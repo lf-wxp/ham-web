@@ -18,7 +18,7 @@ pub use not_found::NotFoundPage;
 pub use photo::PhotoProcessorPage;
 pub use practice::PracticePage;
 
-use ham_exam_core::Bank;
+use ham_web_core::Bank;
 use leptos::prelude::*;
 use leptos_router::hooks::use_query_map;
 

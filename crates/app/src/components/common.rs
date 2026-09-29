@@ -1,6 +1,6 @@
 //! 通用组件：提示弹窗、答案解析卡片、可预览图片、进度头部、底部操作栏。
 
-use ham_exam_core::QuestionItem;
+use ham_web_core::QuestionItem;
 use leptos::prelude::*;
 
 use crate::cn::cn;

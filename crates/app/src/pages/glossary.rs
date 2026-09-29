@@ -3,9 +3,9 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use ham_exam_core::Bank;
-use ham_exam_core::categories::{TOP_CATEGORIES, top_category};
-use ham_exam_core::glossary::{GlossaryEntry, OTHER_CATEGORY};
+use ham_web_core::Bank;
+use ham_web_core::categories::{TOP_CATEGORIES, top_category};
+use ham_web_core::glossary::{GlossaryEntry, OTHER_CATEGORY};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;

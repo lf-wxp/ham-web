@@ -8,8 +8,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
-use ham_exam_core::fingerprint::fingerprint_parts;
-use ham_exam_core::{Codes, QuestionItem, QuestionOption, QuestionType};
+use ham_web_core::fingerprint::fingerprint_parts;
+use ham_web_core::{Codes, QuestionItem, QuestionOption, QuestionType};
 use regex::Regex;
 
 use crate::csv::Table;

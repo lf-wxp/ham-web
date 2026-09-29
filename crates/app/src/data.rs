@@ -6,8 +6,8 @@ use std::fmt;
 use std::rc::Rc;
 use std::sync::{Arc, LazyLock};
 
-use ham_exam_core::glossary::Glossary;
-use ham_exam_core::{Bank, BankConfig, QuestionItem, QuestionVersion};
+use ham_web_core::glossary::Glossary;
+use ham_web_core::{Bank, BankConfig, QuestionItem, QuestionVersion};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestCache, RequestInit, Response};

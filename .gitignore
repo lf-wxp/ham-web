@@ -4,7 +4,7 @@
 /tmp
 crates/app/dist
 
-# 由 `ham-exam-tools postbuild` 生成，只存在于 dist/
+# 由 `ham-web-tools postbuild` 生成，只存在于 dist/
 public/sw.js
 public/sitemap.xml
 

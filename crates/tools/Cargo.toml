@@ -1,5 +1,5 @@
 [package]
-name = "ham-exam-tools"
+name = "ham-web-tools"
 description = "业余无线电考试模拟：构建与维护工具（数据集、解析、PWA 图标、Service Worker、sitemap）"
 version.workspace = true
 edition.workspace = true
@@ -9,11 +9,11 @@ repository.workspace = true
 authors.workspace = true
 
 [[bin]]
-name = "ham-exam-tools"
+name = "ham-web-tools"
 path = "src/main.rs"
 
 [dependencies]
-ham-exam-core.workspace = true
+ham-web-core.workspace = true
 anyhow.workspace = true
 clap.workspace = true
 serde.workspace = true

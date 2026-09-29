@@ -42,13 +42,13 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/src/target \
     --mount=type=cache,target=/root/.cache/trunk \
     set -eux; \
-    cargo build --release -p ham-exam-tools -p ham-exam-server; \
-    if [ "${REBUILD_DATASET}" = "1" ]; then ./target/release/ham-exam-tools dataset; fi; \
-    ./target/release/ham-exam-tools icons; \
+    cargo build --release -p ham-web-tools -p ham-web-server; \
+    if [ "${REBUILD_DATASET}" = "1" ]; then ./target/release/ham-web-tools dataset; fi; \
+    ./target/release/ham-web-tools icons; \
     (cd crates/app && trunk build --release); \
-    ./target/release/ham-exam-tools postbuild --dist dist --site-url "${SITE_URL}"; \
+    ./target/release/ham-web-tools postbuild --dist dist --site-url "${SITE_URL}"; \
     mkdir -p /out; \
-    cp ./target/release/ham-exam-server /out/ham-exam-server; \
+    cp ./target/release/ham-web-server /out/ham-web-server; \
     cp -r dist /out/dist
 
 # ───────────────────────────── 运行阶段 ─────────────────────────────
@@ -60,7 +60,7 @@ LABEL org.opencontainers.image.title="ham-web" \
       org.opencontainers.image.licenses="MIT"
 
 WORKDIR /app
-COPY --from=builder --chown=nonroot:nonroot /out/ham-exam-server /app/ham-exam-server
+COPY --from=builder --chown=nonroot:nonroot /out/ham-web-server /app/ham-web-server
 COPY --from=builder --chown=nonroot:nonroot /out/dist /app/dist
 
 ENV HOST=0.0.0.0 \
@@ -72,6 +72,6 @@ EXPOSE 3000
 USER nonroot
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD ["/app/ham-exam-server", "healthcheck"]
+  CMD ["/app/ham-web-server", "healthcheck"]
 
-ENTRYPOINT ["/app/ham-exam-server"]
+ENTRYPOINT ["/app/ham-web-server"]

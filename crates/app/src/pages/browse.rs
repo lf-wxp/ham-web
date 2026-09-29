@@ -3,8 +3,8 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use ham_exam_core::categories::{self, RefKind, TOP_CATEGORIES};
-use ham_exam_core::{Bank, QuestionItem, fingerprint};
+use ham_web_core::categories::{self, RefKind, TOP_CATEGORIES};
+use ham_web_core::{Bank, QuestionItem, fingerprint};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;

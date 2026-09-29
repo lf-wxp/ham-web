@@ -1,9 +1,9 @@
-//! `ham-exam-tools`：构建与题库维护命令行工具。
+//! `ham-web-tools`：构建与题库维护命令行工具。
 //!
 //! 常用入口见 `Makefile.toml`（`cargo make <task>`），也可直接运行：
 //!
 //! ```text
-//! cargo run -p ham-exam-tools -- <SUBCOMMAND> --help
+//! cargo run -p ham-web-tools -- <SUBCOMMAND> --help
 //! ```
 
 mod csv;
@@ -23,13 +23,13 @@ const DEFAULT_REMOTE: &str =
 
 #[derive(Debug, Parser)]
 #[command(
-  name = "ham-exam-tools",
+  name = "ham-web-tools",
   version,
   about = "业余无线电考试模拟：构建与题库维护工具"
 )]
 struct Cli {
   /// 项目根目录（默认自动向上查找 Makefile.toml）
-  #[arg(long, global = true, env = "HAM_EXAM_ROOT")]
+  #[arg(long, global = true, env = "HAM_WEB_ROOT")]
   root: Option<PathBuf>,
 
   #[command(subcommand)]
@@ -62,7 +62,7 @@ enum Command {
   MissingExplanations {
     /// 仅统计某个题库（A/B/C）
     #[arg(long)]
-    bank: Option<ham_exam_core::Bank>,
+    bank: Option<ham_web_core::Bank>,
     /// 导出 {"id": ""} 模板，填写后可直接用 add-explanations 合并
     #[arg(long)]
     output: Option<PathBuf>,

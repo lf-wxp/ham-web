@@ -3,7 +3,7 @@
 
 use std::time::Duration;
 
-use ham_exam_core::bands::{self, Allocation, BANDS, Band, FOOTNOTES, Note, Usage};
+use ham_web_core::bands::{self, Allocation, BANDS, Band, FOOTNOTES, Note, Usage};
 use leptos::prelude::*;
 
 use crate::icons::{Icon, IconKind};

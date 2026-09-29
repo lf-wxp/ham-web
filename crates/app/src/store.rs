@@ -1,8 +1,8 @@
 //! 练习 / 考试进度与偏好的本地持久化（key 与旧版 Next.js 实现保持兼容）。
 
-use ham_exam_core::Bank;
-use ham_exam_core::practice::PracticeOrder;
-use ham_exam_core::saved_state::{ExamSavedState, PracticeSavedState, keys};
+use ham_web_core::Bank;
+use ham_web_core::practice::PracticeOrder;
+use ham_web_core::saved_state::{ExamSavedState, PracticeSavedState, keys};
 
 use crate::util::{now_ms, storage};
 

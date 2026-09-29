@@ -1,5 +1,5 @@
 [package]
-name = "ham-exam-server"
+name = "ham-web-server"
 description = "业余无线电考试模拟：静态站点服务器（SPA 回退、PWA 缓存头、压缩）"
 version.workspace = true
 edition.workspace = true

@@ -1,6 +1,6 @@
 //! 题目解析维护：合并、术语增强、缺失统计、重新应用。
 //!
-//! 解析统一存放在 `data/explanations.json`，key 为题目内容指纹（见 `ham_exam_core::fingerprint`），
+//! 解析统一存放在 `data/explanations.json`，key 为题目内容指纹（见 `ham_web_core::fingerprint`），
 //! value 为解析文本。指纹与题号/顺序/题库无关，因此题库重排不会导致解析错位，
 //! A/B/C 中内容相同的题目共享同一条解析。
 
@@ -9,9 +9,9 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 use anyhow::{Context, Result, bail};
-use ham_exam_core::glossary::Glossary;
-use ham_exam_core::text::{is_js_whitespace, js_trim};
-use ham_exam_core::{Bank, QuestionItem, fingerprint};
+use ham_web_core::glossary::Glossary;
+use ham_web_core::text::{is_js_whitespace, js_trim};
+use ham_web_core::{Bank, QuestionItem, fingerprint};
 use serde::Serialize;
 use serde_json::{Map, Value};
 

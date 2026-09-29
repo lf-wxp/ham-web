@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use ham_exam_core::ExamScore;
+use ham_web_core::ExamScore;
 use leptos::prelude::*;
 
 use crate::components::common::PreviewableImage;

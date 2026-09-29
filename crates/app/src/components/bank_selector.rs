@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use ham_exam_core::{Bank, QuestionVersion};
+use ham_web_core::{Bank, QuestionVersion};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 

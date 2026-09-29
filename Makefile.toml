@@ -51,12 +51,12 @@ args = ["build", "--release"]
 [tasks.postbuild]
 description = "构建后处理：sw.js、sitemap.xml、站点地址替换"
 command = "cargo"
-args = ["run", "-q", "-p", "ham-exam-tools", "--release", "--", "postbuild", "--dist", "${DIST_DIR}", "--site-url", "${SITE_URL}"]
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "postbuild", "--dist", "${DIST_DIR}", "--site-url", "${SITE_URL}"]
 
 [tasks.build-server]
 description = "构建静态站点服务器（release）"
 command = "cargo"
-args = ["build", "-p", "ham-exam-server", "--release"]
+args = ["build", "-p", "ham-web-server", "--release"]
 
 [tasks.build]
 description = "完整构建：图标 + 前端 + 服务器"
@@ -70,7 +70,7 @@ dependencies = ["dataset", "build"]
 description = "以 release 服务器托管 dist/：http://127.0.0.1:8080"
 dependencies = ["build-web"]
 command = "cargo"
-args = ["run", "-p", "ham-exam-server", "--release"]
+args = ["run", "-p", "ham-web-server", "--release"]
 env = { DIST_DIR = "${DIST_DIR}", HOST = "127.0.0.1", PORT = "8080" }
 
 # ───────────────────────────── 数据与资源 ─────────────────────────────
@@ -78,12 +78,12 @@ env = { DIST_DIR = "${DIST_DIR}", HOST = "127.0.0.1", PORT = "8080" }
 [tasks.dataset]
 description = "从 CSV 构建题库 JSON 与图片（DATASET_DIR 优先本地，DATASET_REMOTE 可覆盖远程地址）"
 command = "cargo"
-args = ["run", "-q", "-p", "ham-exam-tools", "--release", "--", "dataset"]
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "dataset"]
 
 [tasks.icons]
 description = "由 public/pwa-icon.svg 生成 PWA / Apple Touch 图标"
 command = "cargo"
-args = ["run", "-q", "-p", "ham-exam-tools", "--release", "--", "icons"]
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "icons"]
 
 # ───────────────────────────── 题目解析维护 ─────────────────────────────
 
@@ -95,7 +95,7 @@ mkdir -p tmp
 args="--output tmp/batch.json --context tmp/context.json"
 if [ -n "$BANK" ]; then args="$args --bank $BANK"; fi
 if [ -n "$LIMIT" ]; then args="$args --limit $LIMIT"; fi
-cargo run -q -p ham-exam-tools --release -- missing-explanations $args
+cargo run -q -p ham-web-tools --release -- missing-explanations $args
 '''
 
 [tasks.explanations-add]
@@ -106,23 +106,23 @@ if [ -z "$BATCH" ]; then
   echo "请通过环境变量指定解析文件，例如：BATCH=tmp/batch.json cargo make explanations-add" >&2
   exit 1
 fi
-cargo run -q -p ham-exam-tools --release -- add-explanations "$BATCH"
+cargo run -q -p ham-web-tools --release -- add-explanations "$BATCH"
 '''
 
 [tasks.explanations-enhance]
 description = "用 data/glossary.json 中 inject=true 的词条为解析注入术语解释"
 command = "cargo"
-args = ["run", "-q", "-p", "ham-exam-tools", "--release", "--", "enhance-explanations"]
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "enhance-explanations"]
 
 [tasks.glossary-check]
 description = "校验 data/glossary.json（分类、参见、重复、括号）并输出统计"
 command = "cargo"
-args = ["run", "-q", "-p", "ham-exam-tools", "--release", "--", "check-glossary"]
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "check-glossary"]
 
 [tasks.explanations-apply]
 description = "把 data/explanations.json 写入 public/questions/*.json（离线，无需重建数据集）"
 command = "cargo"
-args = ["run", "-q", "-p", "ham-exam-tools", "--release", "--", "apply-explanations"]
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "apply-explanations"]
 
 [tasks.explanations]
 description = "一键：合并 → 术语增强 → 写入题库：BATCH=tmp/batch.json cargo make explanations"
@@ -143,14 +143,14 @@ args = ["fmt", "--all", "--check"]
 description = "Clippy（原生 crate + wasm 前端）"
 script_runner = "@shell"
 script = '''
-cargo clippy --all-targets -p ham-exam-core -p ham-exam-tools -p ham-exam-server -- -D warnings
-cargo clippy -p ham-exam-app --target wasm32-unknown-unknown -- -D warnings
+cargo clippy --all-targets -p ham-web-core -p ham-web-tools -p ham-web-server -- -D warnings
+cargo clippy -p ham-web-app --target wasm32-unknown-unknown -- -D warnings
 '''
 
 [tasks.test]
 description = "运行单元测试"
 command = "cargo"
-args = ["test", "-p", "ham-exam-core", "-p", "ham-exam-tools", "-p", "ham-exam-server", "-p", "ham-exam-app"]
+args = ["test", "-p", "ham-web-core", "-p", "ham-web-tools", "-p", "ham-web-server", "-p", "ham-web-app"]
 
 [tasks.ci]
 description = "CI：格式检查 + clippy + 测试 + 前端构建"

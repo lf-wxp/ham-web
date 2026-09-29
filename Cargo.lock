@@ -983,11 +983,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "17e2ac29387b1aa07a1e448f7bb4f35b500787971e965b02842b900afa5c8f6f"
 
 [[package]]
-name = "ham-exam-app"
+name = "ham-web-app"
 version = "0.2.0"
 dependencies = [
  "console_error_panic_hook",
- "ham-exam-core",
+ "ham-web-core",
  "js-sys",
  "leptos",
  "leptos_router",
@@ -1000,7 +1000,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ham-exam-core"
+name = "ham-web-core"
 version = "0.2.0"
 dependencies = [
  "serde",
@@ -1008,7 +1008,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ham-exam-server"
+name = "ham-web-server"
 version = "0.2.0"
 dependencies = [
  "anyhow",
@@ -1021,13 +1021,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "ham-exam-tools"
+name = "ham-web-tools"
 version = "0.2.0"
 dependencies = [
  "anyhow",
  "chrono",
  "clap",
- "ham-exam-core",
+ "ham-web-core",
  "regex",
  "resvg",
  "serde",

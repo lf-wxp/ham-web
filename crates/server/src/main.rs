@@ -46,7 +46,7 @@ impl Config {
   }
 }
 
-/// 判断文件名是否带 Trunk 生成的内容哈希，如 `ham-exam-app-1a2b3c4d5e6f7a8b_bg.wasm`。
+/// 判断文件名是否带 Trunk 生成的内容哈希，如 `ham-web-app-1a2b3c4d5e6f7a8b_bg.wasm`。
 fn is_hashed_asset(path: &str) -> bool {
   let file = path.rsplit('/').next().unwrap_or_default();
   let stem = file.split('.').next().unwrap_or_default();
@@ -143,7 +143,7 @@ async fn shutdown_signal() {
   tracing::info!("shutting down");
 }
 
-/// `ham-exam-server healthcheck`：请求本机 `/healthz`，供容器 HEALTHCHECK 使用（运行镜像内无 curl）。
+/// `ham-web-server healthcheck`：请求本机 `/healthz`，供容器 HEALTHCHECK 使用（运行镜像内无 curl）。
 async fn healthcheck() -> anyhow::Result<()> {
   use tokio::io::{AsyncReadExt, AsyncWriteExt};
   let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_owned());
@@ -193,7 +193,7 @@ mod tests {
 
   #[test]
   fn detects_hashed_assets() {
-    assert!(is_hashed_asset("/ham-exam-app-8a1f0c2d9e3b4a5c_bg.wasm"));
+    assert!(is_hashed_asset("/ham-web-app-8a1f0c2d9e3b4a5c_bg.wasm"));
     assert!(is_hashed_asset("/input-0123456789abcdef.css"));
     assert!(!is_hashed_asset("/pwa-icon-192.png"));
     assert!(!is_hashed_asset("/manifest.json"));

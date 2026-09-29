@@ -80,7 +80,7 @@
 | 样式 | Tailwind CSS v4 + tw-animate-css，沿用原 shadcn/ui（new-york）设计令牌与类名 |
 | 图标 | Lucide（内联 SVG，与原版路径一致） |
 | 服务器 | Axum 0.8 + tower-http（SPA 回退、缓存头、gzip/brotli） |
-| 工具链 | `ham-exam-tools`（clap、ureq、resvg、sha2） |
+| 工具链 | `ham-web-tools`（clap、ureq、resvg、sha2） |
 | 任务编排 | [cargo-make](https://github.com/sagiegurari/cargo-make) |
 | PWA | 构建时由 Rust 生成 Service Worker（预缓存 + 运行时缓存策略） |
 
@@ -180,7 +180,7 @@ cargo make serve          # 用 release 服务器托管 dist/：http://127.0.0.1
 
 ```bash
 docker build -t ham-web .
-docker run -d --name ham-exam -p 3000:3000 ham-web
+docker run -d --name ham-web -p 3000:3000 ham-web
 # 或
 cargo make docker-build && cargo make docker-run
 ```
@@ -280,7 +280,7 @@ BANK=C LIMIT=50 cargo make explanations-missing   # 仅 C 类，最多导出 50 
      "question": "…", "options": ["A. …", "B. …"], "answer": "B" }]
   ```
 
-也可直接调用：`cargo run -p ham-exam-tools -- missing-explanations --help`。
+也可直接调用：`cargo run -p ham-web-tools -- missing-explanations --help`。
 
 ### 第 2 步：撰写解析
 

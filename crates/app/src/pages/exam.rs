@@ -4,10 +4,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use ham_exam_core::exam::pick_exam;
-use ham_exam_core::saved_state::{ExamSavedState, keys};
-use ham_exam_core::text::format_ms;
-use ham_exam_core::{ExamRule, ExamScore, QuestionItem};
+use ham_web_core::exam::pick_exam;
+use ham_web_core::saved_state::{ExamSavedState, keys};
+use ham_web_core::text::format_ms;
+use ham_web_core::{ExamRule, ExamScore, QuestionItem};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use send_wrapper::SendWrapper;

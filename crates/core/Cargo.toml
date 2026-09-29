@@ -1,5 +1,5 @@
 [package]
-name = "ham-exam-core"
+name = "ham-web-core"
 description = "业余无线电考试：题目模型、内容指纹、考试规则与分类体系（前端与工具链共享）"
 version.workspace = true
 edition.workspace = true

@@ -1,4 +1,4 @@
-/* 由 `ham-exam-tools postbuild` 生成，请勿手动修改。模板：crates/tools/templates/sw.js */
+/* 由 `ham-web-tools postbuild` 生成，请勿手动修改。模板：crates/tools/templates/sw.js */
 "use strict";
 
 const PRECACHE_VERSION = "__CACHE_VERSION__";

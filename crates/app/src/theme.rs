@@ -1,6 +1,6 @@
 //! 明暗主题：`light` / `dark` / `system`，持久化到 `localStorage["theme"]`。
 
-use ham_exam_core::saved_state::keys;
+use ham_web_core::saved_state::keys;
 use leptos::prelude::*;
 use send_wrapper::SendWrapper;
 use wasm_bindgen::JsCast;

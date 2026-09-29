@@ -1,5 +1,5 @@
 [package]
-name = "ham-exam-app"
+name = "ham-web-app"
 description = "业余无线电执照考试模拟：Leptos CSR 前端（PWA）"
 version.workspace = true
 edition.workspace = true
@@ -9,7 +9,7 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-ham-exam-core.workspace = true
+ham-web-core.workspace = true
 leptos.workspace = true
 leptos_router.workspace = true
 serde.workspace = true

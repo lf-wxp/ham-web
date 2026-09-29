@@ -1,6 +1,6 @@
 //! 首页：选择题库版本与类别，进入练习 / 模拟考试。
 
-use ham_exam_core::Bank;
+use ham_web_core::Bank;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 

@@ -4,11 +4,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use ham_exam_core::exam::shuffle_in_place;
-use ham_exam_core::practice::{PracticeOrder, find_jump_target, search, unique_to_bank};
-use ham_exam_core::saved_state::{PracticeSavedState, keys};
-use ham_exam_core::text::js_trim;
-use ham_exam_core::{Bank, QuestionItem};
+use ham_web_core::exam::shuffle_in_place;
+use ham_web_core::practice::{PracticeOrder, find_jump_target, search, unique_to_bank};
+use ham_web_core::saved_state::{PracticeSavedState, keys};
+use ham_web_core::text::js_trim;
+use ham_web_core::{Bank, QuestionItem};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::NavigateOptions;

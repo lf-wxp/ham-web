@@ -1,6 +1,6 @@
 //! 题目卡片：题干、附图、选项（单选/多选），可选即时显示答案。
 
-use ham_exam_core::QuestionItem;
+use ham_web_core::QuestionItem;
 use leptos::prelude::*;
 
 use crate::components::common::PreviewableImage;
@@ -123,7 +123,7 @@ pub fn QuestionCard(
   let answer_line = move || {
     show_answer.get().then(|| {
       let sel = selected.get();
-      let correct = !sel.is_empty() && ham_exam_core::question::same_set(&sel, &answer_keys);
+      let correct = !sel.is_empty() && ham_web_core::question::same_set(&sel, &answer_keys);
       let verdict = (!sel.is_empty()).then(|| {
         let (class, text) =
           if correct { ("ml-2 text-green-600 dark:text-green-400", "已答对".to_owned()) } else { ("ml-2 text-red-600 dark:text-red-400", format!("作答：{}", sel.join(", "))) };

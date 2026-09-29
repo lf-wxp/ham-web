@@ -1,7 +1,7 @@
 //! 练习模式相关组件：恢复进度、设置、搜索对话框。
 
-use ham_exam_core::practice::{PracticeOrder, SearchMatch};
-use ham_exam_core::text::upper_chars;
+use ham_web_core::practice::{PracticeOrder, SearchMatch};
+use ham_web_core::text::upper_chars;
 use leptos::prelude::*;
 
 use crate::components::exam::ShortcutRow;
