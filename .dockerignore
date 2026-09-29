@@ -1,0 +1,13 @@
+target/
+dist/
+tmp/
+node_modules/
+.next/
+.git/
+.github/
+.codebuddy/
+.playwright-mcp/
+.idea/
+.vscode/
+**/.DS_Store
+*.log

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>业余无线电执照考试模拟练习</title>
+    <meta name="description" content="业余无线电执照考试模拟练习| 2025年10月题库" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#09090b" />
+
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/pwa-icon.svg" type="image/svg+xml" />
+    <link rel="shortcut icon" href="/pwa-icon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="无线电考试" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <meta property="og:title" content="业余无线电执照考试模拟练习" />
+    <meta property="og:description" content="业余无线电执照考试模拟练习｜支持 A/B/C 类题库、真实规则抽题与计时交卷" />
+    <meta property="og:url" content="__SITE_URL__/" />
+    <meta property="og:site_name" content="业余无线电执照考试模拟练习" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="__SITE_URL__/pwa-icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="业余无线电执照考试模拟练习" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="业余无线电执照考试模拟练习" />
+    <meta name="twitter:description" content="业余无线电执照考试模拟练习｜支持 A/B/C 类题库、真实规则抽题与计时交卷" />
+    <meta name="twitter:image" content="__SITE_URL__/pwa-icon-512.png" />
+
+    <!-- 首屏前应用主题，避免闪烁 -->
+    <script>
+      (() => {
+        const root = document.documentElement;
+        let stored = "system";
+        try { stored = localStorage.getItem("theme") ?? "system"; } catch {}
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const resolved = stored === "system" ? (prefersDark ? "dark" : "light") : stored;
+        root.classList.toggle("dark", resolved === "dark");
+        root.style.colorScheme = resolved;
+      })();
+    </script>
+
+    <link data-trunk rel="tailwind-css" href="style/input.css" />
+    <link
+      data-trunk
+      rel="rust"
+      data-bin="ham-exam-app"
+      data-cargo-profile-release="wasm-release"
+      data-wasm-opt="z"
+      data-wasm-opt-params="--enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals"
+    />
+
+    <link data-trunk rel="copy-dir" href="../../public/questions" />
+    <link data-trunk rel="copy-dir" href="../../public/fonts" />
+    <link data-trunk rel="copy-file" href="../../public/manifest.json" />
+    <link data-trunk rel="copy-file" href="../../public/favicon.ico" />
+    <link data-trunk rel="copy-file" href="../../public/icon.svg" />
+    <link data-trunk rel="copy-file" href="../../public/pwa-icon.svg" />
+    <link data-trunk rel="copy-file" href="../../public/pwa-icon-192.png" />
+    <link data-trunk rel="copy-file" href="../../public/pwa-icon-512.png" />
+    <link data-trunk rel="copy-file" href="../../public/apple-touch-icon.png" />
+    <link data-trunk rel="copy-file" href="../../public/apple-touch-icon-precomposed.png" />
+
+    <script
+      async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5453400863646747"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body class="antialiased min-h-[100dvh] flex flex-col"></body>
+</html>

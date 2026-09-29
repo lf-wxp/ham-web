@@ -1,0 +1,18 @@
+[package]
+name = "ham-exam-core"
+description = "业余无线电考试：题目模型、内容指纹、考试规则与分类体系（前端与工具链共享）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

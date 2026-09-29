@@ -1,0 +1,73 @@
+[workspace]
+resolver = "3"
+members = ["crates/core", "crates/app", "crates/server", "crates/tools"]
+default-members = ["crates/core", "crates/server", "crates/tools"]
+
+[workspace.package]
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.88"
+license = "MIT"
+repository = "https://github.com/lf-wxp/ham-web"
+homepage = "https://ham.onlyxp.me"
+authors = ["lf-wxp"]
+
+[workspace.dependencies]
+ham-exam-core = { path = "crates/core" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1.0.104"
+thiserror = "2.0.21"
+
+# frontend
+leptos = { version = "0.8", features = ["csr"] }
+leptos_router = "0.8"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-sys = "0.3"
+console_error_panic_hook = "0.1"
+send_wrapper = "0.6"
+
+# server
+axum = "0.8"
+tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "net", "signal", "io-util"] }
+tower = "0.5"
+tower-http = { version = "0.7", features = ["fs", "compression-gzip", "compression-br", "set-header", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+
+# tools
+clap = { version = "4", features = ["derive", "env"] }
+regex = "1.13"
+ureq = "3"
+resvg = "0.48"
+sha2 = "0.11"
+walkdir = "2"
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
+style = { level = "warn", priority = -1 }
+complexity = { level = "warn", priority = -1 }
+perf = { level = "warn", priority = -1 }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.dev.package."*"]
+opt-level = 1
+
+# 前端 WASM 构建使用体积优先的配置（由 index.html 中的 data-cargo-profile-release 指定，仅 release 构建生效）
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+panic = "abort"

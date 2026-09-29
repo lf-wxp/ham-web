@@ -1,0 +1,29 @@
+[package]
+name = "ham-exam-tools"
+description = "业余无线电考试模拟：构建与维护工具（数据集、解析、PWA 图标、Service Worker、sitemap）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "ham-exam-tools"
+path = "src/main.rs"
+
+[dependencies]
+ham-exam-core.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json = { workspace = true, features = ["preserve_order"] }
+regex.workspace = true
+ureq.workspace = true
+resvg.workspace = true
+sha2.workspace = true
+walkdir.workspace = true
+chrono.workspace = true
+
+[lints]
+workspace = true

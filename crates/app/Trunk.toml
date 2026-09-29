@@ -1,0 +1,19 @@
+[build]
+target = "index.html"
+dist = "../../dist"
+public_url = "/"
+filehash = true
+
+[tools]
+# Trunk 会自动下载对应版本的 Tailwind CSS 独立可执行文件（无需 Node.js）
+tailwindcss = "4.1.14"
+# wasm-opt（binaryen），release 构建时用于体积优化
+wasm_opt = "version_123"
+
+[watch]
+watch = ["src", "style", "index.html", "../core/src", "../../public", "../../data/glossary.json"]
+
+[serve]
+addresses = ["127.0.0.1"]
+port = 3000
+open = false

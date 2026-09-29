@@ -1,0 +1,70 @@
+[package]
+name = "ham-exam-app"
+description = "业余无线电执照考试模拟：Leptos CSR 前端（PWA）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+ham-exam-core.workspace = true
+leptos.workspace = true
+leptos_router.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
+js-sys.workspace = true
+console_error_panic_hook.workspace = true
+send_wrapper.workspace = true
+
+[dependencies.web-sys]
+workspace = true
+features = [
+  "AddEventListenerOptions",
+  "Blob",
+  "BlobPropertyBag",
+  "CanvasRenderingContext2d",
+  "CssStyleDeclaration",
+  "DataTransfer",
+  "Document",
+  "DomRect",
+  "DomTokenList",
+  "DragEvent",
+  "Element",
+  "Event",
+  "EventTarget",
+  "File",
+  "FileList",
+  "FileReader",
+  "Headers",
+  "HtmlAnchorElement",
+  "HtmlCanvasElement",
+  "HtmlElement",
+  "HtmlImageElement",
+  "HtmlInputElement",
+  "KeyboardEvent",
+  "Location",
+  "MediaQueryList",
+  "MediaQueryListEvent",
+  "MouseEvent",
+  "Navigator",
+  "NodeList",
+  "Request",
+  "RequestCache",
+  "RequestInit",
+  "Response",
+  "ServiceWorker",
+  "ServiceWorkerContainer",
+  "ServiceWorkerRegistration",
+  "ServiceWorkerState",
+  "Storage",
+  "Url",
+  "VisibilityState",
+  "Window",
+]
+
+[lints]
+workspace = true

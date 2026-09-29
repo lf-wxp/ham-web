@@ -1,0 +1,2816 @@
+{
+  "多径传播": {
+    "en": "Multipath Propagation",
+    "category": "传播",
+    "desc": "电波从发射到接收可能走好几条路，有的直达、有的被墙或地面反射，这些波先后到达，会相互加强或抵消",
+    "inject": true
+  },
+  "多径效应": {
+    "en": "Multipath Effect",
+    "category": "传播",
+    "desc": "电波走好几条路到达接收点，因先后不同而相互加强或抵消，导致信号忽强忽弱",
+    "inject": true
+  },
+  "电离层": {
+    "en": "Ionosphere",
+    "category": "传播",
+    "desc": "地球上空几十到几百公里处被太阳晒出的一层带电大气，能把短波信号弹回地面，实现远距离通信",
+    "inject": true
+  },
+  "驻波比": {
+    "abbr": "SWR",
+    "en": "Standing Wave Ratio",
+    "category": "天线",
+    "desc": "衡量天线和连接线配合得好不好的指标；配合越好能量浪费越少，数值越接近 1:1 越好",
+    "aliases": [
+      "电压驻波比",
+      "VSWR"
+    ],
+    "inject": true
+  },
+  "杂散发射": {
+    "en": "Spurious Emission",
+    "category": "设备",
+    "desc": "除了该发的信号之外漏出去的多余信号，会干扰别人",
+    "inject": true
+  },
+  "谐波": {
+    "en": "Harmonic",
+    "category": "设备",
+    "desc": "一个信号频率的整数倍，比如 100MHz 的 2 倍 200MHz，属于多余的干扰信号",
+    "inject": true
+  },
+  "互调": {
+    "abbr": "IMD",
+    "en": "Intermodulation",
+    "category": "设备",
+    "desc": "两个或多个信号撞在一起，在电路里混合出新的频率，造成干扰",
+    "aliases": [
+      "互调失真"
+    ],
+    "inject": true
+  },
+  "单边带": {
+    "abbr": "SSB",
+    "en": "Single Sideband",
+    "category": "调制",
+    "desc": "只发送调幅信号里上边带或下边带其中一半的省带宽方式，即 SSB",
+    "inject": true
+  },
+  "上边带": {
+    "abbr": "USB",
+    "en": "Upper Sideband",
+    "category": "调制",
+    "desc": "调幅信号里、比载波频率高的那一半信号",
+    "inject": true
+  },
+  "下边带": {
+    "abbr": "LSB",
+    "en": "Lower Sideband",
+    "category": "调制",
+    "desc": "调幅信号里、比载波频率低的那一半信号",
+    "inject": true
+  },
+  "边带": {
+    "en": "Sideband",
+    "category": "调制",
+    "desc": "调制后，在载波两边多出来的那两段信号",
+    "inject": true
+  },
+  "极化": {
+    "en": "Polarization",
+    "category": "天线",
+    "desc": "电波里电场振动的方向；水平振动叫水平极化，垂直振动叫垂直极化，转圈叫圆极化",
+    "aliases": [
+      "水平极化",
+      "垂直极化"
+    ],
+    "inject": true
+  },
+  "鉴频": {
+    "en": "Frequency Discrimination",
+    "category": "设备",
+    "desc": "把频率随声音变化的信号还原成声音的过程，是调频接收的关键一步",
+    "aliases": [
+      "鉴频器"
+    ],
+    "inject": true
+  },
+  "检波": {
+    "en": "Detection",
+    "category": "设备",
+    "desc": "把幅度随声音变化的信号还原成声音的过程，是调幅接收的关键一步",
+    "aliases": [
+      "检波器"
+    ],
+    "inject": true
+  },
+  "镜频": {
+    "en": "Image Frequency",
+    "category": "设备",
+    "desc": "一个假信号频率，它会和真信号一起混进接收机，造成干扰，又叫镜像频率",
+    "aliases": [
+      "镜像频率"
+    ],
+    "inject": true
+  },
+  "镜像抑制比": {
+    "en": "Image Rejection Ratio",
+    "category": "设备",
+    "desc": "接收机压掉镜频假信号的能力",
+    "inject": true
+  },
+  "灵敏度": {
+    "en": "Sensitivity",
+    "category": "设备",
+    "desc": "接收机耳朵有多灵，能收到多弱的信号；数值越小越灵敏",
+    "inject": true
+  },
+  "信噪比": {
+    "abbr": "SNR",
+    "en": "Signal-to-Noise Ratio",
+    "category": "设备",
+    "desc": "有用信号和噪声的音量之比，越大信号越清楚",
+    "aliases": [
+      "S/N"
+    ],
+    "inject": true
+  },
+  "噪声系数": {
+    "abbr": "NF",
+    "en": "Noise Figure",
+    "category": "设备",
+    "desc": "接收机自己制造噪声的程度，越接近 1 越好",
+    "inject": true
+  },
+  "噪声温度": {
+    "en": "Noise Temperature",
+    "category": "设备",
+    "desc": "把接收机内部噪声换算成等效电阻温度来表示的大小",
+    "inject": true
+  },
+  "选择性": {
+    "en": "Selectivity",
+    "category": "设备",
+    "desc": "接收机从一堆信号里挑出想要的、压住不想要的能力",
+    "inject": true
+  },
+  "中频": {
+    "abbr": "IF",
+    "en": "Intermediate Frequency",
+    "category": "设备",
+    "desc": "接收机先把收到的高频信号统一降到一个中间频率再处理，这个中间频率就是中频",
+    "inject": true
+  },
+  "衰减器": {
+    "abbr": "ATT",
+    "en": "Attenuator",
+    "category": "设备",
+    "desc": "把信号调小的开关，防止强信号把接收机震聋",
+    "inject": true
+  },
+  "前置放大器": {
+    "en": "Preamplifier",
+    "category": "设备",
+    "desc": "紧靠天线的小放大器，先放大弱信号、压低噪声，让信号更清楚",
+    "aliases": [
+      "前放"
+    ],
+    "inject": true
+  },
+  "自动增益控制": {
+    "abbr": "AGC",
+    "en": "Automatic Gain Control",
+    "category": "设备",
+    "desc": "接收机根据信号强弱自动调节放大倍数、防止过载，即 AGC",
+    "inject": true
+  },
+  "限幅": {
+    "en": "Limiting",
+    "category": "设备",
+    "desc": "把信号幅度削平，去掉幅度上的干扰",
+    "aliases": [
+      "限幅器"
+    ],
+    "inject": true
+  },
+  "载波": {
+    "en": "Carrier",
+    "category": "调制",
+    "desc": "被声音等信息骑在上面的那个高频电波",
+    "inject": true
+  },
+  "主载波": {
+    "en": "Main Carrier",
+    "category": "调制",
+    "desc": "被声音等信息骑在上面的那个高频电波",
+    "see": "载波",
+    "inject": true
+  },
+  "频偏": {
+    "en": "Frequency Deviation",
+    "category": "调制",
+    "desc": "调频时，电波频率偏离中心频率的最大幅度",
+    "inject": true
+  },
+  "静噪": {
+    "abbr": "SQL",
+    "en": "Squelch",
+    "category": "设备",
+    "desc": "没有信号时自动关掉喇叭，避免沙沙的噪声",
+    "inject": true
+  },
+  "亚音": {
+    "abbr": "CTCSS",
+    "en": "Continuous Tone-Coded Squelch System",
+    "category": "设备",
+    "desc": "混在话音里的一小声低频音，用来解锁接收机的静噪",
+    "aliases": [
+      "亚音频",
+      "亚音频静噪"
+    ],
+    "inject": true
+  },
+  "大气波导": {
+    "en": "Tropospheric Ducting",
+    "category": "传播",
+    "desc": "特殊天气下电波被夹在近地大气层里来回反射，传得特别远",
+    "inject": true
+  },
+  "对流层散射": {
+    "en": "Tropospheric Scatter",
+    "category": "传播",
+    "desc": "电波被大气低层的不均匀气团散射，实现几百公里的超视距通信",
+    "inject": true
+  },
+  "流星余迹": {
+    "abbr": "MS",
+    "en": "Meteor Scatter",
+    "category": "传播",
+    "desc": "流星划过留下一条电离尾巴，能短暂反射电波完成通信",
+    "aliases": [
+      "流星散射"
+    ],
+    "inject": true
+  },
+  "EME": {
+    "en": "Earth-Moon-Earth",
+    "category": "传播",
+    "desc": "把信号打到月亮上、再反射回地球的通信方式，即地-月-地",
+    "aliases": [
+      "月面反射通信",
+      "地月地通信"
+    ],
+    "inject": true
+  },
+  "视距": {
+    "abbr": "LOS",
+    "en": "Line of Sight",
+    "category": "传播",
+    "desc": "收发两点之间看得见的直线传播，中间没有遮挡",
+    "aliases": [
+      "视距传播"
+    ],
+    "inject": true
+  },
+  "等幅电报": {
+    "abbr": "CW",
+    "en": "Continuous Wave",
+    "category": "调制",
+    "desc": "幅度始终不变的连续波，就是莫尔斯电报嘀嗒信号的载体",
+    "inject": true
+  },
+  "频差": {
+    "en": "Repeater Offset",
+    "category": "操作",
+    "desc": "中继台接收和发射两个频率之间的差值",
+    "aliases": [
+      "收发频差"
+    ],
+    "inject": true
+  },
+  "假负载": {
+    "en": "Dummy Load",
+    "category": "设备",
+    "desc": "代替天线、把发射能量变成热量的假天线，调试发射机时用",
+    "inject": true
+  },
+  "介质损耗": {
+    "en": "Dielectric Loss",
+    "category": "基础",
+    "desc": "绝缘材料在交流电下发热而白白浪费的能量",
+    "inject": true
+  },
+  "击穿": {
+    "en": "Breakdown",
+    "category": "基础",
+    "desc": "绝缘材料电压太高时突然通电了",
+    "inject": true
+  },
+  "尖端放电": {
+    "en": "Point Discharge",
+    "category": "基础",
+    "desc": "导体尖角处电荷聚集、电场特别强，容易放电",
+    "inject": true
+  },
+  "减幅波": {
+    "en": "Damped Wave",
+    "category": "调制",
+    "desc": "幅度越来越小的振荡波，会干扰正常通信",
+    "inject": true
+  },
+  "矩形系数": {
+    "en": "Shape Factor",
+    "category": "设备",
+    "desc": "描述滤波器边缘多陡的指标，越小越能干净地压掉旁边频率",
+    "inject": true
+  },
+  "峰包功率": {
+    "abbr": "PEP",
+    "en": "Peak Envelope Power",
+    "category": "设备",
+    "desc": "发射信号在最高点那瞬间的功率",
+    "inject": true
+  },
+  "PEP": {
+    "en": "Peak Envelope Power",
+    "category": "设备",
+    "desc": "峰包功率，即发射信号在最高点那瞬间的功率",
+    "see": "峰包功率",
+    "inject": true
+  },
+  "峰-峰值": {
+    "abbr": "Vpp",
+    "en": "Peak-to-Peak Value",
+    "category": "基础",
+    "desc": "波形最高点到最低点之间的幅度差",
+    "inject": true
+  },
+  "有效值": {
+    "abbr": "RMS",
+    "en": "Root Mean Square",
+    "category": "基础",
+    "desc": "和直流产生同样发热效果的交流等效值",
+    "aliases": [
+      "均方根值"
+    ],
+    "inject": true
+  },
+  "频率容限": {
+    "en": "Frequency Tolerance",
+    "category": "设备",
+    "desc": "发射频率允许偏离规定频率的最大范围",
+    "inject": true
+  },
+  "杂散域": {
+    "en": "Spurious Domain",
+    "category": "设备",
+    "desc": "该发信号带宽之外、杂散发射所在的频率范围",
+    "inject": true
+  },
+  "包络": {
+    "en": "Envelope",
+    "category": "调制",
+    "desc": "调制后，载波幅度形成的轮廓",
+    "inject": true
+  },
+  "调制": {
+    "en": "Modulation",
+    "category": "调制",
+    "desc": "把声音等信息装载到高频电波上的过程",
+    "inject": true
+  },
+  "解调": {
+    "en": "Demodulation",
+    "category": "调制",
+    "desc": "把声音等信息从高频电波里还原出来的过程",
+    "inject": true
+  },
+  "调频": {
+    "abbr": "FM",
+    "en": "Frequency Modulation",
+    "category": "调制",
+    "desc": "让电波的频率随声音高低变化的调制方式，即 FM",
+    "inject": true
+  },
+  "调幅": {
+    "abbr": "AM",
+    "en": "Amplitude Modulation",
+    "category": "调制",
+    "desc": "让电波的幅度随声音大小变化的调制方式，即 AM",
+    "inject": true
+  },
+  "本振": {
+    "abbr": "LO",
+    "en": "Local Oscillator",
+    "category": "设备",
+    "desc": "接收机内部自己产生的一个参考频率，用来和收到的信号混合",
+    "aliases": [
+      "本机振荡器"
+    ],
+    "inject": true
+  },
+  "混频": {
+    "en": "Mixing",
+    "category": "设备",
+    "desc": "把两个不同频率的信号合在一起，产生新的频率",
+    "aliases": [
+      "混频器"
+    ],
+    "inject": true
+  },
+  "射频": {
+    "abbr": "RF",
+    "en": "Radio Frequency",
+    "category": "基础",
+    "desc": "适合发射到空中的高频电信号",
+    "inject": true
+  },
+  "音频": {
+    "abbr": "AF",
+    "en": "Audio Frequency",
+    "category": "基础",
+    "desc": "人耳能听到的声音对应的电信号",
+    "inject": true
+  },
+  "带宽": {
+    "abbr": "BW",
+    "en": "Bandwidth",
+    "category": "调制",
+    "desc": "信号占用的频率范围的宽度",
+    "inject": true
+  },
+  "业余业务": {
+    "en": "Amateur Service",
+    "category": "法规",
+    "desc": "国际电联定义的一种无线电业务，供经正式批准、对无线电技术有兴趣的人进行自我训练、相互通信和技术研究，不得用于谋取商业利益"
+  },
+  "卫星业余业务": {
+    "en": "Amateur-Satellite Service",
+    "category": "法规",
+    "desc": "利用地球卫星上的空间电台开展的业余业务，业余卫星通信即属于这一业务"
+  },
+  "业余无线电台": {
+    "en": "Amateur Radio Station",
+    "category": "法规",
+    "desc": "业余业务和卫星业余业务中使用的电台，设置和使用须取得无线电管理机构核发的执照",
+    "aliases": [
+      "业余电台"
+    ]
+  },
+  "电台执照": {
+    "en": "Station License",
+    "category": "法规",
+    "desc": "无线电管理机构核发的准许设置和使用业余无线电台的凭证，有效期不超过 5 年，届满 30 个工作日前申请换发",
+    "aliases": [
+      "业余无线电台执照"
+    ]
+  },
+  "操作技术能力验证": {
+    "en": "Operating Proficiency Verification",
+    "category": "法规",
+    "desc": "取得业余电台操作资格的考核，分 A、B、C 三类，类别越高允许使用的频率范围和发射功率越大",
+    "aliases": [
+      "操作证",
+      "能力验证"
+    ]
+  },
+  "呼号": {
+    "en": "Call Sign",
+    "category": "法规",
+    "desc": "业余电台的唯一身份标识，由管理机构随执照一并核发，通联建立和结束时都要发送，通联过程中至少每 10 分钟发送一次"
+  },
+  "分区号": {
+    "en": "Call Area Digit",
+    "category": "法规",
+    "desc": "我国业余电台呼号中的数字，表示电台所在地区，例如 1 代表北京、4 代表上海山东江苏、0 代表新疆西藏"
+  },
+  "呼号前缀": {
+    "en": "Call Sign Prefix",
+    "category": "法规",
+    "desc": "呼号开头的字母数字组合，由国际电联分配给各国家和地区，中国使用 B 开头的前缀，据此可判断电台所属国家"
+  },
+  "国际电信联盟": {
+    "abbr": "ITU",
+    "en": "International Telecommunication Union",
+    "category": "法规",
+    "desc": "联合国负责信息通信技术的专门机构，制定《无线电规则》并协调全球频率划分",
+    "aliases": [
+      "国际电联"
+    ]
+  },
+  "无线电规则": {
+    "abbr": "RR",
+    "en": "Radio Regulations",
+    "category": "法规",
+    "desc": "国际电联制定、具有国际条约效力的无线电频谱与卫星轨道使用规则，各国频率划分以此为基础"
+  },
+  "国际业余无线电联盟": {
+    "abbr": "IARU",
+    "en": "International Amateur Radio Union",
+    "category": "法规",
+    "desc": "各国业余无线电组织的国际联合体，代表业余界参与国际电联事务，并制定各区域的波段规划"
+  },
+  "中国无线电协会业余无线电分会": {
+    "abbr": "CRAC",
+    "en": "Chinese Radio Amateurs Club",
+    "category": "法规",
+    "desc": "我国全国性的业余无线电组织，代表我国参加国际业余无线电联盟"
+  },
+  "无线电管理机构": {
+    "en": "Radio Regulatory Authority",
+    "category": "法规",
+    "desc": "依法负责无线电频率、电台和设备管理的政府部门，国家层面为工业和信息化部，地方为省级无线电管理机构"
+  },
+  "有害干扰": {
+    "en": "Harmful Interference",
+    "category": "法规",
+    "desc": "危害无线电导航或安全业务正常运行，或严重损害、阻碍、一再阻断依法开展的无线电业务的干扰"
+  },
+  "主要业务": {
+    "en": "Primary Service",
+    "category": "法规",
+    "desc": "频率划分表中享有优先地位的业务，次要业务不得对其产生有害干扰"
+  },
+  "次要业务": {
+    "en": "Secondary Service",
+    "category": "法规",
+    "desc": "频率划分表中处于从属地位的业务，不得干扰主要业务，也不能要求主要业务给予保护，不少业余频段属于次要业务"
+  },
+  "频率划分": {
+    "en": "Frequency Allocation",
+    "category": "法规",
+    "desc": "把某个频段列入频率划分表，规定由一种或多种业务在指定条件下使用，是频率管理的第一层次"
+  },
+  "频率分配": {
+    "en": "Frequency Allotment",
+    "category": "法规",
+    "desc": "把划分给某种业务的频率进一步规定给一个或多个部门在指定区域内使用"
+  },
+  "频率指配": {
+    "en": "Frequency Assignment",
+    "category": "法规",
+    "desc": "无线电管理机构批准具体电台使用某一频率或频道"
+  },
+  "应急通信": {
+    "en": "Emergency Communication",
+    "category": "法规",
+    "desc": "发生自然灾害等突发事件时开展的通信保障，此时业余电台可以与非业余电台就直接相关的紧急事务进行通信"
+  },
+  "高频": {
+    "abbr": "HF",
+    "en": "High Frequency",
+    "category": "频率",
+    "desc": "3–30MHz 的频段，也叫短波，可借助电离层反射实现远距离通信",
+    "aliases": [
+      "短波"
+    ]
+  },
+  "甚高频": {
+    "abbr": "VHF",
+    "en": "Very High Frequency",
+    "category": "频率",
+    "desc": "30–300MHz 的频段，以视距传播为主，2 米波段属于这一范围",
+    "aliases": [
+      "米波"
+    ]
+  },
+  "特高频": {
+    "abbr": "UHF",
+    "en": "Ultra High Frequency",
+    "category": "频率",
+    "desc": "300–3000MHz 的频段，以视距传播为主，70 厘米波段属于这一范围",
+    "aliases": [
+      "分米波"
+    ]
+  },
+  "超高频": {
+    "abbr": "SHF",
+    "en": "Super High Frequency",
+    "category": "频率",
+    "desc": "3–30GHz 的频段，属于厘米波，常用于微波通信和卫星通信",
+    "aliases": [
+      "厘米波"
+    ]
+  },
+  "极高频": {
+    "abbr": "EHF",
+    "en": "Extremely High Frequency",
+    "category": "频率",
+    "desc": "30–300GHz 的频段，属于毫米波，受雨雾衰减影响明显",
+    "aliases": [
+      "毫米波"
+    ]
+  },
+  "至高频": {
+    "abbr": "THF",
+    "en": "Tremendously High Frequency",
+    "category": "频率",
+    "desc": "300–3000GHz 的频段，也叫太赫兹频段",
+    "aliases": [
+      "太赫兹"
+    ]
+  },
+  "中频段": {
+    "abbr": "MF",
+    "en": "Medium Frequency",
+    "category": "频率",
+    "desc": "300kHz–3MHz 的频段，也叫中波，白天主要靠地波传播，夜间可借天波传得更远",
+    "aliases": [
+      "中波"
+    ]
+  },
+  "低频段": {
+    "abbr": "LF",
+    "en": "Low Frequency",
+    "category": "频率",
+    "desc": "30–300kHz 的频段，也叫长波，业余业务在 135.7–137.8kHz 有一个很窄的频段",
+    "aliases": [
+      "长波"
+    ]
+  },
+  "波长": {
+    "abbr": "λ",
+    "en": "Wavelength",
+    "category": "频率",
+    "desc": "电波在一个振荡周期内传播的距离，波长等于光速除以频率，用 300 除以兆赫数即得米数"
+  },
+  "频率": {
+    "abbr": "f",
+    "en": "Frequency",
+    "category": "频率",
+    "desc": "每秒振荡的次数，单位赫兹 Hz，常用 kHz、MHz、GHz"
+  },
+  "波段": {
+    "en": "Band",
+    "category": "频率",
+    "desc": "按波长或频率划分的一段范围，业余无线电常用波长命名，如 20 米波段、2 米波段",
+    "aliases": [
+      "频段"
+    ]
+  },
+  "2 米波段": {
+    "en": "2 Meter Band",
+    "category": "频率",
+    "desc": "144–148MHz 的甚高频业余频段，手台和车台最常用，也是中继台和卫星通信的主要频段"
+  },
+  "70 厘米波段": {
+    "en": "70 Centimeter Band",
+    "category": "频率",
+    "desc": "我国为 430–440MHz 的特高频业余频段，常用于中继台、卫星通信和数字语音"
+  },
+  "波段规划": {
+    "en": "Band Plan",
+    "category": "频率",
+    "desc": "由 IARU 等组织制定的频段内部使用约定，把频段分成 CW、数据、话音、卫星等子段，便于互不干扰",
+    "aliases": [
+      "频段规划"
+    ]
+  },
+  "ITU 区域": {
+    "en": "ITU Region",
+    "category": "频率",
+    "desc": "国际电联把全球分为三个区域分别划分频率，一区为欧洲非洲，二区为美洲，三区为亚洲大部与大洋洲，我国属于第三区"
+  },
+  "CQ 分区": {
+    "en": "CQ Zone",
+    "category": "频率",
+    "desc": "CQ 杂志为 DX 通联和竞赛划分的 40 个地理分区，我国大部分地区位于 23、24 区"
+  },
+  "ITU 分区": {
+    "en": "ITU Zone",
+    "category": "频率",
+    "desc": "国际电联划分的 90 个分区，IARU 竞赛等以此计分，我国大部分地区位于 42–44 区"
+  },
+  "WARC 频段": {
+    "en": "WARC Bands",
+    "category": "频率",
+    "desc": "1979 年世界无线电行政大会新增的 30 米、17 米、12 米业余频段，按惯例不在这些频段举办竞赛"
+  },
+  "信道间隔": {
+    "en": "Channel Spacing",
+    "category": "频率",
+    "desc": "相邻两个信道中心频率之间的差值，业余 VHF/UHF 调频话音常用 12.5kHz 或 25kHz",
+    "aliases": [
+      "频道间隔"
+    ]
+  },
+  "单工": {
+    "en": "Simplex",
+    "category": "频率",
+    "desc": "收发使用同一频率、轮流进行的通信方式，不经过中继台的直接通联就是单工",
+    "aliases": [
+      "同频单工"
+    ]
+  },
+  "双工": {
+    "en": "Duplex",
+    "category": "频率",
+    "desc": "收发使用两个不同频率、可以同时收和发的通信方式，中继台即工作在双工状态",
+    "aliases": [
+      "异频双工"
+    ]
+  },
+  "中继台": {
+    "en": "Repeater",
+    "category": "操作",
+    "desc": "架设在高处、用一个频率接收并同时用另一个频率转发信号的电台，可大大扩展手台的通联距离",
+    "aliases": [
+      "中继"
+    ]
+  },
+  "守听": {
+    "en": "Listening Watch",
+    "category": "操作",
+    "desc": "在某一频率上持续收听，发起呼叫前先守听确认频率空闲是基本操作规范"
+  },
+  "电台日志": {
+    "en": "Station Log",
+    "category": "操作",
+    "desc": "记录每次通信时间、频率、模式和对方电台的簿册或文件，按规定至少保存 2 年",
+    "aliases": [
+      "通联日志",
+      "LOG"
+    ]
+  },
+  "QSL 卡片": {
+    "en": "QSL Card",
+    "category": "操作",
+    "desc": "通联双方互相寄送的书面确认凭证，印有呼号、时间、频率、模式和信号报告，也可通过网络电子确认"
+  },
+  "竞赛": {
+    "en": "Contest",
+    "category": "操作",
+    "desc": "在规定时间内尽可能多地与其他电台通联的比赛，通常要交换信号报告和序号或分区号",
+    "aliases": [
+      "比赛",
+      "TEST"
+    ]
+  },
+  "堆积": {
+    "en": "Pile-up",
+    "category": "操作",
+    "desc": "大量电台同时呼叫同一个稀有或远方电台的情形，应耐心守听、按对方要求有序呼叫"
+  },
+  "分频操作": {
+    "en": "Split Operation",
+    "category": "操作",
+    "desc": "发射和接收使用不同频率的操作方式，稀有电台为避开堆积常要求对方在其发射频率之上呼叫，如 UP 5",
+    "aliases": [
+      "SPLIT"
+    ]
+  },
+  "网络通联": {
+    "en": "Net",
+    "category": "操作",
+    "desc": "由主控电台按约定时间和频率组织多台轮流发言的通联形式，常用于交流和应急演练",
+    "aliases": [
+      "点名"
+    ]
+  },
+  "梅登海德网格": {
+    "en": "Maidenhead Grid Locator",
+    "category": "操作",
+    "desc": "用字母数字组合表示地理位置的编码，如 OM89 表示北京附近区域，常用于 VHF 和卫星通联交换位置",
+    "aliases": [
+      "网格定位",
+      "Grid"
+    ]
+  },
+  "协调世界时": {
+    "abbr": "UTC",
+    "en": "Coordinated Universal Time",
+    "category": "操作",
+    "desc": "国际通用的标准时间，北京时间比 UTC 早 8 小时，业余电台日志和通联统一使用 UTC",
+    "aliases": [
+      "世界时"
+    ]
+  },
+  "大圆方位": {
+    "en": "Great Circle Bearing",
+    "category": "操作",
+    "desc": "地球表面两点间最短路径的方向，定向天线应按大圆方位对准目标地区",
+    "aliases": [
+      "大圆航向"
+    ]
+  },
+  "业余无线电测向": {
+    "abbr": "ARDF",
+    "en": "Amateur Radio Direction Finding",
+    "category": "操作",
+    "desc": "参赛者用测向接收机寻找隐藏发射机的竞技活动，相关技术也可用于查找干扰源",
+    "aliases": [
+      "猎狐",
+      "无线电测向"
+    ]
+  },
+  "便携操作": {
+    "abbr": "/P",
+    "en": "Portable",
+    "category": "操作",
+    "desc": "在临时地点野外架设电台进行的操作，呼号后缀常加 /P",
+    "aliases": [
+      "野外通联"
+    ]
+  },
+  "移动操作": {
+    "abbr": "/M",
+    "en": "Mobile",
+    "category": "操作",
+    "desc": "在行驶的车辆等移动载体上操作电台，呼号后缀常加 /M"
+  },
+  "山峰通联": {
+    "abbr": "SOTA",
+    "en": "Summits On The Air",
+    "category": "操作",
+    "desc": "登上指定山峰架设电台进行通联的活动，结合了户外运动与野外通联技术"
+  },
+  "DXCC": {
+    "en": "DX Century Club",
+    "category": "操作",
+    "desc": "通联并确认 100 个及以上 DXCC 实体即可获得的奖状，是 DX 爱好者最知名的目标",
+    "aliases": [
+      "DXCC 实体"
+    ]
+  },
+  "WAZ": {
+    "en": "Worked All Zones",
+    "category": "操作",
+    "desc": "与全部 40 个 CQ 分区的电台通联并确认后可申请的奖状"
+  },
+  "CQ": {
+    "en": "Calling Any Station",
+    "category": "用语",
+    "desc": "普遍呼叫，表示呼叫任何电台，CQ DX 表示只呼叫远方电台",
+    "aliases": [
+      "普遍呼叫",
+      "CQ DX"
+    ]
+  },
+  "DX": {
+    "en": "Long Distance",
+    "category": "用语",
+    "desc": "远距离通联或远方电台，HF 上通常指其他大洲或稀有地区的电台"
+  },
+  "RST": {
+    "en": "Readability, Strength, Tone",
+    "category": "用语",
+    "desc": "信号报告，R 为可懂度 1–5，S 为强度 1–9，T 为音调 1–9 且仅用于 CW，话音报告如 59，CW 报告如 599",
+    "aliases": [
+      "信号报告"
+    ]
+  },
+  "字母解释法": {
+    "en": "Phonetic Alphabet",
+    "category": "用语",
+    "desc": "用固定单词代表字母以避免听错，如 A Alfa、B Bravo、C Charlie，话音通联拼读呼号时使用",
+    "aliases": [
+      "语音字母",
+      "ITU 拼读字母"
+    ]
+  },
+  "莫尔斯电码": {
+    "en": "Morse Code",
+    "category": "用语",
+    "desc": "用长短不同的点划组合表示字母和数字的编码，是 CW 通信的基础",
+    "aliases": [
+      "摩尔斯电码",
+      "电码"
+    ]
+  },
+  "WPM": {
+    "en": "Words Per Minute",
+    "category": "用语",
+    "desc": "每分钟发送的单词数，是衡量 CW 收发速度的单位"
+  },
+  "SOS": {
+    "en": "Distress Signal",
+    "category": "用语",
+    "desc": "国际通用的莫尔斯遇险信号，发送为嘀嘀嘀嗒嗒嗒嘀嘀嘀，听到后应立即停止其他通信并协助",
+    "aliases": [
+      "遇险信号"
+    ]
+  },
+  "MAYDAY": {
+    "en": "Mayday",
+    "category": "用语",
+    "desc": "话音通信中的遇险呼叫用语，连呼三遍，表示生命或船舶航空器面临严重紧急危险"
+  },
+  "QRA": {
+    "en": "Name of Station",
+    "category": "用语",
+    "desc": "问你台的名称是什么，答我台的名称是某某"
+  },
+  "QRK": {
+    "en": "Readability",
+    "category": "用语",
+    "desc": "问我的信号可懂度如何，答你的信号可懂度为 1–5 级"
+  },
+  "QRL": {
+    "en": "Busy",
+    "category": "用语",
+    "desc": "问你忙吗，答我正忙请勿干扰，业余通联中常用来询问频率是否已被占用"
+  },
+  "QRM": {
+    "en": "Man-made Interference",
+    "category": "用语",
+    "desc": "人为干扰，指其他电台或电气设备造成的干扰"
+  },
+  "QRN": {
+    "en": "Static",
+    "category": "用语",
+    "desc": "天电干扰，指雷电等自然现象产生的噪声"
+  },
+  "QRO": {
+    "en": "Increase Power",
+    "category": "用语",
+    "desc": "增加发射功率，业余中也泛指大功率工作"
+  },
+  "QRP": {
+    "en": "Reduce Power",
+    "category": "用语",
+    "desc": "降低发射功率，业余中也指小功率通信，CW 通常不超过 5W"
+  },
+  "QRQ": {
+    "en": "Send Faster",
+    "category": "用语",
+    "desc": "请发快一点"
+  },
+  "QRS": {
+    "en": "Send Slower",
+    "category": "用语",
+    "desc": "请发慢一点"
+  },
+  "QRT": {
+    "en": "Stop Sending",
+    "category": "用语",
+    "desc": "停止发送，也常表示准备关机下线"
+  },
+  "QRU": {
+    "en": "Nothing for You",
+    "category": "用语",
+    "desc": "问你有什么要给我的吗，答我没有什么要给你的"
+  },
+  "QRV": {
+    "en": "Ready",
+    "category": "用语",
+    "desc": "我已准备好"
+  },
+  "QRX": {
+    "en": "Wait",
+    "category": "用语",
+    "desc": "请等待，稍后再叫我"
+  },
+  "QRZ": {
+    "en": "Who Is Calling Me",
+    "category": "用语",
+    "desc": "谁在呼叫我，常用于没听清对方呼号时"
+  },
+  "QSB": {
+    "en": "Fading",
+    "category": "用语",
+    "desc": "信号衰落，信号强度时强时弱"
+  },
+  "QSL": {
+    "en": "Acknowledge Receipt",
+    "category": "用语",
+    "desc": "确认收妥，也指通联确认卡片"
+  },
+  "QSO": {
+    "en": "Contact",
+    "category": "用语",
+    "desc": "与某电台进行的双向联络，一次完整通联称为一个 QSO",
+    "aliases": [
+      "联络"
+    ]
+  },
+  "QSP": {
+    "en": "Relay",
+    "category": "用语",
+    "desc": "代为转发消息"
+  },
+  "QST": {
+    "en": "General Call to All Amateurs",
+    "category": "用语",
+    "desc": "致全体业余电台的通告"
+  },
+  "QSY": {
+    "en": "Change Frequency",
+    "category": "用语",
+    "desc": "改变频率，如 QSY 145.500 表示转到该频率继续通联"
+  },
+  "QTH": {
+    "en": "Location",
+    "category": "用语",
+    "desc": "电台所在位置"
+  },
+  "QTR": {
+    "en": "Exact Time",
+    "category": "用语",
+    "desc": "准确时间"
+  },
+  "73": {
+    "en": "Best Regards",
+    "category": "用语",
+    "desc": "致以良好祝愿，通联结束时的问候语"
+  },
+  "88": {
+    "en": "Love and Kisses",
+    "category": "用语",
+    "desc": "爱与吻，一般用于对女性业余爱好者的问候，使用时需注意场合"
+  },
+  "DE": {
+    "en": "From / This Is",
+    "category": "用语",
+    "desc": "这里是、来自，用于连接对方呼号和本台呼号，如 BA1AA DE BG4XX"
+  },
+  "K": {
+    "en": "Over / Go Ahead",
+    "category": "用语",
+    "desc": "请发，邀请任何电台回答"
+  },
+  "KN": {
+    "en": "Go Ahead, Named Station Only",
+    "category": "用语",
+    "desc": "请发，只邀请指定电台回答，其他电台请勿插入"
+  },
+  "AR": {
+    "en": "End of Message",
+    "category": "用语",
+    "desc": "报文结束，CW 中两个字母连发、中间不留间隔"
+  },
+  "SK": {
+    "en": "End of Contact",
+    "category": "用语",
+    "desc": "通联结束"
+  },
+  "BK": {
+    "en": "Break",
+    "category": "用语",
+    "desc": "插话或打断，用于快速交换发送权"
+  },
+  "R": {
+    "en": "Roger",
+    "category": "用语",
+    "desc": "收到、已抄收",
+    "aliases": [
+      "Roger"
+    ]
+  },
+  "TNX": {
+    "en": "Thanks",
+    "category": "用语",
+    "desc": "谢谢",
+    "aliases": [
+      "TKS"
+    ]
+  },
+  "PSE": {
+    "en": "Please",
+    "category": "用语",
+    "desc": "请"
+  },
+  "FB": {
+    "en": "Fine Business",
+    "category": "用语",
+    "desc": "很好、非常好"
+  },
+  "OM": {
+    "en": "Old Man",
+    "category": "用语",
+    "desc": "老朋友，对男性业余爱好者的称呼"
+  },
+  "YL": {
+    "en": "Young Lady",
+    "category": "用语",
+    "desc": "女性业余爱好者"
+  },
+  "XYL": {
+    "en": "Ex-Young Lady",
+    "category": "用语",
+    "desc": "妻子"
+  },
+  "HI": {
+    "en": "Laughter",
+    "category": "用语",
+    "desc": "笑声，CW 中表示哈哈"
+  },
+  "UR": {
+    "en": "Your",
+    "category": "用语",
+    "desc": "你的，如 UR RST 599"
+  },
+  "HR": {
+    "en": "Here",
+    "category": "用语",
+    "desc": "这里"
+  },
+  "WX": {
+    "en": "Weather",
+    "category": "用语",
+    "desc": "天气"
+  },
+  "RIG": {
+    "en": "Radio Equipment",
+    "category": "用语",
+    "desc": "电台设备"
+  },
+  "ANT": {
+    "en": "Antenna",
+    "category": "用语",
+    "desc": "天线"
+  },
+  "CUL": {
+    "en": "See You Later",
+    "category": "用语",
+    "desc": "回头见"
+  },
+  "GL": {
+    "en": "Good Luck",
+    "category": "用语",
+    "desc": "祝好运"
+  },
+  "ES": {
+    "en": "And",
+    "category": "用语",
+    "desc": "和、以及"
+  },
+  "OP": {
+    "en": "Operator",
+    "category": "用语",
+    "desc": "操作员"
+  },
+  "发射类别": {
+    "en": "Class of Emission",
+    "category": "调制",
+    "desc": "用三个字符标示发射特性，第一个表示主载波调制方式，第二个表示调制信号性质，第三个表示所传信息类型，如 J3E、F3E",
+    "aliases": [
+      "发射标识"
+    ]
+  },
+  "J3E": {
+    "en": "SSB Telephony, Suppressed Carrier",
+    "category": "调制",
+    "desc": "抑制载波的单边带调幅话音，即常说的 SSB 话"
+  },
+  "A3E": {
+    "en": "Double-Sideband AM Telephony",
+    "category": "调制",
+    "desc": "双边带调幅话音，即普通的 AM 调幅话"
+  },
+  "F3E": {
+    "en": "FM Telephony",
+    "category": "调制",
+    "desc": "调频话音，VHF/UHF 手台和中继台最常用"
+  },
+  "A1A": {
+    "en": "CW Telegraphy",
+    "category": "调制",
+    "desc": "等幅电报，靠人耳接收的莫尔斯电报"
+  },
+  "F1B": {
+    "en": "FSK Telegraphy",
+    "category": "调制",
+    "desc": "频移键控电报，由机器自动接收，如 RTTY"
+  },
+  "G3E": {
+    "en": "Phase Modulation Telephony",
+    "category": "调制",
+    "desc": "调相话音，许多所谓调频电台实际采用的就是这种方式"
+  },
+  "调相": {
+    "abbr": "PM",
+    "en": "Phase Modulation",
+    "category": "调制",
+    "desc": "让载波相位随调制信号变化的调制方式"
+  },
+  "双边带": {
+    "abbr": "DSB",
+    "en": "Double Sideband",
+    "category": "调制",
+    "desc": "保留上下两个边带的调幅信号，占用带宽约为音频最高频率的 2 倍"
+  },
+  "抑制载波": {
+    "en": "Suppressed Carrier",
+    "category": "调制",
+    "desc": "发射时去掉载波成分以节省功率，SSB 即抑制载波并只保留一个边带"
+  },
+  "过调制": {
+    "en": "Overmodulation",
+    "category": "调制",
+    "desc": "调制信号过强、调幅度超过 100%，会产生失真和邻道干扰"
+  },
+  "调幅度": {
+    "en": "Modulation Depth",
+    "category": "调制",
+    "desc": "调幅信号幅度变化的程度，通常用百分比表示，超过 100% 即为过调制",
+    "aliases": [
+      "调制度"
+    ]
+  },
+  "调制指数": {
+    "en": "Modulation Index",
+    "category": "调制",
+    "desc": "调频时频偏与调制信号频率之比，决定调频信号的带宽"
+  },
+  "必要带宽": {
+    "en": "Necessary Bandwidth",
+    "category": "调制",
+    "desc": "在给定发射类别下，恰好保证信息以要求的速率和质量传输所需的带宽",
+    "aliases": [
+      "占用带宽"
+    ]
+  },
+  "频移键控": {
+    "abbr": "FSK",
+    "en": "Frequency Shift Keying",
+    "category": "调制",
+    "desc": "让载波频率在两个或多个值之间切换来传送数字信息",
+    "aliases": [
+      "频移电报"
+    ]
+  },
+  "音频频移键控": {
+    "abbr": "AFSK",
+    "en": "Audio Frequency Shift Keying",
+    "category": "调制",
+    "desc": "用两个音频音调表示数字 0 和 1，再送入话音发射机发出，APRS 和分组通信常用"
+  },
+  "相移键控": {
+    "abbr": "PSK",
+    "en": "Phase Shift Keying",
+    "category": "调制",
+    "desc": "用载波相位变化传送数字信息的调制方式",
+    "aliases": [
+      "BPSK",
+      "QPSK"
+    ]
+  },
+  "正交幅度调制": {
+    "abbr": "QAM",
+    "en": "Quadrature Amplitude Modulation",
+    "category": "调制",
+    "desc": "同时改变载波幅度和相位来传送更多数据的调制方式"
+  },
+  "正交频分复用": {
+    "abbr": "OFDM",
+    "en": "Orthogonal Frequency Division Multiplexing",
+    "category": "调制",
+    "desc": "把数据分散到许多相互正交的子载波上并行传输，抗多径能力强"
+  },
+  "无线电传": {
+    "abbr": "RTTY",
+    "en": "Radio Teletype",
+    "category": "调制",
+    "desc": "用频移键控传送文字的数字模式，业余常用 45.45 波特、频移 170Hz",
+    "aliases": [
+      "电传"
+    ]
+  },
+  "慢扫描电视": {
+    "abbr": "SSTV",
+    "en": "Slow Scan Television",
+    "category": "调制",
+    "desc": "在话音带宽内逐行传送静止图像的方式，国际空间站常开展 SSTV 活动"
+  },
+  "数字业余电视": {
+    "abbr": "DATV",
+    "en": "Digital Amateur Television",
+    "category": "调制",
+    "desc": "把视频压缩后以数字方式发送的业余电视，常用 DVB-S 或 DVB-S2 标准"
+  },
+  "自动位置报告系统": {
+    "abbr": "APRS",
+    "en": "Automatic Packet Reporting System",
+    "category": "调制",
+    "desc": "通过分组数据自动上报位置和短信息的系统，国内常用频率为 144.640MHz"
+  },
+  "分组无线电": {
+    "en": "Packet Radio",
+    "category": "调制",
+    "desc": "把数据分成带地址的数据包进行传输的通信方式，常用 AX.25 协议",
+    "aliases": [
+      "分组通信"
+    ]
+  },
+  "FT8": {
+    "en": "Franke-Taylor 8-FSK",
+    "category": "调制",
+    "desc": "15 秒一个周期的弱信号数字模式，占用约 50Hz 带宽，能在很弱的信号下完成简短通联"
+  },
+  "JT65": {
+    "en": "Joe Taylor 65-FSK",
+    "category": "调制",
+    "desc": "1 分钟一个周期的弱信号数字模式，常用于 EME 月面反射和 HF 小功率通联"
+  },
+  "PSK31": {
+    "en": "Phase Shift Keying, 31 Baud",
+    "category": "调制",
+    "desc": "31.25 波特的窄带相移键控文字聊天模式，带宽仅约 31Hz"
+  },
+  "D-STAR": {
+    "en": "Digital Smart Technologies for Amateur Radio",
+    "category": "调制",
+    "desc": "日本业余无线电联盟制定的数字语音与数据标准，支持中继台联网"
+  },
+  "DMR": {
+    "en": "Digital Mobile Radio",
+    "category": "调制",
+    "desc": "欧洲电信标准协会制定的数字对讲标准，采用时分多址，一个 12.5kHz 信道可同时传两路语音"
+  },
+  "System Fusion": {
+    "abbr": "YSF",
+    "en": "Yaesu System Fusion",
+    "category": "调制",
+    "desc": "八重洲推出的数字语音系统，采用 C4FM 调制，可与模拟调频兼容",
+    "aliases": [
+      "融合"
+    ]
+  },
+  "C4FM": {
+    "en": "Continuous 4-Level FM",
+    "category": "调制",
+    "desc": "四电平连续调频，一种数字调制方式，System Fusion 即采用此方式"
+  },
+  "FreeDV": {
+    "en": "Free Digital Voice",
+    "category": "调制",
+    "desc": "基于开源 Codec2 声码器的数字语音模式，可在 HF 窄带中传输数字话音"
+  },
+  "声码器": {
+    "en": "Vocoder",
+    "category": "调制",
+    "desc": "把话音压缩成低速率数字数据的编解码器，如 D-STAR 和 DMR 使用的 AMBE",
+    "aliases": [
+      "AMBE",
+      "Codec2"
+    ]
+  },
+  "波特": {
+    "abbr": "Bd",
+    "en": "Baud",
+    "category": "调制",
+    "desc": "每秒传输的符号数，是数字信号的调制速率单位",
+    "aliases": [
+      "波特率"
+    ]
+  },
+  "比特率": {
+    "abbr": "bps",
+    "en": "Bit Rate",
+    "category": "调制",
+    "desc": "每秒传输的二进制位数"
+  },
+  "预加重": {
+    "en": "Pre-emphasis",
+    "category": "调制",
+    "desc": "调频发射时提升音频高音部分，接收时再用去加重恢复，从而改善信噪比",
+    "aliases": [
+      "去加重"
+    ]
+  },
+  "收发信机": {
+    "abbr": "TRX",
+    "en": "Transceiver",
+    "category": "设备",
+    "desc": "把发射机和接收机合为一体的电台设备",
+    "aliases": [
+      "电台",
+      "收发机"
+    ]
+  },
+  "发射机": {
+    "abbr": "TX",
+    "en": "Transmitter",
+    "category": "设备",
+    "desc": "产生并放大已调射频信号送往天线的设备"
+  },
+  "接收机": {
+    "abbr": "RX",
+    "en": "Receiver",
+    "category": "设备",
+    "desc": "从天线接收信号并还原成声音或数据的设备"
+  },
+  "超外差接收机": {
+    "en": "Superheterodyne Receiver",
+    "category": "设备",
+    "desc": "先把接收信号与本振混频变为固定中频，再进行放大和解调的接收机，选择性和灵敏度好",
+    "aliases": [
+      "超外差"
+    ]
+  },
+  "直接变频接收机": {
+    "en": "Direct Conversion Receiver",
+    "category": "设备",
+    "desc": "本振频率与信号频率相同、直接混频得到音频或基带的接收机，结构简单",
+    "aliases": [
+      "零中频接收机"
+    ]
+  },
+  "软件无线电": {
+    "abbr": "SDR",
+    "en": "Software Defined Radio",
+    "category": "设备",
+    "desc": "把射频信号尽早数字化，由软件完成滤波、解调等功能的无线电设备",
+    "aliases": [
+      "软件定义无线电"
+    ]
+  },
+  "功率放大器": {
+    "abbr": "PA",
+    "en": "Power Amplifier",
+    "category": "设备",
+    "desc": "把信号放大到足够功率送往天线的放大器",
+    "aliases": [
+      "功放"
+    ]
+  },
+  "线性放大器": {
+    "en": "Linear Amplifier",
+    "category": "设备",
+    "desc": "输出与输入成正比、不引入明显失真的功率放大器，放大 SSB 等信号时必须使用",
+    "aliases": [
+      "线性功放"
+    ]
+  },
+  "按键通话": {
+    "abbr": "PTT",
+    "en": "Push To Talk",
+    "category": "设备",
+    "desc": "按下即发射、松开即接收的控制开关",
+    "aliases": [
+      "发射键"
+    ]
+  },
+  "声控发射": {
+    "abbr": "VOX",
+    "en": "Voice Operated Exchange",
+    "category": "设备",
+    "desc": "检测到话音时自动转入发射、停止说话后自动回到接收的功能"
+  },
+  "自动电平控制": {
+    "abbr": "ALC",
+    "en": "Automatic Level Control",
+    "category": "设备",
+    "desc": "自动限制发射机或功放的激励电平，防止过激励造成失真"
+  },
+  "收信微调": {
+    "abbr": "RIT",
+    "en": "Receiver Incremental Tuning",
+    "category": "设备",
+    "desc": "只微调接收频率而不改变发射频率，用于补偿对方的频率偏差",
+    "aliases": [
+      "CLAR"
+    ]
+  },
+  "发信微调": {
+    "abbr": "XIT",
+    "en": "Transmitter Incremental Tuning",
+    "category": "设备",
+    "desc": "只微调发射频率而不改变接收频率"
+  },
+  "噪声抑制器": {
+    "abbr": "NB",
+    "en": "Noise Blanker",
+    "category": "设备",
+    "desc": "检测并消除汽车点火等脉冲干扰的电路",
+    "aliases": [
+      "噪声消隐"
+    ]
+  },
+  "降噪": {
+    "abbr": "NR",
+    "en": "Noise Reduction",
+    "category": "设备",
+    "desc": "用数字信号处理降低背景噪声，使话音更清晰"
+  },
+  "陷波器": {
+    "en": "Notch Filter",
+    "category": "设备",
+    "desc": "在某一窄频率处形成深度衰减的滤波器，用于去除单一音调的干扰",
+    "aliases": [
+      "NOTCH"
+    ]
+  },
+  "数字信号处理": {
+    "abbr": "DSP",
+    "en": "Digital Signal Processing",
+    "category": "设备",
+    "desc": "用数字运算完成滤波、降噪、解调等处理"
+  },
+  "压控振荡器": {
+    "abbr": "VCO",
+    "en": "Voltage-Controlled Oscillator",
+    "category": "设备",
+    "desc": "输出频率随控制电压变化的振荡器，是锁相环的核心部件"
+  },
+  "锁相环": {
+    "abbr": "PLL",
+    "en": "Phase-Locked Loop",
+    "category": "设备",
+    "desc": "让振荡器的频率和相位跟踪参考信号的反馈电路，用于频率合成"
+  },
+  "直接数字频率合成": {
+    "abbr": "DDS",
+    "en": "Direct Digital Synthesis",
+    "category": "设备",
+    "desc": "用数字方法直接产生所需频率的信号，频率切换快、分辨率高"
+  },
+  "晶体振荡器": {
+    "abbr": "XO",
+    "en": "Crystal Oscillator",
+    "category": "设备",
+    "desc": "用石英晶体控制频率的振荡器，频率稳定度高",
+    "aliases": [
+      "晶振"
+    ]
+  },
+  "温补晶振": {
+    "abbr": "TCXO",
+    "en": "Temperature Compensated Crystal Oscillator",
+    "category": "设备",
+    "desc": "带温度补偿的晶体振荡器，环境温度变化时频率仍很稳定"
+  },
+  "频率合成器": {
+    "en": "Frequency Synthesizer",
+    "category": "设备",
+    "desc": "由一个稳定参考源产生多个精确频率的电路"
+  },
+  "双工器": {
+    "en": "Duplexer",
+    "category": "设备",
+    "desc": "让发射机和接收机共用一副天线、同时工作而互不干扰的滤波装置，中继台必备",
+    "aliases": [
+      "腔体双工器"
+    ]
+  },
+  "动态范围": {
+    "en": "Dynamic Range",
+    "category": "设备",
+    "desc": "接收机在不失真前提下能同时处理的最弱与最强信号之比"
+  },
+  "阻塞": {
+    "en": "Blocking",
+    "category": "设备",
+    "desc": "附近强信号使接收机灵敏度下降、弱信号听不到的现象",
+    "aliases": [
+      "阻塞干扰"
+    ]
+  },
+  "交叉调制": {
+    "en": "Cross Modulation",
+    "category": "设备",
+    "desc": "强干扰信号的调制内容转移到有用信号上的现象",
+    "aliases": [
+      "交调"
+    ]
+  },
+  "三阶截点": {
+    "abbr": "IP3",
+    "en": "Third-Order Intercept Point",
+    "category": "设备",
+    "desc": "衡量接收机抗互调能力的指标，数值越高，强信号环境下越不容易产生互调干扰"
+  },
+  "相位噪声": {
+    "en": "Phase Noise",
+    "category": "设备",
+    "desc": "振荡器输出信号附近的随机相位抖动，会降低接收机在强信号旁接收弱信号的能力"
+  },
+  "频率稳定度": {
+    "en": "Frequency Stability",
+    "category": "设备",
+    "desc": "振荡器频率随时间和温度保持不变的程度"
+  },
+  "邻道选择性": {
+    "abbr": "ACS",
+    "en": "Adjacent Channel Selectivity",
+    "category": "设备",
+    "desc": "接收机抑制相邻信道信号的能力",
+    "aliases": [
+      "邻道抑制"
+    ]
+  },
+  "S 表": {
+    "en": "S-Meter",
+    "category": "设备",
+    "desc": "接收机上显示信号强度的表头，HF 上 S9 约对应 50μV，每个 S 单位相差 6dB",
+    "aliases": [
+      "信号强度表"
+    ]
+  },
+  "手台": {
+    "abbr": "HT",
+    "en": "Handheld Transceiver",
+    "category": "设备",
+    "desc": "手持式收发信机，功率通常为几瓦，多用于 VHF/UHF",
+    "aliases": [
+      "对讲机"
+    ]
+  },
+  "车台": {
+    "en": "Mobile Transceiver",
+    "category": "设备",
+    "desc": "安装在车辆上的收发信机，功率比手台大"
+  },
+  "过载": {
+    "en": "Overload",
+    "category": "设备",
+    "desc": "输入信号过强使接收机工作于非线性状态，产生失真和虚假信号"
+  },
+  "寄生振荡": {
+    "en": "Parasitic Oscillation",
+    "category": "设备",
+    "desc": "放大器在非预期频率上自行产生的振荡，会造成杂散发射",
+    "aliases": [
+      "自激"
+    ]
+  },
+  "CAT": {
+    "en": "Computer Aided Transceiver",
+    "category": "设备",
+    "desc": "电脑通过串口或 USB 控制电台频率、模式等参数的接口"
+  },
+  "电键": {
+    "en": "Telegraph Key",
+    "category": "设备",
+    "desc": "手动发送莫尔斯电码的开关，有直键、双桨电键等形式",
+    "aliases": [
+      "手键",
+      "双桨"
+    ]
+  },
+  "自动键": {
+    "en": "Keyer",
+    "category": "设备",
+    "desc": "配合双桨电键自动产生标准点划和间隔的电子装置"
+  },
+  "稳压电源": {
+    "abbr": "PSU",
+    "en": "Power Supply Unit",
+    "category": "设备",
+    "desc": "把市电转换为稳定直流电供电台使用的设备，开关电源可能产生射频干扰",
+    "aliases": [
+      "电源"
+    ]
+  },
+  "功率计": {
+    "en": "Wattmeter",
+    "category": "设备",
+    "desc": "串接在发射机与天线之间，测量前向功率和反射功率的仪表",
+    "aliases": [
+      "通过式功率计"
+    ]
+  },
+  "天线": {
+    "abbr": "ANT",
+    "en": "Antenna",
+    "category": "天线",
+    "desc": "把导线中的高频电流转换为空间电磁波或反之的装置，具有互易性，收发性能相同"
+  },
+  "半波偶极天线": {
+    "abbr": "DP",
+    "en": "Half-Wave Dipole",
+    "category": "天线",
+    "desc": "总长约半个波长、从中间馈电的天线，自由空间输入阻抗约 73Ω，增益约 2.15dBi",
+    "aliases": [
+      "偶极天线",
+      "Dipole"
+    ]
+  },
+  "地网天线": {
+    "abbr": "GP",
+    "en": "Ground Plane Antenna",
+    "category": "天线",
+    "desc": "由四分之一波长垂直振子加若干水平或下倾地网组成的垂直天线，全向、低仰角",
+    "aliases": [
+      "垂直天线"
+    ]
+  },
+  "八木天线": {
+    "abbr": "YAGI",
+    "en": "Yagi-Uda Antenna",
+    "category": "天线",
+    "desc": "由有源振子、反射器和若干引向器组成的定向天线，增益高、前后比大",
+    "aliases": [
+      "八木"
+    ]
+  },
+  "有源振子": {
+    "en": "Driven Element",
+    "category": "天线",
+    "desc": "天线中直接接馈线的振子",
+    "aliases": [
+      "主振子"
+    ]
+  },
+  "引向器": {
+    "en": "Director",
+    "category": "天线",
+    "desc": "八木天线中比有源振子略短、位于前方的无源振子，使辐射集中到前方"
+  },
+  "反射器": {
+    "en": "Reflector",
+    "category": "天线",
+    "desc": "八木天线中比有源振子略长、位于后方的无源振子，把能量反射向前方"
+  },
+  "对数周期天线": {
+    "abbr": "LPDA",
+    "en": "Log-Periodic Dipole Array",
+    "category": "天线",
+    "desc": "振子长度和间距按比例递增的宽频带定向天线"
+  },
+  "环形天线": {
+    "en": "Loop Antenna",
+    "category": "天线",
+    "desc": "导线绕成环状的天线，小环天线方向性明显，常用于测向",
+    "aliases": [
+      "环天线"
+    ]
+  },
+  "磁环天线": {
+    "en": "Magnetic Loop Antenna",
+    "category": "天线",
+    "desc": "周长远小于波长的小型环形天线，带宽很窄、需精细调谐，适合空间受限的场合",
+    "aliases": [
+      "小环天线"
+    ]
+  },
+  "螺旋天线": {
+    "en": "Helical Antenna",
+    "category": "天线",
+    "desc": "导线绕成螺旋状的天线，轴向模式可产生圆极化，常用于卫星通信"
+  },
+  "抛物面天线": {
+    "en": "Parabolic Dish Antenna",
+    "category": "天线",
+    "desc": "用抛物面反射器聚焦电波的高增益天线，用于微波和 EME",
+    "aliases": [
+      "碟形天线"
+    ]
+  },
+  "鞭状天线": {
+    "en": "Whip Antenna",
+    "category": "天线",
+    "desc": "一根垂直的金属杆或弹性导体，常见于手台和车台",
+    "aliases": [
+      "拉杆天线"
+    ]
+  },
+  "倒 V 天线": {
+    "en": "Inverted-V Antenna",
+    "category": "天线",
+    "desc": "中间高、两端向下倾斜的偶极天线，只需一根支撑杆"
+  },
+  "长线天线": {
+    "en": "Long Wire Antenna",
+    "category": "天线",
+    "desc": "长度为多个波长的单根导线天线，架设简单"
+  },
+  "行波天线": {
+    "en": "Traveling-Wave Antenna",
+    "category": "天线",
+    "desc": "末端接匹配负载、电流沿导线单向行进的天线，频带宽且有方向性，如 T2FD、菱形天线",
+    "aliases": [
+      "T2FD"
+    ]
+  },
+  "各向同性天线": {
+    "en": "Isotropic Antenna",
+    "category": "天线",
+    "desc": "向所有方向均匀辐射的理想点源天线，是 dBi 的参考基准",
+    "aliases": [
+      "全向点源"
+    ]
+  },
+  "dBi": {
+    "en": "Decibels Relative to Isotropic",
+    "category": "天线",
+    "desc": "以各向同性天线为参考的天线增益单位"
+  },
+  "dBd": {
+    "en": "Decibels Relative to Dipole",
+    "category": "天线",
+    "desc": "以半波偶极天线为参考的增益单位，dBi 等于 dBd 加 2.15"
+  },
+  "天线增益": {
+    "en": "Antenna Gain",
+    "category": "天线",
+    "desc": "天线在最大辐射方向上相对参考天线的功率密度之比，来自方向性集中而不是能量放大",
+    "aliases": [
+      "增益"
+    ]
+  },
+  "方向图": {
+    "en": "Radiation Pattern",
+    "category": "天线",
+    "desc": "描述天线在各个方向辐射强弱的图形",
+    "aliases": [
+      "辐射方向图"
+    ]
+  },
+  "前后比": {
+    "abbr": "F/B",
+    "en": "Front-to-Back Ratio",
+    "category": "天线",
+    "desc": "定向天线前方与后方辐射强度之比，越大抗后方干扰能力越强"
+  },
+  "波束宽度": {
+    "en": "Beamwidth",
+    "category": "天线",
+    "desc": "方向图主瓣中辐射功率下降一半即 -3dB 的两点间夹角",
+    "aliases": [
+      "半功率角"
+    ]
+  },
+  "辐射仰角": {
+    "en": "Take-off Angle",
+    "category": "天线",
+    "desc": "天线最大辐射方向与地面的夹角，低仰角有利于 DX 远距离通信",
+    "aliases": [
+      "发射仰角"
+    ]
+  },
+  "输入阻抗": {
+    "en": "Input Impedance",
+    "category": "天线",
+    "desc": "天线馈电点呈现的阻抗，与馈线特性阻抗一致时匹配最好",
+    "aliases": [
+      "馈电阻抗"
+    ]
+  },
+  "特性阻抗": {
+    "abbr": "Z0",
+    "en": "Characteristic Impedance",
+    "category": "天线",
+    "desc": "传输线本身固有的阻抗，由导体尺寸和绝缘介质决定、与长度无关，业余电台常用 50Ω"
+  },
+  "同轴电缆": {
+    "en": "Coaxial Cable",
+    "category": "天线",
+    "desc": "由内导体、绝缘介质、屏蔽层和外护套同轴构成的馈线，屏蔽好、使用方便",
+    "aliases": [
+      "COAX"
+    ]
+  },
+  "平行馈线": {
+    "en": "Open-Wire Line",
+    "category": "天线",
+    "desc": "两根平行导线组成的平衡馈线，损耗低，但容易受周围物体影响",
+    "aliases": [
+      "梯形馈线",
+      "Ladder Line"
+    ]
+  },
+  "巴伦": {
+    "en": "Balun",
+    "category": "天线",
+    "desc": "平衡与不平衡转换器，把同轴电缆的不平衡输出接到偶极等平衡天线上，常见 1:1、4:1",
+    "aliases": [
+      "平衡不平衡转换器"
+    ]
+  },
+  "反射系数": {
+    "abbr": "Γ",
+    "en": "Reflection Coefficient",
+    "category": "天线",
+    "desc": "反射电压与入射电压之比，等于负载阻抗与特性阻抗之差除以二者之和，为 0 时完全匹配"
+  },
+  "回波损耗": {
+    "abbr": "RL",
+    "en": "Return Loss",
+    "category": "天线",
+    "desc": "入射功率与反射功率之比的分贝数，数值越大匹配越好"
+  },
+  "速度因子": {
+    "abbr": "VF",
+    "en": "Velocity Factor",
+    "category": "天线",
+    "desc": "电波在馈线中的传播速度与光速之比，实心聚乙烯同轴电缆约为 0.66",
+    "aliases": [
+      "缩短系数"
+    ]
+  },
+  "电长度": {
+    "en": "Electrical Length",
+    "category": "天线",
+    "desc": "以波长为单位衡量的导线或馈线长度，与频率和速度因子有关"
+  },
+  "加感线圈": {
+    "en": "Loading Coil",
+    "category": "天线",
+    "desc": "串入天线中、在缩短物理长度的同时保持谐振的电感线圈，常见于短波车载天线"
+  },
+  "天线调谐器": {
+    "abbr": "ATU",
+    "en": "Antenna Tuning Unit",
+    "category": "天线",
+    "desc": "把天线系统阻抗变换为发射机所需的 50Ω，使发射机能满功率工作，但不能提高天线本身效率",
+    "aliases": [
+      "天调",
+      "ATU",
+      "Tuner"
+    ]
+  },
+  "驻波表": {
+    "en": "SWR Meter",
+    "category": "天线",
+    "desc": "串接在馈线中测量驻波比的仪表",
+    "aliases": [
+      "驻波功率计"
+    ]
+  },
+  "天线分析仪": {
+    "en": "Antenna Analyzer",
+    "category": "天线",
+    "desc": "自带信号源、可扫描测量天线阻抗和驻波比的仪器",
+    "aliases": [
+      "矢量网络分析仪"
+    ]
+  },
+  "地网": {
+    "en": "Radials",
+    "category": "天线",
+    "desc": "垂直天线下方或周围铺设的若干导线，为天线提供镜像地面、降低损耗",
+    "aliases": [
+      "辐射地网"
+    ]
+  },
+  "圆极化": {
+    "en": "Circular Polarization",
+    "category": "天线",
+    "desc": "电场方向随传播不断旋转的极化方式，卫星通信常用来减轻卫星姿态变化带来的衰落"
+  },
+  "等效全向辐射功率": {
+    "abbr": "EIRP",
+    "en": "Equivalent Isotropically Radiated Power",
+    "category": "天线",
+    "desc": "送入天线的功率乘以天线相对各向同性天线的增益，表示最大辐射方向上的等效辐射能力"
+  },
+  "有效辐射功率": {
+    "abbr": "ERP",
+    "en": "Effective Radiated Power",
+    "category": "天线",
+    "desc": "以半波偶极天线为参考的等效辐射功率，EIRP 比 ERP 大 2.15dB"
+  },
+  "N 型连接器": {
+    "en": "N Connector",
+    "category": "天线",
+    "desc": "螺纹连接、可防水的射频接头，损耗小、适用频率高，常用于 UHF 以上和室外",
+    "aliases": [
+      "N 头"
+    ]
+  },
+  "BNC 连接器": {
+    "abbr": "BNC",
+    "en": "Bayonet Neill-Concelman",
+    "category": "天线",
+    "desc": "卡口式快速连接的射频接头，常见于测试仪器和部分手台",
+    "aliases": [
+      "BNC 头"
+    ]
+  },
+  "SMA 连接器": {
+    "abbr": "SMA",
+    "en": "SubMiniature version A",
+    "category": "天线",
+    "desc": "小型螺纹射频接头，常见于手台和 SDR 设备",
+    "aliases": [
+      "SMA 头"
+    ]
+  },
+  "PL-259": {
+    "en": "UHF Connector",
+    "category": "天线",
+    "desc": "HF 电台最常见的射频接头，PL-259 为插头、SO-239 为插座，不适合较高频率",
+    "aliases": [
+      "SO-239",
+      "M 头"
+    ]
+  },
+  "地波": {
+    "en": "Ground Wave",
+    "category": "传播",
+    "desc": "沿地球表面传播的电波，频率越低、地面导电性越好，衰减越小",
+    "aliases": [
+      "地面波"
+    ]
+  },
+  "天波": {
+    "en": "Sky Wave",
+    "category": "传播",
+    "desc": "经电离层反射回地面的电波，是短波远距离通信的主要方式"
+  },
+  "空间波": {
+    "en": "Space Wave",
+    "category": "传播",
+    "desc": "在收发天线之间直线传播或经地面反射的电波，是 VHF 以上的主要传播方式",
+    "aliases": [
+      "直射波"
+    ]
+  },
+  "跳距": {
+    "en": "Skip Distance",
+    "category": "传播",
+    "desc": "发射点到天波第一次返回地面处的距离"
+  },
+  "寂静区": {
+    "en": "Skip Zone",
+    "category": "传播",
+    "desc": "地波已到达不了、天波又尚未返回的环形区域，在其中收不到信号",
+    "aliases": [
+      "盲区"
+    ]
+  },
+  "临界频率": {
+    "en": "Critical Frequency",
+    "category": "传播",
+    "desc": "垂直向上发射时能被电离层反射回来的最高频率，常用 F2 层临界频率 foF2 表示",
+    "aliases": [
+      "foF2"
+    ]
+  },
+  "最高可用频率": {
+    "abbr": "MUF",
+    "en": "Maximum Usable Frequency",
+    "category": "传播",
+    "desc": "某一时刻在两地之间能经电离层反射通信的最高频率，高于它的信号会穿透电离层"
+  },
+  "最低可用频率": {
+    "abbr": "LUF",
+    "en": "Lowest Usable Frequency",
+    "category": "传播",
+    "desc": "受 D 层吸收和噪声限制，仍能保持可用通信的最低频率"
+  },
+  "最佳工作频率": {
+    "abbr": "FOT",
+    "en": "Frequency of Optimum Traffic",
+    "category": "传播",
+    "desc": "通常取最高可用频率的 85% 左右，此时通信最稳定",
+    "aliases": [
+      "OWF"
+    ]
+  },
+  "D 层": {
+    "en": "D Layer",
+    "category": "传播",
+    "desc": "离地约 60–90km 的电离层最低层，只在白天存在，会吸收较低频率的短波信号"
+  },
+  "E 层": {
+    "en": "E Layer",
+    "category": "传播",
+    "desc": "离地约 90–150km 的电离层，白天较强、夜间减弱"
+  },
+  "F 层": {
+    "en": "F Layer",
+    "category": "传播",
+    "desc": "离地约 150–500km 的电离层，白天分为 F1、F2 两层，F2 层是短波远距离通信最重要的反射层",
+    "aliases": [
+      "F2 层"
+    ]
+  },
+  "突发 E 层": {
+    "abbr": "Es",
+    "en": "Sporadic E",
+    "category": "传播",
+    "desc": "E 层中偶发的高密度电离云，夏季多见，可使 6 米、2 米波段出现意外的远距离通信",
+    "aliases": [
+      "偶发 E 层"
+    ]
+  },
+  "太阳黑子": {
+    "en": "Sunspot",
+    "category": "传播",
+    "desc": "太阳表面温度较低的暗区，数量越多太阳活动越强，高频段传播越好"
+  },
+  "太阳黑子数": {
+    "abbr": "SSN",
+    "en": "Sunspot Number",
+    "category": "传播",
+    "desc": "表征太阳活动强弱的指数，常用于预测短波传播"
+  },
+  "太阳通量": {
+    "abbr": "SFI",
+    "en": "Solar Flux Index",
+    "category": "传播",
+    "desc": "太阳在 10.7 厘米波长上的射电辐射强度，数值越高，高频段越容易开通",
+    "aliases": [
+      "太阳辐射通量"
+    ]
+  },
+  "太阳活动周期": {
+    "en": "Solar Cycle",
+    "category": "传播",
+    "desc": "太阳黑子数大约以 11 年为周期起伏变化，高峰年短波高频段传播最好",
+    "aliases": [
+      "太阳周期"
+    ]
+  },
+  "突然电离层骚扰": {
+    "abbr": "SID",
+    "en": "Sudden Ionospheric Disturbance",
+    "category": "传播",
+    "desc": "太阳耀斑爆发后 D 层电离急剧增强，导致白天短波信号突然大面积中断",
+    "aliases": [
+      "短波消逝",
+      "Dellinger 效应"
+    ]
+  },
+  "地磁暴": {
+    "en": "Geomagnetic Storm",
+    "category": "传播",
+    "desc": "太阳活动引起的地球磁场剧烈扰动，会使短波传播变差、极光增强",
+    "aliases": [
+      "磁暴"
+    ]
+  },
+  "K 指数": {
+    "en": "K-index",
+    "category": "传播",
+    "desc": "每 3 小时的地磁扰动指数，范围 0–9，数值越大地磁越不平静"
+  },
+  "A 指数": {
+    "en": "A-index",
+    "category": "传播",
+    "desc": "每日的地磁活动指数，由 K 指数换算得到，数值越大地磁越不平静"
+  },
+  "极光传播": {
+    "en": "Auroral Propagation",
+    "category": "传播",
+    "desc": "借极光区域的电离反射电波，信号带有明显的嘶哑声，多见于高纬度地区"
+  },
+  "灰线传播": {
+    "en": "Grey Line Propagation",
+    "category": "传播",
+    "desc": "沿地球晨昏交界线传播的特殊路径，此时 D 层吸收小，低频段容易实现远距离通信",
+    "aliases": [
+      "晨昏线传播"
+    ]
+  },
+  "长路径": {
+    "abbr": "LP",
+    "en": "Long Path",
+    "category": "传播",
+    "desc": "沿大圆另一方向、绕地球较长一侧传播的路径，有时比短路径信号更好",
+    "aliases": [
+      "长程"
+    ]
+  },
+  "衰落": {
+    "en": "Fading",
+    "category": "传播",
+    "desc": "接收信号强度随时间起伏变化的现象，多由多径和电离层变化引起"
+  },
+  "自由空间损耗": {
+    "abbr": "FSPL",
+    "en": "Free Space Path Loss",
+    "category": "传播",
+    "desc": "电波在无遮挡空间中传播时因扩散造成的衰减，距离或频率加倍都会增加约 6dB",
+    "aliases": [
+      "路径损耗"
+    ]
+  },
+  "菲涅尔区": {
+    "en": "Fresnel Zone",
+    "category": "传播",
+    "desc": "收发两点连线周围的椭球区域，其中有障碍物会明显削弱视距信号"
+  },
+  "绕射": {
+    "en": "Diffraction",
+    "category": "传播",
+    "desc": "电波绕过障碍物边缘继续传播的现象，频率越低绕射能力越强",
+    "aliases": [
+      "衍射"
+    ]
+  },
+  "对流层": {
+    "en": "Troposphere",
+    "category": "传播",
+    "desc": "离地约 10km 以内的大气层，温度湿度变化会影响 VHF 以上信号的传播"
+  },
+  "电磁波": {
+    "en": "Electromagnetic Wave",
+    "category": "传播",
+    "desc": "由相互垂直的交变电场和磁场组成、以光速传播的横波，无线电波就是一种电磁波",
+    "aliases": [
+      "无线电波"
+    ]
+  },
+  "近垂直入射天波": {
+    "abbr": "NVIS",
+    "en": "Near Vertical Incidence Skywave",
+    "category": "传播",
+    "desc": "用高仰角天线把信号几乎垂直射向电离层再反射回来，实现周边数百公里无盲区覆盖"
+  },
+  "信标台": {
+    "en": "Beacon",
+    "category": "传播",
+    "desc": "按固定频率和格式持续发射识别信号的无人值守电台，业余爱好者据此判断电波传播状况",
+    "aliases": [
+      "信标"
+    ]
+  },
+  "业余卫星": {
+    "abbr": "OSCAR",
+    "en": "Orbiting Satellite Carrying Amateur Radio",
+    "category": "传播",
+    "desc": "携带业余无线电转发器的卫星，OSCAR 是业余卫星的统一编号名称"
+  },
+  "AMSAT": {
+    "en": "Radio Amateur Satellite Corporation",
+    "category": "传播",
+    "desc": "业余卫星组织，负责业余卫星的研制、发射与运营协调"
+  },
+  "近地轨道": {
+    "abbr": "LEO",
+    "en": "Low Earth Orbit",
+    "category": "传播",
+    "desc": "高度约 2000km 以下的卫星轨道，大多数业余卫星位于此轨道，每次过境仅十几分钟",
+    "aliases": [
+      "低轨道"
+    ]
+  },
+  "线性转发器": {
+    "en": "Linear Transponder",
+    "category": "传播",
+    "desc": "把一段频率内的所有信号整体转发的卫星转发器，可同时支持多组 SSB 和 CW 通联"
+  },
+  "多普勒效应": {
+    "en": "Doppler Effect",
+    "category": "传播",
+    "desc": "信号源与接收者相对运动时接收频率发生偏移的现象，卫星通信中需要随时修正频率",
+    "aliases": [
+      "多普勒频移"
+    ]
+  },
+  "上行": {
+    "en": "Uplink",
+    "category": "传播",
+    "desc": "地面电台发往卫星或中继台的方向和频率",
+    "aliases": [
+      "上行频率"
+    ]
+  },
+  "下行": {
+    "en": "Downlink",
+    "category": "传播",
+    "desc": "卫星或中继台发往地面电台的方向和频率",
+    "aliases": [
+      "下行频率"
+    ]
+  },
+  "立方星": {
+    "en": "CubeSat",
+    "category": "传播",
+    "desc": "以 10 厘米立方体为基本单元的小型卫星，许多业余卫星采用这种形式"
+  },
+  "国际空间站业余无线电": {
+    "abbr": "ARISS",
+    "en": "Amateur Radio on the International Space Station",
+    "category": "传播",
+    "desc": "国际空间站上的业余无线电项目，常开展航天员与学生通联和 SSTV 活动，下行常用 145.800MHz",
+    "aliases": [
+      "ISS"
+    ]
+  },
+  "电压": {
+    "abbr": "U",
+    "en": "Voltage",
+    "category": "基础",
+    "desc": "两点之间的电位差，单位伏特 V，是推动电流流动的原因",
+    "aliases": [
+      "电位差"
+    ]
+  },
+  "电流": {
+    "abbr": "I",
+    "en": "Current",
+    "category": "基础",
+    "desc": "单位时间内通过导体截面的电荷量，单位安培 A"
+  },
+  "电阻": {
+    "abbr": "R",
+    "en": "Resistance",
+    "category": "基础",
+    "desc": "导体对电流的阻碍作用，单位欧姆 Ω"
+  },
+  "电功率": {
+    "abbr": "P",
+    "en": "Power",
+    "category": "基础",
+    "desc": "单位时间内消耗或传输的电能，单位瓦特 W，等于电压乘以电流",
+    "aliases": [
+      "功率"
+    ]
+  },
+  "欧姆定律": {
+    "en": "Ohm's Law",
+    "category": "基础",
+    "desc": "电压等于电流乘以电阻，即 U = I × R"
+  },
+  "基尔霍夫定律": {
+    "en": "Kirchhoff's Laws",
+    "category": "基础",
+    "desc": "电流定律指流入节点的电流之和等于流出之和，电压定律指闭合回路中各段电压的代数和为零",
+    "aliases": [
+      "KCL",
+      "KVL"
+    ]
+  },
+  "电动势": {
+    "abbr": "EMF",
+    "en": "Electromotive Force",
+    "category": "基础",
+    "desc": "电源内部把其他形式的能量转化为电能的能力，单位伏特"
+  },
+  "内阻": {
+    "en": "Internal Resistance",
+    "category": "基础",
+    "desc": "电源内部存在的电阻，输出电流越大，端电压下降越多"
+  },
+  "直流": {
+    "abbr": "DC",
+    "en": "Direct Current",
+    "category": "基础",
+    "desc": "方向不随时间变化的电流",
+    "aliases": [
+      "直流电"
+    ]
+  },
+  "交流": {
+    "abbr": "AC",
+    "en": "Alternating Current",
+    "category": "基础",
+    "desc": "大小和方向随时间周期变化的电流，我国市电为 50Hz 正弦交流",
+    "aliases": [
+      "交流电"
+    ]
+  },
+  "阻抗": {
+    "abbr": "Z",
+    "en": "Impedance",
+    "category": "基础",
+    "desc": "交流电路中电阻和电抗共同对电流的阻碍作用，单位欧姆"
+  },
+  "电抗": {
+    "abbr": "X",
+    "en": "Reactance",
+    "category": "基础",
+    "desc": "电容和电感对交流电的阻碍作用，大小随频率变化"
+  },
+  "容抗": {
+    "abbr": "Xc",
+    "en": "Capacitive Reactance",
+    "category": "基础",
+    "desc": "电容对交流电的阻碍，Xc = 1/(2πfC)，频率越高容抗越小"
+  },
+  "感抗": {
+    "abbr": "XL",
+    "en": "Inductive Reactance",
+    "category": "基础",
+    "desc": "电感对交流电的阻碍，XL = 2πfL，频率越高感抗越大"
+  },
+  "电容": {
+    "abbr": "C",
+    "en": "Capacitance",
+    "category": "基础",
+    "desc": "电容器储存电荷的能力，单位法拉 F，常用 μF、nF、pF",
+    "aliases": [
+      "电容器"
+    ]
+  },
+  "电感": {
+    "abbr": "L",
+    "en": "Inductance",
+    "category": "基础",
+    "desc": "线圈阻碍电流变化并以磁场形式储能的能力，单位亨利 H",
+    "aliases": [
+      "电感器",
+      "线圈"
+    ]
+  },
+  "谐振": {
+    "en": "Resonance",
+    "category": "基础",
+    "desc": "电路中感抗与容抗相等、相互抵消时的状态，谐振频率 f = 1/(2π√LC)",
+    "aliases": [
+      "谐振频率"
+    ]
+  },
+  "品质因数": {
+    "abbr": "Q",
+    "en": "Quality Factor",
+    "category": "基础",
+    "desc": "谐振电路储存能量与损耗能量之比，Q 越高选择性越好、带宽越窄",
+    "aliases": [
+      "Q 值"
+    ]
+  },
+  "分贝": {
+    "abbr": "dB",
+    "en": "Decibel",
+    "category": "基础",
+    "desc": "用对数表示两个量之比的单位，功率比取 10lg、电压比取 20lg，3dB 约为功率两倍"
+  },
+  "dBm": {
+    "en": "Decibels Relative to 1 Milliwatt",
+    "category": "基础",
+    "desc": "以 1mW 为参考的功率电平，0dBm 等于 1mW，30dBm 等于 1W"
+  },
+  "趋肤效应": {
+    "en": "Skin Effect",
+    "category": "基础",
+    "desc": "频率越高电流越集中在导体表面流动，导致导线的有效电阻增大",
+    "aliases": [
+      "集肤效应"
+    ]
+  },
+  "半导体": {
+    "en": "Semiconductor",
+    "category": "基础",
+    "desc": "导电能力介于导体和绝缘体之间的材料，如硅、锗，是二极管和晶体管的基础"
+  },
+  "二极管": {
+    "en": "Diode",
+    "category": "基础",
+    "desc": "只允许电流单向通过的器件，用于整流、检波等"
+  },
+  "稳压二极管": {
+    "en": "Zener Diode",
+    "category": "基础",
+    "desc": "工作在反向击穿区、两端电压基本恒定的二极管，用于稳压",
+    "aliases": [
+      "齐纳二极管"
+    ]
+  },
+  "变容二极管": {
+    "en": "Varactor Diode",
+    "category": "基础",
+    "desc": "结电容随反向电压变化的二极管，常用于电调谐和调频"
+  },
+  "发光二极管": {
+    "abbr": "LED",
+    "en": "Light-Emitting Diode",
+    "category": "基础",
+    "desc": "通电后发光的二极管，常用作指示灯"
+  },
+  "三极管": {
+    "abbr": "BJT",
+    "en": "Bipolar Junction Transistor",
+    "category": "基础",
+    "desc": "用较小的基极电流控制较大集电极电流的放大器件",
+    "aliases": [
+      "晶体管",
+      "双极型晶体管"
+    ]
+  },
+  "场效应管": {
+    "abbr": "FET",
+    "en": "Field-Effect Transistor",
+    "category": "基础",
+    "desc": "用栅极电压控制电流的器件，输入阻抗高，广泛用于放大和开关",
+    "aliases": [
+      "MOSFET"
+    ]
+  },
+  "集成电路": {
+    "abbr": "IC",
+    "en": "Integrated Circuit",
+    "category": "基础",
+    "desc": "把大量元件集成在一块芯片上的电路",
+    "aliases": [
+      "芯片"
+    ]
+  },
+  "运算放大器": {
+    "abbr": "Op-Amp",
+    "en": "Operational Amplifier",
+    "category": "基础",
+    "desc": "高增益的直接耦合放大器集成电路，配合外部元件可构成放大、滤波等电路",
+    "aliases": [
+      "运放"
+    ]
+  },
+  "整流": {
+    "en": "Rectification",
+    "category": "基础",
+    "desc": "把交流电变为单向脉动直流电的过程，有半波、全波、桥式等形式",
+    "aliases": [
+      "整流器"
+    ]
+  },
+  "滤波器": {
+    "en": "Filter",
+    "category": "基础",
+    "desc": "让某些频率通过、衰减其他频率的电路，有低通、高通、带通、带阻等类型"
+  },
+  "低通滤波器": {
+    "abbr": "LPF",
+    "en": "Low-Pass Filter",
+    "category": "基础",
+    "desc": "让低于截止频率的信号通过、衰减高频的滤波器，发射机输出端常用它抑制谐波"
+  },
+  "高通滤波器": {
+    "abbr": "HPF",
+    "en": "High-Pass Filter",
+    "category": "基础",
+    "desc": "让高于截止频率的信号通过、衰减低频的滤波器"
+  },
+  "带通滤波器": {
+    "abbr": "BPF",
+    "en": "Band-Pass Filter",
+    "category": "基础",
+    "desc": "只让某一频段信号通过的滤波器"
+  },
+  "截止频率": {
+    "en": "Cutoff Frequency",
+    "category": "基础",
+    "desc": "滤波器输出比通带下降 3dB 时对应的频率"
+  },
+  "变压器": {
+    "en": "Transformer",
+    "category": "基础",
+    "desc": "利用电磁感应变换交流电压、电流或阻抗的器件"
+  },
+  "放大器工作类别": {
+    "en": "Amplifier Classes",
+    "category": "基础",
+    "desc": "按导通角划分，甲类全周期导通、失真小效率低，乙类导通半周期，甲乙类介于两者之间，丙类小于半周期、效率高但失真大，丁类工作于开关状态",
+    "aliases": [
+      "甲类",
+      "乙类",
+      "甲乙类",
+      "丙类",
+      "丁类"
+    ]
+  },
+  "振荡器": {
+    "en": "Oscillator",
+    "category": "基础",
+    "desc": "不需外加输入就能产生周期信号的电路"
+  },
+  "模数转换": {
+    "abbr": "ADC",
+    "en": "Analog-to-Digital Converter",
+    "category": "基础",
+    "desc": "把模拟信号转换为数字信号的器件",
+    "aliases": [
+      "模数转换器"
+    ]
+  },
+  "数模转换": {
+    "abbr": "DAC",
+    "en": "Digital-to-Analog Converter",
+    "category": "基础",
+    "desc": "把数字信号转换为模拟信号的器件",
+    "aliases": [
+      "数模转换器"
+    ]
+  },
+  "奈奎斯特采样定理": {
+    "en": "Nyquist Sampling Theorem",
+    "category": "基础",
+    "desc": "采样频率必须大于信号最高频率的 2 倍，才能无失真地恢复原信号",
+    "aliases": [
+      "采样定理"
+    ]
+  },
+  "I/Q 信号": {
+    "en": "In-phase / Quadrature",
+    "category": "基础",
+    "desc": "相位相差 90° 的两路正交信号，软件无线电用它表示复数基带信号",
+    "aliases": [
+      "正交信号"
+    ]
+  },
+  "快速傅里叶变换": {
+    "abbr": "FFT",
+    "en": "Fast Fourier Transform",
+    "category": "基础",
+    "desc": "把时域信号快速转换为频谱的算法，SDR 的频谱和瀑布图显示都依赖它"
+  },
+  "FIR 滤波器": {
+    "abbr": "FIR",
+    "en": "Finite Impulse Response Filter",
+    "category": "基础",
+    "desc": "有限冲激响应数字滤波器，可以做到线性相位"
+  },
+  "IIR 滤波器": {
+    "abbr": "IIR",
+    "en": "Infinite Impulse Response Filter",
+    "category": "基础",
+    "desc": "无限冲激响应数字滤波器，运算量小，但相位是非线性的"
+  },
+  "逻辑门": {
+    "en": "Logic Gate",
+    "category": "基础",
+    "desc": "实现与、或、非等基本逻辑运算的数字电路",
+    "aliases": [
+      "与门",
+      "或门",
+      "非门"
+    ]
+  },
+  "触发器": {
+    "en": "Flip-Flop",
+    "category": "基础",
+    "desc": "能存储 1 位二进制状态的数字电路，D 触发器可构成分频器",
+    "aliases": [
+      "D 触发器"
+    ]
+  },
+  "热噪声": {
+    "en": "Thermal Noise",
+    "category": "基础",
+    "desc": "导体中电子热运动产生的噪声，与温度和带宽成正比，室温下约为每赫兹 -174dBm",
+    "aliases": [
+      "约翰逊噪声"
+    ]
+  },
+  "静电放电": {
+    "abbr": "ESD",
+    "en": "Electrostatic Discharge",
+    "category": "基础",
+    "desc": "积累的静电突然释放，可能击穿半导体器件，操作时宜佩戴防静电手环"
+  },
+  "相位": {
+    "en": "Phase",
+    "category": "基础",
+    "desc": "描述周期信号在某一时刻所处位置的量，单位为度或弧度",
+    "aliases": [
+      "相位差"
+    ]
+  },
+  "周期": {
+    "abbr": "T",
+    "en": "Period",
+    "category": "基础",
+    "desc": "周期信号完成一次变化所需的时间，等于频率的倒数"
+  },
+  "峰值": {
+    "en": "Peak Value",
+    "category": "基础",
+    "desc": "交流信号的最大瞬时值，正弦波的有效值等于峰值除以 √2"
+  },
+  "串联": {
+    "en": "Series Connection",
+    "category": "基础",
+    "desc": "元件首尾相连、流过电流相同的连接方式"
+  },
+  "并联": {
+    "en": "Parallel Connection",
+    "category": "基础",
+    "desc": "元件两端分别连在一起、两端电压相同的连接方式"
+  },
+  "频谱分析仪": {
+    "en": "Spectrum Analyzer",
+    "category": "基础",
+    "desc": "显示信号在各频率上幅度分布的仪器，可用于检查谐波和杂散发射",
+    "aliases": [
+      "频谱仪"
+    ]
+  },
+  "示波器": {
+    "en": "Oscilloscope",
+    "category": "基础",
+    "desc": "显示电压随时间变化波形的仪器"
+  },
+  "万用表": {
+    "abbr": "DMM",
+    "en": "Multimeter",
+    "category": "基础",
+    "desc": "可测量电压、电流、电阻等的仪表，测电压要并联、测电流要串联",
+    "aliases": [
+      "数字万用表"
+    ]
+  },
+  "电磁兼容": {
+    "abbr": "EMC",
+    "en": "Electromagnetic Compatibility",
+    "category": "安全",
+    "desc": "设备在电磁环境中能正常工作、且不对其他设备造成不可接受干扰的能力"
+  },
+  "电磁干扰": {
+    "abbr": "EMI",
+    "en": "Electromagnetic Interference",
+    "category": "安全",
+    "desc": "电磁能量对其他设备正常工作造成的影响"
+  },
+  "射频干扰": {
+    "abbr": "RFI",
+    "en": "Radio Frequency Interference",
+    "category": "安全",
+    "desc": "射频信号进入音响、电视、电话等设备造成的干扰"
+  },
+  "电视干扰": {
+    "abbr": "TVI",
+    "en": "Television Interference",
+    "category": "安全",
+    "desc": "业余电台发射对电视接收造成的干扰，常用低通滤波器或共模扼流圈解决"
+  },
+  "广播干扰": {
+    "abbr": "BCI",
+    "en": "Broadcast Interference",
+    "category": "安全",
+    "desc": "业余电台发射对广播收音造成的干扰"
+  },
+  "共模扼流圈": {
+    "en": "Common-Mode Choke",
+    "category": "安全",
+    "desc": "把电缆穿过或绕在磁环上，抑制沿电缆外表面流动的共模射频电流",
+    "aliases": [
+      "磁环"
+    ]
+  },
+  "比吸收率": {
+    "abbr": "SAR",
+    "en": "Specific Absorption Rate",
+    "category": "安全",
+    "desc": "人体组织单位质量吸收射频能量的速率，单位 W/kg"
+  },
+  "功率密度": {
+    "en": "Power Density",
+    "category": "安全",
+    "desc": "单位面积上的电磁辐射功率，单位 W/m²，是评价电磁暴露的常用指标"
+  },
+  "电磁环境控制限值": {
+    "en": "Electromagnetic Environment Limits",
+    "category": "安全",
+    "desc": "GB 8702-2014 规定的公众暴露电磁场限值，业余电台的设置使用应满足该标准",
+    "aliases": [
+      "GB 8702"
+    ]
+  },
+  "接地": {
+    "en": "Grounding",
+    "category": "安全",
+    "desc": "把设备外壳或防雷装置与大地可靠连接，用于安全防护和泄放雷电流",
+    "aliases": [
+      "地线"
+    ]
+  },
+  "接地电阻": {
+    "en": "Grounding Resistance",
+    "category": "安全",
+    "desc": "接地装置与大地之间的电阻，越小越能迅速把雷电流和故障电流泄入大地"
+  },
+  "避雷器": {
+    "en": "Lightning Arrester",
+    "category": "安全",
+    "desc": "串接在馈线上，雷击时把过电压泄放入地、保护设备的装置",
+    "aliases": [
+      "馈线避雷器"
+    ]
+  },
+  "接闪器": {
+    "en": "Air Terminal",
+    "category": "安全",
+    "desc": "防雷装置中直接承受雷击的部分，如避雷针、避雷带",
+    "aliases": [
+      "避雷针"
+    ]
+  },
+  "安全特低电压": {
+    "abbr": "SELV",
+    "en": "Safety Extra-Low Voltage",
+    "category": "安全",
+    "desc": "正常和单一故障情况下都不会造成危险电击的低电压，潮湿环境下限值更低",
+    "aliases": [
+      "特低电压"
+    ]
+  },
+  "漏电保护器": {
+    "abbr": "RCD",
+    "en": "Residual Current Device",
+    "category": "安全",
+    "desc": "检测到漏电电流超过设定值时迅速切断电源的保护装置",
+    "aliases": [
+      "漏电开关"
+    ]
+  },
+  "射频灼伤": {
+    "en": "RF Burn",
+    "category": "安全",
+    "desc": "人体接触或过于靠近大功率发射天线时，射频能量造成的皮肤或组织灼伤"
+  },
+  "锂电池": {
+    "en": "Lithium Battery",
+    "category": "安全",
+    "desc": "能量密度高的可充电电池，过充、短路或受损时可能热失控起火，应使用匹配的充电器",
+    "aliases": [
+      "锂离子电池"
+    ]
+  },
+  "热失控": {
+    "en": "Thermal Runaway",
+    "category": "安全",
+    "desc": "电池内部温度升高引发反应加剧、温度进一步升高的恶性循环，可能导致起火爆炸"
+  },
+  "铅酸蓄电池": {
+    "en": "Lead-Acid Battery",
+    "category": "安全",
+    "desc": "常用作备用电源的蓄电池，短路时电流极大，充电时会产生氢气，需注意通风",
+    "aliases": [
+      "蓄电池"
+    ]
+  }
+}

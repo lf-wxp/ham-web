@@ -1,0 +1,177 @@
+# 业余无线电执照考试模拟 —— cargo-make 任务定义
+#
+#   cargo install cargo-make   # 首次安装
+#   cargo make                 # 等价于 cargo make dev
+#   cargo make --list-all-steps
+
+[config]
+default_to_workspace = false
+skip_core_tasks = true
+
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+APP_DIR = "crates/app"
+DIST_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/dist"
+SITE_URL = { value = "https://ham.onlyxp.me", condition = { env_not_set = ["SITE_URL"] } }
+
+# ───────────────────────────── 环境准备 ─────────────────────────────
+
+[tasks.setup]
+description = "安装 wasm32 目标与 Trunk（Tailwind / wasm-bindgen / wasm-opt 由 Trunk 自动下载）"
+script_runner = "@shell"
+script = '''
+rustup target add wasm32-unknown-unknown
+command -v trunk >/dev/null 2>&1 || cargo install trunk --locked
+'''
+
+# ───────────────────────────── 开发 ─────────────────────────────
+
+[tasks.default]
+alias = "dev"
+
+[tasks.dev]
+description = "启动前端开发服务器（热重载）：http://127.0.0.1:3000"
+cwd = "${APP_DIR}"
+command = "trunk"
+# 开发产物放在 target/ 下，避免与 release 构建共用 dist/ 互相覆盖
+args = ["serve", "--dist", "../../target/dev-dist"]
+
+# ───────────────────────────── 构建 ─────────────────────────────
+
+[tasks.build-web]
+description = "构建前端（release）并生成 Service Worker / sitemap"
+dependencies = ["trunk-build", "postbuild"]
+
+[tasks.trunk-build]
+private = true
+cwd = "${APP_DIR}"
+command = "trunk"
+args = ["build", "--release"]
+
+[tasks.postbuild]
+description = "构建后处理：sw.js、sitemap.xml、站点地址替换"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-exam-tools", "--release", "--", "postbuild", "--dist", "${DIST_DIR}", "--site-url", "${SITE_URL}"]
+
+[tasks.build-server]
+description = "构建静态站点服务器（release）"
+command = "cargo"
+args = ["build", "-p", "ham-exam-server", "--release"]
+
+[tasks.build]
+description = "完整构建：图标 + 前端 + 服务器"
+dependencies = ["icons", "build-web", "build-server"]
+
+[tasks.build-full]
+description = "完整构建并重新拉取题库数据（需联网或设置 DATASET_DIR）"
+dependencies = ["dataset", "build"]
+
+[tasks.serve]
+description = "以 release 服务器托管 dist/：http://127.0.0.1:8080"
+dependencies = ["build-web"]
+command = "cargo"
+args = ["run", "-p", "ham-exam-server", "--release"]
+env = { DIST_DIR = "${DIST_DIR}", HOST = "127.0.0.1", PORT = "8080" }
+
+# ───────────────────────────── 数据与资源 ─────────────────────────────
+
+[tasks.dataset]
+description = "从 CSV 构建题库 JSON 与图片（DATASET_DIR 优先本地，DATASET_REMOTE 可覆盖远程地址）"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-exam-tools", "--release", "--", "dataset"]
+
+[tasks.icons]
+description = "由 public/pwa-icon.svg 生成 PWA / Apple Touch 图标"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-exam-tools", "--release", "--", "icons"]
+
+# ───────────────────────────── 题目解析维护 ─────────────────────────────
+
+[tasks.explanations-missing]
+description = "统计缺失解析并导出待填模板：[BANK=A] [LIMIT=50] cargo make explanations-missing"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+args="--output tmp/batch.json --context tmp/context.json"
+if [ -n "$BANK" ]; then args="$args --bank $BANK"; fi
+if [ -n "$LIMIT" ]; then args="$args --limit $LIMIT"; fi
+cargo run -q -p ham-exam-tools --release -- missing-explanations $args
+'''
+
+[tasks.explanations-add]
+description = "按题目 ID 合并解析：BATCH=tmp/batch.json cargo make explanations-add"
+script_runner = "@shell"
+script = '''
+if [ -z "$BATCH" ]; then
+  echo "请通过环境变量指定解析文件，例如：BATCH=tmp/batch.json cargo make explanations-add" >&2
+  exit 1
+fi
+cargo run -q -p ham-exam-tools --release -- add-explanations "$BATCH"
+'''
+
+[tasks.explanations-enhance]
+description = "用 data/glossary.json 中 inject=true 的词条为解析注入术语解释"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-exam-tools", "--release", "--", "enhance-explanations"]
+
+[tasks.glossary-check]
+description = "校验 data/glossary.json（分类、参见、重复、括号）并输出统计"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-exam-tools", "--release", "--", "check-glossary"]
+
+[tasks.explanations-apply]
+description = "把 data/explanations.json 写入 public/questions/*.json（离线，无需重建数据集）"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-exam-tools", "--release", "--", "apply-explanations"]
+
+[tasks.explanations]
+description = "一键：合并 → 术语增强 → 写入题库：BATCH=tmp/batch.json cargo make explanations"
+dependencies = ["explanations-add", "explanations-enhance", "explanations-apply"]
+
+# ───────────────────────────── 质量 ─────────────────────────────
+
+[tasks.fmt]
+description = "格式化全部代码"
+command = "cargo"
+args = ["fmt", "--all"]
+
+[tasks.fmt-check]
+command = "cargo"
+args = ["fmt", "--all", "--check"]
+
+[tasks.clippy]
+description = "Clippy（原生 crate + wasm 前端）"
+script_runner = "@shell"
+script = '''
+cargo clippy --all-targets -p ham-exam-core -p ham-exam-tools -p ham-exam-server -- -D warnings
+cargo clippy -p ham-exam-app --target wasm32-unknown-unknown -- -D warnings
+'''
+
+[tasks.test]
+description = "运行单元测试"
+command = "cargo"
+args = ["test", "-p", "ham-exam-core", "-p", "ham-exam-tools", "-p", "ham-exam-server", "-p", "ham-exam-app"]
+
+[tasks.ci]
+description = "CI：格式检查 + clippy + 测试 + 前端构建"
+dependencies = ["fmt-check", "clippy", "test", "build-web"]
+
+# ───────────────────────────── 部署 ─────────────────────────────
+
+[tasks.docker-build]
+description = "构建 Docker 镜像：ham-web:latest"
+command = "docker"
+args = ["build", "--build-arg", "SITE_URL=${SITE_URL}", "-t", "ham-web:latest", "."]
+
+[tasks.docker-run]
+description = "运行 Docker 镜像：http://127.0.0.1:3000"
+command = "docker"
+args = ["run", "--rm", "-p", "3000:3000", "ham-web:latest"]
+
+[tasks.clean]
+description = "清理构建产物"
+script_runner = "@shell"
+script = '''
+cargo clean
+rm -rf dist tmp
+'''
