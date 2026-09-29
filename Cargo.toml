@@ -59,7 +59,9 @@ perf = { level = "warn", priority = -1 }
 
 [profile.release]
 opt-level = 3
-lto = true
+# 关闭 LTO：fat LTO 会为每个 crate 生成 .bc bitcode 中间文件，
+# 显著放大 target 目录，是磁盘紧张环境下的主要空间杀手
+lto = "off"
 codegen-units = 1
 strip = true
 
