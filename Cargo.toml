@@ -70,4 +70,7 @@ opt-level = 1
 [profile.wasm-release]
 inherits = "release"
 opt-level = "z"
+# 关闭 LTO：wasm 体积优化主要由 wasm-opt（data-wasm-opt="z"）完成，
+# LTO 收益有限却会显著增大 target 中间产物，拖累 Docker 构建缓存占用
+lto = "off"
 panic = "abort"

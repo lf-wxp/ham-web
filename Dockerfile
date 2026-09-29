@@ -39,7 +39,7 @@ COPY . .
 # 工具链 → 可选重建题库 → 前端 → 构建后处理（sw.js / sitemap）→ 服务器
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/src/target \
+    --mount=type=cache,target=/src/target,size=6g \
     --mount=type=cache,target=/root/.cache/trunk \
     set -eux; \
     cargo build --release -p ham-web-tools -p ham-web-server; \
