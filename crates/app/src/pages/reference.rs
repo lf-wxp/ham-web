@@ -3,6 +3,7 @@
 use ham_web_core::reference::{CALL_AREAS, EMISSION_TYPES, LICENSE_CLASSES, PHRASES, RST_SCALES};
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::util::set_title;
 
 const CELL: &str = "border px-3 py-2 text-left align-top";
@@ -12,16 +13,8 @@ pub fn ReferencePage() -> impl IntoView {
   set_title("考试速查");
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"考试速查"</div>
-            <div class="text-xs text-muted-foreground">"操作证权限 · 分区 · RST · 发射类别 · 通联英语"</div>
-          </div>
-        </div>
-      </header>
-
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageHeader title="考试速查" subtitle="操作证权限 · 分区 · RST · 发射类别 · 通联英语" />
+      <PageContainer>
         // 操作证类别与权限
         <section class="rounded-xl border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">"操作证类别与使用权限"</h2>
@@ -157,7 +150,7 @@ pub fn ReferencePage() -> impl IntoView {
               .collect_view()}
           </dl>
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

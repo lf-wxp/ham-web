@@ -45,7 +45,9 @@ const BUTTON_BASE: &str = "inline-flex items-center justify-center gap-2 whitesp
 /// 生成按钮类名（等价于 shadcn `buttonVariants({ variant, size, className })`）。
 pub fn button_class(variant: Variant, size: Size, extra: &str) -> String {
   let v = match variant {
-    Variant::Default => "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+    Variant::Default => {
+      "bg-primary text-primary-foreground shadow-xs shadow-primary/25 hover:bg-primary/90"
+    }
     Variant::Destructive => {
       "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60"
     }

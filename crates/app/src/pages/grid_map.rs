@@ -7,7 +7,8 @@ use serde::Deserialize;
 
 use crate::data;
 use crate::pages::log::GridMap;
-use crate::util::{set_title, storage};
+use crate::util::set_title;
+use crate::util::storage;
 
 /// 日志精简结构（仅读取网格）。
 #[derive(Deserialize, Default)]
@@ -99,7 +100,7 @@ pub fn GridMapPage() -> impl IntoView {
                 maxlength="6"
                 prop:value=move || query.get()
                 on:input=move |e| query.set(event_target_value(&e).to_ascii_uppercase())
-                class="h-10 rounded-lg border bg-background px-3 font-mono text-sm uppercase outline-none focus:ring-2 focus:ring-ring/50"
+                class="h-10 rounded-lg border bg-background px-3 font-mono text-sm uppercase outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               />
             </label>
             <div class="flex items-center rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums">

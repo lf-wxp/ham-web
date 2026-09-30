@@ -7,7 +7,8 @@ use leptos::task::spawn_local;
 
 use crate::data;
 use crate::ui::{Size, Variant, button_class};
-use crate::util::{random, set_title};
+use crate::util::random;
+use crate::util::set_title;
 
 fn pill_class(active: bool) -> &'static str {
   if active {
@@ -27,6 +28,7 @@ pub fn FlashcardsPage() -> impl IntoView {
   let revealed = RwSignal::new(false);
   let known = RwSignal::new(0usize);
   let unknown = RwSignal::new(0usize);
+  let skipped = RwSignal::new(0usize);
   let loading = RwSignal::new(true);
   let finished = RwSignal::new(false);
   let generation = StoredValue::new(0u32);
@@ -38,6 +40,7 @@ pub fn FlashcardsPage() -> impl IntoView {
     revealed.set(false);
     known.set(0);
     unknown.set(0);
+    skipped.set(0);
     // 递增代次，丢弃过期请求的结果，避免快速切换题库时旧数据覆盖新数据。
     generation.update_value(|g| *g += 1);
     let current = generation.get_value();
@@ -59,12 +62,8 @@ pub fn FlashcardsPage() -> impl IntoView {
 
   let reveal = move || revealed.set(true);
 
-  let mark = move |ok: bool| {
-    if ok {
-      known.update(|c| *c += 1);
-    } else {
-      unknown.update(|c| *c += 1);
-    }
+  // 前进到下一题（不计分，供「跳过」使用）。
+  let advance = move || {
     let total = questions.get_untracked().len();
     if current.get_untracked() + 1 < total {
       current.update(|c| *c += 1);
@@ -72,6 +71,20 @@ pub fn FlashcardsPage() -> impl IntoView {
     } else {
       finished.set(true);
     }
+  };
+
+  let mark = move |ok: bool| {
+    if ok {
+      known.update(|c| *c += 1);
+    } else {
+      unknown.update(|c| *c += 1);
+    }
+    advance();
+  };
+
+  let skip = move || {
+    skipped.update(|c| *c += 1);
+    advance();
   };
 
   view! {
@@ -110,13 +123,18 @@ pub fn FlashcardsPage() -> impl IntoView {
             view! { <div class="px-4 py-10 text-center text-sm text-muted-foreground">"加载题库中..."</div> }
               .into_any()
           } else if finished.get() {
-            let total = known.get() + unknown.get();
+            let total = known.get() + unknown.get() + skipped.get();
             view! {
               <div class="rounded-xl border bg-card px-4 py-10 text-center">
                 <div class="text-lg font-semibold">"本轮完成"</div>
                 <div class="mt-2 text-sm text-muted-foreground">
                   "共 " {total} " 题 · 会 " <span class="font-semibold text-emerald-600">{known.get()}</span>
                   " · 不会 " <span class="font-semibold text-red-600">{unknown.get()}</span>
+                  {move || {
+                    (skipped.get() > 0).then(|| {
+                      view! { <span>" · 跳过 " <span class="font-semibold text-muted-foreground">{skipped.get()}</span></span> }
+                    })
+                  }}
                 </div>
                 <button type="button" class=format!("{} mt-5", button_class(Variant::Default, Size::Default, "")) on:click=move |_| load()>
                   "再来一轮"
@@ -178,7 +196,7 @@ pub fn FlashcardsPage() -> impl IntoView {
                         <button type="button" class=button_class(Variant::Default, Size::Default, "") on:click=move |_| reveal()>
                           "显示答案"
                         </button>
-                        <button type="button" class=button_class(Variant::Outline, Size::Default, "") on:click=move |_| mark(false)>
+                        <button type="button" class=button_class(Variant::Outline, Size::Default, "") on:click=move |_| skip()>
                           "跳过"
                         </button>
                       }

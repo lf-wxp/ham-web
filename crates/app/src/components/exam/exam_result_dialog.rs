@@ -2,7 +2,9 @@ use ham_web_core::ExamScore;
 use leptos::prelude::*;
 
 use crate::exam_history::HistoryChart;
-use crate::ui::{Dialog, DialogDescription, DialogHeader, DialogTitle};
+use crate::ui::{
+  Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Size, Variant, button_class,
+};
 
 #[component]
 pub fn ExamResultDialog(
@@ -30,6 +32,14 @@ pub fn ExamResultDialog(
         <div class="text-xs text-muted-foreground">"交卷后可继续浏览题目查看答案。"</div>
         {move || open.get().then(|| view! { <HistoryChart /> })}
       </div>
+      <DialogFooter>
+        <button
+          class=button_class(Variant::Default, Size::Default, "")
+          on:click=move |_| open.set(false)
+        >
+          "继续浏览题目"
+        </button>
+      </DialogFooter>
     </Dialog>
   }
 }

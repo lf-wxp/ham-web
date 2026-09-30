@@ -28,8 +28,13 @@ use crate::data::{self, AppError, Questions};
 use crate::icons::{Icon, IconKind};
 use crate::shortcuts::{DigitDetail, Shortcuts, digit_answer, use_question_shortcuts};
 use crate::store;
-use crate::ui::{Size, Variant, button_class};
-use crate::util::{alert, now_ms, random, set_title};
+use crate::ui::{
+  Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Size, Variant, button_class,
+};
+use crate::util::alert;
+use crate::util::now_ms;
+use crate::util::random;
+use crate::util::set_title;
 
 const PRESS: &str = "active:scale-[0.98] transition-transform";
 const PRESS_FULL: &str = "w-full active:scale-[0.98] transition-transform";
@@ -186,6 +191,8 @@ pub fn PracticePage() -> impl IntoView {
   let unique_only = RwSignal::new(false);
   let generation = StoredValue::new(0u32);
   let help_shown = StoredValue::new(false);
+  let pending_order = RwSignal::new(None::<PracticeOrder>);
+  let confirm_order_open = RwSignal::new(false);
 
   Effect::new(move |_| {
     no_prompt.set(store::load_no_resume(bank.get(), version.get().as_deref()));
@@ -331,7 +338,7 @@ pub fn PracticePage() -> impl IntoView {
     );
   });
 
-  let handle_set_order = Callback::new(move |next: PracticeOrder| {
+  let apply_order = move |next: PracticeOrder| {
     store.set_order(next);
     store::save_last_mode(next);
     if next == PracticeOrder::Sequential {
@@ -339,6 +346,29 @@ pub fn PracticePage() -> impl IntoView {
     } else {
       search_open.set(false);
     }
+  };
+
+  let handle_set_order = Callback::new(move |next: PracticeOrder| {
+    if next == store.order.get_untracked() {
+      return;
+    }
+    let has_answers = store
+      .answers
+      .with_untracked(|a| a.values().any(|v| !v.is_empty()));
+    if next == PracticeOrder::Random && has_answers {
+      pending_order.set(Some(next));
+      confirm_order_open.set(true);
+      return;
+    }
+    apply_order(next);
+  });
+
+  let confirm_change_order = Callback::new(move |()| {
+    if let Some(next) = pending_order.get_untracked() {
+      apply_order(next);
+    }
+    confirm_order_open.set(false);
+    pending_order.set(None);
   });
 
   let selected = Signal::derive(move || {
@@ -653,6 +683,29 @@ pub fn PracticePage() -> impl IntoView {
       on_pick=Callback::new(move |pos| store.jump(pos))
       on_jump=on_jump
     />
+    <Dialog open=confirm_order_open>
+      <DialogHeader>
+        <DialogTitle>"切换题序将清空作答"</DialogTitle>
+        <DialogDescription>"切换到随机模式会重新打乱题目并清空当前所有作答，确定继续吗？"</DialogDescription>
+      </DialogHeader>
+      <DialogFooter>
+        <button
+          class=button_class(Variant::Outline, Size::Default, "")
+          on:click=move |_| {
+            confirm_order_open.set(false);
+            pending_order.set(None);
+          }
+        >
+          "取消"
+        </button>
+        <button
+          class=button_class(Variant::Default, Size::Default, "")
+          on:click=move |_| confirm_change_order.run(())
+        >
+          "确定切换"
+        </button>
+      </DialogFooter>
+    </Dialog>
     <MessageDialog open=error_open title="加载失败" description=error_text confirm_text="知道了" />
   }
 }

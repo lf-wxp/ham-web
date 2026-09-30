@@ -10,7 +10,8 @@ use crate::cn::cn;
 use crate::data;
 use crate::store;
 use crate::ui::{Size, Variant, button_class, input_class};
-use crate::util::{download_text, set_title};
+use crate::util::download_text;
+use crate::util::set_title;
 
 use super::mistake_card::MistakeCard;
 

@@ -25,7 +25,7 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
             type="button"
             on:click=move |_| open.update(|v| *v = !*v)
             aria-expanded=move || open.get().to_string()
-            class="flex flex-1 items-center justify-between gap-2 px-6 py-4 text-left cursor-pointer transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 rounded-xl"
+            class="flex flex-1 items-center justify-between gap-2 px-6 py-4 text-left cursor-pointer transition-colors hover:bg-accent/50 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 rounded-xl"
           >
             <span class="text-base font-semibold leading-none">"答案解析"</span>
             <Icon

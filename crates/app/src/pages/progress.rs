@@ -14,7 +14,8 @@ use serde::{Deserialize, Serialize};
 use crate::data;
 use crate::store;
 use crate::ui::{Size, Stat, Variant, button_class, input_class};
-use crate::util::{set_title, storage};
+use crate::util::set_title;
+use crate::util::storage;
 
 /// 打卡状态（精简）。
 #[derive(Deserialize, Clone, Default)]

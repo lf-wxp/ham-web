@@ -2,6 +2,7 @@ use ham_web_core::{Bank, QuestionItem};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
+use crate::components::common::{EmptyState, Loading};
 use crate::data;
 use crate::store;
 use crate::util::set_title;
@@ -60,16 +61,14 @@ pub fn BookmarksPage() -> impl IntoView {
       <div class="mx-auto max-w-3xl space-y-4 px-4 py-5">
         {move || {
           if loading.get() {
-            view! { <div class="px-4 py-10 text-center text-sm text-muted-foreground">"加载中..."</div> }
+            view! { <Loading label="加载中..." class="py-10" /> }
               .into_any()
           } else if questions.get().is_empty() {
             view! {
-              <div class="rounded-xl border bg-card px-4 py-12 text-center">
-                <div class="text-sm font-medium">"暂无收藏"</div>
-                <div class="mt-1 text-xs text-muted-foreground">
-                  "在「练习」页面点击右上角书签图标即可收藏当前题。"
-                </div>
-              </div>
+              <EmptyState
+                title="暂无收藏"
+                description="在「练习」页面点击右上角书签图标即可收藏当前题。"
+              />
             }
             .into_any()
           } else {

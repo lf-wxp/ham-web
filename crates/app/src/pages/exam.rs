@@ -26,7 +26,10 @@ use crate::icons::{Icon, IconKind};
 use crate::shortcuts::{DigitDetail, Shortcuts, digit_answer, use_question_shortcuts};
 use crate::store;
 use crate::ui::{Size, Variant, button_class};
-use crate::util::{now_ms, random, set_title, storage};
+use crate::util::now_ms;
+use crate::util::random;
+use crate::util::set_title;
+use crate::util::storage;
 
 const PRESS: &str = "active:scale-[0.98] transition-transform";
 const PRESS_FULL: &str = "w-full active:scale-[0.98] transition-transform";
@@ -105,6 +108,7 @@ pub fn ExamPage() -> impl IntoView {
   use_no_site_footer();
   let (version, bank) = use_bank_query();
   let store = ExamStore::new();
+  let bank_all = RwSignal::new(Arc::<Vec<QuestionItem>>::new(Vec::new()));
 
   let loading = RwSignal::new(true);
   let settings_open = RwSignal::new(false);
@@ -151,6 +155,7 @@ pub fn ExamPage() -> impl IntoView {
       let rule = ExamRule::of(b);
       match result {
         Ok(all) => {
+          bank_all.set(all.clone());
           let saved = store::load_exam(b, v.as_deref()).filter(|s| s.should_resume(now_ms()));
           if let Some(saved) = saved {
             store.questions.set(Arc::new(saved.reconstruct(&all)));
@@ -249,7 +254,7 @@ pub fn ExamPage() -> impl IntoView {
       let _ = js_sys::Reflect::set(
         &e,
         &"returnValue".into(),
-        &"考试仍在进行，离开将可能导致进度丢失".into(),
+        &"考试仍在进行，离开页面计时不会暂停".into(),
       );
     }
   });
@@ -377,7 +382,13 @@ pub fn ExamPage() -> impl IntoView {
   });
   let on_restart = Callback::new(move |()| {
     store::clear_exam(bank.get_untracked(), version.get_untracked().as_deref());
-    store.start(store.questions.get_untracked(), rule.get_untracked());
+    let mut rng = random;
+    let all = bank_all.get_untracked();
+    let picked: Vec<QuestionItem> = pick_exam(&all, rule.get_untracked(), &mut rng)
+      .into_iter()
+      .map(|i| all[i].clone())
+      .collect();
+    store.start(Arc::new(picked), rule.get_untracked());
     resume_open.set(false);
     pending.set(None);
   });
@@ -496,7 +507,7 @@ pub fn ExamPage() -> impl IntoView {
                 disabled=move || store.finished.get()
                 on:click=move |_| confirm_open.set(true)
               >
-                "交卷"
+                {move || if store.finished.get() { "已交卷" } else { "交卷" }}
               </button>
             }
           }
@@ -537,7 +548,7 @@ pub fn ExamPage() -> impl IntoView {
                   disabled=move || store.finished.get()
                   on:click=move |_| confirm_open.set(true)
                 >
-                  "交卷"
+                  {move || if store.finished.get() { "已交卷" } else { "交卷" }}
                 </button>
               </div>
             }

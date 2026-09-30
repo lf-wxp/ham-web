@@ -145,7 +145,7 @@ pub fn QCodePage() -> impl IntoView {
               prop:value=move || kw.get()
               on:input=move |e| kw.set(event_target_value(&e))
               placeholder="搜索简语 / 含义…"
-              class="h-9 w-56 rounded-lg border bg-background pl-8 pr-8 text-sm outline-none focus:ring-2 focus:ring-ring/50"
+              class="h-9 w-56 rounded-lg border bg-background pl-8 pr-8 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             />
             {move || {
               kw.with(|k| !k.is_empty())

@@ -4,7 +4,8 @@ use leptos::prelude::*;
 pub(super) fn Footer() -> impl IntoView {
   const LINK: &str = "hover:underline underline-offset-4 hover:text-foreground transition-colors";
   view! {
-    <footer class="mt-8 border-t bg-secondary/40">
+    <footer class="relative mt-8 border-t bg-secondary/40">
+      <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent"></div>
       <div class="max-w-screen-lg mx-auto px-4">
         <div class="py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div class="text-xs sm:text-sm text-muted-foreground">"业余无线电 · 题库 · 知识 · 工具"</div>

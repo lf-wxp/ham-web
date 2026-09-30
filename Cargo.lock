@@ -985,7 +985,7 @@ checksum = "17e2ac29387b1aa07a1e448f7bb4f35b500787971e965b02842b900afa5c8f6f"
 
 [[package]]
 name = "ham-web-app"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "console_error_panic_hook",
  "ham-web-core",
@@ -1002,7 +1002,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-core"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -1010,7 +1010,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-server"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anyhow",
  "axum",
@@ -1029,7 +1029,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-tools"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anyhow",
  "chrono",

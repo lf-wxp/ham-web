@@ -61,7 +61,7 @@ pub(super) fn WantedTracker() -> impl IntoView {
           placeholder="搜索前缀或实体名…"
           prop:value=move || query.get()
           on:input=move |e| query.set(event_target_value(&e))
-          class="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring/50"
+          class="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         />
         <div>
           <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">

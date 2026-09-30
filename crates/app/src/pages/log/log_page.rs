@@ -8,7 +8,8 @@ use leptos::task::spawn_local;
 use wasm_bindgen::JsCast;
 
 use crate::ui::{Size, Stat, Variant, button_class, input_class};
-use crate::util::{download_text, set_title};
+use crate::util::download_text;
+use crate::util::set_title;
 
 use super::bar_list::BarList;
 use super::grid_cell::GridCell;

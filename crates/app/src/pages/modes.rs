@@ -3,6 +3,7 @@
 use ham_web_core::modes::{DIGITAL_MODES, DIGITAL_USAGE};
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader, SectionCard};
 use crate::util::set_title;
 
 const CELL: &str = "border px-3 py-2 text-left align-top";
@@ -12,16 +13,8 @@ pub fn ModesPage() -> impl IntoView {
   set_title("数字模式");
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"数字模式"</div>
-            <div class="text-xs text-muted-foreground">"数字语音与数据模式 · 带宽 · 用途"</div>
-          </div>
-        </div>
-      </header>
-
-      <div class="mx-auto max-w-5xl px-4 py-5">
+      <PageHeader title="数字模式" subtitle="数字语音与数据模式 · 带宽 · 用途" />
+      <PageContainer>
         <div class="overflow-x-auto rounded-xl border bg-card">
           <table class="w-full min-w-[720px] border-collapse text-sm">
             <thead class="bg-muted/60 text-xs">
@@ -53,8 +46,7 @@ pub fn ModesPage() -> impl IntoView {
           </table>
         </div>
 
-        <section class="mt-6 rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"按用途选模式"</h2>
+        <SectionCard title="按用途选模式">
           <dl class="divide-y">
             {DIGITAL_USAGE
               .iter()
@@ -68,8 +60,8 @@ pub fn ModesPage() -> impl IntoView {
               })
               .collect_view()}
           </dl>
-        </section>
-      </div>
+        </SectionCard>
+      </PageContainer>
     </div>
   }
 }

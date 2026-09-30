@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-const INPUT: &str = "h-10 rounded-lg border bg-background px-3 text-sm tabular-nums outline-none focus:ring-2 focus:ring-ring/50";
+const INPUT: &str = "h-10 rounded-lg border bg-background px-3 text-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 
 /// 偶极天线尺寸估算计算器。
 #[component]

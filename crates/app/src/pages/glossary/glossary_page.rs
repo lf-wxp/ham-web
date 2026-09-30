@@ -11,7 +11,8 @@ use leptos_router::hooks::use_query_map;
 use crate::data;
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
-use crate::util::{set_title, window};
+use crate::util::set_title;
+use crate::util::window;
 
 use super::stat::Stat;
 use super::term_card::TermCard;
@@ -209,7 +210,7 @@ pub fn GlossaryPage() -> impl IntoView {
                 visible.set(PAGE);
               }
               placeholder="搜索术语 / 缩写 / 解释…"
-              class="h-9 w-56 rounded-lg border bg-background pl-8 pr-8 text-sm outline-none focus:ring-2 focus:ring-ring/50"
+              class="h-9 w-56 rounded-lg border bg-background pl-8 pr-8 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             />
             {move || {
               kw.with(|k| !k.is_empty())

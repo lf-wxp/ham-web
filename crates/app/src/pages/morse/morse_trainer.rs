@@ -264,7 +264,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
               placeholder=move || target.get().placeholder()
               maxlength=move || target.get().max_len()
               autocomplete="off"
-              class="h-10 w-28 rounded-lg border bg-background text-center text-lg font-semibold uppercase outline-none focus:ring-2 focus:ring-ring/50"
+              class="h-10 w-28 rounded-lg border bg-background text-center text-lg font-semibold uppercase outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             />
             <button
               type="submit"

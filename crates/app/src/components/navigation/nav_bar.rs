@@ -614,6 +614,7 @@ pub fn Navigation() -> impl IntoView {
 
   view! {
     <nav data-nav class="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
       <div class="container mx-auto px-4">
         <div class="flex h-16 items-center justify-between gap-3">
           // 品牌标识
@@ -622,8 +623,9 @@ pub fn Navigation() -> impl IntoView {
             class="group flex shrink-0 items-center gap-2.5"
             on:click=move |_| menu_open.set(false)
           >
-            <div class="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110">
-              <Icon kind=IconKind::Satellite class="h-5 w-5" />
+            <div class="relative flex size-9 items-center justify-center overflow-hidden rounded-lg bg-primary text-primary-foreground shadow-xs shadow-primary/30 transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110">
+              <span class="absolute inset-0 bg-gradient-to-b from-white/20 to-black/15"></span>
+              <Icon kind=IconKind::Satellite class="relative h-5 w-5" />
             </div>
             <div class="hidden flex-col whitespace-nowrap leading-tight sm:flex">
               <span class="text-sm font-semibold text-foreground">"业余无线电"</span>

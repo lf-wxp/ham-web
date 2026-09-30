@@ -8,6 +8,7 @@ use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 
 use crate::cn::cn;
+use crate::components::common::{EmptyState, Loading};
 use crate::data::{self, Questions};
 use crate::icons::{Icon, IconKind};
 use crate::util::set_title;
@@ -228,18 +229,11 @@ pub fn BrowsePage() -> impl IntoView {
 
   let list = move || {
     if loading.get() {
-      return view! {
-        <div class="flex items-center justify-center gap-2 py-20 text-muted-foreground">
-          <Icon kind=IconKind::Loader2 class="h-5 w-5 animate-spin" />
-          " 正在加载题库…"
-        </div>
-      }
-      .into_any();
+      return view! { <Loading label="正在加载题库…" /> }.into_any();
     }
     let total = filtered.with(Vec::len);
     if total == 0 {
-      return view! { <div class="py-20 text-center text-muted-foreground">"没有匹配的题目"</div> }
-        .into_any();
+      return view! { <EmptyState title="没有匹配的题目" /> }.into_any();
     }
     let shown: Vec<usize> = filtered.with(|f| f.iter().copied().take(visible.get()).collect());
     let shown_len = shown.len();
@@ -310,7 +304,7 @@ pub fn BrowsePage() -> impl IntoView {
                 visible.set(PAGE);
               }
               placeholder="搜索题干 / 答案 / 解析…"
-              class="h-9 w-56 rounded-lg border bg-background pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring/50"
+              class="h-9 w-56 rounded-lg border bg-background pl-8 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             />
           </div>
 

@@ -65,72 +65,77 @@
 :root {
   --font-geist-sans: "Geist", "Geist Fallback";
   --font-geist-mono: "Geist Mono", "Geist Mono Fallback";
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --radius: 0.75rem;
+  /* 动画节奏 token：统一缓动曲线与时长，供自定义动画（hero-rise 等）复用 */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-fast: 0.15s;
+  --motion-normal: 0.3s;
+  --motion-slow: 0.6s;
+  --background: oklch(0.988 0.002 210);
+  --foreground: oklch(0.215 0.02 250);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.215 0.02 250);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --popover-foreground: oklch(0.215 0.02 250);
+  --primary: oklch(0.53 0.13 195);
+  --primary-foreground: oklch(0.99 0.005 200);
+  --secondary: oklch(0.955 0.006 210);
+  --secondary-foreground: oklch(0.24 0.02 250);
+  --muted: oklch(0.955 0.006 210);
+  --muted-foreground: oklch(0.53 0.015 240);
+  --accent: oklch(0.945 0.012 190);
+  --accent-foreground: oklch(0.25 0.03 200);
+  --destructive: oklch(0.6 0.22 25);
+  --border: oklch(0.915 0.008 220);
+  --input: oklch(0.915 0.008 220);
+  --ring: oklch(0.6 0.13 195);
+  --chart-1: oklch(0.55 0.14 195);
+  --chart-2: oklch(0.68 0.15 70);
+  --chart-3: oklch(0.6 0.17 285);
+  --chart-4: oklch(0.65 0.16 150);
+  --chart-5: oklch(0.62 0.17 25);
+  --sidebar: oklch(0.97 0.006 210);
+  --sidebar-foreground: oklch(0.215 0.02 250);
+  --sidebar-primary: oklch(0.53 0.13 195);
+  --sidebar-primary-foreground: oklch(0.99 0.005 200);
+  --sidebar-accent: oklch(0.945 0.012 190);
+  --sidebar-accent-foreground: oklch(0.25 0.03 200);
+  --sidebar-border: oklch(0.915 0.008 220);
+  --sidebar-ring: oklch(0.6 0.13 195);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0.145 0.015 245);
+  --foreground: oklch(0.955 0.005 220);
+  --card: oklch(0.19 0.016 245);
+  --card-foreground: oklch(0.955 0.005 220);
+  --popover: oklch(0.17 0.016 245);
+  --popover-foreground: oklch(0.955 0.005 220);
+  --primary: oklch(0.82 0.16 165);
+  --primary-foreground: oklch(0.17 0.04 165);
+  --secondary: oklch(0.26 0.016 245);
+  --secondary-foreground: oklch(0.955 0.005 220);
+  --muted: oklch(0.26 0.016 245);
+  --muted-foreground: oklch(0.7 0.01 220);
+  --accent: oklch(0.28 0.02 230);
+  --accent-foreground: oklch(0.96 0.005 220);
+  --destructive: oklch(0.7 0.19 22);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.78 0.15 165);
+  --chart-1: oklch(0.78 0.15 165);
+  --chart-2: oklch(0.72 0.16 75);
+  --chart-3: oklch(0.68 0.17 285);
+  --chart-4: oklch(0.7 0.16 145);
+  --chart-5: oklch(0.68 0.17 20);
+  --sidebar: oklch(0.19 0.016 245);
+  --sidebar-foreground: oklch(0.955 0.005 220);
+  --sidebar-primary: oklch(0.82 0.16 165);
+  --sidebar-primary-foreground: oklch(0.17 0.04 165);
+  --sidebar-accent: oklch(0.28 0.02 230);
+  --sidebar-accent-foreground: oklch(0.96 0.005 220);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.78 0.15 165);
 }
 
 @layer base {
@@ -143,6 +148,124 @@
   body.no-site-footer footer {
     display: none !important;
   }
+}
+
+/* ---------- 全局氛围：主题化的环境光晕（置于内容之后） ----------
+   用固定定位伪元素而非 body 的 background-attachment: fixed：
+   后者在 iOS Safari 上滚动时会持续重绘，是移动端滚动卡顿的常见来源。
+   transform: translateZ(0) 将伪元素提升为独立合成层，滚动时由合成器处理、不触发重绘。 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  transform: translateZ(0);
+  background-image:
+    radial-gradient(
+      1100px 520px at 50% -12%,
+      color-mix(in oklab, var(--primary) 9%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      900px 480px at 108% -6%,
+      color-mix(in oklab, var(--chart-2) 6%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      800px 460px at -8% 6%,
+      color-mix(in oklab, var(--chart-1) 5%, transparent),
+      transparent 55%
+    );
+}
+
+/* ---------- 品牌渐变文字（首页标题等） ---------- */
+.hero-gradient-text {
+  background-image: linear-gradient(
+    100deg,
+    var(--primary) 0%,
+    var(--chart-2) 48%,
+    var(--chart-4) 92%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------- 频谱条（SDR 瀑布图意象） ---------- */
+.spectrum-bar {
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(
+    90deg,
+    var(--chart-1),
+    var(--chart-4) 26%,
+    var(--chart-2) 52%,
+    var(--chart-3) 76%,
+    var(--chart-1)
+  );
+  background-size: 220% 100%;
+  animation: spectrum-scroll 10s linear infinite;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+/* 频谱条上的扫掠高光 */
+.spectrum-bar::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  width: 28%;
+  left: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--background) 55%, transparent),
+    transparent
+  );
+  animation: signal-sweep 4.5s ease-in-out infinite;
+}
+
+/* 瀑布图底部刻度线 */
+.spectrum-ticks {
+  background-image: repeating-linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--foreground) 18%, transparent) 0 1px,
+    transparent 1px 12.5%
+  );
+}
+
+@keyframes spectrum-scroll {
+  to {
+    background-position: -220% 0;
+  }
+}
+
+@keyframes signal-sweep {
+  /* 改用 transform 平移（left 会触发 layout/reflow）。
+     元素宽 28%，起点 translateX(-100%) 即左移一个自身宽度（处于左外），
+     终点扫过整个容器需左移 100% 容器宽 = 100%/28% ≈ 357.14% 的自身宽度。 */
+  to {
+    transform: translateX(357.14%);
+  }
+}
+
+/* ---------- 首页入场：错峰浮现（尊重系统减少动效偏好） ---------- */
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal {
+  opacity: 0;
+  animation: hero-rise var(--motion-slow) var(--ease-out-expo) forwards;
 }
 
 /* ---------- 卡片内表格：去掉与卡片边框重合的最外圈边框 ---------- */
@@ -255,5 +378,14 @@ html {
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+/* ---------- 触屏设备按压反馈（桌面 hover 态在触屏无效） ---------- */
+@media (hover: none) {
+  button:active,
+  a:active,
+  [role="button"]:active {
+    opacity: 0.72;
   }
 }

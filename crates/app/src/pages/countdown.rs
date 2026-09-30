@@ -8,7 +8,8 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsValue;
 
 use crate::ui::{Size, Variant, button_class, input_class};
-use crate::util::{now_ms, set_title};
+use crate::util::now_ms;
+use crate::util::set_title;
 
 /// 一个倒计时事件。
 #[derive(Serialize, Deserialize, Clone)]

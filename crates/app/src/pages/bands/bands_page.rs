@@ -5,7 +5,8 @@ use leptos::prelude::*;
 
 use crate::icons::{Icon, IconKind};
 use crate::ui::Stat;
-use crate::util::{document, set_title};
+use crate::util::document;
+use crate::util::set_title;
 
 use super::band_card::BandCard;
 use super::usage_badge::UsageBadge;

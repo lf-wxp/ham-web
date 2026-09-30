@@ -107,14 +107,35 @@ pub fn HomePage() -> impl IntoView {
   let exam_href = move || bank_href("/exam", version.get().as_deref(), bank.get());
 
   view! {
-    <main class="container mx-auto max-w-5xl space-y-6 px-4 py-10 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <main class="container relative mx-auto max-w-5xl px-4 pb-12 pt-14 sm:pt-20">
       // Hero
-      <div class="py-8 text-center">
-        <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">"业余无线电"</h1>
-        <p class="mt-3 text-sm text-muted-foreground sm:text-base">
-          "一站式题库练习、知识速查与通联工具平台"
+      <section class="flex flex-col items-center text-center">
+        <span
+          class="reveal inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm"
+          style="animation-delay: 0ms"
+        >
+          <span class="relative flex size-1.5">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60"></span>
+            <span class="relative inline-flex size-1.5 rounded-full bg-primary"></span>
+          </span>
+          "业余无线电 · Amateur Radio"
+        </span>
+
+        <h1
+          class="reveal mt-6 text-4xl font-bold tracking-tight sm:text-6xl"
+          style="animation-delay: 60ms"
+        >
+          <span class="hero-gradient-text">"业余无线电"</span>
+        </h1>
+
+        <p
+          class="reveal mt-4 max-w-xl text-sm text-muted-foreground sm:text-base"
+          style="animation-delay: 120ms"
+        >
+          "一站式题库练习、知识速查与通联工具平台，从 A/B/C 备考到实时传播，一个入口全部搞定"
         </p>
-        <div class="mt-6 flex flex-wrap justify-center gap-3">
+
+        <div class="reveal mt-8 flex flex-wrap justify-center gap-3" style="animation-delay: 180ms">
           <a href="/practice" class=button_class(Variant::Default, Size::Default, "")>
             "开始练习"
           </a>
@@ -125,25 +146,43 @@ pub fn HomePage() -> impl IntoView {
             "浏览知识库"
           </a>
         </div>
-      </div>
+
+        // 频谱瀑布视觉（SDR 意象）
+        <div class="reveal mt-12 w-full max-w-2xl" style="animation-delay: 240ms">
+          <div class="rounded-2xl border bg-card/70 p-4 shadow-sm backdrop-blur">
+            <div class="mb-3 flex items-center justify-between text-xs font-medium text-muted-foreground">
+              <span class="font-mono tracking-widest uppercase">"Spectrum · 14.000 MHz"</span>
+              <span class="inline-flex items-center gap-1.5">
+                <span class="inline-block size-1.5 rounded-full bg-primary"></span>
+                "接收中"
+              </span>
+            </div>
+            <div class="spectrum-bar h-14 rounded-xl border"></div>
+            <div class="spectrum-ticks mt-2 h-3 rounded-sm opacity-60"></div>
+          </div>
+        </div>
+      </section>
 
       // 模块入口
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div class="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {MODULES
           .iter()
-          .map(|m| {
+          .enumerate()
+          .map(|(i, m)| {
             view! {
               <a
                 href=m.href
-                class="group flex flex-col gap-4 rounded-xl border bg-card p-5 shadow-sm transition-colors hover:bg-accent/40"
+                class="reveal group relative flex flex-col gap-4 overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
+                style=format!("animation-delay: {}ms", 300 + i * 90)
               >
+                <div class="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
                 <div class="flex items-center gap-3">
-                  <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/10 transition-colors duration-300 group-hover:bg-primary group-hover:text-primary-foreground">
                     <Icon kind=m.icon class="h-5 w-5" />
                   </div>
                   <div class="min-w-0">
-                    <div class="font-semibold">{m.title}</div>
-                    <div class="text-xs text-muted-foreground">{m.desc}</div>
+                    <div class="font-semibold tracking-tight">{m.title}</div>
+                    <div class="mt-0.5 text-xs text-muted-foreground">{m.desc}</div>
                   </div>
                 </div>
                 <div class="flex flex-wrap gap-1.5">
@@ -152,7 +191,7 @@ pub fn HomePage() -> impl IntoView {
                     .iter()
                     .map(|&(label, _)| {
                       view! {
-                        <span class="rounded-full border bg-muted/40 px-2.5 py-0.5 text-xs text-muted-foreground">
+                        <span class="rounded-full border bg-muted/50 px-2.5 py-0.5 text-xs text-muted-foreground transition-colors group-hover:bg-accent group-hover:text-accent-foreground">
                           {label}
                         </span>
                       }
@@ -166,7 +205,7 @@ pub fn HomePage() -> impl IntoView {
       </div>
 
       // 快速开始练习（选择题库版本与类别）
-      <div data-slot="card" class=card_class("")>
+      <div data-slot="card" class=card_class("mt-12")>
         <div data-slot="card-header" class=CARD_HEADER>
           <div data-slot="card-title" class=card_title_class("")>"快速开始练习"</div>
           <div class="text-sm text-muted-foreground">"选择题库版本与类别，进入练习或模拟考试"</div>
@@ -195,8 +234,10 @@ pub fn HomePage() -> impl IntoView {
         </div>
       </div>
 
-      <DailyQuestion />
-      <PropagationWidget />
+      <div class="space-y-6">
+        <DailyQuestion />
+        <PropagationWidget />
+      </div>
     </main>
   }
 }
