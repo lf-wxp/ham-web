@@ -75,8 +75,7 @@ jobs:
         run: |
           tags="${{ steps.meta.outputs.tags }}"
           if [ "${{ steps.check.outputs.exists }}" = "false" ]; then
-            tags="${tags}
-${{ steps.norm.outputs.user }}/ham-web:${{ steps.version.outputs.version }}"
+            tags="${tags}"$'\n'"${{ steps.norm.outputs.user }}/ham-web:${{ steps.version.outputs.version }}"
           fi
           echo "tags<<EOF" >> "$GITHUB_OUTPUT"
           echo "${tags}" >> "$GITHUB_OUTPUT"
