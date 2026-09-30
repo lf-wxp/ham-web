@@ -10,6 +10,7 @@
 
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use anyhow::Context;
 use axum::Router;
@@ -24,6 +25,15 @@ use tower::ServiceExt;
 use tower_http::compression::CompressionLayer;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
+
+mod alerts;
+mod cache;
+mod geocode;
+mod iss;
+mod most_wanted;
+mod passes;
+mod solar;
+mod spots;
 
 const NO_STORE: &str = "no-cache, no-store, must-revalidate";
 const IMMUTABLE: &str = "public, max-age=31536000, immutable";
@@ -62,6 +72,7 @@ fn cache_policy(path: &str) -> Option<&'static str> {
     p if p.starts_with("/questions/images/") || p.starts_with("/fonts/") => {
       Some("public, max-age=86400")
     }
+    p if p.starts_with("/api/") => Some(NO_STORE),
     p if is_hashed_asset(p) => Some(IMMUTABLE),
     _ => None,
   }
@@ -116,8 +127,57 @@ fn app(cfg: &Config) -> Router {
     .append_index_html_on_directories(true)
     .fallback(fallback);
 
+  let solar_cache = Arc::new(solar::Cache::default());
+  let solar_route = {
+    let cache = solar_cache.clone();
+    move || solar::handler(cache.clone())
+  };
+
+  let passes_cache = Arc::new(passes::Cache::default());
+  let passes_route = {
+    let cache = passes_cache.clone();
+    move |query: axum::extract::Query<passes::PassQuery>| passes::handler(query, cache.clone())
+  };
+
+  let wanted_cache = Arc::new(most_wanted::Cache::default());
+  let wanted_route = {
+    let cache = wanted_cache.clone();
+    move || most_wanted::handler(cache.clone())
+  };
+
+  let spots_cache = Arc::new(spots::Cache::default());
+  let spots_route = {
+    let cache = spots_cache.clone();
+    move || spots::handler(cache.clone())
+  };
+
+  let alerts_cache = Arc::new(alerts::Cache::default());
+  let alerts_route = {
+    let cache = alerts_cache.clone();
+    move || alerts::handler(cache.clone())
+  };
+
+  let iss_cache = Arc::new(iss::Cache::default());
+  let iss_route = {
+    let cache = iss_cache.clone();
+    move || iss::handler(cache.clone())
+  };
+
+  let geocode_cache = Arc::new(geocode::Cache::default());
+  let geocode_route = {
+    let cache = geocode_cache.clone();
+    move |query: axum::extract::Query<geocode::GeocodeQuery>| geocode::handler(query, cache.clone())
+  };
+
   Router::new()
     .route("/healthz", get(|| async { "ok" }))
+    .route("/api/solar", get(solar_route))
+    .route("/api/passes", get(passes_route))
+    .route("/api/most-wanted", get(wanted_route))
+    .route("/api/spots", get(spots_route))
+    .route("/api/alerts", get(alerts_route))
+    .route("/api/iss", get(iss_route))
+    .route("/api/geocode", get(geocode_route))
     .fallback_service(static_files)
     .layer(middleware::from_fn(cache_headers))
     .layer(CompressionLayer::new())
@@ -171,11 +231,14 @@ async fn main() -> anyhow::Result<()> {
     .init();
 
   let cfg = Config::from_env()?;
-  anyhow::ensure!(
-    cfg.dist.join("index.html").is_file(),
-    "{} 不存在，请先执行 `cargo make build-web`",
-    cfg.dist.join("index.html").display()
-  );
+  // 开发联调（仅提供 /api 代理）时允许跳过静态产物检查
+  if std::env::var("SKIP_DIST_CHECK").is_err() {
+    anyhow::ensure!(
+      cfg.dist.join("index.html").is_file(),
+      "{} 不存在，请先执行 `cargo make build-web`",
+      cfg.dist.join("index.html").display()
+    );
+  }
 
   let listener = tokio::net::TcpListener::bind(cfg.addr)
     .await
@@ -189,6 +252,10 @@ async fn main() -> anyhow::Result<()> {
 
 #[cfg(test)]
 mod tests {
+  use std::fs;
+  use std::path::PathBuf;
+  use std::sync::atomic::{AtomicU64, Ordering};
+
   use super::*;
 
   #[test]
@@ -204,5 +271,80 @@ mod tests {
     assert_eq!(cache_policy("/sw.js"), Some(NO_STORE));
     assert_eq!(cache_policy("/questions/A.json"), Some("no-cache"));
     assert_eq!(cache_policy("/pwa-icon.svg"), None);
+  }
+
+  /// 带 `index.html` 的临时静态目录，测试结束自动清理（RAII）。
+  struct TempDist {
+    path: PathBuf,
+  }
+
+  impl TempDist {
+    fn new() -> Self {
+      static COUNTER: AtomicU64 = AtomicU64::new(0);
+      let n = COUNTER.fetch_add(1, Ordering::Relaxed);
+      let path =
+        std::env::temp_dir().join(format!("ham-web-server-test-{}-{n}", std::process::id()));
+      fs::create_dir_all(&path).expect("create temp dist");
+      fs::write(path.join("index.html"), "<html>app</html>").expect("write index.html");
+      Self { path }
+    }
+  }
+
+  impl Drop for TempDist {
+    fn drop(&mut self) {
+      let _ = fs::remove_dir_all(&self.path);
+    }
+  }
+
+  fn config(dist: &TempDist) -> Config {
+    Config {
+      addr: "127.0.0.1:0".parse().expect("valid addr"),
+      dist: dist.path.clone(),
+    }
+  }
+
+  fn get(uri: &str) -> axum::extract::Request {
+    axum::extract::Request::builder()
+      .uri(uri)
+      .body(Body::empty())
+      .expect("valid request")
+  }
+
+  #[tokio::test]
+  async fn healthz_returns_ok() {
+    let dist = TempDist::new();
+    let res = app(&config(&dist))
+      .oneshot(get("/healthz"))
+      .await
+      .expect("response");
+    assert_eq!(res.status(), StatusCode::OK);
+    let body = axum::body::to_bytes(res.into_body(), usize::MAX)
+      .await
+      .expect("body");
+    assert_eq!(&body[..], b"ok");
+  }
+
+  #[tokio::test]
+  async fn spa_fallback_serves_index_html() {
+    let dist = TempDist::new();
+    let res = app(&config(&dist))
+      .oneshot(get("/exam/A"))
+      .await
+      .expect("response");
+    assert_eq!(res.status(), StatusCode::OK);
+    let body = axum::body::to_bytes(res.into_body(), usize::MAX)
+      .await
+      .expect("body");
+    assert_eq!(&body[..], b"<html>app</html>");
+  }
+
+  #[tokio::test]
+  async fn missing_asset_returns_404() {
+    let dist = TempDist::new();
+    let res = app(&config(&dist))
+      .oneshot(get("/missing.js"))
+      .await
+      .expect("response");
+    assert_eq!(res.status(), StatusCode::NOT_FOUND);
   }
 }

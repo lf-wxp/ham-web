@@ -1,0 +1,132 @@
+{
+  "电磁兼容": {
+    "abbr": "EMC",
+    "en": "Electromagnetic Compatibility",
+    "category": "安全",
+    "desc": "设备在电磁环境中能正常工作、且不对其他设备造成不可接受干扰的能力"
+  },
+  "电磁干扰": {
+    "abbr": "EMI",
+    "en": "Electromagnetic Interference",
+    "category": "安全",
+    "desc": "电磁能量对其他设备正常工作造成的影响"
+  },
+  "射频干扰": {
+    "abbr": "RFI",
+    "en": "Radio Frequency Interference",
+    "category": "安全",
+    "desc": "射频信号进入音响、电视、电话等设备造成的干扰"
+  },
+  "电视干扰": {
+    "abbr": "TVI",
+    "en": "Television Interference",
+    "category": "安全",
+    "desc": "业余电台发射对电视接收造成的干扰，常用低通滤波器或共模扼流圈解决"
+  },
+  "广播干扰": {
+    "abbr": "BCI",
+    "en": "Broadcast Interference",
+    "category": "安全",
+    "desc": "业余电台发射对广播收音造成的干扰"
+  },
+  "共模扼流圈": {
+    "en": "Common-Mode Choke",
+    "category": "安全",
+    "desc": "把电缆穿过或绕在磁环上，抑制沿电缆外表面流动的共模射频电流",
+    "aliases": [
+      "磁环"
+    ]
+  },
+  "比吸收率": {
+    "abbr": "SAR",
+    "en": "Specific Absorption Rate",
+    "category": "安全",
+    "desc": "人体组织单位质量吸收射频能量的速率，单位 W/kg"
+  },
+  "功率密度": {
+    "en": "Power Density",
+    "category": "安全",
+    "desc": "单位面积上的电磁辐射功率，单位 W/m²，是评价电磁暴露的常用指标"
+  },
+  "电磁环境控制限值": {
+    "en": "Electromagnetic Environment Limits",
+    "category": "安全",
+    "desc": "GB 8702-2014 规定的公众暴露电磁场限值，业余电台的设置使用应满足该标准",
+    "aliases": [
+      "GB 8702"
+    ]
+  },
+  "接地": {
+    "en": "Grounding",
+    "category": "安全",
+    "desc": "把设备外壳或防雷装置与大地可靠连接，用于安全防护和泄放雷电流",
+    "aliases": [
+      "地线"
+    ]
+  },
+  "接地电阻": {
+    "en": "Grounding Resistance",
+    "category": "安全",
+    "desc": "接地装置与大地之间的电阻，越小越能迅速把雷电流和故障电流泄入大地"
+  },
+  "避雷器": {
+    "en": "Lightning Arrester",
+    "category": "安全",
+    "desc": "串接在馈线上，雷击时把过电压泄放入地、保护设备的装置",
+    "aliases": [
+      "馈线避雷器"
+    ]
+  },
+  "接闪器": {
+    "en": "Air Terminal",
+    "category": "安全",
+    "desc": "防雷装置中直接承受雷击的部分，如避雷针、避雷带",
+    "aliases": [
+      "避雷针"
+    ]
+  },
+  "安全特低电压": {
+    "abbr": "SELV",
+    "en": "Safety Extra-Low Voltage",
+    "category": "安全",
+    "desc": "正常和单一故障情况下都不会造成危险电击的低电压，潮湿环境下限值更低",
+    "aliases": [
+      "特低电压"
+    ]
+  },
+  "漏电保护器": {
+    "abbr": "RCD",
+    "en": "Residual Current Device",
+    "category": "安全",
+    "desc": "检测到漏电电流超过设定值时迅速切断电源的保护装置",
+    "aliases": [
+      "漏电开关"
+    ]
+  },
+  "射频灼伤": {
+    "en": "RF Burn",
+    "category": "安全",
+    "desc": "人体接触或过于靠近大功率发射天线时，射频能量造成的皮肤或组织灼伤"
+  },
+  "锂电池": {
+    "en": "Lithium Battery",
+    "category": "安全",
+    "desc": "能量密度高的可充电电池，过充、短路或受损时可能热失控起火，应使用匹配的充电器",
+    "aliases": [
+      "锂离子电池"
+    ]
+  },
+  "热失控": {
+    "en": "Thermal Runaway",
+    "category": "安全",
+    "desc": "电池内部温度升高引发反应加剧、温度进一步升高的恶性循环，可能导致起火爆炸"
+  },
+  "铅酸蓄电池": {
+    "en": "Lead-Acid Battery",
+    "category": "安全",
+    "desc": "常用作备用电源的蓄电池，短路时电流极大，充电时会产生氢气，需注意通风",
+    "aliases": [
+      "蓄电池"
+    ]
+  }
+}

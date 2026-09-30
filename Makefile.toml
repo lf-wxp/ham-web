@@ -36,6 +36,18 @@ command = "trunk"
 # 开发产物放在 target/ 下，避免与 release 构建共用 dist/ 互相覆盖
 args = ["serve", "--dist", "../../target/dev-dist"]
 
+[tasks.dev-full]
+description = "同时启动后端 server（3001，仅 API）与前端 trunk dev（3000，代理 /api 到后端）"
+script_runner = "@shell"
+script = '''
+set -e
+cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
+trap cleanup EXIT INT TERM
+PORT=3001 SKIP_DIST_CHECK=1 cargo run -p ham-web-server &
+SERVER_PID=$!
+(cd crates/app && trunk serve --dist ../../target/dev-dist)
+'''
+
 # ───────────────────────────── 构建 ─────────────────────────────
 
 [tasks.build-web]
@@ -110,12 +122,12 @@ cargo run -q -p ham-web-tools --release -- add-explanations "$BATCH"
 '''
 
 [tasks.explanations-enhance]
-description = "用 data/glossary.json 中 inject=true 的词条为解析注入术语解释"
+description = "用 data/glossary/ 中 inject=true 的词条为解析注入术语解释"
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "enhance-explanations"]
 
 [tasks.glossary-check]
-description = "校验 data/glossary.json（分类、参见、重复、括号）并输出统计"
+description = "校验 data/glossary/（分类、参见、重复、括号）并输出统计"
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "check-glossary"]
 
@@ -151,6 +163,10 @@ cargo clippy -p ham-web-app --target wasm32-unknown-unknown -- -D warnings
 description = "运行单元测试"
 command = "cargo"
 args = ["test", "-p", "ham-web-core", "-p", "ham-web-tools", "-p", "ham-web-server", "-p", "ham-web-app"]
+
+[tasks.check]
+description = "代码检查：格式检查 + clippy + 单元测试（不构建前端）"
+dependencies = ["fmt-check", "clippy", "test"]
 
 [tasks.ci]
 description = "CI：格式检查 + clippy + 测试 + 前端构建"

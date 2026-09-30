@@ -1,5 +1,7 @@
 //! 练习 / 考试进度与偏好的本地持久化（key 与旧版 Next.js 实现保持兼容）。
 
+use std::collections::HashSet;
+
 use ham_web_core::Bank;
 use ham_web_core::practice::PracticeOrder;
 use ham_web_core::saved_state::{ExamSavedState, PracticeSavedState, keys};
@@ -66,4 +68,28 @@ pub fn help_seen(key: &str) -> bool {
 
 pub fn mark_help_seen(key: &str) {
   storage::set(key, "1");
+}
+
+/// 收藏的题目（stable_id 集合）。
+pub fn load_bookmarks() -> HashSet<String> {
+  storage::get_json("bookmarks").unwrap_or_default()
+}
+
+/// 切换收藏状态，返回切换后是否已收藏。
+pub fn toggle_bookmark(id: &str) -> bool {
+  let mut set = load_bookmarks();
+  let added = if set.contains(id) {
+    set.remove(id);
+    false
+  } else {
+    set.insert(id.to_owned());
+    true
+  };
+  storage::set_json("bookmarks", &set);
+  added
+}
+
+/// 题目是否已收藏。
+pub fn is_bookmarked(id: &str) -> bool {
+  load_bookmarks().contains(id)
 }

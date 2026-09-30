@@ -1,0 +1,349 @@
+{
+  "驻波比": {
+    "abbr": "SWR",
+    "en": "Standing Wave Ratio",
+    "category": "天线",
+    "desc": "衡量天线和连接线配合得好不好的指标；配合越好能量浪费越少，数值越接近 1:1 越好",
+    "aliases": [
+      "电压驻波比",
+      "VSWR"
+    ],
+    "inject": true
+  },
+  "极化": {
+    "en": "Polarization",
+    "category": "天线",
+    "desc": "电波里电场振动的方向；水平振动叫水平极化，垂直振动叫垂直极化，转圈叫圆极化",
+    "aliases": [
+      "水平极化",
+      "垂直极化"
+    ],
+    "inject": true
+  },
+  "天线": {
+    "abbr": "ANT",
+    "en": "Antenna",
+    "category": "天线",
+    "desc": "把导线中的高频电流转换为空间电磁波或反之的装置，具有互易性，收发性能相同"
+  },
+  "半波偶极天线": {
+    "abbr": "DP",
+    "en": "Half-Wave Dipole",
+    "category": "天线",
+    "desc": "总长约半个波长、从中间馈电的天线，自由空间输入阻抗约 73Ω，增益约 2.15dBi",
+    "aliases": [
+      "偶极天线",
+      "Dipole"
+    ]
+  },
+  "地网天线": {
+    "abbr": "GP",
+    "en": "Ground Plane Antenna",
+    "category": "天线",
+    "desc": "由四分之一波长垂直振子加若干水平或下倾地网组成的垂直天线，全向、低仰角",
+    "aliases": [
+      "垂直天线"
+    ]
+  },
+  "八木天线": {
+    "abbr": "YAGI",
+    "en": "Yagi-Uda Antenna",
+    "category": "天线",
+    "desc": "由有源振子、反射器和若干引向器组成的定向天线，增益高、前后比大",
+    "aliases": [
+      "八木"
+    ]
+  },
+  "有源振子": {
+    "en": "Driven Element",
+    "category": "天线",
+    "desc": "天线中直接接馈线的振子",
+    "aliases": [
+      "主振子"
+    ]
+  },
+  "引向器": {
+    "en": "Director",
+    "category": "天线",
+    "desc": "八木天线中比有源振子略短、位于前方的无源振子，使辐射集中到前方"
+  },
+  "反射器": {
+    "en": "Reflector",
+    "category": "天线",
+    "desc": "八木天线中比有源振子略长、位于后方的无源振子，把能量反射向前方"
+  },
+  "对数周期天线": {
+    "abbr": "LPDA",
+    "en": "Log-Periodic Dipole Array",
+    "category": "天线",
+    "desc": "振子长度和间距按比例递增的宽频带定向天线"
+  },
+  "环形天线": {
+    "en": "Loop Antenna",
+    "category": "天线",
+    "desc": "导线绕成环状的天线，小环天线方向性明显，常用于测向",
+    "aliases": [
+      "环天线"
+    ]
+  },
+  "磁环天线": {
+    "en": "Magnetic Loop Antenna",
+    "category": "天线",
+    "desc": "周长远小于波长的小型环形天线，带宽很窄、需精细调谐，适合空间受限的场合",
+    "aliases": [
+      "小环天线"
+    ]
+  },
+  "螺旋天线": {
+    "en": "Helical Antenna",
+    "category": "天线",
+    "desc": "导线绕成螺旋状的天线，轴向模式可产生圆极化，常用于卫星通信"
+  },
+  "抛物面天线": {
+    "en": "Parabolic Dish Antenna",
+    "category": "天线",
+    "desc": "用抛物面反射器聚焦电波的高增益天线，用于微波和 EME",
+    "aliases": [
+      "碟形天线"
+    ]
+  },
+  "鞭状天线": {
+    "en": "Whip Antenna",
+    "category": "天线",
+    "desc": "一根垂直的金属杆或弹性导体，常见于手台和车台",
+    "aliases": [
+      "拉杆天线"
+    ]
+  },
+  "倒 V 天线": {
+    "en": "Inverted-V Antenna",
+    "category": "天线",
+    "desc": "中间高、两端向下倾斜的偶极天线，只需一根支撑杆"
+  },
+  "长线天线": {
+    "en": "Long Wire Antenna",
+    "category": "天线",
+    "desc": "长度为多个波长的单根导线天线，架设简单"
+  },
+  "行波天线": {
+    "en": "Traveling-Wave Antenna",
+    "category": "天线",
+    "desc": "末端接匹配负载、电流沿导线单向行进的天线，频带宽且有方向性，如 T2FD、菱形天线",
+    "aliases": [
+      "T2FD"
+    ]
+  },
+  "各向同性天线": {
+    "en": "Isotropic Antenna",
+    "category": "天线",
+    "desc": "向所有方向均匀辐射的理想点源天线，是 dBi 的参考基准",
+    "aliases": [
+      "全向点源"
+    ]
+  },
+  "dBi": {
+    "en": "Decibels Relative to Isotropic",
+    "category": "天线",
+    "desc": "以各向同性天线为参考的天线增益单位"
+  },
+  "dBd": {
+    "en": "Decibels Relative to Dipole",
+    "category": "天线",
+    "desc": "以半波偶极天线为参考的增益单位，dBi 等于 dBd 加 2.15"
+  },
+  "天线增益": {
+    "en": "Antenna Gain",
+    "category": "天线",
+    "desc": "天线在最大辐射方向上相对参考天线的功率密度之比，来自方向性集中而不是能量放大",
+    "aliases": [
+      "增益"
+    ]
+  },
+  "方向图": {
+    "en": "Radiation Pattern",
+    "category": "天线",
+    "desc": "描述天线在各个方向辐射强弱的图形",
+    "aliases": [
+      "辐射方向图"
+    ]
+  },
+  "前后比": {
+    "abbr": "F/B",
+    "en": "Front-to-Back Ratio",
+    "category": "天线",
+    "desc": "定向天线前方与后方辐射强度之比，越大抗后方干扰能力越强"
+  },
+  "波束宽度": {
+    "en": "Beamwidth",
+    "category": "天线",
+    "desc": "方向图主瓣中辐射功率下降一半即 -3dB 的两点间夹角",
+    "aliases": [
+      "半功率角"
+    ]
+  },
+  "辐射仰角": {
+    "en": "Take-off Angle",
+    "category": "天线",
+    "desc": "天线最大辐射方向与地面的夹角，低仰角有利于 DX 远距离通信",
+    "aliases": [
+      "发射仰角"
+    ]
+  },
+  "输入阻抗": {
+    "en": "Input Impedance",
+    "category": "天线",
+    "desc": "天线馈电点呈现的阻抗，与馈线特性阻抗一致时匹配最好",
+    "aliases": [
+      "馈电阻抗"
+    ]
+  },
+  "特性阻抗": {
+    "abbr": "Z0",
+    "en": "Characteristic Impedance",
+    "category": "天线",
+    "desc": "传输线本身固有的阻抗，由导体尺寸和绝缘介质决定、与长度无关，业余电台常用 50Ω"
+  },
+  "同轴电缆": {
+    "en": "Coaxial Cable",
+    "category": "天线",
+    "desc": "由内导体、绝缘介质、屏蔽层和外护套同轴构成的馈线，屏蔽好、使用方便",
+    "aliases": [
+      "COAX"
+    ]
+  },
+  "平行馈线": {
+    "en": "Open-Wire Line",
+    "category": "天线",
+    "desc": "两根平行导线组成的平衡馈线，损耗低，但容易受周围物体影响",
+    "aliases": [
+      "梯形馈线",
+      "Ladder Line"
+    ]
+  },
+  "巴伦": {
+    "en": "Balun",
+    "category": "天线",
+    "desc": "平衡与不平衡转换器，把同轴电缆的不平衡输出接到偶极等平衡天线上，常见 1:1、4:1",
+    "aliases": [
+      "平衡不平衡转换器"
+    ]
+  },
+  "反射系数": {
+    "abbr": "Γ",
+    "en": "Reflection Coefficient",
+    "category": "天线",
+    "desc": "反射电压与入射电压之比，等于负载阻抗与特性阻抗之差除以二者之和，为 0 时完全匹配"
+  },
+  "回波损耗": {
+    "abbr": "RL",
+    "en": "Return Loss",
+    "category": "天线",
+    "desc": "入射功率与反射功率之比的分贝数，数值越大匹配越好"
+  },
+  "速度因子": {
+    "abbr": "VF",
+    "en": "Velocity Factor",
+    "category": "天线",
+    "desc": "电波在馈线中的传播速度与光速之比，实心聚乙烯同轴电缆约为 0.66",
+    "aliases": [
+      "缩短系数"
+    ]
+  },
+  "电长度": {
+    "en": "Electrical Length",
+    "category": "天线",
+    "desc": "以波长为单位衡量的导线或馈线长度，与频率和速度因子有关"
+  },
+  "加感线圈": {
+    "en": "Loading Coil",
+    "category": "天线",
+    "desc": "串入天线中、在缩短物理长度的同时保持谐振的电感线圈，常见于短波车载天线"
+  },
+  "天线调谐器": {
+    "abbr": "ATU",
+    "en": "Antenna Tuning Unit",
+    "category": "天线",
+    "desc": "把天线系统阻抗变换为发射机所需的 50Ω，使发射机能满功率工作，但不能提高天线本身效率",
+    "aliases": [
+      "天调",
+      "ATU",
+      "Tuner"
+    ]
+  },
+  "驻波表": {
+    "en": "SWR Meter",
+    "category": "天线",
+    "desc": "串接在馈线中测量驻波比的仪表",
+    "aliases": [
+      "驻波功率计"
+    ]
+  },
+  "天线分析仪": {
+    "en": "Antenna Analyzer",
+    "category": "天线",
+    "desc": "自带信号源、可扫描测量天线阻抗和驻波比的仪器",
+    "aliases": [
+      "矢量网络分析仪"
+    ]
+  },
+  "地网": {
+    "en": "Radials",
+    "category": "天线",
+    "desc": "垂直天线下方或周围铺设的若干导线，为天线提供镜像地面、降低损耗",
+    "aliases": [
+      "辐射地网"
+    ]
+  },
+  "圆极化": {
+    "en": "Circular Polarization",
+    "category": "天线",
+    "desc": "电场方向随传播不断旋转的极化方式，卫星通信常用来减轻卫星姿态变化带来的衰落"
+  },
+  "等效全向辐射功率": {
+    "abbr": "EIRP",
+    "en": "Equivalent Isotropically Radiated Power",
+    "category": "天线",
+    "desc": "送入天线的功率乘以天线相对各向同性天线的增益，表示最大辐射方向上的等效辐射能力"
+  },
+  "有效辐射功率": {
+    "abbr": "ERP",
+    "en": "Effective Radiated Power",
+    "category": "天线",
+    "desc": "以半波偶极天线为参考的等效辐射功率，EIRP 比 ERP 大 2.15dB"
+  },
+  "N 型连接器": {
+    "en": "N Connector",
+    "category": "天线",
+    "desc": "螺纹连接、可防水的射频接头，损耗小、适用频率高，常用于 UHF 以上和室外",
+    "aliases": [
+      "N 头"
+    ]
+  },
+  "BNC 连接器": {
+    "abbr": "BNC",
+    "en": "Bayonet Neill-Concelman",
+    "category": "天线",
+    "desc": "卡口式快速连接的射频接头，常见于测试仪器和部分手台",
+    "aliases": [
+      "BNC 头"
+    ]
+  },
+  "SMA 连接器": {
+    "abbr": "SMA",
+    "en": "SubMiniature version A",
+    "category": "天线",
+    "desc": "小型螺纹射频接头，常见于手台和 SDR 设备",
+    "aliases": [
+      "SMA 头"
+    ]
+  },
+  "PL-259": {
+    "en": "UHF Connector",
+    "category": "天线",
+    "desc": "HF 电台最常见的射频接头，PL-259 为插头、SO-239 为插座，不适合较高频率",
+    "aliases": [
+      "SO-239",
+      "M 头"
+    ]
+  }
+}

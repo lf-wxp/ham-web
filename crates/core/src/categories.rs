@@ -880,6 +880,13 @@ pub fn top_category(key: &str) -> Option<&'static TopCategory> {
   TOP_CATEGORIES.iter().find(|c| c.key == key)
 }
 
+/// 分类码（`p_code`）对应的一级分类，如 `"1.1.1"` → 法规。
+#[must_use]
+pub fn top_of(code: &str) -> Option<&'static TopCategory> {
+  let sub = sub_category(code)?;
+  top_category(sub.top)
+}
+
 /// 分类码对应的知识点。
 #[must_use]
 pub fn sub_note(code: &str) -> Option<&'static str> {

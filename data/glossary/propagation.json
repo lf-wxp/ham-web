@@ -1,0 +1,347 @@
+{
+  "多径传播": {
+    "en": "Multipath Propagation",
+    "category": "传播",
+    "desc": "电波从发射到接收可能走好几条路，有的直达、有的被墙或地面反射，这些波先后到达，会相互加强或抵消",
+    "inject": true
+  },
+  "多径效应": {
+    "en": "Multipath Effect",
+    "category": "传播",
+    "desc": "电波走好几条路到达接收点，因先后不同而相互加强或抵消，导致信号忽强忽弱",
+    "inject": true
+  },
+  "电离层": {
+    "en": "Ionosphere",
+    "category": "传播",
+    "desc": "地球上空几十到几百公里处被太阳晒出的一层带电大气，能把短波信号弹回地面，实现远距离通信",
+    "inject": true
+  },
+  "大气波导": {
+    "en": "Tropospheric Ducting",
+    "category": "传播",
+    "desc": "特殊天气下电波被夹在近地大气层里来回反射，传得特别远",
+    "inject": true
+  },
+  "对流层散射": {
+    "en": "Tropospheric Scatter",
+    "category": "传播",
+    "desc": "电波被大气低层的不均匀气团散射，实现几百公里的超视距通信",
+    "inject": true
+  },
+  "流星余迹": {
+    "abbr": "MS",
+    "en": "Meteor Scatter",
+    "category": "传播",
+    "desc": "流星划过留下一条电离尾巴，能短暂反射电波完成通信",
+    "aliases": [
+      "流星散射"
+    ],
+    "inject": true
+  },
+  "EME": {
+    "en": "Earth-Moon-Earth",
+    "category": "传播",
+    "desc": "把信号打到月亮上、再反射回地球的通信方式，即地-月-地",
+    "aliases": [
+      "月面反射通信",
+      "地月地通信"
+    ],
+    "inject": true
+  },
+  "视距": {
+    "abbr": "LOS",
+    "en": "Line of Sight",
+    "category": "传播",
+    "desc": "收发两点之间看得见的直线传播，中间没有遮挡",
+    "aliases": [
+      "视距传播"
+    ],
+    "inject": true
+  },
+  "地波": {
+    "en": "Ground Wave",
+    "category": "传播",
+    "desc": "沿地球表面传播的电波，频率越低、地面导电性越好，衰减越小",
+    "aliases": [
+      "地面波"
+    ]
+  },
+  "天波": {
+    "en": "Sky Wave",
+    "category": "传播",
+    "desc": "经电离层反射回地面的电波，是短波远距离通信的主要方式"
+  },
+  "空间波": {
+    "en": "Space Wave",
+    "category": "传播",
+    "desc": "在收发天线之间直线传播或经地面反射的电波，是 VHF 以上的主要传播方式",
+    "aliases": [
+      "直射波"
+    ]
+  },
+  "跳距": {
+    "en": "Skip Distance",
+    "category": "传播",
+    "desc": "发射点到天波第一次返回地面处的距离"
+  },
+  "寂静区": {
+    "en": "Skip Zone",
+    "category": "传播",
+    "desc": "地波已到达不了、天波又尚未返回的环形区域，在其中收不到信号",
+    "aliases": [
+      "盲区"
+    ]
+  },
+  "临界频率": {
+    "en": "Critical Frequency",
+    "category": "传播",
+    "desc": "垂直向上发射时能被电离层反射回来的最高频率，常用 F2 层临界频率 foF2 表示",
+    "aliases": [
+      "foF2"
+    ]
+  },
+  "最高可用频率": {
+    "abbr": "MUF",
+    "en": "Maximum Usable Frequency",
+    "category": "传播",
+    "desc": "某一时刻在两地之间能经电离层反射通信的最高频率，高于它的信号会穿透电离层"
+  },
+  "最低可用频率": {
+    "abbr": "LUF",
+    "en": "Lowest Usable Frequency",
+    "category": "传播",
+    "desc": "受 D 层吸收和噪声限制，仍能保持可用通信的最低频率"
+  },
+  "最佳工作频率": {
+    "abbr": "FOT",
+    "en": "Frequency of Optimum Traffic",
+    "category": "传播",
+    "desc": "通常取最高可用频率的 85% 左右，此时通信最稳定",
+    "aliases": [
+      "OWF"
+    ]
+  },
+  "D 层": {
+    "en": "D Layer",
+    "category": "传播",
+    "desc": "离地约 60–90km 的电离层最低层，只在白天存在，会吸收较低频率的短波信号"
+  },
+  "E 层": {
+    "en": "E Layer",
+    "category": "传播",
+    "desc": "离地约 90–150km 的电离层，白天较强、夜间减弱"
+  },
+  "F 层": {
+    "en": "F Layer",
+    "category": "传播",
+    "desc": "离地约 150–500km 的电离层，白天分为 F1、F2 两层，F2 层是短波远距离通信最重要的反射层",
+    "aliases": [
+      "F2 层"
+    ]
+  },
+  "突发 E 层": {
+    "abbr": "Es",
+    "en": "Sporadic E",
+    "category": "传播",
+    "desc": "E 层中偶发的高密度电离云，夏季多见，可使 6 米、2 米波段出现意外的远距离通信",
+    "aliases": [
+      "偶发 E 层"
+    ]
+  },
+  "太阳黑子": {
+    "en": "Sunspot",
+    "category": "传播",
+    "desc": "太阳表面温度较低的暗区，数量越多太阳活动越强，高频段传播越好"
+  },
+  "太阳黑子数": {
+    "abbr": "SSN",
+    "en": "Sunspot Number",
+    "category": "传播",
+    "desc": "表征太阳活动强弱的指数，常用于预测短波传播"
+  },
+  "太阳通量": {
+    "abbr": "SFI",
+    "en": "Solar Flux Index",
+    "category": "传播",
+    "desc": "太阳在 10.7 厘米波长上的射电辐射强度，数值越高，高频段越容易开通",
+    "aliases": [
+      "太阳辐射通量"
+    ]
+  },
+  "太阳活动周期": {
+    "en": "Solar Cycle",
+    "category": "传播",
+    "desc": "太阳黑子数大约以 11 年为周期起伏变化，高峰年短波高频段传播最好",
+    "aliases": [
+      "太阳周期"
+    ]
+  },
+  "突然电离层骚扰": {
+    "abbr": "SID",
+    "en": "Sudden Ionospheric Disturbance",
+    "category": "传播",
+    "desc": "太阳耀斑爆发后 D 层电离急剧增强，导致白天短波信号突然大面积中断",
+    "aliases": [
+      "短波消逝",
+      "Dellinger 效应"
+    ]
+  },
+  "地磁暴": {
+    "en": "Geomagnetic Storm",
+    "category": "传播",
+    "desc": "太阳活动引起的地球磁场剧烈扰动，会使短波传播变差、极光增强",
+    "aliases": [
+      "磁暴"
+    ]
+  },
+  "K 指数": {
+    "en": "K-index",
+    "category": "传播",
+    "desc": "每 3 小时的地磁扰动指数，范围 0–9，数值越大地磁越不平静"
+  },
+  "A 指数": {
+    "en": "A-index",
+    "category": "传播",
+    "desc": "每日的地磁活动指数，由 K 指数换算得到，数值越大地磁越不平静"
+  },
+  "极光传播": {
+    "en": "Auroral Propagation",
+    "category": "传播",
+    "desc": "借极光区域的电离反射电波，信号带有明显的嘶哑声，多见于高纬度地区"
+  },
+  "灰线传播": {
+    "en": "Grey Line Propagation",
+    "category": "传播",
+    "desc": "沿地球晨昏交界线传播的特殊路径，此时 D 层吸收小，低频段容易实现远距离通信",
+    "aliases": [
+      "晨昏线传播"
+    ]
+  },
+  "长路径": {
+    "abbr": "LP",
+    "en": "Long Path",
+    "category": "传播",
+    "desc": "沿大圆另一方向、绕地球较长一侧传播的路径，有时比短路径信号更好",
+    "aliases": [
+      "长程"
+    ]
+  },
+  "衰落": {
+    "en": "Fading",
+    "category": "传播",
+    "desc": "接收信号强度随时间起伏变化的现象，多由多径和电离层变化引起"
+  },
+  "自由空间损耗": {
+    "abbr": "FSPL",
+    "en": "Free Space Path Loss",
+    "category": "传播",
+    "desc": "电波在无遮挡空间中传播时因扩散造成的衰减，距离或频率加倍都会增加约 6dB",
+    "aliases": [
+      "路径损耗"
+    ]
+  },
+  "菲涅尔区": {
+    "en": "Fresnel Zone",
+    "category": "传播",
+    "desc": "收发两点连线周围的椭球区域，其中有障碍物会明显削弱视距信号"
+  },
+  "绕射": {
+    "en": "Diffraction",
+    "category": "传播",
+    "desc": "电波绕过障碍物边缘继续传播的现象，频率越低绕射能力越强",
+    "aliases": [
+      "衍射"
+    ]
+  },
+  "对流层": {
+    "en": "Troposphere",
+    "category": "传播",
+    "desc": "离地约 10km 以内的大气层，温度湿度变化会影响 VHF 以上信号的传播"
+  },
+  "电磁波": {
+    "en": "Electromagnetic Wave",
+    "category": "传播",
+    "desc": "由相互垂直的交变电场和磁场组成、以光速传播的横波，无线电波就是一种电磁波",
+    "aliases": [
+      "无线电波"
+    ]
+  },
+  "近垂直入射天波": {
+    "abbr": "NVIS",
+    "en": "Near Vertical Incidence Skywave",
+    "category": "传播",
+    "desc": "用高仰角天线把信号几乎垂直射向电离层再反射回来，实现周边数百公里无盲区覆盖"
+  },
+  "信标台": {
+    "en": "Beacon",
+    "category": "传播",
+    "desc": "按固定频率和格式持续发射识别信号的无人值守电台，业余爱好者据此判断电波传播状况",
+    "aliases": [
+      "信标"
+    ]
+  },
+  "业余卫星": {
+    "abbr": "OSCAR",
+    "en": "Orbiting Satellite Carrying Amateur Radio",
+    "category": "传播",
+    "desc": "携带业余无线电转发器的卫星，OSCAR 是业余卫星的统一编号名称"
+  },
+  "AMSAT": {
+    "en": "Radio Amateur Satellite Corporation",
+    "category": "传播",
+    "desc": "业余卫星组织，负责业余卫星的研制、发射与运营协调"
+  },
+  "近地轨道": {
+    "abbr": "LEO",
+    "en": "Low Earth Orbit",
+    "category": "传播",
+    "desc": "高度约 2000km 以下的卫星轨道，大多数业余卫星位于此轨道，每次过境仅十几分钟",
+    "aliases": [
+      "低轨道"
+    ]
+  },
+  "线性转发器": {
+    "en": "Linear Transponder",
+    "category": "传播",
+    "desc": "把一段频率内的所有信号整体转发的卫星转发器，可同时支持多组 SSB 和 CW 通联"
+  },
+  "多普勒效应": {
+    "en": "Doppler Effect",
+    "category": "传播",
+    "desc": "信号源与接收者相对运动时接收频率发生偏移的现象，卫星通信中需要随时修正频率",
+    "aliases": [
+      "多普勒频移"
+    ]
+  },
+  "上行": {
+    "en": "Uplink",
+    "category": "传播",
+    "desc": "地面电台发往卫星或中继台的方向和频率",
+    "aliases": [
+      "上行频率"
+    ]
+  },
+  "下行": {
+    "en": "Downlink",
+    "category": "传播",
+    "desc": "卫星或中继台发往地面电台的方向和频率",
+    "aliases": [
+      "下行频率"
+    ]
+  },
+  "立方星": {
+    "en": "CubeSat",
+    "category": "传播",
+    "desc": "以 10 厘米立方体为基本单元的小型卫星，许多业余卫星采用这种形式"
+  },
+  "国际空间站业余无线电": {
+    "abbr": "ARISS",
+    "en": "Amateur Radio on the International Space Station",
+    "category": "传播",
+    "desc": "国际空间站上的业余无线电项目，常开展航天员与学生通联和 SSTV 活动，下行常用 145.800MHz",
+    "aliases": [
+      "ISS"
+    ]
+  }
+}

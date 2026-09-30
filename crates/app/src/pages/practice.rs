@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
+use ham_web_core::categories::top_of;
 use ham_web_core::exam::shuffle_in_place;
 use ham_web_core::practice::{PracticeOrder, find_jump_target, search, unique_to_bank};
 use ham_web_core::saved_state::{PracticeSavedState, keys};
@@ -12,7 +13,7 @@ use ham_web_core::{Bank, QuestionItem};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::NavigateOptions;
-use leptos_router::hooks::use_navigate;
+use leptos_router::hooks::{use_navigate, use_query_map};
 
 use super::{DEFAULT_TITLE, bank_href, use_bank_query, use_no_site_footer};
 use crate::cn::cn;
@@ -152,8 +153,27 @@ pub fn PracticePage() -> impl IntoView {
   set_title(DEFAULT_TITLE);
   use_no_site_footer();
   let (version, bank) = use_bank_query();
+  let query = use_query_map();
+  let topic = Memo::new(move |_| query.with(|q| q.get("topic")).filter(|t| !t.is_empty()));
   let navigate = use_navigate();
   let store = PracticeStore::new();
+
+  // 收藏状态（跟随当前题）
+  let bookmarked = RwSignal::new(false);
+  Effect::new(move |_| {
+    let Some((i, q)) = store.current() else {
+      return;
+    };
+    let id = q.stable_id().unwrap_or_else(|| q.answer_key(i));
+    bookmarked.set(store::is_bookmarked(&id));
+  });
+  let toggle_bookmark = move || {
+    let Some((i, q)) = store.current() else {
+      return;
+    };
+    let id = q.stable_id().unwrap_or_else(|| q.answer_key(i));
+    bookmarked.set(store::toggle_bookmark(&id));
+  };
 
   let jump_input = RwSignal::new(String::new());
   let resume_open = RwSignal::new(false);
@@ -190,6 +210,7 @@ pub fn PracticePage() -> impl IntoView {
   // 加载题库（题库类别 / 版本 / 「只看本类新增」变化时重新加载）
   Effect::new(move |_| {
     let (v, b, unique) = (version.get(), bank.get(), unique_only.get());
+    let topic_val = topic.get();
     store.reset();
     pending.set(None);
     resume_open.set(false);
@@ -202,15 +223,34 @@ pub fn PracticePage() -> impl IntoView {
       }
       match result {
         Ok(qs) => {
-          store.load(qs);
-          let last = store::load_last_mode();
-          if let Some(mode) = last
-            && mode != PracticeOrder::Sequential
-          {
-            store.set_order(mode);
-          }
-          if last != Some(PracticeOrder::Random) {
-            try_prompt_resume();
+          // 专项练习：按一级分类过滤，随机顺序、不提示恢复。
+          let filtered: Questions = match topic_val.as_deref() {
+            Some(t) => Arc::new(
+              qs.iter()
+                .filter(|q| {
+                  q.p_code()
+                    .and_then(top_of)
+                    .map(|top| top.key == t)
+                    .unwrap_or(false)
+                })
+                .cloned()
+                .collect(),
+            ),
+            None => qs,
+          };
+          store.load(filtered);
+          if topic_val.is_some() {
+            store.set_order(PracticeOrder::Random);
+          } else {
+            let last = store::load_last_mode();
+            if let Some(mode) = last
+              && mode != PracticeOrder::Sequential
+            {
+              store.set_order(mode);
+            }
+            if last != Some(PracticeOrder::Random) {
+              try_prompt_resume();
+            }
           }
         }
         Err(_) => {
@@ -449,7 +489,7 @@ pub fn PracticePage() -> impl IntoView {
       return view! { <div class="p-6">"题库暂不可用或为空"</div> }.into_any();
     }
     view! {
-      <div class="container mx-auto px-4 py-6 max-w-4xl space-y-4 pb-24 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+      <div class="container mx-auto px-4 py-6 max-w-5xl space-y-4 pb-24 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
         <QuestionProgressHeader
           percent=percent
           left=move || {
@@ -483,6 +523,20 @@ pub fn PracticePage() -> impl IntoView {
           }
           right=move || {
             view! {
+              <button
+                class=button_class(Variant::Outline, Size::Icon, "")
+                aria-label="收藏"
+                title=move || if bookmarked.get() { "取消收藏" } else { "收藏本题" }
+                on:click=move |_| toggle_bookmark()
+              >
+                {move || {
+                  if bookmarked.get() {
+                    view! { <Icon kind=IconKind::BookMarked class="h-4 w-4" /> }
+                  } else {
+                    view! { <Icon kind=IconKind::Bookmark class="h-4 w-4" /> }
+                  }
+                }}
+              </button>
               {move || {
                 (store.order.get() == PracticeOrder::Sequential)
                   .then(|| {

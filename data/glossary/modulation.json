@@ -1,0 +1,329 @@
+{
+  "单边带": {
+    "abbr": "SSB",
+    "en": "Single Sideband",
+    "category": "调制",
+    "desc": "只发送调幅信号里上边带或下边带其中一半的省带宽方式，即 SSB",
+    "inject": true
+  },
+  "上边带": {
+    "abbr": "USB",
+    "en": "Upper Sideband",
+    "category": "调制",
+    "desc": "调幅信号里、比载波频率高的那一半信号",
+    "inject": true
+  },
+  "下边带": {
+    "abbr": "LSB",
+    "en": "Lower Sideband",
+    "category": "调制",
+    "desc": "调幅信号里、比载波频率低的那一半信号",
+    "inject": true
+  },
+  "边带": {
+    "en": "Sideband",
+    "category": "调制",
+    "desc": "调制后，在载波两边多出来的那两段信号",
+    "inject": true
+  },
+  "载波": {
+    "en": "Carrier",
+    "category": "调制",
+    "desc": "被声音等信息骑在上面的那个高频电波",
+    "inject": true
+  },
+  "主载波": {
+    "en": "Main Carrier",
+    "category": "调制",
+    "desc": "被声音等信息骑在上面的那个高频电波",
+    "see": "载波",
+    "inject": true
+  },
+  "频偏": {
+    "en": "Frequency Deviation",
+    "category": "调制",
+    "desc": "调频时，电波频率偏离中心频率的最大幅度",
+    "inject": true
+  },
+  "等幅电报": {
+    "abbr": "CW",
+    "en": "Continuous Wave",
+    "category": "调制",
+    "desc": "幅度始终不变的连续波，就是莫尔斯电报嘀嗒信号的载体",
+    "inject": true
+  },
+  "减幅波": {
+    "en": "Damped Wave",
+    "category": "调制",
+    "desc": "幅度越来越小的振荡波，会干扰正常通信",
+    "inject": true
+  },
+  "包络": {
+    "en": "Envelope",
+    "category": "调制",
+    "desc": "调制后，载波幅度形成的轮廓",
+    "inject": true
+  },
+  "调制": {
+    "en": "Modulation",
+    "category": "调制",
+    "desc": "把声音等信息装载到高频电波上的过程",
+    "inject": true
+  },
+  "解调": {
+    "en": "Demodulation",
+    "category": "调制",
+    "desc": "把声音等信息从高频电波里还原出来的过程",
+    "inject": true
+  },
+  "调频": {
+    "abbr": "FM",
+    "en": "Frequency Modulation",
+    "category": "调制",
+    "desc": "让电波的频率随声音高低变化的调制方式，即 FM",
+    "inject": true
+  },
+  "调幅": {
+    "abbr": "AM",
+    "en": "Amplitude Modulation",
+    "category": "调制",
+    "desc": "让电波的幅度随声音大小变化的调制方式，即 AM",
+    "inject": true
+  },
+  "带宽": {
+    "abbr": "BW",
+    "en": "Bandwidth",
+    "category": "调制",
+    "desc": "信号占用的频率范围的宽度",
+    "inject": true
+  },
+  "发射类别": {
+    "en": "Class of Emission",
+    "category": "调制",
+    "desc": "用三个字符标示发射特性，第一个表示主载波调制方式，第二个表示调制信号性质，第三个表示所传信息类型，如 J3E、F3E",
+    "aliases": [
+      "发射标识"
+    ]
+  },
+  "J3E": {
+    "en": "SSB Telephony, Suppressed Carrier",
+    "category": "调制",
+    "desc": "抑制载波的单边带调幅话音，即常说的 SSB 话"
+  },
+  "A3E": {
+    "en": "Double-Sideband AM Telephony",
+    "category": "调制",
+    "desc": "双边带调幅话音，即普通的 AM 调幅话"
+  },
+  "F3E": {
+    "en": "FM Telephony",
+    "category": "调制",
+    "desc": "调频话音，VHF/UHF 手台和中继台最常用"
+  },
+  "A1A": {
+    "en": "CW Telegraphy",
+    "category": "调制",
+    "desc": "等幅电报，靠人耳接收的莫尔斯电报"
+  },
+  "F1B": {
+    "en": "FSK Telegraphy",
+    "category": "调制",
+    "desc": "频移键控电报，由机器自动接收，如 RTTY"
+  },
+  "G3E": {
+    "en": "Phase Modulation Telephony",
+    "category": "调制",
+    "desc": "调相话音，许多所谓调频电台实际采用的就是这种方式"
+  },
+  "调相": {
+    "abbr": "PM",
+    "en": "Phase Modulation",
+    "category": "调制",
+    "desc": "让载波相位随调制信号变化的调制方式"
+  },
+  "双边带": {
+    "abbr": "DSB",
+    "en": "Double Sideband",
+    "category": "调制",
+    "desc": "保留上下两个边带的调幅信号，占用带宽约为音频最高频率的 2 倍"
+  },
+  "抑制载波": {
+    "en": "Suppressed Carrier",
+    "category": "调制",
+    "desc": "发射时去掉载波成分以节省功率，SSB 即抑制载波并只保留一个边带"
+  },
+  "过调制": {
+    "en": "Overmodulation",
+    "category": "调制",
+    "desc": "调制信号过强、调幅度超过 100%，会产生失真和邻道干扰"
+  },
+  "调幅度": {
+    "en": "Modulation Depth",
+    "category": "调制",
+    "desc": "调幅信号幅度变化的程度，通常用百分比表示，超过 100% 即为过调制",
+    "aliases": [
+      "调制度"
+    ]
+  },
+  "调制指数": {
+    "en": "Modulation Index",
+    "category": "调制",
+    "desc": "调频时频偏与调制信号频率之比，决定调频信号的带宽"
+  },
+  "必要带宽": {
+    "en": "Necessary Bandwidth",
+    "category": "调制",
+    "desc": "在给定发射类别下，恰好保证信息以要求的速率和质量传输所需的带宽",
+    "aliases": [
+      "占用带宽"
+    ]
+  },
+  "频移键控": {
+    "abbr": "FSK",
+    "en": "Frequency Shift Keying",
+    "category": "调制",
+    "desc": "让载波频率在两个或多个值之间切换来传送数字信息",
+    "aliases": [
+      "频移电报"
+    ]
+  },
+  "音频频移键控": {
+    "abbr": "AFSK",
+    "en": "Audio Frequency Shift Keying",
+    "category": "调制",
+    "desc": "用两个音频音调表示数字 0 和 1，再送入话音发射机发出，APRS 和分组通信常用"
+  },
+  "相移键控": {
+    "abbr": "PSK",
+    "en": "Phase Shift Keying",
+    "category": "调制",
+    "desc": "用载波相位变化传送数字信息的调制方式",
+    "aliases": [
+      "BPSK",
+      "QPSK"
+    ]
+  },
+  "正交幅度调制": {
+    "abbr": "QAM",
+    "en": "Quadrature Amplitude Modulation",
+    "category": "调制",
+    "desc": "同时改变载波幅度和相位来传送更多数据的调制方式"
+  },
+  "正交频分复用": {
+    "abbr": "OFDM",
+    "en": "Orthogonal Frequency Division Multiplexing",
+    "category": "调制",
+    "desc": "把数据分散到许多相互正交的子载波上并行传输，抗多径能力强"
+  },
+  "无线电传": {
+    "abbr": "RTTY",
+    "en": "Radio Teletype",
+    "category": "调制",
+    "desc": "用频移键控传送文字的数字模式，业余常用 45.45 波特、频移 170Hz",
+    "aliases": [
+      "电传"
+    ]
+  },
+  "慢扫描电视": {
+    "abbr": "SSTV",
+    "en": "Slow Scan Television",
+    "category": "调制",
+    "desc": "在话音带宽内逐行传送静止图像的方式，国际空间站常开展 SSTV 活动"
+  },
+  "数字业余电视": {
+    "abbr": "DATV",
+    "en": "Digital Amateur Television",
+    "category": "调制",
+    "desc": "把视频压缩后以数字方式发送的业余电视，常用 DVB-S 或 DVB-S2 标准"
+  },
+  "自动位置报告系统": {
+    "abbr": "APRS",
+    "en": "Automatic Packet Reporting System",
+    "category": "调制",
+    "desc": "通过分组数据自动上报位置和短信息的系统，国内常用频率为 144.640MHz"
+  },
+  "分组无线电": {
+    "en": "Packet Radio",
+    "category": "调制",
+    "desc": "把数据分成带地址的数据包进行传输的通信方式，常用 AX.25 协议",
+    "aliases": [
+      "分组通信"
+    ]
+  },
+  "FT8": {
+    "en": "Franke-Taylor 8-FSK",
+    "category": "调制",
+    "desc": "15 秒一个周期的弱信号数字模式，占用约 50Hz 带宽，能在很弱的信号下完成简短通联"
+  },
+  "JT65": {
+    "en": "Joe Taylor 65-FSK",
+    "category": "调制",
+    "desc": "1 分钟一个周期的弱信号数字模式，常用于 EME 月面反射和 HF 小功率通联"
+  },
+  "PSK31": {
+    "en": "Phase Shift Keying, 31 Baud",
+    "category": "调制",
+    "desc": "31.25 波特的窄带相移键控文字聊天模式，带宽仅约 31Hz"
+  },
+  "D-STAR": {
+    "en": "Digital Smart Technologies for Amateur Radio",
+    "category": "调制",
+    "desc": "日本业余无线电联盟制定的数字语音与数据标准，支持中继台联网"
+  },
+  "DMR": {
+    "en": "Digital Mobile Radio",
+    "category": "调制",
+    "desc": "欧洲电信标准协会制定的数字对讲标准，采用时分多址，一个 12.5kHz 信道可同时传两路语音"
+  },
+  "System Fusion": {
+    "abbr": "YSF",
+    "en": "Yaesu System Fusion",
+    "category": "调制",
+    "desc": "八重洲推出的数字语音系统，采用 C4FM 调制，可与模拟调频兼容",
+    "aliases": [
+      "融合"
+    ]
+  },
+  "C4FM": {
+    "en": "Continuous 4-Level FM",
+    "category": "调制",
+    "desc": "四电平连续调频，一种数字调制方式，System Fusion 即采用此方式"
+  },
+  "FreeDV": {
+    "en": "Free Digital Voice",
+    "category": "调制",
+    "desc": "基于开源 Codec2 声码器的数字语音模式，可在 HF 窄带中传输数字话音"
+  },
+  "声码器": {
+    "en": "Vocoder",
+    "category": "调制",
+    "desc": "把话音压缩成低速率数字数据的编解码器，如 D-STAR 和 DMR 使用的 AMBE",
+    "aliases": [
+      "AMBE",
+      "Codec2"
+    ]
+  },
+  "波特": {
+    "abbr": "Bd",
+    "en": "Baud",
+    "category": "调制",
+    "desc": "每秒传输的符号数，是数字信号的调制速率单位",
+    "aliases": [
+      "波特率"
+    ]
+  },
+  "比特率": {
+    "abbr": "bps",
+    "en": "Bit Rate",
+    "category": "调制",
+    "desc": "每秒传输的二进制位数"
+  },
+  "预加重": {
+    "en": "Pre-emphasis",
+    "category": "调制",
+    "desc": "调频发射时提升音频高音部分，接收时再用去加重恢复，从而改善信噪比",
+    "aliases": [
+      "去加重"
+    ]
+  }
+}

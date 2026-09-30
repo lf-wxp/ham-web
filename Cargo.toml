@@ -4,7 +4,7 @@ members = ["crates/core", "crates/app", "crates/server", "crates/tools"]
 default-members = ["crates/core", "crates/server", "crates/tools"]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.88"
 license = "MIT"
@@ -32,7 +32,9 @@ send_wrapper = "0.6"
 
 # server
 axum = "0.8"
-tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "net", "signal", "io-util"] }
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
+sgp4 = "2"
+tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "net", "signal", "io-util", "sync"] }
 tower = "0.5"
 tower-http = { version = "0.7", features = ["fs", "compression-gzip", "compression-br", "set-header", "trace"] }
 tracing = "0.1"
@@ -45,7 +47,6 @@ ureq = "3"
 resvg = "0.48"
 sha2 = "0.11"
 walkdir = "2"
-chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

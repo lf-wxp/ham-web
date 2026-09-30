@@ -1,0 +1,580 @@
+{
+  "CQ": {
+    "en": "Calling Any Station",
+    "category": "用语",
+    "desc": "普遍呼叫，表示呼叫任何电台，CQ DX 表示只呼叫远方电台",
+    "aliases": [
+      "普遍呼叫",
+      "CQ DX"
+    ]
+  },
+  "DX": {
+    "en": "Long Distance",
+    "category": "用语",
+    "desc": "远距离通联或远方电台，HF 上通常指其他大洲或稀有地区的电台"
+  },
+  "RST": {
+    "en": "Readability, Strength, Tone",
+    "category": "用语",
+    "desc": "信号报告，R 为可懂度 1–5，S 为强度 1–9，T 为音调 1–9 且仅用于 CW，话音报告如 59，CW 报告如 599",
+    "aliases": [
+      "信号报告"
+    ]
+  },
+  "字母解释法": {
+    "en": "Phonetic Alphabet",
+    "category": "用语",
+    "desc": "用固定单词代表字母以避免听错，如 A Alfa、B Bravo、C Charlie，话音通联拼读呼号时使用",
+    "aliases": [
+      "语音字母",
+      "ITU 拼读字母"
+    ]
+  },
+  "莫尔斯电码": {
+    "en": "Morse Code",
+    "category": "用语",
+    "desc": "用长短不同的点划组合表示字母和数字的编码，是 CW 通信的基础",
+    "aliases": [
+      "摩尔斯电码",
+      "电码"
+    ]
+  },
+  "WPM": {
+    "en": "Words Per Minute",
+    "category": "用语",
+    "desc": "每分钟发送的单词数，是衡量 CW 收发速度的单位"
+  },
+  "SOS": {
+    "en": "Distress Signal",
+    "category": "用语",
+    "desc": "国际通用的莫尔斯遇险信号，发送为嘀嘀嘀嗒嗒嗒嘀嘀嘀，听到后应立即停止其他通信并协助",
+    "aliases": [
+      "遇险信号"
+    ]
+  },
+  "MAYDAY": {
+    "en": "Mayday",
+    "category": "用语",
+    "desc": "话音通信中的遇险呼叫用语，连呼三遍，表示生命或船舶航空器面临严重紧急危险"
+  },
+  "QLF": {
+    "en": "Poor Keying / Fist",
+    "category": "用语",
+    "desc": "发报手法差、键控不熟练，业余界惯用语",
+    "common": false
+  },
+  "QRA": {
+    "en": "Name of Station",
+    "category": "用语",
+    "desc": "问你台的名称是什么，答我台的名称是某某"
+  },
+  "QRB": {
+    "en": "Distance Between Stations",
+    "category": "用语",
+    "desc": "两电台之间的距离",
+    "common": false
+  },
+  "QRD": {
+    "en": "Where Are You Bound",
+    "category": "用语",
+    "desc": "你从哪里来、要到哪里去",
+    "common": false
+  },
+  "QRG": {
+    "en": "Exact Frequency",
+    "category": "用语",
+    "desc": "你台的准确频率是多少，答我台的频率是…",
+    "common": false
+  },
+  "QRH": {
+    "en": "Frequency Varies",
+    "category": "用语",
+    "desc": "我的频率是否有漂移，答你的频率有漂移",
+    "common": false
+  },
+  "QRI": {
+    "en": "Tone of Transmission",
+    "category": "用语",
+    "desc": "我的发射音调如何，答你的音调…",
+    "common": false
+  },
+  "QRK": {
+    "en": "Readability",
+    "category": "用语",
+    "desc": "问我的信号可懂度如何，答你的信号可懂度为 1–5 级"
+  },
+  "QRL": {
+    "en": "Busy",
+    "category": "用语",
+    "desc": "问你忙吗，答我正忙请勿干扰，业余通联中常用来询问频率是否已被占用"
+  },
+  "QRM": {
+    "en": "Man-made Interference",
+    "category": "用语",
+    "desc": "人为干扰，指其他电台或电气设备造成的干扰"
+  },
+  "QRN": {
+    "en": "Static",
+    "category": "用语",
+    "desc": "天电干扰，指雷电等自然现象产生的噪声"
+  },
+  "QRO": {
+    "en": "Increase Power",
+    "category": "用语",
+    "desc": "增加发射功率，业余中也泛指大功率工作"
+  },
+  "QRP": {
+    "en": "Reduce Power",
+    "category": "用语",
+    "desc": "降低发射功率，业余中也指小功率通信，CW 通常不超过 5W"
+  },
+  "QRQ": {
+    "en": "Send Faster",
+    "category": "用语",
+    "desc": "请发快一点"
+  },
+  "QRS": {
+    "en": "Send Slower",
+    "category": "用语",
+    "desc": "请发慢一点"
+  },
+  "QRT": {
+    "en": "Stop Sending",
+    "category": "用语",
+    "desc": "停止发送，也常表示准备关机下线"
+  },
+  "QRU": {
+    "en": "Nothing for You",
+    "category": "用语",
+    "desc": "问你有什么要给我的吗，答我没有什么要给你的"
+  },
+  "QRV": {
+    "en": "Ready",
+    "category": "用语",
+    "desc": "我已准备好"
+  },
+  "QRW": {
+    "en": "Relay To",
+    "category": "用语",
+    "desc": "请转告…",
+    "common": false
+  },
+  "QRX": {
+    "en": "Wait",
+    "category": "用语",
+    "desc": "请等待，稍后再叫我"
+  },
+  "QRZ": {
+    "en": "Who Is Calling Me",
+    "category": "用语",
+    "desc": "谁在呼叫我，常用于没听清对方呼号时"
+  },
+  "QSA": {
+    "en": "Signal Strength",
+    "category": "用语",
+    "desc": "我的信号强度如何，答你的信号强度为 1–5 级",
+    "common": false
+  },
+  "QSB": {
+    "en": "Fading",
+    "category": "用语",
+    "desc": "信号衰落，信号强度时强时弱"
+  },
+  "QSD": {
+    "en": "Keying Defective",
+    "category": "用语",
+    "desc": "我的键控是否有缺陷，答你的键控有缺陷",
+    "common": false
+  },
+  "QSK": {
+    "en": "Full Break-In",
+    "category": "用语",
+    "desc": "全插入，能否在所发电码的间隙中接收信号",
+    "common": false
+  },
+  "QSL": {
+    "en": "Acknowledge Receipt",
+    "category": "用语",
+    "desc": "确认收妥，也指通联确认卡片"
+  },
+  "QSM": {
+    "en": "Repeat Last Message",
+    "category": "用语",
+    "desc": "请重复最后一条消息",
+    "common": false
+  },
+  "QSN": {
+    "en": "I Heard You",
+    "category": "用语",
+    "desc": "我听到你了",
+    "common": false
+  },
+  "QSO": {
+    "en": "Contact",
+    "category": "用语",
+    "desc": "与某电台进行的双向联络，一次完整通联称为一个 QSO",
+    "aliases": [
+      "联络"
+    ]
+  },
+  "QSP": {
+    "en": "Relay",
+    "category": "用语",
+    "desc": "代为转发消息"
+  },
+  "QST": {
+    "en": "General Call to All Amateurs",
+    "category": "用语",
+    "desc": "致全体业余电台的通告"
+  },
+  "QSV": {
+    "en": "Send a Series of V",
+    "category": "用语",
+    "desc": "请发送一连串 V 用于调试",
+    "common": false
+  },
+  "QSX": {
+    "en": "Listen On Frequency",
+    "category": "用语",
+    "desc": "请在…频率守听",
+    "common": false
+  },
+  "QSY": {
+    "en": "Change Frequency",
+    "category": "用语",
+    "desc": "改变频率，如 QSY 145.500 表示转到该频率继续通联"
+  },
+  "QSZ": {
+    "en": "Repeat Each Word or Group",
+    "category": "用语",
+    "desc": "请把每个词或组重复发送多次",
+    "common": false
+  },
+  "QTC": {
+    "en": "Telegrams to Send",
+    "category": "用语",
+    "desc": "你有多少电报要发，答我有…份电报",
+    "common": false
+  },
+  "QTH": {
+    "en": "Location",
+    "category": "用语",
+    "desc": "电台所在位置"
+  },
+  "QTR": {
+    "en": "Exact Time",
+    "category": "用语",
+    "desc": "准确时间"
+  },
+  "QTU": {
+    "en": "Hours of Operation",
+    "category": "用语",
+    "desc": "你台的工作时段是什么，答我台开放时段为…",
+    "common": false
+  },
+  "QTX": {
+    "en": "Keep Station Open",
+    "category": "用语",
+    "desc": "请保持联系直到…",
+    "common": false
+  },
+  "73": {
+    "en": "Best Regards",
+    "category": "用语",
+    "desc": "致以良好祝愿，通联结束时的问候语"
+  },
+  "88": {
+    "en": "Love and Kisses",
+    "category": "用语",
+    "desc": "爱与吻，一般用于对女性业余爱好者的问候，使用时需注意场合"
+  },
+  "DE": {
+    "en": "From / This Is",
+    "category": "用语",
+    "desc": "这里是、来自，用于连接对方呼号和本台呼号，如 BA1AA DE BG4XX"
+  },
+  "K": {
+    "en": "Over / Go Ahead",
+    "category": "用语",
+    "desc": "请发，邀请任何电台回答"
+  },
+  "KN": {
+    "en": "Go Ahead, Named Station Only",
+    "category": "用语",
+    "desc": "请发，只邀请指定电台回答，其他电台请勿插入"
+  },
+  "AR": {
+    "en": "End of Message",
+    "category": "用语",
+    "desc": "报文结束，CW 中两个字母连发、中间不留间隔"
+  },
+  "SK": {
+    "en": "End of Contact",
+    "category": "用语",
+    "desc": "通联结束"
+  },
+  "BK": {
+    "en": "Break",
+    "category": "用语",
+    "desc": "插话或打断，用于快速交换发送权"
+  },
+  "R": {
+    "en": "Roger",
+    "category": "用语",
+    "desc": "收到、已抄收",
+    "aliases": [
+      "Roger"
+    ]
+  },
+  "TNX": {
+    "en": "Thanks",
+    "category": "用语",
+    "desc": "谢谢",
+    "aliases": [
+      "TKS"
+    ]
+  },
+  "PSE": {
+    "en": "Please",
+    "category": "用语",
+    "desc": "请"
+  },
+  "FB": {
+    "en": "Fine Business",
+    "category": "用语",
+    "desc": "很好、非常好"
+  },
+  "OM": {
+    "en": "Old Man",
+    "category": "用语",
+    "desc": "老朋友，对男性业余爱好者的称呼"
+  },
+  "YL": {
+    "en": "Young Lady",
+    "category": "用语",
+    "desc": "女性业余爱好者"
+  },
+  "XYL": {
+    "en": "Ex-Young Lady",
+    "category": "用语",
+    "desc": "妻子"
+  },
+  "HI": {
+    "en": "Laughter",
+    "category": "用语",
+    "desc": "笑声，CW 中表示哈哈"
+  },
+  "UR": {
+    "en": "Your",
+    "category": "用语",
+    "desc": "你的，如 UR RST 599"
+  },
+  "HR": {
+    "en": "Here",
+    "category": "用语",
+    "desc": "这里"
+  },
+  "WX": {
+    "en": "Weather",
+    "category": "用语",
+    "desc": "天气"
+  },
+  "RIG": {
+    "en": "Radio Equipment",
+    "category": "用语",
+    "desc": "电台设备"
+  },
+  "ANT": {
+    "en": "Antenna",
+    "category": "用语",
+    "desc": "天线"
+  },
+  "CUL": {
+    "en": "See You Later",
+    "category": "用语",
+    "desc": "回头见"
+  },
+  "GL": {
+    "en": "Good Luck",
+    "category": "用语",
+    "desc": "祝好运"
+  },
+  "ES": {
+    "en": "And",
+    "category": "用语",
+    "desc": "和、以及"
+  },
+  "OP": {
+    "en": "Operator",
+    "category": "用语",
+    "desc": "操作员"
+  },
+  "ABT": {
+    "en": "About",
+    "category": "用语",
+    "desc": "关于",
+    "common": false
+  },
+  "AGN": {
+    "en": "Again",
+    "category": "用语",
+    "desc": "再次、再说一遍",
+    "common": false
+  },
+  "AS": {
+    "en": "Wait",
+    "category": "用语",
+    "desc": "请等待，CW 中作为操作符号连发、中间不留间隔",
+    "common": false
+  },
+  "B4": {
+    "en": "Before",
+    "category": "用语",
+    "desc": "之前、早于",
+    "common": false
+  },
+  "CFM": {
+    "en": "Confirm",
+    "category": "用语",
+    "desc": "确认",
+    "common": false
+  },
+  "CL": {
+    "en": "Closing Station",
+    "category": "用语",
+    "desc": "关机，表示结束工作，CW 中作为操作符号连发",
+    "common": false
+  },
+  "CPY": {
+    "en": "Copy",
+    "category": "用语",
+    "desc": "抄收、复制",
+    "common": false
+  },
+  "CU": {
+    "en": "See You",
+    "category": "用语",
+    "desc": "再见",
+    "common": false
+  },
+  "GE": {
+    "en": "Good Evening",
+    "category": "用语",
+    "desc": "晚上好",
+    "common": false
+  },
+  "GM": {
+    "en": "Good Morning",
+    "category": "用语",
+    "desc": "早上好",
+    "common": false
+  },
+  "GN": {
+    "en": "Good Night",
+    "category": "用语",
+    "desc": "晚安",
+    "common": false
+  },
+  "GND": {
+    "en": "Ground",
+    "category": "用语",
+    "desc": "接地",
+    "common": false
+  },
+  "HW": {
+    "en": "How",
+    "category": "用语",
+    "desc": "如何、怎么样",
+    "common": false
+  },
+  "NIL": {
+    "en": "Nothing",
+    "category": "用语",
+    "desc": "无、没有",
+    "common": false
+  },
+  "NR": {
+    "en": "Number",
+    "category": "用语",
+    "desc": "编号、号码",
+    "common": false
+  },
+  "RPT": {
+    "en": "Repeat",
+    "category": "用语",
+    "desc": "重复、请重复",
+    "common": false
+  },
+  "SRI": {
+    "en": "Sorry",
+    "category": "用语",
+    "desc": "抱歉",
+    "common": false
+  },
+  "VY": {
+    "en": "Very",
+    "category": "用语",
+    "desc": "非常",
+    "common": false
+  },
+  "WKD": {
+    "en": "Worked",
+    "category": "用语",
+    "desc": "已通联过",
+    "common": false
+  },
+  "GD": {
+    "en": "Good",
+    "category": "用语",
+    "desc": "好",
+    "common": false
+  },
+  "GB": {
+    "en": "Goodbye",
+    "category": "用语",
+    "desc": "再见",
+    "common": false
+  },
+  "CUAGN": {
+    "en": "See You Again",
+    "category": "用语",
+    "desc": "下次再见",
+    "common": false
+  },
+  "HPE": {
+    "en": "Hope",
+    "category": "用语",
+    "desc": "希望",
+    "common": false
+  },
+  "FER": {
+    "en": "For",
+    "category": "用语",
+    "desc": "为了、关于",
+    "common": false
+  },
+  "MNY": {
+    "en": "Many",
+    "category": "用语",
+    "desc": "许多",
+    "common": false
+  },
+  "TMW": {
+    "en": "Tomorrow",
+    "category": "用语",
+    "desc": "明天",
+    "common": false
+  },
+  "VE": {
+    "en": "Verified",
+    "category": "用语",
+    "desc": "已收到并理解，CW 中作为操作符号连发",
+    "common": false
+  },
+  "SN": {
+    "en": "Understood",
+    "category": "用语",
+    "desc": "已理解，CW 中作为操作符号连发",
+    "common": false
+  }
+}

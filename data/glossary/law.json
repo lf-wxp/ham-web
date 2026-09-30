@@ -1,0 +1,119 @@
+{
+  "业余业务": {
+    "en": "Amateur Service",
+    "category": "法规",
+    "desc": "国际电联定义的一种无线电业务，供经正式批准、对无线电技术有兴趣的人进行自我训练、相互通信和技术研究，不得用于谋取商业利益"
+  },
+  "卫星业余业务": {
+    "en": "Amateur-Satellite Service",
+    "category": "法规",
+    "desc": "利用地球卫星上的空间电台开展的业余业务，业余卫星通信即属于这一业务"
+  },
+  "业余无线电台": {
+    "en": "Amateur Radio Station",
+    "category": "法规",
+    "desc": "业余业务和卫星业余业务中使用的电台，设置和使用须取得无线电管理机构核发的执照",
+    "aliases": [
+      "业余电台"
+    ]
+  },
+  "电台执照": {
+    "en": "Station License",
+    "category": "法规",
+    "desc": "无线电管理机构核发的准许设置和使用业余无线电台的凭证，有效期不超过 5 年，届满 30 个工作日前申请换发",
+    "aliases": [
+      "业余无线电台执照"
+    ]
+  },
+  "操作技术能力验证": {
+    "en": "Operating Proficiency Verification",
+    "category": "法规",
+    "desc": "取得业余电台操作资格的考核，分 A、B、C 三类，类别越高允许使用的频率范围和发射功率越大",
+    "aliases": [
+      "操作证",
+      "能力验证"
+    ]
+  },
+  "呼号": {
+    "en": "Call Sign",
+    "category": "法规",
+    "desc": "业余电台的唯一身份标识，由管理机构随执照一并核发，通联建立和结束时都要发送，通联过程中至少每 10 分钟发送一次"
+  },
+  "分区号": {
+    "en": "Call Area Digit",
+    "category": "法规",
+    "desc": "我国业余电台呼号中的数字，表示电台所在地区，例如 1 代表北京、4 代表上海山东江苏、0 代表新疆西藏"
+  },
+  "呼号前缀": {
+    "en": "Call Sign Prefix",
+    "category": "法规",
+    "desc": "呼号开头的字母数字组合，由国际电联分配给各国家和地区，中国使用 B 开头的前缀，据此可判断电台所属国家"
+  },
+  "国际电信联盟": {
+    "abbr": "ITU",
+    "en": "International Telecommunication Union",
+    "category": "法规",
+    "desc": "联合国负责信息通信技术的专门机构，制定《无线电规则》并协调全球频率划分",
+    "aliases": [
+      "国际电联"
+    ]
+  },
+  "无线电规则": {
+    "abbr": "RR",
+    "en": "Radio Regulations",
+    "category": "法规",
+    "desc": "国际电联制定、具有国际条约效力的无线电频谱与卫星轨道使用规则，各国频率划分以此为基础"
+  },
+  "国际业余无线电联盟": {
+    "abbr": "IARU",
+    "en": "International Amateur Radio Union",
+    "category": "法规",
+    "desc": "各国业余无线电组织的国际联合体，代表业余界参与国际电联事务，并制定各区域的波段规划"
+  },
+  "中国无线电协会业余无线电分会": {
+    "abbr": "CRAC",
+    "en": "Chinese Radio Amateurs Club",
+    "category": "法规",
+    "desc": "我国全国性的业余无线电组织，代表我国参加国际业余无线电联盟"
+  },
+  "无线电管理机构": {
+    "en": "Radio Regulatory Authority",
+    "category": "法规",
+    "desc": "依法负责无线电频率、电台和设备管理的政府部门，国家层面为工业和信息化部，地方为省级无线电管理机构"
+  },
+  "有害干扰": {
+    "en": "Harmful Interference",
+    "category": "法规",
+    "desc": "危害无线电导航或安全业务正常运行，或严重损害、阻碍、一再阻断依法开展的无线电业务的干扰"
+  },
+  "主要业务": {
+    "en": "Primary Service",
+    "category": "法规",
+    "desc": "频率划分表中享有优先地位的业务，次要业务不得对其产生有害干扰"
+  },
+  "次要业务": {
+    "en": "Secondary Service",
+    "category": "法规",
+    "desc": "频率划分表中处于从属地位的业务，不得干扰主要业务，也不能要求主要业务给予保护，不少业余频段属于次要业务"
+  },
+  "频率划分": {
+    "en": "Frequency Allocation",
+    "category": "法规",
+    "desc": "把某个频段列入频率划分表，规定由一种或多种业务在指定条件下使用，是频率管理的第一层次"
+  },
+  "频率分配": {
+    "en": "Frequency Allotment",
+    "category": "法规",
+    "desc": "把划分给某种业务的频率进一步规定给一个或多个部门在指定区域内使用"
+  },
+  "频率指配": {
+    "en": "Frequency Assignment",
+    "category": "法规",
+    "desc": "无线电管理机构批准具体电台使用某一频率或频道"
+  },
+  "应急通信": {
+    "en": "Emergency Communication",
+    "category": "法规",
+    "desc": "发生自然灾害等突发事件时开展的通信保障，此时业余电台可以与非业余电台就直接相关的紧急事务进行通信"
+  }
+}

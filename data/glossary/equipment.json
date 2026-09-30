@@ -1,0 +1,498 @@
+{
+  "杂散发射": {
+    "en": "Spurious Emission",
+    "category": "设备",
+    "desc": "除了该发的信号之外漏出去的多余信号，会干扰别人",
+    "inject": true
+  },
+  "谐波": {
+    "en": "Harmonic",
+    "category": "设备",
+    "desc": "一个信号频率的整数倍，比如 100MHz 的 2 倍 200MHz，属于多余的干扰信号",
+    "inject": true
+  },
+  "互调": {
+    "abbr": "IMD",
+    "en": "Intermodulation",
+    "category": "设备",
+    "desc": "两个或多个信号撞在一起，在电路里混合出新的频率，造成干扰",
+    "aliases": [
+      "互调失真"
+    ],
+    "inject": true
+  },
+  "鉴频": {
+    "en": "Frequency Discrimination",
+    "category": "设备",
+    "desc": "把频率随声音变化的信号还原成声音的过程，是调频接收的关键一步",
+    "aliases": [
+      "鉴频器"
+    ],
+    "inject": true
+  },
+  "检波": {
+    "en": "Detection",
+    "category": "设备",
+    "desc": "把幅度随声音变化的信号还原成声音的过程，是调幅接收的关键一步",
+    "aliases": [
+      "检波器"
+    ],
+    "inject": true
+  },
+  "镜频": {
+    "en": "Image Frequency",
+    "category": "设备",
+    "desc": "一个假信号频率，它会和真信号一起混进接收机，造成干扰，又叫镜像频率",
+    "aliases": [
+      "镜像频率"
+    ],
+    "inject": true
+  },
+  "镜像抑制比": {
+    "en": "Image Rejection Ratio",
+    "category": "设备",
+    "desc": "接收机压掉镜频假信号的能力",
+    "inject": true
+  },
+  "灵敏度": {
+    "en": "Sensitivity",
+    "category": "设备",
+    "desc": "接收机耳朵有多灵，能收到多弱的信号；数值越小越灵敏",
+    "inject": true
+  },
+  "信噪比": {
+    "abbr": "SNR",
+    "en": "Signal-to-Noise Ratio",
+    "category": "设备",
+    "desc": "有用信号和噪声的音量之比，越大信号越清楚",
+    "aliases": [
+      "S/N"
+    ],
+    "inject": true
+  },
+  "噪声系数": {
+    "abbr": "NF",
+    "en": "Noise Figure",
+    "category": "设备",
+    "desc": "接收机自己制造噪声的程度，越接近 1 越好",
+    "inject": true
+  },
+  "噪声温度": {
+    "en": "Noise Temperature",
+    "category": "设备",
+    "desc": "把接收机内部噪声换算成等效电阻温度来表示的大小",
+    "inject": true
+  },
+  "选择性": {
+    "en": "Selectivity",
+    "category": "设备",
+    "desc": "接收机从一堆信号里挑出想要的、压住不想要的能力",
+    "inject": true
+  },
+  "中频": {
+    "abbr": "IF",
+    "en": "Intermediate Frequency",
+    "category": "设备",
+    "desc": "接收机先把收到的高频信号统一降到一个中间频率再处理，这个中间频率就是中频",
+    "inject": true
+  },
+  "衰减器": {
+    "abbr": "ATT",
+    "en": "Attenuator",
+    "category": "设备",
+    "desc": "把信号调小的开关，防止强信号把接收机震聋",
+    "inject": true
+  },
+  "前置放大器": {
+    "en": "Preamplifier",
+    "category": "设备",
+    "desc": "紧靠天线的小放大器，先放大弱信号、压低噪声，让信号更清楚",
+    "aliases": [
+      "前放"
+    ],
+    "inject": true
+  },
+  "自动增益控制": {
+    "abbr": "AGC",
+    "en": "Automatic Gain Control",
+    "category": "设备",
+    "desc": "接收机根据信号强弱自动调节放大倍数、防止过载，即 AGC",
+    "inject": true
+  },
+  "限幅": {
+    "en": "Limiting",
+    "category": "设备",
+    "desc": "把信号幅度削平，去掉幅度上的干扰",
+    "aliases": [
+      "限幅器"
+    ],
+    "inject": true
+  },
+  "静噪": {
+    "abbr": "SQL",
+    "en": "Squelch",
+    "category": "设备",
+    "desc": "没有信号时自动关掉喇叭，避免沙沙的噪声",
+    "inject": true
+  },
+  "亚音": {
+    "abbr": "CTCSS",
+    "en": "Continuous Tone-Coded Squelch System",
+    "category": "设备",
+    "desc": "混在话音里的一小声低频音，用来解锁接收机的静噪",
+    "aliases": [
+      "亚音频",
+      "亚音频静噪"
+    ],
+    "inject": true
+  },
+  "假负载": {
+    "en": "Dummy Load",
+    "category": "设备",
+    "desc": "代替天线、把发射能量变成热量的假天线，调试发射机时用",
+    "inject": true
+  },
+  "矩形系数": {
+    "en": "Shape Factor",
+    "category": "设备",
+    "desc": "描述滤波器边缘多陡的指标，越小越能干净地压掉旁边频率",
+    "inject": true
+  },
+  "峰包功率": {
+    "abbr": "PEP",
+    "en": "Peak Envelope Power",
+    "category": "设备",
+    "desc": "发射信号在最高点那瞬间的功率",
+    "inject": true
+  },
+  "PEP": {
+    "en": "Peak Envelope Power",
+    "category": "设备",
+    "desc": "峰包功率，即发射信号在最高点那瞬间的功率",
+    "see": "峰包功率",
+    "inject": true
+  },
+  "频率容限": {
+    "en": "Frequency Tolerance",
+    "category": "设备",
+    "desc": "发射频率允许偏离规定频率的最大范围",
+    "inject": true
+  },
+  "杂散域": {
+    "en": "Spurious Domain",
+    "category": "设备",
+    "desc": "该发信号带宽之外、杂散发射所在的频率范围",
+    "inject": true
+  },
+  "本振": {
+    "abbr": "LO",
+    "en": "Local Oscillator",
+    "category": "设备",
+    "desc": "接收机内部自己产生的一个参考频率，用来和收到的信号混合",
+    "aliases": [
+      "本机振荡器"
+    ],
+    "inject": true
+  },
+  "混频": {
+    "en": "Mixing",
+    "category": "设备",
+    "desc": "把两个不同频率的信号合在一起，产生新的频率",
+    "aliases": [
+      "混频器"
+    ],
+    "inject": true
+  },
+  "收发信机": {
+    "abbr": "TRX",
+    "en": "Transceiver",
+    "category": "设备",
+    "desc": "把发射机和接收机合为一体的电台设备",
+    "aliases": [
+      "电台",
+      "收发机"
+    ]
+  },
+  "发射机": {
+    "abbr": "TX",
+    "en": "Transmitter",
+    "category": "设备",
+    "desc": "产生并放大已调射频信号送往天线的设备"
+  },
+  "接收机": {
+    "abbr": "RX",
+    "en": "Receiver",
+    "category": "设备",
+    "desc": "从天线接收信号并还原成声音或数据的设备"
+  },
+  "超外差接收机": {
+    "en": "Superheterodyne Receiver",
+    "category": "设备",
+    "desc": "先把接收信号与本振混频变为固定中频，再进行放大和解调的接收机，选择性和灵敏度好",
+    "aliases": [
+      "超外差"
+    ]
+  },
+  "直接变频接收机": {
+    "en": "Direct Conversion Receiver",
+    "category": "设备",
+    "desc": "本振频率与信号频率相同、直接混频得到音频或基带的接收机，结构简单",
+    "aliases": [
+      "零中频接收机"
+    ]
+  },
+  "软件无线电": {
+    "abbr": "SDR",
+    "en": "Software Defined Radio",
+    "category": "设备",
+    "desc": "把射频信号尽早数字化，由软件完成滤波、解调等功能的无线电设备",
+    "aliases": [
+      "软件定义无线电"
+    ]
+  },
+  "功率放大器": {
+    "abbr": "PA",
+    "en": "Power Amplifier",
+    "category": "设备",
+    "desc": "把信号放大到足够功率送往天线的放大器",
+    "aliases": [
+      "功放"
+    ]
+  },
+  "线性放大器": {
+    "en": "Linear Amplifier",
+    "category": "设备",
+    "desc": "输出与输入成正比、不引入明显失真的功率放大器，放大 SSB 等信号时必须使用",
+    "aliases": [
+      "线性功放"
+    ]
+  },
+  "按键通话": {
+    "abbr": "PTT",
+    "en": "Push To Talk",
+    "category": "设备",
+    "desc": "按下即发射、松开即接收的控制开关",
+    "aliases": [
+      "发射键"
+    ]
+  },
+  "声控发射": {
+    "abbr": "VOX",
+    "en": "Voice Operated Exchange",
+    "category": "设备",
+    "desc": "检测到话音时自动转入发射、停止说话后自动回到接收的功能"
+  },
+  "自动电平控制": {
+    "abbr": "ALC",
+    "en": "Automatic Level Control",
+    "category": "设备",
+    "desc": "自动限制发射机或功放的激励电平，防止过激励造成失真"
+  },
+  "收信微调": {
+    "abbr": "RIT",
+    "en": "Receiver Incremental Tuning",
+    "category": "设备",
+    "desc": "只微调接收频率而不改变发射频率，用于补偿对方的频率偏差",
+    "aliases": [
+      "CLAR"
+    ]
+  },
+  "发信微调": {
+    "abbr": "XIT",
+    "en": "Transmitter Incremental Tuning",
+    "category": "设备",
+    "desc": "只微调发射频率而不改变接收频率"
+  },
+  "噪声抑制器": {
+    "abbr": "NB",
+    "en": "Noise Blanker",
+    "category": "设备",
+    "desc": "检测并消除汽车点火等脉冲干扰的电路",
+    "aliases": [
+      "噪声消隐"
+    ]
+  },
+  "降噪": {
+    "abbr": "NR",
+    "en": "Noise Reduction",
+    "category": "设备",
+    "desc": "用数字信号处理降低背景噪声，使话音更清晰"
+  },
+  "陷波器": {
+    "en": "Notch Filter",
+    "category": "设备",
+    "desc": "在某一窄频率处形成深度衰减的滤波器，用于去除单一音调的干扰",
+    "aliases": [
+      "NOTCH"
+    ]
+  },
+  "数字信号处理": {
+    "abbr": "DSP",
+    "en": "Digital Signal Processing",
+    "category": "设备",
+    "desc": "用数字运算完成滤波、降噪、解调等处理"
+  },
+  "压控振荡器": {
+    "abbr": "VCO",
+    "en": "Voltage-Controlled Oscillator",
+    "category": "设备",
+    "desc": "输出频率随控制电压变化的振荡器，是锁相环的核心部件"
+  },
+  "锁相环": {
+    "abbr": "PLL",
+    "en": "Phase-Locked Loop",
+    "category": "设备",
+    "desc": "让振荡器的频率和相位跟踪参考信号的反馈电路，用于频率合成"
+  },
+  "直接数字频率合成": {
+    "abbr": "DDS",
+    "en": "Direct Digital Synthesis",
+    "category": "设备",
+    "desc": "用数字方法直接产生所需频率的信号，频率切换快、分辨率高"
+  },
+  "晶体振荡器": {
+    "abbr": "XO",
+    "en": "Crystal Oscillator",
+    "category": "设备",
+    "desc": "用石英晶体控制频率的振荡器，频率稳定度高",
+    "aliases": [
+      "晶振"
+    ]
+  },
+  "温补晶振": {
+    "abbr": "TCXO",
+    "en": "Temperature Compensated Crystal Oscillator",
+    "category": "设备",
+    "desc": "带温度补偿的晶体振荡器，环境温度变化时频率仍很稳定"
+  },
+  "频率合成器": {
+    "en": "Frequency Synthesizer",
+    "category": "设备",
+    "desc": "由一个稳定参考源产生多个精确频率的电路"
+  },
+  "双工器": {
+    "en": "Duplexer",
+    "category": "设备",
+    "desc": "让发射机和接收机共用一副天线、同时工作而互不干扰的滤波装置，中继台必备",
+    "aliases": [
+      "腔体双工器"
+    ]
+  },
+  "动态范围": {
+    "en": "Dynamic Range",
+    "category": "设备",
+    "desc": "接收机在不失真前提下能同时处理的最弱与最强信号之比"
+  },
+  "阻塞": {
+    "en": "Blocking",
+    "category": "设备",
+    "desc": "附近强信号使接收机灵敏度下降、弱信号听不到的现象",
+    "aliases": [
+      "阻塞干扰"
+    ]
+  },
+  "交叉调制": {
+    "en": "Cross Modulation",
+    "category": "设备",
+    "desc": "强干扰信号的调制内容转移到有用信号上的现象",
+    "aliases": [
+      "交调"
+    ]
+  },
+  "三阶截点": {
+    "abbr": "IP3",
+    "en": "Third-Order Intercept Point",
+    "category": "设备",
+    "desc": "衡量接收机抗互调能力的指标，数值越高，强信号环境下越不容易产生互调干扰"
+  },
+  "相位噪声": {
+    "en": "Phase Noise",
+    "category": "设备",
+    "desc": "振荡器输出信号附近的随机相位抖动，会降低接收机在强信号旁接收弱信号的能力"
+  },
+  "频率稳定度": {
+    "en": "Frequency Stability",
+    "category": "设备",
+    "desc": "振荡器频率随时间和温度保持不变的程度"
+  },
+  "邻道选择性": {
+    "abbr": "ACS",
+    "en": "Adjacent Channel Selectivity",
+    "category": "设备",
+    "desc": "接收机抑制相邻信道信号的能力",
+    "aliases": [
+      "邻道抑制"
+    ]
+  },
+  "S 表": {
+    "en": "S-Meter",
+    "category": "设备",
+    "desc": "接收机上显示信号强度的表头，HF 上 S9 约对应 50μV，每个 S 单位相差 6dB",
+    "aliases": [
+      "信号强度表"
+    ]
+  },
+  "手台": {
+    "abbr": "HT",
+    "en": "Handheld Transceiver",
+    "category": "设备",
+    "desc": "手持式收发信机，功率通常为几瓦，多用于 VHF/UHF",
+    "aliases": [
+      "对讲机"
+    ]
+  },
+  "车台": {
+    "en": "Mobile Transceiver",
+    "category": "设备",
+    "desc": "安装在车辆上的收发信机，功率比手台大"
+  },
+  "过载": {
+    "en": "Overload",
+    "category": "设备",
+    "desc": "输入信号过强使接收机工作于非线性状态，产生失真和虚假信号"
+  },
+  "寄生振荡": {
+    "en": "Parasitic Oscillation",
+    "category": "设备",
+    "desc": "放大器在非预期频率上自行产生的振荡，会造成杂散发射",
+    "aliases": [
+      "自激"
+    ]
+  },
+  "CAT": {
+    "en": "Computer Aided Transceiver",
+    "category": "设备",
+    "desc": "电脑通过串口或 USB 控制电台频率、模式等参数的接口"
+  },
+  "电键": {
+    "en": "Telegraph Key",
+    "category": "设备",
+    "desc": "手动发送莫尔斯电码的开关，有直键、双桨电键等形式",
+    "aliases": [
+      "手键",
+      "双桨"
+    ]
+  },
+  "自动键": {
+    "en": "Keyer",
+    "category": "设备",
+    "desc": "配合双桨电键自动产生标准点划和间隔的电子装置"
+  },
+  "稳压电源": {
+    "abbr": "PSU",
+    "en": "Power Supply Unit",
+    "category": "设备",
+    "desc": "把市电转换为稳定直流电供电台使用的设备，开关电源可能产生射频干扰",
+    "aliases": [
+      "电源"
+    ]
+  },
+  "功率计": {
+    "en": "Wattmeter",
+    "category": "设备",
+    "desc": "串接在发射机与天线之间，测量前向功率和反射功率的仪表",
+    "aliases": [
+      "通过式功率计"
+    ]
+  }
+}

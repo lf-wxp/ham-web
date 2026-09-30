@@ -54,9 +54,9 @@ enum Command {
     /// 形如 {"A-1": "解析…", "B-5": "解析…"} 的 JSON 文件
     batch: PathBuf,
   },
-  /// 用术语表 glossary.json 中 inject=true 的词条为解析注入通俗解释（幂等）
+  /// 用术语表 data/glossary/ 中 inject=true 的词条为解析注入通俗解释（幂等）
   EnhanceExplanations,
-  /// 校验 data/glossary.json（分类、参见、重复、括号等）并输出统计
+  /// 校验 data/glossary/（分类、参见、重复、括号等）并输出统计
   CheckGlossary,
   /// 统计缺失解析的题目，并导出待填写模板
   MissingExplanations {

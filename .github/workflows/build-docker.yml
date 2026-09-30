@@ -35,6 +35,29 @@ jobs:
           username: ${{ steps.norm.outputs.user }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # 从 Cargo.toml 读取版本号，作为镜像 tag，保证镜像 tag 与 Cargo 版本一致
+      - name: Extract version from Cargo.toml
+        id: version
+        shell: bash
+        run: |
+          ver=$(grep -m1 '^version = ' Cargo.toml | sed 's/^version = "\(.*\)"/\1/')
+          echo "version=${ver}" >> "$GITHUB_OUTPUT"
+
+      # 检查 Docker Hub 上是否已存在该版本号的镜像 tag，避免重复覆盖
+      - name: Check if version tag already exists
+        id: check
+        shell: bash
+        run: |
+          image="${{ steps.norm.outputs.user }}/ham-web"
+          tag="${{ steps.version.outputs.version }}"
+          if docker manifest inspect "${image}:${tag}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "version tag ${image}:${tag} already exists, skip pushing it"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "version tag ${image}:${tag} not found, will push it"
+          fi
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
@@ -45,12 +68,26 @@ jobs:
             type=sha
             type=ref,event=tag
 
+      # 仅当版本 tag 尚不存在时，才把它追加到待推送的 tag 列表
+      - name: Compose final tag list
+        id: tags
+        shell: bash
+        run: |
+          tags="${{ steps.meta.outputs.tags }}"
+          if [ "${{ steps.check.outputs.exists }}" = "false" ]; then
+            tags="${tags}
+${{ steps.norm.outputs.user }}/ham-web:${{ steps.version.outputs.version }}"
+          fi
+          echo "tags<<EOF" >> "$GITHUB_OUTPUT"
+          echo "${tags}" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.tags.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             SITE_URL=${{ vars.SITE_URL }}

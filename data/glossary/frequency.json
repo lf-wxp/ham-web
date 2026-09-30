@@ -1,0 +1,156 @@
+{
+  "高频": {
+    "abbr": "HF",
+    "en": "High Frequency",
+    "category": "频率",
+    "desc": "3–30MHz 的频段，也叫短波，可借助电离层反射实现远距离通信",
+    "aliases": [
+      "短波"
+    ]
+  },
+  "甚高频": {
+    "abbr": "VHF",
+    "en": "Very High Frequency",
+    "category": "频率",
+    "desc": "30–300MHz 的频段，以视距传播为主，2 米波段属于这一范围",
+    "aliases": [
+      "米波"
+    ]
+  },
+  "特高频": {
+    "abbr": "UHF",
+    "en": "Ultra High Frequency",
+    "category": "频率",
+    "desc": "300–3000MHz 的频段，以视距传播为主，70 厘米波段属于这一范围",
+    "aliases": [
+      "分米波"
+    ]
+  },
+  "超高频": {
+    "abbr": "SHF",
+    "en": "Super High Frequency",
+    "category": "频率",
+    "desc": "3–30GHz 的频段，属于厘米波，常用于微波通信和卫星通信",
+    "aliases": [
+      "厘米波"
+    ]
+  },
+  "极高频": {
+    "abbr": "EHF",
+    "en": "Extremely High Frequency",
+    "category": "频率",
+    "desc": "30–300GHz 的频段，属于毫米波，受雨雾衰减影响明显",
+    "aliases": [
+      "毫米波"
+    ]
+  },
+  "至高频": {
+    "abbr": "THF",
+    "en": "Tremendously High Frequency",
+    "category": "频率",
+    "desc": "300–3000GHz 的频段，也叫太赫兹频段",
+    "aliases": [
+      "太赫兹"
+    ]
+  },
+  "中频段": {
+    "abbr": "MF",
+    "en": "Medium Frequency",
+    "category": "频率",
+    "desc": "300kHz–3MHz 的频段，也叫中波，白天主要靠地波传播，夜间可借天波传得更远",
+    "aliases": [
+      "中波"
+    ]
+  },
+  "低频段": {
+    "abbr": "LF",
+    "en": "Low Frequency",
+    "category": "频率",
+    "desc": "30–300kHz 的频段，也叫长波，业余业务在 135.7–137.8kHz 有一个很窄的频段",
+    "aliases": [
+      "长波"
+    ]
+  },
+  "波长": {
+    "abbr": "λ",
+    "en": "Wavelength",
+    "category": "频率",
+    "desc": "电波在一个振荡周期内传播的距离，波长等于光速除以频率，用 300 除以兆赫数即得米数"
+  },
+  "频率": {
+    "abbr": "f",
+    "en": "Frequency",
+    "category": "频率",
+    "desc": "每秒振荡的次数，单位赫兹 Hz，常用 kHz、MHz、GHz"
+  },
+  "波段": {
+    "en": "Band",
+    "category": "频率",
+    "desc": "按波长或频率划分的一段范围，业余无线电常用波长命名，如 20 米波段、2 米波段",
+    "aliases": [
+      "频段"
+    ]
+  },
+  "2 米波段": {
+    "en": "2 Meter Band",
+    "category": "频率",
+    "desc": "144–148MHz 的甚高频业余频段，手台和车台最常用，也是中继台和卫星通信的主要频段"
+  },
+  "70 厘米波段": {
+    "en": "70 Centimeter Band",
+    "category": "频率",
+    "desc": "我国为 430–440MHz 的特高频业余频段，常用于中继台、卫星通信和数字语音"
+  },
+  "波段规划": {
+    "en": "Band Plan",
+    "category": "频率",
+    "desc": "由 IARU 等组织制定的频段内部使用约定，把频段分成 CW、数据、话音、卫星等子段，便于互不干扰",
+    "aliases": [
+      "频段规划"
+    ]
+  },
+  "ITU 区域": {
+    "en": "ITU Region",
+    "category": "频率",
+    "desc": "国际电联把全球分为三个区域分别划分频率，一区为欧洲非洲，二区为美洲，三区为亚洲大部与大洋洲，我国属于第三区"
+  },
+  "CQ 分区": {
+    "en": "CQ Zone",
+    "category": "频率",
+    "desc": "CQ 杂志为 DX 通联和竞赛划分的 40 个地理分区，我国大部分地区位于 23、24 区"
+  },
+  "ITU 分区": {
+    "en": "ITU Zone",
+    "category": "频率",
+    "desc": "国际电联划分的 90 个分区，IARU 竞赛等以此计分，我国大部分地区位于 42–44 区"
+  },
+  "WARC 频段": {
+    "en": "WARC Bands",
+    "category": "频率",
+    "desc": "1979 年世界无线电行政大会新增的 30 米、17 米、12 米业余频段，按惯例不在这些频段举办竞赛"
+  },
+  "信道间隔": {
+    "en": "Channel Spacing",
+    "category": "频率",
+    "desc": "相邻两个信道中心频率之间的差值，业余 VHF/UHF 调频话音常用 12.5kHz 或 25kHz",
+    "aliases": [
+      "频道间隔"
+    ]
+  },
+  "单工": {
+    "en": "Simplex",
+    "category": "频率",
+    "desc": "收发使用同一频率、轮流进行的通信方式，不经过中继台的直接通联就是单工",
+    "aliases": [
+      "同频单工"
+    ]
+  },
+  "双工": {
+    "en": "Duplex",
+    "category": "频率",
+    "desc": "收发使用两个不同频率、可以同时收和发的通信方式，中继台即工作在双工状态",
+    "aliases": [
+      "异频双工"
+    ]
+  }
+}

@@ -1,4 +1,4 @@
-//! 术语表（`data/glossary.json`）：业余无线电常用术语、英文缩写与通俗解释。
+//! 术语表（`data/glossary/` 下按一级分类拆分为多个 JSON）：业余无线电常用术语、英文缩写与通俗解释。
 //!
 //! 文件为 JSON 对象，key 为术语（中文名称或缩写本身），value 支持两种写法：
 //!
@@ -51,6 +51,8 @@ pub struct GlossaryEntry {
   pub see: Option<String>,
   /// 是否用于解析术语注入。
   pub inject: bool,
+  /// 是否属于「常用」词条；`false` 表示全量补充的冷门项（默认 `true`）。
+  pub common: bool,
 }
 
 impl GlossaryEntry {
@@ -133,6 +135,13 @@ struct RawFields {
   see: Option<String>,
   #[serde(default)]
   inject: bool,
+  #[serde(default = "default_common")]
+  common: bool,
+}
+
+/// `common` 字段缺省值：`true`。
+const fn default_common() -> bool {
+  true
 }
 
 impl RawEntry {
@@ -147,6 +156,7 @@ impl RawEntry {
         aliases: Vec::new(),
         see: None,
         inject: true,
+        common: true,
       },
       Self::Full(f) => GlossaryEntry {
         term,
@@ -157,6 +167,7 @@ impl RawEntry {
         aliases: f.aliases,
         see: f.see,
         inject: f.inject,
+        common: f.common,
       },
     }
   }
@@ -195,6 +206,16 @@ impl<'de> Deserialize<'de> for Glossary {
 const FULL_WIDTH_PARENS: [char; 2] = ['（', '）'];
 
 impl Glossary {
+  /// 合并多个术语表（词条按传入顺序拼接，保持各文件内部顺序）。
+  #[must_use]
+  pub fn merged(parts: impl IntoIterator<Item = Glossary>) -> Self {
+    let mut entries = Vec::new();
+    for part in parts {
+      entries.extend(part.entries);
+    }
+    Self { entries }
+  }
+
   /// 全部词条。
   #[must_use]
   pub fn entries(&self) -> &[GlossaryEntry] {
@@ -265,6 +286,27 @@ impl Glossary {
   }
 }
 
+/// 按一级分类顺序列出 `data/glossary/` 下全部术语表文件内容。
+///
+/// 供 core 测试与前端（`ham-web-app`）复用，保证两侧加载的分类文件列表一致。
+#[macro_export]
+macro_rules! glossary_files {
+  () => {
+    [
+      include_str!("../../../data/glossary/law.json"),
+      include_str!("../../../data/glossary/frequency.json"),
+      include_str!("../../../data/glossary/operation.json"),
+      include_str!("../../../data/glossary/slang.json"),
+      include_str!("../../../data/glossary/modulation.json"),
+      include_str!("../../../data/glossary/equipment.json"),
+      include_str!("../../../data/glossary/antenna.json"),
+      include_str!("../../../data/glossary/propagation.json"),
+      include_str!("../../../data/glossary/basics.json"),
+      include_str!("../../../data/glossary/safety.json"),
+    ]
+  };
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -306,10 +348,18 @@ mod tests {
     assert_eq!(g.validate().len(), 3);
   }
 
+  /// 从 `data/glossary/` 目录加载并合并全部分类文件。
+  fn project_glossary() -> Glossary {
+    Glossary::merged(
+      glossary_files!()
+        .iter()
+        .map(|s| serde_json::from_str(s).expect("valid glossary category file")),
+    )
+  }
+
   #[test]
   fn project_glossary_is_valid() {
-    let g: Glossary = serde_json::from_str(include_str!("../../../data/glossary.json"))
-      .expect("data/glossary.json");
+    let g = project_glossary();
     let problems = g.validate();
     assert!(problems.is_empty(), "{problems:#?}");
     assert!(g.entries().len() >= 300);
@@ -320,5 +370,20 @@ mod tests {
       .map(|e| &e.term)
       .collect();
     assert!(uncategorized.is_empty(), "缺少分类：{uncategorized:?}");
+  }
+
+  #[test]
+  fn slang_marks_common_subset() {
+    let g = project_glossary();
+    let slang: Vec<_> = g
+      .entries()
+      .iter()
+      .filter(|e| e.category_key() == "用语")
+      .collect();
+    let common = slang.iter().filter(|e| e.common).count();
+    let extra = slang.len() - common;
+    // 「常用」是核心子集，「全量」为补充项
+    assert!(common > 0, "应有常用简语");
+    assert!(extra > 0, "应有全量补充简语");
   }
 }

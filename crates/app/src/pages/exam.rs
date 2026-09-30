@@ -179,6 +179,12 @@ pub fn ExamPage() -> impl IntoView {
     store.finished.set(true);
     result_open.set(true);
     store::clear_exam(bank.get_untracked(), version.get_untracked().as_deref());
+    // 保存本次成绩到历史
+    let answers = store.answers.get_untracked();
+    let sc = store
+      .questions
+      .with(|qs| ExamScore::calculate(qs, |q, i| answers.get(&q.answer_key(i)).map(Vec::as_slice)));
+    crate::exam_history::save(bank.get_untracked(), sc);
   };
 
   // 倒计时
@@ -409,7 +415,7 @@ pub fn ExamPage() -> impl IntoView {
     let b = bank.get();
     let r = rule.get();
     view! {
-      <div class="container mx-auto px-4 py-6 max-w-4xl space-y-4 pb-28 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+      <div class="container mx-auto px-4 py-6 max-w-5xl space-y-4 pb-28 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
         <QuestionProgressHeader
           percent=percent
           right=move || {

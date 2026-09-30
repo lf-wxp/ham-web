@@ -145,16 +145,57 @@
   }
 }
 
-/* ---------- 滚动条样式 ---------- */
-/* scrollbar-width / scrollbar-color 为继承属性，设在根元素即可，避免通配符匹配开销 */
-html {
-  scrollbar-width: thin;
-  scrollbar-color: var(--muted-foreground) transparent;
+/* ---------- 卡片内表格：去掉与卡片边框重合的最外圈边框 ---------- */
+/* 表格（border-collapse）紧贴 .rounded-xl 卡片的内边缘时，单元格最外圈的 border 会与
+   卡片自身的 border 贴合成双线。这里去掉首行上边、末行下边、首列左边、末列右边四条
+   外边线，只保留表格内部的网格线。带内边距包裹的表格（如 solar 页）不受影响。
+
+   1) 上/下外边线用 :first-child / :last-child 定位行组：表格以 <caption> 开头时首行
+      并未贴着卡片边缘，本就应保留 border，因此不能改用 :first-of-type。
+   2) 左/右外边线需遍历全部行组（thead / tbody / tfoot），漏掉 <tfoot> 会让汇总行
+      重新出现双线。 */
+:is(.rounded-xl, .rounded-xl > .overflow-x-auto)
+  > table.border-collapse
+  > :first-child
+  > tr:first-child
+  > :is(th, td) {
+  border-top-width: 0;
 }
 
+:is(.rounded-xl, .rounded-xl > .overflow-x-auto)
+  > table.border-collapse
+  > :last-child
+  > tr:last-child
+  > :is(th, td) {
+  border-bottom-width: 0;
+}
+
+:is(.rounded-xl, .rounded-xl > .overflow-x-auto)
+  > table.border-collapse
+  > :is(thead, tbody, tfoot)
+  > tr
+  > :is(th, td):first-child {
+  border-left-width: 0;
+}
+
+:is(.rounded-xl, .rounded-xl > .overflow-x-auto)
+  > table.border-collapse
+  > :is(thead, tbody, tfoot)
+  > tr
+  > :is(th, td):last-child {
+  border-right-width: 0;
+}
+
+/* ---------- 滚动条样式 ---------- */
+/* Chromium / Safari：用 ::-webkit-scrollbar 自绘滚动条。
+   注意：不要在 html（或任何会被 Chromium 命中的选择器）上设置 scrollbar-color /
+   scrollbar-width——它们是继承属性，一旦生效，Chromium 会改用标准滚动条绘制并忽略
+   ::-webkit-scrollbar，下面的宽度设置随之失效（实测会退回默认宽度）。标准属性仅用于
+   Firefox 回退，见文件末尾的 @supports 块。 */
+
 *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 
 *::-webkit-scrollbar-track {
@@ -162,18 +203,30 @@ html {
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: var(--muted-foreground);
+  background-color: color-mix(in oklab, var(--muted-foreground) 30%, transparent);
   border-radius: 9999px;
-  border: 2px solid transparent;
+  /* 透明 border 借 background-clip 给滑块留内边距，宽度须小于 scrollbar 宽度，
+     否则（如 4px 宽配 2px border）content-box 会被压成 0，滑块不可见。 */
+  border: 1px solid transparent;
   background-clip: content-box;
 }
-
 *::-webkit-scrollbar-thumb:hover {
-  background-color: var(--foreground);
+  background-color: color-mix(in oklab, var(--foreground) 35%, transparent);
 }
 
 *::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* Firefox 等不支持 ::-webkit-scrollbar 的浏览器：回退到标准属性。
+   必须放在 @supports not 内——否则这些继承属性会在 Chromium 中反过来禁用上面的
+   伪元素样式。 */
+@supports not selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 30%, transparent)
+      transparent;
+  }
 }
 
 /* ---------- 全局体验增强 ---------- */
@@ -189,14 +242,18 @@ html {
   color: var(--primary-foreground);
 }
 
-/* 尊重用户「减少动态效果」偏好 */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+/* 尊重用户「减少动态效果」偏好。
+   放入 @layer base：对 !important 声明而言，分层声明优先于未分层声明，且 base 在
+   utilities 之前，这样该无障碍降级不会被任何工具类的 !important 声明反向覆盖。 */
+@layer base {
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

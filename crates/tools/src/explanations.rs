@@ -6,6 +6,7 @@
 
 use std::cmp::Reverse;
 use std::collections::{HashMap, HashSet};
+use std::fs;
 use std::path::Path;
 
 use anyhow::{Context, Result, bail};
@@ -190,14 +191,23 @@ pub fn inject(text: &str, glossary: &[(String, String)]) -> String {
   out.into_iter().collect()
 }
 
-/// 读取并校验术语表。
+/// 读取并校验术语表（从 `data/glossary/` 目录按分类合并）。
 fn load_glossary(paths: &Paths) -> Result<Glossary> {
-  let glossary: Glossary = read_json(&paths.glossary)?;
+  let mut parts = Vec::new();
+  for entry in fs::read_dir(&paths.glossary_dir)
+    .with_context(|| format!("failed to read {}", paths.glossary_dir.display()))?
+  {
+    let path = entry?.path();
+    if path.extension().and_then(|e| e.to_str()) == Some("json") {
+      parts.push(read_json(&path)?);
+    }
+  }
+  let glossary = Glossary::merged(parts);
   let problems = glossary.validate();
   if !problems.is_empty() {
     bail!(
       "{} 校验失败：\n  - {}",
-      paths.glossary.display(),
+      paths.glossary_dir.display(),
       problems.join("\n  - ")
     );
   }

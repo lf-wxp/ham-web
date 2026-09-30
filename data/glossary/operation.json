@@ -1,0 +1,138 @@
+{
+  "频差": {
+    "en": "Repeater Offset",
+    "category": "操作",
+    "desc": "中继台接收和发射两个频率之间的差值",
+    "aliases": [
+      "收发频差"
+    ],
+    "inject": true
+  },
+  "中继台": {
+    "en": "Repeater",
+    "category": "操作",
+    "desc": "架设在高处、用一个频率接收并同时用另一个频率转发信号的电台，可大大扩展手台的通联距离",
+    "aliases": [
+      "中继"
+    ]
+  },
+  "守听": {
+    "en": "Listening Watch",
+    "category": "操作",
+    "desc": "在某一频率上持续收听，发起呼叫前先守听确认频率空闲是基本操作规范"
+  },
+  "电台日志": {
+    "en": "Station Log",
+    "category": "操作",
+    "desc": "记录每次通信时间、频率、模式和对方电台的簿册或文件，按规定至少保存 2 年",
+    "aliases": [
+      "通联日志",
+      "LOG"
+    ]
+  },
+  "QSL 卡片": {
+    "en": "QSL Card",
+    "category": "操作",
+    "desc": "通联双方互相寄送的书面确认凭证，印有呼号、时间、频率、模式和信号报告，也可通过网络电子确认"
+  },
+  "竞赛": {
+    "en": "Contest",
+    "category": "操作",
+    "desc": "在规定时间内尽可能多地与其他电台通联的比赛，通常要交换信号报告和序号或分区号",
+    "aliases": [
+      "比赛",
+      "TEST"
+    ]
+  },
+  "堆积": {
+    "en": "Pile-up",
+    "category": "操作",
+    "desc": "大量电台同时呼叫同一个稀有或远方电台的情形，应耐心守听、按对方要求有序呼叫"
+  },
+  "分频操作": {
+    "en": "Split Operation",
+    "category": "操作",
+    "desc": "发射和接收使用不同频率的操作方式，稀有电台为避开堆积常要求对方在其发射频率之上呼叫，如 UP 5",
+    "aliases": [
+      "SPLIT"
+    ]
+  },
+  "网络通联": {
+    "en": "Net",
+    "category": "操作",
+    "desc": "由主控电台按约定时间和频率组织多台轮流发言的通联形式，常用于交流和应急演练",
+    "aliases": [
+      "点名"
+    ]
+  },
+  "梅登海德网格": {
+    "en": "Maidenhead Grid Locator",
+    "category": "操作",
+    "desc": "用字母数字组合表示地理位置的编码，如 OM89 表示北京附近区域，常用于 VHF 和卫星通联交换位置",
+    "aliases": [
+      "网格定位",
+      "Grid"
+    ]
+  },
+  "协调世界时": {
+    "abbr": "UTC",
+    "en": "Coordinated Universal Time",
+    "category": "操作",
+    "desc": "国际通用的标准时间，北京时间比 UTC 早 8 小时，业余电台日志和通联统一使用 UTC",
+    "aliases": [
+      "世界时"
+    ]
+  },
+  "大圆方位": {
+    "en": "Great Circle Bearing",
+    "category": "操作",
+    "desc": "地球表面两点间最短路径的方向，定向天线应按大圆方位对准目标地区",
+    "aliases": [
+      "大圆航向"
+    ]
+  },
+  "业余无线电测向": {
+    "abbr": "ARDF",
+    "en": "Amateur Radio Direction Finding",
+    "category": "操作",
+    "desc": "参赛者用测向接收机寻找隐藏发射机的竞技活动，相关技术也可用于查找干扰源",
+    "aliases": [
+      "猎狐",
+      "无线电测向"
+    ]
+  },
+  "便携操作": {
+    "abbr": "/P",
+    "en": "Portable",
+    "category": "操作",
+    "desc": "在临时地点野外架设电台进行的操作，呼号后缀常加 /P",
+    "aliases": [
+      "野外通联"
+    ]
+  },
+  "移动操作": {
+    "abbr": "/M",
+    "en": "Mobile",
+    "category": "操作",
+    "desc": "在行驶的车辆等移动载体上操作电台，呼号后缀常加 /M"
+  },
+  "山峰通联": {
+    "abbr": "SOTA",
+    "en": "Summits On The Air",
+    "category": "操作",
+    "desc": "登上指定山峰架设电台进行通联的活动，结合了户外运动与野外通联技术"
+  },
+  "DXCC": {
+    "en": "DX Century Club",
+    "category": "操作",
+    "desc": "通联并确认 100 个及以上 DXCC 实体即可获得的奖状，是 DX 爱好者最知名的目标",
+    "aliases": [
+      "DXCC 实体"
+    ]
+  },
+  "WAZ": {
+    "en": "Worked All Zones",
+    "category": "操作",
+    "desc": "与全部 40 个 CQ 分区的电台通联并确认后可申请的奖状"
+  }
+}

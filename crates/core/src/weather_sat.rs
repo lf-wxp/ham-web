@@ -1,0 +1,79 @@
+//! 气象卫星接收：NOAA APT、METEOR LRPT 与静止卫星图像。
+
+/// 一颗气象卫星。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WeatherSat {
+  pub name: &'static str,
+  pub signal: &'static str,
+  pub freq: &'static str,
+  pub note: &'static str,
+}
+
+/// 常见可接收的气象卫星。
+pub const WEATHER_SATS: &[WeatherSat] = &[
+  WeatherSat {
+    name: "NOAA-19",
+    signal: "APT",
+    freq: "137.100 MHz",
+    note: "自动图像传输，信号稳定，入门首选。",
+  },
+  WeatherSat {
+    name: "NOAA-18",
+    signal: "APT",
+    freq: "137.9125 MHz",
+    note: "自动图像传输，过境频繁。",
+  },
+  WeatherSat {
+    name: "NOAA-15",
+    signal: "APT",
+    freq: "137.620 MHz",
+    note: "最老但仍在工作的 NOAA 卫星。",
+  },
+  WeatherSat {
+    name: "METEOR-M2",
+    signal: "LRPT",
+    freq: "137.900 MHz",
+    note: "俄罗斯卫星，LRPT 高分辨率彩色图像。",
+  },
+  WeatherSat {
+    name: "GOES 系列",
+    signal: "HRIT",
+    freq: "1694 MHz",
+    note: "静止气象卫星，需抛物面天线接收。",
+  },
+];
+
+/// 核心概念。
+pub const WEATHER_CONCEPTS: &[(&str, &str)] = &[
+  (
+    "APT",
+    "Automatic Picture Transmission，模拟图像，普通 SDR 即可接收。",
+  ),
+  ("LRPT", "Low Rate Picture Transmission，数字高分辨率图像。"),
+  ("WEFAX", "短波气象传真，用 SSB 接收各地气象台的气象图。"),
+  ("QFH 天线", "四臂螺旋天线，气象卫星接收的优选全向天线。"),
+];
+
+/// 接收要点。
+pub const WEATHER_TIPS: &[&str] = &[
+  "用 RTL-SDR（约 20 元）+ V 型偶极或 QFH 天线即可入门。",
+  "解码软件：SatDump、WXtoIMG（APT）；配合 Gpredict 预报过境。",
+  "卫星每次过境仅约 10–15 分钟，需提前查过境时间并守听。",
+  "接收时选开阔地、避开高楼遮挡，天线朝向卫星来向。",
+];
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn weather_sat_populated() {
+    assert!(WEATHER_SATS.len() >= 4);
+    for s in WEATHER_SATS {
+      assert!(!s.name.is_empty());
+      assert!(!s.freq.is_empty());
+    }
+    assert!(!WEATHER_CONCEPTS.is_empty());
+    assert!(!WEATHER_TIPS.is_empty());
+  }
+}

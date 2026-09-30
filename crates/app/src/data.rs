@@ -84,6 +84,66 @@ async fn fetch_text(url: &str, mode: CacheMode) -> Result<String, AppError> {
   Ok(text.as_string().unwrap_or_default())
 }
 
+/// 拉取外部 JSON（带 5 秒超时，超时或失败返回错误）。
+pub async fn fetch_external_json<T: serde::de::DeserializeOwned>(url: &str) -> Result<T, AppError> {
+  let text = fetch_text_external(url, 5000).await?;
+  serde_json::from_str(&text).map_err(|e| AppError::Validation(format!("Invalid JSON: {e}")))
+}
+
+/// 持有 `setTimeout` 句柄，析构时清除，避免超时定时器在请求提前结束后空转。
+struct ClearTimeout(i32);
+
+impl Drop for ClearTimeout {
+  fn drop(&mut self) {
+    if self.0 != 0 {
+      window().clear_timeout_with_handle(self.0);
+    }
+  }
+}
+
+/// 拉取外部文本，`timeout_ms` 毫秒超时（通过 `AbortController` 中断）。
+async fn fetch_text_external(url: &str, timeout_ms: i32) -> Result<String, AppError> {
+  use wasm_bindgen::JsCast;
+  use wasm_bindgen_futures::JsFuture;
+  use web_sys::{AbortController, Request, RequestInit, Response};
+
+  let init = RequestInit::new();
+  let controller = AbortController::new().map_err(|e| AppError::Network(js_error_message(&e)))?;
+  let signal = controller.signal();
+  init.set_signal(Some(&signal));
+
+  // 超时后中断请求
+  let c = controller.clone();
+  let timer = wasm_bindgen::closure::Closure::once_into_js(move || {
+    c.abort();
+  });
+  let timer_id = window()
+    .set_timeout_with_callback_and_timeout_and_arguments_0(
+      timer.as_ref().unchecked_ref(),
+      timeout_ms,
+    )
+    .unwrap_or(0);
+  let _clear = ClearTimeout(timer_id);
+
+  let request = Request::new_with_str_and_init(url, &init)
+    .map_err(|e| AppError::Network(js_error_message(&e)))?;
+  let resp: Response = JsFuture::from(window().fetch_with_request(&request))
+    .await
+    .map_err(|e| AppError::Network(js_error_message(&e)))?
+    .unchecked_into();
+  if !resp.ok() {
+    return Err(AppError::Network(format!("HTTP {}", resp.status())));
+  }
+  let text = JsFuture::from(
+    resp
+      .text()
+      .map_err(|e| AppError::Network(js_error_message(&e)))?,
+  )
+  .await
+  .map_err(|e| AppError::Network(js_error_message(&e)))?;
+  Ok(text.as_string().unwrap_or_default())
+}
+
 /// 版本可用性状态。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VersionStatus {
@@ -228,13 +288,20 @@ pub async fn version_status(version_id: &str, force: bool) -> VersionStatus {
   status
 }
 
-/// 术语表（编译期嵌入 `data/glossary.json`，离线可用）。
+/// 术语表（编译期嵌入 `data/glossary/` 下按分类拆分的 JSON，离线可用）。
 pub fn glossary() -> &'static Glossary {
   static GLOSSARY: LazyLock<Glossary> = LazyLock::new(|| {
-    serde_json::from_str(include_str!("../../../data/glossary.json")).unwrap_or_else(|e| {
-      web_sys::console::error_1(&format!("[ERROR] 术语表解析失败：{e}").into());
-      Glossary::default()
-    })
+    let parsed: Vec<Glossary> = ham_web_core::glossary_files!()
+      .iter()
+      .filter_map(|s| match serde_json::from_str(s) {
+        Ok(g) => Some(g),
+        Err(e) => {
+          web_sys::console::error_1(&format!("[ERROR] 术语表解析失败：{e}").into());
+          None
+        }
+      })
+      .collect();
+    Glossary::merged(parsed)
   });
   &GLOSSARY
 }

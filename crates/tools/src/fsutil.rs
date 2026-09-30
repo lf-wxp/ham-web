@@ -16,8 +16,8 @@ pub struct Paths {
   pub questions: PathBuf,
   /// `data/explanations.json`
   pub explanations: PathBuf,
-  /// `data/glossary.json`
-  pub glossary: PathBuf,
+  /// `data/glossary/`（按分类拆分的术语表目录）
+  pub glossary_dir: PathBuf,
 }
 
 impl Paths {
@@ -27,7 +27,7 @@ impl Paths {
       questions: public.join("questions"),
       public,
       explanations: root.join("data").join("explanations.json"),
-      glossary: root.join("data").join("glossary.json"),
+      glossary_dir: root.join("data").join("glossary"),
     }
   }
 

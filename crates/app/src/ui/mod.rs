@@ -2,15 +2,21 @@
 
 mod checkbox;
 mod dialog;
+mod label;
+mod progress;
 mod radio;
 mod select;
+mod separator;
+mod stat;
 
 pub use checkbox::Checkbox;
 pub use dialog::{Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Sheet};
+pub use label::Label;
+pub use progress::Progress;
 pub use radio::{RadioGroup, RadioGroupItem};
 pub use select::{Select, SelectItem};
-
-use leptos::prelude::*;
+pub use separator::Separator;
+pub use stat::Stat;
 
 use crate::cn::cn;
 
@@ -121,60 +127,4 @@ pub fn label_class(extra: &str) -> String {
     "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
     extra,
   ])
-}
-
-/// 表单标签。
-#[component]
-pub fn Label(
-  #[prop(into)] r#for: String,
-  #[prop(optional, into)] class: Signal<String>,
-  children: Children,
-) -> impl IntoView {
-  view! {
-    <label data-slot="label" for=r#for class=move || label_class(&class.get())>
-      {children()}
-    </label>
-  }
-}
-
-/// 水平分割线。
-#[component]
-pub fn Separator() -> impl IntoView {
-  view! {
-    <div
-      data-slot="separator"
-      role="none"
-      data-orientation="horizontal"
-      class="bg-border shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px"
-    ></div>
-  }
-}
-
-/// 进度条。
-#[component]
-pub fn Progress(
-  #[prop(into)] value: Signal<i64>,
-  #[prop(optional, into)] class: String,
-) -> impl IntoView {
-  let class = cn(&[
-    "bg-primary/20 relative h-2 w-full overflow-hidden rounded-full",
-    &class,
-  ]);
-  view! {
-    <div
-      data-slot="progress"
-      role="progressbar"
-      aria-valuemin="0"
-      aria-valuemax="100"
-      aria-valuenow=move || value.get().to_string()
-      aria-label="作答进度"
-      class=class
-    >
-      <div
-        data-slot="progress-indicator"
-        class="bg-primary h-full w-full flex-1 transition-all"
-        style=move || format!("transform: translateX(-{}%)", 100 - value.get())
-      ></div>
-    </div>
-  }
 }

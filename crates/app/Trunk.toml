@@ -11,9 +11,14 @@ tailwindcss = "4.1.14"
 wasm_opt = "version_123"
 
 [watch]
-watch = ["src", "style", "index.html", "../core/src", "../../public", "../../data/glossary.json"]
+watch = ["src", "style", "index.html", "../core/src", "../../public", "../../data/glossary"]
 
 [serve]
 addresses = ["127.0.0.1"]
 port = 3000
 open = false
+
+# 开发联调：把 /api 请求代理到后端 server（端口 3001），供 /api/solar 同源访问
+# backend URL 的路径部分（/api/）会作为 Trunk 监听的代理前缀，后续路径原样透传
+[[proxy]]
+backend = "http://localhost:3001/api/"

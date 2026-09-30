@@ -1,0 +1,462 @@
+{
+  "介质损耗": {
+    "en": "Dielectric Loss",
+    "category": "基础",
+    "desc": "绝缘材料在交流电下发热而白白浪费的能量",
+    "inject": true
+  },
+  "击穿": {
+    "en": "Breakdown",
+    "category": "基础",
+    "desc": "绝缘材料电压太高时突然通电了",
+    "inject": true
+  },
+  "尖端放电": {
+    "en": "Point Discharge",
+    "category": "基础",
+    "desc": "导体尖角处电荷聚集、电场特别强，容易放电",
+    "inject": true
+  },
+  "峰-峰值": {
+    "abbr": "Vpp",
+    "en": "Peak-to-Peak Value",
+    "category": "基础",
+    "desc": "波形最高点到最低点之间的幅度差",
+    "inject": true
+  },
+  "有效值": {
+    "abbr": "RMS",
+    "en": "Root Mean Square",
+    "category": "基础",
+    "desc": "和直流产生同样发热效果的交流等效值",
+    "aliases": [
+      "均方根值"
+    ],
+    "inject": true
+  },
+  "射频": {
+    "abbr": "RF",
+    "en": "Radio Frequency",
+    "category": "基础",
+    "desc": "适合发射到空中的高频电信号",
+    "inject": true
+  },
+  "音频": {
+    "abbr": "AF",
+    "en": "Audio Frequency",
+    "category": "基础",
+    "desc": "人耳能听到的声音对应的电信号",
+    "inject": true
+  },
+  "电压": {
+    "abbr": "U",
+    "en": "Voltage",
+    "category": "基础",
+    "desc": "两点之间的电位差，单位伏特 V，是推动电流流动的原因",
+    "aliases": [
+      "电位差"
+    ]
+  },
+  "电流": {
+    "abbr": "I",
+    "en": "Current",
+    "category": "基础",
+    "desc": "单位时间内通过导体截面的电荷量，单位安培 A"
+  },
+  "电阻": {
+    "abbr": "R",
+    "en": "Resistance",
+    "category": "基础",
+    "desc": "导体对电流的阻碍作用，单位欧姆 Ω"
+  },
+  "电功率": {
+    "abbr": "P",
+    "en": "Power",
+    "category": "基础",
+    "desc": "单位时间内消耗或传输的电能，单位瓦特 W，等于电压乘以电流",
+    "aliases": [
+      "功率"
+    ]
+  },
+  "欧姆定律": {
+    "en": "Ohm's Law",
+    "category": "基础",
+    "desc": "电压等于电流乘以电阻，即 U = I × R"
+  },
+  "基尔霍夫定律": {
+    "en": "Kirchhoff's Laws",
+    "category": "基础",
+    "desc": "电流定律指流入节点的电流之和等于流出之和，电压定律指闭合回路中各段电压的代数和为零",
+    "aliases": [
+      "KCL",
+      "KVL"
+    ]
+  },
+  "电动势": {
+    "abbr": "EMF",
+    "en": "Electromotive Force",
+    "category": "基础",
+    "desc": "电源内部把其他形式的能量转化为电能的能力，单位伏特"
+  },
+  "内阻": {
+    "en": "Internal Resistance",
+    "category": "基础",
+    "desc": "电源内部存在的电阻，输出电流越大，端电压下降越多"
+  },
+  "直流": {
+    "abbr": "DC",
+    "en": "Direct Current",
+    "category": "基础",
+    "desc": "方向不随时间变化的电流",
+    "aliases": [
+      "直流电"
+    ]
+  },
+  "交流": {
+    "abbr": "AC",
+    "en": "Alternating Current",
+    "category": "基础",
+    "desc": "大小和方向随时间周期变化的电流，我国市电为 50Hz 正弦交流",
+    "aliases": [
+      "交流电"
+    ]
+  },
+  "阻抗": {
+    "abbr": "Z",
+    "en": "Impedance",
+    "category": "基础",
+    "desc": "交流电路中电阻和电抗共同对电流的阻碍作用，单位欧姆"
+  },
+  "电抗": {
+    "abbr": "X",
+    "en": "Reactance",
+    "category": "基础",
+    "desc": "电容和电感对交流电的阻碍作用，大小随频率变化"
+  },
+  "容抗": {
+    "abbr": "Xc",
+    "en": "Capacitive Reactance",
+    "category": "基础",
+    "desc": "电容对交流电的阻碍，Xc = 1/(2πfC)，频率越高容抗越小"
+  },
+  "感抗": {
+    "abbr": "XL",
+    "en": "Inductive Reactance",
+    "category": "基础",
+    "desc": "电感对交流电的阻碍，XL = 2πfL，频率越高感抗越大"
+  },
+  "电容": {
+    "abbr": "C",
+    "en": "Capacitance",
+    "category": "基础",
+    "desc": "电容器储存电荷的能力，单位法拉 F，常用 μF、nF、pF",
+    "aliases": [
+      "电容器"
+    ]
+  },
+  "电感": {
+    "abbr": "L",
+    "en": "Inductance",
+    "category": "基础",
+    "desc": "线圈阻碍电流变化并以磁场形式储能的能力，单位亨利 H",
+    "aliases": [
+      "电感器",
+      "线圈"
+    ]
+  },
+  "谐振": {
+    "en": "Resonance",
+    "category": "基础",
+    "desc": "电路中感抗与容抗相等、相互抵消时的状态，谐振频率 f = 1/(2π√LC)",
+    "aliases": [
+      "谐振频率"
+    ]
+  },
+  "品质因数": {
+    "abbr": "Q",
+    "en": "Quality Factor",
+    "category": "基础",
+    "desc": "谐振电路储存能量与损耗能量之比，Q 越高选择性越好、带宽越窄",
+    "aliases": [
+      "Q 值"
+    ]
+  },
+  "分贝": {
+    "abbr": "dB",
+    "en": "Decibel",
+    "category": "基础",
+    "desc": "用对数表示两个量之比的单位，功率比取 10lg、电压比取 20lg，3dB 约为功率两倍"
+  },
+  "dBm": {
+    "en": "Decibels Relative to 1 Milliwatt",
+    "category": "基础",
+    "desc": "以 1mW 为参考的功率电平，0dBm 等于 1mW，30dBm 等于 1W"
+  },
+  "趋肤效应": {
+    "en": "Skin Effect",
+    "category": "基础",
+    "desc": "频率越高电流越集中在导体表面流动，导致导线的有效电阻增大",
+    "aliases": [
+      "集肤效应"
+    ]
+  },
+  "半导体": {
+    "en": "Semiconductor",
+    "category": "基础",
+    "desc": "导电能力介于导体和绝缘体之间的材料，如硅、锗，是二极管和晶体管的基础"
+  },
+  "二极管": {
+    "en": "Diode",
+    "category": "基础",
+    "desc": "只允许电流单向通过的器件，用于整流、检波等"
+  },
+  "稳压二极管": {
+    "en": "Zener Diode",
+    "category": "基础",
+    "desc": "工作在反向击穿区、两端电压基本恒定的二极管，用于稳压",
+    "aliases": [
+      "齐纳二极管"
+    ]
+  },
+  "变容二极管": {
+    "en": "Varactor Diode",
+    "category": "基础",
+    "desc": "结电容随反向电压变化的二极管，常用于电调谐和调频"
+  },
+  "发光二极管": {
+    "abbr": "LED",
+    "en": "Light-Emitting Diode",
+    "category": "基础",
+    "desc": "通电后发光的二极管，常用作指示灯"
+  },
+  "三极管": {
+    "abbr": "BJT",
+    "en": "Bipolar Junction Transistor",
+    "category": "基础",
+    "desc": "用较小的基极电流控制较大集电极电流的放大器件",
+    "aliases": [
+      "晶体管",
+      "双极型晶体管"
+    ]
+  },
+  "场效应管": {
+    "abbr": "FET",
+    "en": "Field-Effect Transistor",
+    "category": "基础",
+    "desc": "用栅极电压控制电流的器件，输入阻抗高，广泛用于放大和开关",
+    "aliases": [
+      "MOSFET"
+    ]
+  },
+  "集成电路": {
+    "abbr": "IC",
+    "en": "Integrated Circuit",
+    "category": "基础",
+    "desc": "把大量元件集成在一块芯片上的电路",
+    "aliases": [
+      "芯片"
+    ]
+  },
+  "运算放大器": {
+    "abbr": "Op-Amp",
+    "en": "Operational Amplifier",
+    "category": "基础",
+    "desc": "高增益的直接耦合放大器集成电路，配合外部元件可构成放大、滤波等电路",
+    "aliases": [
+      "运放"
+    ]
+  },
+  "整流": {
+    "en": "Rectification",
+    "category": "基础",
+    "desc": "把交流电变为单向脉动直流电的过程，有半波、全波、桥式等形式",
+    "aliases": [
+      "整流器"
+    ]
+  },
+  "滤波器": {
+    "en": "Filter",
+    "category": "基础",
+    "desc": "让某些频率通过、衰减其他频率的电路，有低通、高通、带通、带阻等类型"
+  },
+  "低通滤波器": {
+    "abbr": "LPF",
+    "en": "Low-Pass Filter",
+    "category": "基础",
+    "desc": "让低于截止频率的信号通过、衰减高频的滤波器，发射机输出端常用它抑制谐波"
+  },
+  "高通滤波器": {
+    "abbr": "HPF",
+    "en": "High-Pass Filter",
+    "category": "基础",
+    "desc": "让高于截止频率的信号通过、衰减低频的滤波器"
+  },
+  "带通滤波器": {
+    "abbr": "BPF",
+    "en": "Band-Pass Filter",
+    "category": "基础",
+    "desc": "只让某一频段信号通过的滤波器"
+  },
+  "截止频率": {
+    "en": "Cutoff Frequency",
+    "category": "基础",
+    "desc": "滤波器输出比通带下降 3dB 时对应的频率"
+  },
+  "变压器": {
+    "en": "Transformer",
+    "category": "基础",
+    "desc": "利用电磁感应变换交流电压、电流或阻抗的器件"
+  },
+  "放大器工作类别": {
+    "en": "Amplifier Classes",
+    "category": "基础",
+    "desc": "按导通角划分，甲类全周期导通、失真小效率低，乙类导通半周期，甲乙类介于两者之间，丙类小于半周期、效率高但失真大，丁类工作于开关状态",
+    "aliases": [
+      "甲类",
+      "乙类",
+      "甲乙类",
+      "丙类",
+      "丁类"
+    ]
+  },
+  "振荡器": {
+    "en": "Oscillator",
+    "category": "基础",
+    "desc": "不需外加输入就能产生周期信号的电路"
+  },
+  "模数转换": {
+    "abbr": "ADC",
+    "en": "Analog-to-Digital Converter",
+    "category": "基础",
+    "desc": "把模拟信号转换为数字信号的器件",
+    "aliases": [
+      "模数转换器"
+    ]
+  },
+  "数模转换": {
+    "abbr": "DAC",
+    "en": "Digital-to-Analog Converter",
+    "category": "基础",
+    "desc": "把数字信号转换为模拟信号的器件",
+    "aliases": [
+      "数模转换器"
+    ]
+  },
+  "奈奎斯特采样定理": {
+    "en": "Nyquist Sampling Theorem",
+    "category": "基础",
+    "desc": "采样频率必须大于信号最高频率的 2 倍，才能无失真地恢复原信号",
+    "aliases": [
+      "采样定理"
+    ]
+  },
+  "I/Q 信号": {
+    "en": "In-phase / Quadrature",
+    "category": "基础",
+    "desc": "相位相差 90° 的两路正交信号，软件无线电用它表示复数基带信号",
+    "aliases": [
+      "正交信号"
+    ]
+  },
+  "快速傅里叶变换": {
+    "abbr": "FFT",
+    "en": "Fast Fourier Transform",
+    "category": "基础",
+    "desc": "把时域信号快速转换为频谱的算法，SDR 的频谱和瀑布图显示都依赖它"
+  },
+  "FIR 滤波器": {
+    "abbr": "FIR",
+    "en": "Finite Impulse Response Filter",
+    "category": "基础",
+    "desc": "有限冲激响应数字滤波器，可以做到线性相位"
+  },
+  "IIR 滤波器": {
+    "abbr": "IIR",
+    "en": "Infinite Impulse Response Filter",
+    "category": "基础",
+    "desc": "无限冲激响应数字滤波器，运算量小，但相位是非线性的"
+  },
+  "逻辑门": {
+    "en": "Logic Gate",
+    "category": "基础",
+    "desc": "实现与、或、非等基本逻辑运算的数字电路",
+    "aliases": [
+      "与门",
+      "或门",
+      "非门"
+    ]
+  },
+  "触发器": {
+    "en": "Flip-Flop",
+    "category": "基础",
+    "desc": "能存储 1 位二进制状态的数字电路，D 触发器可构成分频器",
+    "aliases": [
+      "D 触发器"
+    ]
+  },
+  "热噪声": {
+    "en": "Thermal Noise",
+    "category": "基础",
+    "desc": "导体中电子热运动产生的噪声，与温度和带宽成正比，室温下约为每赫兹 -174dBm",
+    "aliases": [
+      "约翰逊噪声"
+    ]
+  },
+  "静电放电": {
+    "abbr": "ESD",
+    "en": "Electrostatic Discharge",
+    "category": "基础",
+    "desc": "积累的静电突然释放，可能击穿半导体器件，操作时宜佩戴防静电手环"
+  },
+  "相位": {
+    "en": "Phase",
+    "category": "基础",
+    "desc": "描述周期信号在某一时刻所处位置的量，单位为度或弧度",
+    "aliases": [
+      "相位差"
+    ]
+  },
+  "周期": {
+    "abbr": "T",
+    "en": "Period",
+    "category": "基础",
+    "desc": "周期信号完成一次变化所需的时间，等于频率的倒数"
+  },
+  "峰值": {
+    "en": "Peak Value",
+    "category": "基础",
+    "desc": "交流信号的最大瞬时值，正弦波的有效值等于峰值除以 √2"
+  },
+  "串联": {
+    "en": "Series Connection",
+    "category": "基础",
+    "desc": "元件首尾相连、流过电流相同的连接方式"
+  },
+  "并联": {
+    "en": "Parallel Connection",
+    "category": "基础",
+    "desc": "元件两端分别连在一起、两端电压相同的连接方式"
+  },
+  "频谱分析仪": {
+    "en": "Spectrum Analyzer",
+    "category": "基础",
+    "desc": "显示信号在各频率上幅度分布的仪器，可用于检查谐波和杂散发射",
+    "aliases": [
+      "频谱仪"
+    ]
+  },
+  "示波器": {
+    "en": "Oscilloscope",
+    "category": "基础",
+    "desc": "显示电压随时间变化波形的仪器"
+  },
+  "万用表": {
+    "abbr": "DMM",
+    "en": "Multimeter",
+    "category": "基础",
+    "desc": "可测量电压、电流、电阻等的仪表，测电压要并联、测电流要串联",
+    "aliases": [
+      "数字万用表"
+    ]
+  }
+}
