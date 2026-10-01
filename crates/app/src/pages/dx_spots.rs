@@ -29,7 +29,8 @@ const BANDS: &[&str] = &[
 const MODES: &[&str] = &["CW", "SSB", "FT8", "FT4", "RTTY"];
 /// 筛选按钮激活 / 未激活样式。
 const CHIP_ON: &str = "shrink-0 whitespace-nowrap rounded-full border bg-primary px-2.5 py-1 text-xs text-primary-foreground";
-const CHIP_OFF: &str = "shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs hover:bg-accent";
+const CHIP_OFF: &str =
+  "shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs hover:bg-accent";
 
 /// 频率 kHz → 业余波段。
 fn band_of(khz: u32) -> &'static str {

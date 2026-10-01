@@ -382,7 +382,7 @@ pub fn LogPage() -> impl IntoView {
               } else {
                 view! {
                   <div class="space-y-3">
-                    <GridMap grids=grids.clone() highlight=Signal::derive(|| None) />
+                    <GridMap entries=entries.clone() station_grid=station.get_untracked().gridsquare.clone() />
                     <div class="flex flex-wrap gap-1.5">
                       {grids
                         .into_iter()

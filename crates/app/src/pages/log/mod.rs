@@ -8,7 +8,7 @@ mod grid_cell;
 mod grid_map;
 mod log_page;
 
-pub use grid_map::{CONTINENTS, GridMap, polygon_points, project};
+pub use grid_map::{CONTINENTS, COUNTRY_LABELS, GridMap, polygon_points, project, simplify};
 pub use log_page::LogPage;
 
 use ham_web_core::adif::AdifRecord;
@@ -31,8 +31,8 @@ struct StationInfo {
 }
 
 /// 一条通联记录。
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct LogEntry {
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LogEntry {
   id: u64,
   /// 日期（YYYY-MM-DD）。
   date: String,
@@ -134,6 +134,13 @@ fn load_station() -> StationInfo {
 
 fn save_station(station: &StationInfo) {
   crate::util::storage::set_json(STATION_KEY, station);
+}
+
+/// 读取网格地图所需的输入：全部通联记录 + 本台网格（供网格地图页等外部入口复用）。
+pub fn grid_map_input() -> (Vec<LogEntry>, String) {
+  let lb = load_logbook();
+  let st = load_station();
+  (lb.entries, st.gridsquare)
 }
 
 /// 当前 UTC 日期（YYYY-MM-DD）。

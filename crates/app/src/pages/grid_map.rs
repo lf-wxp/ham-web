@@ -6,7 +6,7 @@ use leptos::task::spawn_local;
 use serde::Deserialize;
 
 use crate::data;
-use crate::pages::log::GridMap;
+use crate::pages::log::{GridMap, grid_map_input};
 use crate::util::set_title;
 use crate::util::storage;
 
@@ -38,6 +38,8 @@ pub fn GridMapPage() -> impl IntoView {
 
   let query = RwSignal::new(String::new());
 
+  let (entries, station_grid) = grid_map_input();
+
   let logbook: LogbookLite = storage::get_json("logbook").unwrap_or_default();
   let mut grids: Vec<String> = logbook
     .entries
@@ -50,11 +52,6 @@ pub fn GridMapPage() -> impl IntoView {
   grids.sort();
   grids.dedup();
   let count = grids.len();
-
-  let highlight = Signal::derive(move || {
-    let q = query.get().trim().to_ascii_uppercase();
-    lat_lon_from_grid(&q).is_some().then_some(q)
-  });
 
   let geocode = RwSignal::new(None::<Geocode>);
   Effect::new(move |_| {
@@ -136,7 +133,7 @@ pub fn GridMapPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card p-4">
-          <GridMap grids=grids.clone() highlight=highlight />
+          <GridMap entries=entries station_grid=station_grid />
           <p class="mt-3 text-xs text-muted-foreground">
             {if count == 0 {
               "暂无日志网格记录，地图仅展示查询标记；在「通联日志」添加带网格的记录后展示通联分布。"
