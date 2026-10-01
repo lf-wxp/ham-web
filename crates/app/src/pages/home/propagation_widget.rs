@@ -53,10 +53,10 @@ pub(super) fn PropagationWidget() -> impl IntoView {
               Some(kv) => {
                 let lvl = propagation_level(kv, ssn.get().unwrap_or(0.0), sfi.get().unwrap_or(0.0));
                 let color = match lvl {
-                  PropagationLevel::Excellent => "text-emerald-500",
-                  PropagationLevel::Good => "text-sky-500",
-                  PropagationLevel::Fair => "text-amber-500",
-                  PropagationLevel::Poor => "text-red-500",
+                  PropagationLevel::Excellent => "text-emerald-700 dark:text-emerald-400",
+                  PropagationLevel::Good => "text-sky-700 dark:text-sky-400",
+                  PropagationLevel::Fair => "text-amber-700 dark:text-amber-400",
+                  PropagationLevel::Poor => "text-red-700 dark:text-red-400",
                 };
                 view! {
                   <span>"传播条件：" <span class=format!("font-semibold {color}")>{lvl.label()}</span></span>

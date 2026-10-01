@@ -92,6 +92,11 @@ description = "从 CSV 构建题库 JSON 与图片（DATASET_DIR 优先本地，
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "dataset"]
 
+[tasks.dxcc]
+description = "从 country-files.com 下载 cty.csv，更新内置 DXCC 前缀表 crates/core/data/dxcc.txt"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "dxcc"]
+
 [tasks.icons]
 description = "由 public/pwa-icon.svg 生成 PWA / Apple Touch 图标"
 command = "cargo"
@@ -167,6 +172,13 @@ args = ["test", "-p", "ham-web-core", "-p", "ham-web-tools", "-p", "ham-web-serv
 [tasks.check]
 description = "代码检查：格式检查 + clippy + 单元测试（不构建前端）"
 dependencies = ["fmt-check", "clippy", "test"]
+
+[tasks.e2e]
+description = "端到端测试：构建 release 站点后由 Playwright 启动服务器并运行 e2e/（首次：cd e2e && npm ci && npx playwright install chromium）"
+dependencies = ["build-web"]
+cwd = "e2e"
+command = "npx"
+args = ["playwright", "test"]
 
 [tasks.ci]
 description = "CI：格式检查 + clippy + 测试 + 前端构建"

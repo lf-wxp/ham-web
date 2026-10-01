@@ -1,6 +1,4 @@
-//! Lucide 图标（与原项目 `lucide-react@0.539` 的 SVG 路径一致）。
-
-use leptos::prelude::*;
+//! 图标种类枚举与 Lucide SVG 路径映射。
 
 /// 用到的图标。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -161,7 +159,7 @@ pub enum IconKind {
 }
 
 impl IconKind {
-  const fn name(self) -> &'static str {
+  pub(crate) const fn name(self) -> &'static str {
     match self {
       Self::Settings => "settings",
       Self::Search => "search",
@@ -253,7 +251,7 @@ impl IconKind {
     }
   }
 
-  const fn body(self) -> &'static str {
+  pub(crate) const fn body(self) -> &'static str {
     match self {
       Self::Settings => {
         r#"<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>"#
@@ -487,27 +485,5 @@ impl IconKind {
         r#"<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>"#
       }
     }
-  }
-}
-
-/// 渲染一个 Lucide 图标。
-#[component]
-pub fn Icon(kind: IconKind, #[prop(optional, into)] class: Signal<String>) -> impl IntoView {
-  let class = move || format!("lucide lucide-{} {}", kind.name(), class.get());
-  view! {
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      class=class
-      aria-hidden="true"
-      inner_html=kind.body()
-    ></svg>
   }
 }

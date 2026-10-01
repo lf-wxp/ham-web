@@ -286,6 +286,21 @@ impl Glossary {
   }
 }
 
+/// `data/glossary/` 下的分类文件名（不含扩展名），顺序与 [`glossary_files!`] 一致；
+/// 前端按此列表运行时拉取 `/data/glossary/{name}.json`，不再嵌入 wasm。
+pub const GLOSSARY_FILES: [&str; 10] = [
+  "law",
+  "frequency",
+  "operation",
+  "slang",
+  "modulation",
+  "equipment",
+  "antenna",
+  "propagation",
+  "basics",
+  "safety",
+];
+
 /// 按一级分类顺序列出 `data/glossary/` 下全部术语表文件内容。
 ///
 /// 供 core 测试与前端（`ham-web-app`）复用，保证两侧加载的分类文件列表一致。
@@ -313,6 +328,20 @@ mod tests {
 
   fn parse(json: &str) -> Glossary {
     serde_json::from_str(json).expect("valid glossary")
+  }
+
+  #[test]
+  fn file_list_matches_embedded_files() {
+    let embedded = crate::glossary_files!();
+    assert_eq!(embedded.len(), GLOSSARY_FILES.len());
+    for (name, text) in GLOSSARY_FILES.iter().zip(embedded) {
+      let on_disk = std::fs::read_to_string(format!(
+        "{}/../../data/glossary/{name}.json",
+        env!("CARGO_MANIFEST_DIR")
+      ))
+      .expect("glossary file exists");
+      assert_eq!(on_disk, text, "{name}.json 顺序与 glossary_files! 不一致");
+    }
   }
 
   #[test]

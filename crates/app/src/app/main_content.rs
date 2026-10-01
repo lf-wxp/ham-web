@@ -7,18 +7,19 @@ use crate::pages::{
   AmplifierPage, AnalogModesPage, AntennaAnalyzerPage, AntennaArrayPage, AntennaDiyPage,
   AntennaFarmPage, AntennaInstallationPage, AntennaModelingPage, AntennaTuningPage, AntennasPage,
   AprsPage, ArdfPage, AtvPage, AwardsPage, BandPlanPage, BandsPage, BeginnerPage, BookmarksPage,
-  BrowsePage, CabrilloPage, ContestPage, CountdownPage, CwOpPage, DashboardPage, DvNetworkPage,
-  DxPage, DxSpotsPage, DxpeditionPage, ElectronicsPage, EmcommPage, EmePage, EqslPage, ExamPage,
-  FeedlinePage, FiltersPage, FlashcardsPage, FrequenciesPage, Ft8Page, GlossaryPage, GnuradioPage,
-  GraylinePage, GridMapPage, GridSystemPage, GroundingPage, HistoryPage, HomePage, IotaPage,
-  LicenseClassesPage, LicensePage, LogPage, LoggingSoftwarePage, MetersPage, MicrowavePage,
-  MistakesPage, MobilePage, ModesPage, MorsePage, MostWantedPage, MufPage, NotFoundPage, NvisPage,
-  OperatingPage, OrganizationsPage, PacketPage, PhoneticPage, PhotoProcessorPage, PolarizationPage,
-  PortablePage, PowerPage, PowerSupplyPage, PracticePage, PrefixesPage, ProgressPage,
-  PropagationPage, QCodePage, QrpPage, QslCardPage, ReceiverPage, ReferencePage, RegulationsPage,
-  RemotePage, RepeaterBuildPage, RepeaterPage, RfiPage, RstPage, RttyPage, SafetyPage,
-  SatellitesPage, SdrPage, SolarPage, SpecialPropPage, SstvPage, StatsPage, SwlPage, ToolsPage,
-  TransceiverPage, WeatherSatPage, WsprPage,
+  BrowsePage, CabrilloPage, CardsPage, ContestLogPage, ContestPage, CountdownPage, CwOpPage,
+  DashboardPage, DvNetworkPage, DxPage, DxSpotsPage, DxpeditionPage, ElectronicsPage, EmcommPage,
+  EmePage, EqslPage, ExamPage, FeedlinePage, FiltersPage, FlashcardsPage, FrequenciesPage, Ft8Page,
+  GlossaryPage, GnuradioPage, GraylinePage, GridMapPage, GridSystemPage, GroundingPage,
+  HistoryPage, HomePage, IotaPage, LicenseClassesPage, LicensePage, ListenPage, LogPage,
+  LoggingSoftwarePage, MetersPage, MicrowavePage, MistakesPage, MobilePage, ModesPage, MorsePage,
+  MostWantedPage, MufPage, NotFoundPage, NvisPage, OperatingPage, OrganizationsPage, PacketPage,
+  PhoneticPage, PhotoProcessorPage, PolarizationPage, PortablePage, PowerPage, PowerSupplyPage,
+  PracticePage, PrefixesPage, PrintPage, ProgressPage, PropagationPage, QCodePage, QrpPage,
+  QslCardPage, QslLabelsPage, ReceiverPage, ReferencePage, RegulationsPage, RemotePage,
+  RepeaterBuildPage, RepeaterPage, RfiPage, RstPage, RttyPage, SafetyPage, SatellitesPage, SdrPage,
+  SolarPage, SpecialPropPage, SstvPage, StatsPage, SwlPage, ToolsPage, TransceiverPage,
+  WeatherSatPage, WsprPage,
 };
 
 use crate::components::related_topics::RelatedTopics;
@@ -39,10 +40,14 @@ pub(super) fn MainContent() -> impl IntoView {
   });
 
   view! {
-    <main class="flex-1">
+    <main id="main-content" tabindex="-1" class="flex-1 outline-none">
       <Routes fallback=|| view! { <NotFoundPage /> }>
         <Route path=path!("/") view=HomePage />
         <Route path=path!("/practice") view=PracticePage />
+        <Route path=path!("/print") view=PrintPage />
+        <Route path=path!("/qsl-labels") view=QslLabelsPage />
+        <Route path=path!("/listen") view=ListenPage />
+        <Route path=path!("/cards") view=CardsPage />
         <Route path=path!("/exam") view=ExamPage />
         <Route path=path!("/browse") view=BrowsePage />
         <Route path=path!("/glossary") view=GlossaryPage />
@@ -62,6 +67,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/rst") view=RstPage />
         <Route path=path!("/propagation") view=PropagationPage />
         <Route path=path!("/log") view=LogPage />
+        <Route path=path!("/contest-log") view=ContestLogPage />
         <Route path=path!("/countdown") view=CountdownPage />
         <Route path=path!("/mistakes") view=MistakesPage />
         <Route path=path!("/bookmarks") view=BookmarksPage />

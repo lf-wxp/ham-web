@@ -13,7 +13,7 @@ pub fn NvisPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"NVIS 近垂直入射天波"</div>
+            <h1 class="text-base font-semibold leading-tight">"NVIS 近垂直入射天波"</h1>
             <div class="text-xs text-muted-foreground">"近距离盲区通信的天线技术"</div>
           </div>
         </div>

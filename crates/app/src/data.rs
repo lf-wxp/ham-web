@@ -4,9 +4,9 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
-use std::sync::{Arc, LazyLock};
+use std::sync::{Arc, OnceLock};
 
-use ham_web_core::glossary::Glossary;
+use ham_web_core::glossary::{GLOSSARY_FILES, Glossary};
 use ham_web_core::{Bank, BankConfig, QuestionItem, QuestionVersion};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
@@ -42,11 +42,14 @@ enum CacheMode {
   ForceCache,
   /// 强制向服务器验证，并附带时间戳参数。
   NoCache,
+  /// 浏览器默认缓存策略（遵循服务端缓存头，可被 Service Worker 预缓存命中）。
+  Default,
 }
 
 async fn fetch_text(url: &str, mode: CacheMode) -> Result<String, AppError> {
   let init = RequestInit::new();
   let final_url = match mode {
+    CacheMode::Default => url.to_owned(),
     CacheMode::ForceCache => {
       init.set_cache(RequestCache::ForceCache);
       url.to_owned()
@@ -234,7 +237,18 @@ pub async fn load_bank(
   strict: bool,
 ) -> Result<Questions, AppError> {
   let url = resolve_url(version, bank).await;
-  let data = load_url(&url).await?;
+  let rev = load_config(false)
+    .await
+    .ok()
+    .and_then(|cfg| cfg.rev_of(&url).map(str::to_owned));
+  let fetch_url = rev
+    .as_ref()
+    .map_or_else(|| url.clone(), |r| format!("{url}?v={r}"));
+  let fresh = CACHE.with_borrow(|c| !c.questions.contains_key(&fetch_url));
+  let data = load_url(&fetch_url).await?;
+  if fresh && url == bank.default_url() {
+    crate::bank_updates::observe(bank, rev.as_deref().unwrap_or_default(), &data);
+  }
   if strict && data.is_empty() {
     return Err(AppError::Validation(format!(
       "Questions for bank {bank} (version {}) empty",
@@ -288,22 +302,31 @@ pub async fn version_status(version_id: &str, force: bool) -> VersionStatus {
   status
 }
 
-/// 术语表（编译期嵌入 `data/glossary/` 下按分类拆分的 JSON，离线可用）。
-pub fn glossary() -> &'static Glossary {
-  static GLOSSARY: LazyLock<Glossary> = LazyLock::new(|| {
-    let parsed: Vec<Glossary> = ham_web_core::glossary_files!()
-      .iter()
-      .filter_map(|s| match serde_json::from_str(s) {
-        Ok(g) => Some(g),
-        Err(e) => {
-          web_sys::console::error_1(&format!("[ERROR] 术语表解析失败：{e}").into());
-          None
-        }
-      })
-      .collect();
-    Glossary::merged(parsed)
-  });
-  &GLOSSARY
+static GLOSSARY: OnceLock<Glossary> = OnceLock::new();
+
+/// 已加载的术语表（尚未加载时为 `None`）。
+pub fn glossary_loaded() -> Option<&'static Glossary> {
+  GLOSSARY.get()
+}
+
+/// 术语表：首次使用时拉取 `/data/glossary/*.json`（按分类拆分，Service Worker 预缓存，离线可用），
+/// 之后复用内存缓存。不嵌入 wasm 以减小首屏下载体积。
+pub async fn load_glossary() -> &'static Glossary {
+  if let Some(g) = GLOSSARY.get() {
+    return g;
+  }
+  let mut parsed = Vec::with_capacity(GLOSSARY_FILES.len());
+  for name in GLOSSARY_FILES {
+    let url = format!("/data/glossary/{name}.json");
+    match fetch_text(&url, CacheMode::Default).await {
+      Ok(text) => match serde_json::from_str::<Glossary>(&text) {
+        Ok(g) => parsed.push(g),
+        Err(e) => web_sys::console::error_1(&format!("[ERROR] 术语表 {name} 解析失败：{e}").into()),
+      },
+      Err(e) => web_sys::console::error_1(&format!("[ERROR] 术语表 {name} 加载失败：{e}").into()),
+    }
+  }
+  GLOSSARY.get_or_init(|| Glossary::merged(parsed))
 }
 
 /// 强制刷新配置与全部版本状态。

@@ -13,7 +13,7 @@ pub fn MufPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"传播预测"</div>
+            <h1 class="text-base font-semibold leading-tight">"传播预测"</h1>
             <div class="text-xs text-muted-foreground">"MUF 最高可用频率 · LUF 最低可用频率 · 最佳工作频率 · 波段选择"</div>
           </div>
         </div>

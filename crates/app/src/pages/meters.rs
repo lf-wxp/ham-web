@@ -15,7 +15,7 @@ pub fn MetersPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"测量仪表"</div>
+            <h1 class="text-base font-semibold leading-tight">"测量仪表"</h1>
             <div class="text-xs text-muted-foreground">"万用表 · 驻波表 · 功率计 · 天线分析仪"</div>
           </div>
         </div>

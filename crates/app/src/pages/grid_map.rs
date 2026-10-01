@@ -6,22 +6,8 @@ use leptos::task::spawn_local;
 use serde::Deserialize;
 
 use crate::data;
-use crate::pages::log::{GridMap, grid_map_input};
+use crate::pages::log::{GridMap, use_log_store};
 use crate::util::set_title;
-use crate::util::storage;
-
-/// 日志精简结构（仅读取网格）。
-#[derive(Deserialize, Default)]
-struct LogbookLite {
-  #[serde(default)]
-  entries: Vec<LogEntryLite>,
-}
-
-#[derive(Deserialize, Default)]
-struct LogEntryLite {
-  #[serde(default)]
-  gridsquare: String,
-}
 
 /// 反向地理编码结果（/api/geocode）。
 #[derive(Deserialize, Clone)]
@@ -36,22 +22,26 @@ struct Geocode {
 pub fn GridMapPage() -> impl IntoView {
   set_title("网格地图");
 
+  let store = use_log_store();
   let query = RwSignal::new(String::new());
 
-  let (entries, station_grid) = grid_map_input();
-
-  let logbook: LogbookLite = storage::get_json("logbook").unwrap_or_default();
-  let mut grids: Vec<String> = logbook
-    .entries
-    .iter()
-    .filter_map(|e| {
-      let g = e.gridsquare.trim().to_ascii_uppercase();
-      field_index(&g).is_some().then_some(g)
-    })
-    .collect();
-  grids.sort();
-  grids.dedup();
-  let count = grids.len();
+  // 已通联网格去重列表（响应式，跟随日志 store 联动）。
+  let grids = Memo::new(move |_| {
+    let mut grids: Vec<String> = store
+      .logbook
+      .get()
+      .entries
+      .iter()
+      .filter_map(|e| {
+        let g = e.gridsquare.trim().to_ascii_uppercase();
+        field_index(&g).is_some().then_some(g)
+      })
+      .collect();
+    grids.sort();
+    grids.dedup();
+    grids
+  });
+  let count = Memo::new(move |_| grids.get().len());
 
   let geocode = RwSignal::new(None::<Geocode>);
   Effect::new(move |_| {
@@ -76,11 +66,11 @@ pub fn GridMapPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"网格地图"</div>
+            <h1 class="text-base font-semibold leading-tight">"网格地图"</h1>
             <div class="text-xs text-muted-foreground">"Maidenhead 网格定位 · 查询与已通联分布"</div>
           </div>
           <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
-            {format!("已通联 {count} 个网格")}
+            {move || format!("已通联 {} 个网格", count.get())}
           </span>
         </div>
       </header>
@@ -133,9 +123,15 @@ pub fn GridMapPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card p-4">
-          <GridMap entries=entries station_grid=station_grid />
+          {move || {
+            let entries = store.logbook.get().entries;
+            let station_grid = store.station.get().gridsquare.clone();
+            view! {
+              <GridMap entries=entries station_grid=station_grid />
+            }
+          }}
           <p class="mt-3 text-xs text-muted-foreground">
-            {if count == 0 {
+            {move || if count.get() == 0 {
               "暂无日志网格记录，地图仅展示查询标记；在「通联日志」添加带网格的记录后展示通联分布。"
             } else {
               "点击地图上的 field（大格）展开具体网格列表；色块深浅表示通联密度，红色标记为查询位置。"

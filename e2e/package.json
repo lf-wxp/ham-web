@@ -1,0 +1,14 @@
+{
+  "name": "ham-web-e2e",
+  "private": true,
+  "description": "Playwright 端到端测试：练习、考试、错题本、日志导入导出",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0"
+  }
+}

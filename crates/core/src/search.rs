@@ -617,13 +617,13 @@ fn build_index() -> Vec<SearchEntry> {
   );
 
   // DXCC 实体
-  for &(p, e) in dxcc::DXCC_PREFIXES {
+  for e in dxcc::entities() {
     push(
       &mut out,
       "通联日志",
       "/log",
-      p.to_owned(),
-      format!("DXCC 实体：{e}"),
+      e.prefix.to_owned(),
+      format!("DXCC 实体：{}（{}）", e.name, e.name_en),
     );
   }
 

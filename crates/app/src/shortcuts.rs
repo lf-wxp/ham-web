@@ -27,6 +27,31 @@ fn is_typing_target(target: Option<web_sys::EventTarget>) -> bool {
   tag == "input" || tag == "textarea" || el.is_content_editable()
 }
 
+/// 自身响应 Enter / 方向键的控件（按钮、链接、下拉、单选组等），交给浏览器默认行为。
+fn handles_own_keys(target: Option<web_sys::EventTarget>, key: &str) -> bool {
+  let Some(el) = target.and_then(|t| t.dyn_into::<web_sys::Element>().ok()) else {
+    return false;
+  };
+  let tag = el.tag_name().to_lowercase();
+  let role = el.get_attribute("role").unwrap_or_default();
+  match key {
+    "Enter" => {
+      matches!(tag.as_str(), "button" | "a" | "select" | "summary")
+        || matches!(
+          role.as_str(),
+          "button" | "link" | "checkbox" | "radio" | "option" | "tab" | "menuitem" | "switch"
+        )
+    }
+    _ => {
+      tag == "select"
+        || matches!(
+          role.as_str(),
+          "option" | "tab" | "menuitem" | "slider" | "listbox"
+        )
+    }
+  }
+}
+
 /// 注册全局快捷键，组件卸载时自动移除。
 pub fn use_question_shortcuts(opts: Shortcuts) {
   let handle = window_event_listener(ev::keydown, move |e| {
@@ -34,6 +59,11 @@ pub fn use_question_shortcuts(opts: Shortcuts) {
       return;
     }
     let key = e.key();
+    if matches!(key.as_str(), "Enter" | "ArrowLeft" | "ArrowRight")
+      && handles_own_keys(e.target(), &key)
+    {
+      return;
+    }
     match key.as_str() {
       "ArrowLeft" => {
         e.prevent_default();

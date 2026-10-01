@@ -24,6 +24,8 @@ resvg.workspace = true
 sha2.workspace = true
 walkdir.workspace = true
 chrono.workspace = true
+brotli.workspace = true
+flate2.workspace = true
 
 [lints]
 workspace = true

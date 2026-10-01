@@ -5,6 +5,7 @@
 
 mod qcode_page;
 mod qcode_quiz;
+mod qcode_view;
 mod slang_card;
 
 pub use qcode_page::QCodePage;

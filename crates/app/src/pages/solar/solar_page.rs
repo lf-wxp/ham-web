@@ -92,7 +92,7 @@ pub fn SolarPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"太阳活动"</div>
+            <h1 class="text-base font-semibold leading-tight">"太阳活动"</h1>
             <div class="text-xs text-muted-foreground">"太阳活动指数 · 传播条件 · 实时数据"</div>
           </div>
           <button
@@ -153,10 +153,10 @@ pub fn SolarPage() -> impl IntoView {
                     Some(kv) => {
                       let lvl = propagation_level(kv, ssn.get().unwrap_or(0.0), sfi.get().unwrap_or(0.0));
                       let color = match lvl {
-                        PropagationLevel::Excellent => "text-emerald-500",
-                        PropagationLevel::Good => "text-sky-500",
-                        PropagationLevel::Fair => "text-amber-500",
-                        PropagationLevel::Poor => "text-red-500",
+                        PropagationLevel::Excellent => "text-emerald-700 dark:text-emerald-400",
+                        PropagationLevel::Good => "text-sky-700 dark:text-sky-400",
+                        PropagationLevel::Fair => "text-amber-700 dark:text-amber-400",
+                        PropagationLevel::Poor => "text-red-700 dark:text-red-400",
                       };
                       view! { <span class=color>{lvl.label()}</span> }.into_any()
                     }

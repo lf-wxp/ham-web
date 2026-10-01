@@ -46,20 +46,38 @@ pub const WANTED_ENTITIES: &[(&str, &str, &str)] = &[
   ("9U", "布隆迪", "较稀有"),
 ];
 
-/// 判断呼号是否命中某个稀有 DXCC 实体（按前缀最长匹配），返回命中的前缀。
+/// [`WANTED_ENTITIES`] 前缀 → DXCC 编号。
+const WANTED_DXCC: &[(&str, u16)] = &[
+  ("P5", 344),
+  ("3Y/B", 24),
+  ("FT5/W", 41),
+  ("KH1", 20),
+  ("7O", 492),
+  ("BV9P", 505),
+  ("VK0H", 111),
+  ("FT5/X", 131),
+  ("ZS8", 201),
+  ("T33", 490),
+  ("9N", 369),
+  ("XZ", 309),
+  ("3C", 49),
+  ("FT5/Z", 10),
+  ("3Y/P", 199),
+  ("VP8S", 240),
+  ("4W", 511),
+  ("E4", 510),
+  ("A5", 306),
+  ("9U", 404),
+];
+
+/// 判断呼号是否命中某个稀有 DXCC 实体，返回该实体在 [`WANTED_ENTITIES`] 中的前缀。
 #[must_use]
 pub fn wanted_prefix(callsign: &str) -> Option<&'static str> {
-  let cs = callsign.trim().to_ascii_uppercase();
-  if cs.is_empty() {
-    return None;
-  }
-  let mut best: Option<(usize, &'static str)> = None;
-  for &(prefix, _, _) in WANTED_ENTITIES {
-    if cs.starts_with(prefix) && best.is_none_or(|(len, _)| prefix.len() > len) {
-      best = Some((prefix.len(), prefix));
-    }
-  }
-  best.map(|(_, p)| p)
+  let dxcc = crate::dxcc::lookup(callsign)?.dxcc;
+  WANTED_DXCC
+    .iter()
+    .find(|(_, n)| *n == dxcc)
+    .map(|(p, _)| *p)
 }
 
 #[cfg(test)]
@@ -70,5 +88,20 @@ mod tests {
   fn most_wanted_data_populated() {
     assert!(WANTED_CONCEPTS.len() >= 4);
     assert!(!WANTED_TIPS.is_empty());
+    assert_eq!(WANTED_DXCC.len(), WANTED_ENTITIES.len());
+    assert!(
+      WANTED_ENTITIES
+        .iter()
+        .all(|(p, _, _)| WANTED_DXCC.iter().any(|(q, _)| q == p))
+    );
+  }
+
+  #[test]
+  fn wanted_prefix_uses_dxcc_entity() {
+    assert_eq!(wanted_prefix("P5DX"), Some("P5"));
+    assert_eq!(wanted_prefix("FT4WA"), Some("FT5/W"));
+    assert_eq!(wanted_prefix("BV9PA"), Some("BV9P"));
+    assert_eq!(wanted_prefix("BV2AA"), None);
+    assert_eq!(wanted_prefix("BG4XXX"), None);
   }
 }

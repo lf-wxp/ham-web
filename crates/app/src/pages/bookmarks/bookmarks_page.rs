@@ -5,6 +5,7 @@ use leptos::task::spawn_local;
 use crate::components::common::{EmptyState, Loading};
 use crate::data;
 use crate::store;
+use crate::ui::{Size, Variant, button_class};
 use crate::util::set_title;
 
 use super::bookmark_card::BookmarkCard;
@@ -49,12 +50,13 @@ pub fn BookmarksPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"收藏集"</div>
+            <h1 class="text-base font-semibold leading-tight">"收藏集"</h1>
             <div class="text-xs text-muted-foreground">"练习中手动收藏的重点题目"</div>
           </div>
           <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
             {move || format!("共 {} 题", questions.get().len())}
           </span>
+          <a href="/print?src=bookmarks" class=button_class(Variant::Outline, Size::Sm, "")>"打印"</a>
         </div>
       </header>
 

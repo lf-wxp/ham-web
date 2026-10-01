@@ -13,7 +13,7 @@ pub fn Ft8Page() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"FT8 / FT4"</div>
+            <h1 class="text-base font-semibold leading-tight">"FT8 / FT4"</h1>
             <div class="text-xs text-muted-foreground">"弱信号数字模式（FT8 = 8-FSK / FT4 = 4-FSK）· WSJT-X 操作 · 标准频率"</div>
           </div>
         </div>

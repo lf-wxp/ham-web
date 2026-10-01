@@ -5,7 +5,7 @@ use leptos::prelude::*;
 use crate::cn::cn;
 use crate::icons::{Icon, IconKind};
 
-use super::shared::{focus_first, state_attr, use_presence};
+use super::shared::{on_open, state_attr, trap_tab, use_presence};
 
 /// 居中模态对话框。
 ///
@@ -15,6 +15,9 @@ pub fn Dialog(
   open: RwSignal<bool>,
   #[prop(optional, into)] class: String,
   #[prop(optional, default = true)] show_close: bool,
+  /// 无可见标题时的无障碍名称；有标题时会自动用首个标题命名。
+  #[prop(optional, into)]
+  label: Option<String>,
   children: ChildrenFn,
 ) -> impl IntoView {
   let mounted = use_presence(open, 200);
@@ -28,9 +31,10 @@ pub fn Dialog(
     mounted.get().then(|| {
       let children = children.clone();
       let class = class.clone();
+      let label = label.clone();
       let content = NodeRef::<html::Div>::new();
       content.on_load(move |el| {
-        request_animation_frame(move || focus_first(&el));
+        request_animation_frame(move || on_open(&el));
       });
       view! {
         <Portal>
@@ -44,7 +48,13 @@ pub fn Dialog(
             node_ref=content
             role="dialog"
             aria-modal="true"
+            aria-label=label.clone()
             tabindex="-1"
+            on:keydown=move |e| {
+              if let Some(el) = content.get_untracked() {
+                trap_tab(&e, &el);
+              }
+            }
             data-slot="dialog-content"
             data-state=state
             class=class.clone()
@@ -61,7 +71,7 @@ pub fn Dialog(
                     on:click=move |_| open.set(false)
                   >
                     <Icon kind=IconKind::X />
-                    <span class="sr-only">"Close"</span>
+                    <span class="sr-only">"关闭"</span>
                   </button>
                 }
               })}

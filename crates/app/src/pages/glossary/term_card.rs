@@ -73,7 +73,7 @@ pub(super) fn TermCard(
   view! {
     <article class="flex flex-col rounded-xl border bg-card p-4 sm:p-5">
       <div class="mb-2 flex flex-wrap items-center gap-2">
-        <h3 class=term_class>{entry.term.as_str()}</h3>
+        <h2 class=term_class>{entry.term.as_str()}</h2>
         {abbr
           .map(|a| {
             view! {

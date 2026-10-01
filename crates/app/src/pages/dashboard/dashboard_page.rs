@@ -16,7 +16,7 @@ pub fn DashboardPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"实时仪表盘"</div>
+            <h1 class="text-base font-semibold leading-tight">"实时仪表盘"</h1>
             <div class="text-xs text-muted-foreground">"太阳活动 · 警报 · DX 热点 · ISS · 稀有度"</div>
           </div>
         </div>

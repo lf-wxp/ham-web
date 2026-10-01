@@ -2,23 +2,11 @@ use std::collections::HashSet;
 
 use ham_web_core::most_wanted::{WANTED_ENTITIES, wanted_prefix};
 use leptos::prelude::*;
-use serde::Deserialize;
 
+use crate::pages::log::use_log_store;
 use crate::util::storage;
 
 const STORAGE_KEY: &str = "dxcc_wanted_done";
-
-/// 日志精简结构（仅读取呼号，用于自动识别已通联稀有实体）。
-#[derive(Deserialize)]
-struct LogbookLite {
-  entries: Vec<LogEntryLite>,
-}
-
-#[derive(Deserialize)]
-struct LogEntryLite {
-  #[serde(default)]
-  callsign: String,
-}
 
 /// 本地通联进度追踪：勾选已通联实体，进度存 localStorage。
 #[component]
@@ -29,14 +17,13 @@ pub(super) fn WantedTracker() -> impl IntoView {
 
   // 从通联日志自动识别已通联的稀有实体。
   let logged = RwSignal::new(
-    storage::get_json::<LogbookLite>("logbook")
-      .map(|lb| {
-        lb.entries
-          .iter()
-          .filter_map(|e| wanted_prefix(&e.callsign).map(str::to_owned))
-          .collect::<HashSet<String>>()
-      })
-      .unwrap_or_default(),
+    use_log_store()
+      .logbook
+      .get_untracked()
+      .entries
+      .iter()
+      .filter_map(|e| wanted_prefix(&e.callsign).map(str::to_owned))
+      .collect::<HashSet<String>>(),
   );
 
   let toggle = move |prefix: &'static str| {

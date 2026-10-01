@@ -9,6 +9,22 @@ pub fn now_ms() -> i64 {
   js_sys::Date::now() as i64
 }
 
+/// 某时间戳（毫秒）所在的本地日期 `YYYY-MM-DD`。
+pub fn local_day(ms: f64) -> String {
+  let d = js_sys::Date::new(&JsValue::from_f64(ms));
+  format!(
+    "{:04}-{:02}-{:02}",
+    d.get_full_year(),
+    d.get_month() + 1,
+    d.get_date()
+  )
+}
+
+/// 今天的本地日期 `YYYY-MM-DD`。
+pub fn local_today() -> String {
+  local_day(js_sys::Date::now())
+}
+
 /// `[0, 1)` 随机数。
 pub fn random() -> f64 {
   js_sys::Math::random()
@@ -54,10 +70,16 @@ pub fn body_class(class: &str, on: bool) {
   }
 }
 
-/// `localStorage` 读写，失败（隐私模式/配额）时静默忽略。
+/// `localStorage` 读写。读取失败时返回 `None`；写入失败（通常是配额已满）时在 `window` 上派发
+/// [`storage::WRITE_FAILED_EVENT`] 事件，由全局提示条提醒用户导出备份。
 pub mod storage {
   use serde::Serialize;
   use serde::de::DeserializeOwned;
+
+  /// 写入失败时派发的事件名，`detail` 为失败的 key。
+  pub const WRITE_FAILED_EVENT: &str = "ham-storage-write-failed";
+  /// 主流浏览器每个源约可存 5M 个 UTF-16 字符（key + value）。
+  pub const QUOTA_UNITS: usize = 5 * 1024 * 1024;
 
   fn local() -> Option<web_sys::Storage> {
     super::window().local_storage().ok().flatten()
@@ -68,9 +90,36 @@ pub mod storage {
   }
 
   pub fn set(key: &str, value: &str) {
-    if let Some(s) = local() {
-      let _ = s.set_item(key, value);
+    if let Some(s) = local()
+      && s.set_item(key, value).is_err()
+    {
+      let init = web_sys::CustomEventInit::new();
+      init.set_detail(&key.into());
+      if let Ok(ev) = web_sys::CustomEvent::new_with_event_init_dict(WRITE_FAILED_EVENT, &init) {
+        let _ = super::window().dispatch_event(&ev);
+      }
     }
+  }
+
+  /// 各 key 的占用（UTF-16 字符数，key + value），从大到小排列。
+  pub fn usage() -> Vec<(String, usize)> {
+    let Some(s) = local() else {
+      return Vec::new();
+    };
+    let mut out: Vec<(String, usize)> = (0..s.length().unwrap_or(0))
+      .filter_map(|i| s.key(i).ok().flatten())
+      .map(|k| {
+        let len = s
+          .get_item(&k)
+          .ok()
+          .flatten()
+          .map_or(0, |v| v.encode_utf16().count());
+        let units = k.encode_utf16().count() + len;
+        (k, units)
+      })
+      .collect();
+    out.sort_by_key(|(_, b)| std::cmp::Reverse(*b));
+    out
   }
 
   pub fn remove(key: &str) {
@@ -88,6 +137,11 @@ pub mod storage {
       set(key, &s);
     }
   }
+}
+
+/// 复制文本到剪贴板（Clipboard API，失败时静默忽略）。
+pub fn copy_text(text: &str) {
+  let _ = window().navigator().clipboard().write_text(text);
 }
 
 /// 触发浏览器下载一个文本文件（用于 ADIF 等导出）。
@@ -212,6 +266,17 @@ pub fn request_notify_permission() {
   if matches!(Notification::permission(), NotificationPermission::Default) {
     let _ = Notification::request_permission();
   }
+}
+
+/// 等待 `ms` 毫秒。
+pub async fn sleep(ms: u32) {
+  let p = js_sys::Promise::new(&mut |resolve, _| {
+    let _ = window().set_timeout_with_callback_and_timeout_and_arguments_0(
+      &resolve,
+      i32::try_from(ms).unwrap_or(i32::MAX),
+    );
+  });
+  let _ = wasm_bindgen_futures::JsFuture::from(p).await;
 }
 
 /// 把 `JsValue` 错误转为可读字符串。

@@ -1,21 +1,17 @@
-//! 练习模式：顺序/随机练习、即时答案与解析、题号/关键词搜索、进度保存与恢复、跨题库「只看本类新增」。
-
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
+use ham_web_core::Bank;
 use ham_web_core::categories::top_of;
-use ham_web_core::exam::shuffle_in_place;
-use ham_web_core::practice::{PracticeOrder, find_jump_target, search, unique_to_bank};
+use ham_web_core::practice::{PracticeOrder, find_jump_target, search};
 use ham_web_core::saved_state::{PracticeSavedState, keys};
 use ham_web_core::text::js_trim;
-use ham_web_core::{Bank, QuestionItem};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::NavigateOptions;
 use leptos_router::hooks::{use_navigate, use_query_map};
 
-use super::{DEFAULT_TITLE, bank_href, use_bank_query, use_no_site_footer};
 use crate::cn::cn;
 use crate::components::common::{
   BottomBar, ExplanationCard, MessageDialog, QuestionProgressHeader,
@@ -24,8 +20,9 @@ use crate::components::practice::{
   PracticeResumeDialog, PracticeSearchDialog, PracticeSettingsDialog,
 };
 use crate::components::question_card::QuestionCard;
-use crate::data::{self, AppError, Questions};
+use crate::data::Questions;
 use crate::icons::{Icon, IconKind};
+use crate::pages::{DEFAULT_TITLE, bank_href, use_bank_query, use_no_site_footer};
 use crate::shortcuts::{DigitDetail, Shortcuts, digit_answer, use_question_shortcuts};
 use crate::store;
 use crate::ui::{
@@ -33,125 +30,12 @@ use crate::ui::{
 };
 use crate::util::alert;
 use crate::util::now_ms;
-use crate::util::random;
 use crate::util::set_title;
+
+use super::store::{PracticeStore, load_questions};
 
 const PRESS: &str = "active:scale-[0.98] transition-transform";
 const PRESS_FULL: &str = "w-full active:scale-[0.98] transition-transform";
-
-#[derive(Clone, Copy)]
-struct PracticeStore {
-  /// 原始题库（顺序）。
-  all: RwSignal<Questions>,
-  /// 当前题序：`all` 的下标。
-  order_idx: RwSignal<Vec<usize>>,
-  index: RwSignal<usize>,
-  answers: RwSignal<HashMap<String, Vec<String>>>,
-  order: RwSignal<PracticeOrder>,
-  show_answer: RwSignal<bool>,
-  show_explanation: RwSignal<bool>,
-  loading: RwSignal<bool>,
-}
-
-impl PracticeStore {
-  fn new() -> Self {
-    Self {
-      all: RwSignal::new(Arc::new(Vec::new())),
-      order_idx: RwSignal::new(Vec::new()),
-      index: RwSignal::new(0),
-      answers: RwSignal::new(HashMap::new()),
-      order: RwSignal::new(PracticeOrder::Sequential),
-      show_answer: RwSignal::new(true),
-      show_explanation: RwSignal::new(true),
-      loading: RwSignal::new(true),
-    }
-  }
-
-  fn reset(self) {
-    self.all.set(Arc::new(Vec::new()));
-    self.order_idx.set(Vec::new());
-    self.index.set(0);
-    self.answers.set(HashMap::new());
-    self.order.set(PracticeOrder::Sequential);
-    self.show_answer.set(true);
-    self.show_explanation.set(true);
-    self.loading.set(true);
-  }
-
-  fn load(self, qs: Questions) {
-    self.reset();
-    self.order_idx.set((0..qs.len()).collect());
-    self.all.set(qs);
-    self.loading.set(false);
-  }
-
-  fn set_order(self, order: PracticeOrder) {
-    let mut idx: Vec<usize> = (0..self.all.with_untracked(|a| a.len())).collect();
-    if order == PracticeOrder::Random {
-      let mut rng = random;
-      shuffle_in_place(&mut idx, &mut rng);
-    }
-    self.order.set(order);
-    self.order_idx.set(idx);
-    self.index.set(0);
-    self.answers.set(HashMap::new());
-  }
-
-  fn len(self) -> usize {
-    self.order_idx.with(Vec::len)
-  }
-
-  fn next(self) {
-    let max = self.len().saturating_sub(1);
-    self.index.update(|i| *i = (*i + 1).min(max));
-  }
-
-  fn prev(self) {
-    self.index.update(|i| *i = i.saturating_sub(1));
-  }
-
-  fn jump(self, i: usize) {
-    self.index.set(i.min(self.len().saturating_sub(1)));
-  }
-
-  fn question_at(self, pos: usize) -> Option<QuestionItem> {
-    let idx = self.order_idx.with(|o| o.get(pos).copied())?;
-    self.all.with(|a| a.get(idx).cloned())
-  }
-
-  fn current(self) -> Option<(usize, QuestionItem)> {
-    let i = self.index.get();
-    self.question_at(i).map(|q| (i, q))
-  }
-
-  fn current_key(self) -> Option<String> {
-    let i = self.index.get();
-    self.question_at(i).map(|q| q.answer_key(i))
-  }
-
-  /// 当前题序下的题目引用列表。
-  fn ordered<R>(self, f: impl FnOnce(&[&QuestionItem]) -> R) -> R {
-    self.all.with(|all| {
-      self
-        .order_idx
-        .with(|idx| f(&idx.iter().filter_map(|&i| all.get(i)).collect::<Vec<_>>()))
-    })
-  }
-}
-
-async fn load_questions(
-  version: Option<&str>,
-  bank: Bank,
-  unique: bool,
-) -> Result<Questions, AppError> {
-  if !unique {
-    return data::load_bank(version, bank, true).await;
-  }
-  let a = data::load_bank(version, Bank::A, false).await?;
-  let b = data::load_bank(version, Bank::B, false).await?;
-  let c = data::load_bank(version, Bank::C, false).await?;
-  Ok(Arc::new(unique_to_bank(bank, &a, &b, &c)))
-}
 
 #[component]
 pub fn PracticePage() -> impl IntoView {
@@ -162,6 +46,7 @@ pub fn PracticePage() -> impl IntoView {
   let topic = Memo::new(move |_| query.with(|q| q.get("topic")).filter(|t| !t.is_empty()));
   let navigate = use_navigate();
   let store = PracticeStore::new();
+  on_cleanup(move || store.commit_current());
 
   // 收藏状态（跟随当前题）
   let bookmarked = RwSignal::new(false);
@@ -189,6 +74,9 @@ pub fn PracticePage() -> impl IntoView {
   let error_open = RwSignal::new(false);
   let error_text = RwSignal::new(String::new());
   let unique_only = RwSignal::new(false);
+  let unseen_only = RwSignal::new(query.with_untracked(|q| q.get("unseen").is_some()));
+  // 专项 / 只练没做过：题目是题库的子集，不保存也不恢复进度，以免覆盖完整题库的顺序进度。
+  let subset = Memo::new(move |_| topic.get().is_some() || unseen_only.get());
   let generation = StoredValue::new(0u32);
   let help_shown = StoredValue::new(false);
   let pending_order = RwSignal::new(None::<PracticeOrder>);
@@ -200,7 +88,7 @@ pub fn PracticePage() -> impl IntoView {
 
   let try_prompt_resume = move || {
     let (b, v) = (bank.get_untracked(), version.get_untracked());
-    if store::load_no_resume(b, v.as_deref()) {
+    if subset.get_untracked() || store::load_no_resume(b, v.as_deref()) {
       return;
     }
     let total = store.all.with_untracked(|a| a.len());
@@ -218,6 +106,7 @@ pub fn PracticePage() -> impl IntoView {
   Effect::new(move |_| {
     let (v, b, unique) = (version.get(), bank.get(), unique_only.get());
     let topic_val = topic.get();
+    let unseen = unseen_only.get();
     store.reset();
     pending.set(None);
     resume_open.set(false);
@@ -230,25 +119,32 @@ pub fn PracticePage() -> impl IntoView {
       }
       match result {
         Ok(qs) => {
-          // 专项练习：按一级分类过滤，随机顺序、不提示恢复。
-          let filtered: Questions = match topic_val.as_deref() {
-            Some(t) => Arc::new(
+          // 专项练习：按一级分类过滤，随机顺序；只练没做过：去掉已做过的题，保持顺序。均不提示恢复。
+          let seen = unseen.then(|| {
+            crate::study::load_stats()
+              .bank(b)
+              .cloned()
+              .unwrap_or_default()
+          });
+          let filtered: Questions = if topic_val.is_none() && seen.is_none() {
+            qs
+          } else {
+            Arc::new(
               qs.iter()
                 .filter(|q| {
-                  q.p_code()
-                    .and_then(top_of)
-                    .map(|top| top.key == t)
-                    .unwrap_or(false)
+                  topic_val
+                    .as_deref()
+                    .is_none_or(|t| q.p_code().and_then(top_of).is_some_and(|top| top.key == t))
+                    && seen.as_ref().is_none_or(|s| !s.has_seen(q))
                 })
                 .cloned()
                 .collect(),
-            ),
-            None => qs,
+            )
           };
           store.load(filtered);
           if topic_val.is_some() {
             store.set_order(PracticeOrder::Random);
-          } else {
+          } else if !unseen {
             let last = store::load_last_mode();
             if let Some(mode) = last
               && mode != PracticeOrder::Sequential
@@ -275,7 +171,7 @@ pub fn PracticePage() -> impl IntoView {
     let answers = store.answers.get();
     let index = store.index.get();
     let (show_answer, show_explanation) = (store.show_answer.get(), store.show_explanation.get());
-    if loading || order != PracticeOrder::Sequential {
+    if loading || order != PracticeOrder::Sequential || subset.get() {
       return;
     }
     let all = store.all.get_untracked();
@@ -306,6 +202,11 @@ pub fn PracticePage() -> impl IntoView {
       total: all.len(),
     });
   });
+
+  let (swipe_start, swipe_end) = crate::gesture::swipe_handlers(Callback::new(move |s| match s {
+    crate::gesture::Swipe::Left => store.next(),
+    crate::gesture::Swipe::Right => store.prev(),
+  }));
 
   // 首次进入自动展示快捷键说明
   Effect::new(move |_| {
@@ -433,6 +334,7 @@ pub fn PracticePage() -> impl IntoView {
       })
       .collect();
     let len = idx.len();
+    store.recorded.set_value(answers.keys().cloned().collect());
     store.order.set(PracticeOrder::Sequential);
     store.order_idx.set(idx);
     store.answers.set(answers);
@@ -516,10 +418,21 @@ pub fn PracticePage() -> impl IntoView {
       return view! { <div class="p-6">"加载题库中..."</div> }.into_any();
     }
     if store.len() == 0 {
+      if unseen_only.get() {
+        return view! {
+          <div class="p-6">
+            "这套题库的题已经全部做过了。"
+            <button type="button" class="ml-2 text-primary underline-offset-4 hover:underline" on:click=move |_| unseen_only.set(false)>
+              "练全部题目"
+            </button>
+          </div>
+        }
+        .into_any();
+      }
       return view! { <div class="p-6">"题库暂不可用或为空"</div> }.into_any();
     }
     view! {
-      <div class="container mx-auto px-4 py-6 max-w-5xl space-y-4 pb-24 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+      <div on:touchstart=swipe_start on:touchend=swipe_end class="container mx-auto px-4 py-6 max-w-5xl space-y-4 pb-24 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
         <QuestionProgressHeader
           percent=percent
           left=move || {
@@ -548,6 +461,14 @@ pub fn PracticePage() -> impl IntoView {
                 on:click=move |_| unique_only.update(|v| *v = !*v)
               >
                 "只看本类新增"
+              </button>
+              <button
+                type="button"
+                class=move || toggle_class(unseen_only.get(), "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors")
+                title="去掉练习、考试、闪卡中已经做过的题"
+                on:click=move |_| unseen_only.update(|v| *v = !*v)
+              >
+                "只练没做过"
               </button>
             }
           }
@@ -665,6 +586,7 @@ pub fn PracticePage() -> impl IntoView {
   };
 
   view! {
+    <h1 class="sr-only">"题库练习"</h1>
     {content}
     <PracticeResumeDialog open=resume_open no_prompt=no_prompt on_restart=on_restart on_resume=on_resume />
     <PracticeSettingsDialog

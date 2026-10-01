@@ -1,4 +1,4 @@
-use ham_web_core::dxcc::{dxcc_entity, entity_zones};
+use ham_web_core::dxcc::lookup;
 use ham_web_core::most_wanted::wanted_prefix;
 use leptos::prelude::*;
 
@@ -26,14 +26,12 @@ pub(super) fn CallsignLookup() -> impl IntoView {
           if c.is_empty() {
             "输入呼号查询其 DXCC 实体与稀有度。".to_owned()
           } else {
-            let entity = dxcc_entity(&c).unwrap_or("未识别");
-            let zone = entity_zones(entity)
-              .map(|(cq, itu)| format!("CQ {cq} 区 / ITU {itu} 区"))
-              .unwrap_or_default();
-            let base = if zone.is_empty() {
-              format!("DXCC 实体：{entity}")
-            } else {
-              format!("DXCC 实体：{entity}　{zone}")
+            let base = match lookup(&c) {
+              Some(e) => format!(
+                "DXCC 实体：{}（#{}，{}）　CQ {} 区 / ITU {} 区",
+                e.name, e.dxcc, e.continent, e.cq, e.itu
+              ),
+              None => "DXCC 实体：未识别".to_owned(),
             };
             match wanted_prefix(&c) {
               Some(p) => format!("{base}　稀有实体：{p}（Most Wanted）"),

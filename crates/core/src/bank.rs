@@ -94,6 +94,9 @@ pub struct BankInfo {
   pub path: String,
   /// 描述。
   pub description: String,
+  /// 内容修订号（构建时由 postbuild 写入文件哈希），拼到请求地址上，题库更新后浏览器缓存自动失效。
+  #[serde(default, skip_serializing_if = "String::is_empty")]
+  pub rev: String,
 }
 
 /// 三类题库文件。
@@ -161,6 +164,28 @@ impl QuestionVersion {
   }
 }
 
+impl BankConfig {
+  /// 题库地址对应的修订号（任一版本里解析到同一地址且带修订号即可）。
+  #[must_use]
+  pub fn rev_of(&self, url: &str) -> Option<&str> {
+    self.versions.iter().find_map(|v| {
+      Bank::ALL
+        .into_iter()
+        .find(|&b| v.resolve_url(b) == url && !v.banks.get(b).rev.is_empty())
+        .map(|b| v.banks.get(b).rev.as_str())
+    })
+  }
+
+  /// 带修订号的请求地址，如 `/questions/A.json?v=1a2b3c4d`。
+  #[must_use]
+  pub fn versioned_url(&self, url: &str) -> String {
+    match self.rev_of(url) {
+      Some(rev) => format!("{url}?v={rev}"),
+      None => url.to_owned(),
+    }
+  }
+}
+
 /// 题库配置文件。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -197,6 +222,7 @@ mod tests {
     let info = BankInfo {
       path: path.into(),
       description: String::new(),
+      rev: String::new(),
     };
     QuestionVersion {
       id: "v".into(),
@@ -223,6 +249,34 @@ mod tests {
       "/questions/B.json"
     );
     assert_eq!(version("/data/x.json").resolve_url(Bank::C), "/data/x.json");
+  }
+
+  #[test]
+  fn versioned_url_appends_rev() {
+    let mut v = version("/questions/2025-10/A.json");
+    let cfg_plain = BankConfig {
+      version: "1".into(),
+      last_modified: String::new(),
+      versions: vec![v.clone()],
+    };
+    assert_eq!(
+      cfg_plain.versioned_url("/questions/A.json"),
+      "/questions/A.json"
+    );
+    v.banks.a.rev = "abcd1234".into();
+    let cfg = BankConfig {
+      version: "1".into(),
+      last_modified: String::new(),
+      versions: vec![v],
+    };
+    assert_eq!(
+      cfg.versioned_url("/questions/A.json"),
+      "/questions/A.json?v=abcd1234"
+    );
+    // 旧配置没有 rev 字段也能解析
+    let parsed: BankInfo =
+      serde_json::from_str(r#"{"path":"/questions/A.json","description":""}"#).unwrap();
+    assert!(parsed.rev.is_empty());
   }
 
   #[test]

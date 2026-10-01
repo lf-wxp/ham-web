@@ -1,18 +1,16 @@
-//! 模拟考试：按真实规则抽题、倒计时、标记、答题卡、交卷计分、断点恢复。
-
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use ham_web_core::exam::pick_exam;
 use ham_web_core::saved_state::{ExamSavedState, keys};
 use ham_web_core::text::format_ms;
+use ham_web_core::weak_exam::{self, CategoryDelta};
 use ham_web_core::{ExamRule, ExamScore, QuestionItem};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
+use leptos_router::hooks::use_query_map;
 use send_wrapper::SendWrapper;
 
-use super::{DEFAULT_TITLE, use_bank_query, use_no_site_footer};
 use crate::components::common::{
   BottomBar, ExplanationCard, MessageDialog, QuestionProgressHeader,
 };
@@ -21,92 +19,31 @@ use crate::components::exam::{
   ExamSubmitConfirmDialog,
 };
 use crate::components::question_card::QuestionCard;
-use crate::data::{self, Questions};
+use crate::data;
 use crate::icons::{Icon, IconKind};
+use crate::pages::{DEFAULT_TITLE, use_bank_query, use_no_site_footer};
 use crate::shortcuts::{DigitDetail, Shortcuts, digit_answer, use_question_shortcuts};
 use crate::store;
 use crate::ui::{Size, Variant, button_class};
 use crate::util::now_ms;
-use crate::util::random;
 use crate::util::set_title;
 use crate::util::storage;
 
+use super::paper::pick_paper;
+use super::store::ExamStore;
+
 const PRESS: &str = "active:scale-[0.98] transition-transform";
 const PRESS_FULL: &str = "w-full active:scale-[0.98] transition-transform";
-
-#[derive(Clone, Copy)]
-struct ExamStore {
-  questions: RwSignal<Questions>,
-  answers: RwSignal<HashMap<String, Vec<String>>>,
-  flags: RwSignal<HashMap<String, bool>>,
-  index: RwSignal<usize>,
-  finished: RwSignal<bool>,
-  end_at: RwSignal<Option<i64>>,
-}
-
-impl ExamStore {
-  fn new() -> Self {
-    Self {
-      questions: RwSignal::new(Arc::new(Vec::new())),
-      answers: RwSignal::new(HashMap::new()),
-      flags: RwSignal::new(HashMap::new()),
-      index: RwSignal::new(0),
-      finished: RwSignal::new(false),
-      end_at: RwSignal::new(None),
-    }
-  }
-
-  fn start(self, questions: Questions, rule: ExamRule) {
-    self.questions.set(questions);
-    self.answers.set(HashMap::new());
-    self.flags.set(HashMap::new());
-    self.index.set(0);
-    self.finished.set(false);
-    self.end_at.set(Some(now_ms() + rule.duration_ms()));
-  }
-
-  fn reset(self) {
-    self.questions.set(Arc::new(Vec::new()));
-    self.answers.set(HashMap::new());
-    self.flags.set(HashMap::new());
-    self.index.set(0);
-    self.finished.set(false);
-    self.end_at.set(None);
-  }
-
-  fn len(self) -> usize {
-    self.questions.with(|q| q.len())
-  }
-
-  fn next(self) {
-    let max = self.len().saturating_sub(1);
-    self.index.update(|i| *i = (*i + 1).min(max));
-  }
-
-  fn prev(self) {
-    self.index.update(|i| *i = i.saturating_sub(1));
-  }
-
-  fn jump(self, i: usize) {
-    self.index.set(i.min(self.len().saturating_sub(1)));
-  }
-
-  fn current(self) -> Option<(usize, QuestionItem)> {
-    let i = self.index.get();
-    self.questions.with(|q| q.get(i).cloned().map(|q| (i, q)))
-  }
-
-  fn current_key(self) -> Option<String> {
-    let i = self.index.get();
-    self.questions.with(|q| q.get(i).map(|q| q.answer_key(i)))
-  }
-}
 
 #[component]
 pub fn ExamPage() -> impl IntoView {
   set_title(DEFAULT_TITLE);
   use_no_site_footer();
   let (version, bank) = use_bank_query();
+  let query = use_query_map();
+  // 薄弱项组卷不保存断点，也不覆盖常规模考的断点
+  let weak = Memo::new(move |_| query.with(|q| q.get("mode")).as_deref() == Some("weak"));
+  let deltas = RwSignal::new(Vec::<CategoryDelta>::new());
   let store = ExamStore::new();
   let bank_all = RwSignal::new(Arc::<Vec<QuestionItem>>::new(Vec::new()));
 
@@ -140,8 +77,9 @@ pub fn ExamPage() -> impl IntoView {
 
   // 加载题库、抽题或准备恢复
   Effect::new(move |_| {
-    let (v, b) = (version.get(), bank.get());
+    let (v, b, weak) = (version.get(), bank.get(), weak.get());
     store.reset();
+    deltas.set(Vec::new());
     loading.set(true);
     pending.set(None);
     resume_open.set(false);
@@ -156,19 +94,17 @@ pub fn ExamPage() -> impl IntoView {
       match result {
         Ok(all) => {
           bank_all.set(all.clone());
-          let saved = store::load_exam(b, v.as_deref()).filter(|s| s.should_resume(now_ms()));
+          let saved = (!weak)
+            .then(|| store::load_exam(b, v.as_deref()))
+            .flatten()
+            .filter(|s| s.should_resume(now_ms()));
           if let Some(saved) = saved {
             store.questions.set(Arc::new(saved.reconstruct(&all)));
             store.end_at.set(Some(saved.end_at_ms));
             pending.set(Some(saved));
             resume_open.set(true);
           } else {
-            let mut rng = random;
-            let picked: Vec<QuestionItem> = pick_exam(&all, rule, &mut rng)
-              .into_iter()
-              .map(|i| all[i].clone())
-              .collect();
-            store.start(Arc::new(picked), rule);
+            store.start(Arc::new(pick_paper(&all, b, weak)), rule);
           }
         }
         Err(_) => {
@@ -182,15 +118,42 @@ pub fn ExamPage() -> impl IntoView {
 
   let submit = move || {
     store.finished.set(true);
-    result_open.set(true);
-    store::clear_exam(bank.get_untracked(), version.get_untracked().as_deref());
+    let (b, is_weak) = (bank.get_untracked(), weak.get_untracked());
+    if !is_weak {
+      store::clear_exam(b, version.get_untracked().as_deref());
+    }
     // 保存本次成绩到历史
     let answers = store.answers.get_untracked();
     let sc = store
       .questions
       .with(|qs| ExamScore::calculate(qs, |q, i| answers.get(&q.answer_key(i)).map(Vec::as_slice)));
-    crate::exam_history::save(bank.get_untracked(), sc);
+    crate::exam_history::save(b, sc, is_weak);
+    let before = crate::study::load_stats();
+    deltas.set(store.questions.with_untracked(|qs| {
+      weak_exam::compare(
+        qs,
+        |i| {
+          answers
+            .get(&qs[i].answer_key(i))
+            .is_some_and(|a| qs[i].is_answer_correct(a))
+        },
+        before.bank(b),
+      )
+    }));
+    result_open.set(true);
+    store.questions.with_untracked(|qs| {
+      crate::study::record_many(
+        qs.iter()
+          .enumerate()
+          .filter_map(|(i, q)| answers.get(&q.answer_key(i)).map(|a| (q, a.as_slice()))),
+      );
+    });
   };
+
+  let (swipe_start, swipe_end) = crate::gesture::swipe_handlers(Callback::new(move |s| match s {
+    crate::gesture::Swipe::Left => store.next(),
+    crate::gesture::Swipe::Right => store.prev(),
+  }));
 
   // 倒计时
   let tick = move || {
@@ -220,7 +183,7 @@ pub fn ExamPage() -> impl IntoView {
     let (Some(end_at), false) = (store.end_at.get(), store.finished.get()) else {
       return;
     };
-    if qs.is_empty() || pending.with(Option::is_some) {
+    if qs.is_empty() || pending.with(Option::is_some) || weak.get_untracked() {
       return;
     }
     let mut answers_by_position = Vec::with_capacity(qs.len());
@@ -382,12 +345,8 @@ pub fn ExamPage() -> impl IntoView {
   });
   let on_restart = Callback::new(move |()| {
     store::clear_exam(bank.get_untracked(), version.get_untracked().as_deref());
-    let mut rng = random;
     let all = bank_all.get_untracked();
-    let picked: Vec<QuestionItem> = pick_exam(&all, rule.get_untracked(), &mut rng)
-      .into_iter()
-      .map(|i| all[i].clone())
-      .collect();
+    let picked = pick_paper(&all, bank.get_untracked(), weak.get_untracked());
     store.start(Arc::new(picked), rule.get_untracked());
     resume_open.set(false);
     pending.set(None);
@@ -426,11 +385,22 @@ pub fn ExamPage() -> impl IntoView {
     let b = bank.get();
     let r = rule.get();
     view! {
-      <div class="container mx-auto px-4 py-6 max-w-5xl space-y-4 pb-28 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+      <div on:touchstart=swipe_start on:touchend=swipe_end class="container mx-auto px-4 py-6 max-w-5xl space-y-4 pb-28 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
         <QuestionProgressHeader
           percent=percent
           right=move || {
+            let href = move || {
+              let base = crate::pages::bank_href("/exam", version.get().as_deref(), bank.get());
+              if weak.get() { base } else { format!("{base}&mode=weak") }
+            };
             view! {
+              <a
+                class=button_class(Variant::Outline, Size::Sm, "")
+                href=href
+                title="按分类正确率与错题加权抽题，不计入备考状态"
+              >
+                {move || if weak.get() { "常规模考" } else { "薄弱项组卷" }}
+              </a>
               <button
                 class=button_class(Variant::Outline, Size::Icon, "")
                 aria-label="设置"
@@ -443,6 +413,7 @@ pub fn ExamPage() -> impl IntoView {
           }
           meta=ViewFn::from(move || {
             view! {
+              {move || weak.get().then(|| view! { <span class="mr-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-amber-800 dark:text-amber-300">"薄弱项组卷"</span> })}
               "考试类别：" {b.as_str()} " 类｜试题数：" {r.total} "（单选 " {r.singles} "，多选 " {r.multiples}
               "）｜限时：" {r.minutes} " 分钟｜剩余时间：" {remaining_view}
             }
@@ -560,8 +531,15 @@ pub fn ExamPage() -> impl IntoView {
   };
 
   view! {
+    <h1 class="sr-only">{move || if weak.get() { "薄弱项组卷" } else { "模拟考试" }}</h1>
     {content}
-    <ExamResultDialog open=result_open score=score pass_line=Signal::derive(move || rule.get().pass) />
+    <ExamResultDialog
+      open=result_open
+      score=score
+      pass_line=Signal::derive(move || rule.get().pass)
+      deltas=deltas
+      weak=weak
+    />
     <AnswerCardSheet
       open=card_open
       questions=store.questions

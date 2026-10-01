@@ -13,7 +13,7 @@ pub fn AprsPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"APRS 自动位置报告系统"</div>
+            <h1 class="text-base font-semibold leading-tight">"APRS 自动位置报告系统"</h1>
             <div class="text-xs text-muted-foreground">"定位追踪 · 气象站 · 短消息"</div>
           </div>
         </div>

@@ -125,7 +125,7 @@ pub fn CountdownPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"倒计时与提醒"</div>
+            <h1 class="text-base font-semibold leading-tight">"倒计时与提醒"</h1>
             <div class="text-xs text-muted-foreground">"考试日期 · 执照到期 · 活动提醒"</div>
           </div>
         </div>
@@ -138,12 +138,14 @@ pub fn CountdownPage() -> impl IntoView {
             <input
               type="text"
               placeholder="标题，如：A 类操作证考试"
+              aria-label="倒计时标题"
               prop:value=move || title.get()
               on:input=move |e| title.set(event_target_value(&e))
               class=input_class("")
             />
             <input
               type="datetime-local"
+              aria-label="目标时间"
               prop:value=move || target.get()
               on:input=move |e| target.set(event_target_value(&e))
               class=input_class("")

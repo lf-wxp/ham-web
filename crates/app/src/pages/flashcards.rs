@@ -74,6 +74,9 @@ pub fn FlashcardsPage() -> impl IntoView {
   };
 
   let mark = move |ok: bool| {
+    if let Some(q) = questions.with_untracked(|qs| qs.get(current.get_untracked()).cloned()) {
+      crate::study::record_self_assess(&q, ok);
+    }
     if ok {
       known.update(|c| *c += 1);
     } else {
@@ -87,13 +90,23 @@ pub fn FlashcardsPage() -> impl IntoView {
     advance();
   };
 
+  // 看过答案后右划「会」、左划「不会」；未看答案时左划跳过
+  let (swipe_start, swipe_end) = crate::gesture::swipe_handlers(Callback::new(move |s| {
+    match (revealed.get_untracked(), s) {
+      (true, crate::gesture::Swipe::Right) => mark(true),
+      (true, crate::gesture::Swipe::Left) => mark(false),
+      (false, crate::gesture::Swipe::Left) => skip(),
+      (false, crate::gesture::Swipe::Right) => reveal(),
+    }
+  }));
+
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-2xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"闪卡刷题"</div>
-            <div class="text-xs text-muted-foreground">"快速过题 · 自评掌握"</div>
+            <h1 class="text-base font-semibold leading-tight">"闪卡刷题"</h1>
+            <div class="text-xs text-muted-foreground">"快速过题 · 自评掌握 · 「不会」自动加入错题本"</div>
           </div>
           <div class="flex items-center gap-1">
             {Bank::ALL
@@ -128,8 +141,8 @@ pub fn FlashcardsPage() -> impl IntoView {
               <div class="rounded-xl border bg-card px-4 py-10 text-center">
                 <div class="text-lg font-semibold">"本轮完成"</div>
                 <div class="mt-2 text-sm text-muted-foreground">
-                  "共 " {total} " 题 · 会 " <span class="font-semibold text-emerald-600">{known.get()}</span>
-                  " · 不会 " <span class="font-semibold text-red-600">{unknown.get()}</span>
+                  "共 " {total} " 题 · 会 " <span class="font-semibold text-emerald-700 dark:text-emerald-400">{known.get()}</span>
+                  " · 不会 " <span class="font-semibold text-red-700 dark:text-red-400">{unknown.get()}</span>
                   {move || {
                     (skipped.get() > 0).then(|| {
                       view! { <span>" · 跳过 " <span class="font-semibold text-muted-foreground">{skipped.get()}</span></span> }
@@ -148,10 +161,10 @@ pub fn FlashcardsPage() -> impl IntoView {
             };
             let total = questions.get_untracked().len();
             view! {
-              <div class="rounded-xl border bg-card p-5">
+              <div on:touchstart=swipe_start on:touchend=swipe_end class="rounded-xl border bg-card p-5">
                 <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
                   <span>{"第 "} <span class="font-semibold text-foreground">{current.get() + 1}</span> {" / "} {total} {" 题"}</span>
-                  <span>{"会 "} <span class="font-semibold text-emerald-600">{known.get()}</span> {" · 不会 "} <span class="font-semibold text-red-600">{unknown.get()}</span></span>
+                  <span>{"会 "} <span class="font-semibold text-emerald-700 dark:text-emerald-400">{known.get()}</span> {" · 不会 "} <span class="font-semibold text-red-700 dark:text-red-400">{unknown.get()}</span></span>
                 </div>
                 <p class="whitespace-pre-line text-base font-medium leading-relaxed">{q.question.clone()}</p>
 
@@ -174,7 +187,7 @@ pub fn FlashcardsPage() -> impl IntoView {
                     }
                     .into_any()
                   } else {
-                    view! { <div class="mt-4 text-xs text-muted-foreground">"先想答案，再点下方按钮核对。"</div> }
+                    view! { <div class="mt-4 text-xs text-muted-foreground">"先想答案，再点下方按钮核对（手机上右划显示答案，左划跳过）。"</div> }
                       .into_any()
                   }
                 }}

@@ -1032,8 +1032,10 @@ name = "ham-web-tools"
 version = "0.3.2"
 dependencies = [
  "anyhow",
+ "brotli",
  "chrono",
  "clap",
+ "flate2",
  "ham-web-core",
  "regex",
  "resvg",

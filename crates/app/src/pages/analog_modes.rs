@@ -15,7 +15,7 @@ pub fn AnalogModesPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"模拟模式"</div>
+            <h1 class="text-base font-semibold leading-tight">"模拟模式"</h1>
             <div class="text-xs text-muted-foreground">"CW 等幅波 · SSB 单边带 · AM 调幅 · FM 调频 · SSTV 慢扫描电视"</div>
           </div>
         </div>

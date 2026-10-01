@@ -67,7 +67,7 @@ fn is_hashed_asset(path: &str) -> bool {
 
 fn cache_policy(path: &str) -> Option<&'static str> {
   match path {
-    "/" | "/index.html" | "/sw.js" | "/manifest.json" => Some(NO_STORE),
+    "/" | "/index.html" | "/sw.js" | "/manifest.json" | "/changelog.json" => Some(NO_STORE),
     p if p.starts_with("/questions/") && p.ends_with(".json") => Some("no-cache"),
     p if p.starts_with("/questions/images/") || p.starts_with("/fonts/") => {
       Some("public, max-age=86400")
@@ -108,7 +108,12 @@ async fn spa_fallback(index: PathBuf, uri: Uri, req: Request<Body>) -> Response 
   if last.contains('.') {
     return (StatusCode::NOT_FOUND, "Not Found").into_response();
   }
-  match ServeFile::new(index).oneshot(req).await {
+  match ServeFile::new(index)
+    .precompressed_br()
+    .precompressed_gzip()
+    .oneshot(req)
+    .await
+  {
     Ok(res) => res.into_response(),
     Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response(),
   }
@@ -124,6 +129,8 @@ fn app(cfg: &Config) -> Router {
     }
   });
   let static_files = ServeDir::new(&cfg.dist)
+    .precompressed_br()
+    .precompressed_gzip()
     .append_index_html_on_directories(true)
     .fallback(fallback);
 

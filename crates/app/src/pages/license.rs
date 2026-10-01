@@ -48,7 +48,7 @@ pub fn LicensePage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"执照 / 操作证申办"</div>
+            <h1 class="text-base font-semibold leading-tight">"执照 / 操作证申办"</h1>
             <div class="text-xs text-muted-foreground">"报名 → 考试 → 设台 → 领证"</div>
           </div>
         </div>

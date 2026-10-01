@@ -13,7 +13,7 @@ pub fn RemotePage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"远程电台"</div>
+            <h1 class="text-base font-semibold leading-tight">"远程电台"</h1>
             <div class="text-xs text-muted-foreground">"远程操作 · 控制协议 · 搭建要点"</div>
           </div>
         </div>

@@ -9,19 +9,19 @@ const EXAMPLE_PARTS: &[(&str, &str, &str, &str)] = &[
     "B",
     "前缀",
     "中国",
-    "border-sky-500/40 bg-sky-500/10 text-sky-600",
+    "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-400",
   ),
   (
     "G",
     "台站类别",
     "个人业余电台",
-    "border-emerald-500/40 bg-emerald-500/10 text-emerald-600",
+    "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
   ),
   (
     "4",
     "分区号",
     "上海 · 山东 · 江苏",
-    "border-amber-500/40 bg-amber-500/10 text-amber-600",
+    "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
   ),
   (
     "XYZ",
@@ -53,7 +53,7 @@ pub(super) fn CallsignAnalyzer() -> impl IntoView {
                   <div class=format!("rounded-lg border p-3 text-center {color}")>
                     <div class="font-mono text-2xl font-bold">{ch}</div>
                     <div class="mt-1 text-xs font-semibold">{label}</div>
-                    <div class="mt-0.5 text-[11px] opacity-80">{desc}</div>
+                    <div class="mt-0.5 text-[11px]">{desc}</div>
                   </div>
                 }
               })

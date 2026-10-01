@@ -111,6 +111,71 @@ pub fn square_index(grid: &str) -> Option<(usize, usize)> {
   Some((fl * 10 + sl, fa * 10 + sa))
 }
 
+/// 大圆航线采样：在两点间沿大圆均匀插值 `n` 段，返回 `(纬度, 经度)` 序列（含两端点）。
+///
+/// 用于地图绘制两点间最短路径；对跖点（几乎正对）时大圆退化，退化为绕一个垂直轴
+/// 的任意半圆（仍是一条合法的大圆）。
+#[must_use]
+pub fn great_circle_path(lat1: f64, lon1: f64, lat2: f64, lon2: f64, n: usize) -> Vec<(f64, f64)> {
+  let to_vec = |lat: f64, lon: f64| -> (f64, f64, f64) {
+    let (la, lo) = (lat.to_radians(), lon.to_radians());
+    (la.cos() * lo.cos(), la.cos() * lo.sin(), la.sin())
+  };
+  let to_latlon = |(x, y, z): (f64, f64, f64)| -> (f64, f64) {
+    (
+      z.atan2((x * x + y * y).sqrt()).to_degrees(),
+      y.atan2(x).to_degrees(),
+    )
+  };
+
+  let v1 = to_vec(lat1, lon1);
+  let v2 = to_vec(lat2, lon2);
+  let dot = (v1.0 * v2.0 + v1.1 * v2.1 + v1.2 * v2.2).clamp(-1.0, 1.0);
+
+  let mut out = Vec::with_capacity(n + 1);
+  if dot < -0.999_999_9 {
+    // 对跖点：选一个不平行于 v1 的参考向量做叉积，绕该垂直轴旋转半圆。
+    let axis = if v1.0.abs() < 0.9 {
+      (1.0, 0.0, 0.0)
+    } else {
+      (0.0, 1.0, 0.0)
+    };
+    let (mut cx, mut cy, mut cz) = (
+      v1.1 * axis.2 - v1.2 * axis.1,
+      v1.2 * axis.0 - v1.0 * axis.2,
+      v1.0 * axis.1 - v1.1 * axis.0,
+    );
+    let len = (cx * cx + cy * cy + cz * cz).sqrt();
+    (cx, cy, cz) = (cx / len, cy / len, cz / len);
+    for i in 0..=n {
+      let t = i as f64 / n as f64;
+      let ang = t * std::f64::consts::PI;
+      let (x, y, z) = (
+        v1.0 * ang.cos() + cx * ang.sin(),
+        v1.1 * ang.cos() + cy * ang.sin(),
+        v1.2 * ang.cos() + cz * ang.sin(),
+      );
+      out.push(to_latlon((x, y, z)));
+    }
+    return out;
+  }
+
+  let omega = dot.acos();
+  let sin_omega = omega.sin();
+  for i in 0..=n {
+    let t = i as f64 / n as f64;
+    let a = ((1.0 - t) * omega).sin() / sin_omega;
+    let b = (t * omega).sin() / sin_omega;
+    let (x, y, z) = (
+      a * v1.0 + b * v2.0,
+      a * v1.1 + b * v2.1,
+      a * v1.2 + b * v2.2,
+    );
+    out.push(to_latlon((x, y, z)));
+  }
+  out
+}
+
 /// 两点大圆距离（km）与初始方位角（度，正北为 0，顺时针）。
 /// 输入为 `(纬度, 经度)`，单位度。
 #[must_use]
@@ -195,5 +260,26 @@ mod tests {
     let (d, b) = distance_bearing(39.9, 116.4, 51.5, -0.1);
     assert!((d - 8150.0).abs() < 250.0, "dist {d}");
     assert!(b > 300.0 && b < 335.0, "bearing {b}");
+  }
+
+  #[test]
+  fn great_circle_path_equator_quarter() {
+    // 赤道 (0,0) → (0,90)：非对跖，中间点经度 45、纬度 0。
+    let pts = great_circle_path(0.0, 0.0, 0.0, 90.0, 100);
+    assert_eq!(pts.first(), Some(&(0.0, 0.0)));
+    assert_eq!(pts.last(), Some(&(0.0, 90.0)));
+    let mid = pts[50];
+    assert!((mid.1 - 45.0).abs() < 1e-6, "lon {}", mid.1);
+    assert!(mid.0.abs() < 1e-6, "lat {}", mid.0);
+  }
+
+  #[test]
+  fn great_circle_path_antipodal_endpoints() {
+    // 对跖点：仍返回含两端点的路径（经度 ±180 等价）。
+    let pts = great_circle_path(0.0, 0.0, 0.0, 180.0, 50);
+    assert_eq!(pts.len(), 51);
+    assert_eq!(pts[0], (0.0, 0.0));
+    assert!((pts[50].0 - 0.0).abs() < 1e-6);
+    assert!((pts[50].1 - 180.0).abs() < 1e-6);
   }
 }

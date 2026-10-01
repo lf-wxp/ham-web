@@ -1,6 +1,7 @@
 //! 术语表：业余无线电常用术语、英文缩写与通俗解释，按题目类型分类，并统计在各题库中出现的题数。
 
 mod glossary_page;
+mod glossary_view;
 mod stat;
 mod term_card;
 

@@ -72,7 +72,7 @@ pub(super) fn PhotoUploader(
           <Icon kind=icon class="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
           <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{title}</span>
           <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">"点击选择或拖拽文件到此处"</span>
-          <span class="text-xs text-gray-400 dark:text-gray-500 mt-1">{hint}</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">{hint}</span>
         </label>
         <input
           id=id

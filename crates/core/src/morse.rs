@@ -3,6 +3,8 @@
 //! 点划序列用 `.` 表示点、`-` 表示划；字母对应的语音字母（字母解释法）统一由
 //! [`crate::phonetic`] 维护，避免两处重复。
 
+use crate::koch::Timing;
+
 /// 一个摩尔斯电码字符。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MorseChar {
@@ -109,6 +111,80 @@ pub fn code_of(ch: char) -> Option<&'static str> {
     .map(|m| m.code)
 }
 
+/// 把点划序列解析为「字符 → (点划, 是否单词结尾)」。
+fn tokenize(code: &str) -> Vec<(Vec<char>, bool)> {
+  let mut chars: Vec<(Vec<char>, bool)> = Vec::new();
+  for token in code.split(' ').filter(|s| !s.is_empty()) {
+    if token == "/" {
+      if let Some(last) = chars.last_mut() {
+        last.1 = true;
+      }
+    } else {
+      chars.push((
+        token.chars().filter(|&c| c == '.' || c == '-').collect(),
+        false,
+      ));
+    }
+  }
+  chars
+}
+
+/// 逐符号时间区间（秒）：返回每个点/划的 `(开始, 结束)`，顺序对应 `code` 中的点划符号，
+/// 忽略空格与 `/`。起始偏移与播放调度的 0.02s 前置延迟保持一致。
+#[must_use]
+pub fn morse_symbol_times(code: &str, timing: Timing) -> Vec<(f64, f64)> {
+  let chars = tokenize(code);
+  let dot = timing.dot;
+  let mut out = Vec::new();
+  let mut t = 0.02;
+  for (ci, (marks, word_end)) in chars.iter().enumerate() {
+    for (mi, &c) in marks.iter().enumerate() {
+      let dur = if c == '.' { dot } else { 3.0 * dot };
+      out.push((t, t + dur));
+      t += dur;
+      if mi + 1 < marks.len() {
+        t += dot;
+      }
+    }
+    if ci + 1 < chars.len() {
+      t += if *word_end {
+        timing.word_gap
+      } else {
+        timing.char_gap
+      };
+    }
+  }
+  out
+}
+
+/// 逐字符时间区间（秒）：返回每个字符（按空格分组）的 `(开始, 结束)`。
+#[must_use]
+pub fn morse_char_times(code: &str, timing: Timing) -> Vec<(f64, f64)> {
+  let chars = tokenize(code);
+  let dot = timing.dot;
+  let mut out = Vec::new();
+  let mut t = 0.02;
+  for (ci, (marks, word_end)) in chars.iter().enumerate() {
+    let start = t;
+    for (mi, &c) in marks.iter().enumerate() {
+      let dur = if c == '.' { dot } else { 3.0 * dot };
+      t += dur;
+      if mi + 1 < marks.len() {
+        t += dot;
+      }
+    }
+    out.push((start, t));
+    if ci + 1 < chars.len() {
+      t += if *word_end {
+        timing.word_gap
+      } else {
+        timing.char_gap
+      };
+    }
+  }
+  out
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -140,5 +216,23 @@ mod tests {
       LETTERS.iter().find(|c| c.ch == "S").map(|c| c.code),
       Some("...")
     );
+  }
+
+  #[test]
+  fn symbol_and_char_times_align_with_standard_timing() {
+    let near = |a: (f64, f64), b: (f64, f64)| (a.0 - b.0).abs() < 1e-9 && (a.1 - b.1).abs() < 1e-9;
+    // 20/20 WPM：点 0.06s、字符间隔 0.18s、单词间隔 0.42s
+    let timing = crate::koch::farnsworth(20.0, 20.0);
+    let sym = morse_symbol_times(".- -...", timing);
+    assert_eq!(sym.len(), 6);
+    assert!(near(sym[0], (0.02, 0.08)));
+    assert!(near(sym[1], (0.14, 0.32)));
+    assert!(near(sym[2], (0.50, 0.68)));
+    assert!(near(sym[5], (0.98, 1.04)));
+
+    let chars = morse_char_times(".- -...", timing);
+    assert_eq!(chars.len(), 2);
+    assert!(near(chars[0], (0.02, 0.32)));
+    assert!(near(chars[1], (0.50, 1.04)));
   }
 }

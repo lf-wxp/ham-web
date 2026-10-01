@@ -17,7 +17,7 @@ pub fn AntennaAnalyzerPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"天线分析仪与史密斯圆图"</div>
+            <h1 class="text-base font-semibold leading-tight">"天线分析仪与史密斯圆图"</h1>
             <div class="text-xs text-muted-foreground">"NanoVNA · 阻抗测量 · 驻波比判断"</div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 //! 模拟考试相关组件：成绩、恢复、设置、交卷确认对话框与答题卡。
 
 mod answer_card_sheet;
+mod category_compare;
 mod exam_result_dialog;
 mod exam_resume_dialog;
 mod exam_settings_dialog;

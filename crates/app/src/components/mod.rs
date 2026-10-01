@@ -2,6 +2,7 @@
 
 pub mod bank_selector;
 pub mod bubble;
+pub mod cat_control;
 pub mod common;
 pub mod exam;
 pub mod navigation;
@@ -9,3 +10,4 @@ pub mod practice;
 pub mod question_card;
 pub mod related_topics;
 pub mod search_dialog;
+pub mod study_plan_card;

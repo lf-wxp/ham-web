@@ -1,24 +1,48 @@
 //! 业余无线电执照考试模拟：Leptos CSR 前端入口。
 
 mod app;
+mod bank_updates;
 mod cn;
 mod components;
 mod data;
 mod exam_history;
+mod gesture;
 mod icons;
 mod morse_audio;
+mod morse_settings;
 mod pages;
 mod photo;
 mod pwa;
+mod sat_alert;
 mod shortcuts;
 mod speech;
 mod store;
+mod study;
 mod theme;
 mod ui;
 mod util;
 
+/// panic 时除了打印到控制台，还调用 `index.html` 中的 `__hamFatal` 显示兜底页。
+fn install_panic_hook() {
+  std::panic::set_hook(Box::new(|info| {
+    console_error_panic_hook::hook(info);
+    let window = util::window();
+    if let Ok(f) = js_sys::Reflect::get(&window, &"__hamFatal".into())
+      && let Some(f) = wasm_bindgen::JsCast::dyn_ref::<js_sys::Function>(&f)
+    {
+      let _ = f.call2(&window, &"页面出错了".into(), &info.to_string().into());
+    }
+  }));
+}
+
 fn main() {
-  console_error_panic_hook::set_once();
+  install_panic_hook();
   pwa::register_service_worker();
   leptos::mount::mount_to_body(app::App);
+  if let Some(boot) = util::window()
+    .document()
+    .and_then(|d| d.get_element_by_id("boot"))
+  {
+    boot.remove();
+  }
 }

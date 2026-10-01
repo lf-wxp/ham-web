@@ -15,7 +15,7 @@ pub fn SafetyPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"射频安全与电磁防护"</div>
+            <h1 class="text-base font-semibold leading-tight">"射频安全与电磁防护"</h1>
             <div class="text-xs text-muted-foreground">"SAR · 曝露限值 · 安全距离 · 操作要点"</div>
           </div>
         </div>

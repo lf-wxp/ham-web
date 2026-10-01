@@ -13,7 +13,7 @@ pub fn FrequenciesPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"常用频率"</div>
+            <h1 class="text-base font-semibold leading-tight">"常用频率"</h1>
             <div class="text-xs text-muted-foreground">"遇险应急 · 信标 · 呼叫 · APRS · 数字模式"</div>
           </div>
         </div>

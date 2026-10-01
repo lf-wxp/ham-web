@@ -50,7 +50,10 @@ fn search_glossary(query: &str) -> Vec<(&'static str, &'static str, String, Stri
   if q.is_empty() {
     return Vec::new();
   }
-  let mut matched: Vec<(u8, &'static str, &'static str, String, String)> = data::glossary()
+  let Some(glossary) = data::glossary_loaded() else {
+    return Vec::new();
+  };
+  let mut matched: Vec<(u8, &'static str, &'static str, String, String)> = glossary
     .entries()
     .iter()
     .filter_map(|e| {
@@ -78,15 +81,24 @@ pub fn SearchDialog() -> impl IntoView {
   let open = expect_context::<RwSignal<bool>>();
   let query = RwSignal::new(String::new());
 
+  // 术语表按需加载：首次打开面板时拉取，加载完成后结果自动刷新。
+  let glossary_ready = RwSignal::new(data::glossary_loaded().is_some());
+
   // 打开时清空输入。
   Effect::new(move |_| {
     if open.get() {
       query.set(String::new());
+      if !glossary_ready.get_untracked() {
+        leptos::task::spawn_local(async move {
+          data::load_glossary().await;
+          glossary_ready.set(true);
+        });
+      }
     }
   });
 
   view! {
-    <Dialog open=open class="sm:max-w-2xl" show_close=false>
+    <Dialog open=open class="sm:max-w-2xl" show_close=false label="全站搜索">
       <div class="flex flex-col gap-3">
         // 搜索框
         <div class="relative">
@@ -96,6 +108,7 @@ pub fn SearchDialog() -> impl IntoView {
           />
           <input
             type="search"
+            aria-label="搜索关键词"
             placeholder="搜索术语、频率、呼号、天线、元件……"
             class=input_class("h-11 pl-9")
             prop:value=move || query.get()
@@ -106,6 +119,7 @@ pub fn SearchDialog() -> impl IntoView {
         // 结果列表
         <div class="max-h-[60vh] overflow-y-auto">
           {move || {
+            glossary_ready.track();
             let q = query.get();
             let trimmed = q.trim();
             if trimmed.is_empty() {

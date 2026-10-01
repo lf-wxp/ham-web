@@ -1,22 +1,44 @@
 //! 莫尔斯电码速查表：字母（附语音字母）、数字、常用标点的点划序列与信号时值标准；
 //! 并内置「点击试听」与「解码练习」两个交互能力。
 
+mod abbrev_quiz;
+mod callsign_runner;
+mod callsign_session;
+mod cw_decoder;
+mod koch_trainer;
 mod morse_card;
 mod morse_page;
 mod morse_trainer;
 mod send_trainer;
+mod signal_bars;
+mod stats_panel;
 
 pub use morse_page::MorsePage;
 
 use std::collections::HashMap;
 
-use ham_web_core::morse::{COMMON_WORDS, DIGITS, LETTERS, MorseChar, PUNCTUATION, code_of};
+use ham_web_core::morse::code_of;
 use serde::{Deserialize, Serialize};
 
+use crate::cn::cn;
+use crate::ui::{Size, Variant, button_class};
 use crate::util::random;
+
+pub use ham_web_core::morse_trainer::{
+  MODES, Mode, Question, Scope, Target, random_choice, random_question,
+};
 
 /// 卡片试听的默认速度。
 const CARD_WPM: f64 = 20.0;
+
+/// 文本 → 点划序列，空格分隔的单词之间插入单词间隔 `/`（供 `play_morse_timed` 播放）。
+fn encode_words(text: &str) -> String {
+  text
+    .split_whitespace()
+    .map(|w| w.chars().filter_map(code_of).collect::<Vec<_>>().join(" "))
+    .collect::<Vec<_>>()
+    .join(" / ")
+}
 
 /// 把点划序列渲染为更直观的视觉符号：`.` → `•`、`-` → `—`。
 fn morse_display(code: &str) -> String {
@@ -34,108 +56,6 @@ fn morse_display(code: &str) -> String {
     .collect()
 }
 
-/// 练习模式。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Mode {
-  /// 听译：播放音频，靠耳朵识别字符。
-  Listen,
-  /// 看码：显示点划，识别对应字符。
-  Read,
-}
-
-impl Mode {
-  const fn label(self) -> &'static str {
-    match self {
-      Self::Listen => "听译",
-      Self::Read => "看码",
-    }
-  }
-}
-
-const MODES: [Mode; 2] = [Mode::Listen, Mode::Read];
-
-/// 出题范围。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Scope {
-  Letters,
-  Digits,
-  Punctuation,
-  Both,
-  All,
-}
-
-impl Scope {
-  const fn label(self) -> &'static str {
-    match self {
-      Self::Letters => "字母",
-      Self::Digits => "数字",
-      Self::Punctuation => "标点",
-      Self::Both => "字母 + 数字",
-      Self::All => "全部",
-    }
-  }
-
-  const ALL: [Self; 5] = [
-    Self::Letters,
-    Self::Digits,
-    Self::Punctuation,
-    Self::Both,
-    Self::All,
-  ];
-}
-
-/// 题目类型。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Target {
-  /// 单字符。
-  Single,
-  /// 单词（多个字母数字）。
-  Word,
-  /// 呼号（中国业余电台格式，如 BG4XXX）。
-  CallSign,
-  /// 整句（多个通联常用词）。
-  Sentence,
-}
-
-impl Target {
-  const fn label(self) -> &'static str {
-    match self {
-      Self::Single => "单字符",
-      Self::Word => "单词",
-      Self::CallSign => "呼号",
-      Self::Sentence => "整句",
-    }
-  }
-
-  /// 输入框的最大长度。
-  const fn max_len(self) -> &'static str {
-    match self {
-      Self::Single => "1",
-      Self::Word | Self::CallSign => "6",
-      Self::Sentence => "20",
-    }
-  }
-
-  /// 输入框占位提示。
-  const fn placeholder(self) -> &'static str {
-    match self {
-      Self::Single => "字符",
-      Self::Word => "单词",
-      Self::CallSign => "呼号",
-      Self::Sentence => "整句",
-    }
-  }
-
-  const ALL: [Self; 4] = [Self::Single, Self::Word, Self::CallSign, Self::Sentence];
-}
-
-/// 一道题：答案文本 + 点划序列（空格分隔字符）。
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct Question {
-  text: String,
-  code: String,
-}
-
 /// 提交反馈。
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Feedback {
@@ -150,6 +70,26 @@ struct MorseStats {
   wrong: usize,
   /// 每个字符（答案文本）的累计答错次数，用于易错字符优先出题。
   mistakes: HashMap<String, usize>,
+  /// 当前连续答对（不持久化，仅运行时）。
+  #[serde(skip)]
+  streak: usize,
+  /// 历史最长连续答对。
+  #[serde(default)]
+  best_streak: usize,
+  /// 答对过的最高速度（WPM）。
+  #[serde(default)]
+  top_wpm: f64,
+  /// 今日日期（YYYY-MM-DD）。
+  #[serde(default)]
+  today: String,
+  /// 今日正确/错误。
+  #[serde(default)]
+  today_correct: usize,
+  #[serde(default)]
+  today_wrong: usize,
+  /// 每日快照（日期 → 正确/错误），用于近 7 天趋势。
+  #[serde(default)]
+  daily: HashMap<String, (usize, usize)>,
 }
 
 const STATS_KEY: &str = "morse-stats";
@@ -162,122 +102,115 @@ fn save_stats(stats: &MorseStats) {
   crate::util::storage::set_json(STATS_KEY, stats);
 }
 
+/// 跨天后把昨日统计归档到 `daily` 并清零今日计数。
+fn roll_today(stats: &mut MorseStats) {
+  ham_web_core::morse_trainer::roll_daily_snapshot(
+    &mut stats.daily,
+    &mut stats.today,
+    &mut stats.today_correct,
+    &mut stats.today_wrong,
+    &crate::util::local_today(),
+  );
+}
+
+/// 导出全部摩尔斯练习统计（解码/Koch/呼号/发报）为单个 JSON 文件。
+fn export_all_morse_stats() {
+  let mut map = serde_json::Map::new();
+  for key in ["morse-stats", "morse-koch", "morse-runner", "morse-send"] {
+    if let Some(v) = crate::util::storage::get(key)
+      && let Ok(j) = serde_json::from_str::<serde_json::Value>(&v)
+    {
+      map.insert(key.to_owned(), j);
+    }
+  }
+  if let Ok(json) = serde_json::to_string_pretty(&serde_json::Value::Object(map)) {
+    crate::util::download_text("morse-all-stats.json", &json, "application/json");
+  }
+}
+
+/// 解码练习的设置（持久化）。
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+struct TrainerSettings {
+  #[serde(default = "default_mode")]
+  mode: Mode,
+  #[serde(default = "default_scope")]
+  scope: Scope,
+  #[serde(default = "default_target")]
+  target: Target,
+  #[serde(default = "default_wpm")]
+  wpm: f64,
+  #[serde(default = "default_wpm")]
+  eff_wpm: f64,
+  /// 自适应速度：答对加速、答错减速。
+  #[serde(default)]
+  adaptive: bool,
+}
+
+const fn default_mode() -> Mode {
+  Mode::Listen
+}
+
+const fn default_scope() -> Scope {
+  Scope::Letters
+}
+
+const fn default_target() -> Target {
+  Target::Single
+}
+
+const fn default_wpm() -> f64 {
+  20.0
+}
+
+impl Default for TrainerSettings {
+  fn default() -> Self {
+    Self {
+      mode: default_mode(),
+      scope: default_scope(),
+      target: default_target(),
+      wpm: default_wpm(),
+      eff_wpm: default_wpm(),
+      adaptive: false,
+    }
+  }
+}
+
+const TRAINER_KEY: &str = "morse-trainer";
+
+fn load_trainer_settings() -> TrainerSettings {
+  crate::util::storage::get_json(TRAINER_KEY).unwrap_or_default()
+}
+
+fn save_trainer_settings(s: &TrainerSettings) {
+  crate::util::storage::set_json(TRAINER_KEY, s);
+}
+
 fn random_index(len: usize) -> usize {
   (random() * len as f64) as usize
 }
 
-/// 指定范围的字符池。
-fn scope_pool(scope: Scope) -> Vec<&'static MorseChar> {
-  match scope {
-    Scope::Letters => LETTERS.iter().collect(),
-    Scope::Digits => DIGITS.iter().collect(),
-    Scope::Punctuation => PUNCTUATION.iter().collect(),
-    Scope::Both => LETTERS.iter().chain(DIGITS).collect(),
-    Scope::All => LETTERS.iter().chain(DIGITS).chain(PUNCTUATION).collect(),
-  }
+/// 主按钮：复用全局 `button_class` 统一状态，仅保留本页偏好的圆角/高度。
+fn btn_primary(extra: &str) -> String {
+  button_class(
+    Variant::Default,
+    Size::Default,
+    &cn(&["rounded-lg h-10", extra]),
+  )
 }
 
-/// 随机取一个字符；`weak_first` 为真且存在答错 ≥2 次的字符时，优先从易错字符中抽。
-fn weighted_char(
-  pool: &[&'static MorseChar],
-  mistakes: &HashMap<String, usize>,
-  weak_first: bool,
-) -> &'static MorseChar {
-  if weak_first {
-    let frequent: Vec<&'static MorseChar> = pool
-      .iter()
-      .copied()
-      .filter(|c| mistakes.get(c.ch).copied().unwrap_or(0) >= 2)
-      .collect();
-    if !frequent.is_empty() {
-      return frequent[random_index(frequent.len())];
-    }
-  }
-  pool[random_index(pool.len())]
-}
-
-/// 把文本编码为点划序列（字符之间用空格分隔）。
-fn encode_text(text: &str) -> String {
-  text
-    .chars()
-    .filter_map(code_of)
-    .collect::<Vec<_>>()
-    .join(" ")
-}
-
-/// 随机生成一道题。
-fn random_question(
-  scope: Scope,
-  target: Target,
-  mistakes: &HashMap<String, usize>,
-  weak_first: bool,
-) -> Question {
-  match target {
-    Target::Single => {
-      let pool = scope_pool(scope);
-      let c = weighted_char(&pool, mistakes, weak_first);
-      Question {
-        text: c.ch.to_owned(),
-        code: c.code.to_owned(),
-      }
-    }
-    Target::Word => {
-      let pool: Vec<&'static MorseChar> = LETTERS.iter().chain(DIGITS).collect();
-      let len = 2 + random_index(3); // 2–4 个字符
-      let mut text = String::new();
-      let mut codes = Vec::new();
-      for _ in 0..len {
-        let c = weighted_char(&pool, mistakes, weak_first);
-        text.push_str(c.ch);
-        codes.push(c.code);
-      }
-      Question {
-        text,
-        code: codes.join(" "),
-      }
-    }
-    Target::CallSign => {
-      // 官方个人业余电台呼号：前缀 B + 电台种类 A–H + 分区号 0–9 + 2–3 字母后缀
-      const KIND: &[char] = &['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-      let letters: Vec<&'static MorseChar> = LETTERS.iter().collect();
-      let suffix_len = 2 + random_index(2); // 2–3 个字母
-      let mut suffix = String::new();
-      for _ in 0..suffix_len {
-        suffix.push_str(weighted_char(&letters, mistakes, weak_first).ch);
-      }
-      // 规避与遇险信号冲突的后缀 SOS
-      if suffix == "SOS" {
-        suffix = "SOX".to_owned();
-      }
-      let mut text = String::from("B");
-      text.push(KIND[random_index(KIND.len())]);
-      text.push(char::from_digit(random_index(10) as u32, 10).expect("digit 0-9"));
-      text.push_str(&suffix);
-      Question {
-        code: encode_text(&text),
-        text,
-      }
-    }
-    Target::Sentence => {
-      // 2–4 个通联常用词组成的「整句」
-      let len = 2 + random_index(3);
-      let mut words = Vec::new();
-      for _ in 0..len {
-        words.push(COMMON_WORDS[random_index(COMMON_WORDS.len())]);
-      }
-      let text = words.join(" ");
-      Question {
-        code: encode_text(&text),
-        text,
-      }
-    }
-  }
+/// 次按钮（描边）。
+fn btn_secondary(extra: &str) -> String {
+  button_class(
+    Variant::Outline,
+    Size::Default,
+    &cn(&["rounded-lg h-10", extra]),
+  )
 }
 
 fn pill_class(active: bool) -> &'static str {
   if active {
-    "inline-flex items-center whitespace-nowrap rounded-full border bg-primary text-primary-foreground px-3 py-1 text-xs transition-colors"
+    "inline-flex items-center justify-center whitespace-nowrap rounded-full border border-primary bg-primary px-3 py-1 text-xs font-medium text-primary-foreground shadow-sm shadow-primary/20 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
   } else {
-    "inline-flex items-center whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors hover:bg-accent"
+    "inline-flex items-center justify-center whitespace-nowrap rounded-full border bg-card px-3 py-1 text-xs transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
   }
 }

@@ -1,156 +1,53 @@
+use ham_web_core::contest::{CONTESTS, CabrilloHeader, cabrillo, contest};
 use leptos::prelude::*;
-use serde::Deserialize;
 
+use crate::pages::log::{LogEntry, use_log_store};
 use crate::ui::{Size, Variant, button_class, input_class};
-use crate::util::{download_text, storage};
-
-/// 可选竞赛（CONTEST 字段值 → 展示名）。
-const CONTESTS: &[(&str, &str)] = &[
-  ("CQ-WW-SSB", "CQ WW SSB"),
-  ("CQ-WW-CW", "CQ WW CW"),
-  ("CQ-WPX-SSB", "CQ WPX SSB"),
-  ("ARRL-DX-SSB", "ARRL DX SSB"),
-  ("ARRL-DX-CW", "ARRL DX CW"),
-];
-
-/// 日志精简结构（读取 localStorage 的通联日志）。
-#[derive(Deserialize, Default)]
-struct LogbookLite {
-  #[serde(default)]
-  entries: Vec<EntryLite>,
-}
-
-#[derive(Deserialize, Default)]
-struct EntryLite {
-  #[serde(default)]
-  date: String,
-  #[serde(default)]
-  time: String,
-  #[serde(default)]
-  freq: String,
-  #[serde(default)]
-  mode: String,
-  #[serde(default)]
-  callsign: String,
-  #[serde(default)]
-  rst_sent: String,
-  #[serde(default)]
-  rst_rcvd: String,
-}
-
-/// 本台信息精简结构。
-#[derive(Deserialize, Default)]
-struct StationLite {
-  #[serde(default)]
-  callsign: String,
-  #[serde(default)]
-  operator: String,
-  #[serde(default)]
-  gridsquare: String,
-}
-
-/// 频率 MHz → kHz（Cabrillo 要求整数 kHz）。
-fn freq_to_khz(freq: &str) -> String {
-  freq
-    .trim()
-    .parse::<f64>()
-    .map(|f| format!("{:.0}", f * 1000.0))
-    .unwrap_or_else(|_| freq.trim().to_owned())
-}
-
-/// 模式 → Cabrillo 模式代码。
-fn mode_to_cabrillo(mode: &str) -> &'static str {
-  match mode {
-    "CW" => "CW",
-    "SSB" | "AM" | "FM" => "PH",
-    "RTTY" => "RY",
-    _ => "DG",
-  }
-}
-
-/// 生成 Cabrillo 文本（交换信息留空，需按竞赛规则补充）。
-fn build_cabrillo(
-  contest: &str,
-  callsign: &str,
-  operator: &str,
-  gridsquare: &str,
-  entries: &[EntryLite],
-) -> String {
-  let mut s = String::new();
-  s.push_str("START-OF-LOG: 3.0\n");
-  s.push_str(&format!("CALLSIGN: {}\n", callsign.trim()));
-  s.push_str(&format!("CONTEST: {}\n", contest));
-  s.push_str("CATEGORY-OPERATOR: SINGLE-OP\n");
-  s.push_str("CATEGORY-ASSISTED: NON-ASSISTED\n");
-  s.push_str("CATEGORY-BAND: ALL\n");
-  s.push_str(&format!(
-    "CATEGORY-MODE: {}\n",
-    if contest.contains("CW") { "CW" } else { "SSB" }
-  ));
-  s.push_str("CATEGORY-TRANSMITTER: ONE\n");
-  s.push_str("CLAIMED-SCORE: 0\n");
-  s.push_str(&format!("NAME: {}\n", operator.trim()));
-  s.push_str(&format!("LOCATION: {}\n", gridsquare.trim()));
-  s.push_str(
-    "ADDRESS:\nADDRESS-CITY:\nADDRESS-STATE-PROVINCE:\nADDRESS-POSTALCODE:\nADDRESS-COUNTRY:\n",
-  );
-  s.push_str("OPERATORS:\nSOAPBOX:\n");
-  for e in entries {
-    let date = e.date.replace('-', "");
-    let time = e.time.replace(':', "");
-    let rst_sent = if e.rst_sent.is_empty() {
-      "599"
-    } else {
-      e.rst_sent.as_str()
-    };
-    let rst_rcvd = if e.rst_rcvd.is_empty() {
-      "599"
-    } else {
-      e.rst_rcvd.as_str()
-    };
-    s.push_str(&format!(
-      "QSO: {} {} {} {} {} {}  {} {} {}  0\n",
-      freq_to_khz(&e.freq),
-      mode_to_cabrillo(&e.mode),
-      date,
-      time,
-      callsign.trim(),
-      rst_sent,
-      e.callsign,
-      rst_rcvd,
-      "",
-    ));
-  }
-  s.push_str("END-OF-LOG:\n");
-  s
-}
+use crate::util::download_text;
 
 /// 从通联日志按竞赛规则生成可提交的 Cabrillo 文件。
 #[component]
 pub(super) fn CabrilloGenerator() -> impl IntoView {
-  let station: StationLite = storage::get_json("station-info").unwrap_or_default();
+  let store = use_log_store();
+  let station = store.station.get_untracked();
   let callsign = RwSignal::new(station.callsign.clone());
   let operator = RwSignal::new(station.operator.clone());
   let gridsquare = RwSignal::new(station.gridsquare.clone());
-  let contest = RwSignal::new("CQ-WW-SSB".to_owned());
+  let contest_id = RwSignal::new(CONTESTS[0].id.to_owned());
   let generated = RwSignal::new(String::new());
 
+  let tagged = Memo::new(move |_| {
+    let id = contest_id.get();
+    store.logbook.with(|lb| {
+      lb.entries
+        .iter()
+        .filter(|e| e.contest_id == id)
+        .cloned()
+        .collect::<Vec<LogEntry>>()
+    })
+  });
+
   let generate = move || {
-    let lb: LogbookLite = storage::get_json("logbook").unwrap_or_default();
-    let text = build_cabrillo(
-      contest.get().as_str(),
-      callsign.get().trim(),
-      operator.get().trim(),
-      gridsquare.get().trim(),
-      &lb.entries,
-    );
-    generated.set(text);
+    let Some(def) = contest(&contest_id.get_untracked()) else {
+      return;
+    };
+    let header = CabrilloHeader {
+      callsign: callsign.get_untracked().trim().to_owned(),
+      operators: operator.get_untracked().trim().to_owned(),
+      grid: gridsquare.get_untracked().trim().to_owned(),
+      ..Default::default()
+    };
+    generated.set(tagged.with_untracked(|list| cabrillo(def, &header, list)));
   };
 
   let download = move || {
     let text = generated.get();
     if !text.is_empty() {
-      download_text("contest.cbr", &text, "text/plain");
+      download_text(
+        &format!("{}.cbr", contest_id.get_untracked()),
+        &text,
+        "text/plain",
+      );
     }
   };
 
@@ -171,15 +68,16 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
           <label class="flex flex-col gap-1.5 text-sm">
             <span class="text-xs text-muted-foreground">"竞赛"</span>
             <select
-              prop:value=move || contest.get()
-              on:change=move |e| contest.set(event_target_value(&e))
+              prop:value=move || contest_id.get()
+              on:change=move |e| {
+                contest_id.set(event_target_value(&e));
+                generated.set(String::new());
+              }
               class=input_class("")
             >
               {CONTESTS
                 .iter()
-                .map(|&(code, name)| {
-                  view! { <option value=code>{name}</option> }
-                })
+                .map(|c| view! { <option value=c.id>{c.name}</option> })
                 .collect_view()}
             </select>
           </label>
@@ -214,10 +112,14 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
           <button
             type="button"
             class=button_class(Variant::Outline, Size::Default, "")
+            prop:disabled=move || generated.with(String::is_empty)
             on:click=move |_| download()
           >
             "下载 .cbr"
           </button>
+          <span class="text-xs text-muted-foreground">
+            {move || format!("日志中标记为该竞赛的通联：{} 条", tagged.with(Vec::len))}
+          </span>
         </div>
 
         {move || {
@@ -225,7 +127,9 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
           if text.is_empty() {
             view! {
               <p class="text-xs text-muted-foreground">
-                "从「通联日志」读取记录，选择竞赛后生成；交换信息（分区 / 序号等）留空，请按竞赛规则补充后提交。"
+                "读取通联日志中带对应 CONTEST_ID 的记录（含交换信息与自报分数）。比赛时推荐直接用 "
+                <a href="/contest-log" class="font-medium text-foreground underline underline-offset-4">"竞赛录入"</a>
+                "：自动序号、实时查重，结束后一键导出。"
               </p>
             }
             .into_any()

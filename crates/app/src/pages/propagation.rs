@@ -13,7 +13,7 @@ pub fn PropagationPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"传播与电离层"</div>
+            <h1 class="text-base font-semibold leading-tight">"传播与电离层"</h1>
             <div class="text-xs text-muted-foreground">"电离层分层 · 传播方式 · 关键概念"</div>
           </div>
         </div>

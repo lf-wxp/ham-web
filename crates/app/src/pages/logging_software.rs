@@ -15,7 +15,7 @@ pub fn LoggingSoftwarePage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"日志与竞赛软件"</div>
+            <h1 class="text-base font-semibold leading-tight">"日志与竞赛软件"</h1>
             <div class="text-xs text-muted-foreground">"N1MM+ · Logger32 · HRD · WSJT-X"</div>
           </div>
         </div>

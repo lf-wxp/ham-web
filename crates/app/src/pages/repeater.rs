@@ -15,7 +15,7 @@ pub fn RepeaterPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"中继台与数字网关"</div>
+            <h1 class="text-base font-semibold leading-tight">"中继台与数字网关"</h1>
             <div class="text-xs text-muted-foreground">"中继台原理 · 数字中继 · 热点 · 互联网网关"</div>
           </div>
         </div>

@@ -68,7 +68,7 @@ pub(super) fn PhotoProcessor() -> impl IntoView {
             </a>
             "的要求。处理过程在设备本地处理，不会保存到服务器。"
           </p>
-          <p class="text-amber-600 dark:text-amber-400">
+          <p class="text-amber-700 dark:text-amber-400">
             "⚠️ 本工具无法帮助处理人像照片的底色要求，仅能处理尺寸。若需换白底，请自行寻找其他解决方案。"
           </p>
         </div>

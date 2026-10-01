@@ -16,7 +16,7 @@ pub fn LicenseClassesPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"A/B/C 类操作证权限"</div>
+            <h1 class="text-base font-semibold leading-tight">"A/B/C 类操作证权限"</h1>
             <div class="text-xs text-muted-foreground">"频率范围 · 功率上限 · 适用场景"</div>
           </div>
         </div>

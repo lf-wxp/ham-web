@@ -4,6 +4,7 @@ use leptos::task::spawn_local;
 
 use crate::components::bank_selector::QuestionBankSelector;
 use crate::components::bubble::Bubble;
+use crate::components::study_plan_card::StudyPlanCard;
 use crate::data;
 use crate::icons::{Icon, IconKind};
 use crate::pages::{DEFAULT_TITLE, bank_href};
@@ -12,8 +13,10 @@ use crate::ui::{
 };
 use crate::util::set_title;
 
+use super::cards_card::CardsCard;
 use super::daily_question::DailyQuestion;
 use super::propagation_widget::PropagationWidget;
+use super::review_card::ReviewCard;
 
 /// 首页模块入口。
 struct ModuleCard {
@@ -107,7 +110,7 @@ pub fn HomePage() -> impl IntoView {
   let exam_href = move || bank_href("/exam", version.get().as_deref(), bank.get());
 
   view! {
-    <main class="container relative mx-auto max-w-5xl px-4 pb-12 pt-14 sm:pt-20">
+    <div class="container relative mx-auto max-w-5xl px-4 pb-12 pt-14 sm:pt-20">
       // Hero
       <section class="flex flex-col items-center text-center">
         <span
@@ -235,9 +238,12 @@ pub fn HomePage() -> impl IntoView {
       </div>
 
       <div class="space-y-6">
+        <StudyPlanCard />
+        <ReviewCard />
+        <CardsCard />
         <DailyQuestion />
         <PropagationWidget />
       </div>
-    </main>
+    </div>
   }
 }

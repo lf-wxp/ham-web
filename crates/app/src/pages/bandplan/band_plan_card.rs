@@ -6,7 +6,7 @@ pub(super) fn BandPlanCard(plan: &'static BandPlan) -> impl IntoView {
   view! {
     <article class="rounded-xl border bg-card p-4">
       <div class="flex flex-wrap items-baseline gap-2">
-        <h3 class="font-mono font-semibold text-primary">{plan.band}</h3>
+        <h2 class="font-mono font-semibold text-primary">{plan.band}</h2>
         <span class="text-xs text-muted-foreground">{plan.freq_range}</span>
       </div>
       <ul class="mt-3 space-y-1.5">

@@ -14,7 +14,7 @@ pub fn MostWantedPage() -> impl IntoView {
       <header class="sticky top-16 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"DXCC 稀有度榜单"</div>
+            <h1 class="text-base font-semibold leading-tight">"DXCC 稀有度榜单"</h1>
             <div class="text-xs text-muted-foreground">"DXCC 世纪俱乐部最稀有榜 · 稀有实体追台"</div>
           </div>
         </div>

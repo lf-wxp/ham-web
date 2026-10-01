@@ -69,9 +69,9 @@ fn fmt_iso_time(s: &str) -> String {
 /// 条件文字对应的颜色。
 fn condition_color(condition: &str) -> &'static str {
   match condition {
-    "Good" => "text-emerald-500",
-    "Fair" => "text-amber-500",
-    "Poor" => "text-red-500",
+    "Good" => "text-emerald-700 dark:text-emerald-400",
+    "Fair" => "text-amber-700 dark:text-amber-400",
+    "Poor" => "text-red-700 dark:text-red-400",
     _ => "text-foreground",
   }
 }
@@ -88,9 +88,9 @@ struct Alert {
 /// 警报级别文字颜色。
 fn level_color(level: &str) -> &'static str {
   match level.chars().next() {
-    Some('G') => "text-red-500",
-    Some('S') => "text-purple-500",
-    Some('R') => "text-orange-500",
+    Some('G') => "text-red-700 dark:text-red-400",
+    Some('S') => "text-purple-700 dark:text-purple-300",
+    Some('R') => "text-orange-700 dark:text-orange-400",
     _ => "text-foreground",
   }
 }

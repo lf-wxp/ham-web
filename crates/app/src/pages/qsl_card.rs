@@ -13,7 +13,7 @@ pub fn QslCardPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"QSL 卡片设计"</div>
+            <h1 class="text-base font-semibold leading-tight">"QSL 卡片设计"</h1>
             <div class="text-xs text-muted-foreground">"必备信息 · 设计建议"</div>
           </div>
         </div>

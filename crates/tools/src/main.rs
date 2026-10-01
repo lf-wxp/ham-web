@@ -8,6 +8,7 @@
 
 mod csv;
 mod dataset;
+mod dxcc;
 mod explanations;
 mod fsutil;
 mod icons;
@@ -73,6 +74,15 @@ enum Command {
     #[arg(long)]
     limit: Option<usize>,
   },
+  /// 由 cty.csv 生成内置 DXCC 前缀表（crates/core/data/dxcc.txt）
+  Dxcc {
+    /// 本地 cty.csv（默认从 country-files.com 下载）
+    #[arg(long)]
+    input: Option<PathBuf>,
+    /// 下载地址
+    #[arg(long, default_value = dxcc::DEFAULT_URL)]
+    url: String,
+  },
   /// 由 public/pwa-icon.svg 生成 PWA 与 Apple Touch 图标
   Icons,
   /// Trunk 构建后处理：生成 Service Worker、sitemap.xml，并替换站点地址
@@ -106,6 +116,7 @@ fn main() -> Result<()> {
       context,
       limit,
     } => explanations::missing(&paths, bank, output.as_deref(), context.as_deref(), limit),
+    Command::Dxcc { input, url } => dxcc::generate(&root, input.as_deref(), &url),
     Command::Icons => icons::generate(&paths),
     Command::Postbuild { dist, site_url } => {
       let dist = if dist.is_absolute() {

@@ -13,7 +13,7 @@ pub fn AtvPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"业余电视 ATV / DATV"</div>
+            <h1 class="text-base font-semibold leading-tight">"业余电视 ATV / DATV"</h1>
             <div class="text-xs text-muted-foreground">"ATV 业余电视 · DATV 数字业余电视"</div>
           </div>
         </div>

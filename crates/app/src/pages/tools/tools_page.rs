@@ -80,12 +80,20 @@ fn scroll_to(id: &str) {
 #[component]
 pub fn ToolsPage() -> impl IntoView {
   set_title("小工具");
+  // 路由切换后不会自动跳到锚点（如存储告警里的 `/tools#backup`），挂载后手动滚动
+  let hash = leptos_router::hooks::use_location().hash;
+  Effect::new(move |_| {
+    if let Some(id) = hash.get().strip_prefix('#').filter(|id| !id.is_empty()) {
+      let id = id.to_owned();
+      request_animation_frame(move || scroll_to(&id));
+    }
+  });
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"小工具"</div>
+            <h1 class="text-base font-semibold leading-tight">"小工具"</h1>
             <div class="text-xs text-muted-foreground">"频率波长 · 功率 · 增益 · 电路计算"</div>
           </div>
         </div>
@@ -114,7 +122,7 @@ pub fn ToolsPage() -> impl IntoView {
 
         <div class="grid gap-6 lg:grid-cols-[14rem_1fr]">
           <aside class="hidden lg:block">
-            <nav class="sticky top-20 rounded-xl border bg-card p-3">
+            <nav aria-label="工具目录" class="sticky top-20 rounded-xl border bg-card p-3">
               <div class="mb-2 px-2 text-xs font-semibold text-muted-foreground">"工具导航"</div>
               <ul class="max-h-[calc(100vh-7rem)] space-y-0.5 overflow-y-auto pr-1">
                 {TOOL_NAV

@@ -16,7 +16,7 @@ pub fn OperatingPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"通联实务"</div>
+            <h1 class="text-base font-semibold leading-tight">"通联实务"</h1>
             <div class="text-xs text-muted-foreground">"通联流程 · 日志 · QSL · 中继台 · 接地防雷"</div>
           </div>
         </div>

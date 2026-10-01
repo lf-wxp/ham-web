@@ -2,7 +2,7 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>业余无线电｜题库 · 知识 · 工具</title>
     <meta name="description" content="业余无线电一站式平台：A/B/C 类题库练习、模拟考试、知识速查、通联日志与实时传播" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAFBFC" />
@@ -46,6 +46,93 @@
       })();
     </script>
 
+    <!-- 致命错误兜底：wasm 加载失败或运行时 panic 时显示，不依赖 wasm 本身 -->
+    <script>
+      (() => {
+        let shown = false;
+        const backup = () => {
+          const map = {};
+          try {
+            for (let i = 0; i < localStorage.length; i++) {
+              const k = localStorage.key(i);
+              map[k] = localStorage.getItem(k);
+            }
+          } catch {}
+          const d = new Date();
+          const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(new Blob([JSON.stringify(map)], { type: "application/json" }));
+          a.download = `ham-backup-${stamp}.json`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        };
+        window.__hamFatal = (title, detail) => {
+          if (shown) return;
+          shown = true;
+          document.getElementById("boot")?.remove();
+          const box = document.createElement("div");
+          box.id = "fatal";
+          box.setAttribute("role", "alertdialog");
+          box.setAttribute("aria-modal", "true");
+          box.setAttribute("aria-labelledby", "fatal-title");
+          box.setAttribute("aria-describedby", "fatal-desc");
+          box.innerHTML = `
+            <style>
+              #fatal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; background: #fafbfc; color: #334155; font: 14px/1.6 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+              .dark #fatal { background: #060b10; color: #cbd5e1; }
+              #fatal section { max-width: 440px; width: 100%; }
+              #fatal h1 { margin: 0 0 6px; font-size: 18px; color: #0f172a; }
+              .dark #fatal h1 { color: #f1f5f9; }
+              #fatal .row { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+              #fatal button { font: inherit; padding: 6px 14px; border-radius: 8px; border: 1px solid #cbd5e1; background: transparent; color: inherit; cursor: pointer; }
+              #fatal button.primary { background: #0f766e; border-color: #0f766e; color: #fff; }
+              #fatal button:focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; }
+              #fatal pre { max-height: 180px; overflow: auto; white-space: pre-wrap; word-break: break-all; font-size: 12px; padding: 8px; border-radius: 6px; background: rgba(100, 116, 139, .12); }
+            </style>
+            <section>
+              <h1 id="fatal-title"></h1>
+              <p id="fatal-desc">本地数据（进度、错题、日志等）不受影响。可以重新加载页面；如果反复出现，建议先导出数据备份。</p>
+              <div class="row">
+                <button type="button" class="primary" data-act="reload">重新加载</button>
+                <button type="button" data-act="backup">导出数据备份</button>
+                <button type="button" data-act="copy">复制错误信息</button>
+              </div>
+              <details><summary>错误详情</summary><pre></pre></details>
+            </section>`;
+          box.querySelector("h1").textContent = title;
+          box.querySelector("pre").textContent = `${detail}\n\n${location.href}\n${navigator.userAgent}`;
+          box.addEventListener("click", (e) => {
+            const act = e.target.closest("button")?.dataset.act;
+            if (act === "reload") location.reload();
+            if (act === "backup") backup();
+            if (act === "copy") navigator.clipboard?.writeText(box.querySelector("pre").textContent).then(() => { e.target.textContent = "已复制"; });
+          });
+          document.body.appendChild(box);
+          box.querySelector("button")?.focus();
+        };
+        if (typeof WebAssembly !== "object") {
+          addEventListener("DOMContentLoaded", () => window.__hamFatal("浏览器不受支持", "当前浏览器不支持 WebAssembly，请升级到最新版 Chrome / Edge / Safari / Firefox。"));
+          return;
+        }
+        const onBootError = (reason) => {
+          if (document.getElementById("boot")) window.__hamFatal("加载失败", String(reason?.stack ?? reason?.message ?? reason));
+        };
+        addEventListener("unhandledrejection", (e) => onBootError(e.reason));
+        // 只关心本站资源：第三方脚本（如被广告拦截器拦下的广告）失败不影响使用
+        const sameOrigin = (url) => { try { return new URL(url, location.href).origin === location.origin; } catch { return false; } };
+        addEventListener("error", (e) => {
+          const t = e.target;
+          if (t instanceof HTMLScriptElement || t instanceof HTMLLinkElement) {
+            const url = t.src || t.href;
+            if (sameOrigin(url)) onBootError(`资源加载失败：${url}`);
+          } else if (e.error && sameOrigin(e.filename)) {
+            onBootError(e.error);
+          }
+        }, true);
+      })();
+    </script>
+
     <link data-trunk rel="tailwind-css" href="style/input.css" />
     <link
       data-trunk
@@ -58,6 +145,7 @@
 
     <link data-trunk rel="copy-dir" href="../../public/questions" />
     <link data-trunk rel="copy-dir" href="../../public/fonts" />
+    <link data-trunk rel="copy-dir" href="../../data/glossary" data-target-path="data/glossary" />
     <link data-trunk rel="copy-file" href="../../public/manifest.json" />
     <link data-trunk rel="copy-file" href="../../public/favicon.ico" />
     <link data-trunk rel="copy-file" href="../../public/icon.svg" />
@@ -73,5 +161,22 @@
       crossorigin="anonymous"
     ></script>
   </head>
-  <body class="antialiased min-h-dvh flex flex-col"></body>
+  <body class="antialiased min-h-dvh flex flex-col">
+    <!-- 首屏占位：wasm 下载 / 初始化期间显示，应用挂载后由 main.rs 移除 -->
+    <div id="boot" role="status" aria-live="polite">
+      <style>
+        #boot { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #fafbfc; color: #475569; font: 14px/1.4 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; z-index: 50; }
+        .dark #boot { background: #060b10; color: #94a3b8; }
+        #boot b { font-size: 18px; color: #0f172a; letter-spacing: .02em; }
+        .dark #boot b { color: #e2e8f0; }
+        #boot i { width: 28px; height: 28px; border-radius: 50%; border: 3px solid currentColor; border-right-color: transparent; opacity: .6; animation: boot-spin .8s linear infinite; }
+        @keyframes boot-spin { to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) { #boot i { animation: none; } }
+      </style>
+      <i aria-hidden="true"></i>
+      <b>业余无线电</b>
+      <span>正在加载题库与工具…</span>
+    </div>
+    <noscript>本站需要启用 JavaScript 才能使用。</noscript>
+  </body>
 </html>

@@ -1,36 +1,11 @@
 use std::collections::{HashMap, HashSet};
 
-use ham_web_core::dxcc::dxcc_entity;
-use ham_web_core::frequencies::band_of;
 use leptos::prelude::*;
-use serde::Deserialize;
 
+use crate::pages::log::use_log_store;
 use crate::util::set_title;
 
 use super::bar_chart::BarChart;
-
-/// 日志精简结构。
-#[derive(Deserialize, Default)]
-struct LogbookLite {
-  #[serde(default)]
-  entries: Vec<EntryLite>,
-}
-
-#[derive(Deserialize, Default)]
-struct EntryLite {
-  #[serde(default)]
-  callsign: String,
-  #[serde(default)]
-  freq: String,
-  #[serde(default)]
-  mode: String,
-  #[serde(default)]
-  date: String,
-  #[serde(default)]
-  qsl_sent: bool,
-  #[serde(default)]
-  qsl_rcvd: bool,
-}
 
 /// 取 Top N（按计数降序）。
 fn top_n(mut map: HashMap<String, usize>, n: usize) -> Vec<(String, usize)> {
@@ -44,8 +19,8 @@ fn top_n(mut map: HashMap<String, usize>, n: usize) -> Vec<(String, usize)> {
 pub fn StatsPage() -> impl IntoView {
   set_title("通联统计");
 
-  let lb: LogbookLite = crate::util::storage::get_json("logbook").unwrap_or_default();
-  let total = lb.entries.len();
+  let entries = use_log_store().logbook.get_untracked().entries;
+  let total = entries.len();
 
   let mut dxcc: HashMap<String, usize> = HashMap::new();
   let mut band: HashMap<String, usize> = HashMap::new();
@@ -53,20 +28,21 @@ pub fn StatsPage() -> impl IntoView {
   let mut monthly: HashMap<String, usize> = HashMap::new();
   let mut band_dxcc: HashMap<String, HashSet<String>> = HashMap::new();
 
-  for e in &lb.entries {
+  for e in &entries {
     if !e.callsign.is_empty() {
       *dxcc
-        .entry(dxcc_entity(&e.callsign).unwrap_or("其他").to_owned())
+        .entry(e.entity().map(|x| x.name).unwrap_or("其他").to_owned())
         .or_default() += 1;
     }
-    if let Ok(f) = e.freq.parse::<f64>() {
-      *band.entry(band_of(f).to_owned()).or_default() += 1;
-      if let Some(entity) = dxcc_entity(&e.callsign) {
+    let b = e.band_label();
+    if !b.is_empty() {
+      if let Some(entity) = e.entity().map(|x| x.name) {
         band_dxcc
-          .entry(band_of(f).to_owned())
+          .entry(b.clone())
           .or_default()
           .insert(entity.to_owned());
       }
+      *band.entry(b).or_default() += 1;
     }
     if !e.mode.is_empty() {
       *mode.entry(e.mode.clone()).or_default() += 1;
@@ -76,10 +52,10 @@ pub fn StatsPage() -> impl IntoView {
     }
   }
 
-  let qsl_sent_count = lb.entries.iter().filter(|e| e.qsl_sent).count();
-  let qsl_rcvd_count = lb.entries.iter().filter(|e| e.qsl_rcvd).count();
+  let qsl_sent_count = entries.iter().filter(|e| e.qsl_sent).count();
+  let qsl_rcvd_count = entries.iter().filter(|e| e.qsl_rcvd).count();
 
-  let dxcc_total = dxcc.len();
+  let dxcc_total = dxcc.keys().filter(|k| *k != "其他").count();
   let dxcc_top = top_n(dxcc, 10);
   let mut band_dxcc_list: Vec<(String, usize)> = band_dxcc
     .iter()
@@ -99,7 +75,7 @@ pub fn StatsPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"通联统计"</div>
+            <h1 class="text-base font-semibold leading-tight">"通联统计"</h1>
             <div class="text-xs text-muted-foreground">"日志可视化 · DXCC / 波段 / 模式 / 趋势"</div>
           </div>
         </div>

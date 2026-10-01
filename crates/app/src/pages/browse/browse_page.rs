@@ -212,7 +212,7 @@ pub fn BrowsePage() -> impl IntoView {
             >
               <span class="h-2 w-2 shrink-0 rounded-full" style=format!("background: {}", c.color)></span>
               <span class="truncate">{c.name}</span>
-              <span class="ml-auto text-xs opacity-70">{move || cat_count.with(|m| m.get(c.key).copied().unwrap_or(0))}</span>
+              <span class="ml-auto text-xs tabular-nums">{move || cat_count.with(|m| m.get(c.key).copied().unwrap_or(0))}</span>
               <Icon
                 kind=IconKind::ChevronDown
                 class=Signal::derive(move || {
@@ -266,7 +266,7 @@ pub fn BrowsePage() -> impl IntoView {
       <header class="sticky top-16 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"题库分类浏览"</div>
+            <h1 class="text-base font-semibold leading-tight">"题库分类浏览"</h1>
             <div class="text-xs text-muted-foreground">"按题目类型分类 · 仅显示正确答案 · 附解析与参考依据"</div>
           </div>
 
@@ -337,13 +337,13 @@ pub fn BrowsePage() -> impl IntoView {
             >
               <span class="h-2 w-2 rounded-full bg-foreground/60"></span>
               "全部题目"
-              <span class="ml-auto text-xs opacity-70">{move || bank_questions.with(Vec::len)}</span>
+              <span class="ml-auto text-xs tabular-nums">{move || bank_questions.with(Vec::len)}</span>
             </button>
             {sidebar}
           </div>
         </aside>
 
-        <main class="min-w-0">
+        <div class="min-w-0">
           <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="题目总数" value=Signal::derive(move || bank_questions.with(Vec::len)) />
             <Stat label="多选题" value=multi_count />
@@ -351,7 +351,7 @@ pub fn BrowsePage() -> impl IntoView {
             <Stat label="当前筛选" value=Signal::derive(move || filtered.with(Vec::len)) />
           </div>
           {list}
-        </main>
+        </div>
       </div>
     </div>
   }

@@ -15,7 +15,7 @@ pub fn PortablePage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <div class="text-base font-semibold leading-tight">"户外便携操作"</div>
+            <h1 class="text-base font-semibold leading-tight">"户外便携操作"</h1>
             <div class="text-xs text-muted-foreground">"SOTA 山顶 · POTA 公园 · WWFF 世界动植物"</div>
           </div>
         </div>

@@ -2,7 +2,6 @@ use ham_web_core::exam::shuffle_in_place;
 use ham_web_core::glossary::GlossaryEntry;
 use leptos::prelude::*;
 
-use crate::data;
 use crate::pages::SLANG_CATEGORY;
 use crate::util::random;
 
@@ -32,7 +31,7 @@ fn make_qcode_question(pool: &[&GlossaryEntry]) -> Option<(String, Vec<String>, 
 
 /// Q 简语测验：给简语选含义。
 #[component]
-pub(super) fn QCodeQuiz() -> impl IntoView {
+pub(super) fn QCodeQuiz(entries: &'static [GlossaryEntry]) -> impl IntoView {
   let question = RwSignal::new(String::new());
   let options = RwSignal::new(Vec::<String>::new());
   let answer = StoredValue::new(String::new());
@@ -41,8 +40,7 @@ pub(super) fn QCodeQuiz() -> impl IntoView {
   let wrong = RwSignal::new(0usize);
 
   let load_next = move || {
-    let pool: Vec<&'static GlossaryEntry> = data::glossary()
-      .entries()
+    let pool: Vec<&'static GlossaryEntry> = entries
       .iter()
       .filter(|e| {
         e.category_key() == SLANG_CATEGORY

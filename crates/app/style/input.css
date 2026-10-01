@@ -85,7 +85,7 @@
   --muted-foreground: oklch(0.53 0.015 240);
   --accent: oklch(0.945 0.012 190);
   --accent-foreground: oklch(0.25 0.03 200);
-  --destructive: oklch(0.6 0.22 25);
+  --destructive: oklch(0.55 0.22 25);
   --border: oklch(0.915 0.008 220);
   --input: oklch(0.915 0.008 220);
   --ring: oklch(0.6 0.13 195);
@@ -387,5 +387,30 @@ html {
   a:active,
   [role="button"]:active {
     opacity: 0.72;
+  }
+}
+
+/* ---------- 打印（/print 打印版） ---------- */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 12mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .print-hide,
+  body:has(.print-sheet) :is(main ~ *, :has(~ main)) {
+    display: none !important;
+  }
+  .print-avoid-break {
+    break-inside: avoid;
+  }
+  .print-break-before {
+    break-before: page;
   }
 }

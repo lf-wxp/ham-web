@@ -22,6 +22,7 @@ pub fn Select(
   children: ChildrenFn,
 ) -> impl IntoView {
   let open = RwSignal::new(false);
+  let title = placeholder.clone();
   provide_context(SelectCtx {
     value,
     on_change,
@@ -46,7 +47,9 @@ pub fn Select(
       <button
         type="button"
         role="combobox"
+        aria-haspopup="listbox"
         aria-expanded=move || open.get().to_string()
+        title=title
         data-state=state
         disabled=move || disabled.get()
         class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1"

@@ -1,8 +1,8 @@
 //! 呼号结构解析：前缀（国家/地区）、中国台站类别、分区号、后缀与斜杠后缀。
 //!
-//! 复用 [`crate::dxcc`] 的前缀表与 [`crate::reference::CALL_AREAS`] 的中国分区表。
+//! 复用 [`crate::dxcc`] 的实体识别与 [`crate::reference::CALL_AREAS`] 的中国分区表。
 
-use crate::dxcc::DXCC_PREFIXES;
+use crate::dxcc::lookup_with_prefix;
 use crate::reference::CALL_AREAS;
 
 /// 台站类别（中国呼号第二位字母）。
@@ -45,16 +45,8 @@ pub struct CallsignParts {
   pub slash: Option<&'static str>,
 }
 
-/// 最长前缀匹配：返回 `(前缀, 国家/地区)`。
-fn match_prefix(body: &str) -> Option<(&'static str, &'static str)> {
-  let mut best: Option<(usize, &'static str, &'static str)> = None;
-  for &(prefix, entity) in DXCC_PREFIXES {
-    if body.starts_with(prefix) && best.is_none_or(|(len, _, _)| prefix.len() > len) {
-      best = Some((prefix.len(), prefix, entity));
-    }
-  }
-  best.map(|(_, p, e)| (p, e))
-}
+/// DXCC 中国实体编号。
+const CHINA_DXCC: u16 = 318;
 
 /// 台站类别（按中国呼号第二位字母）。
 fn station_type_of(c: char) -> Option<&'static str> {
@@ -97,7 +89,10 @@ pub fn parse_callsign(input: &str) -> CallsignParts {
     None => (cs.clone(), None),
   };
 
-  let (prefix, entity) = match_prefix(&body).map_or((None, None), |(p, e)| (Some(p), Some(e)));
+  let matched = lookup_with_prefix(&cs);
+  let prefix = matched.map(|(p, _)| p).filter(|p| body.starts_with(p));
+  let entity = matched.map(|(_, e)| e.name);
+  let is_china = matched.is_some_and(|(_, e)| e.dxcc == CHINA_DXCC) && body.starts_with('B');
 
   let chars: Vec<char> = body.chars().collect();
   let mut station_type = None;
@@ -107,7 +102,7 @@ pub fn parse_callsign(input: &str) -> CallsignParts {
 
   if let Some(p) = prefix {
     // 中国呼号：B 开头，第二位字母（类别）+ 第三位数字（分区）。
-    if p == "B" && chars.len() >= 3 {
+    if is_china && chars.len() >= 3 {
       if let Some(&c) = chars.get(1)
         && c.is_ascii_alphabetic()
       {
@@ -146,7 +141,7 @@ mod tests {
   #[test]
   fn parses_china_callsign() {
     let p = parse_callsign("BG4XYZ");
-    assert_eq!(p.prefix, Some("B"));
+    assert_eq!(p.prefix, Some("BG"));
     assert_eq!(p.entity, Some("中国"));
     assert_eq!(p.station_type, Some("个人业余电台（BA–BH）"));
     assert_eq!(p.area, Some("4"));
