@@ -74,9 +74,9 @@ fn matches(entries: &[GlossaryEntry], q: &str, group: SlangGroup, common_only: b
 /// 「常用 / 全部」切换按钮的样式。
 fn scope_pill(active: bool) -> &'static str {
   if active {
-    "rounded-md px-2.5 py-1 text-xs font-medium text-primary-foreground bg-primary transition-colors"
+    "inline-flex items-center whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium text-primary-foreground bg-primary transition-colors"
   } else {
-    "rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent"
+    "inline-flex items-center whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent"
   }
 }
 

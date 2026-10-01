@@ -125,8 +125,8 @@ pub(super) fn MorseTrainer() -> impl IntoView {
       <div class="space-y-4 p-4">
         // 控制区
         <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div class="flex items-center gap-1.5">
-            <span class="text-xs text-muted-foreground">"模式"</span>
+          <div class="flex shrink-0 items-center gap-1.5">
+            <span class="whitespace-nowrap text-xs text-muted-foreground">"模式"</span>
             {MODES
               .iter()
               .map(|&m| {
@@ -143,8 +143,8 @@ pub(super) fn MorseTrainer() -> impl IntoView {
               .collect_view()}
           </div>
 
-          <div class="flex items-center gap-1.5">
-            <span class="text-xs text-muted-foreground">"类型"</span>
+          <div class="flex shrink-0 items-center gap-1.5">
+            <span class="whitespace-nowrap text-xs text-muted-foreground">"类型"</span>
             {Target::ALL
               .iter()
               .map(|&t| {
@@ -164,8 +164,8 @@ pub(super) fn MorseTrainer() -> impl IntoView {
               .collect_view()}
           </div>
 
-          <div class="flex items-center gap-1.5">
-            <span class="text-xs text-muted-foreground">"范围"</span>
+          <div class="flex shrink-0 items-center gap-1.5">
+            <span class="whitespace-nowrap text-xs text-muted-foreground">"范围"</span>
             {Scope::ALL
               .iter()
               .map(|&s| {
@@ -194,8 +194,8 @@ pub(super) fn MorseTrainer() -> impl IntoView {
             "易错优先"
           </button>
 
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-muted-foreground">"速度"</span>
+          <div class="flex shrink-0 items-center gap-2">
+            <span class="whitespace-nowrap text-xs text-muted-foreground">"速度"</span>
             <input
               type="range"
               min="5"
@@ -238,7 +238,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                 <button
                   type="button"
                   on:click=move |_| play_morse(&question.code, wpm.get())
-                  class="rounded-full border px-3 py-1 text-xs transition-colors hover:bg-accent"
+                  class="inline-flex items-center whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors hover:bg-accent"
                 >
                   "试听"
                 </button>

@@ -1,11 +1,11 @@
 {
-  "name": "业余无线电执照考试模拟练习",
-  "short_name": "无线电考试",
-  "description": "业余无线电执照考试模拟练习 | 2025年10月题库",
+  "name": "业余无线电｜题库 · 知识 · 工具",
+  "short_name": "业余无线电",
+  "description": "业余无线电一站式平台：A/B/C 类题库练习、模拟考试、知识速查、通联日志与实时传播",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "background_color": "#FAFBFC",
+  "theme_color": "#008183",
   "icons": [
     {
       "src": "/pwa-icon-192.png",

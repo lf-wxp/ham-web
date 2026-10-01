@@ -150,7 +150,7 @@ pub fn GlossaryPage() -> impl IntoView {
           <button
             type="button"
             on:click=move |_| select_cat(key)
-            class=move || pill(cat.with(|c| c == key), "shrink-0 rounded-full border px-3 py-1 text-xs transition-colors")
+            class=move || pill(cat.with(|c| c == key), "shrink-0 inline-flex items-center whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors")
           >
             {label}
           </button>

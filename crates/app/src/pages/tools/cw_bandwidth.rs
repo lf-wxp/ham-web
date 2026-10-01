@@ -29,9 +29,9 @@ pub(super) fn CwBandwidth() -> impl IntoView {
           on:click=move |_| fading.set(true)
           class=move || {
             if fading.get() {
-              "rounded-full border bg-primary px-3 py-1 text-xs text-primary-foreground"
+              "inline-flex items-center whitespace-nowrap rounded-full border bg-primary px-3 py-1 text-xs text-primary-foreground"
             } else {
-              "rounded-full border px-3 py-1 text-xs hover:bg-accent"
+              "inline-flex items-center whitespace-nowrap rounded-full border px-3 py-1 text-xs hover:bg-accent"
             }
           }
         >
@@ -42,9 +42,9 @@ pub(super) fn CwBandwidth() -> impl IntoView {
           on:click=move |_| fading.set(false)
           class=move || {
             if !fading.get() {
-              "rounded-full border bg-primary px-3 py-1 text-xs text-primary-foreground"
+              "inline-flex items-center whitespace-nowrap rounded-full border bg-primary px-3 py-1 text-xs text-primary-foreground"
             } else {
-              "rounded-full border px-3 py-1 text-xs hover:bg-accent"
+              "inline-flex items-center whitespace-nowrap rounded-full border px-3 py-1 text-xs hover:bg-accent"
             }
           }
         >

@@ -428,7 +428,7 @@ pub fn QuestionBankSelector(
           <div class="space-y-2">
             <div class="text-sm text-muted-foreground">"选择题库"</div>
             <RadioGroup
-              class="flex gap-6"
+              class="flex flex-wrap gap-x-6 gap-y-2"
               value=bank_value
               on_change=on_bank
               disabled=Signal::derive(move || disabled.get() || available_banks.with(Vec::is_empty))
@@ -444,8 +444,9 @@ pub fn QuestionBankSelector(
                     view! {
                       <div class="flex items-center gap-2">
                         <RadioGroupItem id=id.clone() value=bank.as_str() />
-                        <Label r#for=id>
-                          {bank.as_str()} " 类"
+                        // flex-col 覆盖 Label 默认 flex-row（cn 冲突组），题号与描述纵向排列且不换行
+                        <Label r#for=id class=Signal::derive(|| "flex-col items-start gap-0.5".to_owned())>
+                          <span class="whitespace-nowrap">{bank.as_str()} " 类"</span>
                           {desc.map(|d| view! { <div class="text-xs text-muted-foreground">{d}</div> })}
                         </Label>
                       </div>

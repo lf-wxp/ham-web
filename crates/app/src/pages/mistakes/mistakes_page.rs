@@ -340,7 +340,7 @@ pub fn MistakesPage() -> impl IntoView {
                           view! {
                             <button
                               type="button"
-                              class="rounded-full border px-3 py-1 text-xs transition-colors hover:bg-accent"
+                              class="whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors hover:bg-accent"
                               title=format!("只看「{name}」的错题")
                               on:click=move |_| filter.set(key.to_owned())
                             >

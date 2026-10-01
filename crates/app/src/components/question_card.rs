@@ -89,11 +89,13 @@ pub fn QuestionCard(
         .into_iter()
         .map(|opt| {
           let id = format!("{base_id}-{index}-{}", opt.key);
+          // block 覆盖 Label 默认的 flex（cn 的 display 冲突组），
+          // 使 "A." 与文本内联排布，长文本换行时始终对齐第一行
           let label_class = Signal::derive(move || {
             if read_only.get() {
-              "whitespace-pre-line leading-6 cursor-default"
+              "block whitespace-pre-line leading-6 cursor-default"
             } else {
-              "whitespace-pre-line leading-6 cursor-pointer"
+              "block whitespace-pre-line leading-6 cursor-pointer"
             }
             .to_owned()
           });

@@ -276,8 +276,8 @@ fn random_question(
 
 fn pill_class(active: bool) -> &'static str {
   if active {
-    "rounded-full border bg-primary text-primary-foreground px-3 py-1 text-xs transition-colors"
+    "inline-flex items-center whitespace-nowrap rounded-full border bg-primary text-primary-foreground px-3 py-1 text-xs transition-colors"
   } else {
-    "rounded-full border px-3 py-1 text-xs transition-colors hover:bg-accent"
+    "inline-flex items-center whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors hover:bg-accent"
   }
 }
