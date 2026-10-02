@@ -3,6 +3,7 @@ use leptos::task::spawn_local;
 use serde::Deserialize;
 
 use crate::data;
+use crate::i18n::t;
 
 /// DXCC 稀有度（/api/most-wanted）。
 #[derive(Deserialize, Clone)]
@@ -37,15 +38,15 @@ pub(super) fn WantedCard() -> impl IntoView {
 
   view! {
     <a href="/most-wanted" class="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">
-      <div class="text-sm font-semibold">"DXCC 最稀有 Top 5"</div>
+      <div class="text-sm font-semibold">{move || t("DXCC 最稀有 Top 5")}</div>
       <div class="mt-2 space-y-1">
         {move || {
           if loading.get() {
-            return view! { <div class="text-sm text-muted-foreground">"加载中…"</div> }.into_any();
+            return view! { <div class="text-sm text-muted-foreground">{move || t("加载中…")}</div> }.into_any();
           }
           let list = entries.get();
           if list.is_empty() {
-            return view! { <div class="text-sm text-muted-foreground">"暂不可用"</div> }.into_any();
+            return view! { <div class="text-sm text-muted-foreground">{move || t("暂不可用")}</div> }.into_any();
           }
           view! {
             {list

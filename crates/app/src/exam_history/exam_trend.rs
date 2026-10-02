@@ -1,3 +1,4 @@
+use crate::i18n::{t, tf};
 use ham_web_core::exam_history::{ExamRecord, Readiness, Verdict, assess, of_bank};
 use ham_web_core::{Bank, ExamRule};
 use leptos::prelude::*;
@@ -15,18 +16,21 @@ fn verdict_class(v: Verdict) -> &'static str {
 
 fn verdict_hint(r: &Readiness, pass: usize, total: usize) -> String {
   match r.verdict {
-    Verdict::NeedMore => format!("已考 {} 次，再考几次就能给出判断。", r.count),
-    Verdict::Ready => format!(
-      "最近 {} 次都稳定在合格线（{pass}/{total}）以上，可以报名了。",
-      r.count
+    Verdict::NeedMore => tf(
+      "已考 {} 次，再考几次就能给出判断。",
+      &[&r.count.to_string()],
     ),
-    Verdict::Almost => format!(
+    Verdict::Ready => tf(
+      "最近 {} 次都稳定在合格线（{} / {}）以上，可以报名了。",
+      &[&r.count.to_string(), &pass.to_string(), &total.to_string()],
+    ),
+    Verdict::Almost => tf(
       "最近 {} 次及格 {} 次，再巩固一下薄弱分类。",
-      r.count, r.passed
+      &[&r.count.to_string(), &r.passed.to_string()],
     ),
-    Verdict::NotYet => format!(
+    Verdict::NotYet => tf(
       "最近 {} 次只及格 {} 次，建议先刷错题与专项练习。",
-      r.count, r.passed
+      &[&r.count.to_string(), &r.passed.to_string()],
     ),
   }
 }
@@ -37,9 +41,9 @@ pub fn ExamTrend(history: Vec<ExamRecord>, bank: Bank) -> impl IntoView {
   let Some(readiness) = assess(&history, bank) else {
     return view! {
       <p class="text-sm text-muted-foreground">
-        {format!("还没有 {bank} 类模拟考试记录。")}
+        {tf("还没有 {} 类模拟考试记录。", &[&bank.to_string()])}
         <a href=format!("/exam?bank={bank}") class="ml-1 text-primary underline underline-offset-4">
-          "去考一次 →"
+          {move || t("去考一次 →")}
         </a>
       </p>
     }
@@ -90,18 +94,18 @@ pub fn ExamTrend(history: Vec<ExamRecord>, bank: Bank) -> impl IntoView {
         <span class="text-muted-foreground">{verdict_hint(&readiness, rule.pass, rule.total)}</span>
       </div>
       <div class="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
-        <span>"近 " {readiness.count} " 次平均 " <span class="font-semibold text-foreground tabular-nums">{format!("{:.0}%", readiness.average)}</span></span>
-        <span>"及格 " <span class="font-semibold text-foreground tabular-nums">{format!("{} / {}", readiness.passed, readiness.count)}</span></span>
+        <span>{move || t("近 ")} {readiness.count} {move || t(" 次平均 ")} <span class="font-semibold text-foreground tabular-nums">{format!("{:.0}%", readiness.average)}</span></span>
+        <span>{move || t("及格 ")} <span class="font-semibold text-foreground tabular-nums">{format!("{} / {}", readiness.passed, readiness.count)}</span></span>
         {(readiness.count >= 2).then(|| view! {
           <span>
-            "变化 "
+            {move || t("变化 ")}
             <span class=trend_class>
-              {format!("{trend:+.0} 个百分点")}
+              {tf("{} 个百分点", &[&(format!("{trend:+.0}")).to_string()])}
             </span>
           </span>
         })}
       </div>
-      <svg viewBox=format!("-34 -8 {} {}", w + 42.0, h + 16.0) class="h-auto w-full" role="img" aria-label="考试正确率趋势">
+      <svg viewBox=format!("-34 -8 {} {}", w + 42.0, h + 16.0) class="h-auto w-full" role="img" aria-label=move || t("考试正确率趋势")>
         {[lo, 100.0]
           .into_iter()
           .map(|p| view! {
@@ -131,8 +135,7 @@ pub fn ExamTrend(history: Vec<ExamRecord>, bank: Bank) -> impl IntoView {
           .collect_view()}
       </svg>
       <p class="text-xs text-muted-foreground">
-        {format!("虚线为合格线 {:.0}%；绿点及格、红点不及格。最近 {} 次全部比合格线多答对 2 题以上即判定「可以去考了」。",
-          pass_pct, ham_web_core::exam_history::RECENT)}
+        {tf("虚线为合格线 {}%；绿点及格、红点不及格。最近 {} 次全部比合格线多答对 2 题以上即判定「可以去考了」。", &[&(format!("{pass_pct:.0}")).to_string(), &ham_web_core::exam_history::RECENT.to_string()])}
       </p>
     </div>
   }

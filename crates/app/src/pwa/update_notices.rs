@@ -14,6 +14,7 @@ use crate::util::{document, now_ms, storage, window};
 use crate::{bank_updates, data};
 
 use super::notice::Notice;
+use crate::i18n::t;
 
 /// 已看过的更新日志版本（日期）。
 const SEEN_KEY: &str = "app:changelog-seen";
@@ -186,29 +187,29 @@ pub fn UpdateNotices() -> impl IntoView {
     >
       {move || open.get().then(|| view! {
         <Notice
-          title="发现新版本"
-          detail="刷新后即可使用最新功能；正在进行的练习与考试进度会自动保存。"
+          title=t("发现新版本")
+          detail=t("刷新后即可使用最新功能；正在进行的练习与考试进度会自动保存。")
           items=new_items.get()
         >
           <button type="button" class=button_class(Variant::Ghost, Size::Sm, "") on:click=move |_| open.set(false)>
-            "稍后"
+            {move || t("稍后")}
           </button>
           <button type="button" class=button_class(Variant::Default, Size::Sm, "") on:click=update_now>
-            "刷新以更新"
+            {move || t("刷新以更新")}
           </button>
         </Notice>
       })}
       {move || (!whats_new.with(Vec::is_empty)).then(|| view! {
-        <Notice title="已更新到新版本" items=whats_new.get()>
+        <Notice title=t("已更新到新版本") items=whats_new.get()>
           <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| whats_new.set(Vec::new())>
-            "知道了"
+            {move || t("知道了")}
           </button>
         </Notice>
       })}
       {move || (!bank_notes.with(Vec::is_empty)).then(|| view! {
-        <Notice title="题库已更新" items=bank_notes.get()>
+        <Notice title=t("题库已更新") items=bank_notes.get()>
           <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| bank_notes.set(Vec::new())>
-            "知道了"
+            {move || t("知道了")}
           </button>
         </Notice>
       })}

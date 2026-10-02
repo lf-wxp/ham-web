@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::{INPUT, RESULT, fmt_num};
+use crate::i18n::{t, tf};
 
 /// 分贝增益：dB ↔ 功率 / 电压倍数（功率比 10lg、电压比 20lg）。
 #[component]
@@ -26,21 +27,23 @@ pub(super) fn DecibelGain() -> impl IntoView {
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"增益（dB）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("增益（dB）")}</span>
         <input type="number" prop:value=move || db.get().to_string() on:input=on_db class=INPUT />
       </label>
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"功率倍数（倍）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("功率倍数（倍）")}</span>
         <input type="number" prop:value=move || power_ratio.get().to_string() on:input=on_ratio class=INPUT />
       </label>
       <div class=RESULT>
         {move || {
           let d = db.get();
-          format!(
+          tf(
             "{} dB → 功率 ×{}，电压 ×{}",
-            fmt_num(d),
-            fmt_num(power_ratio.get()),
-            fmt_num(10f64.powf(d / 20.0)),
+            &[
+              &fmt_num(d),
+              &fmt_num(power_ratio.get()),
+              &fmt_num(10f64.powf(d / 20.0)),
+            ],
           )
         }}
       </div>

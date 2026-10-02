@@ -9,9 +9,19 @@ pub(crate) const EXAM_ITEMS: &[NavItem] = &[
     icon: IconKind::ClipboardList,
   },
   NavItem {
+    href: "/practice?multi=1",
+    label: "多选专项",
+    icon: IconKind::CheckCircle2,
+  },
+  NavItem {
     href: "/exam",
     label: "模拟考试",
     icon: IconKind::Timer,
+  },
+  NavItem {
+    href: "/daily-challenge",
+    label: "每日挑战",
+    icon: IconKind::Flame,
   },
   NavItem {
     href: "/browse",
@@ -39,23 +49,28 @@ pub(crate) const EXAM_ITEMS: &[NavItem] = &[
     icon: IconKind::ListX,
   },
   NavItem {
+    href: "/mistake-topics",
+    label: "易错知识点",
+    icon: IconKind::Flame,
+  },
+  NavItem {
     href: "/bookmarks",
     label: "收藏集",
     icon: IconKind::Bookmark,
   },
   NavItem {
-    href: "/photo-processor",
-    label: "照片处理",
-    icon: IconKind::Camera,
-  },
-  NavItem {
-    href: "/countdown",
-    label: "倒计时",
-    icon: IconKind::Timer,
+    href: "/weekly",
+    label: "学习周报",
+    icon: IconKind::Activity,
   },
   NavItem {
     href: "/progress",
     label: "学习进度",
     icon: IconKind::TrendingUp,
+  },
+  NavItem {
+    href: "/study-calendar",
+    label: "备考日历",
+    icon: IconKind::Timer,
   },
 ];

@@ -3,25 +3,26 @@
 use ham_web_core::packet::{PACKET_APPS, PACKET_CONCEPTS, PACKET_TIPS};
 use leptos::prelude::*;
 
+use crate::i18n::t;
 use crate::util::set_title;
 
 #[component]
 pub fn PacketPage() -> impl IntoView {
-  set_title("Packet Radio 分组无线电");
+  set_title(&t("Packet Radio 分组无线电"));
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"Packet Radio 分组无线电"</h1>
-            <div class="text-xs text-muted-foreground">"AX.25 · TNC · Winlink 邮件网关"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("Packet Radio 分组无线电")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("AX.25 · TNC · Winlink 邮件网关")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"核心概念"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("核心概念")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {PACKET_CONCEPTS
               .iter()
@@ -38,7 +39,7 @@ pub fn PacketPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"典型应用"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("典型应用")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {PACKET_APPS
               .iter()
@@ -55,7 +56,7 @@ pub fn PacketPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"操作要点"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("操作要点")}</h2>
           <ul class="space-y-2 p-4">
             {PACKET_TIPS
               .iter()

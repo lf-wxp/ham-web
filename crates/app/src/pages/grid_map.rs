@@ -5,7 +5,9 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde::Deserialize;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::data;
+use crate::i18n::{t, tf};
 use crate::pages::log::{GridMap, use_log_store};
 use crate::util::set_title;
 
@@ -20,7 +22,7 @@ struct Geocode {
 
 #[component]
 pub fn GridMapPage() -> impl IntoView {
-  set_title("网格地图");
+  set_title(&t("网格地图"));
 
   let store = use_log_store();
   let query = RwSignal::new(String::new());
@@ -62,28 +64,27 @@ pub fn GridMapPage() -> impl IntoView {
   });
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"网格地图"</h1>
-            <div class="text-xs text-muted-foreground">"Maidenhead 网格定位 · 查询与已通联分布"</div>
-          </div>
-          <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
-            {move || format!("已通联 {} 个网格", count.get())}
-          </span>
-        </div>
-      </header>
-
-      <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+      <PageHeader
+        title=Signal::derive(move || t("网格地图"))
+        subtitle=Signal::derive(move || t("Maidenhead 网格定位 · 查询与已通联分布"))
+        actions=ViewFn::from(move || {
+          view! {
+            <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
+              {move || tf("已通联 {} 个网格", &[&count.get().to_string()])}
+            </span>
+          }
+        })
+      />
+      <PageContainer>
         <section class="rounded-xl border bg-card p-4">
-          <h2 class="mb-3 text-sm font-semibold">"网格查询"</h2>
+          <h2 class="mb-3 text-sm font-semibold">{move || t("网格查询")}</h2>
           <div class="grid gap-3 sm:grid-cols-2">
             <label class="flex flex-col gap-1.5 text-sm">
-              <span class="text-xs text-muted-foreground">"输入 Maidenhead 网格码"</span>
+              <span class="text-xs text-muted-foreground">{move || t("输入 Maidenhead 网格码")}</span>
               <input
                 type="text"
-                placeholder="如 OM89EW"
+                placeholder=move || t("如 OM89EW")
                 maxlength="6"
                 prop:value=move || query.get()
                 on:input=move |e| query.set(event_target_value(&e).to_ascii_uppercase())
@@ -94,7 +95,7 @@ pub fn GridMapPage() -> impl IntoView {
               {move || {
                 let q = query.get().trim().to_ascii_uppercase();
                 if q.is_empty() {
-                  "输入网格码（≥4 位，如 OM89）查询其中心经纬度。".to_owned()
+                  t("输入网格码（≥4 位，如 OM89）查询其中心经纬度。")
                 } else {
                   match lat_lon_from_grid(&q) {
                     Some((lat, lon)) => {
@@ -109,12 +110,18 @@ pub fn GridMapPage() -> impl IntoView {
                         _ => String::new(),
                       };
                       if loc.is_empty() {
-                        format!("{q} 中心：纬度 {lat:.4}°，经度 {lon:.4}°")
+                        tf(
+              "{} 中心：纬度 {}°，经度 {}°",
+              &[&q, &format!("{lat:.4}"), &format!("{lon:.4}")],
+            )
                       } else {
-                        format!("{q} 中心：纬度 {lat:.4}°，经度 {lon:.4}°　·　{loc}")
+                        tf(
+              "{} 中心：纬度 {}°，经度 {}°　·　{}",
+              &[&q, &format!("{lat:.4}"), &format!("{lon:.4}"), &loc],
+            )
                       }
                     }
-                    None => "无效网格码：需 4 或 6 位（如 OM89 / OM89EW）。".to_owned(),
+                    None => t("无效网格码：需 4 或 6 位（如 OM89 / OM89EW）。"),
                   }
                 }
               }}
@@ -132,13 +139,13 @@ pub fn GridMapPage() -> impl IntoView {
           }}
           <p class="mt-3 text-xs text-muted-foreground">
             {move || if count.get() == 0 {
-              "暂无日志网格记录，地图仅展示查询标记；在「通联日志」添加带网格的记录后展示通联分布。"
+              {move || t("暂无日志网格记录，地图仅展示查询标记；在「通联日志」添加带网格的记录后展示通联分布。")}
             } else {
-              "点击地图上的 field（大格）展开具体网格列表；色块深浅表示通联密度，红色标记为查询位置。"
+              {move || t("点击地图上的 field（大格）展开具体网格列表；色块深浅表示通联密度，红色标记为查询位置。")}
             }}
           </p>
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

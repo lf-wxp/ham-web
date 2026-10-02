@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::{INPUT, RESULT, fmt_num};
+use crate::i18n::t;
 
 /// dBm ↔ dBμV 换算（50Ω 阻抗）。
 #[component]
@@ -9,7 +10,7 @@ pub(super) fn DbmDbuv() -> impl IntoView {
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"功率电平（dBm）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("功率电平（dBm）")}</span>
         <input
           type="number"
           prop:value=move || dbm.get().to_string()

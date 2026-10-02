@@ -2,6 +2,7 @@ use ham_web_core::practice::SearchMatch;
 use ham_web_core::text::upper_chars;
 use leptos::prelude::*;
 
+use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
   Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Size, Variant, button_class,
@@ -62,8 +63,8 @@ pub fn PracticeSearchDialog(
   view! {
     <Dialog open=open class="sm:max-w-[640px]">
       <DialogHeader>
-        <DialogTitle>"搜索题目"</DialogTitle>
-        <DialogDescription>"输入题号或关键词（如 LK0501 / 天线），回车或点击跳转"</DialogDescription>
+        <DialogTitle>{move || t("搜索题目")}</DialogTitle>
+        <DialogDescription>{move || t("输入题号或关键词（如 LK0501 / 天线），回车或点击跳转")}</DialogDescription>
       </DialogHeader>
       <div class="space-y-3 overflow-auto pr-1 min-h-0">
         <div class="relative">
@@ -71,7 +72,7 @@ pub fn PracticeSearchDialog(
             id="jump"
             data-slot="input"
             class=input_class("h-11 text-base md:h-9 md:text-sm pr-10")
-            placeholder="题号或关键词，如 LK0501 / 天线"
+            placeholder=move || t("题号或关键词，如 LK0501 / 天线")
             prop:value=move || input.get()
             on:input=move |e| input.set(event_target_value(&e))
             on:keydown=move |e| {
@@ -86,7 +87,7 @@ pub fn PracticeSearchDialog(
                 view! {
                   <button
                     type="button"
-                    aria-label="清除"
+                    aria-label=move || t("清除")
                     class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     on:click=move |_| input.set(String::new())
                   >
@@ -99,14 +100,14 @@ pub fn PracticeSearchDialog(
         {move || {
           has_input()
             .then(|| {
-              view! { <div class="text-xs text-muted-foreground">"匹配 " {move || matches.with(Vec::len)} " 条"</div> }
+              view! { <div class="text-xs text-muted-foreground">{move || tf("匹配 {} 条", &[&matches.with(Vec::len).to_string()])}</div> }
             })
         }}
         <div class="rounded-md border">
           {move || {
             let list = matches.get();
             if list.is_empty() {
-              let msg = if has_input() { "未找到匹配" } else { "输入以开始搜索" };
+              let msg = if has_input() { t("未找到匹配") } else { t("输入以开始搜索") };
               return view! { <div class="p-3 text-sm text-muted-foreground">{msg}</div> }.into_any();
             }
             let q = query_upper();
@@ -128,7 +129,7 @@ pub fn PracticeSearchDialog(
                         {m.j}
                       </span>
                       {match_snippet(&m.text, &q)}
-                      <span class="ml-auto text-xs text-muted-foreground">"第 " {pos + 1} " 题"</span>
+                      <span class="ml-auto text-xs text-muted-foreground">{tf("第 {} 题", &[&(pos + 1).to_string()])}</span>
                     </div>
                   </li>
                 }
@@ -140,7 +141,7 @@ pub fn PracticeSearchDialog(
       </div>
       <DialogFooter>
         <button class=button_class(Variant::Default, Size::Default, "") on:click=move |_| jump()>
-          "跳转"
+          {move || t("跳转")}
         </button>
       </DialogFooter>
     </Dialog>

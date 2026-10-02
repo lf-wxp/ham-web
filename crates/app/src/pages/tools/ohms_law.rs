@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::{INPUT, RESULT, fmt_num};
+use crate::i18n::t;
 
 /// 欧姆定律 / 电功率：U = I·R，P = U·I。填任意两项，计算其余。
 #[component]
@@ -25,7 +26,7 @@ pub(super) fn OhmsLaw() -> impl IntoView {
     view! {
       <label class="flex flex-col gap-1.5 text-sm">
         <span class="text-xs text-muted-foreground">
-          {label} "（" {unit} "）"
+          {move || t(label)} "（" {unit} "）"
         </span>
         <input
           type="number"
@@ -50,10 +51,10 @@ pub(super) fn OhmsLaw() -> impl IntoView {
             Some((name, value, power)) => view! {
               <span>
                 {name} " = " <span class="font-mono font-semibold text-foreground">{fmt_num(value)}</span>
-                "　功率 P = " <span class="font-mono font-semibold text-foreground">{fmt_num(power)}</span> " W"
+                {move || t("　功率 P = ")} <span class="font-mono font-semibold text-foreground">{fmt_num(power)}</span> " W"
               </span>
             }.into_any(),
-            None => view! { <span>"填写任意两项（U、I、R）后自动计算。"</span> }.into_any(),
+            None => view! { {move || t("填写任意两项（U、I、R）后自动计算。")} }.into_any(),
           }
         }}
       </div>

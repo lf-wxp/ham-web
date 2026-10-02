@@ -4,6 +4,7 @@ use ham_web_core::QuestionItem;
 use leptos::prelude::*;
 
 use crate::components::common::PreviewableImage;
+use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::speech;
 use crate::ui::{
@@ -27,6 +28,7 @@ pub fn QuestionCard(
   let answer_keys = question.answer_keys.clone();
   let question_text = question.question.clone();
   let j_code = question.j_code().map(ToOwned::to_owned);
+  let kind_label = question.kind.label();
   let pages = question.pages.and_then(|p| {
     let start = p.start?;
     Some(match p.end {
@@ -37,8 +39,11 @@ pub fn QuestionCard(
 
   let image = question.image().map(|src| {
     let (alt, title) = match &j_code {
-      Some(j) => (format!("题号 {j} 附图"), format!("题号 {j} 题图")),
-      None => ("题目附图".to_owned(), "题目附图".to_owned()),
+      Some(j) => (
+        tf("题号 {} 附图", &[(j.as_str())]),
+        tf("题号 {} 题图", &[(j.as_str())]),
+      ),
+      None => (t("题目附图"), t("题目附图")),
     };
     view! {
       <div class="mt-2">
@@ -130,12 +135,26 @@ pub fn QuestionCard(
       let sel = selected.get();
       let correct = !sel.is_empty() && ham_web_core::question::same_set(&sel, &answer_keys);
       let verdict = (!sel.is_empty()).then(|| {
-        let (class, text) =
-          if correct { ("ml-2 text-green-600 dark:text-green-400", "已答对".to_owned()) } else { ("ml-2 text-red-600 dark:text-red-400", format!("作答：{}", sel.join(", "))) };
-        view! { <span class=class>{text}</span> }
+        if correct {
+          view! { <span class="ml-2 text-green-600 dark:text-green-400">{move || t("已答对")}</span> }.into_any()
+        } else {
+          let err = if is_multiple {
+            ham_web_core::question::multi_error_kind(&sel, &answer_keys)
+              .map(|e| format!(" · {}", e.label()))
+              .unwrap_or_default()
+          } else {
+            String::new()
+          };
+          view! {
+            <span class="ml-2 text-red-600 dark:text-red-400">
+              {tf("作答：{}{}", &[&(sel.join(", ")).to_string(), &err])}
+            </span>
+          }
+          .into_any()
+        }
       });
       view! {
-        <div class="text-sm text-muted-foreground">"正确答案：" {answer_keys.join(", ")} {verdict}</div>
+        <div class="text-sm text-muted-foreground">{move || t("正确答案：")} {answer_keys.join(", ")} {verdict}</div>
       }
     })
   };
@@ -144,16 +163,16 @@ pub fn QuestionCard(
     <div data-slot="card" class=card_class("")>
       <div data-slot="card-header" class=CARD_HEADER>
         <div data-slot="card-title" class=card_title_class("flex items-center gap-2")>
-          <span>"第 " {index + 1} " / " {total} " 题"</span>
+          <span>{move || tf("第 {} / {} 题", &[&(index + 1).to_string(), &total.to_string()])}</span>
           <span data-slot="badge" class=badge_class(BadgeVariant::Secondary, "")>
-            {question.kind.label()}
+            {move || t(kind_label)}
           </span>
           {pages.map(|p| view! { <span data-slot="badge" class=badge_class(BadgeVariant::Outline, "")>{p}</span> })}
           {j_code
             .clone()
             .map(|j| {
               view! {
-                <span data-slot="badge" class=badge_class(BadgeVariant::Outline, "") title="题号">
+                <span data-slot="badge" class=badge_class(BadgeVariant::Outline, "") title=move || t("题号")>
                   {j}
                 </span>
               }
@@ -161,8 +180,8 @@ pub fn QuestionCard(
           <button
             type="button"
             class="ml-auto flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            title="朗读题干"
-            aria-label="朗读题干"
+            title=move || t("朗读题干")
+            aria-label=move || t("朗读题干")
             on:click=move |_| speech::speak_zh(&question_text)
           >
             <Icon kind=IconKind::Volume2 class="h-4 w-4" />

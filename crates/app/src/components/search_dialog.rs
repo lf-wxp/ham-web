@@ -4,6 +4,7 @@ use ham_web_core::search::search;
 use leptos::prelude::*;
 
 use crate::data;
+use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
 use crate::ui::{Dialog, input_class};
@@ -75,14 +76,58 @@ fn search_glossary(query: &str) -> Vec<(&'static str, &'static str, String, Stri
     .collect()
 }
 
+/// 截断文本（按字符数，超出加省略号）。
+fn truncate(s: &str, max: usize) -> String {
+  if s.chars().count() <= max {
+    s.to_owned()
+  } else {
+    let head: String = s.chars().take(max).collect();
+    format!("{head}…")
+  }
+}
+
+/// 题库题目搜索（题干 + 解析），返回 `(页面, 路由, 题干, 解析片段)`。
+fn search_questions(query: &str) -> Vec<(String, String, String, String)> {
+  let q = query.trim().to_lowercase();
+  if q.is_empty() {
+    return Vec::new();
+  }
+  let Some(index) = data::question_index_loaded() else {
+    return Vec::new();
+  };
+  let mut matched: Vec<(String, String, String, String)> = index
+    .iter()
+    .filter(|e| e.search_text().contains(&q))
+    .take(20)
+    .map(|e| {
+      let title = truncate(&e.q, 42);
+      let text = if e.exp.is_empty() {
+        title.clone()
+      } else {
+        truncate(&e.exp, 90)
+      };
+      (
+        "题库".to_owned(),
+        format!("/browse?bank={}&q={}", e.bank, query.trim()),
+        title,
+        text,
+      )
+    })
+    .collect();
+  // 题干越短通常越精确，靠前展示。
+  matched.sort_by_key(|a| a.2.chars().count());
+  matched
+}
+
 /// 全局搜索命令面板。开闭状态由 App 层 `provide_context::<RwSignal<bool>>()` 提供。
 #[component]
 pub fn SearchDialog() -> impl IntoView {
   let open = expect_context::<RwSignal<bool>>();
   let query = RwSignal::new(String::new());
 
-  // 术语表按需加载：首次打开面板时拉取，加载完成后结果自动刷新。
+  // 术语表 / 题目搜索索引按需加载：首次打开面板时拉取，加载完成后结果自动刷新。
   let glossary_ready = RwSignal::new(data::glossary_loaded().is_some());
+  let question_ready = RwSignal::new(data::question_index_loaded().is_some());
 
   // 打开时清空输入。
   Effect::new(move |_| {
@@ -94,11 +139,17 @@ pub fn SearchDialog() -> impl IntoView {
           glossary_ready.set(true);
         });
       }
+      if !question_ready.get_untracked() {
+        leptos::task::spawn_local(async move {
+          data::load_question_index().await;
+          question_ready.set(true);
+        });
+      }
     }
   });
 
   view! {
-    <Dialog open=open class="sm:max-w-2xl" show_close=false label="全站搜索">
+    <Dialog open=open class="sm:max-w-2xl" show_close=false label=t("全站搜索")>
       <div class="flex flex-col gap-3">
         // 搜索框
         <div class="relative">
@@ -108,8 +159,8 @@ pub fn SearchDialog() -> impl IntoView {
           />
           <input
             type="search"
-            aria-label="搜索关键词"
-            placeholder="搜索术语、频率、呼号、天线、元件……"
+            aria-label=move || t("搜索关键词")
+            placeholder=move || t("搜索术语、频率、呼号、天线、元件……")
             class=input_class("h-11 pl-9")
             prop:value=move || query.get()
             on:input=move |e| query.set(event_target_value(&e))
@@ -120,25 +171,32 @@ pub fn SearchDialog() -> impl IntoView {
         <div class="max-h-[60vh] overflow-y-auto">
           {move || {
             glossary_ready.track();
+            question_ready.track();
             let q = query.get();
             let trimmed = q.trim();
             if trimmed.is_empty() {
               return view! {
                 <div class="px-2 py-8 text-center text-sm text-muted-foreground">
-                  "输入关键词检索全站知识，如「驻波比」「FT8」「三极管」「DXCC」「APRS」。"
+                  {move || t("输入关键词检索全站知识，如「驻波比」「FT8」「三极管」「DXCC」「APRS」。")}
                 </div>
               }
               .into_any();
             }
 
-            let mut raw = search_glossary(&q);
+            let mut raw: Vec<(String, String, String, String)> = search_glossary(&q)
+              .into_iter()
+              .map(|(p, h, t, d)| (p.to_owned(), h.to_owned(), t, d))
+              .collect();
             for e in search(&q) {
-              raw.push((e.page, e.href, e.title.clone(), e.text.clone()));
+              raw.push((e.page.to_owned(), e.href.to_owned(), e.title.clone(), e.text.clone()));
+            }
+            for e in search_questions(&q) {
+              raw.push((e.0, e.1, e.2, e.3));
             }
             if raw.is_empty() {
               return view! {
                 <div class="px-2 py-8 text-center text-sm text-muted-foreground">
-                  "未找到与「" <span class="font-medium text-foreground">{q.clone()}</span> "」相关的内容，换个关键词试试。"
+                  {move || t("未找到与「")} <span class="font-medium text-foreground">{q.clone()}</span> {move || t("」相关的内容，换个关键词试试。")}
                 </div>
               }
               .into_any();
@@ -146,9 +204,9 @@ pub fn SearchDialog() -> impl IntoView {
 
             let mut groups: Vec<SearchGroup> = Vec::new();
             for (page, href, title, text) in raw.into_iter().take(30) {
-              match groups.iter_mut().find(|(p, _, _)| p == page) {
+              match groups.iter_mut().find(|(p, _, _)| p == &page) {
                 Some((_, _, items)) => items.push((title, text)),
-                None => groups.push((page.to_owned(), href.to_owned(), vec![(title, text)])),
+                None => groups.push((page, href, vec![(title, text)])),
               }
             }
             let keyword = trimmed.to_owned();
@@ -198,8 +256,8 @@ pub fn SearchDialog() -> impl IntoView {
 
         // 底部提示
         <div class="flex items-center justify-between border-t pt-3 text-[11px] text-muted-foreground">
-          <span>"点击结果跳转"</span>
-          <span>"Esc 关闭 · / 唤起"</span>
+          <span>{move || t("点击结果跳转")}</span>
+          <span>{move || t("Esc 关闭 · / 唤起")}</span>
         </div>
       </div>
     </Dialog>

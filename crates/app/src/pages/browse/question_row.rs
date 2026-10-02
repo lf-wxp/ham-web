@@ -3,6 +3,7 @@ use ham_web_core::categories::{self, RefKind};
 use leptos::prelude::*;
 
 use crate::cn::cn;
+use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 
 #[component]
@@ -19,9 +20,9 @@ pub(super) fn QuestionRow(q: QuestionItem) -> impl IntoView {
   let refs = top_cat.map_or(&[][..], |c| categories::top_refs(c.key));
   let is_multiple = q.is_multiple();
   let answer_title = if is_multiple {
-    format!("正确答案（共 {} 项）", answers.len())
+    tf("正确答案（共 {} 项）", &[&(answers.len()).to_string()])
   } else {
-    "正确答案".to_owned()
+    t("正确答案")
   };
 
   view! {
@@ -46,7 +47,7 @@ pub(super) fn QuestionRow(q: QuestionItem) -> impl IntoView {
           .then(|| {
             view! {
               <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                "多选"
+                {move || t("多选")}
               </span>
             }
           })}
@@ -83,7 +84,7 @@ pub(super) fn QuestionRow(q: QuestionItem) -> impl IntoView {
         .map(|e| {
           view! {
             <div class="mb-3 border-t border-dashed pt-3">
-              <div class="mb-1 text-xs font-semibold text-muted-foreground">"解析"</div>
+              <div class="mb-1 text-xs font-semibold text-muted-foreground">{move || t("解析")}</div>
               <div class="whitespace-pre-line text-sm leading-6 text-muted-foreground">{e}</div>
             </div>
           }
@@ -105,7 +106,7 @@ pub(super) fn QuestionRow(q: QuestionItem) -> impl IntoView {
         .then(|| {
           view! {
             <div class="border-t border-dashed pt-3">
-              <div class="mb-1 text-xs font-semibold text-muted-foreground">"参考依据"</div>
+              <div class="mb-1 text-xs font-semibold text-muted-foreground">{move || t("参考依据")}</div>
               <ul class="space-y-1">
                 {refs
                   .iter()

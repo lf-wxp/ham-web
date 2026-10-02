@@ -1,3 +1,4 @@
+use crate::i18n::{t, tf};
 use leptos::prelude::*;
 
 const INPUT: &str = "h-10 rounded-lg border bg-background px-3 text-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
@@ -11,7 +12,7 @@ pub(super) fn DipoleCalculator() -> impl IntoView {
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"频率（MHz）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("频率（MHz）")}</span>
         <input
           type="number"
           step="0.01"
@@ -25,7 +26,7 @@ pub(super) fn DipoleCalculator() -> impl IntoView {
         />
       </label>
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"缩短系数 k（0.90–0.98）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("缩短系数 k（0.90–0.98）")}</span>
         <input
           type="number"
           step="0.01"
@@ -45,16 +46,10 @@ pub(super) fn DipoleCalculator() -> impl IntoView {
           let f = freq.get();
           let kk = k.get().clamp(0.5, 1.0);
           if f <= 0.0 {
-            "请输入正频率".to_owned()
+            t("请输入正频率")
           } else {
             let half = 150.0 / f * kk;
-            format!(
-              "半波偶极总长 ≈ {:.2} m（单臂 {:.2} m）　1/4 波长 ≈ {:.2} m　建议架高 ≈ {:.2} m",
-              half,
-              half / 2.0,
-              75.0 / f * kk,
-              75.0 / f,
-            )
+            tf("半波偶极总长 ≈ {} m（单臂 {} m）　1/4 波长 ≈ {} m　建议架高 ≈ {} m", &[&format!("{half:.2}"), &format!("{:.2}", half / 2.0), &format!("{:.2}", 75.0 / f * kk), &format!("{:.2}", 75.0 / f)])
           }
         }}
       </div>

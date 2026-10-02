@@ -3,9 +3,9 @@ use leptos::prelude::*;
 /// 展示一个实时指标。
 #[component]
 pub(super) fn MetricCard(
-  label: &'static str,
+  #[prop(into)] label: String,
   #[prop(into)] value: Signal<Option<f64>>,
-  unit: &'static str,
+  #[prop(into)] unit: String,
   #[prop(into)] loading: Signal<bool>,
   #[prop(into)] failed: Signal<bool>,
 ) -> impl IntoView {

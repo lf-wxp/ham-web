@@ -3,25 +3,26 @@
 use ham_web_core::iota::{IOTA_CONCEPTS, IOTA_TIPS};
 use leptos::prelude::*;
 
+use crate::i18n::t;
 use crate::util::set_title;
 
 #[component]
 pub fn IotaPage() -> impl IntoView {
-  set_title("IOTA 海岛通联");
+  set_title(&t("IOTA 海岛通联"));
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"IOTA 海岛通联"</h1>
-            <div class="text-xs text-muted-foreground">"Islands On The Air · 岛组奖状"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("IOTA 海岛通联")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("Islands On The Air · 岛组奖状")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"核心概念"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("核心概念")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {IOTA_CONCEPTS
               .iter()
@@ -38,7 +39,7 @@ pub fn IotaPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"参与要点"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("参与要点")}</h2>
           <ul class="space-y-2 p-4">
             {IOTA_TIPS
               .iter()

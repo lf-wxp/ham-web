@@ -4,6 +4,7 @@ use std::sync::Arc;
 use ham_web_core::Bank;
 use ham_web_core::QuestionItem;
 use ham_web_core::exam::shuffle_in_place;
+use ham_web_core::mistake_book::RecordOutcome;
 use ham_web_core::practice::{PracticeOrder, unique_to_bank};
 use leptos::prelude::*;
 
@@ -24,6 +25,10 @@ pub(super) struct PracticeStore {
   pub(super) loading: RwSignal<bool>,
   /// 本轮已计入错题本 / 统计的作答 key。
   pub(super) recorded: StoredValue<HashSet<String>>,
+  /// 当前会话连续答对题数。
+  pub(super) streak: RwSignal<u32>,
+  /// 当前会话最长连续答对题数。
+  pub(super) best_streak: RwSignal<u32>,
 }
 
 impl PracticeStore {
@@ -38,6 +43,8 @@ impl PracticeStore {
       show_explanation: RwSignal::new(true),
       loading: RwSignal::new(true),
       recorded: StoredValue::new(HashSet::new()),
+      streak: RwSignal::new(0),
+      best_streak: RwSignal::new(0),
     }
   }
 
@@ -63,8 +70,18 @@ impl PracticeStore {
     else {
       return;
     };
-    if self.recorded.try_update_value(|r| r.insert(key)) == Some(true) {
-      crate::study::record_answer(&q, &ans);
+    if self.recorded.try_update_value(|r| r.insert(key)) == Some(true)
+      && let Some(outcome) = crate::study::record_answer(&q, &ans)
+    {
+      match outcome {
+        RecordOutcome::Wrong => self.streak.set(0),
+        _ => {
+          self.streak.update(|s| *s += 1);
+          self
+            .best_streak
+            .update(|b| *b = (*b).max(self.streak.get_untracked()));
+        }
+      }
     }
   }
 
@@ -86,6 +103,7 @@ impl PracticeStore {
     self.order_idx.set((0..qs.len()).collect());
     self.all.set(qs);
     self.loading.set(false);
+    crate::study::note_question_start();
   }
 
   pub(super) fn set_order(self, order: PracticeOrder) {
@@ -100,6 +118,7 @@ impl PracticeStore {
     self.order_idx.set(idx);
     self.index.set(0);
     self.answers.set(HashMap::new());
+    crate::study::note_question_start();
   }
 
   pub(super) fn len(self) -> usize {
@@ -110,16 +129,19 @@ impl PracticeStore {
     self.commit_current();
     let max = self.len().saturating_sub(1);
     self.index.update(|i| *i = (*i + 1).min(max));
+    crate::study::note_question_start();
   }
 
   pub(super) fn prev(self) {
     self.commit_current();
     self.index.update(|i| *i = i.saturating_sub(1));
+    crate::study::note_question_start();
   }
 
   pub(super) fn jump(self, i: usize) {
     self.commit_current();
     self.index.set(i.min(self.len().saturating_sub(1)));
+    crate::study::note_question_start();
   }
 
   pub(super) fn question_at(self, pos: usize) -> Option<QuestionItem> {

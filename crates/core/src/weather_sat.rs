@@ -62,6 +62,35 @@ pub const WEATHER_TIPS: &[&str] = &[
   "接收时选开阔地、避开高楼遮挡，天线朝向卫星来向。",
 ];
 
+/// APT 接收上手步骤：(标题, 描述, 可选跳转链接)。
+pub const APT_GUIDE: &[(&str, &str, Option<&str>)] = &[
+  (
+    "① 准备设备",
+    "RTL-SDR 接收棒 + 电脑即可接收 137 MHz 气象卫星，无需执照。",
+    None,
+  ),
+  (
+    "② 制作天线",
+    "V 形偶极：两臂各约 53 cm、夹角约 120°，水平架设、开口朝南。",
+    None,
+  ),
+  (
+    "③ 安装软件",
+    "SDR# / GQRX / SatDump，设为 WFM 模式、带宽 40 kHz。",
+    Some("/sdr"),
+  ),
+  (
+    "④ 等待过境",
+    "查 NOAA 15/18/19 过境时间，开启 APT 录制提醒（提前几分钟通知）。",
+    Some("/satellites"),
+  ),
+  (
+    "⑤ 录制并解码",
+    "过境时录制 10–15 分钟 WAV，上传到 APT 解码器本地重建云图。",
+    Some("/apt-decoder"),
+  ),
+];
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -75,5 +104,9 @@ mod tests {
     }
     assert!(!WEATHER_CONCEPTS.is_empty());
     assert!(!WEATHER_TIPS.is_empty());
+    assert!(APT_GUIDE.len() >= 5);
+    for (title, desc, _) in APT_GUIDE {
+      assert!(!title.is_empty() && !desc.is_empty());
+    }
   }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "ham-web-app"
-description = "业余无线电执照考试模拟：Leptos CSR 前端（PWA）"
+description = "业余无线电：Leptos CSR 前端（PWA）"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,6 +10,7 @@ authors.workspace = true
 
 [dependencies]
 ham-web-core.workspace = true
+ham-web-apt.workspace = true
 leptos.workspace = true
 leptos_router.workspace = true
 serde.workspace = true
@@ -36,6 +37,7 @@ features = [
   "BlobPropertyBag",
   "CanvasRenderingContext2d",
   "Clipboard",
+  "ClipboardItem",
   "CssStyleDeclaration",
   "CustomEvent",
   "CustomEventInit",
@@ -57,10 +59,12 @@ features = [
   "HtmlElement",
   "HtmlImageElement",
   "HtmlInputElement",
+  "ImageData",
   "KeyboardEvent",
   "Location",
   "MediaQueryList",
   "MediaQueryListEvent",
+  "MessageEvent",
   "MouseEvent",
   "Navigator",
   "NodeList",
@@ -68,6 +72,9 @@ features = [
   "NotificationPermission",
   "OscillatorNode",
   "OscillatorType",
+  "PushManager",
+  "PushSubscription",
+  "PushSubscriptionOptionsInit",
   "Request",
   "RequestCache",
   "RequestInit",
@@ -78,6 +85,7 @@ features = [
   "ServiceWorkerContainer",
   "ServiceWorkerRegistration",
   "ServiceWorkerState",
+  "ShareData",
   "Storage",
   "Touch",
   "TouchEvent",
@@ -93,6 +101,14 @@ features = [
   "Url",
   "VisibilityState",
   "Window",
+  "Worker",
+  "IdbDatabase",
+  "IdbFactory",
+  "IdbObjectStore",
+  "IdbOpenDbRequest",
+  "IdbRequest",
+  "IdbTransaction",
+  "IdbTransactionMode",
 ]
 
 [lints]

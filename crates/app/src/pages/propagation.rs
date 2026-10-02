@@ -3,25 +3,26 @@
 use ham_web_core::propagation::{CONCEPTS, LAYERS, LOW_BAND_TIPS, PROPAGATION_MODES};
 use leptos::prelude::*;
 
+use crate::i18n::t;
 use crate::util::set_title;
 
 #[component]
 pub fn PropagationPage() -> impl IntoView {
-  set_title("传播与电离层");
+  set_title(&t("传播与电离层"));
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"传播与电离层"</h1>
-            <div class="text-xs text-muted-foreground">"电离层分层 · 传播方式 · 关键概念"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("传播与电离层")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("电离层分层 · 传播方式 · 关键概念")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"电离层分层"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("电离层分层")}</h2>
           <div class="divide-y">
             {LAYERS
               .iter()
@@ -39,7 +40,7 @@ pub fn PropagationPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"主要传播方式"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("主要传播方式")}</h2>
           <dl class="divide-y">
             {PROPAGATION_MODES
               .iter()
@@ -56,7 +57,7 @@ pub fn PropagationPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"关键概念"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("关键概念")}</h2>
           <dl class="divide-y">
             {CONCEPTS
               .iter()
@@ -73,7 +74,7 @@ pub fn PropagationPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"低频段（160m / 80m）DX 要点"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("低频段（160m / 80m）DX 要点")}</h2>
           <ul class="space-y-2 p-4">
             {LOW_BAND_TIPS
               .iter()

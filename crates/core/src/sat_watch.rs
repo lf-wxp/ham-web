@@ -49,6 +49,8 @@ pub struct SatWatch {
   pub alerts: bool,
   /// 提前多少分钟提醒。
   pub lead_min: u32,
+  /// 是否在 NOAA APT 气象卫星过境前提醒录制（配合 `/apt-decoder`）。
+  pub apt_alert: bool,
 }
 
 /// 已提醒过的过境（`Pass::key` 与 AOS），防止重复提醒；与设置分开存储，
@@ -64,6 +66,7 @@ impl Default for SatWatch {
       favorites: Vec::new(),
       alerts: false,
       lead_min: 10,
+      apt_alert: false,
     }
   }
 }
@@ -118,6 +121,15 @@ pub fn upcoming<'a>(watch: &SatWatch, passes: &'a [Pass], now: i64) -> Vec<&'a P
     .collect();
   v.sort_by_key(|p| p.aos);
   v
+}
+
+/// APT 气象卫星（NOAA 系列）NORAD 编号：NOAA-15 / NOAA-18 / NOAA-19。
+pub const APT_SATS: &[u64] = &[25_338, 28_654, 33_591];
+
+/// 某颗卫星是否为 APT 气象卫星（用于录制提醒）。
+#[must_use]
+pub fn is_apt(norad: u64) -> bool {
+  APT_SATS.contains(&norad)
 }
 
 /// 方位角 → 八方位中文。

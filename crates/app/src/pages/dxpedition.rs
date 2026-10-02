@@ -3,25 +3,26 @@
 use ham_web_core::dxpedition::{DXPED_CONCEPTS, DXPED_TIPS};
 use leptos::prelude::*;
 
+use crate::i18n::t;
 use crate::util::set_title;
 
 #[component]
 pub fn DxpeditionPage() -> impl IntoView {
-  set_title("DX 远征（DXpedition）");
+  set_title(&t("DX 远征（DXpedition）"));
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"DX 远征（DXpedition）"</h1>
-            <div class="text-xs text-muted-foreground">"稀有 DXCC 实体的远征队与追台"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("DX 远征（DXpedition）")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("稀有 DXCC 实体的远征队与追台")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"核心概念"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("核心概念")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {DXPED_CONCEPTS
               .iter()
@@ -38,7 +39,7 @@ pub fn DxpeditionPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"追远征台要点"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("追远征台要点")}</h2>
           <ul class="space-y-2 p-4">
             {DXPED_TIPS
               .iter()

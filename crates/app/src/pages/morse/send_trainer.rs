@@ -8,6 +8,7 @@ use crate::morse_settings::use_morse_settings;
 use crate::util::storage;
 
 use super::{btn_primary, btn_secondary, morse_display, pill_class, random_index};
+use crate::i18n::t;
 
 /// 发报目标类型。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -196,26 +197,26 @@ pub(super) fn SendTrainer() -> impl IntoView {
   view! {
     <section class="rounded-xl border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">
-        "发报练习"
-        <span class="ml-2 text-xs font-normal text-muted-foreground">"按住拍发 · 带侧音"</span>
+        {move || t("发报练习")}
+        <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("按住拍发 · 带侧音")}</span>
       </h2>
       <div class="space-y-4 p-4">
         <div class="flex flex-wrap items-center gap-1.5">
-          <span class="mr-1 text-xs text-muted-foreground">"目标类型"</span>
+          <span class="mr-1 text-xs text-muted-foreground">{move || t("目标类型")}</span>
           {SendTarget::ALL
             .iter()
-            .map(|&t| {
+            .map(|&target_kind| {
               view! {
                 <button
                   type="button"
                   on:click=move |_| {
-                    send_target.set(t);
+                    send_target.set(target_kind);
                     next_target();
                   }
-                  aria-pressed=move || (send_target.get() == t).to_string()
-                  class=move || pill_class(send_target.get() == t)
+                  aria-pressed=move || (send_target.get() == target_kind).to_string()
+                  class=move || pill_class(send_target.get() == target_kind)
                 >
-                  {t.label()}
+                  {move || t(target_kind.label())}
                 </button>
               }
             })
@@ -223,7 +224,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
         </div>
 
         <div class="flex flex-col items-center gap-2 rounded-xl border bg-muted/30 px-4 py-6">
-          <div class="text-xs text-muted-foreground">"目标"</div>
+          <div class="text-xs text-muted-foreground">{move || t("目标")}</div>
           <div class="text-4xl font-semibold tabular-nums tracking-widest">{move || target.get()}</div>
           <div data-testid="send-marks" class="font-mono text-2xl font-semibold tracking-[0.3em] text-primary">
             {move || {
@@ -231,7 +232,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
               if m.is_empty() { "…".to_owned() } else { morse_display(&m) }
             }}
           </div>
-          <div class="text-xs text-muted-foreground">"短按（<0.2s）为点，长按为划"</div>
+          <div class="text-xs text-muted-foreground">{move || t("短按（<0.2s）为点，长按为划")}</div>
         </div>
 
         <div class="flex flex-col items-center gap-3">
@@ -254,7 +255,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
                 view! { <span class="absolute inset-0 rounded-full bg-primary/40 animate-ping"></span> }
               })
             }}
-            <span class="relative text-sm font-semibold">"按住发报"</span>
+            <span class="relative text-sm font-semibold">{move || t("按住发报")}</span>
           </button>
 
           <div class="text-xs text-muted-foreground">
@@ -265,16 +266,16 @@ pub(super) fn SendTrainer() -> impl IntoView {
               match (wpm, score) {
                 (Some(w), Some(sc)) => view! {
                   <span>
-                    "估算 ≈ " <span class="font-semibold tabular-nums text-foreground">{format!("{w:.0}")}</span> " WPM"
-                    " · 节奏 " <span class="font-semibold tabular-nums text-foreground">{format!("{sc:.0}")}</span> "/100"
+                    {move || t("估算 ≈ ")} <span class="font-semibold tabular-nums text-foreground">{format!("{w:.0}")}</span> " WPM"
+                    {move || t(" · 节奏 ")} <span class="font-semibold tabular-nums text-foreground">{format!("{sc:.0}")}</span> "/100"
                   </span>
                 }.into_any(),
                 (Some(w), None) => view! {
                   <span>
-                    "估算 ≈ " <span class="font-semibold tabular-nums text-foreground">{format!("{w:.0}")}</span> " WPM"
+                    {move || t("估算 ≈ ")} <span class="font-semibold tabular-nums text-foreground">{format!("{w:.0}")}</span> " WPM"
                   </span>
                 }.into_any(),
-                _ => view! { "拍发后可估算速度与节奏" }.into_any(),
+                _ => view! { {move || t("拍发后可估算速度与节奏")} }.into_any(),
               }
             }}
           </div>
@@ -286,21 +287,21 @@ pub(super) fn SendTrainer() -> impl IntoView {
               prop:disabled=move || marks.get().is_empty()
               on:click=move |_| judge()
             >
-              "判定"
+              {move || t("判定")}
             </button>
             <button
               type="button"
               class=btn_secondary("")
               on:click=move |_| clear_marks()
             >
-              "重拍"
+              {move || t("重拍")}
             </button>
             <button
               type="button"
               class=btn_secondary("")
               on:click=move |_| next_target()
             >
-              "下一题"
+              {move || t("下一题")}
             </button>
           </div>
 
@@ -311,7 +312,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
                   view! {
                     <span class="inline-flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400 animate-in fade-in zoom-in-95 duration-200">
                       <Icon kind=IconKind::CheckCircle2 class="h-4 w-4" />
-                      "正确！"
+                      {move || t("正确！")}
                     </span>
                   }
                   .into_any()
@@ -320,7 +321,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
                   view! {
                     <span class="inline-flex items-center gap-1.5 font-medium text-red-600 dark:text-red-400 animate-in fade-in zoom-in-95 duration-200">
                       <Icon kind=IconKind::XCircle class="h-4 w-4" />
-                      "答案是 " <span class="font-mono">{target.get()}</span> "　"
+                      {move || t("答案是 ")} <span class="font-mono">{target.get()}</span> "　"
                       <span class="font-mono">{morse_display(&expected)}</span>
                     </span>
                   }
@@ -332,26 +333,26 @@ pub(super) fn SendTrainer() -> impl IntoView {
 
           <div class="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
             <span>
-              "正确 " <span class="font-semibold tabular-nums text-foreground">{move || stats.get().correct}</span>
+              {move || t("正确 ")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().correct}</span>
             </span>
             <span>
-              "错误 " <span class="font-semibold tabular-nums text-foreground">{move || stats.get().wrong}</span>
+              {move || t("错误 ")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().wrong}</span>
             </span>
             <span>
-              "正确率 " <span class="font-semibold tabular-nums text-foreground">{move || format!("{:.0}%", rate())}</span>
+              {move || t("正确率 ")} <span class="font-semibold tabular-nums text-foreground">{move || format!("{:.0}%", rate())}</span>
             </span>
             <span>
-              "连对 " <span class="font-semibold tabular-nums text-foreground">{move || streak.get()}</span>
+              {move || t("连对 ")} <span class="font-semibold tabular-nums text-foreground">{move || streak.get()}</span>
             </span>
             <span>
-              "最长 " <span class="font-semibold tabular-nums text-foreground">{move || stats.get().best_streak}</span>
+              {move || t("最长 ")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().best_streak}</span>
             </span>
             <button
               type="button"
               on:click=move |_| reset_stats()
               class="rounded-md px-2 py-0.5 transition-all duration-200 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
             >
-              "重置"
+              {move || t("重置")}
             </button>
           </div>
         </div>

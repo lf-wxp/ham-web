@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::{INPUT, RESULT, TAU, fmt_num};
+use crate::i18n::{t, tf};
 
 /// LC 谐振频率：f(MHz) = 159.15 / √(L(μH) × C(pF))。
 #[component]
@@ -11,7 +12,7 @@ pub(super) fn LcResonance() -> impl IntoView {
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"电感 L（μH）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("电感 L（μH）")}</span>
         <input
           type="number"
           prop:value=move || inductance.get().to_string()
@@ -24,7 +25,7 @@ pub(super) fn LcResonance() -> impl IntoView {
         />
       </label>
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"电容 C（pF）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("电容 C（pF）")}</span>
         <input
           type="number"
           prop:value=move || capacitance.get().to_string()
@@ -40,7 +41,7 @@ pub(super) fn LcResonance() -> impl IntoView {
         {move || {
           let lc = inductance.get() * capacitance.get();
           let f = if lc > 0.0 { (1000.0 / TAU) / lc.sqrt() } else { 0.0 };
-          format!("谐振频率 f = {} MHz", fmt_num(f))
+          tf("谐振频率 f = {} MHz", &[&(fmt_num(f)).to_string()])
         }}
       </div>
     </div>

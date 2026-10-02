@@ -16,10 +16,11 @@ use crate::util::set_title;
 use super::question_row::QuestionRow;
 use super::stat::Stat;
 use super::{ALL, OTHER, PAGE, pill, sub_name_of, top_of};
+use crate::i18n::t;
 
 #[component]
 pub fn BrowsePage() -> impl IntoView {
-  set_title("题库分类浏览");
+  set_title(&t("题库分类浏览"));
   let all: RwSignal<Questions> = RwSignal::new(Arc::new(Vec::new()));
   let loading = RwSignal::new(true);
   let bank = RwSignal::new(Bank::A);
@@ -31,10 +32,10 @@ pub fn BrowsePage() -> impl IntoView {
   let visible = RwSignal::new(PAGE);
   let open_top = RwSignal::new(HashSet::<&'static str>::new());
 
-  // 支持 /browse?bank=B&q=驻波比（术语表页跳转）
+  // 支持 /browse?bank=B&q=驻波比（术语表页跳转）、/browse?sub=驻波比 SWR（错题「同类题」跳转）
   let query = use_query_map();
   Effect::new(move |_| {
-    let (b, q) = query.with(|p| (p.get("bank"), p.get("q")));
+    let (b, q, s) = query.with(|p| (p.get("bank"), p.get("q"), p.get("sub")));
     if let Some(b) = b.and_then(|b| b.parse::<Bank>().ok()) {
       bank.set(b);
       top.set(ALL.to_owned());
@@ -42,6 +43,14 @@ pub fn BrowsePage() -> impl IntoView {
     }
     if let Some(q) = q {
       kw.set(q);
+    }
+    if let Some(s) = s
+      && let Some(sc) = categories::SUB_CATEGORIES
+        .iter()
+        .find(|sc| sc.name == s.as_str())
+    {
+      top.set(sc.top.to_owned());
+      sub.set(Some(sc.name));
     }
     visible.set(PAGE);
   });
@@ -229,11 +238,11 @@ pub fn BrowsePage() -> impl IntoView {
 
   let list = move || {
     if loading.get() {
-      return view! { <Loading label="正在加载题库…" /> }.into_any();
+      return view! { <Loading label=t("正在加载题库…") /> }.into_any();
     }
     let total = filtered.with(Vec::len);
     if total == 0 {
-      return view! { <EmptyState title="没有匹配的题目" /> }.into_any();
+      return view! { <EmptyState title=t("没有匹配的题目") /> }.into_any();
     }
     let shown: Vec<usize> = filtered.with(|f| f.iter().copied().take(visible.get()).collect());
     let shown_len = shown.len();
@@ -266,8 +275,8 @@ pub fn BrowsePage() -> impl IntoView {
       <header class="sticky top-16 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"题库分类浏览"</h1>
-            <div class="text-xs text-muted-foreground">"按题目类型分类 · 仅显示正确答案 · 附解析与参考依据"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("题库分类浏览")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("按题目类型分类 · 仅显示正确答案 · 附解析与参考依据")}</div>
           </div>
 
           <div class="flex overflow-hidden rounded-lg border">
@@ -303,7 +312,7 @@ pub fn BrowsePage() -> impl IntoView {
                 kw.set(event_target_value(&e));
                 visible.set(PAGE);
               }
-              placeholder="搜索题干 / 答案 / 解析…"
+              placeholder=move || t("搜索题干 / 答案 / 解析…")
               class="h-9 w-56 rounded-lg border bg-background pl-8 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             />
           </div>
@@ -313,14 +322,14 @@ pub fn BrowsePage() -> impl IntoView {
             on:click=move |_| multi_only.update(|v| *v = !*v)
             class=move || pill(multi_only.get(), "rounded-lg border px-3 py-1.5 text-sm transition-colors")
           >
-            "只看多选"
+            {move || t("只看多选")}
           </button>
           <button
             type="button"
             on:click=move |_| unique_only.update(|v| *v = !*v)
             class=move || pill(unique_only.get(), "rounded-lg border px-3 py-1.5 text-sm transition-colors")
           >
-            "只看本类新增"
+            {move || t("只看本类新增")}
           </button>
         </div>
       </header>
@@ -336,7 +345,7 @@ pub fn BrowsePage() -> impl IntoView {
               }
             >
               <span class="h-2 w-2 rounded-full bg-foreground/60"></span>
-              "全部题目"
+              {move || t("全部题目")}
               <span class="ml-auto text-xs tabular-nums">{move || bank_questions.with(Vec::len)}</span>
             </button>
             {sidebar}
@@ -345,10 +354,10 @@ pub fn BrowsePage() -> impl IntoView {
 
         <div class="min-w-0">
           <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="题目总数" value=Signal::derive(move || bank_questions.with(Vec::len)) />
-            <Stat label="多选题" value=multi_count />
-            <Stat label="题目类型" value=Signal::stored(TOP_CATEGORIES.len()) />
-            <Stat label="当前筛选" value=Signal::derive(move || filtered.with(Vec::len)) />
+            <Stat label=t("题目总数") value=Signal::derive(move || bank_questions.with(Vec::len)) />
+            <Stat label=t("多选题") value=multi_count />
+            <Stat label=t("题目类型") value=Signal::stored(TOP_CATEGORIES.len()) />
+            <Stat label=t("当前筛选") value=Signal::derive(move || filtered.with(Vec::len)) />
           </div>
           {list}
         </div>

@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::{INPUT, RESULT, fmt_num};
+use crate::i18n::t;
 
 /// 频率 ↔ 波长换算（λ = 300 / f(MHz)）。
 #[component]
@@ -28,11 +29,11 @@ pub(super) fn FreqWavelength() -> impl IntoView {
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"频率（MHz）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("频率（MHz）")}</span>
         <input type="number" prop:value=move || freq.get().to_string() on:input=on_freq class=INPUT />
       </label>
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"波长（m）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("波长（m）")}</span>
         <input type="number" prop:value=move || wl.get().to_string() on:input=on_wl class=INPUT />
       </label>
       <div class=RESULT>

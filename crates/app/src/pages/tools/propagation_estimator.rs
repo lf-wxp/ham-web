@@ -2,6 +2,7 @@ use ham_web_core::muf::{estimate_fof2, estimate_muf, estimate_owf};
 use leptos::prelude::*;
 
 use super::INPUT;
+use crate::i18n::{t, tf};
 
 /// 传播预测：SFI + K 指数 → foF2 / MUF / OWF 与可用波段建议。
 #[component]
@@ -26,7 +27,7 @@ pub(super) fn PropagationEstimator() -> impl IntoView {
     <div class="space-y-3">
       <div class="grid gap-3 sm:grid-cols-2">
         <label class="flex flex-col gap-1.5 text-sm">
-          <span class="text-xs text-muted-foreground">"太阳通量 SFI"</span>
+          <span class="text-xs text-muted-foreground">{move || t("太阳通量 SFI")}</span>
           <input
             type="number"
             prop:value=move || sfi.get().to_string()
@@ -39,7 +40,7 @@ pub(super) fn PropagationEstimator() -> impl IntoView {
           />
         </label>
         <label class="flex flex-col gap-1.5 text-sm">
-          <span class="text-xs text-muted-foreground">"K 指数（0–9）"</span>
+          <span class="text-xs text-muted-foreground">{move || t("K 指数（0–9）")}</span>
           <input
             type="number"
             step="1"
@@ -58,22 +59,25 @@ pub(super) fn PropagationEstimator() -> impl IntoView {
           let s = sfi.get();
           let kk = k.get();
           let quality = match kk {
-            x if x < 2.0 => "磁情安静",
-            x if x < 4.0 => "磁情活跃",
-            x if x < 6.0 => "磁扰",
-            _ => "强磁暴",
+            x if x < 2.0 => t("磁情安静"),
+            x if x < 4.0 => t("磁情活跃"),
+            x if x < 6.0 => t("磁扰"),
+            _ => t("强磁暴"),
           };
-          format!(
-            "foF2 ≈ {:.1} MHz　单跳 MUF ≈ {:.1} MHz　OWF ≈ {:.1} MHz　（K = {:.0}，{quality}）",
-            estimate_fof2(s),
-            estimate_muf(s),
-            estimate_owf(s),
-            kk,
+          tf(
+            "foF2 ≈ {} MHz　单跳 MUF ≈ {} MHz　OWF ≈ {} MHz　（K = {}，{}）",
+            &[
+              &format!("{:.1}", estimate_fof2(s)),
+              &format!("{:.1}", estimate_muf(s)),
+              &format!("{:.1}", estimate_owf(s)),
+              &format!("{kk:.0}"),
+              &quality,
+            ],
           )
         }}
       </div>
       <div>
-        <div class="mb-1.5 text-xs font-medium text-muted-foreground">"预计可用波段（中心频率低于 MUF）"</div>
+        <div class="mb-1.5 text-xs font-medium text-muted-foreground">{move || t("预计可用波段（中心频率低于 MUF）")}</div>
         <div class="flex flex-wrap gap-1.5">
           {move || {
             let muf = estimate_muf(sfi.get());

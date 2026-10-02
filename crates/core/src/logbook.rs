@@ -105,14 +105,32 @@ pub struct LogEntry {
   /// ITU 分区 `ITUZ`（空则取实体的主分区）。
   #[serde(default)]
   pub ituz: String,
+  /// 美国州 `STATE`（WAS 奖状）。
+  #[serde(default)]
+  pub state: String,
+  /// IOTA 岛屿编号 `IOTA`。
+  #[serde(default)]
+  pub iota: String,
   /// 备注 `COMMENT`。
   pub remark: String,
   /// QSL 卡片是否已寄出 `QSL_SENT`。
   #[serde(default)]
   pub qsl_sent: bool,
-  /// QSL 是否已确认收到 `QSL_RCVD`。
+  /// QSL 卡片是否已确认收到 `QSL_RCVD`。
   #[serde(default)]
   pub qsl_rcvd: bool,
+  /// LoTW 是否已上传 `LOTW_QSL_SENT`。
+  #[serde(default)]
+  pub lotw_sent: bool,
+  /// LoTW 是否已确认 `LOTW_QSL_RCVD`。
+  #[serde(default)]
+  pub lotw_rcvd: bool,
+  /// eQSL 是否已寄出 `EQSL_QSL_SENT`。
+  #[serde(default)]
+  pub eqsl_sent: bool,
+  /// eQSL 是否已确认 `EQSL_QSL_RCVD`。
+  #[serde(default)]
+  pub eqsl_rcvd: bool,
 }
 
 impl LogEntry {
@@ -189,22 +207,46 @@ impl LogEntry {
     }
   }
 
-  /// 是否命中列表搜索关键词（`q` 已大写；呼号 / 姓名 / QTH / 网格 / 备注 / SOTA / POTA）。
+  /// 是否已被任一途径（纸卡 / LoTW / eQSL）确认。
+  #[must_use]
+  pub fn confirmed(&self) -> bool {
+    self.qsl_rcvd || self.lotw_rcvd || self.eqsl_rcvd
+  }
+
+  /// 是否命中列表搜索关键词（`q` 已大写；呼号 / 姓名 / QTH / 网格 / 备注 / SOTA / POTA / DXCC 实体名）。
   #[must_use]
   pub fn matches_query(&self, q: &str) -> bool {
-    q.is_empty()
-      || [
-        &self.callsign,
-        &self.name,
-        &self.qth,
-        &self.gridsquare,
-        &self.remark,
-        &self.sota_ref,
-        &self.pota_ref,
-      ]
-      .iter()
-      .any(|f| f.to_uppercase().contains(q))
+    if q.is_empty() {
+      return true;
+    }
+    if [
+      &self.callsign,
+      &self.name,
+      &self.qth,
+      &self.gridsquare,
+      &self.remark,
+      &self.sota_ref,
+      &self.pota_ref,
+    ]
+    .iter()
+    .any(|f| f.to_uppercase().contains(q))
+    {
+      return true;
+    }
+    // DXCC 实体名（中文 / 英文），支持从 DXCC 地图点击实体后按实体过滤。
+    self
+      .entity()
+      .is_some_and(|e| e.name.contains(q) || e.name_en.to_uppercase().contains(q))
   }
+}
+
+/// 已寄出（纸卡 / LoTW / eQSL）但尚未确认收到 QSL 的通联（待追卡清单）。
+#[must_use]
+pub fn pending_qsl(entries: &[LogEntry]) -> Vec<&LogEntry> {
+  entries
+    .iter()
+    .filter(|e| (e.qsl_sent || e.lotw_sent || e.eqsl_sent) && !e.confirmed())
+    .collect()
 }
 
 fn zone(s: &str, max: u8) -> Option<u8> {
@@ -314,9 +356,15 @@ pub fn export_adif(entries: &[LogEntry], station: &StationInfo) -> String {
       "ITUZ",
       &e.itu_zone().map(|z| z.to_string()).unwrap_or_default(),
     );
+    adif_field(&mut s, "STATE", &e.state);
+    adif_field(&mut s, "IOTA", &e.iota);
     adif_field(&mut s, "COMMENT", &e.remark);
     adif_field(&mut s, "QSL_SENT", if e.qsl_sent { "Y" } else { "N" });
     adif_field(&mut s, "QSL_RCVD", if e.qsl_rcvd { "Y" } else { "N" });
+    adif_field(&mut s, "LOTW_QSL_SENT", if e.lotw_sent { "Y" } else { "N" });
+    adif_field(&mut s, "LOTW_QSL_RCVD", if e.lotw_rcvd { "Y" } else { "N" });
+    adif_field(&mut s, "EQSL_QSL_SENT", if e.eqsl_sent { "Y" } else { "N" });
+    adif_field(&mut s, "EQSL_QSL_RCVD", if e.eqsl_rcvd { "Y" } else { "N" });
     s.push_str("<EOR>\n");
   }
   s
@@ -422,9 +470,15 @@ pub fn from_adif(r: AdifRecord) -> LogEntry {
     dxcc: r.dxcc,
     cqz: r.cqz,
     ituz: r.ituz,
+    state: r.state,
+    iota: r.iota,
     remark: r.comment,
     qsl_sent: r.qsl_sent,
     qsl_rcvd: r.qsl_rcvd,
+    lotw_sent: r.lotw_sent,
+    lotw_rcvd: r.lotw_rcvd,
+    eqsl_sent: r.eqsl_sent,
+    eqsl_rcvd: r.eqsl_rcvd,
     ..Default::default()
   }
 }
@@ -548,6 +602,16 @@ mod tests {
   }
 
   #[test]
+  fn matches_query_by_entity_name() {
+    let e = qso(1, "BG1AA", "14.074", "FT8");
+    assert!(e.matches_query("BG1")); // 呼号
+    assert!(e.matches_query("中国")); // 实体中文名（BG1AA → 中国）
+    assert!(e.matches_query("CHINA")); // 实体英文名（q 已大写）
+    assert!(!e.matches_query("日本"));
+    assert!(e.matches_query("")); // 空查询命中全部
+  }
+
+  #[test]
   fn import_skips_existing_and_batch_duplicates() {
     let mut lb = Logbook {
       entries: vec![qso(5, "K1AA", "14.074", "FT8")],
@@ -658,5 +722,19 @@ mod tests {
       ("599", "599")
     );
     assert!(lb.entries[0].cqz.is_empty());
+  }
+
+  #[test]
+  fn pending_qsl_filters_sent_but_unconfirmed() {
+    let mut a = qso(1, "JA1X", "14.074", "FT8");
+    a.qsl_sent = true;
+    let mut b = qso(2, "W1AW", "14.074", "SSB");
+    b.lotw_sent = true;
+    b.lotw_rcvd = true;
+    let c = qso(3, "DL1A", "7.010", "CW");
+    let arr = [a, b, c];
+    let pending = pending_qsl(&arr);
+    assert_eq!(pending.len(), 1);
+    assert_eq!(pending[0].callsign, "JA1X");
   }
 }

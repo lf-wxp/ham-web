@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 
+use crate::i18n::t;
 use crate::ui::{
   Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Size, Variant, button_class,
 };
@@ -17,11 +18,11 @@ pub fn MessageDialog(
   view! {
     <Dialog open=open>
       <DialogHeader>
-        <DialogTitle>{title.get_value()}</DialogTitle>
+        <DialogTitle>{move || t(&title.get_value())}</DialogTitle>
         {move || {
           let d = description.get();
           if d.is_empty() {
-            view! { <DialogDescription class="sr-only">"弹窗提示"</DialogDescription> }.into_any()
+            view! { <DialogDescription class="sr-only">{move || t("弹窗提示")}</DialogDescription> }.into_any()
           } else {
             view! { <DialogDescription>{d}</DialogDescription> }.into_any()
           }
@@ -29,7 +30,7 @@ pub fn MessageDialog(
       </DialogHeader>
       <DialogFooter>
         <button class=button_class(Variant::Default, Size::Default, "") on:click=move |_| open.set(false)>
-          {confirm_text.get_value()}
+          {move || t(&confirm_text.get_value())}
         </button>
       </DialogFooter>
     </Dialog>

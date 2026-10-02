@@ -29,8 +29,14 @@ pub struct AdifRecord {
   pub qth: String,
   pub comment: String,
   pub qsl_sent: bool,
-  /// 任一途径（纸卡 / LoTW / eQSL）已确认。
+  /// 纸卡已确认收到。
   pub qsl_rcvd: bool,
+  /// LoTW 已上传 / 已确认。
+  pub lotw_sent: bool,
+  pub lotw_rcvd: bool,
+  /// eQSL 已寄出 / 已确认。
+  pub eqsl_sent: bool,
+  pub eqsl_rcvd: bool,
   /// 卫星名。
   pub sat_name: String,
   /// 传播方式（如 `SAT`、`EME`、`ES`）。
@@ -52,6 +58,10 @@ pub struct AdifRecord {
   /// 发出 / 收到的竞赛交换（`STX_STRING` 优先，否则 `STX`；`SRX` 同理）。
   pub stx: String,
   pub srx: String,
+  /// 美国州（`STATE`）。
+  pub state: String,
+  /// IOTA 岛屿编号（`IOTA`）。
+  pub iota: String,
 }
 
 /// 读取 `<` 之后、`>` 之前的标签，返回 `(标签内容, '>' 之后的位置)`。
@@ -166,7 +176,11 @@ pub fn parse_adif(text: &str) -> Vec<AdifRecord> {
         qth: take("QTH"),
         comment: take("COMMENT"),
         qsl_sent: yes(take("QSL_SENT")),
-        qsl_rcvd: yes(take("QSL_RCVD")) || yes(take("LOTW_QSL_RCVD")) || yes(take("EQSL_QSL_RCVD")),
+        qsl_rcvd: yes(take("QSL_RCVD")),
+        lotw_sent: yes(take("LOTW_QSL_SENT")),
+        lotw_rcvd: yes(take("LOTW_QSL_RCVD")),
+        eqsl_sent: yes(take("EQSL_QSL_SENT")),
+        eqsl_rcvd: yes(take("EQSL_QSL_RCVD")),
         sat_name: take("SAT_NAME"),
         prop_mode: take("PROP_MODE").to_ascii_uppercase(),
         sota_ref: take("SOTA_REF"),
@@ -183,6 +197,8 @@ pub fn parse_adif(text: &str) -> Vec<AdifRecord> {
         srx: Some(take("SRX_STRING"))
           .filter(|s| !s.is_empty())
           .unwrap_or_else(|| take("SRX")),
+        state: take("STATE").to_ascii_uppercase(),
+        iota: take("IOTA").to_ascii_uppercase(),
       })
     })
     .collect()
@@ -228,7 +244,8 @@ mod tests {
       (r[0].call.as_str(), r[0].mode.as_str(), r[0].band.as_str()),
       ("BG4XX", "FT4", "20M")
     );
-    assert!(r[0].qsl_rcvd && r[0].qsl_sent);
+    assert!(r[0].lotw_rcvd && r[0].qsl_sent);
+    assert!(!r[0].qsl_rcvd, "LoTW 确认应独立于纸卡 QSL");
     assert_eq!(r[0].tx_pwr, "100");
     assert_eq!(
       (

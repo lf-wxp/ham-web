@@ -2,6 +2,7 @@ use ham_web_core::practice::PracticeOrder;
 use leptos::prelude::*;
 
 use crate::components::exam::ShortcutRow;
+use crate::i18n::t;
 use crate::ui::{
   Checkbox, Dialog, DialogDescription, DialogHeader, DialogTitle, Label, RadioGroup,
   RadioGroupItem, Separator,
@@ -26,38 +27,38 @@ pub fn PracticeSettingsDialog(
   view! {
     <Dialog open=open class="sm:max-w-[520px]">
       <DialogHeader>
-        <DialogTitle>"设置"</DialogTitle>
-        <DialogDescription>"题序、显示答案与快捷键说明"</DialogDescription>
+        <DialogTitle>{move || t("设置")}</DialogTitle>
+        <DialogDescription>{move || t("题序、显示答案与快捷键说明")}</DialogDescription>
       </DialogHeader>
       <div class="space-y-5">
         <div class="space-y-2">
-          <div class="text-sm text-muted-foreground">"顺序/随机"</div>
+          <div class="text-sm text-muted-foreground">{move || t("顺序/随机")}</div>
           <RadioGroup class="flex items-center gap-4" value=order_value on_change=on_order>
             <div class="flex items-center space-x-2">
               <RadioGroupItem value="sequential" id="order-seq" />
-              <Label r#for="order-seq">"顺序"</Label>
+              <Label r#for="order-seq">{move || t("顺序")}</Label>
             </div>
             <div class="flex items-center space-x-2">
               <RadioGroupItem value="random" id="order-rand" />
-              <Label r#for="order-rand">"随机"</Label>
+              <Label r#for="order-rand">{move || t("随机")}</Label>
             </div>
           </RadioGroup>
         </div>
         <div class="flex items-center gap-2">
           <Checkbox id="show-ans" checked=show_answer on_change=on_toggle_show_answer />
-          <Label r#for="show-ans">"显示正确答案"</Label>
+          <Label r#for="show-ans">{move || t("显示正确答案")}</Label>
         </div>
         <div class="flex items-center gap-2">
           <Checkbox id="show-expl" checked=show_explanation on_change=on_toggle_show_explanation />
-          <Label r#for="show-expl">"显示答案解析"</Label>
+          <Label r#for="show-expl">{move || t("显示答案解析")}</Label>
         </div>
         <Separator />
         <div class="space-y-2 text-sm">
-          <div class="text-muted-foreground">"快捷键"</div>
-          <ShortcutRow label="上一题 / 下一题" keys="← / →" />
-          <ShortcutRow label="选择 / 切换选项（单选/多选）" keys="1-9" />
-          <ShortcutRow label="严格选择（多选，仅该项）" keys="Shift 或 Cmd（macOS） + 1-9" />
-          <ShortcutRow label="打开搜索（仅顺序模式）" keys="Enter" />
+          <div class="text-muted-foreground">{move || t("快捷键")}</div>
+          <ShortcutRow label=t("上一题 / 下一题") keys="← / →" />
+          <ShortcutRow label=t("选择 / 切换选项（单选/多选）") keys="1-9" />
+          <ShortcutRow label=t("严格选择（多选，仅该项）") keys="Shift 或 Cmd（macOS） + 1-9" />
+          <ShortcutRow label=t("打开搜索（仅顺序模式）") keys="Enter" />
         </div>
       </div>
     </Dialog>

@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::{INPUT, fmt_num};
+use crate::i18n::{t, tf};
 
 /// 噪声系数级联（Friis 公式，3 级）。
 #[component]
@@ -14,7 +15,7 @@ pub(super) fn NoiseCascade() -> impl IntoView {
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"第 1 级 NF（dB）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("第 1 级 NF（dB）")}</span>
         <input
           type="number"
           prop:value=move || nf1.get().to_string()
@@ -27,7 +28,7 @@ pub(super) fn NoiseCascade() -> impl IntoView {
         />
       </label>
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"第 1 级增益（dB）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("第 1 级增益（dB）")}</span>
         <input
           type="number"
           prop:value=move || g1.get().to_string()
@@ -40,7 +41,7 @@ pub(super) fn NoiseCascade() -> impl IntoView {
         />
       </label>
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"第 2 级 NF（dB）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("第 2 级 NF（dB）")}</span>
         <input
           type="number"
           prop:value=move || nf2.get().to_string()
@@ -53,7 +54,7 @@ pub(super) fn NoiseCascade() -> impl IntoView {
         />
       </label>
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"第 2 级增益（dB）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("第 2 级增益（dB）")}</span>
         <input
           type="number"
           prop:value=move || g2.get().to_string()
@@ -66,7 +67,7 @@ pub(super) fn NoiseCascade() -> impl IntoView {
         />
       </label>
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"第 3 级 NF（dB）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("第 3 级 NF（dB）")}</span>
         <input
           type="number"
           prop:value=move || nf3.get().to_string()
@@ -88,7 +89,7 @@ pub(super) fn NoiseCascade() -> impl IntoView {
           let g2l = to_lin(g2.get());
           let f_total = f1 + (f2 - 1.0) / g1l + (f3 - 1.0) / (g1l * g2l);
           let nf_total = 10.0 * f_total.log10();
-          format!("总噪声系数 ≈ {} dB", fmt_num(nf_total))
+          tf("总噪声系数 ≈ {} dB", &[&(fmt_num(nf_total)).to_string()])
         }}
       </div>
     </div>

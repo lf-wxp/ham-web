@@ -8,6 +8,10 @@ crates/app/dist
 public/sw.js
 public/sitemap.xml
 
+# APT 解码 Worker 构建产物（由 `cargo make build-worker` / wasm-bindgen 生成）
+public/apt-worker/apt_worker.js
+public/apt-worker/apt_worker_bg.wasm
+
 # IDE and editor files
 .idea/
 .vscode/

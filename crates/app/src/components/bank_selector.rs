@@ -8,6 +8,7 @@ use leptos::task::spawn_local;
 
 use crate::cn::cn;
 use crate::data::{self, VersionStatus};
+use crate::i18n::{bank_class, t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
   BadgeVariant, Label, RadioGroup, RadioGroupItem, Select, SelectItem, Size, Variant, badge_class,
@@ -52,16 +53,13 @@ fn classify(message: &str) -> (ErrorKind, String) {
     .iter()
     .any(|p| message.contains(p))
   {
-    (
-      ErrorKind::Network,
-      "网络连接失败，请检查网络后重试".to_owned(),
-    )
+    (ErrorKind::Network, t("网络连接失败，请检查网络后重试"))
   } else if message.contains("timeout") {
-    (ErrorKind::Timeout, "请求超时，请重试".to_owned())
+    (ErrorKind::Timeout, t("请求超时，请重试"))
   } else if message.contains("config") {
-    (ErrorKind::Config, "配置文件加载失败，请重试".to_owned())
+    (ErrorKind::Config, t("配置文件加载失败，请重试"))
   } else if message.is_empty() {
-    (ErrorKind::Unknown, "未知错误，请重试".to_owned())
+    (ErrorKind::Unknown, t("未知错误，请重试"))
   } else {
     (ErrorKind::Unknown, message.to_owned())
   }
@@ -79,18 +77,17 @@ fn status_icon(v: &VersionWithStatus) -> AnyView {
 
 fn status_text(v: &VersionWithStatus) -> String {
   match &v.status {
-    None => "状态未知".to_owned(),
-    Some(s) if s.is_available => {
-      format!(
-        "包含: {}",
-        s.available_banks
-          .iter()
-          .map(|b| b.as_str())
-          .collect::<Vec<_>>()
-          .join(", ")
-      )
-    }
-    Some(s) => s.error.clone().unwrap_or_else(|| "无可用题库".to_owned()),
+    None => t("状态未知"),
+    Some(s) if s.is_available => tf(
+      "包含: {}",
+      &[&s
+        .available_banks
+        .iter()
+        .map(|b| b.as_str())
+        .collect::<Vec<_>>()
+        .join(", ")],
+    ),
+    Some(s) => s.error.clone().unwrap_or_else(|| t("无可用题库")),
   }
 }
 
@@ -203,7 +200,7 @@ pub fn QuestionBankSelector(
           );
         }
         Err(e) => {
-          web_sys::console::error_1(&format!("[ERROR] 刷新配置失败 {e}").into());
+          web_sys::console::error_1(&tf("[ERROR] 刷新配置失败 {}", &[&(e).to_string()]).into());
           let (kind, msg) = classify(&e.to_string());
           error_kind.set(Some(kind));
           error_message.set(msg);
@@ -252,9 +249,9 @@ pub fn QuestionBankSelector(
     match refresh_state.get() {
     RefreshState::Loading => {
       let text = if auto_retrying.get() && retry_count.get() > 0 {
-        format!("自动重试({}/2)...", retry_count.get())
+        tf("自动重试({}/2)...", &[&retry_count.get().to_string()])
       } else {
-        "刷新中...".to_owned()
+        t("刷新中...")
       };
       view! {
         <div class="flex items-center gap-1">
@@ -267,12 +264,12 @@ pub fn QuestionBankSelector(
     RefreshState::Success => view! {
       <div class="flex items-center gap-1">
         <Icon kind=IconKind::CheckCircle class="h-3 w-3 text-green-500 animate-in fade-in slide-in-from-left-1 duration-300" />
-        <span class="text-xs text-green-600 dark:text-green-400 animate-in fade-in slide-in-from-right-1 duration-300">"成功"</span>
+        <span class="text-xs text-green-600 dark:text-green-400 animate-in fade-in slide-in-from-right-1 duration-300">{move || t("成功")}</span>
       </div>
     }
     .into_any(),
     RefreshState::Error => {
-      let label = if retry_count.get() >= 2 || auto_retrying.get() { "重试" } else { "失败" };
+      let label = if retry_count.get() >= 2 || auto_retrying.get() { t("重试") } else { t("失败") };
       view! {
         <div class="flex items-center gap-1">
           <Icon kind=IconKind::XCircle class="h-3 w-3 text-red-500 animate-in fade-in slide-in-from-left-1 duration-300" />
@@ -284,7 +281,7 @@ pub fn QuestionBankSelector(
     RefreshState::Idle => view! {
       <div class="flex items-center gap-1">
         <Icon kind=IconKind::RefreshCw class="h-3 w-3 transition-transform hover:rotate-12" />
-        <span class="text-xs">"刷新"</span>
+        <span class="text-xs">{move || t("刷新")}</span>
       </div>
     }
     .into_any(),
@@ -297,7 +294,7 @@ pub fn QuestionBankSelector(
         <div class="flex items-center gap-2">
           {status_icon(&v)}
           <span>{v.version.name.clone()}</span>
-          {v.version.is_latest.then(|| view! { <span class=badge_class(BadgeVariant::Secondary, "text-xs")>"最新"</span> })}
+          {v.version.is_latest.then(|| view! { <span class=badge_class(BadgeVariant::Secondary, "text-xs")>{move || t("最新")}</span> })}
         </div>
       }
     })
@@ -319,7 +316,7 @@ pub fn QuestionBankSelector(
                     {v
                       .version
                       .is_latest
-                      .then(|| view! { <span class=badge_class(BadgeVariant::Secondary, "text-xs")>"最新"</span> })}
+                      .then(|| view! { <span class=badge_class(BadgeVariant::Secondary, "text-xs")>{move || t("最新")}</span> })}
                   </div>
                   <div class="text-xs text-muted-foreground">{status_text(&v)}</div>
                 </div>
@@ -342,7 +339,7 @@ pub fn QuestionBankSelector(
             <Icon kind=IconKind::AlertCircle class="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
             <div class="flex-1">
               <div class="text-sm font-medium text-orange-800 dark:text-orange-200">
-                "刷新失败 " {move || error_kind.get().map(|k| format!("({})", k.as_str()))}
+                {move || t("刷新失败")} {move || error_kind.get().map(|k| format!("({})", k.as_str()))}
               </div>
               <div class="text-xs text-orange-700 dark:text-orange-300 mt-1">{move || error_message.get()}</div>
               <div class="mt-2">
@@ -354,7 +351,7 @@ pub fn QuestionBankSelector(
                   )
                   on:click=move |_| refresh.run(false)
                 >
-                  "手动重试"
+                  {move || t("手动重试")}
                 </button>
               </div>
             </div>
@@ -378,7 +375,7 @@ pub fn QuestionBankSelector(
           <div class="space-y-4">
             <div class="flex items-center gap-2 text-sm text-muted-foreground">
               <Icon kind=IconKind::Loader2 class="h-4 w-4 animate-spin" />
-              "加载题库版本中..."
+              {move || t("加载题库版本中...")}
             </div>
           </div>
         }
@@ -388,14 +385,14 @@ pub fn QuestionBankSelector(
         <div class="space-y-4">
           <div class="space-y-2">
             <div class="flex items-baseline justify-between">
-              <div class="text-sm text-muted-foreground">"题库版本"</div>
+              <div class="text-sm text-muted-foreground">{move || t("题库版本")}</div>
               <div class="flex items-center gap-2">
                 {move || {
                   selected_data
                     .get()
                     .map(|v| {
                       view! {
-                        <div class="text-xs text-muted-foreground">"更新时间: " {locale_date(&v.version.updated_at)}</div>
+                        <div class="text-xs text-muted-foreground">{move || t("更新时间: ")} {locale_date(&v.version.updated_at)}</div>
                       }
                     })
                 }}
@@ -404,12 +401,12 @@ pub fn QuestionBankSelector(
                   disabled=move || refresh_state.get() == RefreshState::Loading || disabled.get()
                   title=move || {
                     let m = error_message.get();
-                    if m.is_empty() { "刷新题库配置".to_owned() } else { m }
+                    if m.is_empty() { t("刷新题库配置") } else { m }
                   }
                   on:click=move |_| refresh.run(false)
                 >
                   {refresh_content}
-                  <span class="sr-only">"刷新配置"</span>
+                  <span class="sr-only">{move || t("刷新配置")}</span>
                 </button>
               </div>
             </div>
@@ -417,7 +414,7 @@ pub fn QuestionBankSelector(
               value=selected_version
               on_change=Callback::new(move |v| selected_version.set(Some(v)))
               disabled=Signal::derive(move || disabled.get() || versions.with(Vec::is_empty))
-              placeholder="选择题库版本"
+              placeholder=t("选择题库版本")
               trigger=trigger
             >
               {items}
@@ -426,7 +423,7 @@ pub fn QuestionBankSelector(
           </div>
 
           <div class="space-y-2">
-            <div class="text-sm text-muted-foreground">"选择题库"</div>
+            <div class="text-sm text-muted-foreground">{move || t("选择题库")}</div>
             <RadioGroup
               class="flex flex-wrap gap-x-6 gap-y-2"
               value=bank_value
@@ -446,7 +443,7 @@ pub fn QuestionBankSelector(
                         <RadioGroupItem id=id.clone() value=bank.as_str() />
                         // flex-col 覆盖 Label 默认 flex-row（cn 冲突组），题号与描述纵向排列且不换行
                         <Label r#for=id class=Signal::derive(|| "flex-col items-start gap-0.5".to_owned())>
-                          <span class="whitespace-nowrap">{bank.as_str()} " 类"</span>
+                          <span class="whitespace-nowrap">{move || bank_class(bank.as_str())}</span>
                           {desc.map(|d| view! { <div class="text-xs text-muted-foreground">{d}</div> })}
                         </Label>
                       </div>
@@ -461,7 +458,7 @@ pub fn QuestionBankSelector(
                   view! {
                     <div class="text-sm text-muted-foreground flex items-center gap-2">
                       <Icon kind=IconKind::XCircle class="h-4 w-4 text-red-500" />
-                      "该版本暂无可用的题库"
+                      {move || t("该版本暂无可用的题库")}
                     </div>
                   }
                 })

@@ -31,6 +31,7 @@ alias = "dev"
 
 [tasks.dev]
 description = "启动前端开发服务器（热重载）：http://127.0.0.1:3000"
+dependencies = ["build-worker"]
 cwd = "${APP_DIR}"
 command = "trunk"
 # 开发产物放在 target/ 下，避免与 release 构建共用 dist/ 互相覆盖
@@ -38,6 +39,7 @@ args = ["serve", "--dist", "../../target/dev-dist"]
 
 [tasks.dev-full]
 description = "同时启动后端 server（3001，仅 API）与前端 trunk dev（3000，代理 /api 到后端）"
+dependencies = ["build-worker"]
 script_runner = "@shell"
 script = '''
 set -e
@@ -52,7 +54,18 @@ SERVER_PID=$!
 
 [tasks.build-web]
 description = "构建前端（release）并生成 Service Worker / sitemap"
-dependencies = ["trunk-build", "postbuild"]
+dependencies = ["build-worker", "trunk-build", "postbuild"]
+
+[tasks.build-worker]
+description = "构建 APT 解码 Web Worker（wasm-bindgen --target no-modules）"
+script_runner = "@shell"
+script = '''
+set -e
+cargo build --profile wasm-release --target wasm32-unknown-unknown -p ham-web-apt-worker
+mkdir -p public/apt-worker
+wasm-bindgen --target no-modules --no-typescript --out-dir public/apt-worker --out-name apt_worker \
+  target/wasm32-unknown-unknown/wasm-release/ham_web_apt_worker.wasm
+'''
 
 [tasks.trunk-build]
 private = true
@@ -97,10 +110,52 @@ description = "从 country-files.com 下载 cty.csv，更新内置 DXCC 前缀�
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "dxcc"]
 
+[tasks.dxcc-map]
+description = "从 Natural Earth 国界 GeoJSON 生成 DXCC 实体边界 public/dxcc-entities.bin（i16 定点 + delta 二进制）"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "dxcc-map"]
+
 [tasks.icons]
 description = "由 public/pwa-icon.svg 生成 PWA / Apple Touch 图标"
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "icons"]
+
+# ───────────────────────────── APT 解码器（测试数据） ─────────────────────────────
+
+[tasks.apt-sample]
+description = "生成合成 APT 测试样本 WAV：LINES=400 NOISE=0.02 cargo make apt-sample"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-apt --release --example generate_sample -- tmp/apt-sample.wav "${LINES:-400}" "${NOISE:-0.02}"
+'''
+
+[tasks.apt-decode]
+description = "命令行解码样本并验证方向：FILE=tmp/apt-sample.wav cargo make apt-decode"
+script_runner = "@shell"
+script = '''
+cargo run -q -p ham-web-apt --release --example decode_sample -- "${FILE:-tmp/apt-sample.wav}"
+'''
+
+[tasks.apt-test]
+description = "生成并解码合成 APT 样本，端到端自检（依赖 apt-sample → apt-decode）"
+dependencies = ["apt-sample", "apt-decode"]
+
+# ───────────────────────────── PSK31 解码器（测试数据） ─────────────────────────────
+
+[tasks.psk31-sample]
+description = "生成合成 PSK31 测试样本 WAV：OFFSET=15 NOISE=0.2 cargo make psk31-sample"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-tools --release -- gen-psk31 \
+  --output tmp/psk31-sample.wav \
+  --text "${TEXT:-CQ CQ CQ DE BG4XXX BG4XXX K}" \
+  --rate "${RATE:-8000}" \
+  --center "${CENTER:-1000}" \
+  --offset "${OFFSET:-0}" \
+  --noise "${NOISE:-0.1}"
+'''
 
 # ───────────────────────────── 题目解析维护 ─────────────────────────────
 
@@ -160,14 +215,14 @@ args = ["fmt", "--all", "--check"]
 description = "Clippy（原生 crate + wasm 前端）"
 script_runner = "@shell"
 script = '''
-cargo clippy --all-targets -p ham-web-core -p ham-web-tools -p ham-web-server -- -D warnings
+cargo clippy --all-targets -p ham-web-core -p ham-web-apt -p ham-web-tools -p ham-web-server -- -D warnings
 cargo clippy -p ham-web-app --target wasm32-unknown-unknown -- -D warnings
 '''
 
 [tasks.test]
 description = "运行单元测试"
 command = "cargo"
-args = ["test", "-p", "ham-web-core", "-p", "ham-web-tools", "-p", "ham-web-server", "-p", "ham-web-app"]
+args = ["test", "-p", "ham-web-core", "-p", "ham-web-apt", "-p", "ham-web-tools", "-p", "ham-web-server", "-p", "ham-web-app"]
 
 [tasks.check]
 description = "代码检查：格式检查 + clippy + 单元测试（不构建前端）"

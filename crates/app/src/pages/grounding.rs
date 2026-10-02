@@ -3,25 +3,26 @@
 use ham_web_core::grounding::{GROUND_TYPES, GROUNDING_PRACTICE, GROUNDING_TIPS, SURGE_DEVICES};
 use leptos::prelude::*;
 
+use crate::i18n::t;
 use crate::util::set_title;
 
 #[component]
 pub fn GroundingPage() -> impl IntoView {
-  set_title("接地与防雷");
+  set_title(&t("接地与防雷"));
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"接地与防雷"</h1>
-            <div class="text-xs text-muted-foreground">"射频接地 · 防雷接地 · 浪涌保护"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("接地与防雷")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("射频接地 · 防雷接地 · 浪涌保护")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"接地类型"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("接地类型")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {GROUND_TYPES
               .iter()
@@ -38,7 +39,7 @@ pub fn GroundingPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"接地做法"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("接地做法")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {GROUNDING_PRACTICE
               .iter()
@@ -55,7 +56,7 @@ pub fn GroundingPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"防雷器件"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("防雷器件")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {SURGE_DEVICES
               .iter()
@@ -72,7 +73,7 @@ pub fn GroundingPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"防雷操作要点"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("防雷操作要点")}</h2>
           <ul class="space-y-2 p-4">
             {GROUNDING_TIPS
               .iter()

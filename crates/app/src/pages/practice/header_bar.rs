@@ -1,0 +1,118 @@
+//! 练习页顶部进度头：进度条、题库类别切换、只看本类新增 / 只练没做过、收藏、搜索与设置入口。
+
+use ham_web_core::Bank;
+use leptos::prelude::*;
+
+use crate::cn::cn;
+use crate::components::common::QuestionProgressHeader;
+use crate::i18n::{bank_class, t};
+use crate::icons::{Icon, IconKind};
+use crate::ui::{Size, Variant, button_class};
+
+#[component]
+pub(super) fn PracticeHeaderBar(
+  #[prop(into)] percent: Signal<i64>,
+  #[prop(into)] bank: Signal<Bank>,
+  on_switch_bank: Callback<Bank>,
+  unique_only: RwSignal<bool>,
+  unseen_only: RwSignal<bool>,
+  bookmarked: RwSignal<bool>,
+  on_toggle_bookmark: Callback<()>,
+  #[prop(into)] sequential: Signal<bool>,
+  on_open_search: Callback<()>,
+  on_open_settings: Callback<()>,
+) -> impl IntoView {
+  let toggle_class = |on: bool, base: &str| {
+    cn(&[
+      base,
+      if on {
+        "bg-primary text-primary-foreground"
+      } else {
+        "hover:bg-accent"
+      },
+    ])
+  };
+
+  view! {
+    <QuestionProgressHeader
+      percent=percent
+      left=move || {
+        view! {
+          <span class="text-sm text-muted-foreground">{move || t("题库类别")}</span>
+          <div class="flex overflow-hidden rounded-lg border">
+            {Bank::ALL
+              .into_iter()
+              .map(|b| {
+                view! {
+                  <button
+                    type="button"
+                    class=move || toggle_class(bank.get() == b, "px-3 py-1.5 text-sm font-medium transition-colors")
+                    on:click=move |_| on_switch_bank.run(b)
+                  >
+                    {move || bank_class(b.as_str())}
+                  </button>
+                }
+              })
+              .collect_view()}
+          </div>
+          <button
+            type="button"
+            class=move || toggle_class(unique_only.get(), "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors")
+            on:click=move |_| unique_only.update(|v| *v = !*v)
+          >
+            {move || t("只看本类新增")}
+          </button>
+          <button
+            type="button"
+            class=move || toggle_class(unseen_only.get(), "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors")
+            title=move || t("去掉练习、考试、闪卡中已经做过的题")
+            on:click=move |_| unseen_only.update(|v| *v = !*v)
+          >
+            {move || t("只练没做过")}
+          </button>
+        }
+      }
+      right=move || {
+        view! {
+          <button
+            class=button_class(Variant::Outline, Size::Icon, "")
+            aria-label=move || t("收藏")
+            title=move || if bookmarked.get() { t("取消收藏") } else { t("收藏本题") }
+            on:click=move |_| on_toggle_bookmark.run(())
+          >
+            {move || {
+              if bookmarked.get() {
+                view! { <Icon kind=IconKind::BookMarked class="h-4 w-4" /> }
+              } else {
+                view! { <Icon kind=IconKind::Bookmark class="h-4 w-4" /> }
+              }
+            }}
+          </button>
+          {move || {
+            sequential.get()
+              .then(|| {
+                view! {
+                  <button
+                    class=button_class(Variant::Outline, Size::Icon, "")
+                    aria-label=move || t("搜索")
+                    title=move || t("搜索")
+                    on:click=move |_| on_open_search.run(())
+                  >
+                    <Icon kind=IconKind::Search class="h-4 w-4" />
+                  </button>
+                }
+              })
+          }}
+          <button
+            class=button_class(Variant::Outline, Size::Icon, "")
+            aria-label=move || t("设置")
+            title=move || t("设置")
+            on:click=move |_| on_open_settings.run(())
+          >
+            <Icon kind=IconKind::Settings class="h-4 w-4" />
+          </button>
+        }
+      }
+    />
+  }
+}

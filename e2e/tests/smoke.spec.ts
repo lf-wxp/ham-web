@@ -26,6 +26,8 @@ test.describe(`全站冒烟（${colorScheme}）`, () => {
         if (msg.type() !== "error") return;
         const url = msg.location().url;
         if (msg.text().startsWith("Failed to load resource") && ignoredRequest(url, base)) return;
+        // 浏览器对外部站点的 report-only CSP 报告（如 Google frame-ancestors），非本页错误，忽略
+        if (msg.text().includes("report-only Content Security Policy")) return;
         problems.push(`console: ${msg.text()}`);
       });
       page.on("response", (res) => {

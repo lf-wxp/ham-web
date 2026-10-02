@@ -14,9 +14,12 @@ use crate::ui::{
 use crate::util::set_title;
 
 use super::cards_card::CardsCard;
+use super::daily_challenge_card::DailyChallengeCard;
 use super::daily_question::DailyQuestion;
 use super::propagation_widget::PropagationWidget;
 use super::review_card::ReviewCard;
+use super::wanted_card::WantedCard;
+use crate::i18n::{t, tf};
 
 /// 首页模块入口。
 struct ModuleCard {
@@ -36,9 +39,11 @@ const MODULES: &[ModuleCard] = &[
     links: &[
       ("练习", "/practice"),
       ("模拟考试", "/exam"),
+      ("每日挑战", "/daily-challenge"),
       ("分类浏览", "/browse"),
       ("闪卡刷题", "/flashcards"),
       ("错题集", "/mistakes"),
+      ("学习周报", "/weekly"),
     ],
   },
   ModuleCard {
@@ -63,8 +68,10 @@ const MODULES: &[ModuleCard] = &[
     links: &[
       ("小工具", "/tools"),
       ("通联日志", "/log"),
+      ("呼号抄收", "/callsign-copy"),
       ("太阳活动", "/solar"),
       ("业余卫星", "/satellites"),
+      ("通知中心", "/notifications"),
     ],
   },
 ];
@@ -99,15 +106,21 @@ pub fn HomePage() -> impl IntoView {
   let guard = move |e: web_sys::MouseEvent| {
     if !available.get_untracked() || version.with_untracked(Option::is_none) {
       e.prevent_default();
-      warn_text.set(format!(
+      warn_text.set(tf(
         "题库 {} 暂不可用或为空，请先构建数据集",
-        bank.get_untracked()
+        &[&bank.get_untracked().to_string()],
       ));
       warn_open.set(true);
     }
   };
   let practice_href = move || bank_href("/practice", version.get().as_deref(), bank.get());
   let exam_href = move || bank_href("/exam", version.get().as_deref(), bank.get());
+  let custom_href = move || {
+    format!(
+      "{}&mode=custom",
+      bank_href("/exam", version.get().as_deref(), bank.get())
+    )
+  };
 
   view! {
     <div class="container relative mx-auto max-w-5xl px-4 pb-12 pt-14 sm:pt-20">
@@ -121,32 +134,32 @@ pub fn HomePage() -> impl IntoView {
             <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60"></span>
             <span class="relative inline-flex size-1.5 rounded-full bg-primary"></span>
           </span>
-          "业余无线电 · Amateur Radio"
+          {move || t("业余无线电 · Amateur Radio")}
         </span>
 
         <h1
           class="reveal mt-6 text-4xl font-bold tracking-tight sm:text-6xl"
           style="animation-delay: 60ms"
         >
-          <span class="hero-gradient-text">"业余无线电"</span>
+          <span class="hero-gradient-text">{move || t("业余无线电")}</span>
         </h1>
 
         <p
           class="reveal mt-4 max-w-xl text-sm text-muted-foreground sm:text-base"
           style="animation-delay: 120ms"
         >
-          "一站式题库练习、知识速查与通联工具平台，从 A/B/C 备考到实时传播，一个入口全部搞定"
+          {move || t("一站式题库练习、知识速查与通联工具平台，从 A/B/C 备考到实时传播，一个入口全部搞定")}
         </p>
 
         <div class="reveal mt-8 flex flex-wrap justify-center gap-3" style="animation-delay: 180ms">
           <a href="/practice" class=button_class(Variant::Default, Size::Default, "")>
-            "开始练习"
+            {move || t("开始练习")}
           </a>
           <a href="/exam" class=button_class(Variant::Secondary, Size::Default, "")>
-            "模拟考试"
+            {move || t("模拟考试")}
           </a>
           <a href="/reference" class=button_class(Variant::Outline, Size::Default, "")>
-            "浏览知识库"
+            {move || t("浏览知识库")}
           </a>
         </div>
 
@@ -157,7 +170,7 @@ pub fn HomePage() -> impl IntoView {
               <span class="font-mono tracking-widest uppercase">"Spectrum · 14.000 MHz"</span>
               <span class="inline-flex items-center gap-1.5">
                 <span class="inline-block size-1.5 rounded-full bg-primary"></span>
-                "接收中"
+                {move || t("接收中")}
               </span>
             </div>
             <div class="spectrum-bar h-14 rounded-xl border"></div>
@@ -184,8 +197,8 @@ pub fn HomePage() -> impl IntoView {
                     <Icon kind=m.icon class="h-5 w-5" />
                   </div>
                   <div class="min-w-0">
-                    <div class="font-semibold tracking-tight">{m.title}</div>
-                    <div class="mt-0.5 text-xs text-muted-foreground">{m.desc}</div>
+                    <div class="font-semibold tracking-tight">{move || t(m.title)}</div>
+                    <div class="mt-0.5 text-xs text-muted-foreground">{move || t(m.desc)}</div>
                   </div>
                 </div>
                 <div class="flex flex-wrap gap-1.5">
@@ -195,7 +208,7 @@ pub fn HomePage() -> impl IntoView {
                     .map(|&(label, _)| {
                       view! {
                         <span class="rounded-full border bg-muted/50 px-2.5 py-0.5 text-xs text-muted-foreground transition-colors group-hover:bg-accent group-hover:text-accent-foreground">
-                          {label}
+                          {move || t(label)}
                         </span>
                       }
                     })
@@ -210,8 +223,8 @@ pub fn HomePage() -> impl IntoView {
       // 快速开始练习（选择题库版本与类别）
       <div data-slot="card" class=card_class("mt-12")>
         <div data-slot="card-header" class=CARD_HEADER>
-          <div data-slot="card-title" class=card_title_class("")>"快速开始练习"</div>
-          <div class="text-sm text-muted-foreground">"选择题库版本与类别，进入练习或模拟考试"</div>
+          <div data-slot="card-title" class=card_title_class("")>{move || t("快速开始练习")}</div>
+          <div class="text-sm text-muted-foreground">{move || t("选择题库版本与类别，进入练习或模拟考试")}</div>
         </div>
         <div data-slot="card-content" class=card_content_class("space-y-4")>
           <QuestionBankSelector selected_version=version selected_bank=bank disabled=checking />
@@ -222,7 +235,7 @@ pub fn HomePage() -> impl IntoView {
               class=button_class(Variant::Default, Size::Default, "")
               on:click=guard
             >
-              "开始练习"
+              {move || t("开始练习")}
             </a>
             <a
               href=exam_href
@@ -230,7 +243,15 @@ pub fn HomePage() -> impl IntoView {
               class=button_class(Variant::Secondary, Size::Default, "")
               on:click=guard
             >
-              "开始模拟考试"
+              {move || t("开始模拟考试")}
+            </a>
+            <a
+              href=custom_href
+              data-slot="button"
+              class=button_class(Variant::Outline, Size::Default, "")
+              on:click=guard
+            >
+              {move || t("自定义组卷")}
             </a>
             <Bubble open=warn_open text=warn_text />
           </div>
@@ -241,6 +262,8 @@ pub fn HomePage() -> impl IntoView {
         <StudyPlanCard />
         <ReviewCard />
         <CardsCard />
+        <DailyChallengeCard />
+        <WantedCard />
         <DailyQuestion />
         <PropagationWidget />
       </div>

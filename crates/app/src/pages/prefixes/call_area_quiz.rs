@@ -2,6 +2,7 @@ use ham_web_core::exam::shuffle_in_place;
 use ham_web_core::reference::CALL_AREAS;
 use leptos::prelude::*;
 
+use crate::i18n::{t, tf};
 use crate::util::random;
 
 /// 呼号分区测验：给分区号（0–9）选对应地区。
@@ -53,11 +54,11 @@ pub(super) fn CallAreaQuiz() -> impl IntoView {
 
   view! {
     <section class="rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">"分区测验"</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("分区测验")}</h2>
       <div class="space-y-4 p-4">
         <div class="flex flex-col items-center gap-2 rounded-xl border bg-muted/30 px-4 py-6">
-          <div class="text-xs text-muted-foreground">"这个分区号对应的地区是？"</div>
-          <div class="font-mono text-3xl font-semibold text-primary">{move || format!("{} 区", question.get())}</div>
+          <div class="text-xs text-muted-foreground">{move || t("这个分区号对应的地区是？")}</div>
+          <div class="font-mono text-3xl font-semibold text-primary">{move || tf("{} 区", &[&(question.get()).to_string()])}</div>
         </div>
         <div class="grid gap-2 sm:grid-cols-2">
           {move || {
@@ -85,13 +86,13 @@ pub(super) fn CallAreaQuiz() -> impl IntoView {
               feedback.get().map(|ok| {
                 if ok {
                   view! {
-                    <span class="font-medium text-emerald-600 dark:text-emerald-400">"正确！"</span>
+                    <span class="font-medium text-emerald-600 dark:text-emerald-400">{move || t("正确！")}</span>
                   }
                   .into_any()
                 } else {
                   view! {
                     <span class="font-medium text-red-600 dark:text-red-400">
-                      "正确答案：" {answer.get_value()}
+                      {t("正确答案：")} {answer.get_value()}
                     </span>
                   }
                   .into_any()
@@ -104,11 +105,11 @@ pub(super) fn CallAreaQuiz() -> impl IntoView {
             on:click=move |_| load_next()
             class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
           >
-            "下一题"
+            {move || t("下一题")}
           </button>
           <div class="text-xs text-muted-foreground">
-            "正确 " <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
-            "　错误 " <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
+            {t("正确 ")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
+            {t("　错误 ")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
           </div>
         </div>
       </div>

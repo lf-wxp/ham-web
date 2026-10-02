@@ -4,25 +4,29 @@ use leptos_router::hooks::use_location;
 use leptos_router::path;
 
 use crate::pages::{
-  AmplifierPage, AnalogModesPage, AntennaAnalyzerPage, AntennaArrayPage, AntennaDiyPage,
-  AntennaFarmPage, AntennaInstallationPage, AntennaModelingPage, AntennaTuningPage, AntennasPage,
-  AprsPage, ArdfPage, AtvPage, AwardsPage, BandPlanPage, BandsPage, BeginnerPage, BookmarksPage,
-  BrowsePage, CabrilloPage, CardsPage, ContestLogPage, ContestPage, CountdownPage, CwOpPage,
-  DashboardPage, DvNetworkPage, DxPage, DxSpotsPage, DxpeditionPage, ElectronicsPage, EmcommPage,
-  EmePage, EqslPage, ExamPage, FeedlinePage, FiltersPage, FlashcardsPage, FrequenciesPage, Ft8Page,
-  GlossaryPage, GnuradioPage, GraylinePage, GridMapPage, GridSystemPage, GroundingPage,
-  HistoryPage, HomePage, IotaPage, LicenseClassesPage, LicensePage, ListenPage, LogPage,
-  LoggingSoftwarePage, MetersPage, MicrowavePage, MistakesPage, MobilePage, ModesPage, MorsePage,
-  MostWantedPage, MufPage, NotFoundPage, NvisPage, OperatingPage, OrganizationsPage, PacketPage,
-  PhoneticPage, PhotoProcessorPage, PolarizationPage, PortablePage, PowerPage, PowerSupplyPage,
-  PracticePage, PrefixesPage, PrintPage, ProgressPage, PropagationPage, QCodePage, QrpPage,
-  QslCardPage, QslLabelsPage, ReceiverPage, ReferencePage, RegulationsPage, RemotePage,
-  RepeaterBuildPage, RepeaterPage, RfiPage, RstPage, RttyPage, SafetyPage, SatellitesPage, SdrPage,
-  SolarPage, SpecialPropPage, SstvPage, StatsPage, SwlPage, ToolsPage, TransceiverPage,
-  WeatherSatPage, WsprPage,
+  AchievementsPage, AmplifierPage, AnalogModesPage, AntennaAnalyzerPage, AntennaArrayPage,
+  AntennaDiyPage, AntennaFarmPage, AntennaInstallationPage, AntennaModelingPage, AntennaTuningPage,
+  AntennasPage, AprsPage, AptDecoderPage, ArdfPage, AtvPage, AwardsPage, BandPlanPage, BandsPage,
+  BeginnerPage, BookmarksPage, BrowsePage, CabrilloPage, CallsignCopyPage, CardsPage,
+  CheatSheetPage, ConfusablesPage, ContestCalendarPage, ContestLogPage, ContestPage, CountdownPage,
+  CwOpPage, DailyChallengePage, DashboardPage, DvNetworkPage, DxPage, DxSpotsPage, DxccMapPage,
+  DxpeditionPage, ElectronicsPage, EmcommPage, EmePage, EqslPage, ExamPage, FeedlinePage,
+  FiltersPage, FlashcardsPage, FormulasPage, FrequenciesPage, Ft8Page, GlossaryPage, GnuradioPage,
+  GraylinePage, GridMapPage, GridSystemPage, GroundingPage, HistoryPage, HomePage, IotaPage,
+  LicenseClassesPage, LicensePage, ListenPage, LogPage, LoggingSoftwarePage, MetersPage,
+  MicrowavePage, MistakeTopicsPage, MistakesPage, MobilePage, ModesPage, MorsePage, MostWantedPage,
+  MufPage, NotFoundPage, NotificationsPage, NvisPage, OperatingPage, OrganizationsPage, PacketPage,
+  PhoneticPage, PhotoProcessorPage, PolarizationPage, PortableMapPage, PortablePage, PowerPage,
+  PowerSupplyPage, PracticePage, PrefixesPage, PrintPage, ProgressPage, PropagationPage,
+  PskDecodePage, PskReporterPage, QCodePage, QrpPage, QslCardPage, QslDesignerPage, QslLabelsPage,
+  RbnPage, ReceiverPage, ReferencePage, RegulationsPage, RemotePage, RepeaterBuildPage,
+  RepeaterPage, ReportPage, RfiPage, RstPage, RttyPage, SafetyPage, SatellitesPage, SdrPage,
+  SolarPage, SpecialPropPage, SstvPage, StatsPage, StudyCalendarPage, SwlPage, ToolsPage,
+  TransceiverPage, WeatherSatPage, WeeklyPage, WsprPage,
 };
 
 use crate::components::related_topics::RelatedTopics;
+use crate::components::topic_quiz::TopicQuiz;
 
 /// 主体内容。
 #[component]
@@ -49,13 +53,18 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/listen") view=ListenPage />
         <Route path=path!("/cards") view=CardsPage />
         <Route path=path!("/exam") view=ExamPage />
+        <Route path=path!("/daily-challenge") view=DailyChallengePage />
         <Route path=path!("/browse") view=BrowsePage />
         <Route path=path!("/glossary") view=GlossaryPage />
         <Route path=path!("/q-code") view=QCodePage />
         <Route path=path!("/morse") view=MorsePage />
         <Route path=path!("/phonetic") view=PhoneticPage />
+        <Route path=path!("/callsign-copy") view=CallsignCopyPage />
         <Route path=path!("/bands") view=BandsPage />
         <Route path=path!("/reference") view=ReferencePage />
+        <Route path=path!("/cheat-sheet") view=CheatSheetPage />
+        <Route path=path!("/confusables") view=ConfusablesPage />
+        <Route path=path!("/formulas") view=FormulasPage />
         <Route path=path!("/antennas") view=AntennasPage />
         <Route path=path!("/bandplan") view=BandPlanPage />
         <Route path=path!("/prefixes") view=PrefixesPage />
@@ -70,9 +79,11 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/contest-log") view=ContestLogPage />
         <Route path=path!("/countdown") view=CountdownPage />
         <Route path=path!("/mistakes") view=MistakesPage />
+        <Route path=path!("/mistake-topics") view=MistakeTopicsPage />
         <Route path=path!("/bookmarks") view=BookmarksPage />
         <Route path=path!("/flashcards") view=FlashcardsPage />
         <Route path=path!("/contest") view=ContestPage />
+        <Route path=path!("/contest-calendar") view=ContestCalendarPage />
         <Route path=path!("/solar") view=SolarPage />
         <Route path=path!("/safety") view=SafetyPage />
         <Route path=path!("/license") view=LicensePage />
@@ -96,6 +107,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/history") view=HistoryPage />
         <Route path=path!("/muf") view=MufPage />
         <Route path=path!("/portable") view=PortablePage />
+        <Route path=path!("/portable-map") view=PortableMapPage />
         <Route path=path!("/cw-operating") view=CwOpPage />
         <Route path=path!("/antenna-installation") view=AntennaInstallationPage />
         <Route path=path!("/ft8") view=Ft8Page />
@@ -105,6 +117,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/microwave") view=MicrowavePage />
         <Route path=path!("/remote") view=RemotePage />
         <Route path=path!("/qsl-card") view=QslCardPage />
+        <Route path=path!("/qsl-designer") view=QslDesignerPage />
         <Route path=path!("/eme") view=EmePage />
         <Route path=path!("/antenna-tuning") view=AntennaTuningPage />
         <Route path=path!("/rfi") view=RfiPage />
@@ -129,9 +142,18 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/dx-spots") view=DxSpotsPage />
         <Route path=path!("/dashboard") view=DashboardPage />
         <Route path=path!("/progress") view=ProgressPage />
+        <Route path=path!("/study-calendar") view=StudyCalendarPage />
+        <Route path=path!("/achievements") view=AchievementsPage />
+        <Route path=path!("/weekly") view=WeeklyPage />
+        <Route path=path!("/report") view=ReportPage />
         <Route path=path!("/grid-map") view=GridMapPage />
+        <Route path=path!("/dxcc-map") view=DxccMapPage />
         <Route path=path!("/grayline") view=GraylinePage />
         <Route path=path!("/stats") view=StatsPage />
+        <Route path=path!("/notifications") view=NotificationsPage />
+        <Route path=path!("/psk-reporter") view=PskReporterPage />
+        <Route path=path!("/psk-decode") view=PskDecodePage />
+        <Route path=path!("/rbn") view=RbnPage />
         <Route path=path!("/grounding") view=GroundingPage />
         <Route path=path!("/antenna-analyzer") view=AntennaAnalyzerPage />
         <Route path=path!("/power-supply") view=PowerSupplyPage />
@@ -139,12 +161,14 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/photo-processor") view=PhotoProcessorPage />
         <Route path=path!("/sstv") view=SstvPage />
         <Route path=path!("/weather-sat") view=WeatherSatPage />
+        <Route path=path!("/apt-decoder") view=AptDecoderPage />
         <Route path=path!("/packet") view=PacketPage />
         <Route path=path!("/mobile") view=MobilePage />
         <Route path=path!("/license-classes") view=LicenseClassesPage />
         <Route path=path!("/receiver") view=ReceiverPage />
         <Route path=path!("/antenna-array") view=AntennaArrayPage />
       </Routes>
+      <TopicQuiz />
       <RelatedTopics />
     </main>
   }

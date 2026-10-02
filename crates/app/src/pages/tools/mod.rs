@@ -2,6 +2,7 @@
 
 mod antenna_length;
 mod antenna_matcher;
+mod attenuator_calculator;
 mod backup_tool;
 mod battery_runtime;
 mod callsign_lookup;
@@ -31,6 +32,7 @@ mod resistor_color_code;
 mod resistor_parallel;
 mod swr_converter;
 mod tools_page;
+mod transformer_calculator;
 
 pub use tools_page::ToolsPage;
 

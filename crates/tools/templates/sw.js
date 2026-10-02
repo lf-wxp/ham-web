@@ -136,3 +136,40 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(precacheFirst(event, url.pathname));
   }
 });
+
+// —— Web Push：收到服务端推送时显示系统通知，点击后回到应用 ——
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch (err) {
+    payload = { title: "业余无线电", body: event.data ? event.data.text() : "" };
+  }
+  const title = payload.title || "业余无线电";
+  const options = {
+    body: payload.body || "",
+    icon: "/pwa-icon-192.png",
+    badge: "/pwa-icon-192.png",
+    tag: payload.tag || "ham-exam",
+    data: { url: payload.url || "/" },
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || "/";
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((list) => {
+        for (const client of list) {
+          if ("focus" in client) {
+            client.focus();
+            return client;
+          }
+        }
+        return self.clients.openWindow(url);
+      }),
+  );
+});

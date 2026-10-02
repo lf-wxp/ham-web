@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::{INPUT, fmt_num};
+use crate::i18n::t;
 
 /// EIRP 有效辐射功率：功率 + 天线增益 − 馈线损耗。
 #[component]
@@ -12,7 +13,7 @@ pub(super) fn EirpCalculator() -> impl IntoView {
   view! {
     <div class="grid gap-3 sm:grid-cols-3">
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"发射功率（W）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("发射功率（W）")}</span>
         <input
           type="number"
           prop:value=move || power.get().to_string()
@@ -25,7 +26,7 @@ pub(super) fn EirpCalculator() -> impl IntoView {
         />
       </label>
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"天线增益（dBi）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("天线增益（dBi）")}</span>
         <input
           type="number"
           prop:value=move || gain.get().to_string()
@@ -38,7 +39,7 @@ pub(super) fn EirpCalculator() -> impl IntoView {
         />
       </label>
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"馈线损耗（dB）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("馈线损耗（dB）")}</span>
         <input
           type="number"
           prop:value=move || loss.get().to_string()
@@ -54,7 +55,7 @@ pub(super) fn EirpCalculator() -> impl IntoView {
         {move || {
           let p = power.get();
           if p <= 0.0 {
-            "请输入正功率".to_owned()
+            t("请输入正功率")
           } else {
             let p_dbm = 10.0 * p.log10() + 30.0;
             let eirp = p_dbm + gain.get() - loss.get();

@@ -14,6 +14,7 @@ use leptos::task::spawn_local;
 use serde::Deserialize;
 
 use crate::data;
+use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::pages::log::use_log_store;
 use crate::ui::{Size, Variant, button_class, input_class};
@@ -47,17 +48,17 @@ const CHIP_OFF: &str =
 /// 波段 → chip 着色样式（深色模式改用更亮的文字色以保证对比度）。
 fn band_color(band: &str) -> &'static str {
   match band {
-    "160m" => "border-red-500/30 bg-red-500/10 text-red-500 dark:text-red-300",
-    "80m" => "border-orange-500/30 bg-orange-500/10 text-orange-500 dark:text-orange-300",
-    "40m" => "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-300",
-    "30m" => "border-yellow-500/30 bg-yellow-500/10 text-yellow-600 dark:text-yellow-300",
-    "20m" => "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-300",
-    "17m" => "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
-    "15m" => "border-teal-500/30 bg-teal-500/10 text-teal-600 dark:text-teal-300",
-    "12m" => "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-300",
-    "10m" => "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-300",
-    "6m" => "border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-300",
-    "2m" => "border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-300",
+    "160m" => "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-300",
+    "80m" => "border-orange-500/30 bg-orange-500/10 text-orange-600 dark:text-orange-300",
+    "40m" => "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+    "30m" => "border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300",
+    "20m" => "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300",
+    "17m" => "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    "15m" => "border-teal-500/30 bg-teal-500/10 text-teal-700 dark:text-teal-300",
+    "12m" => "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+    "10m" => "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
+    "6m" => "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300",
+    "2m" => "border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-300",
     _ => "border bg-muted/40 text-muted-foreground",
   }
 }
@@ -77,7 +78,7 @@ fn fmt_freq(khz: u32) -> String {
 
 #[component]
 pub fn DxSpotsPage() -> impl IntoView {
-  set_title("DX 实时热点");
+  set_title(&t("DX 实时热点"));
 
   let store = use_log_store();
   let spots = RwSignal::new(Vec::<Spot>::new());
@@ -130,9 +131,9 @@ pub fn DxSpotsPage() -> impl IntoView {
           continue;
         }
         let why = match reason {
-          AlertReason::Watched(p) => format!("关注 {p}"),
-          AlertReason::NewDxcc => "新 DXCC".to_owned(),
-          AlertReason::NewBand => "新波段".to_owned(),
+          AlertReason::Watched(p) => tf("关注 {}", &[&(p).to_string()]),
+          AlertReason::NewDxcc => t("新 DXCC"),
+          AlertReason::NewBand => t("新波段"),
         };
         hits.push(format!(
           "{} {} {}（{why}）",
@@ -144,8 +145,13 @@ pub fn DxSpotsPage() -> impl IntoView {
     });
     match hits.len() {
       0 => {}
-      1..=3 => hits.iter().for_each(|h| notify(&format!("DX 热点：{h}"))),
-      n => notify(&format!("DX 热点：{} 等 {n} 条需要的报告", hits[0])),
+      1..=3 => hits
+        .iter()
+        .for_each(|h| notify(&tf("DX 热点：{}", &[&(h).to_string()]))),
+      n => notify(&tf(
+        "DX 热点：{} 等 {} 条需要的报告",
+        &[&hits[0], &n.to_string()],
+      )),
     }
   });
 
@@ -190,7 +196,10 @@ pub fn DxSpotsPage() -> impl IntoView {
     let mode = mode_of(&comment);
     let mode = if mode == "其他" { "SSB" } else { mode };
     store.quick_add(&dx, &s, mode);
-    crate::util::alert(&format!("已加入日志：{dx}（{s} MHz {mode}）"));
+    crate::util::alert(&tf(
+      "已加入日志：{}（{} MHz {}）",
+      &[&(dx).to_string(), &(s).to_string(), (mode)],
+    ));
   };
 
   view! {
@@ -198,8 +207,8 @@ pub fn DxSpotsPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"DX 实时热点"</h1>
-            <div class="text-xs text-muted-foreground">"DX Cluster · 全球实时通联"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("DX 实时热点")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("DX Cluster · 全球实时通联")}</div>
           </div>
           <button
             type="button"
@@ -211,12 +220,12 @@ pub fn DxSpotsPage() -> impl IntoView {
                 view! {
                   <span class="inline-flex items-center gap-1.5">
                     <Icon kind=IconKind::Loader2 class="h-3.5 w-3.5 animate-spin" />
-                    "刷新中"
+                    {move || t("刷新中")}
                   </span>
                 }
                 .into_any()
               } else {
-                "刷新".into_any()
+                t("刷新").into_any()
               }
             }}
           </button>
@@ -226,20 +235,20 @@ pub fn DxSpotsPage() -> impl IntoView {
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
           <h2 class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold">
-            "实时 DX 报告"
+            {move || t("实时 DX 报告")}
             <span class="text-xs font-normal text-muted-foreground">
-              {move || format!("{} 条", spots.get().len())}
+              {move || tf("{} 条", &[&spots.get().len().to_string()])}
             </span>
           </h2>
           <div class="space-y-2 p-3">
             <div class="flex flex-wrap items-center gap-1.5">
-              <span class="mr-1 text-xs text-muted-foreground">"波段"</span>
+              <span class="mr-1 text-xs text-muted-foreground">{move || t("波段")}</span>
               <button
                 type="button"
                 on:click=move |_| band_filter.set(None)
                 class=move || if band_filter.get().is_none() { CHIP_ON } else { CHIP_OFF }
               >
-                "全部"
+                {move || t("全部")}
               </button>
               {BANDS
                 .iter()
@@ -258,13 +267,13 @@ pub fn DxSpotsPage() -> impl IntoView {
                 .collect_view()}
             </div>
             <div class="flex flex-wrap items-center gap-1.5">
-              <span class="mr-1 text-xs text-muted-foreground">"模式"</span>
+              <span class="mr-1 text-xs text-muted-foreground">{move || t("模式")}</span>
               <button
                 type="button"
                 on:click=move |_| mode_filter.set(None)
                 class=move || if mode_filter.get().is_none() { CHIP_ON } else { CHIP_OFF }
               >
-                "全部"
+                {move || t("全部")}
               </button>
               {MODES
                 .iter()
@@ -286,21 +295,21 @@ pub fn DxSpotsPage() -> impl IntoView {
               has_log.get().then(|| {
                 view! {
                   <div class="flex flex-wrap items-center gap-1.5">
-                    <span class="mr-1 text-xs text-muted-foreground">"日志"</span>
+                    <span class="mr-1 text-xs text-muted-foreground">{move || t("日志")}</span>
                     <button
                       type="button"
                       on:click=move |_| needed_only.update(|v| *v = !*v)
                       class=move || if needed_only.get() { CHIP_ON } else { CHIP_OFF }
-                      title="只显示日志中未通联的实体，或该实体尚未通联的波段"
+                      title=move || t("只显示日志中未通联的实体，或该实体尚未通联的波段")
                     >
-                      {move || format!("只看需要的（{}）", needed_count.get())}
+                      {move || tf("只看需要的（{}）", &[&needed_count.get().to_string()])}
                     </button>
                   </div>
                 }
               })
             }}
             <div class="flex flex-wrap items-center gap-1.5">
-              <span class="mr-1 text-xs text-muted-foreground">"提醒"</span>
+              <span class="mr-1 text-xs text-muted-foreground">{move || t("提醒")}</span>
               <button
                 type="button"
                 on:click=move |_| show_alerts.update(|v| *v = !*v)
@@ -311,17 +320,17 @@ pub fn DxSpotsPage() -> impl IntoView {
                   if a.enabled() {
                     let mut parts = Vec::new();
                     if a.new_dxcc {
-                      parts.push("新 DXCC".to_owned());
+                      parts.push(t("新 DXCC"));
                     }
                     if a.new_band {
-                      parts.push("新波段".to_owned());
+                      parts.push(t("新波段"));
                     }
                     if !a.calls.is_empty() {
-                      parts.push(format!("关注 {} 个", a.calls.len()));
+                      parts.push(tf("关注 {} 个", &[&a.calls.len().to_string()]));
                     }
-                    format!("已开启：{}", parts.join(" · "))
+                    tf("已开启：{}", &[&(parts.join(" · ")).to_string()])
                   } else {
-                    "设置通知提醒".to_owned()
+                    t("设置通知提醒")
                   }
                 }}
               </button>
@@ -340,7 +349,7 @@ pub fn DxSpotsPage() -> impl IntoView {
                           update_alerts(&|a| set(a, on));
                         }
                       />
-                      {label}
+                      {move || t(label)}
                     </label>
                   }
                 };
@@ -351,7 +360,7 @@ pub fn DxSpotsPage() -> impl IntoView {
                       {toggle("出现已联实体的新波段时通知", |a| a.new_band, |a, v| a.new_band = v)}
                     </div>
                     <label class="flex flex-col gap-1.5 text-sm">
-                      <span class="text-xs text-muted-foreground">"关注呼号（空格或逗号分隔，* 为通配符，如 VP8* 3Y0J */P）"</span>
+                      <span class="text-xs text-muted-foreground">{move || t("关注呼号（空格或逗号分隔，* 为通配符，如 VP8* 3Y0J */P）")}</span>
                       <input
                         type="text"
                         class=input_class("uppercase")
@@ -370,7 +379,7 @@ pub fn DxSpotsPage() -> impl IntoView {
                       />
                     </label>
                     <p class="text-xs text-muted-foreground">
-                      "开启后页面每分钟自动刷新，命中时发送浏览器通知（需允许通知权限；同一呼号同一波段只提醒一次）。关闭页面后不再提醒。"
+                      {move || t("开启后页面每分钟自动刷新，命中时发送浏览器通知（需允许通知权限；同一呼号同一波段只提醒一次）。关闭页面后不再提醒。")}
                     </p>
                   </div>
                 }
@@ -381,14 +390,14 @@ pub fn DxSpotsPage() -> impl IntoView {
             {move || {
               if loading.get() {
                 return view! {
-                  <p class="px-3 py-8 text-center text-sm text-muted-foreground">"正在获取实时热点…"</p>
+                  <p class="px-3 py-8 text-center text-sm text-muted-foreground">{move || t("正在获取实时热点…")}</p>
                 }
                 .into_any();
               }
               if failed.get() || spots.get().is_empty() {
                 return view! {
                   <p class="px-3 py-8 text-center text-sm text-muted-foreground">
-                    "实时热点暂不可用（可能因网络受限），稍后重试。"
+                    {move || t("实时热点暂不可用（可能因网络受限），稍后重试。")}
                   </p>
                 }
                 .into_any();
@@ -409,7 +418,7 @@ pub fn DxSpotsPage() -> impl IntoView {
                 .collect();
               if filtered.is_empty() {
                 return view! {
-                  <p class="px-3 py-8 text-center text-sm text-muted-foreground">"当前筛选下暂无报告，试试其他波段或模式。"</p>
+                  <p class="px-3 py-8 text-center text-sm text-muted-foreground">{move || t("当前筛选下暂无报告，试试其他波段或模式。")}</p>
                 }
                 .into_any();
               }
@@ -426,9 +435,9 @@ pub fn DxSpotsPage() -> impl IntoView {
                         s.country.clone()
                       };
                       let badge = match need {
-                        Need::NewDxcc => Some(("新 DXCC", "border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300")),
-                        Need::NewBand => Some(("新波段", "border-sky-500/40 bg-sky-500/15 text-sky-700 dark:text-sky-300")),
-                        Need::Worked => Some(("已联", "text-muted-foreground")),
+                        Need::NewDxcc => Some((t("新 DXCC"), "border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300")),
+                        Need::NewBand => Some((t("新波段"), "border-sky-500/40 bg-sky-500/15 text-sky-700 dark:text-sky-300")),
+                        Need::Worked => Some((t("已联"), "text-muted-foreground")),
                         Need::None => None,
                       };
                       let watched = alerts.with_untracked(|a| {
@@ -444,7 +453,7 @@ pub fn DxSpotsPage() -> impl IntoView {
                           <button
                             type="button"
                             class="w-28 shrink-0 text-left"
-                            title="点击记入日志"
+                            title=move || t("点击记入日志")
                             on:click=move |_| add_to_log(dx_btn.clone(), freq, comment_btn.clone())
                           >
                             <div class="font-mono text-sm font-semibold text-primary">{dx.clone()}</div>
@@ -470,13 +479,13 @@ pub fn DxSpotsPage() -> impl IntoView {
                             <span class=format!("shrink-0 rounded border px-1.5 py-0.5 text-xs font-medium {class}")>{text}</span>
                           })}
                           {watched.then(|| view! {
-                            <span class="shrink-0 rounded border border-amber-500/40 bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">"关注"</span>
+                            <span class="shrink-0 rounded border border-amber-500/40 bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">{move || t("关注")}</span>
                           })}
                           <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
                             {if comment.is_empty() { "—".to_owned() } else { comment.clone() }}
                           </span>
                           <span class="shrink-0 text-xs text-muted-foreground">{time.clone()}</span>
-                          <span class="shrink-0 text-xs text-muted-foreground" title="报告者">
+                          <span class="shrink-0 text-xs text-muted-foreground" title=move || t("报告者")>
                             {spotter.clone()}
                           </span>
                         </div>
@@ -491,7 +500,7 @@ pub fn DxSpotsPage() -> impl IntoView {
         </section>
 
         <p class="text-xs text-muted-foreground">
-          "数据来自 DXWatch 全球 DX Cluster，反映当前正在被报告的电台、频率与时间，供追 DX / 守听参考。"
+          {move || t("数据来自 DXWatch 全球 DX Cluster，反映当前正在被报告的电台、频率与时间，供追 DX / 守听参考。")}
         </p>
       </div>
     </div>

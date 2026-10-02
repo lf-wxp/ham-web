@@ -10,6 +10,7 @@ use web_sys::{
   Blob, CanvasRenderingContext2d, File, FileReader, HtmlCanvasElement, HtmlImageElement, Url,
 };
 
+use crate::i18n::{t, tf};
 use crate::util::{document, js_error_message};
 
 /// 照片类型。
@@ -192,7 +193,7 @@ async fn read_data_url(blob: &Blob) -> Result<String, String> {
     .result()
     .ok()
     .and_then(|v| v.as_string())
-    .ok_or_else(|| "无法读取处理后的图片数据".to_owned())
+    .ok_or_else(|| t("无法读取处理后的图片数据"))
 }
 
 async fn compress(kind: PhotoKind, file: &File) -> Result<Blob, String> {
@@ -250,13 +251,16 @@ async fn compress(kind: PhotoKind, file: &File) -> Result<Blob, String> {
 
 /// 处理照片。
 pub async fn process_photo(kind: PhotoKind, file: File) -> Result<PhotoResult, String> {
-  let blob = compress(kind, &file)
-    .await
-    .map_err(|e| format!("处理失败，请尝试更换照片格式，或对着照片截图再上传。详细信息：{e}"))?;
+  let blob = compress(kind, &file).await.map_err(|e| {
+    tf(
+      "处理失败，请尝试更换照片格式，或对着照片截图再上传。详细信息：{}",
+      &[&(e).to_string()],
+    )
+  })?;
   let data_url = read_data_url(&blob).await?;
   let img = load_image(&data_url)
     .await
-    .map_err(|_| "无法读取处理后的图片尺寸".to_owned())?;
+    .map_err(|_| t("无法读取处理后的图片尺寸"))?;
   Ok(PhotoResult {
     data_url,
     width: img.natural_width(),

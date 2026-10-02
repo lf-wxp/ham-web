@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 
+use crate::i18n::{t, tf};
 use crate::ui::{
   Dialog, DialogDescription, DialogHeader, DialogTitle, Size, Variant, button_class,
 };
@@ -20,18 +21,22 @@ pub fn ExamResumeDialog(
   view! {
     <Dialog open=open class="sm:max-w-[520px]">
       <DialogHeader>
-        <DialogTitle>"恢复考试"</DialogTitle>
+        <DialogTitle>{move || t("恢复考试")}</DialogTitle>
         <DialogDescription>
-          "检测到未完成的考试。已答 " {move || answered.get()} " / " {move || total.get()} "，剩余时间约 " {remaining}
-          "。"
+          {move || {
+            tf(
+              "检测到未完成的考试。已答 {} / {}，剩余时间约 {}。",
+              &[&answered.get().to_string(), &total.get().to_string(), &remaining()],
+            )
+          }}
         </DialogDescription>
       </DialogHeader>
       <div class="flex items-center justify-end gap-2 pt-2">
         <button class=button_class(Variant::Outline, Size::Default, "") on:click=move |_| on_restart.run(())>
-          "重新开始"
+          {move || t("重新开始")}
         </button>
         <button class=button_class(Variant::Default, Size::Default, "") on:click=move |_| on_resume.run(())>
-          "继续考试"
+          {move || t("继续考试")}
         </button>
       </div>
     </Dialog>

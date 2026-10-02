@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use leptos::prelude::*;
 
+use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 
 #[component]
@@ -42,7 +43,7 @@ pub fn Bubble(open: RwSignal<bool>, #[prop(into)] text: Signal<String>) -> impl 
               type="button"
               on:click=move |_| open.set(false)
               class="opacity-70 hover:opacity-100 transition-opacity"
-              aria-label="关闭提示"
+              aria-label=move || t("关闭提示")
             >
               <Icon kind=IconKind::X class="h-3.5 w-3.5" />
             </button>

@@ -7,11 +7,12 @@ use std::rc::Rc;
 use std::sync::{Arc, OnceLock};
 
 use ham_web_core::glossary::{GLOSSARY_FILES, Glossary};
-use ham_web_core::{Bank, BankConfig, QuestionItem, QuestionVersion};
+use ham_web_core::{Bank, BankConfig, QuestionItem, QuestionSearchEntry, QuestionVersion};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestCache, RequestInit, Response};
 
+use crate::i18n::tf;
 use crate::util::{js_error_message, now_ms, window};
 
 /// 数据加载错误。
@@ -91,6 +92,28 @@ async fn fetch_text(url: &str, mode: CacheMode) -> Result<String, AppError> {
 pub async fn fetch_external_json<T: serde::de::DeserializeOwned>(url: &str) -> Result<T, AppError> {
   let text = fetch_text_external(url, 5000).await?;
   serde_json::from_str(&text).map_err(|e| AppError::Validation(format!("Invalid JSON: {e}")))
+}
+
+/// 拉取二进制资源（紧凑编码的几何数据，如 `dxcc-entities.bin`）。
+pub async fn fetch_bytes(url: &str) -> Result<Vec<u8>, AppError> {
+  let init = RequestInit::new();
+  let request = Request::new_with_str_and_init(url, &init)
+    .map_err(|e| AppError::Network(js_error_message(&e)))?;
+  let resp: Response = JsFuture::from(window().fetch_with_request(&request))
+    .await
+    .map_err(|e| AppError::Network(js_error_message(&e)))?
+    .unchecked_into();
+  if !resp.ok() {
+    return Err(AppError::Network(format!("HTTP {}", resp.status())));
+  }
+  let buf = JsFuture::from(
+    resp
+      .array_buffer()
+      .map_err(|e| AppError::Network(js_error_message(&e)))?,
+  )
+  .await
+  .map_err(|e| AppError::Network(js_error_message(&e)))?;
+  Ok(js_sys::Uint8Array::new(&buf).to_vec())
 }
 
 /// 持有 `setTimeout` 句柄，析构时清除，避免超时定时器在请求提前结束后空转。
@@ -321,12 +344,44 @@ pub async fn load_glossary() -> &'static Glossary {
     match fetch_text(&url, CacheMode::Default).await {
       Ok(text) => match serde_json::from_str::<Glossary>(&text) {
         Ok(g) => parsed.push(g),
-        Err(e) => web_sys::console::error_1(&format!("[ERROR] 术语表 {name} 解析失败：{e}").into()),
+        Err(e) => web_sys::console::error_1(
+          &tf(
+            "[ERROR] 术语表 {} 解析失败：{}",
+            &[(name), &(e).to_string()],
+          )
+          .into(),
+        ),
       },
-      Err(e) => web_sys::console::error_1(&format!("[ERROR] 术语表 {name} 加载失败：{e}").into()),
+      Err(e) => web_sys::console::error_1(
+        &tf(
+          "[ERROR] 术语表 {} 加载失败：{}",
+          &[(name), &(e).to_string()],
+        )
+        .into(),
+      ),
     }
   }
   GLOSSARY.get_or_init(|| Glossary::merged(parsed))
+}
+
+static QUESTION_INDEX: OnceLock<Vec<QuestionSearchEntry>> = OnceLock::new();
+
+/// 已加载的题目搜索索引（尚未加载时为 `None`）。
+pub fn question_index_loaded() -> Option<&'static Vec<QuestionSearchEntry>> {
+  QUESTION_INDEX.get()
+}
+
+/// 题目搜索索引：首次使用时拉取 `/questions/search-index.json`（由 `postbuild` 生成，
+/// 仅含题干 + 解析，不增大首屏），之后复用内存缓存。
+pub async fn load_question_index() -> &'static Vec<QuestionSearchEntry> {
+  if let Some(idx) = QUESTION_INDEX.get() {
+    return idx;
+  }
+  let entries = match fetch_text("/questions/search-index.json", CacheMode::Default).await {
+    Ok(text) => serde_json::from_str::<Vec<QuestionSearchEntry>>(&text).unwrap_or_default(),
+    Err(_) => Vec::new(),
+  };
+  QUESTION_INDEX.get_or_init(|| entries)
 }
 
 /// 强制刷新配置与全部版本状态。

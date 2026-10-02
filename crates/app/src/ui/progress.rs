@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use crate::cn::cn;
+use crate::i18n::t;
 
 /// 进度条。
 #[component]
@@ -19,7 +20,7 @@ pub fn Progress(
       aria-valuemin="0"
       aria-valuemax="100"
       aria-valuenow=move || value.get().to_string()
-      aria-label="作答进度"
+      aria-label=move || t("作答进度")
       class=class
     >
       <div

@@ -3,6 +3,7 @@ use leptos::task::spawn_local;
 use serde::Deserialize;
 
 use crate::data;
+use crate::i18n::t;
 
 /// 空间天气警报（/api/alerts）。
 #[derive(Deserialize, Clone)]
@@ -31,7 +32,7 @@ pub(super) fn AlertCard() -> impl IntoView {
 
   view! {
     <a href="/solar" class="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">
-      <div class="text-sm font-semibold">"空间天气警报"</div>
+      <div class="text-sm font-semibold">{move || t("空间天气警报")}</div>
       <div class="mt-2">
         {move || match alert.get() {
           Some(a) if !a.level.is_empty() => view! {
@@ -42,8 +43,8 @@ pub(super) fn AlertCard() -> impl IntoView {
             <span class="font-mono text-sm text-muted-foreground">{a.product_id.clone()}</span>
           }
           .into_any(),
-          None if loading.get() => view! { <span class="text-sm text-muted-foreground">"加载中…"</span> }.into_any(),
-          None => view! { <span class="text-sm text-muted-foreground">"当前无有效警报"</span> }.into_any(),
+          None if loading.get() => view! { <span class="text-sm text-muted-foreground">{move || t("加载中…")}</span> }.into_any(),
+          None => view! { <span class="text-sm text-muted-foreground">{move || t("当前无有效警报")}</span> }.into_any(),
         }}
       </div>
     </a>

@@ -1,3 +1,4 @@
+use crate::i18n::t;
 use ham_web_core::weak_exam::CategoryDelta;
 use leptos::prelude::*;
 
@@ -11,14 +12,14 @@ fn pct(rate: Option<f64>) -> String {
 pub(crate) fn CategoryCompare(deltas: Vec<CategoryDelta>) -> impl IntoView {
   view! {
     <div class="mt-3 border-t pt-3">
-      <div class="text-sm font-medium">"分类对比（本次 / 以往）"</div>
+      <div class="text-sm font-medium">{move || t("分类对比（本次 / 以往）")}</div>
       <table class="mt-2 w-full text-xs tabular-nums">
         <thead class="text-muted-foreground">
           <tr>
-            <th scope="col" class="py-1 text-left font-normal">"分类"</th>
-            <th scope="col" class="py-1 text-right font-normal">"本次"</th>
-            <th scope="col" class="py-1 text-right font-normal">"以往"</th>
-            <th scope="col" class="py-1 text-right font-normal">"变化"</th>
+            <th scope="col" class="py-1 text-left font-normal">{move || t("分类")}</th>
+            <th scope="col" class="py-1 text-right font-normal">{move || t("本次")}</th>
+            <th scope="col" class="py-1 text-right font-normal">{move || t("以往")}</th>
+            <th scope="col" class="py-1 text-right font-normal">{move || t("变化")}</th>
           </tr>
         </thead>
         <tbody>
@@ -29,7 +30,7 @@ pub(crate) fn CategoryCompare(deltas: Vec<CategoryDelta>) -> impl IntoView {
               let (text, class) = match change {
                 Some(c) if c >= 0.5 => (format!("+{c:.0}"), "text-emerald-700 dark:text-emerald-400"),
                 Some(c) if c <= -0.5 => (format!("{c:.0}"), "text-red-700 dark:text-red-400"),
-                Some(_) => ("持平".to_owned(), "text-muted-foreground"),
+                Some(_) => (t("持平"), "text-muted-foreground"),
                 None => ("—".to_owned(), "text-muted-foreground"),
               };
               view! {

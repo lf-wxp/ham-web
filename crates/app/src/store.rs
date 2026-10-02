@@ -1,8 +1,10 @@
 //! 练习 / 考试进度与偏好的本地持久化（key 与旧版 Next.js 实现保持兼容）。
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use ham_web_core::Bank;
+use ham_web_core::QuestionItem;
+use ham_web_core::bookmark_groups::BookmarkGroups;
 use ham_web_core::practice::PracticeOrder;
 use ham_web_core::saved_state::{ExamSavedState, PracticeSavedState, keys};
 
@@ -86,10 +88,72 @@ pub fn toggle_bookmark(id: &str) -> bool {
     true
   };
   storage::set_json("bookmarks", &set);
+  // 取消收藏时同步清理各分组里的残留，避免「幽灵」分组条目。
+  if !added {
+    let mut groups = load_groups();
+    groups.prune(&set);
+    save_groups(&groups);
+  }
   added
+}
+
+/// 读取收藏分组。
+pub fn load_groups() -> BookmarkGroups {
+  storage::get_json("bookmark-groups").unwrap_or_default()
+}
+
+/// 保存收藏分组。
+pub fn save_groups(groups: &BookmarkGroups) {
+  storage::set_json("bookmark-groups", groups);
+}
+
+/// 题目私人笔记（key = stable_id）。
+const NOTES_KEY: &str = "question-notes";
+
+/// 读取全部题目笔记。
+pub fn load_notes() -> HashMap<String, String> {
+  storage::get_json(NOTES_KEY).unwrap_or_default()
+}
+
+/// 读取某题的笔记。
+pub fn load_note(id: &str) -> Option<String> {
+  load_notes().get(id).cloned()
+}
+
+/// 保存某题的笔记（空文本则删除）。
+pub fn save_note(id: &str, text: &str) {
+  let mut notes = load_notes();
+  if text.trim().is_empty() {
+    notes.remove(id);
+  } else {
+    notes.insert(id.to_owned(), text.to_owned());
+  }
+  storage::set_json(NOTES_KEY, &notes);
 }
 
 /// 题目是否已收藏。
 pub fn is_bookmarked(id: &str) -> bool {
   load_bookmarks().contains(id)
+}
+
+/// 模拟考试交卷后暂存的「本次错题」列表（供练习页一键重练）。
+const WRONG_EXAM_PREFIX: &str = "exam:wrong";
+
+fn wrong_exam_key(bank: Bank) -> String {
+  format!("{WRONG_EXAM_PREFIX}:{bank}")
+}
+
+/// 暂存本次模拟考试的错题。
+pub fn save_wrong_exam(bank: Bank, questions: &[QuestionItem]) {
+  storage::set_json(&wrong_exam_key(bank), &questions.to_vec());
+}
+
+/// 读取暂存的错题列表。
+pub fn load_wrong_exam(bank: Bank) -> Option<Vec<QuestionItem>> {
+  storage::get_json(&wrong_exam_key(bank))
+}
+
+/// 清除暂存的错题列表。
+pub fn clear_wrong_exam(bank: Bank) {
+  storage::remove(&wrong_exam_key(bank));
 }

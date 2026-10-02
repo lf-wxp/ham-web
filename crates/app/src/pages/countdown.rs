@@ -1,5 +1,6 @@
 //! 倒计时与提醒：管理多个目标时间（考试、执照到期等），本地持久化并实时刷新。
 
+use std::cell::RefCell;
 use std::collections::HashSet;
 use std::time::Duration;
 
@@ -7,6 +8,7 @@ use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsValue;
 
+use crate::i18n::{t, tf};
 use crate::ui::{Size, Variant, button_class, input_class};
 use crate::util::now_ms;
 use crate::util::set_title;
@@ -43,7 +45,7 @@ fn next_id(events: &[CountdownEvent]) -> u64 {
 /// 剩余时间文本。
 fn format_remaining(ms: i64) -> String {
   if ms <= 0 {
-    return "已到期".to_owned();
+    return t("已到期");
   }
   let total = ms / 1000;
   let d = total / 86400;
@@ -51,7 +53,15 @@ fn format_remaining(ms: i64) -> String {
   let m = (total % 3600) / 60;
   let s = total % 60;
   if d > 0 {
-    format!("{d} 天 {h:02}:{m:02}:{s:02}")
+    tf(
+      "{} 天 {}:{}:{}",
+      &[
+        &(d).to_string(),
+        &(h).to_string(),
+        &(m).to_string(),
+        &(s).to_string(),
+      ],
+    )
   } else {
     format!("{h:02}:{m:02}:{s:02}")
   }
@@ -68,31 +78,20 @@ fn parse_local(s: &str) -> Option<i64> {
 
 #[component]
 pub fn CountdownPage() -> impl IntoView {
-  set_title("倒计时");
+  set_title(&t("倒计时"));
 
   let list = RwSignal::new(load());
   let title = RwSignal::new(String::new());
   let target = RwSignal::new(String::new());
   let now = RwSignal::new(now_ms());
 
-  let notified = StoredValue::new(HashSet::<u64>::new());
+  // 每秒刷新当前时间用于倒计时显示；到期通知由全局 watcher 统一负责（见 start_global_watcher）。
   set_interval(
     move || {
-      let n = now_ms();
-      now.set(n);
-      // 事件到期时发送浏览器通知（去重）
-      let mut set = notified.get_value();
-      for e in &list.get_untracked().events {
-        if e.target_ms <= n && set.insert(e.id) {
-          crate::util::notify(&format!("倒计时到期：{}", e.title));
-        }
-      }
-      notified.set_value(set);
+      now.set(now_ms());
     },
     Duration::from_secs(1),
   );
-  // 页面加载时请求通知权限（用户可拒绝，不影响其他功能）
-  crate::util::request_notify_permission();
 
   let add = move || {
     let t = title.get().trim().to_owned();
@@ -125,33 +124,33 @@ pub fn CountdownPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"倒计时与提醒"</h1>
-            <div class="text-xs text-muted-foreground">"考试日期 · 执照到期 · 活动提醒"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("倒计时与提醒")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("考试日期 · 执照到期 · 活动提醒")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-3xl space-y-5 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"添加倒计时"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("添加倒计时")}</h2>
           <div class="grid gap-3 p-4 sm:grid-cols-[1fr_auto_auto]">
             <input
               type="text"
-              placeholder="标题，如：A 类操作证考试"
-              aria-label="倒计时标题"
+              placeholder=move || t("标题，如：A 类操作证考试")
+              aria-label=move || t("倒计时标题")
               prop:value=move || title.get()
               on:input=move |e| title.set(event_target_value(&e))
               class=input_class("")
             />
             <input
               type="datetime-local"
-              aria-label="目标时间"
+              aria-label=move || t("目标时间")
               prop:value=move || target.get()
               on:input=move |e| target.set(event_target_value(&e))
               class=input_class("")
             />
             <button type="button" class=button_class(Variant::Default, Size::Default, "") on:click=move |_| add()>
-              "添加"
+              {move || t("添加")}
             </button>
           </div>
         </section>
@@ -163,7 +162,7 @@ pub fn CountdownPage() -> impl IntoView {
             if events.is_empty() {
               view! {
                 <div class="rounded-xl border bg-card px-4 py-10 text-center text-sm text-muted-foreground">
-                  "暂无倒计时，添加一个目标时间吧。"
+                  {move || t("暂无倒计时，添加一个目标时间吧。")}
                 </div>
               }
               .into_any()
@@ -194,7 +193,7 @@ pub fn CountdownPage() -> impl IntoView {
                           class="shrink-0 text-xs text-muted-foreground transition-colors hover:text-destructive"
                           on:click=move |_| remove(id)
                         >
-                          "删除"
+                          {move || t("删除")}
                         </button>
                       </div>
                     }
@@ -219,4 +218,39 @@ fn format_local(ms: i64) -> String {
   let h = d.get_hours() as i32;
   let m = d.get_minutes() as i32;
   format!("{y:04}-{mo:02}-{day:02} {h:02}:{m:02}")
+}
+
+/// 添加一条倒计时（供竞赛日历等页面复用，返回是否新增成功）。
+pub(crate) fn add_countdown(title: &str, target_ms: i64) {
+  let mut list = load();
+  let id = next_id(&list.events);
+  list.events.push(CountdownEvent {
+    id,
+    title: title.to_owned(),
+    target_ms,
+  });
+  save(&list);
+}
+
+thread_local! {
+  static NOTIFIED: RefCell<HashSet<u64>> = RefCell::new(HashSet::new());
+}
+
+/// 全局倒计时到期提醒：在根组件调用一次，应用打开期间任意页面都会触发通知。
+pub(crate) fn start_global_watcher() {
+  crate::util::request_notify_permission();
+  set_interval(
+    || {
+      let n = now_ms();
+      let list = load();
+      NOTIFIED.with_borrow_mut(|set| {
+        for e in &list.events {
+          if e.target_ms <= n && set.insert(e.id) {
+            crate::util::notify(&tf("倒计时到期：{}", &[&(e.title).to_string()]));
+          }
+        }
+      });
+    },
+    Duration::from_secs(1),
+  );
 }

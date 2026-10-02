@@ -2,6 +2,7 @@ use ham_web_core::QuestionItem;
 use leptos::prelude::*;
 
 use crate::cn::cn;
+use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 use crate::speech;
 use crate::ui::card_class;
@@ -27,7 +28,7 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
             aria-expanded=move || open.get().to_string()
             class="flex flex-1 items-center justify-between gap-2 px-6 py-4 text-left cursor-pointer transition-colors hover:bg-accent/50 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 rounded-xl"
           >
-            <span class="text-base font-semibold leading-none">"答案解析"</span>
+            <span class="text-base font-semibold leading-none">{move || t("答案解析")}</span>
             <Icon
               kind=IconKind::ChevronDown
               class=Signal::derive(move || cn(&["h-4 w-4 shrink-0 transition-transform", if open.get() { "rotate-180" } else { "" }]))
@@ -36,8 +37,8 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
           <button
             type="button"
             class="mr-4 flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            title="朗读解析"
-            aria-label="朗读解析"
+            title=move || t("朗读解析")
+            aria-label=move || t("朗读解析")
             on:click=move |_| speech::speak_zh(&speak_text)
           >
             <Icon kind=IconKind::Volume2 class="h-4 w-4" />

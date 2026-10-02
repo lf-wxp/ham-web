@@ -6,6 +6,7 @@ use ham_web_core::contest::{
 use ham_web_core::dxcc::lookup;
 use leptos::html;
 use leptos::prelude::*;
+use leptos_router::hooks::use_query_map;
 
 use crate::components::cat_control::{CatControl, CatReading};
 use crate::pages::log::{LogEntry, use_log_store, utc_now_time, utc_today};
@@ -13,15 +14,26 @@ use crate::ui::{Size, Stat, Variant, button_class, input_class};
 use crate::util::{download_text, set_title, storage};
 
 use super::session::Session;
+use crate::i18n::{t, tf};
 
 const SESSION_KEY: &str = "contest-session";
 const MODES: &[&str] = &["CW", "SSB", "FT8", "RTTY"];
 
 #[component]
 pub fn ContestLogPage() -> impl IntoView {
-  set_title("竞赛录入");
+  set_title(&t("竞赛录入"));
   let store = use_log_store();
   let session = RwSignal::new(storage::get_json::<Session>(SESSION_KEY).unwrap_or_default());
+  // 支持 `/contest-log?contest=ID` 预选竞赛（如从竞赛日历「开新场次」进入）。
+  let query = use_query_map();
+  if let Some(cid) = query.with(|q| q.get("contest"))
+    && ham_web_core::contest::contest(&cid).is_some()
+  {
+    session.update(|s| {
+      s.contest_id = cid;
+      s.my_exch.clear();
+    });
+  }
   let save = move || storage::set_json(SESSION_KEY, &session.get_untracked());
   let my_call = Memo::new(move |_| {
     store
@@ -146,9 +158,9 @@ pub fn ContestLogPage() -> impl IntoView {
     store.logbook.update(|lb| lb.entries.push(entry));
     store.persist();
     message.set(Some(if was_dupe {
-      format!("已记录 {label}（重复，不计分）")
+      tf("已记录 {}（重复，不计分）", &[&(label).to_string()])
     } else {
-      format!("已记录 {label}")
+      tf("已记录 {}", &[&(label).to_string()])
     }));
     call.set(String::new());
     rcvd.set(String::new());
@@ -161,9 +173,7 @@ pub fn ContestLogPage() -> impl IntoView {
   let restart = move || {
     session.update(|s| s.start = format!("{} {}", utc_today(), utc_now_time()));
     save();
-    message.set(Some(
-      "已开始新一场，之前的通联仍保留在通联日志里".to_owned(),
-    ));
+    message.set(Some(t("已开始新一场，之前的通联仍保留在通联日志里")));
   };
   let export = move || {
     let s = session.get_untracked();
@@ -203,12 +213,12 @@ pub fn ContestLogPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"竞赛录入"</h1>
-            <div class="text-xs text-muted-foreground">"键盘快速录入 · 实时查重 · 自报分数 · 导出 Cabrillo"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("竞赛录入")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("键盘快速录入 · 实时查重 · 自报分数 · 导出 Cabrillo")}</div>
           </div>
-          <a href="/log" class=button_class(Variant::Outline, Size::Sm, "")>"通联日志"</a>
+          <a href="/log" class=button_class(Variant::Outline, Size::Sm, "")>{move || t("通联日志")}</a>
           <button type="button" class=button_class(Variant::Default, Size::Sm, "") on:click=move |_| export()>
-            "导出 Cabrillo"
+            {move || t("导出 Cabrillo")}
           </button>
         </div>
       </header>
@@ -216,14 +226,16 @@ pub fn ContestLogPage() -> impl IntoView {
       <div class="mx-auto max-w-5xl space-y-5 px-4 py-5">
         {move || my_call.get().is_empty().then(|| view! {
           <p class="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-            "还没有设置本台呼号，记分与 Cabrillo 需要它。请先到 "
-            <a href="/log" class="font-medium underline underline-offset-4">"通联日志 → 本台信息"</a>
-            " 填写。"
+            {move || t("还没有设置本台呼号，记分与 Cabrillo 需要它。请先到")}
+            " "
+            <a href="/log" class="font-medium underline underline-offset-4">{move || t("通联日志 → 本台信息")}</a>
+            " "
+            {move || t("填写。")}
           </p>
         })}
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"竞赛设置"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("竞赛设置")}</h2>
           <div class="px-4 pt-4">
             <CatControl on_reading=move |r: CatReading| {
               // 电台的数据模式在竞赛里通常就是 FT8
@@ -241,7 +253,7 @@ pub fn ContestLogPage() -> impl IntoView {
           </div>
           <div class="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5">
             <label class="flex flex-col gap-1.5 text-xs text-muted-foreground lg:col-span-2">
-              "竞赛"
+              {move || t("竞赛")}
               <select
                 class=input_class("")
                 prop:value=move || session.with(|s| s.contest_id.clone())
@@ -259,11 +271,11 @@ pub fn ContestLogPage() -> impl IntoView {
                   save();
                 }
               >
-                {CONTESTS.iter().map(|c| view! { <option value=c.id>{c.name}</option> }).collect_view()}
+                {CONTESTS.iter().map(|c| view! { <option value=c.id>{move || t(c.name)}</option> }).collect_view()}
               </select>
             </label>
             <label class="flex flex-col gap-1.5 text-xs text-muted-foreground">
-              "频率（MHz）"
+              {move || t("频率（MHz）")}
               <input
                 class=input_class("font-mono")
                 inputmode="decimal"
@@ -276,7 +288,7 @@ pub fn ContestLogPage() -> impl IntoView {
               />
             </label>
             <label class="flex flex-col gap-1.5 text-xs text-muted-foreground">
-              "模式"
+              {move || t("模式")}
               <select
                 class=input_class("")
                 prop:disabled=move || session.with(|s| s.def().mode.is_some())
@@ -291,12 +303,12 @@ pub fn ContestLogPage() -> impl IntoView {
               </select>
             </label>
             <label class="flex flex-col gap-1.5 text-xs text-muted-foreground">
-              {move || format!("我发出的{}", session.with(|s| s.def().sent.label()))}
+              {move || tf("我发出的{}", &[(session.with(|s| s.def().sent.label()))])}
               <input
                 class=input_class("font-mono uppercase")
                 prop:disabled=move || session.with(|s| s.def().sent == Exch::Serial)
                 prop:value=move || {
-                  if session.with(|s| s.def().sent == Exch::Serial) { "自动递增".to_owned() } else { session.with(|s| s.my_exch.clone()) }
+                  if session.with(|s| s.def().sent == Exch::Serial) { t("自动递增") } else { session.with(|s| s.my_exch.clone()) }
                 }
                 on:change=move |e| {
                   let v = event_target_value(&e).trim().to_ascii_uppercase();
@@ -307,9 +319,9 @@ pub fn ContestLogPage() -> impl IntoView {
             </label>
           </div>
           <div class="flex flex-wrap items-center gap-3 border-t px-4 py-3 text-xs text-muted-foreground">
-            <span>{move || format!("本场开始于 {} UTC", session.with(|s| s.start.clone()))}</span>
+            <span>{move || tf("本场开始于 {} UTC", &[&(session.with(|s| s.start.clone())).to_string()])}</span>
             <label class="inline-flex items-center gap-1.5">
-              "功率类别"
+              {move || t("功率类别")}
               <select
                 class="rounded border bg-background px-1.5 py-0.5"
                 prop:value=move || session.with(|s| s.power.clone())
@@ -325,7 +337,7 @@ pub fn ContestLogPage() -> impl IntoView {
               </select>
             </label>
             <button type="button" class=button_class(Variant::Ghost, Size::Sm, "ml-auto") on:click=move |_| restart()>
-              "开始新一场"
+              {move || t("开始新一场")}
             </button>
           </div>
         </section>
@@ -339,7 +351,7 @@ pub fn ContestLogPage() -> impl IntoView {
             }
           >
             <label class="flex flex-col gap-1.5 text-xs text-muted-foreground">
-              "对方呼号"
+              {move || t("对方呼号")}
               <input
                 node_ref=call_ref
                 autofocus
@@ -376,13 +388,13 @@ pub fn ContestLogPage() -> impl IntoView {
               />
             </label>
             <div class="flex flex-col gap-1.5 text-xs text-muted-foreground">
-              "发出"
+              {move || t("发出")}
               <div class="flex h-12 items-center rounded-lg border bg-muted/40 px-3 font-mono text-lg tabular-nums text-foreground">
                 {move || format!("{} {}", default_rst(&session.with(Session::mode)), sent_exch())}
               </div>
             </div>
             <label class="flex flex-col gap-1.5 text-xs text-muted-foreground">
-              {move || format!("收到的{}", session.with(|s| s.def().rcvd.label()))}
+              {move || tf("收到的{}", &[(session.with(|s| s.def().rcvd.label()))])}
               <input
                 node_ref=rcvd_ref
                 autocomplete="off"
@@ -393,12 +405,12 @@ pub fn ContestLogPage() -> impl IntoView {
                 class="h-12 w-28 rounded-lg border bg-background px-3 font-mono text-2xl font-semibold uppercase outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               />
             </label>
-            <button type="submit" class=button_class(Variant::Default, Size::Default, "h-12 px-6")>"记录"</button>
+            <button type="submit" class=button_class(Variant::Default, Size::Default, "h-12 px-6")>{move || t("记录")}</button>
           </form>
           <div id="contest-call-hint" aria-live="polite" class="mt-2 min-h-5 text-sm">
             {move || {
               if dupe.get() {
-                view! { <span class="font-medium text-red-600 dark:text-red-400">"重复：本波段已通联过"</span> }.into_any()
+                view! { <span class="font-medium text-red-600 dark:text-red-400">{move || t("重复：本波段已通联过")}</span> }.into_any()
               } else if let Some(m) = message.get() {
                 view! { <span class="text-emerald-600 dark:text-emerald-400">{m}</span> }.into_any()
               } else {
@@ -407,21 +419,21 @@ pub fn ContestLogPage() -> impl IntoView {
             }}
           </div>
           <p class="mt-1 text-xs text-muted-foreground">
-            "呼号框按回车或空格跳到交换，再按回车记录；Esc 清空。时间按当前 UTC 自动填写，信号报告默认 599 / 59。"
+            {move || t("呼号框按回车或空格跳到交换，再按回车记录；Esc 清空。时间按当前 UTC 自动填写，信号报告默认 599 / 59。")}
           </p>
         </section>
 
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <Stat label="有效通联" value=Signal::derive(move || tally.get().qsos as usize) />
-          <Stat label="重复" value=Signal::derive(move || tally.get().dupes as usize) />
-          <Stat label="点数" value=Signal::derive(move || tally.get().points as usize) />
-          <Stat label="乘数" value=Signal::derive(move || tally.get().mults as usize) />
-          <Stat label="自报总分" value=Signal::derive(move || tally.get().total as usize) />
+          <Stat label=t("有效通联") value=Signal::derive(move || tally.get().qsos as usize) />
+          <Stat label=t("重复") value=Signal::derive(move || tally.get().dupes as usize) />
+          <Stat label=t("点数") value=Signal::derive(move || tally.get().points as usize) />
+          <Stat label=t("乘数") value=Signal::derive(move || tally.get().mults as usize) />
+          <Stat label=t("自报总分") value=Signal::derive(move || tally.get().total as usize) />
         </div>
 
         <section class="rounded-xl border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">"本场通联"</h2>
+            <h2 class="mr-auto text-sm font-semibold">{move || t("本场通联")}</h2>
             {move || per_band.get().into_iter().map(|(b, n)| view! {
               <span class="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">{format!("{b} {n}")}</span>
             }).collect_view()}
@@ -430,13 +442,13 @@ pub fn ContestLogPage() -> impl IntoView {
             <table class="w-full text-left text-sm">
               <thead class="text-xs text-muted-foreground">
                 <tr class="border-b">
-                  <th class="px-4 py-2 font-normal">"时间"</th>
-                  <th class="px-2 py-2 font-normal">"频率"</th>
-                  <th class="px-2 py-2 font-normal">"呼号"</th>
-                  <th class="px-2 py-2 font-normal">"发出"</th>
-                  <th class="px-2 py-2 font-normal">"收到"</th>
-                  <th class="px-2 py-2 font-normal">"实体"</th>
-                  <th class="px-4 py-2 font-normal"><span class="sr-only">"操作"</span></th>
+                  <th class="px-4 py-2 font-normal">{move || t("时间")}</th>
+                  <th class="px-2 py-2 font-normal">{move || t("频率")}</th>
+                  <th class="px-2 py-2 font-normal">{move || t("呼号")}</th>
+                  <th class="px-2 py-2 font-normal">{move || t("发出")}</th>
+                  <th class="px-2 py-2 font-normal">{move || t("收到")}</th>
+                  <th class="px-2 py-2 font-normal">{move || t("实体")}</th>
+                  <th class="px-4 py-2 font-normal"><span class="sr-only">{move || t("操作")}</span></th>
                 </tr>
               </thead>
               <tbody class="font-mono">
@@ -444,7 +456,7 @@ pub fn ContestLogPage() -> impl IntoView {
                   let list = entries.get();
                   if list.is_empty() {
                     return view! {
-                      <tr><td colspan="7" class="px-4 py-6 text-center font-sans text-sm text-muted-foreground">"还没有通联，输入呼号开始吧"</td></tr>
+                      <tr><td colspan="7" class="px-4 py-6 text-center font-sans text-sm text-muted-foreground">{move || t("还没有通联，输入呼号开始吧")}</td></tr>
                     }.into_any();
                   }
                   list
@@ -466,10 +478,10 @@ pub fn ContestLogPage() -> impl IntoView {
                             <button
                               type="button"
                               class="font-sans text-xs text-muted-foreground hover:text-red-600"
-                              aria-label=format!("删除 {}", e.callsign)
+                              aria-label=tf("删除 {}", &[&(e.callsign).to_string()])
                               on:click=move |_| remove(id)
                             >
-                              "删除"
+                              {move || t("删除")}
                             </button>
                           </td>
                         </tr>
@@ -484,7 +496,7 @@ pub fn ContestLogPage() -> impl IntoView {
         </section>
 
         <p class="text-xs text-muted-foreground">
-          "竞赛通联同时保存在通联日志中（带 CONTEST_ID 与交换信息，ADIF 导出时一并写出）。分数按中国台站视角简化计算，仅供参考，以主办方核对为准。"
+          {move || t("竞赛通联同时保存在通联日志中（带 CONTEST_ID 与交换信息，ADIF 导出时一并写出）。分数按中国台站视角简化计算，仅供参考，以主办方核对为准。")}
         </p>
       </div>
     </div>

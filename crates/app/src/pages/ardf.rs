@@ -3,25 +3,26 @@
 use ham_web_core::ardf::{ARDF_BANDS, ARDF_CONCEPTS};
 use leptos::prelude::*;
 
+use crate::i18n::t;
 use crate::util::set_title;
 
 #[component]
 pub fn ArdfPage() -> impl IntoView {
-  set_title("无线电测向 ARDF");
+  set_title(&t("无线电测向 ARDF"));
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"无线电测向 ARDF"</h1>
-            <div class="text-xs text-muted-foreground">"业余无线电测向（ARDF）· 竞赛频段"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("无线电测向 ARDF")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("业余无线电测向（ARDF）· 竞赛频段")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"核心概念"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("核心概念")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {ARDF_CONCEPTS
               .iter()
@@ -38,7 +39,7 @@ pub fn ArdfPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"常用频段"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("常用频段")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {ARDF_BANDS
               .iter()

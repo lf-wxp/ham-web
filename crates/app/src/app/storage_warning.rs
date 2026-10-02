@@ -2,6 +2,7 @@
 
 use leptos::prelude::*;
 
+use crate::i18n::t;
 use crate::ui::{Size, Variant, button_class};
 use crate::util::storage::WRITE_FAILED_EVENT;
 
@@ -20,17 +21,17 @@ pub(super) fn StorageWarning() -> impl IntoView {
         >
           <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3">
             <span class="mr-auto">
-              "本地存储空间已满，最新的进度 / 错题 / 日志可能没有保存。请先导出备份，再清理不需要的数据。"
+              {move || t("本地存储空间已满，最新的进度 / 错题 / 日志可能没有保存。请先导出备份，再清理不需要的数据。")}
             </span>
             <a href="/tools#backup" class=button_class(Variant::Destructive, Size::Sm, "")>
-              "查看占用并备份"
+              {move || t("查看占用并备份")}
             </a>
             <button
               type="button"
               class=button_class(Variant::Ghost, Size::Sm, "")
               on:click=move |_| open.set(false)
             >
-              "知道了"
+              {move || t("知道了")}
             </button>
           </div>
         </div>

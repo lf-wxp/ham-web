@@ -13,7 +13,7 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::{Context, Result, ensure};
-use ham_web_core::{Bank, BankConfig, changelog};
+use ham_web_core::{Bank, BankConfig, QuestionItem, QuestionSearchEntry, changelog};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use walkdir::WalkDir;
@@ -44,7 +44,7 @@ fn is_precompressed(rel: &str) -> bool {
 /// 值得预压缩的文本类资源。
 fn is_compressible(rel: &str) -> bool {
   const EXT: &[&str] = &[
-    ".wasm", ".js", ".css", ".json", ".svg", ".html", ".xml", ".txt",
+    ".wasm", ".js", ".css", ".json", ".svg", ".html", ".xml", ".txt", ".bin",
   ];
   EXT.iter().any(|e| rel.ends_with(e))
 }
@@ -334,9 +334,42 @@ pub fn run(dist: &Path, site_url: &str) -> Result<()> {
   replace_site_url(dist, site_url)?;
   write_sitemap(dist, site_url)?;
   stamp_bank_revisions(dist)?;
+  write_question_search_index(dist)?;
   write_changelog(dist)?;
   write_service_worker(dist)?;
   precompress(dist)?;
+  Ok(())
+}
+
+/// 从各题库 JSON 提取精简搜索索引（题干 + 解析），供全站搜索按需加载。
+fn write_question_search_index(dist: &Path) -> Result<()> {
+  let mut entries: Vec<QuestionSearchEntry> = Vec::new();
+  for bank in Bank::ALL {
+    let path = dist.join(format!("questions/{bank}.json"));
+    let Ok(data) = fs::read(&path) else {
+      continue;
+    };
+    let Ok(questions) = serde_json::from_slice::<Vec<QuestionItem>>(&data) else {
+      continue;
+    };
+    for q in questions {
+      let Some(id) = q.id_str() else {
+        continue;
+      };
+      entries.push(QuestionSearchEntry {
+        id: id.to_owned(),
+        bank: bank.to_string(),
+        q: q.question,
+        exp: q.explanation.unwrap_or_default(),
+      });
+    }
+  }
+  let json = serde_json::to_vec(&entries)?;
+  fs::write(dist.join("questions/search-index.json"), json)?;
+  println!(
+    "Generated questions/search-index.json ({} entries)",
+    entries.len()
+  );
   Ok(())
 }
 

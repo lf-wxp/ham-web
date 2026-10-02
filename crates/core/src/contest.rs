@@ -57,6 +57,10 @@ pub enum Scoring {
   ArrlDx,
   /// 每个通联 1 分，无乘数。
   Simple,
+  /// 每个通联 1 分、乘数 = 各波段 DXCC 实体数（All Asian、WAE 等）。
+  DxccPerBand,
+  /// 每个通联 1 分、乘数 = 各波段 CQ 分区数（JIDX、俄罗斯 DX 等简化）。
+  ZoneMults,
 }
 
 /// 一个竞赛。
@@ -128,6 +132,70 @@ pub const CONTESTS: &[ContestDef] = &[
     sent: Exch::Serial,
     rcvd: Exch::Free,
     scoring: Scoring::Simple,
+  },
+  ContestDef {
+    id: "ALL-ASIAN-CW",
+    name: "All Asian DX CW",
+    mode: Some("CW"),
+    sent: Exch::Serial,
+    rcvd: Exch::Serial,
+    scoring: Scoring::DxccPerBand,
+  },
+  ContestDef {
+    id: "ALL-ASIAN-SSB",
+    name: "All Asian DX SSB",
+    mode: Some("SSB"),
+    sent: Exch::Serial,
+    rcvd: Exch::Serial,
+    scoring: Scoring::DxccPerBand,
+  },
+  ContestDef {
+    id: "JIDX-CW",
+    name: "JIDX CW",
+    mode: Some("CW"),
+    sent: Exch::CqZone,
+    rcvd: Exch::Free,
+    scoring: Scoring::ZoneMults,
+  },
+  ContestDef {
+    id: "JIDX-SSB",
+    name: "JIDX SSB",
+    mode: Some("SSB"),
+    sent: Exch::CqZone,
+    rcvd: Exch::Free,
+    scoring: Scoring::ZoneMults,
+  },
+  ContestDef {
+    id: "WAE-CW",
+    name: "WAE DX CW",
+    mode: Some("CW"),
+    sent: Exch::Serial,
+    rcvd: Exch::Serial,
+    scoring: Scoring::DxccPerBand,
+  },
+  ContestDef {
+    id: "WAE-SSB",
+    name: "WAE DX SSB",
+    mode: Some("SSB"),
+    sent: Exch::Serial,
+    rcvd: Exch::Serial,
+    scoring: Scoring::DxccPerBand,
+  },
+  ContestDef {
+    id: "IARU-HF",
+    name: "IARU HF 锦标赛",
+    mode: None,
+    sent: Exch::Free,
+    rcvd: Exch::Free,
+    scoring: Scoring::ZoneMults,
+  },
+  ContestDef {
+    id: "RUSSIAN-DX",
+    name: "俄罗斯 DX",
+    mode: None,
+    sent: Exch::Serial,
+    rcvd: Exch::CqZone,
+    scoring: Scoring::ZoneMults,
   },
 ];
 
@@ -317,6 +385,25 @@ pub fn score(def: &ContestDef, entries: &[LogEntry], my_call: &str) -> Score {
         }
       }
       Scoring::Simple => s.points += 1,
+      Scoring::DxccPerBand => {
+        s.points += u32::from(them.is_some());
+        if let Some(t) = them {
+          mults.insert(format!("E|{band}|{}", t.dxcc));
+        }
+      }
+      Scoring::ZoneMults => {
+        s.points += u32::from(them.is_some());
+        let zone = e
+          .srx
+          .trim()
+          .parse::<u8>()
+          .ok()
+          .filter(|z| (1..=40).contains(z))
+          .or_else(|| e.cq_zone());
+        if let Some(z) = zone {
+          mults.insert(format!("Z|{band}|{z}"));
+        }
+      }
     }
   }
   s.mults = mults.len() as u32;
@@ -533,6 +620,29 @@ mod tests {
 
     let other = contest("OTHER").unwrap();
     assert_eq!(score(other, &log, "BG4ABC").total, 3);
+  }
+
+  #[test]
+  fn dxcc_per_band_and_zone_mults() {
+    let aa = contest("ALL-ASIAN-CW").unwrap();
+    let log = vec![
+      qso(1, "W1AW", "14.020", "001"),
+      qso(2, "JA1ABC", "14.021", "002"),
+      qso(3, "W1AW", "7.010", "003"),
+    ];
+    let s = score(aa, &log, "BG4ABC");
+    // 3 分；乘数 = 20m 美国/日本 + 40m 美国 = 3
+    assert_eq!((s.points, s.mults, s.total), (3, 3, 9));
+
+    let jidx = contest("JIDX-CW").unwrap();
+    let log = vec![
+      qso(1, "JA1ABC", "14.020", "10"),
+      qso(2, "JA2DEF", "14.021", "11"),
+      qso(3, "JA3GHI", "7.010", "10"),
+    ];
+    let s = score(jidx, &log, "BG4ABC");
+    // 3 分；乘数 = 20m 10/11 + 40m 10 = 3
+    assert_eq!((s.points, s.mults, s.total), (3, 3, 9));
   }
 
   #[test]

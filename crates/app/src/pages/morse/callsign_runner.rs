@@ -13,6 +13,7 @@ use crate::util::{random, storage};
 use super::{btn_primary, encode_words, pill_class};
 
 use super::callsign_session::{KEY, Logged, SESSION_QSOS, Session, save};
+use crate::i18n::{t, tf};
 
 /// 竞赛模拟抄收：对方发 `呼号 5NN 序号`，抄下呼号与序号后提交，每轮 10 个通联计分。
 #[component]
@@ -230,11 +231,11 @@ pub(super) fn CallsignRunner() -> impl IntoView {
     <section class="rounded-xl border bg-card">
       <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
         <h2 class="mr-auto text-sm font-semibold">
-          "呼号抄收 · 竞赛模拟"
+          {move || t("呼号抄收 · 竞赛模拟")}
           <span class="ml-2 text-xs font-normal text-muted-foreground">
             {move || {
               let s = stats.get();
-              format!("最高 {} 分 · 抄对最高 {} WPM", s.best_score, s.top_wpm)
+              tf("最高 {} 分 · 抄对最高 {} WPM", &[&(s.best_score).to_string(), &(s.top_wpm).to_string()])
             }}
           </span>
         </h2>
@@ -246,17 +247,17 @@ pub(super) fn CallsignRunner() -> impl IntoView {
           }
           class="rounded-md px-2 py-0.5 text-xs text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
         >
-          "重置成绩"
+          {move || t("重置成绩")}
         </button>
       </div>
 
       <div class="space-y-4 p-4">
         <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
           <div class="flex items-center gap-2">
-            <span class="text-xs text-muted-foreground">"速度"</span>
+            <span class="text-xs text-muted-foreground">{move || t("速度")}</span>
             <input
               type="range"
-              aria-label="速度"
+              aria-label=move || t("速度")
               min=MIN_WPM
               max=MAX_WPM
               step="1"
@@ -283,8 +284,8 @@ pub(super) fn CallsignRunner() -> impl IntoView {
               let (n, score) = session.with(|s| s.as_ref().map_or((0, 0), |s| (s.attempted() + 1, s.score())));
               view! {
                 <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm">
-                  <span class="tabular-nums">{format!("第 {n} / {SESSION_QSOS} 个通联")}</span>
-                  <span class="tabular-nums text-muted-foreground">{format!("得分 {score}")}</span>
+                  <span class="tabular-nums">{tf("第 {} / {} 个通联", &[&(n).to_string(), &(SESSION_QSOS).to_string()])}</span>
+                  <span class="tabular-nums text-muted-foreground">{tf("得分 {}", &[&(score).to_string()])}</span>
                   {move || {
                     let d = wpm_delta.get();
                     (d != 0).then(|| {
@@ -296,7 +297,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                       let sign = if d > 0 { "+" } else { "" };
                       view! {
                         <span class=cls>
-                          {format!("速度 {sign}{d} WPM")}
+                          {tf("速度 {}{} WPM", &[(sign), &(d).to_string()])}
                         </span>
                       }
                     })
@@ -315,34 +316,34 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                         view! { <Icon kind=IconKind::Play class="h-4 w-4" /> }.into_any()
                       }
                     }}
-                    "重听"
+                    {move || t("重听")}
                   </button>
                   <button
                     type="button"
                     on:click=move |_| skip()
                     class="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                   >
-                    "跳过"
+                    {move || t("跳过")}
                   </button>
                   <button
                     type="button"
                     on:click=move |_| finish()
                     class="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                   >
-                    "结束本轮"
+                    {move || t("结束本轮")}
                   </button>
                   <button
                     type="button"
                     on:click=move |_| reveal()
                     class="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                   >
-                    "看答案"
+                    {move || t("看答案")}
                   </button>
                 </div>
                 {move || {
                   stats.with(|s| s.pileup).then(|| {
                     view! {
-                      <div class="text-xs text-amber-700 dark:text-amber-300">"叠听：干扰台音调较低，请抄音调较高的目标台"</div>
+                      <div class="text-xs text-amber-700 dark:text-amber-300">{move || t("叠听：干扰台音调较低，请抄音调较高的目标台")}</div>
                     }
                   })
                 }}
@@ -355,7 +356,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                   on:click=move |_| start()
                   class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-sm shadow-primary/20 transition-all duration-200 ease-out hover:bg-primary/90 hover:shadow-md hover:shadow-primary/25 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
-                  {move || if session.with(Option::is_some) { "再来一轮" } else { "开始一轮（10 个通联）" }}
+                  {move || if session.with(Option::is_some) { t("再来一轮") } else { t("开始一轮（10 个通联）") }}
                 </button>
               }
               .into_any()
@@ -369,7 +370,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
             }
           >
             <label class="flex flex-col gap-1 text-xs text-muted-foreground">
-              "呼号"
+              {move || t("呼号")}
               <input
                 node_ref=call_ref
                 prop:value=move || call.get()
@@ -388,7 +389,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
               />
             </label>
             <label class="flex flex-col gap-1 text-xs text-muted-foreground">
-              "序号"
+              {move || t("序号")}
               <input
                 node_ref=serial_ref
                 prop:value=move || serial.get()
@@ -404,14 +405,14 @@ pub(super) fn CallsignRunner() -> impl IntoView {
               prop:disabled=move || !in_progress()
               class=btn_primary("")
             >
-              "记录"
+              {move || t("记录")}
             </button>
           </form>
           <div aria-live="polite" class="min-h-5 text-sm">
             {move || revealed.get().map(|ex| {
               view! {
                 <span class="text-muted-foreground">
-                  "答案 " <span class="font-mono font-semibold">{format!("{} 5NN {}", ex.call, ex.serial)}</span>
+                  {move || t("答案 ")} <span class="font-mono font-semibold">{format!("{} 5NN {}", ex.call, ex.serial)}</span>
                 </span>
               }
             })}
@@ -424,13 +425,13 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                 </span>
                 {(!ok).then(|| view! {
                   <span class="ml-2 text-xs text-muted-foreground">
-                    {format!("你抄的：{} {}", if l.call.is_empty() { "—" } else { &l.call }, if l.serial.is_empty() { "—" } else { &l.serial })}
+                    {tf("你抄的：{} {}", &[(if l.call.is_empty() { "—" } else { &l.call }), (if l.serial.is_empty() { "—" } else { &l.serial })])}
                   </span>
                 })}
               }
             })}
           </div>
-          <p class="text-xs text-muted-foreground">"抄完呼号按回车跳到序号，再按回车记录；呼号对得 2 分，序号也对再加 1 分。"</p>
+          <p class="text-xs text-muted-foreground">{move || t("抄完呼号按回车跳到序号，再按回车记录；呼号对得 2 分，序号也对再加 1 分。")}</p>
         </div>
 
         {move || {
@@ -440,9 +441,9 @@ pub(super) fn CallsignRunner() -> impl IntoView {
             view! {
               <div class="space-y-2">
                 <div class="text-sm font-medium">
-                  {format!("本轮得分 {score} / {}", SESSION_QSOS * 3)}
+                  {tf("本轮得分 {} / {}", &[&(score).to_string(), &(SESSION_QSOS * 3).to_string()])}
                   {(score >= best && score > 0).then(|| view! {
-                    <span class="ml-2 text-emerald-600 dark:text-emerald-400">"新纪录！"</span>
+                    <span class="ml-2 text-emerald-600 dark:text-emerald-400">{move || t("新纪录！")}</span>
                   })}
                 </div>
                 <div class="overflow-x-auto">
@@ -450,11 +451,11 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                     <thead class="text-muted-foreground">
                       <tr>
                         <th class="py-1 pr-3 font-normal">"#"</th>
-                        <th class="py-1 pr-3 font-normal">"对方"</th>
-                        <th class="py-1 pr-3 font-normal">"你抄的"</th>
-                        <th class="py-1 pr-3 font-normal">"速度"</th>
-                        <th class="py-1 pr-3 font-normal">"重听"</th>
-                        <th class="py-1 font-normal">"得分"</th>
+                        <th class="py-1 pr-3 font-normal">{move || t("对方")}</th>
+                        <th class="py-1 pr-3 font-normal">{move || t("你抄的")}</th>
+                        <th class="py-1 pr-3 font-normal">{move || t("速度")}</th>
+                        <th class="py-1 pr-3 font-normal">{move || t("重听")}</th>
+                        <th class="py-1 font-normal">{move || t("得分")}</th>
                       </tr>
                     </thead>
                     <tbody class="font-mono">
@@ -489,14 +490,14 @@ pub(super) fn CallsignRunner() -> impl IntoView {
             let worst = s.worst_chars(8);
             view! {
               <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
-                <span>{format!("累计 {} 轮 · {} 个通联 · 呼号正确率 {rate:.0}%", s.sessions, s.qsos)}</span>
+                <span>{tf("累计 {} 轮 · {} 个通联 · 呼号正确率 {}%", &[&(s.sessions).to_string(), &(s.qsos).to_string(), &(rate).to_string()])}</span>
                 {(!worst.is_empty()).then(|| view! {
                   <span class="flex flex-wrap items-center gap-1">
-                    "常错字符"
+                    {move || t("常错字符")}
                     {worst
                       .into_iter()
                       .map(|(c, n)| view! {
-                        <span class=pill_class(false) title=format!("抄错 {n} 次")>
+                        <span class=pill_class(false) title=tf("抄错 {} 次", &[&(n).to_string()])>
                           <span class="font-mono font-semibold">{c.to_string()}</span>
                           <span class="ml-1 tabular-nums">{n}</span>
                         </span>

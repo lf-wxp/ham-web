@@ -2,6 +2,7 @@
 //! 桌面端为与原表一致的合并单元格表格，移动端为按波段分组的卡片。
 
 mod band_card;
+mod band_quiz;
 mod bands_page;
 mod usage_badge;
 
@@ -12,6 +13,7 @@ use leptos::prelude::*;
 
 use crate::icons::{Icon, IconKind};
 
+use crate::i18n::{t, tf};
 use usage_badge::UsageBadge;
 
 const CELL: &str = "border px-2 py-1.5 text-center align-middle";
@@ -39,7 +41,7 @@ fn range_view(a: &'static Allocation) -> impl IntoView {
         .then(|| {
           view! {
             <Icon kind=IconKind::Satellite class=SAT_ICON />
-            <span class="sr-only">"卫星业余业务"</span>
+            <span class="sr-only">{move || t("卫星业余业务")}</span>
           }
         })}
       <span class="tabular-nums">{a.range}</span>
@@ -56,7 +58,7 @@ fn notes_view(notes: &'static [Note], jump: Callback<&'static str>) -> impl Into
         <button
           type="button"
           class="font-mono font-medium text-blue-600 underline underline-offset-2 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-          title=format!("查看脚注 {code}")
+          title=tf("查看脚注 {}", &[(code)])
           on:click=move |_| jump.run(code)
         >
           {code}
@@ -90,7 +92,7 @@ fn table_rows(jump: Callback<&'static str>) -> impl IntoView {
               .then(|| {
                 view! {
                   <td class=CELL rowspan=mw_rows.clone()>
-                    <span class="[writing-mode:vertical-rl] tracking-[0.4em]">"微波"</span>
+                    <span class="[writing-mode:vertical-rl] tracking-[0.4em]">{move || t("微波")}</span>
                   </td>
                 }
               })}

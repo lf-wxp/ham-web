@@ -1,0 +1,17 @@
+# ───────────────────────────── wasm 链接规避 ─────────────────────────────
+#
+# macOS 上 Rust 自带的 wasm-ld（rust-lld -flavor wasm）在并行写出超大「自定义 section」
+# 时会以 SIGBUS 崩溃（上游未修复：https://github.com/llvm/llvm-project/issues/195482）：
+#
+#   error: linking with `rust-lld` failed: signal: 10 (SIGBUS)
+#     #4 lld::wasm::InputChunk::writeTo(unsigned char*) const
+#     #5 lld::wasm::CustomSection::writeTo(unsigned char*)
+#     #6 llvm::parallelFor(...)
+#
+# 自定义 section 的体积主要来自调试信息（dev profile 默认 debug = 2）。
+# 把 wasm 目标的调试信息降为「仅行号表」可稳定绕过崩溃，同时明显缩小 target/ 体积；
+# release / wasm-release 本身已是 debug = false + strip = true，产物不受影响。
+#
+# 只作用于 wasm32 目标，宿主机（server / tools）的调试信息保持完整。
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "debuginfo=1"]

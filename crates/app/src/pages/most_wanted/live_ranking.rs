@@ -3,6 +3,7 @@ use leptos::task::spawn_local;
 use serde::Deserialize;
 
 use crate::data;
+use crate::i18n::t;
 
 /// Club Log 实时榜返回结构。
 #[derive(Deserialize, Clone)]
@@ -33,16 +34,16 @@ pub(super) fn LiveRanking() -> impl IntoView {
 
   view! {
     <section class="rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">"Club Log 实时最稀有榜（Top 15）"</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("Club Log 实时最稀有榜（Top 15）")}</h2>
       <div class="p-4">
         {move || {
           if loading.get() {
-            return view! { <p class="text-sm text-muted-foreground">"正在获取实时榜单…"</p> }.into_any();
+            return view! { <p class="text-sm text-muted-foreground">{move || t("正在获取实时榜单…")}</p> }.into_any();
           }
           if failed.get() || entries.get().is_empty() {
             return view! {
               <p class="text-sm text-muted-foreground">
-                "实时榜单暂不可用，以下为内置参考清单（按稀有度排序）。"
+                {move || t("实时榜单暂不可用，以下为内置参考清单（按稀有度排序）。")}
               </p>
             }
             .into_any();
@@ -55,7 +56,7 @@ pub(super) fn LiveRanking() -> impl IntoView {
                 .map(|e| {
                   view! {
                     <span class="rounded-lg border bg-muted/40 px-2.5 py-1 text-xs tabular-nums">
-                      <span class="font-semibold text-primary">{format!("#{}", e.rank)}</span>
+                      <span class="font-semibold text-foreground">{format!("#{}", e.rank)}</span>
                       " DXCC " <span class="font-mono">{e.adif}</span>
                     </span>
                   }
@@ -66,7 +67,7 @@ pub(super) fn LiveRanking() -> impl IntoView {
           .into_any()
         }}
         <p class="mt-3 text-xs text-muted-foreground">
-          "数据来自 Club Log，编号为 ADIF DXCC 实体编号（可对照 DXCC 实体表）。"
+          {move || t("数据来自 Club Log，编号为 ADIF DXCC 实体编号（可对照 DXCC 实体表）。")}
         </p>
       </div>
     </section>

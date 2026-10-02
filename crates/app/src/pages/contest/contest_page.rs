@@ -3,6 +3,7 @@ use leptos::prelude::*;
 use crate::util::set_title;
 
 use super::countdown_section::CountdownSection;
+use crate::i18n::{t, tf};
 
 /// 一项竞赛。
 struct Contest {
@@ -80,7 +81,7 @@ fn months_until(start: &[u32], current: u32) -> (u32, u32) {
 
 #[component]
 pub fn ContestPage() -> impl IntoView {
-  set_title("通联竞赛");
+  set_title(&t("通联竞赛"));
   // 当前月份（1–12），用于计算下一个竞赛。
   let current = js_sys::Date::new_0().get_month() + 1;
 
@@ -96,11 +97,11 @@ pub fn ContestPage() -> impl IntoView {
   let next = scheduled.first().map(|&(w, m, c)| (w, m, c.name));
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"通联竞赛"</h1>
+            <h1 class="text-base font-semibold leading-tight">{move || t("通联竞赛")}</h1>
             <div class="text-xs text-muted-foreground">"CQ WW · WPX · IARU · ARRL"</div>
           </div>
         </div>
@@ -108,20 +109,20 @@ pub fn ContestPage() -> impl IntoView {
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"下一个竞赛"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("下一个竞赛")}</h2>
           <div class="p-4">
             {match next {
               Some((0, m, name)) => view! {
                 <div class="rounded-lg border bg-primary/10 px-4 py-3">
-                  <div class="text-sm font-semibold">{format!("本月：{name}（{m} 月）")}</div>
-                  <div class="mt-1 text-xs text-muted-foreground">"准备参赛，记得及时提交 Cabrillo 日志。"</div>
+                  <div class="text-sm font-semibold">{tf("本月：{}（{} 月）", &[&(t(name)).to_string(), &m.to_string()])}</div>
+                  <div class="mt-1 text-xs text-muted-foreground">{move || t("准备参赛，记得及时提交 Cabrillo 日志。")}</div>
                 </div>
               }
               .into_any(),
               Some((w, m, name)) => view! {
                 <div class="rounded-lg border bg-primary/10 px-4 py-3">
-                  <div class="text-sm font-semibold">{format!("下一场：{name}（{m} 月）")}</div>
-                  <div class="mt-1 text-xs text-muted-foreground">{format!("约 {w} 个月后举行。")}</div>
+                  <div class="text-sm font-semibold">{tf("下一场：{}（{} 月）", &[&(t(name)).to_string(), &m.to_string()])}</div>
+                  <div class="mt-1 text-xs text-muted-foreground">{tf("约 {} 个月后举行。", &[&w.to_string()])}</div>
                 </div>
               }
               .into_any(),
@@ -133,19 +134,19 @@ pub fn ContestPage() -> impl IntoView {
         <CountdownSection />
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"全年竞赛日历（按下届时间排序）"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("全年竞赛日历（按下届时间排序）")}</h2>
           <div class="divide-y">
             {scheduled
               .iter()
               .map(|&(wait, _month, c)| {
                 view! {
                   <div class="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_11rem_6rem_1fr]">
-                    <div class="font-medium">{c.name}</div>
-                    <div class="text-xs text-muted-foreground">{c.months}</div>
+                    <div class="font-medium">{move || t(c.name)}</div>
+                    <div class="text-xs text-muted-foreground">{move || t(c.months)}</div>
                     <div class=if wait == 0 { "text-xs font-medium text-primary" } else { "text-xs text-muted-foreground" }>
-                      {if wait == 0 { "本月".to_owned() } else { format!("约 {wait} 个月后") }}
+                      {if wait == 0 { t("本月") } else { tf("约 {} 个月后", &[&wait.to_string()]) }}
                     </div>
-                    <div class="text-sm text-muted-foreground">{c.desc}</div>
+                    <div class="text-sm text-muted-foreground">{move || t(c.desc)}</div>
                   </div>
                 }
               })
@@ -154,7 +155,7 @@ pub fn ContestPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"参赛要点"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("参赛要点")}</h2>
           <ul class="space-y-2 p-4">
             {CONTEST_TIPS
               .iter()
@@ -162,7 +163,7 @@ pub fn ContestPage() -> impl IntoView {
                 view! {
                   <li class="flex gap-2 text-sm text-muted-foreground">
                     <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-                    <span>{*tip}</span>
+                    <span>{move || t(tip)}</span>
                   </li>
                 }
               })

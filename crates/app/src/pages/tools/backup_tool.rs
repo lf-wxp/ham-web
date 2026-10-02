@@ -2,6 +2,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use wasm_bindgen::JsCast;
 
+use crate::i18n::{t, tf};
 use crate::ui::{Size, Variant, button_class};
 use crate::util::storage;
 
@@ -42,7 +43,7 @@ fn fmt_size(units: usize) -> String {
 #[component]
 pub(super) fn BackupTool() -> impl IntoView {
   let usage = RwSignal::new(storage::usage());
-  let import = move |e: web_sys::Event| {
+  let run_import = move |e: web_sys::Event, merge: bool| {
     let Some(target) = e.target() else { return };
     let input: web_sys::HtmlInputElement = target.unchecked_into();
     let Some(file) = input.files().and_then(|f| f.get(0)) else {
@@ -52,9 +53,21 @@ pub(super) fn BackupTool() -> impl IntoView {
       let Some(text) = crate::util::read_file_text(&file).await else {
         return;
       };
-      match crate::util::import_backup(&text) {
-        Ok(n) => crate::util::alert(&format!("已恢复 {n} 条数据")),
-        Err(e) => crate::util::alert(&format!("导入失败：{e}")),
+      let result = if merge {
+        crate::util::import_backup_merge(&text)
+      } else {
+        crate::util::import_backup(&text)
+      };
+      match result {
+        Ok(n) => {
+          let msg = if merge {
+            "已合并 {} 条数据"
+          } else {
+            "已恢复 {} 条数据"
+          };
+          crate::util::alert(&tf(msg, &[&n.to_string()]));
+        }
+        Err(e) => crate::util::alert(&tf("导入失败：{}", &[&e.to_string()])),
       }
       usage.set(storage::usage());
     });
@@ -68,11 +81,15 @@ pub(super) fn BackupTool() -> impl IntoView {
           class=button_class(Variant::Default, Size::Default, "")
           on:click=move |_| crate::util::export_backup()
         >
-          "导出备份"
+          {move || t("导出备份")}
         </button>
         <label class=button_class(Variant::Outline, Size::Default, "cursor-pointer")>
-          "导入备份"
-          <input type="file" accept=".json" class="hidden" on:change=import />
+          {move || t("导入备份")}
+          <input type="file" accept=".json" class="hidden" on:change=move |e| run_import(e, false) />
+        </label>
+        <label class=button_class(Variant::Outline, Size::Default, "cursor-pointer")>
+          {move || t("合并导入")}
+          <input type="file" accept=".json" class="hidden" on:change=move |e| run_import(e, true) />
         </label>
       </div>
       {move || {
@@ -98,9 +115,16 @@ pub(super) fn BackupTool() -> impl IntoView {
         view! {
           <div class="space-y-2">
             <div class="flex items-center justify-between text-xs text-muted-foreground">
-              <span>"本地存储占用（约）"</span>
+              {move || t("本地存储占用（约）")}
               <span class="tabular-nums">
-                {format!("{} / {} 字符 · {pct:.1}%", fmt_size(total), fmt_size(storage::QUOTA_UNITS))}
+                {tf(
+                  "{} / {} 字符 · {}%",
+                  &[
+                    &fmt_size(total),
+                    &fmt_size(storage::QUOTA_UNITS),
+                    &format!("{pct:.1}"),
+                  ],
+                )}
               </span>
             </div>
             <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -113,7 +137,7 @@ pub(super) fn BackupTool() -> impl IntoView {
                 .map(|(label, n)| {
                   view! {
                     <li class="flex justify-between">
-                      <span>{label}</span>
+                      <span>{move || t(label)}</span>
                       <span class="tabular-nums text-muted-foreground">{fmt_size(n)}</span>
                     </li>
                   }
@@ -122,7 +146,7 @@ pub(super) fn BackupTool() -> impl IntoView {
             </ul>
             {(pct >= 80.0).then(|| view! {
               <p class="text-xs text-red-600 dark:text-red-400">
-                "存储空间即将用满，建议先导出备份；日志可在通联日志页导出 ADIF 后清理。"
+                {move || t("存储空间即将用满，建议先导出备份；日志可在通联日志页导出 ADIF 后清理。")}
               </p>
             })}
           </div>

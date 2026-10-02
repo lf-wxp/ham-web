@@ -914,6 +914,111 @@ pub fn sub_names_of(top_key: &str) -> Vec<&'static str> {
   names
 }
 
+/// 某一级分类下的分类码（P 码，保持定义顺序，去重）。
+#[must_use]
+pub fn sub_codes_of(top_key: &str) -> Vec<&'static str> {
+  let mut codes: Vec<&'static str> = Vec::new();
+  for s in SUB_CATEGORIES.iter().filter(|s| s.top == top_key) {
+    if !codes.contains(&s.code) {
+      codes.push(s.code);
+    }
+  }
+  codes
+}
+
+/// 一级分类对应的专题页（路由, 名称），供薄弱知识点下钻跳转。
+pub const TOP_PAGES: &[(&str, &[(&str, &str)])] = &[
+  (
+    "法规",
+    &[
+      ("/regulations", "法规与管理"),
+      ("/license", "执照申办"),
+      ("/license-classes", "操作证权限"),
+    ],
+  ),
+  (
+    "频率",
+    &[
+      ("/frequencies", "常用频率"),
+      ("/bands", "波段表"),
+      ("/bandplan", "波段规划"),
+    ],
+  ),
+  (
+    "操作",
+    &[
+      ("/operating", "通联实务"),
+      ("/q-code", "Q 简语"),
+      ("/cw-operating", "CW 操作"),
+    ],
+  ),
+  (
+    "用语",
+    &[
+      ("/q-code", "Q 简语"),
+      ("/phonetic", "字母解释法"),
+      ("/reference", "考试速查"),
+    ],
+  ),
+  (
+    "调制",
+    &[
+      ("/modes", "数字模式"),
+      ("/analog-modes", "模拟模式"),
+      ("/ft8", "FT8/FT4"),
+    ],
+  ),
+  (
+    "设备",
+    &[
+      ("/transceiver", "收发信机"),
+      ("/receiver", "接收机指标"),
+      ("/amplifier", "功率放大器"),
+    ],
+  ),
+  (
+    "天线",
+    &[
+      ("/antennas", "天线型式"),
+      ("/feedline", "匹配与馈线"),
+      ("/polarization", "天线极化"),
+    ],
+  ),
+  (
+    "传播",
+    &[
+      ("/propagation", "传播与电离层"),
+      ("/muf", "传播预测 MUF"),
+      ("/special-prop", "特殊传播"),
+    ],
+  ),
+  (
+    "基础",
+    &[
+      ("/electronics", "电子电路基础"),
+      ("/meters", "测量仪表"),
+      ("/power", "电源与电池"),
+    ],
+  ),
+  (
+    "安全",
+    &[
+      ("/safety", "射频安全"),
+      ("/grounding", "接地与防雷"),
+      ("/rfi", "射频干扰排查"),
+    ],
+  ),
+];
+
+/// 一级分类 key 对应的专题页列表。
+#[must_use]
+pub fn top_pages(key: &str) -> &'static [(&'static str, &'static str)] {
+  TOP_PAGES
+    .iter()
+    .find(|(k, _)| *k == key)
+    .map_or(&[], |(_, p)| p)
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;

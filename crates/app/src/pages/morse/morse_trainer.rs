@@ -17,6 +17,7 @@ use super::{
   btn_secondary, load_stats, load_trainer_settings, morse_display, pill_class, random_choice,
   random_question, roll_today, save_stats, save_trainer_settings,
 };
+use crate::i18n::t;
 
 /// 目标元素是否可输入/可交互（用于快捷键跳过）。
 fn is_interactive(e: &KeyboardEvent) -> bool {
@@ -270,15 +271,15 @@ pub(super) fn MorseTrainer() -> impl IntoView {
   view! {
     <section class="rounded-xl border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">
-        "解码练习"
-        <span class="ml-2 text-xs font-normal text-muted-foreground">"空格重播 · → 下一题"</span>
+        {move || t("解码练习")}
+        <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("空格重播 · → 下一题")}</span>
       </h2>
 
       <div class="space-y-4 p-4">
         // 控制区
         <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div class="flex shrink-0 items-center gap-1.5">
-            <span class="whitespace-nowrap text-xs text-muted-foreground">"模式"</span>
+            <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("模式")}</span>
             {MODES
               .iter()
               .map(|&m| {
@@ -301,7 +302,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
           </div>
 
           <div class="flex shrink-0 items-center gap-1.5">
-            <span class="whitespace-nowrap text-xs text-muted-foreground">"类型"</span>
+            <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("类型")}</span>
             {Target::ALL
               .iter()
               .map(|&t| {
@@ -333,7 +334,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
           </div>
 
           <div class="flex shrink-0 items-center gap-1.5">
-            <span class="whitespace-nowrap text-xs text-muted-foreground">"范围"</span>
+            <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("范围")}</span>
             {Scope::ALL
               .iter()
               .map(|&s| {
@@ -359,7 +360,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
           </div>
 
           <div class="flex shrink-0 items-center gap-2">
-            <span class="whitespace-nowrap text-xs text-muted-foreground">"速度"</span>
+            <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("速度")}</span>
             <input
               type="range"
               min="5"
@@ -373,14 +374,14 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                 }
               }
               class="h-1.5 w-32 accent-primary"
-              aria-label="发报速度（WPM）"
+              aria-label=move || t("发报速度（WPM）")
               aria-valuetext=move || format!("{} WPM", wpm.get().round())
             />
             <span class="text-xs tabular-nums text-muted-foreground">{move || wpm.get().round()} " WPM"</span>
           </div>
 
           <div class="flex shrink-0 items-center gap-2">
-            <span class="whitespace-nowrap text-xs text-muted-foreground">"有效速度"</span>
+            <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("有效速度")}</span>
             <input
               type="range"
               min="5"
@@ -394,7 +395,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                 }
               }
               class="h-1.5 w-32 accent-primary"
-              aria-label="有效速度（WPM，低于字符速度时启用 Farnsworth 间隔）"
+              aria-label=move || t("有效速度（WPM，低于字符速度时启用 Farnsworth 间隔）")
               aria-valuetext=move || format!("{} WPM", eff_wpm.get().round())
             />
             <span class="text-xs tabular-nums text-muted-foreground">{move || eff_wpm.get().round()} " WPM"</span>
@@ -408,9 +409,9 @@ pub(super) fn MorseTrainer() -> impl IntoView {
             }
             aria-pressed=move || adaptive.get().to_string()
             class=move || pill_class(adaptive.get())
-            title="答对加速、答错减速"
+            title=move || t("答对加速、答错减速")
           >
-            "自适应速度"
+            {move || t("自适应速度")}
           </button>
         </div>
 
@@ -452,20 +453,20 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                   class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border bg-card px-3 py-1 text-xs transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                 >
                   <Icon kind=IconKind::Volume2 class="h-3.5 w-3.5" />
-                  "试听"
+                  {move || t("试听")}
                 </button>
               }
               .into_any()
             } else {
               let hint = if mode.get() == Mode::Choice {
-                "点击播放，从下面选出答案"
+                t("点击播放，从下面选出答案")
               } else {
-                "点击播放，听出内容后输入"
+                t("点击播放，听出内容后输入")
               };
               view! {
                 <button
                   type="button"
-                  aria-label="播放"
+                  aria-label=move || t("播放")
                   on:click=move |_| play_current()
                   class="relative flex size-20 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 ease-out hover:scale-105 hover:shadow-xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95"
                 >
@@ -517,8 +518,8 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                     .collect_view()}
                 </div>
                 <div class="flex flex-wrap items-center justify-center gap-2">
-                  <button type="button" on:click=move |_| load_next() class=btn_secondary("")>"跳过"</button>
-                  <button type="button" on:click=move |_| load_next() class=btn_secondary("")>"下一题"</button>
+                  <button type="button" on:click=move |_| load_next() class=btn_secondary("")>{move || t("跳过")}</button>
+                  <button type="button" on:click=move |_| load_next() class=btn_secondary("")>{move || t("下一题")}</button>
                 </div>
               }
               .into_any()
@@ -548,11 +549,11 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                     prop:disabled=move || answer.get().trim().is_empty()
                     class=btn_primary("")
                   >
-                    "提交"
+                    {move || t("提交")}
                   </button>
-                  <button type="button" on:click=move |_| hint() class=btn_secondary("")>"提示"</button>
-                  <button type="button" on:click=move |_| load_next() class=btn_secondary("")>"跳过"</button>
-                  <button type="button" on:click=move |_| load_next() class=btn_secondary("")>"下一题"</button>
+                  <button type="button" on:click=move |_| hint() class=btn_secondary("")>{move || t("提示")}</button>
+                  <button type="button" on:click=move |_| load_next() class=btn_secondary("")>{move || t("跳过")}</button>
+                  <button type="button" on:click=move |_| load_next() class=btn_secondary("")>{move || t("下一题")}</button>
                 </form>
               }
               .into_any()
@@ -566,7 +567,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                   view! {
                     <span class="inline-flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400 animate-in fade-in zoom-in-95 duration-200">
                       <Icon kind=IconKind::CheckCircle2 class="h-4 w-4" />
-                      "正确！"
+                      {move || t("正确！")}
                     </span>
                   }
                   .into_any()
@@ -574,7 +575,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                   view! {
                     <span class="inline-flex items-center gap-1.5 font-medium text-red-600 dark:text-red-400 animate-in fade-in zoom-in-95 duration-200">
                       <Icon kind=IconKind::XCircle class="h-4 w-4" />
-                      "答案是 " <span class="font-mono font-semibold">{fb.question.text}</span> "　"
+                      {move || t("答案是 ")} <span class="font-mono font-semibold">{fb.question.text}</span> "　"
                       <span class="font-mono">{morse_display(&fb.question.code)}</span>
                     </span>
                   }

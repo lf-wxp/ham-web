@@ -3,27 +3,29 @@
 use ham_web_core::repeater::{DIGITAL_GATEWAYS, INTERNET_GATEWAYS, REPEATER_CONCEPTS};
 use leptos::prelude::*;
 
+use super::repeater_lookup::RepeaterLookup;
+use crate::i18n::t;
 use crate::util::set_title;
 
 const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn RepeaterPage() -> impl IntoView {
-  set_title("中继台与数字网关");
+  set_title(&t("中继台与数字网关"));
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"中继台与数字网关"</h1>
-            <div class="text-xs text-muted-foreground">"中继台原理 · 数字中继 · 热点 · 互联网网关"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("中继台与数字网关")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("中继台原理 · 数字中继 · 热点 · 互联网网关")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"中继台概念"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("中继台概念")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {REPEATER_CONCEPTS
               .iter()
@@ -40,14 +42,14 @@ pub fn RepeaterPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"数字中继与网关"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("数字中继与网关")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[560px] border-collapse text-sm">
               <thead class="bg-muted/60 text-xs">
                 <tr>
-                  <th class=CELL>"类型"</th>
-                  <th class=CELL>"协议"</th>
-                  <th class=CELL>"说明"</th>
+                  <th class=CELL>{move || t("类型")}</th>
+                  <th class=CELL>{move || t("协议")}</th>
+                  <th class=CELL>{move || t("说明")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -68,8 +70,10 @@ pub fn RepeaterPage() -> impl IntoView {
           </div>
         </section>
 
+        <RepeaterLookup />
+
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"互联网网关"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("互联网网关")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {INTERNET_GATEWAYS
               .iter()

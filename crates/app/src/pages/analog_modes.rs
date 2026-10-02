@@ -3,20 +3,21 @@
 use ham_web_core::analog_modes::{ANALOG_MODES, ANALOG_VS_DIGITAL, SIDEBAND_RULES};
 use leptos::prelude::*;
 
+use crate::i18n::t;
 use crate::util::set_title;
 
 const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn AnalogModesPage() -> impl IntoView {
-  set_title("模拟模式");
+  set_title(&t("模拟模式"));
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"模拟模式"</h1>
-            <div class="text-xs text-muted-foreground">"CW 等幅波 · SSB 单边带 · AM 调幅 · FM 调频 · SSTV 慢扫描电视"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("模拟模式")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("CW 等幅波 · SSB 单边带 · AM 调幅 · FM 调频 · SSTV 慢扫描电视")}</div>
           </div>
         </div>
       </header>
@@ -26,12 +27,12 @@ pub fn AnalogModesPage() -> impl IntoView {
           <table class="w-full min-w-[720px] border-collapse text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>
-                <th class=CELL>"模式"</th>
-                <th class=CELL>"发射类别"</th>
-                <th class=CELL>"带宽"</th>
-                <th class=CELL>"说明"</th>
-                <th class=CELL>"特点"</th>
-                <th class=CELL>"典型用途"</th>
+                <th class=CELL>{move || t("模式")}</th>
+                <th class=CELL>{move || t("发射类别")}</th>
+                <th class=CELL>{move || t("带宽")}</th>
+                <th class=CELL>{move || t("说明")}</th>
+                <th class=CELL>{move || t("特点")}</th>
+                <th class=CELL>{move || t("典型用途")}</th>
               </tr>
             </thead>
             <tbody>
@@ -58,7 +59,7 @@ pub fn AnalogModesPage() -> impl IntoView {
         </div>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"USB / LSB 边带选择惯例"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("USB / LSB 边带选择惯例")}</h2>
           <ul class="space-y-2 p-4">
             {SIDEBAND_RULES
               .iter()
@@ -75,7 +76,7 @@ pub fn AnalogModesPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"模拟 vs 数字"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("模拟 vs 数字")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {ANALOG_VS_DIGITAL
               .iter()

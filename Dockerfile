@@ -47,7 +47,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     ./target/release/ham-web-tools icons; \
     (cd crates/app && trunk build --release); \
     ./target/release/ham-web-tools postbuild --dist dist --site-url "${SITE_URL}"; \
-    mkdir -p /out; \
+    mkdir -p /out/data; \
     cp ./target/release/ham-web-server /out/ham-web-server; \
     cp -r dist /out/dist
 
@@ -62,10 +62,13 @@ LABEL org.opencontainers.image.title="ham-web" \
 WORKDIR /app
 COPY --from=builder --chown=nonroot:nonroot /out/ham-web-server /app/ham-web-server
 COPY --from=builder --chown=nonroot:nonroot /out/dist /app/dist
+# 可写数据目录：VAPID 密钥与推送订阅持久化（首次启动自动生成密钥）
+COPY --from=builder --chown=nonroot:nonroot /out/data /app/data
 
 ENV HOST=0.0.0.0 \
     PORT=3000 \
     DIST_DIR=/app/dist \
+    PUSH_STORE=/app/data/push-subscriptions.json \
     RUST_LOG=info,tower_http=warn
 
 EXPOSE 3000

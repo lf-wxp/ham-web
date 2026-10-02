@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::INPUT;
+use crate::i18n::{t, tf};
 
 /// 馈线损耗估算。
 #[component]
@@ -10,7 +11,7 @@ pub(super) fn FeedlineLoss() -> impl IntoView {
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"馈线损耗（dB / 100m）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("馈线损耗（dB / 100m）")}</span>
         <input
           type="number"
           step="0.1"
@@ -24,7 +25,7 @@ pub(super) fn FeedlineLoss() -> impl IntoView {
         />
       </label>
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"馈线长度（m）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("馈线长度（m）")}</span>
         <input
           type="number"
           step="1"
@@ -41,7 +42,10 @@ pub(super) fn FeedlineLoss() -> impl IntoView {
         {move || {
           let db = loss_per_100m.get() * length.get() / 100.0;
           let power_pct = (1.0 - 10f64.powf(-db / 10.0)) * 100.0;
-          format!("总损耗 {:.2} dB　功率损耗 {:.1}%", db, power_pct)
+          tf(
+            "总损耗 {} dB　功率损耗 {}%",
+            &[&format!("{db:.2}"), &format!("{power_pct:.1}")],
+          )
         }}
       </div>
     </div>

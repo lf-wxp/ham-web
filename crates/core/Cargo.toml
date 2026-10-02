@@ -1,6 +1,6 @@
 [package]
 name = "ham-web-core"
-description = "业余无线电考试：题目模型、内容指纹、考试规则与分类体系（前端与工具链共享）"
+description = "业余无线电：题目模型、内容指纹、考试规则与分类体系（前端与工具链共享）"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,8 +10,6 @@ authors.workspace = true
 
 [dependencies]
 serde.workspace = true
-
-[dev-dependencies]
 serde_json.workspace = true
 
 [lints]

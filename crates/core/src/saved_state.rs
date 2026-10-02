@@ -177,6 +177,8 @@ pub mod keys {
   pub const PRACTICE_LAST_MODE: &str = "practice:lastMode";
   /// 主题。
   pub const THEME: &str = "theme";
+  /// 界面语言（`zh` / `en`）。
+  pub const LOCALE: &str = "locale";
   /// 练习快捷键说明是否已展示。
   pub const HELP_SEEN_PRACTICE: &str = "ui:shortcutsHelpSeen:practice";
   /// 考试快捷键说明是否已展示。

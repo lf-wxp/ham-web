@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::{INPUT, RESULT, fmt_num};
+use crate::i18n::{t, tf};
 
 /// CW 必要带宽估算：Bn = B × K，B = WPM / 1.2，K 取 5（衰落信道）或 3（非衰落）。
 #[component]
@@ -11,7 +12,7 @@ pub(super) fn CwBandwidth() -> impl IntoView {
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"拍发速度（WPM）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("拍发速度（WPM）")}</span>
         <input
           type="number"
           prop:value=move || wpm.get().to_string()
@@ -35,7 +36,7 @@ pub(super) fn CwBandwidth() -> impl IntoView {
             }
           }
         >
-          "衰落 K=5"
+          {move || t("衰落 K=5")}
         </button>
         <button
           type="button"
@@ -48,14 +49,17 @@ pub(super) fn CwBandwidth() -> impl IntoView {
             }
           }
         >
-          "非衰落 K=3"
+          {move || t("非衰落 K=3")}
         </button>
       </div>
       <div class=RESULT>
         {move || {
           let k = if fading.get() { 5.0 } else { 3.0 };
           let b = wpm.get() / 1.2;
-          format!("波特率 B = {} Bd，必要带宽 Bn = {} Hz", fmt_num(b), fmt_num(b * k))
+          tf(
+            "波特率 B = {} Bd，必要带宽 Bn = {} Hz",
+            &[&fmt_num(b), &fmt_num(b * k)],
+          )
         }}
       </div>
     </div>

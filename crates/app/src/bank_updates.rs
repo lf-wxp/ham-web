@@ -7,6 +7,7 @@ use wasm_bindgen::JsValue;
 use web_sys::{CustomEvent, CustomEventInit};
 
 use crate::data;
+use crate::i18n::tf;
 use crate::util::{storage, window};
 
 /// 题库内容变化时派发的事件，`detail` 为提示文字。
@@ -42,7 +43,10 @@ pub fn observe(bank: Bank, rev: &str, questions: &[QuestionItem]) {
     }
     let d = diff(&old.digest, &digest);
     if !d.is_empty() {
-      notify(&format!("{bank} 类：{}", d.describe()));
+      notify(&tf(
+        "{} 类：{}",
+        &[&(bank).to_string(), &(d.describe()).to_string()],
+      ));
     }
   }
   storage::set_json(

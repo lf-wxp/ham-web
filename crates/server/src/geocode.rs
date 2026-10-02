@@ -1,7 +1,6 @@
 //! 反向地理编码代理：经纬度 → 国家 / 城市（BigDataCloud 客户端 API，无需密钥）。
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -11,8 +10,9 @@ use axum::http::StatusCode;
 use axum::http::header::CONTENT_TYPE;
 use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
-use tokio::sync::Notify;
 use tracing::error;
+
+use crate::cache::Inflight;
 
 /// 缓存时长：地理信息基本不变。
 const CACHE_TTL: Duration = Duration::from_secs(24 * 3600);
@@ -174,8 +174,7 @@ const MAX_ENTRIES: usize = 10_000;
 #[derive(Default)]
 pub struct Cache {
   inner: Mutex<HashMap<(i32, i32), (Instant, GeocodeResult)>>,
-  inflight: AtomicBool,
-  notify: Notify,
+  inflight: Inflight,
 }
 
 /// 经纬度量化到约 1km 精度，避免缓存无限增长。
@@ -202,21 +201,14 @@ pub async fn handler(Query(q): Query<GeocodeQuery>, cache: Arc<Cache>) -> Respon
     }
 
     // 抢刷新权；抢不到则等待，避免并发请求在冷启动/过期瞬间拿到无谓的 503。
-    if cache
-      .inflight
-      .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-      .is_ok()
-    {
+    if let Some(_guard) = cache.inflight.acquire() {
       let fetched = tokio::task::spawn_blocking(move || fetch(q.lat, q.lon)).await;
-      cache.inflight.store(false, Ordering::Release);
-      cache.notify.notify_waiters();
 
+      // `_guard` 存活到缓存写入完成后释放，保证等待者被唤醒时能读到新缓存。
       return match fetched {
         Ok(Ok(r)) => {
           if let Ok(mut g) = cache.inner.lock() {
-            if g.len() >= MAX_ENTRIES {
-              g.clear();
-            }
+            crate::cache::evict_oldest(&mut *g, MAX_ENTRIES);
             g.insert(k, (Instant::now(), r.clone()));
           }
           json(&r)
@@ -232,7 +224,7 @@ pub async fn handler(Query(q): Query<GeocodeQuery>, cache: Arc<Cache>) -> Respon
       };
     }
 
-    cache.notify.notified().await;
+    cache.inflight.wait().await;
   }
 }
 

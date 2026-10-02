@@ -1,10 +1,17 @@
 [workspace]
 resolver = "3"
-members = ["crates/core", "crates/app", "crates/server", "crates/tools"]
-default-members = ["crates/core", "crates/server", "crates/tools"]
+members = [
+  "crates/core",
+  "crates/app",
+  "crates/server",
+  "crates/tools",
+  "crates/apt",
+  "crates/apt-worker",
+]
+default-members = ["crates/core", "crates/server", "crates/tools", "crates/apt"]
 
 [workspace.package]
-version = "0.3.2"
+version = "0.3.3"
 edition = "2024"
 rust-version = "1.88"
 license = "MIT"
@@ -14,6 +21,7 @@ authors = ["lf-wxp"]
 
 [workspace.dependencies]
 ham-web-core = { path = "crates/core" }
+ham-web-apt = { path = "crates/apt" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -46,7 +54,7 @@ regex = "1.13"
 ureq = "3"
 resvg = "0.48"
 sha2 = "0.11"
-brotli = "8"
+brotli = "9"
 flate2 = "1"
 walkdir = "2"
 

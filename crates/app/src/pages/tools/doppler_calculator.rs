@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::{INPUT, fmt_num};
+use crate::i18n::{t, tf};
 
 /// 卫星多普勒频移：输入频率与相对径向速度，估算最大多普勒频移。
 #[component]
@@ -11,7 +12,7 @@ pub(super) fn DopplerCalculator() -> impl IntoView {
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"下行频率（MHz）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("下行频率（MHz）")}</span>
         <input
           type="number"
           prop:value=move || freq.get().to_string()
@@ -24,7 +25,7 @@ pub(super) fn DopplerCalculator() -> impl IntoView {
         />
       </label>
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"相对径向速度（km/s，LEO 约 7.5）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("相对径向速度（km/s，LEO 约 7.5）")}</span>
         <input
           type="number"
           prop:value=move || vel.get().to_string()
@@ -41,14 +42,13 @@ pub(super) fn DopplerCalculator() -> impl IntoView {
           let f = freq.get();
           let v = vel.get();
           if f <= 0.0 || v < 0.0 {
-            "请输入正频率与速度".to_owned()
+            t("请输入正频率与速度")
           } else {
             // Δf = f · v / c，c = 299792.458 km/s。
             let shift_khz = f * v / 299_792.458 * 1000.0;
-            format!(
+            tf(
               "最大多普勒频移 ≈ {} kHz（{} MHz 处）。卫星接近时频率升高、远离时降低。",
-              fmt_num(shift_khz),
-              fmt_num(f),
+              &[&fmt_num(shift_khz), &fmt_num(f)],
             )
           }
         }}

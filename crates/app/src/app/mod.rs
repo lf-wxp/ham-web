@@ -12,6 +12,7 @@ mod footer;
 mod main_content;
 mod storage_warning;
 
+use crate::i18n::t;
 use footer::Footer;
 use main_content::MainContent;
 use storage_warning::StorageWarning;
@@ -19,9 +20,12 @@ use storage_warning::StorageWarning;
 #[component]
 pub fn App() -> impl IntoView {
   provide_theme();
+  crate::i18n::provide_locale();
   crate::pages::log::provide_log_store();
   leptos::task::spawn_local(crate::study::ensure_seeded());
   crate::sat_alert::start_watcher();
+  crate::pages::start_global_watcher();
+  crate::study::start_study_reminder_watcher();
   let search_open = RwSignal::new(false);
   provide_context(search_open);
   view! {
@@ -40,7 +44,7 @@ pub fn App() -> impl IntoView {
           }
         }
       >
-        "跳到主要内容"
+        {move || t("跳到主要内容")}
       </a>
       <UpdateNotices />
       <Navigation />
@@ -48,6 +52,7 @@ pub fn App() -> impl IntoView {
       <Footer />
       <SearchDialog />
       <StorageWarning />
+      <crate::achievements::AchievementToast />
     </Router>
   }
 }

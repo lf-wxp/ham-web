@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsValue;
 
 use crate::data;
+use crate::i18n::{t, tf};
 use crate::ui::{
   CARD_HEADER, Size, Variant, button_class, card_class, card_content_class, card_title_class,
 };
@@ -77,11 +78,9 @@ pub(super) fn DailyQuestion() -> impl IntoView {
     <div data-slot="card" class=card_class("")>
       <div data-slot="card-header" class=CARD_HEADER>
         <div data-slot="card-title" class=card_title_class("flex items-center justify-between")>
-          <span>"每日一题"</span>
+          <span>{move || t("每日一题")}</span>
           <span class="text-sm font-normal text-muted-foreground">
-            "已连续打卡 "
-            <span class="font-semibold text-foreground">{move || streak.get()}</span>
-            " 天"
+            {move || tf("已连续打卡 {} 天", &[&streak.get().to_string()])}
           </span>
         </div>
       </div>
@@ -104,7 +103,7 @@ pub(super) fn DailyQuestion() -> impl IntoView {
                   .collect_view()}
               </div>
               <a href="/practice" class=button_class(Variant::Outline, Size::Sm, "")>
-                "去练习答题"
+                {move || t("去练习答题")}
               </a>
             }
           })

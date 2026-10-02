@@ -1,6 +1,6 @@
 [package]
 name = "ham-web-server"
-description = "业余无线电考试模拟：静态站点服务器（SPA 回退、PWA 缓存头、压缩）"
+description = "业余无线电：静态站点服务器（SPA 回退、PWA 缓存头、压缩）"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,6 +9,7 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+ham-web-core.workspace = true
 anyhow.workspace = true
 axum.workspace = true
 chrono.workspace = true
@@ -22,6 +23,14 @@ tower-http.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 ureq.workspace = true
+
+# Web Push（RFC 8291 + VAPID，纯 Rust 实现，无系统 OpenSSL 依赖）
+p256 = { version = "0.14", features = ["ecdsa", "ecdh"] }
+hkdf = "0.13"
+aes-gcm = "0.11"
+base64 = "0.23"
+rand = "0.10"
+sha2 = "0.11"
 
 [lints]
 workspace = true

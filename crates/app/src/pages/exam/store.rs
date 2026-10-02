@@ -16,6 +16,8 @@ pub(super) struct ExamStore {
   pub(super) index: RwSignal<usize>,
   pub(super) finished: RwSignal<bool>,
   pub(super) end_at: RwSignal<Option<i64>>,
+  /// 本场考试开始时间（毫秒时间戳），用于统计作答耗时。
+  pub(super) started_ms: RwSignal<i64>,
 }
 
 impl ExamStore {
@@ -27,16 +29,22 @@ impl ExamStore {
       index: RwSignal::new(0),
       finished: RwSignal::new(false),
       end_at: RwSignal::new(None),
+      started_ms: RwSignal::new(0),
     }
   }
 
   pub(super) fn start(self, questions: Questions, rule: ExamRule) {
+    let now = now_ms();
     self.questions.set(questions);
     self.answers.set(HashMap::new());
     self.flags.set(HashMap::new());
     self.index.set(0);
     self.finished.set(false);
-    self.end_at.set(Some(now_ms() + rule.duration_ms()));
+    self.started_ms.set(now);
+    // `minutes == 0` 表示不限时（自定义组卷）。
+    self
+      .end_at
+      .set((rule.minutes > 0).then(|| now + rule.duration_ms()));
   }
 
   pub(super) fn reset(self) {
@@ -46,6 +54,7 @@ impl ExamStore {
     self.index.set(0);
     self.finished.set(false);
     self.end_at.set(None);
+    self.started_ms.set(0);
   }
 
   pub(super) fn len(self) -> usize {

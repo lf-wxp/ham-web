@@ -3,7 +3,6 @@
 //! TLE 缓存 6 小时；过境计算在 `spawn_blocking` 中执行，避免阻塞事件循环。
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -14,11 +13,37 @@ use axum::http::header::CONTENT_TYPE;
 use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
 use sgp4::{Constants, Elements, MinutesSinceEpoch};
-use tokio::sync::Notify;
 use tracing::error;
 
-/// Celestrak 业余卫星 TLE（GP 组）。
-const CELESTRAK_URL: &str = "https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle";
+use crate::cache::Inflight;
+
+/// 卫星群组：业余卫星（默认）与气象卫星（NOAA APT）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub enum SatGroup {
+  #[default]
+  Amateur,
+  Weather,
+}
+
+impl SatGroup {
+  /// 对应 Celestrak GP 组 TLE 地址。
+  const fn url(self) -> &'static str {
+    match self {
+      Self::Amateur => "https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle",
+      Self::Weather => "https://celestrak.org/NORAD/elements/gp.php?GROUP=weather&FORMAT=tle",
+    }
+  }
+}
+
+impl std::str::FromStr for SatGroup {
+  type Err = ();
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s {
+      "weather" => Ok(Self::Weather),
+      _ => Ok(Self::Amateur),
+    }
+  }
+}
 /// TLE 缓存时长。
 const TLE_CACHE_TTL: Duration = Duration::from_secs(6 * 3600);
 /// 上游响应体上限。
@@ -42,6 +67,9 @@ pub struct PassQuery {
   lon: f64,
   #[serde(default = "default_min_elev")]
   min_elev: f64,
+  /// 卫星群组：`amateur`（默认）或 `weather`。
+  #[serde(default)]
+  group: String,
 }
 
 const fn default_min_elev() -> f64 {
@@ -101,8 +129,8 @@ fn parse_tle_group(text: &str) -> Vec<TleLine> {
 }
 
 /// 拉取 Celestrak TLE。
-fn fetch_tle() -> anyhow::Result<Vec<TleLine>> {
-  let mut res = ureq::get(CELESTRAK_URL)
+fn fetch_tle(group: SatGroup) -> anyhow::Result<Vec<TleLine>> {
+  let mut res = ureq::get(group.url())
     .call()
     .context("fetch Celestrak failed")?;
   let text = res
@@ -252,24 +280,25 @@ struct PassKey {
   lat: i32,
   lon: i32,
   min_elev: i32,
+  group: SatGroup,
 }
 
 /// 量化经纬度与仰角为缓存 key。
-fn result_key(lat: f64, lon: f64, min_elev: f64) -> PassKey {
+fn result_key(lat: f64, lon: f64, min_elev: f64, group: SatGroup) -> PassKey {
   PassKey {
     lat: (lat * 2.0).round() as i32,
     lon: (lon * 2.0).round() as i32,
     min_elev: min_elev.round() as i32,
+    group,
   }
 }
 
 /// 缓存：TLE（6 小时）+ 过境结果（5 分钟）。
 #[derive(Default)]
 pub struct Cache {
-  tle: Mutex<Option<TleCacheEntry>>,
+  tle: Mutex<HashMap<SatGroup, TleCacheEntry>>,
   results: Mutex<HashMap<PassKey, (Instant, Vec<Pass>)>>,
-  inflight: AtomicBool,
-  notify: Notify,
+  inflight: Inflight,
 }
 
 /// `GET /api/passes` 处理器。
@@ -282,7 +311,8 @@ pub async fn handler(Query(q): Query<PassQuery>, cache: Arc<Cache>) -> Response 
     return (StatusCode::BAD_REQUEST, "invalid lat/lon").into_response();
   }
   let min_elev = q.min_elev.clamp(0.0, 90.0);
-  let key = result_key(q.lat, q.lon, min_elev);
+  let group = q.group.parse::<SatGroup>().unwrap_or_default();
+  let key = result_key(q.lat, q.lon, min_elev, group);
 
   loop {
     // 命中结果缓存直接返回。
@@ -293,21 +323,14 @@ pub async fn handler(Query(q): Query<PassQuery>, cache: Arc<Cache>) -> Response 
     }
 
     // 抢计算权；抢不到则等待，避免并发请求在冷启动/过期瞬间拿到无谓的 503。
-    if cache
-      .inflight
-      .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-      .is_ok()
-    {
-      let result = compute(cache.clone(), q.lat, q.lon, min_elev).await;
-      cache.inflight.store(false, Ordering::Release);
-      cache.notify.notify_waiters();
+    if let Some(_guard) = cache.inflight.acquire() {
+      let result = compute(cache.clone(), q.lat, q.lon, min_elev, group).await;
 
+      // `_guard` 存活到缓存写入完成后释放，保证等待者被唤醒时能读到新缓存。
       return match result {
         Ok(passes) => {
           if let Ok(mut g) = cache.results.lock() {
-            if g.len() >= MAX_RESULT_ENTRIES {
-              g.clear();
-            }
+            crate::cache::evict_oldest(&mut *g, MAX_RESULT_ENTRIES);
             g.insert(key, (Instant::now(), passes.clone()));
           }
           passes_payload(q.lat, q.lon, &passes)
@@ -316,7 +339,7 @@ pub async fn handler(Query(q): Query<PassQuery>, cache: Arc<Cache>) -> Response 
       };
     }
 
-    cache.notify.notified().await;
+    cache.inflight.wait().await;
   }
 }
 
@@ -327,17 +350,18 @@ async fn compute(
   lat: f64,
   lon: f64,
   min_elev: f64,
+  group: SatGroup,
 ) -> Result<Vec<Pass>, Response> {
   // 1) 获取 TLE。
-  let group = {
-    let cached: Option<TleCacheEntry> = cache.tle.lock().ok().and_then(|g| g.clone());
+  let tles = {
+    let cached: Option<TleCacheEntry> = cache.tle.lock().ok().and_then(|g| g.get(&group).cloned());
     if let Some((_, g)) = cached.filter(|(t, _)| t.elapsed() < TLE_CACHE_TTL) {
       g
     } else {
-      match tokio::task::spawn_blocking(fetch_tle).await {
+      match tokio::task::spawn_blocking(move || fetch_tle(group)).await {
         Ok(Ok(g)) => {
           if let Ok(mut lock) = cache.tle.lock() {
-            *lock = Some((Instant::now(), g.clone()));
+            lock.insert(group, (Instant::now(), g.clone()));
           }
           g
         }
@@ -362,7 +386,7 @@ async fn compute(
   // 2) 计算过境（CPU 密集，放 spawn_blocking）。
   tokio::task::spawn_blocking(move || {
     let mut all = Vec::new();
-    for (name, l1, l2) in &group {
+    for (name, l1, l2) in &tles {
       let Ok(elements) = Elements::from_tle(Some(name.clone()), l1.as_bytes(), l2.as_bytes())
       else {
         continue;

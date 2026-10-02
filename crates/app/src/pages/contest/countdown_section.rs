@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use crate::i18n::{t, tf};
 use leptos::prelude::*;
 
 /// 未来赛事（2026 赛季，UTC 起始日期）。
@@ -29,7 +30,7 @@ pub(super) fn CountdownSection() -> impl IntoView {
 
   view! {
     <section class="rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">"未来赛事倒计时（UTC）"</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("未来赛事倒计时（UTC）")}</h2>
       <div class="divide-y">
         {UPCOMING
           .iter()
@@ -38,17 +39,20 @@ pub(super) fn CountdownSection() -> impl IntoView {
             let target = month_start + (d as f64 - 1.0) * 86_400_000.0;
             view! {
               <div class="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr_9rem]">
-                <div class="font-medium">{name}</div>
-                <div class="text-sm text-muted-foreground">{format!("{m} 月 {d} 日 · {desc}")}</div>
+                <div class="font-medium">{move || t(name)}</div>
+                <div class="text-sm text-muted-foreground">{tf("{} 月 {} 日 · {}", &[&m.to_string(), &d.to_string(), &(t(desc)).to_string()])}</div>
                 <div class="text-right text-sm font-medium tabular-nums text-primary">
                   {move || {
                     let left = target - now.get();
                     if left <= 0.0 {
-                      "已开赛".to_owned()
+                      t("已开赛")
                     } else {
                       let days = (left / 86_400_000.0).floor();
                       let hours = ((left % 86_400_000.0) / 3_600_000.0).floor();
-                      format!("{days:.0} 天 {hours:.0} 时")
+                      tf(
+                        "{} 天 {} 时",
+                        &[&format!("{days:.0}"), &format!("{hours:.0}")],
+                      )
                     }
                   }}
                 </div>
@@ -58,7 +62,7 @@ pub(super) fn CountdownSection() -> impl IntoView {
           .collect_view()}
       </div>
       <p class="px-4 py-3 text-xs text-muted-foreground">
-        "日期按 2026 赛季常见规则推算（UTC 为准），具体以主办方公告为准。"
+        {move || t("日期按 2026 赛季常见规则推算（UTC 为准），具体以主办方公告为准。")}
       </p>
     </section>
   }

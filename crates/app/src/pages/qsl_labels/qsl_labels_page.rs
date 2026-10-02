@@ -8,6 +8,7 @@ use crate::ui::{Size, Variant, button_class, input_class};
 use crate::util::{set_title, storage, window};
 
 use super::label_view::LabelView;
+use crate::i18n::{t, tf};
 
 const LAYOUT_KEY: &str = "qsl-label-layout";
 
@@ -31,7 +32,7 @@ fn page_css(l: &Layout) -> String {
 /// QSL 标签打印页。
 #[component]
 pub fn QslLabelsPage() -> impl IntoView {
-  set_title("QSL 标签打印");
+  set_title(&t("QSL 标签打印"));
   let store = use_log_store();
   let layout_id =
     RwSignal::new(storage::get(LAYOUT_KEY).unwrap_or_else(|| LAYOUTS[0].id.to_owned()));
@@ -64,7 +65,10 @@ pub fn QslLabelsPage() -> impl IntoView {
       return;
     }
     if !window()
-      .confirm_with_message(&format!("把这 {} 条通联标记为「QSL 已寄出」？", ids.len()))
+      .confirm_with_message(&tf(
+        "把这 {} 条通联标记为「QSL 已寄出」？",
+        &[&ids.len().to_string()],
+      ))
       .unwrap_or(false)
     {
       return;
@@ -91,7 +95,7 @@ pub fn QslLabelsPage() -> impl IntoView {
     if list.is_empty() {
       return view! {
         <p class="py-16 text-center text-sm text-muted-foreground">
-          {if scope.get() == Scope::Unsent { "没有待寄出的通联。可切换到「全部」重新打印。" } else { "日志里还没有通联记录。" }}
+          {if scope.get() == Scope::Unsent { t("没有待寄出的通联。可切换到「全部」重新打印。") } else { t("日志里还没有通联记录。") }}
         </p>
       }
       .into_any();
@@ -112,7 +116,7 @@ pub fn QslLabelsPage() -> impl IntoView {
             class=if p == 0 { "relative mx-auto mb-6 overflow-hidden bg-white text-zinc-900 shadow-sm print:mb-0 print:shadow-none" } else { "print-break-before relative mx-auto mb-6 overflow-hidden bg-white text-zinc-900 shadow-sm print:mb-0 print:shadow-none" }
             style:width=format!("{w}mm")
             style:height=format!("{h}mm")
-            aria-label=format!("第 {} 页", p + 1)
+            aria-label=tf("第 {} 页", &[&(p + 1).to_string()])
           >
             {slots.into_iter().enumerate().map(|(slot, idx)| {
               let (x, y) = l.origin(slot);
@@ -145,17 +149,17 @@ pub fn QslLabelsPage() -> impl IntoView {
       <div class="print-hide sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"QSL 标签打印"</h1>
-            <div class="text-xs text-muted-foreground">"同一呼号的通联合并到一张标签，贴在 QSL 卡背面即可寄出"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("QSL 标签打印")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("同一呼号的通联合并到一张标签，贴在 QSL 卡背面即可寄出")}</div>
           </div>
-          <a href="/log" class=button_class(Variant::Ghost, Size::Sm, "")>"返回日志"</a>
+          <a href="/log" class=button_class(Variant::Ghost, Size::Sm, "")>{move || t("返回日志")}</a>
           <button
             type="button"
             class=button_class(Variant::Outline, Size::Sm, "")
             prop:disabled=move || selected.with(Vec::is_empty)
             on:click=move |_| mark_sent()
           >
-            {move || format!("标记为已寄出（{}）", selected.with(Vec::len))}
+            {move || tf("标记为已寄出（{}）", &[&selected.with(Vec::len).to_string()])}
           </button>
           <button
             type="button"
@@ -163,23 +167,23 @@ pub fn QslLabelsPage() -> impl IntoView {
             prop:disabled=move || labels.with(Vec::is_empty)
             on:click=move |_| { let _ = window().print(); }
           >
-            "打印"
+            {move || t("打印")}
           </button>
         </div>
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 pb-3 text-xs text-muted-foreground">
-          <div class="inline-flex rounded-lg bg-muted p-0.5" role="group" aria-label="通联范围">
+          <div class="inline-flex rounded-lg bg-muted p-0.5" role="group" aria-label=move || t("通联范围")>
             {[(Scope::Unsent, "未寄出"), (Scope::All, "全部")].into_iter().map(|(s, label)| view! {
               <button type="button" class=move || seg(scope.get() == s) aria-pressed=move || (scope.get() == s).to_string() on:click=move |_| scope.set(s)>
-                {label}
+                {move || t(label)}
               </button>
             }).collect_view()}
           </div>
           <label class="inline-flex items-center gap-1.5">
-            "起始日期"
+            {move || t("起始日期")}
             <input type="date" class=input_class("h-7 w-auto py-0 text-xs") prop:value=move || since.get() on:input=move |e| since.set(event_target_value(&e)) />
           </label>
           <label class="inline-flex items-center gap-1.5">
-            "标签纸"
+            {move || t("标签纸")}
             <select
               class=input_class("h-7 w-auto py-0 text-xs")
               on:change=move |e| {
@@ -194,8 +198,8 @@ pub fn QslLabelsPage() -> impl IntoView {
               }).collect_view()}
             </select>
           </label>
-          <label class="inline-flex items-center gap-1.5" title="用过一部分的标签纸：跳过前面已撕掉的标签">
-            "跳过前"
+          <label class="inline-flex items-center gap-1.5" title=move || t("用过一部分的标签纸：跳过前面已撕掉的标签")>
+            {move || t("跳过前")}
             <input
               type="number"
               min="0"
@@ -207,28 +211,37 @@ pub fn QslLabelsPage() -> impl IntoView {
                 skip.set(event_target_value(&e).parse::<usize>().unwrap_or(0).min(max));
               }
             />
-            "张"
+            {move || t("张")}
           </label>
           <span class="tabular-nums" aria-live="polite">
             {move || {
               let l = current.get();
               let n = labels.with(Vec::len);
               let pages = paginate(n, &l, skip.get()).len();
-              format!("{n} 张标签 · {} 条通联 · {pages} 页", selected.with(Vec::len))
+              tf(
+                "{} 张标签 · {} 条通联 · {} 页",
+                &[
+                  &n.to_string(),
+                  &selected.with(Vec::len).to_string(),
+                  &pages.to_string(),
+                ],
+              )
             }}
           </span>
         </div>
         {move || store.station.with(|s| s.callsign.trim().is_empty()).then(|| view! {
           <p class="mx-auto max-w-5xl px-4 pb-3 text-xs text-amber-800 dark:text-amber-300">
-            "还没有设置本台呼号，标签上不会显示「From」。可到 "
-            <a href="/log" class="font-medium underline underline-offset-4">"通联日志 → 本台信息"</a>
-            " 填写。"
+            {move || t("还没有设置本台呼号，标签上不会显示「From」。可到")}
+            " "
+            <a href="/log" class="font-medium underline underline-offset-4">{move || t("通联日志 → 本台信息")}</a>
+            " "
+            {move || t("填写。")}
           </p>
         })}
       </div>
 
       <div class="print-sheet mt-6 overflow-x-auto px-4 print:mt-0 print:overflow-visible print:px-0">{sheets}</div>
-      <p class="print-hide mt-2 text-center text-xs text-muted-foreground">"打印时请选择「实际大小 / 100%」并关闭页眉页脚，否则标签会错位。"</p>
+      <p class="print-hide mt-2 text-center text-xs text-muted-foreground">{move || t("打印时请选择「实际大小 / 100%」并关闭页眉页脚，否则标签会错位。")}</p>
     </div>
   }
 }

@@ -8,6 +8,7 @@ mod conditions_table;
 mod flux_trend;
 mod metric_card;
 mod solar_page;
+mod xray_trend;
 
 pub use solar_page::SolarPage;
 
@@ -49,6 +50,21 @@ struct SolarEntry {
   ssn: Option<f64>,
   #[serde(rename = "f10.7")]
   f107: Option<f64>,
+}
+
+/// 服务端 `/api/xray` 返回结构（GOES X 射线通量）。
+#[derive(Deserialize, Clone)]
+struct XrayApi {
+  flux: Option<f64>,
+  flare_class: String,
+  series: Vec<XrayPoint>,
+}
+
+/// X 射线通量曲线点。
+#[derive(Deserialize, Clone)]
+struct XrayPoint {
+  time: String,
+  flux: f64,
 }
 
 /// NOAA SWPC 行星 Kp 指数（每分钟）。

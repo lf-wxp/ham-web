@@ -176,6 +176,66 @@ pub fn same_set(a: &[String], b: &[String]) -> bool {
   a == b
 }
 
+/// 全站搜索用的精简题目索引条目（由 `postbuild` 从题库 JSON 提取，
+/// 写入 `questions/search-index.json`，仅含题干 + 解析，不含选项与图片）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QuestionSearchEntry {
+  /// 题目 ID，如 `A-1`。
+  pub id: String,
+  /// 题库字母 `A` / `B` / `C`。
+  pub bank: String,
+  /// 题干。
+  pub q: String,
+  /// 解析（无解析时为空）。
+  pub exp: String,
+}
+
+impl QuestionSearchEntry {
+  /// 匹配文本（题干 + 解析，小写）。
+  #[must_use]
+  pub fn search_text(&self) -> String {
+    format!("{} {}", self.q, self.exp).to_lowercase()
+  }
+}
+
+/// 多选作答的错误类型。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MultiError {
+  /// 漏选：只选了部分正确项，缺了某些正确项。
+  Missing,
+  /// 多选：选了全部正确项，但多选了错误项。
+  Extra,
+  /// 错选：既漏选又多选，或所选与正确答案完全不沾边。
+  Wrong,
+}
+
+impl MultiError {
+  /// 中文标签。
+  #[must_use]
+  pub const fn label(self) -> &'static str {
+    match self {
+      Self::Missing => "漏选",
+      Self::Extra => "多选",
+      Self::Wrong => "错选",
+    }
+  }
+}
+
+/// 多选作答的错误归类：答对或未作答返回 `None`，否则按「漏选 / 多选 / 错选」归类。
+#[must_use]
+pub fn multi_error_kind(selected: &[String], answer_keys: &[String]) -> Option<MultiError> {
+  if selected.is_empty() || same_set(selected, answer_keys) {
+    return None;
+  }
+  let missing = answer_keys.iter().any(|k| !selected.contains(k));
+  let extra = selected.iter().any(|s| !answer_keys.contains(s));
+  match (missing, extra) {
+    (true, false) => Some(MultiError::Missing),
+    (false, true) => Some(MultiError::Extra),
+    _ => Some(MultiError::Wrong),
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -205,5 +265,26 @@ mod tests {
       explanation: None,
     };
     assert_eq!(q.answer_key(7), "pos:7");
+  }
+
+  #[test]
+  fn classifies_multi_select_errors() {
+    let keys = vec!["A".to_owned(), "C".to_owned()];
+    let s = |xs: &[&str]| xs.iter().map(|x| (*x).to_owned()).collect::<Vec<_>>();
+    assert_eq!(multi_error_kind(&s(&["A", "C"]), &keys), None);
+    assert_eq!(multi_error_kind(&s(&[]), &keys), None, "未作答不归因");
+    assert_eq!(
+      multi_error_kind(&s(&["A"]), &keys),
+      Some(MultiError::Missing)
+    );
+    assert_eq!(
+      multi_error_kind(&s(&["A", "B", "C"]), &keys),
+      Some(MultiError::Extra)
+    );
+    assert_eq!(multi_error_kind(&s(&["B"]), &keys), Some(MultiError::Wrong));
+    assert_eq!(
+      multi_error_kind(&s(&["A", "B"]), &keys),
+      Some(MultiError::Wrong)
+    );
   }
 }

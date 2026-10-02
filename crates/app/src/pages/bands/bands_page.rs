@@ -9,12 +9,14 @@ use crate::util::document;
 use crate::util::set_title;
 
 use super::band_card::BandCard;
+use super::band_quiz::BandQuiz;
 use super::usage_badge::UsageBadge;
 use super::{CELL, SAT_ICON, footnote_id, table_rows};
+use crate::i18n::t;
 
 #[component]
 pub fn BandsPage() -> impl IntoView {
-  set_title("频谱波段划分表");
+  set_title(&t("频谱波段划分表"));
   let active = RwSignal::new(None::<&'static str>);
 
   let jump = Callback::new(move |code: &'static str| {
@@ -59,28 +61,28 @@ pub fn BandsPage() -> impl IntoView {
     .collect_view();
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"频谱波段划分表"</h1>
-            <div class="text-xs text-muted-foreground">"均含上限，不含下限 · C = λf = 3×10⁸ m/s"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("频谱波段划分表")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("均含上限，不含下限 · C = λf = 3×10⁸ m/s")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="波段" value=BANDS.len() />
-          <Stat label="业余业务频段" value=bands::allocation_count() />
-          <Stat label="可供卫星业余业务" value=bands::satellite_count() />
-          <Stat label="脚注" value=FOOTNOTES.len() />
+          <Stat label=t("波段") value=BANDS.len() />
+          <Stat label=t("业余业务频段") value=bands::allocation_count() />
+          <Stat label=t("可供卫星业余业务") value=bands::satellite_count() />
+          <Stat label=t("脚注") value=FOOTNOTES.len() />
         </div>
 
         <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
           <span class="inline-flex items-center gap-1">
             <Icon kind=IconKind::Satellite class=SAT_ICON />
-            "表示该频段也供卫星业余业务使用"
+            {move || t("表示该频段也供卫星业余业务使用")}
           </span>
           <span class="inline-flex flex-wrap items-center gap-1.5">"使用状态：" {legend}</span>
         </div>
@@ -89,14 +91,14 @@ pub fn BandsPage() -> impl IntoView {
           <table class="w-full min-w-[960px] border-collapse border-hidden text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>
-                <th class=CELL>"带号"</th>
-                <th class=CELL colspan="2">"波段名称"</th>
-                <th class=CELL>"波长范围"</th>
-                <th class=CELL colspan="2">"频段名称"</th>
-                <th class=CELL>"频段范围"</th>
-                <th class=CELL>"业余业务/卫星业余业务频段"</th>
-                <th class=CELL>"使用状态"</th>
-                <th class=CELL>"脚注/备注"</th>
+                <th class=CELL>{move || t("带号")}</th>
+                <th class=CELL colspan="2">{move || t("波段名称")}</th>
+                <th class=CELL>{move || t("波长范围")}</th>
+                <th class=CELL colspan="2">{move || t("频段名称")}</th>
+                <th class=CELL>{move || t("频段范围")}</th>
+                <th class=CELL>{move || t("业余业务/卫星业余业务频段")}</th>
+                <th class=CELL>{move || t("使用状态")}</th>
+                <th class=CELL>{move || t("脚注/备注")}</th>
               </tr>
             </thead>
             <tbody>{table_rows(jump)}</tbody>
@@ -108,9 +110,11 @@ pub fn BandsPage() -> impl IntoView {
         </div>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"脚注"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("脚注")}</h2>
           <dl class="divide-y">{footnotes}</dl>
         </section>
+
+        <BandQuiz />
       </div>
     </div>
   }

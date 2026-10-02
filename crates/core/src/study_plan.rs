@@ -20,6 +20,17 @@ pub struct DayTally {
   /// 其中第一次做的题数。
   #[serde(default)]
   pub new: u32,
+  /// 当日累计作答耗时（毫秒）。
+  #[serde(default)]
+  pub duration_ms: u64,
+}
+
+impl DayTally {
+  /// 作答耗时（分钟，保留一位小数语义由调用方格式化）。
+  #[must_use]
+  pub fn minutes(self) -> f64 {
+    self.duration_ms as f64 / 60_000.0
+  }
 }
 
 /// 按本地日期（`YYYY-MM-DD`）记录的每日作答量（`localStorage` 中 `study-daily`）。
@@ -30,11 +41,12 @@ pub struct DailyLog {
 }
 
 impl DailyLog {
-  /// 记一次作答；`new` 表示这道题以前没做过。
-  pub fn add(&mut self, day: &str, new: bool) {
+  /// 记一次作答；`new` 表示这道题以前没做过，`duration_ms` 为本次作答耗时。
+  pub fn add(&mut self, day: &str, new: bool, duration_ms: u64) {
     let t = self.days.entry(day.to_owned()).or_default();
     t.answered += 1;
     t.new += u32::from(new);
+    t.duration_ms += duration_ms;
     while self.days.len() > KEEP_DAYS {
       self.days.pop_first();
     }
@@ -72,6 +84,9 @@ pub struct StudyPlan {
   /// 报考类别（空则取作答最多的题库）。
   #[serde(default)]
   pub bank: Option<Bank>,
+  /// 每日学习提醒时间 `HH:MM`（24 小时制，空则关闭提醒）。
+  #[serde(default)]
+  pub reminder_time: String,
 }
 
 impl StudyPlan {
@@ -242,13 +257,14 @@ mod tests {
   #[test]
   fn daily_log_counts_and_prunes() {
     let mut log = DailyLog::default();
-    log.add("2026-10-01", true);
-    log.add("2026-10-01", false);
+    log.add("2026-10-01", true, 5000);
+    log.add("2026-10-01", false, 3000);
     assert_eq!(
       log.on("2026-10-01"),
       DayTally {
         answered: 2,
-        new: 1
+        new: 1,
+        duration_ms: 8000
       }
     );
     let recent = log.recent("2026-10-02", 3);
@@ -256,7 +272,7 @@ mod tests {
     assert_eq!(recent[0].0, "2026-09-30");
     assert_eq!(recent[1].1.answered, 2);
     for d in 0..100 {
-      log.add(&format_day(d), false);
+      log.add(&format_day(d), false, 0);
     }
     assert_eq!(log.days.len(), KEEP_DAYS);
   }

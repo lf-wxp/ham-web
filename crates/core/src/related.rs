@@ -6,10 +6,29 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
   (
     "/reference",
     &[
+      ("/cheat-sheet", "考点速查手册"),
       ("/prefixes", "呼号前缀"),
       ("/glossary", "术语表"),
       ("/license-classes", "操作证权限"),
       ("/q-code", "简语"),
+    ],
+  ),
+  (
+    "/cheat-sheet",
+    &[
+      ("/reference", "考试速查"),
+      ("/formulas", "公式速查"),
+      ("/glossary", "术语表"),
+      ("/license-classes", "操作证权限"),
+      ("/browse", "题库分类浏览"),
+    ],
+  ),
+  (
+    "/formulas",
+    &[
+      ("/tools", "小工具"),
+      ("/cheat-sheet", "考点速查手册"),
+      ("/reference", "考试速查"),
     ],
   ),
   (
@@ -106,6 +125,7 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
     &[
       ("/ft8", "FT8 / FT4"),
       ("/rtty", "RTTY / PSK31"),
+      ("/psk-decode", "PSK31 解码"),
       ("/dv-network", "数字语音组网"),
       ("/sdr", "SDR"),
     ],
@@ -130,6 +150,7 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
     "/rtty",
     &[
       ("/modes", "数字模式"),
+      ("/psk-decode", "PSK31 解码"),
       ("/ft8", "FT8 / FT4"),
       ("/frequencies", "常用频率"),
     ],
@@ -216,6 +237,31 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
       ("/satellites", "业余卫星"),
       ("/sdr", "SDR"),
       ("/sstv", "SSTV 慢扫描电视"),
+      ("/apt-decoder", "APT 云图解码"),
+    ],
+  ),
+  (
+    "/apt-decoder",
+    &[
+      ("/weather-sat", "气象卫星接收"),
+      ("/sstv", "SSTV 慢扫描电视"),
+      ("/sdr", "SDR"),
+    ],
+  ),
+  (
+    "/psk-decode",
+    &[
+      ("/modes", "数字模式"),
+      ("/rtty", "RTTY / PSK31"),
+      ("/psk-reporter", "PSK Reporter"),
+    ],
+  ),
+  (
+    "/psk-reporter",
+    &[
+      ("/psk-decode", "PSK31 解码"),
+      ("/rbn", "RBN 信标网络"),
+      ("/dx-spots", "DX 实时热点"),
     ],
   ),
   // ── 天线 · 设备 ──

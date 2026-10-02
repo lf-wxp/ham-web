@@ -10,6 +10,7 @@ use crate::sat_alert;
 use crate::ui::{Size, Variant, button_class, input_class};
 
 use super::CELL;
+use crate::i18n::{t, tf};
 
 /// Unix 秒 → 本地时间 `MM-DD HH:MM`。
 fn fmt_pass_time(unix: i64) -> String {
@@ -25,11 +26,11 @@ fn now_secs() -> i64 {
   (js_sys::Date::now() / 1000.0) as i64
 }
 
-fn permission_label() -> &'static str {
+fn permission_label() -> String {
   match Notification::permission() {
-    NotificationPermission::Granted => "已允许",
-    NotificationPermission::Denied => "已被浏览器拒绝，请在站点设置中允许通知",
-    _ => "尚未授权",
+    NotificationPermission::Granted => t("已允许"),
+    NotificationPermission::Denied => t("已被浏览器拒绝，请在站点设置中允许通知"),
+    _ => t("尚未授权"),
   }
 }
 
@@ -57,7 +58,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
     failed.set(false);
     let w = watch.get_untracked();
     spawn_local(async move {
-      match sat_alert::fetch_passes(&w).await {
+      match sat_alert::fetch_passes(&w, "amateur").await {
         Ok(list) => {
           passes.set(list);
           queried.set(true);
@@ -84,6 +85,19 @@ pub(super) fn PassPredictor() -> impl IntoView {
     update(&|w| w.alerts = on);
   };
 
+  let toggle_apt = move |on: bool| {
+    if on
+      && matches!(Notification::permission(), NotificationPermission::Default)
+      && let Ok(p) = Notification::request_permission()
+    {
+      spawn_local(async move {
+        let _ = wasm_bindgen_futures::JsFuture::from(p).await;
+        permission.set(permission_label());
+      });
+    }
+    update(&|w| w.apt_alert = on);
+  };
+
   let number_input = move |label: &'static str,
                            step: &'static str,
                            get: fn(&SatWatch) -> f64,
@@ -108,7 +122,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
 
   view! {
     <section class="rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">"过境预报与提醒"</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("过境预报与提醒")}</h2>
       <div class="space-y-4 p-4">
         <div class="grid gap-3 sm:grid-cols-3">
           {number_input("纬度（°）", "0.0001", |w| w.lat, |w, v| w.lat = v.clamp(-90.0, 90.0))}
@@ -122,7 +136,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
             class=button_class(Variant::Default, Size::Default, "")
             on:click=move |_| fetch()
           >
-            "查询过境"
+            {move || t("查询过境")}
           </button>
           {station_pos.map(|(la, lo)| {
             view! {
@@ -134,12 +148,12 @@ pub(super) fn PassPredictor() -> impl IntoView {
                   w.lon = (lo * 100.0).round() / 100.0;
                 })
               >
-                {format!("用本台网格 {station_grid}")}
+                {tf("用本台网格 {}", &[&(station_grid).to_string()])}
               </button>
             }
           })}
           <span class="text-xs text-muted-foreground">
-            "数据来自 Celestrak / SGP4，展示未来 24 小时过境（本地时间）。"
+            {move || t("数据来自 Celestrak / SGP4，展示未来 24 小时过境（本地时间）。")}
           </span>
         </div>
 
@@ -152,10 +166,19 @@ pub(super) fn PassPredictor() -> impl IntoView {
                 prop:checked=move || watch.with(|w| w.alerts)
                 on:change=move |e| toggle_alerts(event_target_checked(&e))
               />
-              "收藏卫星过境前通知我"
+              {move || t("收藏卫星过境前通知我")}
+            </label>
+            <label class="inline-flex cursor-pointer items-center gap-2 font-medium">
+              <input
+                type="checkbox"
+                class="size-4 accent-primary"
+                prop:checked=move || watch.with(|w| w.apt_alert)
+                on:change=move |e| toggle_apt(event_target_checked(&e))
+              />
+              {move || t("NOAA 气象卫星过境前提醒我录制 APT")}
             </label>
             <label class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-              "提前"
+              {move || t("提前")}
               <select
                 class="rounded border bg-background px-1.5 py-0.5"
                 prop:value=move || watch.with(|w| w.lead_min.to_string())
@@ -165,13 +188,13 @@ pub(super) fn PassPredictor() -> impl IntoView {
                   }
                 }
               >
-                {LEAD_CHOICES.iter().map(|m| view! { <option value=m.to_string()>{format!("{m} 分钟")}</option> }).collect_view()}
+                {LEAD_CHOICES.iter().map(|m| view! { <option value=m.to_string()>{tf("{} 分钟", &[&(m).to_string()])}</option> }).collect_view()}
               </select>
             </label>
-            <span class="text-xs text-muted-foreground">{move || format!("通知权限：{}", permission.get())}</span>
+            <span class="text-xs text-muted-foreground">{move || tf("通知权限：{}", &[&(permission.get()).to_string()])}</span>
           </div>
           <p class="mt-2 text-xs text-muted-foreground">
-            "点击下表中的 ☆ 收藏卫星。提醒在本应用打开期间生效（任意页面，可在后台标签页），关闭浏览器后不会提醒。"
+            {move || t("点击下表中的 ☆ 收藏卫星。提醒在本应用打开期间生效（任意页面，可在后台标签页），关闭浏览器后不会提醒。")}
           </p>
           {move || {
             let w = watch.get();
@@ -183,16 +206,16 @@ pub(super) fn PassPredictor() -> impl IntoView {
             let names = w.favorites.iter().map(|f| f.name.clone()).collect::<Vec<_>>().join("、");
             Some(view! {
               <div class="mt-3 space-y-1.5 text-sm">
-                <div class="text-xs text-muted-foreground">{format!("已收藏：{names}")}</div>
+                <div class="text-xs text-muted-foreground">{tf("已收藏：{}", &[&(names).to_string()])}</div>
                 {if next.is_empty() {
-                  view! { <div class="text-xs text-muted-foreground">"查询后在这里显示收藏卫星的下一次过境。"</div> }.into_any()
+                  view! { <div class="text-xs text-muted-foreground">{move || t("查询后在这里显示收藏卫星的下一次过境。")}</div> }.into_any()
                 } else {
                   next.into_iter().take(3).map(|p| view! {
                     <div class="flex flex-wrap items-baseline gap-x-2">
                       <span class="font-medium">{p.name.clone()}</span>
                       <span class="font-mono tabular-nums">{fmt_pass_time(p.aos)}</span>
                       <span class="text-xs text-muted-foreground">
-                        {format!("最高 {:.0}° · {}方入境 · {} 分钟", p.max_elev, compass(p.azimuth), (p.los - p.aos + 59) / 60)}
+                        {tf("最高 {}° · {}方入境 · {} 分钟", &[&format!("{:.0}", p.max_elev), (compass(p.azimuth)), &((p.los - p.aos + 59) / 60).to_string()])}
                       </span>
                     </div>
                   }).collect_view().into_any()
@@ -206,7 +229,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
           if loading.get() {
             return view! {
               <div class="rounded-lg bg-muted/40 px-3 py-8 text-center text-sm text-muted-foreground">
-                "正在计算过境预报…"
+                {move || t("正在计算过境预报…")}
               </div>
             }
             .into_any();
@@ -214,7 +237,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
           if failed.get() {
             return view! {
               <div class="rounded-lg bg-muted/40 px-3 py-6 text-center text-sm text-muted-foreground">
-                "过境数据暂不可用（可能因网络受限），请稍后重试。"
+                {move || t("过境数据暂不可用（可能因网络受限），请稍后重试。")}
               </div>
             }
             .into_any();
@@ -222,7 +245,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
           if !queried.get() {
             return view! {
               <div class="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
-                "输入经纬度后点击「查询过境」，默认位置为北京。"
+                {move || t("输入经纬度后点击「查询过境」，默认位置为北京。")}
               </div>
             }
             .into_any();
@@ -242,12 +265,12 @@ pub(super) fn PassPredictor() -> impl IntoView {
                   prop:checked=move || only_fav.get()
                   on:change=move |e| only_fav.set(event_target_checked(&e))
                 />
-                {format!("只看收藏（共 {} 次过境）", items.len())}
+                {tf("只看收藏（共 {} 次过境）", &[&(items.len()).to_string()])}
               </label>
               {if items.is_empty() {
                 view! {
                   <div class="rounded-lg bg-muted/40 px-3 py-6 text-center text-sm text-muted-foreground">
-                    "没有符合条件的过境，可降低最小仰角或取消「只看收藏」。"
+                    {move || t("没有符合条件的过境，可降低最小仰角或取消「只看收藏」。")}
                   </div>
                 }.into_any()
               } else {
@@ -256,12 +279,12 @@ pub(super) fn PassPredictor() -> impl IntoView {
                     <table class="w-full min-w-[560px] border-collapse text-sm">
                       <thead class="sticky top-0 bg-muted text-xs">
                         <tr>
-                          <th class=CELL><span class="sr-only">"收藏"</span></th>
-                          <th class=CELL>"卫星"</th>
-                          <th class=CELL>"开始（AOS）"</th>
-                          <th class=CELL>"最大仰角"</th>
-                          <th class=CELL>"入境方位"</th>
-                          <th class=CELL>"时长"</th>
+                          <th class=CELL><span class="sr-only">{move || t("收藏")}</span></th>
+                          <th class=CELL>{move || t("卫星")}</th>
+                          <th class=CELL>{move || t("开始（AOS）")}</th>
+                          <th class=CELL>{move || t("最大仰角")}</th>
+                          <th class=CELL>{move || t("入境方位")}</th>
+                          <th class=CELL>{move || t("时长")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -279,7 +302,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
                                     type="button"
                                     class=move || if fav() { "text-amber-500" } else { "text-muted-foreground hover:text-amber-500" }
                                     aria-pressed=move || fav().to_string()
-                                    aria-label=format!("收藏 {name}")
+                                    aria-label=tf("收藏 {}", &[&(name).to_string()])
                                     on:click={
                                       let name = name.clone();
                                       move |_| update(&|w| {
@@ -292,13 +315,13 @@ pub(super) fn PassPredictor() -> impl IntoView {
                                 </td>
                                 <td class=format!("{CELL} whitespace-nowrap font-medium")>{p.name.clone()}</td>
                                 <td class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")
-                                  title=format!("最大仰角时刻 {}", fmt_pass_time(p.max_elev_time))
+                                  title=tf("最大仰角时刻 {}", &[&(fmt_pass_time(p.max_elev_time)).to_string()])
                                 >
                                   {fmt_pass_time(p.aos)}
                                 </td>
                                 <td class=format!("{CELL} whitespace-nowrap tabular-nums")>{format!("{:.0}°", p.max_elev)}</td>
                                 <td class=format!("{CELL} whitespace-nowrap tabular-nums")>{format!("{:.0}° {}", p.azimuth, compass(p.azimuth))}</td>
-                                <td class=format!("{CELL} whitespace-nowrap tabular-nums")>{format!("{dur_min} 分钟")}</td>
+                                <td class=format!("{CELL} whitespace-nowrap tabular-nums")>{tf("{} 分钟", &[&(dur_min).to_string()])}</td>
                               </tr>
                             }
                           })

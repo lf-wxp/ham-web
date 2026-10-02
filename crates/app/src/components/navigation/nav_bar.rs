@@ -8,9 +8,11 @@ use crate::cn::cn;
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Size, Variant, button_class};
 
+use super::locale_toggle::LocaleToggle;
 use super::theme_toggle::ThemeToggle;
 
-use super::menu::{EXAM_ITEMS, KNOWLEDGE_GROUPS, MenuKind, TOOL_ITEMS};
+use super::menu::{EXAM_ITEMS, KNOWLEDGE_GROUPS, MenuKind, TOOL_GROUPS};
+use crate::i18n::{self, Locale, t};
 
 #[component]
 pub fn Navigation() -> impl IntoView {
@@ -68,10 +70,14 @@ pub fn Navigation() -> impl IntoView {
       .iter()
       .any(|g| g.items.iter().any(|i| active(i.href)))
   };
-  let tool_active = move || TOOL_ITEMS.iter().any(|i| active(i.href));
+  let tool_active = move || {
+    TOOL_GROUPS
+      .iter()
+      .any(|g| g.items.iter().any(|i| active(i.href)))
+  };
 
   view! {
-    <nav data-nav aria-label="主导航" class="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+    <nav data-nav aria-label=move || t("主导航") class="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
       <div class="container mx-auto px-4">
         <div class="flex h-16 items-center justify-between gap-3">
@@ -86,8 +92,8 @@ pub fn Navigation() -> impl IntoView {
               <Icon kind=IconKind::Satellite class="relative h-5 w-5" />
             </div>
             <div class="hidden flex-col whitespace-nowrap leading-tight sm:flex">
-              <span class="text-sm font-semibold text-foreground">"业余无线电"</span>
-              <span class="text-[11px] text-muted-foreground">"题库 · 知识 · 工具"</span>
+              <span class="text-sm font-semibold text-foreground">{move || t("业余无线电")}</span>
+              <span class="text-[11px] text-muted-foreground">{move || t("题库 · 知识 · 工具")}</span>
             </div>
           </a>
 
@@ -105,7 +111,7 @@ pub fn Navigation() -> impl IntoView {
               }
             >
               <Icon kind=IconKind::Home class="h-4 w-4" />
-              "首页"
+              {move || t("首页")}
             </a>
 
             // 考试中心下拉
@@ -128,7 +134,7 @@ pub fn Navigation() -> impl IntoView {
                 }
               >
                 <Icon kind=IconKind::Timer class="h-4 w-4" />
-                "考试中心"
+                {move || t("考试中心")}
                 <Icon kind=IconKind::ChevronDown class="h-3.5 w-3.5" />
               </button>
               <div class=move || {
@@ -161,7 +167,7 @@ pub fn Navigation() -> impl IntoView {
                           }
                         >
                           <Icon kind=item.icon class="h-4 w-4" />
-                          {item.label}
+                          {move || t(item.label)}
                         </a>
                       }
                     })
@@ -194,7 +200,7 @@ pub fn Navigation() -> impl IntoView {
                 }
               >
                 <Icon kind=IconKind::BookOpen class="h-4 w-4" />
-                "知识库"
+                {move || t("知识库")}
                 <Icon kind=IconKind::ChevronDown class="h-3.5 w-3.5" />
               </button>
               <div class=move || {
@@ -215,7 +221,7 @@ pub fn Navigation() -> impl IntoView {
                         <div>
                           <div class="mb-1.5 flex items-center gap-1.5 px-2 text-xs font-semibold text-muted-foreground">
                             <Icon kind=g.icon class="h-3.5 w-3.5" />
-                            <span>{g.label}</span>
+                            <span>{move || t(g.label)}</span>
                           </div>
                           <div class="space-y-0.5">
                             {g
@@ -238,7 +244,7 @@ pub fn Navigation() -> impl IntoView {
                                     }
                                   >
                                     <Icon kind=item.icon class="h-4 w-4 shrink-0" />
-                                    <span class="min-w-0 leading-snug">{item.label}</span>
+                                    <span class="min-w-0 leading-snug">{move || t(item.label)}</span>
                                   </a>
                                 }
                               })
@@ -272,12 +278,12 @@ pub fn Navigation() -> impl IntoView {
                 }
               >
                 <Icon kind=IconKind::Calculator class="h-4 w-4" />
-                "工具"
+                {move || t("工具")}
                 <Icon kind=IconKind::ChevronDown class="h-3.5 w-3.5" />
               </button>
               <div class=move || {
                 cn(&[
-                  "absolute left-0 top-full pt-1.5 transition",
+                  "absolute right-0 top-full pt-1.5 transition",
                   if open_menu.get() == Some(MenuKind::Tools) {
                     "visible opacity-100"
                   } else {
@@ -285,28 +291,44 @@ pub fn Navigation() -> impl IntoView {
                   },
                 ])
               }>
-                <div class="w-44 rounded-lg border bg-popover p-1 shadow-md">
-                  {TOOL_ITEMS
+                <div class="grid w-[720px] max-w-[calc(100vw-2rem)] grid-cols-2 gap-x-4 gap-y-3 rounded-lg border bg-popover p-4 shadow-md md:grid-cols-3 lg:grid-cols-5">
+                  {TOOL_GROUPS
                     .iter()
-                    .map(|item| {
+                    .map(|g| {
                       view! {
-                        <a
-                          href=item.href
-                          on:click=move |_| open_menu.set(None)
-                          class=move || {
-                            cn(&[
-                              "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
-                              if active(item.href) {
-                                "bg-accent text-foreground"
-                              } else {
-                                "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-                              },
-                            ])
-                          }
-                        >
-                          <Icon kind=item.icon class="h-4 w-4" />
-                          {item.label}
-                        </a>
+                        <div>
+                          <div class="mb-1.5 flex items-center gap-1.5 px-2 text-xs font-semibold text-muted-foreground">
+                            <Icon kind=g.icon class="h-3.5 w-3.5" />
+                            <span>{move || t(g.label)}</span>
+                          </div>
+                          <div class="space-y-0.5">
+                            {g
+                              .items
+                              .iter()
+                              .map(|item| {
+                                view! {
+                                  <a
+                                    href=item.href
+                                    on:click=move |_| open_menu.set(None)
+                                    class=move || {
+                                      cn(&[
+                                        "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors",
+                                        if active(item.href) {
+                                          "bg-accent text-foreground"
+                                        } else {
+                                          "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                                        },
+                                      ])
+                                    }
+                                  >
+                                    <Icon kind=item.icon class="h-4 w-4 shrink-0" />
+                                    <span class="min-w-0 leading-snug">{move || t(item.label)}</span>
+                                  </a>
+                                }
+                              })
+                              .collect_view()}
+                          </div>
+                        </div>
                       }
                     })
                     .collect_view()}
@@ -321,18 +343,19 @@ pub fn Navigation() -> impl IntoView {
               type="button"
               data-slot="button"
               class=button_class(Variant::Ghost, Size::Icon, "")
-              aria-label="搜索"
-              title="搜索（/）"
+              aria-label=move || t("搜索")
+              title=move || t("搜索（/）")
               on:click=move |_| search_open.set(true)
             >
               <Icon kind=IconKind::Search class="h-5 w-5" />
             </button>
+            <LocaleToggle />
             <ThemeToggle />
             <button
               type="button"
               data-slot="button"
               class=button_class(Variant::Ghost, Size::Icon, "xl:hidden")
-              aria-label=move || if menu_open.get() { "关闭菜单" } else { "打开菜单" }
+              aria-label=move || if menu_open.get() { t("关闭菜单") } else { t("打开菜单") }
               aria-expanded=move || menu_open.get()
               on:click=move |_| menu_open.update(|v| *v = !*v)
             >
@@ -352,7 +375,7 @@ pub fn Navigation() -> impl IntoView {
           menu_open.get().then(|| {
             view! {
               <div class="absolute inset-x-0 top-full z-40 max-h-[calc(100vh-4rem)] overflow-y-auto border-b bg-background shadow-md xl:hidden animate-in slide-in-from-top-2 fade-in duration-200">
-                <nav aria-label="移动端导航" class="container mx-auto grid grid-cols-1 gap-1 px-4 py-3">
+                <nav aria-label=move || t("移动端导航") class="container mx-auto grid grid-cols-1 gap-1 px-4 py-3">
                   <a
                     href="/"
                     class=move || {
@@ -368,10 +391,35 @@ pub fn Navigation() -> impl IntoView {
                     on:click=move |_| menu_open.set(false)
                   >
                     <Icon kind=IconKind::Home class="h-5 w-5" />
-                    "首页"
+                    {move || t("首页")}
                   </a>
 
-                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">"考试中心"</div>
+                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("语言")}</div>
+                  <div class="flex flex-wrap gap-1.5 px-3">
+                    {Locale::ALL
+                      .iter()
+                      .map(|&l| view! {
+                        <button
+                          type="button"
+                          class=move || {
+                            cn(&[
+                              "rounded-md border px-3 py-1.5 text-sm transition-colors",
+                              if i18n::locale().get() == l {
+                                "border-primary bg-primary text-primary-foreground"
+                              } else {
+                                "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                              },
+                            ])
+                          }
+                          on:click=move |_| i18n::set_locale(l)
+                        >
+                          {l.label()}
+                        </button>
+                      })
+                      .collect_view()}
+                  </div>
+
+                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("考试中心")}</div>
                   {EXAM_ITEMS
                     .iter()
                     .map(|item| {
@@ -391,18 +439,18 @@ pub fn Navigation() -> impl IntoView {
                           on:click=move |_| menu_open.set(false)
                         >
                           <Icon kind=item.icon class="h-5 w-5" />
-                          {item.label}
+                          {move || t(item.label)}
                         </a>
                       }
                     })
                     .collect_view()}
 
-                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">"知识库"</div>
+                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("知识库")}</div>
                   {KNOWLEDGE_GROUPS
                     .iter()
                     .map(|g| {
                       view! {
-                        <div class="px-3 pt-1 text-xs font-medium text-muted-foreground/70">{g.label}</div>
+                        <div class="px-3 pt-1 text-xs font-medium text-muted-foreground">{move || t(g.label)}</div>
                         {g
                           .items
                           .iter()
@@ -423,7 +471,7 @@ pub fn Navigation() -> impl IntoView {
                                 on:click=move |_| menu_open.set(false)
                               >
                                 <Icon kind=item.icon class="h-5 w-5" />
-                                {item.label}
+                                {move || t(item.label)}
                               </a>
                             }
                           })
@@ -432,28 +480,37 @@ pub fn Navigation() -> impl IntoView {
                     })
                     .collect_view()}
 
-                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">"工具"</div>
-                  {TOOL_ITEMS
+                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("工具")}</div>
+                  {TOOL_GROUPS
                     .iter()
-                    .map(|item| {
+                    .map(|g| {
                       view! {
-                        <a
-                          href=item.href
-                          class=move || {
-                            cn(&[
-                              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                              if active(item.href) {
-                                "bg-accent text-foreground"
-                              } else {
-                                "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-                              },
-                            ])
-                          }
-                          on:click=move |_| menu_open.set(false)
-                        >
-                          <Icon kind=item.icon class="h-5 w-5" />
-                          {item.label}
-                        </a>
+                        <div class="px-3 pt-1 text-xs font-medium text-muted-foreground">{move || t(g.label)}</div>
+                        {g
+                          .items
+                          .iter()
+                          .map(|item| {
+                            view! {
+                              <a
+                                href=item.href
+                                class=move || {
+                                  cn(&[
+                                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                                    if active(item.href) {
+                                      "bg-accent text-foreground"
+                                    } else {
+                                      "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                                    },
+                                  ])
+                                }
+                                on:click=move |_| menu_open.set(false)
+                              >
+                                <Icon kind=item.icon class="h-5 w-5" />
+                                {move || t(item.label)}
+                              </a>
+                            }
+                          })
+                          .collect_view()}
                       }
                     })
                     .collect_view()}

@@ -16,6 +16,7 @@ use web_sys::SpeechSynthesisUtterance;
 
 use super::print_sheet::{Source as Collection, load_items};
 use crate::data;
+use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Size, Variant, button_class};
 use crate::util::{random, set_title, sleep, storage, window};
@@ -136,7 +137,7 @@ fn phase_label(phase: Option<Phase>) -> &'static str {
 
 #[component]
 pub fn ListenPage() -> impl IntoView {
-  set_title("听题模式");
+  set_title(&t("听题模式"));
   let settings = RwSignal::new(storage::get_json::<Settings>(KEY).unwrap_or_default());
   let questions = RwSignal::new(Arc::new(Vec::<QuestionItem>::new()));
   let loading = RwSignal::new(true);
@@ -268,11 +269,11 @@ pub fn ListenPage() -> impl IntoView {
 
   let card = move || {
     if loading.get() {
-      return view! { <div class="p-6 text-sm text-muted-foreground" aria-live="polite">"加载题目中…"</div> }.into_any();
+      return view! { <div class="p-6 text-sm text-muted-foreground" aria-live="polite">{move || t("加载题目中…")}</div> }.into_any();
     }
     let i = index.get();
     let Some(q) = questions.with(|qs| qs.get(i).cloned()) else {
-      return view! { <div class="p-6 text-sm text-muted-foreground">"这里还没有题目。"</div> }
+      return view! { <div class="p-6 text-sm text-muted-foreground">{move || t("这里还没有题目。")}</div> }
         .into_any();
     };
     let total = questions.with(|qs| qs.len());
@@ -282,12 +283,12 @@ pub fn ListenPage() -> impl IntoView {
     view! {
       <div class="p-5">
         <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-          <span class="tabular-nums">{format!("第 {} / {total} 题 · {}", i + 1, q.kind.label())}</span>
+          <span class="tabular-nums">{tf("第 {} / {} 题 · {}", &[&(i + 1).to_string(), &total.to_string(), &(t(q.kind.label())).to_string()])}</span>
           <span
             class=move || if phase.get().is_some() { "rounded-full bg-primary/10 px-2 py-0.5 font-medium text-foreground" } else { "px-2 py-0.5" }
             aria-live="polite"
           >
-            {move || phase_label(phase.get())}
+            {move || t(phase_label(phase.get()))}
           </span>
         </div>
         <p class="whitespace-pre-line text-base font-medium leading-relaxed">{q.question.clone()}</p>
@@ -303,7 +304,7 @@ pub fn ListenPage() -> impl IntoView {
           }).collect_view()}
         </ul>
         <div class="mt-3 min-h-5 text-sm">
-          {move || revealed().then(|| view! { <span>"正确答案：" <span class="font-mono font-semibold">{answer.clone()}</span></span> })}
+          {move || revealed().then(|| view! { <span>{move || t("正确答案：")} <span class="font-mono font-semibold">{answer.clone()}</span></span> })}
         </div>
       </div>
     }
@@ -313,18 +314,18 @@ pub fn ListenPage() -> impl IntoView {
   view! {
     <div class="mx-auto max-w-2xl space-y-4 px-4 py-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <div>
-        <h1 class="text-base font-semibold leading-tight">"听题模式"</h1>
-        <p class="text-xs text-muted-foreground">"自动朗读题干与选项，停顿思考后读出答案，适合通勤路上免手刷题。"</p>
+        <h1 class="text-base font-semibold leading-tight">{move || t("听题模式")}</h1>
+        <p class="text-xs text-muted-foreground">{move || t("自动朗读题干与选项，停顿思考后读出答案，适合通勤路上免手刷题。")}</p>
       </div>
 
       {(!supported).then(|| view! {
         <div role="alert" class="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
-          "当前浏览器不支持语音合成，无法朗读。"
+          {move || t("当前浏览器不支持语音合成，无法朗读。")}
         </div>
       })}
 
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div class="inline-flex rounded-lg bg-muted p-0.5" role="group" aria-label="题目来源">
+        <div class="inline-flex rounded-lg bg-muted p-0.5" role="group" aria-label=move || t("题目来源")>
           {Source::ALL.into_iter().map(|s| view! {
             <button
               type="button"
@@ -332,7 +333,7 @@ pub fn ListenPage() -> impl IntoView {
               aria-pressed=move || settings.with(|st| st.source == s).to_string()
               on:click=move |_| { settings.update(|st| st.source = s); save(); }
             >
-              {s.label()}
+              {move || t(s.label())}
             </button>
           }).collect_view()}
         </div>
@@ -342,7 +343,7 @@ pub fn ListenPage() -> impl IntoView {
             prop:checked=move || settings.with(|s| s.shuffle)
             on:change=move |e| { settings.update(|s| s.shuffle = event_target_checked(&e)); save(); }
           />
-          "随机顺序"
+          {move || t("随机顺序")}
         </label>
         <label class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
           <input
@@ -350,15 +351,15 @@ pub fn ListenPage() -> impl IntoView {
             prop:checked=move || settings.with(|s| s.explain)
             on:change=move |e| { settings.update_untracked(|s| s.explain = event_target_checked(&e)); save(); }
           />
-          "朗读解析"
+          {move || t("朗读解析")}
         </label>
       </div>
 
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
         <label class="inline-flex items-center gap-1.5">
-          "语速"
+          {move || t("语速")}
           <select
-            aria-label="语速"
+            aria-label=move || t("语速")
             class="rounded-md border bg-background px-2 py-1 text-foreground"
             on:change=move |e| {
               let v: f32 = event_target_value(&e).parse().unwrap_or(1.0);
@@ -372,9 +373,9 @@ pub fn ListenPage() -> impl IntoView {
           </select>
         </label>
         <label class="inline-flex items-center gap-1.5">
-          "思考时间"
+          {move || t("思考时间")}
           <select
-            aria-label="思考时间"
+            aria-label=move || t("思考时间")
             class="rounded-md border bg-background px-2 py-1 text-foreground"
             on:change=move |e| {
               let v: u32 = event_target_value(&e).parse().unwrap_or(5);
@@ -383,16 +384,16 @@ pub fn ListenPage() -> impl IntoView {
             }
           >
             {THINK_CHOICES.into_iter().map(|t| view! {
-              <option value=t.to_string() selected=move || settings.with(|s| s.think_secs == t)>{format!("{t} 秒")}</option>
+              <option value=t.to_string() selected=move || settings.with(|s| s.think_secs == t)>{tf("{} 秒", &[&(t).to_string()])}</option>
             }).collect_view()}
           </select>
         </label>
       </div>
 
-      <section class="rounded-xl border bg-card" aria-label="当前题目">{card}</section>
+      <section class="rounded-xl border bg-card" aria-label=move || t("当前题目")>{card}</section>
 
       <div class="flex items-center justify-center gap-3">
-        <button type="button" class=button_class(Variant::Outline, Size::Default, "") on:click=move |_| go(-1)>"上一题"</button>
+        <button type="button" class=button_class(Variant::Outline, Size::Default, "") on:click=move |_| go(-1)>{move || t("上一题")}</button>
         <button
           type="button"
           class=button_class(Variant::Default, Size::Default, "min-w-28")
@@ -400,11 +401,11 @@ pub fn ListenPage() -> impl IntoView {
           on:click=move |_| toggle()
         >
           <Icon kind=IconKind::Headphones class="h-4 w-4" />
-          {move || if phase.get().is_some() { "暂停" } else { "开始听题" }}
+          {move || if phase.get().is_some() { t("暂停") } else { t("开始听题") }}
         </button>
-        <button type="button" class=button_class(Variant::Outline, Size::Default, "") on:click=move |_| go(1)>"下一题"</button>
+        <button type="button" class=button_class(Variant::Outline, Size::Default, "") on:click=move |_| go(1)>{move || t("下一题")}</button>
       </div>
-      <p class="text-center text-xs text-muted-foreground">"锁屏后部分手机会暂停朗读，建议保持屏幕常亮。"</p>
+      <p class="text-center text-xs text-muted-foreground">{move || t("锁屏后部分手机会暂停朗读，建议保持屏幕常亮。")}</p>
     </div>
   }
 }

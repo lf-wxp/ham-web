@@ -1,16 +1,43 @@
 //! 错题本与累计答题统计的本地持久化，以及从旧版进度（练习 / 考试存档）的一次性迁移。
 
-use ham_web_core::mistake_book::{MistakeBook, RecordOutcome, StudyStats};
+use std::cell::Cell;
+
+use ham_web_core::mistake_book::{MistakeBook, RecordOutcome, StudyStats, question_key};
+use ham_web_core::question_stats::QuestionStats;
 use ham_web_core::study_plan::{DailyLog, StudyPlan};
 use ham_web_core::{Bank, QuestionItem};
 
 use crate::util::{local_today, now_ms, storage};
 use crate::{data, store};
 
+// 当前这道题开始作答的时间戳（毫秒）。单题作答入口在展示题目时调用
+// `note_question_start`，随后 `record_answer` / `record_self_assess` 据此计算本题耗时。
+thread_local! {
+  static QUESTION_START: Cell<i64> = const { Cell::new(0) };
+}
+
+/// 标记「开始看一道题」；后续单题记录会自动计算从此刻起的耗时。
+pub fn note_question_start() {
+  QUESTION_START.with(|c| c.set(now_ms()));
+}
+
+/// 取出并清零当前题耗时（毫秒）；未标记时为 0。
+fn take_duration() -> u64 {
+  QUESTION_START.with(|c| {
+    let start = c.replace(0);
+    if start > 0 {
+      (now_ms() - start).max(0) as u64
+    } else {
+      0
+    }
+  })
+}
+
 const BOOK_KEY: &str = "mistake-book";
 const STATS_KEY: &str = "study-stats";
 const DAILY_KEY: &str = "study-daily";
 const PLAN_KEY: &str = "learning-plan";
+const QSTATS_KEY: &str = "question-stats";
 const SEEDED_KEY: &str = "mistake-book:seeded";
 const SEEN_SEEDED_KEY: &str = "study-stats:seen-seeded";
 
@@ -28,6 +55,15 @@ pub fn load_stats() -> StudyStats {
 
 fn save_stats(stats: &StudyStats) {
   storage::set_json(STATS_KEY, stats);
+}
+
+/// 加载单题作答统计。
+pub fn load_qstats() -> QuestionStats {
+  storage::get_json(QSTATS_KEY).unwrap_or_default()
+}
+
+fn save_qstats(stats: &QuestionStats) {
+  storage::set_json(QSTATS_KEY, stats);
 }
 
 pub fn load_daily() -> DailyLog {
@@ -48,36 +84,42 @@ fn is_new(stats: &StudyStats, q: &QuestionItem) -> bool {
     .is_some_and(|b| b.has_seen(q))
 }
 
-/// 记录一次作答（空作答忽略），同时更新错题本与分类统计。
+/// 记录一次作答（空作答忽略），同时更新错题本与分类统计；耗时取当前题标记的时长。
 pub fn record_answer(q: &QuestionItem, answer: &[String]) -> Option<RecordOutcome> {
-  record_many(std::iter::once((q, answer))).into_iter().next()
+  let dur = take_duration();
+  record_many(std::iter::once((q, answer, dur)))
+    .into_iter()
+    .next()
 }
 
-/// 批量记录作答（模拟考试交卷），只读写一次存储。
+/// 批量记录作答（模拟考试交卷），只读写一次存储；每题耗时由调用方传入。
 pub fn record_many<'a>(
-  items: impl IntoIterator<Item = (&'a QuestionItem, &'a [String])>,
+  items: impl IntoIterator<Item = (&'a QuestionItem, &'a [String], u64)>,
 ) -> Vec<RecordOutcome> {
   record_items(items, true)
 }
 
 /// `daily` 为假时不计入今日作答量（旧存档迁移）。
 fn record_items<'a>(
-  items: impl IntoIterator<Item = (&'a QuestionItem, &'a [String])>,
+  items: impl IntoIterator<Item = (&'a QuestionItem, &'a [String], u64)>,
   daily: bool,
 ) -> Vec<RecordOutcome> {
   let now = now_ms();
   let today = local_today();
   let mut book = load_book();
   let mut stats = load_stats();
+  let mut qstats = load_qstats();
   let mut log = daily.then(load_daily);
   let outcomes: Vec<RecordOutcome> = items
     .into_iter()
-    .filter_map(|(q, a)| {
+    .filter_map(|(q, a, dur)| {
       let new = is_new(&stats, q);
       let outcome = book.record(q, a, now)?;
-      stats.record(q, q.is_answer_correct(a));
+      let correct = q.is_answer_correct(a);
+      stats.record(q, correct);
+      qstats.record(&question_key(q), correct, now, dur);
       if let Some(log) = log.as_mut() {
-        log.add(&today, new);
+        log.add(&today, new, dur);
       }
       Some(outcome)
     })
@@ -85,24 +127,32 @@ fn record_items<'a>(
   if !outcomes.is_empty() {
     save_book(&book);
     save_stats(&stats);
+    save_qstats(&qstats);
     if let Some(log) = &log {
       storage::set_json(DAILY_KEY, log);
     }
+    crate::achievements::detect_new();
   }
   outcomes
 }
 
-/// 记录闪卡自评（会 / 不会）。
+/// 记录闪卡自评（会 / 不会）；耗时取当前题标记的时长。
 pub fn record_self_assess(q: &QuestionItem, known: bool) {
+  let dur = take_duration();
+  let now = now_ms();
   let mut book = load_book();
   let mut stats = load_stats();
+  let mut qstats = load_qstats();
   let mut log = load_daily();
-  log.add(&local_today(), is_new(&stats, q));
-  book.record_result(q, known, &[], now_ms());
+  log.add(&local_today(), is_new(&stats, q), dur);
+  book.record_result(q, known, &[], now);
   stats.record(q, known);
+  qstats.record(&question_key(q), known, now, dur);
   save_book(&book);
   save_stats(&stats);
+  save_qstats(&qstats);
   storage::set_json(DAILY_KEY, &log);
+  crate::achievements::detect_new();
 }
 
 /// 手动移出一道错题。
@@ -110,6 +160,14 @@ pub fn remove_mistake(key: &str) {
   let mut book = load_book();
   book.remove(key);
   save_book(&book);
+}
+
+/// 标注错题错因（`cause` 为空则清除标注）。
+pub fn set_mistake_cause(key: &str, cause: &str) {
+  let mut book = load_book();
+  if book.set_cause(key, cause) {
+    save_book(&book);
+  }
 }
 
 /// 清空错题本。
@@ -176,7 +234,7 @@ pub async fn ensure_seeded() {
       collected
         .iter()
         .filter(|(_, _, resumable)| !resumable)
-        .map(|(q, a, _)| (q, a.as_slice())),
+        .map(|(q, a, _)| (q, a.as_slice(), 0)),
       false,
     );
   }
@@ -187,4 +245,30 @@ pub async fn ensure_seeded() {
     }
     save_stats(&stats);
   }
+}
+
+/// 每日学习提醒：应用打开期间每 30 秒检查一次，到达备考计划设定的提醒时间
+/// （且当天尚未提醒过）时发浏览器通知。
+pub fn start_study_reminder_watcher() {
+  crate::util::request_notify_permission();
+  leptos::prelude::set_interval(
+    || {
+      let plan = load_plan();
+      let time = plan.reminder_time.trim().to_owned();
+      if time.is_empty() {
+        return;
+      }
+      let today = local_today();
+      if storage::get("study-reminder-last").as_deref() == Some(today.as_str()) {
+        return;
+      }
+      let now = js_sys::Date::new_0();
+      let hhmm = format!("{:02}:{:02}", now.get_hours(), now.get_minutes());
+      if hhmm == time {
+        storage::set("study-reminder-last", &today);
+        crate::util::notify(&crate::i18n::t("该学习啦！今天的备考任务待完成。"));
+      }
+    },
+    std::time::Duration::from_secs(30),
+  );
 }

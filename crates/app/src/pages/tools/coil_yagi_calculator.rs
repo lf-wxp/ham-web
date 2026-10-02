@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::{INPUT, fmt_num};
+use crate::i18n::{t, tf};
 
 /// 线圈电感与 Yagi 振子计算。
 #[component]
@@ -13,10 +14,10 @@ pub(super) fn CoilYagiCalculator() -> impl IntoView {
   view! {
     <div class="space-y-4">
       <div>
-        <div class="mb-1.5 text-xs font-medium text-muted-foreground">"空心线圈电感（Wheeler 近似）"</div>
+        <div class="mb-1.5 text-xs font-medium text-muted-foreground">{move || t("空心线圈电感（Wheeler 近似）")}</div>
         <div class="grid gap-3 sm:grid-cols-3">
           <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">"直径 D（cm）"</span>
+            <span class="text-xs text-muted-foreground">{move || t("直径 D（cm）")}</span>
             <input
               type="number"
               step="0.1"
@@ -30,7 +31,7 @@ pub(super) fn CoilYagiCalculator() -> impl IntoView {
             />
           </label>
           <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">"长度 l（cm）"</span>
+            <span class="text-xs text-muted-foreground">{move || t("长度 l（cm）")}</span>
             <input
               type="number"
               step="0.1"
@@ -44,7 +45,7 @@ pub(super) fn CoilYagiCalculator() -> impl IntoView {
             />
           </label>
           <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">"匝数 N"</span>
+            <span class="text-xs text-muted-foreground">{move || t("匝数 N")}</span>
             <input
               type="number"
               step="1"
@@ -64,20 +65,20 @@ pub(super) fn CoilYagiCalculator() -> impl IntoView {
             let l = coil_l.get();
             let n = coil_n.get();
             if d <= 0.0 || n <= 0.0 {
-              "请输入正的直径与匝数".to_owned()
+              t("请输入正的直径与匝数")
             } else {
               let denom = 45.4 * d + 100.0 * l;
               let ind = if denom > 0.0 { d * d * n * n / denom } else { 0.0 };
-              format!("电感 ≈ {} μH", fmt_num(ind))
+              tf("电感 ≈ {} μH", &[&(fmt_num(ind)).to_string()])
             }
           }}
         </div>
       </div>
       <div>
-        <div class="mb-1.5 text-xs font-medium text-muted-foreground">"Yagi 振子长度（3 单元近似，米）"</div>
+        <div class="mb-1.5 text-xs font-medium text-muted-foreground">{move || t("Yagi 振子长度（3 单元近似，米）")}</div>
         <div class="grid gap-3 sm:grid-cols-2">
           <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">"频率（MHz）"</span>
+            <span class="text-xs text-muted-foreground">{move || t("频率（MHz）")}</span>
             <input
               type="number"
               prop:value=move || freq.get().to_string()
@@ -94,13 +95,15 @@ pub(super) fn CoilYagiCalculator() -> impl IntoView {
           {move || {
             let f = freq.get();
             if f <= 0.0 {
-              "请输入正频率".to_owned()
+              t("请输入正频率")
             } else {
-              format!(
+              tf(
                 "反射器 ≈ {} m　激励振子 ≈ {} m　引向器 ≈ {} m",
-                fmt_num(150.0 / f),
-                fmt_num(143.0 / f),
-                fmt_num(136.0 / f),
+                &[
+                  &fmt_num(150.0 / f),
+                  &fmt_num(143.0 / f),
+                  &fmt_num(136.0 / f),
+                ],
               )
             }
           }}

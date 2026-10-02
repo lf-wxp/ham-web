@@ -3,34 +3,36 @@
 use ham_web_core::portable::{PORTABLE_PROGRAMS, PORTABLE_TIPS};
 use leptos::prelude::*;
 
+use super::portable_lookup::PortableLookup;
+use crate::i18n::t;
 use crate::util::set_title;
 
 const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn PortablePage() -> impl IntoView {
-  set_title("户外便携操作");
+  set_title(&t("户外便携操作"));
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"户外便携操作"</h1>
-            <div class="text-xs text-muted-foreground">"SOTA 山顶 · POTA 公园 · WWFF 世界动植物"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("户外便携操作")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("SOTA 山顶 · POTA 公园 · WWFF 世界动植物")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"主要项目"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("主要项目")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[640px] border-collapse text-sm">
               <thead class="bg-muted/60 text-xs">
                 <tr>
-                  <th class=CELL>"项目"</th>
-                  <th class=CELL>"全称"</th>
-                  <th class=CELL>"说明"</th>
+                  <th class=CELL>{move || t("项目")}</th>
+                  <th class=CELL>{move || t("全称")}</th>
+                  <th class=CELL>{move || t("说明")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -51,8 +53,10 @@ pub fn PortablePage() -> impl IntoView {
           </div>
         </section>
 
+        <PortableLookup />
+
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"便携要点"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("便携要点")}</h2>
           <ul class="space-y-2 p-4">
             {PORTABLE_TIPS
               .iter()

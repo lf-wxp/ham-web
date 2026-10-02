@@ -13,6 +13,21 @@ pub(crate) const KNOWLEDGE_GROUPS: &[NavGroup] = &[
         icon: IconKind::BookMarked,
       },
       NavItem {
+        href: "/cheat-sheet",
+        label: "考点速查手册",
+        icon: IconKind::ClipboardList,
+      },
+      NavItem {
+        href: "/confusables",
+        label: "易混淆辨析",
+        icon: IconKind::ArrowUpDown,
+      },
+      NavItem {
+        href: "/formulas",
+        label: "公式速查",
+        icon: IconKind::Calculator,
+      },
+      NavItem {
         href: "/prefixes",
         label: "呼号前缀",
         icon: IconKind::Globe,

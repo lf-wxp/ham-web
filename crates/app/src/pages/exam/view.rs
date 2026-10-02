@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
+use ham_web_core::exam::CustomPaper;
 use ham_web_core::saved_state::{ExamSavedState, keys};
-use ham_web_core::text::format_ms;
 use ham_web_core::weak_exam::{self, CategoryDelta};
 use ham_web_core::{ExamRule, ExamScore, QuestionItem};
 use leptos::prelude::*;
@@ -11,16 +11,13 @@ use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 use send_wrapper::SendWrapper;
 
-use crate::components::common::{
-  BottomBar, ExplanationCard, MessageDialog, QuestionProgressHeader,
-};
+use crate::components::common::{ExplanationCard, MessageDialog};
 use crate::components::exam::{
-  AnswerCardFilter, AnswerCardSheet, ExamResultDialog, ExamResumeDialog, ExamSettingsDialog,
-  ExamSubmitConfirmDialog,
+  AnswerCardFilter, AnswerCardSheet, CustomPaperDialog, ExamResultDialog, ExamResumeDialog,
+  ExamSettingsDialog, ExamSubmitConfirmDialog,
 };
 use crate::components::question_card::QuestionCard;
 use crate::data;
-use crate::icons::{Icon, IconKind};
 use crate::pages::{DEFAULT_TITLE, use_bank_query, use_no_site_footer};
 use crate::shortcuts::{DigitDetail, Shortcuts, digit_answer, use_question_shortcuts};
 use crate::store;
@@ -29,11 +26,11 @@ use crate::util::now_ms;
 use crate::util::set_title;
 use crate::util::storage;
 
+use super::exam_bottom_bar::ExamBottomBar;
+use super::exam_header::ExamHeader;
 use super::paper::pick_paper;
 use super::store::ExamStore;
-
-const PRESS: &str = "active:scale-[0.98] transition-transform";
-const PRESS_FULL: &str = "w-full active:scale-[0.98] transition-transform";
+use crate::i18n::{t, tf};
 
 #[component]
 pub fn ExamPage() -> impl IntoView {
@@ -43,8 +40,27 @@ pub fn ExamPage() -> impl IntoView {
   let query = use_query_map();
   // 薄弱项组卷不保存断点，也不覆盖常规模考的断点
   let weak = Memo::new(move |_| query.with(|q| q.get("mode")).as_deref() == Some("weak"));
+  // 自定义组卷：自选题量与分类范围，同样不保存断点、不计入备考状态。
+  let custom = Memo::new(move |_| query.with(|q| q.get("mode")).as_deref() == Some("custom"));
+  // 是否按分类占比抽题（贴近真实大纲分布）。
+  let weighted = RwSignal::new(storage::get("exam:weighted").as_deref() == Some("1"));
+  let strict = RwSignal::new(storage::get("exam:strict").as_deref() == Some("1"));
   let deltas = RwSignal::new(Vec::<CategoryDelta>::new());
+  let wrong_count = RwSignal::new(0usize);
   let store = ExamStore::new();
+
+  // 机考仿真：考试进行中进入全屏，结束后退出全屏。
+  Effect::new(move |_| {
+    let active = strict.get() && store.end_at.get().is_some();
+    let doc = crate::util::document();
+    if active && doc.fullscreen_element().is_none() {
+      if let Some(el) = doc.document_element() {
+        let _ = el.request_fullscreen();
+      }
+    } else if !active && doc.fullscreen_element().is_some() {
+      doc.exit_fullscreen();
+    }
+  });
   let bank_all = RwSignal::new(Arc::<Vec<QuestionItem>>::new(Vec::new()));
 
   let loading = RwSignal::new(true);
@@ -62,7 +78,14 @@ pub fn ExamPage() -> impl IntoView {
   let generation = StoredValue::new(0u32);
   let help_shown = StoredValue::new(false);
 
-  let rule = Memo::new(move |_| ExamRule::of(bank.get()));
+  let custom_paper = RwSignal::new(None::<CustomPaper>);
+  let custom_open = RwSignal::new(false);
+  // 自定义组卷时按用户配置生成规则，否则用 A/B/C 标准规则。
+  let rule = Memo::new(move |_| {
+    custom_paper
+      .get()
+      .map_or_else(|| ExamRule::of(bank.get()), |p| p.rule())
+  });
 
   // 每个题库的答题卡筛选与解析显示偏好
   Effect::new(move |_| {
@@ -77,24 +100,33 @@ pub fn ExamPage() -> impl IntoView {
 
   // 加载题库、抽题或准备恢复
   Effect::new(move |_| {
-    let (v, b, weak) = (version.get(), bank.get(), weak.get());
+    let (v, b, weak, weighted) = (version.get(), bank.get(), weak.get(), weighted.get());
+    let is_custom = custom.get();
+    let paper = custom_paper.get();
+    // 自定义组卷尚未配置：打开对话框等待用户确认（触发 custom_paper 变化）后再组卷。
+    if is_custom && paper.is_none() {
+      custom_open.set(true);
+      return;
+    }
     store.reset();
+    // 开始一场新考试时清除上一场暂存的错题列表，避免「重练错题」读到旧数据。
+    store::clear_wrong_exam(b);
     deltas.set(Vec::new());
     loading.set(true);
     pending.set(None);
     resume_open.set(false);
     generation.update_value(|g| *g += 1);
     let current = generation.get_value();
+    let current_rule = rule.get();
     spawn_local(async move {
       let result = data::load_bank(v.as_deref(), b, true).await;
       if generation.try_get_value() != Some(current) {
         return;
       }
-      let rule = ExamRule::of(b);
       match result {
         Ok(all) => {
           bank_all.set(all.clone());
-          let saved = (!weak)
+          let saved = (!weak && !is_custom)
             .then(|| store::load_exam(b, v.as_deref()))
             .flatten()
             .filter(|s| s.should_resume(now_ms()));
@@ -104,11 +136,14 @@ pub fn ExamPage() -> impl IntoView {
             pending.set(Some(saved));
             resume_open.set(true);
           } else {
-            store.start(Arc::new(pick_paper(&all, b, weak)), rule);
+            store.start(
+              Arc::new(pick_paper(&all, b, weak, weighted, paper.as_ref())),
+              current_rule,
+            );
           }
         }
         Err(_) => {
-          error_text.set(format!("题库 {b} 暂不可用"));
+          error_text.set(tf("题库 {} 暂不可用", &[&b.to_string()]));
           error_open.set(true);
         }
       }
@@ -118,7 +153,11 @@ pub fn ExamPage() -> impl IntoView {
 
   let submit = move || {
     store.finished.set(true);
-    let (b, is_weak) = (bank.get_untracked(), weak.get_untracked());
+    // 自定义组卷与薄弱项组卷一样：不保存断点、不计入备考状态。
+    let (b, is_weak) = (
+      bank.get_untracked(),
+      weak.get_untracked() || custom.get_untracked(),
+    );
     if !is_weak {
       store::clear_exam(b, version.get_untracked().as_deref());
     }
@@ -142,17 +181,41 @@ pub fn ExamPage() -> impl IntoView {
     }));
     result_open.set(true);
     store.questions.with_untracked(|qs| {
-      crate::study::record_many(
-        qs.iter()
-          .enumerate()
-          .filter_map(|(i, q)| answers.get(&q.answer_key(i)).map(|a| (q, a.as_slice()))),
-      );
+      let answered: Vec<(&QuestionItem, &[String])> = qs
+        .iter()
+        .enumerate()
+        .filter_map(|(i, q)| answers.get(&q.answer_key(i)).map(|a| (q, a.as_slice())))
+        .collect();
+      let elapsed = (now_ms() - store.started_ms.get_untracked()).max(0) as u64;
+      let per = if answered.is_empty() {
+        0
+      } else {
+        elapsed / answered.len() as u64
+      };
+      crate::study::record_many(answered.into_iter().map(|(q, a)| (q, a, per)));
+      // 收集本次错题（含未作答的题），暂存供练习页一键重练。
+      let wrong: Vec<QuestionItem> = qs
+        .iter()
+        .enumerate()
+        .filter(|(i, q)| {
+          !answers
+            .get(&q.answer_key(*i))
+            .is_some_and(|a| q.is_answer_correct(a))
+        })
+        .map(|(_, q)| q.clone())
+        .collect();
+      wrong_count.set(wrong.len());
+      store::save_wrong_exam(b, &wrong);
     });
   };
 
   let (swipe_start, swipe_end) = crate::gesture::swipe_handlers(Callback::new(move |s| match s {
     crate::gesture::Swipe::Left => store.next(),
-    crate::gesture::Swipe::Right => store.prev(),
+    crate::gesture::Swipe::Right => {
+      if !strict.get_untracked() {
+        store.prev();
+      }
+    }
   }));
 
   // 倒计时
@@ -183,7 +246,11 @@ pub fn ExamPage() -> impl IntoView {
     let (Some(end_at), false) = (store.end_at.get(), store.finished.get()) else {
       return;
     };
-    if qs.is_empty() || pending.with(Option::is_some) || weak.get_untracked() {
+    if qs.is_empty()
+      || pending.with(Option::is_some)
+      || weak.get_untracked()
+      || custom.get_untracked()
+    {
       return;
     }
     let mut answers_by_position = Vec::with_capacity(qs.len());
@@ -217,7 +284,7 @@ pub fn ExamPage() -> impl IntoView {
       let _ = js_sys::Reflect::set(
         &e,
         &"returnValue".into(),
-        &"考试仍在进行，离开页面计时不会暂停".into(),
+        &t("考试仍在进行，离开页面计时不会暂停").into(),
       );
     }
   });
@@ -265,19 +332,19 @@ pub fn ExamPage() -> impl IntoView {
       .with(|a| a.values().filter(|v| !v.is_empty()).count())
   });
   let flagged = Signal::derive(move || store.flags.with(|f| f.values().filter(|v| **v).count()));
-  let is_flagged = move || {
+  let is_flagged = Signal::derive(move || {
     store
       .current_key()
       .is_some_and(|k| store.flags.with(|f| f.get(&k).copied().unwrap_or(false)))
-  };
-  let toggle_flag = move |_| {
+  });
+  let on_toggle_flag = Callback::new(move |()| {
     if let Some(k) = store.current_key() {
       store.flags.update(|f| {
         let v = f.entry(k).or_insert(false);
         *v = !*v;
       });
     }
-  };
+  });
   let score = Signal::derive(move || {
     let answers = store.answers.get();
     store
@@ -295,7 +362,11 @@ pub fn ExamPage() -> impl IntoView {
   });
 
   use_question_shortcuts(Shortcuts {
-    on_prev: Callback::new(move |()| store.prev()),
+    on_prev: Callback::new(move |()| {
+      if !strict.get_untracked() {
+        store.prev();
+      }
+    }),
     on_next: Callback::new(move |()| store.next()),
     on_digit: Callback::new(move |(n, d): (usize, DigitDetail)| {
       if store.finished.get_untracked() {
@@ -346,85 +417,41 @@ pub fn ExamPage() -> impl IntoView {
   let on_restart = Callback::new(move |()| {
     store::clear_exam(bank.get_untracked(), version.get_untracked().as_deref());
     let all = bank_all.get_untracked();
-    let picked = pick_paper(&all, bank.get_untracked(), weak.get_untracked());
+    let picked = pick_paper(
+      &all,
+      bank.get_untracked(),
+      weak.get_untracked(),
+      weighted.get_untracked(),
+      custom_paper.get_untracked().as_ref(),
+    );
     store.start(Arc::new(picked), rule.get_untracked());
     resume_open.set(false);
     pending.set(None);
   });
 
-  let remaining_view = move || {
-    let ms = remaining.get();
-    let class = if ms <= 60_000 {
-      "text-red-600 dark:text-red-400"
-    } else {
-      ""
-    };
-    view! {
-      <span class=class aria-live="polite">
-        {format_ms(ms)}
-      </span>
-    }
-  };
-  let flag_label = move || {
-    if is_flagged() {
-      "取消标记"
-    } else {
-      "标记"
-    }
-  };
-  let at_start = move || store.index.get() == 0;
-  let at_end = move || store.index.get() + 1 >= store.len();
+  let at_start = Signal::derive(move || store.index.get() == 0);
+  let at_end = Signal::derive(move || store.index.get() + 1 >= store.len());
 
   let content = move || {
     if loading.get() {
-      return view! { <div class="p-6" aria-live="polite">"加载题库中..."</div> }.into_any();
+      return view! { <div class="p-6" aria-live="polite">{move || t("加载题库中...")}</div> }
+        .into_any();
     }
     if store.questions.with(|q| q.is_empty()) {
-      return view! { <div class="p-6" role="alert">"题库暂不可用或为空"</div> }.into_any();
+      return view! { <div class="p-6" role="alert">{move || t("题库暂不可用或为空")}</div> }
+        .into_any();
     }
-    let b = bank.get();
-    let r = rule.get();
     view! {
       <div on:touchstart=swipe_start on:touchend=swipe_end class="container mx-auto px-4 py-6 max-w-5xl space-y-4 pb-28 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-        <QuestionProgressHeader
+        <ExamHeader
           percent=percent
-          right=move || {
-            let href = move || {
-              let base = crate::pages::bank_href("/exam", version.get().as_deref(), bank.get());
-              if weak.get() { base } else { format!("{base}&mode=weak") }
-            };
-            view! {
-              <a
-                class=button_class(Variant::Outline, Size::Sm, "")
-                href=href
-                title="按分类正确率与错题加权抽题，不计入备考状态"
-              >
-                {move || if weak.get() { "常规模考" } else { "薄弱项组卷" }}
-              </a>
-              <button
-                class=button_class(Variant::Outline, Size::Icon, "")
-                aria-label="设置"
-                title="设置"
-                on:click=move |_| settings_open.set(true)
-              >
-                <Icon kind=IconKind::Settings class="h-4 w-4" />
-              </button>
-            }
-          }
-          meta=ViewFn::from(move || {
-            view! {
-              {move || weak.get().then(|| view! { <span class="mr-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-amber-800 dark:text-amber-300">"薄弱项组卷"</span> })}
-              "考试类别：" {b.as_str()} " 类｜试题数：" {r.total} "（单选 " {r.singles} "，多选 " {r.multiples}
-              "）｜限时：" {r.minutes} " 分钟｜剩余时间：" {remaining_view}
-            }
-          })
+          weak=weak
+          version=version
+          bank=bank
+          rule=rule
+          remaining=remaining
+          on_open_settings=Callback::new(move |()| settings_open.set(true))
         />
-        <div class="sm:hidden grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <div>"考试类别：" {b.as_str()} " 类"</div>
-          <div>"试题数：" {r.total} "（单选 " {r.singles} "，多选 " {r.multiples} "）"</div>
-          <div>"限时：" {r.minutes} " 分钟"</div>
-          <div>"剩余：" {remaining_view}</div>
-        </div>
 
         {move || {
           store
@@ -432,6 +459,10 @@ pub fn ExamPage() -> impl IntoView {
             .map(|(i, q)| {
               let finished = store.finished;
               let expl = q.clone();
+              let check_q = q.clone();
+              let wrong_key = q.answer_key(i);
+              let p_code = q.p_code().map(str::to_owned);
+              let bank_val = bank.get_untracked();
               view! {
                 <QuestionCard
                   index=i
@@ -445,85 +476,52 @@ pub fn ExamPage() -> impl IntoView {
                 {move || {
                   (finished.get() && show_explanation.get()).then(|| view! { <ExplanationCard question=expl.clone() /> })
                 }}
+                {move || {
+                  if !finished.get() {
+                    return ().into_any();
+                  }
+                  let wrong = store.answers.with(|a| {
+                    a.get(&wrong_key)
+                      .is_some_and(|ans| !ans.is_empty() && !check_q.is_answer_correct(ans))
+                  });
+                  let Some(p) = p_code.as_ref() else {
+                    return ().into_any();
+                  };
+                  if !wrong {
+                    return ().into_any();
+                  }
+                  let href = format!("/practice?bank={}&sub={}", bank_val.as_str(), p);
+                  view! {
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="text-xs text-muted-foreground">{t("这道题答错了")}</span>
+                      <a href=href class=button_class(Variant::Outline, Size::Sm, "")>
+                        {t("同类题再练")}
+                      </a>
+                    </div>
+                  }
+                  .into_any()
+                }}
               }
             })
         }}
 
-        <BottomBar
-          stats=move || view! { "已作答 " {answered} " / " {total} "｜标记 " {flagged} }
-          left=move || {
-            view! {
-              <button
-                class=button_class(Variant::Secondary, Size::Default, PRESS)
-                disabled=at_start
-                on:click=move |_| store.prev()
-              >
-                "上一题"
-              </button>
-            }
-          }
-          right=move || {
-            view! {
-              <button class=button_class(Variant::Outline, Size::Default, PRESS) on:click=toggle_flag>
-                {flag_label}
-              </button>
-              <button class=button_class(Variant::Outline, Size::Default, PRESS) on:click=move |_| card_open.set(true)>
-                "答题卡"
-              </button>
-              <button class=button_class(Variant::Default, Size::Default, PRESS) disabled=at_end on:click=move |_| store.next()>
-                "下一题"
-              </button>
-              <button
-                class=button_class(Variant::Destructive, Size::Default, PRESS)
-                disabled=move || store.finished.get()
-                on:click=move |_| confirm_open.set(true)
-              >
-                {move || if store.finished.get() { "已交卷" } else { "交卷" }}
-              </button>
-            }
-          }
-          mobile_top=move || {
-            view! {
-              <div class="grid grid-cols-2 gap-2">
-                <button
-                  class=button_class(Variant::Secondary, Size::Default, PRESS_FULL)
-                  disabled=at_start
-                  on:click=move |_| store.prev()
-                >
-                  "上一题"
-                </button>
-                <button
-                  class=button_class(Variant::Default, Size::Default, PRESS_FULL)
-                  disabled=at_end
-                  on:click=move |_| store.next()
-                >
-                  "下一题"
-                </button>
-              </div>
-            }
-          }
-          mobile_bottom=ViewFn::from(move || {
-            view! {
-              <div class="grid grid-cols-3 gap-2 mt-2">
-                <button class=button_class(Variant::Outline, Size::Default, PRESS_FULL) on:click=toggle_flag>
-                  {flag_label}
-                </button>
-                <button
-                  class=button_class(Variant::Outline, Size::Default, PRESS_FULL)
-                  on:click=move |_| card_open.set(true)
-                >
-                  "答题卡"
-                </button>
-                <button
-                  class=button_class(Variant::Destructive, Size::Default, PRESS_FULL)
-                  disabled=move || store.finished.get()
-                  on:click=move |_| confirm_open.set(true)
-                >
-                  {move || if store.finished.get() { "已交卷" } else { "交卷" }}
-                </button>
-              </div>
+        <ExamBottomBar
+          answered=answered
+          total=total
+          flagged=flagged
+          is_flagged=is_flagged
+          finished=store.finished
+          at_start=at_start
+          at_end=at_end
+          on_prev=Callback::new(move |()| {
+            if !strict.get_untracked() {
+              store.prev();
             }
           })
+          on_next=Callback::new(move |()| store.next())
+          on_toggle_flag=on_toggle_flag
+          on_open_card=Callback::new(move |()| card_open.set(true))
+          on_submit=Callback::new(move |()| confirm_open.set(true))
         />
       </div>
     }
@@ -531,7 +529,17 @@ pub fn ExamPage() -> impl IntoView {
   };
 
   view! {
-    <h1 class="sr-only">{move || if weak.get() { "薄弱项组卷" } else { "模拟考试" }}</h1>
+    <h1 class="sr-only">
+      {move || {
+        if custom.get() {
+          t("自定义组卷")
+        } else if weak.get() {
+          t("薄弱项组卷")
+        } else {
+          t("模拟考试")
+        }
+      }}
+    </h1>
     {content}
     <ExamResultDialog
       open=result_open
@@ -539,6 +547,9 @@ pub fn ExamPage() -> impl IntoView {
       pass_line=Signal::derive(move || rule.get().pass)
       deltas=deltas
       weak=weak
+      wrong_count=wrong_count
+      wrong_href=Signal::derive(move || format!("/practice?bank={}&src=exam", bank.get()))
+      bank=bank
     />
     <AnswerCardSheet
       open=card_open
@@ -551,7 +562,11 @@ pub fn ExamPage() -> impl IntoView {
         filter.set(f);
         storage::set(&keys::answer_card_filter(bank.get_untracked()), f.as_str());
       })
-      on_jump=Callback::new(move |i| store.jump(i))
+      on_jump=Callback::new(move |i| {
+        if !strict.get_untracked() {
+          store.jump(i);
+        }
+      })
       current_index=store.index
     />
     <ExamSubmitConfirmDialog
@@ -571,6 +586,20 @@ pub fn ExamPage() -> impl IntoView {
         show_explanation.set(v);
         storage::set(&keys::exam_show_explanation(bank.get_untracked()), if v { "1" } else { "0" });
       })
+      weighted=weighted
+      on_change_weighted=Callback::new(move |v: bool| {
+        weighted.set(v);
+        storage::set("exam:weighted", if v { "1" } else { "0" });
+      })
+      strict=strict
+      on_change_strict=Callback::new(move |v: bool| {
+        strict.set(v);
+        storage::set("exam:strict", if v { "1" } else { "0" });
+      })
+    />
+    <CustomPaperDialog
+      open=custom_open
+      on_confirm=Callback::new(move |p: CustomPaper| custom_paper.set(Some(p)))
     />
     <ExamResumeDialog
       open=resume_open
@@ -583,6 +612,6 @@ pub fn ExamPage() -> impl IntoView {
       on_resume=on_resume
       on_restart=on_restart
     />
-    <MessageDialog open=error_open title="加载失败" description=error_text confirm_text="知道了" />
+    <MessageDialog open=error_open title=t("加载失败") description=error_text confirm_text=t("知道了") />
   }
 }

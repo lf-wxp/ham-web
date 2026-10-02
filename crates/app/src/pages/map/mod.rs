@@ -7,11 +7,15 @@
 //! 关键决策见 [`MapView`] 的文档：等距圆柱投影（Plate Carrée）让 Maidenhead 网格
 //! 退化为轴对齐矩形；`viewBox.x` 允许越过 ±180° 并在 x 方向平铺三份，实现反子午线环绕。
 
+mod choropleth_overlay;
+mod dxcc_overlay;
 mod grayline_overlay;
 mod map_view;
 mod projection;
 mod world_data;
 
+pub use choropleth_overlay::{ChoroplethOverlay, RegionShape, RegionStatus};
+pub use dxcc_overlay::DxccOverlay;
 pub use grayline_overlay::GraylineOverlay;
 pub use map_view::MapView;
 pub use projection::project;

@@ -1,6 +1,7 @@
 use ham_web_core::contest::{CONTESTS, CabrilloHeader, cabrillo, contest};
 use leptos::prelude::*;
 
+use crate::i18n::{t, tf};
 use crate::pages::log::{LogEntry, use_log_store};
 use crate::ui::{Size, Variant, button_class, input_class};
 use crate::util::download_text;
@@ -53,11 +54,11 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
 
   view! {
     <section class="rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">"竞赛日志生成器"</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("竞赛日志生成器")}</h2>
       <div class="space-y-3 p-4">
         <div class="grid gap-3 sm:grid-cols-2">
           <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">"本台呼号"</span>
+            <span class="text-xs text-muted-foreground">{move || t("本台呼号")}</span>
             <input
               type="text"
               prop:value=move || callsign.get()
@@ -66,7 +67,7 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
             />
           </label>
           <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">"竞赛"</span>
+            <span class="text-xs text-muted-foreground">{move || t("竞赛")}</span>
             <select
               prop:value=move || contest_id.get()
               on:change=move |e| {
@@ -77,12 +78,12 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
             >
               {CONTESTS
                 .iter()
-                .map(|c| view! { <option value=c.id>{c.name}</option> })
+                .map(|c| view! { <option value=c.id>{move || t(c.name)}</option> })
                 .collect_view()}
             </select>
           </label>
           <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">"操作员"</span>
+            <span class="text-xs text-muted-foreground">{move || t("操作员")}</span>
             <input
               type="text"
               prop:value=move || operator.get()
@@ -91,7 +92,7 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
             />
           </label>
           <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">"本台网格"</span>
+            <span class="text-xs text-muted-foreground">{move || t("本台网格")}</span>
             <input
               type="text"
               prop:value=move || gridsquare.get()
@@ -107,7 +108,7 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
             class=button_class(Variant::Default, Size::Default, "")
             on:click=move |_| generate()
           >
-            "生成 Cabrillo"
+            {move || t("生成 Cabrillo")}
           </button>
           <button
             type="button"
@@ -115,10 +116,10 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
             prop:disabled=move || generated.with(String::is_empty)
             on:click=move |_| download()
           >
-            "下载 .cbr"
+            {move || t("下载 .cbr")}
           </button>
           <span class="text-xs text-muted-foreground">
-            {move || format!("日志中标记为该竞赛的通联：{} 条", tagged.with(Vec::len))}
+            {move || tf("日志中标记为该竞赛的通联：{} 条", &[&tagged.with(Vec::len).to_string()])}
           </span>
         </div>
 
@@ -127,9 +128,10 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
           if text.is_empty() {
             view! {
               <p class="text-xs text-muted-foreground">
-                "读取通联日志中带对应 CONTEST_ID 的记录（含交换信息与自报分数）。比赛时推荐直接用 "
-                <a href="/contest-log" class="font-medium text-foreground underline underline-offset-4">"竞赛录入"</a>
-                "：自动序号、实时查重，结束后一键导出。"
+                {move || t("读取通联日志中带对应 CONTEST_ID 的记录（含交换信息与自报分数）。比赛时推荐直接用")}
+                " "
+                <a href="/contest-log" class="font-medium text-foreground underline underline-offset-4">{move || t("竞赛录入")}</a>
+                {move || t("：自动序号、实时查重，结束后一键导出。")}
               </p>
             }
             .into_any()

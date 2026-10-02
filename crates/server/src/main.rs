@@ -20,7 +20,7 @@ use axum::http::header::{CACHE_CONTROL, EXPIRES, HeaderValue, PRAGMA};
 use axum::http::{StatusCode, Uri};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
-use axum::routing::get;
+use axum::routing::{get, post};
 use tower::ServiceExt;
 use tower_http::compression::CompressionLayer;
 use tower_http::services::{ServeDir, ServeFile};
@@ -28,12 +28,22 @@ use tower_http::trace::TraceLayer;
 
 mod alerts;
 mod cache;
+mod callsign;
 mod geocode;
 mod iss;
 mod most_wanted;
 mod passes;
+mod portable;
+mod psk_reporter;
+mod push;
+mod rate_limit;
+mod rbn;
+mod repeaters;
 mod solar;
 mod spots;
+mod util;
+mod voacap;
+mod xray;
 
 const NO_STORE: &str = "no-cache, no-store, must-revalidate";
 const IMMUTABLE: &str = "public, max-age=31536000, immutable";
@@ -69,6 +79,8 @@ fn cache_policy(path: &str) -> Option<&'static str> {
   match path {
     "/" | "/index.html" | "/sw.js" | "/manifest.json" | "/changelog.json" => Some(NO_STORE),
     p if p.starts_with("/questions/") && p.ends_with(".json") => Some("no-cache"),
+    // DXCC 几何二进制：无内容哈希，用协商缓存保证重新生成后能拿到新版本。
+    "/dxcc-entities.bin" => Some("no-cache"),
     p if p.starts_with("/questions/images/") || p.starts_with("/fonts/") => {
       Some("public, max-age=86400")
     }
@@ -119,7 +131,7 @@ async fn spa_fallback(index: PathBuf, uri: Uri, req: Request<Body>) -> Response 
   }
 }
 
-fn app(cfg: &Config) -> Router {
+fn app(cfg: &Config, push_service: push::PushService) -> Router {
   let index = cfg.dist.join("index.html");
   let fallback = tower::service_fn(move |req: Request<Body>| {
     let index = index.clone();
@@ -133,6 +145,37 @@ fn app(cfg: &Config) -> Router {
     .precompressed_gzip()
     .append_index_html_on_directories(true)
     .fallback(fallback);
+
+  // /api 限流：默认每 IP 每分钟 120 次，可通过 `RATE_LIMIT_PER_MIN` 覆盖。
+  let rl_limit = std::env::var("RATE_LIMIT_PER_MIN")
+    .ok()
+    .and_then(|s| s.parse::<usize>().ok())
+    .unwrap_or(120);
+  let rate_limiter = Arc::new(rate_limit::RateLimiter::new(
+    rl_limit,
+    std::time::Duration::from_secs(60),
+  ));
+  let limit_mw = {
+    let limiter = rate_limiter.clone();
+    move |req: Request, next: Next| {
+      let limiter = limiter.clone();
+      async move {
+        if !req.uri().path().starts_with("/api/") {
+          return next.run(req).await;
+        }
+        // 连接信息由 `into_make_service_with_connect_info` 注入到 extensions。
+        let conn = req
+          .extensions()
+          .get::<axum::extract::ConnectInfo<SocketAddr>>()
+          .cloned();
+        if rate_limit::allow(&limiter, conn, &req) {
+          next.run(req).await
+        } else {
+          (StatusCode::TOO_MANY_REQUESTS, "too many requests").into_response()
+        }
+      }
+    }
+  };
 
   let solar_cache = Arc::new(solar::Cache::default());
   let solar_route = {
@@ -176,6 +219,79 @@ fn app(cfg: &Config) -> Router {
     move |query: axum::extract::Query<geocode::GeocodeQuery>| geocode::handler(query, cache.clone())
   };
 
+  let voacap_cache = Arc::new(voacap::Cache::default());
+  let voacap_route = {
+    let cache = voacap_cache.clone();
+    move |query: axum::extract::Query<voacap::VoacapQuery>| voacap::handler(query, cache.clone())
+  };
+
+  let psk_cache = Arc::new(psk_reporter::Cache::default());
+  let psk_route = {
+    let cache = psk_cache.clone();
+    move |query: axum::extract::Query<psk_reporter::PskQuery>| {
+      psk_reporter::handler(query, cache.clone())
+    }
+  };
+
+  let rbn_cache = Arc::new(rbn::Cache::default());
+  let rbn_route = {
+    let cache = rbn_cache.clone();
+    move |query: axum::extract::Query<rbn::RbnQuery>| rbn::handler(query, cache.clone())
+  };
+
+  let callsign_cache = Arc::new(callsign::Cache::default());
+  let callsign_route = {
+    let cache = callsign_cache.clone();
+    move |query: axum::extract::Query<callsign::CallsignQuery>| {
+      callsign::handler(query, cache.clone())
+    }
+  };
+
+  let portable_cache = Arc::new(portable::Cache::default());
+  let sota_route = {
+    let cache = portable_cache.clone();
+    move |query: axum::extract::Query<portable::SotaQuery>| {
+      portable::sota_handler(query, cache.clone())
+    }
+  };
+  let pota_route = {
+    let cache = portable_cache.clone();
+    move |query: axum::extract::Query<portable::PotaQuery>| {
+      portable::pota_handler(query, cache.clone())
+    }
+  };
+
+  let repeaters_cache = Arc::new(repeaters::Cache::default());
+  let repeaters_route = {
+    let cache = repeaters_cache.clone();
+    move |query: axum::extract::Query<repeaters::RepeaterQuery>| {
+      repeaters::handler(query, cache.clone())
+    }
+  };
+
+  let xray_cache = Arc::new(xray::Cache::default());
+  let xray_route = {
+    let cache = xray_cache.clone();
+    move || xray::handler(cache.clone())
+  };
+
+  let push_public = {
+    let s = push_service.clone();
+    move || push::public_key_handler(s.clone())
+  };
+  let push_subscribe = {
+    let s = push_service.clone();
+    move |headers: axum::http::HeaderMap, body: String| {
+      push::subscribe_handler(s.clone(), headers, body)
+    }
+  };
+  let push_unsubscribe = {
+    let s = push_service.clone();
+    move |headers: axum::http::HeaderMap, body: String| {
+      push::unsubscribe_handler(s.clone(), headers, body)
+    }
+  };
+
   Router::new()
     .route("/healthz", get(|| async { "ok" }))
     .route("/api/solar", get(solar_route))
@@ -185,8 +301,20 @@ fn app(cfg: &Config) -> Router {
     .route("/api/alerts", get(alerts_route))
     .route("/api/iss", get(iss_route))
     .route("/api/geocode", get(geocode_route))
+    .route("/api/voacap", get(voacap_route))
+    .route("/api/psk-reporter", get(psk_route))
+    .route("/api/rbn", get(rbn_route))
+    .route("/api/callsign", get(callsign_route))
+    .route("/api/sota", get(sota_route))
+    .route("/api/pota", get(pota_route))
+    .route("/api/repeaters", get(repeaters_route))
+    .route("/api/xray", get(xray_route))
+    .route("/api/push/vapid-public-key", get(push_public))
+    .route("/api/push/subscribe", post(push_subscribe))
+    .route("/api/push/unsubscribe", post(push_unsubscribe))
     .fallback_service(static_files)
     .layer(middleware::from_fn(cache_headers))
+    .layer(middleware::from_fn(limit_mw))
     .layer(CompressionLayer::new())
     .layer(TraceLayer::new_for_http())
 }
@@ -247,13 +375,20 @@ async fn main() -> anyhow::Result<()> {
     );
   }
 
+  let push_service = push::PushService::default();
+  push_service.init()?;
+  push_service.clone().spawn_reminder_loop();
+
   let listener = tokio::net::TcpListener::bind(cfg.addr)
     .await
     .with_context(|| format!("failed to bind {}", cfg.addr))?;
   tracing::info!("serving {} on http://{}", cfg.dist.display(), cfg.addr);
-  axum::serve(listener, app(&cfg))
-    .with_graceful_shutdown(shutdown_signal())
-    .await?;
+  axum::serve(
+    listener,
+    app(&cfg, push_service).into_make_service_with_connect_info::<SocketAddr>(),
+  )
+  .with_graceful_shutdown(shutdown_signal())
+  .await?;
   Ok(())
 }
 
@@ -277,6 +412,7 @@ mod tests {
   fn cache_policies() {
     assert_eq!(cache_policy("/sw.js"), Some(NO_STORE));
     assert_eq!(cache_policy("/questions/A.json"), Some("no-cache"));
+    assert_eq!(cache_policy("/dxcc-entities.bin"), Some("no-cache"));
     assert_eq!(cache_policy("/pwa-icon.svg"), None);
   }
 
@@ -320,7 +456,7 @@ mod tests {
   #[tokio::test]
   async fn healthz_returns_ok() {
     let dist = TempDist::new();
-    let res = app(&config(&dist))
+    let res = app(&config(&dist), push::PushService::default())
       .oneshot(get("/healthz"))
       .await
       .expect("response");
@@ -334,7 +470,7 @@ mod tests {
   #[tokio::test]
   async fn spa_fallback_serves_index_html() {
     let dist = TempDist::new();
-    let res = app(&config(&dist))
+    let res = app(&config(&dist), push::PushService::default())
       .oneshot(get("/exam/A"))
       .await
       .expect("response");
@@ -348,7 +484,7 @@ mod tests {
   #[tokio::test]
   async fn missing_asset_returns_404() {
     let dist = TempDist::new();
-    let res = app(&config(&dist))
+    let res = app(&config(&dist), push::PushService::default())
       .oneshot(get("/missing.js"))
       .await
       .expect("response");

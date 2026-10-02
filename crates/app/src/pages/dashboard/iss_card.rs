@@ -3,6 +3,7 @@ use leptos::task::spawn_local;
 use serde::Deserialize;
 
 use crate::data;
+use crate::i18n::t;
 
 /// ISS 位置（/api/iss）。
 #[derive(Deserialize, Clone)]
@@ -31,12 +32,12 @@ pub(super) fn IssCard() -> impl IntoView {
 
   view! {
     <a href="/satellites" class="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">
-      <div class="text-sm font-semibold">"ISS 国际空间站"</div>
+      <div class="text-sm font-semibold">{move || t("ISS 国际空间站")}</div>
       <div class="mt-2 text-sm tabular-nums text-muted-foreground">
         {move || match iss.get() {
           Some(d) => format!("{:.2}°, {:.2}°", d.latitude, d.longitude),
-          None if loading.get() => "加载中…".to_owned(),
-          None => "暂不可用".to_owned(),
+          None if loading.get() => t("加载中…"),
+          None => t("暂不可用"),
         }}
       </div>
     </a>

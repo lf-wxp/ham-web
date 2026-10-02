@@ -1,5 +1,6 @@
 //! 业余无线电执照考试模拟：Leptos CSR 前端入口。
 
+mod achievements;
 mod app;
 mod bank_updates;
 mod cn;
@@ -7,13 +8,17 @@ mod components;
 mod data;
 mod exam_history;
 mod gesture;
+mod i18n;
 mod icons;
+mod idb;
 mod morse_audio;
 mod morse_settings;
 mod pages;
 mod photo;
+mod push;
 mod pwa;
 mod sat_alert;
+mod share_score;
 mod shortcuts;
 mod speech;
 mod store;

@@ -16,6 +16,7 @@ use crate::util::window;
 use super::stat::Stat;
 use super::term_card::TermCard;
 use super::{ALL, Haystacks, PAGE, category_meta, category_pos, pill};
+use crate::i18n::t;
 
 /// 术语表主体：搜索、分类筛选与词条列表。
 #[component]
@@ -143,7 +144,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
     keys
       .into_iter()
       .map(|key| {
-        let label = if key == ALL { "全部" } else { category_meta(key).0 };
+        let label = if key == ALL { t("全部") } else { t(category_meta(key).0) };
         view! {
           <button
             type="button"
@@ -160,7 +161,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
   let list = move || {
     let total = filtered.with(Vec::len);
     if total == 0 {
-      return view! { <div class="py-20 text-center text-muted-foreground">"没有匹配的术语"</div> }
+      return view! { <div class="py-20 text-center text-muted-foreground">{move || t("没有匹配的术语")}</div> }
         .into_any();
     }
     let shown: Vec<usize> = filtered.with(|f| f.iter().copied().take(visible.get()).collect());
@@ -179,7 +180,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               on:click=move |_| visible.update(|v| *v += PAGE)
               class="mt-4 w-full rounded-lg border py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent"
             >
-              "加载更多（已显示 " {shown_len} " / " {total} "）"
+              {t("加载更多（已显示 ")} {shown_len} " / " {total} {t("）")}
             </button>
           }
         })}
@@ -188,12 +189,12 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
   };
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-16 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"术语表"</h1>
-            <div class="text-xs text-muted-foreground">"业余无线电常用术语 · 英文缩写 · 通俗解释"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("术语表")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("业余无线电常用术语 · 英文缩写 · 通俗解释")}</div>
           </div>
 
           <div class="relative">
@@ -207,7 +208,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
                 kw.set(event_target_value(&e));
                 visible.set(PAGE);
               }
-              placeholder="搜索术语 / 缩写 / 解释…"
+              placeholder=move || t("搜索术语 / 缩写 / 解释…")
               class="h-9 w-56 rounded-lg border bg-background pl-8 pr-8 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             />
             {move || {
@@ -216,7 +217,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
                   view! {
                     <button
                       type="button"
-                      aria-label="清除"
+                      aria-label=move || t("清除")
                       class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       on:click=move |_| kw.set(String::new())
                     >
@@ -235,7 +236,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
             }
             class=move || pill(abbr_only.get(), "rounded-lg border px-3 py-1.5 text-sm transition-colors")
           >
-            "只看英文缩写"
+            {move || t("只看英文缩写")}
           </button>
         </div>
       </header>
@@ -251,7 +252,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               }
             >
               <span class="h-2 w-2 rounded-full bg-foreground/60"></span>
-              "全部术语"
+              {move || t("全部术语")}
               <span class="ml-auto text-xs tabular-nums">{move || base.with(Vec::len)}</span>
             </button>
             {sidebar}
@@ -261,10 +262,10 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
         <div class="min-w-0">
           <div class="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 md:hidden">{chips}</div>
           <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="术语总数" value=Signal::derive(move || base.with(Vec::len)) />
-            <Stat label="英文缩写" value=abbr_count />
-            <Stat label="术语分类" value=category_total />
-            <Stat label="当前筛选" value=Signal::derive(move || filtered.with(Vec::len)) />
+            <Stat label=t("术语总数") value=Signal::derive(move || base.with(Vec::len)) />
+            <Stat label=t("英文缩写") value=abbr_count />
+            <Stat label=t("术语分类") value=category_total />
+            <Stat label=t("当前筛选") value=Signal::derive(move || filtered.with(Vec::len)) />
           </div>
           {list}
         </div>

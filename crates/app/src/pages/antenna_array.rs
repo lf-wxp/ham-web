@@ -3,25 +3,26 @@
 use ham_web_core::antenna_array::{ARRAY_CONCEPTS, ARRAY_TIPS, ARRAY_TYPES};
 use leptos::prelude::*;
 
+use crate::i18n::t;
 use crate::util::set_title;
 
 #[component]
 pub fn AntennaArrayPage() -> impl IntoView {
-  set_title("天线阵列与相控阵");
+  set_title(&t("天线阵列与相控阵"));
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"天线阵列与相控阵"</h1>
-            <div class="text-xs text-muted-foreground">"堆叠增益 · 波束成形 · 常见阵列"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("天线阵列与相控阵")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("堆叠增益 · 波束成形 · 常见阵列")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"核心概念"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("核心概念")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {ARRAY_CONCEPTS
               .iter()
@@ -38,7 +39,7 @@ pub fn AntennaArrayPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"常见阵列类型"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("常见阵列类型")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {ARRAY_TYPES
               .iter()
@@ -55,7 +56,7 @@ pub fn AntennaArrayPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"设计要点"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("设计要点")}</h2>
           <ul class="space-y-2 p-4">
             {ARRAY_TIPS
               .iter()

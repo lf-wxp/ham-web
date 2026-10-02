@@ -1,5 +1,8 @@
 //! 薄弱项组卷：按分类正确率、错题本与是否做过为每道题加权，加权不放回抽题；
 //! 交卷后按一级分类对比本次与以往的正确率。
+//!
+//! 抽题权重优先取二级分类（官方分类码 P，即「知识点」）粒度的正确率，作答不足时
+//! 回退到一级分类，再不足按未知正确率估计——把「薄弱大类」进一步定位到「薄弱知识点」。
 
 use std::collections::{BTreeMap, HashSet};
 
@@ -7,29 +10,56 @@ use crate::categories::top_of;
 use crate::exam::{ExamRule, shuffled};
 use crate::mistake_book::{BankStats, MistakeBook, Tally, question_key};
 use crate::question::QuestionItem;
+use crate::question_stats::QuestionStats;
 
 /// 错题本中的题额外乘的权重。
 const MISTAKE_FACTOR: f64 = 3.0;
 /// 从未做过的题额外乘的权重。
 const UNSEEN_FACTOR: f64 = 1.5;
-/// 分类作答少于这么多次时，视为正确率未知。
+/// 一级分类作答少于这么多次时，视为正确率未知。
 const MIN_CATEGORY_ANSWERED: u32 = 5;
+/// 二级分类（知识点）作答少于这么多次时，视为正确率未知（知识点题量更少，门槛更低）。
+const MIN_SUB_ANSWERED: u32 = 3;
 /// 正确率未知的分类按这个正确率估计。
 const UNKNOWN_RATE: f64 = 0.6;
+/// 平均作答耗时超过这个毫秒数视为「会但慢」，额外加权（概念不牢的信号）。
+const SLOW_MS: u64 = 45_000;
+/// 「会但慢」的题额外乘的权重。
+const SLOW_FACTOR: f64 = 1.5;
 
-/// 每道题的权重（与 `all` 一一对应）：`1 + 3 × 错误率`，错题 ×3，没做过 ×1.5。
+/// 某个分类码（P 码）的正确率：优先二级分类（知识点）粒度，作答不足时回退到
+/// 一级分类，再不足返回 `None`。
+fn category_rate(stats: Option<&BankStats>, code: &str) -> Option<f64> {
+  let s = stats?;
+  s.stats
+    .subs
+    .get(code)
+    .filter(|t| t.answered >= MIN_SUB_ANSWERED)
+    .and_then(|t| t.rate())
+    .or_else(|| {
+      top_of(code)
+        .and_then(|top| s.stats.categories.get(top.key))
+        .filter(|t| t.answered >= MIN_CATEGORY_ANSWERED)
+        .and_then(|t| t.rate())
+    })
+}
+
+/// 每道题的权重（与 `all` 一一对应）：`1 + 3 × 错误率`，错题 ×3，没做过 ×1.5，
+/// 「会但慢」（平均作答耗时超过 [`SLOW_MS`]）再 ×[`SLOW_FACTOR`]。
 #[must_use]
-pub fn weights(all: &[QuestionItem], stats: Option<&BankStats>, book: &MistakeBook) -> Vec<f64> {
+pub fn weights(
+  all: &[QuestionItem],
+  stats: Option<&BankStats>,
+  book: &MistakeBook,
+  qstats: &QuestionStats,
+) -> Vec<f64> {
   let mistakes: HashSet<&str> = book.records.iter().map(|r| r.key.as_str()).collect();
   all
     .iter()
     .map(|q| {
       let rate = q
         .p_code()
-        .and_then(top_of)
-        .and_then(|top| stats?.stats.categories.get(top.key))
-        .filter(|t| t.answered >= MIN_CATEGORY_ANSWERED)
-        .and_then(|t| t.rate())
+        .and_then(|code| category_rate(stats, code))
         .unwrap_or(UNKNOWN_RATE);
       let key = question_key(q);
       let mut w = 1.0 + 3.0 * (1.0 - rate);
@@ -38,6 +68,9 @@ pub fn weights(all: &[QuestionItem], stats: Option<&BankStats>, book: &MistakeBo
       }
       if !stats.is_some_and(|s| s.seen.contains(&key)) {
         w *= UNSEEN_FACTOR;
+      }
+      if qstats.avg_ms(&key).is_some_and(|ms| ms > SLOW_MS) {
+        w *= SLOW_FACTOR;
       }
       w
     })
@@ -145,6 +178,7 @@ mod tests {
   use super::*;
   use crate::bank::Bank;
   use crate::question::{Codes, QuestionOption, QuestionType};
+  use crate::question_stats::QuestionStats;
 
   fn q(n: usize, p: &str, multiple: bool) -> QuestionItem {
     QuestionItem {
@@ -213,10 +247,53 @@ mod tests {
     stats.record(&all[2], true);
     let mut book = MistakeBook::default();
     book.record(&all[2], &["B".to_owned()], 0);
-    let w = weights(&all, stats.bank(Bank::A), &book);
+    let w = weights(&all, stats.bank(Bank::A), &book, &QuestionStats::default());
     assert!((w[0] - 4.0).abs() < 1e-9, "全错的分类：1 + 3 × 1");
     assert!((w[1] - 1.0).abs() < 1e-9, "全对且做过");
     assert!((w[2] - 3.0).abs() < 1e-9, "全对分类但在错题本：1 × 3");
+  }
+
+  #[test]
+  fn slow_but_correct_weighs_more() {
+    let (a, _) = two_tops();
+    let all = vec![q(1, a, false)];
+    let mut stats = crate::mistake_book::StudyStats::default();
+    for _ in 0..5 {
+      stats.record(&all[0], true); // 已充分作答且全对
+    }
+    let mut qstats = QuestionStats::default();
+    qstats.record(&question_key(&all[0]), true, 0, SLOW_MS + 1);
+    let w = weights(&all, stats.bank(Bank::A), &MistakeBook::default(), &qstats);
+    // 基础 1（全对且做过），会但慢 ×1.5。
+    assert!((w[0] - 1.5).abs() < 1e-9, "会但慢应加权 1.5，实际 {}", w[0]);
+  }
+
+  #[test]
+  fn weak_sub_category_weighs_more_than_strong_within_same_top() {
+    // 1.1.1 与 1.1.2 同属「法规」一级分类，但知识点不同：细分后应区分开。
+    let weak = "1.1.1";
+    let strong = "1.1.2";
+    let all = vec![q(1, weak, false), q(2, strong, false)];
+    let mut stats = crate::mistake_book::StudyStats::default();
+    for _ in 0..5 {
+      stats.record(&all[0], false);
+      stats.record(&all[1], true);
+    }
+    let w = weights(
+      &all,
+      stats.bank(Bank::A),
+      &MistakeBook::default(),
+      &QuestionStats::default(),
+    );
+    // 同一一级分类下，薄弱知识点的题权重应更高（1 + 3×1 = 4 vs 1）。
+    assert!(
+      w[0] > w[1],
+      "薄弱知识点应加权更高：weak={} strong={}",
+      w[0],
+      w[1]
+    );
+    assert!((w[0] - 4.0).abs() < 1e-9, "薄弱知识点：1 + 3 × 1");
+    assert!((w[1] - 1.0).abs() < 1e-9, "已掌握知识点：1 + 3 × 0");
   }
 
   #[test]

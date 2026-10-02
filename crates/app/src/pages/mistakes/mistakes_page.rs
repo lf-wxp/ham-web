@@ -1,5 +1,7 @@
-use ham_web_core::categories::{TOP_CATEGORIES, sub_category};
-use ham_web_core::mistake_book::{MASTER_STREAK, MistakeRecord, RecordOutcome};
+use ham_web_core::categories::{TOP_CATEGORIES, sub_category, top_pages};
+use ham_web_core::mistake_book::{
+  MASTER_STREAK, MistakeRecord, RecordOutcome, WRONG_CAUSES, cause_stats,
+};
 use ham_web_core::{Bank, QuestionItem};
 use leptos::prelude::*;
 use leptos_router::hooks::use_query_map;
@@ -11,6 +13,7 @@ use crate::ui::{Size, Variant, button_class, input_class};
 use crate::util::{download_text, now_ms, set_title};
 
 use super::mistake_card::MistakeCard;
+use crate::i18n::{t, tf};
 
 /// 题目所属一级分类（用于分类筛选），无分类码时归入「其他」。
 fn top_of(question: &QuestionItem) -> &'static str {
@@ -18,6 +21,113 @@ fn top_of(question: &QuestionItem) -> &'static str {
     .p_code()
     .and_then(sub_category)
     .map_or("其他", |s| s.top)
+}
+
+/// 一级分类 key → 中文名。
+fn category_name(key: &str) -> &'static str {
+  TOP_CATEGORIES
+    .iter()
+    .find(|c| c.key == key)
+    .map_or("其他", |c| c.name)
+}
+
+/// 错题诊断：聚合分类分布、错因与薄弱环节，给出可行动结论。
+#[component]
+fn MistakeDiagnosis() -> impl IntoView {
+  let records = study::load_book().sorted();
+  let stats = study::load_stats();
+
+  // 错题分类分布（按错题数降序）。
+  let mut cat_counts: Vec<(&'static str, usize)> = TOP_CATEGORIES
+    .iter()
+    .map(|c| {
+      (
+        c.key,
+        records
+          .iter()
+          .filter(|m| top_of(&m.question) == c.key)
+          .count(),
+      )
+    })
+    .filter(|(_, n)| *n > 0)
+    .collect();
+  cat_counts.sort_by_key(|(_, n)| std::cmp::Reverse(*n));
+
+  // 主要错因（已标注的最多）。
+  let top_cause = cause_stats(&study::load_book())
+    .into_iter()
+    .filter(|(_, _, n)| *n > 0)
+    .max_by_key(|(_, _, n)| *n)
+    .map(|(_, name, n)| (name, n));
+
+  // 最薄弱分类（答题 ≥ 5 次中正确率最低）。
+  let weakest = stats.total.weakest(5);
+
+  let top_cat = cat_counts.first().copied();
+
+  // 生成结论。
+  let summary = {
+    let mut parts: Vec<String> = Vec::new();
+    if let Some((key, n)) = top_cat {
+      parts.push(format!(
+        "{}「{}」（{} 道）",
+        t("错题最集中在"),
+        t(category_name(key)),
+        n
+      ));
+    }
+    if let Some((name, n)) = top_cause {
+      parts.push(format!("{}「{}」（{} 道）", t("主要错因是"), t(name), n));
+    }
+    if let Some((key, tally)) = weakest {
+      let rate = (tally.rate().unwrap_or(0.0) * 100.0).round() as u32;
+      parts.push(format!(
+        "{}「{}」（正确率 {}%）",
+        t("最薄弱环节是"),
+        t(category_name(key)),
+        rate
+      ));
+    }
+    if parts.is_empty() {
+      t("错题不多，继续保持。")
+    } else {
+      format!("{}。", parts.join("；"))
+    }
+  };
+
+  let has_signal = top_cat.is_some() || top_cause.is_some() || weakest.is_some();
+  if !has_signal {
+    return ().into_any();
+  }
+
+  let top_cat_href = top_cat.and_then(|(key, _)| top_pages(key).first().map(|&(href, _)| href));
+  let weak_href = weakest.and_then(|(key, _)| top_pages(key).first().map(|&(href, _)| href));
+
+  view! {
+    <div class="rounded-xl border bg-card p-4">
+      <h3 class="mb-2 text-sm font-semibold">{move || t("错题诊断")}</h3>
+      <p class="text-sm text-muted-foreground">{summary}</p>
+      <div class="mt-3 flex flex-wrap gap-1.5">
+        {top_cat_href.map(|href| view! {
+          <a
+            href=href
+            class="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+          >
+            {move || t("复习薄弱专题 →")}
+          </a>
+        })}
+        {weak_href.map(|href| view! {
+          <a
+            href=href
+            class="rounded-full border px-3 py-1 text-xs transition-colors hover:bg-accent"
+          >
+            {move || t("专项练习 →")}
+          </a>
+        })}
+      </div>
+    </div>
+  }
+  .into_any()
 }
 
 /// 把错题导出为纯文本。
@@ -29,10 +139,12 @@ fn export_text(records: &[MistakeRecord]) -> String {
     for o in &r.question.options {
       s.push_str(&format!("   {}. {}\n", o.key, o.text));
     }
-    s.push_str(&format!(
+    s.push_str(&tf(
       "   正确答案：{}（累计答错 {} 次）\n\n",
-      r.question.answer_keys.join("、"),
-      r.wrong_count
+      &[
+        &r.question.answer_keys.join("、"),
+        &r.wrong_count.to_string(),
+      ],
     ));
   }
   s
@@ -52,7 +164,7 @@ fn option_class(selected: bool) -> String {
 
 #[component]
 pub fn MistakesPage() -> impl IntoView {
-  set_title("错题集");
+  set_title(&t("错题集"));
 
   let query = use_query_map();
   let bank = RwSignal::new(
@@ -81,6 +193,11 @@ pub fn MistakesPage() -> impl IntoView {
   let mastered = RwSignal::new(0usize);
   let filter = RwSignal::new(String::new());
   let confirm_clear = RwSignal::new(false);
+  // 闪卡模式：看题 → 自评会 / 不会，复用错题本的 SRS 进度。
+  let carding = RwSignal::new(false);
+  let card_revealed = RwSignal::new(false);
+  let card_known = RwSignal::new(0usize);
+  let card_unknown = RwSignal::new(0usize);
 
   let filtered = move || {
     let f = filter.get_untracked();
@@ -105,6 +222,7 @@ pub fn MistakesPage() -> impl IntoView {
     correct.set(0);
     wrong.set(0);
     mastered.set(0);
+    crate::study::note_question_start();
   };
   let start_due = move || {
     let now = now_ms();
@@ -113,6 +231,44 @@ pub fn MistakesPage() -> impl IntoView {
     start_with(list);
   };
   let start_all = move || start_with(filtered());
+
+  let start_cards = move || {
+    let list: Vec<MistakeRecord> = filtered();
+    if list.is_empty() {
+      return;
+    }
+    session.set(list);
+    carding.set(true);
+    current.set(0);
+    card_revealed.set(false);
+    card_known.set(0);
+    card_unknown.set(0);
+    crate::study::note_question_start();
+  };
+
+  let card_advance = move || {
+    let total = session.with_untracked(Vec::len);
+    if current.get_untracked() + 1 >= total {
+      carding.set(false);
+      refresh();
+    } else {
+      current.update(|c| *c += 1);
+      card_revealed.set(false);
+      crate::study::note_question_start();
+    }
+  };
+  let card_mark = move |ok: bool| {
+    let Some(m) = session.with_untracked(|s| s.get(current.get_untracked()).cloned()) else {
+      return;
+    };
+    crate::study::record_self_assess(&m.question, ok);
+    if ok {
+      card_known.update(|c| *c += 1);
+    } else {
+      card_unknown.update(|c| *c += 1);
+    }
+    card_advance();
+  };
 
   if query.with_untracked(|q| q.get("review").is_some()) {
     start_due();
@@ -164,6 +320,7 @@ pub fn MistakesPage() -> impl IntoView {
       current.update(|c| *c += 1);
       selected.set(Vec::new());
       feedback.set(None);
+      crate::study::note_question_start();
     }
   };
 
@@ -184,14 +341,20 @@ pub fn MistakesPage() -> impl IntoView {
 
   let idle = move || !practicing.get() && !finished.get() && !records.with(Vec::is_empty);
 
+  // 未来 7 天错题复习前瞻（owned 数据，静态渲染）。
+  let review_now = now_ms();
+  let review_timeline = study::load_book().due_timeline(review_now, 7);
+  let review_max = review_timeline.iter().copied().max().unwrap_or(1).max(1);
+  let review_total: usize = review_timeline.iter().sum();
+
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"错题集"</h1>
+            <h1 class="text-base font-semibold leading-tight">{move || t("错题集")}</h1>
             <div class="text-xs text-muted-foreground">
-              {format!("练习 · 模拟考试 · 闪卡中答错的题；复习间隔随作答自适应，连续答对 {MASTER_STREAK} 次（常错题更多）自动移出")}
+              {tf("练习 · 模拟考试 · 闪卡中答错的题；复习间隔随作答自适应，连续答对 {} 次（常错题更多）自动移出", &[&MASTER_STREAK.to_string()])}
             </div>
           </div>
           {move || {
@@ -204,13 +367,16 @@ pub fn MistakesPage() -> impl IntoView {
                     disabled=move || due_count.get() == 0
                     on:click=move |_| start_due()
                   >
-                    {move || format!("今日待复习 {}", due_count.get())}
+                    {move || tf("今日待复习 {}", &[&due_count.get().to_string()])}
                   </button>
                   <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| start_all()>
-                    "全部重练"
+                    {move || t("全部重练")}
+                  </button>
+                  <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| start_cards()>
+                    {move || t("闪卡复习")}
                   </button>
                   <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| export()>
-                    "导出"
+                    {move || t("导出")}
                   </button>
                   <a
                     class=button_class(Variant::Outline, Size::Sm, "")
@@ -219,22 +385,29 @@ pub fn MistakesPage() -> impl IntoView {
                       None => "/print?src=mistakes".to_owned(),
                     }
                   >
-                    "打印"
+                    {move || t("打印")}
                   </a>
                   <button
                     type="button"
                     class=button_class(Variant::Ghost, Size::Sm, "text-muted-foreground")
                     on:click=move |_| confirm_clear.set(true)
                   >
-                    "清空"
+                    {move || t("清空")}
                   </button>
                 }
               })
           }}
           <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
             {move || match bank.get() {
-              Some(b) => format!("{b} 类 {} / 共 {} 道错题", bank_count.get(), records.with(Vec::len)),
-              None => format!("共 {} 道错题", records.with(Vec::len)),
+              Some(b) => tf(
+                "{} 类 {} / 共 {} 道错题",
+                &[
+                  &b.to_string(),
+                  &bank_count.get().to_string(),
+                  &records.with(Vec::len).to_string(),
+                ],
+              ),
+              None => tf("共 {} 道错题", &[&records.with(Vec::len).to_string()]),
             }}
           </span>
         </div>
@@ -242,7 +415,7 @@ pub fn MistakesPage() -> impl IntoView {
           confirm_clear.get().then(|| {
             view! {
               <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-2 px-4 pb-3 text-sm">
-                <span class="mr-auto text-red-700 dark:text-red-400">"确定清空全部错题吗？此操作不可撤销。"</span>
+                <span class="mr-auto text-red-700 dark:text-red-400">{move || t("确定清空全部错题吗？此操作不可撤销。")}</span>
                 <button
                   type="button"
                   class=button_class(Variant::Destructive, Size::Sm, "")
@@ -252,10 +425,10 @@ pub fn MistakesPage() -> impl IntoView {
                     refresh();
                   }
                 >
-                  "清空"
+                  {move || t("清空")}
                 </button>
                 <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| confirm_clear.set(false)>
-                  "取消"
+                  {move || t("取消")}
                 </button>
               </div>
             }
@@ -265,7 +438,83 @@ pub fn MistakesPage() -> impl IntoView {
 
       <div class="mx-auto max-w-3xl space-y-4 px-4 py-5">
         {move || {
-          if practicing.get() {
+          if carding.get() {
+            // 闪卡视图：看题 → 显示答案 → 自评会 / 不会
+            let Some(m) = session.with_untracked(|s| s.get(current.get()).cloned()) else {
+              return view! { <div></div> }.into_any();
+            };
+            let total = session.with_untracked(Vec::len);
+            let q = m.question.clone();
+            view! {
+              <div class="rounded-xl border bg-card p-5">
+                <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{move || tf("第 {} / {} 题", &[&(current.get() + 1).to_string(), &total.to_string()])}</span>
+                  <span>
+                    {move || t("会")} <span class="font-semibold text-emerald-600">{card_known.get()}</span>
+                    " · " {move || t("不会")} <span class="font-semibold text-red-600">{card_unknown.get()}</span>
+                  </span>
+                </div>
+                <p class="whitespace-pre-line text-base font-medium leading-relaxed">{q.question.clone()}</p>
+                {q.image().map(|src| view! { <img src=src.to_owned() alt=move || t("题目附图") class="max-h-64 rounded border" /> })}
+                {move || {
+                  if card_revealed.get() {
+                    view! {
+                      <div class="mt-4 space-y-1 border-t pt-3">
+                        {q.options.iter().map(|o| {
+                          let correct = q.answer_keys.contains(&o.key);
+                          view! {
+                            <div class=format!(
+                              "text-sm {}",
+                              if correct { "font-medium text-emerald-600 dark:text-emerald-400" } else { "text-muted-foreground" },
+                            )>
+                              <span class="font-mono">{o.key.clone()}</span> "　" {o.text.clone()}
+                            </div>
+                          }
+                        }).collect_view()}
+                      </div>
+                    }
+                    .into_any()
+                  } else {
+                    view! { <div class="mt-4 text-xs text-muted-foreground">{move || t("先想答案，再点「显示答案」核对，然后自评会 / 不会（自评会推进复习间隔，不会则当天重来）。")}</div> }
+                      .into_any()
+                  }
+                }}
+                <div class="mt-5 flex items-center gap-2">
+                  {move || {
+                    if card_revealed.get() {
+                      view! {
+                        <button type="button" class=button_class(Variant::Default, Size::Default, "") on:click=move |_| card_mark(true)>
+                          {move || t("会 ✓")}
+                        </button>
+                        <button type="button" class=button_class(Variant::Outline, Size::Default, "") on:click=move |_| card_mark(false)>
+                          {move || t("不会 ✗")}
+                        </button>
+                      }
+                      .into_any()
+                    } else {
+                      view! {
+                        <button type="button" class=button_class(Variant::Default, Size::Default, "") on:click=move |_| card_revealed.set(true)>
+                          {move || t("显示答案")}
+                        </button>
+                        <button
+                          type="button"
+                          class=button_class(Variant::Ghost, Size::Default, "ml-auto text-muted-foreground")
+                          on:click=move |_| {
+                            carding.set(false);
+                            refresh();
+                          }
+                        >
+                          {move || t("结束")}
+                        </button>
+                      }
+                      .into_any()
+                    }
+                  }}
+                </div>
+              </div>
+            }
+            .into_any()
+          } else if practicing.get() {
             // 重练视图
             let Some(m) = session.with_untracked(|s| s.get(current.get()).cloned()) else {
               return view! { <div></div> }.into_any();
@@ -273,14 +522,19 @@ pub fn MistakesPage() -> impl IntoView {
             let total = session.with_untracked(Vec::len);
             let answer = m.question.answer_keys.join("、");
             let expl = m.question.clone();
+            let mk = m.key.clone();
+            let wrong_cause = RwSignal::new(None::<String>);
             view! {
               <div class="space-y-4 rounded-xl border bg-card p-5">
                 <div class="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{"第 "} <span class="font-semibold text-foreground">{current.get() + 1}</span> {" / "} {total} {" 题"}</span>
-                  <span>{"正确 "} <span class="font-semibold text-emerald-600">{correct.get()}</span> {"　错误 "} <span class="font-semibold text-red-600">{wrong.get()}</span></span>
+                  <span>{move || tf("第 {} / {} 题", &[&(current.get() + 1).to_string(), &total.to_string()])}</span>
+                  <span>
+                    {move || t("正确")} <span class="font-semibold text-emerald-600">{correct.get()}</span>
+                    "　" {move || t("错误")} <span class="font-semibold text-red-600">{wrong.get()}</span>
+                  </span>
                 </div>
                 <p class="whitespace-pre-line text-sm font-medium leading-snug">{m.question.question.clone()}</p>
-                {m.question.image().map(|src| view! { <img src=src.to_owned() alt="题目附图" class="max-h-64 rounded border" /> })}
+                {m.question.image().map(|src| view! { <img src=src.to_owned() alt=move || t("题目附图") class="max-h-64 rounded border" /> })}
                 <div class="space-y-2">
                   {m.question.options.iter().map(|o| {
                     let key = o.key.clone();
@@ -307,7 +561,7 @@ pub fn MistakesPage() -> impl IntoView {
                     disabled=move || feedback.get().is_some() || selected.get().is_empty()
                     on:click=move |_| submit()
                   >
-                    "提交"
+                    {move || t("提交")}
                   </button>
                   <button
                     type="button"
@@ -315,35 +569,62 @@ pub fn MistakesPage() -> impl IntoView {
                     disabled=move || feedback.get().is_none()
                     on:click=move |_| next()
                   >
-                    "下一题"
+                    {move || t("下一题")}
                   </button>
                   <button
                     type="button"
                     class=button_class(Variant::Ghost, Size::Default, "ml-auto text-muted-foreground")
                     on:click=move |_| exit()
                   >
-                    "结束"
+                    {move || t("结束")}
                   </button>
                 </div>
                 <div class="min-h-5 text-sm">
                   {move || {
                     feedback.get().map(|outcome| match outcome {
                       RecordOutcome::Wrong => view! {
-                        <span class="font-medium text-red-700 dark:text-red-400">
-                          "正确答案：" <span class="font-mono font-semibold">{answer.clone()}</span>
-                          <span class="ml-2 text-xs font-normal text-muted-foreground">"连续答对次数已清零"</span>
-                        </span>
+                        <div class="space-y-2">
+                          <span class="font-medium text-red-700 dark:text-red-400">
+                            {move || t("正确答案：")} <span class="font-mono font-semibold">{answer.clone()}</span>
+                            <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("连续答对次数已清零")}</span>
+                          </span>
+                          <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="text-xs text-muted-foreground">{move || t("为什么错？")}</span>
+                            {WRONG_CAUSES
+                              .iter()
+                              .map(|&(ck, cn)| {
+                                let mk2 = mk.clone();
+                                view! {
+                                  <button
+                                    type="button"
+                                    class=move || if wrong_cause.get().as_deref() == Some(ck) {
+                                      "rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary"
+                                    } else {
+                                      "rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent"
+                                    }
+                                    on:click=move |_| {
+                                      wrong_cause.set(Some(ck.to_owned()));
+                                      crate::study::set_mistake_cause(&mk2, ck);
+                                    }
+                                  >
+                                    {move || t(cn)}
+                                  </button>
+                                }
+                              })
+                              .collect_view()}
+                          </div>
+                        </div>
                       }.into_any(),
                       RecordOutcome::Mastered => view! {
-                        <span class="font-medium text-emerald-700 dark:text-emerald-400">"正确！已掌握，移出错题本"</span>
+                        <span class="font-medium text-emerald-700 dark:text-emerald-400">{move || t("正确！已掌握，移出错题本")}</span>
                       }.into_any(),
                       RecordOutcome::Progressed { streak, target, next_days } => view! {
                         <span class="font-medium text-emerald-700 dark:text-emerald-400">
-                          {format!("正确！已连续答对 {streak} / {target}，{next_days} 天后再复习")}
+                          {tf("正确！已连续答对 {} / {}，{} 天后再复习", &[&streak.to_string(), &target.to_string(), &next_days.to_string()])}
                         </span>
                       }.into_any(),
                       RecordOutcome::Correct => view! {
-                        <span class="font-medium text-emerald-700 dark:text-emerald-400">"正确！"</span>
+                        <span class="font-medium text-emerald-700 dark:text-emerald-400">{move || t("正确！")}</span>
                       }.into_any(),
                     })
                   }}
@@ -355,14 +636,14 @@ pub fn MistakesPage() -> impl IntoView {
           } else if finished.get() {
             view! {
               <div class="rounded-xl border bg-card px-4 py-10 text-center">
-                <div class="text-lg font-semibold">"重练完成"</div>
+                <div class="text-lg font-semibold">{move || t("重练完成")}</div>
                 <div class="mt-2 text-sm text-muted-foreground">
-                  "正确 " <span class="font-semibold text-emerald-600">{correct.get()}</span>
-                  "　错误 " <span class="font-semibold text-red-600">{wrong.get()}</span>
-                  "　已掌握 " <span class="font-semibold text-foreground">{mastered.get()}</span>
+                  {move || t("正确")} " " <span class="font-semibold text-emerald-600">{correct.get()}</span>
+                  "　" {move || t("错误")} " " <span class="font-semibold text-red-600">{wrong.get()}</span>
+                  "　" {move || t("已掌握")} " " <span class="font-semibold text-foreground">{mastered.get()}</span>
                 </div>
                 <button type="button" class=format!("{} mt-5", button_class(Variant::Default, Size::Default, "")) on:click=move |_| exit()>
-                  "返回列表"
+                  {move || t("返回列表")}
                 </button>
               </div>
             }
@@ -370,15 +651,68 @@ pub fn MistakesPage() -> impl IntoView {
           } else if records.with(Vec::is_empty) {
             view! {
               <div class="rounded-xl border bg-card px-4 py-12 text-center">
-                <div class="text-sm font-medium">"暂无错题"</div>
+                <div class="text-sm font-medium">{move || t("暂无错题")}</div>
                 <div class="mt-1 text-xs text-muted-foreground">
-                  "去「练习」「模拟考试」或「闪卡」作答后，答错的题目会自动收进这里。"
+                  {move || t("去「练习」「模拟考试」或「闪卡」作答后，答错的题目会自动收进这里。")}
                 </div>
               </div>
             }
             .into_any()
           } else {
             view! {
+              <MistakeDiagnosis />
+              {{
+                let timeline = review_timeline.clone();
+                let max = review_max;
+                move || {
+                  (review_total > 0).then(|| {
+                    view! {
+                      <div class="rounded-xl border bg-card p-4">
+                        <div class="mb-2 flex items-center justify-between">
+                          <h3 class="text-sm font-semibold">{move || t("复习前瞻")}</h3>
+                          <span class="text-xs text-muted-foreground">
+                            {tf("未来 7 天共 {} 道待复习", &[&review_total.to_string()])}
+                          </span>
+                        </div>
+                        <div class="flex h-24 items-end gap-1.5">
+                          {timeline
+                            .iter()
+                            .enumerate()
+                            .map(|(i, n)| {
+                              let h = if *n == 0 {
+                                0.0
+                              } else {
+                                (*n as f64 / max as f64 * 100.0).max(8.0)
+                              };
+                              let label = match i {
+                                0 => t("今天"),
+                                1 => t("明天"),
+                                2 => t("后天"),
+                                _ => tf("{} 天后", &[&i.to_string()]),
+                              };
+                              let bar_class = if *n > 0 {
+                                "w-full rounded-t bg-primary/70"
+                              } else {
+                                "w-full rounded-t bg-muted"
+                              };
+                              view! {
+                                <div class="flex min-w-0 flex-1 flex-col items-center gap-1">
+                                  <div
+                                    class=bar_class
+                                    style=format!("height: {h}%")
+                                    title=tf("{}：{} 道", &[&label, &n.to_string()])
+                                  ></div>
+                                  <span class="text-[9px] text-muted-foreground">{label}</span>
+                                </div>
+                              }
+                            })
+                            .collect_view()}
+                        </div>
+                      </div>
+                    }
+                  })
+                }
+              }}
               {move || {
                 if !filter.get().is_empty() {
                   return view! { <div></div> }.into_any();
@@ -396,7 +730,7 @@ pub fn MistakesPage() -> impl IntoView {
                 }
                 view! {
                   <div class="rounded-xl border bg-card p-4">
-                    <h3 class="mb-2 text-sm font-semibold">"薄弱分类"</h3>
+                    <h3 class="mb-2 text-sm font-semibold">{move || t("薄弱分类")}</h3>
                     <div class="flex flex-wrap gap-1.5">
                       {counts
                         .into_iter()
@@ -405,7 +739,7 @@ pub fn MistakesPage() -> impl IntoView {
                             <button
                               type="button"
                               class="whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors hover:bg-accent"
-                              title=format!("只看「{name}」的错题")
+                              title=tf("只看「{}」的错题", &[(name)])
                               on:click=move |_| filter.set(key.to_owned())
                             >
                               {name} " " <span class="font-semibold tabular-nums">{n}</span>
@@ -419,13 +753,40 @@ pub fn MistakesPage() -> impl IntoView {
                 .into_any()
               }}
 
+              {{
+                let cause_counts = cause_stats(&study::load_book());
+                let has_cause = cause_counts.iter().any(|(_, _, n)| *n > 0);
+                move || {
+                  has_cause.then(|| {
+                    view! {
+                      <div class="rounded-xl border bg-card p-4">
+                        <h3 class="mb-2 text-sm font-semibold">{move || t("错因分布")}</h3>
+                        <div class="flex flex-wrap gap-1.5">
+                          {cause_counts
+                            .iter()
+                            .filter(|(_, _, n)| *n > 0)
+                            .map(|&(_, name, n)| {
+                              view! {
+                                <span class="whitespace-nowrap rounded-full border px-3 py-1 text-xs">
+                                  {move || t(name)} " " <span class="font-semibold tabular-nums">{n}</span>
+                                </span>
+                              }
+                            })
+                            .collect_view()}
+                        </div>
+                      </div>
+                    }
+                  })
+                }
+              }}
+
               <div class="flex flex-wrap items-center gap-2">
                 <select
                   prop:value=move || filter.get()
                   on:change=move |e| filter.set(event_target_value(&e))
                   class=format!("{} w-full sm:w-48", input_class(""))
                 >
-                  <option value="">"全部分类"</option>
+                  <option value="">{move || t("全部分类")}</option>
                   {TOP_CATEGORIES
                     .iter()
                     .map(|c| {
@@ -446,7 +807,7 @@ pub fn MistakesPage() -> impl IntoView {
                         aria-pressed=move || (bank.get() == b).to_string()
                         on:click=move |_| bank.set(b)
                       >
-                        {b.map_or_else(|| "全部".to_owned(), |b| format!("{b} 类"))}
+                        {b.map_or_else(|| t("全部"), |b| tf("{} 类", &[&b.to_string()]))}
                       </button>
                     })
                     .collect_view()}

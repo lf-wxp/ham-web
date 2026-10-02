@@ -5,6 +5,7 @@ use leptos::prelude::*;
 use crate::icons::{Icon, IconKind};
 
 use super::shared::{on_open, state_attr, trap_tab, use_presence};
+use crate::i18n::t;
 
 /// 右侧抽屉（答题卡）。
 #[component]
@@ -48,7 +49,7 @@ pub fn Sheet(open: RwSignal<bool>, children: ChildrenFn) -> impl IntoView {
               on:click=move |_| open.set(false)
             >
               <Icon kind=IconKind::X class="size-4" />
-              <span class="sr-only">"关闭"</span>
+              <span class="sr-only">{move || t("关闭")}</span>
             </button>
           </div>
         </Portal>

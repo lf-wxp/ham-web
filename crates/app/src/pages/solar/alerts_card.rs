@@ -4,6 +4,7 @@ use leptos::task::spawn_local;
 use crate::data;
 
 use super::{Alert, level_color};
+use crate::i18n::t;
 
 /// 空间天气警报卡片。
 #[component]
@@ -22,18 +23,18 @@ pub(super) fn AlertsCard() -> impl IntoView {
 
   view! {
     <section class="rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">"空间天气警报"</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("空间天气警报")}</h2>
       <div class="p-2">
         {move || {
           if loading.get() {
             return view! {
-              <p class="px-3 py-6 text-center text-sm text-muted-foreground">"正在获取警报…"</p>
+              <p class="px-3 py-6 text-center text-sm text-muted-foreground">{move || t("正在获取警报…")}</p>
             }
             .into_any();
           }
           if failed.get() || alerts.get().is_empty() {
             return view! {
-              <p class="px-3 py-6 text-center text-sm text-muted-foreground">"当前无有效警报或数据暂不可用。"</p>
+              <p class="px-3 py-6 text-center text-sm text-muted-foreground">{move || t("当前无有效警报或数据暂不可用。")}</p>
             }
             .into_any();
           }

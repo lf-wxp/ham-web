@@ -36,6 +36,14 @@ const fn default_ease() -> f64 {
   DEFAULT_EASE
 }
 
+/// 错因选项：(key, 中文名)。用于答错后的自评标注，便于按错因聚类复习。
+pub const WRONG_CAUSES: &[(&str, &str)] = &[
+  ("memory", "知识点没记住"),
+  ("careless", "审题看错"),
+  ("distractor", "被干扰项迷惑"),
+  ("confused", "记混了概念"),
+];
+
 /// 题目的稳定 key：内容指纹的 FNV-1a 64 位哈希（16 位十六进制）。
 #[must_use]
 pub fn question_key(q: &QuestionItem) -> String {
@@ -76,6 +84,9 @@ pub struct MistakeRecord {
   /// 最近一次作答时间（旧记录为 0，按最近答错时间计）。
   #[serde(default)]
   pub last_review_ms: i64,
+  /// 错因（用户自评，`WRONG_CAUSES` 中的 key；空为未标注）。
+  #[serde(default)]
+  pub cause: Option<String>,
 }
 
 impl MistakeRecord {
@@ -205,6 +216,7 @@ impl MistakeBook {
             ease: DEFAULT_EASE,
             interval_days: 0.0,
             last_review_ms: now_ms,
+            cause: None,
           });
           self.trim();
         }
@@ -241,6 +253,19 @@ impl MistakeBook {
     self.records.retain(|r| r.key != key);
   }
 
+  /// 标注错因（`cause` 为空则清除标注）；返回是否命中该题。
+  pub fn set_cause(&mut self, key: &str, cause: &str) -> bool {
+    let Some(r) = self.records.iter_mut().find(|r| r.key == key) else {
+      return false;
+    };
+    r.cause = if cause.is_empty() {
+      None
+    } else {
+      Some(cause.to_owned())
+    };
+    true
+  }
+
   /// 是否包含某题。
   #[must_use]
   pub fn contains(&self, q: &QuestionItem) -> bool {
@@ -275,6 +300,24 @@ impl MistakeBook {
     v
   }
 
+  /// 未来 `days` 天（含今天已到期的）每天待复习的错题数，按天返回（索引 0 = 今天已到期）。
+  #[must_use]
+  pub fn due_timeline(&self, now_ms: i64, days: usize) -> Vec<usize> {
+    let mut out = vec![0usize; days];
+    for r in &self.records {
+      let delta = r.due_ms - now_ms;
+      let idx = if delta <= 0 {
+        0
+      } else {
+        ((delta + DAY_MS - 1) / DAY_MS) as usize
+      };
+      if idx < days {
+        out[idx] += 1;
+      }
+    }
+    out
+  }
+
   fn trim(&mut self) {
     if self.records.len() > MAX_RECORDS {
       self
@@ -283,6 +326,74 @@ impl MistakeBook {
       self.records.truncate(MAX_RECORDS);
     }
   }
+}
+
+/// 按知识点（二级分类 P 码）聚合的错题统计。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TopicAgg {
+  /// 官方分类码 P。
+  pub code: &'static str,
+  /// 知识点名。
+  pub name: &'static str,
+  /// 一级分类 key。
+  pub top: &'static str,
+  /// 一级分类名。
+  pub top_name: &'static str,
+  /// 该知识点下的错题数。
+  pub mistakes: usize,
+  /// 累计答错次数。
+  pub total_wrong: u32,
+}
+
+/// 按知识点聚合错题（无分类码的忽略），按错题数降序。
+#[must_use]
+pub fn mistake_topics(book: &MistakeBook) -> Vec<TopicAgg> {
+  let mut map: BTreeMap<&'static str, (usize, u32)> = BTreeMap::new();
+  for r in &book.records {
+    let Some(sub) = r
+      .question
+      .p_code()
+      .and_then(crate::categories::sub_category)
+    else {
+      continue;
+    };
+    let e = map.entry(sub.code).or_default();
+    e.0 += 1;
+    e.1 += r.wrong_count;
+  }
+  let mut out: Vec<TopicAgg> = map
+    .into_iter()
+    .map(|(code, (mistakes, total_wrong))| {
+      let sub = crate::categories::sub_category(code).expect("code from sub_category");
+      let top_name = crate::categories::top_category(sub.top).map_or(sub.top, |t| t.name);
+      TopicAgg {
+        code,
+        name: sub.name,
+        top: sub.top,
+        top_name,
+        mistakes,
+        total_wrong,
+      }
+    })
+    .collect();
+  out.sort_by_key(|a| std::cmp::Reverse(a.mistakes));
+  out
+}
+
+/// 按错因聚合错题数（仅统计已标注的），按 [`WRONG_CAUSES`] 顺序返回 `(key, 名称, 数量)`。
+#[must_use]
+pub fn cause_stats(book: &MistakeBook) -> Vec<(&'static str, &'static str, usize)> {
+  WRONG_CAUSES
+    .iter()
+    .map(|&(key, name)| {
+      let n = book
+        .records
+        .iter()
+        .filter(|r| r.cause.as_deref() == Some(key))
+        .count();
+      (key, name, n)
+    })
+    .collect()
 }
 
 /// 某一级分类的累计作答情况。
@@ -306,6 +417,9 @@ pub struct CategoryStats {
   /// key = 一级分类 key。
   #[serde(default)]
   pub categories: BTreeMap<String, Tally>,
+  /// key = 官方分类码（P 码），用于薄弱知识点下钻。
+  #[serde(default)]
+  pub subs: BTreeMap<String, Tally>,
   /// 全部作答次数（含无分类码的题）。
   #[serde(default)]
   pub answered: u32,
@@ -318,10 +432,15 @@ impl CategoryStats {
   fn record(&mut self, q: &QuestionItem, correct: bool) {
     self.answered += 1;
     self.correct += u32::from(correct);
-    if let Some(top) = q.p_code().and_then(top_of) {
-      let t = self.categories.entry(top.key.to_owned()).or_default();
+    if let Some(code) = q.p_code() {
+      let t = self.subs.entry(code.to_owned()).or_default();
       t.answered += 1;
       t.correct += u32::from(correct);
+      if let Some(top) = top_of(code) {
+        let t = self.categories.entry(top.key.to_owned()).or_default();
+        t.answered += 1;
+        t.correct += u32::from(correct);
+      }
     }
   }
 
@@ -334,6 +453,29 @@ impl CategoryStats {
       .filter(|(_, t)| t.answered >= min_answered)
       .min_by(|(_, a), (_, b)| a.rate().unwrap_or(0.0).total_cmp(&b.rate().unwrap_or(0.0)))
       .map(|(k, t)| (k.as_str(), *t))
+  }
+
+  /// 作答不少于 `min_answered` 次的分类码（P 码）中正确率最低的一个。
+  #[must_use]
+  pub fn weakest_sub(&self, min_answered: u32) -> Option<(&str, Tally)> {
+    self
+      .subs
+      .iter()
+      .filter(|(_, t)| t.answered >= min_answered)
+      .min_by(|(_, a), (_, b)| a.rate().unwrap_or(0.0).total_cmp(&b.rate().unwrap_or(0.0)))
+      .map(|(k, t)| (k.as_str(), *t))
+  }
+
+  /// 某一级分类下的分类码累计（按定义顺序）。
+  #[must_use]
+  pub fn subs_of(&self, top_key: &str) -> Vec<(&str, Tally)> {
+    let mut out: Vec<(&str, Tally)> = Vec::new();
+    for code in crate::categories::sub_codes_of(top_key) {
+      if let Some(t) = self.subs.get(code) {
+        out.push((code, *t));
+      }
+    }
+    out
   }
 }
 
@@ -625,6 +767,47 @@ mod tests {
     legacy.banks.clear();
     legacy.question.id = Some("C-1".into());
     assert!(legacy.in_bank(Bank::C) && !legacy.in_bank(Bank::A));
+  }
+
+  #[test]
+  fn aggregates_mistakes_by_topic() {
+    let mut book = MistakeBook::default();
+    let mut a = q("题目A", "A");
+    a.codes.p = Some("1.1.1".into());
+    let mut b = q("题目B", "A");
+    b.codes.p = Some("1.1.2".into());
+    book.record(&a, &ans("B"), 0);
+    book.record(&a, &ans("B"), 1);
+    book.record(&b, &ans("B"), 2);
+    let topics = mistake_topics(&book);
+    assert_eq!(topics.len(), 2);
+    // 按错题数降序：1.1.1 错 1 题（累计 2 次）、1.1.2 错 1 题（累计 1 次）。
+    assert_eq!(topics[0].code, "1.1.1");
+    assert_eq!(topics[0].mistakes, 1);
+    assert_eq!(topics[0].total_wrong, 2);
+    assert_eq!(topics[0].top_name, "无线电法规与管理");
+    assert_eq!(topics[1].code, "1.1.2");
+  }
+
+  #[test]
+  fn cause_annotation_and_stats() {
+    let mut book = MistakeBook::default();
+    let a = q("题目A", "A");
+    let b = q("题目B", "A");
+    book.record(&a, &ans("B"), 0);
+    book.record(&b, &ans("B"), 1);
+    let ka = question_key(&a);
+    let kb = question_key(&b);
+    assert!(book.set_cause(&ka, "memory"));
+    assert!(book.set_cause(&kb, "confused"));
+    assert!(!book.set_cause("nope", "memory"));
+    let stats = cause_stats(&book);
+    assert_eq!(stats[0], ("memory", "知识点没记住", 1));
+    assert_eq!(stats[3], ("confused", "记混了概念", 1));
+    // 清除标注。
+    assert!(book.set_cause(&ka, ""));
+    let stats = cause_stats(&book);
+    assert_eq!(stats[0].2, 0);
   }
 
   #[test]

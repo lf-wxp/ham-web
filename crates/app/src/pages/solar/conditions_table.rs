@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::{BandCond, condition_color};
+use crate::i18n::t;
 
 /// 各波段传播条件表。
 #[component]
@@ -31,9 +32,9 @@ pub(super) fn ConditionsTable(conditions: Vec<BandCond>) -> impl IntoView {
       <table class="w-full min-w-[320px] border-collapse text-sm">
         <thead class="bg-muted/60 text-xs">
           <tr>
-            <th class="border px-3 py-2 text-left">"波段"</th>
-            <th class="border px-3 py-2 text-left">"白天"</th>
-            <th class="border px-3 py-2 text-left">"夜间"</th>
+            <th class="border px-3 py-2 text-left">{move || t("波段")}</th>
+            <th class="border px-3 py-2 text-left">{move || t("白天")}</th>
+            <th class="border px-3 py-2 text-left">{move || t("夜间")}</th>
           </tr>
         </thead>
         <tbody>

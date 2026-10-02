@@ -30,6 +30,7 @@
     - [生产构建与运行](#生产构建与运行)
   - [cargo make 任务一览](#cargo-make-任务一览)
   - [Docker 部署](#docker-部署)
+  - [Web Push 后台推送](#web-push-后台推送)
   - [数据集构建](#数据集构建)
   - [题目解析维护流程](#题目解析维护流程)
     - [核心概念：内容指纹](#核心概念内容指纹)
@@ -60,21 +61,24 @@
 - **📝 模拟考试**：A/B/C 三类考试，按真实规则抽题（单选/多选配额：A 类 40 题/40 分钟、B 类 60 题/60 分钟、C 类 90 题/90 分钟），倒计时、标记、答题卡、交卷计分与合格判定，中途退出可恢复；交卷后可回看题目解析，并展示最近 10 次成绩趋势与本次各分类正确率对比以往
 - **🎯 薄弱项组卷**（`/exam?bank=A&mode=weak`）：同样题量与配额，按分类正确率、错题本与未做过的题加权抽题；不计入备考状态与历史趋势，首页复习卡片可一键进入
 - **✅ 备考状态**：按 A/B/C 分别绘制模拟考试成绩曲线（含合格线），根据最近 5 次成绩给出「还需多考几次 / 再巩固一下 / 接近合格 / 可以去考了」判定
+- **⏱️ 每日挑战**（`/daily-challenge`）：每天一组 10 题限时闯关，同一天抽到同一组题，交卷计入打卡；展示当前连胜与历史最长连胜，首页有今日状态入口
 - **🎯 练习模式**：顺序/随机练习、即时显示答案与解析、进度自动保存与恢复；可「只练没做过」的题，专项练习不覆盖顺序进度
 - **🗂️ 分类浏览**：按 10 大题目类型与官方分类码浏览，仅显示正确答案，附解析、知识点与参考依据
 - **⚡ 闪卡刷题**：看题 → 心里想答案 → 显示答案 → 自评，适合考前高强度过题；移动端可左右滑动（翻面后右滑「会」、左滑「不会」）
 - **🎧 听题模式**（`/listen`）：自动朗读题干与选项，停顿思考后读出答案（可选读解析），题源可选 A/B/C 类、错题集或收藏集，可调语速与思考时间，按来源记住听到第几题
+- **📻 呼号抄收**（`/callsign-copy`）：听字母解释法（或摩尔斯电码）拼读随机呼号，抄写核对，附正确率与连续答对统计，练习呼号听抄基本功
 - **🃏 知识卡片**（`/cards`）：Q 简语、常用缩略语、字母解释法、莫尔斯字符与术语五组卡片间隔复习：翻面后自评「忘了 / 模糊 / 记得」，按难度系数安排下次复习（最长 180 天，忘了 10 分钟后重来），每组每天最多 10 张新卡；字母解释法与莫尔斯可点读 / 播放；支持空格翻面、1/2/3 评分与左右滑动；首页显示今日待复习张数
 - **❌ 错题本**：练习、模拟考试与闪卡「不会」自动入本并持久保存；按自适应间隔安排「今日待复习」：每道题有自己的难度系数，答对后间隔按实际间隔 × 难度系数增长（最长 60 天），答错降低难度系数并当天重来；常错的题需要连续答对更多次（3～5 次）才移出，旧数据自动兼容；可按 A/B/C 类筛选与复习
 - **🔖 收藏集**：手动收藏重点题目，随时复习与取消收藏
 - **🖨️ 打印版**：错题 / 收藏一键生成 A4 打印页（`/print`），可按题库筛选，答案集中在末尾、随题显示或不显示，可附解析
 - **🗓️ 备考计划**：设定考试日期与类别，按剩余未做题量、待复习错题与临考阶段（最后 7 天每天一套模拟考试）给出今日任务，并记录每天的作答量（首页与学习进度页展示）
 - **📊 学习进度**：练习 / 考试 / 错题 / 收藏 / 日志 / 打卡 / DXCC 的统计总览，按 A/B/C 分别展示题库覆盖率与 10 大分类正确率、定位薄弱知识点；首页可一键进入待复习与最薄弱分类的专项练习
+- **📈 学习周报**（`/weekly`）：近两周作答趋势、本周新题 / 复习占比、连续打卡天数与最薄弱分类回顾，附最近模拟考试成绩，一眼看清学习节奏
 - **⏰ 倒计时与提醒**：管理多个目标时间（考试日、执照到期等），本地持久化并实时刷新，到期用浏览器通知提醒
 - **🔍 全站搜索**：`/` 键或导航栏按钮唤起搜索面板，检索术语、简语与全部知识库条目，命中高亮、点击直达对应页面
 - **🧩 只看本类新增**：基于题目内容指纹识别 A/B/C 重合题，只看 B（相对 A）或 C（相对 A、B）新增的题目
 - **📷 照片处理**：报名证件照/人像照尺寸处理，完全在浏览器本地完成
-- **💾 数据备份**：一键把全部本地数据（进度、错题、收藏、日志…）导出为 JSON，可换设备或清缓存后恢复；显示本地存储占用与各项明细，写入失败（存储已满）时全站提示
+- **💾 数据备份**：一键把全部本地数据（进度、错题、收藏、日志…）导出为 JSON，可换设备或清缓存后恢复；支持覆盖恢复或按类型合并导入（日志按 QSO 去重、统计累加、收藏并集），显示本地存储占用与各项明细，写入失败（存储已满）时全站提示
 
 ### 知识库
 
@@ -84,26 +88,33 @@
 | --- | --- |
 | 备考速查 | 考试速查、呼号前缀、术语表、简语、字母解释法、RST 信号报告、莫尔斯电码、CW 操作、操作证权限 |
 | 模式 · 传播 | 模拟模式、业余电视、SSTV 慢扫描电视、数字模式、数字语音组网、Packet 分组无线电、RTTY/PSK31、FT8/FT4、SDR、GNU Radio、APRS、常用频率、传播与电离层、特殊传播、EME、传播预测、WSPR、气象卫星接收 |
-| 天线 · 设备 | 天线型式、天线极化、匹配与馈线、天线 DIY、天线架设、天线农场、天线调试、天线分析仪、天线建模、NVIS、电子电路基础、滤波器与双工器、测量仪表、电源与电池、电源供应、收发信机、接收机指标、功率放大器、波段表、波段规划、微波通信、车载/移动电台 |
+| 天线 · 设备 | 天线型式、天线极化、匹配与馈线、天线 DIY、天线架设、天线农场、天线调试、天线分析仪、天线建模、天线阵列、NVIS、电子电路基础、滤波器与双工器、测量仪表、电源与电池、电源供应、收发信机、接收机指标、功率放大器、波段表、波段规划、微波通信、车载/移动电台 |
 | 通联 · 活动 | 通联实务、通联竞赛、竞赛日志 Cabrillo、DX 奖状、IOTA、DX 技巧、DX 远征、DXCC 世纪俱乐部、QRP、电子 QSL、QSL 卡片设计、无线电测向、应急通信、SOTA/POTA、网格定位、中继台与网关、中继台建设、日志与竞赛软件 |
 | 进阶 · 关于 | 国际组织与分区、射频安全、接地与防雷、射频干扰排查、新手入门、SWL 短波监听、执照申办、法规与管理、业余无线电历史、远程电台 |
 
-其中几项为富交互页面：莫尔斯电码可点击试听、Koch 法抄收训练（Farnsworth 间隔、逐字符错误率、达标自动加字符）、CW 呼号抄收竞赛模拟（每轮 10 个通联、抄呼号与序号计分、自适应速度、截短数字、常错字符统计）、解码练习与按键发报练习、麦克风 CW 解码（带通滤波 + 自适应门限，自动识别发报速度）、字母解释法可朗读、RST 页可试听不同强度信号、波段表按带号 -1～12 呈现完整频段划分（移动端为卡片）。
+其中几项为富交互页面：莫尔斯电码可点击试听、Koch 法抄收训练（Farnsworth 间隔、逐字符错误率、达标自动加字符）、CW 呼号抄收竞赛模拟（每轮 10 个通联、抄呼号与序号计分、自适应速度、截短数字、常错字符统计）、解码练习与按键发报练习、麦克风 CW 解码（带通滤波 + 自适应门限，自动识别发报速度）、字母解释法可朗读、RST 页可试听不同强度信号、波段表按带号 -1～12 呈现完整频段划分（移动端为卡片）、天线建模页含偶极振子计算器与方向图绘制。
 
 ### 工具与实时数据
 
-- **🧮 小工具（28 项计算器）**：频率 ↔ 波长、dBm ↔ 功率、分贝增益、欧姆定律、CW 必要带宽、LC 谐振、容抗/感抗、天线长度、驻波比 ↔ 反射系数、级联增益、电阻串并联、频率单位换算、电池续航、dBm ↔ dBμV、馈线损耗、呼号查询（DXCC 实体/稀有度）、两点距离与方位角、传播预测 MUF、卫星多普勒、自由空间路径损耗、EIRP、链路预算、接收机灵敏度、噪声系数级联、天线增益换算、电阻色环、竞赛记分、线圈/Yagi 振子计算
+- **🧮 小工具（30 项计算器）**：频率 ↔ 波长、dBm ↔ 功率、分贝增益、欧姆定律、CW 必要带宽、LC 谐振、容抗/感抗、天线长度、天线匹配网络、驻波比 ↔ 反射系数、级联增益、电阻串并联、频率单位换算、电池续航、dBm ↔ dBμV、馈线损耗、呼号查询（DXCC 实体/稀有度）、两点距离与方位角、传播预测 MUF、卫星多普勒、自由空间路径损耗、EIRP、链路预算、接收机灵敏度、噪声系数级联、天线增益换算、电阻色环、竞赛记分、线圈/Yagi 振子计算、T/π 型衰减器、变压器阻抗
+- **🧭 点对点传播预测**（`/muf` 页内）：输入双方 Maidenhead 网格、月份与太阳黑子数，估算两点间各 HF 波段的可用性与可靠度（简化 VOACAP 模型，本地计算 + 服务端缓存）
 - **📈 实时仪表盘**：太阳活动、空间天气警报、DX 热点、ISS 位置、DXCC 稀有度聚合一屏展示
 - **☀️ 太阳活动**：太阳通量、A/K 指数、黑子数与各波段传播条件（含 K 指数 1 分钟曲线与太阳黑子周期趋势）
 - **📡 DX 实时热点** / **🏆 DXCC 稀有度榜单**：拉取 DX Cluster 热点与 Club Log 最稀有实体；对照本地日志标出新 DXCC / 新波段，可只看需要的；可开启新 DXCC / 新波段 / 关注呼号（支持 `*` 通配）浏览器通知，开启后每 60 秒自动刷新
+- **📡 接收报告查询**：PSK Reporter（`/psk-reporter`）与 RBN 信标网络（`/rbn`）查询「谁收到了我发的信号」，展示接收台、频率、波段、SNR（RBN 另有 WPM），数据来自 PSK Reporter 与 Reverse Beacon Network 实时流
 - **🛰️ 业余卫星**：TLE + SGP4 计算未来 24 小时过境（AOS/LOS、最大仰角与方位角），可一键使用本台网格；收藏卫星后可开启过境提醒（提前 5 / 10 / 15 / 30 分钟浏览器通知，页面打开期间每 30 秒检查）；另有 ISS 实时位置追踪与追踪软件推荐
+- **🖼️ APT 云图解码**（`/apt-decoder`）：上传 NOAA 气象卫星 APT 录音（WAV），在浏览器本地解调 2400 Hz 副载波并重建可见光 / 红外云图（纯 Rust DSP，解码在 Web Worker 后台线程完成，不阻塞页面、音频不上传服务器）；可配合过境预报提前录制，并可开启过境前的 APT 录制提醒
 - **🌗 灰线地图**：实时晨昏圈（日出/日落分界），用于判断低频 DX 灰线窗口
+- **🌍 DXCC 世界地图**（`/dxcc-map`）：按通联日志把世界地图着色为「未通联 / 已通联 / 已确认」choropleth，支持按波段切换着色、悬停查看实体、点击实体跳转日志过滤，岛屿等无国界数据的实体以中心点标记；一眼看清 DXCC 进度缺口（边界数据由 `cargo make dxcc-map` 生成）
 - **🗺️ 网格地图**：全球已通联 Maidenhead 网格可视化，输入网格码可反查位置（反向地理编码）；日志网格地图可按本台网格绘制按波段着色的大圆通联路径（跨日期变更线正确处理，最多 600 条）
-- **📓 通联日志**：字段对齐 ADIF 3.1 的在线日志（含 MODE/SUBMODE、卫星、SOTA/POTA 等），录入时提示重复 / 新 DXCC / 新波段，并按网格（或实体中心）估算距离与方位、自动填 CQ / ITU 分区；列表可搜索筛选分页；ADIF / CSV 导入导出（含 DXCC / CQZ / ITUZ），导入时读取 QSL（含 LoTW / eQSL）状态并自动去重
-- **🏆 竞赛录入**（`/contest-log`）：选定竞赛后专注键盘录入（呼号后回车 / 空格跳到交换信息，回车记录，Esc 清空），实时提示重复与实体，CQ 分区类竞赛自动填分区；实时计分、分波段统计，一键导出 Cabrillo 3.0
+- **⛰️ SOTA / POTA 查询**（`/portable` 页内）：按编号查询山峰 / 公园的名称、积分 / 位置与网格，并对照本地日志统计激活次数
+- **📻 中继台数据库**（`/repeater` 页内）：按国家 / 地区拉取 RepeaterBook 收录的中继台（频率、频差、亚音、城市、状态），支持按呼号 / 城市筛选
+- **📓 通联日志**：字段对齐 ADIF 3.1 的在线日志（含 MODE/SUBMODE、卫星、SOTA/POTA 等），录入时提示重复 / 新 DXCC / 新波段，并按网格（或实体中心）估算距离与方位、自动填 CQ / ITU 分区，可一键在线查询呼号（Callook / HamQTH）自动补全姓名、网格与 QTH；列表可搜索筛选分页；ADIF / CSV 导入导出（含 DXCC / CQZ / ITUZ、STATE、IOTA），导入时读取 QSL（含 LoTW / eQSL）状态并自动去重；可粘贴或上传 LoTW / eQSL 下载的确认报告（ADIF），一键把匹配到的 QSO 同步为已确认
+- **🏆 竞赛录入**（`/contest-log`）：选定竞赛后专注键盘录入（呼号后回车 / 空格跳到交换信息，回车记录，Esc 清空），实时提示重复与实体，CQ 分区类竞赛自动填分区；实时计分、分波段统计，一键导出 Cabrillo 3.0；内置 CQ WW / CQ WPX / ARRL DX / All Asian / JIDX / WAE / IARU HF / 俄罗斯 DX 等模板
+- **🗓️ 竞赛日历**（`/contest-calendar`）：全球主要竞赛按下一届开赛时间排序，一键把开赛时间加入倒计时提醒，有对应模板的可直接「开新场次」跳转竞赛录入
 - **📻 电台 CAT 联动**：日志与竞赛录入页可通过 Web Serial 连接电台（桌面版 Chrome / Edge），每秒读取频率与模式自动回填；支持 Kenwood / Elecraft / 新款 Yaesu 的 ASCII 命令与 Icom CI-V（可设地址）
 - **🏷️ QSL 标签打印**（`/qsl-labels`）：把日志按呼号合并（每张最多 2～6 条通联），排到 Avery L7163 / L7160 / L7159 / 5160 / 5163 标签纸上直接打印；可只打未寄出的、按起始日期筛选、跳过已用掉的标签，打印后一键标记「QSL 已寄出」
-- **🏅 奖状进度**：由日志统计 DXCC（总计 / 分模式 / 分波段）、WAZ、WAC、VUCC，可切换已通联 / 已确认
+- **🏅 奖状进度**：由日志统计 DXCC（总计 / 分模式 / 分波段）、WAZ、WAC、VUCC、WPX 前缀奖、WAS 美国州、IOTA 岛屿组与 DXCC Challenge 分波段积分，可切换已通联 / 已确认
 - **🌍 DXCC 前缀库**：内置 340 个现行 DXCC 实体（数据源 AD1C cty.csv），最长前缀匹配，支持 `VP2E/W1AW`、`/P`、`/MM` 等斜杠呼号
 - **📊 通联统计**：DXCC / 波段 / 模式分布、QSL 确认率与月度 QSO 趋势
 
@@ -112,6 +123,7 @@
 - **🧭 全局导航**：所有页面顶部常驻导航栏，按「考试中心 / 知识库 / 工具」三大模块组织，移动端为分组平铺菜单
 - **🔍 全局搜索**：任意页面按 `/` 或点击导航栏搜索按钮唤起命令面板，结果按页面分组并高亮关键词
 - **🌗 明暗主题**：导航栏内随时切换，支持跟随系统 / 浅色 / 深色
+- **🌐 多语言界面**：导航栏内切换中文 / English / Español，选择存本地并同步 `<html lang>`；当前覆盖导航、页脚、全站搜索、首页（含各卡片）与页面标题，其余页面正文按模块增量翻译（见 `crates/app/src/i18n.rs`，以中文原文为 key 补词条即可）
 - **🔊 语音与音频**：Web Speech API 朗读题干、解析与字母解释法；Web Audio API 合成摩尔斯电码与 RST 信号音（可调 WPM）
 - **✨ 流畅动效**：页面切换淡入过渡、按钮按压反馈、Logo 悬停动效，并尊重系统「减少动态效果」偏好
 - **⌨️ 键盘快捷键**：`/` 唤起搜索，方向键切题，数字键选择选项
@@ -121,6 +133,8 @@
 - **🧯 错误兜底**：wasm 加载失败、浏览器不支持或运行中 panic 时显示兜底页，可重新加载、导出数据备份或复制错误信息
 - **📋 答题卡**：快速导航、标记、未答/标记筛选，交卷后显示对错
 - **📱 移动优先**：响应式设计，PWA 可安装、可离线使用
+- **🔔 通知中心**（`/notifications`）：集中管理浏览器通知权限与倒计时 / DX 热点 / 卫星过境三类提醒开关
+- **📤 成绩分享**：模拟考试成绩与学习周报可导出 PNG 卡片，支持下载、复制到剪贴板与系统分享面板
 - **💾 本地存储**：所有数据仅保存在浏览器 `localStorage`，不上传任何个人数据
 
 ## 技术栈
@@ -169,6 +183,8 @@
 │   │       ├── theme.rs        # 主题（light/dark/system）
 │   │       ├── photo.rs        # 照片压缩（Canvas，对齐 compressorjs 行为）
 │   │       └── pwa.rs          # Service Worker 注册与更新提示
+│   ├── apt/                # NOAA APT 云图解码（音频 AM 解调 + 图像重建，纯 Rust DSP，无外部依赖）
+│   ├── apt-worker/         # APT 解码 Web Worker（后台线程解调，编译为 worker.js）
 │   ├── server/             # Axum 静态站点服务器 + /api 数据代理
 │   └── tools/              # 构建/维护 CLI（数据集、解析、图标、sw.js、sitemap）
 │       └── templates/sw.js # Service Worker 模板
@@ -196,6 +212,16 @@
 | GET | `/api/passes?lat=&lon=&min_elev=` | 卫星过境预报（TLE + SGP4，未来 24 小时） | Celestrak | TLE 缓存 6h |
 | GET | `/api/iss` | 国际空间站实时位置 | wheretheiss.at | 30s |
 | GET | `/api/geocode?lat=&lon=` | 反向地理编码（国家/城市，中文） | BigDataCloud | 24h |
+| GET | `/api/voacap?tx=&rx=&month=&ssn=` | 点对点 HF 传播预测（简化 VOACAP 模型） | 本地计算 | 6h |
+| GET | `/api/psk-reporter?callsign=` | 数字模式接收报告（谁收到了我） | PSK Reporter | 60s |
+| GET | `/api/rbn?callsign=` | CW / RTTY 信标台接收报告 | Reverse Beacon Network | 30s |
+| GET | `/api/callsign?callsign=` | 呼号查询（姓名 / 网格 / QTH，日志录入自动补全） | Callook / HamQTH | 7d |
+| GET | `/api/sota?ref=` | SOTA 山峰详情（名称 / 海拔 / 积分 / 位置） | SOTA API | 30d |
+| GET | `/api/pota?ref=` | POTA 公园详情（名称 / 实体 / 网格 / 位置） | POTA API | 30d |
+| GET | `/api/repeaters?country=` | 中继台列表（频率 / 频差 / 亚音 / 城市） | RepeaterBook | 7d |
+| GET | `/api/push/vapid-public-key` | 分发 Web Push 的 VAPID 公钥（前端订阅用） | 本地 | — |
+| POST | `/api/push/subscribe` | 上报 Web Push 订阅（含每日提醒时间），持久化到 `PUSH_STORE` | 本地 | — |
+| POST | `/api/push/unsubscribe` | 删除 Web Push 订阅 | 本地 | — |
 
 其余 `/api/*` 之外的路径均由静态文件服务处理：命中文件直接返回，未命中且不带扩展名的路径回退到 `index.html`（SPA 路由）。
 
@@ -255,6 +281,7 @@ cargo make serve          # 用 release 服务器托管 dist/：http://127.0.0.1
 | `cargo make explanations-apply` | 把解析写入题库 JSON |
 | `BATCH=… cargo make explanations` | 合并 → 增强 → 写入，一步完成 |
 | `cargo make dxcc` | 从 country-files.com 拉取 cty.csv，重新生成 `crates/core/data/dxcc.txt` |
+| `cargo make dxcc-map` | 从 Natural Earth 国界 GeoJSON 生成 DXCC 实体边界 `public/dxcc-entities.bin`（DXCC 世界地图着色用，i16 定点 + delta 二进制编码） |
 | `cargo make fmt` / `fmt-check` | 代码格式化 / 检查 |
 | `cargo make clippy` | Clippy（原生 + wasm） |
 | `cargo make test` | 单元测试 |
@@ -268,7 +295,9 @@ cargo make serve          # 用 release 服务器托管 dist/：http://127.0.0.1
 
 ```bash
 docker build -t ham-web .
-docker run -d --name ham-web -p 3000:3000 ham-web
+docker run -d --name ham-web -p 3000:3000 \
+  -v ham-web-data:/app/data \
+  ham-web
 # 或
 cargo make docker-build && cargo make docker-run
 ```
@@ -285,8 +314,33 @@ cargo make docker-build && cargo make docker-run
 docker build --build-arg SITE_URL=https://exam.example.com -t ham-web .
 ```
 
-运行时环境变量：`HOST`（默认 `0.0.0.0`）、`PORT`（默认 `3000`）、`DIST_DIR`（默认 `/app/dist`）、`RUST_LOG`。
-镜像基于 `gcr.io/distroless/cc-debian12:nonroot`，以非 root 用户运行，内置健康检查（`/healthz`）。
+运行时环境变量：`HOST`（默认 `0.0.0.0`）、`PORT`（默认 `3000`）、`DIST_DIR`（默认 `/app/dist`）、`PUSH_STORE`（Web Push 持久化文件，默认 `/app/data/push-subscriptions.json`）、`VAPID_PRIVATE_KEY` / `VAPID_SUBJECT`（可选，见下文）、`RUST_LOG`。
+镜像基于 `gcr.io/distroless/cc-debian12:nonroot`，以非 root 用户运行，内置健康检查（`/healthz`）。`/app/data` 目录已内置为可写，建议挂载 volume 持久化推送订阅与 VAPID 密钥。
+
+## Web Push 后台推送
+
+订阅后即使页面关闭，也能在「备考计划 → 每日提醒时间」到点时收到浏览器系统通知（前提是浏览器允许通知、站点为 HTTPS）。完整链路：
+
+1. 前端在通知中心（`/notifications`）点击「订阅后台推送」，用后端分发的 VAPID 公钥向浏览器 `PushManager` 订阅；
+2. 订阅信息（含每日提醒时间换算出的 UTC 分钟数）`POST /api/push/subscribe` 上报后端；
+3. 后端每分钟检查一次，到点用 VAPID 私钥签发 JWT、按 RFC 8291（`aes128gcm`）加密消息，推送到订阅 endpoint；`410/404` 时自动清理失效订阅。
+
+**VAPID 密钥**按以下优先级确定，无需手工生成：
+
+1. 环境变量 `VAPID_PRIVATE_KEY`（base64url，32 字节 P-256 标量）—— 适合多副本 / 自托管固定密钥；
+2. `PUSH_STORE` 文件中已持久化的私钥；
+3. 都没有时，**首次启动自动生成**，并随订阅一起写入 `PUSH_STORE` 文件（重启复用，公钥稳定）。
+
+```bash
+# 可选：固定私钥与 subject（不设则自动生成）
+docker run -d --name ham-web -p 3000:3000 \
+  -v ham-web-data:/app/data \
+  -e VAPID_PRIVATE_KEY='<base64url 32字节>' \
+  -e VAPID_SUBJECT='mailto:you@example.com' \
+  ham-web
+```
+
+> ⚠️ 浏览器只在安全上下文（HTTPS 或 `localhost`）开放 `PushManager`。本地用 `http://127.0.0.1` 可调试，线上必须走 HTTPS。纯静态托管（无后端）时该功能不可用，前端会自动降级为「未配置推送服务」。
 
 ## 数据集构建
 
@@ -507,6 +561,7 @@ cargo make explanations-missing    # 查看因题目修订/新增而缺失的解
 | `exam:answerCardFilter:{题库}` / `exam:showExplanation:{题库}` | 考试偏好 |
 | `ui:shortcutsHelpSeen:{practice,exam}` | 快捷键说明是否已展示 |
 | `theme` | `light` / `dark` / `system` |
+| `locale` | `zh` / `en` / `es`（界面语言） |
 
 后续新增功能的 key（同样只存在本地）：
 
@@ -587,13 +642,13 @@ cd e2e && E2E_BASE_URL=http://127.0.0.1:3000 npx playwright test   # 直接测�
 | 模块 | 路径 |
 | --- | --- |
 | 首页 | `/` |
-| 考试中心 | `/practice` `/exam` `/browse` `/flashcards` `/mistakes` `/bookmarks` `/print` `/listen` `/cards` `/progress` `/countdown` `/photo-processor` |
+| 考试中心 | `/practice` `/exam` `/daily-challenge` `/browse` `/flashcards` `/mistakes` `/mistake-topics` `/bookmarks` `/print` `/listen` `/cards` `/progress` `/weekly` `/countdown` `/photo-processor` `/cheat-sheet` `/formulas` |
 | 备考速查 | `/reference` `/prefixes` `/glossary` `/q-code` `/phonetic` `/rst` `/morse` `/cw-operating` `/license-classes` |
-| 模式 · 传播 | `/analog-modes` `/atv` `/sstv` `/modes` `/dv-network` `/packet` `/rtty` `/ft8` `/sdr` `/gnuradio` `/aprs` `/frequencies` `/propagation` `/special-prop` `/eme` `/muf` `/wspr` `/weather-sat` |
-| 天线 · 设备 | `/antennas` `/polarization` `/feedline` `/antenna-diy` `/antenna-installation` `/antenna-farm` `/antenna-tuning` `/antenna-analyzer` `/antenna-modeling` `/nvis` `/electronics` `/filters` `/meters` `/power` `/power-supply` `/transceiver` `/receiver` `/amplifier` `/bands` `/bandplan` `/microwave` `/mobile` |
+| 模式 · 传播 | `/analog-modes` `/atv` `/sstv` `/modes` `/dv-network` `/packet` `/rtty` `/ft8` `/sdr` `/gnuradio` `/aprs` `/frequencies` `/propagation` `/special-prop` `/eme` `/muf` `/wspr` `/weather-sat` `/apt-decoder` |
+| 天线 · 设备 | `/antennas` `/polarization` `/feedline` `/antenna-diy` `/antenna-installation` `/antenna-farm` `/antenna-tuning` `/antenna-analyzer` `/antenna-modeling` `/antenna-array` `/nvis` `/electronics` `/filters` `/meters` `/power` `/power-supply` `/transceiver` `/receiver` `/amplifier` `/bands` `/bandplan` `/microwave` `/mobile` |
 | 通联 · 活动 | `/operating` `/contest` `/cabrillo` `/awards` `/iota` `/dx` `/dxpedition` `/most-wanted` `/qrp` `/eqsl` `/qsl-card` `/ardf` `/emcomm` `/portable` `/grid` `/repeater` `/repeater-build` `/logging-software` |
 | 进阶 · 关于 | `/organizations` `/safety` `/grounding` `/rfi` `/beginner` `/swl` `/license` `/regulations` `/history` `/remote` |
-| 工具 | `/dashboard` `/tools` `/log` `/contest-log` `/qsl-labels` `/grid-map` `/dx-spots` `/solar` `/satellites` `/grayline` `/stats` |
+| 工具 | `/dashboard` `/tools` `/log` `/contest-log` `/contest-calendar` `/qsl-labels` `/grid-map` `/dx-spots` `/solar` `/satellites` `/grayline` `/dxcc-map` `/stats` `/psk-reporter` `/rbn` `/callsign-copy` `/notifications` |
 
 带参数的页面：
 
@@ -604,6 +659,7 @@ cd e2e && E2E_BASE_URL=http://127.0.0.1:3000 npx playwright test   # 直接测�
 | `/glossary` | `q`（关键词） |
 | `/print` | `src`（`mistakes` \| `bookmarks`）、`bank`（A\|B\|C） |
 | `/cards` | `deck`（`qcode` \| `abbrev` \| `phonetic` \| `morse` \| `glossary`） |
+| `/contest-log` | `contest`（预选竞赛模板 ID，如 `CQ-WW-CW`） |
 
 其余路径回退到 404 页。
 

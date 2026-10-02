@@ -13,11 +13,15 @@ use super::alerts_card::AlertsCard;
 use super::conditions_table::ConditionsTable;
 use super::flux_trend::FluxTrend;
 use super::metric_card::MetricCard;
-use super::{BandCond, KP_URL, KpEntry, SOLAR_URL, SolarApi, SolarEntry, fmt_iso_time};
+use super::xray_trend::XrayTrend;
+use super::{
+  BandCond, KP_URL, KpEntry, SOLAR_URL, SolarApi, SolarEntry, XrayApi, XrayPoint, fmt_iso_time,
+};
+use crate::i18n::{t, tf};
 
 #[component]
 pub fn SolarPage() -> impl IntoView {
-  set_title("太阳活动");
+  set_title(&t("太阳活动"));
 
   let k = RwSignal::new(None::<f64>);
   let sfi = RwSignal::new(None::<f64>);
@@ -29,6 +33,9 @@ pub fn SolarPage() -> impl IntoView {
   let loading = RwSignal::new(true);
   let failed = RwSignal::new(false);
   let history = RwSignal::new(Vec::<(String, f64)>::new());
+  let xray_series = RwSignal::new(Vec::<XrayPoint>::new());
+  let xray_flux = RwSignal::new(None::<f64>);
+  let xray_class = RwSignal::new(String::new());
 
   let load = move || {
     loading.set(true);
@@ -43,6 +50,13 @@ pub fn SolarPage() -> impl IntoView {
           .take(12)
           .collect();
         history.set(hist.into_iter().rev().collect());
+      }
+
+      // GOES X 射线通量（耀斑实时曲线，走服务端代理）
+      if let Ok(api) = data::fetch_external_json::<XrayApi>("/api/xray").await {
+        xray_flux.set(api.flux);
+        xray_class.set(api.flare_class);
+        xray_series.set(api.series);
       }
 
       // 优先走服务端代理（HamQSL，含 A/K 指数与各波段条件）
@@ -65,7 +79,10 @@ pub fn SolarPage() -> impl IntoView {
         && let Some(v) = last.estimated_kp.or_else(|| last.kp_index.map(f64::from))
       {
         k.set(Some(v));
-        updated.set(format!("Kp 更新于 {} UTC", fmt_iso_time(&last.time_tag)));
+        updated.set(tf(
+          "Kp 更新于 {} UTC",
+          &[&(fmt_iso_time(&last.time_tag)).to_string()],
+        ));
         any = true;
       }
       if let Ok(entries) = data::fetch_external_json::<Vec<SolarEntry>>(SOLAR_URL).await {
@@ -92,8 +109,8 @@ pub fn SolarPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"太阳活动"</h1>
-            <div class="text-xs text-muted-foreground">"太阳活动指数 · 传播条件 · 实时数据"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("太阳活动")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("太阳活动指数 · 传播条件 · 实时数据")}</div>
           </div>
           <button
             type="button"
@@ -105,12 +122,12 @@ pub fn SolarPage() -> impl IntoView {
                 view! {
                   <span class="inline-flex items-center gap-1.5">
                     <Icon kind=IconKind::Loader2 class="h-3.5 w-3.5 animate-spin" />
-                    "刷新中"
+                    {move || t("刷新中")}
                   </span>
                 }
                 .into_any()
               } else {
-                "刷新".into_any()
+                t("刷新").into_any()
               }
             }}
           </button>
@@ -120,7 +137,7 @@ pub fn SolarPage() -> impl IntoView {
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
           <h2 class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold">
-            "实时太阳活动"
+            {move || t("实时太阳活动")}
             <span class="text-xs font-normal text-muted-foreground">
               {move || {
                 let mut parts = Vec::new();
@@ -128,10 +145,10 @@ pub fn SolarPage() -> impl IntoView {
                   parts.push(updated.get());
                 }
                 if !xray.get().is_empty() {
-                  parts.push(format!("X 射线耀斑 {}", xray.get()));
+                  parts.push(tf("X 射线耀斑 {}", &[&xray.get().to_string()]));
                 }
                 if parts.is_empty() {
-                  "数据来自 HamQSL / NOAA SWPC".to_owned()
+                  t("数据来自 HamQSL / NOAA SWPC")
                 } else {
                   parts.join(" · ")
                 }
@@ -139,14 +156,14 @@ pub fn SolarPage() -> impl IntoView {
             </span>
           </h2>
           <div class="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
-            <MetricCard label="K 指数" value=k unit="0–9（越低越安静）" loading=loading failed=failed />
-            <MetricCard label="太阳通量 SFI" value=sfi unit="10.7cm 流量" loading=loading failed=failed />
-            <MetricCard label="太阳黑子数 SSN" value=ssn unit="相对数" loading=loading failed=failed />
-            <MetricCard label="A 指数" value=a unit="日地磁指数" loading=loading failed=failed />
+            <MetricCard label=t("K 指数") value=k unit=t("0–9（越低越安静）") loading=loading failed=failed />
+            <MetricCard label=t("太阳通量 SFI") value=sfi unit=t("10.7cm 流量") loading=loading failed=failed />
+            <MetricCard label=t("太阳黑子数 SSN") value=ssn unit=t("相对数") loading=loading failed=failed />
+            <MetricCard label=t("A 指数") value=a unit=t("日地磁指数") loading=loading failed=failed />
           </div>
           <div class="grid grid-cols-2 gap-3 px-4 pb-4 sm:grid-cols-4">
             <div class="col-span-2 rounded-lg border bg-muted/40 p-3 text-center sm:col-span-4">
-              <div class="text-xs text-muted-foreground">"传播条件（按 K / SSN / SFI 综合判断）"</div>
+              <div class="text-xs text-muted-foreground">{move || t("传播条件（按 K / SSN / SFI 综合判断）")}</div>
               <div class="mt-1 text-2xl font-semibold tabular-nums">
                 {move || {
                   match k.get() {
@@ -173,7 +190,7 @@ pub fn SolarPage() -> impl IntoView {
               .then(|| {
                 view! {
                   <p class="px-4 pb-4 text-xs text-muted-foreground">
-                    "实时数据暂不可用（可能因网络受限），以下为科普内容。"
+                    {move || t("实时数据暂不可用（可能因网络受限），以下为科普内容。")}
                   </p>
                 }
               })
@@ -187,11 +204,20 @@ pub fn SolarPage() -> impl IntoView {
           (!conds.is_empty()).then(|| {
             view! {
               <section class="rounded-xl border bg-card">
-                <h2 class="border-b px-4 py-3 text-sm font-semibold">"各波段传播条件"</h2>
+                <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("各波段传播条件")}</h2>
                 <div class="p-4">
                   <ConditionsTable conditions=conds />
                 </div>
               </section>
+            }
+          })
+        }}
+
+        {move || {
+          let series = xray_series.get();
+          (!series.is_empty()).then(|| {
+            view! {
+              <XrayTrend series=series.clone() flux=xray_flux.get() flare_class=xray_class.get() />
             }
           })
         }}
@@ -202,7 +228,7 @@ pub fn SolarPage() -> impl IntoView {
         }}
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"太阳活动指数"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("太阳活动指数")}</h2>
           <div class="divide-y">
             {SOLAR_INDICES
               .iter()
@@ -220,7 +246,7 @@ pub fn SolarPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"传播条件分级"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("传播条件分级")}</h2>
           <div class="grid gap-3 p-4 sm:grid-cols-2">
             {CONDITIONS
               .iter()
@@ -237,7 +263,7 @@ pub fn SolarPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"太阳活动周期"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("太阳活动周期")}</h2>
           <ul class="space-y-2 p-4">
             {CYCLE_NOTES
               .iter()

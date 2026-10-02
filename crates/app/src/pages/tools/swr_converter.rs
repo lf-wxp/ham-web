@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::{INPUT, RESULT, fmt_num};
+use crate::i18n::{t, tf};
 
 /// 驻波比 ↔ 反射系数 / 回波损耗。
 #[component]
@@ -29,22 +30,20 @@ pub(super) fn SwrConverter() -> impl IntoView {
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"驻波比 SWR"</span>
+        <span class="text-xs text-muted-foreground">{move || t("驻波比 SWR")}</span>
         <input type="number" prop:value=move || swr.get().to_string() on:input=on_swr class=INPUT />
       </label>
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"回波损耗（dB，负值）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("回波损耗（dB，负值）")}</span>
         <input type="number" prop:value=move || return_loss.get().to_string() on:input=on_rl class=INPUT />
       </label>
       <div class=RESULT>
         {move || {
           let s = swr.get();
           let gamma = (s - 1.0) / (s + 1.0);
-          format!(
+          tf(
             "SWR {} → 反射系数 |Γ| = {}，回波损耗 {} dB",
-            fmt_num(s),
-            fmt_num(gamma),
-            fmt_num(return_loss.get()),
+            &[&fmt_num(s), &fmt_num(gamma), &fmt_num(return_loss.get())],
           )
         }}
       </div>

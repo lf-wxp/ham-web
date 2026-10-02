@@ -9,10 +9,12 @@
 mod csv;
 mod dataset;
 mod dxcc;
+mod dxcc_map;
 mod explanations;
 mod fsutil;
 mod icons;
 mod postbuild;
+mod psk31_gen;
 
 use std::path::PathBuf;
 
@@ -83,8 +85,38 @@ enum Command {
     #[arg(long, default_value = dxcc::DEFAULT_URL)]
     url: String,
   },
+  /// 由 Natural Earth 国界 GeoJSON 生成 DXCC 实体边界（public/dxcc-entities.bin）
+  DxccMap {
+    /// 本地 GeoJSON（默认从 Natural Earth 下载）
+    #[arg(long)]
+    input: Option<PathBuf>,
+    /// 下载地址
+    #[arg(long, default_value = dxcc_map::DEFAULT_URL)]
+    url: String,
+  },
   /// 由 public/pwa-icon.svg 生成 PWA 与 Apple Touch 图标
   Icons,
+  /// 生成合成 PSK31 测试样本 WAV（用于手动测试 /psk-decode）
+  GenPsk31 {
+    /// 输出 WAV 路径
+    #[arg(long, default_value = "tmp/psk31-sample.wav")]
+    output: PathBuf,
+    /// 要编码的文本
+    #[arg(long, default_value = "CQ CQ CQ DE BG4XXX BG4XXX K")]
+    text: String,
+    /// 采样率（Hz）
+    #[arg(long, default_value = "8000")]
+    rate: u32,
+    /// 载波频率（Hz）
+    #[arg(long, default_value = "1000")]
+    center: f32,
+    /// 载波频偏（Hz，模拟真实接收）
+    #[arg(long, default_value = "0")]
+    offset: f32,
+    /// 噪声标准差（0 表示无噪声）
+    #[arg(long, default_value = "0.1")]
+    noise: f32,
+  },
   /// Trunk 构建后处理：生成 Service Worker、sitemap.xml，并替换站点地址
   Postbuild {
     /// 构建产物目录
@@ -117,7 +149,16 @@ fn main() -> Result<()> {
       limit,
     } => explanations::missing(&paths, bank, output.as_deref(), context.as_deref(), limit),
     Command::Dxcc { input, url } => dxcc::generate(&root, input.as_deref(), &url),
+    Command::DxccMap { input, url } => dxcc_map::generate(&root, input.as_deref(), &url),
     Command::Icons => icons::generate(&paths),
+    Command::GenPsk31 {
+      output,
+      text,
+      rate,
+      center,
+      offset,
+      noise,
+    } => psk31_gen::generate(&output, &text, rate, center + offset, noise),
     Command::Postbuild { dist, site_url } => {
       let dist = if dist.is_absolute() {
         dist

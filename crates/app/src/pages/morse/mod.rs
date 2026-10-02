@@ -12,6 +12,7 @@ mod morse_trainer;
 mod send_trainer;
 mod signal_bars;
 mod stats_panel;
+mod word_copy;
 
 pub use morse_page::MorsePage;
 

@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::{INPUT, RESULT, fmt_num};
+use crate::i18n::{t, tf};
 
 /// 电池续航估算：续航 = 容量 / 电流。
 #[component]
@@ -11,7 +12,7 @@ pub(super) fn BatteryRuntime() -> impl IntoView {
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"电池容量（mAh）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("电池容量（mAh）")}</span>
         <input
           type="number"
           prop:value=move || capacity.get().to_string()
@@ -24,7 +25,7 @@ pub(super) fn BatteryRuntime() -> impl IntoView {
         />
       </label>
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"设备电流（mA）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("设备电流（mA）")}</span>
         <input
           type="number"
           prop:value=move || current.get().to_string()
@@ -40,9 +41,9 @@ pub(super) fn BatteryRuntime() -> impl IntoView {
         {move || {
           let i = current.get();
           if i <= 0.0 {
-            "请输入正电流".to_owned()
+            t("请输入正电流")
           } else {
-            format!("续航 ≈ {} 小时", fmt_num(capacity.get() / i))
+            tf("续航 ≈ {} 小时", &[&(fmt_num(capacity.get() / i)).to_string()])
           }
         }}
       </div>

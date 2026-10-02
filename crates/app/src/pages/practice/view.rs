@@ -12,16 +12,12 @@ use leptos::task::spawn_local;
 use leptos_router::NavigateOptions;
 use leptos_router::hooks::{use_navigate, use_query_map};
 
-use crate::cn::cn;
-use crate::components::common::{
-  BottomBar, ExplanationCard, MessageDialog, QuestionProgressHeader,
-};
+use crate::components::common::{ExplanationCard, MessageDialog, NoteEditor};
 use crate::components::practice::{
   PracticeResumeDialog, PracticeSearchDialog, PracticeSettingsDialog,
 };
 use crate::components::question_card::QuestionCard;
 use crate::data::Questions;
-use crate::icons::{Icon, IconKind};
 use crate::pages::{DEFAULT_TITLE, bank_href, use_bank_query, use_no_site_footer};
 use crate::shortcuts::{DigitDetail, Shortcuts, digit_answer, use_question_shortcuts};
 use crate::store;
@@ -32,10 +28,10 @@ use crate::util::alert;
 use crate::util::now_ms;
 use crate::util::set_title;
 
+use super::bottom_bar::PracticeBottomBar;
+use super::header_bar::PracticeHeaderBar;
 use super::store::{PracticeStore, load_questions};
-
-const PRESS: &str = "active:scale-[0.98] transition-transform";
-const PRESS_FULL: &str = "w-full active:scale-[0.98] transition-transform";
+use crate::i18n::{t, tf};
 
 #[component]
 pub fn PracticePage() -> impl IntoView {
@@ -44,6 +40,9 @@ pub fn PracticePage() -> impl IntoView {
   let (version, bank) = use_bank_query();
   let query = use_query_map();
   let topic = Memo::new(move |_| query.with(|q| q.get("topic")).filter(|t| !t.is_empty()));
+  let sub_code = Memo::new(move |_| query.with(|q| q.get("sub")).filter(|t| !t.is_empty()));
+  let src = Memo::new(move |_| query.with(|q| q.get("src")).filter(|t| !t.is_empty()));
+  let multi_only = Memo::new(move |_| query.with(|q| q.get("multi")).is_some());
   let navigate = use_navigate();
   let store = PracticeStore::new();
   on_cleanup(move || store.commit_current());
@@ -57,13 +56,21 @@ pub fn PracticePage() -> impl IntoView {
     let id = q.stable_id().unwrap_or_else(|| q.answer_key(i));
     bookmarked.set(store::is_bookmarked(&id));
   });
-  let toggle_bookmark = move || {
+  let on_toggle_bookmark = Callback::new(move |()| {
     let Some((i, q)) = store.current() else {
       return;
     };
     let id = q.stable_id().unwrap_or_else(|| q.answer_key(i));
     bookmarked.set(store::toggle_bookmark(&id));
-  };
+  });
+
+  // 当前题的 stable_id，供笔记编辑区跟随切题加载。
+  let current_id = Signal::derive(move || {
+    store
+      .current()
+      .and_then(|(_, q)| q.stable_id())
+      .unwrap_or_default()
+  });
 
   let jump_input = RwSignal::new(String::new());
   let resume_open = RwSignal::new(false);
@@ -75,8 +82,14 @@ pub fn PracticePage() -> impl IntoView {
   let error_text = RwSignal::new(String::new());
   let unique_only = RwSignal::new(false);
   let unseen_only = RwSignal::new(query.with_untracked(|q| q.get("unseen").is_some()));
-  // 专项 / 只练没做过：题目是题库的子集，不保存也不恢复进度，以免覆盖完整题库的顺序进度。
-  let subset = Memo::new(move |_| topic.get().is_some() || unseen_only.get());
+  // 专项 / 只练没做过 / 错题重练：题目是题库的子集，不保存也不恢复进度，以免覆盖完整题库的顺序进度。
+  let subset = Memo::new(move |_| {
+    topic.get().is_some()
+      || sub_code.get().is_some()
+      || unseen_only.get()
+      || src.get().is_some()
+      || multi_only.get()
+  });
   let generation = StoredValue::new(0u32);
   let help_shown = StoredValue::new(false);
   let pending_order = RwSignal::new(None::<PracticeOrder>);
@@ -106,13 +119,35 @@ pub fn PracticePage() -> impl IntoView {
   Effect::new(move |_| {
     let (v, b, unique) = (version.get(), bank.get(), unique_only.get());
     let topic_val = topic.get();
+    let sub_val = sub_code.get();
+    let src_val = src.get();
     let unseen = unseen_only.get();
+    let multi_val = multi_only.get();
     store.reset();
     pending.set(None);
     resume_open.set(false);
     generation.update_value(|g| *g += 1);
     let current = generation.get_value();
     spawn_local(async move {
+      // 模拟考错题重练：直接读交卷时暂存的错题列表，无需加载题库。
+      if src_val.as_deref() == Some("exam") {
+        let wrong = store::load_wrong_exam(b).unwrap_or_default();
+        if generation.try_get_value() != Some(current) {
+          return;
+        }
+        let filtered: Questions = if unseen {
+          let seen = crate::study::load_stats()
+            .bank(b)
+            .cloned()
+            .unwrap_or_default();
+          Arc::new(wrong.into_iter().filter(|q| !seen.has_seen(q)).collect())
+        } else {
+          Arc::new(wrong)
+        };
+        store.load(filtered);
+        store.set_order(PracticeOrder::Random);
+        return;
+      }
       let result = load_questions(v.as_deref(), b, unique).await;
       if generation.try_get_value() != Some(current) {
         return;
@@ -126,23 +161,28 @@ pub fn PracticePage() -> impl IntoView {
               .cloned()
               .unwrap_or_default()
           });
-          let filtered: Questions = if topic_val.is_none() && seen.is_none() {
-            qs
-          } else {
-            Arc::new(
-              qs.iter()
-                .filter(|q| {
-                  topic_val
-                    .as_deref()
-                    .is_none_or(|t| q.p_code().and_then(top_of).is_some_and(|top| top.key == t))
-                    && seen.as_ref().is_none_or(|s| !s.has_seen(q))
-                })
-                .cloned()
-                .collect(),
-            )
-          };
+          let filtered: Questions =
+            if topic_val.is_none() && sub_val.is_none() && seen.is_none() && !multi_val {
+              qs
+            } else {
+              Arc::new(
+                qs.iter()
+                  .filter(|q| {
+                    topic_val
+                      .as_deref()
+                      .is_none_or(|t| q.p_code().and_then(top_of).is_some_and(|top| top.key == t))
+                      && sub_val
+                        .as_deref()
+                        .is_none_or(|s| q.p_code().is_some_and(|p| p == s))
+                      && seen.as_ref().is_none_or(|s| !s.has_seen(q))
+                      && (!multi_val || q.is_multiple())
+                  })
+                  .cloned()
+                  .collect(),
+              )
+            };
           store.load(filtered);
-          if topic_val.is_some() {
+          if topic_val.is_some() || sub_val.is_some() || multi_val {
             store.set_order(PracticeOrder::Random);
           } else if !unseen {
             let last = store::load_last_mode();
@@ -157,7 +197,7 @@ pub fn PracticePage() -> impl IntoView {
           }
         }
         Err(_) => {
-          error_text.set(format!("题库 {b} 暂不可用"));
+          error_text.set(tf("题库 {} 暂不可用", &[&b.to_string()]));
           error_open.set(true);
         }
       }
@@ -305,7 +345,7 @@ pub fn PracticePage() -> impl IntoView {
     }
     match store.ordered(|qs| find_jump_target(qs, &input)) {
       Some(pos) => store.jump(pos),
-      None => alert(&format!("未找到题号：{raw}")),
+      None => alert(&tf("未找到题号：{}", &[&(raw).to_string()])),
     }
   });
 
@@ -400,119 +440,43 @@ pub fn PracticePage() -> impl IntoView {
       ((store.index.get() + 1) as f64 / n as f64 * 100.0).round() as i64
     }
   });
-  let at_start = move || store.index.get() == 0;
-  let at_end = move || store.index.get() + 1 >= store.len();
-  let toggle_class = |on: bool, base: &str| {
-    cn(&[
-      base,
-      if on {
-        "bg-primary text-primary-foreground"
-      } else {
-        "hover:bg-accent"
-      },
-    ])
-  };
+  let at_start = Signal::derive(move || store.index.get() == 0);
+  let at_end = Signal::derive(move || store.index.get() + 1 >= store.len());
+  let sequential = Signal::derive(move || store.order.get() == PracticeOrder::Sequential);
+  let on_open_search = Callback::new(move |()| search_open.set(true));
+  let on_open_settings = Callback::new(move |()| settings_open.set(true));
 
   let content = move || {
     if store.loading.get() {
-      return view! { <div class="p-6">"加载题库中..."</div> }.into_any();
+      return view! { <div class="p-6">{move || t("加载题库中...")}</div> }.into_any();
     }
     if store.len() == 0 {
       if unseen_only.get() {
         return view! {
           <div class="p-6">
-            "这套题库的题已经全部做过了。"
+            {move || t("这套题库的题已经全部做过了。")}
             <button type="button" class="ml-2 text-primary underline-offset-4 hover:underline" on:click=move |_| unseen_only.set(false)>
-              "练全部题目"
+              {move || t("练全部题目")}
             </button>
           </div>
         }
         .into_any();
       }
-      return view! { <div class="p-6">"题库暂不可用或为空"</div> }.into_any();
+      return view! { <div class="p-6">{move || t("题库暂不可用或为空")}</div> }.into_any();
     }
     view! {
       <div on:touchstart=swipe_start on:touchend=swipe_end class="container mx-auto px-4 py-6 max-w-5xl space-y-4 pb-24 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-        <QuestionProgressHeader
+        <PracticeHeaderBar
           percent=percent
-          left=move || {
-            view! {
-              <span class="text-sm text-muted-foreground">"题库类别"</span>
-              <div class="flex overflow-hidden rounded-lg border">
-                {Bank::ALL
-                  .into_iter()
-                  .map(|b| {
-                    view! {
-                      <button
-                        type="button"
-                        class=move || toggle_class(bank.get() == b, "px-3 py-1.5 text-sm font-medium transition-colors")
-                        on:click=move |_| switch_bank.run(b)
-                      >
-                        {b.as_str()}
-                        " 类"
-                      </button>
-                    }
-                  })
-                  .collect_view()}
-              </div>
-              <button
-                type="button"
-                class=move || toggle_class(unique_only.get(), "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors")
-                on:click=move |_| unique_only.update(|v| *v = !*v)
-              >
-                "只看本类新增"
-              </button>
-              <button
-                type="button"
-                class=move || toggle_class(unseen_only.get(), "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors")
-                title="去掉练习、考试、闪卡中已经做过的题"
-                on:click=move |_| unseen_only.update(|v| *v = !*v)
-              >
-                "只练没做过"
-              </button>
-            }
-          }
-          right=move || {
-            view! {
-              <button
-                class=button_class(Variant::Outline, Size::Icon, "")
-                aria-label="收藏"
-                title=move || if bookmarked.get() { "取消收藏" } else { "收藏本题" }
-                on:click=move |_| toggle_bookmark()
-              >
-                {move || {
-                  if bookmarked.get() {
-                    view! { <Icon kind=IconKind::BookMarked class="h-4 w-4" /> }
-                  } else {
-                    view! { <Icon kind=IconKind::Bookmark class="h-4 w-4" /> }
-                  }
-                }}
-              </button>
-              {move || {
-                (store.order.get() == PracticeOrder::Sequential)
-                  .then(|| {
-                    view! {
-                      <button
-                        class=button_class(Variant::Outline, Size::Icon, "")
-                        aria-label="搜索"
-                        title="搜索"
-                        on:click=move |_| search_open.set(true)
-                      >
-                        <Icon kind=IconKind::Search class="h-4 w-4" />
-                      </button>
-                    }
-                  })
-              }}
-              <button
-                class=button_class(Variant::Outline, Size::Icon, "")
-                aria-label="设置"
-                title="设置"
-                on:click=move |_| settings_open.set(true)
-              >
-                <Icon kind=IconKind::Settings class="h-4 w-4" />
-              </button>
-            }
-          }
+          bank=bank
+          on_switch_bank=switch_bank
+          unique_only=unique_only
+          unseen_only=unseen_only
+          bookmarked=bookmarked
+          on_toggle_bookmark=on_toggle_bookmark
+          sequential=sequential
+          on_open_search=on_open_search
+          on_open_settings=on_open_settings
         />
 
         {move || {
@@ -521,6 +485,17 @@ pub fn PracticePage() -> impl IntoView {
             .map(|(i, q)| {
               let expl = q.clone();
               view! {
+                {move || {
+                  (store.streak.get() >= 2).then(|| {
+                    view! {
+                      <div class="flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                        <span>{tf("连续答对 {} 题", &[&store.streak.get().to_string()])}</span>
+                        <span class="text-muted-foreground">{" · "}</span>
+                        <span>{tf("本组最长 {} 题", &[&store.best_streak.get().to_string()])}</span>
+                      </div>
+                    }
+                  })
+                }}
                 <QuestionCard
                   index=i
                   total=store.len()
@@ -530,55 +505,20 @@ pub fn PracticePage() -> impl IntoView {
                   show_answer=store.show_answer
                 />
                 {move || store.show_explanation.get().then(|| view! { <ExplanationCard question=expl.clone() /> })}
+                <NoteEditor question_id=current_id />
               }
             })
         }}
 
-        <BottomBar
-          stats=move || {
-            view! {
-              "题库：" {move || bank.get().as_str()} " 类｜模式：" {move || store.order.get().label()} "｜进度："
-              {move || store.index.get() + 1} " / " {move || store.len()}
-            }
-          }
-          left=move || {
-            view! {
-              <button
-                class=button_class(Variant::Secondary, Size::Default, PRESS)
-                disabled=at_start
-                on:click=move |_| store.prev()
-              >
-                "上一题"
-              </button>
-            }
-          }
-          right=move || {
-            view! {
-              <button class=button_class(Variant::Default, Size::Default, PRESS) disabled=at_end on:click=move |_| store.next()>
-                "下一题"
-              </button>
-            }
-          }
-          mobile_top=move || {
-            view! {
-              <div class="grid grid-cols-2 gap-2">
-                <button
-                  class=button_class(Variant::Secondary, Size::Default, PRESS_FULL)
-                  disabled=at_start
-                  on:click=move |_| store.prev()
-                >
-                  "上一题"
-                </button>
-                <button
-                  class=button_class(Variant::Default, Size::Default, PRESS_FULL)
-                  disabled=at_end
-                  on:click=move |_| store.next()
-                >
-                  "下一题"
-                </button>
-              </div>
-            }
-          }
+        <PracticeBottomBar
+          bank=bank
+          order=store.order
+          index=store.index
+          len=Signal::derive(move || store.len())
+          at_start=at_start
+          at_end=at_end
+          on_prev=Callback::new(move |()| store.prev())
+          on_next=Callback::new(move |()| store.next())
         />
       </div>
     }
@@ -586,7 +526,7 @@ pub fn PracticePage() -> impl IntoView {
   };
 
   view! {
-    <h1 class="sr-only">"题库练习"</h1>
+    <h1 class="sr-only">{move || t("题库练习")}</h1>
     {content}
     <PracticeResumeDialog open=resume_open no_prompt=no_prompt on_restart=on_restart on_resume=on_resume />
     <PracticeSettingsDialog
@@ -607,8 +547,8 @@ pub fn PracticePage() -> impl IntoView {
     />
     <Dialog open=confirm_order_open>
       <DialogHeader>
-        <DialogTitle>"切换题序将清空作答"</DialogTitle>
-        <DialogDescription>"切换到随机模式会重新打乱题目并清空当前所有作答，确定继续吗？"</DialogDescription>
+        <DialogTitle>{move || t("切换题序将清空作答")}</DialogTitle>
+        <DialogDescription>{move || t("切换到随机模式会重新打乱题目并清空当前所有作答，确定继续吗？")}</DialogDescription>
       </DialogHeader>
       <DialogFooter>
         <button
@@ -618,16 +558,16 @@ pub fn PracticePage() -> impl IntoView {
             pending_order.set(None);
           }
         >
-          "取消"
+          {move || t("取消")}
         </button>
         <button
           class=button_class(Variant::Default, Size::Default, "")
           on:click=move |_| confirm_change_order.run(())
         >
-          "确定切换"
+          {move || t("确定切换")}
         </button>
       </DialogFooter>
     </Dialog>
-    <MessageDialog open=error_open title="加载失败" description=error_text confirm_text="知道了" />
+    <MessageDialog open=error_open title=t("加载失败") description=error_text confirm_text=t("知道了") />
   }
 }

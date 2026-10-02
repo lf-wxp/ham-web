@@ -1,6 +1,6 @@
 [package]
 name = "ham-web-tools"
-description = "业余无线电考试模拟：构建与维护工具（数据集、解析、PWA 图标、Service Worker、sitemap）"
+description = "业余无线电：构建与维护工具（数据集、解析、PWA 图标、Service Worker、sitemap）"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

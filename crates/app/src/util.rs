@@ -2,6 +2,7 @@
 
 use std::sync::atomic::{AtomicU32, Ordering};
 
+use crate::i18n::t;
 use wasm_bindgen::JsValue;
 
 /// 当前时间（毫秒时间戳）。
@@ -48,9 +49,9 @@ pub fn body() -> Option<web_sys::HtmlElement> {
   document().body()
 }
 
-/// 设置页面标题。
+/// 设置页面标题（英文模式下按 [`crate::i18n`] 词典翻译）。
 pub fn set_title(title: &str) {
-  document().set_title(title);
+  document().set_title(&crate::i18n::t(title));
 }
 
 /// 弹出原生提示框。
@@ -137,6 +138,23 @@ pub mod storage {
       set(key, &s);
     }
   }
+
+  /// 写入（失败静默，不派发全局「存储已满」警告）。
+  ///
+  /// 用于 IndexedDB 已兜底的大数据（如通联日志）的 localStorage 快照：快照写满时
+  /// 不应反复弹出警告，真正的数据由 IndexedDB 保证。
+  pub fn set_silent(key: &str, value: &str) {
+    if let Some(s) = local() {
+      let _ = s.set_item(key, value);
+    }
+  }
+
+  /// [`set_json`] 的静默版本，见 [`set_silent`]。
+  pub fn set_json_silent<T: Serialize>(key: &str, value: &T) {
+    if let Ok(s) = serde_json::to_string(value) {
+      set_silent(key, &s);
+    }
+  }
 }
 
 /// 复制文本到剪贴板（Clipboard API，失败时静默忽略）。
@@ -209,11 +227,31 @@ pub fn import_backup(json: &str) -> Result<usize, String> {
   let map: std::collections::BTreeMap<String, String> =
     serde_json::from_str(json).map_err(|e| e.to_string())?;
   let Some(local) = window().local_storage().ok().flatten() else {
-    return Err("localStorage 不可用".to_owned());
+    return Err(t("localStorage 不可用"));
   };
   let mut count = 0;
   for (k, v) in map {
     if local.set_item(&k, &v).is_ok() {
+      count += 1;
+    }
+  }
+  Ok(count)
+}
+
+/// 从备份 JSON **合并**导入：已知类型（日志、收藏、错题本、统计等）做并集 / 累加合并，
+/// 其余 key 保留本机不覆盖。返回合并写入的条目数。
+pub fn import_backup_merge(json: &str) -> Result<usize, String> {
+  let map: std::collections::BTreeMap<String, String> =
+    serde_json::from_str(json).map_err(|e| e.to_string())?;
+  let Some(local) = window().local_storage().ok().flatten() else {
+    return Err(t("localStorage 不可用"));
+  };
+  let mut count = 0;
+  for (k, v) in map {
+    let current = local.get_item(&k).ok().flatten();
+    if let Some(merged) = ham_web_core::backup_merge::merge_value(&k, current.as_deref(), &v)
+      && local.set_item(&k, &merged).is_ok()
+    {
       count += 1;
     }
   }

@@ -10,6 +10,7 @@ use crate::morse_audio::{morse_symbol_times, play_morse_timed_with};
 use crate::morse_settings::use_morse_settings;
 
 use super::{CARD_WPM, morse_display};
+use crate::i18n::tf;
 
 #[component]
 pub(super) fn MorseCard(entry: &'static MorseChar) -> impl IntoView {
@@ -48,7 +49,7 @@ pub(super) fn MorseCard(entry: &'static MorseChar) -> impl IntoView {
   view! {
     <button
       type="button"
-      title=format!("试听 {}：{}", entry.ch, entry.code)
+      title=tf("试听 {}：{}", &[(entry.ch), (entry.code)])
       on:click=play_card
       class="group relative flex flex-col items-center gap-1.5 rounded-xl border bg-card p-3 text-center transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent/60 hover:shadow-md hover:shadow-primary/10 active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >

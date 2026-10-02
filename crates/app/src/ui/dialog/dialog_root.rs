@@ -6,6 +6,7 @@ use crate::cn::cn;
 use crate::icons::{Icon, IconKind};
 
 use super::shared::{on_open, state_attr, trap_tab, use_presence};
+use crate::i18n::t;
 
 /// 居中模态对话框。
 ///
@@ -71,7 +72,7 @@ pub fn Dialog(
                     on:click=move |_| open.set(false)
                   >
                     <Icon kind=IconKind::X />
-                    <span class="sr-only">"关闭"</span>
+                    <span class="sr-only">{move || t("关闭")}</span>
                   </button>
                 }
               })}

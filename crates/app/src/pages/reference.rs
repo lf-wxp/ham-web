@@ -4,28 +4,29 @@ use ham_web_core::reference::{CALL_AREAS, EMISSION_TYPES, LICENSE_CLASSES, PHRAS
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::i18n::t;
 use crate::util::set_title;
 
 const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn ReferencePage() -> impl IntoView {
-  set_title("考试速查");
+  set_title(&t("考试速查"));
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <PageHeader title="考试速查" subtitle="操作证权限 · 分区 · RST · 发射类别 · 通联英语" />
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+      <PageHeader title=t("考试速查") subtitle=t("操作证权限 · 分区 · RST · 发射类别 · 通联英语") />
       <PageContainer>
         // 操作证类别与权限
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"操作证类别与使用权限"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("操作证类别与使用权限")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[560px] border-collapse text-sm">
               <thead class="bg-muted/60 text-xs">
                 <tr>
-                  <th class=CELL>"类别"</th>
-                  <th class=CELL>"频率范围"</th>
-                  <th class=CELL>"功率上限"</th>
-                  <th class=CELL>"说明"</th>
+                  <th class=CELL>{move || t("类别")}</th>
+                  <th class=CELL>{move || t("频率范围")}</th>
+                  <th class=CELL>{move || t("功率上限")}</th>
+                  <th class=CELL>{move || t("说明")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -49,7 +50,7 @@ pub fn ReferencePage() -> impl IntoView {
 
         // 分区号
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"业余电台分区号"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("业余电台分区号")}</h2>
           <div class="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3 lg:grid-cols-5">
             {CALL_AREAS
               .iter()
@@ -67,7 +68,7 @@ pub fn ReferencePage() -> impl IntoView {
 
         // RST 信号报告
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"RST 信号报告"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("RST 信号报告")}</h2>
           <div class="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
             {RST_SCALES
               .iter()
@@ -102,14 +103,14 @@ pub fn ReferencePage() -> impl IntoView {
 
         // 发射类别
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"发射类别标识"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("发射类别标识")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[480px] border-collapse text-sm">
               <thead class="bg-muted/60 text-xs">
                 <tr>
-                  <th class=CELL>"标识"</th>
-                  <th class=CELL>"名称"</th>
-                  <th class=CELL>"说明"</th>
+                  <th class=CELL>{move || t("标识")}</th>
+                  <th class=CELL>{move || t("名称")}</th>
+                  <th class=CELL>{move || t("说明")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -132,7 +133,7 @@ pub fn ReferencePage() -> impl IntoView {
 
         // 通联英语
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"通联英语短句"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("通联英语短句")}</h2>
           <dl class="divide-y">
             {PHRASES
               .iter()

@@ -4,6 +4,9 @@
 mod awards_panel;
 mod bar_list;
 mod contest_log;
+mod entry_form;
+mod entry_list;
+mod form_state;
 mod grid_cell;
 mod grid_fill;
 mod grid_filter;
@@ -11,6 +14,9 @@ mod grid_geo;
 mod grid_map;
 mod log_helpers;
 mod log_page;
+mod log_stats_panel;
+mod qsl_sync_dialog;
+mod station_panel;
 
 pub use contest_log::ContestLogPage;
 pub use grid_map::GridMap;
@@ -23,6 +29,11 @@ use leptos::prelude::*;
 const LOG_KEY: &str = "logbook";
 const STATION_KEY: &str = "station-info";
 
+thread_local! {
+  /// 本页是否已写入过日志：用于避免 IndexedDB 异步加载完成后覆盖用户刚写入的数据。
+  static LOG_DIRTY: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
 fn load_logbook() -> Logbook {
   let mut lb: Logbook = crate::util::storage::get_json(LOG_KEY).unwrap_or_default();
   lb.migrate();
@@ -30,7 +41,16 @@ fn load_logbook() -> Logbook {
 }
 
 fn save_logbook(logbook: &Logbook) {
-  crate::util::storage::set_json(LOG_KEY, logbook);
+  LOG_DIRTY.with(|c| c.set(true));
+  // localStorage 同步快照（静默）：数据较小时保证同步读可用、无闪烁；写满时忽略，
+  // 由 IndexedDB 兜底承载大日志，避免反复弹出「存储已满」。
+  crate::util::storage::set_json_silent(LOG_KEY, logbook);
+  // IndexedDB 权威持久化（异步，fire-and-forget）。
+  if let Ok(json) = serde_json::to_string(logbook) {
+    wasm_bindgen_futures::spawn_local(async move {
+      let _ = crate::idb::set(LOG_KEY, &json).await;
+    });
+  }
 }
 
 fn load_station() -> StationInfo {
@@ -96,6 +116,29 @@ pub fn provide_log_store() {
     station: RwSignal::new(load_station()),
   };
   provide_context(store);
+
+  // 跨标签页同步：其他标签页修改日志 / 本台信息时，本页同步刷新。`storage` 事件
+  // 只在「其他」标签页写入时触发，本页自身写入不触发，因此不会产生回环。
+  let _ = window_event_listener_untyped("storage", move |ev: web_sys::Event| {
+    let key = js_sys::Reflect::get(ev.as_ref(), &"key".into())
+      .ok()
+      .and_then(|v| v.as_string());
+    match key.as_deref() {
+      Some(LOG_KEY) => store.logbook.set(load_logbook()),
+      Some(STATION_KEY) => store.station.set(load_station()),
+      _ => {}
+    }
+  });
+
+  // IndexedDB 权威数据覆盖 localStorage 快照（大日志时快照可能缺失 / 过期）。
+  wasm_bindgen_futures::spawn_local(async move {
+    if let Ok(Some(json)) = crate::idb::get(LOG_KEY).await
+      && let Ok(lb) = serde_json::from_str::<Logbook>(&json)
+      && !LOG_DIRTY.with(|c| c.get())
+    {
+      store.logbook.set(lb);
+    }
+  });
 }
 
 /// 获取日志 store（需在 `provide_log_store` 之后调用）。

@@ -3,20 +3,21 @@
 use ham_web_core::receiver::{NOISE_BASICS, RECEIVER_METRICS, RECEIVER_TIPS};
 use leptos::prelude::*;
 
+use crate::i18n::t;
 use crate::util::set_title;
 
 const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn ReceiverPage() -> impl IntoView {
-  set_title("接收机关键指标");
+  set_title(&t("接收机关键指标"));
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"接收机关键指标"</h1>
-            <div class="text-xs text-muted-foreground">"灵敏度 · 选择性 · 动态范围 · 三阶截点"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("接收机关键指标")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("灵敏度 · 选择性 · 动态范围 · 三阶截点")}</div>
           </div>
         </div>
       </header>
@@ -26,9 +27,9 @@ pub fn ReceiverPage() -> impl IntoView {
           <table class="w-full min-w-[640px] border-collapse text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>
-                <th class=CELL>"指标"</th>
-                <th class=CELL>"含义"</th>
-                <th class=CELL>"决定因素"</th>
+                <th class=CELL>{move || t("指标")}</th>
+                <th class=CELL>{move || t("含义")}</th>
+                <th class=CELL>{move || t("决定因素")}</th>
               </tr>
             </thead>
             <tbody>
@@ -49,7 +50,7 @@ pub fn ReceiverPage() -> impl IntoView {
         </div>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"噪声与灵敏度基础"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("噪声与灵敏度基础")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {NOISE_BASICS
               .iter()
@@ -66,7 +67,7 @@ pub fn ReceiverPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">"改善接收的要点"</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("改善接收的要点")}</h2>
           <ul class="space-y-2 p-4">
             {RECEIVER_TIPS
               .iter()

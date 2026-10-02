@@ -11,6 +11,12 @@ use crate::logbook::LogEntry;
 pub const DXCC_TARGET: usize = 100;
 /// WAZ：40 个 CQ 分区。
 pub const WAZ_TARGET: usize = 40;
+/// WAS：美国 50 个州。
+pub const WAS_TARGET: usize = 50;
+/// IOTA 基础奖要求的岛屿组数。
+pub const IOTA_TARGET: usize = 100;
+/// WPX 基础奖要求的前缀数。
+pub const WPX_TARGET: usize = 400;
 /// WAC 统计的 6 个大洲（南极洲不计）。
 pub const CONTINENTS: [(&str, &str); 6] = [
   ("NA", "北美洲"),
@@ -86,6 +92,14 @@ pub struct AwardProgress {
   pub wac: Progress<&'static str>,
   /// key = 波段或 `SAT`，值为 4 位网格。
   pub vucc: BTreeMap<String, Progress<String>>,
+  /// WPX 前缀奖。
+  pub wpx: Progress<String>,
+  /// WAS：美国州。
+  pub was: Progress<String>,
+  /// IOTA：岛屿组编号。
+  pub iota: Progress<String>,
+  /// DXCC Challenge：各波段 DXCC 实体数之和。
+  pub dxcc_challenge: usize,
 }
 
 impl AwardProgress {
@@ -94,7 +108,7 @@ impl AwardProgress {
   pub fn from_entries(entries: &[LogEntry]) -> Self {
     let mut p = Self::default();
     for e in entries {
-      let ok = e.qsl_rcvd;
+      let ok = e.confirmed();
       let band = e.band_label();
       if let Some(en) = e.entity() {
         p.dxcc.add(en.dxcc, ok);
@@ -115,6 +129,15 @@ impl AwardProgress {
       if let Some(z) = e.cq_zone() {
         p.waz.add(z, ok);
       }
+      if let Some(prefix) = wpx_prefix(&e.callsign) {
+        p.wpx.add(prefix, ok);
+      }
+      if !e.state.trim().is_empty() {
+        p.was.add(e.state.trim().to_ascii_uppercase(), ok);
+      }
+      if !e.iota.trim().is_empty() {
+        p.iota.add(e.iota.trim().to_ascii_uppercase(), ok);
+      }
       let grid = e.gridsquare.trim().to_ascii_uppercase();
       if let Some(g4) = grid.get(..4).filter(|g| is_grid4(g)) {
         let key = if e.prop_mode.eq_ignore_ascii_case("SAT") || !e.sat_name.trim().is_empty() {
@@ -127,8 +150,163 @@ impl AwardProgress {
         }
       }
     }
+    p.dxcc_challenge = p.dxcc_by_band.values().map(|x| x.worked.len()).sum();
     p
   }
+}
+
+/// 一项奖状的冲刺缺口（还差多少达标）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AwardGap {
+  /// 奖状缩写（DXCC / WAZ / WAC / WAS / IOTA / WPX）。
+  pub label: &'static str,
+  /// 当前已通联（或已确认）数量。
+  pub current: usize,
+  /// 达标所需数量。
+  pub target: usize,
+}
+
+impl AwardGap {
+  /// 还差多少达标。
+  #[must_use]
+  pub fn remaining(&self) -> usize {
+    self.target.saturating_sub(self.current)
+  }
+}
+
+/// 未达标奖状的冲刺缺口，按「还差最少」升序（越接近达标的越靠前）。
+///
+/// `confirmed` 为真时按「已确认（QSL）」统计，否则按「已通联」统计。
+#[must_use]
+pub fn award_gaps(p: &AwardProgress, confirmed: bool) -> Vec<AwardGap> {
+  let worked = |x: &Progress<u16>| {
+    if confirmed {
+      x.confirmed.len()
+    } else {
+      x.worked.len()
+    }
+  };
+  let count = |x: &Progress<u8>| {
+    if confirmed {
+      x.confirmed.len()
+    } else {
+      x.worked.len()
+    }
+  };
+  let str_count = |x: &Progress<&str>| {
+    if confirmed {
+      x.confirmed.len()
+    } else {
+      x.worked.len()
+    }
+  };
+  let str_count_owned = |x: &Progress<String>| {
+    if confirmed {
+      x.confirmed.len()
+    } else {
+      x.worked.len()
+    }
+  };
+
+  let mut out = Vec::new();
+  let dxcc = worked(&p.dxcc);
+  if dxcc < DXCC_TARGET {
+    out.push(AwardGap {
+      label: "DXCC",
+      current: dxcc,
+      target: DXCC_TARGET,
+    });
+  }
+  let waz = count(&p.waz);
+  if waz < WAZ_TARGET {
+    out.push(AwardGap {
+      label: "WAZ",
+      current: waz,
+      target: WAZ_TARGET,
+    });
+  }
+  let wac = str_count(&p.wac);
+  if wac < CONTINENTS.len() {
+    out.push(AwardGap {
+      label: "WAC",
+      current: wac,
+      target: CONTINENTS.len(),
+    });
+  }
+  let was = str_count_owned(&p.was);
+  if was < WAS_TARGET {
+    out.push(AwardGap {
+      label: "WAS",
+      current: was,
+      target: WAS_TARGET,
+    });
+  }
+  let iota = str_count_owned(&p.iota);
+  if iota < IOTA_TARGET {
+    out.push(AwardGap {
+      label: "IOTA",
+      current: iota,
+      target: IOTA_TARGET,
+    });
+  }
+  let wpx = str_count_owned(&p.wpx);
+  if wpx < WPX_TARGET {
+    out.push(AwardGap {
+      label: "WPX",
+      current: wpx,
+      target: WPX_TARGET,
+    });
+  }
+
+  out.sort_by_key(AwardGap::remaining);
+  out
+}
+
+/// 未通联的 DXCC 实体，按大洲分组（依 [`CONTINENTS`] 顺序，仅返回有缺口的洲）。
+///
+/// 用于「DXCC 缺口清单」：一眼看清还差哪些实体、各洲还差多少。
+#[must_use]
+pub fn dxcc_missing(p: &AwardProgress) -> Vec<(&'static str, Vec<&'static crate::dxcc::Entity>)> {
+  let entities = crate::dxcc::entities();
+  CONTINENTS
+    .iter()
+    .filter_map(|(code, name)| {
+      let missing: Vec<&'static crate::dxcc::Entity> = entities
+        .iter()
+        .filter(|e| e.continent == *code && !p.dxcc.worked.contains(&e.dxcc))
+        .collect();
+      (!missing.is_empty()).then_some((*name, missing))
+    })
+    .collect()
+}
+
+/// 提取呼号的 WPX 前缀（用于前缀奖统计）。
+///
+/// 简化规则：取第一个含数字的斜杠分段为主呼号；前缀由开头字母 + 第一个数字组成，
+/// 若以数字开头则延伸到第二个数字（如 `JA1X`→`JA1`、`W1AW`→`W1`、`3D2AG`→`3D2`）。
+#[must_use]
+pub fn wpx_prefix(callsign: &str) -> Option<String> {
+  let seg = callsign
+    .split('/')
+    .map(str::trim)
+    .find(|s| s.chars().any(|c| c.is_ascii_digit()))?;
+  let chars: Vec<char> = seg.chars().collect();
+  let digits: Vec<usize> = chars
+    .iter()
+    .enumerate()
+    .filter(|(_, c)| c.is_ascii_digit())
+    .map(|(i, _)| i)
+    .collect();
+  let end = if digits.is_empty() {
+    chars.len()
+  } else if digits[0] > 0 {
+    digits[0] + 1
+  } else if digits.len() >= 2 {
+    digits[1] + 1
+  } else {
+    chars.len()
+  };
+  Some(chars[..end].iter().collect::<String>().to_ascii_uppercase())
 }
 
 /// VUCC 某波段（或 `SAT`）要求的网格数；HF 波段不适用时为 `None`。
@@ -218,5 +396,89 @@ mod tests {
     assert!(!p.vucc.contains_key("20m") && !p.vucc.contains_key("2m"));
     assert_eq!(vucc_target("6m"), Some(100));
     assert_eq!(vucc_target("20m"), None);
+  }
+
+  #[test]
+  fn wpx_prefix_rules() {
+    assert_eq!(wpx_prefix("JA1X").as_deref(), Some("JA1"));
+    assert_eq!(wpx_prefix("W1AW").as_deref(), Some("W1"));
+    assert_eq!(wpx_prefix("VP2E").as_deref(), Some("VP2"));
+    assert_eq!(wpx_prefix("3D2AG").as_deref(), Some("3D2"));
+    assert_eq!(wpx_prefix("4X4JU").as_deref(), Some("4X4"));
+    assert_eq!(wpx_prefix("DL1ABC").as_deref(), Some("DL1"));
+    assert_eq!(wpx_prefix("K1AA/P").as_deref(), Some("K1"));
+    assert_eq!(wpx_prefix("VP2E/W1AW").as_deref(), Some("VP2"));
+    assert_eq!(wpx_prefix("N0CALL").as_deref(), Some("N0"));
+    assert_eq!(wpx_prefix("NOCALL"), None);
+  }
+
+  #[test]
+  fn counts_wpx_was_iota_and_dxcc_challenge() {
+    let mut e1 = qso("JA1X", "14.074", "FT8", "", true);
+    e1.state = "CT".into();
+    e1.iota = "NA-046".into();
+    let mut e2 = qso("W1AW", "7.010", "CW", "", false);
+    e2.state = "CT".into();
+    let mut e3 = qso("DL1ABC", "14.074", "FT8", "", false);
+    e3.iota = "EU-004".into();
+    let p = AwardProgress::from_entries(&[e1, e2, e3]);
+    assert_eq!(
+      p.wpx.worked,
+      BTreeSet::from(["JA1".to_owned(), "W1".to_owned(), "DL1".to_owned()])
+    );
+    assert_eq!(p.wpx.confirmed, BTreeSet::from(["JA1".to_owned()]));
+    assert_eq!(p.was.worked, BTreeSet::from(["CT".to_owned()]));
+    assert_eq!(
+      p.iota.worked,
+      BTreeSet::from(["NA-046".to_owned(), "EU-004".to_owned()])
+    );
+    // 20m 有 JA1X + DL1ABC 两个实体，40m 有 W1AW 一个实体 → challenge = 3
+    assert_eq!(p.dxcc_challenge, 3);
+  }
+
+  #[test]
+  fn award_gaps_sorts_by_remaining() {
+    let mut p = AwardProgress::default();
+    for z in 1..=39u8 {
+      p.waz.worked.insert(z); // 39 分区，还差 1 个
+    }
+    for d in 1..=50u16 {
+      p.dxcc.worked.insert(d); // 50 实体，还差 50 个
+    }
+    let gaps = award_gaps(&p, false);
+    assert_eq!(gaps[0].label, "WAZ");
+    assert_eq!(gaps[0].remaining(), 1);
+    assert!(
+      gaps
+        .iter()
+        .any(|g| g.label == "DXCC" && g.remaining() == 50)
+    );
+
+    // 全部达标时返回空。
+    for z in 1..=40u8 {
+      p.waz.worked.insert(z);
+    }
+    assert!(award_gaps(&p, false).iter().all(|g| g.label != "WAZ"));
+  }
+
+  #[test]
+  fn dxcc_missing_groups_and_excludes_worked() {
+    let mut p = AwardProgress::default();
+    let entities = crate::dxcc::entities();
+    for e in entities.iter().take(10) {
+      p.dxcc.worked.insert(e.dxcc);
+    }
+    let missing = dxcc_missing(&p);
+    let total_missing: usize = missing.iter().map(|(_, v)| v.len()).sum();
+    assert_eq!(total_missing, entities.len() - 10);
+    for (name, ents) in &missing {
+      let code = CONTINENTS
+        .iter()
+        .find(|(_, n)| n == name)
+        .map(|(c, _)| *c)
+        .expect("continent code");
+      assert!(ents.iter().all(|e| e.continent == code));
+      assert!(ents.iter().all(|e| !p.dxcc.worked.contains(&e.dxcc)));
+    }
   }
 }

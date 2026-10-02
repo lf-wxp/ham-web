@@ -3,6 +3,7 @@ use leptos::svg;
 
 use super::projection::{K, MAP_H, MAP_W, WORLD_OFFSETS, polygon_points, project, simplify};
 use super::world_data::{CONTINENTS, COUNTRY_LABELS};
+use crate::i18n::t;
 
 /// 两个活动指针的欧氏距离（像素），用于双指捏合缩放。
 fn ptr_dist(a: &(i32, f64, f64), b: &(i32, f64, f64)) -> f64 {
@@ -34,7 +35,7 @@ pub fn MapView(
   children: ChildrenFn,
 ) -> impl IntoView {
   let label = if aria_label.is_empty() {
-    "世界地图（滚轮缩放、拖拽平移、双指缩放、双击复位、反子午线环绕）".to_string()
+    t("世界地图（滚轮缩放、拖拽平移、双指缩放、双击复位、反子午线环绕）")
   } else {
     aria_label
   };
@@ -346,7 +347,7 @@ pub fn MapView(
     let (x, y) = project(lon, lat);
     let cls = if italic { format!("{fill} italic") } else { fill.to_owned() };
     view! {
-      <text x=x.to_string() y=y.to_string() text-anchor="middle" class=cls font-size=size>{name}</text>
+      <text x=x.to_string() y=y.to_string() text-anchor="middle" class=cls font-size=size>{move || t(name)}</text>
     }
   })
   .collect_view();
@@ -461,7 +462,7 @@ pub fn MapView(
           type="button"
           class="flex h-7 w-7 items-center justify-center rounded-md border bg-background text-sm shadow-sm transition-colors hover:bg-accent"
           on:click=zoom_in
-          aria-label="放大"
+          aria-label=move || t("放大")
         >
           "+"
         </button>
@@ -469,7 +470,7 @@ pub fn MapView(
           type="button"
           class="flex h-7 w-7 items-center justify-center rounded-md border bg-background text-sm shadow-sm transition-colors hover:bg-accent"
           on:click=zoom_out
-          aria-label="缩小"
+          aria-label=move || t("缩小")
         >
           "−"
         </button>
@@ -477,7 +478,7 @@ pub fn MapView(
           type="button"
           class="flex h-7 w-7 items-center justify-center rounded-md border bg-background text-sm shadow-sm transition-colors hover:bg-accent"
           on:click=reset_view
-          aria-label="复位视图"
+          aria-label=move || t("复位视图")
         >
           "⤢"
         </button>

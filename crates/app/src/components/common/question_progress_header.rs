@@ -24,7 +24,7 @@ pub fn QuestionProgressHeader(
       <div class="flex items-center gap-4 justify-between flex-wrap">
         <div class="flex items-center gap-4 w-full sm:w-auto">
           <div class="min-w-24 text-sm text-muted-foreground">"进度 " {move || percent.get()} "%"</div>
-          <Progress value=percent class="h-2 flex-1 sm:flex-none" />
+          <Progress value=percent class="h-2 flex-1 sm:w-40 sm:flex-none" />
         </div>
         {meta.map(|m| view! { <div class="hidden sm:block text-sm text-muted-foreground">{m.run()}</div> })}
       </div>

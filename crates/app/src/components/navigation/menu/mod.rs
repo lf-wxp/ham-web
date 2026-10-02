@@ -7,5 +7,5 @@ mod types;
 
 pub(crate) use exam_items::EXAM_ITEMS;
 pub(crate) use knowledge_groups::KNOWLEDGE_GROUPS;
-pub(crate) use tool_items::TOOL_ITEMS;
+pub(crate) use tool_items::TOOL_GROUPS;
 pub(crate) use types::MenuKind;

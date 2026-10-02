@@ -1,6 +1,7 @@
 use ham_web_core::phonetic::PhoneticEntry;
 use leptos::prelude::*;
 
+use crate::i18n::tf;
 use crate::speech::speak_en;
 
 #[component]
@@ -8,7 +9,7 @@ pub(super) fn PhoneticCard(entry: &'static PhoneticEntry) -> impl IntoView {
   view! {
     <button
       type="button"
-      title=format!("朗读 {}", entry.word)
+      title=tf("朗读 {}", &[(entry.word)])
       on:click=move |_| speak_en(entry.word)
       class="group flex flex-col items-center gap-1.5 rounded-xl border bg-card p-3 text-center transition-colors hover:bg-accent/60"
     >

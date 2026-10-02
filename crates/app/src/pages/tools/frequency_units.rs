@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::{INPUT, RESULT, fmt_num};
+use crate::i18n::t;
 
 /// 频率单位换算：以 MHz 为基准换算到 Hz / kHz / GHz。
 #[component]
@@ -10,7 +11,7 @@ pub(super) fn FrequencyUnits() -> impl IntoView {
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">"频率（MHz）"</span>
+        <span class="text-xs text-muted-foreground">{move || t("频率（MHz）")}</span>
         <input
           type="number"
           prop:value=move || mhz.get().to_string()

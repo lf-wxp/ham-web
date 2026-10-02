@@ -2,6 +2,7 @@ use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{DragEvent, File, HtmlInputElement};
 
+use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 use crate::photo::{self, PhotoKind};
 use crate::util::alert;
@@ -24,8 +25,8 @@ pub(super) fn PhotoUploader(
   let zone = move |kind: PhotoKind,
                    id: &'static str,
                    icon: IconKind,
-                   title: &'static str,
-                   hint: &'static str| {
+                   title: String,
+                   hint: String| {
     let class = move || {
       let state = if disabled.get() {
         "opacity-50 cursor-not-allowed"
@@ -71,7 +72,7 @@ pub(super) fn PhotoUploader(
         >
           <Icon kind=icon class="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
           <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{title}</span>
-          <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">"点击选择或拖拽文件到此处"</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">{move || t("点击选择或拖拽文件到此处")}</span>
           <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">{hint}</span>
         </label>
         <input
@@ -94,8 +95,20 @@ pub(super) fn PhotoUploader(
 
   view! {
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {zone(PhotoKind::Id, "id-file", IconKind::CreditCard, "选取证件照", "推荐尺寸: 1024×768 - 4096×3072")}
-      {zone(PhotoKind::Profile, "profile-file", IconKind::User, "选取人像照", "推荐尺寸: 300×400 - 3375×4500")}
+      {zone(
+          PhotoKind::Id,
+          "id-file",
+          IconKind::CreditCard,
+          t("选取证件照"),
+          t("推荐尺寸: 1024×768 - 4096×3072"),
+        )}
+      {zone(
+          PhotoKind::Profile,
+          "profile-file",
+          IconKind::User,
+          t("选取人像照"),
+          t("推荐尺寸: 300×400 - 3375×4500"),
+        )}
     </div>
   }
 }

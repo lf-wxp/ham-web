@@ -7,7 +7,9 @@ use crate::pages::SLANG_CATEGORY;
 use crate::ui::Stat;
 
 use super::qcode_quiz::QCodeQuiz;
+use super::qcode_reverse_quiz::QCodeReverseQuiz;
 use super::slang_card::SlangCard;
+use crate::i18n::t;
 
 /// 简语分组。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -108,12 +110,12 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
   let lists = [qcode, abbrev, phrase];
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-16 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"简语速查"</h1>
-            <div class="text-xs text-muted-foreground">"Q 简语 · CW 缩语 · 通联常用语"</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("简语速查")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("Q 简语 · CW 缩语 · 通联常用语")}</div>
           </div>
 
           <div class="flex items-center gap-0.5 rounded-lg border p-0.5">
@@ -122,14 +124,14 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               on:click=move |_| common_only.set(true)
               class=move || scope_pill(common_only.get())
             >
-              "常用"
+              {move || t("常用")}
             </button>
             <button
               type="button"
               on:click=move |_| common_only.set(false)
               class=move || scope_pill(!common_only.get())
             >
-              "全部"
+              {move || t("全部")}
             </button>
           </div>
 
@@ -141,7 +143,7 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
             <input
               prop:value=move || kw.get()
               on:input=move |e| kw.set(event_target_value(&e))
-              placeholder="搜索简语 / 含义…"
+              placeholder=move || t("搜索简语 / 含义…")
               class="h-9 w-56 rounded-lg border bg-background pl-8 pr-8 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             />
             {move || {
@@ -150,7 +152,7 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
                   view! {
                     <button
                       type="button"
-                      aria-label="清除"
+                      aria-label=move || t("清除")
                       class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       on:click=move |_| kw.set(String::new())
                     >
@@ -165,16 +167,18 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
 
       <div class="mx-auto max-w-5xl px-4 py-5">
         <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Q 简语" value=Signal::derive(move || qcode.with(Vec::len)) />
-          <Stat label="通联缩语" value=Signal::derive(move || abbrev.with(Vec::len)) />
-          <Stat label="通联用语" value=Signal::derive(move || phrase.with(Vec::len)) />
+          <Stat label=t("Q 简语") value=Signal::derive(move || qcode.with(Vec::len)) />
+          <Stat label=t("通联缩语") value=Signal::derive(move || abbrev.with(Vec::len)) />
+          <Stat label=t("通联用语") value=Signal::derive(move || phrase.with(Vec::len)) />
           <Stat
-            label="当前匹配"
+            label=t("当前匹配")
             value=Signal::derive(move || lists.iter().map(|l| l.with(Vec::len)).sum::<usize>())
           />
         </div>
 
         <QCodeQuiz entries=entries />
+
+        <QCodeReverseQuiz entries=entries />
 
         {GROUPS
           .iter()
@@ -183,8 +187,8 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
             view! {
               <section class="mb-8 last:mb-0">
                 <div class="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <h2 class="text-sm font-semibold">{group.label()}</h2>
-                  <span class="text-xs text-muted-foreground">{group.hint()}</span>
+                  <h2 class="text-sm font-semibold">{move || t(group.label())}</h2>
+                  <span class="text-xs text-muted-foreground">{move || t(group.hint())}</span>
                   <span class="ml-auto text-xs tabular-nums text-muted-foreground">
                     {move || list.with(Vec::len)}
                   </span>
@@ -194,7 +198,7 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
                     if items.is_empty() {
                       view! {
                         <div class="rounded-xl border border-dashed py-10 text-center text-sm text-muted-foreground">
-                          "没有匹配的简语"
+                          {move || t("没有匹配的简语")}
                         </div>
                       }
                       .into_any()

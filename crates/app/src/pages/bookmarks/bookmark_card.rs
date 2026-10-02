@@ -1,19 +1,26 @@
 use ham_web_core::QuestionItem;
 use leptos::prelude::*;
 
+use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 
-/// 一道收藏题卡片。
+/// 一道收藏题卡片；`groups_of` 为该题当前所属分组，`all_groups` 为全部分组（用于下拉加入）。
 #[component]
 pub(super) fn BookmarkCard(
   question: QuestionItem,
+  groups_of: Vec<String>,
+  all_groups: Vec<String>,
   on_remove: Callback<QuestionItem>,
+  on_add_to_group: Callback<(QuestionItem, String)>,
+  on_remove_from_group: Callback<(QuestionItem, String)>,
 ) -> impl IntoView {
   let j = question
     .j_code()
     .map(str::to_owned)
     .unwrap_or_else(|| "—".to_owned());
   let q = question.clone();
+  let q_add = question.clone();
+  let pick = RwSignal::new(String::new());
   view! {
     <div class="rounded-xl border bg-card p-4">
       <div class="mb-2 flex items-start gap-2">
@@ -22,8 +29,8 @@ pub(super) fn BookmarkCard(
         <button
           type="button"
           class="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
-          title="取消收藏"
-          aria-label="取消收藏"
+          title=move || t("取消收藏")
+          aria-label=move || t("取消收藏")
           on:click=move |_| on_remove.run(q.clone())
         >
           <Icon kind=IconKind::BookMarked class="h-4 w-4" />
@@ -44,6 +51,47 @@ pub(super) fn BookmarkCard(
       </div>
       <div class="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
         "答案：" <span class="font-mono font-semibold">{question.answer_keys.join("、")}</span>
+      </div>
+      <div class="mt-3 flex flex-wrap items-center gap-1.5 border-t pt-2">
+        <span class="text-xs text-muted-foreground">{move || t("分组")}</span>
+        {groups_of
+          .into_iter()
+          .map(|name| {
+            let n = name.clone();
+            let qr = question.clone();
+            view! {
+              <button
+                type="button"
+                class="inline-flex items-center gap-1 rounded-full border bg-accent px-2 py-0.5 text-[11px] transition-colors hover:bg-destructive/10"
+                title=move || t("从该分组移出")
+                on:click=move |_| on_remove_from_group.run((qr.clone(), n.clone()))
+              >
+                {name} " ×"
+              </button>
+            }
+          })
+          .collect_view()}
+        {(!all_groups.is_empty()).then(|| {
+          view! {
+            <select
+              prop:value=move || pick.get()
+              on:change=move |e| {
+                let v = event_target_value(&e);
+                if !v.is_empty() {
+                  on_add_to_group.run((q_add.clone(), v));
+                }
+                pick.set(String::new());
+              }
+              class="rounded-full border bg-background px-2 py-0.5 text-[11px] text-muted-foreground focus:outline-none"
+            >
+              <option value="">{move || t("加入分组…")}</option>
+              {all_groups
+                .iter()
+                .map(|g| view! { <option value=g.clone()>{g.clone()}</option> })
+                .collect_view()}
+            </select>
+          }
+        })}
       </div>
     </div>
   }
