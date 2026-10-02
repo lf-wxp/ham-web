@@ -59,10 +59,23 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: Install cargo-make and Trunk
+      - name: Install cargo-make, Trunk and wasm-bindgen CLI
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-make,trunk
+          # wasm-bindgen CLI 版本需与 Cargo.lock 中的 wasm-bindgen crate 一致：
+          # 装错了不会报编译错误，只会在运行时让 APT Worker 的胶水代码与 wasm 不匹配。
+          # 这里的版本号是硬编码的（install-action 不支持从文件读），下一步会校验它没漂移。
+          tool: cargo-make,trunk,wasm-bindgen-cli@0.2.129
+
+      - name: 校验 wasm-bindgen CLI 版本与 Cargo.lock 一致
+        run: |
+          lock=$(awk -F'"' '/^name = "wasm-bindgen"$/{f=1; next} f && /^version = /{print $2; exit}' Cargo.lock)
+          cli=$(wasm-bindgen --version | awk '{print $2}')
+          echo "Cargo.lock=$lock CLI=$cli"
+          if [ "$lock" != "$cli" ]; then
+            echo "::error::wasm-bindgen CLI 版本漂移，请将 install-action 中的 wasm-bindgen-cli@$cli 改为 @$lock"
+            exit 1
+          fi
 
       - name: Build site and server
         run: |

@@ -17,6 +17,7 @@ use crate::components::practice::{
   PracticeResumeDialog, PracticeSearchDialog, PracticeSettingsDialog,
 };
 use crate::components::question_card::QuestionCard;
+use crate::components::shortcut_help::ShortcutHelpDialog;
 use crate::data::Questions;
 use crate::pages::{DEFAULT_TITLE, bank_href, use_bank_query, use_no_site_footer};
 use crate::shortcuts::{DigitDetail, Shortcuts, digit_answer, use_question_shortcuts};
@@ -77,6 +78,7 @@ pub fn PracticePage() -> impl IntoView {
   let pending: RwSignal<Option<PracticeSavedState>> = RwSignal::new(None);
   let search_open = RwSignal::new(false);
   let settings_open = RwSignal::new(false);
+  let help_open = RwSignal::new(false);
   let no_prompt = RwSignal::new(false);
   let error_open = RwSignal::new(false);
   let error_text = RwSignal::new(String::new());
@@ -430,6 +432,7 @@ pub fn PracticePage() -> impl IntoView {
       Signal::derive(move || store.order.get() == PracticeOrder::Sequential),
       Callback::new(move |()| search_open.set(true)),
     )),
+    on_help: Some(Callback::new(move |()| help_open.set(true))),
   });
 
   let percent = Signal::derive(move || {
@@ -569,5 +572,6 @@ pub fn PracticePage() -> impl IntoView {
       </DialogFooter>
     </Dialog>
     <MessageDialog open=error_open title=t("加载失败") description=error_text confirm_text=t("知道了") />
+    <ShortcutHelpDialog open=help_open />
   }
 }

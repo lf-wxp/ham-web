@@ -12,13 +12,15 @@ mod dxcc;
 mod dxcc_map;
 mod explanations;
 mod fsutil;
+mod i18n;
 mod icons;
+mod knowledge_i18n;
 mod postbuild;
 mod psk31_gen;
 
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{Result, bail};
 use clap::{Parser, Subcommand};
 
 const DEFAULT_REMOTE: &str =
@@ -61,6 +63,57 @@ enum Command {
   EnhanceExplanations,
   /// 校验 data/glossary/（分类、参见、重复、括号等）并输出统计
   CheckGlossary,
+  /// 校验 crates/app/src/i18n.rs 的 EN / ES 词典（重复 key、占位符数量）并统计覆盖率
+  CheckI18n {
+    /// 导出「源码里有但词典里没有」的文案模板（{zh, text}）
+    #[arg(long)]
+    missing: Option<PathBuf>,
+    /// 配合 --missing 使用的语言（en / es）
+    #[arg(long, default_value = "en")]
+    lang: String,
+  },
+  /// 合并已填写的界面文案模板回 i18n.rs 词典
+  AddI18n {
+    /// 已填写的模板文件（{zh, text}）
+    batch: PathBuf,
+    /// 目标语言（en / es）
+    #[arg(long, default_value = "en")]
+    lang: String,
+  },
+  /// 列出 crates/core 中含中文的模块（按字符数从大到小），供决定先翻哪个
+  KnowledgeI18nInventory,
+  /// 导出某模块的待译模板（{zh, text}，text 留空表示未翻）
+  KnowledgeI18nMissing {
+    /// core 模块名，如 `wspr`
+    #[arg(long)]
+    module: String,
+    /// 目标语言（en / es）
+    #[arg(long, default_value = "en")]
+    lang: String,
+    /// 模板输出路径
+    #[arg(long, default_value = "tmp/knowledge-i18n.json")]
+    output: PathBuf,
+  },
+  /// 合并已填写的模板回 data/knowledge-i18n/
+  KnowledgeI18nAdd {
+    /// core 模块名
+    #[arg(long)]
+    module: String,
+    /// 目标语言（en / es）
+    #[arg(long, default_value = "en")]
+    lang: String,
+    /// 已填写的模板文件
+    batch: PathBuf,
+  },
+  /// 查看某模块某语言的翻译覆盖率
+  KnowledgeI18nCoverage {
+    /// core 模块名
+    #[arg(long)]
+    module: String,
+    /// 目标语言（en / es）；省略时两种语言都看
+    #[arg(long)]
+    lang: Option<String>,
+  },
   /// 统计缺失解析的题目，并导出待填写模板
   MissingExplanations {
     /// 仅统计某个题库（A/B/C）
@@ -142,6 +195,83 @@ fn main() -> Result<()> {
     Command::AddExplanations { batch } => explanations::add(&paths, &batch),
     Command::EnhanceExplanations => explanations::enhance(&paths),
     Command::CheckGlossary => explanations::check_glossary(&paths),
+    Command::CheckI18n { missing, lang } => {
+      if let Some(out) = missing {
+        let items = i18n::missing(&root, &lang)?;
+        if let Some(dir) = out.parent() {
+          std::fs::create_dir_all(dir)?;
+        }
+        let payload: Vec<serde_json::Value> = items
+          .iter()
+          .map(|zh| serde_json::json!({ "zh": zh, "text": "" }))
+          .collect();
+        crate::fsutil::write_json(&out, &payload)?;
+        println!("已导出 {} 条待译界面文案 → {}", items.len(), out.display());
+        return Ok(());
+      }
+      if !i18n::run(&root)? {
+        bail!("界面文案词典校验未通过");
+      }
+      Ok(())
+    }
+    Command::AddI18n { batch, lang } => {
+      let n = i18n::add(&root, &lang, &batch)?;
+      println!("已合并 {n} 条界面文案（{lang}）");
+      Ok(())
+    }
+    Command::KnowledgeI18nInventory => {
+      let items = knowledge_i18n::inventory(&root)?;
+      let total: usize = items.iter().map(|(_, n)| n).sum();
+      println!(
+        "crates/core 含中文模块 {} 个，合计 {} 字符\n",
+        items.len(),
+        total
+      );
+      for (m, n) in items.iter().take(20) {
+        println!("  {n:>6}  {m}");
+      }
+      if items.len() > 20 {
+        println!("  … 另有 {} 个模块", items.len() - 20);
+      }
+      Ok(())
+    }
+    Command::KnowledgeI18nMissing {
+      module,
+      lang,
+      output,
+    } => {
+      let (p, n) = knowledge_i18n::export(&root, &module, &lang, &output)?;
+      println!("已导出 {n} 条待译条目 → {}", p.display());
+      Ok(())
+    }
+    Command::KnowledgeI18nAdd {
+      module,
+      lang,
+      batch,
+    } => {
+      let n = knowledge_i18n::add(&root, &module, &lang, &batch)?;
+      println!("已合并 {n} 条译文（{module}/{lang}）");
+      Ok(())
+    }
+    Command::KnowledgeI18nCoverage { module, lang } => {
+      let langs: Vec<String> = match lang {
+        Some(l) => vec![l],
+        None => knowledge_i18n::LANGS
+          .iter()
+          .map(|s| (*s).to_owned())
+          .collect(),
+      };
+      for l in langs {
+        let (done, total) = knowledge_i18n::coverage(&root, &module, &l)?;
+        let pct = if total == 0 {
+          100.0
+        } else {
+          done as f64 * 100.0 / total as f64
+        };
+        println!("{module}/{l}: {done} / {total}（{pct:.1}%）");
+      }
+      Ok(())
+    }
     Command::MissingExplanations {
       bank,
       output,
@@ -165,7 +295,7 @@ fn main() -> Result<()> {
       } else {
         root.join(dist)
       };
-      postbuild::run(&dist, &site_url)
+      postbuild::run(&root, &dist, &site_url)
     }
   }
 }

@@ -44,7 +44,8 @@ fn country_of(ci: Option<&serde_json::Map<String, serde_json::Value>>, call: &st
 
 /// 拉取并解析 DXWatch（同步，在 `spawn_blocking` 中执行）。
 fn fetch_and_parse() -> anyhow::Result<Vec<Spot>> {
-  let mut res = ureq::get(DXWATCH_URL)
+  let mut res = crate::util::http_agent()
+    .get(DXWATCH_URL)
     .call()
     .context("fetch DXWatch failed")?;
   let body = res

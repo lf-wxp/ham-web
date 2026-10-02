@@ -212,7 +212,7 @@
 | GET | `/api/passes?lat=&lon=&min_elev=` | 卫星过境预报（TLE + SGP4，未来 24 小时） | Celestrak | TLE 缓存 6h |
 | GET | `/api/iss` | 国际空间站实时位置 | wheretheiss.at | 30s |
 | GET | `/api/geocode?lat=&lon=` | 反向地理编码（国家/城市，中文） | BigDataCloud | 24h |
-| GET | `/api/voacap?tx=&rx=&month=&ssn=` | 点对点 HF 传播预测（简化 VOACAP 模型） | 本地计算 | 6h |
+| GET | `/api/voacap?tx=&rx=&month=&ssn=&hour=` | 点对点 HF 传播预测（简化 VOACAP 模型，`hour` 为 UTC 时刻，省略则按最佳时段） | 本地计算 | 6h |
 | GET | `/api/psk-reporter?callsign=` | 数字模式接收报告（谁收到了我） | PSK Reporter | 60s |
 | GET | `/api/rbn?callsign=` | CW / RTTY 信标台接收报告 | Reverse Beacon Network | 30s |
 | GET | `/api/callsign?callsign=` | 呼号查询（姓名 / 网格 / QTH，日志录入自动补全） | Callook / HamQTH | 7d |
@@ -236,10 +236,12 @@
 
 ```bash
 cargo install cargo-make
-cargo make setup          # 安装 wasm32 目标与 Trunk
+cargo make setup          # 安装 wasm32 目标、Trunk 与 wasm-bindgen CLI
 ```
 
-> Tailwind CSS、wasm-bindgen、wasm-opt 会在首次构建时由 Trunk 自动下载到本机缓存，无需 Node.js。
+> Tailwind CSS、wasm-opt 会在首次构建时由 Trunk 自动下载到本机缓存，无需 Node.js。
+> Trunk 自带的 wasm-bindgen 不对外暴露，APT 解码 Worker 需要 PATH 上的 `wasm-bindgen` CLI，
+> 版本由 `cargo make setup` 按 `Cargo.lock` 自动固定。
 
 ### 本地开发
 
@@ -309,12 +311,22 @@ cargo make docker-build && cargo make docker-run
 | `SITE_URL` | `https://ham.onlyxp.me` | 写入 Open Graph 与 `sitemap.xml` 的站点地址 |
 | `REBUILD_DATASET` | `0` | 设为 `1` 时构建阶段从远程 CSV 重新生成题库 |
 | `TRUNK_VERSION` | `0.21.14` | Trunk 版本 |
+| `WASM_BINDGEN_VERSION` | `0.2.129` | wasm-bindgen CLI 版本（构建 APT 解码 Worker），需与 `Cargo.lock` 中的 wasm-bindgen crate 一致 |
 
 ```bash
 docker build --build-arg SITE_URL=https://exam.example.com -t ham-web .
 ```
 
 运行时环境变量：`HOST`（默认 `0.0.0.0`）、`PORT`（默认 `3000`）、`DIST_DIR`（默认 `/app/dist`）、`PUSH_STORE`（Web Push 持久化文件，默认 `/app/data/push-subscriptions.json`）、`VAPID_PRIVATE_KEY` / `VAPID_SUBJECT`（可选，见下文）、`RUST_LOG`。
+
+上游与请求相关的调优变量（均有合理默认值，一般无需设置）：
+
+| 变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `UPSTREAM_CONNECT_TIMEOUT_SECS` | `5` | 上游建连（含 DNS 与 TLS 握手）超时；防止上游挂起占满阻塞线程池 |
+| `UPSTREAM_TIMEOUT_SECS` | `15` | 上游请求端到端超时（从 DNS 到读完响应体） |
+| `REQUEST_TIMEOUT_SECS` | `60` | 单个请求的兜底超时，超时返回 `504` |
+| `RATE_LIMIT_PER_MIN` | `120` | `/api/*` 每 IP 每分钟限流阈值 |
 镜像基于 `gcr.io/distroless/cc-debian12:nonroot`，以非 root 用户运行，内置健康检查（`/healthz`）。`/app/data` 目录已内置为可写，建议挂载 volume 持久化推送订阅与 VAPID 密钥。
 
 ## Web Push 后台推送
@@ -324,6 +336,12 @@ docker build --build-arg SITE_URL=https://exam.example.com -t ham-web .
 1. 前端在通知中心（`/notifications`）点击「订阅后台推送」，用后端分发的 VAPID 公钥向浏览器 `PushManager` 订阅；
 2. 订阅信息（含每日提醒时间换算出的 UTC 分钟数）`POST /api/push/subscribe` 上报后端；
 3. 后端每分钟检查一次，到点用 VAPID 私钥签发 JWT、按 RFC 8291（`aes128gcm`）加密消息，推送到订阅 endpoint；`410/404` 时自动清理失效订阅。
+
+**订阅接口鉴权**：`POST /api/push/subscribe` 与 `/unsubscribe` **默认匿名可写**，无需任何配置 —— 订阅者本就是浏览器里的匿名访客，而前端是共享的静态资源，无从持有服务端令牌，要求鉴权会让功能对所有人失效。
+
+匿名写入的防护依赖：`/api/*` 每 IP 限流、`valid_endpoint` 的推送服务域名白名单、`MAX_SUBSCRIPTIONS` 总数上限，以及不提供订阅列表读取接口（覆盖 / 删除他人订阅需事先拿到对方那条不可枚举的 endpoint）。
+
+设置 `PUSH_API_TOKEN` 后这两个接口会校验 `Authorization: Bearer <token>`，但**官方前端会因此无法订阅**，仅适用于自建前端注入令牌或脚本管理的场景；设置后启动日志会给出相应提示。若只是想收紧来源，更推荐在反向代理层限制这两个路径。
 
 **VAPID 密钥**按以下优先级确定，无需手工生成：
 
@@ -617,7 +635,9 @@ cargo make explanations-missing    # 查看因题目修订/新增而缺失的解
 
 ### 端到端测试
 
-`e2e/` 下是 Playwright 测试，覆盖练习（答题、翻页、进度恢复、首次快捷键说明）、模拟考试交卷、错题本入本与重练、通联日志 ADIF 导入 / 去重 / ADIF 与 CSV 导出，键盘无障碍（跳转链接、对话框焦点、方向键切题）、薄弱项组卷、移动端滑动、听题模式（语音合成桩）、CAT（模拟串口）、CW 解码（振荡器冒充麦克风）、QSL 标签、错误兜底页、更新提示（新版本说明 / 题库变化）与知识卡片复习；`smoke.spec.ts` 从路由表读取全部页面，在浅色 / 深色主题下逐一检查运行时错误、资源 404 与 axe（WCAG 2.1 AA）。
+`e2e/` 下是 Playwright 测试，覆盖练习（答题、翻页、进度恢复、首次快捷键说明）、模拟考试交卷、错题本入本与重练、通联日志 ADIF 导入 / 去重 / ADIF 与 CSV 导出，键盘无障碍（跳转链接、对话框焦点、方向键切题）、薄弱项组卷、移动端滑动、听题模式（语音合成桩）、CAT（模拟串口）、CW 解码（振荡器冒充麦克风）、QSL 标签、错误兜底页、更新提示（新版本说明 / 题库变化）与知识卡片复习；此外还有全站搜索（相关度排序、多词 AND 与逐词高亮、结果上限）、题目笔记（错题重练与收藏集的持久化）、`?` 快捷键帮助面板、考后复盘（逐题对错、分类排序、交卷后入口）、APT 解码（超大文件拦截、正常文件进入处理）。
+
+`smoke.spec.ts` 从路由表读取全部页面，在浅色 / 深色主题下逐一检查运行时错误、资源 404 与 axe（WCAG 2.1 AA）—— **新增页面会自动纳入**，无需改测试。
 
 ```bash
 cd e2e && npm ci && npx playwright install chromium   # 首次

@@ -103,6 +103,10 @@ pub fn ExamResultDialog(
             }
           })
         }}
+        // 交卷弹窗关掉后，逐题对错原本就再也看不到了，这里给出复盘页入口。
+        <a class=button_class(Variant::Secondary, Size::Default, "") href="/exam-review">
+          {move || t("逐题复盘")}
+        </a>
         <button
           type="button"
           class=button_class(Variant::Outline, Size::Default, "")

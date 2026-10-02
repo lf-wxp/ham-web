@@ -68,7 +68,8 @@ fn parse_conditions(xml: &str) -> Vec<BandCondition> {
 
 /// 拉取并解析 HamQSL（同步，在 `spawn_blocking` 中执行）。
 fn fetch_and_parse() -> anyhow::Result<SolarPayload> {
-  let mut res = ureq::get(HAMQSL_URL)
+  let mut res = crate::util::http_agent()
+    .get(HAMQSL_URL)
     .call()
     .context("fetch HamQSL failed")?;
   let xml = res

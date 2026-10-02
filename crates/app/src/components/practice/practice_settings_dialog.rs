@@ -3,6 +3,7 @@ use leptos::prelude::*;
 
 use crate::components::exam::ShortcutRow;
 use crate::i18n::t;
+use crate::shortcuts::SHORTCUT_HELP;
 use crate::ui::{
   Checkbox, Dialog, DialogDescription, DialogHeader, DialogTitle, Label, RadioGroup,
   RadioGroupItem, Separator,
@@ -55,10 +56,13 @@ pub fn PracticeSettingsDialog(
         <Separator />
         <div class="space-y-2 text-sm">
           <div class="text-muted-foreground">{move || t("快捷键")}</div>
-          <ShortcutRow label=t("上一题 / 下一题") keys="← / →" />
-          <ShortcutRow label=t("选择 / 切换选项（单选/多选）") keys="1-9" />
-          <ShortcutRow label=t("严格选择（多选，仅该项）") keys="Shift 或 Cmd（macOS） + 1-9" />
-          <ShortcutRow label=t("打开搜索（仅顺序模式）") keys="Enter" />
+          // 键位统一取自 SHORTCUT_HELP，避免这里与帮助面板各写一份而逐渐脱节。
+          {SHORTCUT_HELP
+            .iter()
+            .map(|(keys, desc)| {
+              view! { <ShortcutRow label=Signal::derive(move || t(desc)) keys=(*keys).to_owned() /> }
+            })
+            .collect_view()}
         </div>
       </div>
     </Dialog>

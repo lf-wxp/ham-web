@@ -48,8 +48,8 @@ const CHIP_OFF: &str =
 /// 波段 → chip 着色样式（深色模式改用更亮的文字色以保证对比度）。
 fn band_color(band: &str) -> &'static str {
   match band {
-    "160m" => "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-300",
-    "80m" => "border-orange-500/30 bg-orange-500/10 text-orange-600 dark:text-orange-300",
+    "160m" => "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300",
+    "80m" => "border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300",
     "40m" => "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
     "30m" => "border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300",
     "20m" => "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300",

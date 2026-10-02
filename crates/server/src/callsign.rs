@@ -82,7 +82,10 @@ struct CallookLocation {
 /// 从 Callook 查询（美国 / 加拿大，免费）。
 fn from_callook(call: &str) -> anyhow::Result<CallsignInfo> {
   let url = format!("https://callook.info/{call}/json");
-  let mut res = ureq::get(&url).call().context("callook fetch failed")?;
+  let mut res = crate::util::http_agent()
+    .get(&url)
+    .call()
+    .context("callook fetch failed")?;
   let body = res
     .body_mut()
     .with_config()
@@ -130,7 +133,10 @@ fn from_hamqth(call: &str) -> anyhow::Result<CallsignInfo> {
     urlencode_query(&pass),
     urlencode_query(call)
   );
-  let mut res = ureq::get(&url).call().context("hamqth fetch failed")?;
+  let mut res = crate::util::http_agent()
+    .get(&url)
+    .call()
+    .context("hamqth fetch failed")?;
   let xml = res
     .body_mut()
     .with_config()

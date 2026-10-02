@@ -87,6 +87,7 @@ features = [
   "ServiceWorkerState",
   "ShareData",
   "Storage",
+  "StorageEvent",
   "Touch",
   "TouchEvent",
   "TouchList",

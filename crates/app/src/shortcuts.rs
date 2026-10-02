@@ -1,9 +1,23 @@
-//! 答题快捷键：`←/→` 切题，`1-9` 选择选项（Shift/Cmd 为多选严格选择），`Enter` 打开搜索。
+//! 答题快捷键：`←/→` 切题，`1-9` 选择选项（Shift/Cmd 为多选严格选择），`Enter` 打开搜索，`?` 打开帮助。
 
 use leptos::ev;
 use leptos::prelude::*;
 use send_wrapper::SendWrapper;
 use wasm_bindgen::JsCast;
+
+/// 快捷键说明条目：`(按键, 说明)`。
+///
+/// 这是键位的**唯一数据源**：帮助面板直接渲染它，避免文档与实现各写一份而逐渐脱节。
+/// 均为中文原文，渲染时经 `t()` 翻译。
+pub const SHORTCUT_HELP: &[(&str, &str)] = &[
+  ("← / →", "上一题 / 下一题"),
+  ("1 – 9", "选择对应选项"),
+  ("Shift / Cmd + 数字", "多选题只选这一项"),
+  ("Enter", "打开题目搜索（顺序练习）"),
+  ("/", "打开全站搜索"),
+  ("?", "显示快捷键帮助"),
+  ("Esc", "关闭对话框"),
+];
 
 /// 数字键选择的附加信息。
 #[derive(Debug, Clone, Copy)]
@@ -17,6 +31,8 @@ pub struct Shortcuts {
   pub on_digit: Callback<(usize, DigitDetail)>,
   /// 返回 `true` 时 Enter 打开搜索。
   pub enter_search: Option<(Signal<bool>, Callback<()>)>,
+  /// 按下 `?` 时的回调；为 `None` 时不响应。
+  pub on_help: Option<Callback<()>>,
 }
 
 fn is_typing_target(target: Option<web_sys::EventTarget>) -> bool {
@@ -77,6 +93,13 @@ pub fn use_question_shortcuts(opts: Shortcuts) {
         if let Some((enabled, cb)) = opts.enter_search
           && enabled.get_untracked()
         {
+          e.prevent_default();
+          cb.run(());
+        }
+      }
+      // `?` 唤起快捷键帮助；只有接入方提供了回调才拦截。
+      "?" => {
+        if let Some(cb) = opts.on_help {
           e.prevent_default();
           cb.run(());
         }

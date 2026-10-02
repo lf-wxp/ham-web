@@ -11,7 +11,7 @@ members = [
 default-members = ["crates/core", "crates/server", "crates/tools", "crates/apt"]
 
 [workspace.package]
-version = "0.3.3"
+version = "0.3.4"
 edition = "2024"
 rust-version = "1.88"
 license = "MIT"
@@ -44,7 +44,7 @@ chrono = { version = "0.4.45", default-features = false, features = ["clock", "s
 sgp4 = "2"
 tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "net", "signal", "io-util", "sync"] }
 tower = "0.5"
-tower-http = { version = "0.7", features = ["fs", "compression-gzip", "compression-br", "set-header", "trace"] }
+tower-http = { version = "0.7", features = ["fs", "compression-gzip", "compression-br", "set-header", "trace", "timeout"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 

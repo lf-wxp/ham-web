@@ -2,7 +2,6 @@
 
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use send_wrapper::SendWrapper;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::closure::Closure;
 use web_sys::{File, MessageEvent, Worker};
@@ -13,7 +12,63 @@ use crate::util::{js_error_message, set_title};
 use super::apt_result_view::{AptRender, AptResultView};
 use super::apt_uploader::AptUploader;
 use super::apt_worker::parse_message;
-use crate::i18n::t;
+use crate::i18n::{t, tf};
+
+/// 允许的最大 WAV 体积（字节）。
+///
+/// 解码会在 Worker 里把整段音频读入内存并重采样到 20800 Hz（每采样一个 `f32`），
+/// 峰值内存可达文件体积的数倍。不设上限时，误选一个几百 MB 的录音会直接把标签页
+/// 拖垮；96 MB 足够容纳 44.1 kHz 单声道约 15 分钟 —— 正好是一次典型过境的长度。
+const MAX_BYTES: u64 = 96 * 1024 * 1024;
+
+/// 创建消息回调。
+///
+/// **只创建一次并在所有 Worker 之间复用**：每次取消都新建并 `forget` 一个 `Closure`
+/// 会随操作次数累积泄漏。过期结果靠「换文件 / 取消时 `terminate` 旧 Worker」来丢弃
+/// —— Worker 内的解码是同步的，无法中途打断，只能整体丢弃。
+fn message_handler(
+  result: RwSignal<Option<AptRender>>,
+  error: RwSignal<Option<String>>,
+  processing: RwSignal<bool>,
+) -> js_sys::Function {
+  let cb = Closure::<dyn FnMut(MessageEvent)>::new(move |event: MessageEvent| {
+    let outcome = parse_message(&event.data()).and_then(|p| {
+      AptRender::new(
+        p.width,
+        p.height,
+        p.lines,
+        p.source_sample_rate,
+        p.duration_seconds,
+        p.channel_a,
+        p.channel_b,
+        p.false_color,
+      )
+    });
+    match outcome {
+      Ok(render) => result.set(Some(render)),
+      Err(e) => error.set(Some(if e.is_empty() {
+        t("解码失败，请确认是 APT 音频（WAV）")
+      } else {
+        e
+      })),
+    }
+    processing.set(false);
+  });
+  let f = cb.as_ref().unchecked_ref::<js_sys::Function>().clone();
+  // 回调与页面同生命周期常驻，故意不回收（只此一份）。
+  cb.forget();
+  f
+}
+
+/// 创建一个解码 Worker 并挂好消息回调。
+///
+/// 单独成函数是因为「取消」需要 `terminate` 掉正在解码的 Worker 再重建一个 ——
+/// Worker 内的解码是同步的，无法中途被打断，只能整体丢弃。
+fn spawn_worker(onmessage: &js_sys::Function) -> Option<Worker> {
+  let w = Worker::new("/apt-worker/worker.js").ok()?;
+  w.set_onmessage(Some(onmessage));
+  Some(w)
+}
 
 /// 读取文件字节（通过 Blob.array_buffer）。
 async fn read_file_bytes(file: &File) -> Result<Vec<u8>, String> {
@@ -42,79 +97,95 @@ pub fn AptDecoderPage() -> impl IntoView {
   let result = RwSignal::new(None::<AptRender>);
   let error = RwSignal::new(None::<String>);
   let file_name = RwSignal::new(String::new());
+  // 当前阶段：读取文件与后台解码分开显示，让用户知道卡在哪一步。
+  let reading = RwSignal::new(false);
 
-  // 惰性创建解码 Worker（页面生命周期内复用），并注册一次性消息回调。
-  let worker = SendWrapper::new(Worker::new("/apt-worker/worker.js").ok());
-  if let Some(w) = worker.as_ref() {
-    let cb = Closure::<dyn FnMut(MessageEvent)>::new(move |event: MessageEvent| {
-      let outcome = parse_message(&event.data()).and_then(|p| {
-        AptRender::new(
-          p.width,
-          p.height,
-          p.lines,
-          p.source_sample_rate,
-          p.duration_seconds,
-          p.channel_a,
-          p.channel_b,
-          p.false_color,
-        )
-      });
-      match outcome {
-        Ok(render) => result.set(Some(render)),
-        Err(e) => error.set(Some(if e.is_empty() {
-          t("解码失败，请确认是 APT 音频（WAV）")
-        } else {
-          e
-        })),
-      }
-      processing.set(false);
-    });
-    w.set_onmessage(Some(cb.as_ref().unchecked_ref()));
-    cb.forget();
-  }
+  // 解码批次号。每次开始新任务或取消都会 +1，读取阶段仍在 await 的任务据此判断自己
+  // 是否已经作废；过期 Worker 则靠「换文件 / 取消时 terminate」整体丢弃。
+  let generation = StoredValue::new(0u32);
+  // 回调本身放进 `StoredValue`：`js_sys::Function` 不是 `Copy`，直接捕获会让
+  // `cancel` / `on_file` 变成只能调用一次的 `FnOnce`。
+  let onmessage = StoredValue::new(message_handler(result, error, processing));
 
-  on_cleanup({
-    let worker = worker.clone();
-    move || {
-      if let Some(w) = worker.as_ref() {
-        w.terminate();
-      }
+  // Worker 放在 `StoredValue` 里：取消时要 terminate 掉旧的再换一个新的。
+  let worker = StoredValue::new(spawn_worker(&onmessage.get_value()));
+
+  on_cleanup(move || {
+    if let Some(w) = worker.get_value() {
+      w.terminate();
     }
   });
 
-  let on_file = {
-    let worker = worker.clone();
-    Callback::new(move |file: File| {
-      processing.set(true);
-      error.set(None);
-      result.set(None);
-      file_name.set(file.name());
-      let worker = worker.clone();
-      spawn_local(async move {
-        match read_file_bytes(&file).await {
-          Ok(bytes) => {
-            let ab = to_array_buffer(&bytes);
-            match worker.as_ref() {
-              Some(w) => {
-                if let Err(e) = w.post_message(&ab) {
-                  error.set(Some(js_error_message(&e)));
-                  processing.set(false);
-                }
-              }
-              None => {
-                error.set(Some(t("无法创建解码 Worker，请刷新页面重试")));
+  // 取消当前解码：丢弃正在解码的 Worker，重建一个备用。
+  let cancel = move |_| {
+    if let Some(w) = worker.get_value() {
+      w.terminate();
+    }
+    let n = generation.get_value();
+    generation.set_value(n + 1);
+    worker.set_value(spawn_worker(&onmessage.get_value()));
+    processing.set(false);
+    reading.set(false);
+    error.set(None);
+    file_name.set(String::new());
+  };
+
+  let on_file = Callback::new(move |file: File| {
+    let size = file.size() as u64;
+    if size > MAX_BYTES {
+      let mb = size as f64 / 1024.0 / 1024.0;
+      error.set(Some(tf(
+        "文件过大（约 {} MB），上限 {} MB。解码需要把整段音频载入内存，建议先降采样到 8–16 kHz 单声道，或只截取过境那一段。",
+        &[&format!("{mb:.0}"), &format!("{}", MAX_BYTES / 1024 / 1024)],
+      )));
+      return;
+    }
+    // 每一批解码都换一个新 Worker：上一次的解码在 Worker 里是同步的、无法打断，
+    // 只能整体丢弃，否则它会与这一批抢同一组信号。
+    if let Some(w) = worker.get_value() {
+      w.terminate();
+    }
+    let batch = generation.get_value() + 1;
+    generation.set_value(batch);
+    worker.set_value(spawn_worker(&onmessage.get_value()));
+    processing.set(true);
+    reading.set(true);
+    error.set(None);
+    result.set(None);
+    file_name.set(file.name());
+    spawn_local(async move {
+      match read_file_bytes(&file).await {
+        Ok(bytes) => {
+          // 读取期间用户可能已经取消或换了文件：这一批作废，别再占用新的 Worker。
+          if generation.get_value() != batch {
+            return;
+          }
+          reading.set(false);
+          let ab = to_array_buffer(&bytes);
+          match worker.get_value() {
+            Some(w) => {
+              if let Err(e) = w.post_message(&ab) {
+                error.set(Some(js_error_message(&e)));
                 processing.set(false);
               }
             }
-          }
-          Err(e) => {
-            error.set(Some(e));
-            processing.set(false);
+            None => {
+              error.set(Some(t("无法创建解码 Worker，请刷新页面重试")));
+              processing.set(false);
+            }
           }
         }
-      });
-    })
-  };
+        Err(e) => {
+          if generation.get_value() != batch {
+            return;
+          }
+          error.set(Some(e));
+          processing.set(false);
+          reading.set(false);
+        }
+      }
+    });
+  });
 
   let reset = move |_| {
     result.set(None);
@@ -163,7 +234,30 @@ pub fn AptDecoderPage() -> impl IntoView {
                 view! {
                   <div class="flex flex-col items-center justify-center gap-3 py-8">
                     <Icon kind=IconKind::Loader2 class="h-8 w-8 animate-spin text-primary" />
-                    <span class="text-sm text-muted-foreground">{move || t("正在后台解码，请稍候…")}</span>
+                    <span class="text-sm text-muted-foreground">
+                      {move || {
+                        if reading.get() {
+                          t("正在读取文件…")
+                        } else {
+                          t("正在后台解码，请稍候…")
+                        }
+                      }}
+                    </span>
+                    {move || {
+                      (!file_name.get_untracked().is_empty())
+                        .then(|| {
+                          view! {
+                            <span class="max-w-full truncate text-xs text-muted-foreground">{file_name.get_untracked()}</span>
+                          }
+                        })
+                    }}
+                    <button
+                      type="button"
+                      class="rounded-md border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      on:click=cancel
+                    >
+                      {move || t("取消")}
+                    </button>
                   </div>
                 }
               })

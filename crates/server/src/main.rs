@@ -11,6 +11,7 @@
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Context;
 use axum::Router;
@@ -24,6 +25,7 @@ use axum::routing::{get, post};
 use tower::ServiceExt;
 use tower_http::compression::CompressionLayer;
 use tower_http::services::{ServeDir, ServeFile};
+use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
 mod alerts;
@@ -316,7 +318,22 @@ fn app(cfg: &Config, push_service: push::PushService) -> Router {
     .layer(middleware::from_fn(cache_headers))
     .layer(middleware::from_fn(limit_mw))
     .layer(CompressionLayer::new())
+    // 兜底超时：上游已各自配置 ureq 超时（见 `util::http_agent`），这一层防止
+    // handler 内部因单飞等待、telnet 读取或本地计算异常而无限挂起占住连接。
+    .layer(TimeoutLayer::with_status_code(
+      StatusCode::GATEWAY_TIMEOUT,
+      request_timeout(),
+    ))
     .layer(TraceLayer::new_for_http())
+}
+
+/// 单个请求的兜底超时，可用 `REQUEST_TIMEOUT_SECS` 覆盖（默认 60 秒）。
+fn request_timeout() -> Duration {
+  std::env::var("REQUEST_TIMEOUT_SECS")
+    .ok()
+    .and_then(|s| s.parse::<u64>().ok())
+    .filter(|&s| s > 0)
+    .map_or(Duration::from_secs(60), Duration::from_secs)
 }
 
 async fn shutdown_signal() {
@@ -378,6 +395,13 @@ async fn main() -> anyhow::Result<()> {
   let push_service = push::PushService::default();
   push_service.init()?;
   push_service.clone().spawn_reminder_loop();
+  if push::token_required() {
+    tracing::warn!(
+      "已设置 PUSH_API_TOKEN：/api/push/subscribe 与 /unsubscribe 需要 Bearer 令牌。\
+       浏览器前端是共享的静态资源，无法携带该令牌，因此官方前端将无法订阅；\
+       除非你自行构建前端并注入 Authorization 头，否则请勿设置此变量。"
+    );
+  }
 
   let listener = tokio::net::TcpListener::bind(cfg.addr)
     .await

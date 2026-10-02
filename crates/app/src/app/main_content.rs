@@ -10,10 +10,10 @@ use crate::pages::{
   BeginnerPage, BookmarksPage, BrowsePage, CabrilloPage, CallsignCopyPage, CardsPage,
   CheatSheetPage, ConfusablesPage, ContestCalendarPage, ContestLogPage, ContestPage, CountdownPage,
   CwOpPage, DailyChallengePage, DashboardPage, DvNetworkPage, DxPage, DxSpotsPage, DxccMapPage,
-  DxpeditionPage, ElectronicsPage, EmcommPage, EmePage, EqslPage, ExamPage, FeedlinePage,
-  FiltersPage, FlashcardsPage, FormulasPage, FrequenciesPage, Ft8Page, GlossaryPage, GnuradioPage,
-  GraylinePage, GridMapPage, GridSystemPage, GroundingPage, HistoryPage, HomePage, IotaPage,
-  LicenseClassesPage, LicensePage, ListenPage, LogPage, LoggingSoftwarePage, MetersPage,
+  DxpeditionPage, ElectronicsPage, EmcommPage, EmePage, EqslPage, ExamPage, ExamReviewPage,
+  FeedlinePage, FiltersPage, FlashcardsPage, FormulasPage, FrequenciesPage, Ft8Page, GlossaryPage,
+  GnuradioPage, GraylinePage, GridMapPage, GridSystemPage, GroundingPage, HistoryPage, HomePage,
+  IotaPage, LicenseClassesPage, LicensePage, ListenPage, LogPage, LoggingSoftwarePage, MetersPage,
   MicrowavePage, MistakeTopicsPage, MistakesPage, MobilePage, ModesPage, MorsePage, MostWantedPage,
   MufPage, NotFoundPage, NotificationsPage, NvisPage, OperatingPage, OrganizationsPage, PacketPage,
   PhoneticPage, PhotoProcessorPage, PolarizationPage, PortableMapPage, PortablePage, PowerPage,
@@ -146,6 +146,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/achievements") view=AchievementsPage />
         <Route path=path!("/weekly") view=WeeklyPage />
         <Route path=path!("/report") view=ReportPage />
+        <Route path=path!("/exam-review") view=ExamReviewPage />
         <Route path=path!("/grid-map") view=GridMapPage />
         <Route path=path!("/dxcc-map") view=DxccMapPage />
         <Route path=path!("/grayline") view=GraylinePage />

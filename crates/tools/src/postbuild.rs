@@ -8,6 +8,7 @@
 //! 5. 为文本类资源（wasm / js / css / json / svg / html）预生成 `.br`（质量 11）与 `.gz`
 //!    （级别 9），由服务端 `ServeDir::precompressed_*` 直接返回，比运行时压缩更小且不耗 CPU。
 
+use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::fs;
 use std::path::Path;
@@ -324,7 +325,9 @@ fn replace_site_url(dist: &Path, site_url: &str) -> Result<()> {
   Ok(())
 }
 
-pub fn run(dist: &Path, site_url: &str) -> Result<()> {
+/// `root` 为项目根目录：译文源文件 `data/knowledge-i18n/` 位于源码树而不是 `dist` 中，
+/// 必须显式传入，不能依赖进程当前工作目录（否则换个目录执行会静默漏掉全部译文）。
+pub fn run(root: &Path, dist: &Path, site_url: &str) -> Result<()> {
   ensure!(
     dist.join("index.html").is_file(),
     "{} 不存在，请先执行 trunk build",
@@ -335,6 +338,7 @@ pub fn run(dist: &Path, site_url: &str) -> Result<()> {
   write_sitemap(dist, site_url)?;
   stamp_bank_revisions(dist)?;
   write_question_search_index(dist)?;
+  write_knowledge_i18n(root, dist)?;
   write_changelog(dist)?;
   write_service_worker(dist)?;
   precompress(dist)?;
@@ -370,6 +374,44 @@ fn write_question_search_index(dist: &Path) -> Result<()> {
     "Generated questions/search-index.json ({} entries)",
     entries.len()
   );
+  Ok(())
+}
+
+/// 把 `data/knowledge-i18n/{lang}/{module}.json` 合并为每种语言一个文件供前端按需加载。
+///
+/// 知识库正文按模块分批翻译，构建时再合并：这样翻译进度可以随时推进，而前端只需要
+/// 关心「当前语言有没有这条译文」。源目录取自 `root`（源码树），与 `dist` 无关。
+fn write_knowledge_i18n(root: &Path, dist: &Path) -> Result<()> {
+  let src_dir = root.join("data/knowledge-i18n");
+  let mut total = 0usize;
+  for lang in ["en", "es"] {
+    let lang_dir = src_dir.join(lang);
+    let mut merged: BTreeMap<String, String> = BTreeMap::new();
+    let Ok(entries) = fs::read_dir(&lang_dir) else {
+      continue;
+    };
+    for e in entries.flatten() {
+      let p = e.path();
+      if p.extension().is_some_and(|x| x == "json") {
+        let dict: BTreeMap<String, String> = serde_json::from_slice(&fs::read(&p)?)?;
+        merged.extend(dict);
+      }
+    }
+    let out_dir = dist.join("data/knowledge-i18n");
+    fs::create_dir_all(&out_dir)?;
+    fs::write(
+      out_dir.join(format!("{lang}.json")),
+      serde_json::to_vec(&merged)?,
+    )?;
+    total += merged.len();
+    println!(
+      "Generated data/knowledge-i18n/{lang}.json ({} entries)",
+      merged.len()
+    );
+  }
+  if total == 0 {
+    println!("No knowledge translations yet (data/knowledge-i18n/)");
+  }
   Ok(())
 }
 

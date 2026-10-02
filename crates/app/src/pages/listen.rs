@@ -106,7 +106,7 @@ async fn say(text: &str, rate: f32) {
   let (Some(synth), Ok(u)) = (synth(), SpeechSynthesisUtterance::new_with_text(text)) else {
     return;
   };
-  u.set_lang("zh-CN");
+  u.set_lang(crate::speech::content_lang());
   u.set_rate(rate);
   #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
   let timeout = (text.chars().count() as f32 * 450.0 / rate) as i32 + 4000;

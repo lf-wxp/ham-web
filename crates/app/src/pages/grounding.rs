@@ -3,6 +3,7 @@
 use ham_web_core::grounding::{GROUND_TYPES, GROUNDING_PRACTICE, GROUNDING_TIPS, SURGE_DEVICES};
 use leptos::prelude::*;
 
+use crate::components::common::{BulletSection, ConceptsSection, KnowledgePage};
 use crate::i18n::t;
 use crate::util::set_title;
 
@@ -10,85 +11,11 @@ use crate::util::set_title;
 pub fn GroundingPage() -> impl IntoView {
   set_title(&t("接地与防雷"));
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("接地与防雷")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("射频接地 · 防雷接地 · 浪涌保护")}</div>
-          </div>
-        </div>
-      </header>
-
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
-        <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("接地类型")}</h2>
-          <div class="grid gap-1 p-4 sm:grid-cols-2">
-            {GROUND_TYPES
-              .iter()
-              .map(|&(t, d)| {
-                view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
-                    <span class="text-sm text-muted-foreground">{d}</span>
-                  </div>
-                }
-              })
-              .collect_view()}
-          </div>
-        </section>
-
-        <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("接地做法")}</h2>
-          <div class="grid gap-1 p-4 sm:grid-cols-2">
-            {GROUNDING_PRACTICE
-              .iter()
-              .map(|&(t, d)| {
-                view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
-                    <span class="text-sm text-muted-foreground">{d}</span>
-                  </div>
-                }
-              })
-              .collect_view()}
-          </div>
-        </section>
-
-        <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("防雷器件")}</h2>
-          <div class="grid gap-1 p-4 sm:grid-cols-2">
-            {SURGE_DEVICES
-              .iter()
-              .map(|&(t, d)| {
-                view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
-                    <span class="text-sm text-muted-foreground">{d}</span>
-                  </div>
-                }
-              })
-              .collect_view()}
-          </div>
-        </section>
-
-        <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("防雷操作要点")}</h2>
-          <ul class="space-y-2 p-4">
-            {GROUNDING_TIPS
-              .iter()
-              .map(|tip| {
-                view! {
-                  <li class="flex gap-2 text-sm text-muted-foreground">
-                    <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-                    <span>{*tip}</span>
-                  </li>
-                }
-              })
-              .collect_view()}
-          </ul>
-        </section>
-      </div>
-    </div>
+    <KnowledgePage title=t("接地与防雷") subtitle=t("射频接地 · 防雷接地 · 浪涌保护")>
+      <ConceptsSection title="接地类型" items=GROUND_TYPES />
+      <ConceptsSection title="接地做法" items=GROUNDING_PRACTICE />
+      <ConceptsSection title="防雷器件" items=SURGE_DEVICES />
+      <BulletSection title="防雷操作要点" items=GROUNDING_TIPS />
+    </KnowledgePage>
   }
 }

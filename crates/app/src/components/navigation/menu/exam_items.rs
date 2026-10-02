@@ -73,4 +73,9 @@ pub(crate) const EXAM_ITEMS: &[NavItem] = &[
     label: "备考日历",
     icon: IconKind::Timer,
   },
+  NavItem {
+    href: "/exam-review",
+    label: "考后复盘",
+    icon: IconKind::ClipboardList,
+  },
 ];

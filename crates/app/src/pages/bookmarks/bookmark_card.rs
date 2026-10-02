@@ -1,8 +1,10 @@
 use ham_web_core::QuestionItem;
 use leptos::prelude::*;
 
+use crate::components::common::NoteEditor;
 use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
+use crate::store;
 
 /// 一道收藏题卡片；`groups_of` 为该题当前所属分组，`all_groups` 为全部分组（用于下拉加入）。
 #[component]
@@ -21,6 +23,13 @@ pub(super) fn BookmarkCard(
   let q = question.clone();
   let q_add = question.clone();
   let pick = RwSignal::new(String::new());
+  // 笔记按需展开：收藏列表可能很长，每题都铺开一个输入框会把页面撑得没法浏览。
+  let q_note = question.clone();
+  let note_id = Signal::derive(move || q_note.stable_id().unwrap_or_default());
+  let note_open = RwSignal::new(false);
+  // 已有笔记的题目标出来，省得逐条展开去找（笔记保存后展开状态会重渲染，此处够用）。
+  let q_has_note = question.clone();
+  let has_note = store::load_note(&q_has_note.stable_id().unwrap_or_default()).is_some();
   view! {
     <div class="rounded-xl border bg-card p-4">
       <div class="mb-2 flex items-start gap-2">
@@ -50,7 +59,7 @@ pub(super) fn BookmarkCard(
           .collect_view()}
       </div>
       <div class="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
-        "答案：" <span class="font-mono font-semibold">{question.answer_keys.join("、")}</span>
+        {move || t("答案：")} <span class="font-mono font-semibold">{question.answer_keys.join("、")}</span>
       </div>
       <div class="mt-3 flex flex-wrap items-center gap-1.5 border-t pt-2">
         <span class="text-xs text-muted-foreground">{move || t("分组")}</span>
@@ -92,7 +101,29 @@ pub(super) fn BookmarkCard(
             </select>
           }
         })}
+        <button
+          type="button"
+          class="ml-auto inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent"
+          aria-expanded=move || note_open.get().to_string()
+          on:click=move |_| note_open.update(|v| *v = !*v)
+        >
+          {move || t("笔记")}
+          {has_note.then(|| {
+            view! { <span class="size-1.5 rounded-full bg-primary"></span> }
+          })}
+        </button>
       </div>
+      {move || {
+        note_open
+          .get()
+          .then(|| {
+            view! {
+              <div class="mt-3">
+                <NoteEditor question_id=note_id />
+              </div>
+            }
+          })
+      }}
     </div>
   }
 }

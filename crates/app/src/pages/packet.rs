@@ -3,6 +3,7 @@
 use ham_web_core::packet::{PACKET_APPS, PACKET_CONCEPTS, PACKET_TIPS};
 use leptos::prelude::*;
 
+use crate::components::common::{BulletSection, ConceptsSection, KnowledgePage};
 use crate::i18n::t;
 use crate::util::set_title;
 
@@ -10,68 +11,10 @@ use crate::util::set_title;
 pub fn PacketPage() -> impl IntoView {
   set_title(&t("Packet Radio 分组无线电"));
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("Packet Radio 分组无线电")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("AX.25 · TNC · Winlink 邮件网关")}</div>
-          </div>
-        </div>
-      </header>
-
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
-        <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("核心概念")}</h2>
-          <div class="grid gap-1 p-4 sm:grid-cols-2">
-            {PACKET_CONCEPTS
-              .iter()
-              .map(|&(t, d)| {
-                view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
-                    <span class="text-sm text-muted-foreground">{d}</span>
-                  </div>
-                }
-              })
-              .collect_view()}
-          </div>
-        </section>
-
-        <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("典型应用")}</h2>
-          <div class="grid gap-1 p-4 sm:grid-cols-2">
-            {PACKET_APPS
-              .iter()
-              .map(|&(t, d)| {
-                view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
-                    <span class="text-sm text-muted-foreground">{d}</span>
-                  </div>
-                }
-              })
-              .collect_view()}
-          </div>
-        </section>
-
-        <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("操作要点")}</h2>
-          <ul class="space-y-2 p-4">
-            {PACKET_TIPS
-              .iter()
-              .map(|tip| {
-                view! {
-                  <li class="flex gap-2 text-sm text-muted-foreground">
-                    <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-                    <span>{*tip}</span>
-                  </li>
-                }
-              })
-              .collect_view()}
-          </ul>
-        </section>
-      </div>
-    </div>
+    <KnowledgePage title=t("Packet Radio 分组无线电") subtitle=t("AX.25 · TNC · Winlink 邮件网关")>
+      <ConceptsSection title="核心概念" items=PACKET_CONCEPTS />
+      <ConceptsSection title="典型应用" items=PACKET_APPS />
+      <BulletSection title="操作要点" items=PACKET_TIPS />
+    </KnowledgePage>
   }
 }

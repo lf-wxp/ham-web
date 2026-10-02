@@ -31,7 +31,10 @@ struct IssPayload {
 
 /// 拉取并解析 ISS 位置（同步，在 `spawn_blocking` 中执行）。
 fn fetch_and_parse() -> anyhow::Result<IssPayload> {
-  let mut res = ureq::get(ISS_URL).call().context("fetch ISS failed")?;
+  let mut res = crate::util::http_agent()
+    .get(ISS_URL)
+    .call()
+    .context("fetch ISS failed")?;
   let body = res
     .body_mut()
     .with_config()

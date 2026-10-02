@@ -38,7 +38,8 @@ struct WantedPayload {
 
 /// 拉取并解析 Club Log（同步，在 `spawn_blocking` 中执行）。
 fn fetch_and_parse() -> anyhow::Result<WantedPayload> {
-  let mut res = ureq::get(CLUBLOG_URL)
+  let mut res = crate::util::http_agent()
+    .get(CLUBLOG_URL)
     .call()
     .context("fetch Club Log failed")?;
   let body = res

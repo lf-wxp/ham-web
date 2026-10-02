@@ -56,10 +56,14 @@ pub fn read_json<T: DeserializeOwned>(path: &Path) -> Result<T> {
 }
 
 /// 以 2 空格缩进写 JSON（与 `JSON.stringify(v, null, 2)` 输出一致）。
+///
+/// 末尾补一个换行：仓库里的 JSON 都以换行结尾，缺了会让每次提交都带一个
+/// 「\ No newline at end of file」噪声，也会让 `git diff` 出现整行重写。
 pub fn write_json<T: Serialize + ?Sized>(path: &Path, value: &T) -> Result<()> {
   if let Some(dir) = path.parent() {
     fs::create_dir_all(dir).with_context(|| format!("failed to create {}", dir.display()))?;
   }
-  let text = serde_json::to_string_pretty(value)?;
+  let mut text = serde_json::to_string_pretty(value)?;
+  text.push('\n');
   fs::write(path, text).with_context(|| format!("failed to write {}", path.display()))
 }

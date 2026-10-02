@@ -98,7 +98,10 @@ struct PotaUpstream {
 /// 拉取并解析 SOTA 山峰。
 fn fetch_summit(r: &str) -> anyhow::Result<String> {
   let url = format!("https://api2.sota.org.uk/api/summits/{r}");
-  let mut res = ureq::get(&url).call().context("sota fetch failed")?;
+  let mut res = crate::util::http_agent()
+    .get(&url)
+    .call()
+    .context("sota fetch failed")?;
   let body = res
     .body_mut()
     .with_config()
@@ -121,7 +124,10 @@ fn fetch_summit(r: &str) -> anyhow::Result<String> {
 /// 拉取并解析 POTA 公园。
 fn fetch_park(r: &str) -> anyhow::Result<String> {
   let url = format!("https://api.pota.app/park/{r}");
-  let mut res = ureq::get(&url).call().context("pota fetch failed")?;
+  let mut res = crate::util::http_agent()
+    .get(&url)
+    .call()
+    .context("pota fetch failed")?;
   let body = res
     .body_mut()
     .with_config()

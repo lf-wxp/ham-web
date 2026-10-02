@@ -146,7 +146,10 @@ fn fetch(lat: f64, lon: f64) -> anyhow::Result<GeocodeResult> {
   let url = format!(
     "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude={lat}&longitude={lon}&localityLanguage=zh"
   );
-  let mut res = ureq::get(&url).call().context("fetch geocode failed")?;
+  let mut res = crate::util::http_agent()
+    .get(&url)
+    .call()
+    .context("fetch geocode failed")?;
   let body = res
     .body_mut()
     .with_config()

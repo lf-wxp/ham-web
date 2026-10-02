@@ -25,6 +25,12 @@ struct VoacapResponse {
   fo_f2: f64,
   muf: f64,
   bands: Vec<BandResult>,
+  /// 路径中点的地方时（0–24）；未指定时刻时为 `None`。
+  ///
+  /// 判断「有没有指定时刻」就靠它：`hour_utc` 只是输入回显，界面上要看的是地方时。
+  local_hour: Option<f64>,
+  /// 昼夜衰减因子（0.35–1）。
+  diurnal: f64,
 }
 
 const INPUT: &str = "h-10 rounded-lg border bg-background px-3 text-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
@@ -36,6 +42,8 @@ pub(super) fn VoacapCard() -> impl IntoView {
   let rx = RwSignal::new(String::new());
   let month = RwSignal::new(10u32);
   let ssn = RwSignal::new(100.0);
+  // `None` 表示不指定时刻（按路径日照最佳情况估算）。
+  let hour = RwSignal::new(None::<u32>);
   let result = RwSignal::new(None::<VoacapResponse>);
   let loading = RwSignal::new(false);
   let failed = RwSignal::new(false);
@@ -49,10 +57,14 @@ pub(super) fn VoacapCard() -> impl IntoView {
     }
     loading.set(true);
     failed.set(false);
+    let hour_param = hour
+      .get()
+      .map_or_else(String::new, |h| format!("&hour={h}"));
     let url = format!(
-      "/api/voacap?tx={tx_g}&rx={rx_g}&month={}&ssn={}",
+      "/api/voacap?tx={tx_g}&rx={rx_g}&month={}&ssn={}{}",
       month.get(),
-      ssn.get()
+      ssn.get(),
+      hour_param
     );
     spawn_local(async move {
       match data::fetch_external_json::<VoacapResponse>(&url).await {
@@ -67,7 +79,7 @@ pub(super) fn VoacapCard() -> impl IntoView {
     <section class="rounded-xl border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("点对点传播预测")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
-        {move || t("输入双方网格与月份、太阳黑子数（可到「太阳活动」页查看当前值），估算两点间各波段的可用性与可靠度（简化模型，仅供参考）。")}
+        {move || t("输入双方网格与月份、太阳黑子数（可到「太阳活动」页查看当前值），估算两点间各波段的可用性与可靠度。指定 UTC 时刻后会按路径中点的日照情况修正，昼夜差异很大；不选则按最佳时段估算（简化模型，仅供参考）。")}
       </p>
       <div class="grid gap-3 p-4 sm:grid-cols-[1fr_1fr_auto_auto_auto]">
         <input
@@ -112,6 +124,22 @@ pub(super) fn VoacapCard() -> impl IntoView {
           }
           class=INPUT
         />
+        <select
+          aria-label=move || t("UTC 时刻")
+          prop:value=move || hour.get().map_or_else(String::new, |h| h.to_string())
+          on:change=move |e| {
+            let v = event_target_value(&e);
+            hour.set(if v.is_empty() { None } else { v.parse::<u32>().ok() });
+          }
+          class=input_class("w-28")
+        >
+          <option value="">{move || t("最佳时段")}</option>
+          {(0..24u32)
+            .map(|h| {
+              view! { <option value=h.to_string()>{format!("{h:02}:00 UTC")}</option> }
+            })
+            .collect_view()}
+        </select>
         <button type="button" class=button_class(Variant::Default, Size::Default, "") on:click=move |_| run()>
           {move || if loading.get() { t("预测中…") } else { t("预测") }}
         </button>
@@ -135,6 +163,26 @@ pub(super) fn VoacapCard() -> impl IntoView {
                     <span>"foF2 " <b class="tabular-nums">{format!("{:.1} MHz", r.fo_f2)}</b></span>
                     <span>"MUF " <b class="tabular-nums">{format!("{:.1} MHz", r.muf)}</b></span>
                   </div>
+                  <p class="text-xs text-muted-foreground">
+                    {move || {
+                      r.local_hour
+                        .map(|lh| {
+                          // 先按分钟取整再拆分时/分：否则 23.996h 会因分钟四舍五入到 60
+                          // 而显示成「23:00」而不是进位到「00:00」。
+                          let total_min = (lh * 60.0).round() as u32 % (24 * 60);
+                          // `tf` 按 `{}` 出现顺序替换，格式化需在参数侧完成。
+                          tf(
+                            "路径中点地方时约 {}:{}，电离程度约为正午的 {}%",
+                            &[
+                              &format!("{:02}", total_min / 60),
+                              &format!("{:02}", total_min % 60),
+                              &format!("{:.0}", r.diurnal * 100.0),
+                            ],
+                          )
+                        })
+                        .unwrap_or_else(|| t("未指定时刻：按路径日照最佳情况估算"))
+                    }}
+                  </p>
                   <div class="space-y-1.5">
                     {r.bands
                       .iter()

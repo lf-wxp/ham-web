@@ -77,7 +77,10 @@ fn unwrap_jsonp(s: &str) -> &str {
 /// 拉取并解析 PSK Reporter。
 fn fetch_and_parse(call: &str) -> anyhow::Result<Vec<PskReport>> {
   let url = format!("https://pskreporter.info/pskqueryapi?senderCallsign={call}");
-  let mut res = ureq::get(&url).call().context("fetch pskreporter failed")?;
+  let mut res = crate::util::http_agent()
+    .get(&url)
+    .call()
+    .context("fetch pskreporter failed")?;
   let body = res
     .body_mut()
     .with_config()

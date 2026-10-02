@@ -62,7 +62,8 @@ fn flare_class(flux: f64) -> &'static str {
 
 /// 拉取并解析（同步，在 `spawn_blocking` 中执行）。
 fn fetch_and_parse() -> anyhow::Result<XrayPayload> {
-  let mut res = ureq::get(XRAY_URL)
+  let mut res = crate::util::http_agent()
+    .get(XRAY_URL)
     .call()
     .context("fetch GOES xray failed")?;
   let body = res

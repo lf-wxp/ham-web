@@ -1,6 +1,6 @@
 //! 全局搜索命令面板：`/` 快捷键或导航栏搜索按钮唤起，居中弹出、不打断当前流程。
 
-use ham_web_core::search::search;
+use ham_web_core::search::{search, tokenize};
 use leptos::prelude::*;
 
 use crate::data;
@@ -9,8 +9,12 @@ use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
 use crate::ui::{Dialog, input_class};
 
-/// 搜索结果分组：`(页面名, 路由, [(标题, 内容)])`。
-type SearchGroup = (String, String, Vec<(String, String)>);
+/// 搜索结果分组：`(页面名, [(标题, 链接, 内容)])`。
+///
+/// 链接随**条目**走而不是随分组走：题目命中的 `href` 含 bank（`/browse?bank=…`），
+/// 同一个「题库」分组里会有多个不同链接；若把 `href` 挂在分组上，组内所有条目都会
+/// 跳向第一条命中的链接。
+type SearchGroup = (String, Vec<(String, String, String)>);
 
 /// HTML 转义。
 fn escape_html(s: &str) -> String {
@@ -20,26 +24,84 @@ fn escape_html(s: &str) -> String {
     .replace('"', "&quot;")
 }
 
+/// 找出 `term` 在 `text` 中的全部命中区间（字节区间，必定落在字符边界上）。
+///
+/// 不能直接拿 `text.to_lowercase()` 的字节偏移去切原文：少数字符小写化后字节数会变
+/// （如 `İ` → `i̇`，2 字节变 3 字节），偏移一旦漂移，`text[s..e]` 就可能落在 UTF-8
+/// 字符中间而 panic —— 在 CSR 里那意味着整页白屏。因此这里分两条路：长度不变时走快的
+/// 子串查找并逐条校验边界，长度变化时退回到逐字符比较。
+fn match_ranges(text: &str, term: &str) -> Vec<(usize, usize)> {
+  let mut out = Vec::new();
+  let lower = text.to_lowercase();
+  if lower.len() == text.len() {
+    // 快路径：小写化未改变字节长度（ASCII / 中文都是这种情况），偏移可直接映射。
+    let mut from = 0;
+    while let Some(pos) = lower[from..].find(term) {
+      let (start, end) = (from + pos, from + pos + term.len());
+      if text.get(start..end).is_some() {
+        out.push((start, end));
+      }
+      from = (start + term.len()).max(start + 1);
+    }
+    return out;
+  }
+  // 慢路径：在原文的字符边界上逐点比较。慢，但绝不会切出非法切片。
+  let n = term.chars().count();
+  for (i, _) in text.char_indices() {
+    if text[i..].chars().count() < n {
+      break;
+    }
+    let hit = text[i..]
+      .chars()
+      .zip(term.chars())
+      .all(|(a, b)| a.to_lowercase().eq(b.to_lowercase()));
+    if hit {
+      let end = i + text[i..].chars().take(n).map(char::len_utf8).sum::<usize>();
+      out.push((i, end));
+    }
+  }
+  out
+}
+
 /// 高亮文本中的关键词（忽略大小写），返回 HTML。
 ///
+/// 查询串会被切成多个检索词分别高亮 —— 与检索侧的多词 AND 匹配保持一致，
+/// 否则搜「天线 驻波比」时结果能出来却一个字都不高亮。
+///
 /// 在原始文本上定位关键词、再对非匹配片段做转义，避免关键词命中 `&amp;` 等
-/// HTML 实体内部而破坏标记。
+/// HTML 实体内部而破坏标记。多个词的命中区间先合并再输出，避免嵌套 `<mark>`。
 fn highlight(text: &str, query: &str) -> String {
-  let q = query.trim();
-  if q.is_empty() {
+  let terms = tokenize(query);
+  if terms.is_empty() {
     return escape_html(text);
   }
-  let lower = text.to_lowercase();
-  let ql = q.to_lowercase();
+  let mut ranges: Vec<(usize, usize)> = Vec::new();
+  for t in &terms {
+    ranges.extend(match_ranges(text, t));
+  }
+  if ranges.is_empty() {
+    return escape_html(text);
+  }
+  ranges.sort_unstable();
+  let mut merged: Vec<(usize, usize)> = Vec::new();
+  for (s, e) in ranges {
+    match merged.last_mut() {
+      Some(last) if s <= last.1 => last.1 = last.1.max(e),
+      _ => merged.push((s, e)),
+    }
+  }
+
   let mut result = String::new();
   let mut last = 0;
-  while let Some(pos) = lower[last..].find(&ql) {
-    let start = last + pos;
-    result.push_str(&escape_html(&text[last..start]));
+  for (s, e) in merged {
+    if s < last {
+      continue;
+    }
+    result.push_str(&escape_html(&text[last..s]));
     result.push_str("<mark class=\"rounded-sm bg-primary/20 px-0.5 text-primary\">");
-    result.push_str(&escape_html(&text[start..start + q.len()]));
+    result.push_str(&escape_html(&text[s..e]));
     result.push_str("</mark>");
-    last = start + q.len();
+    last = e;
   }
   result.push_str(&escape_html(&text[last..]));
   result
@@ -47,8 +109,10 @@ fn highlight(text: &str, query: &str) -> String {
 
 /// 术语表 / 简语关键词搜索（运行时 JSON 数据），返回 `(页面名, 路由, 标题, 内容)`。
 fn search_glossary(query: &str) -> Vec<(&'static str, &'static str, String, String)> {
-  let q = query.trim().to_lowercase();
-  if q.is_empty() {
+  // 与知识库检索一致地切词：搜「天线 驻波比」要的是同时含两个词的条目，
+  // 而不是把「天线 驻波比」整串（含空格）当一个子串去查 —— 后者永远查不到。
+  let terms = tokenize(query);
+  if terms.is_empty() {
     return Vec::new();
   }
   let Some(glossary) = data::glossary_loaded() else {
@@ -58,8 +122,14 @@ fn search_glossary(query: &str) -> Vec<(&'static str, &'static str, String, Stri
     .entries()
     .iter()
     .filter_map(|e| {
-      let rank = e.match_rank(&q)?;
+      // 多词 AND：每个词都要命中，整体排名取最弱的那个词（否则「一个词很匹配、
+      // 另一个词只是提到」的条目会挤到前面）。
+      let mut worst = 0u8;
+      for t in &terms {
+        worst = worst.max(e.match_rank(t)?);
+      }
       let is_slang = e.category_key() == SLANG_CATEGORY;
+      let rank = worst;
       let (page, href) = if is_slang {
         ("简语", "/q-code")
       } else {
@@ -88,16 +158,21 @@ fn truncate(s: &str, max: usize) -> String {
 
 /// 题库题目搜索（题干 + 解析），返回 `(页面, 路由, 题干, 解析片段)`。
 fn search_questions(query: &str) -> Vec<(String, String, String, String)> {
-  let q = query.trim().to_lowercase();
-  if q.is_empty() {
+  let terms = tokenize(query);
+  if terms.is_empty() {
     return Vec::new();
   }
   let Some(index) = data::question_index_loaded() else {
     return Vec::new();
   };
+  // 链接里的查询串必须编码：含空格、`&`、`#` 时未编码会把 URL 截断或注入额外参数。
+  let href_q = crate::util::encode_uri_component(query.trim());
   let mut matched: Vec<(String, String, String, String)> = index
     .iter()
-    .filter(|e| e.search_text().contains(&q))
+    .filter(|e| {
+      let text = e.search_text();
+      terms.iter().all(|t| text.contains(t.as_str()))
+    })
     .take(20)
     .map(|e| {
       let title = truncate(&e.q, 42);
@@ -108,7 +183,7 @@ fn search_questions(query: &str) -> Vec<(String, String, String, String)> {
       };
       (
         "题库".to_owned(),
-        format!("/browse?bank={}&q={}", e.bank, query.trim()),
+        format!("/browse?bank={}&q={href_q}", e.bank),
         title,
         text,
       )
@@ -117,6 +192,58 @@ fn search_questions(query: &str) -> Vec<(String, String, String, String)> {
   // 题干越短通常越精确，靠前展示。
   matched.sort_by_key(|a| a.2.chars().count());
   matched
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn escapes_html_outside_matches() {
+    assert_eq!(highlight("a<b", "zzz"), "a&lt;b");
+    assert_eq!(
+      highlight("a<b", "a"),
+      "<mark class=\"rounded-sm bg-primary/20 px-0.5 text-primary\">a</mark>&lt;b"
+    );
+  }
+
+  #[test]
+  fn highlights_every_term() {
+    let out = highlight("天线与驻波比", "天线 驻波比");
+    assert_eq!(out.matches("<mark").count(), 2, "{out}");
+  }
+
+  #[test]
+  fn merges_overlapping_ranges() {
+    // 「ab」与「bc」的命中区间重叠，合并后只应产生一个 <mark>，不能嵌套。
+    let out = highlight("abc", "ab bc");
+    assert_eq!(out.matches("<mark").count(), 1, "{out}");
+    assert!(out.contains(">abc<"), "{out}");
+  }
+
+  #[test]
+  fn empty_query_is_plain_escaped() {
+    assert_eq!(highlight("x&y", ""), "x&amp;y");
+    assert_eq!(highlight("x&y", "   "), "x&amp;y");
+  }
+
+  #[test]
+  fn survives_lowercasing_that_changes_byte_length() {
+    // `İ` 小写后从 2 字节变 3 字节，小写串的偏移无法映射回原文。
+    // 这里验证的是「不 panic 且仍能正确高亮」—— 直接切片会在这里崩掉整页。
+    let out = highlight("İstanbul 天线", "天线");
+    assert!(out.contains("<mark"), "{out}");
+    assert!(out.contains("İstanbul"), "{out}");
+    // 纯 ASCII / 中文（小写化不改变长度）走快路径，同样要高亮出来。
+    assert!(highlight("istanbul 天线", "天线").contains("<mark"));
+  }
+
+  #[test]
+  fn encodes_query_in_question_links() {
+    // 查询串里的空格与 `&` 必须编码，否则链接会被截断。
+    assert_eq!(crate::util::encode_uri_component("a b"), "a%20b");
+    assert_eq!(crate::util::encode_uri_component("a&b=c"), "a%26b%3Dc");
+  }
 }
 
 /// 全局搜索命令面板。开闭状态由 App 层 `provide_context::<RwSignal<bool>>()` 提供。
@@ -204,9 +331,9 @@ pub fn SearchDialog() -> impl IntoView {
 
             let mut groups: Vec<SearchGroup> = Vec::new();
             for (page, href, title, text) in raw.into_iter().take(30) {
-              match groups.iter_mut().find(|(p, _, _)| p == &page) {
-                Some((_, _, items)) => items.push((title, text)),
-                None => groups.push((page, href, vec![(title, text)])),
+              match groups.iter_mut().find(|(p, _)| p == &page) {
+                Some((_, items)) => items.push((title, href, text)),
+                None => groups.push((page, vec![(title, href, text)])),
               }
             }
             let keyword = trimmed.to_owned();
@@ -215,7 +342,7 @@ pub fn SearchDialog() -> impl IntoView {
               <div class="space-y-3">
                 {groups
                   .into_iter()
-                  .map(|(page, href, items)| {
+                  .map(|(page, items)| {
                     let keyword = keyword.clone();
                     view! {
                       <div>
@@ -226,9 +353,8 @@ pub fn SearchDialog() -> impl IntoView {
                         <ul class="space-y-0.5">
                           {items
                             .into_iter()
-                            .map(|(title, text)| {
+                            .map(|(title, href, text)| {
                               let kw = keyword.clone();
-                              let href = href.clone();
                               view! {
                                 <li>
                                   <a

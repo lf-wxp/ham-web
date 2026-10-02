@@ -1031,17 +1031,109 @@ pub fn knowledge_index() -> &'static [SearchEntry] {
   INDEX.get_or_init(build_index)
 }
 
-/// 按关键词搜索，返回匹配条目（忽略大小写）。
+/// 搜索结果条数上限。
+///
+/// 早期版本返回**全部**命中：搜「天线」这类高频词会一次返回数百条，既拖慢渲染
+/// 也让用户找不到真正想要的。这里截断到最相关的若干条。
+pub const MAX_RESULTS: usize = 50;
+
+/// 一条搜索命中（含相关度得分）。
+#[derive(Debug, Clone, Copy)]
+pub struct SearchHit {
+  /// 命中的条目。
+  pub entry: &'static SearchEntry,
+  /// 相关度得分，越大越相关。
+  pub score: u32,
+}
+
+/// 把查询串切成检索词：按空白与常见中英文顿句符切分。
+///
+/// 中文没有可用的分词词典，因此不做分词；但「天线 驻波比」这类多词查询很常见，
+/// 切成两个词后按 AND 匹配，比把整串（含空格）当成一个子串去查实用得多。
+///
+/// 对外公开：前端（术语表 / 题库搜索、关键词高亮）必须与检索侧用同一套切词规则，
+/// 否则会出现「搜得到但不高亮」「知识库有结果而题库没有」这类割裂。
 #[must_use]
-pub fn search(query: &str) -> Vec<&'static SearchEntry> {
-  let q = query.trim();
-  if q.is_empty() {
+pub fn tokenize(query: &str) -> Vec<String> {
+  query
+    .split(|c: char| c.is_whitespace() || matches!(c, '、' | ',' | '，' | '；' | ';' | '/'))
+    .map(str::trim)
+    .filter(|s| !s.is_empty())
+    .map(str::to_lowercase)
+    .collect()
+}
+
+/// 字节偏移 → 字符偏移。
+///
+/// `str::find` 返回的是字节偏移，而中文一个字占 3 字节：直接拿字节偏移算位置分，
+/// 中文条目的附加分会比英文条目衰减快三倍，排序被无谓地打偏。`find` 的返回值一定
+/// 落在字符边界上，因此这里切片是安全的。
+fn char_offset(s: &str, byte_pos: usize) -> usize {
+  s[..byte_pos].chars().count()
+}
+
+/// 命中位置越靠前越相关（按**字符**计位），附加分 0–9。
+fn position_bonus(pos: usize) -> u32 {
+  9 - (pos / 16).min(9) as u32
+}
+
+/// 单个检索词在某条目上的得分；未命中返回 `None`。
+fn score_term(entry: &SearchEntry, term: &str) -> Option<u32> {
+  if let Some(pos) = entry.title_lower.find(term) {
+    // 标题完全等于查询词 > 标题前缀命中 > 标题中间命中
+    let base = if entry.title_lower.len() == term.len() {
+      100
+    } else if pos == 0 {
+      60
+    } else {
+      40
+    };
+    return Some(base + position_bonus(char_offset(&entry.title_lower, pos)));
+  }
+  if let Some(pos) = entry.text_lower.find(term) {
+    let base = if pos == 0 { 20 } else { 10 };
+    return Some(base + position_bonus(char_offset(&entry.text_lower, pos)));
+  }
+  None
+}
+
+/// 某条目对整条查询的得分；有任一词未命中则整条不算命中（AND 语义）。
+fn score_entry(entry: &SearchEntry, terms: &[String]) -> Option<u32> {
+  let mut total = 0u32;
+  for term in terms {
+    total += score_term(entry, term)?;
+  }
+  Some(total)
+}
+
+/// 按关键词搜索并按相关度排序，最多返回 `limit` 条（忽略大小写）。
+///
+/// 排序依据：标题命中优于正文命中；完全相等优于前缀命中优于中间命中；命中位置越靠前
+/// 得分越高。`limit` 为 0 时表示不限制。
+#[must_use]
+pub fn search_ranked(query: &str, limit: usize) -> Vec<SearchHit> {
+  let terms = tokenize(query);
+  if terms.is_empty() {
     return Vec::new();
   }
-  let q = q.to_lowercase();
-  knowledge_index()
+  let mut hits: Vec<SearchHit> = knowledge_index()
     .iter()
-    .filter(|e| e.title_lower.contains(&q) || e.text_lower.contains(&q))
+    .filter_map(|entry| score_entry(entry, &terms).map(|score| SearchHit { entry, score }))
+    .collect();
+  // 稳定排序：同分时保持条目在索引中的原始顺序。
+  hits.sort_by_key(|h| std::cmp::Reverse(h.score));
+  if limit > 0 && hits.len() > limit {
+    hits.truncate(limit);
+  }
+  hits
+}
+
+/// 按关键词搜索，返回匹配条目（按相关度排序，最多 [`MAX_RESULTS`] 条）。
+#[must_use]
+pub fn search(query: &str) -> Vec<&'static SearchEntry> {
+  search_ranked(query, MAX_RESULTS)
+    .into_iter()
+    .map(|h| h.entry)
     .collect()
 }
 
@@ -1060,5 +1152,49 @@ mod tests {
     assert!(!search("DXCC").is_empty());
     assert!(!search("三极管").is_empty());
     assert!(search("").is_empty());
+    // 纯分隔符也应视为空查询
+    assert!(search("  ").is_empty());
+  }
+
+  #[test]
+  fn ranks_title_matches_above_text_matches() {
+    let hits = search_ranked("驻波比", 0);
+    assert!(!hits.is_empty());
+    // 标题里直接就叫「驻波比」的条目应排在只在正文里提到它的前面。
+    let first_is_title = hits[0].entry.title_lower.contains("驻波比");
+    assert!(first_is_title, "首条标题 {}", hits[0].entry.title);
+    // 得分单调不增
+    for w in hits.windows(2) {
+      assert!(w[0].score >= w[1].score, "{} < {}", w[0].score, w[1].score);
+    }
+  }
+
+  #[test]
+  fn respects_result_limit() {
+    let unlimited = search_ranked("天线", 0).len();
+    assert!(unlimited > 10, "结果应足够多，实际 {unlimited}");
+    assert_eq!(search_ranked("天线", 5).len(), 5);
+    assert_eq!(search("天线").len(), MAX_RESULTS.min(unlimited));
+  }
+
+  #[test]
+  fn multi_term_query_is_conjunctive() {
+    // 两个词都出现的条目，得分必然高于只出现一个词的 —— 后者直接不算命中。
+    let both = search_ranked("天线 驻波比", 0);
+    for h in &both {
+      assert!(h.entry.title_lower.contains("天线") || h.entry.text_lower.contains("天线"));
+      assert!(h.entry.title_lower.contains("驻波比") || h.entry.text_lower.contains("驻波比"));
+    }
+    // 不存在的词应让整条查询无结果
+    assert!(search("驻波比 这个词绝对不存在于知识库").is_empty());
+  }
+
+  #[test]
+  fn exact_title_match_scores_highest() {
+    let hits = search_ranked("驻波比", 0);
+    let exact = hits.iter().find(|h| h.entry.title == "驻波比");
+    if let Some(e) = exact {
+      assert!(e.score >= 100, "完全匹配得分 {}", e.score);
+    }
   }
 }

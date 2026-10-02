@@ -30,10 +30,13 @@ pub struct VoacapQuery {
   /// 太阳黑子数，默认 100。
   #[serde(default)]
   ssn: Option<f64>,
+  /// UTC 时刻（0–24，可为小数）。省略时按路径日照最佳情况估算。
+  #[serde(default)]
+  hour: Option<f64>,
 }
 
 /// 缓存 key 与条目。
-type CacheKey = (String, String, u32, i32);
+type CacheKey = (String, String, u32, i32, Option<i32>);
 type CacheEntry = (Instant, voacap::Prediction);
 
 /// 缓存。
@@ -42,15 +45,17 @@ pub struct Cache {
   inner: Mutex<HashMap<CacheKey, CacheEntry>>,
 }
 
-/// 缓存 key：网格大写规范化，SSN 量化到 0.1 精度。
-fn key(q: &VoacapQuery) -> (String, String, u32, i32) {
+/// 缓存 key：网格大写规范化，SSN 量化到 0.1 精度，时刻量化到半小时。
+fn key(q: &VoacapQuery) -> CacheKey {
   let month = q.month.unwrap_or(10).clamp(1, 12);
   let ssn = (q.ssn.unwrap_or(100.0).clamp(0.0, 400.0) * 10.0).round() as i32;
+  let hour = q.hour.map(|h| (h.clamp(0.0, 24.0) * 2.0).round() as i32);
   (
     q.tx.trim().to_uppercase(),
     q.rx.trim().to_uppercase(),
     month,
     ssn,
+    hour,
   )
 }
 
@@ -61,6 +66,9 @@ pub async fn handler(Query(q): Query<VoacapQuery>, cache: Arc<Cache>) -> Respons
   if !(1..=12).contains(&month) {
     return (StatusCode::BAD_REQUEST, "invalid month").into_response();
   }
+  if q.hour.is_some_and(|h| !(0.0..=24.0).contains(&h)) {
+    return (StatusCode::BAD_REQUEST, "invalid hour").into_response();
+  }
 
   let k = key(&q);
   if let Some((t, r)) = cache.inner.lock().ok().and_then(|g| g.get(&k).cloned())
@@ -69,7 +77,7 @@ pub async fn handler(Query(q): Query<VoacapQuery>, cache: Arc<Cache>) -> Respons
     return json(&r);
   }
 
-  match voacap::predict(&q.tx, &q.rx, month, ssn) {
+  match voacap::predict_at(&q.tx, &q.rx, month, ssn, q.hour) {
     Some(p) => {
       if let Ok(mut g) = cache.inner.lock() {
         crate::cache::evict_oldest(&mut *g, MAX_ENTRIES);
@@ -99,7 +107,21 @@ mod tests {
       rx: " io91 ".into(),
       month: Some(10),
       ssn: Some(100.0),
+      hour: None,
     };
-    assert_eq!(key(&q), ("OM89".into(), "IO91".into(), 10, 1000));
+    assert_eq!(key(&q), ("OM89".into(), "IO91".into(), 10, 1000, None));
+  }
+
+  #[test]
+  fn key_quantizes_hour() {
+    let q = VoacapQuery {
+      tx: "OM89".into(),
+      rx: "IO91".into(),
+      month: Some(10),
+      ssn: Some(100.0),
+      hour: Some(12.4),
+    };
+    // 12.4 h → 量化到半小时精度
+    assert_eq!(key(&q).4, Some(25));
   }
 }

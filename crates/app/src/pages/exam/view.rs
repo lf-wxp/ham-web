@@ -17,6 +17,7 @@ use crate::components::exam::{
   ExamSettingsDialog, ExamSubmitConfirmDialog,
 };
 use crate::components::question_card::QuestionCard;
+use crate::components::shortcut_help::ShortcutHelpDialog;
 use crate::data;
 use crate::pages::{DEFAULT_TITLE, use_bank_query, use_no_site_footer};
 use crate::shortcuts::{DigitDetail, Shortcuts, digit_answer, use_question_shortcuts};
@@ -25,6 +26,7 @@ use crate::ui::{Size, Variant, button_class};
 use crate::util::now_ms;
 use crate::util::set_title;
 use crate::util::storage;
+use ham_web_core::exam_review::{ExamReview, ReviewItem};
 
 use super::exam_bottom_bar::ExamBottomBar;
 use super::exam_header::ExamHeader;
@@ -65,6 +67,7 @@ pub fn ExamPage() -> impl IntoView {
 
   let loading = RwSignal::new(true);
   let settings_open = RwSignal::new(false);
+  let help_open = RwSignal::new(false);
   let result_open = RwSignal::new(false);
   let confirm_open = RwSignal::new(false);
   let card_open = RwSignal::new(false);
@@ -167,6 +170,35 @@ pub fn ExamPage() -> impl IntoView {
       .questions
       .with(|qs| ExamScore::calculate(qs, |q, i| answers.get(&q.answer_key(i)).map(Vec::as_slice)));
     crate::exam_history::save(b, sc, is_weak);
+    // 存一份逐题快照供「考后复盘」页使用：交卷弹窗关掉后，原本就再也回不去
+    // 逐题对错与解析了。只保留最近一次，避免占满本地存储。
+    let review = ExamReview {
+      bank: b.as_str().to_owned(),
+      finished_at_ms: now_ms(),
+      items: store.questions.with_untracked(|qs| {
+        qs.iter()
+          .enumerate()
+          .map(|(i, q)| ReviewItem {
+            id: q.stable_id().unwrap_or_else(|| q.answer_key(i)),
+            code: q.j_code().unwrap_or_default().to_owned(),
+            question: q.question.clone(),
+            options: q
+              .options
+              .iter()
+              .map(|o| format!("{}. {}", o.key, o.text))
+              .collect(),
+            answer: q.answer_keys.clone(),
+            given: answers.get(&q.answer_key(i)).cloned().unwrap_or_default(),
+            explanation: q.explanation.clone().unwrap_or_default(),
+            category: q.p_code().unwrap_or_default().to_owned(),
+          })
+          .collect()
+      }),
+    };
+    // 直接写，不再推到宏任务：构建 `ReviewItem` 列表（克隆题干/选项/解析）本就是同步
+    // 完成的，被推迟的只剩一次 JSON 序列化，收益很小；而推迟会留下「交卷后立刻关掉
+    // 标签页就丢快照」的窗口。快照只保留最近一次，丢了就再也回不来。
+    store::save_exam_review(&review);
     let before = crate::study::load_stats();
     deltas.set(store.questions.with_untracked(|qs| {
       weak_exam::compare(
@@ -387,6 +419,7 @@ pub fn ExamPage() -> impl IntoView {
       }
     }),
     enter_search: None,
+    on_help: Some(Callback::new(move |()| help_open.set(true))),
   });
 
   let on_resume = Callback::new(move |()| {
@@ -613,5 +646,6 @@ pub fn ExamPage() -> impl IntoView {
       on_restart=on_restart
     />
     <MessageDialog open=error_open title=t("加载失败") description=error_text confirm_text=t("知道了") />
+    <ShortcutHelpDialog open=help_open />
   }
 }

@@ -1,5 +1,6 @@
 //! 浏览器相关的小工具。
 
+use std::fmt::Write as _;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::i18n::t;
@@ -35,6 +36,37 @@ pub fn random() -> f64 {
 pub fn unique_id(prefix: &str) -> String {
   static NEXT: AtomicU32 = AtomicU32::new(1);
   format!("{prefix}-{}", NEXT.fetch_add(1, Ordering::Relaxed))
+}
+
+/// 对 URL 查询参数值做 percent-encode（等价 JS 的 `encodeURIComponent`）。
+///
+/// 拼 `/browse?q={query}` 这类链接时必须编码：查询串含空格、`&`、`#` 时不编码会截断
+/// URL 或凭空多出查询参数。
+///
+/// 用纯 Rust 实现而不是 `js_sys::encode_uri_component`，是为了让 `cargo test` 在原生
+/// 目标下也能覆盖到它（wasm-bindgen 的接口在原生目标下调用即 panic）。
+#[must_use]
+pub fn encode_uri_component(s: &str) -> String {
+  let mut out = String::with_capacity(s.len());
+  for b in s.as_bytes() {
+    match b {
+      b'A'..=b'Z'
+      | b'a'..=b'z'
+      | b'0'..=b'9'
+      | b'-'
+      | b'_'
+      | b'.'
+      | b'!'
+      | b'~'
+      | b'*'
+      | b'\''
+      | b'('
+      | b')' => out.push(char::from(*b)),
+      // 其余（含多字节 UTF-8 与 `&` `=` `#` `%` 等）逐字节编码。
+      _ => write!(out, "%{b:02X}").expect("写入 String 不会失败"),
+    }
+  }
+  out
 }
 
 pub fn window() -> web_sys::Window {

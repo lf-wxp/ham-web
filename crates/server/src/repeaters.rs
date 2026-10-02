@@ -112,7 +112,8 @@ fn fetch_and_parse(country: &str) -> anyhow::Result<Payload> {
     endpoint_for(country),
     urlencode_query(country)
   );
-  let mut res = ureq::get(&url)
+  let mut res = crate::util::http_agent()
+    .get(&url)
     .header("User-Agent", USER_AGENT)
     .call()
     .context("repeaterbook fetch failed")?;

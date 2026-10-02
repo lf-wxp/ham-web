@@ -35,6 +35,7 @@ pub fn NoteEditor(#[prop(into)] question_id: Signal<String>) -> impl IntoView {
         </span>
       </div>
       <textarea
+        aria-label=move || t("笔记内容")
         prop:value=move || draft.get()
         on:input=move |e| draft.set(event_target_value(&e))
         rows=3

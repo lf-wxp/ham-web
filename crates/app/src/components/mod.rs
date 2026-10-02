@@ -11,5 +11,6 @@ pub mod question_card;
 pub mod related_topics;
 pub mod rotor_control;
 pub mod search_dialog;
+pub mod shortcut_help;
 pub mod study_plan_card;
 pub mod topic_quiz;

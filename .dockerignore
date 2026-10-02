@@ -1,6 +1,10 @@
 target/
 dist/
 tmp/
+# APT Worker 产物由 Dockerfile 内的 wasm-bindgen 生成，
+# 排除本地残留以保证干净 checkout 也能构建出可用镜像
+public/apt-worker/apt_worker.js
+public/apt-worker/apt_worker_bg.wasm
 node_modules/
 .next/
 .git/

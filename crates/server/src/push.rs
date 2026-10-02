@@ -226,6 +226,8 @@ fn valid_endpoint(endpoint: &str) -> bool {
   if host.is_empty() {
     return false;
   }
+  // 主机名大小写不敏感：白名单按小写书写，这里归一化后再比对。
+  let host = host.to_ascii_lowercase();
   TRUSTED_PUSH_HOSTS.iter().any(|d| {
     host == *d
       || (host.len() > d.len()
@@ -249,14 +251,20 @@ fn vapid_jwt(vapid: &VapidKeys, aud: &str) -> anyhow::Result<String> {
 }
 
 /// RFC 8291 `aes128gcm` 内容加密：返回 (HTTP body, `Encryption` 头值, `Crypto-Key` 头值)。
+///
+/// `auth` 是订阅里的认证密钥（authentication secret），在 RFC 8291 中作为 HKDF-Extract
+/// 的盐参与密钥派生；body 里那条 16 字节 `salt` 只是记录盐，二者不能混用。
 fn encrypt_payload(
   plaintext: &[u8],
   client_p256dh_b64: &str,
+  client_auth_b64: &str,
 ) -> anyhow::Result<(Vec<u8>, String, String)> {
   let client_pub =
     PublicKey::from_sec1_bytes(&unb64url(client_p256dh_b64)?).context("订阅 p256dh 无效")?;
   let client_pub_bytes = client_pub.to_sec1_bytes().to_vec();
+  let auth_secret = unb64url(client_auth_b64).context("订阅 auth 无效")?;
 
+  // 记录盐：随密文一起发给客户端，用于重建密钥（写入 body 头与 `Encryption` 头）。
   let salt: [u8; 16] = Generate::generate();
 
   let server_secret = EphemeralSecret::generate();
@@ -264,20 +272,37 @@ fn encrypt_payload(
   let shared = server_secret.diffie_hellman(&client_pub);
   let shared_bytes = shared.raw_secret_bytes();
 
-  // HKDF-Extract(salt, ecdh_secret) 后 HKDF-Expand 一次得到 32 字节：CEK(16) + nonce(12)。
-  let hk = Hkdf::<Sha256>::new(Some(&salt), shared_bytes);
-  let mut okm = [0u8; 32];
+  // RFC 8291 §3.4 的两步派生，缺一不可：
+  //   1. IKM = HKDF-Expand(HKDF-Extract(auth_secret, ecdh_secret), "WebPush: info\0"‖ua‖as, 32)
+  //      —— 第一步的盐是订阅的 `auth`（认证密钥）；
+  //   2. PRK   = HKDF-Extract(记录盐 `salt`, IKM)
+  //      CEK   = HKDF-Expand(PRK, "Content-Encoding: aes128gcm\0", 16)
+  //      NONCE = HKDF-Expand(PRK, "Content-Encoding: nonce\0", 12)
+  // 第二步的盐才是随密文下发的记录盐 `salt`，与第一步的 `auth` 不可混用；直接把 IKM
+  // 切成 CEK‖NONCE（跳过第二步）会被浏览器按 RFC 派生出不同的密钥而无法解密。
+  let hkdf = Hkdf::<Sha256>::new(Some(auth_secret.as_slice()), shared_bytes);
   let mut info = Vec::with_capacity(14 + 65 + 65);
   info.extend_from_slice(b"WebPush: info\0");
   info.extend_from_slice(&client_pub_bytes);
   info.extend_from_slice(&server_pub_bytes);
-  hk.expand(&info, &mut okm)
-    .map_err(|_| anyhow::anyhow!("HKDF expand 失败"))?;
-  let (cek, nonce_bytes) = (&okm[..16], &okm[16..28]);
+  let mut ikm = [0u8; 32];
+  hkdf
+    .expand(&info, &mut ikm)
+    .map_err(|_| anyhow::anyhow!("HKDF expand IKM 失败"))?;
 
-  let cipher = Aes128Gcm::new_from_slice(cek).context("AES 密钥无效")?;
-  let nonce =
-    Nonce::<Aes128Gcm>::try_from(nonce_bytes).map_err(|_| anyhow::anyhow!("nonce 长度错误"))?;
+  let hkdf = Hkdf::<Sha256>::new(Some(salt.as_slice()), &ikm);
+  let mut cek = [0u8; 16];
+  hkdf
+    .expand(b"Content-Encoding: aes128gcm\0", &mut cek)
+    .map_err(|_| anyhow::anyhow!("HKDF expand CEK 失败"))?;
+  let mut nonce_bytes = [0u8; 12];
+  hkdf
+    .expand(b"Content-Encoding: nonce\0", &mut nonce_bytes)
+    .map_err(|_| anyhow::anyhow!("HKDF expand nonce 失败"))?;
+
+  let cipher = Aes128Gcm::new_from_slice(&cek).context("AES 密钥无效")?;
+  let nonce = Nonce::<Aes128Gcm>::try_from(&nonce_bytes[..])
+    .map_err(|_| anyhow::anyhow!("nonce 长度错误"))?;
   let ciphertext = cipher
     .encrypt(
       &nonce,
@@ -310,10 +335,14 @@ fn send_push(
   let aud = endpoint_origin(&sub.endpoint).context("endpoint origin 无法解析")?;
   let jwt = vapid_jwt(vapid, &aud)?;
   let payload = serde_json::json!({ "title": title, "body": body, "url": "/" });
-  let (body_bytes, encryption, crypto_key) =
-    encrypt_payload(payload.to_string().as_bytes(), &sub.keys.p256dh)?;
+  let (body_bytes, encryption, crypto_key) = encrypt_payload(
+    payload.to_string().as_bytes(),
+    &sub.keys.p256dh,
+    &sub.keys.auth,
+  )?;
 
-  let res = ureq::post(&sub.endpoint)
+  let res = crate::util::http_agent()
+    .post(&sub.endpoint)
     .header("Content-Encoding", "aes128gcm")
     .header("TTL", &TTL_SECS.to_string())
     .header("Encryption", &encryption)
@@ -396,6 +425,8 @@ impl PushService {
   pub fn unsubscribe(&self, endpoint: &str) {
     let mut state = self.inner.lock().expect("push state poisoned");
     state.subscriptions.remove(endpoint);
+    // 与失效订阅的清理保持一致：订阅没了，去重记录也一并删除。
+    state.last_reminded.remove(endpoint);
     state.persist();
   }
 
@@ -425,20 +456,31 @@ impl PushService {
       return;
     };
 
+    let mut changed = false;
     for (endpoint, sub) in due {
       match send_push(&vapid, &sub, "该学习啦", "今天的备考任务待完成。") {
         Ok(true) => {
           let mut state = self.inner.lock().expect("push state poisoned");
           state.last_reminded.insert(endpoint, day);
+          changed = true;
           tracing::info!("push reminder sent to {}", sub.endpoint);
         }
         Ok(false) => {
           let mut state = self.inner.lock().expect("push state poisoned");
           state.subscriptions.remove(&endpoint);
+          // 订阅没了，它的去重记录也一并清掉，避免 `last_reminded` 无限增长。
+          state.last_reminded.remove(&endpoint);
+          changed = true;
           tracing::info!("removed expired subscription {}", sub.endpoint);
         }
         Err(e) => tracing::warn!("push reminder failed: {e:#}"),
       }
+    }
+    // 统一落盘一次：`send_push` 是网络操作，若在循环里逐个 `persist`，同一分钟到点的
+    // 大量订阅会触发同等次数的全量文件写入。不落盘则重启后同一天会重复推送、且已清理
+    // 的失效订阅会从磁盘复活。
+    if changed {
+      self.inner.lock().expect("push state poisoned").persist();
     }
   }
 
@@ -459,16 +501,45 @@ impl PushService {
 
 // —— axum 处理器 ——
 
-/// 校验 `Authorization: Bearer <token>`；未配置 `PUSH_API_TOKEN` 时不鉴权。
-fn authorized(headers: &axum::http::HeaderMap) -> bool {
+/// 订阅写入接口的鉴权结果。
+enum Auth {
+  /// 通过。
+  Ok,
+  /// 配置了令牌但不匹配。
+  Denied,
+}
+
+/// 是否要求订阅接口携带令牌（即设置了 `PUSH_API_TOKEN`）。
+pub(crate) fn token_required() -> bool {
+  std::env::var("PUSH_API_TOKEN").is_ok()
+}
+
+/// 校验 `Authorization: Bearer <token>`。
+///
+/// **未配置 `PUSH_API_TOKEN` 时有意放行**（返回 [`Auth::Ok`]）。这不是疏忽：
+/// 订阅者就是浏览器里的匿名访客，而前端是所有访客共享的静态 wasm，无从持有服务端
+/// 环境变量里的令牌 —— 一旦要求鉴权，合法用户同样无法订阅，功能等于对所有人关闭。
+/// 曾改为「无令牌即拒绝」，结果正是把推送做废，故回退为放行。
+///
+/// 匿名写入的实际防护来自四层：
+/// 1. `/api/*` 每 IP 限流（默认 120 次/分钟）；
+/// 2. `valid_endpoint` 只接受主流推送服务的 `https://` endpoint；
+/// 3. `MAX_SUBSCRIPTIONS` 订阅总数上限；
+/// 4. 不提供订阅列表读取接口，且覆盖 / 删除他人订阅需事先拿到对方那条不可枚举的
+///    endpoint（FCM / APNs 的长随机 URL）。
+///
+/// 需要更严格管控时，请在反向代理层限制这两个路径；或自行构建前端、把令牌注入
+/// `Authorization` 头后再设置 `PUSH_API_TOKEN`。
+fn authorize(headers: &axum::http::HeaderMap) -> Auth {
   let Ok(token) = std::env::var("PUSH_API_TOKEN") else {
-    return true;
+    return Auth::Ok;
   };
-  headers
+  let matched = headers
     .get(axum::http::header::AUTHORIZATION)
     .and_then(|v| v.to_str().ok())
     .and_then(|v| v.strip_prefix("Bearer "))
-    .is_some_and(|t| t == token)
+    .is_some_and(|t| t == token);
+  if matched { Auth::Ok } else { Auth::Denied }
 }
 
 /// `GET /api/push/vapid-public-key`：分发 VAPID 公钥。
@@ -483,7 +554,7 @@ pub async fn subscribe_handler(
   headers: axum::http::HeaderMap,
   body: String,
 ) -> axum::response::Response {
-  if !authorized(&headers) {
+  if let Auth::Denied = authorize(&headers) {
     return json_err(axum::http::StatusCode::UNAUTHORIZED, "unauthorized");
   }
   match serde_json::from_str::<Subscription>(&body) {
@@ -503,7 +574,7 @@ pub async fn unsubscribe_handler(
   headers: axum::http::HeaderMap,
   body: String,
 ) -> axum::response::Response {
-  if !authorized(&headers) {
+  if let Auth::Denied = authorize(&headers) {
     return json_err(axum::http::StatusCode::UNAUTHORIZED, "unauthorized");
   }
   #[derive(Deserialize)]
@@ -522,6 +593,16 @@ pub async fn unsubscribe_handler(
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  /// 匿名订阅必须保持放行：前端是共享的静态资源，拿不到服务端令牌。
+  ///
+  /// 曾改为「无令牌即拒绝」，结果官方前端的订阅请求全部失败，功能对所有人关闭。
+  /// 这个测试用于防止再次改回去。
+  #[test]
+  fn anonymous_subscribe_is_allowed_without_token() {
+    let headers = axum::http::HeaderMap::new();
+    assert!(matches!(authorize(&headers), Auth::Ok));
+  }
 
   #[test]
   fn vapid_jwt_roundtrips() {
@@ -576,7 +657,9 @@ mod tests {
     // 用一组临时订阅密钥验证加密产出结构（不验证密文可解，仅校验布局与长度）。
     let secret = SecretKey::generate();
     let pub_b64 = b64url(&secret.public_key().to_sec1_bytes());
-    let (body, encryption, crypto_key) = encrypt_payload(b"hello", &pub_b64).expect("encrypt");
+    let auth_b64 = b64url(&[0u8; 16]);
+    let (body, encryption, crypto_key) =
+      encrypt_payload(b"hello", &pub_b64, &auth_b64).expect("encrypt");
     assert_eq!(body.len(), 16 + 4 + 1 + 16 + "hello".len()); // salt + rs + idlen + tag + msg
     assert!(encryption.starts_with("salt="));
     assert!(crypto_key.starts_with("dh="));
@@ -587,5 +670,57 @@ mod tests {
       RECORD_SIZE
     );
     assert_eq!(body[20], 0);
+  }
+
+  /// 端到端往返：`encrypt_payload` 产出的密文，客户端按同一套 RFC 8291 步骤派生密钥后
+  /// 必须能解开。长度/布局校验发现不了「少做一步 HKDF」这类问题，只有真解密才能。
+  #[test]
+  fn encrypt_payload_roundtrips_per_rfc8291() {
+    let client_secret = EphemeralSecret::generate();
+    let client_pub_bytes = client_secret.public_key().to_sec1_bytes().to_vec();
+    let auth_secret = [7u8; 16];
+
+    let (body, encryption, crypto_key) = encrypt_payload(
+      b"hello web push",
+      &b64url(&client_pub_bytes),
+      &b64url(&auth_secret),
+    )
+    .expect("encrypt");
+
+    // 从密文头与 `Crypto-Key` 头还原记录盐与服务端临时公钥。
+    let salt: [u8; 16] = body[..16].try_into().expect("salt");
+    assert_eq!(b64url(&salt), encryption.trim_start_matches("salt="));
+    let server_pub_bytes = unb64url(crypto_key.trim_start_matches("dh=")).expect("dh");
+    let server_pub = PublicKey::from_sec1_bytes(&server_pub_bytes).expect("server pub");
+
+    // 客户端侧：ECDH → 两步 HKDF → AES-GCM 解密。
+    let shared = client_secret.diffie_hellman(&server_pub);
+    let shared_bytes = shared.raw_secret_bytes();
+    let mut info = Vec::new();
+    info.extend_from_slice(b"WebPush: info\0");
+    info.extend_from_slice(&client_pub_bytes);
+    info.extend_from_slice(&server_pub_bytes);
+    let mut ikm = [0u8; 32];
+    Hkdf::<Sha256>::new(Some(auth_secret.as_slice()), shared_bytes)
+      .expand(&info, &mut ikm)
+      .expect("ikm");
+    let hkdf = Hkdf::<Sha256>::new(Some(salt.as_slice()), &ikm);
+    let mut cek = [0u8; 16];
+    hkdf
+      .expand(b"Content-Encoding: aes128gcm\0", &mut cek)
+      .expect("cek");
+    let mut nonce = [0u8; 12];
+    hkdf
+      .expand(b"Content-Encoding: nonce\0", &mut nonce)
+      .expect("nonce");
+
+    let cipher = Aes128Gcm::new_from_slice(&cek).expect("cipher");
+    let plaintext = cipher
+      .decrypt(
+        &Nonce::<Aes128Gcm>::try_from(&nonce[..]).expect("nonce"),
+        &body[21..],
+      )
+      .expect("decrypt");
+    assert_eq!(plaintext, b"hello web push");
   }
 }

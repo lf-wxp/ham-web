@@ -1,6 +1,6 @@
 //! 题库数据加载：配置文件、题库 JSON、版本可用性状态（带内存缓存）。
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
@@ -8,6 +8,7 @@ use std::sync::{Arc, OnceLock};
 
 use ham_web_core::glossary::{GLOSSARY_FILES, Glossary};
 use ham_web_core::{Bank, BankConfig, QuestionItem, QuestionSearchEntry, QuestionVersion};
+use leptos::prelude::{RwSignal, Track, Update};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestCache, RequestInit, Response};
@@ -325,7 +326,41 @@ pub async fn version_status(version_id: &str, force: bool) -> VersionStatus {
   status
 }
 
+/// 加载失败后的最短重试间隔（毫秒）。
+///
+/// 失败结果**不会**写入常驻缓存（否则一次网络抖动会让整个会话都拿不到数据），
+/// 但也不能因此每帧都重试 —— 离线时那样会打出一串必然失败的请求。
+const RETRY_BACKOFF_MS: i64 = 30_000;
+
+// 上次加载失败的时间戳（毫秒），0 表示从未失败。
+thread_local! {
+  static GLOSSARY_FAILED_AT: Cell<i64> = const { Cell::new(0) };
+  static INDEX_FAILED_AT: Cell<i64> = const { Cell::new(0) };
+}
+
+/// 距上次失败是否已超过退避窗口（可以再试一次）。
+fn backoff_elapsed(failed_at: &'static std::thread::LocalKey<Cell<i64>>) -> bool {
+  let last = failed_at.with(Cell::get);
+  if last == 0 {
+    return true;
+  }
+  // 系统时钟被回拨时 `now < last`，差值会为负；此时按「已过期」处理，否则退避窗口
+  // 在下一次时钟追上之前会一直不生效。
+  let now = now_ms();
+  now < last || now - last >= RETRY_BACKOFF_MS
+}
+
+/// 记录一次失败时间戳。
+fn mark_failed(failed_at: &'static std::thread::LocalKey<Cell<i64>>) {
+  failed_at.with(|c| c.set(now_ms()));
+}
+
 static GLOSSARY: OnceLock<Glossary> = OnceLock::new();
+/// 加载失败时返回的空术语表。
+///
+/// 单独一个 `OnceLock`：它只作为「本次失败」的返回值，不污染 [`GLOSSARY`]，
+/// 因此退避窗口过后仍能重新加载。
+static EMPTY_GLOSSARY: OnceLock<Glossary> = OnceLock::new();
 
 /// 已加载的术语表（尚未加载时为 `None`）。
 pub fn glossary_loaded() -> Option<&'static Glossary> {
@@ -337,6 +372,9 @@ pub fn glossary_loaded() -> Option<&'static Glossary> {
 pub async fn load_glossary() -> &'static Glossary {
   if let Some(g) = GLOSSARY.get() {
     return g;
+  }
+  if !backoff_elapsed(&GLOSSARY_FAILED_AT) {
+    return EMPTY_GLOSSARY.get_or_init(Glossary::default);
   }
   let mut parsed = Vec::with_capacity(GLOSSARY_FILES.len());
   for name in GLOSSARY_FILES {
@@ -361,10 +399,105 @@ pub async fn load_glossary() -> &'static Glossary {
       ),
     }
   }
+  if parsed.len() < GLOSSARY_FILES.len() {
+    // 有任一文件解析失败就不写入常驻缓存（否则一次网络抖动会让整个会话拿到不完整的
+    // 术语表），记为失败、退避后再试。
+    mark_failed(&GLOSSARY_FAILED_AT);
+    return EMPTY_GLOSSARY.get_or_init(Glossary::default);
+  }
+  GLOSSARY_FAILED_AT.with(|c| c.set(0));
   GLOSSARY.get_or_init(|| Glossary::merged(parsed))
 }
 
+thread_local! {
+  /// 当前译文：`(语言, 中文原文 → 译文)`，按模块分批翻译、构建时合并导出。
+  ///
+  /// 连语言一起存，是因为切换界面语言时必须能看出「手里这份是哪一语言的」——
+  /// 只存词典的话，zh → en 之后切到 es 会被「已加载」短路掉，西班牙语界面显示英文译文。
+  ///
+  /// 用 `RefCell` 而非 `OnceLock`：切语言要整体替换，而 `OnceLock` 只在首次写入生效。
+  /// 所有读写都在主线程（wasm 单线程），不存在并发竞争。
+  static KNOWLEDGE_I18N: RefCell<Option<(String, HashMap<String, String>)>> =
+    const { RefCell::new(None) };
+  /// 译文加载完成的版本号。
+  ///
+  /// 词典是异步拉取的，而知识页的条目是 `&'static` 切片、只会构建一次视图 —— 不通知
+  /// 响应式系统的话，译文到达后页面不会重算，仍然停在中文。组件通过 [`track_knowledge`]
+  /// 订阅这个信号。
+  static KNOWLEDGE_READY: RwSignal<u32> = RwSignal::new(0);
+  /// 译文加载失败的时间戳（毫秒），0 表示从未失败（同 [`GLOSSARY_FAILED_AT`]）。
+  static KNOWLEDGE_FAILED_AT: Cell<i64> = const { Cell::new(0) };
+}
+
+/// 订阅知识库译文的加载状态；译文到达后调用方会重新求值。
+pub fn track_knowledge() {
+  KNOWLEDGE_READY.with(|s| s.track());
+}
+
+/// 当前译文是否已就绪且属于 `lang`。
+///
+/// 调用方应拿它判断是否需要加载，而不是只看「有没有词典」—— 后者在切语言后会误判为就绪。
+#[must_use]
+pub fn knowledge_i18n_ready(lang: &str) -> bool {
+  KNOWLEDGE_I18N.with(|c| c.borrow().as_ref().is_some_and(|(l, _)| l == lang))
+}
+
+/// 加载某语言的知识库正文译文。
+///
+/// 词典可能很大（全部模块合计可达数万条），因此只在切到非中文界面时才拉取；
+/// 拉取失败不缓存空结果，退避后可重试（同 [`load_glossary`]）。
+///
+/// 已缓存的语言与 `lang` 不一致时会重新拉取 —— 否则 en → es 会一直沿用英文词典。
+pub async fn load_knowledge_i18n(lang: &str) {
+  if knowledge_i18n_ready(lang) {
+    return;
+  }
+  if !backoff_elapsed(&KNOWLEDGE_FAILED_AT) {
+    return;
+  }
+  if lang == "zh" {
+    // 中文无需译文，空词典即可（同样记下语言，切走再切回来才不会误判）。
+    set_knowledge_i18n(lang.to_owned(), HashMap::new());
+    KNOWLEDGE_FAILED_AT.with(|c| c.set(0));
+    return;
+  }
+  let url = format!("/data/knowledge-i18n/{lang}.json");
+  let dict: Option<HashMap<String, String>> = match fetch_text(&url, CacheMode::Default).await {
+    Ok(text) => serde_json::from_str(&text).ok(),
+    Err(_) => None,
+  };
+  // 空词典不落常驻缓存：否则一次拉取失败（或尚未翻译）就会让后续请求一直走不到重试。
+  if let Some(d) = dict.filter(|d| !d.is_empty()) {
+    set_knowledge_i18n(lang.to_owned(), d);
+    KNOWLEDGE_FAILED_AT.with(|c| c.set(0));
+  } else {
+    mark_failed(&KNOWLEDGE_FAILED_AT);
+  }
+}
+
+/// 替换当前译文并通知订阅方重算。
+fn set_knowledge_i18n(lang: String, dict: HashMap<String, String>) {
+  KNOWLEDGE_I18N.with(|c| *c.borrow_mut() = Some((lang, dict)));
+  KNOWLEDGE_READY.with(|s| s.update(|n| *n += 1));
+}
+
+/// 翻译一条知识库正文；无译文时回退中文原文。
+///
+/// 与界面文案的 `t()` 分开，是因为两者的 key 来源不同：界面文案以中文原文为 key 写在
+/// `i18n.rs` 里，知识库正文则由 `data/knowledge-i18n/` 按模块维护。
+#[must_use]
+pub fn kt(text: &str) -> String {
+  KNOWLEDGE_I18N.with(|c| {
+    c.borrow()
+      .as_ref()
+      .and_then(|(_, d)| d.get(text).cloned())
+      .unwrap_or_else(|| text.to_owned())
+  })
+}
+
 static QUESTION_INDEX: OnceLock<Vec<QuestionSearchEntry>> = OnceLock::new();
+/// 加载失败时返回的空索引（同 [`EMPTY_GLOSSARY`]，不污染常驻缓存）。
+static EMPTY_INDEX: OnceLock<Vec<QuestionSearchEntry>> = OnceLock::new();
 
 /// 已加载的题目搜索索引（尚未加载时为 `None`）。
 pub fn question_index_loaded() -> Option<&'static Vec<QuestionSearchEntry>> {
@@ -377,10 +510,18 @@ pub async fn load_question_index() -> &'static Vec<QuestionSearchEntry> {
   if let Some(idx) = QUESTION_INDEX.get() {
     return idx;
   }
+  if !backoff_elapsed(&INDEX_FAILED_AT) {
+    return EMPTY_INDEX.get_or_init(Vec::new);
+  }
   let entries = match fetch_text("/questions/search-index.json", CacheMode::Default).await {
     Ok(text) => serde_json::from_str::<Vec<QuestionSearchEntry>>(&text).unwrap_or_default(),
     Err(_) => Vec::new(),
   };
+  if entries.is_empty() {
+    mark_failed(&INDEX_FAILED_AT);
+    return EMPTY_INDEX.get_or_init(Vec::new);
+  }
+  INDEX_FAILED_AT.with(|c| c.set(0));
   QUESTION_INDEX.get_or_init(|| entries)
 }
 

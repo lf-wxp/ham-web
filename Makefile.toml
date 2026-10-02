@@ -17,11 +17,15 @@ SITE_URL = { value = "https://ham.onlyxp.me", condition = { env_not_set = ["SITE
 # ───────────────────────────── 环境准备 ─────────────────────────────
 
 [tasks.setup]
-description = "安装 wasm32 目标与 Trunk（Tailwind / wasm-bindgen / wasm-opt 由 Trunk 自动下载）"
+description = "安装 wasm32 目标、Trunk 与 wasm-bindgen CLI（版本取自 Cargo.lock；Tailwind / wasm-opt 由 Trunk 自动下载）"
 script_runner = "@shell"
 script = '''
+set -e
+WB_VERSION=$(awk -F'"' '/^name = "wasm-bindgen"$/{f=1; next} f && /^version = /{print $2; exit}' Cargo.lock)
 rustup target add wasm32-unknown-unknown
 command -v trunk >/dev/null 2>&1 || cargo install trunk --locked
+# Trunk 自带的 wasm-bindgen 不对外暴露，APT Worker 需要 PATH 上的 CLI，且版本须与 crate 一致
+command -v wasm-bindgen >/dev/null 2>&1 || cargo install wasm-bindgen-cli --version "$WB_VERSION" --locked
 '''
 
 # ───────────────────────────── 开发 ─────────────────────────────
@@ -57,10 +61,20 @@ description = "构建前端（release）并生成 Service Worker / sitemap"
 dependencies = ["build-worker", "trunk-build", "postbuild"]
 
 [tasks.build-worker]
-description = "构建 APT 解码 Web Worker（wasm-bindgen --target no-modules）"
+description = "构建 APT 解码 Web Worker（wasm-bindgen --target no-modules，CLI 版本须与 Cargo.lock 一致）"
 script_runner = "@shell"
 script = '''
 set -e
+WB_VERSION=$(awk -F'"' '/^name = "wasm-bindgen"$/{f=1; next} f && /^version = /{print $2; exit}' Cargo.lock)
+if ! command -v wasm-bindgen >/dev/null 2>&1; then
+  echo "未找到 wasm-bindgen CLI，请先执行 cargo make setup（或 cargo install wasm-bindgen-cli --version $WB_VERSION --locked）" >&2
+  exit 1
+fi
+WB_INSTALLED=$(wasm-bindgen --version | awk '{print $2}')
+if [ "$WB_INSTALLED" != "$WB_VERSION" ]; then
+  echo "wasm-bindgen CLI 版本 $WB_INSTALLED 与 Cargo.lock 中的 $WB_VERSION 不一致，请执行 cargo install wasm-bindgen-cli --version $WB_VERSION --locked" >&2
+  exit 1
+fi
 cargo build --profile wasm-release --target wasm32-unknown-unknown -p ham-web-apt-worker
 mkdir -p public/apt-worker
 wasm-bindgen --target no-modules --no-typescript --out-dir public/apt-worker --out-name apt_worker \
@@ -191,6 +205,13 @@ description = "校验 data/glossary/（分类、参见、重复、括号）并�
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "check-glossary"]
 
+[tasks.i18n-check]
+description = "校验 crates/app/src/i18n.rs 词典（重复 key、占位符数量）并统计文案覆盖率"
+# 不用 --release：这只是解析文本，debug 构建即可，省掉整条依赖链的 release 编译。
+# 注意：与 `dev-full` 同时跑会争用 target/ 构建锁，见 README「常见问题」。
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--", "check-i18n"]
+
 [tasks.explanations-apply]
 description = "把 data/explanations.json 写入 public/questions/*.json（离线，无需重建数据集）"
 command = "cargo"
@@ -225,8 +246,8 @@ command = "cargo"
 args = ["test", "-p", "ham-web-core", "-p", "ham-web-apt", "-p", "ham-web-tools", "-p", "ham-web-server", "-p", "ham-web-app"]
 
 [tasks.check]
-description = "代码检查：格式检查 + clippy + 单元测试（不构建前端）"
-dependencies = ["fmt-check", "clippy", "test"]
+description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案词典校验（不构建前端）"
+dependencies = ["fmt-check", "clippy", "test", "i18n-check"]
 
 [tasks.e2e]
 description = "端到端测试：构建 release 站点后由 Playwright 启动服务器并运行 e2e/（首次：cd e2e && npm ci && npx playwright install chromium）"
@@ -236,8 +257,8 @@ command = "npx"
 args = ["playwright", "test"]
 
 [tasks.ci]
-description = "CI：格式检查 + clippy + 测试 + 前端构建"
-dependencies = ["fmt-check", "clippy", "test", "build-web"]
+description = "CI：格式检查 + clippy + 测试 + 界面文案校验 + 前端构建"
+dependencies = ["fmt-check", "clippy", "test", "i18n-check", "build-web"]
 
 # ───────────────────────────── 部署 ─────────────────────────────
 

@@ -3,9 +3,10 @@ use leptos::prelude::*;
 
 use crate::util::set_title;
 
-use super::design_calculators::{VerticalCalculator, YagiCalculator};
 use super::dipole_calculator::DipoleCalculator;
 use super::pattern_plot::PatternPlot;
+use super::vertical_calculator::VerticalCalculator;
+use super::yagi_calculator::YagiCalculator;
 use crate::i18n::t;
 
 const CELL: &str = "border px-3 py-2 text-left align-top";

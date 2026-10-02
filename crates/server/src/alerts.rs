@@ -45,7 +45,8 @@ fn extract_level(msg: &str) -> String {
 
 /// 拉取并解析 SWPC（同步，在 `spawn_blocking` 中执行）。
 fn fetch_and_parse() -> anyhow::Result<Vec<Alert>> {
-  let mut res = ureq::get(ALERTS_URL)
+  let mut res = crate::util::http_agent()
+    .get(ALERTS_URL)
     .call()
     .context("fetch NOAA alerts failed")?;
   let body = res

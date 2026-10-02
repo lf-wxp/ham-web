@@ -130,7 +130,8 @@ fn parse_tle_group(text: &str) -> Vec<TleLine> {
 
 /// 拉取 Celestrak TLE。
 fn fetch_tle(group: SatGroup) -> anyhow::Result<Vec<TleLine>> {
-  let mut res = ureq::get(group.url())
+  let mut res = crate::util::http_agent()
+    .get(group.url())
     .call()
     .context("fetch Celestrak failed")?;
   let text = res

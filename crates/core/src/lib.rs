@@ -58,6 +58,7 @@ pub mod eme;
 pub mod eqsl;
 pub mod exam;
 pub mod exam_history;
+pub mod exam_review;
 pub mod feedline;
 pub mod filters;
 pub mod fingerprint;

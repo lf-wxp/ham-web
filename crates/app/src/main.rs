@@ -43,6 +43,8 @@ fn install_panic_hook() {
 fn main() {
   install_panic_hook();
   pwa::register_service_worker();
+  // 多标签页同时打开时，各自的内存缓存需感知对方的写入。
+  store::install_cross_tab_sync();
   leptos::mount::mount_to_body(app::App);
   if let Some(boot) = util::window()
     .document()
