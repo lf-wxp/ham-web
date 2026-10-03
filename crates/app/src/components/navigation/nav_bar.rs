@@ -4,14 +4,16 @@ use leptos_router::hooks::use_location;
 use send_wrapper::SendWrapper;
 use wasm_bindgen::JsCast;
 
+use ham_web_core::registry::{self, GROUP_EXAM, KNOWLEDGE_GROUPS, TOOL_GROUPS};
+
 use crate::cn::cn;
-use crate::icons::{Icon, IconKind};
+use crate::icons::{Icon, IconKind, icon_of};
 use crate::ui::{Size, Variant, button_class};
 
 use super::locale_toggle::LocaleToggle;
 use super::theme_toggle::ThemeToggle;
 
-use super::menu::{EXAM_ITEMS, KNOWLEDGE_GROUPS, MenuKind, TOOL_GROUPS};
+use super::menu::MenuKind;
 use crate::i18n::{self, Locale, t};
 
 #[component]
@@ -64,22 +66,21 @@ pub fn Navigation() -> impl IntoView {
   });
 
   let active = move |href: &'static str| location.pathname.get() == href;
-  let exam_active = move || EXAM_ITEMS.iter().any(|i| active(i.href));
-  let knowledge_active = move || {
-    KNOWLEDGE_GROUPS
+  // 某分组下是否有当前页面（用于给对应的一级菜单加高亮）。
+  let group_active = move |group: &str| {
+    registry::MODULES
       .iter()
-      .any(|g| g.items.iter().any(|i| active(i.href)))
+      .filter(|m| m.group == Some(group))
+      .any(|m| active(m.path))
   };
-  let tool_active = move || {
-    TOOL_GROUPS
-      .iter()
-      .any(|g| g.items.iter().any(|i| active(i.href)))
-  };
+  let exam_active = move || group_active(GROUP_EXAM);
+  let knowledge_active = move || KNOWLEDGE_GROUPS.iter().any(|g| group_active(g));
+  let tool_active = move || TOOL_GROUPS.iter().any(|g| group_active(g));
 
   view! {
     <nav data-nav aria-label=move || t("主导航") class="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
-      <div class="container mx-auto px-4">
+      <div class="container relative mx-auto px-4">
         <div class="flex h-16 items-center justify-between gap-3">
           // 品牌标识
           <a
@@ -148,17 +149,18 @@ pub fn Navigation() -> impl IntoView {
                 ])
               }>
                 <div class="w-44 rounded-lg border bg-popover p-1 shadow-md">
-                  {EXAM_ITEMS
+                  {registry::MODULES
                     .iter()
-                    .map(|item| {
+                    .filter(|m| m.group == Some(GROUP_EXAM))
+                    .map(|m| {
                       view! {
                         <a
-                          href=item.href
+                          href=m.nav_href()
                           on:click=move |_| open_menu.set(None)
                           class=move || {
                             cn(&[
                               "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
-                              if active(item.href) {
+                              if active(m.path) {
                                 "bg-accent text-foreground"
                               } else {
                                 "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
@@ -166,8 +168,8 @@ pub fn Navigation() -> impl IntoView {
                             ])
                           }
                         >
-                          <Icon kind=item.icon class="h-4 w-4" />
-                          {move || t(item.label)}
+                          <Icon kind=icon_of(m.icon) class="h-4 w-4" />
+                          {move || t(m.title)}
                         </a>
                       }
                     })
@@ -177,7 +179,7 @@ pub fn Navigation() -> impl IntoView {
             </div>
 
             // 知识库分组菜单
-            <div class="group relative">
+            <div class="group static">
               <button
                 type="button"
                 data-slot="button"
@@ -213,29 +215,29 @@ pub fn Navigation() -> impl IntoView {
                   },
                 ])
               }>
-                <div class="grid w-[900px] max-w-[calc(100vw-2rem)] grid-cols-2 gap-x-4 gap-y-3 rounded-lg border bg-popover p-4 shadow-md md:grid-cols-3 lg:grid-cols-5">
+                <div class="grid w-[960px] max-w-[calc(100vw-2rem)] grid-cols-2 gap-x-4 gap-y-3 rounded-lg border bg-popover p-4 shadow-md md:grid-cols-3 lg:grid-cols-5">
                   {KNOWLEDGE_GROUPS
                     .iter()
                     .map(|g| {
                       view! {
                         <div>
                           <div class="mb-1.5 flex items-center gap-1.5 px-2 text-xs font-semibold text-muted-foreground">
-                            <Icon kind=g.icon class="h-3.5 w-3.5" />
-                            <span>{move || t(g.label)}</span>
+                            <Icon kind=icon_of(registry::group_icon(g)) class="h-3.5 w-3.5" />
+                            <span>{move || t(g)}</span>
                           </div>
                           <div class="space-y-0.5">
-                            {g
-                              .items
+                            {registry::MODULES
                               .iter()
-                              .map(|item| {
+                              .filter(|m| m.group == Some(*g))
+                              .map(|m| {
                                 view! {
                                   <a
-                                    href=item.href
+                                    href=m.nav_href()
                                     on:click=move |_| open_menu.set(None)
                                     class=move || {
                                       cn(&[
                                         "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors",
-                                        if active(item.href) {
+                                        if active(m.path) {
                                           "bg-accent text-foreground"
                                         } else {
                                           "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
@@ -243,8 +245,8 @@ pub fn Navigation() -> impl IntoView {
                                       ])
                                     }
                                   >
-                                    <Icon kind=item.icon class="h-4 w-4 shrink-0" />
-                                    <span class="min-w-0 leading-snug">{move || t(item.label)}</span>
+                                    <Icon kind=icon_of(m.icon) class="h-4 w-4 shrink-0" />
+                                    <span class="whitespace-nowrap leading-snug">{move || t(m.title)}</span>
                                   </a>
                                 }
                               })
@@ -259,7 +261,7 @@ pub fn Navigation() -> impl IntoView {
             </div>
 
             // 工具下拉
-            <div class="group relative">
+            <div class="group static">
               <button
                 type="button"
                 data-slot="button"
@@ -283,7 +285,7 @@ pub fn Navigation() -> impl IntoView {
               </button>
               <div class=move || {
                 cn(&[
-                  "absolute right-0 top-full pt-1.5 transition",
+                  "absolute right-4 top-full pt-1.5 transition",
                   if open_menu.get() == Some(MenuKind::Tools) {
                     "visible opacity-100"
                   } else {
@@ -291,29 +293,29 @@ pub fn Navigation() -> impl IntoView {
                   },
                 ])
               }>
-                <div class="grid w-[720px] max-w-[calc(100vw-2rem)] grid-cols-2 gap-x-4 gap-y-3 rounded-lg border bg-popover p-4 shadow-md md:grid-cols-3 lg:grid-cols-5">
+                <div class="grid w-[960px] max-w-[calc(100vw-2rem)] grid-cols-2 gap-x-4 gap-y-3 rounded-lg border bg-popover p-4 shadow-md md:grid-cols-3 lg:grid-cols-5">
                   {TOOL_GROUPS
                     .iter()
                     .map(|g| {
                       view! {
                         <div>
                           <div class="mb-1.5 flex items-center gap-1.5 px-2 text-xs font-semibold text-muted-foreground">
-                            <Icon kind=g.icon class="h-3.5 w-3.5" />
-                            <span>{move || t(g.label)}</span>
+                            <Icon kind=icon_of(registry::group_icon(g)) class="h-3.5 w-3.5" />
+                            <span>{move || t(g)}</span>
                           </div>
                           <div class="space-y-0.5">
-                            {g
-                              .items
+                            {registry::MODULES
                               .iter()
-                              .map(|item| {
+                              .filter(|m| m.group == Some(*g))
+                              .map(|m| {
                                 view! {
                                   <a
-                                    href=item.href
+                                    href=m.nav_href()
                                     on:click=move |_| open_menu.set(None)
                                     class=move || {
                                       cn(&[
                                         "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors",
-                                        if active(item.href) {
+                                        if active(m.path) {
                                           "bg-accent text-foreground"
                                         } else {
                                           "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
@@ -321,8 +323,8 @@ pub fn Navigation() -> impl IntoView {
                                       ])
                                     }
                                   >
-                                    <Icon kind=item.icon class="h-4 w-4 shrink-0" />
-                                    <span class="min-w-0 leading-snug">{move || t(item.label)}</span>
+                                    <Icon kind=icon_of(m.icon) class="h-4 w-4 shrink-0" />
+                                    <span class="whitespace-nowrap leading-snug">{move || t(m.title)}</span>
                                   </a>
                                 }
                               })
@@ -420,16 +422,17 @@ pub fn Navigation() -> impl IntoView {
                   </div>
 
                   <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("考试中心")}</div>
-                  {EXAM_ITEMS
+                  {registry::MODULES
                     .iter()
-                    .map(|item| {
+                    .filter(|m| m.group == Some(GROUP_EXAM))
+                    .map(|m| {
                       view! {
                         <a
-                          href=item.href
+                          href=m.nav_href()
                           class=move || {
                             cn(&[
                               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                              if active(item.href) {
+                              if active(m.path) {
                                 "bg-accent text-foreground"
                               } else {
                                 "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
@@ -438,8 +441,8 @@ pub fn Navigation() -> impl IntoView {
                           }
                           on:click=move |_| menu_open.set(false)
                         >
-                          <Icon kind=item.icon class="h-5 w-5" />
-                          {move || t(item.label)}
+                          <Icon kind=icon_of(m.icon) class="h-5 w-5" />
+                          {move || t(m.title)}
                         </a>
                       }
                     })
@@ -450,18 +453,18 @@ pub fn Navigation() -> impl IntoView {
                     .iter()
                     .map(|g| {
                       view! {
-                        <div class="px-3 pt-1 text-xs font-medium text-muted-foreground">{move || t(g.label)}</div>
-                        {g
-                          .items
+                        <div class="px-3 pt-1 text-xs font-medium text-muted-foreground">{move || t(g)}</div>
+                        {registry::MODULES
                           .iter()
-                          .map(|item| {
+                          .filter(|m| m.group == Some(*g))
+                          .map(|m| {
                             view! {
                               <a
-                                href=item.href
+                                href=m.nav_href()
                                 class=move || {
                                   cn(&[
                                     "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                                    if active(item.href) {
+                                    if active(m.path) {
                                       "bg-accent text-foreground"
                                     } else {
                                       "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
@@ -470,8 +473,8 @@ pub fn Navigation() -> impl IntoView {
                                 }
                                 on:click=move |_| menu_open.set(false)
                               >
-                                <Icon kind=item.icon class="h-5 w-5" />
-                                {move || t(item.label)}
+                                <Icon kind=icon_of(m.icon) class="h-5 w-5" />
+                                {move || t(m.title)}
                               </a>
                             }
                           })
@@ -485,18 +488,18 @@ pub fn Navigation() -> impl IntoView {
                     .iter()
                     .map(|g| {
                       view! {
-                        <div class="px-3 pt-1 text-xs font-medium text-muted-foreground">{move || t(g.label)}</div>
-                        {g
-                          .items
+                        <div class="px-3 pt-1 text-xs font-medium text-muted-foreground">{move || t(g)}</div>
+                        {registry::MODULES
                           .iter()
-                          .map(|item| {
+                          .filter(|m| m.group == Some(*g))
+                          .map(|m| {
                             view! {
                               <a
-                                href=item.href
+                                href=m.nav_href()
                                 class=move || {
                                   cn(&[
                                     "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                                    if active(item.href) {
+                                    if active(m.path) {
                                       "bg-accent text-foreground"
                                     } else {
                                       "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
@@ -505,8 +508,8 @@ pub fn Navigation() -> impl IntoView {
                                 }
                                 on:click=move |_| menu_open.set(false)
                               >
-                                <Icon kind=item.icon class="h-5 w-5" />
-                                {move || t(item.label)}
+                                <Icon kind=icon_of(m.icon) class="h-5 w-5" />
+                                {move || t(m.title)}
                               </a>
                             }
                           })

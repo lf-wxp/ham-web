@@ -6,23 +6,27 @@ use leptos_router::path;
 use crate::pages::{
   AchievementsPage, AmplifierPage, AnalogModesPage, AntennaAnalyzerPage, AntennaArrayPage,
   AntennaDiyPage, AntennaFarmPage, AntennaInstallationPage, AntennaModelingPage, AntennaTuningPage,
-  AntennasPage, AprsPage, AptDecoderPage, ArdfPage, AtvPage, AwardsPage, BandPlanPage, BandsPage,
-  BeginnerPage, BookmarksPage, BrowsePage, CabrilloPage, CallsignCopyPage, CardsPage,
-  CheatSheetPage, ConfusablesPage, ContestCalendarPage, ContestLogPage, ContestPage, CountdownPage,
-  CwOpPage, DailyChallengePage, DashboardPage, DvNetworkPage, DxPage, DxSpotsPage, DxccMapPage,
-  DxpeditionPage, ElectronicsPage, EmcommPage, EmePage, EqslPage, ExamPage, ExamReviewPage,
-  FeedlinePage, FiltersPage, FlashcardsPage, FormulasPage, FrequenciesPage, Ft8Page, GlossaryPage,
-  GnuradioPage, GraylinePage, GridMapPage, GridSystemPage, GroundingPage, HistoryPage, HomePage,
-  IotaPage, LicenseClassesPage, LicensePage, ListenPage, LogPage, LoggingSoftwarePage, MetersPage,
-  MicrowavePage, MistakeTopicsPage, MistakesPage, MobilePage, ModesPage, MorsePage, MostWantedPage,
-  MufPage, NotFoundPage, NotificationsPage, NvisPage, OperatingPage, OrganizationsPage, PacketPage,
-  PhoneticPage, PhotoProcessorPage, PolarizationPage, PortableMapPage, PortablePage, PowerPage,
-  PowerSupplyPage, PracticePage, PrefixesPage, PrintPage, ProgressPage, PropagationPage,
+  AntennasPage, AprsPage, AptDecoderPage, ArdfPage, AtvPage, AuroraPage, AwardsPage, BalunPage,
+  BandPlanPage, BandsPage, BeaconsPage, BeginnerPage, BookmarksPage, BrowsePage, CabrilloPage,
+  CallsignCopyPage, CallsignPage, CardsPage, CheatSheetPage, CommunityPage, ConfusablesPage,
+  ContestCalendarPage, ContestLogPage, ContestPage, CoordinationPage, CountdownPage, CwOpPage,
+  DailyChallengePage, DashboardPage, DevelopersPage, DiyProjectsPage, DvNetworkPage, DxPage,
+  DxSpotsPage, DxccMapPage, DxpeditionPage, ElectronicsPage, EmcommPage, EmePage, EqslPage,
+  EventsPage, ExamPage, ExamReviewPage, FeedlinePage, FiltersPage, FlashcardsPage, FormulasPage,
+  FrequenciesPage, Ft8Page, GearPage, GlossaryPage, GnuradioPage, GraylinePage, GridMapPage,
+  GridSystemPage, GroundingPage, HistoryPage, HomePage, IotaPage, LearningPathPage,
+  LearningResourcesPage, LicenseClassesPage, LicensePage, ListenPage, LogPage, LoggingSoftwarePage,
+  MeteorScatterPage, MetersPage, MicrowavePage, MistakeTopicsPage, MistakesPage, MobilePage,
+  ModesPage, MorsePage, MostWantedPage, MufPage, NoisePage, NotFoundPage, NotificationsPage,
+  NvisPage, OpenSourcePage, OperatingPage, OrganizationsPage, PacketPage, PhoneticPage,
+  PhotoProcessorPage, PolarizationPage, PortableMapPage, PortablePage, PowerPage, PowerSupplyPage,
+  PracticalAntennasPage, PracticePage, PrefixesPage, PrintPage, ProgressPage, PropagationPage,
   PskDecodePage, PskReporterPage, QCodePage, QrpPage, QslCardPage, QslDesignerPage, QslLabelsPage,
   RbnPage, ReceiverPage, ReferencePage, RegulationsPage, RemotePage, RepeaterBuildPage,
-  RepeaterPage, ReportPage, RfiPage, RstPage, RttyPage, SafetyPage, SatellitesPage, SdrPage,
-  SolarPage, SpecialPropPage, SstvPage, StatsPage, StudyCalendarPage, SwlPage, ToolsPage,
-  TransceiverPage, WeatherSatPage, WeeklyPage, WsprPage,
+  RepeaterPage, ReportPage, RfiPage, RstPage, RttyPage, SafetyPage, SatOperationPage,
+  SatellitesPage, SdrMapPage, SdrPage, SdrWaterfallPage, SolarPage, SpecialPropPage,
+  SstvDecoderPage, SstvPage, StatsPage, StudyCalendarPage, SwlPage, ToolsPage, TransceiverPage,
+  VnaPage, WeatherSatPage, WeeklyPage, WinlinkPage, WsprDecoderPage, WsprPage, ZoneMapPage,
 };
 
 use crate::components::related_topics::RelatedTopics;
@@ -61,6 +65,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/phonetic") view=PhoneticPage />
         <Route path=path!("/callsign-copy") view=CallsignCopyPage />
         <Route path=path!("/bands") view=BandsPage />
+        <Route path=path!("/beacons") view=BeaconsPage />
         <Route path=path!("/reference") view=ReferencePage />
         <Route path=path!("/cheat-sheet") view=CheatSheetPage />
         <Route path=path!("/confusables") view=ConfusablesPage />
@@ -68,10 +73,13 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/antennas") view=AntennasPage />
         <Route path=path!("/bandplan") view=BandPlanPage />
         <Route path=path!("/prefixes") view=PrefixesPage />
+        <Route path=path!("/callsign") view=CallsignPage />
         <Route path=path!("/modes") view=ModesPage />
         <Route path=path!("/analog-modes") view=AnalogModesPage />
         <Route path=path!("/frequencies") view=FrequenciesPage />
+        <Route path=path!("/coordination") view=CoordinationPage />
         <Route path=path!("/satellites") view=SatellitesPage />
+        <Route path=path!("/sat-operation") view=SatOperationPage />
         <Route path=path!("/operating") view=OperatingPage />
         <Route path=path!("/rst") view=RstPage />
         <Route path=path!("/propagation") view=PropagationPage />
@@ -84,23 +92,31 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/flashcards") view=FlashcardsPage />
         <Route path=path!("/contest") view=ContestPage />
         <Route path=path!("/contest-calendar") view=ContestCalendarPage />
+        <Route path=path!("/events") view=EventsPage />
         <Route path=path!("/solar") view=SolarPage />
         <Route path=path!("/safety") view=SafetyPage />
         <Route path=path!("/license") view=LicensePage />
         <Route path=path!("/electronics") view=ElectronicsPage />
         <Route path=path!("/feedline") view=FeedlinePage />
+        <Route path=path!("/balun") view=BalunPage />
         <Route path=path!("/meters") view=MetersPage />
         <Route path=path!("/power") view=PowerPage />
         <Route path=path!("/awards") view=AwardsPage />
         <Route path=path!("/aprs") view=AprsPage />
         <Route path=path!("/sdr") view=SdrPage />
+        <Route path=path!("/sdr-map") view=SdrMapPage />
+        <Route path=path!("/sdr-waterfall") view=SdrWaterfallPage />
         <Route path=path!("/emcomm") view=EmcommPage />
+        <Route path=path!("/winlink") view=WinlinkPage />
         <Route path=path!("/beginner") view=BeginnerPage />
         <Route path=path!("/organizations") view=OrganizationsPage />
         <Route path=path!("/ardf") view=ArdfPage />
         <Route path=path!("/special-prop") view=SpecialPropPage />
+        <Route path=path!("/meteor-scatter") view=MeteorScatterPage />
+        <Route path=path!("/aurora") view=AuroraPage />
         <Route path=path!("/antenna-diy") view=AntennaDiyPage />
         <Route path=path!("/transceiver") view=TransceiverPage />
+        <Route path=path!("/gear") view=GearPage />
         <Route path=path!("/dx") view=DxPage />
         <Route path=path!("/eqsl") view=EqslPage />
         <Route path=path!("/grid") view=GridSystemPage />
@@ -113,7 +129,9 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/ft8") view=Ft8Page />
         <Route path=path!("/repeater") view=RepeaterPage />
         <Route path=path!("/wspr") view=WsprPage />
+        <Route path=path!("/wspr-decode") view=WsprDecoderPage />
         <Route path=path!("/logging-software") view=LoggingSoftwarePage />
+        <Route path=path!("/open-source") view=OpenSourcePage />
         <Route path=path!("/microwave") view=MicrowavePage />
         <Route path=path!("/remote") view=RemotePage />
         <Route path=path!("/qsl-card") view=QslCardPage />
@@ -149,6 +167,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/exam-review") view=ExamReviewPage />
         <Route path=path!("/grid-map") view=GridMapPage />
         <Route path=path!("/dxcc-map") view=DxccMapPage />
+        <Route path=path!("/zone-map") view=ZoneMapPage />
         <Route path=path!("/grayline") view=GraylinePage />
         <Route path=path!("/stats") view=StatsPage />
         <Route path=path!("/notifications") view=NotificationsPage />
@@ -161,6 +180,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/tools") view=ToolsPage />
         <Route path=path!("/photo-processor") view=PhotoProcessorPage />
         <Route path=path!("/sstv") view=SstvPage />
+        <Route path=path!("/sstv-decode") view=SstvDecoderPage />
         <Route path=path!("/weather-sat") view=WeatherSatPage />
         <Route path=path!("/apt-decoder") view=AptDecoderPage />
         <Route path=path!("/packet") view=PacketPage />
@@ -168,6 +188,14 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/license-classes") view=LicenseClassesPage />
         <Route path=path!("/receiver") view=ReceiverPage />
         <Route path=path!("/antenna-array") view=AntennaArrayPage />
+        <Route path=path!("/noise") view=NoisePage />
+        <Route path=path!("/learning-path") view=LearningPathPage />
+        <Route path=path!("/practical-antennas") view=PracticalAntennasPage />
+        <Route path=path!("/vna") view=VnaPage />
+        <Route path=path!("/diy-projects") view=DiyProjectsPage />
+        <Route path=path!("/developers") view=DevelopersPage />
+        <Route path=path!("/learning-resources") view=LearningResourcesPage />
+        <Route path=path!("/community") view=CommunityPage />
       </Routes>
       <TopicQuiz />
       <RelatedTopics />

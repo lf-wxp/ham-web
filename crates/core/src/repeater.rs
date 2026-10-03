@@ -34,10 +34,17 @@ pub const DIGITAL_GATEWAYS: &[(&str, &str, &str)] = &[
   ),
 ];
 
-/// 互联网网关。
+/// 互联网语音网关（VoIP）。
 pub const INTERNET_GATEWAYS: &[(&str, &str)] = &[
-  ("EchoLink", "把电台经互联网互联，可用电脑/手机接入。"),
-  ("IRLP", "互联网无线电连接项目，连接各地中继台。"),
+  (
+    "EchoLink",
+    "把电台经互联网互联，可用电脑/手机接入远地中继或会议。",
+  ),
+  ("IRLP", "互联网无线电连接项目，连接各地中继台，需先听再发。"),
+  (
+    "AllStar",
+    "开源 Asterisk 语音网关，支持自建节点与链路互联。",
+  ),
 ];
 
 #[cfg(test)]

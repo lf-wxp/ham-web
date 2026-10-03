@@ -42,14 +42,9 @@ fn load_logbook() -> Logbook {
 
 fn save_logbook(logbook: &Logbook) {
   LOG_DIRTY.with(|c| c.set(true));
-  // localStorage 同步快照（静默）：数据较小时保证同步读可用、无闪烁；写满时忽略，
-  // 由 IndexedDB 兜底承载大日志，避免反复弹出「存储已满」。
-  crate::util::storage::set_json_silent(LOG_KEY, logbook);
-  // IndexedDB 权威持久化（异步，fire-and-forget）。
+  // 统一门面：localStorage 静默快照 + IndexedDB 权威（异步），见 `crate::kv::save_large`。
   if let Ok(json) = serde_json::to_string(logbook) {
-    wasm_bindgen_futures::spawn_local(async move {
-      let _ = crate::idb::set(LOG_KEY, &json).await;
-    });
+    crate::kv::save_large(LOG_KEY, &json);
   }
 }
 
@@ -132,7 +127,7 @@ pub fn provide_log_store() {
 
   // IndexedDB 权威数据覆盖 localStorage 快照（大日志时快照可能缺失 / 过期）。
   wasm_bindgen_futures::spawn_local(async move {
-    if let Ok(Some(json)) = crate::idb::get(LOG_KEY).await
+    if let Some(json) = crate::kv::load_large(LOG_KEY).await
       && let Ok(lb) = serde_json::from_str::<Logbook>(&json)
       && !LOG_DIRTY.with(|c| c.get())
     {

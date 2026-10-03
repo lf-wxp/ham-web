@@ -13,9 +13,13 @@ mod grayline_overlay;
 mod map_view;
 mod projection;
 mod world_data;
+mod zone_map;
+mod zone_overlay;
 
 pub use choropleth_overlay::{ChoroplethOverlay, RegionShape, RegionStatus};
 pub use dxcc_overlay::DxccOverlay;
 pub use grayline_overlay::GraylineOverlay;
 pub use map_view::MapView;
 pub use projection::project;
+pub use zone_map::ZoneMap;
+pub use zone_overlay::ZoneOverlay;

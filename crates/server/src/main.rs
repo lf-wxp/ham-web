@@ -29,6 +29,7 @@ use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
 mod alerts;
+mod api_v1;
 mod cache;
 mod callsign;
 mod geocode;
@@ -86,6 +87,8 @@ fn cache_policy(path: &str) -> Option<&'static str> {
     p if p.starts_with("/questions/images/") || p.starts_with("/fonts/") => {
       Some("public, max-age=86400")
     }
+    // 开放 API 自带 ETag 与 Cache-Control（见 `api_v1::send`），这里不能覆盖成 no-store。
+    p if p.starts_with("/api/v1/") => None,
     p if p.starts_with("/api/") => Some(NO_STORE),
     p if is_hashed_asset(p) => Some(IMMUTABLE),
     _ => None,
@@ -157,21 +160,50 @@ fn app(cfg: &Config, push_service: push::PushService) -> Router {
     rl_limit,
     std::time::Duration::from_secs(60),
   ));
+  // 开放 API（/api/v1）使用独立配额，避免第三方流量挤占前端：
+  // 匿名一档，携带 `Authorization: Bearer <key>`（`API_KEYS`）另一档。
+  let anon_limit = std::env::var("API_V1_RATE_LIMIT_PER_MIN")
+    .ok()
+    .and_then(|s| s.parse::<usize>().ok())
+    .unwrap_or(ham_web_core::api_v1::ANON_LIMIT_PER_MIN);
+  let v1_anon = Arc::new(rate_limit::RateLimiter::new(
+    anon_limit,
+    Duration::from_secs(60),
+  ));
+  let v1_keyed = Arc::new(rate_limit::RateLimiter::new(
+    ham_web_core::api_v1::KEYED_LIMIT_PER_MIN,
+    Duration::from_secs(60),
+  ));
+  let api_keys = Arc::new(api_v1::load_keys());
   let limit_mw = {
     let limiter = rate_limiter.clone();
     move |req: Request, next: Next| {
       let limiter = limiter.clone();
+      let v1_anon = v1_anon.clone();
+      let v1_keyed = v1_keyed.clone();
+      let api_keys = api_keys.clone();
       async move {
-        if !req.uri().path().starts_with("/api/") {
+        let path = req.uri().path();
+        if !path.starts_with("/api/") {
           return next.run(req).await;
         }
+        let is_v1 = path.starts_with("/api/v1/");
+        let active = if !is_v1 {
+          &limiter
+        } else if api_v1::is_authorized(req.headers(), &api_keys) {
+          &v1_keyed
+        } else {
+          &v1_anon
+        };
         // 连接信息由 `into_make_service_with_connect_info` 注入到 extensions。
         let conn = req
           .extensions()
           .get::<axum::extract::ConnectInfo<SocketAddr>>()
           .cloned();
-        if rate_limit::allow(&limiter, conn, &req) {
+        if rate_limit::allow(active, conn, &req) {
           next.run(req).await
+        } else if is_v1 {
+          api_v1::rate_limited()
         } else {
           (StatusCode::TOO_MANY_REQUESTS, "too many requests").into_response()
         }
@@ -293,6 +325,12 @@ fn app(cfg: &Config, push_service: push::PushService) -> Router {
       push::unsubscribe_handler(s.clone(), headers, body)
     }
   };
+  let push_review_count = {
+    let s = push_service.clone();
+    move |headers: axum::http::HeaderMap, body: String| {
+      push::review_count_handler(s.clone(), headers, body)
+    }
+  };
 
   Router::new()
     .route("/healthz", get(|| async { "ok" }))
@@ -314,9 +352,23 @@ fn app(cfg: &Config, push_service: push::PushService) -> Router {
     .route("/api/push/vapid-public-key", get(push_public))
     .route("/api/push/subscribe", post(push_subscribe))
     .route("/api/push/unsubscribe", post(push_unsubscribe))
+    .route("/api/push/review-count", post(push_review_count))
+    // 开放 API v1：纯计算 / 静态参考数据，契约见 `ham_web_core::api_v1`。
+    .route("/api/v1/dxcc", get(api_v1::dxcc_list))
+    .route("/api/v1/dxcc/lookup", get(api_v1::dxcc_lookup))
+    .route("/api/v1/bands", get(api_v1::bands_list))
+    .route("/api/v1/grid/to-latlon", get(api_v1::grid_to_latlon))
+    .route("/api/v1/grid/from-latlon", get(api_v1::grid_from_latlon))
+    .route("/api/v1/grid/distance", get(api_v1::grid_distance))
+    .route("/api/v1/propagation/muf", get(api_v1::propagation_muf))
+    .route("/api/v1/status", get(api_v1::status))
+    .route("/api/v1/openapi.json", get(api_v1::openapi_json))
+    .route("/api/v1/{*rest}", get(api_v1::not_found))
     .fallback_service(static_files)
     .layer(middleware::from_fn(cache_headers))
     .layer(middleware::from_fn(limit_mw))
+    // CORS 放在限流外层：429 响应与预检请求同样带跨域头。
+    .layer(middleware::from_fn(api_v1::cors))
     .layer(CompressionLayer::new())
     // 兜底超时：上游已各自配置 ureq 超时（见 `util::http_agent`），这一层防止
     // handler 内部因单飞等待、telnet 读取或本地计算异常而无限挂起占住连接。
@@ -438,6 +490,9 @@ mod tests {
     assert_eq!(cache_policy("/questions/A.json"), Some("no-cache"));
     assert_eq!(cache_policy("/dxcc-entities.bin"), Some("no-cache"));
     assert_eq!(cache_policy("/pwa-icon.svg"), None);
+    // 内部代理接口 no-store；开放 API 自管缓存头。
+    assert_eq!(cache_policy("/api/solar"), Some(NO_STORE));
+    assert_eq!(cache_policy("/api/v1/dxcc"), None);
   }
 
   /// 带 `index.html` 的临时静态目录，测试结束自动清理（RAII）。
@@ -513,5 +568,153 @@ mod tests {
       .await
       .expect("response");
     assert_eq!(res.status(), StatusCode::NOT_FOUND);
+  }
+
+  /// 请求开放 API，返回 `(状态码, 响应头, JSON 正文)`。
+  async fn v1(uri: &str) -> (StatusCode, axum::http::HeaderMap, serde_json::Value) {
+    let dist = TempDist::new();
+    let res = app(&config(&dist), push::PushService::default())
+      .oneshot(get(uri))
+      .await
+      .expect("response");
+    let status = res.status();
+    let headers = res.headers().clone();
+    let body = axum::body::to_bytes(res.into_body(), usize::MAX)
+      .await
+      .expect("body");
+    let json = serde_json::from_slice(&body).unwrap_or(serde_json::Value::Null);
+    (status, headers, json)
+  }
+
+  /// 契约表里登记的每个端点都必须真实可路由（不带参数时应是 400 / 200，而不是 404）。
+  #[tokio::test]
+  async fn every_documented_endpoint_is_routed() {
+    for e in ham_web_core::api_v1::ENDPOINTS {
+      let (status, _, _) = v1(e.path).await;
+      assert_ne!(status, StatusCode::NOT_FOUND, "{} 已登记但未挂路由", e.path);
+    }
+  }
+
+  #[tokio::test]
+  async fn v1_unknown_path_is_json_404_not_spa_html() {
+    let (status, _, body) = v1("/api/v1/nope").await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body["error"]["code"], "not_found");
+  }
+
+  #[tokio::test]
+  async fn v1_success_is_wrapped_cached_and_cors_enabled() {
+    let (status, headers, body) = v1("/api/v1/dxcc/lookup?callsign=ba1xx").await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["data"]["callsign"], "BA1XX");
+    assert_eq!(body["data"]["entity"]["dxcc"], 318);
+    assert_eq!(body["meta"]["source"], "static");
+    assert_eq!(headers["access-control-allow-origin"], "*");
+    assert!(
+      headers["cache-control"]
+        .to_str()
+        .expect("ascii")
+        .starts_with("public, max-age=")
+    );
+    assert!(headers.contains_key("etag"));
+  }
+
+  #[tokio::test]
+  async fn v1_conditional_request_returns_304() {
+    let dist = TempDist::new();
+    let first = app(&config(&dist), push::PushService::default())
+      .oneshot(get("/api/v1/bands"))
+      .await
+      .expect("response");
+    let etag = first.headers()["etag"].clone();
+    let req = axum::extract::Request::builder()
+      .uri("/api/v1/bands")
+      .header("if-none-match", etag)
+      .body(Body::empty())
+      .expect("valid request");
+    let second = app(&config(&dist), push::PushService::default())
+      .oneshot(req)
+      .await
+      .expect("response");
+    assert_eq!(second.status(), StatusCode::NOT_MODIFIED);
+  }
+
+  #[tokio::test]
+  async fn v1_validates_parameters_with_json_errors() {
+    for uri in [
+      "/api/v1/dxcc/lookup",
+      "/api/v1/dxcc/lookup?callsign=a%20b",
+      "/api/v1/dxcc?limit=0",
+      "/api/v1/dxcc?limit=201",
+      "/api/v1/grid/to-latlon?grid=ZZ",
+      "/api/v1/grid/from-latlon?lat=91&lon=0",
+      "/api/v1/grid/from-latlon?lat=abc&lon=0",
+      "/api/v1/propagation/muf?tx=OM89&rx=IO91&month=13",
+      "/api/v1/propagation/muf?tx=OM89&rx=IO91&hour=25",
+    ] {
+      let (status, _, body) = v1(uri).await;
+      assert_eq!(status, StatusCode::BAD_REQUEST, "{uri}");
+      assert_eq!(body["error"]["code"], "invalid_parameter", "{uri}");
+    }
+  }
+
+  #[tokio::test]
+  async fn v1_unassignable_callsign_is_404() {
+    let (status, _, body) = v1("/api/v1/dxcc/lookup?callsign=BG4XXX/MM").await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body["error"]["code"], "not_found");
+  }
+
+  #[tokio::test]
+  async fn v1_dxcc_list_paginates_with_cursor() {
+    let (_, _, first) = v1("/api/v1/dxcc?limit=5").await;
+    assert_eq!(first["data"].as_array().map(Vec::len), Some(5));
+    let cursor = first["meta"]["next_cursor"].as_str().expect("应有下一页");
+    let (status, _, second) = v1(&format!("/api/v1/dxcc?limit=5&cursor={cursor}")).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_ne!(first["data"][0]["dxcc"], second["data"][0]["dxcc"]);
+    // 翻到最后一页后不再给 next_cursor。
+    let total = first["meta"]["total"].as_u64().expect("total");
+    let (_, _, last) = v1(&format!("/api/v1/dxcc?limit=200&cursor={}", total - 1)).await;
+    assert_eq!(last["data"].as_array().map(Vec::len), Some(1));
+    assert!(last["meta"]["next_cursor"].is_null());
+  }
+
+  #[tokio::test]
+  async fn v1_computations_match_core() {
+    let (_, _, g) = v1("/api/v1/grid/from-latlon?lat=0&lon=0").await;
+    assert_eq!(g["data"]["grid"], "JJ00AA");
+    let (_, _, d) = v1("/api/v1/grid/distance?from=FN31&to=FN31").await;
+    assert_eq!(d["data"]["distance_km"], 0.0);
+    let (status, _, m) = v1("/api/v1/propagation/muf?tx=OM89&rx=IO91&hour=12").await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(m["data"]["muf"].as_f64().is_some_and(|v| v > 0.0));
+    assert_eq!(m["data"]["bands"].as_array().map(Vec::len), Some(10));
+  }
+
+  #[tokio::test]
+  async fn v1_preflight_is_answered_with_cors_headers() {
+    let dist = TempDist::new();
+    let req = axum::extract::Request::builder()
+      .method("OPTIONS")
+      .uri("/api/v1/dxcc")
+      .body(Body::empty())
+      .expect("valid request");
+    let res = app(&config(&dist), push::PushService::default())
+      .oneshot(req)
+      .await
+      .expect("response");
+    assert_eq!(res.status(), StatusCode::NO_CONTENT);
+    assert_eq!(res.headers()["access-control-allow-origin"], "*");
+  }
+
+  #[tokio::test]
+  async fn internal_api_stays_same_origin() {
+    let dist = TempDist::new();
+    let res = app(&config(&dist), push::PushService::default())
+      .oneshot(get("/healthz"))
+      .await
+      .expect("response");
+    assert!(!res.headers().contains_key("access-control-allow-origin"));
   }
 }

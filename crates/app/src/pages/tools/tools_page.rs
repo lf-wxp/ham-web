@@ -4,6 +4,7 @@ use crate::util::set_title;
 
 use super::antenna_length::AntennaLength;
 use super::antenna_matcher::AntennaMatcher;
+use super::aprs_codec::AprsCodec;
 use super::attenuator_calculator::AttenuatorCalculator;
 use super::backup_tool::BackupTool;
 use super::battery_runtime::BatteryRuntime;
@@ -19,21 +20,30 @@ use super::distance_bearing::DistanceBearing;
 use super::doppler_calculator::DopplerCalculator;
 use super::eirp_calculator::EirpCalculator;
 use super::feedline_loss::FeedlineLoss;
+use super::filter_design::FilterDesign;
 use super::freq_wavelength::FreqWavelength;
 use super::frequency_units::FrequencyUnits;
 use super::fspl_calculator::FsplCalculator;
 use super::gain_conversion::GainConversion;
 use super::lc_resonance::LcResonance;
 use super::link_budget_calculator::LinkBudgetCalculator;
+use super::mode_encoder::ModeEncoder;
 use super::noise_cascade::NoiseCascade;
 use super::ohms_law::OhmsLaw;
+use super::oscillator::Oscillator;
 use super::propagation_estimator::PropagationEstimator;
 use super::reactance::Reactance;
 use super::receiver_sensitivity::ReceiverSensitivity;
 use super::resistor_color_code::ResistorColorCode;
 use super::resistor_parallel::ResistorParallel;
+use super::rf_exposure::RfExposure;
+use super::smith_chart::SmithChart;
 use super::swr_converter::SwrConverter;
+use super::tone_squelch::ToneSquelch;
 use super::transformer_calculator::TransformerCalculator;
+use super::tx_line::TxLine;
+use super::utc_clock::UtcClock;
+use super::wire_gauge::WireGauge;
 use crate::i18n::t;
 
 /// 工具目录（锚点 id + 标题）。
@@ -47,6 +57,7 @@ const TOOL_NAV: &[(&str, &str)] = &[
   ("reactance", "容抗 / 感抗"),
   ("antenna-length", "天线长度"),
   ("antenna-matcher", "天线匹配"),
+  ("smith", "史密斯圆图"),
   ("swr", "驻波比"),
   ("cascade-gain", "级联增益"),
   ("resistor", "电阻串并联"),
@@ -54,6 +65,7 @@ const TOOL_NAV: &[(&str, &str)] = &[
   ("battery", "电池续航"),
   ("dbm-dbuv", "dBm ↔ dBμV"),
   ("feedline-loss", "馈线损耗"),
+  ("filter-design", "滤波器设计"),
   ("callsign-lookup", "呼号查询"),
   ("distance-bearing", "两点距离 / 方位角"),
   ("propagation-muf", "传播预测 MUF"),
@@ -69,6 +81,14 @@ const TOOL_NAV: &[(&str, &str)] = &[
   ("coil-yagi", "线圈 / Yagi 计算"),
   ("attenuator", "衰减器"),
   ("transformer", "变压器阻抗"),
+  ("utc-clock", "UTC 时间"),
+  ("tx-line", "传输线阻抗"),
+  ("wire-gauge", "线径压降"),
+  ("oscillator", "晶体振荡"),
+  ("rf-exposure", "射频暴露"),
+  ("tone-squelch", "亚音与中继频差"),
+  ("aprs-codec", "APRS 编解码"),
+  ("mode-encoder", "数字模式编码"),
   ("backup", "数据备份"),
 ];
 
@@ -205,6 +225,12 @@ pub fn ToolsPage() -> impl IntoView {
               <div class="p-4"><AntennaMatcher /></div>
             </section>
 
+            <section id="smith" class="scroll-mt-24 rounded-xl border bg-card">
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("史密斯圆图")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("输入复阻抗（R ± jX），在圆图上定位并显示驻波比 / 反射系数 / 回波损耗。")}</p>
+              <div class="p-4"><SmithChart /></div>
+            </section>
+
             <section id="swr" class="scroll-mt-24 rounded-xl border bg-card">
               <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("驻波比 / 反射系数")}</h2>
               <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("SWR = (1+|Γ|)/(1-|Γ|)，回波损耗 = -20·lg(|Γ|)。")}</p>
@@ -245,6 +271,12 @@ pub fn ToolsPage() -> impl IntoView {
               <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("馈线损耗")}</h2>
               <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("总损耗 = 每百米损耗 × 长度 / 100；功率损耗 = 1 − 10^(−dB/10)。")}</p>
               <div class="p-4"><FeedlineLoss /></div>
+            </section>
+
+            <section id="filter-design" class="scroll-mt-24 rounded-xl border bg-card">
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("滤波器设计")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("Butterworth 低通 / 高通 / 带通 / 带阻的 L/C 元件值。")}</p>
+              <div class="p-4"><FilterDesign /></div>
             </section>
 
             <section id="callsign-lookup" class="scroll-mt-24 rounded-xl border bg-card">
@@ -335,6 +367,54 @@ pub fn ToolsPage() -> impl IntoView {
               <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("变压器阻抗")}</h2>
               <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("按初级 / 次级阻抗计算变压器匝数比与阻抗比。")}</p>
               <div class="p-4"><TransformerCalculator /></div>
+            </section>
+
+            <section id="utc-clock" class="scroll-mt-24 rounded-xl border bg-card">
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("UTC 时间")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("实时 UTC / Zulu 时钟与常用时区对照。")}</p>
+              <div class="p-4"><UtcClock /></div>
+            </section>
+
+            <section id="tx-line" class="scroll-mt-24 rounded-xl border bg-card">
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("传输线阻抗")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("同轴 / 平行双线 / 微带线的特性阻抗。")}</p>
+              <div class="p-4"><TxLine /></div>
+            </section>
+
+            <section id="wire-gauge" class="scroll-mt-24 rounded-xl border bg-card">
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("线径压降")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("按电流与长度估算直流供电线径与回路压降。")}</p>
+              <div class="p-4"><WireGauge /></div>
+            </section>
+
+            <section id="oscillator" class="scroll-mt-24 rounded-xl border bg-card">
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("晶体振荡")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("晶体频率牵引（负载电容 → ppm）与串联谐振。")}</p>
+              <div class="p-4"><Oscillator /></div>
+            </section>
+
+            <section id="rf-exposure" class="scroll-mt-24 rounded-xl border bg-card">
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("射频暴露评估")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("按 FCC OET-65 估算功率密度与最小安全距离。")}</p>
+              <div class="p-4"><RfExposure /></div>
+            </section>
+
+            <section id="tone-squelch" class="scroll-mt-24 rounded-xl border bg-card">
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("亚音与中继频差")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("中继频差计算与 CTCSS / DCS 亚音码表。")}</p>
+              <div class="p-4"><ToneSquelch /></div>
+            </section>
+
+            <section id="aprs-codec" class="scroll-mt-24 rounded-xl border bg-card">
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("APRS 编解码")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("APRS 未压缩位置报文的编解码。")}</p>
+              <div class="p-4"><AprsCodec /></div>
+            </section>
+
+            <section id="mode-encoder" class="scroll-mt-24 rounded-xl border bg-card">
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("数字模式编码")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("文本 → 摩尔斯（CW）与 RTTY（ITA2）比特流。")}</p>
+              <div class="p-4"><ModeEncoder /></div>
             </section>
 
             <section id="backup" class="scroll-mt-24 rounded-xl border bg-card">

@@ -130,7 +130,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
             }
           >
             <span class="h-2 w-2 shrink-0 rounded-full" style=format!("background: {color}")></span>
-            <span class="truncate">{name}</span>
+            <span class="truncate" title=name.to_string()>{name}</span>
             <span class="ml-auto text-xs tabular-nums">{move || cat_count.with(|m| m.get(key).copied().unwrap_or(0))}</span>
           </button>
         }

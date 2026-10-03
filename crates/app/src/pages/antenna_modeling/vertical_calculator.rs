@@ -3,7 +3,7 @@
 use ham_web_core::antenna_design::vertical_dims;
 use leptos::prelude::*;
 
-use crate::i18n::t;
+use crate::i18n::{t, tf};
 
 const INPUT: &str = "h-10 rounded-lg border bg-background px-3 text-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 
@@ -50,7 +50,11 @@ pub(super) fn VerticalCalculator() -> impl IntoView {
           let Some((radiator, radial)) = vertical_dims(freq.get(), k.get()) else {
             return t("请输入有效频率与缩短系数");
           };
-          format!("辐射体 ≈ {radiator:.2} m　地网（每根）≈ {radial:.2} m")
+          // 先按固定小数位格式化数值，再交给 `tf` 填占位符 —— 译文里只需一个 `{}`。
+          tf(
+            "辐射体 ≈ {} m　地网（每根）≈ {} m",
+            &[&format!("{radiator:.2}"), &format!("{radial:.2}")],
+          )
         }}
       </div>
     </div>

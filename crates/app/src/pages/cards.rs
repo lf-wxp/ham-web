@@ -281,6 +281,32 @@ pub fn CardsPage() -> impl IntoView {
     )
   };
 
+  // 记忆巩固分段条：熟记（≥21 天）与学习中（已学未熟记）占当前卡组的比例。
+  let mastery_bar = move || {
+    // 订阅 deck 变化（切换卡组时重算），计算本身只用 cards / schedule。
+    let _ = deck.get();
+    let ids: Vec<String> = cards.with(|c| {
+      c.as_ref()
+        .map(|l| l.iter().map(|c| c.id.clone()).collect())
+        .unwrap_or_default()
+    });
+    let (learned, mature) = schedule.with(|s| s.progress(&ids));
+    let total = ids.len();
+    (total > 0).then(|| {
+      let pct = |n: usize| -> String { format!("{:.2}%", n as f64 / total as f64 * 100.0) };
+      view! {
+        <div
+          data-testid="card-mastery-bar"
+          class="flex h-2 w-full overflow-hidden rounded-full bg-muted"
+          title=tf("已学 {} / 熟记 {}", &[&learned.to_string(), &mature.to_string()])
+        >
+          <div class="bg-emerald-500/70" style=format!("width: {}", pct(mature))></div>
+          <div class="bg-sky-400/70" style=format!("width: {}", pct(learned - mature))></div>
+        </div>
+      }
+    })
+  };
+
   let card_view = move || {
     if cards.with(Option::is_none) {
       return view! { <Loading label=t("加载卡片...") class="py-16" /> }.into_any();
@@ -321,7 +347,7 @@ pub fn CardsPage() -> impl IntoView {
         <button
           type="button"
           class="flex min-h-48 w-full flex-col items-center justify-center gap-2 rounded-xl border bg-card p-6 text-center shadow-sm"
-          aria-label=if revealed.get_untracked() { "卡片背面" } else { "翻面查看答案" }
+          aria-label=if revealed.get_untracked() { t("卡片背面") } else { t("翻面查看答案") }
           on:click=move |_| reveal()
         >
           <span class="font-mono text-3xl font-bold tracking-wide">{c.front.clone()}</span>
@@ -370,6 +396,7 @@ pub fn CardsPage() -> impl IntoView {
         {Deck::ALL.into_iter().map(chip).collect_view()}
       </div>
       <p class="text-xs text-muted-foreground tabular-nums">{progress}</p>
+      {mastery_bar}
       {card_view}
     </div>
   }

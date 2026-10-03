@@ -34,7 +34,7 @@ pub fn FormulasPage() -> impl IntoView {
                           <div class="mt-1 font-mono text-sm font-semibold text-primary">{f.expr}</div>
                           <div class="mt-0.5 text-xs text-muted-foreground">{f.desc}</div>
                           <div class="mt-1 text-[11px] text-primary opacity-0 transition-opacity group-hover:opacity-100">
-                            "计算 →"
+                            {move || t("计算 →")}
                           </div>
                         </a>
                       }

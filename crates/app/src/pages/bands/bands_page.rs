@@ -84,7 +84,7 @@ pub fn BandsPage() -> impl IntoView {
             <Icon kind=IconKind::Satellite class=SAT_ICON />
             {move || t("表示该频段也供卫星业余业务使用")}
           </span>
-          <span class="inline-flex flex-wrap items-center gap-1.5">"使用状态：" {legend}</span>
+          <span class="inline-flex flex-wrap items-center gap-1.5">{move || t("使用状态：")} {legend}</span>
         </div>
 
         <div class="hidden overflow-x-auto rounded-xl border bg-card md:block">

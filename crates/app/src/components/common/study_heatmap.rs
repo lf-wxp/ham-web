@@ -55,7 +55,7 @@ pub fn StudyHeatmap(days: HashMap<String, u32>, today: String) -> impl IntoView 
             .map(|wd| {
               view! {
                 <div class="flex-1 text-center text-[9px] leading-none text-muted-foreground">
-                  {*wd}
+                  {move || t(wd)}
                 </div>
               }
             })

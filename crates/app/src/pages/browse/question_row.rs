@@ -81,21 +81,33 @@ pub(super) fn QuestionRow(q: QuestionItem) -> impl IntoView {
         .explanation
         .clone()
         .filter(|e| !e.is_empty())
-        .map(|e| {
-          view! {
-            <div class="mb-3 border-t border-dashed pt-3">
-              <div class="mb-1 text-xs font-semibold text-muted-foreground">{move || t("解析")}</div>
-              <div class="whitespace-pre-line text-sm leading-6 text-muted-foreground">{e}</div>
-            </div>
-          }
-        })}
+        .map_or_else(
+          || {
+            view! {
+              <div class="mb-3 border-t border-dashed pt-3">
+                <div class="mb-1 text-xs font-semibold text-muted-foreground">{move || t("解析")}</div>
+                <div class="text-sm leading-6 text-muted-foreground">{move || t("此题暂无解析")}</div>
+              </div>
+            }
+            .into_any()
+          },
+          |e| {
+            view! {
+              <div class="mb-3 border-t border-dashed pt-3">
+                <div class="mb-1 text-xs font-semibold text-muted-foreground">{move || t("解析")}</div>
+                <div class="whitespace-pre-line text-sm leading-6 text-muted-foreground">{e}</div>
+              </div>
+            }
+            .into_any()
+          },
+        )}
 
       {note
         .map(|n| {
           view! {
             <div class="mb-3 border-t border-dashed pt-3">
               <div class="mb-1 text-xs font-semibold text-muted-foreground">
-                "知识点 · " {sub.map(|s| s.name)}
+                {move || t("知识点 · ")} {sub.map(|s| s.name)}
               </div>
               <div class="text-sm leading-6 text-muted-foreground">{n}</div>
             </div>

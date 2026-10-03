@@ -12,6 +12,7 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{PushManager, PushSubscription, ServiceWorkerRegistration};
 
+use crate::i18n::t;
 use crate::util::{storage, window};
 
 const SUB_KEY: &str = "push-subscription";
@@ -116,9 +117,11 @@ async fn registration() -> Option<ServiceWorkerRegistration> {
 
 /// 订阅推送，返回订阅 JSON 字符串（供后端保存），并缓存到本地。
 pub async fn subscribe(public_key: &str) -> Result<String, String> {
-  let reg = registration().await.ok_or("service worker 未就绪")?;
+  let reg = registration()
+    .await
+    .ok_or_else(|| t("service worker 未就绪"))?;
   let pm: PushManager = reg.push_manager().map_err(|e| format!("{e:?}"))?;
-  let key = b64url_to_bytes(public_key).ok_or("VAPID 公钥无效")?;
+  let key = b64url_to_bytes(public_key).ok_or_else(|| t("VAPID 公钥无效"))?;
   let options = web_sys::PushSubscriptionOptionsInit::new();
   options.set_user_visible_only(true);
   options.set_application_server_key_opt_u8_array(Some(&key));
@@ -135,6 +138,8 @@ pub async fn subscribe(public_key: &str) -> Result<String, String> {
     .unwrap_or_default();
   storage::set(SUB_KEY, &json);
   report_subscription(&json).await;
+  // 订阅后立即同步一次待复习数，避免后端因缺少数据而在提醒时回退为通用文案。
+  sync_review_counts();
   Ok(json)
 }
 
@@ -166,4 +171,36 @@ pub async fn unsubscribe() {
 #[must_use]
 pub fn has_subscription() -> bool {
   storage::get(SUB_KEY).is_some()
+}
+
+/// 上报「今日待复习数」给后端（静默失败），供每日提醒推送时附带具体数量。
+async fn report_review_counts(mistakes: u32, cards: u32) {
+  let Some(json) = storage::get(SUB_KEY) else {
+    return;
+  };
+  let Ok(v) = serde_json::from_str::<serde_json::Value>(&json) else {
+    return;
+  };
+  let Some(endpoint) = v["endpoint"].as_str() else {
+    return;
+  };
+  let body = serde_json::json!({
+    "endpoint": endpoint,
+    "due_mistakes": mistakes,
+    "due_cards": cards,
+  });
+  let _ = post_json("/api/push/review-count", &body.to_string()).await;
+}
+
+/// 同步本地「今日待复习数」到后端（页面打开 / 复习完成时调用；未订阅时为空操作）。
+pub fn sync_review_counts() {
+  if !has_subscription() {
+    return;
+  }
+  let now = crate::util::now_ms();
+  let mistakes = crate::study::load_book().due_count(now) as u32;
+  let cards = crate::pages::load_card_schedule().due_total(now) as u32;
+  leptos::task::spawn_local(async move {
+    report_review_counts(mistakes, cards).await;
+  });
 }

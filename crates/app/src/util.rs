@@ -4,6 +4,7 @@ use std::fmt::Write as _;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::i18n::t;
+use leptos::prelude::{GetUntracked, RwSignal, Set};
 use wasm_bindgen::JsValue;
 
 /// 当前时间（毫秒时间戳）。
@@ -81,9 +82,30 @@ pub fn body() -> Option<web_sys::HtmlElement> {
   document().body()
 }
 
-/// 设置页面标题（英文模式下按 [`crate::i18n`] 词典翻译）。
+// 当前页面标题的中文原文。
+//
+// 标题是进入页面时一次性写入的（不在响应式上下文里），切语言时不会自动重算；
+// 记住原文后，`refresh_title` 才能在语言变化时重新翻译并写回 `<title>`。
+thread_local! {
+  static TITLE_KEY: RwSignal<String> = RwSignal::new(String::new());
+}
+
+/// 设置页面标题（浏览器标签，按 [`crate::i18n`] 词典翻译）。
 pub fn set_title(title: &str) {
-  document().set_title(&crate::i18n::t(title));
+  TITLE_KEY.with(|k| k.set(title.to_owned()));
+  apply_title();
+}
+
+/// 语言切换后按当前语言重设标题；未设置过标题时为空操作。
+pub fn refresh_title() {
+  apply_title();
+}
+
+fn apply_title() {
+  let key = TITLE_KEY.with(|k| k.get_untracked());
+  if !key.is_empty() {
+    document().set_title(&t(&key));
+  }
 }
 
 /// 弹出原生提示框。
@@ -307,7 +329,7 @@ pub async fn read_file_text(file: &web_sys::File) -> Option<String> {
       let _ = resolve.call0(&JsValue::NULL);
     });
     let onerror = Closure::once_into_js(move || {
-      let _ = reject.call1(&JsValue::NULL, &JsValue::from_str("读取文件失败"));
+      let _ = reject.call1(&JsValue::NULL, &JsValue::from_str(&t("读取文件失败")));
     });
     target.set_onload(Some(onload.unchecked_ref()));
     target.set_onerror(Some(onerror.unchecked_ref()));

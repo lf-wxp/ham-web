@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use crate::i18n::t;
+use crate::i18n::{t, tf};
 
 use super::{XrayPoint, fmt_iso_time};
 
@@ -49,7 +49,10 @@ pub(super) fn XrayTrend(
         {t("X 射线通量")}
         <span class="text-xs font-normal text-muted-foreground">
           {move || match flux {
-            Some(f) if !flare_class.is_empty() => format!("{} 级 · {:.1e} W/m²", flare_class, f),
+            Some(f) if !flare_class.is_empty() => {
+              // 数值先格式化，译文模板只保留 `{}` 占位符。
+              tf("{} 级 · {} W/m²", &[flare_class.as_str(), &format!("{f:.1e}")])
+            }
             Some(f) => format!("{:.1e} W/m²", f),
             None => t("暂不可用").to_string(),
           }}

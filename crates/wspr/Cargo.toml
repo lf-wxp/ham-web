@@ -1,0 +1,15 @@
+[package]
+name = "ham-web-wspr"
+description = "WSPR 弱信号传播报告：Type 1 消息编码与解码（纯 Rust，无外部依赖）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+ham-web-apt.workspace = true
+
+[lints]
+workspace = true

@@ -3,7 +3,7 @@
 use ham_web_core::antenna_design::yagi_dims;
 use leptos::prelude::*;
 
-use crate::i18n::t;
+use crate::i18n::{t, tf};
 
 const INPUT: &str = "h-10 rounded-lg border bg-background px-3 text-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 
@@ -51,15 +51,21 @@ pub(super) fn YagiCalculator() -> impl IntoView {
             return t("请输入正频率");
           };
           let mut parts = vec![
-            format!("反射器 ≈ {:.2} m", d.reflector),
-            format!("激励振子 ≈ {:.2} m", d.driven),
+            tf("反射器 ≈ {} m", &[&format!("{:.2}", d.reflector)]),
+            tf("激励振子 ≈ {} m", &[&format!("{:.2}", d.driven)]),
           ];
           for (i, len) in d.directors.iter().enumerate() {
-            parts.push(format!("引向器 {} ≈ {len:.2} m", i + 1));
+            parts.push(tf(
+              "引向器 {} ≈ {} m",
+              &[&(i + 1).to_string(), &format!("{:.2}", len)],
+            ));
           }
-          parts.push(format!(
-            "反射器–激励间距 ≈ {:.2} m · 引向器间距 ≈ {:.2} m",
-            d.refl_spacing, d.dir_spacing
+          parts.push(tf(
+            "反射器–激励间距 ≈ {} m · 引向器间距 ≈ {} m",
+            &[
+              &format!("{:.2}", d.refl_spacing),
+              &format!("{:.2}", d.dir_spacing),
+            ],
           ));
           parts.join("　")
         }}

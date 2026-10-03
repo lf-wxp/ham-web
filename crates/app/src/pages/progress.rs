@@ -450,7 +450,9 @@ pub fn ProgressPage() -> impl IntoView {
                                             <span class="shrink-0 font-mono text-[10px] text-muted-foreground">
                                               {sub.code.clone()}
                                             </span>
-                                            <span class="truncate">{sub.name.clone()}</span>
+                                            <span class="truncate" title=sub.name.clone()>
+                                              {sub.name.clone()}
+                                            </span>
                                             <a
                                               href=sub_href
                                               class="shrink-0 rounded border px-1 py-px text-[10px] text-primary transition-colors hover:bg-primary/10"

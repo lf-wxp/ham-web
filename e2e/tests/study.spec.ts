@@ -87,6 +87,21 @@ test("错题本：重练答对后提示正确", async ({ page }) => {
   await expect(page.getByText(/^正确！/)).toBeVisible();
 });
 
+test("错题本：显示记忆巩固分布", async ({ page }) => {
+  // 造一条错题（刚答错，复习间隔为 0，落在「学习中」档）
+  await page.goto("/practice");
+  await expect(page.getByText(/第 1 \/ \d+ 题/)).toBeVisible();
+  const correct = await correctLetters(page);
+  await option(page, wrongLetter(correct)).click();
+  await page.getByRole("button", { name: "下一题" }).first().click();
+  await expect(page.getByText(/第 2 \/ \d+ 题/)).toBeVisible();
+
+  await page.goto("/mistakes");
+  await expect(page.getByRole("heading", { level: 1, name: "错题集" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "记忆巩固" })).toBeVisible();
+  await expect(page.getByText("学习中 1 道")).toBeVisible();
+});
+
 test.describe("首次进入", () => {
   test.use({ helpSeen: false });
 

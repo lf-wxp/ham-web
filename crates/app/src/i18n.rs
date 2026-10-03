@@ -68,7 +68,13 @@ pub fn locale() -> RwSignal<Locale> {
 pub fn provide_locale() {
   let signal = locale();
   signal.set(crate::util::storage::get(keys::LOCALE).map_or(Locale::Zh, |s| Locale::from_code(&s)));
-  Effect::new(move |_| apply_lang(signal.get()));
+  Effect::new(move |_| {
+    let l = signal.get();
+    apply_lang(l);
+    // 页面标题在进入页面时一次性写入，不在响应式上下文里 —— 切语言后要按新语言重设，
+    // 否则浏览器标签会一直停留在旧语言。
+    crate::util::refresh_title();
+  });
 }
 
 fn apply_lang(l: Locale) {
@@ -4213,8 +4219,1049 @@ static EN: &[(&str, &str)] = &[
   ),
   ("限定分类（不选 = 全部）", "Limit categories (empty = all)"),
   ("限时（分钟，0 为不限时）", "Time limit (minutes, 0 = none)"),
+  // —— 新增模块 ——
+  ("频率协调", "Frequency Coordination"),
+  ("设备评测与选购", "Gear Reviews & Buying Guide"),
+  ("CQ / ITU 分区地图", "CQ / ITU Zone Map"),
+  ("开放 API", "Open API"),
+  (
+    "版本化 · 可跨域 · 纯计算与静态数据",
+    "Versioned · CORS-enabled · Pure computation & static data",
+  ),
+  ("配额与鉴权", "Quotas & Authentication"),
+  ("接口清单", "Endpoints"),
+  (
+    "下载 OpenAPI 3.1 文档（openapi.json）",
+    "Download the OpenAPI 3.1 spec (openapi.json)",
+  ),
   // —— 批量补齐 ——
   ("答案：", "Answer:"),
+  // —— 新增页面 · 极光 / 流星散射 / 巴伦 / 信标 / 噪声 ——
+  ("极光通信", "Aurora Communication"),
+  (
+    "高纬 VHF/UHF 的极区反射传播",
+    "Polar-region reflection on high-latitude VHF/UHF",
+  ),
+  ("流星散射", "Meteor Scatter"),
+  (
+    "6m / 2m 弱信号 DX 的主力手段",
+    "The main weak-signal DX mode on 6 m / 2 m",
+  ),
+  ("巴伦与不平衡变压器", "Baluns and Ununs"),
+  (
+    "平衡-不平衡转换 · 阻抗变换 · 共模抑制",
+    "Balanced-to-unbalanced · Impedance transformation · Common-mode rejection",
+  ),
+  ("国际信标网络", "International Beacon Network"),
+  (
+    "NCDXF/IARU · 18 台 5 波段 · 判断传播开通",
+    "NCDXF/IARU · 18 beacons on 5 bands · Check whether a path is open",
+  ),
+  ("信标台（按轮询顺序）", "Beacons (in polling order)"),
+  ("信标频率", "Beacon frequency"),
+  ("信号格式", "Signal format"),
+  ("本台剩余约 {} 秒", "About {} s left for this station"),
+  ("正在发射：{}（{} · {}）", "Transmitting now: {} ({} · {})"),
+  (
+    "每台发射 10 秒：先以 CW（约 20 WPM）发送呼号，再发 4 个各约 1 秒的长划，功率逐级下降 10 dB。",
+    "Each station transmits for 10 seconds: first its callsign in CW (about 20 WPM), then four dashes of about one second each, with power dropping 10 dB per dash.",
+  ),
+  (
+    "能听到第几个长划，就能估算这条路径的损耗余量：听到 0.1W 的一划说明路径极佳。",
+    "The last dash you can still hear gives the loss margin of the path: hearing the 0.1 W dash means an excellent path.",
+  ),
+  (
+    "把电台调谐到某个信标频率，按上表对照此刻是哪台在发射。",
+    "Tune the radio to a beacon frequency and use the table above to see which station is transmitting now.",
+  ),
+  (
+    "傍晚 / 清晨与灰线时段效果最佳；换不同波段轮流听，可判断各波段开通顺序。",
+    "Best around dusk / dawn and along the grey line; listen band by band to tell in which order the bands open.",
+  ),
+  (
+    "时隙按本地时钟估算并向下取整，实际相位可能存在秒级偏差；信标实际是否在线以现场收讯为准。",
+    "Time slots are estimated from the local clock and rounded down, so the actual phase may be off by a few seconds; confirm on the air whether a beacon is really transmitting.",
+  ),
+  ("怎么看", "How to read it"),
+  (
+    "听到某台信标，说明「你 ↔ 该台」这条传播路径当前开通，可据此推断该方向 DX 的可行性。",
+    "Hearing a beacon means the propagation path between you and that station is open right now, which tells you whether DX in that direction is feasible.",
+  ),
+  ("接收环境与噪声", "Reception Environment and Noise"),
+  (
+    "QRN / QRM 与底噪的识别和应对",
+    "Identifying and dealing with QRN / QRM and the noise floor",
+  ),
+  ("实用天线专题", "Practical Antenna Topics"),
+  (
+    "EFHW、磁环小环、接收天线与倒 V 的选型要点",
+    "How to choose between EFHW, magnetic loops, receive antennas and inverted-Vs",
+  ),
+  ("开源项目与 DIY 索引", "Open-source Projects and DIY Index"),
+  (
+    "社区开源软件与自制教程 · 一站直达",
+    "Community open-source software and build tutorials · all in one place",
+  ),
+  ("DIY 与自制教程", "DIY and Build Tutorials"),
+  ("精选开源项目", "Featured Open-source Projects"),
+  (
+    "按用途分类，点击名称跳转项目官网或代码仓库（外部链接）。",
+    "Grouped by purpose; click a name to open the project site or code repository (external link).",
+  ),
+  ("VNA 矢量网络分析仪", "VNA (Vector Network Analyzer)"),
+  (
+    "校准方法与天线 / 滤波器 / 馈线测量",
+    "Calibration methods and antenna / filter / feedline measurements",
+  ),
+  ("Winlink 无线邮件", "Winlink Radio Email"),
+  (
+    "经业余无线电收发电子邮件",
+    "Send and receive email over amateur radio",
+  ),
+  ("卫星通联操作", "Satellite Operating"),
+  (
+    "FM 中继与线性转发器的完整 QSO 流程",
+    "The complete QSO procedure for FM repeaters and linear transponders",
+  ),
+  ("「业余卫星」", "“Amateur Satellites”"),
+  ("先到", "First go to"),
+  (
+    "页查过境时间与各星上行 / 下行频率，再按本页流程完成通联。",
+    "to look up pass times and each satellite's uplink / downlink frequencies, then follow the procedure on this page to make the contact.",
+  ),
+  ("学习路径", "Learning Path"),
+  (
+    "学习路径与认证路线图",
+    "Learning Path and Certification Roadmap",
+  ),
+  (
+    "从新手到 A/B/C 操作证的循序渐进指引",
+    "A step-by-step guide from complete beginner to the A/B/C operator certificates",
+  ),
+  ("学习资源", "Learning Resources"),
+  (
+    "视频课程、技术文档与自学建议",
+    "Video courses, technical documentation and self-study tips",
+  ),
+  ("DIY 实战项目", "Hands-on DIY Projects"),
+  ("DIY 实战项目教程", "Hands-on DIY Project Guides"),
+  (
+    "从入门到进阶的动手项目与通用流程",
+    "Hands-on projects from beginner to advanced, plus a common workflow",
+  ),
+  (
+    "IARU 分区 · 协调层级 · 申请与干扰处理",
+    "IARU regions · Coordination levels · Applications and interference handling",
+  ),
+  ("活动日历", "Event Calendar"),
+  (
+    "展会 · 火腿节 · 年度通联活动",
+    "Conventions · Ham fests · Annual operating events",
+  ),
+  (
+    "全年活动（按下一届开始时间排序）",
+    "Events all year (sorted by the next start time)",
+  ),
+  ("追踪 DX 远征与竞赛", "Track DX Expeditions and Contests"),
+  ("{} 年 {} 月 {} 日 · {} · {}", "{} / {} / {} · {} · {}"),
+  ("官网", "Website"),
+  (
+    "日期为每年常见安排（多在周末，逐年浮动），以主办方公告为准；「加入提醒」会把开始时间写入倒计时，到期通过浏览器通知提醒。",
+    "Dates follow the usual annual schedule (mostly weekends, shifting from year to year); the organizer's announcement is authoritative. “Add reminder” writes the start time into the countdown and notifies you in the browser when it is due.",
+  ),
+  ("活动：{}", "Event: {}"),
+  ("1 天", "1 day"),
+  // —— 新增页面 · CQ / ITU 分区地图 ——
+  ("分区地图", "Zone Map"),
+  ("分区地图（CQ / ITU）", "Zone Map (CQ / ITU)"),
+  (
+    "CQ / ITU 分区地图（滚轮缩放、拖拽平移、双击复位）",
+    "CQ / ITU Zone Map (scroll to zoom, drag to pan, double-click to reset)",
+  ),
+  (
+    "按分区着色 · 呼号定位 · 分区构成",
+    "Colour by zone · Locate a callsign · Zone composition",
+  ),
+  ("CQ 分区（40）", "CQ Zones (40)"),
+  ("ITU 分区（90）", "ITU Zones (90)"),
+  ("{} {} 区", "{} Zone {}"),
+  ("{} · {} {} 区", "{} · {} Zone {}"),
+  ("含 {} 个 DXCC 实体", "{} DXCC entities"),
+  (
+    "图例（共 {} 个分区，括号内为所含 DXCC 实体数）",
+    "Legend ({} zones; the number in brackets is the DXCC entity count)",
+  ),
+  (
+    "点击地图区域或图例，或输入呼号定位，查看该分区包含的 DXCC 实体。",
+    "Click an area of the map or a legend entry, or enter a callsign, to see the DXCC entities in that zone.",
+  ),
+  ("分区构成", "Zone composition"),
+  (
+    "该分区暂无登记的 DXCC 实体。",
+    "No DXCC entities registered in this zone yet.",
+  ),
+  ("已定位：{}", "Located: {}"),
+  ("打开完整分区地图", "Open the full zone map"),
+  (
+    "按每个 DXCC 实体的主分区着色并高亮当前呼号所属实体；分区边界与国界不重合，此图为速查近似。",
+    "Coloured by each DXCC entity's primary zone, with the entity of the current callsign highlighted; zone boundaries do not follow national borders, so this map is an approximate quick reference.",
+  ),
+  (
+    "按每个 DXCC 实体的主分区着色：俄罗斯、美国、中国等横跨多个分区的大国会被整体归入一个分区，因此本图用于「分区大致在哪、含哪些实体」的速查，并非精确的分区边界。",
+    "Coloured by each DXCC entity's primary zone: large countries spanning several zones (Russia, the United States, China and so on) are placed entirely in one zone, so this map is a quick reference for roughly where a zone lies and which entities it contains — not an exact zone boundary.",
+  ),
+  (
+    "边界数据加载失败，请运行 `cargo make dxcc-map` 生成 public/dxcc-entities.bin。",
+    "Failed to load boundary data. Run `cargo make dxcc-map` to generate public/dxcc-entities.bin.",
+  ),
+  // —— 新增页面 · 呼号解析 ——
+  ("呼号解析与查询", "Callsign Lookup"),
+  (
+    "本地解析 · DXCC 实体与分区 · 在线补全",
+    "Offline parsing · DXCC entity and zones · Online lookup",
+  ),
+  (
+    "输入呼号即时解析国家 / 地区、DXCC 实体、CQ / ITU 分区与稀有度；「在线查询」再补全姓名、QTH 与网格。",
+    "Enter a callsign to resolve country, DXCC entity, CQ / ITU zones and rarity instantly; “Online lookup” adds name, QTH and grid.",
+  ),
+  ("呼号或实体名", "Callsign or entity name"),
+  (
+    "呼号或实体名（如 BG4XYZ、日本）",
+    "Callsign or entity name (e.g. BG4XYZ, Japan)",
+  ),
+  (
+    "如 BG4XYZ、JA1ABC、K1ZZ/QRP、P5ABC",
+    "e.g. BG4XYZ, JA1ABC, K1ZZ/QRP, P5ABC",
+  ),
+  ("在线查询", "Online lookup"),
+  ("在线资料", "Online data"),
+  ("输入呼号开始查询。", "Enter a callsign to begin."),
+  (
+    "请输入至少 3 位的呼号",
+    "Enter a callsign of at least 3 characters",
+  ),
+  (
+    "未识别的呼号或实体名，请检查拼写。",
+    "Unrecognised callsign or entity name — please check the spelling.",
+  ),
+  ("{}（Most Wanted 稀有实体）", "{} (Most Wanted entity)"),
+  ("常规实体", "Regular entity"),
+  (
+    "该呼号暂无公开的操作员资料（上游只覆盖美加，其他国家 / 地区需在服务端配置 HamQTH 账号），此处仅按内置 DXCC 前缀库给出国家 / 地区。",
+    "No public operator data for this callsign (the upstream source only covers the US and Canada; other countries need a HamQTH account configured on the server). Only the country is shown here, derived from the built-in DXCC prefix list.",
+  ),
+  (
+    "在线资料暂不可用（呼号不存在，或未通过后端 dev-full / serve 访问）；本地解析结果不受影响。",
+    "Online data is unavailable (the callsign does not exist, or the site is not served through the dev-full / serve backend). Offline results are unaffected.",
+  ),
+  (
+    "本地解析依据内置的 340 个 DXCC 实体与前缀库，离线可用；在线资料来自 Callook / HamQTH 公开接口，仅显示电台的公开资料，不涉及隐私。",
+    "Offline parsing uses the built-in list of 340 DXCC entities and prefixes and works without a network; online data comes from the public Callook / HamQTH APIs and only shows public station information, with no private data involved.",
+  ),
+  // —— 新增页面 · 设备评测 ——
+  (
+    "精选机型 · 参数对比 · 选购指南",
+    "Featured radios · Spec comparison · Buying guide",
+  ),
+  ("参数对比", "Spec Comparison"),
+  ("参数", "Specs"),
+  (
+    "请至少选择一台机型进行对比。",
+    "Select at least one radio to compare.",
+  ),
+  (
+    "最多同时对比 {} 台，请先取消一台。",
+    "You can compare at most {} radios at once — deselect one first.",
+  ),
+  (
+    "选择类别与机型（最多 4 台）并排对比规格与点评。规格取公开且稳定的高层次信息，价格档为相对定位。",
+    "Pick a category and up to 4 radios to compare specifications and comments side by side. Specifications are stable, high-level public information; price tiers show relative positioning.",
+  ),
+  (
+    "本表为客观规格与共识点评整理，不构成购买建议，也未收录具体售价；购买前请以厂商与经销商的最新资料为准。",
+    "This table compiles objective specifications and widely shared opinions. It is not buying advice and does not list actual prices; check the manufacturer's and dealer's latest information before purchasing.",
+  ),
+  // —— 新增工具 · 编解码 / 亚音 ——
+  ("数字模式编码", "Digital Mode Encoding"),
+  (
+    "文本 → 摩尔斯（CW）与 RTTY（ITA2）比特流。",
+    "Text to Morse (CW) and RTTY (ITA2) bit streams.",
+  ),
+  ("CW 摩尔斯电码", "CW Morse Code"),
+  ("RTTY（ITA2）比特流", "RTTY (ITA2) bit stream"),
+  ("报文内容", "Message content"),
+  (
+    "RTTY 编码：11111 为字母移态（LTRS）、11011 为数字移态（FIGS）。CW 中 `/` 表示单词间隔。",
+    "RTTY coding: 11111 is the letter shift (LTRS) and 11011 the figure shift (FIGS). In CW, `/` marks a word space.",
+  ),
+  ("APRS 编解码", "APRS Codec"),
+  (
+    "APRS 未压缩位置报文的编解码。",
+    "Encode and decode uncompressed APRS position reports.",
+  ),
+  (
+    "APRS 位置字段（如 3114.50N/12128.50E）",
+    "APRS position field (e.g. 3114.50N/12128.50E)",
+  ),
+  ("APRS 位置字段：{}", "APRS position field: {}"),
+  (
+    "未压缩位置格式：纬度 ddmm.mm + N/S，经度 dddmm.mm + E/W。本工具不涉及 AX.25 帧与 Mic-E 压缩。",
+    "Uncompressed format: latitude ddmm.mm + N/S, longitude dddmm.mm + E/W. This tool does not handle AX.25 framing or Mic-E compression.",
+  ),
+  (
+    "无法解析，请检查格式。",
+    "Cannot parse it — please check the format.",
+  ),
+  ("亚音与中继频差", "Tone Squelch and Repeater Offset"),
+  (
+    "中继频差计算与 CTCSS / DCS 亚音码表。",
+    "Repeater offset calculation plus CTCSS / DCS tone charts.",
+  ),
+  ("CTCSS 亚音（Hz，共 50 组）", "CTCSS tone (Hz, 50 tones)"),
+  (
+    "DCS 数字静噪码（八进制）",
+    "DCS digital squelch code (octal)",
+  ),
+  (
+    "接收 {} MHz → 发射 {} MHz",
+    "Receive {} MHz → transmit {} MHz",
+  ),
+  ("频差 {} MHz（{}）", "Offset {} MHz ({})"),
+  ("请选择波段。", "Please select a band."),
+  // —— 新增工具 · 滤波器 / 晶体 / 传输线 / 线径 / 射频暴露 / UTC ——
+  ("滤波器设计", "Filter Design"),
+  (
+    "Butterworth 低通 / 高通 / 带通 / 带阻的 L/C 元件值。",
+    "L/C component values for Butterworth low-pass / high-pass / band-pass / band-stop filters.",
+  ),
+  (
+    "Butterworth 原型；g₁ 起交替串 / 并联。带通 / 带阻每级为 LC 谐振回路，谐振于中心频率。",
+    "Butterworth prototype: from g₁ onwards the elements alternate between series and shunt. Band-pass / band-stop stages are LC resonant circuits tuned to the centre frequency.",
+  ),
+  ("中心频率（MHz）", "Centre frequency (MHz)"),
+  ("带宽（MHz）", "Bandwidth (MHz)"),
+  ("截止频率（MHz）", "Cut-off frequency (MHz)"),
+  ("接收频率（MHz）", "Receive frequency (MHz)"),
+  ("阶数（1–5）", "Order (1–5)"),
+  ("级", "Stage"),
+  ("位置", "Position"),
+  ("串联", "Series"),
+  ("并联", "Shunt"),
+  ("电容（pF）", "Capacitance (pF)"),
+  ("电感（μH）", "Inductance (µH)"),
+  ("晶体振荡", "Crystal Oscillator"),
+  (
+    "晶体频率牵引（负载电容 → ppm）与串联谐振。",
+    "Crystal frequency pulling (load capacitance → ppm) and series resonance.",
+  ),
+  ("负载电容 CL（pF）", "Load capacitance CL (pF)"),
+  ("静电容 C0（pF）", "Shunt capacitance C0 (pF)"),
+  ("动态电容 C1（fF）", "Motional capacitance C1 (fF)"),
+  ("频率牵引 Δf/f ≈ {} ppm", "Frequency pulling Δf/f ≈ {} ppm"),
+  ("串联谐振频率 f ≈ {} MHz", "Series resonance f ≈ {} MHz"),
+  (
+    "串联谐振：请输入正的 L 与 C。",
+    "Series resonance: enter positive L and C.",
+  ),
+  (
+    "牵引量：请输入正的 C1 与 C0。",
+    "Pulling: enter positive C1 and C0.",
+  ),
+  ("传输线阻抗", "Transmission Line Impedance"),
+  (
+    "同轴 / 平行双线 / 微带线的特性阻抗。",
+    "Characteristic impedance of coax, twin-lead and microstrip lines.",
+  ),
+  ("同轴内导体外径（mm）", "Coax inner conductor OD (mm)"),
+  ("同轴外导体内径（mm）", "Coax outer conductor ID (mm)"),
+  ("介质常数 εr", "Dielectric constant εr"),
+  (
+    "同轴线特性阻抗 ≈ {} Ω",
+    "Coax characteristic impedance ≈ {} Ω",
+  ),
+  (
+    "同轴线：请输入有效参数（εr>0 且外径>内径）。",
+    "Coax: enter valid parameters (εr > 0 and inner OD smaller than outer ID).",
+  ),
+  ("平行双线中心距（mm）", "Twin-lead conductor spacing (mm)"),
+  ("导线直径（mm）", "Conductor diameter (mm)"),
+  (
+    "平行双线特性阻抗 ≈ {} Ω",
+    "Twin-lead characteristic impedance ≈ {} Ω",
+  ),
+  (
+    "平行双线：请输入有效参数（中心距大于直径）。",
+    "Twin-lead: enter valid parameters (spacing greater than conductor diameter).",
+  ),
+  ("微带走线宽度（mm）", "Microstrip trace width (mm)"),
+  ("介质厚度（mm）", "Substrate thickness (mm)"),
+  (
+    "微带线特性阻抗 ≈ {} Ω",
+    "Microstrip characteristic impedance ≈ {} Ω",
+  ),
+  (
+    "微带线：请输入有效参数（εr>1 且宽厚为正）。",
+    "Microstrip: enter valid parameters (εr > 1, with positive width and thickness).",
+  ),
+  ("线径压降", "Wire Gauge and Voltage Drop"),
+  (
+    "按电流与长度估算直流供电线径与回路压降。",
+    "Estimate DC supply wire gauge and loop voltage drop from current and length.",
+  ),
+  ("单程长度（m）", "One-way length (m)"),
+  ("电流（A）", "Current (A)"),
+  (
+    "单根导线电阻 {} Ω（回路 ×2）",
+    "Single conductor resistance {} Ω (×2 for the loop)",
+  ),
+  ("回路压降 {} V", "Loop voltage drop {} V"),
+  ("直径 mm", "Diameter mm"),
+  ("截面积 mm²", "Cross-section mm²"),
+  ("常用 AWG 线规参考", "Common AWG wire gauges"),
+  (
+    "载流能力取决于绝缘与敷设方式，表中仅给出电阻参考；大电流供电建议压降控制在 3% 以内。",
+    "Current ratings depend on insulation and installation; the table only gives resistance as a reference. For high-current supplies, keep the voltage drop under 3%.",
+  ),
+  ("射频暴露评估", "RF Exposure Evaluation"),
+  (
+    "按 FCC OET-65 估算功率密度与最小安全距离。",
+    "Estimate power density and minimum safe distance per FCC OET-65.",
+  ),
+  ("评估距离（m）", "Evaluation distance (m)"),
+  ("功率密度：{} mW/cm²", "Power density: {} mW/cm²"),
+  (
+    "公众限值 {} mW/cm²，受控限值 {} mW/cm²",
+    "Public limit {} mW/cm², controlled limit {} mW/cm²",
+  ),
+  (
+    "最小安全距离：公众 {} m，受控 {} m",
+    "Minimum safe distance: {} m public, {} m controlled",
+  ),
+  (
+    "当前距离下满足公众环境限值。",
+    "Within the public limit at this distance.",
+  ),
+  (
+    "当前距离下超过公众环境限值，请增大距离或降低功率。",
+    "Exceeds the public limit at this distance — increase the distance or reduce power.",
+  ),
+  (
+    "请输入正的功率、频率与距离。",
+    "Enter positive power, frequency and distance.",
+  ),
+  (
+    "远场近似：S = P·G/(4πd²)。近场区实际场强可能更高，结果仅供合规自检参考。",
+    "Far-field approximation: S = P·G/(4πd²). Actual field strength may be higher in the near field; results are for compliance self-checking only.",
+  ),
+  ("UTC 时间", "UTC Time"),
+  (
+    "实时 UTC / Zulu 时钟与常用时区对照。",
+    "Live UTC / Zulu clock with common time zone equivalents.",
+  ),
+  ("时区", "Time zone"),
+  ("偏移", "Offset"),
+  ("正偏移 +", "Positive offset +"),
+  ("负偏移 −", "Negative offset −"),
+  (
+    "通联日志、竞赛与卫星过境统一用 UTC 记录；跨日期变更线时注意日期 ±1 天。",
+    "Log contacts, contests and satellite passes in UTC; watch for a ±1 day date change across the date line.",
+  ),
+  ("史密斯圆图", "Smith Chart"),
+  (
+    "输入复阻抗（R ± jX），在圆图上定位并显示驻波比 / 反射系数 / 回波损耗。",
+    "Enter a complex impedance (R ± jX) to plot it on the chart and show SWR / reflection coefficient / return loss.",
+  ),
+  (
+    "以 50Ω 为特性阻抗。上半圆为感性（+jX），下半圆为容性（−jX）；圆心处完全匹配。",
+    "Reference impedance is 50 Ω. The upper half is inductive (+jX), the lower half capacitive (−jX); the centre is a perfect match.",
+  ),
+  (
+    "Γ = {} + j{}　｜　SWR = {}　｜　回波损耗 {} dB",
+    "Γ = {} + j{}　|　SWR = {}　|　Return loss {} dB",
+  ),
+  ("电阻 R（Ω）", "Resistance R (Ω)"),
+  (
+    "电抗 X（Ω，感性为正）",
+    "Reactance X (Ω, inductive is positive)",
+  ),
+  (
+    "路径中点地方时约 {}:{}，电离程度约为正午的 {}%",
+    "Local time at the path midpoint is about {}:{}, with ionisation around {}% of the noon value",
+  ),
+  // —— 新增工具 · SDR 频谱 / 接收站地图 ——
+  ("SDR 瀑布图", "SDR Waterfall"),
+  ("频谱瀑布图", "Spectrum Waterfall"),
+  ("实时频谱", "Live spectrum"),
+  (
+    "瀑布图（随时间下滑）",
+    "Waterfall (scrolling down over time)",
+  ),
+  (
+    "把电台或 SDR 的音频输出接入麦克风，实时查看频谱与瀑布图。",
+    "Feed the radio or SDR audio output into the microphone to view the spectrum and waterfall live.",
+  ),
+  ("显示增益（dB）", "Display gain (dB)"),
+  (
+    "颜色由深到亮代表信号由弱到强（黑 → 蓝 → 青 → 绿 → 黄 → 红 → 白）。增益可整体抬升弱信号以改善显示对比度。",
+    "Darker to brighter colours mean weaker to stronger signals (black → blue → cyan → green → yellow → red → white). Gain lifts weak signals overall to improve display contrast.",
+  ),
+  ("开始", "Start"),
+  ("增益", "Gain"),
+  ("频率范围 —", "Frequency range —"),
+  ("SDR 在线接收站地图", "Online SDR Receiver Map"),
+  (
+    "无需本地硬件，浏览器直达公开接收站",
+    "No local hardware needed — reach public receivers straight from the browser",
+  ),
+  ("公开接收站", "Public receivers"),
+  ("打开接收机", "Open receiver"),
+  (
+    "接收机目录与自建平台",
+    "Receiver directory and self-hosting platforms",
+  ),
+  (
+    "绿点为长期公开接收站；点击下方「定位」可在图上居中。更多接收站见下方目录。",
+    "Green dots are long-running public receivers; use “Locate” below to centre the map. More receivers are listed further down.",
+  ),
+  (
+    "请输入有效经纬度。",
+    "Enter a valid latitude and longitude.",
+  ),
+  ("纬度（度，±90）", "Latitude (degrees, ±90)"),
+  ("经度（度，±180）", "Longitude (degrees, ±180)"),
+  // —— 新增工具 · SSTV / WSPR 解码 ——
+  ("SSTV 解码器", "SSTV Decoder"),
+  ("SSTV 速查", "SSTV Reference"),
+  ("SSTV 解码结果", "SSTV decode result"),
+  (
+    "音频 FM 解调 + VIS 识别 · 后台线程离线处理",
+    "Audio FM demodulation + VIS detection · processed offline in a background thread",
+  ),
+  (
+    "上传一段 SSTV 慢扫描电视音频（WAV），即可在浏览器本地解调并重建图像，支持 Martin / Scottie / Robot 系列模式。",
+    "Upload an SSTV audio recording (WAV) to demodulate and rebuild the image locally in your browser; Martin / Scottie / Robot modes are supported.",
+  ),
+  (
+    "支持 Martin M1/M2、Scottie S1/S2/DX、Robot 36/72；推荐 8–16 kHz 单声道 WAV",
+    "Supports Martin M1/M2, Scottie S1/S2/DX and Robot 36/72; 8–16 kHz mono WAV recommended",
+  ),
+  ("选择 SSTV 录音（WAV）", "Choose an SSTV recording (WAV)"),
+  (
+    "解码失败，请确认是 SSTV 音频（WAV）",
+    "Decoding failed — make sure this is SSTV audio (WAV)",
+  ),
+  (
+    "文件过大（约 {} MB），上限 {} MB。请先降采样到 8–16 kHz 单声道，或只截取图像那一段。",
+    "File too large (about {} MB); the limit is {} MB. Downsample to 8–16 kHz mono first, or trim to just the image segment.",
+  ),
+  ("WSPR 解码器", "WSPR Decoder"),
+  ("WSPR 速查", "WSPR Reference"),
+  (
+    "弱信号传播报告 · 4-FSK 解调 · 后台线程离线处理",
+    "Weak-signal propagation reports · 4-FSK demodulation · offline processing in a background thread",
+  ),
+  (
+    "上传一段 WSPR 弱信号传播报告录音（WAV），在浏览器本地解调并解码出呼号 / 网格 / 功率。",
+    "Upload a WSPR recording (WAV) to demodulate and decode callsign / grid / power locally in your browser.",
+  ),
+  (
+    "WSPR 信号位于 1400–1600 Hz 音频窗口，通常取电台拨号频率对应的音频 1500 Hz。",
+    "WSPR signals sit in the 1400–1600 Hz audio window; 1500 Hz, the audio frequency matching the radio's dial frequency, is the usual choice.",
+  ),
+  (
+    "基准频率（Hz，默认 1500）",
+    "Base frequency (Hz, default 1500)",
+  ),
+  ("选择 WSPR 录音（WAV）", "Choose a WSPR recording (WAV)"),
+  (
+    "解码：纬度 {}°，经度 {}°",
+    "Decoded: latitude {}°, longitude {}°",
+  ),
+  (
+    "解码失败，请确认是 WSPR 音频（WAV）且基准频率正确",
+    "Decoding failed — make sure this is WSPR audio (WAV) and the base frequency is correct",
+  ),
+  (
+    "文件过大（约 {} MB），上限 {} MB。请先降采样到 8–16 kHz 单声道。",
+    "File too large (about {} MB); the limit is {} MB. Downsample to 8–16 kHz mono first.",
+  ),
+  (
+    "文件过大（约 {} MB），上限 {} MB。解码需要把整段音频载入内存，建议先降采样到 8–16 kHz 单声道，或只截取过境那一段。",
+    "File too large (about {} MB); the limit is {} MB. Decoding loads the whole recording into memory, so downsample to 8–16 kHz mono first or trim to just the pass.",
+  ),
+  // —— 世界地图国家 / 地区标注 ——
+  ("中国", "China"),
+  ("台湾", "Taiwan"),
+  ("香港", "Hong Kong"),
+  ("澳门", "Macau"),
+  ("夏威夷", "Hawaii"),
+  ("日本", "Japan"),
+  ("韩国", "South Korea"),
+  ("印度", "India"),
+  ("泰国", "Thailand"),
+  ("马来西亚", "Malaysia"),
+  ("新加坡", "Singapore"),
+  ("印度尼西亚", "Indonesia"),
+  ("菲律宾", "Philippines"),
+  ("英国", "United Kingdom"),
+  ("法国", "France"),
+  ("德国", "Germany"),
+  ("意大利", "Italy"),
+  ("西班牙", "Spain"),
+  ("葡萄牙", "Portugal"),
+  ("比利时", "Belgium"),
+  ("荷兰", "Netherlands"),
+  ("瑞士", "Switzerland"),
+  ("奥地利", "Austria"),
+  ("芬兰", "Finland"),
+  ("瑞典", "Sweden"),
+  ("挪威", "Norway"),
+  ("丹麦", "Denmark"),
+  ("波兰", "Poland"),
+  ("捷克", "Czechia"),
+  ("斯洛伐克", "Slovakia"),
+  ("匈牙利", "Hungary"),
+  ("罗马尼亚", "Romania"),
+  ("俄罗斯", "Russia"),
+  ("乌克兰", "Ukraine"),
+  ("美国", "United States"),
+  ("加拿大", "Canada"),
+  ("墨西哥", "Mexico"),
+  ("阿根廷", "Argentina"),
+  ("巴西", "Brazil"),
+  ("智利", "Chile"),
+  ("乌拉圭", "Uruguay"),
+  ("澳大利亚", "Australia"),
+  ("新西兰", "New Zealand"),
+  ("南非", "South Africa"),
+  ("埃及", "Egypt"),
+  ("摩洛哥", "Morocco"),
+  ("以色列", "Israel"),
+  ("沙特阿拉伯", "Saudi Arabia"),
+  // —— 常用时区 ——
+  ("北京", "Beijing"),
+  ("东京", "Tokyo"),
+  ("伦敦", "London"),
+  ("纽约", "New York"),
+  ("洛杉矶", "Los Angeles"),
+  ("悉尼", "Sydney"),
+  ("中国标准时间 CST", "China Standard Time (CST)"),
+  ("日本标准时间 JST", "Japan Standard Time (JST)"),
+  ("格林尼治标准时间 GMT", "Greenwich Mean Time (GMT)"),
+  (
+    "美国东部时间 EST（夏令时 -4）",
+    "US Eastern Time (EST, −4 in summer)",
+  ),
+  (
+    "美国太平洋时间 PST（夏令时 -7）",
+    "US Pacific Time (PST, −7 in summer)",
+  ),
+  (
+    "澳大利亚东部时间 AEST",
+    "Australian Eastern Standard Time (AEST)",
+  ),
+  // —— 学习热力图星期缩写 ——
+  ("日", "Sun"),
+  ("一", "Mon"),
+  ("二", "Tue"),
+  ("三", "Wed"),
+  ("四", "Thu"),
+  ("五", "Fri"),
+  ("六", "Sat"),
+  // —— 快捷键帮助 ——
+  ("选择对应选项", "Select the matching option"),
+  ("Shift / Cmd + 数字", "Shift / Cmd + number"),
+  (
+    "多选题只选这一项",
+    "Select only this option in a multiple-choice question",
+  ),
+  (
+    "打开题目搜索（顺序练习）",
+    "Open question search (sequential practice)",
+  ),
+  ("打开全站搜索", "Open site-wide search"),
+  ("显示快捷键帮助", "Show the shortcut help"),
+  ("关闭对话框", "Close the dialog"),
+  // —— 呼号解析页字段 ——
+  ("国家 / 地区", "Country / region"),
+  ("大洲", "Continent"),
+  ("CQ / ITU 分区", "CQ / ITU zones"),
+  ("稀有度", "Rarity"),
+  ("姓名", "Name"),
+  ("数据来源", "Data source"),
+  ("怎么用", "How to use"),
+  ("前缀", "Prefix"),
+  ("个人业余电台", "Individual amateur station"),
+  ("分区号", "Zone number"),
+  ("上海 · 山东 · 江苏", "Shanghai · Shandong · Jiangsu"),
+  ("台站唯一标识", "Unique station identifier"),
+  // —— 呼号页延伸入口说明 ——
+  (
+    "全球主要竞赛的开赛时间，可一键加入提醒。",
+    "Start times of the major contests, with one-tap reminders.",
+  ),
+  (
+    "远征的玩法、波段与追逐技巧。",
+    "How DXpeditions work, their bands and chasing tips.",
+  ),
+  (
+    "实时查看当前正在呼叫的远征电台。",
+    "See which DXpedition stations are calling right now.",
+  ),
+  (
+    "海岛编号与海岛通联活动。",
+    "Island references and islands-on-the-air activity.",
+  ),
+  (
+    "山顶与公园活动，含编号查询。",
+    "Summit and park activations, with reference lookups.",
+  ),
+  (
+    "最稀有的实体，远征多奔这些目标。",
+    "The rarest entities — the usual targets of DXpeditions.",
+  ),
+  // —— 听题模式阶段 ——
+  ("A 类", "Class A"),
+  ("B 类", "Class B"),
+  ("C 类", "Class C"),
+  ("已暂停", "Paused"),
+  ("朗读题目", "Reading the question"),
+  ("思考中…", "Thinking…"),
+  ("公布答案", "Revealing the answer"),
+  // —— 设备评测表头 ——
+  ("推荐机型", "Recommended radios"),
+  ("理由", "Why"),
+  ("品牌", "Brand"),
+  ("价格档", "Price tier"),
+  ("点评", "Comments"),
+  ("按用途推荐", "Recommendations by use"),
+  // —— 莫尔斯特殊符号 ——
+  ("报文结束", "End of message"),
+  ("通联结束", "End of contact"),
+  ("仅邀指定台", "Invitation to a specific station only"),
+  ("分隔/暂停", "Separator / pause"),
+  ("请稍候", "Please wait"),
+  ("更正（误发）", "Correction (sent in error)"),
+  // —— 各知识页小标题与表头 ——
+  ("测量流程", "Measurement procedure"),
+  ("常见测量对象", "Common measurement targets"),
+  ("对象", "Target"),
+  ("主要看", "Main indicator"),
+  ("意义", "Meaning"),
+  ("各级别重点", "Focus by level"),
+  ("级别", "Level"),
+  ("重点", "Focus"),
+  ("对应页面", "Related pages"),
+  ("备考建议", "Exam preparation tips"),
+  ("FM 卫星通联步骤", "FM Satellite QSO Steps"),
+  (
+    "线性转发器 · 边带倒置",
+    "Linear transponders · Sideband inversion",
+  ),
+  ("多普勒补偿", "Doppler compensation"),
+  ("通联格式与礼仪", "QSO format and etiquette"),
+  ("项目列表", "Project list"),
+  ("要点", "Key points"),
+  ("通用制作流程", "General build workflow"),
+  ("制作安全提醒", "Build safety reminders"),
+  ("低通", "Low-pass"),
+  ("高通", "High-pass"),
+  ("带通", "Band-pass"),
+  ("带阻", "Band-stop"),
+  ("天线对比", "Antenna comparison"),
+  ("适用场景", "Best for"),
+  ("制作与使用要点", "Key points for building and using"),
+  ("噪声类型", "Noise types"),
+  ("来源", "Source"),
+  ("降低噪声的要点", "Key points for reducing noise"),
+  ("主要流星雨", "Major meteor showers"),
+  ("流星雨", "Meteor shower"),
+  ("峰值时段", "Peak period"),
+  ("阻抗比与用途", "Impedance ratios and uses"),
+  ("阻抗比", "Impedance ratio"),
+  ("绕制与选型要点", "Winding and selection tips"),
+  ("常用调制方式", "Common modulation modes"),
+  ("应急用法与要点", "Emergency use and key points"),
+  ("常用波段", "Common bands"),
+  ("预测与监测", "Forecasts and monitoring"),
+  ("线圈 / Yagi 振子", "Coil / Yagi elements"),
+  ("驻波比换算", "SWR conversion"),
+  ("使用提示", "Usage tips"),
+  ("射频暴露", "RF Exposure"),
+  ("用语", "Slang"),
+  ("视频资源", "Video Resources"),
+  ("平台", "Platform"),
+  ("内容", "Content"),
+  ("建议", "Tip"),
+  ("技术文档", "Technical Docs"),
+  ("文档", "Document"),
+  ("自学建议", "Self-study Tips"),
+  ("IARU 一区", "IARU Region 1"),
+  ("IARU 二区 / 三区", "IARU Regions 2 / 3"),
+  ("协调层级（自顶向下）", "Coordination levels (top down)"),
+  ("IARU 三区波段差异", "IARU Region 3 band differences"),
+  (
+    "频率协调申请流程",
+    "Frequency coordination application process",
+  ),
+  ("受干扰处理流程", "Interference handling process"),
+  ("要点与提醒", "Key points and reminders"),
+  ("使用状态：", "Usage status: "),
+  ("纸卡", "Paper"),
+  ("知识点 · ", "Topic · "),
+  ("计算 →", "Calculate →"),
+  ("目标方位°", "Target azimuth°"),
+  ("卡片背面", "Back of the card"),
+  ("翻面查看答案", "Flip to see the answer"),
+  ("日照中", "In sunlight"),
+  ("地影中", "In eclipse"),
+  ("截短数字（T=0 N=9）", "Cut numbers (T=0, N=9)"),
+  (
+    "叠听（多一个干扰台）",
+    "Pileup (one extra interfering station)",
+  ),
+  ("单字符", "Single character"),
+  ("单词", "Word"),
+  ("{} 个考点", "{} points"),
+  // —— 简语 / 缩语分类说明 ——
+  (
+    "ITU 三字母简语，可兼作问句或陈述句",
+    "Three-letter ITU codes usable as both questions and statements",
+  ),
+  (
+    "CW 与话音通联常用缩语、信号报告",
+    "Abbreviations and signal reports common on CW and phone",
+  ),
+  (
+    "通联中常用的语音拼读与电码",
+    "Phonetic spelling and codes commonly used on the air",
+  ),
+  // —— 错误提示 ——
+  ("频谱画布未就绪", "Spectrum canvas not ready"),
+  ("瀑布画布未就绪", "Waterfall canvas not ready"),
+  ("2D 上下文不可用", "2D context not available"),
+  ("Canvas 2D 上下文不可用", "Canvas 2D context not available"),
+  ("service worker 未就绪", "Service worker not ready"),
+  ("VAPID 公钥无效", "Invalid VAPID public key"),
+  ("读取文件失败", "Failed to read the file"),
+  ("页面出错了", "Something went wrong"),
+  (
+    "解码在 Web Worker 后台线程完成，不阻塞页面。",
+    "Decoding runs in a Web Worker background thread and does not block the page.",
+  ),
+  (
+    "音频不会上传到服务器。",
+    "The audio is never uploaded to a server.",
+  ),
+  (
+    "典型过境约 10–15 分钟，建议配合",
+    "A typical pass lasts about 10–15 minutes, so plan together with",
+  ),
+  // —— 计算结果模板 ——
+  ("{}「{}」（{} 道）", "{} “{}” ({} questions)"),
+  ("{}「{}」（正确率 {}%）", "{} “{}” ({}% correct)"),
+  ("反射器 ≈ {} m", "Reflector ≈ {} m"),
+  ("激励振子 ≈ {} m", "Driven element ≈ {} m"),
+  ("引向器 {} ≈ {} m", "Director {} ≈ {} m"),
+  (
+    "反射器–激励间距 ≈ {} m · 引向器间距 ≈ {} m",
+    "Reflector–driven spacing ≈ {} m · director spacing ≈ {} m",
+  ),
+  (
+    "辐射体 ≈ {} m　地网（每根）≈ {} m",
+    "Radiator ≈ {} m　radials (each) ≈ {} m",
+  ),
+  ("{} 级 · {} W/m²", "Class {} · {} W/m²"),
+  // —— 进度 / 历史成绩模板 ——
+  (
+    "历史成绩（最近 {} 次正确率）",
+    "Recent accuracy (last {} attempts)",
+  ),
+  ("进度 {}%", "Progress {}%"),
+  // —— SDR 瀑布图 · 离线分析 ——
+  ("离线分析（上传 WAV）", "Offline analysis (upload WAV)"),
+  (
+    "上传一段音频录音，生成整段时间的频谱瀑布图，可下载 PNG。",
+    "Upload an audio recording to render a spectrum waterfall of the whole file, downloadable as PNG.",
+  ),
+  ("选择音频文件（WAV）", "Choose an audio file (WAV)"),
+  ("正在分析频谱…", "Analysing spectrum…"),
+  ("平均频谱", "Average spectrum"),
+  ("瀑布图（顶部为最新时间）", "Waterfall (newest at the top)"),
+  ("下载瀑布图 PNG", "Download waterfall PNG"),
+  ("分析其他文件", "Analyse another file"),
+  (
+    "文件过大（约 {} MB），上限 {} MB。",
+    "File too large (about {} MB); the limit is {} MB.",
+  ),
+  (
+    "音频太短，无法分析（至少需要约 0.05 秒）",
+    "Audio too short to analyse (at least about 0.05 s is needed)",
+  ),
+  (
+    "音频解码失败，请确认是有效的 WAV 文件",
+    "Audio decoding failed — make sure it is a valid WAV file",
+  ),
+  (
+    "可用 cargo make spectrum-sample 生成测试样本",
+    "Run cargo make spectrum-sample to generate a test sample",
+  ),
+  // —— 火腿社区 ——
+  ("火腿社区", "Ham Community"),
+  (
+    "国内外业余无线电论坛与问答 · 外链直达",
+    "Ham radio forums & Q&A worldwide · direct links",
+  ),
+  ("关于本站社区", "About this community"),
+  (
+    "本站目前以题库、知识与工具为主，暂未自建论坛。这里聚合了国内外活跃的火腿社区，点击即可直达；你的学习进度、通联日志等个人数据只保存在浏览器本地，不会离开你的设备。",
+    "This site currently focuses on question banks, knowledge, and tools, and does not run its own forum yet. Here we gather active ham communities at home and abroad — click to jump straight in. Your study progress, logs, and other personal data stay in your browser and never leave your device.",
+  ),
+  ("社区索引", "Community index"),
+  (
+    "按类别整理，点击名称跳转对应站点（外部链接）。",
+    "Organized by category; click a name to open the site (external links).",
+  ),
+  ("此题暂无解析", "No explanation yet for this question"),
+  ("欢迎补充", "Contribute"),
+  // —— 间隔重复可视化 ——
+  ("记忆巩固", "Memory consolidation"),
+  (
+    "答对间隔逐次拉长，答错回到当天",
+    "Correct answers stretch the interval; mistakes bring it back to today",
+  ),
+  ("学习中 {} 道", "Learning: {}"),
+  ("1–6 天 {} 道", "1–6 days: {}"),
+  ("7–20 天 {} 道", "7–20 days: {}"),
+  ("≥21 天 {} 道", "≥21 days: {}"),
+  ("已学 {} / 熟记 {}", "Learned {} / Mature {}"),
+  // —— 批量补齐 ——
+  ("报名验证", "Register for the exam"),
+  (
+    "通过当地无线电管理机构或其指定平台报名操作技术能力验证（A / B / C 类）。",
+    "Register with the local radio authority or its designated platform for the A / B / C operating-ability test.",
+  ),
+  ("参加考试", "Sit the exam"),
+  (
+    "参加理论考试，合格后取得《业余无线电台操作证书》（对应 A / B / C 类）。",
+    "Take the written exam; passing it earns the Amateur Radio Station Operating Certificate (class A / B / C).",
+  ),
+  ("申请设台", "Apply for a station licence"),
+  (
+    "凭操作证书提交设台申请：个人需申请表、身份证明复印件、设备说明材料等。",
+    "Submit the station application with your operating certificate: individuals need the application form, a copy of their ID and equipment specifications.",
+  ),
+  ("核发执照与呼号", "Licence and callsign issued"),
+  (
+    "批准后颁发《业余无线电台执照》并同时核发呼号，即可依法使用。",
+    "Once approved, the Amateur Radio Station Licence is issued together with your callsign and you may operate legally.",
+  ),
+  (
+    "30–3000 MHz，发射功率 ≤ 25W。",
+    "30–3000 MHz, transmit power ≤ 25 W.",
+  ),
+  (
+    "30 MHz 以下 <15W 或 30 MHz 以上 ≤25W。",
+    "Below 30 MHz <15 W, or above 30 MHz ≤25 W.",
+  ),
+  (
+    "30 MHz 以下 ≤1000W 或 30 MHz 以上 ≤25W。",
+    "Below 30 MHz ≤1000 W, or above 30 MHz ≤25 W.",
+  ),
+  (
+    "执照有效期不超过 5 年，届满 30 个工作日前申请更换。",
+    "A licence is valid for at most 5 years; apply for renewal 30 working days before it expires.",
+  ),
+  (
+    "取得操作证书前，可在他人现场监督指导下实习操作。",
+    "Before holding an operating certificate you may practise on site under another operator's supervision.",
+  ),
+  (
+    "呼号停止使用应办理注销，注销 1 年后可重新投入分配。",
+    "A callsign no longer in use must be cancelled; it can be reassigned one year after cancellation.",
+  ),
+  (
+    "通信建立及结束时应发送呼号，过程中间隔不超过 10 分钟。",
+    "Send your callsign when a contact starts and ends, and at least every 10 minutes in between.",
+  ),
+  (
+    "设台须满足三个条件：熟悉无线电管理规定、通过操作技术能力验证、使用符合规定的设备。",
+    "Setting up a station requires three conditions: knowing the radio regulations, passing the operating-ability test and using compliant equipment.",
+  ),
+  (
+    "本地解析完全离线：不联网也能查国家 / 地区、DXCC 实体、CQ / ITU 分区与稀有度。",
+    "Local parsing works fully offline: country / region, DXCC entity, CQ / ITU zones and rarity need no network.",
+  ),
+  (
+    "「在线查询」再补全姓名、QTH 与网格，数据来自 Callook（美加）与 HamQTH（国际），纯静态托管时不可用。",
+    "\"Online lookup\" adds name, QTH and grid from Callook (US / Canada) and HamQTH (international); unavailable on pure static hosting.",
+  ),
+  (
+    "在地址后加上 `?call=BA1XX` 可分享查询结果，打开页面即自动发起一次在线查询。",
+    "Append `?call=BA1XX` to the URL to share a result; opening the page runs one online lookup automatically.",
+  ),
+  (
+    "解析后可对照「DXCC 稀有度榜单」判断追台价值，或到「通联日志」录入该呼号。",
+    "After parsing, check the \"DXCC rarity ranking\" to judge whether it is worth chasing, or log the callsign in the logbook.",
+  ),
+  ("接入约定", "API conventions"),
+  ("错误码", "Error codes"),
+  ("必填", "required"),
+  ("可选", "optional"),
+  ("基础地址", "Base URL"),
+  (
+    "同站点域名下的 /api/v1/*；全部为 GET 请求，返回 JSON。",
+    "/api/v1/* under the same site domain; all requests are GET and return JSON.",
+  ),
+  ("成功响应", "Success response"),
+  (
+    "{ \"data\": …, \"meta\": { \"source\": … } }；列表接口的 meta 带 total 与 next_cursor。",
+    "{ \"data\": …, \"meta\": { \"source\": … } }; list endpoints carry total and next_cursor in meta.",
+  ),
+  ("错误响应", "Error response"),
+  (
+    "{ \"error\": { \"code\": …, \"message\": … } }，code 见下方错误码表。",
+    "{ \"error\": { \"code\": …, \"message\": … } }; see the error code table below for code.",
+  ),
+  ("跨域 CORS", "Cross-origin CORS"),
+  (
+    "对任意来源开放（只读 GET），网页前端可直接 fetch，无需自建代理。",
+    "Open to any origin (read-only GET), so the web frontend can fetch directly without your own proxy.",
+  ),
+  ("条件请求", "Conditional requests"),
+  (
+    "响应带 ETag；再次请求带 If-None-Match，内容未变化时返回 304，不消耗流量。",
+    "Responses carry an ETag; resend it as If-None-Match and unchanged content returns 304, costing no bandwidth.",
+  ),
+  ("版本策略", "Versioning policy"),
+  (
+    "v1 发布后向后兼容：只增字段、不改含义；破坏性变更会升到 v2 并保留 v1 一段时间。",
+    "v1 stays backward compatible after release: fields are only added, never redefined; breaking changes move to v2 while v1 is kept for a while.",
+  ),
+  (
+    "首批只开放纯计算与静态参考数据，不依赖任何上游服务，结果稳定、可放心做长时间缓存。",
+    "The first batch exposes only pure calculations and static reference data with no upstream dependency, so results are stable and safe to cache for a long time.",
+  ),
+  (
+    "引用型接口（太阳活动、中继台、POTA / SOTA）会在复用服务端缓存后陆续开放，并保证缓存 TTL 不低于站内接口，避免放大对上游的压力。",
+    "Reference endpoints (solar activity, repeaters, POTA / SOTA) open later on top of the server-side cache, with a TTL never shorter than the site's own endpoints, so upstream load is not amplified.",
+  ),
+  (
+    "传播预测使用简化 VOACAP 模型，适合估算趋势与规划操作时段，不等同于专业电离层预测软件。",
+    "Propagation prediction uses a simplified VOACAP model: fine for estimating trends and planning operating hours, but not a substitute for professional ionospheric prediction software.",
+  ),
+  (
+    "纯静态托管（无后端）时本页文档仍可阅读，但接口不可用。",
+    "On pure static hosting (no backend) this page is still readable, but the endpoints are unavailable.",
+  ),
+  (
+    "匿名访问：每 IP 每分钟 {} 次。请求头携带 Authorization: Bearer <key> 后提升到每分钟 {} 次。",
+    "Anonymous access: {} requests per minute per IP. An Authorization: Bearer <key> header raises it to {} per minute.",
+  ),
+  (
+    "key 只用于区分配额档位与统计，不做敏感鉴权；成功响应的缓存时长为 {} 秒。需要 key 请联系站点维护者。",
+    "The key only picks a quota tier and feeds statistics; it is not sensitive authentication. Successful responses are cached for {} seconds. Contact the site maintainer if you need a key.",
+  ),
 ];
 
 /// 西班牙文词典（中文原文 → 西班牙文）。
@@ -8432,6 +9479,1123 @@ static ES: &[(&str, &str)] = &[
     "限时（分钟，0 为不限时）",
     "Límite de tiempo (minutos, 0 = sin límite)",
   ),
+  // —— 新增模块 ——
+  ("频率协调", "Coordinación de frecuencias"),
+  ("设备评测与选购", "Equipos: reseñas y compra"),
+  ("CQ / ITU 分区地图", "Mapa de zonas CQ / ITU"),
+  ("开放 API", "API abierta"),
+  (
+    "版本化 · 可跨域 · 纯计算与静态数据",
+    "Versionada · con CORS · cálculo puro y datos estáticos",
+  ),
+  ("配额与鉴权", "Cuotas y autenticación"),
+  ("接口清单", "Lista de endpoints"),
+  (
+    "下载 OpenAPI 3.1 文档（openapi.json）",
+    "Descargar la especificación OpenAPI 3.1 (openapi.json)",
+  ),
   // —— 批量补齐 ——
   ("答案：", "Respuesta:"),
+  // —— Páginas nuevas · aurora / dispersión meteórica / balún / balizas / ruido ——
+  ("极光通信", "Comunicación por aurora"),
+  (
+    "高纬 VHF/UHF 的极区反射传播",
+    "Propagación por reflexión polar en VHF/UHF de alta latitud",
+  ),
+  ("流星散射", "Dispersión meteórica"),
+  (
+    "6m / 2m 弱信号 DX 的主力手段",
+    "El medio principal para DX de señal débil en 6 m / 2 m",
+  ),
+  (
+    "巴伦与不平衡变压器",
+    "Balunes y transformadores no balanceados",
+  ),
+  (
+    "平衡-不平衡转换 · 阻抗变换 · 共模抑制",
+    "Balanceado a no balanceado · Transformación de impedancia · Rechazo de modo común",
+  ),
+  ("国际信标网络", "Red internacional de balizas"),
+  (
+    "NCDXF/IARU · 18 台 5 波段 · 判断传播开通",
+    "NCDXF/IARU · 18 balizas en 5 bandas · Comprueba si la ruta está abierta",
+  ),
+  ("信标台（按轮询顺序）", "Balizas (en orden de sondeo)"),
+  ("信标频率", "Frecuencia de baliza"),
+  ("信号格式", "Formato de señal"),
+  ("本台剩余约 {} 秒", "Quedan unos {} s para esta estación"),
+  (
+    "正在发射：{}（{} · {}）",
+    "Transmitiendo ahora: {} ({} · {})",
+  ),
+  (
+    "每台发射 10 秒：先以 CW（约 20 WPM）发送呼号，再发 4 个各约 1 秒的长划，功率逐级下降 10 dB。",
+    "Cada estación transmite durante 10 segundos: primero su indicativo en CW (unos 20 WPM) y luego cuatro rayas de aproximadamente un segundo cada una, con la potencia bajando 10 dB por cada raya.",
+  ),
+  (
+    "能听到第几个长划，就能估算这条路径的损耗余量：听到 0.1W 的一划说明路径极佳。",
+    "La última raya que aún oigas indica el margen de pérdida de la ruta: oír la raya de 0,1 W significa una ruta excelente.",
+  ),
+  (
+    "把电台调谐到某个信标频率，按上表对照此刻是哪台在发射。",
+    "Sintoniza la radio en una frecuencia de baliza y usa la tabla anterior para saber qué estación está transmitiendo ahora.",
+  ),
+  (
+    "傍晚 / 清晨与灰线时段效果最佳；换不同波段轮流听，可判断各波段开通顺序。",
+    "Funciona mejor al anochecer / amanecer y en la línea gris; escucha banda por banda para saber en qué orden se abren.",
+  ),
+  (
+    "时隙按本地时钟估算并向下取整，实际相位可能存在秒级偏差；信标实际是否在线以现场收讯为准。",
+    "Las franjas horarias se estiman con el reloj local y se redondean hacia abajo, por lo que la fase real puede variar unos segundos; confirma en el aire si la baliza está realmente transmitiendo.",
+  ),
+  ("怎么看", "Cómo interpretarlo"),
+  (
+    "听到某台信标，说明「你 ↔ 该台」这条传播路径当前开通，可据此推断该方向 DX 的可行性。",
+    "Oír una baliza significa que la ruta de propagación entre tú y esa estación está abierta ahora mismo, lo que indica si el DX en esa dirección es viable.",
+  ),
+  ("接收环境与噪声", "Entorno de recepción y ruido"),
+  (
+    "QRN / QRM 与底噪的识别和应对",
+    "Identificación y tratamiento de QRN / QRM y del ruido de fondo",
+  ),
+  ("实用天线专题", "Temas prácticos de antenas"),
+  (
+    "EFHW、磁环小环、接收天线与倒 V 的选型要点",
+    "Claves para elegir entre EFHW, bucles magnéticos, antenas de recepción y V invertida",
+  ),
+  (
+    "开源项目与 DIY 索引",
+    "Índice de proyectos open source y DIY",
+  ),
+  (
+    "社区开源软件与自制教程 · 一站直达",
+    "Software open source de la comunidad y tutoriales de construcción · todo en un lugar",
+  ),
+  ("DIY 与自制教程", "DIY y tutoriales de construcción"),
+  ("精选开源项目", "Proyectos open source destacados"),
+  (
+    "按用途分类，点击名称跳转项目官网或代码仓库（外部链接）。",
+    "Agrupados por uso; haz clic en un nombre para abrir el sitio web o el repositorio del proyecto (enlace externo).",
+  ),
+  ("VNA 矢量网络分析仪", "VNA (analizador de redes vectorial)"),
+  (
+    "校准方法与天线 / 滤波器 / 馈线测量",
+    "Métodos de calibración y medidas de antenas / filtros / líneas de alimentación",
+  ),
+  ("Winlink 无线邮件", "Correo Winlink por radio"),
+  (
+    "经业余无线电收发电子邮件",
+    "Enviar y recibir correo electrónico por radioafición",
+  ),
+  ("卫星通联操作", "Operación por satélite"),
+  (
+    "FM 中继与线性转发器的完整 QSO 流程",
+    "Procedimiento completo de QSO para repetidores FM y transpondedores lineales",
+  ),
+  ("「业余卫星」", "«Satélites de radioaficionados»"),
+  ("先到", "Primero ve a"),
+  (
+    "页查过境时间与各星上行 / 下行频率，再按本页流程完成通联。",
+    "para consultar los horarios de paso y las frecuencias de subida / bajada de cada satélite; después sigue el procedimiento de esta página para completar el contacto.",
+  ),
+  ("学习路径", "Ruta de aprendizaje"),
+  (
+    "学习路径与认证路线图",
+    "Ruta de aprendizaje y mapa de certificación",
+  ),
+  (
+    "从新手到 A/B/C 操作证的循序渐进指引",
+    "Guía paso a paso desde principiante absoluto hasta los certificados de operador A/B/C",
+  ),
+  ("学习资源", "Recursos de aprendizaje"),
+  (
+    "视频课程、技术文档与自学建议",
+    "Cursos en vídeo, documentación técnica y consejos de autoaprendizaje",
+  ),
+  ("DIY 实战项目", "Proyectos DIY prácticos"),
+  ("DIY 实战项目教程", "Guías de proyectos DIY prácticos"),
+  (
+    "从入门到进阶的动手项目与通用流程",
+    "Proyectos prácticos de principiante a avanzado, más un flujo de trabajo común",
+  ),
+  (
+    "IARU 分区 · 协调层级 · 申请与干扰处理",
+    "Regiones IARU · Niveles de coordinación · Solicitudes y gestión de interferencias",
+  ),
+  ("活动日历", "Calendario de eventos"),
+  (
+    "展会 · 火腿节 · 年度通联活动",
+    "Convenciones · Ferias de radioaficionados · Actividades anuales",
+  ),
+  (
+    "全年活动（按下一届开始时间排序）",
+    "Actividades de todo el año (ordenadas por el próximo inicio)",
+  ),
+  ("追踪 DX 远征与竞赛", "Sigue expediciones DX y concursos"),
+  ("{} 年 {} 月 {} 日 · {} · {}", "{} / {} / {} · {} · {}"),
+  ("官网", "Sitio web"),
+  (
+    "日期为每年常见安排（多在周末，逐年浮动），以主办方公告为准；「加入提醒」会把开始时间写入倒计时，到期通过浏览器通知提醒。",
+    "Las fechas siguen la programación anual habitual (principalmente fines de semana y varían cada año); el anuncio del organizador es la referencia. «Añadir recordatorio» guarda la hora de inicio en la cuenta atrás y te avisa en el navegador cuando llegue el momento.",
+  ),
+  ("活动：{}", "Evento: {}"),
+  ("1 天", "1 día"),
+  // —— Página nueva · mapa de zonas CQ / ITU ——
+  ("分区地图", "Mapa de zonas"),
+  ("分区地图（CQ / ITU）", "Mapa de zonas (CQ / ITU)"),
+  (
+    "CQ / ITU 分区地图（滚轮缩放、拖拽平移、双击复位）",
+    "Mapa de zonas CQ / ITU (rueda para zoom, arrastra para desplazar, doble clic para restablecer)",
+  ),
+  (
+    "按分区着色 · 呼号定位 · 分区构成",
+    "Colorear por zona · Localizar un indicativo · Composición de zonas",
+  ),
+  ("CQ 分区（40）", "Zonas CQ (40)"),
+  ("ITU 分区（90）", "Zonas ITU (90)"),
+  ("{} {} 区", "{} Zona {}"),
+  ("{} · {} {} 区", "{} · {} Zona {}"),
+  ("含 {} 个 DXCC 实体", "{} entidades DXCC"),
+  (
+    "图例（共 {} 个分区，括号内为所含 DXCC 实体数）",
+    "Leyenda ({} zonas; el número entre paréntesis es la cantidad de entidades DXCC)",
+  ),
+  (
+    "点击地图区域或图例，或输入呼号定位，查看该分区包含的 DXCC 实体。",
+    "Haz clic en un área del mapa o en una entrada de la leyenda, o introduce un indicativo, para ver las entidades DXCC de esa zona.",
+  ),
+  ("分区构成", "Composición de zonas"),
+  (
+    "该分区暂无登记的 DXCC 实体。",
+    "Esta zona aún no tiene entidades DXCC registradas.",
+  ),
+  ("已定位：{}", "Localizado: {}"),
+  ("打开完整分区地图", "Abrir el mapa completo de zonas"),
+  (
+    "按每个 DXCC 实体的主分区着色并高亮当前呼号所属实体；分区边界与国界不重合，此图为速查近似。",
+    "Coloreado por la zona principal de cada entidad DXCC, con la entidad del indicativo actual resaltada; los límites de zona no coinciden con las fronteras nacionales, por lo que este mapa es una referencia rápida aproximada.",
+  ),
+  (
+    "按每个 DXCC 实体的主分区着色：俄罗斯、美国、中国等横跨多个分区的大国会被整体归入一个分区，因此本图用于「分区大致在哪、含哪些实体」的速查，并非精确的分区边界。",
+    "Coloreado por la zona principal de cada entidad DXCC: los países grandes que abarcan varias zonas (Rusia, Estados Unidos, China, etc.) se asignan por completo a una sola zona, por lo que este mapa sirve como consulta rápida de dónde está una zona y qué entidades incluye, no como frontera exacta.",
+  ),
+  (
+    "边界数据加载失败，请运行 `cargo make dxcc-map` 生成 public/dxcc-entities.bin。",
+    "Error al cargar los datos de límites. Ejecuta `cargo make dxcc-map` para generar public/dxcc-entities.bin.",
+  ),
+  // —— Página nueva · análisis de indicativos ——
+  ("呼号解析与查询", "Consulta de indicativos"),
+  (
+    "本地解析 · DXCC 实体与分区 · 在线补全",
+    "Análisis local · Entidad y zonas DXCC · Consulta en línea",
+  ),
+  (
+    "输入呼号即时解析国家 / 地区、DXCC 实体、CQ / ITU 分区与稀有度；「在线查询」再补全姓名、QTH 与网格。",
+    "Introduce un indicativo para resolver al instante el país, la entidad DXCC, las zonas CQ / ITU y la rareza; la «consulta en línea» añade nombre, QTH y locator.",
+  ),
+  ("呼号或实体名", "Indicativo o nombre de entidad"),
+  (
+    "呼号或实体名（如 BG4XYZ、日本）",
+    "Indicativo o nombre de entidad (ej.: BG4XYZ, Japón)",
+  ),
+  (
+    "如 BG4XYZ、JA1ABC、K1ZZ/QRP、P5ABC",
+    "ej.: BG4XYZ, JA1ABC, K1ZZ/QRP, P5ABC",
+  ),
+  ("在线查询", "Consulta en línea"),
+  ("在线资料", "Datos en línea"),
+  (
+    "输入呼号开始查询。",
+    "Introduce un indicativo para empezar.",
+  ),
+  (
+    "请输入至少 3 位的呼号",
+    "Introduce un indicativo de al menos 3 caracteres",
+  ),
+  (
+    "未识别的呼号或实体名，请检查拼写。",
+    "Indicativo o nombre de entidad no reconocido; revisa la ortografía.",
+  ),
+  ("{}（Most Wanted 稀有实体）", "{} (entidad más buscada)"),
+  ("常规实体", "Entidad habitual"),
+  (
+    "该呼号暂无公开的操作员资料（上游只覆盖美加，其他国家 / 地区需在服务端配置 HamQTH 账号），此处仅按内置 DXCC 前缀库给出国家 / 地区。",
+    "No hay datos públicos del operador para este indicativo (la fuente externa solo cubre EE. UU. y Canadá; otros países requieren configurar una cuenta de HamQTH en el servidor). Aquí solo se muestra el país, según la lista de prefijos DXCC integrada.",
+  ),
+  (
+    "在线资料暂不可用（呼号不存在，或未通过后端 dev-full / serve 访问）；本地解析结果不受影响。",
+    "Los datos en línea no están disponibles (el indicativo no existe o el sitio no se sirve mediante el backend dev-full / serve). El análisis local no se ve afectado.",
+  ),
+  (
+    "本地解析依据内置的 340 个 DXCC 实体与前缀库，离线可用；在线资料来自 Callook / HamQTH 公开接口，仅显示电台的公开资料，不涉及隐私。",
+    "El análisis local usa la lista integrada de 340 entidades y prefijos DXCC y funciona sin conexión; los datos en línea provienen de las API públicas de Callook / HamQTH y solo muestran información pública de la estación, sin datos privados.",
+  ),
+  // —— Página nueva · equipos ——
+  (
+    "精选机型 · 参数对比 · 选购指南",
+    "Equipos destacados · Comparación de especificaciones · Guía de compra",
+  ),
+  ("参数对比", "Comparación de especificaciones"),
+  ("参数", "Especificaciones"),
+  (
+    "请至少选择一台机型进行对比。",
+    "Selecciona al menos un equipo para comparar.",
+  ),
+  (
+    "最多同时对比 {} 台，请先取消一台。",
+    "Puedes comparar como máximo {} equipos a la vez; deselecciona uno primero.",
+  ),
+  (
+    "选择类别与机型（最多 4 台）并排对比规格与点评。规格取公开且稳定的高层次信息，价格档为相对定位。",
+    "Elige una categoría y hasta 4 equipos para comparar especificaciones y comentarios en paralelo. Las especificaciones son información pública estable de alto nivel; los niveles de precio indican posicionamiento relativo.",
+  ),
+  (
+    "本表为客观规格与共识点评整理，不构成购买建议，也未收录具体售价；购买前请以厂商与经销商的最新资料为准。",
+    "Esta tabla recopila especificaciones objetivas y opiniones ampliamente compartidas. No es asesoramiento de compra ni incluye precios reales; consulta la información más reciente del fabricante y del distribuidor antes de comprar.",
+  ),
+  // —— Herramientas nuevas · codificación / subtón ——
+  ("数字模式编码", "Codificación de modos digitales"),
+  (
+    "文本 → 摩尔斯（CW）与 RTTY（ITA2）比特流。",
+    "Texto a Morse (CW) y flujo de bits RTTY (ITA2).",
+  ),
+  ("CW 摩尔斯电码", "Código Morse CW"),
+  ("RTTY（ITA2）比特流", "Flujo de bits RTTY (ITA2)"),
+  ("报文内容", "Contenido del mensaje"),
+  (
+    "RTTY 编码：11111 为字母移态（LTRS）、11011 为数字移态（FIGS）。CW 中 `/` 表示单词间隔。",
+    "Codificación RTTY: 11111 es el cambio a letras (LTRS) y 11011 el cambio a cifras (FIGS). En CW, `/` marca el espacio entre palabras.",
+  ),
+  ("APRS 编解码", "Codec APRS"),
+  (
+    "APRS 未压缩位置报文的编解码。",
+    "Codificación y decodificación de mensajes de posición APRS sin comprimir.",
+  ),
+  (
+    "APRS 位置字段（如 3114.50N/12128.50E）",
+    "Campo de posición APRS (ej.: 3114.50N/12128.50E)",
+  ),
+  ("APRS 位置字段：{}", "Campo de posición APRS: {}"),
+  (
+    "未压缩位置格式：纬度 ddmm.mm + N/S，经度 dddmm.mm + E/W。本工具不涉及 AX.25 帧与 Mic-E 压缩。",
+    "Formato sin comprimir: latitud ddmm.mm + N/S, longitud dddmm.mm + E/W. Esta herramienta no gestiona tramas AX.25 ni compresión Mic-E.",
+  ),
+  (
+    "无法解析，请检查格式。",
+    "No se puede analizar; revisa el formato.",
+  ),
+  ("亚音与中继频差", "Subtonos y desplazamiento de repetidor"),
+  (
+    "中继频差计算与 CTCSS / DCS 亚音码表。",
+    "Cálculo del desplazamiento de repetidor y tablas de subtón CTCSS / DCS.",
+  ),
+  ("CTCSS 亚音（Hz，共 50 组）", "Subtón CTCSS (Hz, 50 tonos)"),
+  (
+    "DCS 数字静噪码（八进制）",
+    "Código de silenciador digital DCS (octal)",
+  ),
+  (
+    "接收 {} MHz → 发射 {} MHz",
+    "Recepción {} MHz → transmisión {} MHz",
+  ),
+  ("频差 {} MHz（{}）", "Desplazamiento {} MHz ({})"),
+  ("请选择波段。", "Selecciona una banda."),
+  // —— Herramientas nuevas · filtros / cristal / líneas / sección / RF / UTC ——
+  ("滤波器设计", "Diseño de filtros"),
+  (
+    "Butterworth 低通 / 高通 / 带通 / 带阻的 L/C 元件值。",
+    "Valores de L/C para filtros Butterworth paso bajo / paso alto / paso banda / rechazo de banda.",
+  ),
+  (
+    "Butterworth 原型；g₁ 起交替串 / 并联。带通 / 带阻每级为 LC 谐振回路，谐振于中心频率。",
+    "Prototipo Butterworth: a partir de g₁ los elementos alternan entre serie y derivación. Las etapas de paso banda / rechazo de banda son circuitos resonantes LC sintonizados en la frecuencia central.",
+  ),
+  ("中心频率（MHz）", "Frecuencia central (MHz)"),
+  ("带宽（MHz）", "Ancho de banda (MHz)"),
+  ("截止频率（MHz）", "Frecuencia de corte (MHz)"),
+  ("接收频率（MHz）", "Frecuencia de recepción (MHz)"),
+  ("阶数（1–5）", "Orden (1–5)"),
+  ("级", "Etapa"),
+  ("位置", "Posición"),
+  ("串联", "Serie"),
+  ("并联", "Derivación"),
+  ("电容（pF）", "Capacidad (pF)"),
+  ("电感（μH）", "Inductancia (µH)"),
+  ("晶体振荡", "Oscilador de cristal"),
+  (
+    "晶体频率牵引（负载电容 → ppm）与串联谐振。",
+    "Tiraje de frecuencia del cristal (capacidad de carga → ppm) y resonancia serie.",
+  ),
+  ("负载电容 CL（pF）", "Capacidad de carga CL (pF)"),
+  ("静电容 C0（pF）", "Capacidad estática C0 (pF)"),
+  ("动态电容 C1（fF）", "Capacidad dinámica C1 (fF)"),
+  (
+    "频率牵引 Δf/f ≈ {} ppm",
+    "Tiraje de frecuencia Δf/f ≈ {} ppm",
+  ),
+  ("串联谐振频率 f ≈ {} MHz", "Resonancia serie f ≈ {} MHz"),
+  (
+    "串联谐振：请输入正的 L 与 C。",
+    "Resonancia serie: introduce L y C positivos.",
+  ),
+  (
+    "牵引量：请输入正的 C1 与 C0。",
+    "Tiraje: introduce C1 y C0 positivos.",
+  ),
+  ("传输线阻抗", "Impedancia de la línea de transmisión"),
+  (
+    "同轴 / 平行双线 / 微带线的特性阻抗。",
+    "Impedancia característica de coaxial, línea paralela y microstrip.",
+  ),
+  (
+    "同轴内导体外径（mm）",
+    "Diámetro exterior del conductor interno (mm)",
+  ),
+  (
+    "同轴外导体内径（mm）",
+    "Diámetro interior del conductor externo (mm)",
+  ),
+  ("介质常数 εr", "Constante dieléctrica εr"),
+  (
+    "同轴线特性阻抗 ≈ {} Ω",
+    "Impedancia característica del coaxial ≈ {} Ω",
+  ),
+  (
+    "同轴线：请输入有效参数（εr>0 且外径>内径）。",
+    "Coaxial: introduce parámetros válidos (εr > 0 y el diámetro interior del conductor externo mayor que el exterior del interno).",
+  ),
+  ("平行双线中心距（mm）", "Separación entre conductores (mm)"),
+  ("导线直径（mm）", "Diámetro del conductor (mm)"),
+  (
+    "平行双线特性阻抗 ≈ {} Ω",
+    "Impedancia característica de la línea paralela ≈ {} Ω",
+  ),
+  (
+    "平行双线：请输入有效参数（中心距大于直径）。",
+    "Línea paralela: introduce parámetros válidos (la separación debe ser mayor que el diámetro).",
+  ),
+  ("微带走线宽度（mm）", "Ancho de la pista microstrip (mm)"),
+  ("介质厚度（mm）", "Espesor del sustrato (mm)"),
+  (
+    "微带线特性阻抗 ≈ {} Ω",
+    "Impedancia característica de microstrip ≈ {} Ω",
+  ),
+  (
+    "微带线：请输入有效参数（εr>1 且宽厚为正）。",
+    "Microstrip: introduce parámetros válidos (εr > 1, con ancho y espesor positivos).",
+  ),
+  ("线径压降", "Sección de cable y caída de tensión"),
+  (
+    "按电流与长度估算直流供电线径与回路压降。",
+    "Estima la sección del cable de alimentación de CC y la caída de tensión del bucle según la corriente y la longitud.",
+  ),
+  ("单程长度（m）", "Longitud de un tramo (m)"),
+  ("电流（A）", "Corriente (A)"),
+  (
+    "单根导线电阻 {} Ω（回路 ×2）",
+    "Resistencia de un conductor {} Ω (×2 por el bucle)",
+  ),
+  ("回路压降 {} V", "Caída de tensión del bucle {} V"),
+  ("直径 mm", "Diámetro mm"),
+  ("截面积 mm²", "Sección mm²"),
+  ("常用 AWG 线规参考", "Referencia de calibres AWG comunes"),
+  (
+    "载流能力取决于绝缘与敷设方式，表中仅给出电阻参考；大电流供电建议压降控制在 3% 以内。",
+    "La capacidad de corriente depende del aislamiento y la instalación; la tabla solo ofrece la resistencia como referencia. Para alimentación de alta corriente, mantén la caída de tensión por debajo del 3 %.",
+  ),
+  ("射频暴露评估", "Evaluación de exposición a RF"),
+  (
+    "按 FCC OET-65 估算功率密度与最小安全距离。",
+    "Estima la densidad de potencia y la distancia mínima de seguridad según FCC OET-65.",
+  ),
+  ("评估距离（m）", "Distancia de evaluación (m)"),
+  ("功率密度：{} mW/cm²", "Densidad de potencia: {} mW/cm²"),
+  (
+    "公众限值 {} mW/cm²，受控限值 {} mW/cm²",
+    "Límite público {} mW/cm², límite controlado {} mW/cm²",
+  ),
+  (
+    "最小安全距离：公众 {} m，受控 {} m",
+    "Distancia mínima de seguridad: {} m público, {} m controlado",
+  ),
+  (
+    "当前距离下满足公众环境限值。",
+    "Cumple el límite público a esta distancia.",
+  ),
+  (
+    "当前距离下超过公众环境限值，请增大距离或降低功率。",
+    "Supera el límite público a esta distancia: aumenta la distancia o reduce la potencia.",
+  ),
+  (
+    "请输入正的功率、频率与距离。",
+    "Introduce potencia, frecuencia y distancia positivas.",
+  ),
+  (
+    "远场近似：S = P·G/(4πd²)。近场区实际场强可能更高，结果仅供合规自检参考。",
+    "Aproximación de campo lejano: S = P·G/(4πd²). En campo cercano la intensidad real puede ser mayor; los resultados sirven solo para autocomprobar el cumplimiento.",
+  ),
+  ("UTC 时间", "Hora UTC"),
+  (
+    "实时 UTC / Zulu 时钟与常用时区对照。",
+    "Reloj UTC / Zulú en vivo con equivalencias de zonas horarias comunes.",
+  ),
+  ("时区", "Zona horaria"),
+  ("偏移", "Desplazamiento"),
+  ("正偏移 +", "Desplazamiento positivo +"),
+  ("负偏移 −", "Desplazamiento negativo −"),
+  (
+    "通联日志、竞赛与卫星过境统一用 UTC 记录；跨日期变更线时注意日期 ±1 天。",
+    "Registra contactos, concursos y pasos de satélite en UTC; ten en cuenta el cambio de fecha de ±1 día al cruzar la línea de cambio de fecha.",
+  ),
+  ("史密斯圆图", "Carta de Smith"),
+  (
+    "输入复阻抗（R ± jX），在圆图上定位并显示驻波比 / 反射系数 / 回波损耗。",
+    "Introduce una impedancia compleja (R ± jX) para situarla en la carta y ver ROE / coeficiente de reflexión / pérdida de retorno.",
+  ),
+  (
+    "以 50Ω 为特性阻抗。上半圆为感性（+jX），下半圆为容性（−jX）；圆心处完全匹配。",
+    "La impedancia de referencia es 50 Ω. La mitad superior es inductiva (+jX) y la inferior capacitiva (−jX); el centro es la adaptación perfecta.",
+  ),
+  (
+    "Γ = {} + j{}　｜　SWR = {}　｜　回波损耗 {} dB",
+    "Γ = {} + j{}　|　ROE = {}　|　Pérdida de retorno {} dB",
+  ),
+  ("电阻 R（Ω）", "Resistencia R (Ω)"),
+  (
+    "电抗 X（Ω，感性为正）",
+    "Reactancia X (Ω, inductiva si es positiva)",
+  ),
+  (
+    "路径中点地方时约 {}:{}，电离程度约为正午的 {}%",
+    "La hora local en el punto medio de la ruta es aproximadamente {}:{}, con una ionización en torno al {}% del valor del mediodía",
+  ),
+  // —— Herramientas nuevas · espectro SDR / mapa de receptores ——
+  ("SDR 瀑布图", "Cascada SDR"),
+  ("频谱瀑布图", "Cascada del espectro"),
+  ("实时频谱", "Espectro en directo"),
+  (
+    "瀑布图（随时间下滑）",
+    "Cascada (desplazándose hacia abajo con el tiempo)",
+  ),
+  (
+    "把电台或 SDR 的音频输出接入麦克风，实时查看频谱与瀑布图。",
+    "Conecta la salida de audio de la radio o del SDR al micrófono para ver el espectro y la cascada en directo.",
+  ),
+  ("显示增益（dB）", "Ganancia de visualización (dB)"),
+  (
+    "颜色由深到亮代表信号由弱到强（黑 → 蓝 → 青 → 绿 → 黄 → 红 → 白）。增益可整体抬升弱信号以改善显示对比度。",
+    "Los colores de oscuro a brillante indican señales de débiles a fuertes (negro → azul → cian → verde → amarillo → rojo → blanco). La ganancia eleva las señales débiles para mejorar el contraste.",
+  ),
+  ("开始", "Iniciar"),
+  ("增益", "Ganancia"),
+  ("频率范围 —", "Rango de frecuencia —"),
+  ("SDR 在线接收站地图", "Mapa de receptores SDR en línea"),
+  (
+    "无需本地硬件，浏览器直达公开接收站",
+    "Sin hardware local: accede a receptores públicos directamente desde el navegador",
+  ),
+  ("公开接收站", "Receptores públicos"),
+  ("打开接收机", "Abrir receptor"),
+  (
+    "接收机目录与自建平台",
+    "Directorio de receptores y plataformas de alojamiento propio",
+  ),
+  (
+    "绿点为长期公开接收站；点击下方「定位」可在图上居中。更多接收站见下方目录。",
+    "Los puntos verdes son receptores públicos estables; usa «Localizar» abajo para centrar el mapa. Más receptores en el listado inferior.",
+  ),
+  (
+    "请输入有效经纬度。",
+    "Introduce latitud y longitud válidas.",
+  ),
+  ("纬度（度，±90）", "Latitud (grados, ±90)"),
+  ("经度（度，±180）", "Longitud (grados, ±180)"),
+  // —— Herramientas nuevas · decodificadores SSTV / WSPR ——
+  ("SSTV 解码器", "Decodificador SSTV"),
+  ("SSTV 速查", "Referencia SSTV"),
+  ("SSTV 解码结果", "Resultado de la decodificación SSTV"),
+  (
+    "音频 FM 解调 + VIS 识别 · 后台线程离线处理",
+    "Demodulación FM de audio + detección VIS · procesado sin conexión en un hilo en segundo plano",
+  ),
+  (
+    "上传一段 SSTV 慢扫描电视音频（WAV），即可在浏览器本地解调并重建图像，支持 Martin / Scottie / Robot 系列模式。",
+    "Sube una grabación de audio SSTV (WAV) para demodularla y reconstruir la imagen localmente en el navegador; se admiten los modos Martin / Scottie / Robot.",
+  ),
+  (
+    "支持 Martin M1/M2、Scottie S1/S2/DX、Robot 36/72；推荐 8–16 kHz 单声道 WAV",
+    "Admite Martin M1/M2, Scottie S1/S2/DX y Robot 36/72; se recomienda WAV mono de 8–16 kHz",
+  ),
+  ("选择 SSTV 录音（WAV）", "Elige una grabación SSTV (WAV)"),
+  (
+    "解码失败，请确认是 SSTV 音频（WAV）",
+    "Error de decodificación: comprueba que sea audio SSTV (WAV)",
+  ),
+  (
+    "文件过大（约 {} MB），上限 {} MB。请先降采样到 8–16 kHz 单声道，或只截取图像那一段。",
+    "Archivo demasiado grande (unos {} MB); el límite es {} MB. Reduce primero a 8–16 kHz mono o recorta solo el segmento de la imagen.",
+  ),
+  ("WSPR 解码器", "Decodificador WSPR"),
+  ("WSPR 速查", "Referencia WSPR"),
+  (
+    "弱信号传播报告 · 4-FSK 解调 · 后台线程离线处理",
+    "Informes de propagación de señal débil · Demodulación 4-FSK · Procesado sin conexión en un hilo en segundo plano",
+  ),
+  (
+    "上传一段 WSPR 弱信号传播报告录音（WAV），在浏览器本地解调并解码出呼号 / 网格 / 功率。",
+    "Sube una grabación WSPR (WAV) para demodularla y decodificar indicativo / locator / potencia localmente en el navegador.",
+  ),
+  (
+    "WSPR 信号位于 1400–1600 Hz 音频窗口，通常取电台拨号频率对应的音频 1500 Hz。",
+    "Las señales WSPR ocupan la ventana de audio de 1400–1600 Hz; lo habitual es usar 1500 Hz, el audio correspondiente a la frecuencia de sintonía de la radio.",
+  ),
+  (
+    "基准频率（Hz，默认 1500）",
+    "Frecuencia base (Hz, 1500 por defecto)",
+  ),
+  ("选择 WSPR 录音（WAV）", "Elige una grabación WSPR (WAV)"),
+  (
+    "解码：纬度 {}°，经度 {}°",
+    "Decodificado: latitud {}°, longitud {}°",
+  ),
+  (
+    "解码失败，请确认是 WSPR 音频（WAV）且基准频率正确",
+    "Error de decodificación: comprueba que sea audio WSPR (WAV) y que la frecuencia base sea correcta",
+  ),
+  (
+    "文件过大（约 {} MB），上限 {} MB。请先降采样到 8–16 kHz 单声道。",
+    "Archivo demasiado grande (unos {} MB); el límite es {} MB. Reduce primero a 8–16 kHz mono.",
+  ),
+  (
+    "文件过大（约 {} MB），上限 {} MB。解码需要把整段音频载入内存，建议先降采样到 8–16 kHz 单声道，或只截取过境那一段。",
+    "Archivo demasiado grande (unos {} MB); el límite es {} MB. La decodificación carga toda la grabación en memoria, por lo que conviene reducir a 8–16 kHz mono o recortar solo el paso.",
+  ),
+  // —— Etiquetas de países / regiones del mapa mundial ——
+  ("中国", "China"),
+  ("台湾", "Taiwán"),
+  ("香港", "Hong Kong"),
+  ("澳门", "Macao"),
+  ("夏威夷", "Hawái"),
+  ("日本", "Japón"),
+  ("韩国", "Corea del Sur"),
+  ("印度", "India"),
+  ("泰国", "Tailandia"),
+  ("马来西亚", "Malasia"),
+  ("新加坡", "Singapur"),
+  ("印度尼西亚", "Indonesia"),
+  ("菲律宾", "Filipinas"),
+  ("英国", "Reino Unido"),
+  ("法国", "Francia"),
+  ("德国", "Alemania"),
+  ("意大利", "Italia"),
+  ("西班牙", "España"),
+  ("葡萄牙", "Portugal"),
+  ("比利时", "Bélgica"),
+  ("荷兰", "Países Bajos"),
+  ("瑞士", "Suiza"),
+  ("奥地利", "Austria"),
+  ("芬兰", "Finlandia"),
+  ("瑞典", "Suecia"),
+  ("挪威", "Noruega"),
+  ("丹麦", "Dinamarca"),
+  ("波兰", "Polonia"),
+  ("捷克", "Chequia"),
+  ("斯洛伐克", "Eslovaquia"),
+  ("匈牙利", "Hungría"),
+  ("罗马尼亚", "Rumanía"),
+  ("俄罗斯", "Rusia"),
+  ("乌克兰", "Ucrania"),
+  ("美国", "Estados Unidos"),
+  ("加拿大", "Canadá"),
+  ("墨西哥", "México"),
+  ("阿根廷", "Argentina"),
+  ("巴西", "Brasil"),
+  ("智利", "Chile"),
+  ("乌拉圭", "Uruguay"),
+  ("澳大利亚", "Australia"),
+  ("新西兰", "Nueva Zelanda"),
+  ("南非", "Sudáfrica"),
+  ("埃及", "Egipto"),
+  ("摩洛哥", "Marruecos"),
+  ("以色列", "Israel"),
+  ("沙特阿拉伯", "Arabia Saudí"),
+  // —— Zonas horarias habituales ——
+  ("北京", "Pekín"),
+  ("东京", "Tokio"),
+  ("伦敦", "Londres"),
+  ("纽约", "Nueva York"),
+  ("洛杉矶", "Los Ángeles"),
+  ("悉尼", "Sídney"),
+  ("中国标准时间 CST", "Hora estándar de China (CST)"),
+  ("日本标准时间 JST", "Hora estándar de Japón (JST)"),
+  ("格林尼治标准时间 GMT", "Hora media de Greenwich (GMT)"),
+  (
+    "美国东部时间 EST（夏令时 -4）",
+    "Hora del este de EE. UU. (EST, −4 en verano)",
+  ),
+  (
+    "美国太平洋时间 PST（夏令时 -7）",
+    "Hora del Pacífico de EE. UU. (PST, −7 en verano)",
+  ),
+  (
+    "澳大利亚东部时间 AEST",
+    "Hora estándar del este de Australia (AEST)",
+  ),
+  // —— Abreviaturas de días del mapa de calor ——
+  ("日", "Dom"),
+  ("一", "Lun"),
+  ("二", "Mar"),
+  ("三", "Mié"),
+  ("四", "Jue"),
+  ("五", "Vie"),
+  ("六", "Sáb"),
+  // —— Ayuda de atajos de teclado ——
+  ("选择对应选项", "Selecciona la opción correspondiente"),
+  ("Shift / Cmd + 数字", "Shift / Cmd + número"),
+  (
+    "多选题只选这一项",
+    "En preguntas multirespuesta, marca solo esta opción",
+  ),
+  (
+    "打开题目搜索（顺序练习）",
+    "Abre la búsqueda de preguntas (práctica secuencial)",
+  ),
+  ("打开全站搜索", "Abre la búsqueda global"),
+  ("显示快捷键帮助", "Muestra la ayuda de atajos"),
+  ("关闭对话框", "Cierra el diálogo"),
+  // —— Campos de la página de indicativos ——
+  ("国家 / 地区", "País / región"),
+  ("大洲", "Continente"),
+  ("CQ / ITU 分区", "Zonas CQ / ITU"),
+  ("稀有度", "Rareza"),
+  ("姓名", "Nombre"),
+  ("数据来源", "Fuente de datos"),
+  ("怎么用", "Cómo se usa"),
+  ("前缀", "Prefijo"),
+  ("个人业余电台", "Estación de radioaficionado individual"),
+  ("分区号", "Número de zona"),
+  ("上海 · 山东 · 江苏", "Shanghái · Shandong · Jiangsu"),
+  ("台站唯一标识", "Identificador único de la estación"),
+  // —— Descripciones de los accesos relacionados ——
+  (
+    "全球主要竞赛的开赛时间，可一键加入提醒。",
+    "Horarios de inicio de los principales concursos, con recordatorio en un toque.",
+  ),
+  (
+    "远征的玩法、波段与追逐技巧。",
+    "Cómo funcionan las expediciones DX, sus bandas y técnicas de persecución.",
+  ),
+  (
+    "实时查看当前正在呼叫的远征电台。",
+    "Consulta en directo qué expediciones están llamando ahora.",
+  ),
+  (
+    "海岛编号与海岛通联活动。",
+    "Referencias de islas y actividad de islas en el aire.",
+  ),
+  (
+    "山顶与公园活动，含编号查询。",
+    "Activaciones de cumbres y parques, con consulta de referencias.",
+  ),
+  (
+    "最稀有的实体，远征多奔这些目标。",
+    "Las entidades más raras: el objetivo habitual de las expediciones.",
+  ),
+  // —— Fases del modo de escucha ——
+  ("A 类", "Clase A"),
+  ("B 类", "Clase B"),
+  ("C 类", "Clase C"),
+  ("已暂停", "En pausa"),
+  ("朗读题目", "Leyendo la pregunta"),
+  ("思考中…", "Pensando…"),
+  ("公布答案", "Revelando la respuesta"),
+  // —— Encabezados de la tabla de equipos ——
+  ("推荐机型", "Equipos recomendados"),
+  ("理由", "Motivo"),
+  ("品牌", "Marca"),
+  ("价格档", "Nivel de precio"),
+  ("点评", "Comentario"),
+  ("按用途推荐", "Recomendaciones por uso"),
+  // —— Signos especiales de Morse ——
+  ("报文结束", "Fin de mensaje"),
+  ("通联结束", "Fin de contacto"),
+  ("仅邀指定台", "Invitación solo a una estación concreta"),
+  ("分隔/暂停", "Separador / pausa"),
+  ("请稍候", "Espera, por favor"),
+  ("更正（误发）", "Corrección (enviado por error)"),
+  // —— Subtítulos y encabezados de las páginas de conocimiento ——
+  ("测量流程", "Procedimiento de medición"),
+  ("常见测量对象", "Objetos de medición habituales"),
+  ("对象", "Objeto"),
+  ("主要看", "Indicador principal"),
+  ("意义", "Significado"),
+  ("各级别重点", "Puntos clave por nivel"),
+  ("级别", "Nivel"),
+  ("重点", "Puntos clave"),
+  ("对应页面", "Páginas relacionadas"),
+  ("备考建议", "Consejos de preparación"),
+  ("FM 卫星通联步骤", "Pasos para un QSO por satélite FM"),
+  (
+    "线性转发器 · 边带倒置",
+    "Transpondedores lineales · Inversión de banda lateral",
+  ),
+  ("多普勒补偿", "Compensación Doppler"),
+  ("通联格式与礼仪", "Formato del QSO y etiqueta"),
+  ("项目列表", "Lista de proyectos"),
+  ("要点", "Puntos clave"),
+  ("通用制作流程", "Flujo de trabajo general de construcción"),
+  ("制作安全提醒", "Recordatorios de seguridad al construir"),
+  ("低通", "Paso bajo"),
+  ("高通", "Paso alto"),
+  ("带通", "Paso banda"),
+  ("带阻", "Rechazo de banda"),
+  ("天线对比", "Comparación de antenas"),
+  ("适用场景", "Uso recomendado"),
+  ("制作与使用要点", "Puntos clave de construcción y uso"),
+  ("噪声类型", "Tipos de ruido"),
+  ("来源", "Origen"),
+  ("降低噪声的要点", "Puntos clave para reducir el ruido"),
+  ("主要流星雨", "Principales lluvias de meteoros"),
+  ("流星雨", "Lluvia de meteoros"),
+  ("峰值时段", "Periodo de máximo"),
+  ("阻抗比与用途", "Relaciones de impedancia y usos"),
+  ("阻抗比", "Relación de impedancia"),
+  ("绕制与选型要点", "Puntos clave de bobinado y selección"),
+  ("常用调制方式", "Modos de modulación habituales"),
+  ("应急用法与要点", "Uso en emergencias y puntos clave"),
+  ("常用波段", "Bandas habituales"),
+  ("预测与监测", "Predicción y monitorización"),
+  ("线圈 / Yagi 振子", "Bobina / Elementos Yagi"),
+  ("驻波比换算", "Conversión de ROE"),
+  ("使用提示", "Consejos de uso"),
+  ("射频暴露", "Exposición a RF"),
+  ("用语", "Jerga"),
+  ("视频资源", "Recursos en vídeo"),
+  ("平台", "Plataforma"),
+  ("内容", "Contenido"),
+  ("建议", "Consejo"),
+  ("技术文档", "Documentación técnica"),
+  ("文档", "Documento"),
+  ("自学建议", "Consejos de autoaprendizaje"),
+  ("IARU 一区", "Región 1 IARU"),
+  ("IARU 二区 / 三区", "Regiones 2 / 3 IARU"),
+  (
+    "协调层级（自顶向下）",
+    "Niveles de coordinación (de arriba abajo)",
+  ),
+  (
+    "IARU 三区波段差异",
+    "Diferencias de banda en la Región 3 IARU",
+  ),
+  (
+    "频率协调申请流程",
+    "Proceso de solicitud de coordinación de frecuencias",
+  ),
+  ("受干扰处理流程", "Proceso de gestión de interferencias"),
+  ("要点与提醒", "Puntos clave y recordatorios"),
+  ("使用状态：", "Estado de uso: "),
+  ("纸卡", "Papel"),
+  ("知识点 · ", "Tema · "),
+  ("计算 →", "Calcular →"),
+  ("目标方位°", "Azimut objetivo°"),
+  ("卡片背面", "Reverso de la tarjeta"),
+  ("翻面查看答案", "Voltea para ver la respuesta"),
+  ("日照中", "Con luz solar"),
+  ("地影中", "En sombra"),
+  ("截短数字（T=0 N=9）", "Números recortados (T=0, N=9)"),
+  (
+    "叠听（多一个干扰台）",
+    "Pileup (una estación interferente extra)",
+  ),
+  ("单字符", "Carácter individual"),
+  ("单词", "Palabra"),
+  ("{} 个考点", "{} puntos"),
+  // —— Descripciones de categorías de códigos Q y abreviaturas ——
+  (
+    "ITU 三字母简语，可兼作问句或陈述句",
+    "Códigos ITU de tres letras que sirven como pregunta o como afirmación",
+  ),
+  (
+    "CW 与话音通联常用缩语、信号报告",
+    "Abreviaturas e informes de señal habituales en CW y fonía",
+  ),
+  (
+    "通联中常用的语音拼读与电码",
+    "Deletreo fonético y códigos usados habitualmente en los contactos",
+  ),
+  // —— Mensajes de error ——
+  ("频谱画布未就绪", "El lienzo del espectro no está listo"),
+  ("瀑布画布未就绪", "El lienzo de la cascada no está listo"),
+  ("2D 上下文不可用", "Contexto 2D no disponible"),
+  ("Canvas 2D 上下文不可用", "Contexto Canvas 2D no disponible"),
+  ("service worker 未就绪", "Service worker no disponible"),
+  ("VAPID 公钥无效", "Clave pública VAPID no válida"),
+  ("读取文件失败", "Error al leer el archivo"),
+  ("页面出错了", "Algo ha ido mal"),
+  (
+    "解码在 Web Worker 后台线程完成，不阻塞页面。",
+    "La decodificación se realiza en un Web Worker en segundo plano y no bloquea la página.",
+  ),
+  (
+    "音频不会上传到服务器。",
+    "El audio nunca se sube a un servidor.",
+  ),
+  (
+    "典型过境约 10–15 分钟，建议配合",
+    "Un paso típico dura unos 10–15 minutos, por lo que conviene combinarlo con",
+  ),
+  // —— Plantillas de resultados ——
+  ("{}「{}」（{} 道）", "{} «{}» ({} preguntas)"),
+  ("{}「{}」（正确率 {}%）", "{} «{}» ({}% de aciertos)"),
+  ("反射器 ≈ {} m", "Reflectora ≈ {} m"),
+  ("激励振子 ≈ {} m", "Elemento excitado ≈ {} m"),
+  ("引向器 {} ≈ {} m", "Director {} ≈ {} m"),
+  (
+    "反射器–激励间距 ≈ {} m · 引向器间距 ≈ {} m",
+    "Separación reflectora–excitado ≈ {} m · separación de directores ≈ {} m",
+  ),
+  (
+    "辐射体 ≈ {} m　地网（每根）≈ {} m",
+    "Radiador ≈ {} m　radiales (cada uno) ≈ {} m",
+  ),
+  ("{} 级 · {} W/m²", "Clase {} · {} W/m²"),
+  // —— Plantillas de progreso / historial ——
+  (
+    "历史成绩（最近 {} 次正确率）",
+    "Precisión reciente (últimos {} intentos)",
+  ),
+  ("进度 {}%", "Progreso {}%"),
+  // —— Cascada SDR · análisis sin conexión ——
+  ("离线分析（上传 WAV）", "Análisis sin conexión (subir WAV)"),
+  (
+    "上传一段音频录音，生成整段时间的频谱瀑布图，可下载 PNG。",
+    "Sube una grabación de audio para generar la cascada del espectro de todo el archivo, descargable como PNG.",
+  ),
+  ("选择音频文件（WAV）", "Elige un archivo de audio (WAV)"),
+  ("正在分析频谱…", "Analizando el espectro…"),
+  ("平均频谱", "Espectro medio"),
+  (
+    "瀑布图（顶部为最新时间）",
+    "Cascada (lo más reciente arriba)",
+  ),
+  ("下载瀑布图 PNG", "Descargar cascada PNG"),
+  ("分析其他文件", "Analizar otro archivo"),
+  (
+    "文件过大（约 {} MB），上限 {} MB。",
+    "Archivo demasiado grande (unos {} MB); el límite es {} MB.",
+  ),
+  (
+    "音频太短，无法分析（至少需要约 0.05 秒）",
+    "El audio es demasiado corto para analizarlo (se necesitan unos 0,05 s como mínimo)",
+  ),
+  (
+    "音频解码失败，请确认是有效的 WAV 文件",
+    "Error al decodificar el audio: comprueba que sea un archivo WAV válido",
+  ),
+  (
+    "可用 cargo make spectrum-sample 生成测试样本",
+    "Ejecuta cargo make spectrum-sample para generar una muestra de prueba",
+  ),
+  // —— 火腿社区 ——
+  ("火腿社区", "Comunidad de radioaficionados"),
+  (
+    "国内外业余无线电论坛与问答 · 外链直达",
+    "Foros y preguntas de radioafición de todo el mundo · enlaces directos",
+  ),
+  ("关于本站社区", "Sobre esta comunidad"),
+  (
+    "本站目前以题库、知识与工具为主，暂未自建论坛。这里聚合了国内外活跃的火腿社区，点击即可直达；你的学习进度、通联日志等个人数据只保存在浏览器本地，不会离开你的设备。",
+    "Este sitio se centra actualmente en bancos de preguntas, conocimiento y herramientas, y aún no tiene foro propio. Aquí reunimos comunidades de radioaficionados activas, locales e internacionales: haz clic para acceder directamente. Tu progreso de estudio, registros y demás datos personales permanecen en tu navegador y nunca salen de tu dispositivo.",
+  ),
+  ("社区索引", "Índice de comunidades"),
+  (
+    "按类别整理，点击名称跳转对应站点（外部链接）。",
+    "Organizado por categorías; haz clic en un nombre para abrir el sitio (enlaces externos).",
+  ),
+  ("此题暂无解析", "Esta pregunta aún no tiene explicación"),
+  ("欢迎补充", "Contribuir"),
+  // —— 间隔重复可视化 ——
+  ("记忆巩固", "Consolidación de memoria"),
+  (
+    "答对间隔逐次拉长，答错回到当天",
+    "Los aciertos alargan el intervalo; los fallos lo devuelven al mismo día",
+  ),
+  ("学习中 {} 道", "Aprendiendo: {}"),
+  ("1–6 天 {} 道", "1–6 días: {}"),
+  ("7–20 天 {} 道", "7–20 días: {}"),
+  ("≥21 天 {} 道", "≥21 días: {}"),
+  ("已学 {} / 熟记 {}", "Aprendidas {} / Memorizadas {}"),
+  // —— 批量补齐 ——
+  ("报名验证", "Inscripción a la validación"),
+  (
+    "通过当地无线电管理机构或其指定平台报名操作技术能力验证（A / B / C 类）。",
+    "Inscríbete en la autoridad radioeléctrica local o su plataforma designada para la validación de aptitud operativa (clases A / B / C).",
+  ),
+  ("参加考试", "Realizar el examen"),
+  (
+    "参加理论考试，合格后取得《业余无线电台操作证书》（对应 A / B / C 类）。",
+    "Supera el examen teórico; al aprobarlo obtendrás el Certificado de Operación de Estación de Radioaficionado (clases A / B / C).",
+  ),
+  ("申请设台", "Solicitar la estación"),
+  (
+    "凭操作证书提交设台申请：个人需申请表、身份证明复印件、设备说明材料等。",
+    "Presenta la solicitud de estación con tu certificado de operación: los particulares necesitan el formulario, copia de identificación y especificaciones del equipo.",
+  ),
+  ("核发执照与呼号", "Emisión de licencia e indicativo"),
+  (
+    "批准后颁发《业余无线电台执照》并同时核发呼号，即可依法使用。",
+    "Una vez aprobada, se expide la Licencia de Estación de Radioaficionado junto con tu indicativo y ya puedes operar legalmente.",
+  ),
+  (
+    "30–3000 MHz，发射功率 ≤ 25W。",
+    "30–3000 MHz, potencia de emisión ≤ 25 W.",
+  ),
+  (
+    "30 MHz 以下 <15W 或 30 MHz 以上 ≤25W。",
+    "Por debajo de 30 MHz <15 W, o por encima de 30 MHz ≤25 W.",
+  ),
+  (
+    "30 MHz 以下 ≤1000W 或 30 MHz 以上 ≤25W。",
+    "Por debajo de 30 MHz ≤1000 W, o por encima de 30 MHz ≤25 W.",
+  ),
+  (
+    "执照有效期不超过 5 年，届满 30 个工作日前申请更换。",
+    "La licencia es válida como máximo 5 años; solicita la renovación 30 días hábiles antes del vencimiento.",
+  ),
+  (
+    "取得操作证书前，可在他人现场监督指导下实习操作。",
+    "Antes de obtener el certificado de operación puedes practicar en persona bajo la supervisión de otro radioaficionado.",
+  ),
+  (
+    "呼号停止使用应办理注销，注销 1 年后可重新投入分配。",
+    "Un indicativo que deja de usarse debe cancelarse; podrá volver a asignarse un año después de la cancelación.",
+  ),
+  (
+    "通信建立及结束时应发送呼号，过程中间隔不超过 10 分钟。",
+    "Envía tu indicativo al iniciar y al finalizar la comunicación, y al menos cada 10 minutos durante la misma.",
+  ),
+  (
+    "设台须满足三个条件：熟悉无线电管理规定、通过操作技术能力验证、使用符合规定的设备。",
+    "Instalar una estación exige tres condiciones: conocer la normativa radioeléctrica, superar la validación de aptitud operativa y usar equipos conformes.",
+  ),
+  (
+    "本地解析完全离线：不联网也能查国家 / 地区、DXCC 实体、CQ / ITU 分区与稀有度。",
+    "El análisis local funciona sin conexión: país / región, entidad DXCC, zonas CQ / ITU y rareza no necesitan red.",
+  ),
+  (
+    "「在线查询」再补全姓名、QTH 与网格，数据来自 Callook（美加）与 HamQTH（国际），纯静态托管时不可用。",
+    "La «consulta en línea» añade nombre, QTH y grid desde Callook (EE. UU. / Canadá) y HamQTH (internacional); no disponible en alojamiento puramente estático.",
+  ),
+  (
+    "在地址后加上 `?call=BA1XX` 可分享查询结果，打开页面即自动发起一次在线查询。",
+    "Añade `?call=BA1XX` a la URL para compartir un resultado; al abrir la página se lanza automáticamente una consulta en línea.",
+  ),
+  (
+    "解析后可对照「DXCC 稀有度榜单」判断追台价值，或到「通联日志」录入该呼号。",
+    "Tras analizarlo, consulta el «ranking de rareza DXCC» para valorar si merece perseguirlo, o registra el indicativo en el diario.",
+  ),
+  ("接入约定", "Convenciones de la API"),
+  ("错误码", "Códigos de error"),
+  ("必填", "obligatorio"),
+  ("可选", "opcional"),
+  ("基础地址", "Dirección base"),
+  (
+    "同站点域名下的 /api/v1/*；全部为 GET 请求，返回 JSON。",
+    "/api/v1/* bajo el mismo dominio del sitio; todas las peticiones son GET y devuelven JSON.",
+  ),
+  ("成功响应", "Respuesta correcta"),
+  (
+    "{ \"data\": …, \"meta\": { \"source\": … } }；列表接口的 meta 带 total 与 next_cursor。",
+    "{ \"data\": …, \"meta\": { \"source\": … } }; en los endpoints de lista, meta incluye total y next_cursor.",
+  ),
+  ("错误响应", "Respuesta de error"),
+  (
+    "{ \"error\": { \"code\": …, \"message\": … } }，code 见下方错误码表。",
+    "{ \"error\": { \"code\": …, \"message\": … } }; consulta la tabla de códigos de error para code.",
+  ),
+  ("跨域 CORS", "CORS entre dominios"),
+  (
+    "对任意来源开放（只读 GET），网页前端可直接 fetch，无需自建代理。",
+    "Abierto a cualquier origen (GET de solo lectura), así que el frontend puede hacer fetch directamente sin proxy propio.",
+  ),
+  ("条件请求", "Peticiones condicionales"),
+  (
+    "响应带 ETag；再次请求带 If-None-Match，内容未变化时返回 304，不消耗流量。",
+    "Las respuestas incluyen ETag; reenvíalo como If-None-Match y el contenido sin cambios devuelve 304, sin consumir datos.",
+  ),
+  ("版本策略", "Política de versiones"),
+  (
+    "v1 发布后向后兼容：只增字段、不改含义；破坏性变更会升到 v2 并保留 v1 一段时间。",
+    "v1 mantiene la compatibilidad tras publicarse: solo se añaden campos, nunca se redefine su significado; los cambios rompentes pasan a v2 y v1 se conserva un tiempo.",
+  ),
+  (
+    "首批只开放纯计算与静态参考数据，不依赖任何上游服务，结果稳定、可放心做长时间缓存。",
+    "La primera tanda expone solo cálculos puros y datos de referencia estáticos, sin depender de servicios externos: los resultados son estables y se pueden cachear mucho tiempo.",
+  ),
+  (
+    "引用型接口（太阳活动、中继台、POTA / SOTA）会在复用服务端缓存后陆续开放，并保证缓存 TTL 不低于站内接口，避免放大对上游的压力。",
+    "Los endpoints de referencia (actividad solar, repetidores, POTA / SOTA) se abrirán más adelante reutilizando la caché del servidor, con un TTL nunca inferior al de los endpoints propios para no amplificar la carga sobre los servicios de origen.",
+  ),
+  (
+    "传播预测使用简化 VOACAP 模型，适合估算趋势与规划操作时段，不等同于专业电离层预测软件。",
+    "La predicción de propagación usa un modelo VOACAP simplificado: sirve para estimar tendencias y planificar horarios, pero no equivale al software profesional de predicción ionosférica.",
+  ),
+  (
+    "纯静态托管（无后端）时本页文档仍可阅读，但接口不可用。",
+    "En alojamiento puramente estático (sin backend) esta página sigue siendo legible, pero los endpoints no están disponibles.",
+  ),
+  (
+    "匿名访问：每 IP 每分钟 {} 次。请求头携带 Authorization: Bearer <key> 后提升到每分钟 {} 次。",
+    "Acceso anónimo: {} peticiones por minuto por IP. Con la cabecera Authorization: Bearer <key> el límite sube a {} por minuto.",
+  ),
+  (
+    "key 只用于区分配额档位与统计，不做敏感鉴权；成功响应的缓存时长为 {} 秒。需要 key 请联系站点维护者。",
+    "La key solo distingue el nivel de cuota y alimenta las estadísticas; no es autenticación sensible. Las respuestas correctas se cachean {} segundos. Si necesitas una key, contacta con el mantenedor del sitio.",
+  ),
 ];
+
+#[cfg(test)]
+mod tests {
+  use super::{EN, ES};
+
+  /// 占位符数量必须与中文原文一致，否则 `tf` 会漏填或错填。
+  fn placeholders(s: &str) -> usize {
+    s.matches("{}").count()
+  }
+
+  #[test]
+  fn dictionaries_have_no_duplicate_keys() {
+    for (name, dict) in [("EN", EN), ("ES", ES)] {
+      let mut seen = std::collections::HashSet::new();
+      for (k, _) in dict {
+        assert!(seen.insert(*k), "{name} 里出现重复词条：{k}");
+      }
+    }
+  }
+
+  /// 两种语言的词条集合必须完全一致：缺一条就说明该语言界面会漏出中文。
+  #[test]
+  fn en_and_es_cover_the_same_keys() {
+    let en: std::collections::HashSet<_> = EN.iter().map(|(k, _)| *k).collect();
+    let es: std::collections::HashSet<_> = ES.iter().map(|(k, _)| *k).collect();
+    let only_en: Vec<_> = en.difference(&es).copied().collect();
+    let only_es: Vec<_> = es.difference(&en).copied().collect();
+    assert!(
+      only_en.is_empty() && only_es.is_empty(),
+      "英西词条不一致：仅英文有 {only_en:?}；仅西班牙文有 {only_es:?}"
+    );
+  }
+
+  #[test]
+  fn translations_keep_the_same_placeholders() {
+    for (name, dict) in [("EN", EN), ("ES", ES)] {
+      for (k, v) in dict {
+        assert_eq!(
+          placeholders(k),
+          placeholders(v),
+          "{name} 词条占位符数量不一致：{k} → {v}"
+        );
+      }
+    }
+  }
+}

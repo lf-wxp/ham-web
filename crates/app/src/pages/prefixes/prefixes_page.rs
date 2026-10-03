@@ -5,7 +5,7 @@ use crate::util::set_title;
 
 use super::call_area_quiz::CallAreaQuiz;
 use super::callsign_analyzer::CallsignAnalyzer;
-use crate::i18n::t;
+use crate::i18n::{t, tf};
 
 #[component]
 pub fn PrefixesPage() -> impl IntoView {
@@ -33,7 +33,9 @@ pub fn PrefixesPage() -> impl IntoView {
               <section class="rounded-xl border bg-card">
                 <h2 class="border-b px-4 py-3 text-sm font-semibold">
                   {g.region}
-                  <span class="ml-2 text-xs font-normal text-muted-foreground">{g.prefixes.len()} " 个"</span>
+                  <span class="ml-2 text-xs font-normal text-muted-foreground">
+                    {move || tf("{} 个", &[&g.prefixes.len().to_string()])}
+                  </span>
                 </h2>
                 <div class="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3">
                   {g

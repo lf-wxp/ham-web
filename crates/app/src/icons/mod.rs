@@ -1,8 +1,10 @@
 //! Lucide 图标（与原项目 lucide-react@0.539 的 SVG 路径一致）。
 
 mod icon_kind;
+mod icon_lookup;
 
 pub use icon_kind::IconKind;
+pub use icon_lookup::icon_of;
 
 use leptos::prelude::*;
 

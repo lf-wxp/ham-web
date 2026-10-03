@@ -17,6 +17,7 @@ mod icons;
 mod knowledge_i18n;
 mod postbuild;
 mod psk31_gen;
+mod spectrum_gen;
 
 use std::path::PathBuf;
 
@@ -170,6 +171,33 @@ enum Command {
     #[arg(long, default_value = "0.1")]
     noise: f32,
   },
+  /// 生成合成频谱测试样本 WAV（用于手动测试 /sdr-waterfall）
+  GenSpectrum {
+    /// 输出 WAV 路径
+    #[arg(long, default_value = "tmp/spectrum-sample.wav")]
+    output: PathBuf,
+    /// 采样率（Hz）
+    #[arg(long, default_value = "8000")]
+    rate: u32,
+    /// 时长（秒）
+    #[arg(long, default_value = "2.0")]
+    seconds: f32,
+    /// 音调列表，逗号分隔的「频率:幅度」，如 700:0.8,1500:0.5
+    #[arg(long, default_value = "700:0.8,1500:0.5,3000:0.3")]
+    tones: String,
+    /// 噪声幅度（0 表示无噪声）
+    #[arg(long, default_value = "0.05")]
+    noise: f32,
+  },
+  /// 读取 WAV 并做频谱分析，打印峰值频率（验证测试样本）
+  AnalyzeSpectrum {
+    /// 输入 WAV 路径
+    #[arg(long, default_value = "tmp/spectrum-sample.wav")]
+    input: PathBuf,
+    /// 打印峰值数量
+    #[arg(long, default_value = "5")]
+    peaks: usize,
+  },
   /// Trunk 构建后处理：生成 Service Worker、sitemap.xml，并替换站点地址
   Postbuild {
     /// 构建产物目录
@@ -289,6 +317,17 @@ fn main() -> Result<()> {
       offset,
       noise,
     } => psk31_gen::generate(&output, &text, rate, center + offset, noise),
+    Command::GenSpectrum {
+      output,
+      rate,
+      seconds,
+      tones,
+      noise,
+    } => {
+      let tones = spectrum_gen::parse_tones(&tones)?;
+      spectrum_gen::generate(&output, rate, seconds, &tones, noise)
+    }
+    Command::AnalyzeSpectrum { input, peaks } => spectrum_gen::analyze(&input, peaks),
     Command::Postbuild { dist, site_url } => {
       let dist = if dist.is_absolute() {
         dist

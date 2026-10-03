@@ -4,6 +4,8 @@ test("知识卡片：翻面、自评、忘了的卡本轮再出现，首页显�
   await page.goto("/cards?deck=phonetic");
   await expect(page.getByRole("heading", { level: 1, name: "知识卡片" })).toBeVisible();
   await expect(page.getByText("第 1 / 10 张")).toBeVisible();
+  // 记忆巩固进度条（当前卡组加载后即显示）
+  await expect(page.getByTestId("card-mastery-bar")).toBeVisible();
 
   await page.getByRole("button", { name: "翻面查看答案" }).click();
   await expect(page.getByTestId("card-back")).toHaveText("Alfa");

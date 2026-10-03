@@ -4,14 +4,15 @@ use std::sync::OnceLock;
 
 use crate::{
   amplifier, analog_modes, antenna_analyzer, antenna_array, antenna_diy, antenna_farm,
-  antenna_installation, antenna_modeling, antenna_tuning, antennas, aprs, ardf, atv, awards,
-  bandplan, bands, beginner, cabrillo, cw_op, dv_network, dx, dxcc, dxpedition, electronics,
-  emcomm, eme, eqsl, feedline, filters, frequencies, ft8, gnuradio, grid_system, grounding,
-  history, iota, license_classes, logging_software, meters, microwave, mobile, modes, morse,
-  most_wanted, muf, nvis, operating, organizations, packet, phonetic, polarization, portable,
-  power, power_supply, prefixes, propagation, qrp, qsl_card, receiver, reference, regulations,
-  remote, repeater, repeater_build, rfi, rst, rtty, safety, satellites, sdr, solar, special_prop,
-  sstv, swl, transceiver, weather_sat, wspr,
+  antenna_installation, antenna_modeling, antenna_tuning, antennas, api_v1, aprs, ardf, atv,
+  aurora, awards, bandplan, bands, beginner, cabrillo, community, coordination, cw_op, dv_network,
+  dx, dxcc, dxpedition, electronics, emcomm, eme, eqsl, events, feedline, filters, frequencies,
+  ft8, gear, gnuradio, grid_system, grounding, history, iota, license_classes, logging_software,
+  meters, microwave, mobile, modes, morse, most_wanted, muf, nvis, open_source, operating,
+  organizations, packet, phonetic, polarization, portable, power, power_supply, prefixes,
+  propagation, qrp, qsl_card, receiver, reference, regulations, remote, repeater, repeater_build,
+  rfi, rst, rtty, safety, satellites, sdr, sdr_map, solar, special_prop, sstv, swl, transceiver,
+  weather_sat, wspr, zone,
 };
 
 /// 一条可搜索的知识条目。
@@ -1021,10 +1022,152 @@ fn build_index() -> Vec<SearchEntry> {
     antenna_array::ARRAY_TIPS,
   );
 
+  // 极光通信
+  pairs(&mut out, "极光通信", "/aurora", aurora::AURORA_CONCEPTS);
+  triples(&mut out, "极光通信", "/aurora", aurora::AURORA_BANDS);
+  pairs(&mut out, "极光通信", "/aurora", aurora::AURORA_FORECAST);
+  tips(&mut out, "极光通信", "/aurora", aurora::AURORA_TIPS);
+
+  // 在线 SDR 接收站
+  for s in sdr_map::SDR_SITES {
+    push(
+      &mut out,
+      "在线 SDR 接收站",
+      "/sdr-map",
+      s.name.to_owned(),
+      format!("{} · {} · {}", s.kind, s.location, s.desc),
+    );
+  }
+  for d in sdr_map::SDR_DIRECTORIES {
+    push(
+      &mut out,
+      "在线 SDR 接收站",
+      "/sdr-map",
+      d.name.to_owned(),
+      format!("{} · {}", d.kind, d.desc),
+    );
+  }
+  tips(
+    &mut out,
+    "在线 SDR 接收站",
+    "/sdr-map",
+    sdr_map::SDR_MAP_TIPS,
+  );
+
+  // 开源项目与 DIY 索引
+  for p in open_source::OSS_PROJECTS {
+    push(
+      &mut out,
+      "开源项目与 DIY",
+      "/open-source",
+      p.name.to_owned(),
+      format!("{} · {}", p.category, p.desc),
+    );
+  }
+  for (_, name, desc) in open_source::DIY_GUIDES {
+    push(
+      &mut out,
+      "开源项目与 DIY",
+      "/open-source",
+      (*name).to_owned(),
+      (*desc).to_owned(),
+    );
+  }
+
+  // 火腿社区
+  for l in community::COMMUNITY_LINKS {
+    push(
+      &mut out,
+      "火腿社区",
+      "/community",
+      l.name.to_owned(),
+      format!("{} · {}", l.category, l.desc),
+    );
+  }
+
+  // 活动日历
+  for e in events::HAM_EVENTS {
+    push(
+      &mut out,
+      "活动日历",
+      "/events",
+      e.name.to_owned(),
+      format!("{} · {} · {}", e.kind, e.location, e.desc),
+    );
+  }
+
+  // 频率协调
+  pairs(
+    &mut out,
+    "频率协调",
+    "/coordination",
+    coordination::COORDINATION_CONCEPTS,
+  );
+  // 设备评测与选购
+  for g in gear::GEAR {
+    push(
+      &mut out,
+      "设备评测与选购",
+      "/gear",
+      format!("{} {}", g.brand, g.model),
+      format!("{} · {} · {} · {}", g.tier, g.bands, g.power, g.highlight),
+    );
+  }
+  triples(&mut out, "设备评测与选购", "/gear", gear::GEAR_PICKS);
+  tips(&mut out, "设备评测与选购", "/gear", gear::GEAR_TIPS);
+
+  // CQ / ITU 分区地图
+  pairs(
+    &mut out,
+    "CQ / ITU 分区地图",
+    "/zone-map",
+    zone::ZONE_CONCEPTS,
+  );
+  tips(&mut out, "CQ / ITU 分区地图", "/zone-map", zone::ZONE_TIPS);
+  pairs(
+    &mut out,
+    "频率协调",
+    "/coordination",
+    coordination::COORDINATION_TIERS,
+  );
+  triples(
+    &mut out,
+    "频率协调",
+    "/coordination",
+    coordination::IARU_BAND_DIFFS,
+  );
+  pairs(
+    &mut out,
+    "频率协调",
+    "/coordination",
+    coordination::COORDINATION_STEPS,
+  );
+  pairs(
+    &mut out,
+    "频率协调",
+    "/coordination",
+    coordination::INTERFERENCE_STEPS,
+  );
+  tips(
+    &mut out,
+    "频率协调",
+    "/coordination",
+    coordination::COORDINATION_TIPS,
+  );
+
+  // 开放 API
+  for e in api_v1::ENDPOINTS {
+    push(
+      &mut out,
+      "开放 API",
+      "/developers",
+      e.path.to_owned(),
+      format!("{} · {}", e.tag, e.summary),
+    );
+  }
+
   out
 }
-
-/// 返回全站知识索引（惰性构建一次）。
 #[must_use]
 pub fn knowledge_index() -> &'static [SearchEntry] {
   static INDEX: OnceLock<Vec<SearchEntry>> = OnceLock::new();

@@ -35,7 +35,7 @@ alias = "dev"
 
 [tasks.dev]
 description = "启动前端开发服务器（热重载）：http://127.0.0.1:3000"
-dependencies = ["build-worker"]
+dependencies = ["build-worker", "build-sstv-worker", "build-wspr-worker"]
 cwd = "${APP_DIR}"
 command = "trunk"
 # 开发产物放在 target/ 下，避免与 release 构建共用 dist/ 互相覆盖
@@ -43,7 +43,7 @@ args = ["serve", "--dist", "../../target/dev-dist"]
 
 [tasks.dev-full]
 description = "同时启动后端 server（3001，仅 API）与前端 trunk dev（3000，代理 /api 到后端）"
-dependencies = ["build-worker"]
+dependencies = ["build-worker", "build-sstv-worker", "build-wspr-worker"]
 script_runner = "@shell"
 script = '''
 set -e
@@ -58,7 +58,7 @@ SERVER_PID=$!
 
 [tasks.build-web]
 description = "构建前端（release）并生成 Service Worker / sitemap"
-dependencies = ["build-worker", "trunk-build", "postbuild"]
+dependencies = ["build-worker", "build-sstv-worker", "build-wspr-worker", "trunk-build", "postbuild"]
 
 [tasks.build-worker]
 description = "构建 APT 解码 Web Worker（wasm-bindgen --target no-modules，CLI 版本须与 Cargo.lock 一致）"
@@ -79,6 +79,48 @@ cargo build --profile wasm-release --target wasm32-unknown-unknown -p ham-web-ap
 mkdir -p public/apt-worker
 wasm-bindgen --target no-modules --no-typescript --out-dir public/apt-worker --out-name apt_worker \
   target/wasm32-unknown-unknown/wasm-release/ham_web_apt_worker.wasm
+'''
+
+[tasks.build-sstv-worker]
+description = "构建 SSTV 解码 Web Worker（wasm-bindgen --target no-modules）"
+script_runner = "@shell"
+script = '''
+set -e
+WB_VERSION=$(awk -F'"' '/^name = "wasm-bindgen"$/{f=1; next} f && /^version = /{print $2; exit}' Cargo.lock)
+if ! command -v wasm-bindgen >/dev/null 2>&1; then
+  echo "未找到 wasm-bindgen CLI，请先执行 cargo make setup" >&2
+  exit 1
+fi
+WB_INSTALLED=$(wasm-bindgen --version | awk '{print $2}')
+if [ "$WB_INSTALLED" != "$WB_VERSION" ]; then
+  echo "wasm-bindgen CLI 版本 $WB_INSTALLED 与 Cargo.lock 中的 $WB_VERSION 不一致" >&2
+  exit 1
+fi
+cargo build --profile wasm-release --target wasm32-unknown-unknown -p ham-web-sstv-worker
+mkdir -p public/sstv-worker
+wasm-bindgen --target no-modules --no-typescript --out-dir public/sstv-worker --out-name sstv_worker \
+  target/wasm32-unknown-unknown/wasm-release/ham_web_sstv_worker.wasm
+'''
+
+[tasks.build-wspr-worker]
+description = "构建 WSPR 解码 Web Worker（wasm-bindgen --target no-modules）"
+script_runner = "@shell"
+script = '''
+set -e
+WB_VERSION=$(awk -F'"' '/^name = "wasm-bindgen"$/{f=1; next} f && /^version = /{print $2; exit}' Cargo.lock)
+if ! command -v wasm-bindgen >/dev/null 2>&1; then
+  echo "未找到 wasm-bindgen CLI，请先执行 cargo make setup" >&2
+  exit 1
+fi
+WB_INSTALLED=$(wasm-bindgen --version | awk '{print $2}')
+if [ "$WB_INSTALLED" != "$WB_VERSION" ]; then
+  echo "wasm-bindgen CLI 版本 $WB_INSTALLED 与 Cargo.lock 中的 $WB_VERSION 不一致" >&2
+  exit 1
+fi
+cargo build --profile wasm-release --target wasm32-unknown-unknown -p ham-web-wspr-worker
+mkdir -p public/wspr-worker
+wasm-bindgen --target no-modules --no-typescript --out-dir public/wspr-worker --out-name wspr_worker \
+  target/wasm32-unknown-unknown/wasm-release/ham_web_wspr_worker.wasm
 '''
 
 [tasks.trunk-build]
@@ -155,6 +197,48 @@ cargo run -q -p ham-web-apt --release --example decode_sample -- "${FILE:-tmp/ap
 description = "生成并解码合成 APT 样本，端到端自检（依赖 apt-sample → apt-decode）"
 dependencies = ["apt-sample", "apt-decode"]
 
+# ───────────────────────────── SSTV 解码器（测试数据） ─────────────────────────────
+
+[tasks.sstv-sample]
+description = "生成合成 SSTV 测试样本 WAV：VIS=44 NOISE=0.02 cargo make sstv-sample"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-sstv --release --example generate_sample -- tmp/sstv-sample.wav "${VIS:-44}" "${NOISE:-0.02}"
+'''
+
+[tasks.sstv-decode]
+description = "命令行解码 SSTV 样本并验证方向：FILE=tmp/sstv-sample.wav cargo make sstv-decode"
+script_runner = "@shell"
+script = '''
+cargo run -q -p ham-web-sstv --release --example decode_sample -- "${FILE:-tmp/sstv-sample.wav}"
+'''
+
+[tasks.sstv-test]
+description = "生成并解码合成 SSTV 样本，端到端自检（依赖 sstv-sample → sstv-decode）"
+dependencies = ["sstv-sample", "sstv-decode"]
+
+# ───────────────────────────── WSPR 解码器（测试数据） ─────────────────────────────
+
+[tasks.wspr-sample]
+description = "生成合成 WSPR 测试样本 WAV：CALL=AA0NT GRID=EM18 PWR=20 NOISE=0.02 cargo make wspr-sample"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-wspr --release --example generate_sample -- tmp/wspr-sample.wav "${CALL:-AA0NT}" "${GRID:-EM18}" "${PWR:-20}" "${NOISE:-0.02}"
+'''
+
+[tasks.wspr-decode]
+description = "命令行解码 WSPR 样本：FILE=tmp/wspr-sample.wav cargo make wspr-decode"
+script_runner = "@shell"
+script = '''
+cargo run -q -p ham-web-wspr --release --example decode_sample -- "${FILE:-tmp/wspr-sample.wav}"
+'''
+
+[tasks.wspr-test]
+description = "生成并解码合成 WSPR 样本，端到端自检（依赖 wspr-sample → wspr-decode）"
+dependencies = ["wspr-sample", "wspr-decode"]
+
 # ───────────────────────────── PSK31 解码器（测试数据） ─────────────────────────────
 
 [tasks.psk31-sample]
@@ -170,6 +254,34 @@ cargo run -q -p ham-web-tools --release -- gen-psk31 \
   --offset "${OFFSET:-0}" \
   --noise "${NOISE:-0.1}"
 '''
+
+# ───────────────────────────── SDR 瀑布图（测试数据） ─────────────────────────────
+
+[tasks.spectrum-sample]
+description = "生成合成频谱测试样本 WAV：TONES='700:0.8,1500:0.5' cargo make spectrum-sample"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-tools --release -- gen-spectrum \
+  --output tmp/spectrum-sample.wav \
+  --rate "${RATE:-8000}" \
+  --seconds "${DURATION:-2}" \
+  --tones "${TONES:-700:0.8,1500:0.5,3000:0.3}" \
+  --noise "${NOISE:-0.05}"
+'''
+
+[tasks.spectrum-analyze]
+description = "命令行频谱分析样本并打印峰值：FILE=tmp/spectrum-sample.wav cargo make spectrum-analyze"
+script_runner = "@shell"
+script = '''
+cargo run -q -p ham-web-tools --release -- analyze-spectrum \
+  --input "${FILE:-tmp/spectrum-sample.wav}" \
+  --peaks "${PEAKS:-5}"
+'''
+
+[tasks.spectrum-test]
+description = "生成并分析合成频谱样本，端到端自检（依赖 spectrum-sample → spectrum-analyze）"
+dependencies = ["spectrum-sample", "spectrum-analyze"]
 
 # ───────────────────────────── 题目解析维护 ─────────────────────────────
 
@@ -255,6 +367,12 @@ dependencies = ["build-web"]
 cwd = "e2e"
 command = "npx"
 args = ["playwright", "test"]
+
+[tasks.e2e-coverage]
+description = "统计 e2e 覆盖率（路由冒烟 / 交互 / 关键流程），报告写入 e2e/test-results/coverage.{md,json}"
+cwd = "e2e"
+command = "node"
+args = ["scripts/coverage.mjs"]
 
 [tasks.ci]
 description = "CI：格式检查 + clippy + 测试 + 界面文案校验 + 前端构建"

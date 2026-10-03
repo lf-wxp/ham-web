@@ -60,6 +60,12 @@ pub struct Subscription {
   /// 每日学习提醒的 UTC 分钟数（0–1439，来自用户本地时间 + 时区换算）；缺省则不调度。
   #[serde(default)]
   pub reminder_utc_minutes: Option<u32>,
+  /// 最近一次上报的「今日待复习错题数」（前端本地计算、静默同步）；缺省为 `None`。
+  #[serde(default)]
+  pub due_mistakes: Option<u32>,
+  /// 最近一次上报的「今日待复习知识卡片数」；缺省为 `None`。
+  #[serde(default)]
+  pub due_cards: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -362,6 +368,18 @@ fn send_push(
   }
 }
 
+/// 根据最近一次上报的待复习数生成提醒正文；无数据或均为 0 时回退到通用文案。
+fn review_body(sub: &Subscription) -> String {
+  match (sub.due_mistakes, sub.due_cards) {
+    (Some(m), Some(c)) if m > 0 && c > 0 => {
+      format!("今日待复习：错题 {m} 道、知识卡片 {c} 张。")
+    }
+    (Some(m), _) if m > 0 => format!("今日待复习错题 {m} 道。"),
+    (_, Some(c)) if c > 0 => format!("今日待复习知识卡片 {c} 张。"),
+    _ => "今天的备考任务待完成。".to_owned(),
+  }
+}
+
 impl PushService {
   /// 初始化 VAPID 密钥与订阅存储，并启动每日提醒定时任务。
   ///
@@ -430,6 +448,18 @@ impl PushService {
     state.persist();
   }
 
+  /// 更新某订阅的「今日待复习数」（前端页面打开 / 复习完成时静默同步）；订阅不存在时返回 `false`。
+  pub fn update_review_counts(&self, endpoint: &str, mistakes: u32, cards: u32) -> bool {
+    let mut state = self.inner.lock().expect("push state poisoned");
+    let Some(sub) = state.subscriptions.get_mut(endpoint) else {
+      return false;
+    };
+    sub.due_mistakes = Some(mistakes);
+    sub.due_cards = Some(cards);
+    state.persist();
+    true
+  }
+
   /// 每分钟检查一次：对设定了提醒时间且到点的订阅发送「该学习啦」。
   pub fn check_reminders(&self) {
     let now = Utc::now();
@@ -458,7 +488,8 @@ impl PushService {
 
     let mut changed = false;
     for (endpoint, sub) in due {
-      match send_push(&vapid, &sub, "该学习啦", "今天的备考任务待完成。") {
+      let body = review_body(&sub);
+      match send_push(&vapid, &sub, "该学习啦", &body) {
         Ok(true) => {
           let mut state = self.inner.lock().expect("push state poisoned");
           state.last_reminded.insert(endpoint, day);
@@ -590,6 +621,37 @@ pub async fn unsubscribe_handler(
   }
 }
 
+/// `POST /api/push/review-count`：同步「今日待复习数」（body 为
+/// `{"endpoint":"…","due_mistakes":N,"due_cards":M}`）。前端页面打开时静默上报，
+/// 供每日提醒推送时带上具体的待复习数量。
+pub async fn review_count_handler(
+  service: PushService,
+  headers: axum::http::HeaderMap,
+  body: String,
+) -> axum::response::Response {
+  if let Auth::Denied = authorize(&headers) {
+    return json_err(axum::http::StatusCode::UNAUTHORIZED, "unauthorized");
+  }
+  #[derive(Deserialize)]
+  struct Req {
+    endpoint: String,
+    #[serde(default)]
+    due_mistakes: u32,
+    #[serde(default)]
+    due_cards: u32,
+  }
+  match serde_json::from_str::<Req>(&body) {
+    Ok(req) if !req.endpoint.is_empty() => {
+      if service.update_review_counts(&req.endpoint, req.due_mistakes, req.due_cards) {
+        json_ok("{\"ok\":true}".to_owned())
+      } else {
+        json_err(axum::http::StatusCode::NOT_FOUND, "unknown subscription")
+      }
+    }
+    _ => json_err(axum::http::StatusCode::BAD_REQUEST, "invalid endpoint"),
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -633,6 +695,8 @@ mod tests {
             auth: "auth".to_owned(),
           },
           reminder_utc_minutes: Some(720),
+          due_mistakes: None,
+          due_cards: None,
         },
       )]),
       last_reminded: HashMap::new(),
@@ -641,6 +705,34 @@ mod tests {
     let back: StoreData = serde_json::from_str(&json).expect("deserialize");
     assert_eq!(back.vapid_private_b64, "abc");
     assert_eq!(back.subscriptions.len(), 1);
+  }
+
+  #[test]
+  fn review_body_reflects_due_counts() {
+    let sub = |m: Option<u32>, c: Option<u32>| Subscription {
+      endpoint: "https://push.example.com/1".to_owned(),
+      keys: SubscriptionKeys {
+        p256dh: "dh".to_owned(),
+        auth: "auth".to_owned(),
+      },
+      reminder_utc_minutes: Some(720),
+      due_mistakes: m,
+      due_cards: c,
+    };
+    assert_eq!(
+      review_body(&sub(Some(3), Some(5))),
+      "今日待复习：错题 3 道、知识卡片 5 张。"
+    );
+    assert_eq!(review_body(&sub(Some(3), None)), "今日待复习错题 3 道。");
+    assert_eq!(
+      review_body(&sub(None, Some(5))),
+      "今日待复习知识卡片 5 张。"
+    );
+    assert_eq!(
+      review_body(&sub(Some(0), Some(0))),
+      "今天的备考任务待完成。"
+    );
+    assert_eq!(review_body(&sub(None, None)), "今天的备考任务待完成。");
   }
 
   #[test]

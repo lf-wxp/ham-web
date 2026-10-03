@@ -77,7 +77,8 @@
   --card-foreground: oklch(0.215 0.02 250);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.215 0.02 250);
-  --primary: oklch(0.53 0.13 195);
+  /* 浅色下 primary 也用于小字号文字（徽标、链接），压暗以满足 4.5:1 对比度 */
+  --primary: oklch(0.49 0.13 195);
   --primary-foreground: oklch(0.99 0.005 200);
   --secondary: oklch(0.955 0.006 210);
   --secondary-foreground: oklch(0.24 0.02 250);
@@ -96,7 +97,7 @@
   --chart-5: oklch(0.62 0.17 25);
   --sidebar: oklch(0.97 0.006 210);
   --sidebar-foreground: oklch(0.215 0.02 250);
-  --sidebar-primary: oklch(0.53 0.13 195);
+  --sidebar-primary: oklch(0.49 0.13 195);
   --sidebar-primary-foreground: oklch(0.99 0.005 200);
   --sidebar-accent: oklch(0.945 0.012 190);
   --sidebar-accent-foreground: oklch(0.25 0.03 200);
@@ -147,6 +148,15 @@
   }
   body.no-site-footer footer {
     display: none !important;
+  }
+  /* 多语言排版兜底：英文 / 西班牙文的单词远长于中文，窄容器里若不换行就会撑破布局
+     或被截断。`break-word` 只在单词自身放不下时才断开，对中文排版没有副作用；
+     `hyphens` 仅在非中文界面启用，让长单词按音节断行、断得更自然。 */
+  body {
+    overflow-wrap: break-word;
+  }
+  html:not([lang^="zh"]) body {
+    hyphens: auto;
   }
 }
 

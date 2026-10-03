@@ -357,7 +357,13 @@ pub fn MapView(
     .map(|&(name, lon, lat)| {
       let (x, y) = project(lon, lat);
       view! {
-        <text x=x.to_string() y=y.to_string() text-anchor="middle" class="fill-foreground/40" font-size="8">{name}</text>
+        <text
+          x=x.to_string()
+          y=y.to_string()
+          text-anchor="middle"
+          class="fill-foreground/40"
+          font-size="8"
+        >{move || t(name)}</text>
       }
     })
     .collect_view();

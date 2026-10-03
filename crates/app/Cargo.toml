@@ -27,6 +27,7 @@ features = [
   "AbortController",
   "AbortSignal",
   "AddEventListenerOptions",
+  "AudioBuffer",
   "AudioContext",
   "AudioDestinationNode",
   "AudioNode",

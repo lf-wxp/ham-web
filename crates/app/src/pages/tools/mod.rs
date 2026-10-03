@@ -2,6 +2,7 @@
 
 mod antenna_length;
 mod antenna_matcher;
+mod aprs_codec;
 mod attenuator_calculator;
 mod backup_tool;
 mod battery_runtime;
@@ -17,22 +18,31 @@ mod distance_bearing;
 mod doppler_calculator;
 mod eirp_calculator;
 mod feedline_loss;
+mod filter_design;
 mod freq_wavelength;
 mod frequency_units;
 mod fspl_calculator;
 mod gain_conversion;
 mod lc_resonance;
 mod link_budget_calculator;
+mod mode_encoder;
 mod noise_cascade;
 mod ohms_law;
+mod oscillator;
 mod propagation_estimator;
 mod reactance;
 mod receiver_sensitivity;
 mod resistor_color_code;
 mod resistor_parallel;
+mod rf_exposure;
+mod smith_chart;
 mod swr_converter;
+mod tone_squelch;
 mod tools_page;
 mod transformer_calculator;
+mod tx_line;
+mod utc_clock;
+mod wire_gauge;
 
 pub use tools_page::ToolsPage;
 

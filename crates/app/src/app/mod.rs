@@ -22,7 +22,11 @@ pub fn App() -> impl IntoView {
   provide_theme();
   crate::i18n::provide_locale();
   crate::pages::log::provide_log_store();
-  leptos::task::spawn_local(crate::study::ensure_seeded());
+  leptos::task::spawn_local(async move {
+    crate::study::ensure_seeded().await;
+    // 迁移旧数据后，把最新的「今日待复习数」同步给后端，供 Web Push 每日提醒附带数量。
+    crate::push::sync_review_counts();
+  });
   crate::sat_alert::start_watcher();
   crate::pages::start_global_watcher();
   crate::study::start_study_reminder_watcher();

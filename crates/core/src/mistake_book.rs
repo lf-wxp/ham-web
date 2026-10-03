@@ -380,6 +380,47 @@ pub fn mistake_topics(book: &MistakeBook) -> Vec<TopicAgg> {
   out
 }
 
+/// 错题按当前复习间隔分桶的巩固度分布。
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct IntervalBuckets {
+  /// 学习中（间隔为 0，刚答错或仍在频繁答错）。
+  pub learning: usize,
+  /// 短期（1–6 天）。
+  pub short: usize,
+  /// 中期（7–20 天）。
+  pub medium: usize,
+  /// 长期（≥ 21 天，接近掌握）。
+  pub mature: usize,
+}
+
+impl IntervalBuckets {
+  /// 错题总数。
+  #[must_use]
+  pub fn total(self) -> usize {
+    self.learning + self.short + self.medium + self.mature
+  }
+}
+
+/// 按复习间隔把错题分成四档，用于可视化「间隔重复」的巩固进度：
+/// 答对会让间隔逐次增长（1 → 3 → 7 → … 天），答错则归零重新开始。
+#[must_use]
+pub fn interval_buckets(book: &MistakeBook) -> IntervalBuckets {
+  let mut b = IntervalBuckets::default();
+  for r in &book.records {
+    let d = r.interval_days;
+    if d <= 0.0 {
+      b.learning += 1;
+    } else if d < 7.0 {
+      b.short += 1;
+    } else if d < 21.0 {
+      b.medium += 1;
+    } else {
+      b.mature += 1;
+    }
+  }
+  b
+}
+
 /// 按错因聚合错题数（仅统计已标注的），按 [`WRONG_CAUSES`] 顺序返回 `(key, 名称, 数量)`。
 #[must_use]
 pub fn cause_stats(book: &MistakeBook) -> Vec<(&'static str, &'static str, usize)> {
@@ -808,6 +849,36 @@ mod tests {
     assert!(book.set_cause(&ka, ""));
     let stats = cause_stats(&book);
     assert_eq!(stats[0].2, 0);
+  }
+
+  #[test]
+  fn interval_buckets_group_by_interval() {
+    let mut book = MistakeBook::default();
+    let mk = |interval: f64, text: &str| MistakeRecord {
+      key: question_key(&q(text, "A")),
+      question: q(text, "A"),
+      my_answer: vec![],
+      wrong_count: 1,
+      streak: 0,
+      last_wrong_ms: 0,
+      due_ms: 0,
+      banks: BTreeSet::new(),
+      ease: DEFAULT_EASE,
+      interval_days: interval,
+      last_review_ms: 0,
+      cause: None,
+    };
+    book.records.push(mk(0.0, "一"));
+    book.records.push(mk(0.0, "二"));
+    book.records.push(mk(3.0, "三"));
+    book.records.push(mk(10.0, "四"));
+    book.records.push(mk(30.0, "五"));
+    let b = interval_buckets(&book);
+    assert_eq!(b.learning, 2);
+    assert_eq!(b.short, 1);
+    assert_eq!(b.medium, 1);
+    assert_eq!(b.mature, 1);
+    assert_eq!(b.total(), 5);
   }
 
   #[test]

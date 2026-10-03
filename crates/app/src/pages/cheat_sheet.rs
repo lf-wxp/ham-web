@@ -4,7 +4,7 @@ use ham_web_core::cheat_sheet::sections;
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
-use crate::i18n::t;
+use crate::i18n::{t, tf};
 use crate::ui::{Size, Variant, button_class};
 use crate::util::{set_title, window};
 
@@ -39,7 +39,9 @@ pub fn CheatSheetPage() -> impl IntoView {
                 <h2 class="flex items-center gap-2 border-b px-4 py-3 text-sm font-semibold">
                   <span class="h-2.5 w-2.5 shrink-0 rounded-full" style=format!("background: {color}")></span>
                   {sec.name}
-                  <span class="ml-auto text-xs font-normal text-muted-foreground">{count} " 个考点"</span>
+                  <span class="ml-auto text-xs font-normal text-muted-foreground">
+                    {move || tf("{} 个考点", &[&count.to_string()])}
+                  </span>
                 </h2>
                 <div class="grid gap-2 p-4 sm:grid-cols-2">
                   {sec

@@ -112,11 +112,11 @@ pub(super) fn LogStatsPanel(
                   .iter()
                   .map(|e| {
                     let via = if e.qsl_sent {
-                      "纸卡"
+                      t("纸卡")
                     } else if e.lotw_sent {
-                      "LoTW"
+                      "LoTW".to_owned()
                     } else {
-                      "eQSL"
+                      "eQSL".to_owned()
                     };
                     view! {
                       <div class="flex items-center gap-2 py-1.5 text-sm">

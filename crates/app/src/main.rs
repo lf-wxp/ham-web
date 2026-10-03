@@ -11,12 +11,15 @@ mod gesture;
 mod i18n;
 mod icons;
 mod idb;
+mod kv;
 mod morse_audio;
 mod morse_settings;
 mod pages;
 mod photo;
 mod push;
 mod pwa;
+#[cfg(test)]
+mod registry_check;
 mod sat_alert;
 mod share_score;
 mod shortcuts;
@@ -35,7 +38,11 @@ fn install_panic_hook() {
     if let Ok(f) = js_sys::Reflect::get(&window, &"__hamFatal".into())
       && let Some(f) = wasm_bindgen::JsCast::dyn_ref::<js_sys::Function>(&f)
     {
-      let _ = f.call2(&window, &"页面出错了".into(), &info.to_string().into());
+      let _ = f.call2(
+        &window,
+        &i18n::t("页面出错了").into(),
+        &info.to_string().into(),
+      );
     }
   }));
 }

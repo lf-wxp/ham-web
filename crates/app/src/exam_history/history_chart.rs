@@ -17,7 +17,9 @@ pub fn HistoryChart() -> impl IntoView {
 
   view! {
     <div class="mt-4 border-t pt-3">
-      <div class="text-sm font-medium">"历史成绩（最近 " {recent.len()} " 次正确率）"</div>
+      <div class="text-sm font-medium">
+        {tf("历史成绩（最近 {} 次正确率）", &[&recent.len().to_string()])}
+      </div>
       <div class="mt-3 flex items-end gap-1.5">
         {recent
           .iter()

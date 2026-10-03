@@ -37,7 +37,7 @@ pub(super) fn BandCard(band: &'static Band, jump: Callback<&'static str>) -> imp
     <article class="rounded-xl border bg-card p-4">
       <div class="flex flex-wrap items-center gap-2">
         <span class="rounded-md bg-muted px-2 py-0.5 font-mono text-xs font-semibold text-foreground">
-          "带号 " {band.number}
+          {move || t("带号")} " " {band.number}
         </span>
         <h3 class="font-semibold">{band.name}</h3>
         {band

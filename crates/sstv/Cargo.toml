@@ -1,0 +1,15 @@
+[package]
+name = "ham-web-sstv"
+description = "SSTV 慢扫描电视图像解码：音频 FM 解调 + VIS 识别 + 图像重建（纯 Rust DSP，无外部依赖）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+ham-web-apt.workspace = true
+
+[lints]
+workspace = true

@@ -240,7 +240,7 @@ pub fn RotorControl() -> impl IntoView {
             </span>
             <input
               aria-label=t("目标方位（度）")
-              placeholder="目标方位°"
+              placeholder=t("目标方位°")
               class=input_class("h-7 w-24 py-0 text-xs")
               prop:value=move || target_az.get()
               on:input=move |e| target_az.set(event_target_value(&e))

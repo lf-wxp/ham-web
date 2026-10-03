@@ -89,10 +89,67 @@ async fn fetch_text(url: &str, mode: CacheMode) -> Result<String, AppError> {
   Ok(text.as_string().unwrap_or_default())
 }
 
-/// 拉取外部 JSON（带 5 秒超时，超时或失败返回错误）。
+/// API 离线缓存：实时数据页在离线时回退到「最后一次成功拉取」的数据，而非硬降级为
+/// 「数据暂不可用」。缓存以响应原文（text）存储、以 URL 为 key，避免与各接口的解析类型耦合。
+const API_CACHE_PREFIX: &str = "api-cache:";
+/// 单条缓存最大 UTF-16 单元数（约 512 KB），超过不缓存，避免挤占 localStorage 配额。
+const API_CACHE_MAX_UNITS: usize = 512 * 1024;
+/// 缓存回退的最大有效期（7 天，毫秒），超过则认为过于陈旧、不再回退。
+const API_CACHE_MAX_AGE_MS: i64 = 7 * 24 * 60 * 60 * 1000;
+
+/// 一条 API 缓存：`{ ts: 写入时间戳(ms), text: 响应原文 }`。
+#[derive(serde::Serialize, serde::Deserialize)]
+struct ApiCacheEntry {
+  ts: i64,
+  text: String,
+}
+
+fn api_cache_key(url: &str) -> String {
+  format!("{API_CACHE_PREFIX}{url}")
+}
+
+/// 成功拉取后把响应原文写入缓存（静默：配额满时不打扰用户）。
+fn api_cache_put(url: &str, text: &str) {
+  if text.is_empty() || text.encode_utf16().count() > API_CACHE_MAX_UNITS {
+    return;
+  }
+  let entry = ApiCacheEntry {
+    ts: now_ms(),
+    text: text.to_owned(),
+  };
+  crate::util::storage::set_json_silent(&api_cache_key(url), &entry);
+}
+
+/// 读取仍处于有效期内的缓存响应原文。
+fn api_cache_get(url: &str) -> Option<String> {
+  let entry = crate::util::storage::get_json::<ApiCacheEntry>(&api_cache_key(url))?;
+  if now_ms() - entry.ts > API_CACHE_MAX_AGE_MS {
+    return None;
+  }
+  Some(entry.text)
+}
+
+fn parse_json<T: serde::de::DeserializeOwned>(text: &str) -> Result<T, AppError> {
+  serde_json::from_str(text).map_err(|e| AppError::Validation(format!("Invalid JSON: {e}")))
+}
+
+/// 拉取外部 JSON（带 5 秒超时）；成功时写离线缓存，失败时回退到上次缓存。
 pub async fn fetch_external_json<T: serde::de::DeserializeOwned>(url: &str) -> Result<T, AppError> {
-  let text = fetch_text_external(url, 5000).await?;
-  serde_json::from_str(&text).map_err(|e| AppError::Validation(format!("Invalid JSON: {e}")))
+  match fetch_text_external(url, 5000).await {
+    Ok(text) => {
+      api_cache_put(url, &text);
+      parse_json(&text)
+    }
+    Err(net_err) => {
+      // 网络失败：回退到有效期内的缓存；缓存缺失或格式不兼容时维持原始错误。
+      if let Some(text) = api_cache_get(url)
+        && let Ok(data) = parse_json(&text)
+      {
+        return Ok(data);
+      }
+      Err(net_err)
+    }
+  }
 }
 
 /// 拉取二进制资源（紧凑编码的几何数据，如 `dxcc-entities.bin`）。

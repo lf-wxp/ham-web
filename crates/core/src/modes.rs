@@ -58,6 +58,13 @@ pub const DIGITAL_MODES: &[DigitalMode] = &[
     "基于开源 Codec2 声码器，可在 HF 窄带中传输数字话音。",
   ),
   mode(
+    "开源数字语音协议",
+    "M17",
+    "数字语音 / 数据",
+    "约 6.25 kHz（4FSK）",
+    "完全开源的新一代数字语音与数据协议，基于 Codec2 声码器，面向开放生态。",
+  ),
+  mode(
     "FT8",
     "FT8",
     "数据",
@@ -126,6 +133,13 @@ pub const DIGITAL_MODES: &[DigitalMode] = &[
     "数据",
     "约 50 Hz",
     "基于 FT8 的信号结构，支持键盘实时文字聊天。",
+  ),
+  mode(
+    "高速 ARQ 声卡调制",
+    "VARA",
+    "数据（邮件 / 文件）",
+    "约 500 Hz / 2.3 kHz",
+    "VARA HF / VARA FM 自适应速率 ARQ 调制，Winlink 无线邮件常用。",
   ),
 ];
 

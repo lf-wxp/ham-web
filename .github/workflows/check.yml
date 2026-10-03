@@ -99,6 +99,35 @@ jobs:
         working-directory: e2e
         run: npx playwright test
 
+      # 覆盖率按三条口径统计：路由冒烟 / 交互 / 关键流程（详见 e2e/scripts/coverage.mjs）
+      - name: E2E coverage report
+        id: coverage
+        # 覆盖率只扫描 spec 文件，与用例是否通过无关，失败时同样出报告便于对照
+        if: always()
+        working-directory: e2e
+        run: |
+          set +e
+          E2E_MIN_JOURNEY=${{ vars.E2E_MIN_JOURNEY }} E2E_MIN_ROUTE=${{ vars.E2E_MIN_ROUTE }} \
+            node scripts/coverage.mjs > /tmp/coverage.md
+          code=$?
+          cat /tmp/coverage.md
+          {
+            echo "## E2E 覆盖率"
+            echo
+            cat /tmp/coverage.md
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $code
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-coverage
+          path: |
+            e2e/test-results/coverage.md
+            e2e/test-results/coverage.json
+          retention-days: 30
+
       - name: Upload report
         if: failure()
         uses: actions/upload-artifact@v4

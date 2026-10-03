@@ -164,113 +164,13 @@ fn write_service_worker(dist: &Path) -> Result<usize> {
 
 fn write_sitemap(dist: &Path, site_url: &str) -> Result<()> {
   let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
-  let pages = [
-    ("", "weekly", "1"),
-    ("/photo-processor", "monthly", "0.8"),
-    ("/practice", "weekly", "0.9"),
-    ("/exam", "weekly", "0.9"),
-    ("/browse", "weekly", "0.8"),
-    ("/glossary", "monthly", "0.7"),
-    ("/q-code", "monthly", "0.7"),
-    ("/morse", "monthly", "0.7"),
-    ("/phonetic", "monthly", "0.7"),
-    ("/bands", "monthly", "0.7"),
-    ("/reference", "monthly", "0.7"),
-    ("/antennas", "monthly", "0.7"),
-    ("/bandplan", "monthly", "0.7"),
-    ("/prefixes", "monthly", "0.7"),
-    ("/modes", "monthly", "0.7"),
-    ("/analog-modes", "monthly", "0.7"),
-    ("/frequencies", "monthly", "0.7"),
-    ("/satellites", "monthly", "0.7"),
-    ("/operating", "monthly", "0.7"),
-    ("/rst", "monthly", "0.7"),
-    ("/propagation", "monthly", "0.7"),
-    ("/log", "monthly", "0.7"),
-    ("/countdown", "monthly", "0.7"),
-    ("/mistakes", "monthly", "0.7"),
-    ("/bookmarks", "monthly", "0.7"),
-    ("/flashcards", "monthly", "0.7"),
-    ("/listen", "monthly", "0.7"),
-    ("/cards", "monthly", "0.7"),
-    ("/qsl-labels", "monthly", "0.5"),
-    ("/contest", "monthly", "0.7"),
-    ("/solar", "monthly", "0.7"),
-    ("/safety", "monthly", "0.7"),
-    ("/license", "monthly", "0.7"),
-    ("/electronics", "monthly", "0.7"),
-    ("/feedline", "monthly", "0.7"),
-    ("/meters", "monthly", "0.7"),
-    ("/power", "monthly", "0.7"),
-    ("/awards", "monthly", "0.7"),
-    ("/aprs", "monthly", "0.7"),
-    ("/sdr", "monthly", "0.7"),
-    ("/emcomm", "monthly", "0.7"),
-    ("/beginner", "monthly", "0.7"),
-    ("/organizations", "monthly", "0.7"),
-    ("/ardf", "monthly", "0.7"),
-    ("/special-prop", "monthly", "0.7"),
-    ("/antenna-diy", "monthly", "0.7"),
-    ("/transceiver", "monthly", "0.7"),
-    ("/dx", "monthly", "0.7"),
-    ("/eqsl", "monthly", "0.7"),
-    ("/grid", "monthly", "0.7"),
-    ("/history", "monthly", "0.7"),
-    ("/muf", "monthly", "0.7"),
-    ("/portable", "monthly", "0.7"),
-    ("/cw-operating", "monthly", "0.7"),
-    ("/antenna-installation", "monthly", "0.7"),
-    ("/ft8", "monthly", "0.7"),
-    ("/repeater", "monthly", "0.7"),
-    ("/wspr", "monthly", "0.7"),
-    ("/logging-software", "monthly", "0.7"),
-    ("/microwave", "monthly", "0.7"),
-    ("/remote", "monthly", "0.7"),
-    ("/qsl-card", "monthly", "0.7"),
-    ("/eme", "monthly", "0.7"),
-    ("/antenna-tuning", "monthly", "0.7"),
-    ("/rfi", "monthly", "0.7"),
-    ("/qrp", "monthly", "0.7"),
-    ("/dxpedition", "monthly", "0.7"),
-    ("/regulations", "monthly", "0.7"),
-    ("/antenna-farm", "monthly", "0.7"),
-    ("/nvis", "monthly", "0.7"),
-    ("/rtty", "monthly", "0.7"),
-    ("/iota", "monthly", "0.7"),
-    ("/gnuradio", "monthly", "0.7"),
-    ("/swl", "monthly", "0.7"),
-    ("/amplifier", "monthly", "0.7"),
-    ("/atv", "monthly", "0.7"),
-    ("/filters", "monthly", "0.7"),
-    ("/antenna-modeling", "monthly", "0.7"),
-    ("/most-wanted", "monthly", "0.7"),
-    ("/repeater-build", "monthly", "0.7"),
-    ("/cabrillo", "monthly", "0.7"),
-    ("/contest-log", "monthly", "0.7"),
-    ("/polarization", "monthly", "0.7"),
-    ("/dv-network", "monthly", "0.7"),
-    ("/dx-spots", "weekly", "0.8"),
-    ("/dashboard", "weekly", "0.9"),
-    ("/progress", "weekly", "0.8"),
-    ("/grid-map", "weekly", "0.8"),
-    ("/grayline", "weekly", "0.8"),
-    ("/stats", "weekly", "0.8"),
-    ("/grounding", "monthly", "0.7"),
-    ("/antenna-analyzer", "monthly", "0.7"),
-    ("/power-supply", "monthly", "0.7"),
-    ("/sstv", "monthly", "0.7"),
-    ("/weather-sat", "monthly", "0.7"),
-    ("/packet", "monthly", "0.7"),
-    ("/mobile", "monthly", "0.7"),
-    ("/license-classes", "monthly", "0.7"),
-    ("/receiver", "monthly", "0.7"),
-    ("/antenna-array", "monthly", "0.7"),
-    ("/tools", "monthly", "0.7"),
-  ];
+  // 页面清单来自能力注册表：新增页面只要注册一次，站点地图自动跟上。
+  // 此前这里是一份手写数组，长期漏掉了大批新页面（且没人会发现）。
+  let pages = ham_web_core::registry::sitemap_entries();
   let mut xml = String::from(
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n",
   );
-  for (path, freq, priority) in pages {
+  for (path, freq, priority) in &pages {
     let _ = write!(
       xml,
       "<url>\n<loc>{site_url}{path}</loc>\n<lastmod>{now}</lastmod>\n<changefreq>{freq}</changefreq>\n<priority>{priority}</priority>\n</url>\n"
@@ -278,11 +178,10 @@ fn write_sitemap(dist: &Path, site_url: &str) -> Result<()> {
   }
   xml.push_str("</urlset>\n");
   fs::write(dist.join("sitemap.xml"), xml)?;
-  println!("Generated sitemap.xml");
+  println!("Generated sitemap.xml ({} urls)", pages.len());
   Ok(())
 }
 
-/// 把每个题库文件的内容哈希写入 `questions/config.json` 的 `rev`，前端据此给请求加版本参数。
 fn stamp_bank_revisions(dist: &Path) -> Result<()> {
   let path = dist.join("questions/config.json");
   if !path.is_file() {

@@ -1,0 +1,21 @@
+[package]
+name = "ham-web-wspr-worker"
+description = "WSPR 解码器的 Web Worker 绑定（wasm-bindgen，--target no-modules）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ham-web-wspr.workspace = true
+ham-web-apt.workspace = true
+wasm-bindgen.workspace = true
+js-sys.workspace = true
+
+[lints]
+workspace = true

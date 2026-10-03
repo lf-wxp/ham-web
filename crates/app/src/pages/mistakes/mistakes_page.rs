@@ -1,6 +1,6 @@
 use ham_web_core::categories::{TOP_CATEGORIES, sub_category};
 use ham_web_core::mistake_book::{
-  MASTER_STREAK, MistakeRecord, RecordOutcome, WRONG_CAUSES, cause_stats,
+  MASTER_STREAK, MistakeRecord, RecordOutcome, WRONG_CAUSES, cause_stats, interval_buckets,
 };
 use ham_web_core::{Bank, QuestionItem};
 use leptos::prelude::*;
@@ -240,6 +240,8 @@ pub fn MistakesPage() -> impl IntoView {
   let review_timeline = study::load_book().due_timeline(review_now, 7);
   let review_max = review_timeline.iter().copied().max().unwrap_or(1).max(1);
   let review_total: usize = review_timeline.iter().sum();
+  // 记忆巩固度分布（owned 数据，静态渲染）。
+  let mastery = interval_buckets(&study::load_book());
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
@@ -610,6 +612,53 @@ pub fn MistakesPage() -> impl IntoView {
                               }
                             })
                             .collect_view()}
+                        </div>
+                      </div>
+                    }
+                  })
+                }
+              }}
+              {{
+                move || {
+                  let total = mastery.total();
+                  (total > 0).then(|| {
+                    let pct = |n: usize| -> String {
+                      format!("{:.2}%", n as f64 / total as f64 * 100.0)
+                    };
+                    let dot = |color: &'static str| {
+                      view! { <span class=format!("inline-block h-2 w-2 rounded-full {color}")></span> }
+                    };
+                    view! {
+                      <div class="rounded-xl border bg-card p-4">
+                        <div class="mb-2 flex items-center justify-between">
+                          <h3 class="text-sm font-semibold">{move || t("记忆巩固")}</h3>
+                          <span class="text-xs text-muted-foreground">
+                            {move || t("答对间隔逐次拉长，答错回到当天")}
+                          </span>
+                        </div>
+                        <div class="flex h-3 w-full overflow-hidden rounded-full bg-muted">
+                          <div class="bg-red-400/60" style=format!("width: {}", pct(mastery.learning))></div>
+                          <div class="bg-amber-400/70" style=format!("width: {}", pct(mastery.short))></div>
+                          <div class="bg-sky-400/70" style=format!("width: {}", pct(mastery.medium))></div>
+                          <div class="bg-emerald-500/70" style=format!("width: {}", pct(mastery.mature))></div>
+                        </div>
+                        <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                          <span class="inline-flex items-center gap-1">
+                            {dot("bg-red-400/60")}
+                            {tf("学习中 {} 道", &[&mastery.learning.to_string()])}
+                          </span>
+                          <span class="inline-flex items-center gap-1">
+                            {dot("bg-amber-400/70")}
+                            {tf("1–6 天 {} 道", &[&mastery.short.to_string()])}
+                          </span>
+                          <span class="inline-flex items-center gap-1">
+                            {dot("bg-sky-400/70")}
+                            {tf("7–20 天 {} 道", &[&mastery.medium.to_string()])}
+                          </span>
+                          <span class="inline-flex items-center gap-1">
+                            {dot("bg-emerald-500/70")}
+                            {tf("≥21 天 {} 道", &[&mastery.mature.to_string()])}
+                          </span>
                         </div>
                       </div>
                     }

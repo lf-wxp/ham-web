@@ -37,6 +37,7 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
       ("/reference", "考试速查"),
       ("/glossary", "术语表"),
       ("/most-wanted", "DXCC 稀有度"),
+      ("/callsign", "呼号查询"),
     ],
   ),
   (
@@ -169,6 +170,15 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
       ("/gnuradio", "GNU Radio"),
       ("/transceiver", "收发信机"),
       ("/modes", "数字模式"),
+      ("/sdr-map", "在线 SDR 接收站"),
+    ],
+  ),
+  (
+    "/sdr-map",
+    &[
+      ("/sdr", "SDR 软件定义无线电"),
+      ("/gnuradio", "GNU Radio"),
+      ("/remote", "远程电台"),
     ],
   ),
   (
@@ -189,6 +199,17 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
       ("/bands", "波段表"),
       ("/bandplan", "波段规划"),
       ("/propagation", "传播与电离层"),
+      ("/coordination", "频率协调"),
+    ],
+  ),
+  (
+    "/coordination",
+    &[
+      ("/regulations", "法规与管理"),
+      ("/bandplan", "波段规划"),
+      ("/organizations", "国际组织与分区"),
+      ("/zone-map", "CQ / ITU 分区地图"),
+      ("/repeater-build", "中继台建设"),
     ],
   ),
   (
@@ -205,6 +226,15 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
       ("/propagation", "传播与电离层"),
       ("/eme", "EME 月面反射"),
       ("/wspr", "WSPR"),
+      ("/aurora", "极光通信"),
+    ],
+  ),
+  (
+    "/aurora",
+    &[
+      ("/special-prop", "特殊传播"),
+      ("/propagation", "传播与电离层"),
+      ("/solar", "太阳活动"),
     ],
   ),
   (
@@ -399,6 +429,16 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
       ("/receiver", "接收机指标"),
       ("/amplifier", "功率放大器"),
       ("/sdr", "SDR"),
+      ("/gear", "设备评测与选购"),
+    ],
+  ),
+  (
+    "/gear",
+    &[
+      ("/transceiver", "收发信机"),
+      ("/receiver", "接收机指标"),
+      ("/power-supply", "电源供应"),
+      ("/beginner", "新手入门"),
     ],
   ),
   (
@@ -568,6 +608,16 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
       ("/grid-map", "网格地图"),
       ("/dx", "DX 技巧"),
       ("/log", "通联日志"),
+      ("/callsign", "呼号查询"),
+    ],
+  ),
+  (
+    "/callsign",
+    &[
+      ("/prefixes", "呼号前缀"),
+      ("/most-wanted", "DXCC 稀有度"),
+      ("/dxcc-map", "DXCC 世界地图"),
+      ("/grid", "网格定位"),
     ],
   ),
   (
@@ -592,6 +642,15 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
       ("/log", "通联日志"),
       ("/cabrillo", "竞赛 Cabrillo"),
       ("/contest", "通联竞赛"),
+      ("/open-source", "开源项目与 DIY"),
+    ],
+  ),
+  (
+    "/events",
+    &[
+      ("/contest-calendar", "竞赛日历"),
+      ("/dxpedition", "DX 远征"),
+      ("/portable", "SOTA / POTA"),
     ],
   ),
   // ── 进阶 · 关于 ──
@@ -601,6 +660,16 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
       ("/regulations", "法规与管理"),
       ("/license", "执照申办"),
       ("/history", "业余无线电历史"),
+      ("/zone-map", "CQ / ITU 分区地图"),
+    ],
+  ),
+  (
+    "/zone-map",
+    &[
+      ("/organizations", "国际组织与分区"),
+      ("/callsign", "呼号查询"),
+      ("/coordination", "频率协调"),
+      ("/awards", "DX 奖状"),
     ],
   ),
   (
@@ -673,6 +742,34 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
       ("/sdr", "SDR"),
       ("/logging-software", "日志与竞赛软件"),
       ("/transceiver", "收发信机"),
+      ("/sdr-map", "在线 SDR 接收站"),
+    ],
+  ),
+  (
+    "/open-source",
+    &[
+      ("/sdr", "SDR 软件定义无线电"),
+      ("/logging-software", "日志与竞赛软件"),
+      ("/antenna-diy", "天线 DIY"),
+      ("/developers", "开放 API"),
+    ],
+  ),
+  (
+    "/developers",
+    &[
+      ("/callsign", "呼号查询"),
+      ("/grid", "网格定位"),
+      ("/muf", "传播预测"),
+      ("/open-source", "开源项目与 DIY"),
+    ],
+  ),
+  (
+    "/community",
+    &[
+      ("/operating", "通联实务"),
+      ("/gear", "设备评测与选购"),
+      ("/open-source", "开源项目与 DIY"),
+      ("/beginner", "新手入门"),
     ],
   ),
 ];

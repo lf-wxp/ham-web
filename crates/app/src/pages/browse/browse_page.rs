@@ -200,7 +200,7 @@ pub fn BrowsePage() -> impl IntoView {
                     ])
                   }
                 >
-                  {name}
+                  <span class="truncate" title=name.to_string()>{name}</span>
                   <span class="ml-1 opacity-60">{move || sub_count.with(|m| m.get(name).copied().unwrap_or(0))}</span>
                 </button>
               }
@@ -220,7 +220,7 @@ pub fn BrowsePage() -> impl IntoView {
               }
             >
               <span class="h-2 w-2 shrink-0 rounded-full" style=format!("background: {}", c.color)></span>
-              <span class="truncate">{c.name}</span>
+              <span class="truncate" title=c.name.to_string()>{c.name}</span>
               <span class="ml-auto text-xs tabular-nums">{move || cat_count.with(|m| m.get(c.key).copied().unwrap_or(0))}</span>
               <Icon
                 kind=IconKind::ChevronDown

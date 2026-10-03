@@ -2,7 +2,13 @@
 //!
 //! 数据源按优先级：
 //! 1. Callook（`callook.info`，免费 JSON，覆盖美国 / 加拿大呼号，无需鉴权）；
-//! 2. HamQTH（需设置 `HAMQTH_USER` / `HAMQTH_PASS` 环境变量，覆盖国际呼号）。
+//! 2. HamQTH（需设置 `HAMQTH_USER` / `HAMQTH_PASS` 环境变量，覆盖国际呼号）；
+//! 3. **本地 DXCC 前缀库**（内置、离线）：上游都没有资料时只给出国家 / 地区，
+//!    不猜姓名、QTH 与网格 —— 凭空生成的网格会污染日志与奖章统计。
+//!
+//! 响应状态码：`200` 查到资料（`source` 标明来源，含 `DXCC` 回退）；`400` 呼号非法；
+//! `404` 前缀无法识别（多半是拼写错误）；`503` 仅用于服务内部异常
+//! （如阻塞线程池故障），不再表示「没有资料」。
 //!
 //! 结果按呼号缓存 7 天（呼号资料变化缓慢）。
 
@@ -112,13 +118,22 @@ fn from_callook(call: &str) -> anyhow::Result<CallsignInfo> {
   })
 }
 
+/// 反转 XML 中最常见的 5 个预定义实体（HamQTH 返回的字段可能把 `&`、`<` 等转义）。
+fn unescape_xml(s: &str) -> String {
+  s.replace("&amp;", "&")
+    .replace("&lt;", "<")
+    .replace("&gt;", ">")
+    .replace("&quot;", "\"")
+    .replace("&apos;", "'")
+}
+
 /// 提取 HamQTH XML 的 `<name>value</name>`。
 fn tag(xml: &str, name: &str) -> Option<String> {
   let open = format!("<{name}>");
   let close = format!("</{name}>");
   let start = xml.find(&open)? + open.len();
   let end = xml[start..].find(&close)? + start;
-  Some(xml[start..end].trim().to_owned())
+  Some(unescape_xml(xml[start..end].trim()))
 }
 
 /// 从 HamQTH 查询（国际，需账号）。
@@ -179,6 +194,30 @@ fn fetch_and_parse(call: &str) -> anyhow::Result<CallsignInfo> {
   }
 }
 
+/// 上游都没有资料时的本地回退：用内置 DXCC 前缀库识别国家 / 地区。
+///
+/// 只填 `country`（实体中文名），其余字段留空。**不要**用实体中心点去合成
+/// `grid`：那既不是台站真实网格，还会被日志与奖章统计当成有效数据。
+fn dxcc_fallback(call: &str) -> Option<CallsignInfo> {
+  let entity = ham_web_core::dxcc::lookup(call)?;
+  Some(CallsignInfo {
+    callsign: call.to_owned(),
+    name: String::new(),
+    grid: String::new(),
+    qth: String::new(),
+    country: entity.name.to_owned(),
+    source: "DXCC".to_owned(),
+  })
+}
+
+/// 写入缓存（含回退结果），并按容量上限淘汰最旧条目。
+fn cache_put(cache: &Cache, call: &str, info: CallsignInfo) {
+  if let Ok(mut g) = cache.inner.lock() {
+    crate::cache::evict_oldest(&mut *g, MAX_ENTRIES);
+    g.insert(call.to_owned(), (Instant::now(), info));
+  }
+}
+
 /// 缓存。
 #[derive(Default)]
 pub struct Cache {
@@ -207,15 +246,20 @@ pub async fn handler(Query(q): Query<CallsignQuery>, cache: Arc<Cache>) -> Respo
       // `_guard` 存活到缓存写入完成后释放，保证等待者被唤醒时能读到新缓存。
       return match fetched {
         Ok(Ok(r)) => {
-          if let Ok(mut g) = cache.inner.lock() {
-            crate::cache::evict_oldest(&mut *g, MAX_ENTRIES);
-            g.insert(call, (Instant::now(), r.clone()));
-          }
+          cache_put(&cache, &call, r.clone());
           json(&r)
         }
         Ok(Err(e)) => {
           error!("callsign lookup {call} failed: {e:#}");
-          (StatusCode::SERVICE_UNAVAILABLE, "callsign unavailable").into_response()
+          // 上游查不到（地区不覆盖 / 未配置账号 / 网络异常）时退回本地 DXCC：
+          // 至少给出国家 / 地区，避免整条查询因一个地区缺资料而不可用。
+          match dxcc_fallback(&call) {
+            Some(info) => {
+              cache_put(&cache, &call, info.clone());
+              json(&info)
+            }
+            None => (StatusCode::NOT_FOUND, "callsign not found").into_response(),
+          }
         }
         Err(e) => {
           error!("spawn_blocking failed: {e:#}");
@@ -249,9 +293,40 @@ mod tests {
   }
 
   #[test]
+  fn tag_unescapes_xml_entities() {
+    let xml =
+      "<HamQTH><search><qth>Dolgeville &amp; NY</qth><name>A&amp;B</name></search></HamQTH>";
+    assert_eq!(tag(xml, "qth").as_deref(), Some("Dolgeville & NY"));
+    assert_eq!(tag(xml, "name").as_deref(), Some("A&B"));
+  }
+
+  #[test]
   fn callook_invalid_status_fails() {
     let body = r#"{"status":"INVALID"}"#;
     let c: Callook = serde_json::from_str(body).unwrap();
     assert_ne!(c.status, "VALID");
+  }
+
+  #[test]
+  fn dxcc_fallback_gives_country_only() {
+    // BV9P 为东沙群岛：Callook 不覆盖（返回 INVALID），HamQTH 未配置时会走到这里。
+    let info = dxcc_fallback("BV9PAA").expect("应识别出东沙群岛");
+    assert_eq!(info.country, "东沙群岛");
+    assert_eq!(info.source, "DXCC");
+    assert_eq!(info.callsign, "BV9PAA");
+    // 姓名 / QTH / 网格必须留空：绝不能凭空合成，否则会污染日志与奖章统计。
+    assert!(info.name.is_empty() && info.grid.is_empty() && info.qth.is_empty());
+  }
+
+  #[test]
+  fn dxcc_fallback_handles_unknown_and_slash_suffix() {
+    assert!(dxcc_fallback("").is_none());
+    // 无法归属任何实体（海上移动）→ 交由上层返回 404。
+    assert!(dxcc_fallback("BG4XXX/MM").is_none());
+    // 常见修饰后缀不应影响识别。
+    assert_eq!(
+      dxcc_fallback("BG4XXX/P").map(|i| i.country),
+      Some("中国".to_owned())
+    );
   }
 }

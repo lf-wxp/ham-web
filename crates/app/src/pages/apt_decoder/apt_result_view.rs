@@ -73,7 +73,7 @@ fn render_rgba(rgba: &[u8], width: u32, height: u32) -> Result<String, String> {
   let ctx: CanvasRenderingContext2d = canvas
     .get_context("2d")
     .map_err(|e| js_error_message(&e))?
-    .ok_or("Canvas 2D 上下文不可用")?
+    .ok_or_else(|| t("Canvas 2D 上下文不可用"))?
     .unchecked_into();
 
   let clamped = wasm_bindgen::Clamped(rgba);

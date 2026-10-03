@@ -214,8 +214,8 @@ pub fn AptDecoderPage() -> impl IntoView {
         <section class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
           <p>
             {move || t("上传一段从 NOAA 气象卫星接收的 APT 音频（137 MHz FM 解调后的 WAV），即可在浏览器本地解调 2400 Hz 副载波并重建可见光 / 红外云图。")}
-            "解码在 Web Worker 后台线程完成，不阻塞页面。"
-            "典型过境约 10–15 分钟，建议配合"
+            {move || t("解码在 Web Worker 后台线程完成，不阻塞页面。")}
+            {move || t("典型过境约 10–15 分钟，建议配合")}
             <a href="/satellites" class="text-primary underline underline-offset-2">{move || t("过境预报")}</a>
             {move || t("提前录制。音频不会上传到服务器。")}
           </p>

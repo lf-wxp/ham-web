@@ -2,6 +2,8 @@ import { expect, test } from "./fixtures";
 
 /** 唤起全站搜索面板（`/` 快捷键），返回面板定位器。 */
 async function openSearch(page: import("@playwright/test").Page) {
+  // 等应用挂载完成再按快捷键：wasm 未就绪时按 `/` 不会有任何响应
+  await expect(page.getByRole("button", { name: "搜索" })).toBeVisible();
   await page.keyboard.press("/");
   const panel = page.getByRole("dialog", { name: "全站搜索" });
   await expect(panel).toBeVisible();

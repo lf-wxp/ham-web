@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 
+use crate::i18n::tf;
 use crate::ui::Progress;
 
 /// 进度头部：可选左侧控件、右侧按钮、进度条与说明。
@@ -23,7 +24,9 @@ pub fn QuestionProgressHeader(
       </div>
       <div class="flex items-center gap-4 justify-between flex-wrap">
         <div class="flex items-center gap-4 w-full sm:w-auto">
-          <div class="min-w-24 text-sm text-muted-foreground">"进度 " {move || percent.get()} "%"</div>
+          <div class="min-w-24 text-sm text-muted-foreground">
+            {move || tf("进度 {}%", &[&percent.get().to_string()])}
+          </div>
           <Progress value=percent class="h-2 flex-1 sm:w-40 sm:flex-none" />
         </div>
         {meta.map(|m| view! { <div class="hidden sm:block text-sm text-muted-foreground">{m.run()}</div> })}

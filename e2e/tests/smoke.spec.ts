@@ -13,6 +13,13 @@ const routes = [...source.matchAll(/path!\("([^"]+)"\)/g)]
 const ignoredRequest = (url: string, base: string) =>
   !url.startsWith(base) || new URL(url).pathname.startsWith("/api/");
 
+// 第三方脚本（如 AdSense）在无外网的测试环境里会抛自己的 unhandled rejection，
+// 堆栈里全是外域地址，与本站代码无关，按与 console/网络一致的规则忽略。
+const fromThirdParty = (stack: string, base: string) => {
+  const urls = stack.match(/https?:\/\/[^\s)]+/g) ?? [];
+  return urls.length > 0 && urls.every((u) => !u.startsWith(base));
+};
+
 for (const colorScheme of ["light", "dark"] as const) {
 test.describe(`全站冒烟（${colorScheme}）`, () => {
   test.use({ colorScheme });
@@ -21,7 +28,11 @@ test.describe(`全站冒烟（${colorScheme}）`, () => {
     test(`${route} 可正常渲染且无障碍检查通过`, async ({ page, baseURL }) => {
       const base = baseURL ?? "";
       const problems: string[] = [];
-      page.on("pageerror", (e) => problems.push(`pageerror: ${e.message}`));
+      page.on("pageerror", (e) => {
+        const stack = e.stack ?? "";
+        if (fromThirdParty(stack, base)) return;
+        problems.push(`pageerror: ${e.message}`);
+      });
       page.on("console", (msg) => {
         if (msg.type() !== "error") return;
         const url = msg.location().url;

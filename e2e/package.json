@@ -5,7 +5,8 @@
   "scripts": {
     "test": "playwright test",
     "test:headed": "playwright test --headed",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "coverage": "node scripts/coverage.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
