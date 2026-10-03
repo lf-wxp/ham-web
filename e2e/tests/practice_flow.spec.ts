@@ -1,9 +1,11 @@
 import type { Page } from "@playwright/test";
 import { expect, option, test } from "./fixtures";
 
-/** 底部栏统计行：「题库 A 类 · 顺序练习 · 进度 1 / 100」。 */
+/** 底部栏统计行：「题库 A 类 · 顺序练习 · 进度 1 / 100」。
+ *  操作栏经 `Portal` 挂到 `body`（避免被路由容器的入场 `transform` 影响 `fixed` 定位），
+ *  因此不再位于 `<main>` 内，不能再用 `locator("main")` 限定。 */
 function bar(page: Page) {
-  return page.locator("main").getByText(/题库 [ABC] 类 ·/).first();
+  return page.getByText(/题库 [ABC] 类 ·/).first();
 }
 
 /** 开关类按钮没有 aria-pressed，用高亮类名判断选中状态。 */
@@ -101,10 +103,18 @@ test("练习：收藏后进入收藏集，再取消收藏", async ({ page }) => 
   await expect(page.getByText("暂无收藏")).toBeVisible();
 });
 
-test("练习：专项链接（?multi=1）只看多选题且强制随机序", async ({ page }) => {
+test("练习：?multi=1 只看多选题且强制随机序", async ({ page }) => {
   await page.goto("/practice?bank=A&multi=1");
   await expect(page.getByText(/第 1 \/ \d+ 题/).first()).toBeVisible();
   await expect(bar(page)).toContainText("随机练习");
+  await expect(page.getByText("多选", { exact: true }).first()).toBeVisible();
+});
+
+test("练习：顶部「只练多选」开关可切换多选专项", async ({ page }) => {
+  await page.goto("/practice?bank=A");
+  await expect(page.getByText(/第 1 \/ \d+ 题/).first()).toBeVisible();
+  await page.getByRole("button", { name: "只练多选" }).click();
+  await expect(page.getByText(/第 1 \/ \d+ 题/).first()).toBeVisible();
   await expect(page.getByText("多选", { exact: true }).first()).toBeVisible();
 });
 

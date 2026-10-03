@@ -312,7 +312,7 @@ pub fn ListenPage() -> impl IntoView {
   };
 
   view! {
-    <div class="mx-auto max-w-2xl space-y-4 px-4 py-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="mx-auto max-w-5xl space-y-4 px-4 py-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <div>
         <h1 class="text-base font-semibold leading-tight">{move || t("听题模式")}</h1>
         <p class="text-xs text-muted-foreground">{move || t("自动朗读题干与选项，停顿思考后读出答案，适合通勤路上免手刷题。")}</p>

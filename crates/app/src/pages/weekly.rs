@@ -147,7 +147,7 @@ pub fn WeeklyPage() -> impl IntoView {
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
+        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
             <h1 class="text-base font-semibold leading-tight">{move || t("学习周报")}</h1>
             <div class="text-xs text-muted-foreground">{move || t("近两周作答趋势与本周回顾")}</div>
@@ -179,7 +179,7 @@ pub fn WeeklyPage() -> impl IntoView {
         </div>
       </header>
 
-      <div class="mx-auto max-w-3xl space-y-4 px-4 py-5">
+      <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <div class="rounded-xl border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{week_answered}</div>

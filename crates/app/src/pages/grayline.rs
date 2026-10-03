@@ -20,10 +20,12 @@ pub fn GraylinePage() -> impl IntoView {
   let now = RwSignal::new(js_sys::Date::new_0().get_time());
   // 时间偏移（小时）：0 = 当前，正数预测未来、负数回溯过去。
   let time_offset = RwSignal::new(0.0f64);
-  set_interval(
+  if let Ok(handle) = set_interval_with_handle(
     move || now.set(js_sys::Date::new_0().get_time()),
     Duration::from_secs(60),
-  );
+  ) {
+    on_cleanup(move || handle.clear());
+  }
 
   // 当前展示时刻（含时间偏移），驱动灰线叠加。
   let display_ms = Signal::derive(move || now.get() + time_offset.get() * 3_600_000.0);

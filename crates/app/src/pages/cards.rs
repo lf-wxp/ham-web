@@ -387,7 +387,7 @@ pub fn CardsPage() -> impl IntoView {
   };
 
   view! {
-    <div class="mx-auto max-w-xl space-y-4 px-4 py-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="mx-auto max-w-5xl space-y-4 px-4 py-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <div>
         <h1 class="text-base font-semibold leading-tight">{move || t("知识卡片")}</h1>
         <p class="text-xs text-muted-foreground">{move || t("按遗忘规律安排复习：记得的卡隔得越来越久，忘了的卡很快再出现。")}</p>

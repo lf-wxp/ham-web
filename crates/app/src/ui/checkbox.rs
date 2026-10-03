@@ -42,7 +42,7 @@ pub fn Checkbox(
               <span
                 data-slot="checkbox-indicator"
                 data-state="checked"
-                class="flex items-center justify-center text-current transition-none"
+                class="motion-check flex items-center justify-center text-current"
                 style="pointer-events: none;"
               >
                 <Icon kind=IconKind::Check class="size-3.5" />

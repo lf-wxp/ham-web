@@ -41,7 +41,11 @@ pub fn RadioGroupItem(
         checked()
           .then(|| {
             view! {
-              <span data-slot="radio-group-indicator" data-state="checked" class="relative flex items-center justify-center">
+              <span
+                data-slot="radio-group-indicator"
+                data-state="checked"
+                class="motion-check relative flex items-center justify-center"
+              >
                 <Icon
                   kind=IconKind::Circle
                   class="fill-primary absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2"

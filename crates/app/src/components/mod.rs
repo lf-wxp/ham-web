@@ -14,3 +14,4 @@ pub mod search_dialog;
 pub mod shortcut_help;
 pub mod study_plan_card;
 pub mod topic_quiz;
+pub mod web_threads;

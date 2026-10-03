@@ -8,7 +8,7 @@ use std::cell::RefCell;
 use std::time::Duration;
 
 use ham_web_core::koch::{Timing, farnsworth};
-use leptos::prelude::{RwSignal, Set, set_timeout};
+use leptos::prelude::{ArcRwSignal, Set, set_timeout};
 use wasm_bindgen::JsCast;
 use web_sys::{AudioContext, OscillatorType};
 
@@ -41,14 +41,18 @@ thread_local! {
   /// 持续侧音（发报练习按住时）。
   static SIDETONE: RefCell<Option<Active>> = const { RefCell::new(None) };
   /// 全局「是否有摩尔斯音频在播放」信号（供波形指示器读取）。
-  static PLAYING: RwSignal<bool> = RwSignal::new(false);
+  ///
+  /// 用 `ArcRwSignal` 而非 `RwSignal`：`RwSignal` 是 arena 分配的，会随创建时所在的
+  /// 响应式 `Owner` 一起被释放，而首次访问可能发生在摩尔斯页组件内部 —— 离开该页面后
+  /// 这个「全局」信号就失效了。引用计数信号只要还有引用就一直有效。
+  static PLAYING: ArcRwSignal<bool> = ArcRwSignal::new(false);
   /// 播放代数计数，用于失效旧的「播放结束」定时器。
   static PLAY_GEN: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
 }
 
 /// 全局「是否有摩尔斯音频在播放」信号。
-pub fn playing_signal() -> RwSignal<bool> {
-  PLAYING.with(|s| *s)
+pub fn playing_signal() -> ArcRwSignal<bool> {
+  PLAYING.with(|s| s.clone())
 }
 
 /// 标记正在播放，并在 `dur` 秒后复位。

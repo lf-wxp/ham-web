@@ -86,12 +86,14 @@ pub fn CountdownPage() -> impl IntoView {
   let now = RwSignal::new(now_ms());
 
   // 每秒刷新当前时间用于倒计时显示；到期通知由全局 watcher 统一负责（见 start_global_watcher）。
-  set_interval(
+  if let Ok(handle) = set_interval_with_handle(
     move || {
       now.set(now_ms());
     },
     Duration::from_secs(1),
-  );
+  ) {
+    on_cleanup(move || handle.clear());
+  }
 
   let add = move || {
     let t = title.get().trim().to_owned();

@@ -116,6 +116,13 @@ const FONT_WEIGHTS: &[&str] = &[
 ];
 const BORDER_STYLES: &[&str] = &["solid", "dashed", "dotted", "double", "hidden", "none"];
 
+/// 阴影「尺寸」关键字；其余 `shadow-*` 一律按颜色处理（`shadow-primary/25` 等）。
+///
+/// Tailwind 把阴影尺寸（`shadow-xs`）与阴影颜色（`shadow-primary/25`）拆成两个独立属性，
+/// 若合并为同一冲突组，`shadow-xs shadow-primary/25` 会由后者把前者挤掉 —— 结果是
+/// `--tw-shadow` 仍为 `0 0 #0000`，元素反而**完全没有阴影**。
+const SHADOW_SIZES: &[&str] = &["2xs", "xs", "sm", "md", "lg", "xl", "2xl", "none", "inner"];
+
 fn value_after<'a>(base: &'a str, prefix: &str) -> Option<&'a str> {
   if base == prefix {
     return Some("");
@@ -255,8 +262,14 @@ fn class_group(base: &str) -> Option<&'static str> {
   if value_after(base, "rounded").is_some() {
     return Some("rounded");
   }
-  if value_after(base, "shadow").is_some() {
-    return Some("shadow");
+  if let Some(v) = value_after(base, "shadow") {
+    return Some(
+      if v.is_empty() || is_arbitrary(v) || SHADOW_SIZES.contains(&v) {
+        "shadow"
+      } else {
+        "shadow-color"
+      },
+    );
   }
   if value_after(base, "transition").is_some() {
     return Some("transition");
@@ -371,6 +384,30 @@ mod tests {
     assert_eq!(
       cn(&["[&_svg:not([class*='size-'])]:size-4", "size-9"]),
       "[&_svg:not([class*='size-'])]:size-4 size-9"
+    );
+  }
+
+  /// 阴影尺寸与颜色是两个独立组：尺寸不能被颜色挤掉（否则元素反而完全没有阴影）。
+  #[test]
+  fn shadow_size_and_color_do_not_conflict() {
+    assert_eq!(
+      cn(&[
+        "shadow-xs shadow-primary/25",
+        "hover:shadow-md hover:shadow-primary/30"
+      ]),
+      "shadow-xs shadow-primary/25 hover:shadow-md hover:shadow-primary/30"
+    );
+    // 同为尺寸：后者覆盖前者。
+    assert_eq!(cn(&["shadow-sm", "shadow-lg"]), "shadow-lg");
+    // 同为颜色：后者覆盖前者。
+    assert_eq!(
+      cn(&["shadow-red-500", "shadow-blue-500"]),
+      "shadow-blue-500"
+    );
+    // 尺寸与颜色可以共存，且仍能被各自组内的后写覆盖。
+    assert_eq!(
+      cn(&["shadow-sm shadow-black/5", "shadow-lg shadow-primary/20"]),
+      "shadow-lg shadow-primary/20"
     );
   }
 }

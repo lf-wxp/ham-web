@@ -9,8 +9,9 @@ pub fn Progress(
   #[prop(into)] value: Signal<i64>,
   #[prop(optional, into)] class: String,
 ) -> impl IntoView {
+  // `motion-progress`：已填充段上叠一道流光，让「进度在走」这件事在静止画面里也成立。
   let class = cn(&[
-    "bg-primary/20 relative h-2 w-full overflow-hidden rounded-full",
+    "motion-progress bg-primary/20 relative h-2 w-full overflow-hidden rounded-full",
     &class,
   ]);
   view! {

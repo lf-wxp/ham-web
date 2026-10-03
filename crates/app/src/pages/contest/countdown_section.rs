@@ -21,10 +21,12 @@ const UPCOMING: &[(&str, u32, u32, &str)] = &[
 #[component]
 pub(super) fn CountdownSection() -> impl IntoView {
   let now = RwSignal::new(js_sys::Date::new_0().get_time());
-  set_interval(
+  if let Ok(handle) = set_interval_with_handle(
     move || now.set(js_sys::Date::new_0().get_time()),
     Duration::from_secs(60),
-  );
+  ) {
+    on_cleanup(move || handle.clear());
+  }
 
   let year = js_sys::Date::new_0().get_utc_full_year() as f64;
 

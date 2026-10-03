@@ -7,9 +7,10 @@ use leptos::prelude::*;
 use crate::icons::{Icon, IconKind};
 use crate::morse_audio::play_morse_timed_with;
 use crate::morse_settings::use_morse_settings;
+use crate::ui::{Button, ButtonKind, ControlSize, Input, Size, Variant};
 use crate::util::{random, storage};
 
-use super::{btn_primary, encode_words, pill_class};
+use super::{encode_words, pill_class};
 use crate::i18n::{t, tf};
 
 const KEY: &str = "morse-koch";
@@ -202,17 +203,23 @@ pub(super) fn KochTrainer() -> impl IntoView {
               if result.with_untracked(Option::is_some) { next() } else { submit() }
             }
           >
-            <input
+            <Input
               node_ref=input_ref
-              prop:value=move || answer.get()
-              on:input=move |e| answer.set(event_target_value(&e))
-              placeholder=move || t("抄收内容")
+              value=answer
+              on_change=Callback::new(move |v: String| answer.set(v))
+              size=ControlSize::Lg
+              placeholder=Signal::derive(move || t("抄收内容"))
               autocomplete="off"
-              class="h-10 w-56 rounded-lg border bg-background px-3 text-center font-mono text-lg font-semibold uppercase tracking-widest outline-none transition-[border-color,box-shadow] duration-200 focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring/60"
+              class="h-10 w-56 rounded-lg text-center font-mono text-lg md:text-lg font-semibold uppercase tracking-widest"
             />
-            <button type="submit" class=btn_primary("")>
+            <Button
+              kind=ButtonKind::Submit
+              variant=Variant::Default
+              size=Size::Default
+              class="rounded-lg h-10"
+            >
               {move || if result.get().is_some() { t("下一轮") } else { t("提交") }}
-            </button>
+            </Button>
           </form>
           {move || {
             result.get().map(|r| {

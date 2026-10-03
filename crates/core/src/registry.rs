@@ -101,7 +101,7 @@ pub fn group_icon(group: &str) -> &'static str {
 pub struct Module {
   /// 路由路径（不含查询串），与 `main_content.rs` 的 `<Route>` 一一对应。
   pub path: &'static str,
-  /// 导航链接；`None` 时即 `path`（少数入口带默认查询串，如「多选专项」）。
+  /// 导航链接；`None` 时即 `path`（少数入口需要带默认查询串，如练习页的只练多选）。
   pub href: Option<&'static str>,
   /// 页面标题（中文原文，同时是 i18n key，与页面里的 `set_title` 保持一致）。
   pub title: &'static str,
@@ -140,14 +140,6 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "练习",
     icon: "clipboard-list",
-    group: Some(GROUP_EXAM),
-    backend: false,
-  },
-  Module {
-    path: "/practice",
-    href: Some("/practice?multi=1"),
-    title: "多选专项",
-    icon: "circle-check",
     group: Some(GROUP_EXAM),
     backend: false,
   },
@@ -1400,14 +1392,12 @@ mod tests {
   }
 
   #[test]
-  fn nav_paths_are_unique_but_practice_has_two_entries() {
+  fn nav_paths_are_unique() {
     let paths = nav_paths();
     let mut sorted = paths.clone();
     sorted.sort_unstable();
     sorted.dedup();
     assert_eq!(sorted.len(), paths.len(), "导航路径应已去重");
-    // `/practice` 与 `/practice?multi=1` 指向同一路由，是两个菜单入口。
-    assert_eq!(MODULES.iter().filter(|m| m.path == "/practice").count(), 2);
   }
 
   #[test]

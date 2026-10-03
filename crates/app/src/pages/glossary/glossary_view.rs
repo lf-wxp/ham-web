@@ -11,6 +11,7 @@ use leptos_router::hooks::use_query_map;
 use crate::data;
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
+use crate::ui::{Input, InputType};
 use crate::util::window;
 
 use super::stat::Stat;
@@ -197,36 +198,18 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
             <div class="text-xs text-muted-foreground">{move || t("业余无线电常用术语 · 英文缩写 · 通俗解释")}</div>
           </div>
 
-          <div class="relative">
-            <Icon
-              kind=IconKind::Search
-              class="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <input
-              prop:value=move || kw.get()
-              on:input=move |e| {
-                kw.set(event_target_value(&e));
-                visible.set(PAGE);
-              }
-              placeholder=move || t("搜索术语 / 缩写 / 解释…")
-              class="h-9 w-56 rounded-lg border bg-background pl-8 pr-8 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            />
-            {move || {
-              kw.with(|k| !k.is_empty())
-                .then(|| {
-                  view! {
-                    <button
-                      type="button"
-                      aria-label=move || t("清除")
-                      class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      on:click=move |_| kw.set(String::new())
-                    >
-                      <Icon kind=IconKind::X class="h-4 w-4" />
-                    </button>
-                  }
-                })
-            }}
-          </div>
+          <Input
+            value=kw
+            on_change=Callback::new(move |v: String| {
+              kw.set(v);
+              visible.set(PAGE);
+            })
+            kind=InputType::Search
+            placeholder=Signal::derive(move || t("搜索术语 / 缩写 / 解释…"))
+            prefix=move || view! { <Icon kind=IconKind::Search /> }
+            clearable=true
+            class="w-56"
+          />
 
           <button
             type="button"

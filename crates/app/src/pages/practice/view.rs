@@ -43,7 +43,12 @@ pub fn PracticePage() -> impl IntoView {
   let topic = Memo::new(move |_| query.with(|q| q.get("topic")).filter(|t| !t.is_empty()));
   let sub_code = Memo::new(move |_| query.with(|q| q.get("sub")).filter(|t| !t.is_empty()));
   let src = Memo::new(move |_| query.with(|q| q.get("src")).filter(|t| !t.is_empty()));
-  let multi_only = Memo::new(move |_| query.with(|q| q.get("multi")).is_some());
+  // 只练多选：不再占用独立导航入口，改由页面顶部开关切换；URL 带 `?multi=1` 时默认开启。
+  let multi_only = RwSignal::new(
+    query
+      .with_untracked(|q| q.get("multi"))
+      .is_some_and(|v| v == "1"),
+  );
   let navigate = use_navigate();
   let store = PracticeStore::new();
   on_cleanup(move || store.commit_current());
@@ -468,13 +473,14 @@ pub fn PracticePage() -> impl IntoView {
       return view! { <div class="p-6">{move || t("题库暂不可用或为空")}</div> }.into_any();
     }
     view! {
-      <div on:touchstart=swipe_start on:touchend=swipe_end class="container mx-auto px-4 py-6 max-w-5xl space-y-4 pb-24 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+      <div on:touchstart=swipe_start on:touchend=swipe_end class="mx-auto max-w-5xl px-4 py-6 space-y-4 pb-24 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
         <PracticeHeaderBar
           percent=percent
           bank=bank
           on_switch_bank=switch_bank
           unique_only=unique_only
           unseen_only=unseen_only
+          multi_only=multi_only
           bookmarked=bookmarked
           on_toggle_bookmark=on_toggle_bookmark
           sequential=sequential

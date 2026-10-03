@@ -25,7 +25,7 @@ pub fn StudyCalendarPage() -> impl IntoView {
   let today = local_today();
   let plan = RwSignal::new(study::load_plan());
   // 备考计划（考试日期 / 类别）在顶部卡片里可改，这里每 2 秒轮询一次 storage 以同步日历。
-  set_interval(
+  if let Ok(handle) = set_interval_with_handle(
     move || {
       let p = study::load_plan();
       if p != plan.get_untracked() {
@@ -33,7 +33,9 @@ pub fn StudyCalendarPage() -> impl IntoView {
       }
     },
     Duration::from_secs(2),
-  );
+  ) {
+    on_cleanup(move || handle.clear());
+  }
 
   // 错题到期与打卡为页面进入时的快照（复习进度通常不会在本页内变化）。
   let timeline = study::load_book().due_timeline(now_ms(), DAYS);
@@ -44,7 +46,7 @@ pub fn StudyCalendarPage() -> impl IntoView {
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
+        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
             <h1 class="text-base font-semibold leading-tight">{move || t("备考日历")}</h1>
             <div class="text-xs text-muted-foreground">{move || t("未来 14 天的复习节奏与压力，一眼看清")}</div>
@@ -52,7 +54,7 @@ pub fn StudyCalendarPage() -> impl IntoView {
         </div>
       </header>
 
-      <div class="mx-auto max-w-3xl space-y-4 px-4 py-5">
+      <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
         <StudyPlanCard editable=true />
 
         <section class="rounded-xl border bg-card">

@@ -156,6 +156,10 @@ pub enum IconKind {
   ArrowUpDown,
   /// `Network`（network）
   Network,
+  /// `Plus`（plus）：数字输入的「加」按钮
+  Plus,
+  /// `Minus`（minus）：数字输入的「减」按钮
+  Minus,
 }
 
 impl IconKind {
@@ -248,6 +252,8 @@ impl IconKind {
       Self::FileText => "file-text",
       Self::ArrowUpDown => "arrow-up-down",
       Self::Network => "network",
+      Self::Plus => "plus",
+      Self::Minus => "minus",
     }
   }
 
@@ -484,6 +490,8 @@ impl IconKind {
       Self::Network => {
         r#"<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>"#
       }
+      Self::Plus => r#"<path d="M5 12h14"/><path d="M12 5v14"/>"#,
+      Self::Minus => r#"<path d="M5 12h14"/>"#,
     }
   }
 }

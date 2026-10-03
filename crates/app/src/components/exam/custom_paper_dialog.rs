@@ -5,8 +5,8 @@ use ham_web_core::exam::CustomPaper;
 
 use crate::i18n::t;
 use crate::ui::{
-  Checkbox, Dialog, DialogFooter, DialogHeader, DialogTitle, Label, Size, Variant, button_class,
-  input_class, label_class,
+  Button, Checkbox, Dialog, DialogFooter, DialogHeader, DialogTitle, Field, Label, NumberField,
+  Variant,
 };
 
 /// 自定义组卷对话框：自选题量（单选 / 多选）、限时与一级分类范围。
@@ -34,39 +34,33 @@ pub fn CustomPaperDialog(open: RwSignal<bool>, on_confirm: Callback<CustomPaper>
       </DialogHeader>
       <div class="space-y-5">
         <div class="grid grid-cols-3 gap-3">
-          <div class="space-y-1.5">
-            <label class=label_class("")>{t("单选题数")}</label>
-            <input
-              type="number"
-              min="0"
-              max="300"
-              class=input_class("")
-              prop:value=move || singles.get().to_string()
-              on:input=move |e| singles.set(event_target_value(&e).parse().unwrap_or(0))
+          <Field label=t("单选题数") r#for="custom-single">
+            <NumberField
+              id="custom-single"
+              value=Signal::derive(move || singles.get().to_string())
+              on_change=Callback::new(move |v: String| singles.set(v.parse().unwrap_or(0)))
+              min=0.0
+              max=300.0
             />
-          </div>
-          <div class="space-y-1.5">
-            <label class=label_class("")>{t("多选题数")}</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              class=input_class("")
-              prop:value=move || multiples.get().to_string()
-              on:input=move |e| multiples.set(event_target_value(&e).parse().unwrap_or(0))
+          </Field>
+          <Field label=t("多选题数") r#for="custom-multi">
+            <NumberField
+              id="custom-multi"
+              value=Signal::derive(move || multiples.get().to_string())
+              on_change=Callback::new(move |v: String| multiples.set(v.parse().unwrap_or(0)))
+              min=0.0
+              max=100.0
             />
-          </div>
-          <div class="space-y-1.5">
-            <label class=label_class("")>{t("限时（分钟，0 为不限时）")}</label>
-            <input
-              type="number"
-              min="0"
-              max="600"
-              class=input_class("")
-              prop:value=move || minutes.get().to_string()
-              on:input=move |e| minutes.set(event_target_value(&e).parse().unwrap_or(0))
+          </Field>
+          <Field label=t("限时（分钟，0 为不限时）") r#for="custom-minutes">
+            <NumberField
+              id="custom-minutes"
+              value=Signal::derive(move || minutes.get().to_string())
+              on_change=Callback::new(move |v: String| minutes.set(v.parse().unwrap_or(0)))
+              min=0.0
+              max=600.0
             />
-          </div>
+          </Field>
         </div>
         <div class="space-y-2">
           <div class="text-sm text-muted-foreground">{t("限定分类（不选 = 全部）")}</div>
@@ -98,21 +92,16 @@ pub fn CustomPaperDialog(open: RwSignal<bool>, on_confirm: Callback<CustomPaper>
         </div>
       </div>
       <DialogFooter>
-        <button
-          type="button"
-          class=button_class(Variant::Ghost, Size::Default, "")
-          on:click=move |_| open.set(false)
-        >
+        <Button variant=Variant::Ghost on_click=Callback::new(move |_| open.set(false))>
           {move || t("取消")}
-        </button>
-        <button
-          type="button"
-          class=button_class(Variant::Default, Size::Default, "")
-          disabled=move || singles.get() + multiples.get() == 0
-          on:click=move |_| confirm()
+        </Button>
+        <Button
+          variant=Variant::Default
+          disabled=Signal::derive(move || singles.get() + multiples.get() == 0)
+          on_click=Callback::new(move |_| confirm())
         >
           {move || t("开始考试")}
-        </button>
+        </Button>
       </DialogFooter>
     </Dialog>
   }

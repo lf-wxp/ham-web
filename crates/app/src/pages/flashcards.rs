@@ -106,7 +106,7 @@ pub fn FlashcardsPage() -> impl IntoView {
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-2xl flex-wrap items-center gap-3 px-4 py-3">
+        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
             <h1 class="text-base font-semibold leading-tight">{move || t("闪卡刷题")}</h1>
             <div class="text-xs text-muted-foreground">{move || t("快速过题 · 自评掌握 · 「不会」自动加入错题本")}</div>
@@ -133,7 +133,7 @@ pub fn FlashcardsPage() -> impl IntoView {
         </div>
       </header>
 
-      <div class="mx-auto max-w-2xl space-y-4 px-4 py-5">
+      <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
         {move || {
           if loading.get() {
             view! { <div class="px-4 py-10 text-center text-sm text-muted-foreground">{move || t("加载题库中...")}</div> }

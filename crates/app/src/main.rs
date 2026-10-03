@@ -14,6 +14,7 @@ mod idb;
 mod kv;
 mod morse_audio;
 mod morse_settings;
+mod motion;
 mod pages;
 mod photo;
 mod push;
@@ -27,8 +28,9 @@ mod speech;
 mod store;
 mod study;
 mod theme;
-mod ui;
+pub mod ui;
 mod util;
+mod web_threads;
 
 /// panic 时除了打印到控制台，还调用 `index.html` 中的 `__hamFatal` 显示兜底页。
 fn install_panic_hook() {

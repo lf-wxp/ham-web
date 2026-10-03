@@ -246,7 +246,7 @@ pub fn MistakesPage() -> impl IntoView {
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
+        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
             <h1 class="text-base font-semibold leading-tight">{move || t("错题集")}</h1>
             <div class="text-xs text-muted-foreground">
@@ -310,7 +310,7 @@ pub fn MistakesPage() -> impl IntoView {
         {move || {
           confirm_clear.get().then(|| {
             view! {
-              <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-2 px-4 pb-3 text-sm">
+              <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-4 pb-3 text-sm">
                 <span class="mr-auto text-red-700 dark:text-red-400">{move || t("确定清空全部错题吗？此操作不可撤销。")}</span>
                 <button
                   type="button"
@@ -332,7 +332,7 @@ pub fn MistakesPage() -> impl IntoView {
         }}
       </header>
 
-      <div class="mx-auto max-w-3xl space-y-4 px-4 py-5">
+      <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
         {move || {
           if carding.get() {
             // 闪卡视图：看题 → 显示答案 → 自评会 / 不会

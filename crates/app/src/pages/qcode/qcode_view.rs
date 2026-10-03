@@ -4,7 +4,7 @@ use leptos_router::hooks::use_query_map;
 
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
-use crate::ui::Stat;
+use crate::ui::{Input, InputType, Stat};
 
 use super::qcode_quiz::QCodeQuiz;
 use super::qcode_reverse_quiz::QCodeReverseQuiz;
@@ -135,33 +135,15 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
             </button>
           </div>
 
-          <div class="relative">
-            <Icon
-              kind=IconKind::Search
-              class="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <input
-              prop:value=move || kw.get()
-              on:input=move |e| kw.set(event_target_value(&e))
-              placeholder=move || t("搜索简语 / 含义…")
-              class="h-9 w-56 rounded-lg border bg-background pl-8 pr-8 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            />
-            {move || {
-              kw.with(|k| !k.is_empty())
-                .then(|| {
-                  view! {
-                    <button
-                      type="button"
-                      aria-label=move || t("清除")
-                      class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      on:click=move |_| kw.set(String::new())
-                    >
-                      <Icon kind=IconKind::X class="h-4 w-4" />
-                    </button>
-                  }
-                })
-            }}
-          </div>
+          <Input
+            value=kw
+            on_change=Callback::new(move |v: String| kw.set(v))
+            kind=InputType::Search
+            placeholder=Signal::derive(move || t("搜索简语 / 含义…"))
+            prefix=move || view! { <Icon kind=IconKind::Search /> }
+            clearable=true
+            class="w-56"
+          />
         </div>
       </header>
 

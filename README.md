@@ -57,6 +57,7 @@
       - [覆盖率统计口径](#覆盖率统计口径)
       - [集成到 CI](#集成到-ci)
     - [修改 UI 的注意事项](#修改-ui-的注意事项)
+    - [动态背景（Web Threads）](#动态背景web-threads)
   - [路由](#路由)
   - [常见问题](#常见问题)
   - [贡献指南](#贡献指南)
@@ -93,7 +94,7 @@
 - **🏆 成就墙**（`/achievements`）：21 项里程碑成就（首考合格、连续打卡、题库过关、DXCC / 通联 / 网格 / 竞赛 / 收藏等），达成时右下角弹出解锁提示；成就墙集中展示已解锁与未解锁项及进度
 - **📊 学习报告**（`/report`）：汇总累计作答、正确率、连续打卡、错题、收藏、成就与通联 / DXCC 统计，一键导出 PNG 卡片分享
 - **📝 题目笔记**：练习 / 复习时可为每道题写私人笔记（本地保存、随题加载）
-- **🎯 多选专项**（`/practice?multi=1`）：导航菜单独立入口，只练多选题
+- **🎯 只练多选**（练习页顶部开关，或 `/practice?multi=1`）：切到只刷多选题，随机顺序
 
 ### 知识库
 
@@ -144,6 +145,7 @@
 - **🌐 多语言界面**：导航栏内切换中文 / English / Español，选择存本地并同步 `<html lang>`；当前覆盖导航、页脚、全站搜索、首页（含各卡片）与页面标题，其余页面正文按模块增量翻译（见 `crates/app/src/i18n.rs`，以中文原文为 key 补词条即可）
 - **🔊 语音与音频**：Web Speech API 朗读题干、解析与字母解释法；Web Audio API 合成摩尔斯电码与 RST 信号音（可调 WPM）
 - **✨ 流畅动效**：页面切换淡入过渡、按钮按压反馈、Logo 悬停动效，并尊重系统「减少动态效果」偏好
+- **🌌 动态背景**：内容之下的 Web Threads 发光丝线（WebGL2），随明暗主题切换配色且不遮挡前景；移动端与「减少动态效果」下退化为静态一帧（详见[动态背景（Web Threads）](#动态背景web-threads)）
 - **⌨️ 键盘快捷键**：`/` 唤起搜索，方向键切题，数字键选择选项
 - **👆 滑动切题**：手机上在练习 / 模拟考试题目区域左右滑动切换上下题，并有轻微振动反馈
 - **♿ 无障碍**：「跳到主要内容」链接、导航与对话框地标命名、对话框焦点循环与关闭后焦点还原、页面标题使用 `h1`、明暗主题均通过 axe 对比度检查；快捷键不会抢占按钮 / 链接上的回车
@@ -165,7 +167,7 @@
 | 前端构建 | [Trunk](https://trunkrs.dev)（自动下载 Tailwind CSS v4 独立版、wasm-bindgen、wasm-opt） |
 | 样式 | Tailwind CSS v4 + tw-animate-css，沿用原 shadcn/ui（new-york）设计令牌与类名 |
 | 图标 | Lucide（内联 SVG，与原版路径一致） |
-| 浏览器 API | Web Speech API（朗读）、Web Audio API（摩尔斯 / 信号音 / 实时频谱）、Canvas（照片处理、瀑布图）、Notification（倒计时提醒）、IndexedDB（大体积日志存储） |
+| 浏览器 API | Web Speech API（朗读）、Web Audio API（摩尔斯 / 信号音 / 实时频谱）、Canvas（照片处理、瀑布图）、WebGL2（全站动态背景，见[动态背景（Web Threads）](#动态背景web-threads)）、Notification（倒计时提醒）、IndexedDB（大体积日志存储） |
 | 服务器 | Axum 0.8 + tower-http（SPA 回退、缓存头、gzip/brotli），并提供 `/api/*` 外部数据代理（`ureq` + 内存缓存 + `sgp4` 过境计算） |
 | 数字信号解码 | `ham-web-apt` / `ham-web-sstv` / `ham-web-wspr`（纯 Rust DSP，编译为 Web Worker，音频不上传服务器） |
 | 工具链 | `ham-web-tools`（clap、ureq、resvg、sha2、brotli、walkdir） |
@@ -195,14 +197,14 @@
 │   │   └── src/
 │   │       ├── app/        # 路由表（main_content.rs）+ 全局布局（导航 / 页脚 / 搜索面板）
 │   │       ├── pages/      # 全部页面：首页、练习、考试、日志、地图、实时数据与知识库专题
-│   │       ├── components/ # 题目卡片、答题卡、题库选择器、导航、全局搜索面板、相关主题内链与专题自测…
+│   │       ├── components/ # 题目卡片、答题卡、题库选择器、导航、全局搜索面板、相关主题内链与专题自测、动态背景…
 │   │       ├── ui/         # 基础组件（Dialog/Sheet/Select/Checkbox/Radio…）
 │   │       ├── data.rs     # 题库配置与加载（带缓存）、术语表、外部 JSON 拉取（5s 超时）
 │   │       ├── store.rs    # 收藏 / 分组 / 笔记等本地持久化（带跨标签页缓存同步）
 │   │       ├── kv.rs       # 统一存储门面：小数据 localStorage、大数据 IndexedDB 双写
 │   │       ├── idb.rs      # IndexedDB KV 封装（承载通联日志等大体积数据）
 │   │       ├── i18n.rs     # 界面文案词典（zh 为 key，en / es 增量翻译）
-│   │       └── …           # exam_history / achievements / bank_updates / shortcuts / speech / theme / photo / pwa
+│   │       └── …           # exam_history / achievements / bank_updates / shortcuts / speech / theme / photo / pwa / web_threads
 │   ├── apt/                # NOAA APT 云图解码（音频 AM 解调 + 图像重建，纯 Rust DSP，无外部依赖）
 │   ├── apt-worker/         # APT 解码 Web Worker（后台线程解调，编译为 worker.js）
 │   ├── sstv/               # SSTV 慢扫描电视解码（VIS 头识别 + 行同步 + RGB/YC 采样）
@@ -816,6 +818,24 @@ cargo make e2e-coverage                                # 只统计覆盖率，�
 - 在 `leptos` 中向依赖 context 的子组件（如 `RadioGroupItem`、`SelectItem`）传递子元素时，需在父组件的 children 内构建，而不是提前 `collect_view()`；
 - 知识库表格统一使用「卡片 + 内部网格线」的样式：卡片内的 `table.border-collapse` 会自动去掉与卡片边框重合的最外圈边框（见 `style/input.css`），因此单元格只需写 `border`，无需手动处理外边线。
 
+### 动态背景（Web Threads）
+
+全站背景层是 React Bits [`WebThreads`](https://reactbits.dev/backgrounds/web-threads) 的 Rust / WASM 复刻，与上游**同一套技术方案**：WebGL2 + 全屏三角形 + GLSL ES 3.00 片元着色器（逐像素叠加 10 条正弦丝线，`glow()` 幂次衰减生成柔光，浅色主题走 `uLightMode` 分支输出「墨线」）。顶点与片元着色器与上游**逐字一致**（SHA-256 相同），改动前请先比对上游。
+
+| 关注点 | 实现 |
+| --- | --- |
+| 引擎 | `crates/app/src/web_threads.rs`：上下文创建、uniform 位置缓存、渲染循环、资源释放（只依赖 web-sys，不依赖 Leptos） |
+| 组件 | `crates/app/src/components/web_threads.rs`：`WebThreadsBackground`（全站背景）+ `WebThreads`（低阶、可复用） |
+| 主题适配 | `ThemeCtx::is_dark()` → `Memo` 生成预设；切主题只更新 uniform，**不重建 WebGL 上下文**。浅色画布底色运行时从 `--background` 解析（回退 `#FAFBFC`），与页面背景严丝合缝 |
+| 背景层 | `style/input.css` 的 `.web-threads-layer`：`fixed inset-0` + `z-index: -10`（低于 `body::before` 环境光晕与全部内容）+ `pointer-events: none`，配合「顶部最浓、向下 `mask` 淡出」保住正文可读性 |
+| 不干扰前景 | 鼠标扰动在 `window` 上监听（画布不接收指针事件），因此不抢占前景的点击 / 悬停；图层 `aria-hidden="true"`，打印时不渲染 |
+| 省电 | 触屏设备（`(hover: hover)` 为假）用 `RenderMode::Static` 只渲染**一帧**当背景图，GPU 占用归零；桌面端帧率上限 30fps；DPR 上限 2、最长边 1920，紧凑设备（视口最小边 ≤ 820px）再降到 1.5 / 1280；声明 `powerPreference: "low-power"`；离屏与切后台暂停；卸载时 `WEBGL_lose_context` 释放上下文 |
+| 无障碍 | 「减少动态效果」下同样只渲染一帧（与移动端共用同一条静态路径） |
+
+实测口径（浏览器内 `drawArrays` 计数）：桌面 1440×900 @DPR2 → 缓冲区 1920×1206、30.0fps；手机 390×844 @DPR3 触屏 → 缓冲区 585×1266、初始化 3 帧后 5 秒内 0 次绘制。
+
+接入与调参：根布局已挂载 `<WebThreadsBackground />`，局部复用可直接包裹 `<WebThreads config=… />`（`config` 传 `Signal` 可热更新，同样只改 uniform）。预设配色 / 亮度 / 不透明度 / 线程数在 `components/web_threads.rs` 的 `dark_preset()` 与 `light_preset()`；帧率与设备档位预算在 `web_threads.rs` 的 `MAX_FPS` / `COMPACT_*` 常量；背景层透明度与淡出范围在 `style/input.css`。
+
 ## 路由
 
 路由表定义在 `crates/app/src/app/main_content.rs`（外层布局见同目录 `mod.rs`），页面按三大模块组织。导航菜单与路由的对应关系由 `crates/core/src/registry.rs` 的能力注册表统一维护：注册表是路径、标题、图标与分组的唯一事实来源，顶部导航、`sitemap.xml` 均由其派生，`crates/app/src/registry_check.rs` 的测试保证三者不会漂移；新增页面会自动纳入冒烟测试。
@@ -836,7 +856,7 @@ cargo make e2e-coverage                                # 只统计覆盖率，�
 
 | 路径 | 参数 |
 | --- | --- |
-| `/practice` `/exam` | `version`（题库版本）、`bank`（A\|B\|C）；`/practice` 另有 `multi=1`（多选专项），`/exam` 另有 `mode=weak`（薄弱项组卷） |
+| `/practice` `/exam` | `version`（题库版本）、`bank`（A\|B\|C）；`/practice` 另有 `multi=1`（只练多选，页面顶部有同名开关），`/exam` 另有 `mode=weak`（薄弱项组卷） |
 | `/browse` | `bank`、`q`（关键词） |
 | `/glossary` | `q`（关键词） |
 | `/zone-map` | `q`（呼号 / 实体名，定位分区） |

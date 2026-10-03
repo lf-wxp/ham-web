@@ -5,6 +5,8 @@ use leptos_router::components::Router;
 
 use crate::components::navigation::Navigation;
 use crate::components::search_dialog::SearchDialog;
+use crate::components::web_threads::WebThreadsBackground;
+use crate::motion::RouteTransition;
 use crate::pwa::UpdateNotices;
 use crate::theme::provide_theme;
 
@@ -20,6 +22,8 @@ use storage_warning::StorageWarning;
 #[component]
 pub fn App() -> impl IntoView {
   provide_theme();
+  // 动效环境要在任何页面组件挂载前就位：页面里的 `Reveal` 一挂载就会注册浮现观察器。
+  crate::motion::provide_motion();
   crate::i18n::provide_locale();
   crate::pages::log::provide_log_store();
   leptos::task::spawn_local(async move {
@@ -51,8 +55,10 @@ pub fn App() -> impl IntoView {
         {move || t("跳到主要内容")}
       </a>
       <UpdateNotices />
+      <WebThreadsBackground />
       <Navigation />
       <MainContent />
+      <RouteTransition />
       <Footer />
       <SearchDialog />
       <StorageWarning />

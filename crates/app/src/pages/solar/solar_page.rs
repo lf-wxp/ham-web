@@ -5,8 +5,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 use crate::data;
-use crate::icons::{Icon, IconKind};
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, Size, Variant};
 use crate::util::set_title;
 
 use super::alerts_card::AlertsCard;
@@ -112,25 +111,14 @@ pub fn SolarPage() -> impl IntoView {
             <h1 class="text-base font-semibold leading-tight">{move || t("太阳活动")}</h1>
             <div class="text-xs text-muted-foreground">{move || t("太阳活动指数 · 传播条件 · 实时数据")}</div>
           </div>
-          <button
-            type="button"
-            class=button_class(Variant::Outline, Size::Sm, "")
-            on:click=move |_| load()
+          <Button
+            variant=Variant::Outline
+            size=Size::Sm
+            loading=loading
+            on_click=Callback::new(move |_| load())
           >
-            {move || {
-              if loading.get() {
-                view! {
-                  <span class="inline-flex items-center gap-1.5">
-                    <Icon kind=IconKind::Loader2 class="h-3.5 w-3.5 animate-spin" />
-                    {move || t("刷新中")}
-                  </span>
-                }
-                .into_any()
-              } else {
-                t("刷新").into_any()
-              }
-            }}
-          </button>
+            {move || if loading.get() { t("刷新中") } else { t("刷新") }}
+          </Button>
         </div>
       </header>
 

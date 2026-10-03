@@ -14,10 +14,12 @@ pub fn BeaconsPage() -> impl IntoView {
   set_title(&t("国际信标网络"));
 
   let now_ms = RwSignal::new(js_sys::Date::new_0().get_time());
-  set_interval(
+  if let Ok(handle) = set_interval_with_handle(
     move || now_ms.set(js_sys::Date::new_0().get_time()),
     Duration::from_secs(1),
-  );
+  ) {
+    on_cleanup(move || handle.clear());
+  }
 
   let slot = Memo::new(move |_| {
     let secs = (now_ms.get() / 1000.0).floor() as i64;

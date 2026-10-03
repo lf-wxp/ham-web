@@ -68,9 +68,11 @@ test("考后复盘：分类表现按错得多的在前排序", async ({ page }) 
   }, REVIEW);
 
   await page.goto("/exam-review");
-  const codes = await page.locator("li").filter({ hasText: /错 \d/ }).allInnerTexts();
+  const items = page.locator("li").filter({ hasText: /错 \d/ });
+  // 题库是异步加载的，等分类列表渲染出来再取文本，否则会读到空列表
+  await expect(items).toHaveCount(2);
+  const codes = await items.allInnerTexts();
   // 2.2.2 错了 2 题，1.1.1 错了 0 题
-  expect(codes.length).toBe(2);
   expect(codes[0]).toContain("2.2.2");
   expect(codes[0]).toContain("错 2");
   expect(codes[1]).toContain("1.1.1");

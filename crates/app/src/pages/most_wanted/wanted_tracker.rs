@@ -5,6 +5,7 @@ use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
 use crate::pages::log::use_log_store;
+use crate::ui::Input;
 use crate::util::storage;
 
 const STORAGE_KEY: &str = "dxcc_wanted_done";
@@ -44,12 +45,11 @@ pub(super) fn WantedTracker() -> impl IntoView {
     <section class="rounded-xl border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("通联进度追踪")}</h2>
       <div class="space-y-3 p-4">
-        <input
-          type="text"
-          placeholder=move || t("搜索前缀或实体名…")
-          prop:value=move || query.get()
-          on:input=move |e| query.set(event_target_value(&e))
-          class="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        <Input
+          value=query
+          on_change=Callback::new(move |v: String| query.set(v))
+          placeholder=Signal::derive(move || t("搜索前缀或实体名…"))
+          clearable=true
         />
         <div>
           <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">

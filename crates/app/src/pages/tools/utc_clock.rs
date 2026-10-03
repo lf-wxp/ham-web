@@ -32,10 +32,12 @@ fn zoned(utc_ms: f64, offset_hours: f64) -> String {
 #[component]
 pub(super) fn UtcClock() -> impl IntoView {
   let now_ms = RwSignal::new(js_sys::Date::new_0().get_time());
-  set_interval(
+  if let Ok(handle) = set_interval_with_handle(
     move || now_ms.set(js_sys::Date::new_0().get_time()),
     Duration::from_secs(1),
-  );
+  ) {
+    on_cleanup(move || handle.clear());
+  }
 
   let utc = Memo::new(move |_| zoned(now_ms.get(), 0.0));
 

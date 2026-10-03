@@ -126,7 +126,7 @@ pub fn BookmarksPage() -> impl IntoView {
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
+        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
             <h1 class="text-base font-semibold leading-tight">{move || t("收藏集")}</h1>
             <div class="text-xs text-muted-foreground">{move || t("练习中手动收藏的重点题目，可按分组整理")}</div>
@@ -136,7 +136,7 @@ pub fn BookmarksPage() -> impl IntoView {
           </span>
           <a href="/print?src=bookmarks" class=button_class(Variant::Outline, Size::Sm, "")>{move || t("打印")}</a>
         </div>
-        <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-2 px-4 pb-3">
+        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-4 pb-3">
           <input
             type="text"
             prop:value=move || new_group.get()
@@ -186,7 +186,7 @@ pub fn BookmarksPage() -> impl IntoView {
         </div>
       </header>
 
-      <div class="mx-auto max-w-3xl space-y-4 px-4 py-5">
+      <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
         {move || {
           if loading.get() {
             view! { <Loading label=t("加载中...") class="py-10" /> }

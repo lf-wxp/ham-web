@@ -56,12 +56,16 @@ impl Locale {
 
 thread_local! {
   /// 当前界面语言（全局，供 `t` / `set_title` 等非上下文场景读取）。
-  static LOCALE: RwSignal<Locale> = RwSignal::new(Locale::Zh);
+  ///
+  /// 用 `ArcRwSignal` 而非 `RwSignal`：`RwSignal` 是 arena 分配的，会挂到创建时所在的
+  /// 响应式 `Owner` 上并随其清理而释放；而这个信号是全站共享的，绝不能随某个页面
+  /// `Owner` 一起失效。引用计数信号只要还有引用就一直有效。
+  static LOCALE: ArcRwSignal<Locale> = ArcRwSignal::new(Locale::Zh);
 }
 
 /// 当前界面语言信号。
-pub fn locale() -> RwSignal<Locale> {
-  LOCALE.with(|l| *l)
+pub fn locale() -> ArcRwSignal<Locale> {
+  LOCALE.with(|l| l.clone())
 }
 
 /// 初始化语言：从 `localStorage` 读取并提供上下文，同时同步 `<html lang>`。
@@ -96,7 +100,8 @@ pub fn set_locale(l: Locale) {
 
 /// 翻译：以中文原文为 key，按当前语言查表，缺失或中文模式返回原文。
 pub fn t(key: &str) -> String {
-  match locale().get() {
+  // 渲染时调用极其频繁，直接读 thread_local，省掉 `locale()` 返回时的一次 `Arc` clone。
+  match LOCALE.with(|l| l.get()) {
     Locale::Zh => key.to_owned(),
     Locale::En => en_map()
       .get(key)
@@ -155,6 +160,7 @@ static EN: &[(&str, &str)] = &[
   ("搜索（/）", "Search (/)"),
   ("打开菜单", "Open menu"),
   ("关闭菜单", "Close menu"),
+  ("操作栏", "Action bar"),
   // —— 考试中心菜单 ——
   ("练习", "Practice"),
   ("模拟考试", "Mock Exam"),
@@ -481,6 +487,11 @@ static EN: &[(&str, &str)] = &[
     "Exclude questions already done in practice, exams or flashcards",
   ),
   ("只练没做过", "Unseen only"),
+  ("只练多选", "Multi-answer only"),
+  (
+    "只练习多选题，随机顺序",
+    "Multi-answer questions only, shuffled",
+  ),
   ("收藏", "Bookmark"),
   ("取消收藏", "Remove bookmark"),
   ("收藏本题", "Bookmark this question"),
@@ -2200,6 +2211,8 @@ static EN: &[(&str, &str)] = &[
   ),
   ("共 {} 次", "{} total"),
   ("减少一个字符", "Remove one character"),
+  ("减少", "Decrease"),
+  ("增加", "Increase"),
   ("分享成绩", "Share score"),
   ("划", "Dash"),
   ("判定", "Judgement"),
@@ -3685,6 +3698,7 @@ static EN: &[(&str, &str)] = &[
   ("网格 ", "Grid "),
   ("选取人像照", "Choose a portrait photo"),
   ("选取证件照", "Choose an ID photo"),
+  ("选择文件", "Choose a file"),
   ("高度: ", "Height: "),
   // —— 渲染点补齐 3 ——
   (" 类", " class"),
@@ -5282,6 +5296,7 @@ static ES: &[(&str, &str)] = &[
   ("搜索（/）", "Buscar (/)"),
   ("打开菜单", "Abrir menú"),
   ("关闭菜单", "Cerrar menú"),
+  ("操作栏", "Barra de acciones"),
   // —— 考试中心菜单 ——
   ("练习", "Práctica"),
   ("模拟考试", "Examen simulado"),
@@ -5611,6 +5626,11 @@ static ES: &[(&str, &str)] = &[
     "Excluye preguntas ya hechas en práctica, exámenes o tarjetas",
   ),
   ("只练没做过", "Solo no vistas"),
+  ("只练多选", "Solo multirespuesta"),
+  (
+    "只练习多选题，随机顺序",
+    "Solo preguntas de respuesta múltiple, en orden aleatorio",
+  ),
   ("收藏", "Favorito"),
   ("取消收藏", "Quitar de favoritos"),
   ("收藏本题", "Guardar esta pregunta"),
@@ -7388,6 +7408,8 @@ static ES: &[(&str, &str)] = &[
   ),
   ("共 {} 次", "{} en total"),
   ("减少一个字符", "Quitar un carácter"),
+  ("减少", "Disminuir"),
+  ("增加", "Aumentar"),
   ("分享成绩", "Compartir puntuación"),
   ("划", "Raya"),
   ("判定", "Valoración"),
@@ -8921,6 +8943,7 @@ static ES: &[(&str, &str)] = &[
   ("网格 ", "Cuadrícula "),
   ("选取人像照", "Elegir foto de retrato"),
   ("选取证件照", "Elegir foto de carné"),
+  ("选择文件", "Elegir un archivo"),
   ("高度: ", "Alto: "),
   // —— 渲染点补齐 3 ——
   (" 类", " clase"),

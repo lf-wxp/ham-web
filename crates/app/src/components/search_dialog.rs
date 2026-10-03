@@ -7,7 +7,7 @@ use crate::data;
 use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
-use crate::ui::{Dialog, input_class};
+use crate::ui::{ControlSize, Dialog, Input, InputType};
 
 /// 搜索结果分组：`(页面名, [(标题, 链接, 内容)])`。
 ///
@@ -279,20 +279,16 @@ pub fn SearchDialog() -> impl IntoView {
     <Dialog open=open class="sm:max-w-2xl" show_close=false label=t("全站搜索")>
       <div class="flex flex-col gap-3">
         // 搜索框
-        <div class="relative">
-          <Icon
-            kind=IconKind::Search
-            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-          />
-          <input
-            type="search"
-            aria-label=move || t("搜索关键词")
-            placeholder=move || t("搜索术语、频率、呼号、天线、元件……")
-            class=input_class("h-11 pl-9")
-            prop:value=move || query.get()
-            on:input=move |e| query.set(event_target_value(&e))
-          />
-        </div>
+        <Input
+          value=query
+          on_change=Callback::new(move |v: String| query.set(v))
+          kind=InputType::Search
+          size=ControlSize::Lg
+          aria_label=Signal::derive(move || t("搜索关键词"))
+          placeholder=Signal::derive(move || t("搜索术语、频率、呼号、天线、元件……"))
+          prefix=move || view! { <Icon kind=IconKind::Search /> }
+          clearable=true
+        />
 
         // 结果列表
         <div class="max-h-[60vh] overflow-y-auto">

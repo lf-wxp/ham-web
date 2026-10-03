@@ -17,7 +17,7 @@ pub fn MistakeTopicsPage() -> impl IntoView {
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
+        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
             <h1 class="text-base font-semibold leading-tight">{move || t("易错知识点")}</h1>
             <div class="text-xs text-muted-foreground">
@@ -30,7 +30,7 @@ pub fn MistakeTopicsPage() -> impl IntoView {
         </div>
       </header>
 
-      <div class="mx-auto max-w-3xl space-y-3 px-4 py-5">
+      <div class="mx-auto max-w-5xl space-y-3 px-4 py-5">
         {if topics.is_empty() {
           view! {
             <div class="rounded-xl border bg-card px-4 py-12 text-center">

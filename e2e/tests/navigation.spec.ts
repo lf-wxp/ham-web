@@ -42,17 +42,22 @@ test("明暗主题：切换后写入本地偏好并作用于 <html>", async ({ p
 test("界面语言：切换后同步 <html lang> 并持久化", async ({ page }) => {
   await page.goto("/");
   // 语言切换后 aria-label 也会跟着翻译，这里用结构定位而非文案
-  const select = page.locator("[data-nav] select").first();
-  await expect(select).toBeVisible();
+  const combo = page.locator("[data-nav] [role=combobox]").first();
+  await expect(combo).toBeVisible();
+  // 选项文案（中文 / English / Español）本身不随界面语言变化
+  const pick = async (name: string) => {
+    await combo.click();
+    await page.getByRole("option", { name, exact: true }).click();
+  };
 
-  await select.selectOption("en");
+  await pick("English");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect.poll(() => page.evaluate(() => localStorage.getItem("locale"))).toBe("en");
 
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 
-  await page.locator("[data-nav] select").first().selectOption("zh");
+  await pick("中文");
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
 });
 

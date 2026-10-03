@@ -475,7 +475,7 @@ pub fn ExamPage() -> impl IntoView {
         .into_any();
     }
     view! {
-      <div on:touchstart=swipe_start on:touchend=swipe_end class="container mx-auto px-4 py-6 max-w-5xl space-y-4 pb-28 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+      <div on:touchstart=swipe_start on:touchend=swipe_end class="mx-auto max-w-5xl px-4 py-6 space-y-4 pb-28 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
         <ExamHeader
           percent=percent
           weak=weak

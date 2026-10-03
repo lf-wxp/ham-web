@@ -15,9 +15,8 @@ use serde::Deserialize;
 
 use crate::data;
 use crate::i18n::{t, tf};
-use crate::icons::{Icon, IconKind};
 use crate::pages::log::use_log_store;
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{Button, Size, Variant, input_class};
 use crate::util::{notify, request_notify_permission, set_title, storage};
 
 const ALERTS_KEY: &str = "dx-alerts";
@@ -210,25 +209,14 @@ pub fn DxSpotsPage() -> impl IntoView {
             <h1 class="text-base font-semibold leading-tight">{move || t("DX 实时热点")}</h1>
             <div class="text-xs text-muted-foreground">{move || t("DX Cluster · 全球实时通联")}</div>
           </div>
-          <button
-            type="button"
-            class=button_class(Variant::Outline, Size::Sm, "")
-            on:click=move |_| load()
+          <Button
+            variant=Variant::Outline
+            size=Size::Sm
+            loading=loading
+            on_click=Callback::new(move |_| load())
           >
-            {move || {
-              if loading.get() {
-                view! {
-                  <span class="inline-flex items-center gap-1.5">
-                    <Icon kind=IconKind::Loader2 class="h-3.5 w-3.5 animate-spin" />
-                    {move || t("刷新中")}
-                  </span>
-                }
-                .into_any()
-              } else {
-                t("刷新").into_any()
-              }
-            }}
-          </button>
+            {move || if loading.get() { t("刷新中") } else { t("刷新") }}
+          </Button>
         </div>
       </header>
 

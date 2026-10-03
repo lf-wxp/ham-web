@@ -1,9 +1,8 @@
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use wasm_bindgen::JsCast;
 
 use crate::i18n::{t, tf};
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, FileInput, Variant};
 use crate::util::storage;
 
 /// 本地存储 key 的中文说明。
@@ -43,12 +42,7 @@ fn fmt_size(units: usize) -> String {
 #[component]
 pub(super) fn BackupTool() -> impl IntoView {
   let usage = RwSignal::new(storage::usage());
-  let run_import = move |e: web_sys::Event, merge: bool| {
-    let Some(target) = e.target() else { return };
-    let input: web_sys::HtmlInputElement = target.unchecked_into();
-    let Some(file) = input.files().and_then(|f| f.get(0)) else {
-      return;
-    };
+  let run_import = move |file: web_sys::File, merge: bool| {
     spawn_local(async move {
       let Some(text) = crate::util::read_file_text(&file).await else {
         return;
@@ -76,21 +70,29 @@ pub(super) fn BackupTool() -> impl IntoView {
   view! {
     <div class="space-y-4">
       <div class="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          class=button_class(Variant::Default, Size::Default, "")
-          on:click=move |_| crate::util::export_backup()
-        >
+        <Button variant=Variant::Default on_click=Callback::new(move |_| crate::util::export_backup())>
           {move || t("导出备份")}
-        </button>
-        <label class=button_class(Variant::Outline, Size::Default, "cursor-pointer")>
-          {move || t("导入备份")}
-          <input type="file" accept=".json" class="hidden" on:change=move |e| run_import(e, false) />
-        </label>
-        <label class=button_class(Variant::Outline, Size::Default, "cursor-pointer")>
-          {move || t("合并导入")}
-          <input type="file" accept=".json" class="hidden" on:change=move |e| run_import(e, true) />
-        </label>
+        </Button>
+        <FileInput
+          accept=".json"
+          label=t("导入备份")
+          variant=Variant::Outline
+          on_files=Callback::new(move |files: Vec<web_sys::File>| {
+            if let Some(f) = files.into_iter().next() {
+              run_import(f, false);
+            }
+          })
+        />
+        <FileInput
+          accept=".json"
+          label=t("合并导入")
+          variant=Variant::Outline
+          on_files=Callback::new(move |files: Vec<web_sys::File>| {
+            if let Some(f) = files.into_iter().next() {
+              run_import(f, true);
+            }
+          })
+        />
       </div>
       {move || {
         let list = usage.get();

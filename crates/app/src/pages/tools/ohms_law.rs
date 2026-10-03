@@ -1,7 +1,9 @@
 use leptos::prelude::*;
 
-use super::{INPUT, RESULT, fmt_num};
+use super::{RESULT, fmt_num};
 use crate::i18n::t;
+use crate::ui::{ControlSize, Field, NumberField};
+use crate::util::unique_id;
 
 /// 欧姆定律 / 电功率：U = I·R，P = U·I。填任意两项，计算其余。
 #[component]
@@ -22,19 +24,20 @@ pub(super) fn OhmsLaw() -> impl IntoView {
     }
   });
 
+  // `Field` 的标签与控件是兄弟节点，`r#for` / `id` 必须配对才能点击标签聚焦输入框
+  //（e2e 与读屏都按「标签 → 控件」的关联来定位）。
   let field = move |signal: RwSignal<String>, label: &'static str, unit: &'static str| {
+    let id = unique_id("ohms");
     view! {
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">
-          {move || t(label)} "（" {unit} "）"
-        </span>
-        <input
-          type="number"
-          prop:value=move || signal.get()
-          on:input=move |e| signal.set(event_target_value(&e))
-          class=INPUT
+      <Field label=Signal::derive(move || format!("{}（{unit}）", t(label))) r#for=id.clone()>
+        <NumberField
+          id=id
+          value=signal
+          on_change=Callback::new(move |v: String| signal.set(v))
+          size=ControlSize::Default
+          controls=false
         />
-      </label>
+      </Field>
     }
   };
 

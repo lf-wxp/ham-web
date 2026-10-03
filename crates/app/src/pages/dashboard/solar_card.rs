@@ -33,7 +33,9 @@ pub(super) fn SolarCard() -> impl IntoView {
   };
 
   refresh();
-  set_interval(refresh, std::time::Duration::from_secs(60));
+  if let Ok(handle) = set_interval_with_handle(refresh, std::time::Duration::from_secs(60)) {
+    on_cleanup(move || handle.clear());
+  }
 
   view! {
     <a href="/solar" class="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">

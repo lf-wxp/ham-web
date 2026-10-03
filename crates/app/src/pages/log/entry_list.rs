@@ -2,7 +2,8 @@
 
 use leptos::prelude::*;
 
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::icons::{Icon, IconKind};
+use crate::ui::{Input, InputType, NativeSelect, SelectOption, Size, Variant, button_class};
 
 use super::grid_cell::GridCell;
 use super::log_helpers::{CELL, PAGE_SIZE};
@@ -99,28 +100,49 @@ pub(super) fn EntryList(
           m.dedup();
           (b, m)
         });
+        let band_options: Vec<SelectOption> = bands
+          .iter()
+          .map(|b| SelectOption::new(b.as_str(), b.as_str()))
+          .collect();
+        let mode_options: Vec<SelectOption> = modes
+          .iter()
+          .map(|m| SelectOption::new(m.as_str(), m.as_str()))
+          .collect();
         view! {
           <div class="flex flex-wrap gap-2 border-b px-4 py-3">
-            <input
-              type="search"
-              placeholder=move || t("搜索呼号 / 姓名 / QTH / 网格 / 备注")
-              prop:value=move || query.get()
-              on:input=move |e| query.set(event_target_value(&e))
-              class=input_class("min-w-48 flex-1")
+            <Input
+              value=query
+              on_change=Callback::new(move |v: String| query.set(v))
+              kind=InputType::Search
+              placeholder=Signal::derive(move || t("搜索呼号 / 姓名 / QTH / 网格 / 备注"))
+              prefix=move || view! { <Icon kind=IconKind::Search /> }
+              clearable=true
+              wrapper_class="min-w-48 flex-1"
             />
-            <select prop:value=move || band_filter.get() on:change=move |e| band_filter.set(event_target_value(&e)) class=input_class("w-28")>
-              <option value="">{move || t("全部波段")}</option>
-              {bands.into_iter().map(|b| view! { <option value=b.clone()>{b.clone()}</option> }).collect_view()}
-            </select>
-            <select prop:value=move || mode_filter.get() on:change=move |e| mode_filter.set(event_target_value(&e)) class=input_class("w-28")>
-              <option value="">{move || t("全部模式")}</option>
-              {modes.into_iter().map(|m| view! { <option value=m.clone()>{m.clone()}</option> }).collect_view()}
-            </select>
-            <select prop:value=move || qsl_filter.get() on:change=move |e| qsl_filter.set(event_target_value(&e)) class=input_class("w-28")>
-              <option value="">{move || t("全部 QSL")}</option>
-              <option value="pending">{move || t("未确认")}</option>
-              <option value="rcvd">{move || t("已确认")}</option>
-            </select>
+            <NativeSelect
+              value=band_filter
+              on_change=Callback::new(move |v: String| band_filter.set(v))
+              options=band_options
+              placeholder=Signal::derive(move || t("全部波段"))
+              class="w-28"
+            />
+            <NativeSelect
+              value=mode_filter
+              on_change=Callback::new(move |v: String| mode_filter.set(v))
+              options=mode_options
+              placeholder=Signal::derive(move || t("全部模式"))
+              class="w-28"
+            />
+            <NativeSelect
+              value=qsl_filter
+              on_change=Callback::new(move |v: String| qsl_filter.set(v))
+              options=vec![
+                SelectOption::new("pending", Signal::derive(move || t("未确认"))),
+                SelectOption::new("rcvd", Signal::derive(move || t("已确认"))),
+              ]
+              placeholder=Signal::derive(move || t("全部 QSL"))
+              class="w-28"
+            />
           </div>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[880px] border-collapse text-sm">

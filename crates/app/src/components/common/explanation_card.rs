@@ -41,6 +41,31 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
   };
 
   let speak_text = text.clone();
+  // 折叠面板：外层 grid 行高 0fr → 1fr 做高度过渡（`.ui-collapse` 负责裁剪与收起后隐藏），
+  // 内层再叠一层淡入 + 轻微上移，避免只有高度变化显得生硬。
+  let panel = Signal::derive(move || {
+    cn(&[
+      "ui-collapse",
+      if open.get() {
+        "grid-rows-[1fr]"
+      } else {
+        "grid-rows-[0fr]"
+      },
+    ])
+  });
+  let inner = Signal::derive(move || {
+    cn(&[
+      // Tailwind v4 的 `translate-y-*` 用的是 `translate` 属性而不是 `transform`，
+      // 过渡属性要写成 `translate` 才动得了。
+      "px-6 pb-5 transition-[opacity,translate] duration-[var(--motion-normal)] ease-[var(--ease-out-expo)]",
+      if open.get() {
+        "translate-y-0 opacity-100"
+      } else {
+        "-translate-y-1 opacity-0"
+      },
+    ])
+  });
+
   view! {
     <div data-slot="card" class=card_class("gap-0 py-0")>
       <div class="flex items-center">
@@ -53,7 +78,12 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
           <span class="text-base font-semibold leading-none">{move || t("答案解析")}</span>
           <Icon
             kind=IconKind::ChevronDown
-            class=Signal::derive(move || cn(&["h-4 w-4 shrink-0 transition-transform", if open.get() { "rotate-180" } else { "" }]))
+            class=Signal::derive(move || {
+              cn(&[
+                "h-4 w-4 shrink-0 transition-transform duration-[var(--motion-normal)] ease-[var(--ease-out-expo)]",
+                if open.get() { "rotate-180" } else { "" },
+              ])
+            })
           />
         </button>
         <button
@@ -66,19 +96,15 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
           <Icon kind=IconKind::Volume2 class="h-4 w-4" />
         </button>
       </div>
-      {move || {
-        open
-          .get()
-          .then(|| {
-            view! {
-              <div class="px-6 pb-5">
-                <div class="whitespace-pre-line text-sm leading-6 text-muted-foreground border-t pt-4">
-                  {text.clone()}
-                </div>
-              </div>
-            }
-          })
-      }}
+      <div class=panel data-open=move || open.get().to_string()>
+        <div>
+          <div class=inner>
+            <div class="whitespace-pre-line border-t pt-4 text-sm leading-6 text-muted-foreground">
+              {text.clone()}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   }
   .into_any()

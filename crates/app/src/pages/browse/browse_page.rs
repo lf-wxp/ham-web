@@ -8,9 +8,10 @@ use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 
 use crate::cn::cn;
-use crate::components::common::{EmptyState, Loading};
+use crate::components::common::{EmptyState, Skeleton};
 use crate::data::{self, Questions};
 use crate::icons::{Icon, IconKind};
+use crate::ui::{Input, InputType};
 use crate::util::set_title;
 
 use super::question_row::QuestionRow;
@@ -238,7 +239,26 @@ pub fn BrowsePage() -> impl IntoView {
 
   let list = move || {
     if loading.get() {
-      return view! { <Loading label=t("正在加载题库…") /> }.into_any();
+      // 骨架屏而不是 spinner：题库首屏一次铺开十几行，spinner 消失换成真实列表会有一次
+      // 明显的高度跳变；骨架条按题目行的轮廓铺，跳变被摊平，也让「在加载」有确定感。
+      // `sr-only` 的 status 节点保留读屏播报 —— 骨架条本身是 aria-hidden 的。
+      return view! {
+        <div class="space-y-4">
+          <span class="sr-only" role="status">{move || t("正在加载题库…")}</span>
+          {(0..6)
+            .map(|_| {
+              view! {
+                <div class="rounded-xl border bg-card p-4">
+                  <Skeleton class="h-3 w-20" />
+                  <Skeleton class="mt-3 h-4 w-3/4" />
+                  <Skeleton class="mt-2.5 h-4 w-1/2" />
+                </div>
+              }
+            })
+            .collect_view()}
+        </div>
+      }
+      .into_any();
     }
     let total = filtered.with(Vec::len);
     if total == 0 {
@@ -301,21 +321,18 @@ pub fn BrowsePage() -> impl IntoView {
               .collect_view()}
           </div>
 
-          <div class="relative">
-            <Icon
-              kind=IconKind::Search
-              class="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <input
-              prop:value=move || kw.get()
-              on:input=move |e| {
-                kw.set(event_target_value(&e));
-                visible.set(PAGE);
-              }
-              placeholder=move || t("搜索题干 / 答案 / 解析…")
-              class="h-9 w-56 rounded-lg border bg-background pl-8 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            />
-          </div>
+          <Input
+            value=kw
+            on_change=Callback::new(move |v: String| {
+              kw.set(v);
+              visible.set(PAGE);
+            })
+            kind=InputType::Search
+            placeholder=Signal::derive(move || t("搜索题干 / 答案 / 解析…"))
+            prefix=move || view! { <Icon kind=IconKind::Search /> }
+            clearable=true
+            class="w-56"
+          />
 
           <button
             type="button"

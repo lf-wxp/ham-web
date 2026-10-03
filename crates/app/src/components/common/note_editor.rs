@@ -2,7 +2,7 @@ use leptos::prelude::*;
 
 use crate::i18n::t;
 use crate::store;
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, Size, Textarea, Variant};
 
 /// 题目私人笔记编辑区：随当前题 `question_id` 切换自动加载对应笔记。
 #[component]
@@ -34,21 +34,25 @@ pub fn NoteEditor(#[prop(into)] question_id: Signal<String>) -> impl IntoView {
           {move || saved.get().then(|| t("已保存"))}
         </span>
       </div>
-      <textarea
-        aria-label=move || t("笔记内容")
-        prop:value=move || draft.get()
-        on:input=move |e| draft.set(event_target_value(&e))
+      <Textarea
+        value=draft
+        on_change=Callback::new(move |v: String| draft.set(v))
         rows=3
-        placeholder=move || t("记录这道题的个人理解、易错点或口诀…")
-        class="flex w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50"
-      ></textarea>
+        placeholder=Signal::derive(move || t("记录这道题的个人理解、易错点或口诀…"))
+        aria_label=Signal::derive(move || t("笔记内容"))
+      />
       <div class="mt-2 flex items-center gap-2">
-        <button type="button" class=button_class(Variant::Default, Size::Sm, "") on:click=move |_| save()>
+        <Button variant=Variant::Default size=Size::Sm on_click=Callback::new(move |_| save())>
           {move || t("保存笔记")}
-        </button>
-        <button type="button" class=button_class(Variant::Ghost, Size::Sm, "text-muted-foreground") on:click=move |_| clear()>
+        </Button>
+        <Button
+          variant=Variant::Ghost
+          size=Size::Sm
+          class="text-muted-foreground"
+          on_click=Callback::new(move |_| clear())
+        >
           {move || t("清除")}
-        </button>
+        </Button>
       </div>
     </div>
   }

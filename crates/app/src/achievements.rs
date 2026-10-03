@@ -20,7 +20,11 @@ const SEEN_KEY: &str = "achievements-seen";
 
 thread_local! {
   /// 本次会话新解锁、待展示的成就队列。
-  static NEW: RwSignal<Vec<&'static Achievement>> = RwSignal::new(Vec::new());
+  ///
+  /// 用 `ArcRwSignal` 而非 `RwSignal`：`RwSignal` 是 arena 分配的，会挂到创建时所在的
+  /// 响应式 `Owner` 上并随其清理而释放；这个队列是全站共享的，不能随某个页面 `Owner`
+  /// 一起失效。引用计数信号只要还有引用就一直有效。
+  static NEW: ArcRwSignal<Vec<&'static Achievement>> = ArcRwSignal::new(Vec::new());
 }
 
 /// 打卡状态（精简）。
@@ -111,37 +115,68 @@ pub fn detect_new() {
   NEW.with(|sig| sig.update(|v| v.extend(newly)));
 }
 
+/// Toast 退场时长：与 `--motion-fast`（150ms）对齐并留一点余量，保证退出动画播完再卸载。
+const TOAST_EXIT_MS: u64 = 180;
+
 /// 全局成就解锁提示：右下角弹出，逐条展示，自动消失。
 #[component]
 pub fn AchievementToast() -> impl IntoView {
-  let pending = NEW.with(|s| *s);
+  // `ArcRwSignal` 是 `Clone` 而非 `Copy`，被多个 `move` 闭包捕获时要显式 clone。
+  let pending = NEW.with(|s| s.clone());
+  // 退场态：置真后播退出动画，动画结束再真正移出队列。
+  let leaving = RwSignal::new(false);
   let timer: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
+  // 退场动画播完后的「弹出队首」定时器：与 `timer` 一样需要能在队列变化时取消，
+  // 否则退场期间新成就到达、`Effect` 重置 `leaving` 后，这个已排队的 pop 仍会提前弹出队首。
+  let pop_timer: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
 
-  let dismiss = move || {
-    pending.update(|v| {
-      if !v.is_empty() {
-        v.remove(0);
-      }
-    });
+  // 真正把队首移出队列（退场动画播完后调用）。
+  let pop = {
+    let pending = pending.clone();
+    move || {
+      pending.update(|v| {
+        if !v.is_empty() {
+          v.remove(0);
+        }
+      });
+    }
   };
 
-  Effect::new(move |_| {
-    if !pending.get().is_empty() {
-      if let Some(h) = timer.get_value() {
-        h.clear();
+  // 触发退场：先置 leaving 播放退出动画，动画播完再 pop。加守卫避免退出期间重复触发。
+  let dismiss = {
+    let pop = pop.clone();
+    move || {
+      if !leaving.get_untracked() {
+        leaving.set(true);
+        let h = set_timeout_with_handle(pop.clone(), Duration::from_millis(TOAST_EXIT_MS)).ok();
+        pop_timer.set_value(h);
       }
-      let h = set_timeout_with_handle(
-        move || {
-          pending.update(|v| {
-            if !v.is_empty() {
-              v.remove(0);
-            }
-          });
-        },
-        Duration::from_millis(3500),
-      )
-      .ok();
-      timer.set_value(h);
+    }
+  };
+
+  Effect::new({
+    let pending = pending.clone();
+    let dismiss = dismiss.clone();
+    move |_| {
+      // 队首变化（新成就入场或旧成就弹出）时重置退场态，让下一条从入场态重新开始。
+      leaving.set(false);
+      if !pending.get().is_empty() {
+        if let Some(h) = timer.get_value() {
+          h.clear();
+        }
+        if let Some(h) = pop_timer.get_value() {
+          h.clear();
+        }
+        let h = set_timeout_with_handle(
+          {
+            let dismiss = dismiss.clone();
+            move || dismiss()
+          },
+          Duration::from_millis(3500),
+        )
+        .ok();
+        timer.set_value(h);
+      }
     }
   });
 
@@ -149,15 +184,22 @@ pub fn AchievementToast() -> impl IntoView {
     if let Some(Some(h)) = timer.try_get_value() {
       h.clear();
     }
+    if let Some(Some(h)) = pop_timer.try_get_value() {
+      h.clear();
+    }
   });
 
   move || {
+    // `dismiss` 捕获了非 `Copy` 的 `pending`，本身也不再 `Copy`；外层闭包是 `FnMut`，
+    // 每次渲染都要重新 clone 一份交给事件处理器。
+    let dismiss = dismiss.clone();
     pending.get().first().copied().map(|a| {
       view! {
         <div
           role="status"
           aria-live="polite"
-          class="fixed bottom-4 right-4 z-50 flex w-72 items-start gap-3 rounded-lg border bg-popover p-3 shadow-lg"
+          data-leaving=move || leaving.get().to_string()
+          class="motion-toast fixed bottom-4 right-4 z-50 flex w-72 items-start gap-3 rounded-lg border bg-popover p-3 shadow-lg"
         >
           <div class="text-2xl leading-none">{a.icon}</div>
           <div class="min-w-0 flex-1">

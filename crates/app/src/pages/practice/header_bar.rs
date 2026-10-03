@@ -1,4 +1,4 @@
-//! 练习页顶部进度头：进度条、题库类别切换、只看本类新增 / 只练没做过、收藏、搜索与设置入口。
+//! 练习页顶部进度头：进度条、题库类别切换、只看本类新增 / 只练没做过 / 只练多选、收藏、搜索与设置入口。
 
 use ham_web_core::Bank;
 use leptos::prelude::*;
@@ -16,6 +16,7 @@ pub(super) fn PracticeHeaderBar(
   on_switch_bank: Callback<Bank>,
   unique_only: RwSignal<bool>,
   unseen_only: RwSignal<bool>,
+  multi_only: RwSignal<bool>,
   bookmarked: RwSignal<bool>,
   on_toggle_bookmark: Callback<()>,
   #[prop(into)] sequential: Signal<bool>,
@@ -69,6 +70,14 @@ pub(super) fn PracticeHeaderBar(
             on:click=move |_| unseen_only.update(|v| *v = !*v)
           >
             {move || t("只练没做过")}
+          </button>
+          <button
+            type="button"
+            class=move || toggle_class(multi_only.get(), "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors")
+            title=move || t("只练习多选题，随机顺序")
+            on:click=move |_| multi_only.update(|v| *v = !*v)
+          >
+            {move || t("只练多选")}
           </button>
         }
       }

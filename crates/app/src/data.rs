@@ -8,7 +8,7 @@ use std::sync::{Arc, OnceLock};
 
 use ham_web_core::glossary::{GLOSSARY_FILES, Glossary};
 use ham_web_core::{Bank, BankConfig, QuestionItem, QuestionSearchEntry, QuestionVersion};
-use leptos::prelude::{RwSignal, Track, Update};
+use leptos::prelude::{ArcRwSignal, Track, Update};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestCache, RequestInit, Response};
@@ -481,7 +481,11 @@ thread_local! {
   /// 词典是异步拉取的，而知识页的条目是 `&'static` 切片、只会构建一次视图 —— 不通知
   /// 响应式系统的话，译文到达后页面不会重算，仍然停在中文。组件通过 [`track_knowledge`]
   /// 订阅这个信号。
-  static KNOWLEDGE_READY: RwSignal<u32> = RwSignal::new(0);
+  ///
+  /// 用 `ArcRwSignal` 而非 `RwSignal`：`RwSignal` 是 arena 分配的，会随创建时所在的
+  /// 响应式 `Owner` 一起被释放，而首次订阅发生在页面组件内部 —— 离开该页面后这个
+  /// 「全局」信号就失效了。引用计数信号只要还有引用就一直有效。
+  static KNOWLEDGE_READY: ArcRwSignal<u32> = ArcRwSignal::new(0);
   /// 译文加载失败的时间戳（毫秒），0 表示从未失败（同 [`GLOSSARY_FAILED_AT`]）。
   static KNOWLEDGE_FAILED_AT: Cell<i64> = const { Cell::new(0) };
 }

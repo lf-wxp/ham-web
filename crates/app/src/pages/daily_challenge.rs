@@ -135,7 +135,7 @@ pub fn DailyChallengePage() -> impl IntoView {
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
+        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
             <h1 class="text-base font-semibold leading-tight">{move || t("每日挑战")}</h1>
             <div class="text-xs text-muted-foreground">
@@ -165,7 +165,7 @@ pub fn DailyChallengePage() -> impl IntoView {
         </div>
       </header>
 
-      <div class="mx-auto max-w-3xl space-y-4 px-4 py-5">
+      <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
         {move || {
           if loading.get() {
             return view! { <div class="rounded-xl border bg-card px-4 py-12 text-center text-sm text-muted-foreground">{move || t("正在加载今日题目…")}</div> }.into_any();

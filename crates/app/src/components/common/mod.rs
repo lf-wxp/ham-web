@@ -27,7 +27,7 @@ pub use empty_state::EmptyState;
 pub use explanation_card::ExplanationCard;
 pub use knowledge_page::KnowledgePage;
 pub use legend::Legend;
-pub use loading::Loading;
+pub use loading::{Loading, Skeleton};
 pub use message_dialog::MessageDialog;
 pub use note_editor::NoteEditor;
 pub use page_container::PageContainer;

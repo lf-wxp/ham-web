@@ -60,6 +60,8 @@ features = [
   "HtmlElement",
   "HtmlImageElement",
   "HtmlInputElement",
+  "HtmlSelectElement",
+  "HtmlTextAreaElement",
   "ImageData",
   "KeyboardEvent",
   "Location",
@@ -111,6 +113,15 @@ features = [
   "IdbRequest",
   "IdbTransaction",
   "IdbTransactionMode",
+  "IntersectionObserver",
+  "IntersectionObserverEntry",
+  "IntersectionObserverInit",
+  "ResizeObserver",
+  "WebGl2RenderingContext",
+  "WebGlBuffer",
+  "WebGlProgram",
+  "WebGlShader",
+  "WebGlUniformLocation",
 ]
 
 [lints]

@@ -87,6 +87,9 @@ pub fn HomePage() -> impl IntoView {
   let warn_text = RwSignal::new(String::new());
   let generation = StoredValue::new(0u32);
 
+  let stack = NodeRef::<leptos::html::Div>::new();
+  stack.on_load(|el| crate::motion::reveal_children(&el));
+
   Effect::new(move |_| {
     let (Some(v), b) = (version.get(), bank.get()) else {
       return;
@@ -188,7 +191,10 @@ pub fn HomePage() -> impl IntoView {
             view! {
               <a
                 href=m.href
-                class="reveal group relative flex flex-col gap-4 overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
+                // `motion-press` + `active:translate-y-0`：按下时卡片「落回原位」，
+                // 和抬起方向相反，形成完整的按压手感（桌面 hover 抬起，触屏无 hover
+                // 但有 active，两端都有反馈）。
+                class="reveal group relative flex flex-col gap-4 overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 motion-press active:translate-y-0"
                 style=format!("animation-delay: {}ms", 300 + i * 90)
               >
                 <div class="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
@@ -258,7 +264,8 @@ pub fn HomePage() -> impl IntoView {
         </div>
       </div>
 
-      <div class="space-y-6">
+      // 首屏以下的功能卡片随滚动逐个浮现，避免一进页面七张卡片同时刷出来。
+      <div node_ref=stack class="space-y-6">
         <StudyPlanCard />
         <ReviewCard />
         <CardsCard />

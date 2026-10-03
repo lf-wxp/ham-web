@@ -33,7 +33,7 @@ pub fn Bubble(open: RwSignal<bool>, #[prop(into)] text: Signal<String>) -> impl 
     open.get().then(|| {
       view! {
         <div
-          class="absolute -top-2 left-0 -translate-y-full z-50 rounded-md border bg-popover text-foreground shadow px-3 py-2 text-xs"
+          class="motion-fade absolute -top-2 left-0 -translate-y-full z-50 rounded-md border bg-popover text-foreground shadow px-3 py-2 text-xs"
           role="status"
           aria-live="polite"
         >

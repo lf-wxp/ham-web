@@ -34,7 +34,9 @@ pub(super) fn WantedCard() -> impl IntoView {
   };
 
   refresh();
-  set_interval(refresh, std::time::Duration::from_secs(60));
+  if let Ok(handle) = set_interval_with_handle(refresh, std::time::Duration::from_secs(60)) {
+    on_cleanup(move || handle.clear());
+  }
 
   view! {
     <a href="/most-wanted" class="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">

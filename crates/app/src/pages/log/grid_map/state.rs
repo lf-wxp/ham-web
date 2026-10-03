@@ -389,10 +389,12 @@ impl GridMapState {
 
     // ---- 灰线实时时钟（60s 刷新，与灰线页一致）----
     let now = RwSignal::new(js_sys::Date::new_0().get_time());
-    set_interval(
+    if let Ok(handle) = set_interval_with_handle(
       move || now.set(js_sys::Date::new_0().get_time()),
       Duration::from_secs(60),
-    );
+    ) {
+      on_cleanup(move || handle.clear());
+    }
 
     Self {
       band_filter,

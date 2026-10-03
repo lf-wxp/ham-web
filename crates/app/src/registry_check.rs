@@ -98,7 +98,7 @@ fn nav_icons_resolve() {
   assert_eq!(icon_of(exam_icon).name(), exam_icon);
 }
 
-/// 导航链接必须落在自己的路由上（只允许附带查询串，如 `/practice?multi=1`）。
+/// 导航链接必须落在自己的路由上（只允许附带查询串，如 `/x?mode=1`）。
 #[test]
 fn nav_hrefs_stay_on_their_route() {
   for m in registry::MODULES {

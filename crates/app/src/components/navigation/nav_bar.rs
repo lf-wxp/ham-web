@@ -99,7 +99,8 @@ pub fn Navigation() -> impl IntoView {
           </a>
 
           // 桌面端导航
-          <div class="hidden items-center gap-1 xl:flex">
+          // `self-stretch`：撑满 h-16 的导航行，让内部下拉的 `top-full` 能落在导航下沿。
+          <div class="hidden items-center gap-1 self-stretch xl:flex">
             <a
               href="/"
               data-slot="button"
@@ -116,11 +117,13 @@ pub fn Navigation() -> impl IntoView {
             </a>
 
             // 考试中心下拉
-            <div class="group relative">
+            // `self-stretch`：把容器拉满导航行的高度（h-16），`top-full` 才是「导航栏下沿」。
+            // 不加的话 `top-full` 会取按钮自身的高度，这个面板就比另两个高出十几个像素。
+            <div class="group relative flex items-center self-stretch">
               <button
                 type="button"
                 data-slot="button"
-                aria-expanded=move || open_menu.get() == Some(MenuKind::Exam)
+                aria-expanded=move || (open_menu.get() == Some(MenuKind::Exam)).to_string()
                 class=move || {
                   button_class(
                     if exam_active() { Variant::Default } else { Variant::Ghost },
@@ -136,19 +139,35 @@ pub fn Navigation() -> impl IntoView {
               >
                 <Icon kind=IconKind::Timer class="h-4 w-4" />
                 {move || t("考试中心")}
-                <Icon kind=IconKind::ChevronDown class="h-3.5 w-3.5" />
+                <Icon
+                  kind=IconKind::ChevronDown
+                  class=Signal::derive(move || {
+                    cn(&[
+                      "h-3.5 w-3.5 transition-transform duration-200",
+                      if open_menu.get() == Some(MenuKind::Exam) { "rotate-180" } else { "" },
+                    ])
+                  })
+                />
               </button>
-              <div class=move || {
-                cn(&[
-                  "absolute left-0 top-full pt-1.5 transition",
-                  if open_menu.get() == Some(MenuKind::Exam) {
-                    "visible opacity-100"
-                  } else {
-                    "invisible opacity-0"
-                  },
-                ])
-              }>
-                <div class="w-44 rounded-lg border bg-popover p-1 shadow-md">
+              // 外层只管定位与显隐（隐藏后不再参与命中测试）；
+              // `motion-popover` 挂在内层面板上做位移 + 缩放 —— 外层可能带
+              // `-translate-x-1/2` 这类居中 transform，动效若也写 transform 会把它覆盖掉。
+              <div
+                class=move || {
+                  cn(&[
+                    "absolute left-0 top-full pt-1.5 transition duration-[var(--motion-normal)] ease-[var(--ease-out-expo)]",
+                    if open_menu.get() == Some(MenuKind::Exam) {
+                      "visible opacity-100"
+                    } else {
+                      "invisible opacity-0"
+                    },
+                  ])
+                }
+              >
+                <div
+                  data-open=move || (open_menu.get() == Some(MenuKind::Exam)).to_string()
+                  class="motion-popover origin-top w-44 rounded-lg border bg-popover p-1 shadow-md"
+                >
                   {registry::MODULES
                     .iter()
                     .filter(|m| m.group == Some(GROUP_EXAM))
@@ -179,11 +198,14 @@ pub fn Navigation() -> impl IntoView {
             </div>
 
             // 知识库分组菜单
+            // 这里刻意保持 `static`：面板宽 960px，必须相对整条导航容器定位
+            // （`left-1/2 -translate-x-1/2` 居中）才不会溢出视口。垂直方向因此与
+            // 「考试中心」共享同一个基准 —— 容器高 h-16，`top-full` 恒为导航下沿。
             <div class="group static">
               <button
                 type="button"
                 data-slot="button"
-                aria-expanded=move || open_menu.get() == Some(MenuKind::Knowledge)
+                aria-expanded=move || (open_menu.get() == Some(MenuKind::Knowledge)).to_string()
                 class=move || {
                   button_class(
                     if knowledge_active() { Variant::Default } else { Variant::Ghost },
@@ -203,11 +225,23 @@ pub fn Navigation() -> impl IntoView {
               >
                 <Icon kind=IconKind::BookOpen class="h-4 w-4" />
                 {move || t("知识库")}
-                <Icon kind=IconKind::ChevronDown class="h-3.5 w-3.5" />
+                <Icon
+                  kind=IconKind::ChevronDown
+                  class=Signal::derive(move || {
+                    cn(&[
+                      "h-3.5 w-3.5 transition-transform duration-200",
+                      if open_menu.get() == Some(MenuKind::Knowledge) {
+                        "rotate-180"
+                      } else {
+                        ""
+                      },
+                    ])
+                  })
+                />
               </button>
               <div class=move || {
                 cn(&[
-                  "absolute left-1/2 top-full -translate-x-1/2 pt-1.5 transition",
+                  "absolute left-1/2 top-full -translate-x-1/2 pt-1.5 transition duration-[var(--motion-normal)] ease-[var(--ease-out-expo)]",
                   if open_menu.get() == Some(MenuKind::Knowledge) {
                     "visible opacity-100"
                   } else {
@@ -215,7 +249,10 @@ pub fn Navigation() -> impl IntoView {
                   },
                 ])
               }>
-                <div class="grid w-[960px] max-w-[calc(100vw-2rem)] grid-cols-2 gap-x-4 gap-y-3 rounded-lg border bg-popover p-4 shadow-md md:grid-cols-3 lg:grid-cols-5">
+                <div
+                  data-open=move || (open_menu.get() == Some(MenuKind::Knowledge)).to_string()
+                  class="motion-popover origin-top grid w-[960px] max-w-[calc(100vw-2rem)] grid-cols-2 gap-x-4 gap-y-3 rounded-lg border bg-popover p-4 shadow-md md:grid-cols-3 lg:grid-cols-5"
+                >
                   {KNOWLEDGE_GROUPS
                     .iter()
                     .map(|g| {
@@ -261,11 +298,12 @@ pub fn Navigation() -> impl IntoView {
             </div>
 
             // 工具下拉
+            // 同知识库：960px 宽面板相对导航容器右对齐（`right-4`），保持 `static`。
             <div class="group static">
               <button
                 type="button"
                 data-slot="button"
-                aria-expanded=move || open_menu.get() == Some(MenuKind::Tools)
+                aria-expanded=move || (open_menu.get() == Some(MenuKind::Tools)).to_string()
                 class=move || {
                   button_class(
                     if tool_active() { Variant::Default } else { Variant::Ghost },
@@ -281,11 +319,19 @@ pub fn Navigation() -> impl IntoView {
               >
                 <Icon kind=IconKind::Calculator class="h-4 w-4" />
                 {move || t("工具")}
-                <Icon kind=IconKind::ChevronDown class="h-3.5 w-3.5" />
+                <Icon
+                  kind=IconKind::ChevronDown
+                  class=Signal::derive(move || {
+                    cn(&[
+                      "h-3.5 w-3.5 transition-transform duration-200",
+                      if open_menu.get() == Some(MenuKind::Tools) { "rotate-180" } else { "" },
+                    ])
+                  })
+                />
               </button>
               <div class=move || {
                 cn(&[
-                  "absolute right-4 top-full pt-1.5 transition",
+                  "absolute right-4 top-full pt-1.5 transition duration-[var(--motion-normal)] ease-[var(--ease-out-expo)]",
                   if open_menu.get() == Some(MenuKind::Tools) {
                     "visible opacity-100"
                   } else {
@@ -293,7 +339,10 @@ pub fn Navigation() -> impl IntoView {
                   },
                 ])
               }>
-                <div class="grid w-[960px] max-w-[calc(100vw-2rem)] grid-cols-2 gap-x-4 gap-y-3 rounded-lg border bg-popover p-4 shadow-md md:grid-cols-3 lg:grid-cols-5">
+                <div
+                  data-open=move || (open_menu.get() == Some(MenuKind::Tools)).to_string()
+                  class="motion-popover origin-top grid w-[960px] max-w-[calc(100vw-2rem)] grid-cols-2 gap-x-4 gap-y-3 rounded-lg border bg-popover p-4 shadow-md md:grid-cols-3 lg:grid-cols-5"
+                >
                   {TOOL_GROUPS
                     .iter()
                     .map(|g| {
@@ -358,7 +407,7 @@ pub fn Navigation() -> impl IntoView {
               data-slot="button"
               class=button_class(Variant::Ghost, Size::Icon, "xl:hidden")
               aria-label=move || if menu_open.get() { t("关闭菜单") } else { t("打开菜单") }
-              aria-expanded=move || menu_open.get()
+              aria-expanded=move || menu_open.get().to_string()
               on:click=move |_| menu_open.update(|v| *v = !*v)
             >
               {move || {

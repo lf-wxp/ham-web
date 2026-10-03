@@ -103,6 +103,11 @@ pub fn AchievementsPage() -> impl IntoView {
 
   let total = ACHIEVEMENTS.len();
 
+  // 40+ 枚成就一次性铺满视口时没有节奏可言：让格子随滚动逐个浮现，
+  // 滚动本身就是「翻成就墙」的动作。
+  let grid = NodeRef::<leptos::html::Div>::new();
+  grid.on_load(|el| crate::motion::reveal_children(&el));
+
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
@@ -133,7 +138,7 @@ pub fn AchievementsPage() -> impl IntoView {
           </div>
         </section>
 
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+        <div node_ref=grid class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {ACHIEVEMENTS
             .iter()
             .map(|a| {

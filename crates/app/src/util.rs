@@ -1,10 +1,10 @@
 //! 浏览器相关的小工具。
 
+use std::cell::RefCell;
 use std::fmt::Write as _;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::i18n::t;
-use leptos::prelude::{GetUntracked, RwSignal, Set};
 use wasm_bindgen::JsValue;
 
 /// 当前时间（毫秒时间戳）。
@@ -86,13 +86,19 @@ pub fn body() -> Option<web_sys::HtmlElement> {
 //
 // 标题是进入页面时一次性写入的（不在响应式上下文里），切语言时不会自动重算；
 // 记住原文后，`refresh_title` 才能在语言变化时重新翻译并写回 `<title>`。
+//
+// 这里刻意不用 `RwSignal`：`RwSignal` 是 arena 分配的，会挂到创建时所在的响应式
+// `Owner` 上，随其清理而被释放。首次 `set_title` 发生在页面组件内部，离开该页面后
+// 这个「全局」信号就失效了 —— 之后 `set_title` 静默不生效（标题永远停在第一页），
+// 切语言时 `refresh_title` 访问已释放的信号则直接 panic。标题本身不需要响应式，
+// 用普通 `RefCell` 即可。
 thread_local! {
-  static TITLE_KEY: RwSignal<String> = RwSignal::new(String::new());
+  static TITLE_KEY: RefCell<String> = const { RefCell::new(String::new()) };
 }
 
 /// 设置页面标题（浏览器标签，按 [`crate::i18n`] 词典翻译）。
 pub fn set_title(title: &str) {
-  TITLE_KEY.with(|k| k.set(title.to_owned()));
+  TITLE_KEY.with(|k| *k.borrow_mut() = title.to_owned());
   apply_title();
 }
 
@@ -102,7 +108,7 @@ pub fn refresh_title() {
 }
 
 fn apply_title() {
-  let key = TITLE_KEY.with(|k| k.get_untracked());
+  let key = TITLE_KEY.with(|k| k.borrow().clone());
   if !key.is_empty() {
     document().set_title(&t(&key));
   }

@@ -31,6 +31,7 @@ use crate::pages::{
 
 use crate::components::related_topics::RelatedTopics;
 use crate::components::topic_quiz::TopicQuiz;
+use crate::motion::ROUTE_CONTENT_ID;
 
 /// 主体内容。
 #[component]
@@ -48,8 +49,12 @@ pub(super) fn MainContent() -> impl IntoView {
   });
 
   view! {
+    // 路由内容的过渡容器：入场动画由 `RouteTransition` 在路径变化时重放。
+    // 单独包一层而不是直接动 `<main>`，是因为 `<main>` 里还有 TopicQuiz / RelatedTopics
+    // 这类 `position: fixed` 的挂件 —— 祖先只要有 transform，fixed 就退化成 absolute。
     <main id="main-content" tabindex="-1" class="flex-1 outline-none">
-      <Routes fallback=|| view! { <NotFoundPage /> }>
+      <div id=ROUTE_CONTENT_ID>
+        <Routes fallback=|| view! { <NotFoundPage /> }>
         <Route path=path!("/") view=HomePage />
         <Route path=path!("/practice") view=PracticePage />
         <Route path=path!("/print") view=PrintPage />
@@ -197,6 +202,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/learning-resources") view=LearningResourcesPage />
         <Route path=path!("/community") view=CommunityPage />
       </Routes>
+      </div>
       <TopicQuiz />
       <RelatedTopics />
     </main>

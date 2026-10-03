@@ -62,10 +62,12 @@ test("APT 解码：正常大小文件进入处理流程", async ({ page }) => {
   });
 
   // 要么在处理（出现取消按钮），要么已出结果 / 报错 —— 总之不能停在「没反应」
+  // 处理中「正在后台解码…」与「取消」会同时出现，`.or()` 会命中多个元素，取第一个即可
   await expect(
     page
       .getByRole("button", { name: "取消" })
       .or(page.getByText("解码失败"))
-      .or(page.getByText(/正在后台解码|正在读取文件/)),
+      .or(page.getByText(/正在后台解码|正在读取文件/))
+      .first(),
   ).toBeVisible();
 });

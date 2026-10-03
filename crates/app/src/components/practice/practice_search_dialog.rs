@@ -3,10 +3,9 @@ use ham_web_core::text::upper_chars;
 use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
-use crate::icons::{Icon, IconKind};
 use crate::ui::{
-  Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Size, Variant, button_class,
-  input_class,
+  ControlSize, Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Size,
+  Variant, button_class,
 };
 
 const SNIPPET_MAX: usize = 120;
@@ -66,37 +65,19 @@ pub fn PracticeSearchDialog(
         <DialogTitle>{move || t("搜索题目")}</DialogTitle>
         <DialogDescription>{move || t("输入题号或关键词（如 LK0501 / 天线），回车或点击跳转")}</DialogDescription>
       </DialogHeader>
-      <div class="space-y-3 overflow-auto pr-1 min-h-0">
-        <div class="relative">
-          <input
-            id="jump"
-            data-slot="input"
-            class=input_class("h-11 text-base md:h-9 md:text-sm pr-10")
-            placeholder=move || t("题号或关键词，如 LK0501 / 天线")
-            prop:value=move || input.get()
-            on:input=move |e| input.set(event_target_value(&e))
-            on:keydown=move |e| {
-              if e.key() == "Enter" {
-                jump();
-              }
-            }
-          />
-          {move || {
-            has_input()
-              .then(|| {
-                view! {
-                  <button
-                    type="button"
-                    aria-label=move || t("清除")
-                    class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    on:click=move |_| input.set(String::new())
-                  >
-                    <Icon kind=IconKind::X class="h-4 w-4" />
-                  </button>
-                }
-              })
-          }}
-        </div>
+      // `p-1 -m-1`：滚动容器会裁掉子元素溢出的内容，输入框 3px 的聚焦环必须留出余量；
+      // 负外边距把多出来的 4px 抵掉，视觉位置不变。
+      <div class="-m-1 min-h-0 space-y-3 overflow-auto p-1">
+        <Input
+          id="jump"
+          value=input
+          on_change=Callback::new(move |v: String| input.set(v))
+          size=ControlSize::Lg
+          class="md:h-9 md:text-sm"
+          placeholder=Signal::derive(move || t("题号或关键词，如 LK0501 / 天线"))
+          clearable=true
+          on_enter=Callback::new(move |_| jump())
+        />
         {move || {
           has_input()
             .then(|| {
