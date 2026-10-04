@@ -173,7 +173,7 @@
 | 工具链 | `ham-web-tools`（clap、ureq、resvg、sha2、brotli、walkdir） |
 | 任务编排 | [cargo-make](https://github.com/sagiegurari/cargo-make) |
 | PWA | 构建时由 Rust 生成 Service Worker（预缓存 + 运行时缓存策略） |
-| 许可 | MIT（见 `Cargo.toml` 的 `license` 字段） |
+| 许可 | MIT（见仓库根目录 [`LICENSE`](LICENSE)） |
 
 ## 项目结构
 
@@ -367,7 +367,8 @@ cargo make spectrum-sample                            # 频谱 / 瀑布图样本
 | `cargo make build-full` | 重新拉取题库数据后完整构建 |
 | `cargo make serve` | release 服务器托管 `dist/`（http://127.0.0.1:8080） |
 | **数据与资源** | — |
-| `cargo make dataset` | 从 CSV 构建题库 JSON 与图片（`DATASET_DIR` / `DATASET_REMOTE` 可覆盖数据源） |
+| `cargo make dataset` | 从 CSV 构建题库 JSON 与图片（`DATASET_DIR` / `DATASET_REMOTE` 可覆盖数据源），建库时统一题面排版 |
+| `cargo make questions-normalize` | 一次性迁移：把已提交题库按排版规则归一化（含解析表 key 迁移与搜索索引刷新），不重新下载 CSV |
 | `cargo make dxcc` | 从 country-files.com 拉取 cty.csv，重新生成 `crates/core/data/dxcc.txt` |
 | `cargo make dxcc-map` | 从 Natural Earth 国界 GeoJSON 生成 DXCC 实体边界 `public/dxcc-entities.bin`（i16 定点 + delta 二进制编码） |
 | `cargo make icons` | 由 `public/pwa-icon.svg` 生成 PWA / Apple Touch 图标 |
@@ -375,7 +376,9 @@ cargo make spectrum-sample                            # 频谱 / 瀑布图样本
 | `cargo make explanations-missing` | 统计缺失解析并导出待填模板（`BANK` / `LIMIT` 可选） |
 | `BATCH=… cargo make explanations-add` | 按题目 ID 合并解析 |
 | `cargo make explanations-enhance` | 用术语表为解析注入术语解释（幂等） |
+| `cargo make explanations-sync` | 对齐同一道题多指纹变体的解析文本 |
 | `cargo make glossary-check` | 校验术语表（分类 / 参见 / 重复 / 括号）并输出统计 |
+| `cargo make explanations-check` | 校验解析表（答案一致性、重复/错位注入、裸释义、同题多版本分叉），已并入 `cargo make check` 与 `cargo make ci` |
 | `cargo make explanations-apply` | 把解析写入题库 JSON（离线，无需重建数据集） |
 | `BATCH=… cargo make explanations` | 合并 → 增强 → 写入，一步完成 |
 | **国际化** | — |
@@ -482,10 +485,13 @@ DATASET_REMOTE=https://raw.githubusercontent.com/<you>/<repo>/main cargo make da
 
 默认数据源为 [`xiedada05/crac-amateur-radio-exam-questions-2025-csv`](https://github.com/xiedada05/crac-amateur-radio-exam-questions-2025-csv)。数据源需包含：`class_a.csv`、`class_b.csv`、`class_c.csv`、`full.csv`、`images.csv` 与 `images_2/{题号}.jpg`。CSV 列：`J`（题号）、`P`（分类码）、`Q`（题干）、`T`（答案）、`A`–`D`（选项），可选解析列（`Explanation` / `解析` / `analysis`）。
 
+建库时会统一题面排版（中文与数字 / 英文之间的空格、全角字母数字转半角等），让同一道题在各题库里逐字节一致、不再分叉出多个内容指纹，规则见 [`docs/typography.md`](docs/typography.md)。已有数据可用 `cargo make questions-normalize` 原地迁移（不重新下载 CSV）。
+
 输出：
 
 - `public/questions/{A,B,C,full}.json`：题目列表，ID 形如 `A-1`（按题库内顺序编号）
 - `public/questions/images/N.jpg`：题目附图
+- `public/questions/search-index.json`：全站搜索用的精简索引（题干 + 解析，A/B/C 三库），随题库一起刷新
 
 解析来源优先级：`data/explanations.json`（按内容指纹匹配） > CSV 解析列。
 
@@ -521,7 +527,7 @@ DATASET_REMOTE=https://raw.githubusercontent.com/<you>/<repo>/main cargo make da
  └────────────┬─────────────┘
               ▼
  ┌──────────────────────────┐
- │ 3. 合并 + 增强 + 写入      │  BATCH=tmp/batch.json cargo make explanations
+ │ 3. 合并 + 去重 + 增强 + 对齐 + 写入 │  BATCH=tmp/batch.json cargo make explanations
  └────────────┬─────────────┘
               ▼
  ┌──────────────────────────┐
@@ -538,7 +544,7 @@ cargo make explanations-missing              # 全部题库
 BANK=C LIMIT=50 cargo make explanations-missing   # 仅 C 类，最多导出 50 题
 ```
 
-输出每个题库的解析覆盖情况，并生成：
+输出每个题库（A/B/C 以及 full 完整题库）的解析覆盖情况，并生成：
 
 - `tmp/batch.json`：待填模板（已按指纹去重，跨题库重合的题只出现一次）
   ```json
@@ -553,6 +559,8 @@ BANK=C LIMIT=50 cargo make explanations-missing   # 仅 C 类，最多导出 50 
 也可直接调用：`cargo run -p ham-web-tools -- missing-explanations --help`。
 
 ### 第 2 步：撰写解析
+
+> 完整写作规范（结构模板、分类写法、格式硬约束、质量红线、审查清单）见 [`docs/explanations-style.md`](docs/explanations-style.md)。
 
 在 `tmp/batch.json` 中为每个 ID 填写解析。建议遵循现有风格：
 
@@ -577,10 +585,12 @@ BATCH=tmp/batch.json cargo make explanations
 | 步骤 | 命令 | 作用 |
 | --- | --- | --- |
 | 合并 | `BATCH=… cargo make explanations-add` | 按 ID 找到题目、计算指纹，写入 `data/explanations.json`（未知 ID 会告警） |
+| 去重 | `cargo make explanations-dedupe` | 清理解析里重复注入的术语括注（同一条只保留首次出现），并删除注进更长词语内部的错位括注 |
 | 增强 | `cargo make explanations-enhance` | 用 `data/glossary/` 中 `inject: true` 的词条，为每条解析中**首次出现**的术语追加 `（通俗解释）`，幂等可重复执行 |
+| 对齐 | `cargo make explanations-sync` | 同一道题因题库间空格写法不同而有多个指纹时，保留最详细的一条解析并写回该组所有指纹（明细见 `tmp/explanations-sync-report.json`） |
 | 写入 | `cargo make explanations-apply` | 把解析写入 `public/questions/*.json`（离线完成，无需重新拉取 CSV） |
 
-术语增强规则：长术语优先（「对流层散射」先于「散射」）；术语后已有括号、或处于原文括号内时跳过；每个术语每条解析只注入一次；「发射频率」中的「射频」不视为术语。
+术语增强规则：长术语优先（「对流层散射」先于「散射」）；术语后已有括号、或处于原文括号内时跳过；每个术语每条解析只注入一次；落在更长词语内部（复合词阻止表，如「超视距」「副载波」「必要带宽」「亚音调静噪」）时跳过；「发射频率」中的「射频」不视为术语。
 
 ### 第 4 步：预览与提交
 
@@ -911,7 +921,11 @@ cargo make e2e-coverage                                # 只统计覆盖率，�
 
 ## 许可
 
-本项目以 **MIT** 许可发布（见 `Cargo.toml` 的 `license` 字段）。题库数据版权归原作者所有，使用前请遵守上游仓库的许可与署名要求。
+本项目**代码**以 **MIT** 许可发布，许可全文见仓库根目录 [`LICENSE`](LICENSE)（与 `Cargo.toml` 的 `license = "MIT"` 一致）。
+
+需要注意的是，MIT 只覆盖本仓库的代码，**不覆盖题库数据**：题目与解析的版权归原作者所有，使用前请遵守上游仓库的许可与署名要求。
+
+使用或再分发本仓库代码时，只需保留版权声明与 MIT 许可全文，即可自由地使用、修改、合并、发布、再许可和销售，无需公开衍生作品的源码。
 
 ## 致谢
 

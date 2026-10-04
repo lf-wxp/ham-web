@@ -556,34 +556,74 @@ pub fn kt(text: &str) -> String {
   })
 }
 
-static QUESTION_INDEX: OnceLock<Vec<QuestionSearchEntry>> = OnceLock::new();
-/// 加载失败时返回的空索引（同 [`EMPTY_GLOSSARY`]，不污染常驻缓存）。
-static EMPTY_INDEX: OnceLock<Vec<QuestionSearchEntry>> = OnceLock::new();
+thread_local! {
+  /// 题目搜索索引：`(题库数据修订号, 索引)`。
+  ///
+  /// 用 `RefCell` 而非 `OnceLock`：题库数据更新后索引必须能整体替换 —— 索引里是按
+  /// **题号**给出的跳转链接（`/browse?bank=A&q=…`），数据一变旧索引就会指到别的题。
+  /// 修订号来自 `config.json` 里 A/B/C 三库的内容哈希（构建后处理写入）。
+  static QUESTION_INDEX: RefCell<Option<(String, Arc<Vec<QuestionSearchEntry>>)>> =
+    const { RefCell::new(None) };
+}
 
 /// 已加载的题目搜索索引（尚未加载时为 `None`）。
-pub fn question_index_loaded() -> Option<&'static Vec<QuestionSearchEntry>> {
-  QUESTION_INDEX.get()
+pub fn question_index_loaded() -> Option<Arc<Vec<QuestionSearchEntry>>> {
+  QUESTION_INDEX.with_borrow(|c| c.as_ref().map(|(_, idx)| idx.clone()))
+}
+
+/// 索引地址：带题库修订号时加 `?v=`，让浏览器与 Service Worker 把它当成新资源。
+/// `rev` 是内容哈希（十六进制），无 URL 保留字符，可直接拼接。
+#[must_use]
+fn question_index_url(rev: &str) -> String {
+  if rev.is_empty() {
+    "/questions/search-index.json".to_owned()
+  } else {
+    format!("/questions/search-index.json?v={rev}")
+  }
+}
+
+/// 当前缓存里的索引（没有则空索引）。
+fn current_question_index() -> Arc<Vec<QuestionSearchEntry>> {
+  QUESTION_INDEX
+    .with_borrow(|c| c.as_ref().map(|(_, idx)| idx.clone()))
+    .unwrap_or_default()
 }
 
 /// 题目搜索索引：首次使用时拉取 `/questions/search-index.json`（由 `postbuild` 生成，
-/// 仅含题干 + 解析，不增大首屏），之后复用内存缓存。
-pub async fn load_question_index() -> &'static Vec<QuestionSearchEntry> {
-  if let Some(idx) = QUESTION_INDEX.get() {
-    return idx;
+/// 仅含题干 + 解析，不增大首屏），之后按题库数据修订号复用内存缓存。
+///
+/// 数据更新（`cargo make questions-normalize` / `dataset` 会重写题库并与索引一起刷新）
+/// 后修订号变化，这里会重新拉取；离线时 Service Worker 会回退到忽略查询串的缓存副本，
+/// 因此离线搜索仍然可用。
+///
+/// 返回 `(索引, 是否刷新)`：仅当修订号变化且成功拉取到新索引时为 `true`，
+/// 调用方可据此决定是否重算依赖该索引的结果。
+pub async fn load_question_index() -> (Arc<Vec<QuestionSearchEntry>>, bool) {
+  let rev = load_config(false)
+    .await
+    .ok()
+    .map_or_else(String::new, |cfg| cfg.questions_rev());
+  if let Some((cached_rev, index)) = QUESTION_INDEX.with_borrow(Clone::clone)
+    && cached_rev == rev
+  {
+    return (index, false);
   }
   if !backoff_elapsed(&INDEX_FAILED_AT) {
-    return EMPTY_INDEX.get_or_init(Vec::new);
+    return (current_question_index(), false);
   }
-  let entries = match fetch_text("/questions/search-index.json", CacheMode::Default).await {
+  let entries = match fetch_text(&question_index_url(&rev), CacheMode::Default).await {
     Ok(text) => serde_json::from_str::<Vec<QuestionSearchEntry>>(&text).unwrap_or_default(),
     Err(_) => Vec::new(),
   };
   if entries.is_empty() {
+    // 失败时保留旧索引（旧索引总比空结果好），退避后再试。
     mark_failed(&INDEX_FAILED_AT);
-    return EMPTY_INDEX.get_or_init(Vec::new);
+    return (current_question_index(), false);
   }
   INDEX_FAILED_AT.with(|c| c.set(0));
-  QUESTION_INDEX.get_or_init(|| entries)
+  let index = Arc::new(entries);
+  QUESTION_INDEX.with_borrow_mut(|c| *c = Some((rev, index.clone())));
+  (index, true)
 }
 
 /// 强制刷新配置与全部版本状态。
@@ -593,4 +633,20 @@ pub async fn refresh_all() -> Result<(), AppError> {
     version_status(&v.id, true).await;
   }
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn index_url_carries_bank_rev() {
+    // 开发环境（config.json 无 rev）退回无参数地址，与服务端 no-cache 策略配合
+    assert_eq!(question_index_url(""), "/questions/search-index.json");
+    // 有修订号时带上 ?v=，题库更新后浏览器 / Service Worker 视为新资源
+    assert_eq!(
+      question_index_url("aaaa1111bbbb2222cccc3333"),
+      "/questions/search-index.json?v=aaaa1111bbbb2222cccc3333"
+    );
+  }
 }

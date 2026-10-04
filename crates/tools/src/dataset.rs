@@ -2,6 +2,8 @@
 //!
 //! 数据源优先读取本地目录（`--dataset-dir` / `DATASET_DIR`），缺失时从远程仓库下载。
 //! 解析文本来自 `data/explanations.json`（以内容指纹为 key），CSV 中的解析列作为兜底。
+//! 题面文本在建库时统一排版（见 `ham_web_core::typography`），保证同一道题在各题库里
+//! 逐字节一致，不会因空格写法不同而分叉出多个指纹。
 
 use std::collections::HashMap;
 use std::fs;
@@ -9,12 +11,16 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
 use ham_web_core::fingerprint::fingerprint_parts;
-use ham_web_core::{Codes, QuestionItem, QuestionOption, QuestionType};
+use ham_web_core::typography::normalize;
+use ham_web_core::{
+  Codes, QuestionItem, QuestionOption, QuestionType, fingerprint, normalize_question,
+};
 use regex::Regex;
+use serde_json::{Map, Value, json};
 
 use crate::csv::Table;
-use crate::explanations::load_explanations;
-use crate::fsutil::{Paths, write_json};
+use crate::explanations::{self, load_explanations};
+use crate::fsutil::{Paths, read_json, write_json};
 
 const MAX_BODY: u64 = 64 * 1024 * 1024;
 
@@ -104,7 +110,7 @@ struct BuildCtx<'a> {
 impl BuildCtx<'_> {
   fn option(&self, table_row: &[String], col: Option<usize>) -> String {
     let raw = Table::get(table_row, col);
-    self.sanitize.replace_all(raw, "").trim().to_owned()
+    normalize(self.sanitize.replace_all(raw, "").trim())
   }
 
   fn process_bank(&mut self, bank_key: &str, csv_name: &str) -> Result<Vec<QuestionItem>> {
@@ -126,7 +132,7 @@ impl BuildCtx<'_> {
       let jraw = Table::get(row, cj);
       let primary_j = jraw.split(',').next().unwrap_or_default().trim();
       let p = Table::get(row, cp);
-      let q = Table::get(row, cq);
+      let q = normalize(Table::get(row, cq));
       let t = Table::get(row, ct);
       if q.is_empty() {
         continue;
@@ -155,12 +161,12 @@ impl BuildCtx<'_> {
 
       let explanation = self
         .explanations
-        .get(&fingerprint_parts(q, &options, &answer_keys))
+        .get(&fingerprint_parts(&q, &options, &answer_keys))
         .filter(|s| !s.is_empty())
         .cloned()
         .or_else(|| {
           let v = Table::get(row, explanation_col);
-          (!v.is_empty()).then(|| v.to_owned())
+          (!v.is_empty()).then(|| normalize(v))
         });
 
       let mut image_url = None;
@@ -195,6 +201,13 @@ impl BuildCtx<'_> {
     }
     Ok(out)
   }
+}
+
+/// 刷新 `public/questions/` 下由题库文本派生的文件（搜索索引）。
+///
+/// `config.json` 里的版本列表是手工维护的，`rev` 只在构建后处理写入 `dist/`，这里不动它。
+fn refresh_derived_artifacts(paths: &Paths) -> Result<()> {
+  crate::postbuild::write_question_search_index(&paths.public)
 }
 
 /// 构建数据集。
@@ -237,7 +250,142 @@ pub fn build(paths: &Paths, local: Option<&Path>, remote: &str) -> Result<()> {
       out.len()
     );
   }
+  refresh_derived_artifacts(paths)?;
   println!("Dataset build complete.");
+  Ok(())
+}
+
+/// 一次性迁移：把已提交的 `public/questions/*.json` 按排版规则归一化，并同步迁移
+/// `data/explanations.json` 的 key。
+///
+/// `cargo make dataset` 建库时已经会归一化，这个命令用于**不重新下载 CSV** 也能把现有
+/// 数据迁移过来（与 `explanations-apply` 同类）。同一道题因空格写法不同而产生的多个
+/// 指纹会合并成一条解析（保留最长的一条），术语表释义与解析正文也一并归一化。
+pub fn normalize_committed(paths: &Paths, report: Option<&Path>) -> Result<()> {
+  let mut legacy_to_new: HashMap<String, String> = HashMap::new();
+  let mut banks: Vec<(String, Vec<QuestionItem>)> = Vec::new();
+  let mut changed_questions = 0usize;
+
+  for name in ["A", "B", "C", "full"] {
+    let file = paths.bank_json(name);
+    let mut questions: Vec<QuestionItem> = read_json(&file).with_context(|| {
+      format!(
+        "题库 {} 不存在或损坏，请先运行 `cargo make dataset`",
+        file.display()
+      )
+    })?;
+    for q in &mut questions {
+      let legacy = fingerprint(q);
+      if normalize_question(q) {
+        changed_questions += 1;
+      }
+      let current = fingerprint(q);
+      if legacy != current {
+        legacy_to_new.insert(legacy, current);
+      }
+    }
+    banks.push((name.to_owned(), questions));
+  }
+
+  // 解析表：key 迁移 + 正文归一化 + 变体合并
+  let table: Map<String, Value> = if paths.explanations.is_file() {
+    read_json(&paths.explanations)?
+  } else {
+    Map::new()
+  };
+  let (mut rekeyed, mut merged) = (0usize, 0usize);
+  let mut merges: Vec<Value> = Vec::new();
+  let mut migrated: Map<String, Value> = Map::new();
+  for (old_key, value) in &table {
+    let text = normalize(value.as_str().unwrap_or_default());
+    let new_key = legacy_to_new
+      .get(old_key)
+      .cloned()
+      .unwrap_or_else(|| old_key.clone());
+    if new_key != *old_key {
+      rekeyed += 1;
+    }
+    match migrated.get_mut(&new_key) {
+      None => {
+        migrated.insert(new_key, Value::String(text));
+      }
+      Some(existing) => {
+        let prev = existing.as_str().unwrap_or_default().to_owned();
+        let (keep, dropped) = if prev.chars().count() >= text.chars().count() {
+          (prev, text)
+        } else {
+          (text, prev)
+        };
+        merges.push(json!({ "fingerprint": new_key, "kept": keep, "dropped": dropped }));
+        *existing = Value::String(keep);
+        merged += 1;
+      }
+    }
+  }
+
+  // 术语表释义：保持与解析正文同一套排版（否则注入/清理匹配不上）
+  let mut glossary_files = 0usize;
+  for entry in fs::read_dir(&paths.glossary_dir)
+    .with_context(|| format!("读取 {} 失败", paths.glossary_dir.display()))?
+  {
+    let path = entry?.path();
+    if path.extension().and_then(|e| e.to_str()) != Some("json") {
+      continue;
+    }
+    let mut map: Map<String, Value> = read_json(&path)?;
+    let mut changed = false;
+    for value in map.values_mut() {
+      let normalized = match value.get("desc").and_then(Value::as_str) {
+        Some(desc) => Some(("desc", normalize(desc), desc.to_owned())),
+        None => value.as_str().map(|s| ("", normalize(s), s.to_owned())),
+      };
+      if let Some((field, text, before)) = normalized
+        && text != before
+      {
+        if field.is_empty() {
+          *value = Value::String(text);
+        } else {
+          value["desc"] = Value::String(text);
+        }
+        changed = true;
+      }
+    }
+    if changed {
+      write_json(&path, &map)?;
+      glossary_files += 1;
+    }
+  }
+
+  write_json(&paths.explanations, &migrated)?;
+  for (name, questions) in &banks {
+    write_json(&paths.bank_json(name), questions)?;
+  }
+  if let Some(path) = report {
+    write_json(
+      path,
+      &json!({
+        "changedQuestions": changed_questions,
+        "rekeyed": rekeyed,
+        "merged": merged,
+        "glossaryFiles": glossary_files,
+        "merges": merges,
+      }),
+    )?;
+  }
+
+  println!(
+    "排版归一化：改写 {changed_questions} 道题，迁移解析 key {rekeyed} 条，合并变体 {merged} 组"
+  );
+  if glossary_files > 0 {
+    println!("术语表释义同步：{glossary_files} 个文件");
+  }
+  println!("解析表当前 {} 条", migrated.len());
+  if let Some(path) = report {
+    println!("迁移明细：{}", path.display());
+  }
+  explanations::apply(paths)?;
+  refresh_derived_artifacts(paths)?;
+  println!("提示：再运行 `cargo make explanations-check` 复核");
   Ok(())
 }
 

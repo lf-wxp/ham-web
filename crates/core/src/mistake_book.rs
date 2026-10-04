@@ -160,6 +160,58 @@ pub struct MistakeBook {
 }
 
 impl MistakeBook {
+  /// 按当前排版规则重新计算每条记录的 key（题库归一化后调用，幂等）。
+  ///
+  /// key 是内容指纹的哈希，题面排版一变历史 key 就失效。记录里存了题目快照，
+  /// 于是可以：① 把快照文本也归一化（显示一致）；② 用快照重算 key（历史进度不丢）。
+  /// 同一道题的两个指纹变体若都留过记录，合并为一条：错次数累加、到期时间取早、
+  /// 最近答错时间取近、题库集合取并集。
+  ///
+  /// 返回发生变化（文本或 key 被改写、或被合并掉）的记录条数。
+  pub fn rekey(&mut self) -> usize {
+    let mut rewritten = 0usize;
+    for record in &mut self.records {
+      let before = record.key.clone();
+      let text_changed = crate::typography::normalize_question(&mut record.question);
+      let key = question_key(&record.question);
+      let key_changed = key != before;
+      if key_changed {
+        record.key = key;
+      }
+      // 文本变或 key 变只算一条记录，避免对同一条记录重复计数。
+      if text_changed || key_changed {
+        rewritten += 1;
+      }
+    }
+
+    let mut merged: Vec<MistakeRecord> = Vec::with_capacity(self.records.len());
+    for record in self.records.drain(..) {
+      match merged.iter_mut().find(|r| r.key == record.key) {
+        None => merged.push(record),
+        Some(keep) => {
+          // 两个变体各自记过答错次数，合并时累加
+          keep.wrong_count = keep.wrong_count.saturating_add(record.wrong_count);
+          keep.streak = keep.streak.max(record.streak);
+          keep.last_wrong_ms = keep.last_wrong_ms.max(record.last_wrong_ms);
+          keep.last_review_ms = keep.last_review_ms.max(record.last_review_ms);
+          keep.due_ms = keep.due_ms.min(record.due_ms);
+          keep.interval_days = keep.interval_days.max(record.interval_days);
+          keep.ease = f64::min(keep.ease, record.ease);
+          keep.banks.extend(record.banks);
+          if keep.cause.is_none() {
+            keep.cause = record.cause;
+          }
+          if keep.my_answer.is_empty() {
+            keep.my_answer = record.my_answer;
+          }
+          rewritten += 1;
+        }
+      }
+    }
+    self.records = merged;
+    rewritten
+  }
+
   /// 记录一次作答（`answer` 为空视为未作答，不做处理）。
   pub fn record(
     &mut self,
@@ -643,6 +695,46 @@ mod tests {
     b.id = Some("C-99".into());
     assert_eq!(question_key(&a), question_key(&b));
     assert_ne!(question_key(&a), question_key(&q("另一题", "A")));
+  }
+
+  #[test]
+  fn rekey_survives_typography_change() {
+    // 旧数据里的题面没有归一化排版
+    let legacy = q("使用 FT8模式 时", "A");
+    let mut book = MistakeBook::default();
+    assert_eq!(
+      book.record(&legacy, &ans("B"), 0),
+      Some(RecordOutcome::Wrong)
+    );
+    let old_key = book.records[0].key.clone();
+
+    // 归一化后：key 重算、快照文本也归一化，记录仍认得归一化后的题目
+    let current = q("使用 FT8 模式 时", "A");
+    assert_ne!(old_key, question_key(&current));
+    assert!(book.rekey() > 0);
+    assert_eq!(book.records.len(), 1);
+    assert_eq!(book.records[0].question.question, "使用 FT8 模式 时");
+    assert_eq!(book.records[0].key, question_key(&current));
+    assert!(book.contains(&current));
+    assert_eq!(book.records[0].wrong_count, 1);
+    // 幂等
+    assert_eq!(book.rekey(), 0);
+  }
+
+  #[test]
+  fn rekey_merges_variant_records() {
+    // 同一道题的空格变体各留过一条记录
+    let a = q("使用 FT8模式", "A");
+    let b = q("使用 FT8 模式", "A");
+    let mut book = MistakeBook::default();
+    book.record(&a, &ans("B"), 0);
+    book.record(&b, &ans("B"), 100);
+    assert_eq!(book.records.len(), 2);
+    assert!(book.rekey() > 0);
+    assert_eq!(book.records.len(), 1);
+    assert_eq!(book.records[0].wrong_count, 2);
+    assert_eq!(book.records[0].last_wrong_ms, 100);
+    assert!(book.contains(&b));
   }
 
   #[test]

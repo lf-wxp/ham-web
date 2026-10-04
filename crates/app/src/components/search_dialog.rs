@@ -255,6 +255,8 @@ pub fn SearchDialog() -> impl IntoView {
   // 术语表 / 题目搜索索引按需加载：首次打开面板时拉取，加载完成后结果自动刷新。
   let glossary_ready = RwSignal::new(data::glossary_loaded().is_some());
   let question_ready = RwSignal::new(data::question_index_loaded().is_some());
+  // 索引真正换新（修订号变化）后加一：题库数据更新会换出新索引，用它驱动结果重算。
+  let index_epoch = RwSignal::new(0u32);
 
   // 打开时清空输入。
   Effect::new(move |_| {
@@ -266,12 +268,16 @@ pub fn SearchDialog() -> impl IntoView {
           glossary_ready.set(true);
         });
       }
-      if !question_ready.get_untracked() {
-        leptos::task::spawn_local(async move {
-          data::load_question_index().await;
-          question_ready.set(true);
-        });
-      }
+      // 每次打开都核对索引新鲜度：修订号未变时只是一次内存比较，变了才重新拉取。
+      // 这样「题库更新后又打开搜索」不会再用旧题号去跳转。
+      leptos::task::spawn_local(async move {
+        let (_, refreshed) = data::load_question_index().await;
+        question_ready.set(true);
+        // 仅当索引真的换新（题库数据更新）时才驱动结果重算，避免每次打开都无谓重算。
+        if refreshed {
+          index_epoch.update(|n| *n = n.wrapping_add(1));
+        }
+      });
     }
   });
 
@@ -295,6 +301,8 @@ pub fn SearchDialog() -> impl IntoView {
           {move || {
             glossary_ready.track();
             question_ready.track();
+            // 索引刷新（题库数据更新）后重算结果
+            index_epoch.track();
             let q = query.get();
             let trimmed = q.trim();
             if trimmed.is_empty() {

@@ -64,7 +64,7 @@
     "abbr": "SNR",
     "en": "Signal-to-Noise Ratio",
     "category": "设备",
-    "desc": "有用信号和噪声的音量之比，越大信号越清楚",
+    "desc": "有用信号功率与噪声功率之比，越大信号越清楚",
     "aliases": [
       "S/N"
     ],

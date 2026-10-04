@@ -184,6 +184,24 @@ impl BankConfig {
       None => url.to_owned(),
     }
   }
+
+  /// A/B/C 三个题库修订号拼接，用于给**由题库派生**的资源做版本参数
+  /// （如 `/questions/search-index.json?v=…`）。
+  ///
+  /// `rev` 是构建后处理写入的内容哈希（十六进制），可安全放进 URL 查询串；
+  /// 只要有一个题库缺修订号就返回空串：开发环境（`public/questions/config.json`
+  /// 没有 `rev`，只有构建后处理才会写入）下退回无参数地址，与题库文件的行为一致。
+  #[must_use]
+  pub fn questions_rev(&self) -> String {
+    let mut rev = String::new();
+    for bank in Bank::ALL {
+      match self.rev_of(&bank.default_url()) {
+        Some(r) if !r.is_empty() => rev.push_str(r),
+        _ => return String::new(),
+      }
+    }
+    rev
+  }
 }
 
 /// 题库配置文件。
@@ -277,6 +295,39 @@ mod tests {
     let parsed: BankInfo =
       serde_json::from_str(r#"{"path":"/questions/A.json","description":""}"#).unwrap();
     assert!(parsed.rev.is_empty());
+  }
+
+  #[test]
+  fn questions_rev_requires_all_banks() {
+    let info = |path: &str, rev: &str| BankInfo {
+      path: path.into(),
+      description: String::new(),
+      rev: rev.into(),
+    };
+    let cfg = |revs: [&str; 3]| BankConfig {
+      version: "1".into(),
+      last_modified: String::new(),
+      versions: vec![QuestionVersion {
+        id: "v".into(),
+        name: "v".into(),
+        description: String::new(),
+        is_latest: true,
+        banks: Banks {
+          a: info("/questions/A.json", revs[0]),
+          b: info("/questions/B.json", revs[1]),
+          c: info("/questions/C.json", revs[2]),
+        },
+        updated_at: String::new(),
+      }],
+    };
+    // 开发环境三个题库都没有 rev
+    assert_eq!(cfg(["", "", ""]).questions_rev(), "");
+    // 任一题库缺 rev → 空串，退回无参数地址
+    assert_eq!(cfg(["aaaa1111", "bbbb2222", ""]).questions_rev(), "");
+    assert_eq!(
+      cfg(["aaaa1111", "bbbb2222", "cccc3333"]).questions_rev(),
+      "aaaa1111bbbb2222cccc3333"
+    );
   }
 
   #[test]

@@ -42,7 +42,13 @@ const SEEDED_KEY: &str = "mistake-book:seeded";
 const SEEN_SEEDED_KEY: &str = "study-stats:seen-seeded";
 
 pub fn load_book() -> MistakeBook {
-  storage::get_json(BOOK_KEY).unwrap_or_default()
+  let mut book: MistakeBook = storage::get_json(BOOK_KEY).unwrap_or_default();
+  // 题库排版归一化（2026-10）后历史 key 会失效：用题目快照重算 key 并归一化快照文本，
+  // 幂等，因此每次加载都顺手做一次即可。
+  if book.rekey() > 0 {
+    save_book(&book);
+  }
+  book
 }
 
 fn save_book(book: &MistakeBook) {

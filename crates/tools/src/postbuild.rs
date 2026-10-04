@@ -245,7 +245,10 @@ pub fn run(root: &Path, dist: &Path, site_url: &str) -> Result<()> {
 }
 
 /// 从各题库 JSON 提取精简搜索索引（题干 + 解析），供全站搜索按需加载。
-fn write_question_search_index(dist: &Path) -> Result<()> {
+///
+/// 除了构建后处理写进 `dist/`，题库文本变化时（`cargo make dataset` /
+/// `cargo make questions-normalize`）也会用同一函数刷新 `public/questions/search-index.json`。
+pub(crate) fn write_question_search_index(dist: &Path) -> Result<()> {
   let mut entries: Vec<QuestionSearchEntry> = Vec::new();
   for bank in Bank::ALL {
     let path = dist.join(format!("questions/{bank}.json"));

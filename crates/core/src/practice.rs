@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 
 use crate::bank::Bank;
-use crate::fingerprint::fingerprint;
+use crate::fingerprint::content_key;
 use crate::question::QuestionItem;
 use crate::text::js_trim;
 
@@ -130,6 +130,9 @@ pub fn find_jump_target(questions: &[&QuestionItem], input: &str) -> Option<usiz
 }
 
 /// 「只看本类新增」：A 为基础全部保留；B 只保留 A 没有的；C 只保留 A、B 都没有的。
+///
+/// 判重用 [`content_key`]（忽略全部空白）而不是 [`fingerprint`]：同一道题在不同题库里
+/// 可能因 CSV 的空格差异得到不同指纹，用指纹判重会把同一道题当成「本类新增」再出一遍。
 #[must_use]
 pub fn unique_to_bank(
   bank: Bank,
@@ -137,13 +140,13 @@ pub fn unique_to_bank(
   b: &[QuestionItem],
   c: &[QuestionItem],
 ) -> Vec<QuestionItem> {
-  let set = |qs: &[QuestionItem]| qs.iter().map(fingerprint).collect::<HashSet<_>>();
+  let set = |qs: &[QuestionItem]| qs.iter().map(content_key).collect::<HashSet<_>>();
   match bank {
     Bank::A => a.to_vec(),
     Bank::B => {
       let fa = set(a);
       b.iter()
-        .filter(|q| !fa.contains(&fingerprint(q)))
+        .filter(|q| !fa.contains(&content_key(q)))
         .cloned()
         .collect()
     }
@@ -151,7 +154,7 @@ pub fn unique_to_bank(
       let (fa, fb) = (set(a), set(b));
       c.iter()
         .filter(|q| {
-          let f = fingerprint(q);
+          let f = content_key(q);
           !fa.contains(&f) && !fb.contains(&f)
         })
         .cloned()
@@ -180,6 +183,28 @@ mod tests {
       image_url: None,
       explanation: None,
     }
+  }
+
+  #[test]
+  fn unique_to_bank_ignores_whitespace_variants() {
+    let with_option = |text: &str, option: &str| {
+      let mut item = q("LK0501", text);
+      item.options = vec![crate::question::QuestionOption {
+        key: "A".into(),
+        text: option.into(),
+      }];
+      item.answer_keys = vec!["A".into()];
+      item
+    };
+    let a = vec![with_option("执照的有效期不超过：", "5 年")];
+    let b = vec![
+      // 与 A 只是空格写法不同，不应算「本类新增」
+      with_option("执照的有效期不超过：", "5年"),
+      with_option("另一道题", "3 年"),
+    ];
+    let uniq = unique_to_bank(Bank::B, &a, &b, &[]);
+    assert_eq!(uniq.len(), 1);
+    assert_eq!(uniq[0].question, "另一道题");
   }
 
   #[test]

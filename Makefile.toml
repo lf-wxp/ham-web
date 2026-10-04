@@ -307,6 +307,11 @@ fi
 cargo run -q -p ham-web-tools --release -- add-explanations "$BATCH"
 '''
 
+[tasks.explanations-dedupe]
+description = "清理解析中重复或错位的术语括注（重复只保留首次，并删除注进更长词语内部的释义）"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "dedupe-explanations"]
+
 [tasks.explanations-enhance]
 description = "用 data/glossary/ 中 inject=true 的词条为解析注入术语解释"
 command = "cargo"
@@ -329,9 +334,30 @@ description = "把 data/explanations.json 写入 public/questions/*.json（离�
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "apply-explanations"]
 
+[tasks.explanations-sync]
+description = "对齐同一道题多指纹变体的解析文本（保留最详细的一条，明细写入 tmp/explanations-sync-report.json）"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "sync-explanations", "--report", "tmp/explanations-sync-report.json"]
+
+[tasks.questions-normalize]
+description = "一次性迁移：把已提交题库按排版规则归一化并迁移解析表 key（明细写入 tmp/questions-normalize-report.json）"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "normalize-questions", "--report", "tmp/questions-normalize-report.json"]
+
+[tasks.explanations-check]
+description = "校验解析表：答案一致性、重复/错位注入、裸释义、同题多版本分叉（分叉只告警）"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "check-explanations"]
+
 [tasks.explanations]
-description = "一键：合并 → 术语增强 → 写入题库：BATCH=tmp/batch.json cargo make explanations"
-dependencies = ["explanations-add", "explanations-enhance", "explanations-apply"]
+description = "一键：合并 → 去重 → 术语增强 → 变体对齐 → 写入题库：BATCH=tmp/batch.json cargo make explanations"
+dependencies = [
+  "explanations-add",
+  "explanations-dedupe",
+  "explanations-enhance",
+  "explanations-sync",
+  "explanations-apply",
+]
 
 # ───────────────────────────── 质量 ─────────────────────────────
 
@@ -358,8 +384,8 @@ command = "cargo"
 args = ["test", "-p", "ham-web-core", "-p", "ham-web-apt", "-p", "ham-web-tools", "-p", "ham-web-server", "-p", "ham-web-app"]
 
 [tasks.check]
-description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案词典校验（不构建前端）"
-dependencies = ["fmt-check", "clippy", "test", "i18n-check"]
+description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案词典校验 + 解析表校验（不构建前端）"
+dependencies = ["fmt-check", "clippy", "test", "i18n-check", "explanations-check"]
 
 [tasks.e2e]
 description = "端到端测试：构建 release 站点后由 Playwright 启动服务器并运行 e2e/（首次：cd e2e && npm ci && npx playwright install chromium）"
@@ -375,8 +401,8 @@ command = "node"
 args = ["scripts/coverage.mjs"]
 
 [tasks.ci]
-description = "CI：格式检查 + clippy + 测试 + 界面文案校验 + 前端构建"
-dependencies = ["fmt-check", "clippy", "test", "i18n-check", "build-web"]
+description = "CI：格式检查 + clippy + 测试 + 界面文案校验 + 解析表校验 + 前端构建"
+dependencies = ["fmt-check", "clippy", "test", "i18n-check", "explanations-check", "build-web"]
 
 # ───────────────────────────── 部署 ─────────────────────────────
 

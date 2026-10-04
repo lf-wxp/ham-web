@@ -160,6 +160,7 @@ pub mod tone_squelch;
 pub mod topic_quiz;
 pub mod transceiver;
 pub mod tx_line;
+pub mod typography;
 pub mod vna;
 pub mod voacap;
 pub mod weak_exam;
@@ -171,5 +172,6 @@ pub mod zone;
 
 pub use bank::{Bank, BankConfig, BankInfo, QuestionVersion};
 pub use exam::{ExamRule, ExamScore};
-pub use fingerprint::fingerprint;
+pub use fingerprint::{content_key, fingerprint};
 pub use question::{Codes, Pages, QuestionItem, QuestionOption, QuestionSearchEntry, QuestionType};
+pub use typography::{normalize, normalize_question, normalize_text};

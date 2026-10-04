@@ -62,8 +62,24 @@ enum Command {
   },
   /// 用术语表 data/glossary/ 中 inject=true 的词条为解析注入通俗解释（幂等）
   EnhanceExplanations,
+  /// 清理解析中重复或错位的术语括注（同一条里只保留首次出现，并删除注进更长词语内部的释义）
+  DedupeExplanations,
+  /// 把已提交题库按排版规则归一化，并迁移解析表 key（不重新下载 CSV）
+  NormalizeQuestions {
+    /// 迁移明细输出路径
+    #[arg(long)]
+    report: Option<PathBuf>,
+  },
+  /// 对齐同一道题多指纹变体的解析文本（只保留最详细的一条）
+  SyncExplanations {
+    /// 合并明细（保留/丢弃的文本）输出路径
+    #[arg(long)]
+    report: Option<PathBuf>,
+  },
   /// 校验 data/glossary/（分类、参见、重复、括号等）并输出统计
   CheckGlossary,
+  /// 校验解析表：答案一致性、重复/错位注入、裸释义、同题多版本分叉
+  CheckExplanations,
   /// 校验 crates/app/src/i18n.rs 的 EN / ES 词典（重复 key、占位符数量）并统计覆盖率
   CheckI18n {
     /// 导出「源码里有但词典里没有」的文案模板（{zh, text}）
@@ -117,7 +133,7 @@ enum Command {
   },
   /// 统计缺失解析的题目，并导出待填写模板
   MissingExplanations {
-    /// 仅统计某个题库（A/B/C）
+    /// 仅统计某个题库（A/B/C）；不指定时额外包含 full 题库
     #[arg(long)]
     bank: Option<ham_web_core::Bank>,
     /// 导出 {"id": ""} 模板，填写后可直接用 add-explanations 合并
@@ -222,7 +238,13 @@ fn main() -> Result<()> {
     Command::ApplyExplanations => explanations::apply(&paths),
     Command::AddExplanations { batch } => explanations::add(&paths, &batch),
     Command::EnhanceExplanations => explanations::enhance(&paths),
+    Command::DedupeExplanations => explanations::dedupe(&paths),
+    Command::SyncExplanations { report } => explanations::sync(&paths, report.as_deref()),
+    Command::NormalizeQuestions { report } => {
+      dataset::normalize_committed(&paths, report.as_deref())
+    }
     Command::CheckGlossary => explanations::check_glossary(&paths),
+    Command::CheckExplanations => explanations::check(&paths),
     Command::CheckI18n { missing, lang } => {
       if let Some(out) = missing {
         let items = i18n::missing(&root, &lang)?;
