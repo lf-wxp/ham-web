@@ -38,7 +38,7 @@ pub(super) fn AlertCard() -> impl IntoView {
       <div class="mt-2">
         {move || match alert.get() {
           Some(a) if !a.level.is_empty() => view! {
-            <span class="rounded bg-muted px-2 py-1 font-mono text-sm font-semibold text-red-500">{a.level.clone()}</span>
+            <span class="rounded bg-muted px-2 py-1 font-mono text-sm font-semibold text-destructive">{a.level.clone()}</span>
           }
           .into_any(),
           Some(a) => view! {
