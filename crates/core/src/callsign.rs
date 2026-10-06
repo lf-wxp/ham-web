@@ -7,8 +7,8 @@ use crate::reference::CALL_AREAS;
 
 /// 台站类别（中国呼号第二位字母）。
 pub const STATION_TYPES: &[(&str, &str)] = &[
-  ("BA–BH", "个人业余电台（A–H 类，BG 最常见）"),
-  ("BI", "个人业余电台（I 类）"),
+  ("BA–BH", "个人业余电台（呼号序列 A–H，BG 最常见）"),
+  ("BI", "个人业余电台（呼号序列 I）"),
   ("BJ", "信标台 / 空间电台"),
   ("BR", "中继台"),
   ("BT", "特设电台"),
@@ -21,7 +21,7 @@ pub const SLASH_SUFFIXES: &[(&str, &str)] = &[
   ("/M", "移动操作（Mobile，车载等移动中）"),
   ("/MM", "海上移动（Maritime Mobile）"),
   ("/AM", "航空移动（Aeronautical Mobile）"),
-  ("/QRP", "低功率（发射功率 ≤5W）"),
+  ("/QRP", "低功率（CW ≤5W、SSB ≤10W）"),
   ("/QRO", "高功率"),
   ("/0–/9", "在其他分区操作（数字表示分区号）"),
 ];
@@ -69,7 +69,7 @@ fn slash_of(slash: &str) -> Option<&'static str> {
     "M" => Some("移动操作（Mobile，车载等移动中）"),
     "MM" => Some("海上移动（Maritime Mobile）"),
     "AM" => Some("航空移动（Aeronautical Mobile）"),
-    "QRP" => Some("低功率（发射功率 ≤5W）"),
+    "QRP" => Some("低功率（CW ≤5W、SSB ≤10W）"),
     "QRO" => Some("高功率"),
     _ if !s.is_empty() && s.chars().all(|c| c.is_ascii_digit()) => {
       Some("在其他分区操作（数字表示分区号）")
@@ -165,7 +165,7 @@ mod tests {
     );
     assert_eq!(
       parse_callsign("K1ZZ/QRP").slash,
-      Some("低功率（发射功率 ≤5W）")
+      Some("低功率（CW ≤5W、SSB ≤10W）")
     );
     assert_eq!(
       parse_callsign("BG4XYZ/7").slash,

@@ -7,9 +7,14 @@
 /// 方向图类型。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PatternKind {
-  /// 半波偶极子 E 面（垂直于振子的平面，呈「8」字形）。
+  /// 半波偶极子 E 面：**包含振子轴**的平面，呈「8」字形。
+  ///
+  /// 水平架设的偶极子，其水平面方位图就是 E 面，故最大辐射垂直于振子、轴向为零。
+  /// （E 面的定义是「含振子轴且含最大辐射方向的平面」，不是「垂直于振子的平面」。）
   DipoleE,
-  /// 半波偶极子 H 面（包含振子的水平面，全向）。
+  /// 半波偶极子 H 面：**垂直于振子轴**的平面，全向圆。
+  ///
+  /// 只有垂直架设的偶极子，其水平面方位图才是 H 面（全向）；水平架设时 H 面是竖直的。
   DipoleH,
   /// 三单元 Yagi（水平面，前向主瓣 + 后瓣）。
   Yagi,
@@ -17,7 +22,11 @@ pub enum PatternKind {
   Vertical,
   /// 水平偶极子仰角图（架高可调，见 [`dipole_elevation`]）。
   DipoleEl,
-  /// 水平环天线仰角图（1λ，高仰角主瓣，适合 NVIS 近距通信）。
+  /// 水平环天线仰角图（1λ，天顶主瓣最强，适合 NVIS 近距通信）。
+  ///
+  /// 注意与 [`Self::SquareLoop`] / [`Self::DeltaLoop`] 的区别：本项是**仰角**图，
+  /// 而方环 / 三角环画的是**方位**图。低仰角辐射才是 DX 关心的部分，仰角图上的
+  /// 零点方向（地平线）并不代表方位图无意义 —— 实际架设高度与地面反射会填出低仰角分量。
   Loop,
   /// 方形环天线方位角图（水平面，4 个边中点方向略强）。
   SquareLoop,
@@ -89,13 +98,13 @@ pub fn gain(kind: PatternKind, theta_deg: f64) -> f64 {
     PatternKind::DipoleE => t.sin().abs(),
     // 水平面全向。
     PatternKind::DipoleH => 1.0,
-    // 前向 cos³ 主瓣，后瓣约 -15 dB（0.032）。
+    // 前向 cos³ 主瓣，后瓣约 -20 dB（0.01）。典型三单元八木 F/B 为 15–20 dB。
     PatternKind::Yagi => {
       let c = t.cos();
       if c >= 0.0 {
         c.powi(3)
       } else {
-        c.abs().powi(3) * 0.032
+        c.abs().powi(3) * 0.01
       }
     }
     // 垂直天线：低仰角主瓣（地平线最强，天顶为零）。
@@ -104,24 +113,27 @@ pub fn gain(kind: PatternKind, theta_deg: f64) -> f64 {
     PatternKind::DipoleEl => dipole_elevation(theta_deg, 0.5),
     // 水平环：高仰角主瓣（天顶最强），适合 NVIS。
     PatternKind::Loop => t.sin(),
-    // 方形环：水平面近似全向，4 个边中点方向略强（±8%）。
-    PatternKind::SquareLoop => 0.92 + 0.08 * (4.0 * t).cos(),
-    // 三角环：水平面近似全向，3 个方向略强（±8%）。
-    PatternKind::DeltaLoop => 0.92 + 0.08 * (3.0 * t).cos(),
-    // 二单元 Yagi：前向 cos^2.5 主瓣，后瓣约 -20 dB（0.1）。
+    // 方形环：水平面近似全向，方位起伏约 2 dB（0.8–1.0）。实测随馈电位置（角馈 /
+    // 边中点馈）与架设高度变化，可达 3–4 dB；且最大方向随馈电点改变。
+    PatternKind::SquareLoop => 0.9 + 0.1 * (4.0 * t).cos(),
+    // 三角环：水平面近似全向，3 个方向略强，起伏同样约 2 dB。
+    PatternKind::DeltaLoop => 0.9 + 0.1 * (3.0 * t).cos(),
+    // 二单元 Yagi：前向 cos^2.5 主瓣，后瓣约 -10 dB（0.1，功率口径）。
     PatternKind::Yagi2 => {
       let c = t.cos();
       let mag = c.abs().powf(2.5);
       if c >= 0.0 { mag } else { mag * 0.1 }
     }
-    // 四单元 Yagi：前向 cos^3.5 主瓣，后瓣约 -34 dB（0.02）。
+    // 四单元 Yagi：前向 cos^3.5 主瓣，后瓣约 -22 dB（0.006，功率口径）。
     PatternKind::Yagi4 => {
       let c = t.cos();
       let mag = c.abs().powf(3.5);
-      if c >= 0.0 { mag } else { mag * 0.02 }
+      if c >= 0.0 { mag } else { mag * 0.006 }
     }
-    // 1/4λ 垂直 + 地网：低仰角主瓣比无地网垂直更集中（指数 0.9）。
-    PatternKind::VerticalGP => t.cos().powf(0.9),
+    // 1/4λ 垂直 + 地网：地网改善地面损耗，主瓣比无地网垂直更低、更集中（指数 >1）。
+    // 注意指数必须大于 1 才是「更集中」；小于 1 会把波束展宽（0.9 时 cos30°=0.866
+    // 反而抬到 0.879，离轴增益比 cos θ 更高）。
+    PatternKind::VerticalGP => t.cos().powf(1.15),
   }
 }
 

@@ -34,7 +34,7 @@ pub(super) fn SwrConverter() -> impl IntoView {
         <input type="number" prop:value=move || swr.get().to_string() on:input=on_swr class=INPUT />
       </label>
       <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("回波损耗（dB，负值）")}</span>
+        <span class="text-xs text-muted-foreground">{move || t("S11（dB，负值）")}</span>
         <input type="number" prop:value=move || return_loss.get().to_string() on:input=on_rl class=INPUT />
       </label>
       <div class=RESULT>
@@ -42,8 +42,13 @@ pub(super) fn SwrConverter() -> impl IntoView {
           let s = swr.get();
           let gamma = (s - 1.0) / (s + 1.0);
           tf(
-            "SWR {} → 反射系数 |Γ| = {}，回波损耗 {} dB",
-            &[&fmt_num(s), &fmt_num(gamma), &fmt_num(return_loss.get())],
+            "SWR {} → 反射系数 |Γ| = {}，S11 = {} dB（回波损耗取正值为 {} dB）",
+            &[
+              &fmt_num(s),
+              &fmt_num(gamma),
+              &fmt_num(return_loss.get()),
+              &fmt_num(-return_loss.get()),
+            ],
           )
         }}
       </div>

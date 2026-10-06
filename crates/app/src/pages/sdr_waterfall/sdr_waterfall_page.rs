@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use ham_web_core::spectrum::{db_from_linear, waterfall_color};
+use ham_web_core::spectrum::waterfall_color;
 use js_sys::{Object, Reflect};
 use leptos::html;
 use leptos::prelude::*;
@@ -111,6 +111,8 @@ pub fn SdrWaterfallPage() -> impl IntoView {
         let analyser: AnalyserNode = ctx.create_analyser()?;
         analyser.set_fft_size(FFT_SIZE);
         analyser.set_smoothing_time_constant(0.0);
+        // getFloatFrequencyData 返回的已经是 dB 值；min/maxDecibels 只影响
+        // getByteFrequencyData 的字节缩放，对本路径不生效，故下面不能再取一次对数。
         source.connect_with_audio_node(&analyser)?;
 
         let spectrum_canvas: HtmlCanvasElement = spectrum_ref
@@ -148,7 +150,8 @@ pub fn SdrWaterfallPage() -> impl IntoView {
           for (i, &v) in freq.iter().enumerate() {
             #[allow(clippy::cast_precision_loss)]
             let x = i as f64;
-            let y = f64::from(db_to_y(db_from_linear(v) + g, SPECTRUM_H as f32));
+            // v 已是 dB（见上面的 min/maxDecibels 设置），不能再取一次对数。
+            let y = f64::from(db_to_y(v + g, SPECTRUM_H as f32));
             if i == 0 {
               sctx.move_to(x, y);
             } else {
@@ -166,7 +169,7 @@ pub fn SdrWaterfallPage() -> impl IntoView {
             let total = BINS * WATERFALL_H as usize * 4;
             b.copy_within(0..(total - row), row);
             for (i, &v) in freq.iter().enumerate() {
-              let (r, gr, bl) = waterfall_color(db_from_linear(v) + g, FLOOR_DB, CEIL_DB);
+              let (r, gr, bl) = waterfall_color(v + g, FLOOR_DB, CEIL_DB);
               let o = i * 4;
               b[o] = r;
               b[o + 1] = gr;

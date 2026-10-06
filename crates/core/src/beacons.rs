@@ -42,7 +42,7 @@ pub const DASH_POWERS: &[(&str, f64)] = &[
 
 /// 一轮时长（秒）：18 台 × 10 秒。
 pub const CYCLE_SECS: i64 = 180;
-/// 每台信标发射时长（秒）。
+/// 每台信标的时隙（秒）。实际发射约 5–6 秒（呼号 + 4 个 1 秒 dash，末尾静默）。
 pub const SLOT_SECS: i64 = 10;
 
 /// 由 UTC epoch 秒计算「当前信标下标」与「进入该台的秒数（0..9）」。
@@ -51,6 +51,15 @@ pub const SLOT_SECS: i64 = 10;
 pub fn beacon_slot(utc_epoch_secs: i64) -> (usize, i64) {
   let cycle = utc_epoch_secs.rem_euclid(CYCLE_SECS); // 0..179
   ((cycle / SLOT_SECS) as usize, cycle % SLOT_SECS)
+}
+
+/// 由 UTC epoch 秒计算当前信标所在的波段下标（对应 [`BEACON_BANDS`]）。
+///
+/// 每 3 分钟切换一个波段，5 个波段轮完为 15 分钟。只靠 [`beacon_slot`] 无法知道
+/// 当前在哪一频段 —— 收听时必须同时给出波段。
+#[must_use]
+pub fn beacon_band(utc_epoch_secs: i64) -> usize {
+  (utc_epoch_secs.rem_euclid(CYCLE_SECS * BEACON_BANDS.len() as i64) / CYCLE_SECS) as usize
 }
 
 #[cfg(test)]

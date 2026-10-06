@@ -49,7 +49,8 @@ pub(super) fn DipoleCalculator() -> impl IntoView {
             t("请输入正频率")
           } else {
             let half = 150.0 / f * kk;
-            tf("半波偶极总长 ≈ {} m（单臂 {} m）　1/4 波长 ≈ {} m　建议架高 ≈ {} m", &[&format!("{half:.2}"), &format!("{:.2}", half / 2.0), &format!("{:.2}", 75.0 / f * kk), &format!("{:.2}", 75.0 / f)])
+            // 建议架高约半波长（150/f），不是 1/4 波长（75/f）。
+            tf("半波偶极总长 ≈ {} m（单臂 {} m）　1/4 波长 ≈ {} m　建议架高 ≈ {} m", &[&format!("{half:.2}"), &format!("{:.2}", half / 2.0), &format!("{:.2}", 75.0 / f * kk), &format!("{:.2}", 150.0 / f)])
           }
         }}
       </div>

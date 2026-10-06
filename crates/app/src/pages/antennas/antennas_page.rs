@@ -1,9 +1,10 @@
-use ham_web_core::antennas::ANTENNAS;
+use ham_web_core::antennas::{ANTENNA_THEORY, ANTENNAS};
 use leptos::prelude::*;
 
 use crate::util::set_title;
 
 use super::antenna_card::AntennaCard;
+use crate::components::common::ConceptsSection;
 use crate::i18n::t;
 
 #[component]
@@ -23,6 +24,10 @@ pub fn AntennasPage() -> impl IntoView {
       <div class="mx-auto max-w-5xl px-4 py-5">
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {ANTENNAS.iter().map(|a| view! { <AntennaCard entry=a /> }).collect_view()}
+        </div>
+
+        <div class="mt-6">
+          <ConceptsSection title="天线理论要点" items=ANTENNA_THEORY />
         </div>
       </div>
     </div>

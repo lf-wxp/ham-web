@@ -103,7 +103,7 @@
 | 分组 | 专题 |
 | --- | --- |
 | 备考速查 | 考试速查、考点速查手册、易混淆辨析、公式速查、呼号前缀、术语表、简语、字母解释法、RST 信号报告、莫尔斯电码、CW 操作、操作证权限 |
-| 模式 · 传播 | 模拟模式、业余电视、SSTV 慢扫描电视、数字模式、数字语音组网、Packet 分组无线电、RTTY/PSK31、FT8/FT4、SDR、GNU Radio、APRS、常用频率、频率协调、CQ/ITU 分区地图、传播与电离层、国际信标网络、特殊传播、流星散射、EME、传播预测、WSPR、气象卫星接收、极光通信 |
+| 模式 · 传播 | 模拟模式、业余电视、SSTV 慢扫描电视、数字模式、调制理论、数字通信原理、数字信号处理基础、数字语音组网、Packet 分组无线电、RTTY/PSK31、FT8/FT4、SDR、GNU Radio、APRS、常用频率、频率协调、CQ/ITU 分区地图、传播与电离层、国际信标网络、特殊传播、流星散射、EME、传播预测、WSPR、气象卫星接收、极光通信 |
 | 天线 · 设备 | 天线型式、天线阵列/相控阵、天线极化、匹配与馈线、巴伦与不平衡变压器、天线 DIY、实用天线专题、天线架设、天线农场、天线调试、天线分析仪、VNA 矢量网络分析仪、天线建模、NVIS、电子电路基础、滤波器与双工器、测量仪表、电源与电池、电源供应、收发信机、接收机指标、设备评测与选购、功率放大器、波段表、波段规划、微波通信、车载/移动电台 |
 | 通联 · 活动 | 通联实务、卫星通联操作、通联竞赛、竞赛日志 Cabrillo、DX 奖状、IOTA、DX 技巧、DX 远征、DXCC 世纪俱乐部、QRP、电子 QSL、QSL 卡片设计、无线电测向、应急通信、Winlink 无线邮件、活动日历、SOTA/POTA、网格定位、呼号查询、中继台与网关、中继台建设、日志与竞赛软件 |
 | 进阶 · 关于 | 国际组织与分区、射频安全、接地与防雷、射频干扰排查、接收环境与噪声、新手入门、学习路径、学习资源、SWL 短波监听、执照申办、法规与管理、业余无线电历史、远程电台、开源项目与 DIY、火腿社区、DIY 实战项目 |
@@ -184,7 +184,7 @@
 ├── Dockerfile              # 多阶段构建（distroless 运行镜像）
 ├── rustfmt.toml            # 2 空格缩进、行宽 100
 ├── cspell.json             # 专有名词拼写白名单
-├── ROADMAP.md              # 增量扩展路线图
+├── ROADMAP.md              # 增量扩展路线图（缺口清单与进度追踪，见 [ROADMAP.md](ROADMAP.md)）
 ├── crates/
 │   ├── core/               # 领域模型与纯计算：题目结构、内容指纹、考试规则/抽题/计分、分类体系、
 │   │                       #   术语表、波段/传播/天线等知识数据、ADIF/Cabrillo/竞赛记分、网格与呼号解析、
@@ -855,7 +855,7 @@ cargo make e2e-coverage                                # 只统计覆盖率，�
 | 首页 | `/` |
 | 考试中心 | `/practice` `/exam` `/daily-challenge` `/browse` `/flashcards` `/listen` `/cards` `/mistakes` `/mistake-topics` `/bookmarks` `/weekly` `/progress` `/study-calendar` `/exam-review` `/print` `/countdown` `/photo-processor` |
 | 备考速查 | `/reference` `/cheat-sheet` `/confusables` `/formulas` `/prefixes` `/glossary` `/q-code` `/phonetic` `/rst` `/morse` `/cw-operating` `/license-classes` |
-| 模式 · 传播 | `/analog-modes` `/atv` `/sstv` `/modes` `/dv-network` `/packet` `/rtty` `/ft8` `/sdr` `/gnuradio` `/aprs` `/frequencies` `/coordination` `/zone-map` `/propagation` `/beacons` `/special-prop` `/meteor-scatter` `/eme` `/muf` `/wspr` `/weather-sat` `/apt-decoder` `/aurora` |
+| 模式 · 传播 | `/analog-modes` `/atv` `/sstv` `/modes` `/modulation` `/digital-comms` `/dsp` `/dv-network` `/packet` `/rtty` `/ft8` `/sdr` `/gnuradio` `/aprs` `/frequencies` `/coordination` `/zone-map` `/propagation` `/beacons` `/special-prop` `/meteor-scatter` `/eme` `/muf` `/wspr` `/weather-sat` `/apt-decoder` `/aurora` |
 | 天线 · 设备 | `/antennas` `/polarization` `/feedline` `/balun` `/antenna-diy` `/practical-antennas` `/antenna-installation` `/antenna-farm` `/antenna-tuning` `/antenna-analyzer` `/vna` `/antenna-modeling` `/antenna-array` `/nvis` `/electronics` `/filters` `/meters` `/power` `/power-supply` `/transceiver` `/receiver` `/gear` `/amplifier` `/bands` `/bandplan` `/microwave` `/mobile` |
 | 通联 · 活动 | `/operating` `/sat-operation` `/contest` `/cabrillo` `/awards` `/iota` `/dx` `/dxpedition` `/most-wanted` `/qrp` `/eqsl` `/qsl-card` `/ardf` `/emcomm` `/winlink` `/events` `/portable` `/grid` `/callsign` `/repeater` `/repeater-build` `/logging-software` |
 | 进阶 · 关于 | `/organizations` `/safety` `/grounding` `/rfi` `/noise` `/beginner` `/learning-path` `/learning-resources` `/swl` `/license` `/regulations` `/history` `/remote` `/open-source` `/community` `/diy-projects` `/developers` |

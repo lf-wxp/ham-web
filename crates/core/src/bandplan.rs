@@ -35,6 +35,14 @@ pub const BAND_PLANS: &[BandPlan] = &[
     segments: &[("7.000–7.100", "CW / 数据"), ("7.100–7.200", "话音（SSB）")],
   },
   BandPlan {
+    band: "60m",
+    freq_range: "5.3515–5.3665 MHz",
+    segments: &[(
+      "5.3515–5.3665",
+      "USB 话音 / 窄带数据（WARC，e.i.r.p. ≤15W）",
+    )],
+  },
+  BandPlan {
     band: "30m",
     freq_range: "10.10–10.15 MHz",
     segments: &[("10.100–10.150", "仅 CW / 窄带数据（WARC）")],
@@ -81,6 +89,7 @@ pub const BAND_PLANS: &[BandPlan] = &[
       ("144.100–144.400", "SSB"),
       ("144.400–145.800", "FM / 中继"),
       ("145.800–146.000", "业余卫星"),
+      ("146.000–148.000", "FM / 中继（扩展段）"),
     ],
   },
   BandPlan {

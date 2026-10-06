@@ -53,7 +53,9 @@ pub mod cw_decoder;
 pub mod cw_op;
 pub mod cw_runner;
 pub mod daily_challenge;
+pub mod digital_comms;
 pub mod diy_projects;
+pub mod dsp_basics;
 pub mod dv_network;
 pub mod dx;
 pub mod dx_watch;
@@ -100,6 +102,7 @@ pub mod mistakes;
 pub mod mobile;
 pub mod mode_encoder;
 pub mod modes;
+pub mod modulation_theory;
 pub mod morse;
 pub mod morse_trainer;
 pub mod most_wanted;
@@ -169,6 +172,9 @@ pub mod winlink;
 pub mod wire_gauge;
 pub mod wspr;
 pub mod zone;
+
+#[cfg(test)]
+mod knowledge_consistency;
 
 pub use bank::{Bank, BankConfig, BankInfo, QuestionVersion};
 pub use exam::{ExamRule, ExamScore};

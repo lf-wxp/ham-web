@@ -23,7 +23,7 @@ pub const LICENSE_CLASSES: &[LicenseClass] = &[
   LicenseClass {
     class: "B",
     freq: "30MHz 以下 或 30MHz 以上",
-    power: "30MHz 以下 < 15W；30MHz 以上 ≤ 25W",
+    power: "30MHz 以下 ≤ 15W（不大于 15W）；30MHz 以上 ≤ 25W",
     note: "可进行短波（HF）通联，但功率受限。",
   },
   LicenseClass {
@@ -191,6 +191,112 @@ pub const EMISSION_TYPES: &[EmissionType] = &[
     name: "音频调幅电报",
     desc: "如测向信标发射的音频摩尔斯标识",
   },
+  EmissionType {
+    code: "A1B",
+    name: "等幅电报（自动接收）",
+    desc: "由机器（译码器 / 计算机）自动接收的莫尔斯电报",
+  },
+  EmissionType {
+    code: "J2B",
+    name: "单边带电报（自动接收）",
+    desc: "抑制载波单边带，用于 PSK31 等数据",
+  },
+  EmissionType {
+    code: "R3E",
+    name: "单边带话（减幅载波）",
+    desc: "保留部分载波的单边带电话",
+  },
+  EmissionType {
+    code: "J3C",
+    name: "单边带传真",
+    desc: "用单边带方式传送的传真图像",
+  },
+  EmissionType {
+    code: "F1D",
+    name: "频移键控数据",
+    desc: "直接 FSK 传数据，如 9600 波特分组无线电",
+  },
+  EmissionType {
+    code: "F2D",
+    name: "音频调频数据",
+    desc: "音频副载波调频传数据，如 1200 波特分组无线电",
+  },
+  EmissionType {
+    code: "F3F",
+    name: "调频电视",
+    desc: "用调频方式传送图像（SSTV / 业余电视）",
+  },
+];
+
+/// ITU 发射类别标识的构成：必要带宽 + 发射类别（+ 可选附加特性）。
+pub const EMISSION_DESIGNATION: &[(&str, &str, &str)] = &[
+  (
+    "必要带宽（4 字符）",
+    "3 位数字 + 1 位单位字母（H=Hz、k=kHz、M=MHz、G=GHz），小数点用单位字母代替",
+    "2K70 = 2.7kHz；3K00 = 3.00kHz；500H = 500Hz",
+  ),
+  (
+    "第 1 位 · 主载波调制",
+    "A=双边带、J=单边带抑制载波、R=单边带减幅载波、F=调频、G=调相、D=幅角混合、K/L/M/P=脉冲",
+    "J3E 的首位 J 表示单边带抑制载波",
+  ),
+  (
+    "第 2 位 · 调制信号性质",
+    "0=无调制、1=单路数字（无副载波）、2=单路数字（有副载波）、3=单路模拟、7/8=多路数字/模拟、9=复合",
+    "J3E 的 3 表示单路模拟信号",
+  ),
+  (
+    "第 3 位 · 信息类型",
+    "A=人工电报、B=自动电报、C=传真、D=数据/遥测、E=电话、F=电视、W=组合、X=其他",
+    "J3E 的 E 表示电话",
+  ),
+  (
+    "附加特性（可选）",
+    "描述复用、前向纠错、加密等附加信息",
+    "J3EJN 表示带前向纠错的单边带数据",
+  ),
+];
+
+/// 主要知识的来源与时效（便于核对更新）。
+///
+/// 时效性内容（法规版本、卫星状态、频率惯例）会随时间变化，请以来源方最新公告为准。
+pub const KNOWLEDGE_SOURCES: &[(&str, &str, &str)] = &[
+  (
+    "法规 / 操作证",
+    "《业余无线电台管理办法》（工信部令第 67 号，2024-03-01 施行）",
+    "以主管部门最新公告为准",
+  ),
+  (
+    "频率划分 / 脚注",
+    "《中华人民共和国无线电频率划分规定》（2023-07-01 施行）",
+    "含 ITU《无线电规则》编号脚注（如 5.282）",
+  ),
+  (
+    "功率限值",
+    "同上，第二十五条 / 第三十条",
+    "B 类 30MHz 以下不大于 15W",
+  ),
+  (
+    "射频暴露",
+    "FCC 47 CFR §1.1310（MPE 限值曲线）",
+    "非受控 1.34MHz 拐点、180/f²",
+  ),
+  ("静噪音", "EIA/TIA-603 CTCSS 标准音表", "50 个标准音"),
+  (
+    "数字模式",
+    "WSJT-X（FT8 / FT4 / JS8 / Q65）、WSPR、AX.25 / APRS 规范",
+    "以各项目最新文档为准",
+  ),
+  (
+    "卫星状态",
+    "NOAA OSPO 退役公告",
+    "NOAA-18 于 2025-06-06 退役",
+  ),
+  (
+    "天线工程",
+    "ARRL Antenna Book、NEC 建模",
+    "增益 / 前后比为典型量级",
+  ),
 ];
 
 /// 通联英语短句。
@@ -250,7 +356,8 @@ mod tests {
     assert_eq!(LICENSE_CLASSES.len(), 3);
     assert_eq!(CALL_AREAS.len(), 10);
     assert_eq!(RST_SCALES.len(), 3);
-    assert!(!EMISSION_TYPES.is_empty());
+    assert!(EMISSION_TYPES.len() >= 12);
+    assert!(EMISSION_DESIGNATION.len() >= 4);
     assert!(!PHRASES.is_empty());
   }
 

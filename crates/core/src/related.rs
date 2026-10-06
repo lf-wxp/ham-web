@@ -106,6 +106,33 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
     ],
   ),
   (
+    "/modulation",
+    &[
+      ("/analog-modes", "模拟模式"),
+      ("/digital-comms", "数字通信原理"),
+      ("/formulas", "公式速查"),
+      ("/receiver", "接收机指标"),
+    ],
+  ),
+  (
+    "/digital-comms",
+    &[
+      ("/modes", "数字模式"),
+      ("/ft8", "FT8 / FT4"),
+      ("/modulation", "调制理论"),
+      ("/dsp", "数字信号处理基础"),
+    ],
+  ),
+  (
+    "/dsp",
+    &[
+      ("/sdr", "SDR 软件定义无线电"),
+      ("/sdr-waterfall", "SDR 瀑布图"),
+      ("/receiver", "接收机指标"),
+      ("/digital-comms", "数字通信原理"),
+    ],
+  ),
+  (
     "/atv",
     &[
       ("/sstv", "SSTV 慢扫描电视"),

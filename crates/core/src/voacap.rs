@@ -10,7 +10,16 @@
 use serde::Serialize;
 
 use crate::grid::{distance_bearing, lat_lon_from_grid};
-use crate::muf::{MUF_FACTOR_1HOP, diurnal_factor, local_hour, sfi_from_ssn};
+use crate::muf::{NIGHT_FOF2_RATIO, diurnal_factor, local_hour, sfi_from_ssn};
+
+/// 最佳工作频率（FOT / OWF）与 MUF 之比。
+const OWF_RATIO: f64 = 0.85;
+
+/// 最低可用频率（LUF）下限（MHz）：夜间 D 层消失，此时受大气噪声与人为噪声限制。
+const LUF_NIGHT_MHZ: f64 = 1.8;
+
+/// 最低可用频率上限（MHz）：正午 D 层吸收最强时（吸收大致正比于 1/f²）。
+const LUF_DAY_MHZ: f64 = 6.8;
 
 /// 业余 HF 波段及其参考频率（MHz）。
 pub const HF_BANDS: &[(&str, f64)] = &[
@@ -59,21 +68,55 @@ pub struct Prediction {
   /// 路径中点的地方时（0–24）；`None` 表示未指定时刻，此时 [`Self::diurnal`] 恒为 1，
   /// 没有「真实地方时」可言 —— 用 `Option` 而不是填一个假值，调用方才不会拿它去展示。
   pub local_hour: Option<f64>,
-  /// 实际施加的昼夜衰减因子（[`crate::muf::diurnal_factor`] 的值域，约 0.35–1）；
-  /// 未指定时刻时为 1。
-  ///
-  /// （`NIGHT_FOF2_RATIO` 是 `muf` 模块的私有常量，这里只描述取值范围。）
+  /// 实际施加的昼夜衰减因子（[`crate::muf::diurnal_factor`] 的值域，
+  /// 下限约为 [`crate::muf::NIGHT_FOF2_RATIO`]）；未指定时刻时为 1。
   pub diurnal: f64,
 }
 
 /// 季节项：春秋分略强于冬夏。
+///
+/// 春秋分是两个峰，故周期取 **6 个月**；拟合峰值落在 4 月与 10 月，与节气春秋分（3/9 月）相差约 1 个月。
+/// 用 12 个月周期的话，10 月会落到谷底（0.92），把「秋分强」写成「秋分最弱」。
 fn seasonal_factor(month: u32) -> f64 {
-  1.0 + 0.08 * (2.0 * std::f64::consts::PI * (month as f64 - 4.0) / 12.0).cos()
+  1.0 + 0.08 * (2.0 * std::f64::consts::PI * (month as f64 - 4.0) / 6.0).cos()
 }
 
-/// 多跳路径的 MUF 因子：跳数越多需要的仰角越低，因子略降（下限 2.2）。
-fn muf_factor(hops: f64) -> f64 {
-  (MUF_FACTOR_1HOP - 0.15 * (hops - 1.0)).max(2.2)
+/// F2 层等效反射高度（km）。
+const REFLECTION_HEIGHT_KM: f64 = 300.0;
+
+/// 地球平均半径（km）。
+const EARTH_RADIUS_KM: f64 = 6371.0;
+
+/// F2 层单跳最大地面距离（km）；更长的路径必须分成多跳。
+const MAX_HOP_KM: f64 = 4000.0;
+
+/// 单跳 MUF 因子：正割定律 `MUF = foF2 × sec(i)`。
+///
+/// `hop_km` 为**单跳**的地面距离。仰角越低（单跳跨距越远）→ 入射角 i 越大 →
+/// 因子**越大**：垂直入射（hop→0）时因子为 1，3000 km 约 3.3，4000 km 约 3.4。
+///
+/// 注意这与「跳数越多因子越小」的直觉不同。长路径的 MUF 实测偏低另有原因：
+/// 路径会跨越电离层条件最差的一段（晨昏线、夜侧或低纬），瓶颈在最差的那一段，
+/// 而不是仰角本身。
+#[must_use]
+pub fn muf_factor_for_hop(hop_km: f64) -> f64 {
+  if hop_km <= 0.0 {
+    return 1.0;
+  }
+  let hop = hop_km.min(MAX_HOP_KM);
+  // 半跳对应的地心角。
+  let beta = (hop / 2.0) / EARTH_RADIUS_KM;
+  let (sin_b, cos_b) = beta.sin_cos();
+  let denom = EARTH_RADIUS_KM + REFLECTION_HEIGHT_KM - EARTH_RADIUS_KM * cos_b;
+  let tan_i = EARTH_RADIUS_KM * sin_b / denom;
+  // sec(i) = √(1 + tan²i)
+  (1.0 + tan_i * tan_i).sqrt()
+}
+
+/// 路径 MUF 因子：先按 [`MAX_HOP_KM`] 分跳，再按单跳跨距取正割因子。
+fn muf_factor(distance_km: f64) -> f64 {
+  let hops = (distance_km / MAX_HOP_KM).ceil().max(1.0);
+  muf_factor_for_hop(distance_km / hops)
 }
 
 /// 估算 foF2（MHz）：太阳黑子数越高电离层越强；春秋分略强于冬夏。
@@ -138,21 +181,25 @@ pub fn predict_at(
   let diurnal = path_local_hour.map_or(1.0, diurnal_factor);
 
   let fo_f2 = estimate_fof2(ssn, month) * diurnal;
-  // 一跳约 3000 km；跳数越多仰角越低，MUF 因子相应下降。
-  let hops = (distance_km / 3000.0).ceil().max(1.0);
-  let muf = fo_f2 * muf_factor(hops);
-  let owf = muf * 0.85;
+  // 先按 F2 单跳上限分跳，再按单跳跨距取正割因子。
+  let muf = fo_f2 * muf_factor(distance_km);
+  let owf = muf * OWF_RATIO;
+  // 最低可用频率：由 D 层吸收（∝1/f²，白天最强）与噪声共同决定，与 MUF 不是
+  // 固定比例关系。这里用「夜间底噪 → 白天吸收」随日照插值作粗略估计。
+  let daytime = ((diurnal - NIGHT_FOF2_RATIO) / (1.0 - NIGHT_FOF2_RATIO)).clamp(0.0, 1.0);
+  let luf = (LUF_NIGHT_MHZ + (LUF_DAY_MHZ - LUF_NIGHT_MHZ) * daytime).min(muf * 0.9);
 
   let bands = HF_BANDS
     .iter()
     .map(|&(band, freq_mhz)| {
-      let usable = freq_mhz <= muf;
-      let reliability = if freq_mhz <= owf {
-        0.5 + 0.5 * (freq_mhz / owf)
-      } else if freq_mhz <= muf {
-        0.5 * (muf - freq_mhz) / (muf - owf)
-      } else {
+      let usable = freq_mhz <= muf && freq_mhz >= luf;
+      // 以 OWF 为峰的连续曲线：低于 LUF 为 0，LUF→OWF 上升，OWF→MUF 下降。
+      let reliability = if freq_mhz <= luf || freq_mhz >= muf {
         0.0
+      } else if freq_mhz <= owf {
+        (freq_mhz - luf) / (owf - luf)
+      } else {
+        (muf - freq_mhz) / (muf - owf)
       };
       BandResult {
         band,
@@ -206,16 +253,70 @@ mod tests {
       "bearing {}",
       p.bearing_deg
     );
-    // 未指定时刻时按路径日照最佳情况估算：约 8150 km 下 MUF 约 28 MHz，
-    // 20m 可用而 10m 不可用。
+    // 未指定时刻时按路径日照最佳情况估算（全路径受照）。按正割定律，8150 km 分
+    // 3 跳、每跳约 2717 km，单跳因子约 3.2，foF2 约 10MHz → MUF 约 32MHz。
+    assert!(
+      (29.7..=45.0).contains(&p.muf),
+      "best-case MUF {} 应高于 10m 波段上沿 29.7MHz",
+      p.muf
+    );
     let forty = p.bands.iter().find(|b| b.band == "40m").unwrap();
     let twenty = p.bands.iter().find(|b| b.band == "20m").unwrap();
     let ten = p.bands.iter().find(|b| b.band == "10m").unwrap();
     assert!(forty.usable);
     assert!(twenty.usable);
-    assert!(!ten.usable);
-    assert!(twenty.reliability > ten.reliability);
+    // 全路径受照的最佳情况下 10m 进入可用范围（旧模型按「跳数越多因子越小」
+    // 算出 MUF≈27MHz 会误判 10m 不可用）。
+    assert!(ten.usable);
+    // 可靠度以 OWF（0.85×MUF≈27MHz）为峰，10m 比 20m 更接近峰值。
+    assert!(ten.reliability > twenty.reliability);
     assert_eq!(p.hour_utc, None);
+  }
+
+  #[test]
+  fn muf_factor_follows_secant_law() {
+    // 正割定律：跳距越远（仰角越低）因子越大，垂直入射时为 1。
+    assert!((muf_factor_for_hop(0.0) - 1.0).abs() < 1e-9);
+    let f500 = muf_factor_for_hop(500.0);
+    let f1000 = muf_factor_for_hop(1000.0);
+    let f3000 = muf_factor_for_hop(3000.0);
+    assert!(f500 < f1000 && f1000 < f3000, "{f500} {f1000} {f3000}");
+    // 3000 km 一跳的常用值约 3.0–3.4。
+    assert!((3.0..=3.4).contains(&f3000), "M(3000) = {f3000}");
+    // 短路径不能被当成 3.0 —— 这是历史上把 500 km 路径算成 MUF≈30MHz 的根源。
+    assert!(f500 < 1.5, "500km 因子应约 1.3，实际 {f500}");
+    // 分段：8150 km 按 4000 km 上限分 3 跳，每跳更短 → 因子略低于 3000 km 一跳。
+    let f_long = muf_factor(8150.0);
+    assert!(f_long < f3000, "{f_long}");
+    assert!(f_long > 3.0, "{f_long}");
+  }
+
+  #[test]
+  fn seasonal_factor_peaks_at_equinoxes() {
+    // 春分（4 月）与秋分（10 月）都应是峰，冬夏为谷。
+    let apr = seasonal_factor(4);
+    let oct = seasonal_factor(10);
+    let jan = seasonal_factor(1);
+    let jul = seasonal_factor(7);
+    assert!((apr - 1.08).abs() < 1e-9, "4 月 {apr}");
+    assert!((oct - 1.08).abs() < 1e-9, "10 月 {oct}");
+    assert!(jan < apr && jul < apr, "冬夏应低于春秋分：{jan} {jul}");
+  }
+
+  #[test]
+  fn reliability_peaks_at_owf_and_vanishes_below_luf() {
+    let p = predict_at("OM89", "IO91", 10, 100.0, Some(12.0)).expect("valid grids");
+    let at = |b: &str| p.bands.iter().find(|x| x.band == b).unwrap().reliability;
+    // 曲线必须连续且以 OWF 为峰：不能出现「OWF 左侧 1.0、右侧 0.5」的断崖，
+    // 也不能让低于 LUF 的波段仍被判为「较可靠」。
+    for b in p.bands.iter() {
+      assert!(b.reliability >= 0.0 && b.reliability <= 1.0, "{:?}", b);
+    }
+    let owf = p.muf * OWF_RATIO;
+    // 20m（14.1MHz）低于 OWF，10m（28.4MHz）高于 OWF 且接近 MUF → 可靠度应更低。
+    assert!(owf > 14.1, "OWF {owf}");
+    assert!(at("20m") > 0.0);
+    assert!(at("10m") < at("20m"), "接近 MUF 的波段可靠度应下降");
   }
 
   #[test]

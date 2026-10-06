@@ -19,8 +19,8 @@ pub const SATELLITES: &[Satellite] = &[
     callsign: "RS0ISS / NA1SS",
     kind: "FM 中继 / APRS / SSTV",
     uplink: "145.990 MHz（67Hz 亚音）",
-    downlink: "437.800 MHz（亚太）",
-    note: "最常见也最容易收到，常开展 SSTV 慢扫描电视活动。",
+    downlink: "437.800 MHz（FM 中继下行）；SSTV 活动下行 145.800 MHz",
+    note: "最常见也最容易收到；SSTV 图像活动使用 145.800 MHz FM，与 437.800 MHz 中继下行不同。",
   },
   Satellite {
     name: "SO-50",

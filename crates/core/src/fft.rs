@@ -8,7 +8,7 @@ use std::f32::consts::TAU;
 /// 就地 radix-2 迭代 FFT。
 ///
 /// `re` / `im` 为复数样本的实部与虚部，长度须相等且为 2 的幂。
-/// 变换后原地覆盖为正频率（0..n）的频谱（未归一化）。
+/// 变换后原地覆盖为完整复频谱（0..n，含正频率 0..n/2 与负频率别名 n/2..n，未归一化）。
 pub fn fft_in_place(re: &mut [f32], im: &mut [f32]) {
   let n = re.len();
   assert!(n.is_power_of_two(), "FFT 长度须为 2 的幂，得到 {n}");

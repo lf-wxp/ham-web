@@ -15,7 +15,7 @@ pub const WSPR_CONCEPTS: &[(&str, &str)] = &[
 
 /// 使用要点。
 pub const WSPR_NOTES: &[&str] = &[
-  "发射功率可低至 5mW，即可被全球接收站解码。",
+  "发射功率可低至 mW 级（WSPR 编码下限 0 dBm = 1mW），传播良好时即可被全球接收站解码。",
   "与 FT8 同样需要严格时间同步。",
   "发射后到 wsprnet.org 查看自己的信号被哪些台站接收。",
   "遵守功率限制，WSPR 是信标模式，不应占用话音通联频率。",

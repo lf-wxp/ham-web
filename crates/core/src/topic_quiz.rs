@@ -16,6 +16,9 @@ pub const TOPIC_TOPS: &[(&str, &str)] = &[
   ("/formulas", "基础"),
   // 模式 · 传播
   ("/analog-modes", "调制"),
+  ("/modulation", "调制"),
+  ("/digital-comms", "调制"),
+  ("/dsp", "设备"),
   ("/atv", "调制"),
   ("/sstv", "调制"),
   ("/modes", "调制"),

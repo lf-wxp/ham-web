@@ -23,7 +23,7 @@ pub const DV_NETWORKS: &[(&str, &str, &str)] = &[
 /// 接入要点。
 pub const DV_NETWORK_TIPS: &[&str] = &[
   "DMR 需配置色码、时隙与通话组，匹配当地中继设置。",
-  "D-STAR 反射器用模块（A / B / C）区分语音、数据与地域。",
+  "D-STAR 反射器/网关的模块字母（A / B / C）通常对应频段：A=23cm、B=70cm、C=2m。",
   "WIRES-X 按房间号加入，支持跨洲语音与数据传输。",
   "遵守当地中继的使用规范，避免长时间占用通话组。",
 ];

@@ -1,4 +1,7 @@
 //! 传输线特性阻抗：同轴、平行双线、微带线的特性阻抗估算。
+//!
+//! 速度因子与损耗数据见 [`crate::feedline::FEEDLINE_SPECS`]，
+//! 线缆内波长见 [`crate::feedline::wavelength_in_line_m`]。
 
 /// 同轴线特性阻抗（Ω）。
 ///

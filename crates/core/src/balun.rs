@@ -33,8 +33,16 @@ pub const BALUN_RATIOS: &[(&str, &str, &str)] = &[
   ),
   (
     "4:1",
-    "折叠偶极 / Windom ↔ 50Ω",
-    "约 200Ω 平衡天线匹配到 50Ω，兼作平衡转换。",
+    "Windom / OCF（偏馈）↔ 50Ω",
+    "馈电点约 200Ω 的平衡天线匹配到 50Ω，兼作平衡转换。",
+  ),
+  (
+    "4:1",
+    "折叠偶极 ↔ 50Ω",
+    concat!(
+      "折叠偶极阻抗约为普通偶极的 4 倍（≈292Ω），4:1 后约 73Ω，配 50Ω 同轴约 1.5:1。",
+      "注意与 Windom（≈200Ω）不是同一阻抗，别混为一谈。",
+    ),
   ),
   (
     "9:1",
@@ -50,8 +58,15 @@ pub const BALUN_RATIOS: &[(&str, &str, &str)] = &[
 
 /// 绕制与选型要点。
 pub const BALUN_TIPS: &[&str] = &[
-  "磁环优先选 43 / 31 型铁氧体（FT-240-43 等），HF 段共模抑制效果好。",
-  "同轴绕环做共模扼流圈：RG-58 / RG-8X 在磁环上绕 8–12 匝，覆盖 3.5–30 MHz。",
+  concat!(
+    "铁氧体材质按频段选：31 型（1–300 MHz，低频阻抗最高）最适合 1.8–30 MHz，",
+    "尤其 160/80m 的共模扼流圈；43 型适合约 5–50 MHz 及 VHF 低端；",
+    "61 型适合 200 MHz 以上（VHF/UHF）。",
+  ),
+  concat!(
+    "同轴绕环做共模扼流圈：#31 / #43 磁环（如 FT-240）上绕 4–8 匝即可覆盖 3.5–30 MHz；",
+    "匝数过多会因匝间寄生电容自谐振，反而使高端阻抗下降（空心 ugly balun 才用 8–12 匝）。",
+  ),
   "大功率时用大磁环并留散热空间，避免磁芯饱和导致发热与失真。",
   "1:1 电流巴伦是天线馈电点最实用的选择，优先于电压巴伦。",
 ];
@@ -63,7 +78,8 @@ mod tests {
   #[test]
   fn balun_data_populated() {
     assert!(BALUN_CONCEPTS.len() >= 4);
-    assert_eq!(BALUN_RATIOS.len(), 4);
+    // 4:1 拆成 Windom(≈200Ω) 与折叠偶极(≈292Ω) 两条，故为 5。
+    assert_eq!(BALUN_RATIOS.len(), 5);
     assert!(!BALUN_TIPS.is_empty());
     for (ratio, use_, desc) in BALUN_RATIOS {
       assert!(!ratio.is_empty());

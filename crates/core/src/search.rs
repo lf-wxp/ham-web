@@ -5,14 +5,14 @@ use std::sync::OnceLock;
 use crate::{
   amplifier, analog_modes, antenna_analyzer, antenna_array, antenna_diy, antenna_farm,
   antenna_installation, antenna_modeling, antenna_tuning, antennas, api_v1, aprs, ardf, atv,
-  aurora, awards, bandplan, bands, beginner, cabrillo, community, coordination, cw_op, dv_network,
-  dx, dxcc, dxpedition, electronics, emcomm, eme, eqsl, events, feedline, filters, frequencies,
-  ft8, gear, gnuradio, grid_system, grounding, history, iota, license_classes, logging_software,
-  meters, microwave, mobile, modes, morse, most_wanted, muf, nvis, open_source, operating,
-  organizations, packet, phonetic, polarization, portable, power, power_supply, prefixes,
-  propagation, qrp, qsl_card, receiver, reference, regulations, remote, repeater, repeater_build,
-  rfi, rst, rtty, safety, satellites, sdr, sdr_map, solar, special_prop, sstv, swl, transceiver,
-  weather_sat, wspr, zone,
+  aurora, awards, bandplan, bands, beginner, cabrillo, community, coordination, cw_op,
+  digital_comms, dsp_basics, dv_network, dx, dxcc, dxpedition, electronics, emcomm, eme, eqsl,
+  events, feedline, filters, frequencies, ft8, gear, gnuradio, grid_system, grounding, history,
+  iota, license_classes, logging_software, meters, microwave, mobile, modes, modulation_theory,
+  morse, most_wanted, muf, nvis, open_source, operating, organizations, packet, phonetic,
+  polarization, portable, power, power_supply, prefixes, propagation, qrp, qsl_card, receiver,
+  reference, regulations, remote, repeater, repeater_build, rfi, rst, rtty, safety, satellites,
+  sdr, sdr_map, solar, special_prop, sstv, swl, transceiver, weather_sat, wspr, zone,
 };
 
 /// 一条可搜索的知识条目。
@@ -137,6 +137,12 @@ fn build_index() -> Vec<SearchEntry> {
       e.desc.to_owned(),
     );
   }
+  triples(
+    &mut out,
+    "考试速查",
+    "/reference",
+    reference::EMISSION_DESIGNATION,
+  );
   for p in reference::PHRASES {
     push(
       &mut out,
@@ -222,6 +228,110 @@ fn build_index() -> Vec<SearchEntry> {
     );
   }
 
+  // 调制理论
+  pairs(
+    &mut out,
+    "调制理论",
+    "/modulation",
+    modulation_theory::MOD_CONCEPTS,
+  );
+  triples(
+    &mut out,
+    "调制理论",
+    "/modulation",
+    modulation_theory::MOD_SCHEMES,
+  );
+  triples(
+    &mut out,
+    "调制理论",
+    "/modulation",
+    modulation_theory::MOD_BANDWIDTH,
+  );
+  pairs(
+    &mut out,
+    "调制理论",
+    "/modulation",
+    modulation_theory::FM_EFFECTS,
+  );
+  triples(
+    &mut out,
+    "调制理论",
+    "/modulation",
+    modulation_theory::DEMOD_METHODS,
+  );
+  tips(
+    &mut out,
+    "调制理论",
+    "/modulation",
+    modulation_theory::MOD_TIPS,
+  );
+
+  // 数字通信原理
+  pairs(
+    &mut out,
+    "数字通信原理",
+    "/digital-comms",
+    digital_comms::DIGITAL_CONCEPTS,
+  );
+  triples(
+    &mut out,
+    "数字通信原理",
+    "/digital-comms",
+    digital_comms::DIGITAL_SCHEMES,
+  );
+  triples(
+    &mut out,
+    "数字通信原理",
+    "/digital-comms",
+    digital_comms::DIGITAL_FORMULAS,
+  );
+  triples(
+    &mut out,
+    "数字通信原理",
+    "/digital-comms",
+    digital_comms::CHANNEL_CODING,
+  );
+  pairs(
+    &mut out,
+    "数字通信原理",
+    "/digital-comms",
+    digital_comms::DIGITAL_STEPS,
+  );
+  tips(
+    &mut out,
+    "数字通信原理",
+    "/digital-comms",
+    digital_comms::DIGITAL_TIPS,
+  );
+
+  // 数字信号处理基础
+  pairs(
+    &mut out,
+    "数字信号处理基础",
+    "/dsp",
+    dsp_basics::DSP_CONCEPTS,
+  );
+  triples(
+    &mut out,
+    "数字信号处理基础",
+    "/dsp",
+    dsp_basics::DSP_FORMULAS,
+  );
+  triples(
+    &mut out,
+    "数字信号处理基础",
+    "/dsp",
+    dsp_basics::WINDOW_TABLE,
+  );
+  triples(
+    &mut out,
+    "数字信号处理基础",
+    "/dsp",
+    dsp_basics::FILTER_TYPES,
+  );
+  pairs(&mut out, "数字信号处理基础", "/dsp", dsp_basics::DSP_STEPS);
+  tips(&mut out, "数字信号处理基础", "/dsp", dsp_basics::DSP_TIPS);
+
   // 常用频率
   for g in frequencies::FREQ_GROUPS {
     for &(f, u) in g.freqs {
@@ -299,6 +409,7 @@ fn build_index() -> Vec<SearchEntry> {
       format!("{} · 增益 {} · {}", a.abbr, a.gain, a.desc),
     );
   }
+  pairs(&mut out, "天线型式", "/antennas", antennas::ANTENNA_THEORY);
 
   // 天线匹配与馈线
   triples(&mut out, "天线匹配与馈线", "/feedline", feedline::FEEDLINES);
@@ -436,13 +547,7 @@ fn build_index() -> Vec<SearchEntry> {
   pairs(&mut out, "太阳活动", "/solar", solar::CONDITIONS);
   tips(&mut out, "太阳活动", "/solar", solar::CYCLE_NOTES);
 
-  // 收发信机
-  triples(
-    &mut out,
-    "收发信机",
-    "/transceiver",
-    transceiver::RECEIVER_METRICS,
-  );
+  // 收发信机（接收机关键指标由 /receiver 统一索引，避免同一数据重复命中）
   pairs(
     &mut out,
     "收发信机",

@@ -4,7 +4,7 @@
 pub const QRP_CONCEPTS: &[(&str, &str)] = &[
   (
     "QRP",
-    "低功率操作，一般指 CW/SSB 输出不超过 5W（部分国家定为 10W）。",
+    "低功率操作；传统口径为 CW 不超过 5W、SSB 不超过 10W，口语中也常泛指 5W 以下。",
   ),
   ("QRPp", "极小功率操作，通常 1W 以下，挑战传播极限。"),
   (
@@ -25,7 +25,7 @@ pub const QRP_CONCEPTS: &[(&str, &str)] = &[
 pub const QRP_RIGS: &[(&str, &str)] = &[
   (
     "QRP 收发信机",
-    "Yaesu FT-818、ICOM IC-705、Xiegu G90 等内置电池的便携机。",
+    "Yaesu FT-818、ICOM IC-705 等内置电池的便携机（Xiegu G90 等 20W 机型可降功率当 QRP 使用）。",
   ),
   ("DIY 套件", "QRP Labs QCX 等低成本 CW 套件，焊接入门首选。"),
   (

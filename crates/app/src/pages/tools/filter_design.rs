@@ -1,7 +1,7 @@
 //! 滤波器设计：Butterworth 低通 / 高通 / 带通 / 带阻元件值计算。
 
 use ham_web_core::filter_design::{
-  FilterKind, design_bandpass, design_bandstop, design_highpass, design_lowpass,
+  FilterKind, ResonatorTopology, design_bandpass, design_bandstop, design_highpass, design_lowpass,
 };
 use leptos::prelude::*;
 
@@ -137,6 +137,7 @@ pub(super) fn FilterDesign() -> impl IntoView {
             <tr>
               <th class="border px-3 py-2 text-left">{move || t("级")}</th>
               <th class="border px-3 py-2 text-left">{move || t("位置")}</th>
+              <th class="border px-3 py-2 text-left">{move || t("臂内接法")}</th>
               <th class="border px-3 py-2 text-left">{move || t("电感（μH）")}</th>
               <th class="border px-3 py-2 text-left">{move || t("电容（pF）")}</th>
             </tr>
@@ -152,6 +153,15 @@ pub(super) fn FilterDesign() -> impl IntoView {
                       <td class="border px-3 py-2 font-mono tabular-nums">{i + 1}</td>
                       <td class="border px-3 py-2 text-muted-foreground">
                         {move || if s.series { t("串联") } else { t("并联") }}
+                      </td>
+                      <td class="border px-3 py-2 text-muted-foreground">
+                        {move || {
+                          match s.topology {
+                            ResonatorTopology::Single => "—".to_string(),
+                            ResonatorTopology::SeriesLc => t("串联 LC"),
+                            ResonatorTopology::ParallelLc => t("并联 LC"),
+                          }
+                        }}
                       </td>
                       <td class="border px-3 py-2 font-mono tabular-nums">
                         {move || s.l_uh.map(|v| tf("{} μH", &[&fmt_num(v)])).unwrap_or_else(|| "—".into())}
@@ -169,7 +179,7 @@ pub(super) fn FilterDesign() -> impl IntoView {
       </div>
 
       <p class="text-xs text-muted-foreground">
-        {move || t("Butterworth 原型；g₁ 起交替串 / 并联。带通 / 带阻每级为 LC 谐振回路，谐振于中心频率。")}
+        {move || t("Butterworth 原型；g₁ 起交替串 / 并联。带通 / 带阻每级为 LC 谐振回路、谐振于中心频率。臂内接法决定阻带还是通带：串联臂内串联 LC 或并联臂内并联 LC → 谐振时直通（带通）；串联臂内并联 LC 或并联臂内串联 LC → 谐振时阻断（带阻）。")}
       </p>
     </div>
   }

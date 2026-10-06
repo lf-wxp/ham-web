@@ -41,9 +41,13 @@ pub const FREQ_GROUPS: &[FreqGroup] = &[
   FreqGroup {
     category: "FM 呼叫（中国常用）",
     freqs: &[
-      ("145.000 / 435.000 MHz", "VHF / UHF 常用呼叫"),
-      ("145.500 MHz", "2m FM 呼叫"),
-      ("438.500 MHz", "70cm FM 呼叫"),
+      ("145.000 MHz", "2m FM 呼叫（中国常用）"),
+      ("435.000 MHz", "70cm FM 呼叫（中国常用）"),
+      (
+        "145.500 MHz",
+        "2m FM 呼叫（部分地区 / 国际惯例，与 145.000 择一约定）",
+      ),
+      ("438.500 MHz", "70cm FM 呼叫（部分地区约定）"),
     ],
   },
   FreqGroup {
@@ -63,44 +67,22 @@ pub const FREQ_GROUPS: &[FreqGroup] = &[
       ("50.313 MHz", "6m FT8"),
       ("144.174 MHz", "2m FT8"),
       ("14.080 MHz", "20m RTTY"),
-      ("14.071 MHz", "20m PSK31"),
+      ("14.070 MHz", "20m PSK31"),
       ("14.230 MHz", "20m SSTV"),
     ],
   },
 ];
 
 /// 根据频率（MHz）推断业余波段名称，无法归入常用业余波段时返回「其他」。
+///
+/// 边界来自 [`crate::bands::AMATEUR_BAND_EDGES`]（半开区间 `[下, 上)`），
+/// 该常量是这些边界在全站的唯一事实来源，避免多处硬编码造成漂移。
 #[must_use]
 pub fn band_of(freq_mhz: f64) -> &'static str {
-  if (1.8..2.0).contains(&freq_mhz) {
-    "160m"
-  } else if (3.5..4.0).contains(&freq_mhz) {
-    "80m"
-  } else if (5.3515..5.3666).contains(&freq_mhz) {
-    "60m"
-  } else if (7.0..7.3).contains(&freq_mhz) {
-    "40m"
-  } else if (10.1..10.15).contains(&freq_mhz) {
-    "30m"
-  } else if (14.0..14.35).contains(&freq_mhz) {
-    "20m"
-  } else if (18.0..18.168).contains(&freq_mhz) {
-    "17m"
-  } else if (21.0..21.45).contains(&freq_mhz) {
-    "15m"
-  } else if (24.89..24.99).contains(&freq_mhz) {
-    "12m"
-  } else if (28.0..29.7).contains(&freq_mhz) {
-    "10m"
-  } else if (50.0..54.0).contains(&freq_mhz) {
-    "6m"
-  } else if (144.0..148.0).contains(&freq_mhz) {
-    "2m"
-  } else if (430.0..440.0).contains(&freq_mhz) {
-    "70cm"
-  } else {
-    "其他"
-  }
+  crate::bands::AMATEUR_BAND_EDGES
+    .iter()
+    .find(|(_, lo, hi)| (*lo..*hi).contains(&freq_mhz))
+    .map_or("其他", |(name, _, _)| *name)
 }
 
 #[cfg(test)]

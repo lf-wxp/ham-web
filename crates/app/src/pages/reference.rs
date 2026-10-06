@@ -1,9 +1,12 @@
 //! 考试速查页：操作证权限、分区号、RST 信号报告、发射类别标识、通联英语短句。
 
-use ham_web_core::reference::{CALL_AREAS, EMISSION_TYPES, LICENSE_CLASSES, PHRASES, RST_SCALES};
+use ham_web_core::reference::{
+  CALL_AREAS, EMISSION_DESIGNATION, EMISSION_TYPES, KNOWLEDGE_SOURCES, LICENSE_CLASSES, PHRASES,
+  RST_SCALES,
+};
 use leptos::prelude::*;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{PageContainer, PageHeader, TableSection};
 use crate::i18n::t;
 use crate::util::set_title;
 
@@ -131,6 +134,14 @@ pub fn ReferencePage() -> impl IntoView {
           </div>
         </section>
 
+        // 发射类别的构成
+        <TableSection
+          title="发射类别标识的构成"
+          headers=&["组成", "含义", "示例"]
+          rows=EMISSION_DESIGNATION
+          min_width=720
+        />
+
         // 通联英语
         <section class="rounded-xl border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("通联英语短句")}</h2>
@@ -151,6 +162,13 @@ pub fn ReferencePage() -> impl IntoView {
               .collect_view()}
           </dl>
         </section>
+        // 知识来源与时效
+        <TableSection
+          title="知识来源与时效"
+          headers=&["领域", "来源", "说明"]
+          rows=KNOWLEDGE_SOURCES
+          min_width=720
+        />
       </PageContainer>
     </div>
   }

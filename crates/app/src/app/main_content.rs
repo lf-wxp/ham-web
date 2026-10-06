@@ -10,23 +10,24 @@ use crate::pages::{
   BandPlanPage, BandsPage, BeaconsPage, BeginnerPage, BookmarksPage, BrowsePage, CabrilloPage,
   CallsignCopyPage, CallsignPage, CardsPage, CheatSheetPage, CommunityPage, ConfusablesPage,
   ContestCalendarPage, ContestLogPage, ContestPage, CoordinationPage, CountdownPage, CwOpPage,
-  DailyChallengePage, DashboardPage, DevelopersPage, DiyProjectsPage, DvNetworkPage, DxPage,
-  DxSpotsPage, DxccMapPage, DxpeditionPage, ElectronicsPage, EmcommPage, EmePage, EqslPage,
-  EventsPage, ExamPage, ExamReviewPage, FeedlinePage, FiltersPage, FlashcardsPage, FormulasPage,
-  FrequenciesPage, Ft8Page, GearPage, GlossaryPage, GnuradioPage, GraylinePage, GridMapPage,
-  GridSystemPage, GroundingPage, HistoryPage, HomePage, IotaPage, LearningPathPage,
-  LearningResourcesPage, LicenseClassesPage, LicensePage, ListenPage, LogPage, LoggingSoftwarePage,
-  MeteorScatterPage, MetersPage, MicrowavePage, MistakeTopicsPage, MistakesPage, MobilePage,
-  ModesPage, MorsePage, MostWantedPage, MufPage, NoisePage, NotFoundPage, NotificationsPage,
-  NvisPage, OpenSourcePage, OperatingPage, OrganizationsPage, PacketPage, PhoneticPage,
-  PhotoProcessorPage, PolarizationPage, PortableMapPage, PortablePage, PowerPage, PowerSupplyPage,
-  PracticalAntennasPage, PracticePage, PrefixesPage, PrintPage, ProgressPage, PropagationPage,
-  PskDecodePage, PskReporterPage, QCodePage, QrpPage, QslCardPage, QslDesignerPage, QslLabelsPage,
-  RbnPage, ReceiverPage, ReferencePage, RegulationsPage, RemotePage, RepeaterBuildPage,
-  RepeaterPage, ReportPage, RfiPage, RstPage, RttyPage, SafetyPage, SatOperationPage,
-  SatellitesPage, SdrMapPage, SdrPage, SdrWaterfallPage, SolarPage, SpecialPropPage,
-  SstvDecoderPage, SstvPage, StatsPage, StudyCalendarPage, SwlPage, ToolsPage, TransceiverPage,
-  VnaPage, WeatherSatPage, WeeklyPage, WinlinkPage, WsprDecoderPage, WsprPage, ZoneMapPage,
+  DailyChallengePage, DashboardPage, DevelopersPage, DigitalCommsPage, DiyProjectsPage,
+  DspBasicsPage, DvNetworkPage, DxPage, DxSpotsPage, DxccMapPage, DxpeditionPage, ElectronicsPage,
+  EmcommPage, EmePage, EqslPage, EventsPage, ExamPage, ExamReviewPage, FeedlinePage, FiltersPage,
+  FlashcardsPage, FormulasPage, FrequenciesPage, Ft8Page, GearPage, GlossaryPage, GnuradioPage,
+  GraylinePage, GridMapPage, GridSystemPage, GroundingPage, HistoryPage, HomePage, IotaPage,
+  LearningPathPage, LearningResourcesPage, LicenseClassesPage, LicensePage, ListenPage, LogPage,
+  LoggingSoftwarePage, MeteorScatterPage, MetersPage, MicrowavePage, MistakeTopicsPage,
+  MistakesPage, MobilePage, ModesPage, ModulationTheoryPage, MorsePage, MostWantedPage, MufPage,
+  NoisePage, NotFoundPage, NotificationsPage, NvisPage, OpenSourcePage, OperatingPage,
+  OrganizationsPage, PacketPage, PhoneticPage, PhotoProcessorPage, PolarizationPage,
+  PortableMapPage, PortablePage, PowerPage, PowerSupplyPage, PracticalAntennasPage, PracticePage,
+  PrefixesPage, PrintPage, ProgressPage, PropagationPage, PskDecodePage, PskReporterPage,
+  QCodePage, QrpPage, QslCardPage, QslDesignerPage, QslLabelsPage, RbnPage, ReceiverPage,
+  ReferencePage, RegulationsPage, RemotePage, RepeaterBuildPage, RepeaterPage, ReportPage, RfiPage,
+  RstPage, RttyPage, SafetyPage, SatOperationPage, SatellitesPage, SdrMapPage, SdrPage,
+  SdrWaterfallPage, SolarPage, SpecialPropPage, SstvDecoderPage, SstvPage, StatsPage,
+  StudyCalendarPage, SwlPage, ToolsPage, TransceiverPage, VnaPage, WeatherSatPage, WeeklyPage,
+  WinlinkPage, WsprDecoderPage, WsprPage, ZoneMapPage,
 };
 
 use crate::components::related_topics::RelatedTopics;
@@ -152,6 +153,9 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/rtty") view=RttyPage />
         <Route path=path!("/iota") view=IotaPage />
         <Route path=path!("/gnuradio") view=GnuradioPage />
+        <Route path=path!("/modulation") view=ModulationTheoryPage />
+        <Route path=path!("/digital-comms") view=DigitalCommsPage />
+        <Route path=path!("/dsp") view=DspBasicsPage />
         <Route path=path!("/swl") view=SwlPage />
         <Route path=path!("/amplifier") view=AmplifierPage />
         <Route path=path!("/atv") view=AtvPage />

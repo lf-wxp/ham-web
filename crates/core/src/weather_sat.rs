@@ -18,22 +18,28 @@ pub const WEATHER_SATS: &[WeatherSat] = &[
     note: "自动图像传输，信号稳定，入门首选。",
   },
   WeatherSat {
-    name: "NOAA-18",
-    signal: "APT",
-    freq: "137.9125 MHz",
-    note: "自动图像传输，过境频繁。",
-  },
-  WeatherSat {
     name: "NOAA-15",
     signal: "APT",
     freq: "137.620 MHz",
-    note: "最老但仍在工作的 NOAA 卫星。",
+    note: "在轨较久，APT 信号间歇、时有时无，接收需耐心。",
   },
   WeatherSat {
-    name: "METEOR-M2",
+    name: "NOAA-18",
+    signal: "APT",
+    freq: "137.9125 MHz",
+    note: "已于 2025 年 6 月 6 日退役，仅作历史参考。",
+  },
+  WeatherSat {
+    name: "METEOR-M2-3 / M2-4",
     signal: "LRPT",
-    freq: "137.900 MHz",
-    note: "俄罗斯卫星，LRPT 高分辨率彩色图像。",
+    freq: "137.900 / 137.100 MHz",
+    note: "俄罗斯卫星，LRPT 高分辨率彩色图像，现役主力。",
+  },
+  WeatherSat {
+    name: "NOAA / METEOR HRPT",
+    signal: "HRPT",
+    freq: "1698–1707 MHz",
+    note: "L 波段高分辨率图像，需定向高增益天线与下变频。",
   },
   WeatherSat {
     name: "GOES 系列",
@@ -56,7 +62,7 @@ pub const WEATHER_CONCEPTS: &[(&str, &str)] = &[
 
 /// 接收要点。
 pub const WEATHER_TIPS: &[&str] = &[
-  "用 RTL-SDR（约 20 元）+ V 型偶极或 QFH 天线即可入门。",
+  "用 RTL-SDR（数十元）+ V 型偶极或 QFH 天线即可入门。",
   "解码软件：SatDump、WXtoIMG（APT）；配合 Gpredict 预报过境。",
   "卫星每次过境仅约 10–15 分钟，需提前查过境时间并守听。",
   "接收时选开阔地、避开高楼遮挡，天线朝向卫星来向。",
@@ -81,7 +87,7 @@ pub const APT_GUIDE: &[(&str, &str, Option<&str>)] = &[
   ),
   (
     "④ 等待过境",
-    "查 NOAA 15/18/19 过境时间，开启 APT 录制提醒（提前几分钟通知）。",
+    "查 NOAA 15/19 过境时间，开启 APT 录制提醒（提前几分钟通知）。",
     Some("/satellites"),
   ),
   (

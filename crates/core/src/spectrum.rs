@@ -1,6 +1,6 @@
 //! 频谱与瀑布图的数据处理：线性幅度 → dB、伪彩色映射与峰值检测。
 //!
-//! 供浏览器内 SDR 瀑布图使用。颜色映射是「黑 → 蓝 → 青 → 绿 → 黄 → 红 → 白」
+//! 供浏览器内 SDR 瀑布图使用。颜色映射是「黑 → 蓝 → 青 → 绿 → 黄 → 橙 → 白」
 //! 的分段线性伪彩色，与常见 SDR 软件的瀑布图配色一致。
 
 use std::f32::consts::TAU;
@@ -13,6 +13,10 @@ pub const FLOOR_DB: f32 = -120.0;
 /// 线性幅度（0–∞）→ 分贝（dBFS，20·log10）。
 ///
 /// `v <= 0` 时返回 [`FLOOR_DB`]（视为底噪下限，避免负无穷）。
+///
+/// **入参必须是线性幅度**。若喂进来的已经是 dB 值（例如 Web Audio 的
+/// `getFloatFrequencyData` 输出，恒为负数），本函数会对每个 bin 返回 [`FLOOR_DB`]，
+/// 使整幅图静默变成一条平线而不报错。遇到「频谱图全黑但明显有信号」先查这里。
 #[must_use]
 pub fn db_from_linear(v: f32) -> f32 {
   if v <= 0.0 { FLOOR_DB } else { 20.0 * v.log10() }
@@ -91,17 +95,29 @@ pub fn synthesize(rate: u32, seconds: f32, tones: &[(f32, f32)], noise: f32) -> 
   out
 }
 
-/// 计算 Hann 窗（长度 `n`）。
+/// 计算周期（DFT-even）Hann 窗（长度 `n`）。
 fn hann_window(n: usize) -> Vec<f32> {
-  let denom = (n - 1) as f32;
+  let denom = n as f32;
   (0..n)
     .map(|i| 0.5 - 0.5 * (TAU * i as f32 / denom).cos())
     .collect()
 }
 
+/// Hann 窗的等效噪声带宽（单位：bin）。
+///
+/// 相干增益补偿（[`spectrum_db`] 里的 `2/Σw`）只对**单音**成立。对噪声 / 宽带信号，
+/// 每个 bin 的功率还要再乘 ENBW=1.5 才是真实值，即读数偏低 `10·lg1.5 ≈ 1.76 dB`。
+/// 要把瀑布图上的「噪底」当成功率密度读数时，需补上 [`HANN_ENBW_CORRECTION_DB`]。
+pub const HANN_ENBW_BINS: f32 = 1.5;
+
+/// 加 Hann 窗后噪声类读数换算为真实功率所需的修正量（dB，加到读数上）。
+pub const HANN_ENBW_CORRECTION_DB: f32 = 1.76;
+
 /// 对一段实样本做 FFT，返回 0..N/2 的 dB 幅度谱（加 Hann 窗，N 为 ≤ 长度的最大 2 的幂）。
 ///
-/// 归一化后单音幅度约为其真实幅度（幅度 1.0 → 约 0 dB，不含窗增益损失）。
+/// 归一化已补偿 Hann 窗的相干增益：幅度 1.0 的实正弦约读到 0 dB。
+///
+/// 该标定只对单音有效；读噪声电平时请另加 [`HANN_ENBW_CORRECTION_DB`]。
 #[must_use]
 pub fn spectrum_db(samples: &[f32]) -> Vec<f32> {
   let mut n = 1usize;
@@ -118,13 +134,18 @@ pub fn spectrum_db(samples: &[f32]) -> Vec<f32> {
     re[i] = samples[i] * win[i];
   }
   fft_in_place(&mut re, &mut im);
-  let scale = 2.0 / n as f32;
+  // 幅度为 A 的实正弦，加窗后峰值 bin 幅度约为 A·Σw/2，故取 2/Σw 还原为 A。
+  let coherent = win.iter().sum::<f32>();
+  let scale = if coherent > 0.0 { 2.0 / coherent } else { 0.0 };
   (0..n / 2)
     .map(|i| db_from_linear(re[i].hypot(im[i]) * scale))
     .collect()
 }
 
 /// 第 `bin` 个 bin 对应的频率（Hz）。
+///
+/// `bin_count` 传入的是**返回的 bin 数**（即 N/2），函数内部再乘 2 还原 FFT 长度。
+/// 误传 FFT 长度 N 会让结果差一倍。
 fn bin_frequency_hz(bin: usize, bin_count: usize, sample_rate: f32) -> f32 {
   bin as f32 * sample_rate / (bin_count * 2) as f32
 }
@@ -224,7 +245,7 @@ pub fn spectrum_to_rgba(db: &[f32], height: usize, floor_db: f32, ceil_db: f32) 
 
 /// 频谱中前 `k` 个峰值（按幅度降序，做主瓣抑制），返回 (频率 Hz, dB)。
 ///
-/// 每取一个峰值后抑制其邻域（±4 bin，覆盖 Hann 窗主瓣），避免同一音调的
+/// 每取一个峰值后抑制其邻域（±2 bin，Hann 窗主瓣零点间半宽），避免同一音调的
 /// 旁瓣被重复计为多个峰值。
 #[must_use]
 pub fn top_peaks(db: &[f32], sample_rate: f32, k: usize) -> Vec<(f32, f32)> {
@@ -248,8 +269,10 @@ pub fn top_peaks(db: &[f32], sample_rate: f32, k: usize) -> Vec<(f32, f32)> {
       break;
     };
     peaks.push((bin_frequency_hz(bi, n, sample_rate), bv));
-    let lo = bi.saturating_sub(4);
-    let hi = (bi + 4).min(n - 1);
+    // Hann 窗主瓣零点到零点的半宽为 2 个 bin；抑制范围过大会把相距 ≤4 bin 的
+    // 两个音合并成一个，故取 ±2。
+    let lo = bi.saturating_sub(2);
+    let hi = (bi + 2).min(n - 1);
     for u in &mut used[lo..=hi] {
       *u = true;
     }

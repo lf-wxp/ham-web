@@ -34,7 +34,7 @@ pub const ANALOG_MODES: &[AnalogMode] = &[
     emission: "J3E",
     bandwidth: "约 2.7 kHz",
     desc: "抑制载波与一个边带，只传一个边带（USB / LSB）。",
-    pros: "功率利用率高，约为 AM 的 4 倍。",
+    pros: "功率利用率高，典型话音（单边带）条件下约为 AM 的 4 倍（经验值，随调制深度变化）。",
     usage: "HF 话音通信主力",
   },
   AnalogMode {
@@ -71,7 +71,12 @@ pub const SIDEBAND_RULES: &[&str] = &[
   "10 MHz 以下（80m、40m 等）惯例使用 LSB（下边带）。",
   "10 MHz 以上（20m、15m、10m 等）惯例使用 USB（上边带）。",
   "VHF/UHF 及 60m、30m 等特殊波段统一使用 USB。",
-  "CW 与数据模式不使用边带约定，通常在载波频率附近工作。",
+  concat!(
+    "边带约定只针对话音类模式。CW 无上下边带之分，工作在载波频率附近（靠音频差拍听音调）；",
+    "数据模式不能一概说「不使用边带约定」—— FT8 / FT4 / JS8 / WSPR 等 WSJT-X 系模式各波段统一用 USB，",
+    "10MHz 以下也不例外；PSK31 多数软件默认 USB，但 40m 及以下仍有 LSB 惯例；",
+    "SSTV / RTTY 等仍按所在波段的 LSB / USB 惯例。",
+  ),
 ];
 
 /// 模拟与数字模式对比。

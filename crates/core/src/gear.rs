@@ -1,7 +1,8 @@
 //! 器材库与选购指南（阶段一：静态精选库）。
 //!
-//! 只收录长期在售、资料公开、社区共识度高的常见机型，规格取「公开且稳定」的高层次
-//! 信息（频段覆盖、功率量级、模式、特点），不写会随批次变动与渠道不同的精确参数。
+//! 收录资料公开、社区共识度高的常见机型（含部分已停产经典型号，在 note 中标注），规格
+//! 取「公开且稳定」的高层次信息（频段覆盖、功率量级、模式、特点），不写会随批次变动
+//! 与渠道不同的精确参数。
 //! 价格档为相对定位（入门 / 中端 / 高端 / 旗舰），不写具体售价以免过期。
 
 /// 器材类别：`(key, 名称)`。
@@ -133,7 +134,7 @@ pub const GEAR: &[Gear] = &[
     model: "KX2",
     category: "portable",
     tier: "高端",
-    bands: "HF（50MHz 需选件）",
+    bands: "HF（80–10m）",
     power: "QRP 10W 级",
     modes: "SSB / CW / AM / 数字",
     highlight: "轻量 QRP 便携，内置电池与天调",
@@ -146,10 +147,10 @@ pub const GEAR: &[Gear] = &[
     category: "portable",
     tier: "中端",
     bands: "HF / VHF / UHF",
-    power: "QRP 5W 级",
+    power: "QRP 5W 级（HF 段约 6W）",
     modes: "SSB / CW / AM / FM / 数字",
     highlight: "经典全频段 QRP 便携机型",
-    note: "老牌机型，配件与改装社区资料丰富。",
+    note: "已停产；老牌机型，配件与改装社区资料丰富。",
   },
   // ── 手持对讲机 ──
   Gear {
@@ -174,7 +175,7 @@ pub const GEAR: &[Gear] = &[
     power: "5W 级",
     modes: "FM",
     highlight: "结实耐用、操作简单",
-    note: "传统模拟手台，故障率低，适合日常使用。",
+    note: "已停产；传统模拟手台，故障率低，适合日常使用。",
   },
   Gear {
     id: "ft-5dr",
@@ -235,7 +236,7 @@ pub const GEAR: &[Gear] = &[
     power: "50W 级",
     modes: "FM / APRS",
     highlight: "内置 TNC 与 APRS 导航",
-    note: "想玩 APRS 的车载首选。",
+    note: "已停产；想玩 APRS 的车载经典型号。",
   },
   Gear {
     id: "ftm-400xdr",
@@ -247,7 +248,7 @@ pub const GEAR: &[Gear] = &[
     power: "50W 级",
     modes: "FM / C4FM 数字",
     highlight: "大屏触摸操作，支持 APRS",
-    note: "数字语音 + APRS 的车载方案。",
+    note: "已由 FTM-500 系列取代；数字语音 + APRS 车载方案。",
   },
   // ── SDR 接收机 ──
   Gear {

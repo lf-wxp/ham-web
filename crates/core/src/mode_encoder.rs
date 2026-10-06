@@ -29,7 +29,7 @@ pub fn text_to_morse(text: &str) -> String {
 }
 
 /// ITA2 字母态编码值（5 位）。
-fn letter_code(ch: char) -> Option<u8> {
+pub fn letter_code(ch: char) -> Option<u8> {
   Some(match ch.to_ascii_uppercase() {
     'A' => 0b00011,
     'B' => 0b11001,
@@ -58,8 +58,9 @@ fn letter_code(ch: char) -> Option<u8> {
     'Y' => 0b10101,
     'Z' => 0b10001,
     ' ' => 0b00100,
-    '\r' => 0b00010,
-    '\n' => 0b01000,
+    // ITA2 标准（与上表 A=00011 同口径、低位在先写法）：CR = 01000、LF = 00010。
+    '\r' => 0b01000,
+    '\n' => 0b00010,
     _ => return None,
   })
 }
@@ -130,6 +131,14 @@ mod tests {
   fn baudot_inserts_figs_shift_for_digits() {
     // A 后接 1：A=00011，切数字态 11011，1（Q 位）=10111。
     assert_eq!(text_to_baudot_bits("A1"), "00011 11011 10111");
+  }
+
+  #[test]
+  fn baudot_cr_lf_follow_ita2_bit_order() {
+    // ITA2 标准（低位在先写法）：CR = 01000、LF = 00010。
+    assert_eq!(letter_code('\r'), Some(0b01000), "CR 位序反了会与 LF 互换");
+    assert_eq!(letter_code('\n'), Some(0b00010));
+    assert_ne!(letter_code('\r'), letter_code('\n'), "CR 与 LF 不得相同");
   }
 
   #[test]

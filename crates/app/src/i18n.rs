@@ -5175,8 +5175,8 @@ static EN: &[(&str, &str)] = &[
     "30–3000 MHz, transmit power ≤ 25 W.",
   ),
   (
-    "30 MHz 以下 <15W 或 30 MHz 以上 ≤25W。",
-    "Below 30 MHz <15 W, or above 30 MHz ≤25 W.",
+    "30 MHz 以下 ≤15W 或 30 MHz 以上 ≤25W。",
+    "Below 30 MHz ≤15 W, or above 30 MHz ≤25 W.",
   ),
   (
     "30 MHz 以下 ≤1000W 或 30 MHz 以上 ≤25W。",
@@ -5276,6 +5276,59 @@ static EN: &[(&str, &str)] = &[
     "key 只用于区分配额档位与统计，不做敏感鉴权；成功响应的缓存时长为 {} 秒。需要 key 请联系站点维护者。",
     "The key only picks a quota tier and feeds statistics; it is not sensitive authentication. Successful responses are cached for {} seconds. Contact the site maintainer if you need a key.",
   ),
+  // —— 调制 / 数字通信 / DSP 专题页 ——
+  ("发射类别标识的构成", "Structure of an emission designation"),
+  ("天线理论要点", "Antenna theory essentials"),
+  (
+    "干扰查处流程（主管部门）",
+    "Interference enforcement (regulator)",
+  ),
+  ("知识来源与时效", "Knowledge sources and currency"),
+  ("调制理论", "Modulation Theory"),
+  (
+    "把信息加载到射频载波上的原理",
+    "How information is loaded onto an RF carrier",
+  ),
+  ("数字通信原理", "Digital Communications"),
+  (
+    "比特如何在无线信道中可靠传输",
+    "How bits travel reliably over a wireless channel",
+  ),
+  ("数字信号处理基础", "DSP Fundamentals"),
+  (
+    "采样 / 量化 / FFT / 滤波与 SDR 处理链",
+    "Sampling / quantization / FFT / filtering and the SDR chain",
+  ),
+  // —— 工具页新增文案 ——
+  ("馈线型号", "Feedline model"),
+  ("臂内接法", "In-arm configuration"),
+  ("串联 LC", "Series LC"),
+  ("并联 LC", "Parallel LC"),
+  ("S11（dB，负值）", "S11 (dB, negative)"),
+  (
+    "总损耗 {} dB　功率损耗 {}%　（{}，速度因子 {}）",
+    "Total loss {} dB　power loss {}%　({}, velocity factor {})",
+  ),
+  (
+    "SWR {} → 反射系数 |Γ| = {}，S11 = {} dB（回波损耗取正值为 {} dB）",
+    "SWR {} → reflection coefficient |Γ| = {}, S11 = {} dB (return loss as a positive value is {} dB)",
+  ),
+  (
+    "Butterworth 原型；g₁ 起交替串 / 并联。带通 / 带阻每级为 LC 谐振回路、谐振于中心频率。臂内接法决定阻带还是通带：串联臂内串联 LC 或并联臂内并联 LC → 谐振时直通（带通）；串联臂内并联 LC 或并联臂内串联 LC → 谐振时阻断（带阻）。",
+    "Butterworth prototype; g₁ onward alternates series / shunt. Each band-pass / band-stop stage is an LC resonator tuned to the centre frequency. The in-arm configuration decides stopband vs passband: a series LC in a series arm or a parallel LC in a shunt arm → conducts at resonance (band-pass); a parallel LC in a series arm or a series LC in a shunt arm → blocks at resonance (band-stop).",
+  ),
+  // —— 调制 / 数字通信 / DSP 专题页章节标题 ——
+  ("模拟调制方式对比", "Analog modulation schemes"),
+  ("带宽与调制指数", "Bandwidth and modulation index"),
+  ("FM 的四个关键效应", "Four key FM effects"),
+  ("解调（检波）方式", "Demodulation methods"),
+  ("数字调制方式", "Digital modulation schemes"),
+  ("信道编码与差错控制", "Channel coding and error control"),
+  ("数字通信链路", "Digital communication link"),
+  ("采样与量化", "Sampling and quantization"),
+  ("常用窗函数", "Common window functions"),
+  ("滤波器类型", "Filter types"),
+  ("典型 SDR 接收链", "Typical SDR receive chain"),
 ];
 
 /// 西班牙文词典（中文原文 → 西班牙文）。
@@ -10474,8 +10527,8 @@ static ES: &[(&str, &str)] = &[
     "30–3000 MHz, potencia de emisión ≤ 25 W.",
   ),
   (
-    "30 MHz 以下 <15W 或 30 MHz 以上 ≤25W。",
-    "Por debajo de 30 MHz <15 W, o por encima de 30 MHz ≤25 W.",
+    "30 MHz 以下 ≤15W 或 30 MHz 以上 ≤25W。",
+    "Por debajo de 30 MHz ≤15 W, o por encima de 30 MHz ≤25 W.",
   ),
   (
     "30 MHz 以下 ≤1000W 或 30 MHz 以上 ≤25W。",
@@ -10575,6 +10628,68 @@ static ES: &[(&str, &str)] = &[
     "key 只用于区分配额档位与统计，不做敏感鉴权；成功响应的缓存时长为 {} 秒。需要 key 请联系站点维护者。",
     "La key solo distingue el nivel de cuota y alimenta las estadísticas; no es autenticación sensible. Las respuestas correctas se cachean {} segundos. Si necesitas una key, contacta con el mantenedor del sitio.",
   ),
+  // —— 调制 / 数字通信 / DSP 专题页 ——
+  (
+    "发射类别标识的构成",
+    "Estructura de la designación de emisión",
+  ),
+  ("天线理论要点", "Fundamentos de teoría de antenas"),
+  (
+    "干扰查处流程（主管部门）",
+    "Sanción de interferencias (regulador)",
+  ),
+  ("知识来源与时效", "Fuentes y vigencia del conocimiento"),
+  ("调制理论", "Teoría de la modulación"),
+  (
+    "把信息加载到射频载波上的原理",
+    "Cómo se carga la información en una portadora de RF",
+  ),
+  ("数字通信原理", "Comunicaciones digitales"),
+  (
+    "比特如何在无线信道中可靠传输",
+    "Cómo viajan los bits de forma fiable por un canal inalámbrico",
+  ),
+  ("数字信号处理基础", "Fundamentos del DSP"),
+  (
+    "采样 / 量化 / FFT / 滤波与 SDR 处理链",
+    "Muestreo / cuantificación / FFT / filtrado y la cadena SDR",
+  ),
+  // —— 工具页新增文案 ——
+  ("馈线型号", "Modelo de línea"),
+  ("臂内接法", "Configuración interna del brazo"),
+  ("串联 LC", "LC en serie"),
+  ("并联 LC", "LC en paralelo"),
+  ("S11（dB，负值）", "S11 (dB, valor negativo)"),
+  (
+    "总损耗 {} dB　功率损耗 {}%　（{}，速度因子 {}）",
+    "Pérdida total {} dB　pérdida de potencia {}%　({}, factor de velocidad {})",
+  ),
+  (
+    "SWR {} → 反射系数 |Γ| = {}，S11 = {} dB（回波损耗取正值为 {} dB）",
+    "SWR {} → coeficiente de reflexión |Γ| = {}, S11 = {} dB (pérdida de retorno en positivo: {} dB)",
+  ),
+  (
+    "Butterworth 原型；g₁ 起交替串 / 并联。带通 / 带阻每级为 LC 谐振回路、谐振于中心频率。臂内接法决定阻带还是通带：串联臂内串联 LC 或并联臂内并联 LC → 谐振时直通（带通）；串联臂内并联 LC 或并联臂内串联 LC → 谐振时阻断（带阻）。",
+    "Prototipo Butterworth; desde g₁ alterna serie / paralelo. Cada etapa de paso de banda / rechazo de banda es un resonador LC sintonizado a la frecuencia central. La configuración interna del brazo decide banda rechazada o pasante: un LC en serie en un brazo serie o un LC en paralelo en un brazo paralelo → conduce en resonancia (paso de banda); un LC en paralelo en un brazo serie o un LC en serie en un brazo paralelo → bloquea en resonancia (rechazo de banda).",
+  ),
+  // —— 调制 / 数字通信 / DSP 专题页章节标题 ——
+  (
+    "模拟调制方式对比",
+    "Comparación de esquemas de modulación analógica",
+  ),
+  ("带宽与调制指数", "Ancho de banda e índice de modulación"),
+  ("FM 的四个关键效应", "Cuatro efectos clave de FM"),
+  ("解调（检波）方式", "Métodos de demodulación"),
+  ("数字调制方式", "Esquemas de modulación digital"),
+  (
+    "信道编码与差错控制",
+    "Codificación de canal y control de errores",
+  ),
+  ("数字通信链路", "Enlace de comunicación digital"),
+  ("采样与量化", "Muestreo y cuantificación"),
+  ("常用窗函数", "Funciones de ventana comunes"),
+  ("滤波器类型", "Tipos de filtro"),
+  ("典型 SDR 接收链", "Cadena de recepción SDR típica"),
 ];
 
 #[cfg(test)]

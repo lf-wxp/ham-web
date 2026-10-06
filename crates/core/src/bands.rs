@@ -54,10 +54,19 @@ pub enum Remark {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Allocation {
   pub range: &'static str,
-  /// 该频段也供卫星业余业务使用。
-  pub satellite: bool,
   pub usage: Usage,
   pub remark: Remark,
+}
+
+impl Allocation {
+  /// 该频段是否也供卫星业余业务使用。
+  ///
+  /// 由 [`is_satellite_range`] 依据 ITU 表内划分与脚注 5.282 的**唯一频率来源**
+  /// [`AMATEUR_SATELLITE_RANGES_MHZ`] 派生，不再逐条手工标注，避免维护出错。
+  #[must_use]
+  pub fn is_satellite(&self) -> bool {
+    is_satellite_range(self.range)
+  }
 }
 
 /// 一个波段（带号）。
@@ -123,16 +132,6 @@ use Usage::{Exclusive, Primary, Secondary, SolePrimary};
 const fn a(range: &'static str, usage: Usage, remark: Remark) -> Allocation {
   Allocation {
     range,
-    satellite: false,
-    usage,
-    remark,
-  }
-}
-
-const fn sat(range: &'static str, usage: Usage, remark: Remark) -> Allocation {
-  Allocation {
-    range,
-    satellite: true,
     usage,
     remark,
   }
@@ -241,7 +240,7 @@ pub const BANDS: &[Band] = &[
         Secondary,
         n(&[Ref("5.133B"), Ref("CHN4")]),
       ),
-      sat("7-7.1MHz", Exclusive, n(&[Text("40米业余波段")])),
+      a("7-7.1MHz", Exclusive, n(&[Text("40米业余波段")])),
       a(
         "7.1-7.2MHz",
         Primary,
@@ -252,24 +251,24 @@ pub const BANDS: &[Band] = &[
         Secondary,
         n(&[Ref("CHN4"), Text("WARC频段；不能用于通话")]),
       ),
-      sat("14-14.25MHz", Exclusive, n(&[Text("20米业余波段")])),
+      a("14-14.25MHz", Exclusive, n(&[Text("20米业余波段")])),
       a(
         "14.25-14.35MHz",
         Primary,
         n(&[Ref("5.152"), Ref("CHN4"), Text("20米业余波段")]),
       ),
-      sat(
+      a(
         "18.068-18.168MHz",
         Primary,
         n(&[Ref("CHN4"), Text("WARC频段")]),
       ),
-      sat("21-21.45MHz", Exclusive, n(&[Text("15米业余波段")])),
+      a("21-21.45MHz", Exclusive, n(&[Text("15米业余波段")])),
       a(
         "24.89-24.99MHz",
         Primary,
         n(&[Ref("CHN4"), Text("WARC频段")]),
       ),
-      sat(
+      a(
         "28-29.7MHz",
         Exclusive,
         n(&[Ref("CHN7"), Text("10米业余波段")]),
@@ -288,7 +287,7 @@ pub const BANDS: &[Band] = &[
         Primary,
         n(&[Ref("5.162A"), Ref("CHN4"), Ref("CHN8"), Text("6米业余波段")]),
       ),
-      sat(
+      a(
         "144-146MHz",
         SolePrimary,
         n(&[Ref("CHN42"), Text("2米业余波段")]),
@@ -328,15 +327,15 @@ pub const BANDS: &[Band] = &[
       a("3.4-3.5GHz", Secondary, n(&[Ref("5.282"), Ref("CHN18")])),
       a("5.65-5.725GHz", Secondary, n(&[Ref("5.282")])),
       a("5.725-5.83GHz", Secondary, n(&[Ref("5.150")])),
-      sat(
+      a(
         "5.83-5.85GHz",
         Secondary,
         n(&[Ref("5.150"), Text("空对地")]),
       ),
       a("10-10.4GHz", Secondary, n(&[Ref("5.479"), Ref("5.474D")])),
       a("10.4-10.45GHz", Secondary, E),
-      sat("10.45-10.5GHz", Secondary, E),
-      sat("24-24.05GHz", Primary, n(&[Ref("5.150")])),
+      a("10.45-10.5GHz", Secondary, E),
+      a("24-24.05GHz", Primary, n(&[Ref("5.150")])),
       a("24.05-24.25GHz", Secondary, n(&[Ref("5.150")])),
     ],
   )),
@@ -347,16 +346,16 @@ pub const BANDS: &[Band] = &[
     ("极高频", "EHF"),
     "30-300 GHz",
     &[
-      sat("47-47.2GHz", Exclusive, E),
-      sat("76-77.5GHz", Secondary, n(&[Ref("5.149")])),
-      sat("77.5-78GHz", Primary, n(&[Ref("5.149")])),
-      sat("78-79GHz", Secondary, n(&[Ref("5.149"), Ref("5.560")])),
-      sat("79-81GHz", Secondary, n(&[Ref("5.149")])),
+      a("47-47.2GHz", Exclusive, E),
+      a("76-77.5GHz", Secondary, n(&[Ref("5.149")])),
+      a("77.5-78GHz", Primary, n(&[Ref("5.149")])),
+      a("78-79GHz", Secondary, n(&[Ref("5.149"), Ref("5.560")])),
+      a("79-81GHz", Secondary, n(&[Ref("5.149")])),
       a("122.25-123GHz", Secondary, n(&[Ref("5.138")])),
-      sat("134-136GHz", SolePrimary, E),
-      sat("136-141GHz", Secondary, n(&[Ref("5.149")])),
-      sat("241-248GHz", Secondary, n(&[Ref("5.138"), Ref("5.149")])),
-      sat("248-250GHz", SolePrimary, n(&[Ref("5.149"), Ref("CHN12")])),
+      a("134-136GHz", SolePrimary, E),
+      a("136-141GHz", Secondary, n(&[Ref("5.149")])),
+      a("241-248GHz", Secondary, n(&[Ref("5.138"), Ref("5.149")])),
+      a("248-250GHz", SolePrimary, n(&[Ref("5.149"), Ref("CHN12")])),
     ],
   )),
   microwave(band(
@@ -481,8 +480,66 @@ pub fn satellite_count() -> usize {
   BANDS
     .iter()
     .flat_map(|b| b.allocations)
-    .filter(|a| a.satellite)
+    .filter(|a| a.is_satellite())
     .count()
+}
+
+/// 解析划分条目里的频率范围为 MHz 区间（半开 `[低, 高)`）。
+///
+/// 支持 `kHz` / `MHz` / `GHz` 后缀，如 `135.7-137.8kHz`、`18.068-18.168MHz`、`47-47.2GHz`。
+#[must_use]
+pub fn parse_range_mhz(range: &str) -> Option<(f64, f64)> {
+  let (body, scale) = if let Some(s) = range.strip_suffix("kHz") {
+    (s, 1e-3)
+  } else if let Some(s) = range.strip_suffix("MHz") {
+    (s, 1.0)
+  } else {
+    (range.strip_suffix("GHz")?, 1e3)
+  };
+  let (lo, hi) = body.split_once('-')?;
+  let lo = lo.trim().parse::<f64>().ok()? * scale;
+  let hi = hi.trim().parse::<f64>().ok()? * scale;
+  Some((lo, hi))
+}
+
+/// 卫星业余业务可用的频率范围（MHz，半开区间）——ITU 表内划分与脚注 5.282。
+///
+/// 这是「某频段能否用于卫星业余业务」的**唯一事实来源**：[`Allocation::is_satellite`]
+/// 与 [`satellite_count`] 都由它派生，不再逐条手工标注。
+pub const AMATEUR_SATELLITE_RANGES_MHZ: &[(f64, f64)] = &[
+  // 短波（表内业余卫星业务划分）
+  (7.0, 7.1),
+  (14.0, 14.25),
+  (18.068, 18.168),
+  (21.0, 21.45),
+  (24.89, 24.99),
+  (28.0, 29.7),
+  // 2m
+  (144.0, 146.0),
+  // 脚注 5.282：435-438 / 1260-1270 / 2400-2450 / 3400-3410 / 5650-5670
+  (435.0, 438.0),
+  (1260.0, 1270.0),
+  (2400.0, 2450.0),
+  (3400.0, 3410.0),
+  (5650.0, 5670.0),
+  // 厘米波 / 毫米波（表内划分）
+  (5830.0, 5850.0),
+  (10450.0, 10500.0),
+  (24000.0, 24050.0),
+  (47000.0, 47200.0),
+  (76000.0, 81000.0),
+  (134000.0, 141000.0),
+  (241000.0, 250000.0),
+];
+
+/// 判断某划分频率范围是否与卫星业余业务频段重叠。
+#[must_use]
+pub fn is_satellite_range(range: &str) -> bool {
+  parse_range_mhz(range).is_some_and(|r| {
+    AMATEUR_SATELLITE_RANGES_MHZ
+      .iter()
+      .any(|&s| r.0 < s.1 && s.0 < r.1)
+  })
 }
 
 /// 微波波段在表格中占用的总行数。
@@ -490,6 +547,29 @@ pub fn satellite_count() -> usize {
 pub fn microwave_rows() -> usize {
   BANDS.iter().filter(|b| b.microwave).map(Band::rows).sum()
 }
+
+/// 常用业余波段的数字边界（MHz，半开区间 `[下, 上)`），供
+/// [`crate::frequencies::band_of`] 等复用。
+///
+/// 边界按中国（ITU 三区）口径：80m 到 3.9、40m 到 7.2、17m 从 18.068 起。
+/// 这是这些边界在**全站的唯一事实来源**——`band_of` 与波段规划都据此判断，
+/// 避免历史上「一处写二区值、另一处写三区值」造成的漂移（见
+/// `knowledge_consistency::amateur_band_edges_are_single_source`）。
+pub const AMATEUR_BAND_EDGES: &[(&str, f64, f64)] = &[
+  ("160m", 1.8, 2.0),
+  ("80m", 3.5, 3.9),
+  ("60m", 5.3515, 5.3665),
+  ("40m", 7.0, 7.2),
+  ("30m", 10.1, 10.15),
+  ("20m", 14.0, 14.35),
+  ("17m", 18.068, 18.168),
+  ("15m", 21.0, 21.45),
+  ("12m", 24.89, 24.99),
+  ("10m", 28.0, 29.7),
+  ("6m", 50.0, 54.0),
+  ("2m", 144.0, 148.0),
+  ("70cm", 430.0, 440.0),
+];
 
 #[cfg(test)]
 mod tests {
@@ -557,6 +637,23 @@ mod tests {
   #[test]
   fn counts() {
     assert_eq!(allocation_count(), 1 + 1 + 11 + 3 + 4 + 10 + 10);
-    assert_eq!(satellite_count(), 5 + 1 + 3 + 9);
+    // 按波段分组统计卫星业余业务划分：HF 6、VHF 1、UHF 3、SHF 5、EHF 9（合计 24）。
+    // 该结果由 AMATEUR_SATELLITE_RANGES_MHZ 派生（含脚注 5.282 的 435-438 等）。
+    assert_eq!(satellite_count(), 6 + 1 + 3 + 5 + 9);
+  }
+
+  #[test]
+  fn satellite_derivation_matches_expected() {
+    // 半开区间端点不误判：430-440 含 435-438，故为卫星业务。
+    assert!(is_satellite_range("430-440MHz"));
+    assert!(!is_satellite_range("1240-1260MHz"));
+    assert!(is_satellite_range("1260-1300MHz"));
+    assert!(!is_satellite_range("146-148MHz"));
+    assert!(is_satellite_range("144-146MHz"));
+    // 单位解析：GHz / kHz 都要正确折算到 MHz。
+    assert_eq!(parse_range_mhz("47-47.2GHz"), Some((47000.0, 47200.0)));
+    assert_eq!(parse_range_mhz("135.7-137.8kHz"), Some((0.1357, 0.1378)));
+    assert_eq!(parse_range_mhz("18.068-18.168MHz"), Some((18.068, 18.168)));
+    assert_eq!(parse_range_mhz("0.03-0.3Hz"), None);
   }
 }

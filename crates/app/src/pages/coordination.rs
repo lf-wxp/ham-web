@@ -2,7 +2,7 @@
 
 use ham_web_core::coordination::{
   COORDINATION_CONCEPTS, COORDINATION_STEPS, COORDINATION_TIERS, COORDINATION_TIPS,
-  IARU_BAND_DIFFS, INTERFERENCE_STEPS,
+  ENFORCEMENT_STEPS, IARU_BAND_DIFFS, INTERFERENCE_STEPS,
 };
 use leptos::prelude::*;
 
@@ -30,6 +30,7 @@ pub fn CoordinationPage() -> impl IntoView {
       />
       <StepsSection title="频率协调申请流程" items=COORDINATION_STEPS />
       <StepsSection title="受干扰处理流程" items=INTERFERENCE_STEPS />
+      <StepsSection title="干扰查处流程（主管部门）" items=ENFORCEMENT_STEPS />
       <BulletSection title="要点与提醒" items=COORDINATION_TIPS />
     </KnowledgePage>
   }

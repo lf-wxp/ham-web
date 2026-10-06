@@ -37,7 +37,7 @@ fn footnote_id(code: &str) -> String {
 fn range_view(a: &'static Allocation) -> impl IntoView {
   view! {
     <span class="inline-flex items-center gap-1 whitespace-nowrap">
-      {a.satellite
+      {a.is_satellite()
         .then(|| {
           view! {
             <Icon kind=IconKind::Satellite class=SAT_ICON />

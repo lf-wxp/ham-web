@@ -263,7 +263,7 @@ pub async fn bands_list(headers: HeaderMap) -> Response {
         .map(|a| {
           json!({
             "range": a.range,
-            "satellite": a.satellite,
+            "satellite": a.is_satellite(),
             "usage": a.usage.label(),
           })
         })
