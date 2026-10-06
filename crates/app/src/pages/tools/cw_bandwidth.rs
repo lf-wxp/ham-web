@@ -24,7 +24,7 @@ pub(super) fn CwBandwidth() -> impl IntoView {
           class=INPUT
         />
       </label>
-      <div class="flex items-end gap-1.5 pb-1">
+      <div class="flex flex-wrap items-end gap-1.5 pb-1">
         <button
           type="button"
           on:click=move |_| fading.set(true)
