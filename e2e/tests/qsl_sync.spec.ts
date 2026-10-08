@@ -101,9 +101,12 @@ test("QSL 同步：三向差异、来源决定哪些字段算数、逐条裁决"
   await expect(dialog.getByText("已补上 0 个标志位，清除 1 个。")).toBeVisible();
   await expect(dialog.getByText("没有需要处理的差异。")).toBeVisible();
 
-  // QRZ 报告只做匹配分析：不猜归属，因此没有可应用的差异。
+  // 换成 QRZ 来源：它有自己的渠道（本工具的扩展字段），先说明白这件事；
+  // 而这份报告里没有那个字段，所以只做匹配分析、没有可应用的差异。
   await dialog.getByRole("radio", { name: "QRZ Logbook" }).click();
-  await expect(dialog.getByText(/没有可落库的渠道/)).toBeVisible();
+  await expect(dialog.getByText(/QRZ 的确认走本工具自己的扩展字段/)).toBeVisible();
+  await dialog.getByRole("button", { name: "分析差异" }).click();
+  await expect(dialog.getByText(/没有可采纳的确认标记/)).toBeVisible();
 
   // 关掉对话框再看徽章：纸卡确认被清掉后，LoTW 确认升为徽章上那一档。
   await dialog.getByRole("button", { name: "关闭" }).click();

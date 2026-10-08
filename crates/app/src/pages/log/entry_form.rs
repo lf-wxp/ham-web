@@ -15,10 +15,11 @@ use crate::ui::{
 };
 
 use super::form_state::LogFormState;
-use super::log_helpers::{PROP_MODES, compass};
+use super::log_helpers::{PROP_MODES, compass, station_title};
 use super::qsl_image::QslImage;
-use super::{LogEntry, Logbook, StationInfo};
+use super::{LogEntry, Logbook, StationBook};
 use crate::i18n::{t, tf, tp};
+use crate::util::unique_id;
 
 /// `/api/callsign` 返回的呼号资料（仅取需要字段）。
 #[derive(serde::Deserialize, Clone)]
@@ -32,10 +33,14 @@ struct CallsignInfo {
 pub(super) fn EntryForm(
   form: LogFormState,
   logbook: RwSignal<Logbook>,
-  station: RwSignal<StationInfo>,
+  book: RwSignal<StationBook>,
   editing: RwSignal<Option<u64>>,
   on_save: Callback<()>,
 ) -> impl IntoView {
+  /// 这条记录会用哪个台站的网格算距离：表单里指定的那个，没指定就用当前台站。
+  fn my_grid(book: &StationBook, station_id: u64) -> String {
+    book.resolve(station_id).gridsquare.clone()
+  }
   let hint = Memo::new(move |_| {
     let call = form.callsign.get().trim().to_uppercase();
     if call.len() < 3 {
@@ -48,7 +53,8 @@ pub(super) fn EntryForm(
     };
     let (m, skip) = (form.mode.get(), editing.get());
     let h = logbook.with(|lb| call_hint(&lb.entries, &call, &draft.band_label(), &m, skip));
-    let path = station.with(|s| path_to(&s.gridsquare, &form.gridsquare.get(), &call));
+    let grid = book.with(|b| my_grid(b, form.station_id.get()));
+    let path = path_to(&grid, &form.gridsquare.get(), &call);
     Some((h, path))
   });
   // 自动推断的分区，作为输入框占位提示。
@@ -289,6 +295,53 @@ pub(super) fn EntryForm(
           />
           <span class="text-xs text-muted-foreground">{move || t("log.qsl-received")}</span>
         </label>
+        // 归属台站：只有一个台站时不占地方（绝大多数用户只有一个）。
+        {move || {
+          let profiles: Vec<(u64, String)> = book
+            .get()
+            .profiles
+            .iter()
+            .map(|p| {
+              let call = p.callsign.trim();
+              // 没填档案名时 `station_title` 已回落成呼号 / 默认名，再拼呼号会成「BG4XXX · BG4XXX」。
+              let label = if p.label.trim().is_empty() {
+                station_title(p)
+              } else {
+                format!("{} · {call}", station_title(p))
+              };
+              (p.id, label)
+            })
+            .collect();
+          (profiles.len() > 1)
+            .then(|| {
+              let options: Vec<SelectOption> = profiles
+                .into_iter()
+                .map(|(id, label)| SelectOption::new(id.to_string(), label))
+                .collect();
+              let station_id = unique_id("qso-station");
+              view! {
+                <Field
+                  label=Signal::derive(move || t("log.qso-station"))
+                  r#for=station_id.clone()
+                >
+                  <NativeSelect
+                    id=station_id
+                    value=Signal::derive(move || {
+                      book.with(|b| b.resolve(form.station_id.get()).id).to_string()
+                    })
+                    on_change=Callback::new(move |v: String| {
+                      if let Ok(id) = v.parse::<u64>() {
+                        form.station_id.set(id);
+                      }
+                    })
+                    options=options
+                    aria_label=Signal::derive(move || t("log.qso-station"))
+                    class="w-full"
+                  />
+                </Field>
+              }
+            })
+        }}
         <label class="flex cursor-pointer items-center gap-2">
           <Checkbox
             checked=form.lotw_sent
@@ -304,6 +357,14 @@ pub(super) fn EntryForm(
             aria_label=Signal::derive(move || t("log.lotw-confirmed"))
           />
           <span class="text-xs text-muted-foreground">{move || t("log.lotw-confirmed")}</span>
+        </label>
+        <label class="flex cursor-pointer items-center gap-2">
+          <Checkbox
+            checked=form.qrz_rcvd
+            on_change=Callback::new(move |v: bool| form.qrz_rcvd.set(v))
+            aria_label=Signal::derive(move || t("log.qrz-confirmed"))
+          />
+          <span class="text-xs text-muted-foreground">{move || t("log.qrz-confirmed")}</span>
         </label>
         <label class="flex cursor-pointer items-center gap-2">
           <Checkbox
@@ -333,9 +394,12 @@ pub(super) fn EntryForm(
             </div>
           }.into_any(),
         }}
+        // 展开 / 收起「更多字段」：保留原生元素是因为 `Button` 没有 `aria-expanded` 通道，
+        // 而展开状态是读屏与 e2e 的契约（视觉上这里也只是行内链接，不是按钮）。
         <button
           type="button"
           class="text-left text-xs text-primary underline-offset-4 hover:underline sm:col-span-2 lg:col-span-3"
+          aria-expanded=move || form.show_more.get().to_string()
           on:click=move |_| form.show_more.update(|v| *v = !*v)
         >
           {move || if form.show_more.get() { t("log.hide-extra-fields") } else { t("log.more-fields-power-end") }}
@@ -350,6 +414,8 @@ pub(super) fn EntryForm(
             let ituz_id = crate::util::unique_id("log-ituz");
             view! {
               {text_input(Signal::derive(move || t("log.power-w-tx-pwr")), "100", form.tx_pwr, "")}
+              // 值机员与归属台站是两件事：俱乐部台里「谁在操作」得单独记（空 = 台站档案里那位）。
+              {text_input(Signal::derive(move || t("log.operator")), "BD1ABC", form.operator, "uppercase")}
               <Field label=Signal::derive(move || t("log.end-time-utc")) r#for=time_off_id.clone()>
                 <TimePicker
                   id=time_off_id.clone()

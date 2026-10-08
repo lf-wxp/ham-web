@@ -4,6 +4,7 @@
 //! 高亮态要随当前路由切换 `variant`，下拉开关还要输出 `aria-expanded` —— 这两个通道
 //! [`Button`] 与 `ButtonLink` 目前都没有（见 `docs/ui-components.md` 的「常见坑」）。
 //! 同一个文件里的搜索、语言切换、主题切换等按钮都已经用组件，**不要顺手把这些清掉**。
+//! 「知识库」「工具」两个分组下拉的开关与面板是同一套路数，已拆到 `group_menu.rs`。
 
 use leptos::ev;
 use leptos::prelude::*;
@@ -17,6 +18,7 @@ use crate::cn::cn;
 use crate::icons::{Icon, IconKind, icon_of};
 use crate::ui::{Button, Size, Variant, button_class};
 
+use super::group_menu::{GroupMenu, MenuAlign};
 use super::locale_toggle::LocaleToggle;
 use super::theme_toggle::ThemeToggle;
 
@@ -81,8 +83,6 @@ pub fn Navigation() -> impl IntoView {
       .any(|m| active(m.path))
   };
   let exam_active = move || group_active(GROUP_EXAM);
-  let knowledge_active = move || KNOWLEDGE_GROUPS.iter().any(|g| group_active(g));
-  let tool_active = move || TOOL_GROUPS.iter().any(|g| group_active(g));
 
   view! {
     <nav data-nav aria-label=move || t("shell.main-navigation") class="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
@@ -206,197 +206,26 @@ pub fn Navigation() -> impl IntoView {
               </div>
             </div>
 
-            // 知识库分组菜单
-            // 这里刻意保持 `static`：面板宽 960px，必须相对整条导航容器定位
-            // （`left-1/2 -translate-x-1/2` 居中）才不会溢出视口。垂直方向因此与
-            // 「考试中心」共享同一个基准 —— 容器高 h-16，`top-full` 恒为导航下沿。
-            <div class="group static">
-              // 刻意的例外，见文件头：下拉开关要切换 `variant` 并输出 `aria-expanded`。
-              <button
-                type="button"
-                data-slot="button"
-                aria-expanded=move || (open_menu.get() == Some(MenuKind::Knowledge)).to_string()
-                class=move || {
-                  button_class(
-                    if knowledge_active() { Variant::Default } else { Variant::Ghost },
-                    Size::Sm,
-                    "inline-flex items-center gap-2 whitespace-nowrap",
-                  )
-                }
-                on:click=move |_| {
-                  open_menu.update(|m| {
-                    *m = if *m == Some(MenuKind::Knowledge) {
-                      None
-                    } else {
-                      Some(MenuKind::Knowledge)
-                    };
-                  });
-                }
-              >
-                <Icon kind=IconKind::BookOpen class="h-4 w-4" />
-                {move || t("shell.knowledge")}
-                <Icon
-                  kind=IconKind::ChevronDown
-                  class=Signal::derive(move || {
-                    cn(&[
-                      "h-3.5 w-3.5 transition-transform duration-200",
-                      if open_menu.get() == Some(MenuKind::Knowledge) {
-                        "rotate-180"
-                      } else {
-                        ""
-                      },
-                    ])
-                  })
-                />
-              </button>
-              <div class=move || {
-                cn(&[
-                  "absolute left-1/2 top-full -translate-x-1/2 pt-1.5 transition duration-[var(--motion-normal)] ease-[var(--ease-out-expo)]",
-                  if open_menu.get() == Some(MenuKind::Knowledge) {
-                    "visible opacity-100"
-                  } else {
-                    "invisible opacity-0"
-                  },
-                ])
-              }>
-                <div
-                  data-open=move || (open_menu.get() == Some(MenuKind::Knowledge)).to_string()
-                  class="motion-popover origin-top grid w-[960px] max-w-[calc(100vw-2rem)] grid-cols-2 gap-x-4 gap-y-3 rounded-lg border bg-popover p-4 shadow-md md:grid-cols-3 lg:grid-cols-5"
-                >
-                  {KNOWLEDGE_GROUPS
-                    .iter()
-                    .map(|g| {
-                      view! {
-                        <div>
-                          <div class="mb-1.5 flex items-center gap-1.5 px-2 text-xs font-semibold text-muted-foreground">
-                            <Icon kind=icon_of(registry::group_icon(g)) class="h-3.5 w-3.5" />
-                            <span>{move || t(g)}</span>
-                          </div>
-                          <div class="space-y-0.5">
-                            {registry::MODULES
-                              .iter()
-                              .filter(|m| m.group == Some(*g))
-                              .map(|m| {
-                                view! {
-                                  <a
-                                    href=m.nav_href()
-                                    on:click=move |_| open_menu.set(None)
-                                    class=move || {
-                                      cn(&[
-                                        "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors",
-                                        if active(m.path) {
-                                          "bg-accent text-foreground"
-                                        } else {
-                                          "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-                                        },
-                                      ])
-                                    }
-                                  >
-                                    <Icon kind=icon_of(m.icon) class="h-4 w-4 shrink-0" />
-                                    <span class="whitespace-nowrap leading-snug">{move || t(m.title)}</span>
-                                  </a>
-                                }
-                              })
-                              .collect_view()}
-                          </div>
-                        </div>
-                      }
-                    })
-                    .collect_view()}
-                </div>
-              </div>
-            </div>
+            // 知识库下拉：分组侧栏 + 条目区（上百个专题平铺会顶出视口，
+            // 结构与高度约束见 `group_menu.rs`）
+            <GroupMenu
+              kind=MenuKind::Knowledge
+              groups=KNOWLEDGE_GROUPS
+              label=Signal::derive(move || t("shell.knowledge"))
+              icon=IconKind::BookOpen
+              align=MenuAlign::Center
+              open_menu=open_menu
+            />
 
-            // 工具下拉
-            // 同知识库：960px 宽面板相对导航容器右对齐（`right-4`），保持 `static`。
-            <div class="group static">
-              // 刻意的例外，见文件头：下拉开关要切换 `variant` 并输出 `aria-expanded`。
-              <button
-                type="button"
-                data-slot="button"
-                aria-expanded=move || (open_menu.get() == Some(MenuKind::Tools)).to_string()
-                class=move || {
-                  button_class(
-                    if tool_active() { Variant::Default } else { Variant::Ghost },
-                    Size::Sm,
-                    "inline-flex items-center gap-2 whitespace-nowrap",
-                  )
-                }
-                on:click=move |_| {
-                  open_menu.update(|m| {
-                    *m = if *m == Some(MenuKind::Tools) { None } else { Some(MenuKind::Tools) };
-                  });
-                }
-              >
-                <Icon kind=IconKind::Calculator class="h-4 w-4" />
-                {move || t("shell.tools")}
-                <Icon
-                  kind=IconKind::ChevronDown
-                  class=Signal::derive(move || {
-                    cn(&[
-                      "h-3.5 w-3.5 transition-transform duration-200",
-                      if open_menu.get() == Some(MenuKind::Tools) { "rotate-180" } else { "" },
-                    ])
-                  })
-                />
-              </button>
-              <div class=move || {
-                cn(&[
-                  "absolute right-4 top-full pt-1.5 transition duration-[var(--motion-normal)] ease-[var(--ease-out-expo)]",
-                  if open_menu.get() == Some(MenuKind::Tools) {
-                    "visible opacity-100"
-                  } else {
-                    "invisible opacity-0"
-                  },
-                ])
-              }>
-                <div
-                  data-open=move || (open_menu.get() == Some(MenuKind::Tools)).to_string()
-                  class="motion-popover origin-top grid w-[960px] max-w-[calc(100vw-2rem)] grid-cols-2 gap-x-4 gap-y-3 rounded-lg border bg-popover p-4 shadow-md md:grid-cols-3 lg:grid-cols-5"
-                >
-                  {TOOL_GROUPS
-                    .iter()
-                    .map(|g| {
-                      view! {
-                        <div>
-                          <div class="mb-1.5 flex items-center gap-1.5 px-2 text-xs font-semibold text-muted-foreground">
-                            <Icon kind=icon_of(registry::group_icon(g)) class="h-3.5 w-3.5" />
-                            <span>{move || t(g)}</span>
-                          </div>
-                          <div class="space-y-0.5">
-                            {registry::MODULES
-                              .iter()
-                              .filter(|m| m.group == Some(*g))
-                              .map(|m| {
-                                view! {
-                                  <a
-                                    href=m.nav_href()
-                                    on:click=move |_| open_menu.set(None)
-                                    class=move || {
-                                      cn(&[
-                                        "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors",
-                                        if active(m.path) {
-                                          "bg-accent text-foreground"
-                                        } else {
-                                          "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-                                        },
-                                      ])
-                                    }
-                                  >
-                                    <Icon kind=icon_of(m.icon) class="h-4 w-4 shrink-0" />
-                                    <span class="whitespace-nowrap leading-snug">{move || t(m.title)}</span>
-                                  </a>
-                                }
-                              })
-                              .collect_view()}
-                          </div>
-                        </div>
-                      }
-                    })
-                    .collect_view()}
-                </div>
-              </div>
-            </div>
+            // 工具下拉：与知识库同一套面板，只是相对导航容器右对齐
+            <GroupMenu
+              kind=MenuKind::Tools
+              groups=TOOL_GROUPS
+              label=Signal::derive(move || t("shell.tools"))
+              icon=IconKind::Calculator
+              align=MenuAlign::Right
+              open_menu=open_menu
+            />
           </div>
 
           // 右侧：搜索 + 主题切换 + 移动端菜单按钮
@@ -457,12 +286,18 @@ pub fn Navigation() -> impl IntoView {
                   </a>
 
                   <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("shell.language")}</div>
-                  <div class="flex flex-wrap gap-1.5 px-3">
+                  <div
+                    class="flex flex-wrap gap-1.5 px-3"
+                    role="group"
+                    aria-label=move || t("shell.language")
+                  >
                     {Locale::ALL
                       .iter()
                       .map(|&l| view! {
                         <button
                           type="button"
+                          // 选中态不能只靠颜色：读屏用户靠 `aria-pressed` 分辨当前语言。
+                          aria-pressed=move || (i18n::locale().get() == l).to_string()
                           class=move || {
                             cn(&[
                               "rounded-md border px-3 py-1.5 text-sm transition-colors",

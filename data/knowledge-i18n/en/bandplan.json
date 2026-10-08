@@ -1,0 +1,17 @@
+{
+  "CW / 信标": "CW / beacons",
+  "CW / 数据": "CW / data",
+  "FM / 中继": "FM / repeaters",
+  "FM / 中继（扩展段）": "FM / repeaters (extended segment)",
+  "FM / 数据": "FM / data",
+  "USB 话音 / 窄带数据（WARC，e.i.r.p. ≤15W）": "USB voice / narrow-band data (WARC, e.i.r.p. ≤15 W)",
+  "业余卫星（FM / SSB）": "Amateur satellites (FM / SSB)",
+  "仅 CW / 窄带数据（WARC）": "CW / narrow-band data only (WARC)",
+  "各种模式（CW / 数据 / 话音）": "All modes (CW / data / voice)",
+  "弱信号 / 卫星（CW / SSB）": "Weak signal / satellites (CW / SSB)",
+  "数据": "Data",
+  "窄带数据": "Narrow-band data",
+  "话音 / 信标": "Voice / beacons",
+  "话音（SSB）": "Voice (SSB)",
+  "话音（WARC）": "Voice (WARC)"
+}

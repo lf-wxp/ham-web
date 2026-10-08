@@ -13,6 +13,64 @@ use crate::dxcc::{Entity, entity_by_dxcc, lookup};
 use crate::frequencies::band_of;
 use crate::grid::{distance_bearing, lat_lon_from_grid};
 use crate::qsl_status::QslVia;
+use crate::station::StationBook;
+use crate::study_plan::{day_number, format_day};
+
+/// `HH:MM` → `(时, 分)`；格式或取值不合法时返回 `None`。
+///
+/// 时间字段的**唯一**解析入口：热力图的小时分布、体检的「时间在未来」判定、
+/// [`LogEntry::minutes_on`] 都走它。各写一份的话容忍的写法会不一致 —— 曾经就是
+/// （体检用 `split_once(':')`、热力图用 `get(..2)`），于是「体检查不出问题、
+/// 热力图却少一条」。
+#[must_use]
+pub fn split_hhmm(time: &str) -> Option<(u32, u32)> {
+  let (h, m) = time.trim().split_once(':')?;
+  let h: u32 = h.trim().parse().ok()?;
+  let m: u32 = m.trim().parse().ok()?;
+  (h < 24 && m < 60).then_some((h, m))
+}
+
+/// `YYYY-MM-DD` + `HH:MM` → 自 1970-01-01 起经过的分钟数。
+#[must_use]
+pub fn minutes_of(date: &str, time: &str) -> Option<i64> {
+  let days = day_number(date)?;
+  let (h, m) = split_hhmm(time)?;
+  Some(days * 1440 + i64::from(h) * 60 + i64::from(m))
+}
+
+/// 分钟数 → `YYYY-MM-DD` + `HH:MM`（[`minutes_of`] 的逆运算）。
+#[must_use]
+pub fn stamp(minutes: i64) -> (String, String) {
+  let (days, rest) = (minutes.div_euclid(1440), minutes.rem_euclid(1440));
+  (
+    format_day(days),
+    format!("{:02}:{:02}", rest / 60, rest % 60),
+  )
+}
+
+/// 时间文本 → 统一的 `HH:MM`；解析不出时原样返回（宁可留着怪写法，也不要凭空改记录）。
+///
+/// 让 `8:30` 与 `08:30` 落到同一个 key：两者是同一次通联，写法不同就判成两条会
+/// 在同步时补出一条重复记录。
+fn normalized_hhmm(time: &str) -> String {
+  match split_hhmm(time) {
+    Some((h, m)) => format!("{h:02}:{m:02}"),
+    None => time.trim().to_owned(),
+  }
+}
+
+/// 日期文本 → 统一的 `YYYY-MM-DD`；解析不出时原样返回（宁可留着怪写法，也不要凭空改记录）。
+///
+/// 与 [`normalized_hhmm`] 同一个理由：`2026-1-5` 与 `2026-01-05` 是同一天，写法不同就
+/// 判成两条、同步时补出一条重复记录。归一化复用 [`day_number`] / [`format_day`]，与
+/// [`LogEntry::dedupe_key`] 的「日期必须可解析」是同一口径 —— 否则会出现「能通过
+/// `dedupe_key` 的资格检查、却与报告行的 key 对不上」的半吊子状态。
+fn normalized_date(date: &str) -> String {
+  match day_number(date) {
+    Some(days) => format_day(days),
+    None => date.trim().to_owned(),
+  }
+}
 
 /// 录入表单可选的模式。
 pub const MODES: &[&str] = &[
@@ -39,6 +97,18 @@ pub struct StationInfo {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LogEntry {
   pub id: u64,
+  /// 操作员 `OPERATOR`（多操作员分账用）。空 = 用所属台站档案的操作员。
+  ///
+  /// ADIF 里 `OPERATOR` 本就**逐条**出现（俱乐部台 / 家庭台多人操作是常态），
+  /// 所以它跟归属台站一样是记录级字段，而不是整库一个值。
+  #[serde(default)]
+  pub operator: String,
+  /// 归属台站（[`crate::station::StationProfile::id`]）。
+  ///
+  /// `0` = 未指定：老日志没有这个字段，删掉的台站也会留下悬空 id —— 两种都按「当前台站」
+  /// 回落（见 [`crate::station::StationBook::of_entry`]），因此不需要数据迁移。
+  #[serde(default)]
+  pub station_id: u64,
   /// 日期（YYYY-MM-DD）。
   pub date: String,
   /// 时间（HH:MM）。
@@ -137,6 +207,12 @@ pub struct LogEntry {
   /// eQSL 是否已确认 `EQSL_QSL_RCVD`。
   #[serde(default)]
   pub eqsl_rcvd: bool,
+  /// QRZ Logbook 是否已确认。
+  ///
+  /// ADIF 没有这个标准字段（QRZ 的站内确认是与纸质卡共用的 `QSL_RCVD`），所以走本工具的
+  /// 应用自定义字段 [`crate::adif::APP_QRZ_RCVD`]：别的软件忽略它，导出再导入时原样读回。
+  #[serde(default)]
+  pub qrz_rcvd: bool,
 }
 
 impl LogEntry {
@@ -152,17 +228,39 @@ impl LogEntry {
     self.band.trim().to_ascii_lowercase()
   }
 
-  /// 同一次通联的判定 key（导入去重用）：呼号 + 日期 + 时间（到分钟）+ 波段 + 模式。
+  /// 同一次通联的判定 key：呼号 + 日期 + 时间（到分钟）+ 波段 + 模式。
+  ///
+  /// 只在日期与时间都能解析时才是可靠的身份判据 —— 缺任一项时它会退化成
+  /// 「呼号|||波段|模式」，把同一台站在同一波段模式上的多次通联撞成一条。需要拿它
+  /// 当去重 / 匹配依据的地方一律用 [`LogEntry::dedupe_key`]。
   #[must_use]
   pub fn qso_key(&self) -> String {
     format!(
       "{}|{}|{}|{}|{}",
       self.callsign.trim().to_ascii_uppercase(),
-      self.date,
-      self.time.get(..5).unwrap_or(&self.time),
+      normalized_date(&self.date),
+      normalized_hhmm(&self.time),
       self.band_label(),
-      self.mode.to_ascii_uppercase()
+      self.mode.trim().to_ascii_uppercase()
     )
+  }
+
+  /// 去重 / 跨来源匹配用的 key：日期与时间都能解析时才有值。
+  ///
+  /// 四个调用方（导入去重、备份合并、QSL 同步、日志体检）拿它当「这是不是同一次通联」
+  /// 的身份判据，而误判的代价都是**丢记录** —— 导入静默跳过、备份合并与体检直接删。
+  /// 日期或时间缺失时宁可漏判一条重复，也不要合并两条真实通联，所以这里返回 `None`
+  /// 让调用方跳过判定。
+  #[must_use]
+  pub fn dedupe_key(&self) -> Option<String> {
+    self.minutes_on()?;
+    Some(self.qso_key())
+  }
+
+  /// 通联时刻（自 1970-01-01 起经过的分钟数）；日期或时间不合法时为 `None`。
+  #[must_use]
+  pub fn minutes_on(&self) -> Option<i64> {
+    minutes_of(&self.date, &self.time)
   }
 
   /// DXCC 实体：记录里的 `DXCC` 编号优先，否则按呼号前缀推断。
@@ -216,7 +314,7 @@ impl LogEntry {
   /// 是否已被任一途径（纸卡 / LoTW / eQSL）确认。
   #[must_use]
   pub fn confirmed(&self) -> bool {
-    self.qsl_rcvd || self.lotw_rcvd || self.eqsl_rcvd
+    self.qsl_rcvd || self.lotw_rcvd || self.eqsl_rcvd || self.qrz_rcvd
   }
 
   /// 是否命中列表搜索关键词（`q` 已大写；呼号 / 姓名 / QTH / 网格 / 备注 / SOTA / POTA / DXCC 实体名）。
@@ -279,19 +377,36 @@ impl Logbook {
     }
   }
 
-  /// 导入 ADIF 记录，跳过与已有记录（或同批次）重复的通联，返回 `(导入数, 重复数)`。
-  pub fn import(&mut self, records: Vec<AdifRecord>) -> (usize, usize) {
-    let mut seen: HashSet<String> = self.entries.iter().map(LogEntry::qso_key).collect();
+  /// 导入 ADIF 记录（按 [`LogEntry::dedupe_key`] 去重），跳过与已有记录（或同批次）
+  /// 重复的通联，并把台站归属认领到 `stations`，返回 `(导入数, 重复数)`。
+  ///
+  /// 台站归属要在 [`from_adif`] 消费记录**之前**取：报告里的 `STATION_CALLSIGN` /
+  /// `MY_GRIDSQUARE` 是这份 ADIF 自带的身份信息，认领后 `LogEntry` 只留一个本地 id。
+  pub fn import(&mut self, records: Vec<AdifRecord>, stations: &mut StationBook) -> (usize, usize) {
+    let mut seen: HashSet<String> = self
+      .entries
+      .iter()
+      .filter_map(LogEntry::dedupe_key)
+      .collect();
     let mut id = self.next_id();
     let (mut added, mut dupes) = (0, 0);
     for r in records {
+      let station_callsign = r.station_callsign.clone();
+      let my_gridsquare = r.my_gridsquare.clone();
       let mut entry = from_adif(r);
-      if !seen.insert(entry.qso_key()) {
+      // 没有 `dedupe_key`（日期或时间缺失）就说不上重不重复，一律导入 —— 见
+      // `LogEntry::dedupe_key`：这条 ADIF 里没有日期时，把整批同呼号同波段的记录
+      // 当成一条吞掉，比放进去几条「待补日期」的记录糟糕得多。
+      if entry.dedupe_key().is_some_and(|key| !seen.insert(key)) {
         dupes += 1;
         continue;
       }
+      // 认领放在去重之后：重复行不该在档案册里留下新台站 —— 导入一份全是重复项的
+      // ADIF 时用户以为什么都没发生，档案册却悄悄多出几条，两者对不上。
+      let station_id = stations.claim(&station_callsign, &my_gridsquare);
       entry.fill_location();
       entry.id = id;
+      entry.station_id = station_id;
       id += 1;
       self.entries.push(entry);
       added += 1;
@@ -308,16 +423,27 @@ fn adif_field(out: &mut String, name: &str, value: &str) {
   }
 }
 
-/// 把日志序列化为 ADIF 文本（台站字段写入每条记录）。
+/// 把日志序列化为 ADIF 文本（台站字段**按每条记录自己的台站**写入）。
+///
+/// 台站字段放在每条记录里而不是文件头：一次 POTA 野外通联与家里的固定台可以同在一个日志，
+/// 导出成一份 ADIF 时只有逐条写才对得上（ADIF 本来也允许 `STATION_CALLSIGN` 逐条出现）。
 #[must_use]
-pub fn export_adif(entries: &[LogEntry], station: &StationInfo) -> String {
+pub fn export_adif(entries: &[LogEntry], stations: &StationBook) -> String {
   let mut s = String::from("Amateur radio logbook\n");
   adif_field(&mut s, "ADIF_VER", "3.1.4");
   adif_field(&mut s, "PROGRAMID", "HamExamWeb");
   s.push_str("<EOH>\n");
   for e in entries {
+    let profile = stations.of_entry(e);
+    let station = profile.info();
     adif_field(&mut s, "STATION_CALLSIGN", &station.callsign);
-    adif_field(&mut s, "OPERATOR", &station.operator);
+    // 逐条写：记录里填了 `OPERATOR` 就写它，否则回落到所属台站档案的操作员。
+    let operator = if e.operator.trim().is_empty() {
+      station.operator.as_str()
+    } else {
+      e.operator.trim()
+    };
+    adif_field(&mut s, "OPERATOR", operator);
     adif_field(&mut s, "MY_GRIDSQUARE", &station.gridsquare);
     adif_field(&mut s, "MY_RIG", &station.rig);
     adif_field(&mut s, "MY_ANTENNA", &station.antenna);
@@ -375,6 +501,12 @@ pub fn export_adif(entries: &[LogEntry], station: &StationInfo) -> String {
     adif_field(&mut s, "LOTW_QSL_RCVD", if e.lotw_rcvd { "Y" } else { "N" });
     adif_field(&mut s, "EQSL_QSL_SENT", if e.eqsl_sent { "Y" } else { "N" });
     adif_field(&mut s, "EQSL_QSL_RCVD", if e.eqsl_rcvd { "Y" } else { "N" });
+    // 应用自定义字段：始终写出 Y/N，这样任何一份本工具导出的 ADIF 都是「能代表 QRZ 渠道」的。
+    adif_field(
+      &mut s,
+      crate::adif::APP_QRZ_RCVD,
+      if e.qrz_rcvd { "Y" } else { "N" },
+    );
     s.push_str("<EOR>\n");
   }
   s
@@ -391,7 +523,7 @@ fn csv_field(s: &str) -> String {
 
 /// 把日志序列化为 CSV 文本。
 #[must_use]
-pub fn export_csv(entries: &[LogEntry], station: &StationInfo) -> String {
+pub fn export_csv(entries: &[LogEntry], stations: &StationBook) -> String {
   let mut s = String::from(
     "本台呼号,日期,时间,结束时间,频率,波段,模式,对方呼号,RST发送,RST接收,功率,网格,姓名,QTH,DXCC,CQ分区,ITU分区,传播方式,卫星,SOTA,POTA,备注,QSL寄出,QSL收到\n",
   );
@@ -400,7 +532,7 @@ pub fn export_csv(entries: &[LogEntry], station: &StationInfo) -> String {
     let cq = e.cq_zone().map(|z| z.to_string()).unwrap_or_default();
     let itu = e.itu_zone().map(|z| z.to_string()).unwrap_or_default();
     let fields = [
-      station.callsign.trim(),
+      stations.of_entry(e).callsign.trim(),
       &e.date,
       &e.time,
       &e.time_off,
@@ -438,9 +570,14 @@ pub fn export_csv(entries: &[LogEntry], station: &StationInfo) -> String {
 }
 
 /// `HHMM[SS]` → `HH:MM`。
+///
+/// 只认前四位全是数字的写法：`12:30` 这类「已经带冒号」的输入按原文返回 —— 位置切片会
+/// 切出 `12::3` 这种坏值，它随后既拿不到 `dedupe_key`（同步时被当成「本地缺失」）、
+/// 又会从热力图上消失。校验交给 `split_hhmm` 的调用方，这里只保证不改坏原文。
 fn adif_time(t: &str) -> String {
+  let digits = |s: &str| s.bytes().all(|b| b.is_ascii_digit());
   match (t.get(0..2), t.get(2..4)) {
-    (Some(h), Some(m)) if t.len() >= 4 => format!("{h}:{m}"),
+    (Some(h), Some(m)) if t.len() >= 4 && digits(h) && digits(m) => format!("{h}:{m}"),
     _ => t.to_owned(),
   }
 }
@@ -483,6 +620,7 @@ pub fn from_adif(r: AdifRecord) -> LogEntry {
     state: r.state,
     iota: r.iota,
     remark: r.comment,
+    operator: r.operator.trim().to_ascii_uppercase(),
     qsl_sent: r.qsl_sent,
     qsl_sent_via: r.qsl_sent_via,
     qsl_rcvd: r.qsl_rcvd,
@@ -490,6 +628,7 @@ pub fn from_adif(r: AdifRecord) -> LogEntry {
     lotw_rcvd: r.lotw_rcvd,
     eqsl_sent: r.eqsl_sent,
     eqsl_rcvd: r.eqsl_rcvd,
+    qrz_rcvd: r.qrz_rcvd,
     ..Default::default()
   }
 }
@@ -631,7 +770,7 @@ mod tests {
       <CALL:4>K1AA<QSO_DATE:8>20260930<TIME_ON:6>123459<FREQ:6>14.075<MODE:3>FT8<EOR>\
       <CALL:4>JA1X<QSO_DATE:8>20260930<TIME_ON:4>1300<BAND:3>40M<MODE:2>CW<EOR>\
       <CALL:4>ja1x<QSO_DATE:8>20260930<TIME_ON:4>1300<BAND:3>40m<MODE:2>cw<EOR>";
-    let (added, dupes) = lb.import(parse_adif(adif));
+    let (added, dupes) = lb.import(parse_adif(adif), &mut StationBook::default());
     assert_eq!((added, dupes), (1, 2));
     let ja = &lb.entries[1];
     assert_eq!(
@@ -639,6 +778,33 @@ mod tests {
       (6, "13:00", "40m".to_owned())
     );
     assert_eq!((ja.dxcc.as_str(), ja.cqz.as_str()), ("339", "25"));
+  }
+
+  #[test]
+  fn duplicate_imports_do_not_claim_stations() {
+    // 全部是重复行时，档案册不该多出任何台站：用户以为「什么都没导入」，
+    // 档案册悄悄多几条会对不上。
+    let mut lb = Logbook {
+      entries: vec![qso(5, "K1AA", "14.074", "FT8")],
+    };
+    let mut book = StationBook::default();
+    let before = book.clone();
+    let adif = "<EOH>\
+      <CALL:4>K1AA<STATION_CALLSIGN:6>BG4XXX<MY_GRIDSQUARE:6>OL99AA<QSO_DATE:8>20260930<TIME_ON:6>123459<FREQ:6>14.075<MODE:3>FT8<EOR>";
+    let (added, dupes) = lb.import(parse_adif(adif), &mut book);
+    assert_eq!((added, dupes), (0, 1));
+    assert_eq!(book, before, "重复行不该动档案册");
+
+    // 新通联照常认领：同一份带本台字段的 ADIF 里出现新记录时会新建档案。
+    let adif = "<EOH>\
+      <CALL:4>K1AA<STATION_CALLSIGN:6>BG4XXX<MY_GRIDSQUARE:6>OL99AA<QSO_DATE:8>20260930<TIME_ON:6>123459<FREQ:6>14.075<MODE:3>FT8<EOR>\
+      <CALL:4>JA1X<STATION_CALLSIGN:6>BG4XXX<MY_GRIDSQUARE:6>OL99AA<QSO_DATE:8>20260930<TIME_ON:4>1300<BAND:3>40M<MODE:2>CW<EOR>";
+    let (added, dupes) = lb.import(parse_adif(adif), &mut book);
+    assert_eq!((added, dupes), (1, 1));
+    assert!(
+      book.profiles.iter().any(|p| p.matches("BG4XXX", "OL99AA")),
+      "新通联要认领出台站"
+    );
   }
 
   #[test]
@@ -663,7 +829,7 @@ mod tests {
     let mut e = qso(1, "JA1X", "7.010", "FT4");
     e.name = "太郎".into();
     e.qsl_rcvd = true;
-    let text = export_adif(&[e.clone()], &station);
+    let text = export_adif(&[e.clone()], &StationBook::from_info(&station));
     assert!(text.contains("<STATION_CALLSIGN:6>BG4XXX"));
     assert!(text.contains("<MODE:4>MFSK<SUBMODE:3>FT4"));
     assert!(text.contains("<DXCC:3>339<COUNTRY:5>Japan<CONT:2>AS<CQZ:2>25<ITUZ:2>45"));
@@ -682,12 +848,35 @@ mod tests {
   }
 
   #[test]
+  fn adif_roundtrips_the_qrz_extension_field() {
+    // QRZ 确认没有标准 ADIF 字段，走本工具的应用自定义字段：导出写、导入读回来。
+    let mut e = qso(1, "JA1X", "14.074", "FT8");
+    e.qrz_rcvd = true;
+    let text = export_adif(&[e], &StationBook::default());
+    assert!(text.contains("<APP_HAMEXAMWEB_QRZ_RCVD:1>Y"), "{text}");
+    assert!(from_adif(parse_adif(&text).remove(0)).qrz_rcvd);
+
+    // 没确认时写 N（而不是省略）：任何一份本工具导出的 ADIF 都能代表 QRZ 渠道，
+    // 否则喂回来会被判成「只做匹配分析」（见 `qsl_sync` 的证据规则）。
+    let plain = qso(2, "W1AW", "14.074", "SSB");
+    let text = export_adif(&[plain], &StationBook::default());
+    assert!(text.contains("<APP_HAMEXAMWEB_QRZ_RCVD:1>N"), "{text}");
+    assert!(!from_adif(parse_adif(&text).remove(0)).qrz_rcvd);
+
+    // 别的软件不写这个字段时，读进来就是「没确认」，且不影响其它标志位。
+    let foreign =
+      "<EOH>\n<CALL:4>JA1X<QSO_DATE:8>20260930<TIME_ON:4>1234<MODE:3>FT8<QSL_RCVD:1>Y<EOR>";
+    let r = from_adif(parse_adif(foreign).remove(0));
+    assert!(!r.qrz_rcvd && r.qsl_rcvd);
+  }
+
+  #[test]
   fn adif_roundtrips_the_qsl_sent_via() {
     // 记了寄出方式：导出要写 `QSL_SENT_VIA`，导入要读回来。
     let mut e = qso(1, "JA1X", "14.074", "FT8");
     e.qsl_sent = true;
     e.qsl_sent_via = QslVia::Bureau;
-    let text = export_adif(&[e], &StationInfo::default());
+    let text = export_adif(&[e], &StationBook::default());
     assert!(text.contains("<QSL_SENT_VIA:1>B"), "{text}");
     assert_eq!(
       from_adif(parse_adif(&text).remove(0)).qsl_sent_via,
@@ -696,15 +885,50 @@ mod tests {
 
     // 没记方式时不能凭空多出一行（旧数据往返保持原样）。
     let plain = qso(2, "W1AW", "14.074", "SSB");
-    let text = export_adif(&[plain], &StationInfo::default());
+    let text = export_adif(&[plain], &StationBook::default());
     assert!(!text.contains("QSL_SENT_VIA"), "{text}");
+  }
+
+  #[test]
+  fn adif_roundtrips_per_entry_station_attribution() {
+    // 一个日志里两个台站：同呼号、不同网格（家里固定台与 POTA 野外）。
+    let mut book = StationBook::from_info(&StationInfo {
+      callsign: "BG4XXX".into(),
+      gridsquare: "OM89EW".into(),
+      ..Default::default()
+    });
+    let home = book.active_id;
+    let field = book.claim("BG4XXX", "OL99AA");
+    assert_ne!(home, field);
+    let mut a = qso(1, "JA1X", "14.074", "FT8");
+    a.station_id = home;
+    let mut b = qso(2, "JA2Y", "7.074", "FT8");
+    b.station_id = field;
+
+    // 台站字段逐条写：同一份 ADIF 里两个台站各自的网格都要在。
+    let text = export_adif(&[a, b], &book);
+    assert!(text.contains("<MY_GRIDSQUARE:6>OM89EW"), "{text}");
+    assert!(text.contains("<MY_GRIDSQUARE:6>OL99AA"), "{text}");
+
+    // 导入到另一台机器：按「呼号 + 网格」认领出两条档案，归属各自对得上
+    // （只按呼号认领会把野外那条并回家里）。
+    let mut fresh = Logbook::default();
+    let mut another = StationBook::default();
+    assert_eq!(fresh.import(parse_adif(&text), &mut another), (2, 0));
+    assert_eq!(another.profiles.len(), 3, "默认那条 + 认领出的两条");
+    assert_ne!(
+      fresh.entries[0].station_id, fresh.entries[1].station_id,
+      "两条通联要归属到不同的台站"
+    );
+    assert_eq!(another.of_entry(&fresh.entries[0]).gridsquare, "OM89EW");
+    assert_eq!(another.of_entry(&fresh.entries[1]).gridsquare, "OL99AA");
   }
 
   #[test]
   fn csv_escapes_fields() {
     let mut e = qso(1, "K1AA", "14.074", "FT8");
     e.remark = "hello, \"world\"".into();
-    let csv = export_csv(&[e], &StationInfo::default());
+    let csv = export_csv(&[e], &StationBook::default());
     assert!(
       csv
         .lines()

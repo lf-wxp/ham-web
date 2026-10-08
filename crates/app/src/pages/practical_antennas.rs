@@ -41,10 +41,10 @@ pub fn PracticalAntennasPage() -> impl IntoView {
                   view! {
                     <tr class="border-t transition-colors hover:bg-muted/40">
                       <td class=format!("{CELL} whitespace-nowrap font-medium")>
-                        {crate::data::kt(name)}
+                        {move || text(name)}
                       </td>
-                      <td class=format!("{CELL} text-muted-foreground")>{feature}</td>
-                      <td class=format!("{CELL} text-muted-foreground")>{scene}</td>
+                      <td class=format!("{CELL} text-muted-foreground")>{move || text(feature)}</td>
+                      <td class=format!("{CELL} text-muted-foreground")>{move || text(scene)}</td>
                       <td class=CELL>
                         <NecTemplateLink template=template />
                       </td>
@@ -59,4 +59,13 @@ pub fn PracticalAntennasPage() -> impl IntoView {
       <BulletSection title="制作与使用要点" items=PRACTICAL_ANTENNAS_TIPS />
     </KnowledgePage>
   }
+}
+
+/// 知识库正文译文：先订阅加载状态（译文异步到达后这一格要重算），再查词典。
+///
+/// 三列（名称 / 特点 / 适用场景）都来自 `crates/core` 的中文正文，直接渲染的话
+/// 英文 / 西语界面整张表都是中文 —— 逐格换成这个入口，译文一旦补上就即时生效。
+fn text(zh: &'static str) -> String {
+  crate::data::track_knowledge();
+  crate::data::kt(zh)
 }

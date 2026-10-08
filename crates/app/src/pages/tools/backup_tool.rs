@@ -1,3 +1,5 @@
+use ham_web_core::text::format_units;
+use ham_web_core::usage::sum_by_group;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
@@ -14,6 +16,8 @@ fn key_label(key: &str) -> &'static str {
     "exam-history" => "考试成绩历史",
     "bookmarks" => "收藏题目",
     "station-info" => "本台信息",
+    "station-book" => "台站档案",
+    "log-stats-scope" => "统计范围",
     "daily-checkin" => "每日打卡",
     "countdowns" => "倒计时",
     "morse-stats" | "morse-koch" => "摩尔斯练习",
@@ -25,16 +29,6 @@ fn key_label(key: &str) -> &'static str {
     k if k.starts_with("exam:") => "考试存档 / 偏好",
     k if k.starts_with("ui:") || k.starts_with("mistake-book:") => "界面状态",
     _ => "其他",
-  }
-}
-
-fn fmt_size(units: usize) -> String {
-  if units >= 1024 * 1024 {
-    format!("{:.1} M", units as f64 / 1024.0 / 1024.0)
-  } else if units >= 1024 {
-    format!("{:.1} K", units as f64 / 1024.0)
-  } else {
-    units.to_string()
   }
 }
 
@@ -108,15 +102,8 @@ pub(super) fn BackupTool() -> impl IntoView {
         } else {
           "bg-primary"
         };
-        let mut groups: Vec<(&'static str, usize)> = Vec::new();
-        for (k, n) in &list {
-          let label = key_label(k);
-          match groups.iter_mut().find(|(l, _)| *l == label) {
-            Some(g) => g.1 += n,
-            None => groups.push((label, *n)),
-          }
-        }
-        groups.sort_by_key(|(_, n)| std::cmp::Reverse(*n));
+        // 归并与排序在 core（`usage::sum_by_group`）：这里只把分组标签翻成文案。
+        let groups = sum_by_group(list.iter().map(|(k, n)| (k.as_str(), *n)), key_label);
         view! {
           <div class="space-y-2">
             <div class="flex items-center justify-between text-xs text-muted-foreground">
@@ -125,8 +112,8 @@ pub(super) fn BackupTool() -> impl IntoView {
                 {tf(
                   "tools.characters",
                   &[
-                    &fmt_size(total),
-                    &fmt_size(storage::QUOTA_UNITS),
+                    &format_units(total),
+                    &format_units(storage::QUOTA_UNITS),
                     &format!("{pct:.1}"),
                   ],
                 )}
@@ -143,7 +130,7 @@ pub(super) fn BackupTool() -> impl IntoView {
                   view! {
                     <li class="flex justify-between">
                       <span>{move || t(label)}</span>
-                      <span class="tabular-nums text-muted-foreground">{fmt_size(n)}</span>
+                      <span class="tabular-nums text-muted-foreground">{format_units(n)}</span>
                     </li>
                   }
                 })

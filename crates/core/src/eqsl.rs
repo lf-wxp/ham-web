@@ -1,5 +1,8 @@
 //! 电子 QSL 与日志确认：LoTW、eQSL、QRZ、Club Log 等现代确认方式。
 
+use crate::dxcc;
+use crate::logbook::StationInfo;
+
 /// 主要服务。
 pub const EQSL_SERVICES: &[(&str, &str, &str)] = &[
   (
@@ -58,6 +61,55 @@ pub const LOTW_UPLOAD_STEPS: &[(&str, &str)] = &[
   ),
 ];
 
+/// TQSL 的 Station Location 要填的字段值。
+///
+/// **这几项必须与导出 ADIF 里的 `MY_*` 一致**，否则 LoTW 会把 QSO 判成「不匹配」；
+/// 而 TQSL 的对话框里没有任何交叉校验，填错了要等上传之后才发现。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LotwStationFields {
+  /// 本台呼号（`STATION_CALLSIGN` / TQSL 的 Callsign）。
+  pub callsign: String,
+  /// 本台网格（`MY_GRIDSQUARE`）。
+  pub gridsquare: String,
+  /// DXCC 实体编号（`MY_DXCC` / TQSL 的 DXCC entity）。
+  pub dxcc: Option<u16>,
+  /// 实体中文名（界面展示用）。
+  pub dxcc_name: Option<&'static str>,
+  /// CQ 分区（`MY_CQ_ZONE`）。
+  pub cq_zone: Option<u8>,
+  /// ITU 分区（`MY_ITU_ZONE`）。
+  pub itu_zone: Option<u8>,
+}
+
+impl LotwStationFields {
+  /// 关键字段是否齐全：呼号（推 DXCC 与分区的前提）与网格（LoTW 判匹配时会用）都要有，
+  /// 且呼号前缀能查出实体。
+  #[must_use]
+  pub fn is_complete(&self) -> bool {
+    !self.callsign.trim().is_empty() && !self.gridsquare.trim().is_empty() && self.dxcc.is_some()
+  }
+}
+
+/// 按本台信息算出 TQSL Station Location 的字段值。
+///
+/// **为什么要算**：这四个值就是 LoTW 匹配 QSO 时看的 `MY_*`，与 TQSL 里填的不一致时，
+/// 上传不会报错、只会在 LoTW 端被标成「不匹配」。数据来源只有两处 —— 本台信息
+/// （呼号 / 网格）与 [`crate::dxcc`]（实体编号与主分区，cty 数据的唯一事实来源），
+/// 不另立一份分区表。
+#[must_use]
+pub fn lotw_station_fields(info: &StationInfo) -> LotwStationFields {
+  let callsign = info.callsign.trim().to_ascii_uppercase();
+  let entity = dxcc::lookup(&callsign);
+  LotwStationFields {
+    callsign,
+    gridsquare: info.gridsquare.trim().to_ascii_uppercase(),
+    dxcc: entity.map(|e| e.dxcc),
+    dxcc_name: entity.map(|e| e.name),
+    cq_zone: entity.map(|e| e.cq),
+    itu_zone: entity.map(|e| e.itu),
+  }
+}
+
 /// LoTW 的边界与常见坑。
 pub const LOTW_UPLOAD_NOTES: &[&str] = &[
   "本站不做代签：证书与私钥只存在你自己的电脑上，签名与上传都由 TQSL 完成。本站只负责导出待签名的 ADIF，以及把你手动回写的状态（已上传 / 已确认）合并进日志。",
@@ -112,6 +164,73 @@ mod tests {
     let before = names.len();
     names.dedup();
     assert_eq!(names.len(), before, "步骤名重复");
+  }
+
+  fn station(callsign: &str, grid: &str) -> StationInfo {
+    StationInfo {
+      callsign: callsign.into(),
+      gridsquare: grid.into(),
+      ..Default::default()
+    }
+  }
+
+  #[test]
+  fn station_location_fields_come_from_the_dxcc_table() {
+    let f = lotw_station_fields(&station(" bg4xxx ", " om89ew "));
+    assert_eq!(f.callsign, "BG4XXX", "呼号规整成大写");
+    assert_eq!(f.gridsquare, "OM89EW");
+    assert_eq!(f.dxcc, Some(318), "中国 = 318");
+    assert_eq!(f.dxcc_name, Some("中国"));
+    assert_eq!(f.cq_zone, Some(24));
+    assert_eq!(f.itu_zone, Some(44));
+    assert!(f.is_complete());
+  }
+
+  #[test]
+  fn an_unknown_prefix_leaves_the_entity_blank() {
+    // 查不出实体就不猜：宁可让界面显示「填不出，先去补台站信息」，
+    // 也不要给一个可能让对方判「不匹配」的分区。
+    let f = lotw_station_fields(&station("QQ1QQQ", "OM89EW"));
+    assert_eq!(f.callsign, "QQ1QQQ");
+    assert_eq!(f.dxcc, None);
+    assert_eq!(f.dxcc_name, None);
+    assert_eq!(f.cq_zone, None);
+    assert_eq!(f.itu_zone, None);
+    assert!(!f.is_complete(), "查不出实体就不算齐全");
+  }
+
+  #[test]
+  fn an_empty_station_yields_an_empty_table() {
+    let f = lotw_station_fields(&StationInfo::default());
+    assert!(f.callsign.is_empty() && f.gridsquare.is_empty());
+    assert!(f.dxcc.is_none());
+    assert!(!f.is_complete());
+    // 有呼号但没网格：分区能算，网格这一栏空着 —— 仍然不算齐全（LoTW 判匹配要看网格）。
+    let f = lotw_station_fields(&station("BG4XXX", ""));
+    assert_eq!(f.dxcc, Some(318));
+    assert!(!f.is_complete());
+  }
+
+  #[test]
+  fn the_fields_match_what_the_exporter_writes() {
+    // 这张表存在的唯一理由：与导出的 `MY_*` 一致。把这条契约钉成断言 ——
+    // 哪天导出改了写法而这里没跟上，这条会红。
+    let info = station("BG4XXX", "OM89EW");
+    let fields = lotw_station_fields(&info);
+    let book = crate::station::StationBook::from_info(&info);
+    let entry = crate::logbook::LogEntry {
+      callsign: "JA1AAA".into(),
+      date: "2026-10-08".into(),
+      time: "12:00".into(),
+      freq: "14.074".into(),
+      mode: "FT8".into(),
+      ..Default::default()
+    };
+    let adif = crate::logbook::export_adif(&[entry], &book);
+    assert!(adif.contains("<STATION_CALLSIGN:6>BG4XXX"), "{adif}");
+    assert!(adif.contains("<MY_GRIDSQUARE:6>OM89EW"), "{adif}");
+    assert_eq!(fields.callsign, "BG4XXX");
+    assert_eq!(fields.gridsquare, "OM89EW");
   }
 
   #[test]

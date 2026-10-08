@@ -227,7 +227,7 @@ pub fn QslDesignerPage() -> impl IntoView {
   let picked = RwSignal::new(String::new());
 
   // 本台信息只带一次（空着才填）：之后用户手改的不会被覆盖。
-  let station = store.station.get_untracked();
+  let station = store.active_station();
   if !station.callsign.trim().is_empty() {
     f.my_call.set(station.callsign.clone());
   }

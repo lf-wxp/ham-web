@@ -50,9 +50,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
   let queried = RwSignal::new(false);
   let only_fav = RwSignal::new(false);
   let permission = RwSignal::new(permission_label());
-  let station_grid = use_log_store()
-    .station
-    .with_untracked(|s| s.gridsquare.clone());
+  let station_grid = use_log_store().active_station().gridsquare;
   let station_pos = lat_lon_from_grid(&station_grid);
 
   let fetch = move || {
@@ -100,7 +98,9 @@ pub(super) fn PassPredictor() -> impl IntoView {
     update(&|w| w.apt_alert = on);
   };
 
-  let number_input = move |label: &'static str,
+  // 标签收 `String` 而不是 `&'static str`：`Field` 的标签原样渲染、不过 `t()`，
+  // 所以调用点必须传已经翻好的文案（原来传中文字面量，英西界面会露中文）。
+  let number_input = move |label: String,
                            step: &'static str,
                            get: fn(&SatWatch) -> f64,
                            set: fn(&mut SatWatch, f64)| {
@@ -130,9 +130,9 @@ pub(super) fn PassPredictor() -> impl IntoView {
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.pass-predictions-and-reminders")}</h2>
       <div class="space-y-4 p-4">
         <div class="grid gap-3 sm:grid-cols-3">
-          {number_input("纬度（°）", "0.0001", |w| w.lat, |w, v| w.lat = v.clamp(-90.0, 90.0))}
-          {number_input("经度（°）", "0.0001", |w| w.lon, |w, v| w.lon = v.clamp(-180.0, 180.0))}
-          {number_input("最小仰角（°）", "1", |w| w.min_elev, |w, v| w.min_elev = v.clamp(0.0, 90.0))}
+          {number_input(t("common.latitude"), "0.0001", |w| w.lat, |w, v| w.lat = v.clamp(-90.0, 90.0))}
+          {number_input(t("common.longitude"), "0.0001", |w| w.lon, |w, v| w.lon = v.clamp(-180.0, 180.0))}
+          {number_input(t("common.min-elevation"), "1", |w| w.min_elev, |w, v| w.min_elev = v.clamp(0.0, 90.0))}
         </div>
 
         <div class="flex flex-wrap items-center gap-2">

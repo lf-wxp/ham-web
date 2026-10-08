@@ -132,7 +132,7 @@ pub fn GridMapPage() -> impl IntoView {
         <section class="rounded-xl border bg-card p-4">
           {move || {
             let entries = store.logbook.get().entries;
-            let station_grid = store.station.get().gridsquare.clone();
+            let station_grid = store.active_station().gridsquare;
             view! {
               <GridMap entries=entries station_grid=station_grid />
             }

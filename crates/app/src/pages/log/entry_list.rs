@@ -10,9 +10,9 @@ use crate::ui::{Button, Input, InputType, NativeSelect, SelectOption, Size, Vari
 
 use super::card_image_mark::CardImageMark;
 use super::grid_cell::GridCell;
-use super::log_helpers::{CELL, PAGE_SIZE};
+use super::log_helpers::{CELL, PAGE_SIZE, station_title};
 use super::qsl_badge::{QslBadge, tone_label};
-use super::{LogEntry, Logbook};
+use super::{LogEntry, Logbook, use_log_store};
 use crate::i18n::{t, tf, tp};
 
 #[component]
@@ -25,6 +25,8 @@ pub(super) fn EntryList(
   #[prop(optional, into)]
   initial_query: String,
 ) -> impl IntoView {
+  // 台站档案册（多台站时每行标出归属）。
+  let store = use_log_store();
   // 列表筛选与分页
   let query = RwSignal::new(initial_query);
   let band_filter = RwSignal::new(String::new());
@@ -101,15 +103,9 @@ pub(super) fn EntryList(
           }
           .into_any();
         }
-        let (bands, modes): (Vec<String>, Vec<String>) = logbook.with(|l| {
-          let mut b: Vec<String> = l.entries.iter().map(LogEntry::band_label).filter(|s| !s.is_empty()).collect();
-          let mut m: Vec<String> = l.entries.iter().map(|e| e.mode.clone()).collect();
-          b.sort();
-          b.dedup();
-          m.sort();
-          m.dedup();
-          (b, m)
-        });
+        // 去重与排序在 core（`distinct_bands_and_modes`）：这里只拼下拉项。
+        let (bands, modes) =
+          logbook.with(|l| ham_web_core::log_stats::distinct_bands_and_modes(&l.entries));
         let band_options: Vec<SelectOption> = bands
           .iter()
           .map(|b| SelectOption::new(b.as_str(), b.as_str()))
@@ -131,6 +127,8 @@ pub(super) fn EntryList(
               on_change=Callback::new(move |v: String| query.set(v))
               kind=InputType::Search
               placeholder=Signal::derive(move || t("log.search-callsign-name-qth"))
+              // 工具栏上的筛选器都没有可见标签：无障碍名是读屏与 e2e 的定位契约。
+              aria_label=Signal::derive(move || t("log.search-callsign-name-qth"))
               prefix=move || view! { <Icon kind=IconKind::Search /> }
               clearable=true
               wrapper_class="min-w-48 flex-1"
@@ -140,6 +138,7 @@ pub(super) fn EntryList(
               on_change=Callback::new(move |v: String| band_filter.set(v))
               options=band_options
               placeholder=Signal::derive(move || t("log.all-bands"))
+              aria_label=Signal::derive(move || t("log.band-filter"))
               class="w-28"
             />
             <NativeSelect
@@ -147,6 +146,7 @@ pub(super) fn EntryList(
               on_change=Callback::new(move |v: String| mode_filter.set(v))
               options=mode_options
               placeholder=Signal::derive(move || t("log.all-modes"))
+              aria_label=Signal::derive(move || t("log.mode-filter"))
               class="w-28"
             />
             <NativeSelect
@@ -185,6 +185,9 @@ pub(super) fn EntryList(
                     .map(|e| {
                       let entry = e.clone();
                       let id = e.id;
+                      // 归属在闭包外取出：行内那个 `move ||` 只该捕获这个 Copy 值，
+                      // 捕获 `e` 会借住上面的临时迭代器。
+                      let station_id = e.station_id;
                       let rst = if e.rst_sent.is_empty() && e.rst_rcvd.is_empty() {
                         "—".to_owned()
                       } else {
@@ -210,7 +213,29 @@ pub(super) fn EntryList(
                             <span class="ml-1.5 text-xs text-muted-foreground">{band}</span>
                           </td>
                           <td class=format!("{CELL} whitespace-nowrap")>{e.mode.clone()}</td>
-                          <td class=format!("{CELL} whitespace-nowrap font-mono font-medium")>{e.callsign.clone()}</td>
+                          <td class=format!("{CELL} whitespace-nowrap")>
+                            <span class="font-mono font-medium">{e.callsign.clone()}</span>
+                            // 多台站时标出这条通联的归属：只有一个台站（绝大多数人）时不显示，
+                            // 免得每行都挂一个没信息量的标签。
+                            {move || {
+                              store
+                                .station
+                                .with(|b| {
+                                  (b.profiles.len() > 1)
+                                    .then(|| station_title(b.resolve(station_id)))
+                                })
+                                .map(|title| {
+                                  view! {
+                                    <span
+                                      class="ml-1 text-xs font-normal text-muted-foreground"
+                                      title=move || t("log.qso-station")
+                                    >
+                                      {title}
+                                    </span>
+                                  }
+                                })
+                            }}
+                          </td>
                           <td class=format!("{CELL} whitespace-nowrap tabular-nums")>{rst}</td>
                           <td class=format!("{CELL} whitespace-nowrap")>
                             {if e.gridsquare.is_empty() {

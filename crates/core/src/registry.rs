@@ -584,6 +584,14 @@ pub const MODULES: &[Module] = &[
     backend: false,
   },
   Module {
+    path: "/connectors",
+    href: None,
+    title: "线材与连接器",
+    icon: "plug-zap",
+    group: Some(GROUP_ANTENNAS),
+    backend: false,
+  },
+  Module {
     path: "/balun",
     href: None,
     title: "巴伦与不平衡变压器",

@@ -1,4 +1,9 @@
-import { expect, test as base, type Page } from "@playwright/test";
+import {
+  expect,
+  test as base,
+  type Locator,
+  type Page,
+} from "@playwright/test";
 
 export { expect };
 
@@ -100,6 +105,33 @@ export async function pickDate(page: Page, name: string | RegExp, iso: string) {
   }
   await panel.getByRole("button", { name: `${y}年${m}月${d}日` }).click();
   await expect(panel).toBeHidden();
+}
+
+/**
+ * 一个「近未来」的日期（默认今天 +60 天）。
+ *
+ * 用例里不要写死 `2030-06-01` 这类远期日期：`pickDate` 是**逐月点击**的，从今天翻到
+ * 2030 年要 40 多下，每次点击都过一次渲染与动画。单独跑十来秒能过，
+ * `fullyParallel` 全量并行时这几条用例会一起撞 60 秒超时（判据只要求「在未来」，近未来等价）。
+ */
+export function futureIso(daysAhead = 60): string {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysAhead);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+/**
+ * 点一个「可能被吸顶导航盖住」的元素：先滚到视口中间再点。
+ *
+ * 导航是 `sticky top-0 z-50`（高 64px）：目标一旦落在视口顶部这 64px 里，Playwright 仍判定
+ * 它「已在视口内」而不再滚动，点击会被导航接住（`subtree intercepts pointer events`），
+ * 之后反复重试到用例超时 —— 手工跑不出来，只有在长交互（翻月、弹层）之后滚动位置漂移时才现。
+ */
+export async function clickClear(locator: Locator) {
+  await locator.evaluate((el) => el.scrollIntoView({ block: "center" }));
+  await locator.click();
 }
 
 /** 弹层式时间选择器：点触发器 → 依次点「时」「分」。 */

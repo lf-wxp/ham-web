@@ -11,12 +11,14 @@
 //! # 状态与优先级
 //!
 //! ```text
-//! 未寄出 ──▶ 已寄出（卡片局 / 直寄 / 方式未知）──▶ 电子已确认（eQSL / LoTW）──▶ 纸质已收
+//! 未寄出 ──▶ 已寄出（卡片局 / 直寄 / 方式未知）──▶ 电子已确认（LoTW / eQSL / QRZ）──▶ 纸质已收
 //! ```
 //!
 //! 确认优先于「已寄出」：对方可能先寄卡，所以「确认」并不要求本地先寄。多个确认同时存在时
-//! 取**最硬**的那个，顺序是 纸质 > LoTW > eQSL（纸质卡是实物凭据，LoTW 有 ARRL 背书，
-//! eQSL 是纯电子确认）。这四档正好映射到徽章的四个颜色（[`QslTone`]）。
+//! 取**最硬**的那个，顺序是 纸质 > LoTW > eQSL > QRZ：纸质卡是实物凭据，LoTW 有 ARRL 背书
+//! （也是 DXCC 唯一认可的电子来源），eQSL 是纯电子确认，QRZ Logbook 的站内确认最弱
+//! （既不在 DXCC 的认可来源里，也没有标准 ADIF 字段）。这四档正好映射到徽章的四个颜色
+//! （[`QslTone`]）。
 //!
 //! 「已寄出」按**任一途径**判定：`qsl_sent`（纸卡）、`lotw_sent`（上传）、`eqsl_sent`（寄出）
 //! 任一为真即算已寄出；只有电子渠道已寄出时没有纸卡方式，落到 `QslVia::None`（方式未知）。
@@ -34,8 +36,13 @@ use serde::{Deserialize, Serialize};
 use crate::logbook::LogEntry;
 
 /// 纸质卡片的寄出方式（ADIF `QSL_SENT_VIA`）。
+///
+/// 反序列化走 [`QslVia::from_key`]（见下面的 `QslViaWire`）：这个字段落在整份日志的
+/// JSON 里，而 `#[derive(Deserialize)]` 遇到枚举里没有的取值会**整份解析失败** ——
+/// 一条手改过的记录就足以让日志读成空。宽容处理与 `from_key` / `from_adif_code`
+/// 的既有口径一致：认不出就按「未寄出 / 未知」。
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(from = "QslViaWire", rename_all = "lowercase")]
 pub enum QslVia {
   /// 未寄出，或已寄出但方式未知（旧数据、ADIF 里没写 `QSL_SENT_VIA`）。
   #[default]
@@ -44,6 +51,32 @@ pub enum QslVia {
   Bureau,
   /// 直寄。
   Direct,
+}
+
+impl From<String> for QslVia {
+  fn from(s: String) -> Self {
+    Self::from_key(&s)
+  }
+}
+
+/// [`QslVia`] 的反序列化中间体：只认字符串，其余（`null` / 数字 / 布尔）一律按「未知」。
+///
+/// 用 [`serde::de::IgnoredAny`] 兜底而不是只接 `String`：字段是 `null` 或数字时
+/// `String` 同样会解析失败，而它落在整份日志的 JSON 里 —— 一条脏记录就够让整库读成空。
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum QslViaWire {
+  Text(String),
+  Other(serde::de::IgnoredAny),
+}
+
+impl From<QslViaWire> for QslVia {
+  fn from(wire: QslViaWire) -> Self {
+    match wire {
+      QslViaWire::Text(s) => Self::from_key(&s),
+      QslViaWire::Other(_) => Self::None,
+    }
+  }
 }
 
 impl QslVia {
@@ -103,6 +136,8 @@ pub enum QslConfirm {
   Lotw,
   /// eQSL 已确认。
   Eqsl,
+  /// QRZ Logbook 已确认（本工具的扩展字段，见 [`crate::adif::APP_QRZ_RCVD`]）。
+  Qrz,
 }
 
 /// 徽章的四色档位（颜色本身由前端映射，这里只给出语义档位，保持浏览器无关、可单测）。
@@ -164,6 +199,9 @@ impl QslStatus {
     if e.eqsl_rcvd {
       return Self::Confirmed(QslConfirm::Eqsl);
     }
+    if e.qrz_rcvd {
+      return Self::Confirmed(QslConfirm::Qrz);
+    }
     if e.qsl_sent {
       return Self::Sent(e.qsl_sent_via);
     }
@@ -188,10 +226,10 @@ impl QslStatus {
     match self {
       Self::NotSent => QslTone::Muted,
       Self::Sent(_) => QslTone::Amber,
-      // 两种电子确认共用蓝色：四色档位要的是「走到哪一步」，
-      // 具体是 LoTW 还是 eQSL 由徽章文案区分。
+      // 三种电子确认共用蓝色：四色档位要的是「走到哪一步」，
+      // 具体是 LoTW / eQSL / QRZ 由徽章文案区分。
       Self::Confirmed(QslConfirm::Paper) => QslTone::Emerald,
-      Self::Confirmed(QslConfirm::Lotw | QslConfirm::Eqsl) => QslTone::Sky,
+      Self::Confirmed(QslConfirm::Lotw | QslConfirm::Eqsl | QslConfirm::Qrz) => QslTone::Sky,
     }
   }
 }
@@ -234,19 +272,49 @@ mod tests {
     assert_eq!(QslStatus::of(&e), QslStatus::Sent(QslVia::Bureau));
 
     // 三种确认途径分别单独成立。
-    for (flag, expected) in [
-      (QslConfirm::Eqsl, QslStatus::Confirmed(QslConfirm::Eqsl)),
-      (QslConfirm::Lotw, QslStatus::Confirmed(QslConfirm::Lotw)),
-      (QslConfirm::Paper, QslStatus::Confirmed(QslConfirm::Paper)),
+    for flag in [
+      QslConfirm::Qrz,
+      QslConfirm::Eqsl,
+      QslConfirm::Lotw,
+      QslConfirm::Paper,
     ] {
       let mut e = entry();
       match flag {
+        QslConfirm::Qrz => e.qrz_rcvd = true,
         QslConfirm::Eqsl => e.eqsl_rcvd = true,
         QslConfirm::Lotw => e.lotw_rcvd = true,
         QslConfirm::Paper => e.qsl_rcvd = true,
       }
-      assert_eq!(QslStatus::of(&e), expected, "标志位 → 状态");
+      assert_eq!(
+        QslStatus::of(&e),
+        QslStatus::Confirmed(flag),
+        "标志位 → 状态"
+      );
+      // 电子确认都是蓝色档位，纸质是绿色。
+      let tone = QslStatus::of(&e).tone();
+      assert_eq!(
+        tone,
+        if flag == QslConfirm::Paper {
+          QslTone::Emerald
+        } else {
+          QslTone::Sky
+        }
+      );
     }
+  }
+
+  #[test]
+  fn the_hardest_confirmation_wins() {
+    // 四个确认同时存在时取最硬的：纸质 > LoTW > eQSL > QRZ。逐个摘掉验证链条。
+    let mut e = entry();
+    e.qrz_rcvd = true;
+    assert_eq!(QslStatus::of(&e), QslStatus::Confirmed(QslConfirm::Qrz));
+    e.eqsl_rcvd = true;
+    assert_eq!(QslStatus::of(&e), QslStatus::Confirmed(QslConfirm::Eqsl));
+    e.lotw_rcvd = true;
+    assert_eq!(QslStatus::of(&e), QslStatus::Confirmed(QslConfirm::Lotw));
+    e.qsl_rcvd = true;
+    assert_eq!(QslStatus::of(&e), QslStatus::Confirmed(QslConfirm::Paper));
   }
 
   #[test]
@@ -327,19 +395,26 @@ mod tests {
     seen.dedup();
     assert_eq!(seen.len(), QslTone::ALL.len(), "四色档位都应可达");
 
-    // 两种电子确认共用蓝色档位。
-    let mut e = entry();
-    e.eqsl_rcvd = true;
-    assert_eq!(QslStatus::of(&e).tone(), QslTone::Sky);
+    // 三种电子确认共用蓝色档位。
+    for set in [
+      (|e: &mut LogEntry| e.eqsl_rcvd = true) as fn(&mut LogEntry),
+      |e: &mut LogEntry| e.qrz_rcvd = true,
+    ] {
+      let mut e = entry();
+      set(&mut e);
+      assert_eq!(QslStatus::of(&e).tone(), QslTone::Sky);
+    }
   }
 
   #[test]
   fn is_confirmed_matches_the_existing_helper() {
-    for flags in 0..8u8 {
+    // 16 种组合：四位标志位都要覆盖到，否则新增渠道会从这条等价性检查里漏过去。
+    for flags in 0..16u8 {
       let mut e = entry();
       e.qsl_rcvd = flags & 1 != 0;
       e.lotw_rcvd = flags & 2 != 0;
       e.eqsl_rcvd = flags & 4 != 0;
+      e.qrz_rcvd = flags & 8 != 0;
       assert_eq!(
         QslStatus::of(&e).is_confirmed(),
         e.confirmed(),
@@ -412,5 +487,45 @@ mod tests {
     assert!(json.contains("\"qsl_sent_via\":\"direct\""), "{json}");
     let back: LogEntry = serde_json::from_str(&json).expect("往返");
     assert_eq!(back.qsl_sent_via, QslVia::Direct);
+  }
+
+  #[test]
+  fn an_unrecognised_via_value_does_not_break_the_whole_logbook() {
+    // 严格枚举在这里的代价特别大：`qsl_sent_via` 落在整份日志的 JSON 里，一条手改过的
+    // 记录（或别的软件写进来的 `E` / `M`）会让**整份日志**解析失败，界面直接读成空日志。
+    // 认不出就按「未寄出 / 未知」，与 `from_key` / `from_adif_code` 同一口径。
+    for raw in [
+      "\"e\"",
+      "\"M\"",
+      "\"Bureau\"",
+      "\"\"",
+      "\"direct\"",
+      // 非字符串（`null` / 数字 / 布尔）同样不能拖垮整库：旧版本与手改数据都可能留下。
+      "null",
+      "3",
+      "true",
+    ] {
+      let json = format!(
+        r#"{{"id":1,"date":"2026-01-01","time":"00:00","freq":"14.074","mode":"FT8",
+            "callsign":"JA1X","remark":"","qsl_sent":true,"qsl_sent_via":{raw}}}"#
+      );
+      serde_json::from_str::<LogEntry>(&json).unwrap_or_else(|e| panic!("{raw} 应能反序列化：{e}"));
+    }
+    let via = |raw: &str| {
+      let json = format!(
+        r#"{{"id":1,"date":"2026-01-01","time":"00:00","freq":"14.074","mode":"FT8",
+            "callsign":"JA1X","remark":"","qsl_sent":true,"qsl_sent_via":{raw}}}"#
+      );
+      serde_json::from_str::<LogEntry>(&json)
+        .expect("反序列化")
+        .qsl_sent_via
+    };
+    assert_eq!(via("\"e\""), QslVia::None);
+    assert_eq!(via("\"M\""), QslVia::None);
+    assert_eq!(via("null"), QslVia::None);
+    assert_eq!(via("3"), QslVia::None);
+    assert_eq!(via("true"), QslVia::None);
+    // 大小写不敏感：手写的 `Direct` 也算数。
+    assert_eq!(via("\"Direct\""), QslVia::Direct);
   }
 }

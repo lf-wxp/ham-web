@@ -12,6 +12,7 @@ use crate::logbook::{LogEntry, Logbook};
 use crate::mistake_book::{
   CategoryStats, MAX_RECORDS, MistakeBook, MistakeRecord, StudyStats, Tally,
 };
+use crate::station::{StationBook, StationProfile};
 
 /// 考试历史最多保留的条数（与 `ham-web-app` 的 `exam_history` 一致）。
 const EXAM_HISTORY_LIMIT: usize = 50;
@@ -39,18 +40,54 @@ pub fn merge_value(key: &str, current: Option<&str>, backup: &str) -> Option<Str
     "mistake-book" => merge_mistake_book(cur, backup),
     "study-stats" => merge_study_stats(cur, backup),
     "daily-challenge" => merge_daily_challenge(cur, backup),
+    "station-book" => merge_station_book(cur, backup),
     _ => None,
   }
 }
 
-/// 合并日志：按 [`LogEntry::qso_key`] 去重，保留本机已有记录，新记录重新分配 ID。
+/// 读本机值；解析不出来时采纳备份（见 [`adopt_backup`]）。
+///
+/// 返回 `Err(None)` 表示「本机坏了、备份也没法用」—— 两者都无法采纳时才保留本机。
+fn local_or_backup<T: serde::de::DeserializeOwned>(
+  cur: &str,
+  backup: &str,
+) -> Result<T, Option<String>> {
+  match serde_json::from_str::<T>(cur) {
+    Ok(v) => Ok(v),
+    Err(_) => Err(adopt_backup::<T>(backup)),
+  }
+}
+
+/// 本机值解析不出来时的兜底：整份采纳备份；备份自己也解析不出来时返回 `None`。
+///
+/// 合并本身就是「数据出问题」时的恢复路径，这时代码里的本机值损坏概率最高（手改过、
+/// 写到一半的 JSON、旧版本写入的形状）。各个 `merge_*` 原来都用 `.ok()?` 直接返回
+/// `None`，而 `None` 在调用方那里的语义是「保留本机、不覆盖」—— 备份里那一项被静默
+/// 丢掉，用户看到的却还是「合并成功」。
+fn adopt_backup<T: serde::de::DeserializeOwned>(backup: &str) -> Option<String> {
+  serde_json::from_str::<T>(backup).ok()?;
+  Some(backup.to_owned())
+}
+
+/// 合并日志：按 [`LogEntry::dedupe_key`] 去重，保留本机已有记录，新记录重新分配 ID。
 fn merge_logbook(cur: &str, backup: &str) -> Option<String> {
-  let mut merged: Logbook = serde_json::from_str(cur).ok()?;
-  let backup: Logbook = serde_json::from_str(backup).ok()?;
-  let mut seen: HashSet<String> = merged.entries.iter().map(LogEntry::qso_key).collect();
+  let mut merged = match local_or_backup::<Logbook>(cur, backup) {
+    Ok(v) => v,
+    Err(fallback) => return fallback,
+  };
+  let Ok(backup) = serde_json::from_str::<Logbook>(backup) else {
+    return None;
+  };
+  let mut seen: HashSet<String> = merged
+    .entries
+    .iter()
+    .filter_map(LogEntry::dedupe_key)
+    .collect();
   let mut id = merged.next_id();
   for mut entry in backup.entries {
-    if seen.insert(entry.qso_key()) {
+    // 没有 `dedupe_key`（日期或时间缺失）就说不上重不重复，一律并入 —— 见
+    // `LogEntry::dedupe_key`：把整批同呼号同波段的记录当成一条吞掉，比多几条记录糟糕。
+    if entry.dedupe_key().is_none_or(|key| seen.insert(key)) {
       entry.id = id;
       id += 1;
       merged.entries.push(entry);
@@ -59,18 +96,56 @@ fn merge_logbook(cur: &str, backup: &str) -> Option<String> {
   serde_json::to_string(&merged).ok()
 }
 
+/// 合并台站档案册：按「呼号 + 网格」取并集，**保留本机的 id 与当前台站**。
+///
+/// 备份里那些通联的归属（`station_id`）指的是它在**另一台机器**上的 id，跨设备没有意义：
+/// 硬按 id 对齐会把记录错配到别的台站上，所以合并进来的通联会回落到当前台站
+/// （见 [`crate::station`] 的回落规则）—— 宁可少标一个归属，也不要错标。
+fn merge_station_book(cur: &str, backup: &str) -> Option<String> {
+  let mut merged = match local_or_backup::<StationBook>(cur, backup) {
+    Ok(v) => v,
+    Err(fallback) => return fallback,
+  };
+  let Ok(backup) = serde_json::from_str::<StationBook>(backup) else {
+    return None;
+  };
+  merged.migrate();
+  for profile in backup.profiles {
+    // 呼号 + 网格就能认出同一个台站（与 `StationBook::claim` 同一把尺子）。
+    if merged
+      .profiles
+      .iter()
+      .any(|p| p.matches(&profile.callsign, &profile.gridsquare))
+    {
+      continue;
+    }
+    merged.upsert(StationProfile { id: 0, ..profile });
+  }
+  serde_json::to_string(&merged).ok()
+}
+
 /// 合并字符串集合（收藏、DXCC 稀有度完成清单）：并集后排序。
 fn merge_string_set(cur: &str, backup: &str) -> Option<String> {
-  let a: Vec<String> = serde_json::from_str(cur).ok()?;
-  let b: Vec<String> = serde_json::from_str(backup).ok()?;
+  let a = match local_or_backup::<Vec<String>>(cur, backup) {
+    Ok(v) => v,
+    Err(fallback) => return fallback,
+  };
+  let Ok(b) = serde_json::from_str::<Vec<String>>(backup) else {
+    return None;
+  };
   let set: BTreeSet<String> = a.into_iter().chain(b).collect();
   serde_json::to_string(&set.into_iter().collect::<Vec<_>>()).ok()
 }
 
 /// 合并考试历史：按（题库、对题数、总题数、时间戳）去重，按时间升序，最多保留 [`EXAM_HISTORY_LIMIT`] 条。
 fn merge_exam_history(cur: &str, backup: &str) -> Option<String> {
-  let mut merged: Vec<ExamRecord> = serde_json::from_str(cur).ok()?;
-  let backup: Vec<ExamRecord> = serde_json::from_str(backup).ok()?;
+  let mut merged = match local_or_backup::<Vec<ExamRecord>>(cur, backup) {
+    Ok(v) => v,
+    Err(fallback) => return fallback,
+  };
+  let Ok(backup) = serde_json::from_str::<Vec<ExamRecord>>(backup) else {
+    return None;
+  };
   let mut seen: HashSet<(String, usize, usize, i64)> = merged
     .iter()
     .map(|r| (r.bank.clone(), r.correct, r.total, r.timestamp))
@@ -89,8 +164,13 @@ fn merge_exam_history(cur: &str, backup: &str) -> Option<String> {
 
 /// 合并错题本：按 [`MistakeRecord::key`] 去重，合并 `banks`，重复时保留错得更多的一条。
 fn merge_mistake_book(cur: &str, backup: &str) -> Option<String> {
-  let cur_book: MistakeBook = serde_json::from_str(cur).ok()?;
-  let backup_book: MistakeBook = serde_json::from_str(backup).ok()?;
+  let cur_book = match local_or_backup::<MistakeBook>(cur, backup) {
+    Ok(v) => v,
+    Err(fallback) => return fallback,
+  };
+  let Ok(backup_book) = serde_json::from_str::<MistakeBook>(backup) else {
+    return None;
+  };
   let mut by_key: BTreeMap<String, MistakeRecord> = cur_book
     .records
     .into_iter()
@@ -121,8 +201,13 @@ fn merge_mistake_book(cur: &str, backup: &str) -> Option<String> {
 
 /// 合并累计答题统计：分类计数累加、做过的题目集合取并集。
 fn merge_study_stats(cur: &str, backup: &str) -> Option<String> {
-  let mut merged: StudyStats = serde_json::from_str(cur).ok()?;
-  let backup: StudyStats = serde_json::from_str(backup).ok()?;
+  let mut merged = match local_or_backup::<StudyStats>(cur, backup) {
+    Ok(v) => v,
+    Err(fallback) => return fallback,
+  };
+  let Ok(backup) = serde_json::from_str::<StudyStats>(backup) else {
+    return None;
+  };
   merge_category(&mut merged.total, &backup.total);
   for (bank, bs) in backup.banks {
     let dst = merged.banks.entry(bank).or_default();
@@ -149,8 +234,13 @@ fn merge_tally_map(dst: &mut BTreeMap<String, Tally>, src: &BTreeMap<String, Tal
 
 /// 合并每日挑战成绩：同一天保留得分更高的一次，最多保留 [`DAILY_KEEP_DAYS`] 天。
 fn merge_daily_challenge(cur: &str, backup: &str) -> Option<String> {
-  let mut merged: DailyResults = serde_json::from_str(cur).ok()?;
-  let backup: DailyResults = serde_json::from_str(backup).ok()?;
+  let mut merged = match local_or_backup::<DailyResults>(cur, backup) {
+    Ok(v) => v,
+    Err(fallback) => return fallback,
+  };
+  let Ok(backup) = serde_json::from_str::<DailyResults>(backup) else {
+    return None;
+  };
   for (date, r) in backup.days {
     match merged.days.get(&date) {
       Some(existing) if existing.correct >= r.correct => {}
@@ -169,6 +259,114 @@ fn merge_daily_challenge(cur: &str, backup: &str) -> Option<String> {
 mod tests {
   use super::*;
   use crate::bank::Bank;
+
+  #[test]
+  fn a_corrupt_local_value_is_replaced_by_the_backup() {
+    // 合并本身就是「数据出问题」时的恢复路径，这时代码里的本机值损坏概率最高。
+    // 原来各 `merge_*` 都 `.ok()?` 返回 `None`，而 `None` 的语义是「保留本机」——
+    // 备份里那一项被静默丢掉，用户看到的却还是「合并成功」。
+    let backup = serde_json::to_string(&Logbook {
+      entries: vec![LogEntry {
+        id: 1,
+        callsign: "JA1AAA".into(),
+        date: "2026-10-01".into(),
+        time: "12:00".into(),
+        ..Default::default()
+      }],
+    })
+    .expect("序列化备份");
+
+    let merged =
+      merge_value("logbook", Some("{ 写到一半的 JSON"), &backup).expect("本机损坏时要采纳备份");
+    let book: Logbook = serde_json::from_str(&merged).expect("反序列化");
+    assert_eq!(book.entries.len(), 1);
+    assert_eq!(book.entries[0].callsign, "JA1AAA");
+
+    // 备份自己也解析不出来时不乱写：保留本机。
+    assert!(merge_value("logbook", Some("{ 坏的"), "{ 也坏的").is_none());
+  }
+
+  #[test]
+  fn merging_a_logbook_never_swallows_records_without_a_date() {
+    // 日期缺失时 `qso_key` 会退化成「呼号|波段|模式」，按它去重会把整批记录并成一条。
+    let local = Logbook {
+      entries: vec![LogEntry {
+        id: 1,
+        callsign: "JA1AAA".into(),
+        mode: "FT8".into(),
+        ..Default::default()
+      }],
+    };
+    let backup = Logbook {
+      entries: vec![
+        LogEntry {
+          id: 9,
+          callsign: "JA1AAA".into(),
+          mode: "FT8".into(),
+          ..Default::default()
+        },
+        LogEntry {
+          id: 9,
+          callsign: "JA1AAA".into(),
+          mode: "FT8".into(),
+          ..Default::default()
+        },
+      ],
+    };
+    let merged = merge_value(
+      "logbook",
+      Some(&serde_json::to_string(&local).expect("序列化本机")),
+      &serde_json::to_string(&backup).expect("序列化备份"),
+    )
+    .expect("可合并");
+    let book: Logbook = serde_json::from_str(&merged).expect("反序列化");
+    assert_eq!(book.entries.len(), 3, "没有日期就谈不上重复，一律并入");
+  }
+
+  #[test]
+  fn station_book_union_keeps_local_ids_and_active() {
+    let local = StationBook::from_info(&crate::logbook::StationInfo {
+      callsign: "BG4XXX".into(),
+      gridsquare: "OM89EW".into(),
+      ..Default::default()
+    });
+    let home = local.active_id;
+    let mut backup = StationBook::from_info(&crate::logbook::StationInfo {
+      callsign: "BG4XXX".into(),
+      gridsquare: "OM89EW".into(),
+      ..Default::default()
+    });
+    // 备份里多一台野外台站（同一台机器的 id 与本地不同）。
+    let field = backup.upsert(StationProfile {
+      label: "POTA".into(),
+      callsign: "BG4XXX".into(),
+      gridsquare: "OL99AA".into(),
+      ..Default::default()
+    });
+    backup.set_active(field);
+
+    let merged = merge_value(
+      "station-book",
+      Some(&serde_json::to_string(&local).unwrap()),
+      &serde_json::to_string(&backup).unwrap(),
+    )
+    .expect("台站档案册应当可合并");
+    let book: StationBook = serde_json::from_str(&merged).expect("反序列化");
+
+    assert_eq!(book.profiles.len(), 2, "家里那条去重、野外那条新增");
+    assert_eq!(book.active_id, home, "当前台站仍取本机");
+    assert_eq!(book.by_id(home).expect("本机那条").gridsquare, "OM89EW");
+    assert!(
+      book.profiles.iter().any(|p| p.gridsquare == "OL99AA"),
+      "备份里的野外台站要带过来"
+    );
+    // id 全部唯一且本机的不变。
+    let mut ids: Vec<u64> = book.profiles.iter().map(|p| p.id).collect();
+    ids.sort_unstable();
+    let n = ids.len();
+    ids.dedup();
+    assert_eq!(ids.len(), n);
+  }
 
   #[test]
   fn missing_local_adopts_backup() {

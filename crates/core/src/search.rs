@@ -5,7 +5,7 @@ use std::sync::OnceLock;
 use crate::{
   amplifier, analog_modes, antenna_analyzer, antenna_array, antenna_diy, antenna_farm,
   antenna_installation, antenna_modeling, antenna_tuning, antennas, api_v1, aprs, ardf, atv,
-  aurora, awards, bandplan, bands, beginner, cabrillo, community, coordination, cw_op,
+  aurora, awards, bandplan, bands, beginner, cabrillo, community, connectors, coordination, cw_op,
   digital_comms, dsp_basics, dv_network, dx, dxcc, dxpedition, electronics, emcomm, eme, eqsl,
   events, feedline, filters, frequencies, ft8, gear, gnuradio, grid_system, grounding, history,
   iota, license_classes, logging_software, meters, microwave, mobile, modes, modulation_theory,
@@ -428,6 +428,28 @@ fn build_index() -> Vec<SearchEntry> {
   pairs(&mut out, "天线匹配与馈线", "/feedline", feedline::MATCHING);
   pairs(&mut out, "天线匹配与馈线", "/feedline", feedline::MISMATCH);
 
+  // 线材与连接器
+  triples(
+    &mut out,
+    "线材与连接器",
+    "/connectors",
+    connectors::CONNECTORS,
+  );
+  triples(&mut out, "线材与连接器", "/connectors", connectors::CABLES);
+  tips(
+    &mut out,
+    "线材与连接器",
+    "/connectors",
+    connectors::SELECTION_TIPS,
+  );
+  tips(
+    &mut out,
+    "线材与连接器",
+    "/connectors",
+    connectors::INSTALL_TIPS,
+  );
+  tips(&mut out, "线材与连接器", "/connectors", connectors::FAULTS);
+
   // 波段表
   for b in bands::BANDS {
     push(
@@ -448,13 +470,13 @@ fn build_index() -> Vec<SearchEntry> {
       format!("{} 波段", b.band),
       b.freq_range.to_owned(),
     );
-    for &(range, mode) in b.segments {
+    for seg in b.segments {
       push(
         &mut out,
         "波段规划",
         "/bandplan",
-        range.to_owned(),
-        format!("{} · {}", b.band, mode),
+        seg.range.to_owned(),
+        format!("{} · {}", b.band, seg.text),
       );
     }
   }

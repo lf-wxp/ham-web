@@ -13,7 +13,7 @@
 ## 0. 三条底线
 
 1. **页面里不写原生表单元素**，也不写类名工厂（`input_class` 已删除；`button_class` 只允许
-   `Button` / `ButtonLink` 内部与 9 处已知例外使用），更不新增本地 `const INPUT` / `CHIP_ON`。
+   `Button` / `ButtonLink` 内部与 §8 清单里的几处例外使用），更不新增本地 `const INPUT` / `CHIP_ON`。
 2. **标签关联、无障碍名、多语言文案**是组件与调用点**共同**的责任，缺一样都算没写完
    （e2e 也靠它们定位，见 §4）。
 3. 改完**必须**过 `cargo make check`；动到页面组件再跑相关 e2e（见 §7）。
@@ -99,8 +99,8 @@
    `children` 里就地构建，不能提前 `collect_view()` 到外面再传进去。
 4. **动态 variant 与 `aria-expanded` 不支持**：`Button` / `ButtonLink` 的 `variant` 是静态
    prop，两个组件也都没有 `aria-expanded` 通道。因此「选中态 / 展开态要换 variant」或
-   「下拉开关要报展开状态」的地方**保留原生元素 + `button_class`** —— 全仓库只有 9 处，
-   每处都写了 `刻意的例外` 注释（`grep -rn "刻意的例外" crates/app/src` 可一次列全）。
+   「下拉开关要报展开状态」的地方**保留原生元素 + `button_class`** —— 只有 §8 清单里的
+   那几处，每处都写了 `刻意的例外` 注释（`grep -rn "刻意的例外" crates/app/src` 可一次列全）。
    **不要**为了「统一」把这些清掉（会丢状态反馈 / 无障碍状态）；真要收编，先给
    `Button` / `ButtonLink` 补通道（见 §6），再改调用点。
 5. **`Input.on_change` 是「每次输入」**：需要「失焦 / 回车才提交」语义时用 `on_enter`，
@@ -170,12 +170,14 @@ grep -rn --include='*.rs' --exclude-dir=ui -c 'input_class(' . | grep -v ':0$'
 grep -rln --include='*.rs' --exclude-dir=ui 'CHIP_ON' .
 ```
 
-截至最后一次收口：①0 ②6 ③0 ④0。`button_class` 在页面侧只剩 9 处刻意的例外
-（7 个 `<button>` + 2 个 `<a>`，`grep -rn "刻意的例外" crates/app/src` 可列全）：
+截至最后一次收口：①0 ②6 ③0 ④0。`button_class` 在页面侧只剩 8 条刻意的例外注释，
+覆盖 10 个原生元素（8 个 `<button>` + 2 个 `<a>`；`group_menu.rs` 那条是两个菜单开关共用，
+`grep -rn "刻意的例外" crates/app/src` 可列全）：
 
 | 位置 | 为什么保留原生元素 |
 | --- | --- |
-| `components/navigation/nav_bar.rs` | 导航项与下拉 / 菜单开关（4 个 `<button>` + 1 个 `<a>`）：高亮要切 `variant`，下拉开关还要 `aria-expanded` |
+| `components/navigation/nav_bar.rs` | 导航项与下拉 / 菜单开关（2 个 `<button>` + 1 个 `<a>`）：高亮要切 `variant`，下拉开关还要 `aria-expanded` |
+| `components/navigation/group_menu.rs` | 「知识库」「工具」两个下拉开关（共用一条注释，渲染出 2 个 `<button>`）：理由同 nav_bar；面板是分组侧栏 + 条目区，见文件头 |
 | `pages/callsign_copy.rs` | 两个模式按钮：选中态切 `variant` |
 | `components/exam/answer_card_sheet.rs` | 答题卡筛选按钮：当前筛选切 `variant` |
 | `pages/home/cards_card.rs` | 「今日待复习」入口：有待复习时切 `variant` |

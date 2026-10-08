@@ -4,6 +4,13 @@ use std::collections::HashMap;
 
 use crate::qsl_status::QslVia;
 
+/// QRZ Logbook 确认位用的**应用自定义字段**（ADIF 允许 `APP_` 开头的自定义字段）。
+///
+/// 为什么要自己造一个：QRZ 的站内确认在 ADIF 里没有独立字段（与纸质卡共用 `QSL_RCVD`），
+/// 照它落库会把电子确认标成「纸质已收」。带上自己的 PROGRAMID 以免与别的程序撞名 ——
+/// 其它日志软件会忽略它，本工具导出再导入时原样读回。
+pub const APP_QRZ_RCVD: &str = "APP_HAMEXAMWEB_QRZ_RCVD";
+
 /// 一条 ADIF 通联记录（只提取常用字段）。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct AdifRecord {
@@ -30,6 +37,16 @@ pub struct AdifRecord {
   /// 对方 QTH。
   pub qth: String,
   pub comment: String,
+  /// 本台呼号 `STATION_CALLSIGN`（多台站日志靠它 + 本台网格判断这条属于哪个台站）。
+  pub station_callsign: String,
+  /// 本台网格 `MY_GRIDSQUARE`。
+  pub my_gridsquare: String,
+  /// 本台设备 `MY_RIG`。
+  pub my_rig: String,
+  /// 本台天线 `MY_ANTENNA`。
+  pub my_antenna: String,
+  /// 操作员 `OPERATOR`。
+  pub operator: String,
   pub qsl_sent: bool,
   /// 纸卡寄出方式 `QSL_SENT_VIA`（`B` 卡片局 / `D` 直寄；其余代码按「未知」处理）。
   pub qsl_sent_via: QslVia,
@@ -41,6 +58,13 @@ pub struct AdifRecord {
   /// eQSL 已寄出 / 已确认。
   pub eqsl_sent: bool,
   pub eqsl_rcvd: bool,
+  /// 本行是否**出现了** [`APP_QRZ_RCVD`] 字段。
+  ///
+  /// 与字段值分开：判断「这份报告能不能代表 QRZ 渠道」看的是字段在不在 ——
+  /// 一份不带该字段的报告说不了 QRZ 的任何事（见 `qsl_sync` 的模块文档）。
+  pub has_qrz_flag: bool,
+  /// QRZ Logbook 是否已确认（[`APP_QRZ_RCVD`] 的值）。
+  pub qrz_rcvd: bool,
   /// 卫星名。
   pub sat_name: String,
   /// 传播方式（如 `SAT`、`EME`、`ES`）。
@@ -136,10 +160,29 @@ fn parse_records(text: &str) -> (Vec<HashMap<String, String>>, bool) {
       _ => i = after,
     }
   }
+  // 文件末尾缺 `<EOR>`（手抄清单漏了收尾）时，最后一条记录仍**完整地**留在 `current` 里：
+  // 丢掉它等于把「报告里没有这条」当成结论，同步时会把它误判成待确认差异。
+  // 但「读到半截标签而 break」不算 —— 那种残片字段不全，`from_adif` 出来的记录既没有
+  // 日期也没有时间，保留只会凭空制造一条假的「本地缺失」；这种情况交给 `truncated` 报警。
+  if !current.is_empty() && !truncated {
+    records.push(current);
+    truncated = true;
+  }
   (records, truncated)
 }
 
 /// 本地模式 → ADIF `(MODE, SUBMODE)`（ADIF 3.1 枚举，FT4 / PSK31 等是子模式）。
+///
+/// [`crate::logbook::MODES`] 里的 `DATA` / `OTHER` 是**本站的兜底分类**，ADIF 3.1.4 的
+/// 模式枚举里没有对应值。这里刻意保持原样导出，不替用户折成一个真实模式：
+///
+/// * 折成 `MFSK` / `SSB` 之类等于**凭空造一个模式**，LoTW 会照着它算模式奖状 —— 拿用户
+///   的奖状进度换「文件能过」不值当；
+/// * 整个省略 `MODE` 也不是「更安全」的默认：没有模式的记录同样不是一条可用记录，
+///   而本站自己再导入时会丢失模式（`qso_key` 含模式，往返还会多出一条重复通联）。
+///
+/// 保持原样时坏消息只落在这一条记录上，且 tQSL 会明确指出是哪个模式不认识，用户改成
+/// 具体模式（`FT8`、`RTTY`…）即可 —— 比悄悄替他改掉一个模式要好。
 #[must_use]
 pub fn to_adif_mode(mode: &str) -> (String, Option<String>) {
   let m = mode.trim().to_ascii_uppercase();
@@ -176,6 +219,10 @@ pub fn from_adif_mode(mode: &str, submode: &str) -> String {
 
 /// 把一条记录的字段表转成 [`AdifRecord`]；`CALL` 为空时返回 `None`。
 fn record_from_fields(mut f: HashMap<String, String>) -> Option<AdifRecord> {
+  // 这两位的「字段在不在」与「字段值」都要看：报告带不带这个字段，决定它能不能代表
+  // QRZ 渠道。`take` 闭包会一直占着 `f` 的可变借用，所以先取出来。
+  let has_qrz_flag = f.contains_key(APP_QRZ_RCVD);
+  let qrz_raw = f.remove(APP_QRZ_RCVD).unwrap_or_default();
   let mut take = |k: &str| f.remove(k).unwrap_or_default().trim().to_owned();
   let call = take("CALL").to_ascii_uppercase();
   if call.is_empty() {
@@ -199,6 +246,13 @@ fn record_from_fields(mut f: HashMap<String, String>) -> Option<AdifRecord> {
     name: take("NAME"),
     qth: take("QTH"),
     comment: take("COMMENT"),
+    has_qrz_flag,
+    qrz_rcvd: qrz_raw.trim().eq_ignore_ascii_case("Y"),
+    station_callsign: take("STATION_CALLSIGN").to_ascii_uppercase(),
+    my_gridsquare: take("MY_GRIDSQUARE").to_ascii_uppercase(),
+    my_rig: take("MY_RIG"),
+    my_antenna: take("MY_ANTENNA"),
+    operator: take("OPERATOR"),
     qsl_sent: yes(take("QSL_SENT")),
     qsl_sent_via: QslVia::from_adif_code(&take("QSL_SENT_VIA")),
     qsl_rcvd: yes(take("QSL_RCVD")),
@@ -327,6 +381,16 @@ mod tests {
   }
 
   #[test]
+  fn a_record_whose_eor_is_missing_is_kept_and_flagged() {
+    // 末尾缺 `<EOR>` 但字段完整：最后一条要留下（丢掉它会让同步把「报告里没有」
+    // 当成结论），同时报「被截断」让调用方自己决定信不信这份报告。
+    let (records, truncated) =
+      parse_adif_report("<CALL:4>K1AA<EOR>\n<CALL:4>JA1X<QSO_DATE:8>20260101");
+    assert_eq!(records.len(), 2);
+    assert!(truncated, "缺 `<EOR>` 的报告同样不完整");
+  }
+
+  #[test]
   fn mode_mapping_roundtrip() {
     assert_eq!(
       to_adif_mode("FT4"),
@@ -337,6 +401,11 @@ mod tests {
       ("PSK".to_owned(), Some("PSK31".to_owned()))
     );
     assert_eq!(to_adif_mode("FT8"), ("FT8".to_owned(), None));
+    // `DATA` / `OTHER` 是本站的兜底分类，ADIF 枚举里没有对应值。刻意**原样**导出，
+    // 不折成某个真实模式 —— 折了等于凭空造一个模式，LoTW 会照着它算模式奖状
+    // （理由见 `to_adif_mode` 的文档）。
+    assert_eq!(to_adif_mode("DATA"), ("DATA".to_owned(), None));
+    assert_eq!(to_adif_mode("other"), ("OTHER".to_owned(), None));
     assert_eq!(from_adif_mode("MFSK", "FT4"), "FT4");
     assert_eq!(from_adif_mode("SSB", "USB"), "SSB");
     assert_eq!(from_adif_mode("CW", ""), "CW");

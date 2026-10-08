@@ -37,6 +37,7 @@ fn channel_label(channel: Channel) -> String {
     Channel::Paper => t("log.qsl-channel-paper"),
     Channel::Lotw => t("log.qsl-channel-lotw"),
     Channel::Eqsl => t("log.qsl-channel-eqsl"),
+    Channel::Qrz => t("log.qsl-channel-qrz"),
   }
 }
 
@@ -60,6 +61,7 @@ fn flag_label(flag: QslFlag) -> String {
     QslFlag::LotwRcvd => t("log.lotw-confirmed"),
     QslFlag::EqslSent => t("log.eqsl-sent"),
     QslFlag::EqslRcvd => t("log.eqsl-confirmed"),
+    QslFlag::QrzRcvd => t("log.qrz-confirmed"),
   }
 }
 
@@ -219,10 +221,17 @@ pub fn QslSyncDialog(open: RwSignal<bool>) -> impl IntoView {
           <p class=HINT>
             {move || {
               let s = QslSource::from_id(&source.get());
-              if s.analysis_only() {
-                t("log.qsl-source-analysis-only")
+              if s == QslSource::Qrz {
+                // QRZ 的确认没有标准 ADIF 字段，走本工具的扩展字段 —— 这段必须说清楚，
+                // 否则用户会奇怪「为什么这份报告什么也没改」。
+                t("log.qsl-source-qrz")
               } else {
-                let names = s.channels().iter().map(|c| channel_label(*c)).collect::<Vec<_>>().join(" · ");
+                let names = s
+                  .channels()
+                  .iter()
+                  .map(|c| channel_label(*c))
+                  .collect::<Vec<_>>()
+                  .join(" · ");
                 tf("log.qsl-source-channels", &[&names])
               }
             }}
@@ -298,6 +307,10 @@ pub fn QslSyncDialog(open: RwSignal<bool>) -> impl IntoView {
                   )}
                 </p>
                 <p class=HINT>{move || t("log.diff-conflict-hint")}</p>
+                // 报告里没有任何可采纳的标记（例如 QRZ 官方导出不带扩展字段）：
+                // 说明「为什么一条都没得改」，否则用户只会看到一张空表。
+                {(d.analyze_only)
+                  .then(|| view! { <p class="text-xs">{move || t("log.qsl-source-analysis-only")}</p> })}
 
                 {(d.records.is_empty())
                   .then(|| {

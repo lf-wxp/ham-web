@@ -1,6 +1,8 @@
 use ham_web_core::bandplan::BandPlan;
 use leptos::prelude::*;
 
+use crate::data;
+
 #[component]
 pub(super) fn BandPlanCard(plan: &'static BandPlan) -> impl IntoView {
   view! {
@@ -13,11 +15,18 @@ pub(super) fn BandPlanCard(plan: &'static BandPlan) -> impl IntoView {
         {plan
           .segments
           .iter()
-          .map(|&(range, mode)| {
+          .map(|seg| {
             view! {
               <li class="flex flex-wrap items-baseline gap-2 text-sm">
-                <span class="font-mono tabular-nums text-muted-foreground">{range}</span>
-                <span class="text-muted-foreground">{mode}</span>
+                <span class="font-mono tabular-nums text-muted-foreground">{seg.range}</span>
+                // 子段文案是知识库正文（中文原文为 key，见 `data/knowledge-i18n/bandplan.json`）：
+                // 必须放在 `move ||` 里并订阅加载状态，否则词典到达后这一行不会重算、停在中文。
+                <span class="text-muted-foreground">
+                  {move || {
+                    data::track_knowledge();
+                    data::kt(seg.text)
+                  }}
+                </span>
               </li>
             }
           })

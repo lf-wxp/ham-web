@@ -68,3 +68,36 @@ test("LoTW 指引：/eqsl 上有完整步骤与「不代签」边界，同步框
     "/eqsl",
   );
 });
+
+test("LoTW 指引：TQSL 的 Station Location 该填什么算得出来", async ({ page }) => {
+  page.on("dialog", (d) => d.accept());
+
+  // 台站信息空着：只说明「先补齐」并指出去哪儿补，不硬凑分区。
+  await page.goto("/eqsl");
+  const table = page.locator("section", {
+    hasText: "TQSL 里建 Station Location 时照这个填",
+  });
+  await expect(table.getByText(/台站信息还没填全/)).toBeVisible();
+  await expect(table.getByRole("link", { name: "本台信息" })).toBeVisible();
+
+  // 填上呼号与网格后，四项都按 DXCC 表算了出来。
+  await page.goto("/log");
+  await page.getByRole("button", { name: /本台信息/ }).click();
+  await page.getByLabel("本台呼号").fill("BG4XXX");
+  await page.getByLabel("本台网格").fill("OM89EW");
+  await page.getByRole("button", { name: "保存台站档案" }).click();
+
+  await page.goto("/eqsl");
+  const filled = page.locator("section", {
+    hasText: "TQSL 里建 Station Location 时照这个填",
+  });
+  await expect(filled.getByText("BG4XXX")).toBeVisible();
+  await expect(filled.getByText("中国 · 318")).toBeVisible();
+  await expect(filled.getByText("24", { exact: true })).toBeVisible();
+  await expect(filled.getByText("44", { exact: true })).toBeVisible();
+  await expect(filled.getByText("OM89EW")).toBeVisible();
+  // 这张表存在的理由：与导出的 `MY_*` 一致，否则 LoTW 判「不匹配」。
+  await expect(filled.getByText(/要与导出 ADIF 里的 MY_\* 一致/)).toBeVisible();
+  await expect(filled.getByText("按呼号前缀推断")).toBeVisible();
+  await expect(filled.getByRole("button", { name: "复制这几项" })).toBeVisible();
+});

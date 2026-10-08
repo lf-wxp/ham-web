@@ -8,7 +8,7 @@ use std::sync::{Arc, OnceLock};
 
 use ham_web_core::glossary::{GLOSSARY_FILES, Glossary};
 use ham_web_core::{Bank, BankConfig, QuestionItem, QuestionSearchEntry, QuestionVersion};
-use leptos::prelude::{ArcRwSignal, Track, Update};
+use leptos::prelude::{ArcRwSignal, Get, Track, Update};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestCache, RequestInit, Response};
@@ -534,6 +534,24 @@ pub async fn load_knowledge_i18n(lang: &str) {
     KNOWLEDGE_FAILED_AT.with(|c| c.set(0));
   } else {
     mark_failed(&KNOWLEDGE_FAILED_AT);
+  }
+}
+
+/// 确保当前界面语言的知识库译文正在拉取。
+///
+/// 必须在**响应式上下文**里调用（组件的 `Effect` 内）：内部订阅界面语言，切语言后会
+/// 重新判断并拉新词典 —— 否则 en → es 会一直沿用英文词典。
+///
+/// 展示 `crates/core` 正文的页面都要挂它一次；走 [`KnowledgePage`](crate::components::common::KnowledgePage)
+/// 外壳的页面由外壳代劳，自带页头的页面（如 `/antennas`）要自己调。
+pub fn ensure_knowledge_i18n() {
+  let l = crate::i18n::locale().get();
+  // 按「当前语言的译文是否已就绪」判断，而不是「有没有词典」—— 后者在 zh → en → es
+  // 之后会误判为就绪，让西班牙语界面继续显示英文译文。
+  if l != crate::i18n::Locale::Zh && !knowledge_i18n_ready(l.code()) {
+    leptos::task::spawn_local(async move {
+      load_knowledge_i18n(l.code()).await;
+    });
   }
 }
 

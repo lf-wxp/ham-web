@@ -350,7 +350,16 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
     "/feedline",
     &[
       ("/antennas", "天线型式"),
+      ("/connectors", "线材与连接器"),
       ("/antenna-tuning", "天线调试"),
+      ("/meters", "测量仪表"),
+    ],
+  ),
+  (
+    "/connectors",
+    &[
+      ("/feedline", "匹配与馈线"),
+      ("/antenna-installation", "天线架设"),
       ("/meters", "测量仪表"),
     ],
   ),

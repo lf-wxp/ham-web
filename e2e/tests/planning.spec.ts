@@ -1,4 +1,4 @@
-import { expect, pickDate, pickTime, test } from "./fixtures";
+import { clickClear, expect, futureIso, pickDate, pickTime, test } from "./fixtures";
 
 test("倒计时：添加、持久化与删除", async ({ page }) => {
   await page.goto("/countdown");
@@ -6,9 +6,9 @@ test("倒计时：添加、持久化与删除", async ({ page }) => {
   await expect(page.getByText("暂无倒计时，添加一个目标时间吧。")).toBeVisible();
 
   await page.getByLabel("倒计时标题").fill("A 类操作证考试");
-  await pickDate(page, "目标日期", "2030-06-01");
+  await pickDate(page, "目标日期", futureIso());
   await pickTime(page, "目标时间", "09:00");
-  await page.getByRole("button", { name: "添加" }).click();
+  await clickClear(page.getByRole("button", { name: "添加" }));
 
   await expect(page.getByText("A 类操作证考试")).toBeVisible();
   await expect(page.getByText("暂无倒计时，添加一个目标时间吧。")).toHaveCount(0);
@@ -24,9 +24,9 @@ test("倒计时：标题为空时静默失败，不产生条目", async ({ page 
   await page.goto("/countdown");
   await expect(page.getByRole("heading", { level: 1, name: "倒计时与提醒" })).toBeVisible();
 
-  await pickDate(page, "目标日期", "2030-06-01");
+  await pickDate(page, "目标日期", futureIso());
   await pickTime(page, "目标时间", "09:00");
-  await page.getByRole("button", { name: "添加" }).click();
+  await clickClear(page.getByRole("button", { name: "添加" }));
   await expect(page.getByText("暂无倒计时，添加一个目标时间吧。")).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem("countdowns"))).toBeNull();
 });
@@ -44,7 +44,7 @@ test("倒计时：已过期的条目显示已到期", async ({ page }) => {
   await page.getByLabel("倒计时标题").fill("过去的考试");
   await pickDate(page, "目标日期", iso);
   await pickTime(page, "目标时间", "09:00");
-  await page.getByRole("button", { name: "添加" }).click();
+  await clickClear(page.getByRole("button", { name: "添加" }));
 
   await expect(page.getByText("过去的考试")).toBeVisible();
   await expect(page.getByText("已到期")).toBeVisible();
@@ -58,7 +58,8 @@ test("学习进度：设定考试日期后生成备考计划并持久化", async
     page.getByText("设定考试日期后，会按还没做过的题量、待复习错题和临考阶段"),
   ).toBeVisible();
 
-  await pickDate(page, "考试日期", "2030-06-01");
+  const examDate = futureIso();
+  await pickDate(page, "考试日期", examDate);
   await expect(page.getByText(/距 A 类考试还有 \d+ 天/)).toBeVisible();
   // 任务清单至少包含新题与复习两类
   await expect(page.getByText(/做新题 \d+ \/ \d+/)).toBeVisible();
@@ -66,13 +67,13 @@ test("学习进度：设定考试日期后生成备考计划并持久化", async
 
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem("learning-plan")))
-    .toContain("2030-06-01");
+    .toContain(examDate);
 });
 
 test("学习进度：切换报考类别即时生效", async ({ page }) => {
   await page.goto("/progress");
   await expect(page.getByRole("heading", { level: 2, name: "备考计划" })).toBeVisible();
-  await pickDate(page, "考试日期", "2030-06-01");
+  await pickDate(page, "考试日期", futureIso());
 
   await page.getByRole("button", { name: "B 类" }).first().click();
   await expect(page.getByText(/距 B 类考试还有 \d+ 天/)).toBeVisible();

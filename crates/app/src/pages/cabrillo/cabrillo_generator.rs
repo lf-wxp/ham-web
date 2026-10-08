@@ -10,7 +10,7 @@ use crate::util::download_text;
 #[component]
 pub(super) fn CabrilloGenerator() -> impl IntoView {
   let store = use_log_store();
-  let station = store.station.get_untracked();
+  let station = store.active_station();
   let callsign = RwSignal::new(station.callsign.clone());
   let operator = RwSignal::new(station.operator.clone());
   let gridsquare = RwSignal::new(station.gridsquare.clone());

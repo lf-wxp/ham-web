@@ -17,8 +17,9 @@
 
 - **界面控件只有一套来源**：`crates/app/src/ui/`。页面里不写原生 `<input>` / `<select>` /
   `<textarea>` / `<input type="range">`，不新增本地 `const INPUT` / `CHIP_ON`，
-  不直接调用类名工厂（`button_class` 只给 `Button` / `ButtonLink` 内部与 9 处
-  「刻意的例外」用 —— `grep -rn "刻意的例外" crates/app/src` 可列全）。
+  不直接调用类名工厂（`button_class` 只给 `Button` / `ButtonLink` 内部与
+  `docs/ui-components.md` §8 清单里的几处「刻意的例外」用 ——
+  `grep -rn "刻意的例外" crates/app/src` 可列全）。
 - **一个文件只放一个组件 —— 共享组件与业务组件都是**（`crates/app/src/ui/`、`components/`、
   `pages/` 一视同仁）。「组件」既指 `#[component]`，也指任何**返回视图的函数**
   （`-> impl IntoView` / `-> AnyView`，例如表格单元格、列表行这类视图构造函数）：
@@ -58,6 +59,9 @@ cd e2e && E2E_BASE_URL=http://127.0.0.1:3030 npx playwright test tests/<相关 s
 - 看到「页面空白 / 整页挂载失败 / 英文界面回退中文」这类红，**先怀疑 dev 产物缺资产**：
   `curl -s http://127.0.0.1:3030/data/i18n/en.json | head -c 1` 返回 `<` 就说明 `public/`
   没被拷进产物（`trunk serve` 的拷贝没发生 / 产物被覆盖），重来一次即可。
+  `dist/data/knowledge-i18n/{lang}.json` 同理：它由 postbuild 把
+  `data/knowledge-i18n/{lang}/*.json` 合并而成，而 `trunk serve` 不跑 postbuild ——
+  缺失时 `knowledge_i18n.spec.ts` 与 `i18n_layout.spec.ts` 会红，别急着怀疑代码。
 - dev 构建没有 `wasm-opt`，CPU 密集用例（如 `nec.spec.ts:305` 的 Yagi 优化）并行时容易
   超时 —— `--workers=1` 复跑通过就不是回归。整批回归用 `cargo make e2e`（release 口径）。
 

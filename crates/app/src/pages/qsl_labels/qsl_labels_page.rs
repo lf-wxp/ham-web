@@ -7,8 +7,8 @@ use leptos::prelude::*;
 
 use crate::pages::log::{LogEntry, use_log_store};
 use crate::ui::{
-  Button, ButtonLink, ControlSize, DatePicker, NativeSelect, NumberField, SelectOption, Size,
-  Variant,
+  Button, ButtonLink, Chip, ChipGroup, ControlSize, DatePicker, NativeSelect, NumberField,
+  SelectOption, Size, Variant,
 };
 use crate::util::{set_title, storage, window};
 
@@ -24,6 +24,25 @@ enum Scope {
   Unsent,
   /// 全部通联。
   All,
+}
+
+impl Scope {
+  /// 短键：`Chip` 的 `value` 是字符串，需要一个稳定的往返写法。
+  fn key(self) -> &'static str {
+    match self {
+      Self::Unsent => "unsent",
+      Self::All => "all",
+    }
+  }
+
+  /// 由短键还原；认不出时按「未寄出」处理（与界面上默认那档一致）。
+  fn from_key(key: &str) -> Self {
+    if key == "all" {
+      Self::All
+    } else {
+      Self::Unsent
+    }
+  }
 }
 
 /// 打印时覆盖全局的页边距与纸张，标签坐标按纸张左上角计算。
@@ -95,14 +114,6 @@ pub fn QslLabelsPage() -> impl IntoView {
     }
   };
 
-  let seg = |active: bool| {
-    if active {
-      "rounded-md bg-background px-2.5 py-1 text-xs font-medium shadow-sm"
-    } else {
-      "rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
-    }
-  };
-
   let sheets = move || {
     let l = current.get();
     let list = labels.get();
@@ -118,9 +129,7 @@ pub fn QslLabelsPage() -> impl IntoView {
     // 否则每个槽都要 clone 一遍整表（见 `LabelView` 的说明）。
     let entries: Arc<HashMap<u64, LogEntry>> =
       Arc::new(selected.with(|s| s.iter().map(|e| (e.id, e.clone())).collect()));
-    let my_call = store
-      .station
-      .with(|s| s.callsign.trim().to_ascii_uppercase());
+    let my_call = store.active_station().callsign.trim().to_ascii_uppercase();
     let (w, h) = l.paper.size_mm();
     let compact = l.height < 30.0;
     paginate(list.len(), &l, skip.get())
@@ -218,13 +227,16 @@ pub fn QslLabelsPage() -> impl IntoView {
           </Button>
         </div>
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 pb-3 text-xs text-muted-foreground">
-          <div class="inline-flex rounded-lg bg-muted p-0.5" role="group" aria-label=move || t("log.qso-scope")>
-            {[(Scope::Unsent, "未寄出"), (Scope::All, "全部")].into_iter().map(|(s, label)| view! {
-              <button type="button" class=move || seg(scope.get() == s) aria-pressed=move || (scope.get() == s).to_string() on:click=move |_| scope.set(s)>
-                {move || t(label)}
-              </button>
-            }).collect_view()}
-          </div>
+          // 互斥选择用 `ChipGroup` + `Chip`（`role="radiogroup"` / `aria-checked`）：
+          // 手写的 `aria-pressed` 分段控件不在规范内，读屏与键盘行为也没有这层保证。
+          <ChipGroup
+            value=Signal::derive(move || scope.get().key().to_owned())
+            on_change=Callback::new(move |v: String| scope.set(Scope::from_key(&v)))
+            aria_label=Signal::derive(move || t("log.qso-scope"))
+          >
+            <Chip value=Scope::Unsent.key()>{move || t("未寄出")}</Chip>
+            <Chip value=Scope::All.key()>{move || t("全部")}</Chip>
+          </ChipGroup>
           <label class="inline-flex items-center gap-1.5">
             {move || t("log.start-date")}
             <DatePicker
@@ -285,7 +297,7 @@ pub fn QslLabelsPage() -> impl IntoView {
             }}
           </span>
         </div>
-        {move || store.station.with(|s| s.callsign.trim().is_empty()).then(|| view! {
+        {move || store.active_station().callsign.trim().is_empty().then(|| view! {
           <p class="mx-auto max-w-5xl px-4 pb-3 text-xs text-amber-800 dark:text-amber-300">
             {move || t("log.station-callsign-not-set")}
             " "

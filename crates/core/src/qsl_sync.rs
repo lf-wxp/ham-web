@@ -20,13 +20,20 @@
 //! - **eQSL / QRZ 的导出里也有通用的 `QSL_SENT` / `QSL_RCVD`，但那不是「纸质卡寄出/收到」**。
 //!   照着应用会把电子确认错标成「纸质已收」（徽章变绿），所以这些渠道一律不采纳；
 //! - Club Log 的 OQRS 就是替你寄纸卡，它的 `QSL_SENT` / `QSL_RCVD` 确实代表纸质卡；
-//! - QRZ Logbook 的站内确认在 ADIF 里没有独立字段（落在通用 `QSL_RCVD` 上），本工具
-//!   **不猜它的归属**，因此该来源不写入任何渠道、只做匹配分析（`analyze_only`）。
-//!   要真正落库得先给模型加一个 qrz 渠道并找到可往返的 ADIF 写法，那是独立的一件事。
+//! - QRZ Logbook 的站内确认在 ADIF 里没有标准字段，本工具用自己的应用自定义字段
+//!   （[`crate::adif::APP_QRZ_RCVD`]）承载，因此它是**独立的 `Channel::Qrz`**。
+//!
+//! # QRZ 渠道的「证据规则」
+//!
+//! 光有渠道还不够：QRZ 官方的 ADIF 导出**不带**我们的扩展字段，而「报告里没有这一位」
+//! 在该来源有权威时会被判成冲突 —— 那会把用户本地已记的 QRZ 确认清掉（致命的假冲突）。
+//! 所以 `Channel::Qrz` 只在这份报告**确实带了该字段**时才算数（[`carries_qrz_flags`]）；
+//! 不带就退化成「只做匹配分析」（`QslDiff::analyze_only`），界面会说明原因。
+//! 本工具自己导出的 ADIF 始终写出该字段，所以自己导出的文件喂回来是能落库的。
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
-use crate::adif::parse_adif_report;
+use crate::adif::{AdifRecord, parse_adif_report};
 use crate::logbook::{LogEntry, from_adif};
 
 /// 确认渠道。
@@ -38,11 +45,13 @@ pub enum Channel {
   Lotw,
   /// eQSL。
   Eqsl,
+  /// QRZ Logbook。
+  Qrz,
 }
 
 impl Channel {
   /// 全部渠道（界面按此顺序展示）。
-  pub const ALL: [Self; 3] = [Self::Paper, Self::Lotw, Self::Eqsl];
+  pub const ALL: [Self; 4] = [Self::Paper, Self::Lotw, Self::Eqsl, Self::Qrz];
 
   /// 稳定短键。
   #[must_use]
@@ -51,6 +60,7 @@ impl Channel {
       Self::Paper => "paper",
       Self::Lotw => "lotw",
       Self::Eqsl => "eqsl",
+      Self::Qrz => "qrz",
     }
   }
 
@@ -76,17 +86,20 @@ pub enum QslFlag {
   EqslSent,
   /// eQSL 已确认 `EQSL_QSL_RCVD`。
   EqslRcvd,
+  /// QRZ Logbook 已确认（`APP_HAMEXAMWEB_QRZ_RCVD`，本工具的扩展字段）。
+  QrzRcvd,
 }
 
 impl QslFlag {
   /// 全部标志位（界面按此顺序展示）。
-  pub const ALL: [Self; 6] = [
+  pub const ALL: [Self; 7] = [
     Self::PaperSent,
     Self::PaperRcvd,
     Self::LotwSent,
     Self::LotwRcvd,
     Self::EqslSent,
     Self::EqslRcvd,
+    Self::QrzRcvd,
   ];
 
   /// 所属渠道。
@@ -96,13 +109,17 @@ impl QslFlag {
       Self::PaperSent | Self::PaperRcvd => Channel::Paper,
       Self::LotwSent | Self::LotwRcvd => Channel::Lotw,
       Self::EqslSent | Self::EqslRcvd => Channel::Eqsl,
+      Self::QrzRcvd => Channel::Qrz,
     }
   }
 
   /// 是「收到」还是「寄出」。
   #[must_use]
   pub const fn is_received(self) -> bool {
-    matches!(self, Self::PaperRcvd | Self::LotwRcvd | Self::EqslRcvd)
+    matches!(
+      self,
+      Self::PaperRcvd | Self::LotwRcvd | Self::EqslRcvd | Self::QrzRcvd
+    )
   }
 
   /// 稳定短键（界面状态、持久化用）。
@@ -115,6 +132,7 @@ impl QslFlag {
       Self::LotwRcvd => "lotw-rcvd",
       Self::EqslSent => "eqsl-sent",
       Self::EqslRcvd => "eqsl-rcvd",
+      Self::QrzRcvd => "qrz-rcvd",
     }
   }
 
@@ -134,6 +152,7 @@ impl QslFlag {
       Self::LotwRcvd => e.lotw_rcvd,
       Self::EqslSent => e.eqsl_sent,
       Self::EqslRcvd => e.eqsl_rcvd,
+      Self::QrzRcvd => e.qrz_rcvd,
     }
   }
 
@@ -154,6 +173,7 @@ impl QslFlag {
       Self::LotwRcvd => e.lotw_rcvd = on,
       Self::EqslSent => e.eqsl_sent = on,
       Self::EqslRcvd => e.eqsl_rcvd = on,
+      Self::QrzRcvd => e.qrz_rcvd = on,
     }
   }
 }
@@ -167,7 +187,7 @@ pub enum QslSource {
   Eqsl,
   /// Club Log（OQRS 的纸卡寄出 / 收到）。
   ClubLog,
-  /// QRZ Logbook：只做匹配分析，不写入（见模块文档）。
+  /// QRZ Logbook（`APP_HAMEXAMWEB_QRZ_RCVD`；报告不带该字段时退化成只做匹配分析）。
   Qrz,
   /// 其他 / 手抄清单 / 未知来源：按 ADIF 原样相信三个渠道。
   Other,
@@ -213,17 +233,20 @@ impl QslSource {
       // Club Log 只谈纸卡：它的导出是上传日志的副本，LoTW / eQSL 标记可能是旧快照，
       // 拿它当权威会造出「本地已确认、报告（旧副本）里没有」的假冲突。
       Self::ClubLog => &[Channel::Paper],
-      // QRZ 的确认没有独立 ADIF 字段，不猜归属。
-      Self::Qrz => &[],
-      Self::Other => &[Channel::Paper, Channel::Lotw, Channel::Eqsl],
+      // QRZ 的确认走本工具自己的扩展字段，因此它是一个独立渠道（要不要采纳见 `diff_report`
+      // 的证据规则：报告里没有这个字段就只做匹配分析）。
+      Self::Qrz => &[Channel::Qrz],
+      Self::Other => &[Channel::Paper, Channel::Lotw, Channel::Eqsl, Channel::Qrz],
     }
   }
+}
 
-  /// 该来源是否只做匹配分析（不写入任何渠道）。
-  #[must_use]
-  pub const fn analysis_only(self) -> bool {
-    self.channels().is_empty()
-  }
+/// 这份报告里是否出现过 [`crate::adif::APP_QRZ_RCVD`] 字段。
+///
+/// 看过的是**字段在不在**而不是它的值：一份不带该字段的报告说不了 QRZ 的任何事
+/// （QRZ 官方导出就属于这种），把它的缺席当成「没确认」会造出假冲突。
+fn carries_qrz_flags(records: &[AdifRecord]) -> bool {
+  records.iter().any(|r| r.has_qrz_flag)
 }
 
 /// 报告中一条与本地对不上的记录（带定位信息，便于人工判断为什么没匹配上）。
@@ -244,8 +267,11 @@ pub struct MissingQso {
 /// 一条匹配上的 QSO 的差异。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QsoDiff {
-  /// 本地记录 id。
+  /// 本地记录 id（界面显示 / 日志里指代这条通联）。
   pub entry_id: u64,
+  /// 本地日志里的**下标**：同 id 撞车（手改 localStorage、第三方 JSON）时，`entry_id`
+  /// 无法区分是哪一条，落库必须靠它精确定位（见 `diff_report` 的聚合方式）。
+  pub index: usize,
   /// 对方呼号。
   pub callsign: String,
   /// 日期。
@@ -332,9 +358,9 @@ pub struct QslSyncResult {
 }
 
 /// 报告里一条记录在**该来源说话的渠道**上的标志位集合。
-fn report_flags(report: &LogEntry, source: QslSource) -> BTreeSet<QslFlag> {
+fn report_flags(report: &LogEntry, channels: &[Channel]) -> BTreeSet<QslFlag> {
   let mut out = BTreeSet::new();
-  for &channel in source.channels() {
+  for &channel in channels {
     for flag in QslFlag::ALL.into_iter().filter(|f| f.channel() == channel) {
       if flag.get(report) {
         out.insert(flag);
@@ -351,30 +377,48 @@ fn report_flags(report: &LogEntry, source: QslSource) -> BTreeSet<QslFlag> {
 #[must_use]
 pub fn diff_report(entries: &[LogEntry], report_adif: &str, source: QslSource) -> QslDiff {
   let (records, truncated) = parse_adif_report(report_adif);
+  // `Channel::Qrz` 的证据规则（见模块文档）：只有这份报告确实带了我们的扩展字段，
+  // 才把它当成对 QRZ 渠道有权威 —— 否则「报告里没有」会被误判成冲突清单里的「本地说有」。
+  let qrz_evidence = carries_qrz_flags(&records);
+  let channels: Vec<Channel> = source
+    .channels()
+    .iter()
+    .copied()
+    .filter(|c| *c != Channel::Qrz || qrz_evidence)
+    .collect();
   let mut diff = QslDiff {
     total: records.len(),
-    analyze_only: source.analysis_only(),
+    analyze_only: channels.is_empty(),
     truncated,
     ..Default::default()
   };
   // 先给本地日志建两张索引表：报告动辄上万行，逐行 `entries.iter().find(...)` 是 O(n·m)，
-  // 而 `qso_key()` 每条都要现算（含字符串拼接），代价不低。
+  // 而 `dedupe_key()` 每条都要现算（含字符串拼接），代价不低。
   // 重复 key 保留**第一条**，与原来的线性查找语义一致。
   let mut by_key: HashMap<String, usize> = HashMap::with_capacity(entries.len());
-  let mut by_id: HashMap<u64, usize> = HashMap::with_capacity(entries.len());
   for (i, e) in entries.iter().enumerate() {
-    by_key.entry(e.qso_key()).or_insert(i);
-    by_id.entry(e.id).or_insert(i);
+    // 日期或时间缺失的记录不进索引：它的 key 会退化成「呼号|波段|模式」，报告行会
+    // 随机落到这些记录上，把确认标志写到另一笔通联上（见 `LogEntry::dedupe_key`）。
+    if let Some(key) = e.dedupe_key() {
+      by_key.entry(key).or_insert(i);
+    }
   }
-  let mut reported: BTreeMap<u64, BTreeSet<QslFlag>> = BTreeMap::new();
+  // 差异按**下标**聚合，而不是按 id：日志里两条记录撞 id 时（手改 localStorage、第三方
+  // JSON 都能留下），按 id 聚合会把它们的差异并成一份、落库时全写到第一条上，另一条
+  // 形同漏掉（`log_health` 的合并逻辑为同一个坑做过同类处理）。
+  let mut reported: BTreeMap<usize, BTreeSet<QslFlag>> = BTreeMap::new();
   for rec in records {
     let report = from_adif(rec);
-    match by_key.get(&report.qso_key()).map(|&i| &entries[i]) {
-      Some(local) => {
+    match report
+      .dedupe_key()
+      .and_then(|key| by_key.get(&key))
+      .copied()
+    {
+      Some(idx) => {
         reported
-          .entry(local.id)
+          .entry(idx)
           .or_default()
-          .extend(report_flags(&report, source));
+          .extend(report_flags(&report, &channels));
       }
       None => {
         diff.missing_count += 1;
@@ -389,13 +433,13 @@ pub fn diff_report(entries: &[LogEntry], report_adif: &str, source: QslSource) -
     }
   }
   diff.matched = reported.len();
-  for (entry_id, remote) in reported {
-    let Some(&idx) = by_id.get(&entry_id) else {
+  for (idx, remote) in reported {
+    let Some(local) = entries.get(idx) else {
       continue;
     };
-    let local = &entries[idx];
     let mut qso = QsoDiff {
-      entry_id,
+      entry_id: local.id,
+      index: idx,
       callsign: local.callsign.clone(),
       date: local.date.clone(),
       band: local.band_label(),
@@ -407,8 +451,9 @@ pub fn diff_report(entries: &[LogEntry], report_adif: &str, source: QslSource) -
       let (local_on, remote_on) = (flag.get(local), remote.contains(&flag));
       if remote_on && !local_on {
         qso.added.push(flag);
-      } else if local_on && !remote_on && source.channels().contains(&flag.channel()) {
-        // 只有「来源说话的渠道」才算冲突：LoTW 报告没提 eQSL，不是 eQSL 的结论。
+      } else if local_on && !remote_on && channels.contains(&flag.channel()) {
+        // 只有「这份报告**能说话**的渠道」才算冲突：LoTW 报告没提 eQSL，不是 eQSL 的结论；
+        // 不带我们扩展字段的 QRZ 导出同理（`channels` 已经过证据规则过滤）。
         qso.conflicts.push(flag);
       }
     }
@@ -435,21 +480,20 @@ pub fn apply_diff(
     unmatched: diff.missing_count,
     ..Default::default()
   };
-  // `diff.records` 可能有上千条，逐条 `entries.iter_mut().find(...)` 是 O(差异数 × 日志数)；
-  // 先建一张 id → 下标表（重复 id 保留第一条，与原来的 `find` 语义一致）。
-  let mut by_id: HashMap<u64, usize> = HashMap::with_capacity(entries.len());
-  for (i, e) in entries.iter().enumerate() {
-    by_id.entry(e.id).or_insert(i);
-  }
+  // 直接按 `QsoDiff::index` 定位：`diff_report` 算差异时就记下了下标，O(1) 且同 id 撞车
+  // 时两条差异各自落到自己那一条上（按 id 建表再查会把它们并到第一条）。id 再核对一遍 ——
+  // 差异算出来之后用户可能又增删过记录，下标会漂移；对不上就当这条没了（与原语义一致）。
   for qso in &diff.records {
     let decision = decide(qso);
     if !decision.apply_added && !decision.prefer_remote {
       continue;
     }
-    let Some(&idx) = by_id.get(&qso.entry_id) else {
+    let Some(target) = entries.get_mut(qso.index) else {
       continue;
     };
-    let target = &mut entries[idx];
+    if target.id != qso.entry_id {
+      continue;
+    }
     if decision.apply_added {
       for &flag in &qso.added {
         if !flag.get(target) {
@@ -520,14 +564,20 @@ mod tests {
     assert_eq!(QslSource::Lotw.channels(), &[Channel::Lotw]);
     assert_eq!(QslSource::Eqsl.channels(), &[Channel::Eqsl]);
     assert_eq!(QslSource::ClubLog.channels(), &[Channel::Paper]);
-    assert_eq!(QslSource::Qrz.channels(), &[]);
+    assert_eq!(QslSource::Qrz.channels(), &[Channel::Qrz]);
     assert_eq!(
       QslSource::Other.channels(),
-      &[Channel::Paper, Channel::Lotw, Channel::Eqsl]
+      &[Channel::Paper, Channel::Lotw, Channel::Eqsl, Channel::Qrz]
     );
-    // QRZ 那一份是「只分析不写库」，别把它当成写库来源。
-    assert!(QslSource::Qrz.analysis_only());
-    assert!(!QslSource::Lotw.analysis_only());
+    // 每个渠道都得有来源认领（否则导出/报告里那一位无处落地）。
+    for channel in Channel::ALL {
+      assert!(
+        QslSource::ALL
+          .into_iter()
+          .any(|s| s.channels().contains(&channel)),
+        "{channel:?} 没有任何来源认领"
+      );
+    }
   }
 
   #[test]
@@ -635,15 +685,64 @@ mod tests {
 
   #[test]
   fn qrz_reports_are_analysis_only() {
+    // QRZ 官方导出不带我们的扩展字段：这份报告说不了 QRZ 的任何事，只做匹配分析。
     let entries = vec![qso(1, "JA1X", "14.074", "FT8", "12:34")];
     let qrz = report(&[record("JA1X", "14.074", "FT8", "1234", "<QSL_RCVD:1>Y")]);
     let d = diff_report(&entries, &qrz, QslSource::Qrz);
     assert!(d.analyze_only);
     assert_eq!(d.matched, 1, "匹配情况仍然要报给用户");
-    assert!(d.records.is_empty(), "不猜归属，所以没有可应用的差异");
+    assert!(d.records.is_empty(), "没有可采纳的标记，所以没有差异");
     // 报告里的 QSL_RCVD 没有被当成纸质已收。
     let r = apply_diff(&mut entries.clone(), &d, |_| QsoDecision::MIRROR);
     assert_eq!(r.flags_applied, 0);
+  }
+
+  #[test]
+  fn a_report_without_the_extension_never_conflicts_on_qrz() {
+    // 关键回归：本地记了 QRZ 确认，报告不带扩展字段 —— 绝不能因此判成「本地说有、报告里没有」
+    // 的清库冲突（那会把用户的确认清掉）。
+    let mut local = qso(1, "JA1X", "14.074", "FT8", "12:34");
+    local.qrz_rcvd = true;
+    let entries = vec![local];
+    let qrz = report(&[record("JA1X", "14.074", "FT8", "1234", "<QSL_RCVD:1>Y")]);
+    let d = diff_report(&entries, &qrz, QslSource::Qrz);
+    assert!(d.analyze_only);
+    assert!(d.records.is_empty(), "既没有新增，也没有冲突");
+    let r = apply_diff(&mut entries.clone(), &d, |_| QsoDecision::MIRROR);
+    assert_eq!((r.flags_applied, r.flags_cleared), (0, 0));
+  }
+
+  #[test]
+  fn a_report_carrying_the_extension_can_apply_qrz_confirmations() {
+    // 带扩展字段的报告（本工具自己的导出）对 QRZ 渠道有权威：Y 能补上，N 是冲突。
+    let entries = vec![qso(1, "JA1X", "14.074", "FT8", "12:34")];
+    let qrz = report(&[record(
+      "JA1X",
+      "14.074",
+      "FT8",
+      "1234",
+      "<APP_HAMEXAMWEB_QRZ_RCVD:1>Y",
+    )]);
+    let d = diff_report(&entries, &qrz, QslSource::Qrz);
+    assert!(!d.analyze_only, "带了扩展字段就不是只分析");
+    assert_eq!(d.records[0].added, vec![QslFlag::QrzRcvd]);
+    let mut log = entries.clone();
+    let r = apply_diff(&mut log, &d, |_| QsoDecision::MIRROR);
+    assert_eq!(r.flags_applied, 1);
+    assert!(log[0].qrz_rcvd, "QRZ 确认落到自己的渠道上");
+    assert!(!log[0].qsl_rcvd, "不是纸质卡确认");
+
+    // 同一份格式里写 N：本地说有、报告说无 → 冲突，且默认不勾（不会静默清掉）。
+    let with_n = report(&[record(
+      "JA1X",
+      "14.074",
+      "FT8",
+      "1234",
+      "<APP_HAMEXAMWEB_QRZ_RCVD:1>N",
+    )]);
+    let d = diff_report(&log, &with_n, QslSource::Qrz);
+    assert_eq!(d.records[0].conflicts, vec![QslFlag::QrzRcvd]);
+    assert!(d.records[0].added.is_empty());
   }
 
   #[test]

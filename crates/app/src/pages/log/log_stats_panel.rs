@@ -1,59 +1,108 @@
 //! 通联日志统计概览：总数 / 不同呼号 / DXCC / QSL 确认，模式与波段分布、DXCC 实体、奖项与网格地图。
 
-use std::collections::{HashMap, HashSet};
-
 use leptos::prelude::*;
 
-use crate::ui::Stat;
+use ham_web_core::log_stats::{LogOverview, StatsScope, operators, overview, scoped_entries};
+
+use crate::ui::{NativeSelect, SelectOption, Stat};
 
 use super::awards_panel::AwardsPanel;
 use super::bar_list::BarList;
 use super::grid_map::GridMap;
-use super::{Logbook, StationInfo};
+use super::log_helpers::station_title;
+use super::{Logbook, StationBook};
 use crate::i18n::{t, tf, tp};
+
+/// 统计口径的持久化 key（视图偏好，不进备份正文）。
+const SCOPE_KEY: &str = "log-stats-scope";
 
 #[component]
 pub(super) fn LogStatsPanel(
   logbook: RwSignal<Logbook>,
-  station: RwSignal<StationInfo>,
+  book: RwSignal<StationBook>,
 ) -> impl IntoView {
+  // 统计口径（全部 / 某个台站 / 某个操作员）：切页也记着，俱乐部台就不用每次重选。
+  let scope = RwSignal::new(crate::util::storage::get(SCOPE_KEY).unwrap_or_default());
+  let set_scope = Callback::new(move |key: String| {
+    crate::util::storage::set(SCOPE_KEY, &key);
+    scope.set(key);
+  });
+
   view! {
     {move || {
-      let entries = logbook.get().entries;
-      if entries.is_empty() {
+      let all = logbook.get().entries;
+      if all.is_empty() {
         return view! { <div></div> }.into_any();
       }
-      let mut by_mode: HashMap<String, usize> = HashMap::new();
-      let mut by_band: HashMap<String, usize> = HashMap::new();
-      let mut dxcc: Vec<String> = Vec::new();
-      let mut grids: Vec<String> = Vec::new();
-      let mut calls: HashSet<String> = HashSet::new();
-      let confirmed = entries.iter().filter(|e| e.qsl_rcvd).count();
-      for e in &entries {
-        *by_mode.entry(e.mode.clone()).or_default() += 1;
-        let b = e.band_label();
-        if !b.is_empty() {
-          *by_band.entry(b).or_default() += 1;
-        }
-        if let Some(entity) = e.entity()
-          && !dxcc.iter().any(|d| d == entity.name)
-        {
-          dxcc.push(entity.name.to_owned());
-        }
-        if !e.gridsquare.is_empty() && !grids.contains(&e.gridsquare) {
-          grids.push(e.gridsquare.clone());
-        }
-        calls.insert(e.callsign.to_uppercase());
-      }
-      let mut modes: Vec<(String, usize)> = by_mode.into_iter().collect();
-      let mut bands: Vec<(String, usize)> = by_band.into_iter().collect();
-      modes.sort_by_key(|a| std::cmp::Reverse(a.1));
-      bands.sort_by_key(|a| std::cmp::Reverse(a.1));
-      dxcc.sort();
-      grids.sort();
-      let (total, n_calls, n_dxcc) = (entries.len(), calls.len(), dxcc.len());
+      let parsed = StatsScope::from_key(&scope.get());
+      let entries = book.with(|b| scoped_entries(&all, b, &parsed));
+      // 口径选择器的选项：台站档案 + 日志里出现过的操作员（都没有就不显示这一行）。
+      let profiles = book.with(|b| {
+        b.profiles
+          .iter()
+          .map(|p| (p.id, station_title(p)))
+          .collect::<Vec<_>>()
+      });
+      let ops = book.with(|b| operators(&all, b));
+      // 网格地图的「本台」：按口径里的台站算，口径是操作员时用当前台站。
+      let my_grid = book.with(|b| {
+        b.resolve(parsed.station.unwrap_or(0))
+          .gridsquare
+          .clone()
+      });
+      // 计数 / 去重 / 排序都在 core（`log_stats::overview`）：这里只做视图。
+      let LogOverview {
+        total,
+        callsigns: n_calls,
+        dxcc,
+        grids,
+        modes,
+        bands,
+        confirmed,
+      } = overview(&entries);
+      let n_dxcc = dxcc.len();
       let pending = ham_web_core::logbook::pending_qsl(&entries);
       view! {
+        {(profiles.len() > 1 || ops.len() > 1)
+          .then(|| {
+            // 选项带分组（台站 / 操作员两个面），与原生 `optgroup` 对应。
+            let mut options: Vec<SelectOption> = Vec::new();
+            for (id, title) in &profiles {
+              options.push(SelectOption::grouped(
+                t("log.stats-scope-by-station"),
+                StatsScope::of_station(*id).key(),
+                title.clone(),
+              ));
+            }
+            for op in &ops {
+              options.push(SelectOption::grouped(
+                t("log.stats-scope-by-operator"),
+                StatsScope::of_operator(op).key(),
+                op.clone(),
+              ));
+            }
+            view! {
+              <div class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span>{move || t("log.stats-scope")}</span>
+                <NativeSelect
+                  value=Signal::derive(move || scope.get())
+                  on_change=set_scope
+                  options=options
+                  // 「全部」这个说法词典里已经有了（`exam.all`）：中文释义全库唯一，
+                  // 同义的 key 只能复用一个，不能各造一份。
+                  placeholder=Signal::derive(move || t("exam.all"))
+                  aria_label=Signal::derive(move || t("log.stats-scope"))
+                  class="w-40"
+                />
+                {(!parsed.is_all())
+                  .then(|| {
+                    view! {
+                      <span>{tf("log.stats-scope-count", &[&entries.len().to_string()])}</span>
+                    }
+                  })}
+              </div>
+            }
+          })}
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label=t("log.total-qsos") value=move || total />
           <Stat label=t("log.unique-callsigns") value=move || n_calls />
@@ -146,7 +195,7 @@ pub(super) fn LogStatsPanel(
           } else {
             view! {
               <div class="space-y-3">
-                <GridMap entries=entries.clone() station_grid=station.get_untracked().gridsquare.clone() />
+                <GridMap entries=entries.clone() station_grid=my_grid.clone() />
                 <div class="flex flex-wrap gap-1.5">
                   {grids
                     .into_iter()

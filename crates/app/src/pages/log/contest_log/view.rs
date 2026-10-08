@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use ham_web_core::contest::{
   CONTESTS, CabrilloHeader, Exch, cabrillo, default_rst, is_dupe, score,
 };
@@ -51,11 +49,7 @@ pub fn ContestLogPage() -> impl IntoView {
     SelectOption::new("LOW", "LOW"),
     SelectOption::new("QRP", "QRP"),
   ];
-  let my_call = Memo::new(move |_| {
-    store
-      .station
-      .with(|s| s.callsign.trim().to_ascii_uppercase())
-  });
+  let my_call = Memo::new(move |_| store.active_station().callsign.trim().to_ascii_uppercase());
 
   // 首次使用：按本台呼号填入默认交换
   if session.with_untracked(|s| s.my_exch.is_empty()) {
@@ -206,7 +200,7 @@ pub fn ContestLogPage() -> impl IntoView {
   };
   let export = move || {
     let s = session.get_untracked();
-    let st = store.station.get_untracked();
+    let st = store.active_station();
     let header = CabrilloHeader {
       callsign: st.callsign.clone(),
       operators: st.operator.clone(),
@@ -227,15 +221,8 @@ pub fn ContestLogPage() -> impl IntoView {
     download_text(&name, &text, "text/plain");
   };
 
-  let per_band = Memo::new(move |_| {
-    let mut m: BTreeMap<String, usize> = BTreeMap::new();
-    entries.with(|list| {
-      for e in list {
-        *m.entry(e.band_label()).or_default() += 1;
-      }
-    });
-    m
-  });
+  let per_band =
+    Memo::new(move |_| entries.with(|list| ham_web_core::log_stats::band_counts(list)));
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
@@ -339,7 +326,11 @@ pub fn ContestLogPage() -> impl IntoView {
               />
             </Field>
             <Field
-              label=Signal::derive(move || tf("contest.i-send", &[(session.with(|s| s.def().sent.label()))]))
+              label=Signal::derive(move || {
+                // 交换名先翻一遍再套模板：`Exch::label()` 给的是中文原文，直接当实参填进去
+                // 会让英文界面出现「I send 序号」。
+                tf("contest.i-send", &[&t(session.with(|s| s.def().sent.label()))])
+              })
               r#for=my_exch_id.clone()
             >
               <Input
@@ -433,7 +424,10 @@ pub fn ContestLogPage() -> impl IntoView {
               </div>
             </Field>
             <Field
-              label=Signal::derive(move || tf("contest.received-2", &[(session.with(|s| s.def().rcvd.label()))]))
+              label=Signal::derive(move || {
+                // 同「我发出的」：交换名先翻一遍再套模板。
+                tf("contest.received-2", &[&t(session.with(|s| s.def().rcvd.label()))])
+              })
               r#for=rcvd_id.clone()
             >
               <Input
@@ -444,7 +438,9 @@ pub fn ContestLogPage() -> impl IntoView {
                 placeholder=Signal::derive(rcvd_placeholder)
                 autocomplete="off"
                 spellcheck="false"
-                aria_label=Signal::derive(move || tf("contest.received-2", &[(session.with(|s| s.def().rcvd.label()))]))
+                aria_label=Signal::derive(move || {
+                  tf("contest.received-2", &[&t(session.with(|s| s.def().rcvd.label()))])
+                })
                 size=ControlSize::Lg
                 class="h-12 w-28 px-3 font-mono text-2xl md:text-2xl font-semibold uppercase"
               />

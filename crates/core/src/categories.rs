@@ -981,6 +981,7 @@ pub const TOP_PAGES: &[(&str, &[(&str, &str)])] = &[
     &[
       ("/antennas", "天线型式"),
       ("/feedline", "匹配与馈线"),
+      ("/connectors", "线材与连接器"),
       ("/polarization", "天线极化"),
     ],
   ),

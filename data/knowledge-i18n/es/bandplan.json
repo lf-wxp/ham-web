@@ -1,0 +1,17 @@
+{
+  "CW / 信标": "CW / balizas",
+  "CW / 数据": "CW / datos",
+  "FM / 中继": "FM / repetidores",
+  "FM / 中继（扩展段）": "FM / repetidores (segmento extendido)",
+  "FM / 数据": "FM / datos",
+  "USB 话音 / 窄带数据（WARC，e.i.r.p. ≤15W）": "Voz USB / datos de banda estrecha (WARC, p.i.r.e. ≤15 W)",
+  "业余卫星（FM / SSB）": "Satélites de aficionados (FM / SSB)",
+  "仅 CW / 窄带数据（WARC）": "Solo CW / datos de banda estrecha (WARC)",
+  "各种模式（CW / 数据 / 话音）": "Todos los modos (CW / datos / voz)",
+  "弱信号 / 卫星（CW / SSB）": "Señal débil / satélites (CW / SSB)",
+  "数据": "Datos",
+  "窄带数据": "Datos de banda estrecha",
+  "话音 / 信标": "Voz / balizas",
+  "话音（SSB）": "Voz (SSB)",
+  "话音（WARC）": "Voz (WARC)"
+}

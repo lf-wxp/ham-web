@@ -22,7 +22,7 @@ disabled / error 状态反馈因此只有一处定义。
 | `NumberField` | `<input type="number">` | `value` `on_change` `min` `max` `step` `controls`（加减步进） |
 | `Textarea` | `<textarea>` | `value` `on_change` `rows` `auto_resize` |
 | `Select` + `SelectItem` | `<select>`（选项需要富文本展示时） | `value` `on_change` `trigger` `placeholder` `size` `invalid` |
-| `NativeSelect` | `<select>`（选项固定的筛选器） | `value` `on_change` `options` `placeholder` `size` |
+| `NativeSelect` | `<select>`（选项固定的筛选器） | `value` `on_change` `options`（`SelectOption::grouped` 可加分组标题）`placeholder` `size` |
 | `DatePicker` | `<input type="date">` | `value`（`YYYY-MM-DD`）`on_change` `placeholder` `size` |
 | `TimePicker` | `<input type="time">` | `value`（`HH:MM`）`on_change` `placeholder` `size` |
 | `Checkbox` | `<input type="checkbox">`（表单项） | `checked` `on_change` `disabled` |
@@ -459,9 +459,8 @@ view! {
   新增词条 `common.previous-month` / `common.next-month` / `exam.target-date`。
 
 剩余部分集中在 `pages/log/*`（表单与筛选）、`pages/morse/*`（range 与文本输入），
-可按上表逐页推进；`pages/*/…_calculator.rs` 与 `pages/log/qsl_sync_dialog.rs` 里还有
-本地 `const INPUT` / `const TEXTAREA`，迁移后应一并删除（`pages/tools/mod.rs` 的
-`const INPUT` 已随「小工具页统一」删除，见下）。
+可按上表逐页推进；`pages/*/…_calculator.rs`、`pages/log/qsl_sync_dialog.rs` 与
+`pages/tools/mod.rs` 的本地 `const INPUT` / `const TEXTAREA` 均已删除（`grep` 自检 ① 通过）。
 
 ### 小工具页统一（本轮）
 

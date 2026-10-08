@@ -28,6 +28,10 @@ pub(super) struct LogFormState {
   pub(super) cqz: RwSignal<String>,
   pub(super) ituz: RwSignal<String>,
   pub(super) remark: RwSignal<String>,
+  /// 归属台站 id（`0` = 未指定：新增时按当时的当前台站落库）。
+  pub(super) station_id: RwSignal<u64>,
+  /// 操作员 `OPERATOR`（空 = 用所属台站档案的操作员）。
+  pub(super) operator: RwSignal<String>,
   /// 纸卡寄出方式（`QslVia` 的短键；`"none"` 即未寄出）。
   pub(super) qsl_via: RwSignal<String>,
   pub(super) qsl_rcvd: RwSignal<bool>,
@@ -35,6 +39,8 @@ pub(super) struct LogFormState {
   pub(super) lotw_rcvd: RwSignal<bool>,
   pub(super) eqsl_sent: RwSignal<bool>,
   pub(super) eqsl_rcvd: RwSignal<bool>,
+  /// QRZ Logbook 是否已确认（走本工具的扩展字段，见 `adif::APP_QRZ_RCVD`）。
+  pub(super) qrz_rcvd: RwSignal<bool>,
   pub(super) show_more: RwSignal<bool>,
 }
 
@@ -61,12 +67,15 @@ impl LogFormState {
       cqz: RwSignal::new(String::new()),
       ituz: RwSignal::new(String::new()),
       remark: RwSignal::new(String::new()),
+      station_id: RwSignal::new(0),
+      operator: RwSignal::new(String::new()),
       qsl_via: RwSignal::new(QslVia::None.key().to_owned()),
       qsl_rcvd: RwSignal::new(false),
       lotw_sent: RwSignal::new(false),
       lotw_rcvd: RwSignal::new(false),
       eqsl_sent: RwSignal::new(false),
       eqsl_rcvd: RwSignal::new(false),
+      qrz_rcvd: RwSignal::new(false),
       show_more: RwSignal::new(false),
     }
   }
@@ -93,12 +102,15 @@ impl LogFormState {
     self.cqz.set(String::new());
     self.ituz.set(String::new());
     self.remark.set(String::new());
+    self.station_id.set(0);
+    self.operator.set(String::new());
     self.qsl_via.set(QslVia::None.key().to_owned());
     self.qsl_rcvd.set(false);
     self.lotw_sent.set(false);
     self.lotw_rcvd.set(false);
     self.eqsl_sent.set(false);
     self.eqsl_rcvd.set(false);
+    self.qrz_rcvd.set(false);
   }
 
   /// 从记录载入表单，返回该记录是否含「更多字段」（供自动展开）。
@@ -129,6 +141,8 @@ impl LogFormState {
     self.cqz.set(e.cqz.clone());
     self.ituz.set(e.ituz.clone());
     self.remark.set(e.remark.clone());
+    self.station_id.set(e.station_id);
+    self.operator.set(e.operator.clone());
     // 未寄出时方式无意义，统一收敛成 `none`（避免「未寄出 + 直寄」这种自相矛盾的组合）。
     self.qsl_via.set(
       if e.qsl_sent {
@@ -143,6 +157,7 @@ impl LogFormState {
     self.lotw_rcvd.set(e.lotw_rcvd);
     self.eqsl_sent.set(e.eqsl_sent);
     self.eqsl_rcvd.set(e.eqsl_rcvd);
+    self.qrz_rcvd.set(e.qrz_rcvd);
     has_more
   }
 
@@ -185,6 +200,8 @@ impl LogFormState {
       sota_ref: self.sota_ref.get().trim().to_uppercase(),
       pota_ref: self.pota_ref.get().trim().to_uppercase(),
       remark: self.remark.get().trim().to_owned(),
+      station_id: self.station_id.get(),
+      operator: self.operator.get().trim().to_ascii_uppercase(),
       qsl_sent: via != QslVia::None,
       qsl_sent_via: via,
       qsl_rcvd: self.qsl_rcvd.get(),
@@ -192,6 +209,7 @@ impl LogFormState {
       lotw_rcvd: self.lotw_rcvd.get(),
       eqsl_sent: self.eqsl_sent.get(),
       eqsl_rcvd: self.eqsl_rcvd.get(),
+      qrz_rcvd: self.qrz_rcvd.get(),
       ..Default::default()
     }
   }

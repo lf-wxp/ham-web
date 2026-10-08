@@ -43,6 +43,7 @@ pub const TOPIC_TOPS: &[(&str, &str)] = &[
   ("/antennas", "天线"),
   ("/polarization", "天线"),
   ("/feedline", "天线"),
+  ("/connectors", "天线"),
   ("/antenna-diy", "天线"),
   ("/antenna-installation", "天线"),
   ("/antenna-farm", "天线"),

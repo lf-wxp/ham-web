@@ -38,6 +38,7 @@ test("QSL 标签：按呼号合并、标记已寄出、切换版式", async ({ p
   await page.getByRole("button", { name: "标记为已寄出（3）" }).click();
   await expect(page.getByText("没有待寄出的通联")).toBeVisible();
 
-  await page.getByRole("button", { name: "全部" }).click();
+  // 通联范围是 `ChipGroup` + `Chip`（互斥选择）：role 是 `radio`，不是 `button`。
+  await page.getByRole("radio", { name: "全部" }).click();
   await expect(page.locator('[data-label="W1AW"]')).toHaveCount(1);
 });

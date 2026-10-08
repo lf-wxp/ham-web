@@ -405,7 +405,7 @@ fn bandplan_covers_registered_bands() {
     .find(|b| b.band == "2m")
     .expect("应有 2m 规划");
   assert!(
-    two.segments.iter().any(|(seg, _)| seg.contains("148")),
+    two.segments.iter().any(|seg| seg.range.contains("148")),
     "2m 规划子段应覆盖到 148MHz"
   );
 }

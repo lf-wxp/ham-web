@@ -1,7 +1,8 @@
 import { expect, test } from "./fixtures";
 
-// wspr 模块已在 data/knowledge-i18n/en.json 中翻译（本项目知识库正文多语化的样板）；
-// 其余模块尚未翻译，应自动回退中文，不能因为词典加载失败而变成空白。
+// 已翻译模块（`data/knowledge-i18n/en/*.json`：wspr / antennas / bandplan / connectors）
+// 随界面语言切换；尚未翻译的模块（如 qrp）自动回退中文，
+// 不能因为词典加载失败而变成空白。
 test("知识库正文：已翻译模块随界面语言切换", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("locale", "en"));
   await page.goto("/wspr");

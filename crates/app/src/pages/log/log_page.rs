@@ -11,6 +11,7 @@ use leptos_router::hooks::use_query_map;
 use super::entry_form::EntryForm;
 use super::entry_list::EntryList;
 use super::form_state::LogFormState;
+use super::log_health_panel::LogHealthPanel;
 use super::log_helpers::confirm;
 use super::log_stats_panel::LogStatsPanel;
 use super::qsl_image;
@@ -25,7 +26,7 @@ pub fn LogPage() -> impl IntoView {
 
   let store = use_log_store();
   let logbook = store.logbook;
-  let station = store.station;
+  let book = store.station;
   // 从 URL 读取初始搜索词（如 DXCC 地图点击实体后按实体名过滤）。
   let initial_query = use_query_map().get_untracked().get("q");
   let editing = RwSignal::new(None::<u64>);
@@ -50,9 +51,14 @@ pub fn LogPage() -> impl IntoView {
         }
       });
     } else {
+      // 表单里选了归属台站就用它，没选（0）落到当前台站。
+      let active = book.with_untracked(|b| b.active().id);
       logbook.update(|l| {
         let mut next = form.build(l.next_id(), None);
         next.fill_location();
+        if next.station_id == 0 {
+          next.station_id = active;
+        }
         l.entries.push(next);
       });
     }
@@ -85,7 +91,7 @@ pub fn LogPage() -> impl IntoView {
   };
 
   let export = move || {
-    let content = export_adif(&logbook.get_untracked().entries, &station.get_untracked());
+    let content = export_adif(&logbook.get_untracked().entries, &book.get_untracked());
     download_text(
       &format!("logbook-{}.adi", utc_today()),
       &content,
@@ -95,7 +101,7 @@ pub fn LogPage() -> impl IntoView {
   };
 
   let export_csv_btn = move || {
-    let content = export_csv(&logbook.get_untracked().entries, &station.get_untracked());
+    let content = export_csv(&logbook.get_untracked().entries, &book.get_untracked());
     download_text(
       &format!("logbook-{}.csv", utc_today()),
       &content,
@@ -218,9 +224,10 @@ pub fn LogPage() -> impl IntoView {
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
-        <StationPanel station=station on_save=save_station_btn />
-        <LogStatsPanel logbook=logbook station=station />
-        <EntryForm form=form logbook=logbook station=station editing=editing on_save=on_save />
+        <StationPanel book=book on_save=save_station_btn />
+        <LogStatsPanel logbook=logbook book=book />
+        <LogHealthPanel />
+        <EntryForm form=form logbook=logbook book=book editing=editing on_save=on_save />
         <EntryList logbook=logbook on_edit=on_edit on_remove=on_remove on_clear=on_clear initial_query=initial_query.unwrap_or_default() />
       </div>
       <QslSyncDialog open=qsl_open />

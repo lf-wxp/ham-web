@@ -118,8 +118,12 @@ test("通联日志：本台信息可保存", async ({ page }) => {
     expect(d.message()).toBe("本台信息已保存");
     return d.accept();
   });
-  await page.getByRole("button", { name: "保存本台信息" }).click();
+  await page.getByRole("button", { name: "保存台站档案" }).click();
 
+  // 档案册是真相来源，`station-info` 是当前台站的镜像（RBN / PSK Reporter 还在读它）。
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem("station-book")))
+    .toContain("BG4XXX");
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem("station-info")))
     .toContain("BG4XXX");

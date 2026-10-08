@@ -27,7 +27,9 @@ pub fn RelatedTopics() -> impl IntoView {
                           href=href
                           class="rounded-full border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                         >
-                          {label}
+                          // 文案来自 `crates/core` 的关联表（中文原文），要走反向索引翻一遍 ——
+                          // 原样渲染的话英文 / 西语界面上整块「相关主题」都是中文。
+                          {move || t(label)}
                         </a>
                       }
                     })

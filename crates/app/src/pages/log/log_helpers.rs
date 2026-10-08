@@ -1,3 +1,5 @@
+use super::StationProfile;
+
 pub(super) const CELL: &str = "border px-3 py-2 text-left align-top";
 pub(super) const PAGE_SIZE: usize = 50;
 pub(super) const PROP_MODES: &[(&str, &str)] = &[
@@ -23,4 +25,17 @@ pub(super) fn confirm(msg: &str) -> bool {
   crate::util::window()
     .confirm_with_message(msg)
     .unwrap_or(false)
+}
+
+/// 档案的展示名：档案名优先，其次呼号，都没有时用界面默认名（翻译过的）。
+///
+/// core 的 [`StationProfile::title`] 在两者都空时返回空串（core 不产界面文案），
+/// 兜底在这里补成 `t("log.home")`（中文即「本台」）—— 各语言界面对齐。
+pub(super) fn station_title(p: &StationProfile) -> String {
+  let title = p.title();
+  if title.is_empty() {
+    crate::i18n::t("log.home")
+  } else {
+    title
+  }
 }

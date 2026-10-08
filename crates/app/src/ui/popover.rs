@@ -146,13 +146,18 @@ pub fn close_on_escape(open: RwSignal<bool>) {
 /// 例如点了非聚焦元素、或窗口失焦）同样关闭。
 ///
 /// 返回闭包而不是自己挂监听：面板元素由组件的 `view!` 渲染，`node_ref` 只有组件自己
-/// 拿得到。整个判定是同步的，不写任何跨 `await` 的信号，因此没有「释放后访问」的风险。
+/// 拿得到。整个判定是同步的。
+///
+/// 但 `focusout` 可能在组件销毁**之后**才到达：选中选项会同步改掉筛选值，宿主视图
+/// 随之重建，销毁瞬间的焦点变化会被浏览器排到队列里，此时 `open` 已经释放 ——
+/// 普通 `get_untracked` 会 panic（同 `mount_on_open` 的定时器坑）。因此这里全部走
+/// `try_*`：信号已释放就当「没开、无事发生」。
 pub fn close_on_focus_out(
   open: RwSignal<bool>,
   panel: NodeRef<html::Div>,
 ) -> impl Fn(web_sys::FocusEvent) + Copy + 'static {
   move |e: web_sys::FocusEvent| {
-    if !open.get_untracked() {
+    if !open.try_get_untracked().unwrap_or(false) {
       return;
     }
     let Some(el) = panel.get() else {
@@ -162,12 +167,12 @@ pub fn close_on_focus_out(
       return;
     };
     let Some(next) = e.related_target() else {
-      open.set(false);
+      open.try_set(false);
       return;
     };
     let next: web_sys::Node = next.unchecked_into();
     if !container.contains(Some(&next)) {
-      open.set(false);
+      open.try_set(false);
     }
   }
 }

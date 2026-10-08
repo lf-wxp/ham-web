@@ -52,6 +52,25 @@ pub fn format_ms(ms: i64) -> String {
   }
 }
 
+/// 把「多少个 UTF-16 单元」排版成 `N` / `N.N K` / `N.N M`。
+///
+/// 与 [`format_ms`] 一样是纯排版，因此放在 core：备份页拿它显示各类数据的占用，
+/// 「按 1024 进位、只保留一位小数」这类约定只有一处实现才测得出来。
+#[must_use]
+pub fn format_units(units: usize) -> String {
+  const K: usize = 1024;
+  let k = units as f64 / K as f64;
+  // 进位以**格式化后的值**为准：`1048575` 按档位判据仍小于 1 M，但 `{:.1}` 会把它舍入成
+  // `1024.0 K` —— 既没换档、看着又像溢出（测试里点名要避免的那条）。判档位前先做同样的舍入。
+  if units >= K * K || k.round() >= K as f64 {
+    format!("{:.1} M", units as f64 / (K * K) as f64)
+  } else if units >= K {
+    format!("{k:.1} K")
+  } else {
+    units.to_string()
+  }
+}
+
 /// 字符是否属于要判定的 CJK 区段。
 #[must_use]
 pub const fn is_cjk(c: char) -> bool {
@@ -94,6 +113,17 @@ pub fn upper_chars(s: &str) -> Vec<char> {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn units_are_formatted_by_magnitude() {
+    assert_eq!(format_units(0), "0");
+    assert_eq!(format_units(1023), "1023");
+    assert_eq!(format_units(1024), "1.0 K");
+    assert_eq!(format_units(1536), "1.5 K");
+    // 边界：刚好到 1M 就该换单位，而不是打「1024.0 K」。
+    assert_eq!(format_units(1024 * 1024), "1.0 M");
+    assert_eq!(format_units(3 * 1024 * 1024 / 2), "1.5 M");
+  }
 
   #[test]
   fn collapse_matches_js_semantics() {

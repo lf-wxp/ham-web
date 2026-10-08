@@ -16,7 +16,6 @@ public/sstv-worker/sstv_worker.js
 public/sstv-worker/sstv_worker_bg.wasm
 public/wspr-worker/wspr_worker.js
 public/wspr-worker/wspr_worker_bg.wasm
-
 # IDE and editor files
 .idea/
 .vscode/

@@ -31,6 +31,7 @@ pub(super) fn status_label(status: QslStatus) -> String {
     QslStatus::Confirmed(QslConfirm::Paper) => t("log.qsl-received"),
     QslStatus::Confirmed(QslConfirm::Lotw) => t("log.lotw-confirmed"),
     QslStatus::Confirmed(QslConfirm::Eqsl) => t("log.eqsl-confirmed"),
+    QslStatus::Confirmed(QslConfirm::Qrz) => t("log.qrz-confirmed"),
   }
 }
 

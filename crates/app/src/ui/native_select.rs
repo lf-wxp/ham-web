@@ -37,6 +37,8 @@ pub struct SelectOption {
   pub value: String,
   /// 展示文案。
   pub label: TextValue,
+  /// 所属分组（可空）：同一分组名的相邻选项会归到一个组标题下，标题本身不可选。
+  pub group: Option<String>,
 }
 
 impl SelectOption {
@@ -45,6 +47,21 @@ impl SelectOption {
     Self {
       value: value.into(),
       label: label.into(),
+      group: None,
+    }
+  }
+
+  /// 构造一个带分组的选项（对应原生 `<select>` 的 `optgroup`：同一 `group` 的选项
+  /// 归成一组，组名就是 `group`）。
+  pub fn grouped(
+    group: impl Into<String>,
+    value: impl Into<String>,
+    label: impl Into<TextValue>,
+  ) -> Self {
+    Self {
+      value: value.into(),
+      label: label.into(),
+      group: Some(group.into()),
     }
   }
 }
@@ -59,6 +76,15 @@ impl From<(String, String)> for SelectOption {
   fn from((value, label): (String, String)) -> Self {
     Self::new(value, label)
   }
+}
+
+/// 渲染分组用的中间形态：组名 + 组内选项在 `opts` 里的下标。
+///
+/// 只存下标而不是引用：选项列表是 `StoredValue` 里的 `Vec`，借用它会把渲染闭包
+/// 绑在那个借用上；下标是 `Copy` 的，取用时再 `&list[i]` 更省事。
+struct SelectGroup {
+  name: Option<String>,
+  indices: Vec<usize>,
 }
 
 /// 弹层式下拉框（与语言切换同款外观）。
@@ -292,35 +318,74 @@ pub fn NativeSelect(
                     let cur = value.get();
                     opts
                       .with_value(|list| {
-                        list
-                          .iter()
-                          .enumerate()
-                          .map(|(i, o)| {
-                            let v = o.value.clone();
-                            let label = o.label.clone();
-                            let selected = cur == v;
-                            let tick = v.clone();
-                            let row = i + offset;
-                            view! {
-                              <div
-                                role="option"
-                                id=opt_id(row)
-                                aria-selected=selected.to_string()
-                                data-state=if selected { "checked" } else { "unchecked" }
-                                data-active=move || (active.get() == Some(row)).to_string()
-                                tabindex="-1"
-                                class=cn(&[popover::ITEM, ITEM_ACTIVE])
-                                on:click=move |e| {
-                                  popover::swallow(&e);
-                                  on_change.run(tick.clone());
-                                  open.set(false);
+                        // 相邻的同组选项先切成若干段：`listbox` 的子节点只允许
+                        // `option` / `group`，组名要挂在 `group` 的 `aria-label` 上读屏才会播报
+                        // （原先那版把组标题当成裸文本行，既不是合法子节点、也没有分组语义）。
+                        // 键盘行号仍按**全局**序号算（`i + offset` 就是 `opt_id` 的入参），
+                        // 分组只是多包了一层容器。
+                        let mut groups: Vec<SelectGroup> = Vec::new();
+                        for (i, o) in list.iter().enumerate() {
+                          match groups.last_mut() {
+                            Some(g) if g.name.as_deref() == o.group.as_deref() => g.indices.push(i),
+                            _ => groups.push(SelectGroup {
+                              name: o.group.clone(),
+                              indices: vec![i],
+                            }),
+                          }
+                        }
+                        groups
+                          .into_iter()
+                          .map(|group| {
+                            let rows = group
+                              .indices
+                              .into_iter()
+                              .map(|i| {
+                                let o = &list[i];
+                                let v = o.value.clone();
+                                let label = o.label.clone();
+                                let selected = cur == v;
+                                let tick = v.clone();
+                                let row = i + offset;
+                                view! {
+                                  <div
+                                    role="option"
+                                    id=opt_id(row)
+                                    aria-selected=selected.to_string()
+                                    data-state=if selected { "checked" } else { "unchecked" }
+                                    data-active=move || (active.get() == Some(row)).to_string()
+                                    tabindex="-1"
+                                    class=cn(&[popover::ITEM, ITEM_ACTIVE])
+                                    on:click=move |e| {
+                                      popover::swallow(&e);
+                                      on_change.run(tick.clone());
+                                      open.set(false);
+                                    }
+                                  >
+                                    <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                                      {selected.then(|| view! { <Icon kind=IconKind::Check class="h-4 w-4" /> })}
+                                    </span>
+                                    <span class="w-full">{move || label.get()}</span>
+                                  </div>
                                 }
-                              >
-                                <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-                                  {selected.then(|| view! { <Icon kind=IconKind::Check class="h-4 w-4" /> })}
-                                </span>
-                                <span class="w-full">{move || label.get()}</span>
-                              </div>
+                              })
+                              .collect_view();
+                            match group.name {
+                              None => rows.into_any(),
+                              Some(name) => {
+                                let heading = name.clone();
+                                view! {
+                                  <div role="group" aria-label=name>
+                                    <div
+                                      role="presentation"
+                                      class="px-2 pt-2 pb-1 text-xs font-medium text-muted-foreground"
+                                    >
+                                      {heading}
+                                    </div>
+                                    {rows}
+                                  </div>
+                                }
+                                  .into_any()
+                              }
                             }
                           })
                           .collect_view()

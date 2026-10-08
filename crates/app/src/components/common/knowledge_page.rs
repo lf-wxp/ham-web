@@ -5,7 +5,6 @@ use leptos::prelude::*;
 use super::PageContainer;
 use super::PageHeader;
 use crate::data;
-use crate::i18n::{Locale, locale};
 
 /// 知识库页面外壳：粘性页头 + 内容容器（内容块滚动浮现）。
 ///
@@ -19,16 +18,7 @@ pub fn KnowledgePage(
   #[prop(into)] subtitle: Signal<String>,
   children: Children,
 ) -> impl IntoView {
-  Effect::new(move |_| {
-    let l = locale().get();
-    // 按「当前语言的译文是否已就绪」判断，而不是「有没有词典」—— 后者在 zh → en → es
-    // 之后会误判为就绪，让西班牙语界面继续显示英文译文。
-    if l != Locale::Zh && !data::knowledge_i18n_ready(l.code()) {
-      leptos::task::spawn_local(async move {
-        data::load_knowledge_i18n(l.code()).await;
-      });
-    }
-  });
+  Effect::new(move |_| data::ensure_knowledge_i18n());
   view! {
     <div>
       <PageHeader title=title subtitle=subtitle />
