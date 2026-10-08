@@ -8,9 +8,14 @@ crates/app/dist
 public/sw.js
 public/sitemap.xml
 
-# APT 解码 Worker 构建产物（由 `cargo make build-worker` / wasm-bindgen 生成）
+# Web Worker 构建产物（由 `cargo make build-worker` / `build-sstv-worker` /
+# `build-wspr-worker` 经 wasm-bindgen 生成）。同目录的 `worker.js` 是手写的，要提交。
 public/apt-worker/apt_worker.js
 public/apt-worker/apt_worker_bg.wasm
+public/sstv-worker/sstv_worker.js
+public/sstv-worker/sstv_worker_bg.wasm
+public/wspr-worker/wspr_worker.js
+public/wspr-worker/wspr_worker_bg.wasm
 
 # IDE and editor files
 .idea/
@@ -36,4 +41,6 @@ Icon
 # Playwright
 e2e/node_modules
 e2e/test-results
+e2e/test-results-*
 e2e/playwright-report
+

@@ -8,6 +8,10 @@ use crate::icons::{Icon, IconKind};
 use super::shared::{on_open, state_attr, trap_tab, use_presence};
 use crate::i18n::t;
 
+/// 退场动画时长（毫秒）：与类名里的 `duration-200` 对应 —— 卸载得晚于动画结束，
+/// 否则退场会被截断。
+const EXIT_MS: u64 = 200;
+
 /// 居中模态对话框。
 ///
 /// `class` 会与默认类名合并（可覆盖 `max-w-*`、`sm:max-w-*` 等）。
@@ -21,7 +25,7 @@ pub fn Dialog(
   label: Option<String>,
   children: ChildrenFn,
 ) -> impl IntoView {
-  let mounted = use_presence(open, 200);
+  let mounted = use_presence(open, EXIT_MS);
   let class = cn(&[
     "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fill-mode-both fixed left-1/2 top-4 z-50 flex flex-col w-full max-w-[calc(100%-2rem)] -translate-x-1/2 translate-y-0 gap-4 rounded-lg border p-4 shadow-lg duration-200 sm:max-w-lg sm:top-1/2 sm:translate-y-[-50%] sm:p-6 max-h-[calc(100svh-2rem)] overflow-hidden min-h-0",
     &class,
@@ -72,7 +76,7 @@ pub fn Dialog(
                     on:click=move |_| open.set(false)
                   >
                     <Icon kind=IconKind::X />
-                    <span class="sr-only">{move || t("关闭")}</span>
+                    <span class="sr-only">{move || t("log.close")}</span>
                   </button>
                 }
               })}

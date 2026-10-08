@@ -60,10 +60,10 @@ pub(super) fn AptUploader(
         }
       >
         <Icon kind=IconKind::Satellite class="mb-1 h-8 w-8 text-muted-foreground" />
-        <span class="text-sm font-medium">{move || t("选择 APT 录音（WAV）")}</span>
-        <span class="text-xs text-muted-foreground">{move || t("点击选择或拖拽音频文件到此处")}</span>
+        <span class="text-sm font-medium">{move || t("tools.choose-an-apt-recording")}</span>
+        <span class="text-xs text-muted-foreground">{move || t("tools.click-to-choose-or-2")}</span>
         <span class="mt-1 text-xs text-muted-foreground">
-          {move || t("推荐：RTL-SDR + SDR# / rtl_fm 录制，11025 / 20800 Hz 单声道 WAV")}
+          {move || t("tools.recommended-record-with-rtl")}
         </span>
       </label>
       <input

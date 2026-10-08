@@ -60,8 +60,8 @@ pub fn invalid_attr(
 /// 调用才会重算。因此 `placeholder` / `aria_label` 一类属性既要能接静态 `String`，也要能
 /// 接 `Signal<String>`：
 ///
-/// - `placeholder = t("搜索题目")` —— 静态，够用于不会切语言的文案；
-/// - `placeholder = Signal::derive(move || t("搜索题目"))` —— 切语言后自动更新。
+/// - `placeholder = t("exam.search-questions")` —— 静态，够用于不会切语言的文案；
+/// - `placeholder = Signal::derive(move || t("exam.search-questions"))` —— 切语言后自动更新。
 #[derive(Clone, Debug)]
 pub struct TextValue(TextInner);
 

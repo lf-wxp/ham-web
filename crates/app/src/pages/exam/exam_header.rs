@@ -7,7 +7,7 @@ use leptos::prelude::*;
 use crate::components::common::QuestionProgressHeader;
 use crate::i18n::{bank_class, t, tf};
 use crate::icons::{Icon, IconKind};
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, ButtonLink, Size, Variant};
 
 #[component]
 pub(super) fn ExamHeader(
@@ -42,46 +42,48 @@ pub(super) fn ExamHeader(
           if weak.get() { base } else { format!("{base}&mode=weak") }
         };
         view! {
-          <a
-            class=button_class(Variant::Outline, Size::Sm, "")
-            href=href
-            title=move || t("按分类正确率与错题加权抽题，不计入备考状态")
+          <ButtonLink
+            href=Signal::derive(href)
+            variant=Variant::Outline
+            size=Size::Sm
+            title=Signal::derive(move || t("exam.weighted-by-topic-accuracy"))
           >
-            {move || if weak.get() { t("常规模考") } else { t("薄弱项组卷") }}
-          </a>
-          <button
-            class=button_class(Variant::Outline, Size::Icon, "")
-            aria-label=move || t("设置")
-            title=move || t("设置")
-            on:click=move |_| on_open_settings.run(())
+            {move || if weak.get() { t("exam.standard-exam") } else { t("exam.weak-area-exam") }}
+          </ButtonLink>
+          <Button
+            variant=Variant::Outline
+            size=Size::Icon
+            aria_label=Signal::derive(move || t("exam.settings"))
+            title=Signal::derive(move || t("exam.settings"))
+            on_click=Callback::new(move |_| on_open_settings.run(()))
           >
             <Icon kind=IconKind::Settings class="h-4 w-4" />
-          </button>
+          </Button>
         }
       }
       meta=ViewFn::from(move || {
         view! {
-          {move || weak.get().then(|| view! { <span class="mr-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-amber-800 dark:text-amber-300">{move || t("薄弱项组卷")}</span> })}
-          {move || t("考试类别：")} {move || bank_class(bank.get().as_str())} "｜"
+          {move || weak.get().then(|| view! { <span class="mr-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-amber-800 dark:text-amber-300">{move || t("exam.weak-area-exam")}</span> })}
+          {move || t("exam.class-3")} {move || bank_class(bank.get().as_str())} "｜"
           {move || {
             let r = rule.get();
-            tf("试题数：{}（单选 {}，多选 {}）", &[&r.total.to_string(), &r.singles.to_string(), &r.multiples.to_string()])
+            tf("exam.questions-single-multiple", &[&r.total.to_string(), &r.singles.to_string(), &r.multiples.to_string()])
           }}
-          "｜" {move || tf("限时：{} 分钟", &[&rule.get().minutes.to_string()])} "｜"
-          {move || t("剩余时间：")} {remaining_view}
+          "｜" {move || tf("exam.time-limit-min", &[&rule.get().minutes.to_string()])} "｜"
+          {move || t("exam.remaining")} {remaining_view}
         }
       })
     />
     <div class="sm:hidden grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
-      <div>{move || t("考试类别：")} {move || bank_class(bank.get().as_str())}</div>
+      <div>{move || t("exam.class-3")} {move || bank_class(bank.get().as_str())}</div>
       <div>
         {move || {
           let r = rule.get();
-          tf("试题数：{}（单选 {}，多选 {}）", &[&r.total.to_string(), &r.singles.to_string(), &r.multiples.to_string()])
+          tf("exam.questions-single-multiple", &[&r.total.to_string(), &r.singles.to_string(), &r.multiples.to_string()])
         }}
       </div>
-      <div>{move || tf("限时：{} 分钟", &[&rule.get().minutes.to_string()])}</div>
-      <div>{move || t("剩余：")} {remaining_view}</div>
+      <div>{move || tf("exam.time-limit-min", &[&rule.get().minutes.to_string()])}</div>
+      <div>{move || t("exam.remaining-2")} {remaining_view}</div>
     </div>
   }
 }

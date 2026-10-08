@@ -135,7 +135,7 @@ fn parse_json<T: serde::de::DeserializeOwned>(text: &str) -> Result<T, AppError>
 
 /// 拉取外部 JSON（带 5 秒超时）；成功时写离线缓存，失败时回退到上次缓存。
 pub async fn fetch_external_json<T: serde::de::DeserializeOwned>(url: &str) -> Result<T, AppError> {
-  match fetch_text_external(url, 5000).await {
+  match fetch_text_with_timeout(url, 5000).await {
     Ok(text) => {
       api_cache_put(url, &text);
       parse_json(&text)
@@ -185,8 +185,13 @@ impl Drop for ClearTimeout {
   }
 }
 
-/// 拉取外部文本，`timeout_ms` 毫秒超时（通过 `AbortController` 中断）。
-async fn fetch_text_external(url: &str, timeout_ms: i32) -> Result<String, AppError> {
+/// 拉取文本，`timeout_ms` 毫秒超时（通过 `AbortController` 中断）。
+///
+/// 同源资源（如运行时语言包）也走这里：挂载前会同步等它返回，没有超时就会一直卡在启动页。
+pub(crate) async fn fetch_text_with_timeout(
+  url: &str,
+  timeout_ms: i32,
+) -> Result<String, AppError> {
   use wasm_bindgen::JsCast;
   use wasm_bindgen_futures::JsFuture;
   use web_sys::{AbortController, Request, RequestInit, Response};
@@ -387,7 +392,7 @@ pub async fn version_status(version_id: &str, force: bool) -> VersionStatus {
 ///
 /// 失败结果**不会**写入常驻缓存（否则一次网络抖动会让整个会话都拿不到数据），
 /// 但也不能因此每帧都重试 —— 离线时那样会打出一串必然失败的请求。
-const RETRY_BACKOFF_MS: i64 = 30_000;
+pub(crate) const RETRY_BACKOFF_MS: i64 = 30_000;
 
 // 上次加载失败的时间戳（毫秒），0 表示从未失败。
 thread_local! {
@@ -397,7 +402,11 @@ thread_local! {
 
 /// 距上次失败是否已超过退避窗口（可以再试一次）。
 fn backoff_elapsed(failed_at: &'static std::thread::LocalKey<Cell<i64>>) -> bool {
-  let last = failed_at.with(Cell::get);
+  retry_allowed(failed_at.with(Cell::get))
+}
+
+/// 退避判定本身，供按「资源」而非按「固定槽位」记录失败时间的调用方复用。
+pub(crate) fn retry_allowed(last: i64) -> bool {
   if last == 0 {
     return true;
   }
@@ -440,19 +449,11 @@ pub async fn load_glossary() -> &'static Glossary {
       Ok(text) => match serde_json::from_str::<Glossary>(&text) {
         Ok(g) => parsed.push(g),
         Err(e) => web_sys::console::error_1(
-          &tf(
-            "[ERROR] 术语表 {} 解析失败：{}",
-            &[(name), &(e).to_string()],
-          )
-          .into(),
+          &tf("common.error-failed-to-parse", &[(name), &(e).to_string()]).into(),
         ),
       },
       Err(e) => web_sys::console::error_1(
-        &tf(
-          "[ERROR] 术语表 {} 加载失败：{}",
-          &[(name), &(e).to_string()],
-        )
-        .into(),
+        &tf("common.error-failed-to-load", &[(name), &(e).to_string()]).into(),
       ),
     }
   }

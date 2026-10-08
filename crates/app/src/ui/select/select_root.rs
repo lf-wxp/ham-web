@@ -1,13 +1,10 @@
-use std::time::Duration;
-
-use leptos::ev;
 use leptos::prelude::*;
-use send_wrapper::SendWrapper;
 
 use crate::cn::cn;
 use crate::icons::{Icon, IconKind};
 
-use super::super::control::{ControlSize, TextValue, control_class, invalid_attr};
+use super::super::control::{ControlSize, TextValue, invalid_attr};
+use super::super::popover;
 
 #[derive(Clone, Copy)]
 pub(super) struct SelectCtx {
@@ -35,53 +32,29 @@ pub fn Select(
   aria_label: Option<TextValue>,
   #[prop(optional, into)] id: Option<String>,
   #[prop(optional, into)] class: String,
+  /// 弹层额外类名（改宽度等）。
+  #[prop(optional, into)]
+  panel_class: String,
   children: ChildrenFn,
 ) -> impl IntoView {
+  // 空串一律当作「未设置」：`aria-label=""` 会被读屏当成空名称，`id=""` 也是无效值 ——
+  // 都比属性缺失更糟。转发自 [`super::super::NativeSelect`] 的未设置值因此能安全透传。
+  let aria_label = aria_label.filter(|v| !v.is_empty());
+  let id = id.filter(|s| !s.is_empty());
+
   let open = RwSignal::new(false);
-  // 关闭后延迟卸载，让列表的 `animate-out` 退场动画播完再移除 DOM
-  // （tw-animate 默认 150ms，这里留 200ms 余量）。
-  let mounted = RwSignal::new(open.get_untracked());
-  Effect::new(move |_| {
-    if open.get() {
-      mounted.set(true);
-    } else {
-      set_timeout(
-        move || {
-          if !open.get_untracked() {
-            mounted.set(false);
-          }
-        },
-        Duration::from_millis(200),
-      );
-    }
-  });
+  // 关闭后延迟卸载（退场动画），开合行为见 `popover` 模块。
+  let mounted = popover::mount_on_open(open);
+  popover::close_on_escape(open);
   let title = placeholder.clone();
-  let trigger_class = control_class(
-    size,
-    &cn(&[
-      "flex items-center justify-between [&>span]:line-clamp-1",
-      &class,
-    ]),
-  );
+  let trigger_class = popover::trigger_class(size, &class);
   provide_context(SelectCtx {
     value,
     on_change,
     open,
   });
 
-  let handle = window_event_listener(ev::keydown, move |e| {
-    if e.key() == "Escape" && open.get_untracked() {
-      open.set(false);
-    }
-  });
-  let handle = SendWrapper::new(Some(handle));
-  on_cleanup(move || {
-    if let Some(h) = handle.take() {
-      h.remove();
-    }
-  });
-
-  let state = move || if open.get() { "open" } else { "closed" };
+  let state = popover::state(open);
   view! {
     <div class="relative">
       <button
@@ -107,27 +80,24 @@ pub fn Select(
             }
           }}
         </span>
-        <Icon
-          kind=IconKind::ChevronDown
-          class=Signal::derive(move || {
-            cn(&[
-              "h-4 w-4 opacity-50 transition-transform duration-200",
-              if open.get() { "rotate-180" } else { "" },
-            ])
-          })
-        />
+        <Icon kind=IconKind::ChevronDown class=Signal::derive(move || {
+          cn(&[
+            "h-4 w-4 opacity-50 transition-transform duration-200",
+            if open.get() { "rotate-180" } else { "" },
+          ])
+        }) />
       </button>
       {move || {
         mounted
           .get()
           .then(|| {
             view! {
-              <div class="fixed inset-0 z-40" on:click=move |_| open.set(false)></div>
+              <div class=popover::OVERLAY on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
               <div
                 role="listbox"
                 data-state=state
                 data-side="bottom"
-                class="absolute left-0 top-full mt-1 z-50 max-h-96 min-w-[8rem] w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2"
+                class=cn(&[popover::PANEL, &panel_class])
               >
                 <div class="p-1 w-full overflow-y-auto max-h-96">{children()}</div>
               </div>

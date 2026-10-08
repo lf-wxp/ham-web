@@ -3,9 +3,9 @@
 use ham_web_core::daily_challenge::{DailyResults, current_streak, longest_streak};
 use leptos::prelude::*;
 
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 use crate::ui::{
-  CARD_HEADER, Size, Variant, button_class, card_class, card_content_class, card_title_class,
+  ButtonLink, CARD_HEADER, Size, Variant, card_class, card_content_class, card_title_class,
 };
 use crate::util::{local_today, storage};
 
@@ -24,10 +24,10 @@ pub(super) fn DailyChallengeCard() -> impl IntoView {
     <div data-slot="card" class=card_class("")>
       <div data-slot="card-header" class=CARD_HEADER>
         <div data-slot="card-title" class=card_title_class("flex items-center justify-between")>
-          <span>{move || t("每日挑战")}</span>
+          <span>{move || t("learning.daily-challenge")}</span>
           {(streak > 0).then(|| view! {
             <span class="text-sm font-normal text-muted-foreground">
-              {move || tf("连续 {} 天 · 最长 {} 天", &[&streak.to_string(), &best.to_string()])}
+              {move || tp("home.days-in-a-row", streak as u32, &[&streak.to_string(), &best.to_string()])}
             </span>
           })}
         </div>
@@ -36,15 +36,19 @@ pub(super) fn DailyChallengeCard() -> impl IntoView {
         <p class="mr-auto text-sm text-muted-foreground">
           {match done {
             Some(r) => tf(
-              "今日已完成：答对 {} / {}。",
+              "home.completed-today",
               &[&r.correct.to_string(), &r.total.to_string()],
             ),
-            None => t("每天一组 10 题限时闯关，同一天同一组题，交卷计入打卡。"),
+            None => t("home.a-daily-timed-10"),
           }}
         </p>
-        <a href="/daily-challenge" class=button_class(Variant::Default, Size::Sm, "")>
-          {if done.is_some() { t("再挑战一次") } else { t("开始挑战") }}
-        </a>
+        <ButtonLink
+          href="/daily-challenge"
+          variant=Variant::Default
+          size=Size::Sm
+        >
+          {if done.is_some() { t("learning.try-again") } else { t("learning.start-challenge") }}
+        </ButtonLink>
       </div>
     </div>
   }

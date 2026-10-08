@@ -10,7 +10,7 @@ use super::super::grid_fill::{
 };
 use super::super::grid_geo::{great_circle_d, square_center, square_label};
 use super::state::{FIELD_SQUARE_ZOOM, GridMapState};
-use crate::i18n::tf;
+use crate::i18n::{tf, tp};
 
 #[component]
 pub(super) fn GridOverlay(state: GridMapState) -> impl IntoView {
@@ -24,7 +24,7 @@ pub(super) fn GridOverlay(state: GridMapState) -> impl IntoView {
       (
         x.to_string(),
         y.to_string(),
-        tf("本台网格 {}", &[&(station_grid).to_string()]),
+        tf("log.station-grid-2", &[&(station_grid).to_string()]),
       )
     });
   let home_marker = view! {
@@ -84,8 +84,9 @@ pub(super) fn GridOverlay(state: GridMapState) -> impl IntoView {
             let title = match home_pos {
               Some((hlat, hlon)) => {
                 let (d, b) = distance_bearing(hlat, hlon, lat, lon);
-                tf(
-                  "{}：{} 条（{} 确认）· {}° / {} km",
+                tp(
+                  "log.qsos-confirmed-km",
+                  n as u32,
                   &[
                     &label,
                     &n.to_string(),
@@ -95,8 +96,9 @@ pub(super) fn GridOverlay(state: GridMapState) -> impl IntoView {
                   ],
                 )
               }
-              None => tf(
-                "{}：{} 条（{} 确认）",
+              None => tp(
+                "log.qsos-confirmed",
+                n as u32,
                 &[&label, &n.to_string(), &confirmed.to_string()],
               ),
             };
@@ -282,7 +284,7 @@ pub(super) fn GridOverlay(state: GridMapState) -> impl IntoView {
                   state.selected_square.set(None);
                 }
               >
-                <title>{tf("{}：{} 个网格，点击查看", &[&(format!("{f_lon}{f_lat}")).to_string(), &n.to_string()])}</title>
+                <title>{tp("log.grids-click-to-view", n, &[&(format!("{f_lon}{f_lat}")).to_string(), &n.to_string()])}</title>
               </rect>
             }
           })
@@ -314,7 +316,7 @@ pub(super) fn GridOverlay(state: GridMapState) -> impl IntoView {
                   state.selected.set(None);
                 }
               >
-                <title>{tf("{}：{} 条，点击查看明细", &[&(label).to_string(), &n.to_string()])}</title>
+                <title>{tp("log.qsos-click-for-details", n, &[&(label).to_string(), &n.to_string()])}</title>
               </rect>
             }
           })

@@ -36,6 +36,7 @@
   - [使用示例](#使用示例)
   - [cargo make 任务一览](#cargo-make-任务一览)
   - [Docker 部署](#docker-部署)
+    - [构建耗时与内存（实测）](#构建耗时与内存实测)
   - [Web Push 后台推送](#web-push-后台推送)
   - [数据集构建](#数据集构建)
   - [题目解析维护流程](#题目解析维护流程)
@@ -142,7 +143,7 @@
 - **🧭 全局导航**：所有页面顶部常驻导航栏，按「考试中心 / 知识库 / 工具」三大模块组织，移动端为分组平铺菜单
 - **🔍 全局搜索**：任意页面按 `/` 或点击导航栏搜索按钮唤起命令面板，结果按页面分组并高亮关键词
 - **🌗 明暗主题**：导航栏内随时切换，支持跟随系统 / 浅色 / 深色
-- **🌐 多语言界面**：导航栏内切换中文 / English / Español，选择存本地并同步 `<html lang>`；当前覆盖导航、页脚、全站搜索、首页（含各卡片）与页面标题，其余页面正文按模块增量翻译（见 `crates/app/src/i18n.rs`，以中文原文为 key 补词条即可）
+- **🌐 多语言界面**：导航栏内切换中文 / English / Español，选择存本地并同步 `<html lang>`；当前覆盖导航、页脚、全站搜索、首页（含各卡片）与页面标题，其余页面正文按模块增量翻译（界面文案见 `data/i18n/`，按域拆分的 JSON，以语义 key `域.词条` 补各语言译文即可）
 - **🔊 语音与音频**：Web Speech API 朗读题干、解析与字母解释法；Web Audio API 合成摩尔斯电码与 RST 信号音（可调 WPM）
 - **✨ 流畅动效**：页面切换淡入过渡、按钮按压反馈、Logo 悬停动效，并尊重系统「减少动态效果」偏好
 - **🌌 动态背景**：内容之下的 Web Threads 发光丝线（WebGL2），随明暗主题切换配色且不遮挡前景；移动端与「减少动态效果」下退化为静态一帧（详见[动态背景（Web Threads）](#动态背景web-threads)）
@@ -203,7 +204,7 @@
 │   │       ├── store.rs    # 收藏 / 分组 / 笔记等本地持久化（带跨标签页缓存同步）
 │   │       ├── kv.rs       # 统一存储门面：小数据 localStorage、大数据 IndexedDB 双写
 │   │       ├── idb.rs      # IndexedDB KV 封装（承载通联日志等大体积数据）
-│   │       ├── i18n.rs     # 界面文案词典（zh 为 key，en / es 增量翻译）
+│   │       ├── i18n/       # 界面文案运行时：mod.rs（t/tf/Locale）+ catalog.rs（内嵌域查表）+ pack.rs（运行时语言包）
 │   │       └── …           # exam_history / achievements / bank_updates / shortcuts / speech / theme / photo / pwa / web_threads
 │   ├── apt/                # NOAA APT 云图解码（音频 AM 解调 + 图像重建，纯 Rust DSP，无外部依赖）
 │   ├── apt-worker/         # APT 解码 Web Worker（后台线程解调，编译为 worker.js）
@@ -217,6 +218,7 @@
 ├── data/
 │   ├── explanations.json   # 题目解析（key = 题目内容指纹，约 2000 条）
 │   ├── glossary/           # 术语表（按一级分类拆分为 10 个 JSON，约 460 条）
+│   ├── i18n/               # 界面文案译文（按语言 / 域拆分，语义 key `域.词条`；zh 与内嵌域编进 wasm，其余按语言运行时拉取）
 │   └── knowledge-i18n/     # 知识库正文译文（按语言 / 模块拆分，缺失自动回退中文）
 ├── e2e/                    # Playwright 端到端测试（全站冒烟 + 无障碍 + 关键流程，含覆盖率统计脚本）
 └── public/
@@ -227,7 +229,10 @@
     ├── fonts/              # Geist 字体（本地托管）
     ├── dxcc-entities.bin   # DXCC 实体边界（世界地图着色用）
     ├── manifest.json       # PWA manifest
-    └── *.png / *.svg / favicon.ico
+    ├── pwa-icon.svg / icon.svg / favicon.ico
+    ├── pwa-icon-*.png      # 圆角图标（manifest `any`、og:image）
+    ├── pwa-maskable-*.png  # 满幅图标（manifest `maskable`，圆角由系统遮罩加）
+    └── apple-touch-icon*.png  # 满幅图标（iOS 主屏，圆角由系统加）
 ```
 
 ## 后端 API 与数据源
@@ -382,7 +387,10 @@ cargo make spectrum-sample                            # 频谱 / 瀑布图样本
 | `cargo make explanations-apply` | 把解析写入题库 JSON（离线，无需重建数据集） |
 | `BATCH=… cargo make explanations` | 合并 → 增强 → 写入，一步完成 |
 | **国际化** | — |
-| `cargo make i18n-check` | 校验界面文案词典（重复 key、占位符数量）并统计覆盖率 |
+| `cargo make i18n-check` | 校验界面文案词典（重复 key、占位符数量、复数变体、死条目、语言包新鲜度）并统计按域覆盖率 |
+| `cargo make i18n-pack` | 生成运行时语言包 `public/data/i18n/{lang}.json`（改了译文后跑一次） |
+| `cargo make i18n-plural-candidates` | 导出复数候选骨架（源码用 `tf`/`tp`、中文带数量占位符的文案）到 `tmp/plural-candidates-en.json`；导出西语用 `cargo run -q -p ham-web-tools -- check-i18n --plural-candidates tmp/plural-candidates-es.json --lang es` |
+| `cargo make knowledge-i18n-check` | 校验知识库正文译文：中文原文作 key，源码改过句子后译文即失效（静默回退中文），已并入 `cargo make check` |
 | **解码器样本** | — |
 | `cargo make apt-sample` / `apt-decode` / `apt-test` | 生成 / 命令行解码 / 端到端自检 APT 样本 WAV |
 | `cargo make sstv-sample` / `sstv-decode` / `sstv-test` | 同上，SSTV |
@@ -421,7 +429,7 @@ cargo make docker-build && cargo make docker-run
 | `SITE_URL` | `https://ham.onlyxp.me` | 写入 Open Graph 与 `sitemap.xml` 的站点地址 |
 | `REBUILD_DATASET` | `0` | 设为 `1` 时构建阶段从远程 CSV 重新生成题库 |
 | `TRUNK_VERSION` | `0.21.14` | Trunk 版本 |
-| `WASM_BINDGEN_VERSION` | `0.2.129` | wasm-bindgen CLI 版本（构建 APT 解码 Worker），需与 `Cargo.lock` 中的 wasm-bindgen crate 一致 |
+| `WASM_BINDGEN_VERSION` | 空 | wasm-bindgen CLI 版本（构建三个解码 Worker）；留空时自动取 `Cargo.lock` 中的版本 |
 
 ```bash
 docker build --build-arg SITE_URL=https://exam.example.com -t ham-web .
@@ -440,6 +448,27 @@ docker build --build-arg SITE_URL=https://exam.example.com -t ham-web .
 | `API_V1_RATE_LIMIT_PER_MIN` | `30` | 开放 API `/api/v1/*` 匿名访问每 IP 每分钟配额 |
 | `API_KEYS` | 空 | 开放 API 的 key（逗号分隔）；请求头 `Authorization: Bearer <key>` 命中后配额提升到 600 次/分，仅区分配额档位 |
 镜像基于 `gcr.io/distroless/cc-debian12:nonroot`，以非 root 用户运行，内置健康检查（`/healthz`）。`/app/data` 目录已内置为可写，建议挂载 volume 持久化推送订阅与 VAPID 密钥。
+
+### 构建耗时与内存（实测）
+
+arm64 / 4 vCPU / 16GiB 的 Docker 虚拟机下，一次 `docker build` 的耗时构成：
+
+| 阶段 | 耗时 | 缓存形态 |
+| --- | --- | --- |
+| 拉基础镜像 + 编译安装 `wasm-bindgen-cli` | ~1 min | 镜像层，命中即整层跳过 |
+| 下载 Trunk 预编译二进制 | ~5 s | 镜像层 |
+| 编译第三方依赖（原生 tools/server + wasm 前端与三个 Worker） | ~1 min | `--mount=type=cache` |
+| 编译前端 `ham-web-app` | **~5 min** | 不可缓存（每次提交都在变） |
+| Trunk 下载 Tailwind / wasm-opt | ~1 min | `--mount=type=cache` |
+| 图标 / 语言包 / 三个 Worker / postbuild + 产物断言 | < 1 min | — |
+
+**内存要求**：`wasm-release`（`opt-level = "z"` + `codegen-units = 1`）编译前端时，单个 `rustc` 进程峰值约 6–8GB。Docker 虚拟机只给 4GiB / 8GiB 时会在这一步被 OOM 杀掉，而报错只有 BuildKit 的 `cannot allocate memory`（要加 `--progress=plain` 才看得到 `rustc … SIGKILL: kill`，容易误判成 Dockerfile 有问题）。建议：
+
+```bash
+colima start --memory 16 --cpu 4     # 或用 Docker Desktop 调大内存
+```
+
+**缓存边界**：Dockerfile 里的 `--mount=type=cache` 只存在于当前 builder 的本地磁盘，**不会随 `cache-to` 导出**。所以本机重复构建能靠它跳过依赖编译，而 GitHub Actions（一次性 runner）每次都要重编依赖、重下 Trunk 工具；`type=gha` 实际只缓存镜像层（基础镜像、wasm-bindgen CLI、Trunk 那几个层）。这部分不可缓存的量只占 1–2 分钟，占大头的始终是那 ~5 分钟的前端编译，因此没有为 CI 改用 cargo-chef 式的依赖分层 —— 收益仅 1.5–2 分钟，代价是 gha 缓存（配额 10GB）多占 3–4GB。
 
 ## Web Push 后台推送
 
@@ -684,7 +713,9 @@ cargo make explanations-missing    # 查看因题目修订/新增而缺失的解
 - 刷新后首次打开会显示一次「已更新到新版本」及更新内容；首次访问的用户不会看到；
 - 更新内容写在 `crates/core/src/changelog.rs` 的 `CHANGELOG` 中（新版本插到最前面，日期 + 条目），`postbuild` 会导出为 `dist/changelog.json`；
 - `postbuild` 还会为每个题库计算内容哈希，写入 `dist/questions/config.json` 的 `banks.*.rev`；前端请求题库时带上 `?v=<rev>`，题库内容变化后一定会重新下载。前端记录上次看到的题目摘要，题库变化时提示「题库已更新：修改 N 题，新增 N 题…」；
-- 应用图标由 `cargo make icons` 从 `public/pwa-icon.svg` 渲染（纯 Rust，resvg）。
+- 应用图标由 `cargo make icons` 从 `public/pwa-icon.svg` 渲染（纯 Rust，resvg），同一份 SVG 出两套：
+  - `pwa-icon-192.png` / `pwa-icon-512.png`：保留品牌圆角，供 manifest 的 `any`、`favicon` 与 `og:image` 使用（这些场景不会替我们裁切）；
+  - `apple-touch-icon*.png` / `pwa-maskable-*.png`：**满幅不透明方形**，圆角交给系统遮罩。iOS 的 `apple-touch-icon` 是按原图直接使用的（不裁圆），自带圆角的 PNG 在四个角会把透明像素合成到白底上，因此这类图标四角必须不透明。
 
 ## 本地存储与兼容性
 
@@ -761,7 +792,7 @@ cargo make explanations-missing    # 查看因题目修订/新增而缺失的解
 - workspace 统一开启 `unsafe_code = "forbid"` 与 Clippy `correctness/suspicious/style/complexity/perf`；
 - 提交前执行 `cargo make ci`（仅前端样式改动时可先用 `cargo make check` 快速自检，两者均已包含格式、Clippy、单元测试与文案词典校验）；
 - 不依赖浏览器的逻辑（日志、奖状、DX 通知匹配、Koch、错题本、考试判定、CAT 协议解析、CW 解码、标签排版等）放在 `ham-web-core`，并附单元测试；
-- 修改界面文案时同步补 `crates/app/src/i18n.rs` 词典，`cargo make i18n-check` 会校验重复 key 与占位符数量；知识库正文译文放在 `data/knowledge-i18n/`；
+- 修改界面文案时同步补 `data/i18n/{lang}/{domain}.json`（按域拆分、语义 key `域.词条`，`cargo make i18n-check` 会校验重复 key、占位符数量、死条目与语言包新鲜度）；改完译文跑一次 `cargo make i18n-pack`；知识库正文译文放在 `data/knowledge-i18n/`（以中文原文为 key，改动 `crates/core` 里的中文句子后要同步改 key，`cargo make knowledge-i18n-check` 会校验，否则译文静默失效、页面上仍是中文）；
 - 改动 APT / SSTV / WSPR Worker 时，注意 `wasm-bindgen` CLI 版本必须与 `Cargo.lock` 一致（`cargo make setup` 会按锁文件安装，CI 亦有版本漂移校验）。
 
 CI 位于 `.github/workflows/`：`check.yml` 在 push 到 `main` 与 PR 时运行 `cargo make check`，并另起一个 job 构建 release 站点后运行 Playwright 端到端测试（失败时上传报告）；`build-docker.yml` 在 push 到 `main` 或 `v*` tag 时构建并推送 Docker 镜像。
@@ -779,9 +810,10 @@ CI 位于 `.github/workflows/`：`check.yml` 在 push 到 `main` 与 PR 时运�
 | 练习流程 | `practice_flow.spec.ts`（题库切换、只看本类新增 / 只练没做过、题内搜索跳题、题序切换确认、收藏、专项链接）、`study.spec.ts`、`swipe.spec.ts` |
 | 模拟考试 | `exam_flow.spec.ts`（A/B 类规则与倒计时、标记、答题卡筛选 / 跳转、交卷确认、交卷后对错、中断恢复、薄弱项与自定义组卷、多选题勾选）、`exam_review.spec.ts`（考后复盘） |
 | 复习与题库 | `study_modes.spec.ts`（闪卡、每日挑战、打印版）、`browse.spec.ts`（分类浏览搜索 / 筛选 / 分页）、`glossary.spec.ts`（术语表）、`mistake_topics.spec.ts`（易错知识点）、`notes.spec.ts`、`cards.spec.ts`、`listen.spec.ts` |
-| 日志与竞赛 | `log_form.spec.ts`（表单提交、必填校验、搜索筛选、编辑、清空二次确认、QSL 同步、本台信息）、`log.spec.ts`（ADIF 导入去重 / 导出）、`qsl_labels.spec.ts`、`contest_log.spec.ts` |
-| 工具与实时 | `tools_backup.spec.ts`（计算器、数据备份导出 / 导入 / 合并 / 非法文件）、`photo_processor.spec.ts`、`apt_decoder.spec.ts`、`psk_decode.spec.ts`、`cw_decoder.spec.ts`、`cat.spec.ts`、`morse.spec.ts` |
-| 计划与全局 | `planning.spec.ts`（倒计时边界、备考计划）、`progress` 相关、`navigation.spec.ts`（导航跳转、主题、语言）、`search.spec.ts`（全站搜索）、`notifications.spec.ts`（权限与推送降级） |
+| 日志与竞赛 | `log_form.spec.ts`（表单提交、必填校验、搜索筛选、编辑、清空二次确认、QSL 同步、本台信息）、`log.spec.ts`（ADIF 导入去重 / 导出）、`qsl_labels.spec.ts`、`qsl_image.spec.ts`（卡片影像）、`qsl_lotw.spec.ts`（LoTW 导入）、`qsl_sync.spec.ts`（多源三向 diff）、`qsl_designer.spec.ts`（卡片版式 / 导出）、`log_qsl.spec.ts`（日志侧 QSL 徽章与标记）、`contest_log.spec.ts` |
+| 工具与实时 | `tools_backup.spec.ts`（计算器、数据备份导出 / 导入 / 合并 / 非法文件）、`waveform_lab.spec.ts`（调制波形与频谱、滤波响应、星座与眼图、香农容量、Smith 圆图、传播热力图）、`photo_processor.spec.ts`、`apt_decoder.spec.ts`、`psk_decode.spec.ts`、`cw_decoder.spec.ts`、`cat.spec.ts`、`morse.spec.ts` |
+| 天线建模 | `nec.spec.ts`（预设与几何编辑、地面与材质、`.nec` 导入导出、扫频与可用带宽、Yagi 向导、模板加载、拖拽与阵列复制、NVIS 覆盖） |
+| 计划与全局 | `planning.spec.ts`（倒计时边界、备考计划）、`progress` 相关、`navigation.spec.ts`（导航跳转、主题、语言）、`search.spec.ts`（全站搜索）、`notifications.spec.ts`（权限与推送降级）、`storage_facade.spec.ts`（快照与权威层版本仲裁）、`i18n_plural.spec.ts`（en / es 复数形态回归） |
 | 异常与降级 | `resilience.spec.ts`（题库加载失败、本地数据损坏、接口失败、存储写满）、`fatal.spec.ts`（wasm 兜底页）、`updates.spec.ts`、`new_features.spec.ts`、`a11y.spec.ts`、`knowledge_i18n.spec.ts` |
 
 `smoke.spec.ts` 从路由表读取全部页面，在浅色 / 深色主题下逐一检查运行时错误、资源 404 与 axe（WCAG 2.1 AA）—— **新增页面会自动纳入**，无需改测试。`i18n_layout.spec.ts` 对全部路由做中 / 英 / 西三语布局回归（横向溢出、文本裁剪、越界、浮点未取整）。
@@ -796,6 +828,46 @@ cargo make e2e-coverage                                # 只统计覆盖率，�
 - `E2E_CHANNEL=chrome` 改用本机已安装的 Chrome；`E2E_PORT` 修改 release 服务器端口；
 - 每个测试使用全新浏览器上下文（`localStorage` 为空），fixture 默认把练习 / 考试的快捷键说明标记为已看过；
 - 需要「已有数据」的场景用 `page.addInitScript` 直接写 `localStorage`，不依赖真实操作累积。
+
+#### 已知的失败与本地排障
+
+**先分清三种红**，再决定要不要改代码：
+
+**① `trunk serve` 的产物缺 `public/` 资产**（本地最常见、也最容易被误判成「抖动」）
+
+`cargo make dev` / `trunk serve` 会把 `public/` 拷进产物目录；一旦这次拷贝没发生或产物被覆盖，dev 服务器对 `/data/i18n/*.json`、`/questions/*`、`/*-worker/*` 会返回 `index.html`（SPA 回退），于是：语言包解析失败 → 英文 / 西语界面回退中文、题库数据缺失 → 页面空白或整页挂载失败。**自检一条命令**：
+
+```bash
+curl -s http://127.0.0.1:3030/data/i18n/en.json | head -c 1   # 正常是 `{`，返回 `<` 就是缺资产
+ls target/dev-dist/                                          # 正常应有 data/ questions/ fonts/ 等
+```
+
+缺了就重来一次（`rm -rf target/dev-dist && cd crates/app && cargo make dev`，或 `trunk serve --dist ../../target/dev-dist`）。这类症状包括 `waveform_lab.spec.ts:67`（英文阶数限定语）、`a11y.spec.ts`（练习页内容为空）、`i18n_layout.spec.ts` 的 `page.goto: Page crashed`。
+
+**② CPU 密集用例在 dev 构建下需要余量**
+
+未 `wasm-opt` 的 dev 构建比 release 慢一个量级，`nec.spec.ts:305`（Yagi 优化循环，60s 超时）在并行跑时容易踩线。**用 `--workers=1` 复跑**通过即可，不是回归。
+
+**③ 真正与本仓库当前改动无关的既有失败**
+
+| 现象 | 结论 |
+| --- | --- |
+| `knowledge_i18n.spec.ts:5` | 英文界面缺 `/milliwatt levels/` 译文，属知识库译文数据侧 |
+
+**④ 快照型断言踩到防抖求解**（曾经被误记成上面的「既有失败」，已修）
+
+`nec.spec.ts:104` 里「删掉负载后结果条应回到无负载时的值」一度稳定失败：求解是 250ms 防抖的，
+用例删完导线**立刻**快照 `noLoad`，拿到的是**上一次（两根导线）**的结果，后面拿它当基准自然
+永远对不上 —— 应用本身是对的（删负载后确实回到了无负载值）。修法是快照前先
+`await expect(summary(page)).toHaveText(shifted)` 等结果落定。
+**教训：对防抖 / 异步刷新的输出做快照，要先等它落定再读，别把「上一次的值」当基准。**
+
+> 本地逐页调试用 `trunk serve` 方便，但要**先确认资产完整**；跑整批回归或提交前请用 `cargo make e2e`（release 构建 + Playwright 自带服务器，口径与 CI 一致）。
+
+两条改 UI 时的经验（动交互语义尤其重要）：
+
+- **改了 `role` / `aria-*`，要按「断言里出现过这些属性」全仓搜 spec，不要按页面名找** —— Smith 圆图的用例住在 `waveform_lab.spec.ts` 里，按页面名找就会漏；
+- `getByLabel` / `getByRole` 依赖的标签关联与 role 是**测试契约**：换组件时若动了它们，必须同步 spec（细则见 [`docs/ui-components.md`](docs/ui-components.md)）。
 
 #### 覆盖率统计口径
 
@@ -823,7 +895,11 @@ cargo make e2e-coverage                                # 只统计覆盖率，�
 
 ### 修改 UI 的注意事项
 
-- 基础组件的 Tailwind 类名与原 shadcn/ui 完全一致，位于 `crates/app/src/ui/`；类名合并使用 `cn(&[...])`（语义同 `tailwind-merge`）；
+> 写 / 改界面前先读 **[`docs/ui-components.md`](docs/ui-components.md)**（通用 UI 组件使用规范：
+> 决策表「要什么用哪个」、硬规则、常见坑、验收清单），组件清单与示例见
+> [`crates/app/src/ui/README.md`](crates/app/src/ui/README.md)。
+
+- 页面里不写原生表单元素，统一用 `crates/app/src/ui/` 的组件；基础组件的 Tailwind 类名与原 shadcn/ui 完全一致；类名合并使用 `cn(&[...])`（语义同 `tailwind-merge`）；
 - Tailwind 会扫描 `crates/app/src` 下的 Rust 源码，新类名需以**完整字面量**出现（不要字符串拼接类名片段）；
 - 在 `leptos` 中向依赖 context 的子组件（如 `RadioGroupItem`、`SelectItem`）传递子元素时，需在父组件的 children 内构建，而不是提前 `collect_view()`；
 - 知识库表格统一使用「卡片 + 内部网格线」的样式：卡片内的 `table.border-collapse` 会自动去掉与卡片边框重合的最外圈边框（见 `style/input.css`），因此单元格只需写 `border`，无需手动处理外边线。
@@ -910,7 +986,7 @@ cargo make e2e-coverage                                # 只统计覆盖率，�
 | 修订 / 补充题目解析 | `data/explanations.json`，流程见「题目解析维护流程」 |
 | 补充术语 | `data/glossary/*.json`，随后 `cargo make glossary-check` |
 | 新增知识专题页 | `crates/core/src/<name>.rs`（数据）+ `crates/app/src/pages/<name>.rs`（页面）+ `crates/core/src/registry.rs` 注册一条 + `main_content.rs` 加路由（导航与站点地图自动派生） |
-| 界面文案翻译 | `crates/app/src/i18n.rs`（界面）与 `data/knowledge-i18n/`（知识库正文） |
+| 界面文案翻译 | `data/i18n/`（界面，按域拆分）与 `data/knowledge-i18n/`（知识库正文） |
 | 修 Bug / 加功能 | 不依赖浏览器的逻辑请在 `ham-web-core` 补单元测试；UI 改动注意 `crates/app/src/ui/` 的类名约定 |
 
 > 新增页面时只改两处：**在 `crates/core/src/registry.rs` 的 `MODULES` 追加一条**（路径 / 标题 / 图标 / 分组），再在 `crates/app/src/app/main_content.rs` 加一行 `<Route>`（Leptos 需要具体组件类型，无法数据驱动）。导航菜单、`sitemap.xml` 都由注册表派生；`crates/app/src/registry_check.rs` 的测试会断言「注册表 ↔ 导航 ↔ 路由」三者一致，漏注册或写错路径会让 `cargo make check` 直接失败。页面同时自动纳入 `smoke.spec.ts` 的全站冒烟与无障碍检查。

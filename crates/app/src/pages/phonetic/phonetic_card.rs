@@ -9,7 +9,7 @@ pub(super) fn PhoneticCard(entry: &'static PhoneticEntry) -> impl IntoView {
   view! {
     <button
       type="button"
-      title=tf("朗读 {}", &[(entry.word)])
+      title=tf("common.read-aloud", &[(entry.word)])
       on:click=move |_| speak_en(entry.word)
       class="group flex flex-col items-center gap-1.5 rounded-xl border bg-card p-3 text-center transition-colors hover:bg-accent/60"
     >

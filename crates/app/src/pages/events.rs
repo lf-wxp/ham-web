@@ -3,8 +3,8 @@
 use ham_web_core::events::{HAM_EVENTS, HamEvent, next_start};
 use leptos::prelude::*;
 
-use crate::i18n::{t, tf};
-use crate::ui::{Size, Variant, button_class};
+use crate::i18n::{t, tf, tp};
+use crate::ui::{Button, ButtonLink, Size, Variant};
 use crate::util::{alert, set_title};
 
 /// 追踪 DX 远征与竞赛的延伸入口：`(路由, 标题, 说明)`。
@@ -31,7 +31,7 @@ const TRACKING_LINKS: &[(&str, &str, &str)] = &[
 
 #[component]
 pub fn EventsPage() -> impl IntoView {
-  set_title(&t("活动日历"));
+  set_title("knowledge.event-calendar");
 
   let now = js_sys::Date::new_0();
   let now_t = (
@@ -51,8 +51,8 @@ pub fn EventsPage() -> impl IntoView {
     let (y, m, d) = next_start(e, now_t);
     let month_start = js_sys::Date::utc(y as f64, (m - 1) as f64);
     let target = month_start + (d as f64 - 1.0) * 86_400_000.0;
-    super::countdown::add_countdown(&tf("活动：{}", &[e.name]), target as i64);
-    alert(&tf("已把「{}」加入倒计时提醒", &[e.name]));
+    super::countdown::add_countdown(&tf("knowledge.event", &[e.name]), target as i64);
+    alert(&tf("contest.added-to-countdown-reminders", &[e.name]));
   };
 
   view! {
@@ -60,24 +60,32 @@ pub fn EventsPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("活动日历")}</h1>
+            <h1 class="text-base font-semibold leading-tight">{move || t("knowledge.event-calendar")}</h1>
             <div class="text-xs text-muted-foreground">
-              {move || t("展会 · 火腿节 · 年度通联活动")}
+              {move || t("knowledge.conventions-ham-fests-annual")}
             </div>
           </div>
-          <a href="/contest-calendar" class=button_class(Variant::Outline, Size::Sm, "")>
-            {move || t("竞赛日历")}
-          </a>
-          <a href="/countdown" class=button_class(Variant::Outline, Size::Sm, "")>
-            {move || t("我的倒计时")}
-          </a>
+          <ButtonLink
+            href="/contest-calendar"
+            variant=Variant::Outline
+            size=Size::Sm
+          >
+            {move || t("shell.contest-calendar")}
+          </ButtonLink>
+          <ButtonLink
+            href="/countdown"
+            variant=Variant::Outline
+            size=Size::Sm
+          >
+            {move || t("contest.my-countdowns")}
+          </ButtonLink>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">
-            {move || t("全年活动（按下一届开始时间排序）")}
+            {move || t("knowledge.events-all-year-sorted")}
           </h2>
           <div class="divide-y">
             {scheduled
@@ -85,9 +93,9 @@ pub fn EventsPage() -> impl IntoView {
               .map(|(e, (y, m, d))| {
                 let ev = *e;
                 let dur = if ev.duration_days <= 1 {
-                  t("1 天")
+                  t("knowledge.1-day")
                 } else {
-                  tf("{} 天", &[&ev.duration_days.to_string()])
+                  tp("common.days", ev.duration_days, &[&ev.duration_days.to_string()])
                 };
                 view! {
                   <div class="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_auto]">
@@ -100,7 +108,7 @@ pub fn EventsPage() -> impl IntoView {
                       </div>
                       <div class="mt-0.5 text-xs tabular-nums text-muted-foreground">
                         {tf(
-                          "{} 年 {} 月 {} 日 · {} · {}",
+                          "knowledge.entry",
                           &[
                             &y.to_string(),
                             &m.to_string(),
@@ -116,23 +124,24 @@ pub fn EventsPage() -> impl IntoView {
                       {(!ev.source.is_empty())
                         .then(|| {
                           view! {
-                            <a
+                            <ButtonLink
                               href=ev.source
+                              variant=Variant::Outline
+                              size=Size::Sm
                               target="_blank"
                               rel="noopener noreferrer"
-                              class=button_class(Variant::Outline, Size::Sm, "")
                             >
-                              {move || t("官网")}
-                            </a>
+                              {move || t("knowledge.website")}
+                            </ButtonLink>
                           }
                         })}
-                      <button
-                        type="button"
-                        class=button_class(Variant::Secondary, Size::Sm, "")
-                        on:click=move |_| add_reminder(ev)
+                      <Button
+                        variant=Variant::Secondary
+                        size=Size::Sm
+                        on_click=Callback::new(move |_| add_reminder(ev))
                       >
-                        {move || t("加入提醒")}
-                      </button>
+                        {move || t("contest.add-reminder")}
+                      </Button>
                     </div>
                   </div>
                 }
@@ -142,7 +151,7 @@ pub fn EventsPage() -> impl IntoView {
           <p class="px-4 py-3 text-xs text-muted-foreground">
             {move || {
               t(
-                "日期为每年常见安排（多在周末，逐年浮动），以主办方公告为准；「加入提醒」会把开始时间写入倒计时，到期通过浏览器通知提醒。",
+                "knowledge.dates-follow-the-usual",
               )
             }}
           </p>
@@ -150,7 +159,7 @@ pub fn EventsPage() -> impl IntoView {
 
         <section class="rounded-xl border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">
-            {move || t("追踪 DX 远征与竞赛")}
+            {move || t("knowledge.track-dx-expeditions-and")}
           </h2>
           <div class="grid gap-2 p-4 sm:grid-cols-2">
             {TRACKING_LINKS

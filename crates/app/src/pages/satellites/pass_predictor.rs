@@ -7,10 +7,12 @@ use web_sys::{Notification, NotificationPermission};
 
 use crate::pages::log::use_log_store;
 use crate::sat_alert;
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{
+  Button, Checkbox, ControlSize, Field, NativeSelect, NumberField, SelectOption, Size, Variant,
+};
 
 use super::CELL;
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 
 /// Unix 秒 → 本地时间 `MM-DD HH:MM`。
 fn fmt_pass_time(unix: i64) -> String {
@@ -28,9 +30,9 @@ fn now_secs() -> i64 {
 
 fn permission_label() -> String {
   match Notification::permission() {
-    NotificationPermission::Granted => t("已允许"),
-    NotificationPermission::Denied => t("已被浏览器拒绝，请在站点设置中允许通知"),
-    _ => t("尚未授权"),
+    NotificationPermission::Granted => t("radio.allowed"),
+    NotificationPermission::Denied => t("radio.blocked-by-the-browser"),
+    _ => t("radio.not-authorised-yet"),
   }
 }
 
@@ -102,27 +104,30 @@ pub(super) fn PassPredictor() -> impl IntoView {
                            step: &'static str,
                            get: fn(&SatWatch) -> f64,
                            set: fn(&mut SatWatch, f64)| {
+    let id = crate::util::unique_id("pass-predictor-num");
+    let label_for = id.clone();
+    // 调用点传的是字符串形式的步进（"0.0001" / "1"），`NumberField` 要 f64。
+    let step_value = step.parse::<f64>().unwrap_or(1.0);
     view! {
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{label}</span>
-        <input
-          type="number"
-          step=step
-          prop:value=move || watch.with(get).to_string()
-          on:change=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      <Field label=label r#for=label_for>
+        <NumberField
+          id=id
+          value=Signal::derive(move || watch.with(get).to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               update(&|w| set(w, v));
             }
-          }
-          class=input_class("")
+          })
+          step=step_value
+          controls=false
         />
-      </label>
+      </Field>
     }
   };
 
   view! {
     <section class="rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("过境预报与提醒")}</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.pass-predictions-and-reminders")}</h2>
       <div class="space-y-4 p-4">
         <div class="grid gap-3 sm:grid-cols-3">
           {number_input("纬度（°）", "0.0001", |w| w.lat, |w, v| w.lat = v.clamp(-90.0, 90.0))}
@@ -131,70 +136,81 @@ pub(super) fn PassPredictor() -> impl IntoView {
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            class=button_class(Variant::Default, Size::Default, "")
-            on:click=move |_| fetch()
+          <Button
+            variant=Variant::Default
+            size=Size::Default
+            on_click=Callback::new(move |_| fetch())
           >
-            {move || t("查询过境")}
-          </button>
+            {move || t("radio.look-up-passes")}
+          </Button>
           {station_pos.map(|(la, lo)| {
             view! {
-              <button
-                type="button"
-                class=button_class(Variant::Outline, Size::Default, "")
-                on:click=move |_| update(&|w| {
-                  w.lat = (la * 100.0).round() / 100.0;
-                  w.lon = (lo * 100.0).round() / 100.0;
-                })
+              <Button
+                variant=Variant::Outline
+                size=Size::Default
+                on_click=Callback::new(move |_| update(&|w| {
+                                w.lat = (la * 100.0).round() / 100.0;
+                                w.lon = (lo * 100.0).round() / 100.0;
+                              }))
               >
-                {tf("用本台网格 {}", &[&(station_grid).to_string()])}
-              </button>
+                {tf("radio.use-my-grid", &[&(station_grid).to_string()])}
+              </Button>
             }
           })}
           <span class="text-xs text-muted-foreground">
-            {move || t("数据来自 Celestrak / SGP4，展示未来 24 小时过境（本地时间）。")}
+            {move || t("radio.data-from-celestrak-sgp4")}
           </span>
         </div>
 
         <div class="rounded-lg border bg-muted/30 p-3">
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             <label class="inline-flex cursor-pointer items-center gap-2 font-medium">
-              <input
-                type="checkbox"
-                class="size-4 accent-primary"
-                prop:checked=move || watch.with(|w| w.alerts)
-                on:change=move |e| toggle_alerts(event_target_checked(&e))
+              <Checkbox
+                checked=Signal::derive(move || watch.with(|w| w.alerts))
+                on_change=Callback::new(move |on: bool| toggle_alerts(on))
               />
-              {move || t("收藏卫星过境前通知我")}
+              {move || t("radio.notify-me-before-a")}
             </label>
             <label class="inline-flex cursor-pointer items-center gap-2 font-medium">
-              <input
-                type="checkbox"
-                class="size-4 accent-primary"
-                prop:checked=move || watch.with(|w| w.apt_alert)
-                on:change=move |e| toggle_apt(event_target_checked(&e))
+              <Checkbox
+                checked=Signal::derive(move || watch.with(|w| w.apt_alert))
+                on_change=Callback::new(move |on: bool| toggle_apt(on))
               />
-              {move || t("NOAA 气象卫星过境前提醒我录制 APT")}
+              {move || t("radio.remind-me-to-record")}
             </label>
             <label class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-              {move || t("提前")}
-              <select
-                class="rounded border bg-background px-1.5 py-0.5"
-                prop:value=move || watch.with(|w| w.lead_min.to_string())
-                on:change=move |e| {
-                  if let Ok(v) = event_target_value(&e).parse::<u32>() {
-                    update(&|w| w.lead_min = v);
-                  }
+              {move || t("radio.ahead")}
+              {{
+                let lead_options: Vec<SelectOption> = LEAD_CHOICES
+                  .iter()
+                  .copied()
+                  .map(|m| {
+                    SelectOption::new(
+                      m.to_string(),
+                      Signal::derive(move || tf("radio.min", &[&m.to_string()])),
+                    )
+                  })
+                  .collect();
+                view! {
+                  <NativeSelect
+                    value=Signal::derive(move || watch.with(|w| w.lead_min.to_string()))
+                    on_change=Callback::new(move |v: String| {
+                      if let Ok(n) = v.parse::<u32>() {
+                        update(&|w| w.lead_min = n);
+                      }
+                    })
+                    options=lead_options
+                    size=ControlSize::Sm
+                    aria_label=Signal::derive(move || t("radio.ahead"))
+                    class="w-auto"
+                  />
                 }
-              >
-                {LEAD_CHOICES.iter().map(|m| view! { <option value=m.to_string()>{tf("{} 分钟", &[&(m).to_string()])}</option> }).collect_view()}
-              </select>
+              }}
             </label>
-            <span class="text-xs text-muted-foreground">{move || tf("通知权限：{}", &[&(permission.get()).to_string()])}</span>
+            <span class="text-xs text-muted-foreground">{move || tf("radio.notification-permission", &[&(permission.get()).to_string()])}</span>
           </div>
           <p class="mt-2 text-xs text-muted-foreground">
-            {move || t("点击下表中的 ☆ 收藏卫星。提醒在本应用打开期间生效（任意页面，可在后台标签页），关闭浏览器后不会提醒。")}
+            {move || t("radio.tap-in-the-table")}
           </p>
           {move || {
             let w = watch.get();
@@ -206,16 +222,16 @@ pub(super) fn PassPredictor() -> impl IntoView {
             let names = w.favorites.iter().map(|f| f.name.clone()).collect::<Vec<_>>().join("、");
             Some(view! {
               <div class="mt-3 space-y-1.5 text-sm">
-                <div class="text-xs text-muted-foreground">{tf("已收藏：{}", &[&(names).to_string()])}</div>
+                <div class="text-xs text-muted-foreground">{tf("radio.saved", &[&(names).to_string()])}</div>
                 {if next.is_empty() {
-                  view! { <div class="text-xs text-muted-foreground">{move || t("查询后在这里显示收藏卫星的下一次过境。")}</div> }.into_any()
+                  view! { <div class="text-xs text-muted-foreground">{move || t("radio.look-up-a-location")}</div> }.into_any()
                 } else {
                   next.into_iter().take(3).map(|p| view! {
                     <div class="flex flex-wrap items-baseline gap-x-2">
                       <span class="font-medium">{p.name.clone()}</span>
                       <span class="font-mono tabular-nums">{fmt_pass_time(p.aos)}</span>
                       <span class="text-xs text-muted-foreground">
-                        {tf("最高 {}° · {}方入境 · {} 分钟", &[&format!("{:.0}", p.max_elev), (compass(p.azimuth)), &((p.los - p.aos + 59) / 60).to_string()])}
+                        {tf("radio.max-entering-from-min", &[&format!("{:.0}", p.max_elev), (compass(p.azimuth)), &((p.los - p.aos + 59) / 60).to_string()])}
                       </span>
                     </div>
                   }).collect_view().into_any()
@@ -229,7 +245,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
           if loading.get() {
             return view! {
               <div class="rounded-lg bg-muted/40 px-3 py-8 text-center text-sm text-muted-foreground">
-                {move || t("正在计算过境预报…")}
+                {move || t("radio.calculating-pass-predictions")}
               </div>
             }
             .into_any();
@@ -237,7 +253,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
           if failed.get() {
             return view! {
               <div class="rounded-lg bg-muted/40 px-3 py-6 text-center text-sm text-muted-foreground">
-                {move || t("过境数据暂不可用（可能因网络受限），请稍后重试。")}
+                {move || t("radio.pass-data-is-unavailable")}
               </div>
             }
             .into_any();
@@ -245,7 +261,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
           if !queried.get() {
             return view! {
               <div class="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
-                {move || t("输入经纬度后点击「查询过境」，默认位置为北京。")}
+                {move || t("radio.enter-latitude-and-longitude")}
               </div>
             }
             .into_any();
@@ -259,18 +275,20 @@ pub(super) fn PassPredictor() -> impl IntoView {
           view! {
             <div class="space-y-2">
               <label class="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-                <input
-                  type="checkbox"
-                  class="size-4 accent-primary"
-                  prop:checked=move || only_fav.get()
-                  on:change=move |e| only_fav.set(event_target_checked(&e))
+                <Checkbox
+                  checked=only_fav
+                  on_change=Callback::new(move |on: bool| only_fav.set(on))
                 />
-                {tf("只看收藏（共 {} 次过境）", &[&(items.len()).to_string()])}
+                {tp(
+                  "radio.favourites-only-passes",
+                  items.len() as u32,
+                  &[&(items.len()).to_string()],
+                )}
               </label>
               {if items.is_empty() {
                 view! {
                   <div class="rounded-lg bg-muted/40 px-3 py-6 text-center text-sm text-muted-foreground">
-                    {move || t("没有符合条件的过境，可降低最小仰角或取消「只看收藏」。")}
+                    {move || t("radio.no-passes-match-the")}
                   </div>
                 }.into_any()
               } else {
@@ -279,12 +297,12 @@ pub(super) fn PassPredictor() -> impl IntoView {
                     <table class="w-full min-w-[560px] border-collapse text-sm">
                       <thead class="sticky top-0 bg-muted text-xs">
                         <tr>
-                          <th class=CELL><span class="sr-only">{move || t("收藏")}</span></th>
-                          <th class=CELL>{move || t("卫星")}</th>
-                          <th class=CELL>{move || t("开始（AOS）")}</th>
-                          <th class=CELL>{move || t("最大仰角")}</th>
-                          <th class=CELL>{move || t("入境方位")}</th>
-                          <th class=CELL>{move || t("时长")}</th>
+                          <th class=CELL><span class="sr-only">{move || t("exam.bookmark")}</span></th>
+                          <th class=CELL>{move || t("radio.satellite")}</th>
+                          <th class=CELL>{move || t("radio.start-aos")}</th>
+                          <th class=CELL>{move || t("radio.max-elevation")}</th>
+                          <th class=CELL>{move || t("radio.entry-bearing")}</th>
+                          <th class=CELL>{move || t("radio.duration")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -302,7 +320,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
                                     type="button"
                                     class=move || if fav() { "text-amber-500" } else { "text-muted-foreground hover:text-amber-500" }
                                     aria-pressed=move || fav().to_string()
-                                    aria-label=tf("收藏 {}", &[&(name).to_string()])
+                                    aria-label=tf("radio.save", &[&(name).to_string()])
                                     on:click={
                                       let name = name.clone();
                                       move |_| update(&|w| {
@@ -315,13 +333,13 @@ pub(super) fn PassPredictor() -> impl IntoView {
                                 </td>
                                 <td class=format!("{CELL} whitespace-nowrap font-medium")>{p.name.clone()}</td>
                                 <td class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")
-                                  title=tf("最大仰角时刻 {}", &[&(fmt_pass_time(p.max_elev_time)).to_string()])
+                                  title=tf("radio.max-elevation-at", &[&(fmt_pass_time(p.max_elev_time)).to_string()])
                                 >
                                   {fmt_pass_time(p.aos)}
                                 </td>
                                 <td class=format!("{CELL} whitespace-nowrap tabular-nums")>{format!("{:.0}°", p.max_elev)}</td>
                                 <td class=format!("{CELL} whitespace-nowrap tabular-nums")>{format!("{:.0}° {}", p.azimuth, compass(p.azimuth))}</td>
-                                <td class=format!("{CELL} whitespace-nowrap tabular-nums")>{tf("{} 分钟", &[&(dur_min).to_string()])}</td>
+                                <td class=format!("{CELL} whitespace-nowrap tabular-nums")>{tf("radio.min", &[&(dur_min).to_string()])}</td>
                               </tr>
                             }
                           })

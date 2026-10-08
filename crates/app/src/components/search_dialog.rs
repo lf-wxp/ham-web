@@ -282,7 +282,7 @@ pub fn SearchDialog() -> impl IntoView {
   });
 
   view! {
-    <Dialog open=open class="sm:max-w-2xl" show_close=false label=t("全站搜索")>
+    <Dialog open=open class="sm:max-w-2xl" show_close=false label=t("shell.site-search")>
       <div class="flex flex-col gap-3">
         // 搜索框
         <Input
@@ -290,8 +290,8 @@ pub fn SearchDialog() -> impl IntoView {
           on_change=Callback::new(move |v: String| query.set(v))
           kind=InputType::Search
           size=ControlSize::Lg
-          aria_label=Signal::derive(move || t("搜索关键词"))
-          placeholder=Signal::derive(move || t("搜索术语、频率、呼号、天线、元件……"))
+          aria_label=Signal::derive(move || t("shell.search-keywords"))
+          placeholder=Signal::derive(move || t("shell.search-terms-frequencies-callsigns"))
           prefix=move || view! { <Icon kind=IconKind::Search /> }
           clearable=true
         />
@@ -308,7 +308,7 @@ pub fn SearchDialog() -> impl IntoView {
             if trimmed.is_empty() {
               return view! {
                 <div class="px-2 py-8 text-center text-sm text-muted-foreground">
-                  {move || t("输入关键词检索全站知识，如「驻波比」「FT8」「三极管」「DXCC」「APRS」。")}
+                  {move || t("shell.type-keywords-to-search")}
                 </div>
               }
               .into_any();
@@ -327,7 +327,7 @@ pub fn SearchDialog() -> impl IntoView {
             if raw.is_empty() {
               return view! {
                 <div class="px-2 py-8 text-center text-sm text-muted-foreground">
-                  {move || t("未找到与「")} <span class="font-medium text-foreground">{q.clone()}</span> {move || t("」相关的内容，换个关键词试试。")}
+                  {move || t("shell.no-results-for-u")} <span class="font-medium text-foreground">{q.clone()}</span> {move || t("shell.u-201d-try-another")}
                 </div>
               }
               .into_any();
@@ -386,8 +386,8 @@ pub fn SearchDialog() -> impl IntoView {
 
         // 底部提示
         <div class="flex items-center justify-between border-t pt-3 text-[11px] text-muted-foreground">
-          <span>{move || t("点击结果跳转")}</span>
-          <span>{move || t("Esc 关闭 · / 唤起")}</span>
+          <span>{move || t("shell.click-a-result-to")}</span>
+          <span>{move || t("shell.esc-to-close-to")}</span>
         </div>
       </div>
     </Dialog>

@@ -9,9 +9,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn NvisPage() -> impl IntoView {
-  set_title(&t("NVIS 近垂直入射天波"));
+  set_title("shell.nvis");
   view! {
-    <KnowledgePage title=t("NVIS 近垂直入射天波") subtitle=t("近距离盲区通信的天线技术")>
+    <KnowledgePage title=t("shell.nvis") subtitle=t("radio.antenna-techniques-for-close")>
       <ConceptsSection title="核心概念" items=NVIS_CONCEPTS />
       <BulletSection title="应用与要点" items=NVIS_TIPS />
     </KnowledgePage>

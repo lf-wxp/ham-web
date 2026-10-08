@@ -9,9 +9,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn EmePage() -> impl IntoView {
-  set_title(&t("EME 月面反射（地月地）"));
+  set_title("shell.eme-moonbounce");
   view! {
-    <KnowledgePage title=t("EME 月面反射（地月地）") subtitle=t("天线阵列 · 功率 · 弱信号模式")>
+    <KnowledgePage title=t("shell.eme-moonbounce") subtitle=t("radio.antenna-arrays-power-weak")>
       <ConceptsSection title="核心概念" items=EME_CONCEPTS />
       <TableSection title="设备要求" headers=&["项目", "要求", "说明"] rows=EME_REQUIREMENTS min_width=560 />
       <BulletSection title="操作要点" items=EME_TIPS />

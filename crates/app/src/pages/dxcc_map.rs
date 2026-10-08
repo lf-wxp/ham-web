@@ -12,14 +12,14 @@ use leptos_router::hooks::use_navigate;
 
 use crate::components::common::{Legend, PageContainer, PageHeader};
 use crate::data;
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tp};
 use crate::pages::log::use_log_store;
 use crate::pages::map::{DxccOverlay, MapView};
 use crate::util::set_title;
 
 #[component]
 pub fn DxccMapPage() -> impl IntoView {
-  set_title(&t("DXCC 世界地图"));
+  set_title("radio.dxcc-world-map");
 
   let store = use_log_store();
   let shapes = RwSignal::new(DxccShapes::default());
@@ -88,12 +88,18 @@ pub fn DxccMapPage() -> impl IntoView {
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader
-        title=Signal::derive(move || t("DXCC 世界地图"))
-        subtitle=Signal::derive(move || t("按通联日志着色 · 已通联 / 已确认 / 未通联"))
+        title=Signal::derive(move || t("radio.dxcc-world-map"))
+        subtitle=Signal::derive(move || t("radio.colored-by-your-log"))
         actions=ViewFn::from(move || {
           view! {
             <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
-              {move || tf("已通联 {} / {} 实体", &[&(progress.get().dxcc.worked.len()).to_string(), &total_entities.to_string()])}
+              {move || {
+                tp(
+                  "radio.worked-entities",
+                  total_entities as u32,
+                  &[&(progress.get().dxcc.worked.len()).to_string(), &total_entities.to_string()],
+                )
+              }}
             </span>
           }
         })
@@ -103,19 +109,19 @@ pub fn DxccMapPage() -> impl IntoView {
         <section class="grid grid-cols-3 gap-2">
           <div class="rounded-xl border bg-card p-3 text-center">
             <div class="text-xl font-semibold tabular-nums">{move || worked.get().len()}</div>
-            <div class="mt-0.5 text-xs text-muted-foreground">{move || t("已通联")}</div>
+            <div class="mt-0.5 text-xs text-muted-foreground">{move || t("log.worked")}</div>
           </div>
           <div class="rounded-xl border bg-card p-3 text-center">
             <div class="text-xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
               {move || confirmed.get().len()}
             </div>
-            <div class="mt-0.5 text-xs text-muted-foreground">{move || t("已确认")}</div>
+            <div class="mt-0.5 text-xs text-muted-foreground">{move || t("log.confirmed")}</div>
           </div>
           <div class="rounded-xl border bg-card p-3 text-center">
             <div class="text-xl font-semibold tabular-nums">
               {move || total_entities.saturating_sub(worked.get().len())}
             </div>
-            <div class="mt-0.5 text-xs text-muted-foreground">{move || t("未通联")}</div>
+            <div class="mt-0.5 text-xs text-muted-foreground">{move || t("radio.not-worked-2")}</div>
           </div>
         </section>
 
@@ -130,7 +136,7 @@ pub fn DxccMapPage() -> impl IntoView {
             }
             on:click=move |_| selected_band.set(None)
           >
-            {move || t("全部")}
+            {move || t("exam.all")}
           </button>
           {move || {
             bands.get().into_iter().map(|b| {
@@ -161,14 +167,14 @@ pub fn DxccMapPage() -> impl IntoView {
             if loading.get() {
               view! {
                 <div class="py-12 text-center text-sm text-muted-foreground">
-                  {move || t("加载地图数据…")}
+                  {move || t("radio.loading-map-data")}
                 </div>
               }
               .into_any()
             } else if load_error.get() {
               view! {
                 <div class="py-12 text-center text-sm text-muted-foreground">
-                  {move || t("DXCC 边界数据加载失败，请运行 `cargo make dxcc-map` 生成 public/dxcc-entities.bin。")}
+                  {move || t("radio.failed-to-load-dxcc")}
                 </div>
               }
               .into_any()
@@ -191,10 +197,10 @@ pub fn DxccMapPage() -> impl IntoView {
                 ("h-3 w-3 rounded-sm border bg-foreground/5", "未通联"),
               ]
             />
-            <div class="text-xs text-muted-foreground">{move || t("滚轮/双指缩放 · 拖拽平移 · 双击复位 · 悬停查看实体")}</div>
+            <div class="text-xs text-muted-foreground">{move || t("radio.scroll-pinch-to-zoom")}</div>
           </div>
           <p class="mt-2 text-xs text-muted-foreground">
-            {move || t("着色基于本地通联日志自动统计，仅保存在浏览器中。已确认指 QSL 已收到（纸卡 / LoTW / eQSL）。岛屿等无国界数据的实体以中心点标记。")}
+            {move || t("radio.coloring-is-computed-from")}
           </p>
         </section>
       </PageContainer>

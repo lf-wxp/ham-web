@@ -102,13 +102,13 @@ pub fn WantedCard() -> impl IntoView {
       class="block rounded-2xl border bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
     >
       <div class="flex items-center justify-between gap-2">
-        <div class="font-semibold tracking-tight">{move || t("实时追台建议")}</div>
+        <div class="font-semibold tracking-tight">{move || t("radio.real-time-chase-suggestions")}</div>
         {move || {
           level().map(|lv| {
             let (label, class) = level_badge(lv);
             view! {
               <span class=format!("rounded-full px-2.5 py-0.5 text-xs font-medium {}", class)>
-                {tf("传播{}", &[&t(label)])}
+                {tf("radio.propagation", &[&t(label)])}
               </span>
             }
           })
@@ -127,7 +127,7 @@ pub fn WantedCard() -> impl IntoView {
         view! {
           <div>
             <p class="mt-2 text-xs text-muted-foreground">
-              {move || t("结合本地日志，这些稀有实体你还没通联过：")}
+              {move || t("radio.based-on-your-log")}
             </p>
             <div class="mt-2 space-y-1.5">
               {top
@@ -148,7 +148,7 @@ pub fn WantedCard() -> impl IntoView {
       })}
 
       <div class="mt-3 text-xs font-medium text-primary">
-        {move || if missing.is_empty() { t("去查看传播详情 →") } else { t("去追踪 →") }}
+        {move || if missing.is_empty() { t("radio.view-propagation") } else { t("radio.track-them") }}
       </div>
     </a>
   }

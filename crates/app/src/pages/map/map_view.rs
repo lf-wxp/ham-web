@@ -4,6 +4,7 @@ use leptos::svg;
 use super::projection::{K, MAP_H, MAP_W, WORLD_OFFSETS, polygon_points, project, simplify};
 use super::world_data::{CONTINENTS, COUNTRY_LABELS};
 use crate::i18n::t;
+use crate::ui::TextValue;
 
 /// 两个活动指针的欧氏距离（像素），用于双指捏合缩放。
 fn ptr_dist(a: &(i32, f64, f64), b: &(i32, f64, f64)) -> f64 {
@@ -19,7 +20,7 @@ fn ptr_dist(a: &(i32, f64, f64), b: &(i32, f64, f64)) -> f64 {
 /// - 叠加信息层由 `children` 注入（如 [`GraylineOverlay`] 或网格热力），随底图一同平铺。
 #[component]
 pub fn MapView(
-  #[prop(optional, into)] aria_label: String,
+  #[prop(optional, into)] aria_label: TextValue,
   /// 外部触发定位：(纬度, 经度)，设为 `Some` 时视图居中并缩放到 square 级别。
   #[prop(optional, into)]
   focus: Signal<Option<(f64, f64)>>,
@@ -34,10 +35,14 @@ pub fn MapView(
   click_signal: Option<RwSignal<Option<(f64, f64)>>>,
   children: ChildrenFn,
 ) -> impl IntoView {
-  let label = if aria_label.is_empty() {
-    t("世界地图（滚轮缩放、拖拽平移、双指缩放、双击复位、反子午线环绕）")
-  } else {
-    aria_label
+  // 空标签一律回退到「可滚动」提示。取 `TextValue` 而不是 `String`：调用点可能传
+  // `Signal::derive(move || t(…))`，静态化之后切语言就不会更新了。
+  let label = move || {
+    if aria_label.is_empty() {
+      t("log.world-map-scroll-to")
+    } else {
+      aria_label.get()
+    }
   };
 
   // ---- 视图状态（平移/缩放，x 允许环绕）----
@@ -468,7 +473,7 @@ pub fn MapView(
           type="button"
           class="flex h-7 w-7 items-center justify-center rounded-md border bg-background text-sm shadow-sm transition-colors hover:bg-accent"
           on:click=zoom_in
-          aria-label=move || t("放大")
+          aria-label=move || t("log.zoom-in")
         >
           "+"
         </button>
@@ -476,7 +481,7 @@ pub fn MapView(
           type="button"
           class="flex h-7 w-7 items-center justify-center rounded-md border bg-background text-sm shadow-sm transition-colors hover:bg-accent"
           on:click=zoom_out
-          aria-label=move || t("缩小")
+          aria-label=move || t("log.zoom-out")
         >
           "−"
         </button>
@@ -484,7 +489,7 @@ pub fn MapView(
           type="button"
           class="flex h-7 w-7 items-center justify-center rounded-md border bg-background text-sm shadow-sm transition-colors hover:bg-accent"
           on:click=reset_view
-          aria-label=move || t("复位视图")
+          aria-label=move || t("log.reset-view")
         >
           "⤢"
         </button>

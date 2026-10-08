@@ -17,7 +17,7 @@ use crate::util::copy_text;
 use super::super::grid_fill::band_color;
 use super::super::grid_filter::{GridFilters, QslStatus};
 use super::super::grid_geo::{great_circle_d, square_center, square_label};
-use crate::i18n::tf;
+use crate::i18n::tp;
 
 /// 波段显示顺序（低频 → 高频），筛选下拉据此排序。
 pub(super) const BAND_ORDER: &[&str] = &[
@@ -484,8 +484,9 @@ impl GridMapState {
       .map(|(m, n)| format!("{m}×{n}"))
       .collect::<Vec<_>>()
       .join(" · ");
-    let text = tf(
-      "通联统计\n总数 {} 条 · DXCC {} 个 · field {} · square {} · QSL 已确认 {}\n波段：{}\n模式：{}",
+    let text = tp(
+      "common.qso-statistics-total-records",
+      rows.len(),
       &[
         &(rows.len()).to_string(),
         &(self.dxcc_count.get()).to_string(),
@@ -538,6 +539,12 @@ impl GridMapState {
     let _ = a.set_attribute("download", "grid-map.svg");
     let a_html: web_sys::HtmlElement = a.unchecked_into();
     a_html.click();
-    let _ = web_sys::Url::revoke_object_url(&url);
+    // 延后回收：点完接着同步 revoke 会把下载掐断（见 [`crate::util::download_text`]）。
+    leptos::prelude::set_timeout(
+      move || {
+        let _ = web_sys::Url::revoke_object_url(&url);
+      },
+      std::time::Duration::from_millis(60_000),
+    );
   }
 }

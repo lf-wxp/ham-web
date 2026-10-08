@@ -539,7 +539,7 @@ impl Shared {
 /// 渲染模式。
 ///
 /// 背景层不必总是动：移动端整机功耗预算紧、散热差，静态一帧既保留了视觉效果，
-/// 又把 GPU 占用降到零，所以 [`crate::components::web_threads::WebThreadsBackground`]
+/// 又把 GPU 占用降到零，所以 [`crate::components::web_threads_background::WebThreadsBackground`]
 /// 在触屏设备上固定使用 [`RenderMode::Static`]。
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum RenderMode {

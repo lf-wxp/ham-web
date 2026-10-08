@@ -38,15 +38,15 @@ pub(super) fn PropagationWidget() -> impl IntoView {
     <a href="/solar" data-slot="card" class=card_class("group transition-colors hover:bg-accent/40")>
       <div data-slot="card-header" class=CARD_HEADER>
         <div data-slot="card-title" class=card_title_class("flex items-center justify-between")>
-          <span>{move || t("实时传播条件")}</span>
-          <span class="text-sm font-normal text-muted-foreground">{move || t("查看详情 →")}</span>
+          <span>{move || t("home.live-propagation")}</span>
+          <span class="text-sm font-normal text-muted-foreground">{move || t("home.details")}</span>
         </div>
       </div>
       <div data-slot="card-content" class=card_content_class("space-y-3")>
         <div class="grid grid-cols-3 gap-3">
-          <PvMetric label=t("K 指数") value=k loading=loading />
-          <PvMetric label=t("太阳通量") value=sfi loading=loading />
-          <PvMetric label=t("黑子数") value=ssn loading=loading />
+          <PvMetric label=t("home.k-index") value=k loading=loading />
+          <PvMetric label=t("home.solar-flux") value=sfi loading=loading />
+          <PvMetric label=t("home.sunspots") value=ssn loading=loading />
         </div>
         <div class="rounded-lg border bg-muted/40 px-3 py-2 text-sm">
           {move || {
@@ -60,12 +60,12 @@ pub(super) fn PropagationWidget() -> impl IntoView {
                   PropagationLevel::Poor => "text-red-700 dark:text-red-400",
                 };
                 view! {
-                  <span>{move || t("传播条件：")} <span class=format!("font-semibold {color}")>{move || t(lvl.label())}</span></span>
+                  <span>{move || t("home.conditions")} <span class=format!("font-semibold {color}")>{move || t(lvl.label())}</span></span>
                 }
                 .into_any()
               }
-              None if loading.get() => view! { <span>{move || t("正在获取传播条件…")}</span> }.into_any(),
-              None => view! { <span>{move || t("传播数据暂不可用，点击查看科普内容")}</span> }.into_any(),
+              None if loading.get() => view! { <span>{move || t("home.fetching-conditions-u-2026")}</span> }.into_any(),
+              None => view! { <span>{move || t("home.propagation-data-unavailable-u")}</span> }.into_any(),
             }
           }}
         </div>

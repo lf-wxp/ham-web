@@ -9,9 +9,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn BalunPage() -> impl IntoView {
-  set_title(&t("巴伦与不平衡变压器"));
+  set_title("knowledge.baluns-and-ununs");
   view! {
-    <KnowledgePage title=t("巴伦与不平衡变压器") subtitle=t("平衡-不平衡转换 · 阻抗变换 · 共模抑制")>
+    <KnowledgePage title=t("knowledge.baluns-and-ununs") subtitle=t("knowledge.balanced-to-unbalanced-impedance")>
       <ConceptsSection title="核心概念" items=BALUN_CONCEPTS />
       <TableSection title="阻抗比与用途" headers=&["阻抗比", "典型用途", "说明"] rows=BALUN_RATIOS min_width=640 />
       <BulletSection title="绕制与选型要点" items=BALUN_TIPS />

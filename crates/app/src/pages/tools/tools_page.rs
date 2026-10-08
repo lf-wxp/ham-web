@@ -104,7 +104,7 @@ fn scroll_to(id: &str) {
 
 #[component]
 pub fn ToolsPage() -> impl IntoView {
-  set_title(&t("小工具"));
+  set_title("shell.calculators");
   // 路由切换后不会自动跳到锚点（如存储告警里的 `/tools#backup`），挂载后手动滚动
   let hash = leptos_router::hooks::use_location().hash;
   Effect::new(move |_| {
@@ -118,8 +118,8 @@ pub fn ToolsPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("小工具")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("频率波长 · 功率 · 增益 · 电路计算")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.calculators")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("tools.frequency-wavelength-power-gain")}</div>
           </div>
         </div>
       </header>
@@ -147,8 +147,8 @@ pub fn ToolsPage() -> impl IntoView {
 
         <div class="grid gap-6 lg:grid-cols-[14rem_1fr]">
           <aside class="hidden lg:block">
-            <nav aria-label=move || t("工具目录") class="sticky top-20 rounded-xl border bg-card p-3">
-              <div class="mb-2 px-2 text-xs font-semibold text-muted-foreground">{move || t("工具导航")}</div>
+            <nav aria-label=move || t("tools.tool-catalogue") class="sticky top-20 rounded-xl border bg-card p-3">
+              <div class="mb-2 px-2 text-xs font-semibold text-muted-foreground">{move || t("tools.tool-navigation")}</div>
               <ul class="max-h-[calc(100vh-7rem)] space-y-0.5 overflow-y-auto pr-1">
                 {TOOL_NAV
                   .iter()
@@ -172,254 +172,260 @@ pub fn ToolsPage() -> impl IntoView {
 
           <div class="min-w-0 space-y-6">
             <section id="freq-wavelength" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("频率 ↔ 波长")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("λ = 300 / f（MHz），真空/空气中近似。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.frequency-wavelength")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.300-f-mhz-approximate")}</p>
               <div class="p-4"><FreqWavelength /></div>
             </section>
 
             <section id="dbm-power" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("dBm ↔ 功率")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("0 dBm = 1 mW，30 dBm = 1 W。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.dbm-power")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.0-dbm-1-mw")}</p>
               <div class="p-4"><DbmConverter /></div>
             </section>
 
             <section id="decibel-gain" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("分贝增益")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("功率比 dB = 10·lg(P₁/P₀)，电压比 dB = 20·lg(V₁/V₀)。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.decibel-gain")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.power-ratio-db-10")}</p>
               <div class="p-4"><DecibelGain /></div>
             </section>
 
             <section id="ohms-law" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("欧姆定律 / 电功率")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("U = I·R，P = U·I = I²R = U²/R。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.ohm-s-law-power")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.u-i-r-p")}</p>
               <div class="p-4"><OhmsLaw /></div>
             </section>
 
             <section id="cw-bandwidth" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("CW 必要带宽")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("Bn = B × K，B = WPM / 1.2，K 取 5（衰落）或 3（非衰落）。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.cw-required-bandwidth")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.bn-b-k-b")}</p>
               <div class="p-4"><CwBandwidth /></div>
             </section>
 
             <section id="lc-resonance" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("LC 谐振频率")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("f = 1 / (2π√(LC))，用 μH、pF、MHz 单位。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.lc-resonant-frequency")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.f-1-2-lc")}</p>
               <div class="p-4"><LcResonance /></div>
             </section>
 
             <section id="reactance" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("容抗 / 感抗")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("Xc = 1/(2πfC)，XL = 2πfL，用 MHz、pF、μH 单位。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.capacitive-inductive-reactance")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.xc-1-2-fc")}</p>
               <div class="p-4"><Reactance /></div>
             </section>
 
             <section id="antenna-length" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("天线长度")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("半波偶极 L = 143/f，1/4 波长 = 71.5/f，5/8 波长 = 187.5/f（米，f 为 MHz）。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.antenna-length")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.half-wave-dipole-l")}</p>
               <div class="p-4"><AntennaLength /></div>
             </section>
 
             <section id="antenna-matcher" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("天线匹配网络")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("L 型网络把负载电阻匹配到 50Ω，计算电感 / 电容元件值。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.antenna-matching-network")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.an-l-network-matches")}</p>
               <div class="p-4"><AntennaMatcher /></div>
             </section>
 
             <section id="smith" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("史密斯圆图")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("输入复阻抗（R ± jX），在圆图上定位并显示驻波比 / 反射系数 / 回波损耗。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.smith-chart")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.enter-a-complex-impedance")}</p>
               <div class="p-4"><SmithChart /></div>
+              <p class="px-4 pb-4 text-xs text-muted-foreground">
+                {move || t("tools.for-drag-to-position")}
+                <a href="/smith" class="ml-1 text-primary underline underline-offset-4">
+                  {move || t("tools.smith-chart-and-matching")}
+                </a>
+              </p>
             </section>
 
             <section id="swr" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("驻波比 / 反射系数")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("SWR = (1+|Γ|)/(1-|Γ|)，回波损耗 = -20·lg(|Γ|)。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.swr-reflection-coefficient")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.swr-1-1-return")}</p>
               <div class="p-4"><SwrConverter /></div>
             </section>
 
             <section id="cascade-gain" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("级联增益")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("各级增益 dB 直接相加。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.cascaded-gain")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.stage-gains-in-db")}</p>
               <div class="p-4"><CascadeGain /></div>
             </section>
 
             <section id="resistor" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("电阻串并联")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("串联 R = ΣR，并联 1/R = Σ(1/R)。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.resistors-in-series-parallel")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.series-r-r-parallel")}</p>
               <div class="p-4"><ResistorParallel /></div>
             </section>
 
             <section id="freq-units" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("频率单位换算")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("1 MHz = 1000 kHz = 1000000 Hz。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.frequency-unit-conversion")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.1-mhz-1000-khz")}</p>
               <div class="p-4"><FrequencyUnits /></div>
             </section>
 
             <section id="battery" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("电池续航估算")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("续航（小时）= 容量（mAh）÷ 电流（mA）。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.battery-runtime-estimate")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.runtime-hours-capacity-mah")}</p>
               <div class="p-4"><BatteryRuntime /></div>
             </section>
 
             <section id="dbm-dbuv" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("dBm ↔ dBμV")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("50Ω 阻抗下：dBμV = dBm + 107。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.dbm-db-v")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.at-50-db-v")}</p>
               <div class="p-4"><DbmDbuv /></div>
             </section>
 
             <section id="feedline-loss" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("馈线损耗")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("总损耗 = 每百米损耗 × 长度 / 100；功率损耗 = 1 − 10^(−dB/10)。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.feedline-loss")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.total-loss-loss-per")}</p>
               <div class="p-4"><FeedlineLoss /></div>
             </section>
 
             <section id="filter-design" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("滤波器设计")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("Butterworth 低通 / 高通 / 带通 / 带阻的 L/C 元件值。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.filter-design")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.l-c-component-values")}</p>
               <div class="p-4"><FilterDesign /></div>
             </section>
 
             <section id="callsign-lookup" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("呼号查询")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("按呼号前缀识别 DXCC 实体与是否稀有实体。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.callsign-lookup")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.identifies-the-dxcc-entity")}</p>
               <div class="p-4"><CallsignLookup /></div>
             </section>
 
             <section id="distance-bearing" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("两点距离 / 方位角")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("输入两个 Maidenhead 网格，计算大圆距离与初始方位角。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.distance-bearing")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.enter-two-maidenhead-grids")}</p>
               <div class="p-4"><DistanceBearing /></div>
             </section>
 
             <section id="propagation-muf" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("传播预测 MUF")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("由太阳通量 SFI 估算 foF2 / 单跳 MUF / OWF，并标注可用波段。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.propagation-muf")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.estimates-fof2-single-hop")}</p>
               <div class="p-4"><PropagationEstimator /></div>
             </section>
 
             <section id="doppler" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("卫星多普勒")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("按频率与相对径向速度估算卫星通信中的多普勒频移。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.satellite-doppler")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.estimates-the-doppler-shift")}</p>
               <div class="p-4"><DopplerCalculator /></div>
             </section>
 
             <section id="fspl" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("自由空间路径损耗")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("按距离与频率计算电磁波在自由空间传播的损耗。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.free-space-path-loss")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.computes-the-free-space")}</p>
               <div class="p-4"><FsplCalculator /></div>
             </section>
 
             <section id="eirp" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("EIRP 有效辐射功率")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("发射功率 + 天线增益 − 馈线损耗。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.eirp-effective-radiated-power")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.transmit-power-antenna-gain")}</p>
               <div class="p-4"><EirpCalculator /></div>
             </section>
 
             <section id="link-budget" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("链路预算")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("EIRP − 路径损耗 + 接收增益 → 到达功率。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.link-budget")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.eirp-path-loss-receive")}</p>
               <div class="p-4"><LinkBudgetCalculator /></div>
             </section>
 
             <section id="receiver-sensitivity" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("接收机灵敏度")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("由噪声底线 + 带宽 + 噪声系数估算灵敏度。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.receiver-sensitivity")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.estimates-sensitivity-from-the")}</p>
               <div class="p-4"><ReceiverSensitivity /></div>
             </section>
 
             <section id="noise-cascade" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("噪声系数级联")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("Friis 公式计算三级接收链的总噪声系数。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.noise-figure-cascade")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.friis-formula-computes-the")}</p>
               <div class="p-4"><NoiseCascade /></div>
             </section>
 
             <section id="gain-conversion" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("天线增益换算")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("dBi ↔ dBd 快速换算（相差 2.15 dB）。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.antenna-gain-conversion")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.quick-dbi-dbd-conversion")}</p>
               <div class="p-4"><GainConversion /></div>
             </section>
 
             <section id="resistor-code" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("电阻色环")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("4 色环电阻：前两环数字 + 乘数 + 容差。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.resistor-colour-code")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.4-band-resistor-first")}</p>
               <div class="p-4"><ResistorColorCode /></div>
             </section>
 
             <section id="contest-scorer" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("竞赛记分")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("CQ WPX / CQ WW / ARRL DX 的分数快速计算。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.contest-scoring")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.quick-score-estimates-for")}</p>
               <div class="p-4"><ContestScorer /></div>
             </section>
 
             <section id="coil-yagi" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("线圈 / Yagi 计算")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("空心线圈电感与 3 单元 Yagi 振子长度估算。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.coil-yagi-calculator")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.air-core-coil-inductance")}</p>
               <div class="p-4"><CoilYagiCalculator /></div>
             </section>
 
             <section id="attenuator" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("衰减器")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("对称 T 型 / π 型电阻衰减器，按指定衰减量与特性阻抗计算元件值。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.attenuator")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.symmetrical-t-resistive-attenuators-2")}</p>
               <div class="p-4"><AttenuatorCalculator /></div>
             </section>
 
             <section id="transformer" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("变压器阻抗")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("按初级 / 次级阻抗计算变压器匝数比与阻抗比。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.transformer-impedance")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.compute-transformer-turns-ratio")}</p>
               <div class="p-4"><TransformerCalculator /></div>
             </section>
 
             <section id="utc-clock" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("UTC 时间")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("实时 UTC / Zulu 时钟与常用时区对照。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.utc-time-2")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.live-utc-zulu-clock")}</p>
               <div class="p-4"><UtcClock /></div>
             </section>
 
             <section id="tx-line" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("传输线阻抗")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("同轴 / 平行双线 / 微带线的特性阻抗。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.transmission-line-impedance")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.characteristic-impedance-of-coax")}</p>
               <div class="p-4"><TxLine /></div>
             </section>
 
             <section id="wire-gauge" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("线径压降")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("按电流与长度估算直流供电线径与回路压降。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.wire-gauge-and-voltage")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.estimate-dc-supply-wire")}</p>
               <div class="p-4"><WireGauge /></div>
             </section>
 
             <section id="oscillator" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("晶体振荡")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("晶体频率牵引（负载电容 → ppm）与串联谐振。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.crystal-oscillator")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.crystal-frequency-pulling-load")}</p>
               <div class="p-4"><Oscillator /></div>
             </section>
 
             <section id="rf-exposure" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("射频暴露评估")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("按 FCC OET-65 估算功率密度与最小安全距离。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.rf-exposure-evaluation")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.estimate-power-density-and")}</p>
               <div class="p-4"><RfExposure /></div>
             </section>
 
             <section id="tone-squelch" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("亚音与中继频差")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("中继频差计算与 CTCSS / DCS 亚音码表。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.tone-squelch-and-repeater")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.repeater-offset-calculation-plus")}</p>
               <div class="p-4"><ToneSquelch /></div>
             </section>
 
             <section id="aprs-codec" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("APRS 编解码")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("APRS 未压缩位置报文的编解码。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.aprs-codec")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.encode-and-decode-uncompressed")}</p>
               <div class="p-4"><AprsCodec /></div>
             </section>
 
             <section id="mode-encoder" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("数字模式编码")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("文本 → 摩尔斯（CW）与 RTTY（ITA2）比特流。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.digital-mode-encoding")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.text-to-morse-cw")}</p>
               <div class="p-4"><ModeEncoder /></div>
             </section>
 
             <section id="backup" class="scroll-mt-24 rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("数据备份")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("导出全部本地数据（进度、错题、收藏、日志等）为 JSON；可在其他设备恢复，或合并导入多台设备的数据。")}</p>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.data-backup")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("settings.export-all-local-data")}</p>
               <div class="p-4"><BackupTool /></div>
             </section>
           </div>

@@ -37,9 +37,9 @@ fn render_rgba(rgba: &[u8], width: u32, height: u32) -> Result<String, String> {
   let ctx = canvas
     .get_context("2d")
     .map_err(|e| js_error_message(&e))?
-    .ok_or_else(|| t("Canvas 2D 上下文不可用"))?
+    .ok_or_else(|| t("common.canvas-2d-context-not"))?
     .dyn_into::<web_sys::CanvasRenderingContext2d>()
-    .map_err(|_| t("Canvas 2D 上下文不可用"))?;
+    .map_err(|_| t("common.canvas-2d-context-not"))?;
 
   let img = ImageData::new_with_u8_clamped_array_and_sh(wasm_bindgen::Clamped(rgba), width, height)
     .map_err(|e| js_error_message(&e))?;
@@ -69,7 +69,7 @@ fn message_handler(
     match outcome {
       Ok(r) => result.set(Some(r)),
       Err(e) => error.set(Some(if e.is_empty() {
-        t("解码失败，请确认是 SSTV 音频（WAV）")
+        t("tools.decoding-failed-make-sure")
       } else {
         e
       })),
@@ -106,7 +106,7 @@ fn to_array_buffer(bytes: &[u8]) -> js_sys::ArrayBuffer {
 
 #[component]
 pub fn SstvDecoderPage() -> impl IntoView {
-  set_title(&t("SSTV 解码器"));
+  set_title("tools.sstv-decoder");
 
   let processing = RwSignal::new(false);
   let result = RwSignal::new(None::<SstvResult>);
@@ -142,7 +142,7 @@ pub fn SstvDecoderPage() -> impl IntoView {
     if size > MAX_BYTES {
       let mb = size as f64 / 1024.0 / 1024.0;
       error.set(Some(tf(
-        "文件过大（约 {} MB），上限 {} MB。请先降采样到 8–16 kHz 单声道，或只截取图像那一段。",
+        "tools.file-too-large-about-3",
         &[&format!("{mb:.0}"), &format!("{}", MAX_BYTES / 1024 / 1024)],
       )));
       return;
@@ -174,7 +174,7 @@ pub fn SstvDecoderPage() -> impl IntoView {
               }
             }
             None => {
-              error.set(Some(t("无法创建解码 Worker，请刷新页面重试")));
+              error.set(Some(t("radio.could-not-create-the")));
               processing.set(false);
             }
           }
@@ -202,14 +202,14 @@ pub fn SstvDecoderPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("SSTV 解码器")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("音频 FM 解调 + VIS 识别 · 后台线程离线处理")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("tools.sstv-decoder")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("tools.audio-fm-demodulation-vis")}</div>
           </div>
           <a
             href="/sstv"
             class="rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
-            {move || t("SSTV 速查")}
+            {move || t("tools.sstv-reference")}
           </a>
         </div>
       </header>
@@ -217,9 +217,9 @@ pub fn SstvDecoderPage() -> impl IntoView {
       <div class="mx-auto max-w-5xl space-y-5 px-4 py-5">
         <section class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
           <p>
-            {move || t("上传一段 SSTV 慢扫描电视音频（WAV），即可在浏览器本地解调并重建图像，支持 Martin / Scottie / Robot 系列模式。")}
-            {move || t("解码在 Web Worker 后台线程完成，不阻塞页面。")}
-            {move || t("音频不会上传到服务器。")}
+            {move || t("tools.upload-an-sstv-audio")}
+            {move || t("common.decoding-runs-in-a")}
+            {move || t("common.the-audio-is-never")}
           </p>
         </section>
 
@@ -233,10 +233,10 @@ pub fn SstvDecoderPage() -> impl IntoView {
                     class="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed p-8 text-center transition-all duration-200 hover:bg-muted/40 cursor-pointer"
                   >
                     <Icon kind=IconKind::Camera class="mb-1 h-8 w-8 text-muted-foreground" />
-                    <span class="text-sm font-medium">{move || t("选择 SSTV 录音（WAV）")}</span>
-                    <span class="text-xs text-muted-foreground">{move || t("点击选择或拖拽音频文件到此处")}</span>
+                    <span class="text-sm font-medium">{move || t("tools.choose-an-sstv-recording")}</span>
+                    <span class="text-xs text-muted-foreground">{move || t("tools.click-to-choose-or-2")}</span>
                     <span class="mt-1 text-xs text-muted-foreground">
-                      {move || t("支持 Martin M1/M2、Scottie S1/S2/DX、Robot 36/72；推荐 8–16 kHz 单声道 WAV")}
+                      {move || t("tools.supports-martin-m1-m2")}
                     </span>
                   </label>
                   <input
@@ -266,9 +266,9 @@ pub fn SstvDecoderPage() -> impl IntoView {
                     <span class="text-sm text-muted-foreground">
                       {move || {
                         if reading.get() {
-                          t("正在读取文件…")
+                          t("tools.reading-file")
                         } else {
-                          t("正在后台解码，请稍候…")
+                          t("radio.decoding-in-the-background")
                         }
                       }}
                     </span>
@@ -277,7 +277,7 @@ pub fn SstvDecoderPage() -> impl IntoView {
                       class="rounded-md border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       on:click=cancel
                     >
-                      {move || t("取消")}
+                      {move || t("exam.cancel")}
                     </button>
                   </div>
                 }
@@ -290,7 +290,7 @@ pub fn SstvDecoderPage() -> impl IntoView {
                 <div class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
                   <Icon kind=IconKind::AlertCircle class="mt-0.5 h-5 w-5 shrink-0" />
                   <div class="flex-1">
-                    <div class="font-medium">{move || t("解码失败")}</div>
+                    <div class="font-medium">{move || t("radio.decoding-failed")}</div>
                     <div class="mt-1 text-sm">{e}</div>
                   </div>
                 </div>
@@ -315,7 +315,7 @@ pub fn SstvDecoderPage() -> impl IntoView {
                   </div>
                   <img
                     src=r.image_url.clone()
-                    alt=t("SSTV 解码结果")
+                    alt=t("tools.sstv-decode-result")
                     class="mx-auto w-full max-w-full rounded-lg border"
                   />
                   <div class="flex justify-center gap-2">
@@ -325,7 +325,7 @@ pub fn SstvDecoderPage() -> impl IntoView {
                       class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                     >
                       <Icon kind=IconKind::Download class="h-4 w-4" />
-                      {move || t("下载 PNG")}
+                      {move || t("tools.download-png")}
                     </a>
                     <button
                       type="button"
@@ -333,7 +333,7 @@ pub fn SstvDecoderPage() -> impl IntoView {
                       on:click=move |_| reset(())
                     >
                       <Icon kind=IconKind::RefreshCw class="h-4 w-4" />
-                      {move || t("解码其他文件")}
+                      {move || t("tools.decode-another-file")}
                     </button>
                   </div>
                 </div>

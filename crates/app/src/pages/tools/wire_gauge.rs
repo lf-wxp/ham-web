@@ -1,8 +1,10 @@
 use ham_web_core::wire_gauge::{AWG_TABLE, copper_resistance_ohm, voltage_drop};
 use leptos::prelude::*;
 
-use super::{INPUT, fmt_num};
+use super::fmt_num;
 use crate::i18n::{t, tf};
+use crate::ui::{Field, NumberField};
+use crate::util::unique_id;
 
 /// 直流供电线径与压降估算。
 #[component]
@@ -11,74 +13,75 @@ pub(super) fn WireGauge() -> impl IntoView {
   let len = RwSignal::new(5.0);
   let diameter = RwSignal::new(1.628);
 
+  let amps_id = unique_id("wire-gauge-amps");
+  let len_id = unique_id("wire-gauge-len");
+  let diameter_id = unique_id("wire-gauge-diameter");
+
   view! {
     <div class="space-y-4">
       <div class="grid gap-3 sm:grid-cols-3">
-        <label class="flex flex-col gap-1.5 text-sm">
-          <span class="text-xs text-muted-foreground">{move || t("电流（A）")}</span>
-          <input
-            type="number"
-            prop:value=move || amps.get().to_string()
-            on:input=move |e| {
-              if let Ok(v) = event_target_value(&e).parse::<f64>() {
+        <Field label=Signal::derive(move || t("tools.current-a")) r#for=amps_id.clone()>
+          <NumberField
+            id=amps_id
+            value=Signal::derive(move || amps.get().to_string())
+            on_change=Callback::new(move |v: String| {
+              if let Ok(v) = v.trim().parse::<f64>() {
                 amps.set(v);
               }
-            }
-            class=INPUT
+            })
+            controls=false
           />
-        </label>
-        <label class="flex flex-col gap-1.5 text-sm">
-          <span class="text-xs text-muted-foreground">{move || t("单程长度（m）")}</span>
-          <input
-            type="number"
-            prop:value=move || len.get().to_string()
-            on:input=move |e| {
-              if let Ok(v) = event_target_value(&e).parse::<f64>() {
+        </Field>
+        <Field label=Signal::derive(move || t("tools.one-way-length-m")) r#for=len_id.clone()>
+          <NumberField
+            id=len_id
+            value=Signal::derive(move || len.get().to_string())
+            on_change=Callback::new(move |v: String| {
+              if let Ok(v) = v.trim().parse::<f64>() {
                 len.set(v);
               }
-            }
-            class=INPUT
+            })
+            controls=false
           />
-        </label>
-        <label class="flex flex-col gap-1.5 text-sm">
-          <span class="text-xs text-muted-foreground">{move || t("导线直径（mm）")}</span>
-          <input
-            type="number"
-            prop:value=move || diameter.get().to_string()
-            on:input=move |e| {
-              if let Ok(v) = event_target_value(&e).parse::<f64>() {
+        </Field>
+        <Field label=Signal::derive(move || t("tools.conductor-diameter-mm")) r#for=diameter_id.clone()>
+          <NumberField
+            id=diameter_id
+            value=Signal::derive(move || diameter.get().to_string())
+            on_change=Callback::new(move |v: String| {
+              if let Ok(v) = v.trim().parse::<f64>() {
                 diameter.set(v);
               }
-            }
-            class=INPUT
+            })
+            controls=false
           />
-        </label>
+        </Field>
       </div>
       <div class="space-y-1 rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
         <div class="tabular-nums">
           {move || {
             let r = copper_resistance_ohm(len.get(), diameter.get());
-            tf("单根导线电阻 {} Ω（回路 ×2）", &[&fmt_num(r)])
+            tf("tools.single-conductor-resistance-2", &[&fmt_num(r)])
           }}
         </div>
         <div class="tabular-nums">
           {move || {
             let vd = voltage_drop(amps.get(), len.get(), diameter.get());
-            tf("回路压降 {} V", &[&fmt_num(vd)])
+            tf("tools.loop-voltage-drop-v", &[&fmt_num(vd)])
           }}
         </div>
       </div>
 
       <div>
-        <div class="mb-1.5 text-xs text-muted-foreground">{move || t("常用 AWG 线规参考")}</div>
+        <div class="mb-1.5 text-xs text-muted-foreground">{move || t("tools.common-awg-wire-gauges")}</div>
         <div class="overflow-x-auto">
           <table class="w-full border-collapse text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>
-                <th class="border px-3 py-2 text-left">{move || t("AWG")}</th>
-                <th class="border px-3 py-2 text-left">{move || t("直径 mm")}</th>
-                <th class="border px-3 py-2 text-left">{move || t("截面积 mm²")}</th>
-                <th class="border px-3 py-2 text-left">{move || t("Ω/100m")}</th>
+                <th class="border px-3 py-2 text-left">{move || t("common.awg")}</th>
+                <th class="border px-3 py-2 text-left">{move || t("tools.diameter-mm")}</th>
+                <th class="border px-3 py-2 text-left">{move || t("tools.cross-section-mm")}</th>
+                <th class="border px-3 py-2 text-left">{move || t("common.ohm-per-100m")}</th>
               </tr>
             </thead>
             <tbody>
@@ -100,7 +103,7 @@ pub(super) fn WireGauge() -> impl IntoView {
         </div>
       </div>
       <p class="text-xs text-muted-foreground">
-        {move || t("载流能力取决于绝缘与敷设方式，表中仅给出电阻参考；大电流供电建议压降控制在 3% 以内。")}
+        {move || t("tools.current-ratings-depend-on")}
       </p>
     </div>
   }

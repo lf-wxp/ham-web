@@ -28,34 +28,34 @@ pub fn PracticeSettingsDialog(
   view! {
     <Dialog open=open class="sm:max-w-[520px]">
       <DialogHeader>
-        <DialogTitle>{move || t("设置")}</DialogTitle>
-        <DialogDescription>{move || t("题序、显示答案与快捷键说明")}</DialogDescription>
+        <DialogTitle>{move || t("exam.settings")}</DialogTitle>
+        <DialogDescription>{move || t("exam.order-answer-display-and")}</DialogDescription>
       </DialogHeader>
       <div class="space-y-5">
         <div class="space-y-2">
-          <div class="text-sm text-muted-foreground">{move || t("顺序/随机")}</div>
+          <div class="text-sm text-muted-foreground">{move || t("exam.order-random")}</div>
           <RadioGroup class="flex items-center gap-4" value=order_value on_change=on_order>
             <div class="flex items-center space-x-2">
               <RadioGroupItem value="sequential" id="order-seq" />
-              <Label r#for="order-seq">{move || t("顺序")}</Label>
+              <Label r#for="order-seq">{move || t("exam.sequential")}</Label>
             </div>
             <div class="flex items-center space-x-2">
               <RadioGroupItem value="random" id="order-rand" />
-              <Label r#for="order-rand">{move || t("随机")}</Label>
+              <Label r#for="order-rand">{move || t("exam.random")}</Label>
             </div>
           </RadioGroup>
         </div>
         <div class="flex items-center gap-2">
           <Checkbox id="show-ans" checked=show_answer on_change=on_toggle_show_answer />
-          <Label r#for="show-ans">{move || t("显示正确答案")}</Label>
+          <Label r#for="show-ans">{move || t("exam.show-correct-answer")}</Label>
         </div>
         <div class="flex items-center gap-2">
           <Checkbox id="show-expl" checked=show_explanation on_change=on_toggle_show_explanation />
-          <Label r#for="show-expl">{move || t("显示答案解析")}</Label>
+          <Label r#for="show-expl">{move || t("exam.show-explanation")}</Label>
         </div>
         <Separator />
         <div class="space-y-2 text-sm">
-          <div class="text-muted-foreground">{move || t("快捷键")}</div>
+          <div class="text-muted-foreground">{move || t("exam.shortcuts")}</div>
           // 键位统一取自 SHORTCUT_HELP，避免这里与帮助面板各写一份而逐渐脱节。
           {SHORTCUT_HELP
             .iter()

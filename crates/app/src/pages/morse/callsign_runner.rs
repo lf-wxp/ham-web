@@ -8,12 +8,13 @@ use leptos::prelude::*;
 use crate::icons::{Icon, IconKind};
 use crate::morse_audio::{play_morse_timed_with, play_pileup};
 use crate::morse_settings::use_morse_settings;
-use crate::util::{random, storage};
+use crate::ui::{Button, ButtonKind, Checkbox, ControlSize, Field, Input, Slider};
+use crate::util::{random, storage, unique_id};
 
-use super::{btn_primary, encode_words, pill_class};
+use super::{encode_words, pill_class};
 
 use super::callsign_session::{KEY, Logged, SESSION_QSOS, Session, save};
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 
 /// 竞赛模拟抄收：对方发 `呼号 5NN 序号`，抄下呼号与序号后提交，每轮 10 个通联计分。
 #[component]
@@ -205,37 +206,39 @@ pub(super) fn CallsignRunner() -> impl IntoView {
     }
   };
 
-  let toggle =
-    move |label: &'static str, get: fn(&RunnerStats) -> bool, set: fn(&mut RunnerStats, bool)| {
-      view! {
-        <label class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-          <input
-            type="checkbox"
-            class="accent-primary"
-            prop:checked=move || stats.with(get)
-            on:change=move |e| {
-              let on = event_target_checked(&e);
-              stats.update(|s| set(s, on));
-              save(&stats.get_untracked());
-            }
-          />
-          {label}
-        </label>
-      }
-    };
+  let toggle = move |label: &'static str,
+                     get: fn(&RunnerStats) -> bool,
+                     set: fn(&mut RunnerStats, bool)| {
+    view! {
+      <label class="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
+        <Checkbox
+          checked=Signal::derive(move || stats.with(get))
+          on_change=Callback::new(move |on: bool| {
+            stats.update(|s| set(s, on));
+            save(&stats.get_untracked());
+          })
+        />
+        {label}
+      </label>
+    }
+  };
 
   let last = move || session.with(|s| s.as_ref().and_then(|s| s.log.last().cloned()));
   let in_progress = move || session.with(|s| s.as_ref().is_some_and(|s| !s.finished()));
+
+  // `Field` 的标签与控件是兄弟节点，`r#for` / `id` 必须配对才能点击标签聚焦输入框。
+  let call_id = unique_id("morse-call");
+  let serial_id = unique_id("morse-serial");
 
   view! {
     <section class="rounded-xl border bg-card">
       <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
         <h2 class="mr-auto text-sm font-semibold">
-          {move || t("呼号抄收 · 竞赛模拟")}
+          {move || t("morse.callsign-copying-contest-simulation")}
           <span class="ml-2 text-xs font-normal text-muted-foreground">
             {move || {
               let s = stats.get();
-              tf("最高 {} 分 · 抄对最高 {} WPM", &[&(s.best_score).to_string(), &(s.top_wpm).to_string()])
+              tp("common.best-points-copied-up", s.best_score, &[&(s.best_score).to_string(), &(s.top_wpm).to_string()])
             }}
           </span>
         </h2>
@@ -247,29 +250,26 @@ pub(super) fn CallsignRunner() -> impl IntoView {
           }
           class="rounded-md px-2 py-0.5 text-xs text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
         >
-          {move || t("重置成绩")}
+          {move || t("morse.reset-score")}
         </button>
       </div>
 
       <div class="space-y-4 p-4">
         <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
           <div class="flex items-center gap-2">
-            <span class="text-xs text-muted-foreground">{move || t("速度")}</span>
-            <input
-              type="range"
-              aria-label=move || t("速度")
-              min=MIN_WPM
-              max=MAX_WPM
-              step="1"
-              prop:value=move || stats.with(|s| s.wpm).to_string()
-              aria-valuetext=move || format!("{} WPM", stats.with(|s| s.wpm))
-              on:input=move |e| {
-                if let Ok(v) = event_target_value(&e).parse::<u32>() {
-                  stats.update(|s| s.wpm = v);
-                  save(&stats.get_untracked());
-                }
-              }
-              class="h-1.5 w-32 accent-primary"
+            <span class="text-xs text-muted-foreground">{move || t("radio.speed")}</span>
+            <Slider
+              value=Signal::derive(move || f64::from(stats.with(|s| s.wpm)))
+              on_change=Callback::new(move |v: f64| {
+                stats.update(|s| s.wpm = v as u32);
+                save(&stats.get_untracked());
+              })
+              min=f64::from(MIN_WPM)
+              max=f64::from(MAX_WPM)
+              step=1.0
+              aria_label=Signal::derive(move || t("radio.speed"))
+              aria_valuetext=Signal::derive(move || format!("{} WPM", stats.with(|s| s.wpm)))
+              class="w-32"
             />
             <span class="w-14 text-xs tabular-nums text-muted-foreground">{move || stats.with(|s| s.wpm)} " WPM"</span>
           </div>
@@ -284,8 +284,8 @@ pub(super) fn CallsignRunner() -> impl IntoView {
               let (n, score) = session.with(|s| s.as_ref().map_or((0, 0), |s| (s.attempted() + 1, s.score())));
               view! {
                 <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm">
-                  <span class="tabular-nums">{tf("第 {} / {} 个通联", &[&(n).to_string(), &(SESSION_QSOS).to_string()])}</span>
-                  <span class="tabular-nums text-muted-foreground">{tf("得分 {}", &[&(score).to_string()])}</span>
+                  <span class="tabular-nums">{tf("common.qso", &[&(n).to_string(), &(SESSION_QSOS).to_string()])}</span>
+                  <span class="tabular-nums text-muted-foreground">{tf("common.score", &[&(score).to_string()])}</span>
                   {move || {
                     let d = wpm_delta.get();
                     (d != 0).then(|| {
@@ -297,7 +297,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                       let sign = if d > 0 { "+" } else { "" };
                       view! {
                         <span class=cls>
-                          {tf("速度 {}{} WPM", &[(sign), &(d).to_string()])}
+                          {tf("common.speed-wpm", &[(sign), &(d).to_string()])}
                         </span>
                       }
                     })
@@ -316,34 +316,34 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                         view! { <Icon kind=IconKind::Play class="h-4 w-4" /> }.into_any()
                       }
                     }}
-                    {move || t("重听")}
+                    {move || t("morse.replay")}
                   </button>
                   <button
                     type="button"
                     on:click=move |_| skip()
                     class="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                   >
-                    {move || t("跳过")}
+                    {move || t("exam.skip")}
                   </button>
                   <button
                     type="button"
                     on:click=move |_| finish()
                     class="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                   >
-                    {move || t("结束本轮")}
+                    {move || t("morse.end-round")}
                   </button>
                   <button
                     type="button"
                     on:click=move |_| reveal()
                     class="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                   >
-                    {move || t("看答案")}
+                    {move || t("morse.show-answer")}
                   </button>
                 </div>
                 {move || {
                   stats.with(|s| s.pileup).then(|| {
                     view! {
-                      <div class="text-xs text-amber-700 dark:text-amber-300">{move || t("叠听：干扰台音调较低，请抄音调较高的目标台")}</div>
+                      <div class="text-xs text-amber-700 dark:text-amber-300">{move || t("morse.pile-up-the-interferer")}</div>
                     }
                   })
                 }}
@@ -356,7 +356,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                   on:click=move |_| start()
                   class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-sm shadow-primary/20 transition-all duration-200 ease-out hover:bg-primary/90 hover:shadow-md hover:shadow-primary/25 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
-                  {move || if session.with(Option::is_some) { t("再来一轮") } else { t("开始一轮（10 个通联）") }}
+                  {move || if session.with(Option::is_some) { t("exam.another-round") } else { t("morse.start-a-round-10") }}
                 </button>
               }
               .into_any()
@@ -369,50 +369,52 @@ pub(super) fn CallsignRunner() -> impl IntoView {
               submit();
             }
           >
-            <label class="flex flex-col gap-1 text-xs text-muted-foreground">
-              {move || t("呼号")}
-              <input
+            <Field label=Signal::derive(move || t("log.callsign")) r#for=call_id.clone()>
+              <Input
+                id=call_id.clone()
                 node_ref=call_ref
-                prop:value=move || call.get()
-                on:input=move |e| call.set(event_target_value(&e))
-                on:keydown=move |e| {
+                value=call
+                on_change=Callback::new(move |v: String| call.set(v))
+                on_keydown=Callback::new(move |e: web_sys::KeyboardEvent| {
                   if e.key() == "Enter" && serial.with_untracked(String::is_empty) {
                     e.prevent_default();
                     focus(serial_ref);
                   }
-                }
-                prop:disabled=move || !in_progress()
+                })
+                disabled=Signal::derive(move || !in_progress())
                 autocomplete="off"
                 autocapitalize="characters"
                 spellcheck="false"
-                class="h-10 w-40 rounded-lg border bg-background px-3 text-center font-mono text-lg font-semibold uppercase tracking-widest outline-none transition-[border-color,box-shadow] duration-200 focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-not-allowed disabled:opacity-50"
+                size=ControlSize::Lg
+                class="h-10 w-40 px-3 text-center font-mono text-lg md:text-lg font-semibold uppercase tracking-widest"
               />
-            </label>
-            <label class="flex flex-col gap-1 text-xs text-muted-foreground">
-              {move || t("序号")}
-              <input
+            </Field>
+            <Field label=Signal::derive(move || t("contest.serial")) r#for=serial_id.clone()>
+              <Input
+                id=serial_id.clone()
                 node_ref=serial_ref
-                prop:value=move || serial.get()
-                on:input=move |e| serial.set(event_target_value(&e))
-                prop:disabled=move || !in_progress()
+                value=serial
+                on_change=Callback::new(move |v: String| serial.set(v))
+                disabled=Signal::derive(move || !in_progress())
                 autocomplete="off"
                 inputmode="numeric"
-                class="h-10 w-24 rounded-lg border bg-background px-3 text-center font-mono text-lg font-semibold uppercase tracking-widest outline-none transition-[border-color,box-shadow] duration-200 focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-not-allowed disabled:opacity-50"
+                size=ControlSize::Lg
+                class="h-10 w-24 px-3 text-center font-mono text-lg md:text-lg font-semibold uppercase tracking-widest"
               />
-            </label>
-            <button
-              type="submit"
-              prop:disabled=move || !in_progress()
-              class=btn_primary("")
+            </Field>
+            <Button
+              kind=ButtonKind::Submit
+              class="rounded-lg h-10"
+              disabled=Signal::derive(move || !in_progress())
             >
-              {move || t("记录")}
-            </button>
+              {move || t("contest.log-it")}
+            </Button>
           </form>
           <div aria-live="polite" class="min-h-5 text-sm">
             {move || revealed.get().map(|ex| {
               view! {
                 <span class="text-muted-foreground">
-                  {move || t("答案 ")} <span class="font-mono font-semibold">{format!("{} 5NN {}", ex.call, ex.serial)}</span>
+                  {move || t("morse.answer")} <span class="font-mono font-semibold">{format!("{} 5NN {}", ex.call, ex.serial)}</span>
                 </span>
               }
             })}
@@ -425,13 +427,13 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                 </span>
                 {(!ok).then(|| view! {
                   <span class="ml-2 text-xs text-muted-foreground">
-                    {tf("你抄的：{} {}", &[(if l.call.is_empty() { "—" } else { &l.call }), (if l.serial.is_empty() { "—" } else { &l.serial })])}
+                    {tf("common.you-copied", &[(if l.call.is_empty() { "—" } else { &l.call }), (if l.serial.is_empty() { "—" } else { &l.serial })])}
                   </span>
                 })}
               }
             })}
           </div>
-          <p class="text-xs text-muted-foreground">{move || t("抄完呼号按回车跳到序号，再按回车记录；呼号对得 2 分，序号也对再加 1 分。")}</p>
+          <p class="text-xs text-muted-foreground">{move || t("morse.after-copying-the-callsign")}</p>
         </div>
 
         {move || {
@@ -441,9 +443,9 @@ pub(super) fn CallsignRunner() -> impl IntoView {
             view! {
               <div class="space-y-2">
                 <div class="text-sm font-medium">
-                  {tf("本轮得分 {} / {}", &[&(score).to_string(), &(SESSION_QSOS * 3).to_string()])}
+                  {tf("common.round-score", &[&(score).to_string(), &(SESSION_QSOS * 3).to_string()])}
                   {(score >= best && score > 0).then(|| view! {
-                    <span class="ml-2 text-emerald-600 dark:text-emerald-400">{move || t("新纪录！")}</span>
+                    <span class="ml-2 text-emerald-600 dark:text-emerald-400">{move || t("morse.new-record")}</span>
                   })}
                 </div>
                 <div class="overflow-x-auto">
@@ -451,11 +453,11 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                     <thead class="text-muted-foreground">
                       <tr>
                         <th class="py-1 pr-3 font-normal">"#"</th>
-                        <th class="py-1 pr-3 font-normal">{move || t("对方")}</th>
-                        <th class="py-1 pr-3 font-normal">{move || t("你抄的")}</th>
-                        <th class="py-1 pr-3 font-normal">{move || t("速度")}</th>
-                        <th class="py-1 pr-3 font-normal">{move || t("重听")}</th>
-                        <th class="py-1 font-normal">{move || t("得分")}</th>
+                        <th class="py-1 pr-3 font-normal">{move || t("morse.their-call")}</th>
+                        <th class="py-1 pr-3 font-normal">{move || t("morse.you-copied")}</th>
+                        <th class="py-1 pr-3 font-normal">{move || t("radio.speed")}</th>
+                        <th class="py-1 pr-3 font-normal">{move || t("morse.replay")}</th>
+                        <th class="py-1 font-normal">{move || t("morse.score")}</th>
                       </tr>
                     </thead>
                     <tbody class="font-mono">
@@ -490,14 +492,14 @@ pub(super) fn CallsignRunner() -> impl IntoView {
             let worst = s.worst_chars(8);
             view! {
               <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
-                <span>{tf("累计 {} 轮 · {} 个通联 · 呼号正确率 {}%", &[&(s.sessions).to_string(), &(s.qsos).to_string(), &(rate).to_string()])}</span>
+                <span>{tp("common.rounds-qsos-callsign-accuracy", s.sessions, &[&(s.sessions).to_string(), &(s.qsos).to_string(), &(rate).to_string()])}</span>
                 {(!worst.is_empty()).then(|| view! {
                   <span class="flex flex-wrap items-center gap-1">
-                    {move || t("常错字符")}
+                    {move || t("morse.frequent-misses")}
                     {worst
                       .into_iter()
                       .map(|(c, n)| view! {
-                        <span class=pill_class(false) title=tf("抄错 {} 次", &[&(n).to_string()])>
+                        <span class=pill_class(false) title=tp("common.missed-times", n, &[&(n).to_string()])>
                           <span class="font-mono font-semibold">{c.to_string()}</span>
                           <span class="ml-1 tabular-nums">{n}</span>
                         </span>

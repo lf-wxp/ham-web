@@ -3,8 +3,10 @@
 use ham_web_core::smith::{gamma, reactance_arc, resistance_circle, swr_and_return_loss};
 use leptos::prelude::*;
 
-use super::{INPUT, RESULT, fmt_num};
+use super::{RESULT, fmt_num};
 use crate::i18n::{t, tf};
+use crate::ui::{Field, NumberField};
+use crate::util::unique_id;
 
 const SIZE: f64 = 320.0;
 const RADIUS: f64 = 140.0;
@@ -33,6 +35,9 @@ pub(super) fn SmithChart() -> impl IntoView {
   let r_ohm = RwSignal::new(50.0);
   let x_ohm = RwSignal::new(0.0);
 
+  let r_id = unique_id("smith-r");
+  let x_id = unique_id("smith-x");
+
   let cx = SIZE / 2.0;
   let cy = SIZE / 2.0;
 
@@ -44,44 +49,42 @@ pub(super) fn SmithChart() -> impl IntoView {
   view! {
     <div class="grid gap-4 sm:grid-cols-2">
       <div class="flex flex-col gap-3">
-        <label class="flex flex-col gap-1.5 text-sm">
-          <span class="text-xs text-muted-foreground">{move || t("电阻 R（Ω）")}</span>
-          <input
-            type="number"
-            prop:value=move || r_ohm.get().to_string()
-            on:input=move |e| {
-              if let Ok(v) = event_target_value(&e).parse::<f64>() {
+        <Field label=Signal::derive(move || t("tools.resistance-r-2")) r#for=r_id.clone()>
+          <NumberField
+            id=r_id
+            value=Signal::derive(move || r_ohm.get().to_string())
+            on_change=Callback::new(move |v: String| {
+              if let Ok(v) = v.trim().parse::<f64>() {
                 r_ohm.set(v);
               }
-            }
-            class=INPUT
+            })
+            controls=false
           />
-        </label>
-        <label class="flex flex-col gap-1.5 text-sm">
-          <span class="text-xs text-muted-foreground">{move || t("电抗 X（Ω，感性为正）")}</span>
-          <input
-            type="number"
-            prop:value=move || x_ohm.get().to_string()
-            on:input=move |e| {
-              if let Ok(v) = event_target_value(&e).parse::<f64>() {
+        </Field>
+        <Field label=Signal::derive(move || t("tools.reactance-x-inductive-is")) r#for=x_id.clone()>
+          <NumberField
+            id=x_id
+            value=Signal::derive(move || x_ohm.get().to_string())
+            on_change=Callback::new(move |v: String| {
+              if let Ok(v) = v.trim().parse::<f64>() {
                 x_ohm.set(v);
               }
-            }
-            class=INPUT
+            })
+            controls=false
           />
-        </label>
+        </Field>
         <div class=RESULT>
           {move || {
             let (gr, gi) = point();
             let (swr, rl) = swr_and_return_loss(gr, gi);
             tf(
-              "Γ = {} + j{}　｜　SWR = {}　｜　回波损耗 {} dB",
+              "tools.j-swr-return-loss",
               &[&fmt_num(gr), &fmt_num(gi), &fmt_num(swr), &fmt_num(rl)],
             )
           }}
         </div>
         <p class="text-xs text-muted-foreground">
-          {move || t("以 50Ω 为特性阻抗。上半圆为感性（+jX），下半圆为容性（−jX）；圆心处完全匹配。")}
+          {move || t("tools.reference-impedance-is-50")}
         </p>
       </div>
 
@@ -89,7 +92,7 @@ pub(super) fn SmithChart() -> impl IntoView {
         viewBox=format!("0 0 {SIZE} {SIZE}")
         class="mx-auto w-full max-w-[320px]"
         role="img"
-        aria-label=move || t("史密斯圆图")
+        aria-label=move || t("tools.smith-chart")
       >
         <circle
           cx=cx

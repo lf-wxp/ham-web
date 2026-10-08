@@ -8,21 +8,21 @@ use crate::util::set_title;
 
 #[component]
 pub fn HistoryPage() -> impl IntoView {
-  set_title(&t("业余无线电历史"));
+  set_title("shell.amateur-radio-history");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("业余无线电历史")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("重要人物 · 里程碑时间线")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.amateur-radio-history")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("knowledge.key-figures-milestone-timeline")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("里程碑时间线")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.milestone-timeline")}</h2>
           <div class="divide-y">
             {HISTORY_TIMELINE
               .iter()

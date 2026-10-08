@@ -18,7 +18,7 @@ use super::print_sheet::{Source as Collection, load_items};
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, Checkbox, ControlSize, NativeSelect, SelectOption, Size, Variant};
 use crate::util::{random, set_title, sleep, storage, window};
 
 const KEY: &str = "listen-settings";
@@ -137,7 +137,7 @@ fn phase_label(phase: Option<Phase>) -> &'static str {
 
 #[component]
 pub fn ListenPage() -> impl IntoView {
-  set_title(&t("听题模式"));
+  set_title("shell.listening");
   let settings = RwSignal::new(storage::get_json::<Settings>(KEY).unwrap_or_default());
   let questions = RwSignal::new(Arc::new(Vec::<QuestionItem>::new()));
   let loading = RwSignal::new(true);
@@ -147,6 +147,17 @@ pub fn ListenPage() -> impl IntoView {
   let supported = synth().is_some();
 
   let save = move || settings.with_untracked(|s| storage::set_json(KEY, s));
+
+  let rate_options: Vec<SelectOption> = RATE_CHOICES
+    .iter()
+    .copied()
+    .map(|r| SelectOption::new(r.to_string(), format!("{r}×")))
+    .collect();
+  let think_options: Vec<SelectOption> = THINK_CHOICES
+    .iter()
+    .copied()
+    .map(|s| SelectOption::new(s.to_string(), tf("common.s", &[&s.to_string()])))
+    .collect();
 
   let stop = move || {
     generation.update_value(|g| *g = g.wrapping_add(1));
@@ -269,11 +280,11 @@ pub fn ListenPage() -> impl IntoView {
 
   let card = move || {
     if loading.get() {
-      return view! { <div class="p-6 text-sm text-muted-foreground" aria-live="polite">{move || t("加载题目中…")}</div> }.into_any();
+      return view! { <div class="p-6 text-sm text-muted-foreground" aria-live="polite">{move || t("exam.loading-questions-2")}</div> }.into_any();
     }
     let i = index.get();
     let Some(q) = questions.with(|qs| qs.get(i).cloned()) else {
-      return view! { <div class="p-6 text-sm text-muted-foreground">{move || t("这里还没有题目。")}</div> }
+      return view! { <div class="p-6 text-sm text-muted-foreground">{move || t("exam.no-questions-here-yet")}</div> }
         .into_any();
     };
     let total = questions.with(|qs| qs.len());
@@ -283,7 +294,7 @@ pub fn ListenPage() -> impl IntoView {
     view! {
       <div class="p-5">
         <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-          <span class="tabular-nums">{tf("第 {} / {} 题 · {}", &[&(i + 1).to_string(), &total.to_string(), &(t(q.kind.label())).to_string()])}</span>
+          <span class="tabular-nums">{tf("common.question", &[&(i + 1).to_string(), &total.to_string(), &(t(q.kind.label())).to_string()])}</span>
           <span
             class=move || if phase.get().is_some() { "rounded-full bg-primary/10 px-2 py-0.5 font-medium text-foreground" } else { "px-2 py-0.5" }
             aria-live="polite"
@@ -304,7 +315,7 @@ pub fn ListenPage() -> impl IntoView {
           }).collect_view()}
         </ul>
         <div class="mt-3 min-h-5 text-sm">
-          {move || revealed().then(|| view! { <span>{move || t("正确答案：")} <span class="font-mono font-semibold">{answer.clone()}</span></span> })}
+          {move || revealed().then(|| view! { <span>{move || t("exam.correct-answer-2")} <span class="font-mono font-semibold">{answer.clone()}</span></span> })}
         </div>
       </div>
     }
@@ -314,18 +325,18 @@ pub fn ListenPage() -> impl IntoView {
   view! {
     <div class="mx-auto max-w-5xl space-y-4 px-4 py-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <div>
-        <h1 class="text-base font-semibold leading-tight">{move || t("听题模式")}</h1>
-        <p class="text-xs text-muted-foreground">{move || t("自动朗读题干与选项，停顿思考后读出答案，适合通勤路上免手刷题。")}</p>
+        <h1 class="text-base font-semibold leading-tight">{move || t("shell.listening")}</h1>
+        <p class="text-xs text-muted-foreground">{move || t("exam.reads-the-question-and")}</p>
       </div>
 
       {(!supported).then(|| view! {
         <div role="alert" class="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
-          {move || t("当前浏览器不支持语音合成，无法朗读。")}
+          {move || t("exam.this-browser-does-not")}
         </div>
       })}
 
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div class="inline-flex rounded-lg bg-muted p-0.5" role="group" aria-label=move || t("题目来源")>
+        <div class="inline-flex rounded-lg bg-muted p-0.5" role="group" aria-label=move || t("exam.question-source")>
           {Source::ALL.into_iter().map(|s| view! {
             <button
               type="button"
@@ -338,74 +349,93 @@ pub fn ListenPage() -> impl IntoView {
           }).collect_view()}
         </div>
         <label class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-          <input
-            type="checkbox"
-            prop:checked=move || settings.with(|s| s.shuffle)
-            on:change=move |e| { settings.update(|s| s.shuffle = event_target_checked(&e)); save(); }
+          <Checkbox
+            checked=Signal::derive(move || settings.with(|s| s.shuffle))
+            on_change=Callback::new(move |on: bool| {
+              settings.update(|s| s.shuffle = on);
+              save();
+            })
           />
-          {move || t("随机顺序")}
+          {move || t("exam.shuffle")}
         </label>
-        <label class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-          <input
-            type="checkbox"
-            prop:checked=move || settings.with(|s| s.explain)
-            on:change=move |e| { settings.update_untracked(|s| s.explain = event_target_checked(&e)); save(); }
+        <label class="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
+          <Checkbox
+            checked=Signal::derive(move || settings.with(|s| s.explain))
+            on_change=Callback::new(move |on: bool| {
+              settings.update_untracked(|s| s.explain = on);
+              save();
+            })
           />
-          {move || t("朗读解析")}
+          {move || t("learning.read-explanation-aloud")}
         </label>
       </div>
 
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
         <label class="inline-flex items-center gap-1.5">
-          {move || t("语速")}
-          <select
-            aria-label=move || t("语速")
-            class="rounded-md border bg-background px-2 py-1 text-foreground"
-            on:change=move |e| {
-              let v: f32 = event_target_value(&e).parse().unwrap_or(1.0);
-              settings.update_untracked(|s| s.rate = v);
+          {move || t("exam.speed")}
+          <NativeSelect
+            value=Signal::derive(move || {
+              settings.with(|s| {
+                RATE_CHOICES
+                  .iter()
+                  .copied()
+                  .find(|r| (r - s.rate).abs() < 0.01)
+                  .map_or_else(|| s.rate.to_string(), |r| r.to_string())
+              })
+            })
+            on_change=Callback::new(move |v: String| {
+              let rate: f32 = v.parse().unwrap_or(1.0);
+              settings.update_untracked(|s| s.rate = rate);
               save();
-            }
-          >
-            {RATE_CHOICES.into_iter().map(|r| view! {
-              <option value=r.to_string() selected=move || settings.with(|s| (s.rate - r).abs() < 0.01)>{format!("{r}×")}</option>
-            }).collect_view()}
-          </select>
+            })
+            options=rate_options
+            size=ControlSize::Sm
+            aria_label=Signal::derive(move || t("exam.speed"))
+            class="w-auto"
+          />
         </label>
         <label class="inline-flex items-center gap-1.5">
-          {move || t("思考时间")}
-          <select
-            aria-label=move || t("思考时间")
-            class="rounded-md border bg-background px-2 py-1 text-foreground"
-            on:change=move |e| {
-              let v: u32 = event_target_value(&e).parse().unwrap_or(5);
-              settings.update_untracked(|s| s.think_secs = v);
+          {move || t("exam.think-time")}
+          <NativeSelect
+            value=Signal::derive(move || settings.with(|s| s.think_secs.to_string()))
+            on_change=Callback::new(move |v: String| {
+              let secs: u32 = v.parse().unwrap_or(5);
+              settings.update_untracked(|s| s.think_secs = secs);
               save();
-            }
-          >
-            {THINK_CHOICES.into_iter().map(|t| view! {
-              <option value=t.to_string() selected=move || settings.with(|s| s.think_secs == t)>{tf("{} 秒", &[&(t).to_string()])}</option>
-            }).collect_view()}
-          </select>
+            })
+            options=think_options
+            size=ControlSize::Sm
+            aria_label=Signal::derive(move || t("exam.think-time"))
+            class="w-auto"
+          />
         </label>
       </div>
 
-      <section class="rounded-xl border bg-card" aria-label=move || t("当前题目")>{card}</section>
+      <section class="rounded-xl border bg-card" aria-label=move || t("exam.current-question")>{card}</section>
 
       <div class="flex items-center justify-center gap-3">
-        <button type="button" class=button_class(Variant::Outline, Size::Default, "") on:click=move |_| go(-1)>{move || t("上一题")}</button>
-        <button
-          type="button"
-          class=button_class(Variant::Default, Size::Default, "min-w-28")
-          disabled=move || !supported || loading.get() || questions.with(|q| q.is_empty())
-          on:click=move |_| toggle()
+        <Button
+          variant=Variant::Outline
+          size=Size::Default
+          on_click=Callback::new(move |_| go(-1))
+        >{move || t("exam.previous")}</Button>
+        <Button
+          variant=Variant::Default
+          size=Size::Default
+          class="min-w-28"
+          disabled=Signal::derive(move || !supported || loading.get() || questions.with(|q| q.is_empty()))
+          on_click=Callback::new(move |_| toggle())
         >
           <Icon kind=IconKind::Headphones class="h-4 w-4" />
-          {move || if phase.get().is_some() { t("暂停") } else { t("开始听题") }}
-        </button>
-        <button type="button" class=button_class(Variant::Outline, Size::Default, "") on:click=move |_| go(1)>{move || t("下一题")}</button>
+          {move || if phase.get().is_some() { t("exam.pause") } else { t("exam.start-listening") }}
+        </Button>
+        <Button
+          variant=Variant::Outline
+          size=Size::Default
+          on_click=Callback::new(move |_| go(1))
+        >{move || t("exam.next")}</Button>
       </div>
-      <p class="text-center text-xs text-muted-foreground">{move || t("锁屏后部分手机会暂停朗读，建议保持屏幕常亮。")}</p>
+      <p class="text-center text-xs text-muted-foreground">{move || t("exam.some-phones-pause-speech")}</p>
     </div>
   }
 }

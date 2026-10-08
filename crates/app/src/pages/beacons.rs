@@ -11,7 +11,7 @@ use crate::util::set_title;
 
 #[component]
 pub fn BeaconsPage() -> impl IntoView {
-  set_title(&t("国际信标网络"));
+  set_title("knowledge.international-beacon-network");
 
   let now_ms = RwSignal::new(js_sys::Date::new_0().get_time());
   if let Ok(handle) = set_interval_with_handle(
@@ -39,8 +39,8 @@ pub fn BeaconsPage() -> impl IntoView {
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader
-        title=Signal::derive(move || t("国际信标网络"))
-        subtitle=Signal::derive(move || t("NCDXF/IARU · 18 台 5 波段 · 判断传播开通"))
+        title=Signal::derive(move || t("knowledge.international-beacon-network"))
+        subtitle=Signal::derive(move || t("knowledge.ncdxf-iaru-18-beacons"))
       />
       <PageContainer>
         // 当前时隙：正在发射的信标台。
@@ -56,10 +56,10 @@ pub fn BeaconsPage() -> impl IntoView {
                 <div class="ml-auto flex items-center gap-3">
                   <div class="text-right">
                     <div class="text-sm font-semibold">
-                      {tf("正在发射：{}（{} · {}）", &[call, loc, region])}
+                      {tf("knowledge.transmitting-now", &[call, loc, region])}
                     </div>
                     <div class="text-xs text-muted-foreground">
-                      {tf("本台剩余约 {} 秒", &[&remaining.to_string()])}
+                      {tf("knowledge.about-s-left-for", &[&remaining.to_string()])}
                     </div>
                   </div>
                   <div class="h-2 w-24 overflow-hidden rounded-full bg-muted">
@@ -76,7 +76,7 @@ pub fn BeaconsPage() -> impl IntoView {
 
         // 信标台列表。
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("信标台（按轮询顺序）")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.beacons-in-polling-order")}</h2>
           <div class="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3">
             {BEACONS
               .iter()
@@ -92,7 +92,7 @@ pub fn BeaconsPage() -> impl IntoView {
                       <span class="font-mono text-xs text-muted-foreground">{format!("{:02}", i + 1)}</span>
                       <span class="font-mono text-sm font-semibold">{call}</span>
                     </div>
-                    <div class="mt-0.5 text-xs text-muted-foreground">{tf("{} · {}", &[loc, region])}</div>
+                    <div class="mt-0.5 text-xs text-muted-foreground">{tf("common.pair", &[loc, region])}</div>
                   </div>
                 }
               })
@@ -102,7 +102,7 @@ pub fn BeaconsPage() -> impl IntoView {
 
         // 信标频率。
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("信标频率")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.beacon-frequency")}</h2>
           <div class="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-5">
             {BEACON_BANDS
               .iter()
@@ -120,10 +120,10 @@ pub fn BeaconsPage() -> impl IntoView {
 
         // 信号格式。
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("信号格式")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.signal-format")}</h2>
           <div class="space-y-3 p-4">
             <p class="text-sm text-muted-foreground">
-              {move || t("每台发射 10 秒：先以 CW（约 20 WPM）发送呼号，再发 4 个各约 1 秒的长划，功率逐级下降 10 dB。")}
+              {move || t("knowledge.each-station-transmits-for")}
             </p>
             <div class="flex flex-wrap gap-2">
               {DASH_POWERS
@@ -131,39 +131,39 @@ pub fn BeaconsPage() -> impl IntoView {
                 .map(|&(label, pwr)| {
                   view! {
                     <span class="rounded-md bg-muted/60 px-2 py-1 text-xs tabular-nums">
-                      {tf("{}：{} W", &[label, &format!("{pwr}")])}
+                      {tf("common.watt-value", &[label, &format!("{pwr}")])}
                     </span>
                   }
                 })
                 .collect_view()}
             </div>
             <p class="text-sm text-muted-foreground">
-              {move || t("能听到第几个长划，就能估算这条路径的损耗余量：听到 0.1W 的一划说明路径极佳。")}
+              {move || t("knowledge.the-last-dash-you")}
             </p>
           </div>
         </section>
 
         // 使用说明。
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("怎么看")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.how-to-read-it")}</h2>
           <ul class="space-y-2 p-4">
             <li class="flex gap-2 text-sm text-muted-foreground">
               <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-              <span>{move || t("把电台调谐到某个信标频率，按上表对照此刻是哪台在发射。")}</span>
+              <span>{move || t("knowledge.tune-the-radio-to")}</span>
             </li>
             <li class="flex gap-2 text-sm text-muted-foreground">
               <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-              <span>{move || t("听到某台信标，说明「你 ↔ 该台」这条传播路径当前开通，可据此推断该方向 DX 的可行性。")}</span>
+              <span>{move || t("knowledge.hearing-a-beacon-means")}</span>
             </li>
             <li class="flex gap-2 text-sm text-muted-foreground">
               <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-              <span>{move || t("傍晚 / 清晨与灰线时段效果最佳；换不同波段轮流听，可判断各波段开通顺序。")}</span>
+              <span>{move || t("knowledge.best-around-dusk-dawn")}</span>
             </li>
           </ul>
         </section>
 
         <p class="text-xs text-muted-foreground">
-          {move || t("时隙按本地时钟估算并向下取整，实际相位可能存在秒级偏差；信标实际是否在线以现场收讯为准。")}
+          {move || t("knowledge.time-slots-are-estimated")}
         </p>
       </PageContainer>
     </div>

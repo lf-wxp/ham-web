@@ -1,3 +1,6 @@
+mod bar_row;
+use bar_row::bar_row;
+
 use crate::i18n::{t, tf};
 use ham_web_core::award_progress::{
   AwardProgress, CONTINENTS, DXCC_TARGET, IOTA_TARGET, Progress, WAS_TARGET, WAZ_TARGET,
@@ -6,39 +9,13 @@ use ham_web_core::award_progress::{
 use ham_web_core::logbook::LogEntry;
 use leptos::prelude::*;
 
-const CHIP_ON: &str =
-  "rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground";
-const CHIP_OFF: &str =
-  "rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-accent";
+use crate::ui::{RadioGroup, RadioGroupItem};
 
 fn count<T: Ord>(p: &Progress<T>, confirmed: bool) -> usize {
   if confirmed {
     p.confirmed.len()
   } else {
     p.worked.len()
-  }
-}
-
-/// 一行「名称 · n / 目标」进度条。
-fn bar_row(label: String, n: usize, target: usize) -> impl IntoView {
-  let pct = (n as f64 / target.max(1) as f64 * 100.0).min(100.0);
-  let done = n >= target;
-  view! {
-    <div>
-      <div class="mb-1 flex items-center justify-between text-xs">
-        <span class="font-medium">{label}</span>
-        <span class="tabular-nums text-muted-foreground">
-          {format!("{n} / {target}")}
-          {done.then(|| view! { <span class="ml-1.5 font-semibold text-emerald-600 dark:text-emerald-400">{move || t("已达标")}</span> })}
-        </span>
-      </div>
-      <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          class=if done { "h-full rounded-full bg-emerald-500" } else { "h-full rounded-full bg-primary" }
-          style=format!("width: {pct:.1}%")
-        ></div>
-      </div>
-    </div>
   }
 }
 
@@ -51,13 +28,24 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
   view! {
     <section id="awards" class="scroll-mt-24 rounded-xl border bg-card">
       <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-        <h3 class="mr-auto text-sm font-semibold">{move || t("奖状进度")}</h3>
-        <button type="button" class=move || if confirmed.get() { CHIP_OFF } else { CHIP_ON } on:click=move |_| confirmed.set(false)>
-          {move || t("已通联")}
-        </button>
-        <button type="button" class=move || if confirmed.get() { CHIP_ON } else { CHIP_OFF } on:click=move |_| confirmed.set(true)>
-          {move || t("已确认（QSL）")}
-        </button>
+        <h3 class="mr-auto text-sm font-semibold">{move || t("log.award-progress")}</h3>
+        <RadioGroup
+          value=Signal::derive(move || {
+            if confirmed.get() { "confirmed" } else { "worked" }.to_owned()
+          })
+          on_change=Callback::new(move |v: String| confirmed.set(v == "confirmed"))
+          aria_label=Signal::derive(move || t("log.award-progress"))
+          class="flex items-center gap-4"
+        >
+          <label class="flex cursor-pointer items-center gap-2 text-xs">
+            <RadioGroupItem value="worked" />
+            {move || t("log.worked")}
+          </label>
+          <label class="flex cursor-pointer items-center gap-2 text-xs">
+            <RadioGroupItem value="confirmed" />
+            {move || t("log.confirmed-qsl")}
+          </label>
+        </RadioGroup>
       </div>
       {move || {
         let c = confirmed.get();
@@ -86,7 +74,7 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
             <div class="space-y-5 p-4">
               {(!gaps.is_empty()).then(|| view! {
                 <div class="rounded-lg border bg-muted/30 p-3">
-                  <div class="mb-1.5 text-xs font-semibold">{move || t("冲刺建议")}</div>
+                  <div class="mb-1.5 text-xs font-semibold">{move || t("log.sprint-suggestions")}</div>
                   <div class="flex flex-wrap gap-1.5">
                     {gaps
                       .iter()
@@ -94,13 +82,13 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
                       .map(|g| {
                         view! {
                           <span class="rounded-full border bg-background px-2.5 py-1 text-xs">
-                            {tf("{} 还差 {}", &[g.label, &g.remaining().to_string()])}
+                            {tf("log.needs-more", &[g.label, &g.remaining().to_string()])}
                           </span>
                         }
                       })
                       .collect_view()}
                   </div>
-                  <p class="mt-1.5 text-[11px] text-muted-foreground">{move || t("越靠前越接近达标，优先冲刺")}</p>
+                  <p class="mt-1.5 text-[11px] text-muted-foreground">{move || t("log.closer-to-the-goal")}</p>
                 </div>
               })}
               <div class="space-y-3">
@@ -128,7 +116,7 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
               </div>
 
               <div class="space-y-2">
-                {bar_row(t("WAZ（CQ 分区）"), zones.len(), WAZ_TARGET)}
+                {bar_row(t("log.waz-cq-zones"), zones.len(), WAZ_TARGET)}
                 <div class="grid grid-cols-10 gap-1">
                   {(1..=40u8)
                     .map(|z| {
@@ -140,7 +128,7 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
                           } else {
                             "rounded bg-muted py-0.5 text-center text-[10px] tabular-nums text-muted-foreground"
                           }
-                          title=tf("CQ {} 区", &[&z.to_string()])
+                          title=tf("log.cq-zone", &[&z.to_string()])
                         >
                           {z}
                         </span>
@@ -151,7 +139,7 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
               </div>
 
               <div class="space-y-2">
-                {bar_row(t("WAC（六大洲）"), conts.len(), CONTINENTS.len())}
+                {bar_row(t("log.wac-six-continents"), conts.len(), CONTINENTS.len())}
                 <div class="flex flex-wrap gap-1.5">
                   {CONTINENTS
                     .iter()
@@ -176,7 +164,7 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
                   {vucc
                     .into_iter()
                     .map(|(b, n, target)| {
-                      let label = if b == "SAT" { t("VUCC 卫星") } else { format!("VUCC {b}") };
+                      let label = if b == "SAT" { t("log.vucc-satellite") } else { format!("VUCC {b}") };
                       bar_row(label, n, target)
                     })
                     .collect_view()}
@@ -189,12 +177,12 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
                   <span class="tabular-nums text-muted-foreground">{p.dxcc_challenge}</span>
                 </div>
                 {bar_row("WPX".to_owned(), count(&p.wpx, c), WPX_TARGET)}
-                {bar_row(t("WAS（美国州）"), count(&p.was, c), WAS_TARGET)}
-                {bar_row(t("IOTA（岛屿组）"), count(&p.iota, c), IOTA_TARGET)}
+                {bar_row(t("log.was-us-states-2"), count(&p.was, c), WAS_TARGET)}
+                {bar_row(t("log.iota-island-groups-2"), count(&p.iota, c), IOTA_TARGET)}
               </div>
 
               <p class="text-xs text-muted-foreground">
-                {move || t("未填写 CQ / ITU 分区的记录按 DXCC 实体的主分区估算，跨多个分区的国家（如美国、俄罗斯、中国）可能不准，可在记录的「更多字段」里手动填写。VUCC 按 6m 及以上波段的 4 位网格统计。正式申请以 ARRL / CQ 的确认规则为准。")}
+                {move || t("log.records-without-a-cq")}
               </p>
             </div>
           }

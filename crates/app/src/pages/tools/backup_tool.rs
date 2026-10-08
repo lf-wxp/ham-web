@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 use crate::ui::{Button, FileInput, Variant};
 use crate::util::storage;
 
@@ -45,6 +45,8 @@ pub(super) fn BackupTool() -> impl IntoView {
   let run_import = move |file: web_sys::File, merge: bool| {
     spawn_local(async move {
       let Some(text) = crate::util::read_file_text(&file).await else {
+        // 读失败必须出声：静默返回会被当成「备份里没有数据」。
+        crate::util::alert(&t("common.file-read-failed"));
         return;
       };
       let result = if merge {
@@ -54,14 +56,15 @@ pub(super) fn BackupTool() -> impl IntoView {
       };
       match result {
         Ok(n) => {
+          // 这两条走的是「中文原文 → key」反向索引，静态扫描看不见，改用语义 key + `tp`
           let msg = if merge {
-            "已合并 {} 条数据"
+            tp("settings.merged-items", n as u32, &[&n.to_string()])
           } else {
-            "已恢复 {} 条数据"
+            tp("tools.restored-records", n as u32, &[&n.to_string()])
           };
-          crate::util::alert(&tf(msg, &[&n.to_string()]));
+          crate::util::alert(&msg);
         }
-        Err(e) => crate::util::alert(&tf("导入失败：{}", &[&e.to_string()])),
+        Err(e) => crate::util::alert(&tf("tools.import-failed", &[&e.to_string()])),
       }
       usage.set(storage::usage());
     });
@@ -71,11 +74,11 @@ pub(super) fn BackupTool() -> impl IntoView {
     <div class="space-y-4">
       <div class="flex flex-wrap items-center gap-2">
         <Button variant=Variant::Default on_click=Callback::new(move |_| crate::util::export_backup())>
-          {move || t("导出备份")}
+          {move || t("tools.export-backup")}
         </Button>
         <FileInput
           accept=".json"
-          label=t("导入备份")
+          label=t("tools.import-backup")
           variant=Variant::Outline
           on_files=Callback::new(move |files: Vec<web_sys::File>| {
             if let Some(f) = files.into_iter().next() {
@@ -85,7 +88,7 @@ pub(super) fn BackupTool() -> impl IntoView {
         />
         <FileInput
           accept=".json"
-          label=t("合并导入")
+          label=t("settings.merge-import")
           variant=Variant::Outline
           on_files=Callback::new(move |files: Vec<web_sys::File>| {
             if let Some(f) = files.into_iter().next() {
@@ -117,10 +120,10 @@ pub(super) fn BackupTool() -> impl IntoView {
         view! {
           <div class="space-y-2">
             <div class="flex items-center justify-between text-xs text-muted-foreground">
-              {move || t("本地存储占用（约）")}
+              {move || t("tools.local-storage-used-approx")}
               <span class="tabular-nums">
                 {tf(
-                  "{} / {} 字符 · {}%",
+                  "tools.characters",
                   &[
                     &fmt_size(total),
                     &fmt_size(storage::QUOTA_UNITS),
@@ -148,7 +151,7 @@ pub(super) fn BackupTool() -> impl IntoView {
             </ul>
             {(pct >= 80.0).then(|| view! {
               <p class="text-xs text-red-600 dark:text-red-400">
-                {move || t("存储空间即将用满，建议先导出备份；日志可在通联日志页导出 ADIF 后清理。")}
+                {move || t("tools.storage-is-nearly-full")}
               </p>
             })}
           </div>

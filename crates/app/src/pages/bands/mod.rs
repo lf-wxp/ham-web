@@ -4,17 +4,18 @@
 mod band_card;
 mod band_quiz;
 mod bands_page;
+mod notes_view;
+mod range_view;
+mod table_rows;
 mod usage_badge;
 
 pub use bands_page::BandsPage;
 
-use ham_web_core::bands::{self, Allocation, BANDS, Note, Usage};
-use leptos::prelude::*;
+use notes_view::notes_view;
+use range_view::range_view;
+use table_rows::table_rows;
 
-use crate::icons::{Icon, IconKind};
-
-use crate::i18n::{t, tf};
-use usage_badge::UsageBadge;
+use ham_web_core::bands::Usage;
 
 const CELL: &str = "border px-2 py-1.5 text-center align-middle";
 const SAT_ICON: &str = "h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400";
@@ -32,112 +33,4 @@ fn usage_class(u: Usage) -> &'static str {
 
 fn footnote_id(code: &str) -> String {
   format!("fn-{}", code.replace('.', "-"))
-}
-
-fn range_view(a: &'static Allocation) -> impl IntoView {
-  view! {
-    <span class="inline-flex items-center gap-1 whitespace-nowrap">
-      {a.is_satellite()
-        .then(|| {
-          view! {
-            <Icon kind=IconKind::Satellite class=SAT_ICON />
-            <span class="sr-only">{move || t("卫星业余业务")}</span>
-          }
-        })}
-      <span class="tabular-nums">{a.range}</span>
-    </span>
-  }
-}
-
-/// 备注单元格：多条备注之间用「、」分隔（如「5.162A、CHN4、CHN8、6米业余波段」）。
-fn notes_view(notes: &'static [Note], jump: Callback<&'static str>) -> impl IntoView {
-  notes
-    .iter()
-    .enumerate()
-    .map(|(i, note)| {
-      let sep = (i > 0).then(|| view! { <span class="text-muted-foreground/60">"、"</span> });
-      let body = match *note {
-        Note::Text(t) => view! { <span>{t}</span> }.into_any(),
-        Note::Ref(code) => view! {
-          <button
-            type="button"
-            class="font-mono font-medium text-blue-600 underline underline-offset-2 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-            title=tf("查看脚注 {}", &[(code)])
-            on:click=move |_| jump.run(code)
-          >
-            {code}
-          </button>
-        }
-        .into_any(),
-      };
-      view! { {sep} {body} }
-    })
-    .collect_view()
-}
-
-fn table_rows(jump: Callback<&'static str>) -> impl IntoView {
-  let mw_rows = bands::microwave_rows().to_string();
-  let first_mw = BANDS.iter().position(|b| b.microwave);
-  BANDS
-    .iter()
-    .enumerate()
-    .flat_map(move |(bi, band)| {
-      let rows = band.rows();
-      let span = rows.to_string();
-      let mw_rows = mw_rows.clone();
-      (0..rows).map(move |ri| {
-        let band_cells = (ri == 0).then(|| {
-          view! {
-            <td class=CELL rowspan=span.clone()>
-              <span class="font-mono">{band.number}</span>
-            </td>
-            <td class=CELL rowspan=span.clone() colspan=if band.microwave { "1" } else { "2" }>
-              {band.name}
-            </td>
-            {(band.microwave && first_mw == Some(bi))
-              .then(|| {
-                view! {
-                  <td class=CELL rowspan=mw_rows.clone()>
-                    <span class="[writing-mode:vertical-rl] tracking-[0.4em]">{move || t("微波")}</span>
-                  </td>
-                }
-              })}
-            <td class=CELL rowspan=span.clone()>{band.wavelength}</td>
-            <td class=CELL rowspan=span.clone()>{band.freq_name}</td>
-            <td class=CELL rowspan=span.clone()>
-              <span class="font-mono">{band.freq_abbr}</span>
-            </td>
-            <td class=CELL rowspan=span.clone()>
-              <span class="whitespace-nowrap">{band.freq_range}</span>
-            </td>
-          }
-        });
-        let alloc_cells = match band.allocations.get(ri) {
-          None => view! {
-            <td class=format!("{CELL} text-muted-foreground")>"/"</td>
-            <td class=format!("{CELL} text-muted-foreground")>"/"</td>
-            <td class=format!("{CELL} text-muted-foreground")>"/"</td>
-          }
-          .into_any(),
-          Some(a) => view! {
-            <td class=CELL>{range_view(a)}</td>
-            <td class=CELL>
-              <UsageBadge usage=a.usage />
-            </td>
-            {band
-              .remark_span(ri)
-              .map(|n| {
-                view! {
-                  <td class=format!("{CELL} text-xs") rowspan=n.to_string()>
-                    {notes_view(band.remark_for(ri), jump)}
-                  </td>
-                }
-              })}
-          }
-          .into_any(),
-        };
-        view! { <tr class="transition-colors hover:bg-muted/40">{band_cells} {alloc_cells}</tr> }
-      })
-    })
-    .collect_view()
 }

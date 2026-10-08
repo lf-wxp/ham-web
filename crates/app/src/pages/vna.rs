@@ -9,9 +9,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn VnaPage() -> impl IntoView {
-  set_title(&t("VNA 矢量网络分析仪"));
+  set_title("knowledge.vna-vector-network-analyzer");
   view! {
-    <KnowledgePage title=t("VNA 矢量网络分析仪") subtitle=t("校准方法与天线 / 滤波器 / 馈线测量")>
+    <KnowledgePage title=t("knowledge.vna-vector-network-analyzer") subtitle=t("knowledge.calibration-methods-and-antenna")>
       <ConceptsSection title="核心概念" items=VNA_CONCEPTS />
       <StepsSection title="测量流程" items=VNA_STEPS />
       <TableSection title="常见测量对象" headers=&["对象", "主要看", "意义"] rows=VNA_USES />

@@ -4,8 +4,8 @@ use ham_web_core::antenna_design::yagi_dims;
 use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
-
-const INPUT: &str = "h-10 rounded-lg border bg-background px-3 text-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+use crate::ui::{Field, NumberField};
+use crate::util::unique_id;
 
 /// Yagi 振子尺寸计算器。
 #[component]
@@ -13,55 +13,61 @@ pub(super) fn YagiCalculator() -> impl IntoView {
   let freq = RwSignal::new(14.2);
   let directors = RwSignal::new(2usize);
 
+  // `Field` 的标签与控件是兄弟节点，`r#for` / `id` 必须配对才能点击标签聚焦输入框
+  //（e2e 与读屏都按「标签 → 控件」的关联来定位）。
+  let freq_id = unique_id("yagi-freq");
+  let directors_id = unique_id("yagi-directors");
+
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{t("频率（MHz）")}</span>
-        <input
-          type="number"
-          step="0.01"
-          prop:value=move || freq.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      <Field label=Signal::derive(move || t("log.frequency-mhz")) r#for=freq_id.clone()>
+        <NumberField
+          id=freq_id
+          step=0.01
+          value=Signal::derive(move || freq.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               freq.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{t("引向器数量（0–5）")}</span>
-        <input
-          type="number"
-          min="0"
-          max="5"
-          step="1"
-          prop:value=move || directors.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<usize>() {
+      </Field>
+      <Field
+        label=Signal::derive(move || t("knowledge.number-of-directors-0"))
+        r#for=directors_id.clone()
+      >
+        <NumberField
+          id=directors_id
+          step=1.0
+          min=0.0
+          max=5.0
+          value=Signal::derive(move || directors.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<usize>() {
               directors.set(v.min(5));
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
+      </Field>
       <div class="sm:col-span-2 rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let Some(d) = yagi_dims(freq.get(), directors.get()) else {
-            return t("请输入正频率");
+            return t("tools.enter-a-positive-frequency");
           };
           let mut parts = vec![
-            tf("反射器 ≈ {} m", &[&format!("{:.2}", d.reflector)]),
-            tf("激励振子 ≈ {} m", &[&format!("{:.2}", d.driven)]),
+            tf("common.reflector-m", &[&format!("{:.2}", d.reflector)]),
+            tf("common.driven-element-m", &[&format!("{:.2}", d.driven)]),
           ];
           for (i, len) in d.directors.iter().enumerate() {
             parts.push(tf(
-              "引向器 {} ≈ {} m",
+              "common.director-m",
               &[&(i + 1).to_string(), &format!("{:.2}", len)],
             ));
           }
           parts.push(tf(
-            "反射器–激励间距 ≈ {} m · 引向器间距 ≈ {} m",
+            "common.reflector-driven-spacing-m",
             &[
               &format!("{:.2}", d.refl_spacing),
               &format!("{:.2}", d.dir_spacing),

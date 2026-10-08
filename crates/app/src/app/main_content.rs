@@ -18,16 +18,16 @@ use crate::pages::{
   LearningPathPage, LearningResourcesPage, LicenseClassesPage, LicensePage, ListenPage, LogPage,
   LoggingSoftwarePage, MeteorScatterPage, MetersPage, MicrowavePage, MistakeTopicsPage,
   MistakesPage, MobilePage, ModesPage, ModulationTheoryPage, MorsePage, MostWantedPage, MufPage,
-  NoisePage, NotFoundPage, NotificationsPage, NvisPage, OpenSourcePage, OperatingPage,
+  NecPage, NoisePage, NotFoundPage, NotificationsPage, NvisPage, OpenSourcePage, OperatingPage,
   OrganizationsPage, PacketPage, PhoneticPage, PhotoProcessorPage, PolarizationPage,
   PortableMapPage, PortablePage, PowerPage, PowerSupplyPage, PracticalAntennasPage, PracticePage,
   PrefixesPage, PrintPage, ProgressPage, PropagationPage, PskDecodePage, PskReporterPage,
   QCodePage, QrpPage, QslCardPage, QslDesignerPage, QslLabelsPage, RbnPage, ReceiverPage,
   ReferencePage, RegulationsPage, RemotePage, RepeaterBuildPage, RepeaterPage, ReportPage, RfiPage,
   RstPage, RttyPage, SafetyPage, SatOperationPage, SatellitesPage, SdrMapPage, SdrPage,
-  SdrWaterfallPage, SolarPage, SpecialPropPage, SstvDecoderPage, SstvPage, StatsPage,
-  StudyCalendarPage, SwlPage, ToolsPage, TransceiverPage, VnaPage, WeatherSatPage, WeeklyPage,
-  WinlinkPage, WsprDecoderPage, WsprPage, ZoneMapPage,
+  SdrWaterfallPage, SmithPage, SolarPage, SpecialPropPage, SstvDecoderPage, SstvPage, StatsPage,
+  StudyCalendarPage, SwlPage, ToolsPage, TransceiverPage, VnaPage, WaveformLabPage, WeatherSatPage,
+  WeeklyPage, WinlinkPage, WsprDecoderPage, WsprPage, ZoneMapPage,
 };
 
 use crate::components::related_topics::RelatedTopics;
@@ -187,6 +187,9 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/antenna-analyzer") view=AntennaAnalyzerPage />
         <Route path=path!("/power-supply") view=PowerSupplyPage />
         <Route path=path!("/tools") view=ToolsPage />
+        <Route path=path!("/waveform-lab") view=WaveformLabPage />
+        <Route path=path!("/nec") view=NecPage />
+        <Route path=path!("/smith") view=SmithPage />
         <Route path=path!("/photo-processor") view=PhotoProcessorPage />
         <Route path=path!("/sstv") view=SstvPage />
         <Route path=path!("/sstv-decode") view=SstvDecoderPage />

@@ -9,9 +9,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn QrpPage() -> impl IntoView {
-  set_title(&t("QRP 低功率操作"));
+  set_title("shell.qrp-2");
   view! {
-    <KnowledgePage title=t("QRP 低功率操作") subtitle=t("≤5W 的低功率通联理念与技巧")>
+    <KnowledgePage title=t("shell.qrp-2") subtitle=t("knowledge.the-qrp-mindset-operating")>
       <ConceptsSection title="核心概念" items=QRP_CONCEPTS />
       <ConceptsSection title="设备建议" items=QRP_RIGS />
       <BulletSection title="操作要点" items=QRP_TIPS />

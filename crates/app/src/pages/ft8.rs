@@ -15,14 +15,14 @@ pub fn Ft8Page() -> impl IntoView {
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
             <h1 class="text-base font-semibold leading-tight">"FT8 / FT4"</h1>
-            <div class="text-xs text-muted-foreground">{move || t("弱信号数字模式（FT8 = 8-FSK / FT4 = 4-FSK）· WSJT-X 操作 · 标准频率")}</div>
+            <div class="text-xs text-muted-foreground">{move || t("knowledge.weak-signal-digital-modes")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("核心概念")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.key-concepts-2")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {FT8_CONCEPTS
               .iter()
@@ -39,7 +39,7 @@ pub fn Ft8Page() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("标准频率（USB 模式）")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.standard-frequencies-usb")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {FT8_FREQS
               .iter()
@@ -56,7 +56,7 @@ pub fn Ft8Page() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("操作要点")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.operating-tips")}</h2>
           <ul class="space-y-2 p-4">
             {FT8_TIPS
               .iter()

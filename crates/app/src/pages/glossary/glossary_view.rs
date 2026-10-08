@@ -145,7 +145,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
     keys
       .into_iter()
       .map(|key| {
-        let label = if key == ALL { t("全部") } else { t(category_meta(key).0) };
+        let label = if key == ALL { t("exam.all") } else { t(category_meta(key).0) };
         view! {
           <button
             type="button"
@@ -162,7 +162,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
   let list = move || {
     let total = filtered.with(Vec::len);
     if total == 0 {
-      return view! { <div class="py-20 text-center text-muted-foreground">{move || t("没有匹配的术语")}</div> }
+      return view! { <div class="py-20 text-center text-muted-foreground">{move || t("knowledge.no-matching-terms")}</div> }
         .into_any();
     }
     let shown: Vec<usize> = filtered.with(|f| f.iter().copied().take(visible.get()).collect());
@@ -181,7 +181,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               on:click=move |_| visible.update(|v| *v += PAGE)
               class="mt-4 w-full rounded-lg border py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent"
             >
-              {t("加载更多（已显示 ")} {shown_len} " / " {total} {t("）")}
+              {t("knowledge.load-more-showing")} {shown_len} " / " {total} {t("common.entry-2")}
             </button>
           }
         })}
@@ -194,8 +194,8 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
       <header class="sticky top-16 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("术语表")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("业余无线电常用术语 · 英文缩写 · 通俗解释")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.glossary")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("knowledge.common-ham-terms-english")}</div>
           </div>
 
           <Input
@@ -205,7 +205,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               visible.set(PAGE);
             })
             kind=InputType::Search
-            placeholder=Signal::derive(move || t("搜索术语 / 缩写 / 解释…"))
+            placeholder=Signal::derive(move || t("knowledge.search-terms-abbreviations-explanations"))
             prefix=move || view! { <Icon kind=IconKind::Search /> }
             clearable=true
             class="w-56"
@@ -219,7 +219,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
             }
             class=move || pill(abbr_only.get(), "rounded-lg border px-3 py-1.5 text-sm transition-colors")
           >
-            {move || t("只看英文缩写")}
+            {move || t("knowledge.english-abbreviations-only")}
           </button>
         </div>
       </header>
@@ -235,7 +235,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               }
             >
               <span class="h-2 w-2 rounded-full bg-foreground/60"></span>
-              {move || t("全部术语")}
+              {move || t("knowledge.all-terms")}
               <span class="ml-auto text-xs tabular-nums">{move || base.with(Vec::len)}</span>
             </button>
             {sidebar}
@@ -245,10 +245,10 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
         <div class="min-w-0">
           <div class="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 md:hidden">{chips}</div>
           <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label=t("术语总数") value=Signal::derive(move || base.with(Vec::len)) />
-            <Stat label=t("英文缩写") value=abbr_count />
-            <Stat label=t("术语分类") value=category_total />
-            <Stat label=t("当前筛选") value=Signal::derive(move || filtered.with(Vec::len)) />
+            <Stat label=t("knowledge.total-terms") value=Signal::derive(move || base.with(Vec::len)) />
+            <Stat label=t("knowledge.english-abbreviations") value=abbr_count />
+            <Stat label=t("knowledge.term-categories") value=category_total />
+            <Stat label=t("exam.current-filter") value=Signal::derive(move || filtered.with(Vec::len)) />
           </div>
           {list}
         </div>

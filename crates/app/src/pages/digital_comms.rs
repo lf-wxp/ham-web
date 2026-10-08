@@ -13,9 +13,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn DigitalCommsPage() -> impl IntoView {
-  set_title(&t("数字通信原理"));
+  set_title("knowledge.digital-communications");
   view! {
-    <KnowledgePage title=t("数字通信原理") subtitle=t("比特如何在无线信道中可靠传输")>
+    <KnowledgePage title=t("knowledge.digital-communications") subtitle=t("knowledge.how-bits-travel-reliably")>
       <ConceptsSection title="核心概念" items=DIGITAL_CONCEPTS />
       <TableSection
         title="数字调制方式"

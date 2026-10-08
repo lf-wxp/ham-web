@@ -9,9 +9,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn SwlPage() -> impl IntoView {
-  set_title(&t("SWL 短波监听"));
+  set_title("shell.swl");
   view! {
-    <KnowledgePage title=t("SWL 短波监听") subtitle=t("短波广播 · 数传解码 · 接收入门")>
+    <KnowledgePage title=t("shell.swl") subtitle=t("knowledge.shortwave-broadcast-data-decoding")>
       <TableSection title="可监听内容" headers=&["名称", "类别", "说明"] rows=SWL_TARGETS min_width=520 />
       <ConceptsSection title="常用短波广播频段" items=SWL_BANDS inline=true />
       <BulletSection title="入门要点" items=SWL_TIPS />

@@ -4,12 +4,12 @@ use ham_web_core::contest_calendar::{CONTEST_CALENDAR, ContestEvent, next_start}
 use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, ButtonLink, Size, Variant};
 use crate::util::{alert, set_title};
 
 #[component]
 pub fn ContestCalendarPage() -> impl IntoView {
-  set_title(&t("竞赛日历"));
+  set_title("shell.contest-calendar");
 
   let now = js_sys::Date::new_0();
   let now_t = (
@@ -29,8 +29,8 @@ pub fn ContestCalendarPage() -> impl IntoView {
     let (y, m, d) = next_start(e, now_t);
     let month_start = js_sys::Date::utc(y as f64, (m - 1) as f64);
     let target = month_start + (d as f64 - 1.0) * 86_400_000.0;
-    super::countdown::add_countdown(&tf("竞赛：{}", &[(e.name)]), target as i64);
-    alert(&tf("已把「{}」加入倒计时提醒", &[(e.name)]));
+    super::countdown::add_countdown(&tf("contest.contest-2", &[(e.name)]), target as i64);
+    alert(&tf("contest.added-to-countdown-reminders", &[(e.name)]));
   };
 
   view! {
@@ -38,24 +38,28 @@ pub fn ContestCalendarPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("竞赛日历")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("全球主要竞赛 · 加入倒计时提醒")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.contest-calendar")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("contest.major-global-contests-add")}</div>
           </div>
-          <a href="/countdown" class=button_class(Variant::Outline, Size::Sm, "")>
-            {move || t("我的倒计时")}
-          </a>
+          <ButtonLink
+            href="/countdown"
+            variant=Variant::Outline
+            size=Size::Sm
+          >
+            {move || t("contest.my-countdowns")}
+          </ButtonLink>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("全年竞赛（按下一届开始时间排序）")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.all-contests-sorted-by")}</h2>
           <div class="divide-y">
             {scheduled
               .iter()
               .map(|(e, (y, m, d))| {
                 let ev = *e;
-                let dur = if ev.duration_days <= 1 { t("24 小时") } else { t("48 小时") };
+                let dur = if ev.duration_days <= 1 { t("contest.24-hours") } else { t("contest.48-hours") };
                 view! {
                   <div class="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_auto]">
                     <div class="min-w-0">
@@ -67,7 +71,7 @@ pub fn ContestCalendarPage() -> impl IntoView {
                       </div>
                       <div class="mt-0.5 text-xs tabular-nums text-muted-foreground">
                         {tf(
-                          "{} 年 {} 月 {} 日 · {} · 交换：{}",
+                          "contest.exchange",
                           &[
                             &y.to_string(),
                             &m.to_string(),
@@ -81,17 +85,21 @@ pub fn ContestCalendarPage() -> impl IntoView {
                     </div>
                     <div class="flex items-center gap-2 sm:justify-end">
                       {ev.contest_id.map(|cid| view! {
-                        <a href=format!("/contest-log?contest={cid}") class=button_class(Variant::Outline, Size::Sm, "")>
-                          {move || t("开新场次")}
-                        </a>
+                        <ButtonLink
+                          href=format!("/contest-log?contest={cid}")
+                          variant=Variant::Outline
+                          size=Size::Sm
+                        >
+                          {move || t("contest.start-session")}
+                        </ButtonLink>
                       })}
-                      <button
-                        type="button"
-                        class=button_class(Variant::Secondary, Size::Sm, "")
-                        on:click=move |_| add_reminder(ev)
+                      <Button
+                        variant=Variant::Secondary
+                        size=Size::Sm
+                        on_click=Callback::new(move |_| add_reminder(ev))
                       >
-                        {move || t("加入提醒")}
-                      </button>
+                        {move || t("contest.add-reminder")}
+                      </Button>
                     </div>
                   </div>
                 }
@@ -99,25 +107,25 @@ pub fn ContestCalendarPage() -> impl IntoView {
               .collect_view()}
           </div>
           <p class="px-4 py-3 text-xs text-muted-foreground">
-            {move || t("日期为 UTC 起始（常见规则推算），具体以主办方公告为准；「加入提醒」会把开赛时间写入倒计时，到期通过浏览器通知提醒。")}
+            {move || t("contest.dates-are-utc-start")}
           </p>
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("参赛小贴士")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.contest-tips")}</h2>
           <ul class="space-y-2 p-4">
             <li class="flex gap-2 text-sm text-muted-foreground">
               <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-              <span>{move || t("竞赛常用「CQ TEST」呼叫，回答前先听清对方守听频率（如 UP 5）。")}</span>
+              <span>{move || t("contest.contests-often-use-cq")}</span>
             </li>
             <li class="flex gap-2 text-sm text-muted-foreground">
               <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-              <span>{move || t("赛后可到「竞赛录入」快速记录，并一键导出 Cabrillo 日志提交。")}</span>
+              <span>{move || t("contest.after-the-contest-log")}</span>
             </li>
           </ul>
           <div class="px-4 pb-4">
             <a href="/contest-log" class="text-xs text-primary underline-offset-4 hover:underline">
-              {move || t("前往竞赛录入 →")}
+              {move || t("contest.go-to-contest-logging")}
             </a>
           </div>
         </section>

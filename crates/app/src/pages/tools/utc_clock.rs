@@ -52,9 +52,9 @@ pub(super) fn UtcClock() -> impl IntoView {
         <table class="w-full min-w-[480px] border-collapse text-sm">
           <thead class="bg-muted/60 text-xs">
             <tr>
-              <th class="border px-3 py-2 text-left">{move || t("时区")}</th>
-              <th class="border px-3 py-2 text-left">{move || t("偏移")}</th>
-              <th class="border px-3 py-2 text-left">{move || t("当前时间")}</th>
+              <th class="border px-3 py-2 text-left">{move || t("tools.time-zone")}</th>
+              <th class="border px-3 py-2 text-left">{move || t("tools.offset")}</th>
+              <th class="border px-3 py-2 text-left">{move || t("radio.current-time")}</th>
             </tr>
           </thead>
           <tbody>
@@ -80,7 +80,7 @@ pub(super) fn UtcClock() -> impl IntoView {
       </div>
 
       <p class="text-xs text-muted-foreground">
-        {move || t("通联日志、竞赛与卫星过境统一用 UTC 记录；跨日期变更线时注意日期 ±1 天。")}
+        {move || t("tools.log-contacts-contests-and")}
       </p>
     </div>
   }

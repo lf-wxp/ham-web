@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, pickOption, test } from "./fixtures";
 
 test("闪卡刷题：显示答案后自评，不会的进入错题本", async ({ page }) => {
   await page.goto("/flashcards");
@@ -92,10 +92,10 @@ test("打印版：收藏一题后可打印，答案模式可切换", async ({ pa
   // 默认答案集中在末尾
   await expect(page.getByRole("heading", { level: 2, name: "参考答案" })).toBeVisible();
 
-  await page.getByLabel("答案").selectOption("inline");
+  await pickOption(page, "答案", "随题显示");
   await expect(page.getByText(/答案：/).first()).toBeVisible();
 
   // 不显示答案时解析勾选被禁用
-  await page.getByLabel("答案").selectOption("hidden");
+  await pickOption(page, "答案", "不显示");
   await expect(page.getByText(/答案：/)).toHaveCount(0);
 });

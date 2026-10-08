@@ -72,7 +72,7 @@ pub(super) fn PhotoUploader(
         >
           <Icon kind=icon class="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
           <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{title}</span>
-          <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">{move || t("点击选择或拖拽文件到此处")}</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">{move || t("tools.click-to-choose-or")}</span>
           <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">{hint}</span>
         </label>
         <input
@@ -99,15 +99,15 @@ pub(super) fn PhotoUploader(
           PhotoKind::Id,
           "id-file",
           IconKind::CreditCard,
-          t("选取证件照"),
-          t("推荐尺寸: 1024×768 - 4096×3072"),
+          t("tools.choose-an-id-photo"),
+          t("tools.recommended-1024-768-4096"),
         )}
       {zone(
           PhotoKind::Profile,
           "profile-file",
           IconKind::User,
-          t("选取人像照"),
-          t("推荐尺寸: 300×400 - 3375×4500"),
+          t("tools.choose-a-portrait-photo"),
+          t("tools.recommended-300-400-3375"),
         )}
     </div>
   }

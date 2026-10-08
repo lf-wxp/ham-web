@@ -3,8 +3,9 @@ use std::time::Duration;
 use ham_web_core::cw_op::CW_ABBREVIATIONS;
 use leptos::prelude::*;
 
-use super::{btn_secondary, random_index};
+use super::random_index;
 use crate::i18n::t;
+use crate::ui::{Button, Variant};
 
 /// CW 缩语速答：给出缩语，从四个含义中选出正确项。
 #[component]
@@ -50,10 +51,10 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
 
   view! {
     <section class="rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("缩语速答")}</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("morse.abbreviation-quiz")}</h2>
       <div class="space-y-4 p-4">
         <div class="flex flex-col items-center gap-3 rounded-xl border bg-muted/30 px-4 py-6">
-          <div class="text-xs text-muted-foreground">{move || t("这个缩语是什么意思？")}</div>
+          <div class="text-xs text-muted-foreground">{move || t("morse.what-does-this-abbreviation")}</div>
           <div class="font-mono text-4xl font-semibold tabular-nums text-primary">
             {move || CW_ABBREVIATIONS[current.get()].0}
           </div>
@@ -82,7 +83,7 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
               feedback.get().map(|ok| {
                 if ok {
                   view! {
-                    <span class="inline-flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400 animate-in fade-in zoom-in-95 duration-200">{move || t("正确！")}</span>
+                    <span class="inline-flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400 animate-in fade-in zoom-in-95 duration-200">{move || t("learning.correct")}</span>
                   }
                   .into_any()
                 } else {
@@ -98,12 +99,16 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
         </div>
         <div class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
           <span>
-            {move || t("正确 ")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
+            {move || t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
           </span>
           <span>
-            {move || t("错误 ")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
+            {move || t("morse.wrong")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
           </span>
-          <button type="button" on:click=move |_| next() class=btn_secondary("")>{move || t("下一题")}</button>
+          <Button
+            variant=Variant::Outline
+            class="rounded-lg h-10"
+            on_click=Callback::new(move |_| next())
+          >{move || t("exam.next")}</Button>
         </div>
       </div>
     </section>

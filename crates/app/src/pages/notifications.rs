@@ -5,8 +5,8 @@ use ham_web_core::sat_watch::SatWatch;
 use leptos::prelude::*;
 use web_sys::{Notification, NotificationPermission};
 
-use crate::i18n::{t, tf};
-use crate::ui::{Size, Variant, button_class};
+use crate::i18n::{t, tf, tp};
+use crate::ui::{Button, Size, Variant};
 use crate::util::{set_title, storage};
 
 const DX_KEY: &str = "dx-alerts";
@@ -31,7 +31,7 @@ fn toggle_class(on: bool) -> &'static str {
 /// 通知中心页面。
 #[component]
 pub fn NotificationsPage() -> impl IntoView {
-  set_title(&t("通知中心"));
+  set_title("settings.notifications");
 
   let permission = RwSignal::new(Notification::permission());
   let dx = RwSignal::new(storage::get_json::<AlertSettings>(DX_KEY).unwrap_or_default());
@@ -51,9 +51,9 @@ pub fn NotificationsPage() -> impl IntoView {
   };
 
   let perm_label = move || match permission.get() {
-    NotificationPermission::Granted => t("已授权"),
-    NotificationPermission::Denied => t("已拒绝"),
-    _ => t("尚未请求"),
+    NotificationPermission::Granted => t("settings.granted"),
+    NotificationPermission::Denied => t("settings.denied"),
+    _ => t("settings.not-requested"),
   };
 
   let toggle_dxcc = move |_| {
@@ -78,8 +78,8 @@ pub fn NotificationsPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("通知中心")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("集中管理浏览器通知权限与提醒开关")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("settings.notifications")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("settings.manage-browser-notification-permission")}</div>
           </div>
         </div>
       </header>
@@ -87,63 +87,67 @@ pub fn NotificationsPage() -> impl IntoView {
       <div class="mx-auto max-w-3xl space-y-4 px-4 py-5">
         <section class="rounded-xl border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("浏览器通知权限")}</h2>
+            <h2 class="mr-auto text-sm font-semibold">{move || t("settings.browser-notification-permission")}</h2>
             <span class="text-xs text-muted-foreground">{perm_label}</span>
             {move || {
               (!matches!(permission.get(), NotificationPermission::Granted)).then(|| {
                 view! {
-                  <button
-                    type="button"
-                    class=button_class(Variant::Default, Size::Sm, "")
-                    on:click=request
+                  <Button
+                    variant=Variant::Default
+                    size=Size::Sm
+                    on_click=Callback::new(move |_| request(()))
                   >
-                    {move || t("请求权限")}
-                  </button>
+                    {move || t("settings.request-permission")}
+                  </Button>
                 }
               })
             }}
           </div>
           <p class="px-4 py-3 text-xs text-muted-foreground">
-            {move || t("提醒仅在页面打开期间生效；被系统拒绝后需在浏览器设置里手动开启。")}
+            {move || t("settings.alerts-only-fire-while")}
           </p>
         </section>
 
         <section class="rounded-xl border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("倒计时提醒")}</h2>
+            <h2 class="mr-auto text-sm font-semibold">{move || t("settings.countdown-reminders")}</h2>
             <span class="text-xs text-muted-foreground">
-              {tf("{} 个倒计时", &[&count.get().to_string()])}
+              {tp("settings.countdowns", count.get() as u32, &[&count.get().to_string()])}
             </span>
           </div>
           <div class="px-4 py-3 text-xs text-muted-foreground">
-            {move || t("在倒计时页添加考试日、执照到期等目标，到期时浏览器会弹出通知。")}
+            {move || t("settings.add-targets-like-exam")}
             <a href="/countdown" class="ml-1 text-primary underline underline-offset-4 hover:underline">
-              {move || t("管理倒计时 →")}
+              {move || t("settings.manage-countdowns")}
             </a>
           </div>
         </section>
 
         <section class="rounded-xl border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("DX 热点提醒")}</h2>
+            <h2 class="mr-auto text-sm font-semibold">{move || t("tools.dx-spot-alerts")}</h2>
           </div>
           <div class="space-y-3 px-4 py-3">
             <div class="flex items-center justify-between gap-2">
-              <span class="text-sm">{move || t("新 DXCC 实体")}</span>
+              <span class="text-sm">{move || t("settings.new-dxcc-entity")}</span>
               <button type="button" class=toggle_class(dx.get_untracked().new_dxcc) on:click=toggle_dxcc>
-                {move || if dx.get().new_dxcc { t("已开启") } else { t("已关闭") }}
+                {move || if dx.get().new_dxcc { t("settings.on") } else { t("settings.off") }}
               </button>
             </div>
             <div class="flex items-center justify-between gap-2">
-              <span class="text-sm">{move || t("已通联实体的新波段")}</span>
+              <span class="text-sm">{move || t("settings.new-band-on-worked")}</span>
               <button type="button" class=toggle_class(dx.get_untracked().new_band) on:click=toggle_band>
-                {move || if dx.get().new_band { t("已开启") } else { t("已关闭") }}
+                {move || if dx.get().new_band { t("settings.on") } else { t("settings.off") }}
               </button>
             </div>
             <div class="text-xs text-muted-foreground">
-              {tf("关注呼号 {} 个", &[&dx.get_untracked().calls.len().to_string()])}
+              {tp(
+                "settings.watched-callsigns",
+                dx.get_untracked().calls.len() as u32,
+                &[&dx.get_untracked().calls.len().to_string()],
+              )}
               <a href="/dx-spots" class="ml-1 text-primary underline underline-offset-4 hover:underline">
-                {move || t("到 DX 热点页设置 →")}
+                {move || t("settings.configure-on-dx-spots")}
               </a>
             </div>
           </div>
@@ -151,25 +155,25 @@ pub fn NotificationsPage() -> impl IntoView {
 
         <section class="rounded-xl border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("卫星过境提醒")}</h2>
+            <h2 class="mr-auto text-sm font-semibold">{move || t("settings.satellite-pass-alerts")}</h2>
           </div>
           <div class="space-y-3 px-4 py-3">
             <div class="flex items-center justify-between gap-2">
-              <span class="text-sm">{move || t("收藏卫星过境提醒")}</span>
+              <span class="text-sm">{move || t("settings.favorite-satellite-pass-alerts")}</span>
               <button type="button" class=toggle_class(sat.get_untracked().alerts) on:click=toggle_sat>
-                {move || if sat.get().alerts { t("已开启") } else { t("已关闭") }}
+                {move || if sat.get().alerts { t("settings.on") } else { t("settings.off") }}
               </button>
             </div>
             <div class="flex items-center justify-between gap-2">
-              <span class="text-sm">{move || t("APT 气象卫星录制提醒")}</span>
+              <span class="text-sm">{move || t("settings.apt-weather-satellite-recording")}</span>
               <button type="button" class=toggle_class(sat.get_untracked().apt_alert) on:click=toggle_apt>
-                {move || if sat.get().apt_alert { t("已开启") } else { t("已关闭") }}
+                {move || if sat.get().apt_alert { t("settings.on") } else { t("settings.off") }}
               </button>
             </div>
             <div class="text-xs text-muted-foreground">
-              {move || t("收藏卫星与提前量在卫星页设置。")}
+              {move || t("settings.favorite-satellites-and-lead")}
               <a href="/satellites" class="ml-1 text-primary underline underline-offset-4 hover:underline">
-                {move || t("到卫星页设置 →")}
+                {move || t("settings.configure-on-satellites-page")}
               </a>
             </div>
           </div>
@@ -177,58 +181,58 @@ pub fn NotificationsPage() -> impl IntoView {
 
         <section class="rounded-xl border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("后台推送")}</h2>
+            <h2 class="mr-auto text-sm font-semibold">{move || t("settings.background-push")}</h2>
             <span class="text-xs text-muted-foreground">
-              {move || if subscribed.get() { t("已订阅") } else { t("未订阅") }}
+              {move || if subscribed.get() { t("settings.subscribed") } else { t("settings.not-subscribed") }}
             </span>
           </div>
           <div class="space-y-3 px-4 py-3">
             <p class="text-xs text-muted-foreground">
-              {move || t("订阅后即使页面关闭也能收到每日学习提醒（由后端推送服务定时发送）。")}
+              {move || t("settings.receive-daily-study-reminders")}
             </p>
             {if !supported {
               view! {
-                <p class="text-xs text-muted-foreground">{move || t("当前浏览器不支持 Web Push。")}</p>
+                <p class="text-xs text-muted-foreground">{move || t("settings.this-browser-doesn-t")}</p>
               }
               .into_any()
             } else {
               view! {
                 <div class="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    class=button_class(Variant::Default, Size::Sm, "")
-                    disabled=move || subscribed.get()
-                    on:click=move |_| {
-                      leptos::task::spawn_local(async move {
-                        match crate::push::fetch_public_key().await {
-                          None => status.set(Some(t("未配置推送服务"))),
-                          Some(key) => match crate::push::subscribe(&key).await {
-                            Ok(_) => {
-                              subscribed.set(true);
-                              status.set(None);
-                            }
-                            Err(e) => status.set(Some(tf("订阅失败：{}", &[&e]))),
-                          },
-                        }
-                      });
-                    }
+                  <Button
+                    variant=Variant::Default
+                    size=Size::Sm
+                    disabled=Signal::derive(move || subscribed.get())
+                    on_click=Callback::new(move |_| {
+                                        leptos::task::spawn_local(async move {
+                                          match crate::push::fetch_public_key().await {
+                                            None => status.set(Some(t("settings.push-service-not-configured"))),
+                                            Some(key) => match crate::push::subscribe(&key).await {
+                                              Ok(_) => {
+                                                subscribed.set(true);
+                                                status.set(None);
+                                              }
+                                              Err(e) => status.set(Some(tf("settings.subscribe-failed", &[&e]))),
+                                            },
+                                          }
+                                        });
+                                      })
                   >
-                    {move || t("订阅后台推送")}
-                  </button>
-                  <button
-                    type="button"
-                    class=button_class(Variant::Outline, Size::Sm, "")
-                    disabled=move || !subscribed.get()
-                    on:click=move |_| {
-                      leptos::task::spawn_local(async move {
-                        crate::push::unsubscribe().await;
-                        subscribed.set(false);
-                        status.set(None);
-                      });
-                    }
+                    {move || t("settings.subscribe-to-push")}
+                  </Button>
+                  <Button
+                    variant=Variant::Outline
+                    size=Size::Sm
+                    disabled=Signal::derive(move || !subscribed.get())
+                    on_click=Callback::new(move |_| {
+                                        leptos::task::spawn_local(async move {
+                                          crate::push::unsubscribe().await;
+                                          subscribed.set(false);
+                                          status.set(None);
+                                        });
+                                      })
                   >
-                    {move || t("退订")}
-                  </button>
+                    {move || t("settings.unsubscribe")}
+                  </Button>
                 </div>
               }
               .into_any()

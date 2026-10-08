@@ -15,9 +15,9 @@ use leptos_router::hooks::use_navigate;
 
 use crate::components::question_card::QuestionCard;
 use crate::data;
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 use crate::pages::{use_bank_query, use_no_site_footer};
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, Size, Variant};
 use crate::util::{local_today, now_ms, set_title, storage};
 
 const KEY: &str = "daily-challenge";
@@ -32,7 +32,7 @@ fn save_results(r: &DailyResults) {
 
 #[component]
 pub fn DailyChallengePage() -> impl IntoView {
-  set_title(&t("每日挑战"));
+  set_title("learning.daily-challenge");
   use_no_site_footer();
   let (version, bank) = use_bank_query();
   let navigate = use_navigate();
@@ -137,9 +137,9 @@ pub fn DailyChallengePage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("每日挑战")}</h1>
+            <h1 class="text-base font-semibold leading-tight">{move || t("learning.daily-challenge")}</h1>
             <div class="text-xs text-muted-foreground">
-              {tf("每天 {} 题限时 {} 分钟 · 同一天同一组题", &[&CHALLENGE_COUNT.to_string(), &CHALLENGE_MINUTES.to_string()])}
+              {tf("learning.questions-a-day-in", &[&CHALLENGE_COUNT.to_string(), &CHALLENGE_MINUTES.to_string()])}
             </div>
           </div>
           <div class="flex overflow-hidden rounded-lg border text-xs">
@@ -168,39 +168,44 @@ pub fn DailyChallengePage() -> impl IntoView {
       <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
         {move || {
           if loading.get() {
-            return view! { <div class="rounded-xl border bg-card px-4 py-12 text-center text-sm text-muted-foreground">{move || t("正在加载今日题目…")}</div> }.into_any();
+            return view! { <div class="rounded-xl border bg-card px-4 py-12 text-center text-sm text-muted-foreground">{move || t("learning.loading-today-s-questions")}</div> }.into_any();
           }
           if !started.get() && !finished.get() {
             let done = today_result();
             return view! {
               <section class="rounded-xl border bg-card px-4 py-10 text-center">
-                <div class="text-lg font-semibold">{move || t("今日挑战")}</div>
+                <div class="text-lg font-semibold">{move || t("learning.today-s-challenge")}</div>
                 <div class="mt-2 text-sm text-muted-foreground">
-                  {tf("{} 题 · 限时 {} 分钟 · 交卷后计入打卡", &[&CHALLENGE_COUNT.to_string(), &CHALLENGE_MINUTES.to_string()])}
+                  {tf("learning.questions-minute-limit-counts", &[&CHALLENGE_COUNT.to_string(), &CHALLENGE_MINUTES.to_string()])}
                 </div>
                 {done.map(|r| view! {
                   <div class="mt-3 text-sm text-muted-foreground">
-                    {tf("今日已完成：答对 {} / {}（{}%）", &[&r.correct.to_string(), &r.total.to_string(), &r.percent().to_string()])}
+                    {tp(
+                      "learning.done-today-correct",
+                      r.total as u32,
+                      &[&r.correct.to_string(), &r.total.to_string(), &r.percent().to_string()],
+                    )}
                   </div>
                 })}
                 {(cur_streak() > 0).then(|| view! {
                   <div class="mt-2 text-xs text-muted-foreground">
-                    {tf("连续挑战 {} 天 · 最长 {} 天", &[&cur_streak().to_string(), &best_streak().to_string()])}
+                    {tp("learning.challenge-streak-days-best", cur_streak(), &[&cur_streak().to_string(), &best_streak().to_string()])}
                   </div>
                 })}
-                <button
-                  type="button"
-                  class=format!("{} mt-5", button_class(Variant::Default, Size::Default, ""))
-                  on:click=move |_| {
-                    answers.set(HashMap::new());
-                    finished.set(false);
-                    started.set(true);
-                    deadline.set(now_ms() + i64::from(CHALLENGE_MINUTES) * 60_000);
-                    remaining.set(i64::from(CHALLENGE_MINUTES) * 60);
-                  }
+                <Button
+                  variant=Variant::Default
+                  size=Size::Default
+                  class="mt-5"
+                  on_click=Callback::new(move |_| {
+                                    answers.set(HashMap::new());
+                                    finished.set(false);
+                                    started.set(true);
+                                    deadline.set(now_ms() + i64::from(CHALLENGE_MINUTES) * 60_000);
+                                    remaining.set(i64::from(CHALLENGE_MINUTES) * 60);
+                                  })
                 >
-                  {if done.is_some() { t("再挑战一次") } else { t("开始挑战") }}
-                </button>
+                  {if done.is_some() { t("learning.try-again") } else { t("learning.start-challenge") }}
+                </Button>
               </section>
             }.into_any();
           }
@@ -208,24 +213,29 @@ pub fn DailyChallengePage() -> impl IntoView {
             let done = today_result();
             return view! {
               <section class="rounded-xl border bg-card px-4 py-10 text-center">
-                <div class="text-lg font-semibold">{move || t("挑战完成")}</div>
+                <div class="text-lg font-semibold">{move || t("learning.challenge-complete")}</div>
                 {done.map(|r| view! {
                   <div class="mt-2 text-sm text-muted-foreground">
-                    {tf("答对 {} / {}（{}%）", &[&r.correct.to_string(), &r.total.to_string(), &r.percent().to_string()])}
+                    {tp(
+                      "learning.correct-2",
+                      r.total as u32,
+                      &[&r.correct.to_string(), &r.total.to_string(), &r.percent().to_string()],
+                    )}
                   </div>
                 })}
                 {(cur_streak() > 0).then(|| view! {
                   <div class="mt-2 text-xs text-muted-foreground">
-                    {tf("连续挑战 {} 天 · 最长 {} 天", &[&cur_streak().to_string(), &best_streak().to_string()])}
+                    {tp("learning.challenge-streak-days-best", cur_streak(), &[&cur_streak().to_string(), &best_streak().to_string()])}
                   </div>
                 })}
-                <button
-                  type="button"
-                  class=format!("{} mt-5", button_class(Variant::Default, Size::Default, ""))
-                  on:click=move |_| { finished.set(false); }
+                <Button
+                  variant=Variant::Default
+                  size=Size::Default
+                  class="mt-5"
+                  on_click=Callback::new(move |_| { finished.set(false); })
                 >
-                  {move || t("查看题目")}
-                </button>
+                  {move || t("learning.view-questions")}
+                </Button>
               </section>
             }.into_any();
           }
@@ -259,15 +269,16 @@ pub fn DailyChallengePage() -> impl IntoView {
           view! {
             <div class="sticky top-0 z-10 rounded-xl border bg-card p-3">
               <div class="flex items-center gap-3">
-                <span class="text-xs text-muted-foreground">{move || t("剩余时间")}</span>
+                <span class="text-xs text-muted-foreground">{move || t("learning.time-left")}</span>
                 <span class="font-mono text-lg font-semibold tabular-nums">{mmss}</span>
-                <button
-                  type="button"
-                  class=format!("{} ml-auto", button_class(Variant::Default, Size::Sm, ""))
-                  on:click=move |_| submit.run(())
+                <Button
+                  variant=Variant::Default
+                  size=Size::Sm
+                  class="ml-auto"
+                  on_click=Callback::new(move |_| submit.run(()))
                 >
-                  {move || t("交卷")}
-                </button>
+                  {move || t("exam.submit")}
+                </Button>
               </div>
             </div>
             <div class="space-y-4">{list}</div>

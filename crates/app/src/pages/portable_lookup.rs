@@ -6,7 +6,7 @@ use leptos::task::spawn_local;
 use crate::data;
 use crate::i18n::t;
 use crate::pages::log::use_log_store;
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{Button, Input, Size, Variant};
 use crate::util::alert;
 
 /// SOTA 山峰详情。
@@ -94,9 +94,9 @@ pub fn PortableLookup() -> impl IntoView {
 
   view! {
     <section class="rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("SOTA / POTA 编号查询")}</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.sota-pota-reference-lookup")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
-        {move || t("输入 SOTA 山峰编号（如 G/SP-001）或 POTA 公园编号（如 K-0001），查询名称、积分 / 位置与网格，并对照本地日志统计激活次数。")}
+        {move || t("radio.enter-a-sota-summit")}
       </p>
       <div class="flex flex-wrap items-center gap-3 p-4">
         <div class="flex rounded-lg border p-0.5">
@@ -111,7 +111,7 @@ pub fn PortableLookup() -> impl IntoView {
             }
             on:click=move |_| pota.set(false)
           >
-            {move || t("SOTA 山峰")}
+            {move || t("radio.sota-summits")}
           </button>
           <button
             type="button"
@@ -124,27 +124,32 @@ pub fn PortableLookup() -> impl IntoView {
             }
             on:click=move |_| pota.set(true)
           >
-            {move || t("POTA 公园")}
+            {move || t("radio.pota-parks")}
           </button>
         </div>
-        <input
-          type="text"
-          placeholder=move || if pota.get() { t("如 K-0001") } else { t("如 G/SP-001") }
-          aria-label=move || t("编号")
-          prop:value=move || code.get()
-          on:input=move |e| code.set(event_target_value(&e))
-          class=input_class("max-w-xs font-mono uppercase")
+        <Input
+          value=code
+          on_change=Callback::new(move |v: String| code.set(v))
+          placeholder=Signal::derive(move || {
+            if pota.get() { t("radio.e-g-k-0001") } else { t("radio.e-g-g-sp") }
+          })
+          aria_label=Signal::derive(move || t("radio.reference-2"))
+          class="max-w-xs font-mono uppercase"
         />
-        <button type="button" class=button_class(Variant::Default, Size::Default, "") on:click=move |_| run()>
-          {move || if loading.get() { t("查询中…") } else { t("查询") }}
-        </button>
+        <Button
+          variant=Variant::Default
+          size=Size::Default
+          on_click=Callback::new(move |_| run())
+        >
+          {move || if loading.get() { t("log.looking-up") } else { t("log.look-up") }}
+        </Button>
       </div>
 
       {move || {
         if failed.get() {
           return view! {
             <p class="px-4 pb-4 text-sm text-muted-foreground">
-              {move || t("查询失败：编号不存在，或请确认已通过后端（dev-full / serve）访问。")}
+              {move || t("radio.lookup-failed-the-reference")}
             </p>
           }
           .into_any();
@@ -159,12 +164,12 @@ pub fn PortableLookup() -> impl IntoView {
                   <span class="text-xs text-muted-foreground">{s.region}</span>
                 </div>
                 <div class="flex flex-wrap gap-x-5 text-xs text-muted-foreground">
-                  <span>{t("海拔 ")} <b class="tabular-nums text-foreground">{s.altitude_m} " m"</b></span>
-                  <span>{t("积分 ")} <b class="tabular-nums text-foreground">{s.points}</b></span>
+                  <span>{t("radio.altitude")} <b class="tabular-nums text-foreground">{s.altitude_m} " m"</b></span>
+                  <span>{t("radio.points")} <b class="tabular-nums text-foreground">{s.points}</b></span>
                   <span class="tabular-nums">{coord(s.latitude, s.longitude)}</span>
                 </div>
                 <div class="pt-1 text-xs text-muted-foreground">
-                  {t("本地日志已激活 ")} <b class="tabular-nums text-foreground">{local_count(s.reference)}</b> {t(" 次")}
+                  {t("radio.logged-locally")} <b class="tabular-nums text-foreground">{local_count(s.reference)}</b> {t("radio.times")}
                 </div>
               </div>
             }.into_any(),
@@ -176,11 +181,11 @@ pub fn PortableLookup() -> impl IntoView {
                   <span class="text-xs text-muted-foreground">{p.entity}</span>
                 </div>
                 <div class="flex flex-wrap gap-x-5 text-xs text-muted-foreground">
-                  <span>{t("网格 ")} <b class="font-mono text-foreground">{p.grid}</b></span>
+                  <span>{t("radio.grid")} <b class="font-mono text-foreground">{p.grid}</b></span>
                   <span class="tabular-nums">{coord(p.latitude, p.longitude)}</span>
                 </div>
                 <div class="pt-1 text-xs text-muted-foreground">
-                  {t("本地日志已激活 ")} <b class="tabular-nums text-foreground">{local_count(p.reference)}</b> {t(" 次")}
+                  {t("radio.logged-locally")} <b class="tabular-nums text-foreground">{local_count(p.reference)}</b> {t("radio.times")}
                 </div>
               </div>
             }.into_any(),
@@ -190,7 +195,7 @@ pub fn PortableLookup() -> impl IntoView {
       }}
 
       <p class="px-4 pb-4 text-xs text-muted-foreground">
-        {move || t("数据来自 SOTA（api2.sota.org.uk）与 POTA（api.pota.app）公开接口；在通联日志「更多字段」里可填写 SOTA / POTA 编号。")}
+        {move || t("radio.data-from-the-public-2")}
       </p>
     </section>
   }

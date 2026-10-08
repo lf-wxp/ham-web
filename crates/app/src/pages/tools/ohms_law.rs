@@ -54,10 +54,10 @@ pub(super) fn OhmsLaw() -> impl IntoView {
             Some((name, value, power)) => view! {
               <span>
                 {name} " = " <span class="font-mono font-semibold text-foreground">{fmt_num(value)}</span>
-                {move || t("　功率 P = ")} <span class="font-mono font-semibold text-foreground">{fmt_num(power)}</span> " W"
+                {move || t("tools.power-p")} <span class="font-mono font-semibold text-foreground">{fmt_num(power)}</span> " W"
               </span>
             }.into_any(),
-            None => view! { {move || t("填写任意两项（U、I、R）后自动计算。")} }.into_any(),
+            None => view! { {move || t("tools.fill-in-any-two")} }.into_any(),
           }
         }}
       </div>

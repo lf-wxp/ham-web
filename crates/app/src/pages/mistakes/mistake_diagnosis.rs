@@ -5,7 +5,7 @@ use ham_web_core::mistake_book::cause_stats;
 use leptos::prelude::*;
 
 use super::mistakes_page::top_of;
-use crate::i18n::t;
+use crate::i18n::{Locale, locale, t, tf, tp};
 use crate::study;
 
 /// 一级分类 key → 中文名。
@@ -54,29 +54,43 @@ pub(super) fn MistakeDiagnosis() -> impl IntoView {
   let summary = {
     let mut parts: Vec<String> = Vec::new();
     if let Some((key, n)) = top_cat {
-      parts.push(format!(
-        "{}「{}」（{} 道）",
-        t("错题最集中在"),
-        t(category_name(key)),
-        n
+      parts.push(tp(
+        "common.questions-2",
+        n as u32,
+        &[
+          &t("exam.most-mistakes-are-in"),
+          &t(category_name(key)),
+          &n.to_string(),
+        ],
       ));
     }
     if let Some((name, n)) = top_cause {
-      parts.push(format!("{}「{}」（{} 道）", t("主要错因是"), t(name), n));
+      parts.push(tp(
+        "common.questions-2",
+        n as u32,
+        &[&t("exam.main-cause-is"), &t(name), &n.to_string()],
+      ));
     }
     if let Some((key, tally)) = weakest {
       let rate = (tally.rate().unwrap_or(0.0) * 100.0).round() as u32;
-      parts.push(format!(
-        "{}「{}」（正确率 {}%）",
-        t("最薄弱环节是"),
-        t(category_name(key)),
-        rate
+      parts.push(tf(
+        "common.correct",
+        &[
+          &t("exam.weakest-area-is"),
+          &t(category_name(key)),
+          &rate.to_string(),
+        ],
       ));
     }
     if parts.is_empty() {
-      t("错题不多，继续保持。")
+      t("exam.few-mistakes-keep-it")
     } else {
-      format!("{}。", parts.join("；"))
+      // 标点也随语言走：原先写死的中文标点会让整句在 en / es 下仍是中文句式
+      let (sep, end) = match locale().get() {
+        Locale::Zh => ("；", "。"),
+        _ => ("; ", "."),
+      };
+      format!("{}{}", parts.join(sep), end)
     }
   };
 
@@ -90,7 +104,7 @@ pub(super) fn MistakeDiagnosis() -> impl IntoView {
 
   view! {
     <div class="rounded-xl border bg-card p-4">
-      <h3 class="mb-2 text-sm font-semibold">{move || t("错题诊断")}</h3>
+      <h3 class="mb-2 text-sm font-semibold">{move || t("exam.mistake-diagnosis")}</h3>
       <p class="text-sm text-muted-foreground">{summary}</p>
       <div class="mt-3 flex flex-wrap gap-1.5">
         {top_cat_href.map(|href| view! {
@@ -98,7 +112,7 @@ pub(super) fn MistakeDiagnosis() -> impl IntoView {
             href=href
             class="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
           >
-            {move || t("复习薄弱专题 →")}
+            {move || t("exam.review-weak-topic")}
           </a>
         })}
         {weak_href.map(|href| view! {
@@ -106,7 +120,7 @@ pub(super) fn MistakeDiagnosis() -> impl IntoView {
             href=href
             class="rounded-full border px-3 py-1 text-xs transition-colors hover:bg-accent"
           >
-            {move || t("专项练习 →")}
+            {move || t("exam.targeted-practice")}
           </a>
         })}
       </div>

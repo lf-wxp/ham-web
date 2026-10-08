@@ -1,23 +1,24 @@
 use leptos::prelude::*;
 
-use super::{INPUT, RESULT, fmt_num};
-use crate::i18n::{t, tf};
+use super::{RESULT, fmt_num};
+use crate::i18n::{t, tp};
+use crate::ui::{Field, Input};
+use crate::util::unique_id;
 
 /// 级联增益：多个 dB 相加（用逗号或空格分隔）。
 #[component]
 pub(super) fn CascadeGain() -> impl IntoView {
   let input = RwSignal::new("3, 6".to_owned());
+  let input_id = unique_id("cascade-gain");
 
   view! {
     <div class="space-y-3">
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("各级增益（dB，用逗号或空格分隔）")}</span>
-        <input
-          prop:value=move || input.get()
-          on:input=move |e| input.set(event_target_value(&e))
-          class=INPUT
-        />
-      </label>
+      <Field
+        label=Signal::derive(move || t("tools.stage-gains-db-separated"))
+        r#for=input_id.clone()
+      >
+        <Input id=input_id value=input on_change=Callback::new(move |v: String| input.set(v)) />
+      </Field>
       <div class=RESULT>
         {move || {
           let values: Vec<f64> = input
@@ -26,8 +27,9 @@ pub(super) fn CascadeGain() -> impl IntoView {
             .filter_map(|s| s.trim().parse().ok())
             .collect();
           let sum: f64 = values.iter().sum();
-          tf(
-            "{} 级，级联增益 = {} dB，总功率倍数 ×{}",
+          tp(
+            "tools.stages-cascaded-gain-db",
+            values.len() as u32,
             &[
               &values.len().to_string(),
               &fmt_num(sum),

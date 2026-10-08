@@ -27,9 +27,9 @@ pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
   let dxcc_options = plain(&dxcc_list);
   let year_options = plain(&year_list);
   let qsl_options = vec![
-    SelectOption::new("confirmed", t("已确认")),
-    SelectOption::new("sent_pending", t("已寄未确认")),
-    SelectOption::new("not_sent", t("未寄出")),
+    SelectOption::new("confirmed", t("log.confirmed")),
+    SelectOption::new("sent_pending", t("log.sent-unconfirmed")),
+    SelectOption::new("not_sent", t("log.not-sent")),
   ];
 
   view! {
@@ -40,56 +40,56 @@ pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
           value=state.search_input
           on_change=Callback::new(move |v: String| state.search_input.set(v.to_uppercase()))
           size=ControlSize::Sm
-          placeholder=t("定位网格，如 OM89EW")
-          aria_label=t("定位网格")
+          placeholder=Signal::derive(move || t("log.locate-grid-e-g"))
+          aria_label=Signal::derive(move || t("log.locate-grid"))
           class="w-36 font-mono uppercase"
         />
         <Button variant=Variant::Outline size=Size::Sm on_click=Callback::new(move |_| state.do_search())>
-          {move || t("定位")}
+          {move || t("log.locate")}
         </Button>
       </div>
       <Input
         value=state.callsign_query
         on_change=Callback::new(move |v: String| state.callsign_query.set(v.to_uppercase()))
         size=ControlSize::Sm
-        placeholder=t("呼号搜索")
-        aria_label=t("呼号搜索")
+        placeholder=Signal::derive(move || t("log.callsign-search"))
+        aria_label=Signal::derive(move || t("log.callsign-search"))
         class="w-32 font-mono uppercase"
       />
       <NativeSelect
         value=Signal::derive(move || state.band_filter.get().unwrap_or_default())
         on_change=Callback::new(move |v: String| state.band_filter.set(if v.is_empty() { None } else { Some(v) }))
         options=band_options
-        placeholder=t("全部波段")
+        placeholder=Signal::derive(move || t("log.all-bands"))
         size=ControlSize::Sm
-        aria_label=t("波段筛选")
+        aria_label=Signal::derive(move || t("log.band-filter"))
         class="w-auto"
       />
       <NativeSelect
         value=Signal::derive(move || state.mode_filter.get().unwrap_or_default())
         on_change=Callback::new(move |v: String| state.mode_filter.set(if v.is_empty() { None } else { Some(v) }))
         options=mode_options
-        placeholder=t("全部模式")
+        placeholder=Signal::derive(move || t("log.all-modes"))
         size=ControlSize::Sm
-        aria_label=t("模式筛选")
+        aria_label=Signal::derive(move || t("log.mode-filter"))
         class="w-auto"
       />
       <NativeSelect
         value=Signal::derive(move || state.dxcc_filter.get().unwrap_or_default())
         on_change=Callback::new(move |v: String| state.dxcc_filter.set(if v.is_empty() { None } else { Some(v) }))
         options=dxcc_options
-        placeholder=t("全部实体")
+        placeholder=Signal::derive(move || t("log.all-entities"))
         size=ControlSize::Sm
-        aria_label=t("实体筛选")
+        aria_label=Signal::derive(move || t("log.entity-filter"))
         class="w-auto"
       />
       <NativeSelect
         value=Signal::derive(move || state.year_filter.get().unwrap_or_default())
         on_change=Callback::new(move |v: String| state.year_filter.set(if v.is_empty() { None } else { Some(v) }))
         options=year_options
-        placeholder=t("全部年份")
+        placeholder=Signal::derive(move || t("log.all-years"))
         size=ControlSize::Sm
-        aria_label=t("年份筛选")
+        aria_label=Signal::derive(move || t("log.year-filter"))
         class="w-auto"
       />
       <NativeSelect
@@ -112,9 +112,9 @@ pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
             })
         })
         options=qsl_options
-        placeholder=t("全部 QSL")
+        placeholder=Signal::derive(move || t("log.all-qsl"))
         size=ControlSize::Sm
-        aria_label=t("QSL 筛选")
+        aria_label=Signal::derive(move || t("log.qsl-filter"))
         class="w-auto"
       />
       <label class="flex cursor-pointer items-center gap-1.5 text-muted-foreground">
@@ -122,18 +122,18 @@ pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
           checked=state.show_grayline
           on_change=Callback::new(move |v| state.show_grayline.set(v))
         />
-        {move || t("灰线")}
+        {move || t("log.grayline")}
       </label>
       <label
         class="flex cursor-pointer items-center gap-1.5 text-muted-foreground"
-        title=if paths_disabled { t("需先在本台信息中填写网格") } else { t("从本台到每个通联网格的大圆路径") }
+        title=if paths_disabled { t("log.set-your-grid-in") } else { t("log.great-circle-paths-from") }
       >
         <Switch
           checked=state.show_paths
           on_change=Callback::new(move |v| state.show_paths.set(v))
           disabled=Signal::derive(move || paths_disabled)
         />
-        {move || t("通联路径")}
+        {move || t("log.qso-paths")}
       </label>
     </div>
   }

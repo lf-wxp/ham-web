@@ -1,11 +1,11 @@
 use ham_web_core::categories::top_category;
 use leptos::prelude::*;
 
-use crate::i18n::{bank_class, t, tf};
+use crate::i18n::{bank_class, t, tf, tp};
 use crate::pages::load_card_schedule;
 use crate::study;
 use crate::ui::{
-  CARD_HEADER, Size, Variant, button_class, card_class, card_content_class, card_title_class,
+  ButtonLink, CARD_HEADER, Size, Variant, card_class, card_content_class, card_title_class,
 };
 use crate::util::now_ms;
 
@@ -44,9 +44,9 @@ pub(super) fn ReviewCard() -> impl IntoView {
     <div data-slot="card" class=card_class("")>
       <div data-slot="card-header" class=CARD_HEADER>
         <div data-slot="card-title" class=card_title_class("flex items-center justify-between")>
-          <span>{t("今日学习队列")}</span>
+          <span>{t("exam.today-s-study-queue")}</span>
           <span class="text-sm font-normal text-muted-foreground">
-            {move || tf("共 {} 项待复习", &[&total_due.to_string()])}
+            {move || tp("exam.items-due-today", total_due, &[&total_due.to_string()])}
           </span>
         </div>
       </div>
@@ -55,7 +55,7 @@ pub(super) fn ReviewCard() -> impl IntoView {
           if total_due == 0 {
             return view! {
               <p class="text-sm text-muted-foreground">
-                {t("今天的复习都完成了，可以去练新题或做一套模拟考试。")}
+                {t("exam.all-reviews-done-for")}
               </p>
             }
             .into_any();
@@ -65,17 +65,22 @@ pub(super) fn ReviewCard() -> impl IntoView {
               {(mistakes_due > 0).then(|| {
                 view! {
                   <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-sm">{tf("错题 {} 道", &[&mistakes_due.to_string()])}</span>
-                    <a href="/mistakes?review=1" class=button_class(Variant::Default, Size::Sm, "")>
-                      {t("复习错题")}
-                    </a>
+                    <span class="text-sm">{tp("exam.mistakes", mistakes_due, &[&mistakes_due.to_string()])}</span>
+                    <ButtonLink
+                      href="/mistakes?review=1"
+                      variant=Variant::Default
+                      size=Size::Sm
+                    >
+                      {t("exam.review-mistakes")}
+                    </ButtonLink>
                     {(due_in_bank > 0 && due_in_bank < mistakes_due).then(|| view! {
-                      <a
+                      <ButtonLink
                         href=format!("/mistakes?review=1&bank={bank}")
-                        class=button_class(Variant::Outline, Size::Sm, "")
+                        variant=Variant::Outline
+                        size=Size::Sm
                       >
-                        {tf("只看 {} 类", &[&(bank_class(&bank.to_string())).to_string()])}
-                      </a>
+                        {tf("exam.only-class", &[&(bank_class(&bank.to_string())).to_string()])}
+                      </ButtonLink>
                     })}
                   </div>
                 }
@@ -84,10 +89,14 @@ pub(super) fn ReviewCard() -> impl IntoView {
               {(cards_due > 0).then(|| {
                 view! {
                   <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-sm">{tf("知识卡片 {} 张", &[&cards_due.to_string()])}</span>
-                    <a href="/cards" class=button_class(Variant::Default, Size::Sm, "")>
-                      {t("复习卡片")}
-                    </a>
+                    <span class="text-sm">{tp("exam.cards", cards_due, &[&cards_due.to_string()])}</span>
+                    <ButtonLink
+                      href="/cards"
+                      variant=Variant::Default
+                      size=Size::Sm
+                    >
+                      {t("exam.review-cards")}
+                    </ButtonLink>
                   </div>
                 }
                 .into_any()
@@ -97,22 +106,24 @@ pub(super) fn ReviewCard() -> impl IntoView {
                 view! {
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="text-sm">
-                      {tf("薄弱专项：{}（{}%）", &[name, rate_s.as_str()])}
+                      {tf("exam.weak-spot", &[name, rate_s.as_str()])}
                     </span>
-                    <a
+                    <ButtonLink
                       href=format!("/practice?bank={bank}&topic={}", js_sys::encode_uri_component(key))
-                      class=button_class(Variant::Outline, Size::Sm, "")
-                      title=t("正确率最低的分类")
+                      variant=Variant::Outline
+                      size=Size::Sm
+                      title=t("home.lowest-accuracy-topic")
                     >
-                      {t("专项练习")}
-                    </a>
-                    <a
+                      {t("learning.focused-practice")}
+                    </ButtonLink>
+                    <ButtonLink
                       href=format!("/exam?bank={bank}&mode=weak")
-                      class=button_class(Variant::Outline, Size::Sm, "")
-                      title=t("按分类正确率与错题加权抽题的模拟卷")
+                      variant=Variant::Outline
+                      size=Size::Sm
+                      title=t("home.mock-exam-weighted-by")
                     >
-                      {t("薄弱项组卷")}
-                    </a>
+                      {t("exam.weak-area-exam")}
+                    </ButtonLink>
                   </div>
                 }
                 .into_any()

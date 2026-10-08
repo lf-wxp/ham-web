@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsValue;
 
 use crate::data;
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tp};
 use crate::ui::{
-  CARD_HEADER, Size, Variant, button_class, card_class, card_content_class, card_title_class,
+  ButtonLink, CARD_HEADER, Size, Variant, card_class, card_content_class, card_title_class,
 };
 use crate::util::storage;
 
@@ -78,9 +78,12 @@ pub(super) fn DailyQuestion() -> impl IntoView {
     <div data-slot="card" class=card_class("")>
       <div data-slot="card-header" class=CARD_HEADER>
         <div data-slot="card-title" class=card_title_class("flex items-center justify-between")>
-          <span>{move || t("每日一题")}</span>
+          <span>{move || t("home.daily-question")}</span>
           <span class="text-sm font-normal text-muted-foreground">
-            {move || tf("已连续打卡 {} 天", &[&streak.get().to_string()])}
+            {move || {
+              let n = streak.get() as u32;
+              tp("home.day-streak", n, &[&n.to_string()])
+            }}
           </span>
         </div>
       </div>
@@ -102,9 +105,13 @@ pub(super) fn DailyQuestion() -> impl IntoView {
                   })
                   .collect_view()}
               </div>
-              <a href="/practice" class=button_class(Variant::Outline, Size::Sm, "")>
-                {move || t("去练习答题")}
-              </a>
+              <ButtonLink
+                href="/practice"
+                variant=Variant::Outline
+                size=Size::Sm
+              >
+                {move || t("home.practice-this")}
+              </ButtonLink>
             }
           })
         }}

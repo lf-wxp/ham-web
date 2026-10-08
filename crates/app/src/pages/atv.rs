@@ -9,9 +9,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn AtvPage() -> impl IntoView {
-  set_title(&t("业余电视 ATV / DATV"));
+  set_title("shell.amateur-tv-2");
   view! {
-    <KnowledgePage title=t("业余电视 ATV / DATV") subtitle=t("ATV 业余电视 · DATV 数字业余电视")>
+    <KnowledgePage title=t("shell.amateur-tv-2") subtitle=t("knowledge.atv-amateur-television-datv")>
       <ConceptsSection title="概念与类型" items=ATV_CONCEPTS />
       <BulletSection title="操作要点" items=ATV_TIPS />
     </KnowledgePage>

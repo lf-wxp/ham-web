@@ -7,7 +7,7 @@ use crate::cn::cn;
 use crate::components::common::QuestionProgressHeader;
 use crate::i18n::{bank_class, t};
 use crate::icons::{Icon, IconKind};
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, Size, Variant};
 
 #[component]
 pub(super) fn PracticeHeaderBar(
@@ -39,7 +39,7 @@ pub(super) fn PracticeHeaderBar(
       percent=percent
       left=move || {
         view! {
-          <span class="text-sm text-muted-foreground">{move || t("题库类别")}</span>
+          <span class="text-sm text-muted-foreground">{move || t("exam.bank-class")}</span>
           <div class="flex overflow-hidden rounded-lg border">
             {Bank::ALL
               .into_iter()
@@ -61,33 +61,34 @@ pub(super) fn PracticeHeaderBar(
             class=move || toggle_class(unique_only.get(), "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors")
             on:click=move |_| unique_only.update(|v| *v = !*v)
           >
-            {move || t("只看本类新增")}
+            {move || t("exam.new-in-this-class")}
           </button>
           <button
             type="button"
             class=move || toggle_class(unseen_only.get(), "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors")
-            title=move || t("去掉练习、考试、闪卡中已经做过的题")
+            title=move || t("exam.exclude-questions-already-done")
             on:click=move |_| unseen_only.update(|v| *v = !*v)
           >
-            {move || t("只练没做过")}
+            {move || t("exam.unseen-only")}
           </button>
           <button
             type="button"
             class=move || toggle_class(multi_only.get(), "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors")
-            title=move || t("只练习多选题，随机顺序")
+            title=move || t("exam.multi-answer-questions-only")
             on:click=move |_| multi_only.update(|v| *v = !*v)
           >
-            {move || t("只练多选")}
+            {move || t("exam.multi-answer-only")}
           </button>
         }
       }
       right=move || {
         view! {
-          <button
-            class=button_class(Variant::Outline, Size::Icon, "")
-            aria-label=move || t("收藏")
-            title=move || if bookmarked.get() { t("取消收藏") } else { t("收藏本题") }
-            on:click=move |_| on_toggle_bookmark.run(())
+          <Button
+            variant=Variant::Outline
+            size=Size::Icon
+            aria_label=Signal::derive(move || t("exam.bookmark"))
+            title=Signal::derive(move || if bookmarked.get() { t("exam.remove-bookmark") } else { t("exam.bookmark-this-question") })
+            on_click=Callback::new(move |_| on_toggle_bookmark.run(()))
           >
             {move || {
               if bookmarked.get() {
@@ -96,30 +97,32 @@ pub(super) fn PracticeHeaderBar(
                 view! { <Icon kind=IconKind::Bookmark class="h-4 w-4" /> }
               }
             }}
-          </button>
+          </Button>
           {move || {
             sequential.get()
               .then(|| {
                 view! {
-                  <button
-                    class=button_class(Variant::Outline, Size::Icon, "")
-                    aria-label=move || t("搜索")
-                    title=move || t("搜索")
-                    on:click=move |_| on_open_search.run(())
+                  <Button
+                    variant=Variant::Outline
+                    size=Size::Icon
+                    aria_label=Signal::derive(move || t("shell.search"))
+                    title=Signal::derive(move || t("shell.search"))
+                    on_click=Callback::new(move |_| on_open_search.run(()))
                   >
                     <Icon kind=IconKind::Search class="h-4 w-4" />
-                  </button>
+                  </Button>
                 }
               })
           }}
-          <button
-            class=button_class(Variant::Outline, Size::Icon, "")
-            aria-label=move || t("设置")
-            title=move || t("设置")
-            on:click=move |_| on_open_settings.run(())
+          <Button
+            variant=Variant::Outline
+            size=Size::Icon
+            aria_label=Signal::derive(move || t("exam.settings"))
+            title=Signal::derive(move || t("exam.settings"))
+            on_click=Callback::new(move |_| on_open_settings.run(()))
           >
             <Icon kind=IconKind::Settings class="h-4 w-4" />
-          </button>
+          </Button>
         }
       }
     />

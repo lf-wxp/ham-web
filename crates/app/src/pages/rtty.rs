@@ -17,21 +17,21 @@ pub fn RttyPage() -> impl IntoView {
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
             <h1 class="text-base font-semibold leading-tight">"RTTY / PSK31"</h1>
-            <div class="text-xs text-muted-foreground">{move || t("无线电传 · 相移键控 · 传统数据模式")}</div>
+            <div class="text-xs text-muted-foreground">{move || t("knowledge.radioteletype-phase-shift-keying")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("模式要点")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.mode-notes")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[560px] border-collapse text-sm">
               <thead class="bg-muted/60 text-xs">
                 <tr>
-                  <th class=CELL>{move || t("模式")}</th>
-                  <th class=CELL>{move || t("别名")}</th>
-                  <th class=CELL>{move || t("说明")}</th>
+                  <th class=CELL>{move || t("log.mode")}</th>
+                  <th class=CELL>{move || t("knowledge.alias")}</th>
+                  <th class=CELL>{move || t("radio.notes")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -55,7 +55,7 @@ pub fn RttyPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("常用频率")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("shell.common-frequencies")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {RTTY_FREQS
               .iter()
@@ -72,7 +72,7 @@ pub fn RttyPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("操作要点")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.operating-tips")}</h2>
           <ul class="space-y-2 p-4">
             {RTTY_TIPS
               .iter()

@@ -45,7 +45,7 @@ struct Marker {
 
 #[component]
 pub fn PortableMapPage() -> impl IntoView {
-  set_title(&t("SOTA / POTA 地图"));
+  set_title("radio.sota-pota-map");
 
   let store = use_log_store();
   let markers = RwSignal::new(Vec::<Marker>::new());
@@ -94,12 +94,12 @@ pub fn PortableMapPage() -> impl IntoView {
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader
-        title=Signal::derive(move || t("SOTA / POTA 地图"))
-        subtitle=Signal::derive(move || t("已激活的山峰与公园分布"))
+        title=Signal::derive(move || t("radio.sota-pota-map"))
+        subtitle=Signal::derive(move || t("radio.activated-summits-and-parks"))
         actions=ViewFn::from(move || {
           view! {
             <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
-              {move || tf("已激活 {} 个", &[&markers.get().len().to_string()])}
+              {move || tf("radio.activated", &[&markers.get().len().to_string()])}
             </span>
           }
         })
@@ -109,13 +109,13 @@ pub fn PortableMapPage() -> impl IntoView {
           {move || {
             if loading.get() {
               view! {
-                <div class="py-12 text-center text-sm text-muted-foreground">{move || t("加载中…")}</div>
+                <div class="py-12 text-center text-sm text-muted-foreground">{move || t("learning.loading")}</div>
               }
               .into_any()
             } else if markers.get().is_empty() {
               view! {
                 <div class="py-12 text-center text-sm text-muted-foreground">
-                  {move || t("暂无 SOTA / POTA 激活记录，请在通联日志中添加带 SOTA / POTA 编号的记录。")}
+                  {move || t("radio.no-sota-pota-activations")}
                 </div>
               }
               .into_any()
@@ -147,7 +147,7 @@ pub fn PortableMapPage() -> impl IntoView {
             }
           }}
           <p class="mt-2 text-xs text-muted-foreground">
-            {move || t("红点为你已激活的 SOTA 山峰 / POTA 公园；位置来自 SOTA / POTA API 查询，需通过后端（dev-full / serve）访问。")}
+            {move || t("radio.red-dots-are-your")}
           </p>
         </section>
       </PageContainer>

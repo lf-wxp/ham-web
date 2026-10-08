@@ -7,7 +7,7 @@ use leptos::task::spawn_local;
 
 use crate::data;
 use crate::i18n::t;
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, Size, Variant};
 use crate::util::random;
 use crate::util::set_title;
 
@@ -21,7 +21,7 @@ fn pill_class(active: bool) -> &'static str {
 
 #[component]
 pub fn FlashcardsPage() -> impl IntoView {
-  set_title(&t("闪卡刷题"));
+  set_title("shell.flashcards");
 
   let bank = RwSignal::new(Bank::A);
   let questions = RwSignal::new(Vec::<QuestionItem>::new());
@@ -108,8 +108,8 @@ pub fn FlashcardsPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("闪卡刷题")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("快速过题 · 自评掌握 · 「不会」自动加入错题本")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.flashcards")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("exam.quick-review-self-rate")}</div>
           </div>
           <div class="flex items-center gap-1">
             {Bank::ALL
@@ -124,7 +124,7 @@ pub fn FlashcardsPage() -> impl IntoView {
                     }
                     class=move || pill_class(bank.get() == b)
                   >
-                    {b.as_str()} {t(" 类")}
+                    {b.as_str()} {t("exam.class")}
                   </button>
                 }
               })
@@ -136,25 +136,30 @@ pub fn FlashcardsPage() -> impl IntoView {
       <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
         {move || {
           if loading.get() {
-            view! { <div class="px-4 py-10 text-center text-sm text-muted-foreground">{move || t("加载题库中...")}</div> }
+            view! { <div class="px-4 py-10 text-center text-sm text-muted-foreground">{move || t("exam.loading-questions-u-2026")}</div> }
               .into_any()
           } else if finished.get() {
             let total = known.get() + unknown.get() + skipped.get();
             view! {
               <div class="rounded-xl border bg-card px-4 py-10 text-center">
-                <div class="text-lg font-semibold">{move || t("本轮完成")}</div>
+                <div class="text-lg font-semibold">{move || t("exam.round-complete")}</div>
                 <div class="mt-2 text-sm text-muted-foreground">
-                  {t("共 ")} {total} {move || t(" 题 · 会 ")} <span class="font-semibold text-emerald-700 dark:text-emerald-400">{known.get()}</span>
-                  {move || t(" · 不会 ")} <span class="font-semibold text-red-700 dark:text-red-400">{unknown.get()}</span>
+                  {t("exam.total")} {total} {move || t("exam.questions-know")} <span class="font-semibold text-emerald-700 dark:text-emerald-400">{known.get()}</span>
+                  {move || t("exam.don-t-know")} <span class="font-semibold text-red-700 dark:text-red-400">{unknown.get()}</span>
                   {move || {
                     (skipped.get() > 0).then(|| {
-                      view! { <span>{move || t(" · 跳过 ")} <span class="font-semibold text-muted-foreground">{skipped.get()}</span></span> }
+                      view! { <span>{move || t("exam.skipped")} <span class="font-semibold text-muted-foreground">{skipped.get()}</span></span> }
                     })
                   }}
                 </div>
-                <button type="button" class=format!("{} mt-5", button_class(Variant::Default, Size::Default, "")) on:click=move |_| load()>
-                  {move || t("再来一轮")}
-                </button>
+                <Button
+                  variant=Variant::Default
+                  size=Size::Default
+                  class="mt-5"
+                  on_click=Callback::new(move |_| load())
+                >
+                  {move || t("exam.another-round")}
+                </Button>
               </div>
             }
             .into_any()
@@ -166,8 +171,8 @@ pub fn FlashcardsPage() -> impl IntoView {
             view! {
               <div on:touchstart=swipe_start on:touchend=swipe_end class="rounded-xl border bg-card p-5">
                 <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{move || t("第 ")} <span class="font-semibold text-foreground">{current.get() + 1}</span> {" / "} {total} {move || t(" 题")}</span>
-                  <span>{move || t("会 ")} <span class="font-semibold text-emerald-700 dark:text-emerald-400">{known.get()}</span> {move || t(" · 不会 ")} <span class="font-semibold text-red-700 dark:text-red-400">{unknown.get()}</span></span>
+                  <span>{move || t("exam.no")} <span class="font-semibold text-foreground">{current.get() + 1}</span> {" / "} {total} {move || t("exam.questions")}</span>
+                  <span>{move || t("exam.know")} <span class="font-semibold text-emerald-700 dark:text-emerald-400">{known.get()}</span> {move || t("exam.don-t-know")} <span class="font-semibold text-red-700 dark:text-red-400">{unknown.get()}</span></span>
                 </div>
                 <p class="whitespace-pre-line text-base font-medium leading-relaxed">{q.question.clone()}</p>
 
@@ -190,7 +195,7 @@ pub fn FlashcardsPage() -> impl IntoView {
                     }
                     .into_any()
                   } else {
-                    view! { <div class="mt-4 text-xs text-muted-foreground">{move || t("先想答案，再点下方按钮核对（手机上右划显示答案，左划跳过）。")}</div> }
+                    view! { <div class="mt-4 text-xs text-muted-foreground">{move || t("exam.think-of-the-answer")}</div> }
                       .into_any()
                   }
                 }}
@@ -199,22 +204,38 @@ pub fn FlashcardsPage() -> impl IntoView {
                   {move || {
                     if revealed.get() {
                       view! {
-                        <button type="button" class=button_class(Variant::Default, Size::Default, "") on:click=move |_| mark(true)>
-                          {move || t("会 ✓")}
-                        </button>
-                        <button type="button" class=button_class(Variant::Outline, Size::Default, "") on:click=move |_| mark(false)>
-                          {move || t("不会 ✗")}
-                        </button>
+                        <Button
+                          variant=Variant::Default
+                          size=Size::Default
+                          on_click=Callback::new(move |_| mark(true))
+                        >
+                          {move || t("learning.know-it")}
+                        </Button>
+                        <Button
+                          variant=Variant::Outline
+                          size=Size::Default
+                          on_click=Callback::new(move |_| mark(false))
+                        >
+                          {move || t("learning.don-t-know-2")}
+                        </Button>
                       }
                       .into_any()
                     } else {
                       view! {
-                        <button type="button" class=button_class(Variant::Default, Size::Default, "") on:click=move |_| reveal()>
-                          {move || t("显示答案")}
-                        </button>
-                        <button type="button" class=button_class(Variant::Outline, Size::Default, "") on:click=move |_| skip()>
-                          {move || t("跳过")}
-                        </button>
+                        <Button
+                          variant=Variant::Default
+                          size=Size::Default
+                          on_click=Callback::new(move |_| reveal())
+                        >
+                          {move || t("learning.show-answer")}
+                        </Button>
+                        <Button
+                          variant=Variant::Outline
+                          size=Size::Default
+                          on_click=Callback::new(move |_| skip())
+                        >
+                          {move || t("exam.skip")}
+                        </Button>
                       }
                       .into_any()
                     }

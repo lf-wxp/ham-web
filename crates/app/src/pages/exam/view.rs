@@ -22,7 +22,7 @@ use crate::data;
 use crate::pages::{DEFAULT_TITLE, use_bank_query, use_no_site_footer};
 use crate::shortcuts::{DigitDetail, Shortcuts, digit_answer, use_question_shortcuts};
 use crate::store;
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{ButtonLink, Size, Variant};
 use crate::util::now_ms;
 use crate::util::set_title;
 use crate::util::storage;
@@ -146,7 +146,7 @@ pub fn ExamPage() -> impl IntoView {
           }
         }
         Err(_) => {
-          error_text.set(tf("题库 {} 暂不可用", &[&b.to_string()]));
+          error_text.set(tf("exam.bank-unavailable", &[&b.to_string()]));
           error_open.set(true);
         }
       }
@@ -316,7 +316,7 @@ pub fn ExamPage() -> impl IntoView {
       let _ = js_sys::Reflect::set(
         &e,
         &"returnValue".into(),
-        &t("考试仍在进行，离开页面计时不会暂停").into(),
+        &t("exam.exam-in-progress-the").into(),
       );
     }
   });
@@ -467,11 +467,11 @@ pub fn ExamPage() -> impl IntoView {
 
   let content = move || {
     if loading.get() {
-      return view! { <div class="p-6" aria-live="polite">{move || t("加载题库中...")}</div> }
+      return view! { <div class="p-6" aria-live="polite">{move || t("exam.loading-questions-u-2026")}</div> }
         .into_any();
     }
     if store.questions.with(|q| q.is_empty()) {
-      return view! { <div class="p-6" role="alert">{move || t("题库暂不可用或为空")}</div> }
+      return view! { <div class="p-6" role="alert">{move || t("exam.question-bank-unavailable-or")}</div> }
         .into_any();
     }
     view! {
@@ -526,10 +526,14 @@ pub fn ExamPage() -> impl IntoView {
                   let href = format!("/practice?bank={}&sub={}", bank_val.as_str(), p);
                   view! {
                     <div class="flex flex-wrap items-center gap-2">
-                      <span class="text-xs text-muted-foreground">{t("这道题答错了")}</span>
-                      <a href=href class=button_class(Variant::Outline, Size::Sm, "")>
-                        {t("同类题再练")}
-                      </a>
+                      <span class="text-xs text-muted-foreground">{t("exam.this-question-was-answered")}</span>
+                      <ButtonLink
+                        href=href
+                        variant=Variant::Outline
+                        size=Size::Sm
+                      >
+                        {t("exam.practise-similar")}
+                      </ButtonLink>
                     </div>
                   }
                   .into_any()
@@ -565,11 +569,11 @@ pub fn ExamPage() -> impl IntoView {
     <h1 class="sr-only">
       {move || {
         if custom.get() {
-          t("自定义组卷")
+          t("exam.custom-paper")
         } else if weak.get() {
-          t("薄弱项组卷")
+          t("exam.weak-area-exam")
         } else {
-          t("模拟考试")
+          t("shell.mock-exam")
         }
       }}
     </h1>
@@ -645,7 +649,7 @@ pub fn ExamPage() -> impl IntoView {
       on_resume=on_resume
       on_restart=on_restart
     />
-    <MessageDialog open=error_open title=t("加载失败") description=error_text confirm_text=t("知道了") />
+    <MessageDialog open=error_open title=t("exam.load-failed") description=error_text confirm_text=t("exam.ok") />
     <ShortcutHelpDialog open=help_open />
   }
 }

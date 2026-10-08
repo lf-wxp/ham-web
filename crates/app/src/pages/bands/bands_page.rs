@@ -16,7 +16,7 @@ use crate::i18n::t;
 
 #[component]
 pub fn BandsPage() -> impl IntoView {
-  set_title(&t("频谱波段划分表"));
+  set_title("shell.band-chart-2");
   let active = RwSignal::new(None::<&'static str>);
 
   let jump = Callback::new(move |code: &'static str| {
@@ -65,40 +65,40 @@ pub fn BandsPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("频谱波段划分表")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("均含上限，不含下限 · C = λf = 3×10⁸ m/s")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.band-chart-2")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("radio.upper-limits-included-lower")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label=t("波段") value=BANDS.len() />
-          <Stat label=t("业余业务频段") value=bands::allocation_count() />
-          <Stat label=t("可供卫星业余业务") value=bands::satellite_count() />
-          <Stat label=t("脚注") value=FOOTNOTES.len() />
+          <Stat label=t("radio.band") value=BANDS.len() />
+          <Stat label=t("knowledge.amateur-bands") value=bands::allocation_count() />
+          <Stat label=t("knowledge.also-available-to-the") value=bands::satellite_count() />
+          <Stat label=t("radio.footnote") value=FOOTNOTES.len() />
         </div>
 
         <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
           <span class="inline-flex items-center gap-1">
             <Icon kind=IconKind::Satellite class=SAT_ICON />
-            {move || t("表示该频段也供卫星业余业务使用")}
+            {move || t("radio.means-the-band-is")}
           </span>
-          <span class="inline-flex flex-wrap items-center gap-1.5">{move || t("使用状态：")} {legend}</span>
+          <span class="inline-flex flex-wrap items-center gap-1.5">{move || t("knowledge.usage-status")} {legend}</span>
         </div>
 
         <div class="hidden overflow-x-auto rounded-xl border bg-card md:block">
           <table class="w-full min-w-[960px] border-collapse border-hidden text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>
-                <th class=CELL>{move || t("带号")}</th>
-                <th class=CELL colspan="2">{move || t("波段名称")}</th>
-                <th class=CELL>{move || t("波长范围")}</th>
-                <th class=CELL colspan="2">{move || t("频段名称")}</th>
-                <th class=CELL>{move || t("频段范围")}</th>
-                <th class=CELL>{move || t("业余业务/卫星业余业务频段")}</th>
-                <th class=CELL>{move || t("使用状态")}</th>
-                <th class=CELL>{move || t("脚注/备注")}</th>
+                <th class=CELL>{move || t("radio.reference")}</th>
+                <th class=CELL colspan="2">{move || t("radio.band-name")}</th>
+                <th class=CELL>{move || t("radio.wavelength-range")}</th>
+                <th class=CELL colspan="2">{move || t("radio.band-name-2")}</th>
+                <th class=CELL>{move || t("radio.band-range")}</th>
+                <th class=CELL>{move || t("radio.amateur-amateur-satellite-bands")}</th>
+                <th class=CELL>{move || t("radio.status")}</th>
+                <th class=CELL>{move || t("radio.footnote-notes")}</th>
               </tr>
             </thead>
             <tbody>{table_rows(jump)}</tbody>
@@ -110,7 +110,7 @@ pub fn BandsPage() -> impl IntoView {
         </div>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("脚注")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.footnote")}</h2>
           <dl class="divide-y">{footnotes}</dl>
         </section>
 

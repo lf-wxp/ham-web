@@ -11,14 +11,14 @@ use crate::i18n::t;
 
 #[component]
 pub fn DashboardPage() -> impl IntoView {
-  set_title(&t("实时仪表盘"));
+  set_title("shell.live-dashboard");
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("实时仪表盘")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("太阳活动 · 警报 · DX 热点 · ISS · 稀有度")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.live-dashboard")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("learning.solar-activity-alerts-dx")}</div>
           </div>
         </div>
       </header>
@@ -36,7 +36,7 @@ pub fn DashboardPage() -> impl IntoView {
           <WantedCard />
         </div>
         <p class="text-xs text-muted-foreground">
-          {move || t("各卡片点击可进入对应详情页。数据分别来自 HamQSL / NOAA SWPC、DXWatch、wheretheiss.at 与 Club Log。")}
+          {move || t("learning.tap-each-card-for")}
         </p>
       </div>
     </div>

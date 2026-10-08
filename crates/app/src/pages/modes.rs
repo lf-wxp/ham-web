@@ -11,19 +11,19 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn ModesPage() -> impl IntoView {
-  set_title(&t("数字模式"));
+  set_title("shell.digital-modes");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <PageHeader title=t("数字模式") subtitle=t("数字语音与数据模式 · 带宽 · 用途") />
+      <PageHeader title=t("shell.digital-modes") subtitle=t("knowledge.digital-voice-and-data") />
       <PageContainer>
         <div class="overflow-x-auto rounded-xl border bg-card">
           <table class="w-full min-w-[720px] border-collapse text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>
-                <th class=CELL>{move || t("模式")}</th>
-                <th class=CELL>{move || t("类型")}</th>
-                <th class=CELL>{move || t("带宽")}</th>
-                <th class=CELL>{move || t("说明")}</th>
+                <th class=CELL>{move || t("log.mode")}</th>
+                <th class=CELL>{move || t("radio.type")}</th>
+                <th class=CELL>{move || t("tools.bandwidth")}</th>
+                <th class=CELL>{move || t("radio.notes")}</th>
               </tr>
             </thead>
             <tbody>
@@ -47,7 +47,7 @@ pub fn ModesPage() -> impl IntoView {
           </table>
         </div>
 
-        <SectionCard title=t("按用途选模式")>
+        <SectionCard title=t("knowledge.choose-a-mode-by")>
           <dl class="divide-y">
             {DIGITAL_USAGE
               .iter()

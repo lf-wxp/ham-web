@@ -10,7 +10,7 @@ use crate::ui::{ControlSize, Select, SelectItem};
 #[component]
 pub fn LocaleToggle() -> impl IntoView {
   let locale = i18n::locale();
-  let label = Signal::derive(move || i18n::t("切换语言"));
+  let label = Signal::derive(move || i18n::t("shell.switch-language"));
 
   let shown = locale.clone();
   let value = Signal::derive(move || Some(shown.get().code().to_owned()));

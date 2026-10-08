@@ -23,7 +23,7 @@ use crate::pages::{DEFAULT_TITLE, bank_href, use_bank_query, use_no_site_footer}
 use crate::shortcuts::{DigitDetail, Shortcuts, digit_answer, use_question_shortcuts};
 use crate::store;
 use crate::ui::{
-  Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Size, Variant, button_class,
+  Button, Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Size, Variant,
 };
 use crate::util::alert;
 use crate::util::now_ms;
@@ -204,7 +204,7 @@ pub fn PracticePage() -> impl IntoView {
           }
         }
         Err(_) => {
-          error_text.set(tf("题库 {} 暂不可用", &[&b.to_string()]));
+          error_text.set(tf("exam.bank-unavailable", &[&b.to_string()]));
           error_open.set(true);
         }
       }
@@ -352,7 +352,7 @@ pub fn PracticePage() -> impl IntoView {
     }
     match store.ordered(|qs| find_jump_target(qs, &input)) {
       Some(pos) => store.jump(pos),
-      None => alert(&tf("未找到题号：{}", &[&(raw).to_string()])),
+      None => alert(&tf("exam.question-not-found", &[&(raw).to_string()])),
     }
   });
 
@@ -456,21 +456,23 @@ pub fn PracticePage() -> impl IntoView {
 
   let content = move || {
     if store.loading.get() {
-      return view! { <div class="p-6">{move || t("加载题库中...")}</div> }.into_any();
+      return view! { <div class="p-6">{move || t("exam.loading-questions-u-2026")}</div> }
+        .into_any();
     }
     if store.len() == 0 {
       if unseen_only.get() {
         return view! {
           <div class="p-6">
-            {move || t("这套题库的题已经全部做过了。")}
+            {move || t("exam.you-ve-completed-all")}
             <button type="button" class="ml-2 text-primary underline-offset-4 hover:underline" on:click=move |_| unseen_only.set(false)>
-              {move || t("练全部题目")}
+              {move || t("exam.practice-all")}
             </button>
           </div>
         }
         .into_any();
       }
-      return view! { <div class="p-6">{move || t("题库暂不可用或为空")}</div> }.into_any();
+      return view! { <div class="p-6">{move || t("exam.question-bank-unavailable-or")}</div> }
+        .into_any();
     }
     view! {
       <div on:touchstart=swipe_start on:touchend=swipe_end class="mx-auto max-w-5xl px-4 py-6 space-y-4 pb-24 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
@@ -498,9 +500,9 @@ pub fn PracticePage() -> impl IntoView {
                   (store.streak.get() >= 2).then(|| {
                     view! {
                       <div class="flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                        <span>{tf("连续答对 {} 题", &[&store.streak.get().to_string()])}</span>
+                        <span>{tf("radio.correct-in-a-row", &[&store.streak.get().to_string()])}</span>
                         <span class="text-muted-foreground">{" · "}</span>
-                        <span>{tf("本组最长 {} 题", &[&store.best_streak.get().to_string()])}</span>
+                        <span>{tf("radio.longest-streak", &[&store.best_streak.get().to_string()])}</span>
                       </div>
                     }
                   })
@@ -535,7 +537,7 @@ pub fn PracticePage() -> impl IntoView {
   };
 
   view! {
-    <h1 class="sr-only">{move || t("题库练习")}</h1>
+    <h1 class="sr-only">{move || t("exam.practice")}</h1>
     {content}
     <PracticeResumeDialog open=resume_open no_prompt=no_prompt on_restart=on_restart on_resume=on_resume />
     <PracticeSettingsDialog
@@ -556,28 +558,30 @@ pub fn PracticePage() -> impl IntoView {
     />
     <Dialog open=confirm_order_open>
       <DialogHeader>
-        <DialogTitle>{move || t("切换题序将清空作答")}</DialogTitle>
-        <DialogDescription>{move || t("切换到随机模式会重新打乱题目并清空当前所有作答，确定继续吗？")}</DialogDescription>
+        <DialogTitle>{move || t("exam.changing-order-clears-answers")}</DialogTitle>
+        <DialogDescription>{move || t("exam.switching-to-random-reshuffles")}</DialogDescription>
       </DialogHeader>
       <DialogFooter>
-        <button
-          class=button_class(Variant::Outline, Size::Default, "")
-          on:click=move |_| {
-            confirm_order_open.set(false);
-            pending_order.set(None);
-          }
+        <Button
+          variant=Variant::Outline
+          size=Size::Default
+          on_click=Callback::new(move |_| {
+                    confirm_order_open.set(false);
+                    pending_order.set(None);
+                  })
         >
-          {move || t("取消")}
-        </button>
-        <button
-          class=button_class(Variant::Default, Size::Default, "")
-          on:click=move |_| confirm_change_order.run(())
+          {move || t("exam.cancel")}
+        </Button>
+        <Button
+          variant=Variant::Default
+          size=Size::Default
+          on_click=Callback::new(move |_| confirm_change_order.run(()))
         >
-          {move || t("确定切换")}
-        </button>
+          {move || t("exam.switch")}
+        </Button>
       </DialogFooter>
     </Dialog>
-    <MessageDialog open=error_open title=t("加载失败") description=error_text confirm_text=t("知道了") />
+    <MessageDialog open=error_open title=t("exam.load-failed") description=error_text confirm_text=t("exam.ok") />
     <ShortcutHelpDialog open=help_open />
   }
 }

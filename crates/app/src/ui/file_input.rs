@@ -29,7 +29,7 @@ pub fn FileInput(
 ) -> impl IntoView {
   let picked = RwSignal::new(String::new());
   let label = if label.is_empty() {
-    TextValue::from(t("选择文件"))
+    TextValue::from(t("common.choose-a-file"))
   } else {
     label
   };
@@ -55,6 +55,9 @@ pub fn FileInput(
       }
     }
     picked.set(out.first().map_or_else(String::new, File::name));
+    // 读完必须清空 input 的 value：否则再选**同一个文件**不会触发 `change`，
+    // 用户看到的是「点了没反应」（替换影像、重新导入同一份备份都会撞上）。
+    el.set_value("");
     on_files.run(out);
   };
 

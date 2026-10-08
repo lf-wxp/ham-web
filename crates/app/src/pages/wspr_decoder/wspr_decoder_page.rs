@@ -12,6 +12,7 @@ use crate::util::{js_error_message, set_title};
 
 use super::wspr_worker::{WorkerPayload, parse_message};
 use crate::i18n::{t, tf};
+use crate::ui::{Field, NumberField};
 
 /// 允许的最大 WAV 体积（字节）。110.6 秒的 48 kHz 单声道约 10.6 MB，32 MB 足够。
 const MAX_BYTES: u64 = 32 * 1024 * 1024;
@@ -25,7 +26,7 @@ fn message_handler(
     match parse_message(&event.data()) {
       Ok(p) => result.set(Some(p)),
       Err(e) => error.set(Some(if e.is_empty() {
-        t("解码失败，请确认是 WSPR 音频（WAV）且基准频率正确")
+        t("tools.decoding-failed-make-sure-2")
       } else {
         e
       })),
@@ -70,7 +71,7 @@ fn to_message(bytes: &[u8], base_hz: f64) -> js_sys::Object {
 
 #[component]
 pub fn WsprDecoderPage() -> impl IntoView {
-  set_title(&t("WSPR 解码器"));
+  set_title("tools.wspr-decoder");
 
   let processing = RwSignal::new(false);
   let result = RwSignal::new(None::<WorkerPayload>);
@@ -107,7 +108,7 @@ pub fn WsprDecoderPage() -> impl IntoView {
     if size > MAX_BYTES {
       let mb = size as f64 / 1024.0 / 1024.0;
       error.set(Some(tf(
-        "文件过大（约 {} MB），上限 {} MB。请先降采样到 8–16 kHz 单声道。",
+        "tools.file-too-large-about-2",
         &[&format!("{mb:.0}"), &format!("{}", MAX_BYTES / 1024 / 1024)],
       )));
       return;
@@ -139,7 +140,7 @@ pub fn WsprDecoderPage() -> impl IntoView {
               }
             }
             None => {
-              error.set(Some(t("无法创建解码 Worker，请刷新页面重试")));
+              error.set(Some(t("radio.could-not-create-the")));
               processing.set(false);
             }
           }
@@ -167,14 +168,14 @@ pub fn WsprDecoderPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("WSPR 解码器")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("弱信号传播报告 · 4-FSK 解调 · 后台线程离线处理")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("tools.wspr-decoder")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("tools.weak-signal-propagation-reports")}</div>
           </div>
           <a
             href="/wspr"
             class="rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
-            {move || t("WSPR 速查")}
+            {move || t("tools.wspr-reference")}
           </a>
         </div>
       </header>
@@ -182,29 +183,40 @@ pub fn WsprDecoderPage() -> impl IntoView {
       <div class="mx-auto max-w-5xl space-y-5 px-4 py-5">
         <section class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
           <p>
-            {move || t("上传一段 WSPR 弱信号传播报告录音（WAV），在浏览器本地解调并解码出呼号 / 网格 / 功率。")}
-            {move || t("解码在 Web Worker 后台线程完成，不阻塞页面。")}
-            {move || t("音频不会上传到服务器。")}
+            {move || t("tools.upload-a-wspr-recording")}
+            {move || t("common.decoding-runs-in-a")}
+            {move || t("common.the-audio-is-never")}
           </p>
         </section>
 
         <section class="rounded-xl border bg-card p-4">
-          <label class="mb-4 flex flex-col gap-1.5 text-sm sm:max-w-xs">
-            <span class="text-xs text-muted-foreground">{move || t("基准频率（Hz，默认 1500）")}</span>
-            <input
-              type="number"
-              prop:value=move || base_hz.get().to_string()
-              on:input=move |e| {
-                if let Ok(v) = event_target_value(&e).parse::<f64>() {
-                  base_hz.set(v);
-                }
-              }
-              class="h-10 rounded-lg border bg-background px-3 text-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            />
-            <span class="text-xs text-muted-foreground">
-              {move || t("WSPR 信号位于 1400–1600 Hz 音频窗口，通常取电台拨号频率对应的音频 1500 Hz。")}
-            </span>
-          </label>
+          {{
+            // `Field` 的 `r#for` 与控件 `id` 要配对；在块里现生成，避免被外层 `move ||` 闭包
+            // 捕获（捕获会让闭包退化成 `FnOnce`）。
+            let base_id = crate::util::unique_id("wspr-base");
+            let label_for = base_id.clone();
+            view! {
+              <Field
+                label=Signal::derive(move || t("tools.base-frequency-hz-default"))
+                r#for=label_for
+                class="mb-4 sm:max-w-xs"
+              >
+                <NumberField
+                  id=base_id
+                  value=Signal::derive(move || base_hz.get().to_string())
+                  on_change=Callback::new(move |v: String| {
+                    if let Ok(v) = v.trim().parse::<f64>() {
+                      base_hz.set(v);
+                    }
+                  })
+                  controls=false
+                />
+                <span class="text-xs text-muted-foreground">
+                  {move || t("tools.wspr-signals-sit-in")}
+                </span>
+              </Field>
+            }
+          }}
 
           {move || {
             (result.with(Option::is_none) && !processing.get())
@@ -215,8 +227,8 @@ pub fn WsprDecoderPage() -> impl IntoView {
                     class="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed p-8 text-center transition-all duration-200 hover:bg-muted/40 cursor-pointer"
                   >
                     <Icon kind=IconKind::Waves class="mb-1 h-8 w-8 text-muted-foreground" />
-                    <span class="text-sm font-medium">{move || t("选择 WSPR 录音（WAV）")}</span>
-                    <span class="text-xs text-muted-foreground">{move || t("点击选择或拖拽音频文件到此处")}</span>
+                    <span class="text-sm font-medium">{move || t("tools.choose-a-wspr-recording")}</span>
+                    <span class="text-xs text-muted-foreground">{move || t("tools.click-to-choose-or-2")}</span>
                   </label>
                   <input
                     id="wspr-file"
@@ -245,9 +257,9 @@ pub fn WsprDecoderPage() -> impl IntoView {
                     <span class="text-sm text-muted-foreground">
                       {move || {
                         if reading.get() {
-                          t("正在读取文件…")
+                          t("tools.reading-file")
                         } else {
-                          t("正在后台解码，请稍候…")
+                          t("radio.decoding-in-the-background")
                         }
                       }}
                     </span>
@@ -256,7 +268,7 @@ pub fn WsprDecoderPage() -> impl IntoView {
                       class="rounded-md border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       on:click=cancel
                     >
-                      {move || t("取消")}
+                      {move || t("exam.cancel")}
                     </button>
                   </div>
                 }
@@ -269,7 +281,7 @@ pub fn WsprDecoderPage() -> impl IntoView {
                 <div class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
                   <Icon kind=IconKind::AlertCircle class="mt-0.5 h-5 w-5 shrink-0" />
                   <div class="flex-1">
-                    <div class="font-medium">{move || t("解码失败")}</div>
+                    <div class="font-medium">{move || t("radio.decoding-failed")}</div>
                     <div class="mt-1 text-sm">{e}</div>
                   </div>
                 </div>
@@ -289,9 +301,9 @@ pub fn WsprDecoderPage() -> impl IntoView {
                   <div class="rounded-lg border bg-card p-6 text-center">
                     <div class="text-3xl font-semibold tracking-tight">{p.text}</div>
                     <div class="mt-3 flex flex-wrap justify-center gap-2 text-sm">
-                      <span class="rounded-md bg-muted/60 px-2 py-1">{move || t("呼号")}{"："}{p.callsign}</span>
-                      <span class="rounded-md bg-muted/60 px-2 py-1">{move || t("网格")}{"："}{p.locator}</span>
-                      <span class="rounded-md bg-muted/60 px-2 py-1">{move || t("功率")}{"："}{p.power} dBm</span>
+                      <span class="rounded-md bg-muted/60 px-2 py-1">{move || t("log.callsign")}{"："}{p.callsign}</span>
+                      <span class="rounded-md bg-muted/60 px-2 py-1">{move || t("log.grid")}{"："}{p.locator}</span>
+                      <span class="rounded-md bg-muted/60 px-2 py-1">{move || t("contest.power")}{"："}{p.power} dBm</span>
                     </div>
                   </div>
                   <div class="flex justify-center">
@@ -301,7 +313,7 @@ pub fn WsprDecoderPage() -> impl IntoView {
                       on:click=move |_| reset(())
                     >
                       <Icon kind=IconKind::RefreshCw class="h-4 w-4" />
-                      {move || t("解码其他文件")}
+                      {move || t("tools.decode-another-file")}
                     </button>
                   </div>
                 </div>

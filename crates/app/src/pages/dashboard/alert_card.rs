@@ -34,7 +34,7 @@ pub(super) fn AlertCard() -> impl IntoView {
 
   view! {
     <a href="/solar" class="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">
-      <div class="text-sm font-semibold">{move || t("空间天气警报")}</div>
+      <div class="text-sm font-semibold">{move || t("learning.space-weather-alerts")}</div>
       <div class="mt-2">
         {move || match alert.get() {
           Some(a) if !a.level.is_empty() => view! {
@@ -45,8 +45,8 @@ pub(super) fn AlertCard() -> impl IntoView {
             <span class="font-mono text-sm text-muted-foreground">{a.product_id.clone()}</span>
           }
           .into_any(),
-          None if loading.get() => view! { <span class="text-sm text-muted-foreground">{move || t("加载中…")}</span> }.into_any(),
-          None => view! { <span class="text-sm text-muted-foreground">{move || t("当前无有效警报")}</span> }.into_any(),
+          None if loading.get() => view! { <span class="text-sm text-muted-foreground">{move || t("learning.loading")}</span> }.into_any(),
+          None => view! { <span class="text-sm text-muted-foreground">{move || t("learning.no-active-alerts")}</span> }.into_any(),
         }}
       </div>
     </a>

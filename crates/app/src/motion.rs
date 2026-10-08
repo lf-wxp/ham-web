@@ -189,7 +189,7 @@ pub fn reveal_children(parent: &web_sys::Element) {
 
 /// 路由过渡：切换路径时重放主内容区入场动画，并在顶栏扫过一道信号光。
 ///
-/// 必须放在 `<Router>` 内（要读 `use_location`），且排在 [`crate::app::MainContent`]
+/// 必须放在 `<Router>` 内（要读 `use_location`），且排在 `app::MainContent`
 /// 之后，这样首次运行时容器已经挂载。
 #[component]
 pub fn RouteTransition() -> impl IntoView {

@@ -9,7 +9,7 @@ use web_sys::{ServiceWorker, ServiceWorkerRegistration, ServiceWorkerState};
 
 use ham_web_core::changelog::{self, Release};
 
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, Size, Variant};
 use crate::util::{document, now_ms, storage, window};
 use crate::{bank_updates, data};
 
@@ -187,30 +187,46 @@ pub fn UpdateNotices() -> impl IntoView {
     >
       {move || open.get().then(|| view! {
         <Notice
-          title=t("发现新版本")
-          detail=t("刷新后即可使用最新功能；正在进行的练习与考试进度会自动保存。")
+          title=t("settings.new-version-available")
+          detail=t("settings.refresh-to-use-the")
           items=new_items.get()
         >
-          <button type="button" class=button_class(Variant::Ghost, Size::Sm, "") on:click=move |_| open.set(false)>
-            {move || t("稍后")}
-          </button>
-          <button type="button" class=button_class(Variant::Default, Size::Sm, "") on:click=update_now>
-            {move || t("刷新以更新")}
-          </button>
+          <Button
+            variant=Variant::Ghost
+            size=Size::Sm
+            on_click=Callback::new(move |_| open.set(false))
+          >
+            {move || t("settings.later")}
+          </Button>
+          <Button
+            variant=Variant::Default
+            size=Size::Sm
+            on_click=Callback::new(move |_| update_now(()))
+          >
+            {move || t("settings.refresh-to-update")}
+          </Button>
         </Notice>
       })}
       {move || (!whats_new.with(Vec::is_empty)).then(|| view! {
-        <Notice title=t("已更新到新版本") items=whats_new.get()>
-          <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| whats_new.set(Vec::new())>
-            {move || t("知道了")}
-          </button>
+        <Notice title=t("settings.updated-to-the-new") items=whats_new.get()>
+          <Button
+            variant=Variant::Outline
+            size=Size::Sm
+            on_click=Callback::new(move |_| whats_new.set(Vec::new()))
+          >
+            {move || t("exam.ok")}
+          </Button>
         </Notice>
       })}
       {move || (!bank_notes.with(Vec::is_empty)).then(|| view! {
-        <Notice title=t("题库已更新") items=bank_notes.get()>
-          <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| bank_notes.set(Vec::new())>
-            {move || t("知道了")}
-          </button>
+        <Notice title=t("settings.question-bank-updated") items=bank_notes.get()>
+          <Button
+            variant=Variant::Outline
+            size=Size::Sm
+            on_click=Callback::new(move |_| bank_notes.set(Vec::new()))
+          >
+            {move || t("exam.ok")}
+          </Button>
         </Notice>
       })}
     </div>

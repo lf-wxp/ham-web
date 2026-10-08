@@ -1,7 +1,9 @@
 use leptos::prelude::*;
 
-use super::{INPUT, fmt_num};
+use super::fmt_num;
 use crate::i18n::t;
+use crate::ui::{Field, NumberField};
+use crate::util::unique_id;
 
 /// EIRP 有效辐射功率：功率 + 天线增益 − 馈线损耗。
 #[component]
@@ -10,52 +12,53 @@ pub(super) fn EirpCalculator() -> impl IntoView {
   let gain = RwSignal::new(3.0);
   let loss = RwSignal::new(1.0);
 
+  let power_id = unique_id("eirp-power");
+  let gain_id = unique_id("eirp-gain");
+  let loss_id = unique_id("eirp-loss");
+
   view! {
     <div class="grid gap-3 sm:grid-cols-3">
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("发射功率（W）")}</span>
-        <input
-          type="number"
-          prop:value=move || power.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      <Field label=Signal::derive(move || t("tools.transmit-power-w")) r#for=power_id.clone()>
+        <NumberField
+          id=power_id
+          value=Signal::derive(move || power.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               power.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("天线增益（dBi）")}</span>
-        <input
-          type="number"
-          prop:value=move || gain.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      </Field>
+      <Field label=Signal::derive(move || t("tools.antenna-gain-dbi")) r#for=gain_id.clone()>
+        <NumberField
+          id=gain_id
+          value=Signal::derive(move || gain.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               gain.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("馈线损耗（dB）")}</span>
-        <input
-          type="number"
-          prop:value=move || loss.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      </Field>
+      <Field label=Signal::derive(move || t("tools.feedline-loss-db")) r#for=loss_id.clone()>
+        <NumberField
+          id=loss_id
+          value=Signal::derive(move || loss.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               loss.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
+      </Field>
       <div class="sm:col-span-3 rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let p = power.get();
           if p <= 0.0 {
-            t("请输入正功率")
+            t("tools.enter-a-positive-power")
           } else {
             let p_dbm = 10.0 * p.log10() + 30.0;
             let eirp = p_dbm + gain.get() - loss.get();

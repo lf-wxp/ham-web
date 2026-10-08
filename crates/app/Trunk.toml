@@ -11,7 +11,21 @@ tailwindcss = "4.1.14"
 wasm_opt = "version_123"
 
 [watch]
-watch = ["src", "style", "index.html", "../core/src", "../../public", "../../data/glossary"]
+# data/i18n 由 crates/app/build.rs 在构建期编成静态词典表，改译文也要触发重建。
+#
+# 这里只列**手写**资源目录，不整个监听 ../../public：该目录下还有构建期产物
+# （sw.js / sitemap.xml / 三个 worker 的 *_worker.js 与 *_bg.wasm / 下载物字体），
+# 监听它们会让 `dev` 在自己生成产物时反复自我触发重建。
+watch = [
+  "src",
+  "style",
+  "index.html",
+  "../core/src",
+  "../../public/data/i18n",
+  "../../public/questions",
+  "../../data/glossary",
+  "../../data/i18n",
+]
 
 [serve]
 addresses = ["127.0.0.1"]

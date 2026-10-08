@@ -5,7 +5,7 @@ use leptos_router::components::Router;
 
 use crate::components::navigation::Navigation;
 use crate::components::search_dialog::SearchDialog;
-use crate::components::web_threads::WebThreadsBackground;
+use crate::components::web_threads_background::WebThreadsBackground;
 use crate::motion::RouteTransition;
 use crate::pwa::UpdateNotices;
 use crate::theme::provide_theme;
@@ -52,7 +52,7 @@ pub fn App() -> impl IntoView {
           }
         }
       >
-        {move || t("跳到主要内容")}
+        {move || t("shell.skip-to-main-content")}
       </a>
       <UpdateNotices />
       <WebThreadsBackground />

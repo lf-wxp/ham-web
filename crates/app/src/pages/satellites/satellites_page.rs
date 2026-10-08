@@ -11,14 +11,14 @@ use crate::i18n::t;
 
 #[component]
 pub fn SatellitesPage() -> impl IntoView {
-  set_title(&t("业余卫星"));
+  set_title("shell.satellites");
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("业余卫星")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("FM 中继与线性转发器 · 上行 / 下行频率 · 过境预报")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.satellites")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("radio.fm-repeaters-and-linear")}</div>
           </div>
         </div>
       </header>
@@ -29,22 +29,28 @@ pub fn SatellitesPage() -> impl IntoView {
         <IssTracker />
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("天线旋转器")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.antenna-rotator")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
-            {move || t("过境时连接旋转器（GS-232 协议），输入方位角遥控天线对准卫星。")}
+            {move || t("radio.during-a-pass-connect")}
           </p>
           <div class="p-4"><RotorControl /></div>
         </section>
 
-        <div class="overflow-x-auto rounded-xl border bg-card">
+        // 横向可滚区域必须可聚焦，否则键盘用户滚不动它（axe: scrollable-region-focusable）
+        <div
+          class="overflow-x-auto rounded-xl border bg-card"
+          tabindex="0"
+          role="region"
+          aria-label=move || t("radio.satellite-frequency-table")
+        >
           <table class="w-full min-w-[680px] border-collapse text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>
-                <th class=CELL>{move || t("卫星")}</th>
-                <th class=CELL>{move || t("类型")}</th>
-                <th class=CELL>{move || t("上行")}</th>
-                <th class=CELL>{move || t("下行")}</th>
-                <th class=CELL>{move || t("说明")}</th>
+                <th class=CELL>{move || t("radio.satellite")}</th>
+                <th class=CELL>{move || t("radio.type")}</th>
+                <th class=CELL>{move || t("radio.uplink")}</th>
+                <th class=CELL>{move || t("radio.downlink")}</th>
+                <th class=CELL>{move || t("radio.notes")}</th>
               </tr>
             </thead>
             <tbody>
@@ -70,7 +76,7 @@ pub fn SatellitesPage() -> impl IntoView {
         </div>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("操作要点")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.operating-tips")}</h2>
           <ul class="space-y-2 p-4">
             {SATELLITE_TIPS
               .iter()
@@ -87,7 +93,7 @@ pub fn SatellitesPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("追踪与预报软件")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.tracking-and-prediction-software")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {TRACKING_SOFTWARE
               .iter()

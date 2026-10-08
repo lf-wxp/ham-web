@@ -4,9 +4,9 @@ use leptos::prelude::*;
 
 use crate::morse_audio::play_morse_timed_with;
 use crate::morse_settings::use_morse_settings;
-use crate::ui::input_class;
+use crate::ui::{Button, Input, Variant};
 
-use super::{btn_primary, btn_secondary, encode_words, random_index};
+use super::{encode_words, random_index};
 use crate::i18n::{t, tf};
 
 /// 抄收速度（WPM）。
@@ -52,55 +52,66 @@ pub(super) fn WordCopy() -> impl IntoView {
   view! {
     <section class="rounded-xl border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">
-        {move || t("单词抄收")}
-        <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("听常用缩语 / 单词的莫尔斯音，抄收并拼出")}</span>
+        {move || t("morse.word-copying")}
+        <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.listen-to-morse-for")}</span>
       </h2>
       <div class="space-y-4 p-4">
         <div class="flex flex-col items-center gap-3 rounded-xl border bg-muted/30 px-4 py-6">
-          <div class="text-xs text-muted-foreground">{move || t("点击播放，抄收后输入对应单词或缩语")}</div>
+          <div class="text-xs text-muted-foreground">{move || t("morse.tap-play-then-type")}</div>
           <button
             type="button"
             on:click=move |_| play()
             class="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
           >
-            {move || t("🔊 播放")}
+            {move || t("morse.play-2")}
           </button>
         </div>
-        <input
-          type="text"
-          placeholder=move || t("输入抄收的单词，如 CQ / 73 / RST")
-          aria-label=move || t("抄收输入")
-          prop:value=move || input.get()
-          on:input=move |e| input.set(event_target_value(&e))
-          on:keydown=move |e| {
-            if e.key() == "Enter" && feedback.get().is_none() {
+        <Input
+          placeholder=Signal::derive(move || t("morse.type-the-word-you"))
+          aria_label=Signal::derive(move || t("morse.copy-input"))
+          value=input
+          on_change=Callback::new(move |v: String| input.set(v))
+          on_enter=Callback::new(move |()| {
+            if feedback.get().is_none() {
               check();
             }
-          }
-          class=format!("{} font-mono uppercase", input_class(""))
+          })
+          class="font-mono uppercase"
         />
         <div class="flex flex-wrap items-center gap-3">
           {move || {
             if feedback.get().is_none() {
               view! {
-                <button type="button" on:click=move |_| check() class=btn_primary("")>{move || t("核对")}</button>
+                <Button
+                  variant=Variant::Default
+                  class="rounded-lg h-10"
+                  on_click=Callback::new(move |_| check())
+                >{move || t("morse.check")}</Button>
               }
               .into_any()
             } else {
               let ok = feedback.get().unwrap_or(false);
               view! {
                 <span class=if ok { "text-sm font-medium text-emerald-600 dark:text-emerald-400" } else { "text-sm font-medium text-red-600 dark:text-red-400" }>
-                  {if ok { t("正确！") } else { tf("答案是 {}", &[(word.get())]) }}
+                  {if ok { t("learning.correct") } else { tf("common.the-answer-is", &[(word.get())]) }}
                 </span>
-                <button type="button" on:click=move |_| next() class=btn_primary("")>{move || t("下一题")}</button>
+                <Button
+                  variant=Variant::Default
+                  class="rounded-lg h-10"
+                  on_click=Callback::new(move |_| next())
+                >{move || t("exam.next")}</Button>
               }
               .into_any()
             }
           }}
-          <button type="button" on:click=move |_| play() class=btn_secondary("")>{move || t("重播")}</button>
+          <Button
+            variant=Variant::Outline
+            class="rounded-lg h-10"
+            on_click=Callback::new(move |_| play())
+          >{move || t("morse.replay-2")}</Button>
           <span class="ml-auto text-xs text-muted-foreground">
-            {move || t("正确 ")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
-            {move || t("　错误 ")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
+            {move || t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
+            {move || t("common.wrong-2")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
           </span>
         </div>
       </div>

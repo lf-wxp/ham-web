@@ -2,7 +2,7 @@ use ham_web_core::exam_history::ExamRecord;
 use leptos::prelude::*;
 
 use super::load;
-use crate::i18n::tf;
+use crate::i18n::{tf, tp};
 
 /// 历史成绩趋势（最近 10 次常规模考的正确率柱状图），不足 2 次不展示。
 #[component]
@@ -18,7 +18,7 @@ pub fn HistoryChart() -> impl IntoView {
   view! {
     <div class="mt-4 border-t pt-3">
       <div class="text-sm font-medium">
-        {tf("历史成绩（最近 {} 次正确率）", &[&recent.len().to_string()])}
+        {tp("learning.recent-accuracy-last-attempts", recent.len(), &[&recent.len().to_string()])}
       </div>
       <div class="mt-3 flex items-end gap-1.5">
         {recent
@@ -29,7 +29,7 @@ pub fn HistoryChart() -> impl IntoView {
             view! {
               <div
                 class="flex flex-1 flex-col items-center gap-1"
-                title=tf("{} 类：{}/{}（{}%）", &[&(r.bank).to_string(), &(r.correct).to_string(), &(r.total).to_string(), &(pct.round() as i64).to_string()])
+                title=tf("common.class-2", &[&(r.bank).to_string(), &(r.correct).to_string(), &(r.total).to_string(), &(pct.round() as i64).to_string()])
               >
                 <div class="w-full rounded-t bg-primary" style=format!("height: {h:.1}px")></div>
                 <span class="text-[10px] tabular-nums text-muted-foreground">{pct.round() as i64}</span>

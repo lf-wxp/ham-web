@@ -35,7 +35,9 @@ alias = "dev"
 
 [tasks.dev]
 description = "启动前端开发服务器（热重载）：http://127.0.0.1:3000"
-dependencies = ["build-worker", "build-sstv-worker", "build-wspr-worker"]
+# 语言包必须先生成：`trunk serve` 会把 public/ 拷进产物目录，晚一步拷到的就是旧包
+# （改了 data/i18n/ 却不刷新，页面上仍是旧译文，且不会有任何报错）。
+dependencies = ["i18n-pack", "build-worker", "build-sstv-worker", "build-wspr-worker"]
 cwd = "${APP_DIR}"
 command = "trunk"
 # 开发产物放在 target/ 下，避免与 release 构建共用 dist/ 互相覆盖
@@ -43,7 +45,7 @@ args = ["serve", "--dist", "../../target/dev-dist"]
 
 [tasks.dev-full]
 description = "同时启动后端 server（3001，仅 API）与前端 trunk dev（3000，代理 /api 到后端）"
-dependencies = ["build-worker", "build-sstv-worker", "build-wspr-worker"]
+dependencies = ["i18n-pack", "build-worker", "build-sstv-worker", "build-wspr-worker"]
 script_runner = "@shell"
 script = '''
 set -e
@@ -125,6 +127,8 @@ wasm-bindgen --target no-modules --no-typescript --out-dir public/wspr-worker --
 
 [tasks.trunk-build]
 private = true
+# 语言包必须先生成：Trunk 会把 public/ 拷进产物目录，晚一步拷到的就是旧包
+dependencies = ["i18n-pack"]
 cwd = "${APP_DIR}"
 command = "trunk"
 args = ["build", "--release"]
@@ -322,12 +326,37 @@ description = "校验 data/glossary/（分类、参见、重复、括号）并�
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "check-glossary"]
 
+[tasks.i18n-pack]
+description = "生成运行时语言包 public/data/i18n/{lang}.json（非内嵌域译文，前端启动时按语言拉取）"
+# 与 i18n-check 同理，刻意不用 --release：这只是读写 JSON，debug 构建就够；
+# 而它挂在 `dev` / `dev-full` / `trunk-build` 的依赖链上，用 release 会连带编译
+# 整条 release 依赖链（开发时白等几分钟）。
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--", "i18n-pack"]
+
 [tasks.i18n-check]
-description = "校验 crates/app/src/i18n.rs 词典（重复 key、占位符数量）并统计文案覆盖率"
+description = "校验 data/i18n/ 词典（重复 key、占位符、死条目）与运行时语言包新鲜度，并统计文案覆盖率"
 # 不用 --release：这只是解析文本，debug 构建即可，省掉整条依赖链的 release 编译。
 # 注意：与 `dev-full` 同时跑会争用 target/ 构建锁，见 README「常见问题」。
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--", "check-i18n"]
+
+[tasks.i18n-plural-candidates]
+description = "导出复数候选骨架（tf/tp 调用且中文带数量占位符的文案）→ tmp/plural-candidates-en.json"
+# 换语言：`cargo make i18n-plural-candidates -- --lang es`（CLI 参数覆盖上面的默认）
+command = "cargo"
+args = [
+  "run",
+  "-q",
+  "-p",
+  "ham-web-tools",
+  "--",
+  "check-i18n",
+  "--plural-candidates",
+  "tmp/plural-candidates-en.json",
+  "--lang",
+  "en",
+]
 
 [tasks.explanations-apply]
 description = "把 data/explanations.json 写入 public/questions/*.json（离线，无需重建数据集）"
@@ -343,6 +372,11 @@ args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "sync-explanation
 description = "一次性迁移：把已提交题库按排版规则归一化并迁移解析表 key（明细写入 tmp/questions-normalize-report.json）"
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "normalize-questions", "--report", "tmp/questions-normalize-report.json"]
+
+[tasks.knowledge-i18n-check]
+description = "校验知识库正文译文：中文原文作 key，源码改过句子后译文即失效（静默回退中文）"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--", "knowledge-i18n-check"]
 
 [tasks.explanations-check]
 description = "校验解析表：答案一致性、重复/错位注入、裸释义、同题多版本分叉（分叉只告警）"
@@ -384,8 +418,15 @@ command = "cargo"
 args = ["test", "-p", "ham-web-core", "-p", "ham-web-apt", "-p", "ham-web-tools", "-p", "ham-web-server", "-p", "ham-web-app"]
 
 [tasks.check]
-description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案词典校验 + 解析表校验（不构建前端）"
-dependencies = ["fmt-check", "clippy", "test", "i18n-check", "explanations-check"]
+description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案/知识库译文词典校验 + 解析表校验（不构建前端）"
+dependencies = [
+  "fmt-check",
+  "clippy",
+  "test",
+  "i18n-check",
+  "knowledge-i18n-check",
+  "explanations-check",
+]
 
 [tasks.e2e]
 description = "端到端测试：构建 release 站点后由 Playwright 启动服务器并运行 e2e/（首次：cd e2e && npm ci && npx playwright install chromium）"
@@ -401,8 +442,18 @@ command = "node"
 args = ["scripts/coverage.mjs"]
 
 [tasks.ci]
-description = "CI：格式检查 + clippy + 测试 + 界面文案校验 + 解析表校验 + 前端构建"
-dependencies = ["fmt-check", "clippy", "test", "i18n-check", "explanations-check", "build-web"]
+description = "CI：格式检查 + clippy + 测试 + 界面文案/知识库译文校验 + 解析表校验 + 前端构建"
+# 与 `check` 保持同一套校验：漏掉 knowledge-i18n-check 时，知识库译文 key 漂移
+# 会让页面上静默回退中文，而 CI 不会红。
+dependencies = [
+  "fmt-check",
+  "clippy",
+  "test",
+  "i18n-check",
+  "knowledge-i18n-check",
+  "explanations-check",
+  "build-web",
+]
 
 # ───────────────────────────── 部署 ─────────────────────────────
 

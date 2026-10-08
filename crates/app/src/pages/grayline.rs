@@ -11,11 +11,12 @@ use wasm_bindgen::JsValue;
 use crate::components::common::{Legend, PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::pages::map::{GraylineOverlay, MapView};
+use crate::ui::Slider;
 use crate::util::set_title;
 
 #[component]
 pub fn GraylinePage() -> impl IntoView {
-  set_title(&t("灰线地图"));
+  set_title("shell.grayline-map");
 
   let now = RwSignal::new(js_sys::Date::new_0().get_time());
   // 时间偏移（小时）：0 = 当前，正数预测未来、负数回溯过去。
@@ -43,12 +44,12 @@ pub fn GraylinePage() -> impl IntoView {
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader
-        title=Signal::derive(move || t("灰线地图"))
-        subtitle=Signal::derive(move || t("实时晨昏圈 · 低频 DX 灰线窗口"))
+        title=Signal::derive(move || t("shell.grayline-map"))
+        subtitle=Signal::derive(move || t("radio.live-terminator-lf-dx"))
       />
       <PageContainer>
         <section class="rounded-xl border bg-card p-4">
-          <MapView aria_label=t("灰线地图（滚轮缩放、拖拽平移、双指缩放、双击复位、反子午线环绕）")>
+          <MapView aria_label=Signal::derive(move || t("radio.grayline-map-scroll-to"))>
             <GraylineOverlay now_ms=display_ms />
           </MapView>
 
@@ -58,13 +59,13 @@ pub fn GraylinePage() -> impl IntoView {
               {move || {
                 let off = time_offset.get();
                 if off.abs() < 1e-9 {
-                  view! { <span class="text-muted-foreground">{move || t("当前时间")}</span> }.into_any()
+                  view! { <span class="text-muted-foreground">{move || t("radio.current-time")}</span> }.into_any()
                 } else {
                   view! {
                     <span class="rounded bg-amber-500/15 px-1.5 py-0.5 font-medium text-amber-600">
                       {move || {
                         tf(
-                          "偏移 {}{}h",
+                          "radio.offset-h",
                           &[
                             if off > 0.0 { "+" } else { "-" },
                             &format!("{:.1}", off.abs()),
@@ -79,19 +80,15 @@ pub fn GraylinePage() -> impl IntoView {
             </div>
             <div class="flex items-center gap-2">
               <span class="text-xs text-muted-foreground">"-12h"</span>
-              <input
-                type="range"
-                min="-12"
-                max="12"
-                step="0.5"
-                prop:value=move || time_offset.get().to_string()
-                on:input=move |e| {
-                  if let Ok(v) = event_target_value(&e).parse::<f64>() {
-                    time_offset.set(v);
-                  }
-                }
-                class="h-1.5 flex-1 accent-primary"
-                aria-label=move || t("时间偏移（小时）")
+              <Slider
+                value=time_offset
+                on_change=Callback::new(move |v: f64| time_offset.set(v))
+                min=-12.0
+                max=12.0
+                step=0.5
+                class="flex-1"
+                aria_label=Signal::derive(move || t("radio.time-offset-hours"))
+                aria_valuetext=Signal::derive(move || format!("{:+.1} h", time_offset.get()))
               />
               <span class="text-xs text-muted-foreground">"+12h"</span>
             </div>
@@ -126,10 +123,10 @@ pub fn GraylinePage() -> impl IntoView {
                 ("h-2.5 w-2.5 rounded-full bg-amber-500", "太阳直射点"),
               ]
             />
-            <div class="text-xs text-muted-foreground">{move || t("滚轮/双指缩放 · 拖拽平移 · 双击复位 · 悬停经纬度")}</div>
+            <div class="text-xs text-muted-foreground">{move || t("radio.scroll-pinch-to-zoom-2")}</div>
           </div>
           <p class="mt-3 text-xs text-muted-foreground">
-            {move || t("黄色带为晨昏圈（日出/日落分界），随 UTC 时间实时移动；实心点为太阳直射点、空心为反日点。两端处于灰线的路径，常是 160m / 80m 低频 DX 的黄金窗口。")}
+            {move || t("radio.the-yellow-band-is")}
           </p>
         </section>
       </PageContainer>

@@ -25,7 +25,7 @@ pub fn QuestionProgressHeader(
       <div class="flex items-center gap-4 justify-between flex-wrap">
         <div class="flex items-center gap-4 w-full sm:w-auto">
           <div class="min-w-24 text-sm text-muted-foreground">
-            {move || tf("进度 {}%", &[&percent.get().to_string()])}
+            {move || tf("learning.progress-2", &[&percent.get().to_string()])}
           </div>
           <Progress value=percent class="h-2 flex-1 sm:w-40 sm:flex-none" />
         </div>

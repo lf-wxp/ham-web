@@ -1,7 +1,9 @@
 use leptos::prelude::*;
 
-use super::{INPUT, fmt_num};
+use super::fmt_num;
 use crate::i18n::{t, tf};
+use crate::ui::{Field, NumberField};
+use crate::util::unique_id;
 
 /// 计算 L 型匹配网络元件值（负载纯电阻匹配到 50Ω）。
 /// 返回 `(低通: 并联电感 μH, 串联电容 pF, 高通: 并联电容 pF, 串联电感 μH)`。
@@ -38,47 +40,48 @@ pub(super) fn AntennaMatcher() -> impl IntoView {
   let resist = RwSignal::new(12.0);
   let freq = RwSignal::new(7.1);
 
+  let resist_id = unique_id("antenna-matcher-r");
+  let freq_id = unique_id("antenna-matcher-f");
+
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("负载电阻（Ω，谐振点）")}</span>
-        <input
-          type="number"
-          prop:value=move || resist.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      <Field label=Signal::derive(move || t("tools.load-resistance-at-resonance")) r#for=resist_id.clone()>
+        <NumberField
+          id=resist_id
+          value=Signal::derive(move || resist.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               resist.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("频率（MHz）")}</span>
-        <input
-          type="number"
-          prop:value=move || freq.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      </Field>
+      <Field label=Signal::derive(move || t("log.frequency-mhz")) r#for=freq_id.clone()>
+        <NumberField
+          id=freq_id
+          value=Signal::derive(move || freq.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               freq.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
+      </Field>
       <div class="sm:col-span-2 rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           match l_match(resist.get(), freq.get()) {
             Some((lp, cs, cp, ls)) => tf(
-              "低通型：并联 {} μH + 串联 {} pF　｜　高通型：并联 {} pF + 串联 {} μH",
+              "tools.low-pass-shunt-h",
               &[&fmt_num(lp), &fmt_num(cs), &fmt_num(cp), &fmt_num(ls)],
             ),
-            None => t("请输入正的电阻与频率（电阻不等于 50Ω）。"),
+            None => t("tools.enter-a-positive-resistance"),
           }
         }}
       </div>
       <p class="sm:col-span-2 text-xs text-muted-foreground">
-        {move || t("L 型网络把负载电阻共轭匹配到 50Ω，消除反射。负载 <50Ω 时并联元件在负载侧，>50Ω 时串联元件在源侧。元件值按谐振点纯电阻计算，含电抗时请先将其调至谐振。")}
+        {move || t("tools.an-l-network-conjugate")}
       </p>
     </div>
   }

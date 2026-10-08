@@ -4,7 +4,7 @@ use ham_web_core::{Bank, ExamScore};
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 use crate::util::{document, js_error_message};
 
 const W: f64 = 600.0;
@@ -42,15 +42,16 @@ pub fn render_score_card(bank: Bank, score: ExamScore, pass_line: usize) -> Resu
   // 标题。
   ctx.set_fill_style_str("#18181b");
   ctx.set_font("bold 30px sans-serif");
-  fill(&ctx, &t("业余无线电模拟考试"), W / 2.0, 76.0)?;
+  fill(&ctx, &t("exam.amateur-radio-mock-exam"), W / 2.0, 76.0)?;
 
   // 题库 + 合格线。
   ctx.set_fill_style_str("#71717a");
   ctx.set_font("18px sans-serif");
   fill(
     &ctx,
-    &tf(
-      "{} 类 · 合格线 {} 题",
+    &tp(
+      "common.class-pass-mark-questions",
+      pass_line,
       &[bank.as_str(), &pass_line.to_string()],
     ),
     W / 2.0,
@@ -73,7 +74,7 @@ pub fn render_score_card(bank: Bank, score: ExamScore, pass_line: usize) -> Resu
   fill(
     &ctx,
     &tf(
-      "正确率 {}% · {}",
+      "common.accuracy-2",
       &[
         &score.percent().to_string(),
         &t(if passed { "合格" } else { "不合格" }),
@@ -86,7 +87,7 @@ pub fn render_score_card(bank: Bank, score: ExamScore, pass_line: usize) -> Resu
   // 日期。
   let today = js_sys::Date::new_0();
   let date = tf(
-    "{} 年 {} 月 {} 日",
+    "common.entry",
     &[
       &today.get_full_year().to_string(),
       &(today.get_month() + 1).to_string(),
@@ -136,10 +137,10 @@ pub fn render_weekly_card(
   // 标题与日期。
   ctx.set_fill_style_str("#18181b");
   ctx.set_font("bold 30px sans-serif");
-  fill(&ctx, &t("学习周报"), W / 2.0, 70.0)?;
+  fill(&ctx, &t("shell.weekly-report"), W / 2.0, 70.0)?;
   let today = js_sys::Date::new_0();
   let date = tf(
-    "{} 年 {} 月 {} 日",
+    "common.entry",
     &[
       &today.get_full_year().to_string(),
       &(today.get_month() + 1).to_string(),
@@ -152,10 +153,13 @@ pub fn render_weekly_card(
 
   // 四个统计数字。
   let stats: [(String, String); 4] = [
-    (t("本周作答"), answered.to_string()),
-    (t("本周新题"), new.to_string()),
-    (t("连续打卡"), tf("{} 天", &[&streak.to_string()])),
-    (t("当前错题"), mistakes.to_string()),
+    (t("exam.answered-this-week"), answered.to_string()),
+    (t("exam.new-questions-this-week"), new.to_string()),
+    (
+      t("learning.day-streak"),
+      tp("common.days", streak, &[&streak.to_string()]),
+    ),
+    (t("exam.current-mistakes"), mistakes.to_string()),
   ];
   let xs = [W / 8.0, W * 3.0 / 8.0, W * 5.0 / 8.0, W * 7.0 / 8.0];
   for (i, (label, value)) in stats.iter().enumerate() {
@@ -171,7 +175,7 @@ pub fn render_weekly_card(
   if let Some(w) = weakest {
     ctx.set_fill_style_str("#71717a");
     ctx.set_font("16px sans-serif");
-    fill(&ctx, &t("本周最薄弱分类"), W / 2.0, 262.0)?;
+    fill(&ctx, &t("exam.weakest-category-this-week"), W / 2.0, 262.0)?;
     ctx.set_fill_style_str("#18181b");
     ctx.set_font("bold 22px sans-serif");
     fill(&ctx, w, W / 2.0, 294.0)?;
@@ -221,7 +225,7 @@ fn data_url_to_blob(data_url: &str) -> Option<web_sys::Blob> {
 
 /// 把成绩卡片复制到剪贴板（桌面版 Chrome / Edge）。
 pub async fn copy_image(data_url: &str) -> Result<(), String> {
-  let blob = data_url_to_blob(data_url).ok_or_else(|| t("图片处理失败"))?;
+  let blob = data_url_to_blob(data_url).ok_or_else(|| t("learning.image-processing-failed"))?;
   let record = js_sys::Object::new();
   let blob_promise = js_sys::Promise::resolve(&blob);
   js_sys::Reflect::set(&record, &JsValue::from_str("image/png"), &blob_promise)
@@ -242,7 +246,7 @@ pub async fn copy_image(data_url: &str) -> Result<(), String> {
 
 /// 通过系统分享面板分享图片（移动端 Web Share API）。
 pub async fn share_image(data_url: &str, filename: &str, title: &str) -> Result<(), String> {
-  let blob = data_url_to_blob(data_url).ok_or_else(|| t("图片处理失败"))?;
+  let blob = data_url_to_blob(data_url).ok_or_else(|| t("learning.image-processing-failed"))?;
   let parts = js_sys::Array::new();
   parts.push(&blob);
   let file =
@@ -299,19 +303,25 @@ pub fn render_report_card(d: &ReportData) -> Result<String, String> {
   // 标题与时间范围。
   ctx.set_fill_style_str("#18181b");
   ctx.set_font("bold 36px sans-serif");
-  fill(&ctx, &t("学习报告"), 300.0, 76.0)?;
+  fill(&ctx, &t("learning.study-report"), 300.0, 76.0)?;
   ctx.set_fill_style_str("#a1a1aa");
   ctx.set_font("16px sans-serif");
   fill(&ctx, &t(d.range), 300.0, 112.0)?;
 
   // 学习统计（2 列 × 3 行）。
   let stats: [(String, String); 6] = [
-    (t("累计作答"), d.answered.to_string()),
-    (t("正确率"), tf("{}%", &[&d.correct_rate.to_string()])),
-    (t("连续打卡"), tf("{} 天", &[&d.streak.to_string()])),
-    (t("当前错题"), d.mistakes.to_string()),
-    (t("收藏题目"), d.bookmarks.to_string()),
-    (t("解锁成就"), d.achievements.to_string()),
+    (t("learning.answered-total"), d.answered.to_string()),
+    (
+      t("learning.accuracy"),
+      tf("common.percent", &[&d.correct_rate.to_string()]),
+    ),
+    (
+      t("learning.day-streak"),
+      tp("common.days", d.streak, &[&d.streak.to_string()]),
+    ),
+    (t("exam.current-mistakes"), d.mistakes.to_string()),
+    (t("learning.bookmarks"), d.bookmarks.to_string()),
+    (t("exam.achievement-unlocked"), d.achievements.to_string()),
   ];
   let xs = [160.0, 440.0];
   let ys = [200.0, 300.0, 400.0];
@@ -337,10 +347,10 @@ pub fn render_report_card(d: &ReportData) -> Result<String, String> {
   // 通联统计。
   ctx.set_fill_style_str("#18181b");
   ctx.set_font("bold 22px sans-serif");
-  fill(&ctx, &t("通联日志"), 300.0, 540.0)?;
+  fill(&ctx, &t("shell.logbook"), 300.0, 540.0)?;
   let log_stats: [(String, String); 2] = [
-    (t("通联记录"), d.log_count.to_string()),
-    (t("DXCC 实体"), d.dxcc_count.to_string()),
+    (t("learning.qsos"), d.log_count.to_string()),
+    (t("log.dxcc-entities"), d.dxcc_count.to_string()),
   ];
   for (i, (label, value)) in log_stats.iter().enumerate() {
     let x = 160.0 + i as f64 * 280.0;

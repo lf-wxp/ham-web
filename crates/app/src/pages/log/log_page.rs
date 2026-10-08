@@ -1,27 +1,27 @@
+use crate::ui::{Button, ButtonLink, FileInput, Size, Variant};
+use crate::util::download_text;
+use crate::util::set_title;
 use ham_web_core::adif::parse_adif;
 use ham_web_core::logbook::{export_adif, export_csv};
+use ham_web_core::qsl_sync::QslFlag;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
-use wasm_bindgen::JsCast;
-
-use crate::ui::{Size, Variant, button_class};
-use crate::util::download_text;
-use crate::util::set_title;
 
 use super::entry_form::EntryForm;
 use super::entry_list::EntryList;
 use super::form_state::LogFormState;
 use super::log_helpers::confirm;
 use super::log_stats_panel::LogStatsPanel;
+use super::qsl_image;
 use super::qsl_sync_dialog::QslSyncDialog;
 use super::station_panel::StationPanel;
 use super::{LogEntry, Logbook, use_log_store, utc_today};
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 
 #[component]
 pub fn LogPage() -> impl IntoView {
-  set_title(&t("通联日志"));
+  set_title("shell.logbook");
 
   let store = use_log_store();
   let logbook = store.logbook;
@@ -69,16 +69,17 @@ pub fn LogPage() -> impl IntoView {
 
   let remove = move |id: u64| {
     logbook.update(|l| l.entries.retain(|e| e.id != id));
+    // 影像与 id 绑定，而 `next_id()` 会复用 id —— 一并清掉，别让新通联挂上旧扫描件。
+    qsl_image::purge(store, &[id]);
     store.persist();
   };
 
   let clear = move || {
     let n = logbook.with_untracked(|l| l.entries.len());
-    if confirm(&tf(
-      "确定清空全部 {} 条通联记录吗？建议先导出 ADIF 备份。此操作不可撤销。",
-      &[&n.to_string()],
-    )) {
+    if confirm(&tp("log.clear-all-qso-records", n, &[&n.to_string()])) {
+      let ids: Vec<u64> = logbook.with_untracked(|l| l.entries.iter().map(|e| e.id).collect());
       logbook.set(Logbook::default());
+      qsl_image::purge(store, &ids);
       store.persist();
     }
   };
@@ -90,9 +91,7 @@ pub fn LogPage() -> impl IntoView {
       &content,
       "text/plain",
     );
-    crate::util::alert(&t(
-      "ADIF 已导出（含 LoTW / eQSL 状态）。可到 LoTW（TQSL）或 eQSL 官网登录后上传此文件，确认后回到日志勾选对应状态。",
-    ));
+    crate::util::alert(&t("log.adif-exported-with-lotw"));
   };
 
   let export_csv_btn = move || {
@@ -106,32 +105,60 @@ pub fn LogPage() -> impl IntoView {
 
   let save_station_btn = Callback::new(move |()| {
     store.persist_station();
-    crate::util::alert(&t("本台信息已保存"));
+    crate::util::alert(&t("log.station-info-saved"));
   });
 
-  let import_adif = move |e: web_sys::Event| {
-    let Some(target) = e.target() else { return };
-    let input: web_sys::HtmlInputElement = target.unchecked_into();
-    let Some(file) = input.files().and_then(|f| f.get(0)) else {
+  // 导入 ADIF：`FileInput` 直接把选中的文件交过来（一次一个，多选忽略其余）；
+  // 「读完清空 input」由组件负责，选同一个文件能重复触发。
+  let import_adif = Callback::new(move |files: Vec<web_sys::File>| {
+    let Some(file) = files.into_iter().next() else {
       return;
     };
-    input.set_value("");
     spawn_local(async move {
       let Some(text) = crate::util::read_file_text(&file).await else {
+        // 读失败必须出声：静默返回会被当成「导入了 0 条」。
+        crate::util::alert(&t("common.file-read-failed"));
         return;
       };
       let (added, dupes) = store.import(parse_adif(&text));
       let msg = if dupes > 0 {
+        // 两个可数名词，且西语的过去分词要跟着各自变形 —— 整段放进内层片段各自 `tp`。
+        // 内层「已导入 N 条记录」直接复用外层那条 key：语义完全相同，多一条同义 key
+        // 只会让中文反向索引撞车（同一句中文只能映射到一个 key）。
         tf(
-          "已导入 {} 条记录，跳过重复 {} 条",
-          &[&added.to_string(), &dupes.to_string()],
+          "log.imported-records-skipped-duplicates",
+          &[
+            &tp("log.imported-records", added, &[&added.to_string()]),
+            &tp("log.skipped-n-duplicates", dupes, &[&dupes.to_string()]),
+          ],
         )
       } else {
-        tf("已导入 {} 条记录", &[&added.to_string()])
+        tp("log.imported-records", added, &[&added.to_string()])
       };
       crate::util::alert(&msg);
     });
-  };
+  });
+
+  // 还没标成「已上传 LoTW」的条数：按钮上的计数，也就是这次批量标记的作用范围。
+  let pending_lotw =
+    Memo::new(move |_| logbook.with(|lb| lb.entries.iter().filter(|e| !e.lotw_sent).count()));
+
+  // LoTW 状态回写的「已上传」那一半：确认由「同步 QSL」按报告回写，这一半只能由用户在
+  // 上传成功后自己宣告 —— 我们无法探测 LoTW 端到底收没收到。
+  let mark_lotw = Callback::new(move |()| {
+    let n = pending_lotw.get_untracked();
+    if n == 0 || !confirm(&tf("log.mark-these-qsos-as-uploaded", &[&n.to_string()])) {
+      return;
+    }
+    logbook.update(|lb| {
+      for e in lb.entries.iter_mut().filter(|e| !e.lotw_sent) {
+        // 复用同步模块的标志位读写：`LOTW_QSL_SENT` 的语义只在一处定义。
+        QslFlag::LotwSent.set(e, true);
+      }
+    });
+    store.persist();
+    crate::util::alert(&tf("log.marked-as-uploaded-lotw", &[&n.to_string()]));
+  });
 
   let on_save = Callback::new(move |()| save());
   let on_edit = Callback::new(edit);
@@ -143,40 +170,50 @@ pub fn LogPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("通联日志")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("在线记录 · 本地保存 · 导出 ADIF / CSV")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.logbook")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("log.log-online-saved-locally")}</div>
           </div>
-          <button
-            type="button"
-            class=button_class(Variant::Outline, Size::Sm, "")
-            on:click=move |_| export()
+          <Button
+            variant=Variant::Outline
+            size=Size::Sm
+            on_click=Callback::new(move |_| export())
           >
-            {move || t("导出 ADIF")}
-          </button>
-          <button
-            type="button"
-            class=button_class(Variant::Outline, Size::Sm, "")
-            on:click=move |_| export_csv_btn()
+            {move || t("log.export-adif")}
+          </Button>
+          <Button
+            variant=Variant::Outline
+            size=Size::Sm
+            on_click=Callback::new(move |_| export_csv_btn())
           >
-            {move || t("导出 CSV")}
-          </button>
-          <a href="/qsl-labels" class=button_class(Variant::Outline, Size::Sm, "")>{move || t("打印 QSL 标签")}</a>
-          <label class=button_class(Variant::Outline, Size::Sm, "cursor-pointer")>
-            {move || t("导入 ADIF")}
-            <input
-              type="file"
-              accept=".adi,.adif,.txt"
-              class="hidden"
-              on:change=import_adif
-            />
-          </label>
-          <button
-            type="button"
-            class=button_class(Variant::Outline, Size::Sm, "")
-            on:click=move |_| qsl_open.set(true)
+            {move || t("log.export-csv")}
+          </Button>
+          <ButtonLink
+            href="/qsl-labels"
+            variant=Variant::Outline
+            size=Size::Sm
+          >{move || t("log.print-qsl-labels")}</ButtonLink>
+          <FileInput
+            accept=".adi,.adif,.txt"
+            label=t("log.import-adif")
+            variant=Variant::Outline
+            size=Size::Sm
+            on_files=import_adif
+          />
+          <Button
+            variant=Variant::Outline
+            size=Size::Sm
+            on_click=Callback::new(move |_| qsl_open.set(true))
           >
-            {move || t("同步 QSL")}
-          </button>
+            {move || t("log.sync-qsl")}
+          </Button>
+          <Button
+            variant=Variant::Outline
+            size=Size::Sm
+            disabled=Signal::derive(move || pending_lotw.get() == 0)
+            on_click=Callback::new(move |_| mark_lotw.run(()))
+          >
+            {move || tf("log.mark-lotw-uploaded", &[&pending_lotw.get().to_string()])}
+          </Button>
         </div>
       </header>
 

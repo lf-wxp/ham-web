@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { expect, test } from "./fixtures";
+import { expect, test, waitSettled } from "./fixtures";
 
 // 路由表以 main_content.rs 为准，与 smoke.spec.ts 保持一致
 const source = readFileSync(join(__dirname, "../../crates/app/src/app/main_content.rs"), "utf8");
@@ -39,6 +39,20 @@ const AUDIT = () => {
     return `${el.tagName.toLowerCase()}${id}${cls ? "." + cls : ""} :: ${text}`;
   };
 
+  // 横向可滚容器：`scrollWidth > clientWidth` 是它的正常工作状态，不是「文本被裁掉」
+  const scrollableX = (el: Element) => {
+    const cs = getComputedStyle(el);
+    return cs.overflowX === "auto" || cs.overflowX === "scroll";
+  };
+  // 祖先是横向可滚容器时，后代超出视口右边界是合法的（宽表格本来就该横向滚），
+  // 只判容器**自身**有没有越界 —— 否则 `min-w-[680px]` 这类表格会刷出几十条假阳性。
+  const inScrollableX = (el: Element | null) => {
+    for (let p = el; p; p = p.parentElement) {
+      if (scrollableX(p)) return true;
+    }
+    return false;
+  };
+
   for (const el of Array.from(document.querySelectorAll("main *"))) {
     if ((el as SVGElement).ownerSVGElement) {
       const r = el.getBoundingClientRect();
@@ -57,7 +71,12 @@ const AUDIT = () => {
     const lineClamp = (cs as unknown as { webkitLineClamp?: string }).webkitLineClamp;
     const intentional = cs.textOverflow === "ellipsis" || (!!lineClamp && lineClamp !== "none");
 
-    if (!intentional && el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 2) {
+    if (
+      !intentional &&
+      !scrollableX(el) &&
+      el.clientWidth > 0 &&
+      el.scrollWidth > el.clientWidth + 2
+    ) {
       clipped.push({
         sel: describe(el),
         detail: `scrollW=${el.scrollWidth} clientW=${el.clientWidth}`,
@@ -68,8 +87,7 @@ const AUDIT = () => {
       rect.right > vw + 1 &&
       cs.position !== "fixed" &&
       cs.position !== "sticky" &&
-      cs.overflowX !== "auto" &&
-      cs.overflowX !== "scroll"
+      !inScrollableX(el.parentElement)
     ) {
       overRight.push({
         sel: describe(el),
@@ -103,7 +121,9 @@ for (const lang of LANGS) {
         try {
           // Leptos 客户端渲染：等主内容挂载
           await page.waitForSelector("main", { timeout: 15_000 });
-          await page.waitForTimeout(120);
+          // 再等异步内容到位（骨架 / spinner 消失）：否则量到的是「还没渲染完」的中间态，
+          // 布局结论既可能漏报也可能误报。原先固定 sleep 120ms 同样是在赌。
+          await waitSettled(page);
         } catch {
           findings.push({ sel: `${route} :: main 未挂载`, detail: "页面渲染超时" });
           continue;

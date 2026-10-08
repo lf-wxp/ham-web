@@ -7,10 +7,13 @@ use crate::icons::{Icon, IconKind};
 use super::shared::{on_open, state_attr, trap_tab, use_presence};
 use crate::i18n::t;
 
+/// 退场动画时长（毫秒）：与抽屉类名里的 `duration-300` 对应，卸载前要等它播完。
+const EXIT_MS: u64 = 300;
+
 /// 右侧抽屉（答题卡）。
 #[component]
 pub fn Sheet(open: RwSignal<bool>, children: ChildrenFn) -> impl IntoView {
-  let mounted = use_presence(open, 300);
+  let mounted = use_presence(open, EXIT_MS);
   let state = state_attr(open);
   move || {
     mounted.get().then(|| {
@@ -49,7 +52,7 @@ pub fn Sheet(open: RwSignal<bool>, children: ChildrenFn) -> impl IntoView {
               on:click=move |_| open.set(false)
             >
               <Icon kind=IconKind::X class="size-4" />
-              <span class="sr-only">{move || t("关闭")}</span>
+              <span class="sr-only">{move || t("log.close")}</span>
             </button>
           </div>
         </Portal>

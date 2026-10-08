@@ -17,9 +17,9 @@ const IARU_HEADERS: &[&str] = &["波段", "IARU 一区", "IARU 二区 / 三区"]
 
 #[component]
 pub fn CoordinationPage() -> impl IntoView {
-  set_title(&t("频率协调"));
+  set_title("knowledge.frequency-coordination");
   view! {
-    <KnowledgePage title=t("频率协调") subtitle=t("IARU 分区 · 协调层级 · 申请与干扰处理")>
+    <KnowledgePage title=t("knowledge.frequency-coordination") subtitle=t("knowledge.iaru-regions-coordination-levels")>
       <ConceptsSection title="核心概念" items=COORDINATION_CONCEPTS />
       <StepsSection title="协调层级（自顶向下）" items=COORDINATION_TIERS />
       <TableSection

@@ -3,6 +3,7 @@
 
 mod awards_panel;
 mod bar_list;
+mod card_image_mark;
 mod contest_log;
 mod entry_form;
 mod entry_list;
@@ -15,6 +16,8 @@ mod grid_map;
 mod log_helpers;
 mod log_page;
 mod log_stats_panel;
+mod qsl_badge;
+mod qsl_image;
 mod qsl_sync_dialog;
 mod station_panel;
 
@@ -34,10 +37,16 @@ thread_local! {
   static LOG_DIRTY: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
 
-fn load_logbook() -> Logbook {
-  let mut lb: Logbook = crate::util::storage::get_json(LOG_KEY).unwrap_or_default();
+/// 解析一份日志 JSON（顺带做旧数据迁移）。
+fn parse_logbook(json: &str) -> Logbook {
+  let mut lb: Logbook = serde_json::from_str(json).unwrap_or_default();
   lb.migrate();
   lb
+}
+
+/// 同步读本地快照：首屏立即有内容可渲染；版本比较在异步的权威层读取里完成。
+fn load_logbook() -> Logbook {
+  crate::kv::load_snapshot(LOG_KEY).map_or_else(Logbook::default, |json| parse_logbook(&json))
 }
 
 fn save_logbook(logbook: &Logbook) {
@@ -62,6 +71,8 @@ fn save_station(station: &StationInfo) {
 pub struct LogStore {
   pub logbook: RwSignal<Logbook>,
   pub station: RwSignal<StationInfo>,
+  /// 存了卡片影像的通联 id（localStorage 索引的响应式镜像，供列表渲染相机标记）。
+  pub qsl_images: RwSignal<std::collections::HashSet<u64>>,
 }
 
 impl LogStore {
@@ -106,9 +117,15 @@ impl LogStore {
 
 /// 初始化日志 store 并提供上下文（在应用根组件调用一次）。
 pub fn provide_log_store() {
+  let snapshot = crate::kv::load_snapshot(LOG_KEY);
   let store = LogStore {
-    logbook: RwSignal::new(load_logbook()),
+    logbook: RwSignal::new(
+      snapshot
+        .as_deref()
+        .map_or_else(Logbook::default, parse_logbook),
+    ),
     station: RwSignal::new(load_station()),
+    qsl_images: RwSignal::new(qsl_image::index()),
   };
   provide_context(store);
 
@@ -121,17 +138,20 @@ pub fn provide_log_store() {
     match key.as_deref() {
       Some(LOG_KEY) => store.logbook.set(load_logbook()),
       Some(STATION_KEY) => store.station.set(load_station()),
+      Some(qsl_image::INDEX_KEY) => store.qsl_images.set(qsl_image::index()),
       _ => {}
     }
   });
 
-  // IndexedDB 权威数据覆盖 localStorage 快照（大日志时快照可能缺失 / 过期）。
+  // 由门面比较「快照 / 权威层」的写入版本后给出更新的那一份：大日志时快照可能缺失，
+  // 而快照刚写完就刷新页面时又要以快照为准（见 `crate::kv` 的模块文档）。
+  // 与首屏读到的快照一致就什么都不做，省掉一次无谓的重渲染。
   wasm_bindgen_futures::spawn_local(async move {
     if let Some(json) = crate::kv::load_large(LOG_KEY).await
-      && let Ok(lb) = serde_json::from_str::<Logbook>(&json)
+      && Some(&json) != snapshot.as_ref()
       && !LOG_DIRTY.with(|c| c.get())
     {
-      store.logbook.set(lb);
+      store.logbook.set(parse_logbook(&json));
     }
   });
 }

@@ -44,7 +44,7 @@ pub fn observe(bank: Bank, rev: &str, questions: &[QuestionItem]) {
     let d = diff(&old.digest, &digest);
     if !d.is_empty() {
       notify(&tf(
-        "{} 类：{}",
+        "common.class",
         &[&(bank).to_string(), &(d.describe()).to_string()],
       ));
     }

@@ -5,7 +5,7 @@ use crate::cn::cn;
 /// 页面头部：粘性标题栏（标题 + 副标题），右侧可放操作区（如搜索框、筛选器）。
 ///
 /// `title` / `subtitle` 为 [`Signal<String>`]，既接受静态 [`String`]（`From<String>`），
-/// 也接受响应式信号（如 `Signal::derive(move || t("…"))`），切语言时即时刷新。
+/// 也接受响应式信号（如 `Signal::derive(move || t("common.ellipsis"))`），切语言时即时刷新。
 /// `class` 可覆盖粘性偏移（如 `top-16`，用于页面上方还有其它粘性栏的页面）。
 #[component]
 pub fn PageHeader(

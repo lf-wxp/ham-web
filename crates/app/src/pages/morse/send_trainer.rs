@@ -7,8 +7,9 @@ use crate::morse_audio::{start_tone, stop_tone};
 use crate::morse_settings::use_morse_settings;
 use crate::util::storage;
 
-use super::{btn_primary, btn_secondary, morse_display, pill_class, random_index};
+use super::{morse_display, pill_class, random_index};
 use crate::i18n::t;
+use crate::ui::{Button, Variant};
 
 /// 发报目标类型。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -197,12 +198,12 @@ pub(super) fn SendTrainer() -> impl IntoView {
   view! {
     <section class="rounded-xl border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">
-        {move || t("发报练习")}
-        <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("按住拍发 · 带侧音")}</span>
+        {move || t("morse.sending-practice")}
+        <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.hold-to-key-with")}</span>
       </h2>
       <div class="space-y-4 p-4">
         <div class="flex flex-wrap items-center gap-1.5">
-          <span class="mr-1 text-xs text-muted-foreground">{move || t("目标类型")}</span>
+          <span class="mr-1 text-xs text-muted-foreground">{move || t("morse.target-type")}</span>
           {SendTarget::ALL
             .iter()
             .map(|&target_kind| {
@@ -224,7 +225,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
         </div>
 
         <div class="flex flex-col items-center gap-2 rounded-xl border bg-muted/30 px-4 py-6">
-          <div class="text-xs text-muted-foreground">{move || t("目标")}</div>
+          <div class="text-xs text-muted-foreground">{move || t("morse.target")}</div>
           <div class="text-4xl font-semibold tabular-nums tracking-widest">{move || target.get()}</div>
           <div data-testid="send-marks" class="font-mono text-2xl font-semibold tracking-[0.3em] text-primary">
             {move || {
@@ -232,7 +233,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
               if m.is_empty() { "…".to_owned() } else { morse_display(&m) }
             }}
           </div>
-          <div class="text-xs text-muted-foreground">{move || t("短按（<0.2s）为点，长按为划")}</div>
+          <div class="text-xs text-muted-foreground">{move || t("morse.short-press-0-2")}</div>
         </div>
 
         <div class="flex flex-col items-center gap-3">
@@ -255,7 +256,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
                 view! { <span class="absolute inset-0 rounded-full bg-primary/40 animate-ping"></span> }
               })
             }}
-            <span class="relative text-sm font-semibold">{move || t("按住发报")}</span>
+            <span class="relative text-sm font-semibold">{move || t("morse.hold-to-send")}</span>
           </button>
 
           <div class="text-xs text-muted-foreground">
@@ -266,43 +267,43 @@ pub(super) fn SendTrainer() -> impl IntoView {
               match (wpm, score) {
                 (Some(w), Some(sc)) => view! {
                   <span>
-                    {move || t("估算 ≈ ")} <span class="font-semibold tabular-nums text-foreground">{format!("{w:.0}")}</span> " WPM"
-                    {move || t(" · 节奏 ")} <span class="font-semibold tabular-nums text-foreground">{format!("{sc:.0}")}</span> "/100"
+                    {move || t("morse.estimated")} <span class="font-semibold tabular-nums text-foreground">{format!("{w:.0}")}</span> " WPM"
+                    {move || t("morse.rhythm")} <span class="font-semibold tabular-nums text-foreground">{format!("{sc:.0}")}</span> "/100"
                   </span>
                 }.into_any(),
                 (Some(w), None) => view! {
                   <span>
-                    {move || t("估算 ≈ ")} <span class="font-semibold tabular-nums text-foreground">{format!("{w:.0}")}</span> " WPM"
+                    {move || t("morse.estimated")} <span class="font-semibold tabular-nums text-foreground">{format!("{w:.0}")}</span> " WPM"
                   </span>
                 }.into_any(),
-                _ => view! { {move || t("拍发后可估算速度与节奏")} }.into_any(),
+                _ => view! { {move || t("morse.sending-estimates-your-speed")} }.into_any(),
               }
             }}
           </div>
 
           <div class="flex flex-wrap items-center justify-center gap-2">
-            <button
-              type="button"
-              class=btn_primary("")
-              prop:disabled=move || marks.get().is_empty()
-              on:click=move |_| judge()
+            <Button
+              variant=Variant::Default
+              class="rounded-lg h-10"
+              disabled=Signal::derive(move || marks.get().is_empty())
+              on_click=Callback::new(move |_| judge())
             >
-              {move || t("判定")}
-            </button>
-            <button
-              type="button"
-              class=btn_secondary("")
-              on:click=move |_| clear_marks()
+              {move || t("morse.judgement")}
+            </Button>
+            <Button
+              variant=Variant::Outline
+              class="rounded-lg h-10"
+              on_click=Callback::new(move |_| clear_marks())
             >
-              {move || t("重拍")}
-            </button>
-            <button
-              type="button"
-              class=btn_secondary("")
-              on:click=move |_| next_target()
+              {move || t("morse.re-key")}
+            </Button>
+            <Button
+              variant=Variant::Outline
+              class="rounded-lg h-10"
+              on_click=Callback::new(move |_| next_target())
             >
-              {move || t("下一题")}
-            </button>
+              {move || t("exam.next")}
+            </Button>
           </div>
 
           <div class="min-h-5 text-sm" aria-live="polite">
@@ -312,7 +313,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
                   view! {
                     <span class="inline-flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400 animate-in fade-in zoom-in-95 duration-200">
                       <Icon kind=IconKind::CheckCircle2 class="h-4 w-4" />
-                      {move || t("正确！")}
+                      {move || t("learning.correct")}
                     </span>
                   }
                   .into_any()
@@ -321,7 +322,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
                   view! {
                     <span class="inline-flex items-center gap-1.5 font-medium text-red-600 dark:text-red-400 animate-in fade-in zoom-in-95 duration-200">
                       <Icon kind=IconKind::XCircle class="h-4 w-4" />
-                      {move || t("答案是 ")} <span class="font-mono">{target.get()}</span> "　"
+                      {move || t("morse.the-answer-is")} <span class="font-mono">{target.get()}</span> "　"
                       <span class="font-mono">{morse_display(&expected)}</span>
                     </span>
                   }
@@ -333,26 +334,26 @@ pub(super) fn SendTrainer() -> impl IntoView {
 
           <div class="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
             <span>
-              {move || t("正确 ")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().correct}</span>
+              {move || t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().correct}</span>
             </span>
             <span>
-              {move || t("错误 ")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().wrong}</span>
+              {move || t("morse.wrong")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().wrong}</span>
             </span>
             <span>
-              {move || t("正确率 ")} <span class="font-semibold tabular-nums text-foreground">{move || format!("{:.0}%", rate())}</span>
+              {move || t("morse.accuracy")} <span class="font-semibold tabular-nums text-foreground">{move || format!("{:.0}%", rate())}</span>
             </span>
             <span>
-              {move || t("连对 ")} <span class="font-semibold tabular-nums text-foreground">{move || streak.get()}</span>
+              {move || t("morse.streak")} <span class="font-semibold tabular-nums text-foreground">{move || streak.get()}</span>
             </span>
             <span>
-              {move || t("最长 ")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().best_streak}</span>
+              {move || t("morse.best-streak")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().best_streak}</span>
             </span>
             <button
               type="button"
               on:click=move |_| reset_stats()
               class="rounded-md px-2 py-0.5 transition-all duration-200 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
             >
-              {move || t("重置")}
+              {move || t("morse.reset")}
             </button>
           </div>
         </div>

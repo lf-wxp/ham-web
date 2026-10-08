@@ -90,6 +90,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             SITE_URL=${{ vars.SITE_URL }}
-          # 用 GitHub Actions Cache 做 BuildKit 缓存（不占 runner 本地磁盘，也避免远端机器磁盘被写满）
+          # 用 GitHub Actions Cache 做 BuildKit 缓存（不占 runner 本地磁盘，也避免远端机器磁盘被写满）。
+          # 注意：这里只缓存**镜像层**（基础镜像、wasm-bindgen CLI、Trunk 等）；Dockerfile 里
+          # `--mount=type=cache` 的依赖编译产物不会导出到任何 cache-to 后端，runner 又是一次性的，
+          # 所以依赖与 Trunk 工具每次都会重来一遍——实测约 1–2 分钟，见 README「构建耗时与内存」。
           cache-from: type=gha
           cache-to: type=gha,mode=max

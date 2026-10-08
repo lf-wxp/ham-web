@@ -9,14 +9,14 @@ use leptos::prelude::*;
 use leptos_router::hooks::use_query_map;
 
 use crate::components::common::{BulletSection, ConceptsSection, KnowledgePage};
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 use crate::pages::map::ZoneMap;
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{Button, Input, Size, Variant};
 use crate::util::{alert, set_title};
 
 #[component]
 pub fn ZoneMapPage() -> impl IntoView {
-  set_title(&t("CQ / ITU 分区地图"));
+  set_title("radio.cq-itu-zone-map");
 
   let url_query = use_query_map();
   let is_cq = RwSignal::new(true);
@@ -50,7 +50,7 @@ pub fn ZoneMapPage() -> impl IntoView {
       }
       None => {
         hit.set(None);
-        alert(&t("未识别的呼号或实体名，请检查拼写。"));
+        alert(&t("radio.unrecognised-callsign-or-entity"));
       }
     }
   };
@@ -83,9 +83,9 @@ pub fn ZoneMapPage() -> impl IntoView {
   });
 
   view! {
-    <KnowledgePage title=t("CQ / ITU 分区地图") subtitle=t("按分区着色 · 呼号定位 · 分区构成")>
+    <KnowledgePage title=t("radio.cq-itu-zone-map") subtitle=t("radio.colour-by-zone-locate")>
       <section class="rounded-xl border bg-card">
-        <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("分区地图")}</h2>
+        <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.zone-map")}</h2>
         <div class="flex flex-wrap items-center gap-3 p-4">
           <div class="flex rounded-lg border p-0.5">
             <button
@@ -99,7 +99,7 @@ pub fn ZoneMapPage() -> impl IntoView {
               }
               on:click=move |_| is_cq.set(true)
             >
-              {move || t("CQ 分区（40）")}
+              {move || t("radio.cq-zones-40")}
             </button>
             <button
               type="button"
@@ -112,48 +112,43 @@ pub fn ZoneMapPage() -> impl IntoView {
               }
               on:click=move |_| is_cq.set(false)
             >
-              {move || t("ITU 分区（90）")}
+              {move || t("radio.itu-zones-90")}
             </button>
           </div>
-          <input
-            type="text"
-            placeholder=move || t("呼号或实体名（如 BG4XYZ、日本）")
-            aria-label=move || t("呼号或实体名")
-            prop:value=move || query.get()
-            on:input=move |e| query.set(event_target_value(&e))
-            on:keydown=move |e: web_sys::KeyboardEvent| {
-              if e.key() == "Enter" {
-                resolve();
-              }
-            }
-            class=input_class("max-w-xs")
+          <Input
+            value=query
+            on_change=Callback::new(move |v: String| query.set(v))
+            on_enter=Callback::new(move |()| resolve())
+            placeholder=Signal::derive(move || t("radio.callsign-or-entity-name-2"))
+            aria_label=Signal::derive(move || t("radio.callsign-or-entity-name"))
+            class="max-w-xs"
           />
-          <button
-            type="button"
-            class=button_class(Variant::Default, Size::Default, "")
-            on:click=move |_| resolve()
+          <Button
+            variant=Variant::Default
+            size=Size::Default
+            on_click=Callback::new(move |_| resolve())
           >
-            {move || t("定位")}
-          </button>
-          <button
-            type="button"
-            class=button_class(Variant::Outline, Size::Default, "")
-            on:click=move |_| {
-              query.set(String::new());
-              hit.set(None);
-              selected.set(None);
-              focus_target.set(None);
-            }
+            {move || t("log.locate")}
+          </Button>
+          <Button
+            variant=Variant::Outline
+            size=Size::Default
+            on_click=Callback::new(move |_| {
+                        query.set(String::new());
+                        hit.set(None);
+                        selected.set(None);
+                        focus_target.set(None);
+                      })
           >
-            {move || t("清除")}
-          </button>
+            {move || t("exam.clear")}
+          </Button>
           {move || {
             hit.get()
               .and_then(dxcc::entity_by_dxcc)
               .map(|e| {
                 view! {
                   <span class="rounded-full border border-amber-500 bg-amber-500/10 px-3 py-1 text-xs">
-                    {tf("已定位：{}", &[e.name])}
+                    {tf("radio.located", &[e.name])}
                   </span>
                 }
               })
@@ -168,13 +163,13 @@ pub fn ZoneMapPage() -> impl IntoView {
           />
         </div>
         <p class="border-t px-4 py-3 text-xs text-muted-foreground">
-          {move || t("按每个 DXCC 实体的主分区着色：俄罗斯、美国、中国等横跨多个分区的大国会被整体归入一个分区，因此本图用于「分区大致在哪、含哪些实体」的速查，并非精确的分区边界。")}
+          {move || t("radio.coloured-by-each-dxcc-2")}
         </p>
       </section>
 
       <section class="rounded-xl border bg-card">
         <h2 class="border-b px-4 py-3 text-sm font-semibold">
-          {move || tf("图例（共 {} 个分区，括号内为所含 DXCC 实体数）", &[&max_zone.get().to_string()])}
+          {move || tf("radio.legend-zones-the-number", &[&max_zone.get().to_string()])}
         </h2>
         <div class="flex flex-wrap gap-1.5 p-4">
           {move || {
@@ -207,12 +202,12 @@ pub fn ZoneMapPage() -> impl IntoView {
       </section>
 
       <section class="rounded-xl border bg-card">
-        <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("分区构成")}</h2>
+        <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.zone-composition")}</h2>
         {move || {
           let Some(z) = selected.get() else {
             return view! {
               <p class="px-4 py-4 text-sm text-muted-foreground">
-                {move || t("点击地图区域或图例，或输入呼号定位，查看该分区包含的 DXCC 实体。")}
+                {move || t("radio.click-an-area-of")}
               </p>
             }
             .into_any();
@@ -223,22 +218,22 @@ pub fn ZoneMapPage() -> impl IntoView {
           } else {
             entities_in_itu(z)
           };
-          let label = if cq { t("CQ") } else { t("ITU") };
-          let count = list.len().to_string();
+          let label = if cq { t("common.cq") } else { t("common.itu") };
+          let n = list.len() as u32;
           view! {
             <div class="border-t">
               <div class="flex flex-wrap items-baseline gap-x-3 px-4 py-3">
                 <span class="text-sm font-semibold">
-                  {tf("{} {} 区", &[&label, &z.to_string()])}
+                  {tf("radio.zone", &[&label, &z.to_string()])}
                 </span>
                 <span class="text-xs text-muted-foreground">
-                  {tf("含 {} 个 DXCC 实体", &[&count])}
+                  {tp("radio.dxcc-entities", n, &[&n.to_string()])}
                 </span>
               </div>
               {if list.is_empty() {
                 view! {
                   <p class="px-4 pb-4 text-sm text-muted-foreground">
-                    {move || t("该分区暂无登记的 DXCC 实体。")}
+                    {move || t("radio.no-dxcc-entities-registered")}
                   </p>
                 }
                 .into_any()

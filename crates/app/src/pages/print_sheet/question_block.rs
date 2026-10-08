@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 
 use super::{AnswerMode, Item, explanation};
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 
 /// 打印版中的一道题。
 #[component]
@@ -22,7 +22,7 @@ pub(crate) fn QuestionBlock(
         <div class="min-w-0 flex-1">
           <p>
             {q.question.clone()}
-            {q.is_multiple().then(|| view! { <span class="ml-1 text-[11px] text-zinc-500">{move || t("（多选）")}</span> })}
+            {q.is_multiple().then(|| view! { <span class="ml-1 text-[11px] text-zinc-500">{move || t("exam.multiple-2")}</span> })}
           </p>
           {q.image_url.clone().map(|src| view! { <img src=src alt="题目附图" class="my-2 max-h-48 max-w-full" /> })}
           <ul class="mt-1 grid gap-x-6 gap-y-0.5 sm:grid-cols-2 print:grid-cols-2">
@@ -37,11 +37,11 @@ pub(crate) fn QuestionBlock(
           </ul>
           <div class="mt-1 flex flex-wrap gap-x-3 text-[11px] text-zinc-500">
             {code.map(|c| view! { <span>{c}</span> })}
-            {(item.wrong > 0).then(|| view! { <span>{tf("答错 {} 次", &[&(item.wrong).to_string()])}</span> })}
-            {inline.then(|| view! { <span class="font-semibold text-zinc-900">{tf("答案：{}", &[&(q.answer_keys.join("")).to_string()])}</span> })}
+            {(item.wrong > 0).then(|| view! { <span>{tp("learning.wrong-times", item.wrong, &[&(item.wrong).to_string()])}</span> })}
+            {inline.then(|| view! { <span class="font-semibold text-zinc-900">{tf("common.answer", &[&(q.answer_keys.join("")).to_string()])}</span> })}
           </div>
           {explain_text.map(|t| view! {
-            <p class="mt-1.5 rounded bg-zinc-100 px-2 py-1 text-[12px] leading-relaxed text-zinc-700">{tf("解析：{}", &[&(t).to_string()])}</p>
+            <p class="mt-1.5 rounded bg-zinc-100 px-2 py-1 text-[12px] leading-relaxed text-zinc-700">{tf("common.explanation", &[&(t).to_string()])}</p>
           })}
         </div>
       </div>

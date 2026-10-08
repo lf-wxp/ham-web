@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use ham_web_core::study_plan::{day_number, format_day};
 use leptos::prelude::*;
 
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tp};
 
 /// 按每日作答量返回色阶类名（完整字面量，供 Tailwind 扫描）。
 fn level(count: u32) -> &'static str {
@@ -78,7 +78,7 @@ pub fn StudyHeatmap(days: HashMap<String, u32>, today: String) -> impl IntoView 
                     view! {
                       <div
                         class=format!("h-4 flex-1 rounded-sm {}", level(c))
-                        title=tf("{} · 作答 {} 题", &[&day, &c.to_string()])
+                        title=tp("learning.answered", c, &[&day, &c.to_string()])
                       ></div>
                     }
                   })
@@ -89,13 +89,13 @@ pub fn StudyHeatmap(days: HashMap<String, u32>, today: String) -> impl IntoView 
         })
         .collect_view()}
       <div class="flex items-center justify-end gap-1.5 text-[10px] text-muted-foreground">
-        <span>{t("少")}</span>
+        <span>{t("learning.less")}</span>
         <span class="h-3 w-3 rounded-sm bg-muted/50"></span>
         <span class="h-3 w-3 rounded-sm bg-primary/20"></span>
         <span class="h-3 w-3 rounded-sm bg-primary/40"></span>
         <span class="h-3 w-3 rounded-sm bg-primary/70"></span>
         <span class="h-3 w-3 rounded-sm bg-primary"></span>
-        <span>{t("多")}</span>
+        <span>{t("learning.more")}</span>
       </div>
     </div>
   }

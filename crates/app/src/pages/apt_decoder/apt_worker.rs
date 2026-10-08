@@ -28,7 +28,7 @@ pub fn parse_message(data: &JsValue) -> Result<WorkerPayload, String> {
     let err = js_sys::Reflect::get(data, &"error".into())
       .ok()
       .and_then(|v| v.as_string())
-      .unwrap_or_else(|| t("解码失败"));
+      .unwrap_or_else(|| t("radio.decoding-failed"));
     return Err(err);
   }
 
@@ -50,20 +50,20 @@ fn get_u32(obj: &JsValue, key: &str) -> Result<u32, String> {
     .ok()
     .and_then(|v| v.as_f64())
     .map(|v| v as u32)
-    .ok_or_else(|| tf("字段 {} 缺失", &[(key)]))
+    .ok_or_else(|| tf("common.field-is-missing", &[(key)]))
 }
 
 fn get_f64(obj: &JsValue, key: &str) -> Result<f64, String> {
   js_sys::Reflect::get(obj, &key.into())
     .ok()
     .and_then(|v| v.as_f64())
-    .ok_or_else(|| tf("字段 {} 缺失", &[(key)]))
+    .ok_or_else(|| tf("common.field-is-missing", &[(key)]))
 }
 
 fn get_u8s(obj: &JsValue, key: &str) -> Result<Vec<u8>, String> {
   let v = js_sys::Reflect::get(obj, &key.into()).map_err(|e| js_error_message(&e))?;
   let arr: js_sys::Uint8Array = v
     .dyn_into()
-    .map_err(|_| tf("字段 {} 不是字节数组", &[(key)]))?;
+    .map_err(|_| tf("common.field-is-not-a", &[(key)]))?;
   Ok(arr.to_vec())
 }

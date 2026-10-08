@@ -7,7 +7,7 @@ use leptos::prelude::*;
 use crate::i18n::{t, tf};
 use crate::morse_audio::play_morse;
 use crate::speech::speak_en;
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{Button, ControlSize, Input, NumberField, Size, Variant, button_class};
 use crate::util::{random, set_title};
 
 /// 单个字符的拼读（字母用 ITU 单词，数字用英文读法，9 读作 Niner）。
@@ -62,7 +62,7 @@ fn normalize(s: &str) -> String {
 
 #[component]
 pub fn CallsignCopyPage() -> impl IntoView {
-  set_title(&t("呼号抄收训练"));
+  set_title("shell.callsign-copy-training");
 
   let callsign = RwSignal::new(gen_callsign(&mut random));
   let input = RwSignal::new(String::new());
@@ -114,8 +114,8 @@ pub fn CallsignCopyPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-2xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("呼号抄收训练")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("听字母解释法 / 摩尔斯电码拼读，抄收呼号 · 判定式核对")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.callsign-copy-training")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("morse.listen-to-phonetic-spelling")}</div>
           </div>
         </div>
       </header>
@@ -123,10 +123,12 @@ pub fn CallsignCopyPage() -> impl IntoView {
       <div class="mx-auto max-w-2xl space-y-4 px-4 py-5">
         <section class="rounded-xl border bg-card p-5">
           <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-            <span>{move || t("正确 ")} <span class="font-semibold text-emerald-600">{correct.get()}</span> {" / "} {total.get()}</span>
-            <span>{move || t("连续 ")} <span class="font-semibold text-foreground">{streak.get()}</span> {move || t(" 题")}</span>
+            <span>{move || t("common.correct-3")} <span class="font-semibold text-emerald-600">{correct.get()}</span> {" / "} {total.get()}</span>
+            <span>{move || t("morse.streak-2")} <span class="font-semibold text-foreground">{streak.get()}</span> {move || t("exam.questions")}</span>
           </div>
 
+          // 刻意的例外：这两个模式按钮靠切换 `variant` 表示当前选中，而 `Button` 的
+          // `variant` 是静态 prop（见 `docs/ui-components.md` 的「常见坑」第 4 条）。
           <div class="mb-3 flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -135,7 +137,7 @@ pub fn CallsignCopyPage() -> impl IntoView {
               }
               on:click=move |_| cw.set(false)
             >
-              {move || t("字母解释法")}
+              {move || t("shell.phonetic-alphabet")}
             </button>
             <button
               type="button"
@@ -144,50 +146,52 @@ pub fn CallsignCopyPage() -> impl IntoView {
               }
               on:click=move |_| cw.set(true)
             >
-              {move || t("摩尔斯电码")}
+              {move || t("morse.morse-code")}
             </button>
             {move || cw.get().then(|| view! {
               <label class="flex items-center gap-1.5 text-xs text-muted-foreground">
-                {move || t("速度")}
-                <input
-                  type="number"
-                  min="5"
-                  max="40"
-                  aria-label=move || t("摩尔斯速度 WPM")
-                  prop:value=move || wpm.get().to_string()
-                  on:input=move |e| {
-                    if let Ok(v) = event_target_value(&e).parse::<u32>() {
+                {move || t("radio.speed")}
+                <NumberField
+                  value=Signal::derive(move || wpm.get().to_string())
+                  on_change=Callback::new(move |v: String| {
+                    if let Ok(v) = v.trim().parse::<u32>() {
                       wpm.set(v.clamp(5, 40));
                     }
-                  }
-                  class="w-16 rounded-lg border bg-background px-2 py-1 text-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                  })
+                  step=1.0
+                  min=5.0
+                  max=40.0
+                  aria_label=Signal::derive(move || t("morse.morse-speed-wpm"))
+                  size=ControlSize::Sm
+                  class="w-16"
+                  controls=false
                 />
                 "WPM"
               </label>
             })}
           </div>
 
-          <button
-            type="button"
-            class=format!("{} w-full", button_class(Variant::Default, Size::Default, ""))
-            on:click=move |_| play()
+          <Button
+            variant=Variant::Default
+            size=Size::Default
+            class="w-full"
+            on_click=Callback::new(move |_| play())
           >
-            {move || if cw.get() { t("🔊 播放摩尔斯") } else { t("🔊 播放拼读") }}
-          </button>
+            {move || if cw.get() { t("morse.play-morse") } else { t("morse.play-spelling") }}
+          </Button>
 
           <div class="mt-4">
-            <input
-              type="text"
-              placeholder=move || t("输入抄收到的呼号，如 BG1ABC")
-              aria-label=move || t("呼号输入")
-              prop:value=move || input.get()
-              on:input=move |e| input.set(event_target_value(&e))
-              on:keydown=move |e| {
-                if e.key() == "Enter" && feedback.get().is_none() {
+            <Input
+              placeholder=Signal::derive(move || t("morse.type-the-callsign-you"))
+              aria_label=Signal::derive(move || t("morse.callsign-entry"))
+              value=input
+              on_change=Callback::new(move |v: String| input.set(v))
+              on_enter=Callback::new(move |()| {
+                if feedback.get().is_none() {
                   check();
                 }
-              }
-              class=format!("{} font-mono uppercase", input_class(""))
+              })
+              class="font-mono uppercase"
             />
           </div>
 
@@ -195,20 +199,28 @@ pub fn CallsignCopyPage() -> impl IntoView {
             {move || {
               if feedback.get().is_none() {
                 view! {
-                  <button type="button" class=button_class(Variant::Default, Size::Default, "") on:click=move |_| check()>
-                    {move || t("核对")}
-                  </button>
+                  <Button
+                    variant=Variant::Default
+                    size=Size::Default
+                    on_click=Callback::new(move |_| check())
+                  >
+                    {move || t("morse.check")}
+                  </Button>
                 }
                 .into_any()
               } else {
                 let ok = feedback.get().unwrap_or(false);
                 view! {
                   <span class=if ok { "text-sm font-medium text-emerald-700 dark:text-emerald-400" } else { "text-sm font-medium text-red-700 dark:text-red-400" }>
-                    {if ok { t("正确！") } else { tf("答案是 {}", &[&(callsign.get()).to_string()]) }}
+                    {if ok { t("learning.correct") } else { tf("common.the-answer-is", &[&(callsign.get()).to_string()]) }}
                   </span>
-                  <button type="button" class=button_class(Variant::Default, Size::Default, "") on:click=move |_| next()>
-                    {move || t("下一题")}
-                  </button>
+                  <Button
+                    variant=Variant::Default
+                    size=Size::Default
+                    on_click=Callback::new(move |_| next())
+                  >
+                    {move || t("exam.next")}
+                  </Button>
                 }
                 .into_any()
               }
@@ -217,7 +229,7 @@ pub fn CallsignCopyPage() -> impl IntoView {
         </section>
 
         <details class="rounded-xl border bg-card">
-          <summary class="cursor-pointer px-4 py-3 text-sm font-semibold">{move || t("字母解释法速查")}</summary>
+          <summary class="cursor-pointer px-4 py-3 text-sm font-semibold">{move || t("morse.phonetic-alphabet-reference")}</summary>
           <div class="grid grid-cols-2 gap-x-6 gap-y-1 px-4 pb-4 sm:grid-cols-3">
             {PHONETIC
               .iter()
@@ -232,7 +244,7 @@ pub fn CallsignCopyPage() -> impl IntoView {
               .collect_view()}
           </div>
           <p class="px-4 pb-3 text-xs text-muted-foreground">
-            {move || t("数字读法：0 Zero · 1 One · … · 9 Niner。字母解释法播放依赖系统 TTS（英文语音包）；摩尔斯电码由 Web Audio 合成，可在上方调节速度。")}
+            {move || t("morse.digit-pronunciation-0-zero")}
           </p>
         </details>
       </div>

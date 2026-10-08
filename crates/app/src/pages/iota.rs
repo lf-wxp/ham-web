@@ -9,9 +9,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn IotaPage() -> impl IntoView {
-  set_title(&t("IOTA 海岛通联"));
+  set_title("shell.iota");
   view! {
-    <KnowledgePage title=t("IOTA 海岛通联") subtitle=t("Islands On The Air · 岛组奖状")>
+    <KnowledgePage title=t("shell.iota") subtitle=t("radio.islands-on-the-air")>
       <ConceptsSection title="核心概念" items=IOTA_CONCEPTS />
       <BulletSection title="参与要点" items=IOTA_TIPS />
     </KnowledgePage>

@@ -72,5 +72,5 @@ fn fmt_resistance(ohm: f64) -> String {
 /// 2π。
 const TAU: f64 = std::f64::consts::TAU;
 
-const INPUT: &str = "h-10 rounded-lg border bg-background px-3 text-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+/// 结果区（只读，不是表单控件）。
 const RESULT: &str = "sm:col-span-2 rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground";

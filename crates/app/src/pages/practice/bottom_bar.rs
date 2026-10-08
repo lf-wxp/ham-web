@@ -6,7 +6,7 @@ use leptos::prelude::*;
 
 use crate::components::common::BottomBar;
 use crate::i18n::{bank_class, t};
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, Size, Variant};
 
 const PRESS: &str = "active:scale-[0.98] transition-transform";
 const PRESS_FULL: &str = "w-full active:scale-[0.98] transition-transform";
@@ -26,45 +26,57 @@ pub(super) fn PracticeBottomBar(
     <BottomBar
       stats=move || {
         view! {
-          {move || t("题库")} " " {move || bank_class(bank.get().as_str())} " · " {move || t(order.get().label())} " · "
-          {move || t("进度")} " " {move || index.get() + 1} " / " {move || len.get()}
+          {move || t("exam.bank")} " " {move || bank_class(bank.get().as_str())} " · " {move || t(order.get().label())} " · "
+          {move || t("exam.progress")} " " {move || index.get() + 1} " / " {move || len.get()}
         }
       }
       left=move || {
         view! {
-          <button
-            class=button_class(Variant::Secondary, Size::Default, PRESS)
-            disabled=move || at_start.get()
-            on:click=move |_| on_prev.run(())
+          <Button
+            variant=Variant::Secondary
+            size=Size::Default
+            class=PRESS
+            disabled=Signal::derive(move || at_start.get())
+            on_click=Callback::new(move |_| on_prev.run(()))
           >
-            {move || t("上一题")}
-          </button>
+            {move || t("exam.previous")}
+          </Button>
         }
       }
       right=move || {
         view! {
-          <button class=button_class(Variant::Default, Size::Default, PRESS) disabled=move || at_end.get() on:click=move |_| on_next.run(())>
-            {move || t("下一题")}
-          </button>
+          <Button
+            variant=Variant::Default
+            size=Size::Default
+            class=PRESS
+            disabled=Signal::derive(move || at_end.get())
+            on_click=Callback::new(move |_| on_next.run(()))
+          >
+            {move || t("exam.next")}
+          </Button>
         }
       }
       mobile_top=move || {
         view! {
           <div class="grid grid-cols-2 gap-2">
-            <button
-              class=button_class(Variant::Secondary, Size::Default, PRESS_FULL)
-              disabled=move || at_start.get()
-              on:click=move |_| on_prev.run(())
+            <Button
+              variant=Variant::Secondary
+              size=Size::Default
+              class=PRESS_FULL
+              disabled=Signal::derive(move || at_start.get())
+              on_click=Callback::new(move |_| on_prev.run(()))
             >
-              {move || t("上一题")}
-            </button>
-            <button
-              class=button_class(Variant::Default, Size::Default, PRESS_FULL)
-              disabled=move || at_end.get()
-              on:click=move |_| on_next.run(())
+              {move || t("exam.previous")}
+            </Button>
+            <Button
+              variant=Variant::Default
+              size=Size::Default
+              class=PRESS_FULL
+              disabled=Signal::derive(move || at_end.get())
+              on_click=Callback::new(move |_| on_next.run(()))
             >
-              {move || t("下一题")}
-            </button>
+              {move || t("exam.next")}
+            </Button>
           </div>
         }
       }

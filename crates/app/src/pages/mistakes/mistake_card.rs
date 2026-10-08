@@ -1,4 +1,4 @@
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 use ham_web_core::Bank;
 use ham_web_core::categories::{sub_category, top_pages};
 use ham_web_core::mistake_book::{MistakeRecord, WRONG_CAUSES};
@@ -33,21 +33,21 @@ pub(super) fn MistakeCard(
   // 同类题再练：按二级分类（考点）筛选该题库下的同类题目。
   let same_href = sub.map(|s| format!("/browse?bank={}&sub={}", Bank::of_id(q.id_str()), s.name));
   let due = if record.is_due(now_ms) {
-    t("待复习")
+    t("learning.due-for-review")
   } else {
     let days = ((record.due_ms - now_ms) as f64 / DAY_MS as f64).ceil() as i64;
-    tf("{} 天后复习", &[&days.to_string()])
+    tp("learning.review-in-days", days, &[&days.to_string()])
   };
   // 掌握度：难度系数越小，间隔增长越慢、越难掌握。
   let difficulty = if record.ease < 1.8 {
-    (t("难"), "text-red-700 dark:text-red-400")
+    (t("exam.hard"), "text-red-700 dark:text-red-400")
   } else if record.ease < 2.3 {
-    (t("中"), "text-amber-700 dark:text-amber-400")
+    (t("exam.medium"), "text-amber-700 dark:text-amber-400")
   } else {
-    (t("易"), "text-emerald-700 dark:text-emerald-400")
+    (t("exam.easy"), "text-emerald-700 dark:text-emerald-400")
   };
   let my_answer = if record.my_answer.is_empty() {
-    t("（闪卡自评不会）")
+    t("learning.marked-don-t-know")
   } else {
     record.my_answer.join("、")
   };
@@ -85,13 +85,13 @@ pub(super) fn MistakeCard(
       </div>
       <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs">
         <span class="text-red-700 dark:text-red-400">
-          {move || t("我的答案：")} <span class="font-mono font-semibold">{my_answer}</span>
+          {move || t("learning.my-answer")} <span class="font-mono font-semibold">{my_answer}</span>
         </span>
         <span class="text-emerald-700 dark:text-emerald-400">
-          {move || t("正确答案：")} <span class="font-mono font-semibold">{q.answer_keys.join("、")}</span>
+          {move || t("exam.correct-answer-2")} <span class="font-mono font-semibold">{q.answer_keys.join("、")}</span>
         </span>
         <span class="text-muted-foreground">
-          {move || t("考点：")}
+          {move || t("learning.topic")}
           {match topic_href {
             Some(href) => view! {
               <a href=href class="font-medium text-foreground underline-offset-4 hover:underline">{move || t(topic)}</a>
@@ -99,32 +99,32 @@ pub(super) fn MistakeCard(
             .into_any(),
             None => view! { <span class="font-medium text-foreground">{move || t(topic)}</span> }.into_any(),
           }}
-          {topic_rate.map(|r| view! { <span class="ml-1 tabular-nums">{tf("（正确率 {}%）", &[&r.to_string()])}</span> })}
+          {topic_rate.map(|r| view! { <span class="ml-1 tabular-nums">{tf("learning.accuracy-2", &[&r.to_string()])}</span> })}
           {same_href.map(|href| view! {
             <a href=href class="ml-1 font-medium text-primary underline-offset-4 hover:underline">
-              {move || t("同类题再练 →")}
+              {move || t("exam.practise-similar-2")}
             </a>
           })}
         </span>
       </div>
       <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <span>{move || t("答错")} <span class="font-semibold text-foreground tabular-nums">{record.wrong_count}</span> {move || t("次")}</span>
-        <span>{tf("连续答对 {} / {}", &[&record.streak.to_string(), &record.target_streak().to_string()])}</span>
+        <span>{move || t("learning.wrong")} <span class="font-semibold text-foreground tabular-nums">{record.wrong_count}</span> {move || t("learning.times")}</span>
+        <span>{tf("learning.in-a-row", &[&record.streak.to_string(), &record.target_streak().to_string()])}</span>
         <span>
-          {move || t("难度")} <span class=format!("font-semibold {}", difficulty.1)>{difficulty.0}</span>
+          {move || t("exam.difficulty")} <span class=format!("font-semibold {}", difficulty.1)>{difficulty.0}</span>
         </span>
-        <span>{tf("间隔 {} 天", &[&format!("{:.0}", record.interval_days)])}</span>
+        <span>{tp("exam.day-interval", record.interval_days.round() as i64, &[&format!("{:.0}", record.interval_days)])}</span>
         <span>{due}</span>
         <button
           type="button"
           class="ml-auto rounded px-2 py-0.5 transition-colors hover:bg-accent hover:text-foreground"
           on:click=move |_| on_remove.run(key.clone())
         >
-          {move || t("移出")}
+          {move || t("learning.remove")}
         </button>
       </div>
       <div class="mt-2 flex flex-wrap items-center gap-1.5 border-t pt-2 text-xs">
-        <span class="text-muted-foreground">{move || t("错因")}</span>
+        <span class="text-muted-foreground">{move || t("exam.why-wrong")}</span>
         {WRONG_CAUSES
           .iter()
           .map(|&(ck, cn)| {

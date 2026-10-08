@@ -4,7 +4,7 @@ use leptos::prelude::*;
 
 use crate::components::common::BottomBar;
 use crate::i18n::t;
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, Size, Variant};
 
 const PRESS: &str = "active:scale-[0.98] transition-transform";
 const PRESS_FULL: &str = "w-full active:scale-[0.98] transition-transform";
@@ -26,85 +26,118 @@ pub(super) fn ExamBottomBar(
 ) -> impl IntoView {
   let flag_label = move || {
     if is_flagged.get() {
-      t("取消标记")
+      t("exam.unflag")
     } else {
-      t("标记")
+      t("exam.flag")
     }
   };
 
   view! {
     <BottomBar
-      stats=move || view! { {move || t("已作答")} " " {answered} " / " {total} "｜" {move || t("标记")} " " {flagged} }
+      stats=move || view! { {move || t("exam.answered")} " " {answered} " / " {total} "｜" {move || t("exam.flag")} " " {flagged} }
       left=move || {
         view! {
-          <button
-            class=button_class(Variant::Secondary, Size::Default, PRESS)
-            disabled=move || at_start.get()
-            on:click=move |_| on_prev.run(())
+          <Button
+            variant=Variant::Secondary
+            size=Size::Default
+            class=PRESS
+            disabled=Signal::derive(move || at_start.get())
+            on_click=Callback::new(move |_| on_prev.run(()))
           >
-            {move || t("上一题")}
-          </button>
+            {move || t("exam.previous")}
+          </Button>
         }
       }
       right=move || {
         view! {
-          <button class=button_class(Variant::Outline, Size::Default, PRESS) on:click=move |_| on_toggle_flag.run(())>
-            {flag_label}
-          </button>
-          <button class=button_class(Variant::Outline, Size::Default, PRESS) on:click=move |_| on_open_card.run(())>
-            {move || t("答题卡")}
-          </button>
-          <button class=button_class(Variant::Default, Size::Default, PRESS) disabled=move || at_end.get() on:click=move |_| on_next.run(())>
-            {move || t("下一题")}
-          </button>
-          <button
-            class=button_class(Variant::Destructive, Size::Default, PRESS)
-            disabled=move || finished.get()
-            on:click=move |_| on_submit.run(())
+          <Button
+            variant=Variant::Outline
+            size=Size::Default
+            class=PRESS
+            on_click=Callback::new(move |_| on_toggle_flag.run(()))
           >
-            {move || if finished.get() { t("已交卷") } else { t("交卷") }}
-          </button>
+            {flag_label}
+          </Button>
+          <Button
+            variant=Variant::Outline
+            size=Size::Default
+            class=PRESS
+            on_click=Callback::new(move |_| on_open_card.run(()))
+          >
+            {move || t("exam.answer-card")}
+          </Button>
+          <Button
+            variant=Variant::Default
+            size=Size::Default
+            class=PRESS
+            disabled=Signal::derive(move || at_end.get())
+            on_click=Callback::new(move |_| on_next.run(()))
+          >
+            {move || t("exam.next")}
+          </Button>
+          <Button
+            variant=Variant::Destructive
+            size=Size::Default
+            class=PRESS
+            disabled=Signal::derive(move || finished.get())
+            on_click=Callback::new(move |_| on_submit.run(()))
+          >
+            {move || if finished.get() { t("exam.submitted") } else { t("exam.submit") }}
+          </Button>
         }
       }
       mobile_top=move || {
         view! {
           <div class="grid grid-cols-2 gap-2">
-            <button
-              class=button_class(Variant::Secondary, Size::Default, PRESS_FULL)
-              disabled=move || at_start.get()
-              on:click=move |_| on_prev.run(())
+            <Button
+              variant=Variant::Secondary
+              size=Size::Default
+              class=PRESS_FULL
+              disabled=Signal::derive(move || at_start.get())
+              on_click=Callback::new(move |_| on_prev.run(()))
             >
-              {move || t("上一题")}
-            </button>
-            <button
-              class=button_class(Variant::Default, Size::Default, PRESS_FULL)
-              disabled=move || at_end.get()
-              on:click=move |_| on_next.run(())
+              {move || t("exam.previous")}
+            </Button>
+            <Button
+              variant=Variant::Default
+              size=Size::Default
+              class=PRESS_FULL
+              disabled=Signal::derive(move || at_end.get())
+              on_click=Callback::new(move |_| on_next.run(()))
             >
-              {move || t("下一题")}
-            </button>
+              {move || t("exam.next")}
+            </Button>
           </div>
         }
       }
       mobile_bottom=ViewFn::from(move || {
         view! {
           <div class="grid grid-cols-3 gap-2 mt-2">
-            <button class=button_class(Variant::Outline, Size::Default, PRESS_FULL) on:click=move |_| on_toggle_flag.run(())>
+            <Button
+              variant=Variant::Outline
+              size=Size::Default
+              class=PRESS_FULL
+              on_click=Callback::new(move |_| on_toggle_flag.run(()))
+            >
               {flag_label}
-            </button>
-            <button
-              class=button_class(Variant::Outline, Size::Default, PRESS_FULL)
-              on:click=move |_| on_open_card.run(())
+            </Button>
+            <Button
+              variant=Variant::Outline
+              size=Size::Default
+              class=PRESS_FULL
+              on_click=Callback::new(move |_| on_open_card.run(()))
             >
-              {move || t("答题卡")}
-            </button>
-            <button
-              class=button_class(Variant::Destructive, Size::Default, PRESS_FULL)
-              disabled=move || finished.get()
-              on:click=move |_| on_submit.run(())
+              {move || t("exam.answer-card")}
+            </Button>
+            <Button
+              variant=Variant::Destructive
+              size=Size::Default
+              class=PRESS_FULL
+              disabled=Signal::derive(move || finished.get())
+              on_click=Callback::new(move |_| on_submit.run(()))
             >
-              {move || if finished.get() { t("已交卷") } else { t("交卷") }}
-            </button>
+              {move || if finished.get() { t("exam.submitted") } else { t("exam.submit") }}
+            </Button>
           </div>
         }
       })

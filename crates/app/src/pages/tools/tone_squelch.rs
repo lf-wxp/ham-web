@@ -1,8 +1,10 @@
 use ham_web_core::tone_squelch::{CTCSS_TONES, DCS_CODES, REPEATER_OFFSETS};
 use leptos::prelude::*;
 
-use super::{INPUT, fmt_num};
+use super::fmt_num;
 use crate::i18n::{t, tf};
+use crate::ui::{Field, NumberField, RadioGroup, RadioGroupItem};
+use crate::util::unique_id;
 
 const CHIP: &str =
   "rounded-full border bg-card px-2.5 py-1 text-xs tabular-nums text-muted-foreground";
@@ -14,6 +16,8 @@ pub(super) fn ToneSquelch() -> impl IntoView {
   let rx = RwSignal::new(145.0);
   let positive = RwSignal::new(false);
 
+  let rx_id = unique_id("tone-squelch-rx");
+
   let offset = move || {
     REPEATER_OFFSETS
       .iter()
@@ -24,69 +28,52 @@ pub(super) fn ToneSquelch() -> impl IntoView {
   view! {
     <div class="space-y-4">
       <div class="grid gap-3 sm:grid-cols-2">
-        <div class="sm:col-span-2 flex flex-wrap gap-1.5">
+        <RadioGroup
+          value=band
+          on_change=Callback::new(move |v: String| band.set(v))
+          class="sm:col-span-2 flex flex-wrap items-center gap-4"
+        >
           {REPEATER_OFFSETS
             .iter()
             .map(|(name, _, _, _)| {
+              let band_name = *name;
               view! {
-                <button
-                  type="button"
-                  class=move || {
-                    if band.get() == *name {
-                      "rounded-full border border-primary bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
-                    } else {
-                      "rounded-full border bg-card px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                    }
-                  }
-                  on:click=move |_| band.set((*name).to_string())
-                >
-                  {*name}
-                </button>
+                <label class="flex cursor-pointer items-center gap-2 text-sm">
+                  <RadioGroupItem value=band_name.to_string() />
+                  {band_name}
+                </label>
               }
             })
             .collect_view()}
-        </div>
-        <label class="flex flex-col gap-1.5 text-sm">
-          <span class="text-xs text-muted-foreground">{move || t("接收频率（MHz）")}</span>
-          <input
-            type="number"
-            prop:value=move || rx.get().to_string()
-            on:input=move |e| {
-              if let Ok(v) = event_target_value(&e).parse::<f64>() {
+        </RadioGroup>
+        <Field label=Signal::derive(move || t("tools.receive-frequency-mhz")) r#for=rx_id.clone()>
+          <NumberField
+            id=rx_id
+            value=Signal::derive(move || rx.get().to_string())
+            on_change=Callback::new(move |v: String| {
+              if let Ok(v) = v.trim().parse::<f64>() {
                 rx.set(v);
               }
-            }
-            class=INPUT
+            })
+            controls=false
           />
-        </label>
-        <label class="flex items-end gap-2 text-sm">
-          <button
-            type="button"
-            class=move || {
-              if positive.get() {
-                "rounded-lg border border-primary bg-primary/10 px-3 py-2 text-xs font-medium text-primary"
-              } else {
-                "rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent"
-              }
-            }
-            on:click=move |_| positive.set(false)
-          >
-            {move || t("负偏移 −")}
-          </button>
-          <button
-            type="button"
-            class=move || {
-              if positive.get() {
-                "rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent"
-              } else {
-                "rounded-lg border border-primary bg-primary/10 px-3 py-2 text-xs font-medium text-primary"
-              }
-            }
-            on:click=move |_| positive.set(true)
-          >
-            {move || t("正偏移 +")}
-          </button>
-        </label>
+        </Field>
+        <RadioGroup
+          value=Signal::derive(move || {
+            if positive.get() { "positive" } else { "negative" }.to_string()
+          })
+          on_change=Callback::new(move |v: String| positive.set(v == "positive"))
+          class="flex flex-wrap items-end gap-4 pb-2"
+        >
+          <label class="flex cursor-pointer items-center gap-2 text-sm">
+            <RadioGroupItem value="negative" />
+            {move || t("tools.negative-offset")}
+          </label>
+          <label class="flex cursor-pointer items-center gap-2 text-sm">
+            <RadioGroupItem value="positive" />
+            {move || t("tools.positive-offset")}
+          </label>
+        </RadioGroup>
         <div class="sm:col-span-2 space-y-1 rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
           {move || {
             match offset() {
@@ -94,22 +81,22 @@ pub(super) fn ToneSquelch() -> impl IntoView {
                 let tx = if positive.get() { rx.get() + o } else { rx.get() - o };
                 view! {
                   <div class="tabular-nums">
-                    {tf("频差 {} MHz（{}）", &[&fmt_num(o), note])}
+                    {tf("tools.offset-mhz", &[&fmt_num(o), note])}
                   </div>
                   <div class="tabular-nums">
-                    {tf("接收 {} MHz → 发射 {} MHz", &[&fmt_num(rx.get()), &fmt_num(tx)])}
+                    {tf("tools.receive-mhz-transmit-mhz", &[&fmt_num(rx.get()), &fmt_num(tx)])}
                   </div>
                 }
                 .into_any()
               }
-              None => view! { <span>{move || t("请选择波段。")}</span> }.into_any(),
+              None => view! { <span>{move || t("tools.please-select-a-band")}</span> }.into_any(),
             }
           }}
         </div>
       </div>
 
       <div>
-        <div class="mb-1.5 text-xs text-muted-foreground">{move || t("CTCSS 亚音（Hz，共 50 组）")}</div>
+        <div class="mb-1.5 text-xs text-muted-foreground">{move || t("tools.ctcss-tone-hz-50")}</div>
         <div class="flex flex-wrap gap-1.5">
           {CTCSS_TONES
             .iter()
@@ -121,7 +108,7 @@ pub(super) fn ToneSquelch() -> impl IntoView {
       </div>
 
       <div>
-        <div class="mb-1.5 text-xs text-muted-foreground">{move || t("DCS 数字静噪码（八进制）")}</div>
+        <div class="mb-1.5 text-xs text-muted-foreground">{move || t("tools.dcs-digital-squelch-code")}</div>
         <div class="flex flex-wrap gap-1.5">
           {DCS_CODES
             .iter()

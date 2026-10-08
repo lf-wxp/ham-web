@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use ham_web_core::qsl_labels::Label;
 use leptos::prelude::*;
@@ -6,10 +7,13 @@ use leptos::prelude::*;
 use crate::pages::log::LogEntry;
 
 /// 单张 QSL 标签（一个呼号一行或数行通联）。
+///
+/// `entries` 用 `Arc` 传：一页有几十个标签槽，每槽都克隆一份完整的
+/// `id → LogEntry` 表（每条记录含几十个 String）会白烧掉大量分配。
 #[component]
 pub(crate) fn LabelView(
   label: Label,
-  entries: HashMap<u64, LogEntry>,
+  entries: Arc<HashMap<u64, LogEntry>>,
   my_call: String,
   compact: bool,
 ) -> impl IntoView {

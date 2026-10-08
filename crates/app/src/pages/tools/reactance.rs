@@ -1,7 +1,9 @@
 use leptos::prelude::*;
 
-use super::{INPUT, TAU, fmt_num};
+use super::{TAU, fmt_num};
 use crate::i18n::{t, tf};
+use crate::ui::{Field, NumberField};
+use crate::util::unique_id;
 
 /// 容抗 / 感抗：Xc = 159155 / (f(MHz)·C(pF)) Ω，XL = 6.283·f(MHz)·L(μH) Ω。
 #[component]
@@ -10,54 +12,55 @@ pub(super) fn Reactance() -> impl IntoView {
   let capacitance = RwSignal::new(100.0);
   let inductance = RwSignal::new(10.0);
 
+  let freq_id = unique_id("reactance-freq");
+  let c_id = unique_id("reactance-c");
+  let l_id = unique_id("reactance-l");
+
   view! {
     <div class="grid gap-3 sm:grid-cols-3">
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("频率 f（MHz）")}</span>
-        <input
-          type="number"
-          prop:value=move || freq.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      <Field label=Signal::derive(move || t("tools.frequency-f-mhz")) r#for=freq_id.clone()>
+        <NumberField
+          id=freq_id
+          value=Signal::derive(move || freq.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               freq.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("电容 C（pF）")}</span>
-        <input
-          type="number"
-          prop:value=move || capacitance.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      </Field>
+      <Field label=Signal::derive(move || t("tools.capacitance-c-pf")) r#for=c_id.clone()>
+        <NumberField
+          id=c_id
+          value=Signal::derive(move || capacitance.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               capacitance.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("电感 L（μH）")}</span>
-        <input
-          type="number"
-          prop:value=move || inductance.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      </Field>
+      <Field label=Signal::derive(move || t("tools.inductance-l-h")) r#for=l_id.clone()>
+        <NumberField
+          id=l_id
+          value=Signal::derive(move || inductance.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               inductance.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
+      </Field>
       <div class="sm:col-span-3 rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
         {move || {
           let f = freq.get();
           let fc = f * capacitance.get();
           let xc = if fc > 0.0 { (1_000_000.0 / TAU) / fc } else { 0.0 };
           let xl = TAU * f * inductance.get();
-          tf("容抗 Xc = {} Ω，感抗 XL = {} Ω", &[&(fmt_num(xc)).to_string(), &(fmt_num(xl)).to_string()])
+          tf("tools.xc-xl", &[&(fmt_num(xc)).to_string(), &(fmt_num(xl)).to_string()])
         }}
       </div>
     </div>

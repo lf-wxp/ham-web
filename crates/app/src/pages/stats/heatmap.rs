@@ -1,4 +1,4 @@
-use crate::i18n::tf;
+use crate::i18n::tp;
 use leptos::prelude::*;
 
 /// 根据计数值与最大值返回色阶类名（完整字面量，供 Tailwind 扫描）。
@@ -61,7 +61,7 @@ pub(super) fn Heatmap(rows: Vec<(String, [u32; 24])>) -> impl IntoView {
                     view! {
                       <div
                         class=format!("h-5 flex-1 rounded-sm {}", cell_class(c, max))
-                        title=tf("{} · {}:00 UTC · {} 条", &[&(band).to_string(), &(h).to_string(), &(c).to_string()])
+                        title=tp("common.00-utc-records", c, &[&(band).to_string(), &(h).to_string(), &(c).to_string()])
                       ></div>
                     }
                   })

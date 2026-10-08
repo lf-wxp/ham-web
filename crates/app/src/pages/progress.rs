@@ -49,7 +49,7 @@ struct CategoryStat {
 
 #[component]
 pub fn ProgressPage() -> impl IntoView {
-  set_title(&t("学习进度"));
+  set_title("shell.progress");
 
   // 同步统计。
   let checkin: CheckinLite = storage::get_json("daily-checkin").unwrap_or_default();
@@ -208,34 +208,34 @@ pub fn ProgressPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("学习进度")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("练习 · 考试 · 错题 · 收藏 · 日志 · DXCC")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.progress")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("learning.practice-exam-mistakes-bookmarks")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label=t("连续打卡") value=move || checkin.streak />
-          <Stat label=t("错题数") value=move || mistakes />
-          <Stat label=t("今日待复习") value=move || due />
-          <Stat label=t("累计作答") value=move || answered_total.get() />
-          <Stat label=t("收藏题目") value=move || bookmarks />
-          <Stat label=t("通联日志") value=move || log_count />
-          <Stat label=t("已通联网格") value=move || grid_count />
-          <Stat label=t("DXCC 稀有度") value=move || dxcc_done />
-          <Stat label=t("累计学习（分钟）") value=move || total_minutes />
+          <Stat label=t("learning.day-streak") value=move || checkin.streak />
+          <Stat label=t("learning.mistakes") value=move || mistakes />
+          <Stat label=t("home.due-for-review") value=move || due />
+          <Stat label=t("learning.answered-total") value=move || answered_total.get() />
+          <Stat label=t("learning.bookmarks") value=move || bookmarks />
+          <Stat label=t("shell.logbook") value=move || log_count />
+          <Stat label=t("learning.grids-worked") value=move || grid_count />
+          <Stat label=t("learning.dxcc-rarity") value=move || dxcc_done />
+          <Stat label=t("learning.total-study-min") value=move || total_minutes />
         </div>
 
         <section class="rounded-xl border bg-card p-4">
-          <h2 class="mb-3 text-sm font-semibold">{move || t("每日学习打卡")}</h2>
+          <h2 class="mb-3 text-sm font-semibold">{move || t("learning.daily-study-check-in")}</h2>
           <StudyHeatmap days=heatmap_days today=local_today() />
         </section>
 
         <section class="rounded-xl border bg-card p-4">
-          <h2 class="mb-2 text-sm font-semibold">{move || t("DXCC 稀有度进度")}</h2>
+          <h2 class="mb-2 text-sm font-semibold">{move || t("learning.dxcc-rarity-progress")}</h2>
           <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-            <span>{move || t("已通联（含日志自动识别）")}</span>
+            <span>{move || t("learning.worked-incl-auto-detected")}</span>
             <span class="tabular-nums">{format!("{dxcc_done} / {dxcc_total}")}</span>
           </div>
           <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -246,10 +246,10 @@ pub fn ProgressPage() -> impl IntoView {
           </div>
           <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1">
             <a href="/most-wanted" class="text-xs text-muted-foreground underline-offset-4 hover:underline">
-              {move || t("前往 DXCC 稀有度追踪 →")}
+              {move || t("learning.go-to-dxcc-rarity")}
             </a>
             <a href="/log#awards" class="text-xs text-muted-foreground underline-offset-4 hover:underline">
-              {move || t("DXCC / WAZ / WAC / VUCC 奖状进度 →")}
+              {move || t("learning.dxcc-waz-wac-vucc")}
             </a>
           </div>
         </section>
@@ -258,12 +258,12 @@ pub fn ProgressPage() -> impl IntoView {
 
         <section class="rounded-xl border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("备考状态")}</h2>
+            <h2 class="mr-auto text-sm font-semibold">{move || t("learning.prep-status")}</h2>
             {Bank::ALL
               .into_iter()
               .map(|b| view! {
                 <button type="button" class=move || tab_class(exam_bank.get() == b) on:click=move |_| exam_bank.set(b)>
-                  {tf("{} 类", &[&b.to_string()])}
+                  {tf("learning.class", &[&b.to_string()])}
                 </button>
               })
               .collect_view()}
@@ -277,12 +277,12 @@ pub fn ProgressPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("题库覆盖率")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.bank-coverage")}</h2>
           <div class="space-y-3 p-4">
             {move || {
               let list = coverage.get();
               if list.is_empty() {
-                return view! { <p class="text-sm text-muted-foreground">{move || t("加载题库中...")}</p> }.into_any();
+                return view! { <p class="text-sm text-muted-foreground">{move || t("exam.loading-questions-u-2026")}</p> }.into_any();
               }
               list
                 .into_iter()
@@ -293,13 +293,13 @@ pub fn ProgressPage() -> impl IntoView {
                     <div>
                       <div class="mb-1 flex items-center justify-between text-xs">
                         <span class="font-medium">
-                          {tf("{} 类", &[&b.to_string()])}
+                          {tf("learning.class", &[&b.to_string()])}
                           {(left > 0 && covered > 0).then(|| view! {
                             <a
                               href=format!("/practice?bank={b}&unseen=1")
                               class="ml-1.5 rounded border px-1.5 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/10"
                             >
-                              {tf("练没做过的 {} 题", &[&left.to_string()])}
+                              {tf("learning.practice-the-unseen", &[&left.to_string()])}
                             </a>
                           })}
                         </span>
@@ -316,12 +316,12 @@ pub fn ProgressPage() -> impl IntoView {
                 .collect_view()
                 .into_any()
             }}
-            <p class="text-xs text-muted-foreground">{move || t("统计练习、模拟考试与闪卡中做过的题（按当前最新题库计算）。")}</p>
+            <p class="text-xs text-muted-foreground">{move || t("learning.counts-questions-done-in")}</p>
           </div>
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("成就")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.achievements")}</h2>
           <div class="grid grid-cols-2 gap-2 p-4 sm:grid-cols-4">
             {ACHIEVEMENTS
               .iter()
@@ -345,15 +345,15 @@ pub fn ProgressPage() -> impl IntoView {
 
         <section class="rounded-xl border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("薄弱知识点分析")}</h2>
+            <h2 class="mr-auto text-sm font-semibold">{move || t("learning.weak-area-analysis")}</h2>
             <button type="button" class=move || tab_class(bank_tab.get().is_none()) on:click=move |_| bank_tab.set(None)>
-              {move || t("全部")}
+              {move || t("exam.all")}
             </button>
             {Bank::ALL
               .into_iter()
               .map(|b| view! {
                 <button type="button" class=move || tab_class(bank_tab.get() == Some(b)) on:click=move |_| bank_tab.set(Some(b))>
-                  {tf("{} 类", &[&b.to_string()])}
+                  {tf("learning.class", &[&b.to_string()])}
                 </button>
               })
               .collect_view()}
@@ -364,7 +364,7 @@ pub fn ProgressPage() -> impl IntoView {
               if stats.is_empty() {
                 return view! {
                   <p class="text-sm text-muted-foreground">
-                    {move || t("完成练习或模拟考试后，这里会按分类展示正确率，帮你定位薄弱知识点。")}
+                    {move || t("learning.after-practice-or-a")}
                   </p>
                 }
                 .into_any();
@@ -399,7 +399,7 @@ pub fn ProgressPage() -> impl IntoView {
                                 href=href
                                 class="rounded border px-1.5 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/10"
                               >
-                                {move || t("练习")}
+                                {move || t("shell.practice")}
                               </a>
                               {topics
                                 .iter()
@@ -457,7 +457,7 @@ pub fn ProgressPage() -> impl IntoView {
                                               href=sub_href
                                               class="shrink-0 rounded border px-1 py-px text-[10px] text-primary transition-colors hover:bg-primary/10"
                                             >
-                                              {move || t("练")}
+                                              {move || t("learning.practice")}
                                             </a>
                                           </span>
                                           <span class="shrink-0 tabular-nums text-muted-foreground">
@@ -483,7 +483,7 @@ pub fn ProgressPage() -> impl IntoView {
                     .collect_view()}
                 </div>
                 <p class="text-xs text-muted-foreground">
-                  {move || t("按正确率升序排列，越靠前越薄弱；每个分类下可下钻到细分考点，点击「练」或「练习」可专项巩固。")}
+                  {move || t("learning.sorted-by-accuracy-ascending")}
                 </p>
               }
               .into_any()
@@ -492,7 +492,7 @@ pub fn ProgressPage() -> impl IntoView {
         </section>
 
         <p class="text-xs text-muted-foreground">
-          {move || t("数据来自本地记录（练习 / 考试 / 闪卡 / 收藏 / 日志 / 打卡），无需联网。")}
+          {move || t("learning.data-comes-from-local-2")}
         </p>
       </div>
     </div>

@@ -32,7 +32,7 @@ pub(super) fn CountdownSection() -> impl IntoView {
 
   view! {
     <section class="rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("未来赛事倒计时（UTC）")}</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.upcoming-contest-countdown-utc")}</h2>
       <div class="divide-y">
         {UPCOMING
           .iter()
@@ -42,17 +42,17 @@ pub(super) fn CountdownSection() -> impl IntoView {
             view! {
               <div class="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr_9rem]">
                 <div class="font-medium">{move || t(name)}</div>
-                <div class="text-sm text-muted-foreground">{tf("{} 月 {} 日 · {}", &[&m.to_string(), &d.to_string(), &(t(desc)).to_string()])}</div>
+                <div class="text-sm text-muted-foreground">{tf("contest.entry", &[&m.to_string(), &d.to_string(), &(t(desc)).to_string()])}</div>
                 <div class="text-right text-sm font-medium tabular-nums text-primary">
                   {move || {
                     let left = target - now.get();
                     if left <= 0.0 {
-                      t("已开赛")
+                      t("contest.started")
                     } else {
                       let days = (left / 86_400_000.0).floor();
                       let hours = ((left % 86_400_000.0) / 3_600_000.0).floor();
                       tf(
-                        "{} 天 {} 时",
+                        "contest.d-h",
                         &[&format!("{days:.0}"), &format!("{hours:.0}")],
                       )
                     }
@@ -64,7 +64,7 @@ pub(super) fn CountdownSection() -> impl IntoView {
           .collect_view()}
       </div>
       <p class="px-4 py-3 text-xs text-muted-foreground">
-        {move || t("日期按 2026 赛季常见规则推算（UTC 为准），具体以主办方公告为准。")}
+        {move || t("contest.dates-are-estimated-from")}
       </p>
     </section>
   }

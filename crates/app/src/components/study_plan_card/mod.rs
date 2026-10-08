@@ -1,89 +1,21 @@
 //! 备考计划：设定考试日期与类别，按剩余题量、待复习错题与临考阶段给出今日任务。
 
+mod task_row;
+use task_row::task_row;
+mod history_bars;
+use history_bars::history_bars;
+
 use ham_web_core::Bank;
 use ham_web_core::study_plan::{DailyGoal, Phase, StudyPlan, daily_goal};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 use crate::ui::{
-  CARD_HEADER, Size, Variant, button_class, card_class, card_content_class, card_title_class,
-  input_class,
+  CARD_HEADER, DatePicker, TimePicker, card_class, card_content_class, card_title_class,
 };
 use crate::util::{local_day, local_today, now_ms};
 use crate::{data, exam_history, study};
-
-/// 一条今日任务。
-fn task_row(
-  done: bool,
-  label: String,
-  detail: String,
-  href: String,
-  action: String,
-) -> impl IntoView {
-  view! {
-    <li class="flex items-center gap-3 py-2">
-      <span
-        aria-hidden="true"
-        class=if done {
-          "flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-xs text-white"
-        } else {
-          "size-5 shrink-0 rounded-full border-2 border-muted-foreground/40"
-        }
-      >
-        {done.then_some("✓")}
-      </span>
-      <div class="min-w-0 flex-1">
-        <div class=if done { "text-sm text-muted-foreground line-through" } else { "text-sm font-medium" }>
-          {label}
-          {done.then(|| view! { <span class="sr-only">{move || t("（已完成）")}</span> })}
-        </div>
-        <div class="text-xs text-muted-foreground">{detail}</div>
-      </div>
-      {(!done).then(|| view! {
-        <a href=href class=button_class(Variant::Outline, Size::Sm, "shrink-0")>{action}</a>
-      })}
-    </li>
-  }
-}
-
-/// 最近 14 天每日作答量柱状图。
-fn history_bars(today: &str) -> impl IntoView {
-  let days = study::load_daily().recent(today, 14);
-  let max = days
-    .iter()
-    .map(|(_, t)| t.answered)
-    .max()
-    .unwrap_or(0)
-    .max(1);
-  let total: u32 = days.iter().map(|(_, t)| t.answered).sum();
-  view! {
-    <div>
-      <div class="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
-        <span>{move || t("最近 14 天作答")}</span>
-        <span class="tabular-nums">{tf("共 {} 题", &[&total.to_string()])}</span>
-      </div>
-      <div class="flex h-16 items-end gap-1" role="img" aria-label=tf("最近 14 天共作答 {} 题", &[&total.to_string()])>
-        {days
-          .into_iter()
-          .map(|(day, t)| {
-            let h = f64::from(t.answered) / f64::from(max) * 100.0;
-            view! {
-              <div
-                class="flex-1 rounded-t bg-primary/70"
-                style=format!("height: max({h:.1}%, 2px)")
-                title=tf(
-                  "{}：{} 题（新题 {}）",
-                  &[&day[5..], &t.answered.to_string(), &t.new.to_string()],
-                )
-              ></div>
-            }
-          })
-          .collect_view()}
-      </div>
-    </div>
-  }
-}
 
 #[component]
 pub fn StudyPlanCard(
@@ -137,14 +69,16 @@ pub fn StudyPlanCard(
     let today = &today_for_tasks;
     let log = study::load_daily().on(today);
     let headline = match g.phase {
-      Phase::Over => t("考试日期已过，可以设定下一次考试。"),
-      Phase::ExamDay => t("今天考试，祝顺利通过！考前只看看错题，别再刷新题了。"),
-      Phase::Sprint => tf(
-        "距 {} 类考试还有 {} 天 · 冲刺阶段：错题 + 模拟考试",
+      Phase::Over => t("common.the-exam-date-has"),
+      Phase::ExamDay => t("common.exam-today-good-luck"),
+      Phase::Sprint => tp(
+        "common.days-until-the-class-2",
+        g.days_left,
         &[&b.to_string(), &g.days_left.to_string()],
       ),
-      Phase::Learn => tf(
-        "距 {} 类考试还有 {} 天",
+      Phase::Learn => tp(
+        "common.days-until-the-class",
+        g.days_left,
         &[&b.to_string(), &g.days_left.to_string()],
       ),
     };
@@ -157,48 +91,50 @@ pub fn StudyPlanCard(
           let done_new = log.new as usize;
           task_row(
             done_new >= g.new_target,
-            tf(
-              "做新题 {} / {}",
+            tp(
+              "common.do-new-questions",
+              g.new_target as u32,
               &[
                 &done_new.min(g.new_target).to_string(),
                 &g.new_target.to_string(),
               ],
             ),
-            tf(
-              "{} 类还有 {} 题没做过",
+            tp(
+              "common.questions-left-unseen-in",
+              unseen.get().unwrap_or(0),
               &[&b.to_string(), &unseen.get().unwrap_or(0).to_string()],
             ),
             format!("/practice?bank={b}&unseen=1"),
-            t("去做"),
+            t("common.go"),
           )
         })}
         {(g.phase != Phase::Over).then(|| task_row(
           g.review == 0,
-          if g.review == 0 { t("错题已复习完") } else { tf("复习错题 {} 题", &[&g.review.to_string()]) },
-          t("按间隔复习到期的错题"),
+          if g.review == 0 { t("common.all-mistakes-reviewed") } else { tp("common.review-mistakes", g.review, &[&g.review.to_string()]) },
+          t("common.review-mistakes-due-by"),
           format!("/mistakes?review=1&bank={b}"),
-          t("去复习"),
+          t("common.review"),
         ))}
         {g.mock_exam.then(|| task_row(
           exam_today,
-          tf("{} 类模拟考试 1 套", &[&b.to_string()]),
-          t("临考每天一套，熟悉节奏、检验成绩"),
+          tf("common.one-class-mock-exam", &[&b.to_string()]),
+          t("common.one-mock-exam-a"),
           format!("/exam?bank={b}"),
-          t("去考"),
+          t("common.take-one"),
         ))}
         {(g.phase != Phase::Over).then(|| task_row(
           false,
-          t("必背考点速查"),
-          t("法规条款、公式与高频考点，每天抽空过一遍"),
+          t("common.must-know-exam-points"),
+          t("common.rules-formulas-and-high"),
           "/cheat-sheet".to_owned(),
-          t("去背"),
+          t("common.remove-background"),
         ))}
       </ul>
     };
     Some(view! {
       <div class="space-y-1">
         <div class="text-sm font-medium">{headline}</div>
-        <div class="text-xs text-muted-foreground">{tf("今天已作答 {} 题，其中新题 {} 题", &[&log.answered.to_string(), &log.new.to_string()])}</div>
+        <div class="text-xs text-muted-foreground">{tp("common.answered-questions-today-of", log.answered, &[&log.answered.to_string(), &log.new.to_string()])}</div>
         {rows}
       </div>
     })
@@ -221,9 +157,9 @@ pub fn StudyPlanCard(
     <section id="plan" data-slot="card" class=card_class("scroll-mt-24")>
       <div data-slot="card-header" class=CARD_HEADER>
         <h2 data-slot="card-title" class=card_title_class("flex items-center justify-between gap-2")>
-          <span>{move || t("备考计划")}</span>
+          <span>{move || t("common.study-plan")}</span>
           {(!editable).then(|| view! {
-            <a href="/progress#plan" class="text-xs font-normal text-muted-foreground hover:text-foreground">{move || t("调整 →")}</a>
+            <a href="/progress#plan" class="text-xs font-normal text-muted-foreground hover:text-foreground">{move || t("common.adjust")}</a>
           })}
         </h2>
       </div>
@@ -231,20 +167,17 @@ pub fn StudyPlanCard(
         {editable.then(|| view! {
           <div class="flex flex-wrap items-end gap-4">
             <label class="flex flex-col gap-1.5 text-sm">
-              <span class="text-xs text-muted-foreground">{move || t("考试日期")}</span>
-              <input
-                type="date"
-                prop:value=move || plan.with(|p| p.target_date.clone())
-                on:change=move |e| {
-                  let v = event_target_value(&e);
-                  update(&|p| p.target_date = v.clone());
-                }
-                class=input_class("w-44")
+              <span class="text-xs text-muted-foreground">{move || t("common.exam-date")}</span>
+              <DatePicker
+                value=Signal::derive(move || plan.with(|p| p.target_date.clone()))
+                on_change=Callback::new(move |v: String| update(&|p| p.target_date = v.clone()))
+                aria_label=Signal::derive(move || t("common.exam-date"))
+                class="w-44"
               />
             </label>
             <div class="flex flex-col gap-1.5">
-              <span class="text-xs text-muted-foreground">{move || t("报考类别")}</span>
-              <div class="inline-flex gap-0.5 rounded-lg border p-0.5" role="group" aria-label=move || t("报考类别")>
+              <span class="text-xs text-muted-foreground">{move || t("common.target-class")}</span>
+              <div class="inline-flex gap-0.5 rounded-lg border p-0.5" role="group" aria-label=move || t("common.target-class")>
                 {Bank::ALL
                   .into_iter()
                   .map(|b| view! {
@@ -254,22 +187,19 @@ pub fn StudyPlanCard(
                       aria-pressed=move || (bank.get() == b).to_string()
                       on:click=move |_| update(&|p| p.bank = Some(b))
                     >
-                      {tf("{} 类", &[&b.to_string()])}
+                      {tf("learning.class", &[&b.to_string()])}
                     </button>
                   })
                   .collect_view()}
               </div>
             </div>
             <label class="flex flex-col gap-1.5 text-sm">
-              <span class="text-xs text-muted-foreground">{move || t("每日提醒时间")}</span>
-              <input
-                type="time"
-                prop:value=move || plan.with(|p| p.reminder_time.clone())
-                on:change=move |e| {
-                  let v = event_target_value(&e);
-                  update(&|p| p.reminder_time = v.clone());
-                }
-                class=input_class("w-32")
+              <span class="text-xs text-muted-foreground">{move || t("settings.daily-reminder-time")}</span>
+              <TimePicker
+                value=Signal::derive(move || plan.with(|p| p.reminder_time.clone()))
+                on_change=Callback::new(move |v: String| update(&|p| p.reminder_time = v.clone()))
+                aria_label=Signal::derive(move || t("settings.daily-reminder-time"))
+                class="w-32"
               />
             </label>
           </div>
@@ -278,14 +208,14 @@ pub fn StudyPlanCard(
           if !has_plan() {
             return view! {
               <p class="text-sm text-muted-foreground">
-                {move || t("设定考试日期后，会按还没做过的题量、待复习错题和临考阶段，每天安排新题、复习与模拟考试任务，并显示在首页。")}
+                {move || t("common.once-you-set-an")}
               </p>
             }
             .into_any();
           }
           match tasks() {
             Some(v) => v.into_any(),
-            None => view! { <p class="text-sm text-muted-foreground">{move || t("加载题库中...")}</p> }.into_any(),
+            None => view! { <p class="text-sm text-muted-foreground">{move || t("exam.loading-questions-u-2026")}</p> }.into_any(),
           }
         }}
         {editable.then(|| history_bars(&today))}

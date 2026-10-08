@@ -9,7 +9,7 @@ use crate::data;
 use crate::icons::{Icon, IconKind};
 use crate::pages::{DEFAULT_TITLE, bank_href};
 use crate::ui::{
-  CARD_HEADER, Size, Variant, button_class, card_class, card_content_class, card_title_class,
+  ButtonLink, CARD_HEADER, Size, Variant, card_class, card_content_class, card_title_class,
 };
 use crate::util::set_title;
 
@@ -110,7 +110,7 @@ pub fn HomePage() -> impl IntoView {
     if !available.get_untracked() || version.with_untracked(Option::is_none) {
       e.prevent_default();
       warn_text.set(tf(
-        "题库 {} 暂不可用或为空，请先构建数据集",
+        "home.question-bank-is-unavailable",
         &[&bank.get_untracked().to_string()],
       ));
       warn_open.set(true);
@@ -137,33 +137,45 @@ pub fn HomePage() -> impl IntoView {
             <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60"></span>
             <span class="relative inline-flex size-1.5 rounded-full bg-primary"></span>
           </span>
-          {move || t("业余无线电 · Amateur Radio")}
+          {move || t("knowledge.amateur-radio")}
         </span>
 
         <h1
           class="reveal mt-6 text-4xl font-bold tracking-tight sm:text-6xl"
           style="animation-delay: 60ms"
         >
-          <span class="hero-gradient-text">{move || t("业余无线电")}</span>
+          <span class="hero-gradient-text">{move || t("shell.amateur-radio")}</span>
         </h1>
 
         <p
           class="reveal mt-4 max-w-xl text-sm text-muted-foreground sm:text-base"
           style="animation-delay: 120ms"
         >
-          {move || t("一站式题库练习、知识速查与通联工具平台，从 A/B/C 备考到实时传播，一个入口全部搞定")}
+          {move || t("home.one-platform-for-exam")}
         </p>
 
         <div class="reveal mt-8 flex flex-wrap justify-center gap-3" style="animation-delay: 180ms">
-          <a href="/practice" class=button_class(Variant::Default, Size::Default, "")>
-            {move || t("开始练习")}
-          </a>
-          <a href="/exam" class=button_class(Variant::Secondary, Size::Default, "")>
-            {move || t("模拟考试")}
-          </a>
-          <a href="/reference" class=button_class(Variant::Outline, Size::Default, "")>
-            {move || t("浏览知识库")}
-          </a>
+          <ButtonLink
+            href="/practice"
+            variant=Variant::Default
+            size=Size::Default
+          >
+            {move || t("home.start-practice")}
+          </ButtonLink>
+          <ButtonLink
+            href="/exam"
+            variant=Variant::Secondary
+            size=Size::Default
+          >
+            {move || t("shell.mock-exam")}
+          </ButtonLink>
+          <ButtonLink
+            href="/reference"
+            variant=Variant::Outline
+            size=Size::Default
+          >
+            {move || t("home.browse-knowledge")}
+          </ButtonLink>
         </div>
 
         // 频谱瀑布视觉（SDR 意象）
@@ -173,7 +185,7 @@ pub fn HomePage() -> impl IntoView {
               <span class="font-mono tracking-widest uppercase">"Spectrum · 14.000 MHz"</span>
               <span class="inline-flex items-center gap-1.5">
                 <span class="inline-block size-1.5 rounded-full bg-primary"></span>
-                {move || t("接收中")}
+                {move || t("home.receiving")}
               </span>
             </div>
             <div class="spectrum-bar h-14 rounded-xl border"></div>
@@ -229,36 +241,36 @@ pub fn HomePage() -> impl IntoView {
       // 快速开始练习（选择题库版本与类别）
       <div data-slot="card" class=card_class("mt-12")>
         <div data-slot="card-header" class=CARD_HEADER>
-          <div data-slot="card-title" class=card_title_class("")>{move || t("快速开始练习")}</div>
-          <div class="text-sm text-muted-foreground">{move || t("选择题库版本与类别，进入练习或模拟考试")}</div>
+          <div data-slot="card-title" class=card_title_class("")>{move || t("home.quick-start")}</div>
+          <div class="text-sm text-muted-foreground">{move || t("home.choose-a-bank-version")}</div>
         </div>
         <div data-slot="card-content" class=card_content_class("space-y-4")>
           <QuestionBankSelector selected_version=version selected_bank=bank disabled=checking />
           <div class="flex flex-wrap gap-3 relative">
-            <a
-              href=practice_href
-              data-slot="button"
-              class=button_class(Variant::Default, Size::Default, "")
-              on:click=guard
+            <ButtonLink
+              href=Signal::derive(practice_href)
+              variant=Variant::Default
+              size=Size::Default
+              on_click=Callback::new(guard)
             >
-              {move || t("开始练习")}
-            </a>
-            <a
-              href=exam_href
-              data-slot="button"
-              class=button_class(Variant::Secondary, Size::Default, "")
-              on:click=guard
+              {move || t("home.start-practice")}
+            </ButtonLink>
+            <ButtonLink
+              href=Signal::derive(exam_href)
+              variant=Variant::Secondary
+              size=Size::Default
+              on_click=Callback::new(guard)
             >
-              {move || t("开始模拟考试")}
-            </a>
-            <a
-              href=custom_href
-              data-slot="button"
-              class=button_class(Variant::Outline, Size::Default, "")
-              on:click=guard
+              {move || t("home.start-mock-exam")}
+            </ButtonLink>
+            <ButtonLink
+              href=Signal::derive(custom_href)
+              variant=Variant::Outline
+              size=Size::Default
+              on_click=Callback::new(guard)
             >
-              {move || t("自定义组卷")}
-            </a>
+              {move || t("exam.custom-paper")}
+            </ButtonLink>
             <Bubble open=warn_open text=warn_text />
           </div>
         </div>

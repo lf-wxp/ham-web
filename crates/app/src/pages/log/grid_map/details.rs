@@ -6,7 +6,7 @@ use leptos::prelude::*;
 use super::super::grid_fill::band_color;
 use super::super::grid_geo::{square_center, square_label};
 use super::state::GridMapState;
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 
 #[component]
 pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
@@ -16,24 +16,24 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
     // 图例 + 交互提示
     <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
       <span class="flex items-center gap-1.5">
-        <span class="text-muted-foreground">{move || t("密度")}</span>
+        <span class="text-muted-foreground">{move || t("log.density")}</span>
         <span class="inline-block h-2 w-24 rounded-full bg-gradient-to-r from-primary/15 to-primary"></span>
-        <span>{move || t("低 → 高")}</span>
+        <span>{move || t("log.low-high")}</span>
       </span>
       <span class="flex items-center gap-1.5">
         <span class="inline-block h-3 w-3 rounded-full border-2 border-primary"></span>
-        <span>{move || t("本台")}</span>
+        <span>{move || t("log.home")}</span>
       </span>
       {move || {
         state.show_grayline.get().then(|| {
           view! {
             <span class="flex items-center gap-1.5">
               <span class="inline-block h-3 w-3 rounded-sm bg-amber-500/40"></span>
-              <span>{move || t("晨昏圈")}</span>
+              <span>{move || t("log.terminator")}</span>
               <span class="ml-1 inline-block h-2.5 w-2.5 rounded-full bg-amber-500"></span>
-              <span>{move || t("太阳直射点")}</span>
+              <span>{move || t("log.subsolar-point")}</span>
               <span class="inline-block h-2.5 w-2.5 rounded-full border border-amber-500"></span>
-              <span>{move || t("反日点")}</span>
+              <span>{move || t("log.antipode")}</span>
             </span>
           }
         })
@@ -44,25 +44,25 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
             let skipped = *skipped;
             view! {
               <span class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                {move || t("路径")}
+                {move || t("log.paths")}
                 {legend
                   .iter()
                   .map(|b| {
                     view! {
                       <span class="inline-flex items-center gap-1">
                         <span class="inline-block h-0.5 w-4 rounded" style=format!("background:{}", band_color(b))></span>
-                        {if b.is_empty() { t("未知") } else { b.clone() }}
+                        {if b.is_empty() { t("log.unknown") } else { b.clone() }}
                       </span>
                     }
                   })
                   .collect_view()}
-                {(skipped > 0).then(|| tf("（另有 {} 条未绘制）", &[&skipped.to_string()]))}
+                {(skipped > 0).then(|| tf("log.more-not-drawn", &[&skipped.to_string()]))}
               </span>
             }
           })
         })
       }}
-      <span class="text-muted-foreground">{move || t("滚轮/双指缩放 · 拖拽平移 · 双击复位 · 输入网格定位 · 点击 field/square 展开")}</span>
+      <span class="text-muted-foreground">{move || t("log.scroll-pinch-to-zoom")}</span>
     </div>
 
     // 选中 field 的展开列表
@@ -75,13 +75,13 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
         view! {
           <div class="mt-2 rounded-lg border bg-muted/30 p-3">
             <div class="mb-2 flex items-center justify-between text-xs">
-              <span class="font-semibold">{tf("网格 {}", &[&(format!("{f_lon}{f_lat}")).to_string()])}</span>
+              <span class="font-semibold">{tf("log.grid-2", &[&(format!("{f_lon}{f_lat}")).to_string()])}</span>
               <button
                 type="button"
                 class="text-muted-foreground transition-colors hover:text-foreground"
                 on:click=move |_| state.selected.set(None)
               >
-                {move || t("关闭")}
+                {move || t("log.close")}
               </button>
             </div>
             <div class="flex flex-wrap gap-1.5">
@@ -110,7 +110,7 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
         let bearing_line = home_pos.map(|(hlat, hlon)| {
           let (d, b) = distance_bearing(hlat, hlon, lat, lon);
           tf(
-            "本台方位 {}° · 距离 {} km",
+            "log.bearing-distance-km",
             &[&format!("{b:.0}"), &format!("{d:.0}")],
           )
         });
@@ -119,12 +119,13 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
             <div class="mb-2 flex items-center justify-between text-xs">
               <span class="font-semibold">
                 {if confirmed > 0 {
-                  tf(
-                    "网格 {} · {} 条 · {} 已确认",
+                  tp(
+                    "log.grid-qsos-confirmed",
+                    list.len() as u32,
                     &[&label, &list.len().to_string(), &confirmed.to_string()],
                   )
                 } else {
-                  tf("网格 {} · {} 条", &[&(label).to_string(), &list.len().to_string()])
+                  tp("log.grid-qsos", list.len(), &[&(label).to_string(), &list.len().to_string()])
                 }}
               </span>
               <button
@@ -132,7 +133,7 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
                 class="text-muted-foreground transition-colors hover:text-foreground"
                 on:click=move |_| state.selected_square.set(None)
               >
-                {move || t("关闭")}
+                {move || t("log.close")}
               </button>
             </div>
             {bearing_line.map(|line| {
@@ -177,7 +178,7 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
                     detail.push_str(&format!(" · {entity}"));
                   }
                   let tooltip = tf(
-                    "时间 {} · 备注 {}",
+                    "log.time-notes",
                     &[
                       &if e.time.is_empty() { "—".to_string() } else { e.time.clone() },
                       &if e.remark.is_empty() { "—".to_string() } else { e.remark.clone() },

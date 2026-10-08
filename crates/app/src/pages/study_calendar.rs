@@ -6,7 +6,7 @@ use ham_web_core::study_plan::{MOCK_EXAM_DAYS, day_number, format_day};
 use leptos::prelude::*;
 
 use crate::components::study_plan_card::StudyPlanCard;
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tp};
 use crate::study;
 use crate::util::{local_today, now_ms, set_title};
 
@@ -20,7 +20,7 @@ fn weekday(n: i64) -> usize {
 
 #[component]
 pub fn StudyCalendarPage() -> impl IntoView {
-  set_title(&t("备考日历"));
+  set_title("learning.study-calendar");
 
   let today = local_today();
   let plan = RwSignal::new(study::load_plan());
@@ -48,8 +48,8 @@ pub fn StudyCalendarPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("备考日历")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("未来 14 天的复习节奏与压力，一眼看清")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("learning.study-calendar")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("learning.the-next-14-days")}</div>
           </div>
         </div>
       </header>
@@ -58,7 +58,7 @@ pub fn StudyCalendarPage() -> impl IntoView {
         <StudyPlanCard editable=true />
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("未来 14 天复习日历")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.next-14-days-review")}</h2>
           <ul class="divide-y">
             {{
               let target_n = plan.get().days_left(&today).map(|_| {
@@ -87,36 +87,36 @@ pub fn StudyCalendarPage() -> impl IntoView {
                           {day[5..].to_owned()}
                         </span>
                         <span class="text-[10px] text-muted-foreground">
-                          {if is_today { t("今天") } else { t(wd) }}
+                          {if is_today { t("exam.today") } else { t(wd) }}
                         </span>
                       </div>
                       <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                         {is_exam.then(|| view! {
-                          <span class="rounded-full bg-primary px-2 py-0.5 font-medium text-primary-foreground">{move || t("考试日")}</span>
+                          <span class="rounded-full bg-primary px-2 py-0.5 font-medium text-primary-foreground">{move || t("learning.exam-day")}</span>
                         })}
                         {(!is_exam && days_left.is_some()).then(|| view! {
                           <span class="text-muted-foreground">
                             {if is_over {
-                              t("已过")
+                              t("learning.passed")
                             } else {
-                              tf("距考试 {} 天", &[&days_left.unwrap_or(0).to_string()])
+                              tp("learning.days-to-exam", days_left.unwrap_or(0), &[&days_left.unwrap_or(0).to_string()])
                             }}
                           </span>
                         })}
                         {mock.then(|| view! {
-                          <span class="rounded-full border px-2 py-0.5 text-amber-700 dark:text-amber-400">{move || t("建议模拟考")}</span>
+                          <span class="rounded-full border px-2 py-0.5 text-amber-700 dark:text-amber-400">{move || t("learning.mock-exam-suggested")}</span>
                         })}
                         {checked.then(|| view! {
-                          <span class="text-emerald-700 dark:text-emerald-400">{move || t("已打卡")}</span>
+                          <span class="text-emerald-700 dark:text-emerald-400">{move || t("learning.checked-in")}</span>
                         })}
                       </div>
                       <div class="shrink-0 text-right">
                         {if due > 0 {
                           view! {
                             <div class="text-sm font-semibold text-primary tabular-nums">
-                              {tf("{} 道", &[&due.to_string()])}
+                              {tp("learning.questions", due, &[&due.to_string()])}
                             </div>
-                            <div class="text-[10px] text-muted-foreground">{move || t("待复习")}</div>
+                            <div class="text-[10px] text-muted-foreground">{move || t("learning.due-for-review")}</div>
                           }
                           .into_any()
                         } else {
@@ -133,7 +133,7 @@ pub fn StudyCalendarPage() -> impl IntoView {
             }}
           </ul>
           <p class="border-t px-4 py-3 text-xs text-muted-foreground">
-            {move || t("「建议模拟考」出现在考试前 7 天内；「待复习」为该天到期的错题数。")}
+            {move || t("learning.mock-exam-suggested-appears")}
           </p>
         </section>
       </div>

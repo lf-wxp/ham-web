@@ -41,7 +41,7 @@ fn save(s: &MorseSettings) {
   storage::set_json(KEY, s);
 }
 
-/// 摩尔斯播放设置上下文（由 [`MorsePage`] 提供，供各训练器与卡片读取）。
+/// 摩尔斯播放设置上下文（由 `MorsePage` 提供，供各训练器与卡片读取）。
 #[derive(Clone, Copy)]
 pub struct MorseSettingsCtx {
   pub settings: RwSignal<MorseSettings>,

@@ -5,7 +5,7 @@ use leptos::prelude::*;
 use crate::components::common::PreviewableImage;
 use crate::data::Questions;
 use crate::i18n::{t, tf};
-use crate::ui::{BadgeVariant, Separator, Sheet, Size, Variant, badge_class, button_class};
+use crate::ui::{BadgeVariant, Button, Separator, Sheet, Size, Variant, badge_class, button_class};
 
 /// 答题卡筛选。
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -63,6 +63,8 @@ pub fn AnswerCardSheet(
     }
   };
 
+  // 刻意的例外：筛选按钮靠切换 `variant` 表示当前筛选，而 `Button` 的 `variant` 是静态
+  // prop（见 `docs/ui-components.md` 的「常见坑」第 4 条）。同文件的关闭按钮已用组件。
   let filter_button = move |f: AnswerCardFilter, label: &'static str| {
     view! {
       <button
@@ -102,7 +104,7 @@ pub fn AnswerCardSheet(
             "relative h-9 w-full rounded-md border text-sm font-medium transition-colors bg-muted text-foreground"
           };
           let image = q.image().map(|src| {
-            let label = q.j_code().map_or_else(|| t("题目附图"), |j| tf("题号 {} 题图", &[(j)]));
+            let label = q.j_code().map_or_else(|| t("exam.question-image"), |j| tf("exam.question-figure", &[(j)]));
             view! { <PreviewableImage src=src.to_owned() alt=label.clone() title=label small_trigger=true /> }
           });
           Some(view! {
@@ -144,12 +146,12 @@ pub fn AnswerCardSheet(
   view! {
     <Sheet open=open>
       <div data-slot="sheet-header" class="flex flex-col gap-1.5 p-4">
-        <h2 data-slot="sheet-title" class="text-foreground font-semibold">{move || t("答题卡")}</h2>
+        <h2 data-slot="sheet-title" class="text-foreground font-semibold">{move || t("exam.answer-card")}</h2>
       </div>
       <div class="px-4 space-y-3 overflow-y-auto">
         <div class="flex items-center justify-between gap-3 text-sm">
           <div class="text-muted-foreground">
-            {move || t("已答")} " " {answered_count} " / " {move || questions.with(|q| q.len())} "｜" {move || t("标记")} " " {flagged_count}
+            {move || t("exam.answered-2")} " " {answered_count} " / " {move || questions.with(|q| q.len())} "｜" {move || t("exam.flag")} " " {flagged_count}
           </div>
           <div class="flex items-center gap-2">
             {filter_button(AnswerCardFilter::All, "全部")}
@@ -159,26 +161,29 @@ pub fn AnswerCardSheet(
         </div>
         <Separator />
         <div class="flex items-center justify-between flex-wrap gap-2">
-          <div class="text-sm text-muted-foreground">{move || t("点击题号跳转")}</div>
+          <div class="text-sm text-muted-foreground">{move || t("exam.tap-a-number-to")}</div>
           <div class="flex items-center gap-2">
-            <button
-              class=button_class(Variant::Outline, Size::Sm, "")
-              on:click=move |_| jump(find(None, &|k| !is_answered(k)))
+            <Button
+              variant=Variant::Outline
+              size=Size::Sm
+              on_click=Callback::new(move |_| jump(find(None, &|k| !is_answered(k))))
             >
-              {move || t("首个未答")}
-            </button>
-            <button
-              class=button_class(Variant::Outline, Size::Sm, "")
-              on:click=move |_| jump(find(Some(current_index.get_untracked()), &|k| !is_answered(k)))
+              {move || t("exam.first-unanswered")}
+            </Button>
+            <Button
+              variant=Variant::Outline
+              size=Size::Sm
+              on_click=Callback::new(move |_| jump(find(Some(current_index.get_untracked()), &|k| !is_answered(k))))
             >
-              {move || t("下一个未答")}
-            </button>
-            <button
-              class=button_class(Variant::Outline, Size::Sm, "")
-              on:click=move |_| jump(find(Some(current_index.get_untracked()), &|k| is_flagged(k)))
+              {move || t("exam.next-unanswered")}
+            </Button>
+            <Button
+              variant=Variant::Outline
+              size=Size::Sm
+              on_click=Callback::new(move |_| jump(find(Some(current_index.get_untracked()), &|k| is_flagged(k))))
             >
-              {move || t("下一个标记")}
-            </button>
+              {move || t("exam.next-flagged")}
+            </Button>
           </div>
         </div>
         <div class="grid grid-cols-6 gap-2 sm:grid-cols-8">{grid}</div>
@@ -190,15 +195,15 @@ pub fn AnswerCardSheet(
                 <div class="pt-2 text-xs text-muted-foreground flex items-center gap-3">
                   <span class="inline-flex items-center gap-1">
                     <span class="inline-block size-2 rounded-full bg-green-600"></span>
-                    {move || t("正确")}
+                    {move || t("exam.correct-3")}
                   </span>
                   <span class="inline-flex items-center gap-1">
                     <span class="inline-block size-2 rounded-full bg-red-600"></span>
-                    {move || t("错误")}
+                    {move || t("exam.wrong-2")}
                   </span>
                   <span class="inline-flex items-center gap-1">
                     <span class="inline-block size-2 rounded-full bg-yellow-400"></span>
-                    {move || t("已标记")}
+                    {move || t("exam.flagged")}
                   </span>
                 </div>
               }

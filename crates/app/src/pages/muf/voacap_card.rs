@@ -6,8 +6,11 @@ use serde::Deserialize;
 
 use crate::data;
 use crate::i18n::{t, tf};
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{
+  Button, ControlSize, Field, Input, NativeSelect, NumberField, SelectOption, Size, Variant,
+};
 use crate::util::alert;
+use crate::util::unique_id;
 
 /// 单波段预测结果。
 #[derive(Deserialize, Clone)]
@@ -33,8 +36,6 @@ struct VoacapResponse {
   diurnal: f64,
 }
 
-const INPUT: &str = "h-10 rounded-lg border bg-background px-3 text-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
-
 /// 点对点传播预测卡片。
 #[component]
 pub(super) fn VoacapCard() -> impl IntoView {
@@ -48,11 +49,26 @@ pub(super) fn VoacapCard() -> impl IntoView {
   let loading = RwSignal::new(false);
   let failed = RwSignal::new(false);
 
+  // `Field` 的标签与控件是兄弟节点，`r#for` / `id` 必须配对才能点击标签聚焦输入框
+  //（e2e 与读屏都按「标签 → 控件」的关联来定位）。
+  let tx_id = unique_id("voacap-tx");
+  let rx_id = unique_id("voacap-rx");
+  let month_id = unique_id("voacap-month");
+  let ssn_id = unique_id("voacap-ssn");
+
+  let hour_options: Vec<SelectOption> = (0..24u32)
+    .map(|h| SelectOption::new(h.to_string(), format!("{h:02}:00 UTC")))
+    .collect();
+
+  // 卡片卸载后 `spawn_local` 的续体不能再碰信号（释放后访问会 panic，见 `util::mount_guard`）。
+  // 必须在组件体里创建：事件回调里调用 `on_cleanup` 是静默空操作。
+  let alive = crate::util::mount_guard();
   let run = move || {
     let tx_g = tx.get().trim().to_uppercase();
     let rx_g = rx.get().trim().to_uppercase();
     if tx_g.len() < 4 || rx_g.len() < 4 {
-      alert("请输入至少 4 位 Maidenhead 网格（如 OM89、IO91）");
+      // 必须走词典：原先这里写死中文，en / es 界面下会弹出一条中文提示。
+      alert(&t("radio.enter-maidenhead-grids-of"));
       return;
     }
     loading.set(true);
@@ -66,8 +82,14 @@ pub(super) fn VoacapCard() -> impl IntoView {
       ssn.get(),
       hour_param
     );
+    let alive = alive.clone();
     spawn_local(async move {
-      match data::fetch_external_json::<VoacapResponse>(&url).await {
+      let fetched = data::fetch_external_json::<VoacapResponse>(&url).await;
+      // 用户可能在预测返回前离开本页：此时信号已释放，碰它就是 panic。
+      if !alive() {
+        return;
+      }
+      match fetched {
         Ok(r) => result.set(Some(r)),
         Err(_) => failed.set(true),
       }
@@ -77,78 +99,86 @@ pub(super) fn VoacapCard() -> impl IntoView {
 
   view! {
     <section class="rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("点对点传播预测")}</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.point-to-point-propagation")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
-        {move || t("输入双方网格与月份、太阳黑子数（可到「太阳活动」页查看当前值），估算两点间各波段的可用性与可靠度。指定 UTC 时刻后会按路径中点的日照情况修正，昼夜差异很大；不选则按最佳时段估算（简化模型，仅供参考）。")}
+        {move || t("tools.enter-both-grids-month")}
       </p>
-      <div class="grid gap-3 p-4 sm:grid-cols-[1fr_1fr_auto_auto_auto]">
-        <input
-          type="text"
-          placeholder=move || t("本台网格（如 OM89）")
-          aria-label=move || t("发射端网格")
-          prop:value=move || tx.get()
-          on:input=move |e| tx.set(event_target_value(&e))
-          class=input_class("")
-        />
-        <input
-          type="text"
-          placeholder=move || t("对方网格（如 IO91）")
-          aria-label=move || t("接收端网格")
-          prop:value=move || rx.get()
-          on:input=move |e| rx.set(event_target_value(&e))
-          class=input_class("")
-        />
-        <input
-          type="number"
-          min="1"
-          max="12"
-          aria-label=move || t("月份")
-          prop:value=move || month.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<u32>() {
-              month.set(v.clamp(1, 12));
-            }
-          }
-          class=INPUT
-        />
-        <input
-          type="number"
-          min="0"
-          max="400"
-          aria-label=move || t("太阳黑子数")
-          prop:value=move || ssn.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
-              ssn.set(v.clamp(0.0, 400.0));
-            }
-          }
-          class=INPUT
-        />
-        <select
-          aria-label=move || t("UTC 时刻")
-          prop:value=move || hour.get().map_or_else(String::new, |h| h.to_string())
-          on:change=move |e| {
-            let v = event_target_value(&e);
-            hour.set(if v.is_empty() { None } else { v.parse::<u32>().ok() });
-          }
-          class=input_class("w-28")
-        >
-          <option value="">{move || t("最佳时段")}</option>
-          {(0..24u32)
-            .map(|h| {
-              view! { <option value=h.to_string()>{format!("{h:02}:00 UTC")}</option> }
+      <div class="grid items-end gap-3 p-4 sm:grid-cols-[1fr_1fr_auto_auto_auto]">
+        <Field label=Signal::derive(move || t("radio.transmit-grid")) r#for=tx_id.clone()>
+          <Input
+            id=tx_id
+            value=tx
+            on_change=Callback::new(move |v: String| tx.set(v))
+            placeholder=Signal::derive(move || t("radio.your-grid-e-g"))
+            aria_label=Signal::derive(move || t("radio.transmit-grid"))
+            class="uppercase"
+          />
+        </Field>
+        <Field label=Signal::derive(move || t("radio.receive-grid")) r#for=rx_id.clone()>
+          <Input
+            id=rx_id
+            value=rx
+            on_change=Callback::new(move |v: String| rx.set(v))
+            placeholder=Signal::derive(move || t("radio.their-grid-e-g"))
+            aria_label=Signal::derive(move || t("radio.receive-grid"))
+            class="uppercase"
+          />
+        </Field>
+        <Field label=Signal::derive(move || t("radio.month")) r#for=month_id.clone()>
+          <NumberField
+            id=month_id
+            step=1.0
+            min=1.0
+            max=12.0
+            value=Signal::derive(move || month.get().to_string())
+            on_change=Callback::new(move |v: String| {
+              if let Ok(v) = v.trim().parse::<u32>() {
+                month.set(v.clamp(1, 12));
+              }
             })
-            .collect_view()}
-        </select>
-        <button type="button" class=button_class(Variant::Default, Size::Default, "") on:click=move |_| run()>
-          {move || if loading.get() { t("预测中…") } else { t("预测") }}
-        </button>
+            aria_label=Signal::derive(move || t("radio.month"))
+            controls=false
+          />
+        </Field>
+        <Field label=Signal::derive(move || t("radio.sunspot-number")) r#for=ssn_id.clone()>
+          <NumberField
+            id=ssn_id
+            min=0.0
+            max=400.0
+            value=Signal::derive(move || ssn.get().to_string())
+            on_change=Callback::new(move |v: String| {
+              if let Ok(v) = v.trim().parse::<f64>() {
+                ssn.set(v.clamp(0.0, 400.0));
+              }
+            })
+            aria_label=Signal::derive(move || t("radio.sunspot-number"))
+            controls=false
+          />
+        </Field>
+        <NativeSelect
+          value=Signal::derive(move || hour.get().map_or_else(String::new, |h| h.to_string()))
+          on_change=Callback::new(move |v: String| {
+            hour.set(if v.is_empty() { None } else { v.parse::<u32>().ok() });
+          })
+          options=hour_options
+          placeholder=Signal::derive(move || t("tools.best-window"))
+          size=ControlSize::Sm
+          aria_label=Signal::derive(move || t("tools.utc-time"))
+          class="w-28"
+        />
+        <Button
+          variant=Variant::Default
+          size=Size::Default
+          on_click=Callback::new(move |_| run())
+        >
+          {move || if loading.get() { t("radio.forecasting") } else { t("radio.forecast") }}
+        </Button>
       </div>
       <div class="px-4 pb-4">
         {move || {
           if failed.get() {
             return view! {
-              <p class="text-sm text-muted-foreground">{move || t("预测暂不可用，请确认已通过后端（dev-full / serve）访问。")}</p>
+              <p class="text-sm text-muted-foreground">{move || t("radio.forecast-unavailable-make-sure")}</p>
             }
             .into_any();
           }
@@ -158,8 +188,8 @@ pub(super) fn VoacapCard() -> impl IntoView {
               view! {
                 <div class="space-y-3">
                   <div class="flex flex-wrap gap-x-5 gap-y-1 text-sm">
-                    <span>{move || t("距离 ")} <b class="tabular-nums">{format!("{:.0} km", r.distance_km)}</b></span>
-                    <span>{move || t("方位 ")} <b class="tabular-nums">{format!("{:.0}°", r.bearing_deg)}</b></span>
+                    <span>{move || t("radio.distance")} <b class="tabular-nums">{format!("{:.0} km", r.distance_km)}</b></span>
+                    <span>{move || t("radio.bearing")} <b class="tabular-nums">{format!("{:.0}°", r.bearing_deg)}</b></span>
                     <span>"foF2 " <b class="tabular-nums">{format!("{:.1} MHz", r.fo_f2)}</b></span>
                     <span>"MUF " <b class="tabular-nums">{format!("{:.1} MHz", r.muf)}</b></span>
                   </div>
@@ -172,7 +202,7 @@ pub(super) fn VoacapCard() -> impl IntoView {
                           let total_min = (lh * 60.0).round() as u32 % (24 * 60);
                           // `tf` 按 `{}` 出现顺序替换，格式化需在参数侧完成。
                           tf(
-                            "路径中点地方时约 {}:{}，电离程度约为正午的 {}%",
+                            "tools.local-time-at-the",
                             &[
                               &format!("{:02}", total_min / 60),
                               &format!("{:02}", total_min % 60),
@@ -180,7 +210,7 @@ pub(super) fn VoacapCard() -> impl IntoView {
                             ],
                           )
                         })
-                        .unwrap_or_else(|| t("未指定时刻：按路径日照最佳情况估算"))
+                        .unwrap_or_else(|| t("tools.no-time-specified-estimated"))
                     }}
                   </p>
                   <div class="space-y-1.5">
@@ -198,7 +228,7 @@ pub(super) fn VoacapCard() -> impl IntoView {
                               ></div>
                             </div>
                             <span class="w-24 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-                              {if b.usable { tf("可用 · {}%", &[&(format!("{pct:.0}")).to_string()]) } else { t("不可用") }}
+                              {if b.usable { tf("radio.usable", &[&(format!("{pct:.0}")).to_string()]) } else { t("radio.unusable") }}
                             </span>
                           </div>
                         }

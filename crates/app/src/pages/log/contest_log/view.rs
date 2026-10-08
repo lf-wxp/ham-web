@@ -9,8 +9,13 @@ use leptos::prelude::*;
 use leptos_router::hooks::use_query_map;
 
 use crate::components::cat_control::{CatControl, CatReading};
+use crate::pages::log::qsl_image;
 use crate::pages::log::{LogEntry, use_log_store, utc_now_time, utc_today};
-use crate::ui::{Size, Stat, Variant, button_class, input_class};
+use crate::ui::{
+  Button, ButtonKind, ButtonLink, ControlSize, Field, Input, NativeSelect, SelectOption, Size,
+  Stat, Variant,
+};
+use crate::util::unique_id as ui_id;
 use crate::util::{download_text, set_title, storage};
 
 use super::session::Session;
@@ -21,7 +26,7 @@ const MODES: &[&str] = &["CW", "SSB", "FT8", "RTTY"];
 
 #[component]
 pub fn ContestLogPage() -> impl IntoView {
-  set_title(&t("竞赛录入"));
+  set_title("shell.contest-log");
   let store = use_log_store();
   let session = RwSignal::new(storage::get_json::<Session>(SESSION_KEY).unwrap_or_default());
   // 支持 `/contest-log?contest=ID` 预选竞赛（如从竞赛日历「开新场次」进入）。
@@ -35,6 +40,17 @@ pub fn ContestLogPage() -> impl IntoView {
     });
   }
   let save = move || storage::set_json(SESSION_KEY, &session.get_untracked());
+
+  let contest_options: Vec<SelectOption> = CONTESTS
+    .iter()
+    .map(|c| SelectOption::new(c.id, Signal::derive(move || t(c.name))))
+    .collect();
+  let mode_options: Vec<SelectOption> = MODES.iter().map(|m| SelectOption::new(*m, *m)).collect();
+  let power_options = vec![
+    SelectOption::new("HIGH", "HIGH"),
+    SelectOption::new("LOW", "LOW"),
+    SelectOption::new("QRP", "QRP"),
+  ];
   let my_call = Memo::new(move |_| {
     store
       .station
@@ -73,6 +89,15 @@ pub fn ContestLogPage() -> impl IntoView {
   let call_ref = NodeRef::<html::Input>::new();
   let rcvd_ref = NodeRef::<html::Input>::new();
   let message = RwSignal::new(None::<String>);
+
+  // `Field` 的标签与控件是兄弟节点，`r#for` / `id` 必须配对才能点击标签聚焦输入框。
+  let contest_id_field = ui_id("contest-contest");
+  let freq_id = ui_id("contest-freq");
+  let mode_id = ui_id("contest-mode");
+  let my_exch_id = ui_id("contest-my-exch");
+  let power_id = ui_id("contest-power");
+  let call_id = ui_id("contest-call");
+  let rcvd_id = ui_id("contest-rcvd");
   let focus = |r: NodeRef<html::Input>| {
     if let Some(el) = r.get_untracked() {
       let _ = el.focus();
@@ -158,9 +183,9 @@ pub fn ContestLogPage() -> impl IntoView {
     store.logbook.update(|lb| lb.entries.push(entry));
     store.persist();
     message.set(Some(if was_dupe {
-      tf("已记录 {}（重复，不计分）", &[&(label).to_string()])
+      tf("contest.logged-dupe-no-points", &[&(label).to_string()])
     } else {
-      tf("已记录 {}", &[&(label).to_string()])
+      tf("contest.logged", &[&(label).to_string()])
     }));
     call.set(String::new());
     rcvd.set(String::new());
@@ -168,12 +193,16 @@ pub fn ContestLogPage() -> impl IntoView {
   };
   let remove = move |id: u64| {
     store.logbook.update(|lb| lb.entries.retain(|e| e.id != id));
+    // 卡片影像按 id 绑定，而 `next_id()` 会复用 id —— 竞赛日志与普通日志共用同一份
+    // `logbook` 与同一批 `qsl-image:<id>` 键，这里漏清就会让下一个新通联直接挂上
+    // 已删记录的扫描件（`log_page` 的删除路径就是这么做的，两处必须一致）。
+    qsl_image::purge(store, &[id]);
     store.persist();
   };
   let restart = move || {
     session.update(|s| s.start = format!("{} {}", utc_today(), utc_now_time()));
     save();
-    message.set(Some(t("已开始新一场，之前的通联仍保留在通联日志里")));
+    message.set(Some(t("contest.new-session-started-earlier")));
   };
   let export = move || {
     let s = session.get_untracked();
@@ -213,29 +242,37 @@ pub fn ContestLogPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("竞赛录入")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("键盘快速录入 · 实时查重 · 自报分数 · 导出 Cabrillo")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.contest-log")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("contest.fast-keyboard-entry-live")}</div>
           </div>
-          <a href="/log" class=button_class(Variant::Outline, Size::Sm, "")>{move || t("通联日志")}</a>
-          <button type="button" class=button_class(Variant::Default, Size::Sm, "") on:click=move |_| export()>
-            {move || t("导出 Cabrillo")}
-          </button>
+          <ButtonLink
+            href="/log"
+            variant=Variant::Outline
+            size=Size::Sm
+          >{move || t("shell.logbook")}</ButtonLink>
+          <Button
+            variant=Variant::Default
+            size=Size::Sm
+            on_click=Callback::new(move |_| export())
+          >
+            {move || t("contest.export-cabrillo")}
+          </Button>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-5 px-4 py-5">
         {move || my_call.get().is_empty().then(|| view! {
           <p class="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-            {move || t("还没有设置本台呼号，记分与 Cabrillo 需要它。请先到")}
+            {move || t("contest.station-callsign-not-set")}
             " "
-            <a href="/log" class="font-medium underline underline-offset-4">{move || t("通联日志 → 本台信息")}</a>
+            <a href="/log" class="font-medium underline underline-offset-4">{move || t("contest.qso-log-station-info")}</a>
             " "
-            {move || t("填写。")}
+            {move || t("contest.to-fill-it-in")}
           </p>
         })}
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("竞赛设置")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.contest-setup")}</h2>
           <div class="px-4 pt-4">
             <CatControl on_reading=move |r: CatReading| {
               // 电台的数据模式在竞赛里通常就是 FT8
@@ -252,13 +289,15 @@ pub fn ContestLogPage() -> impl IntoView {
             } />
           </div>
           <div class="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5">
-            <label class="flex flex-col gap-1.5 text-xs text-muted-foreground lg:col-span-2">
-              {move || t("竞赛")}
-              <select
-                class=input_class("")
-                prop:value=move || session.with(|s| s.contest_id.clone())
-                on:change=move |e| {
-                  let id = event_target_value(&e);
+            <Field
+              label=Signal::derive(move || t("contest.contest"))
+              r#for=contest_id_field.clone()
+              class="lg:col-span-2"
+            >
+              <NativeSelect
+                id=contest_id_field.clone()
+                value=Signal::derive(move || session.with(|s| s.contest_id.clone()))
+                on_change=Callback::new(move |id: String| {
                   let zone = lookup(&my_call.get_untracked()).map(|e| e.cq.to_string());
                   session.update(|s| {
                     s.contest_id = id;
@@ -269,76 +308,81 @@ pub fn ContestLogPage() -> impl IntoView {
                     };
                   });
                   save();
-                }
-              >
-                {CONTESTS.iter().map(|c| view! { <option value=c.id>{move || t(c.name)}</option> }).collect_view()}
-              </select>
-            </label>
-            <label class="flex flex-col gap-1.5 text-xs text-muted-foreground">
-              {move || t("频率（MHz）")}
-              <input
-                class=input_class("font-mono")
-                inputmode="decimal"
-                prop:value=move || session.with(|s| s.freq.clone())
-                on:change=move |e| {
-                  let v = event_target_value(&e);
+                })
+                options=contest_options
+                aria_label=Signal::derive(move || t("contest.contest"))
+              />
+            </Field>
+            <Field label=Signal::derive(move || t("log.frequency-mhz")) r#for=freq_id.clone()>
+              <Input
+                id=freq_id.clone()
+                value=Signal::derive(move || session.with(|s| s.freq.clone()))
+                on_change=Callback::new(move |v: String| {
                   session.update(|s| s.freq = v);
                   save();
-                }
+                })
+                inputmode="decimal"
+                class="font-mono"
               />
-            </label>
-            <label class="flex flex-col gap-1.5 text-xs text-muted-foreground">
-              {move || t("模式")}
-              <select
-                class=input_class("")
-                prop:disabled=move || session.with(|s| s.def().mode.is_some())
-                prop:value=move || session.with(Session::mode)
-                on:change=move |e| {
-                  let v = event_target_value(&e);
+            </Field>
+            <Field label=Signal::derive(move || t("log.mode")) r#for=mode_id.clone()>
+              <NativeSelect
+                id=mode_id.clone()
+                value=Signal::derive(move || session.with(Session::mode))
+                on_change=Callback::new(move |v: String| {
                   session.update(|s| s.mode = v);
                   save();
-                }
-              >
-                {MODES.iter().map(|m| view! { <option value=*m>{*m}</option> }).collect_view()}
-              </select>
-            </label>
-            <label class="flex flex-col gap-1.5 text-xs text-muted-foreground">
-              {move || tf("我发出的{}", &[(session.with(|s| s.def().sent.label()))])}
-              <input
-                class=input_class("font-mono uppercase")
-                prop:disabled=move || session.with(|s| s.def().sent == Exch::Serial)
-                prop:value=move || {
-                  if session.with(|s| s.def().sent == Exch::Serial) { t("自动递增") } else { session.with(|s| s.my_exch.clone()) }
-                }
-                on:change=move |e| {
-                  let v = event_target_value(&e).trim().to_ascii_uppercase();
-                  session.update(|s| s.my_exch = v);
-                  save();
-                }
+                })
+                options=mode_options
+                disabled=Signal::derive(move || session.with(|s| s.def().mode.is_some()))
+                aria_label=Signal::derive(move || t("log.mode"))
               />
-            </label>
+            </Field>
+            <Field
+              label=Signal::derive(move || tf("contest.i-send", &[(session.with(|s| s.def().sent.label()))]))
+              r#for=my_exch_id.clone()
+            >
+              <Input
+                id=my_exch_id.clone()
+                value=Signal::derive(move || {
+                  if session.with(|s| s.def().sent == Exch::Serial) { t("contest.auto-increment") } else { session.with(|s| s.my_exch.clone()) }
+                })
+                on_change=Callback::new(move |v: String| {
+                  session.update(|s| s.my_exch = v.trim().to_ascii_uppercase());
+                  save();
+                })
+                disabled=Signal::derive(move || session.with(|s| s.def().sent == Exch::Serial))
+                class="font-mono uppercase"
+              />
+            </Field>
           </div>
-          <div class="flex flex-wrap items-center gap-3 border-t px-4 py-3 text-xs text-muted-foreground">
-            <span>{move || tf("本场开始于 {} UTC", &[&(session.with(|s| s.start.clone())).to_string()])}</span>
-            <label class="inline-flex items-center gap-1.5">
-              {move || t("功率类别")}
-              <select
-                class="rounded border bg-background px-1.5 py-0.5"
-                prop:value=move || session.with(|s| s.power.clone())
-                on:change=move |e| {
-                  let v = event_target_value(&e);
+          <div class="flex flex-wrap items-end gap-3 border-t px-4 py-3 text-xs text-muted-foreground">
+            <span>{move || tf("contest.this-session-started-utc", &[&(session.with(|s| s.start.clone())).to_string()])}</span>
+            <Field
+              label=Signal::derive(move || t("contest.power-category"))
+              r#for=power_id.clone()
+            >
+              <NativeSelect
+                id=power_id.clone()
+                value=Signal::derive(move || session.with(|s| s.power.clone()))
+                on_change=Callback::new(move |v: String| {
                   session.update(|s| s.power = v);
                   save();
-                }
-              >
-                <option value="HIGH">"HIGH"</option>
-                <option value="LOW">"LOW"</option>
-                <option value="QRP">"QRP"</option>
-              </select>
-            </label>
-            <button type="button" class=button_class(Variant::Ghost, Size::Sm, "ml-auto") on:click=move |_| restart()>
-              {move || t("开始新一场")}
-            </button>
+                })
+                options=power_options
+                size=ControlSize::Sm
+                aria_label=Signal::derive(move || t("contest.power-category"))
+                class="w-auto"
+              />
+            </Field>
+            <Button
+              variant=Variant::Ghost
+              size=Size::Sm
+              class="ml-auto"
+              on_click=Callback::new(move |_| restart())
+            >
+              {move || t("contest.start-new-session")}
+            </Button>
           </div>
         </section>
 
@@ -350,21 +394,16 @@ pub fn ContestLogPage() -> impl IntoView {
               log_it();
             }
           >
-            <label class="flex flex-col gap-1.5 text-xs text-muted-foreground">
-              {move || t("对方呼号")}
-              <input
+            <Field label=Signal::derive(move || t("contest.their-callsign")) r#for=call_id.clone()>
+              <Input
+                id=call_id.clone()
                 node_ref=call_ref
-                autofocus
-                autocomplete="off"
-                autocapitalize="characters"
-                spellcheck="false"
-                aria-describedby="contest-call-hint"
-                prop:value=move || call.get()
-                on:input=move |e| {
-                  call.set(event_target_value(&e).to_ascii_uppercase());
+                value=call
+                on_change=Callback::new(move |v: String| {
+                  call.set(v.to_ascii_uppercase());
                   message.set(None);
-                }
-                on:keydown=move |e| {
+                })
+                on_keydown=Callback::new(move |e: web_sys::KeyboardEvent| {
                   match e.key().as_str() {
                     "Enter" | " " if rcvd.with_untracked(String::is_empty) && call.with_untracked(|c| c.trim().len() >= 3) => {
                       e.prevent_default();
@@ -376,41 +415,48 @@ pub fn ContestLogPage() -> impl IntoView {
                     }
                     _ => {}
                   }
-                }
-                class=move || {
-                  let base = "h-12 rounded-lg border bg-background px-3 font-mono text-2xl font-semibold uppercase tracking-wider outline-none focus-visible:ring-2";
-                  if dupe.get() {
-                    format!("{base} border-red-500 text-red-600 focus-visible:ring-red-500/40 dark:text-red-400")
-                  } else {
-                    format!("{base} focus-visible:ring-ring/50")
-                  }
-                }
+                })
+                invalid=dupe
+                autofocus=true
+                autocomplete="off"
+                autocapitalize="characters"
+                spellcheck="false"
+                aria_describedby="contest-call-hint"
+                aria_label=Signal::derive(move || t("contest.their-callsign"))
+                size=ControlSize::Lg
+                class="h-12 px-3 font-mono text-2xl md:text-2xl font-semibold tracking-wider uppercase"
               />
-            </label>
-            <div class="flex flex-col gap-1.5 text-xs text-muted-foreground">
-              {move || t("发出")}
-              <div class="flex h-12 items-center rounded-lg border bg-muted/40 px-3 font-mono text-lg tabular-nums text-foreground">
+            </Field>
+            <Field label=Signal::derive(move || t("contest.sent"))>
+              <div class="flex h-12 items-center rounded-md border bg-muted/40 px-3 font-mono text-lg tabular-nums text-foreground">
                 {move || format!("{} {}", default_rst(&session.with(Session::mode)), sent_exch())}
               </div>
-            </div>
-            <label class="flex flex-col gap-1.5 text-xs text-muted-foreground">
-              {move || tf("收到的{}", &[(session.with(|s| s.def().rcvd.label()))])}
-              <input
+            </Field>
+            <Field
+              label=Signal::derive(move || tf("contest.received-2", &[(session.with(|s| s.def().rcvd.label()))]))
+              r#for=rcvd_id.clone()
+            >
+              <Input
+                id=rcvd_id.clone()
                 node_ref=rcvd_ref
+                value=rcvd
+                on_change=Callback::new(move |v: String| rcvd.set(v.to_ascii_uppercase()))
+                placeholder=Signal::derive(rcvd_placeholder)
                 autocomplete="off"
                 spellcheck="false"
-                placeholder=rcvd_placeholder
-                prop:value=move || rcvd.get()
-                on:input=move |e| rcvd.set(event_target_value(&e).to_ascii_uppercase())
-                class="h-12 w-28 rounded-lg border bg-background px-3 font-mono text-2xl font-semibold uppercase outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                aria_label=Signal::derive(move || tf("contest.received-2", &[(session.with(|s| s.def().rcvd.label()))]))
+                size=ControlSize::Lg
+                class="h-12 w-28 px-3 font-mono text-2xl md:text-2xl font-semibold uppercase"
               />
-            </label>
-            <button type="submit" class=button_class(Variant::Default, Size::Default, "h-12 px-6")>{move || t("记录")}</button>
+            </Field>
+            <Button kind=ButtonKind::Submit class="h-12 px-6">
+              {move || t("contest.log-it")}
+            </Button>
           </form>
           <div id="contest-call-hint" aria-live="polite" class="mt-2 min-h-5 text-sm">
             {move || {
               if dupe.get() {
-                view! { <span class="font-medium text-red-600 dark:text-red-400">{move || t("重复：本波段已通联过")}</span> }.into_any()
+                view! { <span class="font-medium text-red-600 dark:text-red-400">{move || t("contest.dupe-already-worked-on")}</span> }.into_any()
               } else if let Some(m) = message.get() {
                 view! { <span class="text-emerald-600 dark:text-emerald-400">{m}</span> }.into_any()
               } else {
@@ -419,21 +465,21 @@ pub fn ContestLogPage() -> impl IntoView {
             }}
           </div>
           <p class="mt-1 text-xs text-muted-foreground">
-            {move || t("呼号框按回车或空格跳到交换，再按回车记录；Esc 清空。时间按当前 UTC 自动填写，信号报告默认 599 / 59。")}
+            {move || t("contest.press-enter-or-space")}
           </p>
         </section>
 
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <Stat label=t("有效通联") value=Signal::derive(move || tally.get().qsos as usize) />
-          <Stat label=t("重复") value=Signal::derive(move || tally.get().dupes as usize) />
-          <Stat label=t("点数") value=Signal::derive(move || tally.get().points as usize) />
-          <Stat label=t("乘数") value=Signal::derive(move || tally.get().mults as usize) />
-          <Stat label=t("自报总分") value=Signal::derive(move || tally.get().total as usize) />
+          <Stat label=t("contest.valid-qsos") value=Signal::derive(move || tally.get().qsos as usize) />
+          <Stat label=t("contest.dupes") value=Signal::derive(move || tally.get().dupes as usize) />
+          <Stat label=t("contest.points") value=Signal::derive(move || tally.get().points as usize) />
+          <Stat label=t("contest.multipliers") value=Signal::derive(move || tally.get().mults as usize) />
+          <Stat label=t("contest.claimed-score") value=Signal::derive(move || tally.get().total as usize) />
         </div>
 
         <section class="rounded-xl border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("本场通联")}</h2>
+            <h2 class="mr-auto text-sm font-semibold">{move || t("contest.session-qsos")}</h2>
             {move || per_band.get().into_iter().map(|(b, n)| view! {
               <span class="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">{format!("{b} {n}")}</span>
             }).collect_view()}
@@ -442,13 +488,13 @@ pub fn ContestLogPage() -> impl IntoView {
             <table class="w-full text-left text-sm">
               <thead class="text-xs text-muted-foreground">
                 <tr class="border-b">
-                  <th class="px-4 py-2 font-normal">{move || t("时间")}</th>
-                  <th class="px-2 py-2 font-normal">{move || t("频率")}</th>
-                  <th class="px-2 py-2 font-normal">{move || t("呼号")}</th>
-                  <th class="px-2 py-2 font-normal">{move || t("发出")}</th>
-                  <th class="px-2 py-2 font-normal">{move || t("收到")}</th>
-                  <th class="px-2 py-2 font-normal">{move || t("实体")}</th>
-                  <th class="px-4 py-2 font-normal"><span class="sr-only">{move || t("操作")}</span></th>
+                  <th class="px-4 py-2 font-normal">{move || t("log.time")}</th>
+                  <th class="px-2 py-2 font-normal">{move || t("contest.freq")}</th>
+                  <th class="px-2 py-2 font-normal">{move || t("log.callsign")}</th>
+                  <th class="px-2 py-2 font-normal">{move || t("contest.sent")}</th>
+                  <th class="px-2 py-2 font-normal">{move || t("contest.received")}</th>
+                  <th class="px-2 py-2 font-normal">{move || t("contest.entity")}</th>
+                  <th class="px-4 py-2 font-normal"><span class="sr-only">{move || t("log.actions")}</span></th>
                 </tr>
               </thead>
               <tbody class="font-mono">
@@ -456,7 +502,7 @@ pub fn ContestLogPage() -> impl IntoView {
                   let list = entries.get();
                   if list.is_empty() {
                     return view! {
-                      <tr><td colspan="7" class="px-4 py-6 text-center font-sans text-sm text-muted-foreground">{move || t("还没有通联，输入呼号开始吧")}</td></tr>
+                      <tr><td colspan="7" class="px-4 py-6 text-center font-sans text-sm text-muted-foreground">{move || t("contest.no-qsos-yet-type")}</td></tr>
                     }.into_any();
                   }
                   list
@@ -478,10 +524,10 @@ pub fn ContestLogPage() -> impl IntoView {
                             <button
                               type="button"
                               class="font-sans text-xs text-muted-foreground hover:text-red-600"
-                              aria-label=tf("删除 {}", &[&(e.callsign).to_string()])
+                              aria-label=tf("contest.delete", &[&(e.callsign).to_string()])
                               on:click=move |_| remove(id)
                             >
-                              {move || t("删除")}
+                              {move || t("log.delete")}
                             </button>
                           </td>
                         </tr>
@@ -496,7 +542,7 @@ pub fn ContestLogPage() -> impl IntoView {
         </section>
 
         <p class="text-xs text-muted-foreground">
-          {move || t("竞赛通联同时保存在通联日志中（带 CONTEST_ID 与交换信息，ADIF 导出时一并写出）。分数按中国台站视角简化计算，仅供参考，以主办方核对为准。")}
+          {move || t("contest.contest-qsos-are-also")}
         </p>
       </div>
     </div>

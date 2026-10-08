@@ -20,7 +20,7 @@ use crate::i18n::{t, tf};
 
 #[component]
 pub fn SolarPage() -> impl IntoView {
-  set_title(&t("太阳活动"));
+  set_title("shell.solar-data");
 
   let k = RwSignal::new(None::<f64>);
   let sfi = RwSignal::new(None::<f64>);
@@ -79,7 +79,7 @@ pub fn SolarPage() -> impl IntoView {
       {
         k.set(Some(v));
         updated.set(tf(
-          "Kp 更新于 {} UTC",
+          "radio.kp-updated-utc",
           &[&(fmt_iso_time(&last.time_tag)).to_string()],
         ));
         any = true;
@@ -108,8 +108,8 @@ pub fn SolarPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("太阳活动")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("太阳活动指数 · 传播条件 · 实时数据")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.solar-data")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("radio.solar-indices-propagation-conditions")}</div>
           </div>
           <Button
             variant=Variant::Outline
@@ -117,7 +117,7 @@ pub fn SolarPage() -> impl IntoView {
             loading=loading
             on_click=Callback::new(move |_| load())
           >
-            {move || if loading.get() { t("刷新中") } else { t("刷新") }}
+            {move || if loading.get() { t("radio.refreshing") } else { t("exam.refresh") }}
           </Button>
         </div>
       </header>
@@ -125,7 +125,7 @@ pub fn SolarPage() -> impl IntoView {
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
           <h2 class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold">
-            {move || t("实时太阳活动")}
+            {move || t("radio.live-solar-activity")}
             <span class="text-xs font-normal text-muted-foreground">
               {move || {
                 let mut parts = Vec::new();
@@ -133,10 +133,10 @@ pub fn SolarPage() -> impl IntoView {
                   parts.push(updated.get());
                 }
                 if !xray.get().is_empty() {
-                  parts.push(tf("X 射线耀斑 {}", &[&xray.get().to_string()]));
+                  parts.push(tf("radio.x-ray-flux", &[&xray.get().to_string()]));
                 }
                 if parts.is_empty() {
-                  t("数据来自 HamQSL / NOAA SWPC")
+                  t("radio.data-from-hamqsl-noaa")
                 } else {
                   parts.join(" · ")
                 }
@@ -144,14 +144,14 @@ pub fn SolarPage() -> impl IntoView {
             </span>
           </h2>
           <div class="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
-            <MetricCard label=t("K 指数") value=k unit=t("0–9（越低越安静）") loading=loading failed=failed />
-            <MetricCard label=t("太阳通量 SFI") value=sfi unit=t("10.7cm 流量") loading=loading failed=failed />
-            <MetricCard label=t("太阳黑子数 SSN") value=ssn unit=t("相对数") loading=loading failed=failed />
-            <MetricCard label=t("A 指数") value=a unit=t("日地磁指数") loading=loading failed=failed />
+            <MetricCard label=t("home.k-index") value=k unit=t("radio.0-9-lower-is") loading=loading failed=failed />
+            <MetricCard label=t("tools.solar-flux-sfi") value=sfi unit=t("radio.10-7-cm-flux") loading=loading failed=failed />
+            <MetricCard label=t("radio.sunspot-number-ssn") value=ssn unit=t("radio.relative-number") loading=loading failed=failed />
+            <MetricCard label=t("radio.a-index") value=a unit=t("radio.daily-geomagnetic-index") loading=loading failed=failed />
           </div>
           <div class="grid grid-cols-2 gap-3 px-4 pb-4 sm:grid-cols-4">
             <div class="col-span-2 rounded-lg border bg-muted/40 p-3 text-center sm:col-span-4">
-              <div class="text-xs text-muted-foreground">{move || t("传播条件（按 K / SSN / SFI 综合判断）")}</div>
+              <div class="text-xs text-muted-foreground">{move || t("radio.propagation-conditions-from-k")}</div>
               <div class="mt-1 text-2xl font-semibold tabular-nums">
                 {move || {
                   match k.get() {
@@ -178,7 +178,7 @@ pub fn SolarPage() -> impl IntoView {
               .then(|| {
                 view! {
                   <p class="px-4 pb-4 text-xs text-muted-foreground">
-                    {move || t("实时数据暂不可用（可能因网络受限），以下为科普内容。")}
+                    {move || t("radio.live-data-is-unavailable")}
                   </p>
                 }
               })
@@ -192,7 +192,7 @@ pub fn SolarPage() -> impl IntoView {
           (!conds.is_empty()).then(|| {
             view! {
               <section class="rounded-xl border bg-card">
-                <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("各波段传播条件")}</h2>
+                <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.band-conditions")}</h2>
                 <div class="p-4">
                   <ConditionsTable conditions=conds />
                 </div>
@@ -216,7 +216,7 @@ pub fn SolarPage() -> impl IntoView {
         }}
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("太阳活动指数")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.solar-indices")}</h2>
           <div class="divide-y">
             {SOLAR_INDICES
               .iter()
@@ -234,7 +234,7 @@ pub fn SolarPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("传播条件分级")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.propagation-condition-scale")}</h2>
           <div class="grid gap-3 p-4 sm:grid-cols-2">
             {CONDITIONS
               .iter()
@@ -251,7 +251,7 @@ pub fn SolarPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("太阳活动周期")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.solar-cycle")}</h2>
           <ul class="space-y-2 p-4">
             {CYCLE_NOTES
               .iter()

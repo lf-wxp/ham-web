@@ -10,10 +10,10 @@ use crate::i18n::t;
 /// 术语表页面：加载词条数据后交由 [`GlossaryView`] 渲染。
 #[component]
 pub fn GlossaryPage() -> impl IntoView {
-  set_title(&t("术语表"));
+  set_title("shell.glossary");
   let glossary = LocalResource::new(data::load_glossary);
   move || match glossary.get() {
     Some(g) => view! { <GlossaryView entries=g.entries() /> }.into_any(),
-    None => view! { <Loading label=t("加载术语表...") class="py-20" /> }.into_any(),
+    None => view! { <Loading label=t("knowledge.loading-glossary") class="py-20" /> }.into_any(),
   }
 }

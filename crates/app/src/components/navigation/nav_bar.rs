@@ -1,3 +1,10 @@
+//! 顶部导航栏。
+//!
+//! 本文件里的**导航项与下拉 / 菜单开关刻意保留原生 `<a>` / `<button>` + [`button_class`]**：
+//! 高亮态要随当前路由切换 `variant`，下拉开关还要输出 `aria-expanded` —— 这两个通道
+//! [`Button`] 与 `ButtonLink` 目前都没有（见 `docs/ui-components.md` 的「常见坑」）。
+//! 同一个文件里的搜索、语言切换、主题切换等按钮都已经用组件，**不要顺手把这些清掉**。
+
 use leptos::ev;
 use leptos::prelude::*;
 use leptos_router::hooks::use_location;
@@ -8,7 +15,7 @@ use ham_web_core::registry::{self, GROUP_EXAM, KNOWLEDGE_GROUPS, TOOL_GROUPS};
 
 use crate::cn::cn;
 use crate::icons::{Icon, IconKind, icon_of};
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, Size, Variant, button_class};
 
 use super::locale_toggle::LocaleToggle;
 use super::theme_toggle::ThemeToggle;
@@ -78,7 +85,7 @@ pub fn Navigation() -> impl IntoView {
   let tool_active = move || TOOL_GROUPS.iter().any(|g| group_active(g));
 
   view! {
-    <nav data-nav aria-label=move || t("主导航") class="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+    <nav data-nav aria-label=move || t("shell.main-navigation") class="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
       <div class="container relative mx-auto px-4">
         <div class="flex h-16 items-center justify-between gap-3">
@@ -93,14 +100,15 @@ pub fn Navigation() -> impl IntoView {
               <Icon kind=IconKind::Satellite class="relative h-5 w-5" />
             </div>
             <div class="hidden flex-col whitespace-nowrap leading-tight sm:flex">
-              <span class="text-sm font-semibold text-foreground">{move || t("业余无线电")}</span>
-              <span class="text-[11px] text-muted-foreground">{move || t("题库 · 知识 · 工具")}</span>
+              <span class="text-sm font-semibold text-foreground">{move || t("shell.amateur-radio")}</span>
+              <span class="text-[11px] text-muted-foreground">{move || t("shell.exams-knowledge-tools")}</span>
             </div>
           </a>
 
           // 桌面端导航
           // `self-stretch`：撑满 h-16 的导航行，让内部下拉的 `top-full` 能落在导航下沿。
           <div class="hidden items-center gap-1 self-stretch xl:flex">
+            // 刻意的例外，见文件头：高亮要切 `variant`，`ButtonLink` 的 `variant` 是静态 prop。
             <a
               href="/"
               data-slot="button"
@@ -113,13 +121,14 @@ pub fn Navigation() -> impl IntoView {
               }
             >
               <Icon kind=IconKind::Home class="h-4 w-4" />
-              {move || t("首页")}
+              {move || t("shell.home")}
             </a>
 
             // 考试中心下拉
             // `self-stretch`：把容器拉满导航行的高度（h-16），`top-full` 才是「导航栏下沿」。
             // 不加的话 `top-full` 会取按钮自身的高度，这个面板就比另两个高出十几个像素。
             <div class="group relative flex items-center self-stretch">
+              // 刻意的例外，见文件头：下拉开关要切换 `variant` 并输出 `aria-expanded`。
               <button
                 type="button"
                 data-slot="button"
@@ -138,7 +147,7 @@ pub fn Navigation() -> impl IntoView {
                 }
               >
                 <Icon kind=IconKind::Timer class="h-4 w-4" />
-                {move || t("考试中心")}
+                {move || t("shell.exam-center")}
                 <Icon
                   kind=IconKind::ChevronDown
                   class=Signal::derive(move || {
@@ -202,6 +211,7 @@ pub fn Navigation() -> impl IntoView {
             // （`left-1/2 -translate-x-1/2` 居中）才不会溢出视口。垂直方向因此与
             // 「考试中心」共享同一个基准 —— 容器高 h-16，`top-full` 恒为导航下沿。
             <div class="group static">
+              // 刻意的例外，见文件头：下拉开关要切换 `variant` 并输出 `aria-expanded`。
               <button
                 type="button"
                 data-slot="button"
@@ -224,7 +234,7 @@ pub fn Navigation() -> impl IntoView {
                 }
               >
                 <Icon kind=IconKind::BookOpen class="h-4 w-4" />
-                {move || t("知识库")}
+                {move || t("shell.knowledge")}
                 <Icon
                   kind=IconKind::ChevronDown
                   class=Signal::derive(move || {
@@ -300,6 +310,7 @@ pub fn Navigation() -> impl IntoView {
             // 工具下拉
             // 同知识库：960px 宽面板相对导航容器右对齐（`right-4`），保持 `static`。
             <div class="group static">
+              // 刻意的例外，见文件头：下拉开关要切换 `variant` 并输出 `aria-expanded`。
               <button
                 type="button"
                 data-slot="button"
@@ -318,7 +329,7 @@ pub fn Navigation() -> impl IntoView {
                 }
               >
                 <Icon kind=IconKind::Calculator class="h-4 w-4" />
-                {move || t("工具")}
+                {move || t("shell.tools")}
                 <Icon
                   kind=IconKind::ChevronDown
                   class=Signal::derive(move || {
@@ -390,23 +401,23 @@ pub fn Navigation() -> impl IntoView {
 
           // 右侧：搜索 + 主题切换 + 移动端菜单按钮
           <div class="flex items-center gap-1">
-            <button
-              type="button"
-              data-slot="button"
-              class=button_class(Variant::Ghost, Size::Icon, "")
-              aria-label=move || t("搜索")
-              title=move || t("搜索（/）")
-              on:click=move |_| search_open.set(true)
+            <Button
+              variant=Variant::Ghost
+              size=Size::Icon
+              aria_label=Signal::derive(move || t("shell.search"))
+              title=Signal::derive(move || t("shell.search-2"))
+              on_click=Callback::new(move |_| search_open.set(true))
             >
               <Icon kind=IconKind::Search class="h-5 w-5" />
-            </button>
+            </Button>
             <LocaleToggle />
             <ThemeToggle />
+            // 刻意的例外，见文件头：菜单开关要输出 `aria-expanded`（`Button` 暂时没有这个通道）。
             <button
               type="button"
               data-slot="button"
               class=button_class(Variant::Ghost, Size::Icon, "xl:hidden")
-              aria-label=move || if menu_open.get() { t("关闭菜单") } else { t("打开菜单") }
+              aria-label=move || if menu_open.get() { t("shell.close-menu") } else { t("shell.open-menu") }
               aria-expanded=move || menu_open.get().to_string()
               on:click=move |_| menu_open.update(|v| *v = !*v)
             >
@@ -426,7 +437,7 @@ pub fn Navigation() -> impl IntoView {
           menu_open.get().then(|| {
             view! {
               <div class="absolute inset-x-0 top-full z-40 max-h-[calc(100vh-4rem)] overflow-y-auto border-b bg-background shadow-md xl:hidden animate-in slide-in-from-top-2 fade-in duration-200">
-                <nav aria-label=move || t("移动端导航") class="container mx-auto grid grid-cols-1 gap-1 px-4 py-3">
+                <nav aria-label=move || t("shell.mobile-navigation") class="container mx-auto grid grid-cols-1 gap-1 px-4 py-3">
                   <a
                     href="/"
                     class=move || {
@@ -442,10 +453,10 @@ pub fn Navigation() -> impl IntoView {
                     on:click=move |_| menu_open.set(false)
                   >
                     <Icon kind=IconKind::Home class="h-5 w-5" />
-                    {move || t("首页")}
+                    {move || t("shell.home")}
                   </a>
 
-                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("语言")}</div>
+                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("shell.language")}</div>
                   <div class="flex flex-wrap gap-1.5 px-3">
                     {Locale::ALL
                       .iter()
@@ -470,7 +481,7 @@ pub fn Navigation() -> impl IntoView {
                       .collect_view()}
                   </div>
 
-                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("考试中心")}</div>
+                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("shell.exam-center")}</div>
                   {registry::MODULES
                     .iter()
                     .filter(|m| m.group == Some(GROUP_EXAM))
@@ -497,7 +508,7 @@ pub fn Navigation() -> impl IntoView {
                     })
                     .collect_view()}
 
-                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("知识库")}</div>
+                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("shell.knowledge")}</div>
                   {KNOWLEDGE_GROUPS
                     .iter()
                     .map(|g| {
@@ -532,7 +543,7 @@ pub fn Navigation() -> impl IntoView {
                     })
                     .collect_view()}
 
-                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("工具")}</div>
+                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("shell.tools")}</div>
                   {TOOL_GROUPS
                     .iter()
                     .map(|g| {

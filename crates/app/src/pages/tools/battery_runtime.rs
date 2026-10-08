@@ -1,7 +1,9 @@
 use leptos::prelude::*;
 
-use super::{INPUT, RESULT, fmt_num};
+use super::{RESULT, fmt_num};
 use crate::i18n::{t, tf};
+use crate::ui::{Field, NumberField};
+use crate::util::unique_id;
 
 /// 电池续航估算：续航 = 容量 / 电流。
 #[component]
@@ -9,41 +11,42 @@ pub(super) fn BatteryRuntime() -> impl IntoView {
   let capacity = RwSignal::new(2000.0);
   let current = RwSignal::new(500.0);
 
+  let capacity_id = unique_id("battery-capacity");
+  let current_id = unique_id("battery-current");
+
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("电池容量（mAh）")}</span>
-        <input
-          type="number"
-          prop:value=move || capacity.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      <Field label=Signal::derive(move || t("tools.battery-capacity-mah")) r#for=capacity_id.clone()>
+        <NumberField
+          id=capacity_id
+          value=Signal::derive(move || capacity.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               capacity.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("设备电流（mA）")}</span>
-        <input
-          type="number"
-          prop:value=move || current.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      </Field>
+      <Field label=Signal::derive(move || t("tools.device-current-ma")) r#for=current_id.clone()>
+        <NumberField
+          id=current_id
+          value=Signal::derive(move || current.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               current.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
+      </Field>
       <div class=RESULT>
         {move || {
           let i = current.get();
           if i <= 0.0 {
-            t("请输入正电流")
+            t("tools.enter-a-positive-current")
           } else {
-            tf("续航 ≈ {} 小时", &[&(fmt_num(capacity.get() / i)).to_string()])
+            tf("tools.runtime-hours", &[&(fmt_num(capacity.get() / i)).to_string()])
           }
         }}
       </div>

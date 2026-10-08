@@ -48,15 +48,15 @@ pub(super) fn SpotsCard() -> impl IntoView {
 
   view! {
     <a href="/dx-spots" class="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">
-      <div class="text-sm font-semibold">{move || t("DX 实时热点")}</div>
+      <div class="text-sm font-semibold">{move || t("shell.dx-spots")}</div>
       <div class="mt-2 space-y-1">
         {move || {
           if loading.get() {
-            return view! { <div class="text-sm text-muted-foreground">{move || t("加载中…")}</div> }.into_any();
+            return view! { <div class="text-sm text-muted-foreground">{move || t("learning.loading")}</div> }.into_any();
           }
           let list = spots.get();
           if list.is_empty() {
-            return view! { <div class="text-sm text-muted-foreground">{move || t("暂不可用")}</div> }.into_any();
+            return view! { <div class="text-sm text-muted-foreground">{move || t("learning.unavailable")}</div> }.into_any();
           }
           view! {
             {list

@@ -55,11 +55,11 @@ pub fn DxccOverlay(
     let name =
       ham_web_core::dxcc::entity_by_dxcc(dxcc).map_or_else(|| key.clone(), |e| e.name.to_owned());
     if confirmed.get_untracked().contains(&dxcc) {
-      tf("{} · 已确认", &[&name])
+      tf("radio.confirmed", &[&name])
     } else if worked.get_untracked().contains(&dxcc) {
-      tf("{} · 已通联", &[&name])
+      tf("radio.worked", &[&name])
     } else {
-      tf("{} · 未通联", &[&name])
+      tf("radio.not-worked", &[&name])
     }
   });
   // 点击：区域标识 → DXCC 编号。
@@ -91,11 +91,11 @@ pub fn DxccOverlay(
             "fill-foreground/40 stroke-foreground/30"
           };
           let title = if is_confirmed {
-            tf("{} · 已确认", &[e.name])
+            tf("radio.confirmed", &[e.name])
           } else if is_worked {
-            tf("{} · 已通联", &[e.name])
+            tf("radio.worked", &[e.name])
           } else {
-            tf("{} · 未通联", &[e.name])
+            tf("radio.not-worked", &[e.name])
           };
           let dxcc = e.dxcc;
           view! {

@@ -1,9 +1,7 @@
 use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
-use crate::ui::{
-  Dialog, DialogDescription, DialogHeader, DialogTitle, Size, Variant, button_class,
-};
+use crate::ui::{Button, Dialog, DialogDescription, DialogHeader, DialogTitle, Size, Variant};
 
 #[component]
 pub fn ExamResumeDialog(
@@ -21,23 +19,31 @@ pub fn ExamResumeDialog(
   view! {
     <Dialog open=open class="sm:max-w-[520px]">
       <DialogHeader>
-        <DialogTitle>{move || t("恢复考试")}</DialogTitle>
+        <DialogTitle>{move || t("exam.resume-exam")}</DialogTitle>
         <DialogDescription>
           {move || {
             tf(
-              "检测到未完成的考试。已答 {} / {}，剩余时间约 {}。",
+              "exam.found-an-unfinished-exam",
               &[&answered.get().to_string(), &total.get().to_string(), &remaining()],
             )
           }}
         </DialogDescription>
       </DialogHeader>
       <div class="flex items-center justify-end gap-2 pt-2">
-        <button class=button_class(Variant::Outline, Size::Default, "") on:click=move |_| on_restart.run(())>
-          {move || t("重新开始")}
-        </button>
-        <button class=button_class(Variant::Default, Size::Default, "") on:click=move |_| on_resume.run(())>
-          {move || t("继续考试")}
-        </button>
+        <Button
+          variant=Variant::Outline
+          size=Size::Default
+          on_click=Callback::new(move |_| on_restart.run(()))
+        >
+          {move || t("exam.restart")}
+        </Button>
+        <Button
+          variant=Variant::Default
+          size=Size::Default
+          on_click=Callback::new(move |_| on_resume.run(()))
+        >
+          {move || t("exam.resume-2")}
+        </Button>
       </div>
     </Dialog>
   }

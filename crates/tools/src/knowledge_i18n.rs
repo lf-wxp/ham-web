@@ -9,10 +9,11 @@
 //! 译文以「中文原文 → 译文」存于 `data/knowledge-i18n/{lang}/{module}.json`，
 //! 由 [`crate::fsutil::Paths`] 定位到项目根。
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
+use ham_web_core::text::has_cjk;
 
 /// 支持的语言目录名。
 pub const LANGS: [&str; 2] = ["en", "es"];
@@ -41,7 +42,8 @@ pub fn extract_chinese(src: &str) -> Vec<String> {
     for lit in string_literals(line) {
       // 只收首次出现的字面量（去重保序）：`seen.insert` 返回 Some 表示**已存在**，
       // 判据是 `!contains_key` 而不是 `is_some`。
-      if lit.chars().any(|c| ('一'..='鿿').contains(&c)) && !seen.contains_key(&lit) {
+      // CJK 判定与前端、文案工具共用一份实现（原来只认基本区，会漏掉扩展 A / 兼容区）。
+      if has_cjk(&lit) && !seen.contains_key(&lit) {
         seen.insert(lit.clone(), ());
         out.push(lit);
       }
@@ -107,6 +109,11 @@ fn string_literals(line: &str) -> Vec<String> {
 ///
 /// 必须还原成**运行时字符串**里的字符：`\n` 是换行而不是字母 `n`。否则导出的 key 与
 /// 页面里 `kt()` 拿到的文本对不上，译文会永远命中不到，而且没有任何报错。
+///
+/// 未知转义返回 `None`（调用方把反斜杠当普通字符）：这类源码本身编译不过，跳过比猜一个
+/// 字符更安全 —— 而且**绝不能**回退成 `char::from(b)` 再返回 `i + 2`：`b` 可能是某个
+/// 多字节字符的首字节，那样下一轮 `code[i..]` 会按非字符边界切片，直接 panic
+/// （口径与 `crates/tools/src/i18n.rs` 的同名函数一致）。
 fn unescape(code: &str, i: usize) -> Option<(char, usize)> {
   let b = *code.as_bytes().get(i + 1)?;
   match b {
@@ -129,9 +136,24 @@ fn unescape(code: &str, i: usize) -> Option<(char, usize)> {
       let v = u32::from_str_radix(&rest[..end], 16).ok()?;
       Some((char::from_u32(v)?, i + 4 + end))
     }
-    // 未知转义（含 `\<newline>` 行连接）：原样保留反斜杠后的字符。
-    _ => Some((char::from(b), i + 2)),
+    // 未知转义：交给调用方按普通字符处理（见上面的说明，不能自己造一个字符）。
+    _ => None,
   }
+}
+
+/// 校验模块名：只允许 `[a-z0-9_-]`。
+///
+/// 模块名会被直接拼进路径（`crates/core/src/{module}.rs`、`data/knowledge-i18n/…`），
+/// 不校验的话 `--module ../../x` 就能读写项目外的文件。
+fn validate_module(module: &str) -> Result<()> {
+  if module.is_empty()
+    || !module
+      .chars()
+      .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_' || c == '-')
+  {
+    bail!("模块名非法（只允许小写字母、数字、下划线、连字符）：{module}");
+  }
+  Ok(())
 }
 
 /// 译文文件路径。
@@ -144,6 +166,7 @@ fn dict_path(root: &Path, lang: &str, module: &str) -> PathBuf {
 
 /// 导出某模块的待译模板；返回写入路径与条目数。
 pub fn export(root: &Path, module: &str, lang: &str, out: &Path) -> Result<(PathBuf, usize)> {
+  validate_module(module)?;
   let src_path = root.join("crates/core/src").join(format!("{module}.rs"));
   let src = std::fs::read_to_string(&src_path)
     .with_context(|| format!("读取 {} 失败", src_path.display()))?;
@@ -168,6 +191,7 @@ pub fn export(root: &Path, module: &str, lang: &str, out: &Path) -> Result<(Path
 
 /// 合并已填写的模板回词典。
 pub fn add(root: &Path, module: &str, lang: &str, batch: &Path) -> Result<usize> {
+  validate_module(module)?;
   let items: Vec<Item> = crate::fsutil::read_json(batch)?;
   let path = dict_path(root, lang, module);
   let mut dict = load_dict(root, lang, module)?;
@@ -187,16 +211,20 @@ pub fn add(root: &Path, module: &str, lang: &str, batch: &Path) -> Result<usize>
 }
 
 /// 读取某模块某语言的词典。
-pub fn load_dict(root: &Path, lang: &str, module: &str) -> Result<HashMap<String, String>> {
+///
+/// 用 `BTreeMap` 而不是 `HashMap`：词典要原样写回仓库，`HashMap` 的迭代顺序随进程
+/// 随机（`RandomState`），每次回写都会产出整排序的伪 diff。
+pub fn load_dict(root: &Path, lang: &str, module: &str) -> Result<BTreeMap<String, String>> {
   let path = dict_path(root, lang, module);
   if !path.exists() {
-    return Ok(HashMap::new());
+    return Ok(BTreeMap::new());
   }
   crate::fsutil::read_json(&path)
 }
 
 /// 统计覆盖率：某模块有多少中文条目已有译文。
 pub fn coverage(root: &Path, module: &str, lang: &str) -> Result<(usize, usize)> {
+  validate_module(module)?;
   let src_path = root.join("crates/core/src").join(format!("{module}.rs"));
   let src = std::fs::read_to_string(&src_path)
     .with_context(|| format!("读取 {} 失败", src_path.display()))?;
@@ -204,6 +232,52 @@ pub fn coverage(root: &Path, module: &str, lang: &str) -> Result<(usize, usize)>
   let dict = load_dict(root, lang, module)?;
   let done = zhs.iter().filter(|z| dict.contains_key(*z)).count();
   Ok((done, zhs.len()))
+}
+
+/// 译文里已经对不上源码的条目（key 漂移）。
+///
+/// 译文以**中文原文**为 key，源码改了句子就永远命中不到 —— 运行时静默回退中文，
+/// 页面上照旧显示，而且没有任何报错（`WSPR_NOTES` 首条就是这么悄悄失效的：
+/// 中文改成「mW 级（0 dBm = 1mW）」后，旧 key「5mW」的译文再也用不上）。
+/// 因此必须单独校验：词典里的每个 key 都仍要能在源码的中文集合里找到。
+pub fn drift(root: &Path) -> Result<Vec<String>> {
+  let base = root.join("data/knowledge-i18n");
+  let mut out = Vec::new();
+  for lang in LANGS {
+    let dir = base.join(lang);
+    if !dir.exists() {
+      continue;
+    }
+    for e in std::fs::read_dir(&dir).with_context(|| format!("读取 {} 失败", dir.display()))? {
+      let path = e?.path();
+      // 白名单：无扩展名的文件（`extension()` 为 `None`）也要跳过 —— 以前写的是
+      // `is_some_and(|x| x != "json")`，`None` 时整个条件为假、不会 continue，
+      // 于是无扩展名文件被当成词典处理（`file_stem()` 返回整个文件名）。
+      if path.extension().is_none_or(|x| x != "json") {
+        continue;
+      }
+      let Some(module) = path.file_stem().map(|s| s.to_string_lossy().to_string()) else {
+        continue;
+      };
+      let src_path = root.join("crates/core/src").join(format!("{module}.rs"));
+      if !src_path.exists() {
+        out.push(format!("{lang}/{module}：源码模块已不存在（{module}.rs）"));
+        continue;
+      }
+      let src = std::fs::read_to_string(&src_path)
+        .with_context(|| format!("读取 {} 失败", src_path.display()))?;
+      let zhs: HashSet<String> = extract_chinese(&src).into_iter().collect();
+      for key in load_dict(root, lang, &module)?.keys() {
+        if !zhs.contains(key) {
+          out.push(format!(
+            "{lang}/{module}：源码里已没有这句中文（译文命中不到，页面上仍是中文）→ {key}"
+          ));
+        }
+      }
+    }
+  }
+  out.sort();
+  Ok(out)
 }
 
 /// 列出 core 中含中文的模块及其字符数（从大到小），供决定先翻哪个。
@@ -279,6 +353,17 @@ pub const C: &str = "另一个";
 
   /// 转义必须还原成**运行时字符串**里的字符：`\n` 是换行而非字母 `n`。
   /// 否则导出的 key 与页面里 `kt()` 拿到的文本对不上，译文会静默失效。
+  /// 未知转义（如 `\` 后紧跟多字节字符）**不能 panic**：以前未知分支返回 `i + 2`，
+  /// 而那是多字节字符的中间字节，下一轮 `code[i..]` 按非字符边界切片会直接炸
+  /// （报错信息还与真实原因无关）。这类源码本身编译不过，但工具扫描的是任意 `.rs` 文本。
+  #[test]
+  fn unknown_escapes_do_not_panic_on_multibyte() {
+    let src = "pub const C: &str = \"前缀\\中 文\";";
+    let got = extract_chinese(src);
+    assert_eq!(got.len(), 1, "{got:?}");
+    assert_eq!(got[0], "前缀\\中 文");
+  }
+
   #[test]
   fn restores_escapes_like_runtime_strings() {
     let src = "pub const A: &str = \"第一行\\n第二行\";";

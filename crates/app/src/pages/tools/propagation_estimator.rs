@@ -1,8 +1,9 @@
 use ham_web_core::muf::{estimate_fof2, estimate_muf, estimate_owf};
 use leptos::prelude::*;
 
-use super::INPUT;
 use crate::i18n::{t, tf};
+use crate::ui::{Field, NumberField};
+use crate::util::unique_id;
 
 /// 传播预测：SFI + K 指数 → foF2 / MUF / OWF 与可用波段建议。
 #[component]
@@ -23,49 +24,50 @@ pub(super) fn PropagationEstimator() -> impl IntoView {
     ("10m", 28.5),
   ];
 
+  let sfi_id = unique_id("propagation-sfi");
+  let k_id = unique_id("propagation-k");
+
   view! {
     <div class="space-y-3">
       <div class="grid gap-3 sm:grid-cols-2">
-        <label class="flex flex-col gap-1.5 text-sm">
-          <span class="text-xs text-muted-foreground">{move || t("太阳通量 SFI")}</span>
-          <input
-            type="number"
-            prop:value=move || sfi.get().to_string()
-            on:input=move |e| {
-              if let Ok(v) = event_target_value(&e).parse::<f64>() {
+        <Field label=Signal::derive(move || t("tools.solar-flux-sfi")) r#for=sfi_id.clone()>
+          <NumberField
+            id=sfi_id
+            value=Signal::derive(move || sfi.get().to_string())
+            on_change=Callback::new(move |v: String| {
+              if let Ok(v) = v.trim().parse::<f64>() {
                 sfi.set(v);
               }
-            }
-            class=INPUT
+            })
+            controls=false
           />
-        </label>
-        <label class="flex flex-col gap-1.5 text-sm">
-          <span class="text-xs text-muted-foreground">{move || t("K 指数（0–9）")}</span>
-          <input
-            type="number"
-            step="1"
-            prop:value=move || k.get().to_string()
-            on:input=move |e| {
-              if let Ok(v) = event_target_value(&e).parse::<f64>() {
+        </Field>
+        <Field label=Signal::derive(move || t("tools.k-index-0-9")) r#for=k_id.clone()>
+          <NumberField
+            id=k_id
+            step=1.0
+            value=Signal::derive(move || k.get().to_string())
+            on_change=Callback::new(move |v: String| {
+              if let Ok(v) = v.trim().parse::<f64>() {
                 k.set(v);
               }
-            }
-            class=INPUT
+            })
+            controls=false
           />
-        </label>
+        </Field>
       </div>
       <div class="rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let s = sfi.get();
           let kk = k.get();
           let quality = match kk {
-            x if x < 2.0 => t("磁情安静"),
-            x if x < 4.0 => t("磁情活跃"),
-            x if x < 6.0 => t("磁扰"),
-            _ => t("强磁暴"),
+            x if x < 2.0 => t("tools.quiet"),
+            x if x < 4.0 => t("tools.active"),
+            x if x < 6.0 => t("tools.disturbed"),
+            _ => t("tools.storm"),
           };
           tf(
-            "foF2 ≈ {} MHz　单跳 MUF ≈ {} MHz　OWF ≈ {} MHz　（K = {}，{}）",
+            "tools.fof2-mhz-single-hop",
             &[
               &format!("{:.1}", estimate_fof2(s)),
               &format!("{:.1}", estimate_muf(s)),
@@ -77,7 +79,7 @@ pub(super) fn PropagationEstimator() -> impl IntoView {
         }}
       </div>
       <div>
-        <div class="mb-1.5 text-xs font-medium text-muted-foreground">{move || t("预计可用波段（中心频率低于 MUF）")}</div>
+        <div class="mb-1.5 text-xs font-medium text-muted-foreground">{move || t("tools.likely-usable-bands-centre")}</div>
         <div class="flex flex-wrap gap-1.5">
           {move || {
             let muf = estimate_muf(sfi.get());

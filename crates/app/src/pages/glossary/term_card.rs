@@ -40,10 +40,10 @@ pub(super) fn TermCard(
       return None;
     }
     let body = match counts.get() {
-      None => view! { <span>{move || t("统计题库出现次数…")}</span> }.into_any(),
-      Some(list) if list.iter().all(|(_, n)| *n == 0) => view! { <span>{move || t("题库中暂无直接出现该术语的题目")}</span> }.into_any(),
+      None => view! { <span>{move || t("knowledge.counting-occurrences-in-the")}</span> }.into_any(),
+      Some(list) if list.iter().all(|(_, n)| *n == 0) => view! { <span>{move || t("knowledge.no-questions-in-the")}</span> }.into_any(),
       Some(list) => view! {
-        <span>{move || t("题库出现：")}</span>
+        <span>{move || t("knowledge.appears-in-the-bank")}</span>
         {list
           .into_iter()
           .filter(|(_, n)| *n > 0)
@@ -52,10 +52,10 @@ pub(super) fn TermCard(
               <a
                 href=browse_href(b, &entry.term)
                 class="rounded-md border px-2 py-0.5 transition-colors hover:bg-accent hover:text-foreground"
-                title=tf("在 {} 类题库中查看包含「{}」的题目", &[&(b).to_string(), &(entry.term).to_string()])
+                title=tf("common.view-questions-containing-in", &[&(b).to_string(), &(entry.term).to_string()])
               >
                 {b.as_str()}
-                {t(" 类 ")}
+                {t("knowledge.class")}
                 <span class="font-semibold tabular-nums">{n}</span>
               </a>
             }
@@ -92,7 +92,7 @@ pub(super) fn TermCard(
       <p class="text-sm leading-6 text-muted-foreground">{entry.desc.as_str()}</p>
       {(!entry.aliases.is_empty())
         .then(|| {
-          view! { <div class="mt-2 text-xs text-muted-foreground">{t("又称：")} {entry.aliases.join("、")}</div> }
+          view! { <div class="mt-2 text-xs text-muted-foreground">{t("knowledge.also-known-as")} {entry.aliases.join("、")}</div> }
         })}
       {entry
         .see
@@ -100,7 +100,7 @@ pub(super) fn TermCard(
         .map(|see| {
           view! {
             <div class="mt-2 text-xs text-muted-foreground">
-              {move || t("参见：")}
+              {move || t("knowledge.see-also")}
               <button
                 type="button"
                 class="font-medium text-foreground underline-offset-2 hover:underline"

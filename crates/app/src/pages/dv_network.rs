@@ -9,9 +9,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn DvNetworkPage() -> impl IntoView {
-  set_title(&t("数字语音组网"));
+  set_title("shell.digital-voice");
   view! {
-    <KnowledgePage title=t("数字语音组网") subtitle=t("D-STAR · DMR 数字移动无线电 · C4FM 4 电平调频")>
+    <KnowledgePage title=t("shell.digital-voice") subtitle=t("knowledge.d-star-dmr-digital")>
       <TableSection title="主要网络" headers=&["网络", "厂商", "说明"] rows=DV_NETWORKS min_width=520 />
       <BulletSection title="接入要点" items=DV_NETWORK_TIPS />
     </KnowledgePage>

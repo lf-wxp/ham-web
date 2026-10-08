@@ -27,7 +27,8 @@ test("小工具：驻波比换算反射系数", async ({ page }) => {
 
   await section.getByLabel("驻波比 SWR").fill("3");
   await expect(section.getByText(/反射系数 \|Γ\| = 0\.5000/)).toBeVisible();
-  await expect(section.getByText(/回波损耗 6\.02 dB/)).toBeVisible();
+  // 文案在 i18n 重构里改成了「回波损耗取正值为 {} dB」，这里只钉数值
+  await expect(section.getByText(/回波损耗.*6\.02 dB/)).toBeVisible();
 });
 
 test("小工具：欧姆定律填两项算第三项", async ({ page }) => {

@@ -1,14 +1,19 @@
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 use ham_web_core::qsl_labels::{LAYOUTS, Layout, build, layout, paginate};
+use ham_web_core::qsl_status::{QslVia, mark_sent};
 use leptos::prelude::*;
 
 use crate::pages::log::{LogEntry, use_log_store};
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{
+  Button, ButtonLink, ControlSize, DatePicker, NativeSelect, NumberField, SelectOption, Size,
+  Variant,
+};
 use crate::util::{set_title, storage, window};
 
 use super::label_view::LabelView;
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 
 const LAYOUT_KEY: &str = "qsl-label-layout";
 
@@ -32,13 +37,16 @@ fn page_css(l: &Layout) -> String {
 /// QSL 标签打印页。
 #[component]
 pub fn QslLabelsPage() -> impl IntoView {
-  set_title(&t("QSL 标签打印"));
+  set_title("shell.qsl-label-printing");
   let store = use_log_store();
   let layout_id =
     RwSignal::new(storage::get(LAYOUT_KEY).unwrap_or_else(|| LAYOUTS[0].id.to_owned()));
   let scope = RwSignal::new(Scope::Unsent);
   let since = RwSignal::new(String::new());
   let skip = RwSignal::new(0usize);
+  // 「标记为已寄出」时一并记下寄出方式（QSL_SENT_VIA）：卡片局与直寄的回收周期
+  // 差一个数量级，追卡时要看的就是这个。默认卡片局（群里最常用的方式）。
+  let via_sel = RwSignal::new(QslVia::Bureau.key().to_owned());
 
   let current = Memo::new(move |_| *layout(&layout_id.get()));
 
@@ -65,20 +73,26 @@ pub fn QslLabelsPage() -> impl IntoView {
       return;
     }
     if !window()
-      .confirm_with_message(&tf(
-        "把这 {} 条通联标记为「QSL 已寄出」？",
+      .confirm_with_message(&tp(
+        "log.mark-these-qsos-as",
+        ids.len(),
         &[&ids.len().to_string()],
       ))
       .unwrap_or(false)
     {
       return;
     }
+    let via = QslVia::from_key(&via_sel.get_untracked());
+    let mut changed = false;
     store.logbook.update(|lb| {
       for e in lb.entries.iter_mut().filter(|e| ids.contains(&e.id)) {
-        e.qsl_sent = true;
+        changed |= mark_sent(e, via);
       }
     });
-    store.persist();
+    // 全部都已经寄出且方式相同 → 没有任何改动，不必落库。
+    if changed {
+      store.persist();
+    }
   };
 
   let seg = |active: bool| {
@@ -95,13 +109,15 @@ pub fn QslLabelsPage() -> impl IntoView {
     if list.is_empty() {
       return view! {
         <p class="py-16 text-center text-sm text-muted-foreground">
-          {if scope.get() == Scope::Unsent { t("没有待寄出的通联。可切换到「全部」重新打印。") } else { t("日志里还没有通联记录。") }}
+          {if scope.get() == Scope::Unsent { t("log.no-qsos-waiting-to") } else { t("log.no-qsos-in-the") }}
         </p>
       }
       .into_any();
     }
-    let entries: HashMap<u64, LogEntry> =
-      selected.with(|s| s.iter().map(|e| (e.id, e.clone())).collect());
+    // 每次渲染只建一份 `id → LogEntry` 表，用 `Arc` 共享给各标签槽；
+    // 否则每个槽都要 clone 一遍整表（见 `LabelView` 的说明）。
+    let entries: Arc<HashMap<u64, LogEntry>> =
+      Arc::new(selected.with(|s| s.iter().map(|e| (e.id, e.clone())).collect()));
     let my_call = store
       .station
       .with(|s| s.callsign.trim().to_ascii_uppercase());
@@ -116,15 +132,17 @@ pub fn QslLabelsPage() -> impl IntoView {
             class=if p == 0 { "relative mx-auto mb-6 overflow-hidden bg-white text-zinc-900 shadow-sm print:mb-0 print:shadow-none" } else { "print-break-before relative mx-auto mb-6 overflow-hidden bg-white text-zinc-900 shadow-sm print:mb-0 print:shadow-none" }
             style:width=format!("{w}mm")
             style:height=format!("{h}mm")
-            aria-label=tf("第 {} 页", &[&(p + 1).to_string()])
+            data-slot="label-page"
+            aria-label=tf("log.page-2", &[&(p + 1).to_string()])
           >
             {slots.into_iter().enumerate().map(|(slot, idx)| {
               let (x, y) = l.origin(slot);
               let inner = idx.map(|i| view! {
-                <LabelView label=list[i].clone() entries=entries.clone() my_call=my_call.clone() compact=compact />
+                <LabelView label=list[i].clone() entries=Arc::clone(&entries) my_call=my_call.clone() compact=compact />
               });
               view! {
                 <div
+                  data-slot="label-slot"
                   class=if idx.is_some() { "absolute rounded-[2mm] border border-dashed border-zinc-300 print:border-transparent" } else { "absolute rounded-[2mm] border border-dashed border-zinc-200 bg-zinc-50 print:border-transparent print:bg-transparent" }
                   style:left=format!("{x}mm")
                   style:top=format!("{y}mm")
@@ -143,35 +161,64 @@ pub fn QslLabelsPage() -> impl IntoView {
       .into_any()
   };
 
+  let via_options: Vec<SelectOption> = [QslVia::Bureau, QslVia::Direct]
+    .into_iter()
+    .map(|via| {
+      let key = via.key();
+      let label = Signal::derive(move || match via {
+        QslVia::Bureau => t("log.qsl-via-bureau"),
+        QslVia::Direct => t("log.qsl-via-direct"),
+        QslVia::None => t("log.not-sent"),
+      });
+      SelectOption::new(key, label)
+    })
+    .collect();
+  let layout_options: Vec<SelectOption> = LAYOUTS
+    .iter()
+    .map(|l| SelectOption::new(l.id, l.name))
+    .collect();
+
   view! {
     <div class="min-h-screen bg-muted/40 pb-10 print:bg-white print:pb-0">
       <style>{move || page_css(&current.get())}</style>
       <div class="print-hide sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("QSL 标签打印")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("同一呼号的通联合并到一张标签，贴在 QSL 卡背面即可寄出")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.qsl-label-printing")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("log.qsos-with-the-same")}</div>
           </div>
-          <a href="/log" class=button_class(Variant::Ghost, Size::Sm, "")>{move || t("返回日志")}</a>
-          <button
-            type="button"
-            class=button_class(Variant::Outline, Size::Sm, "")
-            prop:disabled=move || selected.with(Vec::is_empty)
-            on:click=move |_| mark_sent()
+          <ButtonLink
+            href="/log"
+            variant=Variant::Ghost
+            size=Size::Sm
+          >{move || t("log.back-to-log")}</ButtonLink>
+          <NativeSelect
+            value=via_sel
+            on_change=Callback::new(move |v: String| via_sel.set(v))
+            options=via_options
+            size=ControlSize::Sm
+            aria_label=Signal::derive(move || t("log.qsl-sent-via"))
+            class="w-auto"
+          />
+          <Button
+            variant=Variant::Outline
+            size=Size::Sm
+            disabled=Signal::derive(move || selected.with(Vec::is_empty))
+            on_click=Callback::new(move |_| mark_sent())
           >
-            {move || tf("标记为已寄出（{}）", &[&selected.with(Vec::len).to_string()])}
-          </button>
-          <button
-            type="button"
-            class=button_class(Variant::Default, Size::Sm, "")
-            prop:disabled=move || labels.with(Vec::is_empty)
-            on:click=move |_| { let _ = window().print(); }
+            {move || tf("log.mark-as-sent", &[&selected.with(Vec::len).to_string()])}
+          </Button>
+          <Button
+            variant=Variant::Default
+            size=Size::Sm
+            disabled=Signal::derive(move || labels.with(Vec::is_empty))
+            on_click=Callback::new(move |_| { let _ = window().print(); })
           >
-            {move || t("打印")}
-          </button>
+            {move || t("learning.print")}
+          </Button>
         </div>
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 pb-3 text-xs text-muted-foreground">
-          <div class="inline-flex rounded-lg bg-muted p-0.5" role="group" aria-label=move || t("通联范围")>
+          <div class="inline-flex rounded-lg bg-muted p-0.5" role="group" aria-label=move || t("log.qso-scope")>
             {[(Scope::Unsent, "未寄出"), (Scope::All, "全部")].into_iter().map(|(s, label)| view! {
               <button type="button" class=move || seg(scope.get() == s) aria-pressed=move || (scope.get() == s).to_string() on:click=move |_| scope.set(s)>
                 {move || t(label)}
@@ -179,51 +226,60 @@ pub fn QslLabelsPage() -> impl IntoView {
             }).collect_view()}
           </div>
           <label class="inline-flex items-center gap-1.5">
-            {move || t("起始日期")}
-            <input type="date" class=input_class("h-7 w-auto py-0 text-xs") prop:value=move || since.get() on:input=move |e| since.set(event_target_value(&e)) />
+            {move || t("log.start-date")}
+            <DatePicker
+              value=since
+              on_change=Callback::new(move |v: String| since.set(v))
+              size=ControlSize::Sm
+              aria_label=Signal::derive(move || t("log.start-date"))
+              class="w-auto"
+            />
           </label>
           <label class="inline-flex items-center gap-1.5">
-            {move || t("标签纸")}
-            <select
-              class=input_class("h-7 w-auto py-0 text-xs")
-              on:change=move |e| {
-                let v = event_target_value(&e);
+            {move || t("log.label-sheet")}
+            <NativeSelect
+              value=layout_id
+              on_change=Callback::new(move |v: String| {
                 storage::set(LAYOUT_KEY, &v);
                 layout_id.set(v);
                 skip.update(|s| *s = (*s).min(current.get_untracked().per_page() - 1));
-              }
-            >
-              {LAYOUTS.iter().map(|l| view! {
-                <option value=l.id selected=move || layout_id.with(|id| id == l.id)>{l.name}</option>
-              }).collect_view()}
-            </select>
-          </label>
-          <label class="inline-flex items-center gap-1.5" title=move || t("用过一部分的标签纸：跳过前面已撕掉的标签")>
-            {move || t("跳过前")}
-            <input
-              type="number"
-              min="0"
-              prop:max=move || (current.get().per_page() - 1).to_string()
-              class=input_class("h-7 w-16 py-0 text-xs")
-              prop:value=move || skip.get().to_string()
-              on:input=move |e| {
-                let max = current.get_untracked().per_page() - 1;
-                skip.set(event_target_value(&e).parse::<usize>().unwrap_or(0).min(max));
-              }
+              })
+              options=layout_options
+              size=ControlSize::Sm
+              aria_label=Signal::derive(move || t("log.label-sheet"))
+              class="w-auto"
             />
-            {move || t("张")}
+          </label>
+          <label class="inline-flex items-center gap-1.5" title=move || t("log.partly-used-sheet-skip")>
+            {move || t("log.skip-first")}
+            <NumberField
+              value=Signal::derive(move || skip.get().to_string())
+              on_change=Callback::new(move |v: String| {
+                let max = current.get_untracked().per_page() - 1;
+                skip.set(v.trim().parse::<usize>().unwrap_or(0).min(max));
+              })
+              min=0.0
+              size=ControlSize::Sm
+              class="w-16 px-1.5"
+              aria_label=Signal::derive(move || t("log.skip-first"))
+              controls=false
+            />
+            {move || t("log.labels")}
           </label>
           <span class="tabular-nums" aria-live="polite">
             {move || {
               let l = current.get();
               let n = labels.with(Vec::len);
+              let qsos = selected.with(Vec::len);
               let pages = paginate(n, &l, skip.get()).len();
+              // 一句话里三个可数名词：`tp` 只吃一个 count，故外层模板只留 `{}` 承接，
+              // 每段各自 `tp` 出「1 张标签 / 1 条通联 / 1 页」（见 docs 的 P3-C5）。
               tf(
-                "{} 张标签 · {} 条通联 · {} 页",
+                "log.labels-qsos-pages",
                 &[
-                  &n.to_string(),
-                  &selected.with(Vec::len).to_string(),
-                  &pages.to_string(),
+                  &tp("log.n-labels", n, &[&n.to_string()]),
+                  &tp("log.n-qsos", qsos, &[&qsos.to_string()]),
+                  &tp("log.n-pages", pages, &[&pages.to_string()]),
                 ],
               )
             }}
@@ -231,17 +287,17 @@ pub fn QslLabelsPage() -> impl IntoView {
         </div>
         {move || store.station.with(|s| s.callsign.trim().is_empty()).then(|| view! {
           <p class="mx-auto max-w-5xl px-4 pb-3 text-xs text-amber-800 dark:text-amber-300">
-            {move || t("还没有设置本台呼号，标签上不会显示「From」。可到")}
+            {move || t("log.station-callsign-not-set")}
             " "
-            <a href="/log" class="font-medium underline underline-offset-4">{move || t("通联日志 → 本台信息")}</a>
+            <a href="/log" class="font-medium underline underline-offset-4">{move || t("contest.qso-log-station-info")}</a>
             " "
-            {move || t("填写。")}
+            {move || t("contest.to-fill-it-in")}
           </p>
         })}
       </div>
 
       <div class="print-sheet mt-6 overflow-x-auto px-4 print:mt-0 print:overflow-visible print:px-0">{sheets}</div>
-      <p class="print-hide mt-2 text-center text-xs text-muted-foreground">{move || t("打印时请选择「实际大小 / 100%」并关闭页眉页脚，否则标签会错位。")}</p>
+      <p class="print-hide mt-2 text-center text-xs text-muted-foreground">{move || t("log.when-printing-choose-actual")}</p>
     </div>
   }
 }

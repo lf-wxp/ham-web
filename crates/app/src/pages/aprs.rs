@@ -14,15 +14,15 @@ pub fn AprsPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("APRS 自动位置报告系统")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("定位追踪 · 气象站 · 短消息")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("knowledge.aprs-automatic-position-reporting")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("knowledge.position-tracking-weather-stations")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("核心概念")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.key-concepts-2")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {APRS_CONCEPTS
               .iter()
@@ -39,7 +39,7 @@ pub fn AprsPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("常用频率")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("shell.common-frequencies")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {APRS_FREQS
               .iter()
@@ -56,7 +56,7 @@ pub fn AprsPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("主要应用")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.main-uses")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {APRS_USES
               .iter()

@@ -5,15 +5,15 @@
 use leptos::prelude::*;
 
 use crate::components::common::PageHeader;
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 use crate::store;
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{ButtonLink, Size, Variant};
 use crate::util::set_title;
 
 /// 考后复盘页。
 #[component]
 pub fn ExamReviewPage() -> impl IntoView {
-  set_title(&t("考后复盘"));
+  set_title("exam.post-exam-review");
 
   let review = store::load_exam_review();
   // 题库直接展示快照里存的字符串：`bank_class` 需要 `Bank`，而解析失败时回退展示原文更直观。
@@ -22,10 +22,15 @@ pub fn ExamReviewPage() -> impl IntoView {
   let body = match review {
     None => view! {
       <div class="rounded-xl border bg-card px-4 py-10 text-center">
-        <div class="text-sm text-muted-foreground">{move || t("还没有可复盘的考试记录。")}</div>
-        <a class=button_class(Variant::Default, Size::Default, "mt-4 inline-flex") href="/exam">
-          {move || t("去做一套模拟考试")}
-        </a>
+        <div class="text-sm text-muted-foreground">{move || t("exam.no-exam-to-review")}</div>
+        <ButtonLink
+          href="/exam"
+          variant=Variant::Default
+          size=Size::Default
+          class="mt-4 inline-flex"
+        >
+          {move || t("exam.take-a-mock-exam")}
+        </ButtonLink>
       </div>
     }
     .into_any(),
@@ -43,17 +48,17 @@ pub fn ExamReviewPage() -> impl IntoView {
             <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm">
               // 空格留在模板里而不写进文案：带尾空格的中文 key 在翻译时极易漏掉，
               // 一旦漏掉就永远匹配不上（`check-i18n` 也查不出来）。
-              <span>{move || t("题库")} " " <b>{bank.clone().unwrap_or_default()}</b></span>
-              <span>{move || t("答对")} " " <b class="tabular-nums">{correct}</b> " / " {total}</span>
-              <span>{move || t("已答")} " " <b class="tabular-nums">{answered}</b> " / " {total}</span>
+              <span>{move || t("exam.bank")} " " <b>{bank.clone().unwrap_or_default()}</b></span>
+              <span>{move || t("exam.correct-4")} " " <b class="tabular-nums">{correct}</b> " / " {total}</span>
+              <span>{move || t("exam.answered-2")} " " <b class="tabular-nums">{answered}</b> " / " {total}</span>
               <span class="text-muted-foreground">
-                {move || tf("交卷于 {}", &[&finished.clone()])}
+                {move || tf("common.submitted-at", &[&finished.clone()])}
               </span>
             </div>
           </section>
 
           <section class="rounded-xl border bg-card p-4">
-            <h2 class="mb-2 text-sm font-semibold">{move || t("各分类表现（错得多的在前）")}</h2>
+            <h2 class="mb-2 text-sm font-semibold">{move || t("exam.performance-by-category-most")}</h2>
             <ul class="space-y-1.5">
               {cats
                 .into_iter()
@@ -67,7 +72,11 @@ pub fn ExamReviewPage() -> impl IntoView {
                         <div class="h-full bg-emerald-500" style=format!("width: {pct}%")></div>
                       </div>
                       <span class="w-28 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-                        {tf("{} / {} · 错 {}", &[&c.correct.to_string(), &c.total.to_string(), &wrong.to_string()])}
+                        {tp(
+                          "common.wrong",
+                          wrong as u32,
+                          &[&c.correct.to_string(), &c.total.to_string(), &wrong.to_string()],
+                        )}
                       </span>
                     </li>
                   }
@@ -77,7 +86,7 @@ pub fn ExamReviewPage() -> impl IntoView {
           </section>
 
           <section class="space-y-3">
-            <h2 class="text-sm font-semibold">{move || t("逐题回顾")}</h2>
+            <h2 class="text-sm font-semibold">{move || t("exam.per-question-review")}</h2>
             {items
               .into_iter()
               .enumerate()
@@ -85,7 +94,7 @@ pub fn ExamReviewPage() -> impl IntoView {
                 let ok = item.is_correct();
                 let blank = item.is_blank();
                 let given = if blank {
-                  t("未作答")
+                  t("exam.unanswered")
                 } else {
                   item.given.join("、")
                 };
@@ -104,7 +113,7 @@ pub fn ExamReviewPage() -> impl IntoView {
                       <span class="mt-0.5 shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{i + 1}</span>
                       <p class="flex-1 text-sm font-medium leading-snug">{item.question.clone()}</p>
                       <span class=format!("shrink-0 text-xs {}", if ok { "text-emerald-600 dark:text-emerald-400" } else { "text-red-600 dark:text-red-400" })>
-                        {if ok { t("正确") } else { t("错误") }}
+                        {if ok { t("exam.correct-3") } else { t("exam.wrong-2") }}
                       </span>
                     </div>
                     <div class="space-y-1">
@@ -117,14 +126,14 @@ pub fn ExamReviewPage() -> impl IntoView {
                         .collect_view()}
                     </div>
                     <div class="mt-2 flex flex-wrap items-center gap-x-4 text-xs">
-                      <span>{move || t("正确答案")} " " <b class="font-mono">{item.answer.join("、")}</b></span>
-                      <span>{move || t("你的作答")} " " <b class="font-mono">{given.clone()}</b></span>
+                      <span>{move || t("exam.correct-answer")} " " <b class="font-mono">{item.answer.join("、")}</b></span>
+                      <span>{move || t("exam.your-answer-2")} " " <b class="font-mono">{given.clone()}</b></span>
                       <button
                         type="button"
                         class="ml-auto rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                         on:click=move |_| marked.set(store::toggle_bookmark(&item_id))
                       >
-                        {move || if marked.get() { t("已收藏") } else { t("收藏") }}
+                        {move || if marked.get() { t("exam.bookmarked") } else { t("exam.bookmark") }}
                       </button>
                     </div>
                     {(!item.explanation.is_empty())
@@ -146,10 +155,10 @@ pub fn ExamReviewPage() -> impl IntoView {
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <PageHeader title=t("考后复盘") subtitle=t("逐题对错、正确答案与解析") />
+      <PageHeader title=t("exam.post-exam-review") subtitle=t("exam.per-question-results-correct") />
       <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
         <p class="text-sm text-muted-foreground">
-          {move || t("复盘最近一次模拟考试：逐题对错、正确答案与解析，并标出这次最薄弱的分类。只保留最近一次考试的记录。")}
+          {move || t("exam.review-your-latest-mock")}
         </p>
         {body}
       </div>

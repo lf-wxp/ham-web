@@ -56,8 +56,8 @@ pub fn TopicQuiz() -> impl IntoView {
         <div class="mx-auto max-w-5xl px-4 pb-10">
           <section class="rounded-xl border bg-card">
             <h2 class="border-b px-4 py-3 text-sm font-semibold">
-              {move || t("自测 3 题")}
-              <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("来自本题库相关考点，即时判分")}</span>
+              {move || t("common.quick-3-question-test")}
+              <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("common.from-related-topics-in")}</span>
             </h2>
             <div class="space-y-4 p-4">
               {qs.into_iter().map(|q| view! { <QuizQuestion q=q /> }).collect_view()}

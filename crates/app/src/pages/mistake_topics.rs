@@ -3,7 +3,7 @@
 use ham_web_core::mistake_book::mistake_topics;
 use leptos::prelude::*;
 
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 use crate::study;
 use crate::util::set_title;
 
@@ -19,13 +19,13 @@ pub fn MistakeTopicsPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("易错知识点")}</h1>
+            <h1 class="text-base font-semibold leading-tight">{move || t("exam.error-prone-topics")}</h1>
             <div class="text-xs text-muted-foreground">
-              {move || t("按知识点聚合错题，定位薄弱考点，点击同类题再练")}
+              {move || t("exam.mistakes-grouped-by-topic")}
             </div>
           </div>
           <a href="/mistakes" class="text-xs text-primary underline-offset-4 hover:underline">
-            {move || t("全部错题 →")}
+            {move || t("exam.all-mistakes")}
           </a>
         </div>
       </header>
@@ -34,9 +34,9 @@ pub fn MistakeTopicsPage() -> impl IntoView {
         {if topics.is_empty() {
           view! {
             <div class="rounded-xl border bg-card px-4 py-12 text-center">
-              <div class="text-sm font-medium">{move || t("暂无错题")}</div>
+              <div class="text-sm font-medium">{move || t("learning.no-mistakes-yet")}</div>
               <div class="mt-1 text-xs text-muted-foreground">
-                {move || t("去「练习」「模拟考试」或「闪卡」作答后，答错的题目会自动收进这里。")}
+                {move || t("learning.after-answering-in-practice")}
               </div>
             </div>
           }
@@ -68,18 +68,18 @@ pub fn MistakeTopicsPage() -> impl IntoView {
                   </div>
                   <div class="shrink-0 text-right text-xs">
                     <div class="font-semibold tabular-nums text-red-600">
-                      {tf("{} 题", &[&topic.mistakes.to_string()])}
+                      {tp("common.questions", topic.mistakes, &[&topic.mistakes.to_string()])}
                     </div>
                     <div class="text-muted-foreground">
-                      {tf("累计答错 {} 次", &[&topic.total_wrong.to_string()])}
+                      {tp("common.wrong-answers-in-total", topic.total_wrong, &[&topic.total_wrong.to_string()])}
                     </div>
                     {rate.map(|r| view! {
                       <div class="text-muted-foreground">
-                        {tf("正确率 {}%", &[&r.to_string()])}
+                        {tf("common.accuracy", &[&r.to_string()])}
                       </div>
                     })}
                   </div>
-                  <span class="shrink-0 text-xs text-primary">{move || t("同类题 →")}</span>
+                  <span class="shrink-0 text-xs text-primary">{move || t("exam.similar-questions")}</span>
                 </a>
               }
             })

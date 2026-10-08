@@ -10,14 +10,14 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn WeatherSatPage() -> impl IntoView {
-  set_title(&t("气象卫星接收"));
+  set_title("shell.weather-satellites");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("气象卫星接收")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("NOAA APT · METEOR LRPT · RTL-SDR 收图")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.weather-satellites")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("radio.noaa-apt-meteor-lrpt")}</div>
           </div>
         </div>
       </header>
@@ -26,22 +26,22 @@ pub fn WeatherSatPage() -> impl IntoView {
         <section class="rounded-xl border bg-primary/5 p-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div class="text-sm font-semibold">{move || t("有 APT 录音？试试在浏览器本地解码")}</div>
+              <div class="text-sm font-semibold">{move || t("radio.got-an-apt-recording")}</div>
               <div class="mt-0.5 text-xs text-muted-foreground">
-                {move || t("上传 WAV，本地解调 2400 Hz 副载波并重建可见光 / 红外云图")}
+                {move || t("radio.upload-a-wav-to")}
               </div>
             </div>
             <a
               href="/apt-decoder"
               class="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
             >
-              {move || t("打开 APT 解码器")}
+              {move || t("radio.open-the-apt-decoder")}
             </a>
           </div>
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("接收上手（5 步）")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.getting-started-5-steps")}</h2>
           <ol class="space-y-3 p-4">
             {APT_GUIDE
               .iter()
@@ -53,7 +53,7 @@ pub fn WeatherSatPage() -> impl IntoView {
                     {link.map(|href| {
                       view! {
                         <a href=href class="mt-1 inline-block text-xs text-primary underline-offset-4 hover:underline">
-                          {move || t("前往 →")}
+                          {move || t("radio.go")}
                         </a>
                       }
                     })}
@@ -68,10 +68,10 @@ pub fn WeatherSatPage() -> impl IntoView {
           <table class="w-full min-w-[640px] border-collapse text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>
-                <th class=CELL>{move || t("卫星")}</th>
-                <th class=CELL>{move || t("信号")}</th>
-                <th class=CELL>{move || t("频率")}</th>
-                <th class=CELL>{move || t("说明")}</th>
+                <th class=CELL>{move || t("radio.satellite")}</th>
+                <th class=CELL>{move || t("radio.signal")}</th>
+                <th class=CELL>{move || t("contest.freq")}</th>
+                <th class=CELL>{move || t("radio.notes")}</th>
               </tr>
             </thead>
             <tbody>
@@ -93,7 +93,7 @@ pub fn WeatherSatPage() -> impl IntoView {
         </div>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("核心概念")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.key-concepts-2")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {WEATHER_CONCEPTS
               .iter()
@@ -110,7 +110,7 @@ pub fn WeatherSatPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("接收要点")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.receiving-tips")}</h2>
           <ul class="space-y-2 p-4">
             {WEATHER_TIPS
               .iter()

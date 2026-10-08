@@ -23,7 +23,9 @@ fn fmt_number(v: f64, step: f64) -> String {
 
 fn decimals_of(step: f64) -> usize {
   let s = step.abs();
-  if s == 0.0 || s.fract() == 0.0 {
+  // 用容差而不是 `fract() == 0.0`：精确比较在 `0.1 + 0.2` 这类值上会给出意外结果。
+  let nearest = s.round();
+  if s < f64::EPSILON || (s - nearest).abs() < f64::EPSILON * nearest.max(1.0) {
     return 0;
   }
   let text = format!("{s}");
@@ -62,7 +64,7 @@ pub fn NumberField(
   #[prop(optional, into)] class: String,
   #[prop(optional)] node_ref: NodeRef<html::Input>,
 ) -> impl IntoView {
-  let step_size = if step == 0.0 { 1.0 } else { step };
+  let step_size = if step.abs() < f64::EPSILON { 1.0 } else { step };
   let clamp = move |v: f64| -> f64 {
     let v = min.map_or(v, |m| v.max(m));
     max.map_or(v, |m| v.min(m))
@@ -70,6 +72,17 @@ pub fn NumberField(
   let bump = Callback::new(move |delta: f64| {
     let cur = value.get_untracked().trim().parse::<f64>().unwrap_or(0.0);
     on_change.run(fmt_number(clamp(cur + delta), step_size));
+  });
+  // 手输钳制**上限**：只钳 +/− 的话，用户直接敲 999 就能越过 `max`，与「点加号会夹紧」
+  // 自相矛盾。下限**不**逐键钳：`min = 5` 时用户想敲 12，钳一下会把 "1" 立刻改成 "5"，
+  // 反而拼不出想要的数（下限交给 `bump` 与调用方自己的校验）。
+  //
+  // 没超限时原样透出，不重排用户正在敲的文本（`1.`、`-` 这类半截输入都能继续敲）。
+  let typed = Callback::new(move |raw: String| match raw.trim().parse::<f64>() {
+    Ok(v) if v.is_finite() && max.is_some_and(|m| v > m) => {
+      on_change.run(fmt_number(max.unwrap_or(v), step_size));
+    }
+    _ => on_change.run(raw),
   });
 
   let stepper = move |icon: IconKind, delta: f64, label: Signal<String>| -> ViewFn {
@@ -114,7 +127,7 @@ pub fn NumberField(
     view! {
       <Input
         value=value
-        on_change=on_change
+        on_change=typed
         kind=InputType::Number
         size=size
         placeholder=placeholder
@@ -126,8 +139,8 @@ pub fn NumberField(
         min=min
         max=max
         step=step_attr
-        prefix=stepper(IconKind::Minus, -step_size, Signal::derive(move || t("减少")))
-        suffix=stepper(IconKind::Plus, step_size, Signal::derive(move || t("增加")))
+        prefix=stepper(IconKind::Minus, -step_size, Signal::derive(move || t("common.decrease")))
+        suffix=stepper(IconKind::Plus, step_size, Signal::derive(move || t("common.increase")))
         class=class
       />
     }
@@ -136,7 +149,7 @@ pub fn NumberField(
     view! {
       <Input
         value=value
-        on_change=on_change
+        on_change=typed
         kind=InputType::Number
         size=size
         placeholder=placeholder

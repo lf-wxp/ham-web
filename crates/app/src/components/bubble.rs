@@ -43,7 +43,7 @@ pub fn Bubble(open: RwSignal<bool>, #[prop(into)] text: Signal<String>) -> impl 
               type="button"
               on:click=move |_| open.set(false)
               class="opacity-70 hover:opacity-100 transition-opacity"
-              aria-label=move || t("关闭提示")
+              aria-label=move || t("learning.dismiss")
             >
               <Icon kind=IconKind::X class="h-3.5 w-3.5" />
             </button>

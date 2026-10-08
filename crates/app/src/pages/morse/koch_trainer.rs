@@ -7,11 +7,11 @@ use leptos::prelude::*;
 use crate::icons::{Icon, IconKind};
 use crate::morse_audio::play_morse_timed_with;
 use crate::morse_settings::use_morse_settings;
-use crate::ui::{Button, ButtonKind, ControlSize, Input, Size, Variant};
+use crate::ui::{Button, ButtonKind, ControlSize, Input, Size, Slider, Variant};
 use crate::util::{random, storage};
 
 use super::{encode_words, pill_class};
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 
 const KEY: &str = "morse-koch";
 /// 每轮的组数与每组字符数。
@@ -95,24 +95,21 @@ pub(super) fn KochTrainer() -> impl IntoView {
     view! {
       <div class="flex shrink-0 items-center gap-2">
         <span class="whitespace-nowrap text-xs text-muted-foreground">{label.clone()}</span>
-        <input
-          type="range"
-          aria-label=label.clone()
-          min=min
-          max="35"
-          step="1"
-          prop:value=move || progress.with(get).to_string()
-          aria-valuetext=move || format!("{} WPM", progress.with(get))
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<u32>() {
-              progress.update(|p| {
-                set(p, v);
-                p.effective_wpm = p.effective_wpm.min(p.char_wpm);
-              });
-              save(&progress.get_untracked());
-            }
-          }
-          class="h-1.5 w-28 accent-primary"
+        <Slider
+          value=Signal::derive(move || f64::from(progress.with(get)))
+          on_change=Callback::new(move |v: f64| {
+            progress.update(|p| {
+              set(p, v.round() as u32);
+              p.effective_wpm = p.effective_wpm.min(p.char_wpm);
+            });
+            save(&progress.get_untracked());
+          })
+          min=f64::from(min)
+          max=35.0
+          step=1.0
+          aria_label=label.clone()
+          aria_valuetext=Signal::derive(move || format!("{} WPM", progress.with(get)))
+          class="w-28"
         />
         <span class="w-14 text-xs tabular-nums text-muted-foreground">{move || progress.with(get)} " WPM"</span>
       </div>
@@ -123,24 +120,24 @@ pub(super) fn KochTrainer() -> impl IntoView {
     <section class="rounded-xl border bg-card">
       <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
         <h2 class="mr-auto text-sm font-semibold">
-          {move || t("Koch 法抄收训练")}
+          {move || t("morse.koch-method-copying-practice")}
           <span class="ml-2 text-xs font-normal text-muted-foreground">
-            {move || tf("第 {} / {} 级", &[&(progress.with(|p| p.level)).to_string(), &(max_level()).to_string()])}
+            {move || tf("common.level", &[&(progress.with(|p| p.level)).to_string(), &(max_level()).to_string()])}
           </span>
         </h2>
-        <button type="button" class=pill_class(false) on:click=move |_| set_level(-1) title=move || t("减少一个字符")>{move || t("− 字符")}</button>
-        <button type="button" class=pill_class(false) on:click=move |_| set_level(1) title=move || t("跳过本级，直接加入下一个字符")>{move || t("+ 字符")}</button>
-        <button type="button" class=pill_class(false) on:click=move |_| reset_progress() title=move || t("重置学习进度")>{move || t("重置")}</button>
+        <button type="button" class=pill_class(false) on:click=move |_| set_level(-1) title=move || t("morse.remove-one-character")>{move || t("morse.character-2")}</button>
+        <button type="button" class=pill_class(false) on:click=move |_| set_level(1) title=move || t("morse.skip-this-level-and")>{move || t("morse.character")}</button>
+        <button type="button" class=pill_class(false) on:click=move |_| reset_progress() title=move || t("morse.reset-progress")>{move || t("morse.reset")}</button>
       </div>
 
       <div class="space-y-4 p-4">
         <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
-          {speed(t("字符速度"), 12, |p| p.char_wpm, |p, v| p.char_wpm = v)}
-          {speed(t("有效速度"), 5, |p| p.effective_wpm, |p, v| p.effective_wpm = v)}
+          {speed(t("morse.character-speed"), 12, |p| p.char_wpm, |p, v| p.char_wpm = v)}
+          {speed(t("morse.effective-speed"), 5, |p| p.effective_wpm, |p, v| p.effective_wpm = v)}
         </div>
 
         <div class="flex flex-wrap items-center gap-1.5">
-          <span class="mr-1 text-xs text-muted-foreground">{move || t("已学字符")}</span>
+          <span class="mr-1 text-xs text-muted-foreground">{move || t("morse.learned-characters")}</span>
           {move || {
             progress.with(|p| {
               let newest = p.newest();
@@ -158,7 +155,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
                   view! {
                     <span
                       class=format!("rounded border px-1.5 py-0.5 font-mono text-sm {class}")
-                      title=err.map_or_else(|| t("尚未练习"), |e| tf("错误率 {}%", &[&format!("{:.0}", e * 100.0)]))
+                      title=err.map_or_else(|| t("morse.not-practised-yet"), |e| tf("common.error-rate", &[&format!("{:.0}", e * 100.0)]))
                     >
                       {c.to_string()}
                     </span>
@@ -172,7 +169,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
         <div class="flex flex-col items-center gap-3 rounded-xl border bg-muted/30 px-4 py-6">
           <button
             type="button"
-            aria-label=move || t("播放")
+            aria-label=move || t("morse.play")
             on:click=move |_| play()
             class="relative flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 ease-out hover:scale-105 hover:shadow-xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95"
           >
@@ -194,7 +191,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
             </span>
           </button>
           <div class="text-xs text-muted-foreground">
-            {tf("每轮 {} 组、每组 {} 个字符，边听边抄，听完再提交", &[&(GROUPS).to_string(), &(GROUP_LEN).to_string()])}
+            {tp("common.each-round-has-groups", GROUPS, &[&(GROUPS).to_string(), &(GROUP_LEN).to_string()])}
           </div>
           <form
             class="flex flex-wrap items-center justify-center gap-2"
@@ -208,7 +205,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
               value=answer
               on_change=Callback::new(move |v: String| answer.set(v))
               size=ControlSize::Lg
-              placeholder=Signal::derive(move || t("抄收内容"))
+              placeholder=Signal::derive(move || t("morse.copied-text"))
               autocomplete="off"
               class="h-10 w-56 rounded-lg text-center font-mono text-lg md:text-lg font-semibold uppercase tracking-widest"
             />
@@ -218,7 +215,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
               size=Size::Default
               class="rounded-lg h-10"
             >
-              {move || if result.get().is_some() { t("下一轮") } else { t("提交") }}
+              {move || if result.get().is_some() { t("morse.next-round") } else { t("learning.submit") }}
             </Button>
           </form>
           {move || {
@@ -245,10 +242,10 @@ pub(super) fn KochTrainer() -> impl IntoView {
                       .collect_view()}
                   </div>
                   <div class="text-sm">
-                    {tf("抄对 {} / {}", &[&(correct).to_string(), &(total).to_string()])}
+                    {tp("common.correct-2", total as u32, &[&(correct).to_string(), &(total).to_string()])}
                     {r.leveled_up.then(|| view! {
                       <span class="ml-2 font-semibold text-emerald-600 dark:text-emerald-400">
-                        {move || tf("升级！新字符 {}", &[&(progress.with(|p| p.newest().map(String::from).unwrap_or_default())).to_string()])}
+                        {move || tf("common.level-up-new-character", &[&(progress.with(|p| p.newest().map(String::from).unwrap_or_default())).to_string()])}
                       </span>
                     })}
                   </div>
@@ -267,7 +264,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
               view! {
                 <div class="flex items-center justify-between text-xs text-muted-foreground">
                   <span>
-                    {tf("本级已抄 {} / {} 字 · 正确率 {}%（需 ≥ {}%）", &[&(t.sent).to_string(), &(MIN_CHARS).to_string(), &format!("{rate:.0}"), &format!("{:.0}", PASS_RATE * 100.0)])}
+                    {tp("common.this-level-characters-accuracy", MIN_CHARS, &[&(t.sent).to_string(), &(MIN_CHARS).to_string(), &format!("{rate:.0}"), &format!("{:.0}", PASS_RATE * 100.0)])}
                   </span>
                 </div>
                 <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -294,12 +291,12 @@ pub(super) fn KochTrainer() -> impl IntoView {
             rows.sort_by(|a, b| b.1.total_cmp(&a.1));
             (!rows.is_empty()).then(|| view! {
               <div>
-                <h3 class="mb-2 text-xs font-medium text-muted-foreground">{move || t("字符错误率（高 → 低）")}</h3>
+                <h3 class="mb-2 text-xs font-medium text-muted-foreground">{move || t("morse.character-error-rate-high")}</h3>
                 <div class="grid grid-cols-4 gap-x-4 gap-y-1 text-xs sm:grid-cols-6 lg:grid-cols-8">
                   {rows
                     .into_iter()
                     .map(|(c, err, sent)| view! {
-                      <div class="flex items-baseline gap-2" title=tf("共 {} 次", &[&(sent).to_string()])>
+                      <div class="flex items-baseline gap-2" title=tf("common.total", &[&(sent).to_string()])>
                         <span class="font-mono font-semibold">{c.to_string()}</span>
                         <span class={if err > 0.2 { "tabular-nums text-red-600 dark:text-red-400" } else { "tabular-nums text-muted-foreground" }}>
                           {format!("{:.0}%", err * 100.0)}
@@ -314,7 +311,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
         }}
 
         <p class="text-xs text-muted-foreground">
-          {move || t("Koch 法：直接用目标字符速度（建议 ≥ 18 WPM）听辨，从 2 个字符开始，本级正确率达到 90% 后自动加入下一个字符，最新字符与易错字符出现得更多。有效速度低于字符速度时启用 Farnsworth 间隔：字符本身不变慢，只拉长字符与组之间的停顿。")}
+          {move || t("morse.koch-method-recognise-characters")}
         </p>
       </div>
     </section>

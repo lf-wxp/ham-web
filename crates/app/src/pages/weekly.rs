@@ -3,14 +3,14 @@
 use ham_web_core::ExamRule;
 use leptos::prelude::*;
 
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 use crate::share_score;
 use crate::study;
 use crate::util::{local_today, set_title};
 
 #[component]
 pub fn WeeklyPage() -> impl IntoView {
-  set_title(&t("学习周报"));
+  set_title("shell.weekly-report");
 
   let today = local_today();
   let daily = study::load_daily();
@@ -28,12 +28,12 @@ pub fn WeeklyPage() -> impl IntoView {
   let week_duration_ms: u64 = week.iter().map(|(_, t)| t.duration_ms).sum();
   let week_duration_text = if week_duration_ms >= 3_600_000 {
     tf(
-      "{} 小时",
+      "learning.hours",
       &[&format!("{:.1}", week_duration_ms as f64 / 3_600_000.0)],
     )
   } else {
     tf(
-      "{} 分钟",
+      "radio.min",
       &[&format!("{:.0}", week_duration_ms as f64 / 60_000.0)],
     )
   };
@@ -77,7 +77,7 @@ pub fn WeeklyPage() -> impl IntoView {
   let mistakes = book.records.len();
   let weakest_label: Option<String> = weakest.as_ref().map(|(_, name, rate, answered)| {
     tf(
-      "{} · 正确率 {}% / 作答 {} 题",
+      "common.correct-answered",
       &[
         &name.to_string(),
         &format!("{rate:.0}"),
@@ -108,8 +108,8 @@ pub fn WeeklyPage() -> impl IntoView {
     if let Some(data_url) = card() {
       leptos::task::spawn_local(async move {
         match share_score::copy_image(&data_url).await {
-          Ok(()) => crate::util::alert(&t("已复制到剪贴板")),
-          Err(e) => crate::util::alert(&tf("复制失败：{}", &[&e])),
+          Ok(()) => crate::util::alert(&t("learning.copied-to-clipboard")),
+          Err(e) => crate::util::alert(&tf("learning.copy-failed", &[&e])),
         }
       });
     }
@@ -119,10 +119,10 @@ pub fn WeeklyPage() -> impl IntoView {
     move |_| {
       if let Some(data_url) = card() {
         let filename = format!("ham-weekly-{today}.png");
-        let title = t("学习周报");
+        let title = t("shell.weekly-report");
         leptos::task::spawn_local(async move {
           if let Err(e) = share_score::share_image(&data_url, &filename, &title).await {
-            crate::util::alert(&tf("分享失败：{}", &[&e]));
+            crate::util::alert(&tf("learning.share-failed", &[&e]));
           }
         });
       }
@@ -149,32 +149,32 @@ pub fn WeeklyPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("学习周报")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("近两周作答趋势与本周回顾")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.weekly-report")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("learning.two-week-answering-trend")}</div>
           </div>
           <button
             type="button"
             class="rounded-md border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
             on:click=share
           >
-            {move || t("下载卡片")}
+            {move || t("learning.download-card")}
           </button>
           <button
             type="button"
             class="rounded-md border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
             on:click=copy
           >
-            {move || t("复制图片")}
+            {move || t("learning.copy-image")}
           </button>
           <button
             type="button"
             class="rounded-md border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
             on:click=sys_share
           >
-            {move || t("系统分享")}
+            {move || t("learning.system-share")}
           </button>
           <a href="/progress" class="text-xs text-primary underline-offset-4 hover:underline">
-            {move || t("学习进度 →")}
+            {move || t("learning.progress")}
           </a>
         </div>
       </header>
@@ -183,28 +183,28 @@ pub fn WeeklyPage() -> impl IntoView {
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <div class="rounded-xl border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{week_answered}</div>
-            <div class="mt-1 text-xs text-muted-foreground">{move || t("本周作答")}</div>
+            <div class="mt-1 text-xs text-muted-foreground">{move || t("exam.answered-this-week")}</div>
           </div>
           <div class="rounded-xl border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{week_new}</div>
-            <div class="mt-1 text-xs text-muted-foreground">{move || t("本周新题")}</div>
+            <div class="mt-1 text-xs text-muted-foreground">{move || t("exam.new-questions-this-week")}</div>
           </div>
           <div class="rounded-xl border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{streak}</div>
-            <div class="mt-1 text-xs text-muted-foreground">{move || t("连续打卡（天）")}</div>
+            <div class="mt-1 text-xs text-muted-foreground">{move || t("learning.check-in-streak-days")}</div>
           </div>
           <div class="rounded-xl border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{mistakes}</div>
-            <div class="mt-1 text-xs text-muted-foreground">{move || t("当前错题")}</div>
+            <div class="mt-1 text-xs text-muted-foreground">{move || t("exam.current-mistakes")}</div>
           </div>
           <div class="rounded-xl border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{week_duration_text}</div>
-            <div class="mt-1 text-xs text-muted-foreground">{move || t("本周学习时长")}</div>
+            <div class="mt-1 text-xs text-muted-foreground">{move || t("learning.study-time-this-week")}</div>
           </div>
         </div>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("近 14 天作答趋势")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.answering-trend-over-the")}</h2>
           <div class="p-4">
             <div class="flex h-28 items-end gap-1">
               {move || {
@@ -220,7 +220,7 @@ pub fn WeeklyPage() -> impl IntoView {
                         <div
                           class="w-full rounded-t bg-primary/70 transition-all group-hover:bg-primary"
                           style=format!("height: {h}%")
-                          title=tf("{}：{} 题（新题 {}）", &[&(day).to_string(), &(answered).to_string(), &(new).to_string()])
+                          title=tp("common.questions-new", answered, &[&(day).to_string(), &(answered).to_string(), &(new).to_string()])
                         ></div>
                         <span class="text-[9px] text-muted-foreground">{label}</span>
                       </div>
@@ -231,12 +231,12 @@ pub fn WeeklyPage() -> impl IntoView {
             </div>
             <div class="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
               <span>
-                {t("新题 ")} <span class="font-semibold text-foreground tabular-nums">{week_new}</span>
+                {t("learning.new")} <span class="font-semibold text-foreground tabular-nums">{week_new}</span>
               </span>
               <span>
-                {t("复习 ")} <span class="font-semibold text-foreground tabular-nums">{week_review}</span>
+                {t("learning.reviews")} <span class="font-semibold text-foreground tabular-nums">{week_review}</span>
               </span>
-              <span class="ml-auto tabular-nums">{move || t("新题占比 ")} {format!("{new_pct:.0}%")}</span>
+              <span class="ml-auto tabular-nums">{move || t("learning.share-of-new-questions")} {format!("{new_pct:.0}%")}</span>
             </div>
           </div>
         </section>
@@ -248,16 +248,16 @@ pub fn WeeklyPage() -> impl IntoView {
           };
           view! {
             <section class="rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("本周最薄弱分类")}</h2>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.weakest-category-this-week")}</h2>
               <div class="flex items-center gap-3 p-4">
                 <div class="min-w-0 flex-1">
                   <div class="text-sm font-medium">{name}</div>
                   <div class="mt-0.5 text-xs text-muted-foreground tabular-nums">
-                    {tf("作答 {} 题，正确率 {}%", &[&(answered).to_string(), &(rate).to_string()])}
+                    {tp("common.questions-answered-accuracy", answered, &[&(answered).to_string(), &(rate).to_string()])}
                   </div>
                 </div>
                 <a href=href class="rounded-md border px-3 py-1.5 text-xs transition-colors hover:bg-accent">
-                  {move || t("专项练习")}
+                  {move || t("learning.focused-practice")}
                 </a>
               </div>
             </section>
@@ -270,7 +270,7 @@ pub fn WeeklyPage() -> impl IntoView {
           }
           view! {
             <section class="rounded-xl border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("最近模拟考试")}</h2>
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.recent-mock-exams")}</h2>
               <div class="divide-y">
                 {exams
                   .iter()
@@ -282,7 +282,7 @@ pub fn WeeklyPage() -> impl IntoView {
                         <span class="w-8 shrink-0 font-mono text-xs text-muted-foreground">{r.bank.clone()}</span>
                         <span class="tabular-nums text-muted-foreground">{r.correct} " / " {r.total}</span>
                         <span class=if passed { "ml-auto text-xs font-medium text-emerald-700 dark:text-emerald-400" } else { "ml-auto text-xs font-medium text-red-700 dark:text-red-400" }>
-                          {if passed { t("合格") } else { t("未合格") }}
+                          {if passed { t("exam.passed") } else { t("learning.not-passed") }}
                         </span>
                       </div>
                     }
@@ -295,7 +295,7 @@ pub fn WeeklyPage() -> impl IntoView {
         }}
 
         <p class="text-xs text-muted-foreground">
-          {move || t("数据来自本地学习记录（每日作答量与模拟考历史），仅保存在浏览器中。")}
+          {move || t("learning.data-comes-from-local")}
         </p>
       </div>
     </div>

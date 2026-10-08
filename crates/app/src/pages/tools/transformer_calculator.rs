@@ -1,7 +1,8 @@
 use leptos::prelude::*;
 
-use super::INPUT;
 use crate::i18n::{t, tf};
+use crate::ui::{Field, NumberField};
+use crate::util::unique_id;
 
 /// 变压器阻抗变换：匝数比 Np:Ns = √(Zp/Zs)。
 #[component]
@@ -9,51 +10,52 @@ pub(super) fn TransformerCalculator() -> impl IntoView {
   let zp = RwSignal::new(200.0);
   let zs = RwSignal::new(50.0);
 
+  let zp_id = unique_id("transformer-zp");
+  let zs_id = unique_id("transformer-zs");
+
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("初级阻抗 Zp（Ω）")}</span>
-        <input
-          type="number"
-          prop:value=move || zp.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      <Field label=Signal::derive(move || t("tools.primary-impedance-zp")) r#for=zp_id.clone()>
+        <NumberField
+          id=zp_id
+          value=Signal::derive(move || zp.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               zp.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("次级阻抗 Zs（Ω）")}</span>
-        <input
-          type="number"
-          prop:value=move || zs.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      </Field>
+      <Field label=Signal::derive(move || t("tools.secondary-impedance-zs")) r#for=zs_id.clone()>
+        <NumberField
+          id=zs_id
+          value=Signal::derive(move || zs.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               zs.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
+      </Field>
       <div class="sm:col-span-2 rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let p = zp.get();
           let s = zs.get();
           if p <= 0.0 || s <= 0.0 {
-            t("请输入正的初级与次级阻抗。")
+            t("tools.enter-positive-primary-and")
           } else {
             let n = (p / s).sqrt();
             tf(
-              "匝数比 Np:Ns = {}:1　·　阻抗比 Zp:Zs = {}:1",
+              "tools.turns-ratio-np-ns",
               &[&format!("{n:.3}"), &format!("{:.3}", p / s)],
             )
           }
         }}
       </div>
       <p class="sm:col-span-2 text-xs text-muted-foreground">
-        {move || t("理想变压器的匝数比平方等于阻抗比。实际需考虑磁芯损耗、漏感与频率范围，宽带应用需选用合适的磁材与绕法。")}
+        {move || t("tools.an-ideal-transformer-s")}
       </p>
     </div>
   }

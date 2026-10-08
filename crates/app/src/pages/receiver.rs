@@ -10,14 +10,14 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn ReceiverPage() -> impl IntoView {
-  set_title(&t("接收机关键指标"));
+  set_title("shell.receiver-specs");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("接收机关键指标")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("灵敏度 · 选择性 · 动态范围 · 三阶截点")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.receiver-specs")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("knowledge.sensitivity-selectivity-dynamic-range")}</div>
           </div>
         </div>
       </header>
@@ -27,9 +27,9 @@ pub fn ReceiverPage() -> impl IntoView {
           <table class="w-full min-w-[640px] border-collapse text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>
-                <th class=CELL>{move || t("指标")}</th>
-                <th class=CELL>{move || t("含义")}</th>
-                <th class=CELL>{move || t("决定因素")}</th>
+                <th class=CELL>{move || t("knowledge.metrics")}</th>
+                <th class=CELL>{move || t("knowledge.meaning")}</th>
+                <th class=CELL>{move || t("knowledge.deciding-factors")}</th>
               </tr>
             </thead>
             <tbody>
@@ -50,7 +50,7 @@ pub fn ReceiverPage() -> impl IntoView {
         </div>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("噪声与灵敏度基础")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.noise-and-sensitivity-basics")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {NOISE_BASICS
               .iter()
@@ -67,7 +67,7 @@ pub fn ReceiverPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("改善接收的要点")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.improving-reception")}</h2>
           <ul class="space-y-2 p-4">
             {RECEIVER_TIPS
               .iter()

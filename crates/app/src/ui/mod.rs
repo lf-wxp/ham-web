@@ -4,20 +4,29 @@
 //! `<textarea>` / `<input type="range">` 等原生元素，统一用这里的组件，颜色、圆角、
 //! 间距、字体与 hover / focus / disabled / error 状态反馈才能始终一致。
 //!
+//! > **写代码前先读 `docs/ui-components.md`**：那是使用规范（决策表「要什么用哪个」、
+//! > prop 约定、无障碍与多语言要求、常见坑、验收清单）；本文件与 `src/ui/README.md`
+//! > 是组件清单与示例。改动本目录时也要同步更新那两份文档。
+//!
 //! # 组件清单
 //!
 //! | 组件 | 替代的原生写法 | 说明 |
 //! |---|---|---|
 //! | [`Button`] | `<button class=button_class(…)>` | [`button_class`] 的组件化封装 |
-//! | [`Input`] | `<input>`（text / search / password / email / tel / url / date / time / datetime-local） | 支持前缀、后缀、一键清除、回车回调 |
+//! | [`ButtonLink`] | `<a href class=button_class(…)>`（跳转用） | 元素仍是链接（中键新开 / 右键复制地址），外观同 [`Button`] |
+//! | [`Input`] | `<input>`（text / search / password / email / tel / url；日期与时间见下两行） | 支持前缀、后缀、一键清除、回车回调 |
 //! | [`NumberField`] | `<input type="number">` | 数值录入 + 可选加减步进 |
 //! | [`Textarea`] | `<textarea>` | 支持随内容自动增高 |
-//! | [`Select`] + [`SelectItem`] | `<select>`（选项需富文本展示时） | 弹层式单选，对应 Radix Select |
-//! | [`NativeSelect`] | `<select>`（选项固定的筛选器） | 保留原生交互，仅统一外观 |
+//! | [`Select`] + [`SelectItem`] | `<select>`（选项需富文本展示时） | 弹层式单选，对应 Radix Select（语言切换即用此组件） |
+//! | [`NativeSelect`] | `<select>`（选项固定的筛选器） | 弹层式单选，外观复用 [`Select`]，故与语言切换一致 |
+//! | [`DatePicker`] | `<input type="date">` | 弹层日历，样式同 [`Select`] |
+//! | [`TimePicker`] | `<input type="time">` | 弹层双列（时 / 分），样式同 [`Select`] |
 //! | [`Checkbox`] | `<input type="checkbox">`（表单项） | 对应 Radix Checkbox |
 //! | [`Switch`] | `<input type="checkbox">`（切换即生效的设置） | 对应 Radix Switch |
 //! | [`RadioGroup`] + [`RadioGroupItem`] | `<input type="radio">` | 对应 Radix RadioGroup |
 //! | [`Slider`] | `<input type="range">` | 轨道 / 滑块自绘，进度用 CSS 变量 |
+//! | [`ChipGroup`] + [`Chip`] | 手写的分段选择胶囊（`CHIP_ON` / `CHIP_OFF`） | 互斥选择，比 [`RadioGroup`] 紧凑，适合工具条 |
+//! | [`ChipToggle`] | 手写的筛选 chip 开关 | `aria-pressed` 语义，允许一个都不选 |
 //! | [`FileInput`] | 隐藏 `<input type="file">` + 触发按钮 | 按钮外观走 [`button_class`] |
 //! | [`Field`] | 手写的 `label + 控件 + 提示` 排版 | 标签 / 说明 / 错误文案统一 |
 //! | [`Label`] | `<label>` | 单独使用时（如 Checkbox 旁） |
@@ -35,6 +44,11 @@
 //!   `aria-invalid:` 变体切换到 `destructive` 描边；常态不输出该属性。
 //! - **类名覆盖**：`class` 会经 [`cn`] 与默认类名合并，后写胜出，可安全覆盖 `w-*`、`h-*` 等。
 //! - **无障碍**：无可见标签时务必传 `aria_label`。
+//! - **文件组织**：一个组件一个文件（整个仓库都这样，业务组件也一样）；一族多组件
+//!   （`Dialog` + 它的部件、`RadioGroup` + `RadioGroupItem`、`ChipGroup` + `Chip` +
+//!   `ChipToggle`）用文件夹模块 —— `mod.rs` 只放模块文档 + `mod` 声明 + `pub use`，
+//!   共享的样式 token / context 放 `shared.rs`。
+//!   文件名不能与父目录同名（`chip/chip.rs` 会被 Rust 拒绝，用 `chip_item.rs`）。
 //!
 //! # 使用示例
 //!
@@ -78,15 +92,20 @@
 //! 更完整的对照表与迁移步骤见 `src/ui/README.md`。
 
 mod button;
+mod button_link;
 mod checkbox;
+mod chip;
 mod control;
+mod date_picker;
 mod dialog;
 mod field;
 mod file_input;
 mod input;
+mod intl;
 mod label;
 mod native_select;
 mod number_field;
+mod popover;
 mod progress;
 mod radio;
 mod select;
@@ -95,10 +114,14 @@ mod slider;
 mod stat;
 mod switch;
 mod textarea;
+mod time_picker;
 
 pub use button::{Button, ButtonKind};
+pub use button_link::ButtonLink;
 pub use checkbox::Checkbox;
+pub use chip::{Chip, ChipGroup, ChipToggle};
 pub use control::{ControlSize, TextValue, control_class};
+pub use date_picker::DatePicker;
 pub use dialog::{Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Sheet};
 pub use field::Field;
 pub use file_input::FileInput;
@@ -114,6 +137,7 @@ pub use slider::Slider;
 pub use stat::Stat;
 pub use switch::Switch;
 pub use textarea::Textarea;
+pub use time_picker::TimePicker;
 
 use crate::cn::cn;
 
@@ -201,7 +225,7 @@ pub fn badge_class(variant: BadgeVariant, extra: &str) -> String {
 /// 卡片容器类名。
 pub fn card_class(extra: &str) -> String {
   cn(&[
-    "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+    "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm mb-[24px]",
     extra,
   ])
 }
@@ -217,16 +241,6 @@ pub fn card_title_class(extra: &str) -> String {
 /// 卡片内容类名。
 pub fn card_content_class(extra: &str) -> String {
   cn(&["px-6", extra])
-}
-
-/// 输入框类名。
-///
-/// 新代码请直接用 [`Input`] / [`control_class`]；这里保留给尚未迁移的调用点。
-///
-/// 直接复用 [`control_class`]：迁移期内「已用组件的输入框」和「仍是原生 `<input>` 的输入框」
-/// 必须长得一样，否则同一页面会出现两种圆角 / 两种聚焦环。
-pub fn input_class(extra: &str) -> String {
-  control_class(ControlSize::Default, extra)
 }
 
 /// 表单标签类名。

@@ -1,5 +1,6 @@
 //! 传播预测与最佳工作频率速查。
 
+mod heatmap_card;
 mod voacap_card;
 
 use ham_web_core::muf::{BAND_CHOICE, MUF_CONCEPTS};
@@ -8,27 +9,30 @@ use leptos::prelude::*;
 use crate::util::set_title;
 
 use crate::i18n::t;
+use heatmap_card::HeatmapCard;
 use voacap_card::VoacapCard;
 
 #[component]
 pub fn MufPage() -> impl IntoView {
-  set_title(&t("传播预测"));
+  set_title("shell.propagation-forecast");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("传播预测")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("MUF 最高可用频率 · LUF 最低可用频率 · 最佳工作频率 · 波段选择")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.propagation-forecast")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("tools.muf-luf-optimum-working")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+        <HeatmapCard />
+
         <VoacapCard />
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("核心概念")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.key-concepts-2")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {MUF_CONCEPTS
               .iter()
@@ -45,7 +49,7 @@ pub fn MufPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("波段选择建议")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.band-selection-advice")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {BAND_CHOICE
               .iter()

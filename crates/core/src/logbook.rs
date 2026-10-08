@@ -12,6 +12,7 @@ use crate::adif::{AdifRecord, to_adif_mode};
 use crate::dxcc::{Entity, entity_by_dxcc, lookup};
 use crate::frequencies::band_of;
 use crate::grid::{distance_bearing, lat_lon_from_grid};
+use crate::qsl_status::QslVia;
 
 /// 录入表单可选的模式。
 pub const MODES: &[&str] = &[
@@ -116,6 +117,11 @@ pub struct LogEntry {
   /// QSL 卡片是否已寄出 `QSL_SENT`。
   #[serde(default)]
   pub qsl_sent: bool,
+  /// 纸卡寄出方式 `QSL_SENT_VIA`（卡片局 / 直寄 / 未知）。
+  ///
+  /// 只有 `qsl_sent` 为真时才有意义；旧数据与不带该字段的 ADIF 一律落到「未知」。
+  #[serde(default)]
+  pub qsl_sent_via: QslVia,
   /// QSL 卡片是否已确认收到 `QSL_RCVD`。
   #[serde(default)]
   pub qsl_rcvd: bool,
@@ -360,6 +366,10 @@ pub fn export_adif(entries: &[LogEntry], station: &StationInfo) -> String {
     adif_field(&mut s, "IOTA", &e.iota);
     adif_field(&mut s, "COMMENT", &e.remark);
     adif_field(&mut s, "QSL_SENT", if e.qsl_sent { "Y" } else { "N" });
+    // 寄出方式只在确实记了的时候写出（`adif_field` 会跳过空值）。
+    if let Some(code) = e.qsl_sent_via.adif_code() {
+      adif_field(&mut s, "QSL_SENT_VIA", code);
+    }
     adif_field(&mut s, "QSL_RCVD", if e.qsl_rcvd { "Y" } else { "N" });
     adif_field(&mut s, "LOTW_QSL_SENT", if e.lotw_sent { "Y" } else { "N" });
     adif_field(&mut s, "LOTW_QSL_RCVD", if e.lotw_rcvd { "Y" } else { "N" });
@@ -474,6 +484,7 @@ pub fn from_adif(r: AdifRecord) -> LogEntry {
     iota: r.iota,
     remark: r.comment,
     qsl_sent: r.qsl_sent,
+    qsl_sent_via: r.qsl_sent_via,
     qsl_rcvd: r.qsl_rcvd,
     lotw_sent: r.lotw_sent,
     lotw_rcvd: r.lotw_rcvd,
@@ -668,6 +679,25 @@ mod tests {
     );
     assert!(back.qsl_rcvd && !back.qsl_sent);
     assert_eq!(back.qso_key(), e.qso_key());
+  }
+
+  #[test]
+  fn adif_roundtrips_the_qsl_sent_via() {
+    // 记了寄出方式：导出要写 `QSL_SENT_VIA`，导入要读回来。
+    let mut e = qso(1, "JA1X", "14.074", "FT8");
+    e.qsl_sent = true;
+    e.qsl_sent_via = QslVia::Bureau;
+    let text = export_adif(&[e], &StationInfo::default());
+    assert!(text.contains("<QSL_SENT_VIA:1>B"), "{text}");
+    assert_eq!(
+      from_adif(parse_adif(&text).remove(0)).qsl_sent_via,
+      QslVia::Bureau
+    );
+
+    // 没记方式时不能凭空多出一行（旧数据往返保持原样）。
+    let plain = qso(2, "W1AW", "14.074", "SSB");
+    let text = export_adif(&[plain], &StationInfo::default());
+    assert!(!text.contains("QSL_SENT_VIA"), "{text}");
   }
 
   #[test]

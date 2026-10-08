@@ -37,7 +37,7 @@ pub(super) fn ChannelView(
           class="rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           on:click=move |_| download(&download_name, &download_url)
         >
-          {move || t("下载 PNG")}
+          {move || t("tools.download-png")}
         </button>
       </div>
       <img src=url alt=label_alt class="w-full rounded-lg border bg-black/5" />

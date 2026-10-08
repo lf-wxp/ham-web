@@ -5,6 +5,7 @@ use crate::components::common::NoteEditor;
 use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 use crate::store;
+use crate::ui::{ControlSize, NativeSelect, SelectOption};
 
 /// 一道收藏题卡片；`groups_of` 为该题当前所属分组，`all_groups` 为全部分组（用于下拉加入）。
 #[component]
@@ -38,8 +39,8 @@ pub(super) fn BookmarkCard(
         <button
           type="button"
           class="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
-          title=move || t("取消收藏")
-          aria-label=move || t("取消收藏")
+          title=move || t("exam.remove-bookmark")
+          aria-label=move || t("exam.remove-bookmark")
           on:click=move |_| on_remove.run(q.clone())
         >
           <Icon kind=IconKind::BookMarked class="h-4 w-4" />
@@ -59,10 +60,10 @@ pub(super) fn BookmarkCard(
           .collect_view()}
       </div>
       <div class="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
-        {move || t("答案：")} <span class="font-mono font-semibold">{question.answer_keys.join("、")}</span>
+        {move || t("exam.answer")} <span class="font-mono font-semibold">{question.answer_keys.join("、")}</span>
       </div>
       <div class="mt-3 flex flex-wrap items-center gap-1.5 border-t pt-2">
-        <span class="text-xs text-muted-foreground">{move || t("分组")}</span>
+        <span class="text-xs text-muted-foreground">{move || t("exam.group")}</span>
         {groups_of
           .into_iter()
           .map(|name| {
@@ -72,7 +73,7 @@ pub(super) fn BookmarkCard(
               <button
                 type="button"
                 class="inline-flex items-center gap-1 rounded-full border bg-accent px-2 py-0.5 text-[11px] transition-colors hover:bg-destructive/10"
-                title=move || t("从该分组移出")
+                title=move || t("exam.remove-from-this-group")
                 on:click=move |_| on_remove_from_group.run((qr.clone(), n.clone()))
               >
                 {name} " ×"
@@ -81,24 +82,25 @@ pub(super) fn BookmarkCard(
           })
           .collect_view()}
         {(!all_groups.is_empty()).then(|| {
+          let group_options: Vec<SelectOption> = all_groups
+            .iter()
+            .map(|g| SelectOption::new(g.clone(), g.clone()))
+            .collect();
           view! {
-            <select
-              prop:value=move || pick.get()
-              on:change=move |e| {
-                let v = event_target_value(&e);
+            <NativeSelect
+              value=pick
+              on_change=Callback::new(move |v: String| {
                 if !v.is_empty() {
                   on_add_to_group.run((q_add.clone(), v));
                 }
                 pick.set(String::new());
-              }
-              class="rounded-full border bg-background px-2 py-0.5 text-[11px] text-muted-foreground focus:outline-none"
-            >
-              <option value="">{move || t("加入分组…")}</option>
-              {all_groups
-                .iter()
-                .map(|g| view! { <option value=g.clone()>{g.clone()}</option> })
-                .collect_view()}
-            </select>
+              })
+              options=group_options
+              placeholder=Signal::derive(move || t("exam.add-to-group"))
+              size=ControlSize::Sm
+              aria_label=Signal::derive(move || t("exam.add-to-group"))
+              class="h-7 w-auto rounded-full px-2 py-0 text-[11px] md:text-[11px]"
+            />
           }
         })}
         <button
@@ -107,7 +109,7 @@ pub(super) fn BookmarkCard(
           aria-expanded=move || note_open.get().to_string()
           on:click=move |_| note_open.update(|v| *v = !*v)
         >
-          {move || t("笔记")}
+          {move || t("exam.notes")}
           {has_note.then(|| {
             view! { <span class="size-1.5 rounded-full bg-primary"></span> }
           })}

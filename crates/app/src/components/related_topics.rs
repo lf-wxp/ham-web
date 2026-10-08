@@ -17,7 +17,7 @@ pub fn RelatedTopics() -> impl IntoView {
           view! {
             <div class="mx-auto max-w-5xl px-4 pb-10">
               <section class="rounded-xl border bg-card">
-                <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("相关主题")}</h2>
+                <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("common.related-topics")}</h2>
                 <div class="flex flex-wrap gap-2 p-4">
                   {items
                     .iter()

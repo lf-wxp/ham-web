@@ -10,21 +10,21 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn SstvPage() -> impl IntoView {
-  set_title(&t("SSTV 慢扫描电视"));
+  set_title("shell.sstv");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("SSTV 慢扫描电视")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("话音带宽内传输静止图像 · 模式 · 频率")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.sstv")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("knowledge.still-images-within-a")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("核心概念")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.key-concepts-2")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {SSTV_CONCEPTS
               .iter()
@@ -41,7 +41,7 @@ pub fn SstvPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("常用频率")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("shell.common-frequencies")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2 md:grid-cols-3">
             {SSTV_FREQS
               .iter()
@@ -61,9 +61,9 @@ pub fn SstvPage() -> impl IntoView {
           <table class="w-full min-w-[520px] border-collapse text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>
-                <th class=CELL>{move || t("模式")}</th>
-                <th class=CELL>{move || t("分辨率 / 时长")}</th>
-                <th class=CELL>{move || t("说明")}</th>
+                <th class=CELL>{move || t("log.mode")}</th>
+                <th class=CELL>{move || t("knowledge.resolution-duration")}</th>
+                <th class=CELL>{move || t("radio.notes")}</th>
               </tr>
             </thead>
             <tbody>
@@ -84,7 +84,7 @@ pub fn SstvPage() -> impl IntoView {
         </div>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("操作要点")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.operating-tips")}</h2>
           <ul class="space-y-2 p-4">
             {SSTV_TIPS
               .iter()

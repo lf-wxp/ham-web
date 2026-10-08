@@ -46,15 +46,15 @@ pub(super) fn XrayTrend(
   view! {
     <section class="rounded-xl border bg-card">
       <h2 class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold">
-        {t("X 射线通量")}
+        {t("radio.x-ray-flux-2")}
         <span class="text-xs font-normal text-muted-foreground">
           {move || match flux {
             Some(f) if !flare_class.is_empty() => {
               // 数值先格式化，译文模板只保留 `{}` 占位符。
-              tf("{} 级 · {} W/m²", &[flare_class.as_str(), &format!("{f:.1e}")])
+              tf("common.class-w-m", &[flare_class.as_str(), &format!("{f:.1e}")])
             }
             Some(f) => format!("{:.1e} W/m²", f),
-            None => t("暂不可用").to_string(),
+            None => t("learning.unavailable").to_string(),
           }}
         </span>
       </h2>
@@ -63,7 +63,7 @@ pub(super) fn XrayTrend(
           viewBox=format!("0 0 {W:.0} {H:.0}")
           class="w-full"
           role="img"
-          aria-label=t("X 射线通量曲线")
+          aria-label=t("radio.x-ray-flux-curve")
         >
           {LEVELS
             .iter()

@@ -8,14 +8,14 @@ use crate::i18n::t;
 
 #[component]
 pub fn BandPlanPage() -> impl IntoView {
-  set_title(&t("波段规划"));
+  set_title("shell.band-plan");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("波段规划")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("IARU 三区 · 各波段模式子段（中国大陆口径）")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.band-plan")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("knowledge.iaru-region-3-band")}</div>
           </div>
         </div>
       </header>

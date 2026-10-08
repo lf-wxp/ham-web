@@ -39,22 +39,22 @@ pub(super) fn SolarCard() -> impl IntoView {
 
   view! {
     <a href="/solar" class="rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">
-      <div class="text-sm font-semibold">{move || t("太阳活动")}</div>
+      <div class="text-sm font-semibold">{move || t("shell.solar-data")}</div>
       <div class="mt-2 grid grid-cols-3 gap-2 text-center">
         <div class="rounded-lg bg-muted/40 p-2">
-          <div class="text-xs text-muted-foreground">{move || t("K 指数")}</div>
+          <div class="text-xs text-muted-foreground">{move || t("home.k-index")}</div>
           <div class="mt-0.5 text-lg font-semibold tabular-nums">
             {move || k.get().map_or_else(|| if loading.get() { "…" } else { "—" }.to_owned(), |v| v.to_string())}
           </div>
         </div>
         <div class="rounded-lg bg-muted/40 p-2">
-          <div class="text-xs text-muted-foreground">{move || t("通量")}</div>
+          <div class="text-xs text-muted-foreground">{move || t("learning.flux")}</div>
           <div class="mt-0.5 text-lg font-semibold tabular-nums">
             {move || sfi.get().map_or_else(|| "—".to_owned(), |v| v.to_string())}
           </div>
         </div>
         <div class="rounded-lg bg-muted/40 p-2">
-          <div class="text-xs text-muted-foreground">{move || t("黑子")}</div>
+          <div class="text-xs text-muted-foreground">{move || t("learning.sunspots")}</div>
           <div class="mt-0.5 text-lg font-semibold tabular-nums">
             {move || ssn.get().map_or_else(|| "—".to_owned(), |v| v.to_string())}
           </div>

@@ -88,13 +88,24 @@ pub fn Input(
   /// 无可见标签时的无障碍名称。
   #[prop(optional, into)]
   aria_label: Option<TextValue>,
+  /// 原生 `title`（鼠标悬停提示）。
+  #[prop(optional, into)]
+  title: Option<TextValue>,
   #[prop(optional, into)] id: Option<String>,
   #[prop(optional, into)] name: Option<String>,
   #[prop(optional, into)] autocomplete: Option<String>,
   #[prop(optional, into)] inputmode: Option<String>,
+  #[prop(optional, into)] autocapitalize: Option<String>,
+  #[prop(optional, into)] spellcheck: Option<String>,
+  /// 关联的外部说明元素 id（例如实时提示区 `aria-live`）。
+  #[prop(optional, into)]
+  aria_describedby: Option<String>,
   #[prop(optional, into)] min: Option<String>,
   #[prop(optional, into)] max: Option<String>,
   #[prop(optional, into)] step: Option<String>,
+  /// `maxlength`（受控：随目标文案长度变化的场合用 `Signal::derive`）。
+  #[prop(optional, into)]
+  maxlength: Option<Signal<String>>,
   #[prop(optional, into)] disabled: Signal<bool>,
   #[prop(optional, into)] readonly: Signal<bool>,
   /// 错误态：描边转 `destructive`，并输出 `aria-invalid`。
@@ -121,6 +132,10 @@ pub fn Input(
   /// 回车提交回调（搜索框常用）。
   #[prop(optional, into)]
   on_enter: Option<Callback<()>>,
+  /// 其余按键（方向键、`Esc`、回车+空格组合的焦点转移等）。比 [`Self::on_enter`]
+  /// 更底层：两者都传时，本回调先跑，回车再由 `on_enter` 处理一次。
+  #[prop(optional, into)]
+  on_keydown: Option<Callback<web_sys::KeyboardEvent>>,
   #[prop(optional)] node_ref: NodeRef<html::Input>,
 ) -> impl IntoView {
   // 空串一律当作「未设置」：`aria-label=""` 会被读屏当成空名称，`min=""` / `max=""`
@@ -130,6 +145,7 @@ pub fn Input(
   let min = non_empty(min);
   let max = non_empty(max);
   let step = non_empty(step);
+  let maxlength = maxlength.filter(|v| !v.get().is_empty());
 
   let pad_l = if prefix.is_some() { "pl-9" } else { "" };
   let pad_r = if suffix.is_some() || clearable {
@@ -148,10 +164,15 @@ pub fn Input(
       name=name
       autocomplete=autocomplete
       inputmode=inputmode
+      autocapitalize=autocapitalize
+      spellcheck=spellcheck
+      aria-describedby=aria_describedby
       min=min
       max=max
       step=step
+      maxlength=move || maxlength.map(|v| v.get())
       placeholder=move || placeholder.as_ref().map(TextValue::get)
+      title=move || title.as_ref().map(TextValue::get)
       aria-label=move || aria_label.as_ref().map(TextValue::get)
       aria-invalid=invalid_attr(invalid)
       autofocus=autofocus
@@ -161,6 +182,9 @@ pub fn Input(
       prop:value=move || value.get()
       on:input=move |e| on_change.run(event_target_value(&e))
       on:keydown=move |e| {
+        if let Some(cb) = on_keydown {
+          cb.run(e.clone());
+        }
         if e.key() == "Enter" && let Some(cb) = on_enter {
           cb.run(());
         }
@@ -207,7 +231,7 @@ pub fn Input(
               <button
                 type="button"
                 tabindex="-1"
-                aria-label=move || t("清除")
+                aria-label=move || t("exam.clear")
                 data-slot="input-clear"
                 class=cn(&[
                   "absolute flex size-6 items-center justify-center rounded-sm text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring/50 focus-visible:ring-[3px]",

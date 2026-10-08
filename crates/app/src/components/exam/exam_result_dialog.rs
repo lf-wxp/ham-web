@@ -5,11 +5,12 @@ use leptos::prelude::*;
 use crate::exam_history::HistoryChart;
 use crate::share_score;
 use crate::ui::{
-  Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Size, Variant, button_class,
+  Button, ButtonLink, Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Size,
+  Variant,
 };
 
 use super::category_compare::CategoryCompare;
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 
 #[component]
 pub fn ExamResultDialog(
@@ -42,8 +43,8 @@ pub fn ExamResultDialog(
     if let Some(data_url) = card() {
       leptos::task::spawn_local(async move {
         match share_score::copy_image(&data_url).await {
-          Ok(()) => crate::util::alert(&t("已复制到剪贴板")),
-          Err(e) => crate::util::alert(&tf("复制失败：{}", &[&e])),
+          Ok(()) => crate::util::alert(&t("learning.copied-to-clipboard")),
+          Err(e) => crate::util::alert(&tf("learning.copy-failed", &[&e])),
         }
       });
     }
@@ -55,10 +56,10 @@ pub fn ExamResultDialog(
         bank.get().as_str(),
         crate::util::local_today()
       );
-      let title = t("业余无线电模拟考试");
+      let title = t("exam.amateur-radio-mock-exam");
       leptos::task::spawn_local(async move {
         if let Err(e) = share_score::share_image(&data_url, &filename, &title).await {
-          crate::util::alert(&tf("分享失败：{}", &[&e]));
+          crate::util::alert(&tf("learning.share-failed", &[&e]));
         }
       });
     }
@@ -66,24 +67,24 @@ pub fn ExamResultDialog(
   view! {
     <Dialog open=open>
       <DialogHeader>
-        <DialogTitle>{move || t("成绩")}</DialogTitle>
-        <DialogDescription class="sr-only">{move || t("考试成绩详情与是否通过")}</DialogDescription>
+        <DialogTitle>{move || t("exam.score-2")}</DialogTitle>
+        <DialogDescription class="sr-only">{move || t("exam.exam-result-details-and")}</DialogDescription>
       </DialogHeader>
       <div class="max-h-[60svh] space-y-2 overflow-y-auto">
-        <div>{move || t("得分：")} {move || score.get().correct} " / " {move || score.get().total}</div>
-        <div class="text-sm text-muted-foreground">{move || t("正确率：")} {move || score.get().percent()} "%"</div>
+        <div>{move || t("exam.score")} {move || score.get().correct} " / " {move || score.get().total}</div>
+        <div class="text-sm text-muted-foreground">{move || t("exam.accuracy")} {move || score.get().percent()} "%"</div>
         {move || {
           let pass_line = pass_line.get();
           let passed = score.get().is_passed(pass_line);
           let class = if passed { "text-sm text-green-700 dark:text-green-400" } else { "text-sm text-red-700 dark:text-red-400" };
           view! {
-            <div class=class>{if passed { t("合格") } else { t("不合格") }} {tf("（合格线：{} 题）", &[&pass_line.to_string()])}</div>
+            <div class=class>{if passed { t("exam.passed") } else { t("exam.not-passed") }} {tp("exam.pass-line-questions", pass_line, &[&pass_line.to_string()])}</div>
           }
         }}
         {move || weak.get().then(|| view! {
-          <div class="text-xs text-muted-foreground">{move || t("薄弱项组卷偏重你的弱项，成绩不计入备考状态与历史趋势。")}</div>
+          <div class="text-xs text-muted-foreground">{move || t("exam.a-weak-area-exam")}</div>
         })}
-        <div class="text-xs text-muted-foreground">{move || t("交卷后可继续浏览题目查看答案。")}</div>
+        <div class="text-xs text-muted-foreground">{move || t("exam.after-submitting-you-can")}</div>
         {move || {
           let d = deltas.get();
           (!d.is_empty()).then(|| view! { <CategoryCompare deltas=d /> })
@@ -94,46 +95,52 @@ pub fn ExamResultDialog(
         {move || {
           (wrong_count.get() > 0).then(|| {
             view! {
-              <a
-                class=button_class(Variant::Secondary, Size::Default, "")
+              <ButtonLink
                 href=wrong_href.get()
+                variant=Variant::Secondary
+                size=Size::Default
               >
-                {tf("重练 {} 道错题", &[&wrong_count.get().to_string()])}
-              </a>
+                {tp("exam.retry-mistakes", wrong_count.get(), &[&wrong_count.get().to_string()])}
+              </ButtonLink>
             }
           })
         }}
         // 交卷弹窗关掉后，逐题对错原本就再也看不到了，这里给出复盘页入口。
-        <a class=button_class(Variant::Secondary, Size::Default, "") href="/exam-review">
-          {move || t("逐题复盘")}
-        </a>
-        <button
-          type="button"
-          class=button_class(Variant::Outline, Size::Default, "")
-          on:click=share
+        <ButtonLink
+          href="/exam-review"
+          variant=Variant::Secondary
+          size=Size::Default
         >
-          {move || t("下载卡片")}
-        </button>
-        <button
-          type="button"
-          class=button_class(Variant::Outline, Size::Default, "")
-          on:click=copy
+          {move || t("exam.review-question-by-question")}
+        </ButtonLink>
+        <Button
+          variant=Variant::Outline
+          size=Size::Default
+          on_click=Callback::new(move |_| share(()))
         >
-          {move || t("复制图片")}
-        </button>
-        <button
-          type="button"
-          class=button_class(Variant::Outline, Size::Default, "")
-          on:click=sys_share
+          {move || t("learning.download-card")}
+        </Button>
+        <Button
+          variant=Variant::Outline
+          size=Size::Default
+          on_click=Callback::new(move |_| copy(()))
         >
-          {move || t("系统分享")}
-        </button>
-        <button
-          class=button_class(Variant::Default, Size::Default, "")
-          on:click=move |_| open.set(false)
+          {move || t("learning.copy-image")}
+        </Button>
+        <Button
+          variant=Variant::Outline
+          size=Size::Default
+          on_click=Callback::new(move |_| sys_share(()))
         >
-          {move || t("继续浏览题目")}
-        </button>
+          {move || t("learning.system-share")}
+        </Button>
+        <Button
+          variant=Variant::Default
+          size=Size::Default
+          on_click=Callback::new(move |_| open.set(false))
+        >
+          {move || t("exam.keep-browsing")}
+        </Button>
       </DialogFooter>
     </Dialog>
   }

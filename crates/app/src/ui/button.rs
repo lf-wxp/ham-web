@@ -48,6 +48,9 @@ pub fn Button(
   /// 无可见文字时的无障碍名称（图标按钮必填）。
   #[prop(optional, into)]
   aria_label: Option<TextValue>,
+  /// 原生 `title`（鼠标悬停提示）。
+  #[prop(optional, into)]
+  title: Option<TextValue>,
   #[prop(optional, into)] on_click: Option<Callback<()>>,
   #[prop(optional)] node_ref: NodeRef<html::Button>,
   children: Children,
@@ -56,8 +59,10 @@ pub fn Button(
     <button
       node_ref=node_ref
       type=kind.as_str()
+      data-slot="button"
       class=button_class(variant, size, &class)
       aria-label=move || aria_label.as_ref().map(TextValue::get)
+      title=move || title.as_ref().map(TextValue::get)
       aria-busy=move || loading.get().then_some("true")
       disabled=move || disabled.get() || loading.get()
       on:click=move |_| {

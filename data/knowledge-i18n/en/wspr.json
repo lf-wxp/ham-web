@@ -1,11 +1,11 @@
 {
-  "全球接收站汇总数据，可查看各波段实时传播图。": "Receiving stations worldwide aggregate the data, giving live propagation maps per band.",
-  "周期发送呼号、网格、功率等信息，接收站解码并上传到 WSPRnet 数据库。": "Periodically transmits callsign, grid and power; receiving stations decode it and upload to the WSPRnet database.",
-  "发射后到 wsprnet.org 查看自己的信号被哪些台站接收。": "After transmitting, check wsprnet.org to see which stations received your signal.",
-  "与 FT8 同样需要严格时间同步。": "Like FT8, it requires strict time synchronisation.",
   "Weak Signal Propagation Reporter，用极低功率（mW 级）测试传播的弱信号模式。": "Weak Signal Propagation Reporter: a weak-signal mode that probes propagation at milliwatt levels.",
-  "遵守功率限制，WSPR 是信标模式，不应占用话音通联频率。": "Observe the power limit: WSPR is a beacon mode and should not occupy voice operating frequencies.",
-  "发射功率可低至 5mW，即可被全球接收站解码。": "Transmit power as low as 5 mW can still be decoded by stations worldwide.",
+  "与 FT8 同样需要严格时间同步。": "Like FT8, it requires strict time synchronisation.",
+  "传播研究": "Propagation research",
   "信标": "Beacon",
-  "传播研究": "Propagation research"
+  "全球接收站汇总数据，可查看各波段实时传播图。": "Receiving stations worldwide aggregate the data, giving live propagation maps per band.",
+  "发射功率可低至 mW 级（WSPR 编码下限 0 dBm = 1mW），传播良好时即可被全球接收站解码。": "Transmit power as low as the milliwatt range (0 dBm = 1 mW, the WSPR encoding floor) is often enough for worldwide reception when propagation is good.",
+  "发射后到 wsprnet.org 查看自己的信号被哪些台站接收。": "After transmitting, check wsprnet.org to see which stations received your signal.",
+  "周期发送呼号、网格、功率等信息，接收站解码并上传到 WSPRnet 数据库。": "Periodically transmits callsign, grid and power; receiving stations decode it and upload to the WSPRnet database.",
+  "遵守功率限制，WSPR 是信标模式，不应占用话音通联频率。": "Observe the power limit: WSPR is a beacon mode and should not occupy voice operating frequencies."
 }

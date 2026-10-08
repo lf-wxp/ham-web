@@ -1,36 +1,38 @@
 use leptos::prelude::*;
 
-use super::{INPUT, RESULT, fmt_num};
+use super::{RESULT, fmt_num};
 use crate::i18n::{t, tf};
+use crate::ui::{Field, NumberField};
+use crate::util::unique_id;
 
 /// 天线长度估算：半波偶极 143/f、1/4 波长 71.5/f、5/8 波长 187.5/f（米，f 为 MHz）。
 #[component]
 pub(super) fn AntennaLength() -> impl IntoView {
   let freq = RwSignal::new(14.2);
+  let freq_id = unique_id("antenna-length-freq");
 
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("频率（MHz）")}</span>
-        <input
-          type="number"
-          prop:value=move || freq.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      <Field label=Signal::derive(move || t("log.frequency-mhz")) r#for=freq_id.clone()>
+        <NumberField
+          id=freq_id
+          value=Signal::derive(move || freq.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               freq.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
+      </Field>
       <div class=RESULT>
         {move || {
           let f = freq.get();
           if f <= 0.0 {
-            t("请输入正频率")
+            t("tools.enter-a-positive-frequency")
           } else {
             tf(
-              "半波偶极 ≈ {} m　1/4 波长 ≈ {} m　5/8 波长 ≈ {} m",
+              "tools.half-wave-dipole-m",
               &[
                 &fmt_num(143.0 / f),
                 &fmt_num(71.5 / f),

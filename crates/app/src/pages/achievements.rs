@@ -24,7 +24,7 @@ struct CheckinLite {
 
 #[component]
 pub fn AchievementsPage() -> impl IntoView {
-  set_title(&t("成就墙"));
+  set_title("learning.achievement-wall");
 
   let checkin: CheckinLite = storage::get_json("daily-checkin").unwrap_or_default();
   let bookmarks = store::load_bookmarks().len();
@@ -113,11 +113,11 @@ pub fn AchievementsPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("成就墙")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("随着学习与通联积累，逐步解锁里程碑")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("learning.achievement-wall")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("learning.unlock-milestones-as-you")}</div>
           </div>
           <a href="/progress" class="text-xs text-primary underline-offset-4 hover:underline">
-            {move || t("学习进度 →")}
+            {move || t("learning.progress")}
           </a>
         </div>
       </header>
@@ -125,9 +125,9 @@ pub fn AchievementsPage() -> impl IntoView {
       <div class="mx-auto max-w-5xl space-y-5 px-4 py-5">
         <section class="rounded-xl border bg-card p-4">
           <div class="mb-1 flex items-center justify-between text-sm">
-            <span class="font-medium">{move || t("已解锁成就")}</span>
+            <span class="font-medium">{move || t("learning.achievements-unlocked")}</span>
             <span class="tabular-nums text-muted-foreground">
-              {move || tf("{} / {}", &[&unlocked_ids.with(Vec::len).to_string(), &total.to_string()])}
+              {move || tf("common.ratio", &[&unlocked_ids.with(Vec::len).to_string(), &total.to_string()])}
             </span>
           </div>
           <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -154,9 +154,9 @@ pub fn AchievementsPage() -> impl IntoView {
                   <div class="mt-0.5 text-[11px] text-muted-foreground">{move || t(a.desc)}</div>
                   <div class="mt-1 text-[10px]">
                     {move || if is_unlocked() {
-                      view! { <span class="font-medium text-emerald-700 dark:text-emerald-400">{t("已解锁")}</span> }.into_any()
+                      view! { <span class="font-medium text-emerald-700 dark:text-emerald-400">{t("learning.unlocked")}</span> }.into_any()
                     } else {
-                      view! { <span>{t("未解锁")}</span> }.into_any()
+                      view! { <span>{t("learning.locked")}</span> }.into_any()
                     }}
                   </div>
                 </div>
@@ -166,7 +166,7 @@ pub fn AchievementsPage() -> impl IntoView {
         </div>
 
         <p class="text-xs text-muted-foreground">
-          {move || t("成就基于本地学习、通联与收藏数据自动判定，仅保存在浏览器中。")}
+          {move || t("learning.achievements-are-determined-from")}
         </p>
       </div>
     </div>

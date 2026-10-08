@@ -8,7 +8,7 @@ use wasm_bindgen::JsValue;
 
 use crate::data;
 use crate::i18n::t;
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{Button, Input, Size, Variant};
 use crate::util::{set_title, storage};
 
 /// 单条接收报告。
@@ -82,26 +82,29 @@ pub fn PskReporterPage() -> impl IntoView {
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
             <h1 class="text-base font-semibold leading-tight">"PSK Reporter"</h1>
-            <div class="text-xs text-muted-foreground">{move || t("数字模式接收报告 · 谁收到了我发的信号")}</div>
+            <div class="text-xs text-muted-foreground">{move || t("radio.digital-mode-reception-reports")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("查询接收报告")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.look-up-reception-reports")}</h2>
           <div class="flex flex-wrap gap-3 p-4">
-            <input
-              type="text"
-              placeholder=move || t("呼号（如 BG1XXX）")
-              aria-label=move || t("呼号")
-              prop:value=move || callsign.get()
-              on:input=move |e| callsign.set(event_target_value(&e))
-              class=input_class("max-w-xs")
+            <Input
+              value=callsign
+              on_change=Callback::new(move |v: String| callsign.set(v))
+              placeholder=Signal::derive(move || t("radio.callsign-e-g-bg1xxx"))
+              aria_label=Signal::derive(move || t("log.callsign"))
+              class="max-w-xs"
             />
-            <button type="button" class=button_class(Variant::Default, Size::Default, "") on:click=move |_| run()>
-              {move || if loading.get() { t("查询中…") } else { t("查询") }}
-            </button>
+            <Button
+              variant=Variant::Default
+              size=Size::Default
+              on_click=Callback::new(move |_| run())
+            >
+              {move || if loading.get() { t("log.looking-up") } else { t("log.look-up") }}
+            </Button>
           </div>
         </section>
 
@@ -109,7 +112,7 @@ pub fn PskReporterPage() -> impl IntoView {
           if failed.get() {
             return view! {
               <section class="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
-                {move || t("查询暂不可用，请确认已通过后端（dev-full / serve）访问，或稍后重试。")}
+                {move || t("radio.lookup-unavailable-make-sure")}
               </section>
             }
             .into_any();
@@ -118,7 +121,7 @@ pub fn PskReporterPage() -> impl IntoView {
           if queried.get() && list.is_empty() {
             return view! {
               <section class="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
-                {move || t("最近没有查询到该呼号的接收报告（默认仅返回近期数字模式记录）。")}
+                {move || t("radio.no-recent-reception-reports")}
               </section>
             }
             .into_any();
@@ -129,17 +132,17 @@ pub fn PskReporterPage() -> impl IntoView {
           view! {
             <section class="rounded-xl border bg-card">
               <h2 class="border-b px-4 py-3 text-sm font-semibold">
-                {t("接收报告（")} {list.len()} {t(" 条）")}
+                {t("radio.reception-reports")} {list.len()} {t("radio.entry")}
               </h2>
               <div class="overflow-x-auto">
                 <table class="w-full min-w-[640px] border-collapse text-sm">
                   <thead class="bg-muted/60 text-xs">
                     <tr>
-                      <th class="border px-3 py-2 text-left">{move || t("时间")}</th>
-                      <th class="border px-3 py-2 text-left">{move || t("接收台")}</th>
-                      <th class="border px-3 py-2 text-left">{move || t("频率")}</th>
-                      <th class="border px-3 py-2 text-left">{move || t("波段")}</th>
-                      <th class="border px-3 py-2 text-left">{move || t("模式")}</th>
+                      <th class="border px-3 py-2 text-left">{move || t("log.time")}</th>
+                      <th class="border px-3 py-2 text-left">{move || t("radio.receivers")}</th>
+                      <th class="border px-3 py-2 text-left">{move || t("contest.freq")}</th>
+                      <th class="border px-3 py-2 text-left">{move || t("radio.band")}</th>
+                      <th class="border px-3 py-2 text-left">{move || t("log.mode")}</th>
                       <th class="border px-3 py-2 text-right">"SNR"</th>
                     </tr>
                   </thead>
@@ -175,7 +178,7 @@ pub fn PskReporterPage() -> impl IntoView {
         }}
 
         <p class="text-xs text-muted-foreground">
-          {move || t("数据来自 PSK Reporter（pskreporter.info），仅展示近期数字模式（FT8 / FT4 / WSPR 等）接收报告。")}
+          {move || t("radio.data-from-psk-reporter")}
         </p>
       </div>
     </div>

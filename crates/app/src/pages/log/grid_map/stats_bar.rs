@@ -17,7 +17,7 @@ pub(super) fn GridStatsBar(state: GridMapState) -> impl IntoView {
         "square " <span class="font-semibold tabular-nums">{move || state.square_entries.get().len()}</span>
       </span>
       <span class="rounded-full border bg-muted/40 px-2 py-0.5">
-        {move || t("网格")} " " <span class="font-semibold tabular-nums">{move || state.grid_count.get()}</span>
+        {move || t("log.grid")} " " <span class="font-semibold tabular-nums">{move || state.grid_count.get()}</span>
       </span>
       <span class="rounded-full border bg-muted/40 px-2 py-0.5">
         "DXCC " <span class="font-semibold tabular-nums">{move || state.dxcc_count.get()}</span>
@@ -34,14 +34,14 @@ pub(super) fn GridStatsBar(state: GridMapState) -> impl IntoView {
           class="rounded-md border px-2 py-0.5 text-xs transition-colors hover:bg-accent"
           on:click=move |_| state.export_svg()
         >
-          {move || t("导出 SVG")}
+          {move || t("log.export-svg")}
         </button>
         <button
           type="button"
           class="rounded-md border px-2 py-0.5 text-xs transition-colors hover:bg-accent"
           on:click=move |_| state.copy_summary()
         >
-          {move || t("复制摘要")}
+          {move || t("log.copy-summary")}
         </button>
       </div>
     </div>

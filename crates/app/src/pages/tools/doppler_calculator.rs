@@ -1,7 +1,9 @@
 use leptos::prelude::*;
 
-use super::{INPUT, fmt_num};
+use super::fmt_num;
 use crate::i18n::{t, tf};
+use crate::ui::{Field, NumberField};
+use crate::util::unique_id;
 
 /// 卫星多普勒频移：输入频率与相对径向速度，估算最大多普勒频移。
 #[component]
@@ -9,45 +11,46 @@ pub(super) fn DopplerCalculator() -> impl IntoView {
   let freq = RwSignal::new(437.8);
   let vel = RwSignal::new(7.5);
 
+  let freq_id = unique_id("doppler-freq");
+  let vel_id = unique_id("doppler-vel");
+
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("下行频率（MHz）")}</span>
-        <input
-          type="number"
-          prop:value=move || freq.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      <Field label=Signal::derive(move || t("tools.downlink-frequency-mhz")) r#for=freq_id.clone()>
+        <NumberField
+          id=freq_id
+          value=Signal::derive(move || freq.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               freq.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("相对径向速度（km/s，LEO 约 7.5）")}</span>
-        <input
-          type="number"
-          prop:value=move || vel.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      </Field>
+      <Field label=Signal::derive(move || t("tools.relative-radial-velocity-km")) r#for=vel_id.clone()>
+        <NumberField
+          id=vel_id
+          value=Signal::derive(move || vel.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               vel.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
+      </Field>
       <div class="sm:col-span-2 rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let f = freq.get();
           let v = vel.get();
           if f <= 0.0 || v < 0.0 {
-            t("请输入正频率与速度")
+            t("tools.enter-a-positive-frequency-2")
           } else {
             // Δf = f · v / c，c = 299792.458 km/s。
             let shift_khz = f * v / 299_792.458 * 1000.0;
             tf(
-              "最大多普勒频移 ≈ {} kHz（{} MHz 处）。卫星接近时频率升高、远离时降低。",
+              "tools.max-doppler-shift-khz",
               &[&fmt_num(shift_khz), &fmt_num(f)],
             )
           }

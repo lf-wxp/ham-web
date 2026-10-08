@@ -1,4 +1,4 @@
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 use ham_web_core::exam_history::{ExamRecord, Readiness, Verdict, assess, of_bank};
 use ham_web_core::{Bank, ExamRule};
 use leptos::prelude::*;
@@ -16,20 +16,20 @@ fn verdict_class(v: Verdict) -> &'static str {
 
 fn verdict_hint(r: &Readiness, pass: usize, total: usize) -> String {
   match r.verdict {
-    Verdict::NeedMore => tf(
-      "已考 {} 次，再考几次就能给出判断。",
-      &[&r.count.to_string()],
-    ),
-    Verdict::Ready => tf(
-      "最近 {} 次都稳定在合格线（{} / {}）以上，可以报名了。",
+    Verdict::NeedMore => tp("common.taken-times-a-few", r.count, &[&r.count.to_string()]),
+    Verdict::Ready => tp(
+      "common.the-last-attempts-were",
+      r.count,
       &[&r.count.to_string(), &pass.to_string(), &total.to_string()],
     ),
-    Verdict::Almost => tf(
-      "最近 {} 次及格 {} 次，再巩固一下薄弱分类。",
+    Verdict::Almost => tp(
+      "common.of-the-last-attempts",
+      r.count,
       &[&r.count.to_string(), &r.passed.to_string()],
     ),
-    Verdict::NotYet => tf(
-      "最近 {} 次只及格 {} 次，建议先刷错题与专项练习。",
+    Verdict::NotYet => tp(
+      "common.only-of-the-last",
+      r.count,
       &[&r.count.to_string(), &r.passed.to_string()],
     ),
   }
@@ -41,9 +41,9 @@ pub fn ExamTrend(history: Vec<ExamRecord>, bank: Bank) -> impl IntoView {
   let Some(readiness) = assess(&history, bank) else {
     return view! {
       <p class="text-sm text-muted-foreground">
-        {tf("还没有 {} 类模拟考试记录。", &[&bank.to_string()])}
+        {tf("common.no-class-mock-exam", &[&bank.to_string()])}
         <a href=format!("/exam?bank={bank}") class="ml-1 text-primary underline underline-offset-4">
-          {move || t("去考一次 →")}
+          {move || t("common.take-one-2")}
         </a>
       </p>
     }
@@ -94,18 +94,18 @@ pub fn ExamTrend(history: Vec<ExamRecord>, bank: Bank) -> impl IntoView {
         <span class="text-muted-foreground">{verdict_hint(&readiness, rule.pass, rule.total)}</span>
       </div>
       <div class="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
-        <span>{move || t("近 ")} {readiness.count} {move || t(" 次平均 ")} <span class="font-semibold text-foreground tabular-nums">{format!("{:.0}%", readiness.average)}</span></span>
-        <span>{move || t("及格 ")} <span class="font-semibold text-foreground tabular-nums">{format!("{} / {}", readiness.passed, readiness.count)}</span></span>
+        <span>{move || t("common.last")} {readiness.count} {move || t("common.avg")} <span class="font-semibold text-foreground tabular-nums">{format!("{:.0}%", readiness.average)}</span></span>
+        <span>{move || t("common.passed")} <span class="font-semibold text-foreground tabular-nums">{format!("{} / {}", readiness.passed, readiness.count)}</span></span>
         {(readiness.count >= 2).then(|| view! {
           <span>
-            {move || t("变化 ")}
+            {move || t("common.change")}
             <span class=trend_class>
-              {tf("{} 个百分点", &[&(format!("{trend:+.0}")).to_string()])}
+              {tp("common.percentage-points", trend, &[&(format!("{trend:+.0}")).to_string()])}
             </span>
           </span>
         })}
       </div>
-      <svg viewBox=format!("-34 -8 {} {}", w + 42.0, h + 16.0) class="h-auto w-full" role="img" aria-label=move || t("考试正确率趋势")>
+      <svg viewBox=format!("-34 -8 {} {}", w + 42.0, h + 16.0) class="h-auto w-full" role="img" aria-label=move || t("common.exam-accuracy-trend")>
         {[lo, 100.0]
           .into_iter()
           .map(|p| view! {
@@ -135,7 +135,11 @@ pub fn ExamTrend(history: Vec<ExamRecord>, bank: Bank) -> impl IntoView {
           .collect_view()}
       </svg>
       <p class="text-xs text-muted-foreground">
-        {tf("虚线为合格线 {}%；绿点及格、红点不及格。最近 {} 次全部比合格线多答对 2 题以上即判定「可以去考了」。", &[&(format!("{pass_pct:.0}")).to_string(), &ham_web_core::exam_history::RECENT.to_string()])}
+        {tp(
+          "common.the-dashed-line-is",
+          ham_web_core::exam_history::RECENT,
+          &[&(format!("{pass_pct:.0}")).to_string(), &ham_web_core::exam_history::RECENT.to_string()],
+        )}
       </p>
     </div>
   }

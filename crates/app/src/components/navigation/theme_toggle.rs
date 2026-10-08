@@ -2,7 +2,7 @@ use leptos::prelude::*;
 
 use crate::icons::{Icon, IconKind};
 use crate::theme::{Theme, use_theme};
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, Size, Variant};
 
 /// 明暗主题切换按钮，可通过 `class` 追加定位等样式。
 #[component]
@@ -16,13 +16,13 @@ pub fn ThemeToggle(#[prop(optional)] class: &'static str) -> impl IntoView {
     }
   };
   view! {
-    <button
-      type="button"
-      data-slot="button"
-      class=button_class(Variant::Ghost, Size::Icon, class)
-      aria-label=toggle_label
-      title=toggle_label
-      on:click=move |_| theme.set(if theme.is_dark() { Theme::Light } else { Theme::Dark })
+    <Button
+      variant=Variant::Ghost
+      size=Size::Icon
+      class=class
+      aria_label=Signal::derive(move || toggle_label().to_owned())
+      title=Signal::derive(move || toggle_label().to_owned())
+      on_click=Callback::new(move |_| theme.set(if theme.is_dark() { Theme::Light } else { Theme::Dark }))
     >
       {move || {
         if theme.is_dark() {
@@ -31,6 +31,6 @@ pub fn ThemeToggle(#[prop(optional)] class: &'static str) -> impl IntoView {
           view! { <Icon kind=IconKind::Moon class="h-4 w-4" /> }
         }
       }}
-    </button>
+    </Button>
   }
 }

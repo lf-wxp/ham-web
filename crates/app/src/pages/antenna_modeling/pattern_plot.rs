@@ -1,4 +1,5 @@
 use crate::i18n::t;
+use crate::ui::Slider;
 use ham_web_core::antenna_pattern::{PatternKind, elevation_pattern, pattern};
 use leptos::prelude::*;
 
@@ -89,31 +90,26 @@ pub(super) fn PatternPlot() -> impl IntoView {
   view! {
     <div class="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
       <div class="flex flex-col gap-2 sm:w-40">
-        <div class="text-[10px] font-semibold text-muted-foreground">{move || t("方位角")}</div>
+        <div class="text-[10px] font-semibold text-muted-foreground">{move || t("knowledge.azimuth")}</div>
         {AZIMUTH.iter().map(|&k| button(k)).collect_view()}
-        <div class="mt-1 text-[10px] font-semibold text-muted-foreground">{move || t("仰角")}</div>
+        <div class="mt-1 text-[10px] font-semibold text-muted-foreground">{move || t("knowledge.elevation")}</div>
         {ELEVATION.iter().map(|&k| button(k)).collect_view()}
         {move || {
           (kind.get() == PatternKind::DipoleEl).then(|| {
             view! {
               <div class="mt-2 rounded-lg border bg-muted/30 px-3 py-2">
                 <div class="flex items-center justify-between text-[10px] text-muted-foreground">
-                  <span>{move || t("架高")}</span>
+                  <span>{move || t("knowledge.height")}</span>
                   <span class="font-mono tabular-nums">{format!("{:.2} λ", height_wl.get())}</span>
                 </div>
-                <input
-                  type="range"
-                  min="0.1"
-                  max="1.0"
-                  step="0.05"
-                  aria-label=move || t("架高（波长）")
-                  prop:value=move || height_wl.get()
-                  on:input=move |e| {
-                    if let Ok(v) = event_target_value(&e).parse::<f64>() {
-                      height_wl.set(v.clamp(0.1, 1.0));
-                    }
-                  }
-                  class="mt-1 w-full accent-primary"
+                <Slider
+                  value=height_wl
+                  on_change=Callback::new(move |v: f64| height_wl.set(v.clamp(0.1, 1.0)))
+                  min=0.1
+                  max=1.0
+                  step=0.05
+                  aria_label=Signal::derive(move || t("knowledge.height-wavelengths"))
+                  class="mt-1 w-full"
                 />
               </div>
             }
@@ -124,7 +120,7 @@ pub(super) fn PatternPlot() -> impl IntoView {
         viewBox=format!("0 0 {SIZE} {SIZE}")
         class="mx-auto w-full max-w-[320px]"
         role="img"
-        aria-label=move || t("天线方向图")
+        aria-label=move || t("knowledge.antenna-pattern")
       >
         {move || {
           if kind.get().is_elevation() {

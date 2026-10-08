@@ -21,7 +21,7 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
       view! {
         <div class="mt-2 rounded-lg border bg-muted/30 p-3">
           <div class="flex items-center justify-between text-xs">
-            <span class="font-medium">{tf("网格猎取（field {}{}）", &[&f_lon.to_string(), &f_lat.to_string()])}</span>
+            <span class="font-medium">{tf("log.grid-hunt-field", &[&f_lon.to_string(), &f_lat.to_string()])}</span>
             <span class="tabular-nums text-muted-foreground">{done} " / 100"</span>
           </div>
           <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -37,7 +37,7 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
     // 全球 square 猎取进度（全部 32400 个 square）
     <div class="mt-2 rounded-lg border bg-muted/30 p-3">
       <div class="flex items-center justify-between text-xs">
-        <span class="font-medium">{move || t("全球 square 猎取")}</span>
+        <span class="font-medium">{move || t("log.global-square-hunt")}</span>
         <span class="tabular-nums text-muted-foreground">{data.world_done} " / " {WORLD_SQUARES}</span>
       </div>
       <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -52,7 +52,7 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
     {(!data.top_squares.is_empty()).then(|| {
       view! {
         <div class="mt-2 rounded-lg border bg-muted/30 p-3 text-xs">
-          <div class="mb-1.5 font-medium">{move || t("通联最多 square")}</div>
+          <div class="mb-1.5 font-medium">{move || t("log.most-worked-squares")}</div>
           <div class="flex flex-wrap gap-1.5">
             {data.top_squares
               .iter()
@@ -72,7 +72,7 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
     {(!data.neighbor_hits.is_empty()).then(|| {
       view! {
         <div class="mt-2 rounded-lg border bg-muted/30 p-3">
-          <div class="mb-1.5 text-xs font-medium">{move || t("邻近未通联（点击定位）")}</div>
+          <div class="mb-1.5 text-xs font-medium">{move || t("log.nearby-unworked-click-to")}</div>
           <div class="flex flex-wrap gap-1.5">
             {data.neighbor_hits
               .iter()
@@ -85,7 +85,7 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
                       distance_bearing(hlat, hlon, square_center(k).0, square_center(k).1);
                     (
                       format!("{label} {b:.0}°"),
-                      tf("{} · 距离 {} km", &[&(label).to_string(), &(format!("{d:.0}")).to_string()]),
+                      tf("log.km-away", &[&(label).to_string(), &(format!("{d:.0}")).to_string()]),
                     )
                   }
                   None => (label.clone(), label.clone()),
@@ -113,13 +113,13 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
         view! {
           <div class="mt-2 rounded-lg border bg-muted/30 p-3 text-xs">
             <div class="mb-1 flex items-center justify-between">
-              <span class="font-semibold">{move || t("点击反查")}</span>
+              <span class="font-semibold">{move || t("log.click-inspector")}</span>
               <button
                 type="button"
                 class="text-muted-foreground transition-colors hover:text-foreground"
                 on:click=move |_| state.clicked_pos.set(None)
               >
-                {move || t("关闭")}
+                {move || t("log.close")}
               </button>
             </div>
             <div class="font-mono text-sm">{grid}</div>
@@ -128,9 +128,9 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
             </div>
             <div class="mt-0.5">
               {match (label, worked) {
-                (Some(l), true) => tf("square {}：已通联", &[&(l).to_string()]),
-                (Some(l), false) => tf("square {}：未通联", &[&(l).to_string()]),
-                (None, _) => t("该点无法解析为网格"),
+                (Some(l), true) => tf("log.square-worked", &[&(l).to_string()]),
+                (Some(l), false) => tf("log.square-not-worked", &[&(l).to_string()]),
+                (None, _) => t("log.cannot-resolve-this-point"),
               }}
             </div>
           </div>

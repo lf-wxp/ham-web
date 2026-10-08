@@ -70,8 +70,8 @@ pub fn ZoneMap(
     };
     let cq = is_cq.get_untracked();
     let zone = if cq { e.cq } else { e.itu };
-    let label = if cq { t("CQ") } else { t("ITU") };
-    tf("{} · {} {} 区", &[e.name, &label, &zone.to_string()])
+    let label = if cq { t("common.cq") } else { t("common.itu") };
+    tf("radio.zone-2", &[e.name, &label, &zone.to_string()])
   });
   let on_click = on_region_click.unwrap_or_else(|| Callback::new(|_: String| {}));
 
@@ -80,7 +80,7 @@ pub fn ZoneMap(
       if loading.get() {
         return view! {
           <div class="py-12 text-center text-sm text-muted-foreground">
-            {move || t("加载地图数据…")}
+            {move || t("radio.loading-map-data")}
           </div>
         }
         .into_any();
@@ -88,14 +88,14 @@ pub fn ZoneMap(
       if failed.get() {
         return view! {
           <div class="py-12 text-center text-sm text-muted-foreground">
-            {move || t("边界数据加载失败，请运行 `cargo make dxcc-map` 生成 public/dxcc-entities.bin。")}
+            {move || t("radio.failed-to-load-boundary")}
           </div>
         }
         .into_any();
       }
       view! {
         <MapView
-          aria_label=t("CQ / ITU 分区地图（滚轮缩放、拖拽平移、双击复位）")
+          aria_label=Signal::derive(move || t("radio.cq-itu-zone-map-2"))
           focus=focus
         >
           <ZoneOverlay

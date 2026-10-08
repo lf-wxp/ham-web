@@ -10,9 +10,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn RepeaterPage() -> impl IntoView {
-  set_title(&t("中继台与数字网关"));
+  set_title("shell.repeaters-gateways");
   view! {
-    <KnowledgePage title=t("中继台与数字网关") subtitle=t("中继台原理 · 数字中继 · 热点 · 互联网网关")>
+    <KnowledgePage title=t("shell.repeaters-gateways") subtitle=t("radio.repeater-principles-digital-repeaters")>
       <ConceptsSection title="中继台概念" items=REPEATER_CONCEPTS />
       <TableSection
         title="数字中继与网关"

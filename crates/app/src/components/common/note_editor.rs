@@ -29,21 +29,21 @@ pub fn NoteEditor(#[prop(into)] question_id: Signal<String>) -> impl IntoView {
   view! {
     <div class="rounded-xl border bg-card p-4">
       <div class="mb-2 flex items-center justify-between">
-        <div class="text-sm font-semibold">{move || t("我的笔记")}</div>
+        <div class="text-sm font-semibold">{move || t("exam.my-notes")}</div>
         <span class="text-[11px] text-muted-foreground">
-          {move || saved.get().then(|| t("已保存"))}
+          {move || saved.get().then(|| t("exam.saved"))}
         </span>
       </div>
       <Textarea
         value=draft
         on_change=Callback::new(move |v: String| draft.set(v))
         rows=3
-        placeholder=Signal::derive(move || t("记录这道题的个人理解、易错点或口诀…"))
-        aria_label=Signal::derive(move || t("笔记内容"))
+        placeholder=Signal::derive(move || t("exam.note-your-understanding-common"))
+        aria_label=Signal::derive(move || t("common.note-content"))
       />
       <div class="mt-2 flex items-center gap-2">
         <Button variant=Variant::Default size=Size::Sm on_click=Callback::new(move |_| save())>
-          {move || t("保存笔记")}
+          {move || t("exam.save-note")}
         </Button>
         <Button
           variant=Variant::Ghost
@@ -51,7 +51,7 @@ pub fn NoteEditor(#[prop(into)] question_id: Signal<String>) -> impl IntoView {
           class="text-muted-foreground"
           on_click=Callback::new(move |_| clear())
         >
-          {move || t("清除")}
+          {move || t("exam.clear")}
         </Button>
       </div>
     </div>

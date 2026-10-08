@@ -1,0 +1,50 @@
+{
+  "home.80-topics-callsigns-glossary": "80+ topics · callsigns · glossary · modes · propagation · antennas · operating",
+  "home.a-b-c-question": "A/B/C question banks · practice · mock exams",
+  "home.k-index": "K-index",
+  "home.q-codes-abbreviations-phonetic": "Q-codes, abbreviations, phonetic alphabet, Morse and glossary \\u{2014} a few minutes a day with spaced repetition.",
+  "home.one-platform-for-exam": "One platform for exam practice, quick reference and operating tools \\u{2014} from A/B/C exam prep to live propagation.",
+  "home.fair": "Fair",
+  "home.all-cards-reviewed-today": "All cards reviewed today \\u{2014} you can learn new ones.",
+  "home.completed-today": "Completed today: {} / {}.",
+  "home.due-for-review": "Due for Review",
+  "home.excellent": "Excellent",
+  "home.propagation-data-unavailable-u": "Propagation data unavailable \\u{2014} tap to read more",
+  "home.conditions": "Conditions: ",
+  "home.practice-this": "Practice this",
+  "home.review": "Review {}",
+  "home.solar-flux": "Solar Flux",
+  "home.learn-new": "Learn new",
+  "home.live-propagation": "Live Propagation",
+  "home.poor": "Poor",
+  "home.learned": "Learned {}",
+  "home.day-streak": {
+    "one": "{} day streak",
+    "other": "{} day streak"
+  },
+  "home.start-learning": "Start learning",
+  "home.start-mock-exam": "Start Mock Exam",
+  "home.start-practice": "Start Practice",
+  "home.quick-start": "Quick Start",
+  "home.mock-exam-weighted-by": "Mock exam weighted by topic accuracy and mistakes",
+  "home.receiving": "Receiving",
+  "home.cards-are-due-for": {
+    "one": "{} card is due for review.",
+    "other": "{} cards are due for review."
+  },
+  "home.details": "Details →",
+  "home.fetching-conditions-u-2026": "Fetching conditions\\u{2026}",
+  "home.lowest-accuracy-topic": "Lowest-accuracy topic",
+  "home.a-daily-timed-10": "A daily timed 10-question challenge; same set all day, counts toward check-in.",
+  "home.daily-question": "Daily Question",
+  "home.browse-knowledge": "Browse Knowledge",
+  "home.good": "Good",
+  "home.calculators-logbook-live-data": "Calculators · logbook · live data",
+  "home.days-in-a-row": {
+    "one": "{} day in a row · best {}",
+    "other": "{} days in a row · best {}"
+  },
+  "home.choose-a-bank-version": "Choose a bank version and class, then start practice or a mock exam",
+  "home.question-bank-is-unavailable": "Question bank {} is unavailable or empty; build the dataset first.",
+  "home.sunspots": "Sunspots"
+}

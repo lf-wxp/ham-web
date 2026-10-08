@@ -119,9 +119,9 @@ async fn registration() -> Option<ServiceWorkerRegistration> {
 pub async fn subscribe(public_key: &str) -> Result<String, String> {
   let reg = registration()
     .await
-    .ok_or_else(|| t("service worker 未就绪"))?;
+    .ok_or_else(|| t("common.service-worker-not-ready"))?;
   let pm: PushManager = reg.push_manager().map_err(|e| format!("{e:?}"))?;
-  let key = b64url_to_bytes(public_key).ok_or_else(|| t("VAPID 公钥无效"))?;
+  let key = b64url_to_bytes(public_key).ok_or_else(|| t("common.invalid-vapid-public-key"))?;
   let options = web_sys::PushSubscriptionOptionsInit::new();
   options.set_user_visible_only(true);
   options.set_application_server_key_opt_u8_array(Some(&key));

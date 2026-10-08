@@ -30,11 +30,11 @@ pub fn CustomPaperDialog(open: RwSignal<bool>, on_confirm: Callback<CustomPaper>
   view! {
     <Dialog open=open class="sm:max-w-[560px]">
       <DialogHeader>
-        <DialogTitle>{move || t("自定义组卷")}</DialogTitle>
+        <DialogTitle>{move || t("exam.custom-paper")}</DialogTitle>
       </DialogHeader>
       <div class="space-y-5">
         <div class="grid grid-cols-3 gap-3">
-          <Field label=t("单选题数") r#for="custom-single">
+          <Field label=t("exam.single-choice-count") r#for="custom-single">
             <NumberField
               id="custom-single"
               value=Signal::derive(move || singles.get().to_string())
@@ -43,7 +43,7 @@ pub fn CustomPaperDialog(open: RwSignal<bool>, on_confirm: Callback<CustomPaper>
               max=300.0
             />
           </Field>
-          <Field label=t("多选题数") r#for="custom-multi">
+          <Field label=t("exam.multiple-choice-count") r#for="custom-multi">
             <NumberField
               id="custom-multi"
               value=Signal::derive(move || multiples.get().to_string())
@@ -52,7 +52,7 @@ pub fn CustomPaperDialog(open: RwSignal<bool>, on_confirm: Callback<CustomPaper>
               max=100.0
             />
           </Field>
-          <Field label=t("限时（分钟，0 为不限时）") r#for="custom-minutes">
+          <Field label=t("exam.time-limit-minutes-0") r#for="custom-minutes">
             <NumberField
               id="custom-minutes"
               value=Signal::derive(move || minutes.get().to_string())
@@ -63,7 +63,7 @@ pub fn CustomPaperDialog(open: RwSignal<bool>, on_confirm: Callback<CustomPaper>
           </Field>
         </div>
         <div class="space-y-2">
-          <div class="text-sm text-muted-foreground">{t("限定分类（不选 = 全部）")}</div>
+          <div class="text-sm text-muted-foreground">{t("exam.limit-categories-empty-all")}</div>
           <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
             {TOP_CATEGORIES.iter().map(|c| {
               let key = c.key;
@@ -93,14 +93,14 @@ pub fn CustomPaperDialog(open: RwSignal<bool>, on_confirm: Callback<CustomPaper>
       </div>
       <DialogFooter>
         <Button variant=Variant::Ghost on_click=Callback::new(move |_| open.set(false))>
-          {move || t("取消")}
+          {move || t("exam.cancel")}
         </Button>
         <Button
           variant=Variant::Default
           disabled=Signal::derive(move || singles.get() + multiples.get() == 0)
           on_click=Callback::new(move |_| confirm())
         >
-          {move || t("开始考试")}
+          {move || t("exam.start-exam")}
         </Button>
       </DialogFooter>
     </Dialog>

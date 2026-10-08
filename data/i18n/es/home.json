@@ -1,0 +1,50 @@
+{
+  "home.80-topics-callsigns-glossary": "80+ temas · indicativos · glosario · modos · propagación · antenas · operación",
+  "home.a-b-c-question": "Bancos A/B/C · práctica · exámenes simulados",
+  "home.k-index": "Índice K",
+  "home.q-codes-abbreviations-phonetic": "Códigos Q, abreviaturas, alfabeto fonético, Morse y glosario: unos minutos al día con repaso espaciado.",
+  "home.one-platform-for-exam": "Una plataforma para practicar exámenes, consultar y usar herramientas de radio \\u{2014} desde la preparación A/B/C hasta la propagación en vivo.",
+  "home.fair": "Regular",
+  "home.all-cards-reviewed-today": "Repaso de hoy completado; puedes aprender tarjetas nuevas.",
+  "home.completed-today": "Completado hoy: {} / {}.",
+  "home.due-for-review": "Pendiente de repaso",
+  "home.excellent": "Excelente",
+  "home.propagation-data-unavailable-u": "Datos de propagación no disponibles; toca para leer más",
+  "home.conditions": "Condiciones: ",
+  "home.practice-this": "Practicar",
+  "home.review": "Repasar {}",
+  "home.solar-flux": "Flujo solar",
+  "home.learn-new": "Aprender nuevas",
+  "home.live-propagation": "Propagación en vivo",
+  "home.poor": "Malo",
+  "home.learned": "Estudiadas {}",
+  "home.day-streak": {
+    "one": "Racha de {} día",
+    "other": "Racha de {} días"
+  },
+  "home.start-learning": "Empezar a aprender",
+  "home.start-mock-exam": "Empezar examen simulado",
+  "home.start-practice": "Empezar práctica",
+  "home.quick-start": "Inicio rápido",
+  "home.mock-exam-weighted-by": "Examen ponderado por precisión y errores",
+  "home.receiving": "Recibiendo",
+  "home.cards-are-due-for": {
+    "one": "{} tarjeta pendiente de repaso.",
+    "other": "{} tarjetas pendientes de repaso."
+  },
+  "home.details": "Detalles →",
+  "home.fetching-conditions-u-2026": "Obteniendo condiciones\\u{2026}",
+  "home.lowest-accuracy-topic": "Tema con menor precisión",
+  "home.a-daily-timed-10": "Un reto diario cronometrado de 10 preguntas; el mismo conjunto todo el día, cuenta para el registro.",
+  "home.daily-question": "Pregunta del día",
+  "home.browse-knowledge": "Explorar conocimiento",
+  "home.good": "Bueno",
+  "home.calculators-logbook-live-data": "Calculadoras · registro · datos en vivo",
+  "home.days-in-a-row": {
+    "one": "{} día seguido · mejor {}",
+    "other": "{} días seguidos · mejor {}"
+  },
+  "home.choose-a-bank-version": "Elige versión y clase del banco, y empieza práctica o examen simulado",
+  "home.question-bank-is-unavailable": "El banco {} no está disponible o está vacío; genera los datos primero.",
+  "home.sunspots": "Manchas solares"
+}

@@ -70,10 +70,10 @@ pub(super) fn QCodeReverseQuiz(entries: &'static [GlossaryEntry]) -> impl IntoVi
 
   view! {
     <section class="mb-8 rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("Q 简语反向测验")}</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.q-code-reverse-quiz")}</h2>
       <div class="space-y-4 p-4">
         <div class="flex flex-col items-center gap-2 rounded-xl border bg-muted/30 px-4 py-6">
-          <div class="text-xs text-muted-foreground">{move || t("这个含义对应哪个 Q 简语？")}</div>
+          <div class="text-xs text-muted-foreground">{move || t("knowledge.which-q-code-matches")}</div>
           <div class="text-base font-semibold text-foreground">{move || question.get()}</div>
         </div>
         <div class="grid gap-2 sm:grid-cols-2">
@@ -102,13 +102,13 @@ pub(super) fn QCodeReverseQuiz(entries: &'static [GlossaryEntry]) -> impl IntoVi
               feedback.get().map(|ok| {
                 if ok {
                   view! {
-                    <span class="font-medium text-emerald-600 dark:text-emerald-400">{move || t("正确！")}</span>
+                    <span class="font-medium text-emerald-600 dark:text-emerald-400">{move || t("learning.correct")}</span>
                   }
                   .into_any()
                 } else {
                   view! {
                     <span class="font-medium text-red-600 dark:text-red-400">
-                      {move || t("正确答案：")} <span class="font-mono font-semibold">{answer.get_value()}</span>
+                      {move || t("exam.correct-answer-2")} <span class="font-mono font-semibold">{answer.get_value()}</span>
                     </span>
                   }
                   .into_any()
@@ -121,11 +121,11 @@ pub(super) fn QCodeReverseQuiz(entries: &'static [GlossaryEntry]) -> impl IntoVi
             on:click=move |_| load_next()
             class="rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
           >
-            {move || t("下一题")}
+            {move || t("exam.next")}
           </button>
           <div class="text-xs text-muted-foreground">
-            {move || t("正确 ")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
-            {move || t("　错误 ")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
+            {move || t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
+            {move || t("common.wrong-2")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
           </div>
         </div>
       </div>

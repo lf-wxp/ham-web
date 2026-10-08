@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, pickOption, test } from "./fixtures";
 
 const ADIF = `e2e
 <EOH>
@@ -27,11 +27,12 @@ test("QSL 标签：按呼号合并、标记已寄出、切换版式", async ({ p
 
   // 跳过前 3 张：第一页前 3 个位置留空
   await page.getByLabel("跳过前").fill("3");
-  const first = page.getByLabel("第 1 页").locator(":scope > div");
-  await expect(first.nth(3)).toHaveAttribute("data-label", "JA1AA");
+  // 按 `data-slot` 取标签槽，不数直接子节点（插一层包裹 div 就会整体错位）。
+  const slots = page.locator('[data-slot="label-page"]').first().locator('[data-slot="label-slot"]');
+  await expect(slots.nth(3)).toHaveAttribute("data-label", "JA1AA");
 
-  await page.getByLabel("标签纸").selectOption("5160");
-  await expect(page.getByLabel("第 1 页").locator(":scope > div")).toHaveCount(30);
+  await pickOption(page, "标签纸", "Avery 5160 · Letter · 3×10（66.7×25.4 mm）");
+  await expect(slots).toHaveCount(30);
 
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "标记为已寄出（3）" }).click();

@@ -12,7 +12,7 @@ use crate::components::common::{BulletSection, KnowledgePage};
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::pages::map::ZoneMap;
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{Button, Input, Size, Variant};
 use crate::util::{alert, set_title};
 
 /// 示例呼号，便于一键试查。
@@ -43,7 +43,7 @@ struct OnlineInfo {
 
 #[component]
 pub fn CallsignPage() -> impl IntoView {
-  set_title(&t("呼号查询"));
+  set_title("tools.callsign-lookup");
 
   let query = use_query_map();
   let input = RwSignal::new(query.with_untracked(|q| q.get("call")).unwrap_or_default());
@@ -63,7 +63,7 @@ pub fn CallsignPage() -> impl IntoView {
   let run_online = move || {
     let call = input.get().trim().to_ascii_uppercase();
     if call.len() < 3 {
-      alert(&t("请输入至少 3 位的呼号"));
+      alert(&t("radio.enter-a-callsign-of"));
       return;
     }
     loading.set(true);
@@ -101,11 +101,17 @@ pub fn CallsignPage() -> impl IntoView {
     vec![
       (
         "国家 / 地区",
-        parts.entity.map(t).unwrap_or_else(|| t("未识别")),
+        parts
+          .entity
+          .map(t)
+          .unwrap_or_else(|| t("radio.unrecognised")),
       ),
       (
         "DXCC 实体",
-        entity.map_or_else(|| t("未识别"), |e| format!("#{} {}", e.dxcc, e.name_en)),
+        entity.map_or_else(
+          || t("radio.unrecognised"),
+          |e| format!("#{} {}", e.dxcc, e.name_en),
+        ),
       ),
       (
         "大洲",
@@ -122,12 +128,12 @@ pub fn CallsignPage() -> impl IntoView {
         parts
           .station_type
           .map(t)
-          .unwrap_or_else(|| t("—（非中国呼号）")),
+          .unwrap_or_else(|| t("radio.non-chinese-callsign")),
       ),
       (
         "分区",
         match (parts.area, parts.area_regions) {
-          (Some(a), Some(r)) => tf("{} 区（{}）", &[a, r]),
+          (Some(a), Some(r)) => tf("common.zone-2", &[a, r]),
           _ => dash.clone(),
         },
       ),
@@ -145,36 +151,37 @@ pub fn CallsignPage() -> impl IntoView {
       ),
       (
         "稀有度",
-        wanted_prefix(&call)
-          .map_or_else(|| t("常规实体"), |p| tf("{}（Most Wanted 稀有实体）", &[p])),
+        wanted_prefix(&call).map_or_else(
+          || t("radio.regular-entity"),
+          |p| tf("radio.most-wanted-entity", &[p]),
+        ),
       ),
     ]
   };
 
   view! {
-    <KnowledgePage title=t("呼号查询") subtitle=t("本地解析 · DXCC 实体与分区 · 在线补全")>
+    <KnowledgePage title=t("tools.callsign-lookup") subtitle=t("radio.offline-parsing-dxcc-entity")>
       <section class="rounded-xl border bg-card">
-        <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("呼号解析与查询")}</h2>
+        <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.callsign-lookup")}</h2>
         <p class="px-4 pt-3 text-xs text-muted-foreground">
-          {move || t("输入呼号即时解析国家 / 地区、DXCC 实体、CQ / ITU 分区与稀有度；「在线查询」再补全姓名、QTH 与网格。")}
+          {move || t("radio.enter-a-callsign-to")}
         </p>
 
         <div class="flex flex-wrap items-center gap-3 p-4">
-          <input
-            type="text"
-            placeholder=move || t("如 BG4XYZ、JA1ABC、K1ZZ/QRP、P5ABC")
-            aria-label=move || t("呼号")
-            prop:value=move || input.get()
-            on:input=move |e| input.set(event_target_value(&e).to_uppercase())
-            class=input_class("max-w-xs font-mono uppercase")
+          <Input
+            value=input
+            on_change=Callback::new(move |v: String| input.set(v.to_uppercase()))
+            placeholder=Signal::derive(move || t("radio.e-g-bg4xyz-ja1abc-2"))
+            aria_label=Signal::derive(move || t("log.callsign"))
+            class="max-w-xs font-mono uppercase"
           />
-          <button
-            type="button"
-            class=button_class(Variant::Default, Size::Default, "")
-            on:click=move |_| run_online()
+          <Button
+            variant=Variant::Default
+            size=Size::Default
+            on_click=Callback::new(move |_| run_online())
           >
-            {move || if loading.get() { t("查询中…") } else { t("在线查询") }}
-          </button>
+            {move || if loading.get() { t("log.looking-up") } else { t("radio.online-lookup") }}
+          </Button>
           <div class="flex flex-wrap items-center gap-1.5">
             {EXAMPLES
               .iter()
@@ -201,7 +208,7 @@ pub fn CallsignPage() -> impl IntoView {
           if list.is_empty() {
             return view! {
               <p class="border-t px-4 py-4 text-sm text-muted-foreground">
-                {move || t("输入呼号开始查询。")}
+                {move || t("radio.enter-a-callsign-to-2")}
               </p>
             }
             .into_any();
@@ -228,7 +235,7 @@ pub fn CallsignPage() -> impl IntoView {
           if failed.get() {
             return view! {
               <p class="border-t px-4 py-3 text-xs text-muted-foreground">
-                {move || t("在线资料暂不可用（呼号不存在，或未通过后端 dev-full / serve 访问）；本地解析结果不受影响。")}
+                {move || t("radio.online-data-is-unavailable")}
               </p>
             }
             .into_any();
@@ -248,7 +255,7 @@ pub fn CallsignPage() -> impl IntoView {
                 .collect();
               view! {
                 <div class="space-y-2 border-t px-4 py-4">
-                  <div class="text-xs font-semibold text-muted-foreground">{move || t("在线资料")}</div>
+                  <div class="text-xs font-semibold text-muted-foreground">{move || t("radio.online-data")}</div>
                   <div class="grid gap-1 sm:grid-cols-2">
                     {fields
                       .into_iter()
@@ -266,7 +273,7 @@ pub fn CallsignPage() -> impl IntoView {
                     .then(|| {
                       view! {
                         <p class="text-xs text-muted-foreground">
-                          {move || t("该呼号暂无公开的操作员资料（上游只覆盖美加，其他国家 / 地区需在服务端配置 HamQTH 账号），此处仅按内置 DXCC 前缀库给出国家 / 地区。")}
+                          {move || t("radio.no-public-operator-data")}
                         </p>
                       }
                     })}
@@ -278,13 +285,13 @@ pub fn CallsignPage() -> impl IntoView {
         }}
 
         <p class="border-t px-4 py-3 text-xs text-muted-foreground">
-          {move || t("本地解析依据内置的 340 个 DXCC 实体与前缀库，离线可用；在线资料来自 Callook / HamQTH 公开接口，仅显示电台的公开资料，不涉及隐私。")}
+          {move || t("radio.offline-parsing-uses-the")}
         </p>
       </section>
 
       <section class="rounded-xl border bg-card">
         <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
-          <h2 class="mr-auto text-sm font-semibold">{move || t("分区地图（CQ / ITU）")}</h2>
+          <h2 class="mr-auto text-sm font-semibold">{move || t("radio.zone-map-cq-itu")}</h2>
           <div class="flex rounded-lg border p-0.5">
             <button
               type="button"
@@ -297,7 +304,7 @@ pub fn CallsignPage() -> impl IntoView {
               }
               on:click=move |_| is_cq.set(true)
             >
-              {move || t("CQ（40）")}
+              {move || t("common.cq-zone")}
             </button>
             <button
               type="button"
@@ -310,7 +317,7 @@ pub fn CallsignPage() -> impl IntoView {
               }
               on:click=move |_| is_cq.set(false)
             >
-              {move || t("ITU（90）")}
+              {move || t("common.itu-zone")}
             </button>
           </div>
         </div>
@@ -318,7 +325,7 @@ pub fn CallsignPage() -> impl IntoView {
           <ZoneMap is_cq=is_cq highlight=zone_dxcc />
         </div>
         <p class="border-t px-4 py-3 text-xs text-muted-foreground">
-          {move || t("按每个 DXCC 实体的主分区着色并高亮当前呼号所属实体；分区边界与国界不重合，此图为速查近似。")}
+          {move || t("radio.coloured-by-each-dxcc")}
           <a
             href=move || {
               let call = input.get().trim().to_ascii_uppercase();
@@ -330,7 +337,7 @@ pub fn CallsignPage() -> impl IntoView {
             }
             class="ml-1 font-medium text-primary underline underline-offset-2"
           >
-            {move || t("打开完整分区地图")}
+            {move || t("radio.open-the-full-zone")}
           </a>
         </p>
       </section>

@@ -14,22 +14,22 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn ReferencePage() -> impl IntoView {
-  set_title(&t("考试速查"));
+  set_title("shell.exam-reference-2");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <PageHeader title=t("考试速查") subtitle=t("操作证权限 · 分区 · RST · 发射类别 · 通联英语") />
+      <PageHeader title=t("shell.exam-reference-2") subtitle=t("exam.licence-privileges-zones-rst") />
       <PageContainer>
         // 操作证类别与权限
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("操作证类别与使用权限")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.operator-licence-classes-and")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[560px] border-collapse text-sm">
               <thead class="bg-muted/60 text-xs">
                 <tr>
-                  <th class=CELL>{move || t("类别")}</th>
-                  <th class=CELL>{move || t("频率范围")}</th>
-                  <th class=CELL>{move || t("功率上限")}</th>
-                  <th class=CELL>{move || t("说明")}</th>
+                  <th class=CELL>{move || t("exam.class-2")}</th>
+                  <th class=CELL>{move || t("exam.frequency-range")}</th>
+                  <th class=CELL>{move || t("exam.power-limit")}</th>
+                  <th class=CELL>{move || t("radio.notes")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -53,7 +53,7 @@ pub fn ReferencePage() -> impl IntoView {
 
         // 分区号
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("业余电台分区号")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.amateur-radio-zone-numbers")}</h2>
           <div class="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3 lg:grid-cols-5">
             {CALL_AREAS
               .iter()
@@ -71,7 +71,7 @@ pub fn ReferencePage() -> impl IntoView {
 
         // RST 信号报告
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("RST 信号报告")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("shell.rst-report")}</h2>
           <div class="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
             {RST_SCALES
               .iter()
@@ -106,14 +106,14 @@ pub fn ReferencePage() -> impl IntoView {
 
         // 发射类别
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("发射类别标识")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.emission-designators")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[480px] border-collapse text-sm">
               <thead class="bg-muted/60 text-xs">
                 <tr>
-                  <th class=CELL>{move || t("标识")}</th>
-                  <th class=CELL>{move || t("名称")}</th>
-                  <th class=CELL>{move || t("说明")}</th>
+                  <th class=CELL>{move || t("exam.designator")}</th>
+                  <th class=CELL>{move || t("exam.name")}</th>
+                  <th class=CELL>{move || t("radio.notes")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -144,7 +144,7 @@ pub fn ReferencePage() -> impl IntoView {
 
         // 通联英语
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("通联英语短句")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.contact-english-phrases")}</h2>
           <dl class="divide-y">
             {PHRASES
               .iter()

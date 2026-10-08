@@ -9,9 +9,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn AntennaFarmPage() -> impl IntoView {
-  set_title(&t("天线农场规划"));
+  set_title("shell.antenna-farms-2");
   view! {
-    <KnowledgePage title=t("天线农场规划") subtitle=t("多天线台站的布局 · 隔离 · 馈线管理")>
+    <KnowledgePage title=t("shell.antenna-farms-2") subtitle=t("knowledge.multi-antenna-layouts-isolation")>
       <ConceptsSection title="规划要素" items=FARM_FACTORS />
       <BulletSection title="实践要点" items=FARM_TIPS />
     </KnowledgePage>

@@ -40,10 +40,10 @@ pub fn QuestionCard(
   let image = question.image().map(|src| {
     let (alt, title) = match &j_code {
       Some(j) => (
-        tf("题号 {} 附图", &[(j.as_str())]),
-        tf("题号 {} 题图", &[(j.as_str())]),
+        tf("exam.no-image", &[(j.as_str())]),
+        tf("exam.question-figure", &[(j.as_str())]),
       ),
-      None => (t("题目附图"), t("题目附图")),
+      None => (t("exam.question-image"), t("exam.question-image")),
     };
     view! {
       <div class="mt-2">
@@ -136,7 +136,7 @@ pub fn QuestionCard(
       let correct = !sel.is_empty() && ham_web_core::question::same_set(&sel, &answer_keys);
       let verdict = (!sel.is_empty()).then(|| {
         if correct {
-          view! { <span class="ml-2 text-green-600 dark:text-green-400">{move || t("已答对")}</span> }.into_any()
+          view! { <span class="ml-2 text-green-600 dark:text-green-400">{move || t("exam.correct-2")}</span> }.into_any()
         } else {
           let err = if is_multiple {
             ham_web_core::question::multi_error_kind(&sel, &answer_keys)
@@ -147,14 +147,14 @@ pub fn QuestionCard(
           };
           view! {
             <span class="ml-2 text-red-600 dark:text-red-400">
-              {tf("作答：{}{}", &[&(sel.join(", ")).to_string(), &err])}
+              {tf("common.your-answer", &[&(sel.join(", ")).to_string(), &err])}
             </span>
           }
           .into_any()
         }
       });
       view! {
-        <div class="text-sm text-muted-foreground">{move || t("正确答案：")} {answer_keys.join(", ")} {verdict}</div>
+        <div class="text-sm text-muted-foreground">{move || t("exam.correct-answer-2")} {answer_keys.join(", ")} {verdict}</div>
       }
     })
   };
@@ -163,7 +163,7 @@ pub fn QuestionCard(
     <div data-slot="card" class=card_class("")>
       <div data-slot="card-header" class=CARD_HEADER>
         <div data-slot="card-title" class=card_title_class("flex items-center gap-2")>
-          <span>{move || tf("第 {} / {} 题", &[&(index + 1).to_string(), &total.to_string()])}</span>
+          <span>{move || tf("exam.question", &[&(index + 1).to_string(), &total.to_string()])}</span>
           <span data-slot="badge" class=badge_class(BadgeVariant::Secondary, "")>
             {move || t(kind_label)}
           </span>
@@ -172,7 +172,7 @@ pub fn QuestionCard(
             .clone()
             .map(|j| {
               view! {
-                <span data-slot="badge" class=badge_class(BadgeVariant::Outline, "") title=move || t("题号")>
+                <span data-slot="badge" class=badge_class(BadgeVariant::Outline, "") title=move || t("exam.no-2")>
                   {j}
                 </span>
               }
@@ -180,8 +180,8 @@ pub fn QuestionCard(
           <button
             type="button"
             class="ml-auto flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            title=move || t("朗读题干")
-            aria-label=move || t("朗读题干")
+            title=move || t("exam.read-question-aloud")
+            aria-label=move || t("exam.read-question-aloud")
             on:click=move |_| speech::speak_zh(&question_text)
           >
             <Icon kind=IconKind::Volume2 class="h-4 w-4" />

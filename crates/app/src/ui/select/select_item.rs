@@ -2,6 +2,7 @@ use leptos::prelude::*;
 
 use crate::icons::{Icon, IconKind};
 
+use super::super::popover;
 use super::select_root::SelectCtx;
 
 /// 下拉选项。
@@ -20,8 +21,9 @@ pub fn SelectItem(#[prop(into)] value: String, children: Children) -> impl IntoV
       aria-selected=move || selected().to_string()
       data-state=move || if selected() { "checked" } else { "unchecked" }
       tabindex="-1"
-      class="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
-      on:click=move |_| {
+      class=popover::ITEM
+      on:click=move |e| {
+        popover::swallow(&e);
         ctx.on_change.run(v.get_value());
         ctx.open.set(false);
       }

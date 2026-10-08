@@ -160,6 +160,14 @@ pub enum IconKind {
   Plus,
   /// `Minus`（minus）：数字输入的「减」按钮
   Minus,
+  /// `ChevronLeft`（chevron-left）：日期选择器切换到上个月
+  ChevronLeft,
+  /// `ChevronRight`（chevron-right）：日期选择器切换到下个月
+  ChevronRight,
+  /// `Calendar`（calendar）：日期选择器触发按钮
+  Calendar,
+  /// `Clock`（clock）：时间选择器触发按钮
+  Clock,
 }
 
 impl IconKind {
@@ -254,6 +262,10 @@ impl IconKind {
       Self::Network => "network",
       Self::Plus => "plus",
       Self::Minus => "minus",
+      Self::ChevronLeft => "chevron-left",
+      Self::ChevronRight => "chevron-right",
+      Self::Calendar => "calendar",
+      Self::Clock => "clock",
     }
   }
 
@@ -492,6 +504,12 @@ impl IconKind {
       }
       Self::Plus => r#"<path d="M5 12h14"/><path d="M12 5v14"/>"#,
       Self::Minus => r#"<path d="M5 12h14"/>"#,
+      Self::ChevronLeft => r#"<path d="m15 18-6-6 6-6"/>"#,
+      Self::ChevronRight => r#"<path d="m9 18 6-6-6-6"/>"#,
+      Self::Calendar => {
+        r#"<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>"#
+      }
+      Self::Clock => r#"<path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/>"#,
     }
   }
 }

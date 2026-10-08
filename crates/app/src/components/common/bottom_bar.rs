@@ -24,7 +24,7 @@ pub fn BottomBar(
     <Portal>
       <div
         role="region"
-        aria-label=move || t("操作栏")
+        aria-label=move || t("shell.action-bar")
         class="fixed left-0 right-0 bottom-0 z-40 border-t bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/60"
         style="padding-bottom: env(safe-area-inset-bottom);"
       >

@@ -4,10 +4,10 @@ use leptos::prelude::*;
 use serde::Deserialize;
 
 use crate::components::common::{PageContainer, PageHeader};
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 use crate::pages::log::use_log_store;
 use crate::share_score::{ReportData, download, render_report_card};
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, Size, Variant};
 use crate::util::{set_title, storage};
 use crate::{store, study};
 
@@ -53,7 +53,7 @@ fn build_report_data(entries: &[crate::pages::log::LogEntry]) -> ReportData {
 
 #[component]
 pub fn ReportPage() -> impl IntoView {
-  set_title(&t("学习报告"));
+  set_title("learning.study-report");
 
   let log_store = use_log_store();
   let entries = log_store.logbook.get_untracked().entries.clone();
@@ -64,7 +64,7 @@ pub fn ReportPage() -> impl IntoView {
     exporting.set(true);
     match render_report_card(&data) {
       Ok(data_url) => download(&data_url, "study-report.png"),
-      Err(_) => crate::util::alert(&t("生成失败，请重试。")),
+      Err(_) => crate::util::alert(&t("log.rendering-failed-please-retry")),
     }
     exporting.set(false);
   };
@@ -81,14 +81,14 @@ pub fn ReportPage() -> impl IntoView {
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader
-        title=Signal::derive(move || t("学习报告"))
-        subtitle=Signal::derive(move || t("本地数据汇总 · 可导出 PNG"))
+        title=Signal::derive(move || t("learning.study-report"))
+        subtitle=Signal::derive(move || t("learning.local-data-summary-export"))
       />
       <PageContainer>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {stat("累计作答", data.answered.to_string())}
-          {stat("正确率", tf("{}%", &[&data.correct_rate.to_string()]))}
-          {stat("连续打卡", tf("{} 天", &[&data.streak.to_string()]))}
+          {stat("正确率", tf("common.percent", &[&data.correct_rate.to_string()]))}
+          {stat("连续打卡", tp("common.days", data.streak, &[&data.streak.to_string()]))}
           {stat("当前错题", data.mistakes.to_string())}
           {stat("收藏题目", data.bookmarks.to_string())}
           {stat("解锁成就", data.achievements.to_string())}
@@ -100,15 +100,16 @@ pub fn ReportPage() -> impl IntoView {
         </div>
 
         <section class="rounded-xl border bg-card p-4">
-          <button
-            type="button"
-            class=button_class(Variant::Default, Size::Default, "w-full")
-            on:click=move |_| export()
+          <Button
+            variant=Variant::Default
+            size=Size::Default
+            class="w-full"
+            on_click=Callback::new(move |_| export())
           >
-            {move || if exporting.get() { t("生成中…") } else { t("导出报告 PNG") }}
-          </button>
+            {move || if exporting.get() { t("log.rendering") } else { t("learning.export-report-png") }}
+          </Button>
           <p class="mt-3 text-xs text-muted-foreground">
-            {move || t("报告基于本地数据生成，仅保存在浏览器中，不上传任何信息。")}
+            {move || t("learning.the-report-is-generated")}
           </p>
         </section>
       </PageContainer>

@@ -5,7 +5,7 @@ use wasm_bindgen::JsValue;
 
 use super::countdown::add_countdown;
 use crate::i18n::t;
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{Button, DatePicker, Size, Variant};
 use crate::util::set_title;
 
 /// 由发照日期推算到期日期（有效期 5 年，按公历加 5 年）。返回毫秒时间戳。
@@ -57,7 +57,7 @@ const NOTES: &[&str] = &[
 
 #[component]
 pub fn LicensePage() -> impl IntoView {
-  set_title(&t("执照申办"));
+  set_title("shell.licensing");
   let issue = RwSignal::new(String::new());
   let added = RwSignal::new(false);
   let expiry_label = move || {
@@ -75,7 +75,7 @@ pub fn LicensePage() -> impl IntoView {
     let Some(ms) = expiry_from_issue(&issue.get_untracked()) else {
       return;
     };
-    add_countdown(&t("执照到期"), ms);
+    add_countdown(&t("settings.license-expires"), ms);
     added.set(true);
   };
   view! {
@@ -83,15 +83,15 @@ pub fn LicensePage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("执照 / 操作证申办")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("报名 → 考试 → 设台 → 领证")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("knowledge.licence-operator-permit-application")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("knowledge.register-exam-set-up")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("申办流程")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.application-process")}</h2>
           <ol class="divide-y">
             {STEPS
               .iter()
@@ -114,7 +114,7 @@ pub fn LicensePage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("操作能力类别与权限")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.operating-classes-and-privileges")}</h2>
           <dl class="divide-y">
             {CLASSES
               .iter()
@@ -131,7 +131,7 @@ pub fn LicensePage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("关键须知")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.key-notes")}</h2>
           <ul class="space-y-2 p-4">
             {NOTES
               .iter()
@@ -148,46 +148,46 @@ pub fn LicensePage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("执照到期提醒")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("settings.license-expiry-reminder")}</h2>
           <div class="space-y-3 p-4">
             <p class="text-xs text-muted-foreground">
-              {move || t("填写发照日期，自动按 5 年有效期计算到期日，并加入倒计时提醒（届满前请提前办理更换）。")}
+              {move || t("settings.enter-the-issue-date")}
             </p>
             <div class="grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-end">
               <label class="flex flex-col gap-1.5 text-sm">
-                <span class="text-xs text-muted-foreground">{move || t("发照日期")}</span>
-                <input
-                  type="date"
-                  prop:value=move || issue.get()
-                  on:input=move |e| {
-                    issue.set(event_target_value(&e));
+                <span class="text-xs text-muted-foreground">{move || t("settings.issue-date")}</span>
+                <DatePicker
+                  value=issue
+                  on_change=Callback::new(move |v: String| {
+                    issue.set(v);
                     added.set(false);
-                  }
-                  class=input_class("w-44")
+                  })
+                  aria_label=Signal::derive(move || t("settings.issue-date"))
+                  class="w-44"
                 />
               </label>
               <div class="flex flex-col gap-1.5 text-sm">
-                <span class="text-xs text-muted-foreground">{move || t("到期日期")}</span>
+                <span class="text-xs text-muted-foreground">{move || t("settings.expiry-date")}</span>
                 <span class="font-mono tabular-nums">
                   {move || expiry_label().unwrap_or_else(|| "—".to_owned())}
                 </span>
               </div>
-              <button
-                type="button"
-                class=button_class(Variant::Default, Size::Default, "")
-                disabled=move || issue.get().is_empty()
-                on:click=move |_| add_reminder()
+              <Button
+                variant=Variant::Default
+                size=Size::Default
+                disabled=Signal::derive(move || issue.get().is_empty())
+                on_click=Callback::new(move |_| add_reminder())
               >
-                {move || t("添加到期提醒")}
-              </button>
+                {move || t("settings.add-expiry-reminder")}
+              </Button>
             </div>
             {move || {
               added.get().then(|| {
                 view! {
                   <p class="text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                    {move || t("已加入倒计时，到期时浏览器会弹出通知。")}
+                    {move || t("settings.added-to-countdown-the")}
                     <a href="/countdown" class="ml-1 text-primary underline underline-offset-4 hover:underline">
-                      {move || t("去倒计时查看 →")}
+                      {move || t("settings.view-countdown")}
                     </a>
                   </p>
                 }

@@ -1,27 +1,29 @@
 use leptos::prelude::*;
 
-use super::{INPUT, RESULT, fmt_num};
+use super::{RESULT, fmt_num};
 use crate::i18n::t;
+use crate::ui::{Field, NumberField};
+use crate::util::unique_id;
 
 /// dBm ↔ dBμV 换算（50Ω 阻抗）。
 #[component]
 pub(super) fn DbmDbuv() -> impl IntoView {
   let dbm = RwSignal::new(0.0);
+  let dbm_id = unique_id("dbm-dbuv-dbm");
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("功率电平（dBm）")}</span>
-        <input
-          type="number"
-          prop:value=move || dbm.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      <Field label=Signal::derive(move || t("tools.power-level-dbm")) r#for=dbm_id.clone()>
+        <NumberField
+          id=dbm_id
+          value=Signal::derive(move || dbm.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               dbm.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
+      </Field>
       <div class=RESULT>
         {move || format!("{} dBμV（50Ω）", fmt_num(dbm.get() + 107.0))}
       </div>

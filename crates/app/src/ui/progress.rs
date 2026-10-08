@@ -20,14 +20,14 @@ pub fn Progress(
       role="progressbar"
       aria-valuemin="0"
       aria-valuemax="100"
-      aria-valuenow=move || value.get().to_string()
-      aria-label=move || t("作答进度")
+      aria-valuenow=move || value.get().clamp(0, 100).to_string()
+      aria-label=move || t("common.answering-progress")
       class=class
     >
       <div
         data-slot="progress-indicator"
         class="bg-primary h-full w-full flex-1 transition-all"
-        style=move || format!("transform: translateX(-{}%)", 100 - value.get())
+        style=move || format!("transform: translateX(-{}%)", 100 - value.get().clamp(0, 100))
       ></div>
     </div>
   }

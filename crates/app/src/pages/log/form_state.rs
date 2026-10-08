@@ -1,5 +1,6 @@
 //! 通联记录表单状态：新增 / 编辑共用的字段信号与读写方法，供表单组件与页面共享。
 
+use ham_web_core::qsl_status::QslVia;
 use leptos::prelude::*;
 
 use super::{LogEntry, utc_now_time, utc_today};
@@ -27,7 +28,8 @@ pub(super) struct LogFormState {
   pub(super) cqz: RwSignal<String>,
   pub(super) ituz: RwSignal<String>,
   pub(super) remark: RwSignal<String>,
-  pub(super) qsl_sent: RwSignal<bool>,
+  /// 纸卡寄出方式（`QslVia` 的短键；`"none"` 即未寄出）。
+  pub(super) qsl_via: RwSignal<String>,
   pub(super) qsl_rcvd: RwSignal<bool>,
   pub(super) lotw_sent: RwSignal<bool>,
   pub(super) lotw_rcvd: RwSignal<bool>,
@@ -59,7 +61,7 @@ impl LogFormState {
       cqz: RwSignal::new(String::new()),
       ituz: RwSignal::new(String::new()),
       remark: RwSignal::new(String::new()),
-      qsl_sent: RwSignal::new(false),
+      qsl_via: RwSignal::new(QslVia::None.key().to_owned()),
       qsl_rcvd: RwSignal::new(false),
       lotw_sent: RwSignal::new(false),
       lotw_rcvd: RwSignal::new(false),
@@ -91,7 +93,7 @@ impl LogFormState {
     self.cqz.set(String::new());
     self.ituz.set(String::new());
     self.remark.set(String::new());
-    self.qsl_sent.set(false);
+    self.qsl_via.set(QslVia::None.key().to_owned());
     self.qsl_rcvd.set(false);
     self.lotw_sent.set(false);
     self.lotw_rcvd.set(false);
@@ -127,7 +129,15 @@ impl LogFormState {
     self.cqz.set(e.cqz.clone());
     self.ituz.set(e.ituz.clone());
     self.remark.set(e.remark.clone());
-    self.qsl_sent.set(e.qsl_sent);
+    // 未寄出时方式无意义，统一收敛成 `none`（避免「未寄出 + 直寄」这种自相矛盾的组合）。
+    self.qsl_via.set(
+      if e.qsl_sent {
+        e.qsl_sent_via.key()
+      } else {
+        QslVia::None.key()
+      }
+      .to_owned(),
+    );
     self.qsl_rcvd.set(e.qsl_rcvd);
     self.lotw_sent.set(e.lotw_sent);
     self.lotw_rcvd.set(e.lotw_rcvd);
@@ -140,6 +150,8 @@ impl LogFormState {
   /// 比前缀推断更准）；呼号改了则重新推断 DXCC，未手动改过的分区也随之重新推断。
   pub(super) fn build(self, id: u64, old: Option<&LogEntry>) -> LogEntry {
     let call = self.callsign.get().trim().to_uppercase();
+    // 寄出方式与「是否寄出」是同一个字段的两种表述：选了卡片局 / 直寄就是已寄出。
+    let via = QslVia::from_key(&self.qsl_via.get());
     let same_call = old.filter(|o| o.callsign.eq_ignore_ascii_case(&call));
     let renamed = old.filter(|o| !o.callsign.eq_ignore_ascii_case(&call));
     let zone = |sig: RwSignal<String>, prev: Option<&String>| {
@@ -173,7 +185,8 @@ impl LogFormState {
       sota_ref: self.sota_ref.get().trim().to_uppercase(),
       pota_ref: self.pota_ref.get().trim().to_uppercase(),
       remark: self.remark.get().trim().to_owned(),
-      qsl_sent: self.qsl_sent.get(),
+      qsl_sent: via != QslVia::None,
+      qsl_sent_via: via,
       qsl_rcvd: self.qsl_rcvd.get(),
       lotw_sent: self.lotw_sent.get(),
       lotw_rcvd: self.lotw_rcvd.get(),

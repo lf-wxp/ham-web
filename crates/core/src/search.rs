@@ -87,6 +87,18 @@ fn quads(
   }
 }
 
+/// 追加五元组（只索引前四列；第五列是 `.nec` 模板 id，不进搜索文本）。
+fn quints(
+  out: &mut Vec<SearchEntry>,
+  page: &'static str,
+  href: &'static str,
+  items: &[(&str, &str, &str, &str, &str)],
+) {
+  for &(a, b, c, d, _) in items {
+    push(out, page, href, a.to_owned(), format!("{b} · {c} · {d}"));
+  }
+}
+
 /// 追加提示列表（标题用页面名）。
 fn tips(out: &mut Vec<SearchEntry>, page: &'static str, href: &'static str, items: &[&str]) {
   for &t in items {
@@ -535,7 +547,7 @@ fn build_index() -> Vec<SearchEntry> {
   pairs(&mut out, "无线电测向", "/ardf", ardf::ARDF_BANDS);
 
   // 天线 DIY
-  quads(
+  quints(
     &mut out,
     "天线 DIY",
     "/antenna-diy",

@@ -41,7 +41,7 @@ fn comparison_rows(models: &[&Gear]) -> Vec<(&'static str, Vec<String>)> {
 
 #[component]
 pub fn GearPage() -> impl IntoView {
-  set_title(&t("设备评测与选购"));
+  set_title("knowledge.gear-reviews-buying-guide");
 
   let category = RwSignal::new(GEAR_CATEGORIES[0].0.to_owned());
   let selected = RwSignal::new(default_selection(GEAR_CATEGORIES[0].0));
@@ -64,12 +64,12 @@ pub fn GearPage() -> impl IntoView {
     });
     if too_many {
       let limit = MAX_COMPARE.to_string();
-      alert(&tf("最多同时对比 {} 台，请先取消一台。", &[&limit]));
+      alert(&tf("knowledge.you-can-compare-at", &[&limit]));
     }
   };
 
   view! {
-    <KnowledgePage title=t("设备评测与选购") subtitle=t("精选机型 · 参数对比 · 选购指南")>
+    <KnowledgePage title=t("knowledge.gear-reviews-buying-guide") subtitle=t("knowledge.featured-radios-spec-comparison")>
       <TableSection
         title="按用途推荐"
         headers=PICK_HEADERS
@@ -78,9 +78,9 @@ pub fn GearPage() -> impl IntoView {
       />
 
       <section class="rounded-xl border bg-card">
-        <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("参数对比")}</h2>
+        <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.spec-comparison")}</h2>
         <p class="px-4 pt-3 text-xs text-muted-foreground">
-          {move || t("选择类别与机型（最多 4 台）并排对比规格与点评。规格取公开且稳定的高层次信息，价格档为相对定位。")}
+          {move || t("knowledge.pick-a-category-and")}
         </p>
 
         <div class="flex flex-wrap gap-1.5 p-4 pb-2">
@@ -142,7 +142,7 @@ pub fn GearPage() -> impl IntoView {
           if models.is_empty() {
             return view! {
               <p class="border-t px-4 py-4 text-sm text-muted-foreground">
-                {move || t("请至少选择一台机型进行对比。")}
+                {move || t("knowledge.select-at-least-one")}
               </p>
             }
             .into_any();
@@ -153,7 +153,7 @@ pub fn GearPage() -> impl IntoView {
               <table class="w-full border-collapse text-sm" style="min-width: 640px">
                 <thead class="bg-muted/60 text-xs">
                   <tr>
-                    <th class="border px-3 py-2 text-left">{move || t("参数")}</th>
+                    <th class="border px-3 py-2 text-left">{move || t("knowledge.specs")}</th>
                     {models
                       .iter()
                       .map(|g| {
@@ -198,7 +198,7 @@ pub fn GearPage() -> impl IntoView {
         }}
 
         <p class="border-t px-4 py-3 text-xs text-muted-foreground">
-          {move || t("本表为客观规格与共识点评整理，不构成购买建议，也未收录具体售价；购买前请以厂商与经销商的最新资料为准。")}
+          {move || t("knowledge.this-table-compiles-objective")}
         </p>
       </section>
 

@@ -21,8 +21,6 @@ use std::collections::HashMap;
 use ham_web_core::morse::code_of;
 use serde::{Deserialize, Serialize};
 
-use crate::cn::cn;
-use crate::ui::{Size, Variant, button_class};
 use crate::util::random;
 
 pub use ham_web_core::morse_trainer::{
@@ -188,24 +186,6 @@ fn save_trainer_settings(s: &TrainerSettings) {
 
 fn random_index(len: usize) -> usize {
   (random() * len as f64) as usize
-}
-
-/// 主按钮：复用全局 `button_class` 统一状态，仅保留本页偏好的圆角/高度。
-fn btn_primary(extra: &str) -> String {
-  button_class(
-    Variant::Default,
-    Size::Default,
-    &cn(&["rounded-lg h-10", extra]),
-  )
-}
-
-/// 次按钮（描边）。
-fn btn_secondary(extra: &str) -> String {
-  button_class(
-    Variant::Outline,
-    Size::Default,
-    &cn(&["rounded-lg h-10", extra]),
-  )
 }
 
 fn pill_class(active: bool) -> &'static str {

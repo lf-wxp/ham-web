@@ -9,9 +9,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn MeteorScatterPage() -> impl IntoView {
-  set_title(&t("流星散射"));
+  set_title("knowledge.meteor-scatter");
   view! {
-    <KnowledgePage title=t("流星散射") subtitle=t("6m / 2m 弱信号 DX 的主力手段")>
+    <KnowledgePage title=t("knowledge.meteor-scatter") subtitle=t("knowledge.the-main-weak-signal")>
       <ConceptsSection title="核心概念" items=MS_CONCEPTS />
       <TableSection title="主要流星雨" headers=&["流星雨", "峰值时段", "说明"] rows=METEOR_SHOWERS min_width=640 />
       <BulletSection title="操作要点" items=MS_TIPS />

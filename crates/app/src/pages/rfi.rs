@@ -9,9 +9,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn RfiPage() -> impl IntoView {
-  set_title(&t("射频干扰与电磁兼容"));
+  set_title("shell.rfi-troubleshooting");
   view! {
-    <KnowledgePage title=t("射频干扰与电磁兼容") subtitle=t("RFI · EMC · 干扰排查与抑制")>
+    <KnowledgePage title=t("shell.rfi-troubleshooting") subtitle=t("tools.rfi-emc-tracing-and")>
       <ConceptsSection title="常见干扰源" items=RFI_SOURCES />
       <ConceptsSection title="排查与抑制手段" items=RFI_SOLUTIONS />
       <BulletSection title="处理要点" items=RFI_TIPS />

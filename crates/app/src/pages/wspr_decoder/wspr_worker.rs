@@ -24,7 +24,7 @@ pub fn parse_message(data: &JsValue) -> Result<WorkerPayload, String> {
     let err = js_sys::Reflect::get(data, &"error".into())
       .ok()
       .and_then(|v| v.as_string())
-      .unwrap_or_else(|| t("解码失败"));
+      .unwrap_or_else(|| t("radio.decoding-failed"));
     return Err(err);
   }
 
@@ -42,12 +42,12 @@ fn get_u32(obj: &JsValue, key: &str) -> Result<u32, String> {
     .ok()
     .and_then(|v| v.as_f64())
     .map(|v| v as u32)
-    .ok_or_else(|| tf("字段 {} 缺失", &[(key)]))
+    .ok_or_else(|| tf("common.field-is-missing", &[(key)]))
 }
 
 fn get_str(obj: &JsValue, key: &str) -> Result<String, String> {
   js_sys::Reflect::get(obj, &key.into())
     .ok()
     .and_then(|v| v.as_string())
-    .ok_or_else(|| tf("字段 {} 缺失", &[(key)]))
+    .ok_or_else(|| tf("common.field-is-missing", &[(key)]))
 }

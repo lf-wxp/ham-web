@@ -10,7 +10,7 @@ use super::awards_panel::AwardsPanel;
 use super::bar_list::BarList;
 use super::grid_map::GridMap;
 use super::{Logbook, StationInfo};
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 
 #[component]
 pub(super) fn LogStatsPanel(
@@ -55,30 +55,30 @@ pub(super) fn LogStatsPanel(
       let pending = ham_web_core::logbook::pending_qsl(&entries);
       view! {
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label=t("通联总数") value=move || total />
-          <Stat label=t("不同呼号") value=move || n_calls />
-          <Stat label=t("DXCC 实体") value=move || n_dxcc />
-          <Stat label=t("QSL 已确认") value=move || confirmed />
+          <Stat label=t("log.total-qsos") value=move || total />
+          <Stat label=t("log.unique-callsigns") value=move || n_calls />
+          <Stat label=t("log.dxcc-entities") value=move || n_dxcc />
+          <Stat label=t("log.qsl-confirmed") value=move || confirmed />
         </div>
         <section class="grid gap-4 sm:grid-cols-2">
           <div class="rounded-xl border bg-card p-4">
-            <h3 class="mb-3 text-sm font-semibold">{move || t("按模式")}</h3>
+            <h3 class="mb-3 text-sm font-semibold">{move || t("log.by-mode")}</h3>
             <BarList items=modes />
           </div>
           <div class="rounded-xl border bg-card p-4">
-            <h3 class="mb-3 text-sm font-semibold">{move || t("按波段")}</h3>
+            <h3 class="mb-3 text-sm font-semibold">{move || t("log.by-band")}</h3>
             <BarList items=bands />
           </div>
         </section>
         <section class="rounded-xl border bg-card p-4">
           <h3 class="mb-2 text-sm font-semibold">
-            {move || t("DXCC 实体")}
+            {move || t("log.dxcc-entities")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">
-              {tf("已通联 {} 个", &[&n_dxcc.to_string()])}
+              {tp("log.worked-2", n_dxcc, &[&n_dxcc.to_string()])}
             </span>
           </h3>
           {if dxcc.is_empty() {
-            view! { <div class="text-xs text-muted-foreground">{move || t("暂无已识别实体，添加通联记录后自动统计。")}</div> }.into_any()
+            view! { <div class="text-xs text-muted-foreground">{move || t("log.no-recognized-entities-yet")}</div> }.into_any()
           } else {
             view! {
               <div class="flex flex-wrap gap-1.5">
@@ -98,13 +98,13 @@ pub(super) fn LogStatsPanel(
         <AwardsPanel entries=entries.clone() />
         <section class="rounded-xl border bg-card p-4">
           <h3 class="mb-2 text-sm font-semibold">
-            {move || t("待确认 QSL")}
+            {move || t("log.qsls-pending")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">
-              {tf("{} 条待追卡", &[&pending.len().to_string()])}
+              {tp("common.cards-to-chase", pending.len(), &[&pending.len().to_string()])}
             </span>
           </h3>
           {if pending.is_empty() {
-            view! { <div class="text-xs text-muted-foreground">{move || t("已寄出的 QSL 都确认了，很棒！")}</div> }.into_any()
+            view! { <div class="text-xs text-muted-foreground">{move || t("log.all-sent-qsls-are")}</div> }.into_any()
           } else {
             view! {
               <div class="divide-y">
@@ -112,7 +112,7 @@ pub(super) fn LogStatsPanel(
                   .iter()
                   .map(|e| {
                     let via = if e.qsl_sent {
-                      t("纸卡")
+                      t("knowledge.paper")
                     } else if e.lotw_sent {
                       "LoTW".to_owned()
                     } else {
@@ -136,13 +136,13 @@ pub(super) fn LogStatsPanel(
         </section>
         <section class="rounded-xl border bg-card p-4">
           <h3 class="mb-2 text-sm font-semibold">
-            {move || t("已通联网格")}
+            {move || t("learning.grids-worked")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">
-              {tf("{} 个", &[&grids.len().to_string()])}
+              {tf("log.entry", &[&grids.len().to_string()])}
             </span>
           </h3>
           {if grids.is_empty() {
-            view! { <div class="text-xs text-muted-foreground">{move || t("暂无网格记录，添加带网格的通联后自动统计。")}</div> }.into_any()
+            view! { <div class="text-xs text-muted-foreground">{move || t("log.no-grids-yet-they")}</div> }.into_any()
           } else {
             view! {
               <div class="space-y-3">

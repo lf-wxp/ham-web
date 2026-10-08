@@ -76,11 +76,11 @@ pub(super) fn QuizQuestion(q: QuestionItem) -> impl IntoView {
       {move || {
         answered().then(|| {
           if correct() {
-            view! { <div class="mt-1.5 text-xs text-emerald-600">{move || t("答对 ✓")}</div> }.into_any()
+            view! { <div class="mt-1.5 text-xs text-emerald-600">{move || t("common.correct-4")}</div> }.into_any()
           } else {
             view! {
               <div class="mt-1.5 text-xs text-red-600">
-                {move || t("正确答案：")} <span class="font-mono font-semibold">{answer_keys.join("、")}</span>
+                {move || t("exam.correct-answer-2")} <span class="font-mono font-semibold">{answer_keys.join("、")}</span>
               </div>
             }
             .into_any()

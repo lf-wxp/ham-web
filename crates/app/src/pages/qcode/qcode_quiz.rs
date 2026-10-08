@@ -72,10 +72,10 @@ pub(super) fn QCodeQuiz(entries: &'static [GlossaryEntry]) -> impl IntoView {
 
   view! {
     <section class="mb-8 rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("Q 简语测验")}</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.q-code-quiz")}</h2>
       <div class="space-y-4 p-4">
         <div class="flex flex-col items-center gap-2 rounded-xl border bg-muted/30 px-4 py-6">
-          <div class="text-xs text-muted-foreground">{move || t("这个 Q 简语的含义是？")}</div>
+          <div class="text-xs text-muted-foreground">{move || t("knowledge.what-does-this-q")}</div>
           <div class="font-mono text-3xl font-semibold text-primary">{move || question.get()}</div>
         </div>
         <div class="grid gap-2 sm:grid-cols-2">
@@ -104,7 +104,7 @@ pub(super) fn QCodeQuiz(entries: &'static [GlossaryEntry]) -> impl IntoView {
               feedback.get().map(|ok| {
                 if ok {
                   view! {
-                    <span class="font-medium text-emerald-600 dark:text-emerald-400">{move || t("正确！")}</span>
+                    <span class="font-medium text-emerald-600 dark:text-emerald-400">{move || t("learning.correct")}</span>
                   }
                   .into_any()
                 } else {
@@ -123,11 +123,11 @@ pub(super) fn QCodeQuiz(entries: &'static [GlossaryEntry]) -> impl IntoView {
             on:click=move |_| load_next()
             class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
           >
-            {move || t("下一题")}
+            {move || t("exam.next")}
           </button>
           <div class="text-xs text-muted-foreground">
-            {move || t("正确 ")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
-            {move || t("　错误 ")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
+            {move || t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
+            {move || t("common.wrong-2")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
           </div>
         </div>
       </div>

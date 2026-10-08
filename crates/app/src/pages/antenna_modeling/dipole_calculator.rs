@@ -1,7 +1,7 @@
 use crate::i18n::{t, tf};
+use crate::ui::{Field, NumberField};
+use crate::util::unique_id;
 use leptos::prelude::*;
-
-const INPUT: &str = "h-10 rounded-lg border bg-background px-3 text-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 
 /// 偶极天线尺寸估算计算器。
 #[component]
@@ -9,48 +9,54 @@ pub(super) fn DipoleCalculator() -> impl IntoView {
   let freq = RwSignal::new(14.2);
   let k = RwSignal::new(0.95);
 
+  // `Field` 的标签与控件是兄弟节点，`r#for` / `id` 必须配对才能点击标签聚焦输入框
+  //（e2e 与读屏都按「标签 → 控件」的关联来定位）。
+  let freq_id = unique_id("dipole-freq");
+  let k_id = unique_id("dipole-k");
+
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("频率（MHz）")}</span>
-        <input
-          type="number"
-          step="0.01"
-          prop:value=move || freq.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      <Field label=Signal::derive(move || t("log.frequency-mhz")) r#for=freq_id.clone()>
+        <NumberField
+          id=freq_id
+          step=0.01
+          value=Signal::derive(move || freq.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               freq.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
-      <label class="flex flex-col gap-1.5 text-sm">
-        <span class="text-xs text-muted-foreground">{move || t("缩短系数 k（0.90–0.98）")}</span>
-        <input
-          type="number"
-          step="0.01"
-          min="0.5"
-          max="1.0"
-          prop:value=move || k.get().to_string()
-          on:input=move |e| {
-            if let Ok(v) = event_target_value(&e).parse::<f64>() {
+      </Field>
+      <Field
+        label=Signal::derive(move || t("knowledge.velocity-factor-k-0-2"))
+        r#for=k_id.clone()
+      >
+        <NumberField
+          id=k_id
+          step=0.01
+          min=0.5
+          max=1.0
+          value=Signal::derive(move || k.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(v) = v.trim().parse::<f64>() {
               k.set(v);
             }
-          }
-          class=INPUT
+          })
+          controls=false
         />
-      </label>
+      </Field>
       <div class="sm:col-span-2 rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let f = freq.get();
           let kk = k.get().clamp(0.5, 1.0);
           if f <= 0.0 {
-            t("请输入正频率")
+            t("tools.enter-a-positive-frequency")
           } else {
             let half = 150.0 / f * kk;
             // 建议架高约半波长（150/f），不是 1/4 波长（75/f）。
-            tf("半波偶极总长 ≈ {} m（单臂 {} m）　1/4 波长 ≈ {} m　建议架高 ≈ {} m", &[&format!("{half:.2}"), &format!("{:.2}", half / 2.0), &format!("{:.2}", 75.0 / f * kk), &format!("{:.2}", 150.0 / f)])
+            tf("common.half-wave-dipole-m", &[&format!("{half:.2}"), &format!("{:.2}", half / 2.0), &format!("{:.2}", 75.0 / f * kk), &format!("{:.2}", 150.0 / f)])
           }
         }}
       </div>

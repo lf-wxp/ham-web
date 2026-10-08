@@ -11,14 +11,14 @@ use crate::util::set_title;
 
 #[component]
 pub fn CommunityPage() -> impl IntoView {
-  set_title(&t("火腿社区"));
+  set_title("knowledge.ham-community");
   view! {
-    <KnowledgePage title=t("火腿社区") subtitle=t("国内外业余无线电论坛与问答 · 外链直达")>
-      <SectionCard title=t("关于本站社区")>
+    <KnowledgePage title=t("knowledge.ham-community") subtitle=t("knowledge.ham-radio-forums-q")>
+      <SectionCard title=t("knowledge.about-this-community")>
         <p class="text-sm leading-relaxed text-muted-foreground">
           {move || {
             t(
-              "本站目前以题库、知识与工具为主，暂未自建论坛。这里聚合了国内外活跃的火腿社区，点击即可直达；你的学习进度、通联日志等个人数据只保存在浏览器本地，不会离开你的设备。",
+              "knowledge.this-site-currently-focuses",
             )
           }}
         </p>
@@ -26,9 +26,9 @@ pub fn CommunityPage() -> impl IntoView {
 
       <section class="rounded-xl border bg-card">
         <div class="border-b px-4 py-3">
-          <h2 class="text-sm font-semibold">{move || t("社区索引")}</h2>
+          <h2 class="text-sm font-semibold">{move || t("knowledge.community-index")}</h2>
           <p class="mt-0.5 text-xs text-muted-foreground">
-            {move || t("按类别整理，点击名称跳转对应站点（外部链接）。")}
+            {move || t("knowledge.organized-by-category-click")}
           </p>
         </div>
         <div class="space-y-5 p-4">

@@ -9,14 +9,14 @@ use crate::i18n::t;
 
 #[component]
 pub fn AntennasPage() -> impl IntoView {
-  set_title(&t("天线型式"));
+  set_title("shell.antenna-types");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("天线型式")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("常见业余天线 · 示意简图 · 简要说明")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.antenna-types")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("knowledge.common-amateur-antennas-diagrams")}</div>
           </div>
         </div>
       </header>

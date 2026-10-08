@@ -11,14 +11,14 @@ use crate::util::set_title;
 
 #[component]
 pub fn OpenSourcePage() -> impl IntoView {
-  set_title(&t("开源项目与 DIY 索引"));
+  set_title("knowledge.open-source-projects-and");
   view! {
-    <KnowledgePage title=t("开源项目与 DIY 索引") subtitle=t("社区开源软件与自制教程 · 一站直达")>
+    <KnowledgePage title=t("knowledge.open-source-projects-and") subtitle=t("knowledge.community-open-source-software")>
       <section class="rounded-xl border bg-card">
         <div class="border-b px-4 py-3">
-          <h2 class="text-sm font-semibold">{move || t("精选开源项目")}</h2>
+          <h2 class="text-sm font-semibold">{move || t("knowledge.featured-open-source-projects")}</h2>
           <p class="mt-0.5 text-xs text-muted-foreground">
-            {move || t("按用途分类，点击名称跳转项目官网或代码仓库（外部链接）。")}
+            {move || t("knowledge.grouped-by-purpose-click")}
           </p>
         </div>
         <div class="space-y-5 p-4">
@@ -72,7 +72,7 @@ pub fn OpenSourcePage() -> impl IntoView {
         </div>
       </section>
 
-      <SectionCard title=t("DIY 与自制教程")>
+      <SectionCard title=t("knowledge.diy-and-build-tutorials")>
         <div class="divide-y">
           {DIY_GUIDES
             .iter()

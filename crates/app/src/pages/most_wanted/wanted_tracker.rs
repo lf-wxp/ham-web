@@ -43,17 +43,17 @@ pub(super) fn WantedTracker() -> impl IntoView {
 
   view! {
     <section class="rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("通联进度追踪")}</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("log.contact-progress-tracking")}</h2>
       <div class="space-y-3 p-4">
         <Input
           value=query
           on_change=Callback::new(move |v: String| query.set(v))
-          placeholder=Signal::derive(move || t("搜索前缀或实体名…"))
+          placeholder=Signal::derive(move || t("log.search-prefix-or-entity"))
           clearable=true
         />
         <div>
           <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-            <span>{move || t("已通联")}</span>
+            <span>{move || t("log.worked")}</span>
             <span class="tabular-nums">
               {move || {
                 let d = done.get();
@@ -95,7 +95,7 @@ pub(super) fn WantedTracker() -> impl IntoView {
                     <div class="flex items-center gap-3 py-2">
                       <button
                         type="button"
-                        aria-label=tf("标记 {}", &[(name)])
+                        aria-label=tf("common.marker", &[(name)])
                         on:click=move |_| toggle(prefix)
                         class=move || {
                           if checked() {
@@ -111,7 +111,7 @@ pub(super) fn WantedTracker() -> impl IntoView {
                       <span class="flex-1 text-sm">{name}</span>
                       {if from_log {
                         view! {
-                          <span class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{move || t("日志")}</span>
+                          <span class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{move || t("radio.log")}</span>
                         }
                         .into_any()
                       } else {

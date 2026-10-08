@@ -42,14 +42,14 @@ pub fn GridMap(entries: Vec<LogEntry>, station_grid: String) -> impl IntoView {
       {entries_empty.then(|| {
         view! {
           <div class="mb-3 rounded-lg border bg-muted/30 p-4 text-center text-sm text-muted-foreground">
-            {move || t("暂无通联记录，请先在「通联日志」中添加记录，或从 ADIF / CSV 导入。")}
+            {move || t("log.no-qsos-yet-add")}
           </div>
         }
       })}
       <GridToolbar state=state />
       <GridStatsBar state=state />
       <MapView
-        aria_label=t("已通联网格地图（滚轮缩放、拖拽平移、双指缩放、双击复位、反子午线环绕）")
+        aria_label=Signal::derive(move || t("log.worked-grid-map-scroll"))
         focus=state.focus
         zoom_signal=state.zoom
         hover_signal=state.hover_pos

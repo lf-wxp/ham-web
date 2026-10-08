@@ -11,7 +11,7 @@ use leptos::prelude::*;
 use crate::components::common::{
   BulletSection, ConceptsSection, KnowledgePage, SectionCard, TableSection,
 };
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tp};
 use crate::util::set_title;
 
 /// 接入约定。
@@ -55,25 +55,27 @@ const ERROR_HEADERS: &[&str] = &["HTTP", "code", "说明"];
 
 #[component]
 pub fn DevelopersPage() -> impl IntoView {
-  set_title(&t("开放 API"));
+  set_title("knowledge.open-api");
   view! {
-    <KnowledgePage title=t("开放 API") subtitle=t("版本化 · 可跨域 · 纯计算与静态数据")>
+    <KnowledgePage title=t("knowledge.open-api") subtitle=t("knowledge.versioned-cors-enabled-pure")>
       <ConceptsSection title="接入约定" items=CONVENTIONS ui=true />
 
-      <SectionCard title=t("配额与鉴权")>
+      <SectionCard title=t("knowledge.quotas-authentication")>
         <div class="space-y-2 p-4 text-sm text-muted-foreground">
           <p>
             {move || {
-              tf(
-                "匿名访问：每 IP 每分钟 {} 次。请求头携带 Authorization: Bearer <key> 后提升到每分钟 {} 次。",
+              tp(
+                "common.anonymous-access-requests-per",
+                ANON_LIMIT_PER_MIN,
                 &[&ANON_LIMIT_PER_MIN.to_string(), &KEYED_LIMIT_PER_MIN.to_string()],
               )
             }}
           </p>
           <p>
             {move || {
-              tf(
-                "key 只用于区分配额档位与统计，不做敏感鉴权；成功响应的缓存时长为 {} 秒。需要 key 请联系站点维护者。",
+              tp(
+                "common.the-key-only-picks",
+                CACHE_MAX_AGE_SECS,
                 &[&CACHE_MAX_AGE_SECS.to_string()],
               )
             }}
@@ -85,13 +87,13 @@ pub fn DevelopersPage() -> impl IntoView {
               rel="noopener noreferrer"
               class="font-medium text-primary underline-offset-2 hover:underline"
             >
-              {move || t("下载 OpenAPI 3.1 文档（openapi.json）")}
+              {move || t("knowledge.download-the-openapi-3")}
             </a>
           </p>
         </div>
       </SectionCard>
 
-      <SectionCard title=t("接口清单")>
+      <SectionCard title=t("knowledge.endpoints")>
         <div class="divide-y">
           {ENDPOINTS
             .iter()

@@ -1,0 +1,12 @@
+# 运行时语言包：由 `cargo make i18n-pack` 从 data/i18n/ 生成，各是一行 18 万字符的
+# 压缩 JSON。
+#
+# 为什么入库：`trunk serve` / `trunk build` 共用同一份产物，裸跑 trunk 也能拿到语言包；
+# 若改成 .gitignore，一次「忘了先跑 i18n-pack」的构建就会让 en / es 的非内嵌域静默显示
+# 中文 —— 比「多两个文件」严重得多。漂移（改了 data/i18n 忘跑 i18n-pack）由
+# `check-i18n` 的语言包新鲜度校验兜住（`cargo make check` / `ci` 都会跑），
+# Docker 镜像则在构建阶段重新生成（见 Dockerfile 的 i18n-pack 步骤）。
+#
+# 只标 linguist-generated、不加 `-diff`：GitHub 默认折叠生成物，但需要时仍能展开核对
+# 「这一版到底打包了哪些译文」—— 把 diff 彻底隐藏会让评审无从判断产物是否同步。
+public/data/i18n/*.json linguist-generated

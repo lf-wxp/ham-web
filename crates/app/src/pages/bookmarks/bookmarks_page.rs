@@ -5,11 +5,11 @@ use leptos::task::spawn_local;
 use crate::components::common::{EmptyState, Loading};
 use crate::data;
 use crate::store;
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{Button, ButtonLink, Input, Size, Variant};
 use crate::util::set_title;
 
 use super::bookmark_card::BookmarkCard;
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tp};
 
 /// 收藏分组过滤方式。
 #[derive(Clone, PartialEq)]
@@ -21,7 +21,7 @@ enum Filter {
 
 #[component]
 pub fn BookmarksPage() -> impl IntoView {
-  set_title(&t("收藏集"));
+  set_title("shell.bookmarks");
 
   let questions = RwSignal::new(Vec::<QuestionItem>::new());
   let loading = RwSignal::new(true);
@@ -128,31 +128,38 @@ pub fn BookmarksPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("收藏集")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("练习中手动收藏的重点题目，可按分组整理")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.bookmarks")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("exam.key-questions-bookmarked-during")}</div>
           </div>
           <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
-            {move || tf("共 {} 题", &[&(questions.get().len()).to_string()])}
+            {move || tp("common.questions-3", questions.get().len(), &[&(questions.get().len()).to_string()])}
           </span>
-          <a href="/print?src=bookmarks" class=button_class(Variant::Outline, Size::Sm, "")>{move || t("打印")}</a>
+          <ButtonLink
+            href="/print?src=bookmarks"
+            variant=Variant::Outline
+            size=Size::Sm
+          >{move || t("learning.print")}</ButtonLink>
         </div>
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-4 pb-3">
-          <input
-            type="text"
-            prop:value=move || new_group.get()
-            on:input=move |e| new_group.set(event_target_value(&e))
-            placeholder=move || t("新建分组名称…")
-            class=format!("{} w-40", input_class(""))
+          <Input
+            value=new_group
+            on_change=Callback::new(move |v: String| new_group.set(v))
+            placeholder=Signal::derive(move || t("exam.new-group-name"))
+            class="w-40"
           />
-          <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| create_group()>
-            {move || t("新建分组")}
-          </button>
+          <Button
+            variant=Variant::Outline
+            size=Size::Sm
+            on_click=Callback::new(move |_| create_group())
+          >
+            {move || t("exam.new-group")}
+          </Button>
           <div class="flex flex-wrap items-center gap-1.5">
             <button type="button" class=move || filter_tab(group_filter.get() == Filter::All) on:click=move |_| group_filter.set(Filter::All)>
-              {move || t("全部")}
+              {move || t("exam.all")}
             </button>
             <button type="button" class=move || filter_tab(group_filter.get() == Filter::Ungrouped) on:click=move |_| group_filter.set(Filter::Ungrouped)>
-              {move || t("未分组")}
+              {move || t("exam.ungrouped")}
             </button>
             {move || {
               groups.get().groups.clone().into_iter().map(|g| {
@@ -172,8 +179,8 @@ pub fn BookmarksPage() -> impl IntoView {
                     <button
                       type="button"
                       class="text-muted-foreground/60 transition-colors hover:text-destructive"
-                      title=move || t("删除该分组")
-                      aria-label=move || t("删除该分组")
+                      title=move || t("exam.delete-this-group")
+                      aria-label=move || t("exam.delete-this-group")
                       on:click=move |_| delete_group(del_name.clone())
                     >
                       "×"
@@ -189,13 +196,13 @@ pub fn BookmarksPage() -> impl IntoView {
       <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
         {move || {
           if loading.get() {
-            view! { <Loading label=t("加载中...") class="py-10" /> }
+            view! { <Loading label=t("exam.loading") class="py-10" /> }
               .into_any()
           } else if questions.get().is_empty() {
             view! {
               <EmptyState
-                title=t("暂无收藏")
-                description=t("在「练习」页面点击右上角书签图标即可收藏当前题。")
+                title=t("exam.no-bookmarks-yet")
+                description=t("exam.tap-the-bookmark-icon")
               />
             }
             .into_any()
@@ -203,7 +210,7 @@ pub fn BookmarksPage() -> impl IntoView {
             let list: Vec<QuestionItem> = filtered().collect();
             if list.is_empty() {
               return view! {
-                <EmptyState title=t("该分组暂无题目") description=t("在题目卡片的「加入分组」下拉里把收藏归入此分组。") />
+                <EmptyState title=t("exam.no-questions-in-this") description=t("exam.add-bookmarks-to-this") />
               }
               .into_any();
             }

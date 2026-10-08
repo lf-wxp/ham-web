@@ -9,10 +9,10 @@ use crate::util::set_title;
 
 #[component]
 pub fn FormulasPage() -> impl IntoView {
-  set_title(&t("公式速查"));
+  set_title("exam.formula-reference");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <PageHeader title=t("公式速查") subtitle=t("高频必背公式 · 点击跳转对应计算器") />
+      <PageHeader title=t("exam.formula-reference") subtitle=t("exam.must-know-formulas-tap") />
       <PageContainer>
         {FORMULA_GROUPS
           .iter()
@@ -34,7 +34,7 @@ pub fn FormulasPage() -> impl IntoView {
                           <div class="mt-1 font-mono text-sm font-semibold text-primary">{f.expr}</div>
                           <div class="mt-0.5 text-xs text-muted-foreground">{f.desc}</div>
                           <div class="mt-1 text-[11px] text-primary opacity-0 transition-opacity group-hover:opacity-100">
-                            {move || t("计算 →")}
+                            {move || t("knowledge.calculate")}
                           </div>
                         </a>
                       }

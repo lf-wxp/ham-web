@@ -21,6 +21,10 @@ js-sys.workspace = true
 console_error_panic_hook.workspace = true
 send_wrapper.workspace = true
 
+[build-dependencies]
+# 构建期把 data/i18n/{lang}/{domain}.json 编成静态词典表（见 crates/app/build.rs）
+serde_json.workspace = true
+
 [dependencies.web-sys]
 workspace = true
 features = [
@@ -75,6 +79,7 @@ features = [
   "NotificationPermission",
   "OscillatorNode",
   "OscillatorType",
+  "PointerEvent",
   "PushManager",
   "PushSubscription",
   "PushSubscriptionOptionsInit",

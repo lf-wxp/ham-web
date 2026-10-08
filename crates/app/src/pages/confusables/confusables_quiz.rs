@@ -3,8 +3,8 @@
 use ham_web_core::confusables::CONFUSABLE_QUIZ;
 use leptos::prelude::*;
 
-use crate::i18n::{t, tf};
-use crate::ui::{Size, Variant, button_class};
+use crate::i18n::{t, tf, tp};
+use crate::ui::{Button, Size, Variant};
 
 /// 辨析判断题练习。
 #[component]
@@ -52,19 +52,20 @@ pub(super) fn ConfusablesQuiz() -> impl IntoView {
           let w = wrong.get();
           view! {
             <div class="rounded-xl border bg-card px-4 py-10 text-center">
-              <div class="text-lg font-semibold">{move || t("练习完成")}</div>
+              <div class="text-lg font-semibold">{move || t("exam.practice-complete")}</div>
               <div class="mt-2 text-sm text-muted-foreground">
-                {move || t("正确")} " " <span class="font-semibold text-emerald-600">{c}</span>
-                "　" {move || t("错误")} " " <span class="font-semibold text-red-600">{w}</span>
-                "　" {tf("共 {} 题", &[&total.to_string()])}
+                {move || t("exam.correct-3")} " " <span class="font-semibold text-emerald-600">{c}</span>
+                "　" {move || t("exam.wrong-2")} " " <span class="font-semibold text-red-600">{w}</span>
+                "　" {tp("common.questions-3", total, &[&total.to_string()])}
               </div>
-              <button
-                type="button"
-                class=format!("{} mt-5", button_class(Variant::Default, Size::Default, ""))
-                on:click=move |_| restart()
+              <Button
+                variant=Variant::Default
+                size=Size::Default
+                class="mt-5"
+                on_click=Callback::new(move |_| restart())
               >
-                {move || t("再来一轮")}
-              </button>
+                {move || t("exam.another-round")}
+              </Button>
             </div>
           }
           .into_any()
@@ -73,38 +74,39 @@ pub(super) fn ConfusablesQuiz() -> impl IntoView {
           view! {
             <div class="rounded-xl border bg-card p-5">
               <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-                <span>{tf("第 {} / {} 题", &[&(index.get() + 1).to_string(), &total.to_string()])}</span>
+                <span>{tf("exam.question", &[&(index.get() + 1).to_string(), &total.to_string()])}</span>
                 <span>
-                  {move || t("正确")} " " <span class="font-semibold text-emerald-600">{correct.get()}</span>
-                  "　" {move || t("错误")} " " <span class="font-semibold text-red-600">{wrong.get()}</span>
+                  {move || t("exam.correct-3")} " " <span class="font-semibold text-emerald-600">{correct.get()}</span>
+                  "　" {move || t("exam.wrong-2")} " " <span class="font-semibold text-red-600">{wrong.get()}</span>
                 </span>
               </div>
               <p class="min-h-16 text-base font-medium leading-relaxed">{item.statement}</p>
               <div class="mt-4 flex items-center gap-2">
-                <button
-                  type="button"
-                  class=button_class(Variant::Default, Size::Default, "")
-                  disabled=move || answered.get().is_some()
-                  on:click=move |_| answer(true)
+                <Button
+                  variant=Variant::Default
+                  size=Size::Default
+                  disabled=Signal::derive(move || answered.get().is_some())
+                  on_click=Callback::new(move |_| answer(true))
                 >
-                  {move || t("正确 ✓")}
-                </button>
-                <button
-                  type="button"
-                  class=button_class(Variant::Outline, Size::Default, "")
-                  disabled=move || answered.get().is_some()
-                  on:click=move |_| answer(false)
+                  {move || t("exam.true")}
+                </Button>
+                <Button
+                  variant=Variant::Outline
+                  size=Size::Default
+                  disabled=Signal::derive(move || answered.get().is_some())
+                  on_click=Callback::new(move |_| answer(false))
                 >
-                  {move || t("错误 ✗")}
-                </button>
-                <button
-                  type="button"
-                  class=button_class(Variant::Ghost, Size::Default, "ml-auto text-muted-foreground")
-                  disabled=move || answered.get().is_none()
-                  on:click=move |_| next()
+                  {move || t("exam.false")}
+                </Button>
+                <Button
+                  variant=Variant::Ghost
+                  size=Size::Default
+                  class="ml-auto text-muted-foreground"
+                  disabled=Signal::derive(move || answered.get().is_none())
+                  on_click=Callback::new(move |_| next())
                 >
-                  {move || t("下一题")}
-                </button>
+                  {move || t("exam.next")}
+                </Button>
               </div>
               {move || {
                 answered.get().map(|choice| {
@@ -116,16 +118,16 @@ pub(super) fn ConfusablesQuiz() -> impl IntoView {
                       } else {
                         "font-medium text-red-700 dark:text-red-400"
                       }>
-                        {if is_right { t("回答正确！") } else { t("回答错误。") }}
+                        {if is_right { t("exam.correct") } else { t("exam.wrong") }}
                         <span class="ml-2 font-normal text-muted-foreground">
-                          {format!("{} {}", t("正确答案："), if item.answer { t("正确") } else { t("错误") })}
+                          {format!("{} {}", t("exam.correct-answer-2"), if item.answer { t("exam.correct-3") } else { t("exam.wrong-2") })}
                         </span>
                       </div>
                       <div class="text-muted-foreground">{item.explain}</div>
                       <div class="text-xs text-primary">
-                        {format!("{} {}", t("关联易混点："), t(item.topic))}
+                        {format!("{} {}", t("exam.related-topic"), t(item.topic))}
                         <a href="#confusables-list" class="ml-1 underline underline-offset-4 hover:underline">
-                          {move || t("回看辨析表 →")}
+                          {move || t("exam.review-table")}
                         </a>
                       </div>
                     </div>

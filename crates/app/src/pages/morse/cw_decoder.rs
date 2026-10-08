@@ -15,7 +15,7 @@ use web_sys::{
 };
 
 use crate::i18n::{t, tf};
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, Input, Size, Slider, Variant};
 use crate::util::{copy_text, js_error_message, window};
 
 /// 轮询周期（毫秒）。时序以音频时钟为准，定时器迟到不影响点划判断。
@@ -250,7 +250,7 @@ pub fn CwDecoder() -> impl IntoView {
             .and_then(|n| n.as_string())
             .is_some_and(|n| n == "NotAllowedError");
           error.set(Some(if denied {
-            t("没有麦克风权限，请在地址栏允许后重试。")
+            t("morse.no-microphone-permission-allow")
           } else {
             js_error_message(&e)
           }));
@@ -286,38 +286,39 @@ pub fn CwDecoder() -> impl IntoView {
     <section class="rounded-xl border bg-card" aria-labelledby="cw-decoder-title">
       <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <div class="mr-auto">
-          <h2 id="cw-decoder-title" class="text-sm font-semibold">{move || t("CW 解码（麦克风）")}</h2>
-          <p class="text-xs text-muted-foreground">{move || t("把麦克风靠近电台扬声器，自动识别速度并实时解码。")}</p>
+          <h2 id="cw-decoder-title" class="text-sm font-semibold">{move || t("morse.cw-decoding-microphone")}</h2>
+          <p class="text-xs text-muted-foreground">{move || t("morse.hold-the-microphone-near")}</p>
         </div>
-        <button
-          type="button"
-          class=button_class(Variant::Default, Size::Sm, "")
-          prop:disabled=move || !supported || status.get() == Status::Starting
-          on:click=move |_| if status.get_untracked() == Status::Idle { start() } else { stop() }
+        <Button
+          variant=Variant::Default
+          size=Size::Sm
+          disabled=Signal::derive(move || !supported || status.get() == Status::Starting)
+          on_click=Callback::new(move |_| if status.get_untracked() == Status::Idle { start() } else { stop() })
         >
           {move || match status.get() {
-            Status::Idle => t("开始监听"),
-            Status::Starting => t("请求麦克风…"),
-            Status::Listening => t("停止"),
+            Status::Idle => t("morse.start-listening"),
+            Status::Starting => t("morse.requesting-microphone"),
+            Status::Listening => t("common.stop"),
           }}
-        </button>
+        </Button>
       </div>
       <div class="space-y-3 p-4">
         {(!supported).then(|| view! {
-          <p role="alert" class="text-sm text-amber-800 dark:text-amber-300">{move || t("当前浏览器无法访问麦克风（需要 HTTPS 与较新的浏览器）。")}</p>
+          <p role="alert" class="text-sm text-amber-800 dark:text-amber-300">{move || t("morse.this-browser-cannot-access")}</p>
         })}
         {move || error.get().map(|e| view! { <p role="alert" class="text-sm text-destructive">{e}</p> })}
         <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
           <label class="inline-flex items-center gap-2">
-            {move || t("音调")}
-            <input
-              type="range"
-              min="300"
-              max="1200"
-              step="10"
-              aria-label=move || t("音调频率")
-              prop:value=move || tone.get().to_string()
-              on:input=move |e| set_tone(event_target_value(&e).parse().unwrap_or(600))
+            {move || t("morse.tone")}
+            <Slider
+              value=Signal::derive(move || f64::from(tone.get()))
+              on_change=Callback::new(move |v: f64| set_tone(v.round() as u32))
+              min=300.0
+              max=1200.0
+              step=10.0
+              class="w-32"
+              aria_label=Signal::derive(move || t("morse.tone-frequency"))
+              aria_valuetext=Signal::derive(move || format!("{} Hz", tone.get()))
             />
             <span class="w-14 tabular-nums text-foreground">{move || format!("{} Hz", tone.get())}</span>
           </label>
@@ -326,38 +327,37 @@ pub fn CwDecoder() -> impl IntoView {
               class=move || if keyed.get() { "h-2.5 w-2.5 rounded-full bg-emerald-500" } else { "h-2.5 w-2.5 rounded-full bg-muted-foreground/30" }
               aria-hidden="true"
             ></span>
-            {move || t("电键")}
+            {move || t("morse.key")}
           </span>
           <span class="inline-flex items-center gap-1.5">
-            {move || t("电平")}
+            {move || t("morse.level")}
             <span class="h-1.5 w-24 overflow-hidden rounded-full bg-muted" aria-hidden="true">
               <span class="block h-full bg-primary transition-[width] duration-75" style:width=move || format!("{:.0}%", level.get() * 100.0)></span>
             </span>
           </span>
           <span class="tabular-nums" data-testid="cw-wpm">
-            {move || if text.with(String::is_empty) { t("速度 —") } else { tf("速度 ≈ {} WPM", &[&format!("{:.0}", wpm.get())]) }}
+            {move || if text.with(String::is_empty) { t("morse.speed") } else { tf("common.speed-wpm-2", &[&format!("{:.0}", wpm.get())]) }}
           </span>
         </div>
         <div
           role="log"
-          aria-label=move || t("解码结果")
+          aria-label=move || t("morse.decoded-result")
           class="min-h-24 whitespace-pre-wrap break-all rounded-lg bg-muted/40 p-3 font-mono text-sm leading-relaxed"
         >
           {move || text.get()}
           <span class="text-muted-foreground">{move || pending.get()}</span>
           {move || (text.with(String::is_empty) && pending.with(String::is_empty)).then(|| view! {
-            <span class="text-muted-foreground">{move || if status.get() == Status::Listening { t("正在监听…") } else { t("解码结果会显示在这里") }}</span>
+            <span class="text-muted-foreground">{move || if status.get() == Status::Listening { t("morse.listening") } else { t("morse.the-decoded-result-appears") }}</span>
           })}
         </div>
         <div class="space-y-2">
           <label class="flex items-center gap-2 text-xs text-muted-foreground">
-            {move || t("对照目标")}
-            <input
-              type="text"
-              prop:value=move || target.get()
-              on:input=move |e| target.set(event_target_value(&e))
-              placeholder=move || t("输入目标文本，拍发后对照")
-              class="h-8 min-w-0 flex-1 rounded-md border bg-background px-2 text-sm font-mono uppercase outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+            {move || t("morse.reference-text")}
+            <Input
+              value=target
+              on_change=Callback::new(move |v: String| target.set(v))
+              placeholder=Signal::derive(move || t("morse.enter-target-text-and"))
+              class="h-8 min-w-0 flex-1 px-2 font-mono uppercase"
             />
           </label>
           {move || {
@@ -381,7 +381,7 @@ pub fn CwDecoder() -> impl IntoView {
             let pct = if total == 0 { 0.0 } else { matched as f64 / total as f64 * 100.0 };
             view! {
               <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                <span class="tabular-nums">{tf("对照 {} / {}", &[&(matched).to_string(), &(total).to_string()])}</span>
+                <span class="tabular-nums">{tf("common.matched", &[&(matched).to_string(), &(total).to_string()])}</span>
                 <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                   <div class="h-full rounded-full bg-emerald-500" style=format!("width: {pct:.0}%")></div>
                 </div>
@@ -390,8 +390,16 @@ pub fn CwDecoder() -> impl IntoView {
           }}
         </div>
         <div class="flex gap-2">
-          <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| clear()>{move || t("清空")}</button>
-          <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| text.with_untracked(|t| copy_text(t.trim()))>{move || t("复制")}</button>
+          <Button
+            variant=Variant::Outline
+            size=Size::Sm
+            on_click=Callback::new(move |_| clear())
+          >{move || t("learning.clear")}</Button>
+          <Button
+            variant=Variant::Outline
+            size=Size::Sm
+            on_click=Callback::new(move |_| text.with_untracked(|t| copy_text(t.trim())))
+          >{move || t("morse.copy")}</Button>
         </div>
       </div>
     </section>

@@ -5,14 +5,20 @@ use ham_web_core::filter_design::{
 };
 use leptos::prelude::*;
 
-use super::{INPUT, fmt_num};
+use super::fmt_num;
 use crate::i18n::{t, tf};
+use crate::ui::{Field, NumberField, RadioGroup, RadioGroupItem};
+use crate::util::unique_id;
 
-const KINDS: [(FilterKind, &str); 4] = [
-  (FilterKind::LowPass, "低通"),
-  (FilterKind::HighPass, "高通"),
-  (FilterKind::BandPass, "带通"),
-  (FilterKind::BandStop, "带阻"),
+/// 滤波器类型：`(枚举值, 单选值, 文案 key)`。
+///
+/// 单选值是与枚举一一对应的稳定字符串 —— `RadioGroup` 对外只有 `String`，
+/// 用枚举名而不是下标，重排选项时不会把用户的选择换掉。
+const KINDS: [(FilterKind, &str, &str); 4] = [
+  (FilterKind::LowPass, "low-pass", "低通"),
+  (FilterKind::HighPass, "high-pass", "高通"),
+  (FilterKind::BandPass, "band-pass", "带通"),
+  (FilterKind::BandStop, "band-stop", "带阻"),
 ];
 
 #[component]
@@ -22,6 +28,13 @@ pub(super) fn FilterDesign() -> impl IntoView {
   let fc = RwSignal::new(7.1);
   let bw = RwSignal::new(0.5);
   let z0 = RwSignal::new(50.0);
+
+  // `Field` 的标签与控件是兄弟节点，`r#for` / `id` 必须配对才能点击标签聚焦输入框
+  //（e2e 与读屏都按「标签 → 控件」的关联来定位）。
+  let order_id = unique_id("filter-order");
+  let fc_id = unique_id("filter-fc");
+  let z0_id = unique_id("filter-z0");
+  let bw_id = unique_id("filter-bw");
 
   let stages = move || {
     let n = order.get().round().clamp(1.0, 5.0) as usize;
@@ -35,99 +48,105 @@ pub(super) fn FilterDesign() -> impl IntoView {
     }
   };
 
-  let tab_class = move |active: bool| {
-    if active {
-      "rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
-    } else {
-      "rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-accent"
-    }
-  };
-
   view! {
     <div class="grid gap-3">
-      <div class="flex flex-wrap gap-1.5">
+      <RadioGroup
+        value=Signal::derive(move || {
+          KINDS
+            .iter()
+            .find(|(k, _, _)| *k == kind.get())
+            .map_or("low-pass", |(_, value, _)| *value)
+            .to_string()
+        })
+        on_change=Callback::new(move |v: String| {
+          if let Some((k, _, _)) = KINDS.iter().find(|(_, value, _)| *value == v) {
+            kind.set(*k);
+          }
+        })
+        class="flex flex-wrap items-center gap-4"
+      >
         {KINDS
           .iter()
-          .map(|&(k, label)| {
+          .map(|&(_, value, label)| {
+            let id = unique_id("filter-kind");
             view! {
-              <button
-                type="button"
-                class=move || tab_class(kind.get() == k)
-                on:click=move |_| kind.set(k)
-              >
+              <label class="flex cursor-pointer items-center gap-2 text-sm">
+                <RadioGroupItem value=value id=id />
                 {move || t(label)}
-              </button>
-            }
-          })
-          .collect_view()}
-      </div>
-
-      <div class="grid gap-3 sm:grid-cols-2">
-        <label class="flex flex-col gap-1.5 text-sm">
-          <span class="text-xs text-muted-foreground">{move || t("阶数（1–5）")}</span>
-          <input
-            type="number"
-            min="1"
-            max="5"
-            prop:value=move || order.get().to_string()
-            on:input=move |e| {
-              if let Ok(v) = event_target_value(&e).parse::<f64>() {
-                order.set(v.clamp(1.0, 5.0));
-              }
-            }
-            class=INPUT
-          />
-        </label>
-        <label class="flex flex-col gap-1.5 text-sm">
-          <span class="text-xs text-muted-foreground">{move || {
-            if kind.get() == FilterKind::LowPass || kind.get() == FilterKind::HighPass {
-              t("截止频率（MHz）")
-            } else {
-              t("中心频率（MHz）")
-            }
-          }}</span>
-          <input
-            type="number"
-            prop:value=move || fc.get().to_string()
-            on:input=move |e| {
-              if let Ok(v) = event_target_value(&e).parse::<f64>() {
-                fc.set(v);
-              }
-            }
-            class=INPUT
-          />
-        </label>
-        <label class="flex flex-col gap-1.5 text-sm">
-          <span class="text-xs text-muted-foreground">{move || t("特性阻抗（Ω）")}</span>
-          <input
-            type="number"
-            prop:value=move || z0.get().to_string()
-            on:input=move |e| {
-              if let Ok(v) = event_target_value(&e).parse::<f64>() {
-                z0.set(v);
-              }
-            }
-            class=INPUT
-          />
-        </label>
-        {move || {
-          (kind.get() == FilterKind::BandPass || kind.get() == FilterKind::BandStop).then(|| {
-            view! {
-              <label class="flex flex-col gap-1.5 text-sm">
-                <span class="text-xs text-muted-foreground">{move || t("带宽（MHz）")}</span>
-                <input
-                  type="number"
-                  prop:value=move || bw.get().to_string()
-                  on:input=move |e| {
-                    if let Ok(v) = event_target_value(&e).parse::<f64>() {
-                      bw.set(v);
-                    }
-                  }
-                  class=INPUT
-                />
               </label>
             }
           })
+          .collect_view()}
+      </RadioGroup>
+
+      <div class="grid gap-3 sm:grid-cols-2">
+        <Field label=Signal::derive(move || t("tools.order-1-5")) r#for=order_id.clone()>
+          <NumberField
+            id=order_id
+            step=1.0
+            min=1.0
+            max=5.0
+            value=Signal::derive(move || order.get().to_string())
+            on_change=Callback::new(move |v: String| {
+              if let Ok(v) = v.trim().parse::<f64>() {
+                order.set(v.clamp(1.0, 5.0));
+              }
+            })
+            controls=false
+          />
+        </Field>
+        <Field
+          label=Signal::derive(move || {
+            if kind.get() == FilterKind::LowPass || kind.get() == FilterKind::HighPass {
+              t("tools.cut-off-frequency-mhz")
+            } else {
+              t("tools.centre-frequency-mhz")
+            }
+          })
+          r#for=fc_id.clone()
+        >
+          <NumberField
+            id=fc_id
+            value=Signal::derive(move || fc.get().to_string())
+            on_change=Callback::new(move |v: String| {
+              if let Ok(v) = v.trim().parse::<f64>() {
+                fc.set(v);
+              }
+            })
+            controls=false
+          />
+        </Field>
+        <Field label=Signal::derive(move || t("tools.characteristic-impedance")) r#for=z0_id.clone()>
+          <NumberField
+            id=z0_id
+            value=Signal::derive(move || z0.get().to_string())
+            on_change=Callback::new(move |v: String| {
+              if let Ok(v) = v.trim().parse::<f64>() {
+                z0.set(v);
+              }
+            })
+            controls=false
+          />
+        </Field>
+        {move || {
+          (kind.get() == FilterKind::BandPass || kind.get() == FilterKind::BandStop)
+            .then(|| {
+              let bw_id = bw_id.clone();
+              view! {
+                <Field label=Signal::derive(move || t("tools.bandwidth-mhz")) r#for=bw_id.clone()>
+                  <NumberField
+                    id=bw_id
+                    value=Signal::derive(move || bw.get().to_string())
+                    on_change=Callback::new(move |v: String| {
+                      if let Ok(v) = v.trim().parse::<f64>() {
+                        bw.set(v);
+                      }
+                    })
+                    controls=false
+                  />
+                </Field>
+              }
+            })
         }}
       </div>
 
@@ -135,11 +154,11 @@ pub(super) fn FilterDesign() -> impl IntoView {
         <table class="w-full min-w-[480px] border-collapse text-sm">
           <thead class="bg-muted/60 text-xs">
             <tr>
-              <th class="border px-3 py-2 text-left">{move || t("级")}</th>
-              <th class="border px-3 py-2 text-left">{move || t("位置")}</th>
-              <th class="border px-3 py-2 text-left">{move || t("臂内接法")}</th>
-              <th class="border px-3 py-2 text-left">{move || t("电感（μH）")}</th>
-              <th class="border px-3 py-2 text-left">{move || t("电容（pF）")}</th>
+              <th class="border px-3 py-2 text-left">{move || t("tools.stage")}</th>
+              <th class="border px-3 py-2 text-left">{move || t("tools.position")}</th>
+              <th class="border px-3 py-2 text-left">{move || t("tools.in-arm-configuration")}</th>
+              <th class="border px-3 py-2 text-left">{move || t("tools.inductance-h-2")}</th>
+              <th class="border px-3 py-2 text-left">{move || t("tools.capacitance-pf")}</th>
             </tr>
           </thead>
           <tbody>
@@ -152,22 +171,22 @@ pub(super) fn FilterDesign() -> impl IntoView {
                     <tr class="border-t">
                       <td class="border px-3 py-2 font-mono tabular-nums">{i + 1}</td>
                       <td class="border px-3 py-2 text-muted-foreground">
-                        {move || if s.series { t("串联") } else { t("并联") }}
+                        {move || if s.series { t("tools.series") } else { t("tools.shunt") }}
                       </td>
                       <td class="border px-3 py-2 text-muted-foreground">
                         {move || {
                           match s.topology {
                             ResonatorTopology::Single => "—".to_string(),
-                            ResonatorTopology::SeriesLc => t("串联 LC"),
-                            ResonatorTopology::ParallelLc => t("并联 LC"),
+                            ResonatorTopology::SeriesLc => t("tools.series-lc"),
+                            ResonatorTopology::ParallelLc => t("tools.parallel-lc"),
                           }
                         }}
                       </td>
                       <td class="border px-3 py-2 font-mono tabular-nums">
-                        {move || s.l_uh.map(|v| tf("{} μH", &[&fmt_num(v)])).unwrap_or_else(|| "—".into())}
+                        {move || s.l_uh.map(|v| tf("common.microhenry", &[&fmt_num(v)])).unwrap_or_else(|| "—".into())}
                       </td>
                       <td class="border px-3 py-2 font-mono tabular-nums">
-                        {move || s.c_pf.map(|v| tf("{} pF", &[&fmt_num(v)])).unwrap_or_else(|| "—".into())}
+                        {move || s.c_pf.map(|v| tf("common.picofarad", &[&fmt_num(v)])).unwrap_or_else(|| "—".into())}
                       </td>
                     </tr>
                   }
@@ -179,7 +198,7 @@ pub(super) fn FilterDesign() -> impl IntoView {
       </div>
 
       <p class="text-xs text-muted-foreground">
-        {move || t("Butterworth 原型；g₁ 起交替串 / 并联。带通 / 带阻每级为 LC 谐振回路、谐振于中心频率。臂内接法决定阻带还是通带：串联臂内串联 LC 或并联臂内并联 LC → 谐振时直通（带通）；串联臂内并联 LC 或并联臂内串联 LC → 谐振时阻断（带阻）。")}
+        {move || t("tools.butterworth-prototype-g-onward")}
       </p>
     </div>
   }

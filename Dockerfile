@@ -10,6 +10,12 @@
 #   TRUNK_VERSION         Trunk 版本
 #   REBUILD_DATASET       设为 1 时在构建阶段从远程 CSV 重新生成题库（默认使用仓库内已提交的 JSON）
 #   WASM_BINDGEN_VERSION  wasm-bindgen CLI 版本；留空时自动取 Cargo.lock 中的版本
+#
+# 注意：`--mount=type=cache` 只存在于**当前 builder 的本地磁盘**，不会随 `cache-to`
+# 导出 —— 本机构建靠它跳过依赖编译，CI（一次性 runner）每次都要重编。实测这些依赖
+# 只占 1 分钟上下，占大头的是前端那 ~5 分钟不可缓存的编译，所以没有为 CI 改成
+# cargo-chef 式的依赖分层（代价是 gha 缓存多占 3–4GB，收益只有 1.5–2 分钟）。
+# 详见 README「Docker 部署 → 构建耗时与缓存」。
 
 ARG RUST_VERSION=1
 
@@ -35,7 +41,7 @@ WORKDIR /src
 # 先只拷贝锁文件：wasm-bindgen CLI 的版本要与 crate 版本一致，而整份源码这一层还用不到
 COPY Cargo.lock ./
 
-# wasm-bindgen CLI：APT 解码 Worker 由它生成 worker.js（Trunk 自带的那份不对外暴露）
+# wasm-bindgen CLI：三个解码 Worker 由它生成胶水代码（Trunk 自带的那份不对外暴露）
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/opt/wasm-bindgen-target \
@@ -44,7 +50,8 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     test -n "${wb}" || { echo "无法从 Cargo.lock 解析 wasm-bindgen 版本" >&2; exit 1; }; \
     cargo install wasm-bindgen-cli --version "${wb}" --locked \
       --target-dir /opt/wasm-bindgen-target; \
-    wasm-bindgen --version
+    actual="$(wasm-bindgen --version | awk '{print $2}')"; \
+    [ "${actual}" = "${wb}" ] || { echo "PATH 上的 wasm-bindgen CLI 是 ${actual}，不是刚安装的 ${wb}" >&2; exit 1; }
 
 # 安装 Trunk 预编译二进制（Tailwind、wasm-bindgen、wasm-opt 由 Trunk 在构建时自动下载）
 RUN set -eux; \
@@ -59,10 +66,25 @@ RUN set -eux; \
 
 COPY . .
 
-# 工具链 → 可选重建题库 → 图标 → APT Worker → 前端 → 构建后处理（sw.js / sitemap）
+# 工具链 → 可选重建题库 → 图标 → 语言包 → 三个解码 Worker → 前端 → 构建后处理（sw.js / sitemap）
 #
-# APT Worker 必须在 trunk build 之前生成：index.html 用 <link data-trunk rel="copy-dir">
-# 引用 public/apt-worker/，该目录在 trunk 启动时就要存在。
+# 顺序与 `cargo make build-web` 保持一致（见 Makefile.toml 的依赖链）：
+#
+#   * 语言包必须在 trunk build 之前生成 —— index.html 把 public/data/i18n 拷进产物，
+#     晚一步拷到的就是旧包（`check-i18n` 会红，但镜像不经过那道门禁）；不生成则
+#     en / es 用户会在非内嵌域看到中文（构建期生成的静态表只含 zh 全量与 common / shell）。
+#   * 三个 Worker 同样必须在 trunk build 之前生成：index.html 用 <link data-trunk
+#     rel="copy-dir"> 引用 public/{apt,sstv,wspr}-worker/，这些目录里的
+#     *_worker.js / *_bg.wasm 由 wasm-bindgen 生成、且被 .gitignore 排除，
+#     漏掉任何一个都会让对应页面在容器里缺资源（/sstv-decode、/wspr-decode）。
+#
+# 收尾对产物做一次存在性断言：上面这些生成物少任何一个，镜像照样能构建成功、
+# 直到运行时才暴露（页面缺资源 / 语言包里是旧译文）。断言让它在构建期就红，
+# 而不是等到部署后才发现——这是 `cargo make check` 的门禁在 docker build 里的补位。
+#
+# 内存：`wasm-release`（opt-level="z" + codegen-units=1）编译前端时单个 rustc 进程
+# 峰值 6–8GB，4GiB/8GiB 的 Docker 虚拟机会在这一步被 OOM 杀掉（报错只有 BuildKit 的
+# "cannot allocate memory"）。本地建议 `colima start --memory 16 --cpu 4`。
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/src/target \
@@ -71,13 +93,33 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo build --release -p ham-web-tools -p ham-web-server; \
     if [ "${REBUILD_DATASET}" = "1" ]; then ./target/release/ham-web-tools dataset; fi; \
     ./target/release/ham-web-tools icons; \
-    cargo build --profile wasm-release --target wasm32-unknown-unknown -p ham-web-apt-worker; \
-    mkdir -p public/apt-worker; \
-    wasm-bindgen --target no-modules --no-typescript \
-      --out-dir public/apt-worker --out-name apt_worker \
-      target/wasm32-unknown-unknown/wasm-release/ham_web_apt_worker.wasm; \
+    ./target/release/ham-web-tools i18n-pack; \
+    cargo build --profile wasm-release --target wasm32-unknown-unknown \
+      -p ham-web-apt-worker -p ham-web-sstv-worker -p ham-web-wspr-worker; \
+    for w in apt sstv wspr; do \
+      mkdir -p "public/${w}-worker"; \
+      wasm-bindgen --target no-modules --no-typescript \
+        --out-dir "public/${w}-worker" --out-name "${w}_worker" \
+        "target/wasm32-unknown-unknown/wasm-release/ham_web_${w}_worker.wasm"; \
+    done; \
     (cd crates/app && trunk build --release); \
     ./target/release/ham-web-tools postbuild --dist dist --site-url "${SITE_URL}"; \
+    for p in \
+      dist/index.html \
+      dist/sw.js \
+      dist/sitemap.xml \
+      dist/dxcc-entities.bin \
+      dist/data/i18n/en.json \
+      dist/data/i18n/es.json \
+      dist/data/glossary/basics.json \
+      dist/apt-worker/apt_worker.js \
+      dist/apt-worker/apt_worker_bg.wasm \
+      dist/sstv-worker/sstv_worker.js \
+      dist/sstv-worker/sstv_worker_bg.wasm \
+      dist/wspr-worker/wspr_worker.js \
+      dist/wspr-worker/wspr_worker_bg.wasm; do \
+      test -s "${p}" || { echo "缺少构建产物（或为空）：${p}" >&2; exit 1; }; \
+    done; \
     mkdir -p /out/data; \
     cp ./target/release/ham-web-server /out/ham-web-server; \
     cp -r dist /out/dist

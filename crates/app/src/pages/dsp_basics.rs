@@ -13,9 +13,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn DspBasicsPage() -> impl IntoView {
-  set_title(&t("数字信号处理基础"));
+  set_title("knowledge.dsp-fundamentals");
   view! {
-    <KnowledgePage title=t("数字信号处理基础") subtitle=t("采样 / 量化 / FFT / 滤波与 SDR 处理链")>
+    <KnowledgePage title=t("knowledge.dsp-fundamentals") subtitle=t("knowledge.sampling-quantization-fft-filtering")>
       <ConceptsSection title="核心概念" items=DSP_CONCEPTS />
       <TableSection
         title="采样与量化"

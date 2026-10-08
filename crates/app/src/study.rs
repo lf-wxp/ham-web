@@ -272,7 +272,7 @@ pub fn start_study_reminder_watcher() {
       let hhmm = format!("{:02}:{:02}", now.get_hours(), now.get_minutes());
       if hhmm == time {
         storage::set("study-reminder-last", &today);
-        crate::util::notify(&crate::i18n::t("该学习啦！今天的备考任务待完成。"));
+        crate::util::notify(&crate::i18n::t("settings.time-to-study-today"));
       }
     },
     std::time::Duration::from_secs(30),

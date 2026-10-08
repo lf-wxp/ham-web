@@ -47,7 +47,7 @@ fn message_handler(
     match outcome {
       Ok(render) => result.set(Some(render)),
       Err(e) => error.set(Some(if e.is_empty() {
-        t("解码失败，请确认是 APT 音频（WAV）")
+        t("radio.decoding-failed-make-sure")
       } else {
         e
       })),
@@ -91,7 +91,7 @@ fn to_array_buffer(bytes: &[u8]) -> js_sys::ArrayBuffer {
 
 #[component]
 pub fn AptDecoderPage() -> impl IntoView {
-  set_title(&t("NOAA APT 解码器"));
+  set_title("radio.noaa-apt-decoder");
 
   let processing = RwSignal::new(false);
   let result = RwSignal::new(None::<AptRender>);
@@ -135,7 +135,7 @@ pub fn AptDecoderPage() -> impl IntoView {
     if size > MAX_BYTES {
       let mb = size as f64 / 1024.0 / 1024.0;
       error.set(Some(tf(
-        "文件过大（约 {} MB），上限 {} MB。解码需要把整段音频载入内存，建议先降采样到 8–16 kHz 单声道，或只截取过境那一段。",
+        "tools.file-too-large-about",
         &[&format!("{mb:.0}"), &format!("{}", MAX_BYTES / 1024 / 1024)],
       )));
       return;
@@ -170,7 +170,7 @@ pub fn AptDecoderPage() -> impl IntoView {
               }
             }
             None => {
-              error.set(Some(t("无法创建解码 Worker，请刷新页面重试")));
+              error.set(Some(t("radio.could-not-create-the")));
               processing.set(false);
             }
           }
@@ -198,14 +198,14 @@ pub fn AptDecoderPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("NOAA APT 解码器")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("音频 AM 解调 + 图像重建 · 后台线程离线处理")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("radio.noaa-apt-decoder")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("radio.audio-am-demodulation-image")}</div>
           </div>
           <a
             href="/weather-sat"
             class="rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
-            {move || t("接收速查")}
+            {move || t("radio.receiving-quick-reference")}
           </a>
         </div>
       </header>
@@ -213,11 +213,11 @@ pub fn AptDecoderPage() -> impl IntoView {
       <div class="mx-auto max-w-5xl space-y-5 px-4 py-5">
         <section class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
           <p>
-            {move || t("上传一段从 NOAA 气象卫星接收的 APT 音频（137 MHz FM 解调后的 WAV），即可在浏览器本地解调 2400 Hz 副载波并重建可见光 / 红外云图。")}
-            {move || t("解码在 Web Worker 后台线程完成，不阻塞页面。")}
-            {move || t("典型过境约 10–15 分钟，建议配合")}
-            <a href="/satellites" class="text-primary underline underline-offset-2">{move || t("过境预报")}</a>
-            {move || t("提前录制。音频不会上传到服务器。")}
+            {move || t("radio.upload-apt-audio-received")}
+            {move || t("common.decoding-runs-in-a")}
+            {move || t("common.a-typical-pass-lasts")}
+            <a href="/satellites" class="text-primary underline underline-offset-2">{move || t("radio.pass-predictions")}</a>
+            {move || t("radio.record-in-advance-the")}
           </p>
         </section>
 
@@ -237,9 +237,9 @@ pub fn AptDecoderPage() -> impl IntoView {
                     <span class="text-sm text-muted-foreground">
                       {move || {
                         if reading.get() {
-                          t("正在读取文件…")
+                          t("tools.reading-file")
                         } else {
-                          t("正在后台解码，请稍候…")
+                          t("radio.decoding-in-the-background")
                         }
                       }}
                     </span>
@@ -256,7 +256,7 @@ pub fn AptDecoderPage() -> impl IntoView {
                       class="rounded-md border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       on:click=cancel
                     >
-                      {move || t("取消")}
+                      {move || t("exam.cancel")}
                     </button>
                   </div>
                 }
@@ -269,7 +269,7 @@ pub fn AptDecoderPage() -> impl IntoView {
                 <div class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
                   <Icon kind=IconKind::AlertCircle class="mt-0.5 h-5 w-5 shrink-0" />
                   <div class="flex-1">
-                    <div class="font-medium">{move || t("解码失败")}</div>
+                    <div class="font-medium">{move || t("radio.decoding-failed")}</div>
                     <div class="mt-1 text-sm">{e}</div>
                   </div>
                 </div>

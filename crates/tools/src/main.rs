@@ -80,16 +80,21 @@ enum Command {
   CheckGlossary,
   /// 校验解析表：答案一致性、重复/错位注入、裸释义、同题多版本分叉
   CheckExplanations,
-  /// 校验 crates/app/src/i18n.rs 的 EN / ES 词典（重复 key、占位符数量）并统计覆盖率
+  /// 校验 data/i18n/ 的 en / es 词典（重复 key、占位符数量、死条目）并统计按域覆盖率
   CheckI18n {
     /// 导出「源码里有但词典里没有」的文案模板（{zh, text}）
     #[arg(long)]
     missing: Option<PathBuf>,
-    /// 配合 --missing 使用的语言（en / es）
+    /// 导出复数候选（{key, zh, text:{one,other}, calls, uses_tp}），填好可直接 add-i18n
+    #[arg(long)]
+    plural_candidates: Option<PathBuf>,
+    /// 配合 --missing / --plural-candidates 使用的语言（en / es）
     #[arg(long, default_value = "en")]
     lang: String,
   },
-  /// 合并已填写的界面文案模板回 i18n.rs 词典
+  /// 生成运行时语言包 public/data/i18n/{lang}.json（前端启动时按语言拉取）
+  I18nPack,
+  /// 合并已填写的界面文案模板回 data/i18n/{lang}/{domain}.json（按调用点自动定位域）
   AddI18n {
     /// 已填写的模板文件（{zh, text}）
     batch: PathBuf,
@@ -122,6 +127,8 @@ enum Command {
     /// 已填写的模板文件
     batch: PathBuf,
   },
+  /// 校验知识库译文：中文原文作 key，源码改过句子后译文就命中不到（静默回退中文）
+  KnowledgeI18nCheck,
   /// 查看某模块某语言的翻译覆盖率
   KnowledgeI18nCoverage {
     /// core 模块名
@@ -245,15 +252,41 @@ fn main() -> Result<()> {
     }
     Command::CheckGlossary => explanations::check_glossary(&paths),
     Command::CheckExplanations => explanations::check(&paths),
-    Command::CheckI18n { missing, lang } => {
+    Command::CheckI18n {
+      missing,
+      plural_candidates,
+      lang,
+    } => {
+      // `--lang` 在任何模式下都先校验：`check-i18n --lang fr` 曾经被静默忽略（照样跑全量），
+      // 而 `add-i18n --lang fr` 会直接报错 —— 同一个参数两种行为最容易让人写错语言。
+      i18n::check_lang(&lang)?;
+      if let Some(out) = plural_candidates {
+        let n = i18n::export_plural_candidates(&root, &lang, &out)?;
+        println!(
+          "已导出 {n} 条复数候选 → {}（填好 one 后用 add-i18n 合并）",
+          out.display()
+        );
+        let tp = i18n::reconcile_plural(&root, &lang)?;
+        if !tp.missing_variants.is_empty() {
+          println!(
+            "  其中 {} 条已用 tp() 调用（count 已确认，优先补变体）",
+            tp.missing_variants.len()
+          );
+        }
+        return Ok(());
+      }
       if let Some(out) = missing {
         let items = i18n::missing(&root, &lang)?;
         if let Some(dir) = out.parent() {
           std::fs::create_dir_all(dir)?;
         }
+        // 带上中文原文作参考；`add-i18n` 只读 key 与 text，`zh` 字段仅给人看。
+        let zh = i18n::zh_map(&root)?;
         let payload: Vec<serde_json::Value> = items
           .iter()
-          .map(|zh| serde_json::json!({ "zh": zh, "text": "" }))
+          .map(|k| {
+            serde_json::json!({ "key": k, "zh": zh.get(k).cloned().unwrap_or_default(), "text": "" })
+          })
           .collect();
         crate::fsutil::write_json(&out, &payload)?;
         println!("已导出 {} 条待译界面文案 → {}", items.len(), out.display());
@@ -264,9 +297,17 @@ fn main() -> Result<()> {
       }
       Ok(())
     }
+    Command::I18nPack => {
+      let n = i18n::write_pack(&root)?;
+      println!("已生成运行时语言包（en + es 共 {n} 条）");
+      Ok(())
+    }
     Command::AddI18n { batch, lang } => {
       let n = i18n::add(&root, &lang, &batch)?;
       println!("已合并 {n} 条界面文案（{lang}）");
+      // 词典一变，语言包必须跟着刷新，否则改了译文线上不变。
+      let packed = i18n::write_pack(&root)?;
+      println!("已刷新运行时语言包（en + es 共 {packed} 条）");
       Ok(())
     }
     Command::KnowledgeI18nInventory => {
@@ -301,6 +342,21 @@ fn main() -> Result<()> {
     } => {
       let n = knowledge_i18n::add(&root, &module, &lang, &batch)?;
       println!("已合并 {n} 条译文（{module}/{lang}）");
+      Ok(())
+    }
+    Command::KnowledgeI18nCheck => {
+      let drift = knowledge_i18n::drift(&root)?;
+      if !drift.is_empty() {
+        println!(
+          "✗ 知识库译文 key 漂移 {} 条（源码改过，译文命中不到 → 页面上仍是中文）：",
+          drift.len()
+        );
+        for d in &drift {
+          println!("      {d}");
+        }
+        bail!("知识库译文校验未通过");
+      }
+      println!("✓ 知识库译文无 key 漂移（en / es）");
       Ok(())
     }
     Command::KnowledgeI18nCoverage { module, lang } => {

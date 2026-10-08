@@ -10,28 +10,28 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn OrganizationsPage() -> impl IntoView {
-  set_title(&t("国际组织与分区"));
+  set_title("shell.organizations-zones");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("国际组织与分区")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("ITU · IARU · ARRL · CQ/ITU 分区")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.organizations-zones")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("knowledge.itu-iaru-arrl-cq")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("主要组织")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.main-organisations")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[640px] border-collapse text-sm">
               <thead class="bg-muted/60 text-xs">
                 <tr>
-                  <th class=CELL>{move || t("缩写")}</th>
-                  <th class=CELL>{move || t("全称")}</th>
-                  <th class=CELL>{move || t("职责")}</th>
+                  <th class=CELL>{move || t("tools.abbreviation")}</th>
+                  <th class=CELL>{move || t("common.full-name")}</th>
+                  <th class=CELL>{move || t("knowledge.responsibilities")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -55,7 +55,7 @@ pub fn OrganizationsPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("分区概念")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.zone-concepts")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {ZONES
               .iter()

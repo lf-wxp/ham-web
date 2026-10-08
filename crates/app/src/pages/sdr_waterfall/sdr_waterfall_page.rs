@@ -14,7 +14,7 @@ use web_sys::{
 };
 
 use crate::i18n::{t, tf};
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, Size, Slider, Variant};
 use crate::util::{js_error_message, set_title, window};
 
 use super::file_waterfall::FileWaterfall;
@@ -78,7 +78,7 @@ enum Status {
 
 #[component]
 pub fn SdrWaterfallPage() -> impl IntoView {
-  set_title(&t("SDR 瀑布图"));
+  set_title("tools.sdr-waterfall");
   let supported = window().navigator().media_devices().is_ok();
   let status = RwSignal::new(Status::Idle);
   let error = RwSignal::new(None::<String>);
@@ -117,21 +117,21 @@ pub fn SdrWaterfallPage() -> impl IntoView {
 
         let spectrum_canvas: HtmlCanvasElement = spectrum_ref
           .get()
-          .ok_or_else(|| JsValue::from_str(&t("频谱画布未就绪")))?;
+          .ok_or_else(|| JsValue::from_str(&t("common.spectrum-canvas-not-ready")))?;
         let waterfall_canvas: HtmlCanvasElement = waterfall_ref
           .get()
-          .ok_or_else(|| JsValue::from_str(&t("瀑布画布未就绪")))?;
+          .ok_or_else(|| JsValue::from_str(&t("common.waterfall-canvas-not-ready")))?;
         spectrum_canvas.set_width(FFT_SIZE / 2);
         spectrum_canvas.set_height(SPECTRUM_H);
         waterfall_canvas.set_width(FFT_SIZE / 2);
         waterfall_canvas.set_height(WATERFALL_H);
         let sctx: CanvasRenderingContext2d = spectrum_canvas
           .get_context("2d")?
-          .ok_or_else(|| JsValue::from_str(&t("2D 上下文不可用")))?
+          .ok_or_else(|| JsValue::from_str(&t("common.2d-context-not-available")))?
           .unchecked_into();
         let wctx: CanvasRenderingContext2d = waterfall_canvas
           .get_context("2d")?
-          .ok_or_else(|| JsValue::from_str(&t("2D 上下文不可用")))?
+          .ok_or_else(|| JsValue::from_str(&t("common.2d-context-not-available")))?
           .unchecked_into();
 
         sample_rate.set(f64::from(ctx.sample_rate()));
@@ -209,7 +209,7 @@ pub fn SdrWaterfallPage() -> impl IntoView {
             .and_then(|n| n.as_string())
             .is_some_and(|n| n == "NotAllowedError");
           error.set(Some(if denied {
-            t("没有麦克风权限，请在地址栏允许后重试。")
+            t("morse.no-microphone-permission-allow")
           } else {
             js_error_message(&e)
           }));
@@ -231,85 +231,86 @@ pub fn SdrWaterfallPage() -> impl IntoView {
         <section class="rounded-xl border bg-card">
           <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
             <div class="mr-auto">
-              <h1 class="text-base font-semibold leading-tight">{move || t("SDR 瀑布图")}</h1>
+              <h1 class="text-base font-semibold leading-tight">{move || t("tools.sdr-waterfall")}</h1>
               <p class="text-xs text-muted-foreground">
-                {move || t("把电台或 SDR 的音频输出接入麦克风，实时查看频谱与瀑布图。")}
+                {move || t("tools.feed-the-radio-or")}
               </p>
             </div>
-            <button
-              type="button"
-              class=button_class(Variant::Default, Size::Sm, "")
-              prop:disabled=move || !supported || status.get() == Status::Starting
-              on:click=move |_| if status.get_untracked() == Status::Idle { start() } else { stop() }
+            <Button
+              variant=Variant::Default
+              size=Size::Sm
+              disabled=Signal::derive(move || !supported || status.get() == Status::Starting)
+              on_click=Callback::new(move |_| if status.get_untracked() == Status::Idle { start() } else { stop() })
             >
               {move || match status.get() {
-                Status::Idle => t("开始"),
-                Status::Starting => t("请求麦克风…"),
-                Status::Listening => t("停止"),
+                Status::Idle => t("tools.start"),
+                Status::Starting => t("morse.requesting-microphone"),
+                Status::Listening => t("common.stop"),
               }}
-            </button>
+            </Button>
           </div>
 
           <div class="space-y-4 p-4">
             {(!supported).then(|| view! {
               <p role="alert" class="text-sm text-amber-800 dark:text-amber-300">
-                {move || t("当前浏览器无法访问麦克风（需要 HTTPS 与较新的浏览器）。")}
+                {move || t("morse.this-browser-cannot-access")}
               </p>
             })}
             {move || error.get().map(|e| view! { <p role="alert" class="text-sm text-destructive">{e}</p> })}
 
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
               <label class="inline-flex items-center gap-2">
-                {move || t("增益")}
-                <input
-                  type="range"
-                  min="-40"
-                  max="40"
-                  step="1"
-                  aria-label=move || t("显示增益（dB）")
-                  prop:value=move || gain.get().to_string()
-                  on:input=move |e| gain.set(event_target_value(&e).parse().unwrap_or(0.0))
+                {move || t("tools.gain")}
+                <Slider
+                  value=Signal::derive(move || f64::from(gain.get()))
+                  on_change=Callback::new(move |v: f64| gain.set(v as f32))
+                  min=-40.0
+                  max=40.0
+                  step=1.0
+                  class="w-32"
+                  aria_label=Signal::derive(move || t("tools.display-gain-db"))
+                  aria_valuetext=Signal::derive(move || format!("{:+} dB", gain.get().round()))
                 />
                 <span class="w-12 tabular-nums text-foreground">
-                  {move || tf("{} dB", &[&format!("{:+}", gain.get())])}
+                  {move || tf("common.db", &[&format!("{:+}", gain.get())])}
                 </span>
               </label>
               <span class="tabular-nums">
                 {move || {
                   let nyquist = sample_rate.get() / 2.0;
                   if nyquist > 0.0 {
-                    tf("0 – {} Hz", &[&format!("{nyquist:.0}")])
+                    tf("common.hz-range", &[&format!("{nyquist:.0}")])
                   } else {
-                    t("频率范围 —").to_string()
+                    t("tools.frequency-range").to_string()
                   }
                 }}
               </span>
             </div>
 
             <div>
-              <div class="mb-1 text-xs font-medium text-muted-foreground">{move || t("实时频谱")}</div>
+              <div class="mb-1 text-xs font-medium text-muted-foreground">{move || t("tools.live-spectrum")}</div>
               <canvas
                 node_ref=spectrum_ref
                 width="1024"
                 height="160"
                 class="h-40 w-full rounded-md bg-black"
-                aria-label=move || t("实时频谱")
+                aria-label=move || t("tools.live-spectrum")
               ></canvas>
             </div>
 
             <div>
-              <div class="mb-1 text-xs font-medium text-muted-foreground">{move || t("瀑布图（随时间下滑）")}</div>
+              <div class="mb-1 text-xs font-medium text-muted-foreground">{move || t("tools.waterfall-scrolling-down-over")}</div>
               <canvas
                 node_ref=waterfall_ref
                 width="1024"
                 height="256"
                 class="h-64 w-full rounded-md bg-black"
-                aria-label=move || t("频谱瀑布图")
+                aria-label=move || t("tools.spectrum-waterfall")
               ></canvas>
             </div>
 
             <p class="text-xs text-muted-foreground">
-              {move || t("颜色由深到亮代表信号由弱到强（黑 → 蓝 → 青 → 绿 → 黄 → 红 → 白）。增益可整体抬升弱信号以改善显示对比度。")}
+              {move || t("tools.darker-to-brighter-colours")}
             </p>
           </div>
         </section>

@@ -1,9 +1,9 @@
 use ham_web_core::contest::{CONTESTS, CabrilloHeader, cabrillo, contest};
 use leptos::prelude::*;
 
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tp};
 use crate::pages::log::{LogEntry, use_log_store};
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{Button, Input, NativeSelect, SelectOption, Size, Variant};
 use crate::util::download_text;
 
 /// 从通联日志按竞赛规则生成可提交的 Cabrillo 文件。
@@ -52,74 +52,68 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
     }
   };
 
+  let contest_options: Vec<SelectOption> = CONTESTS
+    .iter()
+    .map(|c| SelectOption::new(c.id, Signal::derive(move || t(c.name))))
+    .collect();
+
   view! {
     <section class="rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("竞赛日志生成器")}</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("log.contest-log-generator")}</h2>
       <div class="space-y-3 p-4">
         <div class="grid gap-3 sm:grid-cols-2">
           <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">{move || t("本台呼号")}</span>
-            <input
-              type="text"
-              prop:value=move || callsign.get()
-              on:input=move |e| callsign.set(event_target_value(&e).to_uppercase())
-              class=input_class("uppercase")
+            <span class="text-xs text-muted-foreground">{move || t("log.station-callsign")}</span>
+            <Input
+              value=callsign
+              on_change=Callback::new(move |v: String| callsign.set(v.to_uppercase()))
+              class="uppercase"
             />
           </label>
           <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">{move || t("竞赛")}</span>
-            <select
-              prop:value=move || contest_id.get()
-              on:change=move |e| {
-                contest_id.set(event_target_value(&e));
+            <span class="text-xs text-muted-foreground">{move || t("contest.contest")}</span>
+            <NativeSelect
+              value=contest_id
+              on_change=Callback::new(move |v: String| {
+                contest_id.set(v);
                 generated.set(String::new());
-              }
-              class=input_class("")
-            >
-              {CONTESTS
-                .iter()
-                .map(|c| view! { <option value=c.id>{move || t(c.name)}</option> })
-                .collect_view()}
-            </select>
-          </label>
-          <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">{move || t("操作员")}</span>
-            <input
-              type="text"
-              prop:value=move || operator.get()
-              on:input=move |e| operator.set(event_target_value(&e))
-              class=input_class("")
+              })
+              options=contest_options
+              aria_label=Signal::derive(move || t("contest.contest"))
             />
           </label>
           <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">{move || t("本台网格")}</span>
-            <input
-              type="text"
-              prop:value=move || gridsquare.get()
-              on:input=move |e| gridsquare.set(event_target_value(&e).to_uppercase())
-              class=input_class("uppercase")
+            <span class="text-xs text-muted-foreground">{move || t("log.operator")}</span>
+            <Input value=operator on_change=Callback::new(move |v: String| operator.set(v)) />
+          </label>
+          <label class="flex flex-col gap-1.5 text-sm">
+            <span class="text-xs text-muted-foreground">{move || t("log.station-grid")}</span>
+            <Input
+              value=gridsquare
+              on_change=Callback::new(move |v: String| gridsquare.set(v.to_uppercase()))
+              class="uppercase"
             />
           </label>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            class=button_class(Variant::Default, Size::Default, "")
-            on:click=move |_| generate()
+          <Button
+            variant=Variant::Default
+            size=Size::Default
+            on_click=Callback::new(move |_| generate())
           >
-            {move || t("生成 Cabrillo")}
-          </button>
-          <button
-            type="button"
-            class=button_class(Variant::Outline, Size::Default, "")
-            prop:disabled=move || generated.with(String::is_empty)
-            on:click=move |_| download()
+            {move || t("log.generate-cabrillo")}
+          </Button>
+          <Button
+            variant=Variant::Outline
+            size=Size::Default
+            disabled=Signal::derive(move || generated.with(String::is_empty))
+            on_click=Callback::new(move |_| download())
           >
-            {move || t("下载 .cbr")}
-          </button>
+            {move || t("log.download-cbr")}
+          </Button>
           <span class="text-xs text-muted-foreground">
-            {move || tf("日志中标记为该竞赛的通联：{} 条", &[&tagged.with(Vec::len).to_string()])}
+            { move || { let n = tagged.with(Vec::len); tp("log.qsos-tagged-with-this", n, &[&n.to_string()]) } }
           </span>
         </div>
 
@@ -128,10 +122,10 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
           if text.is_empty() {
             view! {
               <p class="text-xs text-muted-foreground">
-                {move || t("读取通联日志中带对应 CONTEST_ID 的记录（含交换信息与自报分数）。比赛时推荐直接用")}
+                {move || t("log.reads-records-in-the")}
                 " "
-                <a href="/contest-log" class="font-medium text-foreground underline underline-offset-4">{move || t("竞赛录入")}</a>
-                {move || t("：自动序号、实时查重，结束后一键导出。")}
+                <a href="/contest-log" class="font-medium text-foreground underline underline-offset-4">{move || t("shell.contest-log")}</a>
+                {move || t("log.automatic-serials-live-dupe")}
               </p>
             }
             .into_any()

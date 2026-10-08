@@ -21,7 +21,7 @@ use crate::i18n::t;
 
 #[component]
 pub fn BrowsePage() -> impl IntoView {
-  set_title(&t("题库分类浏览"));
+  set_title("shell.browse-questions");
   let all: RwSignal<Questions> = RwSignal::new(Arc::new(Vec::new()));
   let loading = RwSignal::new(true);
   let bank = RwSignal::new(Bank::A);
@@ -244,7 +244,7 @@ pub fn BrowsePage() -> impl IntoView {
       // `sr-only` 的 status 节点保留读屏播报 —— 骨架条本身是 aria-hidden 的。
       return view! {
         <div class="space-y-4">
-          <span class="sr-only" role="status">{move || t("正在加载题库…")}</span>
+          <span class="sr-only" role="status">{move || t("exam.loading-the-question-bank")}</span>
           {(0..6)
             .map(|_| {
               view! {
@@ -262,7 +262,7 @@ pub fn BrowsePage() -> impl IntoView {
     }
     let total = filtered.with(Vec::len);
     if total == 0 {
-      return view! { <EmptyState title=t("没有匹配的题目") /> }.into_any();
+      return view! { <EmptyState title=t("exam.no-matching-questions") /> }.into_any();
     }
     let shown: Vec<usize> = filtered.with(|f| f.iter().copied().take(visible.get()).collect());
     let shown_len = shown.len();
@@ -295,8 +295,8 @@ pub fn BrowsePage() -> impl IntoView {
       <header class="sticky top-16 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("题库分类浏览")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("按题目类型分类 · 仅显示正确答案 · 附解析与参考依据")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.browse-questions")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("exam.grouped-by-question-type")}</div>
           </div>
 
           <div class="flex overflow-hidden rounded-lg border">
@@ -328,7 +328,7 @@ pub fn BrowsePage() -> impl IntoView {
               visible.set(PAGE);
             })
             kind=InputType::Search
-            placeholder=Signal::derive(move || t("搜索题干 / 答案 / 解析…"))
+            placeholder=Signal::derive(move || t("exam.search-question-answer-explanation"))
             prefix=move || view! { <Icon kind=IconKind::Search /> }
             clearable=true
             class="w-56"
@@ -339,14 +339,14 @@ pub fn BrowsePage() -> impl IntoView {
             on:click=move |_| multi_only.update(|v| *v = !*v)
             class=move || pill(multi_only.get(), "rounded-lg border px-3 py-1.5 text-sm transition-colors")
           >
-            {move || t("只看多选")}
+            {move || t("exam.multiple-only")}
           </button>
           <button
             type="button"
             on:click=move |_| unique_only.update(|v| *v = !*v)
             class=move || pill(unique_only.get(), "rounded-lg border px-3 py-1.5 text-sm transition-colors")
           >
-            {move || t("只看本类新增")}
+            {move || t("exam.new-in-this-class")}
           </button>
         </div>
       </header>
@@ -362,7 +362,7 @@ pub fn BrowsePage() -> impl IntoView {
               }
             >
               <span class="h-2 w-2 rounded-full bg-foreground/60"></span>
-              {move || t("全部题目")}
+              {move || t("exam.all-questions")}
               <span class="ml-auto text-xs tabular-nums">{move || bank_questions.with(Vec::len)}</span>
             </button>
             {sidebar}
@@ -371,10 +371,10 @@ pub fn BrowsePage() -> impl IntoView {
 
         <div class="min-w-0">
           <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label=t("题目总数") value=Signal::derive(move || bank_questions.with(Vec::len)) />
-            <Stat label=t("多选题") value=multi_count />
-            <Stat label=t("题目类型") value=Signal::stored(TOP_CATEGORIES.len()) />
-            <Stat label=t("当前筛选") value=Signal::derive(move || filtered.with(Vec::len)) />
+            <Stat label=t("exam.total-questions") value=Signal::derive(move || bank_questions.with(Vec::len)) />
+            <Stat label=t("exam.multiple-answer") value=multi_count />
+            <Stat label=t("exam.question-types") value=Signal::stored(TOP_CATEGORIES.len()) />
+            <Stat label=t("exam.current-filter") value=Signal::derive(move || filtered.with(Vec::len)) />
           </div>
           {list}
         </div>

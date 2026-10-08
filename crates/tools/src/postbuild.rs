@@ -1,7 +1,9 @@
 //! Trunk 构建后处理：
 //!
 //! 1. 生成 `sw.js`：预缓存全部静态资源（带内容哈希的版本号），题库 JSON 走 NetworkFirst，
-//!    题目图片走 StaleWhileRevalidate，页面导航离线回退到 `index.html`；
+//!    题目图片走 StaleWhileRevalidate，**运行时语言包**（`data/i18n/*.json`）同样按需
+//!    缓存而不预取（否则中文用户也要为 en / es 付约 400 KB），页面导航离线回退到
+//!    `index.html`；
 //! 2. 生成 `sitemap.xml`；
 //! 3. 把 `index.html` 中的 `__SITE_URL__` 替换为实际站点地址；
 //! 4. 把各题库文件的内容哈希写入 `questions/config.json`（`rev`），并导出 `changelog.json`；
@@ -22,11 +24,23 @@ use walkdir::WalkDir;
 const SW_TEMPLATE: &str = include_str!("../templates/sw.js");
 
 /// 不进入预缓存的文件。
+///
+/// 语言包（`data/i18n/*.json`）**故意排除**：预缓存清单会被 `sw.js` 的 `install`
+/// 无条件 `cache.addAll` 拉一遍，而中文用户（默认语言，词典全量内嵌）根本用不到
+/// en / es 两个包（合计约 400 KB）。它们改走 `sw.js` 的运行时缓存按需拉取，
+/// 详见 `templates/sw.js` 的 `RUNTIME.i18n`。
+///
+/// 题库的**聚合产物**（`full.json` / `search-index.json`）同理排除：全站搜索与整卷
+/// 模拟都是按需加载的（见 `core/question.rs` 的 `search-index` 说明），预取等于让
+/// 每个用户（包括从不用搜索的人）在 install 阶段付 1.6 MB + 1.7 MB。
+/// `/questions/*.json` 已被 `sw.js` 的 `RUNTIME.questions` 覆盖，离线仍可用。
 fn is_excluded(rel: &str) -> bool {
   is_precompressed(rel)
     || rel == "sw.js"
     || rel == "sitemap.xml"
     || rel == "questions/full.json"
+    || rel == "questions/search-index.json"
+    || (rel.starts_with("data/i18n/") && rel.ends_with(".json"))
     || rel.ends_with(".map")
     || rel.rsplit('/').next().is_some_and(|f| f.starts_with('.'))
 }
@@ -147,10 +161,35 @@ fn precache_manifest(dist: &Path) -> Result<Vec<Entry>> {
   Ok(entries)
 }
 
+/// 运行时语言包（`dist/data/i18n/*.json`）的内容指纹。
+///
+/// 这些文件不进预缓存清单，但要参与 `__CACHE_VERSION__`（理由见 `write_service_worker`）。
+fn pack_fingerprint(dist: &Path) -> Result<String> {
+  let mut files: Vec<std::path::PathBuf> = match fs::read_dir(dist.join("data/i18n")) {
+    Ok(entries) => entries.filter_map(Result::ok).map(|e| e.path()).collect(),
+    // 没有语言包目录（未跑 `i18n-pack` 的极简构建）：指纹为空，不影响其它资源。
+    Err(_) => return Ok(String::new()),
+  };
+  files.sort();
+  let mut hasher = Sha256::new();
+  for path in files {
+    if path.extension().is_none_or(|e| e != "json") {
+      continue;
+    }
+    hasher.update(path.to_string_lossy().as_bytes());
+    hasher.update(fs::read(&path)?);
+  }
+  Ok(hex(&hasher.finalize()))
+}
+
 fn write_service_worker(dist: &Path) -> Result<usize> {
   let manifest = precache_manifest(dist)?;
   let manifest_json = serde_json::to_string(&manifest)?;
-  let version = hex(&Sha256::digest(manifest_json.as_bytes())[..8]);
+  // 版本号要同时覆盖「预缓存清单」与「运行时语言包」两类内容：语言包不进清单
+  // （理由见 `is_excluded`），但只改一条译文也必须让版本变，否则运行时缓存
+  // `i18n-<版本>` 不会换新，线上会静默地一直用旧译文。
+  let version =
+    hex(&Sha256::digest(format!("{manifest_json}{}", pack_fingerprint(dist)?).as_bytes())[..8]);
   let sw = SW_TEMPLATE
     .replace("__CACHE_VERSION__", &version)
     .replace("__PRECACHE_MANIFEST__", &manifest_json);
@@ -163,7 +202,10 @@ fn write_service_worker(dist: &Path) -> Result<usize> {
 }
 
 fn write_sitemap(dist: &Path, site_url: &str) -> Result<()> {
-  let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+  // `lastmod` 取**已入库的**当前版本日期，而不是 `Utc::now()`：后者让同一份源码两次
+  // 构建产出不同的 `sitemap.xml` 字节，破坏产物可复现，也让镜像层缓存与产物指纹比对
+  // 无谓失效（`write_changelog` 用的是同一个日期，两者口径一致）。
+  let lastmod = changelog::current();
   // 页面清单来自能力注册表：新增页面只要注册一次，站点地图自动跟上。
   // 此前这里是一份手写数组，长期漏掉了大批新页面（且没人会发现）。
   let pages = ham_web_core::registry::sitemap_entries();
@@ -173,7 +215,7 @@ fn write_sitemap(dist: &Path, site_url: &str) -> Result<()> {
   for (path, freq, priority) in &pages {
     let _ = write!(
       xml,
-      "<url>\n<loc>{site_url}{path}</loc>\n<lastmod>{now}</lastmod>\n<changefreq>{freq}</changefreq>\n<priority>{priority}</priority>\n</url>\n"
+      "<url>\n<loc>{site_url}{path}</loc>\n<lastmod>{lastmod}</lastmod>\n<changefreq>{freq}</changefreq>\n<priority>{priority}</priority>\n</url>\n"
     );
   }
   xml.push_str("</urlset>\n");
@@ -326,10 +368,52 @@ mod tests {
     assert!(is_excluded("sw.js"));
     assert!(is_excluded("questions/full.json"));
     assert!(is_excluded("questions/.DS_Store"));
+    // 聚合产物都不预缓存：`install` 阶段的 `addAll` 是无条件拉取的，
+    // 而搜索索引 1.7 MB 只在用户真的搜索时才需要（`RUNTIME.questions` 已覆盖离线）。
+    assert!(is_excluded("questions/search-index.json"));
     assert!(!is_excluded("questions/A.json"));
     assert!(!is_excluded("index.html"));
     assert!(is_excluded("app_bg.wasm.br"));
     assert!(is_excluded("index.html.gz"));
+  }
+
+  /// 语言包不进预缓存：预缓存会在 `install` 阶段被无条件拉一遍，中文用户不该为
+  /// 用不到的 en / es 付约 400 KB（改走 `RUNTIME.i18n` 按需缓存）。
+  #[test]
+  fn excludes_runtime_language_packs() {
+    assert!(is_excluded("data/i18n/en.json"));
+    assert!(is_excluded("data/i18n/es.json"));
+    assert!(is_excluded("data/i18n/en.json.br"));
+    // 同目录下的非 JSON（若将来有）不在此列，避免误伤。
+    assert!(!is_excluded("data/i18n/index.txt"));
+    assert!(!is_excluded("data/glossary/en.json"));
+  }
+
+  /// 语言包必须参与 `__CACHE_VERSION__`：不进清单时只改译文不会让清单变，
+  /// 若不额外带上内容哈希，运行时缓存不会换新，线上就会一直用旧译文。
+  #[test]
+  fn pack_fingerprint_tracks_content() {
+    let dist = std::env::temp_dir().join(format!("ham-postbuild-packs-{}", std::process::id()));
+    let dir = dist.join("data/i18n");
+    let _ = fs::remove_dir_all(&dist);
+    // 目录不存在（未跑 `i18n-pack` 的极简构建）：指纹为空且不报错。
+    assert_eq!(pack_fingerprint(&dist).unwrap(), "");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(dir.join("en.json"), r#"{"flat":{"a":"A"}}"#).unwrap();
+    let first = pack_fingerprint(&dist).unwrap();
+    assert!(!first.is_empty());
+    assert_eq!(
+      first,
+      pack_fingerprint(&dist).unwrap(),
+      "同一内容指纹应稳定"
+    );
+    fs::write(dir.join("en.json"), r#"{"flat":{"a":"B"}}"#).unwrap();
+    assert_ne!(
+      first,
+      pack_fingerprint(&dist).unwrap(),
+      "内容变了指纹必须变"
+    );
+    let _ = fs::remove_dir_all(&dist);
   }
 
   #[test]
@@ -371,5 +455,30 @@ mod tests {
       .unwrap();
     assert_eq!(back, data);
     assert!(is_compressible("x_bg.wasm") && !is_compressible("a.png"));
+  }
+
+  /// `sitemap.xml` 必须**可复现**：`lastmod` 取已入库的版本日期，而不是构建时刻。
+  ///
+  /// 曾经用 `Utc::now()`：同一份源码两次构建产出不同字节，镜像层缓存与产物指纹比对
+  /// 都会无谓失效（`sitemap` 本身不进预缓存，所以不影响 SW 版本号，但可复现性是硬要求）。
+  #[test]
+  fn sitemap_is_reproducible_and_uses_the_release_date() {
+    let dir = std::env::temp_dir().join(format!("ham-sitemap-{}", std::process::id()));
+    let mut seen: Vec<String> = Vec::new();
+    for run in 0..2 {
+      let dist = dir.join(format!("run{run}"));
+      let _ = fs::remove_dir_all(&dist);
+      fs::create_dir_all(&dist).unwrap();
+      write_sitemap(&dist, "https://example.test").unwrap();
+      seen.push(fs::read_to_string(dist.join("sitemap.xml")).unwrap());
+    }
+    assert_eq!(seen[0], seen[1], "两次构建的 sitemap 必须逐字节相同");
+    assert!(
+      seen[0].contains(&format!("<lastmod>{}</lastmod>", changelog::current())),
+      "lastmod 应取版本日期而不是构建时刻：{}",
+      seen[0].lines().take(6).collect::<Vec<_>>().join(" | ")
+    );
+    assert!(!seen[0].contains("T00:"), "lastmod 里不该出现构建时刻");
+    let _ = fs::remove_dir_all(&dir);
   }
 }

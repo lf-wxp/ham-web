@@ -10,7 +10,7 @@ pub(super) fn FluxTrend(history: Vec<(String, f64)>) -> impl IntoView {
   let max = history.iter().map(|(_, v)| *v).fold(f64::MIN, f64::max);
   view! {
     <section class="rounded-xl border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("太阳通量趋势（近 12 个月）")}</h2>
+      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.solar-flux-trend-last")}</h2>
       <div class="flex items-end gap-1 p-4">
         {history
           .iter()

@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, pickOption, test } from "./fixtures";
 
 test("听题模式：依次朗读题目、选项与答案，并记住位置", async ({ page }) => {
   // 用桩替换语音合成：记录朗读内容并立即结束，避免依赖系统语音
@@ -16,7 +16,7 @@ test("听题模式：依次朗读题目、选项与答案，并记住位置", as
   });
   await page.goto("/listen");
   await expect(page.getByRole("heading", { level: 1, name: "听题模式" })).toBeVisible();
-  await page.getByLabel("思考时间").selectOption("3");
+  await pickOption(page, "思考时间", "3 秒");
   await page.getByRole("button", { name: "开始听题" }).click();
 
   await expect(page.getByText("公布答案")).toBeVisible({ timeout: 10_000 });

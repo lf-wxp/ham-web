@@ -8,21 +8,21 @@ use crate::util::set_title;
 
 #[component]
 pub fn RegulationsPage() -> impl IntoView {
-  set_title(&t("法规与管理"));
+  set_title("shell.regulations");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("法规与管理")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("操作证 · 电台执照 · 频率使用")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.regulations")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("knowledge.operator-permit-station-licence")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("操作证等级")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.operator-licence-classes")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-3">
             {LICENSE_LEVELS
               .iter()
@@ -39,7 +39,7 @@ pub fn RegulationsPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("管理要点")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.management-notes")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {REGULATIONS
               .iter()
@@ -56,7 +56,7 @@ pub fn RegulationsPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("合规要点")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.compliance-notes")}</h2>
           <ul class="space-y-2 p-4">
             {REG_TIPS
               .iter()

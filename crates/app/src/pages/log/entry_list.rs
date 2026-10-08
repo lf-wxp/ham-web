@@ -1,14 +1,19 @@
 //! 通联记录列表：关键字 / 波段 / 模式 / QSL 筛选，分页表格与编辑 / 删除 / 清空操作。
 
+use std::sync::Arc;
+
+use ham_web_core::qsl_status::{QslStatus, QslTone};
 use leptos::prelude::*;
 
 use crate::icons::{Icon, IconKind};
-use crate::ui::{Input, InputType, NativeSelect, SelectOption, Size, Variant, button_class};
+use crate::ui::{Button, Input, InputType, NativeSelect, SelectOption, Size, Variant};
 
+use super::card_image_mark::CardImageMark;
 use super::grid_cell::GridCell;
 use super::log_helpers::{CELL, PAGE_SIZE};
+use super::qsl_badge::{QslBadge, tone_label};
 use super::{LogEntry, Logbook};
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 
 #[component]
 pub(super) fn EntryList(
@@ -34,6 +39,9 @@ pub(super) fn EntryList(
     page.set(0);
   });
 
+  // `Arc` 包一层：`Memo` 只能返回自有数据，所以「筛选结果变了」时克隆整份结果没法避免；
+  // 但**渲染**（翻页、改主题、任意重渲）不该再克隆一次整表 —— 一页只显示 `PAGE_SIZE` 行，
+  // 用 `Arc` 后「取整表」只是加一次引用计数。
   let filtered = Memo::new(move |_| {
     let q = query.get().trim().to_uppercase();
     let (bf, mf, qf) = (band_filter.get(), mode_filter.get(), qsl_filter.get());
@@ -43,50 +51,52 @@ pub(super) fn EntryList(
         .filter(|e| e.matches_query(&q))
         .filter(|e| bf.is_empty() || e.band_label() == bf)
         .filter(|e| mf.is_empty() || e.mode == mf)
-        .filter(|e| match qf.as_str() {
-          "rcvd" => e.qsl_rcvd,
-          "pending" => !e.qsl_rcvd,
-          _ => true,
+        // QSL 筛选按**四色档位**（走到哪一步）而不是单个标志位：走 LoTW / eQSL
+        // 确认的通联以前会被 `qsl_rcvd` 判成「未确认」，看着像没寄过卡。
+        .filter(|e| match QslTone::from_key(&qf) {
+          Some(tone) => QslStatus::of(e).tone() == tone,
+          None => true,
         })
         .cloned()
         .collect()
     });
     list.sort_by(|a, b| (&b.date, &b.time, b.id).cmp(&(&a.date, &a.time, a.id)));
-    list
+    Arc::new(list)
   });
-  let page_count = Memo::new(move |_| filtered.with(Vec::len).div_ceil(PAGE_SIZE).max(1));
+  let page_count = Memo::new(move |_| filtered.with(|v| v.len()).div_ceil(PAGE_SIZE).max(1));
 
   view! {
     // 日志列表
     <section class="rounded-xl border bg-card">
       <div class="flex items-center justify-between border-b px-4 py-3">
         <h2 class="text-sm font-semibold">
-          {move || t("记录列表")}
+          {move || t("log.records-3")}
           <span class="ml-2 text-xs font-normal text-muted-foreground">
             {move || {
-              let (n, total) = (filtered.with(Vec::len), logbook.with(|l| l.entries.len()));
+              let (n, total) = (filtered.with(|v| v.len()), logbook.with(|l| l.entries.len()));
               if n == total {
-                tf("共 {} 条", &[&total.to_string()])
+                tp("log.records", total, &[&total.to_string()])
               } else {
-                tf("筛选出 {} / {} 条", &[&n.to_string(), &total.to_string()])
+                tp("log.records-2", total as u32, &[&n.to_string(), &total.to_string()])
               }
             }}
           </span>
         </h2>
-        <button
-          type="button"
-          class=button_class(Variant::Ghost, Size::Sm, "text-muted-foreground")
-          on:click=move |_| on_clear.run(())
+        <Button
+          variant=Variant::Ghost
+          size=Size::Sm
+          class="text-muted-foreground"
+          on_click=Callback::new(move |_| on_clear.run(()))
         >
-          {move || t("清空")}
-        </button>
+          {move || t("learning.clear")}
+        </Button>
       </div>
 
       {move || {
         if logbook.with(|l| l.entries.is_empty()) {
           return view! {
             <div class="px-4 py-10 text-center text-sm text-muted-foreground">
-              {move || t("暂无记录，添加第一条通联日志吧。")}
+              {move || t("log.no-records-yet-add")}
             </div>
           }
           .into_any();
@@ -108,13 +118,19 @@ pub(super) fn EntryList(
           .iter()
           .map(|m| SelectOption::new(m.as_str(), m.as_str()))
           .collect();
+        // QSL 四色档位的筛选项：颜色即「走到哪一步」。选项在 `view!` 之外先算好 ——
+        // 宏里 `collect::<Vec<_>>()` 的 `>` 会被当成标签结束符，宏直接解析失败。
+        let tone_options: Vec<SelectOption> = QslTone::ALL
+          .into_iter()
+          .map(|tone| SelectOption::new(tone.key(), Signal::derive(move || tone_label(tone))))
+          .collect();
         view! {
           <div class="flex flex-wrap gap-2 border-b px-4 py-3">
             <Input
               value=query
               on_change=Callback::new(move |v: String| query.set(v))
               kind=InputType::Search
-              placeholder=Signal::derive(move || t("搜索呼号 / 姓名 / QTH / 网格 / 备注"))
+              placeholder=Signal::derive(move || t("log.search-callsign-name-qth"))
               prefix=move || view! { <Icon kind=IconKind::Search /> }
               clearable=true
               wrapper_class="min-w-48 flex-1"
@@ -123,41 +139,39 @@ pub(super) fn EntryList(
               value=band_filter
               on_change=Callback::new(move |v: String| band_filter.set(v))
               options=band_options
-              placeholder=Signal::derive(move || t("全部波段"))
+              placeholder=Signal::derive(move || t("log.all-bands"))
               class="w-28"
             />
             <NativeSelect
               value=mode_filter
               on_change=Callback::new(move |v: String| mode_filter.set(v))
               options=mode_options
-              placeholder=Signal::derive(move || t("全部模式"))
+              placeholder=Signal::derive(move || t("log.all-modes"))
               class="w-28"
             />
             <NativeSelect
               value=qsl_filter
               on_change=Callback::new(move |v: String| qsl_filter.set(v))
-              options=vec![
-                SelectOption::new("pending", Signal::derive(move || t("未确认"))),
-                SelectOption::new("rcvd", Signal::derive(move || t("已确认"))),
-              ]
-              placeholder=Signal::derive(move || t("全部 QSL"))
-              class="w-28"
+              options=tone_options
+              placeholder=Signal::derive(move || t("log.all-qsl"))
+              aria_label=Signal::derive(move || t("log.qsl-filter"))
+              class="w-32"
             />
           </div>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[880px] border-collapse text-sm">
               <thead class="bg-muted/60 text-xs">
                 <tr>
-                  <th class=CELL>{move || t("日期")}</th>
-                  <th class=CELL>{move || t("时间")}</th>
-                  <th class=CELL>{move || t("频率 / 波段")}</th>
-                  <th class=CELL>{move || t("模式")}</th>
-                  <th class=CELL>{move || t("呼号")}</th>
-                  <th class=CELL>{move || t("RST 发/收")}</th>
-                  <th class=CELL>{move || t("网格")}</th>
-                  <th class=CELL>{move || t("备注")}</th>
+                  <th class=CELL>{move || t("log.date")}</th>
+                  <th class=CELL>{move || t("log.time")}</th>
+                  <th class=CELL>{move || t("log.freq-band")}</th>
+                  <th class=CELL>{move || t("log.mode")}</th>
+                  <th class=CELL>{move || t("log.callsign")}</th>
+                  <th class=CELL>{move || t("log.rst-sent-rcvd")}</th>
+                  <th class=CELL>{move || t("log.grid")}</th>
+                  <th class=CELL>{move || t("log.notes")}</th>
                   <th class=CELL>"QSL"</th>
-                  <th class=CELL>{move || t("操作")}</th>
+                  <th class=CELL>{move || t("log.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -165,7 +179,7 @@ pub(super) fn EntryList(
                   let start = page.get().min(page_count.get() - 1) * PAGE_SIZE;
                   filtered
                     .get()
-                    .into_iter()
+                    .iter()
                     .skip(start)
                     .take(PAGE_SIZE)
                     .map(|e| {
@@ -212,22 +226,11 @@ pub(super) fn EntryList(
                               .map(|t| view! { <span class="ml-1 inline-block rounded border px-1 text-[10px]">{t}</span> })
                               .collect_view()}
                           </td>
-                          <td class=format!("{CELL} whitespace-nowrap")>
-                            {if e.qsl_rcvd {
-                              view! {
-                                <span class="font-medium text-emerald-600 dark:text-emerald-400">
-                                  {move || t("已确认")}
-                                </span>
-                              }
-                              .into_any()
-                            } else if e.qsl_sent {
-                              view! {
-                                <span class="text-amber-600 dark:text-amber-400">{move || t("已寄出")}</span>
-                              }
-                              .into_any()
-                            } else {
-                              view! { <span class="text-muted-foreground">"—"</span> }.into_any()
-                            }}
+                          <td data-slot="qsl-cell" class=format!("{CELL} whitespace-nowrap")>
+                            <div class="flex items-center gap-1">
+                              <QslBadge status=QslStatus::of(e) />
+                              <CardImageMark entry_id=id />
+                            </div>
                           </td>
                           <td class=format!("{CELL} whitespace-nowrap")>
                             <div class="flex items-center gap-2">
@@ -236,14 +239,14 @@ pub(super) fn EntryList(
                                 class="text-xs text-muted-foreground transition-colors hover:text-foreground"
                                 on:click=move |_| on_edit.run(entry.clone())
                               >
-                                {move || t("编辑")}
+                                {move || t("log.edit")}
                               </button>
                               <button
                                 type="button"
                                 class="text-xs text-muted-foreground transition-colors hover:text-destructive"
                                 on:click=move |_| on_remove.run(id)
                               >
-                                {move || t("删除")}
+                                {move || t("log.delete")}
                               </button>
                             </div>
                           </td>
@@ -259,23 +262,23 @@ pub(super) fn EntryList(
             (page_count.get() > 1).then(|| {
               view! {
                 <div class="flex items-center justify-end gap-2 px-4 py-3 text-xs text-muted-foreground">
-                  <button
-                    type="button"
-                    class=button_class(Variant::Outline, Size::Sm, "")
-                    disabled=move || page.get() == 0
-                    on:click=move |_| page.update(|p| *p = p.saturating_sub(1))
+                  <Button
+                    variant=Variant::Outline
+                    size=Size::Sm
+                    disabled=Signal::derive(move || page.get() == 0)
+                    on_click=Callback::new(move |_| page.update(|p| *p = p.saturating_sub(1)))
                   >
-                    {move || t("上一页")}
-                  </button>
-                  <span class="tabular-nums">{move || tf("第 {} / {} 页", &[&(page.get() + 1).to_string(), &page_count.get().to_string()])}</span>
-                  <button
-                    type="button"
-                    class=button_class(Variant::Outline, Size::Sm, "")
-                    disabled=move || page.get() + 1 >= page_count.get()
-                    on:click=move |_| page.update(|p| *p += 1)
+                    {move || t("log.previous")}
+                  </Button>
+                  <span class="tabular-nums">{move || tf("log.page", &[&(page.get() + 1).to_string(), &page_count.get().to_string()])}</span>
+                  <Button
+                    variant=Variant::Outline
+                    size=Size::Sm
+                    disabled=Signal::derive(move || page.get() + 1 >= page_count.get())
+                    on_click=Callback::new(move |_| page.update(|p| *p += 1))
                   >
-                    {move || t("下一页")}
-                  </button>
+                    {move || t("log.next")}
+                  </Button>
                 </div>
               }
             })

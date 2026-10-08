@@ -9,12 +9,12 @@ use leptos_router::hooks::use_query_map;
 use crate::cn::cn;
 use crate::components::common::{ExplanationCard, NoteEditor};
 use crate::study;
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{Button, ButtonLink, NativeSelect, SelectOption, Size, Variant};
 use crate::util::{download_text, now_ms, set_title};
 
 use super::mistake_card::MistakeCard;
 use super::mistake_diagnosis::MistakeDiagnosis;
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 
 /// 题目所属一级分类（用于分类筛选），无分类码时归入「其他」。
 pub(super) fn top_of(question: &QuestionItem) -> &'static str {
@@ -33,8 +33,9 @@ fn export_text(records: &[MistakeRecord]) -> String {
     for o in &r.question.options {
       s.push_str(&format!("   {}. {}\n", o.key, o.text));
     }
-    s.push_str(&tf(
-      "   正确答案：{}（累计答错 {} 次）\n\n",
+    s.push_str(&tp(
+      "learning.correct-answer-wrong-times",
+      r.wrong_count,
       &[
         &r.question.answer_keys.join("、"),
         &r.wrong_count.to_string(),
@@ -58,7 +59,7 @@ fn option_class(selected: bool) -> String {
 
 #[component]
 pub fn MistakesPage() -> impl IntoView {
-  set_title(&t("错题集"));
+  set_title("shell.mistakes");
 
   let query = use_query_map();
   let bank = RwSignal::new(
@@ -248,62 +249,77 @@ pub fn MistakesPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("错题集")}</h1>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.mistakes")}</h1>
             <div class="text-xs text-muted-foreground">
-              {tf("练习 · 模拟考试 · 闪卡中答错的题；复习间隔随作答自适应，连续答对 {} 次（常错题更多）自动移出", &[&MASTER_STREAK.to_string()])}
+              {tf("learning.questions-answered-wrong-in", &[&MASTER_STREAK.to_string()])}
             </div>
           </div>
           {move || {
             idle()
               .then(|| {
                 view! {
-                  <button
-                    type="button"
-                    class=button_class(Variant::Default, Size::Sm, "")
-                    disabled=move || due_count.get() == 0
-                    on:click=move |_| start_due()
+                  <Button
+                    variant=Variant::Default
+                    size=Size::Sm
+                    disabled=Signal::derive(move || due_count.get() == 0)
+                    on_click=Callback::new(move |_| start_due())
                   >
-                    {move || tf("今日待复习 {}", &[&due_count.get().to_string()])}
-                  </button>
-                  <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| start_all()>
-                    {move || t("全部重练")}
-                  </button>
-                  <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| start_cards()>
-                    {move || t("闪卡复习")}
-                  </button>
-                  <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| export()>
-                    {move || t("导出")}
-                  </button>
-                  <a
-                    class=button_class(Variant::Outline, Size::Sm, "")
-                    href=move || match bank.get() {
+                    {move || tf("learning.due-today", &[&due_count.get().to_string()])}
+                  </Button>
+                  <Button
+                    variant=Variant::Outline
+                    size=Size::Sm
+                    on_click=Callback::new(move |_| start_all())
+                  >
+                    {move || t("learning.retry-all")}
+                  </Button>
+                  <Button
+                    variant=Variant::Outline
+                    size=Size::Sm
+                    on_click=Callback::new(move |_| start_cards())
+                  >
+                    {move || t("learning.flashcard-review")}
+                  </Button>
+                  <Button
+                    variant=Variant::Outline
+                    size=Size::Sm
+                    on_click=Callback::new(move |_| export())
+                  >
+                    {move || t("learning.export")}
+                  </Button>
+                  <ButtonLink
+                    href=Signal::derive(move || match bank.get() {
                       Some(b) => format!("/print?src=mistakes&bank={b}"),
                       None => "/print?src=mistakes".to_owned(),
-                    }
+                    })
+                    variant=Variant::Outline
+                    size=Size::Sm
                   >
-                    {move || t("打印")}
-                  </a>
-                  <button
-                    type="button"
-                    class=button_class(Variant::Ghost, Size::Sm, "text-muted-foreground")
-                    on:click=move |_| confirm_clear.set(true)
+                    {move || t("learning.print")}
+                  </ButtonLink>
+                  <Button
+                    variant=Variant::Ghost
+                    size=Size::Sm
+                    class="text-muted-foreground"
+                    on_click=Callback::new(move |_| confirm_clear.set(true))
                   >
-                    {move || t("清空")}
-                  </button>
+                    {move || t("learning.clear")}
+                  </Button>
                 }
               })
           }}
           <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
             {move || match bank.get() {
-              Some(b) => tf(
-                "{} 类 {} / 共 {} 道错题",
+              Some(b) => tp(
+                "learning.class-mistakes-total",
+                records.with(Vec::len) as u32,
                 &[
                   &b.to_string(),
                   &bank_count.get().to_string(),
                   &records.with(Vec::len).to_string(),
                 ],
               ),
-              None => tf("共 {} 道错题", &[&records.with(Vec::len).to_string()]),
+              None => tp("learning.mistakes-total", records.with(Vec::len), &[&records.with(Vec::len).to_string()]),
             }}
           </span>
         </div>
@@ -311,21 +327,25 @@ pub fn MistakesPage() -> impl IntoView {
           confirm_clear.get().then(|| {
             view! {
               <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-4 pb-3 text-sm">
-                <span class="mr-auto text-red-700 dark:text-red-400">{move || t("确定清空全部错题吗？此操作不可撤销。")}</span>
-                <button
-                  type="button"
-                  class=button_class(Variant::Destructive, Size::Sm, "")
-                  on:click=move |_| {
-                    study::clear_book();
-                    confirm_clear.set(false);
-                    refresh();
-                  }
+                <span class="mr-auto text-red-700 dark:text-red-400">{move || t("learning.clear-all-mistakes-this")}</span>
+                <Button
+                  variant=Variant::Destructive
+                  size=Size::Sm
+                  on_click=Callback::new(move |_| {
+                                    study::clear_book();
+                                    confirm_clear.set(false);
+                                    refresh();
+                                  })
                 >
-                  {move || t("清空")}
-                </button>
-                <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| confirm_clear.set(false)>
-                  {move || t("取消")}
-                </button>
+                  {move || t("learning.clear")}
+                </Button>
+                <Button
+                  variant=Variant::Outline
+                  size=Size::Sm
+                  on_click=Callback::new(move |_| confirm_clear.set(false))
+                >
+                  {move || t("exam.cancel")}
+                </Button>
               </div>
             }
           })
@@ -344,14 +364,14 @@ pub fn MistakesPage() -> impl IntoView {
             view! {
               <div class="rounded-xl border bg-card p-5">
                 <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{move || tf("第 {} / {} 题", &[&(current.get() + 1).to_string(), &total.to_string()])}</span>
+                  <span>{move || tf("exam.question", &[&(current.get() + 1).to_string(), &total.to_string()])}</span>
                   <span>
-                    {move || t("会")} <span class="font-semibold text-emerald-600">{card_known.get()}</span>
-                    " · " {move || t("不会")} <span class="font-semibold text-red-600">{card_unknown.get()}</span>
+                    {move || t("learning.know")} <span class="font-semibold text-emerald-600">{card_known.get()}</span>
+                    " · " {move || t("learning.don-t-know")} <span class="font-semibold text-red-600">{card_unknown.get()}</span>
                   </span>
                 </div>
                 <p class="whitespace-pre-line text-base font-medium leading-relaxed">{q.question.clone()}</p>
-                {q.image().map(|src| view! { <img src=src.to_owned() alt=move || t("题目附图") class="max-h-64 rounded border" /> })}
+                {q.image().map(|src| view! { <img src=src.to_owned() alt=move || t("exam.question-image") class="max-h-64 rounded border" /> })}
                 {move || {
                   if card_revealed.get() {
                     view! {
@@ -371,7 +391,7 @@ pub fn MistakesPage() -> impl IntoView {
                     }
                     .into_any()
                   } else {
-                    view! { <div class="mt-4 text-xs text-muted-foreground">{move || t("先想答案，再点「显示答案」核对，然后自评会 / 不会（自评会推进复习间隔，不会则当天重来）。")}</div> }
+                    view! { <div class="mt-4 text-xs text-muted-foreground">{move || t("learning.think-of-the-answer")}</div> }
                       .into_any()
                   }
                 }}
@@ -379,29 +399,42 @@ pub fn MistakesPage() -> impl IntoView {
                   {move || {
                     if card_revealed.get() {
                       view! {
-                        <button type="button" class=button_class(Variant::Default, Size::Default, "") on:click=move |_| card_mark(true)>
-                          {move || t("会 ✓")}
-                        </button>
-                        <button type="button" class=button_class(Variant::Outline, Size::Default, "") on:click=move |_| card_mark(false)>
-                          {move || t("不会 ✗")}
-                        </button>
+                        <Button
+                          variant=Variant::Default
+                          size=Size::Default
+                          on_click=Callback::new(move |_| card_mark(true))
+                        >
+                          {move || t("learning.know-it")}
+                        </Button>
+                        <Button
+                          variant=Variant::Outline
+                          size=Size::Default
+                          on_click=Callback::new(move |_| card_mark(false))
+                        >
+                          {move || t("learning.don-t-know-2")}
+                        </Button>
                       }
                       .into_any()
                     } else {
                       view! {
-                        <button type="button" class=button_class(Variant::Default, Size::Default, "") on:click=move |_| card_revealed.set(true)>
-                          {move || t("显示答案")}
-                        </button>
-                        <button
-                          type="button"
-                          class=button_class(Variant::Ghost, Size::Default, "ml-auto text-muted-foreground")
-                          on:click=move |_| {
-                            carding.set(false);
-                            refresh();
-                          }
+                        <Button
+                          variant=Variant::Default
+                          size=Size::Default
+                          on_click=Callback::new(move |_| card_revealed.set(true))
                         >
-                          {move || t("结束")}
-                        </button>
+                          {move || t("learning.show-answer")}
+                        </Button>
+                        <Button
+                          variant=Variant::Ghost
+                          size=Size::Default
+                          class="ml-auto text-muted-foreground"
+                          on_click=Callback::new(move |_| {
+                                                    carding.set(false);
+                                                    refresh();
+                                                  })
+                        >
+                          {move || t("learning.end")}
+                        </Button>
                       }
                       .into_any()
                     }
@@ -426,14 +459,14 @@ pub fn MistakesPage() -> impl IntoView {
             view! {
               <div class="space-y-4 rounded-xl border bg-card p-5">
                 <div class="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{move || tf("第 {} / {} 题", &[&(current.get() + 1).to_string(), &total.to_string()])}</span>
+                  <span>{move || tf("exam.question", &[&(current.get() + 1).to_string(), &total.to_string()])}</span>
                   <span>
-                    {move || t("正确")} <span class="font-semibold text-emerald-600">{correct.get()}</span>
-                    "　" {move || t("错误")} <span class="font-semibold text-red-600">{wrong.get()}</span>
+                    {move || t("exam.correct-3")} <span class="font-semibold text-emerald-600">{correct.get()}</span>
+                    "　" {move || t("exam.wrong-2")} <span class="font-semibold text-red-600">{wrong.get()}</span>
                   </span>
                 </div>
                 <p class="whitespace-pre-line text-sm font-medium leading-snug">{m.question.question.clone()}</p>
-                {m.question.image().map(|src| view! { <img src=src.to_owned() alt=move || t("题目附图") class="max-h-64 rounded border" /> })}
+                {m.question.image().map(|src| view! { <img src=src.to_owned() alt=move || t("exam.question-image") class="max-h-64 rounded border" /> })}
                 <div class="space-y-2">
                   {m.question.options.iter().map(|o| {
                     let key = o.key.clone();
@@ -454,29 +487,30 @@ pub fn MistakesPage() -> impl IntoView {
                   }).collect_view()}
                 </div>
                 <div class="flex items-center gap-2">
-                  <button
-                    type="button"
-                    class=button_class(Variant::Default, Size::Default, "")
-                    disabled=move || feedback.get().is_some() || selected.get().is_empty()
-                    on:click=move |_| submit()
+                  <Button
+                    variant=Variant::Default
+                    size=Size::Default
+                    disabled=Signal::derive(move || feedback.get().is_some() || selected.get().is_empty())
+                    on_click=Callback::new(move |_| submit())
                   >
-                    {move || t("提交")}
-                  </button>
-                  <button
-                    type="button"
-                    class=button_class(Variant::Outline, Size::Default, "")
-                    disabled=move || feedback.get().is_none()
-                    on:click=move |_| next()
+                    {move || t("learning.submit")}
+                  </Button>
+                  <Button
+                    variant=Variant::Outline
+                    size=Size::Default
+                    disabled=Signal::derive(move || feedback.get().is_none())
+                    on_click=Callback::new(move |_| next())
                   >
-                    {move || t("下一题")}
-                  </button>
-                  <button
-                    type="button"
-                    class=button_class(Variant::Ghost, Size::Default, "ml-auto text-muted-foreground")
-                    on:click=move |_| exit()
+                    {move || t("exam.next")}
+                  </Button>
+                  <Button
+                    variant=Variant::Ghost
+                    size=Size::Default
+                    class="ml-auto text-muted-foreground"
+                    on_click=Callback::new(move |_| exit())
                   >
-                    {move || t("结束")}
-                  </button>
+                    {move || t("learning.end")}
+                  </Button>
                 </div>
                 <div class="min-h-5 text-sm">
                   {move || {
@@ -484,11 +518,11 @@ pub fn MistakesPage() -> impl IntoView {
                       RecordOutcome::Wrong => view! {
                         <div class="space-y-2">
                           <span class="font-medium text-red-700 dark:text-red-400">
-                            {move || t("正确答案：")} <span class="font-mono font-semibold">{answer.clone()}</span>
-                            <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("连续答对次数已清零")}</span>
+                            {move || t("exam.correct-answer-2")} <span class="font-mono font-semibold">{answer.clone()}</span>
+                            <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("learning.the-correct-in-a")}</span>
                           </span>
                           <div class="flex flex-wrap items-center gap-1.5">
-                            <span class="text-xs text-muted-foreground">{move || t("为什么错？")}</span>
+                            <span class="text-xs text-muted-foreground">{move || t("exam.why-did-you-get")}</span>
                             {WRONG_CAUSES
                               .iter()
                               .map(|&(ck, cn)| {
@@ -515,15 +549,15 @@ pub fn MistakesPage() -> impl IntoView {
                         </div>
                       }.into_any(),
                       RecordOutcome::Mastered => view! {
-                        <span class="font-medium text-emerald-700 dark:text-emerald-400">{move || t("正确！已掌握，移出错题本")}</span>
+                        <span class="font-medium text-emerald-700 dark:text-emerald-400">{move || t("learning.correct-mastered-removed-from")}</span>
                       }.into_any(),
                       RecordOutcome::Progressed { streak, target, next_days } => view! {
                         <span class="font-medium text-emerald-700 dark:text-emerald-400">
-                          {tf("正确！已连续答对 {} / {}，{} 天后再复习", &[&streak.to_string(), &target.to_string(), &next_days.to_string()])}
+                          {tp("learning.correct-in-a-row", u32::from(next_days), &[&streak.to_string(), &target.to_string(), &next_days.to_string()])}
                         </span>
                       }.into_any(),
                       RecordOutcome::Correct => view! {
-                        <span class="font-medium text-emerald-700 dark:text-emerald-400">{move || t("正确！")}</span>
+                        <span class="font-medium text-emerald-700 dark:text-emerald-400">{move || t("learning.correct")}</span>
                       }.into_any(),
                     })
                   }}
@@ -541,24 +575,29 @@ pub fn MistakesPage() -> impl IntoView {
           } else if finished.get() {
             view! {
               <div class="rounded-xl border bg-card px-4 py-10 text-center">
-                <div class="text-lg font-semibold">{move || t("重练完成")}</div>
+                <div class="text-lg font-semibold">{move || t("learning.retry-complete")}</div>
                 <div class="mt-2 text-sm text-muted-foreground">
-                  {move || t("正确")} " " <span class="font-semibold text-emerald-600">{correct.get()}</span>
-                  "　" {move || t("错误")} " " <span class="font-semibold text-red-600">{wrong.get()}</span>
-                  "　" {move || t("已掌握")} " " <span class="font-semibold text-foreground">{mastered.get()}</span>
+                  {move || t("exam.correct-3")} " " <span class="font-semibold text-emerald-600">{correct.get()}</span>
+                  "　" {move || t("exam.wrong-2")} " " <span class="font-semibold text-red-600">{wrong.get()}</span>
+                  "　" {move || t("learning.mastered")} " " <span class="font-semibold text-foreground">{mastered.get()}</span>
                 </div>
-                <button type="button" class=format!("{} mt-5", button_class(Variant::Default, Size::Default, "")) on:click=move |_| exit()>
-                  {move || t("返回列表")}
-                </button>
+                <Button
+                  variant=Variant::Default
+                  size=Size::Default
+                  class="mt-5"
+                  on_click=Callback::new(move |_| exit())
+                >
+                  {move || t("learning.back-to-list")}
+                </Button>
               </div>
             }
             .into_any()
           } else if records.with(Vec::is_empty) {
             view! {
               <div class="rounded-xl border bg-card px-4 py-12 text-center">
-                <div class="text-sm font-medium">{move || t("暂无错题")}</div>
+                <div class="text-sm font-medium">{move || t("learning.no-mistakes-yet")}</div>
                 <div class="mt-1 text-xs text-muted-foreground">
-                  {move || t("去「练习」「模拟考试」或「闪卡」作答后，答错的题目会自动收进这里。")}
+                  {move || t("learning.after-answering-in-practice")}
                 </div>
               </div>
             }
@@ -574,9 +613,9 @@ pub fn MistakesPage() -> impl IntoView {
                     view! {
                       <div class="rounded-xl border bg-card p-4">
                         <div class="mb-2 flex items-center justify-between">
-                          <h3 class="text-sm font-semibold">{move || t("复习前瞻")}</h3>
+                          <h3 class="text-sm font-semibold">{move || t("exam.review-forecast")}</h3>
                           <span class="text-xs text-muted-foreground">
-                            {tf("未来 7 天共 {} 道待复习", &[&review_total.to_string()])}
+                            {tp("exam.questions-due-for-review", review_total, &[&review_total.to_string()])}
                           </span>
                         </div>
                         <div class="flex h-24 items-end gap-1.5">
@@ -590,10 +629,10 @@ pub fn MistakesPage() -> impl IntoView {
                                 (*n as f64 / max as f64 * 100.0).max(8.0)
                               };
                               let label = match i {
-                                0 => t("今天"),
-                                1 => t("明天"),
-                                2 => t("后天"),
-                                _ => tf("{} 天后", &[&i.to_string()]),
+                                0 => t("exam.today"),
+                                1 => t("exam.tomorrow"),
+                                2 => t("exam.day-after"),
+                                _ => tp("exam.in-days", i, &[&i.to_string()]),
                               };
                               let bar_class = if *n > 0 {
                                 "w-full rounded-t bg-primary/70"
@@ -605,7 +644,7 @@ pub fn MistakesPage() -> impl IntoView {
                                   <div
                                     class=bar_class
                                     style=format!("height: {h}%")
-                                    title=tf("{}：{} 道", &[&label, &n.to_string()])
+                                    title=tp("exam.questions-2", *n, &[&label, &n.to_string()])
                                   ></div>
                                   <span class="text-[9px] text-muted-foreground">{label}</span>
                                 </div>
@@ -631,9 +670,9 @@ pub fn MistakesPage() -> impl IntoView {
                     view! {
                       <div class="rounded-xl border bg-card p-4">
                         <div class="mb-2 flex items-center justify-between">
-                          <h3 class="text-sm font-semibold">{move || t("记忆巩固")}</h3>
+                          <h3 class="text-sm font-semibold">{move || t("learning.memory-consolidation")}</h3>
                           <span class="text-xs text-muted-foreground">
-                            {move || t("答对间隔逐次拉长，答错回到当天")}
+                            {move || t("learning.correct-answers-stretch-the")}
                           </span>
                         </div>
                         <div class="flex h-3 w-full overflow-hidden rounded-full bg-muted">
@@ -645,19 +684,19 @@ pub fn MistakesPage() -> impl IntoView {
                         <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                           <span class="inline-flex items-center gap-1">
                             {dot("bg-red-400/60")}
-                            {tf("学习中 {} 道", &[&mastery.learning.to_string()])}
+                            {tf("learning.learning", &[&mastery.learning.to_string()])}
                           </span>
                           <span class="inline-flex items-center gap-1">
                             {dot("bg-amber-400/70")}
-                            {tf("1–6 天 {} 道", &[&mastery.short.to_string()])}
+                            {tf("learning.1-6-days", &[&mastery.short.to_string()])}
                           </span>
                           <span class="inline-flex items-center gap-1">
                             {dot("bg-sky-400/70")}
-                            {tf("7–20 天 {} 道", &[&mastery.medium.to_string()])}
+                            {tf("learning.7-20-days", &[&mastery.medium.to_string()])}
                           </span>
                           <span class="inline-flex items-center gap-1">
                             {dot("bg-emerald-500/70")}
-                            {tf("≥21 天 {} 道", &[&mastery.mature.to_string()])}
+                            {tf("learning.21-days", &[&mastery.mature.to_string()])}
                           </span>
                         </div>
                       </div>
@@ -682,7 +721,7 @@ pub fn MistakesPage() -> impl IntoView {
                 }
                 view! {
                   <div class="rounded-xl border bg-card p-4">
-                    <h3 class="mb-2 text-sm font-semibold">{move || t("薄弱分类")}</h3>
+                    <h3 class="mb-2 text-sm font-semibold">{move || t("learning.weak-categories")}</h3>
                     <div class="flex flex-wrap gap-1.5">
                       {counts
                         .into_iter()
@@ -691,7 +730,7 @@ pub fn MistakesPage() -> impl IntoView {
                             <button
                               type="button"
                               class="whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors hover:bg-accent"
-                              title=tf("只看「{}」的错题", &[(name)])
+                              title=tf("learning.show-only-mistakes", &[(name)])
                               on:click=move |_| filter.set(key.to_owned())
                             >
                               {name} " " <span class="font-semibold tabular-nums">{n}</span>
@@ -712,7 +751,7 @@ pub fn MistakesPage() -> impl IntoView {
                   has_cause.then(|| {
                     view! {
                       <div class="rounded-xl border bg-card p-4">
-                        <h3 class="mb-2 text-sm font-semibold">{move || t("错因分布")}</h3>
+                        <h3 class="mb-2 text-sm font-semibold">{move || t("exam.mistake-causes")}</h3>
                         <div class="flex flex-wrap gap-1.5">
                           {cause_counts
                             .iter()
@@ -733,19 +772,22 @@ pub fn MistakesPage() -> impl IntoView {
               }}
 
               <div class="flex flex-wrap items-center gap-2">
-                <select
-                  prop:value=move || filter.get()
-                  on:change=move |e| filter.set(event_target_value(&e))
-                  class=format!("{} w-full sm:w-48", input_class(""))
-                >
-                  <option value="">{move || t("全部分类")}</option>
-                  {TOP_CATEGORIES
+                {{
+                  let category_options: Vec<SelectOption> = TOP_CATEGORIES
                     .iter()
-                    .map(|c| {
-                      view! { <option value=c.key>{c.name}</option> }
-                    })
-                    .collect_view()}
-                </select>
+                    .map(|c| SelectOption::new(c.key, c.name))
+                    .collect();
+                  view! {
+                    <NativeSelect
+                      value=filter
+                      on_change=Callback::new(move |v: String| filter.set(v))
+                      options=category_options
+                      placeholder=Signal::derive(move || t("learning.all-categories"))
+                      aria_label=Signal::derive(move || t("learning.all-categories"))
+                      class="w-full sm:w-48"
+                    />
+                  }
+                }}
                 <div class="flex overflow-hidden rounded-lg border text-xs">
                   {std::iter::once(None)
                     .chain(Bank::ALL.into_iter().map(Some))
@@ -759,7 +801,7 @@ pub fn MistakesPage() -> impl IntoView {
                         aria-pressed=move || (bank.get() == b).to_string()
                         on:click=move |_| bank.set(b)
                       >
-                        {b.map_or_else(|| t("全部"), |b| tf("{} 类", &[&b.to_string()]))}
+                        {b.map_or_else(|| t("exam.all"), |b| tf("learning.class", &[&b.to_string()]))}
                       </button>
                     })
                     .collect_view()}

@@ -1,6 +1,9 @@
-//! 报名照片处理（纯前端、本地完成），算法对齐原项目使用的 compressorjs 1.2 配置：
-//! 质量 0.8、PNG/JPEG 统一转为 JPEG、按最大/最小宽高等比缩放、JPEG 白底、
+//! 图片缩放（纯前端、本地完成），算法对齐原项目使用的 compressorjs 1.2 配置：
+//! PNG/JPEG 统一转为 JPEG、按最大/最小宽高等比缩放、JPEG 白底、
 //! 同格式且无需缩放时若压缩后更大则保留原图（strict）。
+//!
+//! 目前两个用处：报名照片（[`PhotoKind::Id`] / [`PhotoKind::Profile`]）与
+//! QSL 卡片扫描件（[`PhotoKind::QslCard`]，只缩不放）。
 
 use js_sys::{Function, Promise};
 use wasm_bindgen::closure::Closure;
@@ -9,6 +12,8 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::{
   Blob, CanvasRenderingContext2d, File, FileReader, HtmlCanvasElement, HtmlImageElement, Url,
 };
+
+use ham_web_core::qsl_image;
 
 use crate::i18n::{t, tf};
 use crate::util::{document, js_error_message};
@@ -20,6 +25,8 @@ pub enum PhotoKind {
   Id,
   /// 人像照。
   Profile,
+  /// QSL 卡片扫描件：只缩不放，长边上限 1600px。
+  QslCard,
 }
 
 struct Params {
@@ -53,6 +60,17 @@ impl PhotoKind {
         min_width: 300.0,
         min_height: 400.0,
       },
+      Self::QslCard => Params {
+        // 扫描件是文字 / 手写体，压缩比照片更保守一点（质量降太多会把小字糊掉）。
+        quality: 0.82,
+        convert_types: &["image/png", "image/jpeg", "image/webp"],
+        convert_size: 1.0,
+        max_width: 1600.0,
+        max_height: 1600.0,
+        // 上下限都给 0：卡片影像**只缩不放** —— 小图放大只会变糊，还白占体积。
+        min_width: 0.0,
+        min_height: 0.0,
+      },
     }
   }
 }
@@ -65,6 +83,60 @@ pub struct PhotoResult {
   pub height: u32,
   pub size: f64,
   pub mime: String,
+}
+
+/// [`compress`] 的失败原因。
+///
+/// 绝大多数失败就是一句可直接展示的原因文本，只有「解码后像素超限」要单独区分 ——
+/// QSL 影像那边要把它映射成 `qsl_image::QslImageReject::TooLarge`，与「类型不支持」
+/// 给出不同的提示。
+enum CompressError {
+  /// 读文件 / 解码 / 编码失败，附原因文本。
+  Message(String),
+  /// 解码后的像素总量超过上限（解压炸弹）。
+  TooLarge,
+}
+
+impl From<String> for CompressError {
+  fn from(message: String) -> Self {
+    Self::Message(message)
+  }
+}
+
+impl From<&str> for CompressError {
+  fn from(message: &str) -> Self {
+    Self::Message(message.to_owned())
+  }
+}
+
+/// 处理照片的失败原因（给调用方分类用）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PhotoError {
+  /// 读文件 / 解码 / 编码失败，附**已本地化**的原因文案（可能为空）。
+  Decode(String),
+  /// 解码后的像素总量超过上限。
+  TooLarge,
+}
+
+impl PhotoError {
+  /// 可直接展示在界面上的文案。
+  #[must_use]
+  pub fn message(&self) -> String {
+    match self {
+      Self::TooLarge => t("log.card-image-too-large"),
+      Self::Decode(detail) if detail.is_empty() => t("tools.processing-failed-please-try"),
+      Self::Decode(detail) => tf("common.processing-failed-try-another", &[detail]),
+    }
+  }
+}
+
+impl From<CompressError> for PhotoError {
+  fn from(e: CompressError) -> Self {
+    match e {
+      CompressError::Message(detail) => Self::Decode(detail),
+      CompressError::TooLarge => Self::TooLarge,
+    }
+  }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -193,10 +265,10 @@ async fn read_data_url(blob: &Blob) -> Result<String, String> {
     .result()
     .ok()
     .and_then(|v| v.as_string())
-    .ok_or_else(|| t("无法读取处理后的图片数据"))
+    .ok_or_else(|| t("tools.could-not-read-the-2"))
 }
 
-async fn compress(kind: PhotoKind, file: &File) -> Result<Blob, String> {
+async fn compress(kind: PhotoKind, file: &File) -> Result<Blob, CompressError> {
   let p = kind.params();
   let url = Url::create_object_url_with_blob(file).map_err(|e| js_error_message(&e))?;
   let img = load_image(&url).await;
@@ -207,8 +279,11 @@ async fn compress(kind: PhotoKind, file: &File) -> Result<Blob, String> {
     f64::from(img.natural_height()),
   );
   if nw <= 0.0 || nh <= 0.0 {
-    return Err("Failed to load the image.".to_owned());
+    return Err("Failed to load the image.".to_owned().into());
   }
+  // 解码后的像素总量也要设限：只卡上传体积挡不住「解压炸弹」（见 core::qsl_image）。
+  qsl_image::check_dimensions(img.natural_width(), img.natural_height())
+    .map_err(|_| CompressError::TooLarge)?;
 
   let file_type = file.type_();
   let mime = if p.convert_types.contains(&file_type.as_str()) && file.size() > p.convert_size {
@@ -250,17 +325,12 @@ async fn compress(kind: PhotoKind, file: &File) -> Result<Blob, String> {
 }
 
 /// 处理照片。
-pub async fn process_photo(kind: PhotoKind, file: File) -> Result<PhotoResult, String> {
-  let blob = compress(kind, &file).await.map_err(|e| {
-    tf(
-      "处理失败，请尝试更换照片格式，或对着照片截图再上传。详细信息：{}",
-      &[&(e).to_string()],
-    )
-  })?;
-  let data_url = read_data_url(&blob).await?;
+pub async fn process_photo(kind: PhotoKind, file: File) -> Result<PhotoResult, PhotoError> {
+  let blob = compress(kind, &file).await?;
+  let data_url = read_data_url(&blob).await.map_err(PhotoError::Decode)?;
   let img = load_image(&data_url)
     .await
-    .map_err(|_| t("无法读取处理后的图片尺寸"))?;
+    .map_err(|_| PhotoError::Decode(t("tools.could-not-read-the")))?;
   Ok(PhotoResult {
     data_url,
     width: img.natural_width(),
@@ -317,5 +387,18 @@ mod tests {
     assert_eq!(target_size(&id, 2000.0, 1500.0), (2000, 1500));
     let profile = PhotoKind::Profile.params();
     assert_eq!(target_size(&profile, 150.0, 200.0), (300, 400));
+  }
+
+  #[test]
+  fn qsl_card_scans_are_only_shrunk() {
+    let card = PhotoKind::QslCard.params();
+    // 大图按长边 1600 等比缩（横向）。
+    assert_eq!(target_size(&card, 4000.0, 3000.0), (1600, 1200));
+    // 竖幅同理。
+    assert_eq!(target_size(&card, 1200.0, 2400.0), (800, 1600));
+    // 小图**不放大**（上下限为 0），这正是不复用证件照参数的原因。
+    assert_eq!(target_size(&card, 640.0, 480.0), (640, 480));
+    // 已在限内、但非正方形的图也不动。
+    assert_eq!(target_size(&card, 1600.0, 900.0), (1600, 900));
   }
 }

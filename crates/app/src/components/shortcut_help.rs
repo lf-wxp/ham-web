@@ -14,9 +14,9 @@ use crate::ui::Dialog;
 #[component]
 pub fn ShortcutHelpDialog(open: RwSignal<bool>) -> impl IntoView {
   view! {
-    <Dialog open=open class="sm:max-w-sm" label=t("快捷键")>
-      <h2 class="text-base font-semibold">{move || t("快捷键")}</h2>
-      <p class="text-xs text-muted-foreground">{move || t("答题时按 ? 可随时打开本帮助。")}</p>
+    <Dialog open=open class="sm:max-w-sm" label=t("exam.shortcuts")>
+      <h2 class="text-base font-semibold">{move || t("exam.shortcuts")}</h2>
+      <p class="text-xs text-muted-foreground">{move || t("common.press-while-answering-to")}</p>
       <div class="space-y-2 text-sm">
         {SHORTCUT_HELP
           .iter()

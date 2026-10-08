@@ -45,18 +45,18 @@ pub(super) fn RstListen() -> impl IntoView {
   view! {
     <section class="rounded-xl border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">
-        {move || t("听信号判断 S 值")}
-        <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("播放后凭响度判断信号强度")}</span>
+        {move || t("knowledge.listen-to-the-signal")}
+        <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("knowledge.play-and-judge-the")}</span>
       </h2>
       <div class="space-y-4 p-4">
         <div class="flex flex-col items-center gap-2 rounded-xl border bg-muted/30 px-4 py-6">
-          <div class="text-xs text-muted-foreground">{move || t("点击播放一段信号，判断它属于 S1–S9 中的哪一档")}</div>
+          <div class="text-xs text-muted-foreground">{move || t("knowledge.tap-to-play-a")}</div>
           <button
             type="button"
             on:click=move |_| play()
             class="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
           >
-            {move || t("🔊 播放信号")}
+            {move || t("knowledge.play-signal")}
           </button>
         </div>
         <div class="grid grid-cols-3 gap-2 sm:grid-cols-9">
@@ -83,13 +83,13 @@ pub(super) fn RstListen() -> impl IntoView {
                 let (k, v) = SIGNAL_STRENGTH[target.get()];
                 if ok {
                   view! {
-                    <span class="font-medium text-emerald-600 dark:text-emerald-400">{move || t("正确！")}</span>
+                    <span class="font-medium text-emerald-600 dark:text-emerald-400">{move || t("learning.correct")}</span>
                   }
                   .into_any()
                 } else {
                   view! {
                     <span class="font-medium text-red-600 dark:text-red-400">
-                      {tf("正确答案：{}（{}）", &[(k), (v)])}
+                      {tf("common.correct-answer", &[(k), (v)])}
                     </span>
                   }
                   .into_any()
@@ -102,11 +102,11 @@ pub(super) fn RstListen() -> impl IntoView {
             on:click=move |_| new_round()
             class="rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
           >
-            {move || t("下一题")}
+            {move || t("exam.next")}
           </button>
           <div class="text-xs text-muted-foreground">
-            {move || t("正确 ")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
-            {move || t("　错误 ")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
+            {move || t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
+            {move || t("common.wrong-2")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
           </div>
         </div>
       </div>

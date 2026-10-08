@@ -31,7 +31,7 @@ const PROSIGNS: &[(&str, &str, &str)] = &[
 
 #[component]
 pub fn MorsePage() -> impl IntoView {
-  set_title(&t("莫尔斯电码"));
+  set_title("shell.morse-code");
   provide_morse_settings();
   let settings = use_morse_settings();
   view! {
@@ -39,8 +39,8 @@ pub fn MorsePage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("莫尔斯电码")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("国际摩尔斯电码（ITU）· 字母 · 数字 · 标点 · 点击试听")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.morse-code")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("morse.international-morse-code-itu")}</div>
           </div>
           <SignalBars />
         </div>
@@ -48,37 +48,37 @@ pub fn MorsePage() -> impl IntoView {
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label=t("字母") value=LETTERS.len() />
-          <Stat label=t("数字") value=DIGITS.len() />
-          <Stat label=t("标点符号") value=PUNCTUATION.len() />
-          <Stat label=t("字符总计") value=LETTERS.len() + DIGITS.len() + PUNCTUATION.len() />
+          <Stat label=t("morse.letters") value=LETTERS.len() />
+          <Stat label=t("morse.digits") value=DIGITS.len() />
+          <Stat label=t("morse.punctuation") value=PUNCTUATION.len() />
+          <Stat label=t("morse.total-characters") value=LETTERS.len() + DIGITS.len() + PUNCTUATION.len() />
         </div>
 
         <section class="rounded-xl border bg-card">
           <div class="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
             <div class="flex items-center gap-2">
-              <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("音调")}</span>
+              <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("morse.tone")}</span>
               <Slider
                 value=Signal::derive(move || f64::from(settings.settings.get().tone_hz))
                 on_change=Callback::new(move |v: f64| settings.set_tone(v as u32))
                 min=300.0
                 max=1200.0
                 step=10.0
-                aria_label=Signal::derive(move || t("播放音调"))
+                aria_label=Signal::derive(move || t("morse.play-tone"))
                 aria_valuetext=Signal::derive(move || format!("{} Hz", settings.settings.get().tone_hz))
                 class="w-32"
               />
               <span class="w-14 text-xs tabular-nums text-muted-foreground">{move || format!("{} Hz", settings.settings.get().tone_hz)}</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("音量")}</span>
+              <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("morse.volume-2")}</span>
               <Slider
                 value=Signal::derive(move || (f64::from(settings.settings.get().volume) * 100.0).round())
                 on_change=Callback::new(move |v: f64| settings.set_volume(v as f32 / 100.0))
                 min=0.0
                 max=100.0
                 step=1.0
-                aria_label=Signal::derive(move || t("播放音量"))
+                aria_label=Signal::derive(move || t("morse.volume"))
                 aria_valuetext=Signal::derive(move || format!("{:.0}%", settings.settings.get().volume * 100.0))
                 class="w-32"
               />
@@ -91,7 +91,7 @@ pub fn MorsePage() -> impl IntoView {
               }
               class="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
             >
-              {move || t("试听")}
+              {move || t("exam.preview")}
             </button>
           </div>
         </section>
@@ -112,18 +112,18 @@ pub fn MorsePage() -> impl IntoView {
 
         <div class="flex items-center gap-2 text-xs text-muted-foreground">
           <span class="font-mono text-base leading-none text-primary">"•"</span>
-          {move || t("点")}
+          {move || t("morse.dot")}
           <span class="mx-2 text-border">"·"</span>
           <span class="font-mono text-base leading-none text-primary">"—"</span>
-          {move || t("划")}
+          {move || t("morse.dash")}
           <span class="mx-2 text-border">"·"</span>
-          {move || t("点击任意卡片即可试听")}
+          {move || t("morse.tap-any-card-to")}
         </div>
 
         <section>
           <h2 class="mb-3 text-sm font-semibold">
-            {move || t("字母表")}
-            <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("含 ITU 语音字母")}</span>
+            {move || t("morse.alphabet")}
+            <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.includes-itu-phonetic-alphabet")}</span>
           </h2>
           <div class="grid grid-cols-2 gap-2 min-[400px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
             {LETTERS.iter().map(|c| view! { <MorseCard entry=c /> }).collect_view()}
@@ -131,14 +131,14 @@ pub fn MorsePage() -> impl IntoView {
         </section>
 
         <section>
-          <h2 class="mb-3 text-sm font-semibold">{move || t("数字")}</h2>
+          <h2 class="mb-3 text-sm font-semibold">{move || t("morse.digits")}</h2>
           <div class="grid grid-cols-5 gap-2 sm:grid-cols-10">
             {DIGITS.iter().map(|c| view! { <MorseCard entry=c /> }).collect_view()}
           </div>
         </section>
 
         <section>
-          <h2 class="mb-3 text-sm font-semibold">{move || t("常用标点符号")}</h2>
+          <h2 class="mb-3 text-sm font-semibold">{move || t("morse.common-punctuation")}</h2>
           <div class="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-9">
             {PUNCTUATION.iter().map(|c| view! { <MorseCard entry=c /> }).collect_view()}
           </div>
@@ -146,8 +146,8 @@ pub fn MorsePage() -> impl IntoView {
 
         <section class="rounded-xl border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">
-            {move || t("CW 专用符号（Prosigns）")}
-            <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("整体拍发，字符间无间隔")}</span>
+            {move || t("morse.cw-prosigns")}
+            <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.sent-as-a-whole")}</span>
           </h2>
           <div class="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3">
             {PROSIGNS
@@ -160,7 +160,7 @@ pub fn MorsePage() -> impl IntoView {
                       play_morse_timed_with(code, farnsworth(20.0, 20.0), settings.tone_hz(), settings.volume());
                     }
                     class="group rounded-lg border bg-muted/40 p-3 text-center transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent/60 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-                    title=tf("试听 {}", &[(label)])
+                    title=tf("common.preview", &[(label)])
                   >
                     <div class="text-lg font-semibold tabular-nums">{label}</div>
                     <div class="font-mono text-base font-semibold tracking-widest text-primary">
@@ -175,8 +175,8 @@ pub fn MorsePage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("信号时值标准")}</h2>
-          <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("以一个「点」时间为基准（CW 拍发节奏）：")}</p>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("morse.signal-timing-standard")}</h2>
+          <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("morse.based-on-one-dot")}</p>
           <div class="grid grid-cols-2 gap-3 p-4 sm:grid-cols-5">
             {TIMING
               .iter()

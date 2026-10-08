@@ -10,28 +10,28 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn FeedlinePage() -> impl IntoView {
-  set_title(&t("天线匹配与馈线"));
+  set_title("shell.matching-feedlines");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("天线匹配与馈线")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("同轴电缆 · 巴伦 · 天调 · 驻波比")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.matching-feedlines")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("knowledge.coax-baluns-atus-swr")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("常见馈线")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.common-feedlines")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[560px] border-collapse text-sm">
               <thead class="bg-muted/60 text-xs">
                 <tr>
-                  <th class=CELL>{move || t("型号")}</th>
-                  <th class=CELL>{move || t("特性阻抗")}</th>
-                  <th class=CELL>{move || t("说明")}</th>
+                  <th class=CELL>{move || t("knowledge.model")}</th>
+                  <th class=CELL>{move || t("knowledge.characteristic-impedance")}</th>
+                  <th class=CELL>{move || t("radio.notes")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -53,7 +53,7 @@ pub fn FeedlinePage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("匹配器件与概念")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.matching-components-and-concepts")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {MATCHING
               .iter()
@@ -70,7 +70,7 @@ pub fn FeedlinePage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("失配程度与后果")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.mismatch-degree-and-consequences")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {MISMATCH
               .iter()

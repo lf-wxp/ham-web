@@ -204,7 +204,7 @@ pub fn AchievementToast() -> impl IntoView {
           <div class="text-2xl leading-none">{a.icon}</div>
           <div class="min-w-0 flex-1">
             <div class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              {t("解锁成就")}
+              {t("exam.achievement-unlocked")}
             </div>
             <div class="mt-0.5 text-sm font-semibold">{a.name}</div>
             <div class="mt-0.5 text-[11px] leading-snug text-muted-foreground">{a.desc}</div>
@@ -212,7 +212,7 @@ pub fn AchievementToast() -> impl IntoView {
           <button
             type="button"
             class="opacity-60 transition-opacity hover:opacity-100"
-            aria-label=t("关闭提示")
+            aria-label=t("learning.dismiss")
             on:click=move |_| dismiss()
           >
             <Icon kind=IconKind::X class="h-3.5 w-3.5" />

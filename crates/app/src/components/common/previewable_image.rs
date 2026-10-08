@@ -18,7 +18,7 @@ pub fn PreviewableImage(
       <span
         role="button"
         tabindex="0"
-        aria-label=move || t("预览题图")
+        aria-label=move || t("common.preview-question-image")
         class="absolute -top-1 -left-1 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded bg-background/90 border text-[10px] leading-none cursor-pointer"
         on:click=move |e| {
           e.stop_propagation();
@@ -32,7 +32,7 @@ pub fn PreviewableImage(
           }
         }
       >
-        {move || t("图")}
+        {move || t("common.chart")}
       </span>
     }
     .into_any()
@@ -58,7 +58,7 @@ pub fn PreviewableImage(
     <Dialog open=open class="max-w-[90vw]">
       <DialogHeader>
         <DialogTitle class="sr-only">{title.get_value()}</DialogTitle>
-        <DialogDescription class="sr-only">{move || t("点击空白处或按 Esc 关闭对话框")}</DialogDescription>
+        <DialogDescription class="sr-only">{move || t("common.click-outside-or-press")}</DialogDescription>
       </DialogHeader>
       <div class="relative w-full h-[80vh]">
         <img src=src.get_value() alt=title.get_value() class="absolute inset-0 h-full w-full object-contain" />

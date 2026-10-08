@@ -44,7 +44,7 @@ fn render_rgba(rgba: &[u8], width: u32, height: u32) -> Result<String, String> {
   let ctx: CanvasRenderingContext2d = canvas
     .get_context("2d")
     .map_err(|e| js_error_message(&e))?
-    .ok_or_else(|| t("Canvas 2D 上下文不可用"))?
+    .ok_or_else(|| t("common.canvas-2d-context-not"))?
     .unchecked_into();
   let img = ImageData::new_with_u8_clamped_array_and_sh(wasm_bindgen::Clamped(rgba), width, height)
     .map_err(|e| js_error_message(&e))?;
@@ -77,7 +77,7 @@ async fn decode_audio(bytes: &[u8]) -> Result<(Vec<f32>, f32), String> {
     .map_err(|e| js_error_message(&e))?;
   let buffer: AudioBuffer = decoded
     .dyn_into()
-    .map_err(|_| t("音频解码失败，请确认是有效的 WAV 文件"))?;
+    .map_err(|_| t("radio.audio-decoding-failed-make"))?;
   let channel = buffer
     .get_channel_data(0)
     .map_err(|e| js_error_message(&e))?;
@@ -92,7 +92,7 @@ async fn analyze_file(file: &File) -> Result<AnalysisResult, String> {
   let (samples, sample_rate) = decode_audio(&bytes).await?;
   let (rgba, avg_db) =
     ham_web_core::spectrum::analyze_waterfall(&samples, FILE_FRAME, FILE_HEIGHT, FLOOR_DB, CEIL_DB)
-      .ok_or_else(|| t("音频太短，无法分析（至少需要约 0.05 秒）"))?;
+      .ok_or_else(|| t("radio.audio-too-short-to"))?;
   let width = (FILE_FRAME / 2) as u32;
   let waterfall_url = render_rgba(&rgba, width, FILE_HEIGHT as u32)?;
   let spec_rgba =
@@ -121,7 +121,7 @@ pub(super) fn FileWaterfall() -> impl IntoView {
     if size > MAX_BYTES {
       let mb = size as f64 / 1024.0 / 1024.0;
       error.set(Some(tf(
-        "文件过大（约 {} MB），上限 {} MB。",
+        "radio.file-too-large-about",
         &[&format!("{mb:.0}"), &format!("{}", MAX_BYTES / 1024 / 1024)],
       )));
       return;
@@ -153,9 +153,9 @@ pub(super) fn FileWaterfall() -> impl IntoView {
   view! {
     <section class="rounded-xl border bg-card">
       <div class="border-b px-4 py-3">
-        <h2 class="text-sm font-semibold">{move || t("离线分析（上传 WAV）")}</h2>
+        <h2 class="text-sm font-semibold">{move || t("radio.offline-analysis-upload-wav")}</h2>
         <p class="text-xs text-muted-foreground">
-          {move || t("上传一段音频录音，生成整段时间的频谱瀑布图，可下载 PNG。")}
+          {move || t("radio.upload-an-audio-recording")}
         </p>
       </div>
       <div class="space-y-4 p-4">
@@ -167,8 +167,8 @@ pub(super) fn FileWaterfall() -> impl IntoView {
                 class="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed p-8 text-center transition-all duration-200 hover:bg-muted/40 cursor-pointer"
               >
                 <Icon kind=IconKind::AudioLines class="mb-1 h-8 w-8 text-muted-foreground" />
-                <span class="text-sm font-medium">{move || t("选择音频文件（WAV）")}</span>
-                <span class="text-xs text-muted-foreground">{move || t("可用 cargo make spectrum-sample 生成测试样本")}</span>
+                <span class="text-sm font-medium">{move || t("radio.choose-an-audio-file")}</span>
+                <span class="text-xs text-muted-foreground">{move || t("radio.run-cargo-make-spectrum")}</span>
               </label>
               <input
                 id="waterfall-file"
@@ -190,7 +190,7 @@ pub(super) fn FileWaterfall() -> impl IntoView {
           processing.get().then(|| view! {
             <div class="flex flex-col items-center justify-center gap-3 py-8">
               <Icon kind=IconKind::Loader2 class="h-8 w-8 animate-spin text-primary" />
-              <span class="text-sm text-muted-foreground">{move || t("正在分析频谱…")}</span>
+              <span class="text-sm text-muted-foreground">{move || t("radio.analysing-spectrum")}</span>
             </div>
           })
         }}
@@ -217,12 +217,12 @@ pub(super) fn FileWaterfall() -> impl IntoView {
                 <span>{format!("{} × {}", r.width, r.height)}</span>
               </div>
               <div>
-                <div class="mb-1 text-xs font-medium text-muted-foreground">{move || t("瀑布图（顶部为最新时间）")}</div>
-                <img src=r.waterfall_url.clone() alt=t("频谱瀑布图") class="w-full rounded-md border" />
+                <div class="mb-1 text-xs font-medium text-muted-foreground">{move || t("radio.waterfall-newest-at-the")}</div>
+                <img src=r.waterfall_url.clone() alt=t("tools.spectrum-waterfall") class="w-full rounded-md border" />
               </div>
               <div>
-                <div class="mb-1 text-xs font-medium text-muted-foreground">{move || t("平均频谱")}</div>
-                <img src=r.spectrum_url.clone() alt=t("平均频谱") class="w-full rounded-md border" />
+                <div class="mb-1 text-xs font-medium text-muted-foreground">{move || t("radio.average-spectrum")}</div>
+                <img src=r.spectrum_url.clone() alt=t("radio.average-spectrum") class="w-full rounded-md border" />
               </div>
               <div class="flex justify-center gap-2">
                 <a
@@ -231,7 +231,7 @@ pub(super) fn FileWaterfall() -> impl IntoView {
                   class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   <Icon kind=IconKind::Download class="h-4 w-4" />
-                  {move || t("下载瀑布图 PNG")}
+                  {move || t("radio.download-waterfall-png")}
                 </a>
                 <button
                   type="button"
@@ -239,7 +239,7 @@ pub(super) fn FileWaterfall() -> impl IntoView {
                   on:click=reset
                 >
                   <Icon kind=IconKind::RefreshCw class="h-4 w-4" />
-                  {move || t("分析其他文件")}
+                  {move || t("radio.analyse-another-file")}
                 </button>
               </div>
             </div>

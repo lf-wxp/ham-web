@@ -11,14 +11,14 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn LicenseClassesPage() -> impl IntoView {
-  set_title(&t("A/B/C 类操作证权限"));
+  set_title("shell.a-b-c-license");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("A/B/C 类操作证权限")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("频率范围 · 功率上限 · 适用场景")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.a-b-c-license")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("radio.frequency-range-power-limit")}</div>
           </div>
         </div>
       </header>
@@ -28,10 +28,10 @@ pub fn LicenseClassesPage() -> impl IntoView {
           <table class="w-full min-w-[640px] border-collapse text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>
-                <th class=CELL>{move || t("类别")}</th>
-                <th class=CELL>{move || t("频率范围")}</th>
-                <th class=CELL>{move || t("功率上限")}</th>
-                <th class=CELL>{move || t("说明")}</th>
+                <th class=CELL>{move || t("exam.class-2")}</th>
+                <th class=CELL>{move || t("exam.frequency-range")}</th>
+                <th class=CELL>{move || t("exam.power-limit")}</th>
+                <th class=CELL>{move || t("radio.notes")}</th>
               </tr>
             </thead>
             <tbody>
@@ -41,7 +41,7 @@ pub fn LicenseClassesPage() -> impl IntoView {
                   view! {
                     <tr class="border-t transition-colors hover:bg-muted/40">
                       <td class=format!("{CELL} whitespace-nowrap font-medium")>
-                        {tf("{} 类", &[(c.class)])}
+                        {tf("learning.class", &[(c.class)])}
                       </td>
                       <td class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{c.freq}</td>
                       <td class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{c.power}</td>
@@ -55,7 +55,7 @@ pub fn LicenseClassesPage() -> impl IntoView {
         </div>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("典型设备与场景")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.typical-equipment-and-scenarios")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {CLASS_USAGE
               .iter()
@@ -72,7 +72,7 @@ pub fn LicenseClassesPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("波段权限速查")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.band-privileges-quick-reference")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {BAND_PERMISSIONS
               .iter()
@@ -89,7 +89,7 @@ pub fn LicenseClassesPage() -> impl IntoView {
         </section>
 
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("备考要点")}</h2>
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.exam-tips")}</h2>
           <ul class="space-y-2 p-4">
             {CLASS_TIPS
               .iter()

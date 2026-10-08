@@ -14,7 +14,7 @@ use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 
 use crate::i18n::{t, tf};
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{Button, ControlSize, Input, NativeSelect, SelectOption, Size, Variant};
 use crate::util::{js_error_message, sleep, storage, window};
 
 const KEY: &str = "cat-settings";
@@ -85,7 +85,7 @@ fn call_sync(obj: &JsValue, method: &str) -> Result<JsValue, JsValue> {
 }
 
 async fn open(settings: Settings) -> Result<Conn, JsValue> {
-  let serial = serial().ok_or_else(|| JsValue::from_str(&t("当前浏览器不支持 Web Serial")))?;
+  let serial = serial().ok_or_else(|| JsValue::from_str(&t("common.this-browser-does-not")))?;
   let port = call(&serial, "requestPort", &[]).await?;
   let opts = Object::new();
   Reflect::set(&opts, &"baudRate".into(), &settings.baud.into())?;
@@ -220,87 +220,103 @@ pub fn CatControl(#[prop(into)] on_reading: Callback<CatReading>) -> impl IntoVi
   let connected = move || matches!(status.get(), Status::Connected);
   let busy = move || matches!(status.get(), Status::Connected | Status::Connecting);
 
+  let protocol_options: Vec<SelectOption> = Protocol::ALL
+    .into_iter()
+    .map(|p| {
+      SelectOption::new(
+        if p == Protocol::Icom {
+          "icom"
+        } else {
+          "kenwood"
+        },
+        p.label(),
+      )
+    })
+    .collect();
+  let baud_options: Vec<SelectOption> = BAUD_RATES
+    .into_iter()
+    .map(|b| SelectOption::new(b.to_string(), format!("{b} bps")))
+    .collect();
+
   view! {
     <div class="flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
-      <span class="font-medium text-foreground">{move || t("电台 CAT")}</span>
+      <span class="font-medium text-foreground">{move || t("common.rig-cat")}</span>
       {if supported {
         view! {
-          <select
-            aria-label=move || t("CAT 协议")
-            class=input_class("h-7 w-auto py-0 text-xs")
-            prop:disabled=busy
-            on:change=move |e| {
-              let v = event_target_value(&e);
+          <NativeSelect
+            value=Signal::derive(move || {
+              if settings.with(|s| s.protocol) == Protocol::Icom {
+                "icom".to_owned()
+              } else {
+                "kenwood".to_owned()
+              }
+            })
+            on_change=Callback::new(move |v: String| {
               settings.update(|s| s.protocol = if v == "icom" { Protocol::Icom } else { Protocol::Kenwood });
               save();
-            }
-          >
-            {Protocol::ALL.into_iter().map(|p| view! {
-              <option
-                value=if p == Protocol::Icom { "icom" } else { "kenwood" }
-                selected=move || settings.with(|s| s.protocol == p)
-              >
-                {p.label()}
-              </option>
-            }).collect_view()}
-          </select>
-          <select
-            aria-label=move || t("波特率")
-            class=input_class("h-7 w-auto py-0 text-xs")
-            prop:disabled=busy
-            on:change=move |e| {
-              let v = event_target_value(&e).parse().unwrap_or(9600);
-              settings.update(|s| s.baud = v);
+            })
+            options=protocol_options
+            disabled=Signal::derive(busy)
+            size=ControlSize::Sm
+            aria_label=Signal::derive(move || t("common.cat-protocol"))
+            class="w-auto"
+          />
+          <NativeSelect
+            value=Signal::derive(move || settings.with(|s| s.baud).to_string())
+            on_change=Callback::new(move |v: String| {
+              settings.update(|s| s.baud = v.parse().unwrap_or(9600));
               save();
-            }
-          >
-            {BAUD_RATES.into_iter().map(|b| view! {
-              <option value=b.to_string() selected=move || settings.with(|s| s.baud == b)>{format!("{b} bps")}</option>
-            }).collect_view()}
-          </select>
+            })
+            options=baud_options
+            disabled=Signal::derive(busy)
+            size=ControlSize::Sm
+            aria_label=Signal::derive(move || t("common.baud-rate"))
+            class="w-auto"
+          />
           <Show when=move || settings.with(|s| s.protocol == Protocol::Icom)>
-            <input
-              aria-label=move || t("CI-V 地址（十六进制）")
-              title=move || t("CI-V 地址（十六进制），IC-7300 为 94，IC-705 为 A4")
-              class=input_class("h-7 w-14 py-0 font-mono text-xs uppercase")
-              maxlength="2"
-              prop:disabled=busy
-              prop:value=move || format!("{:02X}", settings.with(|s| s.civ_addr))
-              on:change=move |e| {
-                if let Ok(v) = u8::from_str_radix(event_target_value(&e).trim(), 16) {
+            <Input
+              aria_label=Signal::derive(move || t("common.ci-v-address-hex"))
+              title=Signal::derive(move || t("common.ci-v-address-hex-2"))
+              class="h-7 w-14 py-0 font-mono text-xs uppercase"
+              maxlength=Signal::derive(|| "2".to_owned())
+              disabled=Signal::derive(busy)
+              value=Signal::derive(move || format!("{:02X}", settings.with(|s| s.civ_addr)))
+              on_change=Callback::new(move |v: String| {
+                if let Ok(v) = u8::from_str_radix(v.trim(), 16) {
                   settings.update(|s| s.civ_addr = v);
                   save();
                 }
-              }
+              })
             />
           </Show>
-          <button
-            type="button"
-            class=button_class(Variant::Outline, Size::Sm, "h-7")
-            prop:disabled=move || matches!(status.get(), Status::Connecting)
-            on:click=move |_| if busy() { disconnect(); status.set(Status::Idle); } else { connect(); }
+          <Button
+            variant=Variant::Outline
+            size=Size::Sm
+            class="h-7"
+            disabled=Signal::derive(move || matches!(status.get(), Status::Connecting))
+            on_click=Callback::new(move |_| if busy() { disconnect(); status.set(Status::Idle); } else { connect(); })
           >
             {move || match status.get() {
-              Status::Connecting => t("连接中…"),
-              Status::Connected => t("断开"),
-              Status::Idle | Status::Error(_) => t("连接电台"),
+              Status::Connecting => t("common.connecting"),
+              Status::Connected => t("common.disconnect"),
+              Status::Idle | Status::Error(_) => t("common.connect-rig"),
             }}
-          </button>
+          </Button>
           <span aria-live="polite" class="tabular-nums">
             {move || match status.get() {
               Status::Connected => {
-                let f = freq.get().map_or_else(|| t("等待电台应答…"), |hz| format!("{} MHz", format_mhz(hz)));
+                let f = freq.get().map_or_else(|| t("common.waiting-for-the-rig"), |hz| format!("{} MHz", format_mhz(hz)));
                 let m = mode.get().map(|m| format!(" · {m}")).unwrap_or_default();
-                view! { <span class="text-emerald-700 dark:text-emerald-400">{tf("已连接 · {}{}", &[&(f).to_string(), &(m).to_string()])}</span> }.into_any()
+                view! { <span class="text-emerald-700 dark:text-emerald-400">{tf("common.connected", &[&(f).to_string(), &(m).to_string()])}</span> }.into_any()
               }
-              Status::Error(msg) => view! { <span class="text-destructive">{tf("连接失败：{}", &[&(msg).to_string()])}</span> }.into_any(),
-              _ => view! { <span>{(!connected()).then_some(t("连接后自动回填频率与模式"))}</span> }.into_any(),
+              Status::Error(msg) => view! { <span class="text-destructive">{tf("common.connection-failed", &[&(msg).to_string()])}</span> }.into_any(),
+              _ => view! { <span>{(!connected()).then_some(t("common.frequency-and-mode-fill"))}</span> }.into_any(),
             }}
           </span>
         }
         .into_any()
       } else {
-        view! { <span>{move || t("需要桌面版 Chrome / Edge（Web Serial）才能连接电台。")}</span> }.into_any()
+        view! { <span>{move || t("common.connecting-a-rig-requires")}</span> }.into_any()
       }}
     </div>
   }

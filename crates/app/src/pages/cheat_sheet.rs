@@ -4,29 +4,29 @@ use ham_web_core::cheat_sheet::sections;
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
-use crate::i18n::{t, tf};
-use crate::ui::{Size, Variant, button_class};
+use crate::i18n::{t, tp};
+use crate::ui::{Button, Size, Variant};
 use crate::util::{set_title, window};
 
 #[component]
 pub fn CheatSheetPage() -> impl IntoView {
-  set_title(&t("考点速查手册"));
+  set_title("exam.exam-points-handbook");
   let secs = sections();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <PageHeader title=t("考点速查手册") subtitle=t("高频考点 · 必背法规 · 公式速查 · 可打印") />
+      <PageHeader title=t("exam.exam-points-handbook") subtitle=t("exam.high-frequency-exam-points-2") />
       <PageContainer>
         <div class="print-hide flex flex-wrap items-center justify-between gap-3">
-          <p class="text-xs text-muted-foreground">{move || t("按 10 大分类整理的高频考点，考前可打印速查。")}</p>
-          <button
-            type="button"
-            class=button_class(Variant::Default, Size::Sm, "")
-            on:click=move |_| {
-              let _ = window().print();
-            }
+          <p class="text-xs text-muted-foreground">{move || t("exam.high-frequency-exam-points")}</p>
+          <Button
+            variant=Variant::Default
+            size=Size::Sm
+            on_click=Callback::new(move |_| {
+                        let _ = window().print();
+                      })
           >
-            {move || t("打印 / 存为 PDF")}
-          </button>
+            {move || t("radio.print-save-as-pdf")}
+          </Button>
         </div>
 
         {secs
@@ -40,7 +40,7 @@ pub fn CheatSheetPage() -> impl IntoView {
                   <span class="h-2.5 w-2.5 shrink-0 rounded-full" style=format!("background: {color}")></span>
                   {sec.name}
                   <span class="ml-auto text-xs font-normal text-muted-foreground">
-                    {move || tf("{} 个考点", &[&count.to_string()])}
+                    {move || tp("knowledge.points", count as u32, &[&count.to_string()])}
                   </span>
                 </h2>
                 <div class="grid gap-2 p-4 sm:grid-cols-2">

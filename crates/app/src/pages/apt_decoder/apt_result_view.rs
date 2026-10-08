@@ -4,7 +4,7 @@ use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tp};
 use crate::icons::{Icon, IconKind};
 use crate::util::{document, js_error_message};
 
@@ -73,7 +73,7 @@ fn render_rgba(rgba: &[u8], width: u32, height: u32) -> Result<String, String> {
   let ctx: CanvasRenderingContext2d = canvas
     .get_context("2d")
     .map_err(|e| js_error_message(&e))?
-    .ok_or_else(|| t("Canvas 2D 上下文不可用"))?
+    .ok_or_else(|| t("common.canvas-2d-context-not"))?
     .unchecked_into();
 
   let clamped = wasm_bindgen::Clamped(rgba);
@@ -127,7 +127,7 @@ pub(super) fn AptResultView(
         <span>"·"</span>
         <span>{format!("{width} × {height}")}</span>
         <span>"·"</span>
-        <span>{tf("{} 行", &[&(lines).to_string()])}</span>
+        <span>{tp("common.lines", lines, &[&(lines).to_string()])}</span>
         <span>"·"</span>
         <span>{format!("{source_sample_rate} Hz")}</span>
         <span>"·"</span>
@@ -140,14 +140,14 @@ pub(super) fn AptResultView(
           class=move || tab_class(ViewMode::Gray)
           on:click=move |_| mode.set(ViewMode::Gray)
         >
-          {move || t("灰度（A / B）")}
+          {move || t("tools.greyscale-a-b")}
         </button>
         <button
           type="button"
           class=move || tab_class(ViewMode::FalseColor)
           on:click=move |_| mode.set(ViewMode::FalseColor)
         >
-          {move || t("假彩色（IR 增强）")}
+          {move || t("tools.false-colour-ir-enhanced")}
         </button>
       </div>
 
@@ -155,14 +155,14 @@ pub(super) fn AptResultView(
         if mode.get() == ViewMode::Gray {
           view! {
             <div class="grid gap-5 md:grid-cols-2">
-              <ChannelView label=t("通道 A") url=channel_a_url.clone() download_name="apt-channel-a.png" />
-              <ChannelView label=t("通道 B") url=channel_b_url.clone() download_name="apt-channel-b.png" />
+              <ChannelView label=t("tools.channel-a") url=channel_a_url.clone() download_name="apt-channel-a.png" />
+              <ChannelView label=t("tools.channel-b") url=channel_b_url.clone() download_name="apt-channel-b.png" />
             </div>
           }
           .into_any()
         } else {
           view! {
-            <ChannelView label=t("假彩色") url=false_color_url.clone() download_name="apt-false-color.png" />
+            <ChannelView label=t("tools.false-colour") url=false_color_url.clone() download_name="apt-false-color.png" />
           }
           .into_any()
         }
@@ -175,7 +175,7 @@ pub(super) fn AptResultView(
           on:click=move |_| on_reset.run(())
         >
           <Icon kind=IconKind::RefreshCw class="h-4 w-4" />
-          {move || t("解码其他文件")}
+          {move || t("tools.decode-another-file")}
         </button>
       </div>
     </div>

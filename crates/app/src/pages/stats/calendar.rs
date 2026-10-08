@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tp};
 use leptos::prelude::*;
 use wasm_bindgen::JsValue;
 
@@ -75,14 +75,14 @@ pub(super) fn CalendarHeatmap(counts: BTreeMap<String, u32>) -> impl IntoView {
   view! {
     <div class="space-y-2">
       <div class="flex items-center justify-end gap-1 text-[10px] text-muted-foreground">
-        <span>{move || t("少")}</span>
+        <span>{move || t("learning.less")}</span>
         <span class="h-3 w-3 rounded-sm bg-muted/60"></span>
         <span class="h-3 w-3 rounded-sm bg-emerald-200"></span>
         <span class="h-3 w-3 rounded-sm bg-emerald-300"></span>
         <span class="h-3 w-3 rounded-sm bg-emerald-400"></span>
         <span class="h-3 w-3 rounded-sm bg-emerald-500"></span>
         <span class="h-3 w-3 rounded-sm bg-emerald-600"></span>
-        <span>{move || t("多")}</span>
+        <span>{move || t("learning.more")}</span>
       </div>
       <div class="overflow-x-auto">
         <div class="flex gap-[3px]">
@@ -100,7 +100,7 @@ pub(super) fn CalendarHeatmap(counts: BTreeMap<String, u32>) -> impl IntoView {
                         cell_class(count, max)
                       };
                       view! {
-                        <div class=format!("h-3 w-3 rounded-sm {cls}") title=tf("{} · {} 条", &[&(key).to_string(), &(count).to_string()])></div>
+                        <div class=format!("h-3 w-3 rounded-sm {cls}") title=tp("common.records", count, &[&(key).to_string(), &(count).to_string()])></div>
                       }
                     })
                     .collect_view()}

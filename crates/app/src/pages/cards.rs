@@ -13,11 +13,11 @@ use wasm_bindgen::JsCast;
 use crate::components::common::Loading;
 use crate::data;
 use crate::gesture::{Swipe, swipe_handlers};
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 use crate::morse_audio::play_morse;
 use crate::pages::SLANG_CATEGORY;
 use crate::speech::speak_en;
-use crate::ui::{Size, Variant, button_class};
+use crate::ui::{Button, Size, Variant};
 use crate::util::{local_today, now_ms, set_title, storage};
 
 const KEY: &str = "card-review";
@@ -86,7 +86,7 @@ async fn load_cards(deck: Deck) -> Vec<Card> {
       .map(|m| Card {
         id: deck.card_id(m.ch),
         front: m.ch.to_owned(),
-        hint: Some(t("想一想它的点划")),
+        hint: Some(t("exam.think-about-its-dots")),
         back: m
           .code
           .chars()
@@ -119,11 +119,15 @@ async fn load_cards(deck: Deck) -> Vec<Card> {
 
 fn days_label(days: f64) -> String {
   if days <= 0.0 {
-    t("10 分钟后再来一次")
+    t("exam.come-back-in-10")
   } else if days < 1.5 {
-    t("明天再复习")
+    t("exam.review-tomorrow")
   } else {
-    tf("{} 天后再复习", &[&format!("{days:.0}")])
+    tp(
+      "common.review-again-in-days",
+      days,
+      &[&format!("{days:.0}")],
+    )
   }
 }
 
@@ -138,7 +142,7 @@ fn typing_in_field(e: &web_sys::KeyboardEvent) -> bool {
 
 #[component]
 pub fn CardsPage() -> impl IntoView {
-  set_title(&t("知识卡片"));
+  set_title("shell.study-cards");
   let query = use_query_map();
   let schedule = RwSignal::new(load_schedule());
   let initial = query
@@ -270,8 +274,9 @@ pub fn CardsPage() -> impl IntoView {
     });
     let (learned, mature) = schedule.with(|s| s.progress(&ids));
     let left = schedule.with(|s| s.new_left(d, &local_today()));
-    tf(
-      "共 {} 张 · 已学 {} · 熟记 {} · 今日新卡还剩 {}",
+    tp(
+      "common.cards-learned-mature-new",
+      ids.len(),
       &[
         &(ids.len()).to_string(),
         &(learned).to_string(),
@@ -298,7 +303,7 @@ pub fn CardsPage() -> impl IntoView {
         <div
           data-testid="card-mastery-bar"
           class="flex h-2 w-full overflow-hidden rounded-full bg-muted"
-          title=tf("已学 {} / 熟记 {}", &[&learned.to_string(), &mature.to_string()])
+          title=tf("learning.learned-mature", &[&learned.to_string(), &mature.to_string()])
         >
           <div class="bg-emerald-500/70" style=format!("width: {}", pct(mature))></div>
           <div class="bg-sky-400/70" style=format!("width: {}", pct(learned - mature))></div>
@@ -309,7 +314,7 @@ pub fn CardsPage() -> impl IntoView {
 
   let card_view = move || {
     if cards.with(Option::is_none) {
-      return view! { <Loading label=t("加载卡片...") class="py-16" /> }.into_any();
+      return view! { <Loading label=t("exam.loading-cards") class="py-16" /> }.into_any();
     }
     let Some(c) = current.get() else {
       let other: Vec<(Deck, usize)> = schedule.with(|s| {
@@ -320,15 +325,19 @@ pub fn CardsPage() -> impl IntoView {
       });
       return view! {
         <div class="space-y-3 py-10 text-center">
-          <p class="text-base font-semibold">{tf("{}今天的卡片复习完了", &[(deck.get_untracked().label())])}</p>
+          <p class="text-base font-semibold">{tf("common.today-s-cards-are", &[(deck.get_untracked().label())])}</p>
           <p class="text-sm text-muted-foreground">
-            {move || if reviewed.get() > 0 { tf("本轮复习了 {} 张，明天再来。", &[&(reviewed.get()).to_string()]) } else { t("到期的卡片和新卡会按计划出现在这里。") }}
+            {move || if reviewed.get() > 0 { tp("common.reviewed-cards-this-round", reviewed.get(), &[&(reviewed.get()).to_string()]) } else { t("exam.due-cards-and-new") }}
           </p>
           <div class="flex flex-wrap justify-center gap-2">
             {other.into_iter().map(|(d, n)| view! {
-              <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=move |_| deck.set(d)>
-                {tf("去复习{}（{}）", &[(d.label()), &(n).to_string()])}
-              </button>
+              <Button
+                variant=Variant::Outline
+                size=Size::Sm
+                on_click=Callback::new(move |_| deck.set(d))
+              >
+                {tf("common.review-2", &[(d.label()), &(n).to_string()])}
+              </Button>
             }).collect_view()}
           </div>
         </div>
@@ -341,13 +350,13 @@ pub fn CardsPage() -> impl IntoView {
     view! {
       <div on:touchstart=swipe_start on:touchend=swipe_end class="space-y-4">
         <div class="flex items-center justify-between text-xs text-muted-foreground">
-          <span class="tabular-nums">{tf("第 {} / {} 张", &[&(pos.get() + 1).to_string(), &(total).to_string()])}</span>
+          <span class="tabular-nums">{tf("common.card", &[&(pos.get() + 1).to_string(), &(total).to_string()])}</span>
           <span>{move || feedback.get().unwrap_or_default()}</span>
         </div>
         <button
           type="button"
           class="flex min-h-48 w-full flex-col items-center justify-center gap-2 rounded-xl border bg-card p-6 text-center shadow-sm"
-          aria-label=if revealed.get_untracked() { t("卡片背面") } else { t("翻面查看答案") }
+          aria-label=if revealed.get_untracked() { t("knowledge.back-of-the-card") } else { t("knowledge.flip-to-see-the") }
           on:click=move |_| reveal()
         >
           <span class="font-mono text-3xl font-bold tracking-wide">{c.front.clone()}</span>
@@ -359,28 +368,51 @@ pub fn CardsPage() -> impl IntoView {
               {c.detail.map(|d| view! { <span class="text-xs text-muted-foreground">{d}</span> })}
             }
           })}
-          {move || (!revealed.get()).then(|| view! { <span class="mt-3 text-xs text-muted-foreground">{move || t("点击、空格或滑动翻面")}</span> })}
+          {move || (!revealed.get()).then(|| view! { <span class="mt-3 text-xs text-muted-foreground">{move || t("exam.click-press-space-or")}</span> })}
         </button>
         <div class="flex flex-wrap items-center justify-center gap-2">
           {speak.map(|w| view! {
-            <button type="button" class=button_class(Variant::Ghost, Size::Sm, "") on:click=move |_| speak_en(&w)>{move || t("朗读")}</button>
+            <Button
+              variant=Variant::Ghost
+              size=Size::Sm
+              on_click=Callback::new(move |_| speak_en(&w))
+            >{move || t("exam.read-aloud")}</Button>
           })}
           {morse.map(|code| view! {
-            <button type="button" class=button_class(Variant::Ghost, Size::Sm, "") on:click=move |_| play_morse(code, MORSE_WPM)>{move || t("试听")}</button>
+            <Button
+              variant=Variant::Ghost
+              size=Size::Sm
+              on_click=Callback::new(move |_| play_morse(code, MORSE_WPM))
+            >{move || t("exam.preview")}</Button>
           })}
         </div>
         <div class="grid grid-cols-3 gap-2">
-          <button type="button" class=button_class(Variant::Outline, Size::Default, "") prop:disabled=move || !revealed.get() on:click=move |_| grade(Grade::Again)>
-            {move || t("忘了")} <kbd class="ml-1 hidden text-xs text-muted-foreground sm:inline">"1"</kbd>
-          </button>
-          <button type="button" class=button_class(Variant::Outline, Size::Default, "") prop:disabled=move || !revealed.get() on:click=move |_| grade(Grade::Hard)>
-            {move || t("模糊")} <kbd class="ml-1 hidden text-xs text-muted-foreground sm:inline">"2"</kbd>
-          </button>
-          <button type="button" class=button_class(Variant::Default, Size::Default, "") prop:disabled=move || !revealed.get() on:click=move |_| grade(Grade::Good)>
-            {move || t("记得")} <kbd class="ml-1 hidden text-xs opacity-70 sm:inline">"3"</kbd>
-          </button>
+          <Button
+            variant=Variant::Outline
+            size=Size::Default
+            disabled=Signal::derive(move || !revealed.get())
+            on_click=Callback::new(move |_| grade(Grade::Again))
+          >
+            {move || t("exam.forgot")} <kbd class="ml-1 hidden text-xs text-muted-foreground sm:inline">"1"</kbd>
+          </Button>
+          <Button
+            variant=Variant::Outline
+            size=Size::Default
+            disabled=Signal::derive(move || !revealed.get())
+            on_click=Callback::new(move |_| grade(Grade::Hard))
+          >
+            {move || t("exam.unsure")} <kbd class="ml-1 hidden text-xs text-muted-foreground sm:inline">"2"</kbd>
+          </Button>
+          <Button
+            variant=Variant::Default
+            size=Size::Default
+            disabled=Signal::derive(move || !revealed.get())
+            on_click=Callback::new(move |_| grade(Grade::Good))
+          >
+            {move || t("exam.remember-2")} <kbd class="ml-1 hidden text-xs opacity-70 sm:inline">"3"</kbd>
+          </Button>
         </div>
-        <p class="text-center text-xs text-muted-foreground">{move || t("翻面后右滑「记得」、左滑「忘了」")}</p>
+        <p class="text-center text-xs text-muted-foreground">{move || t("exam.after-flipping-swipe-right")}</p>
       </div>
     }
     .into_any()
@@ -389,10 +421,10 @@ pub fn CardsPage() -> impl IntoView {
   view! {
     <div class="mx-auto max-w-5xl space-y-4 px-4 py-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <div>
-        <h1 class="text-base font-semibold leading-tight">{move || t("知识卡片")}</h1>
-        <p class="text-xs text-muted-foreground">{move || t("按遗忘规律安排复习：记得的卡隔得越来越久，忘了的卡很快再出现。")}</p>
+        <h1 class="text-base font-semibold leading-tight">{move || t("shell.study-cards")}</h1>
+        <p class="text-xs text-muted-foreground">{move || t("exam.reviews-follow-a-forgetting")}</p>
       </div>
-      <div class="flex gap-2 overflow-x-auto pb-1" role="group" aria-label=move || t("卡组")>
+      <div class="flex gap-2 overflow-x-auto pb-1" role="group" aria-label=move || t("exam.deck")>
         {Deck::ALL.into_iter().map(chip).collect_view()}
       </div>
       <p class="text-xs text-muted-foreground tabular-nums">{progress}</p>

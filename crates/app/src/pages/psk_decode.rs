@@ -8,7 +8,7 @@ use wasm_bindgen::JsCast;
 use web_sys::{DragEvent, File, HtmlInputElement};
 
 use crate::icons::{Icon, IconKind};
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{Button, NumberField, Size, Variant};
 use crate::util::{js_error_message, set_title};
 
 use crate::i18n::{t, tf};
@@ -26,7 +26,7 @@ async fn read_file_bytes(file: &File) -> Result<Vec<u8>, String> {
 
 #[component]
 pub fn PskDecodePage() -> impl IntoView {
-  set_title(&t("PSK31 解码器"));
+  set_title("radio.psk31-decoder");
 
   let processing = RwSignal::new(false);
   let result = RwSignal::new(String::new());
@@ -47,14 +47,12 @@ pub fn PskDecodePage() -> impl IntoView {
           Ok((samples, rate)) => {
             let text = ham_web_core::psk31::decode_psk31(&samples, rate, c as f32);
             if text.is_empty() {
-              error.set(Some(t(
-                "未解出文本，请确认是 PSK31 音频（BPSK），或调整载波频率。",
-              )));
+              error.set(Some(t("radio.no-text-decoded-make")));
             } else {
               result.set(text);
             }
           }
-          Err(_) => error.set(Some(t("不是有效的 WAV 文件"))),
+          Err(_) => error.set(Some(t("radio.not-a-valid-wav"))),
         },
         Err(e) => error.set(Some(e)),
       }
@@ -95,14 +93,14 @@ pub fn PskDecodePage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{t("PSK31 解码器")}</h1>
-            <div class="text-xs text-muted-foreground">{t("BPSK 31.25 波特 · Varicode · 纯本地解码")}</div>
+            <h1 class="text-base font-semibold leading-tight">{t("radio.psk31-decoder")}</h1>
+            <div class="text-xs text-muted-foreground">{t("radio.bpsk-31-25-baud")}</div>
           </div>
           <a
             href="/modes"
             class="rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
-            {t("数字模式速查")}
+            {t("radio.digital-modes-reference")}
           </a>
         </div>
       </header>
@@ -110,9 +108,9 @@ pub fn PskDecodePage() -> impl IntoView {
       <div class="mx-auto max-w-5xl space-y-5 px-4 py-5">
         <section class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
           <p>
-            {t("上传一段 PSK31 音频（短波下边带解调后的 WAV），即可在浏览器本地解调出文本。")}
+            {t("radio.upload-a-psk31-audio")}
             " "
-            {t("载波频率通常为 1000 Hz，若解不出文字可微调。音频不会上传到服务器。")}
+            {t("radio.the-carrier-is-usually")}
           </p>
         </section>
 
@@ -142,8 +140,8 @@ pub fn PskDecodePage() -> impl IntoView {
                       }
                     >
                       <Icon kind=IconKind::AudioLines class="mb-1 h-8 w-8 text-muted-foreground" />
-                      <span class="text-sm font-medium">{t("选择 PSK31 录音（WAV）")}</span>
-                      <span class="text-xs text-muted-foreground">{t("点击选择或拖拽音频文件到此处")}</span>
+                      <span class="text-sm font-medium">{t("radio.select-psk31-recording-wav")}</span>
+                      <span class="text-xs text-muted-foreground">{t("tools.click-to-choose-or-2")}</span>
                     </label>
                     <input
                       id="psk-file"
@@ -160,19 +158,19 @@ pub fn PskDecodePage() -> impl IntoView {
                       }
                     />
                     <label class="flex items-center gap-2 text-sm">
-                      <span class="text-xs text-muted-foreground">{t("载波频率（Hz）")}</span>
-                      <input
-                        type="number"
-                        step="10"
-                        min="200"
-                        max="3000"
-                        prop:value=move || center.get().to_string()
-                        on:input=move |e| {
-                          if let Ok(v) = event_target_value(&e).parse::<f64>() {
+                      <span class="text-xs text-muted-foreground">{t("radio.carrier-frequency-hz")}</span>
+                      <NumberField
+                        value=Signal::derive(move || center.get().to_string())
+                        on_change=Callback::new(move |v: String| {
+                          if let Ok(v) = v.trim().parse::<f64>() {
                             center.set(v);
                           }
-                        }
-                        class=input_class("h-9 w-28")
+                        })
+                        step=10.0
+                        min=200.0
+                        max=3000.0
+                        class="w-28"
+                        controls=false
                       />
                     </label>
                   </div>
@@ -185,7 +183,7 @@ pub fn PskDecodePage() -> impl IntoView {
               view! {
                 <div class="flex flex-col items-center justify-center gap-3 py-8">
                   <Icon kind=IconKind::Loader2 class="h-8 w-8 animate-spin text-primary" />
-                  <span class="text-sm text-muted-foreground">{t("正在解码，请稍候…")}</span>
+                  <span class="text-sm text-muted-foreground">{t("radio.decoding-please-wait")}</span>
                 </div>
               }
             })
@@ -197,7 +195,7 @@ pub fn PskDecodePage() -> impl IntoView {
                 <div class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
                   <Icon kind=IconKind::AlertCircle class="mt-0.5 h-5 w-5 shrink-0" />
                   <div class="flex-1">
-                    <div class="font-medium">{t("解码失败")}</div>
+                    <div class="font-medium">{t("radio.decoding-failed")}</div>
                     <div class="mt-1 text-sm">{e}</div>
                   </div>
                 </div>
@@ -211,10 +209,14 @@ pub fn PskDecodePage() -> impl IntoView {
               view! {
                 <div class="space-y-3">
                   <div class="flex items-center justify-between gap-2">
-                    <span class="text-sm text-muted-foreground">{tf("已解码 · {}", &[&file_name.get().to_string()])}</span>
-                    <button type="button" class=button_class(Variant::Outline, Size::Sm, "") on:click=reset>
-                      {t("重新选择")}
-                    </button>
+                    <span class="text-sm text-muted-foreground">{tf("radio.decoded", &[&file_name.get().to_string()])}</span>
+                    <Button
+                      variant=Variant::Outline
+                      size=Size::Sm
+                      on_click=Callback::new(move |_| reset(()))
+                    >
+                      {t("radio.choose-another")}
+                    </Button>
                   </div>
                   <pre class="whitespace-pre-wrap break-words rounded-lg border bg-muted/40 p-4 text-sm font-mono">{text}</pre>
                 </div>

@@ -11,7 +11,7 @@ use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 
 use crate::i18n::{t, tf};
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{Button, Input, Size, Variant};
 use crate::util::{js_error_message, sleep, window};
 
 /// 轮询间隔（毫秒）。
@@ -62,7 +62,7 @@ fn call_sync(obj: &JsValue, method: &str) -> Result<JsValue, JsValue> {
 }
 
 async fn open() -> Result<Conn, JsValue> {
-  let serial = serial().ok_or_else(|| JsValue::from_str(&t("当前浏览器不支持 Web Serial")))?;
+  let serial = serial().ok_or_else(|| JsValue::from_str(&t("common.this-browser-does-not")))?;
   let port = call(&serial, "requestPort", &[]).await?;
   let opts = Object::new();
   // GS-232 控制器默认 9600 baud。
@@ -214,52 +214,63 @@ pub fn RotorControl() -> impl IntoView {
 
   view! {
     <div class="flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
-      <span class="font-medium text-foreground">{t("天线旋转器")}</span>
+      <span class="font-medium text-foreground">{t("radio.antenna-rotator")}</span>
       {if supported {
         view! {
-          <button
-            type="button"
-            class=button_class(Variant::Outline, Size::Sm, "h-7")
-            prop:disabled=move || matches!(status.get(), Status::Connecting)
-            on:click=move |_| if busy() { disconnect(); status.set(Status::Idle); } else { connect(); }
+          <Button
+            variant=Variant::Outline
+            size=Size::Sm
+            class="h-7"
+            disabled=Signal::derive(move || matches!(status.get(), Status::Connecting))
+            on_click=Callback::new(move |_| if busy() { disconnect(); status.set(Status::Idle); } else { connect(); })
           >
             {move || match status.get() {
-              Status::Connecting => t("连接中…"),
-              Status::Connected => t("断开"),
-              Status::Idle | Status::Error(_) => t("连接旋转器"),
+              Status::Connecting => t("common.connecting"),
+              Status::Connected => t("common.disconnect"),
+              Status::Idle | Status::Error(_) => t("common.connect-rotator"),
             }}
-          </button>
+          </Button>
           <Show when=connected>
             <span aria-live="polite" class="tabular-nums">
               {move || match (azimuth.get(), elevation.get()) {
-                (Some(az), Some(el)) => tf("方位 {}° · 仰角 {}°", &[&az.to_string(), &el.to_string()]),
-                (Some(az), None) => tf("方位 {}°", &[&az.to_string()]),
-                (None, Some(el)) => tf("仰角 {}°", &[&el.to_string()]),
-                (None, None) => t("等待应答…"),
+                (Some(az), Some(el)) => tf("common.azimuth-elevation", &[&az.to_string(), &el.to_string()]),
+                (Some(az), None) => tf("common.azimuth", &[&az.to_string()]),
+                (None, Some(el)) => tf("common.elevation", &[&el.to_string()]),
+                (None, None) => t("common.waiting-for-reply"),
               }}
             </span>
-            <input
-              aria-label=t("目标方位（度）")
-              placeholder=t("目标方位°")
-              class=input_class("h-7 w-24 py-0 text-xs")
-              prop:value=move || target_az.get()
-              on:input=move |e| target_az.set(event_target_value(&e))
+            <Input
+              aria_label=t("common.target-azimuth-deg")
+              placeholder=Signal::derive(move || t("knowledge.target-azimuth"))
+              class="h-7 w-24 py-0 text-xs"
+              value=target_az
+              on_change=Callback::new(move |v: String| target_az.set(v))
             />
-            <button type="button" class=button_class(Variant::Default, Size::Sm, "h-7") on:click=move |_| rotate_az()>
-              {t("转向")}
-            </button>
-            <button type="button" class=button_class(Variant::Ghost, Size::Sm, "h-7") on:click=move |_| send(rotor::STOP.to_vec())>
-              {t("停止")}
-            </button>
+            <Button
+              variant=Variant::Default
+              size=Size::Sm
+              class="h-7"
+              on_click=Callback::new(move |_| rotate_az())
+            >
+              {t("common.rotate")}
+            </Button>
+            <Button
+              variant=Variant::Ghost
+              size=Size::Sm
+              class="h-7"
+              on_click=Callback::new(move |_| send(rotor::STOP.to_vec()))
+            >
+              {t("common.stop")}
+            </Button>
           </Show>
           {move || match status.get() {
-            Status::Error(msg) => view! { <span class="text-destructive">{tf("连接失败：{}", &[&msg.to_string()])}</span> }.into_any(),
-            _ => view! { <span>{(!connected()).then_some(t("连接后读取方位/仰角，可输入目标方位遥控转向"))}</span> }.into_any(),
+            Status::Error(msg) => view! { <span class="text-destructive">{tf("common.connection-failed", &[&msg.to_string()])}</span> }.into_any(),
+            _ => view! { <span>{(!connected()).then_some(t("common.after-connecting-read-azimuth"))}</span> }.into_any(),
           }}
         }
         .into_any()
       } else {
-        view! { <span>{t("需要桌面版 Chrome / Edge（Web Serial）才能连接旋转器。")}</span> }.into_any()
+        view! { <span>{t("common.a-desktop-chrome-edge")}</span> }.into_any()
       }}
     </div>
   }

@@ -9,9 +9,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn PowerSupplyPage() -> impl IntoView {
-  set_title(&t("电源供应"));
+  set_title("shell.power-supplies");
   view! {
-    <KnowledgePage title=t("电源供应") subtitle=t("线性电源 · 开关电源 · 稳压供电")>
+    <KnowledgePage title=t("shell.power-supplies") subtitle=t("tools.linear-supplies-switch-mode")>
       <TableSection title="电源类型" headers=&["类型", "原理", "特点"] rows=SUPPLY_TYPES min_width=640 />
       <ConceptsSection title="稳压与供电概念" items=SUPPLY_CONCEPTS />
       <BulletSection title="选用要点" items=SUPPLY_TIPS />

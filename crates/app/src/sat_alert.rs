@@ -132,7 +132,7 @@ fn check(w: &SatWatch) {
   for p in &hits {
     let mins = ((p.aos - now) as f64 / 60.0).ceil() as i64;
     notify(&tf(
-      "{} {} 分钟后过境（{}）· 最高 {}° · {}方",
+      "common.pass-in-max-from",
       &[
         &p.name.to_string(),
         &mins.to_string(),
@@ -192,7 +192,7 @@ fn notify_apt(w: &SatWatch) {
   for p in &hits {
     let mins = ((p.aos - now) as f64 / 60.0).ceil() as i64;
     notify(&tf(
-      "{} {} 分钟后过境（{}）· 适合录制 APT · 最高 {}° · {}方",
+      "common.pass-in-good-for",
       &[
         &p.name.to_string(),
         &mins.to_string(),

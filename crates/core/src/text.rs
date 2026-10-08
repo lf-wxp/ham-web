@@ -52,6 +52,31 @@ pub fn format_ms(ms: i64) -> String {
   }
 }
 
+/// 字符是否属于要判定的 CJK 区段。
+#[must_use]
+pub const fn is_cjk(c: char) -> bool {
+  matches!(
+    c,
+    '\u{3000}'..='\u{303F}'   // CJK 标点（、。「」…）
+      | '\u{3400}'..='\u{4DBF}' // 扩展 A
+      | '\u{4E00}'..='\u{9FFF}' // 基本区
+      | '\u{F900}'..='\u{FAFF}' // 兼容汉字
+      | '\u{FF00}'..='\u{FFEF}' // 全角形式（（），：；？！）
+  )
+}
+
+/// 字符串里是否含 CJK 字符 —— 用来区分「语义 key」与「直接写中文原文」。
+///
+/// 只认基本区（`U+4E00–U+9FFF`）会漏掉三类入参：CJK 标点 / 全角符号、扩展 A 区汉字、
+/// 兼容区汉字 —— 它们会被当成语义 key 原样返回，界面上直接漏出中文。
+///
+/// 前端（`catalog` 的中文反向索引）、构建工具（文案扫描）与知识库译文抽取三处
+/// 共用这一份实现，避免各自的区段口径漂移。
+#[must_use]
+pub fn has_cjk(s: &str) -> bool {
+  s.chars().any(is_cjk)
+}
+
 /// 逐字符转大写（每个字符只取单字符大写结果），保证字符数量不变，便于做位置对齐的高亮。
 #[must_use]
 pub fn upper_chars(s: &str) -> Vec<char> {
@@ -76,6 +101,27 @@ mod tests {
     assert_eq!(collapse_whitespace(""), "");
     assert_eq!(collapse_whitespace("\u{FEFF}x"), "x");
     assert_eq!(collapse_whitespace("a\u{0085}b"), "a\u{0085}b");
+  }
+
+  #[test]
+  fn cjk_detection_covers_all_the_ranges_that_matter() {
+    // 语义 key 与纯拉丁文本不含 CJK。
+    for s in ["common.save", "tools.nec-imported", "Class B", "", "Ω ± ×"] {
+      assert!(!has_cjk(s), "{s} 不应判为含 CJK");
+    }
+    // 基本区、扩展 A、兼容区、CJK 标点、全角符号都要认出来（用转义写，避免字形歧义）。
+    for (name, s) in [
+      ("基本区", "\u{4E00}"),
+      ("扩展A", "\u{3400}"),
+      ("兼容区", "\u{F900}"),
+      ("CJK标点", "\u{3001}"),
+      ("全角形式", "\u{FF08}"),
+      ("保存", "保存"),
+      ("中文+key", "保存 common.save"),
+    ] {
+      assert!(has_cjk(s), "{name} {s} 应判为含 CJK");
+      assert!(is_cjk(s.chars().next().expect("非空")), "{name}");
+    }
   }
 
   #[test]

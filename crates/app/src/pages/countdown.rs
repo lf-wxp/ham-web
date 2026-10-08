@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsValue;
 
 use crate::i18n::{t, tf};
-use crate::ui::{Size, Variant, button_class, input_class};
+use crate::ui::{Button, DatePicker, Input, Size, TimePicker, Variant};
 use crate::util::now_ms;
 use crate::util::set_title;
 
@@ -45,7 +45,7 @@ fn next_id(events: &[CountdownEvent]) -> u64 {
 /// 剩余时间文本。
 fn format_remaining(ms: i64) -> String {
   if ms <= 0 {
-    return t("已到期");
+    return t("exam.due");
   }
   let total = ms / 1000;
   let d = total / 86400;
@@ -54,7 +54,7 @@ fn format_remaining(ms: i64) -> String {
   let s = total % 60;
   if d > 0 {
     tf(
-      "{} 天 {}:{}:{}",
+      "common.d",
       &[
         &(d).to_string(),
         &(h).to_string(),
@@ -78,12 +78,31 @@ fn parse_local(s: &str) -> Option<i64> {
 
 #[component]
 pub fn CountdownPage() -> impl IntoView {
-  set_title(&t("倒计时"));
+  set_title("shell.countdown");
 
   let list = RwSignal::new(load());
   let title = RwSignal::new(String::new());
   let target = RwSignal::new(String::new());
   let now = RwSignal::new(now_ms());
+
+  // `target` 仍是 `datetime-local` 形式（存储 / `Date::parse` 都按它），
+  // 界面上拆成日期与时间两个选择器，各自只改自己那一半。
+  let target_date = Signal::derive(move || {
+    target
+      .get()
+      .split('T')
+      .next()
+      .unwrap_or_default()
+      .to_owned()
+  });
+  let target_time = Signal::derive(move || {
+    target
+      .get()
+      .split('T')
+      .nth(1)
+      .unwrap_or_default()
+      .to_owned()
+  });
 
   // 每秒刷新当前时间用于倒计时显示；到期通知由全局 watcher 统一负责（见 start_global_watcher）。
   if let Ok(handle) = set_interval_with_handle(
@@ -126,34 +145,56 @@ pub fn CountdownPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("倒计时与提醒")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("考试日期 · 执照到期 · 活动提醒")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("exam.countdowns-and-reminders")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("exam.exam-dates-licence-expiry")}</div>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-3xl space-y-5 px-4 py-5">
         <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("添加倒计时")}</h2>
-          <div class="grid gap-3 p-4 sm:grid-cols-[1fr_auto_auto]">
-            <input
-              type="text"
-              placeholder=move || t("标题，如：A 类操作证考试")
-              aria-label=move || t("倒计时标题")
-              prop:value=move || title.get()
-              on:input=move |e| title.set(event_target_value(&e))
-              class=input_class("")
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.add-countdown")}</h2>
+          <div class="grid gap-3 p-4 sm:grid-cols-[1fr_auto_auto_auto]">
+            <Input
+              value=title
+              on_change=Callback::new(move |v: String| title.set(v))
+              placeholder=Signal::derive(move || t("exam.title-e-g-class"))
+              aria_label=Signal::derive(move || t("exam.countdown-title"))
             />
-            <input
-              type="datetime-local"
-              aria-label=move || t("目标时间")
-              prop:value=move || target.get()
-              on:input=move |e| target.set(event_target_value(&e))
-              class=input_class("")
+            <DatePicker
+              value=target_date
+              on_change=Callback::new(move |d: String| {
+                let time = target
+                  .get_untracked()
+                  .split('T')
+                  .nth(1)
+                  .filter(|s| !s.is_empty())
+                  .unwrap_or("00:00")
+                  .to_owned();
+                target.set(format!("{d}T{time}"));
+              })
+              aria_label=Signal::derive(move || t("exam.target-date"))
             />
-            <button type="button" class=button_class(Variant::Default, Size::Default, "") on:click=move |_| add()>
-              {move || t("添加")}
-            </button>
+            <TimePicker
+              value=target_time
+              on_change=Callback::new(move |v: String| {
+                let date = target
+                  .get_untracked()
+                  .split('T')
+                  .next()
+                  .filter(|s| !s.is_empty())
+                  .map_or_else(crate::util::local_today, str::to_owned);
+                target.set(format!("{date}T{v}"));
+              })
+              aria_label=Signal::derive(move || t("exam.target-time"))
+            />
+            <Button
+              variant=Variant::Default
+              size=Size::Default
+              on_click=Callback::new(move |_| add())
+            >
+              {move || t("exam.add")}
+            </Button>
           </div>
         </section>
 
@@ -164,7 +205,7 @@ pub fn CountdownPage() -> impl IntoView {
             if events.is_empty() {
               view! {
                 <div class="rounded-xl border bg-card px-4 py-10 text-center text-sm text-muted-foreground">
-                  {move || t("暂无倒计时，添加一个目标时间吧。")}
+                  {move || t("exam.no-countdowns-yet-add")}
                 </div>
               }
               .into_any()
@@ -195,7 +236,7 @@ pub fn CountdownPage() -> impl IntoView {
                           class="shrink-0 text-xs text-muted-foreground transition-colors hover:text-destructive"
                           on:click=move |_| remove(id)
                         >
-                          {move || t("删除")}
+                          {move || t("log.delete")}
                         </button>
                       </div>
                     }
@@ -248,7 +289,7 @@ pub(crate) fn start_global_watcher() {
       NOTIFIED.with_borrow_mut(|set| {
         for e in &list.events {
           if e.target_ms <= n && set.insert(e.id) {
-            crate::util::notify(&tf("倒计时到期：{}", &[&(e.title).to_string()]));
+            crate::util::notify(&tf("common.countdown-due", &[&(e.title).to_string()]));
           }
         }
       });

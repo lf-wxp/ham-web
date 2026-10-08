@@ -9,16 +9,16 @@ use crate::util::set_title;
 
 #[component]
 pub fn ConfusablesPage() -> impl IntoView {
-  set_title(&t("易混淆辨析"));
+  set_title("exam.confusing-concepts");
   let quiz = RwSignal::new(false);
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("易混淆概念辨析")}</h1>
+            <h1 class="text-base font-semibold leading-tight">{move || t("exam.confusing-concepts-explained")}</h1>
             <div class="text-xs text-muted-foreground">
-              {move || if quiz.get() { t("主动回忆：判断正误，答错回看辨析表") } else { t("考试里最容易记混的概念，一表看清差别") }}
+              {move || if quiz.get() { t("exam.active-recall-judge-true") } else { t("exam.the-most-easily-mixed") }}
             </div>
           </div>
           <div class="flex overflow-hidden rounded-lg border text-xs">
@@ -31,7 +31,7 @@ pub fn ConfusablesPage() -> impl IntoView {
               }
               on:click=move |_| quiz.set(false)
             >
-              {move || t("速查")}
+              {move || t("exam.reference")}
             </button>
             <button
               type="button"
@@ -42,7 +42,7 @@ pub fn ConfusablesPage() -> impl IntoView {
               }
               on:click=move |_| quiz.set(true)
             >
-              {move || t("辨析练习")}
+              {move || t("exam.quiz")}
             </button>
           </div>
         </div>
@@ -78,7 +78,7 @@ pub fn ConfusablesPage() -> impl IntoView {
                           .collect_view()}
                       </dl>
                       <div class="flex items-start gap-2 border-t bg-muted/40 px-4 py-3">
-                        <span class="mt-0.5 shrink-0 text-sm font-semibold text-foreground">{move || t("一句话记住")}</span>
+                        <span class="mt-0.5 shrink-0 text-sm font-semibold text-foreground">{move || t("exam.remember")}</span>
                         <p class="text-sm font-medium">{move || t(c.tip)}</p>
                       </div>
                     </section>

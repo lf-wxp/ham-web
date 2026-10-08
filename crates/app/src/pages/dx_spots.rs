@@ -16,7 +16,7 @@ use serde::Deserialize;
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::pages::log::use_log_store;
-use crate::ui::{Button, Size, Variant, input_class};
+use crate::ui::{Button, Checkbox, ChipToggle, Input, Size, Variant};
 use crate::util::{notify, request_notify_permission, set_title, storage};
 
 const ALERTS_KEY: &str = "dx-alerts";
@@ -39,10 +39,6 @@ const BANDS: &[&str] = &[
 ];
 /// 可筛选的模式。
 const MODES: &[&str] = &["CW", "SSB", "FT8", "FT4", "RTTY"];
-/// 筛选按钮激活 / 未激活样式。
-const CHIP_ON: &str = "shrink-0 whitespace-nowrap rounded-full border bg-primary px-2.5 py-1 text-xs text-primary-foreground";
-const CHIP_OFF: &str =
-  "shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs hover:bg-accent";
 
 /// 波段 → chip 着色样式（深色模式改用更亮的文字色以保证对比度）。
 fn band_color(band: &str) -> &'static str {
@@ -77,7 +73,7 @@ fn fmt_freq(khz: u32) -> String {
 
 #[component]
 pub fn DxSpotsPage() -> impl IntoView {
-  set_title(&t("DX 实时热点"));
+  set_title("shell.dx-spots");
 
   let store = use_log_store();
   let spots = RwSignal::new(Vec::<Spot>::new());
@@ -130,9 +126,9 @@ pub fn DxSpotsPage() -> impl IntoView {
           continue;
         }
         let why = match reason {
-          AlertReason::Watched(p) => tf("关注 {}", &[&(p).to_string()]),
-          AlertReason::NewDxcc => t("新 DXCC"),
-          AlertReason::NewBand => t("新波段"),
+          AlertReason::Watched(p) => tf("radio.watching", &[&(p).to_string()]),
+          AlertReason::NewDxcc => t("radio.new-dxcc"),
+          AlertReason::NewBand => t("radio.new-band"),
         };
         hits.push(format!(
           "{} {} {}（{why}）",
@@ -146,11 +142,8 @@ pub fn DxSpotsPage() -> impl IntoView {
       0 => {}
       1..=3 => hits
         .iter()
-        .for_each(|h| notify(&tf("DX 热点：{}", &[&(h).to_string()]))),
-      n => notify(&tf(
-        "DX 热点：{} 等 {} 条需要的报告",
-        &[&hits[0], &n.to_string()],
-      )),
+        .for_each(|h| notify(&tf("radio.dx-spot", &[&(h).to_string()]))),
+      n => notify(&tf("radio.dx-spot-and-more", &[&hits[0], &n.to_string()])),
     }
   });
 
@@ -196,7 +189,7 @@ pub fn DxSpotsPage() -> impl IntoView {
     let mode = if mode == "其他" { "SSB" } else { mode };
     store.quick_add(&dx, &s, mode);
     crate::util::alert(&tf(
-      "已加入日志：{}（{} MHz {}）",
+      "radio.logged-mhz",
       &[&(dx).to_string(), &(s).to_string(), (mode)],
     ));
   };
@@ -206,8 +199,8 @@ pub fn DxSpotsPage() -> impl IntoView {
       <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("DX 实时热点")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("DX Cluster · 全球实时通联")}</div>
+            <h1 class="text-base font-semibold leading-tight">{move || t("shell.dx-spots")}</h1>
+            <div class="text-xs text-muted-foreground">{move || t("radio.dx-cluster-global-real")}</div>
           </div>
           <Button
             variant=Variant::Outline
@@ -215,7 +208,7 @@ pub fn DxSpotsPage() -> impl IntoView {
             loading=loading
             on_click=Callback::new(move |_| load())
           >
-            {move || if loading.get() { t("刷新中") } else { t("刷新") }}
+            {move || if loading.get() { t("radio.refreshing") } else { t("exam.refresh") }}
           </Button>
         </div>
       </header>
@@ -223,58 +216,58 @@ pub fn DxSpotsPage() -> impl IntoView {
       <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
         <section class="rounded-xl border bg-card">
           <h2 class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold">
-            {move || t("实时 DX 报告")}
+            {move || t("radio.live-dx-reports")}
             <span class="text-xs font-normal text-muted-foreground">
-              {move || tf("{} 条", &[&spots.get().len().to_string()])}
+              {move || tf("radio.entry-2", &[&spots.get().len().to_string()])}
             </span>
           </h2>
           <div class="space-y-2 p-3">
             <div class="flex flex-wrap items-center gap-1.5">
-              <span class="mr-1 text-xs text-muted-foreground">{move || t("波段")}</span>
-              <button
-                type="button"
-                on:click=move |_| band_filter.set(None)
-                class=move || if band_filter.get().is_none() { CHIP_ON } else { CHIP_OFF }
+              <span class="mr-1 text-xs text-muted-foreground">{move || t("radio.band")}</span>
+              <ChipToggle
+                active=Signal::derive(move || band_filter.get().is_none())
+                on_change=Callback::new(move |_| band_filter.set(None))
               >
-                {move || t("全部")}
-              </button>
+                {move || t("exam.all")}
+              </ChipToggle>
               {BANDS
                 .iter()
                 .map(|b| {
                   let b = *b;
                   view! {
-                    <button
-                      type="button"
-                      on:click=move |_| band_filter.set(if band_filter.get() == Some(b) { None } else { Some(b) })
-                      class=move || if band_filter.get() == Some(b) { CHIP_ON } else { CHIP_OFF }
+                    <ChipToggle
+                      active=Signal::derive(move || band_filter.get() == Some(b))
+                      on_change=Callback::new(move |on: bool| {
+                        band_filter.set(if on { Some(b) } else { None })
+                      })
                     >
                       {b}
-                    </button>
+                    </ChipToggle>
                   }
                 })
                 .collect_view()}
             </div>
             <div class="flex flex-wrap items-center gap-1.5">
-              <span class="mr-1 text-xs text-muted-foreground">{move || t("模式")}</span>
-              <button
-                type="button"
-                on:click=move |_| mode_filter.set(None)
-                class=move || if mode_filter.get().is_none() { CHIP_ON } else { CHIP_OFF }
+              <span class="mr-1 text-xs text-muted-foreground">{move || t("log.mode")}</span>
+              <ChipToggle
+                active=Signal::derive(move || mode_filter.get().is_none())
+                on_change=Callback::new(move |_| mode_filter.set(None))
               >
-                {move || t("全部")}
-              </button>
+                {move || t("exam.all")}
+              </ChipToggle>
               {MODES
                 .iter()
                 .map(|m| {
                   let m = *m;
                   view! {
-                    <button
-                      type="button"
-                      on:click=move |_| mode_filter.set(if mode_filter.get() == Some(m) { None } else { Some(m) })
-                      class=move || if mode_filter.get() == Some(m) { CHIP_ON } else { CHIP_OFF }
+                    <ChipToggle
+                      active=Signal::derive(move || mode_filter.get() == Some(m))
+                      on_change=Callback::new(move |on: bool| {
+                        mode_filter.set(if on { Some(m) } else { None })
+                      })
                     >
                       {m}
-                    </button>
+                    </ChipToggle>
                   }
                 })
                 .collect_view()}
@@ -283,59 +276,54 @@ pub fn DxSpotsPage() -> impl IntoView {
               has_log.get().then(|| {
                 view! {
                   <div class="flex flex-wrap items-center gap-1.5">
-                    <span class="mr-1 text-xs text-muted-foreground">{move || t("日志")}</span>
-                    <button
-                      type="button"
-                      on:click=move |_| needed_only.update(|v| *v = !*v)
-                      class=move || if needed_only.get() { CHIP_ON } else { CHIP_OFF }
-                      title=move || t("只显示日志中未通联的实体，或该实体尚未通联的波段")
+                    <span class="mr-1 text-xs text-muted-foreground">{move || t("radio.log")}</span>
+                    <ChipToggle
+                      active=needed_only
+                      on_change=Callback::new(move |on: bool| needed_only.set(on))
+                      title=Signal::derive(move || t("radio.show-only-entities-not"))
                     >
-                      {move || tf("只看需要的（{}）", &[&needed_count.get().to_string()])}
-                    </button>
+                      {move || tf("radio.needed-only", &[&needed_count.get().to_string()])}
+                    </ChipToggle>
                   </div>
                 }
               })
             }}
             <div class="flex flex-wrap items-center gap-1.5">
-              <span class="mr-1 text-xs text-muted-foreground">{move || t("提醒")}</span>
-              <button
-                type="button"
-                on:click=move |_| show_alerts.update(|v| *v = !*v)
-                class=move || if alerts.with(AlertSettings::enabled) { CHIP_ON } else { CHIP_OFF }
+              <span class="mr-1 text-xs text-muted-foreground">{move || t("radio.alerts")}</span>
+              <ChipToggle
+                active=Signal::derive(move || alerts.with(AlertSettings::enabled))
+                on_change=Callback::new(move |_| show_alerts.update(|v| *v = !*v))
               >
                 {move || {
                   let a = alerts.get();
                   if a.enabled() {
                     let mut parts = Vec::new();
                     if a.new_dxcc {
-                      parts.push(t("新 DXCC"));
+                      parts.push(t("radio.new-dxcc"));
                     }
                     if a.new_band {
-                      parts.push(t("新波段"));
+                      parts.push(t("radio.new-band"));
                     }
                     if !a.calls.is_empty() {
-                      parts.push(tf("关注 {} 个", &[&a.calls.len().to_string()]));
+                      parts.push(tf("radio.watched-2", &[&a.calls.len().to_string()]));
                     }
-                    tf("已开启：{}", &[&(parts.join(" · ")).to_string()])
+                    tf("radio.on", &[&(parts.join(" · ")).to_string()])
                   } else {
-                    t("设置通知提醒")
+                    t("radio.set-up-alerts")
                   }
                 }}
-              </button>
+              </ChipToggle>
             </div>
             {move || {
               show_alerts.get().then(|| {
                 let toggle = move |label: &'static str, get: fn(&AlertSettings) -> bool, set: fn(&mut AlertSettings, bool)| {
                   view! {
                     <label class="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        class="size-4 accent-primary"
-                        prop:checked=move || alerts.with(get)
-                        on:change=move |e| {
-                          let on = event_target_checked(&e);
+                      <Checkbox
+                        checked=Signal::derive(move || alerts.with(get))
+                        on_change=Callback::new(move |on: bool| {
                           update_alerts(&|a| set(a, on));
-                        }
+                        })
                       />
                       {move || t(label)}
                     </label>
@@ -348,14 +336,13 @@ pub fn DxSpotsPage() -> impl IntoView {
                       {toggle("出现已联实体的新波段时通知", |a| a.new_band, |a, v| a.new_band = v)}
                     </div>
                     <label class="flex flex-col gap-1.5 text-sm">
-                      <span class="text-xs text-muted-foreground">{move || t("关注呼号（空格或逗号分隔，* 为通配符，如 VP8* 3Y0J */P）")}</span>
-                      <input
-                        type="text"
-                        class=input_class("uppercase")
-                        placeholder="VP8* 3Y0J"
-                        prop:value=move || watch_input.get()
-                        on:input=move |e| watch_input.set(event_target_value(&e))
-                        on:change=move |_| {
+                      <span class="text-xs text-muted-foreground">{move || t("radio.watched-callsigns-space-or")}</span>
+                      <Input
+                        value=watch_input
+                        on_change=Callback::new(move |v: String| {
+                          watch_input.set(v);
+                          // 原先是 `on:change`（失焦才解析），`Input` 只有输入即触发的一条通道；
+                          // 解析本身是幂等的，每次按键重算一遍不影响结果。
                           let calls: Vec<String> = watch_input
                             .get_untracked()
                             .split([' ', ',', '，'])
@@ -363,11 +350,13 @@ pub fn DxSpotsPage() -> impl IntoView {
                             .filter(|s| !s.is_empty())
                             .collect();
                           update_alerts(&|a| a.calls.clone_from(&calls));
-                        }
+                        })
+                        placeholder="VP8* 3Y0J"
+                        class="uppercase"
                       />
                     </label>
                     <p class="text-xs text-muted-foreground">
-                      {move || t("开启后页面每分钟自动刷新，命中时发送浏览器通知（需允许通知权限；同一呼号同一波段只提醒一次）。关闭页面后不再提醒。")}
+                      {move || t("radio.once-enabled-the-page")}
                     </p>
                   </div>
                 }
@@ -378,14 +367,14 @@ pub fn DxSpotsPage() -> impl IntoView {
             {move || {
               if loading.get() {
                 return view! {
-                  <p class="px-3 py-8 text-center text-sm text-muted-foreground">{move || t("正在获取实时热点…")}</p>
+                  <p class="px-3 py-8 text-center text-sm text-muted-foreground">{move || t("radio.fetching-live-spots")}</p>
                 }
                 .into_any();
               }
               if failed.get() || spots.get().is_empty() {
                 return view! {
                   <p class="px-3 py-8 text-center text-sm text-muted-foreground">
-                    {move || t("实时热点暂不可用（可能因网络受限），稍后重试。")}
+                    {move || t("radio.live-spots-are-unavailable")}
                   </p>
                 }
                 .into_any();
@@ -406,7 +395,7 @@ pub fn DxSpotsPage() -> impl IntoView {
                 .collect();
               if filtered.is_empty() {
                 return view! {
-                  <p class="px-3 py-8 text-center text-sm text-muted-foreground">{move || t("当前筛选下暂无报告，试试其他波段或模式。")}</p>
+                  <p class="px-3 py-8 text-center text-sm text-muted-foreground">{move || t("radio.no-reports-for-the")}</p>
                 }
                 .into_any();
               }
@@ -423,9 +412,9 @@ pub fn DxSpotsPage() -> impl IntoView {
                         s.country.clone()
                       };
                       let badge = match need {
-                        Need::NewDxcc => Some((t("新 DXCC"), "border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300")),
-                        Need::NewBand => Some((t("新波段"), "border-sky-500/40 bg-sky-500/15 text-sky-700 dark:text-sky-300")),
-                        Need::Worked => Some((t("已联"), "text-muted-foreground")),
+                        Need::NewDxcc => Some((t("radio.new-dxcc"), "border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300")),
+                        Need::NewBand => Some((t("radio.new-band"), "border-sky-500/40 bg-sky-500/15 text-sky-700 dark:text-sky-300")),
+                        Need::Worked => Some((t("radio.worked-2"), "text-muted-foreground")),
                         Need::None => None,
                       };
                       let watched = alerts.with_untracked(|a| {
@@ -441,7 +430,7 @@ pub fn DxSpotsPage() -> impl IntoView {
                           <button
                             type="button"
                             class="w-28 shrink-0 text-left"
-                            title=move || t("点击记入日志")
+                            title=move || t("radio.click-to-log")
                             on:click=move |_| add_to_log(dx_btn.clone(), freq, comment_btn.clone())
                           >
                             <div class="font-mono text-sm font-semibold text-primary">{dx.clone()}</div>
@@ -467,13 +456,13 @@ pub fn DxSpotsPage() -> impl IntoView {
                             <span class=format!("shrink-0 rounded border px-1.5 py-0.5 text-xs font-medium {class}")>{text}</span>
                           })}
                           {watched.then(|| view! {
-                            <span class="shrink-0 rounded border border-amber-500/40 bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">{move || t("关注")}</span>
+                            <span class="shrink-0 rounded border border-amber-500/40 bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">{move || t("radio.watched")}</span>
                           })}
                           <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
                             {if comment.is_empty() { "—".to_owned() } else { comment.clone() }}
                           </span>
                           <span class="shrink-0 text-xs text-muted-foreground">{time.clone()}</span>
-                          <span class="shrink-0 text-xs text-muted-foreground" title=move || t("报告者")>
+                          <span class="shrink-0 text-xs text-muted-foreground" title=move || t("radio.spotter")>
                             {spotter.clone()}
                           </span>
                         </div>
@@ -488,7 +477,7 @@ pub fn DxSpotsPage() -> impl IntoView {
         </section>
 
         <p class="text-xs text-muted-foreground">
-          {move || t("数据来自 DXWatch 全球 DX Cluster，反映当前正在被报告的电台、频率与时间，供追 DX / 守听参考。")}
+          {move || t("radio.data-comes-from-the")}
         </p>
       </div>
     </div>
