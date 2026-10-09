@@ -15,7 +15,7 @@
 //! | [`Button`] | `<button class=button_class(…)>` | [`button_class`] 的组件化封装 |
 //! | [`ButtonLink`] | `<a href class=button_class(…)>`（跳转用） | 元素仍是链接（中键新开 / 右键复制地址），外观同 [`Button`] |
 //! | [`Input`] | `<input>`（text / search / password / email / tel / url；日期与时间见下两行） | 支持前缀、后缀、一键清除、回车回调 |
-//! | [`NumberField`] | `<input type="number">` | 数值录入 + 可选加减步进 |
+//! | [`NumberField`] | `<input type="number">` | 数值录入 + 可选加减步进；负数 / 要保留半截输入时用 `kind=NumberKind::Decimal` |
 //! | [`Textarea`] | `<textarea>` | 支持随内容自动增高 |
 //! | [`Select`] + [`SelectItem`] | `<select>`（选项需富文本展示时） | 弹层式单选，对应 Radix Select（语言切换即用此组件） |
 //! | [`NativeSelect`] | `<select>`（选项固定的筛选器） | 弹层式单选，外观复用 [`Select`]，故与语言切换一致 |
@@ -128,7 +128,7 @@ pub use file_input::FileInput;
 pub use input::{Input, InputType};
 pub use label::Label;
 pub use native_select::{NativeSelect, SelectOption};
-pub use number_field::NumberField;
+pub use number_field::{NumberField, NumberKind};
 pub use progress::Progress;
 pub use radio::{RadioGroup, RadioGroupItem};
 pub use select::{Select, SelectItem};

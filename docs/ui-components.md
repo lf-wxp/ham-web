@@ -24,6 +24,7 @@
 |---|---|---|
 | 单行文本 / 搜索 / 密码 / 邮箱 / tel / url | `Input`（`kind=InputType::Search` 等） | `<input>` |
 | 数字（有上下限、步进） | `NumberField`（`controls=false` 关掉加减按钮） | `<input type="number">` |
+| 数字（**负数**，或要保留 `-` / `1.` 这类半截输入） | `NumberField` + `kind=NumberKind::Decimal` | 默认的 `type="number"`：半截输入时 `value` 会返回空串 |
 | 多行文本 | `Textarea` | `<textarea>` |
 | 少量固定选项 | `NativeSelect` + `SelectOption` | `<select>` |
 | 选项要富文本 / 长列表 | `Select` + `SelectItem` | — |
@@ -166,11 +167,14 @@ grep -rn --include='*.rs' --exclude-dir=ui -E '^const (INPUT|TEXTAREA): ' .
 grep -rn --include='*.rs' --exclude-dir=ui -E '<input|<select|<textarea' .
 # ③ 类名工厂：input_class 应为 0（工厂已删）
 grep -rn --include='*.rs' --exclude-dir=ui -c 'input_class(' . | grep -v ':0$'
-# ④ 手写 chip：应为 0
+# ④ 手写 chip 的样式常量：应为 0
 grep -rln --include='*.rs' --exclude-dir=ui 'CHIP_ON' .
+# ⑤ 自造的胶囊样式：逐条确认都是徽章 / 链接，而不是「按钮自己写样式、自己切选中态」
+#    —— 后者扫描器认不出（常量名与组件都没有），只能靠这份清单人工过（见下）
+grep -rn --include='*.rs' --exclude-dir=ui 'rounded-full border' .
 ```
 
-截至最后一次收口：①0 ②6 ③0 ④0。`button_class` 在页面侧只剩 8 条刻意的例外注释，
+截至最后一次收口：①0 ②6 ③0 ④0 ⑤73 处（同一行带 `<button` 的为 0，全部是徽章 / 链接）。`button_class` 在页面侧只剩 8 条刻意的例外注释，
 覆盖 10 个原生元素（8 个 `<button>` + 2 个 `<a>`；`group_menu.rs` 那条是两个菜单开关共用，
 `grep -rn "刻意的例外" crates/app/src` 可列全）：
 
@@ -186,3 +190,11 @@ grep -rln --include='*.rs' --exclude-dir=ui 'CHIP_ON' .
 它们连同 `Button` / `ButtonLink` 内部都继续用 `button_class` —— **`ui::button_class` 是这套
 组件的底座，不要删**。另有 6 处隐藏的 `<input type="file">`（上传按钮背后、不参与展示），
 按约定不迁移。
+
+⑤ 那份清单里是**徽章与链接**（答题趋势的判定标签、错题诊断的提示、首页的更新提示、
+`/gear` 对比表里的「依据不足」标签等）：它们渲染一次就定形，没有「点一下就换选中态」的
+交互，不属于 chip。判据是「可点的互斥 / 开关按钮自己写样式」——`/gear` 的类别、机型、
+预设三组曾这么写过（内联 `rounded-full border …` + `class=move || …`），已迁到
+`ui::ChipGroup` + `ui::Chip`（互斥）/ `ui::ChipToggle`（可开关），顺带补上了
+`role="radio"` + `aria-checked` / `aria-pressed`。新写选择器时先看上面第 ⑤ 条清单里
+有没有 `<button`，有就说明又长出一只手写 chip。

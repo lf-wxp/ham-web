@@ -108,6 +108,8 @@ features = [
   "BiquadFilterNode",
   "BiquadFilterType",
   "Url",
+  # `validity().badInput()`：识别数字框的半截输入（见 `ui/input.rs`）
+  "ValidityState",
   "VisibilityState",
   "Window",
   "Worker",

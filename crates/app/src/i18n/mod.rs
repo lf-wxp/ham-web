@@ -274,6 +274,9 @@ fn tp_in(
 /// 参数就整体错位了。
 fn substitute(mut s: String, args: &[&str]) -> String {
   let mut from = 0;
+  // 「实参多于占位符」的开发期提示只在 wasm 下编译（`web_sys` 原生下会 panic），
+  // 计数器也跟着只在 wasm 下声明，原生目标不留下「只写不读」的死变量。
+  #[cfg(target_arch = "wasm32")]
   let mut used = 0;
   for a in args {
     let Some(rel) = s[from..].find("{}") else {
@@ -282,7 +285,10 @@ fn substitute(mut s: String, args: &[&str]) -> String {
     let pos = from + rel;
     s.replace_range(pos..pos + 2, a);
     from = pos + a.len();
-    used += 1;
+    #[cfg(target_arch = "wasm32")]
+    {
+      used += 1;
+    }
   }
   // 实参多于 `{}`：调用点写错了，多传的参数会被静默丢掉（页面上只表现为「少半句话」）。
   // 开发期给一条信号，生产环境不打扰用户。整段只在 wasm 下编译：`web_sys` 在原生

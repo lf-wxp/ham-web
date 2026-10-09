@@ -19,7 +19,7 @@ disabled / error 状态反馈因此只有一处定义。
 | `Button` | `<button class=button_class(…)>` | `variant` `size` `kind` `disabled` `loading` `class` `aria_label` `title` `on_click` `node_ref` |
 | `ButtonLink` | `<a href class=button_class(…)>`（跳转用的「按钮」） | `href`（`TextValue`）`variant` `size` `class` `aria_label` `title` `target` `rel` `on_click`（收 `MouseEvent`） |
 | `Input` | `<input>`（text / search / password / email / tel / url；日期与时间见 `DatePicker` / `TimePicker`） | `value` `on_change` `kind` `size` `prefix` `suffix` `clearable` `on_enter` `on_keydown` `invalid` `maxlength` `title` `autocomplete` `autocapitalize` `spellcheck` `aria_describedby` `node_ref` |
-| `NumberField` | `<input type="number">` | `value` `on_change` `min` `max` `step` `controls`（加减步进） |
+| `NumberField` | `<input type="number">` | `value` `on_change` `min` `max` `step` `controls`（加减步进）`kind`（`NumberKind::Decimal` = 文本框 + 数字键盘，负数与半截输入可用） |
 | `Textarea` | `<textarea>` | `value` `on_change` `rows` `auto_resize` |
 | `Select` + `SelectItem` | `<select>`（选项需要富文本展示时） | `value` `on_change` `trigger` `placeholder` `size` `invalid` |
 | `NativeSelect` | `<select>`（选项固定的筛选器） | `value` `on_change` `options`（`SelectOption::grouped` 可加分组标题）`placeholder` `size` |

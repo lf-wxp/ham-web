@@ -5,15 +5,11 @@
 //! 与渠道不同的精确参数。
 //! 价格档为相对定位（入门 / 中端 / 高端 / 旗舰），不写具体售价以免过期。
 
-/// 器材类别：`(key, 名称)`。
-pub const GEAR_CATEGORIES: &[(&str, &str)] = &[
-  ("hf", "HF / 全段收发信机"),
-  ("portable", "便携 / QRP 电台"),
-  ("handheld", "手持对讲机"),
-  ("mobile", "车载电台"),
-  ("sdr", "SDR 接收机"),
-  ("accessory", "功放与天调"),
-];
+/// 器材类别 key。
+///
+/// 只留 key 不留名称：名称是**界面文案**，归词典（`knowledge.gear-category-*`）。
+/// 早期版本把中文名写在数据里、页面直接渲染，英文 / 西语界面会漏出中文。
+pub const GEAR_CATEGORIES: &[&str] = &["hf", "portable", "handheld", "mobile", "sdr", "accessory"];
 
 /// 一台器材的参考信息。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -110,7 +106,7 @@ pub const GEAR: &[Gear] = &[
     model: "G90",
     category: "portable",
     tier: "入门",
-    bands: "HF（不含 50MHz）",
+    bands: "HF（80–10m）",
     power: "20W 级",
     modes: "SSB / CW / AM / FM / 数字",
     highlight: "内置自动天调，价格友好",
@@ -122,7 +118,7 @@ pub const GEAR: &[Gear] = &[
     model: "IC-705",
     category: "portable",
     tier: "中端",
-    bands: "HF / VHF / UHF",
+    bands: "HF + 2m / 70cm",
     power: "10W 级",
     modes: "SSB / CW / AM / FM / D-STAR / 数字",
     highlight: "全频段便携，内置 GPS 与蓝牙",
@@ -146,7 +142,7 @@ pub const GEAR: &[Gear] = &[
     model: "FT-818",
     category: "portable",
     tier: "中端",
-    bands: "HF / VHF / UHF",
+    bands: "HF + 2m / 70cm",
     power: "QRP 5W 级（HF 段约 6W）",
     modes: "SSB / CW / AM / FM / 数字",
     highlight: "经典全频段 QRP 便携机型",
@@ -406,7 +402,7 @@ mod tests {
     assert!(total >= 15, "机型数量偏少：{total}");
     for g in GEAR {
       assert!(
-        GEAR_CATEGORIES.iter().any(|(k, _)| *k == g.category),
+        GEAR_CATEGORIES.contains(&g.category),
         "{} 的类别 {} 未在 GEAR_CATEGORIES 中登记",
         g.id,
         g.category
@@ -417,7 +413,7 @@ mod tests {
 
   #[test]
   fn every_category_has_models() {
-    for (key, _) in GEAR_CATEGORIES {
+    for key in GEAR_CATEGORIES {
       assert!(
         !in_category(key).is_empty(),
         "类别 {key} 没有任何机型，对比表会为空"

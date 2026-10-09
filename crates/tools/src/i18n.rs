@@ -1346,6 +1346,9 @@ pub fn unused(root: &Path, lang: &str) -> Result<Vec<String>> {
     .map(|e| e.key)
     .filter(|k| !used.contains(k))
     .filter(|k| !literals.contains(zh.get(k).map_or("", |v| v.as_str())))
+    // 数据驱动的 key（`headers=&["knowledge.model", …]`）没有 `t("…")` 调用点，但 key 的
+    // 字面量确实写在源码里 —— 那也是在用。不认这一条，这类表格页一加进来 `check-i18n` 就红。
+    .filter(|k| !literals.contains(k))
     .collect();
   dead.sort();
   dead.dedup();

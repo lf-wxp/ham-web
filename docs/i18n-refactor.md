@@ -271,6 +271,7 @@ pub fn tp(key: &str, count: impl Into<PluralCount>, args: &[&str]) -> String;
 | 复数变体漏翻（`one` 有、`other` 没有） | `check-i18n` 强制 `other` 必填；查表链回退 `other` → `t()` → 中文，最差也只是回到今天的行为 |
 | `count` 传错占位符 | `tp` 的 count 与 args 解耦，迁移靠 `--plural-candidates` 报告人工确认；e2e 用 `count = 1` 场景钉住 |
 | 死条目误判 | `scan_calls` 认 `tp(`（单测模块先涂白，测试里构造的调用不干扰）；复数词条仍是**一个** key，不新增死条目判定分支 |
+| 数据驱动的 key 被误判成死条目 | `unused()` 认两种「在用」：源码里有 `t("key")` 调用点，**或** key 字面量本身出现在源码里 —— `headers=&["knowledge.model", …]` 这类把 key 当数据传进组件、由组件运行时 `t()` 的写法没有调用点（`/gear` 的推荐表就是这么传的）。代价是口径偏宽：任何等于 key 的字面量都会把它「救活」，所以条目改名后要顺手删掉旧的，别指望扫描器报出来 |
 | 语言包结构变化被旧 SW 缓存住 | 与 P3-B 同款机制：包在 `sw.js` 预缓存清单里，内容变则 `__CACHE_VERSION__` 变 |
 | 将来加语言时规则表不准 | 规则集中在 `core/plural.rs` 一张表 + 单测；`zero/two/few/many` 通路已预留 |
 

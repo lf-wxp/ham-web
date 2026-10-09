@@ -5,6 +5,7 @@
 
 use leptos::html;
 use leptos::prelude::*;
+use wasm_bindgen::JsCast;
 
 use crate::cn::cn;
 use crate::i18n::t;
@@ -66,6 +67,17 @@ impl InputType {
 /// 把空串视为「未设置」，避免渲染出 `min=""` 这类无效属性。
 fn non_empty(v: Option<String>) -> Option<String> {
   v.filter(|s| !s.is_empty())
+}
+
+/// `type="number"` 的内容是否处在「还没敲完」的状态（`-`、`1.`、`1e`）。
+///
+/// 这种状态下 `value` IDL 按规范返回**空串**，调用方会把它当成「用户清空了输入框」——
+/// 既可能误删已存的值，也可能把用户正在敲的文本抹掉。浏览器只给出 `validity.badInput`
+/// 这一个信号，所以半截输入一律不回调（等敲完整了自然会再来一次）。
+fn is_incomplete_number(e: &web_sys::Event) -> bool {
+  e.target()
+    .and_then(|t| t.dyn_into::<web_sys::HtmlInputElement>().ok())
+    .is_some_and(|el| el.validity().bad_input())
 }
 
 /// 输入框。
@@ -180,7 +192,13 @@ pub fn Input(
       readonly=move || readonly.get()
       class=input_class
       prop:value=move || value.get()
-      on:input=move |e| on_change.run(event_target_value(&e))
+      on:input=move |e| {
+        // 数字框的半截输入（`-`、`1.`）`value` 是空串，别当成「清空」（见 helper 的注释）。
+        if kind == InputType::Number && is_incomplete_number(&e) {
+          return;
+        }
+        on_change.run(event_target_value(&e))
+      }
       on:keydown=move |e| {
         if let Some(cb) = on_keydown {
           cb.run(e.clone());
