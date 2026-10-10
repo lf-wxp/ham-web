@@ -1,8 +1,9 @@
 use ham_web_core::QuestionItem;
+use ham_web_core::radio_law::{find_refs, law};
 use leptos::prelude::*;
 
 use crate::cn::cn;
-use crate::i18n::t;
+use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::speech;
 use crate::ui::card_class;
@@ -41,6 +42,33 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
   };
 
   let speak_text = text.clone();
+  let refs = find_refs(&text);
+  // 引用把解析切成「普通文字 + 链接」交替的片段；没有引用时整段照旧。
+  let segments: Vec<(String, Option<(String, String)>)> = {
+    let mut out = Vec::new();
+    let mut cursor = 0usize;
+    for r in refs {
+      // `find_refs` 保证按起点升序且不重叠；这里仍防一手，游标回退会让文字重复。
+      if r.start < cursor {
+        continue;
+      }
+      if r.start > cursor {
+        out.push((text[cursor..r.start].to_owned(), None));
+      }
+      let number = r.number;
+      let number_text = number.to_string();
+      let href = format!("/radio-law#{}-{number}", r.law);
+      // 悬停文案里给全称（含书名号），不给内部 key。
+      let law_title = law(r.law).map_or(r.law, |l| l.title);
+      let title = tf("knowledge.view-article-text", &[law_title, &number_text]);
+      out.push((text[r.start..r.end].to_owned(), Some((href, title))));
+      cursor = r.end;
+    }
+    if cursor < text.len() {
+      out.push((text[cursor..].to_owned(), None));
+    }
+    out
+  };
   // 折叠面板：外层 grid 行高 0fr → 1fr 做高度过渡（`.ui-collapse` 负责裁剪与收起后隐藏），
   // 内层再叠一层淡入 + 轻微上移，避免只有高度变化显得生硬。
   let panel = Signal::derive(move || {
@@ -100,7 +128,22 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
         <div>
           <div class=inner>
             <div class="whitespace-pre-line border-t pt-4 text-sm leading-6 text-muted-foreground">
-              {text.clone()}
+              {segments.into_iter().map(|(part, link)| {
+                if let Some((href, title)) = link {
+                  view! {
+                    <a
+                      href=href
+                      title=title
+                      class="font-medium text-primary underline underline-offset-2 hover:opacity-80"
+                    >
+                      {part}
+                    </a>
+                  }
+                    .into_any()
+                } else {
+                  view! { <span>{part}</span> }.into_any()
+                }
+              }).collect_view()}
             </div>
           </div>
         </div>

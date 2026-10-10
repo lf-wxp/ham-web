@@ -1,0 +1,20 @@
+{
+  "驻波 1:1 ≠ 好天线": "ROE 1:1 no significa buena antena",
+  "假负载的驻波也是 1:1，但它几乎不辐射：驻波衡量的是**匹配**，不是效率与方向性。": "La carga ficticia también da 1:1 y apenas radia: la ROE mide la adaptación, no la eficiencia ni la directividad.",
+  "长馈线让表头读数「更好看」": "Las líneas largas hacen que el medidor lea «mejor»",
+  "馈线损耗同时衰减反射波，台站端读到的驻波比天线端真实值低；馈线越差，掩盖越多。": "La pérdida también atenúa la onda reflejada: en el cuarto de radio se lee menos ROE que la real; cuanto peor la línea, más oculta.",
+  "方向性不足，小驻波读不出": "Sin directividad suficiente, la ROE pequeña no se lee",
+  "普通驻波表方向性约 20 dB，约 1.2:1 以下的读数落在方向性下限里，不可信。": "Un medidor típico tiene unos 20 dB de directividad: por debajo de aprox. 1,2:1 la lectura queda bajo el suelo y no es fiable.",
+  "SSB 的功率读数随话音跳": "En SSB la lectura de potencia salta con la voz",
+  "表针显示的是平均功率；SSB 的平均功率只有峰值包络（PEP）的几分之一，且随话音内容起伏。": "La aguja muestra potencia media; en SSB la media es solo una fracción de la potencia de cresta (PEP) y cambia con la voz.",
+  "天线分析仪怕本地强信号": "El analizador de antena teme las señales locales fuertes",
+  "广播等强场信号进入仪表会叠加到测量信号上，使读数跳动；远离强发射台，必要时用仪表的抗干扰模式。": "Las señales fuertes (emisoras, etc.) entran en el instrumento y se suman a la medida, haciendo saltar la lectura; aléjate de emisoras potentes y usa el modo antiinterferencias si existe.",
+  "短路 Short": "Cortocircuito (Short)",
+  "标准短路件：定标反射系数 -1 的参考点，与开路件一起解出源匹配与反射跟踪误差。": "El estándar de corto fija la referencia de reflexión −1; junto con el abierto resuelve la adaptación de fuente y el seguimiento de reflexión.",
+  "开路 Open": "Abierto (Open)",
+  "标准开路件：定标 +1 的参考点，配合短路件解出源匹配与反射跟踪误差。": "El estándar de abierto fija la referencia +1; con el corto resuelve la adaptación de fuente y el seguimiento de reflexión.",
+  "负载 Load": "Carga (Load)",
+  "标准匹配负载：定标 0 反射的参考点，直接测出方向性误差（泄漏进反射通道的那部分正向信号）。": "La carga adaptada fija la referencia de reflexión cero y mide directamente la directividad (la parte de señal directa que se filtra al canal de reflexión).",
+  "直通 Thru": "Directo (Thru)",
+  "两个端口直连：修正传输跟踪与负载匹配，是 S21 增益 / 插损读数的基准。": "Los dos puertos unidos corrigen el seguimiento de transmisión y la adaptación de carga: la referencia de ganancia/pérdida de S21."
+}

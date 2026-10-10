@@ -1,0 +1,17 @@
+{
+  "measurement.lab-title": "Measurement lab",
+  "measurement.lab-subtitle": "Where SWR and power reading errors come from — try it yourself",
+  "measurement.swr-demo-title": "The feedline \"eats\" your SWR",
+  "measurement.swr-demo-hint": "The meter can never read higher than the truth: line loss attenuates the reflected wave too. Drag the loss and watch the curve peel away from the diagonal.",
+  "measurement.line-loss": "One-way line loss {} dB",
+  "measurement.line-loss-name": "One-way line loss",
+  "measurement.meter-vs-true": "A meter reading of {} : 1 means roughly {} : 1 at the antenna",
+  "measurement.directivity-note": "Error in the other direction comes from directivity: a typical SWR meter has about 20 dB, so readings below about 1.2 : 1 are not to be trusted.",
+  "measurement.swr-chart": "Meter reading vs. true antenna SWR",
+  "measurement.meter-reading": "Meter reading",
+  "measurement.true-swr": "True SWR at the antenna",
+  "measurement.solt-title": "VNA calibration (SOLT) step by step",
+  "measurement.solt-hint": "Calibration is the precondition of measurement: uncalibrated S-parameters include cable and instrument errors.",
+  "measurement.solt-next": "Next step",
+  "measurement.pitfalls-title": "Reading pitfalls at a glance"
+}

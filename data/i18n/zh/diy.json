@@ -1,0 +1,23 @@
+{
+  "diy.difficulty-beginner": "入门",
+  "diy.difficulty-advanced": "进阶",
+  "diy.cost": "成本",
+  "diy.cost-low": "低 · 百元内",
+  "diy.cost-note": "成本为按常见零售价估算的档位（{} 核对），价格随市场变动。",
+  "diy.cost-mid": "中 · 数百元",
+  "diy.band-hf": "短波 HF",
+  "diy.band-vhf-uhf": "VHF / UHF",
+  "diy.band-other": "不涉及射频",
+  "diy.instruments": "所需仪表",
+  "diy.instrument-swr": "驻波表",
+  "diy.instrument-vna": "天线分析仪 / VNA",
+  "diy.instrument-multimeter": "万用表",
+  "diy.hours": "工时 {}",
+  "diy.bom": "材料清单（BOM）",
+  "diy.bom-bought": "已采购",
+  "diy.links": "资料与原理图",
+  "diy.tests": "测试步骤",
+  "diy.pitfalls": "常见问题",
+  "diy.done": "完成这个项目",
+  "diy.progress-local": "进度与采购勾选只存本机。"
+}

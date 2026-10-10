@@ -8,13 +8,14 @@ use ham_web_core::weak_exam::{self, CategoryDelta};
 use ham_web_core::{ExamRule, ExamScore, QuestionItem};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use leptos_router::hooks::use_query_map;
+use leptos_router::NavigateOptions;
+use leptos_router::hooks::{use_navigate, use_query_map};
 use send_wrapper::SendWrapper;
 
 use crate::components::common::{ExplanationCard, MessageDialog};
 use crate::components::exam::{
   AnswerCardFilter, AnswerCardSheet, CustomPaperDialog, ExamResultDialog, ExamResumeDialog,
-  ExamSettingsDialog, ExamSubmitConfirmDialog,
+  ExamSettingsDialog, ExamSubmitConfirmDialog, RulesWalkthroughDialog,
 };
 use crate::components::question_card::QuestionCard;
 use crate::components::shortcut_help::ShortcutHelpDialog;
@@ -80,6 +81,28 @@ pub fn ExamPage() -> impl IntoView {
   let remaining = RwSignal::new(0i64);
   let generation = StoredValue::new(0u32);
   let help_shown = StoredValue::new(false);
+  // 考场规则演练：机考仿真开启时，开考先过一遍规则对照，确认后才真正开始。
+  let rules_open = RwSignal::new(false);
+  let pending_start = StoredValue::new(None::<(crate::data::Questions, ExamRule)>);
+  let begin = Callback::new(move |(picked, r): (crate::data::Questions, ExamRule)| {
+    if strict.get_untracked() {
+      pending_start.set_value(Some((picked, r)));
+      rules_open.set(true);
+    } else {
+      store.start(picked, r);
+    }
+  });
+  // 演练被 Esc / 点遮罩 / × 关掉而没点「开始」：挂起的组卷作废并回练习页（与「暂不开始」一致），
+  // 否则考场里没有题、页面落到「题库不可用」，用户无路可走。确认路径会先取走 `pending_start`，不会误触发。
+  let leave_to_practice = use_navigate();
+  Effect::new(move |prev: Option<bool>| {
+    let open = rules_open.get();
+    if prev == Some(true) && !open && pending_start.with_value(Option::is_some) {
+      pending_start.set_value(None);
+      leave_to_practice("/practice", NavigateOptions::default());
+    }
+    open
+  });
 
   let custom_paper = RwSignal::new(None::<CustomPaper>);
   let custom_open = RwSignal::new(false);
@@ -139,10 +162,10 @@ pub fn ExamPage() -> impl IntoView {
             pending.set(Some(saved));
             resume_open.set(true);
           } else {
-            store.start(
+            begin.run((
               Arc::new(pick_paper(&all, b, weak, weighted, paper.as_ref())),
               current_rule,
-            );
+            ));
           }
         }
         Err(_) => {
@@ -457,7 +480,7 @@ pub fn ExamPage() -> impl IntoView {
       weighted.get_untracked(),
       custom_paper.get_untracked().as_ref(),
     );
-    store.start(Arc::new(picked), rule.get_untracked());
+    begin.run((Arc::new(picked), rule.get_untracked()));
     resume_open.set(false);
     pending.set(None);
   });
@@ -650,6 +673,15 @@ pub fn ExamPage() -> impl IntoView {
       on_restart=on_restart
     />
     <MessageDialog open=error_open title=t("exam.load-failed") description=error_text confirm_text=t("exam.ok") />
+    <RulesWalkthroughDialog
+      open=rules_open
+      on_confirm=Callback::new(move |()| {
+        if let Some((picked, r)) = pending_start.get_value() {
+          pending_start.set_value(None);
+          store.start(picked, r);
+        }
+      })
+    />
     <ShortcutHelpDialog open=help_open />
   }
 }

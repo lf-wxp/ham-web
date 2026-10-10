@@ -653,6 +653,62 @@ impl StudyStats {
   }
 }
 
+/// 错题归因图谱的一个域（一级分类）聚合：知识树的第一层。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DomainAgg {
+  /// 一级分类 key（对应 `categories::TOP_CATEGORIES`）。
+  pub top: &'static str,
+  /// 域内错题数。
+  pub mistakes: usize,
+  /// 域内累计答错次数。
+  pub total_wrong: u32,
+  /// 域内知识点（已按错题数降序，见 [`mistake_topics`]）。
+  pub topics: Vec<TopicAgg>,
+}
+
+/// 按一级分类（域）聚合错题，只含有错题的域，按错题数降序。
+///
+/// 域本身复用车库的 `TOP_CATEGORIES`（与浏览页同一棵分类树），不另造一套「五域」映射。
+#[must_use]
+pub fn mistake_domains(book: &MistakeBook) -> Vec<DomainAgg> {
+  let topics = mistake_topics(book);
+  let mut map: BTreeMap<&'static str, DomainAgg> = BTreeMap::new();
+  for t in topics {
+    let e = map.entry(t.top).or_insert_with(|| DomainAgg {
+      top: t.top,
+      mistakes: 0,
+      total_wrong: 0,
+      topics: Vec::new(),
+    });
+    e.mistakes += t.mistakes;
+    e.total_wrong += t.total_wrong;
+    e.topics.push(t);
+  }
+  let mut out: Vec<DomainAgg> = map.into_values().collect();
+  out.sort_by_key(|d| std::cmp::Reverse(d.mistakes));
+  out
+}
+
+/// 热力档位：`value / max` 落到 0–4 档（0 = 无，4 = 最热）。
+///
+/// 界面把档位映射成颜色深浅（域色 + 透明度），阈值规则放在核心是为了能单测。
+#[must_use]
+pub fn heat_level(value: usize, max: usize) -> u8 {
+  if max == 0 || value == 0 {
+    return 0;
+  }
+  let ratio = value as f64 / max as f64;
+  if ratio <= 0.25 {
+    1
+  } else if ratio <= 0.5 {
+    2
+  } else if ratio <= 0.75 {
+    3
+  } else {
+    4
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -920,6 +976,38 @@ mod tests {
     assert_eq!(topics[0].total_wrong, 2);
     assert_eq!(topics[0].top_name, "无线电法规与管理");
     assert_eq!(topics[1].code, "1.1.2");
+  }
+
+  #[test]
+  fn domains_group_topics_by_top_category() {
+    let mut book = MistakeBook::default();
+    for (p, tag) in [("1.1.1", "A"), ("1.1.2", "B"), ("2.1.1", "C")] {
+      let mut item = q(tag, "A");
+      item.codes.p = Some(p.into());
+      book.record(&item, &ans("B"), 0);
+    }
+    let domains = mistake_domains(&book);
+    assert_eq!(domains.len(), 2, "法规与频率两个域");
+    // 法规域错 2 题在前。
+    assert_eq!(domains[0].top, "法规");
+    assert_eq!(domains[0].mistakes, 2);
+    assert_eq!(domains[0].total_wrong, 2);
+    assert_eq!(domains[0].topics.len(), 2);
+    assert_eq!(domains[1].top, "频率");
+    assert_eq!(domains[1].topics.len(), 1);
+  }
+
+  #[test]
+  fn heat_level_buckets_are_quarters_of_the_max() {
+    assert_eq!(heat_level(0, 10), 0);
+    assert_eq!(heat_level(1, 10), 1);
+    assert_eq!(heat_level(3, 10), 2);
+    assert_eq!(heat_level(6, 10), 3);
+    assert_eq!(heat_level(8, 10), 4);
+    assert_eq!(heat_level(10, 10), 4);
+    // max 为 0（没有错题）时不给任何档位。
+    assert_eq!(heat_level(0, 0), 0);
+    assert_eq!(heat_level(5, 0), 0);
   }
 
   #[test]

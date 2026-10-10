@@ -408,14 +408,14 @@ args = ["fmt", "--all", "--check"]
 description = "Clippy（原生 crate + wasm 前端）"
 script_runner = "@shell"
 script = '''
-cargo clippy --all-targets -p ham-web-core -p ham-web-apt -p ham-web-tools -p ham-web-server -- -D warnings
+cargo clippy --all-targets -p ham-web-core -p ham-web-nec -p ham-web-apt -p ham-web-tools -p ham-web-server -- -D warnings
 cargo clippy -p ham-web-app --target wasm32-unknown-unknown -- -D warnings
 '''
 
 [tasks.test]
 description = "运行单元测试"
 command = "cargo"
-args = ["test", "-p", "ham-web-core", "-p", "ham-web-apt", "-p", "ham-web-tools", "-p", "ham-web-server", "-p", "ham-web-app"]
+args = ["test", "-p", "ham-web-core", "-p", "ham-web-nec", "-p", "ham-web-apt", "-p", "ham-web-tools", "-p", "ham-web-server", "-p", "ham-web-app"]
 
 [tasks.check]
 description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案/知识库译文词典校验 + 解析表校验（不构建前端）"

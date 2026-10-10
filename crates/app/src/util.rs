@@ -14,6 +14,13 @@ pub fn now_ms() -> i64 {
   js_sys::Date::now() as i64
 }
 
+/// 本机时区相对 UTC 的偏移（分钟，东八区 = 480）。
+///
+/// `getTimezoneOffset()` 返回「本地比 UTC 晚多少分钟」（东八区是 -480），取负才是偏移。
+pub fn utc_offset_minutes() -> i32 {
+  -js_sys::Date::new_0().get_timezone_offset() as i32
+}
+
 /// 某时间戳（毫秒）所在的本地日期 `YYYY-MM-DD`。
 pub fn local_day(ms: f64) -> String {
   let d = js_sys::Date::new(&JsValue::from_f64(ms));

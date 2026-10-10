@@ -1219,7 +1219,7 @@ checksum = "17e2ac29387b1aa07a1e448f7bb4f35b500787971e965b02842b900afa5c8f6f"
 
 [[package]]
 name = "ham-web-app"
-version = "0.3.10"
+version = "0.3.11"
 dependencies = [
  "console_error_panic_hook",
  "ham-web-apt",
@@ -1237,11 +1237,11 @@ dependencies = [
 
 [[package]]
 name = "ham-web-apt"
-version = "0.3.10"
+version = "0.3.11"
 
 [[package]]
 name = "ham-web-apt-worker"
-version = "0.3.10"
+version = "0.3.11"
 dependencies = [
  "ham-web-apt",
  "js-sys",
@@ -1250,15 +1250,20 @@ dependencies = [
 
 [[package]]
 name = "ham-web-core"
-version = "0.3.10"
+version = "0.3.11"
 dependencies = [
+ "ham-web-nec",
  "serde",
  "serde_json",
 ]
 
 [[package]]
+name = "ham-web-nec"
+version = "0.3.11"
+
+[[package]]
 name = "ham-web-server"
-version = "0.3.10"
+version = "0.3.11"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1284,14 +1289,14 @@ dependencies = [
 
 [[package]]
 name = "ham-web-sstv"
-version = "0.3.10"
+version = "0.3.11"
 dependencies = [
  "ham-web-apt",
 ]
 
 [[package]]
 name = "ham-web-sstv-worker"
-version = "0.3.10"
+version = "0.3.11"
 dependencies = [
  "ham-web-sstv",
  "js-sys",
@@ -1300,7 +1305,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-tools"
-version = "0.3.10"
+version = "0.3.11"
 dependencies = [
  "anyhow",
  "brotli 9.0.0",
@@ -1318,14 +1323,14 @@ dependencies = [
 
 [[package]]
 name = "ham-web-wspr"
-version = "0.3.10"
+version = "0.3.11"
 dependencies = [
  "ham-web-apt",
 ]
 
 [[package]]
 name = "ham-web-wspr-worker"
-version = "0.3.10"
+version = "0.3.11"
 dependencies = [
  "ham-web-apt",
  "ham-web-wspr",

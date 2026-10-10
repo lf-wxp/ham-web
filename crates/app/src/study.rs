@@ -92,6 +92,14 @@ fn is_new(stats: &StudyStats, q: &QuestionItem) -> bool {
 
 /// 记录一次作答（空作答忽略），同时更新错题本与分类统计；耗时取当前题标记的时长。
 pub fn record_answer(q: &QuestionItem, answer: &[String]) -> Option<RecordOutcome> {
+  // 计算变体（id 以 `variant-` 开头）只在当次练习里存在，不计入统计与错题本：
+  // 官方内容指纹不能沾上本地生成的题目。
+  if q
+    .id_str()
+    .is_some_and(|id| id.starts_with(ham_web_core::calc_variants::VARIANT_PREFIX))
+  {
+    return None;
+  }
   let dur = take_duration();
   record_many(std::iter::once((q, answer, dur)))
     .into_iter()

@@ -1,0 +1,23 @@
+{
+  "diy.difficulty-beginner": "Principiante",
+  "diy.difficulty-advanced": "Avanzado",
+  "diy.cost": "Coste",
+  "diy.cost-low": "Bajo · menos de ¥100",
+  "diy.cost-note": "El coste es una franja estimada con precios de venta habituales (verificado {}); los precios varían.",
+  "diy.cost-mid": "Medio · unos cientos de ¥",
+  "diy.band-hf": "HF",
+  "diy.band-vhf-uhf": "VHF / UHF",
+  "diy.band-other": "Sin radiofrecuencia",
+  "diy.instruments": "Instrumentos necesarios",
+  "diy.instrument-swr": "Medidor de ROE",
+  "diy.instrument-vna": "Analizador de antena / VNA",
+  "diy.instrument-multimeter": "Multímetro",
+  "diy.hours": "{} de trabajo",
+  "diy.bom": "Lista de materiales (BOM)",
+  "diy.bom-bought": "Comprado",
+  "diy.links": "Referencias y esquemas",
+  "diy.tests": "Pasos de prueba",
+  "diy.pitfalls": "Errores comunes",
+  "diy.done": "Marcar este proyecto como terminado",
+  "diy.progress-local": "El progreso y las marcas de compra se guardan solo en este dispositivo."
+}

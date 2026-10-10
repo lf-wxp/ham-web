@@ -20,6 +20,8 @@ mod photo;
 mod push;
 mod pwa;
 #[cfg(test)]
+mod radio_law_check;
+#[cfg(test)]
 mod registry_check;
 mod sat_alert;
 mod share_score;

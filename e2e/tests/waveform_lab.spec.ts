@@ -184,11 +184,25 @@ test("传播预测：24 小时热力矩阵随网格与时刻更新", async ({ pa
   await expect(page.locator('[title^="20m · "]')).toHaveCount(24);
   await expect(page.locator('[title^="10m · "]')).toHaveCount(24);
 
-  // 跳到最佳时刻：查看时刻随之改变。
-  const hourLabel = page.getByText(/^查看时刻 \d{2}:00 UTC$/);
-  const before = await hourLabel.innerText();
-  await page.getByRole("button", { name: /跳到最佳时刻/ }).click();
-  await expect(hourLabel).not.toHaveText(before);
+  // 跳到最佳时刻：查看时刻变为按钮标注的最佳整点。
+  // 初始查看时刻是「当前 UTC 小时」，可能恰好就是最佳整点（跑批就撞上过），
+  // 直接断言「改变了」会 flaky；先把时刻拨离最佳整点，再点跳回，稳定验证按钮生效。
+  const jump = page.getByRole("button", { name: /跳到最佳时刻/ });
+  const bestText = await jump.innerText();
+  const bestHour = Number(bestText.match(/（(\d{2}):00 UTC）/)?.[1]);
+  expect(Number.isInteger(bestHour) && bestHour >= 0 && bestHour <= 23).toBe(true);
+
+  const slider = page.locator('input[aria-label="查看时刻 UTC"]');
+  const away = (bestHour + 1) % 24;
+  await slider.fill(String(away));
+  await expect(
+    page.getByText(new RegExp(`^查看时刻 ${String(away).padStart(2, "0")}:00 UTC$`)),
+  ).toBeVisible();
+
+  await jump.click();
+  await expect(
+    page.getByText(new RegExp(`^查看时刻 ${String(bestHour).padStart(2, "0")}:00 UTC$`)),
+  ).toBeVisible();
 
   // 推荐波段列表有内容。
   await expect(page.getByText("该时刻推荐波段（按可靠度）")).toBeVisible();

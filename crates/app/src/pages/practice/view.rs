@@ -67,7 +67,17 @@ pub fn PracticePage() -> impl IntoView {
       return;
     };
     let id = q.stable_id().unwrap_or_else(|| q.answer_key(i));
+    // 变体只在当次练习里存在，收藏没有意义（下次就换题了）；按钮已置灰，这里兜住快捷键等其它入口。
+    if id.starts_with(ham_web_core::calc_variants::VARIANT_PREFIX) {
+      return;
+    }
     bookmarked.set(store::toggle_bookmark(&id));
+  });
+  let current_is_variant = Signal::derive(move || {
+    store.current().is_some_and(|(_, q)| {
+      q.id_str()
+        .is_some_and(|id| id.starts_with(ham_web_core::calc_variants::VARIANT_PREFIX))
+    })
   });
 
   // 当前题的 stable_id，供笔记编辑区跟随切题加载。
@@ -89,13 +99,17 @@ pub fn PracticePage() -> impl IntoView {
   let error_text = RwSignal::new(String::new());
   let unique_only = RwSignal::new(false);
   let unseen_only = RwSignal::new(query.with_untracked(|q| q.get("unseen").is_some()));
-  // 专项 / 只练没做过 / 错题重练：题目是题库的子集，不保存也不恢复进度，以免覆盖完整题库的顺序进度。
+  // 计算变体：同型题换数重新生成（防背答案），只在当次练习里出现。
+  let variants_on = RwSignal::new(query.with_untracked(|q| q.get("variant").is_some()));
+  // 专项 / 只练没做过 / 错题重练 / 计算变体：题目与完整题库不一致（子集，或末尾追加了本地生成的题），
+  // 不保存也不恢复进度，以免覆盖完整题库的顺序进度（变体开启时总数是 N+8，次日变体还会换题）。
   let subset = Memo::new(move |_| {
     topic.get().is_some()
       || sub_code.get().is_some()
       || unseen_only.get()
       || src.get().is_some()
       || multi_only.get()
+      || variants_on.get()
   });
   let generation = StoredValue::new(0u32);
   let help_shown = StoredValue::new(false);
@@ -130,6 +144,8 @@ pub fn PracticePage() -> impl IntoView {
     let src_val = src.get();
     let unseen = unseen_only.get();
     let multi_val = multi_only.get();
+    // 读一次：变体开关翻转时整个加载重跑（重新组卷）。
+    let _variants = variants_on.get();
     store.reset();
     pending.set(None);
     resume_open.set(false);
@@ -188,6 +204,18 @@ pub fn PracticePage() -> impl IntoView {
                   .collect(),
               )
             };
+          // 计算变体：追加到当次练习末尾（种子取当日序号 —— 同一天同一套，
+          // 断点续做能原样重建；次日自动换一套）。
+          let filtered = if variants_on.get_untracked() {
+            let seed = ham_web_core::calc_variants::day_seed(
+              crate::util::now_ms(),
+              crate::util::utc_offset_minutes(),
+            );
+            let extra = ham_web_core::calc_variants::variant_questions(seed);
+            Arc::new(filtered.iter().chain(extra.iter()).cloned().collect())
+          } else {
+            filtered
+          };
           store.load(filtered);
           if topic_val.is_some() || sub_val.is_some() || multi_val {
             store.set_order(PracticeOrder::Random);
@@ -484,6 +512,7 @@ pub fn PracticePage() -> impl IntoView {
           unseen_only=unseen_only
           multi_only=multi_only
           bookmarked=bookmarked
+          bookmark_disabled=current_is_variant
           on_toggle_bookmark=on_toggle_bookmark
           sequential=sequential
           on_open_search=on_open_search
@@ -548,6 +577,8 @@ pub fn PracticePage() -> impl IntoView {
       on_toggle_show_answer=Callback::new(move |_| store.show_answer.update(|v| *v = !*v))
       show_explanation=store.show_explanation
       on_toggle_show_explanation=Callback::new(move |_| store.show_explanation.update(|v| *v = !*v))
+      variants=variants_on
+      on_toggle_variants=Callback::new(move |_| variants_on.update(|v| *v = !*v))
     />
     <PracticeSearchDialog
       open=search_open

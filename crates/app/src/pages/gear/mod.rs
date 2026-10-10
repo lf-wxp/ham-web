@@ -745,6 +745,16 @@ pub fn GearPage() -> impl IntoView {
           {move || t("knowledge.this-table-compiles-objective")}
         </p>
         <p class="border-t px-4 py-3 text-xs text-muted-foreground">
+          {move || t("knowledge.rig-reviews-link")}
+          " "
+          <a
+            href="/rig-reviews"
+            class="underline underline-offset-2 hover:text-foreground"
+          >
+            {move || t("knowledge.rig-reviews")}
+          </a>
+        </p>
+        <p class="border-t px-4 py-3 text-xs text-muted-foreground">
           {move || t("knowledge.best-marked-bold")}
           " "
           {move || {

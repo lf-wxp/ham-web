@@ -252,7 +252,7 @@ pub fn Input(
                 aria-label=move || t("exam.clear")
                 data-slot="input-clear"
                 class=cn(&[
-                  "absolute flex size-6 items-center justify-center rounded-sm text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+                  "absolute top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring/50 focus-visible:ring-[3px]",
                   clear_pos,
                 ])
                 on:click=clear

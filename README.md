@@ -191,6 +191,8 @@
 │   │                       #   术语表、波段/传播/天线等知识数据、ADIF/Cabrillo/竞赛记分、网格与呼号解析、
 │   │                       #   摩尔斯电码、全站知识搜索索引、成就与题库摘要、专题自测/相关主题、CQ/ITU 分区、
 │   │                       #   设备机型库、音频频谱/FFT、本地存储结构、能力注册表（registry）
+│   ├── nec/                # NEC 天线建模计算核心（矩量法 / Yagi 优化 / 方向图 / 网格，纯 std 零依赖），
+│   │                       #   core 以 `pub use` 重导出，页面仍走 `ham_web_core::{cx, nec, nec_mesh, nec_templates}`
 │   ├── app/                # Leptos 前端
 │   │   ├── index.html      # Trunk 入口（meta / manifest / 静态资源拷贝）
 │   │   ├── Trunk.toml

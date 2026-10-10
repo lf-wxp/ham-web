@@ -1,0 +1,12 @@
+[package]
+name = "ham-web-nec"
+description = "业余无线电：NEC 天线建模计算核心（纯逻辑、零外部依赖，前端与计算 Worker 共享）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lints]
+workspace = true

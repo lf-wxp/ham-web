@@ -1,0 +1,17 @@
+{
+  "measurement.lab-title": "Laboratorio de medición",
+  "measurement.lab-subtitle": "De dónde vienen los errores de las lecturas de ROE y potencia: pruébalo tú mismo",
+  "measurement.swr-demo-title": "La línea «se come» la ROE",
+  "measurement.swr-demo-hint": "El medidor nunca lee por encima de la realidad: la pérdida también atenúa la onda reflejada. Mueve la pérdida y mira cómo la curva se aleja de la diagonal.",
+  "measurement.line-loss": "Pérdida de línea (un sentido) {} dB",
+  "measurement.line-loss-name": "Pérdida de línea (un sentido)",
+  "measurement.meter-vs-true": "Con {} : 1 en el medidor, la antena está en unos {} : 1",
+  "measurement.directivity-note": "El error en la otra dirección viene de la directividad: un medidor típico tiene unos 20 dB, así que por debajo de aprox. 1,2 : 1 no hay que fiarse.",
+  "measurement.swr-chart": "Lectura del medidor frente a la ROE real de la antena",
+  "measurement.meter-reading": "Lectura del medidor",
+  "measurement.true-swr": "ROE real en la antena",
+  "measurement.solt-title": "Calibración VNA (SOLT) paso a paso",
+  "measurement.solt-hint": "Calibrar es el requisito de la medición: sin calibrar, los parámetros S llevan el error de cables e instrumento.",
+  "measurement.solt-next": "Siguiente paso",
+  "measurement.pitfalls-title": "Errores de lectura de un vistazo"
+}

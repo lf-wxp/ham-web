@@ -1,0 +1,17 @@
+{
+  "measurement.lab-title": "测量实验室",
+  "measurement.lab-subtitle": "驻波与功率读数的误差从哪来 —— 动手调一调",
+  "measurement.swr-demo-title": "馈线会替你「吃掉」驻波",
+  "measurement.swr-demo-hint": "表头读到的永远是不高于真实值的数：馈线损耗同时衰减了反射波。拖动损耗，看曲线如何偏离对角线。",
+  "measurement.line-loss": "馈线单程损耗 {} dB",
+  "measurement.line-loss-name": "馈线单程损耗",
+  "measurement.meter-vs-true": "表头读到 {} : 1 时，天线端约 {} : 1",
+  "measurement.directivity-note": "另一个方向的误差来自方向性：普通驻波表约 20 dB，约 1.2 : 1 以下的读数不可信。",
+  "measurement.swr-chart": "表头读数与天线端真实驻波",
+  "measurement.meter-reading": "表头读数",
+  "measurement.true-swr": "天线端真实驻波",
+  "measurement.solt-title": "VNA 校准（SOLT）分步演示",
+  "measurement.solt-hint": "校准是测量的前提：不校准，读到的 S 参数里混着线缆与仪器的误差。",
+  "measurement.solt-next": "下一步",
+  "measurement.pitfalls-title": "读数陷阱速查"
+}

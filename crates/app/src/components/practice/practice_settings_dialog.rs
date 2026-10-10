@@ -6,7 +6,7 @@ use crate::i18n::t;
 use crate::shortcuts::SHORTCUT_HELP;
 use crate::ui::{
   Checkbox, Dialog, DialogDescription, DialogHeader, DialogTitle, Label, RadioGroup,
-  RadioGroupItem, Separator,
+  RadioGroupItem, Separator, Switch,
 };
 
 #[component]
@@ -18,6 +18,10 @@ pub fn PracticeSettingsDialog(
   on_toggle_show_answer: Callback<bool>,
   #[prop(into)] show_explanation: Signal<bool>,
   on_toggle_show_explanation: Callback<bool>,
+  /// 计算变体：同型题换数重新生成（防背答案），只在当次练习里出现。
+  #[prop(into)]
+  variants: Signal<bool>,
+  on_toggle_variants: Callback<bool>,
 ) -> impl IntoView {
   let order_value = Signal::derive(move || order.get().as_str().to_owned());
   let on_order = Callback::new(move |v: String| {
@@ -52,6 +56,17 @@ pub fn PracticeSettingsDialog(
         <div class="flex items-center gap-2">
           <Checkbox id="show-expl" checked=show_explanation on_change=on_toggle_show_explanation />
           <Label r#for="show-expl">{move || t("exam.show-explanation")}</Label>
+        </div>
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="text-sm">{move || t("exam.calc-variants")}</div>
+            <p class="mt-0.5 text-xs text-muted-foreground">{move || t("exam.calc-variants-hint")}</p>
+          </div>
+          <Switch
+            checked=variants
+            on_change=on_toggle_variants
+            aria_label=Signal::derive(move || t("exam.calc-variants"))
+          />
         </div>
         <Separator />
         <div class="space-y-2 text-sm">

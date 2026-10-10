@@ -18,6 +18,9 @@ pub(super) fn PracticeHeaderBar(
   unseen_only: RwSignal<bool>,
   multi_only: RwSignal<bool>,
   bookmarked: RwSignal<bool>,
+  /// 当前题不能收藏（计算变体）：按钮置灰并在提示里说明原因。
+  #[prop(into)]
+  bookmark_disabled: Signal<bool>,
   on_toggle_bookmark: Callback<()>,
   #[prop(into)] sequential: Signal<bool>,
   on_open_search: Callback<()>,
@@ -87,7 +90,16 @@ pub(super) fn PracticeHeaderBar(
             variant=Variant::Outline
             size=Size::Icon
             aria_label=Signal::derive(move || t("exam.bookmark"))
-            title=Signal::derive(move || if bookmarked.get() { t("exam.remove-bookmark") } else { t("exam.bookmark-this-question") })
+            disabled=bookmark_disabled
+            title=Signal::derive(move || {
+              if bookmark_disabled.get() {
+                t("exam.variant-no-bookmark")
+              } else if bookmarked.get() {
+                t("exam.remove-bookmark")
+              } else {
+                t("exam.bookmark-this-question")
+              }
+            })
             on_click=Callback::new(move |_| on_toggle_bookmark.run(()))
           >
             {move || {

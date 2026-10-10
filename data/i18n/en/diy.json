@@ -1,0 +1,23 @@
+{
+  "diy.difficulty-beginner": "Beginner",
+  "diy.difficulty-advanced": "Advanced",
+  "diy.cost": "Cost",
+  "diy.cost-low": "Low · under ¥100",
+  "diy.cost-note": "Cost is a tier estimated from typical retail prices (checked {}); prices vary.",
+  "diy.cost-mid": "Mid · a few hundred ¥",
+  "diy.band-hf": "HF",
+  "diy.band-vhf-uhf": "VHF / UHF",
+  "diy.band-other": "Not RF-related",
+  "diy.instruments": "Instruments needed",
+  "diy.instrument-swr": "SWR meter",
+  "diy.instrument-vna": "Antenna analyser / VNA",
+  "diy.instrument-multimeter": "Multimeter",
+  "diy.hours": "{} of work",
+  "diy.bom": "Bill of materials (BOM)",
+  "diy.bom-bought": "Purchased",
+  "diy.links": "References & schematics",
+  "diy.tests": "Test steps",
+  "diy.pitfalls": "Common pitfalls",
+  "diy.done": "Mark this project done",
+  "diy.progress-local": "Progress and purchase ticks are stored only on this device."
+}

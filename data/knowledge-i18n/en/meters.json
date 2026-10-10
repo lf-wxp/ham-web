@@ -1,0 +1,20 @@
+{
+  "驻波 1:1 ≠ 好天线": "SWR 1:1 is not a good antenna",
+  "假负载的驻波也是 1:1，但它几乎不辐射：驻波衡量的是**匹配**，不是效率与方向性。": "A dummy load is also 1:1 yet radiates almost nothing: SWR measures matching, not efficiency or directivity.",
+  "长馈线让表头读数「更好看」": "Long feedlines make the meter read \"better\"",
+  "馈线损耗同时衰减反射波，台站端读到的驻波比天线端真实值低；馈线越差，掩盖越多。": "Line loss attenuates the reflected wave too, so the shack-end SWR reads lower than the antenna's true value; the worse the line, the more it masks.",
+  "方向性不足，小驻波读不出": "Insufficient directivity hides small SWR",
+  "普通驻波表方向性约 20 dB，约 1.2:1 以下的读数落在方向性下限里，不可信。": "A typical SWR meter has about 20 dB of directivity, so readings below about 1.2:1 sit under the directivity floor and cannot be trusted.",
+  "SSB 的功率读数随话音跳": "SSB power readings jump with speech",
+  "表针显示的是平均功率；SSB 的平均功率只有峰值包络（PEP）的几分之一，且随话音内容起伏。": "The needle shows average power; SSB's average is only a fraction of peak envelope power (PEP) and varies with the speech.",
+  "天线分析仪怕本地强信号": "Antenna analysers fear strong local signals",
+  "广播等强场信号进入仪表会叠加到测量信号上，使读数跳动；远离强发射台，必要时用仪表的抗干扰模式。": "Strong signals such as broadcast enter the instrument and ride on the measurement, making readings jump; stay clear of strong transmitters and use the interference-rejection mode when available.",
+  "短路 Short": "Short",
+  "标准短路件：定标反射系数 -1 的参考点，与开路件一起解出源匹配与反射跟踪误差。": "The short standard fixes the −1 reflection reference; together with the open it solves the source-match and reflection-tracking errors.",
+  "开路 Open": "Open",
+  "标准开路件：定标 +1 的参考点，配合短路件解出源匹配与反射跟踪误差。": "The open standard fixes the +1 reference; with the short it solves the source-match and reflection-tracking errors.",
+  "负载 Load": "Load",
+  "标准匹配负载：定标 0 反射的参考点，直接测出方向性误差（泄漏进反射通道的那部分正向信号）。": "The matched load fixes the zero-reflection reference and measures directivity directly (the share of forward signal that leaks into the reflection channel).",
+  "直通 Thru": "Thru",
+  "两个端口直连：修正传输跟踪与负载匹配，是 S21 增益 / 插损读数的基准。": "The two ports joined directly correct transmission tracking and load match — the reference for S21 gain / insertion loss."
+}

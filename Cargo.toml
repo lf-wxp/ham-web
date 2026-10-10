@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
   "crates/core",
+  "crates/nec",
   "crates/app",
   "crates/server",
   "crates/tools",
@@ -15,7 +16,7 @@ members = [
 default-members = ["crates/core", "crates/server", "crates/tools", "crates/apt"]
 
 [workspace.package]
-version = "0.3.10"
+version = "0.3.11"
 edition = "2024"
 rust-version = "1.88"
 license = "MIT"
@@ -25,6 +26,7 @@ authors = ["lf-wxp"]
 
 [workspace.dependencies]
 ham-web-core = { path = "crates/core" }
+ham-web-nec = { path = "crates/nec" }
 ham-web-apt = { path = "crates/apt" }
 ham-web-sstv = { path = "crates/sstv" }
 ham-web-sstv-worker = { path = "crates/sstv-worker" }

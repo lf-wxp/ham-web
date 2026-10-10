@@ -481,6 +481,71 @@ fn build_index() -> Vec<SearchEntry> {
     }
   }
 
+  // 测量实验室
+  push(
+    &mut out,
+    "知识库",
+    "/measurement-lab",
+    "测量实验室".to_owned(),
+    "驻波读数误差与 SOLT 校准的交互演示".to_owned(),
+  );
+  for &(title, text) in crate::meters::SWR_PITFALLS {
+    push(
+      &mut out,
+      "知识库",
+      "/measurement-lab",
+      title.to_owned(),
+      text.to_owned(),
+    );
+  }
+
+  // DIY 项目卡片
+  for project in crate::diy_projects::DIY_PROJECTS {
+    push(
+      &mut out,
+      "知识库",
+      "/diy-projects",
+      project.name.to_owned(),
+      project.notes.to_owned(),
+    );
+  }
+
+  // 法规原文库：逐条索引（条款级检索 —— 搜「第三十七条」直接命中条文）。
+  for law in crate::radio_law::laws() {
+    push(
+      &mut out,
+      "知识库",
+      "/radio-law",
+      law.title.to_owned(),
+      format!("{} 全文", law.title),
+    );
+    for article in crate::radio_law::articles(law.key) {
+      // 法律原文用中文数字（「第三十七条」），用户也这么搜：标题写阿拉伯数字，
+      // 内容前缀补中文写法，两种都能命中。
+      let zh = crate::radio_law::to_zh_number(article.number).unwrap_or_default();
+      push(
+        &mut out,
+        "知识库",
+        "/radio-law",
+        format!("{} 第{}条", law.title, article.number),
+        format!("第{zh}条 {}", article.text),
+      );
+    }
+  }
+
+  // 设备评测文章
+  for r in crate::rig_reviews::RIG_REVIEWS {
+    if let Some(g) = crate::gear::by_id(r.rig_id) {
+      push(
+        &mut out,
+        "知识库",
+        "/rig-reviews",
+        format!("{} {} 评测", g.brand, g.model),
+        format!("{} {}", g.brand, g.model),
+      );
+    }
+  }
+
   // 通联实务
   pairs(&mut out, "通联实务", "/operating", operating::CONTACT_STEPS);
   pairs(&mut out, "通联实务", "/operating", operating::LOG_FIELDS);
@@ -1477,6 +1542,45 @@ mod tests {
     let exact = hits.iter().find(|h| h.entry.title == "驻波比");
     if let Some(e) = exact {
       assert!(e.score >= 100, "完全匹配得分 {}", e.score);
+    }
+  }
+
+  #[test]
+  fn radio_law_articles_are_found_by_chinese_and_arabic_numbers() {
+    // 法律原文写「第三十七条」，用户这么搜；站内索引标题写「第37条」，两种都要命中同一条。
+    for query in ["第三十七条", "办法 第37条"] {
+      let hit = search_ranked(query, 0)
+        .into_iter()
+        .find(|h| h.entry.href == "/radio-law" && h.entry.title.ends_with("管理办法》 第37条"));
+      assert!(hit.is_some(), "「{query}」应命中办法第 37 条");
+    }
+    // 条例与办法都有第 37 条：中文数字查询两部都会命中，不会被其中一部吞掉。
+    let both = search_ranked("第三十七条", 0)
+      .into_iter()
+      .filter(|h| h.entry.href == "/radio-law" && h.entry.title.ends_with("第37条"))
+      .count();
+    assert_eq!(both, 2);
+  }
+
+  #[test]
+  fn new_pages_are_indexed_exactly_once() {
+    // 这几页的条目曾误嵌在「波段规划」的 for 循环里，被重复写入（每个波段一份）：
+    // 搜索结果里同一条会出现十几遍。按 (标题, 内容) 钉住不重复。
+    for href in [
+      "/measurement-lab",
+      "/diy-projects",
+      "/radio-law",
+      "/rig-reviews",
+    ] {
+      let mut seen = std::collections::HashSet::new();
+      for e in knowledge_index().iter().filter(|e| e.href == href) {
+        assert!(
+          seen.insert((e.title.as_str(), e.text.as_str())),
+          "{href} 的索引条目重复：{}",
+          e.title
+        );
+      }
+      assert!(!seen.is_empty(), "{href} 没有进搜索索引");
     }
   }
 }
