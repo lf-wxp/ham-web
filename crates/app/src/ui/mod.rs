@@ -158,29 +158,34 @@ pub enum Size {
   #[default]
   Default,
   Sm,
+  /// 大号 `h-11`：落地页主操作（首页 Hero 的三个入口）。更大的圆角与字号，
+  /// 让它在版面里明显是「主角」；表单与工具栏里不要用。
+  Lg,
   Icon,
 }
 
 // `motion-press` 取代原来的 `transition-all`：只过渡 transform / 阴影 / 颜色这几项，
 // 按下时用 back 曲线回弹、抬起时走 instant 快速收尾（见 style/input.css 动效语言一节）。
-// `relative` 供 `btn-ripple` 的 `::after` 定位；`active:shadow-none` 让按下时「沉下去」。
+// `relative` 供 `btn-ripple` 的 `::after`、`btn-solid` 的 `::before` 定位；
+// `active:shadow-none` 让按下时「沉下去」。
 // 禁用态：半透明 + 去阴影 + 降饱和 + 不响应指针，与可用态有明显区分。
 const BUTTON_BASE: &str = "relative inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium btn-ripple motion-press active:scale-[0.97] active:shadow-none cursor-pointer disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:saturate-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive";
 
 /// 生成按钮类名（等价于 shadcn `buttonVariants({ variant, size, className })`）。
 ///
-/// 悬停时颜色加深并加大阴影（实心变体用带色阴影做「发光」，描边 / 次级只轻抬一档），
-/// 与按下时的 `active:scale-*` + `active:shadow-none` 组成「悬停浮起 → 按下沉下」的完整手感。
+/// 悬停时颜色加深并加大阴影（实心变体用带色阴影做「发光」，再叠一道斜向扫光 ——
+/// `btn-solid`；描边 / 次级只轻抬一档），与按下时的 `active:scale-*` +
+/// `active:shadow-none` 组成「悬停浮起 → 按下沉下」的完整手感。
 pub fn button_class(variant: Variant, size: Size, extra: &str) -> String {
   let v = match variant {
     Variant::Default => {
-      "bg-primary text-primary-foreground shadow-xs shadow-primary/25 hover:bg-primary/90 hover:shadow-md hover:shadow-primary/30"
+      "btn-solid bg-primary text-primary-foreground shadow-xs shadow-primary/25 hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/40"
     }
     Variant::Destructive => {
-      "bg-destructive text-white shadow-xs hover:bg-destructive/90 hover:shadow-md hover:shadow-destructive/30 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60"
+      "btn-solid bg-destructive text-white shadow-xs shadow-destructive/20 hover:bg-destructive/90 hover:shadow-lg hover:shadow-destructive/40 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60"
     }
     Variant::Outline => {
-      "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground hover:shadow-sm dark:bg-input/30 dark:border-input dark:hover:bg-input/50"
+      "border bg-background/60 shadow-xs hover:border-primary/40 hover:bg-accent hover:text-accent-foreground hover:shadow-sm dark:bg-input/30 dark:border-input dark:hover:border-primary/50 dark:hover:bg-input/50"
     }
     Variant::Secondary => {
       "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80 hover:shadow-sm"
@@ -190,6 +195,7 @@ pub fn button_class(variant: Variant, size: Size, extra: &str) -> String {
   let s = match size {
     Size::Default => "h-9 px-4 py-2 has-[>svg]:px-3",
     Size::Sm => "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
+    Size::Lg => "h-11 rounded-xl px-6 text-base has-[>svg]:px-4",
     Size::Icon => "size-9",
   };
   cn(&[BUTTON_BASE, v, s, extra])
@@ -204,7 +210,7 @@ pub enum BadgeVariant {
   Outline,
 }
 
-const BADGE_BASE: &str = "inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden";
+const BADGE_BASE: &str = "inline-flex items-center justify-center rounded-full border px-2.5 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden";
 
 /// 生成徽标类名。
 pub fn badge_class(variant: BadgeVariant, extra: &str) -> String {
@@ -223,6 +229,9 @@ pub fn badge_class(variant: BadgeVariant, extra: &str) -> String {
 }
 
 /// 卡片容器类名。
+///
+/// 玻璃质感（顶部反光）不在这里写：`style/input.css` 的「材质语言」一节按
+/// `.rounded-xl.bg-card.border` 统一叠加，全站手写的卡片与这里生成的走同一条规则。
 pub fn card_class(extra: &str) -> String {
   cn(&[
     "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm mb-[24px]",

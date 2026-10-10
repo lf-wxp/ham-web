@@ -1,10 +1,12 @@
-//! 动效基础设施：滚动浮现与路由过渡。
+//! 动效基础设施：滚动浮现、路由过渡与光斑跟随。
 //!
-//! 曲线、时长与关键帧全部定义在 `style/input.css` 的「动效语言」一节，这里只做两件
+//! 曲线、时长与关键帧全部定义在 `style/input.css` 的「动效语言」一节，这里只做三件
 //! 浏览器必须参与的事：
 //!
 //! 1. **滚动浮现**：用 `IntersectionObserver` 给进入视口的元素打上 `data-reveal="in"`；
-//! 2. **路由过渡**：切换路径时重放主内容区的入场动画，并在顶栏扫过一道信号光。
+//! 2. **路由过渡**：切换路径时重放主内容区的入场动画，并在顶栏扫过一道信号光；
+//! 3. **光斑跟随**：鼠标划过 `.spotlight` 卡片时，把指针位置写进 `--mx` / `--my`，
+//!    由 CSS 用径向渐变画出跟手的柔光。
 //!
 //! # 降级策略
 //!
@@ -20,6 +22,7 @@
 
 use std::cell::RefCell;
 
+use leptos::ev;
 use leptos::prelude::*;
 use leptos_router::hooks::use_location;
 use send_wrapper::SendWrapper;
@@ -55,11 +58,15 @@ thread_local! {
   static CALLBACK: RefCell<Option<SendWrapper<RevealCallback>>> = const { RefCell::new(None) };
 }
 
+/// 光斑跟随宿主的类名（对应 `style/input.css` 的 `.spotlight`）。
+const SPOTLIGHT_HOST: &str = ".spotlight";
+
 /// 初始化动效环境。应在 [`crate::app::App`] 里最先调用。
 pub fn provide_motion() {
   if !motion_allowed() {
     return;
   }
+  install_spotlight();
   let Some(observer) = create_observer() else {
     return;
   };
@@ -70,6 +77,47 @@ pub fn provide_motion() {
     set_motion_ready(false);
     REVEAL.with(|c| *c.borrow_mut() = None);
     CALLBACK.with(|c| *c.borrow_mut() = None);
+  });
+}
+
+/// 挂一个全局的指针监听，把鼠标在 `.spotlight` 宿主内的位置写进 `--mx` / `--my`。
+///
+/// 用事件委托（一个监听管全站）而不是给每张卡片各挂一个：卡片会随路由反复创建销毁，
+/// 逐个挂 / 摘既容易漏清理，也让监听数量随页面内容膨胀。非 `.spotlight` 区域的移动
+/// 只会走一次 `closest` 就返回，开销可以忽略。
+///
+/// 只响应鼠标：触屏与手写笔没有「悬停」，CSS 侧也用 `@media (hover: hover)` 屏蔽了
+/// 光斑，这里提前返回是为了省掉无意义的样式写入。
+fn install_spotlight() {
+  let handle = window_event_listener(ev::pointermove, move |e| {
+    if e.pointer_type() != "mouse" {
+      return;
+    }
+    let Some(host) = e
+      .target()
+      .and_then(|t| t.dyn_into::<web_sys::Element>().ok())
+      .and_then(|el| el.closest(SPOTLIGHT_HOST).ok().flatten())
+      .and_then(|el| el.dyn_into::<web_sys::HtmlElement>().ok())
+    else {
+      return;
+    };
+    let rect = host.get_bounding_client_rect();
+    // 显式 `HtmlElement::style`：理由同 `set_reveal_delay`。
+    let style = web_sys::HtmlElement::style(&host);
+    let _ = style.set_property(
+      "--mx",
+      &format!("{:.0}px", f64::from(e.client_x()) - rect.left()),
+    );
+    let _ = style.set_property(
+      "--my",
+      &format!("{:.0}px", f64::from(e.client_y()) - rect.top()),
+    );
+  });
+  let handle = SendWrapper::new(Some(handle));
+  on_cleanup(move || {
+    if let Some(h) = handle.take() {
+      h.remove();
+    }
   });
 }
 

@@ -85,7 +85,8 @@ view! {
 - 输入类（`Input` / `NumberField` / `Textarea` / `Select` / `NativeSelect` / `DatePicker` /
   `TimePicker`）用 `ControlSize`：
   `Sm` = `h-8`（工具栏筛选）、`Default` = `h-9`（表单主体）、`Lg` = `h-11`（触屏主表单）。
-- 按钮用 `Size`：`Sm` / `Default` / `Icon`。
+- 按钮用 `Size`：`Sm` / `Default` / `Lg` / `Icon`。`Lg` = `h-11` + 更大的圆角与字号，
+  只给落地页的主操作（首页 Hero 的三个入口）用，表单与工具栏里不要用。
 
 `Default` 在移动端保留 16px 字号，避免 iOS 聚焦时页面被自动放大。
 
@@ -93,9 +94,9 @@ view! {
 
 | 状态 | 表现 |
 |---|---|
-| hover | 颜色加深 + 阴影加大（`hover:shadow-*`，Tailwind v4 下仅 hover 设备生效） |
+| hover | 颜色加深 + 阴影加大（`hover:shadow-*`，Tailwind v4 下仅 hover 设备生效）；实心按钮另有一道斜向扫光（`btn-solid`）；输入框描边提亮到 `ring/50` |
 | active | 按下 `scale(0.97)` + 去阴影 + 涟漪泛光（`btn-ripple`，见 `style/input.css`） |
-| focus-visible | `border-ring` + `ring-ring/50` + `ring-[3px]` |
+| focus-visible | 按钮 `ring-[3px]`；输入类控件 `ring-[4px]` + `ring-ring/30`（一圈柔光而不是硬边） |
 | disabled | `opacity-50` + 去阴影 + 降饱和 + `cursor-not-allowed` + `pointer-events-none` |
 | loading | （仅 `Button`）旋转图标 + `aria-busy="true"` + 自动禁用；文案保留，读屏名字不变 |
 | error | 传 `invalid=…`，输出 `aria-invalid="true"`，描边切到 `destructive` |

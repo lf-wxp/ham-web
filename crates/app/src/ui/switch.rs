@@ -26,7 +26,9 @@ pub fn Switch(
   #[prop(optional, into)] class: String,
 ) -> impl IntoView {
   let class = cn(&[
-    "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-xs transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input dark:data-[state=unchecked]:bg-input/80",
+    // 打开时轨道外圈泛一层主色柔光（`shadow-[…var(--primary)]`），和关闭态拉开层次；
+    // 光晕只是锦上添花，开 / 关的信息仍由位置与 `aria-checked` 承担，不靠颜色单独传达。
+    "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-xs transition-[color,box-shadow,background-color] duration-200 outline-none disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:shadow-[0_0_14px_-2px_var(--primary)] data-[state=unchecked]:bg-input dark:data-[state=unchecked]:bg-input/80",
     CONTROL_RING,
     "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
     &class,
@@ -52,7 +54,7 @@ pub fn Switch(
     >
       <span
         data-slot="switch-thumb"
-        class="pointer-events-none block size-5 rounded-full bg-background shadow-xs ring-0 transition-transform duration-200 data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0 dark:data-[state=unchecked]:bg-foreground dark:data-[state=checked]:bg-primary-foreground"
+        class="pointer-events-none block size-5 rounded-full bg-background shadow-sm ring-0 transition-transform duration-300 ease-[var(--ease-out-back)] data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0 dark:data-[state=unchecked]:bg-foreground dark:data-[state=checked]:bg-primary-foreground"
         data-state=move || if checked.get() { "checked" } else { "unchecked" }
       ></span>
     </button>

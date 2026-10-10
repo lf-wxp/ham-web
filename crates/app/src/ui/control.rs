@@ -32,8 +32,13 @@ impl ControlSize {
   }
 }
 
-/// 控件样式基线（等价于 shadcn `inputVariants`，补上与按钮一致的 `ring-[3px]` 聚焦环）。
-pub const CONTROL_BASE: &str = "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex w-full min-w-0 rounded-md border bg-transparent px-3 py-1 shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive";
+/// 控件样式基线（等价于 shadcn `inputVariants`，聚焦环加粗到 4px、降到 30% 透明度，
+/// 做成一圈「柔光」而不是一道硬边）。
+///
+/// 底色是半透明的 `bg-background/60`：控件放在玻璃卡片里时能透出一点背景，不会像一块
+/// 贴上去的白板；悬停先把描边提亮到 `ring/50`，让「这里可以点」在聚焦之前就有反馈。
+/// `aria-invalid` 的变体在 CSS 里排在 `hover` / `focus-visible` 之后，错误态的红色描边不会被它们盖掉。
+pub const CONTROL_BASE: &str = "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex w-full min-w-0 rounded-lg border bg-background/60 px-3 py-1 shadow-xs transition-[color,box-shadow,border-color] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium hover:border-ring/50 disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[4px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive";
 
 /// 生成控件类名：`基线 + 尺寸 + 调用方覆盖`。
 pub fn control_class(size: ControlSize, extra: &str) -> String {
@@ -42,7 +47,7 @@ pub fn control_class(size: ControlSize, extra: &str) -> String {
 
 /// 复选框 / 开关这类「非输入框」控件的聚焦环，与 [`CONTROL_BASE`] 对齐。
 pub const CONTROL_RING: &str =
-  "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]";
+  "focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-[4px]";
 
 /// `aria-invalid` 只在错误态出现在 DOM 上。
 ///

@@ -85,8 +85,16 @@ pub fn Navigation() -> impl IntoView {
   let exam_active = move || group_active(GROUP_EXAM);
 
   view! {
-    <nav data-nav aria-label=move || t("shell.main-navigation") class="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-      <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
+    // 顶栏材质：磨砂 + 提饱和（`backdrop-saturate-150`，让背后的极光透出来而不是发灰）；
+    // 模糊半径停在 `xl`：顶栏常驻且每帧滚动都要重算，半径翻倍代价也近乎翻倍；
+    // `nav-elevate` 随滚动淡入一道下沿阴影；`nav-progress` 是整页滚动进度线。
+    // 两者都是 CSS 滚动驱动动画，没有 JS，不支持的浏览器上整块隐形（见 style/input.css）。
+    <nav data-nav aria-label=move || t("shell.main-navigation") class="nav-elevate sticky top-0 z-50 border-b border-border/70 bg-background/70 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-background/55">
+      <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent"></div>
+      <div
+        aria-hidden="true"
+        class="nav-progress pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-[var(--hero-a)] via-[var(--hero-b)] to-[var(--hero-c)]"
+      ></div>
       <div class="container relative mx-auto px-4">
         <div class="flex h-16 items-center justify-between gap-3">
           // 品牌标识
@@ -95,12 +103,12 @@ pub fn Navigation() -> impl IntoView {
             class="group flex shrink-0 items-center gap-2.5"
             on:click=move |_| menu_open.set(false)
           >
-            <div class="relative flex size-9 items-center justify-center overflow-hidden rounded-lg bg-primary text-primary-foreground shadow-xs shadow-primary/30 transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110">
+            <div class="brand-mark relative flex size-9 items-center justify-center overflow-hidden rounded-xl text-primary-foreground transition-transform duration-300 ease-[var(--ease-out-back)] group-hover:rotate-6 group-hover:scale-110">
               <span class="absolute inset-0 bg-gradient-to-b from-white/20 to-black/15"></span>
               <Icon kind=IconKind::Satellite class="relative h-5 w-5" />
             </div>
             <div class="hidden flex-col whitespace-nowrap leading-tight sm:flex">
-              <span class="text-sm font-semibold text-foreground">{move || t("shell.amateur-radio")}</span>
+              <span class="font-display text-[13px] font-semibold tracking-tight text-foreground">{move || t("shell.amateur-radio")}</span>
               <span class="text-[11px] text-muted-foreground">{move || t("shell.exams-knowledge-tools")}</span>
             </div>
           </a>
@@ -175,7 +183,7 @@ pub fn Navigation() -> impl IntoView {
               >
                 <div
                   data-open=move || (open_menu.get() == Some(MenuKind::Exam)).to_string()
-                  class="motion-popover origin-top w-44 rounded-lg border bg-popover p-1 shadow-md"
+                  class="motion-popover origin-top w-48 rounded-2xl border bg-popover p-1.5 shadow-xl"
                 >
                   {registry::MODULES
                     .iter()
@@ -187,7 +195,7 @@ pub fn Navigation() -> impl IntoView {
                           on:click=move |_| open_menu.set(None)
                           class=move || {
                             cn(&[
-                              "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+                              "flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors",
                               if active(m.path) {
                                 "bg-accent text-foreground"
                               } else {
@@ -265,7 +273,7 @@ pub fn Navigation() -> impl IntoView {
         {move || {
           menu_open.get().then(|| {
             view! {
-              <div class="absolute inset-x-0 top-full z-40 max-h-[calc(100vh-4rem)] overflow-y-auto border-b bg-background shadow-md xl:hidden animate-in slide-in-from-top-2 fade-in duration-200">
+              <div class="absolute inset-x-0 top-full z-40 max-h-[calc(100vh-4rem)] overflow-y-auto border-b bg-background/95 shadow-xl xl:hidden animate-in slide-in-from-top-2 fade-in duration-200">
                 <nav aria-label=move || t("shell.mobile-navigation") class="container mx-auto grid grid-cols-1 gap-1 px-4 py-3">
                   <a
                     href="/"
@@ -300,9 +308,9 @@ pub fn Navigation() -> impl IntoView {
                           aria-pressed=move || (i18n::locale().get() == l).to_string()
                           class=move || {
                             cn(&[
-                              "rounded-md border px-3 py-1.5 text-sm transition-colors",
+                              "rounded-full border px-3.5 py-1.5 text-sm transition-colors",
                               if i18n::locale().get() == l {
-                                "border-primary bg-primary text-primary-foreground"
+                                "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/30"
                               } else {
                                 "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
                               },

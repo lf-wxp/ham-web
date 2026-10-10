@@ -153,10 +153,10 @@ pub(crate) fn GroupMenu(
         <div
           id=panel_id
           data-open=move || is_open().to_string()
-          class="motion-popover origin-top flex max-h-[calc(100vh-5rem)] w-[960px] max-w-[calc(100vw-2rem)] gap-1 rounded-lg border bg-popover p-2 shadow-md"
+          class="motion-popover origin-top flex max-h-[calc(100vh-5rem)] w-[960px] max-w-[calc(100vw-2rem)] gap-1 rounded-2xl border bg-popover p-2 shadow-xl"
         >
           // 分组栏：常驻，不参与条目区的滚动。
-          <div class="flex w-64 shrink-0 flex-col gap-0.5 rounded-lg bg-muted/40 p-1.5">
+          <div class="flex w-64 shrink-0 flex-col gap-0.5 rounded-xl bg-muted/50 p-1.5">
             {groups
               .iter()
               .map(|&g| {
@@ -168,7 +168,7 @@ pub(crate) fn GroupMenu(
                   <div
                     class=move || {
                       cn(&[
-                        "rounded-md transition-colors",
+                        "rounded-lg transition-colors",
                         if selected() { "bg-accent" } else { "" },
                       ])
                     }
@@ -242,7 +242,7 @@ pub(crate) fn GroupMenu(
                         on:click=move |_| open_menu.set(None)
                         class=move || {
                           cn(&[
-                            "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors",
+                            "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors",
                             if active(m.path) {
                               "bg-accent text-foreground"
                             } else {

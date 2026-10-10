@@ -56,9 +56,12 @@ pub fn Stat(#[prop(into)] label: String, #[prop(into)] value: Signal<usize>) -> 
   });
 
   view! {
-    <div node_ref=node class="motion-lift rounded-xl border bg-card p-3">
-      <div class="text-2xl font-semibold tabular-nums">{move || display.get()}</div>
-      <div class="text-xs text-muted-foreground">{label}</div>
+    <div node_ref=node class="motion-lift rounded-xl border bg-card p-3.5 shadow-sm">
+      // 数字用展示字体 + 上亮下暗的渐变，像一块发光的读数；标签退到次要层级。
+      <div class="font-display text-xl font-semibold tracking-tight tabular-nums text-sheen sm:text-2xl">
+        {move || display.get()}
+      </div>
+      <div class="mt-0.5 text-xs text-muted-foreground">{label}</div>
     </div>
   }
 }

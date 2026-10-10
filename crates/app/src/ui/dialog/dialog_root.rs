@@ -27,7 +27,10 @@ pub fn Dialog(
 ) -> impl IntoView {
   let mounted = use_presence(open, EXIT_MS);
   let class = cn(&[
-    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fill-mode-both fixed left-1/2 top-4 z-50 flex flex-col w-full max-w-[calc(100%-2rem)] -translate-x-1/2 translate-y-0 gap-4 rounded-lg border p-4 shadow-lg duration-200 sm:max-w-lg sm:top-1/2 sm:translate-y-[-50%] sm:p-6 max-h-[calc(100svh-2rem)] overflow-hidden min-h-0",
+    // `bg-popover`（0.92+ 不透明）+ 全局的 `.bg-popover` 模糊 + `edge-glow` 渐变描边：
+    // 对话框是整页唯一的「主角」，值得多花一层材质。`edge-glow` 在 `overflow-hidden`
+    // 宿主上自动退到内沿绘制，见 style/input.css。
+    "bg-popover edge-glow data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fill-mode-both fixed left-1/2 top-4 z-50 flex flex-col w-full max-w-[calc(100%-2rem)] -translate-x-1/2 translate-y-0 gap-4 rounded-2xl border p-4 shadow-xl duration-200 sm:max-w-lg sm:top-1/2 sm:translate-y-[-50%] sm:p-6 max-h-[calc(100svh-2rem)] overflow-hidden min-h-0",
     &class,
   ]);
   let state = state_attr(open);
@@ -46,7 +49,7 @@ pub fn Dialog(
           <div
             data-slot="dialog-overlay"
             data-state=state
-            class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fill-mode-both fixed inset-0 z-50 bg-black/50"
+            class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fill-mode-both fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
             on:click=move |_| open.set(false)
           ></div>
           <div

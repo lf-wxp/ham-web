@@ -27,7 +27,7 @@ pub fn Sheet(open: RwSignal<bool>, children: ChildrenFn) -> impl IntoView {
           <div
             data-slot="sheet-overlay"
             data-state=state
-            class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fill-mode-both fixed inset-0 z-50 bg-black/50"
+            class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fill-mode-both fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
             on:click=move |_| open.set(false)
           ></div>
           <div
@@ -42,7 +42,7 @@ pub fn Sheet(open: RwSignal<bool>, children: ChildrenFn) -> impl IntoView {
             }
             data-slot="sheet-content"
             data-state=state
-            class="bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fill-mode-both fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm"
+            class="bg-popover data-[state=open]:animate-in data-[state=closed]:animate-out fill-mode-both fixed z-50 flex flex-col gap-4 shadow-xl transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm"
           >
             {children()}
             <button

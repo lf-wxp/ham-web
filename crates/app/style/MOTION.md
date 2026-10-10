@@ -51,6 +51,19 @@ transition: transform var(--motion-fast) var(--ease-out-expo);
 
 `blur-in` / `blur-out` 仅用于弹层、图标等小元素；整页或大卡片进入动画禁用 blur——低端 Android 上代价过高。
 
+**`backdrop-filter`（玻璃模糊）同理克制**：只给「盖在别的内容上、必须看清字」的元素
+（顶栏、弹层、对话框、首页的信号面板、贴边吸附的卡片）。普通卡片只用半透明底 + 顶部反光，
+不模糊——一页几十张卡片同时开模糊，低端机滚动会掉帧。材质类（`.glass` / `.edge-glow` /
+`.spotlight` / `.btn-solid` …）的说明见 `input.css` 的「材质语言」一节。
+
+### 4a. 装饰性循环动画清单
+
+全局极光（`body::after`，36s）、首页光团（`.hero-orb`，18s）、标题渐变平移（`.hero-gradient-text`，14s）
+都是长周期、低复杂度的氛围动画：前两者只动 `transform`，后者平移的是文字裁剪的渐变背景，
+所以**只允许用在首页那一个标题上**。窄屏（≤ 640px）极光静止；`prefers-reduced-motion`
+下全部由全局降级停住。顶栏的阴影与阅读进度线用 CSS 滚动驱动动画
+（`animation-timeline: scroll()`），在合成器线程上跑，没有 JS 滚动监听，不支持的浏览器整块隐形。
+
 ### 5. 闪烁频率 ≤ 3 次/秒
 
 遵守 WCAG 2.3.1，避免光敏风险。现有 `caret-blink`（1.25s）与频谱扫掠（4.5s）均安全。
