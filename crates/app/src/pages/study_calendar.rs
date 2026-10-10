@@ -5,6 +5,7 @@ use std::time::Duration;
 use ham_web_core::study_plan::{MOCK_EXAM_DAYS, day_number, format_day};
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::components::study_plan_card::StudyPlanCard;
 use crate::i18n::{t, tp};
 use crate::study;
@@ -45,16 +46,12 @@ pub fn StudyCalendarPage() -> impl IntoView {
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("learning.study-calendar")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("learning.the-next-14-days")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("learning.study-calendar")
+        subtitle=move || t("learning.the-next-14-days")
+      />
 
-      <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
+      <PageContainer class="space-y-4">
         <StudyPlanCard editable=true />
 
         <section class="rounded-xl border bg-card">
@@ -136,7 +133,7 @@ pub fn StudyCalendarPage() -> impl IntoView {
             {move || t("learning.mock-exam-suggested-appears")}
           </p>
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

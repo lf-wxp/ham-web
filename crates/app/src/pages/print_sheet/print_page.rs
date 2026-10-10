@@ -52,7 +52,7 @@ pub fn PrintPage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen bg-muted/40 pb-10 print:bg-white print:pb-0">
-      <div class="print-hide sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
+      <div class="print-hide sticky top-0 z-20 border-b-2 border-ink bg-card">
         <div class="mx-auto flex max-w-[210mm] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
           <h1 class="mr-auto text-base font-semibold">{move || t("radio.print-version")}</h1>
           <div class="inline-flex rounded-lg bg-muted p-0.5" role="group" aria-label=move || t("radio.source")>

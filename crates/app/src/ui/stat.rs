@@ -3,7 +3,7 @@ use std::time::Duration;
 use leptos::html;
 use leptos::prelude::*;
 
-/// 数字滚动总时长（ms），与 `--motion-normal`（300ms）同档、稍加余量让滚动更从容。
+/// 数字滚动总时长（ms），比 `--motion-normal`（240ms）稍长，让滚动更从容。
 const COUNT_DURATION_MS: u64 = 600;
 /// 步进次数：12 步、ease-out 收尾。
 const COUNT_STEPS: u32 = 12;
@@ -56,9 +56,9 @@ pub fn Stat(#[prop(into)] label: String, #[prop(into)] value: Signal<usize>) -> 
   });
 
   view! {
-    <div node_ref=node class="motion-lift rounded-xl border bg-card p-3.5 shadow-sm">
-      // 数字用展示字体 + 上亮下暗的渐变，像一块发光的读数；标签退到次要层级。
-      <div class="font-display text-xl font-semibold tracking-tight tabular-nums text-sheen sm:text-2xl">
+    <div node_ref=node class="pxl-window motion-lift p-4">
+      // 数字用像素标题字体，像掌机屏上的读数；标签退到次要层级。
+      <div class="pxl-title text-lg tabular-nums text-foreground sm:text-xl">
         {move || display.get()}
       </div>
       <div class="mt-0.5 text-xs text-muted-foreground">{label}</div>

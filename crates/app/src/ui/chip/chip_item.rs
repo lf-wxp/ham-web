@@ -5,9 +5,7 @@
 
 use leptos::prelude::*;
 
-use crate::cn::cn;
-
-use super::shared::{CHIP_BASE, CHIP_OFF, CHIP_ON, ChipCtx};
+use super::shared::{CHIP_BASE, ChipCtx};
 
 /// 组里的一项。必须放在 [`ChipGroup`](super::ChipGroup) 的 `children` 里就地构建
 /// （它靠 context 拿到组的值与回调）。
@@ -25,7 +23,7 @@ pub fn Chip(#[prop(into)] value: String, children: Children) -> impl IntoView {
       aria-checked=move || checked().to_string()
       data-state=move || if checked() { "checked" } else { "unchecked" }
       disabled=move || ctx.disabled.get()
-      class=move || cn(&[CHIP_BASE, if checked() { CHIP_ON } else { CHIP_OFF }])
+      class=CHIP_BASE
       on:click=move |_| {
         if !ctx.disabled.get_untracked() && !checked() {
           ctx.on_change.run(v.get_value());

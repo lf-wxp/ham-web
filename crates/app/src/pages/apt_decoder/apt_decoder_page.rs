@@ -6,6 +6,7 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen::closure::Closure;
 use web_sys::{File, MessageEvent, Worker};
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::icons::{Icon, IconKind};
 use crate::util::{js_error_message, set_title};
 
@@ -195,22 +196,22 @@ pub fn AptDecoderPage() -> impl IntoView {
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("radio.noaa-apt-decoder")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("radio.audio-am-demodulation-image")}</div>
-          </div>
-          <a
-            href="/weather-sat"
-            class="rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            {move || t("radio.receiving-quick-reference")}
-          </a>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("radio.noaa-apt-decoder")
+        subtitle=move || t("radio.audio-am-demodulation-image")
+        actions=ViewFn::from(move || {
+          view! {
+            <a
+              href="/weather-sat"
+              class="rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {move || t("radio.receiving-quick-reference")}
+            </a>
+          }
+        })
+      />
 
-      <div class="mx-auto max-w-5xl space-y-5 px-4 py-5">
+      <PageContainer class="space-y-5">
         <section class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
           <p>
             {move || t("radio.upload-apt-audio-received")}
@@ -285,7 +286,7 @@ pub fn AptDecoderPage() -> impl IntoView {
             })
           }}
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

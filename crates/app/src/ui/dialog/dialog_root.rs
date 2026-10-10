@@ -27,10 +27,10 @@ pub fn Dialog(
 ) -> impl IntoView {
   let mounted = use_presence(open, EXIT_MS);
   let class = cn(&[
-    // `bg-popover`（0.92+ 不透明）+ 全局的 `.bg-popover` 模糊 + `edge-glow` 渐变描边：
-    // 对话框是整页唯一的「主角」，值得多花一层材质。`edge-glow` 在 `overflow-hidden`
-    // 宿主上自动退到内沿绘制，见 style/input.css。
-    "bg-popover edge-glow data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fill-mode-both fixed left-1/2 top-4 z-50 flex flex-col w-full max-w-[calc(100%-2rem)] -translate-x-1/2 translate-y-0 gap-4 rounded-2xl border p-4 shadow-xl duration-200 sm:max-w-lg sm:top-1/2 sm:translate-y-[-50%] sm:p-6 max-h-[calc(100svh-2rem)] overflow-hidden min-h-0",
+    // 对话框是整页唯一的「主角」：`.pxl-popover` 窗口（实心底 + 粗描边 + 硬偏移投影）。
+    // 入场是 `pop-in`（向上跳 8px、3 帧），不做缩放 —— 缩放会让点阵文字在中间帧变糊。
+    // 居中用 `translate`（独立属性）而不是 `transform`，不会与动画的 transform 互相覆盖。
+    "pxl-popover pxl-enter fixed left-1/2 top-4 z-50 flex flex-col w-full max-w-[calc(100%-2rem)] -translate-x-1/2 gap-4 p-4 sm:max-w-lg sm:top-1/2 sm:-translate-y-1/2 sm:p-6 max-h-[calc(100svh-2rem)] overflow-hidden min-h-0",
     &class,
   ]);
   let state = state_attr(open);
@@ -49,7 +49,7 @@ pub fn Dialog(
           <div
             data-slot="dialog-overlay"
             data-state=state
-            class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fill-mode-both fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+            class="pxl-overlay pxl-enter-fade fixed inset-0 z-50"
             on:click=move |_| open.set(false)
           ></div>
           <div
@@ -75,7 +75,7 @@ pub fn Dialog(
                     type="button"
                     data-slot="dialog-close"
                     data-state=state
-                    class="ring-offset-background focus-visible:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 outline-none disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+                    class="pxl-btn pxl-btn-destructive absolute top-2 right-2 size-8 px-0 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5"
                     on:click=move |_| open.set(false)
                   >
                     <Icon kind=IconKind::X />

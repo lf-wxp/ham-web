@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>业余无线电｜题库 · 知识 · 工具</title>
     <meta name="description" content="业余无线电一站式平台：A/B/C 类题库练习、模拟考试、知识速查、通联日志与实时传播" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAFBFC" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#060B10" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F2E8CF" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1A1C2C" />
 
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -43,6 +43,18 @@
         const resolved = stored === "system" ? (prefersDark ? "dark" : "light") : stored;
         root.classList.toggle("dark", resolved === "dark");
         root.style.colorScheme = resolved;
+        // 像素动效 / 易读字体：与 theme.rs 同一套存储键，首屏前先落到 <html>，避免字体与动画闪一下
+        let motion = "on", readable = "off", scheme = "classic";
+        try {
+          motion = localStorage.getItem("ui:pixelMotion") === "off" ? "off" : "on";
+          readable = localStorage.getItem("ui:readableFont") === "on" ? "on" : "off";
+          // 不认识的 id 在样式里没有对应的块，等价于经典方案；应用挂载后 theme.rs 会再规范化。
+          const stored = localStorage.getItem("ui:colorScheme");
+          if (stored && /^[a-z-]{1,24}$/.test(stored)) scheme = stored;
+        } catch {}
+        root.setAttribute("data-pixel-motion", motion);
+        root.setAttribute("data-readable-font", readable);
+        root.setAttribute("data-scheme", scheme);
       })();
     </script>
 
@@ -79,16 +91,20 @@
           box.setAttribute("aria-describedby", "fatal-desc");
           box.innerHTML = `
             <style>
-              #fatal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; background: #fafbfc; color: #334155; font: 14px/1.6 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
-              .dark #fatal { background: #060b10; color: #cbd5e1; }
-              #fatal section { max-width: 440px; width: 100%; }
-              #fatal h1 { margin: 0 0 6px; font-size: 18px; color: #0f172a; }
-              .dark #fatal h1 { color: #f1f5f9; }
+              #fatal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; background: #f2e8cf; color: #1a1c2c; font: 14px/1.6 "Fusion Pixel", ui-monospace, "PingFang SC", "Microsoft YaHei", monospace; }
+              .dark #fatal { background: #1a1c2c; color: #f4f4f4; }
+              #fatal section { max-width: 440px; width: 100%; padding: 20px; background: #fff8e1; border: 4px solid #1a1c2c; box-shadow: 6px 6px 0 rgba(0, 0, 0, .35); }
+              .dark #fatal section { background: #262b45; border-color: #94b0c2; }
+              #fatal h1 { margin: 0 0 8px; font: 14px/1.5 "Press Start 2P", "Fusion Pixel", monospace; color: #b13e53; }
+              .dark #fatal h1 { color: #ef7d57; }
               #fatal .row { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
-              #fatal button { font: inherit; padding: 6px 14px; border-radius: 8px; border: 1px solid #cbd5e1; background: transparent; color: inherit; cursor: pointer; }
-              #fatal button.primary { background: #0f766e; border-color: #0f766e; color: #fff; }
-              #fatal button:focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; }
-              #fatal pre { max-height: 180px; overflow: auto; white-space: pre-wrap; word-break: break-all; font-size: 12px; padding: 8px; border-radius: 6px; background: rgba(100, 116, 139, .12); }
+              #fatal button { font: inherit; padding: 6px 14px; border: 2px solid #1a1c2c; background: #eadfc0; color: inherit; cursor: pointer; box-shadow: 3px 3px 0 rgba(0, 0, 0, .35); }
+              .dark #fatal button { border-color: #94b0c2; background: #333c57; }
+              #fatal button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(0, 0, 0, .35); }
+              #fatal button.primary { background: #3b5dc9; border-color: #1a1c2c; color: #f4f4f4; }
+              #fatal button:focus-visible { outline: 2px dashed #3b5dc9; outline-offset: 2px; }
+              .dark #fatal button:focus-visible { outline-color: #ffcd75; }
+              #fatal pre { max-height: 180px; overflow: auto; white-space: pre-wrap; word-break: break-all; font-size: 12px; padding: 8px; background: rgba(26, 28, 44, .12); border: 2px solid rgba(26, 28, 44, .3); }
             </style>
             <section>
               <h1 id="fatal-title"></h1>
@@ -154,7 +170,6 @@
     <link data-trunk rel="copy-file" href="../../public/dxcc-entities.bin" />
     <link data-trunk rel="copy-file" href="../../public/manifest.json" />
     <link data-trunk rel="copy-file" href="../../public/favicon.ico" />
-    <link data-trunk rel="copy-file" href="../../public/icon.svg" />
     <link data-trunk rel="copy-file" href="../../public/pwa-icon.svg" />
     <link data-trunk rel="copy-file" href="../../public/pwa-icon-192.png" />
     <link data-trunk rel="copy-file" href="../../public/pwa-icon-512.png" />
@@ -173,13 +188,15 @@
     <!-- 首屏占位：wasm 下载 / 初始化期间显示，应用挂载后由 main.rs 移除 -->
     <div id="boot" role="status" aria-live="polite">
       <style>
-        #boot { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #fafbfc; color: #475569; font: 14px/1.4 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; z-index: 50; }
-        .dark #boot { background: #060b10; color: #94a3b8; }
-        #boot b { font-size: 18px; color: #0f172a; letter-spacing: .02em; }
-        .dark #boot b { color: #e2e8f0; }
-        #boot i { width: 28px; height: 28px; border-radius: 50%; border: 3px solid currentColor; border-right-color: transparent; opacity: .6; animation: boot-spin .8s linear infinite; }
-        @keyframes boot-spin { to { transform: rotate(360deg); } }
-        @media (prefers-reduced-motion: reduce) { #boot i { animation: none; } }
+        #boot { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: var(--background, #f2e8cf); color: var(--foreground, #1a1c2c); font: 14px/1.4 "Fusion Pixel", ui-monospace, "PingFang SC", "Microsoft YaHei", monospace; z-index: 50; }
+        .dark #boot { color: var(--muted-foreground, #94b0c2); }
+        #boot b { font: 14px/1.5 "Press Start 2P", "Fusion Pixel", monospace; color: var(--primary, #3b5dc9); letter-spacing: 0; text-shadow: 2px 2px 0 rgba(0, 0, 0, .3); }
+        /* 读条：8 格，逐格点亮；steps() 让它是「读盘」而不是平滑进度 */
+        #boot i { display: block; width: 160px; height: 16px; border: 4px solid var(--input, #1a1c2c); background: var(--pxl-field, #fffdf2); box-sizing: content-box; }
+        #boot i::after { content: ""; display: block; height: 100%; width: 100%; background: repeating-linear-gradient(90deg, var(--primary, #3b5dc9) 0 16px, transparent 16px 20px); animation: boot-fill 1.6s steps(8, end) infinite; }
+        @keyframes boot-fill { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+        @media (prefers-reduced-motion: reduce) { #boot i::after { animation: none; } }
+        html[data-pixel-motion="off"] #boot i::after { animation: none; }
       </style>
       <i aria-hidden="true"></i>
       <b>业余无线电</b>

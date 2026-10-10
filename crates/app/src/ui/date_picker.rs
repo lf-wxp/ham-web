@@ -75,18 +75,19 @@ fn shift_month((y, m): (i32, u32), delta: i64) -> (i32, u32) {
 /// 单元格类名。
 fn day_class(selected: bool, is_today: bool) -> String {
   cn(&[
-    "flex size-8 items-center justify-center rounded-md text-xs tabular-nums outline-none transition-colors focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+    "flex size-8 items-center justify-center border-2 text-xs tabular-nums outline-none focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring",
     if selected {
-      "bg-primary text-primary-foreground hover:bg-primary/90"
+      "border-ink bg-primary text-primary-foreground"
     } else if is_today {
-      "font-semibold text-primary hover:bg-accent hover:text-accent-foreground"
+      // 今天：虚线框而不是粗体 —— 点阵字体没有粗体。
+      "border-dashed border-primary text-primary hover:border-solid hover:border-ink hover:bg-accent hover:text-accent-foreground"
     } else {
-      "hover:bg-accent hover:text-accent-foreground"
+      "border-transparent hover:border-ink hover:bg-accent hover:text-accent-foreground"
     },
   ])
 }
 
-const NAV_BTN: &str = "flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring/50 focus-visible:ring-[3px]";
+const NAV_BTN: &str = "flex size-8 items-center justify-center border-2 border-transparent text-muted-foreground outline-none hover:border-ink hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring";
 
 /// 弹层式日期选择器（外观与语言切换一致）。
 #[component]
@@ -181,16 +182,16 @@ pub fn DatePicker(
               class=NAV_BTN
               on:click=move |_| view_ym.update(|ym| *ym = shift_month(*ym, -1))
             >
-              <Icon kind=IconKind::ChevronLeft class="h-4 w-4" />
+              <Icon kind=IconKind::ChevronLeft class="size-6" />
             </button>
-            <div class="text-sm font-medium" data-slot="date-picker-title">{title}</div>
+            <div class="pxl-title text-xs" data-slot="date-picker-title">{title}</div>
             <button
               type="button"
               aria-label=move || t("common.next-month")
               class=NAV_BTN
               on:click=move |_| view_ym.update(|ym| *ym = shift_month(*ym, 1))
             >
-              <Icon kind=IconKind::ChevronRight class="h-4 w-4" />
+              <Icon kind=IconKind::ChevronRight class="size-6" />
             </button>
           </div>
           <div class="mt-1 grid grid-cols-7 gap-0.5">
@@ -198,7 +199,7 @@ pub fn DatePicker(
               .into_iter()
               .map(|w| {
                 view! {
-                  <div class="flex h-6 items-center justify-center text-[0.65rem] font-medium text-muted-foreground">
+                  <div class="flex h-6 items-center justify-center text-xs text-muted-foreground">
                     {w}
                   </div>
                 }
@@ -243,7 +244,7 @@ pub fn DatePicker(
             }
           }}
         </span>
-        <Icon kind=IconKind::Calendar class="h-4 w-4 shrink-0 opacity-50" />
+        <Icon kind=IconKind::Calendar class="size-6 shrink-0 opacity-70" />
       </button>
       {panel}
     </div>

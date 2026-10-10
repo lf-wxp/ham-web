@@ -3,6 +3,7 @@ use std::time::Duration;
 use ham_web_core::bands::{self, BANDS, FOOTNOTES, Usage};
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::icons::{Icon, IconKind};
 use crate::ui::Stat;
 use crate::util::document;
@@ -62,16 +63,12 @@ pub fn BandsPage() -> impl IntoView {
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.band-chart-2")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("radio.upper-limits-included-lower")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.band-chart-2")
+        subtitle=move || t("radio.upper-limits-included-lower")
+      />
 
-      <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
+      <PageContainer class="space-y-4">
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label=t("radio.band") value=BANDS.len() />
           <Stat label=t("knowledge.amateur-bands") value=bands::allocation_count() />
@@ -115,7 +112,7 @@ pub fn BandsPage() -> impl IntoView {
         </section>
 
         <BandQuiz />
-      </div>
+      </PageContainer>
     </div>
   }
 }

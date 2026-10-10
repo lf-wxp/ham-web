@@ -12,7 +12,7 @@ use leptos_router::NavigateOptions;
 use leptos_router::hooks::{use_navigate, use_query_map};
 use send_wrapper::SendWrapper;
 
-use crate::components::common::{ExplanationCard, MessageDialog};
+use crate::components::common::{ExplanationCard, MessageDialog, PageContainer};
 use crate::components::exam::{
   AnswerCardFilter, AnswerCardSheet, CustomPaperDialog, ExamResultDialog, ExamResumeDialog,
   ExamSettingsDialog, ExamSubmitConfirmDialog, RulesWalkthroughDialog,
@@ -29,6 +29,7 @@ use crate::util::set_title;
 use crate::util::storage;
 use ham_web_core::exam_review::{ExamReview, ReviewItem};
 
+use super::boss_stage::BossStage;
 use super::exam_bottom_bar::ExamBottomBar;
 use super::exam_header::ExamHeader;
 use super::paper::pick_paper;
@@ -359,13 +360,15 @@ pub fn ExamPage() -> impl IntoView {
     if store::help_seen(keys::HELP_SEEN_EXAM) {
       return;
     }
-    set_timeout(
+    if let Ok(handle) = set_timeout_with_handle(
       move || {
         settings_open.try_set(true);
         store::mark_help_seen(keys::HELP_SEEN_EXAM);
       },
       Duration::from_millis(300),
-    );
+    ) {
+      on_cleanup(move || handle.clear());
+    }
   });
 
   let selected = Signal::derive(move || {
@@ -498,7 +501,16 @@ pub fn ExamPage() -> impl IntoView {
         .into_any();
     }
     view! {
-      <div on:touchstart=swipe_start on:touchend=swipe_end class="mx-auto max-w-5xl px-4 py-6 space-y-4 pb-28 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+      <div on:touchstart=swipe_start on:touchend=swipe_end>
+        <PageContainer class="py-6 space-y-4 pb-28 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+        <BossStage
+          answered=answered
+          total=total
+          remaining=remaining
+          rule=rule
+          finished=store.finished
+          correct=Signal::derive(move || score.get().correct)
+        />
         <ExamHeader
           percent=percent
           weak=weak
@@ -583,6 +595,7 @@ pub fn ExamPage() -> impl IntoView {
           on_open_card=Callback::new(move |()| card_open.set(true))
           on_submit=Callback::new(move |()| confirm_open.set(true))
         />
+        </PageContainer>
       </div>
     }
     .into_any()

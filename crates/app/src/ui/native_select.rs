@@ -25,7 +25,7 @@ use super::popover;
 ///
 /// `popover::ITEM` 只有 `hover:` / `focus:`，而键盘导航时焦点始终留在触发器上，
 /// 这两种状态都不会命中 —— 没有它，方向键移动是「看不见」的。
-const ITEM_ACTIVE: &str = "data-[active=true]:bg-accent data-[active=true]:text-accent-foreground";
+const ITEM_ACTIVE: &str = "data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:border-ink";
 
 /// 一个下拉选项。
 ///

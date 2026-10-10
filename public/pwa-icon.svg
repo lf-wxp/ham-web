@@ -1,49 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>业余无线电</title>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#07A7AA"/>
-      <stop offset="0.52" stop-color="#008183"/>
-      <stop offset="1" stop-color="#0E7C63"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b5dc9"/>
+      <stop offset="1" stop-color="#3b5dc9"/>
     </linearGradient>
     <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.16"/>
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.12"/>
       <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/>
     </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#002E33" flood-opacity="0.30"/>
-    </filter>
+    <clipPath id="tile"><rect width="512" height="512" rx="64.000"/></clipPath>
+    <clipPath id="inner"><rect x="16.000" y="16.000" width="480.000" height="480.000" rx="48.000"/></clipPath>
   </defs>
 
-  <!-- 品牌背景：主色青绿 → 品牌绿（与 hero-gradient-text 的冷色段一致） -->
-  <rect width="512" height="512" rx="118" fill="url(#bg)"/>
-  <rect width="512" height="512" rx="118" fill="url(#sheen)"/>
-
-  <!-- 无线电台设备（白色剪影） -->
-  <g filter="url(#shadow)" fill="#FFFFFF">
-    <!-- 天线 -->
-    <line x1="306" y1="264" x2="306" y2="124" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round"/>
-    <circle cx="306" cy="106" r="18"/>
-    <!-- 机身 -->
-    <rect x="156" y="264" width="200" height="164" rx="40"/>
-    <!-- 信号波纹 -->
-    <path d="M 338 116 A 44 44 0 0 1 338 198" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round"/>
-    <path d="M 366 100 A 70 70 0 0 1 366 214" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" opacity="0.45"/>
+  <g clip-path="url(#tile)">
+    <rect width="512" height="512" fill="#1a1c2c"/>
+    <rect x="16.000" y="16.000" width="480.000" height="480.000" rx="48.000" fill="url(#bg)"/>
+    <rect width="512" height="512" fill="url(#sheen)"/>
+    <g clip-path="url(#inner)">
+      <rect x="16.000" y="16.000" width="480.000" height="16.000" fill="#FFFFFF" opacity="0.35"/>
+      <rect x="16.000" y="16.000" width="16.000" height="480.000" fill="#FFFFFF" opacity="0.35"/>
+      <rect x="16.000" y="480.000" width="480.000" height="16.000" fill="#000000" opacity="0.30"/>
+      <rect x="480.000" y="16.000" width="16.000" height="480.000" fill="#000000" opacity="0.30"/>
+    </g>
+    <g fill="#f4f4f4">
+      <rect x="192.000" y="112.000" width="128.000" height="32.000"/>
+      <rect x="224.000" y="144.000" width="64.000" height="64.000"/>
+      <rect x="64.000" y="208.000" width="96.000" height="64.000"/>
+      <rect x="192.000" y="208.000" width="128.000" height="64.000"/>
+      <rect x="352.000" y="208.000" width="96.000" height="64.000"/>
+      <rect x="64.000" y="272.000" width="384.000" height="64.000"/>
+      <rect x="64.000" y="336.000" width="96.000" height="64.000"/>
+      <rect x="192.000" y="336.000" width="128.000" height="64.000"/>
+      <rect x="352.000" y="336.000" width="96.000" height="64.000"/>
+    </g>
   </g>
-
-  <!-- 细节（深青，呼应 primary 的暗部） -->
-  <g fill="#006568">
-    <!-- 扬声器格栅 -->
-    <rect x="180" y="310" width="90" height="13" rx="6.5"/>
-    <rect x="180" y="336" width="90" height="13" rx="6.5"/>
-    <rect x="180" y="362" width="90" height="13" rx="6.5"/>
-    <!-- 显示屏 -->
-    <rect x="286" y="286" width="52" height="36" rx="8"/>
-    <!-- 调谐旋钮 -->
-    <circle cx="324" cy="390" r="20"/>
-  </g>
-  <circle cx="324" cy="390" r="7" fill="#FFFFFF"/>
-
-  <!-- 发射指示灯（金色点缀，呼应 chart-2） -->
-  <circle cx="176" cy="286" r="7" fill="#F0A500"/>
 </svg>

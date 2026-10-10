@@ -3,6 +3,7 @@ use ham_web_core::operating::{
 };
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::util::set_title;
 
 use super::field_list::FieldList;
@@ -14,16 +15,12 @@ pub fn OperatingPage() -> impl IntoView {
   set_title("shell.operating-practice");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.operating-practice")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("knowledge.contact-procedure-log-qsl")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.operating-practice")
+        subtitle=move || t("knowledge.contact-procedure-log-qsl")
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <section class="rounded-xl border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.standard-contact-procedure")}</h2>
           <FieldList fields=CONTACT_STEPS />
@@ -48,7 +45,7 @@ pub fn OperatingPage() -> impl IntoView {
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("shell.grounding-lightning")}</h2>
           <TipList tips=GROUNDING_TIPS />
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

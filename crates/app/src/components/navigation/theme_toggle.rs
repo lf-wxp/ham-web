@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 
+use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 use crate::theme::{Theme, use_theme};
 use crate::ui::{Button, Size, Variant};
@@ -10,9 +11,9 @@ pub fn ThemeToggle(#[prop(optional)] class: &'static str) -> impl IntoView {
   let theme = use_theme();
   let toggle_label = move || {
     if theme.is_dark() {
-      "切换到浅色模式"
+      t("shell.switch-to-light-mode")
     } else {
-      "切换到深色模式"
+      t("shell.switch-to-dark-mode")
     }
   };
   view! {

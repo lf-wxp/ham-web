@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::util::set_title;
 
 use super::countdown_section::CountdownSection;
@@ -98,16 +99,12 @@ pub fn ContestPage() -> impl IntoView {
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.contesting")}</h1>
-            <div class="text-xs text-muted-foreground">"CQ WW · WPX · IARU · ARRL"</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.contesting")
+        subtitle="CQ WW · WPX · IARU · ARRL".to_string()
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <section class="rounded-xl border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.next-contest")}</h2>
           <div class="p-4">
@@ -176,7 +173,7 @@ pub fn ContestPage() -> impl IntoView {
               .collect_view()}
           </ul>
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

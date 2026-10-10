@@ -8,6 +8,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::data;
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
@@ -191,40 +192,39 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-16 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.glossary")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("knowledge.common-ham-terms-english")}</div>
-          </div>
+      <PageHeader class="top-16"
+        title=move || t("shell.glossary")
+        subtitle=move || t("knowledge.common-ham-terms-english")
+        actions=ViewFn::from(move || {
+          view! {
+            <Input
+              value=kw
+              on_change=Callback::new(move |v: String| {
+                kw.set(v);
+                visible.set(PAGE);
+              })
+              kind=InputType::Search
+              placeholder=Signal::derive(move || t("knowledge.search-terms-abbreviations-explanations"))
+              prefix=move || view! { <Icon kind=IconKind::Search /> }
+              clearable=true
+              class="w-56"
+            />
 
-          <Input
-            value=kw
-            on_change=Callback::new(move |v: String| {
-              kw.set(v);
-              visible.set(PAGE);
-            })
-            kind=InputType::Search
-            placeholder=Signal::derive(move || t("knowledge.search-terms-abbreviations-explanations"))
-            prefix=move || view! { <Icon kind=IconKind::Search /> }
-            clearable=true
-            class="w-56"
-          />
+            <button
+              type="button"
+              on:click=move |_| {
+                abbr_only.update(|v| *v = !*v);
+                visible.set(PAGE);
+              }
+              class=move || pill(abbr_only.get(), "rounded-lg border px-3 py-1.5 text-sm transition-colors")
+            >
+              {move || t("knowledge.english-abbreviations-only")}
+            </button>
+          }
+        })
+      />
 
-          <button
-            type="button"
-            on:click=move |_| {
-              abbr_only.update(|v| *v = !*v);
-              visible.set(PAGE);
-            }
-            class=move || pill(abbr_only.get(), "rounded-lg border px-3 py-1.5 text-sm transition-colors")
-          >
-            {move || t("knowledge.english-abbreviations-only")}
-          </button>
-        </div>
-      </header>
-
-      <div class="mx-auto grid max-w-5xl grid-cols-1 gap-5 px-4 py-5 md:grid-cols-[240px_1fr]">
+      <PageContainer class="space-y-0 grid grid-cols-1 gap-5 md:grid-cols-[240px_1fr]">
         <aside class="hidden md:block">
           <div class="sticky top-[136px] max-h-[calc(100vh-152px)] overflow-y-auto rounded-xl border bg-card p-2">
             <button
@@ -252,7 +252,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
           </div>
           {list}
         </div>
-      </div>
+      </PageContainer>
     </div>
   }
 }

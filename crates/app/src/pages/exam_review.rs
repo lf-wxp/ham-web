@@ -4,6 +4,7 @@
 
 use leptos::prelude::*;
 
+use crate::components::common::PageContainer;
 use crate::components::common::PageHeader;
 use crate::i18n::{t, tf, tp};
 use crate::store;
@@ -156,12 +157,12 @@ pub fn ExamReviewPage() -> impl IntoView {
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader title=t("exam.post-exam-review") subtitle=t("exam.per-question-results-correct") />
-      <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
+      <PageContainer class="space-y-4">
         <p class="text-sm text-muted-foreground">
           {move || t("exam.review-your-latest-mock")}
         </p>
         {body}
-      </div>
+      </PageContainer>
     </div>
   }
 }

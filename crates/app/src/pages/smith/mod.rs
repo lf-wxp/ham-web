@@ -8,6 +8,7 @@ use ham_web_core::smith::{
 };
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::ui::{
   Button, ControlSize, NumberField, RadioGroup, RadioGroupItem, Size, Slider, Variant,
@@ -119,18 +120,12 @@ pub fn SmithPage() -> impl IntoView {
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("tools.smith-chart-and-matching")}</h1>
-            <div class="text-xs text-muted-foreground">
-              {move || t("tools.drag-to-place-the")}
-            </div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("tools.smith-chart-and-matching")
+        subtitle=move || t("tools.drag-to-place-the")
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <section id="chart" class="scroll-mt-24 rounded-xl border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.impedance-location-and-matching")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
@@ -336,7 +331,7 @@ pub fn SmithPage() -> impl IntoView {
             </a>
           </div>
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

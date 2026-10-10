@@ -25,6 +25,10 @@ sha2.workspace = true
 walkdir.workspace = true
 brotli.workspace = true
 flate2.workspace = true
+fontcull-klippa.workspace = true
+fontcull-skrifa.workspace = true
+ttf2woff2.workspace = true
+encoding_rs.workspace = true
 
 [lints]
 workspace = true

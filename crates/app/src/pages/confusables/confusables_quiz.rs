@@ -3,6 +3,7 @@
 use ham_web_core::confusables::CONFUSABLE_QUIZ;
 use leptos::prelude::*;
 
+use crate::components::common::PageContainer;
 use crate::i18n::{t, tf, tp};
 use crate::ui::{Button, Size, Variant};
 
@@ -45,7 +46,7 @@ pub(super) fn ConfusablesQuiz() -> impl IntoView {
   };
 
   view! {
-    <div class="mx-auto max-w-2xl px-4 py-5">
+    <PageContainer class="space-y-0">
       {move || {
         if finished.get() {
           let c = correct.get();
@@ -139,6 +140,6 @@ pub(super) fn ConfusablesQuiz() -> impl IntoView {
           .into_any()
         }
       }}
-    </div>
+    </PageContainer>
   }
 }

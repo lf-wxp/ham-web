@@ -37,8 +37,10 @@ pub(super) fn AlertCard() -> impl IntoView {
       <div class="text-sm font-semibold">{move || t("learning.space-weather-alerts")}</div>
       <div class="mt-2">
         {move || match alert.get() {
+          // 文字用调色板校正过的「文字档」（亮 700 / 暗 300），而不是 `--destructive`：
+          // 后者是给实心按钮做底色的，落在 `--muted` 底上只有 4.29 / 4.43，过不了 AA。
           Some(a) if !a.level.is_empty() => view! {
-            <span class="rounded bg-muted px-2 py-1 font-mono text-sm font-semibold text-destructive">{a.level.clone()}</span>
+            <span class="rounded bg-muted px-2 py-1 font-mono text-sm font-semibold text-red-700 dark:text-red-300">{a.level.clone()}</span>
           }
           .into_any(),
           Some(a) => view! {

@@ -37,7 +37,7 @@ use web_sys::{
 };
 
 use crate::i18n::t;
-use crate::theme::{resolve_theme_color, use_theme};
+use crate::theme::{resolve_theme_color, use_display_prefs, use_theme};
 use crate::util::{document, window};
 
 /// 顶点着色器：顶点位置与法线都做「先偏航、再俯仰」的旋转，然后正交投影到裁剪空间。
@@ -635,10 +635,11 @@ pub fn PatternSphere(
     });
   });
 
-  // 主题变化 → 重新解析令牌（`--primary` / `--muted-foreground` 在明暗下不同）。
+  // 主题 / 配色方案变化 → 重新解析令牌（`--primary` / `--muted-foreground` 在明暗与方案间都不同）。
   let theme = use_theme();
+  let prefs = use_display_prefs();
   Effect::new(move |_| {
-    let _ = theme.is_dark();
+    let _ = (theme.is_dark(), prefs.scheme());
     let palette = Palette::detect();
     renderer.update_value(|slot| {
       if let Some(renderer) = slot.as_ref() {

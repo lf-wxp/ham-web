@@ -7,6 +7,7 @@
 | 要改什么 | 先读 |
 |---|---|
 | **界面 / 表单控件 / 按钮 / 弹层** | [`docs/ui-components.md`](docs/ui-components.md)（使用规范：决策表、硬规则、坑、验收）→ [`crates/app/src/ui/README.md`](crates/app/src/ui/README.md)（组件清单与示例） |
+| **页面骨架 / 内容宽度（页头、正文容器）** | [`docs/ui-components.md`](docs/ui-components.md) §1.5：宽度只有 `max-w-5xl` 一种，页头用 `PageHeader`、正文用 `PageContainer` |
 | 仓库里那些「刻意的例外」（没走组件的原生元素） | `grep -rn "刻意的例外" crates/app/src`；清单与原因见 `docs/ui-components.md` §5 / §8 |
 | 界面文案 / 译文 | [`docs/i18n-refactor.md`](docs/i18n-refactor.md)；词条在 `data/i18n/{zh,en,es}/<域>.json` |
 | 题库题面排版（空格、全角半角、指纹） | [`docs/typography.md`](docs/typography.md) |
@@ -20,6 +21,10 @@
   不直接调用类名工厂（`button_class` 只给 `Button` / `ButtonLink` 内部与
   `docs/ui-components.md` §8 清单里的几处「刻意的例外」用 ——
   `grep -rn "刻意的例外" crates/app/src` 可列全）。
+- **页面宽度只有一个来源**：内容宽度 = `PageHeader`（`components/common/page_header.rs`）与
+  `PageContainer`（`components/common/page_container.rs`）里的 `max-w-5xl`（1024px）。
+  页面里不写 `max-w-*` / `container` / 自造的 `mx-auto` 宽度容器；间距用 `PageContainer` 的
+  `class` 覆盖；多行页头用 `PageHeader` 的 `children`。详见 `docs/ui-components.md` §1.5。
 - **一个文件只放一个组件 —— 共享组件与业务组件都是**（`crates/app/src/ui/`、`components/`、
   `pages/` 一视同仁）。「组件」既指 `#[component]`，也指任何**返回视图的函数**
   （`-> impl IntoView` / `-> AnyView`，例如表格单元格、列表行这类视图构造函数）：
@@ -43,7 +48,7 @@
 - **提交前必须过 `cargo make check`**；动了页面组件再跑相关 e2e。
 
 ```bash
-cargo make check   # fmt-check + clippy + test + i18n-check + knowledge-i18n-check + explanations-check
+cargo make check   # fmt-check + clippy + test + i18n-check + knowledge-i18n-check + explanations-check + pixel-check
 cargo make ci      # 上面 + release 前端构建（提交前用这个）
 ```
 

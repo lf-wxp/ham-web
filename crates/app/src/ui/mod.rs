@@ -1,4 +1,5 @@
-//! 基础 UI 组件：与原项目 shadcn/ui（new-york 风格）保持相同的 Tailwind 类名与交互。
+//! 基础 UI 组件：像素风（Pixel Art）控件库。外观由 `style/pixel/controls.css` 的 `px-*` 类提供，
+//! 组件 API 沿用 shadcn/ui 的 props 约定（`variant` / `size` / 受控 `value` + `on_change`）。
 //!
 //! 本目录是**全站表单控件的唯一来源**：页面里不应再直接写 `<input>` / `<select>` /
 //! `<textarea>` / `<input type="range">` 等原生元素，统一用这里的组件，颜色、圆角、
@@ -25,7 +26,7 @@
 //! | [`Switch`] | `<input type="checkbox">`（切换即生效的设置） | 对应 Radix Switch |
 //! | [`RadioGroup`] + [`RadioGroupItem`] | `<input type="radio">` | 对应 Radix RadioGroup |
 //! | [`Slider`] | `<input type="range">` | 轨道 / 滑块自绘，进度用 CSS 变量 |
-//! | [`ChipGroup`] + [`Chip`] | 手写的分段选择胶囊（`CHIP_ON` / `CHIP_OFF`） | 互斥选择，比 [`RadioGroup`] 紧凑，适合工具条 |
+//! | [`ChipGroup`] + [`Chip`] | 手写的分段选择胶囊 | 互斥选择，比 [`RadioGroup`] 紧凑，适合工具条 |
 //! | [`ChipToggle`] | 手写的筛选 chip 开关 | `aria-pressed` 语义，允许一个都不选 |
 //! | [`FileInput`] | 隐藏 `<input type="file">` + 触发按钮 | 按钮外观走 [`button_class`] |
 //! | [`Field`] | 手写的 `label + 控件 + 提示` 排版 | 标签 / 说明 / 错误文案统一 |
@@ -158,45 +159,35 @@ pub enum Size {
   #[default]
   Default,
   Sm,
-  /// 大号 `h-11`：落地页主操作（首页 Hero 的三个入口）。更大的圆角与字号，
+  /// 大号 `h-12`：落地页主操作（首页 Hero 的三个入口）。更大的圆角与字号，
   /// 让它在版面里明显是「主角」；表单与工具栏里不要用。
   Lg,
   Icon,
 }
 
-// `motion-press` 取代原来的 `transition-all`：只过渡 transform / 阴影 / 颜色这几项，
-// 按下时用 back 曲线回弹、抬起时走 instant 快速收尾（见 style/input.css 动效语言一节）。
-// `relative` 供 `btn-ripple` 的 `::after`、`btn-solid` 的 `::before` 定位；
-// `active:shadow-none` 让按下时「沉下去」。
-// 禁用态：半透明 + 去阴影 + 降饱和 + 不响应指针，与可用态有明显区分。
-const BUTTON_BASE: &str = "relative inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium btn-ripple motion-press active:scale-[0.97] active:shadow-none cursor-pointer disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:saturate-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive";
+// 外观全部在 `style/pixel/controls.css` 的 `.pxl-btn*`：凸起 → 悬停上浮 2px → 按下沉 2px。
+// 这里只拼类名，不再写一长串工具类 —— 手感涉及位移、阴影、内高光同时变化，放在 CSS 里才不会漏。
+// 图标尺寸：像素图标是 24px 网格，`size-6` 是 1:1，其余尺寸会有轻微抗锯齿（见 surfaces.css）。
+const BUTTON_BASE: &str = "pxl-btn [&_svg:not([class*='size-'])]:size-6";
 
-/// 生成按钮类名（等价于 shadcn `buttonVariants({ variant, size, className })`）。
+/// 生成按钮类名。
 ///
-/// 悬停时颜色加深并加大阴影（实心变体用带色阴影做「发光」，再叠一道斜向扫光 ——
-/// `btn-solid`；描边 / 次级只轻抬一档），与按下时的 `active:scale-*` +
-/// `active:shadow-none` 组成「悬停浮起 → 按下沉下」的完整手感。
+/// 悬停上浮 2px 并提亮，按下下沉 2px、投影消失、内高光翻转成内阴影；
+/// 禁用态是抖动网点遮罩而不是半透明。
 pub fn button_class(variant: Variant, size: Size, extra: &str) -> String {
   let v = match variant {
-    Variant::Default => {
-      "btn-solid bg-primary text-primary-foreground shadow-xs shadow-primary/25 hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/40"
-    }
-    Variant::Destructive => {
-      "btn-solid bg-destructive text-white shadow-xs shadow-destructive/20 hover:bg-destructive/90 hover:shadow-lg hover:shadow-destructive/40 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60"
-    }
-    Variant::Outline => {
-      "border bg-background/60 shadow-xs hover:border-primary/40 hover:bg-accent hover:text-accent-foreground hover:shadow-sm dark:bg-input/30 dark:border-input dark:hover:border-primary/50 dark:hover:bg-input/50"
-    }
-    Variant::Secondary => {
-      "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80 hover:shadow-sm"
-    }
-    Variant::Ghost => "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+    Variant::Default => "pxl-btn-primary",
+    Variant::Destructive => "pxl-btn-destructive",
+    Variant::Outline => "pxl-btn-outline",
+    Variant::Secondary => "pxl-btn-secondary",
+    Variant::Ghost => "pxl-btn-ghost",
   };
+  // 高度取 4px 的倍数；按钮文字是 12px 点阵，上下留白按 4px 网格算。
   let s = match size {
-    Size::Default => "h-9 px-4 py-2 has-[>svg]:px-3",
-    Size::Sm => "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-    Size::Lg => "h-11 rounded-xl px-6 text-base has-[>svg]:px-4",
-    Size::Icon => "size-9",
+    Size::Default => "h-10 px-4 has-[>svg]:px-3",
+    Size::Sm => "h-8 gap-1.5 px-3 has-[>svg]:px-2",
+    Size::Lg => "h-12 px-6 text-base has-[>svg]:px-4",
+    Size::Icon => "size-10 px-0",
   };
   cn(&[BUTTON_BASE, v, s, extra])
 }
@@ -210,33 +201,26 @@ pub enum BadgeVariant {
   Outline,
 }
 
-const BADGE_BASE: &str = "inline-flex items-center justify-center rounded-full border px-2.5 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden";
+const BADGE_BASE: &str = "pxl-badge [&>svg]:size-4 [&>svg]:pointer-events-none";
 
 /// 生成徽标类名。
 pub fn badge_class(variant: BadgeVariant, extra: &str) -> String {
   let v = match variant {
-    BadgeVariant::Default => {
-      "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90"
-    }
-    BadgeVariant::Secondary => {
-      "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90"
-    }
+    BadgeVariant::Default => "bg-primary text-primary-foreground [a&]:hover:brightness-110",
+    BadgeVariant::Secondary => "bg-secondary text-secondary-foreground [a&]:hover:brightness-110",
     BadgeVariant::Outline => {
-      "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground"
+      "bg-card text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground"
     }
   };
   cn(&[BADGE_BASE, v, extra])
 }
 
-/// 卡片容器类名。
+/// 卡片容器类名：像素「窗口面板」。
 ///
-/// 玻璃质感（顶部反光）不在这里写：`style/input.css` 的「材质语言」一节按
-/// `.rounded-xl.bg-card.border` 统一叠加，全站手写的卡片与这里生成的走同一条规则。
+/// 描边 / 内高光 / 硬偏移投影在 `.pxl-window`。存量手写的 `rounded-xl border bg-card` 卡片
+/// 靠 `style/pixel/surfaces.css` 的兜底规则统一加粗描边，两条路径视觉一致。
 pub fn card_class(extra: &str) -> String {
-  cn(&[
-    "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm mb-[24px]",
-    extra,
-  ])
+  cn(&["pxl-window flex flex-col gap-6 py-6 mb-[24px]", extra])
 }
 
 /// 卡片头部类名。
@@ -244,7 +228,7 @@ pub const CARD_HEADER: &str = "@container/card-header grid auto-rows-min grid-ro
 
 /// 卡片标题类名。
 pub fn card_title_class(extra: &str) -> String {
-  cn(&["leading-none font-semibold", extra])
+  cn(&["pxl-title text-sm leading-none", extra])
 }
 
 /// 卡片内容类名。
@@ -255,7 +239,7 @@ pub fn card_content_class(extra: &str) -> String {
 /// 表单标签类名。
 pub fn label_class(extra: &str) -> String {
   cn(&[
-    "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+    "flex items-center gap-2 text-sm leading-none select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
     extra,
   ])
 }

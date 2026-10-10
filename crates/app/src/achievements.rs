@@ -12,7 +12,7 @@ use leptos::prelude::*;
 use serde::Deserialize;
 
 use crate::i18n::t;
-use crate::icons::{Icon, IconKind};
+use crate::icons::{Icon, IconKind, PixelSprite, badge_sprite};
 use crate::util::storage;
 
 /// 已展示过的成就 id（避免每次刷新都重复提示）。
@@ -199,15 +199,15 @@ pub fn AchievementToast() -> impl IntoView {
           role="status"
           aria-live="polite"
           data-leaving=move || leaving.get().to_string()
-          class="motion-toast fixed bottom-4 right-4 z-50 flex w-72 items-start gap-3 rounded-lg border bg-popover p-3 shadow-lg"
+          class="motion-toast pxl-popover fixed bottom-20 right-4 z-50 flex w-72 items-start gap-3 p-3 xl:bottom-4"
         >
-          <div class="text-2xl leading-none">{a.icon}</div>
+          <PixelSprite name=badge_sprite(a.id) scale=3 class="pxl-bob" />
           <div class="min-w-0 flex-1">
-            <div class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <div class="pxl-label text-xs text-muted-foreground">
               {t("exam.achievement-unlocked")}
             </div>
-            <div class="mt-0.5 text-sm font-semibold">{a.name}</div>
-            <div class="mt-0.5 text-[11px] leading-snug text-muted-foreground">{a.desc}</div>
+            <div class="mt-0.5 text-sm">{a.name}</div>
+            <div class="mt-0.5 text-xs leading-snug text-muted-foreground">{a.desc}</div>
           </div>
           <button
             type="button"
@@ -215,7 +215,7 @@ pub fn AchievementToast() -> impl IntoView {
             aria-label=t("learning.dismiss")
             on:click=move |_| dismiss()
           >
-            <Icon kind=IconKind::X class="h-3.5 w-3.5" />
+            <Icon kind=IconKind::X class="size-6" />
           </button>
         </div>
       }

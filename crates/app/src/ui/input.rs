@@ -252,12 +252,12 @@ pub fn Input(
                 aria-label=move || t("exam.clear")
                 data-slot="input-clear"
                 class=cn(&[
-                  "absolute top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+                  "absolute top-1/2 flex size-6 -translate-y-1/2 items-center justify-center border-2 border-transparent text-muted-foreground outline-none hover:border-ink hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring",
                   clear_pos,
                 ])
                 on:click=clear
               >
-                <Icon kind=IconKind::X class="size-3.5" />
+                <Icon kind=IconKind::X class="size-4" />
               </button>
             </Show>
           }

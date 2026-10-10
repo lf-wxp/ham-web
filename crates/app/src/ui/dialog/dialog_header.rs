@@ -4,7 +4,7 @@ use leptos::prelude::*;
 #[component]
 pub fn DialogHeader(children: Children) -> impl IntoView {
   view! {
-    <div data-slot="dialog-header" class="flex flex-col gap-2 text-center sm:text-left">
+    <div data-slot="dialog-header" class="flex flex-col gap-2 text-left">
       {children()}
     </div>
   }

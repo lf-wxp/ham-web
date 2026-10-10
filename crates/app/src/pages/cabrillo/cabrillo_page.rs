@@ -1,6 +1,7 @@
 use ham_web_core::cabrillo::{CABRILLO_CONCEPTS, CABRILLO_TIPS};
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::util::set_title;
 
 use super::cabrillo_generator::CabrilloGenerator;
@@ -11,16 +12,12 @@ pub fn CabrilloPage() -> impl IntoView {
   set_title("shell.cabrillo-logs");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.cabrillo-logs")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("log.standard-format-scoring-submission")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.cabrillo-logs")
+        subtitle=move || t("log.standard-format-scoring-submission")
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <section class="rounded-xl border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("log.format-structure")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
@@ -56,7 +53,7 @@ pub fn CabrilloPage() -> impl IntoView {
         </section>
 
         <CabrilloGenerator />
-      </div>
+      </PageContainer>
     </div>
   }
 }

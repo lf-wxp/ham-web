@@ -136,6 +136,31 @@ impl Module {
 /// 全部页面 / 工具（含不在导航菜单中的页面）。
 pub const MODULES: &[Module] = &[
   Module {
+    path: "/map",
+    href: None,
+    title: "闯关地图",
+    icon: "map",
+    group: Some(GROUP_EXAM),
+    backend: false,
+  },
+  // 回合战只能带着 `?stage=` / `?mode=revenge` 进入（由地图与图鉴发起），不进导航与 sitemap。
+  Module {
+    path: "/battle",
+    href: None,
+    title: "回合战",
+    icon: "star",
+    group: None,
+    backend: false,
+  },
+  Module {
+    path: "/bestiary",
+    href: None,
+    title: "怪物图鉴",
+    icon: "book-marked",
+    group: Some(GROUP_EXAM),
+    backend: false,
+  },
+  Module {
     path: "/practice",
     href: None,
     title: "练习",
@@ -1416,8 +1441,8 @@ pub fn nav_paths() -> Vec<&'static str> {
   out
 }
 
-/// 不进 sitemap 的路径：`/print` 依赖 `?src=` 参数，单独访问没有意义。
-const SITEMAP_EXCLUDE: &[&str] = &["/print"];
+/// 不进 sitemap 的路径：`/print`、`/battle` 依赖查询参数，单独访问没有意义。
+const SITEMAP_EXCLUDE: &[&str] = &["/print", "/battle"];
 
 /// 实时数据类页面：更新频率更高，sitemap 里给更高权重。
 const SITEMAP_LIVE: &[&str] = &["/dashboard", "/dx-spots", "/solar", "/rbn", "/psk-reporter"];
@@ -1507,6 +1532,7 @@ mod tests {
     seen.dedup();
     assert_eq!(seen.len(), total, "sitemap 不应出现重复路径");
     assert!(!entries.iter().any(|(p, _, _)| *p == "/print"));
+    assert!(!entries.iter().any(|(p, _, _)| *p == "/battle"));
     assert!(entries.iter().any(|(p, _, _)| *p == "/"));
     // 除排除项外，每个不同路径都应进 sitemap（`/practice` 有两个入口但只算一条）。
     let distinct: Vec<&str> = {
@@ -1515,7 +1541,7 @@ mod tests {
       v.dedup();
       v
     };
-    assert_eq!(total, distinct.len() - 1);
+    assert_eq!(total, distinct.len() - SITEMAP_EXCLUDE.len());
   }
 
   #[test]

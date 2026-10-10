@@ -1,6 +1,6 @@
 //! 滑块：替代原生 `<input type="range">`（音调 / 音量 / 阈值一类连续量）。
 //!
-//! 跨浏览器的轨道与滑块自绘集中在 `style/input.css` 的 `.ui-slider` 里；组件只负责把
+//! 跨浏览器的轨道与滑块自绘集中在 `style/pixel/surfaces.css` 的 `.ui-slider` 里；组件只负责把
 //! 当前进度以 `--slider-fill` 传给 CSS，填充比例无需 JS 逐帧计算。
 
 use leptos::prelude::*;

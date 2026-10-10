@@ -1,0 +1,545 @@
+/* ============================================================
+   像素控件原语（Controls）
+   ------------------------------------------------------------
+   `ui/` 组件的外观只在这里定义一次，Rust 侧只拼 `px-*` 类名。
+   为什么写成 CSS 而不是一长串 Tailwind 工具类：
+   - 像素边框 / 内高光 / 阶梯切角要叠 3–4 层 box-shadow，写成工具类既长又难读；
+   - 「凸起 → 按下」的手感涉及 `:active` 位移 + 阴影 + 内高光同时变化，放一起才不会漏。
+
+   像素边框的做法：
+     border: 2px solid var(--pxl-ink)          外描边（实心墨色）
+     box-shadow: inset 2px 2px 0 var(--pxl-hi)  左上内高光（亮边）
+                 inset -2px -2px 0 var(--pxl-lo) 右下内阴影（暗边）
+                 2px 2px 0 var(--pxl-shadow)     外投影（硬偏移）
+   再用 `clip-path` 把四个角各削掉一格，得到 16 位掌机那种「切角」。
+   切角会把投影也裁掉，所以带投影的元素不用 clip-path（零圆角 + 描边已经足够「方」）。
+
+   分层：全部放在 `@layer components`，调用点的 Tailwind 工具类（`w-full` / `h-8` / `px-2`）
+   照常覆盖这里的默认值。
+   ============================================================ */
+
+@layer components {
+  /* ---------- 按钮 ---------- */
+  .pxl-btn {
+    --btn-bg: var(--secondary);
+    --btn-fg: var(--secondary-foreground);
+    --btn-lo: var(--pxl-lo);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    cursor: pointer;
+    user-select: none;
+    background-color: var(--btn-bg);
+    color: var(--btn-fg);
+    border: 2px solid var(--pxl-ink);
+    box-shadow:
+      inset 2px 2px 0 0 var(--pxl-hi),
+      inset -2px -2px 0 0 var(--btn-lo),
+      2px 2px 0 0 var(--pxl-shadow);
+    font-size: var(--text-sm);
+    line-height: 1;
+    transition-property: translate, box-shadow, background-color, filter;
+    transition-duration: var(--motion-instant);
+    transition-timing-function: steps(2, end);
+  }
+
+  @media (hover: hover) {
+    .pxl-btn:hover:not(:disabled) {
+      filter: brightness(1.1);
+      translate: 0 -2px;
+      box-shadow:
+        inset 2px 2px 0 0 var(--pxl-hi),
+        inset -2px -2px 0 0 var(--btn-lo),
+        2px 4px 0 0 var(--pxl-shadow);
+    }
+  }
+
+  /* 按下：沉 2px，外投影消失，内高光翻转成内阴影（像真的被按进去）。 */
+  .pxl-btn:active:not(:disabled) {
+    translate: 2px 2px;
+    filter: none;
+    box-shadow:
+      inset 2px 2px 0 0 var(--btn-lo),
+      inset -2px -2px 0 0 var(--pxl-hi),
+      0 0 0 0 var(--pxl-shadow);
+  }
+
+  .pxl-btn:focus-visible {
+    outline: 2px dashed var(--ring);
+    outline-offset: 3px;
+  }
+
+  /* 禁用：抖动网点遮罩 + 去投影。网点而不是半透明：像素风里「灰掉」就是镂空。 */
+  .pxl-btn:disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: inset 2px 2px 0 0 var(--pxl-hi);
+    filter: saturate(0.4);
+  }
+
+  .pxl-btn:disabled::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: repeating-conic-gradient(
+      var(--card) 0% 25%,
+      transparent 0% 50%
+    );
+    background-size: 4px 4px;
+    opacity: 0.55;
+  }
+
+  .pxl-btn > svg {
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+
+  /* 变体：只换三个变量，凸起 / 按下的结构不变。 */
+  .pxl-btn-primary {
+    --btn-bg: var(--primary);
+    --btn-fg: var(--primary-foreground);
+    --btn-lo: rgb(0 0 0 / 0.3);
+  }
+
+  .pxl-btn-destructive {
+    --btn-bg: var(--destructive);
+    --btn-fg: var(--destructive-foreground);
+    --btn-lo: rgb(0 0 0 / 0.3);
+  }
+
+  .pxl-btn-outline {
+    --btn-bg: var(--card);
+    --btn-fg: var(--foreground);
+  }
+
+  .pxl-btn-secondary {
+    --btn-bg: var(--secondary);
+    --btn-fg: var(--secondary-foreground);
+  }
+
+  /* 幽灵按钮：平时没有边框与投影（融进背景），悬停才「凸」出来。 */
+  .pxl-btn-ghost {
+    --btn-bg: transparent;
+    --btn-fg: var(--foreground);
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  @media (hover: hover) {
+    .pxl-btn-ghost:hover:not(:disabled) {
+      --btn-bg: var(--accent);
+      --btn-fg: var(--accent-foreground);
+      border-color: var(--pxl-ink);
+      translate: 0 0;
+      filter: none;
+      box-shadow:
+        inset 2px 2px 0 0 var(--pxl-hi),
+        inset -2px -2px 0 0 var(--btn-lo);
+    }
+  }
+
+  .pxl-btn-ghost:active:not(:disabled) {
+    --btn-bg: var(--accent);
+    border-color: var(--pxl-ink);
+    translate: 0 2px;
+    box-shadow:
+      inset 2px 2px 0 0 var(--btn-lo),
+      inset -2px -2px 0 0 var(--pxl-hi);
+  }
+
+  /* ---------- 输入框：凹陷 ---------- */
+  .pxl-field {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    background-color: var(--pxl-field);
+    color: var(--foreground);
+    border: 2px solid var(--input);
+    /* 上、左内阴影 = 凹下去；与按钮的「凸」相反。 */
+    box-shadow:
+      inset 2px 2px 0 0 var(--pxl-lo),
+      inset -2px -2px 0 0 var(--pxl-hi);
+    outline: none;
+    transition-property: border-color, background-color, box-shadow;
+    transition-duration: var(--motion-instant);
+    transition-timing-function: steps(2, end);
+  }
+
+  .pxl-field::placeholder {
+    color: var(--muted-foreground);
+    opacity: 0.8;
+  }
+
+  @media (hover: hover) {
+    .pxl-field:hover:not(:disabled, :focus-visible) {
+      border-color: var(--ring);
+    }
+  }
+
+  /* 焦点：描边换成主色，外圈再套一道 2px 的断开虚线框，光标「在这里」。 */
+  .pxl-field:focus-visible,
+  .pxl-field:focus-within {
+    border-color: var(--ring);
+    outline: 2px dashed var(--ring);
+    outline-offset: 2px;
+  }
+
+  .pxl-field:disabled,
+  .pxl-field[aria-disabled="true"] {
+    cursor: not-allowed;
+    pointer-events: none;
+    background-image: repeating-conic-gradient(var(--pxl-dither) 0% 25%, transparent 0% 50%);
+    background-size: 4px 4px;
+    opacity: 0.7;
+  }
+
+  .pxl-field[aria-invalid="true"] {
+    border-color: var(--destructive);
+    outline-color: var(--destructive);
+  }
+
+  /* ---------- 窗口面板（卡片 / 弹层 / 抽屉共用） ---------- */
+  .pxl-window {
+    position: relative;
+    background-color: var(--card);
+    color: var(--card-foreground);
+    border: 2px solid var(--pxl-ink);
+    box-shadow:
+      inset 2px 2px 0 0 var(--pxl-hi),
+      4px 4px 0 0 var(--pxl-shadow);
+  }
+
+  /* 弹层：比卡片「更实」（--popover 是不透明的），投影再大一档，视觉上浮在页面上。 */
+  .pxl-popover {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+    border: 2px solid var(--pxl-ink);
+    box-shadow:
+      inset 2px 2px 0 0 var(--pxl-hi),
+      4px 4px 0 0 var(--pxl-shadow);
+  }
+
+  /* 标题栏：窗口顶部的一条主色带，左边标题、右边留给关闭钮。 */
+  .pxl-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    border-bottom: 2px solid var(--pxl-ink);
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent 0 2px,
+      rgb(255 255 255 / 0.08) 2px 4px
+    );
+  }
+
+  /* ---------- 选项行（下拉 / 菜单） ---------- */
+  .pxl-item {
+    position: relative;
+    display: flex;
+    width: 100%;
+    cursor: pointer;
+    user-select: none;
+    align-items: center;
+    padding: 0.375rem 0.5rem 0.375rem 2rem;
+    border: 2px solid transparent;
+    outline: none;
+  }
+
+  .pxl-item:hover,
+  .pxl-item:focus {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+    border-color: var(--pxl-ink);
+  }
+
+  /* 选中项左边的小三角光标：纯 CSS 的像素箭头（3 层 box-shadow 叠出阶梯）。 */
+  .pxl-item[data-state="checked"]::before,
+  .pxl-item[aria-selected="true"]::before {
+    content: "";
+    position: absolute;
+    left: 0.5rem;
+    top: 50%;
+    width: 2px;
+    height: 2px;
+    margin-top: -1px;
+    background: var(--foreground);
+    box-shadow:
+      0 -4px 0 0 var(--foreground),
+      0 4px 0 0 var(--foreground),
+      2px -2px 0 0 var(--foreground),
+      2px 2px 0 0 var(--foreground),
+      4px 0 0 0 var(--foreground);
+  }
+
+  .pxl-item[data-disabled] {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  /* ---------- 勾选框 / 单选 / 开关 ---------- */
+  .pxl-check {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    background-color: var(--pxl-field);
+    color: var(--primary-foreground);
+    border: 2px solid var(--input);
+    box-shadow:
+      inset 2px 2px 0 0 var(--pxl-lo),
+      inset -2px -2px 0 0 var(--pxl-hi);
+    cursor: pointer;
+    outline: none;
+  }
+
+  .pxl-check[data-state="checked"] {
+    background-color: var(--primary);
+    border-color: var(--pxl-ink);
+    box-shadow:
+      inset 2px 2px 0 0 var(--pxl-hi),
+      inset -2px -2px 0 0 rgb(0 0 0 / 0.3);
+  }
+
+  .pxl-check:focus-visible {
+    outline: 2px dashed var(--ring);
+    outline-offset: 2px;
+  }
+
+  .pxl-check:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .pxl-check[aria-invalid="true"] {
+    border-color: var(--destructive);
+  }
+
+  /* 单选框：切掉四角的「八边形」，一眼和方形复选框区分开。
+     `clip-path` 会把越界的描边一起裁掉，所以切角只有 4px（描边 2px 的两倍），
+     边缘仍是整数像素的阶梯。 */
+  .pxl-radio {
+    clip-path: polygon(
+      4px 0,
+      calc(100% - 4px) 0,
+      100% 4px,
+      100% calc(100% - 4px),
+      calc(100% - 4px) 100%,
+      4px 100%,
+      0 calc(100% - 4px),
+      0 4px
+    );
+  }
+
+  /* 单选的「点」：方形（零圆角全局规则下圆也会变方），用 2×2 阶梯凑一个 4 格的块。 */
+  .pxl-radio-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    background-color: var(--primary-foreground);
+  }
+
+  .pxl-switch {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    width: 2.75rem;
+    height: 1.5rem;
+    padding: 2px;
+    background-color: var(--pxl-field);
+    border: 2px solid var(--input);
+    box-shadow:
+      inset 2px 2px 0 0 var(--pxl-lo),
+      inset -2px -2px 0 0 var(--pxl-hi);
+    cursor: pointer;
+    outline: none;
+    transition: background-color var(--motion-fast) steps(2, end);
+  }
+
+  .pxl-switch[data-state="checked"] {
+    background-color: var(--pxl-win);
+    border-color: var(--pxl-ink);
+  }
+
+  .pxl-switch:focus-visible {
+    outline: 2px dashed var(--ring);
+    outline-offset: 2px;
+  }
+
+  .pxl-switch:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .pxl-switch-thumb {
+    display: block;
+    width: 1rem;
+    height: 100%;
+    background-color: var(--card);
+    border: 2px solid var(--pxl-ink);
+    box-shadow:
+      inset 2px 2px 0 0 var(--pxl-hi),
+      inset -2px -2px 0 0 var(--pxl-lo);
+    pointer-events: none;
+    transition: translate var(--motion-fast) steps(3, end);
+  }
+
+  .pxl-switch[data-state="checked"] .pxl-switch-thumb {
+    translate: 1.25rem 0;
+  }
+
+  /* ---------- 徽标 ---------- */
+  .pxl-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    width: fit-content;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    padding: 0.125rem 0.5rem;
+    font-size: var(--text-xs);
+    line-height: 1.25;
+    border: 2px solid var(--pxl-ink);
+    box-shadow: 2px 2px 0 0 var(--pxl-shadow);
+  }
+
+  /* ---------- 分段选择 / 筛选 chip ---------- */
+  .pxl-chip {
+    flex-shrink: 0;
+    cursor: pointer;
+    white-space: nowrap;
+    padding: 0.25rem 0.625rem;
+    font-size: var(--text-xs);
+    line-height: 1.25;
+    background-color: var(--card);
+    color: var(--muted-foreground);
+    border: 2px solid var(--input);
+    transition-property: background-color, color, border-color, translate;
+    transition-duration: var(--motion-instant);
+    transition-timing-function: steps(2, end);
+    outline: none;
+  }
+
+  @media (hover: hover) {
+    .pxl-chip:hover:not(:disabled) {
+      color: var(--accent-foreground);
+      background-color: var(--accent);
+      border-color: var(--pxl-ink);
+    }
+  }
+
+  .pxl-chip[aria-checked="true"],
+  .pxl-chip[aria-pressed="true"] {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    border-color: var(--pxl-ink);
+    box-shadow:
+      inset 2px 2px 0 0 rgb(255 255 255 / 0.3),
+      inset -2px -2px 0 0 rgb(0 0 0 / 0.3);
+  }
+
+  .pxl-chip:focus-visible {
+    outline: 2px dashed var(--ring);
+    outline-offset: 2px;
+  }
+
+  .pxl-chip:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* ---------- 血条 / 经验条 / 通用进度条 ----------
+     槽是凹陷的深色，里面按「格」填充：每格 6px + 2px 缝。填充宽度用 `--fill` 百分比，
+     并向下取整到整格（`--cells` × `--fill`），不出现「半格」。
+     变体只换颜色：hp 红 / xp 蓝 / win 绿 / gold 金；默认主色。 */
+  .pxl-bar {
+    --bar-color: var(--primary);
+    --bar-hi: rgb(255 255 255 / 0.35);
+    position: relative;
+    height: 1rem;
+    width: 100%;
+    overflow: hidden;
+    background-color: var(--pxl-field);
+    border: 2px solid var(--pxl-ink);
+    box-shadow: inset 2px 2px 0 0 var(--pxl-lo);
+  }
+
+  .pxl-bar-fill {
+    height: 100%;
+    background-color: var(--bar-color);
+    background-image:
+      linear-gradient(to bottom, var(--bar-hi) 0 2px, transparent 2px),
+      repeating-linear-gradient(90deg, transparent 0 6px, rgb(0 0 0 / 0.28) 6px 8px);
+    transition: width var(--motion-normal) steps(6, end);
+  }
+
+  .pxl-bar-hp {
+    --bar-color: var(--pxl-hp);
+  }
+
+  .pxl-bar-xp {
+    --bar-color: var(--pxl-xp);
+  }
+
+  .pxl-bar-win {
+    --bar-color: var(--pxl-win);
+  }
+
+  .pxl-bar-gold {
+    --bar-color: var(--pxl-gold);
+  }
+
+  /* 绿色血条（玩家）在危险时也要变红：颜色跟着 `data-low` 走，不靠调用方切类名。 */
+  .pxl-bar-danger[data-low="true"] {
+    --bar-color: var(--pxl-hp);
+  }
+
+  /* 血量低于 25%：整条闪烁，提示「危险」。
+     只给血条（`pxl-bar-hp`）：经验条 / 答题进度条在起步阶段本来就是低值，闪烁会被误读成告警。 */
+  .pxl-bar-hp[data-low="true"] .pxl-bar-fill,
+  .pxl-bar-danger[data-low="true"] .pxl-bar-fill {
+    animation: pxl-blink 0.6s steps(1, end) infinite;
+  }
+
+  /* ---------- 文字标签：HUD 风格的小字（拉丁字母走 Silkscreen，中文落点阵体） ---------- */
+  .pxl-label {
+    font-family: var(--font-pixel-label);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .pxl-title {
+    font-family: var(--font-pixel-display);
+    line-height: 1.5;
+    letter-spacing: 0;
+  }
+
+  /* ---------- 抽屉（Sheet） ---------- */
+  .pxl-sheet {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+    border-left: 2px solid var(--pxl-ink);
+    box-shadow: -4px 0 0 0 var(--pxl-shadow);
+  }
+}
+
+/* ---------- 模态遮罩 ----------
+   不模糊也不整体压暗成纯黑：用 4px 抖动网点（黑 / 透明交替）盖住背景，
+   背景内容隐约可见，像老游戏打开菜单时的「隔行变暗」。 */
+.pxl-overlay {
+  background-color: rgb(0 0 0 / 0.28);
+  background-image: repeating-conic-gradient(rgb(0 0 0 / 0.32) 0% 25%, transparent 0% 50%);
+  background-size: 4px 4px;
+}

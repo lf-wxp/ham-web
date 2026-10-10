@@ -123,10 +123,10 @@ pub fn NumberField(
           tabindex="-1"
           aria-label=move || label.get()
           disabled=move || disabled.get()
-          class="flex size-6 items-center justify-center rounded-sm text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50"
+          class="flex size-6 items-center justify-center border-2 border-transparent text-muted-foreground outline-none hover:border-ink hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50"
           on:click=move |_| bump.run(delta)
         >
-          <Icon kind=icon class="size-3.5" />
+          <Icon kind=icon class="size-4" />
         </button>
       }
       .into_any()

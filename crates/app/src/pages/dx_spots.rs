@@ -13,6 +13,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde::Deserialize;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::pages::log::use_log_store;
@@ -196,24 +197,24 @@ pub fn DxSpotsPage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.dx-spots")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("radio.dx-cluster-global-real")}</div>
-          </div>
-          <Button
-            variant=Variant::Outline
-            size=Size::Sm
-            loading=loading
-            on_click=Callback::new(move |_| load())
-          >
-            {move || if loading.get() { t("radio.refreshing") } else { t("exam.refresh") }}
-          </Button>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.dx-spots")
+        subtitle=move || t("radio.dx-cluster-global-real")
+        actions=ViewFn::from(move || {
+          view! {
+            <Button
+              variant=Variant::Outline
+              size=Size::Sm
+              loading=loading
+              on_click=Callback::new(move |_| load())
+            >
+              {move || if loading.get() { t("radio.refreshing") } else { t("exam.refresh") }}
+            </Button>
+          }
+        })
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <section class="rounded-xl border bg-card">
           <h2 class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold">
             {move || t("radio.live-dx-reports")}
@@ -479,7 +480,7 @@ pub fn DxSpotsPage() -> impl IntoView {
         <p class="text-xs text-muted-foreground">
           {move || t("radio.data-comes-from-the")}
         </p>
-      </div>
+      </PageContainer>
     </div>
   }
 }

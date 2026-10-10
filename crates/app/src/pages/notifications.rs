@@ -5,6 +5,7 @@ use ham_web_core::sat_watch::SatWatch;
 use leptos::prelude::*;
 use web_sys::{Notification, NotificationPermission};
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf, tp};
 use crate::ui::{Button, Size, Variant};
 use crate::util::{set_title, storage};
@@ -75,16 +76,12 @@ pub fn NotificationsPage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("settings.notifications")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("settings.manage-browser-notification-permission")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("settings.notifications")
+        subtitle=move || t("settings.manage-browser-notification-permission")
+      />
 
-      <div class="mx-auto max-w-3xl space-y-4 px-4 py-5">
+      <PageContainer class="space-y-4">
         <section class="rounded-xl border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class="mr-auto text-sm font-semibold">{move || t("settings.browser-notification-permission")}</h2>
@@ -246,7 +243,7 @@ pub fn NotificationsPage() -> impl IntoView {
             }}
           </div>
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

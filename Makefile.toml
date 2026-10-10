@@ -180,6 +180,34 @@ description = "由 public/pwa-icon.svg 生成 PWA / Apple Touch 图标"
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "icons"]
 
+[tasks.fonts-pixel]
+description = "按仓库语料重新子集化像素字体 → public/fonts/pixel-*.woff2 + style/pixel/fonts-pixel.css（需 FONT_SRC 指向原始 TTF 目录）"
+# 产物已提交入库，日常开发与 CI 不需要跑它；只有新增大量中文文案或换字体版本时才重跑。
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "pixel-fonts", "--src", "${FONT_SRC}"]
+
+[tasks.pixel-sprites]
+description = "由字符画生成像素图标与精灵的数据文件（需 PIXELARTICONS_DIR 指向 pixelarticons 的 svg 目录）"
+# 产物已提交入库；只有改了 crates/tools/src/pixel/sprite_art.rs 或换了图标集才需要重跑。
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "pixel-sprites", "--pixelarticons", "${PIXELARTICONS_DIR}"]
+
+[tasks.pixel-palette]
+description = "校正像素调色板里的文字色阶，使其在所有表面（含每个配色方案的亮 / 暗表面）上满足 WCAG AA"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "pixel-palette"]
+
+[tasks.pixel-schemes]
+description = "由配色方案表（crates/core/src/color_scheme.rs）生成 style/pixel/schemes.css，并审计每个方案亮 / 暗的对比度"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "pixel-schemes"]
+
+[tasks.pixel-check]
+description = "校验像素风生成物：调色板文字色阶与每个配色方案对比度达标，schemes.css 与方案表一致（只读）"
+# 与 i18n-check 同理不用 --release：只是算几个对比度，debug 构建即可。
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--", "pixel-check"]
+
 # ───────────────────────────── APT 解码器（测试数据） ─────────────────────────────
 
 [tasks.apt-sample]
@@ -418,7 +446,7 @@ command = "cargo"
 args = ["test", "-p", "ham-web-core", "-p", "ham-web-nec", "-p", "ham-web-apt", "-p", "ham-web-tools", "-p", "ham-web-server", "-p", "ham-web-app"]
 
 [tasks.check]
-description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案/知识库译文词典校验 + 解析表校验（不构建前端）"
+description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案/知识库译文词典校验 + 解析表校验 + 像素风生成物校验（不构建前端）"
 dependencies = [
   "fmt-check",
   "clippy",
@@ -426,6 +454,7 @@ dependencies = [
   "i18n-check",
   "knowledge-i18n-check",
   "explanations-check",
+  "pixel-check",
 ]
 
 [tasks.e2e]
@@ -433,7 +462,7 @@ description = "端到端测试：构建 release 站点后由 Playwright 启动�
 dependencies = ["build-web"]
 cwd = "e2e"
 command = "npx"
-args = ["playwright", "test"]
+args = ["playwright", "test", "--workers=3"]
 
 [tasks.e2e-coverage]
 description = "统计 e2e 覆盖率（路由冒烟 / 交互 / 关键流程），报告写入 e2e/test-results/coverage.{md,json}"
@@ -442,7 +471,7 @@ command = "node"
 args = ["scripts/coverage.mjs"]
 
 [tasks.ci]
-description = "CI：格式检查 + clippy + 测试 + 界面文案/知识库译文校验 + 解析表校验 + 前端构建"
+description = "CI：格式检查 + clippy + 测试 + 界面文案/知识库译文校验 + 解析表校验 + 像素风生成物校验 + 前端构建"
 # 与 `check` 保持同一套校验：漏掉 knowledge-i18n-check 时，知识库译文 key 漂移
 # 会让页面上静默回退中文，而 CI 不会红。
 dependencies = [
@@ -452,6 +481,7 @@ dependencies = [
   "i18n-check",
   "knowledge-i18n-check",
   "explanations-check",
+  "pixel-check",
   "build-web",
 ]
 

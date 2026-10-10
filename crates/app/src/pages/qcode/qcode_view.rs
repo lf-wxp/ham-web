@@ -2,6 +2,7 @@ use ham_web_core::glossary::GlossaryEntry;
 use leptos::prelude::*;
 use leptos_router::hooks::use_query_map;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
 use crate::ui::{Input, InputType, Stat};
@@ -111,43 +112,42 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-16 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.q-codes-2")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("knowledge.q-codes-cw-abbreviations")}</div>
-          </div>
+      <PageHeader class="top-16"
+        title=move || t("shell.q-codes-2")
+        subtitle=move || t("knowledge.q-codes-cw-abbreviations")
+        actions=ViewFn::from(move || {
+          view! {
+            <div class="flex items-center gap-0.5 rounded-lg border p-0.5">
+              <button
+                type="button"
+                on:click=move |_| common_only.set(true)
+                class=move || scope_pill(common_only.get())
+              >
+                {move || t("knowledge.common")}
+              </button>
+              <button
+                type="button"
+                on:click=move |_| common_only.set(false)
+                class=move || scope_pill(!common_only.get())
+              >
+                {move || t("exam.all")}
+              </button>
+            </div>
 
-          <div class="flex items-center gap-0.5 rounded-lg border p-0.5">
-            <button
-              type="button"
-              on:click=move |_| common_only.set(true)
-              class=move || scope_pill(common_only.get())
-            >
-              {move || t("knowledge.common")}
-            </button>
-            <button
-              type="button"
-              on:click=move |_| common_only.set(false)
-              class=move || scope_pill(!common_only.get())
-            >
-              {move || t("exam.all")}
-            </button>
-          </div>
+            <Input
+              value=kw
+              on_change=Callback::new(move |v: String| kw.set(v))
+              kind=InputType::Search
+              placeholder=Signal::derive(move || t("knowledge.search-code-meaning"))
+              prefix=move || view! { <Icon kind=IconKind::Search /> }
+              clearable=true
+              class="w-56"
+            />
+          }
+        })
+      />
 
-          <Input
-            value=kw
-            on_change=Callback::new(move |v: String| kw.set(v))
-            kind=InputType::Search
-            placeholder=Signal::derive(move || t("knowledge.search-code-meaning"))
-            prefix=move || view! { <Icon kind=IconKind::Search /> }
-            clearable=true
-            class="w-56"
-          />
-        </div>
-      </header>
-
-      <div class="mx-auto max-w-5xl px-4 py-5">
+      <PageContainer class="space-y-0">
         <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label=t("knowledge.q-codes") value=Signal::derive(move || qcode.with(Vec::len)) />
           <Stat label=t("knowledge.contact-abbreviations") value=Signal::derive(move || abbrev.with(Vec::len)) />
@@ -201,7 +201,7 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
             }
           })
           .collect_view()}
-      </div>
+      </PageContainer>
     </div>
   }
 }

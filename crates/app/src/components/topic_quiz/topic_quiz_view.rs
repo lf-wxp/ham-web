@@ -8,6 +8,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_location;
 
+use crate::components::common::PageContainer;
 use crate::data;
 use crate::i18n::t;
 use crate::util::random;
@@ -53,7 +54,7 @@ pub fn TopicQuiz() -> impl IntoView {
         return view! { <div></div> }.into_any();
       }
       view! {
-        <div class="mx-auto max-w-5xl px-4 pb-10">
+        <PageContainer class="pt-0 pb-10">
           <section class="rounded-xl border bg-card">
             <h2 class="border-b px-4 py-3 text-sm font-semibold">
               {move || t("common.quick-3-question-test")}
@@ -63,7 +64,7 @@ pub fn TopicQuiz() -> impl IntoView {
               {qs.into_iter().map(|q| view! { <QuizQuestion q=q /> }).collect_view()}
             </div>
           </section>
-        </div>
+        </PageContainer>
       }
       .into_any()
     }}

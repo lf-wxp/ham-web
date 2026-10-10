@@ -15,6 +15,7 @@ use ham_web_core::gear_score::Axis;
 use ham_web_core::rig_reviews::{REVIEW_GLOSSARY, REVIEW_METRICS, RIG_REVIEWS, metric_value};
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::util::set_title;
@@ -55,26 +56,22 @@ pub fn RigReviewsPage() -> impl IntoView {
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">
-              {move || t("knowledge.rig-reviews")}
-            </h1>
-            <div class="text-xs text-muted-foreground">
-              {move || t("knowledge.rig-reviews-subtitle")}
-            </div>
-          </div>
-          <a
-            href="/gear"
-            class="rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            {move || t("knowledge.rig-reviews-back-to-gear")}
-          </a>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("knowledge.rig-reviews")
+        subtitle=move || t("knowledge.rig-reviews-subtitle")
+        actions=ViewFn::from(move || {
+          view! {
+            <a
+              href="/gear"
+              class="rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {move || t("knowledge.rig-reviews-back-to-gear")}
+            </a>
+          }
+        })
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <p class="text-xs text-muted-foreground">
           {move || t("knowledge.rig-reviews-stance")}
         </p>
@@ -274,7 +271,7 @@ pub fn RigReviewsPage() -> impl IntoView {
               .collect_view()}
           </div>
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

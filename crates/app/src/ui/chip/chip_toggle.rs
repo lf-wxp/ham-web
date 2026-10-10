@@ -5,7 +5,7 @@ use leptos::prelude::*;
 use crate::cn::cn;
 
 use super::super::control::TextValue;
-use super::shared::{CHIP_BASE, CHIP_OFF, CHIP_ON};
+use super::shared::CHIP_BASE;
 
 /// 单个 chip 开关（筛选条上的「只看需要的」「提醒」这类独立开关）。
 ///
@@ -25,7 +25,7 @@ pub fn ChipToggle(
   #[prop(optional, into)] class: String,
   children: Children,
 ) -> impl IntoView {
-  let base = cn(&[CHIP_BASE, &class]);
+  let class = cn(&[CHIP_BASE, &class]);
   view! {
     <button
       type="button"
@@ -34,7 +34,7 @@ pub fn ChipToggle(
       aria-label=move || aria_label.as_ref().map(TextValue::get)
       title=move || title.as_ref().map(TextValue::get)
       disabled=move || disabled.get()
-      class=move || cn(&[&base, if active.get() { CHIP_ON } else { CHIP_OFF }])
+      class=class
       on:click=move |_| {
         if !disabled.get_untracked() {
           on_change.run(!active.get_untracked());

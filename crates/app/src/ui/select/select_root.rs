@@ -82,7 +82,7 @@ pub fn Select(
         </span>
         <Icon kind=IconKind::ChevronDown class=Signal::derive(move || {
           cn(&[
-            "h-4 w-4 opacity-50 transition-transform duration-200",
+            "size-6 shrink-0 opacity-70",
             if open.get() { "rotate-180" } else { "" },
           ])
         }) />

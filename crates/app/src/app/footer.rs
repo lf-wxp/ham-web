@@ -3,11 +3,11 @@ use leptos::prelude::*;
 
 #[component]
 pub(super) fn Footer() -> impl IntoView {
-  const LINK: &str = "hover:underline underline-offset-4 hover:text-foreground transition-colors";
+  const LINK: &str = "hover:underline underline-offset-4 hover:text-foreground";
   view! {
-    <footer class="relative mt-8 border-t bg-secondary/40">
-      <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent"></div>
-      <div class="max-w-screen-lg mx-auto px-4">
+    // 页脚用 2px 的虚线上沿（像存档点的分隔线），底色是实心的 `--secondary`。
+    <footer class="relative mt-8 border-t-2 border-dashed border-ink bg-secondary">
+      <div class="mx-auto max-w-5xl px-4">
         <div class="py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div class="text-xs sm:text-sm text-muted-foreground">{move || t("shell.amateur-radio-exams-knowledge")}</div>
           <nav class="text-xs sm:text-sm">

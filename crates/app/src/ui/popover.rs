@@ -36,13 +36,18 @@ use wasm_bindgen::JsCast;
 use crate::cn::cn;
 
 /// 点击后关闭弹层的透明遮罩：铺满视口、位于弹层之下（`z-40` < 弹层 `z-50`）。
+/// 遮罩保持透明：像素风里「变暗」只给模态对话框用，下拉是轻量的，不压暗背景。
 pub const OVERLAY: &str = "fixed inset-0 z-40";
 
-/// 弹层容器类名（与语言切换下拉逐字一致）。
-pub const PANEL: &str = "absolute left-0 top-full mt-1.5 z-50 max-h-96 min-w-[8rem] w-full overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2";
+/// 弹层容器类名（与语言切换下拉逐字一致）：`.pxl-popover` 窗口 + 向下「跳」出的两帧动画。
+///
+/// 动画只有位移与显隐（`pop-in` 3 帧），没有缩放：缩放会让点阵文字在中间帧变糊。
+/// 退场靠 [`EXIT_MS`] 的延迟卸载，期间 `data-[state=closed]` 让它反向淡出。
+pub const PANEL: &str = "pxl-popover absolute left-0 top-full mt-2 z-50 max-h-96 min-w-[8rem] w-full overflow-hidden pxl-enter";
 
-/// 弹层内单个可选项的类名（与 [`crate::ui::SelectItem`] 逐字一致）。
-pub const ITEM: &str = "relative flex w-full cursor-default select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50";
+/// 弹层内单个可选项的类名（与 [`crate::ui::SelectItem`] 逐字一致）：`.pxl-item`，
+/// 悬停 / 聚焦时描边 + 底色，选中项左边是像素三角光标（`data-state=checked`）。
+pub const ITEM: &str = "pxl-item text-sm";
 
 /// 弹层内「不该影响触发器」的点击：吞掉冒泡与默认行为。
 ///
@@ -60,7 +65,7 @@ pub fn trigger_class(size: super::control::ControlSize, extra: &str) -> String {
   super::control::control_class(
     size,
     &cn(&[
-      "flex items-center justify-between [&>span]:line-clamp-1",
+      "flex items-center justify-between gap-2 [&>span]:line-clamp-1",
       extra,
     ]),
   )

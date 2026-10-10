@@ -9,6 +9,7 @@ use crate::ui::{
   Variant,
 };
 
+use super::boss_verdict::BossVerdict;
 use super::category_compare::CategoryCompare;
 use crate::i18n::{t, tf, tp};
 
@@ -70,7 +71,10 @@ pub fn ExamResultDialog(
         <DialogTitle>{move || t("exam.score-2")}</DialogTitle>
         <DialogDescription class="sr-only">{move || t("exam.exam-result-details-and")}</DialogDescription>
       </DialogHeader>
-      <div class="max-h-[60svh] space-y-2 overflow-y-auto">
+      // 内容超过 60svh 时这里会滚动：滚动区必须能被键盘聚焦（`tabindex=0`），否则没有鼠标的用户
+        // 滚不动它（axe 的 `scrollable-region-focusable`）。Boss 判词加进来之后这个区域才开始溢出。
+        <div class="max-h-[60svh] space-y-2 overflow-y-auto" tabindex="0">
+        <BossVerdict score=score pass_line=pass_line weak=weak />
         <div>{move || t("exam.score")} {move || score.get().correct} " / " {move || score.get().total}</div>
         <div class="text-sm text-muted-foreground">{move || t("exam.accuracy")} {move || score.get().percent()} "%"</div>
         {move || {

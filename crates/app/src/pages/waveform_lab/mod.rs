@@ -11,6 +11,7 @@ mod wave_section;
 
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
 use crate::util::set_title;
 
@@ -46,23 +47,17 @@ pub fn WaveformLabPage() -> impl IntoView {
   set_title("tools.waveform-lab");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("tools.waveform-lab")}</h1>
-            <div class="text-xs text-muted-foreground">
-              {move || t("tools.modulated-waveforms-and-spectra")}
-            </div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("tools.waveform-lab")
+        subtitle=move || t("tools.modulated-waveforms-and-spectra")
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <WaveSection />
         <SymbolSection />
         <FilterSection />
         <ShannonSection />
-      </div>
+      </PageContainer>
     </div>
   }
 }

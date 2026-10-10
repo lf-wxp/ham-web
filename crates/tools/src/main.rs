@@ -15,6 +15,7 @@ mod fsutil;
 mod i18n;
 mod icons;
 mod knowledge_i18n;
+mod pixel;
 mod postbuild;
 mod psk31_gen;
 mod spectrum_gen;
@@ -170,6 +171,32 @@ enum Command {
     /// 下载地址
     #[arg(long, default_value = dxcc_map::DEFAULT_URL)]
     url: String,
+  },
+  /// 生成像素图标与精灵的数据文件（icons/pixel/{icon_paths,sprite_data}.rs）
+  PixelSprites {
+    /// pixelarticons 的 svg 目录
+    #[arg(long, env = "PIXELARTICONS_DIR")]
+    pixelarticons: PathBuf,
+  },
+  /// 按仓库语料把像素字体子集化成 woff2 分片（public/fonts/pixel-*.woff2 + style/pixel/fonts-pixel.css）
+  PixelFonts {
+    /// 放原始 TTF 的目录（见 public/fonts/LICENSES 的下载地址）
+    #[arg(long, env = "FONT_SRC")]
+    src: PathBuf,
+  },
+  /// 由配色方案表生成 style/pixel/schemes.css 并审计对比度（--check 只校验）
+  PixelSchemes {
+    /// 只校验：schemes.css 要与方案表一致、对比度要达标；否则退出码为 1
+    #[arg(long)]
+    check: bool,
+  },
+  /// 一次性校验全部像素风生成物：调色板文字色阶 + 配色方案（只读，适合挂进 check / CI）
+  PixelCheck,
+  /// 校正像素调色板里的文字色阶，使其在所有表面上满足 WCAG AA（--check 只审计）
+  PixelPalette {
+    /// 只审计、不写文件；有不达标项时退出码为 1
+    #[arg(long)]
+    check: bool,
   },
   /// 由 public/pwa-icon.svg 生成 PWA 与 Apple Touch 图标
   Icons,
@@ -387,6 +414,14 @@ fn main() -> Result<()> {
     Command::Dxcc { input, url } => dxcc::generate(&root, input.as_deref(), &url),
     Command::DxccMap { input, url } => dxcc_map::generate(&root, input.as_deref(), &url),
     Command::Icons => icons::generate(&paths),
+    Command::PixelSprites { pixelarticons } => pixel::sprites::generate(&root, &pixelarticons),
+    Command::PixelFonts { src } => pixel::fonts::generate(&root, &src),
+    Command::PixelSchemes { check } => pixel::schemes::run(&root, check),
+    Command::PixelCheck => {
+      pixel::palette::run(&root, true)?;
+      pixel::schemes::run(&root, true)
+    }
+    Command::PixelPalette { check } => pixel::palette::run(&root, check),
     Command::GenPsk31 {
       output,
       text,

@@ -8,6 +8,7 @@ use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsValue;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::ui::{Button, DatePicker, Input, Size, TimePicker, Variant};
 use crate::util::now_ms;
@@ -142,16 +143,12 @@ pub fn CountdownPage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("exam.countdowns-and-reminders")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("exam.exam-dates-licence-expiry")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("exam.countdowns-and-reminders")
+        subtitle=move || t("exam.exam-dates-licence-expiry")
+      />
 
-      <div class="mx-auto max-w-3xl space-y-5 px-4 py-5">
+      <PageContainer class="space-y-5">
         <section class="rounded-xl border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.add-countdown")}</h2>
           <div class="grid gap-3 p-4 sm:grid-cols-[1fr_auto_auto_auto]">
@@ -247,7 +244,7 @@ pub fn CountdownPage() -> impl IntoView {
             }
           }}
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

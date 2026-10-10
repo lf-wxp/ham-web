@@ -29,7 +29,7 @@ fn opt_class(selected: bool) -> String {
     popover::ITEM,
     "cursor-pointer justify-center pl-2 font-mono tabular-nums",
     if selected {
-      "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+      "bg-primary text-primary-foreground border-ink hover:text-primary-foreground"
     } else {
       ""
     },
@@ -190,7 +190,7 @@ pub fn TimePicker(
             }
           }}
         </span>
-        <Icon kind=IconKind::Clock class="h-4 w-4 shrink-0 opacity-50" />
+        <Icon kind=IconKind::Clock class="size-6 shrink-0 opacity-70" />
       </button>
       {panel}
     </div>

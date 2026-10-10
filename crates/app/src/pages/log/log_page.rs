@@ -1,3 +1,4 @@
+use crate::components::common::{PageContainer, PageHeader};
 use crate::ui::{Button, ButtonLink, FileInput, Size, Variant};
 use crate::util::download_text;
 use crate::util::set_title;
@@ -173,63 +174,63 @@ pub fn LogPage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.logbook")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("log.log-online-saved-locally")}</div>
-          </div>
-          <Button
-            variant=Variant::Outline
-            size=Size::Sm
-            on_click=Callback::new(move |_| export())
-          >
-            {move || t("log.export-adif")}
-          </Button>
-          <Button
-            variant=Variant::Outline
-            size=Size::Sm
-            on_click=Callback::new(move |_| export_csv_btn())
-          >
-            {move || t("log.export-csv")}
-          </Button>
-          <ButtonLink
-            href="/qsl-labels"
-            variant=Variant::Outline
-            size=Size::Sm
-          >{move || t("log.print-qsl-labels")}</ButtonLink>
-          <FileInput
-            accept=".adi,.adif,.txt"
-            label=t("log.import-adif")
-            variant=Variant::Outline
-            size=Size::Sm
-            on_files=import_adif
-          />
-          <Button
-            variant=Variant::Outline
-            size=Size::Sm
-            on_click=Callback::new(move |_| qsl_open.set(true))
-          >
-            {move || t("log.sync-qsl")}
-          </Button>
-          <Button
-            variant=Variant::Outline
-            size=Size::Sm
-            disabled=Signal::derive(move || pending_lotw.get() == 0)
-            on_click=Callback::new(move |_| mark_lotw.run(()))
-          >
-            {move || tf("log.mark-lotw-uploaded", &[&pending_lotw.get().to_string()])}
-          </Button>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.logbook")
+        subtitle=move || t("log.log-online-saved-locally")
+        actions=ViewFn::from(move || {
+          view! {
+            <Button
+              variant=Variant::Outline
+              size=Size::Sm
+              on_click=Callback::new(move |_| export())
+            >
+              {move || t("log.export-adif")}
+            </Button>
+            <Button
+              variant=Variant::Outline
+              size=Size::Sm
+              on_click=Callback::new(move |_| export_csv_btn())
+            >
+              {move || t("log.export-csv")}
+            </Button>
+            <ButtonLink
+              href="/qsl-labels"
+              variant=Variant::Outline
+              size=Size::Sm
+            >{move || t("log.print-qsl-labels")}</ButtonLink>
+            <FileInput
+              accept=".adi,.adif,.txt"
+              label=t("log.import-adif")
+              variant=Variant::Outline
+              size=Size::Sm
+              on_files=import_adif
+            />
+            <Button
+              variant=Variant::Outline
+              size=Size::Sm
+              on_click=Callback::new(move |_| qsl_open.set(true))
+            >
+              {move || t("log.sync-qsl")}
+            </Button>
+            <Button
+              variant=Variant::Outline
+              size=Size::Sm
+              disabled=Signal::derive(move || pending_lotw.get() == 0)
+              on_click=Callback::new(move |_| mark_lotw.run(()))
+            >
+              {move || tf("log.mark-lotw-uploaded", &[&pending_lotw.get().to_string()])}
+            </Button>
+          }
+        })
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <StationPanel book=book on_save=save_station_btn />
         <LogStatsPanel logbook=logbook book=book />
         <LogHealthPanel />
         <EntryForm form=form logbook=logbook book=book editing=editing on_save=on_save />
         <EntryList logbook=logbook on_edit=on_edit on_remove=on_remove on_clear=on_clear initial_query=initial_query.unwrap_or_default() />
-      </div>
+      </PageContainer>
       <QslSyncDialog open=qsl_open />
     </div>
   }

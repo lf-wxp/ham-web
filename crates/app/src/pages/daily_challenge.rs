@@ -13,6 +13,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_navigate;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::components::question_card::QuestionCard;
 use crate::data;
 use crate::i18n::{t, tf, tp};
@@ -134,38 +135,36 @@ pub fn DailyChallengePage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("learning.daily-challenge")}</h1>
-            <div class="text-xs text-muted-foreground">
-              {tf("learning.questions-a-day-in", &[&CHALLENGE_COUNT.to_string(), &CHALLENGE_MINUTES.to_string()])}
+      <PageHeader
+        title=move || t("learning.daily-challenge")
+        subtitle=tf("learning.questions-a-day-in", &[&CHALLENGE_COUNT.to_string(), &CHALLENGE_MINUTES.to_string()])
+        actions=ViewFn::from(move || {
+          view! {
+            <div class="flex overflow-hidden rounded-lg border text-xs">
+              {["A", "B", "C"]
+                .into_iter()
+                .map(|b| {
+                  let bb = ham_web_core::Bank::from_param(Some(b));
+                  let nav = navigate.clone();
+                  view! {
+                    <button
+                      type="button"
+                      class=move || if bank.get() == bb { "bg-primary px-3 py-1.5 font-medium text-primary-foreground" } else { "px-3 py-1.5 transition-colors hover:bg-accent" }
+                      on:click=move |_| {
+                        nav(&format!("/daily-challenge?bank={b}"), leptos_router::NavigateOptions::default());
+                      }
+                    >
+                      {b} " 类"
+                    </button>
+                  }
+                })
+                .collect_view()}
             </div>
-          </div>
-          <div class="flex overflow-hidden rounded-lg border text-xs">
-            {["A", "B", "C"]
-              .into_iter()
-              .map(|b| {
-                let bb = ham_web_core::Bank::from_param(Some(b));
-                let nav = navigate.clone();
-                view! {
-                  <button
-                    type="button"
-                    class=move || if bank.get() == bb { "bg-primary px-3 py-1.5 font-medium text-primary-foreground" } else { "px-3 py-1.5 transition-colors hover:bg-accent" }
-                    on:click=move |_| {
-                      nav(&format!("/daily-challenge?bank={b}"), leptos_router::NavigateOptions::default());
-                    }
-                  >
-                    {b} " 类"
-                  </button>
-                }
-              })
-              .collect_view()}
-          </div>
-        </div>
-      </header>
+          }
+        })
+      />
 
-      <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
+      <PageContainer class="space-y-4">
         {move || {
           if loading.get() {
             return view! { <div class="rounded-xl border bg-card px-4 py-12 text-center text-sm text-muted-foreground">{move || t("learning.loading-today-s-questions")}</div> }.into_any();
@@ -284,7 +283,7 @@ pub fn DailyChallengePage() -> impl IntoView {
             <div class="space-y-4">{list}</div>
           }.into_any()
         }}
-      </div>
+      </PageContainer>
     </div>
   }
 }

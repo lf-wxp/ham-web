@@ -4,6 +4,7 @@ use leptos::task::spawn_local;
 
 use crate::components::bank_selector::QuestionBankSelector;
 use crate::components::bubble::Bubble;
+use crate::components::common::PageContainer;
 use crate::components::study_plan_card::StudyPlanCard;
 use crate::data;
 use crate::icons::{Icon, IconKind};
@@ -13,10 +14,12 @@ use crate::ui::{
 };
 use crate::util::set_title;
 
+use super::base_hero::BaseHero;
 use super::cards_card::CardsCard;
 use super::daily_challenge_card::DailyChallengeCard;
 use super::daily_question::DailyQuestion;
 use super::propagation_widget::PropagationWidget;
+use super::quest_board::QuestBoard;
 use super::review_card::ReviewCard;
 use super::wanted_card::WantedCard;
 use crate::i18n::{t, tf};
@@ -57,7 +60,7 @@ const MODULES: &[ModuleCard] = &[
   },
   ModuleCard {
     title: "知识库",
-    desc: "30+ 专题 · 呼号 · 术语 · 模式 · 传播 · 天线 · 通联",
+    desc: "80+ 专题 · 呼号 · 术语 · 模式 · 传播 · 天线 · 通联",
     href: "/reference",
     icon: IconKind::BookOpen,
     index: "02",
@@ -139,97 +142,34 @@ pub fn HomePage() -> impl IntoView {
   };
 
   view! {
-    <div class="container relative mx-auto max-w-5xl px-4 pb-12 pt-14 sm:pt-24">
-      // Hero
-      // `isolate`：自成一个层叠上下文，装饰层的 `z-index: -1` 只在 Hero 内部「垫底」，
-      // 不会钻到页面级的极光 / Web Threads 背景层后面去。
-      // `overflow-x-clip`：窄屏上光团比容器宽，横向裁掉；用 `clip` 而不是 `hidden`，
-      // 因为 `hidden` 会把 y 轴也变成滚动容器，裁掉光团上探与频谱面板的远光。
-      <section class="relative isolate flex flex-col items-center overflow-x-clip text-center">
-        <div class="hero-orb" aria-hidden="true"></div>
-        <div class="hero-grid" aria-hidden="true"></div>
+    <PageContainer class="space-y-0 relative pb-12 pt-8 sm:pt-12">
+      // 基地首屏：角色 + 等级 + 主入口，再接今日任务。
+      <div class="space-y-8">
+        <BaseHero />
+        <QuestBoard />
+      </div>
 
-        <span
-          class="reveal inline-flex items-center gap-2 rounded-full border bg-card/70 px-3.5 py-1.5 font-mono text-[11px] font-medium tracking-[0.14em] text-muted-foreground shadow-sm backdrop-blur-md"
-          style="animation-delay: 0ms"
-        >
-          <span class="relative flex size-1.5">
-            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60"></span>
-            <span class="relative inline-flex size-1.5 rounded-full bg-primary"></span>
-          </span>
-          {move || t("knowledge.amateur-radio")}
-        </span>
-
-        // 展示字体 + 随视口缩放的字号：拉丁文用 Unbounded，中文落到系统字体，
-        // `clamp` 的下限按西语最长的标题（Radioafición）在 375px 屏上不溢出来定。
-        <h1
-          class="reveal mt-7 font-display text-[clamp(2rem,8.5vw,5.25rem)] font-bold leading-[1.05] tracking-tight"
-          style="animation-delay: 60ms"
-        >
-          <span class="hero-gradient-text">{move || t("shell.amateur-radio")}</span>
-        </h1>
-
-        <p
-          class="reveal mt-5 max-w-2xl text-balance text-base text-foreground/75 sm:text-lg"
-          style="animation-delay: 120ms"
-        >
-          {move || t("home.one-platform-for-exam")}
-        </p>
-
-        <div class="reveal mt-9 flex flex-wrap justify-center gap-3" style="animation-delay: 180ms">
-          <ButtonLink
-            href="/practice"
-            variant=Variant::Default
-            size=Size::Lg
+      // 频谱条（SDR 意象）：保留作为电台气质的点缀，放进一块普通的像素窗口里。
+      <div class="mt-8 w-full">
+        <div class="pxl-window p-4 sm:p-5">
+          <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
+            <span class="pxl-label">"Spectrum · 14.000 MHz"</span>
+            <span class="pxl-label pxl-blink">{move || t("home.receiving")}</span>
+          </div>
+          <div class="spectrum-bar h-12 border-2 border-ink"></div>
+          <div class="spectrum-ticks mt-2 h-3 opacity-60"></div>
+          <div
+            class="mt-1.5 flex justify-between text-xs tabular-nums text-muted-foreground"
+            aria-hidden="true"
           >
-            {move || t("home.start-practice")}
-          </ButtonLink>
-          <ButtonLink
-            href="/exam"
-            variant=Variant::Secondary
-            size=Size::Lg
-          >
-            {move || t("shell.mock-exam")}
-          </ButtonLink>
-          <ButtonLink
-            href="/reference"
-            variant=Variant::Outline
-            size=Size::Lg
-          >
-            {move || t("home.browse-knowledge")}
-          </ButtonLink>
-        </div>
-
-        // 频谱瀑布视觉（SDR 意象）：整页唯一一块「信号玻璃」面板，
-        // 强模糊 + 渐变描边（`glass` + `edge-glow`），底下的刻度读数取 20 米波段的起 / 中 / 止频率。
-        <div class="reveal mt-14 w-full max-w-2xl" style="animation-delay: 240ms">
-          <div class="glass edge-glow relative rounded-3xl border p-4 sm:p-5">
-            <div class="mb-4 flex items-center justify-between text-xs font-medium text-muted-foreground">
-              <span class="font-mono tracking-widest uppercase">"Spectrum · 14.000 MHz"</span>
-              <span class="inline-flex items-center gap-1.5">
-                <span class="relative flex size-1.5">
-                  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60"></span>
-                  <span class="relative inline-flex size-1.5 rounded-full bg-primary"></span>
-                </span>
-                {move || t("home.receiving")}
-              </span>
-            </div>
-            <div class="spectrum-bar h-16 rounded-2xl border"></div>
-            <div class="spectrum-ticks mt-2 h-3 rounded-sm opacity-60"></div>
-            <div
-              class="mt-1.5 flex justify-between font-mono text-[10px] tabular-nums text-muted-foreground/80"
-              aria-hidden="true"
-            >
-              <span>"14.000"</span>
-              <span>"14.175"</span>
-              <span>"14.350"</span>
-            </div>
+            <span>"14.000"</span>
+            <span>"14.175"</span>
+            <span>"14.350"</span>
           </div>
         </div>
-      </section>
+      </div>
 
       // 模块入口：三列不等宽（首列更宽）+ 阶梯式下沉，打破三等分的呆板网格。
-      // 卡片靠 `spotlight` 在鼠标下泛光、`edge-glow` 在悬停时点亮渐变描边。
       <div class="mt-16 grid grid-cols-1 gap-4 md:grid-cols-[1.3fr_1fr_1fr] md:items-start">
         {MODULES
           .iter()
@@ -238,47 +178,39 @@ pub fn HomePage() -> impl IntoView {
             view! {
               <a
                 href=m.href
-                // `motion-press` + `active:translate-y-0`：按下时卡片「落回原位」，
-                // 和抬起方向相反，形成完整的按压手感（桌面 hover 抬起，触屏无 hover
-                // 但有 active，两端都有反馈）。过渡属性由 `motion-press` 统一给出
-                // （含 `translate`），这里不再写 `transition-*`。
+                // `motion-press`：悬停上移 2px、按下落回（硬阴影随之消失），见 `motion.css`。
                 class=format!(
-                  "reveal group spotlight edge-glow relative flex flex-col gap-5 overflow-hidden rounded-2xl border bg-card p-5 shadow-sm hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/15 motion-press active:translate-y-0 {}",
+                  "reveal group pxl-window motion-press relative flex flex-col gap-5 overflow-hidden p-5 hover:bg-accent {}",
                   m.offset,
                 )
                 style=format!("animation-delay: {}ms", 300 + i * 90)
               >
-                // 角落的序号水印：纯装饰，悬停时染上主色。
+                // 角落的序号水印：纯装饰。
                 <span
                   aria-hidden="true"
-                  class="pointer-events-none absolute -bottom-5 -right-1 select-none font-display text-8xl font-bold leading-none text-foreground/[0.05] transition-colors duration-500 group-hover:text-primary/15"
+                  class="pxl-title pointer-events-none absolute -bottom-3 right-1 select-none text-6xl leading-none text-foreground/10"
                 >
                   {m.index}
                 </span>
                 <div class="relative flex items-center gap-3">
-                  <div class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/15 transition-[background-color,color,box-shadow,scale] duration-300 group-hover:scale-105 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-lg group-hover:shadow-primary/40">
-                    <Icon kind=m.icon class="h-5 w-5" />
+                  <div class="flex size-12 shrink-0 items-center justify-center border-2 border-ink bg-primary text-primary-foreground">
+                    <Icon kind=m.icon class="size-6" />
                   </div>
                   <div class="min-w-0">
-                    <div class="text-lg font-semibold tracking-tight">{move || t(m.title)}</div>
-                    <div class="mt-0.5 text-xs text-muted-foreground">{move || t(m.desc)}</div>
+                    <div class="pxl-title text-sm">{move || t(m.title)}</div>
+                    <div class="mt-1 text-xs text-muted-foreground">{move || t(m.desc)}</div>
                   </div>
-                  <span
-                    aria-hidden="true"
-                    class="ml-auto grid size-8 shrink-0 place-items-center rounded-full border bg-background/60 text-muted-foreground transition-[translate,background-color,color,border-color] duration-300 group-hover:translate-x-0.5 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground"
-                  >
-                    <Icon kind=IconKind::ChevronRight class="size-4" />
+                  <span aria-hidden="true" class="ml-auto shrink-0 text-muted-foreground">
+                    <Icon kind=IconKind::ChevronRight class="size-6" />
                   </span>
                 </div>
-                <div class="relative flex flex-wrap gap-1.5">
+                <div class="relative flex flex-wrap gap-2">
                   {m
                     .links
                     .iter()
                     .map(|&(label, _)| {
                       view! {
-                        <span class="rounded-full border bg-muted/50 px-2.5 py-0.5 text-xs text-muted-foreground transition-colors group-hover:bg-accent group-hover:text-accent-foreground">
-                          {move || t(label)}
-                        </span>
+                        <span class="pxl-badge text-xs">{move || t(label)}</span>
                       }
                     })
                     .collect_view()}
@@ -337,6 +269,6 @@ pub fn HomePage() -> impl IntoView {
         <DailyQuestion />
         <PropagationWidget />
       </div>
-    </div>
+    </PageContainer>
   }
 }

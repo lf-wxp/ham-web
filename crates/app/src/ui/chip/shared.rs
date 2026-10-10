@@ -2,13 +2,10 @@
 
 use leptos::prelude::*;
 
-/// chip 的公共外观（尺寸、圆角、过渡）。胶囊形：和按钮的圆角矩形区分开，一眼看出「这是个标签」。
-pub(super) const CHIP_BASE: &str = "shrink-0 cursor-pointer whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium transition-[color,background-color,border-color,box-shadow] duration-200 outline-none focus-visible:border-ring focus-visible:ring-ring/40 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50";
-/// 选中态：实心 + 一圈带色的柔光，在一排未选中项里一眼就能找到当前项。
-pub(super) const CHIP_ON: &str =
-  "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/30";
-/// 未选中态。
-pub(super) const CHIP_OFF: &str = "bg-background/60 text-muted-foreground hover:border-primary/40 hover:bg-accent hover:text-accent-foreground";
+/// chip 的外观由 `style/pixel/controls.css` 的 `.pxl-chip` 提供，选中态跟着
+/// `aria-checked` / `aria-pressed` 走：状态只有一个事实来源（无障碍属性），
+/// 视觉不会和读屏看到的状态不一致，也不必在 Rust 里再拼一遍 `ON` / `OFF` 类名。
+pub(super) const CHIP_BASE: &str = "pxl-chip";
 
 /// [`Chip`](super::Chip) 与 [`ChipGroup`](super::ChipGroup) 之间的上下文。
 #[derive(Clone, Copy)]

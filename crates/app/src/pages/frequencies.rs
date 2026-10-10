@@ -3,6 +3,7 @@
 use ham_web_core::frequencies::FREQ_GROUPS;
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
 use crate::util::set_title;
 
@@ -11,16 +12,12 @@ pub fn FrequenciesPage() -> impl IntoView {
   set_title("shell.common-frequencies");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.common-frequencies")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("knowledge.distress-and-emergency-beacons")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.common-frequencies")
+        subtitle=move || t("knowledge.distress-and-emergency-beacons")
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         {FREQ_GROUPS
           .iter()
           .map(|g| {
@@ -45,7 +42,7 @@ pub fn FrequenciesPage() -> impl IntoView {
             }
           })
           .collect_view()}
-      </div>
+      </PageContainer>
     </div>
   }
 }

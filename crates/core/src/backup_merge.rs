@@ -12,6 +12,7 @@ use crate::logbook::{LogEntry, Logbook};
 use crate::mistake_book::{
   CategoryStats, MAX_RECORDS, MistakeBook, MistakeRecord, StudyStats, Tally,
 };
+use crate::rpg::{Bestiary, StageStars};
 use crate::station::{StationBook, StationProfile};
 
 /// 考试历史最多保留的条数（与 `ham-web-app` 的 `exam_history` 一致）。
@@ -40,6 +41,8 @@ pub fn merge_value(key: &str, current: Option<&str>, backup: &str) -> Option<Str
     "mistake-book" => merge_mistake_book(cur, backup),
     "study-stats" => merge_study_stats(cur, backup),
     "daily-challenge" => merge_daily_challenge(cur, backup),
+    "rpg-stars" => merge_rpg_stars(cur, backup),
+    "rpg-bestiary" => merge_rpg_bestiary(cur, backup),
     "station-book" => merge_station_book(cur, backup),
     _ => None,
   }
@@ -255,6 +258,36 @@ fn merge_daily_challenge(cur: &str, backup: &str) -> Option<String> {
   serde_json::to_string(&merged).ok()
 }
 
+/// 合并闯关星级：每一关取两边的历史最佳。
+///
+/// 星级只增不减，取最大值就是正确的并集 —— 不会因为导入一份旧备份而「掉星」。
+fn merge_rpg_stars(cur: &str, backup: &str) -> Option<String> {
+  let mut merged = match local_or_backup::<StageStars>(cur, backup) {
+    Ok(v) => v,
+    Err(fallback) => return fallback,
+  };
+  let Ok(backup) = serde_json::from_str::<StageStars>(backup) else {
+    return None;
+  };
+  for (stage, stars) in backup.best {
+    merged.record(&stage, stars);
+  }
+  serde_json::to_string(&merged).ok()
+}
+
+/// 合并怪物图鉴：已击败集合取并集。
+fn merge_rpg_bestiary(cur: &str, backup: &str) -> Option<String> {
+  let mut merged = match local_or_backup::<Bestiary>(cur, backup) {
+    Ok(v) => v,
+    Err(fallback) => return fallback,
+  };
+  let Ok(backup) = serde_json::from_str::<Bestiary>(backup) else {
+    return None;
+  };
+  merged.defeated.extend(backup.defeated);
+  serde_json::to_string(&merged).ok()
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -445,5 +478,44 @@ mod tests {
     let r: DailyResults = serde_json::from_str(&merged).expect("parse");
     assert_eq!(r.days["2026-10-01"].correct, 8);
     assert_eq!(r.days["2026-10-02"].correct, 9);
+  }
+
+  #[test]
+  fn merges_rpg_stars_by_best_per_stage() {
+    let local = r#"{"best":{"A:a":3,"A:b":1}}"#;
+    let backup = r#"{"best":{"A:a":1,"A:b":2,"A:c":3}}"#;
+    let merged = merge_value("rpg-stars", Some(local), backup).unwrap();
+    let stars: StageStars = serde_json::from_str(&merged).unwrap();
+    assert_eq!(stars.stars("A:a"), 3, "旧备份不能让本机掉星");
+    assert_eq!(stars.stars("A:b"), 2);
+    assert_eq!(stars.stars("A:c"), 3);
+  }
+
+  #[test]
+  fn merges_rpg_bestiary_as_union() {
+    let merged = merge_value(
+      "rpg-bestiary",
+      Some(r#"{"defeated":["A-1","A-2"]}"#),
+      r#"{"defeated":["A-2","A-3"]}"#,
+    )
+    .unwrap();
+    let dex: Bestiary = serde_json::from_str(&merged).unwrap();
+    assert_eq!(dex.count(), 3);
+  }
+
+  #[test]
+  fn rpg_state_adopts_backup_when_local_is_missing_or_broken() {
+    let backup = r#"{"best":{"A:a":2}}"#;
+    assert_eq!(
+      merge_value("rpg-stars", None, backup).as_deref(),
+      Some(backup)
+    );
+    let merged = merge_value("rpg-stars", Some("not json"), backup).unwrap();
+    assert_eq!(
+      serde_json::from_str::<StageStars>(&merged)
+        .unwrap()
+        .stars("A:a"),
+      2
+    );
   }
 }

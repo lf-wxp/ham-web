@@ -4,11 +4,14 @@
 > 怎么写、有哪些坑、怎么验收」的规范；本文件是组件清单、props 与逐个使用示例。
 
 本目录是全站**表单控件的唯一来源**。页面里不再直接写 `<input>` / `<select>` / `<textarea>` /
-`<input type="range">`，统一用这里的组件 —— 颜色、圆角、间距、字体与 hover / focus /
+`<input type="range">`，统一用这里的组件 —— 颜色、边框、间距、字体与 hover / focus /
 disabled / error 状态反馈因此只有一处定义。
 
-视觉基线沿用项目现有的 shadcn/ui（new-york）Token：`--primary` / `--muted` / `--ring` /
-`--destructive`、`--radius`、`Geist` 字体，暗色模式由 `.dark` 覆盖，无需组件侧额外适配。
+视觉基线是**像素风（Pixel Art）**：token 与控件原语都在 `crates/app/style/pixel/`
+（`tokens.css` 调色板 / 零圆角 / 硬阴影，`controls.css` 的 `pxl-btn` / `pxl-field` / `pxl-window` …）。
+语义 token 名沿用 shadcn（`--primary` / `--muted` / `--ring` / `--destructive`），只换了值，
+所以页面里的 `bg-card` / `text-primary` 照常可用；暗色由 `.dark` 覆盖。组件只拼 `pxl-*` 类名，
+**像素规范与硬规则见 [`docs/ui-components.md` §0.5](../../../../docs/ui-components.md)**。
 
 ---
 
@@ -35,7 +38,8 @@ disabled / error 状态反馈因此只有一处定义。
 | `Field` | 手写的 `label + 控件 + 提示` 排版 | `label` `r#for` `hint` `error` `required` |
 | `Label` | `<label>`（单独使用，如 Checkbox 旁） | `r#for` |
 | `Dialog` / `Sheet` 及 `DialogHeader` 等 | — | 见源码 |
-| `Progress` / `Separator` / `Stat` | — | 见源码 |
+| `Progress` / `Separator` / `Stat` | — | `Progress` 是分格条；加 `pxl-bar-hp` / `pxl-bar-xp` / `pxl-bar-win` / `pxl-bar-gold` 变血条 / 经验条 / 通关绿 / 金币 |
+| `PixelSprite`（`crate::icons`） | — | 像素精灵：`name` `scale`（每格屏幕像素数）`label`；成就徽章用 `badge_sprite(id)` |
 
 辅助导出：`Variant` / `Size`（按钮）、`ControlSize`（输入类控件）、`TextValue`（文案）、
 `button_class` / `badge_class` / `card_class` / `label_class`（类名工厂）。
@@ -84,8 +88,8 @@ view! {
 
 - 输入类（`Input` / `NumberField` / `Textarea` / `Select` / `NativeSelect` / `DatePicker` /
   `TimePicker`）用 `ControlSize`：
-  `Sm` = `h-8`（工具栏筛选）、`Default` = `h-9`（表单主体）、`Lg` = `h-11`（触屏主表单）。
-- 按钮用 `Size`：`Sm` / `Default` / `Lg` / `Icon`。`Lg` = `h-11` + 更大的圆角与字号，
+  `Sm` = `h-8`（工具栏筛选）、`Default` = `h-10`（表单主体）、`Lg` = `h-12`（触屏主表单）。
+- 按钮用 `Size`：`Sm`（`h-8`）/ `Default`（`h-10`）/ `Lg`（`h-12`）/ `Icon`（`size-10`）。`Lg` 配更大的字号，
   只给落地页的主操作（首页 Hero 的三个入口）用，表单与工具栏里不要用。
 
 `Default` 在移动端保留 16px 字号，避免 iOS 聚焦时页面被自动放大。
@@ -94,10 +98,10 @@ view! {
 
 | 状态 | 表现 |
 |---|---|
-| hover | 颜色加深 + 阴影加大（`hover:shadow-*`，Tailwind v4 下仅 hover 设备生效）；实心按钮另有一道斜向扫光（`btn-solid`）；输入框描边提亮到 `ring/50` |
-| active | 按下 `scale(0.97)` + 去阴影 + 涟漪泛光（`btn-ripple`，见 `style/input.css`） |
-| focus-visible | 按钮 `ring-[3px]`；输入类控件 `ring-[4px]` + `ring-ring/30`（一圈柔光而不是硬边） |
-| disabled | `opacity-50` + 去阴影 + 降饱和 + `cursor-not-allowed` + `pointer-events-none` |
+| hover | 按钮上浮 2px + `brightness(1.1)`，外投影变长；输入框描边换成 `--ring`。都只在 `@media (hover: hover)` 生效，触屏不会「粘住」悬停态 |
+| active | 按钮沉 2px、外投影归零、内高光与内阴影对调（像真被按进去） |
+| focus-visible | 按钮与输入类控件统一是「主色 2px 断开虚线框」（`outline: 2px dashed var(--ring)`），不是柔光环 |
+| disabled | 按钮：抖动网点遮罩（`::after`）+ 去投影 + `saturate(.4)`；输入框：网点底 + `opacity: .7`；两者都 `cursor-not-allowed` + `pointer-events-none` |
 | loading | （仅 `Button`）旋转图标 + `aria-busy="true"` + 自动禁用；文案保留，读屏名字不变 |
 | error | 传 `invalid=…`，输出 `aria-invalid="true"`，描边切到 `destructive` |
 
@@ -326,7 +330,7 @@ view! {
 />
 ```
 
-轨道 / 滑块的跨浏览器自绘在 `style/input.css` 的 `.ui-slider`；组件只把进度以
+轨道 / 滑块的跨浏览器自绘在 `style/pixel/surfaces.css` 的 `.ui-slider`；组件只把进度以
 `--slider-fill` 传给 CSS，无需 JS 参与。
 
 ### 文件选择
@@ -489,9 +493,10 @@ view! {
 
 1. **`controls=false`**：工具页录入的是连续量（14.2 MHz、0.1 步进、任意小数），加减步进按钮
    既没用又挤占宽度；同页已迁移的 `ohms_law` 也是这么写的，保持一致。
-2. **删除 `pages/tools/mod.rs` 的本地 `const INPUT`**：它写的是 `h-10 rounded-lg … ring-2`，
-   与全站 `control_class` 的 `h-9 rounded-md … shadow-xs … ring-[3px]` 不一致 ——
-   这正是「同一页两种输入框」的来源。`const RESULT` 保留：它只是只读结果区，不是表单控件。
+2. **删除 `pages/tools/mod.rs` 的本地 `const INPUT`**：它自带一套 `rounded-lg … ring-2` 的
+   圆角柔光质感，与全站 `control_class` 的 `.pxl-field`（2px 硬描边 + 左上内阴影的凹陷输入框）
+   不是同一种控件 —— 这正是「同一页两种输入框」的来源。`const RESULT` 保留：它只是只读结果区，
+   不是表单控件。
 
 `RadioGroup` 对外只有 `String`，因此 `filter_design` 的 `FilterKind` 走一张
 `(枚举值, 单选值, 文案 key)` 常量表做双向映射（单选值取语义名而不是下标，重排选项不会

@@ -9,9 +9,12 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde::Deserialize;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::exam_history;
 use crate::i18n::{t, tf};
+use crate::icons::{PixelSprite, badge_sprite};
 use crate::pages::log::use_log_store;
+use crate::ui::Progress;
 use crate::util::{set_title, storage};
 use crate::{data, store, study};
 
@@ -110,19 +113,19 @@ pub fn AchievementsPage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("learning.achievement-wall")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("learning.unlock-milestones-as-you")}</div>
-          </div>
-          <a href="/progress" class="text-xs text-primary underline-offset-4 hover:underline">
-            {move || t("learning.progress")}
-          </a>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("learning.achievement-wall")
+        subtitle=move || t("learning.unlock-milestones-as-you")
+        actions=ViewFn::from(move || {
+          view! {
+            <a href="/progress" class="text-xs text-primary underline-offset-4 hover:underline">
+              {move || t("learning.progress")}
+            </a>
+          }
+        })
+      />
 
-      <div class="mx-auto max-w-5xl space-y-5 px-4 py-5">
+      <PageContainer class="space-y-5">
         <section class="rounded-xl border bg-card p-4">
           <div class="mb-1 flex items-center justify-between text-sm">
             <span class="font-medium">{move || t("learning.achievements-unlocked")}</span>
@@ -130,12 +133,13 @@ pub fn AchievementsPage() -> impl IntoView {
               {move || tf("common.ratio", &[&unlocked_ids.with(Vec::len).to_string(), &total.to_string()])}
             </span>
           </div>
-          <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              class="h-full rounded-full bg-primary transition-all"
-              style=move || format!("width: {:.1}%", unlocked_ids.with(Vec::len) as f64 / total.max(1) as f64 * 100.0)
-            ></div>
-          </div>
+          <Progress
+            value=Signal::derive(move || {
+              i64::try_from(unlocked_ids.with(Vec::len) * 100 / total.max(1)).unwrap_or(100)
+            })
+            label=Signal::derive(move || t("learning.achievements-unlocked"))
+            class="pxl-bar-gold"
+          />
         </section>
 
         <div node_ref=grid class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
@@ -145,16 +149,27 @@ pub fn AchievementsPage() -> impl IntoView {
               let is_unlocked = move || unlocked_ids.with(|ids| ids.contains(&a.id));
               view! {
                 <div class=move || if is_unlocked() {
-                  "rounded-xl border bg-card p-4 text-center"
+                  "pxl-window p-4 text-center"
                 } else {
-                  "rounded-xl border border-dashed p-4 text-center text-muted-foreground"
+                  "border-2 border-dashed border-border p-4 text-center text-muted-foreground"
                 }>
-                  <div class=move || if is_unlocked() { "text-3xl" } else { "text-3xl grayscale" }>{a.icon}</div>
-                  <div class="mt-1.5 text-sm font-medium">{move || t(a.name)}</div>
-                  <div class="mt-0.5 text-[11px] text-muted-foreground">{move || t(a.desc)}</div>
-                  <div class="mt-1 text-[10px]">
+                  // 未解锁显示锁：与地图、图鉴里「还没到」的语言一致，而不是把彩色徽章灰掉。
+                  <div class="flex justify-center">
+                    <PixelSprite
+                      name=Signal::derive(move || {
+                        if is_unlocked() { badge_sprite(a.id) } else { "badge_lock" }
+                      })
+                      scale=4
+                      class=Signal::derive(move || {
+                        if is_unlocked() { "pxl-bob".to_owned() } else { "opacity-60".to_owned() }
+                      })
+                    />
+                  </div>
+                  <div class="mt-2 text-sm">{move || t(a.name)}</div>
+                  <div class="mt-1 text-xs text-muted-foreground">{move || t(a.desc)}</div>
+                  <div class="mt-1 text-xs">
                     {move || if is_unlocked() {
-                      view! { <span class="font-medium text-emerald-700 dark:text-emerald-400">{t("learning.unlocked")}</span> }.into_any()
+                      view! { <span class="text-win-text">{t("learning.unlocked")}</span> }.into_any()
                     } else {
                       view! { <span>{t("learning.locked")}</span> }.into_any()
                     }}
@@ -168,7 +183,7 @@ pub fn AchievementsPage() -> impl IntoView {
         <p class="text-xs text-muted-foreground">
           {move || t("learning.achievements-are-determined-from")}
         </p>
-      </div>
+      </PageContainer>
     </div>
   }
 }

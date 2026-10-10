@@ -23,6 +23,7 @@ mod pwa;
 mod radio_law_check;
 #[cfg(test)]
 mod registry_check;
+mod rpg;
 mod sat_alert;
 mod share_score;
 mod shortcuts;
@@ -32,7 +33,6 @@ mod study;
 mod theme;
 pub mod ui;
 mod util;
-mod web_threads;
 
 /// panic 时除了打印到控制台，还调用 `index.html` 中的 `__hamFatal` 显示兜底页。
 fn install_panic_hook() {

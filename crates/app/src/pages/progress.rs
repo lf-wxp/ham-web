@@ -13,6 +13,7 @@ use leptos::task::spawn_local;
 use serde::Deserialize;
 
 use crate::components::common::StudyHeatmap;
+use crate::components::common::{PageContainer, PageHeader};
 use crate::components::study_plan_card::StudyPlanCard;
 use crate::exam_history::ExamTrend;
 use crate::i18n::{t, tf};
@@ -205,16 +206,12 @@ pub fn ProgressPage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.progress")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("learning.practice-exam-mistakes-bookmarks")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.progress")
+        subtitle=move || t("learning.practice-exam-mistakes-bookmarks")
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label=t("learning.day-streak") value=move || checkin.streak />
           <Stat label=t("learning.mistakes") value=move || mistakes />
@@ -494,7 +491,7 @@ pub fn ProgressPage() -> impl IntoView {
         <p class="text-xs text-muted-foreground">
           {move || t("learning.data-comes-from-local-2")}
         </p>
-      </div>
+      </PageContainer>
     </div>
   }
 }

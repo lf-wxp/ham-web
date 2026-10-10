@@ -7,6 +7,7 @@ use ham_web_core::categories::top_category;
 use ham_web_core::mistake_book::{heat_level, mistake_domains};
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf, tp};
 use crate::study;
 use crate::util::set_title;
@@ -46,21 +47,19 @@ pub fn MistakeTopicsPage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("exam.error-prone-topics")}</h1>
-            <div class="text-xs text-muted-foreground">
-              {move || t("exam.mistake-heatmap-subtitle")}
-            </div>
-          </div>
-          <a href="/mistakes" class="text-xs text-primary underline-offset-4 hover:underline">
-            {move || t("exam.all-mistakes")}
-          </a>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("exam.error-prone-topics")
+        subtitle=move || t("exam.mistake-heatmap-subtitle")
+        actions=ViewFn::from(move || {
+          view! {
+            <a href="/mistakes" class="text-xs text-primary underline-offset-4 hover:underline">
+              {move || t("exam.all-mistakes")}
+            </a>
+          }
+        })
+      />
 
-      <div class="mx-auto max-w-5xl space-y-3 px-4 py-5">
+      <PageContainer class="space-y-3">
         <p class="text-xs text-muted-foreground">
           {move || t("exam.mistake-heatmap-hint")}
         </p>
@@ -158,7 +157,7 @@ pub fn MistakeTopicsPage() -> impl IntoView {
             .collect_view()
             .into_any()
         }}
-      </div>
+      </PageContainer>
     </div>
   }
 }

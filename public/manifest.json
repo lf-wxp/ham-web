@@ -4,8 +4,8 @@
   "description": "业余无线电一站式平台：A/B/C 类题库练习、模拟考试、知识速查、通联日志与实时传播",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FAFBFC",
-  "theme_color": "#008183",
+  "background_color": "#F2E8CF",
+  "theme_color": "#3B5DC9",
   "icons": [
     {
       "src": "/pwa-icon-192.png",

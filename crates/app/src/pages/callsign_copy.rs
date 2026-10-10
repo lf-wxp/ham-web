@@ -4,6 +4,7 @@ use ham_web_core::morse::code_of;
 use ham_web_core::phonetic::{PHONETIC, word_of};
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::morse_audio::play_morse;
 use crate::speech::speak_en;
@@ -111,16 +112,12 @@ pub fn CallsignCopyPage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-2xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.callsign-copy-training")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("morse.listen-to-phonetic-spelling")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.callsign-copy-training")
+        subtitle=move || t("morse.listen-to-phonetic-spelling")
+      />
 
-      <div class="mx-auto max-w-2xl space-y-4 px-4 py-5">
+      <PageContainer class="space-y-4">
         <section class="rounded-xl border bg-card p-5">
           <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
             <span>{move || t("common.correct-3")} <span class="font-semibold text-emerald-600">{correct.get()}</span> {" / "} {total.get()}</span>
@@ -247,7 +244,7 @@ pub fn CallsignCopyPage() -> impl IntoView {
             {move || t("morse.digit-pronunciation-0-zero")}
           </p>
         </details>
-      </div>
+      </PageContainer>
     </div>
   }
 }

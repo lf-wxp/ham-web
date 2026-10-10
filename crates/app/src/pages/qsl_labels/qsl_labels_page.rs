@@ -5,6 +5,7 @@ use ham_web_core::qsl_labels::{LAYOUTS, Layout, build, layout, paginate};
 use ham_web_core::qsl_status::{QslVia, mark_sent};
 use leptos::prelude::*;
 
+use crate::components::common::PageHeader;
 use crate::pages::log::{LogEntry, use_log_store};
 use crate::ui::{
   Button, ButtonLink, Chip, ChipGroup, ControlSize, DatePicker, NativeSelect, NumberField,
@@ -190,42 +191,44 @@ pub fn QslLabelsPage() -> impl IntoView {
   view! {
     <div class="min-h-screen bg-muted/40 pb-10 print:bg-white print:pb-0">
       <style>{move || page_css(&current.get())}</style>
-      <div class="print-hide sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.qsl-label-printing")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("log.qsos-with-the-same")}</div>
-          </div>
-          <ButtonLink
-            href="/log"
-            variant=Variant::Ghost
-            size=Size::Sm
-          >{move || t("log.back-to-log")}</ButtonLink>
-          <NativeSelect
-            value=via_sel
-            on_change=Callback::new(move |v: String| via_sel.set(v))
-            options=via_options
-            size=ControlSize::Sm
-            aria_label=Signal::derive(move || t("log.qsl-sent-via"))
-            class="w-auto"
-          />
-          <Button
-            variant=Variant::Outline
-            size=Size::Sm
-            disabled=Signal::derive(move || selected.with(Vec::is_empty))
-            on_click=Callback::new(move |_| mark_sent())
-          >
-            {move || tf("log.mark-as-sent", &[&selected.with(Vec::len).to_string()])}
-          </Button>
-          <Button
-            variant=Variant::Default
-            size=Size::Sm
-            disabled=Signal::derive(move || labels.with(Vec::is_empty))
-            on_click=Callback::new(move |_| { let _ = window().print(); })
-          >
-            {move || t("learning.print")}
-          </Button>
-        </div>
+      <PageHeader
+        class="print-hide"
+        title=move || t("shell.qsl-label-printing")
+        subtitle=move || t("log.qsos-with-the-same")
+        actions=ViewFn::from(move || {
+          view! {
+            <ButtonLink
+              href="/log"
+              variant=Variant::Ghost
+              size=Size::Sm
+            >{move || t("log.back-to-log")}</ButtonLink>
+            <NativeSelect
+              value=via_sel
+              on_change=Callback::new(move |v: String| via_sel.set(v))
+              options=via_options.clone()
+              size=ControlSize::Sm
+              aria_label=Signal::derive(move || t("log.qsl-sent-via"))
+              class="w-auto"
+            />
+            <Button
+              variant=Variant::Outline
+              size=Size::Sm
+              disabled=Signal::derive(move || selected.with(Vec::is_empty))
+              on_click=Callback::new(move |_| mark_sent())
+            >
+              {move || tf("log.mark-as-sent", &[&selected.with(Vec::len).to_string()])}
+            </Button>
+            <Button
+              variant=Variant::Default
+              size=Size::Sm
+              disabled=Signal::derive(move || labels.with(Vec::is_empty))
+              on_click=Callback::new(move |_| { let _ = window().print(); })
+            >
+              {move || t("learning.print")}
+            </Button>
+          }
+        })
+      >
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 pb-3 text-xs text-muted-foreground">
           // 互斥选择用 `ChipGroup` + `Chip`（`role="radiogroup"` / `aria-checked`）：
           // 手写的 `aria-pressed` 分段控件不在规范内，读屏与键盘行为也没有这层保证。
@@ -306,7 +309,7 @@ pub fn QslLabelsPage() -> impl IntoView {
             {move || t("contest.to-fill-it-in")}
           </p>
         })}
-      </div>
+      </PageHeader>
 
       <div class="print-sheet mt-6 overflow-x-auto px-4 print:mt-0 print:overflow-visible print:px-0">{sheets}</div>
       <p class="print-hide mt-2 text-center text-xs text-muted-foreground">{move || t("log.when-printing-choose-actual")}</p>

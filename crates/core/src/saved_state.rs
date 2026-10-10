@@ -177,6 +177,16 @@ pub mod keys {
   pub const PRACTICE_LAST_MODE: &str = "practice:lastMode";
   /// 主题。
   pub const THEME: &str = "theme";
+  /// 像素动效偏好（`on` / `off`，缺省为 `on`）。
+  pub const PIXEL_MOTION: &str = "ui:pixelMotion";
+  /// 易读字体偏好（`on` / `off`，缺省为 `off`）：正文切回抗锯齿字体。
+  pub const READABLE_FONT: &str = "ui:readableFont";
+  /// 配色方案 id（[`crate::color_scheme`]；缺省或不认识时用默认方案）。
+  pub const COLOR_SCHEME: &str = "ui:colorScheme";
+  /// 闯关星级（[`crate::rpg::StageStars`]）。
+  pub const RPG_STARS: &str = "rpg-stars";
+  /// 怪物图鉴（[`crate::rpg::Bestiary`]）。
+  pub const RPG_BESTIARY: &str = "rpg-bestiary";
   /// 界面语言（`zh` / `en`）。
   pub const LOCALE: &str = "locale";
   /// 练习快捷键说明是否已展示。

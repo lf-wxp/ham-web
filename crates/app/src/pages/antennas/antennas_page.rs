@@ -1,6 +1,7 @@
 use ham_web_core::antennas::{ANTENNA_THEORY, ANTENNAS};
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::util::set_title;
 
 use super::antenna_card::AntennaCard;
@@ -16,16 +17,12 @@ pub fn AntennasPage() -> impl IntoView {
   Effect::new(move |_| data::ensure_knowledge_i18n());
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.antenna-types")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("knowledge.common-amateur-antennas-diagrams")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.antenna-types")
+        subtitle=move || t("knowledge.common-amateur-antennas-diagrams")
+      />
 
-      <div class="mx-auto max-w-5xl px-4 py-5">
+      <PageContainer class="space-y-0">
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {ANTENNAS.iter().map(|a| view! { <AntennaCard entry=a /> }).collect_view()}
         </div>
@@ -33,7 +30,7 @@ pub fn AntennasPage() -> impl IntoView {
         <div class="mt-6">
           <ConceptsSection title="天线理论要点" items=ANTENNA_THEORY />
         </div>
-      </div>
+      </PageContainer>
     </div>
   }
 }

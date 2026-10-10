@@ -51,17 +51,17 @@ pub(super) fn MorseCard(entry: &'static MorseChar) -> impl IntoView {
       type="button"
       title=tf("common.preview-2", &[(entry.ch), (entry.code)])
       on:click=play_card
-      class="group relative flex flex-col items-center gap-1.5 rounded-xl border bg-card p-3 text-center transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent/60 hover:shadow-md hover:shadow-primary/10 active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      class="group pxl-window motion-press relative flex flex-col items-center gap-1.5 px-1 py-3 text-center hover:bg-accent"
     >
-      <span class="absolute right-2 top-2 text-primary opacity-0 transition-all duration-200 ease-out group-hover:scale-110 group-hover:opacity-100">
-        <Icon kind=IconKind::Play class="h-3.5 w-3.5" />
+      <span class="absolute right-1 top-1 text-primary opacity-0 group-hover:opacity-100">
+        <Icon kind=IconKind::Play class="size-6" />
       </span>
       <div class="flex items-baseline gap-1.5">
-        <span class="text-lg font-semibold leading-none tabular-nums">{entry.ch}</span>
+        <span class="pxl-title text-base leading-none tabular-nums">{entry.ch}</span>
         {word_of(entry.ch)
           .map(|p| view! { <span class="text-[11px] leading-none text-muted-foreground">{p}</span> })}
       </div>
-      <span class="font-mono text-base font-semibold tracking-widest">
+      <span class="font-mono text-sm tracking-wider">
         {move || {
           let code = morse_display(entry.code);
           code

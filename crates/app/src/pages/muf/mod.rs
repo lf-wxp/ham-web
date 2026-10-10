@@ -6,6 +6,7 @@ mod voacap_card;
 use ham_web_core::muf::{BAND_CHOICE, MUF_CONCEPTS};
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::util::set_title;
 
 use crate::i18n::t;
@@ -17,16 +18,12 @@ pub fn MufPage() -> impl IntoView {
   set_title("shell.propagation-forecast");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.propagation-forecast")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("tools.muf-luf-optimum-working")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.propagation-forecast")
+        subtitle=move || t("tools.muf-luf-optimum-working")
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <HeatmapCard />
 
         <VoacapCard />
@@ -64,7 +61,7 @@ pub fn MufPage() -> impl IntoView {
               .collect_view()}
           </div>
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

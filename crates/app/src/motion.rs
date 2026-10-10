@@ -1,19 +1,18 @@
-//! 动效基础设施：滚动浮现、路由过渡与光斑跟随。
+//! 动效基础设施：滚动浮现与路由过渡。
 //!
-//! 曲线、时长与关键帧全部定义在 `style/input.css` 的「动效语言」一节，这里只做三件
+//! 缓动、时长与关键帧全部定义在 `style/pixel/motion.css`（逐帧 `steps()`），这里只做两件
 //! 浏览器必须参与的事：
 //!
 //! 1. **滚动浮现**：用 `IntersectionObserver` 给进入视口的元素打上 `data-reveal="in"`；
-//! 2. **路由过渡**：切换路径时重放主内容区的入场动画，并在顶栏扫过一道信号光；
-//! 3. **光斑跟随**：鼠标划过 `.spotlight` 卡片时，把指针位置写进 `--mx` / `--my`，
-//!    由 CSS 用径向渐变画出跟手的柔光。
+//! 2. **路由过渡**：切换路径时重放主内容区的像素溶解入场，并在顶栏走一格一格的读条。
 //!
 //! # 降级策略
 //!
 //! 滚动浮现的初始态是「透明 + 位移」，一旦 JS 没跑起来就会把内容永久藏住 —— 这是最
 //! 不能接受的失败模式。因此整套浮现有两级开关：
 //!
-//! - 不支持 `IntersectionObserver`，或用户开了「减少动态效果」→ 不给 `<html>` 加
+//! - 不支持 `IntersectionObserver`，或动效被关（系统「减少动态效果」，或设置里的
+//!   「像素动效：关」，即 `<html data-pixel-motion="off">`）→ 不给 `<html>` 加
 //!   `.js-motion`，CSS 里依赖该类名的预隐藏规则整体失效；
 //! - 即便加了 `.js-motion`，元素也只在**成功注册进观察器之后**才写入 `data-reveal`。
 //!
@@ -22,7 +21,6 @@
 
 use std::cell::RefCell;
 
-use leptos::ev;
 use leptos::prelude::*;
 use leptos_router::hooks::use_location;
 use send_wrapper::SendWrapper;
@@ -38,7 +36,7 @@ pub const ROUTE_CONTENT_ID: &str = "route-content";
 /// 路由内容容器的入场类名。
 const PAGE_ENTER: &str = "motion-page";
 
-/// 顶栏扫光条的类名（播放完自动停在透明态）。
+/// 顶栏读条的类名（播放完自动停在透明态）。
 const ROUTE_SWEEP: &str = "route-sweep";
 
 /// 错峰步长与档位上限：同批进入视口的第 n 个元素延迟 `n * STAGGER_MS` 入场，
@@ -58,15 +56,11 @@ thread_local! {
   static CALLBACK: RefCell<Option<SendWrapper<RevealCallback>>> = const { RefCell::new(None) };
 }
 
-/// 光斑跟随宿主的类名（对应 `style/input.css` 的 `.spotlight`）。
-const SPOTLIGHT_HOST: &str = ".spotlight";
-
 /// 初始化动效环境。应在 [`crate::app::App`] 里最先调用。
 pub fn provide_motion() {
   if !motion_allowed() {
     return;
   }
-  install_spotlight();
   let Some(observer) = create_observer() else {
     return;
   };
@@ -80,57 +74,17 @@ pub fn provide_motion() {
   });
 }
 
-/// 挂一个全局的指针监听，把鼠标在 `.spotlight` 宿主内的位置写进 `--mx` / `--my`。
+/// 是否允许播放动效：系统没开「减少动态效果」，且设置里的「像素动效」没被关掉。
 ///
-/// 用事件委托（一个监听管全站）而不是给每张卡片各挂一个：卡片会随路由反复创建销毁，
-/// 逐个挂 / 摘既容易漏清理，也让监听数量随页面内容膨胀。非 `.spotlight` 区域的移动
-/// 只会走一次 `closest` 就返回，开销可以忽略。
-///
-/// 只响应鼠标：触屏与手写笔没有「悬停」，CSS 侧也用 `@media (hover: hover)` 屏蔽了
-/// 光斑，这里提前返回是为了省掉无意义的样式写入。
-fn install_spotlight() {
-  let handle = window_event_listener(ev::pointermove, move |e| {
-    if e.pointer_type() != "mouse" {
-      return;
-    }
-    let Some(host) = e
-      .target()
-      .and_then(|t| t.dyn_into::<web_sys::Element>().ok())
-      .and_then(|el| el.closest(SPOTLIGHT_HOST).ok().flatten())
-      .and_then(|el| el.dyn_into::<web_sys::HtmlElement>().ok())
-    else {
-      return;
-    };
-    let rect = host.get_bounding_client_rect();
-    // 显式 `HtmlElement::style`：理由同 `set_reveal_delay`。
-    let style = web_sys::HtmlElement::style(&host);
-    let _ = style.set_property(
-      "--mx",
-      &format!("{:.0}px", f64::from(e.client_x()) - rect.left()),
-    );
-    let _ = style.set_property(
-      "--my",
-      &format!("{:.0}px", f64::from(e.client_y()) - rect.top()),
-    );
-  });
-  let handle = SendWrapper::new(Some(handle));
-  on_cleanup(move || {
-    if let Some(h) = handle.take() {
-      h.remove();
-    }
-  });
-}
-
-/// 是否允许播放动效（用户未开启「减少动态效果」）。
-///
-/// 供 JS 驱动的非 CSS 动效（如 [`crate::ui::Stat` 的数字滚动）在启动前判断，
-/// 避免在「减少动态效果」下仍跑计时器动画。
+/// 供 JS 驱动的非 CSS 动效（如 [`crate::ui::Stat`] 的数字滚动）在启动前判断，
+/// 避免在动效被关时仍跑计时器动画。
 pub(crate) fn motion_allowed() -> bool {
-  !crate::util::window()
+  let reduced = crate::util::window()
     .match_media("(prefers-reduced-motion: reduce)")
     .ok()
     .flatten()
-    .is_some_and(|m| m.matches())
+    .is_some_and(|m| m.matches());
+  !reduced && crate::theme::pixel_motion_enabled()
 }
 
 fn set_motion_ready(on: bool) {
@@ -235,14 +189,14 @@ pub fn reveal_children(parent: &web_sys::Element) {
   }
 }
 
-/// 路由过渡：切换路径时重放主内容区入场动画，并在顶栏扫过一道信号光。
+/// 路由过渡：切换路径时重放主内容区的像素溶解入场，并在顶栏走一遍读条。
 ///
 /// 必须放在 `<Router>` 内（要读 `use_location`），且排在 `app::MainContent`
 /// 之后，这样首次运行时容器已经挂载。
 #[component]
 pub fn RouteTransition() -> impl IntoView {
   let location = use_location();
-  // 每次递增就换掉扫光条这个 DOM 节点 —— 换节点即重播动画，比手动摘加类名可靠。
+  // 每次递增就换掉读条这个 DOM 节点 —— 换节点即重播动画，比手动摘加类名可靠。
   let beat = RwSignal::new(0u32);
 
   Effect::new(move |_| {

@@ -13,6 +13,7 @@ use web_sys::{
   MediaStreamConstraints,
 };
 
+use crate::components::common::PageContainer;
 use crate::i18n::{t, tf};
 use crate::ui::{Button, Size, Slider, Variant};
 use crate::util::{js_error_message, set_title, window};
@@ -227,7 +228,7 @@ pub fn SdrWaterfallPage() -> impl IntoView {
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <div class="mx-auto max-w-5xl space-y-5 px-4 py-5">
+      <PageContainer class="space-y-5">
         <section class="rounded-xl border bg-card">
           <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
             <div class="mr-auto">
@@ -315,7 +316,7 @@ pub fn SdrWaterfallPage() -> impl IntoView {
           </div>
         </section>
         <FileWaterfall />
-      </div>
+      </PageContainer>
     </div>
   }
 }

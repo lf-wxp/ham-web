@@ -1,7 +1,5 @@
 use leptos::prelude::*;
 
-use crate::icons::{Icon, IconKind};
-
 use super::super::popover;
 use super::select_root::SelectCtx;
 
@@ -28,9 +26,6 @@ pub fn SelectItem(#[prop(into)] value: String, children: Children) -> impl IntoV
         ctx.open.set(false);
       }
     >
-      <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-        {move || selected().then(|| view! { <Icon kind=IconKind::Check class="h-4 w-4" /> })}
-      </span>
       <span class="w-full">{children()}</span>
     </div>
   }

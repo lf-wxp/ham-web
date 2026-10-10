@@ -25,10 +25,10 @@ pub fn BottomBar(
       <div
         role="region"
         aria-label=move || t("shell.action-bar")
-        class="fixed left-0 right-0 bottom-0 z-40 border-t bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+        class="fixed left-0 right-0 bottom-0 z-40 border-t-2 border-ink bg-card shadow-[0_-2px_0_0_var(--pxl-shadow)]"
         style="padding-bottom: env(safe-area-inset-bottom);"
       >
-        <div class="container mx-auto max-w-4xl px-4 py-2 space-y-2">
+        <div class="mx-auto max-w-5xl px-4 py-2 space-y-2">
           <div class="text-sm text-muted-foreground text-center">{stats.run()}</div>
           <div class="hidden sm:flex items-center justify-between gap-2">
             <div>{left.run()}</div>

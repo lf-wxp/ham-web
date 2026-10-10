@@ -1,0 +1,470 @@
+/* ============================================================
+   像素动效语言（Pixel Motion）
+   ------------------------------------------------------------
+   原则只有三条：
+   1. 一律逐帧：缓动是 `steps(n)`，位移取 4px 的倍数，不出现「半个像素」的中间态
+      （缩放会让点阵文字在中间帧变糊，所以不做 scale 动画，只做位移 / 显隐 / 抖动 / 闪烁）。
+   2. 只动合成器属性（`opacity` / `transform` / `translate`），以及极少数一次性的
+      `mask-image` / `clip-path`，不触发布局。
+   3. 全部有静态降级：系统「减少动态效果」或设置里的「像素动效：关」（`<html data-pixel-motion="off">`）
+      时，所有动画按 0.01ms 跑完一帧就停，内容永远处于「终态」，不会被卡在透明态。
+
+   滚动浮现（`[data-reveal]`）的初始态是「隐藏」，所以做了两级降级：
+   `<html>` 上没有 `.js-motion` 时（不支持 IntersectionObserver，或动效被关 —— 见
+   `src/motion.rs`）这条规则整体失效，内容保持默认可见。动效可以「没有」，但不能把内容「卡住」。
+   ============================================================ */
+
+/* ---------- 基础关键帧 ---------- */
+@keyframes pxl-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes pxl-scroll-x {
+  to {
+    background-position-x: -128px;
+  }
+}
+
+/* 暗色星空：两组星点轮换。具体坐标写在 surfaces.css 的 `.dark body::after` 里；
+   这里只切换「第二组」的 box-shadow。 */
+@keyframes pxl-twinkle {
+  50% {
+    box-shadow:
+      6vw 9vh #f4f4f4, 14vw 31vh transparent, 22vw 14vh #f4f4f4, 31vw 52vh transparent,
+      38vw 7vh #f4f4f4, 47vw 26vh transparent, 55vw 61vh #73eff7, 63vw 11vh transparent,
+      71vw 38vh #ffcd75, 79vw 18vh transparent, 86vw 56vh #f4f4f4, 93vw 8vh transparent,
+      11vw 71vh #f4f4f4, 27vw 84vh transparent, 44vw 77vh #ffcd75, 59vw 90vh transparent,
+      76vw 80vh #73eff7, 91vw 87vh transparent;
+  }
+}
+
+/* 受击抖动：左右各 4px，五帧。 */
+@keyframes pxl-shake {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  20% {
+    translate: -4px 0;
+  }
+  40% {
+    translate: 4px 0;
+  }
+  60% {
+    translate: -4px 0;
+  }
+  80% {
+    translate: 4px 0;
+  }
+}
+
+/* 受击闪白：整体亮度在 1 与 2.2 之间跳。 */
+@keyframes pxl-flash {
+  0%,
+  100% {
+    filter: none;
+  }
+  25%,
+  75% {
+    filter: brightness(2.2) saturate(0.4);
+  }
+}
+
+/* 待机呼吸：上下 4px 的两帧。 */
+@keyframes pxl-bob {
+  50% {
+    translate: 0 -4px;
+  }
+}
+
+/* 打字机：宽度从 0 走到 100%，步数由 `--steps` 给出（字符数）。 */
+@keyframes pxl-type {
+  to {
+    width: 100%;
+  }
+}
+
+/* 飘字（+XP、伤害数字）：向上飘 16px 并在最后一帧消失。 */
+@keyframes pxl-float-up {
+  0% {
+    translate: 0 0;
+    opacity: 1;
+  }
+  80% {
+    translate: 0 -16px;
+    opacity: 1;
+  }
+  100% {
+    translate: 0 -20px;
+    opacity: 0;
+  }
+}
+
+.pxl-shake {
+  animation: pxl-shake 0.35s steps(1, end) 1;
+}
+
+.pxl-flash {
+  animation: pxl-flash 0.4s steps(1, end) 1;
+}
+
+.pxl-bob {
+  animation: pxl-bob 1s steps(1, end) infinite;
+}
+
+.pxl-blink {
+  animation: pxl-blink 1s steps(1, end) infinite;
+}
+
+.pxl-float-up {
+  animation: pxl-float-up 0.9s steps(5, end) forwards;
+}
+
+.pxl-typewriter {
+  display: inline-block;
+  width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: bottom;
+  animation: pxl-type var(--type-dur, 1s) steps(var(--steps, 20), end) forwards;
+}
+
+/* ---------- 路由切换：主内容区「抖动溶解」入场 ----------
+   由 `RouteTransition` 在路径变化时「摘类 → 强制回流 → 加类」重放。
+   用 4 张逐帧切换的蒙版（25% → 50% → 75% → 100% 的有序抖动）实现像素溶解：
+   `steps(1, end)` 让每个关键帧区间保持起始值、到点才跳下一张，不会在两张蒙版之间插值。
+   `backwards` 让动画开始前不闪一帧原样内容，同时**结束即回到元素自身的自然样式**。
+   这里不能用 `both` / `forwards`：终态一直保留会让容器长期带着蒙版，而蒙版会让容器成为
+   固定定位后代的裁剪边界，侧栏、固定底栏都会被它裁掉。 */
+@keyframes page-enter {
+  0% {
+    -webkit-mask-image: conic-gradient(#000 25%, transparent 0);
+    mask-image: conic-gradient(#000 25%, transparent 0);
+  }
+  25% {
+    -webkit-mask-image: conic-gradient(#000 25%, transparent 0 50%, #000 0 75%, transparent 0);
+    mask-image: conic-gradient(#000 25%, transparent 0 50%, #000 0 75%, transparent 0);
+  }
+  50% {
+    -webkit-mask-image: conic-gradient(transparent 25%, #000 0);
+    mask-image: conic-gradient(transparent 25%, #000 0);
+  }
+  75%,
+  100% {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+.motion-page {
+  -webkit-mask-size: 4px 4px;
+  mask-size: 4px 4px;
+  animation: page-enter var(--motion-normal) steps(1, end) backwards;
+}
+
+/* ---------- 路由切换：顶栏「读条」 ----------
+   每次导航从左到右一格一格填满再消失，是「页面正在换台」的唯一提示；
+   层级压在导航（z-50）之上、跳转链接（z-[60]）之下。 */
+@keyframes route-sweep {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 1;
+  }
+  75% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    opacity: 0;
+  }
+}
+
+.route-sweep {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  height: 4px;
+  z-index: 55;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--pxl-gold) 0 8px,
+    var(--primary) 8px 16px
+  );
+  animation: route-sweep var(--motion-slow) steps(12, end) forwards;
+}
+
+/* ---------- 滚动浮现 ----------
+   只写 transition 不写 animation：终态就是元素的自然状态，动画结束后不留
+   任何残留样式（也就不需要 `animation-fill-mode`）。
+   `--reveal-delay` 由 `motion.rs` 按「同一批进入视口的序号」写入，实现错峰。
+   过渡的缓动继承 `--default-transition-timing-function`？不：这里显式写 steps(4)，
+   保证位移是 4 帧、每帧 2px，而不是一次跳 8px。 */
+.js-motion [data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, var(--reveal-shift), 0);
+  transition:
+    opacity var(--motion-normal) steps(4, end),
+    transform var(--motion-normal) steps(4, end);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.js-motion [data-reveal="in"] {
+  opacity: 1;
+  transform: none;
+  /* 动效结束后立刻释放合成层：长页面上残留 will-change 会白占显存 */
+  will-change: auto;
+}
+
+/* ---------- 交互反馈：可点击区块的抬起 ----------
+   给「整块可点」的卡片 / 统计格用；纯内容区块（正文卡片、表格）不要加，
+   悬停时内容整体位移反而干扰阅读。位移 2px（一个 art-pixel），阴影同步拉长。 */
+.motion-lift {
+  position: relative;
+  transition:
+    transform var(--motion-fast) steps(2, end),
+    border-color var(--motion-fast) steps(2, end),
+    box-shadow var(--motion-fast) steps(2, end);
+}
+
+@media (hover: hover) {
+  .motion-lift:hover {
+    transform: translate3d(0, -2px, 0);
+    border-color: var(--primary);
+    box-shadow: 4px 6px 0 0 var(--pxl-shadow);
+  }
+}
+
+.motion-lift:active {
+  transform: translate3d(0, 2px, 0);
+  box-shadow: 0 0 0 0 var(--pxl-shadow);
+  transition-duration: var(--motion-instant);
+}
+
+/* ---------- 交互反馈：按压 ----------
+   按下「沉」2px、抬起弹回，都是两帧。位移交给 `pxl-btn` / 工具类的 `translate`，
+   这里只管过渡。Tailwind v4 的 `scale-*` / `translate-*` 输出的是独立的 `scale` / `translate`
+   属性，不在 `transform` 的过渡范围内，所以要单独列出来。 */
+.motion-press {
+  transition-property:
+    transform, scale, translate, box-shadow, background-color, border-color, color, opacity, filter;
+  transition-duration: var(--motion-fast);
+  transition-timing-function: steps(2, end);
+}
+
+.motion-press:active {
+  transition-duration: var(--motion-instant);
+}
+
+/* ---------- 弹层（导航下拉 / 菜单）：从触发点下方「跳」出来 ----------
+   只管 transform，透明度与显隐交给外层的 Tailwind 工具类：显隐必须挂在定位容器上
+   （隐藏后整块退出命中测试），而定位容器本身可能带 `-translate-x-1/2` 这类居中
+   transform —— 动效再写一次 transform 就会把它覆盖掉。
+   `transform-origin` 同理不在这里写死，由调用方用 `origin-*` 指定。 */
+.motion-popover {
+  transition: transform var(--motion-fast) steps(3, end);
+  transform: translate3d(0, -4px, 0);
+}
+
+.motion-popover[data-open="true"] {
+  transform: none;
+}
+
+/* ---------- 出现式反馈：弹窗 / 空态 ----------
+   位移 + 显隐，没有缩放（缩放会让点阵文字在中间帧变糊）。 */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.motion-pop {
+  animation: pop-in var(--motion-normal) steps(3, end) both;
+}
+
+/* ---------- 出现式反馈：Toast / 通知（成就解锁、版本更新等） ----------
+   与居中弹窗的「向上跳出」区分：Toast 是「临时插话」，从右缘滑入、退场沿原路滑出。
+   `data-leaving` 由组件在移除前置真，让退场动画播完再卸载（见 achievements.rs）。 */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate3d(16px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(16px, 0, 0);
+  }
+}
+
+.motion-toast {
+  animation: toast-in var(--motion-normal) steps(4, end) both;
+}
+
+.motion-toast[data-leaving="true"] {
+  animation: toast-out var(--motion-fast) steps(3, end) both;
+}
+
+/* ---------- 微交互：勾选标记「啪」一下出现（Checkbox / Radio） ---------- */
+@keyframes check-pop {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -2px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.motion-check {
+  animation: check-pop var(--motion-fast) steps(2, end) both;
+}
+
+/* ---------- 出现式反馈：纯淡入（定位由 transform 承担的元素） ----------
+   有些元素用 transform 做定位（如气泡的 -translate-y-full），再叠位移动画会覆盖
+   掉定位 transform。此时只用 opacity 三帧淡入：反馈仍在、定位不乱。 */
+@keyframes fade-in-only {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.motion-fade {
+  animation: fade-in-only var(--motion-fast) steps(3, end) both;
+}
+
+/* ---------- 首页入场：错峰浮现 ---------- */
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--reveal-shift), 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.reveal {
+  opacity: 0;
+  animation: hero-rise var(--motion-slow) steps(4, end) forwards;
+}
+
+/* ---------- 加载：骨架屏闪烁 ----------
+   两档明暗之间一格一格地跳，比流光更像「读盘」。 */
+@keyframes skeleton-sweep {
+  50% {
+    background-color: color-mix(in srgb, var(--muted-foreground) 24%, transparent);
+  }
+}
+
+.skeleton {
+  background-color: color-mix(in srgb, var(--muted-foreground) 12%, transparent);
+  background-image: repeating-conic-gradient(var(--pxl-dither) 0% 25%, transparent 0% 50%);
+  background-size: 4px 4px;
+  animation: skeleton-sweep 1.2s steps(1, end) infinite;
+}
+
+/* ============================================================
+   静态降级
+   ------------------------------------------------------------
+   放入 @layer base：对 !important 声明而言，分层声明优先于未分层声明，且 base 在
+   utilities 之前，这样该无障碍降级不会被任何工具类的 !important 声明反向覆盖。
+   触发条件有两个，规则完全相同：
+   - 系统开启「减少动态效果」（prefers-reduced-motion: reduce）；
+   - 设置里把「像素动效」关掉（`<html data-pixel-motion="off">`）。
+   ============================================================ */
+@layer base {
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    /* 入场类动效的初始态（透明 / 位移）直接归位。JS 侧此时也不会给 `<html>` 加
+       `.js-motion`，这里再兜一层，杜绝「内容停在 opacity 0」这种最坏情况。 */
+    [data-reveal] {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+    .reveal {
+      opacity: 1 !important;
+    }
+    /* 读条纯装饰，减少动效时直接不渲染 */
+    .route-sweep {
+      display: none !important;
+    }
+  }
+
+  html[data-pixel-motion="off"] *,
+  html[data-pixel-motion="off"] *::before,
+  html[data-pixel-motion="off"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  html[data-pixel-motion="off"] [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  html[data-pixel-motion="off"] .reveal {
+    opacity: 1 !important;
+  }
+
+  html[data-pixel-motion="off"] .route-sweep {
+    display: none !important;
+  }
+}
+
+/* ---------- 弹层进出场（按 `data-state` 驱动） ----------
+   弹层 / 对话框 / 遮罩共用：`open` 时播入场，`closed` 时（退场期间，组件延迟卸载）反向淡出。
+   为什么不用 `data-[state=open]:motion-pop` 这类工具类变体：`motion-pop` 是层外普通类，
+   Tailwind 不会为它生成变体；写成属性选择器更直白，也能和 `prefers-reduced-motion` 降级统一。
+   `pxl-enter` 的位移用独立的 `translate` 属性：居中用的 `-translate-x-1/2`（也是 `translate`）会被
+   覆盖，所以入场改走 `transform`，两者互不冲突。 */
+.pxl-enter[data-state="open"] {
+  animation: pop-in var(--motion-normal) steps(3, end) both;
+}
+
+.pxl-enter[data-state="closed"] {
+  opacity: 0;
+  transition: opacity var(--motion-instant) steps(2, end);
+}
+
+.pxl-enter-fade[data-state="open"] {
+  animation: fade-in-only var(--motion-fast) steps(3, end) both;
+}
+
+.pxl-enter-fade[data-state="closed"] {
+  opacity: 0;
+  transition: opacity var(--motion-instant) steps(2, end);
+}

@@ -3,6 +3,7 @@
 use ham_web_core::filters::{FILTER_TIPS, FILTER_TYPES};
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
 use crate::util::set_title;
 
@@ -13,16 +14,12 @@ pub fn FiltersPage() -> impl IntoView {
   set_title("shell.filters-duplexers");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.filters-duplexers")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("tools.low-pass-band-pass")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.filters-duplexers")
+        subtitle=move || t("tools.low-pass-band-pass")
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <section class="rounded-xl border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.component-type")}</h2>
           <div class="overflow-x-auto">
@@ -70,7 +67,7 @@ pub fn FiltersPage() -> impl IntoView {
               .collect_view()}
           </ul>
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

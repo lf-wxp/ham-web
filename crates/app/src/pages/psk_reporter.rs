@@ -6,6 +6,7 @@ use leptos::task::spawn_local;
 use serde::Deserialize;
 use wasm_bindgen::JsValue;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::data;
 use crate::i18n::t;
 use crate::ui::{Button, Input, Size, Variant};
@@ -78,16 +79,12 @@ pub fn PskReporterPage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">"PSK Reporter"</h1>
-            <div class="text-xs text-muted-foreground">{move || t("radio.digital-mode-reception-reports")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title="PSK Reporter".to_string()
+        subtitle=move || t("radio.digital-mode-reception-reports")
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <section class="rounded-xl border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.look-up-reception-reports")}</h2>
           <div class="flex flex-wrap gap-3 p-4">
@@ -180,7 +177,7 @@ pub fn PskReporterPage() -> impl IntoView {
         <p class="text-xs text-muted-foreground">
           {move || t("radio.data-from-psk-reporter")}
         </p>
-      </div>
+      </PageContainer>
     </div>
   }
 }

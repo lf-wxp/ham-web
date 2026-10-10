@@ -3,6 +3,7 @@
 use ham_web_core::electronics::{CIRCUITS, COMPONENTS, FORMULAS};
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
 use crate::util::set_title;
 
@@ -15,16 +16,12 @@ pub fn ElectronicsPage() -> impl IntoView {
   set_title("shell.electronics-basics");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.electronics-basics")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("knowledge.common-components-basic-circuits")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.electronics-basics")
+        subtitle=move || t("knowledge.common-components-basic-circuits")
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <section class="rounded-xl border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.common-electronic-components")}</h2>
           <div class="overflow-x-auto">
@@ -91,7 +88,7 @@ pub fn ElectronicsPage() -> impl IntoView {
               .collect_view()}
           </div>
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

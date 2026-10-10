@@ -8,7 +8,7 @@ use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 
 use crate::cn::cn;
-use crate::components::common::{EmptyState, Skeleton};
+use crate::components::common::{EmptyState, PageContainer, PageHeader, Skeleton};
 use crate::data::{self, Questions};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Input, InputType};
@@ -292,66 +292,65 @@ pub fn BrowsePage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-16 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.browse-questions")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("exam.grouped-by-question-type")}</div>
-          </div>
+      <PageHeader class="top-16"
+        title=move || t("shell.browse-questions")
+        subtitle=move || t("exam.grouped-by-question-type")
+        actions=ViewFn::from(move || {
+          view! {
+            <div class="flex overflow-hidden rounded-lg border">
+              {Bank::ALL
+                .into_iter()
+                .map(|b| {
+                  view! {
+                    <button
+                      type="button"
+                      on:click=move |_| {
+                        bank.set(b);
+                        visible.set(PAGE);
+                        select_top(ALL);
+                      }
+                      class=move || pill(bank.get() == b, "px-3 py-1.5 text-sm font-medium transition-colors")
+                    >
+                      {b.as_str()}
+                      " 类"
+                    </button>
+                  }
+                })
+                .collect_view()}
+            </div>
 
-          <div class="flex overflow-hidden rounded-lg border">
-            {Bank::ALL
-              .into_iter()
-              .map(|b| {
-                view! {
-                  <button
-                    type="button"
-                    on:click=move |_| {
-                      bank.set(b);
-                      visible.set(PAGE);
-                      select_top(ALL);
-                    }
-                    class=move || pill(bank.get() == b, "px-3 py-1.5 text-sm font-medium transition-colors")
-                  >
-                    {b.as_str()}
-                    " 类"
-                  </button>
-                }
+            <Input
+              value=kw
+              on_change=Callback::new(move |v: String| {
+                kw.set(v);
+                visible.set(PAGE);
               })
-              .collect_view()}
-          </div>
+              kind=InputType::Search
+              placeholder=Signal::derive(move || t("exam.search-question-answer-explanation"))
+              prefix=move || view! { <Icon kind=IconKind::Search /> }
+              clearable=true
+              class="w-56"
+            />
 
-          <Input
-            value=kw
-            on_change=Callback::new(move |v: String| {
-              kw.set(v);
-              visible.set(PAGE);
-            })
-            kind=InputType::Search
-            placeholder=Signal::derive(move || t("exam.search-question-answer-explanation"))
-            prefix=move || view! { <Icon kind=IconKind::Search /> }
-            clearable=true
-            class="w-56"
-          />
+            <button
+              type="button"
+              on:click=move |_| multi_only.update(|v| *v = !*v)
+              class=move || pill(multi_only.get(), "rounded-lg border px-3 py-1.5 text-sm transition-colors")
+            >
+              {move || t("exam.multiple-only")}
+            </button>
+            <button
+              type="button"
+              on:click=move |_| unique_only.update(|v| *v = !*v)
+              class=move || pill(unique_only.get(), "rounded-lg border px-3 py-1.5 text-sm transition-colors")
+            >
+              {move || t("exam.new-in-this-class")}
+            </button>
+          }
+        })
+      />
 
-          <button
-            type="button"
-            on:click=move |_| multi_only.update(|v| *v = !*v)
-            class=move || pill(multi_only.get(), "rounded-lg border px-3 py-1.5 text-sm transition-colors")
-          >
-            {move || t("exam.multiple-only")}
-          </button>
-          <button
-            type="button"
-            on:click=move |_| unique_only.update(|v| *v = !*v)
-            class=move || pill(unique_only.get(), "rounded-lg border px-3 py-1.5 text-sm transition-colors")
-          >
-            {move || t("exam.new-in-this-class")}
-          </button>
-        </div>
-      </header>
-
-      <div class="mx-auto grid max-w-5xl grid-cols-1 gap-5 px-4 py-5 md:grid-cols-[240px_1fr]">
+      <PageContainer class="space-y-0 grid grid-cols-1 gap-5 md:grid-cols-[240px_1fr]">
         <aside class="hidden md:block">
           <div class="sticky top-[136px] max-h-[calc(100vh-152px)] overflow-y-auto rounded-xl border bg-card p-2">
             <button
@@ -378,7 +377,7 @@ pub fn BrowsePage() -> impl IntoView {
           </div>
           {list}
         </div>
-      </div>
+      </PageContainer>
     </div>
   }
 }

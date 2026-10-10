@@ -7,6 +7,7 @@ use wasm_bindgen::JsValue;
 use wasm_bindgen::closure::Closure;
 use web_sys::{File, HtmlInputElement, MessageEvent, Worker};
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::icons::{Icon, IconKind};
 use crate::util::{js_error_message, set_title};
 
@@ -165,22 +166,22 @@ pub fn WsprDecoderPage() -> impl IntoView {
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("tools.wspr-decoder")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("tools.weak-signal-propagation-reports")}</div>
-          </div>
-          <a
-            href="/wspr"
-            class="rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            {move || t("tools.wspr-reference")}
-          </a>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("tools.wspr-decoder")
+        subtitle=move || t("tools.weak-signal-propagation-reports")
+        actions=ViewFn::from(move || {
+          view! {
+            <a
+              href="/wspr"
+              class="rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {move || t("tools.wspr-reference")}
+            </a>
+          }
+        })
+      />
 
-      <div class="mx-auto max-w-5xl space-y-5 px-4 py-5">
+      <PageContainer class="space-y-5">
         <section class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
           <p>
             {move || t("tools.upload-a-wspr-recording")}
@@ -321,7 +322,7 @@ pub fn WsprDecoderPage() -> impl IntoView {
             })
           }}
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

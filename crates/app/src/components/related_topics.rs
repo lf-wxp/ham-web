@@ -1,3 +1,4 @@
+use crate::components::common::PageContainer;
 use crate::i18n::t;
 use ham_web_core::related::RELATED;
 use leptos::prelude::*;
@@ -15,7 +16,7 @@ pub fn RelatedTopics() -> impl IntoView {
         .find(|(p, _)| *p == path)
         .map(|(_, items)| {
           view! {
-            <div class="mx-auto max-w-5xl px-4 pb-10">
+            <PageContainer class="pt-0 pb-10">
               <section class="rounded-xl border bg-card">
                 <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("common.related-topics")}</h2>
                 <div class="flex flex-wrap gap-2 p-4">
@@ -36,7 +37,7 @@ pub fn RelatedTopics() -> impl IntoView {
                     .collect_view()}
                 </div>
               </section>
-            </div>
+            </PageContainer>
           }
         })
     }}

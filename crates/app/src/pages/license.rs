@@ -4,6 +4,7 @@ use leptos::prelude::*;
 use wasm_bindgen::JsValue;
 
 use super::countdown::add_countdown;
+use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
 use crate::ui::{Button, DatePicker, Size, Variant};
 use crate::util::set_title;
@@ -80,16 +81,12 @@ pub fn LicensePage() -> impl IntoView {
   };
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("knowledge.licence-operator-permit-application")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("knowledge.register-exam-set-up")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("knowledge.licence-operator-permit-application")
+        subtitle=move || t("knowledge.register-exam-set-up")
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <section class="rounded-xl border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.application-process")}</h2>
           <ol class="divide-y">
@@ -195,7 +192,7 @@ pub fn LicensePage() -> impl IntoView {
             }}
           </div>
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

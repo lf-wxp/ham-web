@@ -7,7 +7,7 @@ use leptos::prelude::*;
 use leptos_router::hooks::use_query_map;
 
 use crate::cn::cn;
-use crate::components::common::{ExplanationCard, NoteEditor};
+use crate::components::common::{ExplanationCard, NoteEditor, PageContainer, PageHeader};
 use crate::study;
 use crate::ui::{Button, ButtonLink, NativeSelect, SelectOption, Size, Variant};
 use crate::util::{download_text, now_ms, set_title};
@@ -246,83 +246,82 @@ pub fn MistakesPage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.mistakes")}</h1>
-            <div class="text-xs text-muted-foreground">
-              {tf("learning.questions-answered-wrong-in", &[&MASTER_STREAK.to_string()])}
-            </div>
-          </div>
-          {move || {
-            idle()
-              .then(|| {
-                view! {
-                  <Button
-                    variant=Variant::Default
-                    size=Size::Sm
-                    disabled=Signal::derive(move || due_count.get() == 0)
-                    on_click=Callback::new(move |_| start_due())
-                  >
-                    {move || tf("learning.due-today", &[&due_count.get().to_string()])}
-                  </Button>
-                  <Button
-                    variant=Variant::Outline
-                    size=Size::Sm
-                    on_click=Callback::new(move |_| start_all())
-                  >
-                    {move || t("learning.retry-all")}
-                  </Button>
-                  <Button
-                    variant=Variant::Outline
-                    size=Size::Sm
-                    on_click=Callback::new(move |_| start_cards())
-                  >
-                    {move || t("learning.flashcard-review")}
-                  </Button>
-                  <Button
-                    variant=Variant::Outline
-                    size=Size::Sm
-                    on_click=Callback::new(move |_| export())
-                  >
-                    {move || t("learning.export")}
-                  </Button>
-                  <ButtonLink
-                    href=Signal::derive(move || match bank.get() {
-                      Some(b) => format!("/print?src=mistakes&bank={b}"),
-                      None => "/print?src=mistakes".to_owned(),
-                    })
-                    variant=Variant::Outline
-                    size=Size::Sm
-                  >
-                    {move || t("learning.print")}
-                  </ButtonLink>
-                  <Button
-                    variant=Variant::Ghost
-                    size=Size::Sm
-                    class="text-muted-foreground"
-                    on_click=Callback::new(move |_| confirm_clear.set(true))
-                  >
-                    {move || t("learning.clear")}
-                  </Button>
-                }
-              })
-          }}
-          <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
-            {move || match bank.get() {
-              Some(b) => tp(
-                "learning.class-mistakes-total",
-                records.with(Vec::len) as u32,
-                &[
-                  &b.to_string(),
-                  &bank_count.get().to_string(),
-                  &records.with(Vec::len).to_string(),
-                ],
-              ),
-              None => tp("learning.mistakes-total", records.with(Vec::len), &[&records.with(Vec::len).to_string()]),
+      <PageHeader
+        title=move || t("shell.mistakes")
+        subtitle=tf("learning.questions-answered-wrong-in", &[&MASTER_STREAK.to_string()])
+        actions=ViewFn::from(move || {
+          view! {
+            {move || {
+              idle()
+                .then(|| {
+                  view! {
+                    <Button
+                      variant=Variant::Default
+                      size=Size::Sm
+                      disabled=Signal::derive(move || due_count.get() == 0)
+                      on_click=Callback::new(move |_| start_due())
+                    >
+                      {move || tf("learning.due-today", &[&due_count.get().to_string()])}
+                    </Button>
+                    <Button
+                      variant=Variant::Outline
+                      size=Size::Sm
+                      on_click=Callback::new(move |_| start_all())
+                    >
+                      {move || t("learning.retry-all")}
+                    </Button>
+                    <Button
+                      variant=Variant::Outline
+                      size=Size::Sm
+                      on_click=Callback::new(move |_| start_cards())
+                    >
+                      {move || t("learning.flashcard-review")}
+                    </Button>
+                    <Button
+                      variant=Variant::Outline
+                      size=Size::Sm
+                      on_click=Callback::new(move |_| export())
+                    >
+                      {move || t("learning.export")}
+                    </Button>
+                    <ButtonLink
+                      href=Signal::derive(move || match bank.get() {
+                        Some(b) => format!("/print?src=mistakes&bank={b}"),
+                        None => "/print?src=mistakes".to_owned(),
+                      })
+                      variant=Variant::Outline
+                      size=Size::Sm
+                    >
+                      {move || t("learning.print")}
+                    </ButtonLink>
+                    <Button
+                      variant=Variant::Ghost
+                      size=Size::Sm
+                      class="text-muted-foreground"
+                      on_click=Callback::new(move |_| confirm_clear.set(true))
+                    >
+                      {move || t("learning.clear")}
+                    </Button>
+                  }
+                })
             }}
-          </span>
-        </div>
+            <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
+              {move || match bank.get() {
+                Some(b) => tp(
+                  "learning.class-mistakes-total",
+                  records.with(Vec::len) as u32,
+                  &[
+                    &b.to_string(),
+                    &bank_count.get().to_string(),
+                    &records.with(Vec::len).to_string(),
+                  ],
+                ),
+                None => tp("learning.mistakes-total", records.with(Vec::len), &[&records.with(Vec::len).to_string()]),
+              }}
+            </span>
+          }
+        })
+      >
         {move || {
           confirm_clear.get().then(|| {
             view! {
@@ -350,9 +349,9 @@ pub fn MistakesPage() -> impl IntoView {
             }
           })
         }}
-      </header>
+      </PageHeader>
 
-      <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
+      <PageContainer class="space-y-4">
         {move || {
           if carding.get() {
             // 闪卡视图：看题 → 显示答案 → 自评会 / 不会
@@ -821,7 +820,7 @@ pub fn MistakesPage() -> impl IntoView {
             .into_any()
           }
         }}
-      </div>
+      </PageContainer>
     </div>
   }
 }

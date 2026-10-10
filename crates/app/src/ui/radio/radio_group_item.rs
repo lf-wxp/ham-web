@@ -1,7 +1,6 @@
 use leptos::prelude::*;
 
 use crate::cn::cn;
-use crate::icons::{Icon, IconKind};
 
 use super::radio_group::RadioCtx;
 
@@ -13,10 +12,7 @@ pub fn RadioGroupItem(
   #[prop(optional, into)] class: String,
 ) -> impl IntoView {
   let ctx = expect_context::<RadioCtx>();
-  let class = cn(&[
-    "border-input text-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 aspect-square size-4 shrink-0 rounded-full border shadow-xs transition-[color,box-shadow,border-color] outline-none focus-visible:ring-[3px] data-[state=checked]:border-primary data-[state=checked]:shadow-[0_0_10px_-2px_var(--primary)] disabled:cursor-not-allowed disabled:opacity-50",
-    &class,
-  ]);
+  let class = cn(&["pxl-check pxl-radio shrink-0", &class]);
   let v = StoredValue::new(value);
   let checked = move || ctx.value.with(|cur| v.with_value(|v| cur == v));
   let is_disabled = move || ctx.disabled.get() || disabled.get();
@@ -46,10 +42,7 @@ pub fn RadioGroupItem(
                 data-state="checked"
                 class="motion-check relative flex items-center justify-center"
               >
-                <Icon
-                  kind=IconKind::Circle
-                  class="fill-primary absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2"
-                />
+                <span class="pxl-radio-dot"></span>
               </span>
             }
           })

@@ -89,7 +89,7 @@ test("天线矩量法求解：预设切换与尺寸改动驱动结果与方向�
   await readNum(summary(page), /前后比 ([\d.-]+) dB/).toBeGreaterThan(6);
 
   // 改主尺寸：预设参数会按当前预设重建导线表，结果随之变化。
-  const len = page.locator('input[aria-label="主尺寸（m，振子长度 / 垂直高度 / 倒 V 总臂展）"]');
+  const len = page.locator('input[aria-label="主尺寸（m，随预设而异）"]');
   const yagi = await summary(page).innerText();
   await len.fill("9.6");
   await expect(summary(page)).not.toHaveText(yagi);

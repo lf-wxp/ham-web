@@ -3,6 +3,7 @@
 use ham_web_core::gnuradio::{GNU_RADIO_CONCEPTS, GNU_RADIO_TIPS, SDR_HARDWARE};
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
 use crate::util::set_title;
 
@@ -13,16 +14,12 @@ pub fn GnuradioPage() -> impl IntoView {
   set_title("shell.sdr-gnu-radio");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.sdr-gnu-radio")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("knowledge.choosing-a-receiver-sdr")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.sdr-gnu-radio")
+        subtitle=move || t("knowledge.choosing-a-receiver-sdr")
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <section class="rounded-xl border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.hardware-selection")}</h2>
           <div class="overflow-x-auto">
@@ -87,7 +84,7 @@ pub fn GnuradioPage() -> impl IntoView {
               .collect_view()}
           </ul>
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

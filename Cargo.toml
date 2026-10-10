@@ -16,7 +16,7 @@ members = [
 default-members = ["crates/core", "crates/server", "crates/tools", "crates/apt"]
 
 [workspace.package]
-version = "0.3.11"
+version = "0.4.0"
 edition = "2024"
 rust-version = "1.88"
 license = "MIT"
@@ -67,6 +67,12 @@ sha2 = "0.11"
 brotli = "9"
 flate2 = "1"
 walkdir = "2"
+# 字体子集化 + WOFF2 编码（纯 Rust：不需要 Python / fonttools，也不需要 C++ 工具链）
+fontcull-klippa = "0.1"
+fontcull-skrifa = "0.39"
+ttf2woff2 = { version = "0.13", default-features = false }
+# 只用来把 GB2312 一级汉字区的字节对解码成码点
+encoding_rs = "0.8"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

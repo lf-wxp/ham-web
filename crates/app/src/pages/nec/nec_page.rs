@@ -8,6 +8,7 @@ use ham_web_core::nec::{Feed, Ground, Load, NecInput, Wire, parse_nec, solve_wit
 use ham_web_core::nec_templates::nec_template;
 use leptos::prelude::*;
 
+use crate::components::common::PageContainer;
 use crate::i18n::{t, tf};
 use crate::util::{cancel_debounce, debounce, set_title, take_nec_template};
 
@@ -300,7 +301,7 @@ pub fn NecPage() -> impl IntoView {
   let remove_load = Callback::new(move |id: usize| loads.update(|l| l.retain(|r| r.id != id)));
 
   view! {
-    <section class="mx-auto max-w-6xl space-y-4 px-4 py-5">
+    <PageContainer class="space-y-4">
       <h1 class="text-lg font-semibold">{move || t("tools.nec-antenna-solver")}</h1>
       <p class=NOTE>
         {move || t("tools.nec-solves-wire-antennas")}
@@ -394,6 +395,6 @@ pub fn NecPage() -> impl IntoView {
       <LinesSection lines=lines new_id=Callback::new(move |_| id_gen()) />
 
       <NvisSection result=result />
-    </section>
+    </PageContainer>
   }
 }

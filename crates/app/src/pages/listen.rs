@@ -15,6 +15,7 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::SpeechSynthesisUtterance;
 
 use super::print_sheet::{Source as Collection, load_items};
+use crate::components::common::PageContainer;
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
@@ -323,7 +324,7 @@ pub fn ListenPage() -> impl IntoView {
   };
 
   view! {
-    <div class="mx-auto max-w-5xl space-y-4 px-4 py-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <PageContainer class="space-y-4 py-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <div>
         <h1 class="text-base font-semibold leading-tight">{move || t("shell.listening")}</h1>
         <p class="text-xs text-muted-foreground">{move || t("exam.reads-the-question-and")}</p>
@@ -436,6 +437,6 @@ pub fn ListenPage() -> impl IntoView {
         >{move || t("exam.next")}</Button>
       </div>
       <p class="text-center text-xs text-muted-foreground">{move || t("exam.some-phones-pause-speech")}</p>
-    </div>
+    </PageContainer>
   }
 }

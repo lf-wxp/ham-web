@@ -13,10 +13,73 @@
 ## 0. 三条底线
 
 1. **页面里不写原生表单元素**，也不写类名工厂（`input_class` 已删除；`button_class` 只允许
-   `Button` / `ButtonLink` 内部与 §8 清单里的几处例外使用），更不新增本地 `const INPUT` / `CHIP_ON`。
+   `Button` / `ButtonLink` 内部与 §8 清单里的几处例外使用），更不新增本地 `const INPUT` / `CHIP_ON`。外观规则见 §0.5。
 2. **标签关联、无障碍名、多语言文案**是组件与调用点**共同**的责任，缺一样都算没写完
    （e2e 也靠它们定位，见 §4）。
 3. 改完**必须**过 `cargo make check`；动到页面组件再跑相关 e2e（见 §7）。
+
+## 0.5 像素规范（Pixel Art 视觉基线）
+
+整站是「16 位掌机 + 复古电台」风格。**外观只在 `crates/app/style/pixel/` 定义一次**，组件与页面只用
+语义 token 与 `pxl-*` 控件类，不要在页面里再写圆角、模糊、渐变、软阴影。
+
+| 文件 | 管什么 |
+|---|---|
+| `tokens.css` | 亮 / 暗两套调色板（映射到 `--background` / `--primary` / `--border` 等**既有语义名**）、零圆角、硬偏移阴影、字号阶梯、`steps()` 缓动 |
+| `schemes.css` | 其余配色方案（森林 / 海洋 / 晚霞 / 石墨）的亮 / 暗变量块；由 `cargo make pixel-schemes` 从 `crates/core/src/color_scheme.rs` 生成，**勿手改** |
+| `palette.css` | Tailwind 默认色阶（`green-600` 等）整体换成像素调色板；由固定规则生成，**不要手调单个色值** |
+| `fonts.css` / `fonts-pixel.css` | 字体声明；后者由 `cargo make fonts-pixel`（`crates/tools/src/pixel/fonts.rs`）生成，**勿手改** |
+| `surfaces.css` | 全局基线、背景底纹、存量卡片兜底、滚动条、图标 / 精灵尺寸 |
+| `controls.css` | `pxl-btn` / `pxl-field` / `pxl-window` / `pxl-popover` / `pxl-check` / `pxl-switch` / `pxl-chip` / `pxl-bar` 等控件原语 |
+| `motion.css` | 全部逐帧动画与「静态降级」 |
+
+**硬规则**
+
+1. **零圆角、零模糊、零渐变**：不要写 `rounded-*`（全局已归零，写了也无效）、`backdrop-blur`、
+   `bg-gradient-*`、带模糊半径的 `shadow-[…]`。需要强调就换色、加粗描边、用抖动底纹。
+   真要一个圆（极少）给元素加 `data-keep-round`。
+2. **尺寸取 4 的倍数**：间距、控件高度走 Tailwind 刻度（`h-8` / `h-10` / `h-12`）；描边 2px，
+   位移 2px 的整数倍。**不要写 `h-[37px]` 这类奇数**，点阵边缘会错位。
+3. **图标按 24px 的整数倍显示**（`size-6` / `size-12`）：像素图标是 24×24 网格，
+   16 / 20px 会有半个像素的抗锯齿。`size-4` / `h-4 w-4` 在 `surfaces.css` 里被统一抬到 24px，
+   新代码直接写 `size-6`。
+4. **字体**：正文走点阵中文体（缝合像素）；标题 / HUD / 数字读数用 `pxl-title`（Press Start 2P）
+   或 `pxl-label`（Silkscreen）。**点阵字体没有粗体**：不要用 `font-bold` / `font-semibold`
+   做强调（会被合成成糊边），改用颜色、`pxl-title` 或加框。
+5. **状态只信 ARIA**：选中 / 按下态由 `aria-checked` / `aria-pressed` / `data-state` 驱动样式，
+   不要在 Rust 里再拼一份 `ON` / `OFF` 类名（`Chip` 就是这么做的）。
+6. **颜色分「填充」与「文字」两套**：`--pxl-hp` / `xp` / `gold` / `win` 是画在深色槽里的**填充色**
+   （血条、金币），直接拿来写字对比度不够（亮色下金色文字落在奶油底只有 1.4:1）。**写字一律用
+   `text-hp-text` / `text-xp-text` / `text-gold-text` / `text-win-text`**；不要写
+   `text-[color:var(--pxl-gold)]` 这类任意值。Tailwind 色阶（`text-green-600`、`dark:text-red-400`）
+   可以照常用 —— 它们的文字档由 `cargo make pixel-palette` 保证在真实表面上达标。
+   改了调色板就跑它（`cargo make pixel-check` 只审计，不达标时退出码为 1，已并入 `check` / `ci`）。
+7. **配色一律走语义 token，别在页面里写死色值**：`bg-card` / `text-muted-foreground` /
+   `border-ink` 会随用户选的**配色方案**（经典 / 森林 / 海洋 / 晚霞 / 石墨，与明暗正交）换色；
+   写死 `#fff8e1` 的地方切方案后就成了孤岛（DOM 里没有这类写死的色值；`share_score.rs` 这类导出成绩
+   图的画布色是有意固定的，不在此列）。状态色（`hp` / `xp` / `gold` / `win` / `destructive`）
+   是语义色，不随方案变。
+   **新增 / 调整一个方案**：只改 `crates/core/src/color_scheme.rs` 里的 5 个种子色（底 / 墨 / 主色 /
+   强调面 / 焦点环，亮暗各一套），然后 `cargo make pixel-schemes`。其余变量按规则派生，字色按它
+   实际会落到的每个表面校正；单测会拦下「表面太亮 / 太暗」这类会让共享色阶不够对比度的种子色，
+   `pixel-check` 再按真实表面审计整套 Tailwind 色阶。**别手改 `schemes.css`**。
+8. **动画只用 `motion.css` 里的**：位移 / 显隐 / 抖动 / 闪烁，缓动一律 `steps()`；
+   **不要做缩放动画**（中间帧会让点阵文字变糊）。新增动画必须同时写静态降级。
+
+**可用的像素元素**
+
+- 窗口面板：`pxl-window`（卡片）、`pxl-popover`（弹层）、`pxl-titlebar`（标题栏）。
+- 进度条：`Progress` + `class="pxl-bar-hp"`（血条，低于 25% 自动闪烁）/ `pxl-bar-xp`（经验）/
+  `pxl-bar-win` / `pxl-bar-gold`。
+- 精灵：`PixelSprite name="hero" scale=4`（`scale` 是**每格的屏幕像素数**，从接口上杜绝非整数倍）；
+  成就徽章用 `badge_sprite(id)` 取精灵名。
+- 动效类：`pxl-shake`（受击）、`pxl-flash`（闪白）、`pxl-bob`（待机）、`pxl-blink`、`pxl-float-up`（飘字）、
+  `pxl-typewriter`（打字机，`--steps` 传字符数）。
+
+**两个显示偏好**（设置里，持久化在 `ui:pixelMotion` / `ui:readableFont`，落在 `<html>` 的 `data-*`）：
+`data-pixel-motion="off"` 或系统「减少动态效果」时所有动画降为静态帧；
+`data-readable-font="on"` 时正文切回抗锯齿的 Geist（标题 / HUD 仍是像素字体）。
+**新增样式要在这两种状态下都看一眼**。
 
 ## 1. 决策表：要什么 → 用哪个
 
@@ -45,6 +108,88 @@
 `role="radio"` + `aria-checked`）：选项带文字、和 `Field` 标签配套用前者；选项本身很短
 （`20m`、`三单元八木`）、横排一行用后者。
 `Button` 与 `ButtonLink` 的区别是**元素语义**：动作与跳转不要混用（理由见 ui/README.md）。
+
+## 1.5 页面骨架与内容宽度
+
+内容页**只有一种宽度**：`max-w-5xl`（1024px），而且只在两处定义 —— `PageContainer`
+（正文）与 `PageHeader`（页头标题栏），都在 `crates/app/src/components/common/`。
+页面里**不写** `max-w-*`、**不写** `container`、**不写** `mx-auto` 的宽度容器。
+
+一个内容页的骨架就这两行：
+
+```rust
+<PageHeader title=move || t("域.标题") subtitle=move || t("域.副标题") />
+<PageContainer>
+  …内容块（`SectionCard` 等）…
+</PageContainer>
+```
+
+| 要什么 | 用 | 说明 |
+|---|---|---|
+| 粘性页头（标题 + 副标题） | `PageHeader` | `actions=ViewFn::from(move || view! { … })` 放右侧操作区；页头上方还有别的粘性栏时传 `class="top-16"` |
+| 多行页头（标题行 + 工具条 / 确认条） | `PageHeader` 的 `children` | 子节点渲染在标题行下方；自己写一行 `mx-auto flex max-w-5xl …` 与标题行左边缘对齐 |
+| 页面正文 | `PageContainer` | 默认 `space-y-6 px-4 py-5`；间距 / 内边距不同就用 `class` 覆盖；页面内锚点用 `id="…"` |
+| 知识库正文页 | `KnowledgePage` | = `PageHeader` + `PageContainer`，并负责按需拉取知识库译文 |
+| 打印类内容（`/print` 的纸、QSL 标签、QSL 设计器画布） | 物理尺寸（`max-w-[210mm]`、`@page size`、`mm` 值） | 量的是**纸**，不是内容宽度 —— **唯一**不受 `max-w-5xl` 约束的地方，理由见下 |
+
+### 为什么打印类页面不用 `max-w-5xl`
+
+它们量的是纸，和内容宽度不是一套坐标系：
+
+- `max-w-5xl` = 1024px，按 96dpi 折算 ≈ **271mm**，比 A4 的 210mm 宽 29%。套上去屏幕上的
+  「纸」就不是 A4 比例了，预览会骗人。
+- 打印时的版心由 `@page` 决定（`crates/app/style/pixel/surfaces.css`：`size: A4; margin: 14mm 12mm`），
+  页面上用 `print:max-w-none print:p-0` 把屏幕约束整个放开。所以 `max-w-[210mm]` +
+  `px-[14mm] py-[12mm]` **只在屏幕上复刻那份 `@page` 版心**（所见即所得），根本不进打印流程。
+- 同族的还有 `pages/qsl_labels/`（`@page { size: … }` 按标签纸动态给尺寸、
+  单元格用 `px-[2.5mm] py-[1.8mm]`）与 `pages/qsl_designer.rs`（`width: 210mm; height: 296mm`）。
+
+给它们套 `PageContainer` 的结果是「打印出来一模一样，但屏幕预览变成 271mm 的假纸」，
+属于「统一了但统一错了」—— 所以这一类**允许**写 `mm` 尺寸，别再来「统一」一遍。
+
+注意范围：**只有「纸」本身**用物理尺寸。这类页面的**外壳照旧**走 `PageHeader` /
+`PageContainer`（`qsl_labels`、`qsl_designer` 的工具栏就是），别把整套页面都豁免掉。
+唯一的另一处是 `/print` 的工具栏：它刻意用 `max-w-[210mm]` 与预览的纸左右对齐。
+
+**硬规则**
+
+1. **页面里不写宽度类**。`mx-auto` + `max-w-*`（含 `container`）都交给 `PageHeader` /
+   `PageContainer`；要改全站宽度只改组件，不搜页面。
+2. **间距只在 `PageContainer` 的 `class` 上覆盖**：`cn` 会做 tailwind-merge，`class="space-y-4"`
+   覆盖默认的 `space-y-6`。原页面没有纵向间距时写 `class="space-y-0"`，不要为此另起一个
+   `<div>`。负边距 / `pb-*` 之类的例外同样写在 `class` 里。
+3. **只有一种内容宽度**。嫌宽 / 嫌窄都先用满 `max-w-5xl`，把内容本身做窄（限宽交给内容块，
+   不要缩容器）。真要另一种宽度，先在评审里说明，不要悄悄写 `max-w-3xl`。
+   **例外只有打印类页面**：它们写 `mm`（纸张尺寸），不受这条约束，理由见上。
+4. **页脚与底栏与正文同宽**（`max-w-5xl`），左边缘与正文对齐。
+   **顶栏是唯一的外壳例外**：`nav_bar.rs` 继续用 `container`（宽度随断点增长）—— 整行桌面
+   导航 + HUD 在 xl 断点需要 >1024px，收窄到 `max-w-5xl` 会在 1280px 视口把顶栏撑出屏幕
+   （`e2e/tests/rpg_flow.spec.ts` 的「顶栏：各宽度 × 各语言都不撑出屏幕」会拦住这种改动）。
+5. 需要事件的正文容器（如答题页的 `on:touchstart`）：外层包一个只带事件属性的 `<div>`，
+   `PageContainer` 放里面。
+
+自检（输出是一份**很短的封闭清单**，逐条对得上即可；出现新行就说明又手抄了一份容器）：
+
+```bash
+cd crates/app/src
+grep -rn --include='*.rs' --exclude-dir=ui -E 'class="[^"]*\bmax-w-(2xl|3xl|4xl|5xl|6xl)\b|class="container' pages components app \
+  | grep -vE 'min-w-|<Dialog|sm:max-w'
+```
+
+| 位置 | 为什么允许 |
+|---|---|
+| `components/common/page_header.rs` | 页头宽度就在这里定义（`page_container.rs` 用 `cn(&[…])` 拼类名，不出现在这条 grep 里） |
+| `app/footer.rs`、`components/common/bottom_bar.rs` | 外壳与正文左边缘对齐 |
+| `pages/mistakes/mistakes_page.rs`、`pages/bookmarks/bookmarks_page.rs`、`pages/qsl_labels/qsl_labels_page.rs` | `PageHeader` 的 children 行，与标题行对齐 |
+| `components/navigation/nav_bar.rs`（2 处 `container`） | 顶栏例外，理由见上 |
+| `app/storage_warning.rs` | 全站横幅，复刻页头行的宽度 |
+
+不在范围内的：弹窗宽度（`Dialog` 的 `sm:max-w-*`）是另一套尺度；
+`pages/morse/morse_trainer.rs` 报文行的读宽上限写在 `class = if … { "…" }` 的字符串里，
+同样与页面宽度无关。
+
+**写新页面的顺序**：`PageHeader` → `PageContainer` → 内容块用现成组件（`SectionCard` 等）
+→ 跑 `cargo make check`。
 
 ## 2. 组件 API 约定
 
@@ -169,9 +314,16 @@ grep -rn --include='*.rs' --exclude-dir=ui -E '<input|<select|<textarea' .
 grep -rn --include='*.rs' --exclude-dir=ui -c 'input_class(' . | grep -v ':0$'
 # ④ 手写 chip 的样式常量：应为 0
 grep -rln --include='*.rs' --exclude-dir=ui 'CHIP_ON' .
+# ⑦ 把填充色 token 当文字色用（对比度不够）：应为 0
+grep -rnE --include='*.rs' 'text-\[color:var\(--pxl-(hp|xp|gold|win)\)\]' crates/app/src
+# ⑥ 页面里残留的圆角 / 模糊 / 渐变：全局 CSS 已兜底（零圆角、零模糊），但新代码不该再写
+grep -rnE --include='*.rs' --exclude-dir=ui 'backdrop-blur|bg-gradient|bg-linear|shadow-\[0' .
 # ⑤ 自造的胶囊样式：逐条确认都是徽章 / 链接，而不是「按钮自己写样式、自己切选中态」
 #    —— 后者扫描器认不出（常量名与组件都没有），只能靠这份清单人工过（见下）
 grep -rn --include='*.rs' --exclude-dir=ui 'rounded-full border' .
+# ⑧ 页面级宽度类：输出应等于 §1.5 那份封闭清单（组件自身 / 页头对齐行 / 顶栏 container / 横幅 / 报文读宽）
+grep -rn --include='*.rs' --exclude-dir=ui -E 'class="[^"]*\bmax-w-(2xl|3xl|4xl|5xl|6xl)\b|class="container' pages components app \
+  | grep -vE 'min-w-|<Dialog|sm:max-w'
 ```
 
 截至最后一次收口：①0 ②6 ③0 ④0 ⑤73 处（同一行带 `<button` 的为 0，全部是徽章 / 链接）。`button_class` 在页面侧只剩 8 条刻意的例外注释，

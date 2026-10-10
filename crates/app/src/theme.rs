@@ -1,5 +1,13 @@
-//! 明暗主题：`light` / `dark` / `system`，持久化到 `localStorage["theme"]`。
+//! 明暗主题：`light` / `dark` / `system`，持久化到 `localStorage["theme"]`；
+//! 以及三个像素风相关的显示偏好：「配色方案」「像素动效」与「易读字体」。
+//!
+//! 三个偏好都以 `<html>` 上的 `data-*` 属性落地（见 `style/pixel/`），CSS 一处响应，
+//! 不需要组件各自订阅信号。首屏前由 `index.html` 的内联脚本先写一遍，避免闪烁。
+//!
+//! 配色方案与明暗是**正交**的两个选择：方案决定色相（经典 / 森林 / 海洋……），
+//! 明暗决定亮度，每个方案都有亮 / 暗两套（见 `ham_web_core::color_scheme`）。
 
+use ham_web_core::color_scheme;
 use ham_web_core::saved_state::keys;
 use leptos::prelude::*;
 use send_wrapper::SendWrapper;
@@ -16,7 +24,7 @@ pub enum Theme {
 }
 
 impl Theme {
-  fn parse(s: &str) -> Self {
+  pub fn parse(s: &str) -> Self {
     match s {
       "light" => Self::Light,
       "dark" => Self::Dark,
@@ -24,7 +32,7 @@ impl Theme {
     }
   }
 
-  const fn as_str(self) -> &'static str {
+  pub const fn as_str(self) -> &'static str {
     match self {
       Self::Light => "light",
       Self::Dark => "dark",
@@ -41,6 +49,11 @@ pub struct ThemeCtx {
 }
 
 impl ThemeCtx {
+  /// 用户选择的主题模式（含「跟随系统」）。与 [`Self::is_dark`] 不同：后者是实际生效的明暗。
+  pub fn mode(self) -> Theme {
+    self.theme.get()
+  }
+
   /// 当前实际是否为深色。
   pub fn is_dark(self) -> bool {
     self.dark.get()
@@ -79,8 +92,106 @@ fn apply(theme: Theme) -> bool {
   dark
 }
 
+/// 把「像素动效」偏好写到 `<html data-pixel-motion>`：`off` 时 CSS 把所有动画降为静态帧。
+fn apply_pixel_motion(on: bool) {
+  if let Some(root) = document().document_element() {
+    let _ = root.set_attribute("data-pixel-motion", if on { "on" } else { "off" });
+  }
+}
+
+/// 把「易读字体」偏好写到 `<html data-readable-font>`：`on` 时正文切回抗锯齿字体。
+fn apply_readable_font(on: bool) {
+  if let Some(root) = document().document_element() {
+    let _ = root.set_attribute("data-readable-font", if on { "on" } else { "off" });
+  }
+}
+
+/// 把配色方案写到 `<html data-scheme>`：`schemes.css` 里按它选择变量块（经典方案没有块，沿用 `tokens.css`）。
+fn apply_scheme(id: &str) {
+  if let Some(root) = document().document_element() {
+    let _ = root.set_attribute("data-scheme", id);
+  }
+}
+
+/// 「像素动效」当前是否开启（缺省开启）。
+///
+/// 直接读存储而不是读信号：`motion::motion_allowed` 在组件树之外也会被调用。
+pub(crate) fn pixel_motion_enabled() -> bool {
+  storage::get(keys::PIXEL_MOTION).as_deref() != Some("off")
+}
+
+/// 显示偏好上下文：像素动效 / 易读字体。
+#[derive(Clone, Copy)]
+pub struct DisplayPrefs {
+  pixel_motion: RwSignal<bool>,
+  readable_font: RwSignal<bool>,
+  scheme: RwSignal<&'static str>,
+}
+
+impl DisplayPrefs {
+  /// 当前配色方案的 id（始终是方案表里存在的一个）。
+  pub fn scheme(self) -> &'static str {
+    self.scheme.get()
+  }
+
+  /// 设置并持久化配色方案；不认识的 id 回退默认方案。
+  ///
+  /// 先改 `<html>` 属性、后写信号：订阅者（如 3D 方向图要重读 `--primary`）被唤醒时，
+  /// 读到的已经是新方案的颜色。
+  pub fn set_scheme(self, id: &str) {
+    let id = color_scheme::resolve(id).id;
+    storage::set(keys::COLOR_SCHEME, id);
+    apply_scheme(id);
+    self.scheme.set(id);
+  }
+
+  /// 像素动效是否开启。
+  pub fn pixel_motion(self) -> bool {
+    self.pixel_motion.get()
+  }
+
+  /// 易读字体是否开启。
+  pub fn readable_font(self) -> bool {
+    self.readable_font.get()
+  }
+
+  /// 设置并持久化「像素动效」。
+  ///
+  /// 已经挂上的滚动浮现观察器不会因此重建；下次刷新或路由切换后才完全生效，
+  /// CSS 侧的静态降级则是即时的。
+  pub fn set_pixel_motion(self, on: bool) {
+    storage::set(keys::PIXEL_MOTION, if on { "on" } else { "off" });
+    apply_pixel_motion(on);
+    self.pixel_motion.set(on);
+  }
+
+  /// 设置并持久化「易读字体」。
+  pub fn set_readable_font(self, on: bool) {
+    storage::set(keys::READABLE_FONT, if on { "on" } else { "off" });
+    apply_readable_font(on);
+    self.readable_font.set(on);
+  }
+}
+
+/// 读取显示偏好上下文。
+pub fn use_display_prefs() -> DisplayPrefs {
+  expect_context::<DisplayPrefs>()
+}
+
 /// 初始化主题并提供上下文。
 pub fn provide_theme() {
+  let pixel_motion = pixel_motion_enabled();
+  let readable_font = storage::get(keys::READABLE_FONT).as_deref() == Some("on");
+  let scheme = color_scheme::resolve(&storage::get(keys::COLOR_SCHEME).unwrap_or_default()).id;
+  apply_pixel_motion(pixel_motion);
+  apply_readable_font(readable_font);
+  apply_scheme(scheme);
+  provide_context(DisplayPrefs {
+    pixel_motion: RwSignal::new(pixel_motion),
+    readable_font: RwSignal::new(readable_font),
+    scheme: RwSignal::new(scheme),
+  });
+
   let stored = storage::get(keys::THEME).map_or(Theme::System, |s| Theme::parse(&s));
   let ctx = ThemeCtx {
     theme: RwSignal::new(stored),

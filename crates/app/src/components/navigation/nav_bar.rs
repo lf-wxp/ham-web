@@ -19,17 +19,22 @@ use crate::icons::{Icon, IconKind, icon_of};
 use crate::ui::{Button, Size, Variant, button_class};
 
 use super::group_menu::{GroupMenu, MenuAlign};
+use super::hud_badge::HudBadge;
 use super::locale_toggle::LocaleToggle;
+use super::settings_dialog::SettingsDialog;
 use super::theme_toggle::ThemeToggle;
 
 use super::menu::MenuKind;
+use super::mobile_menu::{MOBILE_NAV_PANEL_ID, use_mobile_menu};
 use crate::i18n::{self, Locale, t};
 
 #[component]
 pub fn Navigation() -> impl IntoView {
   let location = use_location();
-  let menu_open = RwSignal::new(false);
+  // 移动端菜单状态与底部 Tab 共享：Tab 的「更多」打开的就是这个面板。
+  let menu_open = use_mobile_menu().open;
   let open_menu = RwSignal::new(None::<MenuKind>);
+  let settings_open = RwSignal::new(false);
 
   // 点击导航外部时关闭桌面端下拉。
   let outside_handle = window_event_listener(ev::click, move |e| {
@@ -85,31 +90,27 @@ pub fn Navigation() -> impl IntoView {
   let exam_active = move || group_active(GROUP_EXAM);
 
   view! {
-    // 顶栏材质：磨砂 + 提饱和（`backdrop-saturate-150`，让背后的极光透出来而不是发灰）；
-    // 模糊半径停在 `xl`：顶栏常驻且每帧滚动都要重算，半径翻倍代价也近乎翻倍；
-    // `nav-elevate` 随滚动淡入一道下沿阴影；`nav-progress` 是整页滚动进度线。
-    // 两者都是 CSS 滚动驱动动画，没有 JS，不支持的浏览器上整块隐形（见 style/input.css）。
-    <nav data-nav aria-label=move || t("shell.main-navigation") class="nav-elevate sticky top-0 z-50 border-b border-border/70 bg-background/70 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-background/55">
-      <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent"></div>
-      <div
-        aria-hidden="true"
-        class="nav-progress pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-[var(--hero-a)] via-[var(--hero-b)] to-[var(--hero-c)]"
-      ></div>
-      <div class="container relative mx-auto px-4">
-        <div class="flex h-16 items-center justify-between gap-3">
+    // 顶栏是一条实心的「HUD 栏」：底色用 `--card`（不透明）+ 2px 墨色下沿 + 硬偏移投影，
+    // 不模糊、不渐变；吸顶时下面滚过的内容被它实实在在地盖住，不需要任何磨砂兜底。
+    <nav data-nav aria-label=move || t("shell.main-navigation") class="sticky top-0 z-50 border-b-2 border-ink bg-card shadow-[0_2px_0_0_var(--pxl-shadow)]">
+      <div class="container relative mx-auto px-1 min-[360px]:px-2 sm:px-4">
+        <div class="flex h-16 items-center justify-between gap-2 sm:gap-3">
           // 品牌标识
           <a
             href="/"
             class="group flex shrink-0 items-center gap-2.5"
             on:click=move |_| menu_open.set(false)
           >
-            <div class="brand-mark relative flex size-9 items-center justify-center overflow-hidden rounded-xl text-primary-foreground transition-transform duration-300 ease-[var(--ease-out-back)] group-hover:rotate-6 group-hover:scale-110">
-              <span class="absolute inset-0 bg-gradient-to-b from-white/20 to-black/15"></span>
-              <Icon kind=IconKind::Satellite class="relative h-5 w-5" />
+            <div class="brand-mark flex size-10 items-center justify-center text-primary-foreground group-hover:-translate-y-0.5">
+              <Icon kind=IconKind::Satellite class="size-6" />
             </div>
             <div class="hidden flex-col whitespace-nowrap leading-tight sm:flex">
-              <span class="font-display text-[13px] font-semibold tracking-tight text-foreground">{move || t("shell.amateur-radio")}</span>
-              <span class="text-[11px] text-muted-foreground">{move || t("shell.exams-knowledge-tools")}</span>
+              <span class="pxl-title text-xs text-foreground">{move || t("shell.amateur-radio")}</span>
+              // 副标题是装饰，宽度让位于功能：点阵标题字体比正文宽，西语副标题又最长（≈ 240px），
+              // 640–768px 与 xl–2xl（桌面导航整行展开、右侧还有 HUD）两段都会把顶栏撑出屏幕。
+              <span class="hidden text-xs text-muted-foreground lg:block xl:hidden 2xl:block">
+                {move || t("shell.exams-knowledge-tools")}
+              </span>
             </div>
           </a>
 
@@ -128,7 +129,7 @@ pub fn Navigation() -> impl IntoView {
                 )
               }
             >
-              <Icon kind=IconKind::Home class="h-4 w-4" />
+              <Icon kind=IconKind::Home class="size-6" />
               {move || t("shell.home")}
             </a>
 
@@ -154,13 +155,13 @@ pub fn Navigation() -> impl IntoView {
                   });
                 }
               >
-                <Icon kind=IconKind::Timer class="h-4 w-4" />
+                <Icon kind=IconKind::Timer class="size-6" />
                 {move || t("shell.exam-center")}
                 <Icon
                   kind=IconKind::ChevronDown
                   class=Signal::derive(move || {
                     cn(&[
-                      "h-3.5 w-3.5 transition-transform duration-200",
+                      "size-6",
                       if open_menu.get() == Some(MenuKind::Exam) { "rotate-180" } else { "" },
                     ])
                   })
@@ -172,7 +173,7 @@ pub fn Navigation() -> impl IntoView {
               <div
                 class=move || {
                   cn(&[
-                    "absolute left-0 top-full pt-1.5 transition duration-[var(--motion-normal)] ease-[var(--ease-out-expo)]",
+                    "absolute left-0 top-full pt-2",
                     if open_menu.get() == Some(MenuKind::Exam) {
                       "visible opacity-100"
                     } else {
@@ -183,7 +184,7 @@ pub fn Navigation() -> impl IntoView {
               >
                 <div
                   data-open=move || (open_menu.get() == Some(MenuKind::Exam)).to_string()
-                  class="motion-popover origin-top w-48 rounded-2xl border bg-popover p-1.5 shadow-xl"
+                  class="motion-popover pxl-popover origin-top w-52 p-1"
                 >
                   {registry::MODULES
                     .iter()
@@ -195,16 +196,16 @@ pub fn Navigation() -> impl IntoView {
                           on:click=move |_| open_menu.set(None)
                           class=move || {
                             cn(&[
-                              "flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors",
+                              "flex items-center gap-2 border-2 px-3 py-2 text-sm",
                               if active(m.path) {
-                                "bg-accent text-foreground"
+                                "border-ink bg-accent text-accent-foreground"
                               } else {
-                                "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                                "border-transparent text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
                               },
                             ])
                           }
                         >
-                          <Icon kind=icon_of(m.icon) class="h-4 w-4" />
+                          <Icon kind=icon_of(m.icon) class="size-6" />
                           {move || t(m.title)}
                         </a>
                       }
@@ -245,10 +246,23 @@ pub fn Navigation() -> impl IntoView {
               title=Signal::derive(move || t("shell.search-2"))
               on_click=Callback::new(move |_| search_open.set(true))
             >
-              <Icon kind=IconKind::Search class="h-5 w-5" />
+              <Icon kind=IconKind::Search class="size-6" />
             </Button>
             <LocaleToggle />
-            <ThemeToggle />
+            // <sm（手机）放不下：这两个挪进移动菜单（「外观与动效」对话框里也有主题）。
+            <div class="hidden items-center gap-1 sm:flex">
+              <ThemeToggle />
+              <Button
+                variant=Variant::Ghost
+                size=Size::Icon
+                aria_label=Signal::derive(move || t("shell.settings"))
+                title=Signal::derive(move || t("shell.settings"))
+                on_click=Callback::new(move |_| settings_open.set(true))
+              >
+                <Icon kind=IconKind::Settings class="size-6" />
+              </Button>
+            </div>
+            <HudBadge />
             // 刻意的例外，见文件头：菜单开关要输出 `aria-expanded`（`Button` 暂时没有这个通道）。
             <button
               type="button"
@@ -256,13 +270,14 @@ pub fn Navigation() -> impl IntoView {
               class=button_class(Variant::Ghost, Size::Icon, "xl:hidden")
               aria-label=move || if menu_open.get() { t("shell.close-menu") } else { t("shell.open-menu") }
               aria-expanded=move || menu_open.get().to_string()
+              aria-controls=MOBILE_NAV_PANEL_ID
               on:click=move |_| menu_open.update(|v| *v = !*v)
             >
               {move || {
                 if menu_open.get() {
-                  view! { <Icon kind=IconKind::X class="h-5 w-5" /> }
+                  view! { <Icon kind=IconKind::X class="size-6" /> }
                 } else {
-                  view! { <Icon kind=IconKind::Menu class="h-5 w-5" /> }
+                  view! { <Icon kind=IconKind::Menu class="size-6" /> }
                 }
               }}
             </button>
@@ -273,27 +288,30 @@ pub fn Navigation() -> impl IntoView {
         {move || {
           menu_open.get().then(|| {
             view! {
-              <div class="absolute inset-x-0 top-full z-40 max-h-[calc(100vh-4rem)] overflow-y-auto border-b bg-background/95 shadow-xl xl:hidden animate-in slide-in-from-top-2 fade-in duration-200">
+              <div
+                id=MOBILE_NAV_PANEL_ID
+                class="motion-pop absolute inset-x-0 top-full z-40 max-h-[calc(100vh-4rem)] overflow-y-auto border-b-2 border-ink bg-card shadow-[0_4px_0_0_var(--pxl-shadow)] xl:hidden"
+              >
                 <nav aria-label=move || t("shell.mobile-navigation") class="container mx-auto grid grid-cols-1 gap-1 px-4 py-3">
                   <a
                     href="/"
                     class=move || {
                       cn(&[
-                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                        "flex items-center gap-3 border-2 px-3 py-2.5 text-sm",
                         if active("/") {
-                          "bg-accent text-foreground"
+                          "border-ink bg-accent text-accent-foreground"
                         } else {
-                          "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                          "border-transparent text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
                         },
                       ])
                     }
                     on:click=move |_| menu_open.set(false)
                   >
-                    <Icon kind=IconKind::Home class="h-5 w-5" />
+                    <Icon kind=IconKind::Home class="size-6" />
                     {move || t("shell.home")}
                   </a>
 
-                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("shell.language")}</div>
+                  <div class="px-3 pt-2 pxl-label text-xs text-muted-foreground">{move || t("shell.language")}</div>
                   <div
                     class="flex flex-wrap gap-1.5 px-3"
                     role="group"
@@ -308,11 +326,11 @@ pub fn Navigation() -> impl IntoView {
                           aria-pressed=move || (i18n::locale().get() == l).to_string()
                           class=move || {
                             cn(&[
-                              "rounded-full border px-3.5 py-1.5 text-sm transition-colors",
+                              "border-2 px-3 py-1.5 text-sm",
                               if i18n::locale().get() == l {
-                                "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/30"
+                                "border-ink bg-primary text-primary-foreground"
                               } else {
-                                "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                                "border-input text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
                               },
                             ])
                           }
@@ -324,7 +342,23 @@ pub fn Navigation() -> impl IntoView {
                       .collect_view()}
                   </div>
 
-                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("shell.exam-center")}</div>
+                  // 手机顶栏没有齿轮：「像素动效 / 易读字体 / 主题」都从这里进。
+                  <div class="px-3 pt-2">
+                    <Button
+                      variant=Variant::Outline
+                      size=Size::Default
+                      class="w-full justify-start gap-3"
+                      on_click=Callback::new(move |_| {
+                        menu_open.set(false);
+                        settings_open.set(true);
+                      })
+                    >
+                      <Icon kind=IconKind::Settings class="size-6" />
+                      {move || t("shell.settings")}
+                    </Button>
+                  </div>
+
+                  <div class="px-3 pt-2 pxl-label text-xs text-muted-foreground">{move || t("shell.exam-center")}</div>
                   {registry::MODULES
                     .iter()
                     .filter(|m| m.group == Some(GROUP_EXAM))
@@ -334,29 +368,29 @@ pub fn Navigation() -> impl IntoView {
                           href=m.nav_href()
                           class=move || {
                             cn(&[
-                              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                              "flex items-center gap-3 border-2 px-3 py-2.5 text-sm",
                               if active(m.path) {
-                                "bg-accent text-foreground"
+                                "border-ink bg-accent text-accent-foreground"
                               } else {
-                                "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                                "border-transparent text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
                               },
                             ])
                           }
                           on:click=move |_| menu_open.set(false)
                         >
-                          <Icon kind=icon_of(m.icon) class="h-5 w-5" />
+                          <Icon kind=icon_of(m.icon) class="size-6" />
                           {move || t(m.title)}
                         </a>
                       }
                     })
                     .collect_view()}
 
-                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("shell.knowledge")}</div>
+                  <div class="px-3 pt-2 pxl-label text-xs text-muted-foreground">{move || t("shell.knowledge")}</div>
                   {KNOWLEDGE_GROUPS
                     .iter()
                     .map(|g| {
                       view! {
-                        <div class="px-3 pt-1 text-xs font-medium text-muted-foreground">{move || t(g)}</div>
+                        <div class="px-3 pt-1 text-xs text-muted-foreground">{move || t(g)}</div>
                         {registry::MODULES
                           .iter()
                           .filter(|m| m.group == Some(*g))
@@ -366,17 +400,17 @@ pub fn Navigation() -> impl IntoView {
                                 href=m.nav_href()
                                 class=move || {
                                   cn(&[
-                                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                                    "flex items-center gap-3 border-2 px-3 py-2.5 text-sm",
                                     if active(m.path) {
-                                      "bg-accent text-foreground"
+                                      "border-ink bg-accent text-accent-foreground"
                                     } else {
-                                      "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                                      "border-transparent text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
                                     },
                                   ])
                                 }
                                 on:click=move |_| menu_open.set(false)
                               >
-                                <Icon kind=icon_of(m.icon) class="h-5 w-5" />
+                                <Icon kind=icon_of(m.icon) class="size-6" />
                                 {move || t(m.title)}
                               </a>
                             }
@@ -386,12 +420,12 @@ pub fn Navigation() -> impl IntoView {
                     })
                     .collect_view()}
 
-                  <div class="px-3 pt-2 text-xs font-semibold text-muted-foreground">{move || t("shell.tools")}</div>
+                  <div class="px-3 pt-2 pxl-label text-xs text-muted-foreground">{move || t("shell.tools")}</div>
                   {TOOL_GROUPS
                     .iter()
                     .map(|g| {
                       view! {
-                        <div class="px-3 pt-1 text-xs font-medium text-muted-foreground">{move || t(g)}</div>
+                        <div class="px-3 pt-1 text-xs text-muted-foreground">{move || t(g)}</div>
                         {registry::MODULES
                           .iter()
                           .filter(|m| m.group == Some(*g))
@@ -401,17 +435,17 @@ pub fn Navigation() -> impl IntoView {
                                 href=m.nav_href()
                                 class=move || {
                                   cn(&[
-                                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                                    "flex items-center gap-3 border-2 px-3 py-2.5 text-sm",
                                     if active(m.path) {
-                                      "bg-accent text-foreground"
+                                      "border-ink bg-accent text-accent-foreground"
                                     } else {
-                                      "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                                      "border-transparent text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
                                     },
                                   ])
                                 }
                                 on:click=move |_| menu_open.set(false)
                               >
-                                <Icon kind=icon_of(m.icon) class="h-5 w-5" />
+                                <Icon kind=icon_of(m.icon) class="size-6" />
                                 {move || t(m.title)}
                               </a>
                             }
@@ -426,6 +460,7 @@ pub fn Navigation() -> impl IntoView {
           })
         }}
       </div>
+      <SettingsDialog open=settings_open />
     </nav>
   }
 }

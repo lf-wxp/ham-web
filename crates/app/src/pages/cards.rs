@@ -11,6 +11,7 @@ use leptos_router::hooks::use_query_map;
 use wasm_bindgen::JsCast;
 
 use crate::components::common::Loading;
+use crate::components::common::PageContainer;
 use crate::data;
 use crate::gesture::{Swipe, swipe_handlers};
 use crate::i18n::{t, tf, tp};
@@ -419,7 +420,7 @@ pub fn CardsPage() -> impl IntoView {
   };
 
   view! {
-    <div class="mx-auto max-w-5xl space-y-4 px-4 py-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <PageContainer class="space-y-4 py-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <div>
         <h1 class="text-base font-semibold leading-tight">{move || t("shell.study-cards")}</h1>
         <p class="text-xs text-muted-foreground">{move || t("exam.reviews-follow-a-forgetting")}</p>
@@ -430,6 +431,6 @@ pub fn CardsPage() -> impl IntoView {
       <p class="text-xs text-muted-foreground tabular-nums">{progress}</p>
       {mastery_bar}
       {card_view}
-    </div>
+    </PageContainer>
   }
 }

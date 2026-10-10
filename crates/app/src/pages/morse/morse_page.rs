@@ -2,6 +2,7 @@ use ham_web_core::koch::farnsworth;
 use ham_web_core::morse::{DIGITS, LETTERS, PUNCTUATION, TIMING};
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::morse_audio::play_morse_timed_with;
 use crate::morse_settings::{provide_morse_settings, use_morse_settings};
 use crate::ui::{Slider, Stat};
@@ -36,17 +37,17 @@ pub fn MorsePage() -> impl IntoView {
   let settings = use_morse_settings();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.morse-code")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("morse.international-morse-code-itu")}</div>
-          </div>
-          <SignalBars />
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.morse-code")
+        subtitle=move || t("morse.international-morse-code-itu")
+        actions=ViewFn::from(move || {
+          view! {
+            <SignalBars />
+          }
+        })
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label=t("morse.letters") value=LETTERS.len() />
           <Stat label=t("morse.digits") value=DIGITS.len() />
@@ -191,7 +192,7 @@ pub fn MorsePage() -> impl IntoView {
               .collect_view()}
           </div>
         </section>
-      </div>
+      </PageContainer>
     </div>
   }
 }

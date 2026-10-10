@@ -129,6 +129,11 @@ fn record_items<'a>(
     .filter_map(|(q, a, dur)| {
       let new = is_new(&stats, q);
       let outcome = book.record(q, a, now)?;
+      // 「掌握」= 把这只怪物打倒。放在这个汇总入口而不是各页面里记：练习页、考试、错题复习、
+      // 回合战最终都走到这里，图鉴因此不会漏掉任何一条击败途径。
+      if matches!(outcome, RecordOutcome::Mastered) {
+        crate::rpg::defeat_monster(&question_key(q));
+      }
       let correct = q.is_answer_correct(a);
       stats.record(q, correct);
       qstats.record(&question_key(q), correct, now, dur);

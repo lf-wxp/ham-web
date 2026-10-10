@@ -1,6 +1,7 @@
 use ham_web_core::phonetic::PHONETIC;
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::ui::Stat;
 use crate::util::set_title;
 
@@ -13,16 +14,12 @@ pub fn PhoneticPage() -> impl IntoView {
   set_title("shell.phonetic-alphabet");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.phonetic-alphabet")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("morse.itu-phonetic-alphabet-spell")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.phonetic-alphabet")
+        subtitle=move || t("morse.itu-phonetic-alphabet-spell")
+      />
 
-      <div class="mx-auto max-w-5xl space-y-6 px-4 py-5">
+      <PageContainer>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-4">
           <Stat label=t("morse.letters") value=PHONETIC.len() />
           <div class="rounded-xl border bg-card p-4 sm:col-span-3">
@@ -41,7 +38,7 @@ pub fn PhoneticPage() -> impl IntoView {
         </section>
 
         <PhoneticListen />
-      </div>
+      </PageContainer>
     </div>
   }
 }

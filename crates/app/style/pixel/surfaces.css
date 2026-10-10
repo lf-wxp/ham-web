@@ -1,0 +1,492 @@
+/* ============================================================
+   像素表面（Surfaces）
+   ------------------------------------------------------------
+   全局基线、页面背景、窗口面板的存量页面兜底、滚动条与原生控件的像素外观。
+
+   分层规则（为什么有的写在 `@layer base`、有的写在层外）：
+   - 层外（unlayered）的声明永远压过 Tailwind 工具类：只给「必须一刀切」的事用，
+     比如全站零圆角、存量手写卡片的描边 —— 这两件事靠逐个改类名不现实。
+   - `@layer base` 里的声明会被工具类覆盖：给「可以被调用点改写」的默认值用，
+     比如焦点框、字体渲染。
+   ============================================================ */
+
+/* ---------- 全局：零圆角 ----------
+   `rounded-sm|md|lg|xl` 已在 tokens.css 里归零，但 `rounded-full` 与裸 `rounded` 是字面量，
+   这里一并兜住。必须是层外规则才能压过工具类。
+   需要保留圆形的元素（极少）加 `data-keep-round`。 */
+*:not([data-keep-round]),
+*:not([data-keep-round])::before,
+*:not([data-keep-round])::after {
+  border-radius: 0;
+}
+
+/* 全局零模糊：存量页面里的 `backdrop-blur*`（吸顶栏、浮层）一律去掉。
+   `--blur-*` 归零只管得到命名档位，管不到裸 `backdrop-blur`（字面量 8px），所以在层外兜底。
+   吸顶栏的底色原本是半透明 + 模糊，去掉模糊后文字会和滚过的内容打架，
+   因此同时把 `bg-*/NN` 的吸顶元素补成实心（见下一条规则）。 */
+[class*="backdrop-blur"],
+[class*="backdrop-saturate"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.sticky[class*="bg-background/"],
+.sticky[class*="bg-card/"],
+.sticky[class*="bg-popover/"],
+.fixed[class*="bg-background/"],
+.fixed[class*="bg-card/"],
+.fixed[class*="bg-popover/"] {
+  background-color: var(--card);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    font-family: var(--font-pixel-body);
+    /* 点阵字体不抗锯齿才锐利；易读字体模式下恢复灰度抗锯齿。 */
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: auto;
+    text-rendering: optimizeSpeed;
+    /* 点阵字体没有粗体：浏览器合成的「伪粗体」会把 1px 笔画抹成 1.5px 的糊边，直接关掉。
+       强调靠颜色与字体（拉丁标题走 Press Start 2P）。 */
+    font-synthesis-weight: none;
+  }
+
+  html[data-readable-font="on"] {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-synthesis-weight: auto;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-size: var(--text-base);
+    line-height: 1.5;
+    /* 多语言排版兜底：英文 / 西班牙文的单词远长于中文，窄容器里若不换行就会撑破布局
+       或被截断。`break-word` 只在单词自身放不下时才断开，对中文排版没有副作用。 */
+    overflow-wrap: break-word;
+  }
+
+  /* `hyphens` 仅在非中文界面启用，让长单词按音节断行、断得更自然。 */
+  html:not([lang^="zh"]) body {
+    hyphens: auto;
+  }
+
+  body.no-site-footer footer,
+  body.no-site-footer .mobile-tabs {
+    display: none !important;
+  }
+
+  /* 移动端底部 Tab 是固定的，会盖住页面最后一行：给页脚补一段下边距做让位。
+     答题类页面（练习 / 考试 / 回合战）自带固定操作栏、页脚已被隐藏，不受影响。 */
+  @media (max-width: 1279px) {
+    body > footer {
+      padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+    }
+  }
+
+  /* 焦点框：2px 虚线，虚线的断口本身就是「像素」。具体控件用 `outline-none` + 自己的框覆盖。 */
+  :focus-visible {
+    outline: 2px dashed var(--ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+}
+
+/* 位图 / 精灵要锐利地放大；照片、地图瓦片不能套这个（会变成马赛克），所以不做全局规则。 */
+.pxl-img,
+.pxl-img img,
+canvas.pxl-img {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* ---------- 页面背景：抖动底纹 + 暗色星空 ----------
+   纯 CSS、零图片：
+   - `::before` 是 4px 棋盘格抖动（透明度很低，只给大块纯色一点「颗粒」，不影响文字对比度）；
+   - 暗色下 `::after` 是一组固定的「星点」—— 一个 2×2 的元素用 `box-shadow` 复制出多颗星，
+     用 steps(1) 在两组星点之间切换，形成缓慢的闪烁。
+   固定定位伪元素而不是 `background-attachment: fixed`：后者在 iOS Safari 上滚动时会持续重绘。 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: repeating-conic-gradient(var(--pxl-dither) 0% 25%, transparent 0% 50%);
+  background-size: 4px 4px;
+}
+
+.dark body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 2px;
+  z-index: -1;
+  pointer-events: none;
+  background: transparent;
+  box-shadow:
+    6vw 9vh #f4f4f4, 14vw 31vh #73eff7, 22vw 14vh #f4f4f4, 31vw 52vh #ffcd75, 38vw 7vh #f4f4f4,
+    47vw 26vh #f4f4f4, 55vw 61vh #73eff7, 63vw 11vh #f4f4f4, 71vw 38vh #ffcd75, 79vw 18vh #f4f4f4,
+    86vw 56vh #f4f4f4, 93vw 8vh #73eff7, 11vw 71vh #f4f4f4, 27vw 84vh #f4f4f4, 44vw 77vh #ffcd75,
+    59vw 90vh #f4f4f4, 76vw 80vh #73eff7, 91vw 87vh #f4f4f4;
+  animation: pxl-twinkle 6s steps(1, end) infinite;
+}
+
+/* ---------- 存量「卡片」→ 像素窗口 ----------
+   全站手写的 `rounded-xl border bg-card`（几百处）统一加粗描边、换成实心墨色。
+   用 `:not([class*="border-"])` 把「调用点已经指定了边框颜色 / 方向」的卡片排除在外：
+   那是页面有意为之的强调（`border-destructive/40`、`border-b-0` …），不该被一刀切。
+   描边宽度的排除列表同理：单边框 / 虚线 / 已经 `border-2` 的不动。 */
+:is(.rounded-xl, .rounded-2xl, .rounded-lg, .rounded-md).bg-card.border:not(
+    [class*="border-0"],
+    [class*="border-x"],
+    [class*="border-y"],
+    [class*="border-t"],
+    [class*="border-b"],
+    [class*="border-l"],
+    [class*="border-r"],
+    [class*="border-s"],
+    [class*="border-e"],
+    [class*="border-dashed"],
+    [class*="border-2"]
+  ) {
+  border-width: 2px;
+}
+
+:is(.rounded-xl, .rounded-2xl, .rounded-lg, .rounded-md).bg-card.border:not([class*="border-"]) {
+  border-color: var(--pxl-ink);
+}
+
+/* 贴边吸附的卡片底下会有内容滚过：`--card` 现在是实心的，不再需要模糊兜底。 */
+
+/* ---------- 首页装饰 ---------- */
+.hero-grid {
+  position: absolute;
+  z-index: -1;
+  inset: -3.5rem 0 auto;
+  height: 30rem;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--pxl-dither) 2px, transparent 2px),
+    linear-gradient(to bottom, var(--pxl-dither) 2px, transparent 2px);
+  background-size: 32px 32px;
+}
+
+.brand-mark {
+  background-color: var(--primary);
+  border: 2px solid var(--pxl-ink);
+  box-shadow:
+    inset 2px 2px 0 0 rgb(255 255 255 / 0.4),
+    inset -2px -2px 0 0 rgb(0 0 0 / 0.3);
+}
+
+/* 进度条填充：分段（每段 6px + 2px 缝），像血条 / 经验条的格子。 */
+.progress-fill {
+  background-color: var(--primary);
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0 6px,
+    rgb(0 0 0 / 0.22) 6px 8px
+  );
+}
+
+/* 频谱条（SDR 瀑布图意象）：硬边色块横向跳帧滚动。 */
+.spectrum-bar {
+  position: relative;
+  overflow: hidden;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--chart-1) 0 8px,
+    var(--chart-3) 8px 16px,
+    var(--chart-2) 16px 24px,
+    var(--chart-4) 24px 32px
+  );
+  background-size: 128px 100%;
+  animation: pxl-scroll-x 1.6s steps(16, end) infinite;
+}
+
+/* 瀑布图底部刻度线 */
+.spectrum-ticks {
+  background-image: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--foreground) 40%, transparent) 0 2px,
+    transparent 2px 12.5%
+  );
+}
+
+/* ---------- 基础组件：滑块（原生 range 的跨浏览器自绘） ----------
+   轨道与滑块的伪元素 Tailwind 无法逐帧覆盖，统一收在这里。进度由组件以内联
+   `--slider-fill` 百分比传入，CSS 只做一次硬停靠的 linear-gradient，无需 JS 参与。
+   伪元素不继承 `box-sizing: border-box`，所以尺寸按 content-box 算：
+   轨道内容高 8px + 上下各 2px 描边 = 12px；滑块 20px 高，负 margin 让它垂直居中。 */
+.ui-slider {
+  appearance: none;
+  width: 100%;
+  height: 1.5rem;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+.ui-slider::-webkit-slider-runnable-track {
+  height: 0.5rem;
+  border: 2px solid var(--pxl-ink);
+  background: linear-gradient(
+    to right,
+    var(--primary) var(--slider-fill, 0%),
+    var(--pxl-field) var(--slider-fill, 0%)
+  );
+  box-shadow: inset 0 2px 0 0 var(--pxl-lo);
+}
+
+.ui-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 0.75rem;
+  height: 1.25rem;
+  margin-top: -0.5rem;
+  border: 2px solid var(--pxl-ink);
+  border-radius: 0;
+  background: var(--card);
+  box-shadow:
+    inset 2px 2px 0 0 var(--pxl-hi),
+    inset -2px -2px 0 0 var(--pxl-lo);
+}
+
+.ui-slider::-moz-range-track {
+  height: 0.5rem;
+  border: 2px solid var(--pxl-ink);
+  background: linear-gradient(
+    to right,
+    var(--primary) var(--slider-fill, 0%),
+    var(--pxl-field) var(--slider-fill, 0%)
+  );
+  box-shadow: inset 0 2px 0 0 var(--pxl-lo);
+}
+
+.ui-slider::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 1rem;
+  height: 1.5rem;
+  border: 2px solid var(--pxl-ink);
+  border-radius: 0;
+  background: var(--card);
+  box-shadow:
+    inset 2px 2px 0 0 var(--pxl-hi),
+    inset -2px -2px 0 0 var(--pxl-lo);
+}
+
+.ui-slider:active::-webkit-slider-thumb {
+  background: var(--accent);
+}
+
+.ui-slider:active::-moz-range-thumb {
+  background: var(--accent);
+}
+
+.ui-slider:focus-visible::-webkit-slider-thumb {
+  outline: 2px dashed var(--ring);
+  outline-offset: 2px;
+}
+
+.ui-slider:focus-visible::-moz-range-thumb {
+  outline: 2px dashed var(--ring);
+  outline-offset: 2px;
+}
+
+.ui-slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- 基础组件：折叠面板（grid 行高过渡） ----------
+   高度过渡到「内容实际高度」用 grid-template-rows: 0fr → 1fr，无需 JS 量高，
+   内容多长都能自适应。行高由 Tailwind 的 `grid-rows-[0fr]` / `grid-rows-[1fr]` 给出，
+   这里只负责溢出裁剪与「收起结束后立刻隐藏」：
+   visibility 延迟到过渡结束才切换，否则收起动画会被瞬间抹掉；
+   延迟后隐藏可以让被裁剪的内容不再被读屏 / 页面内搜索命中。
+   缓动是 steps()：展开 / 收起会「一格一格」地走，正好是逐帧的味道。 */
+.ui-collapse {
+  display: grid;
+  transition: grid-template-rows var(--motion-normal) var(--ease-out-expo);
+}
+
+.ui-collapse > * {
+  overflow: hidden;
+  visibility: hidden;
+  /* 收起：等行高收完再隐藏 */
+  transition: visibility 0s linear var(--motion-normal);
+}
+
+.ui-collapse[data-open="true"] > * {
+  visibility: visible;
+  /* 展开：立刻可见，跟着行高一起展开 */
+  transition: visibility 0s;
+}
+
+/* ---------- 卡片内表格：去掉与卡片边框重合的最外圈边框 ---------- */
+/* 表格（border-collapse）紧贴 .rounded-xl 卡片的内边缘时，单元格最外圈的 border 会与
+   卡片自身的 border 贴合成双线。这里去掉首行上边、末行下边、首列左边、末列右边四条
+   外边线，只保留表格内部的网格线。带内边距包裹的表格（如 solar 页）不受影响。
+
+   1) 上/下外边线用 :first-child / :last-child 定位行组：表格以 <caption> 开头时首行
+      并未贴着卡片边缘，本就应保留 border，因此不能改用 :first-of-type。
+   2) 左/右外边线需遍历全部行组（thead / tbody / tfoot），漏掉 <tfoot> 会让汇总行
+      重新出现双线。 */
+:is(.rounded-xl, .rounded-xl > .overflow-x-auto)
+  > table.border-collapse
+  > :first-child
+  > tr:first-child
+  > :is(th, td) {
+  border-top-width: 0;
+}
+
+:is(.rounded-xl, .rounded-xl > .overflow-x-auto)
+  > table.border-collapse
+  > :last-child
+  > tr:last-child
+  > :is(th, td) {
+  border-bottom-width: 0;
+}
+
+:is(.rounded-xl, .rounded-xl > .overflow-x-auto)
+  > table.border-collapse
+  > :is(thead, tbody, tfoot)
+  > tr
+  > :is(th, td):first-child {
+  border-left-width: 0;
+}
+
+:is(.rounded-xl, .rounded-xl > .overflow-x-auto)
+  > table.border-collapse
+  > :is(thead, tbody, tfoot)
+  > tr
+  > :is(th, td):last-child {
+  border-right-width: 0;
+}
+
+/* ---------- 滚动条：方块滑块 + 抖动轨道 ---------- */
+/* Chromium / Safari：用 ::-webkit-scrollbar 自绘滚动条。
+   注意：不要在 html（或任何会被 Chromium 命中的选择器）上设置 scrollbar-color /
+   scrollbar-width——它们是继承属性，一旦生效，Chromium 会改用标准滚动条绘制并忽略
+   ::-webkit-scrollbar，下面的宽度设置随之失效（实测会退回默认宽度）。标准属性仅用于
+   Firefox 回退，见下方的 @supports 块。 */
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background-color: var(--muted);
+  background-image: repeating-conic-gradient(var(--pxl-dither) 0% 25%, transparent 0% 50%);
+  background-size: 4px 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--primary);
+  border: 2px solid var(--pxl-ink);
+  box-shadow: inset 2px 2px 0 0 rgb(255 255 255 / 0.35);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent);
+}
+
+*::-webkit-scrollbar-corner {
+  background: var(--muted);
+}
+
+/* Firefox 等不支持 ::-webkit-scrollbar 的浏览器：回退到标准属性。
+   必须放在 @supports not 内——否则这些继承属性会在 Chromium 中反过来禁用上面的
+   伪元素样式。 */
+@supports not selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-width: auto;
+    scrollbar-color: var(--primary) var(--muted);
+  }
+}
+
+/* ---------- 打印（/print 打印版） ---------- */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 12mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .print-hide,
+  body:has(.print-sheet) :is(main ~ *, :has(~ main)) {
+    display: none !important;
+  }
+  /* 背景底纹与星空纯装饰，打印时直接不渲染 */
+  body::before,
+  body::after,
+  .hero-grid {
+    display: none !important;
+  }
+  .print-avoid-break {
+    break-inside: avoid;
+  }
+  .print-break-before {
+    break-before: page;
+  }
+}
+
+/* ---------- 像素图标与精灵 ----------
+   图标是 24×24 网格、整数坐标的方块：按网格的整数倍显示才锐利。
+   站内大量的 `h-4 w-4`（16px）会让 2px 的像素格缩成 1.33px，边缘出现灰边；
+   这里把 16px / 20px 的图标统一抬到 24px（三个常见尺寸：24 / 32 / 48），
+   而不是一个个去改调用点。`size-*` 与 `h-* w-*` 两种写法都要覆盖。 */
+.pxl-icon {
+  flex-shrink: 0;
+  image-rendering: pixelated;
+}
+
+.pxl-icon.h-3,
+.pxl-icon.h-3\.5,
+.pxl-icon.h-4,
+.pxl-icon.size-3,
+.pxl-icon.size-3\.5,
+.pxl-icon.size-4,
+.pxl-icon.h-5,
+.pxl-icon.size-5 {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.pxl-icon.h-6,
+.pxl-icon.size-6 {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* 精灵待机：整体上下 1 个像素格的两帧循环；`--pxl-bob` 由调用方按精灵尺寸设置（默认 3px = scale 3）。 */
+.pxl-sprite {
+  image-rendering: pixelated;
+  overflow: visible;
+}
+
+.pxl-sprite.pxl-bob {
+  animation: pxl-bob-sprite 1s steps(1, end) infinite;
+}
+
+@keyframes pxl-bob-sprite {
+  50% {
+    translate: 0 calc(var(--pxl-bob, 3px) * -1);
+  }
+}

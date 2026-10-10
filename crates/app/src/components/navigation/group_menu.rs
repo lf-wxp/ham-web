@@ -33,12 +33,8 @@ impl MenuAlign {
   /// 外层定位类名。两个菜单的垂直基准与动效一致，差异只在水平锚点。
   const fn wrapper_class(self) -> &'static str {
     match self {
-      Self::Center => {
-        "absolute left-1/2 top-full -translate-x-1/2 pt-1.5 transition duration-[var(--motion-normal)] ease-[var(--ease-out-expo)]"
-      }
-      Self::Right => {
-        "absolute right-4 top-full pt-1.5 transition duration-[var(--motion-normal)] ease-[var(--ease-out-expo)]"
-      }
+      Self::Center => "absolute left-1/2 top-full -translate-x-1/2 pt-2",
+      Self::Right => "absolute right-4 top-full pt-2",
     }
   }
 }
@@ -129,13 +125,13 @@ pub(crate) fn GroupMenu(
           open_menu.update(|m| *m = if *m == Some(kind) { None } else { Some(kind) });
         }
       >
-        <Icon kind=icon class="h-4 w-4" />
+        <Icon kind=icon class="size-6" />
         {move || label.get()}
         <Icon
           kind=IconKind::ChevronDown
           class=Signal::derive(move || {
             cn(&[
-              "h-3.5 w-3.5 transition-transform duration-200",
+              "size-6",
               if is_open() { "rotate-180" } else { "" },
             ])
           })
@@ -153,10 +149,10 @@ pub(crate) fn GroupMenu(
         <div
           id=panel_id
           data-open=move || is_open().to_string()
-          class="motion-popover origin-top flex max-h-[calc(100vh-5rem)] w-[960px] max-w-[calc(100vw-2rem)] gap-1 rounded-2xl border bg-popover p-2 shadow-xl"
+          class="motion-popover pxl-popover origin-top flex max-h-[calc(100vh-5rem)] w-[960px] max-w-[calc(100vw-2rem)] gap-2 p-2"
         >
           // 分组栏：常驻，不参与条目区的滚动。
-          <div class="flex w-64 shrink-0 flex-col gap-0.5 rounded-xl bg-muted/50 p-1.5">
+          <div class="flex w-64 shrink-0 flex-col gap-1 border-2 border-ink bg-muted p-1.5">
             {groups
               .iter()
               .map(|&g| {
@@ -168,8 +164,8 @@ pub(crate) fn GroupMenu(
                   <div
                     class=move || {
                       cn(&[
-                        "rounded-lg transition-colors",
-                        if selected() { "bg-accent" } else { "" },
+                        "border-2",
+                        if selected() { "border-ink bg-accent" } else { "border-transparent" },
                       ])
                     }
                     on:mouseenter=move |_| {
@@ -192,7 +188,7 @@ pub(crate) fn GroupMenu(
                     >
                       <span class=move || {
                         cn(&[
-                          "h-4 w-0.5 shrink-0 rounded-full transition-colors",
+                          "h-4 w-1 shrink-0",
                           if selected() { "bg-primary" } else { "bg-transparent" },
                         ])
                       }></span>
@@ -200,7 +196,7 @@ pub(crate) fn GroupMenu(
                         kind=icon_of(registry::group_icon(g))
                         class=Signal::derive(move || {
                           cn(&[
-                            "h-4 w-4 shrink-0 transition-colors",
+                            "size-6 shrink-0",
                             if selected() { "text-primary" } else { "text-muted-foreground" },
                           ])
                         })
@@ -209,7 +205,7 @@ pub(crate) fn GroupMenu(
                         cn(&[
                           "min-w-0 flex-1 truncate text-left",
                           if selected() {
-                            "font-medium text-foreground"
+                            "text-foreground"
                           } else {
                             "text-muted-foreground"
                           },
@@ -217,7 +213,7 @@ pub(crate) fn GroupMenu(
                       }>{move || t(g)}</span>
                       // 数字只是概览，读屏名字用按钮的 `aria_label` 保持干净。
                       <span
-                        class="text-[11px] tabular-nums text-muted-foreground/70"
+                        class="pxl-label text-xs tabular-nums text-muted-foreground"
                         aria-hidden="true"
                       >
                         {group_count(g).to_string()}
@@ -242,16 +238,16 @@ pub(crate) fn GroupMenu(
                         on:click=move |_| open_menu.set(None)
                         class=move || {
                           cn(&[
-                            "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors",
+                            "flex items-center gap-2 border-2 px-2.5 py-1.5 text-sm",
                             if active(m.path) {
-                              "bg-accent text-foreground"
+                              "border-ink bg-accent text-accent-foreground"
                             } else {
-                              "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                              "border-transparent text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
                             },
                           ])
                         }
                       >
-                        <Icon kind=icon_of(m.icon) class="h-4 w-4 shrink-0" />
+                        <Icon kind=icon_of(m.icon) class="size-6 shrink-0" />
                         // `break-words` 而不是 `truncate`：西语 / 英语长标题会被省略号吃掉，
                         // 换行最多多占一行，条目区本身有高度上限与内部滚动兜底。
                         <span class="min-w-0 break-words leading-snug">{move || t(m.title)}</span>

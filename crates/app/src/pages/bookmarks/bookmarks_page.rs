@@ -2,7 +2,7 @@ use ham_web_core::{Bank, QuestionItem};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::components::common::{EmptyState, Loading};
+use crate::components::common::{EmptyState, Loading, PageContainer, PageHeader};
 use crate::data;
 use crate::store;
 use crate::ui::{Button, ButtonLink, Input, Size, Variant};
@@ -125,21 +125,22 @@ pub fn BookmarksPage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.bookmarks")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("exam.key-questions-bookmarked-during")}</div>
-          </div>
-          <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
-            {move || tp("common.questions-3", questions.get().len(), &[&(questions.get().len()).to_string()])}
-          </span>
-          <ButtonLink
-            href="/print?src=bookmarks"
-            variant=Variant::Outline
-            size=Size::Sm
-          >{move || t("learning.print")}</ButtonLink>
-        </div>
+      <PageHeader
+        title=move || t("shell.bookmarks")
+        subtitle=move || t("exam.key-questions-bookmarked-during")
+        actions=ViewFn::from(move || {
+          view! {
+            <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
+              {move || tp("common.questions-3", questions.get().len(), &[&(questions.get().len()).to_string()])}
+            </span>
+            <ButtonLink
+              href="/print?src=bookmarks"
+              variant=Variant::Outline
+              size=Size::Sm
+            >{move || t("learning.print")}</ButtonLink>
+          }
+        })
+      >
         <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-4 pb-3">
           <Input
             value=new_group
@@ -191,9 +192,9 @@ pub fn BookmarksPage() -> impl IntoView {
             }}
           </div>
         </div>
-      </header>
+      </PageHeader>
 
-      <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
+      <PageContainer class="space-y-4">
         {move || {
           if loading.get() {
             view! { <Loading label=t("exam.loading") class="py-10" /> }
@@ -238,7 +239,7 @@ pub fn BookmarksPage() -> impl IntoView {
             .into_any()
           }
         }}
-      </div>
+      </PageContainer>
     </div>
   }
 }

@@ -27,7 +27,7 @@ pub fn Sheet(open: RwSignal<bool>, children: ChildrenFn) -> impl IntoView {
           <div
             data-slot="sheet-overlay"
             data-state=state
-            class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fill-mode-both fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+            class="pxl-overlay pxl-enter-fade fixed inset-0 z-50"
             on:click=move |_| open.set(false)
           ></div>
           <div
@@ -42,16 +42,16 @@ pub fn Sheet(open: RwSignal<bool>, children: ChildrenFn) -> impl IntoView {
             }
             data-slot="sheet-content"
             data-state=state
-            class="bg-popover data-[state=open]:animate-in data-[state=closed]:animate-out fill-mode-both fixed z-50 flex flex-col gap-4 shadow-xl transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm"
+            class="pxl-sheet data-[state=open]:animate-in data-[state=closed]:animate-out fill-mode-both fixed z-50 flex flex-col gap-4 data-[state=closed]:duration-200 data-[state=open]:duration-300 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 sm:max-w-sm"
           >
             {children()}
             <button
               type="button"
               data-state=state
-              class="ring-offset-background focus-visible:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 outline-none disabled:pointer-events-none"
+              class="pxl-btn pxl-btn-destructive absolute top-2 right-2 size-8 px-0"
               on:click=move |_| open.set(false)
             >
-              <Icon kind=IconKind::X class="size-4" />
+              <Icon kind=IconKind::X class="size-5" />
               <span class="sr-only">{move || t("log.close")}</span>
             </button>
           </div>

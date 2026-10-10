@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::util::set_title;
 
 use super::antenna_length::AntennaLength;
@@ -115,16 +116,12 @@ pub fn ToolsPage() -> impl IntoView {
   });
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.calculators")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("tools.frequency-wavelength-power-gain")}</div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.calculators")
+        subtitle=move || t("tools.frequency-wavelength-power-gain")
+      />
 
-      <div class="mx-auto max-w-5xl px-4 py-5">
+      <PageContainer class="space-y-0">
         // 移动端：横向滚动的工具导航 chip 条。
         <div class="mb-4 -mx-4 overflow-x-auto px-4 lg:hidden">
           <div class="flex gap-1.5 pb-1">
@@ -430,7 +427,7 @@ pub fn ToolsPage() -> impl IntoView {
             </section>
           </div>
         </div>
-      </div>
+      </PageContainer>
     </div>
   }
 }

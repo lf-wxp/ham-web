@@ -3,6 +3,7 @@
 use ham_web_core::ExamRule;
 use leptos::prelude::*;
 
+use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf, tp};
 use crate::share_score;
 use crate::study;
@@ -96,15 +97,16 @@ pub fn WeeklyPage() -> impl IntoView {
     )
     .ok()
   };
-  let share = {
+  // 页头 actions 由 `ViewFn`（要求 `Fn`）承载，闭包需可重复调用，故用 `Callback`（`Copy`）。
+  let share = Callback::new({
     let today = today.clone();
-    move |_| {
+    move |_: ()| {
       if let Some(data_url) = card() {
         share_score::download(&data_url, &format!("ham-weekly-{today}.png"));
       }
     }
-  };
-  let copy = move |_| {
+  });
+  let copy = Callback::new(move |_: ()| {
     if let Some(data_url) = card() {
       leptos::task::spawn_local(async move {
         match share_score::copy_image(&data_url).await {
@@ -113,10 +115,10 @@ pub fn WeeklyPage() -> impl IntoView {
         }
       });
     }
-  };
-  let sys_share = {
+  });
+  let sys_share = Callback::new({
     let today = today.clone();
-    move |_| {
+    move |_: ()| {
       if let Some(data_url) = card() {
         let filename = format!("ham-weekly-{today}.png");
         let title = t("shell.weekly-report");
@@ -127,7 +129,7 @@ pub fn WeeklyPage() -> impl IntoView {
         });
       }
     }
-  };
+  });
 
   // 最近 5 次常规（非薄弱项）模拟考成绩（owned）。
   let mut exams: Vec<_> = history
@@ -146,40 +148,40 @@ pub fn WeeklyPage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.weekly-report")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("learning.two-week-answering-trend")}</div>
-          </div>
-          <button
-            type="button"
-            class="rounded-md border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
-            on:click=share
-          >
-            {move || t("learning.download-card")}
-          </button>
-          <button
-            type="button"
-            class="rounded-md border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
-            on:click=copy
-          >
-            {move || t("learning.copy-image")}
-          </button>
-          <button
-            type="button"
-            class="rounded-md border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
-            on:click=sys_share
-          >
-            {move || t("learning.system-share")}
-          </button>
-          <a href="/progress" class="text-xs text-primary underline-offset-4 hover:underline">
-            {move || t("learning.progress")}
-          </a>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.weekly-report")
+        subtitle=move || t("learning.two-week-answering-trend")
+        actions=ViewFn::from(move || {
+          view! {
+            <button
+              type="button"
+              class="rounded-md border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
+              on:click=move |_| share.run(())
+            >
+              {move || t("learning.download-card")}
+            </button>
+            <button
+              type="button"
+              class="rounded-md border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
+              on:click=move |_| copy.run(())
+            >
+              {move || t("learning.copy-image")}
+            </button>
+            <button
+              type="button"
+              class="rounded-md border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
+              on:click=move |_| sys_share.run(())
+            >
+              {move || t("learning.system-share")}
+            </button>
+            <a href="/progress" class="text-xs text-primary underline-offset-4 hover:underline">
+              {move || t("learning.progress")}
+            </a>
+          }
+        })
+      />
 
-      <div class="mx-auto max-w-5xl space-y-4 px-4 py-5">
+      <PageContainer class="space-y-4">
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <div class="rounded-xl border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{week_answered}</div>
@@ -297,7 +299,7 @@ pub fn WeeklyPage() -> impl IntoView {
         <p class="text-xs text-muted-foreground">
           {move || t("learning.data-comes-from-local")}
         </p>
-      </div>
+      </PageContainer>
     </div>
   }
 }

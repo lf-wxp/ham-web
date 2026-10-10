@@ -71,7 +71,12 @@
 
 ### 考试中心
 
-- **📝 模拟考试**：A/B/C 三类考试，按真实规则抽题（单选/多选配额：A 类 40 题/40 分钟、B 类 60 题/60 分钟、C 类 90 题/90 分钟），倒计时、标记、答题卡、交卷计分与合格判定，中途退出可恢复；交卷后可回看题目解析，并展示最近 10 次成绩趋势与本次各分类正确率对比以往
+整站是**像素风（Pixel Art）**，学习流程按 RPG 闯关来组织；等级与经验由已有的学习存档（累计答对、模拟考试、每日挑战、连续打卡）**实时推算**，不另存一份，所以老用户升级后第一次打开就能看到自己的等级，备份导入后也自动一致。
+
+- **🗺️ 闯关地图**（`/map?bank=A`）：每个一级分类是一关，按顺序逐关解锁；通关按剩余生命给 1–3 星，只保留历史最佳。直接输入未解锁关卡的地址也会被拦下
+- **⚔️ 回合战**（`/battle?stage=<分类>` 闯关、`/battle?mode=revenge` 复仇）：答对打怪（连击 ≥ 3 暴击加伤）、答错掉血并自动进错题本，答错的题稍后会再出现；复仇模式没有暴击，保证每只怪物都出场
+- **👾 怪物图鉴**（`/bestiary`）：每道错题是一只怪物，同一专题外形相同，连续答对到「掌握」即击败，图鉴记住所有被击败的怪物
+- **📝 模拟考试**（Boss 战）：考试页顶部有 Boss 舞台，作答期间 Boss 被「封印」（不泄露对错），交卷后一次性结算血量与 S/A/B/C 评级；A/B/C 三类考试，按真实规则抽题（单选/多选配额：A 类 40 题/40 分钟、B 类 60 题/60 分钟、C 类 90 题/90 分钟），倒计时、标记、答题卡、交卷计分与合格判定，中途退出可恢复；交卷后可回看题目解析，并展示最近 10 次成绩趋势与本次各分类正确率对比以往
 - **🎯 薄弱项组卷**（`/exam?bank=A&mode=weak`）：同样题量与配额，按分类正确率、错题本与未做过的题加权抽题；不计入备考状态与历史趋势，首页复习卡片可一键进入
 - **✅ 备考状态**：按 A/B/C 分别绘制模拟考试成绩曲线（含合格线），根据最近 5 次成绩给出「还需多考几次 / 再巩固一下 / 接近合格 / 可以去考了」判定
 - **⏱️ 每日挑战**（`/daily-challenge`）：每天一组 10 题限时闯关，同一天抽到同一组题，交卷计入打卡；展示当前连胜与历史最长连胜，首页有今日状态入口
@@ -207,7 +212,7 @@
 │   │       ├── kv.rs       # 统一存储门面：小数据 localStorage、大数据 IndexedDB 双写
 │   │       ├── idb.rs      # IndexedDB KV 封装（承载通联日志等大体积数据）
 │   │       ├── i18n/       # 界面文案运行时：mod.rs（t/tf/Locale）+ catalog.rs（内嵌域查表）+ pack.rs（运行时语言包）
-│   │       └── …           # exam_history / achievements / bank_updates / shortcuts / speech / theme / photo / pwa / web_threads
+│   │       └── …           # exam_history / achievements / bank_updates / shortcuts / speech / theme / photo / pwa / rpg
 │   ├── apt/                # NOAA APT 云图解码（音频 AM 解调 + 图像重建，纯 Rust DSP，无外部依赖）
 │   ├── apt-worker/         # APT 解码 Web Worker（后台线程解调，编译为 worker.js）
 │   ├── sstv/               # SSTV 慢扫描电视解码（VIS 头识别 + 行同步 + RGB/YC 采样）
@@ -399,11 +404,17 @@ cargo make spectrum-sample                            # 频谱 / 瀑布图样本
 | `cargo make wspr-sample` / `wspr-decode` / `wspr-test` | 同上，WSPR |
 | `cargo make psk31-sample` | 生成 PSK31 测试样本 WAV（供手动测试 `/psk-decode`） |
 | `cargo make spectrum-sample` / `spectrum-analyze` / `spectrum-test` | 生成 / 命令行分析 / 端到端自检合成频谱样本（供 `/sdr-waterfall`） |
+| **像素风资源** | — |
+| `cargo make pixel-check` | 只读校验：调色板文字色阶与每个配色方案的对比度达标，`schemes.css` 与方案表一致；已并入 `check` / `ci` |
+| `cargo make pixel-palette` | 校正 Tailwind 色阶里的文字档，使其在所有表面（含每个配色方案的亮 / 暗表面）上满足 WCAG AA |
+| `cargo make pixel-schemes` | 由方案表（`crates/core/src/color_scheme.rs`）生成 `style/pixel/schemes.css` |
+| `cargo make pixel-sprites` | 由字符画（`crates/tools/src/pixel/sprite_art.rs`）生成像素图标与精灵的数据文件（需 `PIXELARTICONS_DIR`） |
+| `cargo make fonts-pixel` | 按仓库语料重新子集化像素字体（需 `FONT_SRC`，纯 Rust，不需要 Python） |
 | **质量** | — |
 | `cargo make fmt` / `fmt-check` | 代码格式化 / 格式检查 |
 | `cargo make clippy` | Clippy（原生 crate + wasm 前端，`-D warnings`） |
 | `cargo make test` | 单元测试 |
-| `cargo make check` | 格式检查 + clippy + 单元测试 + 文案词典校验（不构建前端） |
+| `cargo make check` | 格式检查 + clippy + 单元测试 + 文案词典校验 + 像素风生成物校验（不构建前端） |
 | `cargo make e2e` | 构建 release 站点并运行 Playwright 端到端测试（见下文「端到端测试」） |
 | `cargo make e2e-coverage` | 统计 e2e 覆盖率（路由冒烟 / 交互 / 关键流程），报告写入 `e2e/test-results/coverage.{md,json}` |
 | `cargo make ci` | 等价于 `check` + 前端构建 |
@@ -906,23 +917,19 @@ ls target/dev-dist/                                          # 正常应有 data
 - 在 `leptos` 中向依赖 context 的子组件（如 `RadioGroupItem`、`SelectItem`）传递子元素时，需在父组件的 children 内构建，而不是提前 `collect_view()`；
 - 知识库表格统一使用「卡片 + 内部网格线」的样式：卡片内的 `table.border-collapse` 会自动去掉与卡片边框重合的最外圈边框（见 `style/input.css`），因此单元格只需写 `border`，无需手动处理外边线。
 
-### 动态背景（Web Threads）
+### 像素风外观与动效降级
 
-全站背景层是 React Bits [`WebThreads`](https://reactbits.dev/backgrounds/web-threads) 的 Rust / WASM 复刻，与上游**同一套技术方案**：WebGL2 + 全屏三角形 + GLSL ES 3.00 片元着色器（逐像素叠加 10 条正弦丝线，`glow()` 幂次衰减生成柔光，浅色主题走 `uLightMode` 分支输出「墨线」）。顶点与片元着色器与上游**逐字一致**（SHA-256 相同），改动前请先比对上游。
+样式集中在 `crates/app/style/pixel/`（调色板与 token、字体、控件原语、动效），组件与页面只用语义 token 与 `pxl-*` 类，规范见 [`docs/ui-components.md` §0.5](docs/ui-components.md)。
 
 | 关注点 | 实现 |
 | --- | --- |
-| 引擎 | `crates/app/src/web_threads.rs`：上下文创建、uniform 位置缓存、渲染循环、资源释放（只依赖 web-sys，不依赖 Leptos） |
-| 组件 | `crates/app/src/components/web_threads.rs`：`WebThreadsBackground`（全站背景）+ `WebThreads`（低阶、可复用） |
-| 主题适配 | `ThemeCtx::is_dark()` → `Memo` 生成预设；切主题只更新 uniform，**不重建 WebGL 上下文**。浅色画布底色运行时从 `--background` 解析（回退 `#FAFBFC`），与页面背景严丝合缝 |
-| 背景层 | `style/input.css` 的 `.web-threads-layer`：`fixed inset-0` + `z-index: -10`（低于 `body::before` 环境光晕与全部内容）+ `pointer-events: none`，配合「顶部最浓、向下 `mask` 淡出」保住正文可读性 |
-| 不干扰前景 | 鼠标扰动在 `window` 上监听（画布不接收指针事件），因此不抢占前景的点击 / 悬停；图层 `aria-hidden="true"`，打印时不渲染 |
-| 省电 | 触屏设备（`(hover: hover)` 为假）用 `RenderMode::Static` 只渲染**一帧**当背景图，GPU 占用归零；桌面端帧率上限 30fps；DPR 上限 2、最长边 1920，紧凑设备（视口最小边 ≤ 820px）再降到 1.5 / 1280；声明 `powerPreference: "low-power"`；离屏与切后台暂停；卸载时 `WEBGL_lose_context` 释放上下文 |
-| 无障碍 | 「减少动态效果」下同样只渲染一帧（与移动端共用同一条静态路径） |
-
-实测口径（浏览器内 `drawArrays` 计数）：桌面 1440×900 @DPR2 → 缓冲区 1920×1206、30.0fps；手机 390×844 @DPR3 触屏 → 缓冲区 585×1266、初始化 3 帧后 5 秒内 0 次绘制。
-
-接入与调参：根布局已挂载 `<WebThreadsBackground />`，局部复用可直接包裹 `<WebThreads config=… />`（`config` 传 `Signal` 可热更新，同样只改 uniform）。预设配色 / 亮度 / 不透明度 / 线程数在 `components/web_threads.rs` 的 `dark_preset()` 与 `light_preset()`；帧率与设备档位预算在 `web_threads.rs` 的 `MAX_FPS` / `COMPACT_*` 常量；背景层透明度与淡出范围在 `style/input.css`。
+| 背景 | 纯 CSS：亮色是带细抖动点阵的纸张，暗色是深蓝夜空 + 稀疏星点（`steps()` 慢闪）；没有 WebGL、没有渐变 / 模糊，打印时不渲染 |
+| 字体 | 标题 / HUD 用 Press Start 2P / Silkscreen；正文与中文用点阵中文体（Fusion Pixel），按 `unicode-range` 切片，只加载命中的分片；`cargo make fonts-pixel`（纯 Rust，`crates/tools/src/pixel/fonts.rs`）生成，许可证见 `public/fonts/LICENSES` |
+| 对比度 | 调色板里「会被当文字用」的色阶由 `cargo make pixel-palette` 按真实表面（含徽章色调底与每个配色方案的亮 / 暗表面）校正；`cargo make pixel-check` 只审计，已接入 `check` / `ci`。填充色（血条 / 金币）画在深色槽里，写字请用 `text-hp-text` / `text-gold-text` 等文字专用 token |
+| 配色方案 | 设置里可选 5 套方案（经典像素 / 森林 / 海洋 / 晚霞 / 石墨），**与明暗正交**：每个方案都有亮 / 暗两套。落在 `<html data-scheme>`（`localStorage` 键 `ui:colorScheme`）。方案表在 `crates/core/src/color_scheme.rs`，每个方案只写 5 个种子色，其余变量按固定规则派生并保证字色对比度；`style/pixel/schemes.css` 由 `cargo make pixel-schemes` 生成。经典方案手写在 `tokens.css`。状态色（血条 / 金币 / 通关绿 / 危险红）与字体、圆角、动效不随方案变 |
+| 减少动态效果 | 系统开启「减少动态效果」时，所有逐帧动画降为静态帧 |
+| 像素动效开关 | 「外观与动效」设置里可单独关闭（`localStorage` 键 `ui:pixelMotion`，落在 `<html data-pixel-motion>`），不影响系统设置 |
+| 易读字体开关 | 同一设置里可把正文切回抗锯齿字体（`ui:readableFont`，`<html data-readable-font>`）；标题与数字仍是像素字体 |
 
 ## 路由
 
@@ -931,7 +938,7 @@ ls target/dev-dist/                                          # 正常应有 data
 | 模块 | 路径 |
 | --- | --- |
 | 首页 | `/` |
-| 考试中心 | `/practice` `/exam` `/daily-challenge` `/browse` `/flashcards` `/listen` `/cards` `/mistakes` `/mistake-topics` `/bookmarks` `/weekly` `/progress` `/study-calendar` `/exam-review` `/print` `/countdown` `/photo-processor` |
+| 考试中心 | `/map` `/battle` `/bestiary` `/practice` `/exam` `/daily-challenge` `/browse` `/flashcards` `/listen` `/cards` `/mistakes` `/mistake-topics` `/bookmarks` `/weekly` `/progress` `/study-calendar` `/exam-review` `/print` `/countdown` `/photo-processor` |
 | 备考速查 | `/reference` `/cheat-sheet` `/confusables` `/formulas` `/prefixes` `/glossary` `/q-code` `/phonetic` `/rst` `/morse` `/cw-operating` `/license-classes` |
 | 模式 · 传播 | `/analog-modes` `/atv` `/sstv` `/modes` `/modulation` `/digital-comms` `/dsp` `/dv-network` `/packet` `/rtty` `/ft8` `/sdr` `/gnuradio` `/aprs` `/frequencies` `/coordination` `/zone-map` `/propagation` `/beacons` `/special-prop` `/meteor-scatter` `/eme` `/muf` `/wspr` `/weather-sat` `/apt-decoder` `/aurora` |
 | 天线 · 设备 | `/antennas` `/polarization` `/feedline` `/balun` `/antenna-diy` `/practical-antennas` `/antenna-installation` `/antenna-farm` `/antenna-tuning` `/antenna-analyzer` `/vna` `/antenna-modeling` `/antenna-array` `/nvis` `/electronics` `/filters` `/meters` `/power` `/power-supply` `/transceiver` `/receiver` `/gear` `/amplifier` `/bands` `/bandplan` `/microwave` `/mobile` |
@@ -945,6 +952,8 @@ ls target/dev-dist/                                          # 正常应有 data
 | 路径 | 参数 |
 | --- | --- |
 | `/practice` `/exam` | `version`（题库版本）、`bank`（A\|B\|C）；`/practice` 另有 `multi=1`（只练多选，页面顶部有同名开关），`/exam` 另有 `mode=weak`（薄弱项组卷） |
+| `/map` | `version`、`bank`（A\|B\|C） |
+| `/battle` | `stage`（一级分类 key，如 `法规`；闯关）或 `mode=revenge`（复仇，另可带 `key`（单只怪物的错题 key）、`topic`（限定专题））；另有 `version`、`bank`。无目标时给出提示 |
 | `/browse` | `bank`、`q`（关键词） |
 | `/glossary` | `q`（关键词） |
 | `/zone-map` | `q`（呼号 / 实体名，定位分区） |

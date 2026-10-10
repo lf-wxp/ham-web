@@ -7,6 +7,7 @@ use leptos::prelude::*;
 use leptos_router::hooks::use_query_map;
 
 use crate::components::cat_control::{CatControl, CatReading};
+use crate::components::common::{PageContainer, PageHeader};
 use crate::pages::log::qsl_image;
 use crate::pages::log::{LogEntry, use_log_store, utc_now_time, utc_today};
 use crate::ui::{
@@ -226,28 +227,28 @@ pub fn ContestLogPage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <header class="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-          <div class="mr-auto">
-            <h1 class="text-base font-semibold leading-tight">{move || t("shell.contest-log")}</h1>
-            <div class="text-xs text-muted-foreground">{move || t("contest.fast-keyboard-entry-live")}</div>
-          </div>
-          <ButtonLink
-            href="/log"
-            variant=Variant::Outline
-            size=Size::Sm
-          >{move || t("shell.logbook")}</ButtonLink>
-          <Button
-            variant=Variant::Default
-            size=Size::Sm
-            on_click=Callback::new(move |_| export())
-          >
-            {move || t("contest.export-cabrillo")}
-          </Button>
-        </div>
-      </header>
+      <PageHeader
+        title=move || t("shell.contest-log")
+        subtitle=move || t("contest.fast-keyboard-entry-live")
+        actions=ViewFn::from(move || {
+          view! {
+            <ButtonLink
+              href="/log"
+              variant=Variant::Outline
+              size=Size::Sm
+            >{move || t("shell.logbook")}</ButtonLink>
+            <Button
+              variant=Variant::Default
+              size=Size::Sm
+              on_click=Callback::new(move |_| export())
+            >
+              {move || t("contest.export-cabrillo")}
+            </Button>
+          }
+        })
+      />
 
-      <div class="mx-auto max-w-5xl space-y-5 px-4 py-5">
+      <PageContainer class="space-y-5">
         {move || my_call.get().is_empty().then(|| view! {
           <p class="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
             {move || t("contest.station-callsign-not-set")}
@@ -540,7 +541,7 @@ pub fn ContestLogPage() -> impl IntoView {
         <p class="text-xs text-muted-foreground">
           {move || t("contest.contest-qsos-are-also")}
         </p>
-      </div>
+      </PageContainer>
     </div>
   }
 }

@@ -1,0 +1,279 @@
+/* 像素调色板：把 Tailwind 默认色阶整体换成「Sweetie-16 + 少量派生色」。
+   存量页面里大量的 `text-green-600` / `bg-amber-500/10` / `dark:text-red-400` 不用改，
+   换了色值自然就进了像素调色板。
+   生成规则：
+     - 500：色族主色；
+     - 50 / 100 / 200 / 300：主色与纸色按 10 / 20 / 40 / 65% 混合的浅底；
+     - 600 / 400（以及中性色族的 500）：「会被当文字用」的档位，由
+       `cargo make pixel-palette`（`crates/tools/src/pixel/palette.rs`）按**真实会出现的表面**校正到
+       WCAG AA 有余量 —— 不只是纯卡片底，还包括 `bg-X-100`、`bg-X-500/10`、`dark:bg-X-900/40`
+       这类色调底，以及每个配色方案（`schemes.css`）的亮 / 暗表面；
+     - 700 / 800 / 900 / 950：校正后的 600 与墨色按 30 / 55 / 75 / 88% 混合的深底。
+   不要手调单个色值：改了就跑 `cargo make pixel-palette`
+   （`cargo make pixel-check` 只审计、不达标时退出码为 1）。 */
+@theme {
+  /* red */
+  --color-red-50: #f7e5d3;
+  --color-red-100: #efd3c5;
+  --color-red-200: #e0aea8;
+  --color-red-300: #d6999d;
+  --color-red-400: #d499a4;
+  --color-red-500: #b13e53;
+  --color-red-600: #a03a4f;
+  --color-red-700: #783144;
+  --color-red-800: #562a3c;
+  --color-red-900: #3c2435;
+  --color-red-950: #2a2030;
+  /* orange */
+  --color-orange-50: #fdecd3;
+  --color-orange-100: #fcdfc5;
+  --color-orange-200: #f9c7aa;
+  --color-orange-300: #f5a887;
+  --color-orange-400: #f29779;
+  --color-orange-500: #ef7d57;
+  --color-orange-600: #8b4f42;
+  --color-orange-700: #69403b;
+  --color-orange-800: #4d3336;
+  --color-orange-900: #362932;
+  --color-orange-950: #28222f;
+  /* amber */
+  --color-amber-50: #fff4d6;
+  --color-amber-100: #ffefcb;
+  --color-amber-200: #ffe7b6;
+  --color-amber-300: #ffdc9b;
+  --color-amber-400: #ffcd75;
+  --color-amber-500: #ffcd75;
+  --color-amber-600: #6d5c47;
+  --color-amber-700: #54493f;
+  --color-amber-800: #3f3938;
+  --color-amber-900: #2f2c33;
+  --color-amber-950: #24242f;
+  /* yellow */
+  --color-yellow-50: #fff6d8;
+  --color-yellow-100: #fff3d0;
+  --color-yellow-200: #ffeebe;
+  --color-yellow-300: #ffe8a8;
+  --color-yellow-400: #ffe08a;
+  --color-yellow-500: #ffe08a;
+  --color-yellow-600: #685e4c;
+  --color-yellow-700: #514a42;
+  --color-yellow-800: #3d3a3a;
+  --color-yellow-900: #2e2c34;
+  --color-yellow-950: #232430;
+  /* lime */
+  --color-lime-50: #f6f7d6;
+  --color-lime-100: #edf6ca;
+  --color-lime-200: #dcf5b4;
+  --color-lime-300: #c6f398;
+  --color-lime-400: #a7f070;
+  --color-lime-500: #a7f070;
+  --color-lime-600: #4c6644;
+  --color-lime-700: #3d503d;
+  --color-lime-800: #303d37;
+  --color-lime-900: #262e32;
+  --color-lime-950: #20252f;
+  /* green */
+  --color-green-50: #ebf2d4;
+  --color-green-100: #d7ebc8;
+  --color-green-200: #afdeaf;
+  --color-green-300: #7ece90;
+  --color-green-400: #5ec581;
+  --color-green-500: #38b764;
+  --color-green-600: #296b49;
+  --color-green-700: #245340;
+  --color-green-800: #214039;
+  --color-green-900: #1e3033;
+  --color-green-950: #1c252f;
+  /* emerald */
+  --color-emerald-50: #eaf0d8;
+  --color-emerald-100: #d5e7d0;
+  --color-emerald-200: #acd7be;
+  --color-emerald-300: #78c2a8;
+  --color-emerald-400: #64bca8;
+  --color-emerald-500: #2fa58a;
+  --color-emerald-600: #266961;
+  --color-emerald-700: #225251;
+  --color-emerald-800: #1f3f44;
+  --color-emerald-900: #1d2f39;
+  --color-emerald-950: #1b2532;
+  /* teal */
+  --color-teal-50: #e9ebd7;
+  --color-teal-100: #d3ddcc;
+  --color-teal-200: #a8c2b7;
+  --color-teal-300: #b1ccce;
+  --color-teal-400: #87b0b4;
+  --color-teal-500: #257179;
+  --color-teal-600: #246770;
+  --color-teal-700: #21505c;
+  --color-teal-800: #1e3e4b;
+  --color-teal-900: #1c2f3d;
+  --color-teal-950: #1b2534;
+  /* cyan */
+  --color-cyan-50: #f1f7e3;
+  --color-cyan-100: #e3f6e5;
+  --color-cyan-200: #c7f4ea;
+  --color-cyan-300: #a4f2ef;
+  --color-cyan-400: #73eff7;
+  --color-cyan-500: #73eff7;
+  --color-cyan-600: #396572;
+  --color-cyan-700: #304f5d;
+  --color-cyan-800: #283d4c;
+  --color-cyan-900: #222e3e;
+  --color-cyan-950: #1e2534;
+  /* sky */
+  --color-sky-50: #ecf0e3;
+  --color-sky-100: #d9e8e5;
+  --color-sky-200: #b3d7e9;
+  --color-sky-300: #84c3ef;
+  --color-sky-400: #69b9f8;
+  --color-sky-500: #41a6f6;
+  --color-sky-600: #2e6293;
+  --color-sky-700: #284d74;
+  --color-sky-800: #233c5a;
+  --color-sky-900: #1f2e46;
+  --color-sky-950: #1c2438;
+  /* blue */
+  --color-blue-50: #ebe9df;
+  --color-blue-100: #d8d9dc;
+  --color-blue-200: #b1bad7;
+  --color-blue-300: #bbc6ea;
+  --color-blue-400: #97a8df;
+  --color-blue-500: #3b5dc9;
+  --color-blue-600: #3856b9;
+  --color-blue-700: #2f458f;
+  --color-blue-800: #28366b;
+  --color-blue-900: #222a4f;
+  --color-blue-950: #1e233d;
+  /* indigo */
+  --color-indigo-50: #ede7dd;
+  --color-indigo-100: #dbd6d8;
+  --color-indigo-200: #b7b4cf;
+  --color-indigo-300: #c4c4e6;
+  --color-indigo-400: #a4a5d8;
+  --color-indigo-500: #4b4fb5;
+  --color-indigo-600: #4b4fb5;
+  --color-indigo-700: #3c408c;
+  --color-indigo-800: #30336a;
+  --color-indigo-900: #26294e;
+  --color-indigo-950: #20223c;
+  /* violet */
+  --color-violet-50: #f2e7dd;
+  --color-violet-100: #e5d6d9;
+  --color-violet-200: #cab4d1;
+  --color-violet-300: #d0c1e4;
+  --color-violet-400: #b69fd6;
+  --color-violet-500: #7b4fb8;
+  --color-violet-600: #7049a9;
+  --color-violet-700: #563b84;
+  --color-violet-800: #413064;
+  --color-violet-900: #30274b;
+  --color-violet-950: #24213b;
+  /* purple */
+  --color-purple-50: #f3e6d8;
+  --color-purple-100: #e8d3d0;
+  --color-purple-200: #d0aebe;
+  --color-purple-300: #c49dbc;
+  --color-purple-400: #c19dc1;
+  --color-purple-500: #8a3f8a;
+  --color-purple-600: #8a3f8a;
+  --color-purple-700: #68346e;
+  --color-purple-800: #4c2c56;
+  --color-purple-900: #362544;
+  --color-purple-950: #272037;
+  /* fuchsia */
+  --color-fuchsia-50: #f8e6da;
+  --color-fuchsia-100: #f1d4d4;
+  --color-fuchsia-200: #e3b0c6;
+  --color-fuchsia-300: #e4b9da;
+  --color-fuchsia-400: #d594c6;
+  --color-fuchsia-500: #b8449e;
+  --color-fuchsia-600: #963b86;
+  --color-fuchsia-700: #71326b;
+  --color-fuchsia-800: #522a54;
+  --color-fuchsia-900: #392442;
+  --color-fuchsia-950: #292037;
+  /* pink */
+  --color-pink-50: #fbeada;
+  --color-pink-100: #f7ddd3;
+  --color-pink-200: #f0c2c5;
+  --color-pink-300: #e6a0b3;
+  --color-pink-400: #e396b5;
+  --color-pink-500: #d9709a;
+  --color-pink-600: #884c6b;
+  --color-pink-700: #673e58;
+  --color-pink-800: #4c3248;
+  --color-pink-900: #36283c;
+  --color-pink-950: #272234;
+  /* rose */
+  --color-rose-50: #fbe8d6;
+  --color-rose-100: #f7d8ca;
+  --color-rose-200: #efb8b4;
+  --color-rose-300: #e69199;
+  --color-rose-400: #e491a1;
+  --color-rose-500: #d85870;
+  --color-rose-600: #984459;
+  --color-rose-700: #72384c;
+  --color-rose-800: #532e40;
+  --color-rose-900: #3a2637;
+  --color-rose-950: #292131;
+  /* slate */
+  --color-slate-50: #eeead8;
+  --color-slate-100: #dddccf;
+  --color-slate-200: #bbc0bd;
+  --color-slate-300: #c0c8d2;
+  --color-slate-400: #9eaab9;
+  --color-slate-500: #4e6179;
+  --color-slate-600: #4c5f77;
+  --color-slate-700: #3d4b60;
+  --color-slate-800: #303a4e;
+  --color-slate-900: #262d3f;
+  --color-slate-950: #202435;
+  /* gray */
+  --color-gray-50: #f2ecda;
+  --color-gray-100: #e5e0d2;
+  --color-gray-200: #cbc8c3;
+  --color-gray-300: #aaabb0;
+  --color-gray-400: #a5a9b7;
+  --color-gray-500: #5a5e71;
+  --color-gray-600: #595d71;
+  --color-gray-700: #464a5c;
+  --color-gray-800: #36394b;
+  --color-gray-900: #2a2c3d;
+  --color-gray-950: #222434;
+  /* zinc */
+  --color-zinc-50: #f2ecda;
+  --color-zinc-100: #e5e0d2;
+  --color-zinc-200: #cbc8c3;
+  --color-zinc-300: #aaabb0;
+  --color-zinc-400: #a5a9b7;
+  --color-zinc-500: #5a5e71;
+  --color-zinc-600: #595d71;
+  --color-zinc-700: #464a5c;
+  --color-zinc-800: #36394b;
+  --color-zinc-900: #2a2c3d;
+  --color-zinc-950: #222434;
+  /* neutral */
+  --color-neutral-50: #f3edd6;
+  --color-neutral-100: #e8e1cc;
+  --color-neutral-200: #d0cab7;
+  --color-neutral-300: #b3ad9d;
+  --color-neutral-400: #adaaa1;
+  --color-neutral-500: #615e5c;
+  --color-neutral-600: #605d5c;
+  --color-neutral-700: #4b4a4e;
+  --color-neutral-800: #3a3942;
+  --color-neutral-900: #2c2c38;
+  --color-neutral-950: #222432;
+  /* stone */
+  --color-stone-50: #f3edd6;
+  --color-stone-100: #e8e1cc;
+  --color-stone-200: #d0cab7;
+  --color-stone-300: #b3ad9d;
+  --color-stone-400: #adaaa1;
+  --color-stone-500: #615e5c;
+  --color-stone-600: #605d5c;
+  --color-stone-700: #4b4a4e;
+  --color-stone-800: #3a3942;
+  --color-stone-900: #2c2c38;
+  --color-stone-950: #222432;
+}
