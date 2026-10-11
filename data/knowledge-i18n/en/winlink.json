@@ -1,0 +1,13 @@
+{
+  "声卡（付费注册，有试用版）": "Sound card (paid licence, trial available)",
+  "自适应速率 ARQ，Winlink 最常用的 HF 调制。": "Adaptive-rate ARQ, the most common HF modem for Winlink.",
+  "VHF / UHF 高速数据，约 9.6 kbps 量级。": "High-speed VHF/UHF data, on the order of 9.6 kbps.",
+  "声卡（开源）": "Sound card (open source)",
+  "开源 ARQ 调制，兼容 Winlink 与其它邮件系统。": "Open-source ARQ modem, compatible with Winlink and other mail systems.",
+  "硬件 TNC（付费）": "Hardware TNC (paid)",
+  "HF 最强邮件调制：多音自适应速率 + ARQ 重传，把时域压缩做到硬件里；需 SCS 调制解调器。": "The strongest HF mail modem: multi-tone adaptive rates with ARQ retransmission, compression built into hardware; needs an SCS modem.",
+  "硬件 TNC（向下兼容）": "Hardware TNC (backwards compatible)",
+  "PACTOR 早期版本，被 PACTOR 4 向下兼容；部分网关仍在使用。": "Earlier PACTOR versions, backwards compatible with PACTOR 4; some gateways still use them.",
+  "声卡 / TNC / 网络": "Sound card / TNC / network",
+  "部分本地 RMS 以 VHF/UHF 分组（Packet）或 Telnet 方式接入，用于近距离或应急。": "Some local RMS gateways are reachable via VHF/UHF packet or Telnet, for local or emergency use."
+}

@@ -56,7 +56,7 @@ pub const WINLINK_MODES: &[(&str, &str, &str)] = &[
   (
     "PACTOR 4",
     "硬件 TNC（付费）",
-    "HF 最强邮件调制，但需 SCS 调制解调器。",
+    "HF 最强邮件调制：多音自适应速率 + ARQ 重传，把时域压缩做到硬件里；需 SCS 调制解调器。",
   ),
   (
     "PACTOR 1–3",

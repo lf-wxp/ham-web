@@ -575,6 +575,16 @@ pub fn kt(text: &str) -> String {
   })
 }
 
+/// [`kt`] 的响应式版本：先订阅译文加载状态再查词典。
+///
+/// 译文是异步拉取的，在 `move ||` 闭包里用它，词典到达（或切语言）后文本才会重算；
+/// 直接调 [`kt`] 只在渲染瞬间取一次，词典晚到就永远停在中文。
+#[must_use]
+pub fn kt_tracked(text: &str) -> String {
+  track_knowledge();
+  kt(text)
+}
+
 thread_local! {
   /// 题目搜索索引：`(题库数据修订号, 索引)`。
   ///

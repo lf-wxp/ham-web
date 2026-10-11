@@ -328,6 +328,8 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
       ("/polarization", "天线极化"),
       ("/feedline", "匹配与馈线"),
       ("/antenna-array", "天线阵列 / 相控阵"),
+      ("/antenna-theory", "天线理论"),
+      ("/antenna-diy", "天线 DIY"),
     ],
   ),
   (
@@ -808,11 +810,41 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
       ("/beginner", "新手入门"),
     ],
   ),
+  // 天线理论 ↔ 天线 / 馈线（P3 新增）
+  (
+    "/antenna-theory",
+    &[
+      ("/antennas", "天线型式"),
+      ("/feedline", "馈线"),
+      ("/antenna-modeling", "天线建模"),
+      ("/measurement-lab", "测量实验室"),
+    ],
+  ),
+  // 频谱管理 ↔ 法规
+  (
+    "/spectrum-admin",
+    &[
+      ("/radio-law", "法规原文库"),
+      ("/regulations", "法规与管理"),
+      ("/frequencies", "频率使用"),
+      ("/rfi", "干扰与射频干扰"),
+    ],
+  ),
 ];
 
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  /// 页面按路由 `.find()` 取第一项：key 重复时后者永远不会生效，必须唯一。
+  #[test]
+  fn related_keys_are_unique() {
+    let mut keys: Vec<&str> = RELATED.iter().map(|(p, _)| *p).collect();
+    let n = keys.len();
+    keys.sort_unstable();
+    keys.dedup();
+    assert_eq!(keys.len(), n, "RELATED 里有重复的路由 key");
+  }
 
   #[test]
   fn related_map_populated() {

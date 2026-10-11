@@ -3,7 +3,7 @@
 use ham_web_core::regulations::{LICENSE_LEVELS, REG_TIPS, REGULATIONS};
 use leptos::prelude::*;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
 use crate::i18n::t;
 use crate::util::set_title;
 
@@ -68,6 +68,7 @@ pub fn RegulationsPage() -> impl IntoView {
               .collect_view()}
           </ul>
         </section>
+        <ProvenanceNote domain="regulations" />
       </PageContainer>
     </div>
   }

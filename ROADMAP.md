@@ -784,27 +784,74 @@
 
 ### 知识溯源
 
-- [ ] 为知识项增加 `source`（法规版本 / 标准号 / URL）与 `updated`（时效）字段，页面标注「依据 XX，YYYY-MM 核对」
-- [ ] 时效性数据（法规版本、卫星状态、频率惯例）优先补齐
+- [x] **知识溯源字段 + 页面标注**（2026-10）：`crates/core/src/provenance.rs`（**2 条单测**）
+      + `ProvenanceNote` 组件 —— 时效性知识域（regulations / license-classes / bands /
+      bandplan / satellites / radio-law / rr）各带「依据 + 核对日期」，页面底部渲染
+      「依据 XX，2026-10 核对」。**只收数据确实来自该处的条目**：来源没把握的模块不进表，
+      宁可不标，也不把「猜的出处」当依据。卫星状态那一条写的是「以 AMSAT 等公布状态为准，
+      状态会随在轨情况变化」—— 是时效提醒，不是冒充权威
+- [x] **时效性数据优先补齐**（2026-10）：法规版本（两部全文照录 + 依据标注）、卫星状态、
+      频率惯例（划分规定 + IARU 三区波段计划）都挂上了溯源；`reference.rs` 里既有的
+      KNOWLEDGE_SOURCES 表（含 2023-07-01 施行的划分规定）与之互补
 
 ### 原理层缺口
 
-- [ ] **频谱管理深化**：频谱监测与干扰查处流程；ITU RR 业余业务条款结构；共用条件细则；频率申请与指配流程
-- [ ] **协议标准深化**：ITU 发射类别完整表（现仅 7 项）；PACTOR / ARDOP / VARA / JS8 机理；DMR 时隙 / 色码 / Tier；LoTW / TQSL 流程
-- [ ] **天线理论深化**：近场/远场边界 `r = 2D²/λ`；天线 Q 与带宽；噪声温度与 G/T；互耦
-- [ ] **单一事实来源（功率 / 卫星标志）**：彻底收敛 `regulations` / `license_classes` / `reference` / `categories` / `bands.rs` 中的分散常量
+- [x] **频谱管理深化**（2026-10）：新页面 `/spectrum-admin`（核心 `spectrum_admin.rs`，
+      **3 条单测**）—— 干扰查处八步流程（每步引用《条例》条文，单测用 `find_refs` 校验
+      **每条引用都真实存在**）、ITU RR 业余相关条款**结构**（1.56 定义 / 第 5 条划分表与
+      脚注 / 第 25 条业余业务 —— 只给结构，不凭记忆转写款号）、共用条件细则、频率申请与
+      指配流程。站内搜索已收录
+- [x] **协议标准深化**（2026-10）：ITU 发射类别表从 7 项扩到 **20 项**（补 A2A / A3C /
+      C3F / G1D / H3E / J2D / J3F 等，单测钉住数量）；弱信号协议机理表
+      （FT8 / FT4 / JS8 / Q65 / WSPR，LDPC 纠错与帧同步讲清楚）；DMR 机理表
+      （TDMA 时隙 / 色码 / Tier I–III）；Winlink 各模式的机理描述加深
+- [x] **天线理论深化**（2026-10）：新页面 `/antenna-theory`（核心 `antenna_theory.rs`，
+      **2 条单测**）—— 近/远场边界 `r = 2D²/λ` 与电抗近场 `λ/2π`、天线 Q 与带宽
+      `BW ≈ f₀/Q`、噪声温度与 G/T、互耦；每条公式同时带 Unicode 与 KaTeX 两种写法
+      （单测钉住 KaTeX 源不含 Unicode 排版符号）
+- [x] **单一事实来源**（2026-10）：审计发现功率口径散在 4 处（reference 的表格、
+      regulations 的类别说明、categories 的知识点注、license_classes 自己的文案）——
+      `license_classes` 的三个常量（25 / 15 / 1000 W）保持唯一事实来源，新增
+      **跨模块一致性测试**：任何一处文案的数字与常量漂移，测试当场红。卫星状态未见重复
+      常量（satellites 单一来源 ✓）
 
 ### 学习路径与图谱
 
-- [ ] `/learning-path` 从静态列表升级为 DAG：专题前置依赖图，答错自动回推前置专题
-- [ ] 专题页统一挂「自测 3 题」（`topic_quiz.rs`）+「相关主题」（`related.rs`），织成知识图谱
-- [ ] 公式改用 KaTeX / MathJax 渲染，便于搜索与 i18n
+- [x] **学习路径升级为 DAG**（2026-10）：`learning_path.rs` 新增 `TOPIC_GRAPH`
+      （15 个专题节点 × 前置依赖，**数组按拓扑序排列**，单测钉住无环 + 前置可达）+
+      `suggested_reviews`（答错回推 = 沿前置链的**传递闭包**，按学习顺序去重）。
+      页面按图渲染专题链，并按错题本自动给出「先复习这些」的补课顺序
+      （e2e 播种错题钉住整条链）
+- [x] **知识图谱织网**（2026-10）：核实 `TopicQuiz` / `RelatedTopics` 已在 `MainContent`
+      布局层**自动挂载**到全部知识页（此前条目写「统一挂」时它们就已接好）；本轮补上
+      新页面（天线理论 / 频谱管理）的关联数据，并新增**路由一致性测试**：
+      RELATED 表里的每个内链都必须是注册表里的真实路由 —— 相关主题永远不指向 404
+- [x] **公式 KaTeX 渲染**（2026-10）：KaTeX 0.16.21 **自托管**进 `public/vendor/katex`
+      （CSS + JS + 字体，离线可用，经 `copy-dir` 进构建产物）；`formulas.rs` 22 条公式
+      全部补 KaTeX 源（单测钉住「tex 是 ASCII 数学源、不含 Unicode 排版符号」且键名都对得上），
+      `/formulas` 与 `/antenna-theory` 接入。渲染走 **index.html 的 MutationObserver**：
+      wasm 把 KaTeX 源写在 `data-tex` 上，观察者见到就渲染，失败保留 Unicode 回退文本
+      —— 渐进增强，没有任何网络依赖。布局回归抓到两条公式在窄卡片里溢出 → 压缩 tex
+      写法（含义挪回说明文字）
 
 ### 国际化
 
-- [ ] `data/knowledge-i18n/` 知识库正文 en / es 补全（缺失自动回退中文，已有机制）
-- [ ] 新增语言只需补一份 `data/i18n/{lang}/{domain}.json` 界面词典 + 一份正文译文
-- [ ] 多国题库对照：FCC Technician / General / Extra、Ofcom Foundation / Intermediate / Full
+- [~] `data/knowledge-i18n/` 知识库正文 en / es 补全（缺失自动回退中文，已有机制）：
+      本轮新增 **9 个模块**的 en/es 词典（provenance / spectrum_admin / dv_network /
+      digital_comms / antenna_theory / exam_comparison / regulations / learning_path /
+      winlink，共 **230+ 条 × 两语**），en 覆盖从 324 条升到约 600 条。**如实说明**：
+      知识库正文总量约两千余条，全部译完是持续的翻译工作而非一次提交 —— 机制已验证
+      （缺译自动回退中文、`knowledge-i18n-check` 钉住漂移），后续按页面热度逐批补
+- [x] **新增语言的成本已验证**（2026-10）：机制 = 每语言一份 `data/i18n/{lang}/{domain}.json`
+      界面词典 + 每模块一份 `data/knowledge-i18n/{lang}/{module}.json` 正文译文，
+      缺失自动回退中文；`i18n-pack` / `i18n-check` / `knowledge-i18n-check` 全部按语言
+      目录泛化，新增语言零代码改动 —— 本轮新增 9 个正文词典就是按这个流程走的
+- [x] **多国题库对照**（2026-10）：新页面 `/exam-comparison`（核心 `exam_comparison.rs`，
+      **3 条单测**）—— 中国 A/B/C（权限引《办法》，考试形式**不写具体数字**，以当地通知
+      为准）、美国 FCC（Technician / General 35 题、Extra 50 题，及格线均 74%，长期稳定的制度口径）、英国 Ofcom（数字**逐字转录**
+      RSGB 官方考纲 2024 v1.6b：Foundation 26 题/60 分钟/73%、Intermediate 46 题/90 分钟/
+      61%、Full **58 题**/2 小时/60% —— 网上常误传 62，查了原文才落笔）。本站暂未收录
+      FCC / Ofcom 题库全文（数据量与翻译质量考量，如实标注），页面给官方题库入口
 
 ---
 

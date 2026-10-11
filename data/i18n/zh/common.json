@@ -218,6 +218,7 @@
   "common.qso": "第 {} / {} 个通联",
   "common.qso-statistics-total-records": "通联统计\n总数 {} 条 · DXCC {} 个 · field {} · square {} · QSL 已确认 {}\n波段：{}\n模式：{}",
   "common.question": "第 {} / {} 题 · {}",
+  "common.provenance-line": "依据 {}，{} 核对",
   "common.questions": "{} 题",
   "common.questions-2": "{}「{}」（{} 道）",
   "common.questions-3": "共 {} 题",

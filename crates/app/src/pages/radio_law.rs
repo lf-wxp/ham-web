@@ -7,7 +7,7 @@
 use ham_web_core::radio_law::{MappedQuestion, article, chapters, laws, questions_for};
 use leptos::prelude::*;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
 use crate::i18n::{t, tf};
 use crate::util::set_title;
 
@@ -141,6 +141,7 @@ pub fn RadioLawPage() -> impl IntoView {
             }
           })
           .collect_view()}
+        <ProvenanceNote domain="radio-law" />
       </PageContainer>
     </div>
   }

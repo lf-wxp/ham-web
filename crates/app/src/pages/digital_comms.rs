@@ -2,6 +2,7 @@
 
 use ham_web_core::digital_comms::{
   CHANNEL_CODING, DIGITAL_CONCEPTS, DIGITAL_FORMULAS, DIGITAL_SCHEMES, DIGITAL_STEPS, DIGITAL_TIPS,
+  WEAK_SIGNAL_PROTOCOLS,
 };
 use leptos::prelude::*;
 
@@ -34,6 +35,12 @@ pub fn DigitalCommsPage() -> impl IntoView {
         headers=&["编码", "原理", "用途 / 特点"]
         rows=CHANNEL_CODING
         min_width=720
+      />
+      <TableSection
+        title="弱信号协议机理"
+        headers=&["协议", "调制与周期", "机理"]
+        rows=WEAK_SIGNAL_PROTOCOLS
+        min_width=560
       />
       <StepsSection title="数字通信链路" items=DIGITAL_STEPS />
       <BulletSection title="要点" items=DIGITAL_TIPS />

@@ -281,6 +281,7 @@
     "other": "QSO statistics\nTotal {} records · DXCC {} · field {} · square {} · QSL confirmed {}\nBands: {}\nModes: {}"
   },
   "common.question": "Question {} / {} · {}",
+  "common.provenance-line": "Based on {}, checked {}",
   "common.questions": {
     "one": "{} question",
     "other": "{} questions"

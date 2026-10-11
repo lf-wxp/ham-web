@@ -4,7 +4,7 @@ use ham_web_core::license_classes::{BAND_PERMISSIONS, CLASS_TIPS, CLASS_USAGE};
 use ham_web_core::reference::LICENSE_CLASSES;
 use leptos::prelude::*;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
 use crate::i18n::{t, tf};
 use crate::util::set_title;
 
@@ -101,6 +101,7 @@ pub fn LicenseClassesPage() -> impl IntoView {
               .collect_view()}
           </ul>
         </section>
+        <ProvenanceNote domain="license-classes" />
       </PageContainer>
     </div>
   }

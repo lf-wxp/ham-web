@@ -58,6 +58,71 @@
       })();
     </script>
 
+    <!-- KaTeX 公式渲染（自托管，离线可用）：页面里出现 [data-tex] 节点时才按需注入脚本与样式，
+         其他页面零开销。wasm 把 KaTeX 源写在节点的 data-tex 上，这里用 MutationObserver
+         等节点出现 —— 不依赖 wasm 侧的任何时序（挂载 / 路由切换都覆盖）。
+         加载或渲染失败就保留 Unicode 回退文本，绝不把页面弄坏。 -->
+    <script>
+      (() => {
+        let state = "idle"; // idle → loading → ready；失败停在 failed（保留回退文本，不重试）
+        let queued = false;
+        const PENDING = "[data-tex]:not(.katex-done)";
+        const render = () => {
+          document.querySelectorAll(PENDING).forEach((el) => {
+            el.classList.add("katex-done");
+            try {
+              window.katex.render(el.getAttribute("data-tex"), el, {
+                throwOnError: false,
+                displayMode: false,
+              });
+            } catch {
+              /* 保留回退文本 */
+            }
+          });
+        };
+        const load = () => {
+          if (state !== "idle") return;
+          state = "loading";
+          const css = document.createElement("link");
+          css.rel = "stylesheet";
+          css.href = "/katex/katex.min.css";
+          document.head.appendChild(css);
+          const js = document.createElement("script");
+          js.src = "/katex/katex.min.js";
+          js.onload = () => {
+            state = "ready";
+            render();
+          };
+          js.onerror = () => {
+            state = "failed";
+          };
+          document.head.appendChild(js);
+        };
+        const scan = () => {
+          queued = false;
+          if (!document.querySelector(PENDING)) return;
+          if (state === "ready") render();
+          else load();
+        };
+        // 观察者回调只登记一次 rAF：DOM 频繁变动的页面（波形 / 瀑布图）不会每次都扫描。
+        const schedule = () => {
+          if (queued) return;
+          queued = true;
+          requestAnimationFrame(scan);
+        };
+        const start = () => {
+          schedule();
+          new MutationObserver(schedule).observe(document.body, {
+            childList: true,
+            subtree: true,
+          });
+        };
+        // 内联脚本在 <head> 里同步执行，此时 body 还不存在，观察者要等 DOMContentLoaded。
+        if (document.body) start();
+        else document.addEventListener("DOMContentLoaded", start);
+      })();
+    </script>
+
     <!-- 致命错误兜底：wasm 加载失败或运行时 panic 时显示，不依赖 wasm 本身 -->
     <script>
       (() => {
@@ -159,6 +224,7 @@
       data-wasm-opt-params="--enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals"
     />
 
+    <link data-trunk rel="copy-dir" href="../../public/vendor/katex" />
     <link data-trunk rel="copy-dir" href="../../public/questions" />
     <link data-trunk rel="copy-dir" href="../../public/fonts" />
     <link data-trunk rel="copy-dir" href="../../public/apt-worker" />

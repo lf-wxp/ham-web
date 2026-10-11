@@ -1,0 +1,11 @@
+{
+  "8-FSK，15 秒周期": "8-FSK, 15 s frames",
+  "8 个音的多音 FSK + LDPC 前向纠错；全网同步到 15 秒帧，收发严格交替，是当前最流行的 HF 弱信号模式。": "8-tone FSK with LDPC forward error correction; stations synchronise to 15 s frames with strict transmit/receive alternation — today's most popular HF weak-signal mode.",
+  "4-GFSK，7.5 秒周期": "4-GFSK, 7.5 s frames",
+  "FT8 的竞赛变体：帧长减半，灵敏度比 FT8 低约 3 dB 以上，换取比赛节奏。": "The contesting variant of FT8: half-length frames, with sensitivity more than about 3 dB below FT8, traded for contest pace.",
+  "复用 FT8 的调制与编码，帧里装自由文本消息：把「只交换网格与信噪比」的 FT8 变成可以聊天的弱信号模式。": "Reuses FT8's modulation and coding but carries free text: it turns the grid-and-SNR-only FT8 into a weak-signal chat mode.",
+  "多音，30–300 秒": "Multi-tone, 30–300 s",
+  "为极弱信号与特殊传播（EME、对流层散射）设计，支持深度平均与多普勒容忍。": "Designed for very weak signals and special paths (EME, troposcatter), with deep averaging and Doppler tolerance.",
+  "4-FSK，约 2 分钟": "4-FSK, ~2 min",
+  "单向信标协议：只发呼号 / 网格 / 功率，配合全球监听网看传播开通情况。": "A one-way beacon protocol sending call, grid and power; the global listener network reveals propagation openings."
+}

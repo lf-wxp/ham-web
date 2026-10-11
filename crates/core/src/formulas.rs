@@ -171,8 +171,71 @@ pub const FORMULA_GROUPS: &[FormulaGroup] = &[
   },
 ];
 
+/// 每条公式的 KaTeX 源（按公式名索引）。
+///
+/// 界面启用 KaTeX 时用它渲染，未启用（或没写）时回退到 `expr` 的 Unicode 排版 ——
+/// 两者是同一公式的两种写法，本表只补「KaTeX 能排得更好看」的那部分，全部 22 条都写全了。
+pub const FORMULA_TEX: &[(&str, &str)] = &[
+  ("欧姆定律", "U = I \\cdot R"),
+  ("电功率", "P = U \\cdot I = I^2 R = \\frac{U^2}{R}"),
+  ("电阻串联", "R = R_1 + R_2 + \\dots"),
+  (
+    "电阻并联",
+    "\\frac{1}{R} = \\frac{1}{R_1} + \\frac{1}{R_2} + \\dots",
+  ),
+  (
+    "正弦有效值",
+    "V_{\\mathrm{rms}} = \\frac{V_{\\mathrm{peak}}}{\\sqrt{2}}",
+  ),
+  ("频率 ↔ 波长", "\\lambda = \\frac{300}{f}"),
+  ("LC 谐振频率", "f = \\frac{1}{2\\pi\\sqrt{LC}}"),
+  ("容抗", "X_C = \\frac{1}{2\\pi f C}"),
+  ("感抗", "X_L = 2\\pi f L"),
+  ("CW 必要带宽", "B_n = B \\times K"),
+  ("半波偶极长度", "L = \\frac{143}{f}"),
+  ("1/4 波长天线", "L = \\frac{71.5}{f}"),
+  ("驻波比", "\\mathrm{SWR} = \\frac{1+|\\Gamma|}{1-|\\Gamma|}"),
+  ("行波系数", "\\mathrm{TWR} = \\frac{1}{\\mathrm{SWR}}"),
+  ("天线增益", "G = \\eta \\cdot D"),
+  ("馈线损耗", "A = a \\cdot \\frac{L}{100}"),
+  ("功率增益（dB）", "\\mathrm{dB} = 10 \\lg\\frac{P_1}{P_0}"),
+  ("电压增益（dB）", "\\mathrm{dB} = 20 \\lg\\frac{V_1}{V_0}"),
+  ("dBm 定义", "0\\ \\mathrm{dBm} = 1\\ \\mathrm{mW}"),
+  ("dBm ↔ dBμV", "\\mathrm{dB\\mu V} = \\mathrm{dBm} + 107"),
+  ("级联增益", "G_{\\text{总}} = G_1 + G_2 + \\dots"),
+  ("天线增益换算", "\\mathrm{dBi} = \\mathrm{dBd} + 2.15"),
+];
+
+/// 按公式名取 KaTeX 源。
+#[must_use]
+pub fn tex_of(name: &str) -> Option<&'static str> {
+  FORMULA_TEX
+    .iter()
+    .find(|(n, _)| *n == name)
+    .map(|(_, t)| *t)
+}
+
 #[cfg(test)]
 mod tests {
+
+  #[test]
+  fn every_tex_entry_matches_a_formula_and_is_ascii_math() {
+    for &(name, tex) in FORMULA_TEX {
+      assert!(
+        FORMULA_GROUPS
+          .iter()
+          .any(|g| g.items.iter().any(|f| f.name == name)),
+        "FORMULA_TEX 里的「{name}」在公式表里不存在"
+      );
+      // KaTeX 要的是 ASCII 数学源：混进 Unicode 排版符号（·、²、√、₁）会渲染失败。
+      for bad in ['·', '²', '√', '₁', '₂', 'Γ', 'λ', 'μ'] {
+        assert!(!tex.contains(bad), "「{name}」的 tex 里混进了 {bad}");
+      }
+    }
+    assert_eq!(tex_of("欧姆定律"), Some("U = I \\cdot R"));
+    assert!(tex_of("不存在的公式").is_none());
+  }
+
   use super::*;
 
   #[test]

@@ -1,7 +1,7 @@
 use ham_web_core::bandplan::BAND_PLANS;
 use leptos::prelude::*;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
 use crate::util::set_title;
 
 use super::band_plan_card::BandPlanCard;
@@ -25,6 +25,7 @@ pub fn BandPlanPage() -> impl IntoView {
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {BAND_PLANS.iter().map(|b| view! { <BandPlanCard plan=b /> }).collect_view()}
         </div>
+        <ProvenanceNote domain="bandplan" />
       </PageContainer>
     </div>
   }

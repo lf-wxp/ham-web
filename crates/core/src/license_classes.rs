@@ -61,4 +61,75 @@ mod tests {
     assert!(BAND_PERMISSIONS.len() >= 4);
     assert!(!CLASS_TIPS.is_empty());
   }
+
+  /// 单一事实来源的**执行器**：全站各处「A 类 25W / B 类 15W / C 类 1000W」的写法
+  /// （reference / regulations / categories 的散落文案）必须与本模块常量一致 ——
+  /// 谁把 25W 写成 30W，这条测试当场红。
+  ///
+  /// 匹配片段由常量格式化出来（带 `W` 单位），不手写数字，也不用裸数字做子串匹配
+  /// （`"15"` 会误中 `1500`、`"25"` 会误中 `125`）。
+  #[test]
+  fn the_scattered_power_claims_match_the_canonical_constants() {
+    // 常量本身先钉死（精确比较，不做整数截断 —— 谁把 25W 改成非整数，这里当场红）。
+    assert_eq!(CLASS_A_MAX_W, 25.0, "A 类功率上限漂移");
+    assert_eq!(CLASS_B_HF_MAX_W, 15.0, "B 类功率上限漂移");
+    assert_eq!(CLASS_C_HF_MAX_W, 1000.0, "C 类功率上限漂移");
+    let (a, b, c) = (
+      format!("{CLASS_A_MAX_W}W"),
+      format!("{CLASS_B_HF_MAX_W}W"),
+      format!("{CLASS_C_HF_MAX_W}W"),
+    );
+
+    // reference::LICENSE_CLASSES 的 power 栏。
+    let rows = crate::reference::LICENSE_CLASSES;
+    assert!(rows[0].power.contains(&a), "{}", rows[0].power);
+    assert!(
+      rows[1].power.contains(&b) && rows[1].power.contains(&a),
+      "{}",
+      rows[1].power
+    );
+    assert!(
+      rows[2].power.contains(&c) && rows[2].power.contains(&a),
+      "{}",
+      rows[2].power
+    );
+
+    // reference 的 REF 列表（「B 类 30MHz 以下不大于 15W」那条）。
+    let not_more_than_b = format!("不大于 {b}");
+    assert!(
+      crate::reference::KNOWLEDGE_SOURCES
+        .iter()
+        .any(|(_, _, t)| t.contains(&not_more_than_b)),
+      "reference 的「功率限值」来源行要与常量一致"
+    );
+
+    // regulations 的类别说明（LICENSE_LEVELS 里带功率口径）。
+    let regs = crate::regulations::LICENSE_LEVELS;
+    for (class, w) in [("A", &a), ("B", &b), ("C", &c)] {
+      let needle = format!("≤{w}");
+      assert!(
+        regs.iter().any(|(_, t)| t.contains(&needle)),
+        "regulations 里缺 {class} 类 {needle}"
+      );
+    }
+
+    // categories 的知识点注（第三十条权限）。
+    assert!(
+      crate::categories::SUB_NOTES.iter().any(|(_, t)| {
+        t.contains(&format!("≤{a}")) && t.contains(&format!("≤{b}")) && t.contains(&c)
+      }),
+      "categories 里的权限注要与常量一致"
+    );
+
+    // 本模块自己的文案。
+    let all_text: String = CLASS_USAGE
+      .iter()
+      .map(|(_, t)| *t)
+      .chain(CLASS_TIPS.iter().copied())
+      .collect::<Vec<_>>()
+      .join("\n");
+    for needle in [&a, &b, &c] {
+      assert!(all_text.contains(needle.as_str()), "本模块文案缺 {needle}");
+    }
+  }
 }

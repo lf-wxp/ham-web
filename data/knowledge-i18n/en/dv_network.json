@@ -1,0 +1,11 @@
+{
+  "TDMA 时隙": "TDMA time slots",
+  "DMR 每 30ms 一帧分成两个时隙（Slot 1 / Slot 2），两部电台可在同一个 12.5kHz 信道上同时通话 —— 频分复用上再叠时分复用。": "A DMR frame lasts 30 ms and splits into two time slots, so two stations can talk simultaneously on one 12.5 kHz channel — time division stacked on the frequency channel.",
+  "色码 Color Code": "Colour code",
+  "0–15 共 16 个值，作用类似 PL 亚音：只有色码匹配的中继/台站才会解出你的信号，用于区分同一频率上的不同网络。": "Values 0–15; it works like a PL tone: only stations/repeaters with the matching colour code decode your signal, separating networks on the same frequency.",
+  "通话组与私有呼叫": "Talkgroups and private calls",
+  "每个时隙上再按「通话组 Talkgroup」或单呼地址路由：同一中继的两组用户可以互不干扰地各自通话。": "Each slot routes by talkgroup or private-call address, so two user groups can chat independently through one repeater.",
+  "免执照直频：446MHz 免许可频段设备，无中继、不联网（与独立标准 dPMR 不是一回事）。": "Licence-free simplex on 446 MHz: no repeaters and no networking (not the same thing as the separate dPMR standard).",
+  "业余与商用最常用的中继/直频模式，TDMA 两时隙，可与 IP 骨干（BrandMeister 等）互连。": "The most common amateur/commercial mode: TDMA two-slot repeaters that can link to IP backbones such as BrandMeister.",
+  "集群调度系统，带控制信道的 trunking 架构，商用为主，业余较少用。": "Trunked dispatch systems with a control channel; mainly commercial, rarely used by amateurs."
+}

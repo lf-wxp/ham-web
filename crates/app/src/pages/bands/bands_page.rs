@@ -3,7 +3,7 @@ use std::time::Duration;
 use ham_web_core::bands::{self, BANDS, FOOTNOTES, Usage};
 use leptos::prelude::*;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
 use crate::icons::{Icon, IconKind};
 use crate::ui::Stat;
 use crate::util::document;
@@ -112,6 +112,7 @@ pub fn BandsPage() -> impl IntoView {
         </section>
 
         <BandQuiz />
+        <ProvenanceNote domain="bands" />
       </PageContainer>
     </div>
   }

@@ -24,6 +24,10 @@ const RUNTIME = {
     maxEntries: 6,
     maxAgeSeconds: 30 * 24 * 60 * 60,
   },
+  // KaTeX（脚本 + 样式 + 字体，合计约 550 KB）：**不预缓存**（见 postbuild.rs 的
+  // is_excluded），只有公式页首次出现 `[data-tex]` 时才由 index.html 按需注入，
+  // 之后缓存优先 + 后台更新，离线仍可用。文件是自托管的固定版本，不随构建换名。
+  katex: { name: "katex-runtime", maxEntries: 40, maxAgeSeconds: 90 * 24 * 60 * 60 },
 };
 const TS_HEADER = "x-sw-cached-at";
 
@@ -162,6 +166,8 @@ self.addEventListener("fetch", (event) => {
   } else if (/^\/data\/i18n\/[A-Za-z-]+\.json$/.test(url.pathname)) {
     // 首次请求打网络（本来就要拉一次），之后缓存优先 + 后台更新：离线时也能切语言。
     event.respondWith(staleWhileRevalidate(event, RUNTIME.i18n));
+  } else if (/^\/katex\//.test(url.pathname)) {
+    event.respondWith(staleWhileRevalidate(event, RUNTIME.katex));
   } else if (request.mode === "navigate") {
     event.respondWith(navigation(event));
   } else if (PRECACHE_URLS.has(url.pathname) && !url.search) {

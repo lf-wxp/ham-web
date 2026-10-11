@@ -30,6 +30,9 @@ const SW_TEMPLATE: &str = include_str!("../templates/sw.js");
 /// en / es 两个包（合计约 400 KB）。它们改走 `sw.js` 的运行时缓存按需拉取，
 /// 详见 `templates/sw.js` 的 `RUNTIME.i18n`。
 ///
+/// KaTeX（`katex/`：脚本 + 样式 + 20 个字体，约 550 KB）同理排除：只有公式页才用，
+/// 由 `index.html` 在首次出现 `[data-tex]` 时按需注入，离线走 `sw.js` 的 `RUNTIME.katex`。
+///
 /// 题库的**聚合产物**（`full.json` / `search-index.json`）同理排除：全站搜索与整卷
 /// 模拟都是按需加载的（见 `core/question.rs` 的 `search-index` 说明），预取等于让
 /// 每个用户（包括从不用搜索的人）在 install 阶段付 1.6 MB + 1.7 MB。
@@ -41,6 +44,7 @@ fn is_excluded(rel: &str) -> bool {
     || rel == "questions/full.json"
     || rel == "questions/search-index.json"
     || (rel.starts_with("data/i18n/") && rel.ends_with(".json"))
+    || rel.starts_with("katex/")
     || rel.ends_with(".map")
     || rel.rsplit('/').next().is_some_and(|f| f.starts_with('.'))
 }
@@ -387,6 +391,15 @@ mod tests {
     // 同目录下的非 JSON（若将来有）不在此列，避免误伤。
     assert!(!is_excluded("data/i18n/index.txt"));
     assert!(!is_excluded("data/glossary/en.json"));
+  }
+
+  /// KaTeX 不进预缓存：只有公式页用得到，却会让每个用户在 install 阶段多拉约 550 KB。
+  #[test]
+  fn excludes_katex_vendor_files() {
+    assert!(is_excluded("katex/katex.min.js"));
+    assert!(is_excluded("katex/katex.min.css"));
+    assert!(is_excluded("katex/fonts/KaTeX_Main-Regular.woff2"));
+    assert!(!is_excluded("katex_note.txt"));
   }
 
   /// 语言包必须参与 `__CACHE_VERSION__`：不进清单时只改译文不会让清单变，

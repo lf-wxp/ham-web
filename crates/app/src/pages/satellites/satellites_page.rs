@@ -1,7 +1,7 @@
 use ham_web_core::satellites::{SATELLITE_TIPS, SATELLITES, TRACKING_SOFTWARE};
 use leptos::prelude::*;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
 use crate::components::rotor_control::RotorControl;
 use crate::util::set_title;
 
@@ -105,6 +105,7 @@ pub fn SatellitesPage() -> impl IntoView {
               .collect_view()}
           </div>
         </section>
+        <ProvenanceNote domain="satellites" />
       </PageContainer>
     </div>
   }

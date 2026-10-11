@@ -207,6 +207,36 @@ pub const EMISSION_TYPES: &[EmissionType] = &[
     desc: "保留部分载波的单边带电话",
   },
   EmissionType {
+    code: "A3C",
+    name: "双边带传真",
+    desc: "双边带调幅传真（静止图像），第三符号 C = 传真。",
+  },
+  EmissionType {
+    code: "C3F",
+    name: "残留边带电视",
+    desc: "残留边带调幅，模拟电视广播的标准方式（VSB）。",
+  },
+  EmissionType {
+    code: "G1D",
+    name: "调相数据",
+    desc: "相位调制的单信道数字数据（PSK 类数据模式），第三符号 D = 数据。",
+  },
+  EmissionType {
+    code: "H3E",
+    name: "单边带全载波话",
+    desc: "带全载波的单边带，便于普通 AM 接收机解调。",
+  },
+  EmissionType {
+    code: "J2D",
+    name: "单边带数据",
+    desc: "抑制载波单边带数据（如 PACTOR）。",
+  },
+  EmissionType {
+    code: "J3F",
+    name: "单边带电视",
+    desc: "单边带电视（SSTV 常用）。",
+  },
+  EmissionType {
     code: "J3C",
     name: "单边带传真",
     desc: "用单边带方式传送的传真图像",
@@ -358,6 +388,7 @@ mod tests {
     assert_eq!(RST_SCALES.len(), 3);
     assert!(EMISSION_TYPES.len() >= 12);
     assert!(EMISSION_DESIGNATION.len() >= 4);
+    assert!(EMISSION_TYPES.len() >= 15, "发射类别完整表至少 15 项");
     assert!(!PHRASES.is_empty());
   }
 
@@ -366,5 +397,14 @@ mod tests {
     assert_eq!(RST_SCALES[0].levels.len(), 5); // R 1–5
     assert_eq!(RST_SCALES[1].levels.len(), 9); // S 1–9
     assert_eq!(RST_SCALES[2].levels.len(), 9); // T 1–9
+  }
+
+  #[test]
+  fn emission_type_names_follow_the_third_symbol() {
+    // 第三字符定名：C = 传真（facsimile）、F = 电视（television）——J3F 常被误写成
+    // 「单边带传真」与 J3C 重名，这里钉住两者各自的名字。
+    let by_code = |code: &str| EMISSION_TYPES.iter().find(|e| e.code == code).unwrap();
+    assert_eq!(by_code("J3C").name, "单边带传真");
+    assert_eq!(by_code("J3F").name, "单边带电视");
   }
 }

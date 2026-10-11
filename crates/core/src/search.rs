@@ -481,6 +481,55 @@ fn build_index() -> Vec<SearchEntry> {
     }
   }
 
+  // 多国题库对照
+  for s in crate::exam_comparison::SYSTEMS {
+    push(
+      &mut out,
+      "知识库",
+      "/exam-comparison",
+      format!("{}：{}", s.country, s.title),
+      s.coverage.to_owned(),
+    );
+  }
+
+  // 天线理论
+  push(
+    &mut out,
+    "知识库",
+    "/antenna-theory",
+    "天线理论".to_owned(),
+    "近远场边界与品质因数".to_owned(),
+  );
+  for &(title, formulas) in crate::antenna_theory::THEORY_SECTIONS {
+    for f in formulas.iter() {
+      push(
+        &mut out,
+        "知识库",
+        "/antenna-theory",
+        f.name.to_owned(),
+        format!("{}：{}", title, f.desc),
+      );
+    }
+  }
+
+  // 频谱管理
+  push(
+    &mut out,
+    "知识库",
+    "/spectrum-admin",
+    "频谱管理".to_owned(),
+    "干扰查处流程与 ITU 条款结构".to_owned(),
+  );
+  for &(title, text) in crate::spectrum_admin::MONITORING_STEPS {
+    push(
+      &mut out,
+      "知识库",
+      "/spectrum-admin",
+      title.to_owned(),
+      text.to_owned(),
+    );
+  }
+
   // 测量实验室
   push(
     &mut out,

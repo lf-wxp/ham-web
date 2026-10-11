@@ -1,0 +1,11 @@
+{
+  "8-FSK，15 秒周期": "8-FSK, tramas de 15 s",
+  "8 个音的多音 FSK + LDPC 前向纠错；全网同步到 15 秒帧，收发严格交替，是当前最流行的 HF 弱信号模式。": "FSK de 8 tonos con corrección de errores LDPC; las estaciones se sincronizan a tramas de 15 s con alternancia estricta: el modo de señal débil más popular en HF.",
+  "4-GFSK，7.5 秒周期": "4-GFSK, tramas de 7,5 s",
+  "FT8 的竞赛变体：帧长减半，灵敏度比 FT8 低约 3 dB 以上，换取比赛节奏。": "La variante de concurso de FT8: tramas de la mitad, con una sensibilidad más de ~3 dB inferior a la de FT8, a cambio de ritmo.",
+  "复用 FT8 的调制与编码，帧里装自由文本消息：把「只交换网格与信噪比」的 FT8 变成可以聊天的弱信号模式。": "Reutiliza la modulación y codificación de FT8 pero lleva texto libre: convierte el FT8 de solo rejilla y SNR en un modo de charla de señal débil.",
+  "多音，30–300 秒": "Multitono, 30–300 s",
+  "为极弱信号与特殊传播（EME、对流层散射）设计，支持深度平均与多普勒容忍。": "Pensado para señales muy débiles y trayectos especiales (EME, dispersión troposférica), con promediado profundo y tolerancia Doppler.",
+  "4-FSK，约 2 分钟": "4-FSK, ~2 min",
+  "单向信标协议：只发呼号 / 网格 / 功率，配合全球监听网看传播开通情况。": "Protocolo baliza unidireccional que envía indicativo, rejilla y potencia; la red mundial de escuchas revela las aperturas de propagación."
+}
