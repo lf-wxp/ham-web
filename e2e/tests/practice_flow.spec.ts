@@ -8,10 +8,9 @@ function bar(page: Page) {
   return page.getByText(/题库 [ABC] 类 ·/).first();
 }
 
-/** 开关类按钮没有 aria-pressed，用高亮类名判断选中状态。 */
+/** 筛选开关是 `ChipToggle`，选中态由 `aria-pressed` 表达。 */
 async function isOn(locator: ReturnType<Page["getByRole"]>) {
-  const cls = (await locator.getAttribute("class")) ?? "";
-  return cls.includes("bg-primary");
+  return (await locator.getAttribute("aria-pressed")) === "true";
 }
 
 test("练习：切换题库会改写地址栏并换题", async ({ page }) => {
@@ -20,12 +19,12 @@ test("练习：切换题库会改写地址栏并换题", async ({ page }) => {
   await expect(bar(page)).toContainText("题库 A 类");
   await expect(bar(page)).toContainText("顺序练习");
 
-  await page.getByRole("button", { name: "B 类" }).first().click();
+  await page.getByRole("radio", { name: "B 类" }).first().click();
   await expect(page).toHaveURL(/bank=B/);
   await expect(bar(page)).toContainText("题库 B 类");
   await expect(page.getByText(/第 1 \/ \d+ 题/).first()).toBeVisible();
 
-  await page.getByRole("button", { name: "C 类" }).first().click();
+  await page.getByRole("radio", { name: "C 类" }).first().click();
   await expect(page).toHaveURL(/bank=C/);
   await expect(bar(page)).toContainText("题库 C 类");
 });

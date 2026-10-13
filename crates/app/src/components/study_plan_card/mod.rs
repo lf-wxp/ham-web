@@ -12,7 +12,8 @@ use leptos::task::spawn_local;
 
 use crate::i18n::{t, tf, tp};
 use crate::ui::{
-  CARD_HEADER, DatePicker, TimePicker, card_class, card_content_class, card_title_class,
+  CARD_HEADER, Chip, ChipGroup, DatePicker, TimePicker, card_class, card_content_class,
+  card_title_class,
 };
 use crate::util::{local_day, local_today, now_ms};
 use crate::{data, exam_history, study};
@@ -145,14 +146,6 @@ pub fn StudyPlanCard(
     return ().into_any();
   }
 
-  let seg_class = move |on: bool| {
-    if on {
-      "rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
-    } else {
-      "rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
-    }
-  };
-
   view! {
     <section id="plan" data-slot="card" class=card_class("scroll-mt-24")>
       <div data-slot="card-header" class=CARD_HEADER>
@@ -177,21 +170,23 @@ pub fn StudyPlanCard(
             </label>
             <div class="flex flex-col gap-1.5">
               <span class="text-xs text-muted-foreground">{move || t("common.target-class")}</span>
-              <div class="inline-flex gap-0.5 rounded-lg border p-0.5" role="group" aria-label=move || t("common.target-class")>
+              <ChipGroup
+                value=Signal::derive(move || bank.get().as_str().to_string())
+                on_change=Callback::new(move |v: String| {
+                  if let Ok(b) = v.parse::<Bank>() {
+                    update(&|p| p.bank = Some(b));
+                  }
+                })
+                aria_label=Signal::derive(move || t("common.target-class"))
+              >
                 {Bank::ALL
                   .into_iter()
-                  .map(|b| view! {
-                    <button
-                      type="button"
-                      class=move || seg_class(bank.get() == b)
-                      aria-pressed=move || (bank.get() == b).to_string()
-                      on:click=move |_| update(&|p| p.bank = Some(b))
-                    >
-                      {tf("learning.class", &[&b.to_string()])}
-                    </button>
+                  .map(|b| {
+                    let label = view! { {tf("learning.class", &[&b.to_string()])} }.into_any();
+                    view! { <Chip value=b.as_str().to_string()>{label}</Chip> }
                   })
                   .collect_view()}
-              </div>
+              </ChipGroup>
             </div>
             <label class="flex flex-col gap-1.5 text-sm">
               <span class="text-xs text-muted-foreground">{move || t("settings.daily-reminder-time")}</span>

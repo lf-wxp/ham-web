@@ -84,11 +84,17 @@ fn cache_policy(path: &str) -> Option<&'static str> {
     p if p.starts_with("/questions/") && p.ends_with(".json") => Some("no-cache"),
     // DXCC 几何二进制：无内容哈希，用协商缓存保证重新生成后能拿到新版本。
     "/dxcc-entities.bin" => Some("no-cache"),
+    // 解码 Worker 入口、各 wasm 胶水与语言包都没有内容哈希：不加协商缓存的话，无 SW 的首访
+    // 可能按启发式缓存拿到旧胶水配新 wasm（导入对象不匹配，实例化失败）或新代码配旧语言包。
+    "/decode-worker.js" => Some("no-cache"),
+    p if p.contains("-worker/") || (p.starts_with("/data/i18n/") && p.ends_with(".json")) => {
+      Some("no-cache")
+    }
     p if p.starts_with("/questions/images/") || p.starts_with("/fonts/") => {
       Some("public, max-age=86400")
     }
     // 开放 API 自带 ETag 与 Cache-Control（见 `api_v1::send`），这里不能覆盖成 no-store。
-    p if p.starts_with("/api/v1/") => None,
+    p if api_v1::is_v1_path(p) => None,
     p if p.starts_with("/api/") => Some(NO_STORE),
     p if is_hashed_asset(p) => Some(IMMUTABLE),
     _ => None,
@@ -187,20 +193,22 @@ fn app(cfg: &Config, push_service: push::PushService) -> Router {
         if !path.starts_with("/api/") {
           return next.run(req).await;
         }
-        let is_v1 = path.starts_with("/api/v1/");
-        let active = if !is_v1 {
-          &limiter
-        } else if api_v1::is_authorized(req.headers(), &api_keys) {
-          &v1_keyed
-        } else {
-          &v1_anon
-        };
+        let is_v1 = api_v1::is_v1_path(path);
         // 连接信息由 `into_make_service_with_connect_info` 注入到 extensions。
         let conn = req
           .extensions()
           .get::<axum::extract::ConnectInfo<SocketAddr>>()
           .cloned();
-        if rate_limit::allow(active, conn, &req) {
+        // keyed 桶按 key 值分桶：反代部署下 ConnectInfo 是代理地址，按 IP 分桶会让
+        // 所有 key 挤在同一个桶里互相挤占；按 key 分桶后换 IP 也绕不过自己的额度。
+        let allowed = if !is_v1 {
+          rate_limit::allow(&limiter, conn, &req)
+        } else if let Some(key) = api_v1::bearer_key(req.headers(), &api_keys) {
+          v1_keyed.allow_by_key(&key)
+        } else {
+          rate_limit::allow(&v1_anon, conn, &req)
+        };
+        if allowed {
           next.run(req).await
         } else if is_v1 {
           api_v1::rate_limited()
@@ -354,6 +362,10 @@ fn app(cfg: &Config, push_service: push::PushService) -> Router {
     .route("/api/push/unsubscribe", post(push_unsubscribe))
     .route("/api/push/review-count", post(push_review_count))
     // 开放 API v1：纯计算 / 静态参考数据，契约见 `ham_web_core::api_v1`。
+    // 裸前缀也要命中：否则 `/api/v1`（无尾斜杠）会落到 SPA fallback 返回 200 HTML，
+    // 与「API 前缀一律 JSON」的契约不符。
+    .route("/api/v1", get(api_v1::status))
+    .route("/api/v1/", get(api_v1::status))
     .route("/api/v1/dxcc", get(api_v1::dxcc_list))
     .route("/api/v1/dxcc/lookup", get(api_v1::dxcc_lookup))
     .route("/api/v1/bands", get(api_v1::bands_list))
@@ -362,6 +374,9 @@ fn app(cfg: &Config, push_service: push::PushService) -> Router {
     .route("/api/v1/grid/distance", get(api_v1::grid_distance))
     .route("/api/v1/propagation/muf", get(api_v1::propagation_muf))
     .route("/api/v1/status", get(api_v1::status))
+    .route("/api/v1/units/convert", get(api_v1::units_convert))
+    .route("/api/v1/filter/design", get(api_v1::filter_design))
+    .route("/api/v1/link-budget", get(api_v1::link_budget))
     .route("/api/v1/openapi.json", get(api_v1::openapi_json))
     .route("/api/v1/{*rest}", get(api_v1::not_found))
     .fallback_service(static_files)
@@ -489,6 +504,15 @@ mod tests {
     assert_eq!(cache_policy("/sw.js"), Some(NO_STORE));
     assert_eq!(cache_policy("/questions/A.json"), Some("no-cache"));
     assert_eq!(cache_policy("/dxcc-entities.bin"), Some("no-cache"));
+    // 无内容哈希的解码 Worker 资源与语言包必须协商缓存。
+    for p in [
+      "/decode-worker.js",
+      "/rtty-worker/rtty_worker.js",
+      "/lrpt-worker/lrpt_worker_bg.wasm",
+      "/data/i18n/en.json",
+    ] {
+      assert_eq!(cache_policy(p), Some("no-cache"), "{p}");
+    }
     assert_eq!(cache_policy("/pwa-icon.svg"), None);
     // 内部代理接口 no-store；开放 API 自管缓存头。
     assert_eq!(cache_policy("/api/solar"), Some(NO_STORE));
@@ -600,6 +624,61 @@ mod tests {
     let (status, _, body) = v1("/api/v1/nope").await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(body["error"]["code"], "not_found");
+  }
+
+  #[tokio::test]
+  async fn bare_v1_prefix_returns_json_index_not_spa_html() {
+    let (status, headers, body) = v1("/api/v1").await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["data"]["version"], "v1");
+    assert!(
+      body["data"]["endpoints"]
+        .as_array()
+        .is_some_and(|a| !a.is_empty())
+    );
+    assert!(
+      headers["content-type"]
+        .to_str()
+        .expect("ascii")
+        .starts_with("application/json"),
+      "不能返回 SPA 的 HTML"
+    );
+  }
+
+  #[tokio::test]
+  async fn bare_v1_prefix_gets_cors_and_api_cache_headers() {
+    // 裸 `/api/v1` 曾在 CORS / 缓存两处被当成普通 `/api/`：没有 ACAO、ETag 被 no-store 覆盖。
+    let (_, headers, _) = v1("/api/v1").await;
+    assert_eq!(headers["access-control-allow-origin"], "*");
+    assert_ne!(
+      headers.get("cache-control").and_then(|v| v.to_str().ok()),
+      Some(NO_STORE),
+      "开放 API 自带缓存头，不能被 no-store 覆盖"
+    );
+    assert!(api_v1::is_v1_path("/api/v1"));
+    assert!(api_v1::is_v1_path("/api/v1/"));
+    assert!(api_v1::is_v1_path("/api/v1/dxcc"));
+    assert!(!api_v1::is_v1_path("/api/v10"));
+    assert!(!api_v1::is_v1_path("/api/push"));
+    assert_eq!(cache_policy("/api/v1"), None);
+    // 带尾斜杠同样是 JSON，而不是落到 SPA 的 index.html。
+    let (status, _, body) = v1("/api/v1/").await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["data"]["version"], "v1");
+  }
+
+  #[tokio::test]
+  async fn undecodable_query_string_is_json_400() {
+    // `Query<HashMap<..>>` 的默认拒绝是纯文本 400，会绕过统一错误结构。
+    let (status, headers, body) = v1("/api/v1/dxcc/lookup?callsign=%FF").await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(body["error"]["code"], "invalid_parameter");
+    assert!(
+      headers["content-type"]
+        .to_str()
+        .expect("ascii")
+        .starts_with("application/json")
+    );
   }
 
   #[tokio::test]

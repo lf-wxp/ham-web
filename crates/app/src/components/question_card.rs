@@ -8,8 +8,8 @@ use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::speech;
 use crate::ui::{
-  BadgeVariant, CARD_HEADER, Checkbox, Label, RadioGroup, RadioGroupItem, badge_class, card_class,
-  card_content_class, card_title_class,
+  BadgeVariant, Button, CARD_HEADER, Checkbox, Label, RadioGroup, RadioGroupItem, Size, Variant,
+  badge_class, card_class, card_content_class, card_title_class,
 };
 use crate::util::unique_id;
 
@@ -177,15 +177,16 @@ pub fn QuestionCard(
                 </span>
               }
             })}
-          <button
-            type="button"
-            class="ml-auto flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            title=move || t("exam.read-question-aloud")
-            aria-label=move || t("exam.read-question-aloud")
-            on:click=move |_| speech::speak_zh(&question_text)
+          <Button
+            variant=Variant::Ghost
+            size=Size::IconSm
+            class="ml-auto shrink-0"
+            title=Signal::derive(move || t("exam.read-question-aloud"))
+            aria_label=Signal::derive(move || t("exam.read-question-aloud"))
+            on_click=Callback::new(move |_| speech::speak_zh(&question_text))
           >
             <Icon kind=IconKind::Volume2 class="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       </div>
       <div data-slot="card-content" class=card_content_class("space-y-3")>

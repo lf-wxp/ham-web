@@ -1,8 +1,10 @@
 use ham_web_core::rst::SIGNAL_STRENGTH;
 use leptos::prelude::*;
 
+use crate::components::quiz_option::QuizOption;
 use crate::i18n::{t, tf};
 use crate::morse_audio::play_tone;
+use crate::ui::{Button, Variant};
 use crate::util::random;
 
 /// 试听音调（Hz）。
@@ -51,13 +53,9 @@ pub(super) fn RstListen() -> impl IntoView {
       <div class="space-y-4 p-4">
         <div class="flex flex-col items-center gap-2 rounded-xl border bg-muted/30 px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("knowledge.tap-to-play-a")}</div>
-          <button
-            type="button"
-            on:click=move |_| play()
-            class="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-          >
+          <Button on_click=Callback::new(move |_| play())>
             {move || t("knowledge.play-signal")}
-          </button>
+          </Button>
         </div>
         <div class="grid grid-cols-3 gap-2 sm:grid-cols-9">
           {SIGNAL_STRENGTH
@@ -65,13 +63,13 @@ pub(super) fn RstListen() -> impl IntoView {
             .enumerate()
             .map(|(i, &(k, _))| {
               view! {
-                <button
-                  type="button"
-                  on:click=move |_| judge(i)
-                  class="rounded-lg border px-2 py-2 font-mono text-sm transition-colors hover:bg-accent"
+                <QuizOption
+                  class="px-2 py-2 font-mono"
+                  disabled=Signal::derive(move || feedback.get().is_some())
+                  on_click=Callback::new(move |_| judge(i))
                 >
                   {k}
-                </button>
+                </QuizOption>
               }
             })
             .collect_view()}
@@ -97,13 +95,9 @@ pub(super) fn RstListen() -> impl IntoView {
               })
             }}
           </div>
-          <button
-            type="button"
-            on:click=move |_| new_round()
-            class="rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
-          >
+          <Button variant=Variant::Outline on_click=Callback::new(move |_| new_round())>
             {move || t("exam.next")}
-          </button>
+          </Button>
           <div class="text-xs text-muted-foreground">
             {move || t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
             {move || t("common.wrong-2")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>

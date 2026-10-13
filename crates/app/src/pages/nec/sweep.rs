@@ -7,8 +7,7 @@ use ham_web_core::nec::{NecInput, TransmissionLine, sweep_with_lines, swr_bandwi
 use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
-use crate::ui::{Chip, ChipGroup};
-use crate::ui::{Field, NumberField};
+use crate::ui::{Button, Chip, ChipGroup, Field, NumberField, Size, Variant};
 use crate::util::unique_id;
 
 const NOTE: &str = "text-xs text-muted-foreground";
@@ -69,11 +68,11 @@ pub(super) fn SweepSection(
     <div class="space-y-3 rounded-xl border bg-card p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <span class="text-sm font-semibold">{move || t("tools.nec-sweep-title")}</span>
-        <button
-          type="button"
-          class="cursor-pointer rounded-md border bg-background px-3 py-1 text-xs font-medium hover:bg-accent"
-          aria-expanded=move || if open.get() { "true" } else { "false" }
-          on:click=move |_| open.update(|v| *v = !*v)
+        <Button
+          variant=Variant::Outline
+          size=Size::Xs
+          aria_expanded=Signal::derive(move || open.get())
+          on_click=Callback::new(move |_| open.update(|v| *v = !*v))
         >
           {move || {
             if open.get() {
@@ -82,7 +81,7 @@ pub(super) fn SweepSection(
               t("tools.nec-sweep-show")
             }
           }}
-        </button>
+        </Button>
       </div>
 
       {move || {

@@ -9,14 +9,14 @@ use web_sys::KeyboardEvent;
 use crate::icons::{Icon, IconKind};
 use crate::morse_audio::{morse_char_times, play_morse_timed_with};
 use crate::morse_settings::use_morse_settings;
-use crate::ui::{Button, ButtonKind, Input, Slider, Variant};
+use crate::ui::{Button, ButtonKind, Chip, ChipGroup, ChipToggle, Input, Slider, Variant};
 use crate::util::random;
 
 use super::stats_panel::MorseStatsPanel;
 use super::{
   Feedback, MODES, Mode, MorseStats, Question, Scope, Target, TrainerSettings, load_stats,
-  load_trainer_settings, morse_display, pill_class, random_choice, random_question, roll_today,
-  save_stats, save_trainer_settings,
+  load_trainer_settings, morse_display, random_choice, random_question, roll_today, save_stats,
+  save_trainer_settings,
 };
 use crate::i18n::t;
 
@@ -281,83 +281,75 @@ pub(super) fn MorseTrainer() -> impl IntoView {
         <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div class="flex shrink-0 items-center gap-1.5">
             <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("log.mode")}</span>
-            {MODES
-              .iter()
-              .map(|&m| {
-                view! {
-                  <button
-                    type="button"
-                    on:click=move |_| {
-                      mode.set(m);
-                      persist();
-                      load_next();
-                    }
-                    aria-pressed=move || (mode.get() == m).to_string()
-                    class=move || pill_class(mode.get() == m)
-                  >
-                    {m.label()}
-                  </button>
+            <ChipGroup
+              value=Signal::derive(move || mode.get().label().to_owned())
+              on_change=Callback::new(move |v: String| {
+                if let Some(m) = MODES.iter().copied().find(|m| m.label() == v) {
+                  mode.set(m);
+                  persist();
+                  load_next();
                 }
               })
-              .collect_view()}
+              aria_label=Signal::derive(move || t("log.mode"))
+            >
+              {MODES
+                .iter()
+                .map(|&m| {
+                  let label = view! { {m.label()} }.into_any();
+                  view! { <Chip value=m.label().to_owned()>{label}</Chip> }
+                })
+                .collect_view()}
+            </ChipGroup>
           </div>
 
           <div class="flex shrink-0 items-center gap-1.5">
             <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("radio.type")}</span>
-            {Target::ALL
-              .iter()
-              .map(|&t| {
-                view! {
-                  <button
-                    type="button"
-                    prop:disabled=move || scope.get() == Scope::Weak
-                    aria-disabled=move || (scope.get() == Scope::Weak).to_string()
-                    on:click=move |_| {
-                      target.set(t);
-                      persist();
-                      load_next();
-                    }
-                    aria-pressed=move || (target.get() == t).to_string()
-                    class=move || {
-                      let base = pill_class(target.get() == t);
-                      if scope.get() == Scope::Weak {
-                        format!("{base} opacity-40")
-                      } else {
-                        base.to_owned()
-                      }
-                    }
-                  >
-                    {t.label()}
-                  </button>
+            <ChipGroup
+              value=Signal::derive(move || target.get().label().to_owned())
+              on_change=Callback::new(move |v: String| {
+                if let Some(kind) = Target::ALL.iter().copied().find(|k| k.label() == v) {
+                  target.set(kind);
+                  persist();
+                  load_next();
                 }
               })
-              .collect_view()}
+              disabled=Signal::derive(move || scope.get() == Scope::Weak)
+              aria_label=Signal::derive(move || t("radio.type"))
+            >
+              {Target::ALL
+                .iter()
+                .map(|&kind| {
+                  let label = view! { {kind.label()} }.into_any();
+                  view! { <Chip value=kind.label().to_owned()>{label}</Chip> }
+                })
+                .collect_view()}
+            </ChipGroup>
           </div>
 
           <div class="flex shrink-0 items-center gap-1.5">
             <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("morse.scope")}</span>
-            {Scope::ALL
-              .iter()
-              .map(|&s| {
-                view! {
-                  <button
-                    type="button"
-                    on:click=move |_| {
-                      scope.set(s);
-                      if s == Scope::Weak {
-                        target.set(Target::Single);
-                      }
-                      persist();
-                      load_next();
-                    }
-                    aria-pressed=move || (scope.get() == s).to_string()
-                    class=move || pill_class(scope.get() == s)
-                  >
-                    {s.label()}
-                  </button>
+            <ChipGroup
+              value=Signal::derive(move || scope.get().label().to_owned())
+              on_change=Callback::new(move |v: String| {
+                if let Some(s) = Scope::ALL.iter().copied().find(|s| s.label() == v) {
+                  scope.set(s);
+                  if s == Scope::Weak {
+                    target.set(Target::Single);
+                  }
+                  persist();
+                  load_next();
                 }
               })
-              .collect_view()}
+              aria_label=Signal::derive(move || t("morse.scope"))
+            >
+              {Scope::ALL
+                .iter()
+                .map(|&s| {
+                  let label = view! { {s.label()} }.into_any();
+                  view! { <Chip value=s.label().to_owned()>{label}</Chip> }
+                })
+                .collect_view()}
+            </ChipGroup>
           </div>
 
           <div class="flex shrink-0 items-center gap-2">
@@ -396,18 +388,16 @@ pub(super) fn MorseTrainer() -> impl IntoView {
             <span class="text-xs tabular-nums text-muted-foreground">{move || eff_wpm.get().round()} " WPM"</span>
           </div>
 
-          <button
-            type="button"
-            on:click=move |_| {
+          <ChipToggle
+            active=Signal::derive(move || adaptive.get())
+            on_change=Callback::new(move |_| {
               adaptive.update(|v| *v = !*v);
               persist();
-            }
-            aria-pressed=move || adaptive.get().to_string()
-            class=move || pill_class(adaptive.get())
-            title=move || t("morse.speed-up-on-correct")
+            })
+            title=Signal::derive(move || t("morse.speed-up-on-correct"))
           >
-            {move || t("morse.adaptive-speed")}
-          </button>
+            {view! { {move || t("morse.adaptive-speed")} }.into_any()}
+          </ChipToggle>
         </div>
 
         // 题目区

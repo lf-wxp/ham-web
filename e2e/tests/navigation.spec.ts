@@ -61,6 +61,55 @@ test("界面语言：切换后同步 <html lang> 并持久化", async ({ page })
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
 });
 
+test("页脚许可：站内点击无需刷新，刷新后保留页面骨架与主题", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await expect(page.locator("[data-nav]")).toBeVisible();
+  await page.getByRole("button", { name: "切换到深色模式" }).click();
+  const documentRequests: string[] = [];
+  page.on("request", (request) => {
+    if (request.isNavigationRequest() && request.frame() === page.mainFrame()) {
+      documentRequests.push(request.url());
+    }
+  });
+  await page.locator('footer a[href="/license.html"]').click();
+  await expect(page).toHaveURL(/\/license\.html$/);
+  await expect(page.getByRole("heading", { level: 1, name: "许可与对应源码" })).toBeVisible();
+  await expect(page.locator("main .pxl-window")).toHaveCount(3);
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  expect(documentRequests).toEqual([]);
+  const cardColor = await page.locator("main .pxl-window").first().evaluate((element) => getComputedStyle(element).backgroundColor);
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1, name: "许可与对应源码" })).toBeVisible();
+  await expect(page.locator("[data-nav]")).toBeVisible();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  expect(await page.locator("main .pxl-window").first().evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(cardColor);
+  for (const path of ["/licenses/LICENSE", "/licenses/GPL-3.0-only.txt"]) {
+    const link = page.locator(`main a[href="${path}"]`);
+    await expect(link).toHaveAttribute("rel", "external");
+    const response = await page.request.get(path);
+    expect(response.ok()).toBe(true);
+    expect(await response.text()).toMatch(/MIT License|GNU GENERAL PUBLIC LICENSE/);
+  }
+  expect(errors).toEqual([]);
+});
+
+for (const [locale, title] of [
+  ["en", "Licenses and corresponding source"],
+  ["es", "Licencias y código fuente correspondiente"],
+]) {
+  test(`许可页：直接访问的移动布局与 ${locale} 译文`, async ({ page }) => {
+    await page.addInitScript((value) => localStorage.setItem("locale", value), locale);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/license.html");
+    await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+    await expect(page.locator("main .pxl-window")).toHaveCount(3);
+    await expect(page.locator("main")).not.toContainText("组件许可");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+}
+
 test("通联统计：空日志时引导到通联日志页", async ({ page }) => {
   await page.goto("/stats");
   await expect(page.getByRole("heading", { level: 1, name: "通联统计" })).toBeVisible();

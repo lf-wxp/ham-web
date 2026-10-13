@@ -2,7 +2,9 @@ use ham_web_core::exam::shuffle_in_place;
 use ham_web_core::reference::CALL_AREAS;
 use leptos::prelude::*;
 
+use crate::components::quiz_option::QuizOption;
 use crate::i18n::{t, tf};
+use crate::ui::Button;
 use crate::util::random;
 
 /// 呼号分区测验：给分区号（0–9）选对应地区。
@@ -68,13 +70,13 @@ pub(super) fn CallAreaQuiz() -> impl IntoView {
               .map(|opt| {
                 let chosen = opt.clone();
                 view! {
-                  <button
-                    type="button"
-                    on:click=move |_| judge(chosen.clone())
-                    class="rounded-lg border px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent"
+                  <QuizOption
+                    class="text-left"
+                    disabled=Signal::derive(move || feedback.get().is_some())
+                    on_click=Callback::new(move |_| judge(chosen.clone()))
                   >
                     {opt}
-                  </button>
+                  </QuizOption>
                 }
               })
               .collect_view()
@@ -100,13 +102,9 @@ pub(super) fn CallAreaQuiz() -> impl IntoView {
               })
             }}
           </div>
-          <button
-            type="button"
-            on:click=move |_| load_next()
-            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-          >
+          <Button on_click=Callback::new(move |_| load_next())>
             {move || t("exam.next")}
-          </button>
+          </Button>
           <div class="text-xs text-muted-foreground">
             {t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
             {t("common.wrong-2")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>

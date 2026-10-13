@@ -72,6 +72,8 @@ test("计算变体：开启时练习按子集处理，不写顺序进度", async
   await expect(page.getByText(/第 1 \/ \d+ 题/).first()).toBeVisible();
   // 作答会触发「保存进度」的 Effect：变体开启时题目总数是 N+8，写进去会覆盖完整题库的进度。
   await option(page, "A").click();
+  // 刻意保留固定等待：断言「没有写入」是负向的，页面没有对外的「保存已完成」信号可等；
+  // 800 ms 只是给「该写的早就写完了」留足时间。若将来暴露完成标记，应改成等那个标记。
   await page.waitForTimeout(800);
   const keys = await page.evaluate(() =>
     Object.keys(window.localStorage).filter(

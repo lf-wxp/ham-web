@@ -13,6 +13,7 @@ use crate::util::{random, storage, unique_id};
 
 use super::{encode_words, pill_class};
 
+use super::PillButton;
 use super::callsign_session::{KEY, Logged, SESSION_QSOS, Session, save};
 use crate::i18n::{t, tf, tp};
 
@@ -304,11 +305,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                   }}
                 </div>
                 <div class="flex flex-wrap items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    on:click=move |_| replay()
-                    class="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-                  >
+                  <PillButton on_click=Callback::new(move |_| replay())>
                     {move || {
                       if playing.get() {
                         view! { <Icon kind=IconKind::AudioLines class="h-4 w-4 animate-pulse" /> }.into_any()
@@ -317,28 +314,16 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                       }
                     }}
                     {move || t("morse.replay")}
-                  </button>
-                  <button
-                    type="button"
-                    on:click=move |_| skip()
-                    class="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-                  >
+                  </PillButton>
+                  <PillButton on_click=Callback::new(move |_| skip())>
                     {move || t("exam.skip")}
-                  </button>
-                  <button
-                    type="button"
-                    on:click=move |_| finish()
-                    class="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-                  >
+                  </PillButton>
+                  <PillButton on_click=Callback::new(move |_| finish())>
                     {move || t("morse.end-round")}
-                  </button>
-                  <button
-                    type="button"
-                    on:click=move |_| reveal()
-                    class="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-                  >
+                  </PillButton>
+                  <PillButton on_click=Callback::new(move |_| reveal())>
                     {move || t("morse.show-answer")}
-                  </button>
+                  </PillButton>
                 </div>
                 {move || {
                   stats.with(|s| s.pileup).then(|| {
@@ -351,13 +336,9 @@ pub(super) fn CallsignRunner() -> impl IntoView {
               .into_any()
             } else {
               view! {
-                <button
-                  type="button"
-                  on:click=move |_| start()
-                  class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-sm shadow-primary/20 transition-all duration-200 ease-out hover:bg-primary/90 hover:shadow-md hover:shadow-primary/25 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
+                <Button on_click=Callback::new(move |_| start())>
                   {move || if session.with(Option::is_some) { t("exam.another-round") } else { t("morse.start-a-round-10") }}
-                </button>
+                </Button>
               }
               .into_any()
             }

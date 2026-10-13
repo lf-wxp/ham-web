@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn QslCardPage() -> impl IntoView {
   set_title("shell.qsl-card");
   view! {
-    <KnowledgePage title=t("shell.qsl-card-design") subtitle=t("log.essential-information-design-advice")>
+    <KnowledgePage title=t("shell.qsl-card-design-reference") subtitle=t("log.essential-information-design-advice")>
       <ConceptsSection title="必备信息" items=QSL_REQUIRED />
       <BulletSection title="设计建议" items=QSL_DESIGN_TIPS />
     </KnowledgePage>

@@ -49,11 +49,6 @@ fn parse_logbook(json: &str) -> Logbook {
   lb
 }
 
-/// 同步读本地快照：首屏立即有内容可渲染；版本比较在异步的权威层读取里完成。
-fn load_logbook() -> Logbook {
-  crate::kv::load_snapshot(LOG_KEY).map_or_else(Logbook::default, |json| parse_logbook(&json))
-}
-
 fn save_logbook(logbook: &Logbook) {
   LOG_DIRTY.with(|c| c.set(true));
   // 统一门面：localStorage 静默快照 + IndexedDB 权威（异步），见 `crate::kv::save_large`。
@@ -91,6 +86,8 @@ fn save_book(book: &StationBook) {
 #[derive(Clone, Copy)]
 pub struct LogStore {
   pub logbook: RwSignal<Logbook>,
+  /// 根级备份任务锁：切换路由不会释放，直到落盘及 Store 同步结束。
+  pub backup_busy: RwSignal<bool>,
   /// 台站档案册：多台站 + 每条通联的归属（`LogEntry::station_id`）。
   pub station: RwSignal<StationBook>,
   /// 存了卡片影像的通联 id（localStorage 索引的响应式镜像，供列表渲染相机标记）。
@@ -98,8 +95,22 @@ pub struct LogStore {
 }
 
 impl LogStore {
+  /// 备份 / 恢复进行中：本次写入会被稍后的 `refresh_from_storage` 覆回，如实告诉用户没保存。
+  ///
+  /// 此前三个入口在忙时都静默返回：内存里能看到刚做的编辑，随后恢复结束又被旧数据整个盖掉，
+  /// 用户既不知道没保存、也不知道为什么消失。
+  fn warn_busy() {
+    crate::util::alert(&crate::i18n::t("log.backup-busy-not-saved"));
+  }
+
   /// 把当前日志写入 `localStorage`（任何日志变更后调用）。
+  ///
+  /// 备份 / 恢复进行中不写，并提示用户（见 [`Self::warn_busy`]）。
   pub fn persist(self) {
+    if self.backup_busy.get_untracked() {
+      Self::warn_busy();
+      return;
+    }
     save_logbook(&self.logbook.get_untracked());
   }
 
@@ -116,8 +127,29 @@ impl LogStore {
     self.station.with(|book| book.active().info())
   }
 
+  /// 备份写入成功或部分失败后同步内存状态，防止下一次编辑把恢复结果覆回旧整库。
+  pub async fn refresh_from_storage(self) {
+    let loaded = crate::kv::load_large_strict(LOG_KEY).await;
+    // `try_with_untracked`：只判断信号是否还活着，不克隆整本日志。
+    if self.logbook.try_with_untracked(|_| ()).is_none() {
+      return;
+    }
+    if let Ok(Some(json)) = loaded {
+      self.logbook.set(parse_logbook(&json));
+      LOG_DIRTY.with(|dirty| dirty.set(true));
+    }
+    self.station.set(load_book());
+    self.qsl_images.set(qsl_image::index());
+  }
+
   /// 快捷添加一条日志（供 DX 热点等外部入口使用），并持久化。
-  pub fn quick_add(self, callsign: &str, freq_mhz: &str, mode: &str) {
+  ///
+  /// 返回是否真的添加了：备份 / 恢复进行中返回 `false`（已提示用户），调用方不能再报「已记录」。
+  pub fn quick_add(self, callsign: &str, freq_mhz: &str, mode: &str) -> bool {
+    if self.backup_busy.get_untracked() {
+      Self::warn_busy();
+      return false;
+    }
     let station_id = self.station.with_untracked(|book| book.active().id);
     self.logbook.update(|lb| {
       let mut entry = LogEntry {
@@ -134,13 +166,21 @@ impl LogStore {
       lb.entries.push(entry);
     });
     self.persist();
+    true
   }
 
   /// 导入 ADIF 记录，跳过重复通联，返回 `(导入数, 重复数)`。
   ///
   /// 报告里的 `STATION_CALLSIGN` / `MY_GRIDSQUARE` 会在这一步认领台站档案，
   /// 因此导入可能同时改动档案册，一并持久化。
-  pub fn import(self, records: Vec<AdifRecord>) -> (usize, usize) {
+  ///
+  /// 备份 / 恢复进行中返回 `None`（已提示用户）：此前返回 `(0, 全部)`，页面会误报
+  /// 「跳过 N 条重复」，而实际上一条都没处理。
+  pub fn import(self, records: Vec<AdifRecord>) -> Option<(usize, usize)> {
+    if self.backup_busy.get_untracked() {
+      Self::warn_busy();
+      return None;
+    }
     // 档案册与日志要一起改（导入会按报告里的 `STATION_CALLSIGN` 认领台站），
     // 先把两份都取出来改完再写回 —— 避免在一个信号的 `update` 里再 `update` 另一个信号。
     let before = self.station.with_untracked(StationBook::clone);
@@ -158,7 +198,7 @@ impl LogStore {
       self.station.set(book);
       self.persist_station();
     }
-    result
+    Some(result)
   }
 }
 
@@ -171,6 +211,7 @@ pub fn provide_log_store() {
         .as_deref()
         .map_or_else(Logbook::default, parse_logbook),
     ),
+    backup_busy: RwSignal::new(false),
     station: RwSignal::new(load_book()),
     qsl_images: RwSignal::new(qsl_image::index()),
   };
@@ -182,8 +223,30 @@ pub fn provide_log_store() {
     let key = js_sys::Reflect::get(ev.as_ref(), &"key".into())
       .ok()
       .and_then(|v| v.as_string());
+    // `newValue` 为 null 表示该 key 被删除。日志快照被删（`kv::save_large` 在配额写满时会
+    // 清掉快照）并不代表日志没了——权威层仍在 IndexedDB；这里若照样 `load_logbook()` 会得到
+    // 空日志并清空本页内存，随后任何一次新增都会用只含一条记录的日志覆盖权威层。
+    let removed = js_sys::Reflect::get(ev.as_ref(), &"newValue".into())
+      .ok()
+      .is_some_and(|v| v.is_null() || v.is_undefined());
     match key.as_deref() {
-      Some(LOG_KEY) => store.logbook.set(load_logbook()),
+      Some(LOG_KEY) if removed => {}
+      Some(LOG_KEY) => {
+        // 本页已经编辑过就不整表覆盖（与下方首屏校正同一语义）：其他标签页写入的是它
+        // 自己的旧快照，这里若照单全收会把本页内存回退成旧数据，随后一次 `persist`
+        // 就把本页的编辑写丢。跨标签页并发写本就无法合流（最后写赢），至少保住本页。
+        if LOG_DIRTY.with(|c| c.get()) {
+          return;
+        }
+        // 另一标签页可能已把权威层写进 IndexedDB，本页进程内缓存还停在旧值：先失效
+        // 缓存再走 `load_large` 的真实读取 + 快照/权威版本仲裁，而不是直读快照。
+        crate::idb::cache_remove(LOG_KEY);
+        wasm_bindgen_futures::spawn_local(async move {
+          if let Some(json) = crate::kv::load_large(LOG_KEY).await {
+            store.logbook.set(parse_logbook(&json));
+          }
+        });
+      }
       Some(STATION_BOOK_KEY) => store.station.set(load_book()),
       Some(qsl_image::INDEX_KEY) => store.qsl_images.set(qsl_image::index()),
       _ => {}

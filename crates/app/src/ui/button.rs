@@ -51,6 +51,12 @@ pub fn Button(
   /// 原生 `title`（鼠标悬停提示）。
   #[prop(optional, into)]
   title: Option<TextValue>,
+  /// `aria-expanded`：折叠 / 下拉开关的展开状态（传了才输出该属性）。
+  #[prop(optional)]
+  aria_expanded: Option<Signal<bool>>,
+  /// `aria-controls`：展开面板的 DOM id（与 `aria_expanded` 配套）。
+  #[prop(optional, into)]
+  aria_controls: Option<TextValue>,
   #[prop(optional, into)] on_click: Option<Callback<()>>,
   #[prop(optional)] node_ref: NodeRef<html::Button>,
   children: Children,
@@ -63,6 +69,8 @@ pub fn Button(
       class=button_class(variant, size, &class)
       aria-label=move || aria_label.as_ref().map(TextValue::get)
       title=move || title.as_ref().map(TextValue::get)
+      aria-expanded=move || aria_expanded.as_ref().map(|s| s.get().to_string())
+      aria-controls=move || aria_controls.as_ref().map(TextValue::get)
       aria-busy=move || loading.get().then_some("true")
       disabled=move || disabled.get() || loading.get()
       on:click=move |_| {

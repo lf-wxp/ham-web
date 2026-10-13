@@ -58,13 +58,9 @@ pub(super) fn WordCopy() -> impl IntoView {
       <div class="space-y-4 p-4">
         <div class="flex flex-col items-center gap-3 rounded-xl border bg-muted/30 px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("morse.tap-play-then-type")}</div>
-          <button
-            type="button"
-            on:click=move |_| play()
-            class="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-          >
+          <Button on_click=Callback::new(move |_| play())>
             {move || t("morse.play-2")}
-          </button>
+          </Button>
         </div>
         <Input
           placeholder=Signal::derive(move || t("morse.type-the-word-you"))

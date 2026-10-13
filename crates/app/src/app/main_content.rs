@@ -11,25 +11,27 @@ use crate::pages::{
   BestiaryPage, BookmarksPage, BrowsePage, CabrilloPage, CallsignCopyPage, CallsignPage, CardsPage,
   CheatSheetPage, CommunityPage, ConfusablesPage, ConnectorsPage, ContestCalendarPage,
   ContestLogPage, ContestPage, CoordinationPage, CountdownPage, CwOpPage, DailyChallengePage,
-  DashboardPage, DevelopersPage, DigitalCommsPage, DiyProjectsPage, DspBasicsPage, DvNetworkPage,
-  DxPage, DxSpotsPage, DxccMapPage, DxpeditionPage, ElectronicsPage, EmcommPage, EmePage, EqslPage,
-  EventsPage, ExamComparisonPage, ExamPage, ExamReviewPage, FeedlinePage, FiltersPage,
-  FlashcardsPage, FormulasPage, FrequenciesPage, Ft8Page, GearPage, GlossaryPage, GnuradioPage,
-  GraylinePage, GridMapPage, GridSystemPage, GroundingPage, HistoryPage, HomePage, IotaPage,
-  LearningPathPage, LearningResourcesPage, LicenseClassesPage, LicensePage, ListenPage, LogPage,
-  LoggingSoftwarePage, MeasurementLabPage, MeteorScatterPage, MetersPage, MicrowavePage,
+  DashboardPage, DevelopersPage, DigitalCommsPage, DiyProjectsPage, DominoexDecoderPage,
+  DspBasicsPage, DvNetworkPage, DxPage, DxSpotsPage, DxccMapPage, DxpeditionPage, ElectronicsPage,
+  EmcommPage, EmePage, EqslPage, EventsPage, ExamComparisonPage, ExamPage, ExamReviewPage,
+  FeedlinePage, FiltersPage, FlashcardsPage, FormulasPage, FrequenciesPage, Ft8Page, GearPage,
+  GlossaryPage, GnuradioPage, GraylinePage, GridMapPage, GridSystemPage, GroundingPage,
+  HistoryPage, HomePage, IotaPage, KissTncPage, LearningPathPage, LearningResourcesPage,
+  LicenseClassesPage, LicenseNoticePage, LicensePage, ListenPage, LogPage, LoggingSoftwarePage,
+  LrptDecoderPage, MeasurementLabPage, MeteorScatterPage, MetersPage, MicrowavePage,
   MistakeTopicsPage, MistakesPage, MobilePage, ModesPage, ModulationTheoryPage, MorsePage,
-  MostWantedPage, MufPage, NecPage, NoisePage, NotFoundPage, NotificationsPage, NvisPage,
-  OpenSourcePage, OperatingPage, OrganizationsPage, PacketPage, PhoneticPage, PhotoProcessorPage,
-  PolarizationPage, PortableMapPage, PortablePage, PowerPage, PowerSupplyPage,
-  PracticalAntennasPage, PracticePage, PrefixesPage, PrintPage, ProgressPage, PropagationPage,
-  PskDecodePage, PskReporterPage, QCodePage, QrpPage, QslCardPage, QslDesignerPage, QslLabelsPage,
-  QuestMapPage, RadioLawPage, RbnPage, ReceiverPage, ReferencePage, RegulationsPage, RemotePage,
-  RepeaterBuildPage, RepeaterPage, ReportPage, RfiPage, RigReviewsPage, RstPage, RttyPage,
-  SafetyPage, SatOperationPage, SatellitesPage, SdrMapPage, SdrPage, SdrWaterfallPage, SmithPage,
-  SolarPage, SpecialPropPage, SpectrumAdminPage, SstvDecoderPage, SstvPage, StatsPage,
-  StudyCalendarPage, SwlPage, ToolsPage, TransceiverPage, VnaPage, WaveformLabPage, WeatherSatPage,
-  WeeklyPage, WinlinkPage, WsprDecoderPage, WsprPage, ZoneMapPage,
+  MostWantedPage, MufPage, NavtexDecoderPage, NecPage, NoisePage, NotFoundPage, NotificationsPage,
+  NvisPage, OliviaDecoderPage, OpenSourcePage, OperatingPage, OrganizationsPage, PacketPage,
+  PhoneticPage, PhotoProcessorPage, PolarizationPage, PortableMapPage, PortablePage, PowerPage,
+  PowerSupplyPage, PracticalAntennasPage, PracticePage, PrefixesPage, PrintPage, ProgressPage,
+  PropagationPage, PskDecodePage, PskReporterPage, QCodePage, QrpPage, QslCardPage,
+  QslDesignerPage, QslLabelsPage, QuestMapPage, RadioLawPage, RbnPage, ReceiverPage, ReferencePage,
+  RegulationsPage, RemotePage, RepeaterBuildPage, RepeaterPage, ReportPage, RfiPage,
+  RigReviewsPage, RstPage, RttyDecoderPage, RttyPage, SafetyPage, SatOperationPage, SatellitesPage,
+  SdrMapPage, SdrPage, SdrWaterfallPage, SmithPage, SolarPage, SpecialPropPage, SpectrumAdminPage,
+  SstvDecoderPage, SstvPage, StatsPage, StudyCalendarPage, SwlPage, ToolsPage, TransceiverPage,
+  VnaPage, WaveformLabPage, WeatherSatPage, WeeklyPage, WinlinkPage, WsprDecoderPage, WsprPage,
+  ZoneMapPage,
 };
 
 use crate::components::related_topics::RelatedTopics;
@@ -40,6 +42,7 @@ use crate::motion::ROUTE_CONTENT_ID;
 #[component]
 pub(super) fn MainContent() -> impl IntoView {
   let location = use_location();
+  let backup_busy = crate::pages::log::use_log_store().backup_busy;
   Effect::new(move |_| {
     let _ = location.pathname.get();
     // 路由切换后立即复位滚动（覆盖 html 的 smooth 行为，避免导航菜单与内容不同步）。
@@ -56,7 +59,12 @@ pub(super) fn MainContent() -> impl IntoView {
     // 单独包一层而不是直接动 `<main>`，是因为 `<main>` 里还有 TopicQuiz / RelatedTopics
     // 这类 `position: fixed` 的挂件 —— 祖先只要有 transform，fixed 就退化成 absolute。
     <main id="main-content" tabindex="-1" class="flex-1 outline-none">
-      <div id=ROUTE_CONTENT_ID>
+      <Show when=move || backup_busy.get()>
+        <p role="status" class="border-2 border-ink bg-card p-4">
+          {move || crate::i18n::t("tools.backup-in-progress")}
+        </p>
+      </Show>
+      <div id=ROUTE_CONTENT_ID inert=move || backup_busy.get()>
         <Routes fallback=|| view! { <NotFoundPage /> }>
         <Route path=path!("/") view=HomePage />
         <Route path=path!("/map") view=QuestMapPage />
@@ -107,6 +115,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/solar") view=SolarPage />
         <Route path=path!("/safety") view=SafetyPage />
         <Route path=path!("/license") view=LicensePage />
+        <Route path=path!("/license.html") view=LicenseNoticePage />
         <Route path=path!("/electronics") view=ElectronicsPage />
         <Route path=path!("/feedline") view=FeedlinePage />
         <Route path=path!("/connectors") view=ConnectorsPage />
@@ -159,6 +168,11 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/antenna-farm") view=AntennaFarmPage />
         <Route path=path!("/nvis") view=NvisPage />
         <Route path=path!("/rtty") view=RttyPage />
+        <Route path=path!("/rtty-decode") view=RttyDecoderPage />
+        <Route path=path!("/olivia-decode") view=OliviaDecoderPage />
+        <Route path=path!("/dominoex-decode") view=DominoexDecoderPage />
+        <Route path=path!("/navtex-decode") view=NavtexDecoderPage />
+        <Route path=path!("/lrpt-decode") view=LrptDecoderPage />
         <Route path=path!("/iota") view=IotaPage />
         <Route path=path!("/gnuradio") view=GnuradioPage />
         <Route path=path!("/modulation") view=ModulationTheoryPage />
@@ -205,6 +219,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/sstv-decode") view=SstvDecoderPage />
         <Route path=path!("/weather-sat") view=WeatherSatPage />
         <Route path=path!("/apt-decoder") view=AptDecoderPage />
+        <Route path=path!("/kiss-tnc") view=KissTncPage />
         <Route path=path!("/packet") view=PacketPage />
         <Route path=path!("/mobile") view=MobilePage />
         <Route path=path!("/license-classes") view=LicenseClassesPage />

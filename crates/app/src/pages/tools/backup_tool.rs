@@ -4,8 +4,8 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 use crate::i18n::{t, tf, tp};
-use crate::ui::{Button, FileInput, Variant};
-use crate::util::storage;
+use crate::ui::{Button, Checkbox, FileInput, Variant};
+use crate::util::{BackupModules, storage};
 
 /// 本地存储 key 的中文说明。
 fn key_label(key: &str) -> &'static str {
@@ -32,22 +32,45 @@ fn key_label(key: &str) -> &'static str {
   }
 }
 
-/// 数据备份：导出 / 导入全部本地数据，并展示各项占用。
+/// 数据备份：按模块勾选导出，导入 / 合并导入全部本地数据，并展示各项占用。
 #[component]
 pub(super) fn BackupTool() -> impl IntoView {
   let usage = RwSignal::new(storage::usage());
+  let exporting = RwSignal::new(false);
+  let importing = RwSignal::new(false);
+  let alive = StoredValue::new(crate::util::mount_guard());
+  let log_store = crate::pages::log::use_log_store();
+  let export_log = RwSignal::new(true);
+  let export_qsl = RwSignal::new(true);
+  let export_other = RwSignal::new(true);
+
   let run_import = move |file: web_sys::File, merge: bool| {
+    let Some(task) = crate::util::begin_backup_task(log_store.backup_busy) else {
+      return;
+    };
+    importing.set(true);
+    let alive = alive.get_value();
     spawn_local(async move {
-      let Some(text) = crate::util::read_file_text(&file).await else {
-        // 读失败必须出声：静默返回会被当成「备份里没有数据」。
+      let text = crate::util::read_file_text(&file).await;
+      if !alive() {
+        return;
+      }
+      let Some(text) = text else {
+        importing.set(false);
         crate::util::alert(&t("common.file-read-failed"));
         return;
       };
       let result = if merge {
-        crate::util::import_backup_merge(&text)
+        crate::util::import_backup_merge(&text).await
       } else {
-        crate::util::import_backup(&text)
+        crate::util::import_backup(&text).await
       };
+      log_store.refresh_from_storage().await;
+      drop(task);
+      if !alive() {
+        return;
+      }
+      importing.set(false);
       match result {
         Ok(n) => {
           // 这两条走的是「中文原文 → key」反向索引，静态扫描看不见，改用语义 key + `tp`
@@ -64,16 +87,55 @@ pub(super) fn BackupTool() -> impl IntoView {
     });
   };
 
+  let run_export = move |_| {
+    let Some(task) = crate::util::begin_backup_task(log_store.backup_busy) else {
+      return;
+    };
+    let modules = BackupModules {
+      log: export_log.get_untracked(),
+      qsl_images: export_qsl.get_untracked(),
+      other: export_other.get_untracked(),
+    };
+    exporting.set(true);
+    let alive = alive.get_value();
+    spawn_local(async move {
+      let result = crate::util::export_backup(modules).await;
+      drop(task);
+      if !alive() {
+        return;
+      }
+      match result {
+        Ok(n) => crate::util::alert(&tp("tools.exported-records", n as u32, &[&n.to_string()])),
+        Err(e) => crate::util::alert(&e),
+      }
+      exporting.set(false);
+    });
+  };
+
+  // 词条的字面量写在调用点（静态扫描才认得出）；这里只负责排版一行勾选。
+  let module_row = |checked: RwSignal<bool>, label: Signal<String>| {
+    view! {
+      <li class="flex items-center gap-2">
+        <Checkbox
+          checked=Signal::derive(move || checked.get())
+          on_change=Callback::new(move |v| checked.set(v))
+          aria_label=label
+        />
+        <span class="text-sm">{move || label.get()}</span>
+      </li>
+    }
+  };
+  // 三项全不选只会导出一个空 JSON，直接禁用按钮。
+  let nothing_selected = move || !(export_log.get() || export_qsl.get() || export_other.get());
+
   view! {
     <div class="space-y-4">
       <div class="flex flex-wrap items-center gap-2">
-        <Button variant=Variant::Default on_click=Callback::new(move |_| crate::util::export_backup())>
-          {move || t("tools.export-backup")}
-        </Button>
         <FileInput
           accept=".json"
           label=t("tools.import-backup")
           variant=Variant::Outline
+          disabled=move || importing.get() || exporting.get()
           on_files=Callback::new(move |files: Vec<web_sys::File>| {
             if let Some(f) = files.into_iter().next() {
               run_import(f, false);
@@ -84,6 +146,7 @@ pub(super) fn BackupTool() -> impl IntoView {
           accept=".json"
           label=t("settings.merge-import")
           variant=Variant::Outline
+          disabled=move || importing.get() || exporting.get()
           on_files=Callback::new(move |files: Vec<web_sys::File>| {
             if let Some(f) = files.into_iter().next() {
               run_import(f, true);
@@ -91,6 +154,42 @@ pub(super) fn BackupTool() -> impl IntoView {
           })
         />
       </div>
+
+      <div class="rounded-lg border bg-muted/20 p-3">
+        <p class="mb-2 text-xs font-semibold text-muted-foreground">
+          {move || t("tools.backup-modules")}
+        </p>
+        <ul class="space-y-1.5 text-sm">
+          {module_row(
+            export_log,
+            Signal::derive(move || t("tools.backup-module-log")),
+          )}
+          {module_row(
+            export_qsl,
+            Signal::derive(move || t("tools.backup-module-qsl-images")),
+          )}
+          {module_row(
+            export_other,
+            Signal::derive(move || t("tools.backup-module-other")),
+          )}
+        </ul>
+        <div class="mt-3">
+          <Button
+            variant=Variant::Default
+            disabled=move || importing.get() || exporting.get() || nothing_selected()
+            on_click=Callback::new(run_export)
+          >
+            {move || {
+              if exporting.get() {
+                t("tools.exporting")
+              } else {
+                t("tools.export-backup")
+              }
+            }}
+          </Button>
+        </div>
+      </div>
+
       {move || {
         let list = usage.get();
         let total: usize = list.iter().map(|(_, n)| n).sum();

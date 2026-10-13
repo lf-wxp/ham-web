@@ -8,7 +8,7 @@ use crate::components::common::PageContainer;
 use crate::components::common::PageHeader;
 use crate::i18n::{t, tf, tp};
 use crate::store;
-use crate::ui::{ButtonLink, Size, Variant};
+use crate::ui::{ButtonLink, ChipToggle, Size, Variant};
 use crate::util::set_title;
 
 /// 考后复盘页。
@@ -129,13 +129,16 @@ pub fn ExamReviewPage() -> impl IntoView {
                     <div class="mt-2 flex flex-wrap items-center gap-x-4 text-xs">
                       <span>{move || t("exam.correct-answer")} " " <b class="font-mono">{item.answer.join("、")}</b></span>
                       <span>{move || t("exam.your-answer-2")} " " <b class="font-mono">{given.clone()}</b></span>
-                      <button
-                        type="button"
-                        class="ml-auto rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                        on:click=move |_| marked.set(store::toggle_bookmark(&item_id))
+                      <ChipToggle
+                        active=marked
+                        on_change=Callback::new(move |_| marked.set(store::toggle_bookmark(&item_id)))
+                        class="ml-auto"
                       >
-                        {move || if marked.get() { t("exam.bookmarked") } else { t("exam.bookmark") }}
-                      </button>
+                        {view! {
+                          {move || if marked.get() { t("exam.bookmarked") } else { t("exam.bookmark") }}
+                        }
+                          .into_any()}
+                      </ChipToggle>
                     </div>
                     {(!item.explanation.is_empty())
                       .then(|| {

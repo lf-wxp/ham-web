@@ -4,7 +4,9 @@ use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 
 use crate::components::common::Loading;
-use crate::ui::{Button, Checkbox, ControlSize, NativeSelect, SelectOption, Size, Variant};
+use crate::ui::{
+  Button, Checkbox, Chip, ChipGroup, ControlSize, NativeSelect, SelectOption, Size, Variant,
+};
 use crate::util::{local_today, set_title_with_args};
 
 use super::question_block::QuestionBlock;
@@ -42,33 +44,43 @@ pub fn PrintPage() -> impl IntoView {
   let print = move |_| {
     let _ = window().print();
   };
-  let seg = |active: bool| {
-    if active {
-      "rounded-md bg-background px-2.5 py-1 text-xs font-medium shadow-sm"
-    } else {
-      "rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
-    }
-  };
-
   view! {
     <div class="min-h-screen bg-muted/40 pb-10 print:bg-white print:pb-0">
       <div class="print-hide sticky top-0 z-20 border-b-2 border-ink bg-card">
         <div class="mx-auto flex max-w-[210mm] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
           <h1 class="mr-auto text-base font-semibold">{move || t("radio.print-version")}</h1>
-          <div class="inline-flex rounded-lg bg-muted p-0.5" role="group" aria-label=move || t("radio.source")>
-            {[Source::Mistakes, Source::Bookmarks].into_iter().map(|s| view! {
-              <button type="button" class=move || seg(source.get() == s) aria-pressed=move || (source.get() == s).to_string() on:click=move |_| source.set(s)>
-                {move || t(s.title())}
-              </button>
+          <ChipGroup
+            value=Signal::derive(move || source.get().title().to_owned())
+            on_change=Callback::new(move |v: String| {
+              if let Some(s) = [Source::Mistakes, Source::Bookmarks]
+                .into_iter()
+                .find(|s| s.title() == v)
+              {
+                source.set(s);
+              }
+            })
+            aria_label=Signal::derive(move || t("radio.source"))
+          >
+            {[Source::Mistakes, Source::Bookmarks].into_iter().map(|s| {
+              let label = view! { {move || t(s.title())} }.into_any();
+              view! { <Chip value=s.title().to_owned()>{label}</Chip> }
             }).collect_view()}
-          </div>
-          <div class="inline-flex rounded-lg bg-muted p-0.5" role="group" aria-label=move || t("exam.bank")>
-            {[None, Some(Bank::A), Some(Bank::B), Some(Bank::C)].into_iter().map(|b| view! {
-              <button type="button" class=move || seg(bank.get() == b) aria-pressed=move || (bank.get() == b).to_string() on:click=move |_| bank.set(b)>
-                {b.map_or(t("exam.all"), |b| tf("learning.class", &[&(b).to_string()]))}
-              </button>
+          </ChipGroup>
+          <ChipGroup
+            value=Signal::derive(move || bank.get().map_or(String::new(), |b| b.as_str().to_owned()))
+            on_change=Callback::new(move |v: String| {
+              bank.set(if v.is_empty() { None } else { Some(Bank::from_param(Some(&v))) });
+            })
+            aria_label=Signal::derive(move || t("exam.bank"))
+          >
+            {[None, Some(Bank::A), Some(Bank::B), Some(Bank::C)].into_iter().map(|b| {
+              let label = view! {
+                {b.map_or_else(|| t("exam.all"), |b| tf("learning.class", &[&(b).to_string()]))}
+              }
+                .into_any();
+              view! { <Chip value=b.map_or(String::new(), |b| b.as_str().to_owned())>{label}</Chip> }
             }).collect_view()}
-          </div>
+          </ChipGroup>
           <label class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
             {move || t("radio.answer")}
             <NativeSelect

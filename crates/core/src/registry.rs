@@ -101,7 +101,12 @@ pub fn group_icon(group: &str) -> &'static str {
 pub struct Module {
   /// 路由路径（不含查询串），与 `main_content.rs` 的 `<Route>` 一一对应。
   pub path: &'static str,
-  /// 导航链接；`None` 时即 `path`（少数入口需要带默认查询串，如练习页的只练多选）。
+  /// 导航链接；`None` 时即 `path`。
+  ///
+  /// 目前所有条目都是 `None`（「只练多选」这类入口已改由页面内状态 + 查询串处理），
+  /// 字段保留为「导航必须指向带默认查询串的入口」时的通道；
+  /// `crates/app/src/registry_check.rs` 的 `nav_hrefs_stay_on_their_route` 会保证
+  /// 链接永远落在自己的路由上。
   pub href: Option<&'static str>,
   /// 页面标题（中文原文，同时是 i18n key，与页面里的 `set_title` 保持一致）。
   pub title: &'static str,
@@ -430,6 +435,54 @@ pub const MODULES: &[Module] = &[
     title: "数字语音组网",
     icon: "network",
     group: Some(GROUP_MODES),
+    backend: false,
+  },
+  Module {
+    path: "/kiss-tnc",
+    href: None,
+    title: "KISS TNC",
+    icon: "waves",
+    group: Some(GROUP_TOOL_CALC),
+    backend: false,
+  },
+  Module {
+    path: "/navtex-decode",
+    href: None,
+    title: "NAVTEX 解码器",
+    icon: "waves",
+    group: Some(GROUP_TOOL_CALC),
+    backend: false,
+  },
+  Module {
+    path: "/lrpt-decode",
+    href: None,
+    title: "LRPT 解码器",
+    icon: "waves",
+    group: Some(GROUP_TOOL_CALC),
+    backend: false,
+  },
+  Module {
+    path: "/dominoex-decode",
+    href: None,
+    title: "DominoEX 解码器",
+    icon: "waves",
+    group: Some(GROUP_TOOL_CALC),
+    backend: false,
+  },
+  Module {
+    path: "/olivia-decode",
+    href: None,
+    title: "Olivia 解码器",
+    icon: "waves",
+    group: Some(GROUP_TOOL_CALC),
+    backend: false,
+  },
+  Module {
+    path: "/rtty-decode",
+    href: None,
+    title: "RTTY 解码器",
+    icon: "waves",
+    group: Some(GROUP_TOOL_CALC),
     backend: false,
   },
   Module {
@@ -923,7 +976,8 @@ pub const MODULES: &[Module] = &[
   Module {
     path: "/qsl-card",
     href: None,
-    title: "QSL 卡片设计",
+    // 与 `/qsl-designer`（「QSL 卡片设计」）区分：这里是知识速查，那边是设计器，搜索里不能出现两个同名结果。
+    title: "QSL 卡片设计速查",
     icon: "mail",
     group: Some(GROUP_OPERATING),
     backend: false,
@@ -1078,6 +1132,14 @@ pub const MODULES: &[Module] = &[
     title: "SWL 短波监听",
     icon: "headphones",
     group: Some(GROUP_ADVANCED),
+    backend: false,
+  },
+  Module {
+    path: "/license.html",
+    href: None,
+    title: "许可与对应源码",
+    icon: "file-text",
+    group: None,
     backend: false,
   },
   Module {
@@ -1516,6 +1578,18 @@ mod tests {
           "{} 的分组 {g} 未在分组列表中登记",
           m.path
         );
+      }
+    }
+  }
+
+  #[test]
+  fn module_titles_are_unique() {
+    // 全局搜索按标题列出入口：两个页面同名（曾有 `/qsl-card` 与 `/qsl-designer` 都叫
+    // 「QSL 卡片设计」）会让用户分不清点哪个。
+    let mut seen = std::collections::HashMap::new();
+    for m in MODULES {
+      if let Some(prev) = seen.insert(m.title, m.path) {
+        panic!("标题 {:?} 重复：{prev} 与 {}", m.title, m.path);
       }
     }
   }

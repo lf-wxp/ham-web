@@ -12,7 +12,7 @@ use serde::Deserialize;
 use crate::cn::cn;
 use crate::data;
 use crate::i18n::{t, tf, tp};
-use crate::ui::{ControlSize, Input, InputType, NumberField, Slider};
+use crate::ui::{Button, ControlSize, Input, InputType, NumberField, Size, Slider, Variant};
 
 const NOTE: &str = "text-xs text-muted-foreground";
 const RESULT: &str = "rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
@@ -224,13 +224,9 @@ pub(super) fn HeatmapCard() -> impl IntoView {
                   &[&sfi, &ssn_s, &a_s, &k_s],
                 )}
               </p>
-              <button
-                type="button"
-                class="cursor-pointer rounded-md border bg-background px-2 py-0.5 text-xs font-medium hover:bg-accent"
-                on:click=move |_| apply_live()
-              >
+              <Button variant=Variant::Outline size=Size::Sm on_click=Callback::new(move |_| apply_live())>
                 {move || t("tools.update-ssn-from-live")}
-              </button>
+              </Button>
             </div>
             {if geomagnetic {
               view! {
@@ -400,13 +396,13 @@ pub(super) fn HeatmapCard() -> impl IntoView {
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                class="cursor-pointer rounded-md border bg-background px-3 py-1 text-xs font-medium hover:bg-accent"
-                on:click=move |_| hour.set(best_hour)
+              <Button
+                variant=Variant::Outline
+                size=Size::Sm
+                on_click=Callback::new(move |_| hour.set(best_hour))
               >
                 {move || tf("tools.jump-to-the-best", &[&format!("{best_hour:02}")])}
-              </button>
+              </Button>
               <div class="flex min-w-[16rem] flex-1 items-center gap-3">
                 <span class=NOTE>{move || tf("tools.viewing-00-utc", &[&format!("{:02}", hour.get())])}</span>
                 <Slider

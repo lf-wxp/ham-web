@@ -4,7 +4,7 @@ use leptos::svg;
 use super::projection::{K, MAP_H, MAP_W, WORLD_OFFSETS, polygon_points, project, simplify};
 use super::world_data::{CONTINENTS, COUNTRY_LABELS};
 use crate::i18n::t;
-use crate::ui::TextValue;
+use crate::ui::{Button, Size, TextValue, Variant};
 
 /// 两个活动指针的欧氏距离（像素），用于双指捏合缩放。
 fn ptr_dist(a: &(i32, f64, f64), b: &(i32, f64, f64)) -> f64 {
@@ -89,7 +89,7 @@ pub fn MapView(
   };
   let zoom_in = move |_| zoom_by(0.7);
   let zoom_out = move |_| zoom_by(1.0 / 0.7);
-  let reset_view = move |_| view_box.set((0.0, 0.0, MAP_W, MAP_H));
+  let reset_view = move || view_box.set((0.0, 0.0, MAP_W, MAP_H));
 
   let on_wheel = move |ev: web_sys::WheelEvent| {
     ev.prevent_default();
@@ -399,7 +399,7 @@ pub fn MapView(
         on:mousemove=on_mouse_move
         on:mouseleave=on_mouse_leave
         on:click=on_click
-        on:dblclick=reset_view
+        on:dblclick=move |_| reset_view()
       >
         <defs>
           // 海洋纵向渐变（模拟光照，随主题 muted 色）
@@ -469,30 +469,30 @@ pub fn MapView(
 
       // 缩放控制
       <div class="absolute right-2 top-2 flex flex-col gap-1">
-        <button
-          type="button"
-          class="flex h-7 w-7 items-center justify-center rounded-md border bg-background text-sm shadow-sm transition-colors hover:bg-accent"
-          on:click=zoom_in
-          aria-label=move || t("log.zoom-in")
+        <Button
+          variant=Variant::Outline
+          size=Size::IconSm
+          aria_label=Signal::derive(move || t("log.zoom-in"))
+          on_click=Callback::new(move |_| zoom_in(()))
         >
           "+"
-        </button>
-        <button
-          type="button"
-          class="flex h-7 w-7 items-center justify-center rounded-md border bg-background text-sm shadow-sm transition-colors hover:bg-accent"
-          on:click=zoom_out
-          aria-label=move || t("log.zoom-out")
+        </Button>
+        <Button
+          variant=Variant::Outline
+          size=Size::IconSm
+          aria_label=Signal::derive(move || t("log.zoom-out"))
+          on_click=Callback::new(move |_| zoom_out(()))
         >
           "−"
-        </button>
-        <button
-          type="button"
-          class="flex h-7 w-7 items-center justify-center rounded-md border bg-background text-sm shadow-sm transition-colors hover:bg-accent"
-          on:click=reset_view
-          aria-label=move || t("log.reset-view")
+        </Button>
+        <Button
+          variant=Variant::Outline
+          size=Size::IconSm
+          aria_label=Signal::derive(move || t("log.reset-view"))
+          on_click=Callback::new(move |_| reset_view())
         >
           "⤢"
-        </button>
+        </Button>
       </div>
     </div>
   }

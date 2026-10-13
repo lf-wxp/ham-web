@@ -3,11 +3,10 @@
 use ham_web_core::Bank;
 use leptos::prelude::*;
 
-use crate::cn::cn;
 use crate::components::common::QuestionProgressHeader;
 use crate::i18n::{bank_class, t};
 use crate::icons::{Icon, IconKind};
-use crate::ui::{Button, Size, Variant};
+use crate::ui::{Button, Chip, ChipGroup, ChipToggle, Size, Variant};
 
 #[component]
 pub(super) fn PracticeHeaderBar(
@@ -26,62 +25,49 @@ pub(super) fn PracticeHeaderBar(
   on_open_search: Callback<()>,
   on_open_settings: Callback<()>,
 ) -> impl IntoView {
-  let toggle_class = |on: bool, base: &str| {
-    cn(&[
-      base,
-      if on {
-        "bg-primary text-primary-foreground"
-      } else {
-        "hover:bg-accent"
-      },
-    ])
-  };
-
   view! {
     <QuestionProgressHeader
       percent=percent
       left=move || {
         view! {
           <span class="text-sm text-muted-foreground">{move || t("exam.bank-class")}</span>
-          <div class="flex overflow-hidden rounded-lg border">
+          <ChipGroup
+            value=Signal::derive(move || bank.get().as_str().to_string())
+            on_change=Callback::new(move |v: String| {
+              if let Ok(b) = v.parse::<Bank>() {
+                on_switch_bank.run(b);
+              }
+            })
+            aria_label=Signal::derive(move || t("exam.bank-class"))
+          >
             {Bank::ALL
               .into_iter()
               .map(|b| {
-                view! {
-                  <button
-                    type="button"
-                    class=move || toggle_class(bank.get() == b, "px-3 py-1.5 text-sm font-medium transition-colors")
-                    on:click=move |_| on_switch_bank.run(b)
-                  >
-                    {move || bank_class(b.as_str())}
-                  </button>
-                }
+                let label = view! { {move || bank_class(b.as_str())} }.into_any();
+                view! { <Chip value=b.as_str().to_string()>{label}</Chip> }
               })
               .collect_view()}
-          </div>
-          <button
-            type="button"
-            class=move || toggle_class(unique_only.get(), "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors")
-            on:click=move |_| unique_only.update(|v| *v = !*v)
+          </ChipGroup>
+          <ChipToggle
+            active=unique_only
+            on_change=Callback::new(move |v: bool| unique_only.set(v))
           >
-            {move || t("exam.new-in-this-class")}
-          </button>
-          <button
-            type="button"
-            class=move || toggle_class(unseen_only.get(), "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors")
-            title=move || t("exam.exclude-questions-already-done")
-            on:click=move |_| unseen_only.update(|v| *v = !*v)
+            {view! { {move || t("exam.new-in-this-class")} }.into_any()}
+          </ChipToggle>
+          <ChipToggle
+            active=unseen_only
+            on_change=Callback::new(move |v: bool| unseen_only.set(v))
+            title=Signal::derive(move || t("exam.exclude-questions-already-done"))
           >
-            {move || t("exam.unseen-only")}
-          </button>
-          <button
-            type="button"
-            class=move || toggle_class(multi_only.get(), "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors")
-            title=move || t("exam.multi-answer-questions-only")
-            on:click=move |_| multi_only.update(|v| *v = !*v)
+            {view! { {move || t("exam.unseen-only")} }.into_any()}
+          </ChipToggle>
+          <ChipToggle
+            active=multi_only
+            on_change=Callback::new(move |v: bool| multi_only.set(v))
+            title=Signal::derive(move || t("exam.multi-answer-questions-only"))
           >
-            {move || t("exam.multi-answer-only")}
-          </button>
+            {view! { {move || t("exam.multi-answer-only")} }.into_any()}
+          </ChipToggle>
         }
       }
       right=move || {

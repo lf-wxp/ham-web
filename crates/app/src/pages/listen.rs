@@ -19,7 +19,9 @@ use crate::components::common::PageContainer;
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
-use crate::ui::{Button, Checkbox, ControlSize, NativeSelect, SelectOption, Size, Variant};
+use crate::ui::{
+  Button, Checkbox, Chip, ChipGroup, ControlSize, NativeSelect, SelectOption, Size, Variant,
+};
 use crate::util::{random, set_title, sleep, storage, window};
 
 const KEY: &str = "listen-settings";
@@ -271,14 +273,6 @@ pub fn ListenPage() -> impl IntoView {
     }
   });
 
-  let seg = |active: bool| {
-    if active {
-      "rounded-md bg-background px-2.5 py-1 text-xs font-medium shadow-sm"
-    } else {
-      "rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
-    }
-  };
-
   let card = move || {
     if loading.get() {
       return view! { <div class="p-6 text-sm text-muted-foreground" aria-live="polite">{move || t("exam.loading-questions-2")}</div> }.into_any();
@@ -337,18 +331,21 @@ pub fn ListenPage() -> impl IntoView {
       })}
 
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div class="inline-flex rounded-lg bg-muted p-0.5" role="group" aria-label=move || t("exam.question-source")>
-          {Source::ALL.into_iter().map(|s| view! {
-            <button
-              type="button"
-              class=move || seg(settings.with(|st| st.source == s))
-              aria-pressed=move || settings.with(|st| st.source == s).to_string()
-              on:click=move |_| { settings.update(|st| st.source = s); save(); }
-            >
-              {move || t(s.label())}
-            </button>
+        <ChipGroup
+          value=Signal::derive(move || settings.with(|st| st.source.label()).to_owned())
+          on_change=Callback::new(move |v: String| {
+            if let Some(s) = Source::ALL.into_iter().find(|s| s.label() == v) {
+              settings.update(|st| st.source = s);
+              save();
+            }
+          })
+          aria_label=Signal::derive(move || t("exam.question-source"))
+        >
+          {Source::ALL.into_iter().map(|s| {
+            let label = view! { {move || t(s.label())} }.into_any();
+            view! { <Chip value=s.label().to_owned()>{label}</Chip> }
           }).collect_view()}
-        </div>
+        </ChipGroup>
         <label class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
           <Checkbox
             checked=Signal::derive(move || settings.with(|s| s.shuffle))

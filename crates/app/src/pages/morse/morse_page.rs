@@ -5,7 +5,7 @@ use leptos::prelude::*;
 use crate::components::common::{PageContainer, PageHeader};
 use crate::morse_audio::play_morse_timed_with;
 use crate::morse_settings::{provide_morse_settings, use_morse_settings};
-use crate::ui::{Slider, Stat};
+use crate::ui::{Button, Size, Slider, Stat, Variant};
 use crate::util::set_title;
 
 use super::abbrev_quiz::AbbrevQuiz;
@@ -85,15 +85,15 @@ pub fn MorsePage() -> impl IntoView {
               />
               <span class="w-14 text-xs tabular-nums text-muted-foreground">{move || format!("{:.0}%", settings.settings.get().volume * 100.0)}</span>
             </div>
-            <button
-              type="button"
-              on:click=move |_| {
+            <Button
+              variant=Variant::Outline
+              size=Size::Sm
+              on_click=Callback::new(move |_| {
                 play_morse_timed_with("CQ", farnsworth(20.0, 20.0), settings.tone_hz(), settings.volume());
-              }
-              class="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              })
             >
               {move || t("exam.preview")}
-            </button>
+            </Button>
           </div>
         </section>
 

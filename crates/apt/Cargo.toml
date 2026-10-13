@@ -9,6 +9,7 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+ham-web-wav.workspace = true
 
 [lints]
 workspace = true

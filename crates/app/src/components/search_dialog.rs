@@ -1,6 +1,7 @@
 //! 全局搜索命令面板：`/` 快捷键或导航栏搜索按钮唤起，居中弹出、不打断当前流程。
 
-use ham_web_core::search::{search, tokenize};
+use ham_web_core::search::{parse_query, search, tokenize};
+use ham_web_core::unit_conversions::UNIT_CONVERSION_GROUPS;
 use leptos::prelude::*;
 
 use crate::data;
@@ -8,6 +9,65 @@ use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
 use crate::ui::{ControlSize, Dialog, Input, InputType};
+
+/// 日志 QSO 命中上限：本地日志动辄上千条，搜索面板里只放最相关的几条，
+/// 其余交给 `/log` 页的筛选。
+const MAX_QSO_RESULTS: usize = 5;
+
+/// 在本地日志里搜索 QSO（根 `LogStore` 的内存状态，按引用读取、不克隆）。
+///
+/// 自由词在呼号 / 模式 / 波段 / 频率 / 日期 / 姓名 / QTH / 网格上做 AND 匹配；
+/// `band:` / `mode:` 前缀按对应字段过滤（`dxcc:` 需要呼号→实体映射，本地
+/// 日志搜索不做 —— 如实说明，静态 DXCC 条目仍可由该前缀命中）。
+fn search_qsos(
+  terms: &[String],
+  filters: &[(String, String)],
+) -> Vec<(String, String, String, String)> {
+  // 直接读根 store 里的日志：它既是最新状态，也免掉「每敲一个键就重新反序列化整本
+  // 日志快照」（localStorage 里上千条记录，`serde_json` 解析比字符串比较贵得多）。
+  crate::pages::log::use_log_store()
+    .logbook
+    .with_untracked(|logbook| {
+      let mut out = Vec::new();
+      for e in &logbook.entries {
+        let hay = [
+          e.callsign.as_str(),
+          e.mode.as_str(),
+          e.band.as_str(),
+          e.freq.as_str(),
+          e.date.as_str(),
+          e.name.as_str(),
+          e.qth.as_str(),
+          e.gridsquare.as_str(),
+        ]
+        .join(" ");
+        let hay_lower = hay.to_lowercase();
+        if !terms.iter().all(|t| hay_lower.contains(t)) {
+          continue;
+        }
+        let mut ok = true;
+        for (k, v) in filters {
+          match k.as_str() {
+            "band" => ok &= e.band.to_lowercase() == *v,
+            "mode" => ok &= e.mode.to_lowercase() == *v,
+            _ => ok = false, // dxcc: 不做呼号映射，日志结果不匹配该前缀
+          }
+        }
+        if !ok {
+          continue;
+        }
+        let title = format!("{} · {} {}", e.callsign, e.date, e.time);
+        let text = format!("{} · {} · {}", e.mode, e.band, e.freq);
+        // 分组标题复用既有词条（`radio.log` = 「日志」）：新造同义词条会撞上
+        // 「中文释义必须唯一」的反向索引测试。
+        out.push((t("radio.log"), "/log".to_owned(), title, text));
+        if out.len() >= MAX_QSO_RESULTS {
+          break;
+        }
+      }
+      out
+    })
+}
 
 /// 搜索结果分组：`(页面名, [(标题, 链接, 内容)])`。
 ///
@@ -108,7 +168,7 @@ fn highlight(text: &str, query: &str) -> String {
 }
 
 /// 术语表 / 简语关键词搜索（运行时 JSON 数据），返回 `(页面名, 路由, 标题, 内容)`。
-fn search_glossary(query: &str) -> Vec<(&'static str, &'static str, String, String)> {
+fn search_glossary(query: &str) -> Vec<(String, &'static str, String, String)> {
   // 与知识库检索一致地切词：搜「天线 驻波比」要的是同时含两个词的条目，
   // 而不是把「天线 驻波比」整串（含空格）当一个子串去查 —— 后者永远查不到。
   let terms = tokenize(query);
@@ -118,7 +178,7 @@ fn search_glossary(query: &str) -> Vec<(&'static str, &'static str, String, Stri
   let Some(glossary) = data::glossary_loaded() else {
     return Vec::new();
   };
-  let mut matched: Vec<(u8, &'static str, &'static str, String, String)> = glossary
+  let mut matched: Vec<(u8, String, &'static str, String, String)> = glossary
     .entries()
     .iter()
     .filter_map(|e| {
@@ -131,9 +191,9 @@ fn search_glossary(query: &str) -> Vec<(&'static str, &'static str, String, Stri
       let is_slang = e.category_key() == SLANG_CATEGORY;
       let rank = worst;
       let (page, href) = if is_slang {
-        ("简语", "/q-code")
+        (t("shell.q-codes"), "/q-code")
       } else {
-        ("术语表", "/glossary")
+        (t("shell.glossary"), "/glossary")
       };
       Some((rank, page, href, e.term.clone(), e.desc.clone()))
     })
@@ -143,6 +203,41 @@ fn search_glossary(query: &str) -> Vec<(&'static str, &'static str, String, Stri
   matched
     .into_iter()
     .map(|(_, p, h, t, d)| (p, h, t, d))
+    .collect()
+}
+
+/// 单位换算速查搜索，返回 `(页面名, 路由, 标题, 内容)`。
+///
+/// 为什么不放进 core 的 `knowledge_index`：这张表的名称、示例是 **i18n key**（`exam.units-*`），
+/// core 拿不到译文；这里按当前界面语言取译文后再匹配，所以搜「dBm」「波长」「功率比」都能命中，
+/// 英文 / 西语界面则按各自的译文搜。公式本身（`dBm = 10·lg(P/mW)`）是符号表达式，跨语言一致，
+/// 也一并参与匹配。
+fn search_unit_conversions(query: &str) -> Vec<(String, &'static str, String, String)> {
+  let terms = tokenize(query);
+  if terms.is_empty() {
+    return Vec::new();
+  }
+  // 与 core 索引里公式条目同一个页面名（`/formulas` 页），搜索结果里归到同一组。
+  let page = t("exam.formula-reference");
+  UNIT_CONVERSION_GROUPS
+    .iter()
+    .flat_map(|g| g.items.iter())
+    .filter_map(|it| {
+      let name = t(it.name);
+      let example = t(it.example);
+      let hay = format!("{name} {} {example}", it.expr).to_lowercase();
+      terms
+        .iter()
+        .all(|term| hay.contains(term.as_str()))
+        .then(|| {
+          (
+            page.clone(),
+            "/formulas",
+            name,
+            format!("{} · {example}", it.expr),
+          )
+        })
+    })
     .collect()
 }
 
@@ -182,7 +277,7 @@ fn search_questions(query: &str) -> Vec<(String, String, String, String)> {
         truncate(&e.exp, 90)
       };
       (
-        "题库".to_owned(),
+        t("exam.bank"),
         format!("/browse?bank={}&q={href_q}", e.bank),
         title,
         text,
@@ -314,13 +409,23 @@ pub fn SearchDialog() -> impl IntoView {
               .into_any();
             }
 
-            let mut raw: Vec<(String, String, String, String)> = search_glossary(&q)
-              .into_iter()
-              .map(|(p, h, t, d)| (p.to_owned(), h.to_owned(), t, d))
-              .collect();
+            let (qso_terms, qso_filters) = parse_query(&q);
+            // 自己的日志排最前：用户搜呼号时第一条就该是那条通联。
+            let mut raw: Vec<(String, String, String, String)> =
+              search_qsos(&qso_terms, &qso_filters);
+            raw.extend(
+              search_glossary(&q)
+                .into_iter()
+                .map(|(p, h, t, d)| (p.to_owned(), h.to_owned(), t, d)),
+            );
             for e in search(&q) {
               raw.push((e.page.to_owned(), e.href.to_owned(), e.title.clone(), e.text.clone()));
             }
+            raw.extend(
+              search_unit_conversions(&q)
+                .into_iter()
+                .map(|(p, h, t, d)| (p, h.to_owned(), t, d)),
+            );
             for e in search_questions(&q) {
               raw.push((e.0, e.1, e.2, e.3));
             }

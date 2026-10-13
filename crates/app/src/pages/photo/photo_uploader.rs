@@ -1,10 +1,15 @@
+//! 证件照 / 人像照两个上传位：整块可点击、可拖放，选中后按图片校验再回调。
+//!
+//! 拖放区本身是 `ui::FileDropZone`（两个上传位共用一份，只有用途、图标、文案与 id 不同）。
+//! 这里只留「这一个文件该不该收」的判断：非图片走原生 `alert` 提示，不进入处理流程。
+
 use leptos::prelude::*;
-use wasm_bindgen::JsCast;
-use web_sys::{DragEvent, File, HtmlInputElement};
+use web_sys::File;
 
 use crate::i18n::t;
-use crate::icons::{Icon, IconKind};
+use crate::icons::IconKind;
 use crate::photo::{self, PhotoKind};
+use crate::ui::FileDropZone;
 use crate::util::alert;
 
 #[component]
@@ -12,103 +17,51 @@ pub(super) fn PhotoUploader(
   on_file: Callback<(PhotoKind, File)>,
   #[prop(into)] disabled: Signal<bool>,
 ) -> impl IntoView {
-  let drag_over = RwSignal::new(None::<PhotoKind>);
-
   let submit = move |kind: PhotoKind, file: File| {
     if !photo::is_image(&file) {
-      alert("请选择有效的图片文件");
+      alert(&t("common.choose-a-valid-image"));
       return;
     }
     on_file.run((kind, file));
   };
 
+  // 标题与推荐尺寸由调用点构造：`t("…")` 的字面量留在调用点，`check-i18n` 的静态扫描才认得出。
   let zone = move |kind: PhotoKind,
                    id: &'static str,
                    icon: IconKind,
-                   title: String,
-                   hint: String| {
-    let class = move || {
-      let state = if disabled.get() {
-        "opacity-50 cursor-not-allowed"
-      } else {
-        "hover:bg-gray-50 dark:hover:bg-accent/50"
-      };
-      let border = if drag_over.get() == Some(kind) {
-        "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/40"
-      } else {
-        "border-gray-300 dark:border-gray-600"
-      };
-      format!(
-        "relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200 {state} {border}"
-      )
-    };
+                   title: Signal<String>,
+                   hint: Signal<String>| {
     view! {
-      <div class="space-y-2">
-        <label
-          for=id
-          class=class
-          on:dragover=move |e: DragEvent| e.prevent_default()
-          on:dragenter=move |e: DragEvent| {
-            e.prevent_default();
-            drag_over.set(Some(kind));
-          }
-          on:dragleave=move |e: DragEvent| {
-            e.prevent_default();
-            if let Some(el) = e.current_target().and_then(|t| t.dyn_into::<web_sys::Element>().ok()) {
-              let r = el.get_bounding_client_rect();
-              let (x, y) = (f64::from(e.client_x()), f64::from(e.client_y()));
-              if x < r.left() || x > r.right() || y < r.top() || y > r.bottom() {
-                drag_over.set(None);
-              }
-            }
-          }
-          on:drop=move |e: DragEvent| {
-            e.prevent_default();
-            drag_over.set(None);
-            if let Some(file) = e.data_transfer().and_then(|dt| dt.files()).and_then(|f| f.get(0)) {
-              submit(kind, file);
-            }
-          }
-        >
-          <Icon kind=icon class="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
-          <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{title}</span>
-          <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">{move || t("tools.click-to-choose-or")}</span>
-          <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">{hint}</span>
-        </label>
-        <input
-          id=id
-          type="file"
-          accept="image/*"
-          disabled=move || disabled.get()
-          class="hidden"
-          on:change=move |e| {
-            let input: HtmlInputElement = event_target(&e);
-            if let Some(file) = input.files().and_then(|f| f.get(0)) {
-              submit(kind, file);
-            }
-            input.set_value("");
-          }
-        />
-      </div>
+      <FileDropZone
+        on_file=Callback::new(move |file: File| submit(kind, file))
+        accept="image/*"
+        title=title
+        icon=icon
+        hint=hint
+        // 上传的是图片：用通用那句，不要组件默认的「拖拽音频文件」。
+        choose_hint=Signal::derive(move || t("tools.click-to-choose-or"))
+        disabled=disabled
+        id=id
+      />
     }
   };
 
   view! {
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {zone(
-          PhotoKind::Id,
-          "id-file",
-          IconKind::CreditCard,
-          t("tools.choose-an-id-photo"),
-          t("tools.recommended-1024-768-4096"),
-        )}
+        PhotoKind::Id,
+        "id-file",
+        IconKind::CreditCard,
+        Signal::derive(move || t("tools.choose-an-id-photo")),
+        Signal::derive(move || t("tools.recommended-1024-768-4096")),
+      )}
       {zone(
-          PhotoKind::Profile,
-          "profile-file",
-          IconKind::User,
-          t("tools.choose-a-portrait-photo"),
-          t("tools.recommended-300-400-3375"),
-        )}
+        PhotoKind::Profile,
+        "profile-file",
+        IconKind::User,
+        Signal::derive(move || t("tools.choose-a-portrait-photo")),
+        Signal::derive(move || t("tools.recommended-300-400-3375")),
+      )}
     </div>
   }
 }

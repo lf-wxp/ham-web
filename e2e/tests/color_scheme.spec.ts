@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { expect, test } from "./fixtures";
+import { expect, settleFrames, test, waitSettled } from "./fixtures";
 
 // 配色方案：与明暗正交的第二个外观选择（经典 / 森林 / 海洋 / 晚霞 / 石墨，每个都有亮暗两套）。
 // 方案表在 crates/core/src/color_scheme.rs；每一对字 / 底的对比度另由 `cargo make pixel-check` 在
@@ -132,7 +132,8 @@ test.describe("各方案的无障碍对比度", () => {
         for (const route of pages) {
           await page.goto(route);
           await expect(page.locator("main h1").first()).toBeAttached();
-          await page.waitForTimeout(500);
+          await waitSettled(page);
+          await settleFrames(page);
           const res = await new AxeBuilder({ page })
             .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])
             .exclude(".leaflet-container")
@@ -152,7 +153,7 @@ test.describe("各方案的无障碍对比度", () => {
       await page.goto("/");
       await page.getByRole("button", { name: "外观与动效" }).first().click();
       await expect(page.getByRole("dialog", { name: "外观与动效" })).toBeVisible();
-      await page.waitForTimeout(500);
+      await settleFrames(page);
       const res = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])
         .analyze();

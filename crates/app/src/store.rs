@@ -41,8 +41,9 @@ fn with_caches<R>(f: impl FnOnce(&mut Caches) -> R) -> R {
   CACHES.with(|c| f(&mut c.borrow_mut()))
 }
 
-/// 丢弃全部缓存（其它标签页清空了 `localStorage` 时调用）。
-fn invalidate_all() {
+/// 丢弃全部缓存（其它标签页清空了 `localStorage`、或本页直接写了 `localStorage`——如备份
+/// 恢复——之后调用）。
+pub(crate) fn invalidate_all() {
   with_caches(|c| *c = Caches::default());
 }
 

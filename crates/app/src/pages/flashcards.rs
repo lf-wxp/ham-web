@@ -7,18 +7,10 @@ use leptos::task::spawn_local;
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::data;
-use crate::i18n::t;
-use crate::ui::{Button, Size, Variant};
+use crate::i18n::{bank_class, t};
+use crate::ui::{Button, Chip, ChipGroup, Size, Variant};
 use crate::util::random;
 use crate::util::set_title;
-
-fn pill_class(active: bool) -> &'static str {
-  if active {
-    "inline-flex items-center whitespace-nowrap rounded-full border bg-primary text-primary-foreground px-3 py-1 text-xs transition-colors"
-  } else {
-    "inline-flex items-center whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors hover:bg-accent"
-  }
-}
 
 #[component]
 pub fn FlashcardsPage() -> impl IntoView {
@@ -111,25 +103,24 @@ pub fn FlashcardsPage() -> impl IntoView {
         subtitle=move || t("exam.quick-review-self-rate")
         actions=ViewFn::from(move || {
           view! {
-            <div class="flex items-center gap-1">
+            <ChipGroup
+              value=Signal::derive(move || bank.get().as_str().to_string())
+              on_change=Callback::new(move |v: String| {
+                if let Ok(b) = v.parse::<Bank>() {
+                  bank.set(b);
+                  load();
+                }
+              })
+              aria_label=Signal::derive(move || t("exam.bank-class"))
+            >
               {Bank::ALL
-                .iter()
-                .map(|&b| {
-                  view! {
-                    <button
-                      type="button"
-                      on:click=move |_| {
-                        bank.set(b);
-                        load();
-                      }
-                      class=move || pill_class(bank.get() == b)
-                    >
-                      {b.as_str()} {t("exam.class")}
-                    </button>
-                  }
+                .into_iter()
+                .map(|b| {
+                  let label = view! { {move || bank_class(b.as_str())} }.into_any();
+                  view! { <Chip value=b.as_str().to_string()>{label}</Chip> }
                 })
                 .collect_view()}
-            </div>
+            </ChipGroup>
           }
         })
       />

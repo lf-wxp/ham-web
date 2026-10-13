@@ -5,7 +5,7 @@ use crate::components::common::NoteEditor;
 use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 use crate::store;
-use crate::ui::{ControlSize, NativeSelect, SelectOption};
+use crate::ui::{Button, ControlSize, NativeSelect, SelectOption, Size, Variant};
 
 /// 一道收藏题卡片；`groups_of` 为该题当前所属分组，`all_groups` 为全部分组（用于下拉加入）。
 #[component]
@@ -36,15 +36,16 @@ pub(super) fn BookmarkCard(
       <div class="mb-2 flex items-start gap-2">
         <span class="mt-0.5 shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{j}</span>
         <p class="flex-1 text-sm font-medium leading-snug">{question.question.clone()}</p>
-        <button
-          type="button"
-          class="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
-          title=move || t("exam.remove-bookmark")
-          aria-label=move || t("exam.remove-bookmark")
-          on:click=move |_| on_remove.run(q.clone())
+        <Button
+          variant=Variant::Text
+          size=Size::IconSm
+          class="shrink-0 hover:text-destructive"
+          title=Signal::derive(move || t("exam.remove-bookmark"))
+          aria_label=Signal::derive(move || t("exam.remove-bookmark"))
+          on_click=Callback::new(move |_| on_remove.run(q.clone()))
         >
           <Icon kind=IconKind::BookMarked class="h-4 w-4" />
-        </button>
+        </Button>
       </div>
       <div class="space-y-1">
         {question
@@ -103,17 +104,18 @@ pub(super) fn BookmarkCard(
             />
           }
         })}
-        <button
-          type="button"
-          class="ml-auto inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent"
-          aria-expanded=move || note_open.get().to_string()
-          on:click=move |_| note_open.update(|v| *v = !*v)
+        <Button
+          variant=Variant::Text
+          size=Size::Xs
+          class="ml-auto gap-1 px-1 hover:bg-accent"
+          aria_expanded=Signal::derive(move || note_open.get())
+          on_click=Callback::new(move |_| note_open.update(|v| *v = !*v))
         >
           {move || t("exam.notes")}
           {has_note.then(|| {
             view! { <span class="size-1.5 rounded-full bg-primary"></span> }
           })}
-        </button>
+        </Button>
       </div>
       {move || {
         note_open

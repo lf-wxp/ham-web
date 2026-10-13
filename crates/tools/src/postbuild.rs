@@ -106,6 +106,13 @@ fn precompress(dist: &Path) -> Result<()> {
     }
     let data = fs::read(path)?;
     if data.len() < MIN_COMPRESS_BYTES {
+      // 复用旧 dist 重跑时，文件缩到阈值以下也要清掉上次留下的压缩副本，否则
+      // `ServeDir::precompressed_*` 会继续返回旧内容。
+      for ext in ["br", "gz"] {
+        let _ = fs::remove_file(
+          path.with_file_name(format!("{}.{ext}", entry.file_name().to_string_lossy())),
+        );
+      }
       continue;
     }
     for (ext, bytes, total) in [
@@ -180,7 +187,15 @@ fn pack_fingerprint(dist: &Path) -> Result<String> {
     if path.extension().is_none_or(|e| e != "json") {
       continue;
     }
-    hasher.update(path.to_string_lossy().as_bytes());
+    // 只哈希文件名（不含目录）：绝对路径会随构建目录变化，同一份源码在 CI 与本地
+    // 构建出不同的 `__CACHE_VERSION__`，破坏产物可复现（本文件其它位置已把它当硬要求）。
+    hasher.update(
+      path
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .as_bytes(),
+    );
     hasher.update(fs::read(&path)?);
   }
   Ok(hex(&hasher.finalize()))
@@ -238,10 +253,11 @@ fn stamp_bank_revisions(dist: &Path) -> Result<()> {
   for v in &mut cfg.versions {
     for bank in Bank::ALL {
       let file = dist.join(v.resolve_url(bank).trim_start_matches('/'));
-      let rev = match fs::read(&file) {
-        Ok(data) => hex(&Sha256::digest(data)[..4]),
-        Err(_) => String::new(),
-      };
+      // 读不到就不是「没有版本」，而是构建事故：留下空 rev 会让该题库的缓存永不失效，
+      // 所以直接让构建失败，而不是只打一行警告。
+      let data = fs::read(&file)
+        .with_context(|| format!("题库文件 {} 读取失败，无法计算 rev", file.display()))?;
+      let rev = hex(&Sha256::digest(data)[..4]);
       match bank {
         Bank::A => v.banks.a.rev = rev,
         Bank::B => v.banks.b.rev = rev,
@@ -266,6 +282,12 @@ fn replace_site_url(dist: &Path, site_url: &str) -> Result<()> {
   let index = dist.join("index.html");
   let html =
     fs::read_to_string(&index).with_context(|| format!("failed to read {}", index.display()))?;
+  // 模板里没有占位符说明 index.html 改版漏了 Open Graph 地址：静默成功会让线上分享卡片丢失。
+  ensure!(
+    html.contains("__SITE_URL__"),
+    "{} 里没有 __SITE_URL__ 占位符",
+    index.display()
+  );
   fs::write(&index, html.replace("__SITE_URL__", site_url))?;
   Ok(())
 }
@@ -279,7 +301,14 @@ pub fn run(root: &Path, dist: &Path, site_url: &str) -> Result<()> {
     dist.join("index.html").display()
   );
   let site_url = site_url.trim_end_matches('/');
+  // 空串 / 相对路径会让 sitemap 的 `<loc>` 变成相对地址（整个文件无效）、og:url 指向错误。
+  ensure!(
+    site_url.starts_with("http://") || site_url.starts_with("https://"),
+    "--site-url 必须以 http:// 或 https:// 开头，得到 {site_url:?}"
+  );
   replace_site_url(dist, site_url)?;
+  // .html 许可地址也使用应用壳，直接访问和刷新不能落回无主题的独立页面。
+  fs::copy(dist.join("index.html"), dist.join("license.html"))?;
   write_sitemap(dist, site_url)?;
   stamp_bank_revisions(dist)?;
   write_question_search_index(dist)?;
@@ -299,11 +328,12 @@ pub(crate) fn write_question_search_index(dist: &Path) -> Result<()> {
   for bank in Bank::ALL {
     let path = dist.join(format!("questions/{bank}.json"));
     let Ok(data) = fs::read(&path) else {
-      continue;
+      continue; // 该题库未随本次构建分发（部分数据集只有 A/B/C）
     };
-    let Ok(questions) = serde_json::from_slice::<Vec<QuestionItem>>(&data) else {
-      continue;
-    };
+    // 文件在、但解析不了 = 构建事故：静默跳过会产出「缺整个题库」的搜索索引，
+    // 而条数日志看不出缺失。
+    let questions: Vec<QuestionItem> = serde_json::from_slice(&data)
+      .with_context(|| format!("解析 {} 失败（搜索索引需要它）", path.display()))?;
     for q in questions {
       let Some(id) = q.id_str() else {
         continue;
@@ -338,11 +368,29 @@ fn write_knowledge_i18n(root: &Path, dist: &Path) -> Result<()> {
     let Ok(entries) = fs::read_dir(&lang_dir) else {
       continue;
     };
-    for e in entries.flatten() {
-      let p = e.path();
-      if p.extension().is_some_and(|x| x == "json") {
-        let dict: BTreeMap<String, String> = serde_json::from_slice(&fs::read(&p)?)?;
-        merged.extend(dict);
+    // `read_dir` 顺序不固定：先排序，重复键才不会因文件系统不同而「后读的覆盖先读的」，
+    // 产物字节才可复现。
+    let mut files: Vec<std::path::PathBuf> = entries
+      .flatten()
+      .map(|e| e.path())
+      .filter(|p| p.extension().is_some_and(|x| x == "json"))
+      .collect();
+    files.sort();
+    for p in files {
+      let bytes = fs::read(&p).with_context(|| format!("failed to read {}", p.display()))?;
+      let dict: BTreeMap<String, String> = serde_json::from_slice(&bytes)
+        .with_context(|| format!("failed to parse {}", p.display()))?;
+      for (k, v) in dict {
+        // 同一个 key 出现在两个模块文件里说明译文源出了冲突，构建期就该暴露，
+        // 而不是让某一份被静默覆盖。
+        if let Some(prev) = merged.insert(k.clone(), v.clone())
+          && prev != v
+        {
+          anyhow::bail!(
+            "{lang}: 译文键 {k:?} 在多个模块文件里取值不一致（含 {}）",
+            p.display()
+          );
+        }
       }
     }
     let out_dir = dist.join("data/knowledge-i18n");
@@ -438,7 +486,9 @@ mod tests {
       r#"{{"version":"1","lastModified":"","versions":[{{"id":"v","name":"v","description":"","isLatest":true,"banks":{{"A":{info},"B":{info},"C":{info}}},"updatedAt":""}}]}}"#
     );
     fs::write(dist.join("questions/config.json"), cfg).unwrap();
-    fs::write(dist.join("questions/A.json"), "[]").unwrap();
+    for bank in ["A", "B", "C"] {
+      fs::write(dist.join(format!("questions/{bank}.json")), "[]").unwrap();
+    }
     stamp_bank_revisions(&dist).unwrap();
     write_changelog(&dist).unwrap();
     let cfg: BankConfig =

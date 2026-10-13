@@ -32,10 +32,10 @@ fn text(zh: &'static str) -> String {
 
 /// 指标实测那一行的数值文本（含窄间隔的间隔本身）。
 fn metric_text(glossary: usize, rx: Option<&gear_rx::GearRx>) -> String {
-  let row = REVIEW_METRICS
-    .iter()
-    .find(|r| r.glossary == glossary)
-    .expect("指标行与术语表一一对应（核心有单测）");
+  // 数据表漏项时按「未收录」返回：核心的单测只保证入库数据自洽，页面不该因此白屏。
+  let Some(row) = REVIEW_METRICS.iter().find(|r| r.glossary == glossary) else {
+    return t("knowledge.not-listed");
+  };
   let Some(v) = metric_value(row, rx) else {
     return t("knowledge.not-listed");
   };
@@ -79,10 +79,12 @@ pub fn RigReviewsPage() -> impl IntoView {
         // ── 每篇评测 ──────────────────────────────────────────
         {RIG_REVIEWS
           .iter()
-          .map(|review| {
-            let gear = gear::by_id(review.rig_id).expect("核心有单测：评测只挂真实机型");
+          .filter_map(|review| {
+            // 评测挂到不存在的机型时跳过这一篇，而不是让整页 wasm panic（数据表由核心单测守，
+            // 但页面不依赖它才能不白屏）。
+            let gear = gear::by_id(review.rig_id)?;
             let rx = gear_rx::for_gear(review.rig_id);
-            view! {
+            Some(view! {
               <article class="rounded-xl border bg-card">
                 <div class="flex flex-wrap items-baseline gap-2 border-b px-4 py-3">
                   <h2 class="text-sm font-semibold">{format!("{} {}", gear.brand, gear.model)}</h2>
@@ -243,7 +245,7 @@ pub fn RigReviewsPage() -> impl IntoView {
                   </div>
                 </section>
               </article>
-            }
+            })
           })
           .collect_view()}
 

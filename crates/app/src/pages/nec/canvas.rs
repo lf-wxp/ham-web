@@ -12,7 +12,7 @@ use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 
 use crate::i18n::t;
-use crate::ui::{ControlSize, Field, Input, NativeSelect, SelectOption};
+use crate::ui::{Button, ControlSize, Field, Input, NativeSelect, SelectOption, Size, Variant};
 use crate::util::unique_id;
 
 use super::WireRow;
@@ -345,13 +345,9 @@ pub(super) fn WireCanvas(
             class="w-12"
           />
         </Field>
-        <button
-          type="button"
-          class="cursor-pointer rounded-md border bg-background px-2 py-1 text-xs font-medium hover:bg-accent"
-          on:click=duplicate
-        >
+        <Button variant=Variant::Outline size=Size::Xs on_click=Callback::new(move |_| duplicate(()))>
           {move || t("tools.nec-array-copy")}
-        </button>
+        </Button>
       </div>
       <p class="text-xs text-muted-foreground">{move || t("tools.nec-array-note")}</p>
 

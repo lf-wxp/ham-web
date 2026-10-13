@@ -1,4 +1,12 @@
-import { correctLetters, expect, option, test, wrongLetter } from "./fixtures";
+import {
+  correctLetters,
+  expect,
+  option,
+  settleFrames,
+  test,
+  waitSettled,
+  wrongLetter,
+} from "./fixtures";
 
 test("练习：答错后翻页，题号前进且错题本记录该题", async ({ page }) => {
   await page.goto("/practice");
@@ -113,7 +121,9 @@ test.describe("首次进入", () => {
     await expect(help).toBeHidden();
     await page.reload();
     await expect(page.getByText(/第 1 \/ \d+ 题/)).toBeVisible();
-    await page.waitForTimeout(800);
+    // 负向断言：等「该弹的都弹过了」（加载占位消失 + 入场动画结束）再确认它没出现。
+    await waitSettled(page);
+    await settleFrames(page);
     await expect(help).toBeHidden();
   });
 });

@@ -15,6 +15,7 @@ use crate::data;
 use crate::i18n::{t, tp};
 use crate::pages::log::use_log_store;
 use crate::pages::map::{DxccOverlay, MapView};
+use crate::ui::{Chip, ChipGroup};
 use crate::util::set_title;
 
 #[component]
@@ -126,40 +127,27 @@ pub fn DxccMapPage() -> impl IntoView {
         </section>
 
         // 波段切换
-        <div class="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            class=move || if selected_band.get().is_none() {
-              "rounded-full border bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
-            } else {
-              "rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
-            }
-            on:click=move |_| selected_band.set(None)
-          >
-            {move || t("exam.all")}
-          </button>
+        <ChipGroup
+          value=Signal::derive(move || selected_band.get().unwrap_or_default())
+          on_change=Callback::new(move |v: String| {
+            selected_band.set(if v.is_empty() { None } else { Some(v) });
+          })
+          aria_label=Signal::derive(move || t("radio.band"))
+        >
+          <Chip value="".to_owned()>
+            {view! { {move || t("exam.all")} }.into_any()}
+          </Chip>
           {move || {
-            bands.get().into_iter().map(|b| {
-              let label = b.clone();
-              let sel_b = b.clone();
-              let click_b = b.clone();
-              view! {
-                <button
-                  type="button"
-                  class=move || if selected_band.get().as_deref() == Some(sel_b.as_str()) {
-                    "rounded-full border bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
-                  } else {
-                    "rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
-                  }
-                  on:click=move |_| selected_band.set(Some(click_b.clone()))
-                >
-                  {label.clone()}
-                </button>
-              }
-            })
-            .collect_view()
+            bands
+              .get()
+              .into_iter()
+              .map(|b| {
+                let label = view! { {b.clone()} }.into_any();
+                view! { <Chip value=b.clone()>{label}</Chip> }
+              })
+              .collect_view()
           }}
-        </div>
+        </ChipGroup>
 
         // 地图
         <section class="rounded-xl border bg-card p-4">

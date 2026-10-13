@@ -33,6 +33,9 @@ pub fn ButtonLink(
   #[prop(optional, into)]
   target: Option<String>,
   #[prop(optional, into)] rel: Option<String>,
+  /// 原生 `download`（值是建议的文件名）：链接指向要保存的资源（`data:` / `blob:`）时用。
+  #[prop(optional, into)]
+  download: Option<String>,
   /// 点击回调。拿到的是 [`web_sys::MouseEvent`]，因此「条件不满足时
   /// `prevent_default()` 拦住这次跳转」这种守卫可以直接写在调用点。
   #[prop(optional, into)]
@@ -46,6 +49,7 @@ pub fn ButtonLink(
       class=button_class(variant, size, &class)
       target=target
       rel=rel
+      download=download
       aria-label=move || aria_label.as_ref().map(TextValue::get)
       title=move || title.as_ref().map(TextValue::get)
       on:click=move |e| {

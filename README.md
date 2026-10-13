@@ -179,7 +179,7 @@
 | 工具链 | `ham-web-tools`（clap、ureq、resvg、sha2、brotli、walkdir） |
 | 任务编排 | [cargo-make](https://github.com/sagiegurari/cargo-make) |
 | PWA | 构建时由 Rust 生成 Service Worker（预缓存 + 运行时缓存策略） |
-| 许可 | MIT（见仓库根目录 [`LICENSE`](LICENSE)） |
+| 许可 | MIT（见仓库根目录 [`LICENSE`](LICENSE)）；DominoEX / LRPT / NAVTEX 解码器及其 Worker 例外，为 GPL-3.0（见[许可](#许可)） |
 
 ## 项目结构
 
@@ -214,11 +214,13 @@
 │   │       ├── i18n/       # 界面文案运行时：mod.rs（t/tf/Locale）+ catalog.rs（内嵌域查表）+ pack.rs（运行时语言包）
 │   │       └── …           # exam_history / achievements / bank_updates / shortcuts / speech / theme / photo / pwa / rpg
 │   ├── apt/                # NOAA APT 云图解码（音频 AM 解调 + 图像重建，纯 Rust DSP，无外部依赖）
-│   ├── apt-worker/         # APT 解码 Web Worker（后台线程解调，编译为 worker.js）
+│   ├── apt-worker/         # APT 解码 Web Worker 的 wasm 胶水（统一入口见 public/decode-worker.js）
 │   ├── sstv/               # SSTV 慢扫描电视解码（VIS 头识别 + 行同步 + RGB/YC 采样）
 │   ├── sstv-worker/        # SSTV 解码 Web Worker
 │   ├── wspr/               # WSPR 解码（Type 1 消息编解码 + 卷积码 + Goertzel 解调）
 │   ├── wspr-worker/        # WSPR 解码 Web Worker
+│   ├── rtty/ · olivia/ · dominoex/ · navtex/ · lrpt/   # 五种数字模式 / 气象卫星解码核心（纯 Rust + 单测 + 对拍）
+│   ├── rtty-worker/ · olivia-worker/ · dominoex-worker/ · navtex-worker/ · lrpt-worker/   # 对应 Worker 胶水（dominoex / navtex / lrpt 含 GPL 转写，整体 GPL-3.0-only）
 │   ├── server/             # Axum 静态站点服务器 + /api 数据代理
 │   └── tools/              # 构建/维护 CLI（数据集、解析、术语表、i18n、图标、sw.js、sitemap、PSK31/频谱合成样本）
 │       └── templates/sw.js # Service Worker 模板
@@ -230,9 +232,15 @@
 ├── e2e/                    # Playwright 端到端测试（全站冒烟 + 无障碍 + 关键流程，含覆盖率统计脚本）
 └── public/
     ├── questions/          # 题库 JSON、config.json、题目图片（构建产物，已提交）
-    ├── apt-worker/         # 以下三个 Worker 目录由 `cargo make build-*-worker` 生成
+    ├── decode-worker.js    # 统一解码 Worker 入口（手写，入库；协议见 docs/decode-worker-protocol.md）
+    ├── apt-worker/         # 以下八个 Worker 目录由 `cargo make build-*-worker` 生成（已被 .gitignore 忽略）
     ├── sstv-worker/
     ├── wspr-worker/
+    ├── rtty-worker/
+    ├── olivia-worker/
+    ├── dominoex-worker/
+    ├── navtex-worker/
+    ├── lrpt-worker/
     ├── fonts/              # Geist 字体（本地托管）
     ├── dxcc-entities.bin   # DXCC 实体边界（世界地图着色用）
     ├── manifest.json       # PWA manifest
@@ -352,7 +360,7 @@ cargo make serve          # 用 release 服务器托管 dist/：http://127.0.0.1
 
 ### 浏览器内解码（音频不出本机）
 
-「APT 云图解码」「SSTV 解码器」「WSPR 解码器」「PSK31 解码」都把音频交给 Web Worker 中的纯 Rust DSP 处理，不上传服务器。可先生成合成样本试跑：
+「APT 云图解码」「SSTV 解码器」「WSPR 解码器」「RTTY / Olivia / DominoEX / NAVTEX / LRPT 解码」「PSK31 解码」都把音频交给 Web Worker 中的纯 Rust DSP 处理，不上传服务器（八个 Worker 共用 `public/decode-worker.js`，协议见 [`docs/decode-worker-protocol.md`](docs/decode-worker-protocol.md)）。可先生成合成样本试跑：
 
 ```bash
 cargo make apt-sample    && cargo make apt-decode     # 或 apt-test 一步到位
@@ -372,7 +380,7 @@ cargo make spectrum-sample                            # 频谱 / 瀑布图样本
 | `cargo make dev` | 前端开发服务器（默认任务，http://127.0.0.1:3000） |
 | `cargo make dev-full` | 后端 API（3001）+ 前端开发服务器（3000，代理 `/api`） |
 | **构建** | — |
-| `cargo make build-worker` / `build-sstv-worker` / `build-wspr-worker` | 构建三个解码 Web Worker（wasm-bindgen `--target no-modules`） |
+| `cargo make build-worker` / `build-sstv-worker` / `build-wspr-worker` / `build-rtty-worker` / `build-olivia-worker` / `build-dominoex-worker` / `build-navtex-worker` / `build-lrpt-worker` | 构建八个解码 Web Worker（wasm-bindgen `--target no-modules`；APT 的任务名是 `build-worker`，其余带 codec 前缀） |
 | `cargo make build-web` | 构建前端（release）并执行 `postbuild`（sw.js / sitemap / 预压缩） |
 | `cargo make build-server` | 构建静态站点服务器（release） |
 | `cargo make build` | 图标 + 前端 + 服务器 |
@@ -399,9 +407,15 @@ cargo make spectrum-sample                            # 频谱 / 瀑布图样本
 | `cargo make i18n-plural-candidates` | 导出复数候选骨架（源码用 `tf`/`tp`、中文带数量占位符的文案）到 `tmp/plural-candidates-en.json`；导出西语用 `cargo run -q -p ham-web-tools -- check-i18n --plural-candidates tmp/plural-candidates-es.json --lang es` |
 | `cargo make knowledge-i18n-check` | 校验知识库正文译文：中文原文作 key，源码改过句子后译文即失效（静默回退中文），已并入 `cargo make check` |
 | **解码器样本** | — |
+| `cargo make samples` | 一键生成全部合成测试样本 WAV 到 `tmp/`（apt / sstv / wspr / lrpt / dominoex / olivia / navtex / rtty / psk31 / spectrum） |
 | `cargo make apt-sample` / `apt-decode` / `apt-test` | 生成 / 命令行解码 / 端到端自检 APT 样本 WAV |
 | `cargo make sstv-sample` / `sstv-decode` / `sstv-test` | 同上，SSTV |
 | `cargo make wspr-sample` / `wspr-decode` / `wspr-test` | 同上，WSPR |
+| `cargo make rtty-sample` / `rtty-decode` / `rtty-test` | 同上，RTTY |
+| `cargo make olivia-sample` / `olivia-decode` / `olivia-test` / `olivia-xcheck` | 同上，Olivia（`xcheck` 与独立参考实现双向对拍） |
+| `cargo make dominoex-sample` / `dominoex-decode` / `dominoex-test` / `dominoex-xcheck` | 同上，DominoEX |
+| `cargo make navtex-sample` / `navtex-decode` / `navtex-test` | 同上，NAVTEX |
+| `cargo make lrpt-sample` / `lrpt-decode` / `lrpt-test` | 同上，LRPT |
 | `cargo make psk31-sample` | 生成 PSK31 测试样本 WAV（供手动测试 `/psk-decode`） |
 | `cargo make spectrum-sample` / `spectrum-analyze` / `spectrum-test` | 生成 / 命令行分析 / 端到端自检合成频谱样本（供 `/sdr-waterfall`） |
 | **像素风资源** | — |
@@ -442,7 +456,7 @@ cargo make docker-build && cargo make docker-run
 | `SITE_URL` | `https://ham.onlyxp.me` | 写入 Open Graph 与 `sitemap.xml` 的站点地址 |
 | `REBUILD_DATASET` | `0` | 设为 `1` 时构建阶段从远程 CSV 重新生成题库 |
 | `TRUNK_VERSION` | `0.21.14` | Trunk 版本 |
-| `WASM_BINDGEN_VERSION` | 空 | wasm-bindgen CLI 版本（构建三个解码 Worker）；留空时自动取 `Cargo.lock` 中的版本 |
+| `WASM_BINDGEN_VERSION` | 空 | wasm-bindgen CLI 版本（构建八个解码 Worker）；留空时自动取 `Cargo.lock` 中的版本 |
 
 ```bash
 docker build --build-arg SITE_URL=https://exam.example.com -t ham-web .
@@ -470,10 +484,10 @@ arm64 / 4 vCPU / 16GiB 的 Docker 虚拟机下，一次 `docker build` 的耗时
 | --- | --- | --- |
 | 拉基础镜像 + 编译安装 `wasm-bindgen-cli` | ~1 min | 镜像层，命中即整层跳过 |
 | 下载 Trunk 预编译二进制 | ~5 s | 镜像层 |
-| 编译第三方依赖（原生 tools/server + wasm 前端与三个 Worker） | ~1 min | `--mount=type=cache` |
+| 编译第三方依赖（原生 tools/server + wasm 前端与八个 Worker） | ~1 min | `--mount=type=cache` |
 | 编译前端 `ham-web-app` | **~5 min** | 不可缓存（每次提交都在变） |
 | Trunk 下载 Tailwind / wasm-opt | ~1 min | `--mount=type=cache` |
-| 图标 / 语言包 / 三个 Worker / postbuild + 产物断言 | < 1 min | — |
+| 图标 / 语言包 / 八个 Worker / postbuild + 产物断言 | < 1 min | — |
 
 **内存要求**：`wasm-release`（`opt-level = "z"` + `codegen-units = 1`）编译前端时，单个 `rustc` 进程峰值约 6–8GB。Docker 虚拟机只给 4GiB / 8GiB 时会在这一步被 OOM 杀掉，而报错只有 BuildKit 的 `cannot allocate memory`（要加 `--progress=plain` 才看得到 `rustc … SIGKILL: kill`，容易误判成 Dockerfile 有问题）。建议：
 
@@ -806,7 +820,7 @@ cargo make explanations-missing    # 查看因题目修订/新增而缺失的解
 - 提交前执行 `cargo make ci`（仅前端样式改动时可先用 `cargo make check` 快速自检，两者均已包含格式、Clippy、单元测试与文案词典校验）；
 - 不依赖浏览器的逻辑（日志、奖状、DX 通知匹配、Koch、错题本、考试判定、CAT 协议解析、CW 解码、标签排版等）放在 `ham-web-core`，并附单元测试；
 - 修改界面文案时同步补 `data/i18n/{lang}/{domain}.json`（按域拆分、语义 key `域.词条`，`cargo make i18n-check` 会校验重复 key、占位符数量、死条目与语言包新鲜度）；改完译文跑一次 `cargo make i18n-pack`；知识库正文译文放在 `data/knowledge-i18n/`（以中文原文为 key，改动 `crates/core` 里的中文句子后要同步改 key，`cargo make knowledge-i18n-check` 会校验，否则译文静默失效、页面上仍是中文）；
-- 改动 APT / SSTV / WSPR Worker 时，注意 `wasm-bindgen` CLI 版本必须与 `Cargo.lock` 一致（`cargo make setup` 会按锁文件安装，CI 亦有版本漂移校验）。
+- 改动任一解码 Worker（共八个）时，注意 `wasm-bindgen` CLI 版本必须与 `Cargo.lock` 一致（`cargo make setup` 会按锁文件安装，CI 亦有版本漂移校验）。
 
 CI 位于 `.github/workflows/`：`check.yml` 在 push 到 `main` 与 PR 时运行 `cargo make check`，并另起一个 job 构建 release 站点后运行 Playwright 端到端测试（失败时上传报告）；`build-docker.yml` 在 push 到 `main` 或 `v*` tag 时构建并推送 Docker 镜像。
 
@@ -919,7 +933,7 @@ ls target/dev-dist/                                          # 正常应有 data
 
 ### 像素风外观与动效降级
 
-样式集中在 `crates/app/style/pixel/`（调色板与 token、字体、控件原语、动效），组件与页面只用语义 token 与 `pxl-*` 类，规范见 [`docs/ui-components.md` §0.5](docs/ui-components.md)。
+样式集中在 `crates/app/style/pixel/`（调色板与 token、字体、控件原语、动效），组件与页面只用语义 token 与 `pxl-*` 类，规范见 [`docs/ui-components.md` §2](docs/ui-components.md)。
 
 | 关注点 | 实现 |
 | --- | --- |
@@ -974,7 +988,7 @@ ls target/dev-dist/                                          # 正常应有 data
 - **练习模式的搜索按钮不见了？** 题目搜索仅在练习模式的顺序模式下可用；跨全站的知识检索请用 `/` 唤起的搜索面板。
 - **朗读 / 摩尔斯试听没有声音？** 浏览器需要一次用户交互后才允许播放音频，请先点击页面；朗读依赖系统 TTS 语音包。
 - **`cargo make dev-full` 和 `cargo make i18n-check` 能同时跑吗？** 不能：两者都要占用 `target/` 的构建锁，同时执行会互相等待，建议串行运行。
-- **改了解码 Worker 却不生效？** 三个 Worker 的 wasm 由 `cargo make build-worker` / `build-sstv-worker` / `build-wspr-worker` 生成到 `public/*-worker/`；`cargo make dev` 与 `build-web` 会自动先构建，但单独改了 worker 代码后需重跑对应任务（首次还需 `cargo make setup` 提供版本匹配的 `wasm-bindgen`）。
+- **改了解码 Worker 却不生效？** 八个 Worker 的 wasm 由 `cargo make build-worker` / `build-sstv-worker` / `build-wspr-worker` / `build-rtty-worker` / `build-olivia-worker` / `build-dominoex-worker` / `build-navtex-worker` / `build-lrpt-worker` 生成到 `public/*-worker/`；`cargo make dev` 与 `build-web` 会自动先构建，但单独改了 worker 代码后需重跑对应任务（首次还需 `cargo make setup` 提供版本匹配的 `wasm-bindgen`）。
 - **端到端测试跑不起来？** 首次需在 `e2e/` 下执行 `npm ci && npx playwright install chromium`；`cargo make e2e` 会先构建 release 站点。
 - **通联日志很大还能用吗？** 可以：日志由 `IndexedDB` 承载（突破 localStorage 5MB 配额），localStorage 仅保留静默快照。清浏览器数据会同时清除两者，重要日志请定期用「数据备份」导出。
 
@@ -1008,11 +1022,32 @@ ls target/dev-dist/                                          # 正常应有 data
 
 ## 许可
 
-本项目**代码**以 **MIT** 许可发布，许可全文见仓库根目录 [`LICENSE`](LICENSE)（与 `Cargo.toml` 的 `license = "MIT"` 一致）。
+本项目未另行声明的原创组件以 **MIT** 许可发布，许可全文见仓库根目录 [`LICENSE`](LICENSE)；包含 GPL 组件的完整站点分发不是纯 MIT，例外见下。
 
 需要注意的是，MIT 只覆盖本仓库的代码，**不覆盖题库数据**：题目与解析的版权归原作者所有，使用前请遵守上游仓库的许可与署名要求。
 
-使用或再分发本仓库代码时，只需保留版权声明与 MIT 许可全文，即可自由地使用、修改、合并、发布、再许可和销售，无需公开衍生作品的源码。
+使用或再分发 MIT 组件时，须保留版权声明与 MIT 许可全文；GPL 组件须另外遵守其许可及对应源码交付要求，不能用 MIT 条款概括整个发布物。
+
+### 例外：GPL-3.0 的六个 crate
+
+下面六个 crate 含有转写自 GPL-3.0 项目的代码，因此**整个 crate 按 GPL-3.0（`GPL-3.0-only`）发布**，
+许可全文见 [`LICENSES/GPL-3.0-only.txt`](LICENSES/GPL-3.0-only.txt)，各自的 `Cargo.toml` 也已声明：
+
+| crate | 为什么是 GPL |
+| --- | --- |
+| `crates/dominoex`、`crates/dominoex-worker` | 算法与 Varicode 表转写自 [fldigi](https://github.com/w1hkj/fldigi)（GPL-3.0） |
+| `crates/lrpt`、`crates/lrpt-worker` | 帧层 / 80k 链路等部分转写自 [artlav/meteor_decoder](https://github.com/artlav/meteor_decoder)（GPL-3.0）；其余部分转写自 MIT 的 lrpt-encoder |
+| `crates/navtex`、`crates/navtex-worker` | CCIR 476（SITOR-B）码表转写自 AI5GW/CCIR476（GPL-3.0），来源声明见 `crates/navtex/src/codec.rs` 文件头 |
+
+要点：
+
+- 这几个解码器编译成独立的 wasm 文件，由 `public/decode-worker.js` 经 `postMessage` 调用，
+  与站点其余部分（MIT）之间没有链接关系；本站公开分发的 wasm 对应源码就是本仓库。
+- **复用这六个 crate 时必须遵守 GPL-3.0**（衍生作品需以 GPL-3.0 开源）；其余 crate 仍是 MIT。
+- `e2e/tests/dominoex_varicode_data.ts`（fldigi `dominovar.cxx`）与 `e2e/tests/navtex_varicode_data.ts`
+  （转录自 `crates/navtex/src/codec.rs`）是测试用的 GPL 衍生数据，同样按 GPL-3.0 对待。
+- 发布物自带 `/license.html`、`/licenses/LICENSE` 与 `/licenses/GPL-3.0-only.txt`；许可说明是站内页面，点击与刷新均复用全站应用壳、主题和语言，许可全文链接使用完整文档导航。`postbuild` 生成 `/license.html` 应用壳别名，Docker 构建检查这些文件，OCI 许可标签为 `MIT AND GPL-3.0-only`。部署方必须提供与实际构建版本一致的源码提交或归档，不以仓库最新版本代替。
+- 这份划分是工程上的处理，不是法律意见；若有疑问请自行咨询。
 
 ## 致谢
 

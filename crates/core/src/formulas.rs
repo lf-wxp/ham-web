@@ -156,6 +156,12 @@ pub const FORMULA_GROUPS: &[FormulaGroup] = &[
         "dbm-dbuv",
       ),
       f(
+        "μV ↔ dBm",
+        "dBm = 20·lg(μV) − 107",
+        "50Ω 阻抗下由电压换算功率电平",
+        "dbm-dbuv",
+      ),
+      f(
         "级联增益",
         "G 总 = G₁ + G₂ + …",
         "各级增益 dB 直接相加",
@@ -174,7 +180,8 @@ pub const FORMULA_GROUPS: &[FormulaGroup] = &[
 /// 每条公式的 KaTeX 源（按公式名索引）。
 ///
 /// 界面启用 KaTeX 时用它渲染，未启用（或没写）时回退到 `expr` 的 Unicode 排版 ——
-/// 两者是同一公式的两种写法，本表只补「KaTeX 能排得更好看」的那部分，全部 22 条都写全了。
+/// 两者是同一公式的两种写法，本表只补「KaTeX 能排得更好看」的那部分，每条公式都应有对应项
+/// （条数以 `FORMULA_GROUPS` 为准，不在注释里写死）。
 pub const FORMULA_TEX: &[(&str, &str)] = &[
   ("欧姆定律", "U = I \\cdot R"),
   ("电功率", "P = U \\cdot I = I^2 R = \\frac{U^2}{R}"),
@@ -202,6 +209,7 @@ pub const FORMULA_TEX: &[(&str, &str)] = &[
   ("电压增益（dB）", "\\mathrm{dB} = 20 \\lg\\frac{V_1}{V_0}"),
   ("dBm 定义", "0\\ \\mathrm{dBm} = 1\\ \\mathrm{mW}"),
   ("dBm ↔ dBμV", "\\mathrm{dB\\mu V} = \\mathrm{dBm} + 107"),
+  ("μV ↔ dBm", "\\mathrm{dBm} = 20 \\lg(\\mu\\mathrm{V}) - 107"),
   ("级联增益", "G_{\\text{总}} = G_1 + G_2 + \\dots"),
   ("天线增益换算", "\\mathrm{dBi} = \\mathrm{dBd} + 2.15"),
 ];

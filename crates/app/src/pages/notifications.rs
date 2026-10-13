@@ -7,7 +7,7 @@ use web_sys::{Notification, NotificationPermission};
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf, tp};
-use crate::ui::{Button, Size, Variant};
+use crate::ui::{Button, ChipToggle, Size, Variant};
 use crate::util::{set_title, storage};
 
 const DX_KEY: &str = "dx-alerts";
@@ -18,15 +18,6 @@ fn countdown_count() -> usize {
   storage::get_json::<serde_json::Value>("countdowns")
     .and_then(|v| v.get("events").and_then(|e| e.as_array()).map(Vec::len))
     .unwrap_or(0)
-}
-
-/// 开关按钮样式。
-fn toggle_class(on: bool) -> &'static str {
-  if on {
-    "rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
-  } else {
-    "rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
-  }
 }
 
 /// 通知中心页面。
@@ -57,19 +48,19 @@ pub fn NotificationsPage() -> impl IntoView {
     _ => t("settings.not-requested"),
   };
 
-  let toggle_dxcc = move |_| {
+  let toggle_dxcc = move || {
     dx.update(|s| s.new_dxcc = !s.new_dxcc);
     storage::set_json(DX_KEY, &dx.get_untracked());
   };
-  let toggle_band = move |_| {
+  let toggle_band = move || {
     dx.update(|s| s.new_band = !s.new_band);
     storage::set_json(DX_KEY, &dx.get_untracked());
   };
-  let toggle_sat = move |_| {
+  let toggle_sat = move || {
     sat.update(|s| s.alerts = !s.alerts);
     storage::set_json(SAT_KEY, &sat.get_untracked());
   };
-  let toggle_apt = move |_| {
+  let toggle_apt = move || {
     sat.update(|s| s.apt_alert = !s.apt_alert);
     storage::set_json(SAT_KEY, &sat.get_untracked());
   };
@@ -127,15 +118,23 @@ pub fn NotificationsPage() -> impl IntoView {
           <div class="space-y-3 px-4 py-3">
             <div class="flex items-center justify-between gap-2">
               <span class="text-sm">{move || t("settings.new-dxcc-entity")}</span>
-              <button type="button" class=toggle_class(dx.get_untracked().new_dxcc) on:click=toggle_dxcc>
-                {move || if dx.get().new_dxcc { t("settings.on") } else { t("settings.off") }}
-              </button>
+              <ChipToggle
+                active=Signal::derive(move || dx.get().new_dxcc)
+                on_change=Callback::new(move |_| toggle_dxcc())
+              >
+                {view! { {move || if dx.get().new_dxcc { t("settings.on") } else { t("settings.off") } } }
+                  .into_any()}
+              </ChipToggle>
             </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-sm">{move || t("settings.new-band-on-worked")}</span>
-              <button type="button" class=toggle_class(dx.get_untracked().new_band) on:click=toggle_band>
-                {move || if dx.get().new_band { t("settings.on") } else { t("settings.off") }}
-              </button>
+              <ChipToggle
+                active=Signal::derive(move || dx.get().new_band)
+                on_change=Callback::new(move |_| toggle_band())
+              >
+                {view! { {move || if dx.get().new_band { t("settings.on") } else { t("settings.off") } } }
+                  .into_any()}
+              </ChipToggle>
             </div>
             <div class="text-xs text-muted-foreground">
               {tp(
@@ -157,15 +156,23 @@ pub fn NotificationsPage() -> impl IntoView {
           <div class="space-y-3 px-4 py-3">
             <div class="flex items-center justify-between gap-2">
               <span class="text-sm">{move || t("settings.favorite-satellite-pass-alerts")}</span>
-              <button type="button" class=toggle_class(sat.get_untracked().alerts) on:click=toggle_sat>
-                {move || if sat.get().alerts { t("settings.on") } else { t("settings.off") }}
-              </button>
+              <ChipToggle
+                active=Signal::derive(move || sat.get().alerts)
+                on_change=Callback::new(move |_| toggle_sat())
+              >
+                {view! { {move || if sat.get().alerts { t("settings.on") } else { t("settings.off") } } }
+                  .into_any()}
+              </ChipToggle>
             </div>
             <div class="flex items-center justify-between gap-2">
               <span class="text-sm">{move || t("settings.apt-weather-satellite-recording")}</span>
-              <button type="button" class=toggle_class(sat.get_untracked().apt_alert) on:click=toggle_apt>
-                {move || if sat.get().apt_alert { t("settings.on") } else { t("settings.off") }}
-              </button>
+              <ChipToggle
+                active=Signal::derive(move || sat.get().apt_alert)
+                on_change=Callback::new(move |_| toggle_apt())
+              >
+                {view! { {move || if sat.get().apt_alert { t("settings.on") } else { t("settings.off") } } }
+                  .into_any()}
+              </ChipToggle>
             </div>
             <div class="text-xs text-muted-foreground">
               {move || t("settings.favorite-satellites-and-lead")}

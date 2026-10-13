@@ -3,12 +3,12 @@ use leptos::task::spawn_local;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
-  AudioBuffer, AudioContext, CanvasRenderingContext2d, File, HtmlCanvasElement, HtmlInputElement,
-  ImageData,
+  AudioBuffer, AudioContext, CanvasRenderingContext2d, File, HtmlCanvasElement, ImageData,
 };
 
 use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
+use crate::ui::{Button, ButtonLink, FileDropZone, Variant};
 use crate::util::{document, js_error_message};
 
 use super::{CEIL_DB, FLOOR_DB};
@@ -144,7 +144,7 @@ pub(super) fn FileWaterfall() -> impl IntoView {
     });
   });
 
-  let reset = move |_| {
+  let reset = move || {
     result.set(None);
     error.set(None);
     file_name.set(String::new());
@@ -161,28 +161,17 @@ pub(super) fn FileWaterfall() -> impl IntoView {
       <div class="space-y-4 p-4">
         {move || {
           (result.with(Option::is_none) && !processing.get())
-            .then(|| view! {
-              <label
-                for="waterfall-file"
-                class="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed p-8 text-center transition-all duration-200 hover:bg-muted/40 cursor-pointer"
-              >
-                <Icon kind=IconKind::AudioLines class="mb-1 h-8 w-8 text-muted-foreground" />
-                <span class="text-sm font-medium">{move || t("radio.choose-an-audio-file")}</span>
-                <span class="text-xs text-muted-foreground">{move || t("radio.run-cargo-make-spectrum")}</span>
-              </label>
-              <input
-                id="waterfall-file"
-                type="file"
-                accept=".wav,audio/wav,audio/x-wav,audio/*"
-                class="hidden"
-                on:change=move |e| {
-                  let input: HtmlInputElement = event_target(&e);
-                  if let Some(f) = input.files().and_then(|f| f.get(0)) {
-                    on_file.run(f);
-                  }
-                  input.set_value("");
-                }
-              />
+            .then(|| {
+              view! {
+                <FileDropZone
+                  on_file=on_file
+                  accept=".wav,audio/wav,audio/x-wav,audio/*"
+                  title=Signal::derive(move || t("radio.choose-an-audio-file"))
+                  icon=IconKind::AudioLines
+                  hint=Signal::derive(move || t("radio.run-cargo-make-spectrum"))
+                  id="waterfall-file"
+                />
+              }
             })
         }}
 
@@ -225,22 +214,14 @@ pub(super) fn FileWaterfall() -> impl IntoView {
                 <img src=r.spectrum_url.clone() alt=t("radio.average-spectrum") class="w-full rounded-md border" />
               </div>
               <div class="flex justify-center gap-2">
-                <a
-                  href=r.waterfall_url.clone()
-                  download="waterfall.png"
-                  class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                >
+                <ButtonLink href=r.waterfall_url.clone() download="waterfall.png">
                   <Icon kind=IconKind::Download class="h-4 w-4" />
                   {move || t("radio.download-waterfall-png")}
-                </a>
-                <button
-                  type="button"
-                  class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
-                  on:click=reset
-                >
+                </ButtonLink>
+                <Button variant=Variant::Outline on_click=Callback::new(move |_| reset())>
                   <Icon kind=IconKind::RefreshCw class="h-4 w-4" />
                   {move || t("radio.analyse-another-file")}
-                </button>
+                </Button>
               </div>
             </div>
           })

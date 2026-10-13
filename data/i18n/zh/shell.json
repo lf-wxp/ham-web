@@ -1,4 +1,21 @@
 {
+  "shell.software-license-title": "许可与对应源码",
+  "shell.software-license-summary": "各组件的许可全文、来源与发布版本源码",
+  "shell.software-license-components": "组件许可",
+  "shell.software-license-mit": "站点前端、服务器及未另行声明的原创组件使用 MIT 许可。完整发布物包含 GPL 组件，不是纯 MIT 分发。",
+  "shell.software-license-gpl": "DominoEX、LRPT、NAVTEX 解码器及其 Worker 使用 GNU GPL v3（GPL-3.0-only）；使用和再分发时须保留来源与版权声明，并遵守对应源码交付要求。",
+  "shell.software-license-mit-text": "MIT 许可全文",
+  "shell.software-license-gpl-text": "GNU GPL v3 许可全文",
+  "shell.software-license-mit-lrpt-encoder": "lrpt-encoder 的 MIT 声明",
+  "shell.software-license-mit-olivia-python": "olivia-python 的 MIT 声明",
+  "shell.software-license-source": "对应源码",
+  "shell.software-license-source-details": "完整对应源码包含 Rust 源码、Cargo.lock、构建配置、Worker 胶水生成任务与所需静态资源。",
+  "shell.software-license-source-version": "部署方应提供与实际构建版本一致的提交或源码归档，不能以仓库最新版本替代发布版本。",
+  "shell.software-license-provenance": "组件来源",
+  "shell.software-license-dominoex": "算法与 Varicode 表来自 fldigi（GNU GPL v3）；Varicode 表版权为 © 2001–2003 Tomi Manninen OH2BNS。来源声明见下方仓库路径。",
+  "shell.software-license-lrpt": "链路与帧层部分来自 artlav/meteor_decoder（GNU GPL v3）；lrpt-encoder 来源及 MIT 声明见下方仓库路径。",
+  "shell.software-license-navtex": "CCIR 476（SITOR-B）码表转写自 AI5GW/CCIR476（GNU GPL v3）；来源声明见下方仓库路径。",
+  "shell.software-license-third-party": "其他第三方源码、字体与示例数据保留各组件目录中的来源和许可证，不由站点默认 MIT 许可覆盖。",
   "shell.a-b-c-license": "A/B/C 类操作证权限",
   "shell.aprs": "APRS 自动位置报告",
   "shell.crac-question-bank": "CRAC 题库",
@@ -25,6 +42,7 @@
   "shell.qrp-2": "QRP 低功率操作",
   "shell.qsl-card": "QSL 卡片",
   "shell.qsl-card-design": "QSL 卡片设计",
+  "shell.qsl-card-design-reference": "QSL 卡片设计速查",
   "shell.qsl-label-printing": "QSL 标签打印",
   "shell.rbn": "RBN 信标网络",
   "shell.rst-report": "RST 信号报告",
@@ -207,5 +225,7 @@
   "shell.scheme-forest": "森林",
   "shell.scheme-ocean": "海洋",
   "shell.scheme-sunset": "晚霞",
-  "shell.scheme-graphite": "石墨"
+  "shell.scheme-graphite": "石墨",
+  "shell.license": "许可",
+  "shell.license-notice": "许可说明：本站以 MIT 发布，DominoEX、LRPT 与 NAVTEX 解码器为 GPL-3.0，源码在 GitHub 仓库"
 }

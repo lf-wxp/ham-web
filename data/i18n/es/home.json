@@ -3,7 +3,7 @@
   "home.a-b-c-question": "Bancos A/B/C · práctica · exámenes simulados",
   "home.k-index": "Índice K",
   "home.q-codes-abbreviations-phonetic": "Códigos Q, abreviaturas, alfabeto fonético, Morse y glosario: unos minutos al día con repaso espaciado.",
-  "home.one-platform-for-exam": "Una plataforma para practicar exámenes, consultar y usar herramientas de radio \\u{2014} desde la preparación A/B/C hasta la propagación en vivo.",
+  "home.one-platform-for-exam": "Una plataforma para practicar exámenes, consultar y usar herramientas de radio — desde la preparación A/B/C hasta la propagación en vivo.",
   "home.fair": "Regular",
   "home.all-cards-reviewed-today": "Repaso de hoy completado; puedes aprender tarjetas nuevas.",
   "home.completed-today": "Completado hoy: {} / {}.",
@@ -33,7 +33,7 @@
     "other": "{} tarjetas pendientes de repaso."
   },
   "home.details": "Detalles →",
-  "home.fetching-conditions-u-2026": "Obteniendo condiciones\\u{2026}",
+  "home.fetching-conditions-u-2026": "Obteniendo condiciones…",
   "home.lowest-accuracy-topic": "Tema con menor precisión",
   "home.a-daily-timed-10": "Un reto diario cronometrado de 10 preguntas; el mismo conjunto todo el día, cuenta para el registro.",
   "home.daily-question": "Pregunta del día",

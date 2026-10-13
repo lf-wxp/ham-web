@@ -64,14 +64,12 @@ pub fn RadioLawPage() -> impl IntoView {
                         <div class="space-y-1">
                           {numbers
                             .into_iter()
-                            .map(|number| {
-                              let text = article(law.key, number)
-                                .expect("章内条号必有条文（核心有单测）")
-                                .text
-                                .clone();
+                            .filter_map(|number| {
+                              // 条号与正文表不一致时跳过这一条：数据表漏项不该让整页白屏。
+                              let text = article(law.key, number)?.text.clone();
                               let questions: Vec<MappedQuestion> = questions_for(law.key, number).to_vec();
                               let n_questions = questions.len();
-                              view! {
+                              Some(view! {
                                 <div
                                   // 锚点带法律 key：办法与条例都有「第30条」，不带会撞。
                                   id=format!("{}-{number}", law.key)
@@ -129,7 +127,7 @@ pub fn RadioLawPage() -> impl IntoView {
                                       }
                                     })}
                                 </div>
-                              }
+                              })
                             })
                             .collect_view()}
                         </div>

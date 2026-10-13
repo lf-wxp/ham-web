@@ -4,6 +4,8 @@ use ham_web_core::categories::{sub_category, top_pages};
 use ham_web_core::mistake_book::{MistakeRecord, WRONG_CAUSES};
 use leptos::prelude::*;
 
+use crate::ui::ChipToggle;
+
 const DAY_MS: i64 = 24 * 60 * 60 * 1000;
 
 /// 一道错题视图。
@@ -130,21 +132,12 @@ pub(super) fn MistakeCard(
           .map(|&(ck, cn)| {
             let sc = set_cause.clone();
             view! {
-              <button
-                type="button"
-                class=move || if cause.get().as_deref() == Some(ck) {
-                  "rounded-full bg-primary/15 px-2.5 py-0.5 font-medium text-primary"
-                } else {
-                  "rounded-full border px-2.5 py-0.5 text-muted-foreground transition-colors hover:bg-accent"
-                }
-                aria-pressed=move || (cause.get().as_deref() == Some(ck)).to_string()
-                on:click=move |_| {
-                  let clear = cause.get_untracked().as_deref() == Some(ck);
-                  sc(if clear { "" } else { ck });
-                }
+              <ChipToggle
+                active=Signal::derive(move || cause.get().as_deref() == Some(ck))
+                on_change=Callback::new(move |on: bool| sc(if on { ck } else { "" }))
               >
-                {move || t(cn)}
-              </button>
+                {view! { {move || t(cn)} }.into_any()}
+              </ChipToggle>
             }
           })
           .collect_view()}

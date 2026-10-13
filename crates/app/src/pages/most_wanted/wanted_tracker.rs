@@ -5,7 +5,7 @@ use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
 use crate::pages::log::use_log_store;
-use crate::ui::Input;
+use crate::ui::{Checkbox, Input};
 use crate::util::storage;
 
 const STORAGE_KEY: &str = "dxcc_wanted_done";
@@ -93,20 +93,11 @@ pub(super) fn WantedTracker() -> impl IntoView {
                     move || done.get().iter().any(|p| p == prefix) || logged.get().contains(prefix);
                   view! {
                     <div class="flex items-center gap-3 py-2">
-                      <button
-                        type="button"
-                        aria-label=tf("common.marker", &[(name)])
-                        on:click=move |_| toggle(prefix)
-                        class=move || {
-                          if checked() {
-                            "flex h-5 w-5 shrink-0 items-center justify-center rounded border bg-primary text-xs text-primary-foreground"
-                          } else {
-                            "flex h-5 w-5 shrink-0 items-center justify-center rounded border hover:bg-accent"
-                          }
-                        }
-                      >
-                        {move || if checked() { "✓" } else { "" }}
-                      </button>
+                      <Checkbox
+                        checked=Signal::derive(checked)
+                        on_change=Callback::new(move |_| toggle(prefix))
+                        aria_label=tf("common.marker", &[(name)])
+                      />
                       <span class="w-16 shrink-0 font-mono text-sm font-semibold">{prefix}</span>
                       <span class="flex-1 text-sm">{name}</span>
                       {if from_log {

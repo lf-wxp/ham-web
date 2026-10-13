@@ -7,9 +7,9 @@ use crate::morse_audio::{start_tone, stop_tone};
 use crate::morse_settings::use_morse_settings;
 use crate::util::storage;
 
-use super::{morse_display, pill_class, random_index};
+use super::{morse_display, random_index};
 use crate::i18n::t;
-use crate::ui::{Button, Variant};
+use crate::ui::{Button, Chip, ChipGroup, Variant};
 
 /// 发报目标类型。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -204,24 +204,24 @@ pub(super) fn SendTrainer() -> impl IntoView {
       <div class="space-y-4 p-4">
         <div class="flex flex-wrap items-center gap-1.5">
           <span class="mr-1 text-xs text-muted-foreground">{move || t("morse.target-type")}</span>
-          {SendTarget::ALL
-            .iter()
-            .map(|&target_kind| {
-              view! {
-                <button
-                  type="button"
-                  on:click=move |_| {
-                    send_target.set(target_kind);
-                    next_target();
-                  }
-                  aria-pressed=move || (send_target.get() == target_kind).to_string()
-                  class=move || pill_class(send_target.get() == target_kind)
-                >
-                  {move || t(target_kind.label())}
-                </button>
+          <ChipGroup
+            value=Signal::derive(move || send_target.get().label().to_owned())
+            on_change=Callback::new(move |v: String| {
+              if let Some(kind) = SendTarget::ALL.iter().copied().find(|k| k.label() == v) {
+                send_target.set(kind);
+                next_target();
               }
             })
-            .collect_view()}
+            aria_label=Signal::derive(move || t("morse.target-type"))
+          >
+            {SendTarget::ALL
+              .iter()
+              .map(|&target_kind| {
+                let label = view! { {move || t(target_kind.label())} }.into_any();
+                view! { <Chip value=target_kind.label().to_owned()>{label}</Chip> }
+              })
+              .collect_view()}
+          </ChipGroup>
         </div>
 
         <div class="flex flex-col items-center gap-2 rounded-xl border bg-muted/30 px-4 py-6">

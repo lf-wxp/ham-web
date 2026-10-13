@@ -18,7 +18,7 @@ use crate::components::study_plan_card::StudyPlanCard;
 use crate::exam_history::ExamTrend;
 use crate::i18n::{t, tf};
 use crate::pages::log::use_log_store;
-use crate::ui::Stat;
+use crate::ui::{Chip, ChipGroup, Stat};
 use crate::util::{local_today, now_ms, set_title, storage};
 use crate::{data, store, study};
 
@@ -196,14 +196,6 @@ pub fn ProgressPage() -> impl IntoView {
     unlocked(&s)
   });
 
-  let tab_class = |on: bool| {
-    if on {
-      "rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
-    } else {
-      "rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-accent"
-    }
-  };
-
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader
@@ -256,14 +248,23 @@ pub fn ProgressPage() -> impl IntoView {
         <section class="rounded-xl border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class="mr-auto text-sm font-semibold">{move || t("learning.prep-status")}</h2>
-            {Bank::ALL
-              .into_iter()
-              .map(|b| view! {
-                <button type="button" class=move || tab_class(exam_bank.get() == b) on:click=move |_| exam_bank.set(b)>
-                  {tf("learning.class", &[&b.to_string()])}
-                </button>
+            <ChipGroup
+              value=Signal::derive(move || exam_bank.get().as_str().to_string())
+              on_change=Callback::new(move |v: String| {
+                if let Ok(b) = v.parse::<Bank>() {
+                  exam_bank.set(b);
+                }
               })
-              .collect_view()}
+              aria_label=Signal::derive(move || t("exam.bank-class"))
+            >
+              {Bank::ALL
+                .into_iter()
+                .map(|b| {
+                  let label = view! { {tf("learning.class", &[&b.to_string()])} }.into_any();
+                  view! { <Chip value=b.as_str().to_string()>{label}</Chip> }
+                })
+                .collect_view()}
+            </ChipGroup>
           </div>
           <div class="p-4">
             {move || {
@@ -343,17 +344,22 @@ pub fn ProgressPage() -> impl IntoView {
         <section class="rounded-xl border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class="mr-auto text-sm font-semibold">{move || t("learning.weak-area-analysis")}</h2>
-            <button type="button" class=move || tab_class(bank_tab.get().is_none()) on:click=move |_| bank_tab.set(None)>
-              {move || t("exam.all")}
-            </button>
-            {Bank::ALL
-              .into_iter()
-              .map(|b| view! {
-                <button type="button" class=move || tab_class(bank_tab.get() == Some(b)) on:click=move |_| bank_tab.set(Some(b))>
-                  {tf("learning.class", &[&b.to_string()])}
-                </button>
-              })
-              .collect_view()}
+            <ChipGroup
+              value=Signal::derive(move || bank_tab.get().map(|b| b.as_str().to_string()).unwrap_or_default())
+              on_change=Callback::new(move |v: String| bank_tab.set(v.parse::<Bank>().ok()))
+              aria_label=Signal::derive(move || t("learning.weak-area-analysis"))
+            >
+              <Chip value="".to_string()>
+                {view! { {move || t("exam.all")} }.into_any()}
+              </Chip>
+              {Bank::ALL
+                .into_iter()
+                .map(|b| {
+                  let label = view! { {tf("learning.class", &[&b.to_string()])} }.into_any();
+                  view! { <Chip value=b.as_str().to_string()>{label}</Chip> }
+                })
+                .collect_view()}
+            </ChipGroup>
           </div>
           <div class="space-y-3 p-4">
             {move || {

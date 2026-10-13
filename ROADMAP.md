@@ -859,20 +859,152 @@
 
 ### 解码器扩展
 
-- [ ] RTTY、Olivia、DominoEX、NAVTEX 解码 Worker
-- [ ] 气象卫星 LRPT（MetOp）解码
-- [ ] 统一 Worker 协议与 `cargo make <name>-sample` / `-decode` / `-test` 样本命令
+- [x] **统一 Worker 协议**（2026-10）：四个解码器（APT / SSTV / WSPR / RTTY）收敛到一份
+      协议 —— wasm 导出统一为 `decode(bytes, params)`、一个共享入口
+      `public/decode-worker.js`（按 `codec` 分发到各自 glue，消息信封
+      `{ codec, bytes, params }` → `{ ok, result | error }`）、一份共享前端桥
+      `crates/app/src/decode_worker.rs`（spawn / 读文件 / 组消息 / 拆信封），
+      四个页面删掉各自近 500 行样板，只保留结果解析与界面。`cargo make <name>-sample /
+      -decode / -test` 四条命令链此前已各就各位。迁移中被测试抓到一处真 bug：
+      **每页的 `parse_message` 还在按旧信封解析**（读顶层 `ok`），而新 handler 已把信封拆掉、
+      喂进去的是内层 `result` —— 四页的解析函数全部改成只解析 `result` 后，端到端全绿
+      （APT 的成功路径此前没有测试覆盖，这次一并修掉）
+- [~] **RTTY 解码 Worker 已完成**（2026-10）：`crates/rtty/`（**5 条单测**，纯 Rust 无外部
+      依赖）+ `rtty-worker`（wasm-bindgen no-modules）+ 页面 `/rtty-decode`（上传 WAV →
+      Worker 解码出文本，音频不出浏览器）。45.45 波特 / 170 Hz 频移 / ITA2（商业标准版，
+      变体差异写在模块文档里）。三个被单测逼出来的设计决定：
+  - **位窗口直接按样本位置解调**：1.5 停止位让字符网格落在半个符号上，先量化成整数符号
+    再解码会把跨边界的位读错 —— 第一版正是这么写的，端到端样本解出乱码（`CQ CQ DE
+    XGQAWA9.LK`），改成「每字符 7.5 符号的浮点网格 + 每位窗口现场 Goertzel」后全通
+  - **起始位同步 = 两个字符周期内 1/4 符号步进滑窗 + 坏字符惩罚 2 分**：乱对齐赢不了
+    正确对齐（评分规则单测可见）
+  - **验证双向**：`cargo make rtty-test`（Rust 编码 → Rust 解码）之外，e2e 用 **JS 独立
+    实现**的 ITA2 编码器合成 WAV（两套编码表逐项一致）→ 浏览器上传 → wasm 解码还原原文
+    「CQ CQ DE BG1AAA 599 K」—— 编解码分属两套实现，能过才是真解码
+- [x] **NAVTEX 解码器（SITOR-B）**（2026-10）：`crates/navtex/`（**16 条单测** +
+      2 条真实样本测试）—— CCIR 476 七位码（35 个码全部常量 4-mark，权重 ≠ 4 即检错）、
+      100 波特 FSK 解调、ZCZC/NNNN 报文帧、DX/RX 双副本逐字符合并与 4% 错误率门限。
+      码表转写自 AI5GW/CCIR476（GPL-3.0）并经常量权重性质逐码自验。
+  - **SigidWiki 真实样本对拍**（`samples/`，来源与许可状态写入 README）：两段录音的
+    音调都不在标称 1615/1785（电台调谐偏移到 2110/2310 与 1904/2104）→ 解调前**自动
+    估计音调**；录音开头静音使符号网格错位 → **对比度相位同步**（单测当场抓到三个
+    真 bug：5 Hz 频谱步进把非 5 倍频音调整格错过、正交窗口被功率过滤误杀、`first`
+    锚点落在半个符号内需要负偏移搜索）
+  - **如实说明验证级别**：长样本（105 s）验证到信号层（音调估计 + 相位同步 + RY 测试
+    位模式恢复 ✓）；报文全文在这段弱录音（-24 dBFS + 有损 mp3 + 段间拼接）上需要
+    软判决与自适应时钟的完整接收机 —— 不在测试里夸大，写入 README。报文级正确性由
+    合成样本端到端单测全覆盖
+- [x] **Olivia 解码器**（2026-10）：`crates/olivia/`（**9 条单测** + 3 条互操作测试）+
+      `olivia-worker`（统一 Worker 协议接入，`params.mode` 选子模式）+ 页面
+      `/olivia-decode`（4 个标准子模式 4/125、8/250、16/500、32/1000）。算法 1:1 转写自
+      **sntfrc/olivia-python**（MIT，© Federico Santandrea，与 fldigi 对比验证过的独立
+      实现）：MFSK + Walsh-Hadamard 扩频 + 64 位固定密钥旋转异或 + 位交织 + Gray 码。
+  - **三套独立实现互锁**：`tests/reference/olivia_ref.rs` 里的独立 Rust 参考实现
+    （原仓库的无依赖移植，出处与许可写入 README，与 `src/` 不共享代码）+ 本仓
+    Rust + e2e 里的 TS 编码器 —— 互操作测试**进程内双向对拍**（参考编码 → 本仓
+    解码；本仓编码 → 参考解码，不依赖 python3），e2e 用 TS 编码器合成 WAV 由
+    浏览器 wasm 解码还原原文
+  - **移植中被对拍抓到的三处坑**：参考实现的 preamble 是把尾音调**右对齐进 64 符号块**
+    （数据从符号边界开始，我第一版顶头放导致整体错位 64 样本）；`np.flip` + 字符串转
+    整数互相抵消（符号整数 bit k = 原数组第 k 位，多翻一次全盘乱码）；离线解码的
+    对齐策略从「先到先得 + 滚动」改为「取零存疑且总置信度最高的对齐」（干净信号里
+    preamble 的错位窗口会碰巧过门限），门限本身不变
+- [x] **DominoEX 解码器**（2026-10）：`crates/dominoex/`（**6 条单测** + 3 条互操作测试）+
+      `dominoex-worker`（统一 Worker 协议，`params.mode` 选子模式）+ 页面
+      `/dominoex-decode`（6 个标准子模式 4/5/8/11/16/22，默认 DominoEX 8）。
+      算法与参数表转写自 **fldigi**（GPL-3.0，DominoEX 的事实参考实现）：
+      IFK+（`tone = (prev + 2 + nibble) mod 18`，18 音调、差分携带数据、±200 Hz 调谐
+      容差）+ Nibble Varicode（1–3 nibble/字符，MSB 结构自同步）。
+  - **三套实现互锁**：`tests/reference/dominoex_ref.rs` 的独立 Rust 移植（fldigi 的
+    dominoex.cxx 无依赖移植，与 `src/` 不共享代码）+ Rust 核心 + e2e 的 TS 编码器；
+    互操作测试**进程内双向对拍**（参考编码 → 本仓解码 EX8/EX16；本仓编码 →
+    参考解码，不依赖 python3）
+  - **数据表是生成物**：Varicode 512 码 + 4096 解码项由 `examples/extract_varicode.rs`
+    从 fldigi 的 `dominovar.cxx` 生成 Rust/TS 两份，内置 512 项往返自检 ——
+    移植时还抓到参考表自身的两处坑（如实记录）：二次信道 379/381 同码（表内
+    后写者赢）；IFK+ 增量 17 的模 18 环绕会产生 ±1 音调间隔（规格宣称「永不出现
+    相同或相邻音调」与代码不完全一致，单测只断言代码层面成立的「绝无同音调重复」）
+  - **如实说明**：FEC 模式（MFSK16 式卷积码 + 比特 Varicode）未实现 —— fldigi
+    默认 DominoEX 8 不开 FEC，本 crate 覆盖默认路径，页面提示写明
+- [~] **LRPT 解码链路（物理层 → 帧层 → 封装层 → 图像层，端到端打通）**
+      （2026-10）：`crates/lrpt/`（**27 条单测 + 3 条真实样本对拍测试**）——
+  - **信号层**：RRC 匹配滤波（自动采样相位搜索）+ 连续滑窗 Viterbi
+    （CCSDS k=7, r=1/2, 0x79/0x5B，字节对齐）+ NRZ-M + ASM 同步 +
+    去随机化（255 字节专用表）
+  - **纠错层**：RS(255,223) 交织 4 完整译码器（伴随式 + BM + Chien + Forney）——
+    「首根 112、步进 11」的非连续根约定是本轮最大坑：BM 求出的「位置」其实是
+    Y = X¹¹，Chien/Forney 都要按 11 步进、Forney 幅值用 X^(11−b)（b=212），
+    数值推演当场验出，测试钉住（每码字 5 错全纠、17 错如实拒绝）
+  - **封装 + 图像层**：VCDU/MPDU 包流解析（跨帧拼接 + 填充检测）→ MSU-MR 段
+    （MCUN/QF 头）→ JPEG 子集解码（LRPT 专用 ZIGZAG 序 + 亮度 Huffman 表 +
+    质量因子量化表 + IDCT）→ 三通道图像
+  - **端到端对拍**：lrpt-encoder（MIT，SatDump 可解码其输出）编码图像 →
+    288 kHz I/Q → 本 crate → **1568×1568 图像还原**（色带夹具逐像素一致、
+    a.png 夹具结构断言：R=G=B + 方差）—— 解出的图肉眼复核无误
+  - [x] **LRPT 前端页面**（2026-10）：`/lrpt-decode`（统一 Worker 协议第 8 个
+    codec）—— 上传 288 kHz 立体声 I/Q WAV → 完整链路出图（canvas 渲染 + PNG
+    下载）。e2e 上传 lrpt-encoder 的 2.4 MB 色带录音夹具，浏览器 wasm 解码
+    出图并**逐像素抽查**（浏览器解码 1.6 秒）。对拍逼出三个 wasm 现场 bug：
+    `parse_wav` 把立体声**平均成单声道**（(I+Q)/2 对 OQPSK 是无意义的混音 →
+    新增 `parse_wav_interleaved` 保留交错，单测钉住「左 +1 右 −1 平均为 0」）；
+    页面 `ImageData` 只收 RGBA（Worker 返回 RGB → 渲染层补 alpha）；短录音
+    首帧被滑窗 Viterbi 收敛区吃掉 → 解码器按 ms 时间戳对齐行号 + 只收三通道
+    交集里的完整行（fhp 重同步包流、帧计数允许非零起点）
+  - [x] **NAVTEX 前端页面**（2026-10）：`/navtex-decode`（第 7 个 codec）——
+    报文卡片（发射台/类别/序号 + 验收标记 + 修正统计 + 正文）。e2e 用**独立
+    TS 实现**的 CCIR 476 编码器（码表同源生成）合成 WAV，页面解码还原
+    「GALE WARNING IN SOUTHERN ADRIATIC 25 KNOTS」（FA 79 通过）
+  - [x] **解码 Worker 协议文档**（2026-10）：`docs/decode-worker-protocol.md`
+    —— 统一信封、8 个 codec 的参数与返回形态、wasm 胶水契约、页面桥四函数、
+    「新增解码器清单」九步（含 e2e 互锁约定）
+  - [x] **M2-2（80k）链路开关**（2026-10）：`crates/lrpt/src/m2.rs`（**3 条单测**）
+    —— 0x27 重同步（`resync_stream` 转写：80 符号步进上的重复字节定位 + 前瞻保持）、
+    符号级 36×2048 卷积去交织、QPSK 差分（`de_diffcode` 的硬判决等价）。**对拍逼出
+    两个真坑**：差分与交织不可交换（RX 顺序是 resync→deint→dediff，TX 必须先差分后
+    交织）；0x27 同步必须按**符号**步进插入（80 符号 = 8 同步 + 72 数据）。交织展宽
+    ~1.4M 符号 → 往返测试用 2500 帧、跳过两端模糊区、中部逐位一致（Viterbi/RF 与
+    72k 共用、已有单测）。如实说明：artlav 只有接收侧，发送侧约定由往返自洽兜底；
+    帧同步器 `mtd_one_frame` 软相关器未转写（本模块用连续 Viterbi + ASM 替代）——
+    真实 M2-2 录音对拍仍待 SatNOGS 样本
+  未完成（如实排队）：真实过境录音（SatNOGS）的前端对齐搜索、CCSDS 双基底转换、
+  坏帧容忍与帧计数重同步 —— 在这之前真实录音基本解不出，页面已标注「实验性」
+  （`tools.lrpt-experimental-note`），文案不再按「过境录音」宣传
 
 ### 硬件互联
 
-- [ ] KISS TNC over Web Serial：Packet / APRS 实际收发（现有 `aprs_codec.rs` 已具备编解码内核）
+- [x] **KISS TNC over Web Serial**（2026-10）：新页面 `/kiss-tnc`（内核
+      `crates/core/src/kiss.rs`，**14 条单测**）—— Web Serial 连接 TNC / Direwolf 的
+      KISS 串口模式，实时显示收到的 AX.25 帧（解析出 `源>目的:信息` 或 hex），发送
+      UI 帧（呼号 → AX.25 地址 + UI 控制 → KISS 封装 → 串口；KISS 载荷**不带 FCS**，由 TNC 的 HDLC 层追加）。要点：
+  - **KISS 流式解码器**处理任意分块、跨帧转义、坏转义序列丢弃、超长帧丢弃（单测逐条钉住）
+  - **两套实现对拍抓到一个真 bug**：无中继时 Rust 侧给 dest 地址也置了 E 位
+    （0x61 而非 0x60）—— E 位是 AX.25 地址字段的**定界方式**，只有最后一个地址才置；
+    e2e 用测试里**独立 JS 实现**的 AX.25 + KISS 封装与页面预览逐字节对拍，当场红，
+    修后逐字节一致；另有一条**手算字节序列**同时钉住两套实现（一致不等于正确）
+  - **硬件依赖部分如实标注**：串口收发链路需要真实 TNC（或 Direwolf）验证，自动化
+    测试覆盖离线可验证的全部（帧预览、编解码、错误处理）；页面顶部写明浏览器与
+    TNC 要求
 - [ ] 蓝牙 CAT（Web Bluetooth）
 - [ ] WebUSB 仪表读数（天线分析仪 / VNA）
 
 ### 开放 API
 
-- [ ] 把纯计算内核逐步开放为 `/api/v1/*`：天线求解、滤波设计、链路预算、单位换算
-- [ ] 契约单一事实来源仍在 `crates/core/src/api_v1.rs`，文档页 / `openapi.json` / 路由测试共用
+- [x] **纯计算内核开放为 `/api/v1/*`（首批三个端点）**（2026-10）：
+  - `/api/v1/units/convert`：dBm ↔ mW / W、dB ↔ 倍率、MHz ↔ 波长 —— 内核
+    `crates/core/src/unit_math.rs`（**4 条单测**，含非法输入拒绝：非正功率 / 非正波长）
+  - `/api/v1/filter/design`：巴特沃斯 LC 滤波设计（低通 / 高通 / 带通 / 带阻，1–9 阶、
+    特征阻抗可设）—— 内核是既有的 `filter_design.rs`（早有单测）
+  - `/api/v1/link-budget`：Friis 自由空间公式 —— 内核 `crates/core/src/link_budget.rs`
+    （**3 条单测**，钉住经典例题：146 MHz / 100 km → FSPL 115.737 dB；单测自己抓过
+    一处手算错 —— 我把 20·lg146 四舍五入成 43.29 再相加，正确值是 43.287）
+  - **天线求解刻意不做**（保持早前结论：只有把分段上限提到上千段才需要服务器端求解）
+  - 三个处理器都有**直测**（不靠起 HTTP：`units_convert` 的 30 dBm → 1000 mW、滤波器
+    3 阶串并串结构、链路预算数值）；既有的 `every_documented_endpoint_is_routed`
+    测试自动把新端点纳入「契约 ↔ 路由一致」校验
+- [x] **契约单一事实来源**（2026-10）：核实既定架构已满足 —— `crates/core/src/api_v1.rs`
+      的 `ENDPOINTS` 表是唯一来源，文档页（`/developers`）、`/api/v1/openapi.json`、
+      路由测试全部从它派生（新端点零额外登记就上了文档页与 OpenAPI，e2e 钉住
+      `/developers` 列出三个新端点与示例链接）
 
 ---
 
@@ -880,9 +1012,9 @@
 
 | 能力 | 现状 | 目标 | 状态 |
 | --- | --- | --- | --- |
-| 统一搜索 | `/` 唤起命令面板，检索术语 / 简语 / 知识条目 | 扩展到工具、页面、日志 QSO、法规条文；支持 `dxcc:` `band:` 等领域前缀语法 | [ ] |
+| 统一搜索 | `/` 唤起命令面板，检索术语 / 简语 / 知识条目 | 扩展到工具、页面、日志 QSO、法规条文；支持 `dxcc:` `band:` 等领域前缀语法 | [x]（2026-10：**全部页面入口**（导航注册表）入索引；领域前缀 `dxcc:` / `band:` / `mode:`（业余波段两种写法 band:20m / ITU 缩写 band:hf）；**本地日志 QSO** 入结果且排最前（band:/mode: 前缀同样作用于日志字段，dxcc: 因呼号→实体映射缺失如实不做 —— 静态 DXCC 条目仍可命中）；核心 11 条单测 + e2e 2 条钉住） |
 | 存储门面 | `kv.rs` + IndexedDB 双写 + **写入版本仲裁**，容量预警 | 新增大数据（QSL 影像、天线方案）统一走 `kv` | [~] |
-| 数据备份 | 导出 / 导入 / 按类型合并 | 纳入 QSL 影像与天线方案的导出（受体积限制，提供按模块勾选） | [ ] |
+| 数据备份 | 导出 / 导入 / 按类型合并 | 纳入 QSL 影像与天线方案的导出（受体积限制，提供按模块勾选） | [x]（2026-10：**按模块勾选导出**—— 通联数据 / QSL 影像 / 其他本地数据三个开关；QSL 影像本体从 IndexedDB 异步读回并入同一份 JSON，导入侧对 `qsl-image:` 前缀直写 IndexedDB 避开 localStorage 配额（覆盖与合并导入同规则）。`core::classify_key` 纯函数 + 5 条单测钉住归类边界；e2e 钉住「不勾选的通联数据不进备份」。如实说明：路线图原文的「天线方案」目前没有持久化存储（NEC 编辑器不落盘），无数据可导出 —— 待有设计存档功能后自动纳入「其他」分类） |
 | 无障碍与冒烟 | 全路由自动纳入 `smoke.spec.ts` + axe | 新增交互工具需补专属 e2e 用例与 `coverage-targets.json` 旅程 | [ ] |
 | 性能预算 | wasm-opt `z`、预压缩、Worker 拆分 | 新增大内核前先评估主包体积增量 | [ ] |
 

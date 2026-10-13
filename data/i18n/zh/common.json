@@ -121,7 +121,6 @@
   "common.exam-date": "考试日期",
   "common.exam-today-good-luck": "今天考试，祝顺利通过！考前只看看错题，别再刷新题了。",
   "common.explanation": "解析：{}",
-  "common.failed-to-read-the": "读取文件失败",
   "common.field-is-missing": "字段 {} 缺失",
   "common.field-is-not-a": "字段 {} 不是字节数组",
   "common.frequency-and-mode-fill": "连接后自动回填频率与模式",

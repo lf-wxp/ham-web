@@ -1,0 +1,20 @@
+[package]
+name = "ham-web-dominoex"
+description = "DominoEX 数字模式编解码：IFK+ 增量频移键控 + Nibble Varicode（纯 Rust，无外部依赖）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+# 与工作区默认的 MIT 不同：算法与 Varicode 表转写自 fldigi（GPL-3.0），整个 crate 按 GPL-3.0 发布（全文见仓库根目录 LICENSES/）。
+license = "GPL-3.0-only"
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+ham-web-dsp.workspace = true
+
+[dev-dependencies]
+ham-web-apt.workspace = true
+
+
+[lints]
+workspace = true

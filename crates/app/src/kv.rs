@@ -36,8 +36,8 @@ use crate::util::storage;
 
 /// 快照版本号的 key 后缀。
 ///
-/// 它是门面内部约定，但会随 [`crate::util::export_backup`] 一起进出备份文件 —— 恢复了
-/// 带版本号的备份时，[`mirror_snapshots`] 正是靠它认出「哪些 key 由门面托管」。
+/// 它是门面内部约定，备份恢复时忽略来源版本并分配新的本机写入版本，
+/// 不允许用旧快照做全量回灌。
 pub const VERSION_SUFFIX: &str = ":kv-version";
 
 thread_local! {
@@ -141,10 +141,46 @@ pub fn save_large(key: &str, value: &str) {
   });
 }
 
+/// 备份恢复必须等待权威层落盘；失败不宣告成功，快照仅作尽力同步。
+pub async fn restore_large(key: &str, value: &str) -> bool {
+  let version = next_version();
+  let record = encode(version, value);
+  if !crate::idb::set_committed(key, &record)
+    .await
+    .unwrap_or(false)
+  {
+    return false;
+  }
+  if crate::idb::cache_get(key).as_deref() != Some(&record) {
+    return false;
+  }
+  if storage::set_silent(key, value) {
+    if !storage::set_silent(&version_key(key), &version.to_string()) {
+      storage::remove(key);
+      storage::remove(&version_key(key));
+    }
+  } else {
+    storage::remove(key);
+    storage::remove(&version_key(key));
+  }
+  true
+}
+
+/// 备份使用严格读取：权限或 IndexedDB 错误不能被当成「没有日志」。
+pub async fn load_large_strict(key: &str) -> Result<Option<String>, wasm_bindgen::JsValue> {
+  let stored = crate::idb::get(key).await?;
+  // 快照与版本必须在同一个同步段读取，不能把 await 前的旧值配上新版本。
+  Ok(select_latest(key, stored))
+}
+
 /// 读取大体积数据（异步）：比较两侧的写入版本，返回更新的那一份。
 pub async fn load_large(key: &str) -> Option<String> {
-  let snapshot = storage::get(key);
   let stored = crate::idb::get(key).await.ok().flatten();
+  select_latest(key, stored)
+}
+
+fn select_latest(key: &str, stored: Option<String>) -> Option<String> {
+  let snapshot = storage::get(key);
   match (snapshot, stored) {
     (None, None) => None,
     (Some(snapshot), None) => Some(snapshot),
@@ -166,19 +202,24 @@ pub async fn load_large(key: &str) -> Option<String> {
 /// 界面 —— 写入期间页面被卸载就是永久丢失，宁可让用户看到「保存中」，也不要假装成功。
 /// 返回是否落盘成功。
 pub async fn save_store_only(key: &str, value: &str) -> bool {
-  crate::idb::cache_put(key, value);
-  crate::idb::set(key, value).await.is_ok()
+  crate::idb::set_committed_uncached(key, value)
+    .await
+    .unwrap_or(false)
+}
+
+/// 备份专用影像读取：存储错误不能静默漏导出或当作不存在覆盖。
+pub async fn load_store_only_strict(key: &str) -> Result<Option<String>, wasm_bindgen::JsValue> {
+  crate::idb::get_uncached(key).await
 }
 
 /// 读 [`save_store_only`] 写的数据。
 pub async fn load_store_only(key: &str) -> Option<String> {
-  crate::idb::get(key).await.ok().flatten()
+  crate::idb::get_uncached(key).await.ok().flatten()
 }
 
 /// 删除 [`save_store_only`] 写的数据，返回是否删除成功。
 pub async fn remove_store_only(key: &str) -> bool {
-  crate::idb::cache_remove(key);
-  crate::idb::remove(key).await.is_ok()
+  crate::idb::remove_committed(key).await.unwrap_or(false)
 }
 
 /// 删除大体积数据：快照、版本号与权威记录一起删（异步 fire-and-forget）。
@@ -192,27 +233,10 @@ pub fn remove_large(key: &str) {
   crate::idb::cache_remove(key);
   let key = key.to_owned();
   wasm_bindgen_futures::spawn_local(async move {
-    let _ = crate::idb::remove(&key).await;
+    // 用等提交的版本：请求成功不等于已持久化，而且它会重新检查代次，
+    // 不会把期间的新写入当成「已删除」。
+    let _ = crate::idb::remove_committed(&key).await;
   });
-}
-
-/// 把快照层的内容回灌权威层（备份 / 合并导入之后调用）。
-///
-/// [`crate::util::import_backup`] 与 `import_backup_merge` 只写 localStorage；不同步回灌的
-/// 话，下次加载时权威层的版本号可能更高（甚至只是旧数据），用户就会看到「提示导入成功、
-/// 数据却没变」。这里把所有**带版本号**的 key（即门面托管的大数据）重新走一遍
-/// [`save_large`]：内容不变，只是把两侧版本对齐到同一个新版本，于是快照侧不再被判过期。
-///
-/// 幂等：多回灌一次只是把同样的内容再写一遍。
-pub fn mirror_snapshots() {
-  for (key, _) in storage::usage() {
-    let Some(base) = key.strip_suffix(VERSION_SUFFIX) else {
-      continue;
-    };
-    if let Some(value) = storage::get(base) {
-      save_large(base, &value);
-    }
-  }
 }
 
 #[cfg(test)]

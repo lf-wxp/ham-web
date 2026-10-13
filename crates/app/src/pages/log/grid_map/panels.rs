@@ -6,6 +6,7 @@ use leptos::prelude::*;
 use super::super::grid_geo::{square_center, square_label};
 use super::state::{GridMapState, WORLD_SQUARES};
 use crate::i18n::{t, tf};
+use crate::ui::{Button, Size, Variant};
 
 #[component]
 pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
@@ -114,13 +115,13 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
           <div class="mt-2 rounded-lg border bg-muted/30 p-3 text-xs">
             <div class="mb-1 flex items-center justify-between">
               <span class="font-semibold">{move || t("log.click-inspector")}</span>
-              <button
-                type="button"
-                class="text-muted-foreground transition-colors hover:text-foreground"
-                on:click=move |_| state.clicked_pos.set(None)
+              <Button
+                variant=Variant::Text
+                size=Size::Xs
+                on_click=Callback::new(move |_| state.clicked_pos.set(None))
               >
                 {move || t("log.close")}
-              </button>
+              </Button>
             </div>
             <div class="font-mono text-sm">{grid}</div>
             <div class="mt-0.5 text-muted-foreground tabular-nums">

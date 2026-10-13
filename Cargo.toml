@@ -6,19 +6,32 @@ members = [
   "crates/app",
   "crates/server",
   "crates/tools",
+  "crates/dsp",
+  "crates/wav",
   "crates/apt",
   "crates/apt-worker",
   "crates/sstv",
   "crates/sstv-worker",
   "crates/wspr",
   "crates/wspr-worker",
+  "crates/rtty",
+  "crates/rtty-worker",
+  "crates/navtex",
+  "crates/olivia",
+  "crates/olivia-worker",
+  "crates/dominoex",
+  "crates/dominoex-worker",
+  "crates/lrpt",
+  "crates/navtex-worker",
+  "crates/lrpt-worker",
 ]
 default-members = ["crates/core", "crates/server", "crates/tools", "crates/apt"]
 
 [workspace.package]
-version = "0.4.1"
+version = "0.4.2"
 edition = "2024"
 rust-version = "1.88"
+# 工作区默认 MIT；dominoex / lrpt / navtex 及其 worker 六个 crate 因含 GPL-3.0 转写代码，单独声明 GPL-3.0-only。
 license = "MIT"
 repository = "https://github.com/lf-wxp/ham-web"
 homepage = "https://ham.onlyxp.me"
@@ -28,10 +41,22 @@ authors = ["lf-wxp"]
 ham-web-core = { path = "crates/core" }
 ham-web-nec = { path = "crates/nec" }
 ham-web-apt = { path = "crates/apt" }
+ham-web-dsp = { path = "crates/dsp" }
+ham-web-wav = { path = "crates/wav" }
 ham-web-sstv = { path = "crates/sstv" }
 ham-web-sstv-worker = { path = "crates/sstv-worker" }
 ham-web-wspr = { path = "crates/wspr" }
 ham-web-wspr-worker = { path = "crates/wspr-worker" }
+ham-web-rtty = { path = "crates/rtty" }
+ham-web-rtty-worker = { path = "crates/rtty-worker" }
+ham-web-navtex = { path = "crates/navtex" }
+ham-web-olivia = { path = "crates/olivia" }
+ham-web-olivia-worker = { path = "crates/olivia-worker" }
+ham-web-dominoex = { path = "crates/dominoex" }
+ham-web-dominoex-worker = { path = "crates/dominoex-worker" }
+ham-web-lrpt = { path = "crates/lrpt" }
+ham-web-navtex-worker = { path = "crates/navtex-worker" }
+ham-web-lrpt-worker = { path = "crates/lrpt-worker" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

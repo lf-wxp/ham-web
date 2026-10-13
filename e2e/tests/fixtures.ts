@@ -24,7 +24,9 @@ export const test = base.extend<{ helpSeen: boolean }>({
 /** 当前题目中字母为 `letter` 的选项：练习 / 考试为 radio 或 checkbox，错题重练为切换按钮。 */
 export function option(page: Page, letter: string) {
   const main = page.locator("main");
-  const name = new RegExp(`^${letter}(\\s*\\.|\\s)`);
+  // 「A 类」这类题库切换 chip 也是 radio，名字与选项字母前缀相同；负向断言把「类」排除，
+  // 只留题目选项（「A.…」或「A …」）。
+  const name = new RegExp(`^${letter}(\\s*\\.|\\s(?!类))`);
   return main
     .getByRole("radio", { name })
     .or(main.getByRole("checkbox", { name }))
@@ -52,6 +54,25 @@ export async function waitSettled(page: Page) {
       { timeout: 15_000, polling: 100 },
     )
     .catch(() => undefined);
+}
+
+/**
+ * 等页面上所有 CSS / Web 动画播完，并再让出两帧。
+ *
+ * 用途有二：① axe 在入场动画中途（`animate-in` 300 ms）取到的是半透明色，对比度会误报；
+ * ② 「断言某件事**没有**发生」的用例（滑动太短不翻页、重载后弹窗不再出现）需要一个确定的
+ * 「该发生的都已经发生过了」时刻，而不是赌一个固定毫秒数。
+ *
+ * 无限循环的动画（spinner、`steps()` 逐帧）没有 `finished`，只等有限时长的那些。
+ */
+export async function settleFrames(page: Page) {
+  await page.evaluate(async () => {
+    const finite = document
+      .getAnimations()
+      .filter((a) => Number.isFinite(a.effect?.getComputedTiming().endTime ?? 0));
+    await Promise.allSettled(finite.map((a) => a.finished));
+    await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+  });
 }
 
 /** 练习页「正确答案：A, C」中的字母。 */

@@ -10,7 +10,7 @@ use crate::morse_settings::use_morse_settings;
 use crate::ui::{Button, ButtonKind, ControlSize, Input, Size, Slider, Variant};
 use crate::util::{random, storage};
 
-use super::{encode_words, pill_class};
+use super::encode_words;
 use crate::i18n::{t, tf, tp};
 
 const KEY: &str = "morse-koch";
@@ -125,9 +125,30 @@ pub(super) fn KochTrainer() -> impl IntoView {
             {move || tf("common.level", &[&(progress.with(|p| p.level)).to_string(), &(max_level()).to_string()])}
           </span>
         </h2>
-        <button type="button" class=pill_class(false) on:click=move |_| set_level(-1) title=move || t("morse.remove-one-character")>{move || t("morse.character-2")}</button>
-        <button type="button" class=pill_class(false) on:click=move |_| set_level(1) title=move || t("morse.skip-this-level-and")>{move || t("morse.character")}</button>
-        <button type="button" class=pill_class(false) on:click=move |_| reset_progress() title=move || t("morse.reset-progress")>{move || t("morse.reset")}</button>
+        <Button
+          variant=Variant::Outline
+          size=Size::Sm
+          title=Signal::derive(move || t("morse.remove-one-character"))
+          on_click=Callback::new(move |_| set_level(-1))
+        >
+          {move || t("morse.character-2")}
+        </Button>
+        <Button
+          variant=Variant::Outline
+          size=Size::Sm
+          title=Signal::derive(move || t("morse.skip-this-level-and"))
+          on_click=Callback::new(move |_| set_level(1))
+        >
+          {move || t("morse.character")}
+        </Button>
+        <Button
+          variant=Variant::Outline
+          size=Size::Sm
+          title=Signal::derive(move || t("morse.reset-progress"))
+          on_click=Callback::new(move |_| reset_progress())
+        >
+          {move || t("morse.reset")}
+        </Button>
       </div>
 
       <div class="space-y-4 p-4">

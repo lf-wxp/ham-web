@@ -9,7 +9,7 @@ use leptos::task::spawn_local;
 
 use super::{Wire, WireRow};
 use crate::i18n::{t, tf};
-use crate::ui::{Chip, ChipGroup};
+use crate::ui::{Button, Chip, ChipGroup, Size, Variant};
 use crate::util::sleep;
 
 const NOTE: &str = "text-xs text-muted-foreground";
@@ -133,14 +133,14 @@ pub(super) fn DesignSection(
             .map(|&n| view! { <Chip value=n.to_string()>{n}</Chip> })
             .collect_view()}
         </ChipGroup>
-        <button
-          type="button"
-          class="cursor-pointer rounded-md border bg-background px-3 py-1 text-xs font-medium hover:bg-accent disabled:opacity-50"
-          disabled=move || running.get()
-          on:click=run
+        <Button
+          variant=Variant::Outline
+          size=Size::Xs
+          disabled=Signal::derive(move || running.get())
+          on_click=Callback::new(move |_| run(()))
         >
           {move || t("tools.nec-design-run")}
-        </button>
+        </Button>
       </div>
 
       {move || {
@@ -219,13 +219,9 @@ pub(super) fn DesignSection(
             {tf("tools.nec-design-result", &[&gain, &fb, &swr, &evals])}
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              class="cursor-pointer rounded-md border bg-background px-3 py-1 text-xs font-medium hover:bg-accent"
-              on:click=load
-            >
+            <Button variant=Variant::Outline size=Size::Xs on_click=Callback::new(move |_| load(()))>
               {move || t("tools.nec-design-load")}
-            </button>
+            </Button>
             {move || {
               if loaded.get() {
                 view! { <span class=NOTE>{move || t("tools.nec-design-loaded")}</span> }

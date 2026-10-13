@@ -1,0 +1,19 @@
+[package]
+name = "ham-web-rtty"
+description = "RTTY（无线电传）编码与解码：45.45 波特 / 170 Hz FSK / ITA2（纯 Rust，无外部依赖）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+# `ham-web-apt` 只被 examples / tests 用来解析 WAV，库本身不依赖它。
+[dependencies]
+ham-web-dsp.workspace = true
+
+[dev-dependencies]
+ham-web-apt.workspace = true
+
+[lints]
+workspace = true

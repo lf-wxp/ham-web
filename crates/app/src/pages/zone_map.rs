@@ -11,7 +11,7 @@ use leptos_router::hooks::use_query_map;
 use crate::components::common::{BulletSection, ConceptsSection, KnowledgePage};
 use crate::i18n::{t, tf, tp};
 use crate::pages::map::ZoneMap;
-use crate::ui::{Button, Input, Size, Variant};
+use crate::ui::{Button, Chip, ChipGroup, Input, Size, Variant};
 use crate::util::{alert, set_title};
 
 #[component]
@@ -87,34 +87,20 @@ pub fn ZoneMapPage() -> impl IntoView {
       <section class="rounded-xl border bg-card">
         <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.zone-map")}</h2>
         <div class="flex flex-wrap items-center gap-3 p-4">
-          <div class="flex rounded-lg border p-0.5">
-            <button
-              type="button"
-              class=move || {
-                if is_cq.get() {
-                  "rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
-                } else {
-                  "rounded-md px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                }
+          <ChipGroup
+            value=Signal::derive(move || (if is_cq.get() { "cq" } else { "itu" }).to_string())
+            on_change=Callback::new(move |v: String| is_cq.set(v == "cq"))
+            aria_label=Signal::derive(move || t("radio.zone-map-cq-itu"))
+          >
+            {
+              let cq = view! { {move || t("radio.cq-zones-40")} }.into_any();
+              let itu = view! { {move || t("radio.itu-zones-90")} }.into_any();
+              view! {
+                <Chip value="cq".to_string()>{cq}</Chip>
+                <Chip value="itu".to_string()>{itu}</Chip>
               }
-              on:click=move |_| is_cq.set(true)
-            >
-              {move || t("radio.cq-zones-40")}
-            </button>
-            <button
-              type="button"
-              class=move || {
-                if is_cq.get() {
-                  "rounded-md px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                } else {
-                  "rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
-                }
-              }
-              on:click=move |_| is_cq.set(false)
-            >
-              {move || t("radio.itu-zones-90")}
-            </button>
-          </div>
+            }
+          </ChipGroup>
           <Input
             value=query
             on_change=Callback::new(move |v: String| query.set(v))
@@ -171,7 +157,11 @@ pub fn ZoneMapPage() -> impl IntoView {
         <h2 class="border-b px-4 py-3 text-sm font-semibold">
           {move || tf("radio.legend-zones-the-number", &[&max_zone.get().to_string()])}
         </h2>
-        <div class="flex flex-wrap gap-1.5 p-4">
+        <ChipGroup
+          value=Signal::derive(move || selected.get().map(|z| z.to_string()).unwrap_or_default())
+          on_change=Callback::new(move |v: String| selected.set(v.parse::<u8>().ok()))
+          class="gap-1.5 p-4"
+        >
           {move || {
             let max = max_zone.get();
             counts
@@ -179,26 +169,16 @@ pub fn ZoneMapPage() -> impl IntoView {
               .into_iter()
               .map(|(z, n)| {
                 let color = zone_color(z, max);
-                view! {
-                  <button
-                    type="button"
-                    class=move || {
-                      if selected.get() == Some(z) {
-                        "flex items-center gap-1.5 rounded-full border border-primary px-2 py-0.5 text-xs"
-                      } else {
-                        "flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs transition-colors hover:bg-accent"
-                      }
-                    }
-                    on:click=move |_| selected.set(Some(z))
-                  >
-                    <span class="inline-block h-3 w-3 rounded-sm" style=format!("background-color: {color}")></span>
-                    <span class="tabular-nums">{format!("{z} ({n})")}</span>
-                  </button>
+                let label = view! {
+                  <span class="inline-block h-3 w-3 rounded-sm" style=format!("background-color: {color}")></span>
+                  <span class="tabular-nums">{format!("{z} ({n})")}</span>
                 }
+                  .into_any();
+                view! { <Chip value=z.to_string()>{label}</Chip> }
               })
               .collect_view()
           }}
-        </div>
+        </ChipGroup>
       </section>
 
       <section class="rounded-xl border bg-card">
@@ -239,28 +219,20 @@ pub fn ZoneMapPage() -> impl IntoView {
                 .into_any()
               } else {
                 view! {
-                  <div class="flex flex-wrap gap-1.5 px-4 pb-4">
+                  <ChipGroup
+                    value=Signal::derive(move || hit.get().map(|i| i.to_string()).unwrap_or_default())
+                    on_change=Callback::new(move |v: String| hit.set(v.parse::<u16>().ok()))
+                    class="gap-1.5 px-4 pb-4"
+                  >
                     {list
                       .into_iter()
                       .map(|e| {
                         let id = e.dxcc;
-                        let active = hit.get() == Some(id);
-                        view! {
-                          <button
-                            type="button"
-                            class=if active {
-                              "rounded-full border border-amber-500 bg-amber-500/10 px-2.5 py-1 text-xs"
-                            } else {
-                              "rounded-full border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                            }
-                            on:click=move |_| hit.set(Some(id))
-                          >
-                            {e.name}
-                          </button>
-                        }
+                        let label = view! { {e.name} }.into_any();
+                        view! { <Chip value=id.to_string()>{label}</Chip> }
                       })
                       .collect_view()}
-                  </div>
+                  </ChipGroup>
                 }
                 .into_any()
               }}

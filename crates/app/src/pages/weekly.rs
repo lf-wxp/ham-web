@@ -7,6 +7,7 @@ use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf, tp};
 use crate::share_score;
 use crate::study;
+use crate::ui::{Button, Size, Variant};
 use crate::util::{local_today, set_title};
 
 #[component]
@@ -153,27 +154,27 @@ pub fn WeeklyPage() -> impl IntoView {
         subtitle=move || t("learning.two-week-answering-trend")
         actions=ViewFn::from(move || {
           view! {
-            <button
-              type="button"
-              class="rounded-md border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
-              on:click=move |_| share.run(())
+            <Button
+              variant=Variant::Outline
+              size=Size::Sm
+              on_click=Callback::new(move |_| share.run(()))
             >
               {move || t("learning.download-card")}
-            </button>
-            <button
-              type="button"
-              class="rounded-md border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
-              on:click=move |_| copy.run(())
+            </Button>
+            <Button
+              variant=Variant::Outline
+              size=Size::Sm
+              on_click=Callback::new(move |_| copy.run(()))
             >
               {move || t("learning.copy-image")}
-            </button>
-            <button
-              type="button"
-              class="rounded-md border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
-              on:click=move |_| sys_share.run(())
+            </Button>
+            <Button
+              variant=Variant::Outline
+              size=Size::Sm
+              on_click=Callback::new(move |_| sys_share.run(()))
             >
               {move || t("learning.system-share")}
-            </button>
+            </Button>
             <a href="/progress" class="text-xs text-primary underline-offset-4 hover:underline">
               {move || t("learning.progress")}
             </a>

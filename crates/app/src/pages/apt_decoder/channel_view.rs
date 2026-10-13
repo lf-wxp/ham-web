@@ -4,6 +4,7 @@ use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 
 use crate::i18n::t;
+use crate::ui::{Button, Size, Variant};
 use crate::util::document;
 
 fn download(name: &str, url: &str) {
@@ -32,15 +33,15 @@ pub(super) fn ChannelView(
     <div class="space-y-2">
       <div class="flex items-center justify-between">
         <h3 class="text-sm font-medium">{label}</h3>
-        <button
-          type="button"
-          class="rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          on:click=move |_| download(&download_name, &download_url)
+        <Button
+          variant=Variant::Outline
+          size=Size::Sm
+          on_click=move |_| download(&download_name, &download_url)
         >
           {move || t("tools.download-png")}
-        </button>
+        </Button>
       </div>
-      <img src=url alt=label_alt class="w-full rounded-lg border bg-black/5" />
+      <img src=url alt=label_alt class="w-full border bg-black/5" />
     </div>
   }
 }

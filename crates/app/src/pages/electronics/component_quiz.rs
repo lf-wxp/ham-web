@@ -4,7 +4,9 @@ use ham_web_core::electronics::COMPONENTS;
 use ham_web_core::exam::shuffle_in_place;
 use leptos::prelude::*;
 
+use crate::components::quiz_option::QuizOption;
 use crate::i18n::t;
+use crate::ui::{Button, Variant};
 use crate::util::random;
 
 /// 元件识别测验：给出符号 / 单位，从四个元件名中选出正确项。
@@ -70,13 +72,13 @@ pub(super) fn ComponentQuiz() -> impl IntoView {
               .map(|opt| {
                 let chosen = opt.clone();
                 view! {
-                  <button
-                    type="button"
-                    on:click=move |_| judge(chosen.clone())
-                    class="rounded-lg border px-3 py-2.5 text-center text-sm font-medium transition-colors hover:bg-accent"
+                  <QuizOption
+                    class="text-center font-medium"
+                    disabled=Signal::derive(move || feedback.get().is_some())
+                    on_click=Callback::new(move |_| judge(chosen.clone()))
                   >
                     {opt}
-                  </button>
+                  </QuizOption>
                 }
               })
               .collect_view()
@@ -102,13 +104,9 @@ pub(super) fn ComponentQuiz() -> impl IntoView {
               })
             }}
           </div>
-          <button
-            type="button"
-            on:click=move |_| load_next()
-            class="rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
-          >
+          <Button variant=Variant::Outline on_click=Callback::new(move |_| load_next())>
             {move || t("exam.next")}
-          </button>
+          </Button>
           <div class="text-xs text-muted-foreground">
             "正确 " <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
             "　错误 " <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>

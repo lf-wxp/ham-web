@@ -1,7 +1,7 @@
 //! 词典索引。
 //!
 //! 词条本体不在代码里，而在 `data/i18n/{lang}/{domain}.json`（按域拆分，见
-//! `docs/i18n-refactor.md`）；[`build.rs`](../../build.rs) 在构建期把它们编成下面的
+//! `docs/i18n.md`）；[`build.rs`](../../build.rs) 在构建期把它们编成下面的
 //! 静态表，这里只负责聚成 O(1) 的哈希索引。
 //!
 //! 只有中文全量入表，其它语言只编进内嵌域（`BUNDLED_DOMAINS`）—— 其余译文由

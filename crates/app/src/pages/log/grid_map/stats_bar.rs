@@ -4,6 +4,7 @@ use leptos::prelude::*;
 
 use super::state::GridMapState;
 use crate::i18n::t;
+use crate::ui::{Button, Size, Variant};
 
 #[component]
 pub(super) fn GridStatsBar(state: GridMapState) -> impl IntoView {
@@ -29,20 +30,12 @@ pub(super) fn GridStatsBar(state: GridMapState) -> impl IntoView {
         </span>
       </span>
       <div class="ml-auto flex items-center gap-1">
-        <button
-          type="button"
-          class="rounded-md border px-2 py-0.5 text-xs transition-colors hover:bg-accent"
-          on:click=move |_| state.export_svg()
-        >
+        <Button variant=Variant::Outline size=Size::Sm on_click=Callback::new(move |_| state.export_svg())>
           {move || t("log.export-svg")}
-        </button>
-        <button
-          type="button"
-          class="rounded-md border px-2 py-0.5 text-xs transition-colors hover:bg-accent"
-          on:click=move |_| state.copy_summary()
-        >
+        </Button>
+        <Button variant=Variant::Outline size=Size::Sm on_click=Callback::new(move |_| state.copy_summary())>
           {move || t("log.copy-summary")}
-        </button>
+        </Button>
       </div>
     </div>
   }

@@ -228,13 +228,14 @@ pub fn CountdownPage() -> impl IntoView {
                         )>
                           {format_remaining(remain)}
                         </div>
-                        <button
-                          type="button"
-                          class="shrink-0 text-xs text-muted-foreground transition-colors hover:text-destructive"
-                          on:click=move |_| remove(id)
+                        <Button
+                          variant=Variant::Text
+                          size=Size::Xs
+                          class="shrink-0 hover:text-destructive"
+                          on_click=Callback::new(move |_| remove(id))
                         >
                           {move || t("log.delete")}
-                        </button>
+                        </Button>
                       </div>
                     }
                   })

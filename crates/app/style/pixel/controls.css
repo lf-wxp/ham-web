@@ -152,6 +152,41 @@
       inset -2px -2px 0 0 var(--pxl-hi);
   }
 
+  /* 文字按钮：透明底、无边框与投影，悬停只换文字色（句内「编辑 / 删除」这类）。
+     悬停要变红由调用点补 `hover:text-destructive` —— 工具类层级更高，能覆盖 --btn-fg。 */
+  .pxl-btn-text {
+    --btn-bg: transparent;
+    --btn-fg: var(--muted-foreground);
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  @media (hover: hover) {
+    .pxl-btn-text:hover:not(:disabled) {
+      --btn-fg: var(--foreground);
+      translate: 0 0;
+      filter: none;
+      box-shadow: none;
+    }
+  }
+
+  .pxl-btn-text:active:not(:disabled) {
+    --btn-fg: var(--foreground);
+    translate: 0 0;
+    box-shadow: none;
+  }
+
+  /* 无底色的按钮禁用时不要网点遮罩（整块网点看起来像脏点），半透明即可。 */
+  .pxl-btn-text:disabled {
+    box-shadow: none;
+    filter: none;
+    opacity: 0.5;
+  }
+
+  .pxl-btn-text:disabled::after {
+    content: none;
+  }
+
   /* ---------- 输入框：凹陷 ---------- */
   .pxl-field {
     display: flex;

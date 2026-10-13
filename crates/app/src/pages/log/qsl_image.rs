@@ -36,7 +36,7 @@ use super::use_log_store;
 
 /// 「哪些通联存了卡片影像」的 id 集合（localStorage 里的小数据）。
 /// `pub(super)`：日志 store 要监听它的跨标签页变化。
-pub(super) const INDEX_KEY: &str = "qsl-image-index";
+pub(super) const INDEX_KEY: &str = qsl_image::INDEX_KEY;
 
 /// 读索引。
 pub(super) fn index() -> HashSet<u64> {
@@ -121,8 +121,9 @@ pub(super) fn QslImage(entry_id: u64) -> impl IntoView {
   // 否则先完成的会被后完成的覆盖，最终存下的可能不是用户最后选的那张。
   let generation = StoredValue::new(0u32);
   // 卸载守卫：`spawn_local` 的续体不会被取消，而 `await`（IndexedDB 读写、图片解码）
-  // 期间用户可能已经离开 `/log` 或切换了编辑对象 —— 那时这些信号已随 Owner 释放，
-  // 再 `set` 会直接 panic，把整个 wasm 实例带走（见 `util::mount_guard`）。
+  // 期间用户可能已经离开 `/log` 或切换了编辑对象 —— 那时这些信号已随 Owner 释放：
+  // 再 `set` 是静默空操作（存下的影像与界面状态对不上），再读会 panic 带走整个
+  // wasm 实例（见 `util::mount_guard`）。
   // 守卫必须在**组件体**里取：事件回调 / 定时器回调里拿不到 Owner 上下文。
   let alive = crate::util::mount_guard();
   let alive_read = alive.clone();
@@ -132,10 +133,11 @@ pub(super) fn QslImage(entry_id: u64) -> impl IntoView {
   // 挂载时读一次已有影像（`entry_id` 变了会整块重建，所以不需要再跟踪它）。
   Effect::new(move |_| {
     let key = key.get_value();
+    let token = generation.get_value();
     let alive = alive_read.clone();
     spawn_local(async move {
       let loaded = crate::kv::load_store_only(&key).await;
-      if !alive() {
+      if !alive() || generation.try_get_value() != Some(token) {
         return;
       }
       stored.set(loaded);
@@ -163,12 +165,16 @@ pub(super) fn QslImage(entry_id: u64) -> impl IntoView {
     let alive = alive_upload.clone();
     spawn_local(async move {
       // 更晚的一次上传已经开始：这次的结果作废（连 `busy` 也交给它收尾）。
-      if generation.get_value() != token {
+      if !alive() || generation.try_get_value() != Some(token) {
         return;
       }
       let photo = process_photo(PhotoKind::QslCard, file).await;
       // 解码期间组件被卸载、或用户又选了别的：不动信号，也不要把这次的图盖上去。
-      if !alive() || generation.get_value() != token {
+      if !alive() || generation.try_get_value() != Some(token) {
+        return;
+      }
+      if store.backup_busy.get_untracked() {
+        busy.set(false);
         return;
       }
       match photo {

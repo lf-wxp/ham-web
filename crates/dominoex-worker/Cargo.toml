@@ -1,0 +1,23 @@
+[package]
+name = "ham-web-dominoex-worker"
+description = "DominoEX 解码器的 Web Worker 绑定（wasm-bindgen no-modules）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+# 与工作区默认的 MIT 不同：绑定 GPL-3.0 的 ham-web-dominoex，整个 crate 按 GPL-3.0 发布（全文见仓库根目录 LICENSES/）。
+license = "GPL-3.0-only"
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ham-web-dominoex.workspace = true
+ham-web-apt.workspace = true
+wasm-bindgen.workspace = true
+js-sys.workspace = true
+
+
+[lints]
+workspace = true

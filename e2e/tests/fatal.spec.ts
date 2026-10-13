@@ -29,3 +29,23 @@ test("兜底页可导出数据备份", async ({ page }) => {
   const data = JSON.parse(await readFile(await file.path(), "utf8"));
   expect(data["e2e-key"]).toBe("e2e-value");
 });
+
+test("兜底页跟随保存的界面语言（wasm 未加载时不走词典）", async ({ page }) => {
+  await page.route(/_bg\.wasm$/, (route) => route.abort());
+  await page.addInitScript(() => localStorage.setItem("locale", "en"));
+  await page.goto("/");
+  const fatal = page.getByRole("alertdialog", { name: "Failed to load" });
+  await expect(fatal).toBeVisible();
+  await expect(fatal.getByRole("button", { name: "Reload" })).toBeFocused();
+  await expect(fatal.getByRole("button", { name: "Export data backup" })).toBeVisible();
+  await expect(fatal.getByText("Error details")).toBeVisible();
+});
+
+test("兜底页在没有保存语言时回中文（与应用默认一致，不看浏览器语言）", async ({ browser }) => {
+  const ctx = await browser.newContext({ locale: "en-US" });
+  const page = await ctx.newPage();
+  await page.route(/_bg\.wasm$/, (route) => route.abort());
+  await page.goto("/");
+  await expect(page.getByRole("alertdialog", { name: "加载失败" })).toBeVisible();
+  await ctx.close();
+});

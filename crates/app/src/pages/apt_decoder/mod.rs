@@ -2,7 +2,6 @@
 
 mod apt_decoder_page;
 mod apt_result_view;
-mod apt_uploader;
 mod apt_worker;
 mod channel_view;
 

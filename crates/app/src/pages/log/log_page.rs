@@ -127,7 +127,10 @@ pub fn LogPage() -> impl IntoView {
         crate::util::alert(&t("common.file-read-failed"));
         return;
       };
-      let (added, dupes) = store.import(parse_adif(&text));
+      // `None` = 备份 / 恢复进行中（`import` 已提示用户），没有导入结果可报。
+      let Some((added, dupes)) = store.import(parse_adif(&text)) else {
+        return;
+      };
       let msg = if dupes > 0 {
         // 两个可数名词，且西语的过去分词要跟着各自变形 —— 整段放进内层片段各自 `tp`。
         // 内层「已导入 N 条记录」直接复用外层那条 key：语义完全相同，多一条同义 key

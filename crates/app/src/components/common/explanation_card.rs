@@ -6,7 +6,7 @@ use crate::cn::cn;
 use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::speech;
-use crate::ui::card_class;
+use crate::ui::{Button, Size, Variant, card_class};
 
 /// 可折叠的「答案解析」卡片；题目切换时由调用方重建，自动恢复折叠状态。
 /// 题目没有解析时显示轻提示，并引导到仓库补充。
@@ -97,11 +97,12 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
   view! {
     <div data-slot="card" class=card_class("gap-0 py-0")>
       <div class="flex items-center">
-        <button
-          type="button"
-          on:click=move |_| open.update(|v| *v = !*v)
-          aria-expanded=move || open.get().to_string()
-          class="flex flex-1 items-center justify-between gap-2 px-6 py-4 text-left cursor-pointer transition-colors hover:bg-accent/50 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 rounded-xl"
+        <Button
+          variant=Variant::Text
+          // 文字色必须显式给：`Variant::Text` 的 `--btn-fg` 是 `muted-foreground`，而这里是卡片标题。
+          class="h-auto flex-1 justify-between rounded-xl px-6 py-4 text-left text-foreground hover:bg-accent/50"
+          aria_expanded=Signal::derive(move || open.get())
+          on_click=Callback::new(move |_| open.update(|v| *v = !*v))
         >
           <span class="text-base font-semibold leading-none">{move || t("learning.explanation")}</span>
           <Icon
@@ -113,16 +114,17 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
               ])
             })
           />
-        </button>
-        <button
-          type="button"
-          class="mr-4 flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          title=move || t("learning.read-explanation-aloud")
-          aria-label=move || t("learning.read-explanation-aloud")
-          on:click=move |_| speech::speak_zh(&speak_text)
+        </Button>
+        <Button
+          variant=Variant::Ghost
+          size=Size::IconSm
+          class="mr-4 shrink-0"
+          title=Signal::derive(move || t("learning.read-explanation-aloud"))
+          aria_label=Signal::derive(move || t("learning.read-explanation-aloud"))
+          on_click=Callback::new(move |_| speech::speak_zh(&speak_text))
         >
           <Icon kind=IconKind::Volume2 class="h-4 w-4" />
-        </button>
+        </Button>
       </div>
       <div class=panel data-open=move || open.get().to_string()>
         <div>

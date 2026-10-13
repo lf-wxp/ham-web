@@ -1,0 +1,19 @@
+[package]
+name = "ham-web-olivia"
+description = "Olivia 数字模式编解码：MFSK + Walsh-Hadamard + 密钥交织（纯 Rust，无外部依赖）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+ham-web-dsp.workspace = true
+
+[dev-dependencies]
+ham-web-apt.workspace = true
+
+
+[lints]
+workspace = true

@@ -163,7 +163,6 @@
   "common.exam-date": "Fecha del examen",
   "common.exam-today-good-luck": "Hoy es el examen: ¡mucha suerte! Antes repasa tus errores, no empieces preguntas nuevas.",
   "common.explanation": "Explicación: {}",
-  "common.failed-to-read-the": "Error al leer el archivo",
   "common.field-is-missing": "Falta el campo {}",
   "common.field-is-not-a": "El campo {} no es un array de bytes",
   "common.frequency-and-mode-fill": "La frecuencia y el modo se rellenan al conectar",

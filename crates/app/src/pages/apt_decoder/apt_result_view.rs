@@ -6,6 +6,7 @@ use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 
 use crate::i18n::{t, tp};
 use crate::icons::{Icon, IconKind};
+use crate::ui::{Button, ChipToggle};
 use crate::util::{document, js_error_message};
 
 use super::channel_view::ChannelView;
@@ -112,17 +113,9 @@ pub(super) fn AptResultView(
     false_color_url,
   } = render;
 
-  let tab_class = move |m: ViewMode| {
-    if mode.get() == m {
-      "rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
-    } else {
-      "rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-accent"
-    }
-  };
-
   view! {
     <div class="space-y-4">
-      <div class="flex flex-wrap gap-x-1.5 gap-y-1 rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+      <div class="flex flex-wrap gap-x-1.5 gap-y-1 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
         <span class="max-w-[16rem] truncate font-medium text-foreground">{file_name}</span>
         <span>"·"</span>
         <span>{format!("{width} × {height}")}</span>
@@ -134,21 +127,19 @@ pub(super) fn AptResultView(
         <span>{format!("{duration_seconds:.1} s")}</span>
       </div>
 
-      <div class="flex items-center gap-1.5">
-        <button
-          type="button"
-          class=move || tab_class(ViewMode::Gray)
-          on:click=move |_| mode.set(ViewMode::Gray)
+      <div class="flex flex-wrap items-center gap-1.5">
+        <ChipToggle
+          active=Signal::derive(move || mode.get() == ViewMode::Gray)
+          on_change=Callback::new(move |_| mode.set(ViewMode::Gray))
         >
           {move || t("tools.greyscale-a-b")}
-        </button>
-        <button
-          type="button"
-          class=move || tab_class(ViewMode::FalseColor)
-          on:click=move |_| mode.set(ViewMode::FalseColor)
+        </ChipToggle>
+        <ChipToggle
+          active=Signal::derive(move || mode.get() == ViewMode::FalseColor)
+          on_change=Callback::new(move |_| mode.set(ViewMode::FalseColor))
         >
           {move || t("tools.false-colour-ir-enhanced")}
-        </button>
+        </ChipToggle>
       </div>
 
       {move || {
@@ -169,14 +160,10 @@ pub(super) fn AptResultView(
       }}
 
       <div class="flex justify-center">
-        <button
-          type="button"
-          class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          on:click=move |_| on_reset.run(())
-        >
-          <Icon kind=IconKind::RefreshCw class="h-4 w-4" />
+        <Button on_click=move |_| on_reset.run(())>
+          <Icon kind=IconKind::RefreshCw class="size-6" />
           {move || t("tools.decode-another-file")}
-        </button>
+        </Button>
       </div>
     </div>
   }

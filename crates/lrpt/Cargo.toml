@@ -1,0 +1,19 @@
+[package]
+name = "ham-web-lrpt"
+description = "LRPT（气象卫星图像传输）解码链路：卷积码 Viterbi + OQPSK + CADU 帧层（纯 Rust，无外部依赖）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+# 与工作区默认的 MIT 不同：部分链路转写自 artlav/meteor_decoder（GPL-3.0），整个 crate 按 GPL-3.0 发布（全文见仓库根目录 LICENSES/）。
+license = "GPL-3.0-only"
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+
+[dev-dependencies]
+# 仅 examples 读 WAV 用（带容错的解析，不再手写 chunk 遍历）。
+ham-web-apt.workspace = true
+
+[lints]
+workspace = true

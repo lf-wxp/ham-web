@@ -200,6 +200,8 @@
   "exam.units-return-loss-example": "SWR = 1.5 → RL ≈ 14 dB",
   "exam.units-swr-gamma": "SWR ↔ 反射系数",
   "exam.units-swr-gamma-example": "|Γ| = 0.2 → SWR = 1.5",
+  "exam.units-uv-dbm": "μV ↔ dBm（50Ω）",
+  "exam.units-uv-dbm-example": "1 μV = -107 dBm，1 mV = -47 dBm",
   "exam.units-title": "单位换算",
   "exam.no-matches": "未找到匹配",
   "exam.question-not-found": "未找到题号：{}",

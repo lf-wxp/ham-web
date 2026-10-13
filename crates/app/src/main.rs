@@ -6,6 +6,8 @@ mod bank_updates;
 mod cn;
 mod components;
 mod data;
+mod decode_session;
+mod decode_worker;
 mod exam_history;
 mod gesture;
 mod i18n;

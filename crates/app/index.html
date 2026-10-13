@@ -127,6 +127,39 @@
     <script>
       (() => {
         let shown = false;
+        // 这里 wasm 还没加载（或已经崩了），不能走 i18n 词典，所以内联一份三语文案。语言选择与
+        // 应用本身**严格一致**：只看用户保存的 `locale`（zh / en / es），没有就是中文 ——
+        // 应用默认语言是中文、不看浏览器语言（`i18n::stored_locale`）。若这里改看 `navigator.language`，
+        // 英文浏览器的用户在应用里看到中文，崩溃页却突然是英文。
+        const TEXT = {
+          zh: {
+            desc: "本地数据（进度、错题、日志等）不受影响。可以重新加载页面；如果反复出现，建议先导出数据备份。",
+            reload: "重新加载", backup: "导出数据备份", copy: "复制错误信息", copied: "已复制", details: "错误详情",
+            loadFailed: "加载失败", unsupported: "浏览器不受支持",
+            noWasm: "当前浏览器不支持 WebAssembly，请升级到最新版 Chrome / Edge / Safari / Firefox。",
+            resource: "资源加载失败：",
+          },
+          en: {
+            desc: "Your local data (progress, mistakes, logs, …) is not affected. Reload the page; if it keeps happening, export a data backup first.",
+            reload: "Reload", backup: "Export data backup", copy: "Copy error info", copied: "Copied", details: "Error details",
+            loadFailed: "Failed to load", unsupported: "Browser not supported",
+            noWasm: "This browser does not support WebAssembly. Please upgrade to the latest Chrome / Edge / Safari / Firefox.",
+            resource: "Resource failed to load: ",
+          },
+          es: {
+            desc: "Tus datos locales (progreso, errores, registro, …) no se ven afectados. Recarga la página; si se repite, exporta antes una copia de seguridad.",
+            reload: "Recargar", backup: "Exportar copia de seguridad", copy: "Copiar información del error", copied: "Copiado", details: "Detalles del error",
+            loadFailed: "Error de carga", unsupported: "Navegador no compatible",
+            noWasm: "Este navegador no admite WebAssembly. Actualiza a la última versión de Chrome / Edge / Safari / Firefox.",
+            resource: "No se pudo cargar el recurso: ",
+          },
+        };
+        const pickLang = () => {
+          let saved = null;
+          try { saved = localStorage.getItem("locale"); } catch {}
+          return saved && TEXT[saved] ? saved : "zh";
+        };
+        const L = TEXT[pickLang()];
         const backup = () => {
           const map = {};
           try {
@@ -173,31 +206,37 @@
             </style>
             <section>
               <h1 id="fatal-title"></h1>
-              <p id="fatal-desc">本地数据（进度、错题、日志等）不受影响。可以重新加载页面；如果反复出现，建议先导出数据备份。</p>
+              <p id="fatal-desc"></p>
               <div class="row">
-                <button type="button" class="primary" data-act="reload">重新加载</button>
-                <button type="button" data-act="backup">导出数据备份</button>
-                <button type="button" data-act="copy">复制错误信息</button>
+                <button type="button" class="primary" data-act="reload"></button>
+                <button type="button" data-act="backup"></button>
+                <button type="button" data-act="copy"></button>
               </div>
-              <details><summary>错误详情</summary><pre></pre></details>
+              <details><summary></summary><pre></pre></details>
             </section>`;
+          // 文案用 textContent 填：不把词典里的字符串拼进 innerHTML。
+          box.querySelector("#fatal-desc").textContent = L.desc;
+          box.querySelector('[data-act="reload"]').textContent = L.reload;
+          box.querySelector('[data-act="backup"]').textContent = L.backup;
+          box.querySelector('[data-act="copy"]').textContent = L.copy;
+          box.querySelector("summary").textContent = L.details;
           box.querySelector("h1").textContent = title;
           box.querySelector("pre").textContent = `${detail}\n\n${location.href}\n${navigator.userAgent}`;
           box.addEventListener("click", (e) => {
             const act = e.target.closest("button")?.dataset.act;
             if (act === "reload") location.reload();
             if (act === "backup") backup();
-            if (act === "copy") navigator.clipboard?.writeText(box.querySelector("pre").textContent).then(() => { e.target.textContent = "已复制"; });
+            if (act === "copy") navigator.clipboard?.writeText(box.querySelector("pre").textContent).then(() => { e.target.textContent = L.copied; });
           });
           document.body.appendChild(box);
           box.querySelector("button")?.focus();
         };
         if (typeof WebAssembly !== "object") {
-          addEventListener("DOMContentLoaded", () => window.__hamFatal("浏览器不受支持", "当前浏览器不支持 WebAssembly，请升级到最新版 Chrome / Edge / Safari / Firefox。"));
+          addEventListener("DOMContentLoaded", () => window.__hamFatal(L.unsupported, L.noWasm));
           return;
         }
         const onBootError = (reason) => {
-          if (document.getElementById("boot")) window.__hamFatal("加载失败", String(reason?.stack ?? reason?.message ?? reason));
+          if (document.getElementById("boot")) window.__hamFatal(L.loadFailed, String(reason?.stack ?? reason?.message ?? reason));
         };
         addEventListener("unhandledrejection", (e) => onBootError(e.reason));
         // 只关心本站资源：第三方脚本（如被广告拦截器拦下的广告）失败不影响使用
@@ -206,7 +245,7 @@
           const t = e.target;
           if (t instanceof HTMLScriptElement || t instanceof HTMLLinkElement) {
             const url = t.src || t.href;
-            if (sameOrigin(url)) onBootError(`资源加载失败：${url}`);
+            if (sameOrigin(url)) onBootError(`${L.resource}${url}`);
           } else if (e.error && sameOrigin(e.filename)) {
             onBootError(e.error);
           }
@@ -230,6 +269,14 @@
     <link data-trunk rel="copy-dir" href="../../public/apt-worker" />
     <link data-trunk rel="copy-dir" href="../../public/sstv-worker" />
     <link data-trunk rel="copy-dir" href="../../public/wspr-worker" />
+    <link data-trunk rel="copy-dir" href="../../public/rtty-worker" />
+    <link data-trunk rel="copy-dir" href="../../public/olivia-worker" />
+    <link data-trunk rel="copy-dir" href="../../public/dominoex-worker" />
+    <link data-trunk rel="copy-dir" href="../../public/navtex-worker" />
+    <link data-trunk rel="copy-dir" href="../../public/lrpt-worker" />
+    <link data-trunk rel="copy-file" href="../../public/decode-worker.js" />
+    <link data-trunk rel="copy-file" href="../../LICENSE" data-target-path="licenses" />
+    <link data-trunk rel="copy-dir" href="../../LICENSES" data-target-path="licenses" />
     <link data-trunk rel="copy-dir" href="../../data/glossary" data-target-path="data/glossary" />
     <!-- 运行时语言包：由 `cargo make i18n-pack` 生成，前端启动时按语言拉取一次 -->
     <link data-trunk rel="copy-dir" href="../../public/data/i18n" data-target-path="data/i18n" />

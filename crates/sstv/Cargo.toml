@@ -9,7 +9,7 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-ham-web-apt.workspace = true
+ham-web-wav.workspace = true
 
 [lints]
 workspace = true

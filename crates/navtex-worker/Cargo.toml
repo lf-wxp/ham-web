@@ -1,0 +1,23 @@
+[package]
+name = "ham-web-navtex-worker"
+description = "NAVTEX 解码器的 Web Worker 绑定（wasm-bindgen no-modules）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+# 与 ham-web-navtex 一致：码表来源为 GPL-3.0。
+license = "GPL-3.0-only"
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ham-web-navtex.workspace = true
+ham-web-apt.workspace = true
+wasm-bindgen.workspace = true
+js-sys.workspace = true
+
+
+[lints]
+workspace = true

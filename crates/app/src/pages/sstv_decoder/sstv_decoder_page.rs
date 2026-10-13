@@ -1,13 +1,14 @@
 //! SSTV 慢扫描电视解码器页面：上传 SSTV 录音，交由 Web Worker 在后台线程解码。
 
 use leptos::prelude::*;
-use leptos::task::spawn_local;
 use wasm_bindgen::JsCast;
-use wasm_bindgen::closure::Closure;
-use web_sys::{File, HtmlCanvasElement, HtmlInputElement, ImageData, MessageEvent, Worker};
+use wasm_bindgen::JsValue;
+use web_sys::{File, HtmlCanvasElement, ImageData};
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::decode_session::{DecodeConfig, DecodeSession};
 use crate::icons::{Icon, IconKind};
+use crate::ui::{Button, ButtonLink, FileDropZone, Size, Variant};
 use crate::util::{document, js_error_message, set_title};
 
 use super::sstv_worker::parse_message;
@@ -51,152 +52,45 @@ fn render_rgba(rgba: &[u8], width: u32, height: u32) -> Result<String, String> {
 }
 
 /// 创建消息回调（只创建一次并复用）。
-fn message_handler(
-  result: RwSignal<Option<SstvResult>>,
-  error: RwSignal<Option<String>>,
-  processing: RwSignal<bool>,
-) -> js_sys::Function {
-  let cb = Closure::<dyn FnMut(MessageEvent)>::new(move |event: MessageEvent| {
-    let outcome = parse_message(&event.data()).and_then(|p| {
-      render_rgba(&p.rgba, p.width, p.height).map(|url| SstvResult {
-        width: p.width,
-        height: p.height,
-        mode: p.mode,
-        source_sample_rate: p.source_sample_rate,
-        duration_seconds: p.duration_seconds,
-        image_url: url,
-      })
-    });
-    match outcome {
-      Ok(r) => result.set(Some(r)),
-      Err(e) => error.set(Some(if e.is_empty() {
-        t("tools.decoding-failed-make-sure")
-      } else {
-        e
-      })),
-    }
-    processing.set(false);
-  });
-  let f = cb.as_ref().unchecked_ref::<js_sys::Function>().clone();
-  cb.forget();
-  f
-}
-
-fn spawn_worker(onmessage: &js_sys::Function) -> Option<Worker> {
-  let w = Worker::new("/sstv-worker/worker.js").ok()?;
-  w.set_onmessage(Some(onmessage));
-  Some(w)
-}
-
-async fn read_file_bytes(file: &File) -> Result<Vec<u8>, String> {
-  let blob: web_sys::Blob = file.clone().into();
-  let promise = blob.array_buffer();
-  let buf = wasm_bindgen_futures::JsFuture::from(promise)
-    .await
-    .map_err(|e| js_error_message(&e))?;
-  let arr: js_sys::ArrayBuffer = buf.unchecked_into();
-  Ok(js_sys::Uint8Array::new(&arr).to_vec())
-}
-
-fn to_array_buffer(bytes: &[u8]) -> js_sys::ArrayBuffer {
-  let ab = js_sys::ArrayBuffer::new(bytes.len() as u32);
-  let view = js_sys::Uint8Array::new(&ab);
-  view.copy_from(bytes);
-  ab
+/// 解析 Worker 结果并把 RGBA 像素画成 PNG data URL；渲染失败当作解码失败。
+fn parse_and_render(raw: &JsValue) -> Result<SstvResult, String> {
+  let p = parse_message(raw)?;
+  let image_url = render_rgba(&p.rgba, p.width, p.height)?;
+  Ok(SstvResult {
+    width: p.width,
+    height: p.height,
+    mode: p.mode,
+    source_sample_rate: p.source_sample_rate,
+    duration_seconds: p.duration_seconds,
+    image_url,
+  })
 }
 
 #[component]
 pub fn SstvDecoderPage() -> impl IntoView {
   set_title("tools.sstv-decoder");
 
-  let processing = RwSignal::new(false);
-  let result = RwSignal::new(None::<SstvResult>);
-  let error = RwSignal::new(None::<String>);
-  let file_name = RwSignal::new(String::new());
-  let reading = RwSignal::new(false);
-
-  let generation = StoredValue::new(0u32);
-  let onmessage = StoredValue::new(message_handler(result, error, processing));
-  let worker = StoredValue::new(spawn_worker(&onmessage.get_value()));
-
-  on_cleanup(move || {
-    if let Some(w) = worker.get_value() {
-      w.terminate();
-    }
+  let session = DecodeSession::new(DecodeConfig {
+    codec: "sstv",
+    max_bytes: MAX_BYTES,
+    transfer: false,
+    parse: parse_and_render,
+    too_large: |mb, max| tf("tools.file-too-large-about-3", &[mb, max]),
+    timed_out: || t("tools.decoding-timed-out"),
+    failed: || t("tools.decoding-failed-make-sure"),
   });
+  let DecodeSession {
+    processing,
+    result,
+    error,
+    file_name,
+    reading,
+    ..
+  } = session;
 
-  let cancel = move |_| {
-    if let Some(w) = worker.get_value() {
-      w.terminate();
-    }
-    let n = generation.get_value();
-    generation.set_value(n + 1);
-    worker.set_value(spawn_worker(&onmessage.get_value()));
-    processing.set(false);
-    reading.set(false);
-    error.set(None);
-    file_name.set(String::new());
-  };
-
-  let on_file = Callback::new(move |file: File| {
-    let size = file.size() as u64;
-    if size > MAX_BYTES {
-      let mb = size as f64 / 1024.0 / 1024.0;
-      error.set(Some(tf(
-        "tools.file-too-large-about-3",
-        &[&format!("{mb:.0}"), &format!("{}", MAX_BYTES / 1024 / 1024)],
-      )));
-      return;
-    }
-    if let Some(w) = worker.get_value() {
-      w.terminate();
-    }
-    let batch = generation.get_value() + 1;
-    generation.set_value(batch);
-    worker.set_value(spawn_worker(&onmessage.get_value()));
-    processing.set(true);
-    reading.set(true);
-    error.set(None);
-    result.set(None);
-    file_name.set(file.name());
-    spawn_local(async move {
-      match read_file_bytes(&file).await {
-        Ok(bytes) => {
-          if generation.get_value() != batch {
-            return;
-          }
-          reading.set(false);
-          let ab = to_array_buffer(&bytes);
-          match worker.get_value() {
-            Some(w) => {
-              if let Err(e) = w.post_message(&ab) {
-                error.set(Some(js_error_message(&e)));
-                processing.set(false);
-              }
-            }
-            None => {
-              error.set(Some(t("radio.could-not-create-the")));
-              processing.set(false);
-            }
-          }
-        }
-        Err(e) => {
-          if generation.get_value() != batch {
-            return;
-          }
-          error.set(Some(e));
-          processing.set(false);
-          reading.set(false);
-        }
-      }
-    });
-  });
-
-  let reset = move |_| {
-    result.set(None);
-    error.set(None);
-    file_name.set(String::new());
-  };
+  let cancel = move |_| session.cancel();
+  let reset = move |_| session.reset();
+  let on_file = Callback::new(move |file: File| session.start(file, || Ok(JsValue::NULL)));
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
@@ -205,18 +99,15 @@ pub fn SstvDecoderPage() -> impl IntoView {
         subtitle=move || t("tools.audio-fm-demodulation-vis")
         actions=ViewFn::from(move || {
           view! {
-            <a
-              href="/sstv"
-              class="rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
+            <ButtonLink href="/sstv" variant=Variant::Outline size=Size::Sm>
               {move || t("tools.sstv-reference")}
-            </a>
+            </ButtonLink>
           }
         })
       />
 
       <PageContainer class="space-y-5">
-        <section class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+        <section class="border bg-card p-4 text-sm text-muted-foreground">
           <p>
             {move || t("tools.upload-an-sstv-audio")}
             {move || t("common.decoding-runs-in-a")}
@@ -224,34 +115,17 @@ pub fn SstvDecoderPage() -> impl IntoView {
           </p>
         </section>
 
-        <section class="rounded-xl border bg-card p-4">
+        <section class="border bg-card p-4">
           {move || {
             (result.with(Option::is_none) && !processing.get())
               .then(|| {
                 view! {
-                  <label
-                    for="sstv-file"
-                    class="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed p-8 text-center transition-all duration-200 hover:bg-muted/40 cursor-pointer"
-                  >
-                    <Icon kind=IconKind::Camera class="mb-1 h-8 w-8 text-muted-foreground" />
-                    <span class="text-sm font-medium">{move || t("tools.choose-an-sstv-recording")}</span>
-                    <span class="text-xs text-muted-foreground">{move || t("tools.click-to-choose-or-2")}</span>
-                    <span class="mt-1 text-xs text-muted-foreground">
-                      {move || t("tools.supports-martin-m1-m2")}
-                    </span>
-                  </label>
-                  <input
-                    id="sstv-file"
-                    type="file"
+                  <FileDropZone
+                    on_file=on_file
                     accept=".wav,audio/wav,audio/x-wav,audio/*"
-                    class="hidden"
-                    on:change=move |e| {
-                      let input: HtmlInputElement = event_target(&e);
-                      if let Some(f) = input.files().and_then(|f| f.get(0)) {
-                        on_file.run(f);
-                      }
-                      input.set_value("");
-                    }
+                    title=Signal::derive(move || t("tools.choose-an-sstv-recording"))
+                    icon=IconKind::Camera
+                    hint=Signal::derive(move || t("tools.supports-martin-m1-m2"))
                   />
                 }
               })
@@ -273,13 +147,9 @@ pub fn SstvDecoderPage() -> impl IntoView {
                         }
                       }}
                     </span>
-                    <button
-                      type="button"
-                      class="rounded-md border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                      on:click=cancel
-                    >
+                    <Button variant=Variant::Outline size=Size::Sm on_click=move |_| cancel(())>
                       {move || t("exam.cancel")}
-                    </button>
+                    </Button>
                   </div>
                 }
               })
@@ -288,7 +158,7 @@ pub fn SstvDecoderPage() -> impl IntoView {
           {move || {
             error.get().map(|e| {
               view! {
-                <div class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+                <div class="flex items-start gap-2 border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
                   <Icon kind=IconKind::AlertCircle class="mt-0.5 h-5 w-5 shrink-0" />
                   <div class="flex-1">
                     <div class="font-medium">{move || t("radio.decoding-failed")}</div>
@@ -303,7 +173,7 @@ pub fn SstvDecoderPage() -> impl IntoView {
             result.get().map(|r| {
               view! {
                 <div class="space-y-4">
-                  <div class="flex flex-wrap gap-x-1.5 gap-y-1 rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                  <div class="flex flex-wrap gap-x-1.5 gap-y-1 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                     <span class="max-w-[16rem] truncate font-medium text-foreground">{file_name.get_untracked()}</span>
                     <span>"·"</span>
                     <span class="font-medium text-foreground">{r.mode}</span>
@@ -317,25 +187,17 @@ pub fn SstvDecoderPage() -> impl IntoView {
                   <img
                     src=r.image_url.clone()
                     alt=t("tools.sstv-decode-result")
-                    class="mx-auto w-full max-w-full rounded-lg border"
+                    class="mx-auto w-full max-w-full border"
                   />
                   <div class="flex justify-center gap-2">
-                    <a
-                      href=r.image_url.clone()
-                      download="sstv.png"
-                      class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                    >
-                      <Icon kind=IconKind::Download class="h-4 w-4" />
+                    <ButtonLink href=r.image_url.clone() download="sstv.png">
+                      <Icon kind=IconKind::Download class="size-6" />
                       {move || t("tools.download-png")}
-                    </a>
-                    <button
-                      type="button"
-                      class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
-                      on:click=move |_| reset(())
-                    >
-                      <Icon kind=IconKind::RefreshCw class="h-4 w-4" />
+                    </ButtonLink>
+                    <Button variant=Variant::Outline on_click=move |_| reset(())>
+                      <Icon kind=IconKind::RefreshCw class="size-6" />
                       {move || t("tools.decode-another-file")}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               }

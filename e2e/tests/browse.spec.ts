@@ -59,7 +59,7 @@ test("分类浏览：一级分类筛选与只看本类新增", async ({ page }) 
   await expect(rows.first()).toBeVisible();
 
   // B 类「只看本类新增」会排除与 A 类重合的题，题量不应增加
-  await page.getByRole("button", { name: "B 类" }).first().click();
+  await page.getByRole("radio", { name: "B 类" }).first().click();
   await expect(rows.first()).toBeVisible();
   const allB = await rows.count();
   await page.getByRole("button", { name: "只看本类新增" }).click();

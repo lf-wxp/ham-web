@@ -11,7 +11,7 @@ use crate::components::cat_control::{CatControl, CatReading};
 use crate::data;
 use crate::ui::{
   Button, Checkbox, DatePicker, Field, Input, NativeSelect, NumberField, Select, SelectItem,
-  SelectOption, TimePicker, Variant,
+  SelectOption, Size, TimePicker, Variant,
 };
 
 use super::form_state::LogFormState;
@@ -394,16 +394,16 @@ pub(super) fn EntryForm(
             </div>
           }.into_any(),
         }}
-        // 展开 / 收起「更多字段」：保留原生元素是因为 `Button` 没有 `aria-expanded` 通道，
-        // 而展开状态是读屏与 e2e 的契约（视觉上这里也只是行内链接，不是按钮）。
-        <button
-          type="button"
-          class="text-left text-xs text-primary underline-offset-4 hover:underline sm:col-span-2 lg:col-span-3"
-          aria-expanded=move || form.show_more.get().to_string()
-          on:click=move |_| form.show_more.update(|v| *v = !*v)
+        <Button
+          variant=Variant::Text
+          size=Size::Xs
+          // Text 变体的悬停换色被 `text-primary` 压住，所以这里用下划线做悬停反馈。
+          class="text-left text-primary underline underline-offset-4 hover:underline sm:col-span-2 lg:col-span-3"
+          aria_expanded=Signal::derive(move || form.show_more.get())
+          on_click=Callback::new(move |_| form.show_more.update(|v| *v = !*v))
         >
           {move || if form.show_more.get() { t("log.hide-extra-fields") } else { t("log.more-fields-power-end") }}
-        </button>
+        </Button>
         {move || {
           form.show_more.get().then(|| {
             // 折叠区的 id 在这里现生成：`then` 的闭包是 `FnOnce`，可以自由移出，

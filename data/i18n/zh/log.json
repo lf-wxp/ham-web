@@ -21,6 +21,7 @@
   "log.qsl-via-direct": "直寄",
   "log.qsl-received": "QSL 已收到",
   "log.qsl-card-image": "卡片影像",
+  "log.backup-busy-not-saved": "正在备份或恢复数据，本次修改没有保存，请等它结束后重试",
   "log.upload-card-image": "上传扫描件",
   "log.replace-card-image": "换一张",
   "log.delete-card-image": "删除影像",

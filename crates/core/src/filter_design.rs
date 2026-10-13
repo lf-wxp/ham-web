@@ -43,6 +43,9 @@ pub struct FilterStage {
   pub c_pf: Option<f64>,
 }
 
+/// 支持的最高阶数（[`butterworth_g`] 的 g 值表覆盖 1–5 阶）。
+pub const MAX_ORDER: usize = 5;
+
 /// Butterworth 归一化低通原型 g 值（g₀ 与 g_{n+1} 隐含为 1）。
 pub fn butterworth_g(n: usize) -> Option<&'static [f64]> {
   match n {

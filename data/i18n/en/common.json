@@ -163,7 +163,6 @@
   "common.exam-date": "Exam date",
   "common.exam-today-good-luck": "Exam today — good luck! Just review your mistakes beforehand, don't start new questions.",
   "common.explanation": "Explanation: {}",
-  "common.failed-to-read-the": "Failed to read the file",
   "common.field-is-missing": "Field {} is missing",
   "common.field-is-not-a": "Field {} is not a byte array",
   "common.frequency-and-mode-fill": "Frequency and mode fill in automatically once connected",

@@ -63,7 +63,7 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           # wasm-bindgen CLI 版本需与 Cargo.lock 中的 wasm-bindgen crate 一致：
-          # 装错了不会报编译错误，只会在运行时让 APT Worker 的胶水代码与 wasm 不匹配。
+          # 装错了不会报编译错误，只会在运行时让解码 Worker 的胶水代码与 wasm 不匹配。
           # 这里的版本号是硬编码的（install-action 不支持从文件读），下一步会校验它没漂移。
           tool: cargo-make,trunk,wasm-bindgen-cli@0.2.129
 

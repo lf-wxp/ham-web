@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { expect, option, test } from "./fixtures";
+import { expect, option, settleFrames, test, waitSettled } from "./fixtures";
 
 // 闯关地图 / 回合战 / 怪物图鉴 / 外观设置 / 底部 Tab 的回归。
 // 作答靠读题库文件判对错（与 smoke.spec.ts 读路由表同一思路），不依赖页面会泄露答案的文案。
@@ -223,7 +223,8 @@ test.describe("顶栏：各宽度 × 各语言都不撑出屏幕", () => {
 /** 等顶栏里的异步内容（语言包、HUD 档案）到位再量，否则量到的是中间态。 */
 async function waitSettledNav(page: Page) {
   await page.waitForFunction(() => document.querySelector("[data-slot=hud]") !== null);
-  await page.waitForTimeout(400);
+  await waitSettled(page);
+  await settleFrames(page);
 }
 
 // 冒烟用例访问 `/battle` 不带参数，只会扫到「没有战斗目标」的错误页；真正用到文字色 token 的

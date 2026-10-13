@@ -8,12 +8,48 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use crate::daily_challenge::DailyResults;
 use crate::exam_history::ExamRecord;
-use crate::logbook::{LogEntry, Logbook};
+#[cfg(test)]
+use crate::logbook::LogEntry;
+use crate::logbook::Logbook;
 use crate::mistake_book::{
   CategoryStats, MAX_RECORDS, MistakeBook, MistakeRecord, StudyStats, Tally,
 };
+use crate::qsl_image;
 use crate::rpg::{Bestiary, StageStars};
 use crate::station::{StationBook, StationProfile};
+
+/// 备份导出与文本导入共用的字节上限，禁止生成本站不能恢复的 JSON。
+pub const MAX_BACKUP_BYTES: usize = 64 * 1024 * 1024;
+
+/// 使用序列化后的 UTF-8 字节数，而不是条目数或字符数判断可恢复性。
+#[must_use]
+pub fn backup_size_is_supported(bytes: usize) -> bool {
+  bytes <= MAX_BACKUP_BYTES
+}
+
+/// JSON 字节数下界：插入时提前限制驻留数据，最终仍按序列化后的精确字节数检查。
+#[must_use]
+pub fn backup_payload_bytes(values: &BTreeMap<String, String>) -> usize {
+  values.iter().fold(0usize, |total, (key, value)| {
+    total.saturating_add(key.len()).saturating_add(value.len())
+  })
+}
+
+/// 学习统计里每个题库的「做过的题」上限。真实题库每个不到两千题；备份是外部输入，
+/// 并集不设上限的话，合法的 64 MiB 备份合并后能把单个 key 撑过 localStorage 的 ~5 MiB 配额。
+const MAX_SEEN_PER_BANK: usize = 20_000;
+/// 图鉴「已击败」集合与字符串集合（收藏等）的同类上限。
+const MAX_SET_ITEMS: usize = 50_000;
+
+/// 集合超过 `max` 时从末尾丢弃多余项（`BTreeSet` 有序，结果是确定性的）。
+fn cap_set<T: Ord + Clone>(set: &mut BTreeSet<T>, max: usize) {
+  while set.len() > max {
+    let Some(last) = set.last().cloned() else {
+      break;
+    };
+    set.remove(&last);
+  }
+}
 
 /// 考试历史最多保留的条数（与 `ham-web-app` 的 `exam_history` 一致）。
 const EXAM_HISTORY_LIMIT: usize = 50;
@@ -26,13 +62,21 @@ const DAILY_KEEP_DAYS: usize = 90;
 /// * `backup` 为备份文件里的 JSON。
 ///
 /// 返回值：
-/// * 本机没有该 key → `Some(backup)`（直接采用备份值）；
+/// * 本机没有该 key → 已知类型先校验再采用（半截 / 被篡改的 JSON 不写入本地，返回 `None`），
+///   未知 key（如主题这类纯字符串）无从校验，原样采用；
 /// * 已知类型 → `Some(合并后的 JSON)`（写回）；
 /// * 其余 key → `None`（保留本机，不覆盖）。
 #[must_use]
 pub fn merge_value(key: &str, current: Option<&str>, backup: &str) -> Option<String> {
   let Some(cur) = current else {
-    return Some(backup.to_owned());
+    // 本机没有该 key：已知类型先校验再采用，但 logbook / station-book 还要走与合并路径
+    // 相同的归一化 —— 模块化备份允许「只恢复日志、不恢复台站档案」，原样采纳会把
+    // 另一台机器上的 `station_id` / 旧格式形状带回本机，违反「宁可少标，不要错标」。
+    return match key {
+      "logbook" => merge_logbook_with_ids(None, backup).map(|(json, _)| json),
+      "station-book" => adopt_migrated_station_book(backup),
+      _ => known_value_is_valid(key, backup).then(|| backup.to_owned()),
+    };
   };
   match key {
     "logbook" => merge_logbook(cur, backup),
@@ -45,6 +89,28 @@ pub fn merge_value(key: &str, current: Option<&str>, backup: &str) -> Option<Str
     "rpg-bestiary" => merge_rpg_bestiary(cur, backup),
     "station-book" => merge_station_book(cur, backup),
     _ => None,
+  }
+}
+
+/// 已知类型的备份值是否能按其结构解析；未知 key 无结构可查，视为合法。
+///
+/// 本机有值时合并路径会走 [`adopt_backup`] 反序列化校验；本机没有该 key 时也必须同样严格，
+/// 否则「本机空 + 备份损坏」会比「本机有 + 备份损坏」更宽松，损坏 JSON 原样写进 localStorage。
+fn known_value_is_valid(key: &str, backup: &str) -> bool {
+  fn parses<T: serde::de::DeserializeOwned>(raw: &str) -> bool {
+    serde_json::from_str::<T>(raw).is_ok()
+  }
+  match key {
+    "logbook" => parses::<Logbook>(backup),
+    "bookmarks" | "dxcc_wanted_done" => parses::<Vec<String>>(backup),
+    "exam-history" => parses::<Vec<ExamRecord>>(backup),
+    "mistake-book" => parses::<MistakeBook>(backup),
+    "study-stats" => parses::<StudyStats>(backup),
+    "daily-challenge" => parses::<DailyResults>(backup),
+    "rpg-stars" => parses::<StageStars>(backup),
+    "rpg-bestiary" => parses::<Bestiary>(backup),
+    "station-book" => parses::<StationBook>(backup),
+    _ => true,
   }
 }
 
@@ -74,29 +140,145 @@ fn adopt_backup<T: serde::de::DeserializeOwned>(backup: &str) -> Option<String> 
 
 /// 合并日志：按 [`LogEntry::dedupe_key`] 去重，保留本机已有记录，新记录重新分配 ID。
 fn merge_logbook(cur: &str, backup: &str) -> Option<String> {
-  let mut merged = match local_or_backup::<Logbook>(cur, backup) {
-    Ok(v) => v,
-    Err(fallback) => return fallback,
+  merge_logbook_with_ids(Some(cur), backup).map(|(json, _)| json)
+}
+
+/// 本机没有台站档案册时整份采纳备份：与 [`merge_station_book`] 同一口径先 `migrate()`，
+/// 旧格式备份不能原样写回本机。
+fn adopt_migrated_station_book(backup: &str) -> Option<String> {
+  let mut book: StationBook = serde_json::from_str(backup).ok()?;
+  book.migrate();
+  serde_json::to_string(&book).ok()
+}
+
+/// 合并日志并返回备份 ID → 本机 ID 映射，供同一备份的 QSL 影像同步迁移。
+/// 无法唯一对应的重复备份 ID 不进入映射，避免把扫描件关联到错误通联。
+#[must_use]
+pub fn merge_logbook_with_ids(
+  current: Option<&str>,
+  backup: &str,
+) -> Option<(String, BTreeMap<u64, u64>)> {
+  let mut backup: Logbook = serde_json::from_str(backup).ok()?;
+  for entry in &mut backup.entries {
+    entry.station_id = 0;
+  }
+  let Some(mut local) = current.and_then(|raw| serde_json::from_str::<Logbook>(raw).ok()) else {
+    let mut ids = BTreeMap::new();
+    let mut duplicates = BTreeSet::new();
+    for entry in &backup.entries {
+      if ids.insert(entry.id, entry.id).is_some() {
+        duplicates.insert(entry.id);
+      }
+    }
+    for id in duplicates {
+      ids.remove(&id);
+    }
+    return Some((serde_json::to_string(&backup).ok()?, ids));
   };
-  let Ok(backup) = serde_json::from_str::<Logbook>(backup) else {
-    return None;
-  };
-  let mut seen: HashSet<String> = merged
+  let mut seen: BTreeMap<String, u64> = local
     .entries
     .iter()
-    .filter_map(LogEntry::dedupe_key)
+    .filter_map(|e| e.dedupe_key().map(|key| (key, e.id)))
     .collect();
-  let mut id = merged.next_id();
+  let mut next = local.entries.iter().map(|e| e.id).max().unwrap_or(0);
+  let mut ids = BTreeMap::new();
+  let mut duplicate_ids = BTreeSet::new();
   for mut entry in backup.entries {
-    // 没有 `dedupe_key`（日期或时间缺失）就说不上重不重复，一律并入 —— 见
-    // `LogEntry::dedupe_key`：把整批同呼号同波段的记录当成一条吞掉，比多几条记录糟糕。
-    if entry.dedupe_key().is_none_or(|key| seen.insert(key)) {
-      entry.id = id;
-      id += 1;
-      merged.entries.push(entry);
+    let original = entry.id;
+    let key = entry.dedupe_key();
+    let target = if let Some(id) = key.as_ref().and_then(|k| seen.get(k)).copied() {
+      id
+    } else {
+      next = next.checked_add(1)?;
+      entry.id = next;
+      // 外部 station_id 在本机可能指向另一台站，未映射时按当前台站回落。
+      entry.station_id = 0;
+      if let Some(key) = key {
+        seen.insert(key, next);
+      }
+      local.entries.push(entry);
+      next
+    };
+    if ids.insert(original, target).is_some() {
+      duplicate_ids.insert(original);
     }
   }
-  serde_json::to_string(&merged).ok()
+  for id in duplicate_ids {
+    ids.remove(&id);
+  }
+  Some((serde_json::to_string(&local).ok()?, ids))
+}
+
+/// 覆盖日志时只有同 ID、同可靠通联身份且两边 ID 唯一的旧影像可以保留。
+#[must_use]
+pub fn retained_image_ids(current: Option<&str>, incoming: &str) -> BTreeSet<u64> {
+  let Some(local) = current.and_then(|v| serde_json::from_str::<Logbook>(v).ok()) else {
+    return BTreeSet::new();
+  };
+  let Ok(incoming) = serde_json::from_str::<Logbook>(incoming) else {
+    return BTreeSet::new();
+  };
+  let unique = |book: &Logbook| {
+    let mut entries = BTreeMap::new();
+    let mut repeated = BTreeSet::new();
+    for entry in &book.entries {
+      if entries.insert(entry.id, entry.dedupe_key()).is_some() {
+        repeated.insert(entry.id);
+      }
+    }
+    for id in repeated {
+      entries.remove(&id);
+    }
+    entries
+  };
+  let old = unique(&local);
+  unique(&incoming)
+    .into_iter()
+    .filter_map(|(id, key)| {
+      key
+        .filter(|key| old.get(&id).and_then(Option::as_ref) == Some(key))
+        .map(|_| id)
+    })
+    .collect()
+}
+
+/// 仅影像备份不新增日志：只匹配本机已有的、身份明确且唯一的通联。
+#[must_use]
+pub fn image_ids_for_existing_log(current: Option<&str>, backup: &str) -> BTreeMap<u64, u64> {
+  let Some(local) = current.and_then(|v| serde_json::from_str::<Logbook>(v).ok()) else {
+    return BTreeMap::new();
+  };
+  let Ok(backup) = serde_json::from_str::<Logbook>(backup) else {
+    return BTreeMap::new();
+  };
+  let mut seen = BTreeMap::new();
+  let mut ambiguous = BTreeSet::new();
+  for entry in &local.entries {
+    if let Some(key) = entry.dedupe_key()
+      && seen.insert(key.clone(), entry.id).is_some()
+    {
+      ambiguous.insert(key);
+    }
+  }
+  let mut ids = BTreeMap::new();
+  let mut source_ids = BTreeSet::new();
+  let mut repeated = BTreeSet::new();
+  for entry in &backup.entries {
+    if !source_ids.insert(entry.id) {
+      repeated.insert(entry.id);
+    }
+    if let Some(key) = entry.dedupe_key()
+      && !ambiguous.contains(&key)
+      && let Some(&target) = seen.get(&key)
+      && ids.insert(entry.id, target).is_some()
+    {
+      repeated.insert(entry.id);
+    }
+  }
+  for id in repeated {
+    ids.remove(&id);
+  }
+  ids
 }
 
 /// 合并台站档案册：按「呼号 + 网格」取并集，**保留本机的 id 与当前台站**。
@@ -127,17 +309,28 @@ fn merge_station_book(cur: &str, backup: &str) -> Option<String> {
   serde_json::to_string(&merged).ok()
 }
 
-/// 合并字符串集合（收藏、DXCC 稀有度完成清单）：并集后排序。
+/// 合并字符串集合（收藏、DXCC 稀有度完成清单）：保留本机顺序，备份里的新项按其顺序追加。
+///
+/// 此前用 `BTreeSet` 并集再排序，收藏列表的原有顺序会被永久打乱。
 fn merge_string_set(cur: &str, backup: &str) -> Option<String> {
-  let a = match local_or_backup::<Vec<String>>(cur, backup) {
+  let mut merged = match local_or_backup::<Vec<String>>(cur, backup) {
     Ok(v) => v,
     Err(fallback) => return fallback,
   };
-  let Ok(b) = serde_json::from_str::<Vec<String>>(backup) else {
+  let Ok(backup) = serde_json::from_str::<Vec<String>>(backup) else {
     return None;
   };
-  let set: BTreeSet<String> = a.into_iter().chain(b).collect();
-  serde_json::to_string(&set.into_iter().collect::<Vec<_>>()).ok()
+  let mut seen: HashSet<String> = HashSet::with_capacity(merged.len());
+  merged.retain(|item| seen.insert(item.clone()));
+  for item in backup {
+    if merged.len() >= MAX_SET_ITEMS {
+      break;
+    }
+    if seen.insert(item.clone()) {
+      merged.push(item);
+    }
+  }
+  serde_json::to_string(&merged).ok()
 }
 
 /// 合并考试历史：按（题库、对题数、总题数、时间戳）去重，按时间升序，最多保留 [`EXAM_HISTORY_LIMIT`] 条。
@@ -149,12 +342,14 @@ fn merge_exam_history(cur: &str, backup: &str) -> Option<String> {
   let Ok(backup) = serde_json::from_str::<Vec<ExamRecord>>(backup) else {
     return None;
   };
-  let mut seen: HashSet<(String, usize, usize, i64)> = merged
+  // 去重键把 `weak`（是否为薄弱项组卷）并入：同一题库、同一分数、同一时间戳的普通练习
+  // 与薄弱项组卷是两次不同的考试，不能并成一条。
+  let mut seen: HashSet<(String, usize, usize, i64, bool)> = merged
     .iter()
-    .map(|r| (r.bank.clone(), r.correct, r.total, r.timestamp))
+    .map(|r| (r.bank.clone(), r.correct, r.total, r.timestamp, r.weak))
     .collect();
   for r in backup {
-    if seen.insert((r.bank.clone(), r.correct, r.total, r.timestamp)) {
+    if seen.insert((r.bank.clone(), r.correct, r.total, r.timestamp, r.weak)) {
       merged.push(r);
     }
   }
@@ -216,13 +411,19 @@ fn merge_study_stats(cur: &str, backup: &str) -> Option<String> {
     let dst = merged.banks.entry(bank).or_default();
     merge_category(&mut dst.stats, &bs.stats);
     dst.seen.extend(bs.seen);
+    cap_set(&mut dst.seen, MAX_SEEN_PER_BANK);
   }
   serde_json::to_string(&merged).ok()
 }
 
+/// 累计统计合并：两个计数都走饱和加法。
+///
+/// 备份是外部输入，`answered` 可以被文件拉到 `u32::MAX`：直接 `+=` 在 debug 下 panic、
+/// 在 release（含浏览器用的 `wasm-release`）静默回绕，学习统计会变成垃圾，`correct`
+/// 还可能大于 `answered`（正确率 > 100%）。饱和后再夹取，保证 `correct <= answered`。
 fn merge_category(dst: &mut CategoryStats, src: &CategoryStats) {
-  dst.answered += src.answered;
-  dst.correct += src.correct;
+  dst.answered = dst.answered.saturating_add(src.answered);
+  dst.correct = dst.correct.saturating_add(src.correct).min(dst.answered);
   merge_tally_map(&mut dst.categories, &src.categories);
   merge_tally_map(&mut dst.subs, &src.subs);
 }
@@ -230,8 +431,8 @@ fn merge_category(dst: &mut CategoryStats, src: &CategoryStats) {
 fn merge_tally_map(dst: &mut BTreeMap<String, Tally>, src: &BTreeMap<String, Tally>) {
   for (k, v) in src {
     let d = dst.entry(k.clone()).or_default();
-    d.answered += v.answered;
-    d.correct += v.correct;
+    d.answered = d.answered.saturating_add(v.answered);
+    d.correct = d.correct.saturating_add(v.correct).min(d.answered);
   }
 }
 
@@ -246,7 +447,8 @@ fn merge_daily_challenge(cur: &str, backup: &str) -> Option<String> {
   };
   for (date, r) in backup.days {
     match merged.days.get(&date) {
-      Some(existing) if existing.correct >= r.correct => {}
+      // 同分时保留题量更大的一次（题量更大是更难的一档）；分数、题量都相同时保留本机。
+      Some(existing) if (existing.correct, existing.total) >= (r.correct, r.total) => {}
       _ => {
         merged.days.insert(date, r);
       }
@@ -285,13 +487,184 @@ fn merge_rpg_bestiary(cur: &str, backup: &str) -> Option<String> {
     return None;
   };
   merged.defeated.extend(backup.defeated);
+  cap_set(&mut merged.defeated, MAX_SET_ITEMS);
   serde_json::to_string(&merged).ok()
+}
+
+/// 备份的模块归类：导出时按模块勾选（QSL 影像这类大数据单独分组，
+/// 其余本地数据全量兜底）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BackupModule {
+  /// 通联日志、台站档案、QSL 影像索引等通联域数据。
+  Log,
+  /// QSL 影像本体（IndexedDB 里的 `qsl-image:<id>`，数据量大）。
+  QslImage,
+  /// 其余所有本地数据（设置、练习进度、考试历史……）。
+  Other,
+}
+
+/// 把存储 key 归入备份模块。
+///
+/// 边界情况（如实记录）：`log-stats-scope` 是日志页的统计范围偏好，归「其他」还是
+/// 「通联」都说得通 —— 它跟日志数据强绑定，恢复日志时必须一起恢复才一致，
+/// 因此归「通联」。
+#[must_use]
+pub fn classify_key(key: &str) -> BackupModule {
+  if key.starts_with(qsl_image::KEY_PREFIX) {
+    return BackupModule::QslImage;
+  }
+  match key {
+    "logbook" | "station-info" | "station-book" | qsl_image::INDEX_KEY | "log-stats-scope" => {
+      BackupModule::Log
+    }
+    _ => BackupModule::Other,
+  }
+}
+
+#[cfg(test)]
+mod classify_tests {
+  use super::*;
+
+  #[test]
+  fn classifies_backup_keys_by_module() {
+    assert_eq!(classify_key("logbook"), BackupModule::Log);
+    assert_eq!(classify_key("station-book"), BackupModule::Log);
+    assert_eq!(classify_key("qsl-image-index"), BackupModule::Log);
+    assert_eq!(classify_key("log-stats-scope"), BackupModule::Log);
+    assert_eq!(classify_key("qsl-image:7"), BackupModule::QslImage);
+    assert_eq!(classify_key("mistake-book"), BackupModule::Other);
+    assert_eq!(classify_key("theme"), BackupModule::Other);
+    assert_eq!(classify_key("practice:2024"), BackupModule::Other);
+  }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
   use crate::bank::Bank;
+
+  #[test]
+  fn backup_limit_matches_text_import_at_the_exact_byte_boundary() {
+    assert!(backup_size_is_supported(0));
+    assert!(backup_size_is_supported(MAX_BACKUP_BYTES));
+    assert!(!backup_size_is_supported(MAX_BACKUP_BYTES + 1));
+    assert!(!backup_size_is_supported(usize::MAX));
+  }
+
+  #[test]
+  fn covering_logs_only_retains_images_of_the_same_unique_qso() {
+    let a = LogEntry {
+      id: 1,
+      callsign: "JA1AAA".into(),
+      date: "2026-01-01".into(),
+      time: "12:00".into(),
+      ..Default::default()
+    };
+    let local = serde_json::to_string(&Logbook {
+      entries: vec![a.clone()],
+    })
+    .unwrap();
+    assert_eq!(
+      retained_image_ids(Some(&local), &local),
+      BTreeSet::from([1])
+    );
+    let other = serde_json::to_string(&Logbook {
+      entries: vec![LogEntry {
+        callsign: "W1AW".into(),
+        ..a.clone()
+      }],
+    })
+    .unwrap();
+    assert!(retained_image_ids(Some(&local), &other).is_empty());
+    let ambiguous = serde_json::to_string(&Logbook {
+      entries: vec![a.clone(), a],
+    })
+    .unwrap();
+    assert!(retained_image_ids(Some(&local), &ambiguous).is_empty());
+    assert!(retained_image_ids(Some("broken"), &local).is_empty());
+    let values = BTreeMap::from([("key".to_owned(), "中文\"".to_owned())]);
+    assert_eq!(backup_payload_bytes(&values), 10);
+    assert!(backup_payload_bytes(&values) < serde_json::to_string(&values).unwrap().len());
+  }
+
+  #[test]
+  fn log_id_mapping_preserves_duplicates_and_remaps_new_records() {
+    let original = LogEntry {
+      id: 1,
+      date: "2026-01-01".into(),
+      time: "12:00".into(),
+      callsign: "JA1AAA".into(),
+      ..Default::default()
+    };
+    let local = serde_json::to_string(&Logbook {
+      entries: vec![original.clone()],
+    })
+    .unwrap();
+    let backup = serde_json::to_string(&Logbook {
+      entries: vec![
+        LogEntry { id: 9, ..original },
+        LogEntry {
+          id: 1,
+          station_id: 2,
+          callsign: "W1AW".into(),
+          date: "2026-01-02".into(),
+          time: "13:00".into(),
+          ..Default::default()
+        },
+      ],
+    })
+    .unwrap();
+    let (merged, ids) = merge_logbook_with_ids(Some(&local), &backup).unwrap();
+    assert_eq!(ids.get(&9), Some(&1));
+    assert_eq!(ids.get(&1), Some(&2));
+    let book: Logbook = serde_json::from_str(&merged).unwrap();
+    assert_eq!(book.entries[1].station_id, 0);
+    let existing = image_ids_for_existing_log(Some(&local), &backup);
+    assert_eq!(existing.get(&9), Some(&1));
+    assert!(!existing.contains_key(&1));
+    let (adopted_json, adopted) = merge_logbook_with_ids(None, &backup).unwrap();
+    assert_eq!(adopted.get(&9), Some(&9));
+    let adopted_book: Logbook = serde_json::from_str(&adopted_json).unwrap();
+    assert!(
+      adopted_book
+        .entries
+        .iter()
+        .all(|entry| entry.station_id == 0)
+    );
+    let duplicate_source = serde_json::to_string(&Logbook {
+      entries: vec![
+        LogEntry {
+          id: 9,
+          ..book.entries[0].clone()
+        },
+        LogEntry {
+          id: 9,
+          ..book.entries[1].clone()
+        },
+      ],
+    })
+    .unwrap();
+    assert!(image_ids_for_existing_log(Some(&local), &duplicate_source).is_empty());
+  }
+
+  #[test]
+  fn ambiguous_backup_ids_do_not_map_images() {
+    let entry = LogEntry {
+      id: 7,
+      ..Default::default()
+    };
+    let backup = serde_json::to_string(&Logbook {
+      entries: vec![entry.clone(), entry],
+    })
+    .unwrap();
+    assert!(merge_logbook_with_ids(None, &backup).unwrap().1.is_empty());
+    assert!(
+      merge_logbook_with_ids(Some(r#"{"entries":[]}"#), &backup)
+        .unwrap()
+        .1
+        .is_empty()
+    );
+  }
 
   #[test]
   fn a_corrupt_local_value_is_replaced_by_the_backup() {
@@ -426,6 +799,53 @@ mod tests {
   }
 
   #[test]
+  fn absent_local_key_still_validates_known_types() {
+    // R2-11：本机没有该 key 时，半截 / 篡改的 JSON 不得原样写入。
+    for key in [
+      "logbook",
+      "bookmarks",
+      "exam-history",
+      "mistake-book",
+      "study-stats",
+      "daily-challenge",
+      "rpg-stars",
+      "rpg-bestiary",
+      "station-book",
+    ] {
+      assert_eq!(merge_value(key, None, "{\"entries\": [tru"), None, "{key}");
+      assert_eq!(merge_value(key, None, "\"just a string\""), None, "{key}");
+    }
+    // 合法值与未知 key（纯字符串设置）照旧采用。
+    assert_eq!(
+      merge_value("bookmarks", None, r#"["a"]"#).as_deref(),
+      Some(r#"["a"]"#)
+    );
+    assert_eq!(merge_value("theme", None, "dark").as_deref(), Some("dark"));
+  }
+
+  #[test]
+  fn merged_sets_are_capped() {
+    // R2-12：并集不能无限增长。
+    let many: Vec<String> = (0..MAX_SEEN_PER_BANK + 500)
+      .map(|i| format!("q{i:06}"))
+      .collect();
+    let backup = format!(
+      r#"{{"banks":{{"A":{{"seen":{}}}}}}}"#,
+      serde_json::to_string(&many).expect("json")
+    );
+    let merged = merge_value("study-stats", Some("{}"), &backup).expect("merge");
+    let stats: StudyStats = serde_json::from_str(&merged).expect("parse");
+    assert_eq!(stats.banks[&Bank::A].seen.len(), MAX_SEEN_PER_BANK);
+  }
+
+  #[test]
+  fn string_set_merge_keeps_local_order() {
+    let merged = merge_value("bookmarks", Some(r#"["z","a"]"#), r#"["m","a","b"]"#).expect("merge");
+    let v: Vec<String> = serde_json::from_str(&merged).expect("parse");
+    assert_eq!(v, ["z", "a", "m", "b"]);
+  }
+
+  #[test]
   fn merges_string_sets() {
     let merged = merge_value("bookmarks", Some(r#"["a","b"]"#), r#"["b","c"]"#).expect("merge");
     let v: Vec<String> = serde_json::from_str(&merged).expect("parse");
@@ -467,6 +887,23 @@ mod tests {
     assert_eq!(a.stats.categories["a"].answered, 4);
     assert!(a.seen.contains("k1") && a.seen.contains("k2"));
     assert_eq!(s.bank(Bank::B).expect("bank B").stats.answered, 2);
+  }
+
+  #[test]
+  fn huge_backup_stats_saturate_instead_of_wrapping() {
+    // 备份是外部输入：`answered` / `correct` 拉满时不能让 u32 溢回（debug 下 panic、
+    // release 下静默回绕），也不能产出 correct > answered 的「正确率 > 100%」。
+    let cur =
+      r#"{"answered":1,"correct":1,"categories":{"a":{"answered":1,"correct":1}},"banks":{}}"#;
+    let backup = r#"{"answered":4294967295,"correct":4294967295,"categories":{"a":{"answered":4294967295,"correct":4294967295}},"banks":{"A":{"answered":4294967295,"correct":4294967295,"seen":[]}}}"#;
+    let merged = merge_value("study-stats", Some(cur), backup).expect("merge");
+    let s: StudyStats = serde_json::from_str(&merged).expect("parse");
+    assert_eq!(s.total.answered, u32::MAX, "饱和而不是回绕");
+    assert!(s.total.correct <= s.total.answered, "正确率不能超过 100%");
+    assert!(s.total.categories["a"].correct <= s.total.categories["a"].answered);
+    let a = s.bank(Bank::A).expect("bank A");
+    assert_eq!(a.stats.answered, u32::MAX);
+    assert!(a.stats.correct <= a.stats.answered);
   }
 
   #[test]

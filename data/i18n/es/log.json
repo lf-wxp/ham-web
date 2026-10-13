@@ -21,6 +21,7 @@
   "log.qsl-via-direct": "Directo",
   "log.qsl-received": "QSL recibida",
   "log.qsl-card-image": "Imagen del QSL",
+  "log.backup-busy-not-saved": "Hay una copia de seguridad o restauración en curso, por lo que este cambio no se guardó. Inténtalo de nuevo cuando termine.",
   "log.upload-card-image": "Subir un escaneo",
   "log.replace-card-image": "Reemplazar",
   "log.delete-card-image": "Eliminar imagen",

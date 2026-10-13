@@ -6,7 +6,7 @@ use leptos::task::spawn_local;
 use crate::data;
 use crate::i18n::t;
 use crate::pages::log::use_log_store;
-use crate::ui::{Button, Input, Size, Variant};
+use crate::ui::{Button, Chip, ChipGroup, Input, Size, Variant};
 use crate::util::alert;
 
 /// SOTA 山峰详情。
@@ -99,34 +99,18 @@ pub fn PortableLookup() -> impl IntoView {
         {move || t("radio.enter-a-sota-summit")}
       </p>
       <div class="flex flex-wrap items-center gap-3 p-4">
-        <div class="flex rounded-lg border p-0.5">
-          <button
-            type="button"
-            class=move || {
-              if !pota.get() {
-                "rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
-              } else {
-                "rounded-md px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-              }
-            }
-            on:click=move |_| pota.set(false)
-          >
-            {move || t("radio.sota-summits")}
-          </button>
-          <button
-            type="button"
-            class=move || {
-              if pota.get() {
-                "rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
-              } else {
-                "rounded-md px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-              }
-            }
-            on:click=move |_| pota.set(true)
-          >
-            {move || t("radio.pota-parks")}
-          </button>
-        </div>
+        <ChipGroup
+          value=Signal::derive(move || if pota.get() { "pota" } else { "sota" }.to_owned())
+          on_change=Callback::new(move |v: String| pota.set(v == "pota"))
+          aria_label=Signal::derive(move || t("radio.sota-pota-reference-lookup"))
+        >
+          <Chip value="sota".to_owned()>
+            {view! { {move || t("radio.sota-summits")} }.into_any()}
+          </Chip>
+          <Chip value="pota".to_owned()>
+            {view! { {move || t("radio.pota-parks")} }.into_any()}
+          </Chip>
+        </ChipGroup>
         <Input
           value=code
           on_change=Callback::new(move |v: String| code.set(v))

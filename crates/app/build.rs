@@ -9,7 +9,7 @@
 //! 「界面已经是中文」付一次网络请求。
 //!
 //! 值为对象的词条是**复数词条**（`{ "one": …, "other": … }`），单独编成
-//! `NAME_PLURAL` 表；中文不允许复数对象。详见 `docs/i18n-refactor.md` 的 P3-C。
+//! `NAME_PLURAL` 表；中文不允许复数对象。详见 `docs/i18n.md` 的复数规范。
 
 use std::path::{Path, PathBuf};
 

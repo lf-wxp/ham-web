@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "./fixtures";
+import { expect, settleFrames, test, waitSettled } from "./fixtures";
 
 // 路由表以 main_content.rs 为准，新增页面自动纳入冒烟测试
 const source = readFileSync(join(__dirname, "../../crates/app/src/app/main_content.rs"), "utf8");
@@ -51,7 +51,8 @@ test.describe(`全站冒烟（${colorScheme}）`, () => {
       await expect(page.locator("main h1").first()).toBeAttached();
       await expect(page.getByText("未找到页面")).toHaveCount(0);
       await expect(page.locator("#fatal")).toHaveCount(0);
-      await page.waitForTimeout(800);
+      await waitSettled(page);
+      await settleFrames(page);
 
       const axe = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])

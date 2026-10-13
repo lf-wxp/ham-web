@@ -13,25 +13,12 @@ use ham_web_core::Bank;
 use ham_web_core::categories::{TOP_CATEGORIES, top_category};
 use ham_web_core::glossary::OTHER_CATEGORY;
 
-use crate::cn::cn;
-
 const PAGE: usize = 60;
 const ALL: &str = "全部";
 const OTHER_COLOR: &str = "#71717a";
 
 /// 各题库题目的小写搜索文本（与分类浏览页的关键词搜索范围一致）。
 type Haystacks = Arc<Vec<(Bank, Vec<String>)>>;
-
-fn pill(active: bool, base: &str) -> String {
-  cn(&[
-    base,
-    if active {
-      "bg-primary text-primary-foreground"
-    } else {
-      "hover:bg-accent"
-    },
-  ])
-}
 
 /// 分类排序位置：按一级分类定义顺序，「其他」排最后。
 fn category_pos(key: &str) -> usize {

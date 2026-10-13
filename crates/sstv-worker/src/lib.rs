@@ -1,16 +1,17 @@
 //! SSTV 解码器的 Web Worker 绑定。
 //!
 //! 把纯 Rust 的 [`ham_web_sstv`] 解码器通过 wasm-bindgen 暴露给 JS，配合
-//! `public/sstv-worker/worker.js` 在专用线程运行，避免阻塞主线程 UI。
+//! `public/decode-worker.js`（统一解码 Worker 协议）在专用线程运行，避免阻塞主线程 UI。
 //!
 //! 构建方式：`wasm-bindgen --target no-modules --out-name sstv_worker`。
 
 use wasm_bindgen::prelude::*;
 
 /// 在 Worker 线程解码 SSTV 音频字节，返回可被 `postMessage` 结构化克隆的普通对象。
+/// 统一解码 Worker 协议：导出名固定为 `decode(bytes, params)`，SSTV 没有参数。
 #[wasm_bindgen]
-pub fn sstv_decode(bytes: &[u8]) -> Result<JsValue, JsValue> {
-  let img = ham_web_sstv::decode(bytes).map_err(|e| e.to_string())?;
+pub fn decode(bytes: &[u8], _params: &JsValue) -> Result<JsValue, JsValue> {
+  let img = ham_web_sstv::decode(bytes).map_err(|e| e.code())?;
   let obj = js_sys::Object::new();
   set(&obj, "width", JsValue::from(img.width))?;
   set(&obj, "height", JsValue::from(img.height))?;

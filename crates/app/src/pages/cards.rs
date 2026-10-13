@@ -18,7 +18,7 @@ use crate::i18n::{t, tf, tp};
 use crate::morse_audio::play_morse;
 use crate::pages::SLANG_CATEGORY;
 use crate::speech::speak_en;
-use crate::ui::{Button, Size, Variant};
+use crate::ui::{Button, Chip, ChipGroup, Size, Variant};
 use crate::util::{local_today, now_ms, set_title, storage};
 
 const KEY: &str = "card-review";
@@ -247,23 +247,14 @@ pub fn CardsPage() -> impl IntoView {
 
   let chip = move |d: Deck| {
     let due = move || schedule.with(|s| s.due_by_deck(now_ms()).get(&d).copied().unwrap_or(0));
-    view! {
-      <button
-        type="button"
-        aria-pressed=move || (deck.get() == d).to_string()
-        class=move || if deck.get() == d {
-          "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-primary bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
-        } else {
-          "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
-        }
-        on:click=move |_| deck.set(d)
-      >
-        {d.label()}
-        {move || (due() > 0).then(|| view! {
-          <span class="rounded-full bg-amber-500/20 px-1.5 tabular-nums text-amber-800 dark:text-amber-300">{due()}</span>
-        })}
-      </button>
+    let label = view! {
+      {move || t(d.label())}
+      {move || (due() > 0).then(|| view! {
+        <span class="rounded-full bg-amber-500/20 px-1.5 tabular-nums text-amber-800 dark:text-amber-300">{due()}</span>
+      })}
     }
+      .into_any();
+    view! { <Chip value=d.label().to_owned()>{label}</Chip> }
   };
 
   let progress = move || {
@@ -425,9 +416,18 @@ pub fn CardsPage() -> impl IntoView {
         <h1 class="text-base font-semibold leading-tight">{move || t("shell.study-cards")}</h1>
         <p class="text-xs text-muted-foreground">{move || t("exam.reviews-follow-a-forgetting")}</p>
       </div>
-      <div class="flex gap-2 overflow-x-auto pb-1" role="group" aria-label=move || t("exam.deck")>
+      <ChipGroup
+        value=Signal::derive(move || deck.get().label().to_owned())
+        on_change=Callback::new(move |v: String| {
+          if let Some(d) = Deck::ALL.into_iter().find(|d| d.label() == v) {
+            deck.set(d);
+          }
+        })
+        aria_label=Signal::derive(move || t("exam.deck"))
+        class="flex-nowrap overflow-x-auto pb-1"
+      >
         {Deck::ALL.into_iter().map(chip).collect_view()}
-      </div>
+      </ChipGroup>
       <p class="text-xs text-muted-foreground tabular-nums">{progress}</p>
       {mastery_bar}
       {card_view}

@@ -11,7 +11,7 @@ use wasm_bindgen::JsValue;
 use crate::components::common::{Legend, PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::pages::map::{GraylineOverlay, MapView};
-use crate::ui::Slider;
+use crate::ui::{Chip, ChipGroup, Slider};
 use crate::util::set_title;
 
 #[component]
@@ -92,7 +92,15 @@ pub fn GraylinePage() -> impl IntoView {
               />
               <span class="text-xs text-muted-foreground">"+12h"</span>
             </div>
-            <div class="flex flex-wrap gap-1">
+            <ChipGroup
+              value=Signal::derive(move || time_offset.get().to_string())
+              on_change=Callback::new(move |v: String| {
+                if let Ok(h) = v.parse::<f64>() {
+                  time_offset.set(h);
+                }
+              })
+              aria_label=Signal::derive(move || t("radio.time-offset-hours"))
+            >
               {[
                 ("-6h", -6.0),
                 ("-1h", -1.0),
@@ -102,18 +110,11 @@ pub fn GraylinePage() -> impl IntoView {
               ]
               .into_iter()
               .map(|(label, h)| {
-                view! {
-                  <button
-                    type="button"
-                    on:click=move |_| time_offset.set(h)
-                    class="rounded-md border px-2 py-0.5 text-xs transition-colors hover:bg-accent"
-                  >
-                    {move || t(label)}
-                  </button>
-                }
+                let text = view! { {move || t(label)} }.into_any();
+                view! { <Chip value=h.to_string()>{text}</Chip> }
               })
               .collect_view()}
-            </div>
+            </ChipGroup>
           </div>
 
           <div class="mt-2 space-y-1.5">

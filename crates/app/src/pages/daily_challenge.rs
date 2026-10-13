@@ -8,7 +8,7 @@ use ham_web_core::daily_challenge::{
   CHALLENGE_COUNT, CHALLENGE_MINUTES, DailyResult, DailyResults, current_streak, longest_streak,
   pick_daily,
 };
-use ham_web_core::{ExamScore, QuestionItem};
+use ham_web_core::{Bank, ExamScore, QuestionItem};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_navigate;
@@ -16,9 +16,9 @@ use leptos_router::hooks::use_navigate;
 use crate::components::common::{PageContainer, PageHeader};
 use crate::components::question_card::QuestionCard;
 use crate::data;
-use crate::i18n::{t, tf, tp};
+use crate::i18n::{bank_class, t, tf, tp};
 use crate::pages::{use_bank_query, use_no_site_footer};
-use crate::ui::{Button, Size, Variant};
+use crate::ui::{Button, Chip, ChipGroup, Size, Variant};
 use crate::util::{local_today, now_ms, set_title, storage};
 
 const KEY: &str = "daily-challenge";
@@ -139,27 +139,23 @@ pub fn DailyChallengePage() -> impl IntoView {
         title=move || t("learning.daily-challenge")
         subtitle=tf("learning.questions-a-day-in", &[&CHALLENGE_COUNT.to_string(), &CHALLENGE_MINUTES.to_string()])
         actions=ViewFn::from(move || {
+          let nav = navigate.clone();
           view! {
-            <div class="flex overflow-hidden rounded-lg border text-xs">
-              {["A", "B", "C"]
+            <ChipGroup
+              value=Signal::derive(move || bank.get().as_str().to_string())
+              on_change=Callback::new(move |v: String| {
+                nav(&format!("/daily-challenge?bank={v}"), leptos_router::NavigateOptions::default());
+              })
+              aria_label=Signal::derive(move || t("exam.bank-class"))
+            >
+              {Bank::ALL
                 .into_iter()
                 .map(|b| {
-                  let bb = ham_web_core::Bank::from_param(Some(b));
-                  let nav = navigate.clone();
-                  view! {
-                    <button
-                      type="button"
-                      class=move || if bank.get() == bb { "bg-primary px-3 py-1.5 font-medium text-primary-foreground" } else { "px-3 py-1.5 transition-colors hover:bg-accent" }
-                      on:click=move |_| {
-                        nav(&format!("/daily-challenge?bank={b}"), leptos_router::NavigateOptions::default());
-                      }
-                    >
-                      {b} " 类"
-                    </button>
-                  }
+                  let label = view! { {move || bank_class(b.as_str())} }.into_any();
+                  view! { <Chip value=b.as_str().to_string()>{label}</Chip> }
                 })
                 .collect_view()}
-            </div>
+            </ChipGroup>
           }
         })
       />

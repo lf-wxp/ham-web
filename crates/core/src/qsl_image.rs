@@ -32,10 +32,59 @@ pub enum QslImageReject {
   TooLarge,
 }
 
+/// 影像在存储层的 key 前缀。
+pub const KEY_PREFIX: &str = "qsl-image:";
+
+/// 「哪些通联存了卡片影像」的 id 索引（localStorage 里的 `Vec<u64>` JSON）。
+pub const INDEX_KEY: &str = "qsl-image-index";
+
+/// 仅影像备份的日志关联上下文，不作为日志覆盖导入；跨设备合并按通联身份匹配。
+pub const BACKUP_LOG_KEY: &str = "qsl-backup-logbook";
+
+/// 备份导入时单条影像值（dataURL 字符串）的长度上限。
+///
+/// 上传侧源文件上限 12 MB，base64 膨胀约 4/3 ≈ 16 MB；留出余量取 24 MiB。
+/// 超过的不是本站写出的数据，导入时拒绝，免得一份被篡改的备份把 IndexedDB 灌满。
+pub const MAX_STORED_CHARS: usize = 24 * 1024 * 1024;
+
 /// 影像在存储层的 key —— 一条通联一张，重新上传即替换。
 #[must_use]
 pub fn key_for(entry_id: u64) -> String {
-  format!("qsl-image:{entry_id}")
+  format!("{KEY_PREFIX}{entry_id}")
+}
+
+/// [`key_for`] 的逆运算：`qsl-image:<id>` → `id`；格式不对返回 `None`。
+#[must_use]
+pub fn entry_id_from_key(key: &str) -> Option<u64> {
+  let id = key.strip_prefix(KEY_PREFIX)?;
+  // `parse::<u64>` 放过 `+7`，这里要求纯数字；再拒绝前导零（`007`），否则 `qsl-image:7` 与
+  // `qsl-image:007` 会解析成同一个 id、在备份里互相覆盖 —— `key_for` 从不产出前导零的 key。
+  (!id.is_empty() && id.bytes().all(|b| b.is_ascii_digit()) && (id == "0" || !id.starts_with('0')))
+    .then(|| id.parse().ok())
+    .flatten()
+}
+
+/// 备份里的影像值是否像本站写出的数据：`data:<受支持类型>;base64,<base64 字符>`，
+/// 且不超过 [`MAX_STORED_CHARS`]。
+///
+/// 备份文件是外部输入：导入侧会把值原样写进 IndexedDB、之后当 `<img src>` 渲染，
+/// 所以类型走与上传同一份白名单（不收 SVG）。
+#[must_use]
+pub fn is_valid_stored_value(value: &str) -> bool {
+  if value.len() > MAX_STORED_CHARS {
+    return false;
+  }
+  let Some((mime, data)) = value
+    .strip_prefix("data:")
+    .and_then(|rest| rest.split_once(";base64,"))
+  else {
+    return false;
+  };
+  is_supported_mime(mime)
+    && !data.is_empty()
+    && data
+      .bytes()
+      .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'/' | b'='))
 }
 
 /// 是否受支持的图片类型。
@@ -58,7 +107,7 @@ pub fn check(mime: &str, bytes: f64) -> Result<(), QslImageReject> {
   if !is_supported_mime(mime) {
     return Err(QslImageReject::UnsupportedType);
   }
-  if !bytes.is_finite() || bytes > MAX_SOURCE_BYTES {
+  if !bytes.is_finite() || bytes < 0.0 || bytes > MAX_SOURCE_BYTES {
     return Err(QslImageReject::TooLarge);
   }
   Ok(())
@@ -82,6 +131,15 @@ mod tests {
   use super::*;
 
   #[test]
+  fn leading_zero_keys_and_negative_sizes_are_rejected() {
+    assert_eq!(entry_id_from_key("qsl-image:7"), Some(7));
+    assert_eq!(entry_id_from_key("qsl-image:0"), Some(0));
+    assert_eq!(entry_id_from_key("qsl-image:007"), None);
+    assert_eq!(entry_id_from_key("qsl-image:00"), None);
+    assert_eq!(check("image/png", -1.0), Err(QslImageReject::TooLarge));
+  }
+
+  #[test]
   fn keys_are_stable_and_distinct_per_entry() {
     // key 是持久化格式：改了就读不出用户已经存下的扫描件，所以逐字钉住。
     assert_eq!(key_for(1), "qsl-image:1");
@@ -89,6 +147,43 @@ mod tests {
     assert_ne!(key_for(4), key_for(44));
     // 两条通联不能共用一张影像。
     assert_ne!(key_for(u64::MAX), key_for(u64::MAX - 1));
+  }
+
+  #[test]
+  fn entry_id_round_trips_through_the_key() {
+    for id in [0, 1, 42, u64::MAX] {
+      assert_eq!(entry_id_from_key(&key_for(id)), Some(id));
+    }
+    for bad in [
+      "qsl-image:",
+      "qsl-image:+7",
+      "qsl-image:-1",
+      "qsl-image:1a",
+      "qsl-image:99999999999999999999",
+      "qsl-image-index",
+      "logbook",
+    ] {
+      assert_eq!(entry_id_from_key(bad), None, "{bad} 不应解析成 id");
+    }
+  }
+
+  #[test]
+  fn stored_values_must_be_supported_base64_data_urls() {
+    assert!(is_valid_stored_value("data:image/png;base64,iVBORw0KGgo="));
+    assert!(is_valid_stored_value("data:image/jpeg;base64,/9j/4AAQ"));
+    assert!(is_valid_stored_value("data:image/webp;base64,UklGRg=="));
+    // SVG 可内嵌脚本；非图片、非 base64、空内容、带杂字符一律拒绝。
+    assert!(!is_valid_stored_value("data:image/svg+xml;base64,PHN2Zz4="));
+    assert!(!is_valid_stored_value("data:text/html;base64,PGI+"));
+    assert!(!is_valid_stored_value("data:image/png,rawtext"));
+    assert!(!is_valid_stored_value("data:image/png;base64,"));
+    assert!(!is_valid_stored_value(
+      "data:image/png;base64,abc\"onerror=1"
+    ));
+    assert!(!is_valid_stored_value("javascript:alert(1)"));
+    assert!(!is_valid_stored_value(""));
+    let huge = format!("data:image/png;base64,{}", "A".repeat(MAX_STORED_CHARS));
+    assert!(!is_valid_stored_value(&huge), "超长拒绝");
   }
 
   #[test]

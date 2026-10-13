@@ -64,7 +64,7 @@ const TOOL_NAV: &[(&str, &str)] = &[
   ("resistor", "电阻串并联"),
   ("freq-units", "频率单位"),
   ("battery", "电池续航"),
-  ("dbm-dbuv", "dBm ↔ dBμV"),
+  ("dbm-dbuv", "dBm ↔ dBμV / μV"),
   ("feedline-loss", "馈线损耗"),
   ("filter-design", "滤波器设计"),
   ("callsign-lookup", "呼号查询"),

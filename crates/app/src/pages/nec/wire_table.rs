@@ -5,7 +5,7 @@
 use leptos::prelude::*;
 
 use crate::i18n::t;
-use crate::ui::{ControlSize, Input};
+use crate::ui::{Button, ControlSize, Input, Size, Variant};
 
 use super::WireRow;
 
@@ -47,13 +47,13 @@ pub(super) fn WireTable(
     <div class="overflow-x-auto rounded-xl border bg-card">
       <div class="flex items-center justify-between border-b px-4 py-3">
         <span class="text-sm font-semibold">{move || t("tools.nec-wire-geometry")}</span>
-        <button
-          type="button"
-          class="cursor-pointer rounded-md border bg-background px-2 py-1 text-xs font-medium hover:bg-accent"
-          on:click=move |_| on_add.run(())
+        <Button
+          variant=Variant::Outline
+          size=Size::Xs
+          on_click=Callback::new(move |_| on_add.run(()))
         >
           {move || t("tools.nec-add-wire")}
-        </button>
+        </Button>
       </div>
       <table data-slot="nec-wires" class="w-full border-collapse text-xs">
         <thead class="bg-muted/50">
@@ -95,14 +95,14 @@ pub(super) fn WireTable(
                   <td class="border p-1">{cell!(wires, id, radius_mm, label(t("tools.nec-wire-radius-mm"), idx()))}</td>
                   <td class="border p-1">{cell!(wires, id, segments, label(t("tools.nec-segments-count"), idx()))}</td>
                   <td class="border px-2 py-1">
-                    <button
-                      type="button"
-                      class="cursor-pointer rounded border px-1.5 py-0.5 text-xs hover:bg-accent"
-                      aria-label=move || format!("{} {}", t("log.delete"), idx() + 1)
-                      on:click=move |_| on_remove.run(id)
+                    <Button
+                      variant=Variant::Outline
+                      size=Size::IconSm
+                      aria_label=Signal::derive(move || format!("{} {}", t("log.delete"), idx() + 1))
+                      on_click=Callback::new(move |_| on_remove.run(id))
                     >
                       "×"
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               }

@@ -21,6 +21,7 @@
   "log.qsl-via-direct": "Direct",
   "log.qsl-received": "QSL received",
   "log.qsl-card-image": "Card image",
+  "log.backup-busy-not-saved": "A backup or restore is in progress, so this change was not saved. Try again when it finishes.",
   "log.upload-card-image": "Upload a scan",
   "log.replace-card-image": "Replace",
   "log.delete-card-image": "Delete image",

@@ -75,7 +75,7 @@ test("学习进度：切换报考类别即时生效", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 2, name: "备考计划" })).toBeVisible();
   await pickDate(page, "考试日期", futureIso());
 
-  await page.getByRole("button", { name: "B 类" }).first().click();
+  await page.getByRole("radio", { name: "B 类" }).first().click();
   await expect(page.getByText(/距 B 类考试还有 \d+ 天/)).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem("learning-plan")))

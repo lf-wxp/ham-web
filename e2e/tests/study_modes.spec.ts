@@ -72,7 +72,7 @@ test("打印版：空数据与收藏集各自的空态", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "打印版" })).toBeVisible();
   await expect(page.getByText("错题集为空，先去练习积累一些题目吧。")).toBeVisible();
 
-  await page.getByRole("button", { name: "收藏集" }).click();
+  await page.getByRole("radio", { name: "收藏集" }).click();
   await expect(page.getByText("收藏集为空，先去练习积累一些题目吧。")).toBeVisible();
 });
 

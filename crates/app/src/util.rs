@@ -6,6 +6,7 @@ use std::fmt::Write as _;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::i18n::{t, tf};
+use ham_web_core::qsl_image;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::{JsCast, JsValue};
 
@@ -50,9 +51,11 @@ pub fn unique_id(prefix: &str) -> String {
 
 /// 「组件还挂着吗」的守卫，配合 `spawn_local` 的异步续体使用。
 ///
-/// `leptos::task::spawn_local` **不会**随组件卸载取消：`await` 之后若直接读写组件里创建的
-/// 响应式值，而组件已被卸载（信号随之释放），`reactive_graph` 对已释放值的访问是 panic
-/// 而非 `None`，整个 wasm 实例随之崩掉 —— 与 `ui/popover.rs` 里记的是同一个坑。
+/// `leptos::task::spawn_local` **不会**随组件卸载取消：`await` 之后若再碰组件里创建的
+/// 响应式值，而组件已被卸载（信号随之释放），**读**（`get` / `get_value` / `with`）会
+/// panic 并带走整个 wasm 实例，**写**（`set` / `update`）则是静默空操作 —— 那笔写永远
+/// 丢失且没有任何提示。两种情况都必须靠这个守卫提前返回 ——
+/// 与 `ui/popover.rs` 里记的是同一个坑。
 ///
 /// 必须在**组件体**里调用：它靠 `on_cleanup` 置位，而 `on_cleanup` 在没有 Owner 上下文时
 /// 是**静默空操作**（事件回调、定时器回调里调用会拿不到保护）。用法：
@@ -374,10 +377,62 @@ pub fn take_nec_template() -> Option<String> {
   Some(id)
 }
 
-/// 导出全部 localStorage 数据为 JSON 备份文件。
-pub fn export_backup() {
+/// 根级备份任务持有期间不允许再次导入；提前退出和页面卸载都由 Drop 解锁。
+pub struct BackupTaskGuard(leptos::prelude::RwSignal<bool>);
+
+impl Drop for BackupTaskGuard {
+  fn drop(&mut self) {
+    use leptos::prelude::Set;
+    self.0.try_set(false);
+  }
+}
+
+pub fn begin_backup_task(busy: leptos::prelude::RwSignal<bool>) -> Option<BackupTaskGuard> {
+  use leptos::prelude::{GetUntracked, Set};
+  if busy.get_untracked() {
+    return None;
+  }
+  busy.set(true);
+  Some(BackupTaskGuard(busy))
+}
+
+/// 导出模块勾选（见 [`export_backup`]）。
+#[derive(Debug, Clone, Copy, Default)]
+pub struct BackupModules {
+  /// 通联数据（日志 / 台站 / QSL 影像索引）。
+  pub log: bool,
+  /// QSL 影像本体（IndexedDB 的 `qsl-image:<id>`，数据量大，单独勾选）。
+  pub qsl_images: bool,
+  /// 其余本地数据。
+  pub other: bool,
+}
+
+fn insert_backup_value(
+  map: &mut std::collections::BTreeMap<String, String>,
+  key: String,
+  value: String,
+) -> Result<(), String> {
+  let bytes = ham_web_core::backup_merge::backup_payload_bytes(map);
+  let old = map
+    .get(&key)
+    .map_or(0, |old| key.len().saturating_add(old.len()));
+  let next = bytes
+    .saturating_sub(old)
+    .saturating_add(key.len())
+    .saturating_add(value.len());
+  if !ham_web_core::backup_merge::backup_size_is_supported(next) {
+    return Err(t("tools.backup-too-large"));
+  }
+  map.insert(key, value);
+  Ok(())
+}
+
+/// 按模块导出备份：localStorage 里的 key 按 [`ham_web_core::classify_key`] 归组，
+/// QSL 影像本体从 IndexedDB 异步读取后并入同一份 JSON（结构不变：`{key: value}`，
+/// 导入侧对 `qsl-image:` 前缀走 IndexedDB 直写，避开 localStorage 配额）。
+pub async fn export_backup(modules: BackupModules) -> Result<usize, String> {
   let Some(local) = window().local_storage().ok().flatten() else {
-    return;
+    return Err(t("shell.localstorage-unavailable"));
   };
   let len = local.length().unwrap_or(0);
   let mut map = std::collections::BTreeMap::new();
@@ -385,12 +440,61 @@ pub fn export_backup() {
     if let Ok(Some(key)) = local.key(i)
       && let Ok(Some(value)) = local.get_item(&key)
     {
-      map.insert(key, value);
+      let keep = match ham_web_core::classify_key(&key) {
+        ham_web_core::BackupModule::Log => modules.log,
+        ham_web_core::BackupModule::QslImage => modules.qsl_images, // 快照侧基本不存在
+        ham_web_core::BackupModule::Other => modules.other,
+      };
+      if keep {
+        insert_backup_value(&mut map, key, value)?;
+      }
     }
   }
+  if modules.log
+    && let Some(value) = crate::kv::load_large_strict("logbook")
+      .await
+      .map_err(|_| t("tools.backup-write-failed"))?
+  {
+    insert_backup_value(&mut map, "logbook".to_owned(), value)?;
+  }
+  // QSL 影像本体：按索引逐个从 IndexedDB 读回。
+  //
+  // 索引必须直接从 localStorage 读，而不是从上面按模块过滤过的 `map` 里取 ——
+  // 它属于「通联」模块，只勾选「QSL 影像」时 `map` 里没有它，影像会被静默漏掉。
+  // 索引本身也一并写进备份：没有它，恢复后的影像没人引用、界面上看不到。
+  if modules.qsl_images {
+    if !modules.log
+      && let Some(context) = crate::kv::load_large_strict("logbook")
+        .await
+        .map_err(|_| t("tools.backup-write-failed"))?
+    {
+      insert_backup_value(&mut map, qsl_image::BACKUP_LOG_KEY.to_owned(), context)?;
+    }
+    let index = local.get_item(qsl_image::INDEX_KEY).ok().flatten();
+    let ids = index
+      .as_deref()
+      .and_then(|raw| serde_json::from_str::<Vec<u64>>(raw).ok())
+      .unwrap_or_default();
+    if let Some(index) = index {
+      insert_backup_value(&mut map, qsl_image::INDEX_KEY.to_owned(), index)?;
+    }
+    for id in ids {
+      let key = qsl_image::key_for(id);
+      if let Some(value) = crate::kv::load_store_only_strict(&key)
+        .await
+        .map_err(|_| t("tools.backup-write-failed"))?
+      {
+        insert_backup_value(&mut map, key, value)?;
+      }
+    }
+  }
+  let count = map.len();
   let Ok(json) = serde_json::to_string(&map) else {
-    return;
+    return Err(t("common.file-read-failed"));
   };
+  if !ham_web_core::backup_merge::backup_size_is_supported(json.len()) {
+    return Err(t("tools.backup-too-large"));
+  }
   let d = js_sys::Date::new_0();
   let stamp = format!(
     "{:04}{:02}{:02}",
@@ -403,46 +507,218 @@ pub fn export_backup() {
     &json,
     "application/json",
   );
+  Ok(count)
 }
 
-/// 从备份 JSON 恢复 localStorage 数据，返回恢复的条目数。
-pub fn import_backup(json: &str) -> Result<usize, String> {
+/// 导入一条 QSL 影像：备份是外部输入，key 与值都按本站写出的格式校验，不合格的
+/// 条目跳过（不计入返回的条数）。写入走 [`crate::kv::save_store_only`]。
+async fn import_qsl_image(key: &str, value: &str) -> Result<bool, String> {
+  if qsl_image::entry_id_from_key(key).is_none() || !qsl_image::is_valid_stored_value(value) {
+    return Ok(false);
+  }
+  if !crate::kv::save_store_only(key, value).await {
+    return Err(t("tools.backup-write-failed"));
+  }
+  Ok(true)
+}
+
+/// 从备份 JSON 恢复本地数据，返回恢复的条目数。
+///
+/// `qsl-image:` 前缀的键是 IndexedDB 直写数据（localStorage 放不下影像本体），
+/// 经 [`import_qsl_image`] 校验后写入；其余仍走 localStorage + 权威层回灌。
+pub async fn import_backup(json: &str) -> Result<usize, String> {
+  let result = import_backup_inner(json).await;
+  // 无论成败都要丢弃收藏 / 分组 / 笔记的内存缓存：直接写 localStorage 不会触发本标签页的
+  // `storage` 事件，缓存不失效的话，之后的一次收藏就会用旧缓存整表覆盖刚恢复的数据。
+  crate::store::invalidate_all();
+  result
+}
+
+async fn import_backup_inner(json: &str) -> Result<usize, String> {
   let map: std::collections::BTreeMap<String, String> =
     serde_json::from_str(json).map_err(|e| e.to_string())?;
   let Some(local) = window().local_storage().ok().flatten() else {
     return Err(t("shell.localstorage-unavailable"));
   };
   let mut count = 0;
-  for (k, v) in map {
-    if local.set_item(&k, &v).is_ok() {
-      count += 1;
+  let has_index = map.contains_key(qsl_image::INDEX_KEY) || map.contains_key("logbook");
+  let mut index = std::collections::BTreeSet::new();
+  // 旧影像的删除推迟到**所有写入成功之后**：此前预扫描里就直接删，若随后恢复日志或写别的 key
+  // 失败，会落得「日志还是旧的、对应的影像已经没了」，且没法回滚。
+  let mut stale_images: Vec<String> = Vec::new();
+  let mut written_images = std::collections::BTreeSet::new();
+  if let Some(incoming) = map.get("logbook") {
+    let _: ham_web_core::logbook::Logbook =
+      serde_json::from_str(incoming).map_err(|e| e.to_string())?;
+    let current = crate::kv::load_large_strict("logbook")
+      .await
+      .map_err(|_| t("tools.backup-write-failed"))?;
+    let retained = ham_web_core::backup_merge::retained_image_ids(current.as_deref(), incoming);
+    let mut old_ids: std::collections::BTreeSet<u64> = local
+      .get_item(qsl_image::INDEX_KEY)
+      .map_err(|_| t("tools.backup-write-failed"))?
+      .and_then(|v| serde_json::from_str::<Vec<u64>>(&v).ok())
+      .unwrap_or_default()
+      .into_iter()
+      .collect();
+    for raw in [current.as_deref(), Some(incoming.as_str())]
+      .into_iter()
+      .flatten()
+    {
+      if let Ok(book) = serde_json::from_str::<ham_web_core::logbook::Logbook>(raw) {
+        old_ids.extend(book.entries.iter().map(|e| e.id));
+      }
+    }
+    for id in old_ids {
+      let key = qsl_image::key_for(id);
+      if retained.contains(&id) {
+        if crate::kv::load_store_only_strict(&key)
+          .await
+          .map_err(|_| t("tools.backup-write-failed"))?
+          .is_some()
+        {
+          index.insert(id);
+        }
+      } else {
+        stale_images.push(key);
+      }
     }
   }
-  // 覆盖导入只写了 localStorage。门面托管的大数据（快照 + IndexedDB 双写）还得把内容
-  // 回灌权威层，否则下次加载会被旧的 IndexedDB 值盖掉 —— 用户会看到「导入成功但数据没变」。
-  crate::kv::mirror_snapshots();
+  for (k, v) in map {
+    if k == qsl_image::BACKUP_LOG_KEY || k.ends_with(crate::kv::VERSION_SUFFIX) {
+      continue;
+    }
+    if k == qsl_image::INDEX_KEY {
+      continue;
+    }
+    if k.starts_with(qsl_image::KEY_PREFIX) {
+      if import_qsl_image(&k, &v).await?
+        && let Some(id) = qsl_image::entry_id_from_key(&k)
+      {
+        index.insert(id);
+        written_images.insert(k.clone());
+        count += 1;
+      }
+      continue;
+    }
+    if k == "logbook" {
+      if !crate::kv::restore_large(&k, &v).await {
+        return Err(t("tools.backup-write-failed"));
+      }
+    } else {
+      local
+        .set_item(&k, &v)
+        .map_err(|_| t("tools.backup-write-failed"))?;
+    }
+    count += 1;
+  }
+  // 全部写入成功后才清理旧影像。备份里同一个 id 的影像已经覆盖写入，不能再删；删除失败只留下
+  // 一份不在索引里的孤儿（不可见、只占空间），不值得让已经成功的恢复整体报错。
+  for key in stale_images {
+    if !written_images.contains(&key) {
+      let _ = crate::kv::remove_store_only(&key).await;
+    }
+  }
+  if has_index || !index.is_empty() {
+    let value = serde_json::to_string(&index).map_err(|e| e.to_string())?;
+    local
+      .set_item(qsl_image::INDEX_KEY, &value)
+      .map_err(|_| t("tools.backup-write-failed"))?;
+    count += 1;
+  }
   Ok(count)
 }
 
 /// 从备份 JSON **合并**导入：已知类型（日志、收藏、错题本、统计等）做并集 / 累加合并，
 /// 其余 key 保留本机不覆盖。返回合并写入的条目数。
-pub fn import_backup_merge(json: &str) -> Result<usize, String> {
+pub async fn import_backup_merge(json: &str) -> Result<usize, String> {
+  let result = import_backup_merge_inner(json).await;
+  // 理由同 [`import_backup`]：合并也是直接写 localStorage。
+  crate::store::invalidate_all();
+  result
+}
+
+async fn import_backup_merge_inner(json: &str) -> Result<usize, String> {
   let map: std::collections::BTreeMap<String, String> =
     serde_json::from_str(json).map_err(|e| e.to_string())?;
   let Some(local) = window().local_storage().ok().flatten() else {
     return Err(t("shell.localstorage-unavailable"));
   };
   let mut count = 0;
+  let mut ids = std::collections::BTreeMap::new();
+  let current_log = crate::kv::load_large_strict("logbook")
+    .await
+    .map_err(|_| t("tools.backup-write-failed"))?;
+  if let Some(backup) = map.get("logbook") {
+    let (merged, mapping) =
+      ham_web_core::backup_merge::merge_logbook_with_ids(current_log.as_deref(), backup)
+        .ok_or_else(|| t("tools.backup-write-failed"))?;
+    if !crate::kv::restore_large("logbook", &merged).await {
+      return Err(t("tools.backup-write-failed"));
+    }
+    ids = mapping;
+    count += 1;
+  } else if let Some(context) = map.get(qsl_image::BACKUP_LOG_KEY) {
+    ids = ham_web_core::backup_merge::image_ids_for_existing_log(current_log.as_deref(), context);
+  } else if current_log.is_none() {
+    // 旧版仅影像备份没有日志上下文；仅在本机没有日志时保留原始 ID。
+    ids.extend(
+      map
+        .keys()
+        .filter_map(|k| qsl_image::entry_id_from_key(k).map(|id| (id, id))),
+    );
+  }
+  let mut index: std::collections::BTreeSet<u64> = local
+    .get_item(qsl_image::INDEX_KEY)
+    .ok()
+    .flatten()
+    .and_then(|v| serde_json::from_str::<Vec<u64>>(&v).ok())
+    .unwrap_or_default()
+    .into_iter()
+    .collect();
   for (k, v) in map {
-    let current = local.get_item(&k).ok().flatten();
-    if let Some(merged) = ham_web_core::backup_merge::merge_value(&k, current.as_deref(), &v)
-      && local.set_item(&k, &merged).is_ok()
+    if matches!(
+      k.as_str(),
+      "logbook" | qsl_image::INDEX_KEY | qsl_image::BACKUP_LOG_KEY
+    ) || k.ends_with(crate::kv::VERSION_SUFFIX)
     {
+      continue;
+    }
+    if k.starts_with(qsl_image::KEY_PREFIX) {
+      let Some(target) = qsl_image::entry_id_from_key(&k)
+        .and_then(|id| ids.get(&id))
+        .copied()
+      else {
+        continue;
+      };
+      let key = qsl_image::key_for(target);
+      if crate::kv::load_store_only_strict(&key)
+        .await
+        .map_err(|_| t("tools.backup-write-failed"))?
+        .is_some()
+      {
+        index.insert(target);
+      } else if import_qsl_image(&key, &v).await? {
+        index.insert(target);
+        count += 1;
+      }
+      continue;
+    }
+    let current = local.get_item(&k).ok().flatten();
+    if let Some(merged) = ham_web_core::backup_merge::merge_value(&k, current.as_deref(), &v) {
+      local
+        .set_item(&k, &merged)
+        .map_err(|_| t("tools.backup-write-failed"))?;
       count += 1;
     }
   }
-  // 同 [`import_backup`]：合并结果也要回灌权威层，否则日志这类大数据会被旧值盖回去。
-  crate::kv::mirror_snapshots();
+  if !index.is_empty() {
+    let value = serde_json::to_string(&index).map_err(|e| e.to_string())?;
+    local
+      .set_item(qsl_image::INDEX_KEY, &value)
+      .map_err(|_| t("tools.backup-write-failed"))?;
+    count += 1;
+  }
   Ok(count)
 }
 
@@ -450,43 +726,18 @@ pub fn import_backup_merge(json: &str) -> Result<usize, String> {
 ///
 /// 备份 JSON、ADIF 日志、QSL 报告都在几百 KB 量级，64 MB 只是兜底 —— 防止用户误选
 /// 一个几百 MB 的文件把 wasm 内存整块吃光（读进 `String` 还会再翻一倍）。
-const MAX_READ_BYTES: f64 = 64.0 * 1024.0 * 1024.0;
+const MAX_READ_BYTES: f64 = ham_web_core::backup_merge::MAX_BACKUP_BYTES as f64;
 
 /// 读取文件文本内容（超过 [`MAX_READ_BYTES`] 视为失败）。
 pub async fn read_file_text(file: &web_sys::File) -> Option<String> {
   if file.size() > MAX_READ_BYTES {
     return None;
   }
-  use js_sys::Promise;
-  use wasm_bindgen::JsCast;
-  use wasm_bindgen::closure::Closure;
-  use wasm_bindgen_futures::JsFuture;
-  use web_sys::FileReader;
-
-  let reader = FileReader::new().ok()?;
-  let target = reader.clone();
-  let file = file.clone();
-
-  let ok = JsFuture::from(Promise::new(&mut |resolve, reject| {
-    let onload = Closure::once_into_js(move || {
-      let _ = resolve.call0(&JsValue::NULL);
-    });
-    let onerror = Closure::once_into_js(move || {
-      let _ = reject.call1(
-        &JsValue::NULL,
-        &JsValue::from_str(&t("common.failed-to-read-the")),
-      );
-    });
-    target.set_onload(Some(onload.unchecked_ref()));
-    target.set_onerror(Some(onerror.unchecked_ref()));
-    let _ = target.read_as_text(&file);
-  }))
-  .await;
-
-  if ok.is_err() {
-    return None;
-  }
-  reader.result().ok().and_then(|v| v.as_string())
+  let blob: web_sys::Blob = file.clone().into();
+  wasm_bindgen_futures::JsFuture::from(blob.text())
+    .await
+    .ok()?
+    .as_string()
 }
 
 /// 发送浏览器通知（仅在已授予通知权限时生效）。
@@ -562,7 +813,16 @@ pub fn js_error_message(err: &JsValue) -> String {
   if let Some(e) = err.dyn_ref_error() {
     return e;
   }
-  err.as_string().unwrap_or_else(|| format!("{err:?}"))
+  if let Some(s) = err.as_string() {
+    return s;
+  }
+  // `DOMException`（IndexedDB / 文件读取失败）不是 `js_sys::Error`：按「有 message 属性」兜底，
+  // 否则用户会看到 `JsValue(DOMException ...)` 的 Debug 串。
+  js_sys::Reflect::get(err, &"message".into())
+    .ok()
+    .and_then(|m| m.as_string())
+    .filter(|m| !m.is_empty())
+    .unwrap_or_else(|| format!("{err:?}"))
 }
 
 trait DynRefError {

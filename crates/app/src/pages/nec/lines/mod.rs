@@ -10,6 +10,7 @@ mod field;
 use field::field;
 
 use crate::i18n::{t, tf};
+use crate::ui::{Button, Size, Variant};
 
 const NOTE: &str = "text-xs text-muted-foreground";
 const CELL: &str = "border px-2 py-1";
@@ -75,13 +76,9 @@ pub(super) fn LinesSection(
     <div class="space-y-2 rounded-xl border bg-card p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <span class="text-sm font-semibold">{move || t("tools.nec-lines")}</span>
-        <button
-          type="button"
-          class="cursor-pointer rounded-md border bg-background px-3 py-1 text-xs font-medium hover:bg-accent"
-          on:click=add
-        >
+        <Button variant=Variant::Outline size=Size::Xs on_click=Callback::new(move |_| add(()))>
           {move || t("tools.nec-add-line")}
-        </button>
+        </Button>
       </div>
       <p class=NOTE>{move || t("tools.nec-lines-note")}</p>
 
@@ -158,14 +155,14 @@ pub(super) fn LinesSection(
                   "w-14",
                 )}
                 <td class=CELL>
-                  <button
-                    type="button"
-                    class="cursor-pointer rounded border px-1.5 py-0.5 text-xs hover:bg-accent"
-                    aria-label=move || format!("{} {}", t("log.delete"), idx + 1)
-                    on:click=move |_| lines.update(|v| v.retain(|r| r.id != id))
+                  <Button
+                    variant=Variant::Outline
+                    size=Size::IconSm
+                    aria_label=Signal::derive(move || format!("{} {}", t("log.delete"), idx + 1))
+                    on_click=Callback::new(move |_| lines.update(|v| v.retain(|r| r.id != id)))
                   >
                     "×"
-                  </button>
+                  </Button>
                 </td>
               </tr>
             }

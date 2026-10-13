@@ -9,15 +9,16 @@ use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::components::sidebar_item::SidebarItem;
 use crate::data;
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
-use crate::ui::{Input, InputType};
+use crate::ui::{Button, Chip, ChipGroup, ChipToggle, Input, InputType, Variant};
 use crate::util::window;
 
 use super::stat::Stat;
 use super::term_card::TermCard;
-use super::{ALL, Haystacks, PAGE, category_meta, category_pos, pill};
+use super::{ALL, Haystacks, PAGE, category_meta, category_pos};
 use crate::i18n::t;
 
 /// 术语表主体：搜索、分类筛选与词条列表。
@@ -124,17 +125,14 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
       .map(|key| {
         let (name, color) = category_meta(key);
         view! {
-          <button
-            type="button"
-            on:click=move |_| select_cat(key)
-            class=move || {
-              pill(cat.with(|c| c == key), "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors")
-            }
+          <SidebarItem
+            active=Signal::derive(move || cat.with(|c| c == key))
+            on_click=Callback::new(move |_| select_cat(key))
           >
             <span class="h-2 w-2 shrink-0 rounded-full" style=format!("background: {color}")></span>
             <span class="truncate" title=name.to_string()>{name}</span>
             <span class="ml-auto text-xs tabular-nums">{move || cat_count.with(|m| m.get(key).copied().unwrap_or(0))}</span>
-          </button>
+          </SidebarItem>
         }
       })
       .collect_view()
@@ -143,21 +141,25 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
   let chips = move || {
     let mut keys = vec![ALL];
     keys.extend(categories());
-    keys
-      .into_iter()
-      .map(|key| {
-        let label = if key == ALL { t("exam.all") } else { t(category_meta(key).0) };
-        view! {
-          <button
-            type="button"
-            on:click=move |_| select_cat(key)
-            class=move || pill(cat.with(|c| c == key), "shrink-0 inline-flex items-center whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors")
-          >
-            {label}
-          </button>
-        }
-      })
-      .collect_view()
+    view! {
+      <ChipGroup
+        value=Signal::derive(move || cat.get())
+        on_change=Callback::new(move |v: String| select_cat(&v))
+        aria_label=Signal::derive(move || t("knowledge.term-categories"))
+        class="flex-nowrap"
+      >
+        {keys
+          .into_iter()
+          .map(|key| {
+            let label = view! {
+              {move || if key == ALL { t("exam.all") } else { t(category_meta(key).0) }}
+            }
+              .into_any();
+            view! { <Chip value=key.to_string()>{label}</Chip> }
+          })
+          .collect_view()}
+      </ChipGroup>
+    }
   };
 
   let list = move || {
@@ -177,13 +179,13 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
       {(shown_len < total)
         .then(|| {
           view! {
-            <button
-              type="button"
-              on:click=move |_| visible.update(|v| *v += PAGE)
-              class="mt-4 w-full rounded-lg border py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent"
+            <Button
+              variant=Variant::Outline
+              class="mt-4 w-full"
+              on_click=Callback::new(move |_| visible.update(|v| *v += PAGE))
             >
               {t("knowledge.load-more-showing")} {shown_len} " / " {total} {t("common.entry-2")}
-            </button>
+            </Button>
           }
         })}
     }
@@ -210,16 +212,15 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               class="w-56"
             />
 
-            <button
-              type="button"
-              on:click=move |_| {
-                abbr_only.update(|v| *v = !*v);
+            <ChipToggle
+              active=abbr_only
+              on_change=Callback::new(move |v: bool| {
+                abbr_only.set(v);
                 visible.set(PAGE);
-              }
-              class=move || pill(abbr_only.get(), "rounded-lg border px-3 py-1.5 text-sm transition-colors")
+              })
             >
-              {move || t("knowledge.english-abbreviations-only")}
-            </button>
+              {view! { {move || t("knowledge.english-abbreviations-only")} }.into_any()}
+            </ChipToggle>
           }
         })
       />
@@ -227,17 +228,14 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
       <PageContainer class="space-y-0 grid grid-cols-1 gap-5 md:grid-cols-[240px_1fr]">
         <aside class="hidden md:block">
           <div class="sticky top-[136px] max-h-[calc(100vh-152px)] overflow-y-auto rounded-xl border bg-card p-2">
-            <button
-              type="button"
-              on:click=move |_| select_cat(ALL)
-              class=move || {
-                pill(cat.with(|c| c == ALL), "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors")
-              }
+            <SidebarItem
+              active=Signal::derive(move || cat.with(|c| c == ALL))
+              on_click=Callback::new(move |_| select_cat(ALL))
             >
               <span class="h-2 w-2 rounded-full bg-foreground/60"></span>
               {move || t("knowledge.all-terms")}
               <span class="ml-auto text-xs tabular-nums">{move || base.with(Vec::len)}</span>
-            </button>
+            </SidebarItem>
             {sidebar}
           </div>
         </aside>

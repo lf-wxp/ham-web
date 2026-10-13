@@ -1,10 +1,9 @@
 //! APT 解码 Web Worker 桥接：结果类型与消息解析。
 
-use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 
-use crate::i18n::{t, tf};
-use crate::util::js_error_message;
+use crate::decode_worker::{get_f64, get_u8s, get_u32};
+use crate::i18n::tf;
 
 /// Worker 返回的原始解码结果（像素 + 元信息）。
 pub struct WorkerPayload {
@@ -18,52 +17,34 @@ pub struct WorkerPayload {
   pub false_color: Vec<u8>,
 }
 
-/// 解析 Worker `postMessage` 的消息体：`{ ok: bool, result?, error? }`。
-pub fn parse_message(data: &JsValue) -> Result<WorkerPayload, String> {
-  let ok = js_sys::Reflect::get(data, &"ok".into())
-    .ok()
-    .and_then(|v| v.as_bool())
-    .unwrap_or(false);
-  if !ok {
-    let err = js_sys::Reflect::get(data, &"error".into())
-      .ok()
-      .and_then(|v| v.as_string())
-      .unwrap_or_else(|| t("radio.decoding-failed"));
-    return Err(err);
+/// 解析统一信封里的内层 `result`（信封 `{ ok, result?, error? }` 已由
+/// `crate::decode_worker::parse_outcome` 拆掉）。
+pub fn parse_message(result: &JsValue) -> Result<WorkerPayload, String> {
+  let width = get_u32(result, "width")?;
+  let height = get_u32(result, "height")?;
+  let channel_a = get_u8s(result, "channel_a")?;
+  let channel_b = get_u8s(result, "channel_b")?;
+  let false_color = get_u8s(result, "false_color")?;
+  // 长度与尺寸不符会在 `ImageData` 构造处报英文 DOMException：在这里按协议错误
+  // 就地拒绝（与 lrpt_worker 同一口径）。
+  let expected_gray = (width as usize).checked_mul(height as usize);
+  let expected_rgba = expected_gray.and_then(|n| n.checked_mul(4));
+  if width == 0
+    || height == 0
+    || expected_gray != Some(channel_a.len())
+    || expected_gray != Some(channel_b.len())
+    || expected_rgba != Some(false_color.len())
+  {
+    return Err(tf("common.field-is-missing", &["channel_a"]));
   }
-
-  let result = js_sys::Reflect::get(data, &"result".into()).map_err(|e| js_error_message(&e))?;
   Ok(WorkerPayload {
-    width: get_u32(&result, "width")?,
-    height: get_u32(&result, "height")?,
-    lines: get_u32(&result, "lines")?,
-    source_sample_rate: get_u32(&result, "source_sample_rate")?,
-    duration_seconds: get_f64(&result, "duration_seconds")?,
-    channel_a: get_u8s(&result, "channel_a")?,
-    channel_b: get_u8s(&result, "channel_b")?,
-    false_color: get_u8s(&result, "false_color")?,
+    width,
+    height,
+    lines: get_u32(result, "lines")?,
+    source_sample_rate: get_u32(result, "source_sample_rate")?,
+    duration_seconds: get_f64(result, "duration_seconds")?,
+    channel_a,
+    channel_b,
+    false_color,
   })
-}
-
-fn get_u32(obj: &JsValue, key: &str) -> Result<u32, String> {
-  js_sys::Reflect::get(obj, &key.into())
-    .ok()
-    .and_then(|v| v.as_f64())
-    .map(|v| v as u32)
-    .ok_or_else(|| tf("common.field-is-missing", &[(key)]))
-}
-
-fn get_f64(obj: &JsValue, key: &str) -> Result<f64, String> {
-  js_sys::Reflect::get(obj, &key.into())
-    .ok()
-    .and_then(|v| v.as_f64())
-    .ok_or_else(|| tf("common.field-is-missing", &[(key)]))
-}
-
-fn get_u8s(obj: &JsValue, key: &str) -> Result<Vec<u8>, String> {
-  let v = js_sys::Reflect::get(obj, &key.into()).map_err(|e| js_error_message(&e))?;
-  let arr: js_sys::Uint8Array = v
-    .dyn_into()
-    .map_err(|_| tf("common.field-is-not-a", &[(key)]))?;
-  Ok(arr.to_vec())
 }

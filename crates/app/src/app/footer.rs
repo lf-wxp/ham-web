@@ -19,6 +19,13 @@ pub(super) fn Footer() -> impl IntoView {
               </li>
               <li aria-hidden="true" class="text-border">"·"</li>
               <li>
+                // GPL-3.0 的解码器 wasm 随站点分发，要让用户看得到许可说明与源码出处。
+                <a href="/license.html" class=LINK aria-label=move || t("shell.license-notice")>
+                  {move || t("shell.license")}
+                </a>
+              </li>
+              <li aria-hidden="true" class="text-border">"·"</li>
+              <li>
                 <a href="http://www.crac.org.cn/News/List?type=6&y=" rel="nofollow" class=LINK aria-label=move || t("shell.crac-question-bank-source")>
                   {move || t("shell.crac-question-bank")}
                 </a>

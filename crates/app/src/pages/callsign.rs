@@ -12,7 +12,7 @@ use crate::components::common::{BulletSection, KnowledgePage};
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::pages::map::ZoneMap;
-use crate::ui::{Button, Input, Size, Variant};
+use crate::ui::{Button, Chip, ChipGroup, Input, Size, Variant};
 use crate::util::{alert, set_title};
 
 /// 示例呼号，便于一键试查。
@@ -292,34 +292,20 @@ pub fn CallsignPage() -> impl IntoView {
       <section class="rounded-xl border bg-card">
         <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
           <h2 class="mr-auto text-sm font-semibold">{move || t("radio.zone-map-cq-itu")}</h2>
-          <div class="flex rounded-lg border p-0.5">
-            <button
-              type="button"
-              class=move || {
-                if is_cq.get() {
-                  "rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
-                } else {
-                  "rounded-md px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                }
+          <ChipGroup
+            value=Signal::derive(move || (if is_cq.get() { "cq" } else { "itu" }).to_string())
+            on_change=Callback::new(move |v: String| is_cq.set(v == "cq"))
+            aria_label=Signal::derive(move || t("radio.zone-map-cq-itu"))
+          >
+            {
+              let cq = view! { {move || t("common.cq-zone")} }.into_any();
+              let itu = view! { {move || t("common.itu-zone")} }.into_any();
+              view! {
+                <Chip value="cq".to_string()>{cq}</Chip>
+                <Chip value="itu".to_string()>{itu}</Chip>
               }
-              on:click=move |_| is_cq.set(true)
-            >
-              {move || t("common.cq-zone")}
-            </button>
-            <button
-              type="button"
-              class=move || {
-                if is_cq.get() {
-                  "rounded-md px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                } else {
-                  "rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
-                }
-              }
-              on:click=move |_| is_cq.set(false)
-            >
-              {move || t("common.itu-zone")}
-            </button>
-          </div>
+            }
+          </ChipGroup>
         </div>
         <div class="p-4">
           <ZoneMap is_cq=is_cq highlight=zone_dxcc />

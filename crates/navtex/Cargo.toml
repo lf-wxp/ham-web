@@ -1,0 +1,21 @@
+[package]
+name = "ham-web-navtex"
+description = "NAVTEX / SITOR-B 海事安全电传解码：CCIR 476 七位码 + FSK 解调 + 双副本纠错（纯 Rust，无外部依赖）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+# CCIR 476 码表转写自 GPL-3.0 的 AI5GW/CCIR476（见 src/codec.rs 文件头），
+# 因此本 crate 整体按 GPL-3.0-only 发布，不随工作区的 MIT 默认值。
+license = "GPL-3.0-only"
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+ham-web-dsp.workspace = true
+
+[dev-dependencies]
+# 仅 examples / tests 用（读 WAV）；库本身不依赖。
+ham-web-apt.workspace = true
+
+[lints]
+workspace = true

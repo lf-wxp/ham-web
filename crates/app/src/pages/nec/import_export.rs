@@ -5,7 +5,7 @@
 use leptos::prelude::*;
 
 use crate::i18n::t;
-use crate::ui::Textarea;
+use crate::ui::{Button, Size, Textarea, Variant};
 
 /// 导入 / 导出面板。导入解析失败的原因由页面写进提示（这里不猜）。
 #[component]
@@ -28,20 +28,20 @@ pub(super) fn ImportExportSection(
           class="h-32 font-mono text-xs"
         />
         <div class="flex flex-wrap gap-2">
-          <button
-            type="button"
-            class="cursor-pointer rounded-md border bg-background px-3 py-1 text-xs font-medium hover:bg-accent"
-            on:click=move |_| on_import.run(())
+          <Button
+            variant=Variant::Outline
+            size=Size::Xs
+            on_click=Callback::new(move |_| on_import.run(()))
           >
             {move || t("tools.nec-import")}
-          </button>
-          <button
-            type="button"
-            class="cursor-pointer rounded-md border bg-background px-3 py-1 text-xs font-medium hover:bg-accent"
-            on:click=move |_| on_export.run(())
+          </Button>
+          <Button
+            variant=Variant::Outline
+            size=Size::Xs
+            on_click=Callback::new(move |_| on_export.run(()))
           >
             {move || t("tools.nec-export-current")}
-          </button>
+          </Button>
         </div>
       </div>
     </details>

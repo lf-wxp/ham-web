@@ -36,6 +36,7 @@ test("发报练习：长按出划并可用重拍清空", async ({ page }) => {
 
   // 长按（≥0.2s）→ 划（点/划阈值 200ms 依赖真实时延，e2e 只用确定性长按验证）
   await key.dispatchEvent("pointerdown");
+  // 刻意保留固定等待：点 / 划的阈值（200 ms）本身依赖真实按压时长，这里要的就是「过了 300 ms」。
   await page.waitForTimeout(300);
   await key.dispatchEvent("pointerup");
   await expect(marks).toContainText("—");

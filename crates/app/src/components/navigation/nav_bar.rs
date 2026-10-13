@@ -1,9 +1,10 @@
 //! 顶部导航栏。
 //!
-//! 本文件里的**导航项与下拉 / 菜单开关刻意保留原生 `<a>` / `<button>` + [`button_class`]**：
-//! 高亮态要随当前路由切换 `variant`，下拉开关还要输出 `aria-expanded` —— 这两个通道
-//! [`Button`] 与 `ButtonLink` 目前都没有（见 `docs/ui-components.md` 的「常见坑」）。
-//! 同一个文件里的搜索、语言切换、主题切换等按钮都已经用组件，**不要顺手把这些清掉**。
+//! 本文件里的**导航项与分组下拉开关**保留原生元素 + [`button_class`]：高亮态要随当前
+//! 路由切换 `variant`，而 [`Button`] / [`ButtonLink`] 的 `variant` 是静态 prop
+//! （见 `docs/ui-components.md` 的「常见坑」）。`aria-expanded` / `aria-controls`
+//! 已经有通道，不再是保留理由 —— 汉堡菜单开关因此收编回 [`Button`]。同一个文件里的
+//! 搜索、语言切换、主题切换等按钮都已经用组件，**不要顺手把剩下的导航项清掉**。
 //! 「知识库」「工具」两个分组下拉的开关与面板是同一套路数，已拆到 `group_menu.rs`。
 
 use leptos::ev;
@@ -263,15 +264,16 @@ pub fn Navigation() -> impl IntoView {
               </Button>
             </div>
             <HudBadge />
-            // 刻意的例外，见文件头：菜单开关要输出 `aria-expanded`（`Button` 暂时没有这个通道）。
-            <button
-              type="button"
-              data-slot="button"
-              class=button_class(Variant::Ghost, Size::Icon, "xl:hidden")
-              aria-label=move || if menu_open.get() { t("shell.close-menu") } else { t("shell.open-menu") }
-              aria-expanded=move || menu_open.get().to_string()
-              aria-controls=MOBILE_NAV_PANEL_ID
-              on:click=move |_| menu_open.update(|v| *v = !*v)
+            <Button
+              variant=Variant::Ghost
+              size=Size::Icon
+              class="xl:hidden"
+              aria_label=Signal::derive(move || {
+                if menu_open.get() { t("shell.close-menu") } else { t("shell.open-menu") }
+              })
+              aria_expanded=Signal::derive(move || menu_open.get())
+              aria_controls=MOBILE_NAV_PANEL_ID
+              on_click=Callback::new(move |_| menu_open.update(|v| *v = !*v))
             >
               {move || {
                 if menu_open.get() {
@@ -280,7 +282,7 @@ pub fn Navigation() -> impl IntoView {
                   view! { <Icon kind=IconKind::Menu class="size-6" /> }
                 }
               }}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -320,9 +322,10 @@ pub fn Navigation() -> impl IntoView {
                     {Locale::ALL
                       .iter()
                       .map(|&l| view! {
+                        // 刻意的例外，见文件头：选中态要重算 `class`（`Button.class` 是静态串），
+                        // 顺带用 `aria-pressed` 让读屏用户也能分辨当前语言（不只是靠颜色）。
                         <button
                           type="button"
-                          // 选中态不能只靠颜色：读屏用户靠 `aria-pressed` 分辨当前语言。
                           aria-pressed=move || (i18n::locale().get() == l).to_string()
                           class=move || {
                             cn(&[

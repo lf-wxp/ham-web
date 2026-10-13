@@ -2,8 +2,10 @@ use ham_web_core::exam::shuffle_in_place;
 use ham_web_core::glossary::GlossaryEntry;
 use leptos::prelude::*;
 
+use crate::components::quiz_option::QuizOption;
 use crate::i18n::t;
 use crate::pages::SLANG_CATEGORY;
+use crate::ui::Button;
 use crate::util::random;
 
 /// 出题：随机选一个 Q 简语，返回 (简语, 4 个含义选项, 正确含义)。
@@ -86,13 +88,13 @@ pub(super) fn QCodeQuiz(entries: &'static [GlossaryEntry]) -> impl IntoView {
               .map(|opt| {
                 let chosen = opt.clone();
                 view! {
-                  <button
-                    type="button"
-                    on:click=move |_| judge(chosen.clone())
-                    class="rounded-lg border px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent"
+                  <QuizOption
+                    class="text-left"
+                    disabled=Signal::derive(move || feedback.get().is_some())
+                    on_click=Callback::new(move |_| judge(chosen.clone()))
                   >
                     {opt}
-                  </button>
+                  </QuizOption>
                 }
               })
               .collect_view()
@@ -110,7 +112,7 @@ pub(super) fn QCodeQuiz(entries: &'static [GlossaryEntry]) -> impl IntoView {
                 } else {
                   view! {
                     <span class="font-medium text-red-600 dark:text-red-400">
-                      "正确答案：" {answer.get_value()}
+                      {move || t("exam.correct-answer-2")} {answer.get_value()}
                     </span>
                   }
                   .into_any()
@@ -118,13 +120,9 @@ pub(super) fn QCodeQuiz(entries: &'static [GlossaryEntry]) -> impl IntoView {
               })
             }}
           </div>
-          <button
-            type="button"
-            on:click=move |_| load_next()
-            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-          >
+          <Button on_click=Callback::new(move |_| load_next())>
             {move || t("exam.next")}
-          </button>
+          </Button>
           <div class="text-xs text-muted-foreground">
             {move || t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
             {move || t("common.wrong-2")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>

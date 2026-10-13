@@ -6,6 +6,7 @@ use leptos::prelude::*;
 use super::confusables_quiz::ConfusablesQuiz;
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
+use crate::ui::{Chip, ChipGroup};
 use crate::util::set_title;
 
 #[component]
@@ -19,30 +20,18 @@ pub fn ConfusablesPage() -> impl IntoView {
         subtitle=move || if quiz.get() { t("exam.active-recall-judge-true") } else { t("exam.the-most-easily-mixed") }
         actions=ViewFn::from(move || {
           view! {
-            <div class="flex overflow-hidden rounded-lg border text-xs">
-              <button
-                type="button"
-                class=move || if !quiz.get() {
-                  "px-3 py-1.5 font-medium bg-primary text-primary-foreground"
-                } else {
-                  "px-3 py-1.5 font-medium hover:bg-accent"
-                }
-                on:click=move |_| quiz.set(false)
-              >
-                {move || t("exam.reference")}
-              </button>
-              <button
-                type="button"
-                class=move || if quiz.get() {
-                  "px-3 py-1.5 font-medium bg-primary text-primary-foreground"
-                } else {
-                  "px-3 py-1.5 font-medium hover:bg-accent"
-                }
-                on:click=move |_| quiz.set(true)
-              >
-                {move || t("exam.quiz")}
-              </button>
-            </div>
+            <ChipGroup
+              value=Signal::derive(move || if quiz.get() { "quiz" } else { "reference" }.to_owned())
+              on_change=Callback::new(move |v: String| quiz.set(v == "quiz"))
+              aria_label=Signal::derive(move || t("exam.confusing-concepts"))
+            >
+              <Chip value="reference".to_owned()>
+                {view! { {move || t("exam.reference")} }.into_any()}
+              </Chip>
+              <Chip value="quiz".to_owned()>
+                {view! { {move || t("exam.quiz")} }.into_any()}
+              </Chip>
+            </ChipGroup>
           }
         })
       />

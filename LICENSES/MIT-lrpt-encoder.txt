@@ -1,0 +1,30 @@
+本文件随发布物提供，用于满足 MIT 许可证对「保留版权声明与许可声明」的要求。
+
+适用范围：crates/lrpt 中转写自 lrpt-encoder 的部分（RRC 匹配滤波器参数、卷积编码器多项式、
+JPEG Huffman 表、NRZ-M 极性约定等），以及 crates/lrpt/samples 中由 lrpt-encoder 生成的
+CADU 流与基带录音。其余部分的许可见 GPL-3.0-only.txt。
+
+项目：lrpt-encoder
+地址：https://github.com/ktauchathuranga/lrpt-encoder
+
+MIT License
+
+Copyright (c) 2026 Ashen Chathuranga
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

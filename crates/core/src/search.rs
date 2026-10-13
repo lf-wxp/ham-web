@@ -26,6 +26,8 @@ pub struct SearchEntry {
   pub title: String,
   /// 条目内容。
   pub text: String,
+  /// 领域标签（`dxcc:by`、`band:40m`、`mode:ft8` 等），供 `key:value` 前缀过滤。
+  pub tags: Vec<String>,
   /// 预存小写的标题（避免每次查询重复转小写）。
   title_lower: String,
   /// 预存小写的内容。
@@ -39,6 +41,18 @@ fn push(
   title: String,
   text: String,
 ) {
+  push_tagged(out, page, href, title, text, &[]);
+}
+
+/// 带领域标签的入库（`dxcc:` / `band:` / `mode:` 前缀过滤的依据）。
+fn push_tagged(
+  out: &mut Vec<SearchEntry>,
+  page: &'static str,
+  href: &'static str,
+  title: String,
+  text: String,
+  tags: &[&str],
+) {
   let title_lower = title.to_lowercase();
   let text_lower = text.to_lowercase();
   out.push(SearchEntry {
@@ -46,6 +60,7 @@ fn push(
     href,
     title,
     text,
+    tags: tags.iter().map(|t| (*t).to_owned()).collect(),
     title_lower,
     text_lower,
   });
@@ -208,12 +223,13 @@ fn build_index() -> Vec<SearchEntry> {
 
   // 模拟模式
   for m in analog_modes::ANALOG_MODES {
-    push(
+    push_tagged(
       &mut out,
       "模拟模式",
       "/analog-modes",
       m.name.to_owned(),
       format!("{} · {} · {} · {}", m.abbr, m.emission, m.bandwidth, m.desc),
+      &[&format!("mode:{}", m.abbr.to_lowercase())],
     );
   }
   tips(
@@ -231,12 +247,13 @@ fn build_index() -> Vec<SearchEntry> {
 
   // 数字模式
   for m in modes::DIGITAL_MODES {
-    push(
+    push_tagged(
       &mut out,
       "数字模式",
       "/modes",
       m.name.to_owned(),
       format!("{} · {} · {}", m.abbr, m.bandwidth, m.desc),
+      &[&format!("mode:{}", m.abbr.to_lowercase())],
     );
   }
 
@@ -450,33 +467,37 @@ fn build_index() -> Vec<SearchEntry> {
   );
   tips(&mut out, "线材与连接器", "/connectors", connectors::FAULTS);
 
-  // 波段表
+  // 波段表（ITU 频段）
   for b in bands::BANDS {
-    push(
+    push_tagged(
       &mut out,
       "波段表",
       "/bands",
       format!("{} {}", b.name, b.freq_name),
       format!("{} · {}", b.wavelength, b.freq_range),
+      &[&format!("band:{}", b.freq_abbr.to_lowercase())],
     );
   }
 
-  // 波段规划
+  // 波段规划（业余波段）
   for b in bandplan::BAND_PLANS {
-    push(
+    let tag = format!("band:{}", b.band.to_lowercase());
+    push_tagged(
       &mut out,
       "波段规划",
       "/bandplan",
       format!("{} 波段", b.band),
       b.freq_range.to_owned(),
+      &[&tag],
     );
     for seg in b.segments {
-      push(
+      push_tagged(
         &mut out,
         "波段规划",
         "/bandplan",
         seg.range.to_owned(),
         format!("{} · {}", b.band, seg.text),
+        &[&tag],
       );
     }
   }
@@ -872,12 +893,13 @@ fn build_index() -> Vec<SearchEntry> {
 
   // DXCC 实体
   for e in dxcc::entities() {
-    push(
+    push_tagged(
       &mut out,
       "通联日志",
       "/log",
       e.prefix.to_owned(),
       format!("DXCC 实体：{}（{}）", e.name, e.name_en),
+      &[&format!("dxcc:{}", e.prefix.to_lowercase())],
     );
   }
 
@@ -1419,8 +1441,36 @@ fn build_index() -> Vec<SearchEntry> {
     );
   }
 
+  // 工具与页面入口（导航注册表：路径 + 中文标题 + 所属分组）。
+  // 排在索引最后 —— 同分时知识条目自然靠前，页面入口不挤占术语/知识的结果。
+  for m in crate::registry::MODULES {
+    push(
+      &mut out,
+      m.group.unwrap_or("页面"),
+      m.href.unwrap_or(m.path),
+      m.title.to_owned(),
+      "页面入口".to_owned(),
+    );
+  }
+
+  // 公式速查：公式名 / 表达式 / 一句话说明都是用户会搜的词（「欧姆定律」「驻波比」「P = U·I」），
+  // 此前整页都不在索引里，只能靠页面名「公式速查」命中。
+  // 如实说明：「单位换算」区块的名称与示例是 i18n key（`exam.units-*`），core 拿不到译文，
+  // 所以这一块不进索引；`decibel` 是各计算器的数值函数，没有独立页面，同样不收。
+  for g in crate::formulas::FORMULA_GROUPS {
+    for f in g.items {
+      push(
+        &mut out,
+        "公式速查",
+        "/formulas",
+        f.name.to_owned(),
+        format!("{} · {} · {}", f.expr, f.desc, g.name),
+      );
+    }
+  }
   out
 }
+
 #[must_use]
 pub fn knowledge_index() -> &'static [SearchEntry] {
   static INDEX: OnceLock<Vec<SearchEntry>> = OnceLock::new();
@@ -1459,6 +1509,28 @@ pub fn tokenize(query: &str) -> Vec<String> {
     .collect()
 }
 
+/// 查询解析：拆成自由检索词与 `key:value` 领域前缀。
+///
+/// 支持的前缀（大小写不敏感）：`dxcc:`（DXCC 实体前缀）、`band:`（波段）、
+/// `mode:`（模式缩写）。其余含冒号的词按普通检索词处理（不吞掉「1:1 巴伦」
+/// 这类真实查询）。
+#[must_use]
+pub fn parse_query(query: &str) -> (Vec<String>, Vec<(String, String)>) {
+  let mut terms = Vec::new();
+  let mut filters = Vec::new();
+  for tok in tokenize(query) {
+    if let Some((key, value)) = tok.split_once(':')
+      && matches!(key, "dxcc" | "band" | "mode")
+      && !value.is_empty()
+    {
+      filters.push((key.to_owned(), value.to_owned()));
+      continue;
+    }
+    terms.push(tok);
+  }
+  (terms, filters)
+}
+
 /// 字节偏移 → 字符偏移。
 ///
 /// `str::find` 返回的是字节偏移，而中文一个字占 3 字节：直接拿字节偏移算位置分，
@@ -1493,8 +1565,39 @@ fn score_term(entry: &SearchEntry, term: &str) -> Option<u32> {
   None
 }
 
+/// 领域前缀过滤：不同 key 之间是 AND（`band:20m mode:ft8` 要两者都满足），同一个 key
+/// 出现多次是 OR（`band:20m band:40m` 是「20m 或 40m」）—— 一个条目通常只带某个 key 的
+/// 一个标签，同 key 按 AND 会让这种查询恒为空。无标签的条目在带前缀的查询里被过滤掉。
+/// `key:value` 里 key 侧的借用视图；没有冒号（不应出现）按空串。
+///
+/// 做成模块级函数而不是闭包：返回 `&str` 借用输入，闭包无法表达
+/// `for<'a> fn(&'a str) -> &'a str` 的高阶生命周期。
+fn filter_key(f: &str) -> &str {
+  match f.split_once(':') {
+    Some((k, _)) => k,
+    None => "",
+  }
+}
+
+fn tags_match(entry: &SearchEntry, filters: &[String]) -> bool {
+  // 全程借用不分配：数千条目 × 多个 filter 的查询里这条会被调用数万次，
+  // 每条目都建一组 `String` 是无谓的小分配。
+  let mut keys: Vec<&str> = filters.iter().map(|f| filter_key(f)).collect();
+  keys.sort_unstable();
+  keys.dedup();
+  keys.iter().all(|key| {
+    filters
+      .iter()
+      .filter(|f| filter_key(f) == *key)
+      .any(|f| entry.tags.iter().any(|t| t == f))
+  })
+}
+
 /// 某条目对整条查询的得分；有任一词未命中则整条不算命中（AND 语义）。
-fn score_entry(entry: &SearchEntry, terms: &[String]) -> Option<u32> {
+fn score_entry(entry: &SearchEntry, terms: &[String], filters: &[String]) -> Option<u32> {
+  if !tags_match(entry, filters) {
+    return None;
+  }
   let mut total = 0u32;
   for term in terms {
     total += score_term(entry, term)?;
@@ -1508,13 +1611,16 @@ fn score_entry(entry: &SearchEntry, terms: &[String]) -> Option<u32> {
 /// 得分越高。`limit` 为 0 时表示不限制。
 #[must_use]
 pub fn search_ranked(query: &str, limit: usize) -> Vec<SearchHit> {
-  let terms = tokenize(query);
-  if terms.is_empty() {
+  let (terms, filters) = parse_query(query);
+  if terms.is_empty() && filters.is_empty() {
     return Vec::new();
   }
+  let filter_tags: Vec<String> = filters.iter().map(|(k, v)| format!("{k}:{v}")).collect();
   let mut hits: Vec<SearchHit> = knowledge_index()
     .iter()
-    .filter_map(|entry| score_entry(entry, &terms).map(|score| SearchHit { entry, score }))
+    .filter_map(|entry| {
+      score_entry(entry, &terms, &filter_tags).map(|score| SearchHit { entry, score })
+    })
     .collect();
   // 稳定排序：同分时保持条目在索引中的原始顺序。
   hits.sort_by_key(|h| std::cmp::Reverse(h.score));
@@ -1612,6 +1718,75 @@ mod tests {
   }
 
   #[test]
+  fn field_prefixes_filter_by_tags() {
+    // dxcc: 前缀只命中带该标签的条目（DXCC 实体）。
+    let hits = search_ranked("dxcc:by", 0);
+    assert!(!hits.is_empty(), "dxcc:by 应有命中");
+    assert!(
+      hits
+        .iter()
+        .all(|h| h.entry.tags.iter().any(|t| t == "dxcc:by"))
+    );
+    // 前缀 + 自由词组合（AND）。
+    assert!(!search_ranked("dxcc:by 实体", 0).is_empty());
+    // band:20m 命中业余波段规划条目（主条目 + 子段都带该标签）。
+    let by_abbr = search_ranked("band:20m", 0);
+    assert!(!by_abbr.is_empty());
+    assert!(
+      by_abbr
+        .iter()
+        .all(|h| h.entry.tags.iter().any(|t| t == "band:20m"))
+    );
+    // ITU 频段缩写也支持：band:hf 命中「短波」。
+    let itu = search_ranked("band:hf", 0);
+    assert!(
+      itu
+        .iter()
+        .any(|h| h.entry.href == "/bands" && h.entry.title.contains("短波"))
+    );
+    // mode: 前缀。
+    let ft8 = search_ranked("mode:ft8", 0);
+    assert!(!ft8.is_empty());
+    assert!(
+      ft8
+        .iter()
+        .all(|h| h.entry.tags.iter().any(|t| t == "mode:ft8"))
+    );
+    // 同 key 多次出现是 OR：20m 或 40m 的并集，每条都至少带其一。
+    let either = search_ranked("band:20m band:40m", 0);
+    let only_20 = search_ranked("band:20m", 0).len();
+    let only_40 = search_ranked("band:40m", 0).len();
+    assert!(only_20 > 0 && only_40 > 0);
+    assert_eq!(
+      either.len(),
+      only_20 + only_40,
+      "并集 = 两者之和（标签互斥）"
+    );
+    // 不同 key 之间仍是 AND：同一条目不会既是 dxcc:by 又是 band:20m。
+    assert!(search_ranked("dxcc:by band:20m", 0).is_empty());
+    // 未知前缀按自由词处理：不该 panic，也不该吞掉整条查询。
+    let _ = search_ranked("1:1", 0);
+    // 大小写不敏感。
+    assert!(!search_ranked("DXCC:BY", 0).is_empty());
+  }
+
+  #[test]
+  fn pages_and_tools_are_searchable() {
+    assert!(
+      search_ranked("RTTY 解码器", 0)
+        .iter()
+        .any(|h| h.entry.href == "/rtty-decode"),
+      "工具页应可被搜索命中"
+    );
+    assert!(
+      search_ranked("波段表", 0)
+        .iter()
+        .any(|h| h.entry.href == "/bands"),
+      "知识页应可被搜索命中"
+    );
+  }
+
+  #[test]
   fn new_pages_are_indexed_exactly_once() {
     // 这几页的条目曾误嵌在「波段规划」的 for 循环里，被重复写入（每个波段一份）：
     // 搜索结果里同一条会出现十几遍。按 (标题, 内容) 钉住不重复。
@@ -1631,5 +1806,22 @@ mod tests {
       }
       assert!(!seen.is_empty(), "{href} 没有进搜索索引");
     }
+  }
+
+  #[test]
+  fn formulas_are_searchable_by_name_expression_and_description() {
+    use crate::formulas::FORMULA_GROUPS;
+    // 每条公式都至少能被自己的名字搜到，并且落在 /formulas。
+    for g in FORMULA_GROUPS {
+      for f in g.items {
+        let hit = search(f.name)
+          .into_iter()
+          .any(|e| e.href == "/formulas" && e.title == f.name);
+        assert!(hit, "搜「{}」应命中公式速查", f.name);
+      }
+    }
+    // 按说明里的词、按表达式里的符号也能搜到。
+    assert!(search("电压").iter().any(|e| e.href == "/formulas"));
+    assert!(search("I²R").iter().any(|e| e.href == "/formulas"));
   }
 }

@@ -3,7 +3,7 @@
 //! 纯 Rust 实现、无外部依赖，可同时用于 WASM 前端与命令行/测试。
 //!
 //! 完整处理链路：
-//! 1. [`wav`] —— 解析 WAV（PCM / IEEE float，单/双声道，8/16/24/32 位）为归一化单声道样本；
+//! 1. [`ham_web_wav`] —— 解析 WAV（PCM / IEEE float，单/双声道，8/16/24/32 位）为归一化单声道样本；
 //! 2. [`resample`] —— 线性重采样到工作采样率 [`WORK_RATE`]；
 //! 3. [`demod`] —— 对 2400 Hz 副载波做正交 AM 解调，取出视频包络；
 //! 4. [`sync`] —— 在字速率包络上检测 sync A（1040 Hz），定位每行起点；
@@ -20,7 +20,6 @@ mod filter;
 mod image;
 mod resample;
 mod sync;
-mod wav;
 
 use std::fmt;
 
@@ -77,14 +76,40 @@ impl fmt::Display for Error {
   }
 }
 
+impl Error {
+  /// 稳定的机器可读错误码：Worker 回信用它而不是 `Display` 的中文文案，
+  /// 页面按码取各语言的词条（见 `ham-web-app` 的 `decode_worker::localize_error`）。
+  #[must_use]
+  pub fn code(&self) -> &'static str {
+    match self {
+      Self::NotWav => "not-wav",
+      Self::UnsupportedFormat => "unsupported-format",
+      Self::Truncated => "truncated",
+      Self::NoAudio => "no-audio",
+      Self::TooShort => "too-short",
+    }
+  }
+}
+
 impl std::error::Error for Error {}
+
+impl From<ham_web_wav::Error> for Error {
+  fn from(e: ham_web_wav::Error) -> Self {
+    match e {
+      ham_web_wav::Error::NotWav => Self::NotWav,
+      ham_web_wav::Error::UnsupportedFormat => Self::UnsupportedFormat,
+      ham_web_wav::Error::Truncated => Self::Truncated,
+      ham_web_wav::Error::NoAudio => Self::NoAudio,
+    }
+  }
+}
 
 /// 解码一段 WAV 音频字节，返回重建的双通道灰度图像。
 ///
 /// 输入可为任意采样率、单/双声道的 PCM 或 IEEE float WAV；输出为 909 像素宽的
 /// 通道 A / 通道 B 灰度图（高度等于检测到的行数）。
 pub fn decode(bytes: &[u8]) -> Result<AptImage, Error> {
-  let (samples, rate) = wav::parse(bytes)?;
+  let (samples, rate) = ham_web_wav::parse(bytes)?;
   decode_samples(&samples, rate)
 }
 
@@ -109,7 +134,13 @@ pub fn decode_samples(samples: &[f32], sample_rate: u32) -> Result<AptImage, Err
 
 /// 解析 WAV 为归一化单声道样本与采样率。
 pub fn parse_wav(bytes: &[u8]) -> Result<(Vec<f32>, u32), Error> {
-  wav::parse(bytes)
+  Ok(ham_web_wav::parse(bytes)?)
+}
+
+/// 解析 WAV 但**保留声道交错**（不混音）：返回 `(交错样本, 采样率, 声道数)`。
+/// 多声道信号（如 LRPT 的立体声 I/Q）需要原始交错样本。
+pub fn parse_wav_interleaved(bytes: &[u8]) -> Result<(Vec<f32>, u32, u16), Error> {
+  Ok(ham_web_wav::parse_interleaved(bytes)?)
 }
 
 /// 重采样到工作采样率 [`WORK_RATE`]。

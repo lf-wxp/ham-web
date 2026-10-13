@@ -9,15 +9,16 @@ use leptos_router::hooks::use_query_map;
 
 use crate::cn::cn;
 use crate::components::common::{EmptyState, PageContainer, PageHeader, Skeleton};
+use crate::components::sidebar_item::SidebarItem;
 use crate::data::{self, Questions};
 use crate::icons::{Icon, IconKind};
-use crate::ui::{Input, InputType};
+use crate::ui::{Button, Chip, ChipGroup, ChipToggle, Input, InputType, Variant};
 use crate::util::set_title;
 
 use super::question_row::QuestionRow;
 use super::stat::Stat;
-use super::{ALL, OTHER, PAGE, pill, sub_name_of, top_of};
-use crate::i18n::t;
+use super::{ALL, OTHER, PAGE, sub_name_of, top_of};
+use crate::i18n::{bank_class, t};
 
 #[component]
 pub fn BrowsePage() -> impl IntoView {
@@ -210,15 +211,12 @@ pub fn BrowsePage() -> impl IntoView {
         };
         view! {
           <div>
-            <button
-              type="button"
-              on:click=move |_| {
+            <SidebarItem
+              active=Signal::derive(move || top.with(|t| t == c.key))
+              on_click=Callback::new(move |_| {
                 select_top(c.key);
                 toggle_top(c.key);
-              }
-              class=move || {
-                pill(top.with(|t| t == c.key), "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors")
-              }
+              })
             >
               <span class="h-2 w-2 shrink-0 rounded-full" style=format!("background: {}", c.color)></span>
               <span class="truncate" title=c.name.to_string()>{c.name}</span>
@@ -229,7 +227,7 @@ pub fn BrowsePage() -> impl IntoView {
                   cn(&["h-3.5 w-3.5 shrink-0 transition-transform", if expanded() { "rotate-180" } else { "" }])
                 })
               />
-            </button>
+            </SidebarItem>
             {move || expanded().then(|| view! { <div class="mb-1 ml-4 border-l pl-2">{subs}</div> })}
           </div>
         }
@@ -277,13 +275,13 @@ pub fn BrowsePage() -> impl IntoView {
       {(shown_len < total)
         .then(|| {
           view! {
-            <button
-              type="button"
-              on:click=move |_| visible.update(|v| *v += PAGE)
-              class="mt-4 w-full rounded-lg border py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent"
+            <Button
+              variant=Variant::Outline
+              class="mt-4 w-full"
+              on_click=Callback::new(move |_| visible.update(|v| *v += PAGE))
             >
               "加载更多（已显示 " {shown_len} " / " {total} "）"
-            </button>
+            </Button>
           }
         })}
     }
@@ -297,27 +295,25 @@ pub fn BrowsePage() -> impl IntoView {
         subtitle=move || t("exam.grouped-by-question-type")
         actions=ViewFn::from(move || {
           view! {
-            <div class="flex overflow-hidden rounded-lg border">
+            <ChipGroup
+              value=Signal::derive(move || bank.get().as_str().to_string())
+              on_change=Callback::new(move |v: String| {
+                if let Ok(b) = v.parse::<Bank>() {
+                  bank.set(b);
+                  visible.set(PAGE);
+                  select_top(ALL);
+                }
+              })
+              aria_label=Signal::derive(move || t("exam.bank-class"))
+            >
               {Bank::ALL
                 .into_iter()
                 .map(|b| {
-                  view! {
-                    <button
-                      type="button"
-                      on:click=move |_| {
-                        bank.set(b);
-                        visible.set(PAGE);
-                        select_top(ALL);
-                      }
-                      class=move || pill(bank.get() == b, "px-3 py-1.5 text-sm font-medium transition-colors")
-                    >
-                      {b.as_str()}
-                      " 类"
-                    </button>
-                  }
+                  let label = view! { {move || bank_class(b.as_str())} }.into_any();
+                  view! { <Chip value=b.as_str().to_string()>{label}</Chip> }
                 })
                 .collect_view()}
-            </div>
+            </ChipGroup>
 
             <Input
               value=kw
@@ -332,20 +328,18 @@ pub fn BrowsePage() -> impl IntoView {
               class="w-56"
             />
 
-            <button
-              type="button"
-              on:click=move |_| multi_only.update(|v| *v = !*v)
-              class=move || pill(multi_only.get(), "rounded-lg border px-3 py-1.5 text-sm transition-colors")
+            <ChipToggle
+              active=multi_only
+              on_change=Callback::new(move |v: bool| multi_only.set(v))
             >
-              {move || t("exam.multiple-only")}
-            </button>
-            <button
-              type="button"
-              on:click=move |_| unique_only.update(|v| *v = !*v)
-              class=move || pill(unique_only.get(), "rounded-lg border px-3 py-1.5 text-sm transition-colors")
+              {view! { {move || t("exam.multiple-only")} }.into_any()}
+            </ChipToggle>
+            <ChipToggle
+              active=unique_only
+              on_change=Callback::new(move |v: bool| unique_only.set(v))
             >
-              {move || t("exam.new-in-this-class")}
-            </button>
+              {view! { {move || t("exam.new-in-this-class")} }.into_any()}
+            </ChipToggle>
           }
         })
       />
@@ -353,17 +347,14 @@ pub fn BrowsePage() -> impl IntoView {
       <PageContainer class="space-y-0 grid grid-cols-1 gap-5 md:grid-cols-[240px_1fr]">
         <aside class="hidden md:block">
           <div class="sticky top-[136px] max-h-[calc(100vh-152px)] overflow-y-auto rounded-xl border bg-card p-2">
-            <button
-              type="button"
-              on:click=move |_| select_top(ALL)
-              class=move || {
-                pill(top.with(|t| t == ALL), "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors")
-              }
+            <SidebarItem
+              active=Signal::derive(move || top.with(|t| t == ALL))
+              on_click=Callback::new(move |_| select_top(ALL))
             >
               <span class="h-2 w-2 rounded-full bg-foreground/60"></span>
               {move || t("exam.all-questions")}
               <span class="ml-auto text-xs tabular-nums">{move || bank_questions.with(Vec::len)}</span>
-            </button>
+            </SidebarItem>
             {sidebar}
           </div>
         </aside>

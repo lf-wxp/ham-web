@@ -6,7 +6,7 @@
 //! 词典数组**，只做资源目录的读写与一致性检查 —— 词典结构调整不会再牵动工具。
 //!
 //! 与题库解析（`data/explanations.json`）同构：**导出待译模板 → 填写 → 合并回写 →
-//! 校验覆盖率**。详见 `docs/i18n-refactor.md`。
+//! 校验覆盖率**。详见 `docs/i18n.md`。
 //!
 //! 因为源码里写的就是 key，`check-i18n` 能给出比过去强得多的保证：
 //!
@@ -210,6 +210,9 @@ pub struct Report {
   pub bad_plural: Vec<String>,
   /// 一句话里塞了 ≥ 2 处「数量 + 可数名词」：`tp()` 只吃一个 `count`，管不了。
   pub multi_count: Vec<String>,
+  /// 译文里带着字面量的 `\u{…}`：JSON 里写成 `\\u{2026}` 时解码后就是反斜杠加 `u{2026}`
+  /// 这串文本，界面会原样显示，应直接写真字符（`…` `“` `”` `«` `»`）。
+  pub literal_escapes: Vec<String>,
 }
 
 /// 校验一种语言的词典（`zh_map` 是占位符比对的基准；校验 zh 自身时传同一份即可）。
@@ -226,6 +229,13 @@ pub fn check(entries: &[Entry], zh_map: &HashMap<String, String>, lang: &str) ->
       r.bad_namespace.push(e.key.clone());
     }
     let base = zh_map.get(&e.key).map_or(0, |v| count_placeholders(v));
+    let has_literal_escape = match &e.value {
+      Value::Plain(v) => v.contains("\\u{"),
+      Value::Plural(variants) => variants.values().any(|t| t.contains("\\u{")),
+    };
+    if has_literal_escape {
+      r.literal_escapes.push(e.key.clone());
+    }
     match &e.value {
       Value::Plain(v) => {
         let tr = count_placeholders(v);
@@ -1531,7 +1541,13 @@ pub fn add(root: &Path, lang: &str, batch: &Path) -> Result<usize> {
     if value.is_blank() || (!upgrade && known.contains(it.key.as_str())) {
       continue;
     }
-    let Some(domain) = it.key.split('.').next().filter(|d| !d.is_empty()) else {
+    // 域后面还必须跟非空 slug：`"a..b"` 这类 key 的第一段合法，但整条 key 与域前缀
+    // 对不上，会被 `check-i18n` 的命名校验兜住 —— 回填工具自己先拦下，别等兜底。
+    let Some((domain, _)) = it
+      .key
+      .split_once('.')
+      .filter(|(d, s)| !d.is_empty() && !s.is_empty())
+    else {
       bad.push(it.key);
       continue;
     };
@@ -1710,6 +1726,16 @@ pub fn run(root: &Path) -> Result<bool> {
         println!("      {k}");
       }
     }
+    if !r.literal_escapes.is_empty() {
+      ok = false;
+      println!(
+        "  ✗ 译文含字面量 \\u{{…}} 转义 {} 条：",
+        r.literal_escapes.len()
+      );
+      for k in r.literal_escapes.iter().take(10) {
+        println!("      {k}");
+      }
+    }
     // 守门：存量已清零，新增的多计数文案在这里就被拦下（按 P3-C5 的 L2 / L3 改写）。
     if !r.multi_count.is_empty() {
       ok = false;
@@ -1723,6 +1749,7 @@ pub fn run(root: &Path) -> Result<bool> {
       && r.placeholder_mismatch.is_empty()
       && r.bad_plural.is_empty()
       && r.multi_count.is_empty()
+      && r.literal_escapes.is_empty()
     {
       println!("  ✓ 无重复 / 命名空间一致 / 占位符一致 / 复数变体合法 / 无多计数文案");
     }
@@ -2020,6 +2047,21 @@ mod tests {
       .iter()
       .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
       .collect()
+  }
+
+  #[test]
+  fn flags_literal_unicode_escapes_in_translations() {
+    // `\\u{2026}` 写进 JSON 后是反斜杠 + `u{2026}`，界面会原样显示。
+    let zh = zh_of(&[("a.one", "刷新中…"), ("a.two", "好")]);
+    let r = check(
+      &[
+        entry("a.one", "Refreshing\\u{2026}", "a"),
+        entry("a.two", "Fine…", "a"),
+      ],
+      &zh,
+      "en",
+    );
+    assert_eq!(r.literal_escapes, vec!["a.one".to_owned()]);
   }
 
   #[test]

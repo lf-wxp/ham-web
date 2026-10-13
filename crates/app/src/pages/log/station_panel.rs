@@ -86,13 +86,12 @@ pub(super) fn StationPanel(book: RwSignal<StationBook>, on_save: Callback<()>) -
 
   view! {
     <section class="rounded-xl border bg-card">
-      // 区块标题式的展开 / 收起开关：保留原生元素是因为 `Button` 没有 `aria-expanded`
-      // 通道，而展开状态是读屏与 e2e 的契约（它视觉上是卡片标题，不是按钮）。
-      <button
-        type="button"
-        class="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold"
-        aria-expanded=move || show_station.get().to_string()
-        on:click=move |_| show_station.update(|v| *v = !*v)
+      <Button
+        variant=Variant::Text
+        // 文字色必须显式给：`Variant::Text` 的 `--btn-fg` 是 `muted-foreground`，而这里是区块标题。
+        class="h-auto w-full justify-between px-4 py-3 text-left text-sm font-semibold text-foreground"
+        aria_expanded=Signal::derive(move || show_station.get())
+        on_click=Callback::new(move |_| show_station.update(|v| *v = !*v))
       >
         <span>{move || t("log.station-info")}</span>
         <span class="text-xs font-normal text-muted-foreground">
@@ -110,7 +109,7 @@ pub(super) fn StationPanel(book: RwSignal<StationBook>, on_save: Callback<()>) -
             }
           }}
         </span>
-      </button>
+      </Button>
       {move || {
         show_station.get().then(|| {
           // `Field` 的标签与控件是兄弟节点，`r#for` / `id` 必须配对才能点击标签聚焦输入框。

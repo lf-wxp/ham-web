@@ -24,7 +24,7 @@ set -e
 WB_VERSION=$(awk -F'"' '/^name = "wasm-bindgen"$/{f=1; next} f && /^version = /{print $2; exit}' Cargo.lock)
 rustup target add wasm32-unknown-unknown
 command -v trunk >/dev/null 2>&1 || cargo install trunk --locked
-# Trunk 自带的 wasm-bindgen 不对外暴露，APT Worker 需要 PATH 上的 CLI，且版本须与 crate 一致
+# Trunk 自带的 wasm-bindgen 不对外暴露，八个解码 Worker 需要 PATH 上的 CLI，且版本须与 crate 一致
 command -v wasm-bindgen >/dev/null 2>&1 || cargo install wasm-bindgen-cli --version "$WB_VERSION" --locked
 '''
 
@@ -37,7 +37,7 @@ alias = "dev"
 description = "启动前端开发服务器（热重载）：http://127.0.0.1:3000"
 # 语言包必须先生成：`trunk serve` 会把 public/ 拷进产物目录，晚一步拷到的就是旧包
 # （改了 data/i18n/ 却不刷新，页面上仍是旧译文，且不会有任何报错）。
-dependencies = ["i18n-pack", "build-worker", "build-sstv-worker", "build-wspr-worker"]
+dependencies = ["i18n-pack", "build-worker", "build-sstv-worker", "build-wspr-worker", "build-rtty-worker", "build-olivia-worker", "build-dominoex-worker", "build-navtex-worker", "build-lrpt-worker"]
 cwd = "${APP_DIR}"
 command = "trunk"
 # 开发产物放在 target/ 下，避免与 release 构建共用 dist/ 互相覆盖
@@ -45,7 +45,7 @@ args = ["serve", "--dist", "../../target/dev-dist"]
 
 [tasks.dev-full]
 description = "同时启动后端 server（3001，仅 API）与前端 trunk dev（3000，代理 /api 到后端）"
-dependencies = ["i18n-pack", "build-worker", "build-sstv-worker", "build-wspr-worker"]
+dependencies = ["i18n-pack", "build-worker", "build-sstv-worker", "build-wspr-worker", "build-rtty-worker", "build-olivia-worker", "build-dominoex-worker", "build-navtex-worker", "build-lrpt-worker"]
 script_runner = "@shell"
 script = '''
 set -e
@@ -58,72 +58,25 @@ SERVER_PID=$!
 
 # ───────────────────────────── 构建 ─────────────────────────────
 
+
 [tasks.build-web]
 description = "构建前端（release）并生成 Service Worker / sitemap"
-dependencies = ["build-worker", "build-sstv-worker", "build-wspr-worker", "trunk-build", "postbuild"]
+dependencies = ["build-worker", "build-sstv-worker", "build-wspr-worker", "build-rtty-worker", "build-olivia-worker", "build-dominoex-worker", "build-navtex-worker", "build-lrpt-worker", "trunk-build", "postbuild"]
 
 [tasks.build-worker]
 description = "构建 APT 解码 Web Worker（wasm-bindgen --target no-modules，CLI 版本须与 Cargo.lock 一致）"
 script_runner = "@shell"
-script = '''
-set -e
-WB_VERSION=$(awk -F'"' '/^name = "wasm-bindgen"$/{f=1; next} f && /^version = /{print $2; exit}' Cargo.lock)
-if ! command -v wasm-bindgen >/dev/null 2>&1; then
-  echo "未找到 wasm-bindgen CLI，请先执行 cargo make setup（或 cargo install wasm-bindgen-cli --version $WB_VERSION --locked）" >&2
-  exit 1
-fi
-WB_INSTALLED=$(wasm-bindgen --version | awk '{print $2}')
-if [ "$WB_INSTALLED" != "$WB_VERSION" ]; then
-  echo "wasm-bindgen CLI 版本 $WB_INSTALLED 与 Cargo.lock 中的 $WB_VERSION 不一致，请执行 cargo install wasm-bindgen-cli --version $WB_VERSION --locked" >&2
-  exit 1
-fi
-cargo build --profile wasm-release --target wasm32-unknown-unknown -p ham-web-apt-worker
-mkdir -p public/apt-worker
-wasm-bindgen --target no-modules --no-typescript --out-dir public/apt-worker --out-name apt_worker \
-  target/wasm32-unknown-unknown/wasm-release/ham_web_apt_worker.wasm
-'''
+script = "sh scripts/build-decode-worker.sh apt"
 
 [tasks.build-sstv-worker]
 description = "构建 SSTV 解码 Web Worker（wasm-bindgen --target no-modules）"
 script_runner = "@shell"
-script = '''
-set -e
-WB_VERSION=$(awk -F'"' '/^name = "wasm-bindgen"$/{f=1; next} f && /^version = /{print $2; exit}' Cargo.lock)
-if ! command -v wasm-bindgen >/dev/null 2>&1; then
-  echo "未找到 wasm-bindgen CLI，请先执行 cargo make setup" >&2
-  exit 1
-fi
-WB_INSTALLED=$(wasm-bindgen --version | awk '{print $2}')
-if [ "$WB_INSTALLED" != "$WB_VERSION" ]; then
-  echo "wasm-bindgen CLI 版本 $WB_INSTALLED 与 Cargo.lock 中的 $WB_VERSION 不一致" >&2
-  exit 1
-fi
-cargo build --profile wasm-release --target wasm32-unknown-unknown -p ham-web-sstv-worker
-mkdir -p public/sstv-worker
-wasm-bindgen --target no-modules --no-typescript --out-dir public/sstv-worker --out-name sstv_worker \
-  target/wasm32-unknown-unknown/wasm-release/ham_web_sstv_worker.wasm
-'''
+script = "sh scripts/build-decode-worker.sh sstv"
 
 [tasks.build-wspr-worker]
 description = "构建 WSPR 解码 Web Worker（wasm-bindgen --target no-modules）"
 script_runner = "@shell"
-script = '''
-set -e
-WB_VERSION=$(awk -F'"' '/^name = "wasm-bindgen"$/{f=1; next} f && /^version = /{print $2; exit}' Cargo.lock)
-if ! command -v wasm-bindgen >/dev/null 2>&1; then
-  echo "未找到 wasm-bindgen CLI，请先执行 cargo make setup" >&2
-  exit 1
-fi
-WB_INSTALLED=$(wasm-bindgen --version | awk '{print $2}')
-if [ "$WB_INSTALLED" != "$WB_VERSION" ]; then
-  echo "wasm-bindgen CLI 版本 $WB_INSTALLED 与 Cargo.lock 中的 $WB_VERSION 不一致" >&2
-  exit 1
-fi
-cargo build --profile wasm-release --target wasm32-unknown-unknown -p ham-web-wspr-worker
-mkdir -p public/wspr-worker
-wasm-bindgen --target no-modules --no-typescript --out-dir public/wspr-worker --out-name wspr_worker \
-  target/wasm32-unknown-unknown/wasm-release/ham_web_wspr_worker.wasm
-'''
+script = "sh scripts/build-decode-worker.sh wspr"
 
 [tasks.trunk-build]
 private = true
@@ -267,6 +220,140 @@ script = '''
 cargo run -q -p ham-web-wspr --release --example decode_sample -- "${FILE:-tmp/wspr-sample.wav}"
 '''
 
+[tasks.lrpt-sample]
+description = "生成合成 LRPT 基带样本 tmp/lrpt-sample.wav（288 kHz 立体声，左 I 右 Q；取自真实图像帧夹具，页面可解出图像）"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-lrpt --release --example generate_sample -- tmp/lrpt-sample.wav 
+'''
+
+[tasks.lrpt-decode]
+description = "命令行解码 LRPT 基带样本：FILE=tmp/lrpt-sample.wav cargo make lrpt-decode"
+script_runner = "@shell"
+script = '''
+cargo run -q -p ham-web-lrpt --release --example decode_sample -- "${FILE:-tmp/lrpt-sample.wav}"
+'''
+
+[tasks.lrpt-test]
+description = "生成并解码合成 LRPT 样本，端到端自检（依赖 lrpt-sample → lrpt-decode）"
+dependencies = ["lrpt-sample", "lrpt-decode"]
+
+[tasks.dominoex-sample]
+description = "生成合成 DominoEX 样本（用本仓编码器，与 Python 参考实现互锁验证过）：MODE='8' TEXT='CQ CQ DE BG1AAA 599' cargo make dominoex-sample"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-dominoex --release --example generate_sample -- "${MODE:-8}" tmp/dominoex-sample.wav "${TEXT:-CQ CQ DE BG1AAA 599}"
+'''
+
+[tasks.dominoex-decode]
+description = "命令行解码 DominoEX 样本：MODE='8' FILE=tmp/dominoex-sample.wav cargo make dominoex-decode"
+script_runner = "@shell"
+script = '''
+cargo run -q -p ham-web-dominoex --release --example decode_sample -- "${MODE:-8}" "${FILE:-tmp/dominoex-sample.wav}"
+'''
+
+[tasks.dominoex-test]
+description = "生成并解码合成 DominoEX 样本，端到端自检（依赖 dominoex-sample → dominoex-decode）"
+dependencies = ["dominoex-sample", "dominoex-decode"]
+
+[tasks.dominoex-xcheck]
+description = "交叉验证：独立参考实现 ↔ 本仓实现（双向互操作，进程内直连，不依赖 python3）"
+script_runner = "@shell"
+script = '''
+cargo test -p ham-web-dominoex --test reference_interop
+'''
+
+[tasks.olivia-sample]
+description = "生成合成 Olivia 样本（用本仓编码器，与 Python 参考实现互锁验证过）：MODE='32/1000@1500' TEXT='CQ CQ DE BG1AAA 599' cargo make olivia-sample"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-olivia --release --example generate_sample -- "${MODE:-32/1000@1500}" tmp/olivia-sample.wav "${TEXT:-CQ CQ DE BG1AAA 599}"
+'''
+
+[tasks.olivia-decode]
+description = "命令行解码 Olivia 样本：MODE='32/1000@1500' FILE=tmp/olivia-sample.wav cargo make olivia-decode"
+script_runner = "@shell"
+script = '''
+cargo run -q -p ham-web-olivia --release --example decode_sample -- "${MODE:-32/1000@1500}" "${FILE:-tmp/olivia-sample.wav}"
+'''
+
+[tasks.olivia-test]
+description = "生成并解码合成 Olivia 样本，端到端自检（依赖 olivia-sample → olivia-decode）"
+dependencies = ["olivia-sample", "olivia-decode"]
+
+[tasks.olivia-xcheck]
+description = "交叉验证：独立参考实现 ↔ 本仓实现（双向互操作，进程内直连，不依赖 python3）"
+script_runner = "@shell"
+script = '''
+cargo test -p ham-web-olivia --test reference_interop
+'''
+
+[tasks.navtex-sample]
+description = "生成合成 NAVTEX 测试样本 WAV：TEXT='GALE WARNING' NOISE=0.02 cargo make navtex-sample"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-navtex --release --example generate_sample -- tmp/navtex-sample.wav "${TEXT:-GALE WARNING IN SOUTHERN ADRIATIC 25 KNOTS}" "${NOISE:-0.02}"
+'''
+
+[tasks.navtex-decode]
+description = "命令行解码 NAVTEX 样本：FILE=tmp/navtex-sample.wav cargo make navtex-decode"
+script_runner = "@shell"
+script = '''
+cargo run -q -p ham-web-navtex --release --example decode_sample -- "${FILE:-tmp/navtex-sample.wav}"
+'''
+
+[tasks.navtex-test]
+description = "生成并解码合成 NAVTEX 样本，端到端自检（依赖 navtex-sample → navtex-decode）"
+dependencies = ["navtex-sample", "navtex-decode"]
+
+[tasks.rtty-sample]
+description = "生成合成 RTTY 测试样本 WAV：TEXT='CQ CQ DE BG1AAA 599 K' NOISE=0.02 cargo make rtty-sample"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-rtty --release --example generate_sample -- tmp/rtty-sample.wav "${TEXT:-CQ CQ DE BG1AAA 599 K}" "${NOISE:-0.02}"
+'''
+
+[tasks.rtty-decode]
+description = "命令行解码 RTTY 样本：FILE=tmp/rtty-sample.wav MARK=2125 cargo make rtty-decode"
+script_runner = "@shell"
+script = '''
+cargo run -q -p ham-web-rtty --release --example decode_sample -- "${FILE:-tmp/rtty-sample.wav}" "${MARK:-2125}"
+'''
+
+[tasks.rtty-test]
+description = "生成并解码合成 RTTY 样本，端到端自检（依赖 rtty-sample → rtty-decode）"
+dependencies = ["rtty-sample", "rtty-decode"]
+
+[tasks.build-rtty-worker]
+description = "构建 RTTY 解码 Web Worker（wasm-bindgen --target no-modules，CLI 版本须与 Cargo.lock 一致）"
+script_runner = "@shell"
+script = "sh scripts/build-decode-worker.sh rtty"
+
+[tasks.build-olivia-worker]
+description = "构建 Olivia 解码 Web Worker（wasm-bindgen --target no-modules，CLI 版本须与 Cargo.lock 一致）"
+script_runner = "@shell"
+script = "sh scripts/build-decode-worker.sh olivia"
+
+[tasks.build-navtex-worker]
+description = "构建 NAVTEX 解码 Web Worker（wasm-bindgen --target no-modules，CLI 版本须与 Cargo.lock 一致）"
+script_runner = "@shell"
+script = "sh scripts/build-decode-worker.sh navtex"
+
+[tasks.build-lrpt-worker]
+description = "构建 LRPT 解码 Web Worker（wasm-bindgen --target no-modules，CLI 版本须与 Cargo.lock 一致）"
+script_runner = "@shell"
+script = "sh scripts/build-decode-worker.sh lrpt"
+
+[tasks.build-dominoex-worker]
+description = "构建 DominoEX 解码 Web Worker（wasm-bindgen --target no-modules，CLI 版本须与 Cargo.lock 一致）"
+script_runner = "@shell"
+script = "sh scripts/build-decode-worker.sh dominoex"
+
 [tasks.wspr-test]
 description = "生成并解码合成 WSPR 样本，端到端自检（依赖 wspr-sample → wspr-decode）"
 dependencies = ["wspr-sample", "wspr-decode"]
@@ -314,6 +401,24 @@ cargo run -q -p ham-web-tools --release -- analyze-spectrum \
 [tasks.spectrum-test]
 description = "生成并分析合成频谱样本，端到端自检（依赖 spectrum-sample → spectrum-analyze）"
 dependencies = ["spectrum-sample", "spectrum-analyze"]
+
+# ───────────────────────────── 合成测试样本（汇总） ─────────────────────────────
+
+[tasks.samples]
+description = "生成全部合成测试样本 WAV 到 tmp/：apt / sstv / wspr / lrpt / dominoex / olivia / navtex / rtty / psk31 / spectrum"
+# 各样本任务互为独立产物，汇总只做编排；单跑某个样本仍用对应的 <x>-sample。
+dependencies = [
+  "apt-sample",
+  "sstv-sample",
+  "wspr-sample",
+  "lrpt-sample",
+  "dominoex-sample",
+  "olivia-sample",
+  "navtex-sample",
+  "rtty-sample",
+  "psk31-sample",
+  "spectrum-sample",
+]
 
 # ───────────────────────────── 题目解析维护 ─────────────────────────────
 
@@ -436,14 +541,26 @@ args = ["fmt", "--all", "--check"]
 description = "Clippy（原生 crate + wasm 前端）"
 script_runner = "@shell"
 script = '''
-cargo clippy --all-targets -p ham-web-core -p ham-web-nec -p ham-web-apt -p ham-web-tools -p ham-web-server -- -D warnings
+set -e
+cargo clippy --all-targets -p ham-web-core -p ham-web-nec -p ham-web-dsp -p ham-web-wav -p ham-web-tools -p ham-web-server -- -D warnings
+for codec in apt sstv wspr rtty olivia dominoex navtex lrpt; do
+  cargo clippy --all-targets -p "ham-web-$codec" -- -D warnings
+  cargo clippy -p "ham-web-$codec-worker" --target wasm32-unknown-unknown -- -D warnings
+done
 cargo clippy -p ham-web-app --target wasm32-unknown-unknown -- -D warnings
 '''
 
 [tasks.test]
-description = "运行单元测试"
-command = "cargo"
-args = ["test", "-p", "ham-web-core", "-p", "ham-web-nec", "-p", "ham-web-apt", "-p", "ham-web-tools", "-p", "ham-web-server", "-p", "ham-web-app"]
+description = "运行全部原生库与解码器单元、互操作测试"
+script_runner = "@shell"
+script = '''
+set -e
+cargo test -p ham-web-core -p ham-web-nec -p ham-web-dsp -p ham-web-wav -p ham-web-tools -p ham-web-server -p ham-web-app
+# 各解码 crate 的 examples 同名，逐包执行避免 Cargo 输出文件互相覆盖。
+for codec in apt sstv wspr rtty olivia dominoex navtex lrpt; do
+  cargo test -p "ham-web-$codec"
+done
+'''
 
 [tasks.check]
 description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案/知识库译文词典校验 + 解析表校验 + 像素风生成物校验（不构建前端）"
@@ -451,6 +568,8 @@ dependencies = [
   "fmt-check",
   "clippy",
   "test",
+  # 先重新生成运行时语言包（public/data/i18n/ 已不入库），再校验新鲜度
+  "i18n-pack",
   "i18n-check",
   "knowledge-i18n-check",
   "explanations-check",
@@ -478,6 +597,9 @@ dependencies = [
   "fmt-check",
   "clippy",
   "test",
+  # 先重新生成运行时语言包（public/data/i18n/ 已不入库），再校验新鲜度；
+  # 缺了它，干净 checkout 上 ci 会在 i18n-check 处必红（check 任务同样列了它）。
+  "i18n-pack",
   "i18n-check",
   "knowledge-i18n-check",
   "explanations-check",
@@ -501,6 +623,7 @@ args = ["run", "--rm", "-p", "3000:3000", "ham-web:latest"]
 description = "清理构建产物"
 script_runner = "@shell"
 script = '''
+set -e
 cargo clean
 rm -rf dist tmp
 '''

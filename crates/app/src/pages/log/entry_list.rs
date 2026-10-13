@@ -259,20 +259,21 @@ pub(super) fn EntryList(
                           </td>
                           <td class=format!("{CELL} whitespace-nowrap")>
                             <div class="flex items-center gap-2">
-                              <button
-                                type="button"
-                                class="text-xs text-muted-foreground transition-colors hover:text-foreground"
-                                on:click=move |_| on_edit.run(entry.clone())
+                              <Button
+                                variant=Variant::Text
+                                size=Size::Xs
+                                on_click=Callback::new(move |_| on_edit.run(entry.clone()))
                               >
                                 {move || t("log.edit")}
-                              </button>
-                              <button
-                                type="button"
-                                class="text-xs text-muted-foreground transition-colors hover:text-destructive"
-                                on:click=move |_| on_remove.run(id)
+                              </Button>
+                              <Button
+                                variant=Variant::Text
+                                size=Size::Xs
+                                class="hover:text-destructive"
+                                on_click=Callback::new(move |_| on_remove.run(id))
                               >
                                 {move || t("log.delete")}
-                              </button>
+                              </Button>
                             </div>
                           </td>
                         </tr>

@@ -9,7 +9,7 @@ use leptos_router::hooks::use_query_map;
 use crate::cn::cn;
 use crate::components::common::{ExplanationCard, NoteEditor, PageContainer, PageHeader};
 use crate::study;
-use crate::ui::{Button, ButtonLink, NativeSelect, SelectOption, Size, Variant};
+use crate::ui::{Button, ButtonLink, Chip, ChipGroup, NativeSelect, SelectOption, Size, Variant};
 use crate::util::{download_text, now_ms, set_title};
 
 use super::mistake_card::MistakeCard;
@@ -513,6 +513,8 @@ pub fn MistakesPage() -> impl IntoView {
                 </div>
                 <div class="min-h-5 text-sm">
                   {move || {
+                    // ChipGroup 的回调按值消耗 key，每次重渲染都要一份新的（外层闭包需保持 Fn）。
+                    let mk = mk.clone();
                     feedback.get().map(|outcome| match outcome {
                       RecordOutcome::Wrong => view! {
                         <div class="space-y-2">
@@ -522,28 +524,24 @@ pub fn MistakesPage() -> impl IntoView {
                           </span>
                           <div class="flex flex-wrap items-center gap-1.5">
                             <span class="text-xs text-muted-foreground">{move || t("exam.why-did-you-get")}</span>
-                            {WRONG_CAUSES
-                              .iter()
-                              .map(|&(ck, cn)| {
-                                let mk2 = mk.clone();
-                                view! {
-                                  <button
-                                    type="button"
-                                    class=move || if wrong_cause.get().as_deref() == Some(ck) {
-                                      "rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary"
-                                    } else {
-                                      "rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent"
-                                    }
-                                    on:click=move |_| {
-                                      wrong_cause.set(Some(ck.to_owned()));
-                                      crate::study::set_mistake_cause(&mk2, ck);
-                                    }
-                                  >
-                                    {move || t(cn)}
-                                  </button>
+                            <ChipGroup
+                              value=Signal::derive(move || wrong_cause.get().unwrap_or_default())
+                              on_change=Callback::new(move |v: String| {
+                                if let Some(&(ck, _)) = WRONG_CAUSES.iter().find(|(k, _)| *k == v) {
+                                  wrong_cause.set(Some(ck.to_owned()));
+                                  crate::study::set_mistake_cause(&mk, ck);
                                 }
                               })
-                              .collect_view()}
+                              aria_label=Signal::derive(move || t("exam.why-did-you-get"))
+                            >
+                              {WRONG_CAUSES
+                                .iter()
+                                .map(|&(ck, cn)| {
+                                  let label = view! { {move || t(cn)} }.into_any();
+                                  view! { <Chip value=ck.to_owned()>{label}</Chip> }
+                                })
+                                .collect_view()}
+                            </ChipGroup>
                           </div>
                         </div>
                       }.into_any(),
@@ -787,24 +785,24 @@ pub fn MistakesPage() -> impl IntoView {
                     />
                   }
                 }}
-                <div class="flex overflow-hidden rounded-lg border text-xs">
+                <ChipGroup
+                  value=Signal::derive(move || bank.get().map_or(String::new(), |b| b.as_str().to_owned()))
+                  on_change=Callback::new(move |v: String| {
+                    bank.set(if v.is_empty() { None } else { Some(Bank::from_param(Some(&v))) });
+                  })
+                  aria_label=Signal::derive(move || t("exam.bank"))
+                >
                   {std::iter::once(None)
                     .chain(Bank::ALL.into_iter().map(Some))
-                    .map(|b| view! {
-                      <button
-                        type="button"
-                        class=move || cn(&[
-                          "px-3 py-1.5 font-medium transition-colors",
-                          if bank.get() == b { "bg-primary text-primary-foreground" } else { "hover:bg-accent" },
-                        ])
-                        aria-pressed=move || (bank.get() == b).to_string()
-                        on:click=move |_| bank.set(b)
-                      >
+                    .map(|b| {
+                      let label = view! {
                         {b.map_or_else(|| t("exam.all"), |b| tf("learning.class", &[&b.to_string()]))}
-                      </button>
+                      }
+                        .into_any();
+                      view! { <Chip value=b.map_or(String::new(), |b| b.as_str().to_owned())>{label}</Chip> }
                     })
                     .collect_view()}
-                </div>
+                </ChipGroup>
               </div>
               {move || {
                 let f = filter.get();

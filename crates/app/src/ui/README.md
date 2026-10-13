@@ -11,7 +11,7 @@ disabled / error 状态反馈因此只有一处定义。
 （`tokens.css` 调色板 / 零圆角 / 硬阴影，`controls.css` 的 `pxl-btn` / `pxl-field` / `pxl-window` …）。
 语义 token 名沿用 shadcn（`--primary` / `--muted` / `--ring` / `--destructive`），只换了值，
 所以页面里的 `bg-card` / `text-primary` 照常可用；暗色由 `.dark` 覆盖。组件只拼 `pxl-*` 类名，
-**像素规范与硬规则见 [`docs/ui-components.md` §0.5](../../../../docs/ui-components.md)**。
+**像素规范与硬规则见 [`docs/ui-components.md` §2](../../../../docs/ui-components.md)**。
 
 ---
 
@@ -19,8 +19,8 @@ disabled / error 状态反馈因此只有一处定义。
 
 | 组件 | 替代的原生写法 | 关键 props |
 |---|---|---|
-| `Button` | `<button class=button_class(…)>` | `variant` `size` `kind` `disabled` `loading` `class` `aria_label` `title` `on_click` `node_ref` |
-| `ButtonLink` | `<a href class=button_class(…)>`（跳转用的「按钮」） | `href`（`TextValue`）`variant` `size` `class` `aria_label` `title` `target` `rel` `on_click`（收 `MouseEvent`） |
+| `Button` | `<button class=button_class(…)>` | `variant` `size` `kind` `disabled` `loading` `class` `aria_label` `title` `aria_expanded` `aria_controls`（折叠 / 下拉开关）`on_click` `node_ref` |
+| `ButtonLink` | `<a href class=button_class(…)>`（跳转用的「按钮」） | `href`（`TextValue`）`variant` `size` `class` `aria_label` `title` `target` `rel` `download`（保存 `data:` / `blob:` 资源时的文件名）`on_click`（收 `MouseEvent`） |
 | `Input` | `<input>`（text / search / password / email / tel / url；日期与时间见 `DatePicker` / `TimePicker`） | `value` `on_change` `kind` `size` `prefix` `suffix` `clearable` `on_enter` `on_keydown` `invalid` `maxlength` `title` `autocomplete` `autocapitalize` `spellcheck` `aria_describedby` `node_ref` |
 | `NumberField` | `<input type="number">` | `value` `on_change` `min` `max` `step` `controls`（加减步进）`kind`（`NumberKind::Decimal` = 文本框 + 数字键盘，负数与半截输入可用） |
 | `Textarea` | `<textarea>` | `value` `on_change` `rows` `auto_resize` |
@@ -28,13 +28,14 @@ disabled / error 状态反馈因此只有一处定义。
 | `NativeSelect` | `<select>`（选项固定的筛选器） | `value` `on_change` `options`（`SelectOption::grouped` 可加分组标题）`placeholder` `size` |
 | `DatePicker` | `<input type="date">` | `value`（`YYYY-MM-DD`）`on_change` `placeholder` `size` |
 | `TimePicker` | `<input type="time">` | `value`（`HH:MM`）`on_change` `placeholder` `size` |
-| `Checkbox` | `<input type="checkbox">`（表单项） | `checked` `on_change` `disabled` |
-| `Switch` | `<input type="checkbox">`（切换即生效的设置） | `checked` `on_change` `disabled` |
+| `Checkbox` | `<input type="checkbox">`（表单项） | `checked` `on_change` `id` `aria_label` `disabled` `class` |
+| `Switch` | `<input type="checkbox">`（切换即生效的设置） | `checked` `on_change` `id` `aria_label` `disabled` `invalid` `class` |
 | `RadioGroup` + `RadioGroupItem` | `<input type="radio">`（表单里的单选，选项带文字） | `value` `on_change` `disabled` |
 | `ChipGroup` + `Chip` | 手写「分段选择」胶囊按钮（工具条上的短选项） | `value` `on_change` `disabled` |
 | `ChipToggle` | 手写「chip 开关」（筛选条上的独立开关） | `active` `on_change` `title` `disabled` |
 | `Slider` | `<input type="range">` | `value` `on_change` `min` `max` `step` `aria_valuetext` |
 | `FileInput` | 隐藏 `<input type="file">` + 触发按钮 | `on_files` `accept` `multiple` `label` |
+| `FileDropZone` | 手写 `<label for>` + 隐藏 input 的整块拖放区 | `on_file` `accept` `title`（同时是无障碍名）`icon` `hint` `choose_hint`（覆盖默认的「拖拽音频文件」提示行）`disabled` `id`（e2e 按固定 id 定位时传） |
 | `Field` | 手写的 `label + 控件 + 提示` 排版 | `label` `r#for` `hint` `error` `required` |
 | `Label` | `<label>`（单独使用，如 Checkbox 旁） | `r#for` |
 | `Dialog` / `Sheet` 及 `DialogHeader` 等 | — | 见源码 |
@@ -89,8 +90,12 @@ view! {
 - 输入类（`Input` / `NumberField` / `Textarea` / `Select` / `NativeSelect` / `DatePicker` /
   `TimePicker`）用 `ControlSize`：
   `Sm` = `h-8`（工具栏筛选）、`Default` = `h-10`（表单主体）、`Lg` = `h-12`（触屏主表单）。
-- 按钮用 `Size`：`Sm`（`h-8`）/ `Default`（`h-10`）/ `Lg`（`h-12`）/ `Icon`（`size-10`）。`Lg` 配更大的字号，
-  只给落地页的主操作（首页 Hero 的三个入口）用，表单与工具栏里不要用。
+- 按钮用 `Size`：`Xs`（`h-6`，表格行内 / 工具条的**纯文本**小按钮）/ `Sm`（`h-8`）/ `Default`
+  （`h-10`）/ `Lg`（`h-12`）/ `Icon`（`size-10`）/ `IconSm`（`size-6` 紧凑图标按钮 —— 像素图标
+  是 24px 网格，1:1 正好撑满）。`Lg` 配更大的字号，只给落地页的主操作（首页 Hero 的三个
+  入口）用，表单与工具栏里不要用。
+- `Variant::Text` 是文字按钮（透明底、无边框与投影，悬停只换文字色）：句内的「编辑 /
+  删除 / 关闭」用它配 `Size::Xs`；要悬停变红就在调用点补 `class="hover:text-destructive"`。
 
 `Default` 在移动端保留 16px 字号，避免 iOS 聚焦时页面被自动放大。
 
@@ -159,8 +164,10 @@ placeholder = Signal::derive(move || t("搜索题目"))       // 响应式：切
 全站的原生 `<input>` / `<select>` / `<textarea>` 已清干净，`input_class()` 这个「让未迁移的
 输入框暂时长得一样」的类名工厂也随之删除 —— 表单控件现在只有一个来源：`ui/` 的
 `Input` / `NumberField` / `Textarea` / `NativeSelect` / `Select` / `Slider` / `Checkbox` /
-`Switch` / `RadioGroup` / `FileInput`。只剩 6 处隐藏的 `<input type="file">`（上传按钮背后的
-`class="hidden"` 元素，不参与展示）。
+`Switch` / `RadioGroup` / `FileInput` / `FileDropZone`。**页面里已经没有手写的
+`<input type="file">`**：按钮式的上传走 `FileInput`，整块拖放区走 `FileDropZone` —— 后者内部是
+`sr-only` 的 input，留在 Tab 序里、焦点环由 label 的 `has-[:focus-visible]` 显示
+（`hidden` = `display:none` 会让键盘用户选不了文件）；非音频上传位记得覆盖 `choose_hint`。
 
 `type="search"` 由组件额外抹掉浏览器原生外观（Safari 的圆角、Chrome 自带的「×」），
 避免原生清除按钮与组件自带的清除按钮叠在一起。
@@ -348,6 +355,24 @@ view! {
 />
 ```
 
+整块可点击、可拖放的上传区（上传解码类页面统一用它，别在页面手写 `<label for>` + 隐藏 input）：
+
+```rust
+<FileDropZone
+  on_file=Callback::new(move |file: web_sys::File| start_decode(file))
+  accept=".wav,audio/wav,audio/x-wav,audio/*"
+  title=Signal::derive(move || t("tools.choose-a-rtty-recording"))
+  icon=IconKind::Waves
+  hint=Signal::derive(move || t("tools.supports-martin-m1-m2"))
+  disabled=processing
+/>
+```
+
+通用提示行「点击选择或拖拽」由组件内置；`hint` 是可选的补充说明行，不传则不渲染。
+上传的不是音频时用 `choose_hint` 覆盖内置提示行（图片上传位传
+`tools.click-to-choose-or`）。e2e 需要固定 id 定位（如 `#psk-file`）时传 `id`，
+否则组件内部生成。
+
 ### 表单行（标签 + 说明 + 错误）
 
 ```rust
@@ -394,6 +419,7 @@ view! {
 | `<input type="radio">` | `<RadioGroup>` + `<RadioGroupItem>` |
 | `<input type="range">` | `<Slider>` |
 | 隐藏 `<input type="file">` + 按钮 | `<FileInput>` |
+| 手写 `<label for>` + 隐藏 input 的整块拖放区 | `<FileDropZone>` |
 | 「搜索图标 + 输入框 + 清除按钮」手写组合 | `<Input kind=InputType::Search prefix=… clearable=true>` |
 | `<button class=button_class(…)>` | `<Button>` |
 | 手写 `<div class="space-y-1.5"><label>…</label>…` | `<Field>` |

@@ -188,7 +188,9 @@ pub fn DxSpotsPage() -> impl IntoView {
     }
     let mode = mode_of(&comment);
     let mode = if mode == "其他" { "SSB" } else { mode };
-    store.quick_add(&dx, &s, mode);
+    if !store.quick_add(&dx, &s, mode) {
+      return; // 备份 / 恢复进行中：`quick_add` 已提示，不能再报「已记录」。
+    }
     crate::util::alert(&tf(
       "radio.logged-mhz",
       &[&(dx).to_string(), &(s).to_string(), (mode)],
@@ -317,24 +319,29 @@ pub fn DxSpotsPage() -> impl IntoView {
             </div>
             {move || {
               show_alerts.get().then(|| {
-                let toggle = move |label: &'static str, get: fn(&AlertSettings) -> bool, set: fn(&mut AlertSettings, bool)| {
-                  view! {
-                    <label class="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        checked=Signal::derive(move || alerts.with(get))
-                        on_change=Callback::new(move |on: bool| {
-                          update_alerts(&|a| set(a, on));
-                        })
-                      />
-                      {move || t(label)}
-                    </label>
-                  }
-                };
                 view! {
                   <div class="space-y-3 rounded-lg border bg-muted/30 p-3">
                     <div class="flex flex-wrap gap-x-5 gap-y-2">
-                      {toggle("出现新 DXCC 时通知", |a| a.new_dxcc, |a, v| a.new_dxcc = v)}
-                      {toggle("出现已联实体的新波段时通知", |a| a.new_band, |a, v| a.new_band = v)}
+                      // 两个开关各写一遍而不是抽 `toggle(label, …)` 闭包：词条字面量必须写在
+                      // `t()` 的直接实参位，`check-i18n` 只采集直接调用，经参数中转会漏检。
+                      <label class="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked=Signal::derive(move || alerts.with(|a| a.new_dxcc))
+                          on_change=Callback::new(move |on: bool| {
+                            update_alerts(&|a| a.new_dxcc = on);
+                          })
+                        />
+                        {move || t("radio.notify-on-new-dxcc")}
+                      </label>
+                      <label class="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked=Signal::derive(move || alerts.with(|a| a.new_band))
+                          on_change=Callback::new(move |on: bool| {
+                            update_alerts(&|a| a.new_band = on);
+                          })
+                        />
+                        {move || t("radio.notify-on-a-new")}
+                      </label>
                     </div>
                     <label class="flex flex-col gap-1.5 text-sm">
                       <span class="text-xs text-muted-foreground">{move || t("radio.watched-callsigns-space-or")}</span>
@@ -428,6 +435,8 @@ pub fn DxSpotsPage() -> impl IntoView {
                       let comment_btn = comment.clone();
                       view! {
                         <div class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5">
+                          // 刻意的例外：热点表格行内的紧凑多行内容按钮（呼号 + 国家），
+                          // `ui::Button` 的像素风高度与内边距会把行高撑开、破坏表格密度。
                           <button
                             type="button"
                             class="w-28 shrink-0 text-left"

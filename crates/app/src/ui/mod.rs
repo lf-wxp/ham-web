@@ -29,6 +29,7 @@
 //! | [`ChipGroup`] + [`Chip`] | 手写的分段选择胶囊 | 互斥选择，比 [`RadioGroup`] 紧凑，适合工具条 |
 //! | [`ChipToggle`] | 手写的筛选 chip 开关 | `aria-pressed` 语义，允许一个都不选 |
 //! | [`FileInput`] | 隐藏 `<input type="file">` + 触发按钮 | 按钮外观走 [`button_class`] |
+//! | [`FileDropZone`] | 手写的 `<label for>` + 隐藏 input 拖放区 | 整块可点击、可拖放（上传解码类页面用） |
 //! | [`Field`] | 手写的 `label + 控件 + 提示` 排版 | 标签 / 说明 / 错误文案统一 |
 //! | [`Label`] | `<label>` | 单独使用时（如 Checkbox 旁） |
 //! | [`Dialog`] / [`Sheet`] 及配套 | — | 模态与抽屉 |
@@ -100,6 +101,7 @@ mod control;
 mod date_picker;
 mod dialog;
 mod field;
+mod file_drop_zone;
 mod file_input;
 mod input;
 mod intl;
@@ -125,6 +127,7 @@ pub use control::{ControlSize, TextValue, control_class};
 pub use date_picker::DatePicker;
 pub use dialog::{Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Sheet};
 pub use field::Field;
+pub use file_drop_zone::FileDropZone;
 pub use file_input::FileInput;
 pub use input::{Input, InputType};
 pub use label::Label;
@@ -151,6 +154,9 @@ pub enum Variant {
   Outline,
   Secondary,
   Ghost,
+  /// 文字按钮：透明底、无边框与投影，悬停只换文字色（句内「编辑 / 删除」这类）。
+  /// 要悬停变红就在调用点补 `class="hover:text-destructive"`（工具类优先级更高）。
+  Text,
 }
 
 /// 按钮尺寸。
@@ -159,10 +165,16 @@ pub enum Size {
   #[default]
   Default,
   Sm,
+  /// 紧凑 `h-6`（24px）：表格行内 / 工具条上的**纯文本**小按钮。
+  /// 图标按钮走 [`Size::IconSm`] —— 24px 的图标会撑满这个高度。
+  Xs,
   /// 大号 `h-12`：落地页主操作（首页 Hero 的三个入口）。更大的圆角与字号，
   /// 让它在版面里明显是「主角」；表单与工具栏里不要用。
   Lg,
+  /// 图标按钮 `size-10`（40px）。
   Icon,
+  /// 小图标按钮 `size-6`（24px）：像素图标是 24px 网格，1:1 正好撑满。
+  IconSm,
 }
 
 // 外观全部在 `style/pixel/controls.css` 的 `.pxl-btn*`：凸起 → 悬停上浮 2px → 按下沉 2px。
@@ -181,13 +193,16 @@ pub fn button_class(variant: Variant, size: Size, extra: &str) -> String {
     Variant::Outline => "pxl-btn-outline",
     Variant::Secondary => "pxl-btn-secondary",
     Variant::Ghost => "pxl-btn-ghost",
+    Variant::Text => "pxl-btn-text",
   };
   // 高度取 4px 的倍数；按钮文字是 12px 点阵，上下留白按 4px 网格算。
   let s = match size {
     Size::Default => "h-10 px-4 has-[>svg]:px-3",
     Size::Sm => "h-8 gap-1.5 px-3 has-[>svg]:px-2",
+    Size::Xs => "h-6 gap-1 px-2 text-xs",
     Size::Lg => "h-12 px-6 text-base has-[>svg]:px-4",
     Size::Icon => "size-10 px-0",
+    Size::IconSm => "size-6 px-0",
   };
   cn(&[BUTTON_BASE, v, s, extra])
 }

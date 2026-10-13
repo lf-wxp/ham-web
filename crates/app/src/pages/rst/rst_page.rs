@@ -10,6 +10,7 @@ use super::label_list::LabelList;
 use super::rst_listen::RstListen;
 use super::rst_quiz::RstQuiz;
 use crate::i18n::{t, tf};
+use crate::ui::{Button, Size, Variant};
 
 /// 试听音调（Hz）。
 const TONE_FREQ: f32 = 700.0;
@@ -59,14 +60,15 @@ pub fn RstPage() -> impl IntoView {
                 let pct = (i + 1) * 100 / SIGNAL_STRENGTH.len();
                 view! {
                   <div class="flex items-center gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-muted/40">
-                    <button
-                      type="button"
-                      aria-label=tf("common.preview", &[(k)])
-                      on:click=move |_| play_tone(TONE_FREQ, level, 0.7)
-                      class="flex size-8 shrink-0 items-center justify-center rounded-full border text-primary transition-colors hover:bg-accent"
+                    <Button
+                      variant=Variant::Outline
+                      size=Size::IconSm
+                      class="shrink-0 text-primary"
+                      aria_label=tf("common.preview", &[(k)])
+                      on_click=Callback::new(move |_| play_tone(TONE_FREQ, level, 0.7))
                     >
                       <Icon kind=IconKind::Play class="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
                     <span class="w-10 shrink-0 font-mono text-sm font-semibold">{k}</span>
                     <div class="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                       <div

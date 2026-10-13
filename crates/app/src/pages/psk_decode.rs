@@ -5,11 +5,11 @@
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use wasm_bindgen::JsCast;
-use web_sys::{DragEvent, File, HtmlInputElement};
+use web_sys::File;
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::icons::{Icon, IconKind};
-use crate::ui::{Button, NumberField, Size, Variant};
+use crate::ui::{Button, FileDropZone, NumberField, Size, Variant};
 use crate::util::{js_error_message, set_title};
 
 use crate::i18n::{t, tf};
@@ -34,7 +34,6 @@ pub fn PskDecodePage() -> impl IntoView {
   let error = RwSignal::new(None::<String>);
   let file_name = RwSignal::new(String::new());
   let center = RwSignal::new(1000.0f64);
-  let drag_over = RwSignal::new(false);
 
   let decode = move |file: File| {
     processing.set(true);
@@ -73,22 +72,6 @@ pub fn PskDecodePage() -> impl IntoView {
     file_name.set(String::new());
   };
 
-  let zone_class = move || {
-    let state = if processing.get() {
-      "opacity-50 cursor-not-allowed"
-    } else {
-      "hover:bg-muted/40 cursor-pointer"
-    };
-    let border = if drag_over.get() {
-      "border-primary bg-primary/5"
-    } else {
-      "border-border"
-    };
-    format!(
-      "flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed p-8 text-center transition-all duration-200 {state} {border}"
-    )
-  };
-
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader
@@ -121,42 +104,13 @@ pub fn PskDecodePage() -> impl IntoView {
               .then(|| {
                 view! {
                   <div class="space-y-3">
-                    <label for="psk-file" class=zone_class
-                      on:dragover=move |e: DragEvent| e.prevent_default()
-                      on:dragenter=move |e: DragEvent| {
-                        e.prevent_default();
-                        drag_over.set(true);
-                      }
-                      on:dragleave=move |_| drag_over.set(false)
-                      on:drop=move |e: DragEvent| {
-                        e.prevent_default();
-                        drag_over.set(false);
-                        if let Some(f) = e
-                          .data_transfer()
-                          .and_then(|dt| dt.files())
-                          .and_then(|f| f.get(0))
-                        {
-                          submit(f);
-                        }
-                      }
-                    >
-                      <Icon kind=IconKind::AudioLines class="mb-1 h-8 w-8 text-muted-foreground" />
-                      <span class="text-sm font-medium">{t("radio.select-psk31-recording-wav")}</span>
-                      <span class="text-xs text-muted-foreground">{t("tools.click-to-choose-or-2")}</span>
-                    </label>
-                    <input
-                      id="psk-file"
-                      type="file"
+                    <FileDropZone
+                      on_file=Callback::new(move |file: File| submit(file))
                       accept=".wav,audio/wav,audio/x-wav,audio/*"
-                      disabled=move || processing.get()
-                      class="hidden"
-                      on:change=move |e| {
-                        let input: HtmlInputElement = event_target(&e);
-                        if let Some(f) = input.files().and_then(|f| f.get(0)) {
-                          submit(f);
-                        }
-                        input.set_value("");
-                      }
+                      title=Signal::derive(move || t("radio.select-psk31-recording-wav"))
+                      icon=IconKind::AudioLines
+                      disabled=processing
+                      id="psk-file"
                     />
                     <label class="flex items-center gap-2 text-sm">
                       <span class="text-xs text-muted-foreground">{t("radio.carrier-frequency-hz")}</span>

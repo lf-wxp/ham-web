@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, settleFrames, test, waitSettled } from "./fixtures";
 
 // 已翻译模块（`data/knowledge-i18n/en/*.json`：wspr / antennas / bandplan / connectors）
 // 随界面语言切换；尚未翻译的模块（如 qrp）自动回退中文，
@@ -33,6 +33,9 @@ test("知识库正文：中文界面不触发译文加载", async ({ page }) => 
   await page.addInitScript(() => localStorage.setItem("locale", "zh"));
   await page.goto("/wspr");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await page.waitForTimeout(500);
+  // 负向断言：中文是默认语言，不该拉译文。等页面稳定且网络空闲后再确认。
+  await waitSettled(page);
+  await page.waitForLoadState("networkidle");
+  await settleFrames(page);
   expect(requests).toEqual([]);
 });

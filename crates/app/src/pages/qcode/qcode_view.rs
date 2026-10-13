@@ -5,7 +5,7 @@ use leptos_router::hooks::use_query_map;
 use crate::components::common::{PageContainer, PageHeader};
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
-use crate::ui::{Input, InputType, Stat};
+use crate::ui::{Chip, ChipGroup, Input, InputType, Stat};
 
 use super::qcode_quiz::QCodeQuiz;
 use super::qcode_reverse_quiz::QCodeReverseQuiz;
@@ -72,15 +72,6 @@ fn matches(entries: &[GlossaryEntry], q: &str, group: SlangGroup, common_only: b
     .collect()
 }
 
-/// 「常用 / 全部」切换按钮的样式。
-fn scope_pill(active: bool) -> &'static str {
-  if active {
-    "inline-flex items-center whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium text-primary-foreground bg-primary transition-colors"
-  } else {
-    "inline-flex items-center whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent"
-  }
-}
-
 /// 简语速查主体：分组列表、搜索与「常用 / 全部」切换。
 #[component]
 pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
@@ -117,22 +108,18 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
         subtitle=move || t("knowledge.q-codes-cw-abbreviations")
         actions=ViewFn::from(move || {
           view! {
-            <div class="flex items-center gap-0.5 rounded-lg border p-0.5">
-              <button
-                type="button"
-                on:click=move |_| common_only.set(true)
-                class=move || scope_pill(common_only.get())
-              >
-                {move || t("knowledge.common")}
-              </button>
-              <button
-                type="button"
-                on:click=move |_| common_only.set(false)
-                class=move || scope_pill(!common_only.get())
-              >
-                {move || t("exam.all")}
-              </button>
-            </div>
+            <ChipGroup
+              value=Signal::derive(move || if common_only.get() { "common" } else { "all" }.to_owned())
+              on_change=Callback::new(move |v: String| common_only.set(v == "common"))
+              aria_label=Signal::derive(move || t("morse.scope"))
+            >
+              <Chip value="common".to_owned()>
+                {view! { {move || t("knowledge.common")} }.into_any()}
+              </Chip>
+              <Chip value="all".to_owned()>
+                {view! { {move || t("exam.all")} }.into_any()}
+              </Chip>
+            </ChipGroup>
 
             <Input
               value=kw

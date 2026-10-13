@@ -518,14 +518,15 @@ pub fn ContestLogPage() -> impl IntoView {
                           <td class="px-2 py-1.5">{format!("{} {}", e.rst_rcvd, e.srx)}</td>
                           <td class="px-2 py-1.5 font-sans text-xs text-muted-foreground">{entity}</td>
                           <td class="px-4 py-1.5 text-right">
-                            <button
-                              type="button"
-                              class="font-sans text-xs text-muted-foreground hover:text-red-600"
-                              aria-label=tf("contest.delete", &[&(e.callsign).to_string()])
-                              on:click=move |_| remove(id)
+                            <Button
+                              variant=Variant::Text
+                              size=Size::Xs
+                              class="font-sans hover:text-red-600"
+                              aria_label=tf("contest.delete", &[&(e.callsign).to_string()])
+                              on_click=Callback::new(move |_| remove(id))
                             >
                               {move || t("log.delete")}
-                            </button>
+                            </Button>
                           </td>
                         </tr>
                       }

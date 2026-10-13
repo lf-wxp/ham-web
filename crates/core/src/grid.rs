@@ -30,14 +30,19 @@ fn subsquare_char(v: usize) -> char {
   (b'A' + v.min(23) as u8) as char
 }
 
+/// 把闭区间上边界拉回最后一格内部的微小量（远小于最小格 `1/24°`）。
+const UPPER_EDGE_EPS: f64 = 1e-9;
+
 /// 经纬度转 6 位 Maidenhead 网格（如 `PM45AA`）。经纬度越界返回 `None`。
 #[must_use]
 pub fn grid_from_lat_lon(lat: f64, lon: f64) -> Option<String> {
   if !(-90.0..=90.0).contains(&lat) || !(-180.0..=180.0).contains(&lon) {
     return None;
   }
-  let lon = lon + 180.0;
-  let lat = lat + 90.0;
+  // 闭区间的上边界（`lat=90` / `lon=180`）归入最后一格：不夹紧的话 field 索引是 18（被
+  // `field_char` 截成 `R`），而 square / sub 用的是取模结果 0，拼出落在约 80°N 的错误网格。
+  let lon = (lon + 180.0).min(360.0 - UPPER_EDGE_EPS);
+  let lat = (lat + 90.0).min(180.0 - UPPER_EDGE_EPS);
 
   let field_lon = (lon / 20.0).floor() as usize;
   let field_lat = (lat / 10.0).floor() as usize;
@@ -203,6 +208,22 @@ pub fn distance_bearing(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> (f64, f64
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn upper_edges_fall_into_the_last_cell() {
+    // 北极 / 日期变更线东侧：此前 lat=90 得到约 80°N 的 `JR..` 错格。
+    assert_eq!(grid_from_lat_lon(90.0, 0.0).as_deref(), Some("JR09AX"));
+    assert_eq!(grid_from_lat_lon(0.0, 180.0).as_deref(), Some("RJ90XA"));
+    assert_eq!(grid_from_lat_lon(90.0, 180.0).as_deref(), Some("RR99XX"));
+    // 下边界不变。
+    assert_eq!(grid_from_lat_lon(-90.0, -180.0).as_deref(), Some("AA00AA"));
+    // 往返：最后一格的中心仍在边界内。
+    let (lat, lon) = lat_lon_from_grid("RR99XX").expect("valid");
+    assert!(
+      lat > 89.9 && lat < 90.0 && lon > 179.9 && lon < 180.0,
+      "{lat},{lon}"
+    );
+  }
 
   #[test]
   fn zero_is_jj00aa() {

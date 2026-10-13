@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, test } from "./fixtures";
+import { expect, settleFrames, test } from "./fixtures";
 
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
@@ -23,7 +23,8 @@ test("练习：左划下一题、右划上一题，短距离不触发", async ({
   await swipe(page, 80, 320);
   await expect(page.getByText(/第 1 \/ \d+ 题/)).toBeVisible();
   await swipe(page, 200, 170);
-  await page.waitForTimeout(300);
+  // 负向断言：滑动距离不足不翻页。让手势处理与过渡动画都走完，再确认题号没变。
+  await settleFrames(page);
   await expect(page.getByText(/第 1 \/ \d+ 题/)).toBeVisible();
 });
 

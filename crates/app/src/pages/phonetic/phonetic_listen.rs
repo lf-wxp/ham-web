@@ -2,8 +2,10 @@ use ham_web_core::exam::shuffle_in_place;
 use ham_web_core::phonetic::PHONETIC;
 use leptos::prelude::*;
 
+use crate::components::quiz_option::QuizOption;
 use crate::i18n::t;
 use crate::speech::speak_en;
+use crate::ui::{Button, Variant};
 use crate::util::random;
 
 /// 字母解释法听力测验：朗读一个代表单词，判断它代表哪个字母。
@@ -60,13 +62,9 @@ pub(super) fn PhoneticListen() -> impl IntoView {
       <div class="space-y-4 p-4">
         <div class="flex flex-col items-center gap-2 rounded-xl border bg-muted/30 px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("morse.tap-to-play-a")}</div>
-          <button
-            type="button"
-            on:click=move |_| play()
-            class="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-          >
+          <Button on_click=Callback::new(move |_| play())>
             {move || t("morse.play-word")}
-          </button>
+          </Button>
         </div>
         <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {move || {
@@ -76,13 +74,13 @@ pub(super) fn PhoneticListen() -> impl IntoView {
               .map(|opt| {
                 let chosen = opt.clone();
                 view! {
-                  <button
-                    type="button"
-                    on:click=move |_| judge(chosen.clone())
-                    class="rounded-lg border px-3 py-2.5 text-center font-mono text-lg font-semibold transition-colors hover:bg-accent"
+                  <QuizOption
+                    class="text-center font-mono text-lg font-semibold"
+                    disabled=Signal::derive(move || feedback.get().is_some())
+                    on_click=Callback::new(move |_| judge(chosen.clone()))
                   >
                     {opt}
-                  </button>
+                  </QuizOption>
                 }
               })
               .collect_view()
@@ -108,13 +106,9 @@ pub(super) fn PhoneticListen() -> impl IntoView {
               })
             }}
           </div>
-          <button
-            type="button"
-            on:click=move |_| load_next()
-            class="rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
-          >
+          <Button variant=Variant::Outline on_click=Callback::new(move |_| load_next())>
             {move || t("exam.next")}
-          </button>
+          </Button>
           <div class="text-xs text-muted-foreground">
             {move || t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
             {move || t("common.wrong-2")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>

@@ -9,12 +9,14 @@ mod koch_trainer;
 mod morse_card;
 mod morse_page;
 mod morse_trainer;
+mod pill_button;
 mod send_trainer;
 mod signal_bars;
 mod stats_panel;
 mod word_copy;
 
 pub use morse_page::MorsePage;
+pub use pill_button::PillButton;
 
 use std::collections::HashMap;
 

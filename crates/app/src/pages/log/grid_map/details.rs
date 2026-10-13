@@ -7,6 +7,7 @@ use super::super::grid_fill::band_color;
 use super::super::grid_geo::{square_center, square_label};
 use super::state::GridMapState;
 use crate::i18n::{t, tf, tp};
+use crate::ui::{Button, Size, Variant};
 
 #[component]
 pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
@@ -17,7 +18,14 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
     <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
       <span class="flex items-center gap-1.5">
         <span class="text-muted-foreground">{move || t("log.density")}</span>
-        <span class="inline-block h-2 w-24 rounded-full bg-gradient-to-r from-primary/15 to-primary"></span>
+        // 分级色块而不是渐变条：地图填充本来就是按密度分档的（见 `fill_classes`），
+        // 且像素规范里零渐变（`docs/ui-components.md` §2）。
+        <span class="flex h-2 w-24">
+          <span class="h-2 flex-1 bg-primary/15"></span>
+          <span class="h-2 flex-1 bg-primary/40"></span>
+          <span class="h-2 flex-1 bg-primary/70"></span>
+          <span class="h-2 flex-1 bg-primary"></span>
+        </span>
         <span>{move || t("log.low-high")}</span>
       </span>
       <span class="flex items-center gap-1.5">
@@ -76,13 +84,13 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
           <div class="mt-2 rounded-lg border bg-muted/30 p-3">
             <div class="mb-2 flex items-center justify-between text-xs">
               <span class="font-semibold">{tf("log.grid-2", &[&(format!("{f_lon}{f_lat}")).to_string()])}</span>
-              <button
-                type="button"
-                class="text-muted-foreground transition-colors hover:text-foreground"
-                on:click=move |_| state.selected.set(None)
+              <Button
+                variant=Variant::Text
+                size=Size::Xs
+                on_click=Callback::new(move |_| state.selected.set(None))
               >
                 {move || t("log.close")}
-              </button>
+              </Button>
             </div>
             <div class="flex flex-wrap gap-1.5">
               {list
@@ -128,13 +136,13 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
                   tp("log.grid-qsos", list.len(), &[&(label).to_string(), &list.len().to_string()])
                 }}
               </span>
-              <button
-                type="button"
-                class="text-muted-foreground transition-colors hover:text-foreground"
-                on:click=move |_| state.selected_square.set(None)
+              <Button
+                variant=Variant::Text
+                size=Size::Xs
+                on_click=Callback::new(move |_| state.selected_square.set(None))
               >
                 {move || t("log.close")}
-              </button>
+              </Button>
             </div>
             {bearing_line.map(|line| {
               view! {

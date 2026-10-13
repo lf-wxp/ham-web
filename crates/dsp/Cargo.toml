@@ -1,0 +1,16 @@
+[package]
+name = "ham-web-dsp"
+description = "解码器共用的小型 DSP 原语（Goertzel 单频功率）：纯 Rust，无外部依赖"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+# 许可：MIT。GPL-3.0 的解码 crate（dominoex / navtex）可以依赖它，反过来不行 ——
+# 所以这里只放自己写的、不含任何 GPL 转写代码的通用原语。
+[dependencies]
+
+[lints]
+workspace = true
