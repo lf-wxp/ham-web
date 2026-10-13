@@ -65,7 +65,7 @@ pub(super) fn QslBadge(status: QslStatus) -> impl IntoView {
   };
   view! {
     <span class=format!(
-      "inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-medium {}",
+      "inline-flex items-center gap-1 whitespace-nowrap px-2 py-0.5 text-xs font-medium {}",
       tone_class(status.tone()),
     )>
       {move || status_label(status)}

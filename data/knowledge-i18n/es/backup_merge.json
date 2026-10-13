@@ -1,0 +1,20 @@
+{
+  "{ 也坏的": "{ también defectuoso",
+  "{ 写到一半的 JSON": "{ JSON escrito a medias",
+  "{ 坏的": "{ defectuoso",
+  "中文\"": "Chino \"",
+  "反序列化": "Deserialización",
+  "可合并": "Fusionable",
+  "台站档案册应当可合并": "El libro de perfiles de estación debería poder fusionarse",
+  "备份里的野外台站要带过来": "La estación de campo de la copia debe incorporarse",
+  "家里那条去重、野外那条新增": "La de casa se deduplica y la de campo se añade",
+  "序列化备份": "Serialización de la copia",
+  "序列化本机": "Serialización de los datos locales",
+  "当前台站仍取本机": "La estación actual sigue tomándose de los datos locales",
+  "旧备份不能让本机掉星": "Una copia antigua no debe quitar estrellas a los datos locales",
+  "本机损坏时要采纳备份": "Si los datos locales están dañados, se adopta la copia",
+  "本机那条": "El registro local",
+  "正确率不能超过 100%": "La tasa de acierto no puede superar el 100 %",
+  "没有日期就谈不上重复，一律并入": "Sin fecha no hay duplicado: se incorpora todo",
+  "饱和而不是回绕": "Saturar en lugar de desbordar"
+}

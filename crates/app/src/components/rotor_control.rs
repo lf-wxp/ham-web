@@ -213,7 +213,7 @@ pub fn RotorControl() -> impl IntoView {
   let busy = move || matches!(status.get(), Status::Connected | Status::Connecting);
 
   view! {
-    <div class="flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
+    <div class="flex flex-wrap items-center gap-2 border border-dashed px-3 py-2 text-xs text-muted-foreground">
       <span class="font-medium text-foreground">{t("radio.antenna-rotator")}</span>
       {if supported {
         view! {

@@ -118,10 +118,10 @@ pub fn CallsignCopyPage() -> impl IntoView {
       />
 
       <PageContainer class="space-y-4">
-        <section class="rounded-xl border bg-card p-5">
+        <section class="pxl-card border bg-card p-5">
           <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-            <span>{move || t("common.correct-3")} <span class="font-semibold text-emerald-600">{correct.get()}</span> {" / "} {total.get()}</span>
-            <span>{move || t("morse.streak-2")} <span class="font-semibold text-foreground">{streak.get()}</span> {move || t("exam.questions")}</span>
+            <span>{move || t("common.correct-label")} <span class="font-semibold text-emerald-600">{correct.get()}</span> {" / "} {total.get()}</span>
+            <span>{move || t("morse.streak-count")} <span class="font-semibold text-foreground">{streak.get()}</span> {move || t("exam.questions")}</span>
           </div>
 
           // 刻意的例外：这两个模式按钮靠切换 `variant` 表示当前选中，而 `Button` 的
@@ -225,7 +225,7 @@ pub fn CallsignCopyPage() -> impl IntoView {
           </div>
         </section>
 
-        <details class="rounded-xl border bg-card">
+        <details class="pxl-card border bg-card">
           <summary class="cursor-pointer px-4 py-3 text-sm font-semibold">{move || t("morse.phonetic-alphabet-reference")}</summary>
           <div class="grid grid-cols-2 gap-x-6 gap-y-1 px-4 pb-4 sm:grid-cols-3">
             {PHONETIC

@@ -73,7 +73,7 @@ pub fn StudyPlanCard(
       Phase::Over => t("common.the-exam-date-has"),
       Phase::ExamDay => t("common.exam-today-good-luck"),
       Phase::Sprint => tp(
-        "common.days-until-the-class-2",
+        "common.days-until-the-class-sprint",
         g.days_left,
         &[&b.to_string(), &g.days_left.to_string()],
       ),

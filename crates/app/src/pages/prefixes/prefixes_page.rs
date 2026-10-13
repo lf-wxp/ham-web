@@ -27,7 +27,7 @@ pub fn PrefixesPage() -> impl IntoView {
           .iter()
           .map(|g| {
             view! {
-              <section class="rounded-xl border bg-card">
+              <section class="pxl-card border bg-card">
                 <h2 class="border-b px-4 py-3 text-sm font-semibold">
                   {g.region}
                   <span class="ml-2 text-xs font-normal text-muted-foreground">
@@ -40,7 +40,7 @@ pub fn PrefixesPage() -> impl IntoView {
                     .iter()
                     .map(|p| {
                       view! {
-                        <div class="flex items-baseline gap-2 rounded-lg px-2 py-1.5">
+                        <div class="flex items-baseline gap-2 px-2 py-1.5">
                           <span class="w-32 shrink-0 font-mono text-sm font-semibold text-primary">{p.prefix}</span>
                           <span class="text-sm text-muted-foreground">{p.entity}</span>
                         </div>

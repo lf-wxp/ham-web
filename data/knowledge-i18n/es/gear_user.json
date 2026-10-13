@@ -1,0 +1,16 @@
+{
+  "200 dB 的动态范围不存在": "No existe un rango dinámico de 200 dB",
+  "{} set 后读不回来": "{} no se puede leer tras asignarlo",
+  "{} 初始应为空": "{} debería estar vacío inicialmente",
+  "{} 清空后记录应为空": "Tras vaciar, el registro {} debería quedar vacío",
+  "{} 清空失败": "No se pudo vaciar {}",
+  "{} 被别的字段覆盖了": "{} fue sobrescrito por otro campo",
+  "一条数值都不剩时不该留空壳": "Sin ningún valor no debe quedar un registro vacío",
+  "反序列化": "Deserialización",
+  "序列化": "Serialización",
+  "整机电流不会是 0": "La corriente total no puede ser 0",
+  "未知 key 不该写进记录": "Una clave desconocida no debe escribirse en el registro",
+  "没填就是空串": "Sin rellenar es cadena vacía",
+  "没有实测值就不该凭空造一条记录": "Sin valores medidos no debe inventarse un registro",
+  "缺字段也能读": "Legible aunque falten campos"
+}

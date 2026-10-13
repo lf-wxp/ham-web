@@ -250,7 +250,7 @@ pub fn ContestLogPage() -> impl IntoView {
 
       <PageContainer class="space-y-5">
         {move || my_call.get().is_empty().then(|| view! {
-          <p class="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
+          <p class="border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
             {move || t("contest.station-callsign-not-set")}
             " "
             <a href="/log" class="font-medium underline underline-offset-4">{move || t("contest.qso-log-station-info")}</a>
@@ -259,7 +259,7 @@ pub fn ContestLogPage() -> impl IntoView {
           </p>
         })}
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.contest-setup")}</h2>
           <div class="px-4 pt-4">
             <CatControl on_reading=move |r: CatReading| {
@@ -378,7 +378,7 @@ pub fn ContestLogPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card p-4">
+        <section class="pxl-card border bg-card p-4">
           <form
             class="grid gap-3 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end"
             on:submit=move |e| {
@@ -420,14 +420,14 @@ pub fn ContestLogPage() -> impl IntoView {
               />
             </Field>
             <Field label=Signal::derive(move || t("contest.sent"))>
-              <div class="flex h-12 items-center rounded-md border bg-muted/40 px-3 font-mono text-lg tabular-nums text-foreground">
+              <div class="flex h-12 items-center border bg-muted/40 px-3 font-mono text-lg tabular-nums text-foreground">
                 {move || format!("{} {}", default_rst(&session.with(Session::mode)), sent_exch())}
               </div>
             </Field>
             <Field
               label=Signal::derive(move || {
                 // 同「我发出的」：交换名先翻一遍再套模板。
-                tf("contest.received-2", &[&t(session.with(|s| s.def().rcvd.label()))])
+                tf("contest.received-field", &[&t(session.with(|s| s.def().rcvd.label()))])
               })
               r#for=rcvd_id.clone()
             >
@@ -440,7 +440,7 @@ pub fn ContestLogPage() -> impl IntoView {
                 autocomplete="off"
                 spellcheck="false"
                 aria_label=Signal::derive(move || {
-                  tf("contest.received-2", &[&t(session.with(|s| s.def().rcvd.label()))])
+                  tf("contest.received-field", &[&t(session.with(|s| s.def().rcvd.label()))])
                 })
                 size=ControlSize::Lg
                 class="h-12 w-28 px-3 font-mono text-2xl md:text-2xl font-semibold uppercase"
@@ -474,11 +474,11 @@ pub fn ContestLogPage() -> impl IntoView {
           <Stat label=t("contest.claimed-score") value=Signal::derive(move || tally.get().total as usize) />
         </div>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class="mr-auto text-sm font-semibold">{move || t("contest.session-qsos")}</h2>
             {move || per_band.get().into_iter().map(|(b, n)| view! {
-              <span class="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">{format!("{b} {n}")}</span>
+              <span class="border px-2 py-0.5 text-xs text-muted-foreground">{format!("{b} {n}")}</span>
             }).collect_view()}
           </div>
           <div class="overflow-x-auto">

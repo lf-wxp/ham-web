@@ -150,14 +150,14 @@ pub(super) fn FilterDesign() -> impl IntoView {
         }}
       </div>
 
-      <div class="overflow-x-auto rounded-lg border">
+      <div class="overflow-x-auto border">
         <table class="w-full min-w-[480px] border-collapse text-sm">
           <thead class="bg-muted/60 text-xs">
             <tr>
               <th class="border px-3 py-2 text-left">{move || t("tools.stage")}</th>
               <th class="border px-3 py-2 text-left">{move || t("tools.position")}</th>
               <th class="border px-3 py-2 text-left">{move || t("tools.in-arm-configuration")}</th>
-              <th class="border px-3 py-2 text-left">{move || t("tools.inductance-h-2")}</th>
+              <th class="border px-3 py-2 text-left">{move || t("tools.inductance-h-label")}</th>
               <th class="border px-3 py-2 text-left">{move || t("tools.capacitance-pf")}</th>
             </tr>
           </thead>

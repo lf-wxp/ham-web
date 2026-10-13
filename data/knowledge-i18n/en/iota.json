@@ -1,0 +1,15 @@
+{
+  "Islands On The Air，英国 RSGB 主办的海岛通联奖状计划。": "Islands On The Air: an island award programme run by the RSGB of Great Britain.",
+  "与海岛台通联以收集岛组，满足奖状要求。": "Works island stations to collect groups and meet the award requirements.",
+  "全球海岛按地理分组编号，如 AS-xxx（亚洲）、OC-xxx（大洋洲）。": "Islands worldwide are numbered in geographical groups, e.g. AS-xxx (Asia), OC-xxx (Oceania).",
+  "奖状": "Awards",
+  "岛组编号": "Island group reference",
+  "岛组编号与 DXCC 实体不同，同一实体可能有多个岛组。": "Group references differ from DXCC entities — one entity may contain several groups.",
+  "海岛台呼号常带 /P（便携/登岛）；/MM 表示海上移动，不属海岛设台。通联前确认其所在岛组编号。": "Island stations often use /P (portable / on the island); /MM means maritime mobile and is not island operation. Confirm the group reference before the contact.",
+  "激活者": "Activator",
+  "登岛设台的电台，可激活岛组并积累积分。": "A station that lands on an island and operates, activating the group and accumulating points.",
+  "稀有岛组远征同样会形成 pileup，遵守分裂操作礼仪。": "Rare island DXpeditions also create pile-ups, so observe split operating etiquette.",
+  "记录岛组编号，配合日志软件与奖状追踪工具。": "Record the group reference, using logging software and award tracking tools.",
+  "追逐者": "Chaser",
+  "通联规定数量的岛组可获得 IOTA 奖状与奖牌。": "Working the required number of island groups earns the IOTA award and medals."
+}

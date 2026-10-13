@@ -11,16 +11,16 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn AwardsPage() -> impl IntoView {
-  set_title("shell.dx-awards-2");
+  set_title("shell.dx-awards-title");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader
-        title=move || t("shell.dx-awards-2")
+        title=move || t("shell.dx-awards-title")
         subtitle=move || t("log.dxcc-waz-all-cq")
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("log.major-international-awards")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[720px] border-collapse text-sm">

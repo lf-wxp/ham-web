@@ -39,7 +39,7 @@ pub fn RadioLawPage() -> impl IntoView {
           .iter()
           .map(|law| {
             view! {
-              <section class="rounded-xl border bg-card">
+              <section class="pxl-card border bg-card">
                 <div class="flex flex-wrap items-baseline gap-2 border-b px-4 py-3">
                   <h2 class="text-sm font-semibold">{law.title}</h2>
                   <span class="text-xs text-muted-foreground">
@@ -73,7 +73,7 @@ pub fn RadioLawPage() -> impl IntoView {
                                 <div
                                   // 锚点带法律 key：办法与条例都有「第30条」，不带会撞。
                                   id=format!("{}-{number}", law.key)
-                                  class="scroll-mt-20 rounded-lg px-3 py-2 transition-colors hover:bg-muted/40"
+                                  class="scroll-mt-20 px-3 py-2 transition-colors hover:bg-muted/40"
                                 >
                                   <div class="flex flex-wrap items-baseline gap-2">
                                     <span class="text-sm font-semibold">

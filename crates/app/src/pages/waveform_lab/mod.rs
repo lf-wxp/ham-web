@@ -21,7 +21,7 @@ use symbol_section::SymbolSection;
 use wave_section::WaveSection;
 
 /// 结果条。
-pub(super) const RESULT: &str = "rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
+pub(super) const RESULT: &str = "bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
 /// 说明文字。
 pub(super) const NOTE: &str = "text-xs text-muted-foreground";
 /// 绘图区外层容器。

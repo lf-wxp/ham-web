@@ -1,0 +1,21 @@
+{
+  "CQ {cq} 区应包含日本": "La zona CQ {cq} debería incluir Japón",
+  "CQ 分区": "Zonas CQ",
+  "DXCC 实体是奖状单位（政治 / 地理划分），分区是地理带的编号，二者并不一一对应。": "La entidad DXCC es una unidad de diploma (división política / geográfica), mientras que la zona numera una franja geográfica: ambas no se corresponden una a una.",
+  "ITU {itu} 区应包含日本": "La zona UIT {itu} debería incluir Japón",
+  "ITU 分区": "Zonas UIT",
+  "ITU 分区常用于频率协调与官方文书，日常通联交换的通常是 CQ 分区。": "Las zonas UIT se usan en la coordinación de frecuencias y en los documentos oficiales; en los contactos cotidianos suele intercambiarse la zona CQ.",
+  "WAZ 奖状要求通联全部 40 个 CQ 分区；用本图对照日志查看缺口。": "El diploma WAZ exige contactar las 40 zonas CQ; compare su diario con este mapa para ver qué le falta.",
+  "{label} 分区计数之和应等于全部实体数": "La suma de los recuentos de zona {label} debería ser igual al número total de entidades",
+  "与 DXCC 的区别": "Diferencia respecto de DXCC",
+  "中国大陆横跨 CQ 23 / 24 区与 ITU 33、42–44 区（西部含 33 区）；香港、澳门、台湾各有自己的分区。": "La China continental abarca las zonas CQ 23 / 24 y las zonas UIT 33 y 42–44 (la zona 33 corresponde al extremo occidental); Hong Kong, Macao y Taiwán tienen cada una su propia zona.",
+  "中国所在分区": "Zonas en las que se ubica China",
+  "全世界划分为 40 个 CQ 分区，是 WAZ（通联全部 CQ 分区）奖状与竞赛交换信息的基础。": "El mundo se divide en 40 zonas CQ, base del diploma WAZ (Worked All Zones) y del intercambio en los concursos.",
+  "全世界划分为 90 个 ITU 分区，源自国际电信联盟的频率与呼号管理划分。": "El mundo se divide en 90 zonas UIT, derivadas de la división de frecuencias e indicativos de la Unión Internacional de Telecomunicaciones.",
+  "地图的近似性": "Carácter aproximado del mapa",
+  "日本": "Japón",
+  "日本分区": "Zonas de Japón",
+  "本图按每个 DXCC 实体的主分区着色；俄罗斯、美国、中国等横跨多个分区的大国会被整体归入一个分区。": "Este mapa se colorea según la zona principal de cada entidad DXCC; los países grandes que abarcan varias zonas, como Rusia, Estados Unidos y China, se asignan en conjunto a una sola zona.",
+  "竞赛中常需交换 CQ 分区号，可在「呼号查询」页输入呼号直接读出。": "En los concursos suele intercambiarse el número de zona CQ; puede leerlo directamente introduciendo el indicativo en la página «Consulta de indicativos».",
+  "跨分区的大国以主分区编号为准，边境操作时以执照与本地约定为准。": "En los países grandes que abarcan varias zonas se aplica el número de zona principal; al operar cerca de una frontera, rigen su licencia y las prácticas locales."
+}

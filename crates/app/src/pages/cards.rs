@@ -250,7 +250,7 @@ pub fn CardsPage() -> impl IntoView {
     let label = view! {
       {move || t(d.label())}
       {move || (due() > 0).then(|| view! {
-        <span class="rounded-full bg-amber-500/20 px-1.5 tabular-nums text-amber-800 dark:text-amber-300">{due()}</span>
+        <span class="bg-amber-500/20 px-1.5 tabular-nums text-amber-800 dark:text-amber-300">{due()}</span>
       })}
     }
       .into_any();
@@ -294,7 +294,7 @@ pub fn CardsPage() -> impl IntoView {
       view! {
         <div
           data-testid="card-mastery-bar"
-          class="flex h-2 w-full overflow-hidden rounded-full bg-muted"
+          class="flex h-2 w-full overflow-hidden bg-muted"
           title=tf("learning.learned-mature", &[&learned.to_string(), &mature.to_string()])
         >
           <div class="bg-emerald-500/70" style=format!("width: {}", pct(mature))></div>
@@ -328,7 +328,7 @@ pub fn CardsPage() -> impl IntoView {
                 size=Size::Sm
                 on_click=Callback::new(move |_| deck.set(d))
               >
-                {tf("common.review-2", &[(d.label()), &(n).to_string()])}
+                {tf("common.review-with-count", &[(d.label()), &(n).to_string()])}
               </Button>
             }).collect_view()}
           </div>
@@ -347,7 +347,7 @@ pub fn CardsPage() -> impl IntoView {
         </div>
         <button
           type="button"
-          class="flex min-h-48 w-full flex-col items-center justify-center gap-2 rounded-xl border bg-card p-6 text-center shadow-sm"
+          class="flex min-h-48 w-full flex-col items-center justify-center gap-2 pxl-card border bg-card p-6 text-center shadow-sm"
           aria-label=if revealed.get_untracked() { t("knowledge.back-of-the-card") } else { t("knowledge.flip-to-see-the") }
           on:click=move |_| reveal()
         >
@@ -401,7 +401,7 @@ pub fn CardsPage() -> impl IntoView {
             disabled=Signal::derive(move || !revealed.get())
             on_click=Callback::new(move |_| grade(Grade::Good))
           >
-            {move || t("exam.remember-2")} <kbd class="ml-1 hidden text-xs opacity-70 sm:inline">"3"</kbd>
+            {move || t("exam.remember-button")} <kbd class="ml-1 hidden text-xs opacity-70 sm:inline">"3"</kbd>
           </Button>
         </div>
         <p class="text-center text-xs text-muted-foreground">{move || t("exam.after-flipping-swipe-right")}</p>

@@ -84,6 +84,21 @@ pub const fn is_cjk(c: char) -> bool {
   )
 }
 
+/// 字符是否是汉字（不含 CJK 标点与全角符号）。
+///
+/// 与 [`is_cjk`] 的分工：那个判「是不是中文文本」（标点也算，用来区分语义 key 与中文原文），
+/// 这个判「有没有需要翻译的汉字」—— 只有 `（）`、`、`、`　` 这类标点的字面量是排版胶水，
+/// 按语言各写各的标点即可，不必（也不该）进词典。
+#[must_use]
+pub const fn is_han(c: char) -> bool {
+  matches!(
+    c,
+    '\u{3400}'..='\u{4DBF}'   // 扩展 A
+      | '\u{4E00}'..='\u{9FFF}' // 基本区
+      | '\u{F900}'..='\u{FAFF}' // 兼容汉字
+  )
+}
+
 /// 字符串里是否含 CJK 字符 —— 用来区分「语义 key」与「直接写中文原文」。
 ///
 /// 只认基本区（`U+4E00–U+9FFF`）会漏掉三类入参：CJK 标点 / 全角符号、扩展 A 区汉字、
@@ -94,6 +109,14 @@ pub const fn is_cjk(c: char) -> bool {
 #[must_use]
 pub fn has_cjk(s: &str) -> bool {
   s.chars().any(is_cjk)
+}
+
+/// 字符串里是否含汉字（见 [`is_han`]）。
+///
+/// 构建工具用它对「这条文案要不要有译文」下判断：纯标点 / 全角符号的拼接模板不算文案。
+#[must_use]
+pub fn has_han(s: &str) -> bool {
+  s.chars().any(is_han)
 }
 
 /// 逐字符转大写（每个字符只取单字符大写结果），保证字符数量不变，便于做位置对齐的高亮。
@@ -152,6 +175,28 @@ mod tests {
       assert!(has_cjk(s), "{name} {s} 应判为含 CJK");
       assert!(is_cjk(s.chars().next().expect("非空")), "{name}");
     }
+  }
+
+  #[test]
+  fn han_detection_ignores_punctuation_only_literals() {
+    // 汉字就算（含扩展 A / 兼容区）。
+    for s in ["保存", "\u{4E00}", "\u{3400}", "\u{F900}", "\u{4E00}()"] {
+      assert!(has_han(s), "{s} 应判为含汉字");
+    }
+    // 纯标点 / 全角符号 / 拉丁：排版胶水，不该进词典。
+    for s in [
+      "",
+      "、",
+      "（）",
+      "\u{3000}",
+      "{}/{}（{:.0}%）",
+      "Class B",
+      "Ω",
+    ] {
+      assert!(!has_han(s), "{s} 不应判为含汉字");
+    }
+    // 与 has_cjk 的分界：标点不算 han，但仍是 CJK。
+    assert!(has_cjk("、") && !has_han("、"));
   }
 
   #[test]

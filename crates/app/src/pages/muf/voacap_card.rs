@@ -98,7 +98,7 @@ pub(super) fn VoacapCard() -> impl IntoView {
   };
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.point-to-point-propagation")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("tools.enter-both-grids-month")}
@@ -221,7 +221,7 @@ pub(super) fn VoacapCard() -> impl IntoView {
                         view! {
                           <div class="flex items-center gap-2 text-sm">
                             <span class="w-12 shrink-0 font-medium">{b.band.clone()}</span>
-                            <div class="h-3 flex-1 overflow-hidden rounded bg-muted">
+                            <div class="h-3 flex-1 overflow-hidden bg-muted">
                               <div
                                 class=format!("h-full {}", if b.usable { "bg-emerald-500" } else { "bg-muted-foreground/30" })
                                 style=format!("width: {pct:.0}%")

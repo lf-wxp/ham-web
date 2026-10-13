@@ -23,7 +23,7 @@ pub(super) fn ScoreRow(
         <span class="truncate text-sm">{label}</span>
         {if insufficient {
           view! {
-            <span class="shrink-0 rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground">
+            <span class="shrink-0 border px-2 py-0.5 text-[10px] text-muted-foreground">
               {move || t("knowledge.score-insufficient")}
             </span>
           }

@@ -2,8 +2,10 @@
 //!
 //! 同一份 SVG 产出两类图标：
 //!
-//! - **圆角版**（`pwa-icon-*`）：保留设计好的品牌圆角，供 manifest 的 `any`、
-//!   `favicon` 与社交分享图（`og:image`）使用 —— 这些场景不会替我们裁切；
+//! - **圆角版**（`pwa-icon-*`、`favicon.ico`）：保留设计好的品牌圆角，供 manifest 的
+//!   `any`、`favicon` 与社交分享图（`og:image`）使用 —— 这些场景不会替我们裁切；
+//!   `favicon.ico` 是个容器，把 [`FAVICON`] 里的几档尺寸打包成单个文件，其中 16px
+//!   一档用的是对齐到像素格的简化图形（母版缩到 16px 会糊，见该文件里的注释）；
 //! - **满幅版**（`apple-touch-icon-*`、`pwa-maskable-*`）：不带圆角的不透明方形，
 //!   圆角交给各平台的遮罩去加。
 //!
@@ -31,6 +33,13 @@ const BLEED: &[(&str, u32)] = &[
   ("pwa-maskable-512.png", 512),
 ];
 
+/// `favicon.ico` 里打包的 `(图形文件, 尺寸)`：浏览器标签页、书签栏与桌面快捷方式取用的几档。
+const FAVICON: &[(&str, u32)] = &[
+  ("favicon-16.svg", 16),
+  ("pwa-icon.svg", 32),
+  ("pwa-icon.svg", 48),
+];
+
 pub fn generate(paths: &Paths) -> Result<()> {
   let svg_path = paths.public.join("pwa-icon.svg");
   let svg = fs::read_to_string(&svg_path)
@@ -43,37 +52,77 @@ pub fn generate(paths: &Paths) -> Result<()> {
   for &(name, px) in BLEED {
     save(&paths.public, name, px, &bleed_svg)?;
   }
+  write_ico(&paths.public, FAVICON)?;
   println!("All PWA icons generated successfully!");
   Ok(())
 }
 
-/// 把圆角 SVG 转成满幅 SVG：在 `<defs>` 之后补两块铺满画布的背景。
+/// 把圆角 SVG 转成满幅 SVG：在 `<defs>` 之后补一块铺满画布的背景。
 ///
-/// 背景渐变用的是默认的 `objectBoundingBox` 单位，而原背景矩形本来也是铺满画布
-/// 的大小（`512×512`），所以补上去的矩形与原图渐变坐标完全一致 —— 只是多填了原
-/// 圆角以外的区域，不会出现接缝。这里用 `100%` 而不是写死边长，避免 SVG 换尺寸后
-/// 悄悄错位；`<defs>` 或渐变 id 不在时直接报错，免得改坏 SVG 后静默生成一张四角
-/// 仍然透明的「满幅」图标。
+/// 补上去的矩形与图面背景同色（同一个 `#bg`），只是多填了原圆角以外的区域，
+/// 不会出现接缝。这里用 `100%` 而不是写死边长，避免 SVG 换尺寸后悄悄错位；
+/// `<defs>` 或 `#bg` 不在时直接报错，免得改坏 SVG 后静默生成一张四角仍然透明的
+/// 「满幅」图标。
 fn bleed(svg: &str) -> Result<String> {
   const MARK: &str = "</defs>";
   let end = svg
     .find(MARK)
     .map(|i| i + MARK.len())
     .ok_or_else(|| anyhow!("pwa-icon.svg missing {MARK}"))?;
-  ensure!(
-    svg.contains(r#"id="bg""#),
-    "pwa-icon.svg missing #bg gradient"
-  );
-  ensure!(
-    svg.contains(r#"id="sheen""#),
-    "pwa-icon.svg missing #sheen gradient"
-  );
-  let layer = "\n  <!-- 满幅背景：由 `cargo make icons` 注入，仅供 Apple Touch / maskable 图标 -->\n  <rect width=\"100%\" height=\"100%\" fill=\"url(#bg)\"/>\n  <rect width=\"100%\" height=\"100%\" fill=\"url(#sheen)\"/>";
+  ensure!(svg.contains(r#"id="bg""#), "pwa-icon.svg missing #bg fill");
+  let layer = "\n  <!-- 满幅背景：由 `cargo make icons` 注入，仅供 Apple Touch / maskable 图标 -->\n  <rect width=\"100%\" height=\"100%\" fill=\"url(#bg)\"/>";
   Ok(format!("{}{layer}{}", &svg[..end], &svg[end..]))
 }
 
-/// 按 `px×px` 渲染 `svg`，写入 `dir/name`。
-fn save(dir: &Path, name: &str, px: u32, svg: &str) -> Result<()> {
+/// 按 [`FAVICON`] 逐档渲染并打包成 `favicon.ico`。
+///
+/// 条目里嵌的是 PNG（而不是老式的 BMP + AND 掩码）：resvg 本来就产出 PNG，直接嵌省事，
+/// 半透明与体积也更好。读不了 PNG 条目的只有 IE11 之前的浏览器，而这个站是 wasm 应用，
+/// 本来就不支持它们。
+fn write_ico(public: &Path, entries: &[(&str, u32)]) -> Result<()> {
+  let mut sizes = Vec::with_capacity(entries.len());
+  let mut pngs = Vec::with_capacity(entries.len());
+  for &(file, px) in entries {
+    let svg_path = public.join(file);
+    let svg = fs::read_to_string(&svg_path)
+      .with_context(|| format!("failed to read {}", svg_path.display()))?;
+    sizes.push(px);
+    pngs.push(render_png(&svg, px)?);
+  }
+  let path = public.join("favicon.ico");
+  fs::write(&path, pack_ico(&sizes, &pngs))
+    .with_context(|| format!("failed to write {}", path.display()))?;
+  println!("Generated favicon.ico（{sizes:?}）");
+  Ok(())
+}
+
+/// 按 ICO 容器格式拼字节：`ICONDIR` + 每档一条 `ICONDIRENTRY` + 依次排布的 PNG 负载。
+fn pack_ico(sizes: &[u32], pngs: &[Vec<u8>]) -> Vec<u8> {
+  assert_eq!(sizes.len(), pngs.len(), "ICO 尺寸与渲染结果数量不一致");
+  let head = 6 + 16 * sizes.len();
+  let mut out = Vec::with_capacity(head + pngs.iter().map(Vec::len).sum::<usize>());
+  out.extend_from_slice(&0u16.to_le_bytes()); // 保留字段
+  out.extend_from_slice(&1u16.to_le_bytes()); // 1 = 图标（2 = 光标）
+  out.extend_from_slice(&(sizes.len() as u16).to_le_bytes());
+  let mut offset = head as u32;
+  for (&px, png) in sizes.iter().zip(pngs) {
+    // 宽高各占一个字节，256 按约定写成 0；这里没有这么大的一档，真加了也得照规矩写。
+    let dim = if px == 256 { 0 } else { px as u8 };
+    out.extend_from_slice(&[dim, dim, 0, 0]);
+    out.extend_from_slice(&1u16.to_le_bytes()); // 色平面数
+    out.extend_from_slice(&32u16.to_le_bytes()); // 每像素位数
+    out.extend_from_slice(&(png.len() as u32).to_le_bytes());
+    out.extend_from_slice(&offset.to_le_bytes());
+    offset += png.len() as u32;
+  }
+  for png in pngs {
+    out.extend_from_slice(png);
+  }
+  out
+}
+
+/// 渲染 `svg` 到 `px×px` 的 PNG 字节。
+fn render_png(svg: &str, px: u32) -> Result<Vec<u8>> {
   let tree =
     usvg::Tree::from_data(svg.as_bytes(), &usvg::Options::default()).context("invalid svg")?;
   let size = tree.size();
@@ -81,9 +130,13 @@ fn save(dir: &Path, name: &str, px: u32, svg: &str) -> Result<()> {
   let transform =
     tiny_skia::Transform::from_scale(px as f32 / size.width(), px as f32 / size.height());
   resvg::render(&tree, transform, &mut pixmap.as_mut());
+  pixmap.encode_png().context("failed to encode png")
+}
+
+/// 按 `px×px` 渲染 `svg`，写入 `dir/name`。
+fn save(dir: &Path, name: &str, px: u32, svg: &str) -> Result<()> {
   let out = dir.join(name);
-  pixmap
-    .save_png(&out)
+  fs::write(&out, render_png(svg, px)?)
     .with_context(|| format!("failed to write {}", out.display()))?;
   println!("Generated {px}x{px} {name}");
   Ok(())
@@ -94,6 +147,20 @@ mod tests {
   use super::*;
 
   const SRC: &str = include_str!("../../../public/pwa-icon.svg");
+  /// 16px 档专用的简化图形。
+  const SMALL: &str = include_str!("../../../public/favicon-16.svg");
+
+  /// 取 [`FAVICON`] 某一档用的图形内容。
+  ///
+  /// 新增图形文件却忘了在测试里登记时会 panic —— 提醒补上对应的 const 与断言，
+  /// 而不是让新图形悄悄溜过检查。
+  fn artwork(file: &str) -> &'static str {
+    match file {
+      "favicon-16.svg" => SMALL,
+      "pwa-icon.svg" => SRC,
+      other => panic!("未知图形文件 {other}"),
+    }
+  }
 
   /// 渲染 `px×px` 后取 `(x, y)` 处像素（用于断言四角是否透明）。
   fn pixel_at(svg: &str, px: u32, x: u32, y: u32) -> tiny_skia::PremultipliedColorU8 {
@@ -141,6 +208,82 @@ mod tests {
         "({x},{y}) 两版渲染结果应当一致"
       );
     }
+  }
+
+  /// 背景是纯色品牌底：贴边采样与品牌蓝一致 —— 防止有人再往图里加暗色外框或高光渐层。
+  #[test]
+  fn background_is_flat_brand_color() {
+    for (x, y) in [(256, 4), (4, 256), (508, 256), (256, 508), (256, 430)] {
+      let p = pixel_at(SRC, 512, x, y);
+      assert_eq!(
+        (p.red(), p.green(), p.blue(), p.alpha()),
+        (0x3b, 0x5d, 0xc9, 255),
+        "({x},{y}) 应为 #3b5dc9 纯色背景"
+      );
+    }
+  }
+
+  /// ICO 容器：条目表必须自洽（宽高、负载长度、偏移），否则浏览器会当坏文件整个忽略掉。
+  #[test]
+  fn ico_container_layout_is_consistent() {
+    let sizes = FAVICON.iter().map(|&(_, px)| px).collect::<Vec<_>>();
+    let pngs = FAVICON
+      .iter()
+      .map(|&(file, px)| render_png(artwork(file), px).unwrap())
+      .collect::<Vec<_>>();
+    let ico = pack_ico(&sizes, &pngs);
+
+    assert_eq!(
+      &ico[..6],
+      &[0x00, 0x00, 0x01, 0x00, sizes.len() as u8, 0x00],
+      "ICONDIR：保留字段 / 图标类型 / 条目数"
+    );
+    let mut offset = 6 + 16 * sizes.len();
+    for (i, (&px, png)) in sizes.iter().zip(&pngs).enumerate() {
+      let entry = &ico[6 + 16 * i..22 + 16 * i];
+      let u16_at = |k: usize| u16::from_le_bytes([entry[k], entry[k + 1]]);
+      let u32_at =
+        |k: usize| u32::from_le_bytes([entry[k], entry[k + 1], entry[k + 2], entry[k + 3]]);
+      assert_eq!((entry[0], entry[1]), (px as u8, px as u8), "第 {i} 项宽高");
+      assert_eq!((entry[2], entry[3]), (0, 0), "第 {i} 项调色板数 / 保留字段");
+      assert_eq!(u16_at(4), 1, "第 {i} 项色平面数");
+      assert_eq!(u16_at(6), 32, "第 {i} 项每像素位数");
+      assert_eq!(u32_at(8) as usize, png.len(), "第 {i} 项负载长度");
+      assert_eq!(u32_at(12) as usize, offset, "第 {i} 项偏移应当紧接上一项");
+      assert_eq!(
+        &ico[offset..offset + 8],
+        b"\x89PNG\r\n\x1a\n",
+        "第 {i} 项负载应当是 PNG"
+      );
+      offset += png.len();
+    }
+    assert_eq!(ico.len(), offset, "末尾不应有多余字节");
+  }
+
+  /// 16px 档必须整像素对齐：渲染成 16×16 后只该出现「底色蓝 / 前景白」两种颜色，
+  /// 冒出中间色就说明坐标又压到半像素上（母版直接缩到 16px 正是这个毛病）。
+  #[test]
+  fn favicon_16_stays_crisp() {
+    const BG: (u8, u8, u8, u8) = (0x3b, 0x5d, 0xc9, 255);
+    const FG: (u8, u8, u8, u8) = (0xf4, 0xf4, 0xf4, 255);
+    let at = |x: u32, y: u32| {
+      let p = pixel_at(SMALL, 16, x, y);
+      (p.red(), p.green(), p.blue(), p.alpha())
+    };
+
+    // 圆角裁切（rx=2）的四个角本来就有抗锯齿，取样避开它们。
+    for y in 2..14 {
+      for x in 2..14 {
+        let rgba = at(x, y);
+        assert!(
+          rgba == BG || rgba == FG,
+          "({x},{y}) 是 {rgba:?}：16px 图形只该有底色与前景两种颜色"
+        );
+      }
+    }
+    // 顺带确认图形没被删空：横梁左端是前景、肩部那条 1px 的缝是底色。
+    assert_eq!(at(2, 8), FG, "横梁左端");
+    assert_eq!(at(5, 6), BG, "肩部缝");
   }
 
   /// SVG 改坏时宁可报错，也不要静默产出一张四角透明的「满幅」图标。

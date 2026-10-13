@@ -73,7 +73,7 @@ pub(super) fn LinesSection(
   };
 
   view! {
-    <div class="space-y-2 rounded-xl border bg-card p-4">
+    <div class="space-y-2 pxl-card border bg-card p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <span class="text-sm font-semibold">{move || t("tools.nec-lines")}</span>
         <Button variant=Variant::Outline size=Size::Xs on_click=Callback::new(move |_| add(()))>

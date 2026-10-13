@@ -17,9 +17,9 @@ pub(super) fn bar_row(label: String, n: usize, target: usize) -> impl IntoView {
           {done.then(|| view! { <span class="ml-1.5 font-semibold text-emerald-600 dark:text-emerald-400">{move || t("log.achieved")}</span> })}
         </span>
       </div>
-      <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+      <div class="h-2 w-full overflow-hidden bg-muted">
         <div
-          class=if done { "h-full rounded-full bg-emerald-500" } else { "h-full rounded-full bg-primary" }
+          class=if done { "h-full bg-emerald-500" } else { "h-full bg-primary" }
           style=format!("width: {pct:.1}%")
         ></div>
       </div>

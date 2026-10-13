@@ -31,7 +31,7 @@ pub(super) fn CountdownSection() -> impl IntoView {
   let year = js_sys::Date::new_0().get_utc_full_year() as f64;
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.upcoming-contest-countdown-utc")}</h2>
       <div class="divide-y">
         {UPCOMING

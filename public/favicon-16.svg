@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <title>业余无线电</title>
+  <defs>
+    <!--
+      16px 专用图形：与 pwa-icon.svg 同一套构图，但坐标全部落在整像素上。
+
+      母版的坐标是 512 空间里的 32 的整数倍（112、208…），缩到 16px 就压在半像素上
+      （112/512 → 3.5px），细线被插值成灰边，标签页里看着是糊的；这里按 16px 直接取值
+      重画一遍（512 空间 ÷ 32 后取整），小尺寸下才立得住。
+
+      底色与母版 #bg 同色；改母版时要连这版一起看。
+    -->
+    <clipPath id="tile"><rect width="16" height="16" rx="2"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#tile)">
+    <rect width="16" height="16" fill="#3b5dc9"/>
+    <g fill="#f4f4f4">
+      <rect x="6" y="3" width="4" height="1"/>
+      <rect x="7" y="4" width="2" height="2"/>
+      <rect x="2" y="6" width="3" height="2"/>
+      <rect x="6" y="6" width="4" height="2"/>
+      <rect x="11" y="6" width="3" height="2"/>
+      <rect x="2" y="8" width="12" height="2"/>
+      <rect x="2" y="10" width="3" height="2"/>
+      <rect x="6" y="10" width="4" height="2"/>
+      <rect x="11" y="10" width="3" height="2"/>
+    </g>
+  </g>
+</svg>

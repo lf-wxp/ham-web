@@ -1,0 +1,12 @@
+{
+  "FT8/FT4 收发，与日志软件联动自动记录。": "FT8/FT4 transmit and receive, linked to the logging software for automatic recording.",
+  "WSJT-X 的 UDP 广播可与多数日志软件自动联动记录。": "WSJT-X's UDP broadcast links automatically with most logging software for recording.",
+  "弱信号模式": "Weak-signal modes",
+  "日常日志可导出 ADIF，导入 LoTW/eQSL 等确认。": "Everyday logs can be exported as ADIF and imported into LoTW/eQSL for confirmation.",
+  "最流行的竞赛日志软件，支持各种竞赛规则与 DX Cluster。": "The most popular contest logging software, supporting many contest rules and the DX cluster.",
+  "竞赛使用 N1MM+ 可自动评分、控制电台、连接 DX Cluster。": "For contests, N1MM+ gives automatic scoring, radio control and a DX cluster link.",
+  "竞赛日志": "Contest logging",
+  "老牌通用日志软件，功能全面。": "A long-established general logging program with a full feature set.",
+  "通用日志": "General logging",
+  "集成日志、遥控、数字模式的套件。": "A suite integrating logging, remote control and digital modes."
+}

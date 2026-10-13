@@ -1,0 +1,15 @@
+{
+  "10–20m，拉线固定": "10–20 m, con vientos",
+  "20m+，需基础与拉线": "Más de 20 m, con cimentación y vientos",
+  "临时架设，SOTA/POTA 常用。": "Instalación temporal, habitual en SOTA/POTA.",
+  "便携撑杆": "Mástil portátil",
+  "基地台常用，倒 V、偶极天线。": "Habitual en estaciones base para V invertida y dipolos.",
+  "大型八木、高增益定向天线。": "Yagis grandes y antenas direccionales de alta ganancia.",
+  "拉线用绝缘子分段，避免拉线感应电流影响天线方向图。": "Segmente los vientos con aisladores para que la corriente inducida no distorsione el diagrama.",
+  "数米，玻璃钢/铝管": "Pocos metros, fibra de vidrio o tubo de aluminio",
+  "架设远离电力线，雷雨天气停止操作并断开天线。": "Aléjese de las líneas eléctricas al instalar; con tormenta deje de operar y desconecte la antena.",
+  "桅杆": "Mástil",
+  "铁塔": "Torre",
+  "馈线进入室内前加装避雷器并就近接地。": "Instale un descargador antes de que la línea entre en el edificio y conéctelo a tierra cerca.",
+  "高度决定覆盖：VHF/UHF 天线越高越远，HF 则按波段选择合适高度。": "La altura determina la cobertura: en VHF/UHF, cuanto más alto más lejos; en HF, la altura adecuada depende de la banda."
+}

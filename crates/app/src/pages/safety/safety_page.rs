@@ -20,22 +20,22 @@ pub fn SafetyPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.basic-concepts")}</h2>
           <LabelList rows=SAR_CONCEPTS />
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.emf-exposure-limits-gb")}</h2>
           <LabelList rows=EXPOSURE_LIMITS />
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.safe-distance-reference")}</h2>
           <LabelList rows=SAFETY_DISTANCE />
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.safe-operating-notes")}</h2>
           <ul class="space-y-2 p-4">
             {SAFETY_TIPS
@@ -52,7 +52,7 @@ pub fn SafetyPage() -> impl IntoView {
           </ul>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.antenna-installation-safety")}</h2>
           <ul class="space-y-2 p-4">
             {ANTENNA_SAFETY

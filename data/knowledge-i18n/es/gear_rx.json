@@ -1,0 +1,17 @@
+{
+  "{id} 不该有接收机指标": "{id} no debería tener especificaciones de receptor",
+  "{} 不在器材库里：指标要挂在真实机型上": "{} no está en la base de equipos: las especificaciones deben ir en un modelo real",
+  "{} 属于 {}，原表不会测它": "{} pertenece a {}, y la tabla original no lo mide",
+  "{} 的动态范围 {value} 不像实测值": "{}: el rango dinámico {value} no parece un valor medido",
+  "{} 的噪声底 {} dBm 不像实测值": "El ruido de fondo de {} en {} dBm no parece un valor medido",
+  "{} 的型号写法（{}）与器材库（{}）对不上": "La forma del modelo ({}) de {} no coincide con la base de equipos ({})",
+  "{} 的测量日期晚于核对日期": "La fecha de medición de {} es posterior a la fecha de verificación",
+  "{} 的测量日期格式不对": "El formato de la fecha de medición de {} es incorrecto",
+  "{} 的窄间隔 {} kHz 超出原表的两种取值": "El intervalo estrecho de {} kHz de {} queda fuera de los dos valores de la tabla original",
+  "{} 的窄间隔（{}）比宽间隔（{}）还好，抄错了吧": "El intervalo estrecho ({}) de {} es mejor que el ancho ({}): debe de estar mal copiado",
+  "取数规则": "Reglas de extracción de datos",
+  "只有第一行是合法的": "Solo la primera fila es válida",
+  "同一机型收录了多行": "El mismo modelo aparece en varias filas",
+  "收录太少（{} 行）": "Demasiado pocas entradas ({} filas)",
+  "数据文件里少了「{needle}」": "En el archivo de datos falta «{needle}»"
+}

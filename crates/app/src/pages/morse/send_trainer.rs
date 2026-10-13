@@ -196,7 +196,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
   };
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">
         {move || t("morse.sending-practice")}
         <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.hold-to-key-with")}</span>
@@ -224,7 +224,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
           </ChipGroup>
         </div>
 
-        <div class="flex flex-col items-center gap-2 rounded-xl border bg-muted/30 px-4 py-6">
+        <div class="flex flex-col items-center gap-2 border bg-muted/30 px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("morse.target")}</div>
           <div class="text-4xl font-semibold tabular-nums tracking-widest">{move || target.get()}</div>
           <div data-testid="send-marks" class="font-mono text-2xl font-semibold tracking-[0.3em] text-primary">
@@ -246,14 +246,14 @@ pub(super) fn SendTrainer() -> impl IntoView {
             style="touch-action: none;"
             class=move || {
               format!(
-                "relative flex h-28 w-28 select-none items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-transform duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background {}",
+                "relative flex h-28 w-28 select-none items-center justify-center bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-transform duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background {}",
                 if pressing.get() { "scale-90" } else { "hover:scale-105" }
               )
             }
           >
             {move || {
               pressing.get().then(|| {
-                view! { <span class="absolute inset-0 rounded-full bg-primary/40 animate-ping"></span> }
+                view! { <span class="absolute inset-0 bg-primary/40 animate-ping"></span> }
               })
             }}
             <span class="relative text-sm font-semibold">{move || t("morse.hold-to-send")}</span>
@@ -284,7 +284,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
           <div class="flex flex-wrap items-center justify-center gap-2">
             <Button
               variant=Variant::Default
-              class="rounded-lg h-10"
+              class="h-10"
               disabled=Signal::derive(move || marks.get().is_empty())
               on_click=Callback::new(move |_| judge())
             >
@@ -292,14 +292,14 @@ pub(super) fn SendTrainer() -> impl IntoView {
             </Button>
             <Button
               variant=Variant::Outline
-              class="rounded-lg h-10"
+              class="h-10"
               on_click=Callback::new(move |_| clear_marks())
             >
               {move || t("morse.re-key")}
             </Button>
             <Button
               variant=Variant::Outline
-              class="rounded-lg h-10"
+              class="h-10"
               on_click=Callback::new(move |_| next_target())
             >
               {move || t("exam.next")}
@@ -334,7 +334,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
 
           <div class="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
             <span>
-              {move || t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().correct}</span>
+              {move || t("common.correct-label")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().correct}</span>
             </span>
             <span>
               {move || t("morse.wrong")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().wrong}</span>
@@ -351,7 +351,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
             <button
               type="button"
               on:click=move |_| reset_stats()
-              class="rounded-md px-2 py-0.5 transition-all duration-200 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              class="px-2 py-0.5 transition-all duration-200 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
             >
               {move || t("morse.reset")}
             </button>

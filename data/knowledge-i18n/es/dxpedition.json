@@ -1,0 +1,16 @@
+{
+  "不制造干扰：重复呼叫、在错误频率发射只会拖慢全场。": "No cause interferencias: llamar repetidamente o emitir en la frecuencia equivocada solo retrasa a todos.",
+  "严格遵守 split 规则，只在其指定收听频率呼叫。": "Respete estrictamente la regla de split: llame solo en la frecuencia de escucha anunciada.",
+  "团队配置": "Configuración del equipo humano",
+  "基金会赞助、个人募捐，以及 OQRS 通联确认费用。": "Patrocinio de fundaciones, donaciones particulares y tasas de confirmación OQRS.",
+  "多名操作员、多台设备、多个波段/模式同时工作，昼夜轮班。": "Varios operadores y equipos trabajando a la vez en distintas bandas y modos, con turnos día y noche.",
+  "按每年活跃台数量划分 Most Wanted，越稀有追台越热烈。": "La lista Most Wanted ordena según el número de estaciones activas cada año: cuanto más rara, más intensa es la persecución.",
+  "提前在 DX Cluster 与公告板了解远征时间与频率计划。": "Consulte antes el DX Cluster y los tablones para conocer el horario y el plan de frecuencias.",
+  "日志上传": "Subida del diario",
+  "稀有度": "Rareza",
+  "组织团队前往稀有或无人 DXCC 实体临时设台，满足全球通联需求。": "Un equipo viaja a una entidad DXCC rara o deshabitada e instala una estación temporal para satisfacer la demanda mundial de contactos.",
+  "经费来源": "Financiación",
+  "远征台常按分区、前缀或大洲点名，耐心等待轮到你。": "Las expediciones suelen llamar por zona, prefijo o continente: espere pacientemente su turno.",
+  "远征期间或结束上传 Club Log 与 LoTW，供全球核对确认。": "Se sube a Club Log y LoTW durante o después de la expedición para que todos puedan comprobar las confirmaciones.",
+  "通过 OQRS 直接请求 QSL 卡，或等待 LoTW 上传确认。": "Solicite la tarjeta QSL directamente por OQRS o espere la confirmación por la subida a LoTW."
+}

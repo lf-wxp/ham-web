@@ -18,9 +18,9 @@ pub(super) fn task_row(
       <span
         aria-hidden="true"
         class=if done {
-          "flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-xs text-white"
+          "flex size-5 shrink-0 items-center justify-center bg-emerald-500 text-xs text-white"
         } else {
-          "size-5 shrink-0 rounded-full border-2 border-muted-foreground/40"
+          "size-5 shrink-0 border-2 border-muted-foreground/40"
         }
       >
         {done.then_some("✓")}

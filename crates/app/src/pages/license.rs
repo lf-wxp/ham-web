@@ -87,7 +87,7 @@ pub fn LicensePage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.application-process")}</h2>
           <ol class="divide-y">
             {STEPS
@@ -96,7 +96,7 @@ pub fn LicensePage() -> impl IntoView {
               .map(|(i, &(k, v))| {
                 view! {
                   <li class="flex gap-3 px-4 py-3">
-                    <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                    <span class="flex size-6 shrink-0 items-center justify-center bg-primary text-xs font-semibold text-primary-foreground">
                       {i + 1}
                     </span>
                     <div>
@@ -110,7 +110,7 @@ pub fn LicensePage() -> impl IntoView {
           </ol>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.operating-classes-and-privileges")}</h2>
           <dl class="divide-y">
             {CLASSES
@@ -127,7 +127,7 @@ pub fn LicensePage() -> impl IntoView {
           </dl>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.key-notes")}</h2>
           <ul class="space-y-2 p-4">
             {NOTES
@@ -144,7 +144,7 @@ pub fn LicensePage() -> impl IntoView {
           </ul>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("settings.license-expiry-reminder")}</h2>
           <div class="space-y-3 p-4">
             <p class="text-xs text-muted-foreground">

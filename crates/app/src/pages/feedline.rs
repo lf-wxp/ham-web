@@ -20,7 +20,7 @@ pub fn FeedlinePage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.common-feedlines")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[560px] border-collapse text-sm">
@@ -49,14 +49,14 @@ pub fn FeedlinePage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.matching-components-and-concepts")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {MATCHING
               .iter()
               .map(|&(t, d)| {
                 view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2">
+                  <div class="flex flex-col gap-1 px-3 py-2">
                     <span class="text-sm font-medium">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
@@ -66,14 +66,14 @@ pub fn FeedlinePage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.mismatch-degree-and-consequences")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {MISMATCH
               .iter()
               .map(|&(t, d)| {
                 view! {
-                  <div class="flex items-baseline gap-2 rounded-lg px-3 py-2">
+                  <div class="flex items-baseline gap-2 px-3 py-2">
                     <span class="shrink-0 font-mono text-sm font-semibold text-primary">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>

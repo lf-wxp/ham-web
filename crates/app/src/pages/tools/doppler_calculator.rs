@@ -40,12 +40,12 @@ pub(super) fn DopplerCalculator() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class="sm:col-span-2 rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
+      <div class="sm:col-span-2 bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let f = freq.get();
           let v = vel.get();
           if f <= 0.0 || v < 0.0 {
-            t("tools.enter-a-positive-frequency-2")
+            t("tools.enter-positive-frequency-velocity")
           } else {
             // Δf = f · v / c，c = 299792.458 km/s。
             let shift_khz = f * v / 299_792.458 * 1000.0;

@@ -1,0 +1,10 @@
+{
+  "划": "Raya",
+  "单词（组）间隔": "Espacio entre palabras (grupos)",
+  "字符不能为空：{c:?}": "El carácter no puede estar vacío: {c:?}",
+  "字符内点划间隔": "Espacio entre puntos y rayas dentro de un carácter",
+  "字符间隔": "Espacio entre caracteres",
+  "点": "Punto",
+  "点划序列不能为空：{c:?}": "La secuencia de puntos y rayas no puede estar vacía: {c:?}",
+  "点划序列只能含 . 和 -：{c:?}": "La secuencia solo puede contener . y -: {c:?}"
+}

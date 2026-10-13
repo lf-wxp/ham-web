@@ -20,14 +20,14 @@ pub fn SstvPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.key-concepts-2")}</h2>
+        <section class="pxl-card border bg-card">
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.key-concepts-heading")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {SSTV_CONCEPTS
               .iter()
               .map(|&(t, d)| {
                 view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2">
+                  <div class="flex flex-col gap-1 px-3 py-2">
                     <span class="text-sm font-medium">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
@@ -37,14 +37,14 @@ pub fn SstvPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("shell.common-frequencies")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2 md:grid-cols-3">
             {SSTV_FREQS
               .iter()
               .map(|&(b, f)| {
                 view! {
-                  <div class="rounded-lg px-3 py-2">
+                  <div class="px-3 py-2">
                     <span class="text-sm font-medium">{b}</span>
                     <span class="ml-2 font-mono text-sm text-muted-foreground">{f}</span>
                   </div>
@@ -54,7 +54,7 @@ pub fn SstvPage() -> impl IntoView {
           </div>
         </section>
 
-        <div class="overflow-x-auto rounded-xl border bg-card">
+        <div class="overflow-x-auto pxl-card border bg-card">
           <table class="w-full min-w-[520px] border-collapse text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>
@@ -80,7 +80,7 @@ pub fn SstvPage() -> impl IntoView {
           </table>
         </div>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.operating-tips")}</h2>
           <ul class="space-y-2 p-4">
             {SSTV_TIPS

@@ -283,7 +283,7 @@ pub fn CwDecoder() -> impl IntoView {
   });
 
   view! {
-    <section class="rounded-xl border bg-card" aria-labelledby="cw-decoder-title">
+    <section class="pxl-card border bg-card" aria-labelledby="cw-decoder-title">
       <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <div class="mr-auto">
           <h2 id="cw-decoder-title" class="text-sm font-semibold">{move || t("morse.cw-decoding-microphone")}</h2>
@@ -324,25 +324,25 @@ pub fn CwDecoder() -> impl IntoView {
           </label>
           <span class="inline-flex items-center gap-1.5">
             <span
-              class=move || if keyed.get() { "h-2.5 w-2.5 rounded-full bg-emerald-500" } else { "h-2.5 w-2.5 rounded-full bg-muted-foreground/30" }
+              class=move || if keyed.get() { "h-2.5 w-2.5 bg-emerald-500" } else { "h-2.5 w-2.5 bg-muted-foreground/30" }
               aria-hidden="true"
             ></span>
             {move || t("morse.key")}
           </span>
           <span class="inline-flex items-center gap-1.5">
             {move || t("morse.level")}
-            <span class="h-1.5 w-24 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+            <span class="h-1.5 w-24 overflow-hidden bg-muted" aria-hidden="true">
               <span class="block h-full bg-primary transition-[width] duration-75" style:width=move || format!("{:.0}%", level.get() * 100.0)></span>
             </span>
           </span>
           <span class="tabular-nums" data-testid="cw-wpm">
-            {move || if text.with(String::is_empty) { t("morse.speed") } else { tf("common.speed-wpm-2", &[&format!("{:.0}", wpm.get())]) }}
+            {move || if text.with(String::is_empty) { t("morse.speed") } else { tf("common.speed-wpm-approx", &[&format!("{:.0}", wpm.get())]) }}
           </span>
         </div>
         <div
           role="log"
           aria-label=move || t("morse.decoded-result")
-          class="min-h-24 whitespace-pre-wrap break-all rounded-lg bg-muted/40 p-3 font-mono text-sm leading-relaxed"
+          class="min-h-24 whitespace-pre-wrap break-all bg-muted/40 p-3 font-mono text-sm leading-relaxed"
         >
           {move || text.get()}
           <span class="text-muted-foreground">{move || pending.get()}</span>
@@ -382,8 +382,8 @@ pub fn CwDecoder() -> impl IntoView {
             view! {
               <div class="flex items-center gap-2 text-xs text-muted-foreground">
                 <span class="tabular-nums">{tf("common.matched", &[&(matched).to_string(), &(total).to_string()])}</span>
-                <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div class="h-full rounded-full bg-emerald-500" style=format!("width: {pct:.0}%")></div>
+                <div class="h-1.5 flex-1 overflow-hidden bg-muted">
+                  <div class="h-full bg-emerald-500" style=format!("width: {pct:.0}%")></div>
                 </div>
               </div>
             }.into_any()

@@ -21,27 +21,27 @@ pub fn OperatingPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.standard-contact-procedure")}</h2>
           <FieldList fields=CONTACT_STEPS />
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.qso-log-fields")}</h2>
           <FieldList fields=LOG_FIELDS />
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.qsl-card-information")}</h2>
           <FieldList fields=QSL_FIELDS />
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.repeater-usage-notes")}</h2>
           <TipList tips=REPEATER_TIPS />
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("shell.grounding-lightning")}</h2>
           <TipList tips=GROUNDING_TIPS />
         </section>

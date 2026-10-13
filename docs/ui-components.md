@@ -50,9 +50,10 @@
 
 **硬规则**
 
-1. **零圆角、零模糊、零渐变**：不要写 `rounded-*`（全局已归零，写了也无效）、`backdrop-blur`、
-   `bg-gradient-*`、带模糊半径的 `shadow-[…]`。需要强调就换色、加粗描边、用抖动底纹。
-   真要一个圆（极少）给元素加 `data-keep-round`。
+1. **零圆角、零模糊、零渐变**：不要写 `rounded-*`（2026-10-13 已从视图里清干净 —— 它们
+   在像素规范下全部失效，且一度被 `surfaces.css` 当卡片皮肤的钩子用；层外规则仍兜住第三方 /
+   动态 HTML，自检 ⑤ 会拦住回归）、`backdrop-blur`、`bg-gradient-*`、带模糊半径的 `shadow-[…]`。
+   需要强调就换色、加粗描边、用抖动底纹。真要一个圆（极少）给元素加 `data-keep-round`。
    （**例外**：无模糊半径的像素硬阴影是合规的，如 `shadow-[0_2px_0_0_var(--pxl-shadow)]`。）
 2. **尺寸取 4 的倍数**：间距、控件高度走 Tailwind 刻度（`h-6` / `h-8` / `h-10` / `h-12`）；描边 2px，
    位移 2px 的整数倍。**不要写 `h-[37px]` 这类奇数**，点阵边缘会错位。
@@ -84,7 +85,13 @@
 
 **可用的像素元素**
 
-- 窗口面板：`pxl-window`（卡片）、`pxl-popover`（弹层）、`pxl-titlebar`（标题栏）。
+- 窗口面板：`pxl-window`（卡片原语，自带 2px 墨色描边 + 硬投影）、`pxl-popover`（弹层）、
+  `pxl-titlebar`（标题栏）。
+- 手写卡片：`pxl-card` —— **只是标记，本身不带任何样式**。卡片的 2px 描边、以及「卡片内贴边
+  表格去掉最外圈双线」由 `surfaces.css` 按这个标记给（2026-10-13 之前这些规则拿
+  `:is(.rounded-xl, …)` 当钩子）。手写卡片写成 `pxl-card border bg-card`；新写卡片优先用
+  `SectionCard` / `card_class()`（= `pxl-window`，自带描边与投影，但那组表格规则只认
+  `pxl-card`）。
 - 进度条：`Progress` + `class="pxl-bar-hp"`（血条，低于 25% 自动闪烁）/ `pxl-bar-xp`（经验）/
   `pxl-bar-win` / `pxl-bar-gold`。
 - 精灵：`PixelSprite name="hero" scale=4`（`scale` 是**每格的屏幕像素数**，从接口上杜绝非整数倍）；
@@ -174,7 +181,7 @@
 | 知识库正文的要点 / 术语 / 三列对照表 / 步骤 | `BulletSection` / `ConceptsSection` / `TableSection` / `StepsSection` | 手写 `<ul>` / 两列网格 / `<table>` |
 | 页脚的依据溯源行（「依据 XX，YYYY-MM 核对」） | `ProvenanceNote` | 手写一行小字 |
 | 空态（图标 + 标题 + 说明 + 操作） | `EmptyState` | 手写居中的提示块 |
-| 内容卡片（标题栏 + 正文） | `SectionCard` | 再抄一份 `rounded-xl border bg-card` |
+| 内容卡片（标题栏 + 正文） | `SectionCard` | 再抄一份 `pxl-card border bg-card` |
 | 单按钮结果提示（成功 / 失败 / 已复制） | `MessageDialog` | 手搭 `Dialog` + 一个按钮 |
 | 加载中（短等待）/ 首屏骨架 | `Loading` / `Skeleton` | 手写 spinner / 一片留白 |
 | 图例条（色块 + 文字） | `Legend` | 手写色块 + 文字 |
@@ -246,8 +253,12 @@
 5. 需要事件的正文容器（如答题页的 `on:touchstart`）：外层包一个只带事件属性的 `<div>`，
    `PageContainer` 放里面。
 
-自检见 §11 的 ⑧（输出是一份**很短的封闭清单**，当前 **10 行 / 9 个文件**，逐条对得上即可；
-出现新行就说明又手抄了一份容器）：
+自检见 §11 的 ⑧（输出是一份**很短的封闭清单**，当前 **10 行 / 8 个文件**，逐条对得上即可；
+出现新行就说明又手抄了一份容器）。
+
+这份清单现在是**机械守着**的（`cargo make check-ui`）：清单外出现 `max-w-*` / `container` 会红，
+清单内的**数量漂移**（期望 10 处 / 8 文件）也会红 —— 合法新增要同时改上面这张表与
+`crates/tools/src/ui_check.rs` 里的 `WIDTH_ALLOWED`：
 
 | 位置 | 为什么允许 |
 |---|---|
@@ -424,35 +435,46 @@ label 的 `has-[:focus-visible]:ring-2` 显示。**页面里不要再手写拖�
 
 ## 11. 自检命令
 
+**机械可判定的条目已经接进 CI**：`cargo make check-ui`（含在 `cargo make check` 与 `cargo make ci`
+里，源码见 `crates/tools/src/ui_check.rs`）会扫 ①②③④⑤⑦、⑥ 的模糊 / 渐变与**任意值阴影的模糊位**、
+⑧ 的**页面级宽度容器封闭清单**（清单外命中、清单内计数漂移都会红），命中即让门禁红。
+下面保留手工命令是为了看清判定细节，以及覆盖工具刻意不做的部分：内联 `style` 里的阴影、
+打印页的 `mm` 尺寸、⑨ 的例外注释计数。
+
 ```bash
 cd crates/app/src
-# ① 本地控件样式常量：应为 0
+# ① 本地控件样式常量：应为 0（check-ui 已拦）
 grep -rn --include='*.rs' --exclude-dir=ui -E '^const (INPUT|TEXTAREA): ' .
-# ② 原生表单元素：应为 0（拖放区在 ui::FileDropZone 里，见 §10.1）
+# ② 原生表单元素：应为 0（拖放区在 ui::FileDropZone 里，见 §10.1；check-ui 已拦）
 grep -rn --include='*.rs' --exclude-dir=ui -E '<input|<select|<textarea' .
-# ③ 类名工厂：input_class 应为 0（工厂已删）
+# ③ 类名工厂：input_class 应为 0（工厂已删；check-ui 已拦）
 grep -rn --include='*.rs' --exclude-dir=ui -c 'input_class(' . | grep -v ':0$'
-# ④ 手写 chip 的样式常量：应为 0
+# ④ 手写 chip 的样式常量：应为 0（check-ui 已拦）
 grep -rln --include='*.rs' --exclude-dir=ui 'CHIP_ON' .
-# ⑤ 自造的胶囊样式：逐条确认都是徽章 / 链接 / 展示用胶囊，而不是「按钮自己写样式、自己切选中态」
-#    —— 后者扫描器认不出（常量名与组件都没有），只能靠这份清单人工过（判据见 §10.4）
-#    本仓的例外只有 `pages/morse/pill_button.rs`（业务组件底座，理由见 §10.3）
-grep -rn --include='*.rs' --exclude-dir=ui 'rounded-full border' .
-# ⑥ 页面里残留的圆角 / 模糊 / 渐变：应为 0（输出里 `shadow-[0_Npx_0_0_…]` 是像素硬阴影，合规）
-grep -rnE --include='*.rs' --exclude-dir=ui 'backdrop-blur|bg-gradient|bg-linear|shadow-\[0' .
+# ⑤ 已失效的圆角类：应为 0（卡片皮肤改用 `pxl-card` 标记，见 §2；check-ui 已拦）
+#    手工命令的两处放过：`cn.rs`（类名合并器，字符串里出现工具类名是它的本职工作）、
+#    行首注释里的历史说明（`quiz_option.rs` / `pill_button.rs` 各一条）；
+#    工具版更严：不排除 ui/、且按行剥注释后只在字符串字面量里判定
+grep -rnE --include='*.rs' --exclude-dir=ui --exclude=cn.rs \
+  '\brounded-(full|none|sm|md|lg|xl|2xl|3xl|t|r|b|l)(\b|-)' . | grep -vE ':[0-9]+: *//'
+# ⑥ 页面里残留的模糊 / 渐变 / 软阴影：模糊、渐变与「任意值阴影的模糊位」已由 check-ui 拦；
+#    这条手工命令用于复核（输出里 `shadow-[0_Npx_0_0_…]` 是像素硬阴影，合规）
+grep -rnE --include='*.rs' --exclude-dir=ui 'backdrop-blur|blur-(sm|md|lg|xl|2xl|3xl)|drop-shadow-|bg-gradient|bg-linear|shadow-\[0' .
 # ⑦ 把填充色 token 当文字色用（对比度不够）：应为 0
 grep -rnE --include='*.rs' 'text-\[color:var\(--pxl-(hp|xp|gold|win)\)\]' .
-# ⑧ 页面级宽度类：输出应等于 §4 那份封闭清单（10 行 / 9 文件：组件自身 / 页头对齐行 / 顶栏 container / 横幅）
+# ⑧ 页面级宽度类：输出应等于 §4 那份封闭清单（10 行 / 8 文件：组件自身 / 页头对齐行 / 顶栏 container / 横幅）
+#    check-ui 已按同一份清单机械守着（清单外命中、清单内计数漂移都会红），这条用来复核
 grep -rn --include='*.rs' --exclude-dir=ui -E 'class="[^"]*\bmax-w-(2xl|3xl|4xl|5xl|6xl)\b|class="container' pages components app \
   | grep -vE 'min-w-|<Dialog|sm:max-w'
 # ⑨ 刻意保留的原生元素：应等于 §10.2 的清单（9 条注释 / 7 个文件）
 grep -rn "刻意的例外" .
 ```
 
-各条当前状态（2026-10-13 复核）：①0 ②**0** ③0 ④0
-⑤53 处（52 处是徽章 / 链接 / 展示用胶囊，例外是 `pages/morse/pill_button.rs` 这个业务组件的底座，
-理由见 §10.3）⑥0（剩下的 4 行是 3 处像素硬阴影 —— `shadow-[0_2px_0_0_…]` 与它的 `-2px` / `4px`
-变体 —— 与 `cn.rs` 里的冲突组配置，都合规）⑦0 ⑧10 行 / 9 文件（= §4 的封闭清单）⑨9。
+各条当前状态（2026-10-13 复核）：①0 ②**0** ③0 ④0 ⑤**0**（`rounded-*` 已从视图清零，
+卡片皮肤改用 `pxl-card` 标记）⑥0（剩下的 4 行是 3 处像素硬阴影 —— `shadow-[0_2px_0_0_…]` 与它的
+`-2px` / `4px` 变体 —— 与 `cn.rs` 里的冲突组配置，都合规）⑦0 ⑧10 行 / 8 文件（= §4 的封闭清单）⑨9。
+其中 ①②③④⑤、⑥ 的模糊 / 渐变与任意值阴影、⑧ 的封闭清单由 `cargo make check-ui` 持续守着，
+不必再靠人工记得跑。
 
 ## 12. 验收清单
 

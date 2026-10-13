@@ -26,7 +26,7 @@ pub fn NecTemplateLink(template: &'static str) -> impl IntoView {
   view! {
     <a
       href="/nec"
-      class="inline-flex items-center gap-1 whitespace-nowrap rounded-md border bg-background px-2 py-0.5 text-xs font-medium hover:bg-accent"
+      class="inline-flex items-center gap-1 whitespace-nowrap border bg-background px-2 py-0.5 text-xs font-medium hover:bg-accent"
       title=name
       on:click=move |_| stash_nec_template(id)
     >

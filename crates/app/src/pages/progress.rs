@@ -216,20 +216,20 @@ pub fn ProgressPage() -> impl IntoView {
           <Stat label=t("learning.total-study-min") value=move || total_minutes />
         </div>
 
-        <section class="rounded-xl border bg-card p-4">
+        <section class="pxl-card border bg-card p-4">
           <h2 class="mb-3 text-sm font-semibold">{move || t("learning.daily-study-check-in")}</h2>
           <StudyHeatmap days=heatmap_days today=local_today() />
         </section>
 
-        <section class="rounded-xl border bg-card p-4">
+        <section class="pxl-card border bg-card p-4">
           <h2 class="mb-2 text-sm font-semibold">{move || t("learning.dxcc-rarity-progress")}</h2>
           <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
             <span>{move || t("learning.worked-incl-auto-detected")}</span>
             <span class="tabular-nums">{format!("{dxcc_done} / {dxcc_total}")}</span>
           </div>
-          <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+          <div class="h-2 w-full overflow-hidden bg-muted">
             <div
-              class="h-full rounded-full bg-primary transition-all"
+              class="h-full bg-primary transition-all"
               style=format!("width: {:.1}%", dxcc_done as f64 / dxcc_total as f64 * 100.0)
             ></div>
           </div>
@@ -245,7 +245,7 @@ pub fn ProgressPage() -> impl IntoView {
 
         <StudyPlanCard editable=true />
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class="mr-auto text-sm font-semibold">{move || t("learning.prep-status")}</h2>
             <ChipGroup
@@ -274,7 +274,7 @@ pub fn ProgressPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.bank-coverage")}</h2>
           <div class="space-y-3 p-4">
             {move || {
@@ -295,7 +295,7 @@ pub fn ProgressPage() -> impl IntoView {
                           {(left > 0 && covered > 0).then(|| view! {
                             <a
                               href=format!("/practice?bank={b}&unseen=1")
-                              class="ml-1.5 rounded border px-1.5 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/10"
+                              class="ml-1.5 border px-1.5 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/10"
                             >
                               {tf("learning.practice-the-unseen", &[&left.to_string()])}
                             </a>
@@ -305,8 +305,8 @@ pub fn ProgressPage() -> impl IntoView {
                           {format!("{covered} / {total} · {pct:.0}%")}
                         </span>
                       </div>
-                      <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
-                        <div class="h-full rounded-full bg-primary transition-all" style=format!("width: {pct:.1}%")></div>
+                      <div class="h-2 w-full overflow-hidden bg-muted">
+                        <div class="h-full bg-primary transition-all" style=format!("width: {pct:.1}%")></div>
                       </div>
                     </div>
                   }
@@ -318,7 +318,7 @@ pub fn ProgressPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.achievements")}</h2>
           <div class="grid grid-cols-2 gap-2 p-4 sm:grid-cols-4">
             {ACHIEVEMENTS
@@ -327,9 +327,9 @@ pub fn ProgressPage() -> impl IntoView {
                 let is_unlocked = move || unlocked_ids.with(|ids| ids.contains(&a.id));
                 view! {
                   <div class=move || if is_unlocked() {
-                    "rounded-lg border p-3 text-center"
+                    "border p-3 text-center"
                   } else {
-                    "rounded-lg border border-dashed p-3 text-center text-muted-foreground"
+                    "border border-dashed p-3 text-center text-muted-foreground"
                   }>
                     <div class="text-2xl">{a.icon}</div>
                     <div class="mt-1 text-xs font-medium">{move || t(a.name)}</div>
@@ -341,7 +341,7 @@ pub fn ProgressPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class="mr-auto text-sm font-semibold">{move || t("learning.weak-area-analysis")}</h2>
             <ChipGroup
@@ -394,13 +394,13 @@ pub fn ProgressPage() -> impl IntoView {
                       let topics = top_pages(s.key);
                       let subs = s.subs.clone();
                       view! {
-                        <div class="rounded-lg border p-2.5">
+                        <div class="border p-2.5">
                           <div class="mb-1 flex items-center justify-between gap-2 text-xs">
                             <span class="flex min-w-0 flex-wrap items-center gap-1.5 font-medium">
                               <span>{name}</span>
                               <a
                                 href=href
-                                class="rounded border px-1.5 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/10"
+                                class="border px-1.5 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/10"
                               >
                                 {move || t("shell.practice")}
                               </a>
@@ -410,7 +410,7 @@ pub fn ProgressPage() -> impl IntoView {
                                   view! {
                                     <a
                                       href=*route
-                                      class="rounded border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent"
+                                      class="border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent"
                                     >
                                       {*label}
                                     </a>
@@ -422,9 +422,9 @@ pub fn ProgressPage() -> impl IntoView {
                               {format!("{} / {} · {:.0}%", s.correct, s.total, rate)}
                             </span>
                           </div>
-                          <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                          <div class="h-2 w-full overflow-hidden bg-muted">
                             <div
-                              class=format!("h-full rounded-full {bar}")
+                              class=format!("h-full {bar}")
                               style=format!("width: {rate:.1}%")
                             ></div>
                           </div>
@@ -458,7 +458,7 @@ pub fn ProgressPage() -> impl IntoView {
                                             </span>
                                             <a
                                               href=sub_href
-                                              class="shrink-0 rounded border px-1 py-px text-[10px] text-primary transition-colors hover:bg-primary/10"
+                                              class="shrink-0 border px-1 py-px text-[10px] text-primary transition-colors hover:bg-primary/10"
                                             >
                                               {move || t("learning.practice")}
                                             </a>
@@ -467,9 +467,9 @@ pub fn ProgressPage() -> impl IntoView {
                                             {format!("{}/{} · {:.0}%", sub.correct, sub.total, sub_rate)}
                                           </span>
                                         </div>
-                                        <div class="ml-4 mt-0.5 h-1 w-[calc(100%-1rem)] overflow-hidden rounded-full bg-muted">
+                                        <div class="ml-4 mt-0.5 h-1 w-[calc(100%-1rem)] overflow-hidden bg-muted">
                                           <div
-                                            class=format!("h-full rounded-full {sub_bar}")
+                                            class=format!("h-full {sub_bar}")
                                             style=format!("width: {sub_rate:.1}%")
                                           ></div>
                                         </div>
@@ -495,7 +495,7 @@ pub fn ProgressPage() -> impl IntoView {
         </section>
 
         <p class="text-xs text-muted-foreground">
-          {move || t("learning.data-comes-from-local-2")}
+          {move || t("learning.data-from-local-records")}
         </p>
       </PageContainer>
     </div>

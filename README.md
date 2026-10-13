@@ -244,7 +244,10 @@
     ├── fonts/              # Geist 字体（本地托管）
     ├── dxcc-entities.bin   # DXCC 实体边界（世界地图着色用）
     ├── manifest.json       # PWA manifest
-    ├── pwa-icon.svg / icon.svg / favicon.ico
+    ├── pwa-icon.svg        # 图标设计源（512 母版）
+    ├── icon.svg            # 同设计的 64px 副本（构建不使用）
+    ├── favicon-16.svg      # 16px favicon 专用图形（坐标对齐像素格）
+    ├── favicon.ico         # 16 / 32 / 48 多尺寸容器
     ├── pwa-icon-*.png      # 圆角图标（manifest `any`、og:image）
     ├── pwa-maskable-*.png  # 满幅图标（manifest `maskable`，圆角由系统遮罩加）
     └── apple-touch-icon*.png  # 满幅图标（iOS 主屏，圆角由系统加）
@@ -391,7 +394,7 @@ cargo make spectrum-sample                            # 频谱 / 瀑布图样本
 | `cargo make questions-normalize` | 一次性迁移：把已提交题库按排版规则归一化（含解析表 key 迁移与搜索索引刷新），不重新下载 CSV |
 | `cargo make dxcc` | 从 country-files.com 拉取 cty.csv，重新生成 `crates/core/data/dxcc.txt` |
 | `cargo make dxcc-map` | 从 Natural Earth 国界 GeoJSON 生成 DXCC 实体边界 `public/dxcc-entities.bin`（i16 定点 + delta 二进制编码） |
-| `cargo make icons` | 由 `public/pwa-icon.svg` 生成 PWA / Apple Touch 图标 |
+| `cargo make icons` | 由 `public/pwa-icon.svg` 生成 PWA / Apple Touch 图标与 favicon.ico |
 | **解析与术语** | — |
 | `cargo make explanations-missing` | 统计缺失解析并导出待填模板（`BANK` / `LIMIT` 可选） |
 | `BATCH=… cargo make explanations-add` | 按题目 ID 合并解析 |
@@ -741,7 +744,7 @@ cargo make explanations-missing    # 查看因题目修订/新增而缺失的解
 - 更新内容写在 `crates/core/src/changelog.rs` 的 `CHANGELOG` 中（新版本插到最前面，日期 + 条目），`postbuild` 会导出为 `dist/changelog.json`；
 - `postbuild` 还会为每个题库计算内容哈希，写入 `dist/questions/config.json` 的 `banks.*.rev`；前端请求题库时带上 `?v=<rev>`，题库内容变化后一定会重新下载。前端记录上次看到的题目摘要，题库变化时提示「题库已更新：修改 N 题，新增 N 题…」；
 - 应用图标由 `cargo make icons` 从 `public/pwa-icon.svg` 渲染（纯 Rust，resvg），同一份 SVG 出两套：
-  - `pwa-icon-192.png` / `pwa-icon-512.png`：保留品牌圆角，供 manifest 的 `any`、`favicon` 与 `og:image` 使用（这些场景不会替我们裁切）；
+  - `pwa-icon-192.png` / `pwa-icon-512.png` 与 `favicon.ico`（16 / 32 / 48 三档打包）：保留品牌圆角，供 manifest 的 `any`、`favicon` 与 `og:image` 使用（这些场景不会替我们裁切）—— ICO 的 16px 档改用 `public/favicon-16.svg`，那是同一套构图按 16px 重取值的一版（母版坐标压在半像素上，缩到 16px 会糊）；
   - `apple-touch-icon*.png` / `pwa-maskable-*.png`：**满幅不透明方形**，圆角交给系统遮罩。iOS 的 `apple-touch-icon` 是按原图直接使用的（不裁圆），自带圆角的 PNG 在四个角会把透明像素合成到白底上，因此这类图标四角必须不透明。
 
 ## 本地存储与兼容性

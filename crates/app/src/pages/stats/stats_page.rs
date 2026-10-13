@@ -96,19 +96,19 @@ pub fn StatsPage() -> impl IntoView {
 
       <PageContainer class="space-y-4">
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div class="rounded-xl border bg-card p-4 text-center">
+          <div class="pxl-card border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{total}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.total-qsos")}</div>
           </div>
-          <div class="rounded-xl border bg-card p-4 text-center">
+          <div class="pxl-card border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{dxcc_total}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("log.dxcc-entities")}</div>
           </div>
-          <div class="rounded-xl border bg-card p-4 text-center">
+          <div class="pxl-card border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{band_top.len()}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.bands")}</div>
           </div>
-          <div class="rounded-xl border bg-card p-4 text-center">
+          <div class="pxl-card border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{mode_top.len()}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.modes")}</div>
           </div>
@@ -116,7 +116,7 @@ pub fn StatsPage() -> impl IntoView {
 
         {if empty {
           view! {
-            <section class="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
+            <section class="pxl-card border bg-card p-8 text-center text-sm text-muted-foreground">
               {move || t("radio.no-qso-log-yet")}
               <a
                 href="/log"
@@ -129,7 +129,7 @@ pub fn StatsPage() -> impl IntoView {
           .into_any()
         } else {
           view! {
-            <section class="rounded-xl border bg-card">
+            <section class="pxl-card border bg-card">
               <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.dxcc-award-progress")}</h2>
               <div class="space-y-3 p-4">
                 <div>
@@ -137,9 +137,9 @@ pub fn StatsPage() -> impl IntoView {
                     <span>{move || t("radio.dxcc-entities-target-100")}</span>
                     <span class="tabular-nums">{dxcc_total} " / 100"</span>
                   </div>
-                  <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div class="h-2 w-full overflow-hidden bg-muted">
                     <div
-                      class="h-full rounded-full bg-primary transition-all"
+                      class="h-full bg-primary transition-all"
                       style=format!("width: {:.1}%", dxcc_total.min(100) as f64)
                     ></div>
                   </div>
@@ -151,7 +151,7 @@ pub fn StatsPage() -> impl IntoView {
                       .iter()
                       .map(|(b, n)| {
                         view! {
-                          <span class="rounded-full border bg-muted/40 px-2.5 py-0.5 text-xs tabular-nums">
+                          <span class="border bg-muted/40 px-2.5 py-0.5 text-xs tabular-nums">
                             {b.clone()} " " <span class="font-semibold text-primary">{*n}</span>
                           </span>
                         }
@@ -164,7 +164,7 @@ pub fn StatsPage() -> impl IntoView {
 
             {(!missing.is_empty()).then(|| {
               view! {
-                <section class="rounded-xl border bg-card">
+                <section class="pxl-card border bg-card">
                   <h2 class="flex items-baseline gap-2 border-b px-4 py-3 text-sm font-semibold">
                     {move || t("radio.dxcc-gap-list")}
                     <span class="text-xs font-normal text-muted-foreground">
@@ -190,7 +190,7 @@ pub fn StatsPage() -> impl IntoView {
                                 .into_iter()
                                 .map(|e| {
                                   view! {
-                                    <span class="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2 py-0.5 text-xs">
+                                    <span class="inline-flex items-center gap-1 border bg-muted/40 px-2 py-0.5 text-xs">
                                       <span class="font-mono text-muted-foreground">{e.prefix}</span>
                                       <span>{e.name}</span>
                                     </span>
@@ -207,7 +207,7 @@ pub fn StatsPage() -> impl IntoView {
               }
             })}
 
-            <section class="rounded-xl border bg-card">
+            <section class="pxl-card border bg-card">
               <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("log.more-award-progress")}</h2>
               <div class="space-y-3 p-4">
                 <div>
@@ -215,9 +215,9 @@ pub fn StatsPage() -> impl IntoView {
                     <span>{move || t("learning.waz-cq-zones")}</span>
                     <span class="tabular-nums">{awards.waz.worked.len()} " / " {WAZ_TARGET}</span>
                   </div>
-                  <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div class="h-2 w-full overflow-hidden bg-muted">
                     <div
-                      class="h-full rounded-full bg-primary transition-all"
+                      class="h-full bg-primary transition-all"
                       style=format!("width: {:.1}%", awards.waz.worked.len() as f64 / WAZ_TARGET as f64 * 100.0)
                     ></div>
                   </div>
@@ -227,9 +227,9 @@ pub fn StatsPage() -> impl IntoView {
                     <span>{move || t("learning.wac-continents")}</span>
                     <span class="tabular-nums">{awards.wac.worked.len()} " / " {CONTINENTS.len()}</span>
                   </div>
-                  <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div class="h-2 w-full overflow-hidden bg-muted">
                     <div
-                      class="h-full rounded-full bg-primary transition-all"
+                      class="h-full bg-primary transition-all"
                       style=format!("width: {:.1}%", awards.wac.worked.len() as f64 / CONTINENTS.len() as f64 * 100.0)
                     ></div>
                   </div>
@@ -241,7 +241,7 @@ pub fn StatsPage() -> impl IntoView {
                       {awards.vucc.iter().map(|(band, p)| {
                         let target = vucc_target(band).unwrap_or(1);
                         view! {
-                          <span class="rounded-full border bg-muted/40 px-2.5 py-0.5 text-xs tabular-nums">
+                          <span class="border bg-muted/40 px-2.5 py-0.5 text-xs tabular-nums">
                             {band.clone()} " " <span class="font-semibold text-primary">{p.worked.len()}</span> " / " {target}
                           </span>
                         }
@@ -258,9 +258,9 @@ pub fn StatsPage() -> impl IntoView {
                     <span>{move || t("log.wpx-prefix-award")}</span>
                     <span class="tabular-nums">{awards.wpx.worked.len()} " / " {WPX_TARGET}</span>
                   </div>
-                  <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div class="h-2 w-full overflow-hidden bg-muted">
                     <div
-                      class="h-full rounded-full bg-primary transition-all"
+                      class="h-full bg-primary transition-all"
                       style=format!("width: {:.1}%", awards.wpx.worked.len() as f64 / WPX_TARGET as f64 * 100.0)
                     ></div>
                   </div>
@@ -270,9 +270,9 @@ pub fn StatsPage() -> impl IntoView {
                     <span>{move || t("log.was-us-states")}</span>
                     <span class="tabular-nums">{awards.was.worked.len()} " / " {WAS_TARGET}</span>
                   </div>
-                  <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div class="h-2 w-full overflow-hidden bg-muted">
                     <div
-                      class="h-full rounded-full bg-primary transition-all"
+                      class="h-full bg-primary transition-all"
                       style=format!("width: {:.1}%", awards.was.worked.len() as f64 / WAS_TARGET as f64 * 100.0)
                     ></div>
                   </div>
@@ -282,9 +282,9 @@ pub fn StatsPage() -> impl IntoView {
                     <span>{move || t("log.iota-island-groups")}</span>
                     <span class="tabular-nums">{awards.iota.worked.len()} " / " {IOTA_TARGET}</span>
                   </div>
-                  <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div class="h-2 w-full overflow-hidden bg-muted">
                     <div
-                      class="h-full rounded-full bg-primary transition-all"
+                      class="h-full bg-primary transition-all"
                       style=format!("width: {:.1}%", awards.iota.worked.len() as f64 / IOTA_TARGET as f64 * 100.0)
                     ></div>
                   </div>
@@ -292,7 +292,7 @@ pub fn StatsPage() -> impl IntoView {
               </div>
             </section>
 
-            <section class="rounded-xl border bg-card">
+            <section class="pxl-card border bg-card">
               <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.qsl-confirmation-status")}</h2>
               <div class="space-y-3 p-4">
                 <div>
@@ -300,9 +300,9 @@ pub fn StatsPage() -> impl IntoView {
                     <span>{move || t("radio.qsl-received")}</span>
                     <span class="tabular-nums">{qsl_rcvd_count} " / " {total}</span>
                   </div>
-                  <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div class="h-2 w-full overflow-hidden bg-muted">
                     <div
-                      class="h-full rounded-full bg-emerald-500"
+                      class="h-full bg-emerald-500"
                       style=format!("width: {:.1}%", qsl_rcvd_count as f64 / total.max(1) as f64 * 100.0)
                     ></div>
                   </div>
@@ -312,9 +312,9 @@ pub fn StatsPage() -> impl IntoView {
                     <span>{move || t("radio.sent-awaiting-confirmation")}</span>
                     <span class="tabular-nums">{qsl_sent_count} " / " {total}</span>
                   </div>
-                  <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div class="h-2 w-full overflow-hidden bg-muted">
                     <div
-                      class="h-full rounded-full bg-amber-500"
+                      class="h-full bg-amber-500"
                       style=format!("width: {:.1}%", qsl_sent_count as f64 / total.max(1) as f64 * 100.0)
                     ></div>
                   </div>
@@ -322,28 +322,28 @@ pub fn StatsPage() -> impl IntoView {
               </div>
             </section>
 
-            <section class="rounded-xl border bg-card">
+            <section class="pxl-card border bg-card">
               <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.dxcc-entity-distribution-top")}</h2>
               <div class="p-4">
                 <BarChart items=dxcc_top.clone() max=dxcc_top.first().map(|(_, c)| *c).unwrap_or(1) />
               </div>
             </section>
 
-            <section class="rounded-xl border bg-card">
+            <section class="pxl-card border bg-card">
               <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.band-distribution")}</h2>
               <div class="p-4">
                 <BarChart items=band_top.clone() max=band_top.first().map(|(_, c)| *c).unwrap_or(1) />
               </div>
             </section>
 
-            <section class="rounded-xl border bg-card">
+            <section class="pxl-card border bg-card">
               <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.mode-distribution")}</h2>
               <div class="p-4">
                 <BarChart items=mode_top.clone() max=mode_top.first().map(|(_, c)| *c).unwrap_or(1) />
               </div>
             </section>
 
-            <section class="rounded-xl border bg-card">
+            <section class="pxl-card border bg-card">
               <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.monthly-qso-trend")}</h2>
               <div class="p-4">
                 <div class="flex h-32 items-end gap-1">
@@ -354,7 +354,7 @@ pub fn StatsPage() -> impl IntoView {
                       view! {
                         <div class="group flex min-w-0 flex-1 flex-col items-center gap-1">
                           <div
-                            class="w-full rounded-t bg-primary/70 transition-all group-hover:bg-primary"
+                            class="w-full bg-primary/70 transition-all group-hover:bg-primary"
                             style=format!("height: {h}%")
                             title=tp("radio.qsos", *c as u32, &[&(m).to_string(), &c.to_string()])
                           ></div>
@@ -369,7 +369,7 @@ pub fn StatsPage() -> impl IntoView {
 
             {(!heatmap.is_empty()).then(|| {
               view! {
-                <section class="rounded-xl border bg-card">
+                <section class="pxl-card border bg-card">
                   <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.hour-band-heatmap")}</h2>
                   <div class="p-4">
                     <Heatmap rows=heatmap.clone() />
@@ -383,7 +383,7 @@ pub fn StatsPage() -> impl IntoView {
 
             {(!daily.is_empty()).then(|| {
               view! {
-                <section class="rounded-xl border bg-card">
+                <section class="pxl-card border bg-card">
                   <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.qso-calendar-heatmap")}</h2>
                   <div class="p-4">
                     <CalendarHeatmap counts=daily.clone() />

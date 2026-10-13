@@ -105,22 +105,22 @@ pub fn ContestPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.next-contest")}</h2>
           <div class="p-4">
             {match next {
               Some((0, m, name)) => view! {
-                <div class="rounded-lg border bg-primary/10 px-4 py-3">
-                  <div class="text-sm font-semibold">{tf("contest.this-month-2", &[&(t(name)).to_string(), &m.to_string()])}</div>
+                <div class="border bg-primary/10 px-4 py-3">
+                  <div class="text-sm font-semibold">{tf("contest.this-month-with-name", &[&(t(name)).to_string(), &m.to_string()])}</div>
                   <div class="mt-1 text-xs text-muted-foreground">{move || t("contest.get-ready-and-remember")}</div>
                 </div>
               }
               .into_any(),
               Some((w, m, name)) => view! {
-                <div class="rounded-lg border bg-primary/10 px-4 py-3">
+                <div class="border bg-primary/10 px-4 py-3">
                   <div class="text-sm font-semibold">{tf("contest.next", &[&(t(name)).to_string(), &m.to_string()])}</div>
                   <div class="mt-1 text-xs text-muted-foreground">
-                    {tp("contest.in-about-months-2", w, &[&w.to_string()])}
+                    {tp("contest.held-in-about-months", w, &[&w.to_string()])}
                   </div>
                 </div>
               }
@@ -132,7 +132,7 @@ pub fn ContestPage() -> impl IntoView {
 
         <CountdownSection />
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.full-year-contest-calendar")}</h2>
           <div class="divide-y">
             {scheduled
@@ -157,8 +157,8 @@ pub fn ContestPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.contest-tips-2")}</h2>
+        <section class="pxl-card border bg-card">
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.contest-tips-heading")}</h2>
           <ul class="space-y-2 p-4">
             {CONTEST_TIPS
               .iter()

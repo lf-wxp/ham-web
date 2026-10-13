@@ -15,7 +15,7 @@ use crate::i18n::{t, tf, tp};
 use crate::ui::{Button, ControlSize, Input, InputType, NumberField, Size, Slider, Variant};
 
 const NOTE: &str = "text-xs text-muted-foreground";
-const RESULT: &str = "rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
+const RESULT: &str = "bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
 const CURVE_W: f64 = 600.0;
 const CURVE_H: f64 = 110.0;
 const CURVE_PAD: f64 = 24.0;
@@ -188,7 +188,7 @@ pub(super) fn HeatmapCard() -> impl IntoView {
   let marker_x = move || CURVE_PAD + hour_idx() as f64 / 23.0 * (CURVE_W - 2.0 * CURVE_PAD);
 
   view! {
-    <section id="heatmap" class="scroll-mt-24 rounded-xl border bg-card">
+    <section id="heatmap" class="scroll-mt-24 pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.24-hour-opening-window")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("tools.running-the-prediction-for")}
@@ -363,7 +363,7 @@ pub(super) fn HeatmapCard() -> impl IntoView {
                               let aria = label.clone();
                               let class = move || {
                                 cn(&[
-                                  "h-5 flex-1 cursor-pointer rounded-[2px] p-0 transition-shadow",
+                                  "h-5 flex-1 cursor-pointer p-0 transition-shadow",
                                   cell_class(c),
                                   if selected.get() == Some((band, h)) {
                                     "ring-2 ring-primary ring-inset"
@@ -558,7 +558,7 @@ pub(super) fn HeatmapCard() -> impl IntoView {
                       view! {
                         <div class="flex items-center gap-2 text-sm">
                           <span class="w-12 shrink-0 font-medium">{band}</span>
-                          <div class="h-3 flex-1 overflow-hidden rounded bg-muted">
+                          <div class="h-3 flex-1 overflow-hidden bg-muted">
                             <div class="h-full bg-emerald-500" style=format!("width: {pct:.0}%")></div>
                           </div>
                           <span class="w-14 shrink-0 text-right text-xs tabular-nums text-muted-foreground">

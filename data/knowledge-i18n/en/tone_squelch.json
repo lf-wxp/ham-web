@@ -1,0 +1,11 @@
+{
+  "{code:03o} 超出范围": "{code:03o} is out of range",
+  "依地区约定（我国业余为 1240–1260 MHz）": "By regional agreement (amateurs in China have 1240–1260 MHz)",
+  "多用 -5 MHz（我国），依地区约定": "Mostly -5 MHz (in China), by regional agreement",
+  "多用 -600 kHz（三区），依地区约定": "Mostly -600 kHz (Region 3), by regional agreement",
+  "常用 -100 kHz，依地区约定": "Usually -100 kHz, by regional agreement",
+  "常用 -500 kHz 或 -1 MHz，依地区约定": "Usually -500 kHz or -1 MHz, by regional agreement",
+  "未知": "Unknown",
+  "美国 222–225 MHz 波段常用 -1.6 MHz（我国未开放该波段）": "The US 222–225 MHz band commonly uses -1.6 MHz (that band is not allocated in China)",
+  "美国 902–928 MHz 波段常用 +12 MHz（我国未开放该波段）": "The US 902–928 MHz band commonly uses +12 MHz (that band is not allocated in China)"
+}

@@ -30,7 +30,7 @@ pub fn ContestCalendarPage() -> impl IntoView {
     let (y, m, d) = next_start(e, now_t);
     let month_start = js_sys::Date::utc(y as f64, (m - 1) as f64);
     let target = month_start + (d as f64 - 1.0) * 86_400_000.0;
-    super::countdown::add_countdown(&tf("contest.contest-2", &[(e.name)]), target as i64);
+    super::countdown::add_countdown(&tf("contest.contest-with-name", &[(e.name)]), target as i64);
     alert(&tf("contest.added-to-countdown-reminders", &[(e.name)]));
   };
 
@@ -53,7 +53,7 @@ pub fn ContestCalendarPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.all-contests-sorted-by")}</h2>
           <div class="divide-y">
             {scheduled
@@ -66,7 +66,7 @@ pub fn ContestCalendarPage() -> impl IntoView {
                     <div class="min-w-0">
                       <div class="flex flex-wrap items-baseline gap-x-2">
                         <span class="font-medium">{move || t(ev.name)}</span>
-                        <span class="rounded-full border bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
+                        <span class="border bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
                           {move || t(ev.mode)}
                         </span>
                       </div>
@@ -112,7 +112,7 @@ pub fn ContestCalendarPage() -> impl IntoView {
           </p>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.contest-tips")}</h2>
           <ul class="space-y-2 p-4">
             <li class="flex gap-2 text-sm text-muted-foreground">

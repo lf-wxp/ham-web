@@ -1,0 +1,14 @@
+{
+  "与本振相差一个中频的对称频率，抑制不足会产生假响应。": "The frequency symmetrical to the local oscillator by one IF; poor rejection produces a false response.",
+  "关注接收指标：灵敏度、选择性、动态范围比发射功率更重要。": "Mind the receive specifications: sensitivity, selectivity and dynamic range matter more than transmit power.",
+  "发射机的功率放大级，决定输出功率，需良好匹配天线。": "The transmitter's power amplification stage; it sets the output power and needs a well matched antenna.",
+  "天线失配时自动降低功率，保护功放不被反射功率损坏。": "Reduces power automatically when the antenna is mismatched, protecting the amplifier from reflected power.",
+  "把接收信号与本振混频，变频到固定中频（IF）再处理，选择性高。": "The received signal is mixed with a local oscillator and converted to a fixed intermediate frequency (IF) before processing, giving high selectivity.",
+  "按用途选择：本地通联选手台/车台（VHF/UHF），远距离 DX 选短波电台（HF）。": "Choose by use: a handheld or mobile rig (VHF/UHF) for local contacts, an HF radio for long-distance DX.",
+  "末级功放": "Final amplifier",
+  "考虑扩展：内置天调、数字模式接口（CAT/USB）、SDR 频谱显示。": "Consider expandability: a built-in antenna tuner, digital mode interfaces (CAT/USB) and an SDR spectrum display.",
+  "超外差": "Superheterodyne",
+  "镜像频率": "Image frequency",
+  "预算内优先保证天线与馈线质量，天线系统往往比电台本身更关键。": "Within your budget give priority to antenna and feedline quality; the antenna system often matters more than the radio itself.",
+  "驻波保护": "SWR protection"
+}

@@ -124,7 +124,7 @@ pub fn SolarPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold">
             {move || t("radio.live-solar-activity")}
             <span class="text-xs font-normal text-muted-foreground">
@@ -151,7 +151,7 @@ pub fn SolarPage() -> impl IntoView {
             <MetricCard label=t("radio.a-index") value=a unit=t("radio.daily-geomagnetic-index") loading=loading failed=failed />
           </div>
           <div class="grid grid-cols-2 gap-3 px-4 pb-4 sm:grid-cols-4">
-            <div class="col-span-2 rounded-lg border bg-muted/40 p-3 text-center sm:col-span-4">
+            <div class="col-span-2 border bg-muted/40 p-3 text-center sm:col-span-4">
               <div class="text-xs text-muted-foreground">{move || t("radio.propagation-conditions-from-k")}</div>
               <div class="mt-1 text-2xl font-semibold tabular-nums">
                 {move || {
@@ -192,7 +192,7 @@ pub fn SolarPage() -> impl IntoView {
           let conds = conditions.get();
           (!conds.is_empty()).then(|| {
             view! {
-              <section class="rounded-xl border bg-card">
+              <section class="pxl-card border bg-card">
                 <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.band-conditions")}</h2>
                 <div class="p-4">
                   <ConditionsTable conditions=conds />
@@ -216,7 +216,7 @@ pub fn SolarPage() -> impl IntoView {
           (!hist.is_empty()).then(|| view! { <FluxTrend history=hist /> })
         }}
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.solar-indices")}</h2>
           <div class="divide-y">
             {SOLAR_INDICES
@@ -234,14 +234,14 @@ pub fn SolarPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.propagation-condition-scale")}</h2>
           <div class="grid gap-3 p-4 sm:grid-cols-2">
             {CONDITIONS
               .iter()
               .map(|&(level, desc)| {
                 view! {
-                  <div class="rounded-lg border bg-muted/40 p-3">
+                  <div class="border bg-muted/40 p-3">
                     <div class="font-medium">{level}</div>
                     <div class="mt-1 text-sm text-muted-foreground">{desc}</div>
                   </div>
@@ -251,7 +251,7 @@ pub fn SolarPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.solar-cycle")}</h2>
           <ul class="space-y-2 p-4">
             {CYCLE_NOTES

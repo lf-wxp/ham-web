@@ -17,7 +17,7 @@ pub(super) fn GroundMaterialSection(
   material: RwSignal<usize>,
 ) -> impl IntoView {
   view! {
-    <div class="space-y-2 rounded-xl border bg-card p-4">
+    <div class="space-y-2 pxl-card border bg-card p-4">
       <div class="flex flex-wrap items-center gap-2">
         <span class=NOTE>{move || t("tools.nec-ground")}</span>
         <ChipGroup

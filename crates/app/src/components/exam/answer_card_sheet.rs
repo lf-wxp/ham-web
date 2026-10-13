@@ -99,9 +99,9 @@ pub fn AnswerCardSheet(
           }
           let correct = q.is_answer_correct(&user);
           let btn_class = if answered {
-            "relative h-9 w-full rounded-md border text-sm font-medium transition-colors bg-primary text-primary-foreground"
+            "relative h-9 w-full border text-sm font-medium transition-colors bg-primary text-primary-foreground"
           } else {
-            "relative h-9 w-full rounded-md border text-sm font-medium transition-colors bg-muted text-foreground"
+            "relative h-9 w-full border text-sm font-medium transition-colors bg-muted text-foreground"
           };
           let image = q.image().map(|src| {
             let label = q.j_code().map_or_else(|| t("exam.question-image"), |j| tf("exam.question-figure", &[(j)]));
@@ -119,7 +119,7 @@ pub fn AnswerCardSheet(
                 <span>{i + 1}</span>
                 {flagged
                   .then(|| {
-                    view! { <span class="absolute -top-1 -right-1 inline-block size-3 rounded-full bg-yellow-400"></span> }
+                    view! { <span class="absolute -top-1 -right-1 inline-block size-3 bg-yellow-400"></span> }
                   })}
                 {fin
                   .then(|| {
@@ -151,7 +151,7 @@ pub fn AnswerCardSheet(
       <div class="px-4 space-y-3 overflow-y-auto">
         <div class="flex items-center justify-between gap-3 text-sm">
           <div class="text-muted-foreground">
-            {move || t("exam.answered-2")} " " {answered_count} " / " {move || questions.with(|q| q.len())} "｜" {move || t("exam.flag")} " " {flagged_count}
+            {move || t("exam.answered-summary")} " " {answered_count} " / " {move || questions.with(|q| q.len())} "｜" {move || t("exam.flag")} " " {flagged_count}
           </div>
           <div class="flex items-center gap-2">
             {filter_button(AnswerCardFilter::All, "全部")}
@@ -194,15 +194,15 @@ pub fn AnswerCardSheet(
               view! {
                 <div class="pt-2 text-xs text-muted-foreground flex items-center gap-3">
                   <span class="inline-flex items-center gap-1">
-                    <span class="inline-block size-2 rounded-full bg-green-600"></span>
-                    {move || t("exam.correct-3")}
+                    <span class="inline-block size-2 bg-green-600"></span>
+                    {move || t("exam.correct-label")}
                   </span>
                   <span class="inline-flex items-center gap-1">
-                    <span class="inline-block size-2 rounded-full bg-red-600"></span>
-                    {move || t("exam.wrong-2")}
+                    <span class="inline-block size-2 bg-red-600"></span>
+                    {move || t("exam.wrong-label")}
                   </span>
                   <span class="inline-flex items-center gap-1">
-                    <span class="inline-block size-2 rounded-full bg-yellow-400"></span>
+                    <span class="inline-block size-2 bg-yellow-400"></span>
                     {move || t("exam.flagged")}
                   </span>
                 </div>

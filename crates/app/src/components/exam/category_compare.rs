@@ -18,7 +18,7 @@ pub(crate) fn CategoryCompare(deltas: Vec<CategoryDelta>) -> impl IntoView {
           <tr>
             <th scope="col" class="py-1 text-left font-normal">{move || t("exam.category")}</th>
             <th scope="col" class="py-1 text-right font-normal">{move || t("exam.this")}</th>
-            <th scope="col" class="py-1 text-right font-normal">{move || t("exam.previous-2")}</th>
+            <th scope="col" class="py-1 text-right font-normal">{move || t("exam.previous-exams")}</th>
             <th scope="col" class="py-1 text-right font-normal">{move || t("exam.change")}</th>
           </tr>
         </thead>

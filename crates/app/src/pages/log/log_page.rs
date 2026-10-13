@@ -157,7 +157,7 @@ pub fn LogPage() -> impl IntoView {
   // 上传成功后自己宣告 —— 我们无法探测 LoTW 端到底收没收到。
   let mark_lotw = Callback::new(move |()| {
     let n = pending_lotw.get_untracked();
-    if n == 0 || !confirm(&tf("log.mark-these-qsos-as-uploaded", &[&n.to_string()])) {
+    if n == 0 || !confirm(&tp("log.mark-these-qsos-as-uploaded", n, &[&n.to_string()])) {
       return;
     }
     logbook.update(|lb| {
@@ -167,7 +167,7 @@ pub fn LogPage() -> impl IntoView {
       }
     });
     store.persist();
-    crate::util::alert(&tf("log.marked-as-uploaded-lotw", &[&n.to_string()]));
+    crate::util::alert(&tp("log.marked-as-uploaded-lotw", n, &[&n.to_string()]));
   });
 
   let on_save = Callback::new(move |()| save());

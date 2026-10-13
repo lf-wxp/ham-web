@@ -16,7 +16,7 @@ pub fn PillButton(
     <button
       type="button"
       data-slot="morse-pill"
-      class="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+      class="inline-flex items-center gap-2 border bg-card px-4 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
       on:click=move |_| {
         if let Some(cb) = on_click {
           cb.run(());

@@ -40,14 +40,14 @@ pub(super) fn FsplCalculator() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class="sm:col-span-2 rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
+      <div class="sm:col-span-2 bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let (d, f) = (dist.get(), freq.get());
           if d <= 0.0 || f <= 0.0 {
             t("tools.enter-a-positive-distance")
           } else {
             let loss = 20.0 * d.log10() + 20.0 * f.log10() + 32.45;
-            tf("tools.free-space-path-loss-2", &[&(fmt_num(loss)).to_string()])
+            tf("tools.free-space-path-loss-result", &[&(fmt_num(loss)).to_string()])
           }
         }}
       </div>

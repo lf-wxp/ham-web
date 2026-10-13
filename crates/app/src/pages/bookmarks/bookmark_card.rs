@@ -32,9 +32,9 @@ pub(super) fn BookmarkCard(
   let q_has_note = question.clone();
   let has_note = store::load_note(&q_has_note.stable_id().unwrap_or_default()).is_some();
   view! {
-    <div class="rounded-xl border bg-card p-4">
+    <div class="pxl-card border bg-card p-4">
       <div class="mb-2 flex items-start gap-2">
-        <span class="mt-0.5 shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{j}</span>
+        <span class="mt-0.5 shrink-0 bg-muted px-1.5 py-0.5 font-mono text-xs">{j}</span>
         <p class="flex-1 text-sm font-medium leading-snug">{question.question.clone()}</p>
         <Button
           variant=Variant::Text
@@ -73,7 +73,7 @@ pub(super) fn BookmarkCard(
             view! {
               <button
                 type="button"
-                class="inline-flex items-center gap-1 rounded-full border bg-accent px-2 py-0.5 text-[11px] transition-colors hover:bg-destructive/10"
+                class="inline-flex items-center gap-1 border bg-accent px-2 py-0.5 text-[11px] transition-colors hover:bg-destructive/10"
                 title=move || t("exam.remove-from-this-group")
                 on:click=move |_| on_remove_from_group.run((qr.clone(), n.clone()))
               >
@@ -100,7 +100,7 @@ pub(super) fn BookmarkCard(
               placeholder=Signal::derive(move || t("exam.add-to-group"))
               size=ControlSize::Sm
               aria_label=Signal::derive(move || t("exam.add-to-group"))
-              class="h-7 w-auto rounded-full px-2 py-0 text-[11px] md:text-[11px]"
+              class="h-7 w-auto px-2 py-0 text-[11px] md:text-[11px]"
             />
           }
         })}
@@ -113,7 +113,7 @@ pub(super) fn BookmarkCard(
         >
           {move || t("exam.notes")}
           {has_note.then(|| {
-            view! { <span class="size-1.5 rounded-full bg-primary"></span> }
+            view! { <span class="size-1.5 bg-primary"></span> }
           })}
         </Button>
       </div>

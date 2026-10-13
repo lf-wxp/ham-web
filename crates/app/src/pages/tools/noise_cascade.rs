@@ -82,7 +82,7 @@ pub(super) fn NoiseCascade() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class="sm:col-span-2 rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
+      <div class="sm:col-span-2 bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let to_lin = |db: f64| 10f64.powf(db / 10.0);
           let f1 = to_lin(nf1.get());

@@ -71,14 +71,14 @@ pub fn GridMapPage() -> impl IntoView {
         subtitle=Signal::derive(move || t("radio.maidenhead-grid-locator-lookup"))
         actions=ViewFn::from(move || {
           view! {
-            <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
+            <span class="border px-3 py-1 text-xs text-muted-foreground">
               {move || tp("radio.grids-worked", count.get(), &[&count.get().to_string()])}
             </span>
           }
         })
       />
       <PageContainer>
-        <section class="rounded-xl border bg-card p-4">
+        <section class="pxl-card border bg-card p-4">
           <h2 class="mb-3 text-sm font-semibold">{move || t("radio.grid-lookup")}</h2>
           <div class="grid gap-3 sm:grid-cols-2">
             <label class="flex flex-col gap-1.5 text-sm">
@@ -91,7 +91,7 @@ pub fn GridMapPage() -> impl IntoView {
                 class="font-mono uppercase"
               />
             </label>
-            <div class="flex items-center rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums">
+            <div class="flex items-center bg-muted/40 px-3 py-2 text-sm tabular-nums">
               {move || {
                 let q = query.get().trim().to_ascii_uppercase();
                 if q.is_empty() {
@@ -116,7 +116,7 @@ pub fn GridMapPage() -> impl IntoView {
             )
                       } else {
                         tf(
-              "radio.centre-lat-lon-2",
+              "radio.centre-lat-lon-with-place",
               &[&q, &format!("{lat:.4}"), &format!("{lon:.4}"), &loc],
             )
                       }
@@ -129,7 +129,7 @@ pub fn GridMapPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card p-4">
+        <section class="pxl-card border bg-card p-4">
           {move || {
             let entries = store.logbook.get().entries;
             let station_grid = store.active_station().gridsquare;

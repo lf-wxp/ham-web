@@ -33,7 +33,7 @@ pub(super) fn LiveRanking() -> impl IntoView {
   });
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("log.club-log-live-most")}</h2>
       <div class="p-4">
         {move || {
@@ -55,7 +55,7 @@ pub(super) fn LiveRanking() -> impl IntoView {
                 .iter()
                 .map(|e| {
                   view! {
-                    <span class="rounded-lg border bg-muted/40 px-2.5 py-1 text-xs tabular-nums">
+                    <span class="border bg-muted/40 px-2.5 py-1 text-xs tabular-nums">
                       <span class="font-semibold text-foreground">{format!("#{}", e.rank)}</span>
                       " DXCC " <span class="font-mono">{e.adif}</span>
                     </span>

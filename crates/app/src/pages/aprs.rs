@@ -18,14 +18,14 @@ pub fn AprsPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.key-concepts-2")}</h2>
+        <section class="pxl-card border bg-card">
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.key-concepts-heading")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {APRS_CONCEPTS
               .iter()
               .map(|&(t, d)| {
                 view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2">
+                  <div class="flex flex-col gap-1 px-3 py-2">
                     <span class="text-sm font-medium">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
@@ -35,14 +35,14 @@ pub fn AprsPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("shell.common-frequencies")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {APRS_FREQS
               .iter()
               .map(|&(freq, usage)| {
                 view! {
-                  <div class="flex items-baseline gap-2 rounded-lg px-3 py-2">
+                  <div class="flex items-baseline gap-2 px-3 py-2">
                     <span class="shrink-0 font-mono text-sm font-semibold text-primary">{freq}</span>
                     <span class="text-sm text-muted-foreground">{usage}</span>
                   </div>
@@ -52,14 +52,14 @@ pub fn AprsPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.main-uses")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {APRS_USES
               .iter()
               .map(|&(t, d)| {
                 view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2">
+                  <div class="flex flex-col gap-1 px-3 py-2">
                     <span class="text-sm font-medium">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>

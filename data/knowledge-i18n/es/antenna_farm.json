@@ -1,0 +1,18 @@
+{
+  "HF 偶极相互垂直布置可显著减小相互影响。": "Colocar los dipolos de HF en perpendicular reduce notablemente su interacción mutua.",
+  "不同波段天线错层架设，高频在上、低频在下。": "Las antenas de distintas bandas se montan a distinta altura: las bandas altas arriba y las bajas abajo.",
+  "列出所需波段与天线类型：HF 偶极、八木、垂直、VHF/UHF。": "Enumere las bandas y los tipos de antena necesarios: dipolo HF, Yagi, vertical y VHF/UHF.",
+  "场地评估": "Evaluación del emplazamiento",
+  "塔与天线做好防雷接地，统一接入地网。": "Proteja contra rayos y conecte a tierra la torre y las antenas, integradas en una única red de tierra.",
+  "多天线共用塔时配置旋转器与天线切换器、堆叠开关。": "Cuando varias antenas compartan torre, disponga rotor, conmutador de antenas y conmutador de apilado.",
+  "多部电台同时工作时，用带通滤波器隔离收发链路。": "Con varios equipos operando a la vez, aísle las cadenas de emisión y recepción con filtros paso banda.",
+  "天线清单": "Lista de antenas",
+  "天线间保持足够间距，减小互耦与方向图畸变。": "Mantenga separación suficiente entre antenas para reducir el acoplamiento mutuo y la distorsión del diagrama.",
+  "旋转器与切换": "Rotores y conmutación",
+  "记录可用面积、可架设高度、与邻居和电力线的距离。": "Registre la superficie disponible, la altura posible de instalación y las distancias a vecinos y líneas eléctricas.",
+  "记录每根天线的谐振点与驻波比，便于快速定位故障。": "Anote la resonancia y la ROE de cada antena para localizar averías con rapidez.",
+  "间距与隔离": "Separación y aislamiento",
+  "馈线走向": "Trazado de las líneas",
+  "馈线集中走线、就近接地，避免与天线平行耦合。": "Tienda las líneas agrupadas y conéctelas a tierra cerca, evitando trazos paralelos a las antenas.",
+  "高度分层": "Distribución por alturas"
+}

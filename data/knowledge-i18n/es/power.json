@@ -1,0 +1,22 @@
+{
+  "便宜、电流大，但重、需防过放，应急电源常用。": "Barata y con gran corriente, pero pesada y requiere protección contra descarga profunda; habitual como fuente de emergencia.",
+  "单格 2V，常见 12V": "2 V por elemento, normalmente 12 V",
+  "单节 1.2V": "1,2 V por celda",
+  "单节 3.2V，4 串约 12.8V": "3,2 V por celda; 4 en serie dan unos 12,8 V",
+  "单节 3.7V": "3,7 V por celda",
+  "可充电、较环保，记忆效应低。": "Recargable y relativamente ecológica, con bajo efecto memoria.",
+  "多数业余电台按 13.8V 直流供电设计（对应 12V 铅酸浮充电压），直接接 13.8V 稳压电源。": "La mayoría de los equipos de radioaficionado están diseñados para 13,8 V de continua (tensión de flotación de una batería de plomo-ácido de 12 V): conéctelos directamente a una fuente regulada de 13,8 V.",
+  "大功率发射时电流大，需用足够粗的电源线与可靠接头，避免压降与发热。": "Al transmitir con gran potencia la corriente es alta: use cables de alimentación de sección suficiente y conectores fiables para evitar caída de tensión y calentamiento.",
+  "应急电源可选择汽车电瓶 + 太阳能板 + 充电控制器，注意正负极与熔断保护。": "Como fuente de emergencia puede usar una batería de coche más un panel solar y un controlador de carga: cuide la polaridad y la protección por fusible.",
+  "电池严禁短路，短路会产生极大电流导致灼伤、起火甚至爆炸。": "Nunca cortocircuite una batería: la corriente enorme puede causar quemaduras, incendio o incluso explosión.",
+  "磷酸铁锂 LiFePO₄": "LiFePO4 (litio-ferrofosfato)",
+  "耐过充、可大电流，但有记忆效应且含镉，已少用。": "Soporta la sobrecarga y da corrientes altas, pero tiene efecto memoria y contiene cadmio, por lo que ya se usa poco.",
+  "能量密度高，手台普遍使用，需保护板防过充过放。": "Alta densidad de energía y uso generalizado en portátiles: requiere placa de protección contra sobrecarga y descarga excesiva.",
+  "轻、寿命长、安全，业余便携电源首选。": "Ligera, duradera y segura: la primera opción como fuente portátil de radioaficionado.",
+  "铅酸电池": "Batería de plomo-ácido",
+  "锂电池充电需使用匹配的充电器与保护电路，过充过放都会损坏甚至起火。": "Las baterías de litio deben cargarse con un cargador y un circuito de protección adecuados: tanto la sobrecarga como la descarga excesiva las dañan y pueden provocar un incendio.",
+  "锂离子 Li-ion": "Li-ion (ion de litio)",
+  "镍氢 NiMH": "NiMH (níquel-hidruro metálico)",
+  "镍镉 NiCd": "NiCd (níquel-cadmio)",
+  "长期存放电池应保持适当电量并定期补电，避免深度放电。": "Para almacenar baterías mucho tiempo, mantenga un nivel de carga adecuado y recárguelas periódicamente, evitando descargas profundas."
+}

@@ -275,7 +275,7 @@ pub fn ListenPage() -> impl IntoView {
 
   let card = move || {
     if loading.get() {
-      return view! { <div class="p-6 text-sm text-muted-foreground" aria-live="polite">{move || t("exam.loading-questions-2")}</div> }.into_any();
+      return view! { <div class="p-6 text-sm text-muted-foreground" aria-live="polite">{move || t("exam.loading-questions-ellipsis")}</div> }.into_any();
     }
     let i = index.get();
     let Some(q) = questions.with(|qs| qs.get(i).cloned()) else {
@@ -291,7 +291,7 @@ pub fn ListenPage() -> impl IntoView {
         <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
           <span class="tabular-nums">{tf("common.question", &[&(i + 1).to_string(), &total.to_string(), &(t(q.kind.label())).to_string()])}</span>
           <span
-            class=move || if phase.get().is_some() { "rounded-full bg-primary/10 px-2 py-0.5 font-medium text-foreground" } else { "px-2 py-0.5" }
+            class=move || if phase.get().is_some() { "bg-primary/10 px-2 py-0.5 font-medium text-foreground" } else { "px-2 py-0.5" }
             aria-live="polite"
           >
             {move || t(phase_label(phase.get()))}
@@ -303,14 +303,14 @@ pub fn ListenPage() -> impl IntoView {
             let correct = answer_keys.contains(&o.key);
             let key = o.key.clone();
             view! {
-              <li class=move || if revealed() && correct { "rounded-md bg-emerald-500/10 px-2 py-1 font-medium text-emerald-800 dark:text-emerald-300" } else { "px-2 py-1" }>
+              <li class=move || if revealed() && correct { "bg-emerald-500/10 px-2 py-1 font-medium text-emerald-800 dark:text-emerald-300" } else { "px-2 py-1" }>
                 <span class="font-mono">{key.clone()}</span> "　" {o.text.clone()}
               </li>
             }
           }).collect_view()}
         </ul>
         <div class="mt-3 min-h-5 text-sm">
-          {move || revealed().then(|| view! { <span>{move || t("exam.correct-answer-2")} <span class="font-mono font-semibold">{answer.clone()}</span></span> })}
+          {move || revealed().then(|| view! { <span>{move || t("exam.correct-answer-prefix")} <span class="font-mono font-semibold">{answer.clone()}</span></span> })}
         </div>
       </div>
     }
@@ -325,7 +325,7 @@ pub fn ListenPage() -> impl IntoView {
       </div>
 
       {(!supported).then(|| view! {
-        <div role="alert" class="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
+        <div role="alert" class="border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
           {move || t("exam.this-browser-does-not")}
         </div>
       })}
@@ -409,7 +409,7 @@ pub fn ListenPage() -> impl IntoView {
         </label>
       </div>
 
-      <section class="rounded-xl border bg-card" aria-label=move || t("exam.current-question")>{card}</section>
+      <section class="pxl-card border bg-card" aria-label=move || t("exam.current-question")>{card}</section>
 
       <div class="flex items-center justify-center gap-3">
         <Button

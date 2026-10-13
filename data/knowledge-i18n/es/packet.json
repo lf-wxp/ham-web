@@ -1,0 +1,22 @@
+{
+  "AX.25 帧": "Trama AX.25",
+  "Bell 202（1200 baud）": "Bell 202 (1200 baudios)",
+  "G3RUH（9600 baud）": "G3RUH (9600 baudios)",
+  "HF Packet 速度慢但覆盖远，适合长距离与应急场景。": "El paquete en HF es lento pero llega lejos, adecuado para larga distancia y situaciones de emergencia.",
+  "Keep It Simple Stupid，TNC 与主机间的串行封装：0xC0 定界、0xDB 转义，使软件可替代硬件 TNC。": "Keep It Simple Stupid: encapsulado serie entre el TNC y el ordenador, delimitado por 0xC0 con 0xDB como carácter de escape, que permite que el software sustituya al TNC hardware.",
+  "VHF 主流：AFSK，mark 1200 Hz、space 2200 Hz，1200 baud、1 个起始位 + 8 数据位 + 1 个停止位。": "El estándar en VHF: AFSK con marca de 1200 Hz y espacio de 2200 Hz, a 1200 baudios, con 1 bit de inicio + 8 bits de datos + 1 bit de parada.",
+  "VHF/UHF 常用 1200 / 9600 baud，HF 常用 300 baud。": "En VHF/UHF se usan habitualmente 1200 / 9600 baudios, y en HF, 300 baudios.",
+  "Winlink 用 Winlink Express 接入，支持 Pactor / ARDOP / VARA 等协议。": "A Winlink se accede con Winlink Express, que admite Pactor / ARDOP / VARA y otros protocolos.",
+  "业余分组公告板，可留言与收发文件。": "Tablón de anuncios de paquetes de radioaficionados: permite dejar mensajes e intercambiar archivos.",
+  "业余分组通信的链路层协议，含源/目的呼号与校验。": "Protocolo de capa de enlace de la comunicación por paquetes de radioaficionados, con indicativos de origen y destino y comprobación.",
+  "以 0x7E 标志定界，含地址字段（呼号 + SSID，含扩展位）、控制与 PID 字段、信息字段及 CRC-16 校验；链路用 NRZI 编码与比特填充。": "Delimitada por la bandera 0x7E, contiene campos de dirección (indicativo + SSID, con bits de extensión), campos de control y PID, campo de información y comprobación CRC-16; el enlace usa codificación NRZI y relleno de bits.",
+  "基于 Packet 的位置、气象与短消息自动广播。": "Difusión automática de posición, meteorología y mensajes cortos basada en paquetes.",
+  "把数据切成带地址的数据包，用 AX.25 协议传输。": "Los datos se dividen en paquetes con dirección y se transmiten con el protocolo AX.25.",
+  "收发前确认频率占用情况，分组信号勿占用话音通联频率。": "Compruebe la ocupación de la frecuencia antes de transmitir: las señales de paquetes no deben ocupar las frecuencias de fonía.",
+  "数字中继，按呼号路径逐跳转发分组。": "Repetidor digital: reenvía los paquetes salto a salto según la ruta de indicativos.",
+  "现代 TNC 可用声卡 + 软件（如 Direwolf）替代专用硬件。": "El TNC moderno puede sustituirse por una tarjeta de sonido más software (como Dire Wolf).",
+  "直接 FSK 调制（不经音频 AFSK），需电台有平坦的 9600 接口与足够带宽，不能用普通话音麦克风口。": "Modulación FSK directa (sin AFSK de audio): exige un equipo con interfaz de 9600 plana y ancho de banda suficiente, y no sirve el puerto normal de micrófono de voz.",
+  "终端节点控制器，在数据流与电台音频之间相互转换。": "Controlador de nodo terminal: convierte entre el flujo de datos y el audio de la radio.",
+  "通过 HF/VHF 电台收发电子邮件的全球网关，应急通信刚需。": "Pasarela mundial para enviar y recibir correo electrónico por radio HF/VHF: imprescindible en las comunicaciones de emergencia.",
+  "速率": "Velocidades"
+}

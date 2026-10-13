@@ -106,7 +106,7 @@ pub fn FileDropZone(
         <span class="text-xs text-muted-foreground">
           {move || match choose_hint.as_ref() {
             Some(h) => h.get(),
-            None => t("tools.click-to-choose-or-2"),
+            None => t("tools.click-to-choose-audio-file"),
           }}
         </span>
         {move || {

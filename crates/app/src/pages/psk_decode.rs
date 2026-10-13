@@ -81,7 +81,7 @@ pub fn PskDecodePage() -> impl IntoView {
           view! {
             <a
               href="/modes"
-              class="rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              class="border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
               {t("radio.digital-modes-reference")}
             </a>
@@ -90,7 +90,7 @@ pub fn PskDecodePage() -> impl IntoView {
       />
 
       <PageContainer class="space-y-5">
-        <section class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+        <section class="pxl-card border bg-card p-4 text-sm text-muted-foreground">
           <p>
             {t("radio.upload-a-psk31-audio")}
             " "
@@ -98,7 +98,7 @@ pub fn PskDecodePage() -> impl IntoView {
           </p>
         </section>
 
-        <section class="rounded-xl border bg-card p-4">
+        <section class="pxl-card border bg-card p-4">
           {move || {
             (result.with(String::is_empty) && error.with(Option::is_none) && !processing.get())
               .then(|| {
@@ -147,7 +147,7 @@ pub fn PskDecodePage() -> impl IntoView {
           {move || {
             error.get().map(|e| {
               view! {
-                <div class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+                <div class="flex items-start gap-2 border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
                   <Icon kind=IconKind::AlertCircle class="mt-0.5 h-5 w-5 shrink-0" />
                   <div class="flex-1">
                     <div class="font-medium">{t("radio.decoding-failed")}</div>
@@ -173,7 +173,7 @@ pub fn PskDecodePage() -> impl IntoView {
                       {t("radio.choose-another")}
                     </Button>
                   </div>
-                  <pre class="whitespace-pre-wrap break-words rounded-lg border bg-muted/40 p-4 text-sm font-mono">{text}</pre>
+                  <pre class="whitespace-pre-wrap break-words border bg-muted/40 p-4 text-sm font-mono">{text}</pre>
                 </div>
               }
             })

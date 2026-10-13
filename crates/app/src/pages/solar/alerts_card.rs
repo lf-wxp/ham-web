@@ -22,7 +22,7 @@ pub(super) fn AlertsCard() -> impl IntoView {
   });
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.space-weather-alerts")}</h2>
       <div class="p-2">
         {move || {
@@ -55,7 +55,7 @@ pub(super) fn AlertsCard() -> impl IntoView {
                           view! { <span></span> }.into_any()
                         } else {
                           view! {
-                            <span class=format!("rounded bg-muted px-1.5 py-0.5 font-mono text-xs font-semibold {color}")>
+                            <span class=format!("bg-muted px-1.5 py-0.5 font-mono text-xs font-semibold {color}")>
                               {a.level.clone()}
                             </span>
                           }

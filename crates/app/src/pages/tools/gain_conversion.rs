@@ -41,7 +41,7 @@ pub(super) fn GainConversion() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class="sm:col-span-2 rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+      <div class="sm:col-span-2 bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
         {move || t("tools.a-half-wave-dipole")}
       </div>
     </div>

@@ -1,0 +1,23 @@
+{
+  "13.8V 标准电压": "Tensión estándar de 13,8 V",
+  "压降": "Caída de tensión",
+  "基地台首选线性电源（纹波小、无干扰），便携用磷酸铁锂电池。": "Para la estación base, prefiera una fuente lineal (poco rizado y sin interferencias); para uso portátil, baterías de LiFePO4.",
+  "多数电台按 13.8V（对应 12V 铅酸浮充）设计，稳压电源应输出 13.8V。": "La mayoría de los equipos se diseñan para 13,8 V (equivalente a la carga de flotación de una batería de plomo-ácido de 12 V), por lo que la fuente regulada debe entregar 13,8 V.",
+  "工频变压器 + 整流 + 线性稳压": "Transformador de frecuencia industrial + rectificador + regulador lineal",
+  "开关电源": "Fuente conmutada",
+  "开关电源若用于 HF 接收，需选择电磁兼容好、带屏蔽的产品，必要时加共模扼流圈。": "Si se usa una fuente conmutada para recibir en HF, elija un producto bien apantallado y con buena compatibilidad electromagnética, y añada un choque de modo común si hace falta.",
+  "无纹波与干扰，便携与应急首选，注意电压范围。": "Sin rizado ni interferencias: la primera opción para uso portátil y de emergencia; vigile el rango de tensión.",
+  "电池直供": "Alimentación directa por batería",
+  "电流在电源线与接头上产生的电压降，大功率发射时需粗线短距离供电。": "Caída de tensión producida por la corriente en los cables y conectores de alimentación: con gran potencia hacen falta cables gruesos y tramos cortos.",
+  "电源应有限流与短路保护，防止故障时烧毁设备。": "La fuente debe tener limitación de corriente y protección contra cortocircuitos para que un fallo no queme el equipo.",
+  "电源线用足线径并可靠压接，避免接头松动导致压降与发热。": "Use cables de alimentación de sección suficiente y con conexiones prensadas fiables, para evitar que los contactos flojos provoquen caída de tensión y calentamiento.",
+  "电源额定电流应大于电台最大发射电流，并留约 20% 余量。": "La corriente nominal de la fuente debe superar la corriente máxima de emisión del equipo, con un margen de un 20 %.",
+  "纹波 Ripple": "Rizado (ripple)",
+  "纹波小、无高频干扰，但笨重、效率低、发热大。": "Poco rizado y sin interferencias de RF, pero voluminosa, poco eficiente y muy caliente.",
+  "线性电源": "Fuente lineal",
+  "轻便高效，但可能产生高频噪声干扰接收。": "Ligera y eficiente, pero puede generar ruido de RF que interfiera la recepción.",
+  "输出电压中的交流残余，线性电源纹波小，劣质开关电源纹波大会引入「嗡嗡」声。": "Residuo de alterna en la tensión de salida: las fuentes lineales tienen poco rizado y las fuentes conmutadas de baja calidad, con mucho rizado, introducen un «zumbido».",
+  "过流保护": "Protección contra sobrecorriente",
+  "铅酸 / 磷酸铁锂": "Plomo-ácido / LiFePO4",
+  "高频开关 + 变压器": "Conmutación de alta frecuencia + transformador"
+}

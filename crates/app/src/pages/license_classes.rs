@@ -21,11 +21,11 @@ pub fn LicenseClassesPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <div class="overflow-x-auto rounded-xl border bg-card">
+        <div class="overflow-x-auto pxl-card border bg-card">
           <table class="w-full min-w-[640px] border-collapse text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>
-                <th class=CELL>{move || t("exam.class-2")}</th>
+                <th class=CELL>{move || t("exam.class-column")}</th>
                 <th class=CELL>{move || t("exam.frequency-range")}</th>
                 <th class=CELL>{move || t("exam.power-limit")}</th>
                 <th class=CELL>{move || t("radio.notes")}</th>
@@ -51,14 +51,14 @@ pub fn LicenseClassesPage() -> impl IntoView {
           </table>
         </div>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.typical-equipment-and-scenarios")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {CLASS_USAGE
               .iter()
               .map(|&(t, d)| {
                 view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2">
+                  <div class="flex flex-col gap-1 px-3 py-2">
                     <span class="text-sm font-medium">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
@@ -68,14 +68,14 @@ pub fn LicenseClassesPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.band-privileges-quick-reference")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {BAND_PERMISSIONS
               .iter()
               .map(|&(t, d)| {
                 view! {
-                  <div class="flex items-baseline gap-2 rounded-lg px-3 py-2">
+                  <div class="flex items-baseline gap-2 px-3 py-2">
                     <span class="text-sm font-medium">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
@@ -85,7 +85,7 @@ pub fn LicenseClassesPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.exam-tips")}</h2>
           <ul class="space-y-2 p-4">
             {CLASS_TIPS

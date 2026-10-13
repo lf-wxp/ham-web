@@ -1,0 +1,6 @@
+{
+  "{dbm} dBm → μV 往返不一致：{back}": "{dbm} dBm → μV round trip inconsistent: {back}",
+  "{dbm} dBm 往返不一致：{back}": "{dbm} dBm round trip inconsistent: {back}",
+  "{dbuv} dBμV 往返不一致：{back}": "{dbuv} dBμV round trip inconsistent: {back}",
+  "{db} dB 往返不一致：{back}": "{db} dB round trip inconsistent: {back}"
+}

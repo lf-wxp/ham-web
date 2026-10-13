@@ -75,7 +75,7 @@ pub fn SstvDecoderPage() -> impl IntoView {
     max_bytes: MAX_BYTES,
     transfer: false,
     parse: parse_and_render,
-    too_large: |mb, max| tf("tools.file-too-large-about-3", &[mb, max]),
+    too_large: |mb, max| tf("tools.file-too-large-image-segment", &[mb, max]),
     timed_out: || t("tools.decoding-timed-out"),
     failed: || t("tools.decoding-failed-make-sure"),
   });

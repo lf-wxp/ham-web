@@ -85,7 +85,7 @@ pub fn PskReporterPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.look-up-reception-reports")}</h2>
           <div class="flex flex-wrap gap-3 p-4">
             <Input
@@ -108,7 +108,7 @@ pub fn PskReporterPage() -> impl IntoView {
         {move || {
           if failed.get() {
             return view! {
-              <section class="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
+              <section class="pxl-card border bg-card p-6 text-sm text-muted-foreground">
                 {move || t("radio.lookup-unavailable-make-sure")}
               </section>
             }
@@ -117,7 +117,7 @@ pub fn PskReporterPage() -> impl IntoView {
           let list = reports.get();
           if queried.get() && list.is_empty() {
             return view! {
-              <section class="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
+              <section class="pxl-card border bg-card p-6 text-sm text-muted-foreground">
                 {move || t("radio.no-recent-reception-reports")}
               </section>
             }
@@ -127,7 +127,7 @@ pub fn PskReporterPage() -> impl IntoView {
             return view! { <div></div> }.into_any();
           }
           view! {
-            <section class="rounded-xl border bg-card">
+            <section class="pxl-card border bg-card">
               <h2 class="border-b px-4 py-3 text-sm font-semibold">
                 {t("radio.reception-reports")} {list.len()} {t("radio.entry")}
               </h2>

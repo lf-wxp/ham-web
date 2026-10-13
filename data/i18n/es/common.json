@@ -11,7 +11,7 @@
   "common.a-licence-is-valid": "La licencia es válida como máximo 5 años; solicita la renovación 30 días hábiles antes del vencimiento.",
   "common.a-typical-pass-lasts": "Un paso típico dura unos 10–15 minutos, por lo que conviene combinarlo con",
   "common.accuracy": "Precisión {}%",
-  "common.accuracy-2": "Precisión {}% · {}",
+  "common.accuracy-with-result": "Precisión {}% · {}",
   "common.adjust": "Ajustar →",
   "common.after-connecting-read-azimuth": "Tras conectar, lee azimut/elevación e introduce un azimut objetivo para girar a distancia",
   "common.after-parsing-check-the": "Tras analizarlo, consulta el «ranking de rareza DXCC» para valorar si merece perseguirlo, o registra el indicativo en el diario.",
@@ -67,9 +67,9 @@
   "common.choose-a-file": "Elegir un archivo",
   "common.choose-a-valid-image": "Elige un archivo de imagen válido",
   "common.ci-v-address-hex": "Dirección CI-V (hex)",
-  "common.ci-v-address-hex-2": "Dirección CI-V (hex); 94 para IC-7300, A4 para IC-705",
+  "common.ci-v-address-hex-examples": "Dirección CI-V (hex); 94 para IC-7300, A4 para IC-705",
   "common.class": "Clase {}: {}",
-  "common.class-2": "Clase {}: {}/{} ({}%)",
+  "common.class-with-score": "Clase {}: {}/{} ({}%)",
   "common.class-pass-mark-questions": {
     "one": "Clase {} · mínimo {} pregunta",
     "other": "Clase {} · mínimo {} preguntas"
@@ -93,12 +93,12 @@
   "common.connection-failed": "Conexión fallida: {}",
   "common.connection-notes": "Notas de conexión",
   "common.correct": "{} «{}» ({}% de aciertos)",
-  "common.correct-2": {
+  "common.copied-correct": {
     "one": "{} / {} correcto",
     "other": "{} / {} correctos"
   },
-  "common.correct-3": "Correctas ",
-  "common.correct-4": "Correcto ✓",
+  "common.correct-label": "Correctas ",
+  "common.correct-verdict": "Correcto ✓",
   "common.correct-answer": "Respuesta correcta: {} ({})",
   "common.correct-answered": "{} · {}% correctas / {} respondidas",
   "common.correct-answers-items": {
@@ -119,7 +119,7 @@
     "one": "Examen de Clase {} en {} día",
     "other": "Examen de Clase {} en {} días"
   },
-  "common.days-until-the-class-2": {
+  "common.days-until-the-class-sprint": {
     "one": "Examen de Clase {} en {} día · fase final: errores + simulacros",
     "other": "Examen de Clase {} en {} días · fase final: errores + simulacros"
   },
@@ -147,7 +147,7 @@
   "common.enter-a-country-region": "Introduce un país / región (en inglés, p. ej. China)",
   "common.enter-a-reference-e": "Introduce una referencia, p. ej. G/SP-001 o K-0001",
   "common.entry": "{}/{}/{}",
-  "common.entry-2": ")",
+  "common.closing-paren": ")",
   "common.equipment-advice": "Consejos de equipo",
   "common.equipment-requirements": "Requisitos de equipo",
   "common.erection-notes": "Notas de izado",
@@ -266,7 +266,7 @@
   "common.practical-notes": "Notas prácticas",
   "common.press-while-answering-to": "Pulsa ? mientras respondes para abrir esta ayuda.",
   "common.preview": "Escuchar {}",
-  "common.preview-2": "Escuchar {}: {}",
+  "common.preview-with-code": "Escuchar {}: {}",
   "common.preview-question-image": "Vista previa de la imagen",
   "common.previous-month": "Mes anterior",
   "common.principle": "Principio",
@@ -285,11 +285,11 @@
     "one": "{} pregunta",
     "other": "{} preguntas"
   },
-  "common.questions-2": {
+  "common.label-with-questions": {
     "one": "{} «{}» ({} pregunta)",
     "other": "{} «{}» ({} preguntas)"
   },
-  "common.questions-3": {
+  "common.questions-total": {
     "one": "{} pregunta",
     "other": "{} preguntas"
   },
@@ -330,7 +330,7 @@
   "common.requirements": "Requisitos",
   "common.responses-carry-an-etag": "Las respuestas incluyen ETag; reenvíalo como If-None-Match y el contenido sin cambios devuelve 304, sin consumir datos.",
   "common.review": "Repasar",
-  "common.review-2": "Repasar {} ({})",
+  "common.review-with-count": "Repasar {} ({})",
   "common.review-again-in-days": {
     "one": "Repasar en {} día",
     "other": "Repasar en {} días"
@@ -371,7 +371,7 @@
   "common.something-went-wrong": "Algo ha ido mal",
   "common.spectrum-canvas-not-ready": "El lienzo del espectro no está listo",
   "common.speed-wpm": "Velocidad {}{} WPM",
-  "common.speed-wpm-2": "Velocidad ≈ {} WPM",
+  "common.speed-wpm-approx": "Velocidad ≈ {} WPM",
   "common.stop": "Detener",
   "common.study-plan": "Plan de estudio",
   "common.submit-the-station-application": "Presenta la solicitud de estación con tu certificado de operación: los particulares necesitan el formulario, copia de identificación y especificaciones del equipo.",
@@ -380,7 +380,7 @@
   "common.support-methods": "Métodos de soporte",
   "common.sydney": "Sídney",
   "common.take-one": "Hacer uno",
-  "common.take-one-2": "Hacer uno →",
+  "common.take-one-link": "Hacer uno →",
   "common.take-the-written-exam": "Supera el examen teórico; al aprobarlo obtendrás el Certificado de Operación de Estación de Radioaficionado (clases A / B / C).",
   "common.taken-times-a-few": {
     "one": "Has hecho {} intento; con unos más podremos valorarlo.",
@@ -436,7 +436,7 @@
     "one": "{} / {} · {} fallo",
     "other": "{} / {} · {} fallos"
   },
-  "common.wrong-2": " Incorrectas ",
+  "common.wrong-label": " Incorrectas ",
   "common.wrong-answers-in-total": {
     "one": "{} respuesta errónea en total",
     "other": "{} respuestas erróneas en total"
@@ -444,7 +444,7 @@
   "common.you-copied": "Copiaste: {} {}",
   "common.your-answer": "Tu respuesta: {}{}",
   "common.zone": "Zona {}",
-  "common.zone-2": "Zona {} ({})",
+  "common.zone-with-regions": "Zona {} ({})",
   "common.file-read-failed": "No se ha podido leer el archivo: puede ser demasiado grande o estar dañado",
   "common.topic-regulations": "Reglamentos y gestión de radio",
   "common.topic-regulations-desc": "Reglamentos de gestión de radio, permisos de estación, licencias y distintivos, verificación de capacidad operativa, conductas prohibidas y responsabilidad legal",

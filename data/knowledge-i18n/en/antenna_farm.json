@@ -1,0 +1,18 @@
+{
+  "HF 偶极相互垂直布置可显著减小相互影响。": "Placing HF dipoles at right angles to one another markedly reduces their mutual interaction.",
+  "不同波段天线错层架设，高频在上、低频在下。": "Antennas for different bands are mounted at different levels: higher bands on top, lower bands below.",
+  "列出所需波段与天线类型：HF 偶极、八木、垂直、VHF/UHF。": "List the bands and antenna types required: HF dipole, Yagi, vertical, VHF/UHF.",
+  "场地评估": "Site assessment",
+  "塔与天线做好防雷接地，统一接入地网。": "Provide lightning protection and grounding for the tower and antennas, all tied into a single ground system.",
+  "多天线共用塔时配置旋转器与天线切换器、堆叠开关。": "When several antennas share a tower, provide a rotator, an antenna switch and a stacking switch.",
+  "多部电台同时工作时，用带通滤波器隔离收发链路。": "When several rigs operate at the same time, isolate the transmit and receive paths with band-pass filters.",
+  "天线清单": "Antenna list",
+  "天线间保持足够间距，减小互耦与方向图畸变。": "Keep sufficient spacing between antennas to reduce mutual coupling and pattern distortion.",
+  "旋转器与切换": "Rotators and switching",
+  "记录可用面积、可架设高度、与邻居和电力线的距离。": "Record the available area, the height that can be erected, and the distances to neighbours and power lines.",
+  "记录每根天线的谐振点与驻波比，便于快速定位故障。": "Record each antenna's resonant point and SWR, to locate faults quickly.",
+  "间距与隔离": "Spacing and isolation",
+  "馈线走向": "Feedline routing",
+  "馈线集中走线、就近接地，避免与天线平行耦合。": "Route feedlines together and ground them nearby, avoiding runs parallel to antennas.",
+  "高度分层": "Height layering"
+}

@@ -73,7 +73,7 @@ pub fn RepeaterLookup() -> impl IntoView {
   };
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.repeater-database-lookup")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("radio.fetch-repeaters-listed-in")}
@@ -132,7 +132,7 @@ pub fn RepeaterLookup() -> impl IntoView {
                     <th class="border px-3 py-2 text-left">{move || t("radio.ctcss")}</th>
                     <th class="border px-3 py-2 text-left">{move || t("radio.city")}</th>
                     <th class="border px-3 py-2 text-left">{move || t("radio.use")}</th>
-                    <th class="border px-3 py-2 text-left">{move || t("radio.status-2")}</th>
+                    <th class="border px-3 py-2 text-left">{move || t("radio.status-column")}</th>
                   </tr>
                 </thead>
                 <tbody>

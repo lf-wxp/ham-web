@@ -117,9 +117,9 @@ pub fn BookmarksPage() -> impl IntoView {
 
   let filter_tab = |on: bool| {
     if on {
-      "rounded-full border bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
+      "border bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
     } else {
-      "rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
+      "border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
     }
   };
 
@@ -130,8 +130,8 @@ pub fn BookmarksPage() -> impl IntoView {
         subtitle=move || t("exam.key-questions-bookmarked-during")
         actions=ViewFn::from(move || {
           view! {
-            <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
-              {move || tp("common.questions-3", questions.get().len(), &[&(questions.get().len()).to_string()])}
+            <span class="border px-3 py-1 text-xs text-muted-foreground">
+              {move || tp("common.questions-total", questions.get().len(), &[&(questions.get().len()).to_string()])}
             </span>
             <ButtonLink
               href="/print?src=bookmarks"

@@ -280,6 +280,52 @@ pub fn drift(root: &Path) -> Result<Vec<String>> {
   Ok(out)
 }
 
+/// 同一句中文在两个模块文件里被译成了不同文本。
+///
+/// 译文按模块分批翻译，同一句中文会同时出现在多个模块（导航标题、分类名、正文引用…），
+/// 而运行时语言包是 `postbuild` 合并出来的**一张扁平表**（`{lang}.json`）：同一个 key
+/// 只能有一个译文。取值不一致时 `postbuild` 直接 fail（`write_knowledge_i18n`），
+/// 但那要等到构建期；这里提前到 `cargo make check`，并且一次列全（postbuild 只报第一条）。
+pub fn conflicts(root: &Path) -> Result<Vec<String>> {
+  let base = root.join("data/knowledge-i18n");
+  let mut out = Vec::new();
+  for lang in LANGS {
+    let dir = base.join(lang);
+    if !dir.exists() {
+      continue;
+    }
+    // key → 译文 → 出现在哪些模块文件里
+    let mut seen: BTreeMap<String, BTreeMap<String, Vec<String>>> = BTreeMap::new();
+    for e in std::fs::read_dir(&dir).with_context(|| format!("读取 {} 失败", dir.display()))? {
+      let path = e?.path();
+      if path.extension().is_none_or(|x| x != "json") {
+        continue;
+      }
+      let Some(module) = path.file_stem().map(|s| s.to_string_lossy().to_string()) else {
+        continue;
+      };
+      for (k, v) in load_dict(root, lang, &module)? {
+        seen
+          .entry(k)
+          .or_default()
+          .entry(v)
+          .or_default()
+          .push(module.clone());
+      }
+    }
+    for (key, by_value) in seen {
+      if by_value.len() > 1 {
+        let detail: Vec<String> = by_value
+          .iter()
+          .map(|(v, files)| format!("{v:?}（{}）", files.join(" + ")))
+          .collect();
+        out.push(format!("{lang}：{key} → {}", detail.join("  vs  ")));
+      }
+    }
+  }
+  Ok(out)
+}
+
 /// 列出 core 中含中文的模块及其字符数（从大到小），供决定先翻哪个。
 pub fn inventory(root: &Path) -> Result<Vec<(String, usize)>> {
   let dir = root.join("crates/core/src");

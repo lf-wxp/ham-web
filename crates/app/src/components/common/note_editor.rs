@@ -27,7 +27,7 @@ pub fn NoteEditor(#[prop(into)] question_id: Signal<String>) -> impl IntoView {
   };
 
   view! {
-    <div class="rounded-xl border bg-card p-4">
+    <div class="pxl-card border bg-card p-4">
       <div class="mb-2 flex items-center justify-between">
         <div class="text-sm font-semibold">{move || t("exam.my-notes")}</div>
         <span class="text-[11px] text-muted-foreground">

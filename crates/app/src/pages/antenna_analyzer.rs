@@ -11,9 +11,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn AntennaAnalyzerPage() -> impl IntoView {
-  set_title("shell.antenna-analyzers-2");
+  set_title("shell.antenna-analyzers-title");
   view! {
-    <KnowledgePage title=t("shell.antenna-analyzers-2") subtitle=t("knowledge.nanovna-impedance-measurement-swr")>
+    <KnowledgePage title=t("shell.antenna-analyzers-title") subtitle=t("knowledge.nanovna-impedance-measurement-swr")>
       <TableSection title="测量工具" headers=&["工具", "类型", "说明"] rows=ANALYZER_TOOLS min_width=640 />
       <ConceptsSection title="史密斯圆图概念" items=SMITH_CONCEPTS />
       <ConceptsSection title="测量应用" items=ANALYZER_USES />

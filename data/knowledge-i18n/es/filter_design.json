@@ -1,0 +1,10 @@
+{
+  "带边应约 −3dB：{edge} dB": "El borde de banda debería ser unos −3 dB: {edge} dB",
+  "带通中心应低插损：{at_center} dB": "El centro del paso banda debería tener poca pérdida de inserción: {at_center} dB",
+  "带通带边归一化电抗应等于 gₖ={gk}，实际 {got}": "La reactancia normalizada en el borde del paso banda debería ser gₖ={gk}, se obtuvo {got}",
+  "带阻中心应深衰：{at_center} dB": "El centro del supresor de banda debería estar muy atenuado: {at_center} dB",
+  "带阻带边归一化电抗应等于 gₖ={gk}，实际 {got}（gₖ 与 1/gₖ 用反时会差 gₖ² 倍）": "La reactancia normalizada en el borde del supresor de banda debería ser gₖ={gk}, se obtuvo {got} (confundir gₖ con 1/gₖ equivale a un factor gₖ²)",
+  "带阻第二级 g=2": "Segunda etapa del supresor de banda, g = 2",
+  "通带外应深衰：{low} / {high} dB": "Fuera de la banda de paso debería estar muy atenuado: {low} / {high} dB",
+  "阻带外应低插损：{below} / {above} dB": "Fuera de la banda eliminada la pérdida de inserción debería ser baja: {below} / {above} dB"
+}

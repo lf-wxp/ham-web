@@ -1,0 +1,19 @@
+{
+  "  a \n\t b　c  ": "  a \n\t b c  ",
+  "CJK标点": "Puntuación CJK",
+  "{name} {s} 应判为含 CJK": "{name} {s} debería considerarse con CJK",
+  "{s} 不应判为含 CJK": "{s} no debería considerarse con CJK",
+  "、": ",",
+  "㐀": "㐀",
+  "一": "Uno",
+  "中文+key": "Chino + clave",
+  "保存": "Guardar",
+  "保存 common.save": "Guardar common.save",
+  "全角形式": "Formas de ancho completo",
+  "兼容区": "Bloque de compatibilidad",
+  "基本区": "Bloque básico",
+  "扩展A": "Extensión A",
+  "非空": "No vacío",
+  "豈": "豈",
+  "（": "("
+}

@@ -1,0 +1,11 @@
+{
+  "会但慢应加权 1.5，实际 {}": "Sabida pero lenta debería ponderarse 1,5; real {}",
+  "全对且做过": "Todo correcto y ya practicado",
+  "全对分类但在错题本：1 × 3": "Categoría con todo correcto pero en el cuaderno de errores: 1 × 3",
+  "全错的分类：1 + 3 × 1": "Una categoría con todo mal: 1 + 3 × 1",
+  "加权后绝大多数单选来自高权重题：{heavy}": "Tras ponderar, la mayoría de las preguntas de opción única provienen de las de peso alto: {heavy}",
+  "已掌握知识点：1 + 3 × 0": "Punto dominado: 1 + 3 × 0",
+  "薄弱知识点应加权更高：weak={} strong={}": "Los puntos débiles deberían ponderarse más: weak={} strong={}",
+  "薄弱知识点：1 + 3 × 1": "Punto débil: 1 + 3 × 1",
+  "题目 {n}": "Pregunta {n}"
+}

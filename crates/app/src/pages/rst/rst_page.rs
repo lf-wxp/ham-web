@@ -27,26 +27,26 @@ pub fn RstPage() -> impl IntoView {
 
       <PageContainer>
         <div class="grid grid-cols-3 gap-3">
-          <div class="rounded-xl border bg-card p-4 text-center">
+          <div class="pxl-card border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">"1–5"</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("knowledge.readability-r")}</div>
           </div>
-          <div class="rounded-xl border bg-card p-4 text-center">
+          <div class="pxl-card border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">"1–9"</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("knowledge.signal-strength-s")}</div>
           </div>
-          <div class="rounded-xl border bg-card p-4 text-center">
+          <div class="pxl-card border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">"1–9"</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("knowledge.tone-t-cw")}</div>
           </div>
         </div>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.r-readability")}</h2>
           <LabelList rows=READABILITY />
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">
             {move || t("knowledge.s-strength")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("knowledge.tap-to-play-the")}</span>
@@ -59,7 +59,7 @@ pub fn RstPage() -> impl IntoView {
                 let level = 0.05 + 0.10 * i as f32;
                 let pct = (i + 1) * 100 / SIGNAL_STRENGTH.len();
                 view! {
-                  <div class="flex items-center gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-muted/40">
+                  <div class="flex items-center gap-3 px-1 py-2 transition-colors hover:bg-muted/40">
                     <Button
                       variant=Variant::Outline
                       size=Size::IconSm
@@ -70,9 +70,9 @@ pub fn RstPage() -> impl IntoView {
                       <Icon kind=IconKind::Play class="h-3.5 w-3.5" />
                     </Button>
                     <span class="w-10 shrink-0 font-mono text-sm font-semibold">{k}</span>
-                    <div class="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div class="h-2 flex-1 overflow-hidden bg-muted">
                       <div
-                        class="h-full rounded-full bg-primary transition-all"
+                        class="h-full bg-primary transition-all"
                         style=format!("width: {pct}%")
                       ></div>
                     </div>
@@ -84,12 +84,12 @@ pub fn RstPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.t-tone-cw-only")}</h2>
           <LabelList rows=TONE />
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.common-reports")}</h2>
           <LabelList rows=RST_EXAMPLES />
         </section>

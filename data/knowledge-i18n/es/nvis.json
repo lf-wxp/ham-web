@@ -1,0 +1,15 @@
+{
+  "Near Vertical Incidence Skywave，近垂直入射天波。": "Near Vertical Incidence Skywave (NVIS), onda ionosférica de incidencia casi vertical.",
+  "低架设的偶极、倒 V 或环形天线，架高约 1/10–1/4 波长。": "Dipolo bajo, V invertida o bucle, instalados a unos 1/10–1/4 de longitud de onda.",
+  "典型波段": "Bandas típicas",
+  "原理": "Principio",
+  "地面或金属网作反射面可增强向上辐射。": "El suelo o una malla metálica como reflector refuerza la radiación hacia arriba.",
+  "天线向正上方辐射，经电离层近乎垂直反射，覆盖 0–500km 地波盲区。": "La antena irradia hacia arriba y la ionosfera la refleja casi en vertical, cubriendo la zona ciega de la onda terrestre de 0–500 km.",
+  "天线形态": "Formas de antena",
+  "天线架设低（数米），主瓣朝上，牺牲远距离 DX 能力换取近距离覆盖。": "La antena se instala baja (pocos metros) con el lóbulo principal hacia arriba: sacrifica el DX lejano por cobertura cercana.",
+  "应急通信与山区、城市近距离通信的理想方案，无地波盲区。": "Solución ideal para emergencias y comunicaciones cercanas en montaña o ciudad, sin zona ciega de onda terrestre.",
+  "根据实时临界频率选择波段，频率过高会穿透电离层失去反射。": "Elija la banda según la frecuencia crítica en tiempo real: una frecuencia demasiado alta atraviesa la ionosfera y se pierde.",
+  "白天 40m / 60m，夜间 80m / 160m。": "40 m / 60 m de día y 80 m / 160 m de noche.",
+  "适用频率": "Frecuencias utilizables",
+  "通常 1.8–7.5 MHz，取决于当时电离层临界频率。": "Normalmente 1,8–7,5 MHz, según la frecuencia crítica del momento."
+}

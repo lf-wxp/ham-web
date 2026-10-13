@@ -44,9 +44,9 @@ pub(super) fn XrayTrend(
   let last_y = flux.map(y_of);
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold">
-        {t("radio.x-ray-flux-2")}
+        {t("radio.x-ray-flux-heading")}
         <span class="text-xs font-normal text-muted-foreground">
           {move || match flux {
             Some(f) if !flare_class.is_empty() => {

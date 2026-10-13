@@ -20,12 +20,12 @@ pub fn ConceptsSection(
   #[prop(optional)] ui: bool,
 ) -> impl IntoView {
   let row = if inline {
-    "flex items-baseline gap-2 rounded-lg px-3 py-2"
+    "flex items-baseline gap-2 px-3 py-2"
   } else {
-    "flex flex-col gap-1 rounded-lg px-3 py-2"
+    "flex flex-col gap-1 px-3 py-2"
   };
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t(&title)}</h2>
       <div class="grid gap-1 p-4 sm:grid-cols-2">
         {items

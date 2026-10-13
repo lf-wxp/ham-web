@@ -217,11 +217,11 @@ pub fn DxSpotsPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold">
             {move || t("radio.live-dx-reports")}
             <span class="text-xs font-normal text-muted-foreground">
-              {move || tf("radio.entry-2", &[&spots.get().len().to_string()])}
+              {move || tf("radio.entry-count", &[&spots.get().len().to_string()])}
             </span>
           </h2>
           <div class="space-y-2 p-3">
@@ -308,7 +308,7 @@ pub fn DxSpotsPage() -> impl IntoView {
                       parts.push(t("radio.new-band"));
                     }
                     if !a.calls.is_empty() {
-                      parts.push(tf("radio.watched-2", &[&a.calls.len().to_string()]));
+                      parts.push(tf("radio.watched-count", &[&a.calls.len().to_string()]));
                     }
                     tf("radio.on", &[&(parts.join(" · ")).to_string()])
                   } else {
@@ -320,7 +320,7 @@ pub fn DxSpotsPage() -> impl IntoView {
             {move || {
               show_alerts.get().then(|| {
                 view! {
-                  <div class="space-y-3 rounded-lg border bg-muted/30 p-3">
+                  <div class="space-y-3 border bg-muted/30 p-3">
                     <div class="flex flex-wrap gap-x-5 gap-y-2">
                       // 两个开关各写一遍而不是抽 `toggle(label, …)` 闭包：词条字面量必须写在
                       // `t()` 的直接实参位，`check-i18n` 只采集直接调用，经参数中转会漏检。
@@ -422,7 +422,7 @@ pub fn DxSpotsPage() -> impl IntoView {
                       let badge = match need {
                         Need::NewDxcc => Some((t("radio.new-dxcc"), "border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300")),
                         Need::NewBand => Some((t("radio.new-band"), "border-sky-500/40 bg-sky-500/15 text-sky-700 dark:text-sky-300")),
-                        Need::Worked => Some((t("radio.worked-2"), "text-muted-foreground")),
+                        Need::Worked => Some((t("radio.worked-badge"), "text-muted-foreground")),
                         Need::None => None,
                       };
                       let watched = alerts.with_untracked(|a| {
@@ -455,18 +455,18 @@ pub fn DxSpotsPage() -> impl IntoView {
                           </button>
                           <span class="w-24 shrink-0 font-mono text-sm tabular-nums">{fmt_freq(freq)}</span>
                           <span
-                            class=format!("shrink-0 rounded border px-1.5 py-0.5 text-xs {}", band_color(band_of(freq)))
+                            class=format!("shrink-0 border px-1.5 py-0.5 text-xs {}", band_color(band_of(freq)))
                           >
                             {band_of(freq)}
                           </span>
-                          <span class="shrink-0 rounded border px-1.5 py-0.5 text-xs text-muted-foreground">
+                          <span class="shrink-0 border px-1.5 py-0.5 text-xs text-muted-foreground">
                             {mode_of(&comment)}
                           </span>
                           {badge.map(|(text, class)| view! {
-                            <span class=format!("shrink-0 rounded border px-1.5 py-0.5 text-xs font-medium {class}")>{text}</span>
+                            <span class=format!("shrink-0 border px-1.5 py-0.5 text-xs font-medium {class}")>{text}</span>
                           })}
                           {watched.then(|| view! {
-                            <span class="shrink-0 rounded border border-amber-500/40 bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">{move || t("radio.watched")}</span>
+                            <span class="shrink-0 border border-amber-500/40 bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">{move || t("radio.watched")}</span>
                           })}
                           <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
                             {if comment.is_empty() { "—".to_owned() } else { comment.clone() }}

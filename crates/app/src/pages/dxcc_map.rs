@@ -93,7 +93,7 @@ pub fn DxccMapPage() -> impl IntoView {
         subtitle=Signal::derive(move || t("radio.colored-by-your-log"))
         actions=ViewFn::from(move || {
           view! {
-            <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
+            <span class="border px-3 py-1 text-xs text-muted-foreground">
               {move || {
                 tp(
                   "radio.worked-entities",
@@ -108,21 +108,21 @@ pub fn DxccMapPage() -> impl IntoView {
       <PageContainer>
         // 统计条（跟随波段选择）
         <section class="grid grid-cols-3 gap-2">
-          <div class="rounded-xl border bg-card p-3 text-center">
+          <div class="pxl-card border bg-card p-3 text-center">
             <div class="text-xl font-semibold tabular-nums">{move || worked.get().len()}</div>
             <div class="mt-0.5 text-xs text-muted-foreground">{move || t("log.worked")}</div>
           </div>
-          <div class="rounded-xl border bg-card p-3 text-center">
+          <div class="pxl-card border bg-card p-3 text-center">
             <div class="text-xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
               {move || confirmed.get().len()}
             </div>
             <div class="mt-0.5 text-xs text-muted-foreground">{move || t("log.confirmed")}</div>
           </div>
-          <div class="rounded-xl border bg-card p-3 text-center">
+          <div class="pxl-card border bg-card p-3 text-center">
             <div class="text-xl font-semibold tabular-nums">
               {move || total_entities.saturating_sub(worked.get().len())}
             </div>
-            <div class="mt-0.5 text-xs text-muted-foreground">{move || t("radio.not-worked-2")}</div>
+            <div class="mt-0.5 text-xs text-muted-foreground">{move || t("radio.not-worked-label")}</div>
           </div>
         </section>
 
@@ -150,7 +150,7 @@ pub fn DxccMapPage() -> impl IntoView {
         </ChipGroup>
 
         // 地图
-        <section class="rounded-xl border bg-card p-4">
+        <section class="pxl-card border bg-card p-4">
           {move || {
             if loading.get() {
               view! {
@@ -180,9 +180,9 @@ pub fn DxccMapPage() -> impl IntoView {
           <div class="mt-3 space-y-1.5">
             <Legend
               items=vec![
-                ("h-3 w-3 rounded-sm bg-emerald-600/70", "已确认"),
-                ("h-3 w-3 rounded-sm bg-primary/40", "已通联"),
-                ("h-3 w-3 rounded-sm border bg-foreground/5", "未通联"),
+                ("h-3 w-3 bg-emerald-600/70", "已确认"),
+                ("h-3 w-3 bg-primary/40", "已通联"),
+                ("h-3 w-3 border bg-foreground/5", "未通联"),
               ]
             />
             <div class="text-xs text-muted-foreground">{move || t("radio.scroll-pinch-to-zoom")}</div>

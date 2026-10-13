@@ -71,7 +71,10 @@ pub fn ZoneMap(
     let cq = is_cq.get_untracked();
     let zone = if cq { e.cq } else { e.itu };
     let label = if cq { t("common.cq") } else { t("common.itu") };
-    tf("radio.zone-2", &[e.name, &label, &zone.to_string()])
+    tf(
+      "radio.zone-with-entity",
+      &[e.name, &label, &zone.to_string()],
+    )
   });
   let on_click = on_region_click.unwrap_or_else(|| Callback::new(|_: String| {}));
 
@@ -95,7 +98,7 @@ pub fn ZoneMap(
       }
       view! {
         <MapView
-          aria_label=Signal::derive(move || t("radio.cq-itu-zone-map-2"))
+          aria_label=Signal::derive(move || t("radio.cq-itu-zone-map-with-hints"))
           focus=focus
         >
           <ZoneOverlay

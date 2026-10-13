@@ -1,0 +1,22 @@
+{
+  "DIY 套件": "DIY kits",
+  "FT8 / WSPR / JS8 等弱信号模式让 QRP 也能完成远距离通联。": "Weak-signal modes such as FT8 / WSPR / JS8 let QRP complete long-distance contacts too.",
+  "QRP Labs QCX 等低成本 CW 套件，焊接入门首选。": "Low-cost CW kits such as the QRP Labs QCX — the first choice for a soldering start.",
+  "QRP 收发信机": "QRP transceivers",
+  "QRP 精神": "The QRP spirit",
+  "QRP 聚集频率": "QRP calling frequencies",
+  "QRP 靠天吃饭，选对传播时间与波段比盲目发射更重要。": "QRP depends on conditions: choosing the right time and band matters more than transmitting blindly.",
+  "Yaesu FT-818、ICOM IC-705 等内置电池的便携机（Xiegu G90 等 20W 机型可降功率当 QRP 使用）。": "Portable rigs with built-in batteries such as the Yaesu FT-818 and ICOM IC-705 (20 W models like the Xiegu G90 can be turned down and used for QRP).",
+  "主动报告 QRP 功率，许多电台会特别关照小功率信号。": "State your QRP power proactively; many stations give extra attention to low-power signals.",
+  "以最小功率完成最远通联，重技巧与传播而非堆功率。": "Achieving the longest contacts with the least power, valuing skill and propagation over brute power.",
+  "优先 CW 与弱信号数字模式，SSB 小功率很难被抄收。": "Prefer CW and weak-signal digital modes; low-power SSB is hard to copy.",
+  "低功率操作；传统口径为 CW 不超过 5W、SSB 不超过 10W，口语中也常泛指 5W 以下。": "Low-power operation; traditionally no more than 5 W on CW and 10 W on SSB, and in common usage it often just means below 5 W.",
+  "参加 QRP 竞赛与奖状（如 QRP DXCC、QRP ARCI），累积成就感。": "Take part in QRP contests and awards (such as QRP DXCC and QRP ARCI) to build up a sense of achievement.",
+  "各波段低端为 QRP 聚集区，如 40m 7.030、20m 14.060。": "The low end of each band is the QRP gathering spot, e.g. 7.030 on 40 m and 14.060 on 20 m.",
+  "天线": "Antennas",
+  "弱信号模式": "Weak-signal modes",
+  "极小功率操作，通常 1W 以下，挑战传播极限。": "Very low power, usually under 1 W, challenging the limits of propagation.",
+  "电源": "Power supplies",
+  "磷酸铁锂 / 聚合物电池，轻便且放电特性好。": "LiFePO4 / lithium-polymer batteries: light with good discharge characteristics.",
+  "高效谐振天线比功率更重要：全尺寸偶极、垂直或便携线天线。": "An efficient resonant antenna matters more than power: a full-size dipole, a vertical or a portable wire antenna."
+}

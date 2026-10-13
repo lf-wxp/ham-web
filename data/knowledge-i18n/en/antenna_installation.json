@@ -1,0 +1,15 @@
+{
+  "10–20m，拉线固定": "10–20 m, guyed",
+  "20m+，需基础与拉线": "20 m and up, needing a foundation and guys",
+  "临时架设，SOTA/POTA 常用。": "Temporary installation, commonly used for SOTA/POTA.",
+  "便携撑杆": "Portable mast",
+  "基地台常用，倒 V、偶极天线。": "Common at base stations, for inverted V and dipole antennas.",
+  "大型八木、高增益定向天线。": "Large Yagis and high-gain directional antennas.",
+  "拉线用绝缘子分段，避免拉线感应电流影响天线方向图。": "Break guys up with insulators, so induced currents in them do not distort the antenna pattern.",
+  "数米，玻璃钢/铝管": "A few metres, fibreglass / aluminium tubing",
+  "架设远离电力线，雷雨天气停止操作并断开天线。": "Keep away from power lines when erecting, and in thunderstorms stop operating and disconnect the antenna.",
+  "桅杆": "Mast",
+  "铁塔": "Tower",
+  "馈线进入室内前加装避雷器并就近接地。": "Fit an arrester before the feedline enters the building and ground it nearby.",
+  "高度决定覆盖：VHF/UHF 天线越高越远，HF 则按波段选择合适高度。": "Height determines coverage: on VHF/UHF higher means farther, while on HF the right height depends on the band."
+}

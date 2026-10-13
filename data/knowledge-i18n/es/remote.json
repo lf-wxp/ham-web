@@ -1,0 +1,12 @@
+{
+  "CAT 串口命令经网络转发，配合音频流（VoIP）实现远程收发。": "Los comandos serie CAT se reenvían por la red, junto con audio en streaming (VoIP) para emitir y recibir en remoto.",
+  "RemoteRig、FlexRadio SmartSDR、开源的 OpenWebRX/RemoteTx 等。": "RemoteRig, FlexRadio SmartSDR y opciones de código abierto como OpenWebRX/RemoteTx.",
+  "做好安全：鉴权、加密、限权，防止未授权使用。": "Cuide la seguridad: autenticación, cifrado y permisos limitados para evitar usos no autorizados.",
+  "常见方案": "Soluciones habituales",
+  "控制协议": "Protocolo de control",
+  "远程操作": "Operación remota",
+  "远程端需稳定网络与备份电源，避免失联后电台无法关停。": "El extremo remoto necesita red estable y alimentación de respaldo para poder apagar el equipo si se pierde la conexión.",
+  "通过互联网从异地控制电台，用于在位置受限时使用高性能台站。": "Controlar un equipo por Internet desde otro lugar, para usar una estación de alto rendimiento desde un emplazamiento limitado.",
+  "遵守执照规定，远程台站仍由持证操作员负责。": "Cumpla la normativa de la licencia: la estación remota sigue bajo la responsabilidad del operador titular.",
+  "音频延迟与网络抖动会影响操作，优先有线/低延迟网络。": "La latencia de audio y el jitter afectan a la operación: priorice redes cableadas o de baja latencia."
+}

@@ -24,7 +24,7 @@ pub fn AntennaTheoryPage() -> impl IntoView {
           .iter()
           .map(|(title, formulas)| {
             view! {
-              <section class="rounded-xl border bg-card">
+              <section class="pxl-card border bg-card">
                 <h2 class="border-b px-4 py-3 text-sm font-semibold">
                   {move || data::kt_tracked(title)}
                 </h2>
@@ -33,7 +33,7 @@ pub fn AntennaTheoryPage() -> impl IntoView {
                     .iter()
                     .map(|f| {
                       view! {
-                        <div class="rounded-lg border px-3 py-2">
+                        <div class="border px-3 py-2">
                           <div class="text-xs font-medium text-muted-foreground">
                             {move || data::kt_tracked(f.name)}
                           </div>

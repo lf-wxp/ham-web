@@ -2,28 +2,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <title>业余无线电</title>
   <defs>
+    <!--
+      品牌底色：两段同色（纯色），用渐变是为了有个能被 url() 复用的 id ——
+      `cargo make icons` 生成满幅图标时，靠 #bg 补出圆角以外的背景，颜色只写在这一处。
+    -->
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#3b5dc9"/>
       <stop offset="1" stop-color="#3b5dc9"/>
     </linearGradient>
-    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.12"/>
-      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/>
-    </linearGradient>
     <clipPath id="tile"><rect width="512" height="512" rx="64.000"/></clipPath>
-    <clipPath id="inner"><rect x="16.000" y="16.000" width="480.000" height="480.000" rx="48.000"/></clipPath>
   </defs>
 
   <g clip-path="url(#tile)">
-    <rect width="512" height="512" fill="#1a1c2c"/>
-    <rect x="16.000" y="16.000" width="480.000" height="480.000" rx="48.000" fill="url(#bg)"/>
-    <rect width="512" height="512" fill="url(#sheen)"/>
-    <g clip-path="url(#inner)">
-      <rect x="16.000" y="16.000" width="480.000" height="16.000" fill="#FFFFFF" opacity="0.35"/>
-      <rect x="16.000" y="16.000" width="16.000" height="480.000" fill="#FFFFFF" opacity="0.35"/>
-      <rect x="16.000" y="480.000" width="480.000" height="16.000" fill="#000000" opacity="0.30"/>
-      <rect x="480.000" y="16.000" width="16.000" height="480.000" fill="#000000" opacity="0.30"/>
-    </g>
+    <rect width="512" height="512" fill="url(#bg)"/>
     <g fill="#f4f4f4">
       <rect x="192.000" y="112.000" width="128.000" height="32.000"/>
       <rect x="224.000" y="144.000" width="64.000" height="64.000"/>

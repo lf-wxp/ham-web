@@ -1,0 +1,19 @@
+{
+  "Amateur Radio Emergency Service，美国业余无线电应急服务组织。": "Amateur Radio Emergency Service: an American amateur radio emergency service organisation.",
+  "Emergency Communications，泛指利用业余无线电在灾害中提供通信保障。": "Emergency Communications: a general term for providing communication support in disasters by means of amateur radio.",
+  "HF 应急通信常用（中国 LSB，具体以主管部门公布为准）。": "Commonly used for HF emergency communication (LSB in China; subject to what the competent authority publishes).",
+  "NTS 报文 Radiogram": "NTS radiogram",
+  "Radio Amateur Civil Emergency Service，美国业余无线电民间应急服务。": "Radio Amateur Civil Emergency Service: the American amateur radio civil emergency service.",
+  "UHF 应急呼叫常用（中国，具体以主管部门公布为准）。": "Commonly used for UHF emergency calling (China; subject to what the competent authority publishes).",
+  "VHF 应急呼叫常用（中国，具体以主管部门公布为准）。": "Commonly used for VHF emergency calling (China; subject to what the competent authority publishes).",
+  "中继保障": "Repeater support",
+  "优先保障生命财产安全相关的信息传递，用语简明准确。": "Give priority to passing information concerning the safety of life and property, using concise and accurate wording.",
+  "准备独立于市电的电源：电池、发电机、太阳能。": "Prepare power sources independent of the mains: batteries, a generator, solar.",
+  "北美国家交通系统的标准报文格式：报头（序号 / 优先级 / 处理指示 / 发起台 / 校验 / 地点 / 时间 / 日期）、收件人地址、正文、署名，用于结构化转发应急信息。": "The standard message format of the North American National Traffic System: a header (number / precedence / handling instructions / station of origin / check / place / time / date), the recipient's address, the text and the signature, used for structured forwarding of emergency information.",
+  "平时多参加应急演练，熟悉预案与频点。": "Take part in emergency drills often and become familiar with the plans and frequencies.",
+  "应急中继台提供大范围覆盖，是现场指挥的关键。": "Emergency repeaters provide wide-area coverage and are key to on-site command.",
+  "应急台站": "Emergency station",
+  "应急通信必须服从统一指挥，先听后发，避免占用与干扰。": "Emergency communication must obey unified command: listen before transmitting, to avoid occupying the channel and causing interference.",
+  "灾害现场与指挥中心之间的通信节点，通常电池供电、便携架设。": "A communication node between the disaster site and the command centre, usually battery powered and portable.",
+  "记录完整通信日志，重要信息复诵确认。": "Keep a complete communication log and read back important information to confirm it."
+}

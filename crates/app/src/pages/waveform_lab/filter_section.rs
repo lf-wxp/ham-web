@@ -228,7 +228,7 @@ pub(super) fn FilterSection() -> impl IntoView {
   };
 
   view! {
-    <section id="filter" class="scroll-mt-24 rounded-xl border bg-card">
+    <section id="filter" class="scroll-mt-24 pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.filter-response-curves")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("tools.all-three-prototypes-butterworth")}

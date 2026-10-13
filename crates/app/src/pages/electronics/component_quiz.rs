@@ -54,13 +54,13 @@ pub(super) fn ComponentQuiz() -> impl IntoView {
   };
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">
         {move || t("knowledge.component-identification")}
         <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("knowledge.identify-the-component-from")}</span>
       </h2>
       <div class="space-y-4 p-4">
-        <div class="flex flex-col items-center gap-2 rounded-xl border bg-muted/30 px-4 py-6">
+        <div class="flex flex-col items-center gap-2 border bg-muted/30 px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("knowledge.which-component-matches-this")}</div>
           <div class="font-mono text-base font-semibold text-primary">{move || question.get()}</div>
         </div>
@@ -96,7 +96,7 @@ pub(super) fn ComponentQuiz() -> impl IntoView {
                 } else {
                   view! {
                     <span class="font-medium text-red-600 dark:text-red-400">
-                      {move || t("exam.correct-answer-2")} <span class="font-semibold">{answer.get_value()}</span>
+                      {move || t("exam.correct-answer-prefix")} <span class="font-semibold">{answer.get_value()}</span>
                     </span>
                   }
                   .into_any()

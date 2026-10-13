@@ -1,0 +1,13 @@
+{
+  "2m（144MHz）": "2 m (144 MHz)",
+  "80m（3.5MHz）": "80 m (3.5 MHz)",
+  "Amateur Radio Direction Finding，业余无线电测向，俗称「猎狐」。": "Amateur Radio Direction Finding, popularly known as \"fox hunting\".",
+  "利用指向性天线（如环形天线、八木）判断信号来向，用三角定位确定位置。": "A directional antenna (such as a loop or a Yagi) determines the direction of arrival, and triangulation fixes the position.",
+  "常用测向频段，天线尺寸小、方向性好。": "The usual direction-finding band: small antennas with good directivity.",
+  "测向原理": "Direction-finding principle",
+  "测向天线": "Direction-finding antenna",
+  "环形天线双向性、加垂直振子合成心形方向图，可辨单向。": "A loop antenna is bidirectional; adding a vertical element produces a cardioid pattern that resolves the direction.",
+  "竞赛中隐藏发射信标的电台，选手依据信号找到它们。": "Stations hidden during a contest that transmit beacons, which competitors locate by their signals.",
+  "长波测向，需较大环形天线。": "Long-wave direction finding, requiring a larger loop antenna.",
+  "隐蔽电台": "Hidden transmitter"
+}

@@ -42,7 +42,7 @@ pub fn ExamResumeDialog(
           size=Size::Default
           on_click=Callback::new(move |_| on_resume.run(()))
         >
-          {move || t("exam.resume-2")}
+          {move || t("exam.resume-continue")}
         </Button>
       </div>
     </Dialog>

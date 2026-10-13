@@ -12,7 +12,7 @@ pub fn SatOperationPage() -> impl IntoView {
   set_title("knowledge.satellite-operating");
   view! {
     <KnowledgePage title=t("knowledge.satellite-operating") subtitle=t("knowledge.the-complete-qso-procedure")>
-      <section class="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+      <section class="pxl-card border bg-card p-4 text-sm text-muted-foreground">
         <span>{move || t("knowledge.first-go-to")}</span>
         <a href="/satellites" class="mx-1 font-medium text-primary underline-offset-2 hover:underline">
           {move || t("knowledge.amateur-satellites")}

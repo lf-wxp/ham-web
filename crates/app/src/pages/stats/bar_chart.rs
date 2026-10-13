@@ -20,8 +20,8 @@ pub(super) fn BarChart(items: Vec<(String, usize)>, max: usize) -> impl IntoView
               >
                 {move || label.clone()}
               </span>
-              <div class="h-4 flex-1 overflow-hidden rounded bg-muted">
-                <div class="h-full rounded bg-primary/70" style=format!("width: {w:.1}%")></div>
+              <div class="h-4 flex-1 overflow-hidden bg-muted">
+                <div class="h-full bg-primary/70" style=format!("width: {w:.1}%")></div>
               </div>
               <span class="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
                 {count}

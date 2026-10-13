@@ -1,0 +1,19 @@
+{
+  "ADC 直接对射频采样，无需模拟变频，代表高端 SDR。": "El ADC muestrea la RF directamente, sin conversión analógica: propio de la SDR de gama alta.",
+  "I/Q 两路信号采样，可还原幅度与相位，是 SDR 的核心。": "El muestreo en dos canales I/Q recupera amplitud y fase: es el núcleo de la SDR.",
+  "Linux/macOS 常用 SDR 接收软件。": "Software de recepción SDR habitual en Linux/macOS.",
+  "Software Defined Radio，用软件完成调制解调、滤波等大部分信号处理。": "Radio definida por software: la mayor parte del procesamiento (modulación, demodulación, filtrado) se realiza por software.",
+  "Windows 常用，支持多种硬件与插件。": "Habitual en Windows; admite diversos equipos y complementos.",
+  "Windows 平台最流行的 SDR 接收软件。": "El software de recepción SDR más popular en Windows.",
+  "全球爱好者架设的在线接收机，覆盖 0–30MHz。": "Receptores en línea instalados por aficionados de todo el mundo; cubren 0–30 MHz.",
+  "基于 SDR 收发的弱信号数字模式软件（FT8/FT4/JT65）。": "Software de modos digitales de señal débil (FT8/FT4/JT65) basado en la transmisión y recepción por SDR.",
+  "基于电视棒芯片的廉价接收机，覆盖约 24MHz–1.7GHz，入门首选。": "Receptor económico basado en chips de sintonizador de TV, unos 24 MHz–1,7 GHz: la primera opción para empezar.",
+  "实时显示频率-时间-强度的三维视图，直观观察信号。": "Vista en vivo de frecuencia-tiempo-intensidad para observar las señales de forma intuitiva.",
+  "正交采样": "Muestreo en cuadratura",
+  "直接采样": "Muestreo directo",
+  "美国 Half Moon Bay 站点，覆盖范围广。": "Sitio de Half Moon Bay (EE. UU.), con cobertura amplia.",
+  "荷兰 Twente 大学运营，全球多站点，浏览器直接收听。": "Operado por la Universidad de Twente (Países Bajos) con sitios en todo el mundo: se escucha directamente en el navegador.",
+  "跨平台、开源、界面现代的 SDR 软件。": "Software SDR multiplataforma y de código abierto, con interfaz moderna.",
+  "远程电台控制，可操作全球各地接收机。": "Control remoto de estaciones: permite manejar receptores de cualquier parte del mundo.",
+  "频谱瀑布图": "Cascada de espectro"
+}

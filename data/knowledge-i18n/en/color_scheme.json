@@ -1,0 +1,20 @@
+{
+  "id 重复": "Duplicate id",
+  "{id:?} 要是小写 kebab-case：它会直接写进 CSS 属性选择器": "{id:?} must be lower-case kebab-case: it is written straight into a CSS attribute selector",
+  "{name} 不是实色或不存在": "{name} is not a solid colour or does not exist",
+  "{what}：浅字与深字落在 {} 上都不到 4.5（最好 {ratio:.2}）": "{what}: both light and dark text on {} are below 4.5 (best {ratio:.2})",
+  "{} dark={dark}: {fg} 落在 {name} 上只有 {r:.2}": "{} dark={dark}: {fg} on {name} is only {r:.2}",
+  "{} dark={dark}: {n} 对页面底色只有 {r:.2}": "{} dark={dark}: {n} against the page background is only {r:.2}",
+  "{} dark={dark}: 主色上的字只有 {r:.2}": "{} dark={dark}: text on the primary colour is only {r:.2}",
+  "{} dark={dark}: 主色落在 {n} 上只有 {r:.2}": "{} dark={dark}: the primary colour on {n} is only {r:.2}",
+  "{} dark={dark}: 强调面上的字只有 {r:.2}": "{} dark={dark}: text on the accent surface is only {r:.2}",
+  "{} dark={dark}: 静音字落在强调面上只有 {r:.2}": "{} dark={dark}: muted text on the accent surface is only {r:.2}",
+  "{} 亮色 --card 太暗（{card:.3} < {LIGHT_CARD_MIN_LUMINANCE}）": "{} light --card is too dark ({card:.3} < {LIGHT_CARD_MIN_LUMINANCE})",
+  "{} 亮色 {n} 太暗（{l:.3} < {LIGHT_SURFACE_MIN_LUMINANCE}）": "{} light {n} is too dark ({l:.3} < {LIGHT_SURFACE_MIN_LUMINANCE})",
+  "{} 亮色底不够亮": "{} light background is not bright enough",
+  "{} 暗色 {n} 太亮（{l:.4} > {DARK_SURFACE_MAX_LUMINANCE}）：共享色阶会不够对比度": "{} dark {n} is too bright ({l:.4} > {DARK_SURFACE_MAX_LUMINANCE}): the shared scale will lack contrast",
+  "{} 暗色底不够暗": "{} dark background is not dark enough",
+  "{}: 暗色多出变量 {:?}": "{}: dark theme has extra variables {:?}",
+  "主色上的字": "Text on the primary colour",
+  "强调面上的字": "Text on the accent surface"
+}

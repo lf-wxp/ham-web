@@ -50,16 +50,16 @@ pub(super) fn WordCopy() -> impl IntoView {
   };
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">
         {move || t("morse.word-copying")}
         <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.listen-to-morse-for")}</span>
       </h2>
       <div class="space-y-4 p-4">
-        <div class="flex flex-col items-center gap-3 rounded-xl border bg-muted/30 px-4 py-6">
+        <div class="flex flex-col items-center gap-3 border bg-muted/30 px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("morse.tap-play-then-type")}</div>
           <Button on_click=Callback::new(move |_| play())>
-            {move || t("morse.play-2")}
+            {move || t("morse.play-icon")}
           </Button>
         </div>
         <Input
@@ -80,7 +80,7 @@ pub(super) fn WordCopy() -> impl IntoView {
               view! {
                 <Button
                   variant=Variant::Default
-                  class="rounded-lg h-10"
+                  class="h-10"
                   on_click=Callback::new(move |_| check())
                 >{move || t("morse.check")}</Button>
               }
@@ -93,7 +93,7 @@ pub(super) fn WordCopy() -> impl IntoView {
                 </span>
                 <Button
                   variant=Variant::Default
-                  class="rounded-lg h-10"
+                  class="h-10"
                   on_click=Callback::new(move |_| next())
                 >{move || t("exam.next")}</Button>
               }
@@ -102,12 +102,12 @@ pub(super) fn WordCopy() -> impl IntoView {
           }}
           <Button
             variant=Variant::Outline
-            class="rounded-lg h-10"
+            class="h-10"
             on_click=Callback::new(move |_| play())
-          >{move || t("morse.replay-2")}</Button>
+          >{move || t("morse.replay-button")}</Button>
           <span class="ml-auto text-xs text-muted-foreground">
-            {move || t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
-            {move || t("common.wrong-2")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
+            {move || t("common.correct-label")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
+            {move || t("common.wrong-label")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
           </span>
         </div>
       </div>

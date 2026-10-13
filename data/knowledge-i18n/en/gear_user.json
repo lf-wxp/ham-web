@@ -1,0 +1,16 @@
+{
+  "200 dB 的动态范围不存在": "A 200 dB dynamic range does not exist",
+  "{} set 后读不回来": "{} cannot be read back after set",
+  "{} 初始应为空": "{} should initially be empty",
+  "{} 清空后记录应为空": "After clearing, the {} record should be empty",
+  "{} 清空失败": "Failed to clear {}",
+  "{} 被别的字段覆盖了": "{} was overwritten by another field",
+  "一条数值都不剩时不该留空壳": "With no values left, an empty shell should not remain",
+  "反序列化": "Deserialisation",
+  "序列化": "Serialisation",
+  "整机电流不会是 0": "The total current cannot be 0",
+  "未知 key 不该写进记录": "An unknown key must not be written into the record",
+  "没填就是空串": "Unfilled means an empty string",
+  "没有实测值就不该凭空造一条记录": "With no measured values, a record should not be invented",
+  "缺字段也能读": "Readable even with missing fields"
+}

@@ -29,9 +29,9 @@ pub fn HistoryChart() -> impl IntoView {
             view! {
               <div
                 class="flex flex-1 flex-col items-center gap-1"
-                title=tf("common.class-2", &[&(r.bank).to_string(), &(r.correct).to_string(), &(r.total).to_string(), &(pct.round() as i64).to_string()])
+                title=tf("common.class-with-score", &[&(r.bank).to_string(), &(r.correct).to_string(), &(r.total).to_string(), &(pct.round() as i64).to_string()])
               >
-                <div class="w-full rounded-t bg-primary" style=format!("height: {h:.1}px")></div>
+                <div class="w-full bg-primary" style=format!("height: {h:.1}px")></div>
                 <span class="text-[10px] tabular-nums text-muted-foreground">{pct.round() as i64}</span>
               </div>
             }

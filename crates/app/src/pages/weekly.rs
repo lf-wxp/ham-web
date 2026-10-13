@@ -184,29 +184,29 @@ pub fn WeeklyPage() -> impl IntoView {
 
       <PageContainer class="space-y-4">
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <div class="rounded-xl border bg-card p-4 text-center">
+          <div class="pxl-card border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{week_answered}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("exam.answered-this-week")}</div>
           </div>
-          <div class="rounded-xl border bg-card p-4 text-center">
+          <div class="pxl-card border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{week_new}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("exam.new-questions-this-week")}</div>
           </div>
-          <div class="rounded-xl border bg-card p-4 text-center">
+          <div class="pxl-card border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{streak}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("learning.check-in-streak-days")}</div>
           </div>
-          <div class="rounded-xl border bg-card p-4 text-center">
+          <div class="pxl-card border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{mistakes}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("exam.current-mistakes")}</div>
           </div>
-          <div class="rounded-xl border bg-card p-4 text-center">
+          <div class="pxl-card border bg-card p-4 text-center">
             <div class="text-2xl font-semibold tabular-nums">{week_duration_text}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("learning.study-time-this-week")}</div>
           </div>
         </div>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.answering-trend-over-the")}</h2>
           <div class="p-4">
             <div class="flex h-28 items-end gap-1">
@@ -221,7 +221,7 @@ pub fn WeeklyPage() -> impl IntoView {
                     view! {
                       <div class="group flex min-w-0 flex-1 flex-col items-center gap-1">
                         <div
-                          class="w-full rounded-t bg-primary/70 transition-all group-hover:bg-primary"
+                          class="w-full bg-primary/70 transition-all group-hover:bg-primary"
                           style=format!("height: {h}%")
                           title=tp("common.questions-new", answered, &[&(day).to_string(), &(answered).to_string(), &(new).to_string()])
                         ></div>
@@ -250,7 +250,7 @@ pub fn WeeklyPage() -> impl IntoView {
             None => format!("/practice?topic={key}"),
           };
           view! {
-            <section class="rounded-xl border bg-card">
+            <section class="pxl-card border bg-card">
               <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.weakest-category-this-week")}</h2>
               <div class="flex items-center gap-3 p-4">
                 <div class="min-w-0 flex-1">
@@ -259,7 +259,7 @@ pub fn WeeklyPage() -> impl IntoView {
                     {tp("common.questions-answered-accuracy", answered, &[&(answered).to_string(), &(rate).to_string()])}
                   </div>
                 </div>
-                <a href=href class="rounded-md border px-3 py-1.5 text-xs transition-colors hover:bg-accent">
+                <a href=href class="border px-3 py-1.5 text-xs transition-colors hover:bg-accent">
                   {move || t("learning.focused-practice")}
                 </a>
               </div>
@@ -272,7 +272,7 @@ pub fn WeeklyPage() -> impl IntoView {
             return view! { <div></div> }.into_any();
           }
           view! {
-            <section class="rounded-xl border bg-card">
+            <section class="pxl-card border bg-card">
               <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.recent-mock-exams")}</h2>
               <div class="divide-y">
                 {exams

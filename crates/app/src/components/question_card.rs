@@ -136,7 +136,7 @@ pub fn QuestionCard(
       let correct = !sel.is_empty() && ham_web_core::question::same_set(&sel, &answer_keys);
       let verdict = (!sel.is_empty()).then(|| {
         if correct {
-          view! { <span class="ml-2 text-green-600 dark:text-green-400">{move || t("exam.correct-2")}</span> }.into_any()
+          view! { <span class="ml-2 text-green-600 dark:text-green-400">{move || t("exam.answered-correct")}</span> }.into_any()
         } else {
           let err = if is_multiple {
             ham_web_core::question::multi_error_kind(&sel, &answer_keys)
@@ -154,7 +154,7 @@ pub fn QuestionCard(
         }
       });
       view! {
-        <div class="text-sm text-muted-foreground">{move || t("exam.correct-answer-2")} {answer_keys.join(", ")} {verdict}</div>
+        <div class="text-sm text-muted-foreground">{move || t("exam.correct-answer-prefix")} {answer_keys.join(", ")} {verdict}</div>
       }
     })
   };
@@ -172,7 +172,7 @@ pub fn QuestionCard(
             .clone()
             .map(|j| {
               view! {
-                <span data-slot="badge" class=badge_class(BadgeVariant::Outline, "") title=move || t("exam.no-2")>
+                <span data-slot="badge" class=badge_class(BadgeVariant::Outline, "") title=move || t("exam.question-number-label")>
                   {j}
                 </span>
               }

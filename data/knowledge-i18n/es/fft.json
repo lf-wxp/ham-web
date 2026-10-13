@@ -1,0 +1,5 @@
+{
+  "FFT 长度须为 2 的幂，得到 {n}": "La longitud de la FFT debe ser una potencia de 2; se obtuvo {n}",
+  "实部与虚部长度须一致": "Las partes real e imaginaria deben tener la misma longitud",
+  "峰值 bin 应为 {bin}": "El bin de pico debería ser {bin}"
+}

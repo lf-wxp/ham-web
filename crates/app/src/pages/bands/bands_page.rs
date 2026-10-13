@@ -17,7 +17,7 @@ use crate::i18n::t;
 
 #[component]
 pub fn BandsPage() -> impl IntoView {
-  set_title("shell.band-chart-2");
+  set_title("shell.band-chart-title");
   let active = RwSignal::new(None::<&'static str>);
 
   let jump = Callback::new(move |code: &'static str| {
@@ -64,7 +64,7 @@ pub fn BandsPage() -> impl IntoView {
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader
-        title=move || t("shell.band-chart-2")
+        title=move || t("shell.band-chart-title")
         subtitle=move || t("radio.upper-limits-included-lower")
       />
 
@@ -84,14 +84,14 @@ pub fn BandsPage() -> impl IntoView {
           <span class="inline-flex flex-wrap items-center gap-1.5">{move || t("knowledge.usage-status")} {legend}</span>
         </div>
 
-        <div class="hidden overflow-x-auto rounded-xl border bg-card md:block">
+        <div class="hidden overflow-x-auto pxl-card border bg-card md:block">
           <table class="w-full min-w-[960px] border-collapse border-hidden text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>
                 <th class=CELL>{move || t("radio.reference")}</th>
                 <th class=CELL colspan="2">{move || t("radio.band-name")}</th>
                 <th class=CELL>{move || t("radio.wavelength-range")}</th>
-                <th class=CELL colspan="2">{move || t("radio.band-name-2")}</th>
+                <th class=CELL colspan="2">{move || t("radio.frequency-band-name")}</th>
                 <th class=CELL>{move || t("radio.band-range")}</th>
                 <th class=CELL>{move || t("radio.amateur-amateur-satellite-bands")}</th>
                 <th class=CELL>{move || t("radio.status")}</th>
@@ -106,7 +106,7 @@ pub fn BandsPage() -> impl IntoView {
           {BANDS.iter().map(|band| view! { <BandCard band=band jump=jump /> }).collect_view()}
         </div>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.footnote")}</h2>
           <dl class="divide-y">{footnotes}</dl>
         </section>

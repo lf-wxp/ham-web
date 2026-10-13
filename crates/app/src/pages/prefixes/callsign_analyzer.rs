@@ -38,7 +38,7 @@ pub(super) fn CallsignAnalyzer() -> impl IntoView {
   let input = RwSignal::new("BG4XYZ".to_owned());
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.callsign-breakdown")}</h2>
       <div class="space-y-5 p-4">
         // 图解示例
@@ -51,7 +51,7 @@ pub(super) fn CallsignAnalyzer() -> impl IntoView {
               .iter()
               .map(|&(ch, label, desc, color)| {
                 view! {
-                  <div class=format!("rounded-lg border p-3 text-center {color}")>
+                  <div class=format!("border p-3 text-center {color}")>
                     <div class="font-mono text-2xl font-bold">{ch}</div>
                     <div class="mt-1 text-xs font-semibold">{label}</div>
                     <div class="mt-0.5 text-[11px]">{desc}</div>
@@ -64,15 +64,15 @@ pub(super) fn CallsignAnalyzer() -> impl IntoView {
 
         // 交互解析器
         <div>
-          <label class="mb-1.5 block text-xs text-muted-foreground">{move || t("radio.enter-a-callsign-to-3")}</label>
+          <label class="mb-1.5 block text-xs text-muted-foreground">{move || t("radio.enter-a-callsign-to-analyze")}</label>
           <Input
             value=input
             on_change=Callback::new(move |v: String| input.set(v))
             placeholder=Signal::derive(move || t("radio.e-g-bg4xyz-ja1abc"))
-            aria_label=Signal::derive(move || t("radio.enter-a-callsign-to-3"))
+            aria_label=Signal::derive(move || t("radio.enter-a-callsign-to-analyze"))
             class="font-mono uppercase"
           />
-          <div class="mt-3 space-y-1.5 rounded-lg bg-muted/40 p-3">
+          <div class="mt-3 space-y-1.5 bg-muted/40 p-3">
             {move || {
               let p = parse_callsign(&input.get());
               let entity = p.entity.map(t).unwrap_or_else(|| t("radio.unrecognised"));
@@ -81,7 +81,7 @@ pub(super) fn CallsignAnalyzer() -> impl IntoView {
                 .map(t)
                 .unwrap_or_else(|| t("radio.non-chinese-callsign"));
               let area = match (p.area, p.area_regions) {
-                (Some(a), Some(r)) => tf("common.zone-2", &[(a), (r)]),
+                (Some(a), Some(r)) => tf("common.zone-with-regions", &[(a), (r)]),
                 _ => "—".to_owned(),
               };
               let suffix = if p.suffix.is_empty() {
@@ -92,7 +92,7 @@ pub(super) fn CallsignAnalyzer() -> impl IntoView {
               let slash = p.slash.map(t).unwrap_or_else(|| t("radio.none"));
               view! {
                 <div class="flex items-baseline gap-2">
-                  <span class="w-24 shrink-0 text-xs text-muted-foreground">{move || t("radio.country-region-2")}</span>
+                  <span class="w-24 shrink-0 text-xs text-muted-foreground">{move || t("radio.country-region-label")}</span>
                   <span class="text-sm font-medium">{entity}</span>
                 </div>
                 <div class="flex items-baseline gap-2">
@@ -100,7 +100,7 @@ pub(super) fn CallsignAnalyzer() -> impl IntoView {
                   <span class="text-sm">{station}</span>
                 </div>
                 <div class="flex items-baseline gap-2">
-                  <span class="w-24 shrink-0 text-xs text-muted-foreground">{move || t("radio.zone-3")}</span>
+                  <span class="w-24 shrink-0 text-xs text-muted-foreground">{move || t("radio.zone-label")}</span>
                   <span class="text-sm">{area}</span>
                 </div>
                 <div class="flex items-baseline gap-2">

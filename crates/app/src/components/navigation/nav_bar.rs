@@ -244,7 +244,7 @@ pub fn Navigation() -> impl IntoView {
               variant=Variant::Ghost
               size=Size::Icon
               aria_label=Signal::derive(move || t("shell.search"))
-              title=Signal::derive(move || t("shell.search-2"))
+              title=Signal::derive(move || t("shell.search-with-shortcut"))
               on_click=Callback::new(move |_| search_open.set(true))
             >
               <Icon kind=IconKind::Search class="size-6" />

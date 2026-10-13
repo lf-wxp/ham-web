@@ -55,7 +55,7 @@ pub fn TopicQuiz() -> impl IntoView {
       }
       view! {
         <PageContainer class="pt-0 pb-10">
-          <section class="rounded-xl border bg-card">
+          <section class="pxl-card border bg-card">
             <h2 class="border-b px-4 py-3 text-sm font-semibold">
               {move || t("common.quick-3-question-test")}
               <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("common.from-related-topics-in")}</span>

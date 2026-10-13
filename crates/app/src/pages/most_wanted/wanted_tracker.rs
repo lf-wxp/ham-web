@@ -42,7 +42,7 @@ pub(super) fn WantedTracker() -> impl IntoView {
   let total = WANTED_ENTITIES.len();
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("log.contact-progress-tracking")}</h2>
       <div class="space-y-3 p-4">
         <Input
@@ -65,9 +65,9 @@ pub(super) fn WantedTracker() -> impl IntoView {
               }}
             </span>
           </div>
-          <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+          <div class="h-2 w-full overflow-hidden bg-muted">
             <div
-              class="h-full rounded-full bg-primary transition-all"
+              class="h-full bg-primary transition-all"
               style=move || {
                 let d = done.get();
                 let n = WANTED_ENTITIES
@@ -102,7 +102,7 @@ pub(super) fn WantedTracker() -> impl IntoView {
                       <span class="flex-1 text-sm">{name}</span>
                       {if from_log {
                         view! {
-                          <span class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{move || t("radio.log")}</span>
+                          <span class="shrink-0 bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{move || t("radio.log")}</span>
                         }
                         .into_any()
                       } else {

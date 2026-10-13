@@ -82,11 +82,11 @@ pub(super) fn LinkBudgetCalculator() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class="sm:col-span-2 rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
+      <div class="sm:col-span-2 bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let (p, d, f) = (power.get(), dist.get(), freq.get());
           if p <= 0.0 || d <= 0.0 || f <= 0.0 {
-            t("tools.enter-a-positive-power-2")
+            t("tools.enter-positive-power-distance-frequency")
           } else {
             let eirp = 10.0 * p.log10() + 30.0 + tx_gain.get();
             let fspl = 20.0 * d.log10() + 20.0 * f.log10() + 32.45;

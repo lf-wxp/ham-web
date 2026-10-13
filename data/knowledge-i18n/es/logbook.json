@@ -1,0 +1,11 @@
+{
+  "两条通联要归属到不同的台站": "Dos contactos deben corresponder a estaciones distintas",
+  "中国": "China",
+  "其他": "Otros",
+  "太郎": "Taro",
+  "新通联要认领出台站": "Un contacto nuevo debe reclamar una estación",
+  "日本": "Japón",
+  "本台呼号,日期,时间,结束时间,频率,波段,模式,对方呼号,RST发送,RST接收,功率,网格,姓名,QTH,DXCC,CQ分区,ITU分区,传播方式,卫星,SOTA,POTA,备注,QSL寄出,QSL收到\n": "Indicativo propio,Fecha,Hora,Hora de fin,Frecuencia,Banda,Modo,Indicativo de la otra estación,RST enviado,RST recibido,Potencia,Cuadrícula,Nombre,QTH,DXCC,Zona CQ,Zona UIT,Modo de propagación,Satélite,SOTA,POTA,Observaciones,QSL enviada,QSL recibida\n",
+  "重复行不该动档案册": "Las filas duplicadas no deben tocar el libro de perfiles",
+  "默认那条 + 认领出的两条": "La predeterminada más las dos reclamadas"
+}

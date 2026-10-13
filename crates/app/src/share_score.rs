@@ -74,10 +74,14 @@ pub fn render_score_card(bank: Bank, score: ExamScore, pass_line: usize) -> Resu
   fill(
     &ctx,
     &tf(
-      "common.accuracy-2",
+      "common.accuracy-with-result",
       &[
         &score.percent().to_string(),
-        &t(if passed { "合格" } else { "不合格" }),
+        &if passed {
+          t("exam.passed")
+        } else {
+          t("exam.not-passed")
+        },
       ],
     ),
     W / 2.0,

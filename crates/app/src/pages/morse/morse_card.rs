@@ -49,7 +49,7 @@ pub(super) fn MorseCard(entry: &'static MorseChar) -> impl IntoView {
   view! {
     <button
       type="button"
-      title=tf("common.preview-2", &[(entry.ch), (entry.code)])
+      title=tf("common.preview-with-code", &[(entry.ch), (entry.code)])
       on:click=play_card
       class="group pxl-window motion-press relative flex flex-col items-center gap-1.5 px-1 py-3 text-center hover:bg-accent"
     >

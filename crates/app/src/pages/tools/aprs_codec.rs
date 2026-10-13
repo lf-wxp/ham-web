@@ -45,7 +45,7 @@ pub(super) fn AprsCodec() -> impl IntoView {
           />
         </Field>
       </div>
-      <div class="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
+      <div class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
         {move || {
           match encode_position(lat.get(), lon.get()) {
             Some(s) => tf("tools.aprs-position-field", &[&s]),
@@ -57,7 +57,7 @@ pub(super) fn AprsCodec() -> impl IntoView {
       <Field label=Signal::derive(move || t("tools.aprs-position-field-e")) r#for=pos_id.clone()>
         <Input id=pos_id value=pos on_change=Callback::new(move |v: String| pos.set(v)) />
       </Field>
-      <div class="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
+      <div class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
         {move || {
           match decode_position(&pos.get()) {
             Some((la, lo)) => tf("tools.decoded-latitude-longitude", &[&fmt_num(la), &fmt_num(lo)]),

@@ -1,0 +1,22 @@
+{
+  "停车操作时远离加油站等危险区域，避免在易燃环境中发射。": "When operating parked, keep away from hazardous areas such as fuel stations and do not transmit in flammable environments.",
+  "发动机点火系统产生的脉冲干扰，需滤波与屏蔽抑制。": "Impulse interference from the engine's ignition system, suppressed by filtering and shielding.",
+  "呼号后缀 /M 表示陆地移动操作，/MM 表示海上移动。": "The suffix /M indicates land-mobile operation and /M/M maritime mobile.",
+  "天线": "Antennas",
+  "天线座与车身金属可靠连接，必要时加装接地编织带。": "Bond the antenna mount reliably to bare bodywork metal, adding grounding braid if needed.",
+  "天线系统与车身良好搭铁，改善辐射并降低噪声。": "Bond the antenna system well to the vehicle body; it improves radiation and lowers noise.",
+  "安装在车辆上的 VHF/UHF 收发信机，功率通常 25–50W。": "A VHF/UHF transceiver installed in a vehicle, usually 25–50 W.",
+  "射频接地": "RF ground",
+  "接地": "Grounding",
+  "正负极均接电瓶，串接合适保险丝，线径足够粗以减小压降。": "Connect both poles to the battery, with a suitable fuse in series and cable thick enough to limit voltage drop.",
+  "点火噪声": "Ignition noise",
+  "点火系统加滤波，馈线绕磁环抑制屏蔽层共模电流。": "Filter the ignition system and wind the feedline on a toroid to suppress common-mode current on the shield.",
+  "电源": "Power supplies",
+  "电源线直接接电瓶，避免点烟器限流与共模噪声。": "Run the supply leads straight to the battery, avoiding the current limit of the cigarette-lighter socket and common-mode noise.",
+  "直连电瓶": "Direct to the battery",
+  "磁吸或夹边固定，尽量装在车顶中央，用车身作地网。": "Magnetic-mount or lip-mount; place it as close to the centre of the roof as possible, using the bodywork as a ground plane.",
+  "移动中信号受多径与遮挡影响出现起伏，属正常现象。": "While moving, signals fluctuate due to multipath and shadowing — that is normal.",
+  "行驶中操作电台须遵守当地法规，优先保证驾驶安全。": "Operating while driving must comply with local regulations; driving safety comes first.",
+  "车台": "Mobile rig",
+  "降噪": "Noise reduction"
+}

@@ -29,18 +29,18 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
         <span>{move || t("log.low-high")}</span>
       </span>
       <span class="flex items-center gap-1.5">
-        <span class="inline-block h-3 w-3 rounded-full border-2 border-primary"></span>
+        <span class="inline-block h-3 w-3 border-2 border-primary"></span>
         <span>{move || t("log.home")}</span>
       </span>
       {move || {
         state.show_grayline.get().then(|| {
           view! {
             <span class="flex items-center gap-1.5">
-              <span class="inline-block h-3 w-3 rounded-sm bg-amber-500/40"></span>
+              <span class="inline-block h-3 w-3 bg-amber-500/40"></span>
               <span>{move || t("log.terminator")}</span>
-              <span class="ml-1 inline-block h-2.5 w-2.5 rounded-full bg-amber-500"></span>
+              <span class="ml-1 inline-block h-2.5 w-2.5 bg-amber-500"></span>
               <span>{move || t("log.subsolar-point")}</span>
-              <span class="inline-block h-2.5 w-2.5 rounded-full border border-amber-500"></span>
+              <span class="inline-block h-2.5 w-2.5 border border-amber-500"></span>
               <span>{move || t("log.antipode")}</span>
             </span>
           }
@@ -58,7 +58,7 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
                   .map(|b| {
                     view! {
                       <span class="inline-flex items-center gap-1">
-                        <span class="inline-block h-0.5 w-4 rounded" style=format!("background:{}", band_color(b))></span>
+                        <span class="inline-block h-0.5 w-4" style=format!("background:{}", band_color(b))></span>
                         {if b.is_empty() { t("log.unknown") } else { b.clone() }}
                       </span>
                     }
@@ -81,9 +81,9 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
         let mut list = state.field_grids.get().get(&(fl, fa)).cloned().unwrap_or_default();
         list.sort();
         view! {
-          <div class="mt-2 rounded-lg border bg-muted/30 p-3">
+          <div class="mt-2 border bg-muted/30 p-3">
             <div class="mb-2 flex items-center justify-between text-xs">
-              <span class="font-semibold">{tf("log.grid-2", &[&(format!("{f_lon}{f_lat}")).to_string()])}</span>
+              <span class="font-semibold">{tf("log.grid-with-locator", &[&(format!("{f_lon}{f_lat}")).to_string()])}</span>
               <Button
                 variant=Variant::Text
                 size=Size::Xs
@@ -97,7 +97,7 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
                 .into_iter()
                 .map(|g| {
                   view! {
-                    <span class="rounded bg-muted/60 px-2 py-0.5 font-mono text-xs">{g}</span>
+                    <span class="bg-muted/60 px-2 py-0.5 font-mono text-xs">{g}</span>
                   }
                 })
                 .collect_view()}
@@ -123,7 +123,7 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
           )
         });
         view! {
-          <div class="mt-2 rounded-lg border bg-muted/30 p-3">
+          <div class="mt-2 border bg-muted/30 p-3">
             <div class="mb-2 flex items-center justify-between text-xs">
               <span class="font-semibold">
                 {if confirmed > 0 {
@@ -165,11 +165,11 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
                     format!("RST {s}/{r}")
                   };
                   let span_class = if e.qsl_rcvd {
-                    "rounded bg-muted/60 px-2 py-0.5 font-mono text-xs text-emerald-600 dark:text-emerald-400"
+                    "bg-muted/60 px-2 py-0.5 font-mono text-xs text-emerald-600 dark:text-emerald-400"
                   } else if e.qsl_sent {
-                    "rounded bg-muted/60 px-2 py-0.5 font-mono text-xs text-amber-600 dark:text-amber-400"
+                    "bg-muted/60 px-2 py-0.5 font-mono text-xs text-amber-600 dark:text-amber-400"
                   } else {
-                    "rounded bg-muted/60 px-2 py-0.5 font-mono text-xs"
+                    "bg-muted/60 px-2 py-0.5 font-mono text-xs"
                   };
                   let mut detail = format!("{} · {} · {} · {}", e.callsign, grid, band, e.mode);
                   if !rst.is_empty() {

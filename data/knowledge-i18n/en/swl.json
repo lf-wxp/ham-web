@@ -1,0 +1,22 @@
+{
+  "518kHz 海上安全与气象信息。": "518 kHz maritime safety and weather information.",
+  "BBC、VOA、NHK 等，频率随季节与时段变化。": "BBC, VOA, NHK and others; frequencies vary with season and time of day.",
+  "SSB / CW / 数字模式，是新手练耳的好材料。": "SSB / CW / digital modes — good material for a beginner training the ear.",
+  "业余通联": "Amateur contacts",
+  "从一台带 SSB 的短波收音机或 RTL-SDR 开始。": "Start with a shortwave receiver that has SSB, or an RTL-SDR.",
+  "各地气象台站的气象图传真广播。": "Facsimile broadcasts of weather charts from weather services everywhere.",
+  "国际广播": "International broadcasting",
+  "天线对接收至关重要：长线天线加巴伦可显著改善信噪比。": "The antenna is crucial for reception: a long-wire antenna with a balun markedly improves SNR.",
+  "接收不违法，但切勿擅自发射（无证发射违法）。": "Listening is legal, but never transmit on your own initiative (transmitting without a licence is illegal).",
+  "数传解码": "Data decoding",
+  "机场天气广播，HF / VHF 航空波段。": "Airport weather broadcasts on HF / VHF aviation bands.",
+  "气象传真": "Weather facsimile",
+  "海事": "Maritime",
+  "火腿": "Hams",
+  "短波传播随昼夜与季节变化，傍晚/夜间选低段、白天选高段。": "Shortwave propagation changes with time of day and season: lower bands in the evening and at night, higher bands by day.",
+  "短波广播": "Shortwave broadcasting",
+  "航空气象": "Aviation weather",
+  "解码": "Decoding",
+  "记录接收日志：频率、时间、内容与信号强度（SINPO）。": "Keep a reception log: frequency, time, content and signal strength (SINPO).",
+  "配合软件解码 RTTY、SSTV、PSK 等信号。": "Use software to decode RTTY, SSTV, PSK and similar signals."
+}

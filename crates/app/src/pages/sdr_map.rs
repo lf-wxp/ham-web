@@ -23,7 +23,7 @@ pub fn SdrMapPage() -> impl IntoView {
       title=t("tools.online-sdr-receiver-map")
       subtitle=t("tools.no-local-hardware-needed")
     >
-      <section class="rounded-xl border bg-card p-4">
+      <section class="pxl-card border bg-card p-4">
         <MapView focus=Signal::derive(move || focus.get())>
           {SDR_SITES
             .iter()
@@ -51,7 +51,7 @@ pub fn SdrMapPage() -> impl IntoView {
         </p>
       </section>
 
-      <section class="rounded-xl border bg-card">
+      <section class="pxl-card border bg-card">
         <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.public-receivers")}</h2>
         <div class="divide-y">
           {SDR_SITES
@@ -67,7 +67,7 @@ pub fn SdrMapPage() -> impl IntoView {
                           kt(s.name)
                         }}
                       </span>
-                      <span class="rounded-full border bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
+                      <span class="border bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
                         {move || {
                           data::track_knowledge();
                           kt(s.kind)
@@ -115,7 +115,7 @@ pub fn SdrMapPage() -> impl IntoView {
         </div>
       </section>
 
-      <section class="rounded-xl border bg-card">
+      <section class="pxl-card border bg-card">
         <h2 class="border-b px-4 py-3 text-sm font-semibold">
           {move || t("tools.receiver-directory-and-self")}
         </h2>

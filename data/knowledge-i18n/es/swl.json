@@ -1,0 +1,22 @@
+{
+  "518kHz 海上安全与气象信息。": "Información marítima de seguridad y meteorológica en 518 kHz.",
+  "BBC、VOA、NHK 等，频率随季节与时段变化。": "BBC, VOA, NHK, etc.; las frecuencias cambian con la estación y la hora.",
+  "SSB / CW / 数字模式，是新手练耳的好材料。": "SSB / CW / modos digitales: buen material para que un principiante entrene el oído.",
+  "业余通联": "Contactos de radioaficionados",
+  "从一台带 SSB 的短波收音机或 RTL-SDR 开始。": "Empiece con un receptor de onda corta con SSB o con un RTL-SDR.",
+  "各地气象台站的气象图传真广播。": "Difusión por facsimil de cartas meteorológicas de servicios de todo el mundo.",
+  "国际广播": "Radiodifusión internacional",
+  "天线对接收至关重要：长线天线加巴伦可显著改善信噪比。": "La antena es clave para recibir: una antena de hilo largo con balún mejora mucho la SNR.",
+  "接收不违法，但切勿擅自发射（无证发射违法）。": "Escuchar es legal, pero nunca transmita por su cuenta (transmitir sin licencia es ilegal).",
+  "数传解码": "Decodificación de datos",
+  "机场天气广播，HF / VHF 航空波段。": "Difusión meteorológica de aeropuertos en bandas aeronáuticas HF / VHF.",
+  "气象传真": "Facsimil meteorológico",
+  "海事": "Marítimo",
+  "火腿": "Radioaficionados",
+  "短波传播随昼夜与季节变化，傍晚/夜间选低段、白天选高段。": "La propagación en onda corta cambia con la hora y la estación: bandas bajas al atardecer y de noche, altas de día.",
+  "短波广播": "Radiodifusión en onda corta",
+  "航空气象": "Meteorología aeronáutica",
+  "解码": "Decodificación",
+  "记录接收日志：频率、时间、内容与信号强度（SINPO）。": "Lleve un diario de recepción: frecuencia, hora, contenido e intensidad (SINPO).",
+  "配合软件解码 RTTY、SSTV、PSK 等信号。": "Use software para decodificar RTTY, SSTV, PSK y otras señales."
+}

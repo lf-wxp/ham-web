@@ -78,7 +78,7 @@ pub(super) fn DbmConverter() -> impl IntoView {
         </Field>
       </div>
 
-      <div class="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+      <div class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
         {move || {
           format!(
             "{} dBm = {} mW = {} W",

@@ -1,0 +1,12 @@
+{
+  "FT8/FT4 收发，与日志软件联动自动记录。": "Emisión y recepción FT8/FT4, enlazada con el programa de diario para registrar automáticamente.",
+  "WSJT-X 的 UDP 广播可与多数日志软件自动联动记录。": "La difusión UDP de WSJT-X se enlaza automáticamente con la mayoría de los programas de diario.",
+  "弱信号模式": "Modos de señal débil",
+  "日常日志可导出 ADIF，导入 LoTW/eQSL 等确认。": "El diario diario puede exportarse a ADIF e importarse en LoTW/eQSL para su confirmación.",
+  "最流行的竞赛日志软件，支持各种竞赛规则与 DX Cluster。": "El programa de diario para concursos más popular: admite muchas reglas y el DX Cluster.",
+  "竞赛使用 N1MM+ 可自动评分、控制电台、连接 DX Cluster。": "En concursos, N1MM+ ofrece puntuación automática, control del equipo y conexión al DX Cluster.",
+  "竞赛日志": "Diario de concursos",
+  "老牌通用日志软件，功能全面。": "Programa de diario general de larga trayectoria, con funciones completas.",
+  "通用日志": "Diario general",
+  "集成日志、遥控、数字模式的套件。": "Conjunto que integra diario, control remoto y modos digitales."
+}

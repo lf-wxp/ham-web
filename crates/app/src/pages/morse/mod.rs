@@ -192,8 +192,8 @@ fn random_index(len: usize) -> usize {
 
 fn pill_class(active: bool) -> &'static str {
   if active {
-    "inline-flex items-center justify-center whitespace-nowrap rounded-full border border-primary bg-primary px-3 py-1 text-xs font-medium text-primary-foreground shadow-sm shadow-primary/20 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    "inline-flex items-center justify-center whitespace-nowrap border border-primary bg-primary px-3 py-1 text-xs font-medium text-primary-foreground shadow-sm shadow-primary/20 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
   } else {
-    "inline-flex items-center justify-center whitespace-nowrap rounded-full border bg-card px-3 py-1 text-xs transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    "inline-flex items-center justify-center whitespace-nowrap border bg-card px-3 py-1 text-xs transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
   }
 }

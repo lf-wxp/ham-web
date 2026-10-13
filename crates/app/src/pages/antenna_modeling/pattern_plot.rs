@@ -69,9 +69,9 @@ pub(super) fn PatternPlot() -> impl IntoView {
 
   let tab_class = move |active: bool| {
     if active {
-      "rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground"
+      "bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground"
     } else {
-      "rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent"
+      "px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent"
     }
   };
 
@@ -97,7 +97,7 @@ pub(super) fn PatternPlot() -> impl IntoView {
         {move || {
           (kind.get() == PatternKind::DipoleEl).then(|| {
             view! {
-              <div class="mt-2 rounded-lg border bg-muted/30 px-3 py-2">
+              <div class="mt-2 border bg-muted/30 px-3 py-2">
                 <div class="flex items-center justify-between text-[10px] text-muted-foreground">
                   <span>{move || t("knowledge.height")}</span>
                   <span class="font-mono tabular-nums">{format!("{:.2} λ", height_wl.get())}</span>

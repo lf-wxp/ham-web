@@ -1,0 +1,20 @@
+{
+  "EME 月面反射": "EME moonbounce",
+  "UHF 可远达上千公里，多出现在海上与沿海。": "On UHF it can reach a thousand kilometres or more, mostly over sea and coastal paths.",
+  "信号有独特的「嘶嘶」声，用于 VHF/UHF。": "The signal has a distinctive \"hissing\" sound; used on VHF/UHF.",
+  "利用月球反射电波，实现地球任意两地通联": "Uses the Moon to reflect radio waves, allowing contacts between any two points on Earth",
+  "利用流星电离余迹反射 VHF 电波": "Reflects VHF waves off the ionised trail left by a meteor",
+  "卫星转发": "Satellite relaying",
+  "可实现数百公里 VHF/UHF 稳定通信。": "Enables stable VHF/UHF communication over several hundred kilometres.",
+  "对流层不均匀体散射电波": "Radio waves scattered by tropospheric irregularities",
+  "对流层散射": "Tropospheric scatter",
+  "极光传播": "Auroral propagation",
+  "波导传播": "Ducting propagation",
+  "流星余迹散射 MS": "Meteor scatter (MS)",
+  "短暂增强，常配合高速数字模式（如 MSK144）完成交换。": "Brief enhancement, usually with a fast digital mode (such as MSK144) to complete the exchange.",
+  "经业余卫星中继转发": "Relayed through amateur satellites",
+  "见「业余卫星」专题。": "See the \"Amateur satellites\" section.",
+  "路径损耗极大（约 250dB+），需高增益天线阵列与大功率。": "Enormous path loss (about 250 dB or more), requiring a high-gain antenna array and high power.",
+  "逆温层形成大气波导，超视距传播": "A temperature inversion forms an atmospheric duct, giving beyond-line-of-sight propagation",
+  "高纬极光区电离增强反射电波": "Enhanced ionisation in the high-latitude auroral zone reflects radio waves"
+}

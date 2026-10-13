@@ -1,0 +1,22 @@
+{
+  "便宜、电流大，但重、需防过放，应急电源常用。": "Cheap with high current capability, but heavy and needing protection against deep discharge; commonly used as an emergency supply.",
+  "单格 2V，常见 12V": "2 V per cell, commonly 12 V",
+  "单节 1.2V": "1.2 V per cell",
+  "单节 3.2V，4 串约 12.8V": "3.2 V per cell, about 12.8 V for four in series",
+  "单节 3.7V": "3.7 V per cell",
+  "可充电、较环保，记忆效应低。": "Rechargeable and relatively environmentally friendly, with a low memory effect.",
+  "多数业余电台按 13.8V 直流供电设计（对应 12V 铅酸浮充电压），直接接 13.8V 稳压电源。": "Most amateur radios are designed for 13.8 V DC (the float voltage of a 12 V lead-acid battery), so connect them straight to a regulated 13.8 V supply.",
+  "大功率发射时电流大，需用足够粗的电源线与可靠接头，避免压降与发热。": "High-power transmission draws heavy current, so use supply leads of adequate gauge and reliable connectors to avoid voltage drop and heating.",
+  "应急电源可选择汽车电瓶 + 太阳能板 + 充电控制器，注意正负极与熔断保护。": "For an emergency supply you can use a car battery plus a solar panel and a charge controller; mind the polarity and provide fuse protection.",
+  "电池严禁短路，短路会产生极大电流导致灼伤、起火甚至爆炸。": "Never short-circuit a battery: the enormous current can cause burns, fire and even explosion.",
+  "磷酸铁锂 LiFePO₄": "LiFePO4 (lithium iron phosphate)",
+  "耐过充、可大电流，但有记忆效应且含镉，已少用。": "Tolerates over-charging and can deliver high current, but has a memory effect and contains cadmium, so it is now little used.",
+  "能量密度高，手台普遍使用，需保护板防过充过放。": "High energy density and widely used in handhelds; a protection board is needed against over-charge and over-discharge.",
+  "轻、寿命长、安全，业余便携电源首选。": "Light, long-lived and safe — the first choice for portable amateur power.",
+  "铅酸电池": "Lead-acid battery",
+  "锂电池充电需使用匹配的充电器与保护电路，过充过放都会损坏甚至起火。": "Lithium batteries must be charged with a matching charger and protection circuit; both over-charging and over-discharging damage them and may cause fire.",
+  "锂离子 Li-ion": "Li-ion (lithium-ion)",
+  "镍氢 NiMH": "NiMH (nickel-metal hydride)",
+  "镍镉 NiCd": "NiCd (nickel-cadmium)",
+  "长期存放电池应保持适当电量并定期补电，避免深度放电。": "For long-term storage keep batteries at a suitable charge level and top them up periodically, avoiding deep discharge."
+}

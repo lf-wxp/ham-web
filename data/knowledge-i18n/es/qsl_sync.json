@@ -1,0 +1,22 @@
+{
+  "LoTW 确认应累加": "Las confirmaciones de LoTW deben acumularse",
+  "QRZ 确认落到自己的渠道上": "Las confirmaciones de QRZ van a su propio canal",
+  "{channel:?} 没有任何来源认领": "Ninguna fuente reclama {channel:?}",
+  "{} 不该被 {} 连带置位": "{} no debería marcarse por efecto de {}",
+  "{} 置位后应读得到": "{} debería poder leerse una vez marcado",
+  "不是纸质卡确认": "No es una confirmación de tarjeta en papel",
+  "两行的标志位要合并": "Los indicadores de las dos filas deben fusionarse",
+  "匹配情况仍然要报给用户": "La situación de coincidencia debe comunicarse al usuario",
+  "只采纳 eQSL 渠道": "Solo se admite el canal eQSL",
+  "同一本地通联只算一条": "Un mismo contacto local cuenta una sola vez",
+  "带了扩展字段就不是只分析": "Si lleva campos de extensión no es solo análisis",
+  "报告侧的计数照旧": "El recuento del lado del informe se mantiene",
+  "新增照常补上": "Las altas se incorporan como siempre",
+  "既没有新增，也没有冲突": "Ni altas ni conflictos",
+  "本地标志位应原样保留": "Los indicadores locales deben conservarse tal cual",
+  "没有可采纳的标记，所以没有差异": "No hay marca aceptable, por lo que no hay diferencias",
+  "测试里的频率": "La frecuencia usada en la prueba",
+  "纸卡确认应保留": "Las confirmaciones en papel deben conservarse",
+  "纸质确认不是 LoTW 的事": "La confirmación en papel no es asunto de LoTW",
+  "默认应为未置位": "El valor por defecto debería estar sin marcar"
+}

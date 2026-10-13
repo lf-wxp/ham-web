@@ -1,0 +1,21 @@
+{
+  "DV 数字语音": "Voz digital DV",
+  "Fusion 数字语音": "Voz digital Fusion",
+  "MMDVM/Pi-Star 热点": "Punto de acceso MMDVM/Pi-Star",
+  "TDMA 数字语音": "Voz digital TDMA",
+  "上下行频率之差：VHF 通常 0.6MHz，UHF 通常 5MHz。": "Diferencia entre subida y bajada: normalmente 0,6 MHz en VHF y 5 MHz en UHF.",
+  "中继台发射时会回传自身信号，用于确认是否打开中继。": "El repetidor reemite su propia señal, lo que confirma que lo ha abierto.",
+  "中继台用上行频率接收、下行频率发射，同时转发，扩大覆盖。": "El repetidor recibe en la frecuencia de subida y emite en la de bajada de forma simultánea, ampliando la cobertura.",
+  "互联网无线电连接项目，连接各地中继台，需先听再发。": "Proyecto de interconexión de radio por Internet que enlaza repetidores de todo el mundo: escuche antes de transmitir.",
+  "亚音 CTCSS": "Subtono CTCSS",
+  "双时隙、色码与通话组，商业与业余广泛使用。": "Dos ranuras de tiempo, códigos de color y grupos de conversación; muy usada en el ámbito comercial y en el de radioaficionados.",
+  "发射时叠加亚音频，只有带匹配亚音的台才能打开中继，避免误触发。": "Al transmitir se superpone un tono subaudible, de modo que solo abren el repetidor las estaciones con el tono correspondiente, evitando disparos falsos.",
+  "回波": "Eco",
+  "开源 Asterisk 语音网关，支持自建节点与链路互联。": "Pasarela de voz Asterisk de código abierto que permite montar nodos propios y enlazar redes.",
+  "异频中继": "Repetidor dúplex",
+  "把电台经互联网互联，可用电脑/手机接入远地中继或会议。": "Interconecta radios por Internet, lo que permite acceder desde un ordenador o móvil a repetidores o salas de conferencia lejanos.",
+  "日本 ICOM 主导，支持互联网网关全球互联。": "Impulsada por ICOM de Japón; admite interconexión mundial mediante pasarelas de Internet.",
+  "日本八重洲主导，兼容模拟 FM。": "Impulsada por Yaesu de Japón; compatible con FM analógica.",
+  "连接互联网网关的小型个人接入点，无需本地中继。": "Pequeño punto de acceso personal conectado a una pasarela de Internet, sin necesidad de repetidor local.",
+  "频差": "Desplazamiento"
+}

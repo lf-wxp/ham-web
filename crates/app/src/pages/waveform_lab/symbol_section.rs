@@ -75,7 +75,7 @@ pub(super) fn SymbolSection() -> impl IntoView {
   };
 
   view! {
-    <section id="symbols" class="scroll-mt-24 rounded-xl border bg-card">
+    <section id="symbols" class="scroll-mt-24 pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.constellation-and-eye-diagram")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("tools.a-constellation-shows-how")}
@@ -157,7 +157,7 @@ pub(super) fn SymbolSection() -> impl IntoView {
 
         <div class="flex flex-col gap-3">
           <div class="flex flex-col gap-2">
-            <span class=NOTE>{move || t("tools.signal-to-noise-ratio-2")}</span>
+            <span class=NOTE>{move || t("tools.signal-to-noise-ratio-es-n0")}</span>
             <Slider
               value=Signal::derive(move || snr.get())
               on_change=Callback::new(move |v: f64| snr.set(v))
@@ -191,7 +191,7 @@ pub(super) fn SymbolSection() -> impl IntoView {
 
       <div class="border-t px-4 py-3">
         <div class="flex flex-wrap items-center gap-3">
-          <span class=NOTE>{move || t("tools.pulse-shaping-roll-off-2")}</span>
+          <span class=NOTE>{move || t("tools.pulse-shaping-roll-off-beta")}</span>
           <Slider
             value=Signal::derive(move || beta.get())
             on_change=Callback::new(move |v: f64| beta.set(v))

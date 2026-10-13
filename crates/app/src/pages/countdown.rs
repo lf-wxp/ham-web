@@ -149,7 +149,7 @@ pub fn CountdownPage() -> impl IntoView {
       />
 
       <PageContainer class="space-y-5">
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.add-countdown")}</h2>
           <div class="grid gap-3 p-4 sm:grid-cols-[1fr_auto_auto_auto]">
             <Input
@@ -201,7 +201,7 @@ pub fn CountdownPage() -> impl IntoView {
             events.sort_by_key(|e| e.target_ms);
             if events.is_empty() {
               view! {
-                <div class="rounded-xl border bg-card px-4 py-10 text-center text-sm text-muted-foreground">
+                <div class="pxl-card border bg-card px-4 py-10 text-center text-sm text-muted-foreground">
                   {move || t("exam.no-countdowns-yet-add")}
                 </div>
               }
@@ -215,7 +215,7 @@ pub fn CountdownPage() -> impl IntoView {
                     let remain = e.target_ms - now.get();
                     let expired = remain <= 0;
                     view! {
-                      <div class="flex items-center gap-4 rounded-xl border bg-card px-4 py-4">
+                      <div class="flex items-center gap-4 pxl-card border bg-card px-4 py-4">
                         <div class="min-w-0 flex-1">
                           <div class="truncate font-medium">{e.title.clone()}</div>
                           <div class="mt-0.5 text-xs text-muted-foreground tabular-nums">

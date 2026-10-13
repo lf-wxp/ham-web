@@ -55,7 +55,7 @@ pub(super) fn MistakeDiagnosis() -> impl IntoView {
     let mut parts: Vec<String> = Vec::new();
     if let Some((key, n)) = top_cat {
       parts.push(tp(
-        "common.questions-2",
+        "common.label-with-questions",
         n as u32,
         &[
           &t("exam.most-mistakes-are-in"),
@@ -66,7 +66,7 @@ pub(super) fn MistakeDiagnosis() -> impl IntoView {
     }
     if let Some((name, n)) = top_cause {
       parts.push(tp(
-        "common.questions-2",
+        "common.label-with-questions",
         n as u32,
         &[&t("exam.main-cause-is"), &t(name), &n.to_string()],
       ));
@@ -103,14 +103,14 @@ pub(super) fn MistakeDiagnosis() -> impl IntoView {
   let weak_href = weakest.and_then(|(key, _)| top_pages(key).first().map(|&(href, _)| href));
 
   view! {
-    <div class="rounded-xl border bg-card p-4">
+    <div class="pxl-card border bg-card p-4">
       <h3 class="mb-2 text-sm font-semibold">{move || t("exam.mistake-diagnosis")}</h3>
       <p class="text-sm text-muted-foreground">{summary}</p>
       <div class="mt-3 flex flex-wrap gap-1.5">
         {top_cat_href.map(|href| view! {
           <a
             href=href
-            class="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+            class="bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
           >
             {move || t("exam.review-weak-topic")}
           </a>
@@ -118,7 +118,7 @@ pub(super) fn MistakeDiagnosis() -> impl IntoView {
         {weak_href.map(|href| view! {
           <a
             href=href
-            class="rounded-full border px-3 py-1 text-xs transition-colors hover:bg-accent"
+            class="border px-3 py-1 text-xs transition-colors hover:bg-accent"
           >
             {move || t("exam.targeted-practice")}
           </a>

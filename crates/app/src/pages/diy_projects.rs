@@ -239,7 +239,7 @@ pub fn DiyProjectsPage() -> impl IntoView {
                 .map(|(i, (_, _))| (i, unique_id(&format!("diy-buy-{i}"))))
                 .collect();
               view! {
-                <article class="rounded-xl border bg-card">
+                <article class="pxl-card border bg-card">
                   <header class="flex flex-wrap items-baseline gap-2 border-b px-4 py-3">
                     <h2 class="text-sm font-semibold">{move || text(name)}</h2>
                     <span class="text-xs text-muted-foreground">
@@ -256,11 +256,11 @@ pub fn DiyProjectsPage() -> impl IntoView {
 
                     <div class="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                       <span>{move || t("knowledge.band")}</span>
-                      <span class="rounded-full border px-2 py-0.5">{move || band_label(p.band)}</span>
+                      <span class="border px-2 py-0.5">{move || band_label(p.band)}</span>
                       {p.instruments.iter().map(|i| {
                         let i = *i;
                         view! {
-                          <span class="rounded-full border px-2 py-0.5" title=move || t("diy.instruments")>
+                          <span class="border px-2 py-0.5" title=move || t("diy.instruments")>
                             {move || instrument_label(i)}
                           </span>
                         }

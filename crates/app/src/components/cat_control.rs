@@ -239,7 +239,7 @@ pub fn CatControl(#[prop(into)] on_reading: Callback<CatReading>) -> impl IntoVi
     .collect();
 
   view! {
-    <div class="flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
+    <div class="flex flex-wrap items-center gap-2 border border-dashed px-3 py-2 text-xs text-muted-foreground">
       <span class="font-medium text-foreground">{move || t("common.rig-cat")}</span>
       {if supported {
         view! {
@@ -276,7 +276,7 @@ pub fn CatControl(#[prop(into)] on_reading: Callback<CatReading>) -> impl IntoVi
           <Show when=move || settings.with(|s| s.protocol == Protocol::Icom)>
             <Input
               aria_label=Signal::derive(move || t("common.ci-v-address-hex"))
-              title=Signal::derive(move || t("common.ci-v-address-hex-2"))
+              title=Signal::derive(move || t("common.ci-v-address-hex-examples"))
               class="h-7 w-14 py-0 font-mono text-xs uppercase"
               maxlength=Signal::derive(|| "2".to_owned())
               disabled=Signal::derive(busy)

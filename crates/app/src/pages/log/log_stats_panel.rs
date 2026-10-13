@@ -97,7 +97,9 @@ pub(super) fn LogStatsPanel(
                 {(!parsed.is_all())
                   .then(|| {
                     view! {
-                      <span>{tf("log.stats-scope-count", &[&entries.len().to_string()])}</span>
+                      <span>
+                        {tp("log.stats-scope-count", entries.len(), &[&entries.len().to_string()])}
+                      </span>
                     }
                   })}
               </div>
@@ -110,20 +112,20 @@ pub(super) fn LogStatsPanel(
           <Stat label=t("log.qsl-confirmed") value=move || confirmed />
         </div>
         <section class="grid gap-4 sm:grid-cols-2">
-          <div class="rounded-xl border bg-card p-4">
+          <div class="pxl-card border bg-card p-4">
             <h3 class="mb-3 text-sm font-semibold">{move || t("log.by-mode")}</h3>
             <BarList items=modes />
           </div>
-          <div class="rounded-xl border bg-card p-4">
+          <div class="pxl-card border bg-card p-4">
             <h3 class="mb-3 text-sm font-semibold">{move || t("log.by-band")}</h3>
             <BarList items=bands />
           </div>
         </section>
-        <section class="rounded-xl border bg-card p-4">
+        <section class="pxl-card border bg-card p-4">
           <h3 class="mb-2 text-sm font-semibold">
             {move || t("log.dxcc-entities")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">
-              {tp("log.worked-2", n_dxcc, &[&n_dxcc.to_string()])}
+              {tp("log.worked-count", n_dxcc, &[&n_dxcc.to_string()])}
             </span>
           </h3>
           {if dxcc.is_empty() {
@@ -135,7 +137,7 @@ pub(super) fn LogStatsPanel(
                   .into_iter()
                   .map(|e| {
                     view! {
-                      <span class="rounded-full border bg-muted/40 px-2.5 py-0.5 text-xs">{e}</span>
+                      <span class="border bg-muted/40 px-2.5 py-0.5 text-xs">{e}</span>
                     }
                   })
                   .collect_view()}
@@ -145,7 +147,7 @@ pub(super) fn LogStatsPanel(
           }}
         </section>
         <AwardsPanel entries=entries.clone() />
-        <section class="rounded-xl border bg-card p-4">
+        <section class="pxl-card border bg-card p-4">
           <h3 class="mb-2 text-sm font-semibold">
             {move || t("log.qsls-pending")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">
@@ -173,7 +175,7 @@ pub(super) fn LogStatsPanel(
                         <span class="text-xs text-muted-foreground">
                           {e.date.clone()} " · " {e.band_label()} " · " {e.mode.clone()}
                         </span>
-                        <span class="ml-auto rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground">{via}</span>
+                        <span class="ml-auto border px-2 py-0.5 text-[10px] text-muted-foreground">{via}</span>
                       </div>
                     }
                   })
@@ -183,7 +185,7 @@ pub(super) fn LogStatsPanel(
             .into_any()
           }}
         </section>
-        <section class="rounded-xl border bg-card p-4">
+        <section class="pxl-card border bg-card p-4">
           <h3 class="mb-2 text-sm font-semibold">
             {move || t("learning.grids-worked")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">
@@ -201,7 +203,7 @@ pub(super) fn LogStatsPanel(
                     .into_iter()
                     .map(|g| {
                       view! {
-                        <span class="rounded-full border bg-muted/40 px-2.5 py-0.5 font-mono text-xs">{g}</span>
+                        <span class="border bg-muted/40 px-2.5 py-0.5 font-mono text-xs">{g}</span>
                       }
                     })
                     .collect_view()}

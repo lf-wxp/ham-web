@@ -451,7 +451,7 @@ pub fn KissTncPage() -> impl IntoView {
                   <span class="text-xs text-muted-foreground">
                     {tf("tools.kiss-preview", &[&p.frame_len.to_string()])}
                     " "
-                    <code class="break-all rounded bg-muted/60 px-1.5 py-0.5 font-mono">
+                    <code class="break-all bg-muted/60 px-1.5 py-0.5 font-mono">
                       {hex_text}
                     </code>
                   </span>

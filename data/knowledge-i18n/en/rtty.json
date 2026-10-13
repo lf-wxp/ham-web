@@ -1,0 +1,21 @@
+{
+  "1 分钟一个周期，用于 EME 与小功率远距离。": "A one-minute cycle, used for EME and low-power long-distance work.",
+  "10m RTTY。": "10 m RTTY.",
+  "15m RTTY。": "15 m RTTY.",
+  "20m RTTY。": "20 m RTTY.",
+  "31.25 波特窄带，适合弱信号键盘聊天。": "31.25 baud narrowband, suited to weak-signal keyboard chatting.",
+  "40m RTTY（中国）。": "40 m RTTY (China).",
+  "45.45 波特、170Hz 频移，竞赛主力模式。": "45.45 baud with 170 Hz shift; the mainstay contest mode.",
+  "62.5 波特，竞赛时速度翻倍。": "62.5 baud, doubling the speed for contests.",
+  "80m RTTY。": "80 m RTTY.",
+  "PSK31 功率无需太大，5–30W 足以稳定通联。": "PSK31 needs no great power: 5–30 W is enough for solid contacts.",
+  "RTTY 用 FSK 或 AFSK，注意与收发信机选通配合。": "RTTY uses FSK or AFSK; mind how it works with the transceiver's filtering.",
+  "基于 FT8 信号结构，支持实时文字对话。": "Based on the FT8 signal structure, supporting real-time text conversation.",
+  "弱信号": "Weak signal",
+  "弱信号聊天": "Weak-signal chat",
+  "控制音频驱动电平，避免过载导致信号失真。": "Control the audio drive level to avoid overload causing signal distortion.",
+  "无线电传": "Radioteletype (RTTY)",
+  "相移键控": "Phase-shift keying",
+  "竞赛中 RTTY 常用「CQ TEST」加呼号，交换序号。": "In contests, RTTY commonly uses \"CQ TEST\" plus the callsign, exchanging serial numbers.",
+  "高速相移键控": "High-speed phase-shift keying"
+}

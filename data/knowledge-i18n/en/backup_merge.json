@@ -1,0 +1,20 @@
+{
+  "{ 也坏的": "{ also broken",
+  "{ 写到一半的 JSON": "{ half-written JSON",
+  "{ 坏的": "{ broken",
+  "中文\"": "Chinese \"",
+  "反序列化": "Deserialisation",
+  "可合并": "Mergeable",
+  "台站档案册应当可合并": "The station profile book should be mergeable",
+  "备份里的野外台站要带过来": "The field station in the backup must be brought over",
+  "家里那条去重、野外那条新增": "The home one is de-duplicated, the field one is new",
+  "序列化备份": "Serialising the backup",
+  "序列化本机": "Serialising the local data",
+  "当前台站仍取本机": "The current station still comes from the local data",
+  "旧备份不能让本机掉星": "An old backup must not cost the local data its stars",
+  "本机损坏时要采纳备份": "When the local data is corrupt, adopt the backup",
+  "本机那条": "The local record",
+  "正确率不能超过 100%": "Accuracy cannot exceed 100%",
+  "没有日期就谈不上重复，一律并入": "Without a date there is no duplication, so everything is merged in",
+  "饱和而不是回绕": "Saturate rather than wrap around"
+}

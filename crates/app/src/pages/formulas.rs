@@ -19,7 +19,7 @@ pub fn FormulasPage() -> impl IntoView {
           .iter()
           .map(|g| {
             view! {
-              <section class="rounded-xl border bg-card">
+              <section class="pxl-card border bg-card">
                 <h2 class="border-b px-4 py-3 text-sm font-semibold">{g.name}</h2>
                 <div class="grid gap-2 p-4 sm:grid-cols-2">
                   {g.items
@@ -29,7 +29,7 @@ pub fn FormulasPage() -> impl IntoView {
                       view! {
                         <a
                           href=href
-                          class="group rounded-lg border bg-muted/30 p-3 transition-colors hover:bg-accent/60"
+                          class="group border bg-muted/30 p-3 transition-colors hover:bg-accent/60"
                         >
                           <div class="text-sm font-medium">{f.name}</div>
                           // KaTeX 可用时渲染 data-tex，否则保留 Unicode 表达式。
@@ -50,7 +50,7 @@ pub fn FormulasPage() -> impl IntoView {
           })
           .collect_view()}
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.units-title")}</h2>
           <div class="space-y-4 p-4">
             {UNIT_CONVERSION_GROUPS
@@ -67,7 +67,7 @@ pub fn FormulasPage() -> impl IntoView {
                           view! {
                             <a
                               href=href
-                              class="group rounded-lg border bg-muted/30 p-3 transition-colors hover:bg-accent/60"
+                              class="group border bg-muted/30 p-3 transition-colors hover:bg-accent/60"
                             >
                               <div class="text-sm font-medium">{move || t(c.name)}</div>
                               <div class="mt-1 font-mono text-sm font-semibold text-primary">{c.expr}</div>

@@ -1,0 +1,9 @@
+{
+  "{bad} 不应解析成 id": "{bad} should not be parsed as an id",
+  "{mime} 不应被接受": "{mime} should not be accepted",
+  "{mime} 大写也应被接受": "{mime} in upper case should also be accepted",
+  "{mime} 应被接受": "{mime} should be accepted",
+  "刚好到上限应放行": "Exactly at the limit should be allowed",
+  "类型不对时先报类型": "When the type is wrong, report the type first",
+  "超长拒绝": "Oversized input is rejected"
+}

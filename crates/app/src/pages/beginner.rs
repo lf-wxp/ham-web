@@ -11,23 +11,23 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn BeginnerPage() -> impl IntoView {
-  set_title("shell.beginner-s-guide-2");
+  set_title("shell.beginner-s-guide-title");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader
-        title=move || t("shell.beginner-s-guide-2")
+        title=move || t("shell.beginner-s-guide-title")
         subtitle=move || t("knowledge.from-licence-to-first")
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.beginner-roadmap")}</h2>
           <div class="space-y-1 p-4">
             {BEGINNER_STEPS
               .iter()
               .map(|&(t, d)| {
                 view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2 sm:flex-row sm:items-baseline sm:gap-3">
+                  <div class="flex flex-col gap-1 px-3 py-2 sm:flex-row sm:items-baseline sm:gap-3">
                     <span class="shrink-0 text-sm font-semibold text-primary">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
@@ -37,7 +37,7 @@ pub fn BeginnerPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.equipment-type")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[560px] border-collapse text-sm">
@@ -68,7 +68,7 @@ pub fn BeginnerPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.first-contact-notes")}</h2>
           <ul class="space-y-2 p-4">
             {FIRST_QSO_TIPS

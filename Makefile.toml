@@ -129,7 +129,7 @@ command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "dxcc-map"]
 
 [tasks.icons]
-description = "由 public/pwa-icon.svg 生成 PWA / Apple Touch 图标"
+description = "由 public/pwa-icon.svg 生成 PWA / Apple Touch 图标与 favicon.ico"
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "icons"]
 
@@ -154,6 +154,12 @@ args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "pixel-palette"]
 description = "由配色方案表（crates/core/src/color_scheme.rs）生成 style/pixel/schemes.css，并审计每个方案亮 / 暗的对比度"
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "pixel-schemes"]
+
+[tasks.check-ui]
+description = "界面规范守卫：已失效的圆角类、原生表单控件、类名工厂残留、模糊/渐变等「应为 0」的机械条目（只读，见 docs/ui-components.md §11）"
+# 与 i18n-check 同理不用 --release：只是扫源码文本。
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--", "check-ui"]
 
 [tasks.pixel-check]
 description = "校验像素风生成物：调色板文字色阶与每个配色方案对比度达标，schemes.css 与方案表一致（只读）"
@@ -474,6 +480,12 @@ description = "校验 data/i18n/ 词典（重复 key、占位符、死条目）�
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--", "check-i18n"]
 
+[tasks.i18n-dynamic-calls]
+description = "列出数据驱动的调用点（`t(变量)` / `tf(label, …)`：取值来自数据表，静态扫描看不到；译文覆盖已由 i18n-check 的「界面中文都有译文」守住）"
+# 与 i18n-check 同理不用 --release：只是扫源码文本。
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--", "check-i18n", "--dynamic-calls"]
+
 [tasks.i18n-plural-candidates]
 description = "导出复数候选骨架（tf/tp 调用且中文带数量占位符的文案）→ tmp/plural-candidates-en.json"
 # 换语言：`cargo make i18n-plural-candidates -- --lang es`（CLI 参数覆盖上面的默认）
@@ -563,7 +575,7 @@ done
 '''
 
 [tasks.check]
-description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案/知识库译文词典校验 + 解析表校验 + 像素风生成物校验（不构建前端）"
+description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案/知识库译文词典校验 + 解析表校验 + 界面规范守卫 + 像素风生成物校验（不构建前端）"
 dependencies = [
   "fmt-check",
   "clippy",
@@ -573,6 +585,7 @@ dependencies = [
   "i18n-check",
   "knowledge-i18n-check",
   "explanations-check",
+  "check-ui",
   "pixel-check",
 ]
 
@@ -590,7 +603,7 @@ command = "node"
 args = ["scripts/coverage.mjs"]
 
 [tasks.ci]
-description = "CI：格式检查 + clippy + 测试 + 界面文案/知识库译文校验 + 解析表校验 + 像素风生成物校验 + 前端构建"
+description = "CI：格式检查 + clippy + 测试 + 界面文案/知识库译文校验 + 解析表校验 + 界面规范守卫 + 像素风生成物校验 + 前端构建"
 # 与 `check` 保持同一套校验：漏掉 knowledge-i18n-check 时，知识库译文 key 漂移
 # 会让页面上静默回退中文，而 CI 不会红。
 dependencies = [
@@ -603,6 +616,7 @@ dependencies = [
   "i18n-check",
   "knowledge-i18n-check",
   "explanations-check",
+  "check-ui",
   "pixel-check",
   "build-web",
 ]

@@ -183,7 +183,7 @@ pub(super) fn GearRadar(axes: Vec<Axis>, series: Vec<RadarSeries>) -> impl IntoV
             let swatch = SERIES_SWATCHES[s.color % SERIES_SWATCHES.len()];
             view! {
               <li class="flex items-center gap-2 text-xs">
-                <span class=format!("h-2.5 w-2.5 shrink-0 rounded-sm {swatch}")></span>
+                <span class=format!("h-2.5 w-2.5 shrink-0 {swatch}")></span>
                 <span class="truncate">{s.label}</span>
               </li>
             }

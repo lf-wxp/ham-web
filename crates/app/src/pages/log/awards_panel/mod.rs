@@ -26,7 +26,7 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
   let confirmed = RwSignal::new(false);
 
   view! {
-    <section id="awards" class="scroll-mt-24 rounded-xl border bg-card">
+    <section id="awards" class="scroll-mt-24 pxl-card border bg-card">
       <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
         <h3 class="mr-auto text-sm font-semibold">{move || t("log.award-progress")}</h3>
         <RadioGroup
@@ -73,7 +73,7 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
           view! {
             <div class="space-y-5 p-4">
               {(!gaps.is_empty()).then(|| view! {
-                <div class="rounded-lg border bg-muted/30 p-3">
+                <div class="border bg-muted/30 p-3">
                   <div class="mb-1.5 text-xs font-semibold">{move || t("log.sprint-suggestions")}</div>
                   <div class="flex flex-wrap gap-1.5">
                     {gaps
@@ -81,7 +81,7 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
                       .take(3)
                       .map(|g| {
                         view! {
-                          <span class="rounded-full border bg-background px-2.5 py-1 text-xs">
+                          <span class="border bg-background px-2.5 py-1 text-xs">
                             {tf("log.needs-more", &[g.label, &g.remaining().to_string()])}
                           </span>
                         }
@@ -106,7 +106,7 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
                     {bands
                       .into_iter()
                       .map(|(b, n)| view! {
-                        <span class="rounded-full border bg-muted/40 px-2.5 py-0.5 text-xs">
+                        <span class="border bg-muted/40 px-2.5 py-0.5 text-xs">
                           {b} " " <span class="font-semibold tabular-nums">{n}</span>
                         </span>
                       })
@@ -124,9 +124,9 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
                       view! {
                         <span
                           class=if on {
-                            "rounded bg-primary py-0.5 text-center text-[10px] font-medium tabular-nums text-primary-foreground"
+                            "bg-primary py-0.5 text-center text-[10px] font-medium tabular-nums text-primary-foreground"
                           } else {
-                            "rounded bg-muted py-0.5 text-center text-[10px] tabular-nums text-muted-foreground"
+                            "bg-muted py-0.5 text-center text-[10px] tabular-nums text-muted-foreground"
                           }
                           title=tf("log.cq-zone", &[&z.to_string()])
                         >
@@ -147,9 +147,9 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
                       let on = conts.contains(code);
                       view! {
                         <span class=if on {
-                          "rounded-full bg-primary px-2.5 py-0.5 text-xs text-primary-foreground"
+                          "bg-primary px-2.5 py-0.5 text-xs text-primary-foreground"
                         } else {
-                          "rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground"
+                          "border px-2.5 py-0.5 text-xs text-muted-foreground"
                         }>
                           {format!("{name} {code}")}
                         </span>
@@ -177,8 +177,8 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
                   <span class="tabular-nums text-muted-foreground">{p.dxcc_challenge}</span>
                 </div>
                 {bar_row("WPX".to_owned(), count(&p.wpx, c), WPX_TARGET)}
-                {bar_row(t("log.was-us-states-2"), count(&p.was, c), WAS_TARGET)}
-                {bar_row(t("log.iota-island-groups-2"), count(&p.iota, c), IOTA_TARGET)}
+                {bar_row(t("log.was-award-label"), count(&p.was, c), WAS_TARGET)}
+                {bar_row(t("log.iota-award-label"), count(&p.iota, c), IOTA_TARGET)}
               </div>
 
               <p class="text-xs text-muted-foreground">

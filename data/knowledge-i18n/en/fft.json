@@ -1,0 +1,5 @@
+{
+  "FFT 长度须为 2 的幂，得到 {n}": "The FFT length must be a power of 2, got {n}",
+  "实部与虚部长度须一致": "The real and imaginary parts must have the same length",
+  "峰值 bin 应为 {bin}": "The peak bin should be {bin}"
+}

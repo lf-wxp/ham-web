@@ -13,7 +13,7 @@ pub(super) fn ConditionRow(
   value: &'static str,
 ) -> impl IntoView {
   view! {
-    <div class="flex flex-col gap-0.5 rounded-lg px-3 py-1.5">
+    <div class="flex flex-col gap-0.5 px-3 py-1.5">
       <span class="text-[11px] text-muted-foreground">{move || label.get()}</span>
       // 条件值走知识库译文：先订阅加载状态，切语言后这一格才跟着重算。
       <span class="text-sm">{move || {

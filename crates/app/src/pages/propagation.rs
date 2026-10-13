@@ -18,7 +18,7 @@ pub fn PropagationPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.ionospheric-layers")}</h2>
           <div class="divide-y">
             {LAYERS
@@ -36,7 +36,7 @@ pub fn PropagationPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.main-propagation-modes")}</h2>
           <dl class="divide-y">
             {PROPAGATION_MODES
@@ -53,7 +53,7 @@ pub fn PropagationPage() -> impl IntoView {
           </dl>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.key-concepts")}</h2>
           <dl class="divide-y">
             {CONCEPTS
@@ -70,7 +70,7 @@ pub fn PropagationPage() -> impl IntoView {
           </dl>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.lf-160-m-80")}</h2>
           <ul class="space-y-2 p-4">
             {LOW_BAND_TIPS

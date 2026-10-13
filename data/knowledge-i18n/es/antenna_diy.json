@@ -1,0 +1,19 @@
+{
+  "2m 八木": "Yagi de 2 m",
+  "J 型天线": "Antena J (J-pole)",
+  "VHF/UHF 基地台全向天线。": "Antena omnidireccional para estaciones base de VHF/UHF.",
+  "{name} 指向了不存在的模板 {template}": "{name} apunta a la plantilla inexistente {template}",
+  "半波偶极": "Dipolo de media onda",
+  "反射器约 0.52λ（须比半波长长 3%–5%）、振子约 0.47λ、引向器约 0.44λ": "Reflector de unos 0,52λ (debe ser 3 %–5 % más largo que media onda), elemento excitado unos 0,47λ y directores unos 0,44λ",
+  "四分之一波长 GP": "Plano de tierra de cuarto de onda",
+  "定向高增益，卫星与远距离通联。": "Direccional y de alta ganancia: para satélites y contactos a larga distancia.",
+  "总长 143/f(MHz) 米，中点馈电": "Longitud total 143/f(MHz) metros, alimentado en el centro",
+  "总长约 3λ/4，短臂 1λ/4": "Longitud total de unos 3λ/4, brazo corto 1λ/4",
+  "振子长 71.5/f(MHz) 米（与 143/f 同源），配 3–4 根地网": "Elemento de 71,5/f(MHz) metros (mismo origen que 143/f), con 3–4 radiales",
+  "无需地网，适合 2m/70cm。": "Sin radiales: adecuada para 2 m/70 cm.",
+  "最易制作的基础天线，架设水平或倒 V。": "La antena básica más fácil de construir; se instala horizontal o en V invertida.",
+  "金属杆 + 地网": "Varilla metálica + radiales",
+  "铜导线 / 振子管": "Hilo de cobre / tubo para el elemento",
+  "铜管或导线": "Tubo de cobre o hilo",
+  "铝管": "Tubo de aluminio"
+}

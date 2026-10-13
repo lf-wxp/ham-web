@@ -72,7 +72,6 @@ fn conflicts(group: &str) -> &'static [&'static str] {
       "border-w-b",
       "border-w-l",
     ],
-    "rounded" => &["rounded-t", "rounded-r", "rounded-b", "rounded-l"],
     "overflow" => &["overflow-x", "overflow-y"],
     _ => &[],
   }
@@ -149,7 +148,6 @@ fn class_group(base: &str) -> Option<&'static str> {
     "outline" => Some("outline-w"),
     "ring" => Some("ring-w"),
     "shadow" => Some("shadow"),
-    "rounded" => Some("rounded"),
     "border" => Some("border-w"),
     "transition" => Some("transition"),
     "underline" | "no-underline" | "line-through" => Some("text-decoration"),
@@ -239,10 +237,6 @@ fn class_group(base: &str) -> Option<&'static str> {
     ("basis", "basis"),
     ("order", "order"),
     ("backdrop-blur", "backdrop-blur"),
-    ("rounded-t", "rounded-t"),
-    ("rounded-r", "rounded-r"),
-    ("rounded-b", "rounded-b"),
-    ("rounded-l", "rounded-l"),
   ];
   for &(prefix, group) in prefixed {
     if value_after(base, prefix).is_some() {
@@ -258,9 +252,6 @@ fn class_group(base: &str) -> Option<&'static str> {
   }
   if value_after(base, "grow").is_some() {
     return Some("grow");
-  }
-  if value_after(base, "rounded").is_some() {
-    return Some("rounded");
   }
   if let Some(v) = value_after(base, "shadow") {
     return Some(
@@ -347,8 +338,8 @@ mod tests {
   #[test]
   fn later_classes_win_within_group() {
     assert_eq!(
-      cn(&["h-8 px-3 rounded-md", "h-7 px-2"]),
-      "rounded-md h-7 px-2"
+      cn(&["h-8 px-3 border-2", "h-7 px-2 border"]),
+      "h-7 px-2 border"
     );
     assert_eq!(
       cn(&["inline-flex gap-2", "flex items-center gap-2"]),

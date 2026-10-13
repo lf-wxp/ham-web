@@ -1,0 +1,22 @@
+{
+  "AX.25 帧": "AX.25 frame",
+  "Bell 202（1200 baud）": "Bell 202 (1200 baud)",
+  "G3RUH（9600 baud）": "G3RUH (9600 baud)",
+  "HF Packet 速度慢但覆盖远，适合长距离与应急场景。": "HF packet is slow but covers long distances, suiting long-range and emergency scenarios.",
+  "Keep It Simple Stupid，TNC 与主机间的串行封装：0xC0 定界、0xDB 转义，使软件可替代硬件 TNC。": "Keep It Simple Stupid: a serial encapsulation between the TNC and the host, delimited by 0xC0 with 0xDB as escape, letting software replace a hardware TNC.",
+  "VHF 主流：AFSK，mark 1200 Hz、space 2200 Hz，1200 baud、1 个起始位 + 8 数据位 + 1 个停止位。": "The VHF mainstream: AFSK with mark 1200 Hz and space 2200 Hz, at 1200 baud, 1 start bit + 8 data bits + 1 stop bit.",
+  "VHF/UHF 常用 1200 / 9600 baud，HF 常用 300 baud。": "VHF/UHF commonly uses 1200 / 9600 baud, while HF commonly uses 300 baud.",
+  "Winlink 用 Winlink Express 接入，支持 Pactor / ARDOP / VARA 等协议。": "Winlink is accessed with Winlink Express, which supports Pactor / ARDOP / VARA and other protocols.",
+  "业余分组公告板，可留言与收发文件。": "Amateur packet bulletin board: leave messages and exchange files.",
+  "业余分组通信的链路层协议，含源/目的呼号与校验。": "The link-layer protocol of amateur packet communication, containing source and destination callsigns and a check.",
+  "以 0x7E 标志定界，含地址字段（呼号 + SSID，含扩展位）、控制与 PID 字段、信息字段及 CRC-16 校验；链路用 NRZI 编码与比特填充。": "Delimited by the 0x7E flag, it contains address fields (callsign + SSID, with extension bits), control and PID fields, an information field and a CRC-16 check; the link uses NRZI encoding and bit stuffing.",
+  "基于 Packet 的位置、气象与短消息自动广播。": "Automatic broadcasting of position, weather and short messages built on packet.",
+  "把数据切成带地址的数据包，用 AX.25 协议传输。": "Data is cut into addressed packets and transmitted with the AX.25 protocol.",
+  "收发前确认频率占用情况，分组信号勿占用话音通联频率。": "Check whether the frequency is in use before transmitting; packet signals must not occupy voice operating frequencies.",
+  "数字中继，按呼号路径逐跳转发分组。": "Digipeater: relays packets hop by hop along the callsign path.",
+  "现代 TNC 可用声卡 + 软件（如 Direwolf）替代专用硬件。": "A modern TNC can be replaced by a sound card plus software (such as Dire Wolf).",
+  "直接 FSK 调制（不经音频 AFSK），需电台有平坦的 9600 接口与足够带宽，不能用普通话音麦克风口。": "Direct FSK modulation (not audio AFSK), requiring a radio with a flat 9600 interface and enough bandwidth; the ordinary voice microphone port cannot be used.",
+  "终端节点控制器，在数据流与电台音频之间相互转换。": "Terminal node controller: converts between the data stream and the radio's audio.",
+  "通过 HF/VHF 电台收发电子邮件的全球网关，应急通信刚需。": "A global gateway for sending and receiving e-mail over HF/VHF radio — a necessity in emergency communication.",
+  "速率": "Rates"
+}

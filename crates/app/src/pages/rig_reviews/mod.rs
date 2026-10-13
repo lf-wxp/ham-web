@@ -63,7 +63,7 @@ pub fn RigReviewsPage() -> impl IntoView {
           view! {
             <a
               href="/gear"
-              class="rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              class="border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
               {move || t("knowledge.rig-reviews-back-to-gear")}
             </a>
@@ -85,7 +85,7 @@ pub fn RigReviewsPage() -> impl IntoView {
             let gear = gear::by_id(review.rig_id)?;
             let rx = gear_rx::for_gear(review.rig_id);
             Some(view! {
-              <article class="rounded-xl border bg-card">
+              <article class="pxl-card border bg-card">
                 <div class="flex flex-wrap items-baseline gap-2 border-b px-4 py-3">
                   <h2 class="text-sm font-semibold">{format!("{} {}", gear.brand, gear.model)}</h2>
                   <span class="text-xs text-muted-foreground">
@@ -230,13 +230,13 @@ pub fn RigReviewsPage() -> impl IntoView {
                 // 四、适用人群 / 五、结论
                 <section class="px-4 py-3">
                   <div class="grid gap-2 sm:grid-cols-2">
-                    <div class="flex flex-col gap-0.5 rounded-lg px-3 py-1.5">
+                    <div class="flex flex-col gap-0.5 px-3 py-1.5">
                       <span class="text-[11px] text-muted-foreground">
                         {move || t("knowledge.review-for-whom")}
                       </span>
                       <span class="text-sm">{move || text(review.for_whom)}</span>
                     </div>
-                    <div class="flex flex-col gap-0.5 rounded-lg px-3 py-1.5">
+                    <div class="flex flex-col gap-0.5 px-3 py-1.5">
                       <span class="text-[11px] text-muted-foreground">
                         {move || t("knowledge.review-conclusion")}
                       </span>
@@ -250,7 +250,7 @@ pub fn RigReviewsPage() -> impl IntoView {
           .collect_view()}
 
         // ── 指标名词表（互链目标）──────────────────────────────
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">
             {move || t("knowledge.review-glossary")}
           </h2>
@@ -263,7 +263,7 @@ pub fn RigReviewsPage() -> impl IntoView {
                 let meaning = *meaning;
                 let how = *how;
                 view! {
-                  <div id=format!("glossary-{i}") class="flex flex-col gap-1 rounded-lg px-3 py-2">
+                  <div id=format!("glossary-{i}") class="flex flex-col gap-1 px-3 py-2">
                     <span class="text-sm font-medium">{move || text(name)}</span>
                     <span class="text-sm text-muted-foreground">{move || text(meaning)}</span>
                     <span class="text-xs text-muted-foreground">{move || text(how)}</span>

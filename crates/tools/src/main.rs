@@ -19,6 +19,7 @@ mod pixel;
 mod postbuild;
 mod psk31_gen;
 mod spectrum_gen;
+mod ui_check;
 
 use std::path::PathBuf;
 
@@ -81,11 +82,16 @@ enum Command {
   CheckGlossary,
   /// 校验解析表：答案一致性、重复/错位注入、裸释义、同题多版本分叉
   CheckExplanations,
+  /// 界面规范守卫：已失效的圆角类、原生表单控件、类名工厂残留等（docs/ui-components.md §11）
+  CheckUi,
   /// 校验 data/i18n/ 的 en / es 词典（重复 key、占位符数量、死条目）并统计按域覆盖率
   CheckI18n {
     /// 导出「源码里有但词典里没有」的文案模板（{zh, text}）
     #[arg(long)]
     missing: Option<PathBuf>,
+    /// 列出数据驱动的调用点（`t(变量)` / `tf(label, …)`）：取值来自数据表，静态扫描看不到
+    #[arg(long)]
+    dynamic_calls: bool,
     /// 导出复数候选（{key, zh, text:{one,other}, calls, uses_tp}），填好可直接 add-i18n
     #[arg(long)]
     plural_candidates: Option<PathBuf>,
@@ -198,7 +204,7 @@ enum Command {
     #[arg(long)]
     check: bool,
   },
-  /// 由 public/pwa-icon.svg 生成 PWA 与 Apple Touch 图标
+  /// 由 public/pwa-icon.svg 生成 PWA / Apple Touch 图标与 favicon.ico
   Icons,
   /// 生成合成 PSK31 测试样本 WAV（用于手动测试 /psk-decode）
   GenPsk31 {
@@ -279,14 +285,28 @@ fn main() -> Result<()> {
     }
     Command::CheckGlossary => explanations::check_glossary(&paths),
     Command::CheckExplanations => explanations::check(&paths),
+    Command::CheckUi => ui_check::check(&root),
     Command::CheckI18n {
       missing,
+      dynamic_calls,
       plural_candidates,
       lang,
     } => {
       // `--lang` 在任何模式下都先校验：`check-i18n --lang fr` 曾经被静默忽略（照样跑全量），
       // 而 `add-i18n --lang fr` 会直接报错 —— 同一个参数两种行为最容易让人写错语言。
       i18n::check_lang(&lang)?;
+      if dynamic_calls {
+        let v = i18n::dynamic_calls(&root)?;
+        println!(
+          "数据驱动的调用点 {} 处（`t(变量)`：取值来自 `crates/core` 数据表或页面中文常量表，\
+           静态扫描看不到；译文覆盖由「界面中文都有译文」守）：",
+          v.len()
+        );
+        for x in &v {
+          println!("      {x}");
+        }
+        return Ok(());
+      }
       if let Some(out) = plural_candidates {
         let n = i18n::export_plural_candidates(&root, &lang, &out)?;
         println!(
@@ -383,7 +403,20 @@ fn main() -> Result<()> {
         }
         bail!("知识库译文校验未通过");
       }
-      println!("✓ 知识库译文无 key 漂移（en / es）");
+      // 同一句中文在不同模块文件里译法不一致：flat 语言包只能留一个，postbuild 会 fail。
+      // 这里提前拦住，并且一次列全（postbuild 只报第一条，修一条才知道下一条）。
+      let conflicts = knowledge_i18n::conflicts(&root)?;
+      if !conflicts.is_empty() {
+        println!(
+          "\n✗ 知识库译文跨模块取值不一致 {} 条（同一个中文 key 只能有一个译文）：",
+          conflicts.len()
+        );
+        for c in &conflicts {
+          println!("      {c}");
+        }
+        bail!("知识库译文校验未通过");
+      }
+      println!("✓ 知识库译文无 key 漂移 / 无跨模块取值冲突（en / es）");
       Ok(())
     }
     Command::KnowledgeI18nCoverage { module, lang } => {

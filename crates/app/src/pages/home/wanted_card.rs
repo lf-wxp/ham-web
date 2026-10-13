@@ -99,7 +99,7 @@ pub fn WantedCard() -> impl IntoView {
   view! {
     <a
       href="/most-wanted"
-      class="block rounded-2xl border bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
+      class="block pxl-card border bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
     >
       <div class="flex items-center justify-between gap-2">
         <div class="font-semibold tracking-tight">{move || t("radio.real-time-chase-suggestions")}</div>
@@ -107,7 +107,7 @@ pub fn WantedCard() -> impl IntoView {
           level().map(|lv| {
             let (label, class) = level_badge(lv);
             view! {
-              <span class=format!("rounded-full px-2.5 py-0.5 text-xs font-medium {}", class)>
+              <span class=format!("px-2.5 py-0.5 text-xs font-medium {}", class)>
                 {tf("radio.propagation", &[&t(label)])}
               </span>
             }
@@ -137,7 +137,7 @@ pub fn WantedCard() -> impl IntoView {
                     <div class="flex items-center justify-between text-sm">
                       <span class="font-mono text-xs text-muted-foreground">{p}</span>
                       <span class="min-w-0 flex-1 truncate px-2">{name}</span>
-                      <span class="shrink-0 rounded-full bg-muted/50 px-2 py-0.5 text-[10px]">{rarity}</span>
+                      <span class="shrink-0 bg-muted/50 px-2 py-0.5 text-[10px]">{rarity}</span>
                     </div>
                   }
                 })

@@ -71,7 +71,7 @@ pub fn ReportPage() -> impl IntoView {
 
   let stat = |label: &'static str, value: String| {
     view! {
-      <div class="rounded-xl border bg-card p-4 text-center">
+      <div class="pxl-card border bg-card p-4 text-center">
         <div class="text-2xl font-semibold tabular-nums">{value}</div>
         <div class="mt-0.5 text-xs text-muted-foreground">{move || t(label)}</div>
       </div>
@@ -99,7 +99,7 @@ pub fn ReportPage() -> impl IntoView {
           {stat("DXCC 实体", data.dxcc_count.to_string())}
         </div>
 
-        <section class="rounded-xl border bg-card p-4">
+        <section class="pxl-card border bg-card p-4">
           <Button
             variant=Variant::Default
             size=Size::Default

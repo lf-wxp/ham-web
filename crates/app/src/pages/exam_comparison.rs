@@ -28,7 +28,7 @@ pub fn ExamComparisonPage() -> impl IntoView {
           .iter()
           .map(|s| {
             view! {
-              <section class="rounded-xl border bg-card">
+              <section class="pxl-card border bg-card">
                 <header class="flex flex-wrap items-baseline gap-2 border-b px-4 py-3">
                   <span class="text-sm font-semibold">{move || data::kt_tracked(s.country)}</span>
                   <span class="text-xs text-muted-foreground">

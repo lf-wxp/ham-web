@@ -19,7 +19,7 @@ pub fn PreviewableImage(
         role="button"
         tabindex="0"
         aria-label=move || t("common.preview-question-image")
-        class="absolute -top-1 -left-1 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded bg-background/90 border text-[10px] leading-none cursor-pointer"
+        class="absolute -top-1 -left-1 inline-flex items-center justify-center h-4 min-w-4 px-1 bg-background/90 border text-[10px] leading-none cursor-pointer"
         on:click=move |e| {
           e.stop_propagation();
           open.set(true);
@@ -44,7 +44,7 @@ pub fn PreviewableImage(
           alt=alt.clone()
           loading="lazy"
           decoding="async"
-          class="absolute inset-0 h-full w-full object-contain rounded border cursor-zoom-in"
+          class="absolute inset-0 h-full w-full object-contain border cursor-zoom-in"
           on:click=move |_| open.set(true)
         />
       </div>

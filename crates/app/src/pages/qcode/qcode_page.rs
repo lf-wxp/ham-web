@@ -10,7 +10,7 @@ use crate::i18n::t;
 /// 简语速查页面：加载词条数据后交由 [`QCodeView`] 渲染。
 #[component]
 pub fn QCodePage() -> impl IntoView {
-  set_title("shell.q-codes-2");
+  set_title("shell.q-codes-title");
   let glossary = LocalResource::new(data::load_glossary);
   move || match glossary.get() {
     Some(g) => view! { <QCodeView entries=g.entries() /> }.into_any(),

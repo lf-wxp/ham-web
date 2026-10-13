@@ -335,7 +335,7 @@ pub fn QuestionBankSelector(
       && (retry_count.get() >= 2 || !auto_retrying.get()))
     .then(|| {
       view! {
-        <div class="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-md dark:bg-orange-950/40 dark:border-orange-900">
+        <div class="mt-2 p-3 bg-orange-50 border border-orange-200 dark:bg-orange-950/40 dark:border-orange-900">
           <div class="flex items-start gap-2">
             <Icon kind=IconKind::AlertCircle class="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
             <div class="flex-1">

@@ -193,7 +193,7 @@ pub fn BrowsePage() -> impl IntoView {
                   }
                   class=move || {
                     cn(&[
-                      "block w-full truncate rounded-md px-2 py-1 text-left text-xs transition-colors",
+                      "block w-full truncate px-2 py-1 text-left text-xs transition-colors",
                       if sub.get() == Some(name) {
                         "bg-accent font-medium text-foreground"
                       } else {
@@ -218,7 +218,7 @@ pub fn BrowsePage() -> impl IntoView {
                 toggle_top(c.key);
               })
             >
-              <span class="h-2 w-2 shrink-0 rounded-full" style=format!("background: {}", c.color)></span>
+              <span class="h-2 w-2 shrink-0" style=format!("background: {}", c.color)></span>
               <span class="truncate" title=c.name.to_string()>{c.name}</span>
               <span class="ml-auto text-xs tabular-nums">{move || cat_count.with(|m| m.get(c.key).copied().unwrap_or(0))}</span>
               <Icon
@@ -246,7 +246,7 @@ pub fn BrowsePage() -> impl IntoView {
           {(0..6)
             .map(|_| {
               view! {
-                <div class="rounded-xl border bg-card p-4">
+                <div class="pxl-card border bg-card p-4">
                   <Skeleton class="h-3 w-20" />
                   <Skeleton class="mt-3 h-4 w-3/4" />
                   <Skeleton class="mt-2.5 h-4 w-1/2" />
@@ -346,12 +346,12 @@ pub fn BrowsePage() -> impl IntoView {
 
       <PageContainer class="space-y-0 grid grid-cols-1 gap-5 md:grid-cols-[240px_1fr]">
         <aside class="hidden md:block">
-          <div class="sticky top-[136px] max-h-[calc(100vh-152px)] overflow-y-auto rounded-xl border bg-card p-2">
+          <div class="sticky top-[136px] max-h-[calc(100vh-152px)] overflow-y-auto pxl-card border bg-card p-2">
             <SidebarItem
               active=Signal::derive(move || top.with(|t| t == ALL))
               on_click=Callback::new(move |_| select_top(ALL))
             >
-              <span class="h-2 w-2 rounded-full bg-foreground/60"></span>
+              <span class="h-2 w-2 bg-foreground/60"></span>
               {move || t("exam.all-questions")}
               <span class="ml-auto text-xs tabular-nums">{move || bank_questions.with(Vec::len)}</span>
             </SidebarItem>

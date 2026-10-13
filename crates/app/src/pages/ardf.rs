@@ -9,9 +9,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn ArdfPage() -> impl IntoView {
-  set_title("shell.ardf-2");
+  set_title("shell.ardf-title");
   view! {
-    <KnowledgePage title=t("shell.ardf-2") subtitle=t("knowledge.amateur-radio-direction-finding")>
+    <KnowledgePage title=t("shell.ardf-title") subtitle=t("knowledge.amateur-radio-direction-finding")>
       <ConceptsSection title="核心概念" items=ARDF_CONCEPTS />
       <ConceptsSection title="常用频段" items=ARDF_BANDS />
     </KnowledgePage>

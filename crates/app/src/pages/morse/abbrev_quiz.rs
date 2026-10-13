@@ -50,10 +50,10 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
   };
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("morse.abbreviation-quiz")}</h2>
       <div class="space-y-4 p-4">
-        <div class="flex flex-col items-center gap-3 rounded-xl border bg-muted/30 px-4 py-6">
+        <div class="flex flex-col items-center gap-3 border bg-muted/30 px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("morse.what-does-this-abbreviation")}</div>
           <div class="font-mono text-4xl font-semibold tabular-nums text-primary">
             {move || CW_ABBREVIATIONS[current.get()].0}
@@ -69,7 +69,7 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
                     <button
                       type="button"
                       on:click=move |_| choose(idx)
-                      class="inline-flex min-h-10 items-center justify-center rounded-lg border bg-card px-3 py-2 text-sm transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                      class="inline-flex min-h-10 items-center justify-center pxl-card border bg-card px-3 py-2 text-sm transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                     >
                       {meaning}
                     </button>
@@ -99,14 +99,14 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
         </div>
         <div class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
           <span>
-            {move || t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
+            {move || t("common.correct-label")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
           </span>
           <span>
             {move || t("morse.wrong")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
           </span>
           <Button
             variant=Variant::Outline
-            class="rounded-lg h-10"
+            class="h-10"
             on_click=Callback::new(move |_| next())
           >{move || t("exam.next")}</Button>
         </div>

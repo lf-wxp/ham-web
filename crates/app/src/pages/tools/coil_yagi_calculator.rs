@@ -21,7 +21,7 @@ pub(super) fn CoilYagiCalculator() -> impl IntoView {
   view! {
     <div class="space-y-4">
       <div>
-        <div class="mb-1.5 text-xs font-medium text-muted-foreground">{move || t("tools.air-core-coil-inductance-2")}</div>
+        <div class="mb-1.5 text-xs font-medium text-muted-foreground">{move || t("tools.air-core-coil-inductance-heading")}</div>
         <div class="grid gap-3 sm:grid-cols-3">
           <Field label=Signal::derive(move || t("tools.diameter-d-cm")) r#for=coil_d_id.clone()>
             <NumberField
@@ -63,7 +63,7 @@ pub(super) fn CoilYagiCalculator() -> impl IntoView {
             />
           </Field>
         </div>
-        <div class="mt-2 rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums">
+        <div class="mt-2 bg-muted/40 px-3 py-2 text-sm tabular-nums">
           {move || {
             let d = coil_d.get();
             let l = coil_l.get();
@@ -94,7 +94,7 @@ pub(super) fn CoilYagiCalculator() -> impl IntoView {
             />
           </Field>
         </div>
-        <div class="mt-2 rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums">
+        <div class="mt-2 bg-muted/40 px-3 py-2 text-sm tabular-nums">
           {move || {
             let f = freq.get();
             if f <= 0.0 {

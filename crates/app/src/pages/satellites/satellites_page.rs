@@ -25,7 +25,7 @@ pub fn SatellitesPage() -> impl IntoView {
 
         <IssTracker />
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.antenna-rotator")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
             {move || t("radio.during-a-pass-connect")}
@@ -35,7 +35,7 @@ pub fn SatellitesPage() -> impl IntoView {
 
         // 横向可滚区域必须可聚焦，否则键盘用户滚不动它（axe: scrollable-region-focusable）
         <div
-          class="overflow-x-auto rounded-xl border bg-card"
+          class="overflow-x-auto pxl-card border bg-card"
           tabindex="0"
           role="region"
           aria-label=move || t("radio.satellite-frequency-table")
@@ -72,7 +72,7 @@ pub fn SatellitesPage() -> impl IntoView {
           </table>
         </div>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.operating-tips")}</h2>
           <ul class="space-y-2 p-4">
             {SATELLITE_TIPS
@@ -89,14 +89,14 @@ pub fn SatellitesPage() -> impl IntoView {
           </ul>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.tracking-and-prediction-software")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {TRACKING_SOFTWARE
               .iter()
               .map(|&(t, d)| {
                 view! {
-                  <div class="flex items-baseline gap-2 rounded-lg px-3 py-2">
+                  <div class="flex items-baseline gap-2 px-3 py-2">
                     <span class="shrink-0 text-sm font-medium">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>

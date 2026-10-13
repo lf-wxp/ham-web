@@ -24,7 +24,7 @@ const Z0: f64 = 50.0;
 const BAND_SWR_LIMIT: f64 = 2.0;
 
 const NOTE: &str = "text-xs text-muted-foreground";
-const RESULT: &str = "rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
+const RESULT: &str = "bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
 
 /// 元件文案。
 fn element_text(e: Element) -> String {
@@ -126,7 +126,7 @@ pub fn SmithPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section id="chart" class="scroll-mt-24 rounded-xl border bg-card">
+        <section id="chart" class="scroll-mt-24 pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.impedance-location-and-matching")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
             {move || t("tools.the-chart-is-normalised")}
@@ -186,7 +186,7 @@ pub fn SmithPage() -> impl IntoView {
           </div>
         </section>
 
-        <section id="match" class="scroll-mt-24 rounded-xl border bg-card">
+        <section id="match" class="scroll-mt-24 pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.matching-network")}</h2>
           <div class="flex flex-wrap items-center gap-2 px-4 pt-3">
             // 传 `t("key")` 的闭包而不是中文原文：`check-i18n` 判死条目时认「`t("key")` 的
@@ -228,7 +228,7 @@ pub fn SmithPage() -> impl IntoView {
 
           <div class="grid gap-4 p-4 sm:grid-cols-3">
             <div class="flex flex-col gap-2">
-              <span class=NOTE>{move || tf("tools.series-reactance-2", &[&format!("{:.0}", series_x.get())])}</span>
+              <span class=NOTE>{move || tf("tools.series-reactance-value", &[&format!("{:.0}", series_x.get())])}</span>
               <Slider
                 value=Signal::derive(move || series_x.get())
                 on_change=Callback::new(move |v: f64| series_x.set(v))
@@ -314,19 +314,19 @@ pub fn SmithPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.related-tools")}</h2>
           <div class="grid gap-2 p-4 sm:grid-cols-2">
-            <a class="rounded-lg px-3 py-2 text-sm hover:bg-accent" href="/tools#antenna-matcher">
+            <a class="px-3 py-2 text-sm hover:bg-accent" href="/tools#antenna-matcher">
               {move || t("tools.calculators-l-network-antenna")}
             </a>
-            <a class="rounded-lg px-3 py-2 text-sm hover:bg-accent" href="/tools#swr">
+            <a class="px-3 py-2 text-sm hover:bg-accent" href="/tools#swr">
               {move || t("tools.calculators-swr-reflection-coefficient")}
             </a>
-            <a class="rounded-lg px-3 py-2 text-sm hover:bg-accent" href="/waveform-lab#filter">
+            <a class="px-3 py-2 text-sm hover:bg-accent" href="/waveform-lab#filter">
               {move || t("tools.waveform-lab-filter-response")}
             </a>
-            <a class="rounded-lg px-3 py-2 text-sm hover:bg-accent" href="/feedline">
+            <a class="px-3 py-2 text-sm hover:bg-accent" href="/feedline">
               {move || t("tools.knowledge-matching-and-feedline")}
             </a>
           </div>

@@ -1,0 +1,18 @@
+{
+  "ADIF 代码往返": "ADIF code round trip",
+  "{raw} 应能反序列化：{e}": "{raw} should deserialise: {e}",
+  "卡片局": "Card bureau",
+  "反序列化": "Deserialisation",
+  "四色档位都应可达": "All four colour tiers should be reachable",
+  "已寄出档位 {setup} 不应显示未寄出": "The sent tier {setup} should not show as not sent",
+  "序列化": "Serialisation",
+  "往返": "Round trip",
+  "换方式应报告改动": "Changing the method should report a change",
+  "旧 JSON 应能反序列化": "Old JSON should still deserialise",
+  "标志位 → 状态": "Flag → status",
+  "档位 {setup}": "Tier {setup}",
+  "短键往返": "Short key round trip",
+  "组合 {flags}": "Combination {flags}",
+  "重复标记不应报告改动": "Marking again should not report a change",
+  "首次应报告改动": "A change should be reported the first time"
+}

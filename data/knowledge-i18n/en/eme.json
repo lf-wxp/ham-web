@@ -1,0 +1,23 @@
+{
+  "2m EME 用 144MHz，是最热门的 EME 波段。": "2 m EME uses 144 MHz and is the most popular EME band.",
+  "Earth-Moon-Earth，利用月球反射电波，实现地球任意两地通联。": "Earth–Moon–Earth: using the Moon to reflect radio waves, allowing contacts between any two points on Earth.",
+  "Q65 等弱信号模式": "Weak-signal modes such as Q65",
+  "功率": "Power",
+  "多个八木组成阵列或大型抛物面。": "Several Yagis in an array, or a large parabolic dish.",
+  "天平动衰落 libration fading": "Libration fading",
+  "天线": "Antennas",
+  "往返约 250dB+，是业余通信中最苛刻的传播方式。": "About 250 dB or more round trip — the most demanding propagation mode in amateur communication.",
+  "按月球位置与多普勒计算最佳通联窗口。": "The best contact window is computed from the Moon's position and the Doppler shift.",
+  "数十至数百瓦": "Tens to hundreds of watts",
+  "月面各点到地球的径向速度不同，使回波频率展宽并产生约 0.1～数 Hz 的快速衰落。": "Different points on the lunar surface have different radial velocities towards Earth, broadening the echo spectrum and producing rapid fading of about 0.1 to several hertz.",
+  "月面窗口": "Lunar window",
+  "模式": "Mode",
+  "法拉第旋转": "Faraday rotation",
+  "现代 EME 以 Q65 为主的弱信号数字模式，小台站也能参与；JT65 已被淘汰且已从新版 WSJT-X 移除，与 Q65 不兼容。": "Modern EME uses weak-signal digital modes, chiefly Q65, so even small stations can take part; JT65 is obsolete, has been removed from current WSJT-X versions and is incompatible with Q65.",
+  "现以 Q65 为主（JT65 已淘汰，两者是互不兼容的两种协议），大幅降低对功率与天线的要求。": "Q65 is now the main mode (JT65 is obsolete; the two are mutually incompatible protocols), greatly reducing the demands on power and antennas.",
+  "精确对准月球并补偿多普勒频率漂移。": "Point accurately at the Moon and compensate for the Doppler frequency drift.",
+  "线极化波穿过电离层时极化面旋转，EME 常用圆极化天线以规避其影响。": "A linearly polarised wave has its polarisation plane rotated passing through the ionosphere, so EME commonly uses circularly polarised antennas to avoid the effect.",
+  "路径损耗": "Path loss",
+  "需大功率功放与低损耗馈线。": "Requires a high-power amplifier and low-loss feedline.",
+  "高增益阵列": "High-gain array"
+}

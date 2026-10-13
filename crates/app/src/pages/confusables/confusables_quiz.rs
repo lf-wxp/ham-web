@@ -52,12 +52,12 @@ pub(super) fn ConfusablesQuiz() -> impl IntoView {
           let c = correct.get();
           let w = wrong.get();
           view! {
-            <div class="rounded-xl border bg-card px-4 py-10 text-center">
+            <div class="pxl-card border bg-card px-4 py-10 text-center">
               <div class="text-lg font-semibold">{move || t("exam.practice-complete")}</div>
               <div class="mt-2 text-sm text-muted-foreground">
-                {move || t("exam.correct-3")} " " <span class="font-semibold text-emerald-600">{c}</span>
-                "　" {move || t("exam.wrong-2")} " " <span class="font-semibold text-red-600">{w}</span>
-                "　" {tp("common.questions-3", total, &[&total.to_string()])}
+                {move || t("exam.correct-label")} " " <span class="font-semibold text-emerald-600">{c}</span>
+                "　" {move || t("exam.wrong-label")} " " <span class="font-semibold text-red-600">{w}</span>
+                "　" {tp("common.questions-total", total, &[&total.to_string()])}
               </div>
               <Button
                 variant=Variant::Default
@@ -73,12 +73,12 @@ pub(super) fn ConfusablesQuiz() -> impl IntoView {
         } else {
           let item = CONFUSABLE_QUIZ[index.get()];
           view! {
-            <div class="rounded-xl border bg-card p-5">
+            <div class="pxl-card border bg-card p-5">
               <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
                 <span>{tf("exam.question", &[&(index.get() + 1).to_string(), &total.to_string()])}</span>
                 <span>
-                  {move || t("exam.correct-3")} " " <span class="font-semibold text-emerald-600">{correct.get()}</span>
-                  "　" {move || t("exam.wrong-2")} " " <span class="font-semibold text-red-600">{wrong.get()}</span>
+                  {move || t("exam.correct-label")} " " <span class="font-semibold text-emerald-600">{correct.get()}</span>
+                  "　" {move || t("exam.wrong-label")} " " <span class="font-semibold text-red-600">{wrong.get()}</span>
                 </span>
               </div>
               <p class="min-h-16 text-base font-medium leading-relaxed">{item.statement}</p>
@@ -121,7 +121,7 @@ pub(super) fn ConfusablesQuiz() -> impl IntoView {
                       }>
                         {if is_right { t("exam.correct") } else { t("exam.wrong") }}
                         <span class="ml-2 font-normal text-muted-foreground">
-                          {format!("{} {}", t("exam.correct-answer-2"), if item.answer { t("exam.correct-3") } else { t("exam.wrong-2") })}
+                          {format!("{} {}", t("exam.correct-answer-prefix"), if item.answer { t("exam.correct-label") } else { t("exam.wrong-label") })}
                         </span>
                       </div>
                       <div class="text-muted-foreground">{item.explain}</div>

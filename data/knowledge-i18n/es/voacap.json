@@ -1,0 +1,14 @@
+{
+  "10 月 {oct}": "Octubre {oct}",
+  "3000 km 仰角应约 4°，实际 {}": "El ángulo de elevación a 3000 km debería ser unos 4°; real {}",
+  "4 月 {apr}": "Abril {apr}",
+  "500km 因子应约 1.3，实际 {f500}": "El factor de 500 km debería ser unos 1,3; real {f500}",
+  "best-case MUF {} 应高于 10m 波段上沿 29.7MHz": "La MUF en el mejor caso {} debería superar el borde superior de 10 m, 29,7 MHz",
+  "{d} km 仰角 {} 未下降": "A {d} km el ángulo de elevación {} no descendió",
+  "{} 应有 24 个小时": "{} debería tener 24 horas",
+  "冬夏应低于春秋分：{jan} {jul}": "Invierno y verano deberían estar por debajo de los equinoccios: {jan} {jul}",
+  "夜间 LUF {night}": "LUF nocturna {night}",
+  "接近 MUF 的波段可靠度应下降": "La fiabilidad debería caer en las bandas cercanas a la MUF",
+  "最佳时刻 {} UTC 对应中点地方时 {local}，应落在白天": "El mejor momento {} UTC corresponde a {local} hora local en el punto medio y debería caer de día",
+  "白天 LUF {day}": "LUF diurna {day}"
+}

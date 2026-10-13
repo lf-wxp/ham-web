@@ -1,0 +1,15 @@
+{
+  "Islands On The Air，英国 RSGB 主办的海岛通联奖状计划。": "Islands On The Air: programa de diplomas de islas organizado por la RSGB británica.",
+  "与海岛台通联以收集岛组，满足奖状要求。": "Contacta estaciones insulares para reunir grupos y cumplir los requisitos del diploma.",
+  "全球海岛按地理分组编号，如 AS-xxx（亚洲）、OC-xxx（大洋洲）。": "Las islas del mundo se numeran por grupos geográficos, p. ej. AS-xxx (Asia), OC-xxx (Oceanía).",
+  "奖状": "Diplomas",
+  "岛组编号": "Referencia de grupo de islas",
+  "岛组编号与 DXCC 实体不同，同一实体可能有多个岛组。": "Las referencias de grupo no son entidades DXCC: una misma entidad puede tener varios grupos.",
+  "海岛台呼号常带 /P（便携/登岛）；/MM 表示海上移动，不属海岛设台。通联前确认其所在岛组编号。": "Las estaciones insulares suelen usar /P (portátil / en la isla); /MM es móvil marítima y no es operación insular. Confirme la referencia del grupo antes del contacto.",
+  "激活者": "Activador",
+  "登岛设台的电台，可激活岛组并积累积分。": "Estación que desembarca en una isla y opera, activando el grupo y acumulando puntos.",
+  "稀有岛组远征同样会形成 pileup，遵守分裂操作礼仪。": "Las expediciones a grupos raros también crean pileups: respete la etiqueta de la operación en split.",
+  "记录岛组编号，配合日志软件与奖状追踪工具。": "Anote la referencia del grupo, con software de diario y herramientas de seguimiento de diplomas.",
+  "追逐者": "Perseguidor",
+  "通联规定数量的岛组可获得 IOTA 奖状与奖牌。": "Contactar el número exigido de grupos da derecho al diploma y las medallas IOTA."
+}

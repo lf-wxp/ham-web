@@ -1,0 +1,16 @@
+{
+  "break，打断/快速切换收发": "break (interrupting / a quick changeover)",
+  "from，来自（分隔双方呼号，如 BG4XYZ DE JA1ABC）": "from (separates the two callsigns, e.g. BG4XYZ DE JA1ABC)",
+  "over，请讲（邀请对方发射）": "over (invites the other station to transmit)",
+  "信号报告（可懂度/强度/音调）": "Signal report (readability / strength / tone)",
+  "发送前先听，确认频率空闲再呼叫。": "Listen before transmitting; confirm the frequency is clear, then call.",
+  "对方发送时耐心等待，使用 K/BK 正确交接。": "Wait patiently while the other station sends, and hand over correctly with K/BK.",
+  "报呼号至少两遍，速度以对方能抄收为准。": "Send your callsign at least twice, at a speed the other station can copy.",
+  "收到，Roger": "Received — Roger",
+  "普遍呼叫": "General call",
+  "祝福（对女士，love and kisses）": "Best wishes (to a woman: love and kisses)",
+  "祝福，best regards": "Best regards",
+  "结束用 73 或 SK，简洁清晰。": "Close with 73 or SK — brief and clear.",
+  "结束通联，silent key（也指已故台友）": "End of contact; silent key (also used for a deceased ham)",
+  "频率是否被占用（Q 简语）": "Whether the frequency is in use (Q code)"
+}

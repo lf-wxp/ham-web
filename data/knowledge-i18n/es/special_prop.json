@@ -1,0 +1,20 @@
+{
+  "EME 月面反射": "EME rebote lunar",
+  "UHF 可远达上千公里，多出现在海上与沿海。": "En UHF puede alcanzar más de mil kilómetros, sobre todo en rutas marítimas y costeras.",
+  "信号有独特的「嘶嘶」声，用于 VHF/UHF。": "La señal tiene un «siseo» característico; se usa en VHF/UHF.",
+  "利用月球反射电波，实现地球任意两地通联": "Usa la Luna para reflejar ondas de radio y permitir contactos entre dos puntos cualesquiera de la Tierra",
+  "利用流星电离余迹反射 VHF 电波": "Refleja ondas VHF en la estela ionizada de un meteoro",
+  "卫星转发": "Retransmisión por satélite",
+  "可实现数百公里 VHF/UHF 稳定通信。": "Permite comunicaciones estables en VHF/UHF de varios cientos de kilómetros.",
+  "对流层不均匀体散射电波": "Ondas de radio dispersadas por irregularidades troposféricas",
+  "对流层散射": "Dispersión troposférica",
+  "极光传播": "Propagación auroral",
+  "波导传播": "Propagación por conducto",
+  "流星余迹散射 MS": "Dispersión por estela meteórica (MS)",
+  "短暂增强，常配合高速数字模式（如 MSK144）完成交换。": "Realce breve, normalmente con un modo digital rápido (como MSK144) para completar el intercambio.",
+  "经业余卫星中继转发": "Retransmitido por satélites de radioaficionados",
+  "见「业余卫星」专题。": "Véase la sección «Satélites de radioaficionados».",
+  "路径损耗极大（约 250dB+），需高增益天线阵列与大功率。": "Pérdida de trayecto enorme (unos 250 dB o más): requiere arreglo de alta ganancia y gran potencia.",
+  "逆温层形成大气波导，超视距传播": "La inversión térmica forma un conducto atmosférico, con propagación más allá de la línea de visión",
+  "高纬极光区电离增强反射电波": "La ionización reforzada en la zona auroral de latitud alta refleja las ondas de radio"
+}

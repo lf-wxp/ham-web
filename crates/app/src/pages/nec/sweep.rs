@@ -11,7 +11,7 @@ use crate::ui::{Button, Chip, ChipGroup, Field, NumberField, Size, Variant};
 use crate::util::unique_id;
 
 const NOTE: &str = "text-xs text-muted-foreground";
-const RESULT: &str = "rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
+const RESULT: &str = "bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
 
 /// 判断「可用带宽」的驻波比上限（业余界常用判据）。
 const SWR_LIMIT: f64 = 2.0;
@@ -65,7 +65,7 @@ pub(super) fn SweepSection(
   });
 
   view! {
-    <div class="space-y-3 rounded-xl border bg-card p-4">
+    <div class="space-y-3 pxl-card border bg-card p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <span class="text-sm font-semibold">{move || t("tools.nec-sweep-title")}</span>
         <Button

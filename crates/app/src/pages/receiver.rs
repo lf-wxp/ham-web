@@ -20,7 +20,7 @@ pub fn ReceiverPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <div class="overflow-x-auto rounded-xl border bg-card">
+        <div class="overflow-x-auto pxl-card border bg-card">
           <table class="w-full min-w-[640px] border-collapse text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>
@@ -46,14 +46,14 @@ pub fn ReceiverPage() -> impl IntoView {
           </table>
         </div>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.noise-and-sensitivity-basics")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {NOISE_BASICS
               .iter()
               .map(|&(t, d)| {
                 view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2">
+                  <div class="flex flex-col gap-1 px-3 py-2">
                     <span class="text-sm font-medium">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
@@ -63,7 +63,7 @@ pub fn ReceiverPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.improving-reception")}</h2>
           <ul class="space-y-2 p-4">
             {RECEIVER_TIPS

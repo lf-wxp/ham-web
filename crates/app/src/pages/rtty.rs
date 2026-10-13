@@ -20,7 +20,7 @@ pub fn RttyPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.mode-notes")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[560px] border-collapse text-sm">
@@ -51,14 +51,14 @@ pub fn RttyPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("shell.common-frequencies")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {RTTY_FREQS
               .iter()
               .map(|&(freq, usage)| {
                 view! {
-                  <div class="flex items-baseline gap-2 rounded-lg px-3 py-2">
+                  <div class="flex items-baseline gap-2 px-3 py-2">
                     <span class="shrink-0 font-mono text-sm font-semibold text-primary">{freq}</span>
                     <span class="text-sm text-muted-foreground">{usage}</span>
                   </div>
@@ -68,7 +68,7 @@ pub fn RttyPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.operating-tips")}</h2>
           <ul class="space-y-2 p-4">
             {RTTY_TIPS

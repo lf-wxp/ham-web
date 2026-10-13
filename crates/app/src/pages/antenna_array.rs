@@ -9,9 +9,9 @@ use crate::util::set_title;
 
 #[component]
 pub fn AntennaArrayPage() -> impl IntoView {
-  set_title("shell.antenna-arrays-2");
+  set_title("shell.antenna-arrays-title");
   view! {
-    <KnowledgePage title=t("shell.antenna-arrays-2") subtitle=t("knowledge.stacking-gain-beamforming-common")>
+    <KnowledgePage title=t("shell.antenna-arrays-title") subtitle=t("knowledge.stacking-gain-beamforming-common")>
       <ConceptsSection title="核心概念" items=ARRAY_CONCEPTS />
       <ConceptsSection title="常见阵列类型" items=ARRAY_TYPES />
       <BulletSection title="设计要点" items=ARRAY_TIPS />

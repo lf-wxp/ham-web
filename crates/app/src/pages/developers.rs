@@ -101,11 +101,11 @@ pub fn DevelopersPage() -> impl IntoView {
               view! {
                 <div class="space-y-2 px-4 py-3">
                   <div class="flex flex-wrap items-center gap-2">
-                    <span class="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-primary">
+                    <span class="bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-primary">
                       "GET"
                     </span>
                     <code class="break-all font-mono text-sm font-medium">{e.path}</code>
-                    <span class="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">
+                    <span class="border px-2 py-0.5 text-[11px] text-muted-foreground">
                       {move || t(e.tag)}
                     </span>
                   </div>
@@ -123,7 +123,13 @@ pub fn DevelopersPage() -> impl IntoView {
                                   <code class="font-mono font-semibold">{p.name}</code>
                                   <span class="text-muted-foreground">
                                     {format!("{} · ", p.schema)}
-                                    {move || t(if p.required { "必填" } else { "可选" })}
+                                    {move || {
+                                      if p.required {
+                                        t("common.required")
+                                      } else {
+                                        t("common.optional")
+                                      }
+                                    }}
                                   </span>
                                   <span class="text-muted-foreground">{move || t(p.desc)}</span>
                                 </li>
@@ -137,7 +143,7 @@ pub fn DevelopersPage() -> impl IntoView {
                     href=e.example
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="block break-all rounded-lg bg-muted/60 px-3 py-2 font-mono text-xs text-primary transition-colors hover:bg-muted"
+                    class="block break-all bg-muted/60 px-3 py-2 font-mono text-xs text-primary transition-colors hover:bg-muted"
                   >
                     {e.example}
                   </a>

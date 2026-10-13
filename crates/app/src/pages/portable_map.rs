@@ -98,14 +98,14 @@ pub fn PortableMapPage() -> impl IntoView {
         subtitle=Signal::derive(move || t("radio.activated-summits-and-parks"))
         actions=ViewFn::from(move || {
           view! {
-            <span class="rounded-full border px-3 py-1 text-xs text-muted-foreground">
+            <span class="border px-3 py-1 text-xs text-muted-foreground">
               {move || tf("radio.activated", &[&markers.get().len().to_string()])}
             </span>
           }
         })
       />
       <PageContainer>
-        <section class="rounded-xl border bg-card p-4">
+        <section class="pxl-card border bg-card p-4">
           {move || {
             if loading.get() {
               view! {

@@ -66,7 +66,7 @@ pub fn MistakeTopicsPage() -> impl IntoView {
 
         {if domains.is_empty() {
           view! {
-            <div class="rounded-xl border bg-card px-4 py-12 text-center">
+            <div class="pxl-card border bg-card px-4 py-12 text-center">
               <div class="text-sm font-medium">{move || t("learning.no-mistakes-yet")}</div>
               <div class="mt-1 text-xs text-muted-foreground">
                 {move || t("learning.after-answering-in-practice")}
@@ -87,13 +87,13 @@ pub fn MistakeTopicsPage() -> impl IntoView {
               let color = top_category(domain.top).map_or("#888888", |c| c.color);
               let name = top_category(domain.top).map_or(domain.top, |c| c.name);
               view! {
-                <section class="rounded-xl border bg-card">
+                <section class="pxl-card border bg-card">
                   <a
                     href=format!("/practice?topic={}", domain.top)
                     class="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/50"
                   >
                     <span
-                      class="size-2.5 shrink-0 rounded-full"
+                      class="size-2.5 shrink-0"
                       style=format!("background-color:{color}")
                       aria-hidden="true"
                     ></span>
@@ -109,9 +109,9 @@ pub fn MistakeTopicsPage() -> impl IntoView {
                         )}
                       </div>
                       // 域行热力条：本域错题数与最热域的比。
-                      <div class="mt-1 h-1.5 w-full max-w-56 overflow-hidden rounded-full bg-muted">
+                      <div class="mt-1 h-1.5 w-full max-w-56 overflow-hidden bg-muted">
                         <div
-                          class="h-full rounded-full"
+                          class="h-full"
                           style=format!("width:{bar_pct}%;background-color:{color}")
                         ></div>
                       </div>
@@ -139,7 +139,7 @@ pub fn MistakeTopicsPage() -> impl IntoView {
                             topic.code,
                             topic.mistakes
                           )
-                          class="flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs transition-colors hover:border-primary/60"
+                          class="flex items-center gap-2 border px-2.5 py-1.5 text-xs transition-colors hover:border-primary/60"
                           style=bg
                         >
                           <span class="max-w-48 truncate font-medium">{topic.name}</span>

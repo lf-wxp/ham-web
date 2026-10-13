@@ -34,15 +34,15 @@ pub(super) fn BandCard(band: &'static Band, jump: Callback<&'static str>) -> imp
     view! { <ul class="mt-3 divide-y border-t border-dashed">{items}</ul> }.into_any()
   };
   view! {
-    <article class="rounded-xl border bg-card p-4">
+    <article class="pxl-card border bg-card p-4">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="rounded-md bg-muted px-2 py-0.5 font-mono text-xs font-semibold text-foreground">
+        <span class="bg-muted px-2 py-0.5 font-mono text-xs font-semibold text-foreground">
           {move || t("radio.reference")} " " {band.number}
         </span>
         <h3 class="font-semibold">{band.name}</h3>
         {band
           .microwave
-          .then(|| view! { <span class="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">{move || t("knowledge.microwave")}</span> })}
+          .then(|| view! { <span class="border px-2 py-0.5 text-xs text-muted-foreground">{move || t("knowledge.microwave")}</span> })}
         <span class="ml-auto font-mono text-sm font-semibold">{band.freq_abbr}</span>
       </div>
       <dl class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">

@@ -22,7 +22,7 @@ pub fn FrequenciesPage() -> impl IntoView {
           .iter()
           .map(|g| {
             view! {
-              <section class="rounded-xl border bg-card">
+              <section class="pxl-card border bg-card">
                 <h2 class="border-b px-4 py-3 text-sm font-semibold">{g.category}</h2>
                 <div class="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2">
                   {g
@@ -30,7 +30,7 @@ pub fn FrequenciesPage() -> impl IntoView {
                     .iter()
                     .map(|&(freq, usage)| {
                       view! {
-                        <div class="flex items-baseline gap-2 rounded-lg px-2 py-1.5">
+                        <div class="flex items-baseline gap-2 px-2 py-1.5">
                           <span class="w-36 shrink-0 font-mono text-sm font-semibold text-primary">{freq}</span>
                           <span class="text-sm text-muted-foreground">{usage}</span>
                         </div>

@@ -53,7 +53,7 @@ pub fn PracticeSearchDialog(
               view! { <div class="text-xs text-muted-foreground">{ move || { let n = matches.with(Vec::len); tp("exam.matches", n, &[&n.to_string()]) } }</div> }
             })
         }}
-        <div class="rounded-md border">
+        <div class="border">
           {move || {
             let list = matches.get();
             if list.is_empty() {
@@ -75,11 +75,11 @@ pub fn PracticeSearchDialog(
                     }
                   >
                     <div class="flex items-center gap-2 text-sm">
-                      <span class="inline-flex items-center px-2 py-0.5 rounded border text-xs bg-muted text-foreground">
+                      <span class="inline-flex items-center px-2 py-0.5 border text-xs bg-muted text-foreground">
                         {m.j}
                       </span>
                       {match_snippet(&m.text, &q)}
-                      <span class="ml-auto text-xs text-muted-foreground">{tf("exam.question-2", &[&(pos + 1).to_string()])}</span>
+                      <span class="ml-auto text-xs text-muted-foreground">{tf("exam.question-number", &[&(pos + 1).to_string()])}</span>
                     </div>
                   </li>
                 }

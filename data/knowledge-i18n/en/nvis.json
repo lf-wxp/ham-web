@@ -1,0 +1,15 @@
+{
+  "Near Vertical Incidence Skywave，近垂直入射天波。": "Near Vertical Incidence Skywave (NVIS).",
+  "低架设的偶极、倒 V 或环形天线，架高约 1/10–1/4 波长。": "A low dipole, inverted V or loop, mounted about 1/10–1/4 wavelength high.",
+  "典型波段": "Typical bands",
+  "原理": "Principle",
+  "地面或金属网作反射面可增强向上辐射。": "Ground or a metal mesh as a reflector strengthens upward radiation.",
+  "天线向正上方辐射，经电离层近乎垂直反射，覆盖 0–500km 地波盲区。": "The antenna radiates straight up and is reflected almost vertically by the ionosphere, covering the 0–500 km ground-wave blind zone.",
+  "天线形态": "Antenna forms",
+  "天线架设低（数米），主瓣朝上，牺牲远距离 DX 能力换取近距离覆盖。": "The antenna is mounted low (a few metres) with the main lobe upwards, trading long-distance DX for short-range coverage.",
+  "应急通信与山区、城市近距离通信的理想方案，无地波盲区。": "Ideal for emergency communication and short-range communication in mountains or cities, with no ground-wave blind zone.",
+  "根据实时临界频率选择波段，频率过高会穿透电离层失去反射。": "Choose the band from the live critical frequency; too high a frequency penetrates the ionosphere and is lost.",
+  "白天 40m / 60m，夜间 80m / 160m。": "40 m / 60 m by day, 80 m / 160 m at night.",
+  "适用频率": "Usable frequencies",
+  "通常 1.8–7.5 MHz，取决于当时电离层临界频率。": "Usually 1.8–7.5 MHz, depending on the critical frequency at the time."
+}

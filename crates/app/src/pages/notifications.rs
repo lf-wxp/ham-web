@@ -73,7 +73,7 @@ pub fn NotificationsPage() -> impl IntoView {
       />
 
       <PageContainer class="space-y-4">
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class="mr-auto text-sm font-semibold">{move || t("settings.browser-notification-permission")}</h2>
             <span class="text-xs text-muted-foreground">{perm_label}</span>
@@ -96,7 +96,7 @@ pub fn NotificationsPage() -> impl IntoView {
           </p>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class="mr-auto text-sm font-semibold">{move || t("settings.countdown-reminders")}</h2>
             <span class="text-xs text-muted-foreground">
@@ -111,7 +111,7 @@ pub fn NotificationsPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class="mr-auto text-sm font-semibold">{move || t("tools.dx-spot-alerts")}</h2>
           </div>
@@ -149,7 +149,7 @@ pub fn NotificationsPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class="mr-auto text-sm font-semibold">{move || t("settings.satellite-pass-alerts")}</h2>
           </div>
@@ -183,7 +183,7 @@ pub fn NotificationsPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class="mr-auto text-sm font-semibold">{move || t("settings.background-push")}</h2>
             <span class="text-xs text-muted-foreground">

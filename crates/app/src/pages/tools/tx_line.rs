@@ -67,7 +67,7 @@ pub(super) fn TxLine() -> impl IntoView {
           />
         </Field>
       </div>
-      <div class="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
+      <div class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
         {move || {
           let z = coax_z0(er.get(), d_outer.get(), d_inner.get());
           if z.is_nan() {
@@ -104,7 +104,7 @@ pub(super) fn TxLine() -> impl IntoView {
           />
         </Field>
       </div>
-      <div class="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
+      <div class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
         {move || {
           let z = twin_lead_z0(er.get(), spacing.get(), diameter.get());
           if z.is_nan() {
@@ -141,7 +141,7 @@ pub(super) fn TxLine() -> impl IntoView {
           />
         </Field>
       </div>
-      <div class="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
+      <div class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
         {move || {
           let z = microstrip_z0(er.get(), width.get(), height.get());
           if z.is_nan() {

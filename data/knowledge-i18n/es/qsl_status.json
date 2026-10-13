@@ -1,0 +1,18 @@
+{
+  "ADIF 代码往返": "Ida y vuelta del código ADIF",
+  "{raw} 应能反序列化：{e}": "{raw} debería deserializarse: {e}",
+  "卡片局": "Oficina de tarjetas (bureau)",
+  "反序列化": "Deserialización",
+  "四色档位都应可达": "Los cuatro niveles de color deberían ser alcanzables",
+  "已寄出档位 {setup} 不应显示未寄出": "El nivel enviado {setup} no debería mostrarse como no enviado",
+  "序列化": "Serialización",
+  "往返": "Ida y vuelta",
+  "换方式应报告改动": "Cambiar el método debe informar de un cambio",
+  "旧 JSON 应能反序列化": "El JSON antiguo debería poder deserializarse",
+  "标志位 → 状态": "Indicador → estado",
+  "档位 {setup}": "Nivel {setup}",
+  "短键往返": "Ida y vuelta de la clave corta",
+  "组合 {flags}": "Combinación {flags}",
+  "重复标记不应报告改动": "Marcar de nuevo no debe informar de un cambio",
+  "首次应报告改动": "La primera vez debe informarse del cambio"
+}

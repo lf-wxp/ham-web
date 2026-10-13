@@ -129,7 +129,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
             active=Signal::derive(move || cat.with(|c| c == key))
             on_click=Callback::new(move |_| select_cat(key))
           >
-            <span class="h-2 w-2 shrink-0 rounded-full" style=format!("background: {color}")></span>
+            <span class="h-2 w-2 shrink-0" style=format!("background: {color}")></span>
             <span class="truncate" title=name.to_string()>{name}</span>
             <span class="ml-auto text-xs tabular-nums">{move || cat_count.with(|m| m.get(key).copied().unwrap_or(0))}</span>
           </SidebarItem>
@@ -184,7 +184,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               class="mt-4 w-full"
               on_click=Callback::new(move |_| visible.update(|v| *v += PAGE))
             >
-              {t("knowledge.load-more-showing")} {shown_len} " / " {total} {t("common.entry-2")}
+              {t("knowledge.load-more-showing")} {shown_len} " / " {total} {t("common.closing-paren")}
             </Button>
           }
         })}
@@ -227,12 +227,12 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
 
       <PageContainer class="space-y-0 grid grid-cols-1 gap-5 md:grid-cols-[240px_1fr]">
         <aside class="hidden md:block">
-          <div class="sticky top-[136px] max-h-[calc(100vh-152px)] overflow-y-auto rounded-xl border bg-card p-2">
+          <div class="sticky top-[136px] max-h-[calc(100vh-152px)] overflow-y-auto pxl-card border bg-card p-2">
             <SidebarItem
               active=Signal::derive(move || cat.with(|c| c == ALL))
               on_click=Callback::new(move |_| select_cat(ALL))
             >
-              <span class="h-2 w-2 rounded-full bg-foreground/60"></span>
+              <span class="h-2 w-2 bg-foreground/60"></span>
               {move || t("knowledge.all-terms")}
               <span class="ml-auto text-xs tabular-nums">{move || base.with(Vec::len)}</span>
             </SidebarItem>

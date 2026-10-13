@@ -1,4 +1,25 @@
 {
+  "A 类": "Clase A",
+  "B 类": "Clase B",
+  "C 类": "Clase C",
+  "不得为无证人员提供发射机会（本人监督下的学习操作除外）。": "No dé la oportunidad de transmitir a personas sin licencia (salvo la práctica bajo su propia supervisión).",
+  "不得用于商业、广播、泄密，不得干扰其他合法无线电业务。": "No debe emplearse para comercio, radiodifusión ni revelación de secretos, ni para interferir otros servicios radioeléctricos legales.",
   "入门级，可操作 30MHz 以上的 VHF/UHF 业余业务频段（≤25W）。": "Clase inicial: bandas VHF/UHF de aficionado por encima de 30 MHz (≤ 25 W).",
-  "可操作 A 类全部，外加短波（HF）业余业务频段；30MHz 以下功率 ≤15W（不大于 15W）。": "Todo lo de la clase A más las bandas HF; ≤ 15 W por debajo de 30 MHz."
+  "区别只在功率：30MHz 以下可到 ≤1000W。": "la única diferencia es la potencia: hasta ≤ 1000 W por debajo de 30 MHz.",
+  "发射标识": "Identificación de la estación",
+  "只能在操作证对应等级允许的频段内工作，不得越级。": "Opere solo en las bandas permitidas por la clase de su certificado de operación; no exceda su clase.",
+  "可操作 A 类全部，外加短波（HF）业余业务频段；30MHz 以下功率 ≤15W（不大于 15W）。": "Todo lo de la clase A más las bandas HF; ≤ 15 W por debajo de 30 MHz.",
+  "可用频段与 B 类完全相同（没有「更多短波频段」），": "Las bandas utilizables son exactamente las mismas que en la clase B (no hay «más bandas de onda corta»),",
+  "呼号由国家无线电管理机构核配，不得擅自更改、转让或冒用。": "Los indicativos son asignados por el organismo nacional de gestión radioeléctrica y no pueden modificarse, transferirse ni usurparse.",
+  "呼号管理": "Gestión de indicativos",
+  "定期关注国家无线电管理机构发布的频率划分与规定更新。": "Siga periódicamente las actualizaciones de atribución de bandas y normas que publica el organismo nacional de gestión radioeléctrica.",
+  "应急义务": "Obligación en emergencias",
+  "牢记「操作证 + 电台执照」双证齐全才能合法发射。": "Recuerde que hacen falta el certificado de operación y la licencia de estación para transmitir legalmente.",
+  "电台执照": "Licencia de estación",
+  "禁止事项": "Usos prohibidos",
+  "紧急情况下，业余电台可越级使用频率协助抢险救灾。": "En una emergencia, una estación de radioaficionados puede usar frecuencias por encima de su clase para ayudar en el rescate y la asistencia.",
+  "设置、使用业余电台须取得无线电台执照，实行一机一照。": "Para instalar y usar una estación de radioaficionado se requiere licencia de estación: una licencia por equipo.",
+  "通联中须使用核配呼号，采用明语或规定的字母解释法。": "Use el indicativo asignado en los contactos, en lenguaje claro o con el alfabeto fonético establecido.",
+  "遵循环节：先听后发，礼让正在进行的通联。": "Siga la buena práctica: escuche antes de transmitir y ceda el paso a los contactos en curso.",
+  "频率使用": "Uso de frecuencias"
 }

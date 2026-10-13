@@ -19,7 +19,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 // CJK 判定与前端（`catalog` 的中文反向索引）共用一份实现，见函数文档。
-use ham_web_core::text::has_cjk;
+use ham_web_core::text::{has_cjk, has_han};
 
 use anyhow::{Context, Result, bail};
 
@@ -674,13 +674,23 @@ fn cjk_args(root: &Path) -> Result<Vec<String>> {
   Ok(out)
 }
 
-/// 首个实参不是字符串字面量的调用点（`t(&format!(…))` / `t(SOME_CONST)` / `tf(label, …)`）。
+/// 数据驱动的调用点（首个实参不是字面量，`t(变量)` / `tf(label, …)`），`文件:行号` 列表。
 ///
-/// 这类调用点纯静态扫描认不出来，对应的 key 既可能被误判成死条目，也可能不在覆盖率里。
-/// 工具无法自动解析，只能列出来提示人工核对。
-fn unresolved_calls(root: &Path) -> Result<Vec<String>> {
+/// 这类调用点纯静态扫描认不出来，且**只会是数据驱动**：取值来自 `crates/core` 的数据表
+/// （registry 标题、成就名、竞赛描述…）或页面里的中文常量表，运行时靠 `t()` 的中文反向索引
+/// 查表 —— 它们是设计如此，不是待办，所以**不进 `check-i18n` 的默认输出**（译文覆盖由
+/// [`untranslated_cjk`] 反着守）；需要核对「某个变量到底从哪来」时用
+/// `cargo make i18n-dynamic-calls` 列出来。
+///
+/// `crates/app/src/i18n/` 整块跳过：那里是查表实现自身（`t` / `tf` / `tp` 的定义、
+/// 相互转发与 `apply_title` 的标题回填），实参只能是形参。
+pub fn dynamic_calls(root: &Path) -> Result<Vec<String>> {
   let mut out = Vec::new();
+  let i18n_dir = root.join("crates/app/src/i18n");
   for f in walk(&root.join("crates/app/src"))? {
+    if f.starts_with(&i18n_dir) {
+      continue;
+    }
     let src = read_source(&f)?;
     let rel = f.strip_prefix(root).unwrap_or(&f).display().to_string();
     let bytes = src.as_bytes();
@@ -741,7 +751,7 @@ fn call_open(bytes: &[u8], i: usize) -> Option<usize> {
 }
 
 /// key 是否是「slug 冲突自动加序号」的产物：末段以 `-数字` 结尾，且去掉该后缀后
-/// **确实存在**同名的 key（`common.correct-2` ← `common.correct`）。
+/// **确实存在**同名的 key（`some-slug-2` 与 `some-slug` 并存）。
 ///
 /// 后半个条件很重要：`tools.recommended-1024-768-4096` 这类数字本来就有语义，
 /// 不能算冲突产物。
@@ -756,164 +766,6 @@ fn is_collision_slug(key: &str, all: &HashSet<String>) -> bool {
     && tail.bytes().all(|b| b.is_ascii_digit())
     && all.contains(&format!("{head}.{base}"))
 }
-
-/// 存量「编号 slug」清单（150 条）：slug 由英文译文派生，冲突时自动加 `-数字`，
-/// 语义为零（`common.correct-2` / `-3` / `-4` 谁都看不出区别）。
-///
-/// **这就是重命名清单**：改掉一条就从这里删一条，`check-i18n` 会提示清单里哪些
-/// 已经不存在了。新增编号 slug 一律判失败 —— 别让第 151 条再长出来。
-const NUMBERED_SLUG_BASELINE: &[&str] = &[
-  "common.accuracy-2",
-  "common.ci-v-address-hex-2",
-  "common.class-2",
-  "common.correct-2",
-  "common.correct-3",
-  "common.correct-4",
-  "common.days-until-the-class-2",
-  "common.entry-2",
-  "common.preview-2",
-  "common.questions-2",
-  "common.questions-3",
-  "common.review-2",
-  "common.speed-wpm-2",
-  "common.take-one-2",
-  "common.wrong-2",
-  "common.zone-2",
-  "contest.10-m-band-only-2",
-  "contest.24-hour-field-emergency-2",
-  "contest.contest-2",
-  "contest.contest-tips-2",
-  "contest.exchange-2",
-  "contest.global-rtty-contest-exchange-2",
-  "contest.in-about-months-2",
-  "contest.received-2",
-  "contest.the-ssb-leg-of-2",
-  "contest.the-ssb-leg-of-3",
-  "contest.the-ssb-leg-of-4",
-  "contest.the-world-s-biggest-2",
-  "contest.this-month-2",
-  "exam.answered-2",
-  "exam.class-2",
-  "exam.class-3",
-  "exam.correct-2",
-  "exam.correct-3",
-  "exam.correct-4",
-  "exam.correct-answer-2",
-  "exam.high-frequency-exam-points-2",
-  "exam.loading-questions-2",
-  "exam.multiple-2",
-  "exam.no-2",
-  "exam.ok-2",
-  "exam.practise-similar-2",
-  "exam.previous-2",
-  "exam.question-2",
-  "exam.questions-2",
-  "exam.remaining-2",
-  "exam.remember-2",
-  "exam.resume-2",
-  "exam.score-2",
-  "exam.submit-2",
-  "exam.unanswered-2",
-  "exam.wrong-2",
-  "knowledge.iaru-region-3-band-2",
-  "knowledge.meaning-2",
-  "knowledge.velocity-factor-k-0-2",
-  "knowledge.which-band-does-this-2",
-  "learning.accuracy-2",
-  "learning.correct-2",
-  "learning.data-comes-from-local-2",
-  "learning.don-t-know-2",
-  "learning.fri-2",
-  "learning.mon-2",
-  "learning.progress-2",
-  "learning.sat-2",
-  "learning.sun-2",
-  "learning.thu-2",
-  "learning.tue-2",
-  "learning.wed-2",
-  "log.entry-2",
-  "log.grid-2",
-  "log.iota-island-groups-2",
-  "log.page-2",
-  "log.records-2",
-  "log.records-3",
-  "log.station-grid-2",
-  "log.was-us-states-2",
-  "log.worked-2",
-  "morse.character-2",
-  "morse.frequent-misses-2",
-  "morse.play-2",
-  "morse.replay-2",
-  "morse.streak-2",
-  "morse.volume-2",
-  "radio.altitude-2",
-  "radio.band-name-2",
-  "radio.callsign-or-entity-name-2",
-  "radio.centre-lat-lon-2",
-  "radio.coloured-by-each-dxcc-2",
-  "radio.country-region-2",
-  "radio.cq-itu-zone-map-2",
-  "radio.data-from-the-public-2",
-  "radio.e-g-bg4xyz-ja1abc-2",
-  "radio.enter-a-callsign-to-2",
-  "radio.enter-a-callsign-to-3",
-  "radio.entry-2",
-  "radio.key-concepts-2",
-  "radio.not-worked-2",
-  "radio.notes-2",
-  "radio.reference-2",
-  "radio.scroll-pinch-to-zoom-2",
-  "radio.status-2",
-  "radio.watched-2",
-  "radio.worked-2",
-  "radio.x-ray-flux-2",
-  "radio.zone-2",
-  "radio.zone-3",
-  "shell.amateur-radio-exams-knowledge-2",
-  "shell.amateur-tv-2",
-  "shell.antenna-analyzers-2",
-  "shell.antenna-arrays-2",
-  "shell.antenna-farms-2",
-  "shell.antenna-modeling-2",
-  "shell.ardf-2",
-  "shell.band-chart-2",
-  "shell.beginner-s-guide-2",
-  "shell.cabrillo-logs-2",
-  "shell.dx-awards-2",
-  "shell.emergency-comms-2",
-  "shell.exam-reference-2",
-  "shell.iota-2",
-  "shell.packet-radio-2",
-  "shell.q-codes-2",
-  "shell.qrp-2",
-  "shell.receiver-specs-2",
-  "shell.repeater-building-2",
-  "shell.repeaters-gateways-2",
-  "shell.rfi-troubleshooting-2",
-  "shell.search-2",
-  "shell.software-defined-radio-2",
-  "shell.special-propagation-2",
-  "tools.air-core-coil-inductance-2",
-  "tools.click-to-choose-or-2",
-  "tools.could-not-read-the-2",
-  "tools.decoding-failed-make-sure-2",
-  "tools.enter-a-positive-frequency-2",
-  "tools.enter-a-positive-power-2",
-  "tools.file-too-large-about-2",
-  "tools.file-too-large-about-3",
-  "tools.free-space-path-loss-2",
-  "tools.inductance-h-2",
-  "tools.pulse-shaping-roll-off-2",
-  "tools.receiver-sensitivity-2",
-  "tools.resistance-r-2",
-  "tools.series-reactance-2",
-  "tools.signal-to-noise-ratio-2",
-  "tools.signal-to-noise-ratio-3",
-  "tools.swr-2",
-  "tools.symmetrical-t-resistive-attenuators-2",
-  "tools.the-amber-dashed-line-2",
-  "tools.utc-time-2",
-];
 
 fn walk(dir: &Path) -> Result<Vec<PathBuf>> {
   let mut out = Vec::new();
@@ -1271,8 +1123,16 @@ fn unescape(s: &str, i: usize) -> Option<(char, usize)> {
 
 /// 取源码里所有字符串字面量（跳过整行注释与行尾注释）。
 fn source_literals(src: &str) -> Vec<String> {
+  source_literals_with_lines(src)
+    .into_iter()
+    .map(|(_, s)| s)
+    .collect()
+}
+
+/// 同 [`source_literals`]，但带上行号（1 起）：缺译文的报告要靠它定位到具体那一行。
+fn source_literals_with_lines(src: &str) -> Vec<(usize, String)> {
   let mut out = Vec::new();
-  for line in src.lines() {
+  for (no, line) in src.lines().enumerate() {
     if line.trim_start().starts_with("//") {
       continue;
     }
@@ -1283,7 +1143,7 @@ fn source_literals(src: &str) -> Vec<String> {
       if bytes[i] == b'"' {
         match read_string(code, i) {
           Some((s, next)) => {
-            out.push(s);
+            out.push((no + 1, s));
             i = next;
           }
           None => i += 1,
@@ -1371,6 +1231,147 @@ pub fn unused(root: &Path, lang: &str) -> Result<Vec<String>> {
     !literals.iter().any(|l| l.contains(text))
   });
   Ok(dead)
+}
+
+/// 「不是界面文案」的中文字面量白名单 —— 开发者日志、调试断言、只用于中文界面的模板。
+///
+/// 白名单只收**本来就翻不了 / 不该翻**的：日志与断言写进 `console`，语言名在各语言下都写原文，
+/// `bank_class` 的中文模板只在中文界面用（en / es 有各自的模板）。新增界面文案不要往这里加。
+const CJK_LITERAL_ALLOW: &[&str] = &[
+  "中文",
+  "{bank} 类",
+  "i18n: 实参多于占位符（{} 个实参 / {used} 个占位符）：{s}",
+  "ProvenanceNote：溯源表里没有域「{domain}」",
+];
+
+/// `crates/app` 里含中文、却查不到词条的中文字面量（附 `文件:行号`，按字典序）。
+///
+/// 为什么反着守：组件入参（`title="核心概念"`）、页面常量表、`t(变量)` 的取值这些中文，
+/// 运行时都是经 `t()` 的**中文反向索引**查词典命中语义 key 的 —— 静态扫描看不到「哪个中文
+/// 会被传进来」，逐条核对调用点也就无从谈起。但「有没有译文」是可判定的：只要某条中文
+/// 出现在源码里，它就必须能查到词条，否则 en / es 界面会**原样漏出中文**
+/// （也顺带守住「别硬编码界面中文」这条底线）。
+///
+/// 口径**只覆盖 `crates/app`**：`crates/core` 的知识正文走 `data::kt()` + `data/knowledge-i18n/`
+/// 那条线，按模块分批翻译（见 `knowledge-i18n-check`），不在这条要求里。
+pub fn untranslated_cjk(root: &Path) -> Result<Vec<String>> {
+  let zh = ZhIndex::new(root)?;
+  let test_only = test_only_modules(root)?;
+  let mut out = Vec::new();
+  for f in walk(&root.join("crates/app/src"))? {
+    // 查表实现自身（定义、转发、`apply_title`）、测试模块：里面的中文都不是界面文案。
+    if f.starts_with(root.join("crates/app/src/i18n")) || is_test_only(&f, root, &test_only) {
+      continue;
+    }
+    // 与 [`unused`] / [`collect_call_sites`] 同口径：涂白注释与文件内的 `#[cfg(test)] mod …`。
+    let src = read_source(&f)?;
+    let rel = f.strip_prefix(root).unwrap_or(&f).display().to_string();
+    for (line, lit) in source_literals_with_lines(&src) {
+      if has_han(&lit) && !zh.exact.contains_key(&lit) && !is_allowed_cjk(&lit) {
+        out.push(format!("{rel}:{line}  {lit}"));
+      }
+    }
+  }
+  out.sort();
+  out.dedup();
+  Ok(out)
+}
+
+/// 源码里出现的「像本仓库 key 的字面量」但词典里没有的那些（附 `文件:行号`，按字典序）。
+///
+/// 为什么需要：数据驱动的调用点把**语义 key 当数据传**（`headers = &["knowledge.model", …]`、
+/// `title: "shell.iota-title"`、`set_title(m.title)`），静态扫描看不到它最终落在哪个 `t()` 上 ——
+/// 于是反过来守：只要字面量长得像 key（域前缀 ∈ `data/i18n/` 的域集合），它就必须存在。
+/// 少写一个字母的 key 在界面上会**原样漏出**（`t()` 查不到就返回入参），这条在 CI 拦住。
+///
+/// 域前缀取自词典文件名，因此 `openapi.json` / `a.wav` 这类「长得像 key 但不是」的字面量
+/// 不会误报；`crates/app` 与 `crates/core` 都扫 —— 数据表在 core 里。
+pub fn key_literals_missing(root: &Path) -> Result<Vec<String>> {
+  let domains: HashSet<String> = std::fs::read_dir(lang_dir(root, "zh"))?
+    .filter_map(|e| e.ok())
+    .filter_map(|e| {
+      e.path()
+        .file_stem()
+        .map(|s| s.to_string_lossy().into_owned())
+    })
+    .collect();
+  let known: HashSet<String> = load_entries(root, "zh")?
+    .into_iter()
+    .map(|e| e.key)
+    .collect();
+  let mut out = Vec::new();
+  for base in ["crates/app/src", "crates/core/src"] {
+    for f in walk(&root.join(base))? {
+      let src = read_source(&f)?;
+      let rel = f.strip_prefix(root).unwrap_or(&f).display().to_string();
+      for (line, lit) in source_literals_with_lines(&src) {
+        let Some((domain, slug)) = lit.split_once('.') else {
+          continue;
+        };
+        if domains.contains(domain) && !slug.is_empty() && !known.contains(&lit) {
+          out.push(format!("{rel}:{line}  {lit}"));
+        }
+      }
+    }
+  }
+  out.sort();
+  out.dedup();
+  Ok(out)
+}
+
+/// 白名单判定：显式清单，外加「`[` 开头的开发者日志前缀」（`[kv] …` / `[nec-sphere] …`）。
+fn is_allowed_cjk(lit: &str) -> bool {
+  lit.starts_with('[') || CJK_LITERAL_ALLOW.contains(&lit)
+}
+
+/// `#[cfg(test)] mod NAME;` 声明的、只在测试里编译的模块名。
+///
+/// [`mask_test_modules`] 只涂白文件**内部**的 `#[cfg(test)] mod … { … }`；`registry_check`
+/// 这类模块是「文件本身由别的文件按 `cfg(test)` 挂进来」的（`main.rs` 里就两行），
+/// 里面的中文全是断言消息，不该按界面文案要求译文。
+fn test_only_modules(root: &Path) -> Result<HashSet<String>> {
+  let mut out = HashSet::new();
+  for f in walk(&root.join("crates/app/src"))? {
+    // 这里必须看原始文本：注释被涂白后 `#[cfg(test)]` 就没了。
+    let src = std::fs::read_to_string(&f).with_context(|| format!("读取 {} 失败", f.display()))?;
+    out.extend(cfg_test_module_names(&src));
+  }
+  Ok(out)
+}
+
+/// 从源码里取 `#[cfg(test)] mod NAME;` 的模块名（属性与 `mod` 同一行或分成两行都认）。
+fn cfg_test_module_names(src: &str) -> Vec<String> {
+  let lines: Vec<&str> = src.lines().map(str::trim).collect();
+  let mut out = Vec::new();
+  for (i, line) in lines.iter().enumerate() {
+    let Some(rest) = line.strip_prefix("#[cfg(test)]") else {
+      continue;
+    };
+    let rest = rest.trim();
+    let candidate = if rest.is_empty() {
+      lines.get(i + 1).copied().unwrap_or("")
+    } else {
+      rest
+    };
+    if let Some(name) = candidate
+      .strip_prefix("mod ")
+      .and_then(|s| s.strip_suffix(';'))
+    {
+      out.push(name.trim().to_owned());
+    }
+  }
+  out
+}
+
+/// 文件是否属于 [`test_only_modules`] 里的测试模块（`NAME.rs` 或 `NAME/mod.rs`）。
+fn is_test_only(path: &Path, root: &Path, names: &HashSet<String>) -> bool {
+  let Ok(rel) = path.strip_prefix(root.join("crates/app/src")) else {
+    return false;
+  };
+  rel.components().any(|c| {
+    let seg = c.as_os_str().to_string_lossy();
+    names.contains(seg.trim_end_matches(".rs"))
+  })
 }
 
 /// 复数候选：源码按 `tf(` / `tp(` 调用、中文带数量占位符，而目标语言仍是普通文案。
@@ -1821,6 +1822,53 @@ pub fn run(root: &Path) -> Result<bool> {
     }
   }
 
+  // 当数据传的 key：`headers = &["knowledge.model", …]` 这类字面量写错一个字母，
+  // 界面上原样漏出 key，而「源码用到的 key」那条只看得到 `t("…")` 的字面量。
+  match key_literals_missing(root) {
+    Ok(v) if v.is_empty() => println!("\n✓ 源码里的 key 字面量都存在（含当数据传的）"),
+    Ok(v) => {
+      ok = false;
+      println!(
+        "\n✗ {} 处像 key 的字面量在词典里不存在（会原样漏出到界面）：",
+        v.len()
+      );
+      for x in v.iter().take(20) {
+        println!("      {x}");
+      }
+      if v.len() > 20 {
+        println!("      … 另有 {} 条", v.len() - 20);
+      }
+    }
+    Err(e) => {
+      ok = false;
+      println!("\n✗ key 字面量统计失败：{e:#}");
+    }
+  }
+
+  // 界面中文的译文覆盖：数据表 / 组件入参里的中文查不到词条时，en / es 界面会原样漏出中文。
+  match untranslated_cjk(root) {
+    Ok(v) if v.is_empty() => {
+      println!("\n✓ 界面中文都有译文（数据表 / 组件入参里的中文都能查到词条）")
+    }
+    Ok(v) => {
+      ok = false;
+      println!(
+        "\n✗ {} 条界面中文查不到词条（en / es 界面会原样漏出中文）：",
+        v.len()
+      );
+      for x in v.iter().take(20) {
+        println!("      {x}");
+      }
+      if v.len() > 20 {
+        println!("      … 另有 {} 条", v.len() - 20);
+      }
+    }
+    Err(e) => {
+      ok = false;
+      println!("\n✗ 界面中文译文统计失败：{e:#}");
+    }
+  }
+
   // `tp()` 调用 ↔ 词典复数变体对账（只提示、不判失败：迁移是分批做的）
   for lang in ["en", "es"] {
     match reconcile_plural(root, lang) {
@@ -1956,8 +2004,8 @@ pub fn run(root: &Path) -> Result<bool> {
     }
   }
 
-  // 编号 slug 守门：存量冻结在 [`NUMBERED_SLUG_BASELINE`]，新增一律失败 ——
-  // 别让第 151 条 `xxx-2` 再长出来。
+  // 编号 slug 守门：`xxx-2` 这种「slug 冲突自动加序号」的产物语义为零，
+  // 出现一条就失败 —— 撞名时换一个语义化 slug。
   let mut numbered: BTreeSet<String> = BTreeSet::new();
   for (_, keys) in &key_sets {
     for k in keys {
@@ -1966,51 +2014,20 @@ pub fn run(root: &Path) -> Result<bool> {
       }
     }
   }
-  let fresh: Vec<&str> = numbered
-    .iter()
-    .map(String::as_str)
-    .filter(|k| !NUMBERED_SLUG_BASELINE.contains(k))
-    .collect();
-  if fresh.is_empty() {
-    println!(
-      "\n✓ 无新增编号 slug（存量 {} 条待重命名，清单见 NUMBERED_SLUG_BASELINE）",
-      numbered.len()
-    );
+  if numbered.is_empty() {
+    println!("\n✓ 无编号 slug（没有「slug 冲突自动加序号」的产物）");
   } else {
     ok = false;
     println!(
-      "\n✗ 新增了 {} 条编号 slug（slug 冲突自动加序号，语义为零）：",
-      fresh.len()
+      "\n✗ 有 {} 条编号 slug（slug 冲突自动加序号，语义为零）：",
+      numbered.len()
     );
-    for k in fresh.iter().take(10) {
+    for k in numbered.iter().take(10) {
       println!("      {k}");
     }
-  }
-  let stale = NUMBERED_SLUG_BASELINE
-    .iter()
-    .filter(|k| !numbered.contains(**k))
-    .count();
-  if stale > 0 {
-    println!("      （基线里另有 {stale} 条已不存在，可以从清单里删掉）");
-  }
-
-  // 静态扫描认不出来的调用点：只提示，不判失败（工具无法自动解析）。
-  match unresolved_calls(root) {
-    Ok(v) if v.is_empty() => println!("\n✓ 全部文案调用点都是字面量 key"),
-    Ok(v) => {
-      println!(
-        "\n! {} 处调用点的首个实参不是字面量（`t(&format!(…))` / 变量传入）：\
-         静态扫描认不出来，对应的 key 可能被误判成死条目或漏出覆盖率，请人工核对：",
-        v.len()
-      );
-      for x in v.iter().take(10) {
-        println!("      {x}");
-      }
-      if v.len() > 10 {
-        println!("      … 另有 {} 处", v.len() - 10);
-      }
+    if numbered.len() > 10 {
+      println!("      … 另有 {} 条", numbered.len() - 10);
     }
-    Err(e) => println!("\n（跳过动态调用点统计：{e:#}）"),
   }
 
   Ok(ok)
@@ -2364,6 +2381,26 @@ mod tests {
   fn scan_calls_ignores_identifiers_ending_in_t() {
     let src = r#"let a = s.split("x"); let b = t("a.b");"#;
     assert_eq!(keys_of(src), vec!["a.b"]);
+  }
+
+  /// 缺译文的中文清单：日志前缀与显式白名单不算界面文案（它们本来就翻不了 / 不该翻）。
+  #[test]
+  fn cjk_allow_list_covers_logs_and_zh_only_templates() {
+    assert!(is_allowed_cjk("[kv] 写入失败"));
+    assert!(is_allowed_cjk("ProvenanceNote：溯源表里没有域「{domain}」"));
+    assert!(!is_allowed_cjk("每符号比特"));
+    assert!(!is_allowed_cjk("核心概念"));
+  }
+
+  /// 「只在测试里编译」的模块：`main.rs` 里那两行决定了 `registry_check.rs` / `radio_law_check.rs`
+  /// 里的中文（全是断言消息）不该按界面文案算。
+  #[test]
+  fn cfg_test_module_names_reads_both_attribute_layouts() {
+    let src = "#[cfg(test)]\nmod registry_check;\n\n#[cfg(test)] mod inline_check;\nmod real_code;\n#[cfg(not(test))]\nmod other;\n";
+    assert_eq!(
+      cfg_test_module_names(src),
+      vec!["registry_check", "inline_check"]
+    );
   }
 
   /// 调用点直接写中文原文时（`tf("已合并 {} 条数据", …)`），也要能被反查成语义 key：

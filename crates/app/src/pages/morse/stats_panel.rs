@@ -22,7 +22,7 @@ pub(super) fn MorseStatsPanel(
   view! {
           <div class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span>
-              {move || t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().correct}</span>
+              {move || t("common.correct-label")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().correct}</span>
             </span>
             <span>
               {move || t("morse.wrong")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().wrong}</span>
@@ -67,7 +67,7 @@ pub(super) fn MorseStatsPanel(
               (!weak.is_empty()).then(|| {
                 view! {
                   <span>
-                    {move || t("morse.frequent-misses-2")} <span class="font-mono font-semibold text-foreground">{weak.join(" ")}</span>
+                    {move || t("morse.frequent-misses-label")} <span class="font-mono font-semibold text-foreground">{weak.join(" ")}</span>
                   </span>
                 }
               })
@@ -75,14 +75,14 @@ pub(super) fn MorseStatsPanel(
             <button
               type="button"
               on:click=move |_| on_reset.run(())
-              class="rounded-md px-2 py-0.5 transition-all duration-200 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              class="px-2 py-0.5 transition-all duration-200 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
             >
               {move || t("morse.reset")}
             </button>
             <button
               type="button"
               on:click=move |_| export_all_morse_stats()
-              class="rounded-md px-2 py-0.5 transition-all duration-200 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              class="px-2 py-0.5 transition-all duration-200 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
             >
               {move || t("learning.export")}
             </button>
@@ -114,7 +114,7 @@ pub(super) fn MorseStatsPanel(
                         let day = d.chars().skip(5).collect::<String>();
                         view! {
                           <div class="flex flex-col items-center gap-1" title=tf("common.right-wrong", &[&(d).to_string(), &(c).to_string(), &(w).to_string()])>
-                            <div class="flex h-12 w-6 items-end overflow-hidden rounded bg-muted">
+                            <div class="flex h-12 w-6 items-end overflow-hidden bg-muted">
                               <div class="w-full bg-primary" style=format!("height: {pct:.0}%")></div>
                             </div>
                             <span class="text-[10px] tabular-nums text-muted-foreground">{day}</span>

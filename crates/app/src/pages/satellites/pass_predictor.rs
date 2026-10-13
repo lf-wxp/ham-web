@@ -126,7 +126,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
   };
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.pass-predictions-and-reminders")}</h2>
       <div class="space-y-4 p-4">
         <div class="grid gap-3 sm:grid-cols-3">
@@ -162,7 +162,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
           </span>
         </div>
 
-        <div class="rounded-lg border bg-muted/30 p-3">
+        <div class="border bg-muted/30 p-3">
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             <label class="inline-flex cursor-pointer items-center gap-2 font-medium">
               <Checkbox
@@ -244,7 +244,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
         {move || {
           if loading.get() {
             return view! {
-              <div class="rounded-lg bg-muted/40 px-3 py-8 text-center text-sm text-muted-foreground">
+              <div class="bg-muted/40 px-3 py-8 text-center text-sm text-muted-foreground">
                 {move || t("radio.calculating-pass-predictions")}
               </div>
             }
@@ -252,7 +252,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
           }
           if failed.get() {
             return view! {
-              <div class="rounded-lg bg-muted/40 px-3 py-6 text-center text-sm text-muted-foreground">
+              <div class="bg-muted/40 px-3 py-6 text-center text-sm text-muted-foreground">
                 {move || t("radio.pass-data-is-unavailable")}
               </div>
             }
@@ -260,7 +260,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
           }
           if !queried.get() {
             return view! {
-              <div class="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
+              <div class="border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
                 {move || t("radio.enter-latitude-and-longitude")}
               </div>
             }
@@ -287,7 +287,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
               </label>
               {if items.is_empty() {
                 view! {
-                  <div class="rounded-lg bg-muted/40 px-3 py-6 text-center text-sm text-muted-foreground">
+                  <div class="bg-muted/40 px-3 py-6 text-center text-sm text-muted-foreground">
                     {move || t("radio.no-passes-match-the")}
                   </div>
                 }.into_any()

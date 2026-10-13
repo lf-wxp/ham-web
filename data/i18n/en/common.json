@@ -11,7 +11,7 @@
   "common.a-licence-is-valid": "A licence is valid for at most 5 years; apply for renewal 30 working days before it expires.",
   "common.a-typical-pass-lasts": "A typical pass lasts about 10–15 minutes, so plan together with",
   "common.accuracy": "Accuracy {}%",
-  "common.accuracy-2": "Accuracy {}% · {}",
+  "common.accuracy-with-result": "Accuracy {}% · {}",
   "common.adjust": "Adjust →",
   "common.after-connecting-read-azimuth": "After connecting, read azimuth/elevation and enter a target azimuth to rotate remotely",
   "common.after-parsing-check-the": "After parsing, check the \"DXCC rarity ranking\" to judge whether it is worth chasing, or log the callsign in the logbook.",
@@ -67,9 +67,9 @@
   "common.choose-a-file": "Choose a file",
   "common.choose-a-valid-image": "Choose a valid image file",
   "common.ci-v-address-hex": "CI-V address (hex)",
-  "common.ci-v-address-hex-2": "CI-V address (hex); 94 for IC-7300, A4 for IC-705",
+  "common.ci-v-address-hex-examples": "CI-V address (hex); 94 for IC-7300, A4 for IC-705",
   "common.class": "Class {}: {}",
-  "common.class-2": "Class {}: {}/{} ({}%)",
+  "common.class-with-score": "Class {}: {}/{} ({}%)",
   "common.class-pass-mark-questions": {
     "one": "Class {} · pass mark {} question",
     "other": "Class {} · pass mark {} questions"
@@ -93,12 +93,12 @@
   "common.connection-failed": "Connection failed: {}",
   "common.connection-notes": "Connection notes",
   "common.correct": "{} “{}” ({}% correct)",
-  "common.correct-2": {
+  "common.copied-correct": {
     "one": "{} / {} correct",
     "other": "{} / {} correct"
   },
-  "common.correct-3": "Correct ",
-  "common.correct-4": "Correct ✓",
+  "common.correct-label": "Correct ",
+  "common.correct-verdict": "Correct ✓",
   "common.correct-answer": "Correct answer: {} ({})",
   "common.correct-answered": "{} · {}% correct / {} answered",
   "common.correct-answers-items": {
@@ -119,7 +119,7 @@
     "one": "Class {} exam in {} day",
     "other": "Class {} exam in {} days"
   },
-  "common.days-until-the-class-2": {
+  "common.days-until-the-class-sprint": {
     "one": "Class {} exam in {} day · sprint phase: mistakes + mock exams",
     "other": "Class {} exam in {} days · sprint phase: mistakes + mock exams"
   },
@@ -147,7 +147,7 @@
   "common.enter-a-country-region": "Enter a country / region name (English, e.g. China)",
   "common.enter-a-reference-e": "Enter a reference, e.g. G/SP-001 or K-0001",
   "common.entry": "{}/{}/{}",
-  "common.entry-2": ")",
+  "common.closing-paren": ")",
   "common.equipment-advice": "Equipment advice",
   "common.equipment-requirements": "Equipment requirements",
   "common.erection-notes": "Erection notes",
@@ -266,7 +266,7 @@
   "common.practical-notes": "Practical notes",
   "common.press-while-answering-to": "Press ? while answering to open this help anytime.",
   "common.preview": "Preview {}",
-  "common.preview-2": "Preview {}: {}",
+  "common.preview-with-code": "Preview {}: {}",
   "common.preview-question-image": "Preview question image",
   "common.previous-month": "Previous month",
   "common.principle": "Principle",
@@ -285,11 +285,11 @@
     "one": "{} question",
     "other": "{} questions"
   },
-  "common.questions-2": {
+  "common.label-with-questions": {
     "one": "{} “{}” ({} question)",
     "other": "{} “{}” ({} questions)"
   },
-  "common.questions-3": {
+  "common.questions-total": {
     "one": "{} question",
     "other": "{} questions"
   },
@@ -330,7 +330,7 @@
   "common.requirements": "Requirements",
   "common.responses-carry-an-etag": "Responses carry an ETag; resend it as If-None-Match and unchanged content returns 304, costing no bandwidth.",
   "common.review": "Review",
-  "common.review-2": "Review {} ({})",
+  "common.review-with-count": "Review {} ({})",
   "common.review-again-in-days": {
     "one": "Review again in {} day",
     "other": "Review again in {} days"
@@ -371,7 +371,7 @@
   "common.something-went-wrong": "Something went wrong",
   "common.spectrum-canvas-not-ready": "Spectrum canvas not ready",
   "common.speed-wpm": "Speed {}{} WPM",
-  "common.speed-wpm-2": "Speed ≈ {} WPM",
+  "common.speed-wpm-approx": "Speed ≈ {} WPM",
   "common.stop": "Stop",
   "common.study-plan": "Study plan",
   "common.submit-the-station-application": "Submit the station application with your operating certificate: individuals need the application form, a copy of their ID and equipment specifications.",
@@ -380,7 +380,7 @@
   "common.support-methods": "Support methods",
   "common.sydney": "Sydney",
   "common.take-one": "Take one",
-  "common.take-one-2": "Take one →",
+  "common.take-one-link": "Take one →",
   "common.take-the-written-exam": "Take the written exam; passing it earns the Amateur Radio Station Operating Certificate (class A / B / C).",
   "common.taken-times-a-few": {
     "one": "Taken {} time; a few more and we can judge.",
@@ -436,7 +436,7 @@
     "one": "{} / {} · {} wrong",
     "other": "{} / {} · {} wrong"
   },
-  "common.wrong-2": " Wrong ",
+  "common.wrong-label": " Wrong ",
   "common.wrong-answers-in-total": {
     "one": "{} wrong answer in total",
     "other": "{} wrong answers in total"
@@ -444,7 +444,7 @@
   "common.you-copied": "You copied: {} {}",
   "common.your-answer": "Your answer: {}{}",
   "common.zone": "Zone {}",
-  "common.zone-2": "Zone {} ({})",
+  "common.zone-with-regions": "Zone {} ({})",
   "common.file-read-failed": "Could not read the file: it may be too large or damaged",
   "common.topic-regulations": "Radio regulations and management",
   "common.topic-regulations-desc": "Radio management regulations, station set-up permits, licences and callsigns, operating-ability verification, prohibited operating conduct and legal liability",

@@ -1,0 +1,21 @@
+{
+  "1 分钟一个周期，用于 EME 与小功率远距离。": "Ciclo de 1 minuto, usado en EME y larga distancia con baja potencia.",
+  "10m RTTY。": "RTTY en 10 m.",
+  "15m RTTY。": "RTTY en 15 m.",
+  "20m RTTY。": "RTTY en 20 m.",
+  "31.25 波特窄带，适合弱信号键盘聊天。": "31,25 baudios de banda estrecha, para chat por teclado con señal débil.",
+  "40m RTTY（中国）。": "RTTY en 40 m (China).",
+  "45.45 波特、170Hz 频移，竞赛主力模式。": "45,45 baudios con 170 Hz de desplazamiento: el modo principal de los concursos.",
+  "62.5 波特，竞赛时速度翻倍。": "62,5 baudios: duplica la velocidad en los concursos.",
+  "80m RTTY。": "RTTY en 80 m.",
+  "PSK31 功率无需太大，5–30W 足以稳定通联。": "PSK31 no necesita mucha potencia: con 5–30 W basta para contactos estables.",
+  "RTTY 用 FSK 或 AFSK，注意与收发信机选通配合。": "El RTTY usa FSK o AFSK: tenga en cuenta cómo se combina con el filtrado del transceptor.",
+  "基于 FT8 信号结构，支持实时文字对话。": "Basado en la estructura de señal de FT8, permite conversación de texto en tiempo real.",
+  "弱信号": "Señal débil",
+  "弱信号聊天": "Chat de señal débil",
+  "控制音频驱动电平，避免过载导致信号失真。": "Controle el nivel de excitación de audio para que la sobrecarga no distorsione la señal.",
+  "无线电传": "Radioteletipo (RTTY)",
+  "相移键控": "Desplazamiento de fase",
+  "竞赛中 RTTY 常用「CQ TEST」加呼号，交换序号。": "En los concursos se usa «CQ TEST» más el indicativo, intercambiando números correlativos.",
+  "高速相移键控": "Desplazamiento de fase de alta velocidad"
+}

@@ -1,0 +1,21 @@
+{
+  "NEC2 内核": "Núcleo NEC2",
+  "NEC2 内核的免费建模工具，功能全面。": "Herramienta de modelado gratuita con núcleo NEC2 y funciones completas.",
+  "仿真结果受地面与周围环境影响，实际架设后仍需微调。": "Los resultados de la simulación dependen del terreno y del entorno, por lo que tras la instalación aún hace falta un ajuste fino.",
+  "优化": "Optimizar",
+  "先建模后动手，仿真能大幅减少天线调试的试错成本。": "Modele primero y construya después: la simulación reduce mucho el coste de prueba y error al ajustar la antena.",
+  "免费": "Gratuito",
+  "免费天线建模与优化，界面简洁。": "Modelado y optimización de antenas gratuitos, con interfaz sencilla.",
+  "免费工具（MMANA-GAL / 4NEC2）足以满足绝大多数业余需求。": "Las herramientas gratuitas (MMANA-GAL / 4NEC2) bastan para la inmensa mayoría de las necesidades de los radioaficionados.",
+  "基于矩量法（NEC 内核），界面友好，经典首选；作者 2022 年退休后已免费发布。": "Basado en el método de los momentos (núcleo NEC) con interfaz amigable: la opción clásica; se publicó gratuitamente tras la jubilación del autor en 2022.",
+  "建模": "Modelado",
+  "指定仿真频率范围，设置地面类型与架设高度。": "Especifique el rango de frecuencia de simulación y configure el tipo de terreno y la altura de instalación.",
+  "数值电磁学代码，计算天线的方向图与阻抗。": "Código de electromagnetismo numérico que calcula el diagrama de radiación y la impedancia de la antena.",
+  "求解": "Resolver",
+  "注意线径与分段数设置，分段过少会导致结果不准。": "Cuide el diámetro del hilo y el número de segmentos: pocos segmentos dan resultados inexactos.",
+  "算法": "Algoritmo",
+  "设频段": "Configurar la banda",
+  "调整尺寸观察驻波比与增益变化，迭代到满意。": "Ajuste las dimensiones observando la ROE y la ganancia, e itere hasta quedar satisfecho.",
+  "输入振子坐标、线径、材料，定义天线几何结构。": "Introduzca las coordenadas de los elementos, el diámetro del hilo y el material para definir la geometría de la antena.",
+  "运行求解器，得到阻抗、驻波比与方向图。": "Ejecute el solucionador para obtener impedancia, ROE y diagrama de radiación."
+}

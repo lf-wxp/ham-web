@@ -47,7 +47,7 @@ pub fn ExamSubmitConfirmDialog(
           size=Size::Default
           on_click=Callback::new(move |_| on_confirm.run(()))
         >
-          {move || t("exam.submit-2")}
+          {move || t("exam.submit-confirm")}
         </Button>
       </DialogFooter>
     </Dialog>

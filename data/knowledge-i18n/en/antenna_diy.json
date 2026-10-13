@@ -1,0 +1,19 @@
+{
+  "2m 八木": "2 m Yagi",
+  "J 型天线": "J-pole antenna",
+  "VHF/UHF 基地台全向天线。": "An omnidirectional antenna for VHF/UHF base stations.",
+  "{name} 指向了不存在的模板 {template}": "{name} points to a non-existent template {template}",
+  "半波偶极": "Half-wave dipole",
+  "反射器约 0.52λ（须比半波长长 3%–5%）、振子约 0.47λ、引向器约 0.44λ": "Reflector about 0.52λ (must be 3%–5% longer than a half wave), driven element about 0.47λ, directors about 0.44λ",
+  "四分之一波长 GP": "Quarter-wave ground plane",
+  "定向高增益，卫星与远距离通联。": "Directional and high gain; for satellites and long-distance contacts.",
+  "总长 143/f(MHz) 米，中点馈电": "Total length 143/f(MHz) metres, fed at the centre",
+  "总长约 3λ/4，短臂 1λ/4": "Total length about 3λ/4, short arm 1λ/4",
+  "振子长 71.5/f(MHz) 米（与 143/f 同源），配 3–4 根地网": "Element length 71.5/f(MHz) metres (same origin as 143/f), with 3–4 radials",
+  "无需地网，适合 2m/70cm。": "No radials needed; suited to 2 m/70 cm.",
+  "最易制作的基础天线，架设水平或倒 V。": "The easiest basic antenna to build; erect it horizontally or as an inverted V.",
+  "金属杆 + 地网": "Metal rod + radials",
+  "铜导线 / 振子管": "Copper wire / element tubing",
+  "铜管或导线": "Copper tubing or wire",
+  "铝管": "Aluminium tubing"
+}

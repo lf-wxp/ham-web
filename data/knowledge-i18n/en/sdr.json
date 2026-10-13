@@ -1,0 +1,19 @@
+{
+  "ADC 直接对射频采样，无需模拟变频，代表高端 SDR。": "The ADC samples RF directly with no analogue conversion — typical of high-end SDR.",
+  "I/Q 两路信号采样，可还原幅度与相位，是 SDR 的核心。": "Sampling two I/Q channels recovers amplitude and phase — the core of SDR.",
+  "Linux/macOS 常用 SDR 接收软件。": "Commonly used SDR receive software on Linux/macOS.",
+  "Software Defined Radio，用软件完成调制解调、滤波等大部分信号处理。": "Software Defined Radio: most signal processing, such as modulation, demodulation and filtering, is done in software.",
+  "Windows 常用，支持多种硬件与插件。": "Common on Windows, supporting many hardware types and plugins.",
+  "Windows 平台最流行的 SDR 接收软件。": "The most popular SDR receive software on Windows.",
+  "全球爱好者架设的在线接收机，覆盖 0–30MHz。": "Online receivers set up by enthusiasts worldwide, covering 0–30 MHz.",
+  "基于 SDR 收发的弱信号数字模式软件（FT8/FT4/JT65）。": "Weak-signal digital mode software (FT8/FT4/JT65) built on SDR transmit and receive.",
+  "基于电视棒芯片的廉价接收机，覆盖约 24MHz–1.7GHz，入门首选。": "An inexpensive receiver based on TV dongle chips, covering about 24 MHz–1.7 GHz; the first choice for beginners.",
+  "实时显示频率-时间-强度的三维视图，直观观察信号。": "A live frequency–time–strength view for observing signals intuitively.",
+  "正交采样": "Quadrature sampling",
+  "直接采样": "Direct sampling",
+  "美国 Half Moon Bay 站点，覆盖范围广。": "The Half Moon Bay site in the USA, with wide coverage.",
+  "荷兰 Twente 大学运营，全球多站点，浏览器直接收听。": "Run by the University of Twente in the Netherlands with sites worldwide; listen directly in a browser.",
+  "跨平台、开源、界面现代的 SDR 软件。": "Cross-platform, open-source SDR software with a modern interface.",
+  "远程电台控制，可操作全球各地接收机。": "Remote station control: operate receivers anywhere in the world.",
+  "频谱瀑布图": "Spectrum waterfall"
+}

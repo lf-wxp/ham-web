@@ -69,17 +69,17 @@ pub(super) fn EntryList(
 
   view! {
     // 日志列表
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <div class="flex items-center justify-between border-b px-4 py-3">
         <h2 class="text-sm font-semibold">
-          {move || t("log.records-3")}
+          {move || t("log.records-heading")}
           <span class="ml-2 text-xs font-normal text-muted-foreground">
             {move || {
               let (n, total) = (filtered.with(|v| v.len()), logbook.with(|l| l.entries.len()));
               if n == total {
                 tp("log.records", total, &[&total.to_string()])
               } else {
-                tp("log.records-2", total as u32, &[&n.to_string(), &total.to_string()])
+                tp("log.records-filtered", total as u32, &[&n.to_string(), &total.to_string()])
               }
             }}
           </span>
@@ -248,7 +248,7 @@ pub(super) fn EntryList(
                             {e.remark.clone()}
                             {tags
                               .into_iter()
-                              .map(|t| view! { <span class="ml-1 inline-block rounded border px-1 text-[10px]">{t}</span> })
+                              .map(|t| view! { <span class="ml-1 inline-block border px-1 text-[10px]">{t}</span> })
                               .collect_view()}
                           </td>
                           <td data-slot="qsl-cell" class=format!("{CELL} whitespace-nowrap")>

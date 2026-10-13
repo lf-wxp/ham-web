@@ -57,7 +57,7 @@ pub(super) fn WireGauge() -> impl IntoView {
           />
         </Field>
       </div>
-      <div class="space-y-1 rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+      <div class="space-y-1 bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
         <div class="tabular-nums">
           {move || {
             let r = copper_resistance_ohm(len.get(), diameter.get());

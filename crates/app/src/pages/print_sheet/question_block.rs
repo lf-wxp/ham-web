@@ -22,7 +22,7 @@ pub(crate) fn QuestionBlock(
         <div class="min-w-0 flex-1">
           <p>
             {q.question.clone()}
-            {q.is_multiple().then(|| view! { <span class="ml-1 text-[11px] text-zinc-500">{move || t("exam.multiple-2")}</span> })}
+            {q.is_multiple().then(|| view! { <span class="ml-1 text-[11px] text-zinc-500">{move || t("exam.multiple-in-parens")}</span> })}
           </p>
           {q.image_url.clone().map(|src| view! { <img src=src alt="题目附图" class="my-2 max-h-48 max-w-full" /> })}
           <ul class="mt-1 grid gap-x-6 gap-y-0.5 sm:grid-cols-2 print:grid-cols-2">
@@ -41,7 +41,7 @@ pub(crate) fn QuestionBlock(
             {inline.then(|| view! { <span class="font-semibold text-zinc-900">{tf("common.answer", &[&(q.answer_keys.join("")).to_string()])}</span> })}
           </div>
           {explain_text.map(|t| view! {
-            <p class="mt-1.5 rounded bg-zinc-100 px-2 py-1 text-[12px] leading-relaxed text-zinc-700">{tf("common.explanation", &[&(t).to_string()])}</p>
+            <p class="mt-1.5 bg-zinc-100 px-2 py-1 text-[12px] leading-relaxed text-zinc-700">{tf("common.explanation", &[&(t).to_string()])}</p>
           })}
         </div>
       </div>

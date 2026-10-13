@@ -54,7 +54,7 @@ pub fn StudyCalendarPage() -> impl IntoView {
       <PageContainer class="space-y-4">
         <StudyPlanCard editable=true />
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.next-14-days-review")}</h2>
           <ul class="divide-y">
             {{
@@ -89,7 +89,7 @@ pub fn StudyCalendarPage() -> impl IntoView {
                       </div>
                       <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                         {is_exam.then(|| view! {
-                          <span class="rounded-full bg-primary px-2 py-0.5 font-medium text-primary-foreground">{move || t("learning.exam-day")}</span>
+                          <span class="bg-primary px-2 py-0.5 font-medium text-primary-foreground">{move || t("learning.exam-day")}</span>
                         })}
                         {(!is_exam && days_left.is_some()).then(|| view! {
                           <span class="text-muted-foreground">
@@ -101,7 +101,7 @@ pub fn StudyCalendarPage() -> impl IntoView {
                           </span>
                         })}
                         {mock.then(|| view! {
-                          <span class="rounded-full border px-2 py-0.5 text-amber-700 dark:text-amber-400">{move || t("learning.mock-exam-suggested")}</span>
+                          <span class="border px-2 py-0.5 text-amber-700 dark:text-amber-400">{move || t("learning.mock-exam-suggested")}</span>
                         })}
                         {checked.then(|| view! {
                           <span class="text-emerald-700 dark:text-emerald-400">{move || t("learning.checked-in")}</span>

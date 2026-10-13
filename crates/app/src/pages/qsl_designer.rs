@@ -325,7 +325,7 @@ pub fn QslDesignerPage() -> impl IntoView {
         <PageContainer>
           <div class="grid gap-4 lg:grid-cols-2">
             // 表单
-            <section class="rounded-xl border bg-card p-4">
+            <section class="pxl-card border bg-card p-4">
               <h2 class="mb-3 text-sm font-semibold">{move || t("log.card-template")}</h2>
               <RadioGroup
                 value=Signal::derive(move || template.get().id().to_owned())
@@ -426,9 +426,9 @@ pub fn QslDesignerPage() -> impl IntoView {
             </section>
 
             // 预览 + 导出 / 打印
-            <section class="rounded-xl border bg-card p-4">
+            <section class="pxl-card border bg-card p-4">
               <h2 class="mb-3 text-sm font-semibold">{move || t("log.preview")}</h2>
-              <div class="overflow-hidden rounded-lg border bg-muted/30 p-2">
+              <div class="overflow-hidden border bg-muted/30 p-2">
                 <img
                   src=move || preview.get()
                   alt=t("log.qsl-card-preview")

@@ -1,0 +1,9 @@
+{
+  "<CALL:4>K1AA<NAME:2>张三<QTH:2>BJ<EOR>": "<CALL:4>K1AA<NAME:5>Zhang<QTH:2>BJ<EOR>",
+  "<CALL:4>K1AA<NAME:6>张三<EOR>": "<CALL:4>K1AA<NAME:5>Zhang<EOR>",
+  "LoTW 确认应独立于纸卡 QSL": "La confirmación LoTW debería ser independiente de la tarjeta QSL en papel",
+  "完整报告不应标记为截断": "Un informe completo no debe marcarse como truncado",
+  "张三": "Zhang San",
+  "缺 `<EOR>` 的报告同样不完整": "Un informe al que falta `<EOR>` es igualmente incompleto",
+  "缺少 `>` 的报告必须标记为被截断": "Un informe al que falta `>` debe marcarse como truncado"
+}

@@ -137,7 +137,7 @@ pub(super) fn WaveSection() -> impl IntoView {
   };
 
   view! {
-    <section id="wave" class="scroll-mt-24 rounded-xl border bg-card">
+    <section id="wave" class="scroll-mt-24 pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.modulated-waveform-and-spectrum")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("tools.the-horizontal-axis-is")}
@@ -284,7 +284,7 @@ pub(super) fn WaveSection() -> impl IntoView {
           />
         </svg>
         <p class=NOTE>
-          {move || tf("tools.the-amber-dashed-line-2", &[&format!("{:.0}", ratio.get())])}
+          {move || tf("tools.amber-dashed-line-carrier", &[&format!("{:.0}", ratio.get())])}
         </p>
       </div>
 
@@ -317,7 +317,7 @@ pub(super) fn WaveSection() -> impl IntoView {
             let pct = |v: f64| format!("{:.1}%", v / p.total * 100.0);
             view! {
               <div class="space-y-2">
-                <div class="flex h-4 overflow-hidden rounded" role="img"
+                <div class="flex h-4 overflow-hidden" role="img"
                   aria-label=move || t("tools.power-split-carrier-and")>
                   <div class="bg-primary" style=format!("width: {}", pct(p.carrier))></div>
                   <div class="bg-emerald-500" style=format!("width: {}", pct(p.sideband_each))></div>

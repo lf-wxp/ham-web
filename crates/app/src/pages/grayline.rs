@@ -48,7 +48,7 @@ pub fn GraylinePage() -> impl IntoView {
         subtitle=Signal::derive(move || t("radio.live-terminator-lf-dx"))
       />
       <PageContainer>
-        <section class="rounded-xl border bg-card p-4">
+        <section class="pxl-card border bg-card p-4">
           <MapView aria_label=Signal::derive(move || t("radio.grayline-map-scroll-to"))>
             <GraylineOverlay now_ms=display_ms />
           </MapView>
@@ -62,7 +62,7 @@ pub fn GraylinePage() -> impl IntoView {
                   view! { <span class="text-muted-foreground">{move || t("radio.current-time")}</span> }.into_any()
                 } else {
                   view! {
-                    <span class="rounded bg-amber-500/15 px-1.5 py-0.5 font-medium text-amber-600">
+                    <span class="bg-amber-500/15 px-1.5 py-0.5 font-medium text-amber-600">
                       {move || {
                         tf(
                           "radio.offset-h",
@@ -120,11 +120,11 @@ pub fn GraylinePage() -> impl IntoView {
           <div class="mt-2 space-y-1.5">
             <Legend
               items=vec![
-                ("h-3 w-3 rounded-sm bg-amber-500/40", "晨昏圈"),
-                ("h-2.5 w-2.5 rounded-full bg-amber-500", "太阳直射点"),
+                ("h-3 w-3 bg-amber-500/40", "晨昏圈"),
+                ("h-2.5 w-2.5 bg-amber-500", "太阳直射点"),
               ]
             />
-            <div class="text-xs text-muted-foreground">{move || t("radio.scroll-pinch-to-zoom-2")}</div>
+            <div class="text-xs text-muted-foreground">{move || t("radio.scroll-pinch-to-zoom-lat-lon")}</div>
           </div>
           <p class="mt-3 text-xs text-muted-foreground">
             {move || t("radio.the-yellow-band-is")}

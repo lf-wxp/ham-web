@@ -158,7 +158,7 @@ fn highlight(text: &str, query: &str) -> String {
       continue;
     }
     result.push_str(&escape_html(&text[last..s]));
-    result.push_str("<mark class=\"rounded-sm bg-primary/20 px-0.5 text-primary\">");
+    result.push_str("<mark class=\" bg-primary/20 px-0.5 text-primary\">");
     result.push_str(&escape_html(&text[s..e]));
     result.push_str("</mark>");
     last = e;
@@ -298,7 +298,7 @@ mod tests {
     assert_eq!(highlight("a<b", "zzz"), "a&lt;b");
     assert_eq!(
       highlight("a<b", "a"),
-      "<mark class=\"rounded-sm bg-primary/20 px-0.5 text-primary\">a</mark>&lt;b"
+      "<mark class=\" bg-primary/20 px-0.5 text-primary\">a</mark>&lt;b"
     );
   }
 
@@ -468,7 +468,7 @@ pub fn SearchDialog() -> impl IntoView {
                                 <li>
                                   <a
                                     href=href
-                                    class="block rounded-md px-3 py-2 transition-colors hover:bg-accent"
+                                    class="block px-3 py-2 transition-colors hover:bg-accent"
                                     on:click=move |_| open.set(false)
                                   >
                                     <div class="text-sm font-medium" inner_html=highlight(&title, &kw)></div>

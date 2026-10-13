@@ -67,14 +67,14 @@ pub(super) fn BandQuiz() -> impl IntoView {
   };
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">
         {move || t("knowledge.frequency-band-conversion")}
         <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("knowledge.which-band-does-this")}</span>
       </h2>
       <div class="space-y-4 p-4">
-        <div class="flex flex-col items-center gap-2 rounded-xl border bg-muted/30 px-4 py-6">
-          <div class="text-xs text-muted-foreground">{move || t("knowledge.which-band-does-this-2")}</div>
+        <div class="flex flex-col items-center gap-2 border bg-muted/30 px-4 py-6">
+          <div class="text-xs text-muted-foreground">{move || t("knowledge.which-band-question")}</div>
           <div class="font-mono text-3xl font-semibold text-primary">{move || question.get()}</div>
         </div>
         <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -109,7 +109,7 @@ pub(super) fn BandQuiz() -> impl IntoView {
                 } else {
                   view! {
                     <span class="font-medium text-red-600 dark:text-red-400">
-                      {move || t("exam.correct-answer-2")} <span class="font-mono font-semibold">{answer.get_value()}</span>
+                      {move || t("exam.correct-answer-prefix")} <span class="font-mono font-semibold">{answer.get_value()}</span>
                     </span>
                   }
                   .into_any()

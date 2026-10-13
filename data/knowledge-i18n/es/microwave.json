@@ -1,0 +1,17 @@
+{
+  "1.2cm 波段": "Banda de 1,2 cm",
+  "3cm 波段": "Banda de 3 cm",
+  "6mm 波段": "Banda de 6 mm",
+  "先对准再发射，用对方信标或场强仪辅助对准。": "Apunte primero y después emita: ayúdese de la baliza contraria o de un medidor de campo.",
+  "对准": "Alineación",
+  "微波多用于本地竞赛与实验，注意功率与安全。": "Las microondas se usan sobre todo en concursos y experimentos locales; cuide la potencia y la seguridad.",
+  "微波段馈线损耗大，常用波导代替同轴电缆。": "Las pérdidas de la línea son altas en microondas, por lo que se usa guía de ondas en lugar de coaxial.",
+  "抛物面天线": "Antena parabólica",
+  "最活跃的业余微波段，抛物面天线为主。": "La banda de microondas de radioaficionados más activa, con antenas parabólicas.",
+  "毫米波，带宽大，距离受限。": "Onda milimétrica: gran ancho de banda pero alcance limitado.",
+  "波导": "Guía de ondas",
+  "波束极窄，需精确对准对方方向，通常配合信标与功率计。": "El haz es muy estrecho: hay que apuntar con precisión, normalmente con baliza y medidor de potencia.",
+  "用抛物面反射器聚焦电波，增益高、波束窄，微波通信核心。": "Un reflector parabólico enfoca las ondas, con alta ganancia y haz estrecho: el núcleo de las comunicaciones por microondas.",
+  "短距离（数十 km）用小型抛物面即可，长距离需更大口径。": "Para distancias cortas (decenas de km) basta una parabólica pequeña; para largas hace falta más apertura.",
+  "窄波束，适合点对点与比赛。": "Haces estrechos, adecuados para enlaces punto a punto y concursos."
+}

@@ -76,7 +76,7 @@ pub fn MeasurementLabPage() -> impl IntoView {
 
       <PageContainer>
         // ── 演示 A：馈线掩盖 ──────────────────────────────────
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">
             {move || t("measurement.swr-demo-title")}
           </h2>
@@ -159,7 +159,7 @@ pub fn MeasurementLabPage() -> impl IntoView {
         </section>
 
         // ── 演示 B：SOLT 校准分步 ─────────────────────────────
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">
             {move || t("measurement.solt-title")}
           </h2>
@@ -186,7 +186,7 @@ pub fn MeasurementLabPage() -> impl IntoView {
                 })
                 .collect_view()}
             </ChipGroup>
-            <div class="mt-3 rounded-lg bg-muted/50 px-3 py-2">
+            <div class="mt-3 bg-muted/50 px-3 py-2">
               {move || {
                 let (title, desc) = solt_step_text(solt_step.get());
                 view! {
@@ -211,7 +211,7 @@ pub fn MeasurementLabPage() -> impl IntoView {
 
         // ── 读数陷阱速查 ──────────────────────────────────────
         // 标题是界面文案（t），条目是知识内容（kt）：两类词典不同，不能混用 ConceptsSection 的 ui 开关。
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">
             {move || t("measurement.pitfalls-title")}
           </h2>
@@ -222,7 +222,7 @@ pub fn MeasurementLabPage() -> impl IntoView {
                 let title = *title;
                 let desc = *desc;
                 view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2">
+                  <div class="flex flex-col gap-1 px-3 py-2">
                     <span class="text-sm font-medium">{move || text(title)}</span>
                     <span class="text-sm text-muted-foreground">{move || text(desc)}</span>
                   </div>

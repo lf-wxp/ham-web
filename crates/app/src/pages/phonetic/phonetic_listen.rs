@@ -54,13 +54,13 @@ pub(super) fn PhoneticListen() -> impl IntoView {
   };
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">
         {move || t("morse.listen-to-the-spelling")}
         <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.play-the-word-and")}</span>
       </h2>
       <div class="space-y-4 p-4">
-        <div class="flex flex-col items-center gap-2 rounded-xl border bg-muted/30 px-4 py-6">
+        <div class="flex flex-col items-center gap-2 border bg-muted/30 px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("morse.tap-to-play-a")}</div>
           <Button on_click=Callback::new(move |_| play())>
             {move || t("morse.play-word")}
@@ -98,7 +98,7 @@ pub(super) fn PhoneticListen() -> impl IntoView {
                 } else {
                   view! {
                     <span class="font-medium text-red-600 dark:text-red-400">
-                      {move || t("exam.correct-answer-2")} <span class="font-mono font-semibold">{answer.get_value()}</span>
+                      {move || t("exam.correct-answer-prefix")} <span class="font-mono font-semibold">{answer.get_value()}</span>
                     </span>
                   }
                   .into_any()
@@ -110,8 +110,8 @@ pub(super) fn PhoneticListen() -> impl IntoView {
             {move || t("exam.next")}
           </Button>
           <div class="text-xs text-muted-foreground">
-            {move || t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
-            {move || t("common.wrong-2")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
+            {move || t("common.correct-label")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
+            {move || t("common.wrong-label")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
           </div>
         </div>
       </div>

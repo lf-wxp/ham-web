@@ -1,0 +1,13 @@
+{
+  "ATV 占用数 MHz 宽带，DATV 用压缩编码大幅降低码率。": "La ATV ocupa varios MHz; la DATV usa codificación con compresión para reducir mucho la tasa binaria.",
+  "ATV 带宽大，需确认操作证允许的频段与发射类别。": "La ATV es ancha: confirme las bandas y clases de emisión permitidas por su licencia.",
+  "Amateur Television，业余电视，快速扫描传送运动图像。": "Amateur Television: transmisión de imágenes en movimiento por barrido rápido.",
+  "DATV 常用软件（如 DATV Express）配合 SDR 或专用调制器。": "La DATV suele usar software (como DATV Express) con un SDR o un modulador específico.",
+  "Digital Amateur Television，基于 DVB-S / DVB-T 的数字电视。": "Digital Amateur Television: televisión digital basada en DVB-S / DVB-T.",
+  "Slow-Scan Television，慢扫描静止图像（话音带宽内）。": "Slow-Scan Television: imágenes fijas de barrido lento (dentro del ancho de banda de voz).",
+  "国际空间站不定期开展 SSTV 活动，是入门图像接收的好机会。": "La ISS realiza actividades SSTV periódicamente: una buena oportunidad para empezar a recibir imágenes.",
+  "带宽": "Ancho de banda",
+  "常用 UHF（如 430 / 1200MHz）及以上微波频段。": "Normalmente UHF (p. ej. 430 / 1200 MHz) y bandas de microondas superiores.",
+  "电视信号对失真与干扰敏感，注意功放线性与馈线质量。": "Las señales de televisión son sensibles a la distorsión y las interferencias: cuide la linealidad del amplificador y la calidad de la línea.",
+  "频段": "Bandas"
+}

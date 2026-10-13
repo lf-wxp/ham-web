@@ -14,7 +14,7 @@ pub(crate) fn SignalBars() -> impl IntoView {
                 .map(|i| {
                   view! {
                     <span
-                      class="w-0.5 animate-pulse rounded-full bg-primary"
+                      class="w-0.5 animate-pulse bg-primary"
                       style=format!("height: {}px; animation-delay: {}ms", 8 + i * 4, i * 90)
                     ></span>
                   }

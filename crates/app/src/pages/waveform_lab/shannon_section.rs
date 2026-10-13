@@ -62,7 +62,7 @@ pub(super) fn ShannonSection() -> impl IntoView {
   let marker = move || (axes.px(snr.get()), axes.py(se().min(SE_MAX)));
 
   view! {
-    <section id="shannon" class="scroll-mt-24 rounded-xl border bg-card">
+    <section id="shannon" class="scroll-mt-24 pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.shannon-capacity-sandbox")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("tools.shannon-s-formula-c")}
@@ -82,7 +82,7 @@ pub(super) fn ShannonSection() -> impl IntoView {
           />
         </div>
         <div class="flex flex-col gap-2">
-          <span class=NOTE>{move || t("tools.signal-to-noise-ratio-3")}</span>
+          <span class=NOTE>{move || t("tools.signal-to-noise-ratio-s-n-db")}</span>
           <Slider
             value=Signal::derive(move || snr.get())
             on_change=Callback::new(move |v: f64| snr.set(v))

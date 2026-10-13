@@ -143,7 +143,7 @@ pub fn QslLabelsPage() -> impl IntoView {
             style:width=format!("{w}mm")
             style:height=format!("{h}mm")
             data-slot="label-page"
-            aria-label=tf("log.page-2", &[&(p + 1).to_string()])
+            aria-label=tf("log.page-number", &[&(p + 1).to_string()])
           >
             {slots.into_iter().enumerate().map(|(slot, idx)| {
               let (x, y) = l.origin(slot);
@@ -153,7 +153,7 @@ pub fn QslLabelsPage() -> impl IntoView {
               view! {
                 <div
                   data-slot="label-slot"
-                  class=if idx.is_some() { "absolute rounded-[2mm] border border-dashed border-zinc-300 print:border-transparent" } else { "absolute rounded-[2mm] border border-dashed border-zinc-200 bg-zinc-50 print:border-transparent print:bg-transparent" }
+                  class=if idx.is_some() { "absolute border border-dashed border-zinc-300 print:border-transparent" } else { "absolute border border-dashed border-zinc-200 bg-zinc-50 print:border-transparent print:bg-transparent" }
                   style:left=format!("{x}mm")
                   style:top=format!("{y}mm")
                   style:width=format!("{}mm", l.width)

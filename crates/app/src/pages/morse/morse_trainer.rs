@@ -270,7 +270,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
   });
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">
         {move || t("morse.decoding-practice")}
         <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.space-to-replay-next")}</span>
@@ -401,7 +401,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
         </div>
 
         // 题目区
-        <div class="flex flex-col items-center gap-3 rounded-xl border bg-muted/30 px-4 py-8">
+        <div class="flex flex-col items-center gap-3 border bg-muted/30 px-4 py-8">
           {move || {
             let question = current.get();
             if mode.get() == Mode::Read {
@@ -435,7 +435,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                 <button
                   type="button"
                   on:click=move |_| play_current()
-                  class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border bg-card px-3 py-1 text-xs transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                  class="inline-flex items-center gap-1.5 whitespace-nowrap border bg-card px-3 py-1 text-xs transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                 >
                   <Icon kind=IconKind::Volume2 class="h-3.5 w-3.5" />
                   {move || t("exam.preview")}
@@ -453,12 +453,12 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                   type="button"
                   aria-label=move || t("morse.play")
                   on:click=move |_| play_current()
-                  class="relative flex size-20 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 ease-out hover:scale-105 hover:shadow-xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95"
+                  class="relative flex size-20 items-center justify-center bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 ease-out hover:scale-105 hover:shadow-xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95"
                 >
                   {move || {
                     playing.get().then(|| {
                       view! {
-                        <span class="absolute inset-0 rounded-full bg-primary/40 animate-ping [animation-duration:1.4s]"></span>
+                        <span class="absolute inset-0 bg-primary/40 animate-ping [animation-duration:1.4s]"></span>
                       }
                     })
                   }}
@@ -494,7 +494,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                         <button
                           type="button"
                           on:click=move |_| submit_guess(text.clone())
-                          class="inline-flex min-h-10 items-center justify-center rounded-lg border bg-card px-3 py-2 font-mono text-sm font-semibold uppercase tracking-wide transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                          class="inline-flex min-h-10 items-center justify-center pxl-card border bg-card px-3 py-2 font-mono text-sm font-semibold uppercase tracking-wide transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                         >
                           {text.clone()}
                         </button>
@@ -505,12 +505,12 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                 <div class="flex flex-wrap items-center justify-center gap-2">
                   <Button
                     variant=Variant::Outline
-                    class="rounded-lg h-10"
+                    class="h-10"
                     on_click=Callback::new(move |_| load_next())
                   >{move || t("exam.skip")}</Button>
                   <Button
                     variant=Variant::Outline
-                    class="rounded-lg h-10"
+                    class="h-10"
                     on_click=Callback::new(move |_| load_next())
                   >{move || t("exam.next")}</Button>
                 </div>
@@ -541,24 +541,24 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                   />
                   <Button
                     kind=ButtonKind::Submit
-                    class="rounded-lg h-10"
+                    class="h-10"
                     disabled=Signal::derive(move || answer.get().trim().is_empty())
                   >
                     {move || t("learning.submit")}
                   </Button>
                   <Button
                     variant=Variant::Outline
-                    class="rounded-lg h-10"
+                    class="h-10"
                     on_click=Callback::new(move |_| hint())
                   >{move || t("exam.notice")}</Button>
                   <Button
                     variant=Variant::Outline
-                    class="rounded-lg h-10"
+                    class="h-10"
                     on_click=Callback::new(move |_| load_next())
                   >{move || t("exam.skip")}</Button>
                   <Button
                     variant=Variant::Outline
-                    class="rounded-lg h-10"
+                    class="h-10"
                     on_click=Callback::new(move |_| load_next())
                   >{move || t("exam.next")}</Button>
                 </form>

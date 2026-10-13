@@ -1,0 +1,15 @@
+{
+  "{top} 无分类码": "{top} has no category code",
+  "传播": "Propagation",
+  "基础": "Fundamentals",
+  "天线": "Antennas",
+  "安全": "Safety",
+  "操作": "Operating",
+  "未知分类 {top}（{route}）": "Unknown category {top} ({route})",
+  "法规": "Regulations",
+  "用语": "Terminology",
+  "设备": "Equipment",
+  "调制": "Modulation",
+  "重复路由 {route}": "Duplicate route {route}",
+  "频率": "Frequency"
+}

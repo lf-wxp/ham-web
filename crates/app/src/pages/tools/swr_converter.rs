@@ -16,7 +16,7 @@ pub(super) fn SwrConverter() -> impl IntoView {
 
   view! {
     <div class="grid gap-3 sm:grid-cols-2">
-      <Field label=Signal::derive(move || t("tools.swr-2")) r#for=swr_id.clone()>
+      <Field label=Signal::derive(move || t("tools.swr-label")) r#for=swr_id.clone()>
         <NumberField
           id=swr_id
           value=Signal::derive(move || swr.get().to_string())

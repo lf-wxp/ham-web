@@ -20,7 +20,7 @@ pub fn PracticalAntennasPage() -> impl IntoView {
       <ConceptsSection title="核心概念" items=PRACTICAL_ANTENNAS_CONCEPTS />
       // 对比表比通用三列表格多一列「求解器模型」：能建模的方案直接跳到 `/nec`，
       // 不能的（小环、Beverage、K9AY）如实写「暂无可用模型」而不是硬凑一个。
-      <section class="rounded-xl border bg-card">
+      <section class="pxl-card border bg-card">
         <h2 class="border-b px-4 py-3 text-sm font-semibold">
           {move || t("knowledge.antenna-comparison")}
         </h2>

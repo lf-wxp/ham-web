@@ -430,7 +430,7 @@ pub fn GearPage() -> impl IntoView {
         min_width=720
       />
 
-      <section class="rounded-xl border bg-card">
+      <section class="pxl-card border bg-card">
         <h2 class="border-b px-4 py-3 text-sm font-semibold">
           {move || t("knowledge.spec-comparison")}
         </h2>
@@ -571,7 +571,7 @@ pub fn GearPage() -> impl IntoView {
                     .map(|g| {
                       let gear_id = g.id;
                       view! {
-                      <div class="rounded-lg border p-3">
+                      <div class="border p-3">
                         <div class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
                           <span class="text-xs font-medium">
                             {format!("{} {}", g.brand, g.model)}

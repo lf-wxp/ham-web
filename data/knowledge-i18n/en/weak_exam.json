@@ -1,0 +1,11 @@
+{
+  "会但慢应加权 1.5，实际 {}": "Known but slow should be weighted 1.5, actual {}",
+  "全对且做过": "All correct and already practised",
+  "全对分类但在错题本：1 × 3": "A category all correct but in the mistake book: 1 × 3",
+  "全错的分类：1 + 3 × 1": "A category with all wrong: 1 + 3 × 1",
+  "加权后绝大多数单选来自高权重题：{heavy}": "After weighting, most single-choice questions come from high-weight ones: {heavy}",
+  "已掌握知识点：1 + 3 × 0": "Mastered knowledge point: 1 + 3 × 0",
+  "薄弱知识点应加权更高：weak={} strong={}": "Weak knowledge points should be weighted higher: weak={} strong={}",
+  "薄弱知识点：1 + 3 × 1": "Weak knowledge point: 1 + 3 × 1",
+  "题目 {n}": "Question {n}"
+}

@@ -129,7 +129,7 @@ pub(super) fn EntryForm(
 
   view! {
     // 新增记录表单
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">
         {move || if editing.get().is_some() { t("log.edit-qso") } else { t("log.add-qso") }}
       </h2>
@@ -218,14 +218,14 @@ pub(super) fn EntryForm(
               },
             );
             view! {
-              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-muted/40 px-3 py-2 text-xs sm:col-span-2 lg:col-span-3">
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 bg-muted/40 px-3 py-2 text-xs sm:col-span-2 lg:col-span-3">
                 <span class="text-muted-foreground">{entity}</span>
                 {path.map(|p| view! {
                   <span class="tabular-nums text-muted-foreground" title=if p.approximate { t("log.no-grid-given-estimated") } else { t("log.computed-from-both-grids") }>
                     {tf(
                       "log.km-bearing",
                       &[
-                        &if p.approximate { t("log.entry-2") } else { String::new() },
+                        &if p.approximate { t("log.entry-approximate") } else { String::new() },
                         &format!("{:.0}", p.km),
                         &format!("{:.0}", p.bearing),
                         &t(compass(p.bearing)),
@@ -234,13 +234,13 @@ pub(super) fn EntryForm(
                   </span>
                 })}
                 {h.new_dxcc.then(|| view! {
-                  <span class="rounded-full bg-emerald-500/15 px-2 py-0.5 font-medium text-emerald-700 dark:text-emerald-300">{move || t("log.new-dxcc")}</span>
+                  <span class="bg-emerald-500/15 px-2 py-0.5 font-medium text-emerald-700 dark:text-emerald-300">{move || t("log.new-dxcc")}</span>
                 })}
                 {h.new_band.then(|| view! {
-                  <span class="rounded-full bg-sky-500/15 px-2 py-0.5 font-medium text-sky-700 dark:text-sky-300">{move || t("log.new-band-for-this")}</span>
+                  <span class="bg-sky-500/15 px-2 py-0.5 font-medium text-sky-700 dark:text-sky-300">{move || t("log.new-band-for-this")}</span>
                 })}
                 {h.dupe.then(|| view! {
-                  <span class="rounded-full bg-amber-500/15 px-2 py-0.5 font-medium text-amber-700 dark:text-amber-300">{move || t("log.dupe-already-worked-on")}</span>
+                  <span class="bg-amber-500/15 px-2 py-0.5 font-medium text-amber-700 dark:text-amber-300">{move || t("log.dupe-already-worked-on")}</span>
                 })}
                 <span class="text-muted-foreground">
                   {match (h.worked, h.last.clone()) {

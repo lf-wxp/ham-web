@@ -20,7 +20,7 @@ pub fn GridSystemPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.grid-levels")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[560px] border-collapse text-sm">
@@ -49,8 +49,8 @@ pub fn GridSystemPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.notes-2")}</h2>
+        <section class="pxl-card border bg-card">
+          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.notes-heading")}</h2>
           <ul class="space-y-2 p-4">
             {GRID_NOTES
               .iter()

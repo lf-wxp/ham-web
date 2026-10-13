@@ -55,7 +55,7 @@ pub fn MorsePage() -> impl IntoView {
           <Stat label=t("morse.total-characters") value=LETTERS.len() + DIGITS.len() + PUNCTUATION.len() />
         </div>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
             <div class="flex items-center gap-2">
               <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("morse.tone")}</span>
@@ -72,7 +72,7 @@ pub fn MorsePage() -> impl IntoView {
               <span class="w-14 text-xs tabular-nums text-muted-foreground">{move || format!("{} Hz", settings.settings.get().tone_hz)}</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("morse.volume-2")}</span>
+              <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("morse.volume-label")}</span>
               <Slider
                 value=Signal::derive(move || (f64::from(settings.settings.get().volume) * 100.0).round())
                 on_change=Callback::new(move |v: f64| settings.set_volume(v as f32 / 100.0))
@@ -145,7 +145,7 @@ pub fn MorsePage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">
             {move || t("morse.cw-prosigns")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.sent-as-a-whole")}</span>
@@ -160,7 +160,7 @@ pub fn MorsePage() -> impl IntoView {
                     on:click=move |_| {
                       play_morse_timed_with(code, farnsworth(20.0, 20.0), settings.tone_hz(), settings.volume());
                     }
-                    class="group rounded-lg border bg-muted/40 p-3 text-center transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent/60 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                    class="group border bg-muted/40 p-3 text-center transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent/60 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                     title=tf("common.preview", &[(label)])
                   >
                     <div class="text-lg font-semibold tabular-nums">{label}</div>
@@ -175,7 +175,7 @@ pub fn MorsePage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("morse.signal-timing-standard")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("morse.based-on-one-dot")}</p>
           <div class="grid grid-cols-2 gap-3 p-4 sm:grid-cols-5">
@@ -183,7 +183,7 @@ pub fn MorsePage() -> impl IntoView {
               .iter()
               .map(|&(k, v)| {
                 view! {
-                  <div class="rounded-lg border bg-muted/40 p-3 text-center">
+                  <div class="border bg-muted/40 p-3 text-center">
                     <div class="text-xl font-semibold tabular-nums">{v}</div>
                     <div class="mt-1 text-xs text-muted-foreground">{k}</div>
                   </div>

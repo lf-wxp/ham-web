@@ -60,10 +60,10 @@ pub(super) fn RstQuiz() -> impl IntoView {
   };
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.rst-quiz")}</h2>
       <div class="space-y-4 p-4">
-        <div class="flex flex-col items-center gap-2 rounded-xl border bg-muted/30 px-4 py-6">
+        <div class="flex flex-col items-center gap-2 border bg-muted/30 px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("knowledge.what-does-this-signal")}</div>
           <div class="font-mono text-3xl font-semibold text-primary">{move || question.get()}</div>
         </div>
@@ -99,7 +99,7 @@ pub(super) fn RstQuiz() -> impl IntoView {
                 } else {
                   view! {
                     <span class="font-medium text-red-600 dark:text-red-400">
-                      {move || t("exam.correct-answer-2")} {answer.get_value()}
+                      {move || t("exam.correct-answer-prefix")} {answer.get_value()}
                     </span>
                   }
                   .into_any()
@@ -111,8 +111,8 @@ pub(super) fn RstQuiz() -> impl IntoView {
             {move || t("exam.next")}
           </Button>
           <div class="text-xs text-muted-foreground">
-            {move || t("common.correct-3")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
-            {move || t("common.wrong-2")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
+            {move || t("common.correct-label")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
+            {move || t("common.wrong-label")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
           </div>
         </div>
       </div>

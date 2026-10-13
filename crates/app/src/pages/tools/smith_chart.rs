@@ -49,7 +49,7 @@ pub(super) fn SmithChart() -> impl IntoView {
   view! {
     <div class="grid gap-4 sm:grid-cols-2">
       <div class="flex flex-col gap-3">
-        <Field label=Signal::derive(move || t("tools.resistance-r-2")) r#for=r_id.clone()>
+        <Field label=Signal::derive(move || t("tools.resistance-r-label")) r#for=r_id.clone()>
           <NumberField
             id=r_id
             value=Signal::derive(move || r_ohm.get().to_string())

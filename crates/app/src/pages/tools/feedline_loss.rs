@@ -67,7 +67,7 @@ pub(super) fn FeedlineLoss() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class="sm:col-span-3 rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
+      <div class="sm:col-span-3 bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let d = db();
           let power_pct = (1.0 - 10f64.powf(-d / 10.0)) * 100.0;

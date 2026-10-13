@@ -9,7 +9,7 @@
   "log.dxcc-entities": "DXCC entities",
   "log.sporadic-e-es": "Sporadic E ES",
   "log.iota-island-groups": "IOTA Island Groups",
-  "log.iota-island-groups-2": "IOTA (Island Groups)",
+  "log.iota-award-label": "IOTA (Island Groups)",
   "log.itu-zone-blank-auto": "ITU zone (blank = auto)",
   "log.lotw-uploaded": "LoTW uploaded",
   "log.lotw-confirmed": "LoTW confirmed",
@@ -49,7 +49,7 @@
   "log.vucc-satellite": "VUCC satellite",
   "log.wac-six-continents": "WAC (six continents)",
   "log.was-us-states": "WAS US States",
-  "log.was-us-states-2": "WAS (US States)",
+  "log.was-award-label": "WAS (US States)",
   "log.waz-cq-zones": "WAZ (CQ zones)",
   "log.wpx-prefix-award": "WPX Prefix Award",
   "log.eqsl-sent": "eQSL sent",
@@ -130,8 +130,14 @@
   "log.same-as-callsign": "Same as callsign",
   "log.sync-qsl": "Sync QSL",
   "log.mark-lotw-uploaded": "Mark as uploaded to LoTW ({})",
-  "log.mark-these-qsos-as-uploaded": "Mark these {} QSOs as uploaded to LoTW? Do this only after LoTW confirms the upload.",
-  "log.marked-as-uploaded-lotw": "Marked {} QSOs as uploaded to LoTW. When the LoTW report arrives, bring the confirmations back with Sync QSL.",
+  "log.mark-these-qsos-as-uploaded": {
+    "one": "Mark this {} QSO as uploaded to LoTW? Do this only after LoTW confirms the upload.",
+    "other": "Mark these {} QSOs as uploaded to LoTW? Do this only after LoTW confirms the upload."
+  },
+  "log.marked-as-uploaded-lotw": {
+    "one": "Marked {} QSO as uploaded to LoTW. When the LoTW report arrives, bring the confirmations back with Sync QSL.",
+    "other": "Marked {} QSOs as uploaded to LoTW. When the LoTW report arrives, bring the confirmations back with Sync QSL."
+  },
   "log.no-report-yet-sign": "No report yet? Sign and upload with TQSL first, then download it from LoTW.",
   "log.lotw-upload-guide": "TQSL signing and upload steps",
   "log.lotw-upload-steps": "LoTW signing and upload flow",
@@ -201,7 +207,7 @@
   "log.name-grid-qth-filled": "Name / grid / QTH filled automatically",
   "log.achieved": "Achieved",
   "log.worked": "Worked",
-  "log.worked-2": {
+  "log.worked-count": {
     "one": "{} worked",
     "other": "{} worked"
   },
@@ -267,7 +273,7 @@
   "log.station-callsign": "Station callsign",
   "log.bearing-distance-km": "Bearing {}° · distance {} km",
   "log.station-grid": "Station grid",
-  "log.station-grid-2": "Station grid {}",
+  "log.station-grid-with-locator": "Station grid {}",
   "log.organisation": "Organisation",
   "log.aurora-aur": "Aurora AUR",
   "log.look-up": "Look up",
@@ -303,20 +309,20 @@
   "log.rarity-concepts": "Rarity concepts",
   "log.contest-log-generator": "Contest log generator",
   "log.page": "Page {} / {}",
-  "log.page-2": "Page {}",
-  "log.records-2": {
+  "log.page-number": "Page {}",
+  "log.records-filtered": {
     "one": "{} / {} record",
     "other": "{} / {} records"
   },
   "log.abbreviation": "Abbreviation",
   "log.paste-an-adif-confirmation": "Paste a confirmation report (ADIF) from LoTW / eQSL / Club Log / QRZ, review the diff and decide row by row; nothing changes until you apply it.",
-  "log.entry-2": "~",
+  "log.entry-approximate": "~",
   "log.end-time-utc": "End time (UTC)",
   "log.edit": "Edit",
   "log.edit-qso": "Edit QSO",
   "log.zoom-out": "Zoom out",
   "log.grid": "Grid",
-  "log.grid-2": "Grid {}",
+  "log.grid-with-locator": "Grid {}",
   "log.grid-qsos": {
     "one": "Grid {} · {} QSO",
     "other": "Grid {} · {} QSOs"
@@ -331,7 +337,7 @@
   "log.nw": "NW",
   "log.sw": "SW",
   "log.scoring": "Scoring",
-  "log.records-3": "Records",
+  "log.records-heading": "Records",
   "log.rig": "Rig",
   "log.new-band-for-this": "New band for this entity",
   "log.cannot-resolve-this-point": "Cannot resolve this point to a grid",
@@ -404,7 +410,10 @@
   "log.qso-station": "Station",
   "log.station-active": "Active station",
   "log.station-add": "Add station",
-  "log.station-entry-count": "{} QSOs under the active station",
+  "log.station-entry-count": {
+    "one": "{} QSO under the active station",
+    "other": "{} QSOs under the active station"
+  },
   "log.station-book": "Station profiles",
   "log.station-keep-at-least-one": "Keep at least one station profile.",
   "log.station-name": "Profile name",
@@ -414,7 +423,10 @@
   "log.stats-scope": "Statistics scope",
   "log.stats-scope-by-operator": "By operator",
   "log.stats-scope-by-station": "By station",
-  "log.stats-scope-count": "{} QSOs in this scope",
+  "log.stats-scope-count": {
+    "one": "{} QSO in this scope",
+    "other": "{} QSOs in this scope"
+  },
   "log.tqsl-copy": "Copy these",
   "log.tqsl-from-entity": "Entity's primary zone",
   "log.tqsl-from-prefix": "Inferred from the callsign prefix",

@@ -82,7 +82,7 @@ pub fn EventsPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">
             {move || t("knowledge.events-all-year-sorted")}
           </h2>
@@ -101,7 +101,7 @@ pub fn EventsPage() -> impl IntoView {
                     <div class="min-w-0">
                       <div class="flex flex-wrap items-baseline gap-x-2">
                         <span class="font-medium">{move || t(ev.name)}</span>
-                        <span class="rounded-full border bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
+                        <span class="border bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
                           {move || t(ev.kind)}
                         </span>
                       </div>
@@ -156,7 +156,7 @@ pub fn EventsPage() -> impl IntoView {
           </p>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">
             {move || t("knowledge.track-dx-expeditions-and")}
           </h2>
@@ -167,7 +167,7 @@ pub fn EventsPage() -> impl IntoView {
                 view! {
                   <a
                     href=*href
-                    class="flex flex-col gap-0.5 rounded-lg border px-3 py-2 transition-colors hover:bg-accent"
+                    class="flex flex-col gap-0.5 border px-3 py-2 transition-colors hover:bg-accent"
                   >
                     <span class="text-sm font-medium">{move || t(name)}</span>
                     <span class="text-xs text-muted-foreground">{move || t(desc)}</span>

@@ -44,7 +44,7 @@ pub fn BeaconsPage() -> impl IntoView {
       />
       <PageContainer>
         // 当前时隙：正在发射的信标台。
-        <section class="rounded-xl border bg-card p-4">
+        <section class="pxl-card border bg-card p-4">
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
             <div class="font-mono text-2xl font-semibold tabular-nums">{move || clock.get()}</div>
             {move || {
@@ -62,9 +62,9 @@ pub fn BeaconsPage() -> impl IntoView {
                       {tf("knowledge.about-s-left-for", &[&remaining.to_string()])}
                     </div>
                   </div>
-                  <div class="h-2 w-24 overflow-hidden rounded-full bg-muted">
+                  <div class="h-2 w-24 overflow-hidden bg-muted">
                     <div
-                      class="h-full rounded-full bg-primary transition-all"
+                      class="h-full bg-primary transition-all"
                       style=format!("width: {pct}%")
                     ></div>
                   </div>
@@ -75,7 +75,7 @@ pub fn BeaconsPage() -> impl IntoView {
         </section>
 
         // 信标台列表。
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.beacons-in-polling-order")}</h2>
           <div class="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3">
             {BEACONS
@@ -84,9 +84,9 @@ pub fn BeaconsPage() -> impl IntoView {
               .map(|(i, &(call, loc, region))| {
                 view! {
                   <div class=move || if i == slot.get().0 {
-                    "rounded-lg border border-primary bg-primary/5 px-3 py-2"
+                    "border border-primary bg-primary/5 px-3 py-2"
                   } else {
-                    "rounded-lg border px-3 py-2"
+                    "border px-3 py-2"
                   }>
                     <div class="flex items-center gap-2">
                       <span class="font-mono text-xs text-muted-foreground">{format!("{:02}", i + 1)}</span>
@@ -101,14 +101,14 @@ pub fn BeaconsPage() -> impl IntoView {
         </section>
 
         // 信标频率。
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.beacon-frequency")}</h2>
           <div class="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-5">
             {BEACON_BANDS
               .iter()
               .map(|&(band, freq)| {
                 view! {
-                  <div class="rounded-lg border px-3 py-2 text-center">
+                  <div class="border px-3 py-2 text-center">
                     <div class="text-xs text-muted-foreground">{band}</div>
                     <div class="font-mono text-sm font-semibold tabular-nums">{format!("{freq:.3} MHz")}</div>
                   </div>
@@ -119,7 +119,7 @@ pub fn BeaconsPage() -> impl IntoView {
         </section>
 
         // 信号格式。
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.signal-format")}</h2>
           <div class="space-y-3 p-4">
             <p class="text-sm text-muted-foreground">
@@ -130,7 +130,7 @@ pub fn BeaconsPage() -> impl IntoView {
                 .iter()
                 .map(|&(label, pwr)| {
                   view! {
-                    <span class="rounded-md bg-muted/60 px-2 py-1 text-xs tabular-nums">
+                    <span class="bg-muted/60 px-2 py-1 text-xs tabular-nums">
                       {tf("common.watt-value", &[label, &format!("{pwr}")])}
                     </span>
                   }
@@ -144,7 +144,7 @@ pub fn BeaconsPage() -> impl IntoView {
         </section>
 
         // 使用说明。
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.how-to-read-it")}</h2>
           <ul class="space-y-2 p-4">
             <li class="flex gap-2 text-sm text-muted-foreground">

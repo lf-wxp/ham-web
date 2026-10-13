@@ -1,0 +1,14 @@
+{
+  "1 初测": "1. Medición inicial",
+  "2 判断": "2. Diagnosticar",
+  "3 修剪": "3. Ajustar longitud",
+  "4 验证": "4. Verificar",
+  "修剪留有余量，宁长勿短（加长比截短容易）。": "Deje margen al recortar: mejor largo que corto (alargar es más fácil que cortar).",
+  "测量时天线置于最终架设高度与位置，避免环境影响误判。": "Mida con la antena en su altura y posición definitivas para que el entorno no engañe.",
+  "用天线分析仪扫频，找到谐振点与驻波最低频率。": "Barra con un analizador de antenas para hallar la resonancia y la frecuencia de ROE mínima.",
+  "确认目标频率驻波比 < 2（理想 < 1.5），带宽满足需要。": "Confirme ROE < 2 en la frecuencia deseada (idealmente < 1,5) y que el ancho de banda sea suficiente.",
+  "谐振频率偏高说明天线偏短，偏低说明偏长。": "Una resonancia demasiado alta indica antena corta; demasiado baja, antena larga.",
+  "边测边记，避免来回反复。": "Anote mientras mide para no ir y volver.",
+  "逐次少量修剪或加长振子，每次后重新扫频。": "Recorte o alargue el elemento poco a poco, volviendo a barrer tras cada cambio.",
+  "馈线长度也会影响测量，尽量用分析仪直接测天线端。": "La longitud de la línea también afecta: mida directamente en el extremo de la antena con el analizador."
+}

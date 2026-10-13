@@ -21,7 +21,7 @@ pub fn QuizOption(
   children: Children,
 ) -> impl IntoView {
   let class = cn(&[
-    "rounded-lg border px-3 py-2.5 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60",
+    "border px-3 py-2.5 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60",
     &class,
   ]);
   view! {

@@ -1,0 +1,13 @@
+{
+  "`+7` 不是合法 SSID": "«+7» no es un SSID válido",
+  "dest 不应带 E 位": "dest no debe llevar el bit E",
+  "src 带 SSID 7 与 E 位": "src lleva el SSID 7 y el bit E",
+  "带中继": "Con digipeaters",
+  "恰好上限应收下": "El límite superior exacto debe aceptarse",
+  "整帧超过 MAX_FRAME": "La trama completa excede MAX_FRAME",
+  "结构合法": "Estructura válida",
+  "缓冲不得越过上限": "El búfer no debe superar el límite",
+  "超 1 字节即丢弃": "Un byte de más se descarta",
+  "超过 10 个地址必须拒绝": "Más de 10 direcciones deben rechazarse",
+  "超过 8 个中继": "Más de 8 digipeaters"
+}

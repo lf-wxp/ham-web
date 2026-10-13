@@ -30,27 +30,27 @@ pub(super) fn QuestionRow(q: QuestionItem) -> impl IntoView {
   };
 
   view! {
-    <article class="rounded-xl border bg-card p-4 sm:p-5">
+    <article class="pxl-card border bg-card p-4 sm:p-5">
       <div class="mb-3 flex flex-wrap items-center gap-2">
-        <span class="rounded-md bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
+        <span class="bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
           {q.id_str().or(q.j_code()).map(ToOwned::to_owned)}
         </span>
         {top_cat
           .map(|c| {
             view! {
               <span
-                class="rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
+                class="px-2.5 py-0.5 text-xs font-semibold text-white"
                 style=format!("background: {}", c.color)
               >
                 {c.name}
               </span>
             }
           })}
-        {sub.map(|s| view! { <span class="rounded-full bg-accent px-2.5 py-0.5 text-xs text-muted-foreground">{s.name}</span> })}
+        {sub.map(|s| view! { <span class="bg-accent px-2.5 py-0.5 text-xs text-muted-foreground">{s.name}</span> })}
         {is_multiple
           .then(|| {
             view! {
-              <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+              <span class="bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
                 {move || t("exam.multiple")}
               </span>
             }
@@ -59,9 +59,9 @@ pub(super) fn QuestionRow(q: QuestionItem) -> impl IntoView {
       </div>
 
       <div class="mb-3 font-medium leading-relaxed">{q.question.clone()}</div>
-      {q.image().map(|src| view! { <img src=src.to_owned() alt="题目附图" loading="lazy" class="mb-3 max-h-64 rounded-lg border" /> })}
+      {q.image().map(|src| view! { <img src=src.to_owned() alt="题目附图" loading="lazy" class="mb-3 max-h-64 border" /> })}
 
-      <div class="mb-3 rounded-lg border border-emerald-200 bg-emerald-50/60 p-3 dark:border-emerald-900/50 dark:bg-emerald-950/30">
+      <div class="mb-3 border border-emerald-200 bg-emerald-50/60 p-3 dark:border-emerald-900/50 dark:bg-emerald-950/30">
         <div class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
           <Icon kind=IconKind::CheckCircle2 class="h-3.5 w-3.5" />
           {answer_title}
@@ -71,7 +71,7 @@ pub(super) fn QuestionRow(q: QuestionItem) -> impl IntoView {
           .map(|a| {
             view! {
               <div class="flex items-start gap-2 py-0.5 text-sm">
-                <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-emerald-600 text-xs font-bold text-white">
+                <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center bg-emerald-600 text-xs font-bold text-white">
                   {a.key}
                 </span>
                 <span class="flex-1">{a.text}</span>
@@ -128,7 +128,7 @@ pub(super) fn QuestionRow(q: QuestionItem) -> impl IntoView {
                   .iter()
                   .map(|r| {
                     let badge = cn(&[
-                      "mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold",
+                      "mt-0.5 shrink-0 px-1.5 py-0.5 text-[10px] font-bold",
                       if r.kind == RefKind::Law {
                         "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
                       } else {

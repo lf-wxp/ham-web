@@ -30,7 +30,7 @@ pub(super) fn DipoleCalculator() -> impl IntoView {
         />
       </Field>
       <Field
-        label=Signal::derive(move || t("knowledge.velocity-factor-k-0-2"))
+        label=Signal::derive(move || t("knowledge.velocity-factor-k-typical-range"))
         r#for=k_id.clone()
       >
         <NumberField
@@ -47,7 +47,7 @@ pub(super) fn DipoleCalculator() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class="sm:col-span-2 rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
+      <div class="sm:col-span-2 bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let f = freq.get();
           let kk = k.get().clamp(0.5, 1.0);

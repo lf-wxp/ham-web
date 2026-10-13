@@ -22,7 +22,7 @@ pub fn ExamReviewPage() -> impl IntoView {
 
   let body = match review {
     None => view! {
-      <div class="rounded-xl border bg-card px-4 py-10 text-center">
+      <div class="pxl-card border bg-card px-4 py-10 text-center">
         <div class="text-sm text-muted-foreground">{move || t("exam.no-exam-to-review")}</div>
         <ButtonLink
           href="/exam"
@@ -45,20 +45,20 @@ pub fn ExamReviewPage() -> impl IntoView {
 
       view! {
         <div class="space-y-4">
-          <section class="rounded-xl border bg-card p-4">
+          <section class="pxl-card border bg-card p-4">
             <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm">
               // 空格留在模板里而不写进文案：带尾空格的中文 key 在翻译时极易漏掉，
               // 一旦漏掉就永远匹配不上（`check-i18n` 也查不出来）。
               <span>{move || t("exam.bank")} " " <b>{bank.clone().unwrap_or_default()}</b></span>
-              <span>{move || t("exam.correct-4")} " " <b class="tabular-nums">{correct}</b> " / " {total}</span>
-              <span>{move || t("exam.answered-2")} " " <b class="tabular-nums">{answered}</b> " / " {total}</span>
+              <span>{move || t("exam.correct-summary")} " " <b class="tabular-nums">{correct}</b> " / " {total}</span>
+              <span>{move || t("exam.answered-summary")} " " <b class="tabular-nums">{answered}</b> " / " {total}</span>
               <span class="text-muted-foreground">
                 {move || tf("common.submitted-at", &[&finished.clone()])}
               </span>
             </div>
           </section>
 
-          <section class="rounded-xl border bg-card p-4">
+          <section class="pxl-card border bg-card p-4">
             <h2 class="mb-2 text-sm font-semibold">{move || t("exam.performance-by-category-most")}</h2>
             <ul class="space-y-1.5">
               {cats
@@ -69,7 +69,7 @@ pub fn ExamReviewPage() -> impl IntoView {
                   view! {
                     <li class="flex items-center gap-2 text-sm">
                       <span class="w-20 shrink-0 font-mono text-xs text-muted-foreground">{c.code.clone()}</span>
-                      <div class="h-3 flex-1 overflow-hidden rounded bg-muted">
+                      <div class="h-3 flex-1 overflow-hidden bg-muted">
                         <div class="h-full bg-emerald-500" style=format!("width: {pct}%")></div>
                       </div>
                       <span class="w-28 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
@@ -109,12 +109,12 @@ pub fn ExamReviewPage() -> impl IntoView {
                 let item_id = item.id.clone();
                 let marked = RwSignal::new(store::is_bookmarked(&item_id));
                 view! {
-                  <div class=format!("rounded-xl border bg-card p-4 {border}")>
+                  <div class=format!("pxl-card border bg-card p-4 {border}")>
                     <div class="mb-2 flex items-start gap-2">
-                      <span class="mt-0.5 shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{i + 1}</span>
+                      <span class="mt-0.5 shrink-0 bg-muted px-1.5 py-0.5 font-mono text-xs">{i + 1}</span>
                       <p class="flex-1 text-sm font-medium leading-snug">{item.question.clone()}</p>
                       <span class=format!("shrink-0 text-xs {}", if ok { "text-emerald-600 dark:text-emerald-400" } else { "text-red-600 dark:text-red-400" })>
-                        {if ok { t("exam.correct-3") } else { t("exam.wrong-2") }}
+                        {if ok { t("exam.correct-label") } else { t("exam.wrong-label") }}
                       </span>
                     </div>
                     <div class="space-y-1">

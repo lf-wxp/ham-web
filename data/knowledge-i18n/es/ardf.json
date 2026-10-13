@@ -1,0 +1,13 @@
+{
+  "2m（144MHz）": "2 m (144 MHz)",
+  "80m（3.5MHz）": "80 m (3,5 MHz)",
+  "Amateur Radio Direction Finding，业余无线电测向，俗称「猎狐」。": "Amateur Radio Direction Finding, radiogoniometría de radioaficionados, conocida como «caza del zorro».",
+  "利用指向性天线（如环形天线、八木）判断信号来向，用三角定位确定位置。": "Una antena direccional (bucle, Yagi) determina la dirección de llegada y la triangulación fija la posición.",
+  "常用测向频段，天线尺寸小、方向性好。": "La banda de radiogoniometría habitual: antenas pequeñas y buena directividad.",
+  "测向原理": "Principio de radiogoniometría",
+  "测向天线": "Antena de radiogoniometría",
+  "环形天线双向性、加垂直振子合成心形方向图，可辨单向。": "La antena de cuadro es bidireccional; al añadir un elemento vertical se obtiene un diagrama cardioide que resuelve el sentido.",
+  "竞赛中隐藏发射信标的电台，选手依据信号找到它们。": "Estaciones ocultas en un concurso que emiten balizas; los participantes las localizan por su señal.",
+  "长波测向，需较大环形天线。": "Radiogoniometría en onda larga, que requiere un cuadro mayor.",
+  "隐蔽电台": "Emisor oculto"
+}

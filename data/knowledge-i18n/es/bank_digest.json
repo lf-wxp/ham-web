@@ -1,0 +1,21 @@
+{
+  "{}，现共 {} 题": "{}, ahora {} preguntas en total",
+  "一": "Uno",
+  "三": "Tres",
+  "二": "Dos",
+  "二改": "Dos modificadas",
+  "五": "Cinco",
+  "修改 2 题，新增 1 题，新增解析 2 条，现共 4 题": "2 preguntas modificadas, 1 añadida, 2 explicaciones añadidas, ahora 4 preguntas en total",
+  "修改 {changed} 题": "{changed} preguntas modificadas",
+  "内容有更新": "Contenido actualizado",
+  "删除 {removed} 题": "{removed} preguntas eliminadas",
+  "否": "No",
+  "四": "Cuatro",
+  "新增 {added} 题": "{added} preguntas añadidas",
+  "新增解析 1 条，现共 1 题": "1 explicación añadida, ahora 1 pregunta en total",
+  "新增解析 {n} 条": "{n} explicaciones añadidas",
+  "是": "Sí",
+  "解析": "Explicación",
+  "解析减少 {} 条": "{} explicaciones menos",
+  "，": ","
+}

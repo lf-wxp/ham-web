@@ -24,7 +24,7 @@ pub fn CommunityPage() -> impl IntoView {
         </p>
       </SectionCard>
 
-      <section class="rounded-xl border bg-card">
+      <section class="pxl-card border bg-card">
         <div class="border-b px-4 py-3">
           <h2 class="text-sm font-semibold">{move || t("knowledge.community-index")}</h2>
           <p class="mt-0.5 text-xs text-muted-foreground">
@@ -50,7 +50,7 @@ pub fn CommunityPage() -> impl IntoView {
                             href=l.url
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="group flex items-start gap-2 rounded-lg border px-3 py-2 transition-colors hover:bg-accent"
+                            class="group flex items-start gap-2 border px-3 py-2 transition-colors hover:bg-accent"
                           >
                             <Icon
                               kind=IconKind::ExternalLink

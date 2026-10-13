@@ -67,9 +67,9 @@ pub(super) fn MistakeCard(
     }
   };
   view! {
-    <div class="rounded-xl border bg-card p-4">
+    <div class="pxl-card border bg-card p-4">
       <div class="mb-2 flex items-baseline gap-2">
-        <span class="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{j}</span>
+        <span class="shrink-0 bg-muted px-1.5 py-0.5 font-mono text-xs">{j}</span>
         <p class="whitespace-pre-line text-sm font-medium leading-snug">{q.question.clone()}</p>
       </div>
       <div class="space-y-1">
@@ -90,7 +90,7 @@ pub(super) fn MistakeCard(
           {move || t("learning.my-answer")} <span class="font-mono font-semibold">{my_answer}</span>
         </span>
         <span class="text-emerald-700 dark:text-emerald-400">
-          {move || t("exam.correct-answer-2")} <span class="font-mono font-semibold">{q.answer_keys.join("、")}</span>
+          {move || t("exam.correct-answer-prefix")} <span class="font-mono font-semibold">{q.answer_keys.join("、")}</span>
         </span>
         <span class="text-muted-foreground">
           {move || t("learning.topic")}
@@ -101,10 +101,10 @@ pub(super) fn MistakeCard(
             .into_any(),
             None => view! { <span class="font-medium text-foreground">{move || t(topic)}</span> }.into_any(),
           }}
-          {topic_rate.map(|r| view! { <span class="ml-1 tabular-nums">{tf("learning.accuracy-2", &[&r.to_string()])}</span> })}
+          {topic_rate.map(|r| view! { <span class="ml-1 tabular-nums">{tf("learning.accuracy-in-parens", &[&r.to_string()])}</span> })}
           {same_href.map(|href| view! {
             <a href=href class="ml-1 font-medium text-primary underline-offset-4 hover:underline">
-              {move || t("exam.practise-similar-2")}
+              {move || t("exam.practise-similar-link")}
             </a>
           })}
         </span>
@@ -119,7 +119,7 @@ pub(super) fn MistakeCard(
         <span>{due}</span>
         <button
           type="button"
-          class="ml-auto rounded px-2 py-0.5 transition-colors hover:bg-accent hover:text-foreground"
+          class="ml-auto px-2 py-0.5 transition-colors hover:bg-accent hover:text-foreground"
           on:click=move |_| on_remove.run(key.clone())
         >
           {move || t("learning.remove")}

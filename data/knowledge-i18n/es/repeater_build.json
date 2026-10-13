@@ -1,0 +1,16 @@
+{
+  "UPS + 电池，保证停电仍能工作。": "SAI y baterías para seguir funcionando si falta la red.",
+  "做好防雷接地，雷雨季节前重点检查。": "Cuide la protección contra rayos y la toma de tierra, revisándolas antes de la temporada de tormentas.",
+  "双工器": "Duplexor",
+  "天线": "Antenas",
+  "定期检测输出功率、驻波比与接收灵敏度。": "Compruebe periódicamente la potencia de salida, la ROE y la sensibilidad.",
+  "按当地频率协调结果设定输入 / 输出频差（如 ±5MHz）。": "Fije el desplazamiento entrada/salida según la coordinación local de frecuencias (p. ej. ±5 MHz).",
+  "收发共用天线，需足够收发隔离度（通常 ≥ 80dB）。": "Emisión y recepción comparten antena, con aislamiento suficiente entre ambas (normalmente ≥ 80 dB).",
+  "电源": "Fuentes de alimentación",
+  "记录通联日志与故障，便于追溯与排障。": "Registre los contactos y las averías para poder rastrearlas y resolverlas.",
+  "选址": "Elección del emplazamiento",
+  "选高处以扩大覆盖，兼顾电源、天线与馈线条件。": "Elija un lugar alto para ampliar la cobertura, considerando alimentación, antena y línea.",
+  "遵守频率协调与执照要求，避免干扰其他台站。": "Cumpla la coordinación de frecuencias y los requisitos de la licencia para no interferir a otras estaciones.",
+  "频率": "Frecuencia",
+  "高增益全向或定向天线，馈线损耗要小。": "Antena omnidireccional o direccional de alta ganancia, con poca pérdida en la línea."
+}

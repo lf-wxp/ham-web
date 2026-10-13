@@ -24,7 +24,10 @@ pub(super) fn GridOverlay(state: GridMapState) -> impl IntoView {
       (
         x.to_string(),
         y.to_string(),
-        tf("log.station-grid-2", &[&(station_grid).to_string()]),
+        tf(
+          "log.station-grid-with-locator",
+          &[&(station_grid).to_string()],
+        ),
       )
     });
   let home_marker = view! {

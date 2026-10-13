@@ -2,28 +2,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <title>业余无线电</title>
   <defs>
+    <!-- 与 pwa-icon.svg 同一份设计（等比缩小），仅供设计参考，构建不使用 -->
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#3b5dc9"/>
       <stop offset="1" stop-color="#3b5dc9"/>
     </linearGradient>
-    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.12"/>
-      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/>
-    </linearGradient>
     <clipPath id="tile"><rect width="64" height="64" rx="8.000"/></clipPath>
-    <clipPath id="inner"><rect x="2.000" y="2.000" width="60.000" height="60.000" rx="6.000"/></clipPath>
   </defs>
 
   <g clip-path="url(#tile)">
-    <rect width="64" height="64" fill="#1a1c2c"/>
-    <rect x="2.000" y="2.000" width="60.000" height="60.000" rx="6.000" fill="url(#bg)"/>
-    <rect width="64" height="64" fill="url(#sheen)"/>
-    <g clip-path="url(#inner)">
-      <rect x="2.000" y="2.000" width="60.000" height="2.000" fill="#FFFFFF" opacity="0.35"/>
-      <rect x="2.000" y="2.000" width="2.000" height="60.000" fill="#FFFFFF" opacity="0.35"/>
-      <rect x="2.000" y="60.000" width="60.000" height="2.000" fill="#000000" opacity="0.30"/>
-      <rect x="60.000" y="2.000" width="2.000" height="60.000" fill="#000000" opacity="0.30"/>
-    </g>
+    <rect width="64" height="64" fill="url(#bg)"/>
     <g fill="#f4f4f4">
       <rect x="24.000" y="14.000" width="16.000" height="4.000"/>
       <rect x="28.000" y="18.000" width="8.000" height="8.000"/>

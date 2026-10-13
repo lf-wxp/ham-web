@@ -51,7 +51,7 @@ pub(super) fn TermCard(
             view! {
               <a
                 href=browse_href(b, &entry.term)
-                class="rounded-md border px-2 py-0.5 transition-colors hover:bg-accent hover:text-foreground"
+                class="border px-2 py-0.5 transition-colors hover:bg-accent hover:text-foreground"
                 title=tf("common.view-questions-containing-in", &[&(b).to_string(), &(entry.term).to_string()])
               >
                 {b.as_str()}
@@ -72,17 +72,17 @@ pub(super) fn TermCard(
   };
 
   view! {
-    <article class="flex flex-col rounded-xl border bg-card p-4 sm:p-5">
+    <article class="flex flex-col pxl-card border bg-card p-4 sm:p-5">
       <div class="mb-2 flex flex-wrap items-center gap-2">
         <h2 class=term_class>{entry.term.as_str()}</h2>
         {abbr
           .map(|a| {
             view! {
-              <span class="rounded-md bg-muted px-2 py-0.5 font-mono text-xs font-semibold text-foreground">{a}</span>
+              <span class="bg-muted px-2 py-0.5 font-mono text-xs font-semibold text-foreground">{a}</span>
             }
           })}
         <span
-          class="ml-auto rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
+          class="ml-auto px-2.5 py-0.5 text-xs font-semibold text-white"
           style=format!("background: {color}")
         >
           {cat_name}

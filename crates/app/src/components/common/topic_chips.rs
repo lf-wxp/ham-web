@@ -19,9 +19,9 @@ pub fn TopicChips(
 ) -> impl IntoView {
   let total = nodes.len();
   let chip_class = if numbered {
-    "rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+    "bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
   } else {
-    "rounded-full border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
+    "border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
   };
   view! {
     <div class="flex flex-wrap items-center gap-2 p-4">

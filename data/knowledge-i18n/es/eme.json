@@ -1,0 +1,23 @@
+{
+  "2m EME 用 144MHz，是最热门的 EME 波段。": "La EME de 2 m usa 144 MHz y es la banda de EME más popular.",
+  "Earth-Moon-Earth，利用月球反射电波，实现地球任意两地通联。": "Tierra–Luna–Tierra: usar la Luna para reflejar las ondas de radio y permitir contactos entre dos puntos cualesquiera de la Tierra.",
+  "Q65 等弱信号模式": "Modos de señal débil como Q65",
+  "功率": "Potencia",
+  "多个八木组成阵列或大型抛物面。": "Varias Yagis en arreglo o una gran antena parabólica.",
+  "天平动衰落 libration fading": "Desvanecimiento por libración",
+  "天线": "Antenas",
+  "往返约 250dB+，是业余通信中最苛刻的传播方式。": "Unos 250 dB o más en el viaje de ida y vuelta: el modo de propagación más exigente de la radioafición.",
+  "按月球位置与多普勒计算最佳通联窗口。": "La mejor ventana de contacto se calcula según la posición de la Luna y el Doppler.",
+  "数十至数百瓦": "De decenas a cientos de vatios",
+  "月面各点到地球的径向速度不同，使回波频率展宽并产生约 0.1～数 Hz 的快速衰落。": "Los distintos puntos de la superficie lunar tienen velocidades radiales distintas hacia la Tierra, lo que ensancha el espectro del eco y produce desvanecimientos rápidos de unos 0,1 a varios hercios.",
+  "月面窗口": "Ventana lunar",
+  "模式": "Modo",
+  "法拉第旋转": "Rotación de Faraday",
+  "现代 EME 以 Q65 为主的弱信号数字模式，小台站也能参与；JT65 已被淘汰且已从新版 WSJT-X 移除，与 Q65 不兼容。": "La EME moderna emplea modos digitales de señal débil, sobre todo Q65, de modo que hasta las estaciones pequeñas pueden participar; JT65 está obsoleto, se ha eliminado de las versiones actuales de WSJT-X y no es compatible con Q65.",
+  "现以 Q65 为主（JT65 已淘汰，两者是互不兼容的两种协议），大幅降低对功率与天线的要求。": "Hoy predomina Q65 (JT65 está obsoleto; son dos protocolos incompatibles entre sí), lo que reduce mucho las exigencias de potencia y antena.",
+  "精确对准月球并补偿多普勒频率漂移。": "Apunte con precisión a la Luna y compense la deriva de frecuencia por Doppler.",
+  "线极化波穿过电离层时极化面旋转，EME 常用圆极化天线以规避其影响。": "La onda con polarización lineal ve girar su plano de polarización al atravesar la ionosfera, por lo que en EME se suelen usar antenas de polarización circular para eludirlo.",
+  "路径损耗": "Pérdida de trayecto",
+  "需大功率功放与低损耗馈线。": "Requiere un amplificador de gran potencia y líneas de baja pérdida.",
+  "高增益阵列": "Arreglo de alta ganancia"
+}

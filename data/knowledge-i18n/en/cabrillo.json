@@ -1,0 +1,13 @@
+{
+  "QSO 行": "QSO lines",
+  "业余无线电竞赛提交日志的标准纯文本格式。": "The standard plain-text format for submitting amateur radio contest logs.",
+  "以 START-OF-LOG / END-OF-LOG 包裹，含台站与比赛信息。": "Wrapped in START-OF-LOG / END-OF-LOG, containing the station and contest information.",
+  "保留原始日志，便于申诉或核对通联有效性。": "Keep the original log, for appeals or to verify that contacts are valid.",
+  "在比赛官网指定截止时间前提交日志。": "Submit the log before the deadline stated on the contest website.",
+  "头信息": "Header",
+  "按规则统计通联数、系数（分区 / 前缀 / 州）与总分。": "The rules tally contacts, multipliers (zone / prefix / state) and the total score.",
+  "提交前核对呼号、交换信息与时间，格式错误会被拒收。": "Check callsigns, exchanges and times before submitting — format errors are rejected.",
+  "每条记录：频率、模式、日期、时间、对方呼号、交换信息。": "Each record: frequency, mode, date, time, the other station's callsign and the exchange.",
+  "用日志软件（N1MM、DXLog 等）自动导出 Cabrillo，避免手工出错。": "Export Cabrillo automatically with logging software (N1MM, DXLog, etc.) to avoid manual errors.",
+  "记分": "Scoring"
+}

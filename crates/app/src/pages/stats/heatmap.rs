@@ -60,7 +60,7 @@ pub(super) fn Heatmap(rows: Vec<(String, [u32; 24])>) -> impl IntoView {
                   .map(|(h, &c)| {
                     view! {
                       <div
-                        class=format!("h-5 flex-1 rounded-sm {}", cell_class(c, max))
+                        class=format!("h-5 flex-1 {}", cell_class(c, max))
                         title=tp("common.00-utc-records", c, &[&(band).to_string(), &(h).to_string(), &(c).to_string()])
                       ></div>
                     }

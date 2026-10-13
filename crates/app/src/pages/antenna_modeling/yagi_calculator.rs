@@ -51,7 +51,7 @@ pub(super) fn YagiCalculator() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class="sm:col-span-2 rounded-lg bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
+      <div class="sm:col-span-2 bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let Some(d) = yagi_dims(freq.get(), directors.get()) else {
             return t("tools.enter-a-positive-frequency");

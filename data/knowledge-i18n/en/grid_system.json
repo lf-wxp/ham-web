@@ -1,0 +1,17 @@
+{
+  "2 位": "2 characters",
+  "4 位": "4 characters",
+  "6 位": "6 characters",
+  "8 位": "8 characters",
+  "子网格（Subsquare），如 OM89EW": "Subsquares, e.g. OM89EW",
+  "字段（Field），如 OM": "Field, e.g. OM",
+  "扩展精度": "Extended precision",
+  "更高精度，用于卫星、测向等。": "Higher precision, used for satellites, direction finding and the like.",
+  "本工具支持经纬度 ↔ 网格互转，见「小工具 · Maidenhead 网格定位」。": "This tool converts latitude/longitude ↔ grid; see \"Tools · Maidenhead grid locator\".",
+  "经度 20° × 纬度 10°，覆盖大区域。": "20° of longitude × 10° of latitude, covering a large area.",
+  "经度 2° × 纬度 1°，最常用，交换台址的标准精度。": "2° of longitude × 1° of latitude — the most common, standard precision for exchanging locations.",
+  "经度 5′ × 纬度 2.5′，约 9×5 km（赤道附近，随纬度收缩）。": "5′ of longitude × 2.5′ of latitude, about 9 × 5 km (near the equator; narrower at higher latitudes).",
+  "网格由经纬度编码而成，第一个字母按经度 20° 分，第二个字母按纬度 10° 分。": "The grid encodes latitude and longitude: the first letter divides longitude into 20° steps, the second latitude into 10° steps.",
+  "网格（Square），如 OM89": "Square, e.g. OM89",
+  "通联中通常交换 4 位网格（如 OM89），用于距离与方向计算。": "Contacts usually exchange the 4-character grid (e.g. OM89), used to compute distance and bearing."
+}

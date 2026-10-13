@@ -100,7 +100,7 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
         <Button
           variant=Variant::Text
           // 文字色必须显式给：`Variant::Text` 的 `--btn-fg` 是 `muted-foreground`，而这里是卡片标题。
-          class="h-auto flex-1 justify-between rounded-xl px-6 py-4 text-left text-foreground hover:bg-accent/50"
+          class="h-auto flex-1 justify-between px-6 py-4 text-left text-foreground hover:bg-accent/50"
           aria_expanded=Signal::derive(move || open.get())
           on_click=Callback::new(move |_| open.update(|v| *v = !*v))
         >

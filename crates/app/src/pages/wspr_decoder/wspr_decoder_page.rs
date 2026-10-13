@@ -25,9 +25,9 @@ pub fn WsprDecoderPage() -> impl IntoView {
     max_bytes: MAX_BYTES,
     transfer: false,
     parse: parse_message,
-    too_large: |mb, max| tf("tools.file-too-large-about-2", &[mb, max]),
+    too_large: |mb, max| tf("tools.file-too-large-downsample", &[mb, max]),
     timed_out: || t("tools.decoding-timed-out"),
-    failed: || t("tools.decoding-failed-make-sure-2"),
+    failed: || t("tools.decoding-failed-wspr"),
   });
   let DecodeSession {
     processing,

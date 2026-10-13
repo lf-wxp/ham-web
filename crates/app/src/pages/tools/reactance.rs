@@ -54,7 +54,7 @@ pub(super) fn Reactance() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class="sm:col-span-3 rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+      <div class="sm:col-span-3 bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
         {move || {
           let f = freq.get();
           let fc = f * capacitance.get();

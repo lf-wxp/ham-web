@@ -1,0 +1,20 @@
+{
+  "{name}.json 顺序与 glossary_files! 不一致": "The order in {name}.json does not match glossary_files!",
+  "「{t}」参与注入，解释中不能含括号": "\"{t}\" takes part in injection, so its explanation cannot contain brackets",
+  "「{t}」参见的「{see}」不存在": "\"{t}\": the \"{see}\" reference does not exist",
+  "「{t}」的 {field} 为空或首尾含空白": "\"{t}\": the {field} is empty or has leading/trailing whitespace",
+  "「{t}」的分类「{c}」不存在": "\"{t}\": the category \"{c}\" does not exist",
+  "「{t}」的解释含全角括号，会与注入格式冲突": "The explanation of \"{t}\" contains full-width brackets, which clash with the injection format",
+  "「{t}」缺少解释 desc": "\"{t}\" is missing the desc explanation",
+  "其他": "Other",
+  "匹配": "Matching",
+  "天调": "Antenna tuner",
+  "应有全量补充简语": "There should be the full set of supplementary abbreviations",
+  "应有常用简语": "There should be common abbreviations",
+  "旧写法": "Old wording",
+  "术语「{t}」为空或首尾含空白": "The term \"{t}\" is empty or has leading/trailing whitespace",
+  "术语「{t}」重复": "Duplicate term \"{t}\"",
+  "用语": "Terminology",
+  "缺少分类：{uncategorized:?}": "Missing category: {uncategorized:?}",
+  "驻波": "Standing wave"
+}

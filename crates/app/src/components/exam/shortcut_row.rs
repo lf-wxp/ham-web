@@ -12,7 +12,7 @@ pub fn ShortcutRow(
   view! {
     <div class="flex items-center justify-between">
       <span>{move || label.get()}</span>
-      <code class="px-2 py-0.5 rounded border bg-muted">{keys}</code>
+      <code class="px-2 py-0.5 border bg-muted">{keys}</code>
     </div>
   }
 }

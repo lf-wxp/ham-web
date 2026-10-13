@@ -1,0 +1,9 @@
+{
+  "{bad} 不应解析成 id": "{bad} no debería analizarse como id",
+  "{mime} 不应被接受": "{mime} no debería aceptarse",
+  "{mime} 大写也应被接受": "{mime} en mayúsculas también debería aceptarse",
+  "{mime} 应被接受": "{mime} debería aceptarse",
+  "刚好到上限应放行": "Justo en el límite debería permitirse",
+  "类型不对时先报类型": "Si el tipo es incorrecto, informe primero del tipo",
+  "超长拒绝": "Entrada demasiado larga se rechaza"
+}

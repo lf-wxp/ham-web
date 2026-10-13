@@ -68,7 +68,7 @@ pub fn ExamResultDialog(
   view! {
     <Dialog open=open>
       <DialogHeader>
-        <DialogTitle>{move || t("exam.score-2")}</DialogTitle>
+        <DialogTitle>{move || t("exam.score-title")}</DialogTitle>
         <DialogDescription class="sr-only">{move || t("exam.exam-result-details-and")}</DialogDescription>
       </DialogHeader>
       // 内容超过 60svh 时这里会滚动：滚动区必须能被键盘聚焦（`tabindex=0`），否则没有鼠标的用户

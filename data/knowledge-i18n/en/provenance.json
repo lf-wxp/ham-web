@@ -1,10 +1,15 @@
 {
-  "《中华人民共和国无线电管理条例》（国务院、中央军委令第672号）与《业余无线电台管理办法》（工信部令第67号）": "Radio Regulations of the PRC (State Council & Central Military Commission Order No. 672) and the Measures for the Administration of Amateur Radio Stations (MIIT Order No. 67)",
-  "《业余无线电台管理办法》第三十条及附件（A/B/C 类操作技术能力对应频段与功率）": "Article 30 and annexes of the Measures (bands and power per Class A/B/C operator capability)",
-  "《中华人民共和国无线电频率划分规定》": "Regulations on the Radio Frequency Allocation of the PRC",
-  "IARU 第三区波段计划（含各区域差异说明）": "IARU Region 3 band plan (including regional variations)",
   "AMSAT 与各卫星协会公布的最新状态（卫星状态会随在轨情况变化）": "Latest status published by AMSAT and the satellite organisations (statuses change with in-orbit conditions)",
-  "官方公报发布文本（见条文页出处链接）": "Text as published in the official gazette (see the source link on the articles page)",
+  "IARU 第三区波段计划（含各区域差异说明）": "IARU Region 3 band plan (including regional variations)",
   "ITU《无线电规则》（Radio Regulations）": "ITU Radio Regulations",
-  "各官方考纲与考试制度：中国《业余无线电台管理办法》权限口径、FCC / NCVEC 考试制度、RSGB 官方考纲（2024 v1.6b）": "Official syllabi and exam rules: privilege scope from the Chinese Measures, the FCC / NCVEC exam system, and the RSGB syllabus (2024 v1.6b)"
+  "{key} 应该查得到": "{key} should be findable",
+  "{key} 的核对日期应为 YYYY-MM": "The verification date of {key} should be YYYY-MM",
+  "{key} 缺溯源": "{key} is missing its provenance",
+  "《业余无线电台管理办法》第三十条及附件（A/B/C 类操作技术能力对应频段与功率）": "Article 30 and annexes of the Measures (bands and power per Class A/B/C operator capability)",
+  "《中华人民共和国无线电管理条例》（国务院、中央军委令第672号）与《业余无线电台管理办法》（工信部令第67号）": "Radio Regulations of the PRC (State Council & Central Military Commission Order No. 672) and the Measures for the Administration of Amateur Radio Stations (MIIT Order No. 67)",
+  "《中华人民共和国无线电频率划分规定》": "Regulations on the Radio Frequency Allocation of the PRC",
+  "不存在的域": "Non-existent domain",
+  "各官方考纲与考试制度：中国《业余无线电台管理办法》权限口径、FCC / NCVEC 考试制度、RSGB 官方考纲（2024 v1.6b）": "Official syllabi and exam rules: privilege scope from the Chinese Measures, the FCC / NCVEC exam system, and the RSGB syllabus (2024 v1.6b)",
+  "域 key 不能重复": "Domain keys must not be duplicated",
+  "官方公报发布文本（见条文页出处链接）": "Text as published in the official gazette (see the source link on the articles page)"
 }

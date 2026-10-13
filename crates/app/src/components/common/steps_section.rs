@@ -15,14 +15,14 @@ pub fn StepsSection(
   items: &'static [(&'static str, &'static str)],
 ) -> impl IntoView {
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t(&title)}</h2>
       <div class="space-y-1 p-4">
         {items
           .iter()
           .map(|(step, desc)| {
             view! {
-              <div class="flex flex-col gap-1 rounded-lg px-3 py-2 sm:flex-row sm:items-baseline sm:gap-3">
+              <div class="flex flex-col gap-1 px-3 py-2 sm:flex-row sm:items-baseline sm:gap-3">
                 <span class="shrink-0 text-sm font-semibold text-primary">{move || { data::track_knowledge(); data::kt(step) }}</span>
                 <span class="text-sm text-muted-foreground">{move || { data::track_knowledge(); data::kt(desc) }}</span>
               </div>

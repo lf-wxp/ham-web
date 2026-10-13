@@ -62,7 +62,7 @@ pub(super) fn NvisSection(result: Memo<Option<NecResult>>) -> impl IntoView {
   let max_id = unique_id("nec-nvis-max");
 
   view! {
-    <div class="space-y-3 rounded-xl border bg-card p-4">
+    <div class="space-y-3 pxl-card border bg-card p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <span class="text-sm font-semibold">{move || t("tools.nec-nvis")}</span>
         <div class="flex flex-wrap items-end gap-2">

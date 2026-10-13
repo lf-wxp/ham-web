@@ -5,14 +5,16 @@
 
    分层规则（为什么有的写在 `@layer base`、有的写在层外）：
    - 层外（unlayered）的声明永远压过 Tailwind 工具类：只给「必须一刀切」的事用，
-     比如全站零圆角、存量手写卡片的描边 —— 这两件事靠逐个改类名不现实。
+     比如全站零圆角（兜住第三方 / 动态 HTML）、存量手写卡片的描边（按 `pxl-card` 标记 ——
+     2026-10-13 之前它拿几百个调用点上的 `rounded-xl` 当钩子，那些类本身早已失效）。
    - `@layer base` 里的声明会被工具类覆盖：给「可以被调用点改写」的默认值用，
      比如焦点框、字体渲染。
    ============================================================ */
 
 /* ---------- 全局：零圆角 ----------
-   `rounded-sm|md|lg|xl` 已在 tokens.css 里归零，但 `rounded-full` 与裸 `rounded` 是字面量，
-   这里一并兜住。必须是层外规则才能压过工具类。
+   视图里已经不再写 `rounded-*`（2026-10-13 清理干净，见 docs/ui-components.md §2 硬规则 1）；
+   这一条是给第三方 / 动态 HTML（如搜索命中的 `<mark>`）与将来漏写的类兜底的。
+   `rounded-full` 与裸 `rounded` 是字面量、命名档位（`--radius-*`）管不到，所以必须在层外兜住。
    需要保留圆形的元素（极少）加 `data-keep-round`。 */
 *:not([data-keep-round]),
 *:not([data-keep-round])::before,
@@ -144,11 +146,13 @@ body::before {
 }
 
 /* ---------- 存量「卡片」→ 像素窗口 ----------
-   全站手写的 `rounded-xl border bg-card`（几百处）统一加粗描边、换成实心墨色。
+   全站手写卡片（`pxl-card border bg-card`，几百处）统一加粗描边、换成实心墨色。
+   `pxl-card` 只是**标记**、本身不带样式（以前这里用 `:is(.rounded-xl, …)` 当钩子，
+   2026-10-13 把那些已失效的圆角类换成了这个标记，行为不变）。
    用 `:not([class*="border-"])` 把「调用点已经指定了边框颜色 / 方向」的卡片排除在外：
    那是页面有意为之的强调（`border-destructive/40`、`border-b-0` …），不该被一刀切。
    描边宽度的排除列表同理：单边框 / 虚线 / 已经 `border-2` 的不动。 */
-:is(.rounded-xl, .rounded-2xl, .rounded-lg, .rounded-md).bg-card.border:not(
+:is(.pxl-card).bg-card.border:not(
     [class*="border-0"],
     [class*="border-x"],
     [class*="border-y"],
@@ -164,7 +168,7 @@ body::before {
   border-width: 2px;
 }
 
-:is(.rounded-xl, .rounded-2xl, .rounded-lg, .rounded-md).bg-card.border:not([class*="border-"]) {
+:is(.pxl-card).bg-card.border:not([class*="border-"]) {
   border-color: var(--pxl-ink);
 }
 
@@ -335,7 +339,7 @@ body::before {
 }
 
 /* ---------- 卡片内表格：去掉与卡片边框重合的最外圈边框 ---------- */
-/* 表格（border-collapse）紧贴 .rounded-xl 卡片的内边缘时，单元格最外圈的 border 会与
+/* 表格（border-collapse）紧贴 `.pxl-card` 卡片的内边缘时，单元格最外圈的 border 会与
    卡片自身的 border 贴合成双线。这里去掉首行上边、末行下边、首列左边、末列右边四条
    外边线，只保留表格内部的网格线。带内边距包裹的表格（如 solar 页）不受影响。
 
@@ -343,7 +347,7 @@ body::before {
       并未贴着卡片边缘，本就应保留 border，因此不能改用 :first-of-type。
    2) 左/右外边线需遍历全部行组（thead / tbody / tfoot），漏掉 <tfoot> 会让汇总行
       重新出现双线。 */
-:is(.rounded-xl, .rounded-xl > .overflow-x-auto)
+:is(.pxl-card, .pxl-card > .overflow-x-auto)
   > table.border-collapse
   > :first-child
   > tr:first-child
@@ -351,7 +355,7 @@ body::before {
   border-top-width: 0;
 }
 
-:is(.rounded-xl, .rounded-xl > .overflow-x-auto)
+:is(.pxl-card, .pxl-card > .overflow-x-auto)
   > table.border-collapse
   > :last-child
   > tr:last-child
@@ -359,7 +363,7 @@ body::before {
   border-bottom-width: 0;
 }
 
-:is(.rounded-xl, .rounded-xl > .overflow-x-auto)
+:is(.pxl-card, .pxl-card > .overflow-x-auto)
   > table.border-collapse
   > :is(thead, tbody, tfoot)
   > tr
@@ -367,7 +371,7 @@ body::before {
   border-left-width: 0;
 }
 
-:is(.rounded-xl, .rounded-xl > .overflow-x-auto)
+:is(.pxl-card, .pxl-card > .overflow-x-auto)
   > table.border-collapse
   > :is(thead, tbody, tfoot)
   > tr

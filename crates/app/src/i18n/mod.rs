@@ -361,7 +361,7 @@ mod tests {
         tp("common.questions-left-unseen-in", 3, &["A", "3"]),
         "Class A: 3 questions left unseen"
       );
-      assert_eq!(tp("common.questions-3", 1, &["1"]), "1 question");
+      assert_eq!(tp("common.questions-total", 1, &["1"]), "1 question");
     });
     with_locale(Locale::Es, || {
       assert_eq!(
@@ -411,7 +411,7 @@ mod tests {
   fn tp_counts_the_second_placeholder_and_agrees_in_spanish() {
     const DOMAINS: [&str; 3] = ["exam", "log", "learning"];
     const KEYS: [&str; 4] = [
-      "exam.questions-2",
+      "exam.category-questions",
       "log.grid-qsos",
       "log.records",
       "learning.days-to-exam",
@@ -420,8 +420,14 @@ mod tests {
     seed_from_sources("es", &DOMAINS, &KEYS);
     let en = |key, n: u64, args: &[&str]| tp_in("en", catalog::en_map(), key, n.into(), args);
     let es = |key, n: u64, args: &[&str]| tp_in("es", catalog::es_map(), key, n.into(), args);
-    assert_eq!(en("exam.questions-2", 1, &["A", "1"]), "A: 1 question");
-    assert_eq!(en("exam.questions-2", 3, &["A", "3"]), "A: 3 questions");
+    assert_eq!(
+      en("exam.category-questions", 1, &["A", "1"]),
+      "A: 1 question"
+    );
+    assert_eq!(
+      en("exam.category-questions", 3, &["A", "3"]),
+      "A: 3 questions"
+    );
     assert_eq!(en("log.grid-qsos", 1, &["PM95", "1"]), "Grid PM95 · 1 QSO");
     assert_eq!(en("log.grid-qsos", 4, &["PM95", "4"]), "Grid PM95 · 4 QSOs");
     assert_eq!(
@@ -444,8 +450,8 @@ mod tests {
       assert_eq!(tp("shell.home", 1, &[]), tf("shell.home", &[]));
       assert_eq!(tp("shell.home", 1, &[]), t("shell.home"));
       assert_eq!(
-        tp("common.zone-2", 1, &["1", "2"]),
-        tf("common.zone-2", &["1", "2"])
+        tp("common.zone-with-regions", 1, &["1", "2"]),
+        tf("common.zone-with-regions", &["1", "2"])
       );
     });
   }

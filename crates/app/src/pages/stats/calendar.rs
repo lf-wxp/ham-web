@@ -76,12 +76,12 @@ pub(super) fn CalendarHeatmap(counts: BTreeMap<String, u32>) -> impl IntoView {
     <div class="space-y-2">
       <div class="flex items-center justify-end gap-1 text-[10px] text-muted-foreground">
         <span>{move || t("learning.less")}</span>
-        <span class="h-3 w-3 rounded-sm bg-muted/60"></span>
-        <span class="h-3 w-3 rounded-sm bg-emerald-200"></span>
-        <span class="h-3 w-3 rounded-sm bg-emerald-300"></span>
-        <span class="h-3 w-3 rounded-sm bg-emerald-400"></span>
-        <span class="h-3 w-3 rounded-sm bg-emerald-500"></span>
-        <span class="h-3 w-3 rounded-sm bg-emerald-600"></span>
+        <span class="h-3 w-3 bg-muted/60"></span>
+        <span class="h-3 w-3 bg-emerald-200"></span>
+        <span class="h-3 w-3 bg-emerald-300"></span>
+        <span class="h-3 w-3 bg-emerald-400"></span>
+        <span class="h-3 w-3 bg-emerald-500"></span>
+        <span class="h-3 w-3 bg-emerald-600"></span>
         <span>{move || t("learning.more")}</span>
       </div>
       <div class="overflow-x-auto">
@@ -95,12 +95,12 @@ pub(super) fn CalendarHeatmap(counts: BTreeMap<String, u32>) -> impl IntoView {
                     .into_iter()
                     .map(|(key, count, future)| {
                       let cls = if future {
-                        "h-3 w-3 rounded-sm bg-transparent"
+                        "h-3 w-3 bg-transparent"
                       } else {
                         cell_class(count, max)
                       };
                       view! {
-                        <div class=format!("h-3 w-3 rounded-sm {cls}") title=tp("common.records", count, &[&(key).to_string(), &(count).to_string()])></div>
+                        <div class=format!("h-3 w-3 {cls}") title=tp("common.records", count, &[&(key).to_string(), &(count).to_string()])></div>
                       }
                     })
                     .collect_view()}

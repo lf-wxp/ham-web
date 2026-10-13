@@ -14,7 +14,7 @@ pub fn OpenSourcePage() -> impl IntoView {
   set_title("knowledge.open-source-projects-and");
   view! {
     <KnowledgePage title=t("knowledge.open-source-projects-and") subtitle=t("knowledge.community-open-source-software")>
-      <section class="rounded-xl border bg-card">
+      <section class="pxl-card border bg-card">
         <div class="border-b px-4 py-3">
           <h2 class="text-sm font-semibold">{move || t("knowledge.featured-open-source-projects")}</h2>
           <p class="mt-0.5 text-xs text-muted-foreground">
@@ -40,7 +40,7 @@ pub fn OpenSourcePage() -> impl IntoView {
                             href=p.url
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="group flex items-start gap-2 rounded-lg border px-3 py-2 transition-colors hover:bg-accent"
+                            class="group flex items-start gap-2 border px-3 py-2 transition-colors hover:bg-accent"
                           >
                             <Icon
                               kind=IconKind::ExternalLink

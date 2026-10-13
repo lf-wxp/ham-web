@@ -40,7 +40,7 @@ pub(super) fn IssTracker() -> impl IntoView {
   });
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.iss-live-position")}</h2>
       <div class="p-4">
         {move || {
@@ -59,19 +59,19 @@ pub(super) fn IssTracker() -> impl IntoView {
           match iss.get() {
             Some(d) => view! {
               <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div class="rounded-lg border bg-muted/40 p-3 text-center">
+                <div class="border bg-muted/40 p-3 text-center">
                   <div class="text-xs text-muted-foreground">{move || t("radio.latitude")}</div>
                   <div class="mt-1 text-lg font-semibold tabular-nums">{format!("{:.2}°", d.latitude)}</div>
                 </div>
-                <div class="rounded-lg border bg-muted/40 p-3 text-center">
+                <div class="border bg-muted/40 p-3 text-center">
                   <div class="text-xs text-muted-foreground">{move || t("radio.longitude")}</div>
                   <div class="mt-1 text-lg font-semibold tabular-nums">{format!("{:.2}°", d.longitude)}</div>
                 </div>
-                <div class="rounded-lg border bg-muted/40 p-3 text-center">
-                  <div class="text-xs text-muted-foreground">{move || t("radio.altitude-2")}</div>
+                <div class="border bg-muted/40 p-3 text-center">
+                  <div class="text-xs text-muted-foreground">{move || t("radio.altitude-label")}</div>
                   <div class="mt-1 text-lg font-semibold tabular-nums">{format!("{:.0} km", d.altitude)}</div>
                 </div>
-                <div class="rounded-lg border bg-muted/40 p-3 text-center">
+                <div class="border bg-muted/40 p-3 text-center">
                   <div class="text-xs text-muted-foreground">{move || t("radio.speed")}</div>
                   <div class="mt-1 text-lg font-semibold tabular-nums">{format!("{:.1} km/s", d.velocity)}</div>
                 </div>

@@ -229,7 +229,7 @@ pub fn SdrWaterfallPage() -> impl IntoView {
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageContainer class="space-y-5">
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
             <div class="mr-auto">
               <h1 class="text-base font-semibold leading-tight">{move || t("tools.sdr-waterfall")}</h1>
@@ -294,7 +294,7 @@ pub fn SdrWaterfallPage() -> impl IntoView {
                 node_ref=spectrum_ref
                 width="1024"
                 height="160"
-                class="h-40 w-full rounded-md bg-black"
+                class="h-40 w-full bg-black"
                 aria-label=move || t("tools.live-spectrum")
               ></canvas>
             </div>
@@ -305,7 +305,7 @@ pub fn SdrWaterfallPage() -> impl IntoView {
                 node_ref=waterfall_ref
                 width="1024"
                 height="256"
-                class="h-64 w-full rounded-md bg-black"
+                class="h-64 w-full bg-black"
                 aria-label=move || t("tools.spectrum-waterfall")
               ></canvas>
             </div>

@@ -837,11 +837,92 @@
 ### 国际化
 
 - [~] `data/knowledge-i18n/` 知识库正文 en / es 补全（缺失自动回退中文，已有机制）：
-      本轮新增 **9 个模块**的 en/es 词典（provenance / spectrum_admin / dv_network /
+      已译 **73 个模块**的 en/es 词典（provenance / spectrum_admin / dv_network /
       digital_comms / antenna_theory / exam_comparison / regulations / learning_path /
-      winlink，共 **230+ 条 × 两语**），en 覆盖从 324 条升到约 600 条。**如实说明**：
+      winlink / modes / modulation_theory / safety / dsp_basics / coordination /
+      gear / confusables / open_source / bands / changelog / dxcc / categories /
+      registry / reference / search / radio_law / related / eqsl / rfi /
+      grounding / api_v1 / aurora / propagation / receiver /
+      sat_operation / feedline / practical_antennas / electronics / aprs /
+      filters / balun / knowledge_consistency / formulas / noise /
+      analog_modes / morse / sdr_map / satellites / sstv /
+      meteor_scatter / antenna_analyzer / contest / emcomm / operating /
+      zone / events / packet / log_health / weather_sat /
+      waveform_lab / power_supply / license_classes / prefixes /
+      most_wanted / vna / beginner / amplifier …），**en 3829 条 / es 3820 条**
+      （第一批 modes / modulation_theory / safety / dsp_basics 228 条 × 两语；
+      第二批 coordination / gear 170 条 × 两语；第三批 confusables 易混概念辨析
+      131 条 + open_source 开源生态 58 条 = 189 条 × 两语；第四批 changelog
+      36 条 + bands 短条目 43 条 = 79 条 × 两语；第五批 bands 的 24 条法规脚注
+      = 24 条 × 两语 —— bands 至此 **67/67（100%）**；第六批 **dxcc 341 条实体名
+      = 341 条 × 两语**（英文用 ARRL/DXCC 实体名，西语用通用西语地名；争议地名
+      Falkland / Malvinas 两写并注，不做立场取舍）；第七批 **categories 284 条
+      = 284 条 × 两语**（分类名 + 《业余无线电台管理办法》条文描述 + 资料标题 +
+      界面标签；条文号、限值、单位与专有名词保持原样）；第八批 **registry 187 条
+      = 187 条 × 两语**（177 个页面 / 模块名 + 10 条注册表校验消息）；第九批
+      **reference 139 条**；第十批 **search 134 + radio_law 84 + related 103 =
+      321 条 × 两语**（搜索索引标题模板与自检、法规题库题干与《办法》/《条例》
+      结构与条文引用、中文数字 1–999 往返校验词条、页面关联主题）；第十一批
+      **eqsl 46 + rfi 54 + grounding 34 + api_v1 61 = 195 条 × 两语**（LoTW /
+      eQSL 确认渠道与上传流程、干扰源与抑制手段 / 磁环材质 / 骚扰限值标准、
+      接地种类与 NEC 接地棒规范、开放 API 端点与契约自检）；第十二批 **aurora 30 +
+      propagation 46 + receiver 41 + sat_operation 30 + feedline 30 = 177 条 ×
+      两语**（极光传播与 Kp 判据、电离层分层与 MUF/foF2、接收机指标与噪声计算、
+      卫星通联六步与多普勒、馈线与驻波换算）；第十三批 **practical_antennas 31 +
+      electronics 57 + aprs 36 + filters 35 + balun 27 = 186 条 × 两语**（实用天线
+      选型与架设、元件电路与公式、APRS 概念 / 地区频率 / SSID / 报文格式、滤波器
+      类型与四种逼近原型、巴伦与 unun 绕制要点）；第十四批 **knowledge_consistency
+      61 + formulas 54 + noise 32 + analog_modes 34 + morse 8 = 189 条 × 两语**
+      （知识库自检断言、公式速查、接收噪声与 S 表、模拟模式与边带约定、莫尔斯时序）；
+      第十五批 **sdr_map 22 + satellites 30 + sstv 38 + meteor_scatter 29 +
+      antenna_analyzer 28 + contest 8 = 155 条 × 两语**（在线 SDR 站点、业余卫星
+      频率与追踪工具、SSTV 模式与频率、流星散射与流星雨日历、VNA / 天分仪 / 史密斯
+      圆图、竞赛交换项）；第十六批 **emcomm 17 + operating 37 + zone 19 + events
+      26 + packet 20 = 119 条 × 两语**（应急通信组织与 NTS 报文、通联程序与日志字段、
+      CQ/ITU 分区、活动日历、分组无线电协议与速率）；第十七批 **log_health 27 +
+      weather_sat 26 + waveform_lab 47 + power_supply 21 + license_classes 31 =
+      152 条 × 两语**（日志体检问题分类与修复断言、气象卫星接收五步、波形实验室数值
+      断言、电源选型与压降、A/B/C 类权限与一致性自检）；第十八批 **prefixes 90 +
+      most_wanted 34 + vna 28 + beginner 24 + amplifier 25 = 201 条 × 两语**（呼号
+      前缀国家/地区表、DXCC 稀有度榜单、VNA 的 S 参数与 SOLT 校准、新手入门六步、
+      功放指标与 A/B/AB/C/D-E-F 类）。至此**页面主内容的前 20 大模块 + 三大索引
+      模块 + 四十个专业模块全部译完**。
+      已知例外：`formulas` 的 TeX 串 `G_{\text{总}}` 里的 `{总}` 是 LaTeX 分组而非
+      运行时占位符，译作 `{total}`（占位符扫描会把它认作 1 处「不符」，属误报）。
+      法规脚注的译法：ITU
+      句式照原文条款（shall not cause harmful interference to / claim protection
+      from / impose constraints on the operation and development of …），
+      WRC-xx → CMR-xx（西语），地名用通用罗马转写，频段范围与单位保持原样。
+      **如实说明**（翻译质量的自我约束）：易混点的「错误说法 → 纠正」成对条目
+      照原文直译，不把错误说法改对；
+      占位符条目按**位置参数**核对（`{} 的类别 {}` 的先后是 id / 类别 —— 英文
+      第一版写成了「Category {} of {}」= 顺序颠倒，核对后修正；registry 的
+      「{} 的分组 {g}」同类中招一次，也是核对后修正）。**已修正一处中文源事实
+      错误**：categories 原写「FT8 用两音弱信号解码」，FT8 实为 8-FSK（8 音）→
+      中文源改为「8 音（8-FSK）」，译文字典同步删旧 key 挂新 key（漂移检查干净）。
+      第 19/20/21 批又推进 36 个模块（power / contest_calendar / mobile /
+      antenna_array / eme / qsl_card / qrp / antenna_modeling / solar / repeater +
+      community / rpg / gnuradio / callsign / calc_variants / achievements / sdr /
+      organizations / antenna_farm / gear_score + learning_resources / dxpedition /
+      transceiver / swl / qsl_sync / ft8 / topic_quiz / dx / special_prop / iota /
+      fingerprint / station / polarization / microwave / nvis / gear_rx），共
+      **722 条 ×两语**；第 22 批 18 个模块（muf / repeater_build / antenna_tuning /
+      smith / rst / remote / cabrillo / atv / rtty / grid_system / backup_merge /
+      color_scheme / antenna_installation / frequencies / portable / glossary /
+      logbook / ardf）**280 条 ×两语**。
+      **已完成全部模块**（第 23–25 批，65 个模块次、**649 条 × 两语**）：第 23 批
+      19 个（antenna_diy … bookmark_groups，269 条）、第 24 批 31 个小模块（136 条）、
+      第 25 批**补齐 15 个历史模块的缺口**（digital_comms / meters / learning_path /
+      winlink / bandplan / regulations / dv_network / diy_projects / rig_reviews /
+      connectors / antenna_theory / provenance / antennas / exam_comparison /
+      spectrum_admin，244 条）—— 这些模块早期只译了一部分，源码后续又新增条目，
+      按逐模块 coverage 补齐到 100%。**全库：175 个模块、en 5480 条 / es 5471 条，
+      逐模块覆盖率全部 100%**（dxcc_map / astro 的中文只出现在代码注释里，无待译
+      条目）。残留 2 处「占位符不符」为已知例外：formulas 的 TeX 分组
+      `G_{\text{总}}` → `{total}`；text 模块的 5 个 CJK 字符本身是测试样本
       知识库正文总量约两千余条，全部译完是持续的翻译工作而非一次提交 —— 机制已验证
-      （缺译自动回退中文、`knowledge-i18n-check` 钉住漂移），后续按页面热度逐批补
+      （缺译自动回退中文、`knowledge-i18n-check` 钉住漂移、本批自检「译文里无残留
+      CJK」），后续按页面热度逐批补
 - [x] **新增语言的成本已验证**（2026-10）：机制 = 每语言一份 `data/i18n/{lang}/{domain}.json`
       界面词典 + 每模块一份 `data/knowledge-i18n/{lang}/{module}.json` 正文译文，
       缺失自动回退中文；`i18n-pack` / `i18n-check` / `knowledge-i18n-check` 全部按语言

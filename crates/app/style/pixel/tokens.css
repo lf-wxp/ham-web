@@ -67,8 +67,9 @@
 }
 
 @theme {
-  /* 零圆角：`rounded-*` 全部归零。`rounded-full` / 裸 `rounded` 是字面量，由 surfaces.css 的全局
-     规则兜底；真正需要圆形的元素加 `data-keep-round`。 */
+  /* 零圆角：`rounded-*` 全部归零（视图里已在 2026-10-13 清干净，这里仍是兜底）。
+     `rounded-full` / 裸 `rounded` 是字面量，由 surfaces.css 的全局规则兜底；
+     真正需要圆形的元素加 `data-keep-round`。 */
   --radius-xs: 0px;
   --radius-sm: 0px;
   --radius-md: 0px;

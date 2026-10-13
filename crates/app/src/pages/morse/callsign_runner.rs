@@ -232,7 +232,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
   let serial_id = unique_id("morse-serial");
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
         <h2 class="mr-auto text-sm font-semibold">
           {move || t("morse.callsign-copying-contest-simulation")}
@@ -249,7 +249,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
             stats.set(RunnerStats::default());
             save(&stats.get_untracked());
           }
-          class="rounded-md px-2 py-0.5 text-xs text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+          class="px-2 py-0.5 text-xs text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
         >
           {move || t("morse.reset-score")}
         </button>
@@ -279,7 +279,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
           {toggle("叠听（多一个干扰台）", |s| s.pileup, |s, v| s.pileup = v)}
         </div>
 
-        <div class="flex flex-col items-center gap-3 rounded-xl border bg-muted/30 px-4 py-6">
+        <div class="flex flex-col items-center gap-3 border bg-muted/30 px-4 py-6">
           {move || {
             if in_progress() {
               let (n, score) = session.with(|s| s.as_ref().map_or((0, 0), |s| (s.attempted() + 1, s.score())));
@@ -385,7 +385,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
             </Field>
             <Button
               kind=ButtonKind::Submit
-              class="rounded-lg h-10"
+              class="h-10"
               disabled=Signal::derive(move || !in_progress())
             >
               {move || t("contest.log-it")}

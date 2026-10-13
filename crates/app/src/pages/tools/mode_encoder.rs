@@ -16,11 +16,11 @@ pub(super) fn ModeEncoder() -> impl IntoView {
       <Field label=Signal::derive(move || t("tools.message-content")) r#for=text_id.clone()>
         <Input id=text_id value=text on_change=Callback::new(move |v: String| text.set(v)) />
       </Field>
-      <div class="space-y-1 rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+      <div class="space-y-1 bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
         <div class="text-xs font-medium text-foreground/70">{move || t("tools.cw-morse-code")}</div>
         <div class="break-all font-mono tabular-nums">{move || text_to_morse(&text.get())}</div>
       </div>
-      <div class="space-y-1 rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+      <div class="space-y-1 bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
         <div class="text-xs font-medium text-foreground/70">{move || t("tools.rtty-ita2-bit-stream")}</div>
         <div class="break-all font-mono tabular-nums">{move || text_to_baudot_bits(&text.get())}</div>
       </div>

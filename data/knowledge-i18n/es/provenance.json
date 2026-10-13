@@ -1,10 +1,15 @@
 {
-  "《中华人民共和国无线电管理条例》（国务院、中央军委令第672号）与《业余无线电台管理办法》（工信部令第67号）": "Reglamento de Radiocomunicaciones de la RPCh (Orden nº 672 del Consejo de Estado y la Comisión Militar Central) y las Medidas de gestión de estaciones de radioaficionado (Orden nº 67 del MIIT)",
-  "《业余无线电台管理办法》第三十条及附件（A/B/C 类操作技术能力对应频段与功率）": "Artículo 30 y anexos de las Medidas (bandas y potencia según la capacidad de operador de clase A/B/C)",
-  "《中华人民共和国无线电频率划分规定》": "Reglamento de atribución de frecuencias de la RPCh",
-  "IARU 第三区波段计划（含各区域差异说明）": "Plan de bandas de la Región 3 de la IARU (con variaciones regionales)",
   "AMSAT 与各卫星协会公布的最新状态（卫星状态会随在轨情况变化）": "Último estado publicado por AMSAT y las organizaciones de satélites (cambia con la situación orbital)",
-  "官方公报发布文本（见条文页出处链接）": "Texto publicado en la gaceta oficial (véase el enlace en la página de artículos)",
+  "IARU 第三区波段计划（含各区域差异说明）": "Plan de bandas de la Región 3 de la IARU (con variaciones regionales)",
   "ITU《无线电规则》（Radio Regulations）": "Reglamento de Radiocomunicaciones de la UIT (Radio Regulations)",
-  "各官方考纲与考试制度：中国《业余无线电台管理办法》权限口径、FCC / NCVEC 考试制度、RSGB 官方考纲（2024 v1.6b）": "Sílabos y reglas de examen oficiales: alcance de privilegios según las Medidas chinas, sistema de examen FCC / NCVEC y sílabo RSGB (2024 v1.6b)"
+  "{key} 应该查得到": "{key} debería poder consultarse",
+  "{key} 的核对日期应为 YYYY-MM": "La fecha de verificación de {key} debería ser AAAA-MM",
+  "{key} 缺溯源": "A {key} le falta la procedencia",
+  "《业余无线电台管理办法》第三十条及附件（A/B/C 类操作技术能力对应频段与功率）": "Artículo 30 y anexos de las Medidas (bandas y potencia según la capacidad de operador de clase A/B/C)",
+  "《中华人民共和国无线电管理条例》（国务院、中央军委令第672号）与《业余无线电台管理办法》（工信部令第67号）": "Reglamento de Radiocomunicaciones de la RPCh (Orden nº 672 del Consejo de Estado y la Comisión Militar Central) y las Medidas de gestión de estaciones de radioaficionado (Orden nº 67 del MIIT)",
+  "《中华人民共和国无线电频率划分规定》": "Reglamento de atribución de frecuencias de la RPCh",
+  "不存在的域": "Dominio inexistente",
+  "各官方考纲与考试制度：中国《业余无线电台管理办法》权限口径、FCC / NCVEC 考试制度、RSGB 官方考纲（2024 v1.6b）": "Sílabos y reglas de examen oficiales: alcance de privilegios según las Medidas chinas, sistema de examen FCC / NCVEC y sílabo RSGB (2024 v1.6b)",
+  "域 key 不能重复": "Las claves de dominio no deben repetirse",
+  "官方公报发布文本（见条文页出处链接）": "Texto publicado en la gaceta oficial (véase el enlace en la página de artículos)"
 }

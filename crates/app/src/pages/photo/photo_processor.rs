@@ -93,7 +93,7 @@ pub(super) fn PhotoProcessor() -> impl IntoView {
             .get()
             .map(|e| {
               view! {
-                <div class="flex items-start gap-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 dark:bg-red-950/40 dark:border-red-900 dark:text-red-200">
+                <div class="flex items-start gap-2 p-4 bg-red-50 border border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-900 dark:text-red-200">
                   <Icon kind=IconKind::AlertCircle class="w-5 h-5 mt-0.5 flex-shrink-0" />
                   <div class="flex-1">
                     <div class="font-medium">{move || t("tools.processing-failed")}</div>

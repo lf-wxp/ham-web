@@ -1,0 +1,16 @@
+{
+  "UPS + 电池，保证停电仍能工作。": "A UPS plus batteries, so it keeps working through mains outages.",
+  "做好防雷接地，雷雨季节前重点检查。": "Provide lightning protection and grounding, with a thorough check before the thunderstorm season.",
+  "双工器": "Duplexer",
+  "天线": "Antennas",
+  "定期检测输出功率、驻波比与接收灵敏度。": "Check output power, SWR and receive sensitivity periodically.",
+  "按当地频率协调结果设定输入 / 输出频差（如 ±5MHz）。": "Set the input/output offset according to local frequency coordination (e.g. ±5 MHz).",
+  "收发共用天线，需足够收发隔离度（通常 ≥ 80dB）。": "Transmit and receive share one antenna, needing sufficient isolation between them (usually ≥ 80 dB).",
+  "电源": "Power supplies",
+  "记录通联日志与故障，便于追溯与排障。": "Keep records of the log and of faults, for traceability and troubleshooting.",
+  "选址": "Site selection",
+  "选高处以扩大覆盖，兼顾电源、天线与馈线条件。": "Pick a high site to extend coverage, taking power supply, antenna and feedline conditions into account.",
+  "遵守频率协调与执照要求，避免干扰其他台站。": "Observe frequency coordination and licence requirements to avoid interfering with other stations.",
+  "频率": "Frequency",
+  "高增益全向或定向天线，馈线损耗要小。": "A high-gain omnidirectional or directional antenna, with low feedline loss."
+}

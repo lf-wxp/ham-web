@@ -1,0 +1,17 @@
+{
+  "15m、10m 等高波段开放良好。": "The higher bands such as 15 m and 10 m are well open.",
+  "40m、80m 等低波段更适合远距离。": "The lower bands such as 40 m and 80 m suit long distances better.",
+  "LUF 最低可用频率": "LUF (lowest usable frequency)",
+  "MUF 最高可用频率": "MUF (maximum usable frequency)",
+  "OWF 最佳工作频率": "OWF (optimum working frequency)",
+  "业界常用的传播预测软件，输入两端位置与时间预测可用波段。": "A widely used propagation prediction program: enter both ends and the time to predict usable bands.",
+  "低波段（160m/80m/40m）更可靠，高波段受限。": "The low bands (160 m/80 m/40 m) are more reliable and the high bands are limited.",
+  "各波段的黄金时间，传播变化快。": "The golden hours on every band, when propagation changes fast.",
+  "夜间": "Night",
+  "太阳活动低年": "Years of low solar activity",
+  "日出日落": "Sunrise and sunset",
+  "电离层能反射回地面的最高频率，高于它信号穿透电离层。": "The highest frequency the ionosphere can reflect back to Earth; above it the signal penetrates the ionosphere.",
+  "白天 · 高太阳活动": "Daytime · high solar activity",
+  "约为 MUF 的 85%，最可靠的通信频率。": "About 85% of the MUF — the most reliable frequency for communication.",
+  "能被接收的最低频率，低于它信号被吸收或噪声淹没。": "The lowest frequency that can be received; below it the signal is absorbed or buried in noise."
+}

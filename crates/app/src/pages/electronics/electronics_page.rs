@@ -22,7 +22,7 @@ pub fn ElectronicsPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.common-electronic-components")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[640px] border-collapse text-sm">
@@ -55,14 +55,14 @@ pub fn ElectronicsPage() -> impl IntoView {
 
         <ComponentQuiz />
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.basic-circuit-units")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {CIRCUITS
               .iter()
               .map(|&(t, d)| {
                 view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2">
+                  <div class="flex flex-col gap-1 px-3 py-2">
                     <span class="text-sm font-medium">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
@@ -72,14 +72,14 @@ pub fn ElectronicsPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.key-formulas")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {FORMULAS
               .iter()
               .map(|&(t, d)| {
                 view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2">
+                  <div class="flex flex-col gap-1 px-3 py-2">
                     <span class="text-sm font-medium text-primary">{t}</span>
                     <span class="font-mono text-sm text-muted-foreground">{d}</span>
                   </div>

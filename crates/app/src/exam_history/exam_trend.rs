@@ -43,7 +43,7 @@ pub fn ExamTrend(history: Vec<ExamRecord>, bank: Bank) -> impl IntoView {
       <p class="text-sm text-muted-foreground">
         {tf("common.no-class-mock-exam", &[&bank.to_string()])}
         <a href=format!("/exam?bank={bank}") class="ml-1 text-primary underline underline-offset-4">
-          {move || t("common.take-one-2")}
+          {move || t("common.take-one-link")}
         </a>
       </p>
     }
@@ -88,7 +88,7 @@ pub fn ExamTrend(history: Vec<ExamRecord>, bank: Bank) -> impl IntoView {
   view! {
     <div class="space-y-3">
       <div class="flex flex-wrap items-center gap-2 text-sm">
-        <span class=format!("rounded-full border px-2.5 py-0.5 text-xs font-semibold {}", verdict_class(readiness.verdict))>
+        <span class=format!("border px-2.5 py-0.5 text-xs font-semibold {}", verdict_class(readiness.verdict))>
           {readiness.verdict.label()}
         </span>
         <span class="text-muted-foreground">{verdict_hint(&readiness, rule.pass, rule.total)}</span>

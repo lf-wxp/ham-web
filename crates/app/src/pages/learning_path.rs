@@ -30,7 +30,7 @@ pub fn LearningPathPage() -> impl IntoView {
       <TableSection title="各级别重点" headers=&["级别", "重点", "对应页面"] rows=LEARNING_LEVELS />
 
       // ── 专题依赖图：按拓扑层渲染，前置专题永远在前 ──────────────
-      <section class="rounded-xl border bg-card">
+      <section class="pxl-card border bg-card">
         <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.topic-graph")}</h2>
         <TopicChips nodes=TOPIC_GRAPH.iter().collect() />
         <p class="border-t px-4 py-2 text-xs text-muted-foreground">
@@ -39,7 +39,7 @@ pub fn LearningPathPage() -> impl IntoView {
       </section>
 
       // ── 答错回推：按你的错题本回推要先补的专题 ─────────────
-      <section class="rounded-xl border bg-card">
+      <section class="pxl-card border bg-card">
         <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.review-before")}</h2>
         {if reviews.is_empty() {
           view! {

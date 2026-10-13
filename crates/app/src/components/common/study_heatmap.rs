@@ -77,7 +77,7 @@ pub fn StudyHeatmap(days: HashMap<String, u32>, today: String) -> impl IntoView 
                   .map(|(day, c)| {
                     view! {
                       <div
-                        class=format!("h-4 flex-1 rounded-sm {}", level(c))
+                        class=format!("h-4 flex-1 {}", level(c))
                         title=tp("learning.answered", c, &[&day, &c.to_string()])
                       ></div>
                     }
@@ -90,11 +90,11 @@ pub fn StudyHeatmap(days: HashMap<String, u32>, today: String) -> impl IntoView 
         .collect_view()}
       <div class="flex items-center justify-end gap-1.5 text-[10px] text-muted-foreground">
         <span>{t("learning.less")}</span>
-        <span class="h-3 w-3 rounded-sm bg-muted/50"></span>
-        <span class="h-3 w-3 rounded-sm bg-primary/20"></span>
-        <span class="h-3 w-3 rounded-sm bg-primary/40"></span>
-        <span class="h-3 w-3 rounded-sm bg-primary/70"></span>
-        <span class="h-3 w-3 rounded-sm bg-primary"></span>
+        <span class="h-3 w-3 bg-muted/50"></span>
+        <span class="h-3 w-3 bg-primary/20"></span>
+        <span class="h-3 w-3 bg-primary/40"></span>
+        <span class="h-3 w-3 bg-primary/70"></span>
+        <span class="h-3 w-3 bg-primary"></span>
         <span>{t("learning.more")}</span>
       </div>
     </div>

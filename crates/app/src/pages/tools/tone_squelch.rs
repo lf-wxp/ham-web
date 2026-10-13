@@ -6,8 +6,7 @@ use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField, RadioGroup, RadioGroupItem};
 use crate::util::unique_id;
 
-const CHIP: &str =
-  "rounded-full border bg-card px-2.5 py-1 text-xs tabular-nums text-muted-foreground";
+const CHIP: &str = "border bg-card px-2.5 py-1 text-xs tabular-nums text-muted-foreground";
 
 /// 中继频差 + CTCSS / DCS 亚音码表。
 #[component]
@@ -74,7 +73,7 @@ pub(super) fn ToneSquelch() -> impl IntoView {
             {move || t("tools.positive-offset")}
           </label>
         </RadioGroup>
-        <div class="sm:col-span-2 space-y-1 rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+        <div class="sm:col-span-2 space-y-1 bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
           {move || {
             match offset() {
               Some((o, note)) => {

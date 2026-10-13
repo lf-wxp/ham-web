@@ -1,0 +1,21 @@
+{
+  "DV 数字语音": "DV digital voice",
+  "Fusion 数字语音": "Fusion digital voice",
+  "MMDVM/Pi-Star 热点": "MMDVM/Pi-Star hotspot",
+  "TDMA 数字语音": "TDMA digital voice",
+  "上下行频率之差：VHF 通常 0.6MHz，UHF 通常 5MHz。": "The difference between uplink and downlink: usually 0.6 MHz on VHF and 5 MHz on UHF.",
+  "中继台发射时会回传自身信号，用于确认是否打开中继。": "The repeater retransmits your own signal, which confirms that you have opened it.",
+  "中继台用上行频率接收、下行频率发射，同时转发，扩大覆盖。": "The repeater receives on the uplink and transmits on the downlink simultaneously, extending coverage.",
+  "互联网无线电连接项目，连接各地中继台，需先听再发。": "An Internet radio linking project connecting repeaters worldwide — listen first, then transmit.",
+  "亚音 CTCSS": "CTCSS tone",
+  "双时隙、色码与通话组，商业与业余广泛使用。": "Two time slots, colour codes and talkgroups; widely used commercially and by amateurs.",
+  "发射时叠加亚音频，只有带匹配亚音的台才能打开中继，避免误触发。": "A sub-audible tone is superimposed when transmitting, so only stations with the matching tone open the repeater, avoiding false triggering.",
+  "回波": "Echo",
+  "开源 Asterisk 语音网关，支持自建节点与链路互联。": "An open-source Asterisk voice gateway supporting self-hosted nodes and linked networks.",
+  "异频中继": "Duplex repeater",
+  "把电台经互联网互联，可用电脑/手机接入远地中继或会议。": "Links radios over the Internet, so a computer or phone can join distant repeaters or conference rooms.",
+  "日本 ICOM 主导，支持互联网网关全球互联。": "Led by ICOM of Japan, with worldwide linking through Internet gateways.",
+  "日本八重洲主导，兼容模拟 FM。": "Led by Yaesu of Japan, compatible with analogue FM.",
+  "连接互联网网关的小型个人接入点，无需本地中继。": "A small personal access point connected to an Internet gateway, with no local repeater needed.",
+  "频差": "Offset"
+}

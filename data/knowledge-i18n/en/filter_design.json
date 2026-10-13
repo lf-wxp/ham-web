@@ -1,0 +1,10 @@
+{
+  "带边应约 −3dB：{edge} dB": "The band edge should be about −3 dB: {edge} dB",
+  "带通中心应低插损：{at_center} dB": "The band-pass centre should have low insertion loss: {at_center} dB",
+  "带通带边归一化电抗应等于 gₖ={gk}，实际 {got}": "The band-pass band-edge normalised reactance should equal gₖ={gk}, got {got}",
+  "带阻中心应深衰：{at_center} dB": "The band-stop centre should be deeply attenuated: {at_center} dB",
+  "带阻带边归一化电抗应等于 gₖ={gk}，实际 {got}（gₖ 与 1/gₖ 用反时会差 gₖ² 倍）": "The band-stop band-edge normalised reactance should equal gₖ={gk}, got {got} (swapping gₖ with 1/gₖ differs by a factor of gₖ²)",
+  "带阻第二级 g=2": "Band-stop second stage g = 2",
+  "通带外应深衰：{low} / {high} dB": "Outside the pass band it should be deeply attenuated: {low} / {high} dB",
+  "阻带外应低插损：{below} / {above} dB": "Outside the stop band the insertion loss should be low: {below} / {above} dB"
+}

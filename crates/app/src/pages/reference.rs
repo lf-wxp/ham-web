@@ -14,19 +14,19 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn ReferencePage() -> impl IntoView {
-  set_title("shell.exam-reference-2");
+  set_title("shell.exam-reference-title");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <PageHeader title=t("shell.exam-reference-2") subtitle=t("exam.licence-privileges-zones-rst") />
+      <PageHeader title=t("shell.exam-reference-title") subtitle=t("exam.licence-privileges-zones-rst") />
       <PageContainer>
         // 操作证类别与权限
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.operator-licence-classes-and")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[560px] border-collapse text-sm">
               <thead class="bg-muted/60 text-xs">
                 <tr>
-                  <th class=CELL>{move || t("exam.class-2")}</th>
+                  <th class=CELL>{move || t("exam.class-column")}</th>
                   <th class=CELL>{move || t("exam.frequency-range")}</th>
                   <th class=CELL>{move || t("exam.power-limit")}</th>
                   <th class=CELL>{move || t("radio.notes")}</th>
@@ -52,14 +52,14 @@ pub fn ReferencePage() -> impl IntoView {
         </section>
 
         // 分区号
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.amateur-radio-zone-numbers")}</h2>
           <div class="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3 lg:grid-cols-5">
             {CALL_AREAS
               .iter()
               .map(|a| {
                 view! {
-                  <div class="flex items-start gap-2 rounded-lg border bg-muted/30 p-3">
+                  <div class="flex items-start gap-2 border bg-muted/30 p-3">
                     <span class="font-mono text-lg font-semibold text-primary">{a.digit}</span>
                     <span class="text-xs leading-5 text-muted-foreground">{a.regions}</span>
                   </div>
@@ -70,15 +70,15 @@ pub fn ReferencePage() -> impl IntoView {
         </section>
 
         // RST 信号报告
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("shell.rst-report")}</h2>
           <div class="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
             {RST_SCALES
               .iter()
               .map(|s| {
                 view! {
-                  <div class="rounded-lg border">
-                    <div class="rounded-t-lg border-b bg-muted/40 px-3 py-2">
+                  <div class="border">
+                    <div class="border-b bg-muted/40 px-3 py-2">
                       <span class="font-mono font-semibold text-primary">{s.key}</span>
                       <span class="ml-2 text-sm font-medium">{s.name}</span>
                       <div class="text-xs text-muted-foreground">{s.note}</div>
@@ -105,7 +105,7 @@ pub fn ReferencePage() -> impl IntoView {
         </section>
 
         // 发射类别
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.emission-designators")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[480px] border-collapse text-sm">
@@ -143,7 +143,7 @@ pub fn ReferencePage() -> impl IntoView {
         />
 
         // 通联英语
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.contact-english-phrases")}</h2>
           <dl class="divide-y">
             {PHRASES

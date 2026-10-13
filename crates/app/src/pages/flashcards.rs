@@ -133,7 +133,7 @@ pub fn FlashcardsPage() -> impl IntoView {
           } else if finished.get() {
             let total = known.get() + unknown.get() + skipped.get();
             view! {
-              <div class="rounded-xl border bg-card px-4 py-10 text-center">
+              <div class="pxl-card border bg-card px-4 py-10 text-center">
                 <div class="text-lg font-semibold">{move || t("exam.round-complete")}</div>
                 <div class="mt-2 text-sm text-muted-foreground">
                   {t("exam.total")} {total} {move || t("exam.questions-know")} <span class="font-semibold text-emerald-700 dark:text-emerald-400">{known.get()}</span>
@@ -161,7 +161,7 @@ pub fn FlashcardsPage() -> impl IntoView {
             };
             let total = questions.get_untracked().len();
             view! {
-              <div on:touchstart=swipe_start on:touchend=swipe_end class="rounded-xl border bg-card p-5">
+              <div on:touchstart=swipe_start on:touchend=swipe_end class="pxl-card border bg-card p-5">
                 <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
                   <span>{move || t("exam.no")} <span class="font-semibold text-foreground">{current.get() + 1}</span> {" / "} {total} {move || t("exam.questions")}</span>
                   <span>{move || t("exam.know")} <span class="font-semibold text-emerald-700 dark:text-emerald-400">{known.get()}</span> {move || t("exam.don-t-know")} <span class="font-semibold text-red-700 dark:text-red-400">{unknown.get()}</span></span>
@@ -208,7 +208,7 @@ pub fn FlashcardsPage() -> impl IntoView {
                           size=Size::Default
                           on_click=Callback::new(move |_| mark(false))
                         >
-                          {move || t("learning.don-t-know-2")}
+                          {move || t("learning.don-t-know-mark")}
                         </Button>
                       }
                       .into_any()

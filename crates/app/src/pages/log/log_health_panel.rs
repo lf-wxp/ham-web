@@ -160,7 +160,7 @@ pub(super) fn LogHealthPanel() -> impl IntoView {
   });
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
         <h2 class="mr-auto text-sm font-semibold">{move || t("log.health-title")}</h2>
         {move || {

@@ -84,7 +84,7 @@ pub fn ZoneMapPage() -> impl IntoView {
 
   view! {
     <KnowledgePage title=t("radio.cq-itu-zone-map") subtitle=t("radio.colour-by-zone-locate")>
-      <section class="rounded-xl border bg-card">
+      <section class="pxl-card border bg-card">
         <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.zone-map")}</h2>
         <div class="flex flex-wrap items-center gap-3 p-4">
           <ChipGroup
@@ -105,7 +105,7 @@ pub fn ZoneMapPage() -> impl IntoView {
             value=query
             on_change=Callback::new(move |v: String| query.set(v))
             on_enter=Callback::new(move |()| resolve())
-            placeholder=Signal::derive(move || t("radio.callsign-or-entity-name-2"))
+            placeholder=Signal::derive(move || t("radio.callsign-or-entity-placeholder"))
             aria_label=Signal::derive(move || t("radio.callsign-or-entity-name"))
             class="max-w-xs"
           />
@@ -133,7 +133,7 @@ pub fn ZoneMapPage() -> impl IntoView {
               .and_then(dxcc::entity_by_dxcc)
               .map(|e| {
                 view! {
-                  <span class="rounded-full border border-amber-500 bg-amber-500/10 px-3 py-1 text-xs">
+                  <span class="border border-amber-500 bg-amber-500/10 px-3 py-1 text-xs">
                     {tf("radio.located", &[e.name])}
                   </span>
                 }
@@ -149,11 +149,11 @@ pub fn ZoneMapPage() -> impl IntoView {
           />
         </div>
         <p class="border-t px-4 py-3 text-xs text-muted-foreground">
-          {move || t("radio.coloured-by-each-dxcc-2")}
+          {move || t("radio.coloured-by-primary-zone")}
         </p>
       </section>
 
-      <section class="rounded-xl border bg-card">
+      <section class="pxl-card border bg-card">
         <h2 class="border-b px-4 py-3 text-sm font-semibold">
           {move || tf("radio.legend-zones-the-number", &[&max_zone.get().to_string()])}
         </h2>
@@ -170,7 +170,7 @@ pub fn ZoneMapPage() -> impl IntoView {
               .map(|(z, n)| {
                 let color = zone_color(z, max);
                 let label = view! {
-                  <span class="inline-block h-3 w-3 rounded-sm" style=format!("background-color: {color}")></span>
+                  <span class="inline-block h-3 w-3" style=format!("background-color: {color}")></span>
                   <span class="tabular-nums">{format!("{z} ({n})")}</span>
                 }
                   .into_any();
@@ -181,7 +181,7 @@ pub fn ZoneMapPage() -> impl IntoView {
         </ChipGroup>
       </section>
 
-      <section class="rounded-xl border bg-card">
+      <section class="pxl-card border bg-card">
         <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.zone-composition")}</h2>
         {move || {
           let Some(z) = selected.get() else {

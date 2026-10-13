@@ -16,7 +16,7 @@ pub fn ModesPage() -> impl IntoView {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader title=t("shell.digital-modes") subtitle=t("knowledge.digital-voice-and-data") />
       <PageContainer>
-        <div class="overflow-x-auto rounded-xl border bg-card">
+        <div class="overflow-x-auto pxl-card border bg-card">
           <table class="w-full min-w-[720px] border-collapse text-sm">
             <thead class="bg-muted/60 text-xs">
               <tr>

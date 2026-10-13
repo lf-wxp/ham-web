@@ -8,7 +8,7 @@
 
 use leptos::prelude::*;
 
-use crate::i18n::{t, tf};
+use crate::i18n::{t, tf, tp};
 use crate::ui::{Button, Chip, ChipGroup, Field, Input, Size, Variant};
 
 use super::log_helpers::station_title;
@@ -85,7 +85,7 @@ pub(super) fn StationPanel(book: RwSignal<StationBook>, on_save: Callback<()>) -
   };
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <Button
         variant=Variant::Text
         // 文字色必须显式给：`Variant::Text` 的 `--btn-fg` 是 `muted-foreground`，而这里是区块标题。
@@ -159,7 +159,7 @@ pub(super) fn StationPanel(book: RwSignal<StationBook>, on_save: Callback<()>) -
                     {move || t("log.station-remove")}
                   </Button>
                   <span class="text-xs text-muted-foreground">
-                    {move || tf("log.station-entry-count", &[&count.get().to_string()])}
+                    {move || tp("log.station-entry-count", count.get(), &[&count.get().to_string()])}
                   </span>
                 </div>
               </div>

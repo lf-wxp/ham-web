@@ -63,8 +63,8 @@ pub(super) fn ExamHeader(
       }
       meta=ViewFn::from(move || {
         view! {
-          {move || weak.get().then(|| view! { <span class="mr-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-amber-800 dark:text-amber-300">{move || t("exam.weak-area-exam")}</span> })}
-          {move || t("exam.class-3")} {move || bank_class(bank.get().as_str())} "｜"
+          {move || weak.get().then(|| view! { <span class="mr-1 bg-amber-500/15 px-1.5 py-0.5 text-amber-800 dark:text-amber-300">{move || t("exam.weak-area-exam")}</span> })}
+          {move || t("exam.class-prefix")} {move || bank_class(bank.get().as_str())} "｜"
           {move || {
             let r = rule.get();
             tf("exam.questions-single-multiple", &[&r.total.to_string(), &r.singles.to_string(), &r.multiples.to_string()])
@@ -75,7 +75,7 @@ pub(super) fn ExamHeader(
       })
     />
     <div class="sm:hidden grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
-      <div>{move || t("exam.class-3")} {move || bank_class(bank.get().as_str())}</div>
+      <div>{move || t("exam.class-prefix")} {move || bank_class(bank.get().as_str())}</div>
       <div>
         {move || {
           let r = rule.get();
@@ -83,7 +83,7 @@ pub(super) fn ExamHeader(
         }}
       </div>
       <div>{move || tf("exam.time-limit-min", &[&rule.get().minutes.to_string()])}</div>
-      <div>{move || t("exam.remaining-2")} {remaining_view}</div>
+      <div>{move || t("exam.remaining-label")} {remaining_view}</div>
     </div>
   }
 }

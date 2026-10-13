@@ -1,0 +1,4 @@
+{
+  "CR 与 LF 不得相同": "CR and LF must not be the same",
+  "CR 位序反了会与 LF 互换": "Reversing the CR bit order swaps it with LF"
+}

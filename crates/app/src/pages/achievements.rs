@@ -126,7 +126,7 @@ pub fn AchievementsPage() -> impl IntoView {
       />
 
       <PageContainer class="space-y-5">
-        <section class="rounded-xl border bg-card p-4">
+        <section class="pxl-card border bg-card p-4">
           <div class="mb-1 flex items-center justify-between text-sm">
             <span class="font-medium">{move || t("learning.achievements-unlocked")}</span>
             <span class="tabular-nums text-muted-foreground">

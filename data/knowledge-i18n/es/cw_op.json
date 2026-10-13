@@ -1,0 +1,16 @@
+{
+  "break，打断/快速切换收发": "break (interrupción o cambio rápido de turno)",
+  "from，来自（分隔双方呼号，如 BG4XYZ DE JA1ABC）": "from (separa los dos indicativos, p. ej. BG4XYZ DE JA1ABC)",
+  "over，请讲（邀请对方发射）": "over (invita a la otra estación a transmitir)",
+  "信号报告（可懂度/强度/音调）": "Informe de señal (legibilidad / intensidad / tono)",
+  "发送前先听，确认频率空闲再呼叫。": "Escuche antes de transmitir; confirme que la frecuencia está libre y después llame.",
+  "对方发送时耐心等待，使用 K/BK 正确交接。": "Espere con paciencia mientras la otra estación transmite y ceda el turno correctamente con K/BK.",
+  "报呼号至少两遍，速度以对方能抄收为准。": "Dé su indicativo al menos dos veces, a una velocidad que la otra estación pueda copiar.",
+  "收到，Roger": "Recibido — Roger",
+  "普遍呼叫": "Llamada general",
+  "祝福（对女士，love and kisses）": "Buenos deseos (a una mujer: besos y abrazos)",
+  "祝福，best regards": "Un cordial saludo",
+  "结束用 73 或 SK，简洁清晰。": "Termine con 73 o SK: breve y claro.",
+  "结束通联，silent key（也指已故台友）": "Fin del contacto; silent key (también designa a un radioaficionado fallecido)",
+  "频率是否被占用（Q 简语）": "Si la frecuencia está ocupada (código Q)"
+}

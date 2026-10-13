@@ -31,7 +31,7 @@ pub(super) fn QuizQuestion(q: QuestionItem) -> impl IntoView {
   let correct = move || q.is_answer_correct(&selected.get());
 
   view! {
-    <div class="rounded-lg border p-3">
+    <div class="border p-3">
       <div class="text-sm font-medium">{question}</div>
       <div class="mt-2 space-y-1.5">
         {options
@@ -50,7 +50,7 @@ pub(super) fn QuizQuestion(q: QuestionItem) -> impl IntoView {
               <button
                 type="button"
                 class=move || {
-                  let base = "w-full rounded-lg border px-3 py-1.5 text-left text-sm transition-colors";
+                  let base = "w-full border px-3 py-1.5 text-left text-sm transition-colors";
                   if answered() {
                     if correct_key.contains(&class_key) {
                       format!("{base} border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40")
@@ -76,11 +76,11 @@ pub(super) fn QuizQuestion(q: QuestionItem) -> impl IntoView {
       {move || {
         answered().then(|| {
           if correct() {
-            view! { <div class="mt-1.5 text-xs text-emerald-600">{move || t("common.correct-4")}</div> }.into_any()
+            view! { <div class="mt-1.5 text-xs text-emerald-600">{move || t("common.correct-verdict")}</div> }.into_any()
           } else {
             view! {
               <div class="mt-1.5 text-xs text-red-600">
-                {move || t("exam.correct-answer-2")} <span class="font-mono font-semibold">{answer_keys.join("、")}</span>
+                {move || t("exam.correct-answer-prefix")} <span class="font-mono font-semibold">{answer_keys.join("、")}</span>
               </div>
             }
             .into_any()

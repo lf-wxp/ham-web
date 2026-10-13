@@ -48,7 +48,7 @@ pub(super) fn PropagationWidget() -> impl IntoView {
           <PvMetric label=t("home.solar-flux") value=sfi loading=loading />
           <PvMetric label=t("home.sunspots") value=ssn loading=loading />
         </div>
-        <div class="rounded-lg border bg-muted/40 px-3 py-2 text-sm">
+        <div class="border bg-muted/40 px-3 py-2 text-sm">
           {move || {
             match k.get() {
               Some(kv) => {

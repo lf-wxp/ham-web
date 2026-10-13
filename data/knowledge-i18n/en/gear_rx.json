@@ -1,0 +1,17 @@
+{
+  "{id} 不该有接收机指标": "{id} should not have receiver specifications",
+  "{} 不在器材库里：指标要挂在真实机型上": "{} is not in the gear library: specifications must attach to a real model",
+  "{} 属于 {}，原表不会测它": "{} belongs to {}, and the source table does not measure it",
+  "{} 的动态范围 {value} 不像实测值": "{}: the dynamic range {value} does not look like a measured value",
+  "{} 的噪声底 {} dBm 不像实测值": "The noise floor of {} at {} dBm does not look like a measured value",
+  "{} 的型号写法（{}）与器材库（{}）对不上": "The model spelling ({}) of {} does not match the gear library ({})",
+  "{} 的测量日期晚于核对日期": "The measurement date of {} is later than the verification date",
+  "{} 的测量日期格式不对": "The measurement date format of {} is wrong",
+  "{} 的窄间隔 {} kHz 超出原表的两种取值": "The narrow spacing {} kHz of {} is outside the two values of the source table",
+  "{} 的窄间隔（{}）比宽间隔（{}）还好，抄错了吧": "The narrow spacing ({}) of {} is better than the wide spacing ({}) — probably copied wrong",
+  "取数规则": "Data extraction rules",
+  "只有第一行是合法的": "Only the first row is valid",
+  "同一机型收录了多行": "The same model appears in more than one row",
+  "收录太少（{} 行）": "Too few entries ({} rows)",
+  "数据文件里少了「{needle}」": "The data file is missing \"{needle}\""
+}

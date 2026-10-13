@@ -322,7 +322,7 @@ pub fn QslSyncDialog(open: RwSignal<bool>) -> impl IntoView {
                 {(!d.records.is_empty())
                   .then(|| {
                     view! {
-                      <div class="max-h-80 overflow-y-auto rounded-lg border">
+                      <div class="max-h-80 overflow-y-auto border">
                         <table class="w-full border-collapse text-xs">
                           <thead>
                             <tr>

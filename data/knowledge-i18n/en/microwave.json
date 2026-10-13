@@ -1,0 +1,17 @@
+{
+  "1.2cm 波段": "1.2 cm band",
+  "3cm 波段": "3 cm band",
+  "6mm 波段": "6 mm band",
+  "先对准再发射，用对方信标或场强仪辅助对准。": "Aim first, then transmit; use the other station's beacon or a field-strength meter to help.",
+  "对准": "Alignment",
+  "微波多用于本地竞赛与实验，注意功率与安全。": "Microwaves are used mostly for local contests and experiments; mind power and safety.",
+  "微波段馈线损耗大，常用波导代替同轴电缆。": "Feedline loss is high at microwave frequencies, so waveguide is often used instead of coaxial cable.",
+  "抛物面天线": "Parabolic dish antenna",
+  "最活跃的业余微波段，抛物面天线为主。": "The most active amateur microwave band, dominated by dish antennas.",
+  "毫米波，带宽大，距离受限。": "Millimetre wave: wide bandwidth but limited range.",
+  "波导": "Waveguide",
+  "波束极窄，需精确对准对方方向，通常配合信标与功率计。": "The beam is extremely narrow, so aim precisely at the other station, usually with a beacon and a power meter.",
+  "用抛物面反射器聚焦电波，增益高、波束窄，微波通信核心。": "A parabolic reflector focuses the waves, giving high gain and a narrow beam — the core of microwave communication.",
+  "短距离（数十 km）用小型抛物面即可，长距离需更大口径。": "For short distances (tens of km) a small dish is enough; longer paths need a larger aperture.",
+  "窄波束，适合点对点与比赛。": "Narrow beams, suited to point-to-point links and contests."
+}

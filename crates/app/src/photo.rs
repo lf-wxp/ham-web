@@ -265,7 +265,7 @@ async fn read_data_url(blob: &Blob) -> Result<String, String> {
     .result()
     .ok()
     .and_then(|v| v.as_string())
-    .ok_or_else(|| t("tools.could-not-read-the-2"))
+    .ok_or_else(|| t("tools.could-not-read-image-data"))
 }
 
 async fn compress(kind: PhotoKind, file: &File) -> Result<Blob, CompressError> {

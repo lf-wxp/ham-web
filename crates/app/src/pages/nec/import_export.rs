@@ -15,7 +15,7 @@ pub(super) fn ImportExportSection(
   on_export: Callback<(), ()>,
 ) -> impl IntoView {
   view! {
-    <details class="rounded-xl border bg-card">
+    <details class="pxl-card border bg-card">
       <summary class="cursor-pointer px-4 py-3 text-sm font-semibold">
         {move || t("tools.nec-import-export")}
       </summary>

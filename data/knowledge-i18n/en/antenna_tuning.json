@@ -1,0 +1,14 @@
+{
+  "1 初测": "1. Initial measurement",
+  "2 判断": "2. Judge",
+  "3 修剪": "3. Trim",
+  "4 验证": "4. Verify",
+  "修剪留有余量，宁长勿短（加长比截短容易）。": "Leave margin when trimming: better too long than too short (lengthening is easier than cutting).",
+  "测量时天线置于最终架设高度与位置，避免环境影响误判。": "Measure with the antenna at its final height and position, so the environment does not mislead you.",
+  "用天线分析仪扫频，找到谐振点与驻波最低频率。": "Sweep with an antenna analyser to find the resonance and the frequency of lowest SWR.",
+  "确认目标频率驻波比 < 2（理想 < 1.5），带宽满足需要。": "Confirm SWR < 2 on the target frequency (ideally < 1.5) and that the bandwidth is adequate.",
+  "谐振频率偏高说明天线偏短，偏低说明偏长。": "A resonant frequency that is too high means the antenna is too short; too low means it is too long.",
+  "边测边记，避免来回反复。": "Record as you measure, to avoid going back and forth.",
+  "逐次少量修剪或加长振子，每次后重新扫频。": "Trim or lengthen the element a little at a time, re-sweeping after each change.",
+  "馈线长度也会影响测量，尽量用分析仪直接测天线端。": "Feedline length also affects the measurement, so measure at the antenna end with the analyser where possible."
+}

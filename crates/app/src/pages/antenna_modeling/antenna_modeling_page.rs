@@ -14,16 +14,16 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn AntennaModelingPage() -> impl IntoView {
-  set_title("shell.antenna-modeling-2");
+  set_title("shell.antenna-modeling-title");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader
-        title=move || t("shell.antenna-modeling-2")
+        title=move || t("shell.antenna-modeling-title")
         subtitle="EZNEC · MMANA-GAL · 4NEC2".to_string()
       />
 
       <PageContainer>
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.radiation-pattern-visualisation")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
             {move || t("radio.polar-plots-show-the")}
@@ -31,7 +31,7 @@ pub fn AntennaModelingPage() -> impl IntoView {
           <div class="p-4"><PatternPlot /></div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.dipole-dimension-estimate")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
             {move || t("radio.estimate-the-size-before")}
@@ -39,7 +39,7 @@ pub fn AntennaModelingPage() -> impl IntoView {
           <div class="p-4"><DipoleCalculator /></div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.yagi-antenna-dimensions")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
             {move || t("knowledge.the-reflector-is-slightly")}
@@ -47,7 +47,7 @@ pub fn AntennaModelingPage() -> impl IntoView {
           <div class="p-4"><YagiCalculator /></div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.vertical-antenna-dimensions")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
             {move || t("knowledge.quarter-wave-vertical-radials")}
@@ -55,7 +55,7 @@ pub fn AntennaModelingPage() -> impl IntoView {
           <div class="p-4"><VerticalCalculator /></div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.related-calculators")}</h2>
           <div class="flex flex-wrap gap-2 p-4">
             {[
@@ -70,7 +70,7 @@ pub fn AntennaModelingPage() -> impl IntoView {
                 view! {
                   <a
                     href=*href
-                    class="rounded-full border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    class="border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
                     {move || t(label)}
                   </a>
@@ -80,7 +80,7 @@ pub fn AntennaModelingPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.common-software")}</h2>
           <div class="overflow-x-auto">
             <table class="w-full min-w-[520px] border-collapse text-sm">
@@ -111,14 +111,14 @@ pub fn AntennaModelingPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.modelling-workflow")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {MODELING_STEPS
               .iter()
               .map(|&(t, d)| {
                 view! {
-                  <div class="flex flex-col gap-1 rounded-lg px-3 py-2">
+                  <div class="flex flex-col gap-1 px-3 py-2">
                     <span class="text-sm font-medium">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
@@ -128,7 +128,7 @@ pub fn AntennaModelingPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="rounded-xl border bg-card">
+        <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.usage-notes")}</h2>
           <ul class="space-y-2 p-4">
             {MODELING_TIPS

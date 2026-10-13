@@ -1,0 +1,20 @@
+{
+  "{name}.json 顺序与 glossary_files! 不一致": "El orden de {name}.json no coincide con glossary_files!",
+  "「{t}」参与注入，解释中不能含括号": "«{t}» participa en la inyección, así que su explicación no puede llevar paréntesis",
+  "「{t}」参见的「{see}」不存在": "«{t}»: la referencia «{see}» no existe",
+  "「{t}」的 {field} 为空或首尾含空白": "«{t}»: el campo {field} está vacío o tiene espacios",
+  "「{t}」的分类「{c}」不存在": "«{t}»: la categoría «{c}» no existe",
+  "「{t}」的解释含全角括号，会与注入格式冲突": "La explicación de «{t}» contiene paréntesis de ancho completo, que chocan con el formato de inyección",
+  "「{t}」缺少解释 desc": "«{t}» no tiene la explicación desc",
+  "其他": "Otros",
+  "匹配": "Adaptación",
+  "天调": "Sintonizador de antena",
+  "应有全量补充简语": "Debería estar el conjunto completo de abreviaturas complementarias",
+  "应有常用简语": "Debería haber abreviaturas habituales",
+  "旧写法": "Forma antigua",
+  "术语「{t}」为空或首尾含空白": "El término «{t}» está vacío o tiene espacios al inicio o al final",
+  "术语「{t}」重复": "Término duplicado «{t}»",
+  "用语": "Terminología",
+  "缺少分类：{uncategorized:?}": "Falta la categoría: {uncategorized:?}",
+  "驻波": "Onda estacionaria"
+}

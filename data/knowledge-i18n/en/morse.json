@@ -1,0 +1,10 @@
+{
+  "划": "Dah (dash)",
+  "单词（组）间隔": "Word (group) spacing",
+  "字符不能为空：{c:?}": "The character must not be empty: {c:?}",
+  "字符内点划间隔": "Spacing between dits and dahs within a character",
+  "字符间隔": "Inter-character spacing",
+  "点": "Dit (dot)",
+  "点划序列不能为空：{c:?}": "The dit/dah sequence must not be empty: {c:?}",
+  "点划序列只能含 . 和 -：{c:?}": "The dit/dah sequence may contain only . and -: {c:?}"
+}

@@ -1,0 +1,21 @@
+{
+  "NEC2 内核": "NEC2 engine",
+  "NEC2 内核的免费建模工具，功能全面。": "A free modelling tool with an NEC2 engine and a comprehensive feature set.",
+  "仿真结果受地面与周围环境影响，实际架设后仍需微调。": "Simulation results depend on the ground and surroundings, so fine tuning is still needed after installation.",
+  "优化": "Optimise",
+  "先建模后动手，仿真能大幅减少天线调试的试错成本。": "Model first, build afterwards: simulation greatly reduces the trial-and-error cost of antenna tuning.",
+  "免费": "Free",
+  "免费天线建模与优化，界面简洁。": "Free antenna modelling and optimisation with a clean interface.",
+  "免费工具（MMANA-GAL / 4NEC2）足以满足绝大多数业余需求。": "Free tools (MMANA-GAL / 4NEC2) are enough for the great majority of amateur needs.",
+  "基于矩量法（NEC 内核），界面友好，经典首选；作者 2022 年退休后已免费发布。": "Based on the method of moments (NEC engine) with a friendly interface — the classic first choice; released as free software after the author retired in 2022.",
+  "建模": "Modelling",
+  "指定仿真频率范围，设置地面类型与架设高度。": "Specify the simulation frequency range, and set the ground type and mounting height.",
+  "数值电磁学代码，计算天线的方向图与阻抗。": "Numerical electromagnetics code that computes an antenna's pattern and impedance.",
+  "求解": "Solve",
+  "注意线径与分段数设置，分段过少会导致结果不准。": "Pay attention to wire diameter and the number of segments; too few segments make the results inaccurate.",
+  "算法": "Algorithm",
+  "设频段": "Set the band",
+  "调整尺寸观察驻波比与增益变化，迭代到满意。": "Adjust dimensions while watching SWR and gain, iterating until satisfied.",
+  "输入振子坐标、线径、材料，定义天线几何结构。": "Enter the element coordinates, wire diameter and material to define the antenna geometry.",
+  "运行求解器，得到阻抗、驻波比与方向图。": "Run the solver to obtain impedance, SWR and the radiation pattern."
+}

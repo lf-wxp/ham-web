@@ -25,7 +25,7 @@ pub fn NavtexDecoderPage() -> impl IntoView {
     max_bytes: MAX_BYTES,
     transfer: false,
     parse: parse_message,
-    too_large: |mb, max| tf("tools.file-too-large-about-2", &[mb, max]),
+    too_large: |mb, max| tf("tools.file-too-large-downsample", &[mb, max]),
     timed_out: || t("tools.decoding-timed-out"),
     failed: || t("tools.decoding-failed-generic"),
   });
@@ -140,7 +140,7 @@ pub fn NavtexDecoderPage() -> impl IntoView {
                             <span class="font-mono font-semibold">{header}</span>
                             <span
                               class=format!(
-                                "rounded px-1.5 py-0.5 text-xs {}",
+                                "px-1.5 py-0.5 text-xs {}",
                                 if m.accepted {
                                   "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                                 } else {

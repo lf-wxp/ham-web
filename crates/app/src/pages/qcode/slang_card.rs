@@ -9,7 +9,7 @@ pub(super) fn SlangCard(entry: &'static GlossaryEntry) -> impl IntoView {
     "text-base font-semibold"
   };
   view! {
-    <article class="flex flex-col rounded-xl border bg-card p-4">
+    <article class="flex flex-col pxl-card border bg-card p-4">
       <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <h3 class=term_class>{entry.term.as_str()}</h3>
         {entry

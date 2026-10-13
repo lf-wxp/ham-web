@@ -58,7 +58,7 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
     .collect();
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("log.contest-log-generator")}</h2>
       <div class="space-y-3 p-4">
         <div class="grid gap-3 sm:grid-cols-2">
@@ -131,7 +131,7 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
             .into_any()
           } else {
             view! {
-              <pre class="max-h-64 overflow-auto rounded-lg border bg-muted/40 p-3 font-mono text-xs leading-5">
+              <pre class="max-h-64 overflow-auto border bg-muted/40 p-3 font-mono text-xs leading-5">
                 {text}
               </pre>
             }

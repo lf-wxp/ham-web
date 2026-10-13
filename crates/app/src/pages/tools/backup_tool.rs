@@ -155,7 +155,7 @@ pub(super) fn BackupTool() -> impl IntoView {
         />
       </div>
 
-      <div class="rounded-lg border bg-muted/20 p-3">
+      <div class="border bg-muted/20 p-3">
         <p class="mb-2 text-xs font-semibold text-muted-foreground">
           {move || t("tools.backup-modules")}
         </p>
@@ -218,8 +218,8 @@ pub(super) fn BackupTool() -> impl IntoView {
                 )}
               </span>
             </div>
-            <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div class=format!("h-full rounded-full {bar}") style=format!("width: {:.1}%", pct.min(100.0))></div>
+            <div class="h-2 w-full overflow-hidden bg-muted">
+              <div class=format!("h-full {bar}") style=format!("width: {:.1}%", pct.min(100.0))></div>
             </div>
             <ul class="grid gap-x-6 gap-y-1 text-xs sm:grid-cols-2">
               {groups

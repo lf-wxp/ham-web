@@ -104,7 +104,7 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader class="top-16"
-        title=move || t("shell.q-codes-2")
+        title=move || t("shell.q-codes-title")
         subtitle=move || t("knowledge.q-codes-cw-abbreviations")
         actions=ViewFn::from(move || {
           view! {
@@ -166,7 +166,7 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
                   list.with(|items| {
                     if items.is_empty() {
                       view! {
-                        <div class="rounded-xl border border-dashed py-10 text-center text-sm text-muted-foreground">
+                        <div class="border border-dashed py-10 text-center text-sm text-muted-foreground">
                           {move || t("knowledge.no-matching-codes")}
                         </div>
                       }

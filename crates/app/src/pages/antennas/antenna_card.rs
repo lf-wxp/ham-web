@@ -6,7 +6,7 @@ use crate::data;
 #[component]
 pub(super) fn AntennaCard(entry: &'static AntennaType) -> impl IntoView {
   view! {
-    <article class="flex flex-col rounded-xl border bg-card p-4">
+    <article class="flex flex-col pxl-card border bg-card p-4">
       <svg
         viewBox="0 0 100 60"
         class="h-16 w-full text-primary"
@@ -22,10 +22,10 @@ pub(super) fn AntennaCard(entry: &'static AntennaType) -> impl IntoView {
         <span class="font-mono text-xs font-semibold text-muted-foreground">{entry.abbr}</span>
       </div>
       <div class="mt-1.5 flex flex-wrap gap-1.5 text-xs">
-        <span class="rounded-md bg-muted px-2 py-0.5 text-muted-foreground">
+        <span class="bg-muted px-2 py-0.5 text-muted-foreground">
           {move || text(entry.gain)}
         </span>
-        <span class="rounded-md bg-muted px-2 py-0.5 text-muted-foreground">
+        <span class="bg-muted px-2 py-0.5 text-muted-foreground">
           {move || text(entry.usage)}
         </span>
       </div>

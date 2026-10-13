@@ -1,0 +1,22 @@
+{
+  "LoTW 确认应累加": "LoTW confirmations should accumulate",
+  "QRZ 确认落到自己的渠道上": "QRZ confirmations go to their own channel",
+  "{channel:?} 没有任何来源认领": "No source claims {channel:?}",
+  "{} 不该被 {} 连带置位": "{} should not be set as a side effect of {}",
+  "{} 置位后应读得到": "{} should be readable once it is set",
+  "不是纸质卡确认": "It is not a paper card confirmation",
+  "两行的标志位要合并": "The flags of the two rows must be merged",
+  "匹配情况仍然要报给用户": "The match status must still be reported to the user",
+  "只采纳 eQSL 渠道": "Only the eQSL channel is accepted",
+  "同一本地通联只算一条": "The same local contact counts only once",
+  "带了扩展字段就不是只分析": "With extension fields present it is not analysis-only",
+  "报告侧的计数照旧": "The count on the report side stays the same",
+  "新增照常补上": "Additions are filled in as usual",
+  "既没有新增，也没有冲突": "Neither additions nor conflicts",
+  "本地标志位应原样保留": "Local flags should be preserved unchanged",
+  "没有可采纳的标记，所以没有差异": "No flag can be accepted, so there is no difference",
+  "测试里的频率": "The frequency used in the test",
+  "纸卡确认应保留": "Paper card confirmations should be kept",
+  "纸质确认不是 LoTW 的事": "Paper confirmation is not LoTW's business",
+  "默认应为未置位": "The default should be unset"
+}

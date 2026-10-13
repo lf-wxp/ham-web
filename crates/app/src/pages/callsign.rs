@@ -133,7 +133,7 @@ pub fn CallsignPage() -> impl IntoView {
       (
         "分区",
         match (parts.area, parts.area_regions) {
-          (Some(a), Some(r)) => tf("common.zone-2", &[a, r]),
+          (Some(a), Some(r)) => tf("common.zone-with-regions", &[a, r]),
           _ => dash.clone(),
         },
       ),
@@ -161,7 +161,7 @@ pub fn CallsignPage() -> impl IntoView {
 
   view! {
     <KnowledgePage title=t("tools.callsign-lookup") subtitle=t("radio.offline-parsing-dxcc-entity")>
-      <section class="rounded-xl border bg-card">
+      <section class="pxl-card border bg-card">
         <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.callsign-lookup")}</h2>
         <p class="px-4 pt-3 text-xs text-muted-foreground">
           {move || t("radio.enter-a-callsign-to")}
@@ -171,7 +171,7 @@ pub fn CallsignPage() -> impl IntoView {
           <Input
             value=input
             on_change=Callback::new(move |v: String| input.set(v.to_uppercase()))
-            placeholder=Signal::derive(move || t("radio.e-g-bg4xyz-ja1abc-2"))
+            placeholder=Signal::derive(move || t("radio.e-g-bg4xyz-ja1abc-p5abc"))
             aria_label=Signal::derive(move || t("log.callsign"))
             class="max-w-xs font-mono uppercase"
           />
@@ -189,7 +189,7 @@ pub fn CallsignPage() -> impl IntoView {
                 view! {
                   <button
                     type="button"
-                    class="rounded-full border px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    class="border px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                     on:click=move |_| {
                       input.set(ex.to_owned());
                       run_online();
@@ -208,7 +208,7 @@ pub fn CallsignPage() -> impl IntoView {
           if list.is_empty() {
             return view! {
               <p class="border-t px-4 py-4 text-sm text-muted-foreground">
-                {move || t("radio.enter-a-callsign-to-2")}
+                {move || t("radio.enter-a-callsign-to-begin")}
               </p>
             }
             .into_any();
@@ -219,7 +219,7 @@ pub fn CallsignPage() -> impl IntoView {
                 .into_iter()
                 .map(|(label, value)| {
                   view! {
-                    <div class="flex items-baseline gap-2 rounded-lg px-3 py-2">
+                    <div class="flex items-baseline gap-2 px-3 py-2">
                       <span class="w-28 shrink-0 text-xs text-muted-foreground">{label}</span>
                       <span class="text-sm font-medium">{value}</span>
                     </div>
@@ -289,7 +289,7 @@ pub fn CallsignPage() -> impl IntoView {
         </p>
       </section>
 
-      <section class="rounded-xl border bg-card">
+      <section class="pxl-card border bg-card">
         <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
           <h2 class="mr-auto text-sm font-semibold">{move || t("radio.zone-map-cq-itu")}</h2>
           <ChipGroup

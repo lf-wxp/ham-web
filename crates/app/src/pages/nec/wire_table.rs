@@ -44,7 +44,7 @@ pub(super) fn WireTable(
   }
 
   view! {
-    <div class="overflow-x-auto rounded-xl border bg-card">
+    <div class="overflow-x-auto pxl-card border bg-card">
       <div class="flex items-center justify-between border-b px-4 py-3">
         <span class="text-sm font-semibold">{move || t("tools.nec-wire-geometry")}</span>
         <Button

@@ -151,7 +151,7 @@ pub(super) fn FileWaterfall() -> impl IntoView {
   };
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <div class="border-b px-4 py-3">
         <h2 class="text-sm font-semibold">{move || t("radio.offline-analysis-upload-wav")}</h2>
         <p class="text-xs text-muted-foreground">
@@ -186,7 +186,7 @@ pub(super) fn FileWaterfall() -> impl IntoView {
 
         {move || {
           error.get().map(|e| view! {
-            <div class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+            <div class="flex items-start gap-2 border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
               <Icon kind=IconKind::AlertCircle class="mt-0.5 h-5 w-5 shrink-0" />
               <div class="text-sm">{e}</div>
             </div>
@@ -196,7 +196,7 @@ pub(super) fn FileWaterfall() -> impl IntoView {
         {move || {
           result.get().map(|r| view! {
             <div class="space-y-4">
-              <div class="flex flex-wrap gap-x-1.5 gap-y-1 rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              <div class="flex flex-wrap gap-x-1.5 gap-y-1 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                 <span class="max-w-[16rem] truncate font-medium text-foreground">{file_name.get_untracked()}</span>
                 <span>"·"</span>
                 <span>{format!("{:.0} Hz", r.sample_rate)}</span>
@@ -207,11 +207,11 @@ pub(super) fn FileWaterfall() -> impl IntoView {
               </div>
               <div>
                 <div class="mb-1 text-xs font-medium text-muted-foreground">{move || t("radio.waterfall-newest-at-the")}</div>
-                <img src=r.waterfall_url.clone() alt=t("tools.spectrum-waterfall") class="w-full rounded-md border" />
+                <img src=r.waterfall_url.clone() alt=t("tools.spectrum-waterfall") class="w-full border" />
               </div>
               <div>
                 <div class="mb-1 text-xs font-medium text-muted-foreground">{move || t("radio.average-spectrum")}</div>
-                <img src=r.spectrum_url.clone() alt=t("radio.average-spectrum") class="w-full rounded-md border" />
+                <img src=r.spectrum_url.clone() alt=t("radio.average-spectrum") class="w-full border" />
               </div>
               <div class="flex justify-center gap-2">
                 <ButtonLink href=r.waterfall_url.clone() download="waterfall.png">

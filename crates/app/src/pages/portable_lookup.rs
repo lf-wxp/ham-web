@@ -93,7 +93,7 @@ pub fn PortableLookup() -> impl IntoView {
   let coord = |lat: f64, lon: f64| format!("{:.4}, {:.4}", lat, lon);
 
   view! {
-    <section class="rounded-xl border bg-card">
+    <section class="pxl-card border bg-card">
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.sota-pota-reference-lookup")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("radio.enter-a-sota-summit")}
@@ -117,7 +117,7 @@ pub fn PortableLookup() -> impl IntoView {
           placeholder=Signal::derive(move || {
             if pota.get() { t("radio.e-g-k-0001") } else { t("radio.e-g-g-sp") }
           })
-          aria_label=Signal::derive(move || t("radio.reference-2"))
+          aria_label=Signal::derive(move || t("radio.reference-label"))
           class="max-w-xs font-mono uppercase"
         />
         <Button
@@ -179,7 +179,7 @@ pub fn PortableLookup() -> impl IntoView {
       }}
 
       <p class="px-4 pb-4 text-xs text-muted-foreground">
-        {move || t("radio.data-from-the-public-2")}
+        {move || t("radio.data-from-sota-pota")}
       </p>
     </section>
   }
