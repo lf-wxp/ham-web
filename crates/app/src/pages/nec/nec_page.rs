@@ -4,7 +4,10 @@
 //! 导入导出与方案库交接。每一块界面都是独立组件（见 [`super`] 的模块文档），
 //! 全部计算在 `ham_web_core::nec` 里完成（浏览器本地，离线可用）。
 
-use ham_web_core::nec::{Feed, Ground, Load, NecInput, Wire, parse_nec, solve_with_lines, to_nec};
+use ham_web_core::nec::{
+  Feed, Ground, Load, NecInput, TransmissionLine, Wire, parse_nec, solve_with_lines,
+  to_nec_with_lines,
+};
 use ham_web_core::nec_templates::nec_template;
 use leptos::prelude::*;
 
@@ -14,6 +17,7 @@ use crate::util::{cancel_debounce, debounce, set_title, take_nec_template};
 
 use super::canvas::WireCanvas;
 use super::design::DesignSection;
+use super::design_archive::DesignArchiveSection;
 use super::ground_material::GroundMaterialSection;
 use super::import_export::ImportExportSection;
 use super::lines::parsed as parsed_lines;
@@ -181,45 +185,85 @@ pub fn NecPage() -> impl IntoView {
   });
 
   // ── 导入 / 导出 ───────────────────────────────────────────────
-  // 把一段 `.nec` 文本加载进页面：导入按钮与「方案库交接」共用同一条路径，
-  // 保证两条入口的口径完全一致。返回是否成功。
+  // 把一份求解输入铺进各张表：`.nec` 导入、方案库交接与设计存档三条入口共用，
+  // 保证口径完全一致。`exact` 决定格子里写几位：`.nec` 的位置是按段号吸附出来的
+  // （`0.30952380952…`），写短一点好读；存档要的是「存什么回来就是什么」，不舍入。
+  let apply_input = move |input: &NecInput, exact: bool| {
+    let fmt = move |v: f64, digits: usize| {
+      if exact {
+        super::exact(v)
+      } else {
+        format!("{v:.digits$}")
+      }
+    };
+    wires.set(if exact {
+      input
+        .wires
+        .iter()
+        .map(|w| WireRow::from_wire_exact(id_gen(), w))
+        .collect()
+    } else {
+      initial(&input.wires)
+    });
+    loads.set(
+      input
+        .loads
+        .iter()
+        .map(|l| LoadRow {
+          id: id_gen(),
+          wire: (l.wire + 1).to_string(),
+          at: fmt(l.at, 4),
+          r_ohm: fmt(l.r_ohm, 3),
+          l_uh: fmt(l.l_uh, 3),
+          c_pf: fmt(l.c_pf, 3),
+        })
+        .collect(),
+    );
+    ground_kind.set(match input.ground {
+      Ground::Free => 0,
+      Ground::Perfect => 1,
+      Ground::Lossy { .. } => 2,
+    });
+    if let Ground::Lossy { eps_r: e, sigma } = input.ground {
+      eps_r.set(fmt(e, 3));
+      sigma_ground.set(fmt(sigma, 5));
+    }
+    freq_mhz.set(fmt(input.freq_hz / 1e6, 4));
+    // 馈电点必须一起搬过来。`feed` 是独立信号，只有 `rebuild()`（点预设 / 改参数）才会写它；
+    // 漏掉这一句的话，导入端馈（`efhw-40m`）或馈电不在 0 号导线上的模板（`yagi3-2m`）之后，
+    // 仍按旧的 `(0, 0.5)` 馈电 —— 阻抗、驻波比、增益全是错的，界面上还看不出来。
+    let first = input.feeds.first().map_or((0, 0.5), |x| (x.wire, x.at));
+    feed.set(first);
+    preset.set(match first {
+      (0, at) if at > 0.45 && at < 0.55 => Preset::Dipole,
+      _ => Preset::Vertical,
+    });
+  };
+  // 核心的传输线 → 表格行（导线序号在表格里从 1 起）。导入 `.nec` 与载回存档共用。
+  let set_lines = move |src: &[TransmissionLine]| {
+    lines.set(
+      src
+        .iter()
+        .map(|l| LineRow {
+          id: id_gen(),
+          wire_a: (l.wire_a + 1).to_string(),
+          at_a: super::exact(l.at_a),
+          wire_b: (l.wire_b + 1).to_string(),
+          at_b: super::exact(l.at_b),
+          z0: super::exact(l.z0),
+          length_m: super::exact(l.length_m),
+          vf: super::exact(l.velocity_factor),
+        })
+        .collect(),
+    );
+  };
   let apply_nec = move |text: &str| -> bool {
     match parse_nec(text) {
       Some(f) => {
-        wires.set(initial(&f.input.wires));
-        loads.set(
-          f.input
-            .loads
-            .iter()
-            .map(|l| LoadRow {
-              id: id_gen(),
-              wire: (l.wire + 1).to_string(),
-              at: format!("{:.4}", l.at),
-              r_ohm: format!("{:.3}", l.r_ohm),
-              l_uh: format!("{:.3}", l.l_uh),
-              c_pf: format!("{:.3}", l.c_pf),
-            })
-            .collect(),
-        );
-        ground_kind.set(match f.input.ground {
-          Ground::Free => 0,
-          Ground::Perfect => 1,
-          Ground::Lossy { .. } => 2,
-        });
-        if let Ground::Lossy { eps_r: e, sigma } = f.input.ground {
-          eps_r.set(format!("{e:.3}"));
-          sigma_ground.set(format!("{sigma:.5}"));
-        }
-        freq_mhz.set(format!("{:.4}", f.input.freq_hz / 1e6));
-        // 馈电点必须一起搬过来。`feed` 是独立信号，只有 `rebuild()`（点预设 / 改参数）才会写它；
-        // 漏掉这一句的话，导入端馈（`efhw-40m`）或馈电不在 0 号导线上的模板（`yagi3-2m`）之后，
-        // 仍按旧的 `(0, 0.5)` 馈电 —— 阻抗、驻波比、增益全是错的，界面上还看不出来。
-        let first = f.input.feeds.first().map_or((0, 0.5), |x| (x.wire, x.at));
-        feed.set(first);
-        preset.set(match first {
-          (0, at) if at > 0.45 && at < 0.55 => Preset::Dipole,
-          _ => Preset::Vertical,
-        });
+        apply_input(&f.input, false);
+        // `TL` 卡导入后进传输线表；文件里没有 `TL` 时清空表格 —— 留着上一个模型的线，
+        // 算的就不是文件里的模型了。
+        set_lines(&f.lines);
         notice.set(if f.ignored.is_empty() {
           t("tools.nec-imported")
         } else {
@@ -250,9 +294,26 @@ pub fn NecPage() -> impl IntoView {
       None => notice.set(t("tools.nec-template-invalid")),
     }
   }
+  // 设计存档载回：除了几何与地面，还要把 `.nec` 不承载的两样一起恢复 —— 导线材质与传输线。
+  let load_design = Callback::new(
+    move |(input, saved_lines, name): (NecInput, Vec<TransmissionLine>, String)| {
+      apply_input(&input, true);
+      // 材质表只有四档，存档里的电导率必然来自其中之一；对不上（手改过的存档）按铜处理。
+      let found = MATERIALS.iter().position(|(_, s)| *s == input.conductivity);
+      material.set(found.unwrap_or(1));
+      set_lines(&saved_lines);
+      let loaded = tf("tools.nec-archive-loaded", &[&name]);
+      // 悄悄换成铜会让结果与存档当时看到的对不上，要明说。
+      notice.set(if found.is_some() {
+        loaded
+      } else {
+        format!("{loaded} {}", t("tools.nec-archive-material-fallback"))
+      });
+    },
+  );
   let do_export = Callback::new(move |()| match active_input.get() {
     Some(input) => {
-      nec_text.set(to_nec(&input));
+      nec_text.set(to_nec_with_lines(&input, &core_lines.get()));
       notice.set(t("tools.nec-exported"));
     }
     None => notice.set(t("tools.nec-parse-failed")),
@@ -370,6 +431,8 @@ pub fn NecPage() -> impl IntoView {
       />
 
       <ImportExportSection nec_text=nec_text on_import=do_import on_export=do_export />
+
+      <DesignArchiveSection current=active_input lines=core_lines on_load=load_design />
 
       {move || {
         let msg = notice.get();

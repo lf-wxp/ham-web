@@ -89,7 +89,43 @@ fn apply(theme: Theme) -> bool {
         .set_property("color-scheme", if dark { "dark" } else { "light" });
     }
   }
+  sync_theme_color();
   dark
+}
+
+/// 把 `<meta name="theme-color">` 对齐到当前顶栏底色（`--card`）。
+///
+/// iOS Safari 用它给页面上方的状态栏 / 工具栏区域着色；静态值跟不上站内切换的明暗与配色方案，
+/// 那一条就会和顶栏断开（例如系统浅色、站内深色时露出浅色带）。读计算样式而不是硬编码，
+/// 新增方案时不用再改这里。
+fn sync_theme_color() {
+  let Some(root) = document().document_element() else {
+    return;
+  };
+  let Some(color) = window()
+    .get_computed_style(&root)
+    .ok()
+    .flatten()
+    .and_then(|s| s.get_property_value("--card").ok())
+    .map(|v| v.trim().to_owned())
+    .filter(|v| !v.is_empty())
+  else {
+    return;
+  };
+  let meta = match document().query_selector(r#"meta[name="theme-color"]"#) {
+    Ok(Some(el)) => el,
+    _ => {
+      let Ok(el) = document().create_element("meta") else {
+        return;
+      };
+      let _ = el.set_attribute("name", "theme-color");
+      if let Some(head) = document().head() {
+        let _ = head.append_child(&el);
+      }
+      el
+    }
+  };
+  let _ = meta.set_attribute("content", &color);
 }
 
 /// 把「像素动效」偏好写到 `<html data-pixel-motion>`：`off` 时 CSS 把所有动画降为静态帧。
@@ -111,6 +147,7 @@ fn apply_scheme(id: &str) {
   if let Some(root) = document().document_element() {
     let _ = root.set_attribute("data-scheme", id);
   }
+  sync_theme_color();
 }
 
 /// 「像素动效」当前是否开启（缺省开启）。

@@ -76,3 +76,17 @@ test("LRPT 解码：坏样本给出错误提示而非空白", async ({ page }) =
   });
   await expect(page.getByText(/文件中没有可解码的音频数据|解码失败/).first()).toBeVisible();
 });
+
+/**
+ * 真实过境录音（Meteor-M2，SDR# 基带 187.5 kHz）—— 录音来源与授权未写明，不进仓库，
+ * 用环境变量给路径（与 `crates/lrpt/tests/real_iq.rs` 同一份）。没设置就跳过。
+ */
+test("LRPT 解码：真实 Meteor-M2 过境录音（本地录音，未提供则跳过）", async ({ page }) => {
+  const path = process.env.LRPT_REAL_IQ;
+  test.skip(!path, "未设置 LRPT_REAL_IQ");
+  test.setTimeout(180_000);
+  await page.goto("/lrpt-decode");
+  await page.locator('input[type="file"]').setInputFiles(path as string);
+  // 105 s 录音：648 行完整像素（三通道都齐的 MCU 行）。
+  await expect(page.getByText("1568 × 648")).toBeVisible({ timeout: 150_000 });
+});

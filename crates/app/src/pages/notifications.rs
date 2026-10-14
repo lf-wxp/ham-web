@@ -8,7 +8,7 @@ use web_sys::{Notification, NotificationPermission};
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf, tp};
 use crate::ui::{Button, ChipToggle, Size, Variant};
-use crate::util::{set_title, storage};
+use crate::util::{notification_permission, set_title, storage};
 
 const DX_KEY: &str = "dx-alerts";
 const SAT_KEY: &str = "sat-watch";
@@ -25,7 +25,7 @@ fn countdown_count() -> usize {
 pub fn NotificationsPage() -> impl IntoView {
   set_title("settings.notifications");
 
-  let permission = RwSignal::new(Notification::permission());
+  let permission = RwSignal::new(notification_permission());
   let dx = RwSignal::new(storage::get_json::<AlertSettings>(DX_KEY).unwrap_or_default());
   let sat = RwSignal::new(storage::get_json::<SatWatch>(SAT_KEY).unwrap_or_default());
   let count = RwSignal::new(countdown_count());
@@ -38,14 +38,15 @@ pub fn NotificationsPage() -> impl IntoView {
       if let Ok(promise) = Notification::request_permission() {
         let _ = wasm_bindgen_futures::JsFuture::from(promise).await;
       }
-      permission.set(Notification::permission());
+      permission.set(notification_permission());
     });
   };
 
   let perm_label = move || match permission.get() {
-    NotificationPermission::Granted => t("settings.granted"),
-    NotificationPermission::Denied => t("settings.denied"),
-    _ => t("settings.not-requested"),
+    None => t("settings.notifications-unsupported"),
+    Some(NotificationPermission::Granted) => t("settings.granted"),
+    Some(NotificationPermission::Denied) => t("settings.denied"),
+    Some(_) => t("settings.not-requested"),
   };
 
   let toggle_dxcc = move || {
@@ -78,7 +79,7 @@ pub fn NotificationsPage() -> impl IntoView {
             <h2 class="mr-auto text-sm font-semibold">{move || t("settings.browser-notification-permission")}</h2>
             <span class="text-xs text-muted-foreground">{perm_label}</span>
             {move || {
-              (!matches!(permission.get(), NotificationPermission::Granted)).then(|| {
+              permission.get().is_some_and(|p| p != NotificationPermission::Granted).then(|| {
                 view! {
                   <Button
                     variant=Variant::Default
@@ -137,11 +138,10 @@ pub fn NotificationsPage() -> impl IntoView {
               </ChipToggle>
             </div>
             <div class="text-xs text-muted-foreground">
-              {tp(
-                "settings.watched-callsigns",
-                dx.get_untracked().calls.len() as u32,
-                &[&dx.get_untracked().calls.len().to_string()],
-              )}
+              {move || {
+                let n = dx.get().calls.len();
+                tp("settings.watched-callsigns", n as u32, &[&n.to_string()])
+              }}
               <a href="/dx-spots" class="ml-1 text-primary underline underline-offset-4 hover:underline">
                 {move || t("settings.configure-on-dx-spots")}
               </a>

@@ -12,7 +12,8 @@
 //! 几何画布 [`canvas::WireCanvas`]、Yagi 设计向导 [`design::DesignSection`]、
 //! 导线表 [`wire_table::WireTable`]、负载表 [`load_table::LoadTable`]、
 //! 地面与材质 [`ground_material::GroundMaterialSection`]、
-//! 导入导出 [`import_export::ImportExportSection`]、结果卡片
+//! 导入导出 [`import_export::ImportExportSection`]、设计存档
+//! [`design_archive::DesignArchiveSection`]、结果卡片
 //! [`result_section::ResultSection`]、三维方向图 [`pattern_3d::Pattern3d`]、
 //! 数值输入框 [`num_field::NumField`]、预设按钮 [`preset_chip::chip`]，以及两张
 //! 方向图的网格 [`polar_grid::polar_grid`] / [`elevation_grid::elevation_grid`]。
@@ -21,6 +22,7 @@
 
 mod canvas;
 mod design;
+mod design_archive;
 mod elevation_grid;
 mod ground_material;
 mod import_export;
@@ -193,9 +195,31 @@ struct WireRow {
   segments: String,
 }
 
+/// 把数值写回表格格子而不丢精度：保留到 9 位小数再去掉尾零。
+///
+/// 设计存档载回时用它 —— 用户在格子里敲的 `14.07425` 必须原样回来；而直接
+/// `to_string()` 会把 `0.0015 × 1000` 这类换算的浮点噪声（`1.4999999999999998`）也写出来。
+fn exact(v: f64) -> String {
+  let s = format!("{v:.9}");
+  let s = s.trim_end_matches('0').trim_end_matches('.');
+  if s == "-0" {
+    "0".to_owned()
+  } else {
+    s.to_owned()
+  }
+}
+
 impl WireRow {
   fn from_wire(id: usize, w: &Wire) -> Self {
-    let f = |v: f64| format!("{v:.3}");
+    Self::with_format(id, w, |v| format!("{v:.3}"), |v| format!("{v:.2}"))
+  }
+
+  /// 不舍入的版本（设计存档载回用，见 [`exact`]）。
+  fn from_wire_exact(id: usize, w: &Wire) -> Self {
+    Self::with_format(id, w, exact, exact)
+  }
+
+  fn with_format(id: usize, w: &Wire, f: fn(f64) -> String, mm: fn(f64) -> String) -> Self {
     Self {
       id,
       ax: f(w.a[0]),
@@ -204,7 +228,7 @@ impl WireRow {
       bx: f(w.b[0]),
       by: f(w.b[1]),
       bz: f(w.b[2]),
-      radius_mm: format!("{:.2}", w.radius * 1000.0),
+      radius_mm: mm(w.radius * 1000.0),
       segments: w.segments.max(1).to_string(),
     }
   }
@@ -316,6 +340,17 @@ fn elevation_path(points: &[(f64, f64)], peak: f64) -> String {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn exact_keeps_what_the_user_typed_and_drops_float_noise() {
+    for typed in ["14.07425", "0.4321", "2", "0.005", "-5.05", "0"] {
+      let v: f64 = typed.parse().unwrap();
+      assert_eq!(exact(v), typed);
+    }
+    // 毫米换算的浮点噪声不进格子。
+    assert_eq!(exact(0.0015 * 1000.0), "1.5");
+    assert_eq!(exact(-0.0), "0");
+  }
 
   /// 断言 `az` 度的极坐标点落在给定位置上（容差 1e-6）。
   fn assert_polar_at(az: f64, x: f64, y: f64, what: &str) {

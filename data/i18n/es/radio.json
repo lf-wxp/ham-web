@@ -214,6 +214,7 @@
   "radio.real-time-chase-suggestions": "Sugerencias de caza en tiempo real",
   "radio.their-grid-e-g": "Su cuadrícula (p. ej. IO91)",
   "radio.not-authorised-yet": "Sin autorizar",
+  "radio.notifications-unsupported": "No compatible con este navegador",
   "radio.summit-and-park-activations": "Activaciones de cumbres y parques, con consulta de referencias.",
   "radio.allowed": "Permitido",
   "radio.logged-mhz": "Registrado: {} ({} MHz {})",

@@ -111,6 +111,93 @@ fn nav_hrefs_stay_on_their_route() {
   }
 }
 
+/// 交互工具页尚无专属 e2e 的存量欠账（**只许减不许增**）。
+///
+/// 冒烟（`smoke.spec.ts`）只证明页面能渲染、无障碍无违规，证明不了「调参数会出结果」。
+/// 所以工具类路由（[`ModuleKind::Tool`] 与考试中心）必须至少被一条功能用例显式
+/// `page.goto` 过。门禁上线时这里有 12 页欠账，已于 2026-10 全部补齐（依赖 `/api/*` 的页面
+/// 用 `fixtures.ts` 的 `stubApi` 打桩）—— 表保留为空，新增工具页不能再往这里加。
+const TOOLS_WITHOUT_E2E: &[&str] = &[];
+
+/// 从 spec 源码里取出显式 `goto("/…")` 的路由（去掉查询串与锚点）。
+fn gotos_from_spec(src: &str) -> Vec<String> {
+  let mut out = Vec::new();
+  for quote in ['"', '\'', '`'] {
+    let mark = format!("goto({quote}/");
+    let mut rest = src;
+    while let Some(start) = rest.find(&mark) {
+      let after = &rest[start + mark.len() - 1..];
+      let Some(end) = after[1..].find(quote) else {
+        break;
+      };
+      let raw = &after[..=end];
+      let path = raw.split(['?', '#']).next().unwrap_or(raw);
+      out.push(path.to_owned());
+      rest = &after[end + 1..];
+    }
+  }
+  out
+}
+
+/// 工具类路由（工具分组 + 考试中心）必须有功能用例显式访问；存量欠账走棘轮。
+///
+/// 这是**最低门槛**：只证明「有用例到过这个页面」，不证明用例断言了什么 —— 断言质量靠
+/// `e2e/coverage-targets.json` 登记的旅程与评审把关。模板字符串里带 `${…}` 的动态路径
+/// 解析出来不会等于任何注册路由，所以只会漏记、不会让一个没测过的页面蒙混过关。
+#[test]
+fn interactive_routes_have_functional_e2e() {
+  use ham_web_core::registry::ModuleKind;
+  let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../e2e/tests");
+  // 全量体检用例遍历路由表，不算「功能用例」（否则恒为全覆盖）。与 coverage.mjs 同口径。
+  const SWEEP_FILES: &[&str] = &["smoke.spec.ts", "i18n_layout.spec.ts"];
+  let mut visited: Vec<String> = Vec::new();
+  for entry in std::fs::read_dir(&dir).expect("读取 e2e/tests") {
+    let path = entry.expect("目录项").path();
+    let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+    if !name.ends_with(".spec.ts") || SWEEP_FILES.contains(&name) {
+      continue;
+    }
+    let src = std::fs::read_to_string(&path).expect("读取 spec");
+    visited.extend(gotos_from_spec(&src));
+  }
+  assert!(
+    visited.len() > 100,
+    "goto 解析异常，只找到 {} 处",
+    visited.len()
+  );
+
+  let interactive: Vec<&str> = registry::MODULES
+    .iter()
+    .filter(|m| matches!(m.kind(), Some(ModuleKind::Tool | ModuleKind::Exam)))
+    .map(|m| m.path)
+    .collect();
+  let missing: Vec<&str> = interactive
+    .iter()
+    .copied()
+    .filter(|p| !visited.iter().any(|v| v == p) && !TOOLS_WITHOUT_E2E.contains(p))
+    .collect();
+  assert!(
+    missing.is_empty(),
+    "这些交互页没有任何功能用例 `page.goto` 过（冒烟不算）：{missing:?}\n\
+     补一条 e2e，并把旅程登记进 e2e/coverage-targets.json"
+  );
+  let paid_off: Vec<&str> = TOOLS_WITHOUT_E2E
+    .iter()
+    .copied()
+    .filter(|p| visited.iter().any(|v| v == p) || !interactive.contains(p))
+    .collect();
+  assert!(
+    paid_off.is_empty(),
+    "这些路由已有功能用例（或已不是交互页），请从 TOOLS_WITHOUT_E2E 删掉：{paid_off:?}"
+  );
+}
+
+#[test]
+fn spec_goto_parser_handles_all_quote_styles() {
+  let src = r#"page.goto("/a?x=1"); page.goto('/b#c'); page.goto(`/c`); page.goto(url);"#;
+  assert_eq!(gotos_from_spec(src), ["/a", "/b", "/c"]);
+}
+
 /// 一级模块划分：考试 / 知识库 / 工具三组，且每个导航项都能归入其一。
 #[test]
 fn kinds_cover_every_nav_module() {

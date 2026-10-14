@@ -77,3 +77,30 @@ test("QSL 卡片设计：版式选择会记住", async ({ page }) => {
   await page.reload();
   await expect(page.getByRole("radio", { name: "极简" })).toBeChecked();
 });
+
+test("QSL 卡片设计：A4 拼版四张并切到横向纸张", async ({ page }) => {
+  await page.goto("/qsl-designer");
+  const sheet = page.locator(".print-sheet [data-slots]");
+  // 默认每页一张，纸张竖向。
+  await expect(sheet).toHaveAttribute("data-slots", "1");
+  // `<style>` 的内容不算可见文本，Playwright 的文本断言读不到：直接取 textContent。
+  const pageRule = () => page.locator(".print-sheet style").evaluate((el) => el.textContent ?? "");
+  await expect.poll(pageRule).toContain("size: A4;");
+
+  await page.getByRole("radio", { name: /每页 4 张/ }).click();
+  await expect(sheet).toHaveAttribute("data-slots", "4");
+  await expect(page.locator(".print-sheet img")).toHaveCount(4);
+  // 横向 A4（296×209mm 打印区）+ 3 竖 3 横共 12 条裁切刻线（四边各一组）。
+  await expect(sheet).toHaveAttribute("style", /width: 296mm; height: 209mm/);
+  await expect.poll(pageRule).toContain("A4 landscape");
+  await expect(page.locator(".print-sheet svg line")).toHaveCount(12);
+  // 四张卡用的是同一张预览图。
+  const src = await page.locator('img[alt="QSL 卡片预览"]').first().getAttribute("src");
+  for (const img of await page.locator(".print-sheet img").all()) {
+    await expect(img).toHaveAttribute("src", src ?? "");
+  }
+
+  // 选择会记住。
+  await page.reload();
+  await expect(page.getByRole("radio", { name: /每页 4 张/ })).toBeChecked();
+});

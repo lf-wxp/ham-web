@@ -446,6 +446,14 @@ pub const MODULES: &[Module] = &[
     backend: false,
   },
   Module {
+    path: "/vna-reader",
+    href: None,
+    title: "VNA 读数",
+    icon: "activity",
+    group: Some(GROUP_TOOL_CALC),
+    backend: false,
+  },
+  Module {
     path: "/navtex-decode",
     href: None,
     title: "NAVTEX 解码器",

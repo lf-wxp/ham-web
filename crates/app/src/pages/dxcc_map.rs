@@ -13,7 +13,7 @@ use leptos_router::hooks::use_navigate;
 use crate::components::common::{Legend, PageContainer, PageHeader};
 use crate::data;
 use crate::i18n::{t, tp};
-use crate::pages::log::use_log_store;
+use crate::pages::log::{StatsScopeSelect, scoped_log_entries, use_stats_scope};
 use crate::pages::map::{DxccOverlay, MapView};
 use crate::ui::{Chip, ChipGroup};
 use crate::util::set_title;
@@ -22,7 +22,6 @@ use crate::util::set_title;
 pub fn DxccMapPage() -> impl IntoView {
   set_title("radio.dxcc-world-map");
 
-  let store = use_log_store();
   let shapes = RwSignal::new(DxccShapes::default());
   let loading = RwSignal::new(true);
   let load_error = RwSignal::new(false);
@@ -38,7 +37,10 @@ pub fn DxccMapPage() -> impl IntoView {
     loading.set(false);
   });
 
-  let progress = Memo::new(move |_| AwardProgress::from_entries(&store.logbook.get().entries));
+  // 统计口径与日志页 / `/stats` 共用：选了某个台站，地图也只按那个台站的通联着色。
+  let scope = use_stats_scope();
+  let scoped = scoped_log_entries(scope);
+  let progress = Memo::new(move |_| scoped.with(|e| AwardProgress::from_entries(e)));
   // 选中波段（None = 全部）；按波段切换着色与统计。
   let selected_band = RwSignal::new(None::<String>);
   let worked = Signal::derive(move || {
@@ -82,7 +84,9 @@ pub fn DxccMapPage() -> impl IntoView {
   let navigate = use_navigate();
   let on_entity_click = Callback::new(move |dxcc: u16| {
     if let Some(name) = ham_web_core::dxcc::entity_by_dxcc(dxcc).map(|e| e.name) {
-      navigate(&format!("/log?q={name}"), NavigateOptions::default());
+      // 实体名含空格与 `&`（如 "St. Pierre & Miquelon"）：不编码会把查询串截成两个参数。
+      let q = crate::util::encode_uri_component(name);
+      navigate(&format!("/log?q={q}"), NavigateOptions::default());
     }
   });
 
@@ -106,6 +110,7 @@ pub fn DxccMapPage() -> impl IntoView {
         })
       />
       <PageContainer>
+        <StatsScopeSelect scope=scope count=Signal::derive(move || scoped.with(Vec::len)) />
         // 统计条（跟随波段选择）
         <section class="grid grid-cols-3 gap-2">
           <div class="pxl-card border bg-card p-3 text-center">
@@ -180,9 +185,9 @@ pub fn DxccMapPage() -> impl IntoView {
           <div class="mt-3 space-y-1.5">
             <Legend
               items=vec![
-                ("h-3 w-3 bg-emerald-600/70", "已确认"),
-                ("h-3 w-3 bg-primary/40", "已通联"),
-                ("h-3 w-3 border bg-foreground/5", "未通联"),
+                ("h-3 w-3 bg-emerald-600/70", "log.confirmed"),
+                ("h-3 w-3 bg-primary/40", "log.worked"),
+                ("h-3 w-3 border bg-foreground/5", "radio.not-worked-label"),
               ]
             />
             <div class="text-xs text-muted-foreground">{move || t("radio.scroll-pinch-to-zoom")}</div>

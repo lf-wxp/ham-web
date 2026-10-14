@@ -18,6 +18,7 @@ mod knowledge_i18n;
 mod pixel;
 mod postbuild;
 mod psk31_gen;
+mod size_check;
 mod spectrum_gen;
 mod ui_check;
 
@@ -263,6 +264,12 @@ enum Command {
     #[arg(long, env = "SITE_URL", default_value = "https://ham.onlyxp.me")]
     site_url: String,
   },
+  /// 性能预算：按 perf-budget.json 校验 release 产物的 br 压缩后体积
+  SizeCheck {
+    /// 构建产物目录
+    #[arg(long, default_value = "dist")]
+    dist: PathBuf,
+  },
 }
 
 fn main() -> Result<()> {
@@ -481,6 +488,14 @@ fn main() -> Result<()> {
         root.join(dist)
       };
       postbuild::run(&root, &dist, &site_url)
+    }
+    Command::SizeCheck { dist } => {
+      let dist = if dist.is_absolute() {
+        dist
+      } else {
+        root.join(dist)
+      };
+      size_check::run(&root, &dist)
     }
   }
 }

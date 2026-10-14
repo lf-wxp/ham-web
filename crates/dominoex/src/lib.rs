@@ -13,11 +13,13 @@
 //!   减 2，差分测量把调谐误差抵消（规格标称 ±200 Hz 容差）；
 //! - 每个字符 1–3 个 nibble（4 位）：首个 nibble MSB = 0、续码 MSB = 1，
 //!   由**数据本身**自同步，无需额外同步开销；
-//! - FEC 模式（与 MFSK16 相同的卷积码 + 比特 Varicode）**未实现** ——
-//!   fldigi 默认 DominoEX 8 不开 FEC，本 crate 覆盖默认路径并如实说明。
+//! - FEC 模式（MultiPSK 兼容：与 MFSK16 相同的 K=7 卷积码 + 交织 + IZ8BLY Varicode）
+//!   见 [`fec`]；调制完全相同，只是 nibble 的含义变了，所以收发两端必须选同一种。
 
 use ham_web_dsp::tone_power;
 
+pub mod fec;
+pub mod mfsk_varicode;
 pub mod varicode;
 
 use varicode::{VARICODE, VARIDECODE};
@@ -136,9 +138,57 @@ pub fn encode_audio(
   for _ in 0..idle_chars.max(4) {
     nibbles.extend(encode_char_nibbles(0));
   }
-  let mut out = Vec::new();
+  Some(synth(&nibbles, symlen, spacing, sample_rate))
+}
+
+/// FEC 模式的文本 → 音频。前后各补二次信道空格：开头让接收端的 Viterbi 收敛，结尾把
+/// 交织器（12 个 nibble）与回溯（45 位 ≈ 23 个 nibble）里压着的最后几个字符推出来。
+/// 至少各 4 / 10 个，`idle_secs` 更长时按时长补。
+///
+/// 参数约束与 [`encode_audio`] 相同。
+#[must_use]
+pub fn encode_audio_fec(
+  text: &str,
+  baud: f64,
+  spacing: f64,
+  sample_rate: u32,
+  idle_secs: f64,
+) -> Option<Vec<f32>> {
+  if !spacing.is_finite() || spacing <= 0.0 || !(0.0..=MAX_IDLE_SECS).contains(&idle_secs) {
+    return None;
+  }
+  let symlen = symbol_len(sample_rate, baud)?;
+  // 二次信道空格 = 11 位码字 = 22 个码位 = 5.5 个 nibble。
+  let idle_chars = (idle_secs * baud / 5.5).round() as usize;
+  let (head, tail) = (idle_chars.max(4), idle_chars.max(10));
+  // 最长码字 12 位 → 每字符至多 6 个 nibble。
+  let max_nibbles = head
+    .saturating_add(tail)
+    .saturating_add(text.len())
+    .saturating_mul(6);
+  if max_nibbles.saturating_mul(symlen) > MAX_ENCODE_SAMPLES {
+    return None;
+  }
+  let mut enc = fec::FecEncoder::new();
+  enc.clear_bits();
+  let mut nibbles = Vec::new();
+  for _ in 0..head {
+    enc.encode_char(b' ', true, &mut nibbles);
+  }
+  for b in text.bytes() {
+    enc.encode_char(b, false, &mut nibbles);
+  }
+  for _ in 0..tail {
+    enc.encode_char(b' ', true, &mut nibbles);
+  }
+  Some(synth(&nibbles, symlen, spacing, sample_rate))
+}
+
+/// nibble 序列 → IFK+ 音频（相位连续：按全局样本序号取正弦）。
+fn synth(nibbles: &[u8], symlen: usize, spacing: f64, sample_rate: u32) -> Vec<f32> {
+  let mut out = Vec::with_capacity(nibbles.len() * symlen);
   let mut prev = 0usize;
-  for n in nibbles {
+  for &n in nibbles {
     prev = next_tone(prev, n);
     let f = tone_freq(prev, spacing);
     for _ in 0..symlen {
@@ -147,7 +197,7 @@ pub fn encode_audio(
       );
     }
   }
-  Some(out)
+  out
 }
 
 /// 单个窗口内，音调频带上最强的频率（在 `spacing/4` 网格上搜索）。
@@ -353,9 +403,8 @@ pub fn decode_audio(
   baud: f64,
   spacing: f64,
 ) -> Option<(String, String)> {
-  let offset = sync_offset(samples, rate, baud, spacing);
-  let nibbles = demodulate_nibbles(samples, rate, baud, spacing, offset);
-  let locked = locked_nibbles(&nibbles)?;
+  let nibbles = locked_stream(samples, rate, baud, spacing)?;
+  let locked = nibbles.as_slice();
   let mut dec = NibbleDecoder::new();
   let take = |c: u16, dec: &mut NibbleDecoder| {
     if c == 0 {
@@ -377,6 +426,40 @@ pub fn decode_audio(
     take(c, &mut dec);
   }
   Some((dec.primary, dec.secondary))
+}
+
+/// 对齐 → 解调 → 质量门限，返回锁定后的 nibble 流（两种模式共用）。
+fn locked_stream(samples: &[f32], rate: u32, baud: f64, spacing: f64) -> Option<Vec<u8>> {
+  let offset = sync_offset(samples, rate, baud, spacing);
+  let nibbles = demodulate_nibbles(samples, rate, baud, spacing, offset);
+  locked_nibbles(&nibbles).map(<[u8]>::to_vec)
+}
+
+/// FEC 模式的完整解码：音频 → `(主信道文本, 二次信道文本)`。
+///
+/// 与 [`decode_audio`] 共用对齐、解调与质量门限，之后走 [`fec::FecDecoder`]。
+#[must_use]
+pub fn decode_audio_fec(
+  samples: &[f32],
+  rate: u32,
+  baud: f64,
+  spacing: f64,
+) -> Option<(String, String)> {
+  let nibbles = locked_stream(samples, rate, baud, spacing)?;
+  let mut dec = fec::FecDecoder::new();
+  let mut chars = Vec::new();
+  for n in nibbles {
+    dec.feed(n, &mut chars);
+  }
+  let (mut primary, mut secondary) = (String::new(), String::new());
+  for c in chars {
+    if c >= 0x100 {
+      secondary.push(char::from((c & 0xFF) as u8));
+    } else {
+      primary.push(char::from(c as u8));
+    }
+  }
+  Some((primary, secondary))
 }
 
 /// 锁定后允许的「无音调变化」（nibble 16/17）百分比：白噪声约 11%，真实信号接近 0。

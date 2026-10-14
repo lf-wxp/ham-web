@@ -368,7 +368,7 @@
   "exam.sequential": "Sequential",
   "exam.order-random": "Order / random",
   "exam.calc-variants": "Calc variants",
-  "exam.calc-variants-hint": "Regenerate the wavelength / dB / loss / LC-resonance questions with fresh numbers to defeat memorisation; variants appear only in this session and never enter statistics.",
+  "exam.calc-variants-hint": "Regenerate the wavelength / dB / loss / LC-resonance / Ohm's-law / voltage-dB questions with fresh numbers to defeat memorisation; variants appear only in this session and never enter statistics.",
   "exam.variant-no-bookmark": "Calc variants exist only in this session and cannot be bookmarked",
   "exam.frequency-range": "Frequency range",
   "exam.question-number-label": "No.",

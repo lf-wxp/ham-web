@@ -73,10 +73,7 @@ thread_local! {
 }
 
 fn notifications_granted() -> bool {
-  matches!(
-    web_sys::Notification::permission(),
-    web_sys::NotificationPermission::Granted
-  )
+  crate::util::notification_permission() == Some(web_sys::NotificationPermission::Granted)
 }
 
 fn tick() {

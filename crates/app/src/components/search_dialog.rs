@@ -1,6 +1,6 @@
 //! 全局搜索命令面板：`/` 快捷键或导航栏搜索按钮唤起，居中弹出、不打断当前流程。
 
-use ham_web_core::search::{parse_query, search, tokenize};
+use ham_web_core::search::{parse_query, qso_matches, search, tokenize};
 use ham_web_core::unit_conversions::UNIT_CONVERSION_GROUPS;
 use leptos::prelude::*;
 
@@ -16,9 +16,8 @@ const MAX_QSO_RESULTS: usize = 5;
 
 /// 在本地日志里搜索 QSO（根 `LogStore` 的内存状态，按引用读取、不克隆）。
 ///
-/// 自由词在呼号 / 模式 / 波段 / 频率 / 日期 / 姓名 / QTH / 网格上做 AND 匹配；
-/// `band:` / `mode:` 前缀按对应字段过滤（`dxcc:` 需要呼号→实体映射，本地
-/// 日志搜索不做 —— 如实说明，静态 DXCC 条目仍可由该前缀命中）。
+/// 判定（自由词 + `dxcc:` / `band:` / `mode:` 前缀）在核心 [`qso_matches`]，
+/// 与静态条目同一套口径。
 fn search_qsos(
   terms: &[String],
   filters: &[(String, String)],
@@ -30,30 +29,7 @@ fn search_qsos(
     .with_untracked(|logbook| {
       let mut out = Vec::new();
       for e in &logbook.entries {
-        let hay = [
-          e.callsign.as_str(),
-          e.mode.as_str(),
-          e.band.as_str(),
-          e.freq.as_str(),
-          e.date.as_str(),
-          e.name.as_str(),
-          e.qth.as_str(),
-          e.gridsquare.as_str(),
-        ]
-        .join(" ");
-        let hay_lower = hay.to_lowercase();
-        if !terms.iter().all(|t| hay_lower.contains(t)) {
-          continue;
-        }
-        let mut ok = true;
-        for (k, v) in filters {
-          match k.as_str() {
-            "band" => ok &= e.band.to_lowercase() == *v,
-            "mode" => ok &= e.mode.to_lowercase() == *v,
-            _ => ok = false, // dxcc: 不做呼号映射，日志结果不匹配该前缀
-          }
-        }
-        if !ok {
+        if !qso_matches(e, terms, filters) {
           continue;
         }
         let title = format!("{} · {} {}", e.callsign, e.date, e.time);

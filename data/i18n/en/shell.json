@@ -12,7 +12,7 @@
   "shell.software-license-source-details": "The complete corresponding source includes Rust sources, Cargo.lock, build configuration, Worker generation tasks and required static assets.",
   "shell.software-license-source-version": "Distributors must provide the exact source revision or archive used for their build, not just the latest repository revision.",
   "shell.software-license-provenance": "Component provenance",
-  "shell.software-license-dominoex": "Algorithms and Varicode tables come from fldigi (GNU GPL v3). The Varicode table copyright is © 2001–2003 Tomi Manninen OH2BNS. See the repository path below for provenance notices.",
+  "shell.software-license-dominoex": "Algorithms and Varicode tables come from fldigi (GNU GPL v3). The DominoEX Varicode table copyright is © 2001–2003 Tomi Manninen OH2BNS; the MFSK Varicode used by FEC mode is defined by IZ8BLY and the interleaver is adapted from gMFSK. See the repository path below for provenance notices.",
   "shell.software-license-lrpt": "Parts of the link and frame layers come from artlav/meteor_decoder (GNU GPL v3). The lrpt-encoder provenance and MIT notices are documented at the repository path below.",
   "shell.software-license-navtex": "The CCIR 476 (SITOR-B) code table is transcribed from AI5GW/CCIR476 (GNU GPL v3); the provenance statement is at the repository path below.",
   "shell.software-license-third-party": "Other third-party sources, fonts and sample data retain the provenance and licenses in their component directories; the site's default MIT license does not override them.",

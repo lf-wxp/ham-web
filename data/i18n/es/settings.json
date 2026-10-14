@@ -24,6 +24,7 @@
   "settings.enter-the-issue-date": "Introduce la fecha de emisión para calcular el vencimiento (validez de 5 años) y añadir un recordatorio (solicita la renovación con antelación).",
   "settings.export-all-local-data": "Exporta todos los datos locales (progreso, errores, favoritas, registro, etc.) a JSON; restáuralos en otro dispositivo o fusiona los datos de varios dispositivos.",
   "settings.not-requested": "No solicitado",
+  "settings.notifications-unsupported": "Este navegador no admite notificaciones (en iOS, añádela primero a la pantalla de inicio)",
   "settings.off": "Desactivado",
   "settings.added-to-countdown-the": "Añadido a la cuenta atrás; el navegador te avisará al vencer.",
   "settings.merged-items": {

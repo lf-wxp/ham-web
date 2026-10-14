@@ -25,6 +25,10 @@
     - [考试中心](#考试中心)
     - [知识库](#知识库)
     - [工具与实时数据](#工具与实时数据)
+    - [天线与射频设计](#天线与射频设计)
+    - [通联日志与 QSL](#通联日志与-qsl)
+    - [浏览器内解码与硬件互联](#浏览器内解码与硬件互联)
+    - [设备与 DIY](#设备与-diy)
     - [用户体验](#用户体验)
   - [技术栈](#技术栈)
   - [项目结构](#项目结构)
@@ -58,7 +62,7 @@
       - [覆盖率统计口径](#覆盖率统计口径)
       - [集成到 CI](#集成到-ci)
     - [修改 UI 的注意事项](#修改-ui-的注意事项)
-    - [动态背景（Web Threads）](#动态背景web-threads)
+    - [像素风外观与动效降级](#像素风外观与动效降级)
   - [路由](#路由)
   - [常见问题](#常见问题)
   - [贡献指南](#贡献指南)
@@ -101,6 +105,9 @@
 - **📊 学习报告**（`/report`）：汇总累计作答、正确率、连续打卡、错题、收藏、成就与通联 / DXCC 统计，一键导出 PNG 卡片分享
 - **📝 题目笔记**：练习 / 复习时可为每道题写私人笔记（本地保存、随题加载）
 - **🎯 只练多选**（练习页顶部开关，或 `/practice?multi=1`）：切到只刷多选题，随机顺序
+- **🔢 计算题变体**（练习设置「计算变体」开关，或 `?variant=1`）：波长 / 增益 dB / 馈线衰减 / LC 谐振 / 欧姆定律 / 电压 dB 六类同型题「换数不换型」，答案与解析由同一公式现场代值，每天按本地日期换一套；变体不进统计、错题本与收藏，也**不进模拟考试**（机考只用官方原题）
+- **🧭 错题归因图谱**（`/mistake-topics`）：错题按「域 × 知识点」两级热力图展示，点格子直达该知识点的专项练习
+- **🏛️ 机考规则演练**：开启机考仿真后，开考前先过一遍考场规则对照（真实考场 → 本站仿真，做不到的如实标注），并衔接证件照处理与专项练习
 
 ### 知识库
 
@@ -108,50 +115,97 @@
 
 | 分组 | 专题 |
 | --- | --- |
-| 备考速查 | 考试速查、考点速查手册、易混淆辨析、公式速查、呼号前缀、术语表、简语、字母解释法、RST 信号报告、莫尔斯电码、CW 操作、操作证权限 |
+| 备考速查 | 考试速查、考点速查手册、易混淆辨析、公式速查、呼号前缀、术语表、简语、字母解释法、RST 信号报告、莫尔斯电码、CW 操作、多国考试对照、操作证权限、法规原文库 |
 | 模式 · 传播 | 模拟模式、业余电视、SSTV 慢扫描电视、数字模式、调制理论、数字通信原理、数字信号处理基础、数字语音组网、Packet 分组无线电、RTTY/PSK31、FT8/FT4、SDR、GNU Radio、APRS、常用频率、频率协调、CQ/ITU 分区地图、传播与电离层、国际信标网络、特殊传播、流星散射、EME、传播预测、WSPR、气象卫星接收、极光通信 |
-| 天线 · 设备 | 天线型式、天线阵列/相控阵、天线极化、匹配与馈线、线材与连接器、巴伦与不平衡变压器、天线 DIY、实用天线专题、天线架设、天线农场、天线调试、天线分析仪、VNA 矢量网络分析仪、天线建模、NVIS、电子电路基础、滤波器与双工器、测量仪表、电源与电池、电源供应、收发信机、接收机指标、设备评测与选购、功率放大器、波段表、波段规划、微波通信、车载/移动电台 |
+| 天线 · 设备 | 天线型式、天线阵列/相控阵、天线极化、匹配与馈线、线材与连接器、巴伦与不平衡变压器、天线 DIY、实用天线专题、天线架设、天线农场、天线调试、天线分析仪、VNA 矢量网络分析仪、天线理论、天线建模、NVIS、电子电路基础、滤波器与双工器、测量误差实验室、测量仪表、电源与电池、电源供应、收发信机、接收机指标、评测文章、设备评测与选购、功率放大器、波段表、波段规划、微波通信、车载/移动电台 |
 | 通联 · 活动 | 通联实务、卫星通联操作、通联竞赛、竞赛日志 Cabrillo、DX 奖状、IOTA、DX 技巧、DX 远征、DXCC 世纪俱乐部、QRP、电子 QSL、QSL 卡片设计、无线电测向、应急通信、Winlink 无线邮件、活动日历、SOTA/POTA、网格定位、呼号查询、中继台与网关、中继台建设、日志与竞赛软件 |
-| 进阶 · 关于 | 国际组织与分区、射频安全、接地与防雷、射频干扰排查、接收环境与噪声、新手入门、学习路径、学习资源、SWL 短波监听、执照申办、法规与管理、业余无线电历史、远程电台、开源项目与 DIY、火腿社区、DIY 实战项目 |
+| 进阶 · 关于 | 国际组织与分区、射频安全、接地与防雷、射频干扰排查、接收环境与噪声、新手入门、学习路径、学习资源、SWL 短波监听、执照申办、频谱管理、法规与管理、业余无线电历史、远程电台、开源项目与 DIY、火腿社区、DIY 实战项目、开发者 API |
 
 其中几项为富交互页面：莫尔斯电码可点击试听、Koch 法抄收训练（Farnsworth 间隔、逐字符错误率、达标自动加字符）、CW 呼号抄收竞赛模拟（每轮 10 个通联、抄呼号与序号计分、自适应速度、截短数字、常错字符统计）、解码练习与按键发报练习、麦克风 CW 解码（带通滤波 + 自适应门限，自动识别发报速度）、字母解释法可朗读、RST 页可试听不同强度信号、波段表按带号 -1～12 呈现完整频段划分（移动端为卡片）、天线建模页含偶极振子计算器与方向图绘制；设备评测页内置机型库与多机参数对比表。每个专题页底部还有「相关主题」内链与「自测 3 题」（从题库相关考点随机抽取、即时判分），把专题串成知识网。
+
+- **📜 法规原文库**（`/radio-law`）：《业余无线电台管理办法》58 条与《无线电管理条例》85 条全文照录（不译不缩写），按章分组、条款锚点直达（如 `/radio-law#办法-30`），逐条进站内搜索（「第三十七条」「第37条」都能命中）；条文页列出题库里引用这条的题目，可直达专项练习
+- **🔖 知识溯源**：时效性领域（法规、操作证权限、波段与波段规划、卫星状态等）页面底部标注「依据 + 核对日期」；来源没把握的不标
+- **🧮 公式渲染**：公式速查与天线理论用自托管的 KaTeX 渲染（离线可用），失败时回退 Unicode 文本
+- **🗺️ 学习路径**（`/learning-path`）：15 个专题按前置依赖组成有向图，按错题本自动给出「先补哪些前置」的复习顺序
+- **🌍 多国考试对照**（`/exam-comparison`）：中国 A/B/C、美国 FCC、英国 Ofcom 三套考试的等级、题量、时长与及格线对照（Ofcom 数字逐字取自 RSGB 官方考纲），附官方题库入口；FCC / Ofcom 题库全文未收录
 
 ### 工具与实时数据
 
 - **🧮 小工具（41 项计算器 + 数据备份）**：频率 ↔ 波长、dBm ↔ 功率、分贝增益、欧姆定律、CW 必要带宽、LC 谐振、容抗/感抗、天线长度、天线匹配网络、史密斯圆图、驻波比 ↔ 反射系数、级联增益、电阻串并联、频率单位换算、电池续航、dBm ↔ dBμV、馈线损耗、滤波器设计、呼号查询（DXCC 实体/稀有度）、两点距离与方位角、传播预测 MUF、卫星多普勒、自由空间路径损耗、EIRP、链路预算、接收机灵敏度、噪声系数级联、天线增益换算、电阻色环、竞赛记分、线圈/Yagi 振子计算、T/π 型衰减器、变压器阻抗、UTC 时间、传输线阻抗、线径压降、晶体振荡、射频暴露评估、亚音与中继频差、APRS 编解码、数字模式编码
-- **🧭 点对点传播预测**（`/muf` 页内）：输入双方 Maidenhead 网格、月份与太阳黑子数，估算两点间各 HF 波段的可用性与可靠度（简化 VOACAP 模型，本地计算 + 服务端缓存）
+- **🧭 点对点传播预测**（`/muf` 页内）：输入双方 Maidenhead 网格、月份与太阳黑子数，给出 **24 小时 × 波段**可靠度热力矩阵与逐小时 MUF / LUF 曲线，点任一格子看该时刻的跳数、仰角与路径细节（简化 VOACAP 模型，纯本地计算、离线可用）；可一键取实时太阳通量换算黑子数，K ≥ 4 时提示地磁活跃
 - **📈 实时仪表盘**：太阳活动、空间天气警报、DX 热点、ISS 位置、DXCC 稀有度聚合一屏展示
 - **☀️ 太阳活动**：太阳通量、A/K 指数、黑子数与各波段传播条件（含 K 指数 1 分钟曲线与太阳黑子周期趋势）
 - **📡 DX 实时热点** / **🏆 DXCC 稀有度榜单**：拉取 DX Cluster 热点与 Club Log 最稀有实体；对照本地日志标出新 DXCC / 新波段，可只看需要的；可开启新 DXCC / 新波段 / 关注呼号（支持 `*` 通配）浏览器通知，开启后每 60 秒自动刷新
 - **📡 接收报告查询**：PSK Reporter（`/psk-reporter`）与 RBN 信标网络（`/rbn`）查询「谁收到了我发的信号」，展示接收台、频率、波段、SNR（RBN 另有 WPM），数据来自 PSK Reporter 与 Reverse Beacon Network 实时流
 - **🛰️ 业余卫星**：TLE + SGP4 计算未来 24 小时过境（AOS/LOS、最大仰角与方位角），可一键使用本台网格；收藏卫星后可开启过境提醒（提前 5 / 10 / 15 / 30 分钟浏览器通知，页面打开期间每 30 秒检查）；另有 ISS 实时位置追踪与追踪软件推荐
-- **🖼️ APT 云图解码**（`/apt-decoder`）：上传 NOAA 气象卫星 APT 录音（WAV），在浏览器本地解调 2400 Hz 副载波并重建可见光 / 红外云图（纯 Rust DSP，解码在 Web Worker 后台线程完成，不阻塞页面、音频不上传服务器）；可配合过境预报提前录制，并可开启过境前的 APT 录制提醒
 - **📡 SDR 在线接收站地图**（`/sdr-map`）：世界地图标注长期公开接收站，一键定位并以新标签直达 WebSDR / KiwiSDR 的在线频谱与瀑布图，并汇总公开接收机目录；无需本地硬件即可收听短波
 - **🌊 SDR 瀑布图**（`/sdr-waterfall`）：用麦克风输入实时绘制频谱与瀑布图（FFT 2048、可调 dB 标度），或导入 WAV 文件离线分析（含合成样本），全部在浏览器本地完成、音频不上传；色彩映射与 dB 换算位于 `ham-web-core` 的 `spectrum` 模块
 - **🗓️ 活动日历**（`/events`）：展会 / 火腿节与年度通联活动按下一届开始时间排序，可一键加入倒计时提醒，并汇总 DX 远征与竞赛的追踪入口
 - **🌗 灰线地图**：实时晨昏圈（日出/日落分界），用于判断低频 DX 灰线窗口
 - **🌍 DXCC 世界地图**（`/dxcc-map`）：按通联日志把世界地图着色为「未通联 / 已通联 / 已确认」choropleth，支持按波段切换着色、悬停查看实体、点击实体跳转日志过滤，岛屿等无国界数据的实体以中心点标记；一眼看清 DXCC 进度缺口（边界数据由 `cargo make dxcc-map` 生成）
-- **🗺️ 网格地图**：全球已通联 Maidenhead 网格可视化，输入网格码可反查位置（反向地理编码）；日志网格地图可按本台网格绘制按波段着色的大圆通联路径（跨日期变更线正确处理，最多 600 条）
+- **🗺️ 网格地图**（`/grid-map`）：全球已通联 Maidenhead 网格可视化，输入网格码可反查位置（反向地理编码）；日志网格地图可按本台网格绘制按波段着色的大圆通联路径（跨日期变更线正确处理，最多 600 条）
 - **⛰️ SOTA / POTA 查询**（`/portable` 页内）：按编号查询山峰 / 公园的名称、积分 / 位置与网格，并对照本地日志统计激活次数
 - **📻 中继台数据库**（`/repeater` 页内）：按国家 / 地区拉取 RepeaterBook 收录的中继台（频率、频差、亚音、城市、状态），支持按呼号 / 城市筛选
-- **📓 通联日志**：字段对齐 ADIF 3.1 的在线日志（含 MODE/SUBMODE、卫星、SOTA/POTA 等），录入时提示重复 / 新 DXCC / 新波段，并按网格（或实体中心）估算距离与方位、自动填 CQ / ITU 分区，可一键在线查询呼号（Callook / HamQTH）自动补全姓名、网格与 QTH；列表可搜索筛选分页；ADIF / CSV 导入导出（含 DXCC / CQZ / ITUZ、STATE、IOTA），导入时读取 QSL（含 LoTW / eQSL）状态并自动去重；可粘贴或上传 LoTW / eQSL 下载的确认报告（ADIF），一键把匹配到的 QSO 同步为已确认
+
+### 天线与射频设计
+
+- **📐 矩量法天线求解器**（`/nec`）：NEC-2 精简矩量法，纯前端求解（上限 200 段）。5 个预设 + Yagi 设计向导；导线表 / 负载表 / 传输线表可编辑，画布上可拖端点、整根平移、按轴阵列复制；地面（自由空间 / 理想地 / 有耗地）与导线材质；输出馈电阻抗、驻波、效率、真实增益、前后比，方位 / 仰角切面、WebGL2 可旋转三维方向图（不支持时回退 SVG）、NVIS 覆盖图；频带扫描给出 SWR 曲线与可用带宽；`.nec` 导入导出（`GW` / `GE` / `GN` / `LD` / `EX` / `TL` / `FR`）；「实用天线」「天线 DIY」方案表可一键把模板加载进求解器；**设计存档**按名字保存、刷新后原样载回，并随数据备份导出。方案库模板与另一套 NEC-2 实现（necpp）交叉验证过（参照是另一套程序，不是实测）
+- **🎯 Smith 圆图**（`/smith`）：可拖拽阻抗点与等驻波比圆；串 / 并联 L、C 元件即时走轨迹，L 型网络自动求解并折算元件值，给出 SWR ≤ 2 的可用带宽
+- **🌊 波形实验室**（`/waveform-lab`）：AM / DSB / USB / LSB / FM 时域频域联动；BPSK / QPSK / 16QAM 星座图与眼图（可调 Es/N0 与滚降）；Butterworth / Chebyshev I / Chebyshev II / 椭圆四类滤波器原型的幅频、相频、群延迟曲线（椭圆原型与 scipy 参考值对拍）；香农容量沙盒
+- **📏 测量误差实验室**（`/measurement-lab`）：拖动馈线损耗看台站端驻波如何被「掩盖」、驻波表方向性决定的读数下限；VNA SOLT 校准四步分解；五条驻波 / 功率读数陷阱速查
+
+### 通联日志与 QSL
+
+- **📓 通联日志**（`/log`）：字段对齐 ADIF 3.1 的在线日志（含 MODE/SUBMODE、卫星、SOTA/POTA 等），录入时提示重复 / 新 DXCC / 新波段，并按网格（或实体中心）估算距离与方位、自动填 CQ / ITU 分区，可一键在线查询呼号（Callook / HamQTH）自动补全姓名、网格与 QTH；列表可搜索筛选分页；ADIF / CSV 导入导出（含 DXCC / CQZ / ITUZ、STATE、IOTA），导入时读取 QSL（含 LoTW / eQSL）状态并自动去重
+- **🏠 多台站档案与操作员**：固定台、车载、POTA 野外等多份台站档案，每条通联记录归属台站（导出逐条写 `MY_*` 字段）与值机操作员（ADIF `OPERATOR`）；**统计范围**可选全部 / 某个台站 / 某个操作员，日志统计面板、`/stats`、`/dxcc-map`、`/report`、`/grid-map` 共用同一份选择
+- **🩺 日志体检**：九类检查（重复通联、缺波段、本地时误填为 UTC、模式不在该波段的分段内等），判定依据都来自既有内核；只对三类不会出错的问题提供一键修正（按频率回填波段、本地时改 UTC、合并重复并保留 QSL 确认），其余只提示
+- **📮 QSL 全生命周期**：ADIF 的多个 QSL 标志收敛成「未寄出 → 已寄出 → 电子已确认 → 纸质已收」单一状态与四色徽章；可上传卡片扫描件（缩放后存 IndexedDB，随备份勾选导出）
+- **🔄 多源确认同步**：粘贴或上传 LoTW / eQSL / Club Log / QRZ Logbook 的确认报告，按「远端新增 / 冲突 / 本地缺失」三向对比后逐条裁决再应用；另有 LoTW 签名上传六步指引（证书与签名始终在本机 TQSL 完成，本站不经手）
+- **🎴 QSL 卡片设计**（`/qsl-designer`）：三种版式，从日志挑一条通联带入字段，导出 PNG 或打印 140 × 89 mm 标准卡；打印可选每页 1 张（A4 竖向）或 4 张（A4 横向，带裁切线）
+- **🏷️ QSL 标签打印**（`/qsl-labels`）：把日志按呼号合并（每张最多 2～6 条通联），排到 Avery L7163 / L7160 / L7159 / 5160 / 5163 标签纸上直接打印；可只打未寄出的、按起始日期筛选、跳过已用掉的标签，打印后一键标记「QSL 已寄出」
 - **🏆 竞赛录入**（`/contest-log`）：选定竞赛后专注键盘录入（呼号后回车 / 空格跳到交换信息，回车记录，Esc 清空），实时提示重复与实体，CQ 分区类竞赛自动填分区；实时计分、分波段统计，一键导出 Cabrillo 3.0；内置 CQ WW / CQ WPX / ARRL DX / All Asian / JIDX / WAE / IARU HF / 俄罗斯 DX 等模板
 - **🗓️ 竞赛日历**（`/contest-calendar`）：全球主要竞赛按下一届开赛时间排序，一键把开赛时间加入倒计时提醒，有对应模板的可直接「开新场次」跳转竞赛录入
-- **📻 电台 CAT 联动**：日志与竞赛录入页可通过 Web Serial 连接电台（桌面版 Chrome / Edge），每秒读取频率与模式自动回填；支持 Kenwood / Elecraft / 新款 Yaesu 的 ASCII 命令与 Icom CI-V（可设地址）
-- **🏷️ QSL 标签打印**（`/qsl-labels`）：把日志按呼号合并（每张最多 2～6 条通联），排到 Avery L7163 / L7160 / L7159 / 5160 / 5163 标签纸上直接打印；可只打未寄出的、按起始日期筛选、跳过已用掉的标签，打印后一键标记「QSL 已寄出」
 - **🏅 奖状进度**：由日志统计 DXCC（总计 / 分模式 / 分波段）、WAZ、WAC、VUCC、WPX 前缀奖、WAS 美国州、IOTA 岛屿组与 DXCC Challenge 分波段积分，可切换已通联 / 已确认
 - **🌍 DXCC 前缀库**：内置 340 个现行 DXCC 实体（数据源 AD1C cty.csv），最长前缀匹配，支持 `VP2E/W1AW`、`/P`、`/MM` 等斜杠呼号
-- **📊 通联统计**：DXCC / 波段 / 模式分布、QSL 确认率与月度 QSO 趋势
+- **📊 通联统计**（`/stats`）：DXCC / 波段 / 模式分布、QSL 确认率与月度 QSO 趋势
+
+### 浏览器内解码与硬件互联
+
+所有解码都在 Web Worker 里的纯 Rust DSP 中完成，录音不上传服务器（统一协议见 [`docs/decode-worker-protocol.md`](docs/decode-worker-protocol.md)）：
+
+| 解码器 | 路径 | 说明 |
+| --- | --- | --- |
+| APT 云图 | `/apt-decoder` | NOAA 气象卫星 APT 录音（WAV）→ 可见光 / 红外云图；可配合过境预报开启录制提醒 |
+| SSTV | `/sstv-decode` | 慢扫描电视录音 → 图像 |
+| WSPR | `/wspr-decode` | WSPR 录音 → 呼号 / 网格 / 功率 |
+| PSK31 | `/psk-decode` | PSK31 录音 → 文本 |
+| RTTY | `/rtty-decode` | 45.45 波特 / 170 Hz 频移 / ITA2 |
+| NAVTEX | `/navtex-decode` | SITOR-B：CCIR 476 检错、ZCZC / NNNN 报文帧、双副本逐字符合并，按报文卡片展示 |
+| Olivia | `/olivia-decode` | 4/125、8/250、16/500、32/1000 四个子模式 |
+| DominoEX | `/dominoex-decode` | 4 / 5 / 8 / 11 / 16 / 22 六个子模式，可选 MultiPSK 兼容的 FEC 模式（须与发送端一致） |
+| LRPT | `/lrpt-decode` | Meteor-M 系列气象卫星：立体声 I/Q WAV（采样率 ≥ 144 kHz）→ 三通道图像。M2 的 QPSK 已在真实过境录音上验证出图；M2-3 / M2-4 的 OQPSK 只在合成信号上验证过，页面标注为实验性 |
+
+硬件互联走 Web Serial（桌面版 Chrome / Edge）：
+
+- **📻 电台 CAT 联动**：日志与竞赛录入页连接电台，每秒读取频率与模式自动回填；支持 Kenwood / Elecraft / 新款 Yaesu 的 ASCII 命令与 Icom CI-V（可设地址）
+- **📡 KISS TNC**（`/kiss-tnc`）：连接 TNC 或 Direwolf 的 KISS 串口，实时显示收到的 AX.25 帧，可发送 UI 帧；帧预览离线可用
+- **📈 VNA 读数**（`/vna-reader`）：导入 `.s1p`（Touchstone，RI / MA / DB）或直接连 NanoVNA 扫频，给出最低驻波、该点阻抗与回波损耗、SWR ≤ 2 的频段，并画 Smith 圆图轨迹与驻波曲线；可导出 `.s1p`。本页不做校准，读数前请先在仪器上完成 SOL 校准
+
+### 设备与 DIY
+
+- **📻 机型库**（`/gear`）：多机参数对比表 + 六轴雷达图（最多 4 台同屏），收录 Rob Sherwood（NC0B）接收机实测表里的动态范围与噪声底（带出处与核对日期，未进原表的机型如实留空）；按「追稀有台 / 竞赛强台 / 野外便携 / 卫星通联」加权打分，数据不足时只列依据不给分；可录入自己的实测值，以虚线叠加到雷达图
+- **📝 评测文章**（`/rig-reviews`）：测试条件 → 指标实测 → 主观评价 → 适用人群 → 结论，实测栏现场取自实测表，主观部分单独标注；已收录 FT-710 / IC-7300 / G90 / KX2 / UV-5R
+- **🔧 DIY 项目**（`/diy-projects`）：六张项目卡片（难度、成本档位、工时、波段、所需仪表、BOM、测试步骤、常见问题），可按四个维度筛选，「已采购 / 已完成」进度存本地
 
 ### 用户体验
 
 - **🧭 全局导航**：所有页面顶部常驻导航栏，按「考试中心 / 知识库 / 工具」三大模块组织，移动端为分组平铺菜单
-- **🔍 全局搜索**：任意页面按 `/` 或点击导航栏搜索按钮唤起命令面板，结果按页面分组并高亮关键词
+- **🔍 全局搜索**：任意页面按 `/` 或点击导航栏搜索按钮唤起命令面板，结果按页面分组并高亮关键词；覆盖全部页面、知识条目、法规条文与本地日志通联，支持 `dxcc:` / `band:` / `mode:` 前缀（如 `dxcc:ja band:20m`）
 - **🌗 明暗主题**：导航栏内随时切换，支持跟随系统 / 浅色 / 深色
-- **🌐 多语言界面**：导航栏内切换中文 / English / Español，选择存本地并同步 `<html lang>`；当前覆盖导航、页脚、全站搜索、首页（含各卡片）与页面标题，其余页面正文按模块增量翻译（界面文案见 `data/i18n/`，按域拆分的 JSON，以语义 key `域.词条` 补各语言译文即可）
+- **🌐 多语言界面**：导航栏内切换中文 / English / Español，选择存本地并同步 `<html lang>`；界面文案与知识库正文三语全覆盖（界面文案在 `data/i18n/`，正文译文在 `data/knowledge-i18n/`，缺译自动回退中文）；法规原文按规范效力保持中文
 - **🔊 语音与音频**：Web Speech API 朗读题干、解析与字母解释法；Web Audio API 合成摩尔斯电码与 RST 信号音（可调 WPM）
 - **✨ 流畅动效**：页面切换淡入过渡、按钮按压反馈、Logo 悬停动效，并尊重系统「减少动态效果」偏好
-- **🌌 动态背景**：内容之下的 Web Threads 发光丝线（WebGL2），随明暗主题切换配色且不遮挡前景；移动端与「减少动态效果」下退化为静态一帧（详见[动态背景（Web Threads）](#动态背景web-threads)）
+- **🌌 像素背景与配色方案**：纯 CSS 背景（亮色纸张点阵、暗色夜空星点），5 套配色方案与明暗主题正交；系统「减少动态效果」或设置里关闭像素动效时降为静态帧（详见[像素风外观与动效降级](#像素风外观与动效降级)）
 - **⌨️ 键盘快捷键**：`/` 唤起搜索，方向键切题，数字键选择选项
 - **👆 滑动切题**：手机上在练习 / 模拟考试题目区域左右滑动切换上下题，并有轻微振动反馈
 - **♿ 无障碍**：「跳到主要内容」链接、导航与对话框地标命名、对话框焦点循环与关闭后焦点还原、页面标题使用 `h1`、明暗主题均通过 axe 对比度检查；快捷键不会抢占按钮 / 链接上的回车
@@ -173,7 +227,7 @@
 | 前端构建 | [Trunk](https://trunkrs.dev)（自动下载 Tailwind CSS v4 独立版、wasm-bindgen、wasm-opt） |
 | 样式 | Tailwind CSS v4 + tw-animate-css，沿用原 shadcn/ui（new-york）设计令牌与类名 |
 | 图标 | Lucide（内联 SVG，与原版路径一致） |
-| 浏览器 API | Web Speech API（朗读）、Web Audio API（摩尔斯 / 信号音 / 实时频谱）、Canvas（照片处理、瀑布图）、WebGL2（全站动态背景，见[动态背景（Web Threads）](#动态背景web-threads)）、Notification（倒计时提醒）、IndexedDB（大体积日志存储） |
+| 浏览器 API | Web Speech API（朗读）、Web Audio API（摩尔斯 / 信号音 / 实时频谱）、Canvas（照片处理、瀑布图）、WebGL2（天线求解器的三维方向图，不支持时回退 SVG）、Notification（倒计时提醒）、IndexedDB（大体积日志存储） |
 | 服务器 | Axum 0.8 + tower-http（SPA 回退、缓存头、gzip/brotli），并提供 `/api/*` 外部数据代理（`ureq` + 内存缓存 + `sgp4` 过境计算） |
 | 数字信号解码 | `ham-web-apt` / `ham-web-sstv` / `ham-web-wspr`（纯 Rust DSP，编译为 Web Worker，音频不上传服务器） |
 | 工具链 | `ham-web-tools`（clap、ureq、resvg、sha2、brotli、walkdir） |
@@ -190,7 +244,7 @@
 ├── Dockerfile              # 多阶段构建（distroless 运行镜像）
 ├── rustfmt.toml            # 2 空格缩进、行宽 100
 ├── cspell.json             # 专有名词拼写白名单
-├── ROADMAP.md              # 增量扩展路线图（缺口清单与进度追踪，见 [ROADMAP.md](ROADMAP.md)）
+├── ROADMAP.md              # 路线图：未完成项、刻意不做的边界与工程门禁（见 [ROADMAP.md](ROADMAP.md)）
 ├── crates/
 │   ├── core/               # 领域模型与纯计算：题目结构、内容指纹、考试规则/抽题/计分、分类体系、
 │   │                       #   术语表、波段/传播/天线等知识数据、ADIF/Cabrillo/竞赛记分、网格与呼号解析、
@@ -297,6 +351,9 @@
 | `GET /api/v1/bands` | 频谱波段划分表 |
 | `GET /api/v1/grid/to-latlon` · `from-latlon` · `distance` | Maidenhead 网格换算与大圆距离 / 方位角 |
 | `GET /api/v1/propagation/muf` | 点对点 HF 传播预测（简化 VOACAP） |
+| `GET /api/v1/units/convert` | dBm ↔ mW / W、dB ↔ 倍率、MHz ↔ 波长 |
+| `GET /api/v1/filter/design` | Butterworth LC 滤波器设计（低通 / 高通 / 带通 / 带阻，1–9 阶） |
+| `GET /api/v1/link-budget` | 自由空间链路预算（Friis） |
 | `GET /api/v1/status` · `openapi.json` | 服务状态 / OpenAPI 文档 |
 
 约定：成功 `{ "data", "meta" }`、失败 `{ "error": { "code", "message" } }`；带 `ETag`（`If-None-Match` → 304）；`/api/v1/*` 开放 CORS（内部 `/api/*` 保持同源）；独立配额——匿名 30 次/分/IP，携带 `Authorization: Bearer <key>` 600 次/分，超限返回 429 + `Retry-After`。契约单一事实来源是 `crates/core/src/api_v1.rs`，文档页、`openapi.json` 与服务端路由测试共用，不会漂移。
@@ -354,8 +411,15 @@ cargo make serve          # 用 release 服务器托管 dist/：http://127.0.0.1
 
 1. 在「通联日志」逐条录入，或导入 ADIF / CSV（自动去重、读取 LoTW / eQSL 状态）；可查询呼号自动补全姓名与网格；
 2. 桌面版 Chrome / Edge 可开启「电台 CAT 联动」，自动回填频率与模式；
-3. 「通联统计」「奖状进度」「DXCC 世界地图」查看 DXCC / 波段 / QSL 进度；
-4. 「QSL 标签打印」生成标签纸，「竞赛录入」导出 Cabrillo 3.0。
+3. 「通联统计」「奖状进度」「DXCC 世界地图」查看 DXCC / 波段 / QSL 进度；有多个台站或操作员时用「统计范围」分开看；
+4. 「日志体检」找出重复、缺波段、时区误填等问题并一键修正；
+5. 下载 LoTW / eQSL 等确认报告后用「QSL 同步」逐条裁决，「QSL 卡片设计」「QSL 标签打印」寄卡，「竞赛录入」导出 Cabrillo 3.0。
+
+### 天线设计
+
+1. 在「实用天线」或「天线 DIY」的方案表点「在求解器中打开」，或在 `/nec` 选预设 / 用 Yagi 设计向导；
+2. 改导线、负载、地面与材质，看阻抗、效率、方向图与频带扫描；满意后存进「设计存档」，或导出 `.nec` 到其他软件；
+3. 阻抗不理想时到 `/smith` 设计匹配网络；装好后用 NanoVNA 扫一次，在 `/vna-reader` 看实测驻波与可用带宽。
 
 ### 实时数据与传播
 
@@ -363,12 +427,13 @@ cargo make serve          # 用 release 服务器托管 dist/：http://127.0.0.1
 
 ### 浏览器内解码（音频不出本机）
 
-「APT 云图解码」「SSTV 解码器」「WSPR 解码器」「RTTY / Olivia / DominoEX / NAVTEX / LRPT 解码」「PSK31 解码」都把音频交给 Web Worker 中的纯 Rust DSP 处理，不上传服务器（八个 Worker 共用 `public/decode-worker.js`，协议见 [`docs/decode-worker-protocol.md`](docs/decode-worker-protocol.md)）。可先生成合成样本试跑：
+「APT 云图解码」「SSTV 解码器」「WSPR 解码器」「RTTY / Olivia / DominoEX / NAVTEX / LRPT 解码」「PSK31 解码」都把音频交给 Web Worker 中的纯 Rust DSP 处理，不上传服务器（八个 Worker 共用 `public/decode-worker.js`，协议见 [`docs/decode-worker-protocol.md`](docs/decode-worker-protocol.md)）。可先生成合成样本试跑（每个解码器都有 `<名>-sample` / `<名>-decode` / `<名>-test` 三个任务）：
 
 ```bash
 cargo make apt-sample    && cargo make apt-decode     # 或 apt-test 一步到位
 cargo make sstv-sample   && cargo make sstv-decode    # 或 sstv-test
 cargo make wspr-sample   && cargo make wspr-decode    # 或 wspr-test
+cargo make rtty-test                                  # 同理：olivia / dominoex / navtex / lrpt
 cargo make psk31-sample                               # PSK31 样本
 cargo make spectrum-sample                            # 频谱 / 瀑布图样本（供 /sdr-waterfall）
 ```
@@ -434,7 +499,8 @@ cargo make spectrum-sample                            # 频谱 / 瀑布图样本
 | `cargo make check` | 格式检查 + clippy + 单元测试 + 文案词典校验 + 像素风生成物校验（不构建前端） |
 | `cargo make e2e` | 构建 release 站点并运行 Playwright 端到端测试（见下文「端到端测试」） |
 | `cargo make e2e-coverage` | 统计 e2e 覆盖率（路由冒烟 / 交互 / 关键流程），报告写入 `e2e/test-results/coverage.{md,json}` |
-| `cargo make ci` | 等价于 `check` + 前端构建 |
+| `cargo make size-check` | 性能预算：按 `perf-budget.json` 校验 `dist/` 的 br 压缩后体积（需先 `build-web`） |
+| `cargo make ci` | 等价于 `check` + 前端构建 + `size-check` |
 | **部署与清理** | — |
 | `cargo make docker-build` / `docker-run` | 构建 / 运行 Docker 镜像 |
 | `cargo make clean` | 清理构建产物（`cargo clean` + `dist` / `tmp`） |
@@ -950,19 +1016,23 @@ ls target/dev-dist/                                          # 正常应有 data
 
 ## 路由
 
-路由表定义在 `crates/app/src/app/main_content.rs`（外层布局见同目录 `mod.rs`），页面按三大模块组织。导航菜单与路由的对应关系由 `crates/core/src/registry.rs` 的能力注册表统一维护：注册表是路径、标题、图标与分组的唯一事实来源，顶部导航、`sitemap.xml` 均由其派生，`crates/app/src/registry_check.rs` 的测试保证三者不会漂移；新增页面会自动纳入冒烟测试。
+路由表定义在 `crates/app/src/app/main_content.rs`（外层布局见同目录 `mod.rs`），页面按三大模块组织（共 170 个路径，下表由注册表生成）。导航菜单与路由的对应关系由 `crates/core/src/registry.rs` 的能力注册表统一维护：注册表是路径、标题、图标与分组的唯一事实来源，顶部导航、`sitemap.xml` 均由其派生，`crates/app/src/registry_check.rs` 的测试保证三者不会漂移；新增页面会自动纳入冒烟测试。
 
 | 模块 | 路径 |
 | --- | --- |
 | 首页 | `/` |
-| 考试中心 | `/map` `/battle` `/bestiary` `/practice` `/exam` `/daily-challenge` `/browse` `/flashcards` `/listen` `/cards` `/mistakes` `/mistake-topics` `/bookmarks` `/weekly` `/progress` `/study-calendar` `/exam-review` `/print` `/countdown` `/photo-processor` |
-| 备考速查 | `/reference` `/cheat-sheet` `/confusables` `/formulas` `/prefixes` `/glossary` `/q-code` `/phonetic` `/rst` `/morse` `/cw-operating` `/license-classes` |
-| 模式 · 传播 | `/analog-modes` `/atv` `/sstv` `/modes` `/modulation` `/digital-comms` `/dsp` `/dv-network` `/packet` `/rtty` `/ft8` `/sdr` `/gnuradio` `/aprs` `/frequencies` `/coordination` `/zone-map` `/propagation` `/beacons` `/special-prop` `/meteor-scatter` `/eme` `/muf` `/wspr` `/weather-sat` `/apt-decoder` `/aurora` |
-| 天线 · 设备 | `/antennas` `/polarization` `/feedline` `/balun` `/antenna-diy` `/practical-antennas` `/antenna-installation` `/antenna-farm` `/antenna-tuning` `/antenna-analyzer` `/vna` `/antenna-modeling` `/antenna-array` `/nvis` `/electronics` `/filters` `/meters` `/power` `/power-supply` `/transceiver` `/receiver` `/gear` `/amplifier` `/bands` `/bandplan` `/microwave` `/mobile` |
+| 考试中心 | `/map` `/bestiary` `/practice` `/exam` `/daily-challenge` `/browse` `/flashcards` `/listen` `/cards` `/mistakes` `/mistake-topics` `/bookmarks` `/weekly` `/progress` `/study-calendar` `/exam-review` |
+| 备考速查 | `/reference` `/cheat-sheet` `/confusables` `/formulas` `/prefixes` `/glossary` `/q-code` `/phonetic` `/rst` `/morse` `/cw-operating` `/exam-comparison` `/license-classes` `/radio-law` |
+| 模式 · 传播 | `/analog-modes` `/atv` `/modes` `/modulation` `/digital-comms` `/dsp` `/dv-network` `/rtty` `/ft8` `/sdr` `/gnuradio` `/aprs` `/frequencies` `/coordination` `/zone-map` `/propagation` `/beacons` `/special-prop` `/meteor-scatter` `/aurora` `/eme` `/muf` `/wspr` `/sstv` `/weather-sat` `/packet` |
+| 天线 · 设备 | `/antennas` `/antenna-array` `/polarization` `/feedline` `/connectors` `/balun` `/antenna-diy` `/practical-antennas` `/antenna-installation` `/antenna-farm` `/antenna-tuning` `/antenna-analyzer` `/vna` `/antenna-theory` `/antenna-modeling` `/nvis` `/electronics` `/filters` `/measurement-lab` `/meters` `/power` `/power-supply` `/transceiver` `/receiver` `/rig-reviews` `/gear` `/amplifier` `/bands` `/bandplan` `/microwave` `/mobile` |
 | 通联 · 活动 | `/operating` `/sat-operation` `/contest` `/cabrillo` `/awards` `/iota` `/dx` `/dxpedition` `/most-wanted` `/qrp` `/eqsl` `/qsl-card` `/ardf` `/emcomm` `/winlink` `/events` `/portable` `/grid` `/callsign` `/repeater` `/repeater-build` `/logging-software` |
-| 进阶 · 关于 | `/organizations` `/safety` `/grounding` `/rfi` `/noise` `/beginner` `/learning-path` `/learning-resources` `/swl` `/license` `/regulations` `/history` `/remote` `/open-source` `/community` `/diy-projects` `/developers` |
-| 工具 | `/dashboard` `/tools` `/log` `/contest-log` `/contest-calendar` `/qsl-labels` `/qsl-designer` `/grid-map` `/portable-map` `/dx-spots` `/solar` `/satellites` `/sdr-map` `/sdr-waterfall` `/grayline` `/dxcc-map` `/stats` `/psk-reporter` `/rbn` `/psk-decode` `/sstv-decode` `/wspr-decode` `/callsign-copy` `/notifications` |
-| 可直链访问（未在导航中） | `/achievements` `/report` |
+| 进阶 · 关于 | `/organizations` `/safety` `/grounding` `/rfi` `/noise` `/beginner` `/learning-path` `/learning-resources` `/swl` `/license` `/spectrum-admin` `/regulations` `/history` `/remote` `/open-source` `/community` `/diy-projects` `/developers` |
+| 工具 · 计算 · 解码 | `/kiss-tnc` `/vna-reader` `/navtex-decode` `/lrpt-decode` `/dominoex-decode` `/olivia-decode` `/rtty-decode` `/tools` `/nec` `/waveform-lab` `/smith` `/apt-decoder` `/sstv-decode` `/wspr-decode` `/sdr-waterfall` `/psk-decode` `/photo-processor` |
+| 工具 · 日志 · 竞赛 | `/log` `/qsl-labels` `/qsl-designer` `/contest-log` `/contest-calendar` `/stats` |
+| 工具 · 实时数据 | `/dashboard` `/dx-spots` `/psk-reporter` `/rbn` `/solar` |
+| 工具 · 地图 · 卫星 | `/grid-map` `/grayline` `/dxcc-map` `/portable-map` `/satellites` `/sdr-map` |
+| 工具 · 训练 · 辅助 | `/callsign-copy` `/countdown` `/notifications` `/print` |
+| 可直链访问（未在导航中） | `/battle` `/license.html` `/achievements` `/report` |
 
 带参数的页面：
 

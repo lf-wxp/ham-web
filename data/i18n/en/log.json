@@ -297,7 +297,6 @@
   "log.grayline": "Grayline",
   "log.click-inspector": "Click inspector",
   "log.generate-cabrillo": "Generate Cabrillo",
-  "log.rendering": "Rendering…",
   "log.rendering-failed-please-retry": "Rendering failed, please retry.",
   "log.export-cabrillo-automatically-with": "Export Cabrillo automatically with logging software (N1MM, DXLog, etc.) to avoid manual errors.",
   "log.partly-used-sheet-skip": "Partly used sheet: skip the labels already removed",
@@ -433,5 +432,8 @@
   "log.tqsl-itu-zone": "ITU zone",
   "log.tqsl-must-match-my": "These must match the MY_* fields in the ADIF you export — a mismatch uploads without error, but LoTW marks those QSOs as not matched.",
   "log.tqsl-set-station-first": "Your station info is incomplete (callsign or grid empty, or the prefix has no DXCC entity). Fill it in first:",
-  "log.tqsl-station-location": "Fill these in when creating the Station Location in TQSL"
+  "log.tqsl-station-location": "Fill these in when creating the Station Location in TQSL",
+  "log.print-layout": "Print layout",
+  "log.print-layout-single": "1 per page (A4 portrait)",
+  "log.print-layout-grid": "4 per page (A4 landscape, with cut marks)"
 }

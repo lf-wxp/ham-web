@@ -268,7 +268,7 @@ pub async fn share_image(data_url: &str, filename: &str, title: &str) -> Result<
 }
 
 /// 学习报告数据（用于生成年度 / 阶段报告卡片）。
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct ReportData {
   pub answered: u32,
   pub correct_rate: u32,

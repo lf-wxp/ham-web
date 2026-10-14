@@ -223,12 +223,13 @@ impl MuxStream {
     out
   }
 
-  /// 分拣 MSU-MR 段（按 (通道, MCUN) 排序）。跳过 APID 70 遥测。
+  /// 分拣 MSU-MR 段（按 (通道, MCUN) 排序）。图像 APID 为 64–69（六个通道，每次过境
+  /// 只下传其中三个）；跳过 APID 70 遥测。
   #[must_use]
   pub fn segments(&self) -> BTreeMap<(u16, u8), Segment> {
     let mut out = BTreeMap::new();
     for (apid, _seq, payload) in self.packets() {
-      if !(64..=66).contains(&apid) || payload.len() < 14 {
+      if !(64..=69).contains(&apid) || payload.len() < 14 {
         continue;
       }
       let mcu_number = payload[8];

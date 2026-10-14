@@ -43,11 +43,15 @@ impl LineRow {
   }
 
   /// 转成核心类型；任一字段解析失败返回 `None`（该行被跳过）。
+  ///
+  /// 表格里的导线序号与导线表、负载表一样**从 1 起**（「第几根导线」），核心从 0 起。
+  /// 曾经这里直接拿表格值当下标：默认行「导线 1 → 导线 1」在单根导线的模型上指向一根
+  /// 不存在的导线，页面只显示「参数无法求解」—— 序号 0 现在同样按非法处理。
   pub(super) fn to_line(&self) -> Option<TransmissionLine> {
     Some(TransmissionLine {
-      wire_a: self.wire_a.trim().parse::<usize>().ok()?,
+      wire_a: self.wire_a.trim().parse::<usize>().ok()?.checked_sub(1)?,
       at_a: self.at_a.trim().parse::<f64>().ok()?,
-      wire_b: self.wire_b.trim().parse::<usize>().ok()?,
+      wire_b: self.wire_b.trim().parse::<usize>().ok()?.checked_sub(1)?,
       at_b: self.at_b.trim().parse::<f64>().ok()?,
       z0: self.z0.trim().parse::<f64>().ok()?,
       length_m: self.length_m.trim().parse::<f64>().ok()?,

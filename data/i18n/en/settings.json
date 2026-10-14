@@ -24,6 +24,7 @@
   "settings.enter-the-issue-date": "Enter the issue date to auto-calculate the expiry (5-year validity) and add a countdown reminder (apply for renewal well before expiry).",
   "settings.export-all-local-data": "Export all local data (progress, mistakes, bookmarks, logbook, etc.) as JSON; restore on another device, or merge data from multiple devices.",
   "settings.not-requested": "Not requested",
+  "settings.notifications-unsupported": "Notifications not supported in this browser (on iOS, add to Home Screen first)",
   "settings.off": "Off",
   "settings.added-to-countdown-the": "Added to countdown; the browser will notify you when it expires.",
   "settings.merged-items": {

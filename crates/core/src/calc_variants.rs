@@ -1,4 +1,4 @@
-//! 计算题参数化变体：波长 / 增益 dB / 馈线衰减 / LC 谐振四类同型题。
+//! 计算题参数化变体：波长 / 增益 dB / 馈线衰减 / LC 谐振 / 欧姆定律 / 电压 dB 六类同型题。
 //!
 //! # 为什么这么做
 //!
@@ -30,16 +30,21 @@ pub fn day_seed(now_ms: i64, utc_offset_minutes: i32) -> u32 {
 /// 每类模板每次生成的数量。
 const VARIANTS_PER_TEMPLATE: u32 = 2;
 
-/// 全部变体（4 类 × 2 道）。
+/// 全部模板（顺序即出题顺序）。
+const TEMPLATES: [Template; 6] = [
+  Template::Wavelength,
+  Template::Gain,
+  Template::Loss,
+  Template::Lc,
+  Template::Ohm,
+  Template::VoltageDb,
+];
+
+/// 全部变体（6 类 × 2 道）。
 #[must_use]
 pub fn variant_questions(seed: u32) -> Vec<QuestionItem> {
-  let mut out = Vec::with_capacity(8);
-  for template in [
-    Template::Wavelength,
-    Template::Gain,
-    Template::Loss,
-    Template::Lc,
-  ] {
+  let mut out = Vec::with_capacity(TEMPLATES.len() * VARIANTS_PER_TEMPLATE as usize);
+  for template in TEMPLATES {
     for index in 0..VARIANTS_PER_TEMPLATE {
       out.push(build_variant(seed, template, index));
     }
@@ -53,6 +58,8 @@ enum Template {
   Gain,
   Loss,
   Lc,
+  Ohm,
+  VoltageDb,
 }
 
 impl Template {
@@ -62,6 +69,8 @@ impl Template {
       Self::Gain => "gain",
       Self::Loss => "loss",
       Self::Lc => "lc",
+      Self::Ohm => "ohm",
+      Self::VoltageDb => "voltage-db",
     }
   }
 }
@@ -81,6 +90,8 @@ fn rng_for(seed: u32, template: Template, index: u32) -> u64 {
     Template::Gain => 0x02,
     Template::Loss => 0x03,
     Template::Lc => 0x04,
+    Template::Ohm => 0x05,
+    Template::VoltageDb => 0x06,
   };
   let mut rng = (u64::from(seed) << 32) | (tag << 16) | u64::from(index);
   for _ in 0..4 {
@@ -151,12 +162,42 @@ const POOL_LC: &[(f64, f64)] = &[
   (20.0, 20.0),
 ];
 
+/// 欧姆定律：(U V, R Ω) → I = U/R A。
+///
+/// 避开结果在 0.01 A 以下的组合：干扰项要取一半，`fmt3` 只保留到千分位，
+/// 0.0025 这类值会被舍成 0.002 / 0.003（取决于浮点表示），选项就不再是「正好一半」。
+const POOL_OHM: &[(f64, f64)] = &[
+  (12.0, 4.0),
+  (13.8, 2.3),
+  (12.0, 100.0),
+  (5.0, 100.0),
+  (9.0, 18.0),
+  (13.8, 0.5),
+  (48.0, 12.0),
+  (24.0, 0.8),
+];
+
+/// 电压比：(U1, U2) V → 20·lg(U2/U1) dB（与功率比的 10·lg 是最常见的混淆）。
+const POOL_VOLTAGE_DB: &[(f64, f64)] = &[
+  (1.0, 2.0),
+  (1.0, 10.0),
+  (0.5, 5.0),
+  (2.0, 1.0),
+  (1.0, 100.0),
+  (10.0, 20.0),
+  (1.0, 4.0),
+  (100.0, 10.0),
+];
+
 /// 每个模板的公式算出的「答案数字」。
 enum Answer {
   Wavelength(f64),
   Gain(f64),
   Loss(f64),
   Lc(f64),
+  /// 电流（A）；同时带上题目参数，干扰项「把 U×R 当电流」要用到它们。
+  Ohm(f64, f64, f64),
+  VoltageDb(f64),
 }
 
 fn compute(template: Template, p: &(f64, f64)) -> Answer {
@@ -168,6 +209,8 @@ fn compute(template: Template, p: &(f64, f64)) -> Answer {
     Template::Lc => {
       Answer::Lc(1.0 / (2.0 * std::f64::consts::PI * (p.0 * p.1 * 1e-18).sqrt()) / 1e6)
     }
+    Template::Ohm => Answer::Ohm(p.0 / p.1, p.0, p.1),
+    Template::VoltageDb => Answer::VoltageDb(20.0 * (p.1 / p.0).log10()),
   }
 }
 
@@ -177,6 +220,8 @@ fn answer_text(answer: &Answer) -> String {
     Answer::Gain(v) => format!("{} dB", fmt3(v)),
     Answer::Loss(v) => format!("{} W", fmt3(v)),
     Answer::Lc(v) => format!("{} MHz", fmt2(v)),
+    Answer::Ohm(v, _, _) => format!("{} A", fmt3(v)),
+    Answer::VoltageDb(v) => format!("{} dB", fmt3(v)),
   }
 }
 
@@ -206,6 +251,17 @@ fn distractors(answer: &Answer) -> Vec<String> {
       .into_iter()
       .map(|s| format!("{s} MHz"))
       .collect(),
+    // 倍半之外，「把 U×R 当成电流」是欧姆定律最典型的错法。
+    Answer::Ohm(v, u, r) => [fmt3(v * 0.5), fmt3(v * 2.0), fmt3(u * r)]
+      .into_iter()
+      .map(|s| format!("{s} A"))
+      .collect(),
+    // 「误用功率比的 10·lg」（一半）、「符号反了」、「多平方一次」（翻倍）。
+    // 池里没有 0 dB 的组合，三者与答案两两不同。
+    Answer::VoltageDb(v) => [fmt3(v * 0.5), fmt3(-v), fmt3(v * 2.0)]
+      .into_iter()
+      .map(|s| format!("{s} dB"))
+      .collect(),
   }
 }
 
@@ -228,6 +284,16 @@ fn stem(template: Template, p: &(f64, f64)) -> String {
     ),
     Template::Lc => format!(
       "〔变体 · LC 谐振〕电感 {} μH 与电容 {} pF 的并联谐振回路，谐振频率约为：",
+      fmt3(p.0),
+      fmt3(p.1)
+    ),
+    Template::Ohm => format!(
+      "〔变体 · 欧姆定律〕{} V 电压加在 {} Ω 电阻两端，流过的电流约为：",
+      fmt3(p.0),
+      fmt3(p.1)
+    ),
+    Template::VoltageDb => format!(
+      "〔变体 · 电压分贝〕同一负载上的电压由 {} V 变为 {} V，电压增益约为：",
       fmt3(p.0),
       fmt3(p.1)
     ),
@@ -258,6 +324,18 @@ fn explanation(template: Template, p: &(f64, f64), answer_text: &str) -> String 
       "谐振频率 f（MHz）= 1 ÷ (2π × √(L×C))，L 用 μH、C 用 pF。本题 ≈ {}。",
       answer_text
     ),
+    Template::Ohm => format!(
+      "欧姆定律 I = U ÷ R。本题：{} ÷ {} ≈ {}。",
+      fmt3(p.0),
+      fmt3(p.1),
+      answer_text
+    ),
+    Template::VoltageDb => format!(
+      "电压增益 G（dB）= 20 × lg(U₂ ÷ U₁)（功率与电压平方成正比，所以是 20 而不是 10）。本题：20 × lg({} ÷ {}) ≈ {}。",
+      fmt3(p.1),
+      fmt3(p.0),
+      answer_text
+    ),
   }
 }
 
@@ -285,6 +363,10 @@ fn build_variant(seed: u32, template: Template, index: u32) -> QuestionItem {
     Template::Gain => POOL_GAIN[pool_index(seed, template, index, POOL_GAIN.len())],
     Template::Loss => POOL_LOSS[pool_index(seed, template, index, POOL_LOSS.len())],
     Template::Lc => POOL_LC[pool_index(seed, template, index, POOL_LC.len())],
+    Template::Ohm => POOL_OHM[pool_index(seed, template, index, POOL_OHM.len())],
+    Template::VoltageDb => {
+      POOL_VOLTAGE_DB[pool_index(seed, template, index, POOL_VOLTAGE_DB.len())]
+    }
   };
   let answer = compute(template, &p);
   let correct = answer_text(&answer);
@@ -330,7 +412,7 @@ mod tests {
       c.iter().map(|q| &q.question).collect::<Vec<_>>(),
       "换一天要换题，否则防背答案无从谈起"
     );
-    assert_eq!(a.len(), 8, "4 类 × 2 道");
+    assert_eq!(a.len(), 12, "6 类 × 2 道");
   }
 
   #[test]
@@ -385,6 +467,53 @@ mod tests {
         pinned_lc[i],
         "LC 池第 {i} 组"
       );
+    }
+    let pinned_ohm = [
+      "3.00 A", "6.00 A", "0.120 A", "0.050 A", "0.500 A", "27.6 A", "4.00 A", "30.0 A",
+    ];
+    for (i, &p) in POOL_OHM.iter().enumerate() {
+      assert_eq!(
+        answer_text(&compute(Template::Ohm, &p)),
+        pinned_ohm[i],
+        "欧姆池第 {i} 组"
+      );
+    }
+    // 20×lg(2) = 6.0206…、20×lg(4) = 12.041…
+    let pinned_vdb = [
+      "6.02 dB", "20.0 dB", "20.0 dB", "-6.02 dB", "40.0 dB", "6.02 dB", "12.0 dB", "-20.0 dB",
+    ];
+    for (i, &p) in POOL_VOLTAGE_DB.iter().enumerate() {
+      assert_eq!(
+        answer_text(&compute(Template::VoltageDb, &p)),
+        pinned_vdb[i],
+        "电压分贝池第 {i} 组"
+      );
+    }
+  }
+
+  #[test]
+  fn every_pool_entry_yields_four_distinct_options() {
+    // 原有的形态检查只看一个种子；这里把每个模板的每个参数组都过一遍 ——
+    // 新加的池子只要有一组让干扰项撞上答案（或彼此相撞），这里就红。
+    let wavelength: Vec<(f64, f64)> = POOL_WAVELENGTH.iter().map(|&f| (f, 0.0)).collect();
+    let pools: [(Template, &[(f64, f64)]); 6] = [
+      (Template::Wavelength, &wavelength),
+      (Template::Gain, POOL_GAIN),
+      (Template::Loss, POOL_LOSS),
+      (Template::Lc, POOL_LC),
+      (Template::Ohm, POOL_OHM),
+      (Template::VoltageDb, POOL_VOLTAGE_DB),
+    ];
+    for (template, pool) in pools {
+      for p in pool {
+        let answer = compute(template, p);
+        let mut texts = distractors(&answer);
+        texts.push(answer_text(&answer));
+        let n = texts.len();
+        texts.sort_unstable();
+        texts.dedup();
+        assert_eq!(texts.len(), n, "{template:?} {p:?} 的选项有重复：{texts:?}");
+      }
     }
   }
 

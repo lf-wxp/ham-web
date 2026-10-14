@@ -165,3 +165,65 @@ export async function pickTime(page: Page, name: string | RegExp, hhmm: string) 
   await columns.nth(1).getByRole("option", { name: minute, exact: true }).click();
   await expect(panel).toBeHidden();
 }
+
+/** 种子日志的一条记录：只需给出关心的字段，其余必填字段补默认值。 */
+export type SeedQso = {
+  callsign: string;
+  date?: string;
+  time?: string;
+  freq?: string;
+  band?: string;
+  mode?: string;
+  gridsquare?: string;
+  sota_ref?: string;
+  pota_ref?: string;
+};
+
+/**
+ * 在页面脚本运行前写入日志快照（`logbook`）。
+ *
+ * 必须走 `addInitScript`：不少页面只在挂载时读一次日志，先 `goto` 再写就晚了。
+ * IndexedDB 在新 context 里是空的，加载时自然以这份快照为准。
+ */
+export async function seedLog(page: Page, qsos: SeedQso[]) {
+  const entries = qsos.map((q, i) => ({
+    id: i + 1,
+    date: q.date ?? "2026-01-01",
+    time: q.time ?? "00:00",
+    freq: q.freq ?? "14.074",
+    band: q.band ?? "",
+    mode: q.mode ?? "FT8",
+    callsign: q.callsign,
+    gridsquare: q.gridsquare ?? "",
+    sota_ref: q.sota_ref ?? "",
+    pota_ref: q.pota_ref ?? "",
+    remark: "",
+  }));
+  await page.addInitScript((json) => {
+    // 只在首次加载时写：测试里 reload 后应看到页面自己写回的数据，而不是被种子覆盖。
+    if (!sessionStorage.getItem("e2e:seeded-log")) {
+      localStorage.setItem("logbook", json);
+      sessionStorage.setItem("e2e:seeded-log", "1");
+    }
+  }, JSON.stringify({ entries }));
+}
+
+/**
+ * 给 `/api/*` 打桩：`routes` 的 key 是不含查询串的路径（如 `/api/spots`），
+ * 值是 JSON 响应体，或按完整 URL 返回响应体的函数。未登记的接口一律 503 ——
+ * 页面后台的轮询（卫星提醒、太阳活动等）不会偷偷打到真实网络。
+ */
+export async function stubApi(
+  page: Page,
+  routes: Record<string, unknown | ((url: URL) => unknown)>,
+) {
+  await page.route("**/api/**", (route) => {
+    const url = new URL(route.request().url());
+    const hit = routes[url.pathname];
+    if (hit === undefined) {
+      return route.fulfill({ status: 503, contentType: "text/plain", body: "stubbed: not registered" });
+    }
+    const body = typeof hit === "function" ? (hit as (u: URL) => unknown)(url) : hit;
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+  });
+}

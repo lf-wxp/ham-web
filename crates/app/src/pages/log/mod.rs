@@ -21,10 +21,12 @@ mod qsl_badge;
 mod qsl_image;
 mod qsl_sync_dialog;
 mod station_panel;
+mod stats_scope_select;
 
 pub use contest_log::ContestLogPage;
 pub use grid_map::GridMap;
 pub use log_page::LogPage;
+pub use stats_scope_select::{StatsScopeSelect, scoped_log_entries, use_stats_scope};
 
 use ham_web_core::adif::AdifRecord;
 pub use ham_web_core::logbook::{LogEntry, Logbook, StationInfo};

@@ -10,6 +10,7 @@ use crate::sat_alert;
 use crate::ui::{
   Button, Checkbox, ControlSize, Field, NativeSelect, NumberField, SelectOption, Size, Variant,
 };
+use crate::util::notification_permission;
 
 use super::CELL;
 use crate::i18n::{t, tf, tp};
@@ -29,10 +30,11 @@ fn now_secs() -> i64 {
 }
 
 fn permission_label() -> String {
-  match Notification::permission() {
-    NotificationPermission::Granted => t("radio.allowed"),
-    NotificationPermission::Denied => t("radio.blocked-by-the-browser"),
-    _ => t("radio.not-authorised-yet"),
+  match notification_permission() {
+    None => t("radio.notifications-unsupported"),
+    Some(NotificationPermission::Granted) => t("radio.allowed"),
+    Some(NotificationPermission::Denied) => t("radio.blocked-by-the-browser"),
+    Some(_) => t("radio.not-authorised-yet"),
   }
 }
 
@@ -53,12 +55,21 @@ pub(super) fn PassPredictor() -> impl IntoView {
   let station_grid = use_log_store().active_station().gridsquare;
   let station_pos = lat_lon_from_grid(&station_grid);
 
+  // 查询代际：挂载时的自动查询与用户手动点「查询过境」可能并发，快照又各不相同；
+  // 响应回来时对不上代际就丢弃，避免旧坐标的结果晚到后覆盖新查询的结果。
+  let fetch_gen = StoredValue::new(0u32);
   let fetch = move || {
     loading.set(true);
     failed.set(false);
     let w = watch.get_untracked();
+    fetch_gen.update_value(|g| *g = g.wrapping_add(1));
+    let my = fetch_gen.get_value();
     spawn_local(async move {
-      match sat_alert::fetch_passes(&w, "amateur").await {
+      let outcome = sat_alert::fetch_passes(&w, "amateur").await;
+      if fetch_gen.try_get_value() != Some(my) {
+        return;
+      }
+      match outcome {
         Ok(list) => {
           passes.set(list);
           queried.set(true);
@@ -74,7 +85,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
 
   let toggle_alerts = move |on: bool| {
     if on
-      && matches!(Notification::permission(), NotificationPermission::Default)
+      && notification_permission() == Some(NotificationPermission::Default)
       && let Ok(p) = Notification::request_permission()
     {
       spawn_local(async move {
@@ -87,7 +98,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
 
   let toggle_apt = move |on: bool| {
     if on
-      && matches!(Notification::permission(), NotificationPermission::Default)
+      && notification_permission() == Some(NotificationPermission::Default)
       && let Ok(p) = Notification::request_permission()
     {
       spawn_local(async move {
@@ -98,9 +109,8 @@ pub(super) fn PassPredictor() -> impl IntoView {
     update(&|w| w.apt_alert = on);
   };
 
-  // 标签收 `String` 而不是 `&'static str`：`Field` 的标签原样渲染、不过 `t()`，
-  // 所以调用点必须传已经翻好的文案（原来传中文字面量，英西界面会露中文）。
-  let number_input = move |label: String,
+  // 标签收 `Signal` 而不是一次性翻好的 `String`：`Field` 的标签要跟随语言切换。
+  let number_input = move |label: Signal<String>,
                            step: &'static str,
                            get: fn(&SatWatch) -> f64,
                            set: fn(&mut SatWatch, f64)| {
@@ -130,9 +140,9 @@ pub(super) fn PassPredictor() -> impl IntoView {
       <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.pass-predictions-and-reminders")}</h2>
       <div class="space-y-4 p-4">
         <div class="grid gap-3 sm:grid-cols-3">
-          {number_input(t("common.latitude"), "0.0001", |w| w.lat, |w, v| w.lat = v.clamp(-90.0, 90.0))}
-          {number_input(t("common.longitude"), "0.0001", |w| w.lon, |w, v| w.lon = v.clamp(-180.0, 180.0))}
-          {number_input(t("common.min-elevation"), "1", |w| w.min_elev, |w, v| w.min_elev = v.clamp(0.0, 90.0))}
+          {number_input(Signal::derive(move || t("common.latitude")), "0.0001", |w| w.lat, |w, v| w.lat = v.clamp(-90.0, 90.0))}
+          {number_input(Signal::derive(move || t("common.longitude")), "0.0001", |w| w.lon, |w, v| w.lon = v.clamp(-180.0, 180.0))}
+          {number_input(Signal::derive(move || t("common.min-elevation")), "1", |w| w.min_elev, |w, v| w.min_elev = v.clamp(0.0, 90.0))}
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -219,7 +229,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
             }
             let list = passes.get();
             let next = upcoming(&w, &list, now_secs());
-            let names = w.favorites.iter().map(|f| f.name.clone()).collect::<Vec<_>>().join("、");
+            let names = w.favorites.iter().map(|f| f.name.clone()).collect::<Vec<_>>().join(", ");
             Some(view! {
               <div class="mt-3 space-y-1.5 text-sm">
                 <div class="text-xs text-muted-foreground">{tf("radio.saved", &[&(names).to_string()])}</div>

@@ -43,3 +43,5 @@ e2e/test-results
 e2e/test-results-*
 e2e/playwright-report
 
+# necpp 交叉验证用的本地虚拟环境（见 crates/nec/reference/necpp_ref.py）
+/.venv-necpp

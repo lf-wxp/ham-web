@@ -5,9 +5,10 @@
 //! 参数：本原多项式 0x187（x⁸+x⁷+x²+x+1）、首个根指数 112、根步进 11
 //! （即生成多项式根 α^(11·(112+i))，i = 0..31）、交织深度 4（892 = 4×223）。
 //!
-//! 如实说明：编码器（本对拍的参照）用普通 α 基底（跟随 libcorrect），
-//! **没有**做 CCSDS 双基底转换 —— 真实卫星信号用的双基底需另行转换，
-//! 属后续层，此处照参照实现。
+//! 基底：普通 α 基底，**不做** CCSDS 双基底转换。这不是缺口 —— Meteor-M 的 LRPT 本来就
+//! 不用双基底：SatDump（`plugins/meteor_support/meteor/module_meteor_lrpt_decoder.cpp`，
+//! 2026-10 核对）两条解码路径都以 `decode_interlaved(&cadu[4], false, 4, errors)` 调用，
+//! 第二个参数就是「是否双基底」。早先这里与页面提示都把它列为「真实录音还缺的一层」，是误判。
 
 pub const N: usize = 255;
 pub const K: usize = 223;

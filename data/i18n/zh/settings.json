@@ -18,6 +18,7 @@
   "settings.enter-the-issue-date": "填写发照日期，自动按 5 年有效期计算到期日，并加入倒计时提醒（届满前请提前办理更换）。",
   "settings.export-all-local-data": "导出全部本地数据（进度、错题、收藏、日志等）为 JSON；可在其他设备恢复，或合并导入多台设备的数据。",
   "settings.not-requested": "尚未请求",
+  "settings.notifications-unsupported": "当前浏览器不支持通知（iOS 需先添加到主屏幕）",
   "settings.off": "已关闭",
   "settings.added-to-countdown-the": "已加入倒计时，到期时浏览器会弹出通知。",
   "settings.merged-items": "已合并 {} 条数据",

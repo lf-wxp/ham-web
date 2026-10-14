@@ -199,6 +199,7 @@
   "radio.real-time-chase-suggestions": "实时追台建议",
   "radio.their-grid-e-g": "对方网格（如 IO91）",
   "radio.not-authorised-yet": "尚未授权",
+  "radio.notifications-unsupported": "浏览器不支持",
   "radio.summit-and-park-activations": "山顶与公园活动，含编号查询。",
   "radio.allowed": "已允许",
   "radio.logged-mhz": "已加入日志：{}（{} MHz {}）",

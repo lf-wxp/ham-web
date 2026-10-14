@@ -15,3 +15,15 @@
 
 与本仓库的关系：只作互操作对拍用（`cargo test -p ham-web-dominoex --test
 reference_interop`），不随前端分发。
+
+## FEC 模式（MultiPSK 兼容）
+
+- 核心：`../src/fec.rs`；独立参考：`../tests/reference/dominoex_fec_ref.rs`（逐行直译，
+  与 `src/` 不共享代码）；对拍：`cargo test -p ham-web-dominoex --test fec_interop`
+  （nibble 流逐字节相同、双向互解、打坏后两边译码逐字符一致、音频端到端）。
+- 算法出处：fldigi `src/dominoex/dominoex.cxx`（`sendMuPskEX` / `decodeMuPskEX` /
+  `MuPskSec2Pri` / `MuPskPriSecChar`）、`src/filters/viterbi.cxx`（编码器与 Viterbi）、
+  `src/mfsk/interleave.cxx`（交织器，fldigi 注明改编自 gMFSK），均为 GNU GPL v3。
+- 码表：IZ8BLY MFSK Varicode，由 `../examples/extract_mfsk_varicode.rs` 从 fldigi
+  `src/mfsk/mfskvaricode.cxx` 生成 Rust（`../src/mfsk_varicode.rs`）与 TS
+  （`e2e/tests/mfsk_varicode_data.ts`）两份，提取时与同文件的 `varidecode[]` 逐项比对。

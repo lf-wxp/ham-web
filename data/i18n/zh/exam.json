@@ -341,7 +341,7 @@
   "exam.sequential": "顺序",
   "exam.order-random": "顺序/随机",
   "exam.calc-variants": "计算变体",
-  "exam.calc-variants-hint": "把波长 / dB / 衰减 / LC 谐振类题换数不换型重新生成，防背答案；变体只在当次练习里出现，不计入统计。",
+  "exam.calc-variants-hint": "把波长 / dB / 衰减 / LC 谐振 / 欧姆定律 / 电压 dB 类题换数不换型重新生成，防背答案；变体只在当次练习里出现，不计入统计。",
   "exam.variant-no-bookmark": "计算变体只在当次练习里出现，不能收藏",
   "exam.frequency-range": "频率范围",
   "exam.question-number-label": "题号",

@@ -740,10 +740,20 @@ pub async fn read_file_text(file: &web_sys::File) -> Option<String> {
     .as_string()
 }
 
+/// 当前浏览器通知权限；浏览器没有通知 API 时返回 `None`。
+///
+/// 必须先探测：iOS Safari 非主屏 PWA 环境下没有 `window.Notification`，而
+/// `Notification::permission()` 的绑定不带 `catch`，直接调用会抛 `ReferenceError` 让 wasm 中止。
+pub fn notification_permission() -> Option<web_sys::NotificationPermission> {
+  let supported = js_sys::Reflect::has(&window(), &wasm_bindgen::JsValue::from_str("Notification"))
+    .unwrap_or(false);
+  supported.then(web_sys::Notification::permission)
+}
+
 /// 发送浏览器通知（仅在已授予通知权限时生效）。
 pub fn notify(title: &str) {
   use web_sys::{Notification, NotificationPermission};
-  if !matches!(Notification::permission(), NotificationPermission::Granted) {
+  if notification_permission() != Some(NotificationPermission::Granted) {
     return;
   }
   let _ = Notification::new(title);
@@ -752,7 +762,7 @@ pub fn notify(title: &str) {
 /// 请求浏览器通知权限。
 pub fn request_notify_permission() {
   use web_sys::{Notification, NotificationPermission};
-  if matches!(Notification::permission(), NotificationPermission::Default) {
+  if notification_permission() == Some(NotificationPermission::Default) {
     let _ = Notification::request_permission();
   }
 }

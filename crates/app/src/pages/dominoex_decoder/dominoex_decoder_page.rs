@@ -8,7 +8,8 @@ use crate::components::common::{PageContainer, PageHeader};
 use crate::decode_session::{DecodeConfig, DecodeSession};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
-  Button, ButtonLink, Field, FileDropZone, NativeSelect, SelectOption, Size, TextValue, Variant,
+  Button, ButtonLink, Checkbox, Field, FileDropZone, NativeSelect, SelectOption, Size, TextValue,
+  Variant,
 };
 use crate::util::set_title;
 
@@ -50,6 +51,8 @@ pub fn DominoexDecoderPage() -> impl IntoView {
     ..
   } = session;
   let mode = RwSignal::new("8".to_owned());
+  // FEC 不改变调制，只改变 nibble 的含义：发送端开没开 FEC 听不出来，只能由用户选。
+  let fec = RwSignal::new(false);
 
   let cancel = move |_| session.cancel();
   let reset = move |_| session.reset();
@@ -60,6 +63,11 @@ pub fn DominoexDecoderPage() -> impl IntoView {
         &params,
         &"mode".into(),
         &JsValue::from_str(&mode.get_untracked()),
+      );
+      let _ = js_sys::Reflect::set(
+        &params,
+        &"fec".into(),
+        &JsValue::from_bool(fec.get_untracked()),
       );
       Ok(params.into())
     });
@@ -117,6 +125,18 @@ pub fn DominoexDecoderPage() -> impl IntoView {
                   {move || t("tools.dominoex-submode-hint")}
                 </span>
               </Field>
+              <label class="mb-4 flex items-start gap-2 text-sm">
+                <Checkbox
+                  checked=Signal::derive(move || fec.get())
+                  on_change=Callback::new(move |v: bool| fec.set(v))
+                />
+                <span>
+                  {move || t("tools.dominoex-fec")}
+                  <span class="block text-xs text-muted-foreground">
+                    {move || t("tools.dominoex-fec-hint")}
+                  </span>
+                </span>
+              </label>
             }
           }}
 

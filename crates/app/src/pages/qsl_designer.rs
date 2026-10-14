@@ -3,11 +3,13 @@
 //! 版式（文字放哪、多大、什么语气）由 `ham_web_core::qsl_card` 算，这里只负责三件事：
 //! 把语义语气翻成颜色、把内容画到 canvas、把 canvas 交给下载 / 打印。
 //!
-//! 打印走浏览器自己的「打印 → 另存为 PDF」：A4 居中放一张 **140×89mm 标准卡**
-//! （3.5 × 5.5 英寸），不自己拼 PDF 字节流 —— 中文排版与纸张由浏览器负责，
+//! 打印走浏览器自己的「打印 → 另存为 PDF」：A4 竖向居中一张 **140×89mm 标准卡**
+//! （3.5 × 5.5 英寸），或 A4 横向 2×2 拼版四张（带裁切线，几何见
+//! `ham_web_core::qsl_sheet`）。不自己拼 PDF 字节流 —— 中文排版与纸张由浏览器负责，
 //! 自己拼要多几百 KB 依赖还容易印歪。
 
 use ham_web_core::qsl_card::{self, Align, CardContent, CardRect, CardTemplate, RectKind, Tone};
+use ham_web_core::qsl_sheet::{CUT_MARK_GAP_MM, CUT_MARK_MM, Imposition, sheet};
 use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
@@ -29,8 +31,15 @@ const CARD_PX: (f64, f64) = (1400.0, 890.0);
 /// 记住上次选的版式。
 const TEMPLATE_KEY: &str = "qsl-card-template";
 
-/// 打印时覆盖全局页边距：卡片自己带留白，纸张留 0 才能精确居中。
-const PRINT_CSS: &str = "@media print { @page { size: A4; margin: 0; } }";
+/// 记住上次选的打印拼版方式。
+const IMPOSITION_KEY: &str = "qsl-card-imposition";
+
+/// 打印时覆盖全局页边距：卡片自己带留白，纸张留 0 才能精确定位（拼版坐标按纸边算）。
+/// 拼版是横向 A4 时纸张方向必须一起切，否则 2×2 的版面会被浏览器缩放塞进竖版。
+fn print_css(landscape: bool) -> String {
+  let size = if landscape { "A4 landscape" } else { "A4" };
+  format!("@media print {{ @page {{ size: {size}; margin: 0; }} }}")
+}
 
 /// 版式主色。卡片是打印物，用固定的纸面配色，不跟站点明暗主题走。
 fn accent(template: CardTemplate) -> &'static str {
@@ -225,6 +234,9 @@ pub fn QslDesignerPage() -> impl IntoView {
   );
   let preview = RwSignal::new(String::new());
   let picked = RwSignal::new(String::new());
+  let imposition = RwSignal::new(
+    storage::get(IMPOSITION_KEY).map_or(Imposition::Single, |id| Imposition::from_id(&id)),
+  );
 
   // 本台信息只带一次（空着才填）：之后用户手改的不会被覆盖。
   let station = store.active_station();
@@ -315,7 +327,6 @@ pub fn QslDesignerPage() -> impl IntoView {
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <style>{PRINT_CSS}</style>
       // 屏幕上的一切都不打印；打印时只留下面那张 A4 卡片。
       <div class="print-hide">
         <PageHeader
@@ -402,24 +413,24 @@ pub fn QslDesignerPage() -> impl IntoView {
               <h2 class="mb-3 text-sm font-semibold">{move || t("log.card-info")}</h2>
               <div class="space-y-3">
                 <div class="grid grid-cols-2 gap-3">
-                  {field("本台呼号", f.my_call, "BG4XXX")}
-                  {field("本台网格", f.my_grid, "OM89")}
+                  {field("log.station-callsign", f.my_call, "BG4XXX")}
+                  {field("log.station-grid", f.my_grid, "OM89")}
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                  {field("操作员", f.operator, "OP")}
-                  {field("本台 QTH", f.my_qth, "城市")}
+                  {field("log.operator", f.operator, "OP")}
+                  {field("log.my-qth", f.my_qth, "radio.city")}
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                  {field("对方呼号", f.to_call, "JA1XXX")}
+                  {field("contest.their-callsign", f.to_call, "JA1XXX")}
                   {field("log.their-grid", f.to_grid, "PM95")}
                 </div>
                 <div class="grid grid-cols-3 gap-3">
-                  {field("日期", f.date, "2026-10-01")}
-                  {field("时间", f.time, "12:34")}
-                  {field("频率", f.freq, "14.074")}
+                  {field("log.date", f.date, "2026-10-01")}
+                  {field("log.time", f.time, "12:34")}
+                  {field("contest.freq", f.freq, "14.074")}
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                  {field("模式", f.mode, "FT8")}
+                  {field("log.mode", f.mode, "FT8")}
                   {field("RST", f.rst, "599")}
                 </div>
               </div>
@@ -436,6 +447,31 @@ pub fn QslDesignerPage() -> impl IntoView {
                   style="aspect-ratio: 140/89"
                 />
               </div>
+              <RadioGroup
+                value=Signal::derive(move || imposition.get().id().to_owned())
+                on_change=Callback::new(move |v: String| {
+                  let next = Imposition::from_id(&v);
+                  storage::set(IMPOSITION_KEY, next.id());
+                  imposition.set(next);
+                })
+                aria_label=Signal::derive(move || t("log.print-layout"))
+                class="mt-3 flex flex-wrap items-center gap-4"
+              >
+                {Imposition::ALL
+                  .into_iter()
+                  .map(|imp| {
+                    view! {
+                      <label class="flex cursor-pointer items-center gap-2 text-sm">
+                        <RadioGroupItem value=imp.id().to_owned() />
+                        {move || match imp {
+                          Imposition::Single => t("log.print-layout-single"),
+                          Imposition::Grid => t("log.print-layout-grid"),
+                        }}
+                      </label>
+                    }
+                  })
+                  .collect_view()}
+              </RadioGroup>
               <div class="mt-3 flex flex-wrap gap-2">
                 <Button
                   variant=Variant::Default
@@ -467,18 +503,65 @@ pub fn QslDesignerPage() -> impl IntoView {
         </PageContainer>
       </div>
 
-      // 打印页：A4 正中一张标准卡（140×89mm）。高度留 1mm 余量，免得溢出到第二页。
+      // 打印页：按拼版方式摆卡（坐标与裁切线都由 `qsl_sheet` 算，单位 mm）。
+      // 纸面尺寸已在核心里留了 1mm 余量，免得溢出到第二页。
       <div class="print-sheet hidden print:block">
-        <div
-          class="mx-auto flex items-center justify-center"
-          style="width: 210mm; height: 296mm;"
-        >
-          <img
-            src=move || preview.get()
-            alt=t("log.qsl-card-preview")
-            style="width: 140mm; height: 89mm;"
-          />
-        </div>
+        {move || {
+          let s = sheet(imposition.get());
+          let (pw, ph) = s.page_mm;
+          let (cw, chh) = qsl_card::CARD_MM;
+          let src = preview.get();
+          let (x0, y0, x1, y1) = s.bounds();
+          let (gap, len) = (CUT_MARK_GAP_MM, CUT_MARK_MM);
+          // 裁切线只画在卡区外的留白里（四边各一组短刻线），不压到卡面上。
+          let mut marks: Vec<(f64, f64, f64, f64)> = Vec::new();
+          for &x in &s.cut_x {
+            marks.push((x, y0 - gap - len, x, y0 - gap));
+            marks.push((x, y1 + gap, x, y1 + gap + len));
+          }
+          for &y in &s.cut_y {
+            marks.push((x0 - gap - len, y, x0 - gap, y));
+            marks.push((x1 + gap, y, x1 + gap + len, y));
+          }
+          view! {
+            <style>{print_css(s.landscape)}</style>
+            <div
+              class="relative mx-auto"
+              style=format!("width: {pw}mm; height: {ph}mm;")
+              data-slots=s.slots.len()
+            >
+              {s
+                .slots
+                .iter()
+                .map(|&(x, y)| {
+                  view! {
+                    <img
+                      src=src.clone()
+                      alt=t("log.qsl-card-preview")
+                      class="absolute"
+                      style=format!("left: {x}mm; top: {y}mm; width: {cw}mm; height: {chh}mm;")
+                    />
+                  }
+                })
+                .collect_view()}
+              <svg
+                class="absolute left-0 top-0"
+                style=format!("width: {pw}mm; height: {ph}mm;")
+                viewBox=format!("0 0 {pw} {ph}")
+                aria-hidden="true"
+              >
+                {marks
+                  .into_iter()
+                  .map(|(ax, ay, bx, by)| {
+                    view! {
+                      <line x1=ax y1=ay x2=bx y2=by stroke="#000" stroke-width="0.15" />
+                    }
+                  })
+                  .collect_view()}
+              </svg>
+            </div>
+          }
+        }}
       </div>
     </div>
   }

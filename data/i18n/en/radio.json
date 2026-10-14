@@ -214,6 +214,7 @@
   "radio.real-time-chase-suggestions": "Real-time chase suggestions",
   "radio.their-grid-e-g": "Their grid (e.g. IO91)",
   "radio.not-authorised-yet": "Not authorised yet",
+  "radio.notifications-unsupported": "Not supported by this browser",
   "radio.summit-and-park-activations": "Summit and park activations, with reference lookups.",
   "radio.allowed": "Allowed",
   "radio.logged-mhz": "Logged: {} ({} MHz {})",

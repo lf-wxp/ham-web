@@ -237,6 +237,22 @@ impl StatsScope {
     scope
   }
 
+  /// 去掉已经失效的片段：台站档案被删了 / 日志里再没有这个操作员，该片段按「全都看」处理。
+  ///
+  /// 口径是持久化的视图偏好，删台站、清日志都不会同步清它；失效值若照样筛，统计页会
+  /// 一片空白，而下拉框在只剩一个台站、一个操作员时根本不渲染，用户没有任何入口把它改回来。
+  #[must_use]
+  pub fn live(&self, entries: &[LogEntry], book: &StationBook) -> Self {
+    let station = self.station.filter(|&id| book.by_id(id).is_some());
+    let want = self.operator.trim().to_ascii_uppercase();
+    let operator = if want.is_empty() || operators(entries, book).contains(&want) {
+      self.operator.clone()
+    } else {
+      String::new()
+    };
+    Self { station, operator }
+  }
+
   /// 这条通联是否落在口径内。
   #[must_use]
   pub fn matches(&self, e: &LogEntry, book: &StationBook) -> bool {
@@ -391,6 +407,33 @@ mod tests {
     assert_eq!(operator_of(&qso(2, home, "bd1abc"), &book), "BD1ABC");
     // 归属没指定（老日志）也回落到当前台站。
     assert_eq!(operator_of(&qso(3, 0, ""), &book), "WXP");
+  }
+
+  #[test]
+  fn live_drops_scope_parts_that_no_longer_exist() {
+    let book = book();
+    let field = book.profiles[1].id;
+    let entries = vec![qso(1, book.active_id, "WXP"), qso(2, field, "")];
+    // 台站档案已删：退回「全都看」，而不是筛出空集。
+    assert!(StatsScope::of_station(999).live(&entries, &book).is_all());
+    // 日志里再没有这个操作员。
+    assert!(
+      StatsScope::of_operator("NOBODY")
+        .live(&entries, &book)
+        .is_all()
+    );
+    // 仍然有效的片段原样保留（操作员不区分大小写）。
+    let keep = StatsScope {
+      station: Some(field),
+      operator: "lz".into(),
+    };
+    assert_eq!(keep.live(&entries, &book), keep);
+    // 只失效一半时只丢那一半。
+    let half = StatsScope {
+      station: Some(999),
+      operator: "WXP".into(),
+    };
+    assert_eq!(half.live(&entries, &book), StatsScope::of_operator("WXP"));
   }
 
   #[test]

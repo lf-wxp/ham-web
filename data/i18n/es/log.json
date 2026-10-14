@@ -297,7 +297,6 @@
   "log.grayline": "Línea gris",
   "log.click-inspector": "Inspector de clic",
   "log.generate-cabrillo": "Generar Cabrillo",
-  "log.rendering": "Generando…",
   "log.rendering-failed-please-retry": "Error al generar, reintenta.",
   "log.export-cabrillo-automatically-with": "Exporta Cabrillo automáticamente con software de log (N1MM, DXLog, etc.) para evitar errores manuales.",
   "log.partly-used-sheet-skip": "Hoja parcialmente usada: salta las etiquetas ya quitadas",
@@ -433,5 +432,8 @@
   "log.tqsl-itu-zone": "Zona ITU",
   "log.tqsl-must-match-my": "Deben coincidir con los campos MY_* del ADIF que exportes: si no, la subida no da error pero LoTW marca esos QSO como no emparejados.",
   "log.tqsl-set-station-first": "Los datos de estación están incompletos (indicativo o cuadrícula vacíos, o el prefijo sin entidad DXCC). Complétalos primero:",
-  "log.tqsl-station-location": "Rellena esto al crear la Station Location en TQSL"
+  "log.tqsl-station-location": "Rellena esto al crear la Station Location en TQSL",
+  "log.print-layout": "Disposición de impresión",
+  "log.print-layout-single": "1 por página (A4 vertical)",
+  "log.print-layout-grid": "4 por página (A4 horizontal, con marcas de corte)"
 }

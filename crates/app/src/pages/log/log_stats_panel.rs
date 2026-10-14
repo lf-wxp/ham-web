@@ -2,19 +2,16 @@
 
 use leptos::prelude::*;
 
-use ham_web_core::log_stats::{LogOverview, StatsScope, operators, overview, scoped_entries};
+use ham_web_core::log_stats::{LogOverview, StatsScope, overview};
 
-use crate::ui::{NativeSelect, SelectOption, Stat};
+use crate::ui::Stat;
 
 use super::awards_panel::AwardsPanel;
 use super::bar_list::BarList;
 use super::grid_map::GridMap;
-use super::log_helpers::station_title;
+use super::stats_scope_select::{StatsScopeSelect, scoped_log_entries, use_stats_scope};
 use super::{Logbook, StationBook};
 use crate::i18n::{t, tf, tp};
-
-/// 统计口径的持久化 key（视图偏好，不进备份正文）。
-const SCOPE_KEY: &str = "log-stats-scope";
 
 #[component]
 pub(super) fn LogStatsPanel(
@@ -22,28 +19,16 @@ pub(super) fn LogStatsPanel(
   book: RwSignal<StationBook>,
 ) -> impl IntoView {
   // 统计口径（全部 / 某个台站 / 某个操作员）：切页也记着，俱乐部台就不用每次重选。
-  let scope = RwSignal::new(crate::util::storage::get(SCOPE_KEY).unwrap_or_default());
-  let set_scope = Callback::new(move |key: String| {
-    crate::util::storage::set(SCOPE_KEY, &key);
-    scope.set(key);
-  });
+  let scope = use_stats_scope();
+  let scoped = scoped_log_entries(scope);
 
   view! {
     {move || {
-      let all = logbook.get().entries;
-      if all.is_empty() {
+      if logbook.with(|lb| lb.entries.is_empty()) {
         return view! { <div></div> }.into_any();
       }
       let parsed = StatsScope::from_key(&scope.get());
-      let entries = book.with(|b| scoped_entries(&all, b, &parsed));
-      // 口径选择器的选项：台站档案 + 日志里出现过的操作员（都没有就不显示这一行）。
-      let profiles = book.with(|b| {
-        b.profiles
-          .iter()
-          .map(|p| (p.id, station_title(p)))
-          .collect::<Vec<_>>()
-      });
-      let ops = book.with(|b| operators(&all, b));
+      let entries = scoped.get();
       // 网格地图的「本台」：按口径里的台站算，口径是操作员时用当前台站。
       let my_grid = book.with(|b| {
         b.resolve(parsed.station.unwrap_or(0))
@@ -63,48 +48,7 @@ pub(super) fn LogStatsPanel(
       let n_dxcc = dxcc.len();
       let pending = ham_web_core::logbook::pending_qsl(&entries);
       view! {
-        {(profiles.len() > 1 || ops.len() > 1)
-          .then(|| {
-            // 选项带分组（台站 / 操作员两个面），与原生 `optgroup` 对应。
-            let mut options: Vec<SelectOption> = Vec::new();
-            for (id, title) in &profiles {
-              options.push(SelectOption::grouped(
-                t("log.stats-scope-by-station"),
-                StatsScope::of_station(*id).key(),
-                title.clone(),
-              ));
-            }
-            for op in &ops {
-              options.push(SelectOption::grouped(
-                t("log.stats-scope-by-operator"),
-                StatsScope::of_operator(op).key(),
-                op.clone(),
-              ));
-            }
-            view! {
-              <div class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span>{move || t("log.stats-scope")}</span>
-                <NativeSelect
-                  value=Signal::derive(move || scope.get())
-                  on_change=set_scope
-                  options=options
-                  // 「全部」这个说法词典里已经有了（`exam.all`）：中文释义全库唯一，
-                  // 同义的 key 只能复用一个，不能各造一份。
-                  placeholder=Signal::derive(move || t("exam.all"))
-                  aria_label=Signal::derive(move || t("log.stats-scope"))
-                  class="w-40"
-                />
-                {(!parsed.is_all())
-                  .then(|| {
-                    view! {
-                      <span>
-                        {tp("log.stats-scope-count", entries.len(), &[&entries.len().to_string()])}
-                      </span>
-                    }
-                  })}
-              </div>
-            }
-          })}
+        <StatsScopeSelect scope=scope count=Signal::derive(move || scoped.with(Vec::len)) />
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label=t("log.total-qsos") value=move || total />
           <Stat label=t("log.unique-callsigns") value=move || n_calls />

@@ -157,9 +157,34 @@ pub fn viterbi_decode_continuous(coded: &[u8]) -> Vec<u8> {
   out
 }
 
+/// 起始状态未知的窗口译码：所有状态起始代价都为 0，从**末端最优状态**回溯。
+///
+/// 用于从连续流里单独切出一段（一帧加前后余量）来解：切口处的编码器状态不知道，
+/// 强行假设为 0 会让开头几个约束长度的判决被带偏。调用方应在需要的区间前后各留
+/// 至少 ~10 个约束长度的余量，并丢弃余量部分的输出。
+#[must_use]
+pub fn viterbi_decode_window(coded: &[u8]) -> Vec<u8> {
+  viterbi_decode_window_reuse(coded, &mut TrellisBuf::default())
+}
+
+/// [`viterbi_decode_window`] 的可复用缓冲版本：连续解多帧时跨帧复用同一块
+/// trellis 表，省去每帧 ~1.1 MB 的分配与清零（105 s 录音约 850 帧）。
+#[must_use]
+pub fn viterbi_decode_window_reuse(coded: &[u8], buf: &mut TrellisBuf) -> Vec<u8> {
+  let steps = coded.len() / 2;
+  let costs = trellis_from(coded, [0; NUM_STATES], buf);
+  let mut state = (0..NUM_STATES).min_by_key(|&st| costs[st]).unwrap_or(0);
+  let mut out = vec![0u8; steps];
+  for t in (0..steps).rev() {
+    out[t] = buf.decisions[t * NUM_STATES + state];
+    state = buf.prev[(t + 1) * NUM_STATES + state] as usize;
+  }
+  out
+}
+
 /// trellis 的前驱 / 判决表缓冲（扁平化，行 = 状态），可跨窗口复用。
 #[derive(Default)]
-struct TrellisBuf {
+pub struct TrellisBuf {
   prev: Vec<u8>,
   decisions: Vec<u8>,
 }
@@ -168,9 +193,15 @@ struct TrellisBuf {
 ///
 /// 热路径零堆分配（`buf` 容量复用）：代价用栈数组轮换、转移对查 [`BRANCH_TABLE`]。
 fn trellis(coded: &[u8], start_state: usize, buf: &mut TrellisBuf) -> [u32; NUM_STATES] {
+  let mut init = [u32::MAX; NUM_STATES];
+  init[start_state] = 0;
+  trellis_from(coded, init, buf)
+}
+
+/// 同 [`trellis`]，但起始代价由调用方给出（`u32::MAX` = 不可达）。
+fn trellis_from(coded: &[u8], init: [u32; NUM_STATES], buf: &mut TrellisBuf) -> [u32; NUM_STATES] {
   let steps = coded.len() / 2;
-  let mut costs = [u32::MAX; NUM_STATES];
-  costs[start_state] = 0;
+  let mut costs = init;
   let mut new_costs = [u32::MAX; NUM_STATES];
   // 清零而不是沿用旧值：未被写到的（不可达状态）条目要与新分配时一致，译码结果才可复现。
   buf.prev.clear();
@@ -239,6 +270,21 @@ mod tests {
     let coded = conv_encode(&bits);
     let decoded = viterbi_decode(&coded);
     assert_eq!(decoded, bits);
+  }
+
+  #[test]
+  fn window_decode_needs_no_start_state() {
+    // 从连续流中间切一段：切口处的编码器状态不是 0，窗口译码照样还原中段。
+    let bits: Vec<u8> = (0..2000).map(|i| (i * 13 % 7 % 2) as u8).collect();
+    let mut state = 0u8;
+    let coded = conv_encode_continuous(&bits, &mut state);
+    let (a, b) = (700usize, 1500usize);
+    let out = viterbi_decode_window(&coded[2 * a..2 * b]);
+    let margin = 80;
+    assert_eq!(
+      &out[margin..out.len() - margin],
+      &bits[a + margin..b - margin]
+    );
   }
 
   #[test]

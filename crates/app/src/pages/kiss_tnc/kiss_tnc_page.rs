@@ -19,76 +19,7 @@ use crate::ui::{
   Button, ButtonLink, Field, Input, NativeSelect, SelectOption, Size, TextValue, Variant,
 };
 use crate::util::{js_error_message, set_title, unique_id};
-
-/// 串口连接。
-struct Conn {
-  port: JsValue,
-  reader: JsValue,
-  writer: JsValue,
-}
-
-/// `navigator.serial`；浏览器不支持（Firefox / Safari）时返回 `None`。
-///
-/// `Reflect::get` 对缺失属性返回 `Ok(undefined)` 而不是 `Err`，必须显式过滤，否则 `supported`
-/// 永远为真、「不支持」提示不出现，点「连接」还会对 `undefined` 调方法抛 TypeError。
-fn serial() -> Option<JsValue> {
-  js_sys::Reflect::get(&web_sys::window()?.navigator(), &"serial".into())
-    .ok()
-    .filter(|v| !v.is_undefined() && !v.is_null())
-}
-
-fn prop(obj: &JsValue, key: &str) -> Result<JsValue, JsValue> {
-  js_sys::Reflect::get(obj, &key.into()).map_err(|e| format!("{e:?}").into())
-}
-
-async fn call(obj: &JsValue, method: &str, args: &[JsValue]) -> Result<JsValue, JsValue> {
-  let f = prop(obj, method)?;
-  let f = f
-    .dyn_into::<js_sys::Function>()
-    .map_err(|_| "not a function")?;
-  // `Reflect::apply` 把 args 展开成实参列表 —— `f.call1(obj, arr)` 会把整个
-  // 数组当成唯一实参，`open` 读不到 baudRate、`write` 的 BufferSource 也不对。
-  let arr = js_sys::Array::from_iter(args.iter().cloned());
-  let promise = js_sys::Reflect::apply(&f, obj, &arr)?;
-  // 保留 rejection 的原始对象（DOMException 等）：调用方要靠 `name` 区分
-  // 「用户取消端口选择」（NotFoundError）与真实错误，换成字符串就丢了这个信息。
-  wasm_bindgen_futures::JsFuture::from(js_sys::Promise::from(promise)).await
-}
-
-fn call_sync(obj: &JsValue, method: &str) -> Result<JsValue, JsValue> {
-  let f = prop(obj, method)?;
-  let f = f
-    .dyn_into::<js_sys::Function>()
-    .map_err(|_| "not a function")?;
-  f.call0(obj)
-}
-
-async fn open_serial(baud: u32) -> Result<Conn, JsValue> {
-  // 不支持时页面根本不给点「连接」（按钮被 `supported` 挡住），这里只在
-  // 未来放开按钮时兜底 —— 错误细节用英文（与 worker 错误同惯例）。
-  let serial = serial().ok_or_else(|| JsValue::from_str("Web Serial not supported"))?;
-  let port = call(&serial, "requestPort", &[]).await?;
-  let opts = js_sys::Object::new();
-  js_sys::Reflect::set(&opts, &"baudRate".into(), &baud.into())?;
-  call(&port, "open", &[opts.into()]).await?;
-  let reader = call_sync(&prop(&port, "readable")?, "getReader")?;
-  let writer = call_sync(&prop(&port, "writable")?, "getWriter")?;
-  Ok(Conn {
-    port,
-    reader,
-    writer,
-  })
-}
-
-async fn close_serial(conn: Conn) {
-  let _ = call(&conn.reader, "cancel", &[]).await;
-  let _ = call_sync(&conn.reader, "releaseLock");
-  // 有在途写入时 writer 的锁释放会抛错，随后 port.close() 因流仍被锁而 reject、端口保持打开：
-  // 先 abort 丢弃队列并结束写流，再释放锁。
-  let _ = call(&conn.writer, "abort", &[]).await;
-  let _ = call_sync(&conn.writer, "releaseLock");
-  let _ = call(&conn.port, "close", &[]).await;
-}
+use crate::web_serial::{Conn, call, close_serial, is_user_cancel, open_serial, prop, serial};
 
 /// 发送预览：同一份 KISS 字节既用来显示 hex，也用来真正写串口（不重复编码）。
 #[derive(Clone, PartialEq)]
@@ -227,11 +158,7 @@ pub fn KissTncPage() -> impl IntoView {
           });
         }
         Err(e) => {
-          let canceled = prop(&e, "name")
-            .ok()
-            .and_then(|n| n.as_string())
-            .is_some_and(|n| n == "NotFoundError");
-          if !canceled {
+          if !is_user_cancel(&e) {
             error.set(Some(js_error_message(&e)));
           }
         }

@@ -508,3 +508,63 @@ test("天线矩量法求解：NVIS 仰角-距离覆盖图", async ({ page }) => 
   await expect(page.getByText(/主瓣仰角 \d+° 偏低/)).toBeVisible();
   await expect(page.getByText(/馈电点阻抗 .+ Ω/)).toBeVisible();
 });
+
+test("天线矩量法求解：设计存档保存、刷新后载回、删除", async ({ page }) => {
+  page.on("dialog", (d) => d.accept());
+  await page.goto("/nec");
+  await expect(summary(page)).toBeVisible();
+
+  // 改一个 `.nec` 不承载的量（导线起点取一个非整毫米值）+ 频率，存档必须原样带回。
+  await page.locator('input[aria-label="导线起点 X 1"]').fill("-4.5321");
+  await page.locator('input[aria-label="频率（MHz）"]').fill("14.07425");
+  await expect(summary(page)).toHaveText(/馈电点阻抗 .+ Ω/);
+  const designed = await summary(page).innerText();
+
+  await page.getByText("设计存档", { exact: true }).click();
+  await page.getByLabel("存档名称").fill("测试偶极");
+  await page.getByRole("button", { name: "保存当前设计" }).click();
+  await expect(page.getByText("已保存设计：测试偶极")).toBeVisible();
+
+  // 刷新：页面回到默认预设，存档仍在（走存储门面落盘）。
+  await page.reload();
+  await expect(summary(page)).toBeVisible();
+  await page.getByText("设计存档", { exact: true }).click();
+  await page.getByRole("button", { name: "载入设计 测试偶极" }).click();
+  await expect(page.getByText("已载入设计：测试偶极")).toBeVisible();
+  await expect(page.locator('input[aria-label="导线起点 X 1"]')).toHaveValue("-4.5321");
+  await expect(page.locator('input[aria-label="频率（MHz）"]')).toHaveValue("14.07425");
+  await expect(summary(page)).toHaveText(designed);
+
+  // 删除（二次确认已在上面自动接受）。
+  await page.getByRole("button", { name: "删除设计 测试偶极" }).click();
+  await expect(page.getByText("还没有存档。")).toBeVisible();
+});
+
+test("天线矩量法求解：.nec 的 TL 卡导入成传输线、导出时写回", async ({ page }) => {
+  await page.goto("/nec");
+  await page.getByText("导入 / 导出 .nec").click();
+  const box = page.getByRole("textbox", { name: /把 \.nec 文本粘贴/ });
+  // 两臂 + 断口，断口之间接一段 75 Ω、1.2 m 的线（NEC 的线速度因子为 1）。
+  await box.fill(
+    [
+      "GW 1 10 -5 0 10 -0.001 0 10 0.001",
+      "GW 2 10 0.001 0 10 5 0 10 0.001",
+      "EX 0 1 5 0 1 0",
+      "TL 1 10 2 1 75 1.2",
+      "FR 0 1 0 0 14.1",
+      "EN",
+    ].join("\n"),
+  );
+  await page.getByRole("button", { name: "导入" }).click();
+  await expect(page.getByText("已忽略未支持的卡片")).toHaveCount(0);
+  const lines = page.locator('[data-slot="nec-lines"]');
+  await expect(page.getByText(/共 1 段传输线。/)).toBeVisible();
+  // 表格里的导线序号从 1 起（与导线表、负载表一致）；端口落在端段段心。
+  await expect(lines.locator('input[aria-label="端口 A 导线 1"]')).toHaveValue("1");
+  await expect(lines.locator('input[aria-label="端口 B 导线 1"]')).toHaveValue("2");
+  await expect(lines.locator('input[aria-label="线长（m） 1"]')).toHaveValue("1.2");
+  await expect(summary(page)).toBeVisible();
+
+  await page.getByRole("button", { name: "导出当前几何" }).click();
+  await expect(box).toHaveValue(/TL 1, 10, 2, 1, 75\.000000, 1\.200000/);
+});

@@ -1531,6 +1531,59 @@ pub fn parse_query(query: &str) -> (Vec<String>, Vec<(String, String)>) {
   (terms, filters)
 }
 
+/// 本地日志里的一条 QSO 是否命中查询（检索面板「日志」分组的判定）。
+///
+/// 自由词在呼号 / 模式 / 波段 / 频率 / 日期 / 姓名 / QTH / 网格上做 AND 匹配。
+/// 领域前缀与静态条目**同一套语义**：不同 key 之间 AND、同一 key 多次出现 OR；
+/// 取值口径也与静态标签一致，因此同一个 `dxcc:by` 既能命中「DXCC 实体：中国」
+/// 也能命中日志里的 BY 通联：
+/// - `dxcc:` 比的是实体**主前缀**（[`LogEntry::entity`]：记录里的 DXCC 编号优先，
+///   否则按呼号推断）—— 不比呼号字面前缀，否则 `dxcc:ja` 会漏掉 7J / 8N 这些日本呼号
+/// - `band:` 比的是 [`LogEntry::band_label`]（频率比 `BAND` 字段可信）
+/// - `mode:` 比的是记录模式（忽略大小写）
+#[must_use]
+pub fn qso_matches(
+  e: &crate::logbook::LogEntry,
+  terms: &[String],
+  filters: &[(String, String)],
+) -> bool {
+  let hay = [
+    e.callsign.as_str(),
+    e.mode.as_str(),
+    e.band.as_str(),
+    e.freq.as_str(),
+    e.date.as_str(),
+    e.name.as_str(),
+    e.qth.as_str(),
+    e.gridsquare.as_str(),
+  ]
+  .join(" ")
+  .to_lowercase();
+  if !terms.iter().all(|t| hay.contains(t.as_str())) {
+    return false;
+  }
+  let value_of = |key: &str| -> Option<String> {
+    match key {
+      "dxcc" => e.entity().map(|en| en.prefix.to_lowercase()),
+      "band" => Some(e.band_label().to_lowercase()),
+      "mode" => Some(e.mode.trim().to_lowercase()),
+      _ => None,
+    }
+  };
+  let mut keys: Vec<&str> = filters.iter().map(|(k, _)| k.as_str()).collect();
+  keys.sort_unstable();
+  keys.dedup();
+  keys.iter().all(|key| {
+    let Some(actual) = value_of(key) else {
+      return false;
+    };
+    filters
+      .iter()
+      .filter(|(k, _)| k == key)
+      .any(|(_, v)| *v == actual)
+  })
+}
+
 /// 字节偏移 → 字符偏移。
 ///
 /// `str::find` 返回的是字节偏移，而中文一个字占 3 字节：直接拿字节偏移算位置分，
@@ -1642,6 +1695,54 @@ pub fn search(query: &str) -> Vec<&'static SearchEntry> {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  fn qso(call: &str, freq: &str, mode: &str) -> crate::logbook::LogEntry {
+    crate::logbook::LogEntry {
+      callsign: call.into(),
+      freq: freq.into(),
+      mode: mode.into(),
+      date: "2026-10-01".into(),
+      time: "12:00".into(),
+      ..Default::default()
+    }
+  }
+
+  fn hits(e: &crate::logbook::LogEntry, q: &str) -> bool {
+    let (terms, filters) = parse_query(q);
+    qso_matches(e, &terms, &filters)
+  }
+
+  #[test]
+  fn qso_dxcc_prefix_uses_the_entity_not_the_literal_prefix() {
+    let ja = qso("7J1ABC", "14.074", "FT8");
+    // 7J 是日本呼号，实体主前缀是 JA：字面前缀比较会漏掉它。
+    assert!(hits(&ja, "dxcc:ja"));
+    assert!(!hits(&ja, "dxcc:by"));
+    assert!(hits(&qso("BG4XXX", "7.050", "SSB"), "dxcc:by"));
+    // 记录里的 DXCC 编号优先于呼号推断（318 = 中国）。
+    let mut tagged = qso("XX9ZZZ", "14.074", "FT8");
+    tagged.dxcc = "318".into();
+    assert!(hits(&tagged, "dxcc:by"));
+    // 认不出实体的呼号在带 dxcc: 的查询里不命中。
+    assert!(!hits(&qso("ZZZ", "14.074", "FT8"), "dxcc:by"));
+  }
+
+  #[test]
+  fn qso_filters_follow_the_static_index_semantics() {
+    let e = qso("JA1AAA", "14.074", "FT8");
+    // 波段按频率推算（BAND 字段为空也能命中）。
+    assert!(hits(&e, "band:20m"));
+    assert!(hits(&e, "mode:ft8 band:20m dxcc:ja"));
+    // 同一 key 多次出现 = OR；旧实现按 AND 处理，这条查询对日志恒为空。
+    assert!(hits(&e, "band:40m band:20m"));
+    // 不同 key 之间 = AND。
+    assert!(!hits(&e, "band:20m mode:cw"));
+    // 自由词 AND，并可与前缀组合。
+    assert!(hits(&e, "ja1 dxcc:ja"));
+    assert!(!hits(&e, "bg4 dxcc:ja"));
+    // 静态索引与日志用同一份口径：dxcc:ja 在两边都有命中。
+    assert!(!search_ranked("dxcc:ja", 0).is_empty());
+  }
 
   #[test]
   fn index_is_populated() {

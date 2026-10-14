@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf, tp};
-use crate::pages::log::use_log_store;
+use crate::pages::log::{StatsScopeSelect, scoped_log_entries, use_stats_scope};
 use crate::share_score::{ReportData, download, render_report_card};
 use crate::ui::{Button, Size, Variant};
 use crate::util::{set_title, storage};
@@ -47,7 +47,7 @@ fn build_report_data(entries: &[crate::pages::log::LogEntry]) -> ReportData {
     achievements,
     log_count,
     dxcc_count,
-    range: "累计至今",
+    range: "learning.all-time",
   }
 }
 
@@ -55,18 +55,20 @@ fn build_report_data(entries: &[crate::pages::log::LogEntry]) -> ReportData {
 pub fn ReportPage() -> impl IntoView {
   set_title("learning.study-report");
 
-  let log_store = use_log_store();
-  let entries = log_store.logbook.get_untracked().entries.clone();
-  let data = build_report_data(&entries);
-  let exporting = RwSignal::new(false);
+  // 通联两项按统计口径算（与日志页 / `/stats` / `/dxcc-map` 共用同一个口径）；
+  // 导出的卡片与页面上看到的是同一组数字。
+  let scope = use_stats_scope();
+  let scoped = scoped_log_entries(scope);
+  let report = Memo::new(move |_| scoped.with(|e| build_report_data(e)));
+  let data = report.get_untracked();
 
   let export = move || {
-    exporting.set(true);
-    match render_report_card(&data) {
+    // 卡片渲染是同步的（几毫秒的 canvas 绘制）：原来「生成中」状态在同一回调里
+    // 置位又复位，按钮永远等不到它，是个死状态，这里直接去掉。
+    match render_report_card(&report.get_untracked()) {
       Ok(data_url) => download(&data_url, "study-report.png"),
       Err(_) => crate::util::alert(&t("log.rendering-failed-please-retry")),
     }
-    exporting.set(false);
   };
 
   let stat = |label: &'static str, value: String| {
@@ -86,17 +88,18 @@ pub fn ReportPage() -> impl IntoView {
       />
       <PageContainer>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {stat("累计作答", data.answered.to_string())}
-          {stat("正确率", tf("common.percent", &[&data.correct_rate.to_string()]))}
-          {stat("连续打卡", tp("common.days", data.streak, &[&data.streak.to_string()]))}
-          {stat("当前错题", data.mistakes.to_string())}
-          {stat("收藏题目", data.bookmarks.to_string())}
-          {stat("解锁成就", data.achievements.to_string())}
+          {stat("learning.answered-total", data.answered.to_string())}
+          {stat("learning.accuracy", tf("common.percent", &[&data.correct_rate.to_string()]))}
+          {stat("learning.day-streak", tp("common.days", data.streak, &[&data.streak.to_string()]))}
+          {stat("exam.current-mistakes", data.mistakes.to_string())}
+          {stat("learning.bookmarks", data.bookmarks.to_string())}
+          {stat("exam.achievement-unlocked", data.achievements.to_string())}
         </div>
 
+        <StatsScopeSelect scope=scope count=Signal::derive(move || scoped.with(Vec::len)) />
         <div class="grid grid-cols-2 gap-3">
-          {stat("通联记录", data.log_count.to_string())}
-          {stat("DXCC 实体", data.dxcc_count.to_string())}
+          {move || stat("learning.qsos", report.get().log_count.to_string())}
+          {move || stat("log.dxcc-entities", report.get().dxcc_count.to_string())}
         </div>
 
         <section class="pxl-card border bg-card p-4">
@@ -106,7 +109,7 @@ pub fn ReportPage() -> impl IntoView {
             class="w-full"
             on_click=Callback::new(move |_| export())
           >
-            {move || if exporting.get() { t("log.rendering") } else { t("learning.export-report-png") }}
+            {move || t("learning.export-report-png")}
           </Button>
           <p class="mt-3 text-xs text-muted-foreground">
             {move || t("learning.the-report-is-generated")}

@@ -52,7 +52,7 @@ WSPR / RTTY / Olivia / DominoEX / NAVTEX / LRPT）共用一份 JS 入口
 | `wspr` | `baseHz`（1500） | 解码文本 / 元数据 | `/wspr-worker/` |
 | `rtty` | `markHz`（2125） | `{ text }` | `/rtty-worker/` |
 | `olivia` | `mode`（`"32/1000@1500"`） | `{ text }` | `/olivia-worker/` |
-| `dominoex` | `mode`（`"8"`） | `{ text, id }`（`id` = 二次信道） | `/dominoex-worker/` |
+| `dominoex` | `mode`（`"8"`）、`fec`（`false`；`true` = MultiPSK 兼容 FEC） | `{ text, id }`（`id` = 二次信道） | `/dominoex-worker/` |
 | `navtex` | — | `{ messages: [{ transmitter, category, serial, text, corrected, errors, chars, accepted }] }` | `/navtex-worker/` |
 | `lrpt` | — | `{ width, height, rgb: Uint8Array }`（RGB 三平面交错） | `/lrpt-worker/` |
 
@@ -68,7 +68,7 @@ WSPR / RTTY / Olivia / DominoEX / NAVTEX / LRPT）共用一份 JS 入口
   该段（不完整行整行丢弃），采样相位与字节网格一起搜索。真实弱信号仍可能只得到
   `image-incomplete`（它不代表「帧层都通过了」）。
 - **软判决、时钟漂移、载波恢复不在范围内**：各解码器都是硬判决 + 固定速率假设，
-  真实弱录音的完整正文不由合成测试保证（逐条说明见仓库根 `ROADMAP.md` 与各 crate 的模块文档）。
+  真实弱录音的完整正文不由合成测试保证（逐条说明见各 crate 的模块文档，尚未验证的部分列在仓库根 `ROADMAP.md`「未完成」）。
 - **Olivia 在噪声下可能给出乱码而不是 `no-signal`**：WHT 门限是概率性的（实测随机噪声里
   偶尔会解出几个可打印字符），页面只对「完全空」的结果报 `no-signal`。
 

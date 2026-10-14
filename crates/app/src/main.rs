@@ -35,6 +35,7 @@ mod study;
 mod theme;
 pub mod ui;
 mod util;
+mod web_serial;
 
 /// panic 时除了打印到控制台，还调用 `index.html` 中的 `__hamFatal` 显示兜底页。
 fn install_panic_hook() {

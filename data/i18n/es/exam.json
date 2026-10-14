@@ -368,7 +368,7 @@
   "exam.sequential": "Secuencial",
   "exam.order-random": "Orden / aleatorio",
   "exam.calc-variants": "Variantes de cálculo",
-  "exam.calc-variants-hint": "Regenera las preguntas de longitud de onda / dB / pérdidas / resonancia LC con números nuevos para evitar memorizar; las variantes solo aparecen en esta sesión y no entran en las estadísticas.",
+  "exam.calc-variants-hint": "Regenera las preguntas de longitud de onda / dB / pérdidas / resonancia LC / ley de Ohm / dB de tensión con números nuevos para evitar memorizar; las variantes solo aparecen en esta sesión y no entran en las estadísticas.",
   "exam.variant-no-bookmark": "Las variantes de cálculo solo existen en esta sesión y no se pueden guardar",
   "exam.frequency-range": "Rango de frecuencia",
   "exam.question-number-label": "N.º",

@@ -186,6 +186,17 @@ impl Wire {
   pub fn length(&self) -> f64 {
     norm(sub(self.b, self.a))
   }
+
+  /// 导线上相对位置 `at`（0 = `a`，1 = `b`）处的点。
+  #[must_use]
+  pub fn point_at(&self, at: f64) -> Vec3 {
+    let d = sub(self.b, self.a);
+    [
+      self.a[0] + d[0] * at,
+      self.a[1] + d[1] * at,
+      self.a[2] + d[2] * at,
+    ]
+  }
 }
 
 /// δ 间隙馈电：`wire` 号导线上距起点 `at`（0–1）处，间隙电压 `volts`。
@@ -1134,10 +1145,19 @@ struct Solved {
 fn solve_model(input: &NecInput, lines: &[TransmissionLine]) -> Option<Solved> {
   // `is_finite()` 先挡掉 NaN 与 ±inf：只写 `freq_hz <= 0.0` 会放行 NaN（比较为假），
   // 一路算到 `Some(NaN)` 冒充有效解。有限性判定在前，后面的 `<=` 才不会碰到 NaN。
+  // 馈电 / 负载同样要查：`at = NaN` 会被 `locate` 的 `clamp` 静默当成导线起点，
+  // 而不是如实拒绝 —— 与传输线的 `at` 检查（下方）保持同一口径。
   if input.wires.is_empty()
     || input.feeds.is_empty()
     || !input.freq_hz.is_finite()
     || input.freq_hz <= 0.0
+    || input
+      .feeds
+      .iter()
+      .any(|f| !f.at.is_finite() || !f.volts.is_finite())
+    || input.loads.iter().any(|l| {
+      !l.at.is_finite() || !l.r_ohm.is_finite() || !l.l_uh.is_finite() || !l.c_pf.is_finite()
+    })
   {
     return None;
   }
@@ -1209,12 +1229,14 @@ fn solve_model(input: &NecInput, lines: &[TransmissionLine]) -> Option<Solved> {
   let mut port_w: Vec<Vec<Cx>> = Vec::with_capacity(np);
   let mut port_sign_v: Vec<f64> = Vec::with_capacity(np);
   if np > 0 {
+    // 先查有限性再比大小：`z0 = NaN` 与 0.0 的比较恒为假，只写 `<= 0.0` 会放行
+    // NaN 一路装到消元阶段，把「参数非法」伪装成「无解」。
     if lines.iter().any(|l| {
-      l.z0 <= 0.0
-        || l.length_m < 0.0
-        || l.velocity_factor <= 0.0
-        || l.at_a.is_nan()
-        || l.at_b.is_nan()
+      !(l.z0.is_finite() && l.z0 > 0.0)
+        || !(l.length_m.is_finite() && l.length_m >= 0.0)
+        || !(l.velocity_factor.is_finite() && l.velocity_factor > 0.0)
+        || !l.at_a.is_finite()
+        || !l.at_b.is_finite()
     }) {
       return None;
     }
@@ -2097,6 +2119,8 @@ pub fn wavelength(freq_hz: f64) -> f64 {
 pub struct NecFile {
   /// 解析出的求解输入。
   pub input: NecInput,
+  /// `TL` 卡给出的传输线（求解时交给 [`solve_with_lines`]）。
+  pub lines: Vec<TransmissionLine>,
   /// 未识别、因而**没有生效**的卡片类型或字段（去重保序）。同一张卡片的字段坏掉时
   /// 记成 `GW(字段非法，已跳过该卡)` 这类带原因的条目，其余卡片仍然生效。
   pub ignored: Vec<String>,
@@ -2110,16 +2134,24 @@ fn push_ignored(ignored: &mut Vec<String>, what: impl Into<String>) {
   }
 }
 
-/// 解析 NEC 免费格式的线天线子集：`GW` / `GE` / `GN` / `LD` / `EX` / `FR`，
+/// 解析 NEC 免费格式的线天线子集：`GW` / `GE` / `GN` / `LD` / `EX` / `TL` / `FR`，
 /// 忽略 `CM` / `CE` / `EN`。
 ///
-/// 其它卡片（`TL` 传输线、`RP` 方向图请求……）以及**字段非法**的受支持卡片都会进
+/// 其它卡片（`RP` 方向图请求、`NT` 网络……）以及**字段非法**的受支持卡片都会进
 /// [`NecFile::ignored`]，即**列出但不生效** —— 静默忽略会让人以为算的是文件里的模型。
 ///
 /// 粒度是**单张卡片**：某张 `GW` 卡的半径写成不可解析的文本，只丢这一张并留下诊断，
 /// 其余导线照常生效（曾经一个 `?` 会让整份文件解析失败，用户看到的是「文件读不进来」）。
 ///
-/// 坐标系与单位按 NEC 约定：米、右手系、`z` 向上；`EX` 的段号是导线上 1 起的段序号。
+/// 坐标系与单位按 NEC 约定：米、右手系、`z` 向上；`EX` / `LD` / `TL` 的段号是导线上 1 起的
+/// 段序号，tag 为 0 时按**绝对段号**（全部导线按出现顺序连续编号）解释（NEC-2 手册 NT 卡
+/// I1 / I2 的定义，`EX` 同理）。
+///
+/// `TL` 按 NEC-2 手册 Part III 的定义：`TL I1 I2 I3 I4 F1 F2 F3 F4 F5 F6`，两端各是一个段，
+/// `F1` = 特性阻抗（Ω，负号表示 180° 反相的交叉线）、`F2` = 线长（m，空白 = 两个连接段之间的
+/// 直线距离）、`F3`–`F6` = 两端并联导纳。NEC 的线是**无耗、速度因子 1** 的理想线，所以导入时
+/// 速度因子取 1；交叉线与非零并联导纳本求解器不支持，整张卡跳过并留诊断（只解析一半等于
+/// 静默算错）。`I2 = −1` 按手册清空此前的全部传输线。
 ///
 /// 只有在「没有任何导线」或「没有任何馈电」或「没有可用频率」时才整体返回 `None`。
 #[must_use]
@@ -2135,6 +2167,7 @@ pub fn parse_nec(text: &str) -> Option<NecFile> {
   let mut ge_flag: Option<bool> = None;
   let mut gn_ground: Option<Ground> = None;
   let mut raw_loads: Vec<(i64, usize, f64, f64, f64)> = Vec::new();
+  let mut raw_lines: Vec<(i64, usize, i64, usize, f64, f64)> = Vec::new();
   let mut ignored: Vec<String> = Vec::new();
 
   for line in text.lines() {
@@ -2234,6 +2267,48 @@ pub fn parse_nec(text: &str) -> Option<NecFile> {
           push_ignored(&mut ignored, "EX(字段非法，已跳过该卡)".to_owned());
         }
       }
+      "TL" => {
+        let parsed = (|| {
+          if int(1)? == -1 {
+            raw_lines.clear();
+            return Some(());
+          }
+          let z0 = num(4)?;
+          if (6..10).any(|i| num(i).is_some_and(|v| v != 0.0)) {
+            push_ignored(
+              &mut ignored,
+              "TL(两端并联导纳未支持，已跳过该卡)".to_owned(),
+            );
+            return Some(());
+          }
+          if z0 < 0.0 {
+            push_ignored(
+              &mut ignored,
+              "TL(交叉线（Z0 为负）未支持，已跳过该卡)".to_owned(),
+            );
+            return Some(());
+          }
+          if !z0.is_finite() || z0 == 0.0 {
+            return None;
+          }
+          let len = num(5).unwrap_or(0.0);
+          if !len.is_finite() || len < 0.0 {
+            return None;
+          }
+          raw_lines.push((
+            int(0).unwrap_or(0),
+            usize::try_from(int(1)?).ok()?,
+            int(2).unwrap_or(0),
+            usize::try_from(int(3)?).ok()?,
+            z0,
+            len,
+          ));
+          Some(())
+        })();
+        if parsed.is_none() {
+          push_ignored(&mut ignored, "TL(字段非法，已跳过该卡)".to_owned());
+        }
+      }
       // 频率卡：`FR, I1, N, F1, F2, …`，F1 是起始频率（MHz）。有些工具把频率写在
       // 后面的字段上，这里取「第一个非零的频率字段」，两种写法都能读。
       "FR" => {
@@ -2255,16 +2330,13 @@ pub fn parse_nec(text: &str) -> Option<NecFile> {
   let mut feeds = Vec::new();
   for (tag, seg, volts) in raw_feeds {
     // 指向不存在的 tag：只丢这一条馈电并留诊断，其余卡片照常生效。
-    let Some(idx) = tags.iter().position(|&t| t == tag) else {
+    let Some((idx, s)) = resolve_segment(&wires, &tags, tag, seg) else {
       push_ignored(
         &mut ignored,
         format!("EX(引用了不存在的 tag {tag}，已跳过该激励源)"),
       );
       continue;
     };
-    let n = wires[idx].segments.max(1);
-    // `EX` 给的是段号，换算成「段心」的相对位置。
-    let s = (seg.clamp(1, n) as f64 - 0.5) / n as f64;
     feeds.push(Feed {
       wire: idx,
       at: s,
@@ -2276,20 +2348,48 @@ pub fn parse_nec(text: &str) -> Option<NecFile> {
   }
   let mut loads = Vec::new();
   for (tag, seg, r, l_uh, c_pf) in raw_loads {
-    let Some(idx) = tags.iter().position(|&t| t == tag) else {
+    let Some((idx, at)) = resolve_segment(&wires, &tags, tag, seg) else {
       push_ignored(
         &mut ignored,
         format!("LD(引用了不存在的 tag {tag}，已跳过该负载)"),
       );
       continue;
     };
-    let n = wires[idx].segments.max(1);
     loads.push(Load {
       wire: idx,
-      at: (seg.clamp(1, n) as f64 - 0.5) / n as f64,
+      at,
       r_ohm: r,
       l_uh,
       c_pf,
+    });
+  }
+  let mut lines = Vec::new();
+  for (tag_a, seg_a, tag_b, seg_b, z0, len) in raw_lines {
+    let (Some((wa, aa)), Some((wb, ab))) = (
+      resolve_segment(&wires, &tags, tag_a, seg_a),
+      resolve_segment(&wires, &tags, tag_b, seg_b),
+    ) else {
+      push_ignored(
+        &mut ignored,
+        "TL(引用了不存在的段，已跳过该传输线)".to_owned(),
+      );
+      continue;
+    };
+    // 线长空白 = 两个连接段（段心）之间的直线距离。
+    let length_m = if len > 0.0 {
+      len
+    } else {
+      let (pa, pb) = (wires[wa].point_at(aa), wires[wb].point_at(ab));
+      ((pa[0] - pb[0]).powi(2) + (pa[1] - pb[1]).powi(2) + (pa[2] - pb[2]).powi(2)).sqrt()
+    };
+    lines.push(TransmissionLine {
+      wire_a: wa,
+      at_a: aa,
+      wire_b: wb,
+      at_b: ab,
+      z0,
+      length_m,
+      velocity_factor: 1.0,
     });
   }
   Some(NecFile {
@@ -2301,8 +2401,30 @@ pub fn parse_nec(text: &str) -> Option<NecFile> {
       ground,
       conductivity: None,
     },
+    lines,
     ignored,
   })
+}
+
+/// 把卡片里的 `(tag, 段号)` 换算成 `(导线下标, 段心的相对位置)`。
+///
+/// tag 非零：该 tag 导线上的第 `seg` 段（越界按首 / 末段夹住，与既有 `EX` / `LD` 行为一致）；
+/// tag 为 0：`seg` 是**绝对段号**（全部导线按出现顺序连续编号，1 起），越界返回 `None`。
+fn resolve_segment(wires: &[Wire], tags: &[i64], tag: i64, seg: usize) -> Option<(usize, f64)> {
+  if tag == 0 {
+    let mut rest = seg.checked_sub(1)?;
+    for (idx, w) in wires.iter().enumerate() {
+      let n = w.segments.max(1);
+      if rest < n {
+        return Some((idx, (rest as f64 + 0.5) / n as f64));
+      }
+      rest -= n;
+    }
+    return None;
+  }
+  let idx = tags.iter().position(|&t| t == tag)?;
+  let n = wires[idx].segments.max(1);
+  Some((idx, (seg.clamp(1, n) as f64 - 0.5) / n as f64))
 }
 
 /// 导出成 NEC 免费格式（`GW` / `GE` / `EX` / `FR` / `EN`）。
@@ -2310,6 +2432,23 @@ pub fn parse_nec(text: &str) -> Option<NecFile> {
 /// 与 [`parse_nec`] 构成往返闭环，便于把这里的几何拿到 4NEC2 / EZNEC 里交叉验证。
 #[must_use]
 pub fn to_nec(input: &NecInput) -> String {
+  to_nec_with_lines(input, &[])
+}
+
+/// 段心相对位置 → 1 起的段号（与 `EX` / `LD` 的导出同一口径）。
+fn segment_of(input: &NecInput, wire: usize, at: f64) -> usize {
+  let n = input.wires.get(wire).map_or(1, |w| w.segments.max(1));
+  ((at.clamp(0.0, 1.0) * n as f64).floor() as usize).min(n - 1) + 1
+}
+
+/// 带传输线的导出：在 [`to_nec`] 之外为每条线写一张 `TL` 卡。
+///
+/// NEC 的 `TL` 没有速度因子（理想线、速度因子 1），所以写出的是**电长度等效**的线长
+/// `L / v`：无耗线的相移 `θ = ωL/(c·v)` 只取决于这个比值，导回来解出的阻抗不变（单测钉住）。
+/// 端口与 `EX` / `LD` 一样落到段号上 —— 端口在导线端点（本工具允许）时会移到端段的段心，
+/// 这是 NEC 格式本身的表达能力限制。
+#[must_use]
+pub fn to_nec_with_lines(input: &NecInput, lines: &[TransmissionLine]) -> String {
   let mut out = String::from("CM 由 ham-exam-web 导出（NEC 免费格式子集）\nCE\n");
   for (i, w) in input.wires.iter().enumerate() {
     out.push_str(&format!(
@@ -2355,6 +2494,17 @@ pub fn to_nec(input: &NecInput) -> String {
       f.wire + 1,
       seg,
       f.volts
+    ));
+  }
+  for l in lines {
+    out.push_str(&format!(
+      "TL {}, {}, {}, {}, {:.6}, {:.6}, 0, 0, 0, 0\n",
+      l.wire_a + 1,
+      segment_of(input, l.wire_a, l.at_a),
+      l.wire_b + 1,
+      segment_of(input, l.wire_b, l.at_b),
+      l.z0,
+      l.length_m / l.velocity_factor.max(1e-6)
     ));
   }
   out.push_str(&format!("FR 0, 1, {:.4}, 0.0\nEN\n", input.freq_hz / 1e6));
@@ -3720,6 +3870,32 @@ mod tests {
     assert_eq!(solve_with_lines(&input, &[bad]), None);
     let bad = bridging_line(-1.0, 50.0);
     assert_eq!(solve_with_lines(&input, &[bad]), None);
+    // NaN 与 0.0 的比较恒为假，只写 `<= 0.0` 会放行 NaN 一路装到「无解」：必须同口径拒绝。
+    let mut nan_z0 = bridging_line(1.0, 50.0);
+    nan_z0.z0 = f64::NAN;
+    assert_eq!(solve_with_lines(&input, &[nan_z0]), None);
+    let mut nan_len = bridging_line(1.0, 50.0);
+    nan_len.length_m = f64::NAN;
+    assert_eq!(solve_with_lines(&input, &[nan_len]), None);
+    let mut nan_vf = bridging_line(1.0, 50.0);
+    nan_vf.velocity_factor = f64::NAN;
+    assert_eq!(solve_with_lines(&input, &[nan_vf]), None);
+    let mut nan_at = bridging_line(1.0, 50.0);
+    nan_at.at_a = f64::NAN;
+    assert_eq!(solve_with_lines(&input, &[nan_at]), None);
+    // 馈电 / 负载位置为 NaN 时同样拒绝（曾会被 `clamp` 静默当成导线起点）。
+    let mut bad_feed = split_dipole();
+    bad_feed.feeds[0].at = f64::NAN;
+    assert_eq!(solve(&bad_feed), None);
+    let mut bad_load = split_dipole();
+    bad_load.loads.push(Load {
+      wire: 0,
+      at: f64::NAN,
+      r_ohm: 50.0,
+      l_uh: 0.0,
+      c_pf: 0.0,
+    });
+    assert_eq!(solve(&bad_load), None);
     // 端口导线越界。
     let mut bad = bridging_line(1.0, 50.0);
     bad.wire_b = 9;
@@ -3728,6 +3904,39 @@ mod tests {
     let a = solve(&input).expect("应能求解");
     let b = solve_with_lines(&input, &[]).expect("应能求解");
     assert_eq!(a.impedance, b.impedance);
+  }
+
+  #[test]
+  fn sweep_and_bandwidth_cover_the_lines_path() {
+    // 扫频 / 带宽在 `lines` 非空时走的是另一条求解路径（约束扩行），要有用例钉住。
+    let input = split_dipole();
+    let lambda = wavelength(FREQ);
+    let line = bridging_line(0.25 * lambda, 50.0);
+    let pts = sweep_with_lines(&input, &[line], FREQ * 0.95, FREQ * 1.05, 21);
+    assert_eq!(pts.len(), 21, "带线扫频不应有解不出的点");
+    assert!(
+      pts
+        .iter()
+        .all(|p| p.impedance.0.is_finite() && p.impedance.1.is_finite() && p.swr_50.is_finite())
+    );
+    // λ/4 线是阻抗变换器：扫频曲线必须与直连不同，否则说明线没进方程。
+    let plain = sweep(&input, FREQ * 0.95, FREQ * 1.05, 21);
+    assert!(
+      pts
+        .iter()
+        .zip(&plain)
+        .any(|(a, b)| (a.impedance.0 - b.impedance.0).abs() > 1.0),
+      "λ/4 线的扫频曲线应与直连不同"
+    );
+    // 带宽二分同样走带线路径：零长线等价直连偶极（中心 SWR ≈ 2.3），
+    // 按中心点的实际 SWR 定限值，保证频带存在。
+    let joined = bridging_line(0.0, 50.0);
+    let at_center = impedance_with_lines(&retuned(&input, FREQ), &[joined]).expect("应能求解");
+    let swr0 = swr_for(at_center.0, at_center.1, Z0_REF);
+    let limit = (swr0 * 1.2).max(1.0);
+    let (lo, hi) =
+      swr_bandwidth_with_lines(&input, &[joined], limit, 0.3, 41).expect("应有达标频带");
+    assert!(lo < FREQ && FREQ < hi, "{lo} < {FREQ} < {hi}");
   }
 
   #[test]
@@ -4064,5 +4273,120 @@ mod tests {
     assert_eq!(wavelength(0.0), 0.0);
     let w = Wire::new([0.0; 3], [3.0, 4.0, 0.0], 0.001, 2);
     assert!((w.length() - 5.0).abs() < 1e-12);
+  }
+
+  /// 两臂 + 断口的 `.nec` 正文（tag 1 / 2 各 10 段），后面拼上要测的卡片。
+  fn split_nec(extra: &str) -> String {
+    format!(
+      "GW 1 10 -5 0 0 -0.001 0 0 0.001\nGW 2 10 0.001 0 0 5 0 0 0.001\nEX 0 1 5 0 1 0\n{extra}FR 0 1 0 0 14.1\nEN\n"
+    )
+  }
+
+  #[test]
+  fn tl_cards_follow_the_nec2_field_definitions() {
+    let f = parse_nec(&split_nec(
+      "TL 1 10 2 1 50\nTL 1 1 2 10 75 3.0\nTL 1 1 2 10 -50 1\nTL 1 1 2 10 50 1 0.01 0 0 0\nTL 0 10 0 11 300 2\n",
+    ))
+    .expect("应能解析");
+    assert_eq!(f.lines.len(), 3, "{:?}", f.lines);
+    // 段号 → 段心；NEC 的线是速度因子 1 的理想线。
+    let a = f.lines[0];
+    assert_eq!((a.wire_a, a.wire_b), (0, 1));
+    assert!((a.at_a - 0.95).abs() < 1e-12 && (a.at_b - 0.05).abs() < 1e-12);
+    assert_eq!(a.velocity_factor, 1.0);
+    // F2 空白 = 两个连接段段心之间的直线距离。
+    let (pa, pb) = (
+      f.input.wires[0].point_at(0.95),
+      f.input.wires[1].point_at(0.05),
+    );
+    assert!(
+      (a.length_m - (pb[0] - pa[0])).abs() < 1e-12,
+      "{}",
+      a.length_m
+    );
+    assert_eq!((f.lines[1].z0, f.lines[1].length_m), (75.0, 3.0));
+    // tag 0：绝对段号（第 10 段 = 1 号线末段，第 11 段 = 2 号线首段）。
+    let abs = f.lines[2];
+    assert_eq!((abs.wire_a, abs.wire_b, abs.z0), (0, 1, 300.0));
+    assert!((abs.at_a - 0.95).abs() < 1e-12 && (abs.at_b - 0.05).abs() < 1e-12);
+    // 交叉线与并联导纳：整张卡跳过并说明原因，而不是只解析一半。
+    assert!(
+      f.ignored.iter().any(|x| x.contains("交叉线")),
+      "{:?}",
+      f.ignored
+    );
+    assert!(
+      f.ignored.iter().any(|x| x.contains("并联导纳")),
+      "{:?}",
+      f.ignored
+    );
+    assert!(!f.ignored.contains(&"TL".to_owned()), "TL 不再是未支持卡片");
+  }
+
+  #[test]
+  fn tl_minus_one_clears_previous_lines_and_bad_refs_are_reported() {
+    let f = parse_nec(&split_nec("TL 1 10 2 1 50\nTL 0 -1\nTL 1 10 2 1 75\n")).unwrap();
+    assert_eq!(f.lines.len(), 1);
+    assert_eq!(f.lines[0].z0, 75.0);
+    let f = parse_nec(&split_nec("TL 9 1 2 1 50\nTL 0 99 0 1 50\nTL 1 1 2 1 0\n")).unwrap();
+    assert!(f.lines.is_empty());
+    assert!(
+      f.ignored.iter().any(|x| x.contains("不存在的段")),
+      "{:?}",
+      f.ignored
+    );
+    assert!(
+      f.ignored.iter().any(|x| x.contains("字段非法")),
+      "Z0 = 0：{:?}",
+      f.ignored
+    );
+  }
+
+  #[test]
+  fn ex_and_ld_accept_absolute_segment_numbers() {
+    // tag 0 + 第 15 段 = 2 号线第 5 段（与写成 tag 2 / 段 5 完全等价）。
+    let abs =
+      parse_nec(&split_nec("").replace("EX 0 1 5 0 1 0", "EX 0 0 15 0 1 0\nLD 0 0 3 3 10 0 0"))
+        .unwrap();
+    let tagged =
+      parse_nec(&split_nec("").replace("EX 0 1 5 0 1 0", "EX 0 2 5 0 1 0\nLD 0 1 3 3 10 0 0"))
+        .unwrap();
+    assert_eq!(abs.input.feeds, tagged.input.feeds);
+    assert_eq!(abs.input.loads, tagged.input.loads);
+  }
+
+  #[test]
+  fn tl_export_round_trips_with_the_same_impedance() {
+    // 速度因子 0.66 的线：导出写电长度等效线长，导回来（速度因子 1）阻抗必须不变。
+    // 几何先过一遍 `.nec`：馈电会吸附到段心（0.5 → 第 6 段段心 0.55）、半径按 5 位小数写出，
+    // 那是既有的格式边界；这里只比较传输线本身的往返。
+    let input = parse_nec(&to_nec(&split_dipole())).unwrap().input;
+    let line = TransmissionLine {
+      wire_a: 0,
+      at_a: 0.95,
+      wire_b: 1,
+      at_b: 0.05,
+      z0: 75.0,
+      length_m: 1.2,
+      velocity_factor: 0.66,
+    };
+    let want = impedance_with_lines(&input, &[line]).expect("应能求解");
+    let text = to_nec_with_lines(&input, &[line]);
+    assert!(
+      text.contains("TL 1, 10, 2, 1, 75.000000, 1.818182"),
+      "{text}"
+    );
+    let back = parse_nec(&text).unwrap();
+    assert!(back.ignored.is_empty(), "{:?}", back.ignored);
+    assert_eq!(back.lines.len(), 1);
+    let got = impedance_with_lines(&back.input, &back.lines).expect("导回后应能求解");
+    for (g, w) in [(got.0, want.0), (got.1, want.1)] {
+      assert!(
+        (g - w).abs() <= 1e-4 * w.abs().max(1.0),
+        "{got:?} vs {want:?}"
+      );
+    }
+    // 再导出一次是不动点。
+    assert_eq!(to_nec_with_lines(&back.input, &back.lines), text);
   }
 }

@@ -12,7 +12,7 @@
   "shell.software-license-source-details": "完整对应源码包含 Rust 源码、Cargo.lock、构建配置、Worker 胶水生成任务与所需静态资源。",
   "shell.software-license-source-version": "部署方应提供与实际构建版本一致的提交或源码归档，不能以仓库最新版本替代发布版本。",
   "shell.software-license-provenance": "组件来源",
-  "shell.software-license-dominoex": "算法与 Varicode 表来自 fldigi（GNU GPL v3）；Varicode 表版权为 © 2001–2003 Tomi Manninen OH2BNS。来源声明见下方仓库路径。",
+  "shell.software-license-dominoex": "算法与 Varicode 表来自 fldigi（GNU GPL v3）；DominoEX Varicode 表版权为 © 2001–2003 Tomi Manninen OH2BNS，FEC 模式的 MFSK Varicode 为 IZ8BLY 所定义、交织器改编自 gMFSK。来源声明见下方仓库路径。",
   "shell.software-license-lrpt": "链路与帧层部分来自 artlav/meteor_decoder（GNU GPL v3）；lrpt-encoder 来源及 MIT 声明见下方仓库路径。",
   "shell.software-license-navtex": "CCIR 476（SITOR-B）码表转写自 AI5GW/CCIR476（GNU GPL v3）；来源声明见下方仓库路径。",
   "shell.software-license-third-party": "其他第三方源码、字体与示例数据保留各组件目录中的来源和许可证，不由站点默认 MIT 许可覆盖。",

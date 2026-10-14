@@ -1,11 +1,13 @@
 //! 滤波器响应曲线：幅频、相频、群延迟三条曲线共用一次频点扫描。
 
 use ham_web_core::filter_design::FilterKind;
-use ham_web_core::waveform_lab::{FilterResponse, FilterSpec, response_at, response_curve_log};
+use ham_web_core::waveform_lab::{
+  FilterResponse, FilterSpec, elliptic_stopband_edge, response_at, response_curve_log,
+};
 use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
-use crate::ui::{Chip, ChipGroup, ControlSize, NumberField};
+use crate::ui::{Chip, ChipGroup, ControlSize, Field, NumberField};
 
 use super::plot::Axes;
 use super::{NOTE, PLOT, RESULT};
@@ -41,6 +43,7 @@ fn response_key(response: FilterResponse) -> &'static str {
     FilterResponse::Butterworth => "butterworth",
     FilterResponse::Chebyshev1 => "chebyshev-1",
     FilterResponse::Chebyshev2 => "chebyshev-2",
+    FilterResponse::Elliptic => "elliptic",
   }
 }
 
@@ -54,17 +57,18 @@ fn kind_text(kind: FilterKind) -> fn() -> String {
   }
 }
 
-const RESPONSES: [FilterResponse; 3] = [
+const RESPONSES: [FilterResponse; 4] = [
   FilterResponse::Butterworth,
   FilterResponse::Chebyshev1,
   FilterResponse::Chebyshev2,
+  FilterResponse::Elliptic,
 ];
 
 /// 切换原型时的波纹默认值：Butterworth 无波纹参数，两类 Chebyshev 各取常用档。
 fn default_ripple(response: FilterResponse) -> f64 {
   match response {
     FilterResponse::Butterworth => 0.0,
-    FilterResponse::Chebyshev1 => 1.0,
+    FilterResponse::Chebyshev1 | FilterResponse::Elliptic => 1.0,
     FilterResponse::Chebyshev2 => 40.0,
   }
 }
@@ -90,6 +94,8 @@ pub(super) fn FilterSection() -> impl IntoView {
   let kind = RwSignal::new(FilterKind::LowPass);
   let response = RwSignal::new(FilterResponse::Butterworth);
   let ripple_db = RwSignal::new(0.0);
+  // 椭圆原型的第二个参数（阻带最小衰减）；其余原型不读它。
+  let stopband_db = RwSignal::new(40.0);
   let order = RwSignal::new(3usize);
   // 数值录入沿用项目习惯：`String` 承载，空串视为未填写。
   let fc_mhz = RwSignal::new(String::from("7.1"));
@@ -104,6 +110,7 @@ pub(super) fn FilterSection() -> impl IntoView {
     response: response.get(),
     order: order.get(),
     ripple_db: ripple_db.get(),
+    stopband_db: stopband_db.get(),
     fc_hz: fc_hz(),
     bw_hz: bw_hz(),
   });
@@ -287,6 +294,7 @@ pub(super) fn FilterSection() -> impl IntoView {
               FilterResponse::Butterworth => t("tools.butterworth-maximally-flat"),
               FilterResponse::Chebyshev1 => t("tools.chebyshev-i-passband-ripple"),
               FilterResponse::Chebyshev2 => t("tools.chebyshev-ii-stopband-ripple"),
+              FilterResponse::Elliptic => t("tools.elliptic-both-bands-ripple"),
             };
             view! { <Chip value=response_key(r).to_owned()>{label}</Chip> }
           })
@@ -298,7 +306,8 @@ pub(super) fn FilterSection() -> impl IntoView {
         if r == FilterResponse::Butterworth {
           return ().into_any();
         }
-        let cheby1 = r == FilterResponse::Chebyshev1;
+        // 椭圆的第一个参数与 Chebyshev I 同义（通带波纹），第二个参数另起一行。
+        let cheby1 = matches!(r, FilterResponse::Chebyshev1 | FilterResponse::Elliptic);
         let values = if cheby1 {
           &CHEBY1_RIPPLES
         } else {
@@ -342,36 +351,61 @@ pub(super) fn FilterSection() -> impl IntoView {
                 })
                 .collect_view()}
             </ChipGroup>
+            {(r == FilterResponse::Elliptic)
+              .then(|| {
+                view! {
+                  <span class="ml-2 text-xs text-muted-foreground">
+                    {move || t("tools.minimum-stopband-attenuation-db")}
+                  </span>
+                  <ChipGroup
+                    value=Signal::derive(move || stopband_db.get().to_string())
+                    on_change=Callback::new(move |v: String| {
+                      if let Ok(v) = v.parse::<f64>() {
+                        stopband_db.set(v);
+                      }
+                    })
+                    aria_label=Signal::derive(move || t("tools.minimum-stopband-attenuation-db"))
+                  >
+                    {CHEBY2_RIPPLES
+                      .iter()
+                      .map(|&v| {
+                        view! { <Chip value=v.to_string()>{format!("{v:.0} dB")}</Chip> }
+                      })
+                      .collect_view()}
+                  </ChipGroup>
+                }
+              })}
           </div>
         }
         .into_any()
       }}
 
       <div class="grid gap-3 p-4 sm:grid-cols-2">
-        <label class="flex flex-col gap-1.5">
-          <span class=NOTE>{move || if is_band() { t("tools.centre-frequency-mhz") } else { t("tools.cut-off-frequency-mhz") }}</span>
+        <Field
+          label=Signal::derive(move || if is_band() { t("tools.centre-frequency-mhz") } else { t("tools.cut-off-frequency-mhz") })
+          r#for="filter-fc-mhz"
+        >
           <NumberField
+            id="filter-fc-mhz"
             value=Signal::derive(move || fc_mhz.get())
             on_change=Callback::new(move |v: String| fc_mhz.set(v))
             step=0.1
             min=0.01
             max=6000.0
             size=ControlSize::Sm
-            aria_label=Signal::derive(move || t("tools.frequency-mhz"))
           />
-        </label>
-        <label class="flex flex-col gap-1.5">
-          <span class=NOTE>{move || t("tools.bandwidth-khz-band-pass")}</span>
+        </Field>
+        <Field label=Signal::derive(move || t("tools.bandwidth-khz-band-pass")) r#for="filter-bw-khz">
           <NumberField
+            id="filter-bw-khz"
             value=Signal::derive(move || bw_khz.get())
             on_change=Callback::new(move |v: String| bw_khz.set(v))
             step=10.0
             min=0.1
             max=100000.0
             size=ControlSize::Sm
-            aria_label=Signal::derive(move || t("tools.bandwidth-khz"))
           />
-        </label>
+        </Field>
       </div>
 
       <div class="px-4 pb-2">
@@ -488,6 +522,13 @@ pub(super) fn FilterSection() -> impl IntoView {
               FilterResponse::Butterworth => "Butterworth".to_owned(),
               FilterResponse::Chebyshev1 => format!("Chebyshev I · {:.1} dB", s.ripple_db),
               FilterResponse::Chebyshev2 => format!("Chebyshev II · {:.0} dB", s.ripple_db),
+              // 阻带边缘随阶数与两个衰减参数而定（不是用户输入），一并给出。
+              FilterResponse::Elliptic => format!(
+                "Elliptic · {:.1} / {:.0} dB · Ωs = {:.3}",
+                s.ripple_db,
+                s.stopband_db,
+                elliptic_stopband_edge(s.order, s.ripple_db, s.stopband_db)
+              ),
             };
             // 阶数限定语也必须走词典：直接塞中文原文会在 en / es 下漏出中文。
             // 两条 `t()` 都写成字面量 key，`check-i18n` 的覆盖率与死条目检查才认得出。

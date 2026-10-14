@@ -16,10 +16,11 @@
 //! 去随机化 → RS 译码 → VCDU/MPDU → MSU-MR 段 → JPEG 解码 → 三通道图像。
 //!
 //! 已实现：物理层（[`rrc`]/[`viterbi`]/[`diff`]）、帧层（[`cadu`]/[`rs`]）、
-//! 封装层（[`vcdus`]）、图像层（[`jpeg`] + [`decode_image`]）。
-//! 未实现（后续层，如实说明）：真实过境录音的前端对齐搜索（本 crate 的接收链
-//! 已能解出干净信号的逐字节真值帧 —— 见 `tests/`）；M2-2（80k）的差分编码与
-//! 卷积交织（[`cadu`] 已含交织器，链路开关待接）。
+//! 封装层（[`vcdus`]）、图像层（[`jpeg`] + [`decode_image`]）。两个解调前端：
+//! [`decode_stream288`]（288 kHz 整数采样 OQPSK，对齐 lrpt-encoder 合成信号）与
+//! [`qpsk`]（任意采样率 QPSK + 定时 / 载波环路，Meteor-M2 真实过境录音已验证出图，
+//! 见 `tests/real_iq.rs`）。M2-2（80k）的差分与卷积交织见 [`m2`]。
+//! 未实现（如实说明）：M2-3 / M2-4 的 OQPSK 真实录音（缺样本）与软判决 Viterbi。
 
 pub mod cadu;
 pub mod diff;
@@ -28,6 +29,7 @@ pub mod jpeg;
 pub mod m2;
 pub mod oqpsk;
 pub mod prand;
+pub mod qpsk;
 pub mod rrc;
 pub mod rs;
 pub mod vcdus;
@@ -141,7 +143,10 @@ fn fold_midnight(times: &[u32]) -> Vec<u32> {
     .collect()
 }
 
-/// 解码出的 LRPT 图像（三通道：R / G / B）。
+/// MSU-MR 六个通道的 APID 范围（64 = 通道 1 … 69 = 通道 6）。
+const IMAGE_APIDS: std::ops::RangeInclusive<u16> = 64..=69;
+
+/// 解码出的 LRPT 图像（三通道，按 APID 从小到大排）。
 #[derive(Debug, Clone)]
 pub struct LrptImage {
   /// 像素宽度（1568）。
@@ -151,7 +156,10 @@ pub struct LrptImage {
   /// 首行在**本段录音**内的 MCU 行号（相对首个收到的行；头尾残缺行被丢弃后不为 0）
   /// —— 供真值比对定位。绝对行号还需要图像起始时刻，不在本层掌握。
   pub first_row_in_recording: usize,
-  /// 三通道灰度平面（每个 Vec 是一行）。
+  /// 三个通道各自的 APID（升序）。卫星每次过境只下传 MSU-MR 六个通道里的三个，
+  /// 选哪三个由地面控制（白天常见 64/65/66，也有 64/65/68 这种带红外的组合）。
+  pub apids: [u16; 3],
+  /// 三通道灰度平面（每个 Vec 是一行），顺序与 [`Self::apids`] 一致。
   pub channels: [Vec<Vec<u8>>; 3],
 }
 
@@ -185,7 +193,7 @@ pub fn decode_image(frames: &[[u8; DATA_LEN]]) -> Option<LrptImage> {
   }
   let mut pending = Vec::new();
   for (apid, _, payload) in mux.packets() {
-    if !(64..=66).contains(&apid) || payload.len() < 14 {
+    if !IMAGE_APIDS.contains(&apid) || payload.len() < 14 {
       continue; // 遥测（APID 70）等非图像包
     }
     let ms = u32::from_be_bytes([payload[2], payload[3], payload[4], payload[5]]);
@@ -197,9 +205,23 @@ pub fn decode_image(frames: &[[u8; DATA_LEN]]) -> Option<LrptImage> {
     entry.1 = *t;
   }
   let base = *times.iter().min()?;
+  // 取包数最多的三个图像 APID（偶发的误码包不会凑成一个「通道」），再按 APID 升序排。
+  let mut counts: std::collections::BTreeMap<u16, usize> = std::collections::BTreeMap::new();
+  for &(apid, _, _) in &pending {
+    *counts.entry(apid).or_default() += 1;
+  }
+  let mut ranked: Vec<(u16, usize)> = counts.into_iter().collect();
+  ranked.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+  if ranked.len() < 3 {
+    return None;
+  }
+  let mut apids = [ranked[0].0, ranked[1].0, ranked[2].0];
+  apids.sort_unstable();
   let mut rows: [std::collections::BTreeMap<usize, Row>; 3] = Default::default();
   for (apid, ms, payload) in pending {
-    let ch = (apid - 64) as usize;
+    let Some(ch) = apids.iter().position(|&a| a == apid) else {
+      continue;
+    };
     let row_idx = ((ms - base) / 500) as usize;
     let mcu_number = payload[8];
     let quality = payload[13];
@@ -231,19 +253,24 @@ pub fn decode_image(frames: &[[u8; DATA_LEN]]) -> Option<LrptImage> {
   let mut channels: [Vec<Vec<u8>>; 3] = [Vec::new(), Vec::new(), Vec::new()];
   for ch in 0..3 {
     let mut plane = Vec::with_capacity(indices.len() * 8);
+    // 一整行只分配一块（8 × IMAGE_WIDTH）再分片写入，而不是 8 个独立 Vec：
+    // 每个完整行几百个，每行省 8 次分配。
+    let mut expanded = vec![0u8; 8 * IMAGE_WIDTH];
     for &idx in &indices {
       let row = &rows[ch][&idx];
       // 段 × 14 块 → 8 行像素：段按 MCUN 定位（每段 112 像素宽）。
-      let mut expanded = vec![vec![0u8; IMAGE_WIDTH]; 8];
+      expanded.fill(0);
       for (seg_x, (_, blocks)) in row.iter().enumerate() {
         for (i, block) in blocks.iter().enumerate() {
           let x0 = seg_x * 112 + i * 8;
           for (y, brow) in block.iter().enumerate() {
-            expanded[y][x0..x0 + 8].copy_from_slice(brow);
+            expanded[y * IMAGE_WIDTH + x0..y * IMAGE_WIDTH + x0 + 8].copy_from_slice(brow);
           }
         }
       }
-      plane.extend(expanded);
+      for y in 0..8 {
+        plane.push(expanded[y * IMAGE_WIDTH..(y + 1) * IMAGE_WIDTH].to_vec());
+      }
     }
     channels[ch] = plane;
   }
@@ -251,6 +278,7 @@ pub fn decode_image(frames: &[[u8; DATA_LEN]]) -> Option<LrptImage> {
     width: IMAGE_WIDTH,
     height: indices.len() * 8,
     first_row_in_recording,
+    apids,
     channels,
   })
 }

@@ -102,7 +102,7 @@ pub fn PracticePage() -> impl IntoView {
   // 计算变体：同型题换数重新生成（防背答案），只在当次练习里出现。
   let variants_on = RwSignal::new(query.with_untracked(|q| q.get("variant").is_some()));
   // 专项 / 只练没做过 / 错题重练 / 计算变体：题目与完整题库不一致（子集，或末尾追加了本地生成的题），
-  // 不保存也不恢复进度，以免覆盖完整题库的顺序进度（变体开启时总数是 N+8，次日变体还会换题）。
+  // 不保存也不恢复进度，以免覆盖完整题库的顺序进度（变体开启时总数是 N+12，次日变体还会换题）。
   let subset = Memo::new(move |_| {
     topic.get().is_some()
       || sub_code.get().is_some()

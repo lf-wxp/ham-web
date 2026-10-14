@@ -417,6 +417,8 @@ pub enum FilterResponse {
   Chebyshev1,
   /// 阻带等波纹（Chebyshev II / 逆 Chebyshev）：通带最平坦、阻带有波纹与有限传输零点。
   Chebyshev2,
+  /// 通带与阻带都等波纹（椭圆 / Cauer）：同阶下过渡带最陡，代价是两侧都有波纹。
+  Elliptic,
 }
 
 /// 滤波器响应规格。
@@ -428,9 +430,12 @@ pub struct FilterSpec {
   pub response: FilterResponse,
   /// 阶数（1–5）；带通 / 带阻的实际阶数为 2n。
   pub order: usize,
-  /// 波纹参数（dB）：Chebyshev I 为通带波纹，Chebyshev II 为阻带最小衰减；
+  /// 波纹参数（dB）：Chebyshev I 与椭圆为通带波纹，Chebyshev II 为阻带最小衰减；
   /// Butterworth 忽略此字段。
   pub ripple_db: f64,
+  /// 阻带最小衰减（dB），**只有椭圆原型使用**（Chebyshev II 沿用 `ripple_db`，
+  /// 不为一个新原型改动既有口径）。必须大于通带波纹，否则按「比通带波纹大 1 dB」处理。
+  pub stopband_db: f64,
   /// 低通 / 高通为截止频率，带通 / 带阻为中心频率（Hz）。
   pub fc_hz: f64,
   /// 带宽（Hz），仅带通 / 带阻使用。
@@ -569,6 +574,174 @@ fn chebyshev2_proto(order: usize, stopband_db: f64) -> Proto {
   Proto { poles, zeros, gain }
 }
 
+// ── 椭圆（Cauer）原型 ─────────────────────────────────────────────
+//
+// 采用 Orfanidis《Lecture Notes on Elliptic Filter Design》的 Landen 变换写法：
+// 雅可比椭圆函数 `cd` / `sn` 及其反函数都由「降阶 Landen 序列」逐级回代求得，
+// 只用到复数的三角函数、开方与对数，不需要 θ 函数或 AGM 的复数版本。
+// 参照解：scipy.signal.ellipap（单测里逐个钉住极点、零点、增益与若干频点幅值）。
+
+/// 复正弦。
+fn csin(z: Cx) -> Cx {
+  Cx::new(z.re.sin() * z.im.cosh(), z.re.cos() * z.im.sinh())
+}
+
+/// 复余弦。
+fn ccos(z: Cx) -> Cx {
+  Cx::new(z.re.cos() * z.im.cosh(), -z.re.sin() * z.im.sinh())
+}
+
+/// 复对数（主值）。
+fn cln(z: Cx) -> Cx {
+  Cx::new(z.abs().ln(), z.arg())
+}
+
+/// 复反余弦（主值）：`acos w = −j·ln(w + j·√(1 − w²))`。
+fn cacos(w: Cx) -> Cx {
+  let root = (Cx::ONE - w * w).sqrt();
+  Cx::new(0.0, -1.0) * cln(w + Cx::J * root)
+}
+
+/// 降阶 Landen 序列 `k → k₁ → k₂ …`（`kₙ = (kₙ₋₁ / (1 + k'ₙ₋₁))²`），直到可以忽略。
+///
+/// 每一步模数大约平方一次，所以十几步内就降到双精度以下。
+fn landen(k: f64) -> Vec<f64> {
+  let mut v = Vec::new();
+  let mut k = k;
+  while k > 1e-16 && v.len() < 32 {
+    let kp = (1.0 - k * k).max(0.0).sqrt();
+    k = (k / (1.0 + kp)).powi(2);
+    v.push(k);
+  }
+  v
+}
+
+/// 第一类完全椭圆积分 `K(k) = (π/2)·Π(1 + kₙ)`。
+fn ellipk(k: f64) -> f64 {
+  landen(k)
+    .iter()
+    .fold(std::f64::consts::FRAC_PI_2, |acc, v| acc * (1.0 + v))
+}
+
+/// 归一化自变量的 `cd(u·K, k)`（`u` 为复数）。
+fn cde(u: Cx, k: f64) -> Cx {
+  let mut w = ccos(u * std::f64::consts::FRAC_PI_2);
+  for v in landen(k).iter().rev() {
+    w = w * (1.0 + v) / (Cx::ONE + w * w * *v);
+  }
+  w
+}
+
+/// 归一化自变量的 `sn(u·K, k)`。
+fn sne(u: Cx, k: f64) -> Cx {
+  let mut w = csin(u * std::f64::consts::FRAC_PI_2);
+  for v in landen(k).iter().rev() {
+    w = w * (1.0 + v) / (Cx::ONE + w * w * *v);
+  }
+  w
+}
+
+/// 对称取余：结果落在 `[−y/2, y/2]`。
+fn srem(x: f64, y: f64) -> f64 {
+  x - y * (x / y).round()
+}
+
+/// `cd` 的反函数（返回归一化自变量 `u`，即 `w = cd(u·K, k)`）。
+fn acde(w: Cx, k: f64) -> Cx {
+  let v = landen(k);
+  let mut w = w;
+  for (i, vn) in v.iter().enumerate() {
+    let v1 = if i == 0 { k } else { v[i - 1] };
+    w = w / (Cx::ONE + (Cx::ONE - w * w * (v1 * v1)).sqrt()) * (2.0 / (1.0 + vn));
+  }
+  let u = cacos(w) * (2.0 / std::f64::consts::PI);
+  // 归回基本周期：实部周期 4、虚部周期 2K'/K。
+  let r = ellipk((1.0 - k * k).max(0.0).sqrt()) / ellipk(k);
+  Cx::new(srem(u.re, 4.0), srem(u.im, 2.0 * r))
+}
+
+/// `sn` 的反函数（归一化自变量）：`asn = 1 − acd`。
+fn asne(w: Cx, k: f64) -> Cx {
+  Cx::ONE - acde(w, k)
+}
+
+/// 由阶数与「判别模数」`k₁ = ε_p/ε_s` 解度方程，得到选择性模数 `k`（`1/k` 即阻带边缘）。
+fn ellipdeg(order: usize, k1: f64) -> f64 {
+  let n = order as f64;
+  let k1p = (1.0 - k1 * k1).max(0.0).sqrt();
+  let mut prod = 1.0;
+  for i in 1..=order / 2 {
+    prod *= sne(Cx::of((2.0 * i as f64 - 1.0) / n), k1p).re;
+  }
+  let kp = k1p.powf(n) * prod.powi(4);
+  (1.0 - kp * kp).max(0.0).sqrt()
+}
+
+/// 规整椭圆原型的两个衰减参数：阻带必须比通带波纹深，否则没有过渡带可言。
+fn elliptic_params(ripple_db: f64, stopband_db: f64) -> (f64, f64) {
+  let rp = ripple_db.max(1e-3);
+  let rs = if stopband_db > rp {
+    stopband_db
+  } else {
+    rp + 1.0
+  };
+  (rp, rs)
+}
+
+/// 椭圆原型的阻带边缘 `Ω_s = 1/k`（通带边缘归一化为 1）：衰减从这里起不小于
+/// `stopband_db`。界面用它标注「阻带从哪里开始」。
+#[must_use]
+pub fn elliptic_stopband_edge(order: usize, ripple_db: f64, stopband_db: f64) -> f64 {
+  let (rp, rs) = elliptic_params(ripple_db, stopband_db);
+  let k1 = chebyshev_epsilon(rp) / chebyshev_epsilon(rs);
+  1.0 / ellipdeg(order.max(1), k1)
+}
+
+/// 椭圆（Cauer）归一化低通原型。
+///
+/// `|H(jΩ)|² = 1/(1 + ε_p²·R_n²(Ω))`，`R_n` 是椭圆有理函数：通带（`Ω ≤ 1`）内在
+/// `[1/(1+ε_p²), 1]` 之间等波纹，阻带（`Ω ≥ 1/k`）内衰减不小于 `stopband_db` 且等波纹。
+///
+/// - 零点：`±j/(k·cd(u_i·K))`，`u_i = (2i−1)/n`，共 `⌊n/2⌋` 对（奇数阶在无穷远多一个）
+/// - 极点：`j·cd((u_i − j·v₀)·K)` 及其共轭；奇数阶另有实极点 `j·sn(j·v₀·K)`，
+///   其中 `v₀ = −j·asn(j/ε_p, k₁)/n`
+/// - 直流增益：奇数阶为 1，偶数阶落在波纹谷底 `10^(−A_p/20)`（与 Chebyshev I 同一口径）
+fn elliptic_proto(order: usize, ripple_db: f64, stopband_db: f64) -> Proto {
+  let order = order.max(1);
+  let n = order as f64;
+  let (rp, rs) = elliptic_params(ripple_db, stopband_db);
+  let ep = chebyshev_epsilon(rp);
+  let es = chebyshev_epsilon(rs);
+  let k1 = ep / es;
+  let k = ellipdeg(order, k1);
+  let v0 = Cx::new(0.0, -1.0) * asne(Cx::j(1.0 / ep), k1) * (1.0 / n);
+
+  let mut poles = Vec::with_capacity(order);
+  let mut zeros = Vec::with_capacity(order);
+  for i in 1..=order / 2 {
+    let u = (2.0 * i as f64 - 1.0) / n;
+    let zeta = cde(Cx::of(u), k).re;
+    let z = 1.0 / (k * zeta);
+    zeros.push(Cx::j(z));
+    zeros.push(Cx::j(-z));
+    let p = Cx::J * cde(Cx::of(u) - Cx::J * v0, k);
+    poles.push(p);
+    poles.push(p.conj());
+  }
+  if order % 2 == 1 {
+    let p0 = Cx::J * sne(Cx::J * v0, k);
+    // 实极点：虚部只剩舍入噪声，清掉以免相位扫描里出现假的微小不对称。
+    poles.push(Cx::of(p0.re));
+  }
+  let dc = if order.is_multiple_of(2) {
+    10f64.powf(-rp / 20.0)
+  } else {
+    1.0
+  };
+  let gain = dc * negated_product(&poles) / negated_product(&zeros);
+  Proto { poles, zeros, gain }
+}
+
 /// 由规格构造归一化低通原型。
 fn prototype(spec: &FilterSpec) -> Proto {
   match spec.response {
@@ -597,6 +770,7 @@ fn prototype(spec: &FilterSpec) -> Proto {
       }
     }
     FilterResponse::Chebyshev2 => chebyshev2_proto(spec.order, spec.ripple_db),
+    FilterResponse::Elliptic => elliptic_proto(spec.order, spec.ripple_db, spec.stopband_db),
   }
 }
 
@@ -1014,6 +1188,7 @@ mod tests {
       response: FilterResponse::Butterworth,
       order: 2,
       ripple_db: 0.0,
+      stopband_db: 40.0,
       fc_hz: 1000.0,
       bw_hz: 0.0,
     };
@@ -1039,6 +1214,7 @@ mod tests {
       response: FilterResponse::Butterworth,
       order: 3,
       ripple_db: 0.0,
+      stopband_db: 40.0,
       fc_hz: 1000.0,
       bw_hz: 0.0,
     };
@@ -1055,6 +1231,7 @@ mod tests {
       response: FilterResponse::Butterworth,
       order: 3,
       ripple_db: 0.0,
+      stopband_db: 40.0,
       fc_hz: 7_100_000.0,
       bw_hz: 500_000.0,
     };
@@ -1090,6 +1267,7 @@ mod tests {
       response: FilterResponse::Butterworth,
       order: 2,
       ripple_db: 0.0,
+      stopband_db: 40.0,
       fc_hz: 1000.0,
       bw_hz: 0.0,
     };
@@ -1138,6 +1316,8 @@ mod tests {
           let e = 1.0 / eps;
           e * e * t * t / (1.0 + e * e * t * t)
         }
+        // 椭圆有理函数没有初等闭式：它由 scipy 参照解 + 两侧等波纹性质单独核对。
+        FilterResponse::Elliptic => unreachable!(),
       };
       let (mag_db, _) = response_at(spec, spec.fc_hz * omega);
       // `response_at` 把 |H| 下限夹在 1e-12（−240 dB）以避免 log(0)；期望值同样夹住。
@@ -1165,6 +1345,7 @@ mod tests {
             response,
             order,
             ripple_db,
+            stopband_db: 40.0,
             fc_hz: 1000.0,
             bw_hz: 0.0,
           };
@@ -1184,6 +1365,7 @@ mod tests {
         response: FilterResponse::Chebyshev1,
         order,
         ripple_db,
+        stopband_db: 40.0,
         fc_hz: 1000.0,
         bw_hz: 0.0,
       };
@@ -1219,6 +1401,7 @@ mod tests {
       response,
       order: 4,
       ripple_db: 0.5,
+      stopband_db: 40.0,
       fc_hz: 1000.0,
       bw_hz: 0.0,
     };
@@ -1239,6 +1422,7 @@ mod tests {
       response: FilterResponse::Chebyshev2,
       order: n,
       ripple_db: stopband_db,
+      stopband_db: 40.0,
       fc_hz: 1000.0,
       bw_hz: 0.0,
     };
@@ -1426,6 +1610,7 @@ mod tests {
       response: FilterResponse::Chebyshev2,
       order: n,
       ripple_db: stopband_db,
+      stopband_db: 40.0,
       fc_hz: 1000.0,
       bw_hz: 0.0,
     };
@@ -1477,6 +1662,7 @@ mod tests {
       response: FilterResponse::Butterworth,
       order,
       ripple_db: 0.0,
+      stopband_db: 40.0,
       fc_hz: 1000.0,
       bw_hz: 0.0,
     }
@@ -1524,5 +1710,381 @@ mod tests {
         }
       }
     }
+  }
+  /// scipy.signal.ellipap 的参照解（scipy 1.18.1 生成，逐位抄录）：
+  /// `(阶数, 通带波纹, 阻带衰减, 零点虚部（上半平面）, 极点（上半平面含实轴）, 增益, 幅频 dB)`。
+  /// 幅频取样点见 [`ELLIPTIC_REF_OMEGAS`]。
+  // 逐位抄录的 scipy 输出：精度超出 f64 的尾数也原样保留，便于与生成脚本的输出逐字比对。
+  #[allow(clippy::type_complexity, clippy::excessive_precision)]
+  const ELLIPTIC_REF: &[(usize, f64, f64, &[f64], &[(f64, f64)], f64, [f64; 6])] = &[
+    (
+      1,
+      1.0,
+      40.0,
+      &[],
+      &[(-1.965226728360272e+00, 0.000000000000000e+00)],
+      1.965226728360272e+00,
+      [
+        0.0,
+        -0.272400428454,
+        -1.0,
+        -1.99366270279,
+        -3.08714128046,
+        -8.73502844865,
+      ],
+    ),
+    (
+      1,
+      0.5,
+      60.0,
+      &[],
+      &[(-2.862775161243189e+00, 0.000000000000000e+00)],
+      2.862775161243189e+00,
+      [
+        0.0,
+        -0.130499404586,
+        -0.5,
+        -1.05353988538,
+        -1.72624475303,
+        -6.07504493246,
+      ],
+    ),
+    (
+      1,
+      0.1,
+      20.0,
+      &[],
+      &[(-6.552203216802769e+00, 0.000000000000000e+00)],
+      6.552203216802769e+00,
+      [
+        0.0,
+        -0.0252166945543,
+        -0.1,
+        -0.221846494321,
+        -0.386884870791,
+        -1.99295636821,
+      ],
+    ),
+    (
+      2,
+      1.0,
+      40.0,
+      &[9.937626639613704e+00],
+      &[(-5.457543140568523e-01, 9.001208375096555e-01)],
+      9.999999999999993e-03,
+      [
+        -1.0,
+        -0.276434411842,
+        -1.0,
+        -6.31277175482,
+        -11.6500939112,
+        -30.4299237251,
+      ],
+    ),
+    (
+      2,
+      0.5,
+      60.0,
+      &[3.784028098372981e+01],
+      &[(-7.124343665311639e-01, 1.004573924155089e+00)],
+      1.000000000000000e-03,
+      [
+        -0.5,
+        -0.130634134891,
+        -0.5,
+        -3.97607834253,
+        -8.45572479013,
+        -24.8323694886,
+      ],
+    ),
+    (
+      2,
+      0.1,
+      20.0,
+      &[5.752981786034239e+00],
+      &[(-1.121258994675188e+00, 1.445953836545114e+00)],
+      9.999999999999978e-02,
+      [
+        -0.1,
+        -0.0263778708645,
+        -0.1,
+        -1.19205230244,
+        -3.84923661704,
+        -29.5754781065,
+      ],
+    ),
+    (
+      3,
+      1.0,
+      40.0,
+      &[2.758343343678098e+00],
+      &[
+        (-5.237210307202689e-01, 0.000000000000000e+00),
+        (-2.272597707513843e-01, 9.765710116532792e-01),
+      ],
+      6.920148921750012e-02,
+      [
+        -1.92865493311e-15,
+        -0.996795896329,
+        -1.0,
+        -15.6788852573,
+        -28.269649025,
+        -40.0587953233,
+      ],
+    ),
+    (
+      3,
+      0.5,
+      60.0,
+      &[6.545111159844345e+00],
+      &[
+        (-6.333593366910752e-01, 0.000000000000000e+00),
+        (-3.082273249424123e-01, 1.023902830821039e+00),
+      ],
+      1.690468680625121e-02,
+      [
+        0.0,
+        -0.49995088773,
+        -0.5,
+        -10.6860210444,
+        -19.9491734713,
+        -52.0853078019,
+      ],
+    ),
+    (
+      3,
+      0.1,
+      20.0,
+      &[1.980842888509131e+00],
+      &[
+        (-1.176699534646565e+00, 0.000000000000000e+00),
+        (-3.478408856050443e-01, 1.217774334196207e+00),
+      ],
+      4.810177634364765e-01,
+      [
+        -9.64327466553e-16,
+        -0.0985236820925,
+        -0.1,
+        -9.26672481265,
+        -44.8740667745,
+        -21.5722113376,
+      ],
+    ),
+    (
+      4,
+      1.0,
+      40.0,
+      &[1.609550401225154e+00, 3.525287432996002e+00],
+      &[
+        (-3.642905958734215e-01, 4.786027676406497e-01),
+        (-1.052812646211714e-01, 9.937108112087721e-01),
+      ],
+      9.999999999999997e-03,
+      [
+        -1.0,
+        -0.0910845383904,
+        -1.0,
+        -38.193172195,
+        -40.0007344033,
+        -46.5422974706,
+      ],
+    ),
+    (
+      4,
+      0.5,
+      60.0,
+      &[2.888861395862255e+00, 6.794069051986220e+00],
+      &[
+        (-4.333893855695807e-01, 4.426904190503960e-01),
+        (-1.621506366720848e-01, 1.018276851609870e+00),
+      ],
+      9.999999999999981e-04,
+      [
+        -0.5,
+        -0.103112320936,
+        -0.5,
+        -20.7483011216,
+        -36.369084032,
+        -64.6175268617,
+      ],
+    ),
+    (
+      4,
+      0.1,
+      20.0,
+      &[1.321948643277774e+00, 2.706789075199834e+00],
+      &[
+        (-7.229626862122520e-01, 7.385359574884089e-01),
+        (-1.265262900975170e-01, 1.093893535493134e+00),
+      ],
+      1.000000000000001e-01,
+      [
+        -0.1,
+        -0.00186365806132,
+        -0.1,
+        -20.5849389702,
+        -23.8453594164,
+        -23.2223003585,
+      ],
+    ),
+    (
+      5,
+      1.0,
+      40.0,
+      &[1.253807568979584e+00, 1.764288440908589e+00],
+      &[
+        (-3.853443402756088e-01, 0.000000000000000e+00),
+        (-2.191067293462112e-01, 7.410339611506355e-01),
+        (-4.992070888716029e-02, 9.981980505781459e-01),
+      ],
+      4.697229935750682e-02,
+      [
+        -9.64327466553e-16,
+        -0.78090793737,
+        -1.0,
+        -42.0311225674,
+        -46.5565738568,
+        -41.7599432283,
+      ],
+    ),
+    (
+      5,
+      0.5,
+      60.0,
+      &[1.852260186147556e+00, 2.847077907639791e+00],
+      &[
+        (-4.027893809618869e-01, 0.000000000000000e+00),
+        (-2.889067081793648e-01, 6.762768219062187e-01),
+        (-9.155924919005859e-02, 1.012423641952835e+00),
+      ],
+      8.094462983274688e-03,
+      [
+        0.0,
+        -0.225554419076,
+        -0.5,
+        -36.433224192,
+        -61.407072871,
+        -60.0398328734,
+      ],
+    ),
+    (
+      5,
+      0.1,
+      20.0,
+      &[1.121643568184181e+00, 1.479599027340202e+00],
+      &[
+        (-9.333252521307698e-01, 0.000000000000000e+00),
+        (-3.292862007483530e-01, 9.538082160091516e-01),
+        (-4.937252944431421e-02, 1.039261340013206e+00),
+      ],
+      3.734979095226921e-01,
+      [
+        0.0,
+        -0.0930133086198,
+        -0.1,
+        -43.2737596298,
+        -21.0958907175,
+        -23.2641882454,
+      ],
+    ),
+  ];
+  const ELLIPTIC_REF_OMEGAS: [f64; 6] = [0.0, 0.5, 1.0, 1.5, 2.0, 5.0];
+
+  /// 按 (虚部, 实部) 排序的上半平面根（含实轴），与夹具同一顺序。
+  fn upper_half(xs: &[Cx]) -> Vec<Cx> {
+    let mut v: Vec<Cx> = xs.iter().copied().filter(|x| x.im >= -1e-12).collect();
+    v.sort_by(|a, b| a.im.total_cmp(&b.im).then(a.re.total_cmp(&b.re)));
+    v
+  }
+
+  #[test]
+  fn elliptic_matches_scipy_ellipap() {
+    for &(order, rp, rs, zeros_im, poles, gain, mags) in ELLIPTIC_REF {
+      let proto = elliptic_proto(order, rp, rs);
+      let what = format!("n={order} rp={rp} rs={rs}");
+      let zs = upper_half(&proto.zeros);
+      assert_eq!(zs.len(), zeros_im.len(), "{what}");
+      for (got, want) in zs.iter().zip(zeros_im) {
+        assert!(got.re.abs() < 1e-12, "{what}: {got:?}");
+        assert!(
+          (got.im - want).abs() / want < 1e-9,
+          "{what}: {} vs {want}",
+          got.im
+        );
+      }
+      let ps = upper_half(&proto.poles);
+      assert_eq!(ps.len(), poles.len(), "{what}");
+      for (got, &(re, im)) in ps.iter().zip(poles.iter()) {
+        let d = (got.re - re).hypot(got.im - im) / re.hypot(im);
+        assert!(d < 1e-9, "{what}: {got:?} vs ({re}, {im})");
+      }
+      assert!(
+        (proto.gain - gain).abs() / gain < 1e-9,
+        "{what}: {} vs {gain}",
+        proto.gain
+      );
+      for (omega, want) in ELLIPTIC_REF_OMEGAS.iter().zip(mags) {
+        let h = proto.eval(Cx::j(*omega));
+        let got = 20.0 * h.abs().log10();
+        assert!(
+          (got - want).abs() < 1e-7,
+          "{what} Ω={omega}: {got} vs {want}"
+        );
+      }
+    }
+  }
+
+  #[test]
+  fn elliptic_is_equiripple_in_both_bands() {
+    // 定义性质，与参照解无关：通带内落在 [−A_p, 0]，带边恰为 −A_p；
+    // 阻带（Ω ≥ 1/k）内不浅于 −A_s，阻带边缘恰为 −A_s。
+    for order in 2..=5usize {
+      for &(rp, rs) in &[(0.5, 40.0), (1.0, 60.0), (3.0, 30.0)] {
+        let proto = elliptic_proto(order, rp, rs);
+        let db = |omega: f64| 20.0 * proto.eval(Cx::j(omega)).abs().log10();
+        let what = format!("n={order} rp={rp} rs={rs}");
+        for i in 0..=400 {
+          let omega = i as f64 / 400.0;
+          let m = db(omega);
+          assert!(m <= 1e-9 && m >= -rp - 1e-9, "{what} Ω={omega}: {m}");
+        }
+        assert!((db(1.0) + rp).abs() < 1e-9, "{what}: {}", db(1.0));
+        let edge = elliptic_stopband_edge(order, rp, rs);
+        assert!(edge > 1.0, "{what}: {edge}");
+        assert!((db(edge) + rs).abs() < 1e-6, "{what}: {}", db(edge));
+        for i in 0..=400 {
+          let omega = edge * (100f64.ln() * i as f64 / 400.0).exp();
+          let m = db(omega);
+          assert!(m <= -rs + 1e-6, "{what} Ω={omega}: {m}");
+        }
+      }
+    }
+  }
+
+  #[test]
+  fn elliptic_is_steeper_than_chebyshev1_at_the_same_ripple() {
+    // 同阶、同通带波纹：椭圆用阻带波纹换来更陡的过渡带。
+    for order in 2..=5usize {
+      let mk = |response| FilterSpec {
+        kind: FilterKind::LowPass,
+        response,
+        order,
+        ripple_db: 1.0,
+        stopband_db: 40.0,
+        fc_hz: 1000.0,
+        bw_hz: 0.0,
+      };
+      let cheby = response_at(&mk(FilterResponse::Chebyshev1), 1300.0).0;
+      let ellip = response_at(&mk(FilterResponse::Elliptic), 1300.0).0;
+      assert!(ellip < cheby, "n={order}: {ellip} vs {cheby}");
+    }
+  }
+
+  #[test]
+  fn elliptic_parameters_are_sanitised() {
+    // 阻带不深于通带波纹：按「深 1 dB」处理，仍是一个合法（极点在左半平面）的原型。
+    let proto = elliptic_proto(3, 3.0, 2.0);
+    assert!(proto.poles.iter().all(|p| p.re < 0.0));
+    assert!(proto.gain.is_finite());
   }
 }

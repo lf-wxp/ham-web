@@ -261,7 +261,6 @@
   "log.grayline": "灰线",
   "log.click-inspector": "点击反查",
   "log.generate-cabrillo": "生成 Cabrillo",
-  "log.rendering": "生成中…",
   "log.rendering-failed-please-retry": "生成失败，请重试。",
   "log.export-cabrillo-automatically-with": "用日志软件（N1MM、DXLog 等）自动导出 Cabrillo，避免手工出错。",
   "log.partly-used-sheet-skip": "用过一部分的标签纸：跳过前面已撕掉的标签",
@@ -367,5 +366,8 @@
   "log.tqsl-itu-zone": "ITU 分区",
   "log.tqsl-must-match-my": "这几项要与导出 ADIF 里的 MY_* 一致 —— 不一致时上传不会报错，但 LoTW 会把这些 QSO 标成「不匹配」。",
   "log.tqsl-set-station-first": "台站信息还没填全（呼号或网格为空，或呼号前缀查不出 DXCC 实体），先补齐：",
-  "log.tqsl-station-location": "TQSL 里建 Station Location 时照这个填"
+  "log.tqsl-station-location": "TQSL 里建 Station Location 时照这个填",
+  "log.print-layout": "打印方式",
+  "log.print-layout-single": "每页 1 张（A4 竖向）",
+  "log.print-layout-grid": "每页 4 张（A4 横向，带裁切线）"
 }

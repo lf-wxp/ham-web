@@ -589,6 +589,11 @@ dependencies = [
   "pixel-check",
 ]
 
+[tasks.size-check]
+description = "性能预算：按 perf-budget.json 校验 dist/ 的 br 压缩后体积（需先 build-web；ci 已挂上）"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--", "size-check", "--dist", "${DIST_DIR}"]
+
 [tasks.e2e]
 description = "端到端测试：构建 release 站点后由 Playwright 启动服务器并运行 e2e/（首次：cd e2e && npm ci && npx playwright install chromium）"
 dependencies = ["build-web"]
@@ -619,6 +624,8 @@ dependencies = [
   "check-ui",
   "pixel-check",
   "build-web",
+  # 体积只能在 release 产物上量，所以挂在 ci（有 build-web）而不是 check 上
+  "size-check",
 ]
 
 # ───────────────────────────── 部署 ─────────────────────────────

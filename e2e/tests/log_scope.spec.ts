@@ -87,6 +87,27 @@ test("统计范围：按台站与操作员分账，切页也记着", async ({ pa
   await page.reload();
   await expect(page.getByRole("combobox", { name: "统计范围" })).toContainText("POTA");
   await expect(page.getByText("该范围 1 条")).toBeVisible();
+
+  // 其余统计页共用同一个口径：日志页选了 POTA，/stats、/dxcc-map、/report、/grid-map 都按它算。
+  // 逐个写字面量 goto：覆盖率统计与 registry_check 的门禁都只认字面量路由。
+  const expectPota = async () => {
+    await expect(page.getByRole("combobox", { name: "统计范围" })).toContainText("POTA");
+    await expect(page.getByText("该范围 1 条")).toBeVisible();
+  };
+  await page.goto("/stats");
+  await expectPota();
+  await page.goto("/dxcc-map");
+  await expectPota();
+  await page.goto("/report");
+  await expectPota();
+  await page.goto("/grid-map");
+  await expectPota();
+  // 在 /stats 切回本台，回到日志页也跟着变。
+  await page.goto("/stats");
+  await pickOption(page, "统计范围", "本台");
+  await expect(page.getByText("该范围 2 条")).toBeVisible();
+  await page.goto("/log");
+  await expect(page.getByRole("combobox", { name: "统计范围" })).toContainText("本台");
 });
 
 test("统计范围：只有单台站单操作员时不显示选择器", async ({ page }) => {

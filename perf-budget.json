@@ -1,0 +1,48 @@
+{
+  "note": "性能预算：release 构建产物（postbuild 预压缩后的 .br，即线上实际传输体积）的上限。由 `cargo make size-check` 校验；超限即失败。上调 max 之前先回答「这次增量换来了什么、能不能拆进 Worker」，并在 ROADMAP「工程门禁 · 体积」记一笔。baseline 是上次核对时的实测值（一项匹配多个文件时取其中最大的那个），只用来显示增量，不参与判定。",
+  "checked": "2026-10-13",
+  "assets": [
+    {
+      "name": "主包 wasm",
+      "pattern": "ham-web-app-*_bg.wasm",
+      "baseline": 2307018,
+      "max": 2400000
+    },
+    {
+      "name": "主包 JS 胶水",
+      "pattern": "ham-web-app-*.js",
+      "baseline": 15044,
+      "max": 20000
+    },
+    {
+      "name": "样式表",
+      "pattern": "input-*.css",
+      "baseline": 25589,
+      "max": 32000
+    },
+    {
+      "name": "Service Worker",
+      "pattern": "sw.js",
+      "baseline": 4736,
+      "max": 8000
+    },
+    {
+      "name": "解码 Worker 入口",
+      "pattern": "decode-worker.js",
+      "baseline": 2051,
+      "max": 4000
+    },
+    {
+      "name": "单个解码 Worker wasm",
+      "pattern": "*-worker/*_bg.wasm",
+      "baseline": 37299,
+      "max": 65536
+    },
+    {
+      "name": "单个解码 Worker 胶水",
+      "pattern": "*-worker/*_worker.js",
+      "baseline": 3247,
+      "max": 6000
+    }
+  ]
+}

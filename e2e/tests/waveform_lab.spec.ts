@@ -60,7 +60,7 @@ test("波形实验室：改变滤波器阶数与类型后响应结果同步更�
   await expect(filter.getByText(/等效 2n 阶/)).toBeVisible();
 
   // 改中心频率 → 刻度一起更新。
-  await filter.locator('input[aria-label="频率 MHz"]').fill("14.1");
+  await filter.locator("#filter-fc-mhz").fill("14.1");
   await expect(filter.getByText("14.100 MHz")).toBeVisible();
 });
 
@@ -110,6 +110,26 @@ test("波形实验室：切换 Chebyshev 原型与波纹档位", async ({ page }
   await filter.getByRole("radio", { name: "Butterworth（最平坦）" }).click();
   await expect(filter.getByText("阻带最小衰减（dB）")).toHaveCount(0);
   await expect(filter.getByText(/阶数 3（n 阶）　｜　Butterworth$/)).toBeVisible();
+});
+
+test("波形实验室：椭圆原型同时给出通带波纹与阻带衰减两组档位", async ({ page }) => {
+  await page.goto("/waveform-lab");
+  const filter = panel(page, "filter");
+  await filter.getByRole("radio", { name: "椭圆 / Cauer（通带与阻带均有波纹）" }).click();
+  // 两组档位同时出现，默认 1.0 / 40 dB，并给出由阶数与两个衰减算出的阻带边缘。
+  await expect(filter.getByText("通带波纹（dB）")).toBeVisible();
+  await expect(filter.getByText("阻带最小衰减（dB）")).toBeVisible();
+  await expect(filter.getByText(/Elliptic · 1\.0 \/ 40 dB · Ωs = \d\.\d{3}/)).toBeVisible();
+  const edge = async () =>
+    Number((await filter.getByText(/Ωs = /).innerText()).match(/Ωs = ([\d.]+)/)?.[1]);
+  const at40 = await edge();
+  // 阻带要求更深 → 同阶下阻带边缘离通带更远。
+  await filter.getByRole("radio", { name: "80 dB", exact: true }).click();
+  await expect(filter.getByText(/Elliptic · 1\.0 \/ 80 dB/)).toBeVisible();
+  expect(await edge()).toBeGreaterThan(at40);
+  // 改通带波纹只动第一组档位。
+  await filter.getByRole("radio", { name: "0.1 dB", exact: true }).click();
+  await expect(filter.getByText(/Elliptic · 0\.1 \/ 80 dB/)).toBeVisible();
 });
 
 test("史密斯圆图：拖动圆图改变负载阻抗", async ({ page }) => {

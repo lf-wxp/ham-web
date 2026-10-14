@@ -89,4 +89,12 @@ test("全局搜索：本地日志 QSO 命中且排在最前", async ({ page }) =
   const firstGroupTitle = dialog.locator("div.mb-1.flex.items-center.gap-2 > span").first();
   await expect(firstGroupTitle).toHaveText("日志");
   await expect(page.getByText(/BA1AAA · 2026-10-01 08:30/).first()).toBeVisible();
+
+  // dxcc: 前缀同样作用于日志：按呼号推断实体（BA → 中国，主前缀 BY），
+  // 换成别的实体则日志分组不出现。
+  await input.fill("dxcc:by");
+  await expect(firstGroupTitle).toHaveText("日志");
+  await expect(page.getByText(/BA1AAA · 2026-10-01 08:30/).first()).toBeVisible();
+  await input.fill("dxcc:ja");
+  await expect(page.getByText(/BA1AAA · 2026-10-01 08:30/)).toHaveCount(0);
 });
