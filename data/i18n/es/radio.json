@@ -288,7 +288,7 @@
   "radio.data-from-psk-reporter": "Datos de PSK Reporter (pskreporter.info); solo se muestran informes recientes de recepción en modos digitales (FT8 / FT4 / WSPR, etc.).",
   "radio.data-from-the-public": "Datos de la API pública de RepeaterBook; los datos de repetidores amateur chinos son escasos: prueba otros países / regiones.",
   "radio.data-from-the-reverse": "Datos de Reverse Beacon Network (telnet.reversebeacon.net:7000), un flujo en vivo: los skimmers solo registran y envían informes mientras transmites (CW / RTTY).",
-  "radio.data-from-sota-pota": "Datos de las API públicas de SOTA (api2.sota.org.uk) y POTA (api.pota.app); puedes introducir referencias SOTA / POTA en Más campos del registro QSO.",
+  "radio.data-from-sota-pota": "Datos de las API públicas de SOTA (api2.sota.org.uk) y POTA (api.pota.app); puedes introducir tu propia cima o parque en Más campos del registro QSO.",
   "radio.file-too-large-about": "Archivo demasiado grande (unos {} MB); el límite es {} MB.",
   "radio.slash-suffix": "Sufijo con barra",
   "radio.slovakia": "Eslovaquia",
@@ -310,7 +310,7 @@
   "radio.time-offset-hours": "Desfase horario (horas)",
   "radio.chile": "Chile",
   "radio.no-iss-data-yet": "Aún no hay datos de la ISS.",
-  "radio.no-sota-pota-activations": "Aún no hay activaciones SOTA / POTA. Añade registros con referencias SOTA / POTA primero.",
+  "radio.no-sota-pota-activations": "Aún no hay activaciones SOTA / POTA. Añade primero registros con tu propia cima SOTA o parque POTA.",
   "radio.no-grid-records-in": "Aún no hay cuadrículas en el registro, así que el mapa solo muestra los marcadores de consulta; añade QSO con cuadrícula en Registro QSO para ver la distribución.",
   "radio.no-qso-log-yet": "Aún no hay registro de QSO.",
   "radio.max-elevation": "Elevación máxima",
@@ -481,5 +481,29 @@
   "radio.high-bands-10-12": "Bandas altas (10/12/15m) activas",
   "radio.the-yellow-band-is": "La banda amarilla es el terminador (frontera amanecer/atardecer) y se mueve con la UTC; el punto relleno es el subsolar y el hueco el antípoda. Los trayectos con ambos extremos en la línea gris suelen ser ventanas de oro para DX en 160 m / 80 m.",
   "radio.data-from-wheretheiss-at": ", datos de wheretheiss.at.",
-  "radio.satellite-frequency-table": "Tabla de frecuencias de satélite"
+  "radio.satellite-frequency-table": "Tabla de frecuencias de satélite",
+  "radio.chirp-export": "Exportar CSV de CHIRP",
+  "radio.chirp-hint": "Exporta los repetidores filtrados como un CSV genérico de CHIRP; impórtalo en CHIRP con Archivo → Importar para programar una radio. Solo se reconocen los tonos CTCSS estándar. El archivo sigue la convención del CSV genérico de CHIRP, así que revisa en CHIRP las frecuencias, desplazamientos y tonos antes de grabarlos, y comprueba que la frecuencia y la potencia estén permitidas para tu clase de licencia antes de transmitir.",
+  "radio.chirp-only-amateur-bands": "Exportar solo frecuencias dentro de las bandas de aficionado (según la asignación de China)",
+  "radio.chirp-skip-off-air": "Omitir repetidores fuera del aire",
+  "radio.chirp-exported": {
+    "one": "Se exportó {} repetidor",
+    "other": "Se exportaron {} repetidores"
+  },
+  "radio.chirp-skipped-bad-frequency": {
+    "one": "{} omitido por frecuencia ausente o no válida",
+    "other": "{} omitidos por frecuencia ausente o no válida"
+  },
+  "radio.chirp-skipped-off-air": {
+    "one": "{} omitido por estar fuera del aire",
+    "other": "{} omitidos por estar fuera del aire"
+  },
+  "radio.chirp-skipped-out-of-band": {
+    "one": "{} omitido porque su frecuencia de recepción o transmisión queda fuera de las bandas de aficionado",
+    "other": "{} omitidos porque su frecuencia de recepción o transmisión queda fuera de las bandas de aficionado"
+  },
+  "radio.chirp-skipped-unsupported-tone": {
+    "one": "{} omitido porque su tono no es un CTCSS estándar",
+    "other": "{} omitidos porque su tono no es un CTCSS estándar"
+  }
 }

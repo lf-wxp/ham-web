@@ -4,8 +4,8 @@
  *
  * 统计口径（三条互不替代，一起看才有意义）：
  *
- *   1. 冒烟覆盖率   —— smoke.spec.ts / i18n_layout.spec.ts 从路由表读取全部路由逐一体检，
- *                      因此恒为 100%（新增页面自动纳入，无需改测试）。
+ *   1. 冒烟覆盖率   —— smoke.spec.ts / i18n_layout.spec.ts / mobile_overflow.spec.ts 从路由表
+ *                      读取全部路由逐一体检，因此恒为 100%（新增页面自动纳入，无需改测试）。
  *   2. 交互覆盖率   —— 至少有一条「功能用例」通过 page.goto 显式访问过的路由数 / 路由总数。
  *                      只统计显式 goto，不含点击链接间接到达的页面（口径保守、可复现）。
  *   3. 关键流程覆盖率 —— e2e/coverage-targets.json 中列出的核心用户旅程里，
@@ -36,7 +36,7 @@ function readRoutes() {
 }
 
 /** 会遍历全部路由的「全量体检」用例，不计入交互覆盖率（否则恒为 100%，失去意义）。 */
-const SWEEP_FILES = new Set(["smoke.spec.ts", "i18n_layout.spec.ts"]);
+const SWEEP_FILES = new Set(["smoke.spec.ts", "i18n_layout.spec.ts", "mobile_overflow.spec.ts"]);
 
 function readSpecs() {
   return readdirSync(testsDir)

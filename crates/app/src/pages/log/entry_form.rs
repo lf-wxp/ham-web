@@ -398,7 +398,9 @@ pub(super) fn EntryForm(
           variant=Variant::Text
           size=Size::Xs
           // Text 变体的悬停换色被 `text-primary` 压住，所以这里用下划线做悬停反馈。
-          class="text-left text-primary underline underline-offset-4 hover:underline sm:col-span-2 lg:col-span-3"
+          // 文案很长（列出了折叠区里的全部字段）：按钮基类是定高 + 不换行，手机宽度下
+          // 它的最小内容宽度会把单列网格撑到 500px 以上，整页出现横向滚动，所以允许换行。
+          class="h-auto min-h-6 whitespace-normal py-1 text-left text-primary underline underline-offset-4 hover:underline sm:col-span-2 lg:col-span-3"
           aria_expanded=Signal::derive(move || form.show_more.get())
           on_click=Callback::new(move |_| form.show_more.update(|v| *v = !*v))
         >
@@ -447,8 +449,10 @@ pub(super) fn EntryForm(
                 }}
               </Field>
               {text_input(Signal::derive(move || t("log.satellite-sat-name")), "SO-50 / RS-44", form.sat_name, "uppercase")}
-              {text_input(Signal::derive(move || t("log.sota-reference")), "BY/BJ-001", form.sota_ref, "uppercase")}
-              {text_input(Signal::derive(move || t("log.pota-reference")), "CN-0001", form.pota_ref, "uppercase")}
+              {text_input(Signal::derive(move || t("log.my-sota-reference")), "BY/BJ-001", form.my_sota_ref, "uppercase")}
+              {text_input(Signal::derive(move || t("log.my-pota-reference")), "CN-0001", form.my_pota_ref, "uppercase")}
+              {text_input(Signal::derive(move || t("log.contact-sota-reference")), "BY/BJ-001", form.contact_sota_ref, "uppercase")}
+              {text_input(Signal::derive(move || t("log.contact-pota-reference")), "CN-0001", form.contact_pota_ref, "uppercase")}
               <Field label=Signal::derive(move || t("log.cq-zone-blank-auto")) r#for=cqz_id.clone()>
                 <NumberField
                   id=cqz_id.clone()

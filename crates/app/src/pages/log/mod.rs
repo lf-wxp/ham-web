@@ -1,6 +1,7 @@
 //! 通联日志：在线记录、本地持久化、ADIF / CSV 导入导出。数据模型与导入导出逻辑见
 //! [`ham_web_core::logbook`]，这里只负责响应式 store 与 `localStorage` 持久化。
 
+mod activation_export_panel;
 mod awards_panel;
 mod bar_list;
 mod card_image_mark;

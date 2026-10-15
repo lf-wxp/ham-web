@@ -288,7 +288,7 @@
   "radio.data-from-psk-reporter": "Data from PSK Reporter (pskreporter.info); only recent digital-mode (FT8 / FT4 / WSPR etc.) reception reports are shown.",
   "radio.data-from-the-public": "Data from the public RepeaterBook API; Chinese amateur repeater data is sparse — try other countries / regions.",
   "radio.data-from-the-reverse": "Data from the Reverse Beacon Network (telnet.reversebeacon.net:7000), a live stream: reports are only recorded and pushed by skimmers while you are transmitting (CW / RTTY).",
-  "radio.data-from-sota-pota": "Data from the public SOTA (api2.sota.org.uk) and POTA (api.pota.app) APIs; you can enter SOTA / POTA references under More fields in the QSO log.",
+  "radio.data-from-sota-pota": "Data from the public SOTA (api2.sota.org.uk) and POTA (api.pota.app) APIs; you can enter your own summit or park under More fields in the QSO log.",
   "radio.file-too-large-about": "File too large (about {} MB); the limit is {} MB.",
   "radio.slash-suffix": "Slash suffix",
   "radio.slovakia": "Slovakia",
@@ -310,7 +310,7 @@
   "radio.time-offset-hours": "Time offset (hours)",
   "radio.chile": "Chile",
   "radio.no-iss-data-yet": "No ISS data yet.",
-  "radio.no-sota-pota-activations": "No SOTA / POTA activations yet. Add log entries with SOTA / POTA references first.",
+  "radio.no-sota-pota-activations": "No SOTA / POTA activations yet. Add log entries with your own SOTA summit or POTA park first.",
   "radio.no-grid-records-in": "No grid records in the log yet, so the map only shows lookup markers; add QSOs with a grid in QSO log to see the worked distribution.",
   "radio.no-qso-log-yet": "No QSO log yet.",
   "radio.max-elevation": "Max elevation",
@@ -481,5 +481,29 @@
   "radio.high-bands-10-12": "High bands (10/12/15m) active",
   "radio.the-yellow-band-is": "The yellow band is the terminator (sunrise/sunset boundary) and moves with UTC; the filled dot is the subsolar point and the hollow one the antipode. Paths with both ends on the grayline are often golden windows for 160 m / 80 m LF DX.",
   "radio.data-from-wheretheiss-at": ", data from wheretheiss.at.",
-  "radio.satellite-frequency-table": "Satellite frequency table"
+  "radio.satellite-frequency-table": "Satellite frequency table",
+  "radio.chirp-export": "Export CHIRP CSV",
+  "radio.chirp-hint": "Exports the currently filtered repeaters as a generic CHIRP CSV; import it in CHIRP with File → Import to program a radio. Only standard CTCSS tones are recognised. The file follows the generic CHIRP CSV convention, so check the frequencies, offsets and tones in CHIRP before writing them, and make sure frequency and power are allowed for your licence class before transmitting.",
+  "radio.chirp-only-amateur-bands": "Only export frequencies inside the amateur bands (China's allocation)",
+  "radio.chirp-skip-off-air": "Skip off-air repeaters",
+  "radio.chirp-exported": {
+    "one": "Exported {} repeater",
+    "other": "Exported {} repeaters"
+  },
+  "radio.chirp-skipped-bad-frequency": {
+    "one": "{} skipped for a missing or invalid frequency",
+    "other": "{} skipped for a missing or invalid frequency"
+  },
+  "radio.chirp-skipped-off-air": {
+    "one": "{} skipped because it is off the air",
+    "other": "{} skipped because they are off the air"
+  },
+  "radio.chirp-skipped-out-of-band": {
+    "one": "{} skipped because its receive or transmit frequency is outside the amateur bands",
+    "other": "{} skipped because their receive or transmit frequency is outside the amateur bands"
+  },
+  "radio.chirp-skipped-unsupported-tone": {
+    "one": "{} skipped because its tone is not a standard CTCSS tone",
+    "other": "{} skipped because their tone is not a standard CTCSS tone"
+  }
 }

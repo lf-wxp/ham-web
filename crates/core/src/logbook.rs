@@ -152,12 +152,25 @@ pub struct LogEntry {
   /// 卫星名 `SAT_NAME`。
   #[serde(default)]
   pub sat_name: String,
-  /// `SOTA_REF`。
+  /// **本台**所在的山峰 `MY_SOTA_REF`（你在这座山上激活）。
+  ///
+  /// 历史上这个字段叫 `sota_ref`，界面、SOTA / POTA 地图与编号查询一直把它当「自己所在的山峰」用，
+  /// 只有 ADIF 读写把它当成了规范里**对方**的 `SOTA_REF`。口径统一后：本字段是自己的，
+  /// 对方的是 [`LogEntry::contact_sota_ref`]。`alias` 让旧存档（含备份文件）里的 `sota_ref` 键
+  /// 继续读成「自己的」—— 与它在旧版里的实际用法一致，不需要数据迁移。
+  ///
+  /// 旧字段名**没有保留**：留着同名字段只是换了含义，按旧理解写的调用点会悄悄编译通过、语义却反了。
+  #[serde(default, alias = "sota_ref")]
+  pub my_sota_ref: String,
+  /// **本台**所在的公园 `MY_POTA_REF`（你在这个公园里激活）。迁移见 [`LogEntry::my_sota_ref`]。
+  #[serde(default, alias = "pota_ref")]
+  pub my_pota_ref: String,
+  /// **对方**所在的山峰 `SOTA_REF`（山峰对山峰 S2S）。
   #[serde(default)]
-  pub sota_ref: String,
-  /// `POTA_REF`。
+  pub contact_sota_ref: String,
+  /// **对方**所在的公园 `POTA_REF`（公园对公园 P2P）。
   #[serde(default)]
-  pub pota_ref: String,
+  pub contact_pota_ref: String,
   /// 竞赛 `CONTEST_ID`（Cabrillo 竞赛名，如 `CQ-WW-CW`）。
   #[serde(default)]
   pub contest_id: String,
@@ -329,8 +342,10 @@ impl LogEntry {
       &self.qth,
       &self.gridsquare,
       &self.remark,
-      &self.sota_ref,
-      &self.pota_ref,
+      &self.my_sota_ref,
+      &self.my_pota_ref,
+      &self.contact_sota_ref,
+      &self.contact_pota_ref,
     ]
     .iter()
     .any(|f| f.to_uppercase().contains(q))
@@ -416,7 +431,7 @@ impl Logbook {
 }
 
 /// 一个 ADIF 字段（空值不输出；长度按 ADIF 规范的字符数）。
-fn adif_field(out: &mut String, name: &str, value: &str) {
+pub(crate) fn adif_field(out: &mut String, name: &str, value: &str) {
   let value = value.trim();
   if !value.is_empty() {
     out.push_str(&format!("<{name}:{}>{value}", value.chars().count()));
@@ -464,8 +479,11 @@ pub fn export_adif(entries: &[LogEntry], stations: &StationBook) -> String {
     adif_field(&mut s, "QTH", &e.qth);
     adif_field(&mut s, "PROP_MODE", &e.prop_mode);
     adif_field(&mut s, "SAT_NAME", &e.sat_name);
-    adif_field(&mut s, "SOTA_REF", &e.sota_ref);
-    adif_field(&mut s, "POTA_REF", &e.pota_ref);
+    // 自己的写 `MY_*`，对方的写 `SOTA_REF` / `POTA_REF`（ADIF 3.1.4 的定义）。
+    adif_field(&mut s, "MY_SOTA_REF", &e.my_sota_ref);
+    adif_field(&mut s, "MY_POTA_REF", &e.my_pota_ref);
+    adif_field(&mut s, "SOTA_REF", &e.contact_sota_ref);
+    adif_field(&mut s, "POTA_REF", &e.contact_pota_ref);
     adif_field(&mut s, "CONTEST_ID", &e.contest_id);
     for (num, string, v) in [("STX", "STX_STRING", &e.stx), ("SRX", "SRX_STRING", &e.srx)] {
       if v.trim().parse::<u32>().is_ok() {
@@ -551,8 +569,9 @@ pub fn export_csv(entries: &[LogEntry], stations: &StationBook) -> String {
       &itu,
       &e.prop_mode,
       &e.sat_name,
-      &e.sota_ref,
-      &e.pota_ref,
+      // 列数不动（改列会让已在用的表格错位）：SOTA / POTA 两列放本台所在的山峰 / 公园。
+      &e.my_sota_ref,
+      &e.my_pota_ref,
       &e.remark,
       if e.qsl_sent { "Y" } else { "" },
       if e.qsl_rcvd { "Y" } else { "" },
@@ -609,8 +628,10 @@ pub fn from_adif(r: AdifRecord) -> LogEntry {
     qth: r.qth,
     prop_mode: r.prop_mode,
     sat_name: r.sat_name,
-    sota_ref: r.sota_ref,
-    pota_ref: r.pota_ref,
+    my_sota_ref: r.my_sota_ref,
+    my_pota_ref: r.my_pota_ref,
+    contact_sota_ref: r.sota_ref,
+    contact_pota_ref: r.pota_ref,
     contest_id: r.contest_id,
     stx: r.stx,
     srx: r.srx,
@@ -845,6 +866,133 @@ mod tests {
     );
     assert!(back.qsl_rcvd && !back.qsl_sent);
     assert_eq!(back.qso_key(), e.qso_key());
+  }
+
+  /// 自己所在的山峰 / 公园写 `MY_*`，对方的才写 `SOTA_REF` / `POTA_REF`（ADIF 3.1.4）；
+  /// 两组互不串位，且往返不丢。
+  #[test]
+  fn adif_keeps_my_and_contact_references_apart() {
+    let mut e = qso(1, "JA1X", "14.074", "CW");
+    e.my_sota_ref = "BY/BJ-001".into();
+    e.my_pota_ref = "CN-0123".into();
+    e.contact_sota_ref = "JA/TK-001".into();
+    e.contact_pota_ref = "JA-0456".into();
+    let text = export_adif(&[e], &StationBook::default());
+    for needle in [
+      "<MY_SOTA_REF:9>BY/BJ-001",
+      "<MY_POTA_REF:7>CN-0123",
+      "<SOTA_REF:9>JA/TK-001",
+      "<POTA_REF:7>JA-0456",
+    ] {
+      assert!(text.contains(needle), "缺 {needle}\n{text}");
+    }
+    let back = from_adif(parse_adif(&text).remove(0));
+    assert_eq!(
+      (
+        back.my_sota_ref.as_str(),
+        back.my_pota_ref.as_str(),
+        back.contact_sota_ref.as_str(),
+        back.contact_pota_ref.as_str()
+      ),
+      ("BY/BJ-001", "CN-0123", "JA/TK-001", "JA-0456")
+    );
+
+    // 只有自己的：不能凭空写出对方的字段（那等于声称与另一座山 / 另一个公园的台站通联）。
+    let mut mine = qso(2, "JA1X", "14.074", "CW");
+    mine.my_pota_ref = "CN-0123".into();
+    let text = export_adif(&[mine], &StationBook::default());
+    assert!(text.contains("<MY_POTA_REF:7>CN-0123"));
+    assert!(!text.contains("<POTA_REF:"), "{text}");
+    assert!(!text.contains("<SOTA_REF:"), "{text}");
+  }
+
+  /// 别的软件导出的文件：`SOTA_REF` 是对方的，不能被读成「我在这座山上激活」。
+  #[test]
+  fn imported_sota_ref_is_the_contacts_not_mine() {
+    let hunter =
+      "<EOH>\n<CALL:4>JA1X<QSO_DATE:8>20260930<TIME_ON:4>1234<MODE:2>CW<SOTA_REF:9>JA/TK-001<EOR>";
+    let e = from_adif(parse_adif(hunter).remove(0));
+    assert_eq!(e.contact_sota_ref, "JA/TK-001");
+    assert!(e.my_sota_ref.is_empty());
+
+    // 小写编号照旧读成对方的，并统一成大写（与 `my_*` 组同口径）。
+    let lower = "<EOH>\n<CALL:4>JA1X<QSO_DATE:8>20260930<TIME_ON:4>1234<MODE:2>CW\
+      <SOTA_REF:9>ja/tk-001<POTA_REF:7>ja-0456<EOR>";
+    let e = from_adif(parse_adif(lower).remove(0));
+    assert_eq!(e.contact_sota_ref, "JA/TK-001");
+    assert_eq!(e.contact_pota_ref, "JA-0456");
+  }
+
+  /// 本站自己的 POTA 提交文件用 `MY_SIG=POTA` + `MY_SIG_INFO`，导回来要认成「我所在的公园」；
+  /// `MY_SIG` 是别的活动时，`MY_SIG_INFO` 不是公园编号，不能当公园读。
+  #[test]
+  fn my_sig_pota_is_read_back_as_my_park() {
+    let pota = "<EOH>\n<CALL:4>JA1X<QSO_DATE:8>20260930<TIME_ON:4>1234<MODE:2>CW<MY_SIG:4>POTA<MY_SIG_INFO:7>cn-0123<EOR>";
+    assert_eq!(from_adif(parse_adif(pota).remove(0)).my_pota_ref, "CN-0123");
+
+    let other = "<EOH>\n<CALL:4>JA1X<QSO_DATE:8>20260930<TIME_ON:4>1234<MODE:2>CW<MY_SIG:4>WWFF<MY_SIG_INFO:8>BYFF-0001<EOR>";
+    assert!(
+      from_adif(parse_adif(other).remove(0))
+        .my_pota_ref
+        .is_empty()
+    );
+
+    // 两种写法同时出现时 `MY_POTA_REF` 优先。
+    let both = "<EOH>\n<CALL:4>JA1X<QSO_DATE:8>20260930<TIME_ON:4>1234<MODE:2>CW<MY_POTA_REF:7>CN-0001<MY_SIG:4>POTA<MY_SIG_INFO:7>CN-0123<EOR>";
+    assert_eq!(from_adif(parse_adif(both).remove(0)).my_pota_ref, "CN-0001");
+  }
+
+  /// 旧存档 / 旧备份里的 `sota_ref` / `pota_ref` 在旧版里就是「自己所在的山峰 / 公园」，
+  /// 读进来必须落在 `my_*` 上；新存档用 `my_*` 与 `contact_*` 两组键，不再有歧义。
+  #[test]
+  fn legacy_json_keys_load_as_my_references() {
+    let old = r#"{"entries":[{"id":1,"date":"2026-10-13","time":"09:00","freq":"14.062","mode":"CW","callsign":"BD7AAA","remark":"","sota_ref":"BY/BJ-001","pota_ref":"CN-0123"}]}"#;
+    let lb: Logbook = serde_json::from_str(old).unwrap();
+    let e = &lb.entries[0];
+    assert_eq!(
+      (e.my_sota_ref.as_str(), e.my_pota_ref.as_str()),
+      ("BY/BJ-001", "CN-0123")
+    );
+    assert!(e.contact_sota_ref.is_empty() && e.contact_pota_ref.is_empty());
+
+    // 存回去再读：四个字段原样保留，且写出的是新键。
+    let mut e2 = e.clone();
+    e2.contact_pota_ref = "JA-0456".into();
+    let json = serde_json::to_string(&Logbook { entries: vec![e2] }).unwrap();
+    assert!(json.contains("\"my_sota_ref\":\"BY/BJ-001\""), "{json}");
+    assert!(json.contains("\"contact_pota_ref\":\"JA-0456\""), "{json}");
+    assert!(!json.contains("\"sota_ref\""), "{json}");
+    let back: Logbook = serde_json::from_str(&json).unwrap();
+    assert_eq!(back.entries[0].my_pota_ref, "CN-0123");
+    assert_eq!(back.entries[0].contact_pota_ref, "JA-0456");
+  }
+
+  #[test]
+  fn both_kinds_of_reference_are_searchable() {
+    let mut e = qso(1, "JA1X", "14.074", "CW");
+    e.my_pota_ref = "CN-0123".into();
+    e.contact_sota_ref = "JA/TK-001".into();
+    assert!(e.matches_query("CN-0123"));
+    assert!(e.matches_query("JA/TK"));
+    assert!(!e.matches_query("CN-9999"));
+  }
+
+  /// CSV 的列数不变（已在用的表格不能错位），SOTA / POTA 两列放本台的山峰 / 公园。
+  #[test]
+  fn csv_keeps_its_columns_and_shows_my_references() {
+    let mut e = qso(1, "JA1X", "14.074", "CW");
+    e.my_sota_ref = "BY/BJ-001".into();
+    e.my_pota_ref = "CN-0123".into();
+    e.contact_sota_ref = "JA/TK-001".into();
+    let csv = export_csv(&[e], &StationBook::default());
+    let mut lines = csv.lines();
+    let header: Vec<&str> = lines.next().unwrap().split(',').collect();
+    let row: Vec<&str> = lines.next().unwrap().split(',').collect();
+    assert_eq!(header.len(), row.len());
+    let at = |name: &str| header.iter().position(|h| *h == name).unwrap();
+    assert_eq!(row[at("SOTA")], "BY/BJ-001");
+    assert_eq!(row[at("POTA")], "CN-0123");
+    assert!(!csv.contains("JA/TK-001"));
   }
 
   #[test]

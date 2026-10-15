@@ -23,8 +23,12 @@ pub(super) struct LogFormState {
   pub(super) qth: RwSignal<String>,
   pub(super) prop_mode: RwSignal<String>,
   pub(super) sat_name: RwSignal<String>,
-  pub(super) sota_ref: RwSignal<String>,
-  pub(super) pota_ref: RwSignal<String>,
+  /// 本台所在的山峰 / 公园（`MY_SOTA_REF` / `MY_POTA_REF`）。
+  pub(super) my_sota_ref: RwSignal<String>,
+  pub(super) my_pota_ref: RwSignal<String>,
+  /// 对方所在的山峰 / 公园（`SOTA_REF` / `POTA_REF`，S2S / P2P）。
+  pub(super) contact_sota_ref: RwSignal<String>,
+  pub(super) contact_pota_ref: RwSignal<String>,
   pub(super) cqz: RwSignal<String>,
   pub(super) ituz: RwSignal<String>,
   pub(super) remark: RwSignal<String>,
@@ -62,8 +66,10 @@ impl LogFormState {
       qth: RwSignal::new(String::new()),
       prop_mode: RwSignal::new(String::new()),
       sat_name: RwSignal::new(String::new()),
-      sota_ref: RwSignal::new(String::new()),
-      pota_ref: RwSignal::new(String::new()),
+      my_sota_ref: RwSignal::new(String::new()),
+      my_pota_ref: RwSignal::new(String::new()),
+      contact_sota_ref: RwSignal::new(String::new()),
+      contact_pota_ref: RwSignal::new(String::new()),
       cqz: RwSignal::new(String::new()),
       ituz: RwSignal::new(String::new()),
       remark: RwSignal::new(String::new()),
@@ -97,8 +103,10 @@ impl LogFormState {
     self.qth.set(String::new());
     self.prop_mode.set(String::new());
     self.sat_name.set(String::new());
-    self.sota_ref.set(String::new());
-    self.pota_ref.set(String::new());
+    self.my_sota_ref.set(String::new());
+    self.my_pota_ref.set(String::new());
+    self.contact_sota_ref.set(String::new());
+    self.contact_pota_ref.set(String::new());
     self.cqz.set(String::new());
     self.ituz.set(String::new());
     self.remark.set(String::new());
@@ -119,8 +127,10 @@ impl LogFormState {
       && e.tx_pwr.is_empty()
       && e.prop_mode.is_empty()
       && e.sat_name.is_empty()
-      && e.sota_ref.is_empty()
-      && e.pota_ref.is_empty());
+      && e.my_sota_ref.is_empty()
+      && e.my_pota_ref.is_empty()
+      && e.contact_sota_ref.is_empty()
+      && e.contact_pota_ref.is_empty());
     self.date.set(e.date.clone());
     self.time.set(e.time.clone());
     self.time_off.set(e.time_off.clone());
@@ -136,8 +146,10 @@ impl LogFormState {
     self.qth.set(e.qth.clone());
     self.prop_mode.set(e.prop_mode.clone());
     self.sat_name.set(e.sat_name.clone());
-    self.sota_ref.set(e.sota_ref.clone());
-    self.pota_ref.set(e.pota_ref.clone());
+    self.my_sota_ref.set(e.my_sota_ref.clone());
+    self.my_pota_ref.set(e.my_pota_ref.clone());
+    self.contact_sota_ref.set(e.contact_sota_ref.clone());
+    self.contact_pota_ref.set(e.contact_pota_ref.clone());
     self.cqz.set(e.cqz.clone());
     self.ituz.set(e.ituz.clone());
     self.remark.set(e.remark.clone());
@@ -197,8 +209,10 @@ impl LogFormState {
       qth: self.qth.get().trim().to_owned(),
       prop_mode: self.prop_mode.get(),
       sat_name: self.sat_name.get().trim().to_uppercase(),
-      sota_ref: self.sota_ref.get().trim().to_uppercase(),
-      pota_ref: self.pota_ref.get().trim().to_uppercase(),
+      my_sota_ref: self.my_sota_ref.get().trim().to_uppercase(),
+      my_pota_ref: self.my_pota_ref.get().trim().to_uppercase(),
+      contact_sota_ref: self.contact_sota_ref.get().trim().to_uppercase(),
+      contact_pota_ref: self.contact_pota_ref.get().trim().to_uppercase(),
       remark: self.remark.get().trim().to_owned(),
       station_id: self.station_id.get(),
       operator: self.operator.get().trim().to_ascii_uppercase(),

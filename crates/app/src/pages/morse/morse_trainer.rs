@@ -277,9 +277,11 @@ pub(super) fn MorseTrainer() -> impl IntoView {
       </h2>
 
       <div class="space-y-4 p-4">
-        // 控制区
+        // 控制区。组内都是「标签 + 不换行的控件」，因此每组都要能收缩（`min-w-0` 而不是
+        // `shrink-0`）：否则手机宽度下组自己撑出容器，整页横向滚动（西语的「范围 / 有效速度」
+        // 最长）。能收缩之后，组里的 `ChipGroup` 会折行、滑块会变短。
         <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div class="flex shrink-0 items-center gap-1.5">
+          <div class="flex min-w-0 items-center gap-1.5">
             <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("log.mode")}</span>
             <ChipGroup
               value=Signal::derive(move || mode.get().label().to_owned())
@@ -302,7 +304,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
             </ChipGroup>
           </div>
 
-          <div class="flex shrink-0 items-center gap-1.5">
+          <div class="flex min-w-0 items-center gap-1.5">
             <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("radio.type")}</span>
             <ChipGroup
               value=Signal::derive(move || target.get().label().to_owned())
@@ -326,7 +328,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
             </ChipGroup>
           </div>
 
-          <div class="flex shrink-0 items-center gap-1.5">
+          <div class="flex min-w-0 items-center gap-1.5">
             <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("morse.scope")}</span>
             <ChipGroup
               value=Signal::derive(move || scope.get().label().to_owned())
@@ -352,7 +354,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
             </ChipGroup>
           </div>
 
-          <div class="flex shrink-0 items-center gap-2">
+          <div class="flex min-w-0 items-center gap-2">
             <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("radio.speed")}</span>
             <Slider
               value=wpm
@@ -370,7 +372,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
             <span class="text-xs tabular-nums text-muted-foreground">{move || wpm.get().round()} " WPM"</span>
           </div>
 
-          <div class="flex shrink-0 items-center gap-2">
+          <div class="flex min-w-0 items-center gap-2">
             <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("morse.effective-speed")}</span>
             <Slider
               value=eff_wpm

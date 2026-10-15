@@ -1,11 +1,14 @@
-//! 中继台数据库查询：按国家拉取 RepeaterBook 中继台，支持本地按呼号 / 城市筛选。
+//! 中继台数据库查询：按国家拉取 RepeaterBook 中继台，支持本地按呼号 / 城市筛选，
+//! 并把当前筛选结果导出成 CHIRP 通用 CSV 用来给手台写频。
 
+use ham_web_core::chirp_csv::{self, ExportOptions, RepeaterRow, SkipCounts};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 use crate::data;
 use crate::i18n::{t, tp};
-use crate::ui::{Button, Input, Size, Variant};
+use crate::ui::{Button, Checkbox, Input, Label, Size, Variant};
+use crate::util::unique_id;
 
 /// 一条中继台。
 #[derive(serde::Deserialize, Clone)]
@@ -26,6 +29,34 @@ struct RepeaterPayload {
   results: Vec<Repeater>,
 }
 
+/// 一次导出的结果摘要：导出几条、各原因跳过几条。
+#[derive(Clone, Copy)]
+struct ExportSummary {
+  exported: usize,
+  skipped: SkipCounts,
+}
+
+/// 文件名里只留 ASCII 字母数字，其余折成 `-`。
+fn file_slug(country: &str) -> String {
+  let slug: String = country
+    .trim()
+    .chars()
+    .map(|c| {
+      if c.is_ascii_alphanumeric() {
+        c.to_ascii_lowercase()
+      } else {
+        '-'
+      }
+    })
+    .collect();
+  let slug = slug.trim_matches('-');
+  if slug.is_empty() {
+    "repeaters".to_owned()
+  } else {
+    slug.to_owned()
+  }
+}
+
 #[component]
 pub fn RepeaterLookup() -> impl IntoView {
   let country = RwSignal::new("China".to_owned());
@@ -33,6 +64,12 @@ pub fn RepeaterLookup() -> impl IntoView {
   let payload = RwSignal::new(None::<RepeaterPayload>);
   let loading = RwSignal::new(false);
   let failed = RwSignal::new(false);
+  let only_bands = RwSignal::new(true);
+  let skip_off_air = RwSignal::new(true);
+  let summary = RwSignal::new(None::<ExportSummary>);
+
+  let bands_id = unique_id("chirp-only-bands");
+  let off_air_id = unique_id("chirp-skip-off-air");
 
   let run = move || {
     let c = country.get().trim().to_owned();
@@ -42,6 +79,7 @@ pub fn RepeaterLookup() -> impl IntoView {
     }
     loading.set(true);
     failed.set(false);
+    summary.set(None);
     let url = format!(
       "/api/repeaters?country={}",
       js_sys::encode_uri_component(&c)
@@ -70,6 +108,40 @@ pub fn RepeaterLookup() -> impl IntoView {
         .collect();
       (p.country, list)
     })
+  };
+
+  // 导出当前筛选出的中继台；一条都导不出来时不下载空文件，只给出原因。
+  let export = move || {
+    let Some((c, list)) = filtered() else { return };
+    let rows: Vec<RepeaterRow<'_>> = list
+      .iter()
+      .map(|r| RepeaterRow {
+        callsign: &r.callsign,
+        frequency_mhz: &r.frequency_mhz,
+        offset_mhz: &r.offset_mhz,
+        pl: &r.pl,
+        city: &r.city,
+        status: &r.status,
+      })
+      .collect();
+    let result = chirp_csv::export(
+      &rows,
+      ExportOptions {
+        only_amateur_bands: only_bands.get(),
+        skip_off_air: skip_off_air.get(),
+      },
+    );
+    if result.exported > 0 {
+      crate::util::download_text(
+        &format!("chirp-{}.csv", file_slug(&c)),
+        &result.csv,
+        "text/csv;charset=utf-8",
+      );
+    }
+    summary.set(Some(ExportSummary {
+      exported: result.exported,
+      skipped: result.skipped,
+    }));
   };
 
   view! {
@@ -103,6 +175,70 @@ pub fn RepeaterLookup() -> impl IntoView {
           />
         })}
       </div>
+
+      {move || payload.get().is_some().then(|| view! {
+        <div class="space-y-2 border-t px-4 py-3">
+          <p class="text-xs text-muted-foreground">{move || t("radio.chirp-hint")}</p>
+          <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <div class="flex items-center gap-2">
+              <Checkbox
+                id=bands_id.clone()
+                checked=only_bands
+                on_change=Callback::new(move |v: bool| only_bands.set(v))
+              />
+              <Label r#for=bands_id.clone()>{move || t("radio.chirp-only-amateur-bands")}</Label>
+            </div>
+            <div class="flex items-center gap-2">
+              <Checkbox
+                id=off_air_id.clone()
+                checked=skip_off_air
+                on_change=Callback::new(move |v: bool| skip_off_air.set(v))
+              />
+              <Label r#for=off_air_id.clone()>{move || t("radio.chirp-skip-off-air")}</Label>
+            </div>
+            <Button
+              variant=Variant::Outline
+              size=Size::Sm
+              on_click=Callback::new(move |_| export())
+            >
+              {move || t("radio.chirp-export")}
+            </Button>
+          </div>
+          {move || summary.get().map(|s| view! {
+            <ul class="space-y-0.5 text-xs text-muted-foreground" role="status">
+              <li>{tp("radio.chirp-exported", s.exported as u32, &[&s.exported.to_string()])}</li>
+              {(s.skipped.bad_frequency > 0).then(|| view! {
+                <li>{tp(
+                  "radio.chirp-skipped-bad-frequency",
+                  s.skipped.bad_frequency as u32,
+                  &[&s.skipped.bad_frequency.to_string()],
+                )}</li>
+              })}
+              {(s.skipped.off_air > 0).then(|| view! {
+                <li>{tp(
+                  "radio.chirp-skipped-off-air",
+                  s.skipped.off_air as u32,
+                  &[&s.skipped.off_air.to_string()],
+                )}</li>
+              })}
+              {(s.skipped.out_of_band > 0).then(|| view! {
+                <li>{tp(
+                  "radio.chirp-skipped-out-of-band",
+                  s.skipped.out_of_band as u32,
+                  &[&s.skipped.out_of_band.to_string()],
+                )}</li>
+              })}
+              {(s.skipped.unsupported_tone > 0).then(|| view! {
+                <li>{tp(
+                  "radio.chirp-skipped-unsupported-tone",
+                  s.skipped.unsupported_tone as u32,
+                  &[&s.skipped.unsupported_tone.to_string()],
+                )}</li>
+              })}
+            </ul>
+          })}
+        </div>
+      })}
 
       {move || {
         if failed.get() {

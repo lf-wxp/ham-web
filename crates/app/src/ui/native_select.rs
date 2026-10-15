@@ -191,7 +191,9 @@ pub fn NativeSelect(
   });
 
   view! {
-    <div class="relative">
+    // `min-w-0`：包一层 `relative` 是为了给弹层定位，但它同时也是父级 flex 行里的一个子项 ——
+    // 不收缩的话，触发器里的长选项文案（见 `popover::trigger_class`）会连同这层一起把整行撑宽。
+    <div class="relative min-w-0">
       <button
         type="button"
         role="combobox"

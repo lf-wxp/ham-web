@@ -21,14 +21,19 @@ mod feedline_loss;
 mod filter_design;
 mod freq_wavelength;
 mod frequency_units;
+mod fresnel_zone;
 mod fspl_calculator;
 mod gain_conversion;
+mod intermod_calculator;
 mod lc_resonance;
 mod link_budget_calculator;
 mod mode_encoder;
 mod noise_cascade;
 mod ohms_law;
 mod oscillator;
+mod parabolic_dish;
+mod path_profile;
+mod path_profile_chart;
 mod propagation_estimator;
 mod reactance;
 mod receiver_sensitivity;
@@ -39,6 +44,7 @@ mod smith_chart;
 mod swr_converter;
 mod tone_squelch;
 mod tools_page;
+mod toroid_winding;
 mod transformer_calculator;
 mod tx_line;
 mod utc_clock;
@@ -47,7 +53,10 @@ mod wire_gauge;
 pub use tools_page::ToolsPage;
 
 fn fmt_num(v: f64) -> String {
-  if v.abs() >= 1000.0 {
+  // 0 不能落进最后的科学计数分支（会显示成 `0.000e0`）。
+  if v == 0.0 {
+    "0".to_string()
+  } else if v.abs() >= 1000.0 {
     format!("{v:.1}")
   } else if v.abs() >= 1.0 {
     format!("{v:.2}")

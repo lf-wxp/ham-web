@@ -2,8 +2,9 @@
 //!
 //! 同一份 SVG 产出两类图标：
 //!
-//! - **圆角版**（`pwa-icon-*`、`favicon.ico`）：保留设计好的品牌圆角，供 manifest 的
-//!   `any`、`favicon` 与社交分享图（`og:image`）使用 —— 这些场景不会替我们裁切；
+//! - **圆角版**（`pwa-icon-*`、`favicon.ico`）：保留设计好的品牌圆角（iOS 图标口径，
+//!   22.37% 边长），供 manifest 的 `any`、`favicon` 与社交分享图（`og:image`）使用 ——
+//!   这些场景不会替我们裁切；
 //!   `favicon.ico` 是个容器，把 [`FAVICON`] 里的几档尺寸打包成单个文件，其中 16px
 //!   一档用的是对齐到像素格的简化图形（母版缩到 16px 会糊，见该文件里的注释）；
 //! - **满幅版**（`apple-touch-icon-*`、`pwa-maskable-*`）：不带圆角的不透明方形，
@@ -210,17 +211,31 @@ mod tests {
     }
   }
 
-  /// 背景是纯色品牌底：贴边采样与品牌蓝一致 —— 防止有人再往图里加暗色外框或高光渐层。
+  /// 背景整体仍是品牌蓝：贴边采样不透明、蓝通道明显压过红绿。
+  ///
+  /// 不再断言纯色 —— 图标按 iOS 口径叠了玻璃渐变（顶部反光、斜向光带），
+  /// 但底色不许被换成白底 / 黑框这类别的颜色：采样点与 `bleed` 一样贴边取，
+  /// 高光最亮的顶部（256,4）也在其中。
   #[test]
-  fn background_is_flat_brand_color() {
-    for (x, y) in [(256, 4), (4, 256), (508, 256), (256, 508), (256, 430)] {
+  fn background_stays_brand_blue() {
+    for (x, y) in [(256, 4), (4, 256), (508, 256), (256, 508), (256, 484)] {
       let p = pixel_at(SRC, 512, x, y);
-      assert_eq!(
-        (p.red(), p.green(), p.blue(), p.alpha()),
-        (0x3b, 0x5d, 0xc9, 255),
-        "({x},{y}) 应为 #3b5dc9 纯色背景"
+      let (r, g, b) = (p.red() as i32, p.green() as i32, p.blue() as i32);
+      assert_eq!(p.alpha(), 255, "({x},{y}) 背景应当不透明");
+      assert!(
+        b > r + 0x30 && b > g + 0x30,
+        "({x},{y}) 是 #{r:02x}{g:02x}{b:02x}：不再是品牌蓝底"
       );
     }
+  }
+
+  /// 圆角按 iOS 图标口径（≈22.4% 边长，rx=115）：它是这套图标的品牌外轮廓，
+  /// 防止被改回早期的小圆角。
+  #[test]
+  fn corner_radius_matches_ios_ratio() {
+    // 64px 渲染下圆角圆心在 (14.375, 14.375)：(3,3) 落在圆角之外、(8,8) 在图标之内。
+    assert_eq!(pixel_at(SRC, 64, 3, 3).alpha(), 0, "(3,3) 应在圆角之外");
+    assert_eq!(pixel_at(SRC, 64, 8, 8).alpha(), 255, "(8,8) 应在图标之内");
   }
 
   /// ICO 容器：条目表必须自洽（宽高、负载长度、偏移），否则浏览器会当坏文件整个忽略掉。
@@ -265,13 +280,13 @@ mod tests {
   #[test]
   fn favicon_16_stays_crisp() {
     const BG: (u8, u8, u8, u8) = (0x3b, 0x5d, 0xc9, 255);
-    const FG: (u8, u8, u8, u8) = (0xf4, 0xf4, 0xf4, 255);
+    const FG: (u8, u8, u8, u8) = (0xff, 0xff, 0xff, 255);
     let at = |x: u32, y: u32| {
       let p = pixel_at(SMALL, 16, x, y);
       (p.red(), p.green(), p.blue(), p.alpha())
     };
 
-    // 圆角裁切（rx=2）的四个角本来就有抗锯齿，取样避开它们。
+    // 圆角裁切（rx=3）只在最外两圈像素上抗锯齿，取样避开它们。
     for y in 2..14 {
       for x in 2..14 {
         let rgba = at(x, y);
@@ -281,9 +296,11 @@ mod tests {
         );
       }
     }
-    // 顺带确认图形没被删空：横梁左端是前景、肩部那条 1px 的缝是底色。
-    assert_eq!(at(2, 8), FG, "横梁左端");
-    assert_eq!(at(5, 6), BG, "肩部缝");
+    // 顺带确认图形没被删空：横梁左端是前景、肩部那条 1px 的缝是底色、
+    // 塔顶上方的电波也在。
+    assert_eq!(at(2, 9), FG, "横梁左端");
+    assert_eq!(at(5, 7), BG, "肩部缝");
+    assert_eq!(at(7, 1), FG, "塔顶上方的波");
   }
 
   /// SVG 改坏时宁可报错，也不要静默产出一张四角透明的「满幅」图标。

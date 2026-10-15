@@ -267,7 +267,7 @@
   "radio.data-from-psk-reporter": "数据来自 PSK Reporter（pskreporter.info），仅展示近期数字模式（FT8 / FT4 / WSPR 等）接收报告。",
   "radio.data-from-the-public": "数据来自 RepeaterBook 公开接口；中国的业余中继数据较少，可切换到其他国家 / 地区查看。",
   "radio.data-from-the-reverse": "数据来自 Reverse Beacon Network（telnet.reversebeacon.net:7000），为实时流：仅在发报（CW / RTTY）时才会被各地信标台记录并推送。",
-  "radio.data-from-sota-pota": "数据来自 SOTA（api2.sota.org.uk）与 POTA（api.pota.app）公开接口；在通联日志「更多字段」里可填写 SOTA / POTA 编号。",
+  "radio.data-from-sota-pota": "数据来自 SOTA（api2.sota.org.uk）与 POTA（api.pota.app）公开接口；在通联日志「更多字段」里可填写「我的 SOTA 山峰 / 我的 POTA 公园」。",
   "radio.file-too-large-about": "文件过大（约 {} MB），上限 {} MB。",
   "radio.slash-suffix": "斜杠后缀",
   "radio.slovakia": "斯洛伐克",
@@ -289,7 +289,7 @@
   "radio.time-offset-hours": "时间偏移（小时）",
   "radio.chile": "智利",
   "radio.no-iss-data-yet": "暂无 ISS 数据。",
-  "radio.no-sota-pota-activations": "暂无 SOTA / POTA 激活记录，请在通联日志中添加带 SOTA / POTA 编号的记录。",
+  "radio.no-sota-pota-activations": "暂无 SOTA / POTA 激活记录，请在通联日志中添加带「我的 SOTA 山峰 / 我的 POTA 公园」的记录。",
   "radio.no-grid-records-in": "暂无日志网格记录，地图仅展示查询标记；在「通联日志」添加带网格的记录后展示通联分布。",
   "radio.no-qso-log-yet": "暂无通联日志。",
   "radio.max-elevation": "最大仰角",
@@ -457,5 +457,14 @@
   "radio.high-bands-10-12": "高波段（10/12/15m）活跃",
   "radio.the-yellow-band-is": "黄色带为晨昏圈（日出/日落分界），随 UTC 时间实时移动；实心点为太阳直射点、空心为反日点。两端处于灰线的路径，常是 160m / 80m 低频 DX 的黄金窗口。",
   "radio.data-from-wheretheiss-at": "，数据来自 wheretheiss.at。",
-  "radio.satellite-frequency-table": "卫星频率表"
+  "radio.satellite-frequency-table": "卫星频率表",
+  "radio.chirp-export": "导出 CHIRP CSV",
+  "radio.chirp-hint": "把当前筛选出的中继台导出成 CHIRP 通用 CSV，在 CHIRP 里用「文件 → 导入」写进手台。亚音只认标准 CTCSS。格式按 CHIRP 通用 CSV 的约定生成，导入前请先在 CHIRP 里核对频率、频差与亚音；发射前请确认频率与功率符合你持有的操作证类别。",
+  "radio.chirp-only-amateur-bands": "只导出落在业余波段内的频点（按我国口径）",
+  "radio.chirp-skip-off-air": "跳过已停用（Off-air）的中继",
+  "radio.chirp-exported": "已导出 {} 条",
+  "radio.chirp-skipped-bad-frequency": "{} 条因频率缺失或无效被跳过",
+  "radio.chirp-skipped-off-air": "{} 条因已停用被跳过",
+  "radio.chirp-skipped-out-of-band": "{} 条因接收或发射频率在业余波段之外被跳过",
+  "radio.chirp-skipped-unsupported-tone": "{} 条因亚音不是标准 CTCSS 被跳过"
 }

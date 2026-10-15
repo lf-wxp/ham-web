@@ -128,3 +128,26 @@ test("通联日志：本台信息可保存", async ({ page }) => {
     .poll(() => page.evaluate(() => localStorage.getItem("station-info")))
     .toContain("BG4XXX");
 });
+
+// 布局回归（i18n_layout.spec.ts）只在桌面宽度量；录入表单里那个列出了全部折叠字段的长按钮，
+// 在手机宽度下不换行会把单列网格撑到 500px 以上，整页出现横向滚动。
+for (const [code, more] of [
+  ["zh", "更多字段"],
+  ["en", "More fields"],
+  ["es", "Más campos"],
+] as const) {
+  test(`通联日志：手机宽度下录入表单不产生横向滚动（${code}）`, async ({ page }) => {
+    await page.addInitScript((c) => localStorage.setItem("locale", c), code);
+    for (const width of [320, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/log");
+      await expect(page.getByRole("button", { name: new RegExp(`^${more}`) })).toBeVisible();
+      const overflow = () =>
+        page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(await overflow(), `${width}px 折叠时`).toBeLessThanOrEqual(1);
+
+      await page.getByRole("button", { name: new RegExp(`^${more}`) }).click();
+      expect(await overflow(), `${width}px 展开后`).toBeLessThanOrEqual(1);
+    }
+  });
+}

@@ -149,7 +149,11 @@ fn interactive_routes_have_functional_e2e() {
   use ham_web_core::registry::ModuleKind;
   let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../e2e/tests");
   // 全量体检用例遍历路由表，不算「功能用例」（否则恒为全覆盖）。与 coverage.mjs 同口径。
-  const SWEEP_FILES: &[&str] = &["smoke.spec.ts", "i18n_layout.spec.ts"];
+  const SWEEP_FILES: &[&str] = &[
+    "smoke.spec.ts",
+    "i18n_layout.spec.ts",
+    "mobile_overflow.spec.ts",
+  ];
   let mut visited: Vec<String> = Vec::new();
   for entry in std::fs::read_dir(&dir).expect("读取 e2e/tests") {
     let path = entry.expect("目录项").path();

@@ -411,7 +411,8 @@ pub fn ListenPage() -> impl IntoView {
 
       <section class="pxl-card border bg-card" aria-label=move || t("exam.current-question")>{card}</section>
 
-      <div class="flex items-center justify-center gap-3">
+      // `flex-wrap`：三个按钮的文案在英文 / 西语下加起来宽于 320px，不换行会顶出视口。
+      <div class="flex flex-wrap items-center justify-center gap-3">
         <Button
           variant=Variant::Outline
           size=Size::Default

@@ -481,7 +481,10 @@ pub fn ContestLogPage() -> impl IntoView {
               <span class="border px-2 py-0.5 text-xs text-muted-foreground">{format!("{b} {n}")}</span>
             }).collect_view()}
           </div>
-          <div class="overflow-x-auto">
+          // `relative`：表头里的 `sr-only`（`position: absolute` 的 1px 盒子）需要一个在
+          // 滚动容器内部的包含块。否则它以卡片为包含块，那 1px 会被算进**文档**的可滚动
+          // 溢出区 —— 手机宽度下整页多出二十来像素的横向滚动（表格本身横向滚是正常的）。
+          <div class="relative overflow-x-auto">
             <table class="w-full text-left text-sm">
               <thead class="text-xs text-muted-foreground">
                 <tr class="border-b">

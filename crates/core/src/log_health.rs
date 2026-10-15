@@ -572,8 +572,10 @@ fn merge_into(to: &mut LogEntry, from: &LogEntry) {
   fill(&mut to.time_off, &from.time_off);
   fill(&mut to.prop_mode, &from.prop_mode);
   fill(&mut to.sat_name, &from.sat_name);
-  fill(&mut to.sota_ref, &from.sota_ref);
-  fill(&mut to.pota_ref, &from.pota_ref);
+  fill(&mut to.my_sota_ref, &from.my_sota_ref);
+  fill(&mut to.my_pota_ref, &from.my_pota_ref);
+  fill(&mut to.contact_sota_ref, &from.contact_sota_ref);
+  fill(&mut to.contact_pota_ref, &from.contact_pota_ref);
   fill(&mut to.contest_id, &from.contest_id);
   fill(&mut to.stx, &from.stx);
   fill(&mut to.srx, &from.srx);
@@ -929,8 +931,10 @@ mod tests {
     a.band = "20m".into(); // 只剩波段字段，靠它保持与重复项同一个 key
     let mut b = entry(3, "JA1AAA");
     b.operator = "WXP".into();
-    b.sota_ref = "JA/TK-001".into();
-    b.pota_ref = "JA-0123".into();
+    b.my_sota_ref = "JA/TK-001".into();
+    b.my_pota_ref = "JA-0123".into();
+    b.contact_sota_ref = "JA/NN-002".into();
+    b.contact_pota_ref = "JA-0456".into();
     b.contest_id = "CQ-WW-CW".into();
     b.stx = "001".into();
     b.srx = "599".into();
@@ -951,8 +955,10 @@ mod tests {
     // 频率丢了就再也反推不出波段与模式子段；操作员丢了会把这条算到别人头上。
     assert_eq!(keep.freq, "14.074");
     assert_eq!(keep.operator, "WXP");
-    assert_eq!(keep.sota_ref, "JA/TK-001");
-    assert_eq!(keep.pota_ref, "JA-0123");
+    assert_eq!(keep.my_sota_ref, "JA/TK-001");
+    assert_eq!(keep.my_pota_ref, "JA-0123");
+    assert_eq!(keep.contact_sota_ref, "JA/NN-002");
+    assert_eq!(keep.contact_pota_ref, "JA-0456");
     assert_eq!(keep.contest_id, "CQ-WW-CW");
     assert_eq!(keep.stx, "001");
     assert_eq!(keep.srx, "599");

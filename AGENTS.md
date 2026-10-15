@@ -63,13 +63,17 @@ cd e2e && E2E_BASE_URL=http://127.0.0.1:3030 npx playwright test tests/<相关 s
 
 - 改了 `role` / `aria-*`：按「断言里出现过这些属性」全仓搜 spec，**不要按页面名找**
   （smith 的用例住在 `waveform_lab.spec.ts` 里）。
+- 手机宽度（320 / 390px）的整页横向滚动由 `mobile_overflow.spec.ts` 守（全部路由 × 三语）。
+  改「标签 + 控件」这类横向排版（尤其带 `shrink-0` / 网格子项 / 长文案下拉）时跑它 ——
+  桌面宽度下看不出来。
 - 看到「页面空白 / 整页挂载失败 / 英文界面回退中文」这类红，**先怀疑 dev 产物缺资产**：
   最常见的是漏跑 `cargo make i18n-pack`（`public/data/i18n/` 已不入库）；
   `curl -s http://127.0.0.1:3030/data/i18n/en.json | head -c 1` 返回 `<` 则说明 `public/`
   没被拷进产物（`trunk serve` 的拷贝没发生 / 产物被覆盖），重来一次即可。
   `dist/data/knowledge-i18n/{lang}.json` 同理：它由 postbuild 把
   `data/knowledge-i18n/{lang}/*.json` 合并而成，而 `trunk serve` 不跑 postbuild ——
-  缺失时 `knowledge_i18n.spec.ts` 与 `i18n_layout.spec.ts` 会红，别急着怀疑代码。
+  缺失时 `knowledge_i18n.spec.ts`、`i18n_layout.spec.ts` 与 `mobile_overflow.spec.ts` 会红，
+  别急着怀疑代码。
 - dev 构建没有 `wasm-opt`，CPU 密集用例（如 `nec.spec.ts:305` 的 Yagi 优化）并行时容易
   超时 —— `--workers=1` 复跑通过就不是回归。整批回归用 `cargo make e2e`（release 口径）。
 

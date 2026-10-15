@@ -93,7 +93,9 @@ pub(super) fn KochTrainer() -> impl IntoView {
                     get: fn(&KochProgress) -> u32,
                     set: fn(&mut KochProgress, u32)| {
     view! {
-      <div class="flex shrink-0 items-center gap-2">
+      // `min-w-0`（而不是 `shrink-0`）：这一行要能被收缩，否则窄屏下「标签 + 滑块 + 读数」
+      // 会顶出卡片，整页横向滚动。
+      <div class="flex min-w-0 items-center gap-2">
         <span class="whitespace-nowrap text-xs text-muted-foreground">{label.clone()}</span>
         <Slider
           value=Signal::derive(move || f64::from(progress.with(get)))

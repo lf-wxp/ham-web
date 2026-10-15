@@ -56,11 +56,11 @@ test("灰线地图：时间偏移联动时钟、滑块与晨昏圈", async ({ pa
 
 test("SOTA / POTA 地图：按日志里的编号逐个定位，查不到的跳过", async ({ page }) => {
   await seedLog(page, [
-    { callsign: "W6AA", sota_ref: "w6/ct-001" },
-    { callsign: "K1AA", pota_ref: "K-0001" },
+    { callsign: "W6AA", my_sota_ref: "w6/ct-001" },
+    { callsign: "K1AA", my_pota_ref: "K-0001" },
     // 重复编号只查一次；查不到的编号不计入。
-    { callsign: "W6BB", sota_ref: "W6/CT-001" },
-    { callsign: "K2AA", pota_ref: "K-9999" },
+    { callsign: "W6BB", my_sota_ref: "W6/CT-001" },
+    { callsign: "K2AA", my_pota_ref: "K-9999" },
   ]);
   const asked: string[] = [];
   await stubApi(page, {

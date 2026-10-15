@@ -61,11 +61,17 @@ pub fn swallow(e: &web_sys::MouseEvent) {
 }
 
 /// 触发器类名（与语言切换下拉逐字一致）。
+///
+/// `max-w-full` + `[&>span]:min-w-0`：触发器是 `w-auto` 的收缩盒子（按钮的 `width: auto`
+/// 是 fit-content），而选中项的文字被 `line-clamp-1` 固定成一行 —— 它的最小内容宽度就是
+/// 整行文字宽度，于是「料号 / 版式名」这类长文案会把触发器顶到比容器还宽，手机宽度下
+/// 整页横向滚动（`/qsl-labels` 的版式下拉）。两者一起把触发器约束回容器内：外层的
+/// `max-w-full` 封顶，内层 `min-w-0` 让文字真的能被截断。
 pub fn trigger_class(size: super::control::ControlSize, extra: &str) -> String {
   super::control::control_class(
     size,
     &cn(&[
-      "flex items-center justify-between gap-2 [&>span]:line-clamp-1",
+      "flex items-center justify-between gap-2 max-w-full [&>span]:min-w-0 [&>span]:line-clamp-1",
       extra,
     ]),
   )

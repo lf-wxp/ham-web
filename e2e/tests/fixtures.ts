@@ -175,8 +175,11 @@ export type SeedQso = {
   band?: string;
   mode?: string;
   gridsquare?: string;
-  sota_ref?: string;
-  pota_ref?: string;
+  /** 本台所在的山峰 / 公园（`my_*`）与对方的（`contact_*`，S2S / P2P）。 */
+  my_sota_ref?: string;
+  my_pota_ref?: string;
+  contact_sota_ref?: string;
+  contact_pota_ref?: string;
 };
 
 /**
@@ -195,8 +198,10 @@ export async function seedLog(page: Page, qsos: SeedQso[]) {
     mode: q.mode ?? "FT8",
     callsign: q.callsign,
     gridsquare: q.gridsquare ?? "",
-    sota_ref: q.sota_ref ?? "",
-    pota_ref: q.pota_ref ?? "",
+    my_sota_ref: q.my_sota_ref ?? "",
+    my_pota_ref: q.my_pota_ref ?? "",
+    contact_sota_ref: q.contact_sota_ref ?? "",
+    contact_pota_ref: q.contact_pota_ref ?? "",
     remark: "",
   }));
   await page.addInitScript((json) => {

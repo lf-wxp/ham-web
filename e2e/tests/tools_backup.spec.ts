@@ -45,6 +45,255 @@ test("小工具：欧姆定律填两项算第三项", async ({ page }) => {
   await expect(section.getByText(/24\.00/)).toBeVisible();
 });
 
+test("小工具：菲涅尔区净空判定随障碍物高度变化", async ({ page }) => {
+  await page.goto("/tools#fresnel-zone");
+  const section = tool(page, "fresnel-zone");
+  await expect(section).toBeVisible();
+
+  // 默认：145 MHz、30 km、两端 100 m、中点无障碍，只剩地球曲率 → 净空达标
+  await expect(section.getByText(/净空达标/)).toBeVisible();
+  await expect(section.getByText(/地球曲率隆起 13\.24 m/)).toBeVisible();
+  await expect(section.getByText(/占第一菲涅尔区半径的 70%/)).toBeVisible();
+
+  // 抬高障碍物：先侵入第一菲涅尔区，再高过视线
+  await section.getByLabel("障碍物顶高度（m）").fill("40");
+  await expect(section.getByText(/部分遮挡/)).toBeVisible();
+  await expect(section.getByText(/还差 .* m/)).toBeVisible();
+
+  await section.getByLabel("障碍物顶高度（m）").fill("200");
+  await expect(section.getByText(/视线被挡/)).toBeVisible();
+
+  // 障碍物放到端点上不合法：给出引导而不是算出无穷大
+  await section.getByLabel("障碍物距 A 端（km）").fill("30");
+  await expect(section.getByText(/障碍物须位于 A、B 之间/)).toBeVisible();
+});
+
+test("小工具：路径剖面找出最危险的点并给出抬高建议", async ({ page }) => {
+  await page.goto("/tools#path-profile");
+  const section = tool(page, "path-profile");
+  await expect(section).toBeVisible();
+  const points = section.getByLabel("剖面采样点");
+
+  // 示例剖面：310 m 的山脊挡在 15 km 处
+  await expect(section.getByText(/视线被挡/)).toBeVisible();
+  await expect(section.getByText(/距 A 端 15\.00 km，海拔 310\.00 m/)).toBeVisible();
+  await expect(section.getByText(/两端天线同时抬高/)).toBeVisible();
+  await expect(section.getByRole("img", { name: "路径剖面图" })).toBeVisible();
+  // 剖面表：7 个点 + 表头
+  await expect(section.getByRole("row")).toHaveCount(8);
+
+  // 改成平地 + 100 m 天线：与菲涅尔区工具的默认结论一致（净空达标、约 70%）
+  await points.fill("0, 0\n15, 0\n30, 0");
+  await section.getByLabel("天线 A 高度（m）").fill("100");
+  await section.getByLabel("天线 B 高度（m）").fill("100");
+  await expect(section.getByText(/净空达标/)).toBeVisible();
+  await expect(section.getByRole("cell", { name: "70%", exact: true })).toBeVisible();
+  await expect(section.getByRole("row")).toHaveCount(4);
+  await expect(section.getByText(/距 60% 净空线仍有 .* m 余量/)).toBeVisible();
+
+  // 输入不合法时给出带行号的引导，而不是算出奇怪的数
+  await points.fill("0, 0\n5\n10, 0");
+  await expect(section.getByRole("alert")).toContainText("第 2 行");
+  await points.fill("0, 0\n10, 5");
+  await expect(section.getByRole("alert")).toContainText("至少需要 3 个点");
+  await points.fill("0, 0\n10, 0\n10, 0");
+  await expect(section.getByRole("alert")).toContainText("第 3 个点的距离必须大于前一个点");
+});
+
+test("小工具：磁环绕线由目标电感反推匝数，向上取整并给出公差与窗口提示", async ({ page }) => {
+  await page.goto("/tools#toroid-winding");
+  const section = tool(page, "toroid-winding");
+  await expect(section).toBeVisible();
+
+  // 默认磁环 5943000301（AL 440 nH/匝²，±20%），目标 50 µH：
+  // N = √(1000·50/440) = 10.66 → 11 匝；L = 440·11²/1000 = 53.24 µH；±20% → 42.59 – 63.89。
+  await expect(section.getByText("5943000301 · 43 材料")).toBeVisible();
+  await expect(section.getByRole("status")).toContainText("需要绕 11 匝（计算值 10.66");
+  await expect(section.getByText(/实际约 53\.24 µH.*42\.59 – 63\.89 µH/)).toBeVisible();
+  // 线径 0.6 mm、内径 7.15 mm → 内圈周长 22.46 mm → 单层约 37 匝：11 匝放得下
+  await expect(section.getByText(/内圈单层最多约 37 匝：放得下/)).toBeVisible();
+
+  // 目标 1000 µH → 48 匝 > 37：提示放不下
+  await section.getByLabel("目标电感（µH）").fill("1000");
+  await expect(section.getByRole("status")).toContainText("需要绕 48 匝");
+  await expect(section.getByText(/内圈单层最多约 37 匝：放不下/)).toBeVisible();
+
+  // 换成大磁环（AL 1075，内径 35.55 mm）：同样 1000 µH 只要 31 匝，内圈放得下
+  await section.getByRole("combobox", { name: "磁环" }).click();
+  await page.getByRole("option", { name: /5943003801/ }).click();
+  await expect(section.getByRole("status")).toContainText("需要绕 31 匝");
+  await expect(section.getByText(/放得下/)).toBeVisible();
+
+  // 自定义：自己填 AL，不再判断窗口
+  await section.getByRole("combobox", { name: "磁环" }).click();
+  await page.getByRole("option", { name: /自定义/ }).click();
+  await section.getByLabel("AL（nH/匝²）").fill("100");
+  await section.getByLabel("目标电感（µH）").fill("1");
+  // N = √(1000·1/100) = 3.16 → 4 匝
+  await expect(section.getByRole("status")).toContainText("需要绕 4 匝");
+  await expect(section.getByText(/自定义磁环没有尺寸/)).toBeVisible();
+
+  // 目标电感不合法：给出引导而不是算出奇怪的数
+  await section.getByLabel("目标电感（µH）").fill("0");
+  await expect(section.getByText(/请输入有效的 AL/)).toBeVisible();
+});
+
+// `/tools` 里有很多带表格 / 图表的块，表格自带的 `min-w-[…]` 放进网格子项里会把整列撑宽（需要 `min-w-0`），
+// 手机宽度下整页横向滚动。i18n_layout 只在桌面宽度量，所以这里单独守一次。
+for (const [code, name] of [
+  ["zh", "中文"],
+  ["en", "English"],
+  ["es", "Español"],
+] as const) {
+  test(`小工具：手机宽度下整页不产生横向滚动（${name}）`, async ({ page }) => {
+    await page.addInitScript((c) => localStorage.setItem("locale", c), code);
+    for (const width of [320, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/tools");
+      await expect(page.locator("section#path-profile")).toBeVisible();
+      await expect(page.locator("section#toroid-winding")).toBeVisible();
+      await expect(page.locator("section#intermod")).toBeVisible();
+      await expect(page.locator("section#parabolic-dish")).toBeVisible();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow, `${width}px`).toBeLessThanOrEqual(1);
+    }
+  });
+}
+
+test("小工具：互调与镜频列出产物并标出落入业余波段的", async ({ page }) => {
+  await page.goto("/tools#intermod");
+  const section = tool(page, "intermod");
+  await expect(section).toBeVisible();
+  const freqs = section.getByLabel("发射频率（MHz）");
+
+  // 默认 14.200 / 14.205：谐波 8 + 2 阶 2 + 3 阶 4 = 14 个产物，其中 5 个在业余波段内
+  // （28.4、28.41、28.405 在 10m；14.195、14.21 在 20m）
+  await expect(section.getByRole("status")).toContainText("共 14 个产物");
+  await expect(section.getByRole("status")).toContainText("其中 5 个落入业余波段");
+  await expect(section.getByRole("row")).toHaveCount(6); // 表头 + 5
+  const low = section.getByRole("row", { name: /2·f1 − f2/ });
+  await expect(low).toContainText("14.195");
+  await expect(low).toContainText("20m");
+  // 表达式单元格精确匹配：`f1 + f2` 不能同时命中 `2·f1 + f2`
+  const rowOf = (expr: string) =>
+    section.getByRole("row").filter({ has: page.getByRole("cell", { name: expr, exact: true }) });
+  await expect(rowOf("f1 + f2")).toContainText("28.405");
+  // 差频 0.005 与 42.6 不在业余波段：默认被过滤掉
+  await expect(section.getByRole("cell", { name: "0.005", exact: true })).toHaveCount(0);
+
+  // 取消过滤：全部 14 个都显示，不在业余波段的标 —
+  await section.getByRole("checkbox", { name: "只显示落入业余波段的产物" }).click();
+  await expect(section.getByRole("row")).toHaveCount(15);
+  await expect(rowOf("f2 − f1")).toContainText("0.005");
+
+  // 3.65 MHz 的谐波（7.3 / 10.95 / 14.6 / 18.25）全部落空：过滤时给出说明而不是空表
+  await section.getByRole("checkbox", { name: "只显示落入业余波段的产物" }).click();
+  await freqs.fill("3.65");
+  await expect(section.getByText(/没有产物落入业余波段/)).toBeVisible();
+  await expect(section.getByRole("table")).toHaveCount(0);
+
+  // 输入不合法：给出带序号的引导
+  await freqs.fill("14.2, abc");
+  await expect(section.getByRole("alert")).toContainText("第 2 个值不是正数");
+  await freqs.fill("");
+  await expect(section.getByRole("alert")).toContainText("请至少输入一个频率");
+  await freqs.fill("1 2 3 4 5 6 7 8 9");
+  await expect(section.getByRole("alert")).toContainText("最多支持 8 个不同的频率");
+  // 重复的频率不占名额
+  await freqs.fill("1 2 3 4 5 6 7 8 8 8");
+  await expect(section.getByRole("alert")).toHaveCount(0);
+});
+
+test("小工具：镜频按高端 / 低端本振给出两侧并判断是否落入业余波段", async ({ page }) => {
+  await page.goto("/tools#intermod");
+  const section = tool(page, "intermod");
+  const rx = section.getByLabel("接收频率（MHz）");
+  const ifm = section.getByLabel("中频（MHz）");
+
+  // 默认 145 MHz / 10.7 MHz：166.4 与 123.6，都不在业余波段
+  await expect(section.getByText(/高端本振.*镜频 166\.4 MHz，不在业余波段内/)).toBeVisible();
+  await expect(section.getByText(/低端本振.*镜频 123\.6 MHz，不在业余波段内/)).toBeVisible();
+
+  // 14.1 MHz、中频 3.5：21.1（15m）与 7.1（40m）
+  await rx.fill("14.1");
+  await ifm.fill("3.5");
+  await expect(section.getByText(/镜频 21\.1 MHz，落入 15m 波段/)).toBeVisible();
+  await expect(section.getByText(/镜频 7\.1 MHz，落入 40m 波段/)).toBeVisible();
+
+  // 中频太高：低端镜频为负，没有这一侧
+  await rx.fill("7.1");
+  await ifm.fill("4");
+  await expect(section.getByText(/镜频 15\.1 MHz/)).toBeVisible();
+  await expect(section.getByText(/中频过高，镜频为负/)).toBeVisible();
+
+  // 不合法
+  await ifm.fill("0");
+  await expect(section.getByText(/请输入有效的接收频率与中频/)).toBeVisible();
+});
+
+test("小工具：抛物面天线增益、波束与焦点几何", async ({ page }) => {
+  await page.goto("/tools#parabolic-dish");
+  const section = tool(page, "parabolic-dish");
+  await expect(section).toBeVisible();
+
+  // 默认值在输入框里要显示成干净的数字（0.55 × 100 的浮点误差曾显示成 55.00000000000001）
+  await expect(section.getByLabel("孔径效率（%）")).toHaveValue("55");
+  await expect(section.getByLabel("焦径比 f/D")).toHaveValue("0.4");
+  // 默认 10.368 GHz / 0.9 m / 55% / f/D 0.4（预期值由独立脚本算出）：
+  // λ = 0.0289 m，口径 31.13 个波长；G = 0.55·(π·D/λ)² = 5258.9 倍 = 37.21 dBi；A_e = 0.3499 m²
+  await expect(section.getByText(/波长 0\.0289 m　｜　口径 31\.13 个波长/)).toBeVisible();
+  await expect(section.getByRole("status")).toContainText("增益 37.21 dBi（5258.9 倍）");
+  await expect(section.getByRole("status")).toContainText("有效面积 0.3499 m²");
+  await expect(section.getByText(/波束宽度约 2\.25°/)).toBeVisible();
+  // f = 0.36 m，深 0.1406 m，焦点在口径平面前 0.2194 m，张角 128.02°
+  await expect(section.getByText(/焦距 0\.3600 m　｜　凹陷深度 0\.1406 m/)).toBeVisible();
+  await expect(section.getByText(/口径平面前方 0\.2194 m 处/)).toBeVisible();
+  await expect(section.getByText(/全张角 128\.02°/)).toBeVisible();
+  await expect(section.getByText(/增益公式在这里不再可靠/)).toHaveCount(0);
+
+  // 口径翻倍：增益 +6.02 dB、波束减半
+  await section.getByLabel("口径（m）").fill("1.8");
+  await expect(section.getByRole("status")).toContainText("增益 43.23 dBi");
+  await expect(section.getByText(/波束宽度约 1\.12°/)).toBeVisible();
+
+  // f/D = 0.25：焦点恰在口径平面上，张角 180°
+  await section.getByLabel("口径（m）").fill("0.9");
+  await section.getByLabel("焦径比 f/D").fill("0.25");
+  await expect(section.getByText(/焦点恰在口径平面上/)).toBeVisible();
+  await expect(section.getByText(/全张角 180\.00°/)).toBeVisible();
+
+  // f/D = 0.2：深碗，焦点在碗内 0.1012 m，张角超过 180°
+  await section.getByLabel("焦径比 f/D").fill("0.2");
+  await expect(section.getByText(/焦点在碗内，距口径平面 0\.1012 m（深碗）/)).toBeVisible();
+  await expect(section.getByText(/全张角 205\.36°/)).toBeVisible();
+
+  // 效率翻倍到合法上限之外：给出引导
+  await section.getByLabel("孔径效率（%）").fill("120");
+  await expect(section.getByText(/请输入有效的频率、口径、焦径比/)).toBeVisible();
+  await section.getByLabel("孔径效率（%）").fill("55");
+
+  // 低频小口径：145 MHz、1 m，口径不到半个波长
+  await section.getByLabel("频率（MHz）").fill("145");
+  await section.getByLabel("口径（m）").fill("1");
+  await section.getByLabel("焦径比 f/D").fill("0.4");
+  await expect(section.getByText(/增益公式在这里不再可靠/)).toBeVisible();
+});
+
+test("小工具：抛物面天线用实测凹陷深度反推焦距", async ({ page }) => {
+  await page.goto("/tools#parabolic-dish");
+  const section = tool(page, "parabolic-dish");
+  const depth = section.getByLabel("实测凹陷深度（m）");
+
+  // 口径 0.9 m、深 0.15 m：f = 0.81/(16·0.15) = 0.3375 m，f/D = 0.375
+  await expect(section.getByText(/焦距 0\.3375 m　｜　f\/D = 0\.3750/)).toBeVisible();
+  // 深度 = D/4 = 0.225 → f/D = 0.25
+  await depth.fill("0.225");
+  await expect(section.getByText(/f\/D = 0\.2500/)).toBeVisible();
+
+  await depth.fill("0");
+  await expect(section.getByText(/请输入大于 0 的口径与深度/)).toBeVisible();
+});
+
 test("数据备份：导出 JSON 含本地数据", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("e2e-backup-key", "e2e-value"));
   await page.goto("/tools#backup");

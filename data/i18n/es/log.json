@@ -14,7 +14,6 @@
   "log.lotw-uploaded": "LoTW subido",
   "log.lotw-confirmed": "LoTW confirmado",
   "log.lotw-confirmations-eqsl-qrz": "Confirmaciones LoTW · eQSL · QRZ · Club Log",
-  "log.pota-reference": "Referencia POTA",
   "log.qsl-card-preview": "Vista previa de la tarjeta QSL",
   "log.qsl-sent-via": "QSL enviada vía",
   "log.qsl-via-bureau": "Bureau",
@@ -45,7 +44,10 @@
   "log.qsl-filter": "Filtro QSL",
   "log.qso-lines": "Líneas QSO",
   "log.rst-sent-rcvd": "RST env/rec",
-  "log.sota-reference": "Referencia SOTA",
+  "log.my-sota-reference": "Mi cima SOTA (MY_SOTA_REF)",
+  "log.my-pota-reference": "Mi parque POTA (MY_POTA_REF)",
+  "log.contact-sota-reference": "Cima SOTA del corresponsal (SOTA_REF, de cima a cima)",
+  "log.contact-pota-reference": "Parque POTA del corresponsal (POTA_REF, de parque a parque)",
   "log.vucc-satellite": "VUCC satélite",
   "log.wac-six-continents": "WAC (seis continentes)",
   "log.was-us-states": "WAS estados de EE. UU.",
@@ -435,5 +437,35 @@
   "log.tqsl-station-location": "Rellena esto al crear la Station Location en TQSL",
   "log.print-layout": "Disposición de impresión",
   "log.print-layout-single": "1 por página (A4 vertical)",
-  "log.print-layout-grid": "4 por página (A4 horizontal, con marcas de corte)"
+  "log.print-layout-grid": "4 por página (A4 horizontal, con marcas de corte)",
+  "log.activation-title": "Exportación de activaciones (SOTA / POTA)",
+  "log.activation-hint": "Exporta los contactos registrados en una cima o un parque como archivo de envío: CSV V2 para SOTA y ADIF para POTA. Se usa la cima o el parque desde donde operaste (Mi cima SOTA / Mi parque POTA de cada contacto); la cima o el parque de la otra estación no interviene. Cada día UTC genera su propio archivo. Las referencias solo se comprueban en cuanto al formato, no a su existencia, y los archivos siguen las reglas públicas de cada plataforma, así que confía en la validación de la propia plataforma antes de subirlos.",
+  "log.activation-platform": "Plataforma de destino",
+  "log.activation-my-summit": "Mi referencia de cima (SOTA)",
+  "log.activation-my-park": "Mi referencia de parque (POTA)",
+  "log.activation-in-your-log": "En tu registro:",
+  "log.activation-no-refs-in-log": "Aún no hay ninguna referencia válida en tu registro: rellena Mi cima SOTA / Mi parque POTA en Más campos dentro de un contacto, o escríbela arriba.",
+  "log.activation-enter-ref": "Introduce una referencia o pulsa una de las encontradas en tu registro.",
+  "log.activation-bad-sota-ref": "Una referencia SOTA tiene la forma asociación/región-tres dígitos, p. ej. BY/BJ-001.",
+  "log.activation-bad-pota-ref": "Una referencia POTA tiene la forma prefijo-cuatro o cinco dígitos, p. ej. CN-0123; todavía no se admiten varios parques a la vez.",
+  "log.activation-nothing-to-export": "No hay nada que exportar: no hay contactos con esta referencia o todos se omitieron por los motivos indicados abajo.",
+  "log.activation-skipped-datetime": {
+    "one": "{} contacto omitido porque no se puede leer su fecha u hora",
+    "other": "{} contactos omitidos porque no se puede leer su fecha u hora"
+  },
+  "log.activation-skipped-missing": {
+    "one": "{} contacto omitido por falta de indicativo, o de la frecuencia o banda que exige esta plataforma",
+    "other": "{} contactos omitidos por falta de indicativo, o de la frecuencia o banda que exige esta plataforma"
+  },
+  "log.activation-skipped-mode": {
+    "one": "{} contacto omitido porque su modo es la categoría genérica Datos / Otro, que no es un modo ADIF válido; indica un modo concreto",
+    "other": "{} contactos omitidos porque su modo es la categoría genérica Datos / Otro, que no es un modo ADIF válido; indica un modo concreto"
+  },
+  "log.activation-file-qsos": {
+    "one": "{} · {} contacto",
+    "other": "{} · {} contactos"
+  },
+  "log.activation-below-minimum": "Menos de {} contactos; normalmente no cuenta como una activación válida",
+  "log.activation-download-file": "Descargar {}",
+  "log.activation-download": "Descargar"
 }

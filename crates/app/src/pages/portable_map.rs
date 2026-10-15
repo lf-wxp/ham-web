@@ -57,11 +57,12 @@ pub fn PortableMapPage() -> impl IntoView {
     let mut sota = BTreeSet::new();
     let mut pota = BTreeSet::new();
     for e in &entries {
-      if !e.sota_ref.trim().is_empty() {
-        sota.insert(e.sota_ref.trim().to_ascii_uppercase());
+      // 只看本台所在的山峰 / 公园：地图标的是「你激活过的」，对方的（S2S / P2P）不算。
+      if !e.my_sota_ref.trim().is_empty() {
+        sota.insert(e.my_sota_ref.trim().to_ascii_uppercase());
       }
-      if !e.pota_ref.trim().is_empty() {
-        pota.insert(e.pota_ref.trim().to_ascii_uppercase());
+      if !e.my_pota_ref.trim().is_empty() {
+        pota.insert(e.my_pota_ref.trim().to_ascii_uppercase());
       }
     }
     (sota, pota)

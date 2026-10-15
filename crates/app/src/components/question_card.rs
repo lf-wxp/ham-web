@@ -162,7 +162,9 @@ pub fn QuestionCard(
   view! {
     <div data-slot="card" class=card_class("")>
       <div data-slot="card-header" class=CARD_HEADER>
-        <div data-slot="card-title" class=card_title_class("flex items-center gap-2")>
+        // `flex-wrap`：「第 N / M 题」+ 题型 + 题号三个徽标都是不换行的定宽内容，
+        // 320px 下（英文 / 西语最明显）会把标题行撑出视口，整页横向滚动。
+        <div data-slot="card-title" class=card_title_class("flex flex-wrap items-center gap-2")>
           <span>{move || tf("exam.question", &[&(index + 1).to_string(), &total.to_string()])}</span>
           <span data-slot="badge" class=badge_class(BadgeVariant::Secondary, "")>
             {move || t(kind_label)}

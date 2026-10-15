@@ -69,8 +69,17 @@ pub struct AdifRecord {
   pub sat_name: String,
   /// 传播方式（如 `SAT`、`EME`、`ES`）。
   pub prop_mode: String,
+  /// `SOTA_REF`：**对方**所在的山峰（ADIF 规范；山峰对山峰 S2S）。
   pub sota_ref: String,
+  /// `POTA_REF`：**对方**所在的公园（逗号分隔的列表；公园对公园 P2P）。
   pub pota_ref: String,
+  /// `MY_SOTA_REF`：**本台**所在的山峰。
+  pub my_sota_ref: String,
+  /// `MY_POTA_REF`：**本台**所在的公园。
+  ///
+  /// 也接受 `MY_SIG=POTA` + `MY_SIG_INFO=<公园>` 的写法（本站自己的 POTA 提交文件就是这么写的，
+  /// 别的日志软件也常用）：`MY_SIG` 已经声明了活动类型，`MY_SIG_INFO` 就必然是它的编号。
+  pub my_pota_ref: String,
   /// DXCC 实体编号。
   pub dxcc: String,
   /// 实体名（`COUNTRY`）。
@@ -231,6 +240,17 @@ fn record_from_fields(mut f: HashMap<String, String>) -> Option<AdifRecord> {
   let yes = |v: String| v.eq_ignore_ascii_case("Y");
   let mode = take("MODE");
   let submode = take("SUBMODE");
+  // 本台所在的公园：`MY_POTA_REF` 优先；没有时认 `MY_SIG=POTA` + `MY_SIG_INFO`。
+  let my_sig = take("MY_SIG");
+  let my_sig_info = take("MY_SIG_INFO");
+  let my_pota_ref = take("MY_POTA_REF");
+  let my_pota_ref = if !my_pota_ref.is_empty() {
+    my_pota_ref
+  } else if my_sig.eq_ignore_ascii_case("POTA") {
+    my_sig_info
+  } else {
+    String::new()
+  };
   Some(AdifRecord {
     call,
     qso_date: take("QSO_DATE"),
@@ -262,8 +282,10 @@ fn record_from_fields(mut f: HashMap<String, String>) -> Option<AdifRecord> {
     eqsl_rcvd: yes(take("EQSL_QSL_RCVD")),
     sat_name: take("SAT_NAME"),
     prop_mode: take("PROP_MODE").to_ascii_uppercase(),
-    sota_ref: take("SOTA_REF"),
-    pota_ref: take("POTA_REF"),
+    sota_ref: take("SOTA_REF").to_ascii_uppercase(),
+    pota_ref: take("POTA_REF").to_ascii_uppercase(),
+    my_sota_ref: take("MY_SOTA_REF").to_ascii_uppercase(),
+    my_pota_ref: my_pota_ref.to_ascii_uppercase(),
     dxcc: take("DXCC"),
     country: take("COUNTRY"),
     cont: take("CONT").to_ascii_uppercase(),

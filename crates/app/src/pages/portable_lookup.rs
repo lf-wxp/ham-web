@@ -84,7 +84,8 @@ pub fn PortableLookup() -> impl IntoView {
       lb.entries
         .iter()
         .filter(|e| {
-          e.sota_ref.eq_ignore_ascii_case(&reference) || e.pota_ref.eq_ignore_ascii_case(&reference)
+          e.my_sota_ref.eq_ignore_ascii_case(&reference)
+            || e.my_pota_ref.eq_ignore_ascii_case(&reference)
         })
         .count()
     })

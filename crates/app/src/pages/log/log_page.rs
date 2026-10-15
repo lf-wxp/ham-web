@@ -9,6 +9,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 
+use super::activation_export_panel::ActivationExportPanel;
 use super::entry_form::EntryForm;
 use super::entry_list::EntryList;
 use super::form_state::LogFormState;
@@ -231,6 +232,7 @@ pub fn LogPage() -> impl IntoView {
         <StationPanel book=book on_save=save_station_btn />
         <LogStatsPanel logbook=logbook book=book />
         <LogHealthPanel />
+        <ActivationExportPanel />
         <EntryForm form=form logbook=logbook book=book editing=editing on_save=on_save />
         <EntryList logbook=logbook on_edit=on_edit on_remove=on_remove on_clear=on_clear initial_query=initial_query.unwrap_or_default() />
       </PageContainer>

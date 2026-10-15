@@ -24,14 +24,18 @@ use super::feedline_loss::FeedlineLoss;
 use super::filter_design::FilterDesign;
 use super::freq_wavelength::FreqWavelength;
 use super::frequency_units::FrequencyUnits;
+use super::fresnel_zone::FresnelZone;
 use super::fspl_calculator::FsplCalculator;
 use super::gain_conversion::GainConversion;
+use super::intermod_calculator::IntermodCalculator;
 use super::lc_resonance::LcResonance;
 use super::link_budget_calculator::LinkBudgetCalculator;
 use super::mode_encoder::ModeEncoder;
 use super::noise_cascade::NoiseCascade;
 use super::ohms_law::OhmsLaw;
 use super::oscillator::Oscillator;
+use super::parabolic_dish::ParabolicDish;
+use super::path_profile::PathProfile;
 use super::propagation_estimator::PropagationEstimator;
 use super::reactance::Reactance;
 use super::receiver_sensitivity::ReceiverSensitivity;
@@ -41,56 +45,64 @@ use super::rf_exposure::RfExposure;
 use super::smith_chart::SmithChart;
 use super::swr_converter::SwrConverter;
 use super::tone_squelch::ToneSquelch;
+use super::toroid_winding::ToroidWinding;
 use super::transformer_calculator::TransformerCalculator;
 use super::tx_line::TxLine;
 use super::utc_clock::UtcClock;
 use super::wire_gauge::WireGauge;
 use crate::i18n::t;
 
-/// 工具目录（锚点 id + 标题）。
+/// 工具目录（锚点 id + 目录标题词条）。标题必须走 i18n：这里存的是**词条 key** 而不是文字，
+/// 否则 en / es 界面会露中文（i18n 检查器扫不到 const 数据）。
 const TOOL_NAV: &[(&str, &str)] = &[
-  ("freq-wavelength", "频率 ↔ 波长"),
-  ("dbm-power", "dBm ↔ 功率"),
-  ("decibel-gain", "分贝增益"),
-  ("ohms-law", "欧姆定律"),
-  ("cw-bandwidth", "CW 必要带宽"),
-  ("lc-resonance", "LC 谐振"),
-  ("reactance", "容抗 / 感抗"),
-  ("antenna-length", "天线长度"),
-  ("antenna-matcher", "天线匹配"),
-  ("smith", "史密斯圆图"),
-  ("swr", "驻波比"),
-  ("cascade-gain", "级联增益"),
-  ("resistor", "电阻串并联"),
-  ("freq-units", "频率单位"),
-  ("battery", "电池续航"),
-  ("dbm-dbuv", "dBm ↔ dBμV / μV"),
-  ("feedline-loss", "馈线损耗"),
-  ("filter-design", "滤波器设计"),
-  ("callsign-lookup", "呼号查询"),
-  ("distance-bearing", "两点距离 / 方位角"),
-  ("propagation-muf", "传播预测 MUF"),
-  ("doppler", "卫星多普勒"),
-  ("fspl", "路径损耗"),
-  ("eirp", "EIRP"),
-  ("link-budget", "链路预算"),
-  ("receiver-sensitivity", "接收灵敏度"),
-  ("noise-cascade", "噪声级联"),
-  ("gain-conversion", "增益换算"),
-  ("resistor-code", "电阻色环"),
-  ("contest-scorer", "竞赛记分"),
-  ("coil-yagi", "线圈 / Yagi 计算"),
-  ("attenuator", "衰减器"),
-  ("transformer", "变压器阻抗"),
-  ("utc-clock", "UTC 时间"),
-  ("tx-line", "传输线阻抗"),
-  ("wire-gauge", "线径压降"),
-  ("oscillator", "晶体振荡"),
-  ("rf-exposure", "射频暴露"),
-  ("tone-squelch", "亚音与中继频差"),
-  ("aprs-codec", "APRS 编解码"),
-  ("mode-encoder", "数字模式编码"),
-  ("backup", "数据备份"),
+  ("freq-wavelength", "tools.frequency-wavelength"),
+  ("dbm-power", "tools.dbm-power"),
+  ("decibel-gain", "tools.decibel-gain"),
+  ("ohms-law", "tools.ohm-s-law"),
+  ("cw-bandwidth", "tools.cw-required-bandwidth"),
+  ("lc-resonance", "tools.lc-resonance"),
+  ("reactance", "tools.capacitive-inductive-reactance"),
+  ("antenna-length", "tools.antenna-length"),
+  ("antenna-matcher", "tools.antenna-matching"),
+  ("smith", "tools.smith-chart"),
+  ("swr", "tools.swr"),
+  ("cascade-gain", "tools.cascaded-gain"),
+  ("resistor", "tools.resistors-in-series-parallel"),
+  ("freq-units", "tools.frequency-units"),
+  ("battery", "tools.battery-runtime"),
+  ("dbm-dbuv", "tools.dbm-db-v"),
+  ("feedline-loss", "tools.feedline-loss"),
+  ("filter-design", "tools.filter-design"),
+  ("callsign-lookup", "tools.callsign-lookup"),
+  ("distance-bearing", "tools.distance-bearing"),
+  ("propagation-muf", "tools.propagation-muf"),
+  ("doppler", "tools.satellite-doppler"),
+  ("fspl", "tools.path-loss"),
+  ("fresnel-zone", "tools.fresnel-zone"),
+  ("path-profile", "tools.path-profile"),
+  ("intermod", "tools.intermod"),
+  ("parabolic-dish", "tools.parabolic-dish"),
+  // 与正文章节标题同一条词条：目录里显示成完整标题（如「EIRP 有效辐射功率」）。
+  ("eirp", "tools.eirp-effective-radiated-power"),
+  ("link-budget", "tools.link-budget"),
+  ("receiver-sensitivity", "tools.receiver-sensitivity-toc"),
+  ("noise-cascade", "tools.noise-cascade"),
+  ("gain-conversion", "tools.gain-conversion"),
+  ("resistor-code", "tools.resistor-colour-code"),
+  ("contest-scorer", "tools.contest-scoring"),
+  ("coil-yagi", "tools.coil-yagi-calculator"),
+  ("attenuator", "tools.attenuator"),
+  ("transformer", "tools.transformer-impedance"),
+  ("utc-clock", "tools.utc-time-heading"),
+  ("tx-line", "tools.transmission-line-impedance"),
+  ("toroid-winding", "tools.toroid-winding"),
+  ("wire-gauge", "tools.wire-gauge-and-voltage"),
+  ("oscillator", "tools.crystal-oscillator"),
+  ("rf-exposure", "tools.rf-exposure-evaluation"),
+  ("tone-squelch", "tools.tone-squelch-and-repeater"),
+  ("aprs-codec", "tools.aprs-codec"),
+  ("mode-encoder", "tools.digital-mode-encoding"),
+  ("backup", "tools.data-backup"),
 ];
 
 /// 平滑滚动到指定工具。
@@ -127,14 +139,14 @@ pub fn ToolsPage() -> impl IntoView {
           <div class="flex gap-1.5 pb-1">
             {TOOL_NAV
               .iter()
-              .map(|&(id, label)| {
+              .map(|&(id, key)| {
                 view! {
                   <button
                     type="button"
                     class="shrink-0 border bg-card px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                     on:click=move |_| scroll_to(id)
                   >
-                    {move || t(label)}
+                    {move || t(key)}
                   </button>
                 }
               })
@@ -149,7 +161,7 @@ pub fn ToolsPage() -> impl IntoView {
               <ul class="max-h-[calc(100vh-7rem)] space-y-0.5 overflow-y-auto pr-1">
                 {TOOL_NAV
                   .iter()
-                  .map(|&(id, label)| {
+                  .map(|&(id, key)| {
                     view! {
                       <li>
                         <button
@@ -157,7 +169,7 @@ pub fn ToolsPage() -> impl IntoView {
                           class="w-full px-2.5 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                           on:click=move |_| scroll_to(id)
                         >
-                          {move || t(label)}
+                          {move || t(key)}
                         </button>
                       </li>
                     }
@@ -312,6 +324,30 @@ pub fn ToolsPage() -> impl IntoView {
               <div class="p-4"><FsplCalculator /></div>
             </section>
 
+            <section id="fresnel-zone" class="scroll-mt-24 pxl-card border bg-card">
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.fresnel-zone-and-line-of-sight")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.fresnel-zone-description")}</p>
+              <div class="p-4"><FresnelZone /></div>
+            </section>
+
+            <section id="path-profile" class="scroll-mt-24 pxl-card border bg-card">
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.path-profile")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.path-profile-description")}</p>
+              <div class="p-4"><PathProfile /></div>
+            </section>
+
+            <section id="intermod" class="scroll-mt-24 pxl-card border bg-card">
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.intermod-harmonics-image")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.intermod-description")}</p>
+              <div class="p-4"><IntermodCalculator /></div>
+            </section>
+
+            <section id="parabolic-dish" class="scroll-mt-24 pxl-card border bg-card">
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.parabolic-dish")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.parabolic-dish-description")}</p>
+              <div class="p-4"><ParabolicDish /></div>
+            </section>
+
             <section id="eirp" class="scroll-mt-24 pxl-card border bg-card">
               <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.eirp-effective-radiated-power")}</h2>
               <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.transmit-power-antenna-gain")}</p>
@@ -382,6 +418,12 @@ pub fn ToolsPage() -> impl IntoView {
               <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.transmission-line-impedance")}</h2>
               <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.characteristic-impedance-of-coax")}</p>
               <div class="p-4"><TxLine /></div>
+            </section>
+
+            <section id="toroid-winding" class="scroll-mt-24 pxl-card border bg-card">
+              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.toroid-winding")}</h2>
+              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.toroid-winding-description")}</p>
+              <div class="p-4"><ToroidWinding /></div>
             </section>
 
             <section id="wire-gauge" class="scroll-mt-24 pxl-card border bg-card">

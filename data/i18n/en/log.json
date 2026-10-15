@@ -14,7 +14,6 @@
   "log.lotw-uploaded": "LoTW uploaded",
   "log.lotw-confirmed": "LoTW confirmed",
   "log.lotw-confirmations-eqsl-qrz": "LoTW confirmations · eQSL · QRZ · Club Log",
-  "log.pota-reference": "POTA reference",
   "log.qsl-card-preview": "QSL card preview",
   "log.qsl-sent-via": "QSL sent via",
   "log.qsl-via-bureau": "Bureau",
@@ -45,7 +44,10 @@
   "log.qsl-filter": "QSL filter",
   "log.qso-lines": "QSO lines",
   "log.rst-sent-rcvd": "RST sent/rcvd",
-  "log.sota-reference": "SOTA reference",
+  "log.my-sota-reference": "My SOTA summit (MY_SOTA_REF)",
+  "log.my-pota-reference": "My POTA park (MY_POTA_REF)",
+  "log.contact-sota-reference": "Contact's SOTA summit (SOTA_REF, summit-to-summit)",
+  "log.contact-pota-reference": "Contact's POTA park (POTA_REF, park-to-park)",
   "log.vucc-satellite": "VUCC satellite",
   "log.wac-six-continents": "WAC (six continents)",
   "log.was-us-states": "WAS US States",
@@ -435,5 +437,35 @@
   "log.tqsl-station-location": "Fill these in when creating the Station Location in TQSL",
   "log.print-layout": "Print layout",
   "log.print-layout-single": "1 per page (A4 portrait)",
-  "log.print-layout-grid": "4 per page (A4 landscape, with cut marks)"
+  "log.print-layout-grid": "4 per page (A4 landscape, with cut marks)",
+  "log.activation-title": "Field activation export (SOTA / POTA)",
+  "log.activation-hint": "Exports the contacts logged for one summit or park as an upload file: CSV V2 for SOTA, ADIF for POTA. It uses the summit or park you operated from (My SOTA summit / My POTA park on a contact); the other station's summit or park is not used. Each UTC day gets its own file. References are only checked for format, not for existence, and the files follow the platforms' public rules, so rely on each platform's own validation before uploading.",
+  "log.activation-platform": "Target platform",
+  "log.activation-my-summit": "My summit reference (SOTA)",
+  "log.activation-my-park": "My park reference (POTA)",
+  "log.activation-in-your-log": "Found in your log:",
+  "log.activation-no-refs-in-log": "No valid reference in your log yet: fill in My SOTA summit / My POTA park under More fields in a contact, or type one above.",
+  "log.activation-enter-ref": "Enter a reference, or click one found in your log above.",
+  "log.activation-bad-sota-ref": "A SOTA reference looks like association/region-three digits, e.g. BY/BJ-001.",
+  "log.activation-bad-pota-ref": "A POTA reference looks like prefix-four or five digits, e.g. CN-0123; several parks at once are not supported yet.",
+  "log.activation-nothing-to-export": "Nothing to export: there are no contacts under this reference, or all of them were skipped for the reasons below.",
+  "log.activation-skipped-datetime": {
+    "one": "{} contact skipped because its date or time cannot be read",
+    "other": "{} contacts skipped because their date or time cannot be read"
+  },
+  "log.activation-skipped-missing": {
+    "one": "{} contact skipped for a missing callsign, or a missing frequency or band this platform needs",
+    "other": "{} contacts skipped for a missing callsign, or a missing frequency or band this platform needs"
+  },
+  "log.activation-skipped-mode": {
+    "one": "{} contact skipped because its mode is the generic Data / Other bucket, which is not a valid ADIF mode; set a specific mode",
+    "other": "{} contacts skipped because their mode is the generic Data / Other bucket, which is not a valid ADIF mode; set a specific mode"
+  },
+  "log.activation-file-qsos": {
+    "one": "{} · {} contact",
+    "other": "{} · {} contacts"
+  },
+  "log.activation-below-minimum": "Fewer than {} contacts; this usually does not count as a valid activation",
+  "log.activation-download-file": "Download {}",
+  "log.activation-download": "Download"
 }

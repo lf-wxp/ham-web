@@ -197,8 +197,10 @@ pub(super) fn EntryList(
                       let tags: Vec<String> = [
                         (!e.sat_name.is_empty()).then(|| format!("SAT {}", e.sat_name)),
                         (e.sat_name.is_empty() && !e.prop_mode.is_empty()).then(|| e.prop_mode.clone()),
-                        (!e.sota_ref.is_empty()).then(|| format!("SOTA {}", e.sota_ref)),
-                        (!e.pota_ref.is_empty()).then(|| format!("POTA {}", e.pota_ref)),
+                        (!e.my_sota_ref.is_empty()).then(|| format!("SOTA {}", e.my_sota_ref)),
+                        (!e.my_pota_ref.is_empty()).then(|| format!("POTA {}", e.my_pota_ref)),
+                        (!e.contact_sota_ref.is_empty()).then(|| format!("S2S {}", e.contact_sota_ref)),
+                        (!e.contact_pota_ref.is_empty()).then(|| format!("P2P {}", e.contact_pota_ref)),
                         (!e.tx_pwr.is_empty()).then(|| format!("{} W", e.tx_pwr)),
                       ]
                       .into_iter()

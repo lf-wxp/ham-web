@@ -250,7 +250,10 @@ pub fn QslLabelsPage() -> impl IntoView {
               class="w-auto"
             />
           </label>
-          <label class="inline-flex items-center gap-1.5">
+          // `min-w-0`：标签是换行工具栏里的一个子项，默认 `min-width: auto` 让它只能按
+          // 内容宽度排 —— 版式名（`Avery L7163 · A4 · 2×7（99.1×38.1 mm）`）会把这一项
+          // 撑到 320px 之外，允许收缩后由下拉自己截断。
+          <label class="inline-flex min-w-0 items-center gap-1.5">
             {move || t("log.label-sheet")}
             <NativeSelect
               value=layout_id

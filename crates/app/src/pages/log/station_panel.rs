@@ -89,12 +89,14 @@ pub(super) fn StationPanel(book: RwSignal<StationBook>, on_save: Callback<()>) -
       <Button
         variant=Variant::Text
         // 文字色必须显式给：`Variant::Text` 的 `--btn-fg` 是 `muted-foreground`，而这里是区块标题。
-        class="h-auto w-full justify-between px-4 py-3 text-left text-sm font-semibold text-foreground"
+        // `whitespace-normal`：按钮基类不换行，右侧的台站摘要（含「未设置呼号，点击设置」）在 320px
+        // 下放不下，会把整页撑出横向滚动。
+        class="h-auto w-full justify-between whitespace-normal px-4 py-3 text-left text-sm font-semibold text-foreground"
         aria_expanded=Signal::derive(move || show_station.get())
         on_click=Callback::new(move |_| show_station.update(|v| *v = !*v))
       >
         <span>{move || t("log.station-info")}</span>
-        <span class="text-xs font-normal text-muted-foreground">
+        <span class="text-right text-xs font-normal text-muted-foreground">
           {move || {
             let p = active.get();
             let call = p.callsign.trim().to_owned();

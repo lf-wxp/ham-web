@@ -3,28 +3,79 @@
   <title>业余无线电</title>
   <defs>
     <!--
-      品牌底色：两段同色（纯色），用渐变是为了有个能被 url() 复用的 id ——
-      `cargo make icons` 生成满幅图标时，靠 #bg 补出圆角以外的背景，颜色只写在这一处。
+      品牌底色：iOS 口径的竖向渐变（顶部亮 → 底部深），中段压着品牌蓝 #3b5dc9。
+      `cargo make icons` 生成满幅图标（Apple Touch / maskable）时靠 #bg 补出圆角以外的
+      区域，品牌色只写在这一处；改色要连 favicon-16.svg 与 icon.svg 一起看。
     -->
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#3b5dc9"/>
-      <stop offset="1" stop-color="#3b5dc9"/>
+      <stop offset="0" stop-color="#5f80ea"/>
+      <stop offset="0.55" stop-color="#3b5dc9"/>
+      <stop offset="1" stop-color="#2d489f"/>
     </linearGradient>
-    <clipPath id="tile"><rect width="512" height="512" rx="64.000"/></clipPath>
+
+    <!--
+      玻璃质感三层：
+      - glass：顶部向下的白色反光；
+      - glow：左上受光面的一团柔光；
+      - sheen：斜向扫过玻璃面的一道反射光带。
+    -->
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="0.42" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.14" r="0.55">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0.42" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.1"/>
+      <stop offset="0.58" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- iOS 图标的圆角比例：22.37% × 512 ≈ 115 -->
+    <clipPath id="tile"><rect width="512" height="512" rx="115"/></clipPath>
+
+    <!--
+      塔形（像素块拼的发射塔，原型 512 空间里 12 × 9 块、块宽 32）：缩到 3/4 并下移，
+      给上方发射的电波腾出空间，块宽 24 仍是整像素，32px 一档不至于走形。
+      投影与主体共用一个形状。
+    -->
+    <g id="tower">
+      <rect x="208" y="240" width="96" height="24"/>
+      <rect x="232" y="264" width="48" height="48"/>
+      <rect x="112" y="312" width="72" height="48"/>
+      <rect x="208" y="312" width="96" height="48"/>
+      <rect x="328" y="312" width="72" height="48"/>
+      <rect x="112" y="360" width="288" height="48"/>
+      <rect x="112" y="408" width="72" height="48"/>
+      <rect x="208" y="408" width="96" height="48"/>
+      <rect x="328" y="408" width="72" height="48"/>
+    </g>
   </defs>
 
   <g clip-path="url(#tile)">
     <rect width="512" height="512" fill="url(#bg)"/>
-    <g fill="#f4f4f4">
-      <rect x="192.000" y="112.000" width="128.000" height="32.000"/>
-      <rect x="224.000" y="144.000" width="64.000" height="64.000"/>
-      <rect x="64.000" y="208.000" width="96.000" height="64.000"/>
-      <rect x="192.000" y="208.000" width="128.000" height="64.000"/>
-      <rect x="352.000" y="208.000" width="96.000" height="64.000"/>
-      <rect x="64.000" y="272.000" width="384.000" height="64.000"/>
-      <rect x="64.000" y="336.000" width="96.000" height="64.000"/>
-      <rect x="192.000" y="336.000" width="128.000" height="64.000"/>
-      <rect x="352.000" y="336.000" width="96.000" height="64.000"/>
+    <rect width="512" height="512" fill="url(#glass)"/>
+    <rect width="512" height="512" fill="url(#glow)"/>
+
+    <!--
+      无线电波：以塔尖 (256,244) 为圆心的三道同心弧，远弧更细更淡。
+      压在玻璃高光之上 —— 叠在高光下面会被顶部反光冲淡，波就糊了。
+    -->
+    <g fill="none" stroke="#ffffff" stroke-linecap="round">
+      <path d="M 170.4 216.2 A 90 90 0 0 1 341.6 216.2" stroke-width="16" stroke-opacity="0.6"/>
+      <path d="M 113.3 197.6 A 150 150 0 0 1 398.7 197.6" stroke-width="13" stroke-opacity="0.44"/>
+      <path d="M 61.03 180.65 A 205 205 0 0 1 450.97 180.65" stroke-width="10" stroke-opacity="0.32"/>
     </g>
+
+    <rect width="512" height="512" fill="url(#sheen)"/>
+
+    <!-- 塔：深蓝投影在下、白色主体在上，浮出玻璃面 -->
+    <use href="#tower" y="10" fill="#0e1c4d" opacity="0.42"/>
+    <use href="#tower" fill="#ffffff"/>
   </g>
+
+  <!-- 玻璃边缘的高光细线 -->
+  <rect x="1" y="1" width="510" height="510" rx="114" fill="none" stroke="#ffffff" stroke-opacity="0.42" stroke-width="2"/>
 </svg>
