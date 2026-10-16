@@ -9,7 +9,7 @@ use ham_web_core::award_progress::{
 use ham_web_core::logbook::LogEntry;
 use leptos::prelude::*;
 
-use crate::ui::{RadioGroup, RadioGroupItem};
+use crate::ui::{RadioGroup, RadioGroupItem, Tooltip};
 
 fn count<T: Ord>(p: &Progress<T>, confirmed: bool) -> usize {
   if confirmed {
@@ -121,17 +121,19 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
                   {(1..=40u8)
                     .map(|z| {
                       let on = zones.contains(&z);
+                      let tip = tf("log.cq-zone", &[&z.to_string()]);
                       view! {
-                        <span
-                          class=if on {
-                            "bg-primary py-0.5 text-center text-[10px] font-medium tabular-nums text-primary-foreground"
-                          } else {
-                            "bg-muted py-0.5 text-center text-[10px] tabular-nums text-muted-foreground"
-                          }
-                          title=tf("log.cq-zone", &[&z.to_string()])
-                        >
-                          {z}
-                        </span>
+                        <Tooltip label=tip>
+                          <span
+                            class=if on {
+                              "w-full bg-primary py-0.5 text-center text-[10px] font-medium tabular-nums text-primary-foreground"
+                            } else {
+                              "w-full bg-muted py-0.5 text-center text-[10px] tabular-nums text-muted-foreground"
+                            }
+                          >
+                            {z}
+                          </span>
+                        </Tooltip>
                       }
                     })
                     .collect_view()}

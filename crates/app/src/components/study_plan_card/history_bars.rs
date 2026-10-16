@@ -4,6 +4,7 @@ use leptos::prelude::*;
 
 use crate::i18n::{t, tp};
 use crate::study;
+use crate::ui::Tooltip;
 
 /// 最近 14 天每日作答量柱状图。
 pub(super) fn history_bars(today: &str) -> impl IntoView {
@@ -26,16 +27,21 @@ pub(super) fn history_bars(today: &str) -> impl IntoView {
           .into_iter()
           .map(|(day, t)| {
             let h = f64::from(t.answered) / f64::from(max) * 100.0;
+            let tip = tp(
+              "common.questions-new",
+              t.answered,
+              &[&day[5..], &t.answered.to_string(), &t.new.to_string()],
+            );
             view! {
-              <div
-                class="flex-1 bg-primary/70"
-                style=format!("height: max({h:.1}%, 2px)")
-                title=tp(
-                  "common.questions-new",
-                  t.answered,
-                  &[&day[5..], &t.answered.to_string(), &t.new.to_string()],
-                )
-              ></div>
+              // 柱的百分比高度相对 `h-16` 的 flex 容器；包一层后 span 用 `self-stretch`
+              // 撑到容器高度，包含块才有确定高度（父级已带整图 role="img" 名称，
+              // 逐柱明细不再加 tabindex，避免 14 个停靠点）。
+              <Tooltip class="flex flex-1 items-end self-stretch" label=tip>
+                <div
+                  class="w-full bg-primary/70"
+                  style=format!("height: max({h:.1}%, 2px)")
+                ></div>
+              </Tooltip>
             }
           })
           .collect_view()}

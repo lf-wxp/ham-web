@@ -1,4 +1,5 @@
 use crate::i18n::t;
+use crate::ui::Tooltip;
 use leptos::prelude::*;
 
 /// 太阳通量近 12 个月柱状趋势。
@@ -16,12 +17,20 @@ pub(super) fn FluxTrend(history: Vec<(String, f64)>) -> impl IntoView {
           .iter()
           .map(|(m, v)| {
             let h = (v / max * 120.0).max(4.0);
-            let label = m.get(2..).unwrap_or(m);
+            let label = m.get(2..).unwrap_or(m).to_owned();
+            let tip = format!("{m}：{v:.0}");
             view! {
-              <div class="flex flex-1 flex-col items-center gap-1" title=format!("{m}：{v:.0}")>
-                <div class="w-full bg-primary" style=format!("height: {h:.1}px")></div>
-                <span class="text-[9px] tabular-nums text-muted-foreground">{label}</span>
-              </div>
+              <Tooltip class="flex-1" label=tip.clone()>
+                <div
+                  class="flex w-full flex-col items-center gap-1 outline-none focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
+                  tabindex="0"
+                  role="img"
+                  aria-label=tip
+                >
+                  <div class="w-full bg-primary" style=format!("height: {h:.1}px")></div>
+                  <span class="text-[9px] tabular-nums text-muted-foreground">{label}</span>
+                </div>
+              </Tooltip>
             }
           })
           .collect_view()}

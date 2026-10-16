@@ -14,8 +14,8 @@ use crate::data::{self, VersionStatus};
 use crate::i18n::{bank_class, t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
-  BadgeVariant, Button, Label, RadioGroup, RadioGroupItem, Select, SelectItem, Size, Variant,
-  badge_class, button_class,
+  BadgeVariant, Button, Label, RadioGroup, RadioGroupItem, Select, SelectItem, Size, Tooltip,
+  Variant, badge_class, button_class,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -395,18 +395,19 @@ pub fn QuestionBankSelector(
                       }
                     })
                 }}
-                <button
-                  class=refresh_class
-                  disabled=move || refresh_state.get() == RefreshState::Loading || disabled.get()
-                  title=move || {
-                    let m = error_message.get();
-                    if m.is_empty() { t("exam.refresh-bank-config") } else { m }
-                  }
-                  on:click=move |_| refresh.run(false)
-                >
-                  {refresh_content}
-                  <span class="sr-only">{move || t("exam.refresh-config")}</span>
-                </button>
+                <Tooltip label=Signal::derive(move || {
+                  let m = error_message.get();
+                  if m.is_empty() { t("exam.refresh-bank-config") } else { m }
+                })>
+                  <button
+                    class=refresh_class
+                    disabled=move || refresh_state.get() == RefreshState::Loading || disabled.get()
+                    on:click=move |_| refresh.run(false)
+                  >
+                    {refresh_content}
+                    <span class="sr-only">{move || t("exam.refresh-config")}</span>
+                  </button>
+                </Tooltip>
               </div>
             </div>
             <Select

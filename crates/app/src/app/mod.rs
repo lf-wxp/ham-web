@@ -34,6 +34,7 @@ pub fn App() -> impl IntoView {
   crate::sat_alert::start_watcher();
   crate::pages::start_global_watcher();
   crate::study::start_study_reminder_watcher();
+  crate::ui::setup_tooltip_popup();
   let search_open = RwSignal::new(false);
   provide_context(search_open);
   view! {
@@ -63,6 +64,7 @@ pub fn App() -> impl IntoView {
       <SearchDialog />
       <StorageWarning />
       <crate::achievements::AchievementToast />
+      <crate::ui::ToastRoot />
     </Router>
   }
 }

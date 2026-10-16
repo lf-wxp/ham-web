@@ -12,7 +12,7 @@ pub fn SpecialPropPage() -> impl IntoView {
   set_title("shell.special-propagation-title");
   view! {
     <KnowledgePage title=t("shell.special-propagation-title") subtitle=t("radio.eme-meteor-scatter-aurora")>
-      <TableSection title="特殊传播方式" headers=&["方式", "原理", "特点"] rows=SPECIAL_MODES min_width=640 />
+      <TableSection title="特殊传播方式" headers=&["方式", "原理", "特点"] rows=SPECIAL_MODES class="min-w-[640px]" />
     </KnowledgePage>
   }
 }

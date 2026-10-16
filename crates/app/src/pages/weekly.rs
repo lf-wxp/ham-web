@@ -7,7 +7,7 @@ use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf, tp};
 use crate::share_score;
 use crate::study;
-use crate::ui::{Button, Size, Variant};
+use crate::ui::{Button, Size, Tooltip, Variant};
 use crate::util::{local_today, set_title};
 
 #[component]
@@ -111,8 +111,8 @@ pub fn WeeklyPage() -> impl IntoView {
     if let Some(data_url) = card() {
       leptos::task::spawn_local(async move {
         match share_score::copy_image(&data_url).await {
-          Ok(()) => crate::util::alert(&t("learning.copied-to-clipboard")),
-          Err(e) => crate::util::alert(&tf("learning.copy-failed", &[&e])),
+          Ok(()) => crate::ui::push_success(t("learning.copied-to-clipboard")),
+          Err(e) => crate::ui::push_error(tf("learning.copy-failed", &[&e])),
         }
       });
     }
@@ -125,7 +125,7 @@ pub fn WeeklyPage() -> impl IntoView {
         let title = t("shell.weekly-report");
         leptos::task::spawn_local(async move {
           if let Err(e) = share_score::share_image(&data_url, &filename, &title).await {
-            crate::util::alert(&tf("learning.share-failed", &[&e]));
+            crate::ui::push_error(tf("learning.share-failed", &[&e]));
           }
         });
       }
@@ -218,15 +218,23 @@ pub fn WeeklyPage() -> impl IntoView {
                     let h = (answered as f64 / max_day as f64 * 100.0)
                       .max(if answered > 0 { 4.0 } else { 0.0 });
                     let label = day.get(8..).unwrap_or(&day).to_owned();
+                    let tip = tp(
+                      "common.questions-new",
+                      answered,
+                      &[&(day).to_string(), &(answered).to_string(), &(new).to_string()],
+                    );
                     view! {
-                      <div class="group flex min-w-0 flex-1 flex-col items-center gap-1">
+                      // Tooltip 包整列：柱的百分比高度相对包含块，中间多一层会塌。
+                      <Tooltip class="group flex min-w-0 flex-1 flex-col items-center gap-1" label=tip.clone()>
                         <div
-                          class="w-full bg-primary/70 transition-all group-hover:bg-primary"
+                          class="w-full bg-primary/70 outline-none transition-all group-hover:bg-primary focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
                           style=format!("height: {h}%")
-                          title=tp("common.questions-new", answered, &[&(day).to_string(), &(answered).to_string(), &(new).to_string()])
+                          tabindex="0"
+                          role="img"
+                          aria-label=tip
                         ></div>
                         <span class="text-[9px] text-muted-foreground">{label}</span>
-                      </div>
+                      </Tooltip>
                     }
                   })
                   .collect_view()

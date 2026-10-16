@@ -10,7 +10,6 @@ use crate::i18n::t;
 use crate::icons::IconKind;
 use crate::photo::{self, PhotoKind};
 use crate::ui::FileDropZone;
-use crate::util::alert;
 
 #[component]
 pub(super) fn PhotoUploader(
@@ -19,7 +18,7 @@ pub(super) fn PhotoUploader(
 ) -> impl IntoView {
   let submit = move |kind: PhotoKind, file: File| {
     if !photo::is_image(&file) {
-      alert(&t("common.choose-a-valid-image"));
+      crate::ui::push_error(t("common.choose-a-valid-image"));
       return;
     }
     on_file.run((kind, file));

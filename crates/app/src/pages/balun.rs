@@ -13,7 +13,7 @@ pub fn BalunPage() -> impl IntoView {
   view! {
     <KnowledgePage title=t("knowledge.baluns-and-ununs") subtitle=t("knowledge.balanced-to-unbalanced-impedance")>
       <ConceptsSection title="核心概念" items=BALUN_CONCEPTS />
-      <TableSection title="阻抗比与用途" headers=&["阻抗比", "典型用途", "说明"] rows=BALUN_RATIOS min_width=640 />
+      <TableSection title="阻抗比与用途" headers=&["阻抗比", "典型用途", "说明"] rows=BALUN_RATIOS class="min-w-[640px]" />
       <BulletSection title="绕制与选型要点" items=BALUN_TIPS />
     </KnowledgePage>
   }

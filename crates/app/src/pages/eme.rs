@@ -13,7 +13,7 @@ pub fn EmePage() -> impl IntoView {
   view! {
     <KnowledgePage title=t("shell.eme-moonbounce") subtitle=t("radio.antenna-arrays-power-weak")>
       <ConceptsSection title="核心概念" items=EME_CONCEPTS />
-      <TableSection title="设备要求" headers=&["项目", "要求", "说明"] rows=EME_REQUIREMENTS min_width=560 />
+      <TableSection title="设备要求" headers=&["项目", "要求", "说明"] rows=EME_REQUIREMENTS class="min-w-[560px]" />
       <BulletSection title="操作要点" items=EME_TIPS />
     </KnowledgePage>
   }

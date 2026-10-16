@@ -5,10 +5,12 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde::Deserialize;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{EmptyState, PageContainer, PageHeader};
 use crate::data;
 use crate::i18n::t;
-use crate::ui::{Button, Input, Size, Variant};
+use crate::ui::{
+  Button, Input, Size, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Variant,
+};
 use crate::util::{set_title, storage};
 
 /// 一条信标报告。
@@ -44,7 +46,7 @@ pub fn RbnPage() -> impl IntoView {
   let run = move || {
     let call = callsign.get().trim().to_uppercase();
     if call.is_empty() {
-      crate::util::alert("请输入呼号");
+      crate::ui::push_error(t("common.enter-a-callsign"));
       return;
     }
     loading.set(true);
@@ -93,18 +95,14 @@ pub fn RbnPage() -> impl IntoView {
         {move || {
           if failed.get() {
             return view! {
-              <section class="pxl-card border bg-card p-6 text-sm text-muted-foreground">
-                {move || t("radio.lookup-unavailable-make-sure")}
-              </section>
+              <EmptyState title=Signal::derive(move || t("radio.lookup-unavailable-make-sure")) />
             }
             .into_any();
           }
           let list = spots.get();
           if queried.get() && list.is_empty() {
             return view! {
-              <section class="pxl-card border bg-card p-6 text-sm text-muted-foreground">
-                {move || t("radio.no-skimmer-reports-for")}
-              </section>
+              <EmptyState title=Signal::derive(move || t("radio.no-skimmer-reports-for")) />
             }
             .into_any();
           }
@@ -116,39 +114,38 @@ pub fn RbnPage() -> impl IntoView {
               <h2 class="border-b px-4 py-3 text-sm font-semibold">
                 {t("radio.beacon-reports")} {list.len()} {t("radio.entry")}
               </h2>
-              <div class="overflow-x-auto">
-                <table class="w-full min-w-[560px] border-collapse text-sm">
-                  <thead class="bg-muted/60 text-xs">
-                    <tr>
-                      <th class="border px-3 py-2 text-left">{move || t("radio.skimmers")}</th>
-                      <th class="border px-3 py-2 text-left">{move || t("contest.freq")}</th>
-                      <th class="border px-3 py-2 text-left">{move || t("radio.band")}</th>
-                      <th class="border px-3 py-2 text-left">{move || t("log.mode")}</th>
-                      <th class="border px-3 py-2 text-right">"SNR"</th>
-                      <th class="border px-3 py-2 text-right">"WPM"</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {list
-                      .iter()
-                      .map(|s| {
-                        view! {
-                          <tr class="border-t transition-colors hover:bg-muted/40">
-                            <td class="border px-3 py-2 font-medium">{s.spotter.clone()}</td>
-                            <td class="border px-3 py-2 tabular-nums text-muted-foreground">{format!("{:.1} kHz", s.freq_khz)}</td>
-                            <td class="border px-3 py-2">{s.band.clone()}</td>
-                            <td class="border px-3 py-2">{s.mode.clone()}</td>
-                            <td class=format!("border px-3 py-2 text-right tabular-nums {}", if s.snr >= 0 { "text-emerald-600" } else { "text-muted-foreground" })>
-                              {format!("{} dB", s.snr)}
-                            </td>
-                            <td class="border px-3 py-2 text-right tabular-nums text-muted-foreground">{s.wpm}</td>
-                          </tr>
-                        }
-                      })
-                      .collect_view()}
-                  </tbody>
-                </table>
-              </div>
+              <Table class="min-w-[560px] text-sm">
+                <TableHead>
+                  <TableRow>
+                    <TableHeader class="border px-3 py-2">{move || t("radio.skimmers")}</TableHeader>
+                    <TableHeader class="border px-3 py-2">{move || t("contest.freq")}</TableHeader>
+                    <TableHeader class="border px-3 py-2">{move || t("radio.band")}</TableHeader>
+                    <TableHeader class="border px-3 py-2">{move || t("log.mode")}</TableHeader>
+                    <TableHeader class="border px-3 py-2 text-right">"SNR"</TableHeader>
+                    <TableHeader class="border px-3 py-2 text-right">"WPM"</TableHeader>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {list
+                    .iter()
+                    .map(|s| {
+                      let s = s.clone();
+                      view! {
+                        <TableRow>
+                          <TableCell class="border px-3 py-2 font-medium">{s.spotter.clone()}</TableCell>
+                          <TableCell class="border px-3 py-2 tabular-nums text-muted-foreground">{format!("{:.1} kHz", s.freq_khz)}</TableCell>
+                          <TableCell class="border px-3 py-2">{s.band.clone()}</TableCell>
+                          <TableCell class="border px-3 py-2">{s.mode.clone()}</TableCell>
+                          <TableCell class=format!("border px-3 py-2 text-right tabular-nums {}", if s.snr >= 0 { "text-emerald-600" } else { "text-muted-foreground" })>
+                            {format!("{} dB", s.snr)}
+                          </TableCell>
+                          <TableCell class="border px-3 py-2 text-right tabular-nums text-muted-foreground">{s.wpm}</TableCell>
+                        </TableRow>
+                      }
+                    })
+                    .collect_view()}
+                </TableBody>
+              </Table>
             </section>
           }
           .into_any()

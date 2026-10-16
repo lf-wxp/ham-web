@@ -398,10 +398,10 @@ impl Logbook {
   /// 台站归属要在 [`from_adif`] 消费记录**之前**取：报告里的 `STATION_CALLSIGN` /
   /// `MY_GRIDSQUARE` 是这份 ADIF 自带的身份信息，认领后 `LogEntry` 只留一个本地 id。
   pub fn import(&mut self, records: Vec<AdifRecord>, stations: &mut StationBook) -> (usize, usize) {
-    let mut seen: HashSet<String> = self
+    let mut seen: HashSet<(u64, String)> = self
       .entries
       .iter()
-      .filter_map(LogEntry::dedupe_key)
+      .filter_map(|e| e.dedupe_key().map(|key| (stations.of_entry(e).id, key)))
       .collect();
     let mut id = self.next_id();
     let (mut added, mut dupes) = (0, 0);
@@ -412,13 +412,15 @@ impl Logbook {
       // 没有 `dedupe_key`（日期或时间缺失）就说不上重不重复，一律导入 —— 见
       // `LogEntry::dedupe_key`：这条 ADIF 里没有日期时，把整批同呼号同波段的记录
       // 当成一条吞掉，比放进去几条「待补日期」的记录糟糕得多。
-      if entry.dedupe_key().is_some_and(|key| !seen.insert(key)) {
+      // 不同本台是不同通联；认领身份后才能查重，已有台站的重复行不会产生新档案。
+      let station_id = stations.claim(&station_callsign, &my_gridsquare);
+      if entry
+        .dedupe_key()
+        .is_some_and(|key| !seen.insert((station_id, key)))
+      {
         dupes += 1;
         continue;
       }
-      // 认领放在去重之后：重复行不该在档案册里留下新台站 —— 导入一份全是重复项的
-      // ADIF 时用户以为什么都没发生，档案册却悄悄多出几条，两者对不上。
-      let station_id = stations.claim(&station_callsign, &my_gridsquare);
       entry.fill_location();
       entry.id = id;
       entry.station_id = station_id;
@@ -809,6 +811,8 @@ mod tests {
       entries: vec![qso(5, "K1AA", "14.074", "FT8")],
     };
     let mut book = StationBook::default();
+    book.profiles[0].callsign = "BG4XXX".into();
+    book.profiles[0].gridsquare = "OL99AA".into();
     let before = book.clone();
     let adif = "<EOH>\
       <CALL:4>K1AA<STATION_CALLSIGN:6>BG4XXX<MY_GRIDSQUARE:6>OL99AA<QSO_DATE:8>20260930<TIME_ON:6>123459<FREQ:6>14.075<MODE:3>FT8<EOR>";

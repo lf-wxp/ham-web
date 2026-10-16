@@ -158,7 +158,30 @@ pub fn DailyChallengePage() -> impl IntoView {
             </ChipGroup>
           }
         })
-      />
+      >
+        // 计时条作为页头第二行一起吸顶：页头高度随宽度与译文长度变化，
+        // 单独给计时条写 sticky 偏移会被导航栏或页头标题行盖住。
+        {move || {
+          (started.get() && !finished.get()).then(|| {
+            view! {
+              <div class="mx-auto flex max-w-5xl items-center gap-2 px-4 pb-3">
+                <div class="flex w-full items-center gap-3 pxl-card border bg-card p-3">
+                  <span class="text-xs text-muted-foreground">{move || t("learning.time-left")}</span>
+                  <span class="font-mono text-lg font-semibold tabular-nums">{mmss}</span>
+                  <Button
+                    variant=Variant::Default
+                    size=Size::Sm
+                    class="ml-auto"
+                    on_click=Callback::new(move |_| submit.run(()))
+                  >
+                    {move || t("exam.submit")}
+                  </Button>
+                </div>
+              </div>
+            }
+          })
+        }}
+      </PageHeader>
 
       <PageContainer class="space-y-4">
         {move || {
@@ -262,20 +285,6 @@ pub fn DailyChallengePage() -> impl IntoView {
             })
             .collect_view();
           view! {
-            <div class="sticky top-0 z-10 pxl-card border bg-card p-3">
-              <div class="flex items-center gap-3">
-                <span class="text-xs text-muted-foreground">{move || t("learning.time-left")}</span>
-                <span class="font-mono text-lg font-semibold tabular-nums">{mmss}</span>
-                <Button
-                  variant=Variant::Default
-                  size=Size::Sm
-                  class="ml-auto"
-                  on_click=Callback::new(move |_| submit.run(()))
-                >
-                  {move || t("exam.submit")}
-                </Button>
-              </div>
-            </div>
             <div class="space-y-4">{list}</div>
           }.into_any()
         }}

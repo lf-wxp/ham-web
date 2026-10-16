@@ -12,7 +12,7 @@ pub fn AntennaInstallationPage() -> impl IntoView {
   set_title("shell.antenna-installation");
   view! {
     <KnowledgePage title=t("shell.antenna-installation") subtitle=t("knowledge.height-guys-masts-towers")>
-      <TableSection title="支撑方式" headers=&["方式", "规模", "用途"] rows=SUPPORT_TYPES min_width=560 />
+      <TableSection title="支撑方式" headers=&["方式", "规模", "用途"] rows=SUPPORT_TYPES class="min-w-[560px]" />
       <BulletSection title="架设要点" items=INSTALL_TIPS />
     </KnowledgePage>
   }

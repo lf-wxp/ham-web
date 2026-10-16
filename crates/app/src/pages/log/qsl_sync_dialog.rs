@@ -17,13 +17,14 @@ use leptos::task::spawn_local;
 use crate::i18n::{t, tf};
 use crate::ui::{
   Button, Checkbox, Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, FileInput,
-  RadioGroup, RadioGroupItem, Size, Textarea, Variant,
+  RadioGroup, RadioGroupItem, Size, Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Textarea, ToastKind, Variant,
 };
 
 use super::use_log_store;
 
 const HINT: &str = "text-xs text-muted-foreground";
-const TH: &str = "border-b px-2 py-1.5 text-left font-medium text-muted-foreground";
+const TH: &str = "border-b px-2 py-1.5 font-medium text-muted-foreground";
 
 /// 差异表里显示的本地缺失行数上限（再多就只报总数）。
 const MISSING_PREVIEW: usize = 8;
@@ -106,7 +107,7 @@ pub fn QslSyncDialog(open: RwSignal<bool>) -> impl IntoView {
   let analyze = move || {
     let adif = text.get_untracked();
     if adif.trim().is_empty() {
-      crate::util::alert(&t("log.paste-or-upload-a"));
+      crate::ui::push_error(t("log.paste-or-upload-a"));
       return false;
     }
     let src = QslSource::from_id(&source.get_untracked());
@@ -117,13 +118,13 @@ pub fn QslSyncDialog(open: RwSignal<bool>) -> impl IntoView {
       diff.set(None);
       pick_added.set(BTreeSet::new());
       pick_mirror.set(BTreeSet::new());
-      crate::util::alert(&t("log.diff-report-empty"));
+      crate::ui::push_error(t("log.diff-report-empty"));
       return false;
     }
     // 文本被截断（有 `<` 没有 `>`）：条数可能不全。仍然让人继续（部分同步也有用），
     // 但必须说清楚，免得把「报告就这么长」当成「没有差异」。
     if d.truncated {
-      crate::util::alert(&t("log.diff-report-truncated"));
+      crate::ui::push(ToastKind::Info, t("log.diff-report-truncated"));
     }
     pick_added.set(
       d.records
@@ -180,7 +181,7 @@ pub fn QslSyncDialog(open: RwSignal<bool>) -> impl IntoView {
           applied.set(None);
           diff.set(None);
         }
-        None => crate::util::alert(&t("common.file-read-failed")),
+        None => crate::ui::push_error(t("common.file-read-failed")),
       }
     });
   });
@@ -322,62 +323,60 @@ pub fn QslSyncDialog(open: RwSignal<bool>) -> impl IntoView {
                 {(!d.records.is_empty())
                   .then(|| {
                     view! {
-                      <div class="max-h-80 overflow-y-auto border">
-                        <table class="w-full border-collapse text-xs">
-                          <thead>
-                            <tr>
-                              <th class=TH>{move || t("log.callsign")}</th>
-                              <th class=TH>{move || t("log.diff-added")}</th>
-                              <th class=TH>{move || t("log.diff-conflicts")}</th>
-                              <th class=TH>{move || t("log.diff-apply-added")}</th>
-                              <th class=TH>{move || t("log.diff-prefer-remote")}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {d
-                              .records
-                              .iter()
-                              .map(|q| {
-                                let id = q.entry_id;
-                                let can_add = !q.added.is_empty();
-                                let has_conflict = !q.conflicts.is_empty();
-                                let added_text = if can_add { flags_text(&q.added) } else { "—".to_owned() };
-                                let conflict_text = if has_conflict { flags_text(&q.conflicts) } else { "—".to_owned() };
-                                view! {
-                                  <tr class="border-b last:border-b-0">
-                                    <td class="px-2 py-1.5 align-top">
-                                      <span class="font-mono font-medium">{q.callsign.clone()}</span>
-                                      <span class="block text-muted-foreground">
-                                        {format!("{} · {} · {}", q.date, q.band, q.mode)}
-                                      </span>
-                                    </td>
-                                    <td class="px-2 py-1.5 align-top">{added_text}</td>
-                                    <td class="px-2 py-1.5 align-top text-amber-600 dark:text-amber-400">
-                                      {conflict_text}
-                                    </td>
-                                    <td class="px-2 py-1.5 align-top">
-                                      <Checkbox
-                                        checked=Signal::derive(move || pick_added.with(|s| s.contains(&id)))
-                                        on_change=Callback::new(move |v: bool| toggle(pick_added, id, v))
-                                        disabled=Signal::derive(move || !can_add)
-                                        aria_label=Signal::derive(move || t("log.diff-apply-added"))
-                                      />
-                                    </td>
-                                    <td class="px-2 py-1.5 align-top">
-                                      <Checkbox
-                                        checked=Signal::derive(move || pick_mirror.with(|s| s.contains(&id)))
-                                        on_change=Callback::new(move |v: bool| toggle(pick_mirror, id, v))
-                                        disabled=Signal::derive(move || !has_conflict)
-                                        aria_label=Signal::derive(move || t("log.diff-prefer-remote"))
-                                      />
-                                    </td>
-                                  </tr>
-                                }
-                              })
-                              .collect_view()}
-                          </tbody>
-                        </table>
-                      </div>
+                      <Table class="text-xs" wrapper_class="max-h-80 border">
+                        <TableHead>
+                          <TableRow>
+                            <TableHeader class=TH>{move || t("log.callsign")}</TableHeader>
+                            <TableHeader class=TH>{move || t("log.diff-added")}</TableHeader>
+                            <TableHeader class=TH>{move || t("log.diff-conflicts")}</TableHeader>
+                            <TableHeader class=TH>{move || t("log.diff-apply-added")}</TableHeader>
+                            <TableHeader class=TH>{move || t("log.diff-prefer-remote")}</TableHeader>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {d
+                            .records
+                            .iter()
+                            .map(|q| {
+                              let id = q.entry_id;
+                              let can_add = !q.added.is_empty();
+                              let has_conflict = !q.conflicts.is_empty();
+                              let added_text = if can_add { flags_text(&q.added) } else { "—".to_owned() };
+                              let conflict_text = if has_conflict { flags_text(&q.conflicts) } else { "—".to_owned() };
+                              let callsign = q.callsign.clone();
+                              let meta = format!("{} · {} · {}", q.date, q.band, q.mode);
+                              view! {
+                                <TableRow class="border-b last:border-b-0">
+                                  <TableCell class="px-2 py-1.5 align-top">
+                                    <span class="font-mono font-medium">{callsign}</span>
+                                    <span class="block text-muted-foreground">{meta}</span>
+                                  </TableCell>
+                                  <TableCell class="px-2 py-1.5 align-top">{added_text}</TableCell>
+                                  <TableCell class="px-2 py-1.5 align-top text-amber-600 dark:text-amber-400">
+                                    {conflict_text}
+                                  </TableCell>
+                                  <TableCell class="px-2 py-1.5 align-top">
+                                    <Checkbox
+                                      checked=Signal::derive(move || pick_added.with(|s| s.contains(&id)))
+                                      on_change=Callback::new(move |v: bool| toggle(pick_added, id, v))
+                                      disabled=Signal::derive(move || !can_add)
+                                      aria_label=Signal::derive(move || t("log.diff-apply-added"))
+                                    />
+                                  </TableCell>
+                                  <TableCell class="px-2 py-1.5 align-top">
+                                    <Checkbox
+                                      checked=Signal::derive(move || pick_mirror.with(|s| s.contains(&id)))
+                                      on_change=Callback::new(move |v: bool| toggle(pick_mirror, id, v))
+                                      disabled=Signal::derive(move || !has_conflict)
+                                      aria_label=Signal::derive(move || t("log.diff-prefer-remote"))
+                                    />
+                                  </TableCell>
+                                </TableRow>
+                              }
+                            })
+                            .collect_view()}
+                        </TableBody>
+                      </Table>
                     }
                   })}
 

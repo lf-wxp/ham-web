@@ -22,25 +22,25 @@ pub fn DigitalCommsPage() -> impl IntoView {
         title="数字调制方式"
         headers=&["方式", "每符号比特", "特点"]
         rows=DIGITAL_SCHEMES
-        min_width=720
+        class="min-w-[720px]"
       />
       <TableSection
         title="关键公式"
         headers=&["名称", "公式", "含义"]
         rows=DIGITAL_FORMULAS
-        min_width=720
+        class="min-w-[720px]"
       />
       <TableSection
         title="信道编码与差错控制"
         headers=&["编码", "原理", "用途 / 特点"]
         rows=CHANNEL_CODING
-        min_width=720
+        class="min-w-[720px]"
       />
       <TableSection
         title="弱信号协议机理"
         headers=&["协议", "调制与周期", "机理"]
         rows=WEAK_SIGNAL_PROTOCOLS
-        min_width=560
+        class="min-w-[560px]"
       />
       <StepsSection title="数字通信链路" items=DIGITAL_STEPS />
       <BulletSection title="要点" items=DIGITAL_TIPS />

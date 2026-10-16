@@ -6,8 +6,7 @@ use leptos::prelude::*;
 use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
 use crate::icons::{Icon, IconKind};
 use crate::ui::Stat;
-use crate::util::document;
-use crate::util::set_title;
+use crate::util::{document, scroll_to_element, set_title};
 
 use super::band_card::BandCard;
 use super::band_quiz::BandQuiz;
@@ -22,7 +21,8 @@ pub fn BandsPage() -> impl IntoView {
 
   let jump = Callback::new(move |code: &'static str| {
     if let Some(el) = document().get_element_by_id(&footnote_id(code)) {
-      el.scroll_into_view();
+      // 让出吸顶页头：`scroll_into_view` 会把脚注开头滚到视口顶部，被页头盖住。
+      scroll_to_element(&el);
     }
     active.set(Some(code));
     set_timeout(
@@ -84,6 +84,9 @@ pub fn BandsPage() -> impl IntoView {
           <span class="inline-flex flex-wrap items-center gap-1.5">{move || t("knowledge.usage-status")} {legend}</span>
         </div>
 
+        // 刻意的例外：波段表的 tbody 有大量动态 `rowspan` / `colspan`
+        // （`table_rows.rs` 按波段跨行合并单元格），`TableCell` 的静态 `colspan: u32`
+        // 表达不了，整表保留原生 `<table>`。见 docs/ui-audit.md。
         <div class="hidden overflow-x-auto pxl-card border bg-card md:block">
           <table class="w-full min-w-[960px] border-collapse border-hidden text-sm">
             <thead class="bg-muted/60 text-xs">

@@ -9,11 +9,10 @@ const ADIF = `e2e
 
 test("QSL 标签：按呼号合并、标记已寄出、切换版式", async ({ page }) => {
   await page.goto("/log");
-  const imported = page.waitForEvent("dialog");
+  // 导入结果走全局 Toast，不再弹原生 alert。
   await page
     .locator('input[type="file"][accept*=".adi"]')
     .setInputFiles({ name: "e2e.adi", mimeType: "text/plain", buffer: Buffer.from(ADIF) });
-  await (await imported).accept();
 
   await page.getByRole("link", { name: "打印 QSL 标签" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "QSL 标签打印" })).toBeVisible();

@@ -9,7 +9,7 @@ use crate::components::common::PageHeader;
 use crate::pages::log::{LogEntry, use_log_store};
 use crate::ui::{
   Button, ButtonLink, Chip, ChipGroup, ControlSize, DatePicker, NativeSelect, NumberField,
-  SelectOption, Size, Variant,
+  SelectOption, Size, Tooltip, Variant,
 };
 use crate::util::{set_title, storage, window};
 
@@ -268,8 +268,9 @@ pub fn QslLabelsPage() -> impl IntoView {
               class="w-auto"
             />
           </label>
-          <label class="inline-flex items-center gap-1.5" title=move || t("log.partly-used-sheet-skip")>
-            {move || t("log.skip-first")}
+          <Tooltip label=Signal::derive(move || t("log.partly-used-sheet-skip"))>
+            <label class="inline-flex items-center gap-1.5">
+              {move || t("log.skip-first")}
             <NumberField
               value=Signal::derive(move || skip.get().to_string())
               on_change=Callback::new(move |v: String| {
@@ -283,7 +284,8 @@ pub fn QslLabelsPage() -> impl IntoView {
               controls=false
             />
             {move || t("log.labels")}
-          </label>
+            </label>
+          </Tooltip>
           <span class="tabular-nums" aria-live="polite">
             {move || {
               let l = current.get();

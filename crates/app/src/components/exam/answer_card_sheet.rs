@@ -148,7 +148,7 @@ pub fn AnswerCardSheet(
       <div data-slot="sheet-header" class="flex flex-col gap-1.5 p-4">
         <h2 data-slot="sheet-title" class="text-foreground font-semibold">{move || t("exam.answer-card")}</h2>
       </div>
-      <div class="px-4 space-y-3 overflow-y-auto">
+      <div class="px-4 space-y-3 overflow-y-auto pt-1">
         <div class="flex items-center justify-between gap-3 text-sm">
           <div class="text-muted-foreground">
             {move || t("exam.answered-summary")} " " {answered_count} " / " {move || questions.with(|q| q.len())} "｜" {move || t("exam.flag")} " " {flagged_count}

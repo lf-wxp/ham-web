@@ -228,6 +228,7 @@
   "common.network": "Network",
   "common.new-york": "New York",
   "common.next-month": "Next month",
+  "common.next-page": "Next page",
   "common.no-class-mock-exam": "No Class {} mock exam records yet.",
   "common.note-content": "Note content",
   "common.of-the-last-attempts": {
@@ -250,6 +251,7 @@
   "common.open-to-any-origin": "Open to any origin (read-only GET), so the web frontend can fetch directly without your own proxy.",
   "common.optional": "optional",
   "common.organisations-and-concepts": "Organisations and concepts",
+  "common.pagination": "Pagination",
   "common.pair": "{} · {}",
   "common.pass-in-good-for": "Pass in {} {} ({}) · good for APT recording · max {}° · from {}",
   "common.pass-in-max-from": "Pass in {} {} ({}) · max {}° · from {}",
@@ -265,6 +267,7 @@
   "common.power-supply-types": "Power supply types",
   "common.practical-notes": "Practical notes",
   "common.press-while-answering-to": "Press ? while answering to open this help anytime.",
+  "common.prev-page": "Previous page",
   "common.preview": "Preview {}",
   "common.preview-with-code": "Preview {}: {}",
   "common.preview-question-image": "Preview question image",
@@ -465,5 +468,6 @@
   "common.topic-basics": "Electronics and electrical basics",
   "common.topic-basics-desc": "Conductors and insulators, static and direct current, electrical units, power supplies, components and circuits, multimeter measurements",
   "common.topic-safety": "Safety and EMC protection",
-  "common.topic-safety-desc": "Transmitter specifications, electromagnetic environment exposure limits, lightning protection and grounding, electrical and battery safety"
+  "common.topic-safety-desc": "Transmitter specifications, electromagnetic environment exposure limits, lightning protection and grounding, electrical and battery safety",
+  "common.cat-protocol-kenwood": "Kenwood / Elecraft / newer Yaesu"
 }

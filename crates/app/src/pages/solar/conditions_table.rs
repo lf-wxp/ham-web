@@ -2,6 +2,7 @@ use leptos::prelude::*;
 
 use super::{BandCond, condition_color};
 use crate::i18n::t;
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 
 /// 各波段传播条件表。
 #[component]
@@ -28,32 +29,30 @@ pub(super) fn ConditionsTable(conditions: Vec<BandCond>) -> impl IntoView {
     .collect();
 
   view! {
-    <div class="overflow-x-auto">
-      <table class="w-full min-w-[320px] border-collapse text-sm">
-        <thead class="bg-muted/60 text-xs">
-          <tr>
-            <th class="border px-3 py-2 text-left">{move || t("radio.band")}</th>
-            <th class="border px-3 py-2 text-left">{move || t("radio.day")}</th>
-            <th class="border px-3 py-2 text-left">{move || t("radio.night")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows
-            .into_iter()
-            .map(|(band, day, night)| {
-              let day_color = condition_color(&day);
-              let night_color = condition_color(&night);
-              view! {
-                <tr class="border-t">
-                  <td class="border px-3 py-2 font-mono">{band}</td>
-                  <td class=format!("border px-3 py-2 font-medium {day_color}")>{day}</td>
-                  <td class=format!("border px-3 py-2 font-medium {night_color}")>{night}</td>
-                </tr>
-              }
-            })
-            .collect_view()}
-        </tbody>
-      </table>
-    </div>
+    <Table class="min-w-[320px] text-sm">
+      <TableHead>
+        <TableRow>
+          <TableHeader class="border px-3 py-2">{move || t("radio.band")}</TableHeader>
+          <TableHeader class="border px-3 py-2">{move || t("radio.day")}</TableHeader>
+          <TableHeader class="border px-3 py-2">{move || t("radio.night")}</TableHeader>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {rows
+          .into_iter()
+          .map(|(band, day, night)| {
+            let day_color = condition_color(&day);
+            let night_color = condition_color(&night);
+            view! {
+              <TableRow>
+                <TableCell class="border px-3 py-2 font-mono">{band}</TableCell>
+                <TableCell class=format!("border px-3 py-2 font-medium {day_color}")>{day}</TableCell>
+                <TableCell class=format!("border px-3 py-2 font-medium {night_color}")>{night}</TableCell>
+              </TableRow>
+            }
+          })
+          .collect_view()}
+      </TableBody>
+    </Table>
   }
 }

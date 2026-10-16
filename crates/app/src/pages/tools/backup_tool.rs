@@ -57,7 +57,7 @@ pub(super) fn BackupTool() -> impl IntoView {
       }
       let Some(text) = text else {
         importing.set(false);
-        crate::util::alert(&t("common.file-read-failed"));
+        crate::ui::push_error(t("common.file-read-failed"));
         return;
       };
       let result = if merge {
@@ -79,9 +79,9 @@ pub(super) fn BackupTool() -> impl IntoView {
           } else {
             tp("tools.restored-records", n as u32, &[&n.to_string()])
           };
-          crate::util::alert(&msg);
+          crate::ui::push_success(msg);
         }
-        Err(e) => crate::util::alert(&tf("tools.import-failed", &[&e.to_string()])),
+        Err(e) => crate::ui::push_error(tf("tools.import-failed", &[&e.to_string()])),
       }
       usage.set(storage::usage());
     });
@@ -105,8 +105,8 @@ pub(super) fn BackupTool() -> impl IntoView {
         return;
       }
       match result {
-        Ok(n) => crate::util::alert(&tp("tools.exported-records", n as u32, &[&n.to_string()])),
-        Err(e) => crate::util::alert(&e),
+        Ok(n) => crate::ui::push_success(tp("tools.exported-records", n as u32, &[&n.to_string()])),
+        Err(e) => crate::ui::push_error(e),
       }
       exporting.set(false);
     });

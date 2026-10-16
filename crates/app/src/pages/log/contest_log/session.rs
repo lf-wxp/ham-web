@@ -9,6 +9,11 @@ pub(super) struct Session {
   pub(super) contest_id: String,
   /// 本场开始时间（UTC，`YYYY-MM-DD HH:MM`），之前的同名竞赛通联不计入。
   pub(super) start: String,
+  /// 导入快照的结束上界（不含）；空值兼容未限定结束时间的旧场次。
+  #[serde(default)]
+  pub(super) end: String,
+  #[serde(default)]
+  pub(super) station_id: u64,
   /// 我发出的固定交换（CQ 分区 / 功率），序号类交换自动递增。
   pub(super) my_exch: String,
   pub(super) freq: String,
@@ -22,6 +27,8 @@ impl Default for Session {
     Self {
       contest_id: CONTESTS[0].id.to_owned(),
       start: format!("{} {}", utc_today(), utc_now_time()),
+      end: String::new(),
+      station_id: 0,
       my_exch: String::new(),
       freq: "14.025".to_owned(),
       mode: "CW".to_owned(),
@@ -42,7 +49,18 @@ impl Session {
     }
   }
 
-  pub(super) fn includes(&self, e: &LogEntry) -> bool {
-    e.contest_id == self.contest_id && format!("{} {}", e.date, e.time) >= self.start
+  pub(super) fn includes(
+    &self,
+    e: &LogEntry,
+    stations: &ham_web_core::station::StationBook,
+  ) -> bool {
+    ham_web_core::contest::session_contains(
+      e,
+      &self.contest_id,
+      self.station_id,
+      stations,
+      &self.start,
+      &self.end,
+    )
   }
 }

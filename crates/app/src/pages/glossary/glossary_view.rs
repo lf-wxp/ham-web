@@ -8,12 +8,12 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{PageContainer, PageHeader, StickyPanel};
 use crate::components::sidebar_item::SidebarItem;
 use crate::data;
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
-use crate::ui::{Button, Chip, ChipGroup, ChipToggle, Input, InputType, Variant};
+use crate::ui::{Button, ChipToggle, Input, InputType, MobileNavDrawer, Tooltip, Variant};
 use crate::util::window;
 
 use super::stat::Stat;
@@ -104,6 +104,8 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
     cat.set(key.to_owned());
     visible.set(PAGE);
   };
+  // 移动端分类抽屉的开关：选中分类后要主动收起。
+  let cat_open = RwSignal::new(false);
   let jump_to = Callback::new(move |term: String| {
     kw.set(term);
     cat.set(ALL.to_owned());
@@ -127,10 +129,15 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
         view! {
           <SidebarItem
             active=Signal::derive(move || cat.with(|c| c == key))
-            on_click=Callback::new(move |_| select_cat(key))
+            on_click=Callback::new(move |_| {
+              select_cat(key);
+              cat_open.set(false);
+            })
           >
             <span class="h-2 w-2 shrink-0" style=format!("background: {color}")></span>
-            <span class="truncate" title=name.to_string()>{name}</span>
+            <Tooltip class="min-w-0 flex-1" label=name.to_string()>
+              <span class="w-full truncate">{name}</span>
+            </Tooltip>
             <span class="ml-auto text-xs tabular-nums">{move || cat_count.with(|m| m.get(key).copied().unwrap_or(0))}</span>
           </SidebarItem>
         }
@@ -138,27 +145,21 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
       .collect_view()
   };
 
-  let chips = move || {
-    let mut keys = vec![ALL];
-    keys.extend(categories());
+  // 分类列表（桌面侧栏与移动端抽屉共用）：全部 + 各分类。
+  let category_tree = move || {
     view! {
-      <ChipGroup
-        value=Signal::derive(move || cat.get())
-        on_change=Callback::new(move |v: String| select_cat(&v))
-        aria_label=Signal::derive(move || t("knowledge.term-categories"))
-        class="flex-nowrap"
+      <SidebarItem
+        active=Signal::derive(move || cat.with(|c| c == ALL))
+        on_click=Callback::new(move |_| {
+          select_cat(ALL);
+          cat_open.set(false);
+        })
       >
-        {keys
-          .into_iter()
-          .map(|key| {
-            let label = view! {
-              {move || if key == ALL { t("exam.all") } else { t(category_meta(key).0) }}
-            }
-              .into_any();
-            view! { <Chip value=key.to_string()>{label}</Chip> }
-          })
-          .collect_view()}
-      </ChipGroup>
+        <span class="h-2 w-2 bg-foreground/60"></span>
+        {move || t("knowledge.all-terms")}
+        <span class="ml-auto text-xs tabular-nums">{move || base.with(Vec::len)}</span>
+      </SidebarItem>
+      {sidebar}
     }
   };
 
@@ -194,7 +195,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <PageHeader class="top-16"
+      <PageHeader
         title=move || t("shell.glossary")
         subtitle=move || t("knowledge.common-ham-terms-english")
         actions=ViewFn::from(move || {
@@ -227,21 +228,22 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
 
       <PageContainer class="space-y-0 grid grid-cols-1 gap-5 md:grid-cols-[240px_1fr]">
         <aside class="hidden md:block">
-          <div class="sticky top-[136px] max-h-[calc(100vh-152px)] overflow-y-auto pxl-card border bg-card p-2">
-            <SidebarItem
-              active=Signal::derive(move || cat.with(|c| c == ALL))
-              on_click=Callback::new(move |_| select_cat(ALL))
-            >
-              <span class="h-2 w-2 bg-foreground/60"></span>
-              {move || t("knowledge.all-terms")}
-              <span class="ml-auto text-xs tabular-nums">{move || base.with(Vec::len)}</span>
-            </SidebarItem>
-            {sidebar}
-          </div>
+          <StickyPanel class="max-h-[calc(100vh-var(--sticky-top)-16px)] overflow-y-auto pxl-card border bg-card p-2">
+            {category_tree()}
+          </StickyPanel>
         </aside>
 
+        <MobileNavDrawer
+          open=cat_open
+          title=Signal::derive(move || t("knowledge.term-categories"))
+          button_label=Signal::derive(move || t("knowledge.term-categories"))
+          icon=IconKind::SlidersHorizontal
+          class="md:hidden"
+        >
+          {category_tree()}
+        </MobileNavDrawer>
+
         <div class="min-w-0">
-          <div class="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 md:hidden">{chips}</div>
           <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label=t("knowledge.total-terms") value=Signal::derive(move || base.with(Vec::len)) />
             <Stat label=t("knowledge.english-abbreviations") value=abbr_count />

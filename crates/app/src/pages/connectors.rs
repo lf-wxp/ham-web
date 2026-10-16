@@ -23,7 +23,7 @@ pub fn ConnectorsPage() -> impl IntoView {
           "knowledge.features-and-typical-use",
         ]
         rows=CONNECTORS
-        min_width=720
+        class="min-w-[720px]"
       />
       <BulletSection title=t("knowledge.connector-selection-tips") items=SELECTION_TIPS />
       <TableSection
@@ -34,7 +34,7 @@ pub fn ConnectorsPage() -> impl IntoView {
           "knowledge.selection-advice",
         ]
         rows=CABLES
-        min_width=640
+        class="min-w-[640px]"
       />
       <BulletSection
         title=t("knowledge.connector-installation-and-waterproofing")

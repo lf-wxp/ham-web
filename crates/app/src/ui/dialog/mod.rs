@@ -10,6 +10,7 @@ mod dialog_root;
 mod dialog_title;
 mod shared;
 mod sheet;
+mod toast_live_region;
 
 pub use dialog_description::DialogDescription;
 pub use dialog_footer::DialogFooter;

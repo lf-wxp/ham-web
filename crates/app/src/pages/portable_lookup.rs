@@ -7,7 +7,6 @@ use crate::data;
 use crate::i18n::t;
 use crate::pages::log::use_log_store;
 use crate::ui::{Button, Chip, ChipGroup, Input, Size, Variant};
-use crate::util::alert;
 
 /// SOTA 山峰详情。
 #[derive(serde::Deserialize, Clone)]
@@ -51,7 +50,7 @@ pub fn PortableLookup() -> impl IntoView {
   let run = move || {
     let c = code.get().trim().to_uppercase();
     if c.len() < 3 {
-      alert("请输入编号，如 G/SP-001 或 K-0001");
+      crate::ui::push_error(t("common.enter-a-reference-e"));
       return;
     }
     loading.set(true);

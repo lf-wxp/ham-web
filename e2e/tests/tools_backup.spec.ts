@@ -300,19 +300,13 @@ test("数据备份：导出 JSON 含本地数据", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 2, name: "数据备份" })).toBeVisible();
   await expect(page.getByText("本地存储占用（约）")).toBeVisible();
 
-  // 导出成功后有一个「已导出 N 项」提示 —— 监听器必须在点击前注册，
-  // 否则 alert 会在等待下载的间隙被 Playwright 自动关掉。
+  // 导出成功后有一个「已导出 N 项」提示（全局 Toast，`data-slot="toast"` 定位，
+  // `/tools` 各工具的结果框也带 `role="status"`，直接按 role 取会撞 strict mode）。
   const dl = page.waitForEvent("download");
-  const dlg = page.waitForEvent("dialog");
-  // alert 会挂起页面所有动作 —— 点击不等待完成，直接等下载与对话框两个事件。
-  page.getByRole("button", { name: "导出备份" })
-    .click({ noWaitAfter: true })
-    .catch(() => {});
+  await page.getByRole("button", { name: "导出备份" }).click();
   const file = await dl;
   expect(file.suggestedFilename()).toMatch(/^ham-backup-\d{8}\.json$/);
-  const d = await dlg;
-  expect(d.message()).toMatch(/^已导出 \d+ 项$/);
-  await d.accept();
+  await expect(page.locator('[data-slot="toast"]')).toContainText(/^已导出 \d+ 项$/);
 
   const data = JSON.parse(await readFile(await file.path(), "utf8"));
   expect(data["e2e-backup-key"]).toBe("e2e-value");
@@ -331,15 +325,9 @@ test("数据备份：按模块勾选导出（不勾选的通联数据不进备�
   await section.getByLabel(/^通联数据/).uncheck();
   await section.getByLabel(/^QSL 影像（扫描件/).uncheck();
   const dl = page.waitForEvent("download");
-  const dlg = page.waitForEvent("dialog");
-  section
-    .getByRole("button", { name: "导出备份" })
-    .click({ noWaitAfter: true })
-    .catch(() => {});
+  await section.getByRole("button", { name: "导出备份" }).click();
   const file = await dl;
-  const d = await dlg;
-  expect(d.message()).toMatch(/^已导出 \d+ 项$/);
-  await d.accept();
+  await expect(page.locator('[data-slot="toast"]')).toContainText(/^已导出 \d+ 项$/);
 
   const data = JSON.parse(await readFile(await file.path(), "utf8"));
   expect(data["logbook"]).toBeUndefined();
@@ -359,28 +347,20 @@ test("数据备份：只勾选 QSL 影像也要导出影像与索引；导入拒
     "qsl-image:8": "data:image/svg+xml;base64,PHN2Zz4=",
     "qsl-image:x": png,
   };
-  const imported = page.waitForEvent("dialog");
   await section.locator('input[type="file"]').first().setInputFiles({
     name: "qsl.json",
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(backup)),
   });
-  const importDlg = await imported;
-  // 索引（localStorage）+ 合格的 1 张影像 = 2 条。
-  expect(importDlg.message()).toBe("已恢复 2 条数据");
-  await importDlg.accept();
+  // 索引（localStorage）+ 合格的 1 张影像 = 2 条（结果走全局 Toast）。
+  await expect(page.locator('[data-slot="toast"]')).toContainText("已恢复 2 条数据");
 
   // 取消「通联数据」与「其他」：索引不在被勾选的模块里，影像仍要导出。
   await section.getByLabel(/^通联数据/).uncheck();
   await section.getByLabel(/^其他本地数据/).uncheck();
   const dl = page.waitForEvent("download");
-  const dlg = page.waitForEvent("dialog");
-  section
-    .getByRole("button", { name: "导出备份" })
-    .click({ noWaitAfter: true })
-    .catch(() => {});
+  await section.getByRole("button", { name: "导出备份" }).click();
   const file = await dl;
-  await (await dlg).accept();
 
   const data = JSON.parse(await readFile(await file.path(), "utf8"));
   expect(data["qsl-image:7"]).toBe(png);
@@ -410,28 +390,23 @@ test("数据备份：导入恢复与合并导入", async ({ page }) => {
     logbook: JSON.stringify({ entries: [] }),
     "e2e-imported": "cover",
   };
-  let alerted = page.waitForEvent("dialog");
   await inputs.nth(0).setInputFiles({
     name: "backup.json",
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(restore)),
   });
-  let dlg = await alerted;
-  expect(dlg.message()).toMatch(/^已恢复 \d+ 条数据$/);
-  await dlg.accept();
+  await expect(page.locator('[data-slot="toast"]')).toContainText(/^已恢复 \d+ 条数据$/);
   expect(await page.evaluate(() => localStorage.getItem("e2e-imported"))).toBe("cover");
 
   // 合并导入（保留本机已有的 key，并入新的）
-  alerted = page.waitForEvent("dialog");
   await inputs.nth(1).setInputFiles({
     name: "backup2.json",
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify({ "e2e-merged": "yes" })),
   });
-  dlg = await alerted;
-  expect(dlg.message()).toMatch(/^已合并 \d+ 条数据$/);
-  await dlg.accept();
+  await expect(page.locator('[data-slot="toast"]')).toContainText(/^已合并 \d+ 条数据$/);
   expect(await page.evaluate(() => localStorage.getItem("e2e-imported"))).toBe("cover");
+  expect(await page.evaluate(() => localStorage.getItem("e2e-merged"))).toBe("yes");
 });
 
 test("数据备份：跨设备合并重映射影像 ID，保留本机扫描件", async ({ page }) => {
@@ -443,13 +418,13 @@ test("数据备份：跨设备合并重映射影像 ID，保留本机扫描件",
   const a = "data:image/png;base64,QUFB";
   const b = "data:image/png;base64,QkJC";
   const importFile = async (merge: boolean, data: Record<string, string>) => {
-    const alerted = page.waitForEvent("dialog");
+    await expect(page.locator('[data-slot="toast"]')).toHaveCount(0);
     await inputs.nth(merge ? 1 : 0).setInputFiles({
       name: "images.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(data)),
     });
-    const dlg = await alerted;
-    expect(dlg.message()).not.toMatch(/失败/);
-    await dlg.accept();
+    await expect(page.locator('[data-slot="toast"]')).toContainText(merge ? /^已合并/ : /^已恢复/);
+    await expect(page.locator('section#backup input[type="file"]').first()).toBeEnabled();
+    await expect(page.locator('[data-slot="toast"]')).toHaveCount(0);
   };
   await importFile(false, {
     logbook: JSON.stringify({ entries: [entry(1, "JA1AAA", "2026-01-01")] }),
@@ -465,11 +440,8 @@ test("数据备份：跨设备合并重映射影像 ID，保留本机扫描件",
   expect(book.entries.map((e: { id: number }) => e.id)).toEqual([1, 2]);
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("qsl-image-index") ?? "null"))).toEqual([1, 2]);
   const download = page.waitForEvent("download");
-  const alerted = page.waitForEvent("dialog");
-  const click = page.getByRole("button", { name: "导出备份" }).click();
+  await page.getByRole("button", { name: "导出备份" }).click();
   const file = await download;
-  await (await alerted).accept();
-  await click;
   const data = JSON.parse(await readFile(await file.path(), "utf8"));
   expect(data["qsl-image:1"]).toBe(a);
   expect(data["qsl-image:2"]).toBe(b);
@@ -492,23 +464,20 @@ test("覆盖新日志会删除同 ID 的旧影像，随后合并正确影像不�
   const a = "data:image/png;base64,QUFB";
   const b = "data:image/png;base64,QkJC";
   const restore = async (merge: boolean, data: Record<string, string>) => {
-    const dialog = page.waitForEvent("dialog");
+    await expect(page.locator('[data-slot="toast"]')).toHaveCount(0);
     await inputs.nth(merge ? 1 : 0).setInputFiles({
       name: "cover.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(data)),
     });
-    const shown = await dialog;
-    expect(shown.message()).not.toMatch(/失败/);
-    await shown.accept();
+    await expect(page.locator('[data-slot="toast"]')).toContainText(merge ? /^已合并/ : /^已恢复/);
+    await expect(page.locator('section#backup input[type="file"]').first()).toBeEnabled();
+    await expect(page.locator('[data-slot="toast"]')).toHaveCount(0);
   };
   await restore(false, { logbook: log("JA1AAA"), "qsl-image-index": "[1]", "qsl-image:1": a });
   await restore(false, { logbook: log("W1AW"), "qsl-image-index": "[]" });
   await restore(true, { logbook: log("W1AW"), "qsl-image-index": "[1]", "qsl-image:1": b });
   const download = page.waitForEvent("download");
-  const dialog = page.waitForEvent("dialog");
-  const click = page.getByRole("button", { name: "导出备份" }).click();
+  await page.getByRole("button", { name: "导出备份" }).click();
   const file = await download;
-  await (await dialog).accept();
-  await click;
   const data = JSON.parse(await readFile(await file.path(), "utf8"));
   expect(JSON.parse(data.logbook).entries[0].callsign).toBe("W1AW");
   expect(data["qsl-image:1"]).toBe(b);
@@ -518,13 +487,10 @@ test("数据备份：非法 JSON 给出失败提示而不是静默", async ({ pa
   await page.goto("/tools#backup");
   await expect(page.getByRole("heading", { level: 2, name: "数据备份" })).toBeVisible();
 
-  const alerted = page.waitForEvent("dialog");
   await page.locator('section#backup input[type="file"]').first().setInputFiles({
     name: "broken.json",
     mimeType: "application/json",
     buffer: Buffer.from("这不是 JSON"),
   });
-  const dlg = await alerted;
-  expect(dlg.message()).toMatch(/^导入失败：/);
-  await dlg.accept();
+  await expect(page.locator('[data-slot="toast"]')).toContainText(/^导入失败：/);
 });

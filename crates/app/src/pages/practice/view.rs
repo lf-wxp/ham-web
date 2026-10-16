@@ -25,7 +25,6 @@ use crate::store;
 use crate::ui::{
   Button, Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Size, Variant,
 };
-use crate::util::alert;
 use crate::util::now_ms;
 use crate::util::set_title;
 
@@ -380,7 +379,7 @@ pub fn PracticePage() -> impl IntoView {
     }
     match store.ordered(|qs| find_jump_target(qs, &input)) {
       Some(pos) => store.jump(pos),
-      None => alert(&tf("exam.question-not-found", &[&(raw).to_string()])),
+      None => crate::ui::push_error(tf("exam.question-not-found", &[&(raw).to_string()])),
     }
   });
 

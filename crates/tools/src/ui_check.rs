@@ -177,23 +177,16 @@ fn has_fill_token_as_text(line: &str) -> bool {
 
 /// §11 ⑥：模糊 / 渐变。
 ///
-/// 命名档位（`blur-sm` … `blur-3xl`）、任意值（`blur-[…]`）与 `drop-shadow-*` 都算 ——
-/// 像素规范里只能靠描边 / 换色做层次；内联 `style="filter: drop-shadow(0 1px 0 …)"`
-/// （`bubble.rs` 的对话气泡箭头，模糊 0）不在这条规则的范围内。
+/// 命名档位（`blur` / `blur-sm` … `blur-3xl` / Tailwind v4 的 `blur-xs`）、任意值
+/// （`blur-[…]`）、变体（`hover:blur`）与 `drop-shadow-*` 都算 —— 像素规范里只能靠
+/// 描边 / 换色做层次；内联 `style="filter: drop-shadow(0 1px 0 …)"`（`bubble.rs` 的
+/// 对话气泡箭头，模糊 0）不在这条规则的范围内。
+///
+/// 裸 `blur` 用子串 `blur` 一并覆盖（它同时覆盖上面那些档位）：这条规则跳过 `cn.rs`
+/// 与 `/ui/`，而 `cn.rs` 里那处 `("backdrop-blur", "backdrop-blur")` 是 cn 的冲突组配置，
+/// 所以全仓不会误伤；漏掉裸档位则会让 `class="blur"` 整行溜过去。
 fn has_blur_or_gradient(line: &str) -> bool {
-  const NEEDLES: &[&str] = &[
-    "backdrop-blur",
-    "blur-sm",
-    "blur-md",
-    "blur-lg",
-    "blur-xl",
-    "blur-2xl",
-    "blur-3xl",
-    "blur-[",
-    "drop-shadow-",
-    "bg-gradient",
-    "bg-linear",
-  ];
+  const NEEDLES: &[&str] = &["blur", "drop-shadow-", "bg-gradient", "bg-linear"];
   NEEDLES.iter().any(|n| line.contains(n))
 }
 
@@ -323,6 +316,10 @@ const WIDTH_ALLOWED: &[(&str, &str)] = &[
     "多行页头工具条（§4 表里登记的对齐行）",
   ),
   (
+    "crates/app/src/pages/daily_challenge.rs",
+    "多行页头吸顶计时条（§4 表里登记的对齐行）",
+  ),
+  (
     "crates/app/src/pages/mistakes/mistakes_page.rs",
     "多行页头工具条（§4 表里登记的对齐行）",
   ),
@@ -332,16 +329,20 @@ const WIDTH_ALLOWED: &[(&str, &str)] = &[
   ),
 ];
 
-/// 清单内的命中数 / 文件数（复核日期 2026-10-13）。漂移了就要人看一眼。
-const WIDTH_EXPECT_HITS: usize = 10;
-const WIDTH_EXPECT_FILES: usize = 8;
+/// 清单内的命中数 / 文件数（复核日期 2026-10-16）。漂移了就要人看一眼。
+const WIDTH_EXPECT_HITS: usize = 11;
+const WIDTH_EXPECT_FILES: usize = 9;
 
 /// §11 ⑧：页面里写页面级宽度容器（`max-w-2xl…6xl`，或类名开头的 `container`）。
 ///
-/// 与手工命令同口径：只认 `class="…"` 字面量；含 `min-w-` / `sm:max-w` 的行、`<Dialog` 的行放过
-/// （`dialog` 宽度是控件自身的，不是内容宽度）。`max-w-[210mm]` 这类打印纸尺寸也不在范围内。
+/// 与手工命令同口径：只认 `class="…"` 字面量；含 `sm:max-w` 的行、`<Dialog` 的行放过
+/// （`dialog` 宽度是控件自身的、断点覆盖不是页面宽度容器）。`max-w-[210mm]` 这类打印纸尺寸
+/// 也不在范围内。
+///
+/// 曾经连 `min-w-` 也放过：`class="min-w-0 max-w-4xl"` 于是能整行溜过去 —— 现在只认
+/// 上面两个明确的例外。
 fn has_page_width_container(line: &str) -> bool {
-  if line.contains("min-w-") || line.contains("sm:max-w") || line.contains("<Dialog") {
+  if line.contains("sm:max-w") || line.contains("<Dialog") {
     return false;
   }
   const WIDTHS: &[&str] = &[
@@ -606,6 +607,10 @@ mod tests {
     assert!(has_blur_or_gradient("class=\"backdrop-blur-sm\""));
     assert!(has_blur_or_gradient("class=\"blur-lg\""));
     assert!(has_blur_or_gradient("class=\"drop-shadow-md\""));
+    // Tailwind v4 的 `blur-xs` 与裸 `blur` / 带变体的 `hover:blur` 曾经溜得过去（§11 ⑥）
+    assert!(has_blur_or_gradient("class=\"blur-xs\""));
+    assert!(has_blur_or_gradient("class=\"blur\""));
+    assert!(has_blur_or_gradient("class=\"hover:blur\""));
     // 内联 `filter: drop-shadow(…)` 不是工具类，模糊 0 的那处（bubble.rs）也不算
     assert!(!has_blur_or_gradient(
       "style=\"filter: drop-shadow(0 1px 0 rgba(0,0,0,.06));\""
@@ -655,8 +660,9 @@ mod tests {
     assert!(has_page_width_container(
       "  <div class=\"container relative mx-auto px-1\">"
     ));
-    // §4 的例外与排除项
-    assert!(!has_page_width_container(
+    // §4 的例外与排除项。`min-w-` 不再整行放过：`min-w-0 max-w-5xl` 仍然是页面级宽度容器
+    // （这条曾能绕过去，§11 ⑧）。
+    assert!(has_page_width_container(
       "  <div class=\"mx-auto min-w-0 max-w-5xl px-4\">"
     ));
     assert!(!has_page_width_container(

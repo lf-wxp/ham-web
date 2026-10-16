@@ -1,4 +1,5 @@
 use crate::i18n::tp;
+use crate::ui::Tooltip;
 use leptos::prelude::*;
 
 /// 根据计数值与最大值返回色阶类名（完整字面量，供 Tailwind 扫描）。
@@ -58,11 +59,22 @@ pub(super) fn Heatmap(rows: Vec<(String, [u32; 24])>) -> impl IntoView {
                   .iter()
                   .enumerate()
                   .map(|(h, &c)| {
+                    let label =
+                      tp("common.00-utc-records", c, &[&(band).to_string(), &(h).to_string(), &(c).to_string()]);
                     view! {
-                      <div
-                        class=format!("h-5 flex-1 {}", cell_class(c, max))
-                        title=tp("common.00-utc-records", c, &[&(band).to_string(), &(h).to_string(), &(c).to_string()])
-                      ></div>
+                      // 数值不能只挂在 hover 气泡上：格子补 `tabindex` + `aria-label`，
+                      // 键盘与读屏也能拿到「这个波段这个时段答了多少题」。
+                      <Tooltip class="flex-1" label=label.clone()>
+                        <div
+                          class=format!(
+                            "h-5 w-full {} outline-none focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring",
+                            cell_class(c, max)
+                          )
+                          tabindex="0"
+                          role="img"
+                          aria-label=label
+                        ></div>
+                      </Tooltip>
                     }
                   })
                   .collect_view()}

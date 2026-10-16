@@ -7,7 +7,7 @@ use leptos::prelude::*;
 use crate::icons::{Icon, IconKind};
 use crate::morse_audio::play_morse_timed_with;
 use crate::morse_settings::use_morse_settings;
-use crate::ui::{Button, ButtonKind, ControlSize, Input, Size, Slider, Variant};
+use crate::ui::{Button, ButtonKind, ControlSize, Input, Size, Slider, Tooltip, Variant};
 use crate::util::{random, storage};
 
 use super::encode_words;
@@ -175,13 +175,16 @@ pub(super) fn KochTrainer() -> impl IntoView {
                   } else {
                     "text-foreground"
                   };
+                  let tip = err.map_or_else(
+                    || t("morse.not-practised-yet"),
+                    |e| tf("common.error-rate", &[&format!("{:.0}", e * 100.0)]),
+                  );
                   view! {
-                    <span
-                      class=format!("border px-1.5 py-0.5 font-mono text-sm {class}")
-                      title=err.map_or_else(|| t("morse.not-practised-yet"), |e| tf("common.error-rate", &[&format!("{:.0}", e * 100.0)]))
-                    >
-                      {c.to_string()}
-                    </span>
+                    <Tooltip label=tip>
+                      <span class=format!("border px-1.5 py-0.5 font-mono text-sm {class}")>
+                        {c.to_string()}
+                      </span>
+                    </Tooltip>
                   }
                 })
                 .collect_view()
@@ -318,13 +321,18 @@ pub(super) fn KochTrainer() -> impl IntoView {
                 <div class="grid grid-cols-4 gap-x-4 gap-y-1 text-xs sm:grid-cols-6 lg:grid-cols-8">
                   {rows
                     .into_iter()
-                    .map(|(c, err, sent)| view! {
-                      <div class="flex items-baseline gap-2" title=tf("common.total", &[&(sent).to_string()])>
-                        <span class="font-mono font-semibold">{c.to_string()}</span>
-                        <span class={if err > 0.2 { "tabular-nums text-red-600 dark:text-red-400" } else { "tabular-nums text-muted-foreground" }}>
-                          {format!("{:.0}%", err * 100.0)}
-                        </span>
-                      </div>
+                    .map(|(c, err, sent)| {
+                      let tip = tf("common.total", &[&(sent).to_string()]);
+                      view! {
+                        <Tooltip label=tip>
+                          <div class="flex items-baseline gap-2">
+                            <span class="font-mono font-semibold">{c.to_string()}</span>
+                            <span class={if err > 0.2 { "tabular-nums text-red-600 dark:text-red-400" } else { "tabular-nums text-muted-foreground" }}>
+                              {format!("{:.0}%", err * 100.0)}
+                            </span>
+                          </div>
+                        </Tooltip>
+                      }
                     })
                     .collect_view()}
                 </div>

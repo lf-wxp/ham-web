@@ -228,6 +228,7 @@
   "common.network": "Red",
   "common.new-york": "Nueva York",
   "common.next-month": "Mes siguiente",
+  "common.next-page": "Página siguiente",
   "common.no-class-mock-exam": "Aún no hay simulacros de Clase {}.",
   "common.note-content": "Contenido de la nota",
   "common.of-the-last-attempts": {
@@ -250,6 +251,7 @@
   "common.open-to-any-origin": "Abierto a cualquier origen (GET de solo lectura), así que el frontend puede hacer fetch directamente sin proxy propio.",
   "common.optional": "opcional",
   "common.organisations-and-concepts": "Organizaciones y conceptos",
+  "common.pagination": "Paginación",
   "common.pair": "{} · {}",
   "common.pass-in-good-for": "Paso en {} {} ({}) · bueno para grabar APT · máx. {}° · desde {}",
   "common.pass-in-max-from": "Paso en {} {} ({}) · máx. {}° · desde {}",
@@ -265,6 +267,7 @@
   "common.power-supply-types": "Tipos de fuente de alimentación",
   "common.practical-notes": "Notas prácticas",
   "common.press-while-answering-to": "Pulsa ? mientras respondes para abrir esta ayuda.",
+  "common.prev-page": "Página anterior",
   "common.preview": "Escuchar {}",
   "common.preview-with-code": "Escuchar {}: {}",
   "common.preview-question-image": "Vista previa de la imagen",
@@ -465,5 +468,6 @@
   "common.topic-basics": "Fundamentos de electrónica y electricidad",
   "common.topic-basics-desc": "Conductores y aislantes, electricidad estática y continua, unidades eléctricas, fuentes de alimentación, componentes y circuitos, medidas con multímetro",
   "common.topic-safety": "Seguridad y protección electromagnética",
-  "common.topic-safety-desc": "Especificaciones del equipo transmisor, límites de exposición al entorno electromagnético, protección contra rayos y puesta a tierra, seguridad eléctrica y de baterías"
+  "common.topic-safety-desc": "Especificaciones del equipo transmisor, límites de exposición al entorno electromagnético, protección contra rayos y puesta a tierra, seguridad eléctrica y de baterías",
+  "common.cat-protocol-kenwood": "Kenwood / Elecraft / Yaesu recientes"
 }

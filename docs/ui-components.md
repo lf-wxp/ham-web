@@ -142,6 +142,12 @@
 | **跳转**（能中键新开、右键复制地址） | `ButtonLink` | `<a class=button_class(…)>` |
 | 标签 + 控件 + 提示 / 错误 | `Field`（`hint` / `error` / `required`） | 手写 `<label>` + `<span>` |
 | 进度、分隔线、统计块、标签文字 | `Progress` / `Separator` / `Stat` / `Label` | 手写 |
+| 数据表格 | `Table` + `TableHead` / `TableBody` / `TableRow` / `TableHeader` / `TableCell` | 手写 `<table>`（2026-10-15 起收口） |
+| 列表分页 | `Pagination` | 手写页码 / `.slice()` 截断 |
+| 轻量操作反馈（成功 / 已复制 / 导入完成） | `ui::push_success` / `push_error`（全局 `ToastRoot`） | 原生 `alert`（已清零）/ 内联「成功」文字 |
+| 需要用户确认的失败 | `MessageDialog` | Toast（Toast 自动消失，确认类信息会被错过） |
+| 悬停 / 聚焦才显示的提示 | `Tooltip` | 原生 `title=`；子元素不可聚焦时补 `tabindex="0"`，数值信息另写 `aria-label` |
+| 移动端侧栏替代（分类 / 导航：右下角悬浮按钮 + 右侧抽屉） | `MobileNavDrawer` | 手写横滑分类条 / 手搭悬浮按钮 + 抽屉 |
 
 四个易混对子的区别：
 
@@ -193,6 +199,54 @@
 考试 / 练习 / 导航三族组件（`components/exam/`、`components/practice/`、`components/navigation/`）
 只在对应流程里用，不在此表：改它们直接读文件头注释（弹层的开合、`Portal`、焦点与滚动锁都写在里面）。
 
+### 3.3 移动端侧栏替代（`MobileNavDrawer`）
+
+侧栏在移动端被 `hidden md:block` / `hidden lg:block` 藏掉之后，分类 / 导航入口要用
+`ui::MobileNavDrawer`（右下角悬浮按钮 + 右侧抽屉，复用 `Sheet`）补上。浏览 / 术语表 /
+工具目录三个页面已收口到这里 —— 以后「小屏藏侧栏」的场景照这个来，**不要再写横滑分类条**，
+也不要手搭「悬浮按钮 + 抽屉」。
+
+```rust
+let cat_open = RwSignal::new(false);
+// 分类列表：桌面侧栏与移动端抽屉共用同一份
+let category_tree = move || {
+  view! {
+    <SidebarItem active=… on_click=Callback::new(move |_| {
+      select(ALL);
+      cat_open.set(false);   // 选中后收起抽屉（桌面端点这一下无副作用）
+    })>…</SidebarItem>
+    {…其余列表项，点击回调同样带 `cat_open.set(false)`…}
+  }
+};
+view! {
+  <aside class="hidden md:block"><div class="sticky …">{category_tree()}</div></aside>
+  <MobileNavDrawer
+    open=cat_open
+    title=Signal::derive(move || t("域.抽屉标题"))
+    button_label=Signal::derive(move || t("域.按钮名"))
+    icon=IconKind::SlidersHorizontal
+    class="md:hidden"        // 与侧栏断点配套：md:block → md:hidden；lg:block → lg:hidden
+  >
+    {category_tree()}
+  </MobileNavDrawer>
+}
+```
+
+使用要点：
+
+- **`open` 由调用方持有**：抽屉内容的点击回调里要主动 `open.set(false)` 收起；
+- **`class` 传断点类**（`md:hidden` / `lg:hidden`），永远与侧栏的显示断点配套；
+- `title` / `button_label` 用 `Signal::derive(move || t("…"))`；`button_label` 是悬浮按钮的
+  无障碍名（图标按钮必填，§6）；
+- **轻点打开、拖动移动**：位移 ≤ 6px 视为轻点（打开抽屉），超过则拖动改位置；位置收拢在
+  视口内、松手写入 `localStorage["fab-position"]`（**全站共享**同一个位置）；旋转 / 换设备后
+  由 resize 收拢回屏内。拖动判定与收拢在 `ham_web_core::fab`（纯计算，带单测）；
+- **键盘可达**：Enter / Space 走 `Button` 的 click 通道，照常打开抽屉；
+- 抽屉内容较长时 `Sheet` 自己会滚（`children` 外层已带 `overflow-y-auto`）。
+
+已知取舍：抽屉永远从**右侧**滑出（复用 `Sheet`），按钮拖到左边也不会换侧；悬浮按钮是
+像素风方形（§2 零圆角），不是系统风格的圆形 FAB；位置存的是绝对像素，不记忆「贴左 / 贴右」。
+
 ## 4. 页面骨架与内容宽度
 
 内容页**只有一种宽度**：`max-w-5xl`（1024px），而且只在两处定义 —— `PageContainer`
@@ -210,12 +264,57 @@
 
 | 要什么 | 用 | 说明 |
 |---|---|---|
-| 粘性页头（标题 + 副标题） | `PageHeader` | `actions=ViewFn::from(move || view! { … })` 放右侧操作区；页头上方还有别的粘性栏时传 `class="top-16"` |
+| 粘性页头（标题 + 副标题） | `PageHeader` | `actions=ViewFn::from(move || view! { … })` 放右侧操作区；吸顶偏移默认 `top-[66px]`（导航栏 64px 行高 + 2px 底描边，与导航下沿精确对齐，避免吸顶瞬间错位）；吸顶骨架类名集中在 `PAGE_HEADER_BAR`，刻意的例外（打印页）也复用同一常量 |
+| 页内第二根吸顶栏（目录导航 / 侧栏） | `StickyPanel` | 吸顶偏移自动量「页头底边 + 面板与页头之间的原始间距」，页头折行 / 切语言 / 断点切换都跟随，零错位；面板内需要限高的滚动子元素用 `var(--sticky-top)` 计算剩余高度（如 `max-h-[calc(100vh-var(--sticky-top)-16px)]`） |
 | 多行页头（标题行 + 工具条 / 确认条） | `PageHeader` 的 `children` | 子节点渲染在标题行下方；自己写一行 `mx-auto flex max-w-5xl …` 与标题行左边缘对齐 |
 | 页面正文 | `PageContainer` | 默认 `space-y-6 px-4 py-5`；间距 / 内边距不同就用 `class` 覆盖；页面内锚点用 `id="…"` |
 | 内容块滚动浮现 | `PageContainer` 的 `reveal=true` | 直接子元素进入视口时逐个浮现（同批 60ms 错峰）；`KnowledgePage` 已默认开启，普通内容页不必开 |
 | 知识库正文页 | `KnowledgePage` | = `PageHeader` + `PageContainer`，并负责按需拉取知识库译文 |
 | 打印类内容（`/print` 的纸、QSL 标签、QSL 设计器画布） | 物理尺寸（`max-w-[210mm]`、`@page size`、`mm` 值） | 量的是**纸**，不是内容宽度 —— **唯一**不受 `max-w-5xl` 约束的地方，理由见下 |
+
+### 页内第二根吸顶栏（`StickyPanel`）
+
+页头下方还要再吸一根「页内导航」（目录 / 分类侧栏）时用 `StickyPanel`
+（`crates/app/src/components/common/`）。**不要手写 `sticky top-[…px]`**：页头高度随宽度
+折行与译文长度变化，固定偏移要么在吸顶瞬间相对页头错位滑动，要么直接插进页头底下被盖住。
+组件自动量「页头底边 + 面板与页头之间的原始间距」作为吸顶偏移，页头怎么变都跟随，吸顶前后
+零错位。browse / glossary / tools 三个页面已收口，以后同类场景照抄：
+
+```rust
+// 桌面侧栏；移动端配套 MobileNavDrawer（见 §3.3）
+<aside class="hidden md:block">
+  <StickyPanel class="max-h-[calc(100vh-var(--sticky-top)-16px)] overflow-y-auto pxl-card border bg-card p-2">
+    {category_tree()}
+  </StickyPanel>
+</aside>
+```
+
+使用要点：
+
+- **`class` 只写面板自身的视觉与限高**（`pxl-card border bg-card p-*`、`max-h-*`、
+  `overflow-y-auto`），吸顶位置不用写 —— 组件挂载后自动量好并写到内联 `top` 上；
+- **面板内需要限高的滚动子元素**用 CSS 变量 `--sticky-top` 算剩余高度
+  （`max-h-[calc(100vh-var(--sticky-top)-16px)]`，16px 是底部留白；面板自身限高时也一样）；
+  组件已把该变量写在面板元素上；
+- **断点配套**：`hidden md:block` / `hidden lg:block` 之类的显示断点与移动端
+  `MobileNavDrawer` 配套。面板隐藏（`display:none`）期间组件不测量；窗口缩放跨断点后
+  面板可见时会自动补量，不需要调用方处理；
+- **切语言 / 页头折行**都会改变页头高度，组件用 `ResizeObserver` 盯住页头自动重算偏移；
+- 间距是按面板的**实际自然位置**量的：面板上方 `PageContainer` 的内边距等会自动算进去，
+  不用配置；
+- 页面上**必须有 `PageHeader`**（组件按 `main header` 找它量高度）；找不到时面板不设置
+  偏移、保持自然位置（不吸顶）。
+
+原理与取舍：测量间距时把**页头和面板同时**临时置为 `position: static`，在同一自然坐标系
+读取两者的边界并立即恢复样式；否则小屏隐藏侧栏、滚动后跨断点首次显示，会把滚动量缓存进间距。
+之后按恢复吸顶后的页头底边加原始间距定位。`ResizeObserver`、窗口缩放和入场动画结束都会重算；
+400ms 定时器只是无动画环境的兜底，不是保证首次测量发生在动画之后的屏障。
+
+`Tooltip` 的描述通过唯一 `id` 与实际触发元素的 `aria-describedby` 关联；全站共用一个
+`body` 气泡及根级委托监听，做上下翻转、视口边界钳制和内部滚动追踪，不受表格／热图裁剪。
+格子不再各自分配 Portal、开合信号与事件监听，降低渲染成本和主 WASM 体积；数值仍保留可访问名称。
+`ToastRoot` 的可见反馈同样传送到 `body`，层级高于模态遮罩；`Dialog` / `Sheet` 内有配套
+live region。队尾入队不会重置当前消息计时，只有队首身份变化才开始下一条播放。
 
 ### 为什么打印类页面不用 `max-w-5xl`
 
@@ -253,18 +352,18 @@
 5. 需要事件的正文容器（如答题页的 `on:touchstart`）：外层包一个只带事件属性的 `<div>`，
    `PageContainer` 放里面。
 
-自检见 §11 的 ⑧（输出是一份**很短的封闭清单**，当前 **10 行 / 8 个文件**，逐条对得上即可；
+自检见 §11 的 ⑧（输出是一份**很短的封闭清单**，当前 **11 行 / 9 个文件**，逐条对得上即可；
 出现新行就说明又手抄了一份容器）。
 
 这份清单现在是**机械守着**的（`cargo make check-ui`）：清单外出现 `max-w-*` / `container` 会红，
-清单内的**数量漂移**（期望 10 处 / 8 文件）也会红 —— 合法新增要同时改上面这张表与
+清单内的**数量漂移**（期望 11 处 / 9 文件）也会红 —— 合法新增要同时改上面这张表与
 `crates/tools/src/ui_check.rs` 里的 `WIDTH_ALLOWED`：
 
 | 位置 | 为什么允许 |
 |---|---|
 | `components/common/page_header.rs` | 页头宽度就在这里定义（`page_container.rs` 用 `cn(&[…])` 拼类名，不出现在这条 grep 里） |
 | `app/footer.rs`、`components/common/bottom_bar.rs` | 外壳与正文左边缘对齐 |
-| `pages/mistakes/mistakes_page.rs`、`pages/bookmarks/bookmarks_page.rs`、`pages/qsl_labels/qsl_labels_page.rs`（2 处：筛选工具条 + 未设置呼号提示行） | `PageHeader` 的 children 行，与标题行对齐 |
+| `pages/mistakes/mistakes_page.rs`、`pages/bookmarks/bookmarks_page.rs`、`pages/qsl_labels/qsl_labels_page.rs`（2 处：筛选工具条 + 未设置呼号提示行）、`pages/daily_challenge.rs`（吸顶计时条） | `PageHeader` 的 children 行，与标题行对齐 |
 | `components/navigation/nav_bar.rs`（2 处 `container`） | 顶栏例外，理由见上 |
 | `app/storage_warning.rs` | 全站横幅，复刻页头行的宽度 |
 
@@ -380,9 +479,10 @@
 ## 10. 例外清单：刻意保留的原生元素
 
 规范之外**有意留下**的地方都在这里。每一处都在代码里写了 `刻意的例外` 注释，
-`grep -rn "刻意的例外" crates/app/src` 可列全（当前 **9 条注释 / 7 个文件**，全在 §10.2，
-其中 `nav_bar.rs` 占 3 条；9 条里 7 条走 `button_class`，`nav_bar.rs` 的移动端语言切换与
-`dx_spots.rs` 的表格行按钮用的是 `cn` / 原生类名）；
+`grep -rn "刻意的例外" crates/app/src` 可列全（当前 **13 条注释 / 11 个文件**，全在 §10.2，
+其中 `nav_bar.rs` 占 3 条；13 条里 8 条走 `button_class`，其余 —— `nav_bar.rs` 的移动端
+语言切换与 `dx_spots.rs` 的表格行按钮用 `cn` / 原生类名，`page_header.rs` 与 `print_page.rs`
+共用吸顶骨架常量，`bands_page.rs` 保留整表原生 `<table>` —— 各有理由见下表）；
 **新写界面不要模仿它们**，它们各自的理由如下。
 
 ### 10.1 表单控件：拖放上传区（已全部收编）
@@ -406,6 +506,10 @@ label 的 `has-[:focus-visible]:ring-2` 显示。**页面里不要再手写拖�
 | `pages/home/cards_card.rs` | 「今日待复习」入口：有待复习时切 `variant` |
 | `components/bank_selector/mod.rs` | 刷新按钮：底色随刷新状态（成功 / 失败 / 加载）变化，`class` 也要按状态合并 |
 | `pages/dx_spots.rs` | 热点表格行内的紧凑内容按钮（呼号 + 国家两行）：像素按钮的高度与内边距会把行高撑开、破坏表格密度 |
+| `components/common/page_header.rs` | 吸顶骨架 `PAGE_HEADER_BAR` 常量：全站吸顶页头只有这一份骨架类名，打印页等「纸宽坐标系」的页头也复用它，吸顶偏移只在这一处改（见文件头注释与 §4） |
+| `pages/print_sheet/print_page.rs` | 打印页量的是纸宽（`max-w-[210mm]`），不套 `PageHeader`；吸顶骨架与全站共用 `PAGE_HEADER_BAR`，偏移保持单一来源 |
+| `pages/bands/bands_page.rs` | 波段表的 tbody 有大量动态 `rowspan` / `colspan`（按波段跨行合并单元格），`TableCell` 的静态 `colspan: u32` 表达不了，整表保留原生 `<table>`（见 docs/ui-audit.md） |
+| `ui/pagination.rs` | 页码按钮的「当前页高亮」靠 `aria-current` 属性动态切换，`Button` 的 `class` 是静态串、也没有 `aria_current` 通道；分页条住在 `ui/` 里，样式与 `Button` 同源（`button_class`） |
 
 它们连同 `Button` / `ButtonLink` 内部都继续用 `button_class` —— **`ui::button_class` 是这套
 组件的底座，不要删**。
@@ -457,22 +561,28 @@ grep -rln --include='*.rs' --exclude-dir=ui 'CHIP_ON' .
 #    工具版更严：不排除 ui/、且按行剥注释后只在字符串字面量里判定
 grep -rnE --include='*.rs' --exclude-dir=ui --exclude=cn.rs \
   '\brounded-(full|none|sm|md|lg|xl|2xl|3xl|t|r|b|l)(\b|-)' . | grep -vE ':[0-9]+: *//'
-# ⑥ 页面里残留的模糊 / 渐变 / 软阴影：模糊、渐变与「任意值阴影的模糊位」已由 check-ui 拦；
-#    这条手工命令用于复核（输出里 `shadow-[0_Npx_0_0_…]` 是像素硬阴影，合规）
-grep -rnE --include='*.rs' --exclude-dir=ui 'backdrop-blur|blur-(sm|md|lg|xl|2xl|3xl)|drop-shadow-|bg-gradient|bg-linear|shadow-\[0' .
+# ⑥ 页面里残留的模糊 / 渐变 / 软阴影：模糊（含 Tailwind v4 的 `blur-xs` 与裸 `blur`）、
+#    渐变与「任意值阴影的模糊位」已由 check-ui 拦；这条手工命令用于复核
+#    （输出里 `shadow-[0_Npx_0_0_…]` 是像素硬阴影，合规；`cn.rs` 里的
+#    `("backdrop-blur", …)` 是 cn 的冲突组配置，不是 class，故排除）
+grep -rnE --include='*.rs' --exclude-dir=ui --exclude=cn.rs 'blur|drop-shadow-|bg-gradient|bg-linear|shadow-\[0' .
 # ⑦ 把填充色 token 当文字色用（对比度不够）：应为 0
 grep -rnE --include='*.rs' 'text-\[color:var\(--pxl-(hp|xp|gold|win)\)\]' .
-# ⑧ 页面级宽度类：输出应等于 §4 那份封闭清单（10 行 / 8 文件：组件自身 / 页头对齐行 / 顶栏 container / 横幅）
+# ⑧ 页面级宽度类：输出应等于 §4 那份封闭清单（11 行 / 9 文件：组件自身 / 页头对齐行 / 顶栏 container / 横幅）
 #    check-ui 已按同一份清单机械守着（清单外命中、清单内计数漂移都会红），这条用来复核
 grep -rn --include='*.rs' --exclude-dir=ui -E 'class="[^"]*\bmax-w-(2xl|3xl|4xl|5xl|6xl)\b|class="container' pages components app \
-  | grep -vE 'min-w-|<Dialog|sm:max-w'
-# ⑨ 刻意保留的原生元素：应等于 §10.2 的清单（9 条注释 / 7 个文件）
+  | grep -vE '<Dialog|sm:max-w'
+# ⑨ 刻意保留的原生元素：应等于 §10.2 的清单（13 条注释 / 11 个文件）
 grep -rn "刻意的例外" .
+# ⑩ 页面里手写的页内吸顶偏移：应为 0（第二根吸顶栏走 StickyPanel，见 §4；
+#     吸顶骨架唯一来源是 common 里的 PAGE_HEADER_BAR；表格粘性表头的 `sticky top-0` 不在此列）
+grep -rnE --include='*.rs' 'sticky top-\[[0-9]' pages components | grep -v 'components/common'
 ```
 
-各条当前状态（2026-10-13 复核）：①0 ②**0** ③0 ④0 ⑤**0**（`rounded-*` 已从视图清零，
+各条当前状态（2026-10-16 复核）：①0 ②**0** ③0 ④0 ⑤**0**（`rounded-*` 已从视图清零，
 卡片皮肤改用 `pxl-card` 标记）⑥0（剩下的 4 行是 3 处像素硬阴影 —— `shadow-[0_2px_0_0_…]` 与它的
-`-2px` / `4px` 变体 —— 与 `cn.rs` 里的冲突组配置，都合规）⑦0 ⑧10 行 / 8 文件（= §4 的封闭清单）⑨9。
+`-2px` / `4px` 变体 —— 与 `cn.rs` 里的冲突组配置，都合规）⑦0 ⑧11 行 / 9 文件（= §4 的封闭清单）⑨13
+⑩0（2026-10-16：browse / glossary / tools 已收口到 `StickyPanel`）。
 其中 ①②③④⑤、⑥ 的模糊 / 渐变与任意值阴影、⑧ 的封闭清单由 `cargo make check-ui` 持续守着，
 不必再靠人工记得跑。
 
@@ -520,6 +630,7 @@ cd e2e && E2E_BASE_URL=http://127.0.0.1:3030 npx playwright test tests/<spec>.sp
 | 2026-10-13 | 给 `Button` 补 `Size::Xs` / `Size::IconSm` / `Variant::Text` / `aria_expanded` / `aria_controls`；收编 nec 表格工具条（11）、文字按钮（8）、图标按钮（6）、折叠开关（5）；提取 `QuizOption`（8 处）/ `SidebarItem`（4 处）/ `PillButton`（4 处）；两处同名的 `pill()` 私有函数删除 |
 | 2026-10-13 | 提取 `ui::FileDropZone`：解码类页面（APT / SSTV / WSPR / RTTY / Olivia / NAVTEX / LRPT / DominoEX / PSK31 / 离线瀑布分析）与图片处理页的整块拖放上传区全部收口，删除 `AptUploader` 与 psk / 瀑布页手写的拖放区；非音频上传位用 `choose_hint` 覆盖默认的「拖拽音频文件」提示行 |
 | 2026-10-13 | `pages/most_wanted/wanted_tracker.rs` 的手写勾选框 → `ui::Checkbox`（顺带补上 `role="checkbox"` / `aria-checked`；§10.3 的对应条目已删除） |
+| 2026-10-16 | 页内第二根吸顶栏收口：新增 `common::StickyPanel`，browse / glossary / tools 手写的 `sticky top-[136px]` 侧栏与目录全部收编（偏移随页头高度自适应，消除吸顶错位与被页头盖住的问题）；`PageHeader` 吸顶偏移对齐导航下沿（`top-[66px]`），骨架类名抽为 `PAGE_HEADER_BAR`（打印页复用），每日挑战计时条收进 `PageHeader` 的 `children` |
 
 **这轮迁移带来的 e2e 契约变化**（改 role 就要同步 spec）：`Chip` 输出 `role="radio"` +
 `aria-checked`，`ChipToggle` 输出 `aria-pressed`；`browse` / `planning` / `practice_flow` /

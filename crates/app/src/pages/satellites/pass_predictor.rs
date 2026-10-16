@@ -8,7 +8,8 @@ use web_sys::{Notification, NotificationPermission};
 use crate::pages::log::use_log_store;
 use crate::sat_alert;
 use crate::ui::{
-  Button, Checkbox, ControlSize, Field, NativeSelect, NumberField, SelectOption, Size, Variant,
+  Button, Checkbox, ControlSize, Field, NativeSelect, NumberField, SelectOption, Size, Table,
+  TableBody, TableCell, TableHead, TableHeader, TableRow, Variant,
 };
 use crate::util::notification_permission;
 
@@ -303,60 +304,58 @@ pub(super) fn PassPredictor() -> impl IntoView {
                 }.into_any()
               } else {
                 view! {
-                  <div class="max-h-[32rem] overflow-auto">
-                    <table class="w-full min-w-[560px] border-collapse text-sm">
-                      <thead class="sticky top-0 bg-muted text-xs">
-                        <tr>
-                          <th class=CELL><span class="sr-only">{move || t("exam.bookmark")}</span></th>
-                          <th class=CELL>{move || t("radio.satellite")}</th>
-                          <th class=CELL>{move || t("radio.start-aos")}</th>
-                          <th class=CELL>{move || t("radio.max-elevation")}</th>
-                          <th class=CELL>{move || t("radio.entry-bearing")}</th>
-                          <th class=CELL>{move || t("radio.duration")}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {items
-                          .into_iter()
-                          .map(|p| {
-                            let dur_min = ((p.los - p.aos) as f64 / 60.0).round() as i64;
-                            let norad = p.norad;
-                            let name = p.name.clone();
-                            let fav = move || watch.with(|w| w.is_favorite(norad));
-                            view! {
-                              <tr class="border-t transition-colors hover:bg-muted/40">
-                                <td class=format!("{CELL} w-10 text-center")>
-                                  <button
-                                    type="button"
-                                    class=move || if fav() { "text-amber-500" } else { "text-muted-foreground hover:text-amber-500" }
-                                    aria-pressed=move || fav().to_string()
-                                    aria-label=tf("radio.save", &[&(name).to_string()])
-                                    on:click={
-                                      let name = name.clone();
-                                      move |_| update(&|w| {
-                                        w.toggle_favorite(norad, &name);
-                                      })
-                                    }
-                                  >
-                                    {move || if fav() { "★" } else { "☆" }}
-                                  </button>
-                                </td>
-                                <td class=format!("{CELL} whitespace-nowrap font-medium")>{p.name.clone()}</td>
-                                <td class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")
-                                  title=tf("radio.max-elevation-at", &[&(fmt_pass_time(p.max_elev_time)).to_string()])
+                  <Table class="min-w-[560px] text-sm" wrapper_class="max-h-[32rem]">
+                    <TableHead class="sticky top-0 z-10 bg-muted text-xs">
+                      <TableRow>
+                        <TableHeader class=CELL><span class="sr-only">{move || t("exam.bookmark")}</span></TableHeader>
+                        <TableHeader class=CELL>{move || t("radio.satellite")}</TableHeader>
+                        <TableHeader class=CELL>{move || t("radio.start-aos")}</TableHeader>
+                        <TableHeader class=CELL>{move || t("radio.max-elevation")}</TableHeader>
+                        <TableHeader class=CELL>{move || t("radio.entry-bearing")}</TableHeader>
+                        <TableHeader class=CELL>{move || t("radio.duration")}</TableHeader>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {items
+                        .into_iter()
+                        .map(|p| {
+                          let dur_min = ((p.los - p.aos) as f64 / 60.0).round() as i64;
+                          let norad = p.norad;
+                          let name = p.name.clone();
+                          let fav = move || watch.with(|w| w.is_favorite(norad));
+                          view! {
+                            <TableRow>
+                              <TableCell class=format!("{CELL} w-10 text-center")>
+                                <button
+                                  type="button"
+                                  class=move || if fav() { "text-amber-500" } else { "text-muted-foreground hover:text-amber-500" }
+                                  aria-pressed=move || fav().to_string()
+                                  aria-label=tf("radio.save", &[&(name).to_string()])
+                                  on:click={
+                                    let name = name.clone();
+                                    move |_| update(&|w| {
+                                      w.toggle_favorite(norad, &name);
+                                    })
+                                  }
                                 >
-                                  {fmt_pass_time(p.aos)}
-                                </td>
-                                <td class=format!("{CELL} whitespace-nowrap tabular-nums")>{format!("{:.0}°", p.max_elev)}</td>
-                                <td class=format!("{CELL} whitespace-nowrap tabular-nums")>{format!("{:.0}° {}", p.azimuth, compass(p.azimuth))}</td>
-                                <td class=format!("{CELL} whitespace-nowrap tabular-nums")>{tf("radio.min", &[&(dur_min).to_string()])}</td>
-                              </tr>
-                            }
-                          })
-                          .collect_view()}
-                      </tbody>
-                    </table>
-                  </div>
+                                  {move || if fav() { "★" } else { "☆" }}
+                                </button>
+                              </TableCell>
+                              <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{p.name.clone()}</TableCell>
+                              <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")
+                                title=tf("radio.max-elevation-at", &[&(fmt_pass_time(p.max_elev_time)).to_string()])
+                              >
+                                {fmt_pass_time(p.aos)}
+                              </TableCell>
+                              <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{format!("{:.0}°", p.max_elev)}</TableCell>
+                              <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{format!("{:.0}° {}", p.azimuth, compass(p.azimuth))}</TableCell>
+                              <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{tf("radio.min", &[&(dur_min).to_string()])}</TableCell>
+                            </TableRow>
+                          }
+                        })
+                        .collect_view()}
+                    </TableBody>
+                  </Table>
                 }.into_any()
               }}
             </div>

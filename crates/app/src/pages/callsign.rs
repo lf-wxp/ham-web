@@ -13,7 +13,7 @@ use crate::data;
 use crate::i18n::{t, tf};
 use crate::pages::map::ZoneMap;
 use crate::ui::{Button, Chip, ChipGroup, Input, Size, Variant};
-use crate::util::{alert, set_title};
+use crate::util::set_title;
 
 /// 示例呼号，便于一键试查。
 const EXAMPLES: &[&str] = &["BG4XYZ", "JA1ABC", "K1ZZ/QRP", "P5ABC", "BV9PAA"];
@@ -63,7 +63,7 @@ pub fn CallsignPage() -> impl IntoView {
   let run_online = move || {
     let call = input.get().trim().to_ascii_uppercase();
     if call.len() < 3 {
-      alert(&t("radio.enter-a-callsign-of"));
+      crate::ui::push_error(t("radio.enter-a-callsign-of"));
       return;
     }
     loading.set(true);

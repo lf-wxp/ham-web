@@ -6,6 +6,7 @@ use leptos::prelude::*;
 use wasm_bindgen::JsValue;
 
 use crate::i18n::t;
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 
 /// 常用时区（名称，UTC 偏移小时，说明）。
 const TIMEZONES: &[(&str, f64, &str)] = &[
@@ -48,36 +49,34 @@ pub(super) fn UtcClock() -> impl IntoView {
         <div class="text-sm text-muted-foreground">"UTC / Zulu"</div>
       </div>
 
-      <div class="overflow-x-auto border">
-        <table class="w-full min-w-[480px] border-collapse text-sm">
-          <thead class="bg-muted/60 text-xs">
-            <tr>
-              <th class="border px-3 py-2 text-left">{move || t("tools.time-zone")}</th>
-              <th class="border px-3 py-2 text-left">{move || t("tools.offset")}</th>
-              <th class="border px-3 py-2 text-left">{move || t("radio.current-time")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {TIMEZONES
-              .iter()
-              .map(|&(name, offset, note)| {
-                view! {
-                  <tr class="border-t">
-                    <td class="border px-3 py-2">
-                      <div class="font-medium">{name}</div>
-                      <div class="text-xs text-muted-foreground">{note}</div>
-                    </td>
-                    <td class="border px-3 py-2 font-mono tabular-nums text-muted-foreground">
-                      {format!("UTC{offset:+.0}")}
-                    </td>
-                    <td class="border px-3 py-2 font-mono tabular-nums">{move || zoned(now_ms.get(), offset)}</td>
-                  </tr>
-                }
-              })
-              .collect_view()}
-          </tbody>
-        </table>
-      </div>
+      <Table class="min-w-[480px] text-sm" wrapper_class="border">
+        <TableHead>
+          <TableRow>
+            <TableHeader class="border px-3 py-2">{move || t("tools.time-zone")}</TableHeader>
+            <TableHeader class="border px-3 py-2">{move || t("tools.offset")}</TableHeader>
+            <TableHeader class="border px-3 py-2">{move || t("radio.current-time")}</TableHeader>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {TIMEZONES
+            .iter()
+            .map(|&(name, offset, note)| {
+              view! {
+                <TableRow>
+                  <TableCell class="border px-3 py-2">
+                    <div class="font-medium">{name}</div>
+                    <div class="text-xs text-muted-foreground">{note}</div>
+                  </TableCell>
+                  <TableCell class="border px-3 py-2 font-mono tabular-nums text-muted-foreground">
+                    {format!("UTC{offset:+.0}")}
+                  </TableCell>
+                  <TableCell class="border px-3 py-2 font-mono tabular-nums">{move || zoned(now_ms.get(), offset)}</TableCell>
+                </TableRow>
+              }
+            })
+            .collect_view()}
+        </TableBody>
+      </Table>
 
       <p class="text-xs text-muted-foreground">
         {move || t("tools.log-contacts-contests-and")}

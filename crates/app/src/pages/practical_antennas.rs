@@ -8,8 +8,9 @@ use leptos::prelude::*;
 use crate::components::common::{BulletSection, ConceptsSection, KnowledgePage};
 use crate::components::nec_template_link::NecTemplateLink;
 use crate::i18n::t;
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 
-const CELL: &str = "border px-3 py-2 text-left align-top";
+const CELL: &str = "border px-3 py-2 align-top";
 use crate::util::set_title;
 
 #[component]
@@ -24,37 +25,35 @@ pub fn PracticalAntennasPage() -> impl IntoView {
         <h2 class="border-b px-4 py-3 text-sm font-semibold">
           {move || t("knowledge.antenna-comparison")}
         </h2>
-        <div class="overflow-x-auto">
-          <table class="w-full min-w-[820px] border-collapse text-sm">
-            <thead class="bg-muted/60 text-xs">
-              <tr>
-                <th class=CELL>{move || t("log.antenna")}</th>
-                <th class=CELL>{move || t("knowledge.features")}</th>
-                <th class=CELL>{move || t("knowledge.best-for")}</th>
-                <th class=CELL>{move || t("tools.nec-model-column")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {PRACTICAL_ANTENNAS_TABLE
-                .iter()
-                .map(|&(name, feature, scene, template)| {
-                  view! {
-                    <tr class="border-t transition-colors hover:bg-muted/40">
-                      <td class=format!("{CELL} whitespace-nowrap font-medium")>
-                        {move || text(name)}
-                      </td>
-                      <td class=format!("{CELL} text-muted-foreground")>{move || text(feature)}</td>
-                      <td class=format!("{CELL} text-muted-foreground")>{move || text(scene)}</td>
-                      <td class=CELL>
-                        <NecTemplateLink template=template />
-                      </td>
-                    </tr>
-                  }
-                })
-                .collect_view()}
-            </tbody>
-          </table>
-        </div>
+        <Table class="min-w-[820px] text-sm">
+          <TableHead>
+            <TableRow>
+              <TableHeader class=CELL>{move || t("log.antenna")}</TableHeader>
+              <TableHeader class=CELL>{move || t("knowledge.features")}</TableHeader>
+              <TableHeader class=CELL>{move || t("knowledge.best-for")}</TableHeader>
+              <TableHeader class=CELL>{move || t("tools.nec-model-column")}</TableHeader>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {PRACTICAL_ANTENNAS_TABLE
+              .iter()
+              .map(|&(name, feature, scene, template)| {
+                view! {
+                  <TableRow>
+                    <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>
+                      {move || text(name)}
+                    </TableCell>
+                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || text(feature)}</TableCell>
+                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || text(scene)}</TableCell>
+                    <TableCell class=CELL>
+                      <NecTemplateLink template=template />
+                    </TableCell>
+                  </TableRow>
+                }
+              })
+              .collect_view()}
+          </TableBody>
+        </Table>
       </section>
       <BulletSection title="制作与使用要点" items=PRACTICAL_ANTENNAS_TIPS />
     </KnowledgePage>

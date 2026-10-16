@@ -6,6 +6,7 @@ use std::collections::HashSet;
 
 use crate::dxcc::{Entity, lookup};
 use crate::logbook::LogEntry;
+use crate::study_plan::{day_number, format_day};
 
 /// 交换内容。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -216,6 +217,65 @@ pub fn mode_code(mode: &str) -> &'static str {
   }
 }
 
+/// Cabrillo 身份代码：FM 有独立代码，不与计分用的话音大类混淆。
+#[must_use]
+pub fn cabrillo_mode(mode: &str) -> &'static str {
+  if mode.trim().eq_ignore_ascii_case("FM") {
+    "FM"
+  } else {
+    mode_code(mode)
+  }
+}
+
+/// 场次范围与台站判定；旧存档的空上界／零台站保留兼容语义。
+#[must_use]
+pub fn session_contains(
+  e: &LogEntry,
+  id: &str,
+  station_id: u64,
+  stations: &crate::station::StationBook,
+  start: &str,
+  end: &str,
+) -> bool {
+  let stamp = e.minutes_on().map(crate::logbook::stamp).map_or_else(
+    || format!("{} {}", e.date, e.time),
+    |(d, h)| format!("{d} {h}"),
+  );
+  e.contest_id == id
+    && (station_id == 0 || stations.of_entry(e).id == station_id)
+    && stamp.as_str() >= start
+    && (end.is_empty() || stamp.as_str() < end)
+}
+
+/// 下一发送序号：迁移来的部分日志未必从 001 开始。
+#[must_use]
+pub fn next_serial(entries: &[LogEntry]) -> u64 {
+  entries
+    .iter()
+    .filter_map(|e| e.stx.trim().parse::<u64>().ok())
+    .max()
+    .unwrap_or(entries.len() as u64)
+    .saturating_add(1)
+}
+
+/// 显式续录只扩展最近一天内的导入快照；历史场次必须先开新场，不能默默跨年。
+#[must_use]
+pub fn continuation_end(end: &str, now: i64) -> Option<String> {
+  if end.is_empty() {
+    return Some(String::new());
+  }
+  let (date, time) = end.split_once(' ')?;
+  let last = crate::logbook::minutes_of(date, time)?;
+  if now < last {
+    return Some(end.to_owned());
+  }
+  if now.checked_sub(last)? > 1440 {
+    return None;
+  }
+  let (date, time) = crate::logbook::stamp(now.checked_add(1)?);
+  Some(format!("{date} {time}"))
+}
+
 /// 默认信号报告：CW / 数字 599，话音 59。
 #[must_use]
 pub fn default_rst(mode: &str) -> &'static str {
@@ -285,12 +345,6 @@ pub fn is_dupe(def: &ContestDef, entries: &[LogEntry], candidate: &LogEntry) -> 
     .any(|e| dupe_key(def, e) == key)
 }
 
-/// 下一个发出的序号（已录入通联数 + 1）。
-#[must_use]
-pub fn next_serial(entries: &[LogEntry]) -> u32 {
-  entries.len() as u32 + 1
-}
-
 /// 自报分数。
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Score {
@@ -312,99 +366,161 @@ fn is_w_ve(e: Option<&Entity>) -> bool {
   e.is_some_and(|e| matches!(e.dxcc, 291 | 1))
 }
 
+/// 乘数的种类。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum MultKind {
+  /// CQ 分区。
+  Zone,
+  /// DXCC 实体（`value` 是 DXCC 编号）。
+  Entity,
+  /// 呼号前缀（WPX）。
+  Prefix,
+  /// 美国州 / 加拿大省（ARRL DX）。
+  State,
+}
+
+/// 一个乘数：同一个 `(kind, band, value)` 只算一次。
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Mult {
+  pub kind: MultKind,
+  /// 按波段计的乘数带波段（`20m`）；与波段无关的（WPX 前缀）为 `None`。
+  pub band: Option<String>,
+  pub value: String,
+}
+
+impl Mult {
+  fn per_band(kind: MultKind, band: &str, value: impl Into<String>) -> Self {
+    Self {
+      kind,
+      band: Some(band.to_owned()),
+      value: value.into(),
+    }
+  }
+}
+
+/// 按时间排序并剔除重复通联：返回（有效通联，重复数）。
+///
+/// 记分与赛后分析共用，保证两边对「哪些算有效通联」的结论一致。
+pub(crate) fn valid_qsos<'a>(
+  def: &ContestDef,
+  entries: &'a [LogEntry],
+) -> (Vec<&'a LogEntry>, u32) {
+  let mut sorted: Vec<&LogEntry> = entries.iter().collect();
+  sorted.sort_by_key(|e| (e.minutes_on().unwrap_or(i64::MAX), e.id));
+  let mut seen = HashSet::new();
+  let mut dupes = 0;
+  let mut valid = Vec::with_capacity(sorted.len());
+  for e in sorted {
+    if seen.insert(dupe_key(def, e)) {
+      valid.push(e);
+    } else {
+      dupes += 1;
+    }
+  }
+  (valid, dupes)
+}
+
+/// 一条（非重复）通联的得分，以及它「带来」的乘数。
+pub(crate) fn qso_value(def: &ContestDef, me: Option<&Entity>, e: &LogEntry) -> (u32, Vec<Mult>) {
+  let them = e.entity();
+  let band = e.band_label();
+  let same_entity = matches!((me, them), (Some(a), Some(b)) if a.dxcc == b.dxcc);
+  let same_cont = matches!((me, them), (Some(a), Some(b)) if a.continent == b.continent);
+  let zone = || {
+    e.srx
+      .trim()
+      .parse::<u8>()
+      .ok()
+      .filter(|z| (1..=40).contains(z))
+      .or_else(|| e.cq_zone())
+  };
+  let mut mults = Vec::new();
+  let points = match def.scoring {
+    Scoring::CqWw => {
+      let points = if same_entity {
+        0
+      } else if same_cont {
+        if me.is_some_and(|m| m.continent == "NA") {
+          2
+        } else {
+          1
+        }
+      } else if them.is_some() {
+        3
+      } else {
+        0
+      };
+      if let Some(z) = zone() {
+        mults.push(Mult::per_band(MultKind::Zone, &band, z.to_string()));
+      }
+      if let Some(t) = them {
+        mults.push(Mult::per_band(MultKind::Entity, &band, t.dxcc.to_string()));
+      }
+      points
+    }
+    Scoring::Wpx => {
+      let low = low_band(&band);
+      let points = if them.is_none() {
+        0
+      } else if !same_cont {
+        if low { 6 } else { 3 }
+      } else if !same_entity && low {
+        2
+      } else {
+        1
+      };
+      if let Some(p) = wpx_prefix(&e.callsign) {
+        mults.push(Mult {
+          kind: MultKind::Prefix,
+          band: None,
+          value: p,
+        });
+      }
+      points
+    }
+    Scoring::ArrlDx => {
+      if is_w_ve(them) {
+        let sp = e.srx.trim().to_ascii_uppercase();
+        if !sp.is_empty() {
+          mults.push(Mult::per_band(MultKind::State, &band, sp));
+        }
+        3
+      } else {
+        0
+      }
+    }
+    Scoring::Simple => 1,
+    Scoring::DxccPerBand => {
+      if let Some(t) = them {
+        mults.push(Mult::per_band(MultKind::Entity, &band, t.dxcc.to_string()));
+      }
+      u32::from(them.is_some())
+    }
+    Scoring::ZoneMults => {
+      if let Some(z) = zone() {
+        mults.push(Mult::per_band(MultKind::Zone, &band, z.to_string()));
+      }
+      u32::from(them.is_some())
+    }
+  };
+  (points, mults)
+}
+
 /// 计算自报分数（按时间顺序，重复通联不计分）。`my_call` 为本台呼号。
 #[must_use]
 pub fn score(def: &ContestDef, entries: &[LogEntry], my_call: &str) -> Score {
   let me = lookup(my_call);
-  let mut sorted: Vec<&LogEntry> = entries.iter().collect();
-  sorted.sort_by(|a, b| (&a.date, &a.time, a.id).cmp(&(&b.date, &b.time, b.id)));
-  let mut seen = HashSet::new();
-  let mut mults: HashSet<String> = HashSet::new();
-  let mut s = Score::default();
-  for e in sorted {
-    if !seen.insert(dupe_key(def, e)) {
-      s.dupes += 1;
-      continue;
-    }
+  let (valid, dupes) = valid_qsos(def, entries);
+  let mut mults: HashSet<Mult> = HashSet::new();
+  let mut s = Score {
+    dupes,
+    ..Score::default()
+  };
+  for e in valid {
     s.qsos += 1;
-    let them = e.entity();
-    let band = e.band_label();
-    let same_entity = matches!((me, them), (Some(a), Some(b)) if a.dxcc == b.dxcc);
-    let same_cont = matches!((me, them), (Some(a), Some(b)) if a.continent == b.continent);
-    match def.scoring {
-      Scoring::CqWw => {
-        s.points += if same_entity {
-          0
-        } else if same_cont {
-          if me.is_some_and(|m| m.continent == "NA") {
-            2
-          } else {
-            1
-          }
-        } else if them.is_some() {
-          3
-        } else {
-          0
-        };
-        let zone = e
-          .srx
-          .trim()
-          .parse::<u8>()
-          .ok()
-          .filter(|z| (1..=40).contains(z))
-          .or_else(|| e.cq_zone());
-        if let Some(z) = zone {
-          mults.insert(format!("Z|{band}|{z}"));
-        }
-        if let Some(t) = them {
-          mults.insert(format!("E|{band}|{}", t.dxcc));
-        }
-      }
-      Scoring::Wpx => {
-        let low = low_band(&band);
-        s.points += if them.is_none() {
-          0
-        } else if !same_cont {
-          if low { 6 } else { 3 }
-        } else if !same_entity && low {
-          2
-        } else {
-          1
-        };
-        if let Some(p) = wpx_prefix(&e.callsign) {
-          mults.insert(p);
-        }
-      }
-      Scoring::ArrlDx => {
-        if is_w_ve(them) {
-          s.points += 3;
-          let sp = e.srx.trim().to_ascii_uppercase();
-          if !sp.is_empty() {
-            mults.insert(format!("{band}|{sp}"));
-          }
-        }
-      }
-      Scoring::Simple => s.points += 1,
-      Scoring::DxccPerBand => {
-        s.points += u32::from(them.is_some());
-        if let Some(t) = them {
-          mults.insert(format!("E|{band}|{}", t.dxcc));
-        }
-      }
-      Scoring::ZoneMults => {
-        s.points += u32::from(them.is_some());
-        let zone = e
-          .srx
-          .trim()
-          .parse::<u8>()
-          .ok()
-          .filter(|z| (1..=40).contains(z))
-          .or_else(|| e.cq_zone());
-        if let Some(z) = zone {
-          mults.insert(format!("Z|{band}|{z}"));
-        }
-      }
-    }
+    let (points, ms) = qso_value(def, me, e);
+    s.points += points;
+    mults.extend(ms);
   }
   s.mults = mults.len() as u32;
   s.total = if def.scoring == Scoring::Simple {
@@ -435,6 +551,42 @@ fn cabrillo_freq(e: &LogEntry) -> String {
     _ => "0",
   }
   .to_owned()
+}
+
+/// 时间列 `HHMM`：接受 `0:10`、`08:30`、`08:30:15` 与裸 `HHMM`，缺零补零、带秒去秒。
+///
+/// 此前用 `replace(':', "").get(..4)`：`8:30` 变成 3 个字符，`get(..4)` 取不到，
+/// 静默回落成 `0000` —— 导出的日志里这条通联的时间是错的。
+/// 裸 `HHMM` 是同一处改动的另一面：改成按 `:` 分段后它反而会落进 `0000`，
+/// 而备份恢复 / 手改过的数据里确实有这种写法（正常写路径都会先归一化成 `HH:MM`）。
+/// 实在解析不出时仍写 `0000`（Cabrillo 的 QSO 行必须有时间），但这种记录本来就缺时间。
+fn cabrillo_time(time: &str) -> String {
+  let t = time.trim();
+  let (h, m) = if t.len() == 4 && t.bytes().all(|b| b.is_ascii_digit()) {
+    // 整串就是 4 位数字（`2359`）：按 `HH` `MM` 切开。
+    (t[..2].parse::<u32>().ok(), t[2..].parse::<u32>().ok())
+  } else {
+    let mut parts = t.split(':');
+    let mut num = || parts.next().and_then(|p| p.trim().parse::<u32>().ok());
+    (num(), num())
+  };
+  match (h, m) {
+    (Some(h), Some(m)) if h < 24 && m < 60 => format!("{h:02}{m:02}"),
+    _ => "0000".to_owned(),
+  }
+}
+
+/// 日期列 `YYYY-MM-DD`。
+///
+/// 与 [`cabrillo_time`] 同一个理由：`2026-1-5` 这类非定宽的写法在日志里真实存在
+/// （见 `logbook::normalized_date` 的说明），原样导出会破坏 QSO 行的定宽格式，
+/// 再导入时被 `cabrillo_import::parse_date`（要求正好 10 字节）静默跳过 —— 通联就丢了。
+/// 解析不出时原样保留（宁可留着怪写法，也不要凭空改记录）。
+fn cabrillo_date(date: &str) -> String {
+  match day_number(date) {
+    Some(days) => format_day(days),
+    None => date.trim().to_owned(),
+  }
 }
 
 /// Cabrillo 头信息。
@@ -498,7 +650,7 @@ pub fn cabrillo(def: &ContestDef, h: &CabrilloHeader, entries: &[LogEntry]) -> S
   );
   line("SOAPBOX", h.soapbox.trim());
   let mut sorted: Vec<&LogEntry> = entries.iter().collect();
-  sorted.sort_by(|a, b| (&a.date, &a.time, a.id).cmp(&(&b.date, &b.time, b.id)));
+  sorted.sort_by_key(|e| (e.minutes_on().unwrap_or(i64::MAX), e.id));
   for e in sorted {
     let rst_s = if e.rst_sent.trim().is_empty() {
       default_rst(&e.mode)
@@ -520,9 +672,9 @@ pub fn cabrillo(def: &ContestDef, h: &CabrilloHeader, entries: &[LogEntry]) -> S
     s.push_str(&format!(
       "QSO: {:>5} {} {} {} {:<13} {:>3} {:<6} {:<13} {:>3} {:<6} 0\n",
       cabrillo_freq(e),
-      mode_code(&e.mode),
-      e.date,
-      e.time.replace(':', "").get(..4).unwrap_or("0000"),
+      cabrillo_mode(&e.mode),
+      cabrillo_date(&e.date),
+      cabrillo_time(&e.time),
       call,
       rst_s,
       x(&e.stx),
@@ -538,6 +690,51 @@ pub fn cabrillo(def: &ContestDef, h: &CabrilloHeader, entries: &[LogEntry]) -> S
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn imported_serials_and_bounded_sessions() {
+    let entries = [
+      LogEntry {
+        stx: "100".into(),
+        ..Default::default()
+      },
+      LogEntry {
+        stx: "101".into(),
+        ..Default::default()
+      },
+    ];
+    assert_eq!(next_serial(&entries), 102);
+    assert_eq!(cabrillo_mode("FM"), "FM");
+    let now = crate::logbook::minutes_of("2026-10-31", "12:00").unwrap();
+    assert_eq!(
+      continuation_end("2026-10-31 11:00", now).as_deref(),
+      Some("2026-10-31 12:01")
+    );
+    assert!(continuation_end("2025-10-31 11:00", now).is_none());
+    let e = LogEntry {
+      contest_id: "CQ-WW-CW".into(),
+      date: "2026-10-31".into(),
+      time: "8:30".into(),
+      ..Default::default()
+    };
+    let book = crate::station::StationBook::default();
+    assert!(session_contains(
+      &e,
+      "CQ-WW-CW",
+      0,
+      &book,
+      "2026-10-31 08:00",
+      "2026-10-31 09:00"
+    ));
+    assert!(!session_contains(
+      &e,
+      "CQ-WW-CW",
+      0,
+      &book,
+      "2025-10-31 08:00",
+      "2025-10-31 09:00"
+    ));
+  }
 
   fn qso(id: u64, call: &str, freq: &str, srx: &str) -> LogEntry {
     LogEntry {
@@ -664,5 +861,59 @@ mod tests {
       "{text}"
     );
     assert!(text.ends_with("END-OF-LOG:\n"));
+  }
+
+  #[test]
+  fn non_canonical_dates_and_bare_times_are_normalised_on_export() {
+    // `2026-1-5` / `2359` 这类写法在日志里真实存在（手改过、备份恢复、第三方 ADIF）。
+    // 原样导出会破坏 `QSO:` 行的定宽格式，再导入时被 `parse_date` / `parse_time`
+    // 静默跳过 —— 通联就从日志里消失了。
+    use crate::cabrillo_import::parse_cabrillo;
+
+    let def = contest("CQ-WW-CW").unwrap();
+    let h = CabrilloHeader {
+      callsign: "BG4ABC".into(),
+      ..Default::default()
+    };
+    let mut e = qso(1, "W1AW", "14.021", "5");
+    e.date = "2026-1-5".into();
+    e.time = "2359".into();
+    let text = cabrillo(def, &h, std::slice::from_ref(&e));
+    assert!(text.contains("QSO: 14021 CW 2026-01-05 2359 "), "{text}");
+    // 往返：导出后必须还能被自己的导入器读回来（日期 10 字节、时间 4 位）。
+    let c = parse_cabrillo(&text);
+    assert_eq!(c.records.len(), 1, "{text}");
+    assert_eq!(
+      (
+        c.records[0].qso_date.as_str(),
+        c.records[0].time_on.as_str()
+      ),
+      ("20260105", "2359")
+    );
+  }
+
+  #[test]
+  fn cabrillo_time_handles_the_padded_bare_and_broken_forms() {
+    assert_eq!(cabrillo_time("0:10"), "0010");
+    assert_eq!(cabrillo_time("8:30"), "0830");
+    assert_eq!(cabrillo_time("08:30"), "0830");
+    assert_eq!(cabrillo_time("08:30:15"), "0830");
+    assert_eq!(cabrillo_time(" 7:05 "), "0705");
+    // 裸 4 位：备份恢复 / 手改过的数据。
+    assert_eq!(cabrillo_time("2359"), "2359");
+    assert_eq!(cabrillo_time("0010"), "0010");
+    // 越界与垃圾输入：Cabrillo 的 QSO 行必须有时间，写 `0000`。
+    assert_eq!(cabrillo_time("25:00"), "0000");
+    assert_eq!(cabrillo_time(""), "0000");
+    assert_eq!(cabrillo_time("??"), "0000");
+  }
+
+  #[test]
+  fn cabrillo_date_keeps_whatever_it_cannot_parse() {
+    assert_eq!(cabrillo_date("2026-10-31"), "2026-10-31");
+    assert_eq!(cabrillo_date("2026-1-5"), "2026-01-05");
+    assert_eq!(cabrillo_date(" 2026-10-31 "), "2026-10-31");
+    // 解析不出时原样保留（宁可留着怪写法，也不要凭空改记录）。
+    assert_eq!(cabrillo_date("?"), "?");
   }
 }

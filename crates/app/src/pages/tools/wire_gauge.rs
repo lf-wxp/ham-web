@@ -3,7 +3,9 @@ use leptos::prelude::*;
 
 use super::fmt_num;
 use crate::i18n::{t, tf};
-use crate::ui::{Field, NumberField};
+use crate::ui::{
+  Field, NumberField, Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+};
 use crate::util::unique_id;
 
 /// 直流供电线径与压降估算。
@@ -74,33 +76,31 @@ pub(super) fn WireGauge() -> impl IntoView {
 
       <div>
         <div class="mb-1.5 text-xs text-muted-foreground">{move || t("tools.common-awg-wire-gauges")}</div>
-        <div class="overflow-x-auto">
-          <table class="w-full border-collapse text-sm">
-            <thead class="bg-muted/60 text-xs">
-              <tr>
-                <th class="border px-3 py-2 text-left">{move || t("common.awg")}</th>
-                <th class="border px-3 py-2 text-left">{move || t("tools.diameter-mm")}</th>
-                <th class="border px-3 py-2 text-left">{move || t("tools.cross-section-mm")}</th>
-                <th class="border px-3 py-2 text-left">{move || t("common.ohm-per-100m")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {AWG_TABLE
-                .iter()
-                .map(|(awg, dia, area, ohm)| {
-                  view! {
-                    <tr class="border-t hover:bg-muted/40">
-                      <td class="border px-3 py-2 tabular-nums">{*awg}</td>
-                      <td class="border px-3 py-2 tabular-nums">{format!("{dia:.3}")}</td>
-                      <td class="border px-3 py-2 tabular-nums">{format!("{area:.2}")}</td>
-                      <td class="border px-3 py-2 tabular-nums">{format!("{ohm:.2}")}</td>
-                    </tr>
-                  }
-                })
-                .collect_view()}
-            </tbody>
-          </table>
-        </div>
+        <Table class="text-sm">
+          <TableHead>
+            <TableRow>
+              <TableHeader class="border px-3 py-2">{move || t("common.awg")}</TableHeader>
+              <TableHeader class="border px-3 py-2">{move || t("tools.diameter-mm")}</TableHeader>
+              <TableHeader class="border px-3 py-2">{move || t("tools.cross-section-mm")}</TableHeader>
+              <TableHeader class="border px-3 py-2">{move || t("common.ohm-per-100m")}</TableHeader>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {AWG_TABLE
+              .iter()
+              .map(|(awg, dia, area, ohm)| {
+                view! {
+                  <TableRow>
+                    <TableCell class="border px-3 py-2 tabular-nums">{*awg}</TableCell>
+                    <TableCell class="border px-3 py-2 tabular-nums">{format!("{dia:.3}")}</TableCell>
+                    <TableCell class="border px-3 py-2 tabular-nums">{format!("{area:.2}")}</TableCell>
+                    <TableCell class="border px-3 py-2 tabular-nums">{format!("{ohm:.2}")}</TableCell>
+                  </TableRow>
+                }
+              })
+              .collect_view()}
+          </TableBody>
+        </Table>
       </div>
       <p class="text-xs text-muted-foreground">
         {move || t("tools.current-ratings-depend-on")}

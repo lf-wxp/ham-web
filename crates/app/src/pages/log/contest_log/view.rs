@@ -2,6 +2,7 @@ use ham_web_core::contest::{
   CONTESTS, CabrilloHeader, Exch, cabrillo, default_rst, is_dupe, score,
 };
 use ham_web_core::dxcc::lookup;
+use ham_web_core::scp::{Index, ScpFile, parse_scp};
 use leptos::html;
 use leptos::prelude::*;
 use leptos_router::hooks::use_query_map;
@@ -12,15 +13,20 @@ use crate::pages::log::qsl_image;
 use crate::pages::log::{LogEntry, use_log_store, utc_now_time, utc_today};
 use crate::ui::{
   Button, ButtonKind, ButtonLink, ControlSize, Field, Input, NativeSelect, SelectOption, Size,
-  Stat, Variant,
+  Stat, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Variant,
 };
 use crate::util::unique_id as ui_id;
 use crate::util::{download_text, set_title, storage};
 
+use super::analysis::ContestAnalysis;
+use super::cabrillo_import::{CabrilloImportButton, ImportReport};
+use super::import_report::ImportReportPanel;
+use super::scp_source::{STORAGE_KEY as SCP_KEY, ScpSource};
+use super::scp_suggest::ScpSuggest;
 use super::session::Session;
 use crate::i18n::{t, tf};
 
-const SESSION_KEY: &str = "contest-session";
+pub(super) const SESSION_KEY: &str = "contest-session";
 const MODES: &[&str] = &["CW", "SSB", "FT8", "RTTY"];
 
 #[component]
@@ -35,6 +41,9 @@ pub fn ContestLogPage() -> impl IntoView {
   {
     session.update(|s| {
       s.contest_id = cid;
+      s.start = format!("{} {}", utc_today(), utc_now_time());
+      s.end.clear();
+      s.station_id = store.station.with_untracked(|book| book.active().id);
       s.my_exch.clear();
     });
   }
@@ -50,7 +59,11 @@ pub fn ContestLogPage() -> impl IntoView {
     SelectOption::new("LOW", "LOW"),
     SelectOption::new("QRP", "QRP"),
   ];
-  let my_call = Memo::new(move |_| store.active_station().callsign.trim().to_ascii_uppercase());
+  let session_station = Memo::new(move |_| {
+    let id = session.with(|s| s.station_id);
+    store.station.with(|book| book.resolve(id).info())
+  });
+  let my_call = Memo::new(move |_| session_station.get().callsign.trim().to_ascii_uppercase());
 
   // 首次使用：按本台呼号填入默认交换
   if session.with_untracked(|s| s.my_exch.is_empty()) {
@@ -66,14 +79,47 @@ pub fn ContestLogPage() -> impl IntoView {
 
   let entries = Memo::new(move |_| {
     let s = session.get();
-    store.logbook.with(|lb| {
-      lb.entries
-        .iter()
-        .filter(|e| s.includes(e))
-        .cloned()
-        .collect::<Vec<_>>()
+    store.station.with(|book| {
+      store.logbook.with(|lb| {
+        lb.entries
+          .iter()
+          .filter(|e| s.includes(e, book))
+          .cloned()
+          .collect::<Vec<_>>()
+      })
     })
   });
+  let def = Memo::new(move |_| session.with(Session::def));
+  let import_report = RwSignal::new(None::<ImportReport>);
+
+  // 呼号补全：候选 = 自己的通联日志里出现过的呼号 + 用户自己载入的 SCP 文件（本站不带 SCP 数据）。
+  let scp_file = RwSignal::new(None::<ScpFile>);
+  leptos::task::spawn_local(async move {
+    if let Some(text) = crate::kv::load_store_only(SCP_KEY).await
+      && let Ok(f) = parse_scp(&text)
+    {
+      scp_file.set(Some(f));
+    }
+  });
+  let log_calls = Memo::new(move |_| {
+    store.logbook.with(|lb| {
+      let mut v: Vec<String> = lb.entries.iter().map(|e| e.callsign.clone()).collect();
+      v.sort_unstable();
+      v.dedup();
+      v
+    })
+  });
+  let scp_index = Memo::new(move |_| {
+    scp_file.with(|f| {
+      Index::build(
+        log_calls
+          .with(|c| c.clone())
+          .into_iter()
+          .chain(f.iter().flat_map(|f| f.calls.iter().cloned())),
+      )
+    })
+  });
+  let from_log = Signal::derive(move || log_calls.with(Vec::len));
   let tally = Memo::new(move |_| {
     let def = session.with(Session::def);
     entries.with(|list| score(def, list, &my_call.get()))
@@ -102,7 +148,10 @@ pub fn ContestLogPage() -> impl IntoView {
   let sent_exch = move || {
     let s = session.get();
     if s.def().sent == Exch::Serial {
-      format!("{:03}", entries.with(|e| e.len()) + 1)
+      format!(
+        "{:03}",
+        entries.with(|e| ham_web_core::contest::next_serial(e))
+      )
     } else {
       s.my_exch.clone()
     }
@@ -112,6 +161,9 @@ pub fn ContestLogPage() -> impl IntoView {
     let mode = s.mode();
     LogEntry {
       id: store.logbook.with_untracked(|lb| lb.next_id()),
+      station_id: store
+        .station
+        .with_untracked(|book| book.resolve(s.station_id).id),
       date: utc_today(),
       time: utc_now_time(),
       freq: s.freq.trim().to_owned(),
@@ -172,6 +224,17 @@ pub fn ContestLogPage() -> impl IntoView {
       }
     }
     let mut entry = draft();
+    let end = session.with_untracked(|s| {
+      entry
+        .minutes_on()
+        .and_then(|now| ham_web_core::contest::continuation_end(&s.end, now))
+    });
+    let Some(end) = end else {
+      crate::ui::push_error(t("contest.session-history-closed"));
+      return;
+    };
+    session.update(|s| s.end = end);
+    save();
     entry.fill_location();
     let was_dupe = dupe.get_untracked();
     let label = format!("{} {}", entry.callsign, entry.srx);
@@ -195,13 +258,17 @@ pub fn ContestLogPage() -> impl IntoView {
     store.persist();
   };
   let restart = move || {
-    session.update(|s| s.start = format!("{} {}", utc_today(), utc_now_time()));
+    session.update(|s| {
+      s.start = format!("{} {}", utc_today(), utc_now_time());
+      s.end.clear();
+      s.station_id = store.station.with_untracked(|book| book.active().id);
+    });
     save();
     message.set(Some(t("contest.new-session-started-earlier")));
   };
   let export = move || {
     let s = session.get_untracked();
-    let st = store.active_station();
+    let st = session_station.get_untracked();
     let header = CabrilloHeader {
       callsign: st.callsign.clone(),
       operators: st.operator.clone(),
@@ -237,6 +304,7 @@ pub fn ContestLogPage() -> impl IntoView {
               variant=Variant::Outline
               size=Size::Sm
             >{move || t("shell.logbook")}</ButtonLink>
+            <CabrilloImportButton session=session report=import_report />
             <Button
               variant=Variant::Default
               size=Size::Sm
@@ -289,6 +357,9 @@ pub fn ContestLogPage() -> impl IntoView {
                   let zone = lookup(&my_call.get_untracked()).map(|e| e.cq.to_string());
                   session.update(|s| {
                     s.contest_id = id;
+                    s.end.clear();
+                    s.start = format!("{} {}", utc_today(), utc_now_time());
+                    s.station_id = store.station.with_untracked(|book| book.active().id);
                     s.my_exch = match s.def().sent {
                       Exch::CqZone => zone.unwrap_or_default(),
                       Exch::Power => "100".to_owned(),
@@ -461,9 +532,19 @@ pub fn ContestLogPage() -> impl IntoView {
               }
             }}
           </div>
+          <ScpSuggest
+            call=call
+            index=scp_index
+            on_pick=Callback::new(move |c: String| {
+              call.set(c);
+              message.set(None);
+              focus(rcvd_ref);
+            })
+          />
           <p class="mt-1 text-xs text-muted-foreground">
             {move || t("contest.press-enter-or-space")}
           </p>
+          <ScpSource file=scp_file from_log=from_log />
         </section>
 
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -484,63 +565,71 @@ pub fn ContestLogPage() -> impl IntoView {
           // `relative`：表头里的 `sr-only`（`position: absolute` 的 1px 盒子）需要一个在
           // 滚动容器内部的包含块。否则它以卡片为包含块，那 1px 会被算进**文档**的可滚动
           // 溢出区 —— 手机宽度下整页多出二十来像素的横向滚动（表格本身横向滚是正常的）。
-          <div class="relative overflow-x-auto">
-            <table class="w-full text-left text-sm">
-              <thead class="text-xs text-muted-foreground">
-                <tr class="border-b">
-                  <th class="px-4 py-2 font-normal">{move || t("log.time")}</th>
-                  <th class="px-2 py-2 font-normal">{move || t("contest.freq")}</th>
-                  <th class="px-2 py-2 font-normal">{move || t("log.callsign")}</th>
-                  <th class="px-2 py-2 font-normal">{move || t("contest.sent")}</th>
-                  <th class="px-2 py-2 font-normal">{move || t("contest.received")}</th>
-                  <th class="px-2 py-2 font-normal">{move || t("contest.entity")}</th>
-                  <th class="px-4 py-2 font-normal"><span class="sr-only">{move || t("log.actions")}</span></th>
-                </tr>
-              </thead>
-              <tbody class="font-mono">
-                {move || {
-                  let list = entries.get();
-                  if list.is_empty() {
-                    return view! {
-                      <tr><td colspan="7" class="px-4 py-6 text-center font-sans text-sm text-muted-foreground">{move || t("contest.no-qsos-yet-type")}</td></tr>
-                    }.into_any();
-                  }
-                  list
-                    .into_iter()
-                    .rev()
-                    .take(50)
-                    .map(|e| {
-                      let id = e.id;
-                      let entity = e.entity().map(|x| x.name).unwrap_or("—");
-                      view! {
-                        <tr class="border-b last:border-0">
-                          <td class="px-4 py-1.5 tabular-nums">{e.time.clone()}</td>
-                          <td class="px-2 py-1.5 tabular-nums">{e.freq.clone()}</td>
-                          <td class="px-2 py-1.5 font-semibold">{e.callsign.clone()}</td>
-                          <td class="px-2 py-1.5">{format!("{} {}", e.rst_sent, e.stx)}</td>
-                          <td class="px-2 py-1.5">{format!("{} {}", e.rst_rcvd, e.srx)}</td>
-                          <td class="px-2 py-1.5 font-sans text-xs text-muted-foreground">{entity}</td>
-                          <td class="px-4 py-1.5 text-right">
-                            <Button
-                              variant=Variant::Text
-                              size=Size::Xs
-                              class="font-sans hover:text-red-600"
-                              aria_label=tf("contest.delete", &[&(e.callsign).to_string()])
-                              on_click=Callback::new(move |_| remove(id))
-                            >
-                              {move || t("log.delete")}
-                            </Button>
-                          </td>
-                        </tr>
-                      }
-                    })
-                    .collect_view()
-                    .into_any()
-                }}
-              </tbody>
-            </table>
-          </div>
+          <Table class="relative text-sm">
+            <TableHead>
+              <TableRow>
+                <TableHeader class="px-4 py-2 font-normal">{move || t("log.time")}</TableHeader>
+                <TableHeader class="px-2 py-2 font-normal">{move || t("contest.freq")}</TableHeader>
+                <TableHeader class="px-2 py-2 font-normal">{move || t("log.callsign")}</TableHeader>
+                <TableHeader class="px-2 py-2 font-normal">{move || t("contest.sent")}</TableHeader>
+                <TableHeader class="px-2 py-2 font-normal">{move || t("contest.received")}</TableHeader>
+                <TableHeader class="px-2 py-2 font-normal">{move || t("contest.entity")}</TableHeader>
+                <TableHeader class="px-4 py-2 font-normal"><span class="sr-only">{move || t("log.actions")}</span></TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {move || {
+                let list = entries.get();
+                if list.is_empty() {
+                  return view! {
+                    <TableRow><TableCell colspan=7 class="px-4 py-6 text-center font-sans text-sm text-muted-foreground">{move || t("contest.no-qsos-yet-type")}</TableCell></TableRow>
+                  }.into_any();
+                }
+                list
+                  .into_iter()
+                  .rev()
+                  .take(50)
+                  .map(|e| {
+                    let id = e.id;
+                    let entity = e.entity().map(|x| x.name).unwrap_or("—");
+                    let time = e.time.clone();
+                    let freq = e.freq.clone();
+                    let callsign = e.callsign.clone();
+                    let sent = format!("{} {}", e.rst_sent, e.stx);
+                    let rcvd = format!("{} {}", e.rst_rcvd, e.srx);
+                    let delete_label = callsign.clone();
+                    view! {
+                      <TableRow class="border-b font-mono last:border-0">
+                        <TableCell class="px-4 py-1.5 tabular-nums">{time}</TableCell>
+                        <TableCell class="px-2 py-1.5 tabular-nums">{freq}</TableCell>
+                        <TableCell class="px-2 py-1.5 font-semibold">{callsign}</TableCell>
+                        <TableCell class="px-2 py-1.5">{sent}</TableCell>
+                        <TableCell class="px-2 py-1.5">{rcvd}</TableCell>
+                        <TableCell class="px-2 py-1.5 font-sans text-xs text-muted-foreground">{entity}</TableCell>
+                        <TableCell class="px-4 py-1.5 text-right">
+                          <Button
+                            variant=Variant::Text
+                            size=Size::Xs
+                            class="font-sans hover:text-red-600"
+                            aria_label=tf("contest.delete", &[&delete_label])
+                            on_click=Callback::new(move |_| remove(id))
+                          >
+                            {move || t("log.delete")}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    }
+                  })
+                  .collect_view()
+                  .into_any()
+              }}
+            </TableBody>
+          </Table>
         </section>
+
+        <ImportReportPanel report=import_report />
+
+        <ContestAnalysis entries=entries def=def my_call=my_call />
 
         <p class="text-xs text-muted-foreground">
           {move || t("contest.contest-qsos-are-also")}

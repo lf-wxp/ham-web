@@ -79,11 +79,6 @@ test("备考日历：14 天里标出考试日、倒数、模拟考建议、打�
 
 test("竞赛日历：按下一届开始时间排序，加入倒计时，并链到竞赛录入", async ({ page }) => {
   await page.clock.setFixedTime(NOW);
-  const alerts: string[] = [];
-  page.on("dialog", (d) => {
-    alerts.push(d.message());
-    void d.accept();
-  });
   await page.goto("/contest-calendar");
 
   const dates = page.getByText(/^\d{4} 年 \d{1,2} 月 \d{1,2} 日 · /);
@@ -104,9 +99,11 @@ test("竞赛日历：按下一届开始时间排序，加入倒计时，并链�
   }
 
   // 加入提醒：写进倒计时列表（标题带「竞赛：」前缀），再去 /countdown 能看到。
+  // 成功提示走全局 Toast（`role="status"`）。
   await page.getByRole("button", { name: "加入提醒" }).first().click();
-  await expect.poll(() => alerts.join("\n")).toMatch(/^已把「.+」加入倒计时提醒$/);
-  const name = alerts[0].match(/已把「(.+)」/)![1];
+  const toast = page.getByRole("status");
+  await expect(toast).toContainText(/^已把「.+」加入倒计时提醒$/);
+  const name = (await toast.innerText()).match(/已把「(.+)」/)![1];
   const stored = await page.evaluate(() => localStorage.getItem("countdowns") ?? "");
   expect(stored).toContain(`竞赛：${name}`);
   await page.getByRole("link", { name: "我的倒计时" }).click();

@@ -8,7 +8,9 @@ use leptos::prelude::*;
 use super::fmt_num;
 use super::path_profile_chart::PathProfileChart;
 use crate::i18n::{t, tf};
-use crate::ui::{Field, NumberField, Textarea};
+use crate::ui::{
+  Field, NumberField, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Textarea,
+};
 use crate::util::unique_id;
 
 /// 示例剖面：一座 310 m 的山脊挡在 30 km 路径中段偏 A 端处，打开页面就能看到「被挡」的样子。
@@ -191,27 +193,34 @@ pub(super) fn PathProfile() -> impl IntoView {
               .iter()
               .enumerate()
               .map(|(i, row)| {
-                let dash = || "—".to_string();
+                let dash = "—".to_string();
+                let dist = fmt_num(row.dist_km);
+                let elev = fmt_num(row.elev_m);
+                let bulge = if row.clearance_m.is_some() {
+                  fmt_num(row.bulge_m)
+                } else {
+                  dash.clone()
+                };
+                let fresnel = if row.clearance_m.is_some() {
+                  fmt_num(row.fresnel1_m)
+                } else {
+                  dash.clone()
+                };
+                let clearance = row.clearance_m.map(fmt_num).unwrap_or_else(|| dash.clone());
+                let ratio = row
+                  .clearance_ratio
+                  .map(|v| format!("{:.0}%", v * 100.0))
+                  .unwrap_or_else(|| dash.clone());
+                let emphasized = if i == worst_index { "bg-accent" } else { "" };
                 view! {
-                  <tr class="border-t" class=("bg-accent", i == worst_index)>
-                    <td class="border px-3 py-2 font-mono tabular-nums">{fmt_num(row.dist_km)}</td>
-                    <td class="border px-3 py-2 font-mono tabular-nums">{fmt_num(row.elev_m)}</td>
-                    <td class="border px-3 py-2 font-mono tabular-nums">
-                      {if row.clearance_m.is_some() { fmt_num(row.bulge_m) } else { dash() }}
-                    </td>
-                    <td class="border px-3 py-2 font-mono tabular-nums">
-                      {if row.clearance_m.is_some() { fmt_num(row.fresnel1_m) } else { dash() }}
-                    </td>
-                    <td class="border px-3 py-2 font-mono tabular-nums">
-                      {row.clearance_m.map(fmt_num).unwrap_or_else(dash)}
-                    </td>
-                    <td class="border px-3 py-2 font-mono tabular-nums">
-                      {row
-                        .clearance_ratio
-                        .map(|v| format!("{:.0}%", v * 100.0))
-                        .unwrap_or_else(dash)}
-                    </td>
-                  </tr>
+                  <TableRow class=emphasized>
+                    <TableCell class="border px-3 py-2 font-mono tabular-nums">{dist}</TableCell>
+                    <TableCell class="border px-3 py-2 font-mono tabular-nums">{elev}</TableCell>
+                    <TableCell class="border px-3 py-2 font-mono tabular-nums">{bulge}</TableCell>
+                    <TableCell class="border px-3 py-2 font-mono tabular-nums">{fresnel}</TableCell>
+                    <TableCell class="border px-3 py-2 font-mono tabular-nums">{clearance}</TableCell>
+                    <TableCell class="border px-3 py-2 font-mono tabular-nums">{ratio}</TableCell>
+                  </TableRow>
                 }
               })
               .collect_view();
@@ -224,21 +233,19 @@ pub(super) fn PathProfile() -> impl IntoView {
               </div>
               <PathProfileChart report=r />
               <p class="text-xs text-muted-foreground">{move || t("tools.profile-chart-note")}</p>
-              <div class="overflow-x-auto border">
-                <table class="w-full min-w-[560px] border-collapse text-sm">
-                  <thead class="bg-muted/60 text-xs">
-                    <tr>
-                      <th class="border px-3 py-2 text-left">{move || t("tools.distance-km")}</th>
-                      <th class="border px-3 py-2 text-left">{move || t("tools.profile-col-elevation")}</th>
-                      <th class="border px-3 py-2 text-left">{move || t("tools.profile-col-bulge")}</th>
-                      <th class="border px-3 py-2 text-left">{move || t("tools.profile-col-fresnel")}</th>
-                      <th class="border px-3 py-2 text-left">{move || t("tools.profile-col-clearance")}</th>
-                      <th class="border px-3 py-2 text-left">{move || t("tools.profile-col-ratio")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>{rows}</tbody>
-                </table>
-              </div>
+              <Table class="min-w-[560px] text-sm" wrapper_class="border">
+                <TableHead>
+                  <TableRow>
+                      <TableHeader class="border px-3 py-2">{move || t("tools.distance-km")}</TableHeader>
+                      <TableHeader class="border px-3 py-2">{move || t("tools.profile-col-elevation")}</TableHeader>
+                      <TableHeader class="border px-3 py-2">{move || t("tools.profile-col-bulge")}</TableHeader>
+                      <TableHeader class="border px-3 py-2">{move || t("tools.profile-col-fresnel")}</TableHeader>
+                      <TableHeader class="border px-3 py-2">{move || t("tools.profile-col-clearance")}</TableHeader>
+                      <TableHeader class="border px-3 py-2">{move || t("tools.profile-col-ratio")}</TableHeader>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>{rows}</TableBody>
+                </Table>
             }
               .into_any()
           }

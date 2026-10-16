@@ -200,9 +200,10 @@ test("传播预测：24 小时热力矩阵随网格与时刻更新", async ({ pa
   await page.goto("/muf");
   await expect(page.getByRole("heading", { name: "24 小时开通窗口" })).toBeVisible();
 
-  // 每个波段一行 24 个格子（格子是可点选的按钮）；默认网格合法，应有 10 × 24。
-  await expect(page.locator('[title^="20m · "]')).toHaveCount(24);
-  await expect(page.locator('[title^="10m · "]')).toHaveCount(24);
+  // 每个波段一行 24 个格子（格子是可点选的按钮，值在 `aria-label` 上）；
+  // 默认网格合法，应有 10 × 24。
+  await expect(page.locator('button[aria-label^="20m · "]')).toHaveCount(24);
+  await expect(page.locator('button[aria-label^="10m · "]')).toHaveCount(24);
 
   // 跳到最佳时刻：查看时刻变为按钮标注的最佳整点。
   // 初始查看时刻是「当前 UTC 小时」，可能恰好就是最佳整点（跑批就撞上过），
@@ -254,14 +255,14 @@ test("传播预测：点选热力图格子给出路径细节", async ({ page }) 
 
 test("传播预测：非法网格时给出输入提示", async ({ page }) => {
   await page.goto("/muf");
-  await expect(page.locator('[title^="20m · "]')).toHaveCount(24);
+  await expect(page.locator('button[aria-label^="20m · "]')).toHaveCount(24);
 
   // 同一页的另一张卡片也有「接收端网格」，这里限定在热力图面板内。
   const rx = panel(page, "heatmap").locator('input[aria-label="接收端网格"]');
   await rx.fill("XX");
   await expect(page.getByText("请输入至少 4 位 Maidenhead 网格（如 OM89、IO91）。")).toBeVisible();
-  await expect(page.locator('[title^="20m · "]')).toHaveCount(0);
+  await expect(page.locator('button[aria-label^="20m · "]')).toHaveCount(0);
 
   await rx.fill("IO91");
-  await expect(page.locator('[title^="20m · "]')).toHaveCount(24);
+  await expect(page.locator('button[aria-label^="20m · "]')).toHaveCount(24);
 });

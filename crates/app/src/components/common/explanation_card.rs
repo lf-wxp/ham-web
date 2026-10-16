@@ -6,7 +6,7 @@ use crate::cn::cn;
 use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::speech;
-use crate::ui::{Button, Size, Variant, card_class};
+use crate::ui::{Button, Size, Tooltip, Variant, card_class};
 
 /// 可折叠的「答案解析」卡片；题目切换时由调用方重建，自动恢复折叠状态。
 /// 题目没有解析时显示轻提示，并引导到仓库补充。
@@ -133,13 +133,14 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
               {segments.into_iter().map(|(part, link)| {
                 if let Some((href, title)) = link {
                   view! {
-                    <a
-                      href=href
-                      title=title
-                      class="font-medium text-primary underline underline-offset-2 hover:opacity-80"
-                    >
-                      {part}
-                    </a>
+                    <Tooltip label=title>
+                      <a
+                        href=href
+                        class="font-medium text-primary underline underline-offset-2 hover:opacity-80"
+                      >
+                        {part}
+                      </a>
+                    </Tooltip>
                   }
                     .into_any()
                 } else {

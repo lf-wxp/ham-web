@@ -18,12 +18,8 @@ async function importQso(page: Page) {
 }
 
 test("LoTW：上传成功后回写「已上传」，计数与标志位跟着变", async ({ page }) => {
-  // 确认框与成功提示都自动接受，顺便把文案收集起来断言。
-  const dialogs: string[] = [];
-  page.on("dialog", (d) => {
-    dialogs.push(d.message());
-    d.accept();
-  });
+  // 确认框（原生 confirm）自动接受；成功提示走全局 Toast（`role="status"`）。
+  page.on("dialog", (d) => d.accept());
 
   await page.goto("/log");
   await importQso(page);
@@ -32,9 +28,7 @@ test("LoTW：上传成功后回写「已上传」，计数与标志位跟着变"
   await expect(mark).toHaveText("标记已上传 LoTW（1）");
 
   await mark.click();
-  await expect
-    .poll(() => dialogs.some((m) => m.includes("已把 1 条通联标记为已上传 LoTW")))
-    .toBe(true);
+  await expect(page.getByRole("status")).toContainText(/已把 1 条通联标记为已上传 LoTW/);
   // 没有可标记的了：计数归零、按钮禁用。
   await expect(mark).toHaveText("标记已上传 LoTW（0）");
   await expect(mark).toBeDisabled();

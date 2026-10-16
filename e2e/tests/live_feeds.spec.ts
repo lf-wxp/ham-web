@@ -15,11 +15,6 @@ test("DX 热点：按波段 / 模式筛选、对照日志标出需要的实体�
   // 日志里已经在 20m 联过日本：JA1ABC 应标「已联」，其余两个是新实体。
   await seedLog(page, [{ callsign: "JA1XYZ", band: "20m", freq: "14.074" }]);
   await stubApi(page, { "/api/spots": SPOTS });
-  const alerts: string[] = [];
-  page.on("dialog", (d) => {
-    alerts.push(d.message());
-    void d.accept();
-  });
   await page.goto("/dx-spots");
 
   // 呼号按钮的可访问名 = 呼号 + 国家（如「JA1ABC 日本」）。
@@ -50,8 +45,9 @@ test("DX 热点：按波段 / 模式筛选、对照日志标出需要的实体�
   await expect(page.getByRole("button", { name: /^JA1ABC / })).toHaveCount(0);
 
   // 点呼号记入日志：之后 VK2XX 的实体也算联过了，「需要的」只剩 PY2AA。
+  // 记入结果走全局 Toast（`role="status"`）。
   await page.getByRole("button", { name: /^VK2XX / }).click();
-  await expect.poll(() => alerts.join("\n")).toMatch(/已加入日志：VK2XX/);
+  await expect(page.getByRole("status")).toContainText(/已加入日志：VK2XX/);
   await expect(page.getByRole("button", { name: "只看需要的（1）" })).toBeVisible();
   await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText("PY2AA");
@@ -87,17 +83,12 @@ test("PSK Reporter：呼号规整后查询、报告表格式化、空结果与�
       return { reports: [] };
     },
   });
-  const alerts: string[] = [];
-  page.on("dialog", (d) => {
-    alerts.push(d.message());
-    void d.accept();
-  });
   await page.goto("/psk-reporter");
 
-  // 空呼号：不发请求，直接提示。
+  // 空呼号：不发请求，直接 Toast 提示（`role="status"`）。
   await page.getByRole("textbox", { name: "呼号" }).fill("");
   await page.getByRole("button", { name: "查询" }).click();
-  await expect.poll(() => alerts).toContain("请输入呼号");
+  await expect(page.getByRole("status")).toContainText("请输入呼号");
   expect(asked).toHaveLength(0);
 
   // 小写 + 空白 → 大写去空格后再查。

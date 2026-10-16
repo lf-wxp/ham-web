@@ -13,7 +13,7 @@ use crate::ui::{Button, Chip, ChipGroup, Field, Input, Size, Variant};
 
 use super::log_helpers::station_title;
 use super::{Logbook, Removal, StationBook, StationProfile, use_log_store};
-use crate::util::{alert, unique_id, window};
+use crate::util::{unique_id, window};
 
 /// 当前台站名下有多少条通联（面板上显示，也是删除前的提示）。
 fn entry_count(book: &StationBook, logbook: &Logbook) -> usize {
@@ -67,7 +67,7 @@ pub(super) fn StationPanel(book: RwSignal<StationBook>, on_save: Callback<()>) -
     let mut outcome = Removal::Removed;
     book.update(|b| outcome = b.remove(id));
     if outcome == Removal::LastStation {
-      alert(&t("log.station-keep-at-least-one"));
+      crate::ui::push_error(t("log.station-keep-at-least-one"));
     }
   });
 

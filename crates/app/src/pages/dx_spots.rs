@@ -13,11 +13,11 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde::Deserialize;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{EmptyState, Loading, PageContainer, PageHeader};
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::pages::log::use_log_store;
-use crate::ui::{Button, Checkbox, ChipToggle, Input, Size, Variant};
+use crate::ui::{Button, Checkbox, ChipToggle, Input, Size, Tooltip, Variant};
 use crate::util::{notify, request_notify_permission, set_title, storage};
 
 const ALERTS_KEY: &str = "dx-alerts";
@@ -191,7 +191,7 @@ pub fn DxSpotsPage() -> impl IntoView {
     if !store.quick_add(&dx, &s, mode) {
       return; // 备份 / 恢复进行中：`quick_add` 已提示，不能再报「已记录」。
     }
-    crate::util::alert(&tf(
+    crate::ui::push_success(tf(
       "radio.logged-mhz",
       &[&(dx).to_string(), &(s).to_string(), (mode)],
     ));
@@ -375,15 +375,13 @@ pub fn DxSpotsPage() -> impl IntoView {
             {move || {
               if loading.get() {
                 return view! {
-                  <p class="px-3 py-8 text-center text-sm text-muted-foreground">{move || t("radio.fetching-live-spots")}</p>
+                  <Loading label=Signal::derive(move || t("radio.fetching-live-spots")) class="py-8" />
                 }
                 .into_any();
               }
               if failed.get() || spots.get().is_empty() {
                 return view! {
-                  <p class="px-3 py-8 text-center text-sm text-muted-foreground">
-                    {move || t("radio.live-spots-are-unavailable")}
-                  </p>
+                  <EmptyState title=Signal::derive(move || t("radio.live-spots-are-unavailable")) />
                 }
                 .into_any();
               }
@@ -403,7 +401,7 @@ pub fn DxSpotsPage() -> impl IntoView {
                 .collect();
               if filtered.is_empty() {
                 return view! {
-                  <p class="px-3 py-8 text-center text-sm text-muted-foreground">{move || t("radio.no-reports-for-the")}</p>
+                  <EmptyState title=Signal::derive(move || t("radio.no-reports-for-the")) />
                 }
                 .into_any();
               }
@@ -472,9 +470,11 @@ pub fn DxSpotsPage() -> impl IntoView {
                             {if comment.is_empty() { "—".to_owned() } else { comment.clone() }}
                           </span>
                           <span class="shrink-0 text-xs text-muted-foreground">{time.clone()}</span>
-                          <span class="shrink-0 text-xs text-muted-foreground" title=move || t("radio.spotter")>
-                            {spotter.clone()}
-                          </span>
+                          <Tooltip label=Signal::derive(move || t("radio.spotter"))>
+                            <span class="shrink-0 text-xs text-muted-foreground">
+                              {spotter.clone()}
+                            </span>
+                          </Tooltip>
                         </div>
                       }
                     })

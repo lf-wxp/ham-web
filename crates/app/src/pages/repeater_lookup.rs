@@ -5,9 +5,13 @@ use ham_web_core::chirp_csv::{self, ExportOptions, RepeaterRow, SkipCounts};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
+use crate::components::common::EmptyState;
 use crate::data;
 use crate::i18n::{t, tp};
-use crate::ui::{Button, Checkbox, Input, Label, Size, Variant};
+use crate::ui::{
+  Button, Checkbox, Input, Label, Size, Table, TableBody, TableCell, TableHead, TableHeader,
+  TableRow, Variant,
+};
 use crate::util::unique_id;
 
 /// 一条中继台。
@@ -74,7 +78,7 @@ pub fn RepeaterLookup() -> impl IntoView {
   let run = move || {
     let c = country.get().trim().to_owned();
     if c.is_empty() {
-      crate::util::alert("请输入国家 / 地区名称（英文，如 China）");
+      crate::ui::push_error(t("common.enter-a-country-region"));
       return;
     }
     loading.set(true);
@@ -243,9 +247,7 @@ pub fn RepeaterLookup() -> impl IntoView {
       {move || {
         if failed.get() {
           return view! {
-            <p class="px-4 pb-4 text-sm text-muted-foreground">
-              {move || t("radio.lookup-failed-or-no")}
-            </p>
+            <EmptyState title=Signal::derive(move || t("radio.lookup-failed-or-no")) />
           }
           .into_any();
         }
@@ -258,34 +260,32 @@ pub fn RepeaterLookup() -> impl IntoView {
                 &[&(c).to_string(), &(list.len()).to_string()],
               )}
             </div>
-            <div class="overflow-x-auto">
-              <table class="w-full min-w-[720px] border-collapse text-sm">
-                <thead class="bg-muted/60 text-xs">
-                  <tr>
-                    <th class="border px-3 py-2 text-left">{move || t("log.callsign")}</th>
-                    <th class="border px-3 py-2 text-left">{move || t("contest.freq")}</th>
-                    <th class="border px-3 py-2 text-left">{move || t("radio.offset")}</th>
-                    <th class="border px-3 py-2 text-left">{move || t("radio.ctcss")}</th>
-                    <th class="border px-3 py-2 text-left">{move || t("radio.city")}</th>
-                    <th class="border px-3 py-2 text-left">{move || t("radio.use")}</th>
-                    <th class="border px-3 py-2 text-left">{move || t("radio.status-column")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {list.into_iter().map(|r| view! {
-                    <tr class="border-t transition-colors hover:bg-muted/40">
-                      <td class="border px-3 py-1.5 font-mono font-semibold">{r.callsign}</td>
-                      <td class="border px-3 py-1.5 tabular-nums text-muted-foreground">{r.frequency_mhz}</td>
-                      <td class="border px-3 py-1.5 tabular-nums text-muted-foreground">{r.offset_mhz}</td>
-                      <td class="border px-3 py-1.5 tabular-nums text-muted-foreground">{if r.pl.is_empty() { "—".to_owned() } else { r.pl }}</td>
-                      <td class="border px-3 py-1.5 text-muted-foreground">{r.city}</td>
-                      <td class="border px-3 py-1.5 text-muted-foreground">{r.r#use}</td>
-                      <td class="border px-3 py-1.5 text-muted-foreground">{r.status}</td>
-                    </tr>
-                  }).collect_view()}
-                </tbody>
-              </table>
-            </div>
+            <Table class="min-w-[720px] text-sm">
+              <TableHead>
+                <TableRow>
+                  <TableHeader class="border px-3 py-2">{move || t("log.callsign")}</TableHeader>
+                  <TableHeader class="border px-3 py-2">{move || t("contest.freq")}</TableHeader>
+                  <TableHeader class="border px-3 py-2">{move || t("radio.offset")}</TableHeader>
+                  <TableHeader class="border px-3 py-2">{move || t("radio.ctcss")}</TableHeader>
+                  <TableHeader class="border px-3 py-2">{move || t("radio.city")}</TableHeader>
+                  <TableHeader class="border px-3 py-2">{move || t("radio.use")}</TableHeader>
+                  <TableHeader class="border px-3 py-2">{move || t("radio.status-column")}</TableHeader>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {list.into_iter().map(|r| view! {
+                  <TableRow>
+                    <TableCell class="border px-3 py-1.5 font-mono font-semibold">{r.callsign}</TableCell>
+                    <TableCell class="border px-3 py-1.5 tabular-nums text-muted-foreground">{r.frequency_mhz}</TableCell>
+                    <TableCell class="border px-3 py-1.5 tabular-nums text-muted-foreground">{r.offset_mhz}</TableCell>
+                    <TableCell class="border px-3 py-1.5 tabular-nums text-muted-foreground">{if r.pl.is_empty() { "—".to_owned() } else { r.pl }}</TableCell>
+                    <TableCell class="border px-3 py-1.5 text-muted-foreground">{r.city}</TableCell>
+                    <TableCell class="border px-3 py-1.5 text-muted-foreground">{r.r#use}</TableCell>
+                    <TableCell class="border px-3 py-1.5 text-muted-foreground">{r.status}</TableCell>
+                  </TableRow>
+                }).collect_view()}
+              </TableBody>
+            </Table>
           </div>
         })
         .into_any()

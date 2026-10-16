@@ -7,7 +7,10 @@ use leptos::prelude::*;
 
 use super::fmt_num;
 use crate::i18n::{t, tf};
-use crate::ui::{Field, NumberField, RadioGroup, RadioGroupItem};
+use crate::ui::{
+  Field, NumberField, RadioGroup, RadioGroupItem, Table, TableBody, TableCell, TableHead,
+  TableHeader, TableRow,
+};
 use crate::util::unique_id;
 
 /// 滤波器类型：`(枚举值, 单选值, 文案 key)`。
@@ -150,30 +153,29 @@ pub(super) fn FilterDesign() -> impl IntoView {
         }}
       </div>
 
-      <div class="overflow-x-auto border">
-        <table class="w-full min-w-[480px] border-collapse text-sm">
-          <thead class="bg-muted/60 text-xs">
-            <tr>
-              <th class="border px-3 py-2 text-left">{move || t("tools.stage")}</th>
-              <th class="border px-3 py-2 text-left">{move || t("tools.position")}</th>
-              <th class="border px-3 py-2 text-left">{move || t("tools.in-arm-configuration")}</th>
-              <th class="border px-3 py-2 text-left">{move || t("tools.inductance-h-label")}</th>
-              <th class="border px-3 py-2 text-left">{move || t("tools.capacitance-pf")}</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Table class="min-w-[480px] text-sm" wrapper_class="border">
+        <TableHead>
+          <TableRow>
+            <TableHeader class="border px-3 py-2">{move || t("tools.stage")}</TableHeader>
+            <TableHeader class="border px-3 py-2">{move || t("tools.position")}</TableHeader>
+            <TableHeader class="border px-3 py-2">{move || t("tools.in-arm-configuration")}</TableHeader>
+            <TableHeader class="border px-3 py-2">{move || t("tools.inductance-h-label")}</TableHeader>
+            <TableHeader class="border px-3 py-2">{move || t("tools.capacitance-pf")}</TableHeader>
+          </TableRow>
+        </TableHead>
+        <TableBody>
             {move || {
               stages()
                 .iter()
                 .enumerate()
                 .map(|(i, &s)| {
                   view! {
-                    <tr class="border-t">
-                      <td class="border px-3 py-2 font-mono tabular-nums">{i + 1}</td>
-                      <td class="border px-3 py-2 text-muted-foreground">
+                    <TableRow>
+                      <TableCell class="border px-3 py-2 font-mono tabular-nums">{i + 1}</TableCell>
+                      <TableCell class="border px-3 py-2 text-muted-foreground">
                         {move || if s.series { t("tools.series") } else { t("tools.shunt") }}
-                      </td>
-                      <td class="border px-3 py-2 text-muted-foreground">
+                      </TableCell>
+                      <TableCell class="border px-3 py-2 text-muted-foreground">
                         {move || {
                           match s.topology {
                             ResonatorTopology::Single => "—".to_string(),
@@ -181,21 +183,20 @@ pub(super) fn FilterDesign() -> impl IntoView {
                             ResonatorTopology::ParallelLc => t("tools.parallel-lc"),
                           }
                         }}
-                      </td>
-                      <td class="border px-3 py-2 font-mono tabular-nums">
+                      </TableCell>
+                      <TableCell class="border px-3 py-2 font-mono tabular-nums">
                         {move || s.l_uh.map(|v| tf("common.microhenry", &[&fmt_num(v)])).unwrap_or_else(|| "—".into())}
-                      </td>
-                      <td class="border px-3 py-2 font-mono tabular-nums">
+                      </TableCell>
+                      <TableCell class="border px-3 py-2 font-mono tabular-nums">
                         {move || s.c_pf.map(|v| tf("common.picofarad", &[&fmt_num(v)])).unwrap_or_else(|| "—".into())}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   }
                 })
                 .collect_view()
             }}
-          </tbody>
-        </table>
-      </div>
+        </TableBody>
+      </Table>
 
       <p class="text-xs text-muted-foreground">
         {move || t("tools.butterworth-prototype-g-onward")}

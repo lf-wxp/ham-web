@@ -177,6 +177,7 @@
   "common.network": "网络",
   "common.new-york": "纽约",
   "common.next-month": "下个月",
+  "common.next-page": "下一页",
   "common.no-class-mock-exam": "还没有 {} 类模拟考试记录。",
   "common.note-content": "笔记内容",
   "common.of-the-last-attempts": "最近 {} 次及格 {} 次，再巩固一下薄弱分类。",
@@ -193,6 +194,7 @@
   "common.open-to-any-origin": "对任意来源开放（只读 GET），网页前端可直接 fetch，无需自建代理。",
   "common.optional": "可选",
   "common.organisations-and-concepts": "组织与概念",
+  "common.pagination": "分页",
   "common.pair": "{} · {}",
   "common.pass-in-good-for": "{} {} 分钟后过境（{}）· 适合录制 APT · 最高 {}° · {}方",
   "common.pass-in-max-from": "{} {} 分钟后过境（{}）· 最高 {}° · {}方",
@@ -205,6 +207,7 @@
   "common.power-supply-types": "电源类型",
   "common.practical-notes": "实践要点",
   "common.press-while-answering-to": "答题时按 ? 可随时打开本帮助。",
+  "common.prev-page": "上一页",
   "common.preview": "试听 {}",
   "common.preview-with-code": "试听 {}：{}",
   "common.preview-question-image": "预览题图",
@@ -345,5 +348,6 @@
   "common.topic-basics": "电子电工基础",
   "common.topic-basics-desc": "导体与绝缘体、静电与直流电、电学单位、电源、元件与电路、万用表测量",
   "common.topic-safety": "安全与电磁防护",
-  "common.topic-safety-desc": "发射设备技术指标、电磁环境控制限值、防雷接地、用电与电池安全"
+  "common.topic-safety-desc": "发射设备技术指标、电磁环境控制限值、防雷接地、用电与电池安全",
+  "common.cat-protocol-kenwood": "Kenwood / Elecraft / 新款 Yaesu"
 }

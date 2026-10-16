@@ -11,7 +11,7 @@ use crate::components::cat_control::{CatControl, CatReading};
 use crate::data;
 use crate::ui::{
   Button, Checkbox, DatePicker, Field, Input, NativeSelect, NumberField, Select, SelectItem,
-  SelectOption, Size, TimePicker, Variant,
+  SelectOption, Size, TimePicker, Tooltip, Variant,
 };
 
 use super::form_state::LogFormState;
@@ -66,7 +66,7 @@ pub(super) fn EntryForm(
   let lookup_call = move || {
     let call = form.callsign.get().trim().to_uppercase();
     if call.len() < 3 {
-      crate::util::alert(&t("log.enter-a-full-callsign"));
+      crate::ui::push_error(t("log.enter-a-full-callsign"));
       return;
     }
     lookup_loading.set(true);
@@ -220,18 +220,23 @@ pub(super) fn EntryForm(
             view! {
               <div class="flex flex-wrap items-center gap-x-3 gap-y-1 bg-muted/40 px-3 py-2 text-xs sm:col-span-2 lg:col-span-3">
                 <span class="text-muted-foreground">{entity}</span>
-                {path.map(|p| view! {
-                  <span class="tabular-nums text-muted-foreground" title=if p.approximate { t("log.no-grid-given-estimated") } else { t("log.computed-from-both-grids") }>
-                    {tf(
-                      "log.km-bearing",
-                      &[
-                        &if p.approximate { t("log.entry-approximate") } else { String::new() },
-                        &format!("{:.0}", p.km),
-                        &format!("{:.0}", p.bearing),
-                        &t(compass(p.bearing)),
-                      ],
-                    )}
-                  </span>
+                {path.map(|p| {
+                  let tip = if p.approximate { t("log.no-grid-given-estimated") } else { t("log.computed-from-both-grids") };
+                  view! {
+                    <Tooltip label=tip>
+                      <span class="tabular-nums text-muted-foreground">
+                        {tf(
+                          "log.km-bearing",
+                          &[
+                            &if p.approximate { t("log.entry-approximate") } else { String::new() },
+                            &format!("{:.0}", p.km),
+                            &format!("{:.0}", p.bearing),
+                            &t(compass(p.bearing)),
+                          ],
+                        )}
+                      </span>
+                    </Tooltip>
+                  }
                 })}
                 {h.new_dxcc.then(|| view! {
                   <span class="bg-emerald-500/15 px-2 py-0.5 font-medium text-emerald-700 dark:text-emerald-300">{move || t("log.new-dxcc")}</span>

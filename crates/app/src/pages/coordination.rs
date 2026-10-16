@@ -26,7 +26,7 @@ pub fn CoordinationPage() -> impl IntoView {
         title="IARU 三区波段差异"
         headers=IARU_HEADERS
         rows=IARU_BAND_DIFFS
-        min_width=720
+        class="min-w-[720px]"
       />
       <StepsSection title="频率协调申请流程" items=COORDINATION_STEPS />
       <StepsSection title="受干扰处理流程" items=INTERFERENCE_STEPS />

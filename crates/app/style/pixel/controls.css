@@ -568,6 +568,57 @@
     border-left: 2px solid var(--pxl-ink);
     box-shadow: -4px 0 0 0 var(--pxl-shadow);
   }
+
+  /* ---------- 数据表格 ----------
+     网格线用发丝线（--border，半透明墨色）而不是 2px 实线：表格线是内容分隔，
+     不是控件描边，2px 会让整张表变成黑格子；表头用 muted 底纹与内容区分。 */
+  .pxl-table {
+    font-size: var(--text-sm);
+  }
+
+  .pxl-table :is(th, td) {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+
+  .pxl-table thead :is(th, td) {
+    background-color: color-mix(in oklab, var(--muted) 60%, transparent);
+    font-size: var(--text-xs);
+  }
+
+  @media (hover: hover) {
+    .pxl-table tbody tr:hover {
+      background-color: color-mix(in oklab, var(--muted) 40%, transparent);
+    }
+  }
+
+  /* 分页里的当前页：与 `pxl-btn-primary` 同款变量，由 `aria-current="page"` 驱动，
+     不靠调用点在 Rust 里拼 ON / OFF 类名。 */
+  .pxl-btn[aria-current="page"] {
+    --btn-bg: var(--primary);
+    --btn-fg: var(--primary-foreground);
+    --btn-lo: rgb(0 0 0 / 0.3);
+  }
+
+  /* 可见气泡在 body 的传送层，位置由触发器 rect 与视口边界决定，不受滚动容器裁剪。 */
+  .pxl-tip-popup {
+    position: fixed;
+    left: 8px;
+    top: 8px;
+    z-index: 70;
+    width: max-content;
+    max-width: 16rem;
+    padding: 0.25rem 0.5rem;
+    font-size: var(--text-xs);
+    line-height: 1.25;
+    pointer-events: none;
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+    border: 2px solid var(--pxl-ink);
+    box-shadow: 2px 2px 0 0 var(--pxl-shadow);
+  }
+
 }
 
 /* ---------- 模态遮罩 ----------

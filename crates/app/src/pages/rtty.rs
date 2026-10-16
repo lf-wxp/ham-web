@@ -5,9 +5,10 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 text-left align-top";
+const CELL: &str = "border px-3 py-2 align-top";
 
 #[component]
 pub fn RttyPage() -> impl IntoView {
@@ -22,33 +23,31 @@ pub fn RttyPage() -> impl IntoView {
       <PageContainer>
         <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.mode-notes")}</h2>
-          <div class="overflow-x-auto">
-            <table class="w-full min-w-[560px] border-collapse text-sm">
-              <thead class="bg-muted/60 text-xs">
-                <tr>
-                  <th class=CELL>{move || t("log.mode")}</th>
-                  <th class=CELL>{move || t("knowledge.alias")}</th>
-                  <th class=CELL>{move || t("radio.notes")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {RTTY_MODES
-                  .iter()
-                  .map(|&(name, alias, desc)| {
-                    view! {
-                      <tr class="border-t transition-colors hover:bg-muted/40">
-                        <td class=format!("{CELL} whitespace-nowrap font-mono font-semibold text-primary")>
-                          {name}
-                        </td>
-                        <td class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{alias}</td>
-                        <td class=format!("{CELL} text-muted-foreground")>{desc}</td>
-                      </tr>
-                    }
-                  })
-                  .collect_view()}
-              </tbody>
-            </table>
-          </div>
+          <Table class="min-w-[560px] text-sm">
+            <TableHead>
+              <TableRow>
+                <TableHeader class=CELL>{move || t("log.mode")}</TableHeader>
+                <TableHeader class=CELL>{move || t("knowledge.alias")}</TableHeader>
+                <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {RTTY_MODES
+                .iter()
+                .map(|&(name, alias, desc)| {
+                  view! {
+                    <TableRow>
+                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono font-semibold text-primary")>
+                        {name}
+                      </TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{alias}</TableCell>
+                      <TableCell class=format!("{CELL} text-muted-foreground")>{desc}</TableCell>
+                    </TableRow>
+                  }
+                })
+                .collect_view()}
+            </TableBody>
+          </Table>
         </section>
 
         <section class="pxl-card border bg-card">

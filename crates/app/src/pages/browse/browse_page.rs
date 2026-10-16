@@ -8,11 +8,13 @@ use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 
 use crate::cn::cn;
-use crate::components::common::{EmptyState, PageContainer, PageHeader, Skeleton};
+use crate::components::common::{EmptyState, PageContainer, PageHeader, Skeleton, StickyPanel};
 use crate::components::sidebar_item::SidebarItem;
 use crate::data::{self, Questions};
 use crate::icons::{Icon, IconKind};
-use crate::ui::{Button, Chip, ChipGroup, ChipToggle, Input, InputType, Variant};
+use crate::ui::{
+  Button, Chip, ChipGroup, ChipToggle, Input, InputType, MobileNavDrawer, Tooltip, Variant,
+};
 use crate::util::set_title;
 
 use super::question_row::QuestionRow;
@@ -173,6 +175,8 @@ pub fn BrowsePage() -> impl IntoView {
       }
     });
   };
+  // 移动端分类抽屉的开关：选中分类后要主动收起。
+  let cat_open = RwSignal::new(false);
 
   let sidebar = move || {
     TOP_CATEGORIES
@@ -190,6 +194,7 @@ pub fn BrowsePage() -> impl IntoView {
                   on:click=move |_| {
                     top.set(c.key.to_owned());
                     sub.set(Some(name));
+                    cat_open.set(false);
                   }
                   class=move || {
                     cn(&[
@@ -202,7 +207,9 @@ pub fn BrowsePage() -> impl IntoView {
                     ])
                   }
                 >
-                  <span class="truncate" title=name.to_string()>{name}</span>
+                  <Tooltip class="min-w-0 flex-1" label=name.to_string()>
+                    <span class="w-full truncate">{name}</span>
+                  </Tooltip>
                   <span class="ml-1 opacity-60">{move || sub_count.with(|m| m.get(name).copied().unwrap_or(0))}</span>
                 </button>
               }
@@ -216,10 +223,13 @@ pub fn BrowsePage() -> impl IntoView {
               on_click=Callback::new(move |_| {
                 select_top(c.key);
                 toggle_top(c.key);
+                cat_open.set(false);
               })
             >
               <span class="h-2 w-2 shrink-0" style=format!("background: {}", c.color)></span>
-              <span class="truncate" title=c.name.to_string()>{c.name}</span>
+              <Tooltip class="min-w-0 flex-1" label=c.name.to_string()>
+                <span class="w-full truncate">{c.name}</span>
+              </Tooltip>
               <span class="ml-auto text-xs tabular-nums">{move || cat_count.with(|m| m.get(c.key).copied().unwrap_or(0))}</span>
               <Icon
                 kind=IconKind::ChevronDown
@@ -233,6 +243,24 @@ pub fn BrowsePage() -> impl IntoView {
         }
       })
       .collect_view()
+  };
+
+  // 分类列表（桌面侧栏与移动端抽屉共用）：全部 + 各大类（含可展开的子类）。
+  let category_tree = move || {
+    view! {
+      <SidebarItem
+        active=Signal::derive(move || top.with(|t| t == ALL))
+        on_click=Callback::new(move |_| {
+          select_top(ALL);
+          cat_open.set(false);
+        })
+      >
+        <span class="h-2 w-2 bg-foreground/60"></span>
+        {move || t("exam.all-questions")}
+        <span class="ml-auto text-xs tabular-nums">{move || bank_questions.with(Vec::len)}</span>
+      </SidebarItem>
+      {sidebar}
+    }
   };
 
   let list = move || {
@@ -290,7 +318,7 @@ pub fn BrowsePage() -> impl IntoView {
 
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <PageHeader class="top-16"
+      <PageHeader
         title=move || t("shell.browse-questions")
         subtitle=move || t("exam.grouped-by-question-type")
         actions=ViewFn::from(move || {
@@ -346,18 +374,20 @@ pub fn BrowsePage() -> impl IntoView {
 
       <PageContainer class="space-y-0 grid grid-cols-1 gap-5 md:grid-cols-[240px_1fr]">
         <aside class="hidden md:block">
-          <div class="sticky top-[136px] max-h-[calc(100vh-152px)] overflow-y-auto pxl-card border bg-card p-2">
-            <SidebarItem
-              active=Signal::derive(move || top.with(|t| t == ALL))
-              on_click=Callback::new(move |_| select_top(ALL))
-            >
-              <span class="h-2 w-2 bg-foreground/60"></span>
-              {move || t("exam.all-questions")}
-              <span class="ml-auto text-xs tabular-nums">{move || bank_questions.with(Vec::len)}</span>
-            </SidebarItem>
-            {sidebar}
-          </div>
+          <StickyPanel class="max-h-[calc(100vh-var(--sticky-top)-16px)] overflow-y-auto pxl-card border bg-card p-2">
+            {category_tree()}
+          </StickyPanel>
         </aside>
+
+        <MobileNavDrawer
+          open=cat_open
+          title=Signal::derive(move || t("exam.question-types"))
+          button_label=Signal::derive(move || t("exam.category"))
+          icon=IconKind::SlidersHorizontal
+          class="md:hidden"
+        >
+          {category_tree()}
+        </MobileNavDrawer>
 
         <div class="min-w-0">
           <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">

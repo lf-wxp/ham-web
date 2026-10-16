@@ -14,7 +14,7 @@
   "diy.instrument-multimeter": "万用表",
   "diy.hours": "工时 {}",
   "diy.bom": "材料清单（BOM）",
-  "diy.bom-bought": "已采购",
+  "diy.bom-bought-label": "已采购：{}",
   "diy.links": "资料与原理图",
   "diy.tests": "测试步骤",
   "diy.pitfalls": "常见问题",

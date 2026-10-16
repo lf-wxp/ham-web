@@ -6,6 +6,8 @@
 mod alerts_card;
 mod conditions_table;
 mod flux_trend;
+mod kp_forecast_card;
+mod kp_outlook;
 mod metric_card;
 mod solar_page;
 mod xray_trend;

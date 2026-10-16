@@ -3,7 +3,9 @@ use leptos::prelude::*;
 
 use super::fmt_num;
 use crate::i18n::t;
-use crate::ui::{Field, NumberField};
+use crate::ui::{
+  Field, NumberField, Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+};
 use crate::util::unique_id;
 
 /// dBm ↔ 功率（mW / W）换算：双向输入，附公式、计算示例与常用对照。
@@ -93,29 +95,27 @@ pub(super) fn DbmConverter() -> impl IntoView {
 
       <div>
         <div class="mb-1.5 text-xs text-muted-foreground">{move || t("tools.dbm-mw-reference")}</div>
-        <div class="overflow-x-auto">
-          <table class="w-full border-collapse text-sm">
-            <thead class="bg-muted/60 text-xs">
-              <tr>
-                <th class="border px-3 py-2 text-left">{move || t("tools.dbm")}</th>
-                <th class="border px-3 py-2 text-left">{move || t("tools.power-mw-w")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {COMMON_DBM_STEPS
-                .iter()
-                .map(|&d| {
-                  view! {
-                    <tr class="border-t hover:bg-muted/40">
-                      <td class="border px-3 py-2 tabular-nums">{format!("{d:.0}")}</td>
-                      <td class="border px-3 py-2 tabular-nums">{format_mw(dbm_to_mw(d))}</td>
-                    </tr>
-                  }
-                })
-                .collect_view()}
-            </tbody>
-          </table>
-        </div>
+        <Table class="text-sm">
+          <TableHead>
+            <TableRow>
+              <TableHeader class="border px-3 py-2">{move || t("tools.dbm")}</TableHeader>
+              <TableHeader class="border px-3 py-2">{move || t("tools.power-mw-w")}</TableHeader>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {COMMON_DBM_STEPS
+              .iter()
+              .map(|&d| {
+                view! {
+                  <TableRow>
+                    <TableCell class="border px-3 py-2 tabular-nums">{format!("{d:.0}")}</TableCell>
+                    <TableCell class="border px-3 py-2 tabular-nums">{format_mw(dbm_to_mw(d))}</TableCell>
+                  </TableRow>
+                }
+              })
+              .collect_view()}
+          </TableBody>
+        </Table>
       </div>
     </div>
   }

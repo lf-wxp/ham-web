@@ -128,5 +128,110 @@
   "contest.24-hour-field-emergency": "24-hour field / emergency operation",
   "contest.24-hour-field-emergency-north-america": "24-hour field / emergency operation; North America's biggest event.",
   "contest.fast-keyboard-entry-live": "Fast keyboard entry · live dupe check · self-reported score · export Cabrillo",
-  "contest.freq": "Freq"
+  "contest.freq": "Freq",
+  "contest.analysis-heading": "Post-contest analysis",
+  "contest.analysis-empty": "No valid QSOs yet. Once you log a few, the rate, idle stretches and multiplier gaps appear here.",
+  "contest.analysis-untimed": {
+    "one": "{} QSO has an unreadable date or time, so it is left out of the rate and idle statistics (it still counts toward multipliers).",
+    "other": "{} QSOs have an unreadable date or time, so they are left out of the rate and idle statistics (they still count toward multipliers)."
+  },
+  "contest.analysis-hourly": "Hourly rate (UTC)",
+  "contest.analysis-best-hour": {
+    "one": "Best 60 minutes in a row: {} QSO (starting {} UTC)",
+    "other": "Best 60 minutes in a row: {} QSOs (starting {} UTC)"
+  },
+  "contest.analysis-hour": "Hour",
+  "contest.analysis-qsos": "QSOs",
+  "contest.analysis-new-mults": "New mults",
+  "contest.analysis-rate-bar": "Rate bar",
+  "contest.analysis-idle-heading": "Idle stretches",
+  "contest.analysis-idle-note": "The gap between two consecutive QSOs. It is not necessarily rest: the band may simply have been closed, or you were doing something else.",
+  "contest.analysis-idle-min": "Shortest idle stretch",
+  "contest.analysis-idle-none": "No idle stretch of {} or more.",
+  "contest.analysis-idle-summary": {
+    "one": "{} stretch, {} in total",
+    "other": "{} stretches, {} in total"
+  },
+  "contest.analysis-mult-gaps": "Multiplier gaps",
+  "contest.analysis-no-universe": "This contest's multipliers are not counted per band (WPX prefixes, for example), so there is no \"fill it in on another band\" gap.",
+  "contest.analysis-caveat": "Gaps are listed only against the bands you have already used; it does not mean the station is audible on that band right now.",
+  "contest.analysis-one-band": "You have used only one band so far, so there is nothing to compare across bands yet.",
+  "contest.analysis-cross-complete": "Every multiplier you have worked is already covered on every band you have used.",
+  "contest.analysis-cross-band": "Multipliers worked on some bands but not yet on others (fewest missing first)",
+  "contest.analysis-cross-row": "{}: have {}; missing {}",
+  "contest.analysis-cross-more": "{} more not shown.",
+  "contest.analysis-zones": "CQ zones still missing per band",
+  "contest.analysis-zone-row": "{}: {} worked, {} missing: {}",
+  "contest.analysis-zone-complete": "{}: all 40 zones worked.",
+  "contest.import-cabrillo": "Import Cabrillo",
+  "contest.cabrillo-import-heading": "Cabrillo import result",
+  "contest.cabrillo-imported": {
+    "one": "Imported {} QSO ({})",
+    "other": "Imported {} QSOs ({})"
+  },
+  "contest.cabrillo-dupes": {
+    "one": "{} QSO is already in the log and was skipped",
+    "other": "{} QSOs are already in the log and were skipped"
+  },
+  "contest.cabrillo-x-qso": {
+    "one": "{} QSO marked X-QSO (not counted in the logging software) was ignored",
+    "other": "{} QSOs marked X-QSO (not counted in the logging software) were ignored"
+  },
+  "contest.cabrillo-switched": "Switched to \"{}\"; the session start was moved to {} UTC so the imported QSOs show up in the list and analysis below.",
+  "contest.cabrillo-assumed": "The contest \"{}\" has no built-in template: lines were read as the common \"report + one exchange\" layout, so please check a few. The QSOs are in the logbook (see the QSO log); the contest page only shows contests that have a template.",
+  "contest.cabrillo-skipped": {
+    "one": "{} line could not be read and was not imported:",
+    "other": "{} lines could not be read and were not imported:"
+  },
+  "contest.cabrillo-skipped-line": "Line {}: {}",
+  "contest.cabrillo-skipped-more": "{} more not shown.",
+  "contest.cabrillo-reason-layout": "Column count is not a layout I recognise (multi-field exchanges are not supported)",
+  "contest.cabrillo-reason-frequency": "Frequency is neither a whole number of kHz nor a band designator",
+  "contest.cabrillo-reason-mode": "Mode is not CW / PH / FM / RY / DG",
+  "contest.cabrillo-reason-date": "Date is not a valid YYYY-MM-DD",
+  "contest.cabrillo-reason-time": "Time is not a valid HHMM",
+  "contest.cabrillo-reason-callsign": "A callsign looks wrong",
+  "contest.cabrillo-reason-report": "A signal report looks wrong",
+  "contest.cabrillo-not-cabrillo": "No Cabrillo content found (START-OF-LOG or QSO: lines); this does not look like a Cabrillo log.",
+  "contest.cabrillo-too-large": "The file is over {} MB, which is not like a Cabrillo log; nothing was imported.",
+  "contest.cabrillo-no-contest-name": "contest not named",
+  "contest.cabrillo-limits": "Only the \"one exchange field per side\" layout is read. Cabrillo modes are just CW / phone / FM / RTTY / digital, so finer detail such as FT8 or USB cannot be recovered; the transmitter number is not kept.",
+  "contest.scp-exact": "{} is in the candidate list (your log or the loaded SCP file)",
+  "contest.scp-not-found": "{} is not in the candidate list, and nothing close to it is either",
+  "contest.scp-not-in-list": "{} is not in the candidate list",
+  "contest.scp-partial": "Callsigns containing {} ({} in all):",
+  "contest.scp-similar": "Callsigns one character away ({} in all):",
+  "contest.scp-pick": "Use {}",
+  "contest.scp-more": "…and {} more",
+  "contest.scp-loaded": {
+    "one": "Loaded {} callsign (release {})",
+    "other": "Loaded {} callsigns (release {})"
+  },
+  "contest.scp-skipped-lines": {
+    "one": "{} line that does not look like a callsign was skipped",
+    "other": "{} lines that do not look like callsigns were skipped"
+  },
+  "contest.scp-loaded-with-skipped": "{}; {}",
+  "contest.scp-save-failed": "Could not save it to browser storage: it works for now, but you will need to load it again after a refresh.",
+  "contest.scp-cleared": "The loaded SCP file was cleared",
+  "contest.scp-source-heading": "Callsign completion data",
+  "contest.scp-from-log": {
+    "one": "From your QSO log: {} distinct callsign",
+    "other": "From your QSO log: {} distinct callsigns"
+  },
+  "contest.scp-from-file": {
+    "one": "From the loaded SCP file: {} callsign (release {})",
+    "other": "From the loaded SCP file: {} callsigns (release {})"
+  },
+  "contest.scp-no-file": "No SCP file is loaded yet, so only your own QSO log is used for candidates.",
+  "contest.scp-load-file": "Load an .scp file",
+  "contest.scp-clear": "Clear the loaded file",
+  "contest.scp-official-site": "Official site supercheckpartial.com",
+  "contest.scp-note": "This site ships no SCP data: the official Super Check Partial site's footer says all rights are reserved and there is no licence to redistribute it. Download it yourself from the official site (master.scp for international contests, masterdx.scp for ARRL DX, masterss.scp for Sweepstakes) and load it here. The file stays in this device's browser only: it is not uploaded and not included in backups. Candidates are in alphabetical order, not by how often a call appears (an .scp file has no such information), and contest categories are not distinguished.",
+  "contest.scp-error-empty": "No callsigns were found in the file, so it does not look like an SCP file; nothing was loaded.",
+  "contest.scp-error-mostly": "Most lines in the file do not look like callsigns, so it is probably the wrong file; nothing was loaded.",
+  "contest.scp-error-too-large": "The file is too large (over {} MB or {} lines), so it does not look like an SCP file; nothing was loaded.",
+  "contest.scp-clear-failed": "Could not delete the SCP file from storage. Please try again.",
+  "contest.cabrillo-split-session": "The records were imported, but multiple stations or a long time span require separate contest sessions. The current session was not changed.",
+  "contest.session-history-closed": "This historical session cannot accept current contacts. Start a new session first."
 }

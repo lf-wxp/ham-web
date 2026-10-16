@@ -18,6 +18,7 @@ use leptos::prelude::*;
 use crate::components::common::{PageContainer, PageHeader};
 use crate::data;
 use crate::i18n::{t, tf};
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tooltip};
 use crate::util::set_title;
 
 use condition_row::ConditionRow;
@@ -128,45 +129,44 @@ pub fn RigReviewsPage() -> impl IntoView {
                   <h3 class="text-xs font-semibold text-primary">
                     {move || t("knowledge.review-measured")}
                   </h3>
-                  <div class="mt-2 overflow-x-auto">
-                    <table class="w-full border-collapse text-sm">
-                      <thead class="bg-muted/60 text-xs">
-                        <tr>
-                          <th class=CELL>{move || t("knowledge.metrics")}</th>
-                          <th class=CELL>{move || t("knowledge.review-value")}</th>
-                          <th class=CELL>{move || t("knowledge.review-how-to-measure")}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {REVIEW_METRICS
-                          .iter()
-                          .map(|row| {
-                            let glossary = row.glossary;
-                            let href = format!("#glossary-{glossary}");
-                            let name = REVIEW_GLOSSARY[glossary].0;
-                            let meaning = REVIEW_GLOSSARY[glossary].1;
-                            let how = REVIEW_GLOSSARY[glossary].2;
-                            view! {
-                              <tr class="border-t transition-colors hover:bg-muted/40">
-                                <td class=format!("{CELL} whitespace-nowrap font-medium")>
-                                  // 指标名互链到页面底部的术语表；悬停出释义。
+                  <Table class="text-sm" wrapper_class="mt-2">
+                    <TableHead>
+                      <TableRow>
+                        <TableHeader class="border px-3 py-2 align-top">{move || t("knowledge.metrics")}</TableHeader>
+                        <TableHeader class="border px-3 py-2 align-top">{move || t("knowledge.review-value")}</TableHeader>
+                        <TableHeader class="border px-3 py-2 align-top">{move || t("knowledge.review-how-to-measure")}</TableHeader>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {REVIEW_METRICS
+                        .iter()
+                        .map(|row| {
+                          let glossary = row.glossary;
+                          let href = format!("#glossary-{glossary}");
+                          let name = REVIEW_GLOSSARY[glossary].0;
+                          let meaning = REVIEW_GLOSSARY[glossary].1;
+                          let how = REVIEW_GLOSSARY[glossary].2;
+                          view! {
+                            <TableRow>
+                              <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>
+                                // 指标名互链到页面底部的术语表；悬停出释义。
+                                <Tooltip label=Signal::derive(move || text(meaning))>
                                   <a
                                     href=href
-                                    title=move || text(meaning)
                                     class="underline decoration-dotted underline-offset-2 hover:text-foreground"
                                   >
                                     {move || text(name)}
                                   </a>
-                                </td>
-                                <td class=format!("{CELL} font-mono")>{move || metric_text(glossary, rx)}</td>
-                                <td class=format!("{CELL} text-muted-foreground")>{move || text(how)}</td>
-                              </tr>
-                            }
-                          })
-                          .collect_view()}
-                      </tbody>
-                    </table>
-                  </div>
+                                </Tooltip>
+                              </TableCell>
+                              <TableCell class=format!("{CELL} font-mono")>{move || metric_text(glossary, rx)}</TableCell>
+                              <TableCell class=format!("{CELL} text-muted-foreground")>{move || text(how)}</TableCell>
+                            </TableRow>
+                          }
+                        })
+                        .collect_view()}
+                    </TableBody>
+                  </Table>
                   {if rx.is_some() {
                     view! {
                       <p class="mt-2 text-[11px] text-muted-foreground">

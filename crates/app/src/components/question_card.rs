@@ -8,8 +8,8 @@ use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::speech;
 use crate::ui::{
-  BadgeVariant, Button, CARD_HEADER, Checkbox, Label, RadioGroup, RadioGroupItem, Size, Variant,
-  badge_class, card_class, card_content_class, card_title_class,
+  BadgeVariant, Button, CARD_HEADER, Checkbox, Label, RadioGroup, RadioGroupItem, Size, Tooltip,
+  Variant, badge_class, card_class, card_content_class, card_title_class,
 };
 use crate::util::unique_id;
 
@@ -174,9 +174,11 @@ pub fn QuestionCard(
             .clone()
             .map(|j| {
               view! {
-                <span data-slot="badge" class=badge_class(BadgeVariant::Outline, "") title=move || t("exam.question-number-label")>
-                  {j}
-                </span>
+                <Tooltip label=Signal::derive(move || t("exam.question-number-label"))>
+                  <span data-slot="badge" class=badge_class(BadgeVariant::Outline, "")>
+                    {j}
+                  </span>
+                </Tooltip>
               }
             })}
           <Button

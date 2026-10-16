@@ -7,7 +7,7 @@ use super::super::grid_fill::band_color;
 use super::super::grid_geo::{square_center, square_label};
 use super::state::GridMapState;
 use crate::i18n::{t, tf, tp};
-use crate::ui::{Button, Size, Variant};
+use crate::ui::{Button, Size, Tooltip, Variant};
 
 #[component]
 pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
@@ -193,7 +193,9 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
                     ],
                   );
                   view! {
-                    <span class=span_class title=tooltip>{detail}</span>
+                    <Tooltip label=tooltip>
+                      <span class=span_class>{detail}</span>
+                    </Tooltip>
                   }
                 })
                 .collect_view()}

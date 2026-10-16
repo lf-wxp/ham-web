@@ -28,7 +28,11 @@ pub fn Sheet(open: RwSignal<bool>, children: ChildrenFn) -> impl IntoView {
             data-slot="sheet-overlay"
             data-state=state
             class="pxl-overlay pxl-enter-fade fixed inset-0 z-50"
-            on:click=move |_| open.set(false)
+            // 用 pointerdown 而不是 click 关闭：`MobileNavDrawer` 在 pointerup 里打开抽屉
+            //（区分轻点 / 拖动），随后浏览器派发同一次手势的合成 click —— 那时遮罩已
+            // 盖住触发按钮，click 的命中测试落在遮罩上，会立刻把刚打开的抽屉关掉。
+            // click 是旧手势的残余事件，pointerdown 才是新手势，这里只认新手势。
+            on:pointerdown=move |_| open.set(false)
           ></div>
           <div
             node_ref=content
@@ -45,6 +49,7 @@ pub fn Sheet(open: RwSignal<bool>, children: ChildrenFn) -> impl IntoView {
             class="pxl-sheet data-[state=open]:animate-in data-[state=closed]:animate-out fill-mode-both fixed z-50 flex flex-col gap-4 data-[state=closed]:duration-200 data-[state=open]:duration-300 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 sm:max-w-sm"
           >
             {children()}
+            <super::toast_live_region::ToastLiveRegion />
             <button
               type="button"
               data-state=state

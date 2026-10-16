@@ -41,7 +41,8 @@ pub async fn fetch_passes(w: &SatWatch, group: &str) -> Result<Vec<Pass>, crate:
     "/api/passes?lat={}&lon={}&min_elev={}&group={}",
     w.lat, w.lon, w.min_elev, group
   );
-  crate::data::fetch_external_json::<PassesApi>(&url)
+  // 冷启动时服务端要等上游 TLE，用放宽的超时（见 `fetch_external_json_slow`）。
+  crate::data::fetch_external_json_slow::<PassesApi>(&url)
     .await
     .map(|api| api.passes)
 }

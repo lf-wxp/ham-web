@@ -81,9 +81,7 @@
     "one": "{}: {} QSO, clic para detalles",
     "other": "{}: {} QSO, clic para detalles"
   },
-  "log.previous": "Anterior",
   "log.upload-report-file": "Subir archivo de informe",
-  "log.next": "Siguiente",
   "log.download-cbr": "Descargar .cbr",
   "log.unique-callsigns": "Indicativos únicos",
   "log.world-map-scroll-to": "Mapa mundial (rueda para zoom, arrastrar para desplazar, pinza para zoom, doble clic para restablecer, envoltura del antimeridiano)",

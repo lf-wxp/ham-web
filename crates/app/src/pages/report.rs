@@ -67,7 +67,7 @@ pub fn ReportPage() -> impl IntoView {
     // 置位又复位，按钮永远等不到它，是个死状态，这里直接去掉。
     match render_report_card(&report.get_untracked()) {
       Ok(data_url) => download(&data_url, "study-report.png"),
-      Err(_) => crate::util::alert(&t("log.rendering-failed-please-retry")),
+      Err(_) => crate::ui::push_error(t("log.rendering-failed-please-retry")),
     }
   };
 

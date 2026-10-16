@@ -5,6 +5,7 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
 use super::component_quiz::ComponentQuiz;
@@ -24,33 +25,31 @@ pub fn ElectronicsPage() -> impl IntoView {
       <PageContainer>
         <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.common-electronic-components")}</h2>
-          <div class="overflow-x-auto">
-            <table class="w-full min-w-[640px] border-collapse text-sm">
-              <thead class="bg-muted/60 text-xs">
-                <tr>
-                  <th class=CELL>{move || t("knowledge.component")}</th>
-                  <th class=CELL>{move || t("knowledge.symbol-unit")}</th>
-                  <th class=CELL>{move || t("knowledge.function")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {COMPONENTS
-                  .iter()
-                  .map(|&(name, unit, desc)| {
-                    view! {
-                      <tr class="border-t transition-colors hover:bg-muted/40">
-                        <td class=format!("{CELL} whitespace-nowrap font-medium")>{name}</td>
-                        <td class=format!("{CELL} whitespace-nowrap font-mono text-xs text-muted-foreground")>
-                          {unit}
-                        </td>
-                        <td class=format!("{CELL} text-muted-foreground")>{desc}</td>
-                      </tr>
-                    }
-                  })
-                  .collect_view()}
-              </tbody>
-            </table>
-          </div>
+          <Table class="min-w-[640px] text-sm">
+            <TableHead>
+              <TableRow>
+                <TableHeader class="border px-3 py-2 align-top">{move || t("knowledge.component")}</TableHeader>
+                <TableHeader class="border px-3 py-2 align-top">{move || t("knowledge.symbol-unit")}</TableHeader>
+                <TableHeader class="border px-3 py-2 align-top">{move || t("knowledge.function")}</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {COMPONENTS
+                .iter()
+                .map(|&(name, unit, desc)| {
+                  view! {
+                    <TableRow>
+                      <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{name}</TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-xs text-muted-foreground")>
+                        {unit}
+                      </TableCell>
+                      <TableCell class=format!("{CELL} text-muted-foreground")>{desc}</TableCell>
+                    </TableRow>
+                  }
+                })
+                .collect_view()}
+            </TableBody>
+          </Table>
         </section>
 
         <ComponentQuiz />

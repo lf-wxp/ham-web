@@ -6,9 +6,10 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
 use crate::i18n::{t, tf};
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 text-left align-top";
+const CELL: &str = "border px-3 py-2 align-top";
 
 #[component]
 pub fn LicenseClassesPage() -> impl IntoView {
@@ -21,35 +22,33 @@ pub fn LicenseClassesPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <div class="overflow-x-auto pxl-card border bg-card">
-          <table class="w-full min-w-[640px] border-collapse text-sm">
-            <thead class="bg-muted/60 text-xs">
-              <tr>
-                <th class=CELL>{move || t("exam.class-column")}</th>
-                <th class=CELL>{move || t("exam.frequency-range")}</th>
-                <th class=CELL>{move || t("exam.power-limit")}</th>
-                <th class=CELL>{move || t("radio.notes")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {LICENSE_CLASSES
-                .iter()
-                .map(|c| {
-                  view! {
-                    <tr class="border-t transition-colors hover:bg-muted/40">
-                      <td class=format!("{CELL} whitespace-nowrap font-medium")>
-                        {tf("learning.class", &[(c.class)])}
-                      </td>
-                      <td class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{c.freq}</td>
-                      <td class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{c.power}</td>
-                      <td class=format!("{CELL} text-muted-foreground")>{c.note}</td>
-                    </tr>
-                  }
-                })
-                .collect_view()}
-            </tbody>
-          </table>
-        </div>
+        <Table class="min-w-[640px] text-sm" wrapper_class="pxl-card border bg-card">
+          <TableHead>
+            <TableRow>
+              <TableHeader class=CELL>{move || t("exam.class-column")}</TableHeader>
+              <TableHeader class=CELL>{move || t("exam.frequency-range")}</TableHeader>
+              <TableHeader class=CELL>{move || t("exam.power-limit")}</TableHeader>
+              <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {LICENSE_CLASSES
+              .iter()
+              .map(|c| {
+                view! {
+                  <TableRow>
+                    <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>
+                      {tf("learning.class", &[(c.class)])}
+                    </TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{c.freq}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{c.power}</TableCell>
+                    <TableCell class=format!("{CELL} text-muted-foreground")>{c.note}</TableCell>
+                  </TableRow>
+                }
+              })
+              .collect_view()}
+          </TableBody>
+        </Table>
 
         <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.typical-equipment-and-scenarios")}</h2>

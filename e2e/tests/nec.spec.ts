@@ -375,9 +375,9 @@ test("方案库：倒 V 模板（折角几何）加载后结果正常", async ({
   await page.goto("/practical-antennas");
   // 五条方案里只有 EFHW 与倒 V 挂了模型，其余如实标「暂无可用模型」。
   await expect(page.getByRole("link", { name: "在求解器中打开" })).toHaveCount(2);
-  // 「暂无可用模型」只出现在 title 属性里（`getByText` 匹配不到渲染文本，写了等于没写），
-  // 必须按属性定位：5 条方案里 3 条没有模型，各给一个占位符 + title 说明。
-  await expect(page.locator('span[title="暂无可用模型"]')).toHaveCount(3);
+  // 「暂无可用模型」只出现在占位符的 tooltip 里（`getByText` 匹配不到渲染文本），
+  // 必须按 tooltip 定位：5 条方案里 3 条没有模型，各给一个占位符 + 悬停说明。
+  await expect(page.locator('span[role="tooltip"]', { hasText: "暂无可用模型" })).toHaveCount(3);
   await page.getByRole("link", { name: "在求解器中打开" }).nth(1).click();
 
   await expect(page).toHaveURL(/\/nec/);

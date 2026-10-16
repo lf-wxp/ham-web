@@ -5,9 +5,10 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 text-left align-top";
+const CELL: &str = "border px-3 py-2 align-top";
 
 #[component]
 pub fn AwardsPage() -> impl IntoView {
@@ -22,35 +23,33 @@ pub fn AwardsPage() -> impl IntoView {
       <PageContainer>
         <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("log.major-international-awards")}</h2>
-          <div class="overflow-x-auto">
-            <table class="w-full min-w-[720px] border-collapse text-sm">
-              <thead class="bg-muted/60 text-xs">
-                <tr>
-                  <th class=CELL>{move || t("log.abbreviation")}</th>
-                  <th class=CELL>{move || t("common.full-name")}</th>
-                  <th class=CELL>{move || t("log.organisation")}</th>
-                  <th class=CELL>{move || t("log.basic-rules")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {AWARDS
-                  .iter()
-                  .map(|&(abbr, full, org, rule)| {
-                    view! {
-                      <tr class="border-t transition-colors hover:bg-muted/40">
-                        <td class=format!("{CELL} whitespace-nowrap font-mono font-semibold text-primary")>
-                          {abbr}
-                        </td>
-                        <td class=format!("{CELL} whitespace-nowrap font-medium")>{full}</td>
-                        <td class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{org}</td>
-                        <td class=format!("{CELL} text-muted-foreground")>{rule}</td>
-                      </tr>
-                    }
-                  })
-                  .collect_view()}
-              </tbody>
-            </table>
-          </div>
+          <Table class="min-w-[720px] text-sm">
+            <TableHead>
+              <TableRow>
+                <TableHeader class=CELL>{move || t("log.abbreviation")}</TableHeader>
+                <TableHeader class=CELL>{move || t("common.full-name")}</TableHeader>
+                <TableHeader class=CELL>{move || t("log.organisation")}</TableHeader>
+                <TableHeader class=CELL>{move || t("log.basic-rules")}</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {AWARDS
+                .iter()
+                .map(|&(abbr, full, org, rule)| {
+                  view! {
+                    <TableRow>
+                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono font-semibold text-primary")>
+                        {abbr}
+                      </TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{full}</TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{org}</TableCell>
+                      <TableCell class=format!("{CELL} text-muted-foreground")>{rule}</TableCell>
+                    </TableRow>
+                  }
+                })
+                .collect_view()}
+            </TableBody>
+          </Table>
         </section>
       </PageContainer>
     </div>

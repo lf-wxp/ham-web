@@ -6,7 +6,7 @@ use leptos::prelude::*;
 use super::super::grid_geo::{square_center, square_label};
 use super::state::{GridMapState, WORLD_SQUARES};
 use crate::i18n::{t, tf};
-use crate::ui::{Button, Size, Variant};
+use crate::ui::{Button, Size, Tooltip, Variant};
 
 #[component]
 pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
@@ -92,14 +92,15 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
                   None => (label.clone(), label.clone()),
                 };
                 view! {
-                  <button
-                    type="button"
-                    class="bg-muted/60 px-2 py-0.5 font-mono text-xs transition-colors hover:bg-accent"
-                    on:click=move |_| state.focus_square(k)
-                    title=title
-                  >
-                    {meta}
-                  </button>
+                  <Tooltip label=title>
+                    <button
+                      type="button"
+                      class="bg-muted/60 px-2 py-0.5 font-mono text-xs transition-colors hover:bg-accent"
+                      on:click=move |_| state.focus_square(k)
+                    >
+                      {meta}
+                    </button>
+                  </Tooltip>
                 }
               })
               .collect_view()}

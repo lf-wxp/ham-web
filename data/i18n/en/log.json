@@ -81,9 +81,7 @@
     "one": "{}: {} QSO, click for details",
     "other": "{}: {} QSOs, click for details"
   },
-  "log.previous": "Previous",
   "log.upload-report-file": "Upload report file",
-  "log.next": "Next",
   "log.download-cbr": "Download .cbr",
   "log.unique-callsigns": "Unique callsigns",
   "log.world-map-scroll-to": "World map (scroll to zoom, drag to pan, pinch to zoom, double-click to reset, antimeridian wrap)",

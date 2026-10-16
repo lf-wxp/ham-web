@@ -44,8 +44,8 @@ pub fn ExamResultDialog(
     if let Some(data_url) = card() {
       leptos::task::spawn_local(async move {
         match share_score::copy_image(&data_url).await {
-          Ok(()) => crate::util::alert(&t("learning.copied-to-clipboard")),
-          Err(e) => crate::util::alert(&tf("learning.copy-failed", &[&e])),
+          Ok(()) => crate::ui::push_success(t("learning.copied-to-clipboard")),
+          Err(e) => crate::ui::push_error(tf("learning.copy-failed", &[&e])),
         }
       });
     }
@@ -60,7 +60,7 @@ pub fn ExamResultDialog(
       let title = t("exam.amateur-radio-mock-exam");
       leptos::task::spawn_local(async move {
         if let Err(e) = share_score::share_image(&data_url, &filename, &title).await {
-          crate::util::alert(&tf("learning.share-failed", &[&e]));
+          crate::ui::push_error(tf("learning.share-failed", &[&e]));
         }
       });
     }

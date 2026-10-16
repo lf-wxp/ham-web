@@ -13,6 +13,8 @@ export const test = base.extend<{ helpSeen: boolean }>({
   page: async ({ page, helpSeen }, use) => {
     if (helpSeen) {
       await page.addInitScript(() => {
+        // addInitScript 也会进入 axe / 第三方 iframe，种子只属于被测主文档。
+        if (window !== window.top || !["http:", "https:"].includes(location.protocol)) return;
         localStorage.setItem("ui:shortcutsHelpSeen:practice", "1");
         localStorage.setItem("ui:shortcutsHelpSeen:exam", "1");
       });

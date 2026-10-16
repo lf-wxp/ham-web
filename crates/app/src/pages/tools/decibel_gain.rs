@@ -5,7 +5,9 @@ use leptos::prelude::*;
 
 use super::{RESULT, fmt_num};
 use crate::i18n::{t, tf};
-use crate::ui::{Field, NumberField};
+use crate::ui::{
+  Field, NumberField, Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+};
 use crate::util::unique_id;
 
 /// 分贝增益：dB ↔ 功率 / 电压倍数（功率比 10lg、电压比 20lg），附常用对照表。
@@ -68,36 +70,34 @@ pub(super) fn DecibelGain() -> impl IntoView {
         <div class="mb-1.5 text-xs text-muted-foreground">
           {move || t("tools.common-db-ratios")}
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full border-collapse text-sm">
-            <thead class="bg-muted/60 text-xs">
-              <tr>
-                <th class="border px-3 py-2 text-left">{move || t("tools.db")}</th>
-                <th class="border px-3 py-2 text-left">{move || t("tools.power-ratio")}</th>
-                <th class="border px-3 py-2 text-left">{move || t("tools.voltage-ratio")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {COMMON_DB_STEPS
-                .iter()
-                .map(|&d| {
-                  let label = if d > 0.0 { format!("+{d:.0}") } else { format!("{d:.0}") };
-                  view! {
-                    <tr class="border-t hover:bg-muted/40">
-                      <td class="border px-3 py-2 tabular-nums">{label}</td>
-                      <td class="border px-3 py-2 tabular-nums">
-                        {format_ratio(db_to_power_ratio(d))}
-                      </td>
-                      <td class="border px-3 py-2 tabular-nums">
-                        {format_ratio(db_to_voltage_ratio(d))}
-                      </td>
-                    </tr>
-                  }
-                })
-                .collect_view()}
-            </tbody>
-          </table>
-        </div>
+        <Table class="text-sm">
+          <TableHead>
+            <TableRow>
+              <TableHeader class="border px-3 py-2">{move || t("tools.db")}</TableHeader>
+              <TableHeader class="border px-3 py-2">{move || t("tools.power-ratio")}</TableHeader>
+              <TableHeader class="border px-3 py-2">{move || t("tools.voltage-ratio")}</TableHeader>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {COMMON_DB_STEPS
+              .iter()
+              .map(|&d| {
+                let label = if d > 0.0 { format!("+{d:.0}") } else { format!("{d:.0}") };
+                view! {
+                  <TableRow>
+                    <TableCell class="border px-3 py-2 tabular-nums">{label}</TableCell>
+                    <TableCell class="border px-3 py-2 tabular-nums">
+                      {format_ratio(db_to_power_ratio(d))}
+                    </TableCell>
+                    <TableCell class="border px-3 py-2 tabular-nums">
+                      {format_ratio(db_to_voltage_ratio(d))}
+                    </TableCell>
+                  </TableRow>
+                }
+              })
+              .collect_view()}
+          </TableBody>
+        </Table>
       </div>
       <p class="text-xs text-muted-foreground">{move || t("tools.db-ratio-note")}</p>
     </div>

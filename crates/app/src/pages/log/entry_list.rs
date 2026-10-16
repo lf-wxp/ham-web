@@ -6,7 +6,10 @@ use ham_web_core::qsl_status::{QslStatus, QslTone};
 use leptos::prelude::*;
 
 use crate::icons::{Icon, IconKind};
-use crate::ui::{Button, Input, InputType, NativeSelect, SelectOption, Size, Variant};
+use crate::ui::{
+  Button, Input, InputType, NativeSelect, Pagination, SelectOption, Size, Table, TableBody,
+  TableCell, TableHead, TableHeader, TableRow, Tooltip, Variant,
+};
 
 use super::card_image_mark::CardImageMark;
 use super::grid_cell::GridCell;
@@ -158,158 +161,152 @@ pub(super) fn EntryList(
               class="w-32"
             />
           </div>
-          <div class="overflow-x-auto">
-            <table class="w-full min-w-[880px] border-collapse text-sm">
-              <thead class="bg-muted/60 text-xs">
-                <tr>
-                  <th class=CELL>{move || t("log.date")}</th>
-                  <th class=CELL>{move || t("log.time")}</th>
-                  <th class=CELL>{move || t("log.freq-band")}</th>
-                  <th class=CELL>{move || t("log.mode")}</th>
-                  <th class=CELL>{move || t("log.callsign")}</th>
-                  <th class=CELL>{move || t("log.rst-sent-rcvd")}</th>
-                  <th class=CELL>{move || t("log.grid")}</th>
-                  <th class=CELL>{move || t("log.notes")}</th>
-                  <th class=CELL>"QSL"</th>
-                  <th class=CELL>{move || t("log.actions")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {move || {
-                  let start = page.get().min(page_count.get() - 1) * PAGE_SIZE;
-                  filtered
-                    .get()
-                    .iter()
-                    .skip(start)
-                    .take(PAGE_SIZE)
-                    .map(|e| {
-                      let entry = e.clone();
-                      let id = e.id;
-                      // 归属在闭包外取出：行内那个 `move ||` 只该捕获这个 Copy 值，
-                      // 捕获 `e` 会借住上面的临时迭代器。
-                      let station_id = e.station_id;
-                      let rst = if e.rst_sent.is_empty() && e.rst_rcvd.is_empty() {
-                        "—".to_owned()
-                      } else {
-                        format!("{} / {}", e.rst_sent, e.rst_rcvd)
-                      };
-                      let band = e.band_label();
-                      let tags: Vec<String> = [
-                        (!e.sat_name.is_empty()).then(|| format!("SAT {}", e.sat_name)),
-                        (e.sat_name.is_empty() && !e.prop_mode.is_empty()).then(|| e.prop_mode.clone()),
-                        (!e.my_sota_ref.is_empty()).then(|| format!("SOTA {}", e.my_sota_ref)),
-                        (!e.my_pota_ref.is_empty()).then(|| format!("POTA {}", e.my_pota_ref)),
-                        (!e.contact_sota_ref.is_empty()).then(|| format!("S2S {}", e.contact_sota_ref)),
-                        (!e.contact_pota_ref.is_empty()).then(|| format!("P2P {}", e.contact_pota_ref)),
-                        (!e.tx_pwr.is_empty()).then(|| format!("{} W", e.tx_pwr)),
-                      ]
-                      .into_iter()
-                      .flatten()
-                      .collect();
-                      view! {
-                        <tr class="border-t transition-colors hover:bg-muted/40">
-                          <td class=format!("{CELL} whitespace-nowrap tabular-nums")>{e.date.clone()}</td>
-                          <td class=format!("{CELL} whitespace-nowrap tabular-nums")>{e.time.clone()}</td>
-                          <td class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>
-                            {if e.freq.is_empty() { "—".to_owned() } else { e.freq.clone() }}
-                            <span class="ml-1.5 text-xs text-muted-foreground">{band}</span>
-                          </td>
-                          <td class=format!("{CELL} whitespace-nowrap")>{e.mode.clone()}</td>
-                          <td class=format!("{CELL} whitespace-nowrap")>
-                            <span class="font-mono font-medium">{e.callsign.clone()}</span>
-                            // 多台站时标出这条通联的归属：只有一个台站（绝大多数人）时不显示，
-                            // 免得每行都挂一个没信息量的标签。
-                            {move || {
-                              store
-                                .station
-                                .with(|b| {
-                                  (b.profiles.len() > 1)
-                                    .then(|| station_title(b.resolve(station_id)))
-                                })
-                                .map(|title| {
-                                  view! {
-                                    <span
-                                      class="ml-1 text-xs font-normal text-muted-foreground"
-                                      title=move || t("log.qso-station")
-                                    >
+          <Table class="min-w-[880px] text-sm">
+            <TableHead>
+              <TableRow>
+                <TableHeader class="border px-3 py-2 align-top">{move || t("log.date")}</TableHeader>
+                <TableHeader class="border px-3 py-2 align-top">{move || t("log.time")}</TableHeader>
+                <TableHeader class="border px-3 py-2 align-top">{move || t("log.freq-band")}</TableHeader>
+                <TableHeader class="border px-3 py-2 align-top">{move || t("log.mode")}</TableHeader>
+                <TableHeader class="border px-3 py-2 align-top">{move || t("log.callsign")}</TableHeader>
+                <TableHeader class="border px-3 py-2 align-top">{move || t("log.rst-sent-rcvd")}</TableHeader>
+                <TableHeader class="border px-3 py-2 align-top">{move || t("log.grid")}</TableHeader>
+                <TableHeader class="border px-3 py-2 align-top">{move || t("log.notes")}</TableHeader>
+                <TableHeader class="border px-3 py-2 align-top">"QSL"</TableHeader>
+                <TableHeader class="border px-3 py-2 align-top">{move || t("log.actions")}</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {move || {
+                let start = page.get().min(page_count.get() - 1) * PAGE_SIZE;
+                filtered
+                  .get()
+                  .iter()
+                  .skip(start)
+                  .take(PAGE_SIZE)
+                  .map(|e| {
+                    let entry = e.clone();
+                    let id = e.id;
+                    // 归属在闭包外取出：行内那个 `move ||` 只该捕获这个 Copy 值，
+                    // 捕获 `e` 会借住上面的临时迭代器。
+                    let station_id = e.station_id;
+                    let rst = if e.rst_sent.is_empty() && e.rst_rcvd.is_empty() {
+                      "—".to_owned()
+                    } else {
+                      format!("{} / {}", e.rst_sent, e.rst_rcvd)
+                    };
+                    let band = e.band_label();
+                    let tags: Vec<String> = [
+                      (!e.sat_name.is_empty()).then(|| format!("SAT {}", e.sat_name)),
+                      (e.sat_name.is_empty() && !e.prop_mode.is_empty()).then(|| e.prop_mode.clone()),
+                      (!e.my_sota_ref.is_empty()).then(|| format!("SOTA {}", e.my_sota_ref)),
+                      (!e.my_pota_ref.is_empty()).then(|| format!("POTA {}", e.my_pota_ref)),
+                      (!e.contact_sota_ref.is_empty()).then(|| format!("S2S {}", e.contact_sota_ref)),
+                      (!e.contact_pota_ref.is_empty()).then(|| format!("P2P {}", e.contact_pota_ref)),
+                      (!e.tx_pwr.is_empty()).then(|| format!("{} W", e.tx_pwr)),
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .collect();
+                    let date = e.date.clone();
+                    let time = e.time.clone();
+                    let freq = e.freq.clone();
+                    let mode = e.mode.clone();
+                    let callsign = e.callsign.clone();
+                    let gridsquare = e.gridsquare.clone();
+                    let remark = e.remark.clone();
+                    let qsl = QslStatus::of(e);
+                    view! {
+                      <TableRow>
+                        <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{date}</TableCell>
+                        <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{time}</TableCell>
+                        <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>
+                          {if freq.is_empty() { "—".to_owned() } else { freq }}
+                          <span class="ml-1.5 text-xs text-muted-foreground">{band}</span>
+                        </TableCell>
+                        <TableCell class=format!("{CELL} whitespace-nowrap")>{mode}</TableCell>
+                        <TableCell class=format!("{CELL} whitespace-nowrap")>
+                          <span class="font-mono font-medium">{callsign}</span>
+                          // 多台站时标出这条通联的归属：只有一个台站（绝大多数人）时不显示，
+                          // 免得每行都挂一个没信息量的标签。
+                          {move || {
+                            store
+                              .station
+                              .with(|b| {
+                                (b.profiles.len() > 1)
+                                  .then(|| station_title(b.resolve(station_id)))
+                              })
+                              .map(|title| {
+                                view! {
+                                  <Tooltip label=Signal::derive(move || t("log.qso-station"))>
+                                    <span class="ml-1 text-xs font-normal text-muted-foreground">
                                       {title}
                                     </span>
-                                  }
-                                })
-                            }}
-                          </td>
-                          <td class=format!("{CELL} whitespace-nowrap tabular-nums")>{rst}</td>
-                          <td class=format!("{CELL} whitespace-nowrap")>
-                            {if e.gridsquare.is_empty() {
-                              view! { <span class="text-muted-foreground">"—"</span> }.into_any()
-                            } else {
-                              view! { <GridCell grid=e.gridsquare.clone() /> }.into_any()
-                            }}
-                          </td>
-                          <td class=format!("{CELL} text-muted-foreground")>
-                            {e.remark.clone()}
-                            {tags
-                              .into_iter()
-                              .map(|t| view! { <span class="ml-1 inline-block border px-1 text-[10px]">{t}</span> })
-                              .collect_view()}
-                          </td>
-                          <td data-slot="qsl-cell" class=format!("{CELL} whitespace-nowrap")>
-                            <div class="flex items-center gap-1">
-                              <QslBadge status=QslStatus::of(e) />
-                              <CardImageMark entry_id=id />
-                            </div>
-                          </td>
-                          <td class=format!("{CELL} whitespace-nowrap")>
-                            <div class="flex items-center gap-2">
-                              <Button
-                                variant=Variant::Text
-                                size=Size::Xs
-                                on_click=Callback::new(move |_| on_edit.run(entry.clone()))
-                              >
-                                {move || t("log.edit")}
-                              </Button>
-                              <Button
-                                variant=Variant::Text
-                                size=Size::Xs
-                                class="hover:text-destructive"
-                                on_click=Callback::new(move |_| on_remove.run(id))
-                              >
-                                {move || t("log.delete")}
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      }
-                    })
-                    .collect_view()
-                }}
-              </tbody>
-            </table>
-          </div>
+                                  </Tooltip>
+                                }
+                              })
+                          }}
+                        </TableCell>
+                        <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{rst}</TableCell>
+                        <TableCell class=format!("{CELL} whitespace-nowrap")>
+                          {if gridsquare.is_empty() {
+                            view! { <span class="text-muted-foreground">"—"</span> }.into_any()
+                          } else {
+                            view! { <GridCell grid=gridsquare /> }.into_any()
+                          }}
+                        </TableCell>
+                        <TableCell class=format!("{CELL} text-muted-foreground")>
+                          {remark}
+                          {tags
+                            .into_iter()
+                            .map(|t| view! { <span class="ml-1 inline-block border px-1 text-[10px]">{t}</span> })
+                            .collect_view()}
+                        </TableCell>
+                        <td data-slot="qsl-cell" class=format!("{CELL} whitespace-nowrap")>
+                          <div class="flex items-center gap-1">
+                            <QslBadge status=qsl />
+                            <CardImageMark entry_id=id />
+                          </div>
+                        </td>
+                        <TableCell class=format!("{CELL} whitespace-nowrap")>
+                          <div class="flex items-center gap-2">
+                            <Button
+                              variant=Variant::Text
+                              size=Size::Xs
+                              on_click=Callback::new(move |_| on_edit.run(entry.clone()))
+                            >
+                              {move || t("log.edit")}
+                            </Button>
+                            <Button
+                              variant=Variant::Text
+                              size=Size::Xs
+                              class="hover:text-destructive"
+                              on_click=Callback::new(move |_| on_remove.run(id))
+                            >
+                              {move || t("log.delete")}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    }
+                  })
+                  .collect_view()
+              }}
+            </TableBody>
+          </Table>
           {move || {
-            (page_count.get() > 1).then(|| {
-              view! {
-                <div class="flex items-center justify-end gap-2 px-4 py-3 text-xs text-muted-foreground">
-                  <Button
-                    variant=Variant::Outline
-                    size=Size::Sm
-                    disabled=Signal::derive(move || page.get() == 0)
-                    on_click=Callback::new(move |_| page.update(|p| *p = p.saturating_sub(1)))
-                  >
-                    {move || t("log.previous")}
-                  </Button>
-                  <span class="tabular-nums">{move || tf("log.page", &[&(page.get() + 1).to_string(), &page_count.get().to_string()])}</span>
-                  <Button
-                    variant=Variant::Outline
-                    size=Size::Sm
-                    disabled=Signal::derive(move || page.get() + 1 >= page_count.get())
-                    on_click=Callback::new(move |_| page.update(|p| *p += 1))
-                  >
-                    {move || t("log.next")}
-                  </Button>
-                </div>
-              }
-            })
+            view! {
+              <div class="flex flex-wrap items-center justify-end gap-2 px-4 py-3">
+                <span class="text-xs tabular-nums text-muted-foreground">
+                  {move || tf("log.page", &[&(page.get() + 1).to_string(), &page_count.get().to_string()])}
+                </span>
+                <Pagination
+                  page=Signal::derive(move || page.get() as u32 + 1)
+                  total_pages=Signal::derive(move || page_count.get() as u32)
+                  on_change=Callback::new(move |p| page.set((p - 1) as usize))
+                />
+              </div>
+            }
           }}
         }
         .into_any()

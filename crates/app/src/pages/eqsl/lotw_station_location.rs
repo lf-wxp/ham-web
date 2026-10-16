@@ -39,7 +39,7 @@ pub(super) fn LotwStationLocation() -> impl IntoView {
       f.gridsquare,
     );
     copy_text(&text);
-    crate::util::alert(&t("learning.copied-to-clipboard"));
+    crate::ui::push_success(t("learning.copied-to-clipboard"));
   };
 
   view! {

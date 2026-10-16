@@ -9,6 +9,7 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
 use crate::i18n::{t, tf};
+use crate::ui::Tooltip;
 use crate::util::set_title;
 
 /// 题干显示截断（悬停看全题）。
@@ -106,19 +107,21 @@ pub fn RadioLawPage() -> impl IntoView {
                                           </p>
                                           <ul class="mt-1 space-y-1">
                                             {questions.into_iter().map(|q| {
+                                              let stem = q.stem.to_owned();
                                               view! {
                                                 <li class="flex flex-wrap items-baseline gap-2 text-xs">
-                                                  <a
-                                                    href=format!("/practice?sub={}", q.p_code)
-                                                    title=q.stem
-                                                    class="text-primary underline-offset-2 hover:underline"
-                                                  >
-                                                    <span class="font-mono text-muted-foreground">
-                                                      {q.id}
-                                                    </span>
-                                                    " "
-                                                    {short_stem(q.stem)}
-                                                  </a>
+                                                  <Tooltip label=stem.clone()>
+                                                    <a
+                                                      href=format!("/practice?sub={}", q.p_code)
+                                                      class="text-primary underline-offset-2 hover:underline"
+                                                    >
+                                                      <span class="font-mono text-muted-foreground">
+                                                        {q.id}
+                                                      </span>
+                                                      " "
+                                                      {short_stem(&stem)}
+                                                    </a>
+                                                  </Tooltip>
                                                 </li>
                                               }
                                             }).collect_view()}

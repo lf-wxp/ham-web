@@ -128,5 +128,110 @@
   "contest.24-hour-field-emergency": "Operación de campo / emergencia de 24 horas",
   "contest.24-hour-field-emergency-north-america": "Operación de campo / emergencia de 24 horas; el mayor evento de Norteamérica.",
   "contest.fast-keyboard-entry-live": "Entrada rápida por teclado · duplicados en vivo · puntuación propia · exportar Cabrillo",
-  "contest.freq": "Frec."
+  "contest.freq": "Frec.",
+  "contest.analysis-heading": "Análisis posterior al concurso",
+  "contest.analysis-empty": "Aún no hay QSO válidos. Cuando registres algunos, aquí aparecerán el ritmo, los tramos inactivos y los huecos de multiplicadores.",
+  "contest.analysis-untimed": {
+    "one": "{} QSO tiene una fecha u hora ilegible, así que no entra en las estadísticas de ritmo ni de tramos inactivos (sí cuenta para los multiplicadores).",
+    "other": "{} QSO tienen una fecha u hora ilegible, así que no entran en las estadísticas de ritmo ni de tramos inactivos (sí cuentan para los multiplicadores)."
+  },
+  "contest.analysis-hourly": "Ritmo por hora (UTC)",
+  "contest.analysis-best-hour": {
+    "one": "Mejores 60 minutos seguidos: {} QSO (desde las {} UTC)",
+    "other": "Mejores 60 minutos seguidos: {} QSO (desde las {} UTC)"
+  },
+  "contest.analysis-hour": "Hora",
+  "contest.analysis-qsos": "QSO",
+  "contest.analysis-new-mults": "Mult. nuevos",
+  "contest.analysis-rate-bar": "Barra de ritmo",
+  "contest.analysis-idle-heading": "Tramos inactivos",
+  "contest.analysis-idle-note": "El intervalo entre dos QSO consecutivos. No siempre es descanso: puede que la banda estuviera cerrada o que estuvieras haciendo otra cosa.",
+  "contest.analysis-idle-min": "Tramo inactivo mínimo",
+  "contest.analysis-idle-none": "Ningún tramo inactivo de {} o más.",
+  "contest.analysis-idle-summary": {
+    "one": "{} tramo, {} en total",
+    "other": "{} tramos, {} en total"
+  },
+  "contest.analysis-mult-gaps": "Huecos de multiplicadores",
+  "contest.analysis-no-universe": "Los multiplicadores de este concurso no se cuentan por banda (por ejemplo, los prefijos de WPX), así que no hay huecos del tipo «cubrirlo en otra banda».",
+  "contest.analysis-caveat": "Los huecos se listan solo respecto a las bandas que ya has usado; no significa que esa estación se oiga ahora en esa banda.",
+  "contest.analysis-one-band": "Hasta ahora solo has usado una banda, así que aún no hay nada que comparar entre bandas.",
+  "contest.analysis-cross-complete": "Todos los multiplicadores que has trabajado ya están cubiertos en todas las bandas que has usado.",
+  "contest.analysis-cross-band": "Multiplicadores trabajados en algunas bandas pero no en otras (primero los que menos faltan)",
+  "contest.analysis-cross-row": "{}: tienes {}; faltan {}",
+  "contest.analysis-cross-more": "{} más sin mostrar.",
+  "contest.analysis-zones": "Zonas CQ que aún faltan por banda",
+  "contest.analysis-zone-row": "{}: {} trabajadas, {} faltan: {}",
+  "contest.analysis-zone-complete": "{}: las 40 zonas trabajadas.",
+  "contest.import-cabrillo": "Importar Cabrillo",
+  "contest.cabrillo-import-heading": "Resultado de la importación de Cabrillo",
+  "contest.cabrillo-imported": {
+    "one": "Importado {} QSO ({})",
+    "other": "Importados {} QSO ({})"
+  },
+  "contest.cabrillo-dupes": {
+    "one": "{} QSO ya estaba en el registro y se omitió",
+    "other": "{} QSO ya estaban en el registro y se omitieron"
+  },
+  "contest.cabrillo-x-qso": {
+    "one": "Se ignoró {} QSO marcado como X-QSO (no puntúa en el programa de registro)",
+    "other": "Se ignoraron {} QSO marcados como X-QSO (no puntúan en el programa de registro)"
+  },
+  "contest.cabrillo-switched": "Se cambió a «{}»; el inicio de la sesión pasó a {} UTC para que los QSO importados aparezcan en la lista y el análisis de abajo.",
+  "contest.cabrillo-assumed": "El concurso «{}» no tiene plantilla integrada: las líneas se leyeron con el formato habitual «informe + un intercambio», así que revisa algunas. Los QSO están en el registro (mira el registro de QSO); la página de concurso solo muestra concursos con plantilla.",
+  "contest.cabrillo-skipped": {
+    "one": "{} línea no se pudo leer y no se importó:",
+    "other": "{} líneas no se pudieron leer y no se importaron:"
+  },
+  "contest.cabrillo-skipped-line": "Línea {}: {}",
+  "contest.cabrillo-skipped-more": "{} más sin mostrar.",
+  "contest.cabrillo-reason-layout": "El número de columnas no es un formato reconocido (no se admiten intercambios de varios campos)",
+  "contest.cabrillo-reason-frequency": "La frecuencia no es un número entero de kHz ni un designador de banda",
+  "contest.cabrillo-reason-mode": "El modo no es CW / PH / FM / RY / DG",
+  "contest.cabrillo-reason-date": "La fecha no es un YYYY-MM-DD válido",
+  "contest.cabrillo-reason-time": "La hora no es un HHMM válido",
+  "contest.cabrillo-reason-callsign": "Un indicativo parece incorrecto",
+  "contest.cabrillo-reason-report": "Un informe de señal parece incorrecto",
+  "contest.cabrillo-not-cabrillo": "No se encontró contenido Cabrillo (START-OF-LOG o líneas QSO:); no parece un registro Cabrillo.",
+  "contest.cabrillo-too-large": "El archivo supera {} MB, lo que no es propio de un registro Cabrillo; no se importó nada.",
+  "contest.cabrillo-no-contest-name": "concurso sin nombre",
+  "contest.cabrillo-limits": "Solo se lee el formato de «un campo de intercambio por lado». Los modos de Cabrillo son solo CW / fonía / FM / RTTY / digital, así que detalles como FT8 o USB no se recuperan; el número de transmisor no se conserva.",
+  "contest.scp-exact": "{} está en la lista de candidatos (tu registro o el archivo SCP cargado)",
+  "contest.scp-not-found": "{} no está en la lista de candidatos y tampoco hay nada parecido",
+  "contest.scp-not-in-list": "{} no está en la lista de candidatos",
+  "contest.scp-partial": "Indicativos que contienen {} ({} en total):",
+  "contest.scp-similar": "Indicativos a un solo carácter de distancia ({} en total):",
+  "contest.scp-pick": "Usar {}",
+  "contest.scp-more": "…y {} más",
+  "contest.scp-loaded": {
+    "one": "Cargado {} indicativo (versión {})",
+    "other": "Cargados {} indicativos (versión {})"
+  },
+  "contest.scp-skipped-lines": {
+    "one": "se omitió {} línea que no parece un indicativo",
+    "other": "se omitieron {} líneas que no parecen indicativos"
+  },
+  "contest.scp-loaded-with-skipped": "{}; {}",
+  "contest.scp-save-failed": "No se pudo guardar en el almacenamiento del navegador: funciona por ahora, pero tendrás que cargarlo de nuevo tras recargar la página.",
+  "contest.scp-cleared": "Se borró el archivo SCP cargado",
+  "contest.scp-source-heading": "Datos para completar indicativos",
+  "contest.scp-from-log": {
+    "one": "De tu registro de QSO: {} indicativo distinto",
+    "other": "De tu registro de QSO: {} indicativos distintos"
+  },
+  "contest.scp-from-file": {
+    "one": "Del archivo SCP cargado: {} indicativo (versión {})",
+    "other": "Del archivo SCP cargado: {} indicativos (versión {})"
+  },
+  "contest.scp-no-file": "Todavía no hay un archivo SCP cargado, así que los candidatos salen solo de tu propio registro de QSO.",
+  "contest.scp-load-file": "Cargar un archivo .scp",
+  "contest.scp-clear": "Borrar el archivo cargado",
+  "contest.scp-official-site": "Sitio oficial supercheckpartial.com",
+  "contest.scp-note": "Este sitio no incluye datos SCP: el pie del sitio oficial de Super Check Partial dice que se reservan todos los derechos y no hay licencia para redistribuirlo. Descárgalo tú mismo del sitio oficial (master.scp para concursos internacionales, masterdx.scp para ARRL DX, masterss.scp para Sweepstakes) y cárgalo aquí. El archivo queda solo en el navegador de este dispositivo: no se sube ni se incluye en las copias de seguridad. Los candidatos van en orden alfabético, no por la frecuencia con que aparece un indicativo (un archivo .scp no tiene esa información), y no se distinguen las categorías de concurso.",
+  "contest.scp-error-empty": "No se encontraron indicativos en el archivo, así que no parece un archivo SCP; no se cargó nada.",
+  "contest.scp-error-mostly": "La mayoría de las líneas del archivo no parecen indicativos, así que probablemente sea el archivo equivocado; no se cargó nada.",
+  "contest.scp-error-too-large": "El archivo es demasiado grande (más de {} MB o {} líneas), así que no parece un archivo SCP; no se cargó nada.",
+  "contest.scp-clear-failed": "No se pudo borrar el archivo SCP del almacenamiento. Inténtalo de nuevo.",
+  "contest.cabrillo-split-session": "Se importaron los contactos, pero varias estaciones o un período largo requieren sesiones separadas. No se cambió la sesión actual.",
+  "contest.session-history-closed": "Esta sesión histórica no admite contactos actuales. Inicia una sesión nueva."
 }

@@ -21,19 +21,19 @@ pub fn DspBasicsPage() -> impl IntoView {
         title="采样与量化"
         headers=&["名称", "公式 / 取值", "说明"]
         rows=DSP_FORMULAS
-        min_width=720
+        class="min-w-[720px]"
       />
       <TableSection
         title="常用窗函数"
         headers=&["窗", "主瓣宽", "旁瓣 / 适用"]
         rows=WINDOW_TABLE
-        min_width=720
+        class="min-w-[720px]"
       />
       <TableSection
         title="滤波器类型"
         headers=&["类型", "特点", "说明"]
         rows=FILTER_TYPES
-        min_width=720
+        class="min-w-[720px]"
       />
       <StepsSection title="典型 SDR 接收链" items=DSP_STEPS />
       <BulletSection title="要点" items=DSP_TIPS />

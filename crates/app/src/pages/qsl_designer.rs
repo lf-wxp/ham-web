@@ -307,7 +307,7 @@ pub fn QslDesignerPage() -> impl IntoView {
       };
       download(&data_url, &name);
     }
-    Err(_) => crate::util::alert(&t("log.rendering-failed-please-retry")),
+    Err(_) => crate::ui::push_error(t("log.rendering-failed-please-retry")),
   };
 
   let field = |label: &'static str, signal: RwSignal<String>, placeholder: &'static str| {

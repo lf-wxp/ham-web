@@ -16,7 +16,7 @@ use web_sys::js_sys;
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::ui::{
-  Button, ButtonLink, Field, Input, NativeSelect, SelectOption, Size, TextValue, Variant,
+  Button, ButtonLink, Field, Input, NativeSelect, SelectOption, Size, TextValue, Tooltip, Variant,
 };
 use crate::util::{js_error_message, set_title, unique_id};
 use crate::web_serial::{Conn, call, close_serial, is_user_cancel, open_serial, prop, serial};
@@ -299,13 +299,18 @@ pub fn KissTncPage() -> impl IntoView {
                 rows.get()
                   .iter()
                   .map(|r| {
+                    // Tooltip children 需要 `'static`：字段先拷成 owned。
+                    let hex = r.hex.clone();
+                    let text = r.text.clone();
                     view! {
-                      <div class="flex flex-wrap items-baseline gap-2 bg-muted/40 px-3 py-2 text-xs" title=r.hex.clone()>
-                        <span class="font-mono text-muted-foreground">
-                        [{tf("tools.kiss-rx-bytes", &[&(r.hex.len() / 2).to_string()])}]
-                      </span>
-                        <span class="min-w-0 flex-1 break-all font-mono">{r.text.clone()}</span>
-                      </div>
+                      <Tooltip label=hex.clone()>
+                        <div class="flex flex-wrap items-baseline gap-2 bg-muted/40 px-3 py-2 text-xs">
+                          <span class="font-mono text-muted-foreground">
+                            [{tf("tools.kiss-rx-bytes", &[&(hex.len() / 2).to_string()])}]
+                          </span>
+                          <span class="min-w-0 flex-1 break-all font-mono">{text}</span>
+                        </div>
+                      </Tooltip>
                     }
                   })
                   .collect_view()

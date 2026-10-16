@@ -103,7 +103,7 @@ impl LogStore {
   /// 此前三个入口在忙时都静默返回：内存里能看到刚做的编辑，随后恢复结束又被旧数据整个盖掉，
   /// 用户既不知道没保存、也不知道为什么消失。
   fn warn_busy() {
-    crate::util::alert(&crate::i18n::t("log.backup-busy-not-saved"));
+    crate::ui::push_error(crate::i18n::t("log.backup-busy-not-saved"));
   }
 
   /// 把当前日志写入 `localStorage`（任何日志变更后调用）。

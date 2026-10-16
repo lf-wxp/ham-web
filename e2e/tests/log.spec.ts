@@ -14,20 +14,15 @@ test("通联日志：导入 ADIF、去重、导出 ADIF / CSV", async ({ page })
   const input = page.locator('input[type="file"][accept*=".adi"]');
   const file = { name: "e2e.adi", mimeType: "text/plain", buffer: Buffer.from(ADIF) };
 
-  const imported = page.waitForEvent("dialog");
+  // 导入结果走全局 Toast（`role="status"`），不再是原生 dialog。
   await input.setInputFiles(file);
-  const dlg = await imported;
-  expect(dlg.message()).toBe("已导入 2 条记录");
-  await dlg.accept();
+  await expect(page.getByRole("status")).toContainText("已导入 2 条记录");
 
   await expect(page.getByText("JA1AA").first()).toBeVisible();
   await expect(page.getByText("W1AW").first()).toBeVisible();
 
-  const again = page.waitForEvent("dialog");
   await input.setInputFiles(file);
-  const dupDlg = await again;
-  expect(dupDlg.message()).toBe("已导入 0 条记录，跳过重复 2 条");
-  await dupDlg.accept();
+  await expect(page.getByRole("status")).toContainText("已导入 0 条记录，跳过重复 2 条");
 
   const adifDl = page.waitForEvent("download");
   await page.getByRole("button", { name: "导出 ADIF" }).click();

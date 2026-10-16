@@ -12,6 +12,7 @@ use crate::util::set_title;
 use super::alerts_card::AlertsCard;
 use super::conditions_table::ConditionsTable;
 use super::flux_trend::FluxTrend;
+use super::kp_forecast_card::KpForecastCard;
 use super::metric_card::MetricCard;
 use super::xray_trend::XrayTrend;
 use super::{
@@ -37,7 +38,9 @@ pub fn SolarPage() -> impl IntoView {
   let xray_flux = RwSignal::new(None::<f64>);
   let xray_class = RwSignal::new(String::new());
 
+  let refresh = RwSignal::new(0u32);
   let load = move || {
+    refresh.update(|g| *g = g.wrapping_add(1));
     loading.set(true);
     failed.set(false);
     spawn_local(async move {
@@ -185,6 +188,8 @@ pub fn SolarPage() -> impl IntoView {
               })
           }}
         </section>
+
+        <KpForecastCard refresh=refresh />
 
         <AlertsCard />
 

@@ -13,7 +13,7 @@ pub fn MostWantedPage() -> impl IntoView {
   set_title("shell.dxcc-most-wanted");
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <PageHeader class="top-16"
+      <PageHeader
         title=move || t("shell.dxcc-most-wanted")
         subtitle=move || t("log.dxcc-most-wanted-list")
       />

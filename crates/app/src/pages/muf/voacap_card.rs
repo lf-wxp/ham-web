@@ -9,7 +9,6 @@ use crate::i18n::{t, tf};
 use crate::ui::{
   Button, ControlSize, Field, Input, NativeSelect, NumberField, SelectOption, Size, Variant,
 };
-use crate::util::alert;
 use crate::util::unique_id;
 
 /// 单波段预测结果。
@@ -68,7 +67,7 @@ pub(super) fn VoacapCard() -> impl IntoView {
     let rx_g = rx.get().trim().to_uppercase();
     if tx_g.len() < 4 || rx_g.len() < 4 {
       // 必须走词典：原先这里写死中文，en / es 界面下会弹出一条中文提示。
-      alert(&t("radio.enter-maidenhead-grids-of"));
+      crate::ui::push_error(t("radio.enter-maidenhead-grids-of"));
       return;
     }
     loading.set(true);

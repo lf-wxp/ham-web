@@ -8,7 +8,10 @@ use leptos::prelude::*;
 use crate::icons::{Icon, IconKind};
 use crate::morse_audio::{play_morse_timed_with, play_pileup};
 use crate::morse_settings::use_morse_settings;
-use crate::ui::{Button, ButtonKind, Checkbox, ControlSize, Field, Input, Slider};
+use crate::ui::{
+  Button, ButtonKind, Checkbox, ControlSize, Field, Input, Slider, Table, TableBody, TableCell,
+  TableHead, TableHeader, TableRow, Tooltip,
+};
 use crate::util::{random, storage, unique_id};
 
 use super::{encode_words, pill_class};
@@ -420,6 +423,8 @@ pub(super) fn CallsignRunner() -> impl IntoView {
         {move || {
           session.with(|s| s.as_ref().filter(|s| s.finished()).map(|s| {
             let score = s.score();
+            // `with` 只把 `s` 借到闭包结束，表格组件树需要 `'static`：把日志拷贝出来。
+            let log = s.log.clone();
             let best = stats.with(|st| st.best_score);
             view! {
               <div class="space-y-2">
@@ -429,38 +434,45 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                     <span class="ml-2 text-emerald-600 dark:text-emerald-400">{move || t("morse.new-record")}</span>
                   })}
                 </div>
-                <div class="overflow-x-auto">
-                  <table class="w-full text-left text-xs">
-                    <thead class="text-muted-foreground">
-                      <tr>
-                        <th class="py-1 pr-3 font-normal">"#"</th>
-                        <th class="py-1 pr-3 font-normal">{move || t("morse.their-call")}</th>
-                        <th class="py-1 pr-3 font-normal">{move || t("morse.you-copied")}</th>
-                        <th class="py-1 pr-3 font-normal">{move || t("radio.speed")}</th>
-                        <th class="py-1 pr-3 font-normal">{move || t("morse.replay")}</th>
-                        <th class="py-1 font-normal">{move || t("morse.score")}</th>
-                      </tr>
-                    </thead>
-                    <tbody class="font-mono">
-                      {s.log
-                        .iter()
-                        .enumerate()
-                        .map(|(i, l)| view! {
-                          <tr class="border-t">
-                            <td class="py-1 pr-3 text-muted-foreground">{i + 1}</td>
-                            <td class="py-1 pr-3">{format!("{} {}", l.ex.call, l.ex.serial)}</td>
-                            <td class=if l.result.call_ok { "py-1 pr-3" } else { "py-1 pr-3 text-red-600 dark:text-red-400" }>
-                              {format!("{} {}", l.call, l.serial)}
-                            </td>
-                            <td class="py-1 pr-3 tabular-nums">{l.wpm}</td>
-                            <td class="py-1 pr-3 tabular-nums">{l.replays}</td>
-                            <td class="py-1 tabular-nums">{l.result.points}</td>
-                          </tr>
-                        })
-                        .collect_view()}
-                    </tbody>
-                  </table>
-                </div>
+                <Table borderless=true class="text-xs">
+                  <TableHead class="text-muted-foreground">
+                    <TableRow>
+                      <TableHeader class="py-1 pr-3 font-normal">"#"</TableHeader>
+                      <TableHeader class="py-1 pr-3 font-normal">{move || t("morse.their-call")}</TableHeader>
+                      <TableHeader class="py-1 pr-3 font-normal">{move || t("morse.you-copied")}</TableHeader>
+                      <TableHeader class="py-1 pr-3 font-normal">{move || t("radio.speed")}</TableHeader>
+                      <TableHeader class="py-1 pr-3 font-normal">{move || t("morse.replay")}</TableHeader>
+                      <TableHeader class="py-1 font-normal">{move || t("morse.score")}</TableHeader>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody class="font-mono">
+                    {log
+                      .iter()
+                      .enumerate()
+                      .map(|(i, l)| {
+                        // 组件 children 需要 `'static`：把借来的字段先拷贝成值。
+                        let their = format!("{} {}", l.ex.call, l.ex.serial);
+                        let copied = format!("{} {}", l.call, l.serial);
+                        let ok = l.result.call_ok;
+                        let wpm = l.wpm;
+                        let replays = l.replays;
+                        let points = l.result.points;
+                        view! {
+                          <TableRow class="border-t">
+                            <TableCell class="py-1 pr-3 text-muted-foreground">{i + 1}</TableCell>
+                            <TableCell class="py-1 pr-3">{their}</TableCell>
+                            <TableCell class=if ok { "py-1 pr-3" } else { "py-1 pr-3 text-red-600 dark:text-red-400" }>
+                              {copied}
+                            </TableCell>
+                            <TableCell class="py-1 pr-3 tabular-nums">{wpm}</TableCell>
+                            <TableCell class="py-1 pr-3 tabular-nums">{replays}</TableCell>
+                            <TableCell class="py-1 tabular-nums">{points}</TableCell>
+                          </TableRow>
+                        }
+                      })
+                      .collect_view()}
+                  </TableBody>
+                </Table>
               </div>
             }
           }))
@@ -479,11 +491,16 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                     {move || t("morse.frequent-misses")}
                     {worst
                       .into_iter()
-                      .map(|(c, n)| view! {
-                        <span class=pill_class(false) title=tp("common.missed-times", n, &[&(n).to_string()])>
-                          <span class="font-mono font-semibold">{c.to_string()}</span>
-                          <span class="ml-1 tabular-nums">{n}</span>
-                        </span>
+                      .map(|(c, n)| {
+                        let tip = tp("common.missed-times", n, &[&(n).to_string()]);
+                        view! {
+                          <Tooltip label=tip>
+                            <span class=pill_class(false)>
+                              <span class="font-mono font-semibold">{c.to_string()}</span>
+                              <span class="ml-1 tabular-nums">{n}</span>
+                            </span>
+                          </Tooltip>
+                        }
                       })
                       .collect_view()}
                   </span>

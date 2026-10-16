@@ -1,7 +1,9 @@
 use leptos::prelude::*;
 
-use crate::components::common::{PageContainer, PageHeader};
-use crate::util::set_title;
+use crate::components::common::{PageContainer, PageHeader, StickyPanel};
+use crate::icons::IconKind;
+use crate::ui::MobileNavDrawer;
+use crate::util::{document, scroll_to_element, set_title};
 
 use super::antenna_length::AntennaLength;
 use super::antenna_matcher::AntennaMatcher;
@@ -19,6 +21,7 @@ use super::dbm_dbuv::DbmDbuv;
 use super::decibel_gain::DecibelGain;
 use super::distance_bearing::DistanceBearing;
 use super::doppler_calculator::DopplerCalculator;
+use super::duty_power::DutyPower;
 use super::eirp_calculator::EirpCalculator;
 use super::feedline_loss::FeedlineLoss;
 use super::filter_design::FilterDesign;
@@ -28,6 +31,7 @@ use super::fresnel_zone::FresnelZone;
 use super::fspl_calculator::FsplCalculator;
 use super::gain_conversion::GainConversion;
 use super::intermod_calculator::IntermodCalculator;
+use super::ip3_cascade::Ip3Cascade;
 use super::lc_resonance::LcResonance;
 use super::link_budget_calculator::LinkBudgetCalculator;
 use super::mode_encoder::ModeEncoder;
@@ -37,6 +41,7 @@ use super::oscillator::Oscillator;
 use super::parabolic_dish::ParabolicDish;
 use super::path_profile::PathProfile;
 use super::propagation_estimator::PropagationEstimator;
+use super::rain_fade::RainFade;
 use super::reactance::Reactance;
 use super::receiver_sensitivity::ReceiverSensitivity;
 use super::resistor_color_code::ResistorColorCode;
@@ -45,10 +50,12 @@ use super::rf_exposure::RfExposure;
 use super::smith_chart::SmithChart;
 use super::swr_converter::SwrConverter;
 use super::tone_squelch::ToneSquelch;
+use super::tool_section::ToolSection;
 use super::toroid_winding::ToroidWinding;
 use super::transformer_calculator::TransformerCalculator;
 use super::tx_line::TxLine;
 use super::utc_clock::UtcClock;
+use super::waveguide_calculator::WaveguideCalculator;
 use super::wire_gauge::WireGauge;
 use crate::i18n::t;
 
@@ -82,6 +89,10 @@ const TOOL_NAV: &[(&str, &str)] = &[
   ("path-profile", "tools.path-profile"),
   ("intermod", "tools.intermod"),
   ("parabolic-dish", "tools.parabolic-dish"),
+  ("waveguide", "tools.waveguide"),
+  ("rain-fade", "tools.rain-fade"),
+  ("duty-power", "tools.duty-power"),
+  ("ip3-cascade", "tools.ip3-cascade"),
   // 与正文章节标题同一条词条：目录里显示成完整标题（如「EIRP 有效辐射功率」）。
   ("eirp", "tools.eirp-effective-radiated-power"),
   ("link-budget", "tools.link-budget"),
@@ -105,19 +116,18 @@ const TOOL_NAV: &[(&str, &str)] = &[
   ("backup", "tools.data-backup"),
 ];
 
-/// 平滑滚动到指定工具。
+/// 滚动到指定工具（让出吸顶页头，见 `util::scroll_to_element`）。
 fn scroll_to(id: &str) {
-  if let Some(el) = web_sys::window()
-    .and_then(|w| w.document())
-    .and_then(|d| d.get_element_by_id(id))
-  {
-    el.scroll_into_view();
+  if let Some(el) = document().get_element_by_id(id) {
+    scroll_to_element(&el);
   }
 }
 
 #[component]
 pub fn ToolsPage() -> impl IntoView {
   set_title("shell.calculators");
+  // 移动端工具导航抽屉的开关：选中工具后要主动收起。
+  let nav_open = RwSignal::new(false);
   // 路由切换后不会自动跳到锚点（如存储告警里的 `/tools#backup`），挂载后手动滚动
   let hash = leptos_router::hooks::use_location().hash;
   Effect::new(move |_| {
@@ -126,6 +136,28 @@ pub fn ToolsPage() -> impl IntoView {
       request_animation_frame(move || scroll_to(&id));
     }
   });
+  // 工具导航列表（桌面侧栏与移动端抽屉共用）。
+  let tool_nav_items = move || {
+    TOOL_NAV
+      .iter()
+      .map(|&(id, key)| {
+        view! {
+          <li>
+            <button
+              type="button"
+              class="w-full px-2.5 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              on:click=move |_| {
+                scroll_to(id);
+                nav_open.set(false);
+              }
+            >
+              {move || t(key)}
+            </button>
+          </li>
+        }
+      })
+      .collect_view()
+  };
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader
@@ -134,105 +166,46 @@ pub fn ToolsPage() -> impl IntoView {
       />
 
       <PageContainer class="space-y-0">
-        // 移动端：横向滚动的工具导航 chip 条。
-        <div class="mb-4 -mx-4 overflow-x-auto px-4 lg:hidden">
-          <div class="flex gap-1.5 pb-1">
-            {TOOL_NAV
-              .iter()
-              .map(|&(id, key)| {
-                view! {
-                  <button
-                    type="button"
-                    class="shrink-0 border bg-card px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                    on:click=move |_| scroll_to(id)
-                  >
-                    {move || t(key)}
-                  </button>
-                }
-              })
-              .collect_view()}
-          </div>
-        </div>
+        <MobileNavDrawer
+          open=nav_open
+          title=Signal::derive(move || t("tools.tool-catalogue"))
+          button_label=Signal::derive(move || t("tools.tool-catalogue"))
+          icon=IconKind::SlidersHorizontal
+          class="lg:hidden"
+        >
+          <ul class="space-y-0.5">{tool_nav_items()}</ul>
+        </MobileNavDrawer>
 
         <div class="grid gap-6 lg:grid-cols-[14rem_1fr]">
           <aside class="hidden lg:block">
-            <nav aria-label=move || t("tools.tool-catalogue") class="sticky top-20 pxl-card border bg-card p-3">
-              <div class="mb-2 px-2 text-xs font-semibold text-muted-foreground">{move || t("tools.tool-navigation")}</div>
-              <ul class="max-h-[calc(100vh-7rem)] space-y-0.5 overflow-y-auto pr-1">
-                {TOOL_NAV
-                  .iter()
-                  .map(|&(id, key)| {
-                    view! {
-                      <li>
-                        <button
-                          type="button"
-                          class="w-full px-2.5 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                          on:click=move |_| scroll_to(id)
-                        >
-                          {move || t(key)}
-                        </button>
-                      </li>
-                    }
-                  })
-                  .collect_view()}
-              </ul>
-            </nav>
+            <StickyPanel class="pxl-card border bg-card p-3">
+              <nav aria-label=move || t("tools.tool-catalogue")>
+                <div class="mb-2 px-2 text-xs font-semibold text-muted-foreground">{move || t("tools.tool-navigation")}</div>
+                <ul class="max-h-[calc(100vh-var(--sticky-top)-70px)] space-y-0.5 overflow-y-auto pr-1">
+                  {tool_nav_items()}
+                </ul>
+              </nav>
+            </StickyPanel>
           </aside>
 
           <div class="min-w-0 space-y-6">
-            <section id="freq-wavelength" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.frequency-wavelength")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.300-f-mhz-approximate")}</p>
-              <div class="p-4"><FreqWavelength /></div>
-            </section>
+            <ToolSection id="freq-wavelength" title="tools.frequency-wavelength" description="tools.300-f-mhz-approximate"><FreqWavelength /></ToolSection>
 
-            <section id="dbm-power" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.dbm-power")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.0-dbm-1-mw")}</p>
-              <div class="p-4"><DbmConverter /></div>
-            </section>
+            <ToolSection id="dbm-power" title="tools.dbm-power" description="tools.0-dbm-1-mw"><DbmConverter /></ToolSection>
 
-            <section id="decibel-gain" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.decibel-gain")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.power-ratio-db-10")}</p>
-              <div class="p-4"><DecibelGain /></div>
-            </section>
+            <ToolSection id="decibel-gain" title="tools.decibel-gain" description="tools.power-ratio-db-10"><DecibelGain /></ToolSection>
 
-            <section id="ohms-law" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.ohm-s-law-power")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.u-i-r-p")}</p>
-              <div class="p-4"><OhmsLaw /></div>
-            </section>
+            <ToolSection id="ohms-law" title="tools.ohm-s-law-power" description="tools.u-i-r-p"><OhmsLaw /></ToolSection>
 
-            <section id="cw-bandwidth" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.cw-required-bandwidth")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.bn-b-k-b")}</p>
-              <div class="p-4"><CwBandwidth /></div>
-            </section>
+            <ToolSection id="cw-bandwidth" title="tools.cw-required-bandwidth" description="tools.bn-b-k-b"><CwBandwidth /></ToolSection>
 
-            <section id="lc-resonance" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.lc-resonant-frequency")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.f-1-2-lc")}</p>
-              <div class="p-4"><LcResonance /></div>
-            </section>
+            <ToolSection id="lc-resonance" title="tools.lc-resonant-frequency" description="tools.f-1-2-lc"><LcResonance /></ToolSection>
 
-            <section id="reactance" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.capacitive-inductive-reactance")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.xc-1-2-fc")}</p>
-              <div class="p-4"><Reactance /></div>
-            </section>
+            <ToolSection id="reactance" title="tools.capacitive-inductive-reactance" description="tools.xc-1-2-fc"><Reactance /></ToolSection>
 
-            <section id="antenna-length" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.antenna-length")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.half-wave-dipole-l")}</p>
-              <div class="p-4"><AntennaLength /></div>
-            </section>
+            <ToolSection id="antenna-length" title="tools.antenna-length" description="tools.half-wave-dipole-l"><AntennaLength /></ToolSection>
 
-            <section id="antenna-matcher" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.antenna-matching-network")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.an-l-network-matches")}</p>
-              <div class="p-4"><AntennaMatcher /></div>
-            </section>
+            <ToolSection id="antenna-matcher" title="tools.antenna-matching-network" description="tools.an-l-network-matches"><AntennaMatcher /></ToolSection>
 
             <section id="smith" class="scroll-mt-24 pxl-card border bg-card">
               <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.smith-chart")}</h2>
@@ -246,227 +219,87 @@ pub fn ToolsPage() -> impl IntoView {
               </p>
             </section>
 
-            <section id="swr" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.swr-reflection-coefficient")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.swr-1-1-return")}</p>
-              <div class="p-4"><SwrConverter /></div>
-            </section>
+            <ToolSection id="swr" title="tools.swr-reflection-coefficient" description="tools.swr-1-1-return"><SwrConverter /></ToolSection>
 
-            <section id="cascade-gain" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.cascaded-gain")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.stage-gains-in-db")}</p>
-              <div class="p-4"><CascadeGain /></div>
-            </section>
+            <ToolSection id="cascade-gain" title="tools.cascaded-gain" description="tools.stage-gains-in-db"><CascadeGain /></ToolSection>
 
-            <section id="resistor" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.resistors-in-series-parallel")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.series-r-r-parallel")}</p>
-              <div class="p-4"><ResistorParallel /></div>
-            </section>
+            <ToolSection id="resistor" title="tools.resistors-in-series-parallel" description="tools.series-r-r-parallel"><ResistorParallel /></ToolSection>
 
-            <section id="freq-units" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.frequency-unit-conversion")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.1-mhz-1000-khz")}</p>
-              <div class="p-4"><FrequencyUnits /></div>
-            </section>
+            <ToolSection id="freq-units" title="tools.frequency-unit-conversion" description="tools.1-mhz-1000-khz"><FrequencyUnits /></ToolSection>
 
-            <section id="battery" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.battery-runtime-estimate")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.runtime-hours-capacity-mah")}</p>
-              <div class="p-4"><BatteryRuntime /></div>
-            </section>
+            <ToolSection id="battery" title="tools.battery-runtime-estimate" description="tools.runtime-hours-capacity-mah"><BatteryRuntime /></ToolSection>
 
-            <section id="dbm-dbuv" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.dbm-db-v")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.at-50-db-v")}</p>
-              <div class="p-4"><DbmDbuv /></div>
-            </section>
+            <ToolSection id="dbm-dbuv" title="tools.dbm-db-v" description="tools.at-50-db-v"><DbmDbuv /></ToolSection>
 
-            <section id="feedline-loss" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.feedline-loss")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.total-loss-loss-per")}</p>
-              <div class="p-4"><FeedlineLoss /></div>
-            </section>
+            <ToolSection id="feedline-loss" title="tools.feedline-loss" description="tools.total-loss-loss-per"><FeedlineLoss /></ToolSection>
 
-            <section id="filter-design" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.filter-design")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.l-c-component-values")}</p>
-              <div class="p-4"><FilterDesign /></div>
-            </section>
+            <ToolSection id="filter-design" title="tools.filter-design" description="tools.l-c-component-values"><FilterDesign /></ToolSection>
 
-            <section id="callsign-lookup" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.callsign-lookup")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.identifies-the-dxcc-entity")}</p>
-              <div class="p-4"><CallsignLookup /></div>
-            </section>
+            <ToolSection id="callsign-lookup" title="tools.callsign-lookup" description="tools.identifies-the-dxcc-entity"><CallsignLookup /></ToolSection>
 
-            <section id="distance-bearing" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.distance-bearing")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.enter-two-maidenhead-grids")}</p>
-              <div class="p-4"><DistanceBearing /></div>
-            </section>
+            <ToolSection id="distance-bearing" title="tools.distance-bearing" description="tools.enter-two-maidenhead-grids"><DistanceBearing /></ToolSection>
 
-            <section id="propagation-muf" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.propagation-muf")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.estimates-fof2-single-hop")}</p>
-              <div class="p-4"><PropagationEstimator /></div>
-            </section>
+            <ToolSection id="propagation-muf" title="tools.propagation-muf" description="tools.estimates-fof2-single-hop"><PropagationEstimator /></ToolSection>
 
-            <section id="doppler" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.satellite-doppler")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.estimates-the-doppler-shift")}</p>
-              <div class="p-4"><DopplerCalculator /></div>
-            </section>
+            <ToolSection id="doppler" title="tools.satellite-doppler" description="tools.estimates-the-doppler-shift"><DopplerCalculator /></ToolSection>
 
-            <section id="fspl" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.free-space-path-loss")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.computes-the-free-space")}</p>
-              <div class="p-4"><FsplCalculator /></div>
-            </section>
+            <ToolSection id="fspl" title="tools.free-space-path-loss" description="tools.computes-the-free-space"><FsplCalculator /></ToolSection>
 
-            <section id="fresnel-zone" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.fresnel-zone-and-line-of-sight")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.fresnel-zone-description")}</p>
-              <div class="p-4"><FresnelZone /></div>
-            </section>
+            <ToolSection id="fresnel-zone" title="tools.fresnel-zone-and-line-of-sight" description="tools.fresnel-zone-description"><FresnelZone /></ToolSection>
 
-            <section id="path-profile" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.path-profile")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.path-profile-description")}</p>
-              <div class="p-4"><PathProfile /></div>
-            </section>
+            <ToolSection id="path-profile" title="tools.path-profile" description="tools.path-profile-description"><PathProfile /></ToolSection>
 
-            <section id="intermod" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.intermod-harmonics-image")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.intermod-description")}</p>
-              <div class="p-4"><IntermodCalculator /></div>
-            </section>
+            <ToolSection id="intermod" title="tools.intermod-harmonics-image" description="tools.intermod-description"><IntermodCalculator /></ToolSection>
 
-            <section id="parabolic-dish" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.parabolic-dish")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.parabolic-dish-description")}</p>
-              <div class="p-4"><ParabolicDish /></div>
-            </section>
+            <ToolSection id="parabolic-dish" title="tools.parabolic-dish" description="tools.parabolic-dish-description"><ParabolicDish /></ToolSection>
 
-            <section id="eirp" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.eirp-effective-radiated-power")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.transmit-power-antenna-gain")}</p>
-              <div class="p-4"><EirpCalculator /></div>
-            </section>
+            <ToolSection id="waveguide" title="tools.waveguide" description="tools.waveguide-description"><WaveguideCalculator /></ToolSection>
 
-            <section id="link-budget" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.link-budget")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.eirp-path-loss-receive")}</p>
-              <div class="p-4"><LinkBudgetCalculator /></div>
-            </section>
+            <ToolSection id="rain-fade" title="tools.rain-fade" description="tools.rain-fade-description"><RainFade /></ToolSection>
 
-            <section id="receiver-sensitivity" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.receiver-sensitivity")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.estimates-sensitivity-from-the")}</p>
-              <div class="p-4"><ReceiverSensitivity /></div>
-            </section>
+            <ToolSection id="duty-power" title="tools.duty-power" description="tools.duty-power-description"><DutyPower /></ToolSection>
 
-            <section id="noise-cascade" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.noise-figure-cascade")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.friis-formula-computes-the")}</p>
-              <div class="p-4"><NoiseCascade /></div>
-            </section>
+            <ToolSection id="ip3-cascade" title="tools.ip3-cascade" description="tools.ip3-cascade-description"><Ip3Cascade /></ToolSection>
 
-            <section id="gain-conversion" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.antenna-gain-conversion")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.quick-dbi-dbd-conversion")}</p>
-              <div class="p-4"><GainConversion /></div>
-            </section>
+            <ToolSection id="eirp" title="tools.eirp-effective-radiated-power" description="tools.transmit-power-antenna-gain"><EirpCalculator /></ToolSection>
 
-            <section id="resistor-code" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.resistor-colour-code")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.4-band-resistor-first")}</p>
-              <div class="p-4"><ResistorColorCode /></div>
-            </section>
+            <ToolSection id="link-budget" title="tools.link-budget" description="tools.eirp-path-loss-receive"><LinkBudgetCalculator /></ToolSection>
 
-            <section id="contest-scorer" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.contest-scoring")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.quick-score-estimates-for")}</p>
-              <div class="p-4"><ContestScorer /></div>
-            </section>
+            <ToolSection id="receiver-sensitivity" title="tools.receiver-sensitivity" description="tools.estimates-sensitivity-from-the"><ReceiverSensitivity /></ToolSection>
 
-            <section id="coil-yagi" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.coil-yagi-calculator")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.air-core-coil-inductance")}</p>
-              <div class="p-4"><CoilYagiCalculator /></div>
-            </section>
+            <ToolSection id="noise-cascade" title="tools.noise-figure-cascade" description="tools.friis-formula-computes-the"><NoiseCascade /></ToolSection>
 
-            <section id="attenuator" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.attenuator")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.attenuator-description")}</p>
-              <div class="p-4"><AttenuatorCalculator /></div>
-            </section>
+            <ToolSection id="gain-conversion" title="tools.antenna-gain-conversion" description="tools.quick-dbi-dbd-conversion"><GainConversion /></ToolSection>
 
-            <section id="transformer" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.transformer-impedance")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.compute-transformer-turns-ratio")}</p>
-              <div class="p-4"><TransformerCalculator /></div>
-            </section>
+            <ToolSection id="resistor-code" title="tools.resistor-colour-code" description="tools.4-band-resistor-first"><ResistorColorCode /></ToolSection>
 
-            <section id="utc-clock" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.utc-time-heading")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.live-utc-zulu-clock")}</p>
-              <div class="p-4"><UtcClock /></div>
-            </section>
+            <ToolSection id="contest-scorer" title="tools.contest-scoring" description="tools.quick-score-estimates-for"><ContestScorer /></ToolSection>
 
-            <section id="tx-line" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.transmission-line-impedance")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.characteristic-impedance-of-coax")}</p>
-              <div class="p-4"><TxLine /></div>
-            </section>
+            <ToolSection id="coil-yagi" title="tools.coil-yagi-calculator" description="tools.air-core-coil-inductance"><CoilYagiCalculator /></ToolSection>
 
-            <section id="toroid-winding" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.toroid-winding")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.toroid-winding-description")}</p>
-              <div class="p-4"><ToroidWinding /></div>
-            </section>
+            <ToolSection id="attenuator" title="tools.attenuator" description="tools.attenuator-description"><AttenuatorCalculator /></ToolSection>
 
-            <section id="wire-gauge" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.wire-gauge-and-voltage")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.estimate-dc-supply-wire")}</p>
-              <div class="p-4"><WireGauge /></div>
-            </section>
+            <ToolSection id="transformer" title="tools.transformer-impedance" description="tools.compute-transformer-turns-ratio"><TransformerCalculator /></ToolSection>
 
-            <section id="oscillator" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.crystal-oscillator")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.crystal-frequency-pulling-load")}</p>
-              <div class="p-4"><Oscillator /></div>
-            </section>
+            <ToolSection id="utc-clock" title="tools.utc-time-heading" description="tools.live-utc-zulu-clock"><UtcClock /></ToolSection>
 
-            <section id="rf-exposure" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.rf-exposure-evaluation")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.estimate-power-density-and")}</p>
-              <div class="p-4"><RfExposure /></div>
-            </section>
+            <ToolSection id="tx-line" title="tools.transmission-line-impedance" description="tools.characteristic-impedance-of-coax"><TxLine /></ToolSection>
 
-            <section id="tone-squelch" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.tone-squelch-and-repeater")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.repeater-offset-calculation-plus")}</p>
-              <div class="p-4"><ToneSquelch /></div>
-            </section>
+            <ToolSection id="toroid-winding" title="tools.toroid-winding" description="tools.toroid-winding-description"><ToroidWinding /></ToolSection>
 
-            <section id="aprs-codec" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.aprs-codec")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.encode-and-decode-uncompressed")}</p>
-              <div class="p-4"><AprsCodec /></div>
-            </section>
+            <ToolSection id="wire-gauge" title="tools.wire-gauge-and-voltage" description="tools.estimate-dc-supply-wire"><WireGauge /></ToolSection>
 
-            <section id="mode-encoder" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.digital-mode-encoding")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.text-to-morse-cw")}</p>
-              <div class="p-4"><ModeEncoder /></div>
-            </section>
+            <ToolSection id="oscillator" title="tools.crystal-oscillator" description="tools.crystal-frequency-pulling-load"><Oscillator /></ToolSection>
 
-            <section id="backup" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.data-backup")}</h2>
-              <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("settings.export-all-local-data")}</p>
-              <div class="p-4"><BackupTool /></div>
-            </section>
+            <ToolSection id="rf-exposure" title="tools.rf-exposure-evaluation" description="tools.estimate-power-density-and"><RfExposure /></ToolSection>
+
+            <ToolSection id="tone-squelch" title="tools.tone-squelch-and-repeater" description="tools.repeater-offset-calculation-plus"><ToneSquelch /></ToolSection>
+
+            <ToolSection id="aprs-codec" title="tools.aprs-codec" description="tools.encode-and-decode-uncompressed"><AprsCodec /></ToolSection>
+
+            <ToolSection id="mode-encoder" title="tools.digital-mode-encoding" description="tools.text-to-morse-cw"><ModeEncoder /></ToolSection>
+
+            <ToolSection id="backup" title="tools.data-backup" description="settings.export-all-local-data"><BackupTool /></ToolSection>
           </div>
         </div>
       </PageContainer>

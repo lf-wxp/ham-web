@@ -9,7 +9,7 @@ use leptos::prelude::*;
 use crate::components::common::{BulletSection, KnowledgePage, StepsSection};
 use crate::data;
 use crate::i18n::{t, tf};
-use crate::ui::{Checkbox, NativeSelect, SelectOption};
+use crate::ui::{Checkbox, NativeSelect, SelectOption, Tooltip};
 use crate::util::{set_title, unique_id};
 
 /// 制作进度的存储 key（只存本机）。
@@ -260,9 +260,11 @@ pub fn DiyProjectsPage() -> impl IntoView {
                       {p.instruments.iter().map(|i| {
                         let i = *i;
                         view! {
-                          <span class="border px-2 py-0.5" title=move || t("diy.instruments")>
-                            {move || instrument_label(i)}
-                          </span>
+                          <Tooltip label=Signal::derive(move || t("diy.instruments"))>
+                            <span class="border px-2 py-0.5">
+                              {move || instrument_label(i)}
+                            </span>
+                          </Tooltip>
                         }
                       }).collect_view()}
                     </div>
@@ -299,7 +301,7 @@ pub fn DiyProjectsPage() -> impl IntoView {
                                     save_progress.run(progress.get_untracked());
                                   })
                                   aria_label=Signal::derive(move || {
-                                    format!("{}：{}", t("diy.bom-bought"), text(item))
+                                    tf("diy.bom-bought-label", &[text(item).as_str()])
                                   })
                                 />
                                 <span class="font-medium">{move || text(item)}</span>

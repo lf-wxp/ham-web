@@ -4,6 +4,7 @@ use ham_web_core::study_plan::{day_number, format_day};
 use leptos::prelude::*;
 
 use crate::i18n::{t, tp};
+use crate::ui::Tooltip;
 
 /// 按每日作答量返回色阶类名（完整字面量，供 Tailwind 扫描）。
 fn level(count: u32) -> &'static str {
@@ -75,11 +76,21 @@ pub fn StudyHeatmap(days: HashMap<String, u32>, today: String) -> impl IntoView 
                 {row
                   .into_iter()
                   .map(|(day, c)| {
+                    // 数值信息不能只挂在 hover 气泡上：格子补 `tabindex` + `aria-label`，
+                    // 键盘用户与读屏也能拿到「这天答了多少题」（tooltip 由 `:focus-within` 触发）。
+                    let label = tp("learning.answered", c, &[&day, &c.to_string()]);
                     view! {
-                      <div
-                        class=format!("h-4 flex-1 {}", level(c))
-                        title=tp("learning.answered", c, &[&day, &c.to_string()])
-                      ></div>
+                      <Tooltip class="flex-1" label=label.clone()>
+                        <div
+                          class=format!(
+                            "h-4 w-full {} outline-none focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring",
+                            level(c)
+                          )
+                          tabindex="0"
+                          role="img"
+                          aria-label=label
+                        ></div>
+                      </Tooltip>
                     }
                   })
                   .collect_view()}

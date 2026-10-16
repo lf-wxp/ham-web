@@ -1,5 +1,7 @@
 //! 业余卫星入门：常用卫星与操作要点，并接入真实过境预报。
 
+mod doppler_rig;
+mod doppler_tracker;
 mod iss_tracker;
 mod pass_predictor;
 mod satellites_page;

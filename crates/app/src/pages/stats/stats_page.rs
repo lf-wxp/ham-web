@@ -9,6 +9,7 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::pages::log::{StatsScopeSelect, scoped_log_entries, use_stats_scope};
+use crate::ui::Tooltip;
 use crate::util::set_title;
 
 use super::bar_chart::BarChart;
@@ -356,15 +357,20 @@ pub fn StatsPage() -> impl IntoView {
                       .iter()
                       .map(|(m, c)| {
                         let h = (*c as f64 / month_max as f64 * 100.0).max(2.0);
+                        let label = tp("radio.qsos", *c as u32, &[&(m).to_string(), &c.to_string()]);
+                        let month_label = m.get(5..).unwrap_or(m).to_owned();
                         view! {
-                          <div class="group flex min-w-0 flex-1 flex-col items-center gap-1">
+                          // Tooltip 包整列：柱的百分比高度相对包含块，中间多一层会塌。
+                          <Tooltip class="group flex min-w-0 flex-1 flex-col items-center gap-1" label=label.clone()>
                             <div
-                              class="w-full bg-primary/70 transition-all group-hover:bg-primary"
+                              class="w-full bg-primary/70 outline-none transition-all group-hover:bg-primary focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
                               style=format!("height: {h}%")
-                              title=tp("radio.qsos", *c as u32, &[&(m).to_string(), &c.to_string()])
+                              tabindex="0"
+                              role="img"
+                              aria-label=label
                             ></div>
-                            <span class="text-[10px] text-muted-foreground">{m.get(5..).unwrap_or(m)}</span>
-                          </div>
+                            <span class="text-[10px] text-muted-foreground">{month_label}</span>
+                          </Tooltip>
                         }
                       })
                       .collect_view()}

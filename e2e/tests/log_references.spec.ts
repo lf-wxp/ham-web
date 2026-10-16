@@ -41,11 +41,9 @@ test("山峰 / 公园：我的与对方的分开记，ADIF 按规范写 MY_* 与
   page.once("dialog", (d) => d.accept()); // 清空确认
   await page.getByRole("button", { name: /清空/ }).click();
   await expect(page.getByRole("row", { name: /JA1ZZZ/ })).toHaveCount(0);
-  const imported = page.waitForEvent("dialog");
   await page
     .locator('input[type="file"][accept*=".adi"]')
     .setInputFiles({ name: "back.adi", mimeType: "text/plain", buffer: Buffer.from(adif) });
-  await (await imported).accept();
   const back = page.getByRole("row", { name: /JA1ZZZ/ });
   await expect(back).toContainText("SOTA BY/BJ-001");
   await expect(back).toContainText("POTA CN-0123");
@@ -75,11 +73,9 @@ test("山峰 / 公园：旧存档里的 sota_ref / pota_ref 读成「我的」�
   // 别的软件导出的文件：SOTA_REF 是对方的
   const foreign =
     "<EOH>\n<CALL:6>JA1HUN<QSO_DATE:8>20261013<TIME_ON:4>1000<MODE:2>CW<FREQ:6>14.062<SOTA_REF:9>JA/TK-001<EOR>";
-  const imported = page.waitForEvent("dialog");
   await page
     .locator('input[type="file"][accept*=".adi"]')
     .setInputFiles({ name: "hunter.adi", mimeType: "text/plain", buffer: Buffer.from(foreign) });
-  await (await imported).accept();
   const hunter = page.getByRole("row", { name: /JA1HUN/ });
   await expect(hunter).toContainText("S2S JA/TK-001");
   await expect(hunter).not.toContainText("SOTA JA/TK-001");

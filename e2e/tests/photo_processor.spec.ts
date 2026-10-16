@@ -10,18 +10,13 @@ test("照片处理：非图片文件被拦下并给出提示", async ({ page }) 
   await page.goto("/photo-processor");
   await expect(page.getByRole("heading", { level: 1, name: "业余无线电报名照片处理" })).toBeVisible();
 
-  // 校验在原生 alert 里：先挂上会自动确认的监听器，否则渲染进程被弹窗阻塞，setInputFiles 无法返回
-  const seen: string[] = [];
-  page.on("dialog", async (d) => {
-    seen.push(d.message());
-    await d.accept();
-  });
+  // 提示走全局 Toast（`data-slot="toast"`），不再弹原生 alert。
   await page.locator("#id-file").setInputFiles({
     name: "not-an-image.txt",
     mimeType: "text/plain",
     buffer: Buffer.from("hello"),
   });
-  await expect.poll(() => seen).toContain("请选择有效的图片文件");
+  await expect(page.locator('[data-slot="toast"]')).toContainText("请选择有效的图片文件");
 
   // 被拦下时不进入处理态
   await expect(page.getByText(/正在处理照片/)).toHaveCount(0);

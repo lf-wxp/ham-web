@@ -3,6 +3,7 @@ use leptos::prelude::*;
 
 use super::{Haystacks, browse_href, category_meta, is_countable};
 use crate::i18n::{t, tf};
+use crate::ui::Tooltip;
 
 #[component]
 pub(super) fn TermCard(
@@ -48,16 +49,18 @@ pub(super) fn TermCard(
           .into_iter()
           .filter(|(_, n)| *n > 0)
           .map(|(b, n)| {
+            let tip = tf("common.view-questions-containing-in", &[&(b).to_string(), &(entry.term).to_string()]);
             view! {
-              <a
-                href=browse_href(b, &entry.term)
-                class="border px-2 py-0.5 transition-colors hover:bg-accent hover:text-foreground"
-                title=tf("common.view-questions-containing-in", &[&(b).to_string(), &(entry.term).to_string()])
-              >
-                {b.as_str()}
-                {t("knowledge.class")}
-                <span class="font-semibold tabular-nums">{n}</span>
-              </a>
+              <Tooltip label=tip>
+                <a
+                  href=browse_href(b, &entry.term)
+                  class="border px-2 py-0.5 transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  {b.as_str()}
+                  {t("knowledge.class")}
+                  <span class="font-semibold tabular-nums">{n}</span>
+                </a>
+              </Tooltip>
             }
           })
           .collect_view()}

@@ -4,6 +4,7 @@
 use std::collections::BTreeMap;
 
 use crate::i18n::{t, tp};
+use crate::ui::Tooltip;
 use leptos::prelude::*;
 use wasm_bindgen::JsValue;
 
@@ -99,8 +100,18 @@ pub(super) fn CalendarHeatmap(counts: BTreeMap<String, u32>) -> impl IntoView {
                       } else {
                         cell_class(count, max)
                       };
+                      let label = tp("common.records", count, &[&(key).to_string(), &(count).to_string()]);
                       view! {
-                        <div class=format!("h-3 w-3 {cls}") title=tp("common.records", count, &[&(key).to_string(), &(count).to_string()])></div>
+                        <Tooltip label=label.clone()>
+                          <div
+                            class=format!(
+                              "h-3 w-3 {cls} outline-none focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
+                            )
+                            tabindex="0"
+                            role="img"
+                            aria-label=label
+                          ></div>
+                        </Tooltip>
                       }
                     })
                     .collect_view()}

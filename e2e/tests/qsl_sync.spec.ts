@@ -39,7 +39,6 @@ test("QSL 同步：三向差异、来源决定哪些字段算数、逐条裁决"
   // 本地这条要与报告同键（呼号 + 日期 + 时间 + 波段 + 模式），所以用 ADIF 导入而不是
   // 手填表单（表单默认是今天、且没有频率 → 对不上）。
   await page.goto("/log");
-  const imported = page.waitForEvent("dialog");
   await page
     .locator('input[type="file"][accept*=".adi"]')
     .setInputFiles({
@@ -47,7 +46,8 @@ test("QSL 同步：三向差异、来源决定哪些字段算数、逐条裁决"
       mimeType: "text/plain",
       buffer: Buffer.from(QSO_ADIF),
     });
-  (await imported).accept();
+  // 导入结果走全局 Toast（`role="status"`）。
+  await expect(page.getByRole("status")).toContainText(/已导入 \d+ 条记录/);
   await expect(logRow(page)).toHaveCount(1);
 
   // 本地手抄「已经收到纸卡」—— 报告里没有这一位，于是它会成为冲突。

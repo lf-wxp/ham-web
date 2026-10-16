@@ -2,7 +2,7 @@ use ham_web_core::{Bank, QuestionItem};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::components::common::{EmptyState, Loading, PageContainer, PageHeader};
+use crate::components::common::{EmptyState, PageContainer, PageHeader, Skeleton};
 use crate::data;
 use crate::store;
 use crate::ui::{Button, ButtonLink, Input, Size, Variant};
@@ -180,7 +180,6 @@ pub fn BookmarksPage() -> impl IntoView {
                     <button
                       type="button"
                       class="text-muted-foreground/60 transition-colors hover:text-destructive"
-                      title=move || t("exam.delete-this-group")
                       aria-label=move || t("exam.delete-this-group")
                       on:click=move |_| delete_group(del_name.clone())
                     >
@@ -197,7 +196,21 @@ pub fn BookmarksPage() -> impl IntoView {
       <PageContainer class="space-y-4">
         {move || {
           if loading.get() {
-            view! { <Loading label=t("exam.loading") class="py-10" /> }
+            view! {
+              <div class="space-y-3">
+                <span class="sr-only" role="status">{move || t("exam.loading")}</span>
+                {(0..4)
+                  .map(|_| {
+                    view! {
+                      <div class="pxl-card border bg-card p-4">
+                        <Skeleton class="h-3 w-32" />
+                        <Skeleton class="mt-3 h-4 w-3/4" />
+                      </div>
+                    }
+                  })
+                  .collect_view()}
+              </div>
+            }
               .into_any()
           } else if questions.get().is_empty() {
             view! {

@@ -28,9 +28,10 @@ use crate::components::common::{BulletSection, KnowledgePage, TableSection};
 use crate::i18n::{t, tf};
 use crate::pages::log::utc_today;
 use crate::ui::{
-  Button, Chip, ChipGroup, ChipToggle, Field, NumberField, NumberKind, Size, Variant,
+  Button, Chip, ChipGroup, ChipToggle, Field, NumberField, NumberKind, Size, Table, TableBody,
+  TableCell, TableHead, TableHeader, TableRow, Variant,
 };
-use crate::util::{alert, set_title, unique_id};
+use crate::util::{set_title, unique_id};
 
 use radar::{GearRadar, RadarSeries};
 use score_row::ScoreRow;
@@ -414,7 +415,7 @@ pub fn GearPage() -> impl IntoView {
     });
     if too_many {
       let limit = MAX_COMPARE.to_string();
-      alert(&tf("knowledge.you-can-compare-at", &[&limit]));
+      crate::ui::push_error(tf("knowledge.you-can-compare-at", &[&limit]));
     }
   };
 
@@ -427,7 +428,7 @@ pub fn GearPage() -> impl IntoView {
         title="knowledge.recommendations-by-use"
         headers=PICK_HEADERS
         rows=GEAR_PICKS
-        min_width=720
+        class="min-w-[720px]"
       />
 
       <section class="pxl-card border bg-card">
@@ -677,43 +678,43 @@ pub fn GearPage() -> impl IntoView {
             </div>
 
             // ── 参数对比（跟着 `rows` 与选中的机型变）───────────────
-            <div class="overflow-x-auto border-t">
+            <div class="border-t">
               {move || {
                 let models = models.get();
                 let rows = rows.get();
                 view! {
-                  <table class="w-full border-collapse text-sm" style="min-width: 640px">
-                    <thead class="bg-muted/60 text-xs">
-                      <tr>
-                        <th class="border px-3 py-2 text-left">
+                  <Table
+                    aria_label=Signal::derive(move || t("knowledge.specs"))
+                    class="min-w-[640px]"
+                  >
+                    <TableHead>
+                      <TableRow>
+                        <TableHeader>
                           {move || t("knowledge.specs")}
-                        </th>
+                        </TableHeader>
                         {models
-                          .iter()
+                          .into_iter()
                           .map(|g| {
                             view! {
-                              <th class="border px-3 py-2 text-left">
+                              <TableHeader>
                                 <div class="font-semibold">{g.brand}</div>
                                 <div class="font-normal text-muted-foreground">{g.model}</div>
-                              </th>
+                              </TableHeader>
                             }
                           })
                           .collect_view()}
-                      </tr>
-                    </thead>
-                    <tbody>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
                       {rows
                         .into_iter()
                         .map(|row| {
                           let best = row.best;
                           view! {
-                            <tr class="border-t transition-colors hover:bg-muted/40">
-                              <th
-                                scope="row"
-                                class="border px-3 py-2 text-left align-top font-medium whitespace-nowrap"
-                              >
+                            <TableRow>
+                              <TableHeader scope="row" class="align-top whitespace-nowrap font-medium">
                                 {row.label}
-                              </th>
+                              </TableHeader>
                               {row
                                 .values
                                 .into_iter()
@@ -721,19 +722,19 @@ pub fn GearPage() -> impl IntoView {
                                 .map(|(i, value)| {
                                   // 差异高亮：该行最好的一格加重（表下注释里说明「加粗 = 最好」）。
                                   let class = if best.contains(&i) {
-                                    "border px-3 py-2 text-left align-top font-semibold text-foreground"
+                                    "align-top font-semibold text-foreground"
                                   } else {
-                                    "border px-3 py-2 text-left align-top text-muted-foreground"
+                                    "align-top text-muted-foreground"
                                   };
-                                  view! { <td class=class>{value}</td> }
+                                  view! { <TableCell class=class>{value}</TableCell> }
                                 })
                                 .collect_view()}
-                            </tr>
+                            </TableRow>
                           }
                         })
                         .collect_view()}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 }
               }}
             </div>

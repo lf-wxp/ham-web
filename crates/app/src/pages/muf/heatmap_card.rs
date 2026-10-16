@@ -12,7 +12,9 @@ use serde::Deserialize;
 use crate::cn::cn;
 use crate::data;
 use crate::i18n::{t, tf, tp};
-use crate::ui::{Button, ControlSize, Input, InputType, NumberField, Size, Slider, Variant};
+use crate::ui::{
+  Button, ControlSize, Input, InputType, NumberField, Size, Slider, Tooltip, Variant,
+};
 
 const NOTE: &str = "text-xs text-muted-foreground";
 const RESULT: &str = "bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
@@ -373,16 +375,19 @@ pub(super) fn HeatmapCard() -> impl IntoView {
                                 ])
                               };
                               view! {
-                                <button
-                                  type="button"
-                                  class=class
-                                  title=label
-                                  aria-label=aria
-                                  aria-pressed=move || {
-                                    if selected.get() == Some((band, h)) { "true" } else { "false" }
-                                  }
-                                  on:click=move |_| selected.set(Some((band, h)))
-                                ></button>
+                                // 格子已有 aria-label + aria-pressed，tooltip 只是视觉增强：
+                                // 悬停与聚焦（`:focus-within`）都显示。
+                                <Tooltip class="flex-1" label=label.clone()>
+                                  <button
+                                    type="button"
+                                    class=class
+                                    aria-label=aria
+                                    aria-pressed=move || {
+                                      if selected.get() == Some((band, h)) { "true" } else { "false" }
+                                    }
+                                    on:click=move |_| selected.set(Some((band, h)))
+                                  ></button>
+                                </Tooltip>
                               }
                             })
                             .collect_view()}

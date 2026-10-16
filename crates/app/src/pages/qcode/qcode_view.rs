@@ -103,7 +103,7 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <PageHeader class="top-16"
+      <PageHeader
         title=move || t("shell.q-codes-title")
         subtitle=move || t("knowledge.q-codes-cw-abbreviations")
         actions=ViewFn::from(move || {

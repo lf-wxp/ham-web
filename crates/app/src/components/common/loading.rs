@@ -2,6 +2,7 @@ use leptos::prelude::*;
 
 use crate::cn::cn;
 use crate::icons::{Icon, IconKind};
+use crate::ui::TextValue;
 
 /// 加载状态：spinner + 可选文案。默认大间距居中，可用 `class` 覆盖间距。
 ///
@@ -10,7 +11,7 @@ use crate::icons::{Icon, IconKind};
 /// 比一个孤零零的 spinner 更少引起布局跳动。
 #[component]
 pub fn Loading(
-  #[prop(optional, into)] label: Option<String>,
+  #[prop(optional, into)] label: Option<TextValue>,
   #[prop(optional, into)] class: String,
 ) -> impl IntoView {
   view! {
@@ -19,7 +20,7 @@ pub fn Loading(
       &class,
     ])>
       <Icon kind=IconKind::Loader2 class="h-5 w-5 animate-spin" />
-      {label.map(|l| view! { <span>{l}</span> })}
+      {label.map(|l| view! { <span>{move || l.get()}</span> })}
     </div>
   }
 }

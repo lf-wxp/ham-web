@@ -6,9 +6,10 @@ use leptos::prelude::*;
 use crate::components::common::{PageContainer, PageHeader};
 use crate::components::nec_template_link::NecTemplateLink;
 use crate::i18n::t;
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 text-left align-top";
+const CELL: &str = "border px-3 py-2 align-top";
 
 #[component]
 pub fn AntennaDiyPage() -> impl IntoView {
@@ -23,37 +24,35 @@ pub fn AntennaDiyPage() -> impl IntoView {
       <PageContainer>
         <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.classic-home-built-antennas")}</h2>
-          <div class="overflow-x-auto">
-            <table class="w-full min-w-[820px] border-collapse text-sm">
-              <thead class="bg-muted/60 text-xs">
-                <tr>
-                  <th class=CELL>{move || t("log.antenna")}</th>
-                  <th class=CELL>{move || t("knowledge.materials")}</th>
-                  <th class=CELL>{move || t("knowledge.dimension-estimates")}</th>
-                  <th class=CELL>{move || t("radio.notes")}</th>
-                  <th class=CELL>{move || t("tools.nec-model-column")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {DIY_ANTENNAS
-                  .iter()
-                  .map(|&(name, material, size, desc, template)| {
-                    view! {
-                      <tr class="border-t transition-colors hover:bg-muted/40">
-                        <td class=format!("{CELL} whitespace-nowrap font-medium")>{name}</td>
-                        <td class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{material}</td>
-                        <td class=format!("{CELL} font-mono tabular-nums")>{size}</td>
-                        <td class=format!("{CELL} text-muted-foreground")>{desc}</td>
-                        <td class=CELL>
-                          <NecTemplateLink template=template />
-                        </td>
-                      </tr>
-                    }
-                  })
-                  .collect_view()}
-              </tbody>
-            </table>
-          </div>
+          <Table class="min-w-[820px] text-sm">
+            <TableHead>
+              <TableRow>
+                <TableHeader class=CELL>{move || t("log.antenna")}</TableHeader>
+                <TableHeader class=CELL>{move || t("knowledge.materials")}</TableHeader>
+                <TableHeader class=CELL>{move || t("knowledge.dimension-estimates")}</TableHeader>
+                <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+                <TableHeader class=CELL>{move || t("tools.nec-model-column")}</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {DIY_ANTENNAS
+                .iter()
+                .map(|&(name, material, size, desc, template)| {
+                  view! {
+                    <TableRow>
+                      <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{name}</TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{material}</TableCell>
+                      <TableCell class=format!("{CELL} font-mono tabular-nums")>{size}</TableCell>
+                      <TableCell class=format!("{CELL} text-muted-foreground")>{desc}</TableCell>
+                      <TableCell class=CELL>
+                        <NecTemplateLink template=template />
+                      </TableCell>
+                    </TableRow>
+                  }
+                })
+                .collect_view()}
+            </TableBody>
+          </Table>
         </section>
       </PageContainer>
     </div>

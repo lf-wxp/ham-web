@@ -5,7 +5,10 @@ use leptos::prelude::*;
 
 use super::RESULT;
 use crate::i18n::{t, tf, tp};
-use crate::ui::{Checkbox, Field, Label, NumberField, Textarea};
+use crate::ui::{
+  Checkbox, Field, Label, NumberField, Table, TableBody, TableCell, TableHead, TableHeader,
+  TableRow, Textarea,
+};
 use crate::util::unique_id;
 
 /// 示例：同一波段里的两个相邻信号，打开页面就能看到经典的 `2·f1 − f2` / `2·f2 − f1`。
@@ -114,13 +117,13 @@ pub(super) fn IntermodCalculator() -> impl IntoView {
                   "border-t"
                 };
                 view! {
-                  <tr class=row_class>
-                    <td class="border px-3 py-1.5">{kind}</td>
-                    <td class="border px-3 py-1.5 tabular-nums">{p.order}</td>
-                    <td class="border px-3 py-1.5 font-mono">{p.expr}</td>
-                    <td class="border px-3 py-1.5 tabular-nums">{fmt_mhz(p.freq_mhz)}</td>
-                    <td class="border px-3 py-1.5">{p.band.unwrap_or("—")}</td>
-                  </tr>
+                  <TableRow class=row_class>
+                    <TableCell class="border px-3 py-1.5">{kind}</TableCell>
+                    <TableCell class="border px-3 py-1.5 tabular-nums">{p.order}</TableCell>
+                    <TableCell class="border px-3 py-1.5 font-mono">{p.expr}</TableCell>
+                    <TableCell class="border px-3 py-1.5 tabular-nums">{fmt_mhz(p.freq_mhz)}</TableCell>
+                    <TableCell class="border px-3 py-1.5">{p.band.unwrap_or("—")}</TableCell>
+                  </TableRow>
                 }
               })
               .collect_view();
@@ -140,20 +143,18 @@ pub(super) fn IntermodCalculator() -> impl IntoView {
                   .into_any()
               } else {
                 view! {
-                  <div class="max-h-[28rem] overflow-auto border">
-                    <table class="w-full min-w-[480px] border-collapse text-sm">
-                      <thead class="bg-muted/60 text-xs">
-                        <tr>
-                          <th class="border px-3 py-2 text-left">{move || t("radio.type")}</th>
-                          <th class="border px-3 py-2 text-left">{move || t("tools.intermod-col-order")}</th>
-                          <th class="border px-3 py-2 text-left">{move || t("tools.intermod-col-expr")}</th>
-                          <th class="border px-3 py-2 text-left">{move || t("log.frequency-mhz")}</th>
-                          <th class="border px-3 py-2 text-left">{move || t("tools.intermod-col-band")}</th>
-                        </tr>
-                      </thead>
-                      <tbody>{rows}</tbody>
-                    </table>
-                  </div>
+                  <Table class="min-w-[480px] text-sm" wrapper_class="max-h-[28rem] border">
+                      <TableHead>
+                        <TableRow>
+                          <TableHeader class="border px-3 py-2">{move || t("radio.type")}</TableHeader>
+                          <TableHeader class="border px-3 py-2">{move || t("tools.intermod-col-order")}</TableHeader>
+                          <TableHeader class="border px-3 py-2">{move || t("tools.intermod-col-expr")}</TableHeader>
+                          <TableHeader class="border px-3 py-2">{move || t("log.frequency-mhz")}</TableHeader>
+                          <TableHeader class="border px-3 py-2">{move || t("tools.intermod-col-band")}</TableHeader>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>{rows}</TableBody>
+                    </Table>
                 }
                   .into_any()
               }}

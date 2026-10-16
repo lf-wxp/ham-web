@@ -5,9 +5,10 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 text-left align-top";
+const CELL: &str = "border px-3 py-2 align-top";
 
 #[component]
 pub fn ReceiverPage() -> impl IntoView {
@@ -20,31 +21,29 @@ pub fn ReceiverPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <div class="overflow-x-auto pxl-card border bg-card">
-          <table class="w-full min-w-[640px] border-collapse text-sm">
-            <thead class="bg-muted/60 text-xs">
-              <tr>
-                <th class=CELL>{move || t("knowledge.metrics")}</th>
-                <th class=CELL>{move || t("knowledge.meaning")}</th>
-                <th class=CELL>{move || t("knowledge.deciding-factors")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {RECEIVER_METRICS
-                .iter()
-                .map(|&(name, meaning, factor)| {
-                  view! {
-                    <tr class="border-t transition-colors hover:bg-muted/40">
-                      <td class=format!("{CELL} whitespace-nowrap font-medium")>{name}</td>
-                      <td class=format!("{CELL} text-muted-foreground")>{meaning}</td>
-                      <td class=format!("{CELL} text-muted-foreground")>{factor}</td>
-                    </tr>
-                  }
-                })
-                .collect_view()}
-            </tbody>
-          </table>
-        </div>
+        <Table class="min-w-[640px] text-sm" wrapper_class="pxl-card border bg-card">
+          <TableHead>
+            <TableRow>
+              <TableHeader class=CELL>{move || t("knowledge.metrics")}</TableHeader>
+              <TableHeader class=CELL>{move || t("knowledge.meaning")}</TableHeader>
+              <TableHeader class=CELL>{move || t("knowledge.deciding-factors")}</TableHeader>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {RECEIVER_METRICS
+              .iter()
+              .map(|&(name, meaning, factor)| {
+                view! {
+                  <TableRow>
+                    <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{name}</TableCell>
+                    <TableCell class=format!("{CELL} text-muted-foreground")>{meaning}</TableCell>
+                    <TableCell class=format!("{CELL} text-muted-foreground")>{factor}</TableCell>
+                  </TableRow>
+                }
+              })
+              .collect_view()}
+          </TableBody>
+        </Table>
 
         <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.noise-and-sensitivity-basics")}</h2>

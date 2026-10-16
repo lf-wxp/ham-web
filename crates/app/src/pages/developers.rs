@@ -154,7 +154,7 @@ pub fn DevelopersPage() -> impl IntoView {
         </div>
       </SectionCard>
 
-      <TableSection title="错误码" headers=ERROR_HEADERS rows=ERROR_CODES min_width=560 />
+      <TableSection title="错误码" headers=ERROR_HEADERS rows=ERROR_CODES class="min-w-[560px]" />
       <BulletSection title="说明" items=NOTES ui=true />
     </KnowledgePage>
   }

@@ -8,6 +8,7 @@ use leptos::prelude::*;
 use crate::icons::{Icon, IconKind};
 use crate::morse_audio::{morse_symbol_times, play_morse_timed_with};
 use crate::morse_settings::use_morse_settings;
+use crate::ui::Tooltip;
 
 use super::{CARD_WPM, morse_display};
 use crate::i18n::tf;
@@ -47,12 +48,12 @@ pub(super) fn MorseCard(entry: &'static MorseChar) -> impl IntoView {
   };
 
   view! {
-    <button
-      type="button"
-      title=tf("common.preview-with-code", &[(entry.ch), (entry.code)])
-      on:click=play_card
-      class="group pxl-window motion-press relative flex flex-col items-center gap-1.5 px-1 py-3 text-center hover:bg-accent"
-    >
+    <Tooltip class="min-w-0" label=tf("common.preview-with-code", &[(entry.ch), (entry.code)])>
+      <button
+        type="button"
+        on:click=play_card
+        class="group pxl-window motion-press relative flex w-full flex-col items-center gap-1.5 px-1 py-3 text-center hover:bg-accent"
+      >
       <span class="absolute right-1 top-1 text-primary opacity-0 group-hover:opacity-100">
         <Icon kind=IconKind::Play class="size-6" />
       </span>
@@ -76,6 +77,7 @@ pub(super) fn MorseCard(entry: &'static MorseChar) -> impl IntoView {
             .collect_view()
         }}
       </span>
-    </button>
+      </button>
+    </Tooltip>
   }
 }

@@ -29,11 +29,10 @@ const badgeClass = async (page: Page, call: string) =>
   (await qslCell(page, call).locator("span").first().getAttribute("class")) ?? "";
 
 async function importAdif(page: Page, text: string) {
-  const dialog = page.waitForEvent("dialog");
+  // 导入结果走全局 Toast，不再弹原生 alert；后续断言（如「共 N 条」）会等导入落库。
   await page
     .locator('input[type="file"][accept*=".adi"]')
     .setInputFiles({ name: "qsl.adi", mimeType: "text/plain", buffer: Buffer.from(text) });
-  (await dialog).accept();
 }
 
 test("QSL 状态：四色徽章按确认途径着色，筛选按档位收敛", async ({ page }) => {

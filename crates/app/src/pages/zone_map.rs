@@ -12,7 +12,7 @@ use crate::components::common::{BulletSection, ConceptsSection, KnowledgePage};
 use crate::i18n::{t, tf, tp};
 use crate::pages::map::ZoneMap;
 use crate::ui::{Button, Chip, ChipGroup, Input, Size, Variant};
-use crate::util::{alert, set_title};
+use crate::util::set_title;
 
 #[component]
 pub fn ZoneMapPage() -> impl IntoView {
@@ -50,7 +50,7 @@ pub fn ZoneMapPage() -> impl IntoView {
       }
       None => {
         hit.set(None);
-        alert(&t("radio.unrecognised-callsign-or-entity"));
+        crate::ui::push_error(t("radio.unrecognised-callsign-or-entity"));
       }
     }
   };

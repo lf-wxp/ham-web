@@ -13,7 +13,7 @@ use axum::http::header::CONTENT_TYPE;
 use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
 use sgp4::{Constants, Elements, MinutesSinceEpoch};
-use tracing::error;
+use tracing::{error, warn};
 
 use crate::cache::Inflight;
 
@@ -56,9 +56,16 @@ const RESULT_CACHE_TTL: Duration = Duration::from_secs(300);
 const MAX_RESULT_ENTRIES: usize = 1_000;
 
 /// 一行 TLE 数据：`(卫星名, 第一行, 第二行)`。
-type TleLine = (String, String, String);
+pub(crate) type TleLine = (String, String, String);
 /// TLE 缓存值：`(缓存时间, TLE 列表)`。
 type TleCacheEntry = (Instant, Vec<TleLine>);
+
+/// 取回的一组 TLE，以及它是不是「回源失败时的过期兜底」。
+pub(crate) struct Tles {
+  pub(crate) lines: Vec<TleLine>,
+  /// `true` 表示上游故障、用的是超过 TTL 的旧 TLE（响应要标 `X-Cache: stale`）。
+  pub(crate) stale: bool,
+}
 
 /// 查询参数。
 #[derive(Deserialize)]
@@ -144,7 +151,7 @@ fn fetch_tle(group: SatGroup) -> anyhow::Result<Vec<TleLine>> {
 }
 
 /// 格林尼治平恒星时（弧度），IAU 简化近似。
-fn gmst_radians(jd: f64) -> f64 {
+pub(crate) fn gmst_radians(jd: f64) -> f64 {
   let d = jd - 2451545.0;
   (280.46061837 + 360.98564736629 * d)
     .rem_euclid(360.0)
@@ -152,7 +159,7 @@ fn gmst_radians(jd: f64) -> f64 {
 }
 
 /// 地理坐标 → ECEF（WGS84，单位 km）。
-fn geodetic_to_ecef(lat_deg: f64, lon_deg: f64, alt_km: f64) -> [f64; 3] {
+pub(crate) fn geodetic_to_ecef(lat_deg: f64, lon_deg: f64, alt_km: f64) -> [f64; 3] {
   const A: f64 = 6378.137;
   const F: f64 = 1.0 / 298.257223563;
   let e2 = F * (2.0 - F);
@@ -167,7 +174,7 @@ fn geodetic_to_ecef(lat_deg: f64, lon_deg: f64, alt_km: f64) -> [f64; 3] {
 }
 
 /// 地面站 ENU 基向量（东、北、上）。
-fn enu_basis(lat_deg: f64, lon_deg: f64) -> ([f64; 3], [f64; 3], [f64; 3]) {
+pub(crate) fn enu_basis(lat_deg: f64, lon_deg: f64) -> ([f64; 3], [f64; 3], [f64; 3]) {
   let lat = lat_deg.to_radians();
   let lon = lon_deg.to_radians();
   let east = [-lon.sin(), lon.cos(), 0.0];
@@ -223,7 +230,8 @@ fn compute_passes(
   start: i64,
   end: i64,
 ) -> Vec<Pass> {
-  let epoch_unix = elements.datetime.and_utc().timestamp() as f64;
+  let epoch = elements.datetime.and_utc();
+  let epoch_unix = epoch.timestamp() as f64 + f64::from(epoch.timestamp_subsec_nanos()) / 1e9;
   let station_ecef = geodetic_to_ecef(lat, lon, 0.0);
   let basis = enu_basis(lat, lon);
 
@@ -295,11 +303,19 @@ fn result_key(lat: f64, lon: f64, min_elev: f64, group: SatGroup) -> PassKey {
 }
 
 /// 缓存：TLE（6 小时）+ 过境结果（5 分钟）。
+///
+/// 两份 `Inflight` 是**分开**的：`tle_inflight` 管 TLE 回源，`inflight` 管过境计算。
+/// 后者持有期间会调 `tles()` 去等前者，两级锁不会互相等待，故无死锁。
+type PassCacheEntry = (Instant, (Vec<Pass>, bool));
+
 #[derive(Default)]
 pub struct Cache {
-  tle: Mutex<HashMap<SatGroup, TleCacheEntry>>,
-  results: Mutex<HashMap<PassKey, (Instant, Vec<Pass>)>>,
+  pub(crate) tle: Mutex<HashMap<SatGroup, TleCacheEntry>>,
+  results: Mutex<HashMap<PassKey, PassCacheEntry>>,
   inflight: Inflight,
+  /// TLE 回源的单飞保护：`/api/passes` 与 `/api/sat-track` 共用同一份缓存，
+  /// 单飞必须落在 `tles()` 里（只放在 `/api/passes` 的 handler 里挡不住后者）。
+  tle_inflight: Inflight,
 }
 
 /// `GET /api/passes` 处理器。
@@ -317,10 +333,14 @@ pub async fn handler(Query(q): Query<PassQuery>, cache: Arc<Cache>) -> Response 
 
   loop {
     // 命中结果缓存直接返回。
-    if let Some((t, passes)) = cache.results.lock().ok().and_then(|g| g.get(&key).cloned())
+    if let Some((t, (passes, stale))) = cache.results.lock().ok().and_then(|g| g.get(&key).cloned())
       && t.elapsed() < RESULT_CACHE_TTL
     {
-      return passes_payload(q.lat, q.lon, &passes);
+      let mut res = passes_payload(q.lat, q.lon, &passes);
+      if stale {
+        crate::cache::mark_stale(&mut res);
+      }
+      return res;
     }
 
     // 抢计算权；抢不到则等待，避免并发请求在冷启动/过期瞬间拿到无谓的 503。
@@ -329,12 +349,16 @@ pub async fn handler(Query(q): Query<PassQuery>, cache: Arc<Cache>) -> Response 
 
       // `_guard` 存活到缓存写入完成后释放，保证等待者被唤醒时能读到新缓存。
       return match result {
-        Ok(passes) => {
+        Ok((passes, stale)) => {
           if let Ok(mut g) = cache.results.lock() {
             crate::cache::evict_oldest(&mut *g, MAX_RESULT_ENTRIES);
-            g.insert(key, (Instant::now(), passes.clone()));
+            g.insert(key, (Instant::now(), (passes.clone(), stale)));
           }
-          passes_payload(q.lat, q.lon, &passes)
+          let mut res = passes_payload(q.lat, q.lon, &passes);
+          if stale {
+            crate::cache::mark_stale(&mut res);
+          }
+          res
         }
         Err(resp) => resp,
       };
@@ -344,7 +368,56 @@ pub async fn handler(Query(q): Query<PassQuery>, cache: Arc<Cache>) -> Response 
   }
 }
 
+/// 拉取（或复用）TLE：命中 6 小时缓存直接返回；过期时单飞回源，失败则降级到旧的 TLE。
+///
+/// 单飞在这里而不是调用方的 handler 里：`/api/passes` 与 `/api/sat-track` 共用本缓存，
+/// TTL 到期的一瞬间两边都会有并发请求进来，各自回源会一起打 Celestrak（上游挂起时
+/// 每个请求占一个阻塞线程最长 15 s，正是 `util.rs` 里写的级联场景）。
+///
+/// TLE 的可用期以「天」计，远超 6 小时的缓存 TTL：回源失败时宁可用过期的轨道根数，
+/// 也不让过境 / 多普勒整块不可用（与 [`crate::cache::JsonCache`] 的 stale 兜底同口径）。
+#[allow(clippy::result_large_err)]
+pub(crate) async fn tles(cache: &Cache, group: SatGroup) -> Result<Tles, Response> {
+  loop {
+    let cached: Option<TleCacheEntry> = cache.tle.lock().ok().and_then(|g| g.get(&group).cloned());
+    if let Some((_, lines)) = cached.as_ref().filter(|(t, _)| t.elapsed() < TLE_CACHE_TTL) {
+      return Ok(Tles {
+        lines: lines.clone(),
+        stale: false,
+      });
+    }
+
+    // 抢回源权；抢不到就等这一轮刷新结束再看新缓存（与过境计算同一套等待语义）。
+    if let Some(_guard) = cache.tle_inflight.acquire() {
+      match tokio::task::spawn_blocking(move || fetch_tle(group)).await {
+        Ok(Ok(lines)) => {
+          if let Ok(mut lock) = cache.tle.lock() {
+            lock.insert(group, (Instant::now(), lines.clone()));
+          }
+          return Ok(Tles {
+            lines,
+            stale: false,
+          });
+        }
+        Ok(Err(e)) => error!("fetch TLE failed: {e:#}"),
+        Err(e) => error!("spawn_blocking failed: {e:#}"),
+      }
+      return match cached {
+        Some((cached_at, lines)) if cached_at.elapsed() <= Duration::from_secs(7 * 86_400) => {
+          warn!(?group, "upstream TLE fetch failed, serving stale TLE");
+          Ok(Tles { lines, stale: true })
+        }
+        _ => Err((StatusCode::SERVICE_UNAVAILABLE, "TLE unavailable").into_response()),
+      };
+    }
+
+    cache.tle_inflight.wait().await;
+  }
+}
+
 /// 拉取（或复用）TLE 并计算过境；失败返回错误响应。
+///
+/// 第二个返回值是「TLE 是否为过期兜底」，供 handler 打 `X-Cache: stale`。
 #[allow(clippy::result_large_err)]
 async fn compute(
   cache: Arc<Cache>,
@@ -352,31 +425,9 @@ async fn compute(
   lon: f64,
   min_elev: f64,
   group: SatGroup,
-) -> Result<Vec<Pass>, Response> {
+) -> Result<(Vec<Pass>, bool), Response> {
   // 1) 获取 TLE。
-  let tles = {
-    let cached: Option<TleCacheEntry> = cache.tle.lock().ok().and_then(|g| g.get(&group).cloned());
-    if let Some((_, g)) = cached.filter(|(t, _)| t.elapsed() < TLE_CACHE_TTL) {
-      g
-    } else {
-      match tokio::task::spawn_blocking(move || fetch_tle(group)).await {
-        Ok(Ok(g)) => {
-          if let Ok(mut lock) = cache.tle.lock() {
-            lock.insert(group, (Instant::now(), g.clone()));
-          }
-          g
-        }
-        Ok(Err(e)) => {
-          error!("fetch TLE failed: {e:#}");
-          return Err((StatusCode::SERVICE_UNAVAILABLE, "TLE unavailable").into_response());
-        }
-        Err(e) => {
-          error!("spawn_blocking failed: {e:#}");
-          return Err((StatusCode::SERVICE_UNAVAILABLE, "TLE unavailable").into_response());
-        }
-      }
-    }
-  };
+  let Tles { lines, stale } = tles(&cache, group).await?;
 
   let now = SystemTime::now()
     .duration_since(UNIX_EPOCH)
@@ -385,9 +436,9 @@ async fn compute(
   let horizon = 24 * 3600;
 
   // 2) 计算过境（CPU 密集，放 spawn_blocking）。
-  tokio::task::spawn_blocking(move || {
+  let passes = tokio::task::spawn_blocking(move || {
     let mut all = Vec::new();
-    for (name, l1, l2) in &tles {
+    for (name, l1, l2) in &lines {
       let Ok(elements) = Elements::from_tle(Some(name.clone()), l1.as_bytes(), l2.as_bytes())
       else {
         continue;
@@ -412,7 +463,8 @@ async fn compute(
   .map_err(|e| {
     error!("pass compute failed: {e:#}");
     (StatusCode::INTERNAL_SERVER_ERROR, "compute failed").into_response()
-  })
+  })?;
+  Ok((passes, stale))
 }
 
 /// 序列化过境结果为 JSON 响应。
@@ -436,6 +488,28 @@ fn passes_payload(lat: f64, lon: f64, passes: &[Pass]) -> Response {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[tokio::test]
+  async fn cached_passes_preserve_stale_header() {
+    let cache = Arc::new(Cache::default());
+    let key = result_key(39.9, 116.4, 10.0, SatGroup::Amateur);
+    cache
+      .results
+      .lock()
+      .unwrap()
+      .insert(key, (Instant::now(), (Vec::new(), true)));
+    let response = handler(
+      Query(PassQuery {
+        lat: 39.9,
+        lon: 116.4,
+        min_elev: 10.0,
+        group: "amateur".into(),
+      }),
+      cache,
+    )
+    .await;
+    assert_eq!(response.headers().get("x-cache").unwrap(), "stale");
+  }
 
   #[test]
   fn parses_tle_group() {

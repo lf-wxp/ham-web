@@ -10,6 +10,7 @@ use leptos::prelude::*;
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf, tp};
 use crate::study;
+use crate::ui::Tooltip;
 use crate::util::set_title;
 
 /// 热力档位 → 域色的透明度（8 位十六进制，拼在 `#rrggbb` 后面）。
@@ -130,24 +131,26 @@ pub fn MistakeTopicsPage() -> impl IntoView {
                         .get(topic.code)
                         .and_then(|s| s.rate())
                         .map(|r| (r * 100.0).round() as u32);
+                      let tip = format!(
+                        "{} · {} · {}",
+                        topic.name,
+                        topic.code,
+                        topic.mistakes
+                      );
                       view! {
-                        <a
-                          href=format!("/practice?sub={}", topic.code)
-                          title=format!(
-                            "{} · {} · {}",
-                            topic.name,
-                            topic.code,
-                            topic.mistakes
-                          )
-                          class="flex items-center gap-2 border px-2.5 py-1.5 text-xs transition-colors hover:border-primary/60"
-                          style=bg
-                        >
-                          <span class="max-w-48 truncate font-medium">{topic.name}</span>
-                          <span class="tabular-nums text-muted-foreground">{topic.mistakes}</span>
-                          {rate.map(|r| view! {
-                            <span class="tabular-nums text-muted-foreground">{tf("common.accuracy", &[&r.to_string()])}</span>
-                          })}
-                        </a>
+                        <Tooltip label=tip>
+                          <a
+                            href=format!("/practice?sub={}", topic.code)
+                            class="flex items-center gap-2 border px-2.5 py-1.5 text-xs transition-colors hover:border-primary/60"
+                            style=bg
+                          >
+                            <span class="max-w-48 truncate font-medium">{topic.name}</span>
+                            <span class="tabular-nums text-muted-foreground">{topic.mistakes}</span>
+                            {rate.map(|r| view! {
+                              <span class="tabular-nums text-muted-foreground">{tf("common.accuracy", &[&r.to_string()])}</span>
+                            })}
+                          </a>
+                        </Tooltip>
                       }
                     }).collect_view()}
                   </div>

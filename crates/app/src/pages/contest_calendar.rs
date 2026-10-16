@@ -6,7 +6,7 @@ use leptos::prelude::*;
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::ui::{Button, ButtonLink, Size, Variant};
-use crate::util::{alert, set_title};
+use crate::util::set_title;
 
 #[component]
 pub fn ContestCalendarPage() -> impl IntoView {
@@ -31,7 +31,7 @@ pub fn ContestCalendarPage() -> impl IntoView {
     let month_start = js_sys::Date::utc(y as f64, (m - 1) as f64);
     let target = month_start + (d as f64 - 1.0) * 86_400_000.0;
     super::countdown::add_countdown(&tf("contest.contest-with-name", &[(e.name)]), target as i64);
-    alert(&tf("contest.added-to-countdown-reminders", &[(e.name)]));
+    crate::ui::push_success(tf("contest.added-to-countdown-reminders", &[(e.name)]));
   };
 
   view! {

@@ -21,12 +21,23 @@ const KEY: &str = "cat-settings";
 /// 轮询间隔（毫秒）。
 const POLL_MS: u32 = 1000;
 
+/// 串口设置：日志页的电台联动与卫星页的多普勒联动共用（同一个 `cat-settings` 键）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
-struct Settings {
-  protocol: Protocol,
-  baud: u32,
-  civ_addr: u8,
+pub(crate) struct Settings {
+  pub(crate) protocol: Protocol,
+  pub(crate) baud: u32,
+  pub(crate) civ_addr: u8,
+}
+
+/// 读取已保存的串口设置（没有保存过就是默认值）。
+pub(crate) fn load_settings() -> Settings {
+  storage::get_json::<Settings>(KEY).unwrap_or_default()
+}
+
+/// 保存串口设置。
+pub(crate) fn save_settings(s: &Settings) {
+  storage::set_json(KEY, s);
 }
 
 impl Default for Settings {
@@ -220,19 +231,14 @@ pub fn CatControl(#[prop(into)] on_reading: Callback<CatReading>) -> impl IntoVi
   let connected = move || matches!(status.get(), Status::Connected);
   let busy = move || matches!(status.get(), Status::Connected | Status::Connecting);
 
-  let protocol_options: Vec<SelectOption> = Protocol::ALL
-    .into_iter()
-    .map(|p| {
-      SelectOption::new(
-        if p == Protocol::Icom {
-          "icom"
-        } else {
-          "kenwood"
-        },
-        p.label(),
-      )
-    })
-    .collect();
+  // 标签走词条：`Protocol::label()` 是中文常量，直接用会在英文 / 西语界面里漏出中文。
+  let protocol_options: Vec<SelectOption> = vec![
+    SelectOption::new(
+      "kenwood",
+      Signal::derive(move || t("common.cat-protocol-kenwood")),
+    ),
+    SelectOption::new("icom", "Icom CI-V"),
+  ];
   let baud_options: Vec<SelectOption> = BAUD_RATES
     .into_iter()
     .map(|b| SelectOption::new(b.to_string(), format!("{b} bps")))

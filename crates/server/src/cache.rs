@@ -30,6 +30,17 @@ pub fn json_err(status: StatusCode, msg: &'static str) -> Response {
   (status, msg).into_response()
 }
 
+/// 给降级（用过期的缓存值）的响应打标记。
+///
+/// 全站统一用 `X-Cache: stale`：调用方不必各自拼 header 名，也不会出现某个接口
+/// 悄悄降级却没标记、前端与值班都看不出来的情况。
+pub fn mark_stale(res: &mut Response) {
+  res.headers_mut().insert(
+    axum::http::header::HeaderName::from_static("x-cache"),
+    axum::http::HeaderValue::from_static("stale"),
+  );
+}
+
 /// 单飞（singleflight）保护：确保同一时刻只有一个请求回源刷新缓存，其余并发请求等待。
 ///
 /// `acquire` 返回的守卫通过 `Drop` 释放，保证即使请求 future 被取消（例如客户端
@@ -174,10 +185,7 @@ impl JsonCache {
   fn stale_or_unavailable(&self, unavailable: &'static str) -> Response {
     if let Some(json) = self.stale_json() {
       let mut res = json_ok(json);
-      res.headers_mut().insert(
-        axum::http::header::HeaderName::from_static("x-cache"),
-        axum::http::HeaderValue::from_static("stale"),
-      );
+      mark_stale(&mut res);
       res
     } else {
       json_err(StatusCode::SERVICE_UNAVAILABLE, unavailable)

@@ -8,9 +8,8 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader, TableSection};
 use crate::i18n::t;
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
-
-const CELL: &str = "border px-3 py-2 text-left align-top";
 
 #[component]
 pub fn ReferencePage() -> impl IntoView {
@@ -22,33 +21,36 @@ pub fn ReferencePage() -> impl IntoView {
         // 操作证类别与权限
         <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.operator-licence-classes-and")}</h2>
-          <div class="overflow-x-auto">
-            <table class="w-full min-w-[560px] border-collapse text-sm">
-              <thead class="bg-muted/60 text-xs">
-                <tr>
-                  <th class=CELL>{move || t("exam.class-column")}</th>
-                  <th class=CELL>{move || t("exam.frequency-range")}</th>
-                  <th class=CELL>{move || t("exam.power-limit")}</th>
-                  <th class=CELL>{move || t("radio.notes")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {LICENSE_CLASSES
-                  .iter()
-                  .map(|c| {
-                    view! {
-                      <tr class="border-t transition-colors hover:bg-muted/40">
-                        <td class=format!("{CELL} font-mono font-semibold")>{c.class} " 类"</td>
-                        <td class=CELL>{c.freq}</td>
-                        <td class=CELL>{c.power}</td>
-                        <td class=format!("{CELL} text-muted-foreground")>{c.note}</td>
-                      </tr>
-                    }
-                  })
-                  .collect_view()}
-              </tbody>
-            </table>
-          </div>
+          <Table
+            aria_label=Signal::derive(move || t("exam.operator-licence-classes-and"))
+            class="min-w-[560px]"
+          >
+            <TableHead>
+              <TableRow>
+                <TableHeader>{move || t("exam.class-column")}</TableHeader>
+                <TableHeader>{move || t("exam.frequency-range")}</TableHeader>
+                <TableHeader>{move || t("exam.power-limit")}</TableHeader>
+                <TableHeader>{move || t("radio.notes")}</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {LICENSE_CLASSES
+                .iter()
+                .map(|c| {
+                  view! {
+                    <TableRow>
+                      <TableCell class="align-top font-mono font-semibold">
+                        {c.class} " 类"
+                      </TableCell>
+                      <TableCell class="align-top">{c.freq}</TableCell>
+                      <TableCell class="align-top">{c.power}</TableCell>
+                      <TableCell class="align-top text-muted-foreground">{c.note}</TableCell>
+                    </TableRow>
+                  }
+                })
+                .collect_view()}
+            </TableBody>
+          </Table>
         </section>
 
         // 分区号
@@ -107,31 +109,32 @@ pub fn ReferencePage() -> impl IntoView {
         // 发射类别
         <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.emission-designators")}</h2>
-          <div class="overflow-x-auto">
-            <table class="w-full min-w-[480px] border-collapse text-sm">
-              <thead class="bg-muted/60 text-xs">
-                <tr>
-                  <th class=CELL>{move || t("exam.designator")}</th>
-                  <th class=CELL>{move || t("exam.name")}</th>
-                  <th class=CELL>{move || t("radio.notes")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {EMISSION_TYPES
-                  .iter()
-                  .map(|e| {
-                    view! {
-                      <tr class="border-t transition-colors hover:bg-muted/40">
-                        <td class=format!("{CELL} font-mono font-semibold")>{e.code}</td>
-                        <td class=CELL>{e.name}</td>
-                        <td class=format!("{CELL} text-muted-foreground")>{e.desc}</td>
-                      </tr>
-                    }
-                  })
-                  .collect_view()}
-              </tbody>
-            </table>
-          </div>
+          <Table
+            aria_label=Signal::derive(move || t("exam.emission-designators"))
+            class="min-w-[480px]"
+          >
+            <TableHead>
+              <TableRow>
+                <TableHeader>{move || t("exam.designator")}</TableHeader>
+                <TableHeader>{move || t("exam.name")}</TableHeader>
+                <TableHeader>{move || t("radio.notes")}</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {EMISSION_TYPES
+                .iter()
+                .map(|e| {
+                  view! {
+                    <TableRow>
+                      <TableCell class="align-top font-mono font-semibold">{e.code}</TableCell>
+                      <TableCell class="align-top">{e.name}</TableCell>
+                      <TableCell class="align-top text-muted-foreground">{e.desc}</TableCell>
+                    </TableRow>
+                  }
+                })
+                .collect_view()}
+            </TableBody>
+          </Table>
         </section>
 
         // 发射类别的构成
@@ -139,7 +142,7 @@ pub fn ReferencePage() -> impl IntoView {
           title="发射类别标识的构成"
           headers=&["组成", "含义", "示例"]
           rows=EMISSION_DESIGNATION
-          min_width=720
+          class="min-w-[720px]"
         />
 
         // 通联英语
@@ -167,7 +170,7 @@ pub fn ReferencePage() -> impl IntoView {
           title="知识来源与时效"
           headers=&["领域", "来源", "说明"]
           rows=KNOWLEDGE_SOURCES
-          min_width=720
+          class="min-w-[720px]"
         />
       </PageContainer>
     </div>

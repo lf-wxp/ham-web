@@ -11,7 +11,7 @@ use leptos_router::hooks::use_location;
 use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind, PixelSprite};
 use crate::rpg::{Profile, load_profile, rank_label, xp_progress};
-use crate::ui::Progress;
+use crate::ui::{Progress, Tooltip};
 
 /// 顶栏玩家 HUD；点击跳到成就页（等级、徽章、统计都在那里）。
 #[component]
@@ -36,7 +36,6 @@ pub fn HudBadge() -> impl IntoView {
       href="/achievements"
       data-slot="hud"
       class="pxl-btn pxl-btn-ghost h-10 gap-2 px-2"
-      title=move || t("shell.hud-profile")
       aria-label=move || label.get()
     >
       <PixelSprite name="hero" scale=2 class="pxl-bob" />
@@ -47,22 +46,27 @@ pub fn HudBadge() -> impl IntoView {
             if l.is_max() { t("shell.hud-max-level") } else { format!("LV {}", l.level) }
           }}
         </span>
-        <span
-          class="hidden w-20 md:block"
-          aria-hidden="true"
-          title=move || xp_progress(level())
-        >
-          <Progress value=Signal::derive(move || i64::from(level().percent())) class="pxl-bar-xp h-2" />
-        </span>
+        // `hidden` 类必须挂在 Tooltip 的包装 span 上：包装 span 在窄屏只是空盒，但父级
+        // `<a>` 的 `gap-2` 仍会在它与头像之间留一段空隙，把 320px 顶栏撑出 8px。
+        <Tooltip label=Signal::derive(move || xp_progress(level())) class="hidden w-20 md:inline-flex">
+          // `w-full`：flex 项显式定宽，`pxl-bar` 的 `width: 100%` 才有确定参照。
+          <span aria-hidden="true" class="w-full">
+            <Progress value=Signal::derive(move || i64::from(level().percent())) class="pxl-bar-xp h-2" />
+          </span>
+        </Tooltip>
       </span>
-      <span
-        class="hidden items-center gap-1 text-xs text-muted-foreground lg:flex"
-        aria-hidden="true"
-        title=move || tf("shell.hud-streak", &[&profile.get().streak.to_string()])
+      <Tooltip
+        label=Signal::derive(move || tf("shell.hud-streak", &[&profile.get().streak.to_string()]))
+        class="hidden lg:inline-flex"
       >
-        <Icon kind=IconKind::Flame class="size-6 text-destructive" />
-        {move || profile.get().streak}
-      </span>
+        <span
+          class="flex items-center gap-1 text-xs text-muted-foreground"
+          aria-hidden="true"
+        >
+          <Icon kind=IconKind::Flame class="size-6 text-destructive" />
+          {move || profile.get().streak}
+        </span>
+      </Tooltip>
     </a>
   }
 }

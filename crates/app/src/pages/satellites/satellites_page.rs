@@ -3,9 +3,11 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
 use crate::components::rotor_control::RotorControl;
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
 use super::CELL;
+use super::doppler_tracker::DopplerTracker;
 use super::iss_tracker::IssTracker;
 use super::pass_predictor::PassPredictor;
 use crate::i18n::t;
@@ -23,6 +25,8 @@ pub fn SatellitesPage() -> impl IntoView {
       <PageContainer>
         <PassPredictor />
 
+        <DopplerTracker />
+
         <IssTracker />
 
         <section class="pxl-card border bg-card">
@@ -34,43 +38,42 @@ pub fn SatellitesPage() -> impl IntoView {
         </section>
 
         // 横向可滚区域必须可聚焦，否则键盘用户滚不动它（axe: scrollable-region-focusable）
-        <div
-          class="overflow-x-auto pxl-card border bg-card"
+        <Table
+          class="min-w-[680px] text-sm"
+          wrapper_class="pxl-card border bg-card"
           tabindex="0"
           role="region"
-          aria-label=move || t("radio.satellite-frequency-table")
+          aria_label=Signal::derive(move || t("radio.satellite-frequency-table"))
         >
-          <table class="w-full min-w-[680px] border-collapse text-sm">
-            <thead class="bg-muted/60 text-xs">
-              <tr>
-                <th class=CELL>{move || t("radio.satellite")}</th>
-                <th class=CELL>{move || t("radio.type")}</th>
-                <th class=CELL>{move || t("radio.uplink")}</th>
-                <th class=CELL>{move || t("radio.downlink")}</th>
-                <th class=CELL>{move || t("radio.notes")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {SATELLITES
-                .iter()
-                .map(|s| {
-                  view! {
-                    <tr class="border-t transition-colors hover:bg-muted/40">
-                      <td class=format!("{CELL} whitespace-nowrap")>
-                        <div class="font-medium">{s.name}</div>
-                        <div class="font-mono text-xs text-muted-foreground">{s.callsign}</div>
-                      </td>
-                      <td class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{s.kind}</td>
-                      <td class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{s.uplink}</td>
-                      <td class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{s.downlink}</td>
-                      <td class=format!("{CELL} text-muted-foreground")>{s.note}</td>
-                    </tr>
-                  }
-                })
-                .collect_view()}
-            </tbody>
-          </table>
-        </div>
+          <TableHead>
+            <TableRow>
+              <TableHeader class=CELL>{move || t("radio.satellite")}</TableHeader>
+              <TableHeader class=CELL>{move || t("radio.type")}</TableHeader>
+              <TableHeader class=CELL>{move || t("radio.uplink")}</TableHeader>
+              <TableHeader class=CELL>{move || t("radio.downlink")}</TableHeader>
+              <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {SATELLITES
+              .iter()
+              .map(|s| {
+                view! {
+                  <TableRow>
+                    <TableCell class=format!("{CELL} whitespace-nowrap")>
+                      <div class="font-medium">{s.name}</div>
+                      <div class="font-mono text-xs text-muted-foreground">{s.callsign}</div>
+                    </TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{s.kind}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{s.uplink}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{s.downlink}</TableCell>
+                    <TableCell class=format!("{CELL} text-muted-foreground")>{s.note}</TableCell>
+                  </TableRow>
+                }
+              })
+              .collect_view()}
+          </TableBody>
+        </Table>
 
         <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.operating-tips")}</h2>

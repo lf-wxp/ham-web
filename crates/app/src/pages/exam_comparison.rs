@@ -6,6 +6,7 @@ use leptos::prelude::*;
 use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
 use crate::data;
 use crate::i18n::t;
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
 #[component]
@@ -35,43 +36,41 @@ pub fn ExamComparisonPage() -> impl IntoView {
                     {move || data::kt_tracked(s.title)}
                   </span>
                 </header>
-                <div class="overflow-x-auto">
-                  <table class="w-full min-w-[560px] border-collapse text-sm">
-                    <thead class="bg-muted/60 text-xs">
-                      <tr>
-                        <th class="border px-3 py-2 text-left align-top">
-                          {move || t("knowledge.exam-level")}
-                        </th>
-                        <th class="border px-3 py-2 text-left align-top">
-                          {move || t("knowledge.exam-privileges")}
-                        </th>
-                        <th class="border px-3 py-2 text-left align-top">
-                          {move || t("knowledge.exam-format")}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {s.levels
-                        .iter()
-                        .map(|l| {
-                          view! {
-                            <tr>
-                              <td class="border px-3 py-2 align-top font-medium">
-                                {move || data::kt_tracked(l.name)}
-                              </td>
-                              <td class="border px-3 py-2 align-top text-muted-foreground">
-                                {move || data::kt_tracked(l.privileges)}
-                              </td>
-                              <td class="border px-3 py-2 align-top text-muted-foreground">
-                                {move || data::kt_tracked(l.exam)}
-                              </td>
-                            </tr>
-                          }
-                        })
-                        .collect_view()}
-                    </tbody>
-                  </table>
-                </div>
+                <Table class="min-w-[560px] text-sm">
+                  <TableHead>
+                    <TableRow>
+                      <TableHeader class="border px-3 py-2 align-top">
+                        {move || t("knowledge.exam-level")}
+                      </TableHeader>
+                      <TableHeader class="border px-3 py-2 align-top">
+                        {move || t("knowledge.exam-privileges")}
+                      </TableHeader>
+                      <TableHeader class="border px-3 py-2 align-top">
+                        {move || t("knowledge.exam-format")}
+                      </TableHeader>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {s.levels
+                      .iter()
+                      .map(|l| {
+                        view! {
+                          <TableRow>
+                            <TableCell class="border px-3 py-2 align-top font-medium">
+                              {move || data::kt_tracked(l.name)}
+                            </TableCell>
+                            <TableCell class="border px-3 py-2 align-top text-muted-foreground">
+                              {move || data::kt_tracked(l.privileges)}
+                            </TableCell>
+                            <TableCell class="border px-3 py-2 align-top text-muted-foreground">
+                              {move || data::kt_tracked(l.exam)}
+                            </TableCell>
+                          </TableRow>
+                        }
+                      })
+                      .collect_view()}
+                  </TableBody>
+                </Table>
                 <footer class="flex flex-wrap items-center gap-3 border-t px-4 py-2 text-xs text-muted-foreground">
                   <span>{move || data::kt_tracked(s.authority)}</span>
                   <a

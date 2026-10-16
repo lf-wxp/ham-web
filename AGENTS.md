@@ -25,6 +25,10 @@
   `PageContainer`（`components/common/page_container.rs`）里的 `max-w-5xl`（1024px）。
   页面里不写 `max-w-*` / `container` / 自造的 `mx-auto` 宽度容器；间距用 `PageContainer` 的
   `class` 覆盖；多行页头用 `PageHeader` 的 `children`。详见 `docs/ui-components.md` §4。
+- **页内第二根吸顶栏只有一个来源**：`StickyPanel`（`components/common/sticky_panel.rs`）。
+  页面里不手写 `sticky top-[…px]` 的吸顶偏移（页头折行 / 切语言会让固定偏移错位或被盖）；
+  面板内限高滚动子元素用 `var(--sticky-top)` 算剩余高度。用法与自检 ⑩ 见
+  `docs/ui-components.md` §4 / §11。
 - **一个文件只放一个组件 —— 共享组件与业务组件都是**（`crates/app/src/ui/`、`components/`、
   `pages/` 一视同仁）。「组件」既指 `#[component]`，也指任何**返回视图的函数**
   （`-> impl IntoView` / `-> AnyView`，例如表格单元格、列表行这类视图构造函数）：

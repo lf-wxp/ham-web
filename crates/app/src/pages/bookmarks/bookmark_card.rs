@@ -5,7 +5,7 @@ use crate::components::common::NoteEditor;
 use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 use crate::store;
-use crate::ui::{Button, ControlSize, NativeSelect, SelectOption, Size, Variant};
+use crate::ui::{Button, ControlSize, NativeSelect, SelectOption, Size, Tooltip, Variant};
 
 /// 一道收藏题卡片；`groups_of` 为该题当前所属分组，`all_groups` 为全部分组（用于下拉加入）。
 #[component]
@@ -71,14 +71,15 @@ pub(super) fn BookmarkCard(
             let n = name.clone();
             let qr = question.clone();
             view! {
-              <button
-                type="button"
-                class="inline-flex items-center gap-1 border bg-accent px-2 py-0.5 text-[11px] transition-colors hover:bg-destructive/10"
-                title=move || t("exam.remove-from-this-group")
-                on:click=move |_| on_remove_from_group.run((qr.clone(), n.clone()))
-              >
-                {name} " ×"
-              </button>
+              <Tooltip label=Signal::derive(move || t("exam.remove-from-this-group"))>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 border bg-accent px-2 py-0.5 text-[11px] transition-colors hover:bg-destructive/10"
+                  on:click=move |_| on_remove_from_group.run((qr.clone(), n.clone()))
+                >
+                  {name} " ×"
+                </button>
+              </Tooltip>
             }
           })
           .collect_view()}

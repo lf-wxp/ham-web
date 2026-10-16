@@ -68,6 +68,7 @@ pub fn Dialog(
             class=class.clone()
           >
             {children()}
+            <super::toast_live_region::ToastLiveRegion />
             {show_close
               .then(|| {
                 view! {

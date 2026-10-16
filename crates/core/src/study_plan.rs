@@ -184,6 +184,11 @@ pub fn day_number(s: &str) -> Option<i64> {
   let y: i64 = it.next()?.parse().ok()?;
   let m: i64 = it.next()?.parse().ok()?;
   let d: i64 = it.next()?.parse().ok()?;
+  // 年份也要限：`era * 146_097` 要 6×10^15 年才溢出 i64，但畸形输入（上游 JSON 里
+  // 十七位的年份、手改过的目标日期）会让 debug 构建直接 panic —— 日期格式契约是 4 位年。
+  if !(1..=9999).contains(&y) {
+    return None;
+  }
   if !(1..=12).contains(&m) || !(1..=31).contains(&d) {
     return None;
   }
@@ -228,6 +233,10 @@ mod tests {
     }
     assert_eq!(day_number("2026-13-01"), None);
     assert_eq!(day_number(""), None);
+    // 年份越界也判 None：畸形输入不能把日期算法推进溢出（上游 JSON 里的 time 会直接喂进来）。
+    assert_eq!(day_number("99999-01-01"), None);
+    assert_eq!(day_number("0000-01-01"), None);
+    assert_eq!(day_number("-2026-01-01"), None);
   }
 
   #[test]

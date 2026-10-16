@@ -99,7 +99,7 @@ pub fn LogPage() -> impl IntoView {
       &content,
       "text/plain",
     );
-    crate::util::alert(&t("log.adif-exported-with-lotw"));
+    crate::ui::push_success(t("log.adif-exported-with-lotw"));
   };
 
   let export_csv_btn = move || {
@@ -113,7 +113,7 @@ pub fn LogPage() -> impl IntoView {
 
   let save_station_btn = Callback::new(move |()| {
     store.persist_station();
-    crate::util::alert(&t("log.station-info-saved"));
+    crate::ui::push_success(t("log.station-info-saved"));
   });
 
   // 导入 ADIF：`FileInput` 直接把选中的文件交过来（一次一个，多选忽略其余）；
@@ -125,7 +125,7 @@ pub fn LogPage() -> impl IntoView {
     spawn_local(async move {
       let Some(text) = crate::util::read_file_text(&file).await else {
         // 读失败必须出声：静默返回会被当成「导入了 0 条」。
-        crate::util::alert(&t("common.file-read-failed"));
+        crate::ui::push_error(t("common.file-read-failed"));
         return;
       };
       // `None` = 备份 / 恢复进行中（`import` 已提示用户），没有导入结果可报。
@@ -146,7 +146,7 @@ pub fn LogPage() -> impl IntoView {
       } else {
         tp("log.imported-records", added, &[&added.to_string()])
       };
-      crate::util::alert(&msg);
+      crate::ui::push_success(msg);
     });
   });
 
@@ -168,7 +168,7 @@ pub fn LogPage() -> impl IntoView {
       }
     });
     store.persist();
-    crate::util::alert(&tp("log.marked-as-uploaded-lotw", n, &[&n.to_string()]));
+    crate::ui::push_success(tp("log.marked-as-uploaded-lotw", n, &[&n.to_string()]));
   });
 
   let on_save = Callback::new(move |()| save());

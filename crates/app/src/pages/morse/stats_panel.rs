@@ -2,6 +2,7 @@ use leptos::prelude::*;
 
 use super::{MorseStats, export_all_morse_stats};
 use crate::i18n::{t, tf};
+use crate::ui::Tooltip;
 
 /// 解码练习的统计面板：对错计数、正确率、连对与近 7 天正确率。
 #[component]
@@ -112,13 +113,21 @@ pub(super) fn MorseStatsPanel(
                         let total = c + w;
                         let pct = if total == 0 { 0.0 } else { c as f64 / total as f64 * 100.0 };
                         let day = d.chars().skip(5).collect::<String>();
+                        let tip = tf("common.right-wrong", &[&(d).to_string(), &(c).to_string(), &(w).to_string()]);
                         view! {
-                          <div class="flex flex-col items-center gap-1" title=tf("common.right-wrong", &[&(d).to_string(), &(c).to_string(), &(w).to_string()])>
-                            <div class="flex h-12 w-6 items-end overflow-hidden bg-muted">
-                              <div class="w-full bg-primary" style=format!("height: {pct:.0}%")></div>
+                          <Tooltip label=tip.clone()>
+                            <div
+                              class="flex flex-col items-center gap-1 outline-none focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
+                              tabindex="0"
+                              role="img"
+                              aria-label=tip
+                            >
+                              <div class="flex h-12 w-6 items-end overflow-hidden bg-muted">
+                                <div class="w-full bg-primary" style=format!("height: {pct:.0}%")></div>
+                              </div>
+                              <span class="text-[10px] tabular-nums text-muted-foreground">{day}</span>
                             </div>
-                            <span class="text-[10px] tabular-nums text-muted-foreground">{day}</span>
-                          </div>
+                          </Tooltip>
                         }
                       })
                       .collect_view()}

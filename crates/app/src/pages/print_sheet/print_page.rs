@@ -3,7 +3,8 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 
-use crate::components::common::Loading;
+use crate::cn::cn;
+use crate::components::common::{Loading, PAGE_HEADER_BAR};
 use crate::ui::{
   Button, Checkbox, Chip, ChipGroup, ControlSize, NativeSelect, SelectOption, Size, Variant,
 };
@@ -46,7 +47,9 @@ pub fn PrintPage() -> impl IntoView {
   };
   view! {
     <div class="min-h-screen bg-muted/40 pb-10 print:bg-white print:pb-0">
-      <div class="print-hide sticky top-0 z-20 border-b-2 border-ink bg-card">
+      // 刻意的例外：打印页量的是纸宽（max-w-[210mm]），不套 PageHeader；
+      // 但吸顶骨架与全站页头共用 PAGE_HEADER_BAR，偏移只有一处来源。
+      <div class=cn(&[PAGE_HEADER_BAR, "print-hide"])>
         <div class="mx-auto flex max-w-[210mm] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
           <h1 class="mr-auto text-base font-semibold">{move || t("radio.print-version")}</h1>
           <ChipGroup

@@ -1,5 +1,7 @@
 use leptos::prelude::*;
 
+use crate::ui::Tooltip;
+
 /// 水平条形图。
 #[component]
 pub(super) fn BarChart(items: Vec<(String, usize)>, max: usize) -> impl IntoView {
@@ -14,12 +16,11 @@ pub(super) fn BarChart(items: Vec<(String, usize)>, max: usize) -> impl IntoView
           let label_title = label.clone();
           view! {
             <div class="flex items-center gap-2 text-sm">
-              <span
-                class="w-28 shrink-0 truncate text-xs text-muted-foreground sm:w-40 lg:w-56"
-                title=label_title
-              >
-                {move || label.clone()}
-              </span>
+              <Tooltip class="w-28 shrink-0 sm:w-40 lg:w-56" label=label_title>
+                <span class="w-full truncate text-xs text-muted-foreground">
+                  {move || label.clone()}
+                </span>
+              </Tooltip>
               <div class="h-4 flex-1 overflow-hidden bg-muted">
                 <div class="h-full bg-primary/70" style=format!("width: {w:.1}%")></div>
               </div>

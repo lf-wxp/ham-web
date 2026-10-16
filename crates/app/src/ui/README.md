@@ -39,7 +39,12 @@ disabled / error 状态反馈因此只有一处定义。
 | `Field` | 手写的 `label + 控件 + 提示` 排版 | `label` `r#for` `hint` `error` `required` |
 | `Label` | `<label>`（单独使用，如 Checkbox 旁） | `r#for` |
 | `Dialog` / `Sheet` 及 `DialogHeader` 等 | — | 见源码 |
+| `MobileNavDrawer` | 移动端手写「悬浮按钮 + 抽屉」/ 横滑分类条（小屏下替代被 `hidden` 藏掉的侧栏） | `open`（由调用方持有，选中项后主动 `set(false)`）`title` `button_label`（悬浮按钮无障碍名）`icon` `class`（断点类，与侧栏断点配套）+ `children`（抽屉内容，与桌面侧栏共用同一份列表）；悬浮按钮可拖动改位置，收拢视口内并持久化在 `localStorage["fab-position"]`（全站共享）；用法与坑见 `docs/ui-components.md` §3.3 |
 | `Progress` / `Separator` / `Stat` | — | `Progress` 是分格条；加 `pxl-bar-hp` / `pxl-bar-xp` / `pxl-bar-win` / `pxl-bar-gold` 变血条 / 经验条 / 通关绿 / 金币 |
+| `Table` + `TableHead` / `TableBody` / `TableRow` / `TableHeader` / `TableCell` | 手写的 `<div class="overflow-x-auto"><table>…` | 根组件自带滚动容器；`class` 写 `min-w-[…]` 保列宽；限高写 `wrapper_class="max-h-[…]"`；`borderless` 去网格线；无可见标题传 `aria_label`；`TableHeader` / `TableCell` 支持 `colspan` |
+| `Pagination` | 手写分页 / `.slice()` 截断 | `page` `total_pages`（1 起）`on_change`；页数 ≤1 不渲染；窗口算法在 `ham_web_core::pagination` |
+| `ToastRoot` + `push` / `push_success` / `push_error` | `util::alert`（原生 alert，已清零）/ 内联「成功」文字 | 全局挂载在 `App`，可见反馈传送到 body、位于模态遮罩之上；Dialog / Sheet 内同步公告；只在队首变化时重置计时；页面只调 `push_*`，需确认的失败仍用 `MessageDialog` |
+| `Tooltip` | 原生 `title=` 气泡 | 悬停 / 聚焦显示，Escape 隐藏；组件为实际触发器关联 `aria-describedby`；气泡传送到 body 并翻转／钳制视口边界；子元素不可聚焦时补 `tabindex`，数值信息另写 `aria-label` |
 | `PixelSprite`（`crate::icons`） | — | 像素精灵：`name` `scale`（每格屏幕像素数）`label`；成就徽章用 `badge_sprite(id)` |
 
 辅助导出：`Variant` / `Size`（按钮）、`ControlSize`（输入类控件）、`TextValue`（文案）、

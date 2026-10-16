@@ -9,7 +9,9 @@ use leptos_router::hooks::use_query_map;
 use crate::cn::cn;
 use crate::components::common::{ExplanationCard, NoteEditor, PageContainer, PageHeader};
 use crate::study;
-use crate::ui::{Button, ButtonLink, Chip, ChipGroup, NativeSelect, SelectOption, Size, Variant};
+use crate::ui::{
+  Button, ButtonLink, Chip, ChipGroup, NativeSelect, SelectOption, Size, Tooltip, Variant,
+};
 use crate::util::{download_text, now_ms, set_title};
 
 use super::mistake_card::MistakeCard;
@@ -636,15 +638,19 @@ pub fn MistakesPage() -> impl IntoView {
                               } else {
                                 "w-full bg-muted"
                               };
+                              let tip = tp("exam.category-questions", *n, &[&label, &n.to_string()]);
                               view! {
-                                <div class="flex min-w-0 flex-1 flex-col items-center gap-1">
+                                <Tooltip class="min-w-0 flex-1" label=tip.clone()>
                                   <div
-                                    class=bar_class
-                                    style=format!("height: {h}%")
-                                    title=tp("exam.category-questions", *n, &[&label, &n.to_string()])
-                                  ></div>
-                                  <span class="text-[9px] text-muted-foreground">{label}</span>
-                                </div>
+                                    class="flex w-full flex-col items-center gap-1 outline-none focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
+                                    tabindex="0"
+                                    role="img"
+                                    aria-label=tip
+                                  >
+                                    <div class=format!("{bar_class} w-full") style=format!("height: {h}%")></div>
+                                    <span class="text-[9px] text-muted-foreground">{label}</span>
+                                  </div>
+                                </Tooltip>
                               }
                             })
                             .collect_view()}
@@ -723,15 +729,17 @@ pub fn MistakesPage() -> impl IntoView {
                       {counts
                         .into_iter()
                         .map(|(key, name, n)| {
+                          let tip = tf("learning.show-only-mistakes", &[(name)]);
                           view! {
-                            <button
-                              type="button"
-                              class="whitespace-nowrap border px-3 py-1 text-xs transition-colors hover:bg-accent"
-                              title=tf("learning.show-only-mistakes", &[(name)])
-                              on:click=move |_| filter.set(key.to_owned())
-                            >
-                              {name} " " <span class="font-semibold tabular-nums">{n}</span>
-                            </button>
+                            <Tooltip label=tip>
+                              <button
+                                type="button"
+                                class="whitespace-nowrap border px-3 py-1 text-xs transition-colors hover:bg-accent"
+                                on:click=move |_| filter.set(key.to_owned())
+                              >
+                                {name} " " <span class="font-semibold tabular-nums">{n}</span>
+                              </button>
+                            </Tooltip>
                           }
                         })
                         .collect_view()}

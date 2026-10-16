@@ -5,9 +5,10 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 text-left align-top";
+const CELL: &str = "border px-3 py-2 align-top";
 
 #[component]
 pub fn AnalogModesPage() -> impl IntoView {
@@ -20,40 +21,38 @@ pub fn AnalogModesPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <div class="overflow-x-auto pxl-card border bg-card">
-          <table class="w-full min-w-[720px] border-collapse text-sm">
-            <thead class="bg-muted/60 text-xs">
-              <tr>
-                <th class=CELL>{move || t("log.mode")}</th>
-                <th class=CELL>{move || t("knowledge.emission-type")}</th>
-                <th class=CELL>{move || t("tools.bandwidth")}</th>
-                <th class=CELL>{move || t("radio.notes")}</th>
-                <th class=CELL>{move || t("knowledge.features")}</th>
-                <th class=CELL>{move || t("knowledge.typical-use")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ANALOG_MODES
-                .iter()
-                .map(|m| {
-                  view! {
-                    <tr class="border-t transition-colors hover:bg-muted/40">
-                      <td class=format!("{CELL} whitespace-nowrap")>
-                        <div class="font-medium">{m.name}</div>
-                        <div class="font-mono text-xs text-muted-foreground">{m.abbr}</div>
-                      </td>
-                      <td class=format!("{CELL} whitespace-nowrap font-mono text-muted-foreground")>{m.emission}</td>
-                      <td class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{m.bandwidth}</td>
-                      <td class=format!("{CELL} text-muted-foreground")>{m.desc}</td>
-                      <td class=format!("{CELL} text-muted-foreground")>{m.pros}</td>
-                      <td class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{m.usage}</td>
-                    </tr>
-                  }
-                })
-                .collect_view()}
-            </tbody>
-          </table>
-        </div>
+        <Table class="min-w-[720px] text-sm" wrapper_class="pxl-card border bg-card">
+          <TableHead>
+            <TableRow>
+              <TableHeader class=CELL>{move || t("log.mode")}</TableHeader>
+              <TableHeader class=CELL>{move || t("knowledge.emission-type")}</TableHeader>
+              <TableHeader class=CELL>{move || t("tools.bandwidth")}</TableHeader>
+              <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+              <TableHeader class=CELL>{move || t("knowledge.features")}</TableHeader>
+              <TableHeader class=CELL>{move || t("knowledge.typical-use")}</TableHeader>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {ANALOG_MODES
+              .iter()
+              .map(|m| {
+                view! {
+                  <TableRow>
+                    <TableCell class=format!("{CELL} whitespace-nowrap")>
+                      <div class="font-medium">{m.name}</div>
+                      <div class="font-mono text-xs text-muted-foreground">{m.abbr}</div>
+                    </TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-muted-foreground")>{m.emission}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{m.bandwidth}</TableCell>
+                    <TableCell class=format!("{CELL} text-muted-foreground")>{m.desc}</TableCell>
+                    <TableCell class=format!("{CELL} text-muted-foreground")>{m.pros}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{m.usage}</TableCell>
+                  </TableRow>
+                }
+              })
+              .collect_view()}
+          </TableBody>
+        </Table>
 
         <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.usb-lsb-sideband-conventions")}</h2>

@@ -10,14 +10,15 @@ use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 use wasm_bindgen::JsCast;
 
-use crate::components::common::Loading;
 use crate::components::common::PageContainer;
+use crate::components::common::Skeleton;
 use crate::data;
 use crate::gesture::{Swipe, swipe_handlers};
 use crate::i18n::{t, tf, tp};
 use crate::morse_audio::play_morse;
 use crate::pages::SLANG_CATEGORY;
 use crate::speech::speak_en;
+use crate::ui::Tooltip;
 use crate::ui::{Button, Chip, ChipGroup, Size, Variant};
 use crate::util::{local_today, now_ms, set_title, storage};
 
@@ -290,23 +291,43 @@ pub fn CardsPage() -> impl IntoView {
     let (learned, mature) = schedule.with(|s| s.progress(&ids));
     let total = ids.len();
     (total > 0).then(|| {
-      let pct = |n: usize| -> String { format!("{:.2}%", n as f64 / total as f64 * 100.0) };
+      let pct = |n: usize, total: usize| -> String {
+        format!("{:.2}%", n as f64 / total as f64 * 100.0)
+      };
+      let mature_w = pct(mature, total);
+      let learned_w = pct(learned - mature, total);
+      let tip = tf("learning.learned-mature", &[&learned.to_string(), &mature.to_string()]);
       view! {
-        <div
-          data-testid="card-mastery-bar"
-          class="flex h-2 w-full overflow-hidden bg-muted"
-          title=tf("learning.learned-mature", &[&learned.to_string(), &mature.to_string()])
-        >
-          <div class="bg-emerald-500/70" style=format!("width: {}", pct(mature))></div>
-          <div class="bg-sky-400/70" style=format!("width: {}", pct(learned - mature))></div>
-        </div>
+        <Tooltip class="w-full" label=tip.clone()>
+          <div
+            data-testid="card-mastery-bar"
+            class="flex h-2 w-full overflow-hidden bg-muted outline-none focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
+            tabindex="0"
+            role="img"
+            aria-label=tip
+          >
+            <div class="bg-emerald-500/70" style=format!("width: {mature_w}")></div>
+            <div class="bg-sky-400/70" style=format!("width: {learned_w}")></div>
+          </div>
+        </Tooltip>
       }
     })
   };
 
   let card_view = move || {
     if cards.with(Option::is_none) {
-      return view! { <Loading label=t("exam.loading-cards") class="py-16" /> }.into_any();
+      // 首屏数据未到时铺骨架卡（轮廓占位，避免 spinner 消失瞬间的高度跳变）。
+      return view! {
+        <div class="pxl-card border bg-card p-6">
+          <span class="sr-only" role="status">{move || t("exam.loading-cards")}</span>
+          <Skeleton class="h-3 w-20" />
+          <Skeleton class="mt-4 h-6 w-2/3" />
+          <Skeleton class="mt-2.5 h-4 w-1/3" />
+          <Skeleton class="mt-8 h-3 w-full" />
+          <Skeleton class="mt-2.5 h-3 w-5/6" />
+        </div>
+      }
+      .into_any();
     }
     let Some(c) = current.get() else {
       let other: Vec<(Deck, usize)> = schedule.with(|s| {

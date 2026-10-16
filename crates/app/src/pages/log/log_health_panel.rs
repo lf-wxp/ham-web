@@ -135,7 +135,7 @@ pub(super) fn LogHealthPanel() -> impl IntoView {
       return;
     }
     let changed = run(&issues);
-    crate::util::alert(&tf("log.health-fixed", &[&changed.to_string()]));
+    crate::ui::push_success(tf("log.health-fixed", &[&changed.to_string()]));
   });
 
   let fix_all = Callback::new(move |()| {
@@ -156,7 +156,7 @@ pub(super) fn LogHealthPanel() -> impl IntoView {
       return;
     }
     let changed = run(&issues);
-    crate::util::alert(&tf("log.health-fixed", &[&changed.to_string()]));
+    crate::ui::push_success(tf("log.health-fixed", &[&changed.to_string()]));
   });
 
   view! {

@@ -5,9 +5,10 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader, SectionCard};
 use crate::i18n::t;
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 text-left align-top";
+const CELL: &str = "border px-3 py-2 align-top";
 
 #[component]
 pub fn ModesPage() -> impl IntoView {
@@ -16,36 +17,34 @@ pub fn ModesPage() -> impl IntoView {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader title=t("shell.digital-modes") subtitle=t("knowledge.digital-voice-and-data") />
       <PageContainer>
-        <div class="overflow-x-auto pxl-card border bg-card">
-          <table class="w-full min-w-[720px] border-collapse text-sm">
-            <thead class="bg-muted/60 text-xs">
-              <tr>
-                <th class=CELL>{move || t("log.mode")}</th>
-                <th class=CELL>{move || t("radio.type")}</th>
-                <th class=CELL>{move || t("tools.bandwidth")}</th>
-                <th class=CELL>{move || t("radio.notes")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {DIGITAL_MODES
-                .iter()
-                .map(|m| {
-                  view! {
-                    <tr class="border-t transition-colors hover:bg-muted/40">
-                      <td class=format!("{CELL} whitespace-nowrap")>
-                        <div class="font-medium">{m.name}</div>
-                        <div class="font-mono text-xs text-muted-foreground">{m.abbr}</div>
-                      </td>
-                      <td class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{m.kind}</td>
-                      <td class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{m.bandwidth}</td>
-                      <td class=format!("{CELL} text-muted-foreground")>{m.desc}</td>
-                    </tr>
-                  }
-                })
-                .collect_view()}
-            </tbody>
-          </table>
-        </div>
+        <Table class="min-w-[720px] text-sm" wrapper_class="pxl-card border bg-card">
+          <TableHead>
+            <TableRow>
+              <TableHeader class=CELL>{move || t("log.mode")}</TableHeader>
+              <TableHeader class=CELL>{move || t("radio.type")}</TableHeader>
+              <TableHeader class=CELL>{move || t("tools.bandwidth")}</TableHeader>
+              <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {DIGITAL_MODES
+              .iter()
+              .map(|m| {
+                view! {
+                  <TableRow>
+                    <TableCell class=format!("{CELL} whitespace-nowrap")>
+                      <div class="font-medium">{m.name}</div>
+                      <div class="font-mono text-xs text-muted-foreground">{m.abbr}</div>
+                    </TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{m.kind}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{m.bandwidth}</TableCell>
+                    <TableCell class=format!("{CELL} text-muted-foreground")>{m.desc}</TableCell>
+                  </TableRow>
+                }
+              })
+              .collect_view()}
+          </TableBody>
+        </Table>
 
         <SectionCard title=t("knowledge.choose-a-mode-by")>
           <dl class="divide-y">

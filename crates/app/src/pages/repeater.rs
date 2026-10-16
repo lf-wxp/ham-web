@@ -18,7 +18,7 @@ pub fn RepeaterPage() -> impl IntoView {
         title="数字中继与网关"
         headers=&["类型", "协议", "说明"]
         rows=DIGITAL_GATEWAYS
-        min_width=560
+        class="min-w-[560px]"
       />
       // 中继台查询是交互组件，不是静态区块，必须保留在原来的位置。
       <RepeaterLookup />

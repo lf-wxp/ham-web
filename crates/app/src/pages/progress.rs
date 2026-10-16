@@ -18,7 +18,7 @@ use crate::components::study_plan_card::StudyPlanCard;
 use crate::exam_history::ExamTrend;
 use crate::i18n::{t, tf};
 use crate::pages::log::use_log_store;
-use crate::ui::{Chip, ChipGroup, Stat};
+use crate::ui::{Chip, ChipGroup, Stat, Tooltip};
 use crate::util::{local_today, now_ms, set_title, storage};
 use crate::{data, store, study};
 
@@ -429,11 +429,16 @@ pub fn ProgressPage() -> impl IntoView {
                             ></div>
                           </div>
                           {(!subs.is_empty()).then(|| {
+                            // Tooltip children 需要 `'static`：本闭包内克隆一份 owned。
+                            let subs = subs.clone();
                             view! {
                               <div class="mt-2 space-y-1.5 border-t pt-2">
                                 {subs
                                   .iter()
                                   .map(|sub| {
+                                    // Tooltip children 需要 `'static`：字段先拷成 owned。
+                                    let code = sub.code.clone();
+                                    let name = sub.name.clone();
                                     let sub_rate = sub.correct as f64 / sub.total.max(1) as f64 * 100.0;
                                     let sub_bar = if sub_rate < 50.0 {
                                       "bg-red-400"
@@ -444,18 +449,18 @@ pub fn ProgressPage() -> impl IntoView {
                                     };
                                     let sub_href = format!(
                                       "/practice?bank={bank}&sub={}",
-                                      js_sys::encode_uri_component(&sub.code)
+                                      js_sys::encode_uri_component(&code)
                                     );
                                     view! {
                                       <div>
                                         <div class="flex items-center justify-between gap-2 text-[11px]">
                                           <span class="flex min-w-0 items-center gap-1 text-muted-foreground">
                                             <span class="shrink-0 font-mono text-[10px] text-muted-foreground">
-                                              {sub.code.clone()}
+                                              {code}
                                             </span>
-                                            <span class="truncate" title=sub.name.clone()>
-                                              {sub.name.clone()}
-                                            </span>
+                                            <Tooltip class="min-w-0 flex-1" label=name.clone()>
+                                              <span class="w-full truncate">{name}</span>
+                                            </Tooltip>
                                             <a
                                               href=sub_href
                                               class="shrink-0 border px-1 py-px text-[10px] text-primary transition-colors hover:bg-primary/10"

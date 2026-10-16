@@ -130,6 +130,24 @@ pub fn body() -> Option<web_sys::HtmlElement> {
   document().body()
 }
 
+/// 滚动到元素可见位置，让出「导航栏 + 吸顶页头」的高度。
+///
+/// 点目录 / 表格跳转时，`scroll_into_view` 把目标滚到视口顶部，开头会被吸顶的
+/// 页头盖住 —— 页头高度随译文长度与折行变化，固定的 `scroll-mt-24` 跟不上。
+/// 这里按 `main header` 的**实际底边**算偏移（与 `StickyPanel` 同一个选择器口径），
+/// 目标顶部落在页头下方 12px 处。
+pub fn scroll_to_element(el: &web_sys::Element) {
+  let header_bottom = document()
+    .query_selector("main header")
+    .ok()
+    .flatten()
+    .map(|h| h.get_bounding_client_rect().bottom())
+    .unwrap_or(0.0);
+  let y =
+    el.get_bounding_client_rect().top() + window().scroll_y().unwrap_or(0.0) - header_bottom - 12.0;
+  window().scroll_to_with_x_and_y(0.0, y.max(0.0));
+}
+
 /// 页面标题的来源：标题是进入页面时一次性写入的（不在响应式上下文里），切语言时
 /// 不会自动重算，因此这里必须只存**可再翻译**的原料（key、实参快照），译文一律在
 /// [`apply_title`] 里现查。
@@ -206,11 +224,6 @@ fn apply_title() {
     Some(TitleSource::None) => return,
   };
   document().set_title(&title);
-}
-
-/// 弹出原生提示框。
-pub fn alert(msg: &str) {
-  let _ = window().alert_with_message(msg);
 }
 
 /// 给 `<body>` 增删类名。

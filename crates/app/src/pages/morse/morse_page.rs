@@ -5,7 +5,7 @@ use leptos::prelude::*;
 use crate::components::common::{PageContainer, PageHeader};
 use crate::morse_audio::play_morse_timed_with;
 use crate::morse_settings::{provide_morse_settings, use_morse_settings};
-use crate::ui::{Button, Size, Slider, Stat, Variant};
+use crate::ui::{Button, Size, Slider, Stat, Tooltip, Variant};
 use crate::util::set_title;
 
 use super::abbrev_quiz::AbbrevQuiz;
@@ -155,20 +155,21 @@ pub fn MorsePage() -> impl IntoView {
               .iter()
               .map(|&(label, code, meaning)| {
                 view! {
-                  <button
-                    type="button"
-                    on:click=move |_| {
-                      play_morse_timed_with(code, farnsworth(20.0, 20.0), settings.tone_hz(), settings.volume());
-                    }
-                    class="group border bg-muted/40 p-3 text-center transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent/60 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-                    title=tf("common.preview", &[(label)])
-                  >
+                  <Tooltip class="min-w-0" label=tf("common.preview", &[(label)])>
+                    <button
+                      type="button"
+                      on:click=move |_| {
+                        play_morse_timed_with(code, farnsworth(20.0, 20.0), settings.tone_hz(), settings.volume());
+                      }
+                      class="group w-full border bg-muted/40 p-3 text-center transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent/60 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                    >
                     <div class="text-lg font-semibold tabular-nums">{label}</div>
                     <div class="font-mono text-base font-semibold tracking-widest text-primary">
                       {morse_display(code)}
                     </div>
                     <div class="mt-1 text-xs text-muted-foreground">{meaning}</div>
-                  </button>
+                    </button>
+                  </Tooltip>
                 }
               })
               .collect_view()}

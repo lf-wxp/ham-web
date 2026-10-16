@@ -310,7 +310,8 @@ pub fn MapView(
     })
     .collect_view();
 
-  let tick_views = (0..=12)
+  let tick_views = || {
+    (0..=12)
     .map(|k| {
       let lon = -180.0 + k as f64 * 30.0;
       let x = ((lon + 180.0) * K).to_string();
@@ -321,8 +322,10 @@ pub fn MapView(
         </text>
       }
     })
-    .collect_view();
-  let tick_lat_views = (0..=6)
+    .collect_view()
+  };
+  let tick_lat_views = || {
+    (0..=6)
     .map(|k| {
       let lat = -90.0 + k as f64 * 30.0;
       let y = ((90.0 - lat) * K).to_string();
@@ -333,9 +336,11 @@ pub fn MapView(
         </text>
       }
     })
-    .collect_view();
+    .collect_view()
+  };
 
-  let name_views = [
+  let name_views = || {
+    [
     ("亚洲", 95.0, 48.0, "fill-foreground/40", "11", false),
     ("欧洲", 25.0, 55.0, "fill-foreground/40", "11", false),
     ("非洲", 20.0, 2.0, "fill-foreground/40", "11", false),
@@ -355,23 +360,26 @@ pub fn MapView(
       <text x=x.to_string() y=y.to_string() text-anchor="middle" class=cls font-size=size>{move || t(name)}</text>
     }
   })
-  .collect_view();
+  .collect_view()
+  };
 
-  let country_views = COUNTRY_LABELS
-    .iter()
-    .map(|&(name, lon, lat)| {
-      let (x, y) = project(lon, lat);
-      view! {
-        <text
-          x=x.to_string()
-          y=y.to_string()
-          text-anchor="middle"
-          class="fill-foreground/40"
-          font-size="8"
-        >{move || t(name)}</text>
-      }
-    })
-    .collect_view();
+  let country_views = || {
+    COUNTRY_LABELS
+      .iter()
+      .map(|&(name, lon, lat)| {
+        let (x, y) = project(lon, lat);
+        view! {
+          <text
+            x=x.to_string()
+            y=y.to_string()
+            text-anchor="middle"
+            class="fill-foreground/40"
+            font-size="8"
+          >{move || t(name)}</text>
+        }
+      })
+      .collect_view()
+  };
 
   // 叠加层（children）为 `Fn`，每个平铺调用一次构建独立信息层，随底图一同平铺。
 
@@ -431,9 +439,9 @@ pub fn MapView(
                 <line x1="0" y1="180" x2="720" y2="180" class="stroke-foreground/25" stroke-width="1" vector-effect="non-scaling-stroke" />
                 <line x1="360" y1="0" x2="360" y2="360" class="stroke-foreground/25" stroke-width="1" vector-effect="non-scaling-stroke" />
                 // 刻度与名称标注
-                {tick_views.clone()}
-                {tick_lat_views.clone()}
-                {name_views.clone()}
+                {tick_views()}
+                {tick_lat_views()}
+                {name_views()}
                 // 国家/地区名称（放大后显示）
                 <g
                   class="fill-foreground/40"
@@ -441,7 +449,7 @@ pub fn MapView(
                     if zoom.get() >= 2.0 { "opacity:0.9" } else { "opacity:0" }
                   }
                 >
-                  {country_views.clone()}
+                  {country_views()}
                 </g>
                 // 信息层（灰线 / 网格热力等）
                 {children()}

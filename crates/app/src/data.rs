@@ -133,9 +133,42 @@ fn parse_json<T: serde::de::DeserializeOwned>(text: &str) -> Result<T, AppError>
   serde_json::from_str(text).map_err(|e| AppError::Validation(format!("Invalid JSON: {e}")))
 }
 
+/// 一般接口的取数超时。
+const FETCH_TIMEOUT_MS: i32 = 5_000;
+/// 慢接口的取数超时（见 [`fetch_external_json_slow`]）。
+const SLOW_FETCH_TIMEOUT_MS: i32 = 20_000;
+
 /// 拉取外部 JSON（带 5 秒超时）；成功时写离线缓存，失败时回退到上次缓存。
+///
+/// 5 秒对大多数接口够用；卫星类接口见 [`fetch_external_json_slow`]。
 pub async fn fetch_external_json<T: serde::de::DeserializeOwned>(url: &str) -> Result<T, AppError> {
-  match fetch_text_with_timeout(url, 5000).await {
+  fetch_external_json_within(url, FETCH_TIMEOUT_MS).await
+}
+
+/// 同上，但超时放宽到 20 秒，给「服务端要等上游」的接口用。
+///
+/// `/api/passes` 与 `/api/sat-track` 在 TLE 缓存冷启动时要等 Celestrak（服务端侧的
+/// 端到端预算是 15 s，见 `crates/server/src/util.rs`），之后还要跑 SGP4。前端若沿用
+/// 5 秒，会在服务端其实会成功的情况下先放弃，用户看到「加载失败」。
+pub async fn fetch_external_json_slow<T: serde::de::DeserializeOwned>(
+  url: &str,
+) -> Result<T, AppError> {
+  fetch_external_json_within(url, SLOW_FETCH_TIMEOUT_MS).await
+}
+
+/// 电台写入依赖的轨迹必须重新取数，不允许静默使用本机离线缓存。
+pub async fn fetch_external_json_live<T: serde::de::DeserializeOwned>(
+  url: &str,
+) -> Result<T, AppError> {
+  let text = fetch_text_with_timeout(url, SLOW_FETCH_TIMEOUT_MS).await?;
+  parse_json(&text)
+}
+
+async fn fetch_external_json_within<T: serde::de::DeserializeOwned>(
+  url: &str,
+  timeout_ms: i32,
+) -> Result<T, AppError> {
+  match fetch_text_with_timeout(url, timeout_ms).await {
     Ok(text) => {
       api_cache_put(url, &text);
       parse_json(&text)

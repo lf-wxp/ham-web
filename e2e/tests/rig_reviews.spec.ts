@@ -18,10 +18,10 @@ test("评测文章：条件在前、指标与机型库同源、术语可互链",
   expect(headings[0]).toContain("测试条件");
   expect(headings[1]).toContain("指标实测");
 
-  // 指标名互链到术语表，并带悬停释义（title = 术语表里那条的「含义」）。
+  // 指标名互链到术语表，并带悬停释义（自绘 tooltip，内容 = 术语表里那条的「含义」）。
   const metric = ft710.getByRole("link", { name: "窄间隔三阶互调动态范围（RMDR）" });
   await expect(metric).toHaveAttribute("href", "#glossary-0");
-  await expect(metric).toHaveAttribute("title", /相位噪声/);
+  await expect(metric.locator("..").locator('[role="tooltip"]')).toContainText(/相位噪声/);
   await metric.click();
   await expect(page.locator("#glossary-0")).toBeVisible();
 });

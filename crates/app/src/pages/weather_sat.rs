@@ -5,9 +5,10 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 text-left align-top";
+const CELL: &str = "border px-3 py-2 align-top";
 
 #[component]
 pub fn WeatherSatPage() -> impl IntoView {
@@ -61,33 +62,31 @@ pub fn WeatherSatPage() -> impl IntoView {
           </ol>
         </section>
 
-        <div class="overflow-x-auto pxl-card border bg-card">
-          <table class="w-full min-w-[640px] border-collapse text-sm">
-            <thead class="bg-muted/60 text-xs">
-              <tr>
-                <th class=CELL>{move || t("radio.satellite")}</th>
-                <th class=CELL>{move || t("radio.signal")}</th>
-                <th class=CELL>{move || t("contest.freq")}</th>
-                <th class=CELL>{move || t("radio.notes")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {WEATHER_SATS
-                .iter()
-                .map(|s| {
-                  view! {
-                    <tr class="border-t transition-colors hover:bg-muted/40">
-                      <td class=format!("{CELL} whitespace-nowrap font-medium")>{s.name}</td>
-                      <td class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{s.signal}</td>
-                      <td class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{s.freq}</td>
-                      <td class=format!("{CELL} text-muted-foreground")>{s.note}</td>
-                    </tr>
-                  }
-                })
-                .collect_view()}
-            </tbody>
-          </table>
-        </div>
+        <Table class="min-w-[640px] text-sm" wrapper_class="pxl-card border bg-card">
+          <TableHead>
+            <TableRow>
+              <TableHeader class=CELL>{move || t("radio.satellite")}</TableHeader>
+              <TableHeader class=CELL>{move || t("radio.signal")}</TableHeader>
+              <TableHeader class=CELL>{move || t("contest.freq")}</TableHeader>
+              <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {WEATHER_SATS
+              .iter()
+              .map(|s| {
+                view! {
+                  <TableRow>
+                    <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{s.name}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{s.signal}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{s.freq}</TableCell>
+                    <TableCell class=format!("{CELL} text-muted-foreground")>{s.note}</TableCell>
+                  </TableRow>
+                }
+              })
+              .collect_view()}
+          </TableBody>
+        </Table>
 
         <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.key-concepts-heading")}</h2>

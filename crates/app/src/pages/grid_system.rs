@@ -5,9 +5,10 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
+use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 text-left align-top";
+const CELL: &str = "border px-3 py-2 align-top";
 
 #[component]
 pub fn GridSystemPage() -> impl IntoView {
@@ -22,31 +23,29 @@ pub fn GridSystemPage() -> impl IntoView {
       <PageContainer>
         <section class="pxl-card border bg-card">
           <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.grid-levels")}</h2>
-          <div class="overflow-x-auto">
-            <table class="w-full min-w-[560px] border-collapse text-sm">
-              <thead class="bg-muted/60 text-xs">
-                <tr>
-                  <th class=CELL>{move || t("radio.digits")}</th>
-                  <th class=CELL>{move || t("radio.example-names")}</th>
-                  <th class=CELL>{move || t("radio.accuracy")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {GRID_LEVELS
-                  .iter()
-                  .map(|&(bits, example, precision)| {
-                    view! {
-                      <tr class="border-t transition-colors hover:bg-muted/40">
-                        <td class=format!("{CELL} whitespace-nowrap font-medium")>{bits}</td>
-                        <td class=format!("{CELL} whitespace-nowrap font-mono")>{example}</td>
-                        <td class=format!("{CELL} text-muted-foreground")>{precision}</td>
-                      </tr>
-                    }
-                  })
-                  .collect_view()}
-              </tbody>
-            </table>
-          </div>
+          <Table class="min-w-[560px] text-sm">
+            <TableHead>
+              <TableRow>
+                <TableHeader class=CELL>{move || t("radio.digits")}</TableHeader>
+                <TableHeader class=CELL>{move || t("radio.example-names")}</TableHeader>
+                <TableHeader class=CELL>{move || t("radio.accuracy")}</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {GRID_LEVELS
+                .iter()
+                .map(|&(bits, example, precision)| {
+                  view! {
+                    <TableRow>
+                      <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{bits}</TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono")>{example}</TableCell>
+                      <TableCell class=format!("{CELL} text-muted-foreground")>{precision}</TableCell>
+                    </TableRow>
+                  }
+                })
+                .collect_view()}
+            </TableBody>
+          </Table>
         </section>
 
         <section class="pxl-card border bg-card">

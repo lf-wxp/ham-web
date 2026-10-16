@@ -34,6 +34,7 @@ mod cache;
 mod callsign;
 mod geocode;
 mod iss;
+mod kp_forecast;
 mod most_wanted;
 mod passes;
 mod portable;
@@ -42,6 +43,7 @@ mod push;
 mod rate_limit;
 mod rbn;
 mod repeaters;
+mod sat_track;
 mod solar;
 mod spots;
 mod util;
@@ -225,10 +227,25 @@ fn app(cfg: &Config, push_service: push::PushService) -> Router {
     move || solar::handler(cache.clone())
   };
 
+  let kp_cache = Arc::new(kp_forecast::Cache::default());
+  let kp_route = {
+    let cache = kp_cache.clone();
+    move || kp_forecast::handler(cache.clone())
+  };
+
   let passes_cache = Arc::new(passes::Cache::default());
   let passes_route = {
     let cache = passes_cache.clone();
     move |query: axum::extract::Query<passes::PassQuery>| passes::handler(query, cache.clone())
+  };
+
+  let track_route = {
+    // TLE 缓存与 `/api/passes` 共用；轨迹结果缓存是本端点自己的。
+    let tle_cache = passes_cache.clone();
+    let cache = Arc::new(sat_track::Cache::default());
+    move |query: axum::extract::Query<sat_track::TrackQuery>| {
+      sat_track::handler(query, tle_cache.clone(), cache.clone())
+    }
   };
 
   let wanted_cache = Arc::new(most_wanted::Cache::default());
@@ -343,7 +360,9 @@ fn app(cfg: &Config, push_service: push::PushService) -> Router {
   Router::new()
     .route("/healthz", get(|| async { "ok" }))
     .route("/api/solar", get(solar_route))
+    .route("/api/kp-forecast", get(kp_route))
     .route("/api/passes", get(passes_route))
+    .route("/api/sat-track", get(track_route))
     .route("/api/most-wanted", get(wanted_route))
     .route("/api/spots", get(spots_route))
     .route("/api/alerts", get(alerts_route))

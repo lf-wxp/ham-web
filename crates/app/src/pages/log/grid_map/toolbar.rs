@@ -5,7 +5,9 @@ use leptos::prelude::*;
 use super::super::grid_filter::QslStatus;
 use super::state::GridMapState;
 use crate::i18n::t;
-use crate::ui::{Button, ControlSize, Input, NativeSelect, SelectOption, Size, Switch, Variant};
+use crate::ui::{
+  Button, ControlSize, Input, NativeSelect, SelectOption, Size, Switch, Tooltip, Variant,
+};
 
 #[component]
 pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
@@ -124,17 +126,20 @@ pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
         />
         {move || t("log.grayline")}
       </label>
-      <label
-        class="flex cursor-pointer items-center gap-1.5 text-muted-foreground"
-        title=if paths_disabled { t("log.set-your-grid-in") } else { t("log.great-circle-paths-from") }
+      <Tooltip
+        label=Signal::derive(move || {
+          if paths_disabled { t("log.set-your-grid-in") } else { t("log.great-circle-paths-from") }
+        })
       >
-        <Switch
-          checked=state.show_paths
-          on_change=Callback::new(move |v| state.show_paths.set(v))
-          disabled=Signal::derive(move || paths_disabled)
-        />
-        {move || t("log.qso-paths")}
-      </label>
+        <label class="flex cursor-pointer items-center gap-1.5 text-muted-foreground">
+          <Switch
+            checked=state.show_paths
+            on_change=Callback::new(move |v| state.show_paths.set(v))
+            disabled=Signal::derive(move || paths_disabled)
+          />
+          {move || t("log.qso-paths")}
+        </label>
+      </Tooltip>
     </div>
   }
 }

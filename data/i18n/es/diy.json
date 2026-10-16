@@ -14,7 +14,7 @@
   "diy.instrument-multimeter": "Multímetro",
   "diy.hours": "{} de trabajo",
   "diy.bom": "Lista de materiales (BOM)",
-  "diy.bom-bought": "Comprado",
+  "diy.bom-bought-label": "Comprado: {}",
   "diy.links": "Referencias y esquemas",
   "diy.tests": "Pasos de prueba",
   "diy.pitfalls": "Errores comunes",
