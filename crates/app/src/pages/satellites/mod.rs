@@ -3,6 +3,7 @@
 mod doppler_rig;
 mod doppler_tracker;
 mod iss_tracker;
+mod linear_tuner;
 mod pass_predictor;
 mod satellites_page;
 

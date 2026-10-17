@@ -184,6 +184,7 @@ pub mod rtty;
 pub mod safety;
 pub mod sat_doppler;
 pub mod sat_operation;
+pub mod sat_transponder;
 pub mod sat_watch;
 pub mod satellites;
 pub mod saved_state;

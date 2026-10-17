@@ -9,6 +9,11 @@
 //! `?;` 并忽略，所以**不靠机型表猜**，而是照电台自己读频率时回的 `FA` 位数写（[`Parser::freq_digits`]），
 //! 没读到过就拒绝写。命令格式对照 Hamlib 的实现核对过（Kenwood `FA%011d;`、Yaesu `FA%09d;`、
 //! Icom 命令 `05` + 5 字节小端 BCD）。
+//!
+//! 另有**写「另一个 VFO」**的命令（[`set_other_vfo_frequency_command`]），给卫星上行（发射）频率用：
+//! ASCII 协议写 `FB`（`F%c`，`c` 取 `B`），Icom 用命令 `25 01`（未选中 VFO，Hamlib `C_SEND_SEL_FREQ`）。
+//! 位数、BCD 编码与下行的 `FA` / `05` 共用同一套实现。**它只写频率，不开分频、不切 VFO、没有 PTT 命令**：
+//! 电台实际会不会往这个频率发射，取决于用户在电台上设的分频。
 
 use serde::{Deserialize, Serialize};
 
@@ -166,6 +171,47 @@ pub fn set_frequency_command(
   hz: u64,
   ascii_digits: Option<usize>,
 ) -> Option<Vec<u8>> {
+  frequency_command(protocol, civ_addr, hz, ascii_digits, Target::Current)
+}
+
+/// 生成「把**另一个 VFO**设到 `hz`」的命令，给卫星上行（发射）频率用；拒绝规则与 [`set_frequency_command`] 完全相同。
+///
+/// - ASCII 协议：`FB` + 补零到 `ascii_digits` 位 + `;`（Hamlib `kenwood.c` 的 `F%c%011`、`newcat.c` 的 `F%c%0*`，`c` = `B`）；
+/// - Icom：`FE FE <rig> E0 25 01 <5 字节小端 BCD> FD`，`01` 是「未选中 VFO」（Hamlib `C_SEND_SEL_FREQ`）。
+///
+/// **两个提醒，调用方必须让用户知道**：
+/// 1. ASCII 的 `FB` 就是 VFO B，不管电台此刻用的是 A 还是 B；而 Icom 的 `01` 是「未选中的那个」。
+///    要让两者含义一致，电台应当接收在 VFO A（Icom：选中的是 A）、发射在 VFO B；
+/// 2. Icom IC-7600 / IC-7610 / IC-7800 / IC-785x 上 `25` 的 `00`/`01` 是 Main/Sub 而不是选中/未选中（Hamlib 单独处理），
+///    用这几款时 `01` 写的是 Sub 的频率。
+///
+/// 只设频率：不开分频、不切 VFO、不碰模式，没有任何发射相关命令。
+#[must_use]
+pub fn set_other_vfo_frequency_command(
+  protocol: Protocol,
+  civ_addr: u8,
+  hz: u64,
+  ascii_digits: Option<usize>,
+) -> Option<Vec<u8>> {
+  frequency_command(protocol, civ_addr, hz, ascii_digits, Target::Other)
+}
+
+/// 写哪个 VFO。
+#[derive(Clone, Copy)]
+enum Target {
+  /// 当前 / 选中的 VFO（下行）。
+  Current,
+  /// 另一个 VFO（上行）。
+  Other,
+}
+
+fn frequency_command(
+  protocol: Protocol,
+  civ_addr: u8,
+  hz: u64,
+  ascii_digits: Option<usize>,
+  target: Target,
+) -> Option<Vec<u8>> {
   if hz == 0 {
     return None;
   }
@@ -176,11 +222,20 @@ pub fn set_frequency_command(
       if hz >= 10u64.pow(u32::try_from(n).ok()?) {
         return None;
       }
-      Some(format!("FA{hz:0n$};").into_bytes())
+      let vfo = match target {
+        Target::Current => 'A',
+        Target::Other => 'B',
+      };
+      Some(format!("F{vfo}{hz:0n$};").into_bytes())
     }
     Protocol::Icom => {
       let bcd = to_bcd_le(hz, CIV_FREQ_BYTES)?;
-      let mut cmd = vec![0xFE, 0xFE, civ_addr, CIV_CONTROLLER, 0x05];
+      let mut cmd = vec![0xFE, 0xFE, civ_addr, CIV_CONTROLLER];
+      match target {
+        Target::Current => cmd.push(0x05),
+        // `25 01`：未选中 VFO 的频率。
+        Target::Other => cmd.extend_from_slice(&[0x25, 0x01]),
+      }
       cmd.extend_from_slice(&bcd);
       cmd.push(0xFD);
       Some(cmd)
@@ -423,6 +478,96 @@ mod tests {
       set_frequency_command(Protocol::Icom, 0x94, 14_074_000, Some(11)),
       set(0x94, 14_074_000)
     );
+  }
+
+  #[test]
+  fn writing_the_other_vfo_uses_fb_for_ascii_and_command_25_01_for_icom() {
+    let other = |p, a, hz, n| set_other_vfo_frequency_command(p, a, hz, n);
+    // Kenwood 11 位 / Yaesu 9 位 / 8 位：只有 `FA` → `FB` 一个字母不同。
+    assert_eq!(
+      other(Protocol::Kenwood, 0, 145_990_000, Some(11)),
+      Some(b"FB00145990000;".to_vec())
+    );
+    assert_eq!(
+      other(Protocol::Kenwood, 0, 145_990_000, Some(9)),
+      Some(b"FB145990000;".to_vec())
+    );
+    assert_eq!(
+      other(Protocol::Kenwood, 0, 14_074_000, Some(8)),
+      Some(b"FB14074000;".to_vec())
+    );
+    // Icom：`25 01` + 5 字节小端 BCD（145.990 MHz → 00 00 99 45 01，独立脚本算出）。
+    assert_eq!(
+      other(Protocol::Icom, 0x94, 145_990_000, None),
+      Some(vec![
+        0xFE, 0xFE, 0x94, 0xE0, 0x25, 0x01, 0x00, 0x00, 0x99, 0x45, 0x01, 0xFD
+      ])
+    );
+    // 与写当前 VFO 的命令只差命令字：BCD 部分逐字节相同。
+    let cur = set_frequency_command(Protocol::Icom, 0xA2, 435_250_000, None).unwrap();
+    let oth = other(Protocol::Icom, 0xA2, 435_250_000, None).unwrap();
+    assert_eq!(cur[5..10], oth[6..11]);
+    assert_eq!((cur[4], &oth[4..6]), (0x05, &[0x25, 0x01][..]));
+    assert_eq!(cur.len() + 1, oth.len());
+  }
+
+  #[test]
+  fn writing_the_other_vfo_refuses_exactly_what_writing_the_current_one_refuses() {
+    for (p, a, hz, n) in [
+      (Protocol::Kenwood, 0, 0, Some(11)),
+      (Protocol::Kenwood, 0, 145_990_000, None),
+      (Protocol::Kenwood, 0, 145_990_000, Some(7)),
+      (Protocol::Kenwood, 0, 145_990_000, Some(12)),
+      (Protocol::Kenwood, 0, 437_810_220, Some(8)),
+      (Protocol::Kenwood, 0, 100_000_000_000, Some(11)),
+      (Protocol::Icom, 0x94, 0, None),
+      (Protocol::Icom, 0x94, 10_000_000_000, None),
+    ] {
+      assert_eq!(set_frequency_command(p, a, hz, n), None, "{hz} {n:?}");
+      assert_eq!(
+        set_other_vfo_frequency_command(p, a, hz, n),
+        None,
+        "{hz} {n:?}"
+      );
+    }
+    assert!(set_frequency_command(Protocol::Kenwood, 0, 145_990_000, Some(11)).is_some());
+    assert!(set_other_vfo_frequency_command(Protocol::Kenwood, 0, 145_990_000, Some(11)).is_some());
+  }
+
+  #[test]
+  fn the_other_vfo_commands_never_contain_a_transmit_or_split_command() {
+    // 命令生成函数都不产生 PTT（Kenwood TX; / Icom 1C 00）或分频（Kenwood FT / Icom 0F）命令。
+    for hz in [145_990_000_u64, 435_250_000, 14_074_000] {
+      for digits in [8_usize, 9, 11] {
+        let Some(c) = set_other_vfo_frequency_command(Protocol::Kenwood, 0, hz, Some(digits))
+        else {
+          continue;
+        };
+        let text = String::from_utf8(c).unwrap();
+        assert!(text.starts_with("FB") && text.ends_with(';') && text.matches(';').count() == 1);
+        assert!(!text.contains("TX") && !text.contains("FT") && !text.contains("RX"));
+      }
+      let c = set_other_vfo_frequency_command(Protocol::Icom, 0x94, hz, None).unwrap();
+      // 命令字只可能是 25 01：没有 1C（PTT）、0F（分频）、07（切 VFO）。
+      assert_eq!(&c[4..6], &[0x25, 0x01]);
+      assert!(![0x1C, 0x0F, 0x07].contains(&c[4]));
+    }
+  }
+
+  #[test]
+  fn the_other_vfo_replies_are_ignored_by_the_parser() {
+    // 电台对 `FB` 的回应是 `FB…;`，我们的解析器只认 `FA`：写 VFO B 不会被读成「当前频率变了」，
+    // 手动改频检测（读的是 VFO A）也就不会被我们自己写的上行频率误触发。
+    let mut p = Parser::new(Protocol::Kenwood);
+    assert!(p.feed(b"FB00145990000;").is_empty());
+    assert_eq!(p.freq_digits(), None);
+    assert_eq!(p.feed(b"FA00437800000;"), vec![Update::Freq(437_800_000)]);
+    // Icom：`25 01` 的应答不是 03 / 00 命令，同样被忽略。
+    let mut i = Parser::new(Protocol::Icom);
+    let reply = [
+      0xFE, 0xFE, 0xE0, 0x94, 0x25, 0x01, 0x00, 0x00, 0x99, 0x45, 0x01, 0xFD,
+    ];
+    assert!(i.feed(&reply).is_empty());
   }
 
   #[test]

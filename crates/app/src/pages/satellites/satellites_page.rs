@@ -2,7 +2,7 @@ use ham_web_core::satellites::{SATELLITE_TIPS, SATELLITES, TRACKING_SOFTWARE};
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
-use crate::components::rotor_control::RotorControl;
+use crate::components::rotor_control::{Aim, RotorControl};
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
@@ -15,6 +15,8 @@ use crate::i18n::t;
 #[component]
 pub fn SatellitesPage() -> impl IntoView {
   set_title("shell.satellites");
+  // 多普勒面板此刻要对准的方向，旋转器控制条据此自动跟踪（默认关闭，需手动勾选）。
+  let aim = RwSignal::new(None::<Aim>);
   view! {
     <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader
@@ -25,7 +27,7 @@ pub fn SatellitesPage() -> impl IntoView {
       <PageContainer>
         <PassPredictor />
 
-        <DopplerTracker />
+        <DopplerTracker aim=aim />
 
         <IssTracker />
 
@@ -34,7 +36,7 @@ pub fn SatellitesPage() -> impl IntoView {
           <p class="px-4 pt-3 text-xs text-muted-foreground">
             {move || t("radio.during-a-pass-connect")}
           </p>
-          <div class="p-4"><RotorControl /></div>
+          <div class="p-4"><RotorControl aim=aim /></div>
         </section>
 
         // 横向可滚区域必须可聚焦，否则键盘用户滚不动它（axe: scrollable-region-focusable）

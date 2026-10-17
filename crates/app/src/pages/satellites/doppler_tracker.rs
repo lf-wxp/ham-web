@@ -11,15 +11,20 @@ use ham_web_core::sat_doppler::{
   DEFAULT_STEP_SECS, PRESETS, Sample, Track, next_pass, rx_frequency_hz, track_window,
   tx_frequency_hz,
 };
+use ham_web_core::sat_transponder::{Transponder, pair};
 use ham_web_core::sat_watch::Pass;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde::Deserialize;
 
-use super::doppler_rig::DopplerRig;
+use super::doppler_rig::{DopplerRig, TxPlan};
+use super::linear_tuner::LinearTuner;
+use crate::components::rotor_control::Aim;
 use crate::i18n::{t, tf};
 use crate::sat_alert;
-use crate::ui::{Button, Field, NativeSelect, NumberField, SelectOption, Size, Variant};
+use crate::ui::{
+  Button, Field, NativeSelect, NumberField, RadioGroup, RadioGroupItem, SelectOption, Size, Variant,
+};
 use crate::util::unique_id;
 
 /// 下拉里「自定义」一项的值。
@@ -110,7 +115,10 @@ async fn load_next_pass(norad: u64) -> Load {
 
 /// 多普勒修正面板。
 #[component]
-pub(super) fn DopplerTracker() -> impl IntoView {
+pub(super) fn DopplerTracker(
+  /// 此刻该对准的方向，写给页面里的旋转器控制条；轨迹未加载或卫星在地平线下为 `None`。
+  aim: RwSignal<Option<Aim>>,
+) -> impl IntoView {
   let first = PRESETS[0];
   let preset_key = RwSignal::new(first.norad.to_string());
   // 数值存 `Option<f64>`：空输入 = 未填写，而不是沿用旧值。NORAD 为空时 `norad_value`
@@ -120,6 +128,10 @@ pub(super) fn DopplerTracker() -> impl IntoView {
   let down_mhz = RwSignal::new(Some(first.downlink_hz as f64 / 1e6));
   let up_mhz = RwSignal::new(Some(first.uplink_hz as f64 / 1e6));
   let load = RwSignal::new(Load::Idle);
+  // 调谐方式：`fixed`（FM 星等固定频点，现有行为）/ `linear`（线性转发器：上下行联动）。
+  let mode = RwSignal::new("fixed".to_owned());
+  let transponder = RwSignal::new(None::<Transponder>);
+  let tuned_hz = RwSignal::new(0u64);
   let now = RwSignal::new(now_secs());
   // 加载代际：连点两次或中途换了卫星时，晚到的旧响应不能覆盖新状态。
   let load_gen = RwSignal::new(0u32);
@@ -133,6 +145,15 @@ pub(super) fn DopplerTracker() -> impl IntoView {
   let down_id = unique_id("doppler-down");
   let up_id = unique_id("doppler-up");
   let preset_id = unique_id("doppler-preset");
+
+  // 选定一个转发器：带出它的 NORAD 编号，且已加载的过境作废（那是另一颗卫星的轨迹）。
+  // 切到线性模式与在面板里换转发器都走这里，保证「转发器 ↔ NORAD」始终一致。
+  let pick_transponder = Callback::new(move |tp: Transponder| {
+    norad.set(Some(tp.norad as f64));
+    preset_key.set(CUSTOM.to_owned());
+    load_gen.update(|g| *g = g.wrapping_add(1));
+    load.set(Load::Idle);
+  });
 
   // 手动改任何一个数，都意味着不再是预置卫星，且已加载的过境作废。
   let touched = move || {
@@ -166,14 +187,65 @@ pub(super) fn DopplerTracker() -> impl IntoView {
       _ => None,
     })
   });
+  // 给旋转器的目标：只在轨迹已加载、此刻在覆盖范围内、且卫星在地平线上才有。
+  // 用 Effect 同步到页面共享的信号；组件卸载时一并清掉，免得旋转器继续追一个已不存在的目标。
+  Effect::new(move |_| {
+    aim.set(
+      obs
+        .get()
+        .filter(|o| o.el >= 0.0)
+        .map(|o| Aim { az: o.az, el: o.el }),
+    );
+  });
+  on_cleanup(move || aim.set(None));
+
+  let linear = move || mode.with(|m| m == "linear");
   let down_hz = move || down_mhz.get().unwrap_or(f64::NAN) * 1e6;
   let up_hz = move || up_mhz.get().unwrap_or(f64::NAN) * 1e6;
+  // 线性模式下，收发频率由转发器通带 + 调谐点决定；调谐点在通带外（不应发生）则为 `None`。
+  let linear_pair = move |rr: f64| {
+    let tp = transponder.get()?;
+    pair(&tp, tuned_hz.get(), rr)
+  };
   // 写电台用的目标：只在卫星高于地平线时才有。
   let target = Signal::derive(move || {
     let o = obs.get()?;
-    (o.el >= 0.0)
-      .then(|| rx_frequency_hz(down_hz(), o.range_rate_km_s))
-      .flatten()
+    if o.el < 0.0 {
+      return None;
+    }
+    if linear() {
+      return linear_pair(o.range_rate_km_s).map(|p| p.rx_hz);
+    }
+    rx_frequency_hz(down_hz(), o.range_rate_km_s)
+  });
+  // 上行计划：同样只在地平线以上才有。标称值与余量见 `TxPlan`。
+  let tx_plan = Signal::derive(move || {
+    let o = obs.get()?;
+    if o.el < 0.0 {
+      return None;
+    }
+    if linear() {
+      let tp = transponder.get()?;
+      let p = linear_pair(o.range_rate_km_s)?;
+      return Some(TxPlan {
+        hz: p.tx_hz,
+        nominal_hz: tp.uplink_lo + tp.width() / 2,
+        slack_hz: tp.width() / 2,
+      });
+    }
+    let entered = up_hz();
+    (entered.is_finite() && entered > 0.0).then_some(())?;
+    // 标称上行取自预置表（按 NORAD 找），**不取输入框里的值**：否则把 145.990 敲成 145.099 时，
+    // 「离标称太远」这道护栏拿一个同样敲错的值当标称，永远抓不到。NORAD 不在预置表里（自定义卫星）时
+    // 没有独立的标称，只能退化为输入框的值——此时只剩「业余波段」「卫星业务段」两道护栏在起作用。
+    let nominal = norad_value()
+      .and_then(|n| PRESETS.iter().find(|p| p.norad == n))
+      .map_or(entered, |p| p.uplink_hz as f64);
+    Some(TxPlan {
+      hz: tx_frequency_hz(entered, o.range_rate_km_s)?,
+      nominal_hz: nominal.round() as u64,
+      slack_hz: 0,
+    })
   });
 
   let preset_options: Vec<SelectOption> = PRESETS
@@ -245,6 +317,40 @@ pub(super) fn DopplerTracker() -> impl IntoView {
             />
           </Field>
         </div>
+
+        <RadioGroup
+          value=mode
+          on_change=Callback::new(move |v: String| {
+            // 换调谐方式：已加载的过境不必作废（轨迹与频率无关），但电台联动要重新确认。
+            load_gen.update(|g| *g = g.wrapping_add(1));
+            if v == "linear" {
+              // 线性模式下卫星由转发器决定：没选过就选第一个，选过就按它重新带出 NORAD。
+              let tp = transponder.get_untracked().unwrap_or_else(|| {
+                let first = ham_web_core::sat_transponder::TRANSPONDERS[0];
+                transponder.set(Some(first));
+                tuned_hz.set(first.downlink_center());
+                first
+              });
+              pick_transponder.run(tp);
+            }
+            mode.set(v);
+          })
+          aria_label=Signal::derive(move || t("radio.doppler-mode"))
+          class="flex flex-wrap gap-4"
+        >
+          <label class="flex cursor-pointer items-center gap-2 text-sm">
+            <RadioGroupItem value="fixed" />
+            {move || t("radio.doppler-mode-fixed")}
+          </label>
+          <label class="flex cursor-pointer items-center gap-2 text-sm">
+            <RadioGroupItem value="linear" />
+            {move || t("radio.doppler-mode-linear")}
+          </label>
+        </RadioGroup>
+
+        <Show when=linear>
+          <LinearTuner active=transponder tuned_hz=tuned_hz on_pick=pick_transponder />
+        </Show>
 
         <div class="flex flex-wrap items-center gap-3">
           <Button
@@ -319,8 +425,24 @@ pub(super) fn DopplerTracker() -> impl IntoView {
                 {move || {
                   obs.get()
                     .map(|o| {
-                      let rx = rx_frequency_hz(down_hz(), o.range_rate_km_s);
-                      let tx = tx_frequency_hz(up_hz(), o.range_rate_km_s);
+                      let (rx, tx, rx_nominal, tx_nominal) = if linear() {
+                        match linear_pair(o.range_rate_km_s) {
+                          Some(p) => (
+                            Some(p.rx_hz),
+                            Some(p.tx_hz),
+                            p.downlink_sat as f64,
+                            p.uplink_sat as f64,
+                          ),
+                          None => (None, None, f64::NAN, f64::NAN),
+                        }
+                      } else {
+                        (
+                          rx_frequency_hz(down_hz(), o.range_rate_km_s),
+                          tx_frequency_hz(up_hz(), o.range_rate_km_s),
+                          down_hz(),
+                          up_hz(),
+                        )
+                      };
                       view! {
                         <div>
                           {tf(
@@ -339,7 +461,7 @@ pub(super) fn DopplerTracker() -> impl IntoView {
                               <div class="font-medium text-foreground">
                                 {tf(
                                   "radio.doppler-rx",
-                                  &[&fmt_mhz(f), &fmt_shift(f - down_hz())],
+                                  &[&fmt_mhz(f), &fmt_shift(f - rx_nominal)],
                                 )}
                               </div>
                             }
@@ -350,7 +472,7 @@ pub(super) fn DopplerTracker() -> impl IntoView {
                               <div class="font-medium text-foreground">
                                 {tf(
                                   "radio.doppler-tx",
-                                  &[&fmt_mhz(f), &fmt_shift(f - up_hz())],
+                                  &[&fmt_mhz(f), &fmt_shift(f - tx_nominal)],
                                 )}
                               </div>
                             }
@@ -372,7 +494,7 @@ pub(super) fn DopplerTracker() -> impl IntoView {
           }
         }}
 
-        <DopplerRig target=target selection=load_gen />
+        <DopplerRig target=target tx_plan=tx_plan selection=load_gen />
 
         <p class="text-xs text-muted-foreground">{move || t("radio.doppler-note")}</p>
       </div>

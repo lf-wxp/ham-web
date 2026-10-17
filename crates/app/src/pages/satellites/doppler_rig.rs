@@ -7,14 +7,23 @@
 //! - 只在卫星高于地平线时写；写入有节流（`MIN_WRITE_DELTA_HZ`），避免静噪反复闪；
 //! - 发现电台回读的频率连续几次偏离我们写的值，就当作有人转了旋钮，立刻停写。
 //!
+//! 写**上行（发射）频率**是另一个独立的、默认关闭的开关，规则更严（见 `ham_web_core::sat_transponder`）：
+//! - 只写「另一个 VFO」（Kenwood 系 `FB`，Icom `25 01`），**不开分频、不切 VFO、没有任何 PTT 命令**；
+//!   电台实际会不会往那个频率发射，取决于用户在电台上自己设的分频（页面上写明）；
+//! - 必须先开着下行自动调谐才有效；下行因任何原因停下（手动改频、断开、换卫星、重连），上行**同时**停下；
+//! - 每次写之前过 `guard_uplink`：落在业余波段内、卫星业余业务段内、且离标称上行不超过多普勒的物理上限；
+//!   任何一条不满足就不写，并把原因显示给用户；
+//! - 与下行同样的节流与「读到位数才写」。
+//!
 //! 判定逻辑（取整、节流、手动改频检测）都在 `ham_web_core::sat_doppler`，这里只负责串口读写与界面。
 
 // `Update` 改名：不然它会压住 prelude 里的 `Update` trait，`RwSignal::update` 就找不到了。
 use ham_web_core::cat::{
   BAUD_RATES, Parser, Protocol, Update as CatUpdate, format_mhz, poll_commands,
-  set_frequency_command,
+  set_frequency_command, set_other_vfo_frequency_command,
 };
 use ham_web_core::sat_doppler::{OverrideDetector, round_for_rig, should_write};
+use ham_web_core::sat_transponder::{TxRefusal, guard_uplink};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use wasm_bindgen::JsCast;
@@ -32,6 +41,27 @@ use crate::web_serial::{
 /// 轮询 / 写入间隔（毫秒）。
 const POLL_MS: u32 = 1000;
 
+/// 此刻该写进「另一个 VFO」的上行（发射）频率，连同护栏需要的标称值。
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(super) struct TxPlan {
+  /// 已做多普勒修正的发射频率（Hz）。
+  pub hz: f64,
+  /// 该信道 / 转发器的标称上行（Hz）。
+  pub nominal_hz: u64,
+  /// 标称之外允许的余量（Hz）：FM 为 0，线性转发器为通带半宽。
+  pub slack_hz: u64,
+}
+
+/// 护栏拒绝原因的显示文案（`t()` 的字面量写在调用点，静态扫描才认得）。
+fn refusal_text(why: TxRefusal) -> String {
+  match why {
+    TxRefusal::NotValid => t("radio.doppler-rig-uplink-refused-invalid"),
+    TxRefusal::OutsideAmateurBand => t("radio.doppler-rig-uplink-refused-band"),
+    TxRefusal::OutsideSatelliteService => t("radio.doppler-rig-uplink-refused-service"),
+    TxRefusal::FarFromNominal => t("radio.doppler-rig-uplink-refused-far"),
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Status {
   Idle,
@@ -44,6 +74,9 @@ enum Status {
 #[component]
 pub(super) fn DopplerRig(
   #[prop(into)] target: Signal<Option<f64>>,
+  /// 上行（发射）频率计划；卫星在地平线下或参数不全时为 `None`。
+  #[prop(into)]
+  tx_plan: Signal<Option<TxPlan>>,
   #[prop(into)] selection: Signal<u32>,
 ) -> impl IntoView {
   let supported = serial().is_some();
@@ -52,6 +85,11 @@ pub(super) fn DopplerRig(
   let rig_hz = RwSignal::new(None::<u64>);
   let digits = RwSignal::new(None::<usize>);
   let auto = RwSignal::new(false);
+  // 上行开关：默认关；只有 `auto` 开着才会真的写。任何让 `auto` 关掉的路径都经 `stop_auto` 一并关掉它。
+  let tx_follow = RwSignal::new(false);
+  let last_tx = RwSignal::new(None::<u64>);
+  let tx_writes = RwSignal::new(0u32);
+  let tx_refusal = RwSignal::new(None::<TxRefusal>);
   let paused = RwSignal::new(false);
   let writes = RwSignal::new(0u32);
   let last_hz = RwSignal::new(None::<u64>);
@@ -59,15 +97,26 @@ pub(super) fn DopplerRig(
   let generation = StoredValue::new(0u32);
   let detector = StoredValue::new(OverrideDetector::default());
 
+  // 下行自动调谐停下时，上行必须同时停下并忘掉自己的写入记录：上行绝不比下行活得更久。
+  let stop_auto = move || {
+    auto.set(false);
+    tx_follow.set(false);
+    last_tx.set(None);
+    tx_refusal.set(None);
+    // 上行被强制停下，重新开启时从头计数（与上行复选框的开关行为一致）。
+    tx_writes.set(0);
+  };
+
   Effect::new(move |_| {
     let _ = selection.get();
-    auto.set(false);
+    stop_auto();
     paused.set(false);
     last_hz.set(None);
     detector.update_value(OverrideDetector::reset);
   });
 
   let auto_id = unique_id("doppler-auto-tune");
+  let tx_id = unique_id("doppler-write-uplink");
 
   let save = move || settings.with_untracked(save_settings);
 
@@ -79,7 +128,8 @@ pub(super) fn DopplerRig(
     }
   };
   let reset_ui = move || {
-    auto.set(false);
+    stop_auto();
+    tx_writes.set(0);
     paused.set(false);
     rig_hz.set(None);
     digits.set(None);
@@ -164,7 +214,7 @@ pub(super) fn DopplerRig(
               .try_update_value(|d| d.observe(last, hz))
               .unwrap_or(false);
             if moved && auto.get_untracked() {
-              auto.set(false);
+              stop_auto();
               paused.set(true);
             }
           }
@@ -201,6 +251,47 @@ pub(super) fn DopplerRig(
           }
           last_hz.set(Some(hz));
           writes.update(|n| *n = n.saturating_add(1));
+        }
+
+        // 卫星在地平线下（`tx_plan` 为 None）时，清掉上一次残留的「上行被拒」提示，
+        // 免得它和「地平线以下不写」同时挂着一条过期告警。
+        if tx_plan.get_untracked().is_none() {
+          tx_refusal.set(None);
+        }
+
+        // 上行（发射）：必须 `auto` 与 `tx_follow` 都开着；没有手动改频嫌疑；卫星在地平线上（`tx_plan` 为 Some）。
+        if auto.get_untracked()
+          && tx_follow.get_untracked()
+          && detector.with_value(OverrideDetector::write_allowed)
+          && let Some(plan) = tx_plan.get_untracked()
+          && let Some(hz) = round_for_rig(plan.hz)
+        {
+          match guard_uplink(hz, plan.nominal_hz, plan.slack_hz) {
+            Err(why) => {
+              // 护栏拒绝：一个字节也不写，把原因给用户看；目标回到允许范围后下一秒自动恢复。
+              tx_refusal.set(Some(why));
+            }
+            Ok(hz) => {
+              tx_refusal.set(None);
+              if should_write(last_tx.get_untracked(), hz)
+                && let Some(cmd) = set_other_vfo_frequency_command(
+                  s.protocol,
+                  s.civ_addr,
+                  hz,
+                  digits.get_untracked(),
+                )
+              {
+                if let Err(e) = write_bytes(&writer, &cmd).await {
+                  return fail(my, js_error_message(&e));
+                }
+                if !alive() {
+                  return;
+                }
+                last_tx.set(Some(hz));
+                tx_writes.update(|n| *n = n.saturating_add(1));
+              }
+            }
+          }
         }
         sleep(POLL_MS).await;
       }
@@ -317,16 +408,36 @@ pub(super) fn DopplerRig(
             id=auto_id.clone()
             checked=auto
             on_change=Callback::new(move |on: bool| {
-              auto.set(on);
               if on {
+                auto.set(true);
                 // 重新开启：忘掉上次的写入记录，下一秒就按当前目标写一次。
                 paused.set(false);
                 last_hz.set(None);
                 detector.update_value(OverrideDetector::reset);
+              } else {
+                stop_auto();
               }
             })
           />
           <Label r#for=auto_id.clone()>{move || t("radio.doppler-rig-auto")}</Label>
+        </div>
+        <div class="space-y-1 border-l-2 border-destructive/60 pl-3">
+          <div class="flex items-center gap-2">
+            <Checkbox
+              id=tx_id.clone()
+              checked=tx_follow
+              disabled=Signal::derive(move || !auto.get())
+              on_change=Callback::new(move |on: bool| {
+                // 只有下行自动调谐开着才能开；关上行时忘掉自己的写入记录，再开就按当前目标重写一次。
+                tx_follow.set(on && auto.get_untracked());
+                last_tx.set(None);
+                tx_refusal.set(None);
+                tx_writes.set(0);
+              })
+            />
+            <Label r#for=tx_id.clone()>{move || t("radio.doppler-rig-uplink")}</Label>
+          </div>
+          <p class="text-destructive">{move || t("radio.doppler-rig-uplink-warning")}</p>
         </div>
         <div class="space-y-0.5 tabular-nums" aria-live="polite">
           <div>
@@ -343,6 +454,29 @@ pub(super) fn DopplerRig(
                 view! {
                   <div>
                     {tp("radio.doppler-rig-written", n, &[&n.to_string(), &format_mhz(hz)])}
+                  </div>
+                }
+              })
+          }}
+          {move || {
+            let n = tx_writes.get();
+            last_tx
+              .get()
+              .map(|hz| {
+                view! {
+                  <div>
+                    {tp("radio.doppler-rig-uplink-written", n, &[&n.to_string(), &format_mhz(hz)])}
+                  </div>
+                }
+              })
+          }}
+          {move || {
+            tx_refusal
+              .get()
+              .map(|why| {
+                view! {
+                  <div class="text-destructive" role="alert">
+                    {refusal_text(why)}
                   </div>
                 }
               })
