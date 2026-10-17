@@ -7,6 +7,7 @@
 
 mod locus;
 mod swr_plot;
+mod tdr_panel;
 mod vna_reader_page;
 
 pub use vna_reader_page::VnaReaderPage;

@@ -229,5 +229,6 @@
   "shell.scheme-sunset": "Sunset",
   "shell.scheme-graphite": "Graphite",
   "shell.license": "License",
-  "shell.license-notice": "License notice: the site is MIT; the DominoEX, LRPT and NAVTEX decoders are GPL-3.0, source in the GitHub repository"
+  "shell.license-notice": "License notice: the site is MIT; the DominoEX, LRPT and NAVTEX decoders are GPL-3.0, source in the GitHub repository",
+  "shell.frequency-power-compliance": "Frequency & Power Compliance"
 }

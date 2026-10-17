@@ -132,7 +132,7 @@
 
 ### 工具与实时数据
 
-- **🧮 小工具（52 项计算器 + 数据备份）**：频率 ↔ 波长、dBm ↔ 功率、分贝增益、欧姆定律、CW 必要带宽、LC 谐振、容抗/感抗、天线长度、天线匹配网络、史密斯圆图、驻波比 ↔ 反射系数、级联增益、电阻串并联、频率单位换算、电池续航、dBm ↔ dBμV、馈线损耗、滤波器设计、呼号查询（DXCC 实体/稀有度）、两点距离与方位角、传播预测 MUF、卫星多普勒、自由空间路径损耗、菲涅尔区与视距（地球曲率隆起、第一菲涅尔区半径、60% 净空判定）、路径剖面（粘贴高程点，逐点判定并画剖面图，给出两端天线需抬高多少）、EIRP、链路预算、接收机灵敏度、噪声系数级联、天线增益换算、电阻色环、竞赛记分、线圈/Yagi 振子计算、T/π 型衰减器、变压器阻抗、UTC 时间、传输线阻抗、抛物面天线（增益、3 dB 波束宽度、焦距 / 凹陷深度 / 馈源位置，可用实测深度反推未知抛物面的焦点）、互调、谐波与镜频（给定若干发射频率，列出 2 / 3 阶互调与谐波产物并标出落入业余波段的；镜频按高端 / 低端本振两侧给出）、磁环绕线（由目标电感反推匝数、AL 公差带、导线长度与单层窗口占用；内置磁环只收已对照 Fair-Rite 官方零件页核对的，其余可自己填 AL）、矩形波导（截止频率与模式、单模范围、导波波长、导体损耗、截止以下衰减，内置 EIA WR 标准尺寸）、雨衰（ITU-R P.838-3 / P.530-17，地面微波链路）、占空比与平均功率（FCC OET-65B 的模式占空比与滑动平均窗口）、IP3 级联（总 IIP3 / OIP3 与每级对互调的贡献，找瓶颈）、线径压降、晶体振荡、射频暴露评估、亚音与中继频差、APRS 编解码、数字模式编码、LoRa 链路（空中时间、接收灵敏度、链路预算与最大距离，按 Semtech AN1200.13 口径）、NTS Radiogram / ICS-213 报文生成
+- **🧮 小工具（58 项计算器 + 数据备份）**：频率 ↔ 波长、dBm ↔ 功率、分贝增益、欧姆定律、CW 必要带宽、LC 谐振、容抗/感抗、天线长度、天线匹配网络、史密斯圆图、驻波比 ↔ 反射系数、级联增益、电阻串并联、频率单位换算、电池续航、dBm ↔ dBμV、馈线损耗、滤波器设计、呼号查询（DXCC 实体/稀有度）、两点距离与方位角、传播预测 MUF、卫星多普勒、自由空间路径损耗、菲涅尔区与视距（地球曲率隆起、第一菲涅尔区半径、60% 净空判定）、路径剖面（粘贴高程点，逐点判定并画剖面图，给出两端天线需抬高多少）、EIRP、链路预算、接收机灵敏度、噪声系数级联、天线增益换算、电阻色环、SMD 电阻代码、瓷片电容代码、竞赛记分、线圈/Yagi 振子计算、T/π 型衰减器、变压器阻抗、UTC 时间、传输线阻抗（同轴 / 双线 / 微带线 / 带状线）、单短截线匹配、磁环小环天线、电短加载线圈、离网供电规划、抛物面天线（增益、3 dB 波束宽度、焦距 / 凹陷深度 / 馈源位置，可用实测深度反推未知抛物面的焦点）、互调、谐波与镜频（给定若干发射频率，列出 2 / 3 阶互调与谐波产物并标出落入业余波段的；镜频按高端 / 低端本振两侧给出）、磁环绕线（由目标电感反推匝数、AL 公差带、导线长度与单层窗口占用；内置磁环只收已对照 Fair-Rite 官方零件页核对的，其余可自己填 AL）、矩形波导（截止频率与模式、单模范围、导波波长、导体损耗、截止以下衰减，内置 EIA WR 标准尺寸）、雨衰（ITU-R P.838-3 / P.530-17，地面微波链路）、占空比与平均功率（FCC OET-65B 的模式占空比与滑动平均窗口）、IP3 级联（总 IIP3 / OIP3 与每级对互调的贡献，找瓶颈）、线径压降、晶体振荡、射频暴露评估、亚音与中继频差、APRS 编解码、数字模式编码、LoRa 链路（空中时间、接收灵敏度、链路预算与最大距离，按 Semtech AN1200.13 口径）、NTS Radiogram / ICS-213 报文生成
 - **🧭 点对点传播预测**（`/muf` 页内）：输入双方 Maidenhead 网格、月份与太阳黑子数，给出 **24 小时 × 波段**可靠度热力矩阵与逐小时 MUF / LUF 曲线，点任一格子看该时刻的跳数、仰角与路径细节（简化 VOACAP 模型，纯本地计算、离线可用）；可一键取实时太阳通量换算黑子数，K ≥ 4 时提示地磁活跃
 - **📈 实时仪表盘**：太阳活动、空间天气警报、DX 热点、ISS 位置、DXCC 稀有度聚合一屏展示
 - **☀️ 太阳活动**：太阳通量、A/K 指数、黑子数与各波段传播条件（含 K 指数 1 分钟曲线与太阳黑子周期趋势）
@@ -152,6 +152,7 @@
 
 - **📐 矩量法天线求解器**（`/nec`）：NEC-2 精简矩量法，纯前端求解（上限 200 段）。5 个预设 + Yagi 设计向导；导线表 / 负载表 / 传输线表可编辑，画布上可拖端点、整根平移、按轴阵列复制；地面（自由空间 / 理想地 / 有耗地）与导线材质；输出馈电阻抗、驻波、效率、真实增益、前后比，方位 / 仰角切面、WebGL2 可旋转三维方向图（不支持时回退 SVG）、NVIS 覆盖图；频带扫描给出 SWR 曲线与可用带宽；`.nec` 导入导出（`GW` / `GE` / `GN` / `LD` / `EX` / `TL` / `FR`）；「实用天线」「天线 DIY」方案表可一键把模板加载进求解器；**设计存档**按名字保存、刷新后原样载回，并随数据备份导出。方案库模板与另一套 NEC-2 实现（necpp）交叉验证过（参照是另一套程序，不是实测）
 - **🎯 Smith 圆图**（`/smith`）：可拖拽阻抗点与等驻波比圆；串 / 并联 L、C 元件即时走轨迹，L 型网络自动求解并折算元件值，给出 SWR ≤ 2 的可用带宽
+- **🛡️ 频率功率合规**（`/compliance`）：选 A / B / C 操作证类别 + 输入频率，即时判断能否发射、功率上限（30 MHz 分界，并叠加 2200 m / 60 m 的 ITU EIRP 脚注上限）、该频段是否需要频率协调，每条结论链到 `/radio-law` 条文
 - **🌊 波形实验室**（`/waveform-lab`）：AM / DSB / USB / LSB / FM 时域频域联动；BPSK / QPSK / 16QAM 星座图与眼图（可调 Es/N0 与滚降）；Butterworth / Chebyshev I / Chebyshev II / 椭圆四类滤波器原型的幅频、相频、群延迟曲线（椭圆原型与 scipy 参考值对拍）；香农容量沙盒
 - **📏 测量误差实验室**（`/measurement-lab`）：拖动馈线损耗看台站端驻波如何被「掩盖」、驻波表方向性决定的读数下限；VNA SOLT 校准四步分解；五条驻波 / 功率读数陷阱速查
 
@@ -193,7 +194,7 @@
 
 - **📻 电台 CAT 联动**：日志与竞赛录入页连接电台，每秒读取频率与模式自动回填；支持 Kenwood / Elecraft / 新款 Yaesu 的 ASCII 命令与 Icom CI-V（可设地址）
 - **📡 KISS TNC**（`/kiss-tnc`）：连接 TNC 或 Direwolf 的 KISS 串口，实时显示收到的 AX.25 帧，可发送 UI 帧；帧预览离线可用
-- **📈 VNA 读数**（`/vna-reader`）：导入 `.s1p`（Touchstone，RI / MA / DB）或直接连 NanoVNA 扫频，给出最低驻波、该点阻抗与回波损耗、SWR ≤ 2 的频段，并画 Smith 圆图轨迹与驻波曲线；可导出 `.s1p`。本页不做校准，读数前请先在仪器上完成 SOL 校准
+- **📈 VNA 读数**（`/vna-reader`）：导入 `.s1p`（Touchstone，RI / MA / DB）或直接连 NanoVNA 扫频，给出最低驻波、该点阻抗与回波损耗、SWR ≤ 2 的频段，并画 Smith 圆图轨迹与驻波曲线；**TDR 故障定位**对 S11 扫频做逆 FFT 把失配点映射到距离（输入速率因子，给出距离分辨率与最大不模糊距离、−30 dB 以上的反射点）；可导出 `.s1p`。本页不做校准，读数前请先在仪器上完成 SOL 校准
 
 ### 设备与 DIY
 
@@ -1041,7 +1042,7 @@ ls target/dev-dist/                                          # 正常应有 data
 | 天线 · 设备 | `/antennas` `/antenna-array` `/polarization` `/feedline` `/connectors` `/balun` `/antenna-diy` `/practical-antennas` `/antenna-installation` `/antenna-farm` `/antenna-tuning` `/antenna-analyzer` `/vna` `/antenna-theory` `/antenna-modeling` `/nvis` `/electronics` `/filters` `/measurement-lab` `/meters` `/power` `/power-supply` `/transceiver` `/receiver` `/rig-reviews` `/gear` `/amplifier` `/bands` `/bandplan` `/microwave` `/mobile` |
 | 通联 · 活动 | `/radiogram` `/operating` `/sat-operation` `/china-ham` `/contest` `/cabrillo` `/awards` `/iota` `/dx` `/dxpedition` `/most-wanted` `/qrp` `/eqsl` `/qsl-card` `/ardf` `/emcomm` `/winlink` `/events` `/portable` `/grid` `/callsign` `/repeater` `/repeater-build` `/logging-software` |
 | 进阶 · 关于 | `/organizations` `/safety` `/grounding` `/rfi` `/noise` `/beginner` `/learning-path` `/learning-resources` `/swl` `/license` `/spectrum-admin` `/regulations` `/history` `/remote` `/open-source` `/community` `/diy-projects` `/developers` |
-| 工具 · 计算 · 解码 | `/kiss-tnc` `/vna-reader` `/navtex-decode` `/lrpt-decode` `/dominoex-decode` `/olivia-decode` `/rtty-decode` `/ft8-decode` `/tools` `/nec` `/waveform-lab` `/smith` `/apt-decoder` `/sstv-decode` `/wspr-decode` `/sdr-waterfall` `/psk-decode` `/photo-processor` |
+| 工具 · 计算 · 解码 | `/kiss-tnc` `/vna-reader` `/navtex-decode` `/lrpt-decode` `/dominoex-decode` `/olivia-decode` `/rtty-decode` `/ft8-decode` `/tools` `/nec` `/waveform-lab` `/smith` `/compliance` `/apt-decoder` `/sstv-decode` `/wspr-decode` `/sdr-waterfall` `/psk-decode` `/photo-processor` |
 | 工具 · 日志 · 竞赛 | `/log` `/qsl-labels` `/qsl-designer` `/contest-log` `/contest-calendar` `/stats` |
 | 工具 · 实时数据 | `/dashboard` `/dx-spots` `/psk-reporter` `/rbn` `/solar` |
 | 工具 · 地图 · 卫星 | `/grid-map` `/grayline` `/dxcc-map` `/portable-map` `/satellites` `/sdr-map` |

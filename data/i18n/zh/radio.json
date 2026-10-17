@@ -552,5 +552,17 @@
   "radio.linear-custom-error-inverted": "通带没有生效：下限必须小于上限（上行、下行都是）。",
   "radio.linear-custom-error-width-mismatch": "通带没有生效：上行与下行的通带宽度必须相等，否则上下行没有一一对应的关系。请检查有没有填错一位数。",
   "radio.linear-custom-error-width-range": "通带没有生效：通带宽度应在 1 kHz 到 1 MHz 之间（预置里最窄 20 kHz、最宽 100 kHz）。多半是单位或位数填错了。",
-  "radio.linear-custom-note": "自定义通带同样要过上行护栏：必须在业余波段内、卫星业余业务段内，且离通带中心不超过半宽加多普勒上限。自定义转发器没有 NORAD，请在上方自己填卫星编号。数据请以卫星运营方公布的为准。"
+  "radio.linear-custom-note": "自定义通带同样要过上行护栏：必须在业余波段内、卫星业余业务段内，且离通带中心不超过半宽加多普勒上限。自定义转发器没有 NORAD，请在上方自己填卫星编号。数据请以卫星运营方公布的为准。",
+  "radio.compliance-subtitle": "按操作证类别核对频率可用性与功率上限",
+  "radio.compliance-class-label": "操作证类别",
+  "radio.compliance-freq-hint": "输入频率，例如 7.074 或 145.5",
+  "radio.compliance-invalid-freq": "请输入有效的频率（MHz）",
+  "radio.compliance-not-in-band": "该频率不在业余业务频段内",
+  "radio.compliance-usable": "可用",
+  "radio.compliance-band-line": "波段：{} · {} · 使用状态：{}",
+  "radio.compliance-power": "功率上限 ≤ {} W",
+  "radio.compliance-eirp": "受 ITU 脚注 {} 限制：≤ {} W e.i.r.p.",
+  "radio.compliance-denied": "{}无权使用该频率",
+  "radio.compliance-coord-needed": "需开展频率协调（次要业务 / 与其他业务共同主要）",
+  "radio.compliance-coord-none": "无需频率协调"
 }

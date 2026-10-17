@@ -60,3 +60,45 @@ test("VNA 读数：多端口文件如实拒绝", async ({ page }) => {
   await expect(page.getByRole("alert")).toHaveText(/无法解析：第 2 行不是单端口数据/);
   await expect(page.getByText("还没有数据")).toBeVisible();
 });
+
+/**
+ * 合成一份「10 米处有一处失配」的 .s1p：Γ(f) = (1/3)·e^(−j·4π·f·L/v)，v = 0.66·c。
+ * 页面默认速率因子 0.66，所以 TDR 应把峰值定位回 10 m。
+ */
+function synthTdrS1p(): string {
+  const v = 0.66 * 299_792_458;
+  const L = 10;
+  const g0 = 1 / 3;
+  const f0 = 1e6;
+  const f1 = 900e6;
+  const n = 256;
+  const df = (f1 - f0) / (n - 1);
+  const lines = ["! synthetic TDR sweep", "# Hz S RI R 50"];
+  for (let i = 0; i < n; i++) {
+    const f = f0 + i * df;
+    const phase = (-4 * Math.PI * f * L) / v;
+    lines.push(`${f.toExponential(9)} ${(g0 * Math.cos(phase)).toExponential(9)} ${(g0 * Math.sin(phase)).toExponential(9)}`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+test("VNA 读数：TDR 故障定位把失配点定位回已知距离", async ({ page }) => {
+  await page.goto("/vna-reader");
+  await page.setInputFiles('input[type="file"]', {
+    name: "tdr.s1p",
+    mimeType: "text/plain",
+    buffer: Buffer.from(synthTdrS1p()),
+  });
+
+  const tdr = page.locator('[data-slot="vna-tdr"]');
+  await expect(page.getByRole("img", { name: "时域反射（TDR）距离回波曲线" })).toBeVisible();
+  // 分辨率 0.11 m 按「11 cm」显示；最大不模糊距离 = v/(2·Δf) ≈ 28.06 m。
+  await expect(tdr.getByText(/距离分辨率 ≈ 11 cm，最大不模糊距离 28\.\d+ m/)).toBeVisible();
+  // 最强反射（0 dB）落在约 10 m：正是合成时的失配距离。
+  await expect(tdr.getByText(/10\.\d+ m · 0\.0 dB/)).toBeVisible();
+
+  // 清空速率因子（`type=number` 只可能停在空串这类半截状态）：要直说「输错了」，
+  // 而不是把 `Field` 的 hint 重复一遍。
+  await tdr.getByLabel("速率因子 vf").fill("");
+  await expect(tdr.getByRole("alert")).toHaveText("速率因子必须在 0（不含）与 1（含）之间。");
+});

@@ -229,5 +229,6 @@
   "shell.scheme-sunset": "晚霞",
   "shell.scheme-graphite": "石墨",
   "shell.license": "许可",
-  "shell.license-notice": "许可说明：本站以 MIT 发布，DominoEX、LRPT 与 NAVTEX 解码器为 GPL-3.0，源码在 GitHub 仓库"
+  "shell.license-notice": "许可说明：本站以 MIT 发布，DominoEX、LRPT 与 NAVTEX 解码器为 GPL-3.0，源码在 GitHub 仓库",
+  "shell.frequency-power-compliance": "频率功率合规"
 }

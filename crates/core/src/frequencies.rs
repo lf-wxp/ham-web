@@ -73,16 +73,28 @@ pub const FREQ_GROUPS: &[FreqGroup] = &[
   },
 ];
 
-/// 根据频率（MHz）推断业余波段名称，无法归入常用业余波段时返回「其他」。
+/// 根据频率（MHz）推断业余波段名称，无法归入常用业余波段时返回 `None`。
 ///
 /// 边界来自 [`crate::bands::AMATEUR_BAND_EDGES`]（半开区间 `[下, 上)`），
 /// 该常量是这些边界在全站的唯一事实来源，避免多处硬编码造成漂移。
+///
+/// 需要「未命中」这个信息的地方（界面要把「其他」翻译成当前语言）用这个；
+/// 只把结果当数据串（日志、导入导出、按波段分组）的地方用 [`band_of`]。
 #[must_use]
-pub fn band_of(freq_mhz: f64) -> &'static str {
+pub fn band_of_opt(freq_mhz: f64) -> Option<&'static str> {
   crate::bands::AMATEUR_BAND_EDGES
     .iter()
     .find(|(_, lo, hi)| (*lo..*hi).contains(&freq_mhz))
-    .map_or("其他", |(name, _, _)| *name)
+    .map(|(name, _, _)| *name)
+}
+
+/// 根据频率（MHz）推断业余波段名称，无法归入常用业余波段时返回「其他」。
+///
+/// 「其他」在这里是**数据值**（会写进日志、进导出文件、参与按波段分组），不是界面文案；
+/// 界面要显示它时请走 [`band_of_opt`] + 词条，别把中文直接画到 en / es 界面上。
+#[must_use]
+pub fn band_of(freq_mhz: f64) -> &'static str {
+  band_of_opt(freq_mhz).unwrap_or("其他")
 }
 
 #[cfg(test)]
@@ -109,5 +121,8 @@ mod tests {
     assert_eq!(band_of(144.5), "2m");
     assert_eq!(band_of(433.0), "70cm");
     assert_eq!(band_of(1.2), "其他");
+    // 界面取这一支：未命中是 `None`，由页面翻成当前语言。
+    assert_eq!(band_of_opt(433.0), Some("70cm"));
+    assert_eq!(band_of_opt(1.2), None);
   }
 }

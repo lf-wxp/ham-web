@@ -17,22 +17,22 @@ use crate::pages::{
   ExamPage, ExamReviewPage, FeedlinePage, FiltersPage, FlashcardsPage, FormulasPage,
   FrequenciesPage, Ft8DecoderPage, Ft8Page, GearPage, GlossaryPage, GnuradioPage, GraylinePage,
   GridMapPage, GridSystemPage, GroundingPage, HistoryPage, HomePage, IotaPage, KissTncPage,
-  LearningPathPage, LearningResourcesPage, LicenseClassesPage, LicenseNoticePage, LicensePage,
-  ListenPage, LogPage, LoggingSoftwarePage, LoraPage, LrptDecoderPage, MeasurementLabPage,
-  MeteorScatterPage, MetersPage, MicrowavePage, MistakeTopicsPage, MistakesPage, MobilePage,
-  ModernDigitalModesPage, ModesPage, ModulationTheoryPage, MorsePage, MostWantedPage, MufPage,
-  NavtexDecoderPage, NecPage, NoisePage, NotFoundPage, NotificationsPage, NvisPage,
-  OliviaDecoderPage, OpenSourcePage, OperatingPage, OrganizationsPage, PacketPage, PhoneticPage,
-  PhotoProcessorPage, PolarizationPage, PortableMapPage, PortablePage, PowerPage, PowerSupplyPage,
-  PracticalAntennasPage, PracticePage, PrefixesPage, PrintPage, ProgressPage, PropagationPage,
-  PskDecodePage, PskReporterPage, QCodePage, QrpPage, QslCardPage, QslDesignerPage, QslLabelsPage,
-  QuestMapPage, RadioLawPage, RadiogramPage, RbnPage, ReceiverPage, ReferencePage, RegulationsPage,
-  RemotePage, RepeaterBuildPage, RepeaterPage, ReportPage, RfiPage, RigReviewsPage, RstPage,
-  RttyDecoderPage, RttyPage, SafetyPage, SatOperationPage, SatellitesPage, SdrMapPage, SdrPage,
-  SdrWaterfallPage, SmithPage, SolarPage, SpecialPropPage, SpectrumAdminPage, SstvDecoderPage,
-  SstvPage, StatsPage, StudyCalendarPage, SwlPage, ToolsPage, TransceiverPage, VnaPage,
-  VnaReaderPage, WaveformLabPage, WeatherSatPage, WeeklyPage, WinlinkPage, WsprDecoderPage,
-  WsprPage, ZoneMapPage,
+  LearningPathPage, LearningResourcesPage, LicenseClassesPage, LicenseCompliancePage,
+  LicenseNoticePage, LicensePage, ListenPage, LogPage, LoggingSoftwarePage, LoraPage,
+  LrptDecoderPage, MeasurementLabPage, MeteorScatterPage, MetersPage, MicrowavePage,
+  MistakeTopicsPage, MistakesPage, MobilePage, ModernDigitalModesPage, ModesPage,
+  ModulationTheoryPage, MorsePage, MostWantedPage, MufPage, NavtexDecoderPage, NecPage, NoisePage,
+  NotFoundPage, NotificationsPage, NvisPage, OliviaDecoderPage, OpenSourcePage, OperatingPage,
+  OrganizationsPage, PacketPage, PhoneticPage, PhotoProcessorPage, PolarizationPage,
+  PortableMapPage, PortablePage, PowerPage, PowerSupplyPage, PracticalAntennasPage, PracticePage,
+  PrefixesPage, PrintPage, ProgressPage, PropagationPage, PskDecodePage, PskReporterPage,
+  QCodePage, QrpPage, QslCardPage, QslDesignerPage, QslLabelsPage, QuestMapPage, RadioLawPage,
+  RadiogramPage, RbnPage, ReceiverPage, ReferencePage, RegulationsPage, RemotePage,
+  RepeaterBuildPage, RepeaterPage, ReportPage, RfiPage, RigReviewsPage, RstPage, RttyDecoderPage,
+  RttyPage, SafetyPage, SatOperationPage, SatellitesPage, SdrMapPage, SdrPage, SdrWaterfallPage,
+  SmithPage, SolarPage, SpecialPropPage, SpectrumAdminPage, SstvDecoderPage, SstvPage, StatsPage,
+  StudyCalendarPage, SwlPage, ToolsPage, TransceiverPage, VnaPage, VnaReaderPage, WaveformLabPage,
+  WeatherSatPage, WeeklyPage, WinlinkPage, WsprDecoderPage, WsprPage, ZoneMapPage,
 };
 
 use crate::components::related_topics::RelatedTopics;
@@ -230,6 +230,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/packet") view=PacketPage />
         <Route path=path!("/mobile") view=MobilePage />
         <Route path=path!("/license-classes") view=LicenseClassesPage />
+        <Route path=path!("/compliance") view=LicenseCompliancePage />
         <Route path=path!("/receiver") view=ReceiverPage />
         <Route path=path!("/radio-law") view=RadioLawPage />
         <Route path=path!("/rig-reviews") view=RigReviewsPage />

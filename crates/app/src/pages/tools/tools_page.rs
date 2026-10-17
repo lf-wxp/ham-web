@@ -12,6 +12,7 @@ use super::attenuator_calculator::AttenuatorCalculator;
 use super::backup_tool::BackupTool;
 use super::battery_runtime::BatteryRuntime;
 use super::callsign_lookup::CallsignLookup;
+use super::capacitor_code::CapacitorCode;
 use super::cascade_gain::CascadeGain;
 use super::coil_yagi_calculator::CoilYagiCalculator;
 use super::contest_scorer::ContestScorer;
@@ -34,9 +35,12 @@ use super::intermod_calculator::IntermodCalculator;
 use super::ip3_cascade::Ip3Cascade;
 use super::lc_resonance::LcResonance;
 use super::link_budget_calculator::LinkBudgetCalculator;
+use super::loading_coil::LoadingCoilTool;
 use super::lora_calculator::LoraCalculator;
+use super::magnetic_loop::MagneticLoopTool;
 use super::mode_encoder::ModeEncoder;
 use super::noise_cascade::NoiseCascade;
+use super::off_grid::OffGrid;
 use super::ohms_law::OhmsLaw;
 use super::oscillator::Oscillator;
 use super::parabolic_dish::ParabolicDish;
@@ -49,7 +53,9 @@ use super::receiver_sensitivity::ReceiverSensitivity;
 use super::resistor_color_code::ResistorColorCode;
 use super::resistor_parallel::ResistorParallel;
 use super::rf_exposure::RfExposure;
+use super::smd_resistor_code::SmdResistorCode;
 use super::smith_chart::SmithChart;
+use super::stub_match::StubMatch;
 use super::swr_converter::SwrConverter;
 use super::tone_squelch::ToneSquelch;
 use super::tool_section::ToolSection;
@@ -79,6 +85,7 @@ const TOOL_NAV: &[(&str, &str)] = &[
   ("resistor", "tools.resistors-in-series-parallel"),
   ("freq-units", "tools.frequency-units"),
   ("battery", "tools.battery-runtime"),
+  ("off-grid", "tools.offgrid"),
   ("dbm-dbuv", "tools.dbm-db-v"),
   ("feedline-loss", "tools.feedline-loss"),
   ("filter-design", "tools.filter-design"),
@@ -104,13 +111,18 @@ const TOOL_NAV: &[(&str, &str)] = &[
   ("noise-cascade", "tools.noise-cascade"),
   ("gain-conversion", "tools.gain-conversion"),
   ("resistor-code", "tools.resistor-colour-code"),
+  ("smd-resistor", "tools.smd-resistor-code"),
+  ("capacitor-code", "tools.capacitor-code"),
   ("contest-scorer", "tools.contest-scoring"),
   ("coil-yagi", "tools.coil-yagi-calculator"),
   ("attenuator", "tools.attenuator"),
   ("transformer", "tools.transformer-impedance"),
   ("utc-clock", "tools.utc-time-heading"),
   ("tx-line", "tools.transmission-line-impedance"),
+  ("stub-match", "tools.stub-match"),
   ("toroid-winding", "tools.toroid-winding"),
+  ("magnetic-loop", "tools.magloop"),
+  ("loading-coil", "tools.loading-coil"),
   ("wire-gauge", "tools.wire-gauge-and-voltage"),
   ("oscillator", "tools.crystal-oscillator"),
   ("rf-exposure", "tools.rf-exposure-evaluation"),
@@ -233,6 +245,8 @@ pub fn ToolsPage() -> impl IntoView {
 
             <ToolSection id="battery" title="tools.battery-runtime-estimate" description="tools.runtime-hours-capacity-mah"><BatteryRuntime /></ToolSection>
 
+            <ToolSection id="off-grid" title="tools.offgrid" description="tools.offgrid-description"><OffGrid /></ToolSection>
+
             <ToolSection id="dbm-dbuv" title="tools.dbm-db-v" description="tools.at-50-db-v"><DbmDbuv /></ToolSection>
 
             <ToolSection id="feedline-loss" title="tools.feedline-loss" description="tools.total-loss-loss-per"><FeedlineLoss /></ToolSection>
@@ -281,6 +295,10 @@ pub fn ToolsPage() -> impl IntoView {
 
             <ToolSection id="resistor-code" title="tools.resistor-colour-code" description="tools.4-band-resistor-first"><ResistorColorCode /></ToolSection>
 
+            <ToolSection id="smd-resistor" title="tools.smd-resistor-code" description="tools.smd-resistor-code-description"><SmdResistorCode /></ToolSection>
+
+            <ToolSection id="capacitor-code" title="tools.capacitor-code" description="tools.capacitor-code-description"><CapacitorCode /></ToolSection>
+
             <ToolSection id="contest-scorer" title="tools.contest-scoring" description="tools.quick-score-estimates-for"><ContestScorer /></ToolSection>
 
             <ToolSection id="coil-yagi" title="tools.coil-yagi-calculator" description="tools.air-core-coil-inductance"><CoilYagiCalculator /></ToolSection>
@@ -293,7 +311,13 @@ pub fn ToolsPage() -> impl IntoView {
 
             <ToolSection id="tx-line" title="tools.transmission-line-impedance" description="tools.characteristic-impedance-of-coax"><TxLine /></ToolSection>
 
+            <ToolSection id="stub-match" title="tools.stub-match" description="tools.stub-match-description"><StubMatch /></ToolSection>
+
             <ToolSection id="toroid-winding" title="tools.toroid-winding" description="tools.toroid-winding-description"><ToroidWinding /></ToolSection>
+
+            <ToolSection id="magnetic-loop" title="tools.magloop" description="tools.magloop-description"><MagneticLoopTool /></ToolSection>
+
+            <ToolSection id="loading-coil" title="tools.loading-coil" description="tools.loading-coil-description"><LoadingCoilTool /></ToolSection>
 
             <ToolSection id="wire-gauge" title="tools.wire-gauge-and-voltage" description="tools.estimate-dc-supply-wire"><WireGauge /></ToolSection>
 

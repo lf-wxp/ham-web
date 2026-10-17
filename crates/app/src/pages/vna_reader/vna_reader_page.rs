@@ -10,6 +10,7 @@ use wasm_bindgen::JsValue;
 
 use super::locus::S11Locus;
 use super::swr_plot::SwrPlot;
+use super::tdr_panel::TdrPanel;
 use super::{NOTE, fmt_hz, parse_error_text};
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf};
@@ -82,6 +83,9 @@ pub fn VnaReaderPage() -> impl IntoView {
   let busy = RwSignal::new(false);
   let start_mhz = RwSignal::new(String::from("6.9"));
   let stop_mhz = RwSignal::new(String::from("7.4"));
+  // TDR 面板的速率因子必须由页面持有：面板住在下面的结果区里，而结果区整体在一个响应式闭包
+  // 内（切语言会重跑它、整段重建），状态放面板里会被重置成默认值。
+  let tdr_vf = RwSignal::new(String::from("0.66"));
 
   let best = Signal::derive(move || sweep.with(|s| s.as_ref().and_then(min_swr_index)));
 
@@ -277,6 +281,7 @@ pub fn VnaReaderPage() -> impl IntoView {
                 <S11Locus sweep=sweep_memo best=best />
                 <SwrPlot sweep=sweep_memo />
               </div>
+              <TdrPanel sweep=sweep_memo vf_text=tdr_vf />
               <div class="flex flex-wrap gap-2">
                 <Button variant=Variant::Outline size=Size::Sm on_click=Callback::new(export)>
                   {move || t("tools.vna-export")}

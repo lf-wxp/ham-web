@@ -600,5 +600,17 @@
   "radio.linear-custom-error-inverted": "No se aplicó la banda de paso: el extremo inferior debe ser menor que el superior (en subida y en bajada).",
   "radio.linear-custom-error-width-mismatch": "No se aplicó la banda de paso: las bandas de subida y bajada deben tener el mismo ancho, si no, no se corresponden una a una. Revisa si te equivocaste en un dígito.",
   "radio.linear-custom-error-width-range": "No se aplicó la banda de paso: el ancho debe estar entre 1 kHz y 1 MHz (los predefinidos van de 20 kHz a 100 kHz). Probablemente la unidad o un dígito es incorrecto.",
-  "radio.linear-custom-note": "Una banda de paso personalizada pasa por las mismas protecciones de subida: debe estar dentro de una banda de aficionado y del segmento del servicio por satélite, y a no más de medio ancho más el límite Doppler del centro de la banda. Un transpondedor personalizado no tiene número NORAD, así que introduce tú el número del satélite arriba. Usa las cifras publicadas por el operador del satélite."
+  "radio.linear-custom-note": "Una banda de paso personalizada pasa por las mismas protecciones de subida: debe estar dentro de una banda de aficionado y del segmento del servicio por satélite, y a no más de medio ancho más el límite Doppler del centro de la banda. Un transpondedor personalizado no tiene número NORAD, así que introduce tú el número del satélite arriba. Usa las cifras publicadas por el operador del satélite.",
+  "radio.compliance-subtitle": "Comprueba si una frecuencia está disponible y el límite de potencia según tu clase de licencia",
+  "radio.compliance-class-label": "Clase de licencia",
+  "radio.compliance-freq-hint": "Introduce una frecuencia, p. ej. 7.074 o 145.5",
+  "radio.compliance-invalid-freq": "Introduce una frecuencia válida en MHz",
+  "radio.compliance-not-in-band": "Esta frecuencia no está dentro de una atribución de radioaficionados",
+  "radio.compliance-usable": "Disponible",
+  "radio.compliance-band-line": "Banda: {} · {} · Estado de uso: {}",
+  "radio.compliance-power": "Límite de potencia ≤ {} W",
+  "radio.compliance-eirp": "Limitado por la nota ITU {}: ≤ {} W p.i.r.e.",
+  "radio.compliance-denied": "{} no puede usar esta frecuencia",
+  "radio.compliance-coord-needed": "Se requiere coordinación de frecuencias (atribución secundaria o primaria compartida)",
+  "radio.compliance-coord-none": "No se requiere coordinación de frecuencias"
 }

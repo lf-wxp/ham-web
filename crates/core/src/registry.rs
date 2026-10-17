@@ -1304,6 +1304,14 @@ pub const MODULES: &[Module] = &[
     backend: false,
   },
   Module {
+    path: "/compliance",
+    href: None,
+    title: "频率功率合规",
+    icon: "scale",
+    group: Some(GROUP_TOOL_CALC),
+    backend: false,
+  },
+  Module {
     path: "/apt-decoder",
     href: None,
     title: "APT 云图解码",

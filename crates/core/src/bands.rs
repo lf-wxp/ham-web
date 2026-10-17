@@ -1,6 +1,7 @@
 //! 频谱波段划分表：各波段的波长/频率范围，以及其中的业余业务、卫星业余业务频段划分与脚注。
 //!
-//! 约定：频率范围均含上限、不含下限；C = λf = 3×10⁸ m/s。
+//! 约定：频率范围均含下限、不含上限（半开区间 `[下, 上)`，如 `7-7.1MHz` 含 7.000 不含 7.100）；
+//! C = λf = 3×10⁸ m/s。
 
 /// 业余业务在该频段的使用状态。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -23,6 +24,22 @@ impl Usage {
     Self::Secondary,
   ];
 
+  /// 界面词条 key（`data/i18n/{zh,en,es}/knowledge.json`）。
+  ///
+  /// 界面必须走这条：使用状态要在 en / es 界面上显示，硬编码中文是 i18n 检查器扫不到的漏网。
+  #[must_use]
+  pub const fn key(self) -> &'static str {
+    match self {
+      Self::Exclusive => "knowledge.usage-exclusive",
+      Self::SolePrimary => "knowledge.usage-sole-primary",
+      Self::Primary => "knowledge.usage-primary",
+      Self::Secondary => "knowledge.usage-secondary",
+    }
+  }
+
+  /// 中文口径的使用状态。
+  ///
+  /// 只给**非界面**用途：`/api/v1/bands` 的 JSON 字段与日志。界面请用 [`Self::key`]。
   #[must_use]
   pub const fn label(self) -> &'static str {
     match self {
@@ -655,5 +672,29 @@ mod tests {
     assert_eq!(parse_range_mhz("135.7-137.8kHz"), Some((0.1357, 0.1378)));
     assert_eq!(parse_range_mhz("18.068-18.168MHz"), Some((18.068, 18.168)));
     assert_eq!(parse_range_mhz("0.03-0.3Hz"), None);
+  }
+
+  #[test]
+  fn amateur_allocations_do_not_overlap() {
+    // `license_compliance::find_allocation` 按遍历顺序取「首个命中」，其正确性建立在
+    // 「各业余划分互不重叠」这一前提上（相邻划分共享端点但不重叠，如 7-7.1 与 7.1-7.2）。
+    // 这里把所有划分区间两两对拍：谁新增一条与既有区间重叠 / 嵌套的划分，或写出无法解析的
+    // 区间（`find_allocation` 会静默跳过），这条测试当场红。
+    let mut ranges: Vec<(&str, f64, f64)> = Vec::new();
+    for b in BANDS {
+      for a in b.allocations {
+        let (lo, hi) = parse_range_mhz(a.range).expect("划分区间应可解析");
+        assert!(lo < hi, "划分区间非法：{}", a.range);
+        for (other, olo, ohi) in &ranges {
+          assert!(
+            !(lo < *ohi && *olo < hi),
+            "划分区间重叠：{} 与 {}",
+            a.range,
+            other
+          );
+        }
+        ranges.push((a.range, lo, hi));
+      }
+    }
   }
 }

@@ -600,5 +600,17 @@
   "radio.linear-custom-error-inverted": "The passband was not applied: the low end must be below the high end (for both uplink and downlink).",
   "radio.linear-custom-error-width-mismatch": "The passband was not applied: the uplink and downlink passbands must have the same width, otherwise they do not map one to one. Check for a mistyped digit.",
   "radio.linear-custom-error-width-range": "The passband was not applied: the width should be between 1 kHz and 1 MHz (the presets range from 20 kHz to 100 kHz). The unit or a digit is probably wrong.",
-  "radio.linear-custom-note": "A custom passband goes through the same uplink guards: it must be inside an amateur band and the amateur-satellite segment, and within half the width plus the Doppler ceiling of the passband centre. A custom transponder has no NORAD number, so enter the satellite number above yourself. Use the figures published by the satellite's operator."
+  "radio.linear-custom-note": "A custom passband goes through the same uplink guards: it must be inside an amateur band and the amateur-satellite segment, and within half the width plus the Doppler ceiling of the passband centre. A custom transponder has no NORAD number, so enter the satellite number above yourself. Use the figures published by the satellite's operator.",
+  "radio.compliance-subtitle": "Check whether a frequency is available, and the power limit, for your licence class",
+  "radio.compliance-class-label": "Licence class",
+  "radio.compliance-freq-hint": "Enter a frequency, e.g. 7.074 or 145.5",
+  "radio.compliance-invalid-freq": "Enter a valid frequency in MHz",
+  "radio.compliance-not-in-band": "This frequency is not within an amateur allocation",
+  "radio.compliance-usable": "Usable",
+  "radio.compliance-band-line": "Band: {} · {} · Usage status: {}",
+  "radio.compliance-power": "Power limit ≤ {} W",
+  "radio.compliance-eirp": "Capped by ITU footnote {}: ≤ {} W e.i.r.p.",
+  "radio.compliance-denied": "{} may not use this frequency",
+  "radio.compliance-coord-needed": "Frequency coordination required (secondary or shared-primary allocation)",
+  "radio.compliance-coord-none": "No frequency coordination required"
 }

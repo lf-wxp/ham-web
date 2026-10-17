@@ -1,4 +1,7 @@
-//! 业余无线电小工具：频率↔波长、dBm↔功率、分贝增益、欧姆定律、CW 必要带宽、LC 谐振、容抗/感抗。
+//! 业余无线电小工具集合：换算、电路与天线估算、代码解码、数据备份。
+//!
+//! 不在这里维护工具清单（列一次就会过期）：导航项与区块见 `tools_page.rs` 的 `TOOL_NAV`
+//! 与 `<ToolSection>`，两者一一对应。
 
 mod antenna_length;
 mod antenna_matcher;
@@ -7,6 +10,7 @@ mod attenuator_calculator;
 mod backup_tool;
 mod battery_runtime;
 mod callsign_lookup;
+mod capacitor_code;
 mod cascade_gain;
 mod coil_yagi_calculator;
 mod contest_scorer;
@@ -29,9 +33,12 @@ mod intermod_calculator;
 mod ip3_cascade;
 mod lc_resonance;
 mod link_budget_calculator;
+mod loading_coil;
 mod lora_calculator;
+mod magnetic_loop;
 mod mode_encoder;
 mod noise_cascade;
+mod off_grid;
 mod ohms_law;
 mod oscillator;
 mod parabolic_dish;
@@ -45,7 +52,9 @@ mod receiver_sensitivity;
 mod resistor_color_code;
 mod resistor_parallel;
 mod rf_exposure;
+mod smd_resistor_code;
 mod smith_chart;
+mod stub_match;
 mod swr_converter;
 mod tone_squelch;
 mod tool_section;
@@ -91,3 +100,8 @@ const TAU: f64 = std::f64::consts::TAU;
 
 /// 结果区（只读，不是表单控件）。
 const RESULT: &str = "sm:col-span-2 bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
+
+/// 结果区（单列布局用）：与 [`RESULT`] 同一套底色 / 内距 / 字号，但不跨列。
+///
+/// 单列网格里写 `sm:col-span-2` 会凭空长出第二列，所以单列工具（代码解码这类）用这一份。
+const RESULT_INLINE: &str = "bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground";

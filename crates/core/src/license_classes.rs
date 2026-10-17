@@ -26,6 +26,18 @@ pub const BAND_PERMISSIONS: &[(&str, &str)] = &[
   ("3GHz 以上微波（5cm、3cm 等）", "B、C 类"),
 ];
 
+/// 30MHz：**功率**口径的分界（30MHz 以上 A / B / C 一致为 [`CLASS_A_MAX_W`]），也是频率权限的
+/// 判定线（A 类只能从 30MHz 起，上限另有 [`CLASS_A_UPPER_MHZ`]；B / C 类不受频率限制）。
+///
+/// 与下面的功率常量一样是**唯一事实来源**：[`crate::license_compliance`] 的频率权限判定与
+/// [`BAND_PERMISSIONS`] 的文字口径都指向它，别在别处再写一个 `30.0`。
+pub const VHF_THRESHOLD_MHZ: f64 = 30.0;
+
+/// A 类频率上限（MHz）：办法第三十条的「30-3000MHz」。
+///
+/// 3GHz 以上只有 B / C 类可用（见 [`BAND_PERMISSIONS`] 最后一行）。
+pub const CLASS_A_UPPER_MHZ: f64 = 3000.0;
+
 /// A / B / C 类功率上限（W）：全站功率口径的**唯一事实来源**。
 ///
 /// 30MHz 以上 A/B/C 一致为 [`CLASS_A_MAX_W`]；30MHz 以下 B 类为

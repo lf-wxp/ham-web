@@ -138,6 +138,118 @@ test("小工具：磁环绕线由目标电感反推匝数，向上取整并给�
   await expect(section.getByText(/请输入有效的 AL/)).toBeVisible();
 });
 
+test("小工具：SMD 电阻与瓷片电容丝印代码解码", async ({ page }) => {
+  await page.goto("/tools#smd-resistor");
+
+  // SMD 电阻：472 = 47×10² = 4.70 kΩ；1001 = 100×10¹ = 1 kΩ；68X（EIA-96）= 49.9 Ω。
+  const smd = tool(page, "smd-resistor");
+  await expect(smd).toBeVisible();
+  await expect(smd.getByText("4.70 kΩ")).toBeVisible();
+  await smd.getByLabel("丝印代码").fill("1001");
+  await expect(smd.getByText("1.00 kΩ")).toBeVisible();
+  await smd.getByLabel("丝印代码").fill("68X");
+  await expect(smd.getByText("49.90 Ω")).toBeVisible();
+  // 无法识别的代码给出提示
+  await smd.getByLabel("丝印代码").fill("abc");
+  await expect(smd.getByText("无法识别的代码")).toBeVisible();
+
+  // 瓷片电容：104 = 10×10⁴ pF = 100 nF；末尾字母是容差。
+  const cap = tool(page, "capacitor-code");
+  await expect(cap).toBeVisible();
+  await expect(cap.getByText("100.00 nF")).toBeVisible();
+  await cap.getByLabel("丝印代码").fill("104K");
+  await expect(cap.getByText("100.00 nF · ±10%")).toBeVisible();
+  await cap.getByLabel("丝印代码").fill("47");
+  await expect(cap.getByText("47.00 pF")).toBeVisible();
+  await cap.getByLabel("丝印代码").fill("x");
+  await expect(cap.getByText("无法识别的代码")).toBeVisible();
+});
+
+test("小工具：单短截线匹配给出接入点与短截线长度", async ({ page }) => {
+  await page.goto("/tools#stub-match");
+  const section = tool(page, "stub-match");
+  await expect(section).toBeVisible();
+
+  // 默认 100 Ω + j0（zL = 2，短路）：d = l = 0.152λ；14.2 MHz、vf 0.66 → λ ≈ 13.93 m。
+  await expect(
+    section.getByText(/接入点距负载 0\.152λ（2\.12 m）· 短截线长 0\.152λ（2\.12 m）/),
+  ).toBeVisible();
+
+  // 50 Ω 纯阻：已匹配，无需短截线。
+  await section.getByLabel("负载电阻 R（Ω）").fill("50");
+  await section.getByLabel("负载电抗 X（Ω）").fill("0");
+  await expect(section.getByText("负载已匹配，无需短截线。")).toBeVisible();
+
+  // 纯电抗负载：无法匹配。
+  await section.getByLabel("负载电阻 R（Ω）").fill("0");
+  await expect(section.getByText("纯电抗负载无法用无耗短截线匹配。")).toBeVisible();
+});
+
+test("小工具：磁环小环天线估算电感 / 效率 / Q / 调谐电容", async ({ page }) => {
+  await page.goto("/tools#magnetic-loop");
+  const section = tool(page, "magnetic-loop");
+  await expect(section).toBeVisible();
+
+  // 默认 1 m 环、10 mm 铜管 @ 14.2 MHz、100 W：L ≈ 2.94 µH，调谐电容 ≈ 42 pF。
+  await expect(section.getByText(/电感 2\.94 µH · 调谐电容 42\.\d+ pF/)).toBeVisible();
+  // 小环辐射电阻极小、Q 高、电容电压到 kV 级。
+  await expect(section.getByText(/辐射电阻 0\.1\d Ω · 损耗电阻 0\.1\d Ω · 效率 \d+%/)).toBeVisible();
+  await expect(section.getByText(/Q \d+ · 带宽 \d+\.\d kHz/)).toBeVisible();
+  await expect(section.getByText(/电容两端电压 \d+\.\d kV/)).toBeVisible();
+
+  // 输入不合法给出提示
+  await section.getByLabel("环直径 D（m）").fill("0");
+  await expect(section.getByText("请输入有效的环径、导体直径、频率、匝数与功率。")).toBeVisible();
+});
+
+test("小工具：离网供电逐日能量平衡判断能否自持", async ({ page }) => {
+  await page.goto("/tools#off-grid");
+  const section = tool(page, "off-grid");
+  await expect(section).toBeVisible();
+
+  // 默认 100 W 板、4 h 日照、300 Wh 负载：发电 342 Wh、电池可用 640 Wh，每日盈余 42 Wh 自持。
+  await expect(section.getByText(/每日发电 342 Wh · 电池可用 640 Wh/)).toBeVisible();
+  await expect(section.getByText(/每日盈余 42 Wh，可长期自持/)).toBeVisible();
+
+  // 负载提到 500 Wh：每日亏空 158 Wh，满电电池可撑约 4.1 天。
+  await section.getByLabel("每日负载（Wh）").fill("500");
+  await expect(section.getByText(/每日亏空 158 Wh，满电电池可撑 4\.\d 天/)).toBeVisible();
+
+  // 输入不合法给出提示
+  await section.getByLabel("太阳能板功率（W）").fill("0");
+  await expect(section.getByText("请输入有效的功率、日照、负载与电池参数。")).toBeVisible();
+});
+
+test("小工具：微带线给出 εeff，带状线给出特性阻抗", async ({ page }) => {
+  await page.goto("/tools#tx-line");
+  const section = tool(page, "tx-line");
+  await expect(section).toBeVisible();
+
+  // 微带线（εr=2.25、W/h=1.9）除 Z0 外还给出 εeff ≈ 1.86。
+  await expect(section.getByText(/εeff ≈ 1\.86/)).toBeVisible();
+
+  // 带状线（εr=2.25、W/b=1）默认 Z0 ≈ 43.6 Ω。
+  await expect(section.getByText(/带状线特性阻抗 ≈ 43\.6\d Ω/)).toBeVisible();
+
+  // 地平面间距减半（W/b=2）：Z0 降到 ≈ 25.7 Ω。
+  await section.getByLabel("地平面间距 b（mm）").fill("0.5");
+  await expect(section.getByText(/带状线特性阻抗 ≈ 25\.7\d Ω/)).toBeVisible();
+});
+
+test("小工具：电短天线加载线圈估算谐振电感", async ({ page }) => {
+  await page.goto("/tools#loading-coil");
+  const section = tool(page, "loading-coil");
+  await expect(section).toBeVisible();
+
+  // 默认 2.4 m 鞭、2 mm 导体 @ 7 MHz：辐射电阻 ≈ 1.24 Ω，加载电感 ≈ 29 µH。
+  await expect(section.getByText(/辐射电阻 1\.24 Ω · 天线电容 17\.8\d pF/)).toBeVisible();
+  await expect(section.getByText(/容抗 1\.27 kΩ · 加载电感 28\.\d+ µH/)).toBeVisible();
+
+  // 输入不合法给出提示
+  await section.getByLabel("天线高度 h（m）").fill("0");
+  await expect(section.getByText("请输入有效的天线高度、导体直径与频率。")).toBeVisible();
+});
+
 // `/tools` 里有很多带表格 / 图表的块，表格自带的 `min-w-[…]` 放进网格子项里会把整列撑宽（需要 `min-w-0`），
 // 手机宽度下整页横向滚动。i18n_layout 只在桌面宽度量，所以这里单独守一次。
 for (const [code, name] of [
