@@ -248,6 +248,96 @@
     },
     {
       "group": "工具",
+      "name": "LoRa 链路按 AN1200.13 算空中时间 / 灵敏度 / 最大距离",
+      "grep": "小工具：LoRa 链路按 AN1200.13 算出空中时间"
+    },
+    {
+      "group": "工具",
+      "name": "LoRa 链路低速率优化 / 隐式报头 / 关 CRC 改变符号数",
+      "grep": "低速率优化对 SF11 生效（自动档）"
+    },
+    {
+      "group": "工具",
+      "name": "LoRa 链路低速率优化自动档按符号时间 > 16 ms / 最窄带宽 62.5 kHz",
+      "grep": "低速率优化自动档看符号时间（>16 ms）"
+    },
+    {
+      "group": "工具",
+      "name": "LoRa 链路有效载荷必须是整数并标红",
+      "grep": "LoRa 有效载荷必须是整数"
+    },
+    {
+      "group": "工具",
+      "name": "LoRa 链路目录项与合规提示",
+      "grep": "LoRa 链路目录项存在且锚点直达"
+    },
+    {
+      "group": "工具",
+      "name": "LoRa / Meshtastic / AREDN 专题内容",
+      "grep": "专题页：LoRa / Meshtastic / AREDN 有核心概念"
+    },
+    {
+      "group": "工具",
+      "name": "FT8 解码：真实 20m 录音解出黄金标准消息",
+      "grep": "FT8 解码：真实 20m 录音解出黄金标准消息"
+    },
+    {
+      "group": "工具",
+      "name": "FT8 解码：多时隙录音逐时隙解码并标注同步强度",
+      "grep": "FT8 解码：超过一个时隙的录音逐时隙解码"
+    },
+    {
+      "group": "工具",
+      "name": "NTS Radiogram 生成器",
+      "grep": "NTS Radiogram 生成：填表生成报文并自动计算检查"
+    },
+    {
+      "group": "工具",
+      "name": "NTS Radiogram 紧急优先级在报头里拼写全称",
+      "grep": "NTS Radiogram 生成：紧急优先级在报头里拼写全称 EMERGENCY"
+    },
+    {
+      "group": "工具",
+      "name": "ICS-213 生成器",
+      "grep": "ICS-213 生成：切换到 ICS-213"
+    },
+    {
+      "group": "工具",
+      "name": "ICS-213 生成：缺必填字段时不输出报文",
+      "grep": "ICS-213 生成：缺必填字段时不输出报文、复制按钮禁用"
+    },
+    {
+      "group": "工具",
+      "name": "国内业余卫星与 409 MHz 专题",
+      "grep": "国内业余卫星频率表与 409 MHz 合规对比"
+    },
+    {
+      "group": "工具",
+      "name": "NTS Radiogram / ICS-213 专题页",
+      "grep": "专题页：NTS Radiogram / ICS-213"
+    },
+    {
+      "group": "工具",
+      "name": "FT8 解码：协议选 FT4 完整跑完不报错",
+      "grep": "协议选 FT4 也能完整跑完"
+    },
+    {
+      "group": "工具",
+      "name": "现代数字模式专题：五个模式、对比表、要点",
+      "grep": "现代数字模式列出五个模式"
+    },
+    {
+      "group": "工具",
+      "name": "现代数字模式专题：三语界面标题",
+      "grep": "现代数字模式三语界面标题"
+    },
+    {
+      "group": "工具",
+      "name": "LoRa 专题三语界面标题与 section 标题",
+      "grep": "专题页：三语界面标题"
+    },
+    {
+      "group": "工具",
       "name": "小工具页手机宽度不横向滚动",
       "grep": "小工具：手机宽度下整页不产生横向滚动（中文）"
     },

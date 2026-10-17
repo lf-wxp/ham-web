@@ -41,7 +41,7 @@ WORKDIR /src
 # 先只拷贝锁文件：wasm-bindgen CLI 的版本要与 crate 版本一致，而整份源码这一层还用不到
 COPY Cargo.lock ./
 
-# wasm-bindgen CLI：八个解码 Worker 由它生成胶水代码（Trunk 自带的那份不对外暴露）
+# wasm-bindgen CLI：九个解码 Worker 由它生成胶水代码（Trunk 自带的那份不对外暴露）
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/opt/wasm-bindgen-target \
@@ -66,18 +66,19 @@ RUN set -eux; \
 
 COPY . .
 
-# 工具链 → 可选重建题库 → 图标 → 语言包 → 八个解码 Worker → 前端 → 构建后处理（sw.js / sitemap）
+# 工具链 → 可选重建题库 → 图标 → 语言包 → 九个解码 Worker → 前端 → 构建后处理（sw.js / sitemap）
 #
 # 顺序与 `cargo make build-web` 保持一致（见 Makefile.toml 的依赖链）：
 #
 #   * 语言包必须在 trunk build 之前生成 —— index.html 把 public/data/i18n 拷进产物，
 #     晚一步拷到的就是旧包（`check-i18n` 会红，但镜像不经过那道门禁）；不生成则
 #     en / es 用户会在非内嵌域看到中文（构建期生成的静态表只含 zh 全量与 common / shell）。
-#   * 八个 Worker 同样必须在 trunk build 之前生成：index.html 用 <link data-trunk
+#   * 九个 Worker 同样必须在 trunk build 之前生成：index.html 用 <link data-trunk
 #     rel="copy-dir"> 引用 public/*-worker/，这些目录里的
 #     *_worker.js / *_bg.wasm 由 wasm-bindgen 生成、且被 .gitignore 排除，
 #     漏掉任何一个都会让对应页面在容器里缺资源（/sstv-decode、/wspr-decode、
-#     /rtty-decode、/olivia-decode、/dominoex-decode、/navtex-decode、/lrpt-decode）。
+#     /rtty-decode、/olivia-decode、/dominoex-decode、/navtex-decode、/lrpt-decode、
+#     /ft8-decode）。
 #
 # 收尾对产物做一次存在性断言：上面这些生成物少任何一个，镜像照样能构建成功、
 # 直到运行时才暴露（页面缺资源 / 语言包里是旧译文）。断言让它在构建期就红，
@@ -98,8 +99,8 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo build --profile wasm-release --target wasm32-unknown-unknown \
       -p ham-web-apt-worker -p ham-web-sstv-worker -p ham-web-wspr-worker \
       -p ham-web-rtty-worker -p ham-web-olivia-worker -p ham-web-dominoex-worker \
-      -p ham-web-navtex-worker -p ham-web-lrpt-worker; \
-    for w in apt sstv wspr rtty olivia dominoex navtex lrpt; do \
+      -p ham-web-navtex-worker -p ham-web-lrpt-worker -p ham-web-ft8-worker; \
+    for w in apt sstv wspr rtty olivia dominoex navtex lrpt ft8; do \
       mkdir -p "public/${w}-worker"; \
       wasm-bindgen --target no-modules --no-typescript \
         --out-dir "public/${w}-worker" --out-name "${w}_worker" \
@@ -114,6 +115,8 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
       dist/licenses/GPL-3.0-only.txt \
       dist/licenses/MIT-lrpt-encoder.txt \
       dist/licenses/MIT-olivia-python.txt \
+      dist/licenses/MIT-ft8_lib.txt \
+      dist/licenses/BSD-3-Clause-kissfft.txt \
       dist/sw.js \
       dist/sitemap.xml \
       dist/decode-worker.js \
@@ -136,7 +139,9 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
       dist/navtex-worker/navtex_worker.js \
       dist/navtex-worker/navtex_worker_bg.wasm \
       dist/lrpt-worker/lrpt_worker.js \
-      dist/lrpt-worker/lrpt_worker_bg.wasm; do \
+      dist/lrpt-worker/lrpt_worker_bg.wasm \
+      dist/ft8-worker/ft8_worker.js \
+      dist/ft8-worker/ft8_worker_bg.wasm; do \
       test -s "${p}" || { echo "缺少构建产物（或为空）：${p}" >&2; exit 1; }; \
     done; \
     mkdir -p /out/data; \

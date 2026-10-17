@@ -9,29 +9,30 @@ use crate::pages::{
   AntennaTuningPage, AntennasPage, AprsPage, AptDecoderPage, ArdfPage, AtvPage, AuroraPage,
   AwardsPage, BalunPage, BandPlanPage, BandsPage, BattlePage, BeaconsPage, BeginnerPage,
   BestiaryPage, BookmarksPage, BrowsePage, CabrilloPage, CallsignCopyPage, CallsignPage, CardsPage,
-  CheatSheetPage, CommunityPage, ConfusablesPage, ConnectorsPage, ContestCalendarPage,
-  ContestLogPage, ContestPage, CoordinationPage, CountdownPage, CwOpPage, DailyChallengePage,
-  DashboardPage, DevelopersPage, DigitalCommsPage, DiyProjectsPage, DominoexDecoderPage,
-  DspBasicsPage, DvNetworkPage, DxPage, DxSpotsPage, DxccMapPage, DxpeditionPage, ElectronicsPage,
-  EmcommPage, EmePage, EqslPage, EventsPage, ExamComparisonPage, ExamPage, ExamReviewPage,
-  FeedlinePage, FiltersPage, FlashcardsPage, FormulasPage, FrequenciesPage, Ft8Page, GearPage,
-  GlossaryPage, GnuradioPage, GraylinePage, GridMapPage, GridSystemPage, GroundingPage,
-  HistoryPage, HomePage, IotaPage, KissTncPage, LearningPathPage, LearningResourcesPage,
-  LicenseClassesPage, LicenseNoticePage, LicensePage, ListenPage, LogPage, LoggingSoftwarePage,
-  LrptDecoderPage, MeasurementLabPage, MeteorScatterPage, MetersPage, MicrowavePage,
-  MistakeTopicsPage, MistakesPage, MobilePage, ModesPage, ModulationTheoryPage, MorsePage,
-  MostWantedPage, MufPage, NavtexDecoderPage, NecPage, NoisePage, NotFoundPage, NotificationsPage,
-  NvisPage, OliviaDecoderPage, OpenSourcePage, OperatingPage, OrganizationsPage, PacketPage,
-  PhoneticPage, PhotoProcessorPage, PolarizationPage, PortableMapPage, PortablePage, PowerPage,
-  PowerSupplyPage, PracticalAntennasPage, PracticePage, PrefixesPage, PrintPage, ProgressPage,
-  PropagationPage, PskDecodePage, PskReporterPage, QCodePage, QrpPage, QslCardPage,
-  QslDesignerPage, QslLabelsPage, QuestMapPage, RadioLawPage, RbnPage, ReceiverPage, ReferencePage,
-  RegulationsPage, RemotePage, RepeaterBuildPage, RepeaterPage, ReportPage, RfiPage,
-  RigReviewsPage, RstPage, RttyDecoderPage, RttyPage, SafetyPage, SatOperationPage, SatellitesPage,
-  SdrMapPage, SdrPage, SdrWaterfallPage, SmithPage, SolarPage, SpecialPropPage, SpectrumAdminPage,
-  SstvDecoderPage, SstvPage, StatsPage, StudyCalendarPage, SwlPage, ToolsPage, TransceiverPage,
-  VnaPage, VnaReaderPage, WaveformLabPage, WeatherSatPage, WeeklyPage, WinlinkPage,
-  WsprDecoderPage, WsprPage, ZoneMapPage,
+  CheatSheetPage, ChinaHamPage, CommunityPage, ConfusablesPage, ConnectorsPage,
+  ContestCalendarPage, ContestLogPage, ContestPage, CoordinationPage, CountdownPage, CwOpPage,
+  DailyChallengePage, DashboardPage, DevelopersPage, DigitalCommsPage, DiyProjectsPage,
+  DominoexDecoderPage, DspBasicsPage, DvNetworkPage, DxPage, DxSpotsPage, DxccMapPage,
+  DxpeditionPage, ElectronicsPage, EmcommPage, EmePage, EqslPage, EventsPage, ExamComparisonPage,
+  ExamPage, ExamReviewPage, FeedlinePage, FiltersPage, FlashcardsPage, FormulasPage,
+  FrequenciesPage, Ft8DecoderPage, Ft8Page, GearPage, GlossaryPage, GnuradioPage, GraylinePage,
+  GridMapPage, GridSystemPage, GroundingPage, HistoryPage, HomePage, IotaPage, KissTncPage,
+  LearningPathPage, LearningResourcesPage, LicenseClassesPage, LicenseNoticePage, LicensePage,
+  ListenPage, LogPage, LoggingSoftwarePage, LoraPage, LrptDecoderPage, MeasurementLabPage,
+  MeteorScatterPage, MetersPage, MicrowavePage, MistakeTopicsPage, MistakesPage, MobilePage,
+  ModernDigitalModesPage, ModesPage, ModulationTheoryPage, MorsePage, MostWantedPage, MufPage,
+  NavtexDecoderPage, NecPage, NoisePage, NotFoundPage, NotificationsPage, NvisPage,
+  OliviaDecoderPage, OpenSourcePage, OperatingPage, OrganizationsPage, PacketPage, PhoneticPage,
+  PhotoProcessorPage, PolarizationPage, PortableMapPage, PortablePage, PowerPage, PowerSupplyPage,
+  PracticalAntennasPage, PracticePage, PrefixesPage, PrintPage, ProgressPage, PropagationPage,
+  PskDecodePage, PskReporterPage, QCodePage, QrpPage, QslCardPage, QslDesignerPage, QslLabelsPage,
+  QuestMapPage, RadioLawPage, RadiogramPage, RbnPage, ReceiverPage, ReferencePage, RegulationsPage,
+  RemotePage, RepeaterBuildPage, RepeaterPage, ReportPage, RfiPage, RigReviewsPage, RstPage,
+  RttyDecoderPage, RttyPage, SafetyPage, SatOperationPage, SatellitesPage, SdrMapPage, SdrPage,
+  SdrWaterfallPage, SmithPage, SolarPage, SpecialPropPage, SpectrumAdminPage, SstvDecoderPage,
+  SstvPage, StatsPage, StudyCalendarPage, SwlPage, ToolsPage, TransceiverPage, VnaPage,
+  VnaReaderPage, WaveformLabPage, WeatherSatPage, WeeklyPage, WinlinkPage, WsprDecoderPage,
+  WsprPage, ZoneMapPage,
 };
 
 use crate::components::related_topics::RelatedTopics;
@@ -87,12 +88,14 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/beacons") view=BeaconsPage />
         <Route path=path!("/reference") view=ReferencePage />
         <Route path=path!("/cheat-sheet") view=CheatSheetPage />
+        <Route path=path!("/china-ham") view=ChinaHamPage />
         <Route path=path!("/confusables") view=ConfusablesPage />
         <Route path=path!("/formulas") view=FormulasPage />
         <Route path=path!("/antennas") view=AntennasPage />
         <Route path=path!("/bandplan") view=BandPlanPage />
         <Route path=path!("/prefixes") view=PrefixesPage />
         <Route path=path!("/callsign") view=CallsignPage />
+        <Route path=path!("/modern-digital-modes") view=ModernDigitalModesPage />
         <Route path=path!("/modes") view=ModesPage />
         <Route path=path!("/analog-modes") view=AnalogModesPage />
         <Route path=path!("/frequencies") view=FrequenciesPage />
@@ -150,6 +153,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/cw-operating") view=CwOpPage />
         <Route path=path!("/antenna-installation") view=AntennaInstallationPage />
         <Route path=path!("/ft8") view=Ft8Page />
+        <Route path=path!("/ft8-decode") view=Ft8DecoderPage />
         <Route path=path!("/repeater") view=RepeaterPage />
         <Route path=path!("/wspr") view=WsprPage />
         <Route path=path!("/wspr-decode") view=WsprDecoderPage />
@@ -161,6 +165,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/qsl-designer") view=QslDesignerPage />
         <Route path=path!("/eme") view=EmePage />
         <Route path=path!("/antenna-tuning") view=AntennaTuningPage />
+        <Route path=path!("/radiogram") view=RadiogramPage />
         <Route path=path!("/rfi") view=RfiPage />
         <Route path=path!("/qrp") view=QrpPage />
         <Route path=path!("/dxpedition") view=DxpeditionPage />
@@ -177,6 +182,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/gnuradio") view=GnuradioPage />
         <Route path=path!("/modulation") view=ModulationTheoryPage />
         <Route path=path!("/digital-comms") view=DigitalCommsPage />
+        <Route path=path!("/lora") view=LoraPage />
         <Route path=path!("/dsp") view=DspBasicsPage />
         <Route path=path!("/swl") view=SwlPage />
         <Route path=path!("/amplifier") view=AmplifierPage />

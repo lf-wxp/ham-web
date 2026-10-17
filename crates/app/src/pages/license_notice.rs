@@ -24,6 +24,8 @@ pub fn LicenseNoticePage() -> impl IntoView {
             <a href="/licenses/GPL-3.0-only.txt" rel="external" class="text-primary underline underline-offset-4">{move || t("shell.software-license-gpl-text")}</a>
             <a href="/licenses/MIT-lrpt-encoder.txt" rel="external" class="text-primary underline underline-offset-4">{move || t("shell.software-license-mit-lrpt-encoder")}</a>
             <a href="/licenses/MIT-olivia-python.txt" rel="external" class="text-primary underline underline-offset-4">{move || t("shell.software-license-mit-olivia-python")}</a>
+            <a href="/licenses/MIT-ft8_lib.txt" rel="external" class="text-primary underline underline-offset-4">{move || t("shell.software-license-mit-ft8-lib")}</a>
+            <a href="/licenses/BSD-3-Clause-kissfft.txt" rel="external" class="text-primary underline underline-offset-4">{move || t("shell.software-license-bsd-kissfft")}</a>
           </div>
         </div>
       </section>
@@ -54,6 +56,11 @@ pub fn LicenseNoticePage() -> impl IntoView {
             <span class="text-primary">"NAVTEX · AI5GW/CCIR476"</span>
             <p>{move || t("shell.software-license-navtex")}</p>
             <p class="font-mono">"crates/navtex/src/codec.rs"</p>
+          </li>
+          <li>
+            <a href="https://github.com/kgoba/ft8_lib" class="text-primary underline underline-offset-4">"FT8 / FT4 · kgoba/ft8_lib · KISS FFT"</a>
+            <p>{move || t("shell.software-license-ft8")}</p>
+            <p class="font-mono">"crates/ft8/samples/README.md"</p>
           </li>
           <li>{move || t("shell.software-license-third-party")}</li>
         </ul>

@@ -181,12 +181,11 @@ pub fn NativeSelect(
     if !mounted.get() {
       return;
     }
-    // 订阅高亮位置：`active` 一变就重新滚动。
+    // 订阅高亮位置：`active` 一变就重新滚动。只滚列表容器自身，
+    // 别用 `scroll_into_view`（会把页面一起滚到顶部）。
     let _ = active.get();
-    if let Some(el) = list_ref.get()
-      && let Ok(Some(node)) = el.query_selector("[data-active=\"true\"]")
-    {
-      node.scroll_into_view();
+    if let Some(el) = list_ref.get() {
+      popover::scroll_into_view_local(&el, "[data-active=\"true\"]");
     }
   });
 

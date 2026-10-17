@@ -1,7 +1,7 @@
 # 解码 Worker 协议（统一入口）
 
 本文档是「文件 → 浏览器内解码」链路的**现行规范**：所有解码器页面（APT / SSTV /
-WSPR / RTTY / Olivia / DominoEX / NAVTEX / LRPT）共用一份 JS 入口
+WSPR / RTTY / Olivia / DominoEX / NAVTEX / LRPT / FT8）共用一份 JS 入口
 `public/decode-worker.js`，各自的 wasm 胶水遵守同一份导出契约。新增解码器照
 文末清单走一遍即可。
 
@@ -38,6 +38,7 @@ WSPR / RTTY / Olivia / DominoEX / NAVTEX / LRPT）共用一份 JS 入口
 | `mark-hz-out-of-range:<Hz>` / `base-hz-out-of-range:<Hz>` | RTTY / WSPR | 频率越界（须在 0 与采样率一半之间） |
 | `rate-too-low:<最低 Hz>` | Olivia / DominoEX | 采样率低于音调带上沿的 Nyquist 要求 |
 | `need-sample-rate:<Hz>` / `need-stereo:<声道数>` | LRPT | 需要 288 kHz 立体声 I/Q WAV |
+| `ft8-sample-rate:<Hz>` | FT8 / FT4 | 采样率不是 12000 Hz（时频分析按该采样率设计，别的采样率会静默解错，所以直接拒绝） |
 | `image-incomplete:<帧数>` | LRPT | 帧层有输出但图像层不完整（不等于「帧层都通过了」） |
 | `input-too-large:<字节>` | LRPT | 超过 worker 的输入上限（页面已限 128 MiB，这里是兜底） |
 | `worker-load-failed` | **页面侧合成** | `/decode-worker.js` 或胶水加载失败（404 / 被拦截 / 语法错误） |
@@ -55,6 +56,7 @@ WSPR / RTTY / Olivia / DominoEX / NAVTEX / LRPT）共用一份 JS 入口
 | `dominoex` | `mode`（`"8"`）、`fec`（`false`；`true` = MultiPSK 兼容 FEC） | `{ text, id }`（`id` = 二次信道） | `/dominoex-worker/` |
 | `navtex` | — | `{ messages: [{ transmitter, category, serial, text, corrected, errors, chars, accepted }] }` | `/navtex-worker/` |
 | `lrpt` | — | `{ width, height, rgb: Uint8Array }`（RGB 三平面交错） | `/lrpt-worker/` |
+| `ft8` | `protocol`（`"ft8"`；`"ft4"`） | `{ messages: [{ text, freq_hz, time_sec, sync_db }], unsupported, slots }`（`time_sec` 距录音开头；`sync_db` 是同步强度而非 SNR；`unsupported` 是 CRC 通过但类型无字段解析的条数；`slots` 是逐个解码的时隙数） | `/ft8-worker/` |
 
 ## 质量门限与能力边界
 
@@ -109,7 +111,7 @@ pub fn decode(bytes: &[u8], params: &JsValue) -> Result<JsValue, JsValue>
 
 **优先用 `crate::decode_session::DecodeSession`**（`crates/app/src/decode_session.rs`）：它把下面这些函数与
 `generation` / 超时 / 取消 / 重置的编排收成一份实现，页面只需给 `DecodeConfig`（codec、体积上限、
-是否转移 buffer、`parse`、三条文案回调：文件过大 / 超时 / 协议损坏）并在 `start` 里构造 `params`。八个解码页全部已迁移，
+是否转移 buffer、`parse`、三条文案回调：文件过大 / 超时 / 协议损坏）并在 `start` 里构造 `params`。九个解码页全部已迁移，
 APT 页同样已迁移（上传区 `AptUploader` 保留整块拖放，经 `Callback<File>` 接入会话）。结果解析用 `decode_worker::{get_u32, get_f64, get_str,
 get_bool, get_u8s}`，缺字段按错误处理，不要再 `unwrap_or_default()`。
 
@@ -164,3 +166,8 @@ NAVTEX 的 `accepted` 是完整标准报头、CR/LF 与 NNNN 后的残余字符�
 9. **e2e**：`e2e/tests/<codec>_decoder.spec.ts` —— 用**独立 TS 实现**编码合成
    WAV（延续「三套实现互锁」的约定），上传断言解码结果；坏样本如实报错。
    登记到 `e2e/coverage-targets.json`。
+10. **许可证**（解码器若转写自第三方代码或带第三方录音样本）：许可全文放 `LICENSES/`
+    （首段写明适用范围，格式照 `MIT-ft8_lib.txt`）；在 `license_notice.rs` 加链接与「组件来源」
+    条目，补三份 `shell.software-license-*` 词条；`Dockerfile` 末尾产物断言加上
+    `dist/licenses/<文件名>`；`e2e/tests/navigation.spec.ts` 的许可页用例把新链接加进路径列表。
+    MIT / BSD 都要求再分发时保留版权与许可声明，漏掉就是合规缺口（ft8 一批就漏过一次）。

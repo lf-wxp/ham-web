@@ -85,10 +85,8 @@ pub fn TimePicker(
     // `mounted` 与当前激活项）。`track()` 只建立依赖、不取值。
     value.track();
     for col in [hour_col, min_col] {
-      if let Some(el) = col.get()
-        && let Ok(Some(node)) = el.query_selector("[aria-selected=\"true\"]")
-      {
-        node.scroll_into_view();
+      if let Some(el) = col.get() {
+        popover::scroll_into_view_local(&el, "[aria-selected=\"true\"]");
       }
     }
   });

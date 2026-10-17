@@ -14,6 +14,8 @@ members = [
   "crates/sstv-worker",
   "crates/wspr",
   "crates/wspr-worker",
+  "crates/ft8",
+  "crates/ft8-worker",
   "crates/rtty",
   "crates/rtty-worker",
   "crates/navtex",
@@ -28,7 +30,7 @@ members = [
 default-members = ["crates/core", "crates/server", "crates/tools", "crates/apt"]
 
 [workspace.package]
-version = "0.4.7"
+version = "0.4.8"
 edition = "2024"
 rust-version = "1.88"
 # 工作区默认 MIT；dominoex / lrpt / navtex 及其 worker 六个 crate 因含 GPL-3.0 转写代码，单独声明 GPL-3.0-only。
@@ -47,6 +49,8 @@ ham-web-sstv = { path = "crates/sstv" }
 ham-web-sstv-worker = { path = "crates/sstv-worker" }
 ham-web-wspr = { path = "crates/wspr" }
 ham-web-wspr-worker = { path = "crates/wspr-worker" }
+ham-web-ft8 = { path = "crates/ft8" }
+ham-web-ft8-worker = { path = "crates/ft8-worker" }
 ham-web-rtty = { path = "crates/rtty" }
 ham-web-rtty-worker = { path = "crates/rtty-worker" }
 ham-web-navtex = { path = "crates/navtex" }

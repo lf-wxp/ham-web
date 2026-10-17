@@ -1,16 +1,16 @@
 #!/bin/sh
 # 构建一个解码 Web Worker 的 wasm + 胶水到 public/<codec>-worker/。
 #
-# 用法：sh scripts/build-decode-worker.sh <codec>      （codec：apt / sstv / wspr / rtty / olivia / dominoex / navtex / lrpt）
+# 用法：sh scripts/build-decode-worker.sh <codec>      （codec：apt / sstv / wspr / rtty / olivia / dominoex / navtex / lrpt / ft8）
 #
-# 八个 `[tasks.build-*-worker]` 共用这一份脚本：此前每个任务各复制 19 行，版本校验的报错文案
+# 九个 `[tasks.build-*-worker]` 共用这一份脚本：此前每个任务各复制 19 行，版本校验的报错文案
 # 已经分叉（有的带安装提示有的没有）。wasm-bindgen CLI 版本必须与 Cargo.lock 里的 crate 一致，
 # 装错不会编译失败，只会在运行时让胶水与 wasm 不匹配。
 set -e
 
 codec="${1:?用法：build-decode-worker.sh <codec>}"
 case "$codec" in
-  apt | sstv | wspr | rtty | olivia | dominoex | navtex | lrpt) ;;
+  apt | sstv | wspr | rtty | olivia | dominoex | navtex | lrpt | ft8) ;;
   *)
     echo "未知解码器：$codec" >&2
     exit 1

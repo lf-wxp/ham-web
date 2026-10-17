@@ -187,3 +187,30 @@ pub fn close_on_focus_out(
     }
   }
 }
+
+/// 把 `container` 内命中 `selector` 的子元素滚进**容器自身**的可视区。
+///
+/// 这里刻意不用 `scroll_into_view`：无参的 `scrollIntoView` 等价于 `{ block: "start" }`，
+/// 会把目标元素连同整条祖先滚动链（含页面 `window`）一起滚到顶部 —— 打开下拉时页面就
+/// 「跳」到面板处、触发器被顶出视口。改用手动比较 `get_bounding_client_rect`：只在容器
+/// 内部改 `scroll_top`，页面纹丝不动。
+pub fn scroll_into_view_local(container: &web_sys::Element, selector: &str) {
+  let Ok(Some(node)) = container.query_selector(selector) else {
+    return;
+  };
+  let list = container.get_bounding_client_rect();
+  let item = node.get_bounding_client_rect();
+  // 越界量：`above` 是「顶出容器上方」的距离，`below` 是「溢出容器下方」的距离。
+  let above = list.top() - item.top();
+  let below = item.bottom() - list.bottom();
+  let delta = if above > 0.0 {
+    -above
+  } else if below > 0.0 {
+    below
+  } else {
+    0.0
+  };
+  if delta != 0.0 {
+    container.set_scroll_top(container.scroll_top() + delta.round() as i32);
+  }
+}

@@ -23,6 +23,7 @@ const CODECS = Object.assign(Object.create(null), {
   dominoex: ["/dominoex-worker/dominoex_worker.js", "/dominoex-worker/dominoex_worker_bg.wasm"],
   navtex: ["/navtex-worker/navtex_worker.js", "/navtex-worker/navtex_worker_bg.wasm"],
   lrpt: ["/lrpt-worker/lrpt_worker.js", "/lrpt-worker/lrpt_worker_bg.wasm"],
+  ft8: ["/ft8-worker/ft8_worker.js", "/ft8-worker/ft8_worker_bg.wasm"],
 });
 
 // 已加载的 codec 与其 wasm 初始化 Promise（失败也保留：胶水已声明，重试只会得到重复声明错误）。

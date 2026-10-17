@@ -34,6 +34,7 @@ use super::intermod_calculator::IntermodCalculator;
 use super::ip3_cascade::Ip3Cascade;
 use super::lc_resonance::LcResonance;
 use super::link_budget_calculator::LinkBudgetCalculator;
+use super::lora_calculator::LoraCalculator;
 use super::mode_encoder::ModeEncoder;
 use super::noise_cascade::NoiseCascade;
 use super::ohms_law::OhmsLaw;
@@ -41,6 +42,7 @@ use super::oscillator::Oscillator;
 use super::parabolic_dish::ParabolicDish;
 use super::path_profile::PathProfile;
 use super::propagation_estimator::PropagationEstimator;
+use super::radiogram_generator::RadiogramGenerator;
 use super::rain_fade::RainFade;
 use super::reactance::Reactance;
 use super::receiver_sensitivity::ReceiverSensitivity;
@@ -96,6 +98,8 @@ const TOOL_NAV: &[(&str, &str)] = &[
   // 与正文章节标题同一条词条：目录里显示成完整标题（如「EIRP 有效辐射功率」）。
   ("eirp", "tools.eirp-effective-radiated-power"),
   ("link-budget", "tools.link-budget"),
+  ("lora", "tools.lora"),
+  ("radiogram", "tools.radiogram"),
   ("receiver-sensitivity", "tools.receiver-sensitivity-toc"),
   ("noise-cascade", "tools.noise-cascade"),
   ("gain-conversion", "tools.gain-conversion"),
@@ -264,6 +268,10 @@ pub fn ToolsPage() -> impl IntoView {
             <ToolSection id="eirp" title="tools.eirp-effective-radiated-power" description="tools.transmit-power-antenna-gain"><EirpCalculator /></ToolSection>
 
             <ToolSection id="link-budget" title="tools.link-budget" description="tools.eirp-path-loss-receive"><LinkBudgetCalculator /></ToolSection>
+
+            <ToolSection id="lora" title="tools.lora" description="tools.lora-description"><LoraCalculator /></ToolSection>
+
+            <ToolSection id="radiogram" title="tools.radiogram" description="tools.radiogram-description"><RadiogramGenerator /></ToolSection>
 
             <ToolSection id="receiver-sensitivity" title="tools.receiver-sensitivity" description="tools.estimates-sensitivity-from-the"><ReceiverSensitivity /></ToolSection>
 

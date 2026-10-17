@@ -1,6 +1,6 @@
 //! 解码器页面的共享 Worker 桥：统一协议（`{ codec, bytes, params }` → `{ ok, result }`）。
 //!
-//! 八个解码页（APT / SSTV / WSPR / RTTY / NAVTEX / LRPT / DominoEX / Olivia）此前
+//! 九个解码页（APT / SSTV / WSPR / RTTY / NAVTEX / LRPT / DominoEX / Olivia / FT8）此前
 //! 各自维护一份「spawn worker + 读文件 + 组消息 + 拆回复」的样板，统一入口见
 //! `public/decode-worker.js`；这里把其中的公共部分（spawn / 读文件 / 组信封 /
 //! 超时兜底）收敛成一份。各页仍各自保留 `generation`/`batch`/`cancel` 的编排与
@@ -41,7 +41,7 @@ pub fn clear_decode_timeout(timer: StoredValue<Option<TimeoutHandle>>) {
 /// 解码超时兜底：`DECODE_TIMEOUT_SECS` 后若该批次仍在处理中（代际未变且 `processing`
 /// 未复位），调用 `cancel` 终止并把错误文案置为 `message()` —— 正常完成时 `processing`
 /// 已复位，回调直接跳过。文案由调用方给（词条字面量写在调用点；LRPT 的录音大、耗时长，
-/// 提示里要说明原因）。八个解码页经 `DecodeSession` 共用这一份实现。
+/// 提示里要说明原因）。九个解码页经 `DecodeSession` 共用这一份实现。
 pub fn arm_decode_timeout_with(
   timer: StoredValue<Option<TimeoutHandle>>,
   generation: StoredValue<u32>,
@@ -84,7 +84,7 @@ pub fn retain_message_handler(
 }
 
 /// 把 Worker 的 `error` 事件转成一条合成的 `{ ok:false, error }` 消息，交给页面原有的
-/// `onmessage` 处理（走同一套代际 / 超时 / 本地化路径，不必改八个页面）。
+/// `onmessage` 处理（走同一套代际 / 超时 / 本地化路径，不必改九个页面）。
 ///
 /// 错误码区分两种来源：没有 `message` 的是加载失败（脚本 404 / 被拦截 / 语法错误），
 /// 有 `message` 的是运行期异常（如 wasm trap）——两者的修复动作不同，不能都报
@@ -305,6 +305,7 @@ fn localize_error(raw: &str) -> String {
     }
     "mark-hz-out-of-range" => tf("tools.decode-err-mark-hz", &[arg]),
     "base-hz-out-of-range" => tf("tools.decode-err-base-hz", &[arg]),
+    "ft8-sample-rate" => tf("tools.decode-err-ft8-sample-rate", &[arg]),
     "need-sample-rate" => tf("tools.decode-err-lrpt-sample-rate", &[arg]),
     "need-stereo" => tf("tools.decode-err-lrpt-stereo", &[arg]),
     "worker-load-failed" => t("tools.decode-err-worker-load-failed"),

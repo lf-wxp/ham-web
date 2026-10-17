@@ -85,12 +85,20 @@ test("页脚许可：站内点击无需刷新，刷新后保留页面骨架与�
   await expect(page.locator("[data-nav]")).toBeVisible();
   await expect(page.locator("html")).toHaveClass(/dark/);
   expect(await page.locator("main .pxl-window").first().evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(cardColor);
-  for (const path of ["/licenses/LICENSE", "/licenses/GPL-3.0-only.txt"]) {
+  // 第三方转写代码的许可文本必须随发布物提供（ft8_lib 为 MIT，KISS FFT 为 BSD-3-Clause）。
+  for (const path of [
+    "/licenses/LICENSE",
+    "/licenses/GPL-3.0-only.txt",
+    "/licenses/MIT-ft8_lib.txt",
+    "/licenses/BSD-3-Clause-kissfft.txt",
+  ]) {
     const link = page.locator(`main a[href="${path}"]`);
     await expect(link).toHaveAttribute("rel", "external");
     const response = await page.request.get(path);
     expect(response.ok()).toBe(true);
-    expect(await response.text()).toMatch(/MIT License|GNU GENERAL PUBLIC LICENSE/);
+    expect(await response.text()).toMatch(
+      /MIT License|GNU GENERAL PUBLIC LICENSE|Redistribution and use in source and binary forms/,
+    );
   }
   expect(errors).toEqual([]);
 });

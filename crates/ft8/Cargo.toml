@@ -1,0 +1,16 @@
+[package]
+name = "ham-web-ft8"
+description = "FT8 / FT4 编码与解码内核（LDPC(174,91)、CRC-14、消息打包、混合基 FFT、waterfall；纯 Rust，无第三方依赖）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+# 解码内核本身不依赖任何 workspace crate；WAV 解析只在 `examples/` 里用到。
+[dev-dependencies]
+ham-web-apt.workspace = true
+
+[lints]
+workspace = true
