@@ -14,6 +14,12 @@ fn scheme_label(id: &str) -> String {
     "ocean" => t("shell.scheme-ocean"),
     "sunset" => t("shell.scheme-sunset"),
     "graphite" => t("shell.scheme-graphite"),
+    "pico" => t("shell.scheme-pico"),
+    "gameboy" => t("shell.scheme-gameboy"),
+    "nes" => t("shell.scheme-nes"),
+    "commodore" => t("shell.scheme-commodore"),
+    "cga" => t("shell.scheme-cga"),
+    "spectrum" => t("shell.scheme-spectrum"),
     // 新增方案忘了在这里登记名字：回退成 id，至少界面上看得出是哪个。
     other => other.to_owned(),
   }

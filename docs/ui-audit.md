@@ -12,7 +12,7 @@
 |---|---|---|
 | 表单控件收敛 | 完成 | 原生 `<input>` / `<select>` / `<textarea>` 已清零，唯一来源 `ui/` |
 | 页面宽度收敛 | 完成 | `PageHeader` / `PageContainer` 唯一来源，`check-ui` 机械守着（10 行 / 8 文件封闭清单） |
-| 配色方案 + 深色模式 | 完成 | `color_scheme.rs` 5 套方案（classic / forest / ocean / sunset / graphite）× 亮暗，设置面板完整暴露 |
+| 配色方案 + 深色模式 | 完成 | `color_scheme.rs` 11 套方案（classic / forest / ocean / sunset / graphite / pico / gameboy / nes / commodore / cga / spectrum）× 亮暗，设置面板完整暴露 |
 | 动效 token 化 | 完成 | 全部动画集中在 `style/pixel/motion.css`，页面无自造 `@keyframes` |
 | 内联样式纪律 | 完成 | 全库仅 12 处 `style=`，各有理由（画布尺寸、touch-action、打印比例等） |
 | 像素规范门禁 | 完成 | 零圆角 / 零模糊 / 零渐变由 `check-ui` 持续守着 |

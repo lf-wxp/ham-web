@@ -41,7 +41,7 @@
 | 文件 | 管什么 |
 |---|---|
 | `tokens.css` | 亮 / 暗两套调色板（映射到 `--background` / `--primary` / `--border` 等**既有语义名**）、零圆角、硬偏移阴影、字号阶梯、`steps()` 缓动 |
-| `schemes.css` | 其余配色方案（森林 / 海洋 / 晚霞 / 石墨）的亮 / 暗变量块；由 `cargo make pixel-schemes` 从 `crates/core/src/color_scheme.rs` 生成，**勿手改** |
+| `schemes.css` | 其余配色方案（森林 / 海洋 / 晚霞 / 石墨与 PICO-8 / Game Boy / 红白机 / C64 / CGA / ZX Spectrum）的亮 / 暗变量块；由 `cargo make pixel-schemes` 从 `crates/core/src/color_scheme.rs` 生成，**勿手改** |
 | `palette.css` | Tailwind 默认色阶（`green-600` 等）整体换成像素调色板；由固定规则生成，**不要手调单个色值** |
 | `fonts.css` / `fonts-pixel.css` | 字体声明；后者由 `cargo make fonts-pixel`（`crates/tools/src/pixel/fonts.rs`）生成，**勿手改** |
 | `surfaces.css` | 全局基线、背景底纹、存量卡片兜底、滚动条、图标 / 精灵尺寸 |
@@ -72,7 +72,8 @@
    可以照常用 —— 它们的文字档由 `cargo make pixel-palette` 保证在真实表面上达标。
    改了调色板就跑它（`cargo make pixel-check` 只审计，不达标时退出码为 1，已并入 `check` / `ci`）。
 7. **配色一律走语义 token，别在页面里写死色值**：`bg-card` / `text-muted-foreground` /
-   `border-ink` 会随用户选的**配色方案**（经典 / 森林 / 海洋 / 晚霞 / 石墨，与明暗正交）换色；
+   `border-ink` 会随用户选的**配色方案**（11 套：经典 / 森林 / 海洋 / 晚霞 / 石墨 +
+   PICO-8 / Game Boy / 红白机 / C64 / CGA / ZX Spectrum，与明暗正交）换色；
    写死 `#fff8e1` 的地方切方案后就成了孤岛（DOM 里没有这类写死的色值；`share_score.rs` 这类导出成绩
    图的画布色是有意固定的，不在此列）。状态色（`hp` / `xp` / `gold` / `win` / `destructive`）
    是语义色，不随方案变。

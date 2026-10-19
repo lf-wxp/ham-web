@@ -2,7 +2,8 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, settleFrames, test, waitSettled } from "./fixtures";
 
-// 配色方案：与明暗正交的第二个外观选择（经典 / 森林 / 海洋 / 晚霞 / 石墨，每个都有亮暗两套）。
+// 配色方案：与明暗正交的第二个外观选择（经典 / 森林 / 海洋 / 晚霞 / 石墨 +
+// PICO-8 / Game Boy / 红白机 / C64 / CGA / ZX Spectrum，每个都有亮暗两套）。
 // 方案表在 crates/core/src/color_scheme.rs；每一对字 / 底的对比度另由 `cargo make pixel-check` 在
 // 构建期审计，这里验证的是「真实页面里用户看到的」：切换、持久化、回退、以及 axe。
 
@@ -12,6 +13,12 @@ const SCHEMES = [
   { id: "ocean", name: "海洋" },
   { id: "sunset", name: "晚霞" },
   { id: "graphite", name: "石墨" },
+  { id: "pico", name: "PICO-8" },
+  { id: "gameboy", name: "Game Boy" },
+  { id: "nes", name: "红白机" },
+  { id: "commodore", name: "C64" },
+  { id: "cga", name: "CGA" },
+  { id: "spectrum", name: "ZX Spectrum" },
 ] as const;
 
 /** 在页面脚本跑之前写入偏好，等价于「用户上次选过」。 */
@@ -56,7 +63,9 @@ test("设置里切换配色方案：写入 <html>、持久化、刷新后保留"
   ).toBeChecked();
 });
 
-test("方案与明暗正交：十种组合的页面底色互不相同", async ({ browser }) => {
+test("方案与明暗正交：每种组合的页面底色互不相同", async ({ browser }) => {
+  // 每个组合都要新开一个 context 走一遍首屏加载；方案越多，默认 60s 越不够。
+  test.setTimeout(180_000);
   const seen = new Map<string, string>();
   for (const { id } of SCHEMES) {
     for (const theme of ["light", "dark"] as const) {
@@ -113,7 +122,19 @@ test("方案名随界面语言切换", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Appearance & motion" }).first().click();
   const dialog = page.getByRole("dialog", { name: "Appearance & motion" });
-  for (const name of ["Classic", "Forest", "Ocean", "Sunset", "Graphite"]) {
+  for (const name of [
+    "Classic",
+    "Forest",
+    "Ocean",
+    "Sunset",
+    "Graphite",
+    "PICO-8",
+    "Game Boy",
+    "NES",
+    "C64",
+    "CGA",
+    "ZX Spectrum",
+  ]) {
     await expect(dialog.getByRole("radio", { name })).toBeVisible();
   }
 });

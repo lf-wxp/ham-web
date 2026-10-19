@@ -161,6 +161,112 @@ pub const SCHEMES: &[Scheme] = &[
       ring: Rgb::from_u32(0xf0c24b),
     },
   },
+  // 以下几套取自经典像素调色板（PICO-8 / Game Boy / NES / C64 / CGA / ZX Spectrum）。
+  // 种子色不是原样照搬：原调色板里的亮色当「主色」时往往过不了正文对比度，
+  // 这里按同一套派生规则把亮暗两侧都调到可通过审计的范围内，色相本身保留。
+  // id 只用小写字母与连字符（见单测），所以 PICO-8 记作 `pico`、C64 记作 `commodore`。
+  Scheme {
+    id: "pico",
+    light: Seeds {
+      bg: Rgb::from_u32(0xfff1e8),
+      ink: Rgb::from_u32(0x1d2b53),
+      primary: Rgb::from_u32(0x7e2553),
+      accent: Rgb::from_u32(0xffec27),
+      ring: Rgb::from_u32(0x7e2553),
+    },
+    dark: Seeds {
+      bg: Rgb::from_u32(0x131c38),
+      ink: Rgb::from_u32(0xfff1e8),
+      primary: Rgb::from_u32(0x29adff),
+      accent: Rgb::from_u32(0x331d3f),
+      ring: Rgb::from_u32(0xffec27),
+    },
+  },
+  Scheme {
+    id: "gameboy",
+    light: Seeds {
+      bg: Rgb::from_u32(0xe8f8d0),
+      ink: Rgb::from_u32(0x0f2a12),
+      primary: Rgb::from_u32(0x2f6b2f),
+      accent: Rgb::from_u32(0xc4e58a),
+      ring: Rgb::from_u32(0x2f6b2f),
+    },
+    dark: Seeds {
+      bg: Rgb::from_u32(0x071409),
+      ink: Rgb::from_u32(0xe8f2e6),
+      primary: Rgb::from_u32(0x9bbc0f),
+      accent: Rgb::from_u32(0x1b2e18),
+      ring: Rgb::from_u32(0xc4e58a),
+    },
+  },
+  Scheme {
+    id: "nes",
+    light: Seeds {
+      bg: Rgb::from_u32(0xfcf8f0),
+      ink: Rgb::from_u32(0x000000),
+      primary: Rgb::from_u32(0xd82800),
+      accent: Rgb::from_u32(0xffc81e),
+      ring: Rgb::from_u32(0xd82800),
+    },
+    dark: Seeds {
+      bg: Rgb::from_u32(0x101018),
+      ink: Rgb::from_u32(0xf4f4f4),
+      primary: Rgb::from_u32(0x3cbcfc),
+      accent: Rgb::from_u32(0x241635),
+      ring: Rgb::from_u32(0xf8b800),
+    },
+  },
+  Scheme {
+    id: "commodore",
+    light: Seeds {
+      bg: Rgb::from_u32(0xeae8e0),
+      ink: Rgb::from_u32(0x14142b),
+      primary: Rgb::from_u32(0x2e2c9b),
+      accent: Rgb::from_u32(0x9fd7d0),
+      ring: Rgb::from_u32(0x2e2c9b),
+    },
+    dark: Seeds {
+      bg: Rgb::from_u32(0x14142b),
+      ink: Rgb::from_u32(0xece9ff),
+      primary: Rgb::from_u32(0xb8c4ff),
+      accent: Rgb::from_u32(0x22223f),
+      ring: Rgb::from_u32(0xedf171),
+    },
+  },
+  Scheme {
+    id: "cga",
+    light: Seeds {
+      bg: Rgb::from_u32(0xeefaf8),
+      ink: Rgb::from_u32(0x101010),
+      primary: Rgb::from_u32(0xc02060),
+      accent: Rgb::from_u32(0x7ef9f9),
+      ring: Rgb::from_u32(0xc02060),
+    },
+    dark: Seeds {
+      bg: Rgb::from_u32(0x0a0a14),
+      ink: Rgb::from_u32(0xf4f4f4),
+      primary: Rgb::from_u32(0x55ffff),
+      accent: Rgb::from_u32(0x281430),
+      ring: Rgb::from_u32(0xff55ff),
+    },
+  },
+  Scheme {
+    id: "spectrum",
+    light: Seeds {
+      bg: Rgb::from_u32(0xf2f2ea),
+      ink: Rgb::from_u32(0x0a0a12),
+      primary: Rgb::from_u32(0x0000d8),
+      accent: Rgb::from_u32(0xffe94a),
+      ring: Rgb::from_u32(0x0000d8),
+    },
+    dark: Seeds {
+      bg: Rgb::from_u32(0x0b0b16),
+      ink: Rgb::from_u32(0xf4f4f4),
+      primary: Rgb::from_u32(0xffe94a),
+      accent: Rgb::from_u32(0x221033),
+      ring: Rgb::from_u32(0xffe94a),
+    },
+  },
 ];
 
 /// 按 id 找方案。

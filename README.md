@@ -1032,7 +1032,7 @@ ls target/dev-dist/                                          # 正常应有 data
 | 背景 | 纯 CSS：亮色是带细抖动点阵的纸张，暗色是深蓝夜空 + 稀疏星点（`steps()` 慢闪）；没有 WebGL、没有渐变 / 模糊，打印时不渲染 |
 | 字体 | 标题 / HUD 用 Press Start 2P / Silkscreen；正文与中文用点阵中文体（Fusion Pixel），按 `unicode-range` 切片，只加载命中的分片；`cargo make fonts-pixel`（纯 Rust，`crates/tools/src/pixel/fonts.rs`）生成，许可证见 `public/fonts/LICENSES` |
 | 对比度 | 调色板里「会被当文字用」的色阶由 `cargo make pixel-palette` 按真实表面（含徽章色调底与每个配色方案的亮 / 暗表面）校正；`cargo make pixel-check` 只审计，已接入 `check` / `ci`。填充色（血条 / 金币）画在深色槽里，写字请用 `text-hp-text` / `text-gold-text` 等文字专用 token |
-| 配色方案 | 设置里可选 5 套方案（经典像素 / 森林 / 海洋 / 晚霞 / 石墨），**与明暗正交**：每个方案都有亮 / 暗两套。落在 `<html data-scheme>`（`localStorage` 键 `ui:colorScheme`）。方案表在 `crates/core/src/color_scheme.rs`，每个方案只写 5 个种子色，其余变量按固定规则派生并保证字色对比度；`style/pixel/schemes.css` 由 `cargo make pixel-schemes` 生成。经典方案手写在 `tokens.css`。状态色（血条 / 金币 / 通关绿 / 危险红）与字体、圆角、动效不随方案变 |
+| 配色方案 | 设置里可选 11 套方案（经典像素 / 森林 / 海洋 / 晚霞 / 石墨，以及 PICO-8 / Game Boy / 红白机 / C64 / CGA / ZX Spectrum 这几套经典像素调色板），**与明暗正交**：每个方案都有亮 / 暗两套。落在 `<html data-scheme>`（`localStorage` 键 `ui:colorScheme`）。方案表在 `crates/core/src/color_scheme.rs`，每个方案只写 5 个种子色，其余变量按固定规则派生并保证字色对比度；`style/pixel/schemes.css` 由 `cargo make pixel-schemes` 生成。经典方案手写在 `tokens.css`。状态色（血条 / 金币 / 通关绿 / 危险红）与字体、圆角、动效不随方案变 |
 | 减少动态效果 | 系统开启「减少动态效果」时，所有逐帧动画降为静态帧 |
 | 像素动效开关 | 「外观与动效」设置里可单独关闭（`localStorage` 键 `ui:pixelMotion`，落在 `<html data-pixel-motion>`），不影响系统设置 |
 | 易读字体开关 | 同一设置里可把正文切回抗锯齿字体（`ui:readableFont`，`<html data-readable-font>`）；标题与数字仍是像素字体 |
