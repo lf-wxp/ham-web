@@ -1,4 +1,6 @@
+mod apply_sheet;
 mod bar_row;
+use apply_sheet::DxccApplySheet;
 use bar_row::bar_row;
 
 use crate::i18n::{t, tf};
@@ -20,8 +22,11 @@ fn count<T: Ord>(p: &Progress<T>, confirmed: bool) -> usize {
 }
 
 /// 日志联动的奖状进度：DXCC / WAZ / WAC / VUCC。
+///
+/// `apply_open` 由上层持有：本组件在日志页的响应式闭包里创建，日志一变就整体重建，
+/// 展开态放在内部会被重置（见 `DxccApplySheet`）。
 #[component]
-pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
+pub(super) fn AwardsPanel(entries: Vec<LogEntry>, apply_open: RwSignal<bool>) -> impl IntoView {
   let progress = StoredValue::new(AwardProgress::from_entries(&entries));
   let confirmed = RwSignal::new(false);
 
@@ -190,6 +195,8 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>) -> impl IntoView {
           }
         })
       }}
+
+      <DxccApplySheet entries=entries open=apply_open />
     </section>
   }
 }

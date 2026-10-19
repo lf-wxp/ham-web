@@ -20,6 +20,12 @@ pub(super) struct Session {
   pub(super) mode: String,
   #[serde(default)]
   pub(super) power: String,
+  /// 赛前目标 QSO 数；0 = 未设。
+  #[serde(default)]
+  pub(super) target_qsos: u32,
+  /// 计划比赛时长（分钟）；0 = 未设。
+  #[serde(default)]
+  pub(super) planned_minutes: u32,
 }
 
 impl Default for Session {
@@ -33,6 +39,8 @@ impl Default for Session {
       freq: "14.025".to_owned(),
       mode: "CW".to_owned(),
       power: "LOW".to_owned(),
+      target_qsos: 0,
+      planned_minutes: 0,
     }
   }
 }

@@ -10,6 +10,8 @@ authors.workspace = true
 
 [dependencies]
 ham-web-nec.workspace = true
+# `mode_audio::to_wav` 只是 `ham_web_wav::encode` 的薄封装（WAV 编码只有一份实现）
+ham-web-wav.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 

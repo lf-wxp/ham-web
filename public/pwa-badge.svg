@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <title>业余无线电</title>
+  <!--
+    通知栏 badge 的设计源：96 × 96、透明底、纯白图形。
+
+    Android 把一个 badge 当作 alpha 掩膜处理 —— 只取透明度、按系统栏颜色重新上色，
+    所以这里不能有品牌蓝底或渐变（那会被渲染成一个实心圆角方块）。图形直接取
+    favicon-16.svg 的 16px 像素稿，按 6 倍放大并居中（16 × 6 = 96 的整数倍，
+    每个方块都落在整像素上，不会出现灰边）。
+  -->
+  <g transform="translate(0 6) scale(6)" fill="#ffffff">
+    <!-- 电波 -->
+    <rect x="7" y="1" width="2" height="1"/>
+    <rect x="5" y="2" width="2" height="1"/>
+    <rect x="9" y="2" width="2" height="1"/>
+    <rect x="3" y="3" width="2" height="1"/>
+    <rect x="11" y="3" width="2" height="1"/>
+    <!-- 塔 -->
+    <rect x="7" y="4" width="2" height="1"/>
+    <rect x="6" y="5" width="4" height="1"/>
+    <rect x="5" y="6" width="2" height="2"/>
+    <rect x="9" y="6" width="2" height="2"/>
+    <rect x="4" y="8" width="8" height="1"/>
+    <rect x="4" y="9" width="2" height="2"/>
+    <rect x="10" y="9" width="2" height="2"/>
+    <rect x="3" y="11" width="10" height="1"/>
+    <rect x="2" y="12" width="12" height="1"/>
+  </g>
+</svg>

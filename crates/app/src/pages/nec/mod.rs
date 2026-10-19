@@ -23,6 +23,7 @@
 mod canvas;
 mod design;
 mod design_archive;
+mod direction_table;
 mod elevation_grid;
 mod ground_material;
 mod import_export;

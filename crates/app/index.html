@@ -11,10 +11,13 @@
     <meta name="theme-color" content="#FFF8E1" />
 
     <link rel="manifest" href="/manifest.json" />
-    <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="icon" href="/pwa-icon.svg" type="image/svg+xml" />
-    <link rel="shortcut icon" href="/pwa-icon.svg" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- 图标：ICO 里打包了 16 / 32 / 48 三档（16px 是像素对齐的专用图形，母版缩到
+         16px 会糊）；支持 SVG 的浏览器再拿一份矢量版。iOS 主屏图标与 PWA 的
+         maskable 必须是四角不透明的满幅方形，圆角交给系统遮罩 —— 两者都出自
+         `public/pwa-maskable.svg`。 -->
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+    <link rel="icon" href="/pwa-icon.svg" type="image/svg+xml" sizes="any" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="业余无线电" />
@@ -280,6 +283,9 @@
     <link data-trunk rel="copy-dir" href="../../public/navtex-worker" />
     <link data-trunk rel="copy-dir" href="../../public/lrpt-worker" />
     <link data-trunk rel="copy-dir" href="../../public/ft8-worker" />
+    <link data-trunk rel="copy-dir" href="../../public/hell-worker" />
+    <link data-trunk rel="copy-dir" href="../../public/wefax-worker" />
+    <link data-trunk rel="copy-dir" href="../../public/afsk1200-worker" />
     <link data-trunk rel="copy-file" href="../../public/decode-worker.js" />
     <link data-trunk rel="copy-file" href="../../LICENSE" data-target-path="licenses" />
     <link data-trunk rel="copy-dir" href="../../LICENSES" data-target-path="licenses" />
@@ -295,7 +301,8 @@
     <link data-trunk rel="copy-file" href="../../public/pwa-maskable-192.png" />
     <link data-trunk rel="copy-file" href="../../public/pwa-maskable-512.png" />
     <link data-trunk rel="copy-file" href="../../public/apple-touch-icon.png" />
-    <link data-trunk rel="copy-file" href="../../public/apple-touch-icon-precomposed.png" />
+    <!-- 通知栏 badge（sw.js 的 showNotification 用，单色透明底） -->
+    <link data-trunk rel="copy-file" href="../../public/pwa-badge-96.png" />
 
     <script
       async

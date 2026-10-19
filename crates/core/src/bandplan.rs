@@ -94,6 +94,25 @@ pub struct BandPlan {
 
 /// 主要业余波段的模式子段分配。
 pub const BAND_PLANS: &[BandPlan] = &[
+  // LF / MF 新开放段：ITU 三区只安排 CW 与窄带数据，话务不进这两段。
+  BandPlan {
+    band: "2200m",
+    freq_range: "135.7–137.8 kHz",
+    segments: &[BandSegment {
+      range: "135.7–137.8 kHz",
+      text: "仅 CW / 窄带数据（LF，e.i.r.p. ≤1W）",
+      modes: SegmentModes::CW_NARROW,
+    }],
+  },
+  BandPlan {
+    band: "630m",
+    freq_range: "472–479 kHz",
+    segments: &[BandSegment {
+      range: "472–479 kHz",
+      text: "仅 CW / 窄带数据（MF）",
+      modes: SegmentModes::CW_NARROW,
+    }],
+  },
   BandPlan {
     band: "160m",
     freq_range: "1.8–2.0 MHz",

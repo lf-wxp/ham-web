@@ -54,16 +54,6 @@ fn render_rgba(rgba: &[u8], width: u32, height: u32) -> Result<String, String> {
   canvas.to_data_url().map_err(|e| js_error_message(&e))
 }
 
-async fn read_file_bytes(file: &File) -> Result<Vec<u8>, String> {
-  let blob: web_sys::Blob = file.clone().into();
-  let promise = blob.array_buffer();
-  let buf = JsFuture::from(promise)
-    .await
-    .map_err(|e| js_error_message(&e))?;
-  let arr: js_sys::ArrayBuffer = buf.unchecked_into();
-  Ok(js_sys::Uint8Array::new(&arr).to_vec())
-}
-
 /// 用浏览器原生解码器把 WAV 字节解码为单声道 f32 样本。
 async fn decode_audio(bytes: &[u8]) -> Result<(Vec<f32>, f32), String> {
   let ctx = AudioContext::new().map_err(|e| js_error_message(&e))?;
@@ -88,7 +78,7 @@ async fn decode_audio(bytes: &[u8]) -> Result<(Vec<f32>, f32), String> {
 }
 
 async fn analyze_file(file: &File) -> Result<AnalysisResult, String> {
-  let bytes = read_file_bytes(file).await?;
+  let bytes = crate::decode_worker::read_file_bytes(file).await?;
   let (samples, sample_rate) = decode_audio(&bytes).await?;
   let (rgba, avg_db) =
     ham_web_core::spectrum::analyze_waterfall(&samples, FILE_FRAME, FILE_HEIGHT, FLOOR_DB, CEIL_DB)

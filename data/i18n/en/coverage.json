@@ -1,0 +1,37 @@
+{
+  "coverage.title": "Direction distribution",
+  "coverage.desc": "Groups receiving stations into eight 45° sectors around your station, so you can see which direction and band report you most.",
+  "coverage.coarse-hint": "These spots only carry the receiver's callsign: bearings come from the DXCC entity centre converted to a 4-character grid, so they are coarse and not the real station position.",
+  "coverage.map-title": "Receiver locations",
+  "coverage.map-desc": "Each dot is the centre of the grid square that receiver reported; positions only, no signal strength.",
+  "coverage.map-count": {
+    "one": "{} receiver",
+    "other": "{} receivers"
+  },
+  "coverage.band-filter": "Band filter",
+  "coverage.all-bands": "All bands",
+  "coverage.n": "North (N)",
+  "coverage.ne": "Northeast (NE)",
+  "coverage.e": "East (E)",
+  "coverage.se": "Southeast (SE)",
+  "coverage.s": "South (S)",
+  "coverage.sw": "Southwest (SW)",
+  "coverage.w": "West (W)",
+  "coverage.nw": "Northwest (NW)",
+  "coverage.sector": "Sector",
+  "coverage.reports": "Reports",
+  "coverage.mean-snr": "Mean SNR",
+  "coverage.distribution": "Distribution",
+  "coverage.hourly": "Hourly distribution (UTC)",
+  "coverage.hourly-tip": {
+    "one": "{}:00 UTC · {} report",
+    "other": "{}:00 UTC · {} reports"
+  },
+  "coverage.busiest": "Busiest hour: {}:00 UTC",
+  "coverage.total": {
+    "one": "{} report counted (spots without a valid locator were skipped)",
+    "other": "{} reports counted (spots without a valid locator were skipped)"
+  },
+  "coverage.home-missing": "No home grid yet: set your Maidenhead grid in the logbook's station info so directions can be computed.",
+  "coverage.empty": "None of these reports carries a usable receiver locator."
+}

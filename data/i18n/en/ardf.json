@@ -1,0 +1,24 @@
+{
+  "ardf.df-title": "Direction-finding fix",
+  "ardf.df-desc": "Enter the coordinates of a few bearings and the azimuth each one points to (0° = north, clockwise), with an angular error. Leave a whole row empty to skip it; an empty error counts as 2°.",
+  "ardf.df-row": "Bearing {}",
+  "ardf.df-lat-n": "Latitude of bearing {}",
+  "ardf.df-lon-n": "Longitude of bearing {}",
+  "ardf.df-azimuth-n": "Azimuth of bearing {}",
+  "ardf.df-sigma-n": "Error of bearing {}",
+  "ardf.df-need-more": "At least two bearings are needed to cross-fix a position.",
+  "ardf.df-bad-input": "A coordinate or angle is missing or out of range: latitude -90 to 90, longitude -180 to 180, error 0–45°.",
+  "ardf.df-parallel": "These bearings are nearly parallel (or opposite), so there is no unique crossing. Take one from a clearly different position.",
+  "ardf.df-fix": "Crossing: latitude {}, longitude {}",
+  "ardf.df-grid": "Grid: {}",
+  "ardf.df-ellipse": "95% error ellipse: {} m × {} m, major axis at {}°",
+  "ardf.df-rms": {
+    "one": "Residual {}° ({} bearing)",
+    "other": "Residual {}° ({} bearings)"
+  },
+  "ardf.df-behind": {
+    "one": "The crossing lies behind the station of {} bearing. Check that bearing's azimuth (it may be off by 180°).",
+    "other": "The crossing lies behind the stations of {} bearings. Check their azimuths (they may be off by 180°)."
+  },
+  "ardf.df-wide": "The error ellipse is huge, which means the bearings cross at too shallow an angle. Take one from another position instead of trusting this point."
+}

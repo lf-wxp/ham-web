@@ -1,6 +1,7 @@
 //! 成绩分享卡片：把模拟考试成绩绘制到 Canvas，导出为 PNG 图片（完全本地完成，不上传）。
 
 use ham_web_core::{Bank, ExamScore};
+use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 
@@ -206,6 +207,38 @@ pub fn download(data_url: &str, filename: &str) {
     a.click();
     let _ = body.remove_child(&a);
   }
+}
+
+/// 把二进制字节作为文件下载（Blob + 对象 URL）。
+///
+/// 比 `data:` URL 更适合导出音频：几 MB 的 WAV 不经 base64（体积 +33%，且同时驻留
+/// 原文 / base64 / URL 三份），也不受移动端浏览器对超长 data URL 的限制。
+/// 对象 URL 延后回收——立刻 `revoke` 有概率让下载拿到已失效的 URL。
+pub fn download_bytes(bytes: &[u8], mime: &str, filename: &str) {
+  let array = js_sys::Uint8Array::from(bytes);
+  let parts = js_sys::Array::new();
+  parts.push(&array.buffer());
+  let options = web_sys::BlobPropertyBag::new();
+  options.set_type(mime);
+  // 失败不能静默：调用方（导出 WAV / CSV）以为文件已经存下来了，其实什么都没发生。
+  let Ok(blob) = web_sys::Blob::new_with_buffer_source_sequence_and_options(&parts, &options)
+  else {
+    crate::ui::push_error(t("common.download-failed"));
+    return;
+  };
+  let Ok(url) = web_sys::Url::create_object_url_with_blob(&blob) else {
+    crate::ui::push_error(t("common.download-failed"));
+    return;
+  };
+  download(&url, filename);
+  let revoke = url.clone();
+  let _ = crate::util::window().set_timeout_with_callback_and_timeout_and_arguments_0(
+    Closure::once_into_js(move || {
+      let _ = web_sys::Url::revoke_object_url(&revoke);
+    })
+    .unchecked_ref(),
+    10_000,
+  );
 }
 
 /// 把 PNG data URL 转为 Blob（供剪贴板 / 系统分享使用）。

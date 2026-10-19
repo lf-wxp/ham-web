@@ -89,6 +89,91 @@ pub fn check_lang(lang: &str) -> Result<&'static str> {
   }
 }
 
+/// 同一个 JSON 对象内重复出现的 key。
+///
+/// `serde_json::Map` 的 `insert` 会把重复项**静默覆盖**：词条写了却不生效，检查器
+/// 也看不到。所以解析前先自己走一遍 `MapAccess` —— 它按文件顺序交出每一个 key，
+/// 重复项也在里面。嵌套对象同样递归检查。
+pub fn duplicate_keys(json: &str) -> Result<Vec<String>> {
+  let probe: DupProbe = serde_json::from_str(json)?;
+  Ok(probe.dups)
+}
+
+#[derive(Default)]
+struct DupProbe {
+  dups: Vec<String>,
+}
+
+impl<'de> serde::Deserialize<'de> for DupProbe {
+  fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    deserializer.deserialize_any(DupVisitor)
+  }
+}
+
+struct DupVisitor;
+
+impl<'de> serde::de::Visitor<'de> for DupVisitor {
+  type Value = DupProbe;
+
+  fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_str("任意 JSON")
+  }
+
+  fn visit_map<A>(self, mut map: A) -> std::result::Result<DupProbe, A::Error>
+  where
+    A: serde::de::MapAccess<'de>,
+  {
+    let mut seen = HashSet::new();
+    let mut dups = Vec::new();
+    while let Some(key) = map.next_key::<String>()? {
+      if !seen.insert(key.clone()) {
+        dups.push(key.clone());
+      }
+      let child: DupProbe = map.next_value()?;
+      // 子对象的重复项要带上父 key：只报一个 `one` 的话，看不出是哪个词条
+      // （复数对象里 `one` / `other` 到处都是）。
+      dups.extend(child.dups.into_iter().map(|path| format!("{key}.{path}")));
+    }
+    Ok(DupProbe { dups })
+  }
+
+  fn visit_seq<A>(self, mut seq: A) -> std::result::Result<DupProbe, A::Error>
+  where
+    A: serde::de::SeqAccess<'de>,
+  {
+    let mut dups = Vec::new();
+    while let Some(child) = seq.next_element::<DupProbe>()? {
+      dups.extend(child.dups);
+    }
+    Ok(DupProbe { dups })
+  }
+
+  fn visit_bool<E>(self, _: bool) -> std::result::Result<DupProbe, E> {
+    Ok(DupProbe::default())
+  }
+  fn visit_i64<E>(self, _: i64) -> std::result::Result<DupProbe, E> {
+    Ok(DupProbe::default())
+  }
+  fn visit_u64<E>(self, _: u64) -> std::result::Result<DupProbe, E> {
+    Ok(DupProbe::default())
+  }
+  fn visit_f64<E>(self, _: f64) -> std::result::Result<DupProbe, E> {
+    Ok(DupProbe::default())
+  }
+  fn visit_str<E>(self, _: &str) -> std::result::Result<DupProbe, E> {
+    Ok(DupProbe::default())
+  }
+  fn visit_string<E>(self, _: String) -> std::result::Result<DupProbe, E> {
+    Ok(DupProbe::default())
+  }
+  fn visit_unit<E>(self) -> std::result::Result<DupProbe, E> {
+    Ok(DupProbe::default())
+  }
+}
+
 /// 读入一种语言的全部域文件（按文件名排序，域内保持文件里的 key 顺序）。
 pub fn load_entries(root: &Path, lang: &str) -> Result<Vec<Entry>> {
   let dir = lang_dir(root, check_lang(lang)?);
@@ -110,8 +195,17 @@ pub fn load_entries(root: &Path, lang: &str) -> Result<Vec<Entry>> {
       .to_owned();
     // 保序（`serde_json` 开了 `preserve_order`）：回填时只该动改到的那几条，
     // 排序会让整个文件的键重排，diff 里全是噪声。输出侧（`pack`）另行排序。
+    let text = std::fs::read_to_string(&f).with_context(|| format!("读取 {} 失败", f.display()))?;
+    let dups = duplicate_keys(&text).with_context(|| format!("解析 {} 失败", f.display()))?;
+    if !dups.is_empty() {
+      bail!(
+        "{} 里有重复 key：{}（后一条会静默覆盖前一条）",
+        f.display(),
+        dups.join("、")
+      );
+    }
     let map: EntryMap =
-      crate::fsutil::read_json(&f).with_context(|| format!("解析 {} 失败", f.display()))?;
+      serde_json::from_str(&text).with_context(|| format!("解析 {} 失败", f.display()))?;
     for (k, v) in map {
       let value = serde_json::from_value(v)
         .with_context(|| format!("{} 的 {k} 不是字符串或复数对象", f.display()))?;
@@ -1869,13 +1963,15 @@ pub fn run(root: &Path) -> Result<bool> {
     }
   }
 
-  // `tp()` 调用 ↔ 词典复数变体对账（只提示、不判失败：迁移是分批做的）
+  // `tp()` 调用 ↔ 词典复数变体对账（**判失败**：缺变体时英文 / 西语界面会恒定用复数，
+  // 例如「1 QSOs」「faltan 1 QSO」，属用户可见的错误，不能只在日志里提示）
   for lang in ["en", "es"] {
     match reconcile_plural(root, lang) {
       Ok(r) => {
         if !r.missing_variants.is_empty() {
+          ok = false;
           println!(
-            "\n! {lang}：{} 条文案已改用 tp()，但词典还没配复数变体（当前退化为 other）",
+            "\n✗ {lang}：{} 条文案已改用 tp()，但词典还没配复数变体（当前退化为 other）",
             r.missing_variants.len()
           );
           for k in r.missing_variants.iter().take(10) {
@@ -2192,6 +2288,27 @@ mod tests {
   ///
   /// `set_title("…")` 存的是 key（在 `apply_title` 里才查表），必须一起认；但它也接受
   /// 裸标题（`APRS`），那种不该进覆盖率 —— 否则会报出三条不存在的「待补」。
+  #[test]
+  fn duplicate_keys_reports_repeats_and_nested_ones() {
+    // 顶层重复：后一条会静默覆盖。
+    assert_eq!(
+      duplicate_keys(r#"{"a.b":"x","a.b":"y"}"#).unwrap(),
+      vec!["a.b".to_owned()]
+    );
+    // 嵌套对象（复数词条）里的重复：报全路径，否则只看到一个 `one`。
+    assert_eq!(
+      duplicate_keys(r#"{"a.b":{"one":"x","one":"y","other":"z"}}"#).unwrap(),
+      vec!["a.b.one".to_owned()]
+    );
+    // 数组里的对象一样要查（数组本身不加路径段，父 key 照样带上）。
+    assert_eq!(
+      duplicate_keys(r#"{"a":[{"k":1,"k":2}]}"#).unwrap(),
+      vec!["a.k".to_owned()]
+    );
+    // 干净文件不误报：值里出现同名文字不是重复 key。
+    assert!(duplicate_keys(r#"{"a":"k","b":"k"}"#).unwrap().is_empty());
+  }
+
   #[test]
   fn collect_call_sites_recognizes_tp_and_set_title() {
     let src = r#"let a = tf("a.b", &[x]); let c = tp("c.d", n, &[y]); s.set_title("e.f"); s.set_title("APRS"); s.set_title("异常页面");"#;

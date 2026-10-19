@@ -39,6 +39,16 @@ test("通联日志：填写呼号后入库并识别实体", async ({ page }) => 
   await expect(page.getByText("共 2 条")).toBeVisible();
 });
 
+test("通联日志：实体名随界面语言本地化", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("locale", "en"));
+  await page.goto("/log");
+  await callInput(page).fill("JA1AA");
+  // 先等呼号查询返回（CQ/ITU 分区），再断言实体名用英文名 Japan、不再漏出中文「日本」。
+  await expect(page.getByText(/CQ 25 · ITU 45/)).toBeVisible();
+  await expect(page.getByText("Japan")).toBeVisible();
+  await expect(page.getByText("日本")).toHaveCount(0);
+});
+
 test("通联日志：搜索与筛选", async ({ page }) => {
   await page.goto("/log");
   await expect(page.getByRole("heading", { level: 1, name: "通联日志" })).toBeVisible();

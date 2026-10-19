@@ -1,5 +1,29 @@
 {
   "contest.november-ssb-december-cw": "November (SSB) / December (CW)",
+  "contest.pace-title": "Goal and pace",
+  "contest.pace-target": "Target QSOs",
+  "contest.pace-planned-hours": "Planned hours",
+  "contest.pace-hint": "Shows where you should be on a straight-line plan. Pure arithmetic: no propagation forecast, and it does not touch the score.",
+  "contest.pace-unset": "Set a target QSO count and planned hours to see the pace.",
+  "contest.pace-done": "QSOs this session",
+  "contest.pace-expected": "Expected by now",
+  "contest.pace-rate": "Current rate (QSO/h)",
+  "contest.pace-projected": "Projected total",
+  "contest.pace-ahead": {
+    "one": "{} QSO ahead",
+    "other": "{} QSOs ahead"
+  },
+  "contest.pace-behind": {
+    "one": "{} QSO behind",
+    "other": "{} QSOs behind"
+  },
+  "contest.pace-required": "{} QSO/h needed for the remaining time",
+  "contest.pace-eta": "{} minutes to the target at the current rate",
+  "contest.pace-overtime": {
+    "one": "Planned time is up, {} QSO short",
+    "other": "Planned time is up, {} QSOs short"
+  },
+  "contest.pace-reached": "Target reached",
   "contest.december": "December",
   "contest.february-cw-march-ssb": "February (CW) / March (SSB)",
   "contest.24-hours": "24 hours",

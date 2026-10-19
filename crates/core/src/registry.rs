@@ -518,6 +518,22 @@ pub const MODULES: &[Module] = &[
     backend: false,
   },
   Module {
+    path: "/hell-decode",
+    href: None,
+    title: "Feld Hell 解码器",
+    icon: "waves",
+    group: Some(GROUP_TOOL_CALC),
+    backend: false,
+  },
+  Module {
+    path: "/wefax-decode",
+    href: None,
+    title: "WEFAX 解码器",
+    icon: "camera",
+    group: Some(GROUP_TOOL_CALC),
+    backend: false,
+  },
+  Module {
     path: "/ft8-decode",
     href: None,
     title: "FT8 / FT4 解码器",
@@ -1332,6 +1348,15 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "WSPR 解码器",
     icon: "waves",
+    group: Some(GROUP_TOOL_CALC),
+    backend: false,
+  },
+  // 听辨向导排在解码器前：先判断「这是什么」，再决定用哪个解码器。
+  Module {
+    path: "/signal-id",
+    href: None,
+    title: "信号听辨",
+    icon: "audio-lines",
     group: Some(GROUP_TOOL_CALC),
     backend: false,
   },

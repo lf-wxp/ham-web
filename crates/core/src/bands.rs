@@ -569,10 +569,17 @@ pub fn microwave_rows() -> usize {
 /// [`crate::frequencies::band_of`] 等复用。
 ///
 /// 边界按中国（ITU 三区）口径：80m 到 3.9、40m 到 7.2、17m 从 18.068 起。
-/// 这是这些边界在**全站的唯一事实来源**——`band_of` 与波段规划都据此判断，
-/// 避免历史上「一处写二区值、另一处写三区值」造成的漂移（见
+/// 这是这些边界在**全站的唯一事实来源**——`band_of`、波段规划、日志体检与 CHIRP 导出
+/// 都据此判断，避免历史上「一处写二区值、另一处写三区值」造成的漂移（见
 /// `knowledge_consistency::amateur_band_edges_are_single_source`）。
+///
+/// 另含 2023 年后开放的 LF / MF 段：2200 m（135.7–137.8 kHz）与 630 m（472–479 kHz）。
+/// 本表只回答「这个频率属于哪个业余波段」，**不回答「本地能不能发射」**：这两段并非
+/// 所有国家都可操作，可用的 e.i.r.p. 另有 ITU 脚注限制（5.67A ≤1 W，见 `/compliance`
+/// 与 `license_compliance`）。日志体检因此只把它们当「业余波段内」而不是「本地合法」。
 pub const AMATEUR_BAND_EDGES: &[(&str, f64, f64)] = &[
+  ("2200m", 0.1357, 0.1378),
+  ("630m", 0.472, 0.479),
   ("160m", 1.8, 2.0),
   ("80m", 3.5, 3.9),
   ("60m", 5.3515, 5.3665),
@@ -587,6 +594,18 @@ pub const AMATEUR_BAND_EDGES: &[(&str, f64, f64)] = &[
   ("2m", 144.0, 148.0),
   ("70cm", 430.0, 440.0),
 ];
+
+/// 波段排序键：按 [`AMATEUR_BAND_EDGES`] 的顺序（频率由低到高），未知波段排在最后。
+///
+/// 界面里列波段（筛选 chip、统计表）要用它而不是字符串字典序：字典序会把 `10m` 排在
+/// `160m` 前面，而 `band_of` 出来的波段名正是这些短串。
+#[must_use]
+pub fn band_rank(name: &str) -> usize {
+  AMATEUR_BAND_EDGES
+    .iter()
+    .position(|(band, _, _)| *band == name)
+    .unwrap_or(usize::MAX)
+}
 
 #[cfg(test)]
 mod tests {
@@ -672,6 +691,18 @@ mod tests {
     assert_eq!(parse_range_mhz("135.7-137.8kHz"), Some((0.1357, 0.1378)));
     assert_eq!(parse_range_mhz("18.068-18.168MHz"), Some((18.068, 18.168)));
     assert_eq!(parse_range_mhz("0.03-0.3Hz"), None);
+  }
+
+  #[test]
+  fn band_rank_follows_frequency_not_the_string() {
+    // 字典序会把 10m 排在 160m 前面；界面列波段要按频率升序。
+    assert!(band_rank("160m") < band_rank("80m"));
+    assert!(band_rank("20m") < band_rank("10m"));
+    assert!(band_rank("2m") < band_rank("70cm"));
+    assert!(band_rank("2200m") < band_rank("630m"));
+    // 未知波段（如用户手填的 "其他"）排到最后，且不 panic。
+    assert_eq!(band_rank("其他"), usize::MAX);
+    assert_eq!(band_rank(""), usize::MAX);
   }
 
   #[test]

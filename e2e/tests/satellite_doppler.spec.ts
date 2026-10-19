@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect, stubApi, test } from "./fixtures";
 
 // ---- 时间线：固定时钟 + 一次 10 分钟的 ISS 过境，过顶（径向速度为 0）在正中 ----
@@ -70,6 +70,22 @@ const at = (page: Page, unix: number) => page.clock.setFixedTime(new Date(unix *
 
 function panel(page: Page) {
   return page.locator("section").filter({ has: page.getByRole("heading", { name: "多普勒修正与电台联动" }) });
+}
+
+/**
+ * 等读数出现的超时。
+ *
+ * 点「加载下一次过境」之后要等 `/api/passes` 与 `/api/sat-track` 两个接口回来，前端给它们的
+ * 取数预算是 20 s（`data::fetch_external_json_live`，服务端冷启动等 TLE 回源时会真的用到），
+ * **比断言默认的 15 s 还长**。全量 `fullyParallel` 跑、机器被其它用例吃到满载时，15 s 会在
+ * 「加载中…」这一中间态上误报（`Load::Loading` 只由这个预算决定，不是卡死）。
+ */
+const LOAD_TIMEOUT = 25_000;
+
+/** 点「加载下一次过境」并等到逐秒读数出现（面板已就绪）。 */
+async function loadPass(p: Locator) {
+  await p.getByRole("button", { name: "加载下一次过境" }).click();
+  await expect(p.getByText(/^接收（下行）调到/)).toBeVisible({ timeout: LOAD_TIMEOUT });
 }
 
 // ---- 假电台（Web Serial 桩）：Kenwood 11 位 / Icom CI-V / 不回话 ----
@@ -284,8 +300,7 @@ test("卫星多普勒：过境接口或轨迹接口失败时降级，不留旧�
   // 同一页先有成功读数，再让重新取轨迹失败，才能验证旧数据被撤下。
   await stubDoppler(page);
   await at(page, TCA);
-  await p.getByRole("button", { name: "加载下一次过境" }).click();
-  await expect(p.getByText(/^接收（下行）调到/)).toBeVisible();
+  await loadPass(p);
   await page.route("**/api/sat-track?*", route => route.fulfill({ status: 503, body: "unavailable" }));
   await p.getByRole("button", { name: "加载下一次过境" }).click();
   await expect(p.getByRole("alert").filter({ hasText: "取不到这次过境的轨迹" })).toBeVisible();
@@ -309,8 +324,7 @@ test("卫星多普勒 + Kenwood 电台：连接后只读；勾选才写；节流
   await at(page, TCA - 100);
   await page.goto("/satellites");
   const p = panel(page);
-  await p.getByRole("button", { name: "加载下一次过境" }).click();
-  await expect(p.getByText(/^接收（下行）调到/)).toBeVisible();
+  await loadPass(p);
 
   // 1) 连接后只读：没勾选前，一条写频率的命令都不会出现
   await p.getByRole("button", { name: "连接电台" }).click();
@@ -366,8 +380,7 @@ test("卫星多普勒 + Icom 电台：写入的是命令 05 + 5 字节小端 BCD
   await at(page, TCA - 100);
   await page.goto("/satellites");
   const p = panel(page);
-  await p.getByRole("button", { name: "加载下一次过境" }).click();
-  await expect(p.getByText(/^接收（下行）调到/)).toBeVisible();
+  await loadPass(p);
 
   await p.getByRole("combobox", { name: "CAT 协议" }).click();
   await page.getByRole("option", { name: "Icom CI-V" }).click();
@@ -399,8 +412,7 @@ test("卫星多普勒：没读到电台回报的频率位数之前，即使勾�
   await at(page, TCA - 100);
   await page.goto("/satellites");
   const p = panel(page);
-  await p.getByRole("button", { name: "加载下一次过境" }).click();
-  await expect(p.getByText(/^接收（下行）调到/)).toBeVisible();
+  await loadPass(p);
   await p.getByRole("button", { name: "连接电台" }).click();
   await expect(p.getByText("等待电台报告频率…")).toBeVisible();
 
@@ -418,8 +430,7 @@ test("审查修复：动态多普勒中手动改频暂停，改参数后重新�
   await at(page, TCA - 10);
   await page.goto("/satellites");
   const p = panel(page);
-  await p.getByRole("button", { name: "加载下一次过境" }).click();
-  await expect(p.getByText(/^接收（下行）调到/)).toBeVisible();
+  await loadPass(p);
   await p.getByRole("button", { name: "连接电台" }).click();
   await expect(p.getByText("电台当前频率 14.074 MHz")).toBeVisible();
   const auto = p.getByRole("checkbox", { name: AUTO });
@@ -436,8 +447,7 @@ test("审查修复：动态多普勒中手动改频暂停，改参数后重新�
   await p.getByLabel("下行频率（MHz）").fill("437.9");
   await expect(auto).toHaveAttribute("aria-checked", "false");
   const after = setCommands(await written(page)).length;
-  await p.getByRole("button", { name: "加载下一次过境" }).click();
-  await expect(p.getByText(/^接收（下行）调到/)).toBeVisible();
+  await loadPass(p);
   await expect.poll(async () => (await written(page)).filter(c => c === "FA;").length).toBeGreaterThanOrEqual(10);
   expect(setCommands(await written(page))).toHaveLength(after);
 });
@@ -477,8 +487,7 @@ async function connectedAt(page: Page, secs: number, kind: Kind = "kenwood") {
   await at(page, TCA - secs);
   await page.goto("/satellites");
   const p = panel(page);
-  await p.getByRole("button", { name: "加载下一次过境" }).click();
-  await expect(p.getByText(/^接收（下行）调到/)).toBeVisible();
+  await loadPass(p);
   if (kind === "icom") {
     await p.getByRole("combobox", { name: "CAT 协议" }).click();
     await page.getByRole("option", { name: "Icom CI-V" }).click();
@@ -541,8 +550,7 @@ test("上行护栏：上行填错（离标称太远 / 不在卫星业务段 / �
   const arm = async () => {
     // 改参数会让联动停下、已加载的过境作废（既有行为）：每次改完，重新加载过境，再开下行、再明确开上行。
     await expect(auto).toHaveAttribute("aria-checked", "false");
-    await p.getByRole("button", { name: "加载下一次过境" }).click();
-    await expect(p.getByText(/^接收（下行）调到/)).toBeVisible();
+    await loadPass(p);
     await auto.click();
     await up.click();
   };
@@ -645,8 +653,7 @@ test("线性转发器：选转发器必须连带换卫星（NORAD），并作废
   const norad = p.getByLabel("NORAD 编号");
 
   // 先在固定频点模式加载 ISS 的过境，再切线性：旧过境作废，NORAD 变成所选转发器的。
-  await p.getByRole("button", { name: "加载下一次过境" }).click();
-  await expect(p.getByText(/^接收（下行）调到/)).toBeVisible();
+  await loadPass(p);
   await p.getByRole("radio", { name: "线性转发器（上下行联动）" }).click();
   await expect(p.getByText(/^接收（下行）调到/)).toHaveCount(0);
   await expect(norad).toHaveValue("7530"); // 第一个转发器 AO-7 · A
@@ -655,8 +662,7 @@ test("线性转发器：选转发器必须连带换卫星（NORAD），并作废
   await p.getByLabel("转发器", { exact: true }).click();
   await page.getByRole("option", { name: /FO-29/ }).click();
   await expect(norad).toHaveValue("24278");
-  await p.getByRole("button", { name: "加载下一次过境" }).click();
-  await expect(p.getByText(/^接收（下行）调到/)).toBeVisible();
+  await loadPass(p);
   expect(asked.at(-1)?.norad).toBe("24278");
 
   // 再换 AO-7 · B：回到 7530，已加载的 FO-29 过境作废（不能拿它的轨迹给 AO-7 算）。
@@ -864,8 +870,7 @@ test("自定义通带 + 电台：收发都按自定义映射并各做多普勒�
   await f.ulHi.fill("145.2");
   await f.dlLo.fill("435.3");
   await f.dlHi.fill("435.4");
-  await p.getByRole("button", { name: "加载下一次过境" }).click();
-  await expect(p.getByText(/^接收（下行）调到/)).toBeVisible();
+  await loadPass(p);
   await p.getByRole("button", { name: "连接电台" }).click();
   await expect(p.getByText("电台当前频率 14.074 MHz")).toBeVisible();
   await p.getByRole("checkbox", { name: AUTO }).click();
@@ -889,8 +894,7 @@ test("自定义通带不绕过上行护栏：通带整体挪到卫星业务段�
   await f.dlLo.fill("435.3");
   await f.dlHi.fill("435.4");
   await expect(p.getByText("通带：上行 146.200000 – 146.300000 MHz")).toBeVisible();
-  await p.getByRole("button", { name: "加载下一次过境" }).click();
-  await expect(p.getByText(/^接收（下行）调到/)).toBeVisible();
+  await loadPass(p);
   await p.getByRole("button", { name: "连接电台" }).click();
   await expect(p.getByText("电台当前频率 14.074 MHz")).toBeVisible();
   await p.getByRole("checkbox", { name: AUTO }).click();
@@ -914,8 +918,7 @@ test("自定义通带：从预置转发器切到「自定义」时，正在进�
   await p.getByLabel("转发器", { exact: true }).click();
   await page.getByRole("option", { name: /FO-29/ }).click();
   await p.getByLabel("NORAD 编号").fill("25544"); // 过境桩是 ISS 这条
-  await p.getByRole("button", { name: "加载下一次过境" }).click();
-  await expect(p.getByText(/^接收（下行）调到/)).toBeVisible();
+  await loadPass(p);
   await p.getByRole("button", { name: "连接电台" }).click();
   await expect(p.getByText("电台当前频率 14.074 MHz")).toBeVisible();
   await p.getByRole("checkbox", { name: AUTO }).click();

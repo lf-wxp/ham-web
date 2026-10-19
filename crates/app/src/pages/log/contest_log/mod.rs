@@ -3,6 +3,7 @@
 mod analysis;
 mod cabrillo_import;
 mod import_report;
+mod pace;
 mod scp_group;
 mod scp_source;
 mod scp_suggest;

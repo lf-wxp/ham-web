@@ -25,6 +25,13 @@ pub use codec::{ALPHA, BETA, FIGS, InvalidCode, LTRS, REP, decode_code, is_valid
 pub use demod::{decimate_for_demod, demodulate, demodulate_at, estimate_tones, sync_phase};
 pub use message::{NavtexMessage, decode_messages, find_zczc};
 
+/// 单条报文正文的字符上限。
+///
+/// 与 `ham_web_core::mode_audio::MAX_TEXT_CHARS` 取同一个值（100 波特下 1024 字符已约
+/// 70 秒音频、约 60 万样本）；页面必须先按这个值校验，否则一段长粘贴就能生成几百 MB
+/// 的基带采样。
+pub const MAX_MESSAGE_CHARS: usize = 1024;
+
 /// 完整解码：音频样本 → 报文列表。
 ///
 /// 音调自动估计（Mark 低于 Space）；两条极性都试（估计的音调可能把 Mark / Space
@@ -51,10 +58,30 @@ pub fn synthesize(text: &str, phasing_secs: f64, noise: f32) -> Vec<f32> {
   synthesize_at(text, phasing_secs, noise, 8000)
 }
 
+/// 合成一条**指定报头**的 NAVTEX 广播（发端用：8 kHz、无噪声）。
+///
+/// `b1` 是台站识别字母、`b2` 是电报类型字母、`serial` 是两位序号 —— 三者都写进
+/// `ZCZC B1B2SS` 报头，解码端会原样读回来（见 [`NavtexMessage`]）。
+#[must_use]
+pub fn synthesize_message(
+  b1: char,
+  b2: char,
+  serial: u8,
+  text: &str,
+  phasing_secs: f64,
+) -> Vec<f32> {
+  let bits = broadcast_bits(b1, b2, serial, text, phasing_secs);
+  render_fsk(&bits, 8000, 0.0)
+}
+
 /// 同 [`synthesize`]，采样率可选（测试用：验证高采样率输入的抽取路径）。
 fn synthesize_at(text: &str, phasing_secs: f64, noise: f32, rate: u32) -> Vec<f32> {
-  const MARK: f64 = 1904.0;
-  const SPACE: f64 = 2104.0;
+  let bits = broadcast_bits('F', 'A', 79, text, phasing_secs);
+  render_fsk(&bits, rate, noise)
+}
+
+/// 相位段 + 报头 + 正文 + NNNN 的完整位流。
+fn broadcast_bits(b1: char, b2: char, serial: u8, text: &str, phasing_secs: f64) -> Vec<bool> {
   let mut bits = Vec::new();
   // REP / ALPHA 交替标明两条通道；尾部重复码相对首次发送延迟五个字符。
   // 上限防止 `phasing_secs` 极大（公共 API）时把码字向量撑到 GB 级。
@@ -64,7 +91,7 @@ fn synthesize_at(text: &str, phasing_secs: f64, noise: f32, rate: u32) -> Vec<f3
     push_code(&mut bits, REP);
     push_code(&mut bits, ALPHA);
   }
-  let data = message_codes('F', 'A', 79, text);
+  let data = message_codes(b1, b2, serial, text);
   for i in 0..data.len() + 2 {
     push_code(&mut bits, data.get(i).copied().unwrap_or(codec::BLK));
     push_code(
@@ -75,11 +102,20 @@ fn synthesize_at(text: &str, phasing_secs: f64, noise: f32, rate: u32) -> Vec<f3
         .unwrap_or(ALPHA),
     );
   }
-  // 位流 → FSK 采样。
+  bits
+}
+
+/// 位流 → 100 波特 FSK 采样。
+fn render_fsk(bits: &[bool], rate: u32, noise: f32) -> Vec<f32> {
+  const MARK: f64 = 1904.0;
+  const SPACE: f64 = 2104.0;
+  if rate == 0 {
+    return Vec::new();
+  }
   let spb = f64::from(rate) / 100.0;
   let mut out = Vec::new();
   let mut seed = 0x1234_5678u32;
-  for &b in &bits {
+  for &b in bits {
     let f = if b { MARK } else { SPACE };
     for _ in 0..spb as usize {
       let t = out.len() as f64 / f64::from(rate);
@@ -101,6 +137,13 @@ fn synthesize_at(text: &str, phasing_secs: f64, noise: f32, rate: u32) -> Vec<f3
 /// 破坏报头宽度。当前调用方（合成工具）写死 79，仅 `debug_assert` 提醒。
 fn message_codes(b1: char, b2: char, serial: u8, text: &str) -> Vec<u8> {
   debug_assert!(serial <= 99, "NAVTEX 序号是两位（00–99）");
+  // 100 波特下每字符约 0.07 s、约 560 个基带样本；正文没有上限时，一段几 MB 的粘贴
+  // 就能生成 GB 级采样。页面必须按 `MAX_MESSAGE_CHARS` 先校验，这里再断一次，
+  // 防止新的调用方绕过页面校验。
+  debug_assert!(
+    text.chars().count() <= MAX_MESSAGE_CHARS,
+    "NAVTEX 正文超过 {MAX_MESSAGE_CHARS} 字符：调用方必须先校验"
+  );
   let mut codes = vec![LTRS];
   let mut figs = false;
   for ch in format!("ZCZC {b1}{b2}{serial:02}\r\n{text}\r\nNNNN").chars() {
@@ -153,5 +196,18 @@ mod tests {
       assert_eq!(messages.len(), 1, "rate={rate}");
       assert_eq!(messages[0].text, text, "rate={rate}");
     }
+  }
+
+  #[test]
+  fn synthesized_message_keeps_the_requested_header() {
+    let text = "GALE WARNING IN SOUTHERN ADRIATIC 25 KNOTS";
+    let samples = synthesize_message('F', 'B', 42, text, 2.0);
+    let messages = decode_audio(&samples, 8000).expect("应恢复报文");
+    assert_eq!(messages.len(), 1);
+    assert_eq!(messages[0].transmitter, 'F');
+    assert_eq!(messages[0].category, 'B');
+    assert_eq!(messages[0].serial, 42);
+    assert_eq!(messages[0].text, text);
+    assert!(messages[0].accepted);
   }
 }

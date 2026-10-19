@@ -56,29 +56,6 @@ fn upsample(env: &[f32], factor: usize) -> Vec<f32> {
   out
 }
 
-/// 用 2400 Hz 副载波 AM 调制并量化，写为 16 位 PCM WAV。
-fn make_wav(signal: &[f32], rate: u32) -> Vec<u8> {
-  let data_len = signal.len() * 2;
-  let mut out = Vec::with_capacity(44 + data_len);
-  out.extend_from_slice(b"RIFF");
-  out.extend_from_slice(&(36 + data_len as u32).to_le_bytes());
-  out.extend_from_slice(b"WAVE");
-  out.extend_from_slice(b"fmt ");
-  out.extend_from_slice(&16u32.to_le_bytes());
-  out.extend_from_slice(&1u16.to_le_bytes());
-  out.extend_from_slice(&1u16.to_le_bytes());
-  out.extend_from_slice(&rate.to_le_bytes());
-  out.extend_from_slice(&(rate * 2).to_le_bytes());
-  out.extend_from_slice(&2u16.to_le_bytes());
-  out.extend_from_slice(&16u16.to_le_bytes());
-  out.extend_from_slice(b"data");
-  out.extend_from_slice(&(data_len as u32).to_le_bytes());
-  for &s in signal {
-    out.extend_from_slice(&((s.clamp(-1.0, 1.0) * 32767.0) as i16).to_le_bytes());
-  }
-  out
-}
-
 #[test]
 fn decodes_synthetic_apt_image() {
   let lines = 8;
@@ -93,7 +70,7 @@ fn decodes_synthetic_apt_image() {
     .map(|(i, &e)| e * (std::f32::consts::TAU * carrier * i as f32 / WORK_RATE as f32).cos())
     .collect();
 
-  let wav = make_wav(&signal, WORK_RATE);
+  let wav = ham_web_wav::encode(&signal, WORK_RATE);
   let img = ham_web_apt::decode(&wav).expect("解码应成功");
 
   assert_eq!(img.width, IMAGE_WORDS as u32);

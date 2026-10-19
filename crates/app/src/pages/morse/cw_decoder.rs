@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use ham_web_core::cw_decoder::Decoder;
+use ham_web_core::cw_decoder::Reception;
 use js_sys::{Object, Reflect};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -29,8 +29,6 @@ const FFT_SIZE: u32 = 32768;
 const BLOCK_SECS: f64 = 0.005;
 /// 带通滤波器 Q 值：600 Hz 时带宽约 40 Hz。
 const FILTER_Q: f32 = 15.0;
-/// 峰值至少高出底噪这么多倍才认为有信号。
-const MIN_SNR: f32 = 4.0;
 /// 每隔多少个周期刷新一次电平表。
 const METER_EVERY: u32 = 4;
 
@@ -45,50 +43,15 @@ struct Session {
 
 impl Session {
   fn stop(self) {
+    // 先停轮询再关音频上下文：反过来的话定时器还会读已关闭的 analyser。
     window().clear_interval_with_handle(self.interval);
+    let _ = self.filter.disconnect();
     for t in self.stream.get_tracks() {
       if let Ok(t) = t.dyn_into::<web_sys::MediaStreamTrack>() {
         t.stop();
       }
     }
     let _ = self.ctx.close();
-  }
-}
-
-/// 自适应门限的包络检测：跟踪底噪与峰值，取二者之间带回差的门限。
-#[derive(Default)]
-struct Envelope {
-  floor: f32,
-  peak: f32,
-  on: bool,
-}
-
-impl Envelope {
-  fn update(&mut self, level: f32) -> bool {
-    if self.floor == 0.0 || level < self.floor {
-      self.floor = level;
-    } else {
-      self.floor += (level - self.floor) * 0.002;
-    }
-    if level > self.peak {
-      self.peak = level;
-    } else {
-      self.peak -= (self.peak - self.floor) * 0.0015;
-    }
-    let span = self.peak - self.floor;
-    let threshold = self.floor + span * if self.on { 0.35 } else { 0.5 };
-    self.on = self.peak > self.floor * MIN_SNR && level > threshold;
-    self.on
-  }
-
-  /// 当前电平在 [底噪, 峰值] 中的相对位置。
-  fn relative(&self, level: f32) -> f32 {
-    let span = self.peak - self.floor;
-    if span <= f32::EPSILON {
-      0.0
-    } else {
-      ((level - self.floor) / span).clamp(0.0, 1.0)
-    }
   }
 }
 
@@ -123,7 +86,7 @@ pub fn CwDecoder() -> impl IntoView {
   let level = RwSignal::new(0.0f32);
   let keyed = RwSignal::new(false);
   let session = StoredValue::new_local(None::<Session>);
-  let decoder = StoredValue::new_local(Rc::new(RefCell::new(Decoder::new())));
+  let reception = StoredValue::new_local(Rc::new(RefCell::new(Reception::new())));
 
   let stop = move || {
     if let Some(s) = session.try_update_value(Option::take).flatten() {
@@ -158,16 +121,19 @@ pub fn CwDecoder() -> impl IntoView {
         source.connect_with_audio_node(&filter)?;
         filter.connect_with_audio_node(&analyser)?;
 
-        let dec = decoder.get_value();
-        let mut env = Envelope::default();
+        // 电平 → 按键时序 → 文字整条链路都在 `Reception` 里（同一份实现有单测），
+        // 页面只负责按音频时钟切块并把块送进去。
+        let dec = reception.get_value();
         let mut buf = vec![0f32; FFT_SIZE as usize];
         let clock = ctx.clone();
         let rate = f64::from(ctx.sample_rate());
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let block = ((rate * BLOCK_SECS) as usize).max(1);
-        // 已处理到的音频时间（秒）与上次状态切换的时间
+        // 一块代表的音频时长（毫秒）：块长由采样数算出，所以主线程迟到不影响点划时长。
+        #[allow(clippy::cast_precision_loss)]
+        let block_ms = block as f64 / rate * 1000.0;
+        // 已处理到的音频时间（秒）
         let mut processed = clock.current_time();
-        let mut last_change = processed;
         let mut ticks = 0u32;
         let tick = Closure::<dyn FnMut()>::new(move || {
           let now = clock.current_time();
@@ -188,29 +154,19 @@ pub fn CwDecoder() -> impl IntoView {
           let start = buf.len() - blocks * block;
           let mut d = dec.borrow_mut();
           let mut rms = 0.0;
-          for (i, chunk) in buf[start..].chunks_exact(block).enumerate() {
+          for chunk in buf[start..].chunks_exact(block) {
             #[allow(clippy::cast_precision_loss)]
             {
               rms = (chunk.iter().map(|x| x * x).sum::<f32>() / block as f32).sqrt();
             }
-            #[allow(clippy::cast_precision_loss)]
-            let t = processed + ((i + 1) * block) as f64 / rate;
-            let was_on = env.on;
-            let on = env.update(rms);
-            if on != was_on {
-              d.key(was_on, (t - last_change) * 1000.0);
-              last_change = t;
-            }
+            d.push(rms, block_ms);
           }
           #[allow(clippy::cast_precision_loss)]
           {
             processed += (blocks * block) as f64 / rate;
           }
-          if !env.on {
-            d.idle((processed - last_change) * 1000.0);
-          }
-          if keyed.get_untracked() != env.on {
-            keyed.set(env.on);
+          if keyed.get_untracked() != d.keyed() {
+            keyed.set(d.keyed());
           }
           if text.with_untracked(|t| t != d.text()) {
             text.set(d.text().to_owned());
@@ -221,7 +177,7 @@ pub fn CwDecoder() -> impl IntoView {
           }
           ticks = ticks.wrapping_add(1);
           if ticks.is_multiple_of(METER_EVERY) {
-            level.set(env.relative(rms));
+            level.set(d.relative(rms));
           }
         });
         let interval = window().set_interval_with_callback_and_timeout_and_arguments_0(
@@ -271,7 +227,7 @@ pub fn CwDecoder() -> impl IntoView {
   };
 
   let clear = move || {
-    decoder.with_value(|d| d.borrow_mut().clear());
+    reception.with_value(|d| d.borrow_mut().clear());
     text.set(String::new());
     pending.set(String::new());
   };

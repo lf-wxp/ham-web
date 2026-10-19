@@ -1,0 +1,24 @@
+{
+  "ardf.df-title": "Fijación por rumbos",
+  "ardf.df-desc": "Introduce las coordenadas de varios rumbos y el azimut al que apunta cada uno (0° = norte, sentido horario), con su error angular. Deja una fila entera vacía para omitirla; un error vacío cuenta como 2°.",
+  "ardf.df-row": "Rumbo {}",
+  "ardf.df-lat-n": "Latitud del rumbo {}",
+  "ardf.df-lon-n": "Longitud del rumbo {}",
+  "ardf.df-azimuth-n": "Azimut del rumbo {}",
+  "ardf.df-sigma-n": "Error del rumbo {}",
+  "ardf.df-need-more": "Hacen falta al menos dos rumbos para cruzar una posición.",
+  "ardf.df-bad-input": "Falta una coordenada o un ángulo, o está fuera de rango: latitud -90 a 90, longitud -180 a 180, error 0–45°.",
+  "ardf.df-parallel": "Estos rumbos son casi paralelos (u opuestos), así que no hay un cruce único. Toma uno desde una posición claramente distinta.",
+  "ardf.df-fix": "Cruce: latitud {}, longitud {}",
+  "ardf.df-grid": "Cuadrícula: {}",
+  "ardf.df-ellipse": "Elipse de error del 95%: {} m × {} m, eje mayor a {}°",
+  "ardf.df-rms": {
+    "one": "Residuo {}° ({} rumbo)",
+    "other": "Residuo {}° ({} rumbos)"
+  },
+  "ardf.df-behind": {
+    "one": "El cruce queda detrás de la estación de {} marcación. Revisa el acimut de esa marcación (puede estar desfasado 180°).",
+    "other": "El cruce queda detrás de las estaciones de {} marcaciones. Revisa sus acimuts (pueden estar desfasados 180°)."
+  },
+  "ardf.df-wide": "La elipse de error es enorme: los rumbos se cruzan con muy poco ángulo. Toma otro desde una posición distinta en vez de fiarte de este punto."
+}

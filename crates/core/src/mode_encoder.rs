@@ -82,11 +82,12 @@ fn figure_code(ch: char) -> Option<u8> {
   })
 }
 
-/// 文本 → RTTY（ITA2）比特流，字母/数字切换时自动插入 LTRS/FIGS 移态码。
+/// 文本 → RTTY（ITA2）5 位码序列，字母 / 数字切换时自动插入 LTRS / FIGS 移态码。
 ///
-/// 返回空格分隔的 5 位二进制串，`11111` 为 LTRS、`11011` 为 FIGS。
+/// 返回原始码值（低位在先口径，同 [`letter_code`]），`31` 为 LTRS、`27` 为 FIGS。
+/// [`crate::mode_audio::rtty_samples`] 复用本函数把码转成基带音频。
 #[must_use]
-pub fn text_to_baudot_bits(text: &str) -> String {
+pub fn text_to_ita2(text: &str) -> Vec<u8> {
   let mut out: Vec<u8> = Vec::new();
   let mut in_figs = false;
   for ch in text.chars() {
@@ -105,6 +106,14 @@ pub fn text_to_baudot_bits(text: &str) -> String {
     }
   }
   out
+}
+
+/// 文本 → RTTY（ITA2）比特流（格式化显示）。
+///
+/// 返回空格分隔的 5 位二进制串，`11111` 为 LTRS、`11011` 为 FIGS。
+#[must_use]
+pub fn text_to_baudot_bits(text: &str) -> String {
+  text_to_ita2(text)
     .iter()
     .map(|c| format!("{c:05b}"))
     .collect::<Vec<_>>()

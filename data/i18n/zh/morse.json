@@ -130,8 +130,7 @@
   "morse.tone": "音调",
   "morse.tone-frequency": "音调频率",
   "morse.volume-label": "音量",
-  "morse.play-icon": "🔊 播放",
-  "morse.play-word": "🔊 播放单词",
-  "morse.play-spelling": "🔊 播放拼读",
-  "morse.play-morse": "🔊 播放摩尔斯"
+  "morse.play-word": "播放单词",
+  "morse.play-spelling": "播放拼读",
+  "morse.play-morse": "播放摩尔斯"
 }

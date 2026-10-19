@@ -1,78 +1,91 @@
-//! 由 `public/pwa-icon.svg` 渲染 PWA / Apple Touch 图标（纯 Rust，基于 resvg）。
+//! 由 `public/` 下的设计源渲染站点图标（纯 Rust，基于 resvg）。
 //!
-//! 同一份 SVG 产出两类图标：
+//! 三份设计源，各管一类产物：
 //!
-//! - **圆角版**（`pwa-icon-*`、`favicon.ico`）：保留设计好的品牌圆角（iOS 图标口径，
-//!   22.37% 边长），供 manifest 的 `any`、`favicon` 与社交分享图（`og:image`）使用 ——
-//!   这些场景不会替我们裁切；
-//!   `favicon.ico` 是个容器，把 [`FAVICON`] 里的几档尺寸打包成单个文件，其中 16px
-//!   一档用的是对齐到像素格的简化图形（母版缩到 16px 会糊，见该文件里的注释）；
-//! - **满幅版**（`apple-touch-icon-*`、`pwa-maskable-*`）：不带圆角的不透明方形，
-//!   圆角交给各平台的遮罩去加。
+//! - **圆角母版** `pwa-icon.svg` → `pwa-icon-*`（manifest 的 `any`、`og:image`）
+//!   与 `favicon.ico`。母版保留设计好的品牌圆角（iOS 图标口径，22.37% 边长），
+//!   供不会替我们裁切的场景使用；`favicon.ico` 是个容器，把 [`FAVICON`] 里的几档
+//!   尺寸打包成单个文件，其中 16px 一档用的是对齐到像素格的简化图形
+//!   （母版缩到 16px 会糊，见该文件里的注释）。
+//! - **满幅版** `pwa-maskable.svg` → `apple-touch-icon-*`、`pwa-maskable-*`：
+//!   整块画布都是背景、四角不透明、图形缩在安全圆内，圆角交给各平台的遮罩去加。
+//! - **单色版** `pwa-badge.svg` → `pwa-badge-96.png`：通知栏 badge，白图形透明底。
 //!
 //! 为什么必须有满幅版：iOS 的 `apple-touch-icon` 是**按原图直接使用**的（不会像
 //! Android 的 `maskable` 那样套一层启动器形状），而它自己的 squircle 遮罩弧度与
 //! SVG 里的圆弧圆角并不一致。拿一张自带圆角、四角透明的 PNG 过去，系统遮罩盖不
 //! 住的四个角会把透明像素合成到白底上 —— 也就是「4 个角露出白色背景」。
+//!
+//! 满幅版**不是**「圆角母版 + 在角上补一块背景」拼出来的（早期是那么做的）：那样
+//! 玻璃高光与斜向光带仍按圆角裁切，遮罩一盖就露出一个「圆角方框」的接缝，母版里
+//! 的圆角边缘高光线也会变成一个画在方形里的描边。所以满幅版有自己的设计源。
 
 use std::fs;
 use std::path::Path;
 
-use anyhow::{Context, Result, anyhow, ensure};
+use anyhow::{Context, Result, anyhow};
 use resvg::{tiny_skia, usvg};
 
 use crate::fsutil::Paths;
 
+/// 圆角母版（manifest `any`、`og:image`、favicon 的 32 / 48 档）。
+const ROUNDED_SRC: &str = "pwa-icon.svg";
+
 /// 圆角版图标。
 const ROUNDED: &[(&str, u32)] = &[("pwa-icon-192.png", 192), ("pwa-icon-512.png", 512)];
 
+/// 满幅版设计源。
+const BLEED_SRC: &str = "pwa-maskable.svg";
+
 /// 满幅（无圆角、不透明）图标：圆角由系统遮罩添加。
+///
+/// `apple-touch-icon-precomposed.png` 只被 iOS 6 及更早版本使用，页面里也没有任何 `link`
+/// 引用它；生成一份没人下载的文件只会白占 SW 预缓存清单，故不再产出。
 const BLEED: &[(&str, u32)] = &[
   ("apple-touch-icon.png", 180),
-  ("apple-touch-icon-precomposed.png", 180),
   ("pwa-maskable-192.png", 192),
   ("pwa-maskable-512.png", 512),
 ];
 
+/// 单色设计源（通知栏 badge）。
+const BADGE_SRC: &str = "pwa-badge.svg";
+
+/// 通知栏 badge：Android 只取 alpha 通道并按系统主题着色，96px 是它建议的尺寸。
+const BADGE: &[(&str, u32)] = &[("pwa-badge-96.png", 96)];
+
 /// `favicon.ico` 里打包的 `(图形文件, 尺寸)`：浏览器标签页、书签栏与桌面快捷方式取用的几档。
+///
+/// 16 / 32 两档都用 `favicon-16.svg`（32 档是它的 2 倍整数放大，仍是整像素）：母版的
+/// 塔腿在这个尺度上只有 1–2px，插值出来是一团灰。48 档仍用母版，细节撑得住。
 const FAVICON: &[(&str, u32)] = &[
   ("favicon-16.svg", 16),
-  ("pwa-icon.svg", 32),
+  ("favicon-16.svg", 32),
   ("pwa-icon.svg", 48),
 ];
 
 pub fn generate(paths: &Paths) -> Result<()> {
-  let svg_path = paths.public.join("pwa-icon.svg");
-  let svg = fs::read_to_string(&svg_path)
-    .with_context(|| format!("failed to read {}", svg_path.display()))?;
-  let bleed_svg = bleed(&svg)?;
+  let rounded = read_svg(&paths.public, ROUNDED_SRC)?;
+  let bleed = read_svg(&paths.public, BLEED_SRC)?;
+  let badge = read_svg(&paths.public, BADGE_SRC)?;
 
   for &(name, px) in ROUNDED {
-    save(&paths.public, name, px, &svg)?;
+    save(&paths.public, name, px, &rounded)?;
   }
   for &(name, px) in BLEED {
-    save(&paths.public, name, px, &bleed_svg)?;
+    save(&paths.public, name, px, &bleed)?;
+  }
+  for &(name, px) in BADGE {
+    save(&paths.public, name, px, &badge)?;
   }
   write_ico(&paths.public, FAVICON)?;
   println!("All PWA icons generated successfully!");
   Ok(())
 }
 
-/// 把圆角 SVG 转成满幅 SVG：在 `<defs>` 之后补一块铺满画布的背景。
-///
-/// 补上去的矩形与图面背景同色（同一个 `#bg`），只是多填了原圆角以外的区域，
-/// 不会出现接缝。这里用 `100%` 而不是写死边长，避免 SVG 换尺寸后悄悄错位；
-/// `<defs>` 或 `#bg` 不在时直接报错，免得改坏 SVG 后静默生成一张四角仍然透明的
-/// 「满幅」图标。
-fn bleed(svg: &str) -> Result<String> {
-  const MARK: &str = "</defs>";
-  let end = svg
-    .find(MARK)
-    .map(|i| i + MARK.len())
-    .ok_or_else(|| anyhow!("pwa-icon.svg missing {MARK}"))?;
-  ensure!(svg.contains(r#"id="bg""#), "pwa-icon.svg missing #bg fill");
-  let layer = "\n  <!-- 满幅背景：由 `cargo make icons` 注入，仅供 Apple Touch / maskable 图标 -->\n  <rect width=\"100%\" height=\"100%\" fill=\"url(#bg)\"/>";
-  Ok(format!("{}{layer}{}", &svg[..end], &svg[end..]))
+/// 读 `public/` 下的设计源文件。
+fn read_svg(public: &Path, name: &str) -> Result<String> {
+  let path = public.join(name);
+  fs::read_to_string(&path).with_context(|| format!("failed to read {}", path.display()))
 }
 
 /// 按 [`FAVICON`] 逐档渲染并打包成 `favicon.ico`。
@@ -148,8 +161,12 @@ mod tests {
   use super::*;
 
   const SRC: &str = include_str!("../../../public/pwa-icon.svg");
+  /// 满幅版设计源（Apple Touch / maskable）。
+  const MASKABLE: &str = include_str!("../../../public/pwa-maskable.svg");
   /// 16px 档专用的简化图形。
   const SMALL: &str = include_str!("../../../public/favicon-16.svg");
+  /// 通知栏 badge 设计源。
+  const BADGE_ART: &str = include_str!("../../../public/pwa-badge.svg");
 
   /// 取 [`FAVICON`] 某一档用的图形内容。
   ///
@@ -163,70 +180,170 @@ mod tests {
     }
   }
 
-  /// 渲染 `px×px` 后取 `(x, y)` 处像素（用于断言四角是否透明）。
-  fn pixel_at(svg: &str, px: u32, x: u32, y: u32) -> tiny_skia::PremultipliedColorU8 {
+  /// 把 `svg` 渲染成 `px×px` 位图。
+  fn render(svg: &str, px: u32) -> tiny_skia::Pixmap {
     let tree = usvg::Tree::from_data(svg.as_bytes(), &usvg::Options::default()).unwrap();
     let size = tree.size();
     let mut pixmap = tiny_skia::Pixmap::new(px, px).unwrap();
     let t = tiny_skia::Transform::from_scale(px as f32 / size.width(), px as f32 / size.height());
     resvg::render(&tree, t, &mut pixmap.as_mut());
-    pixmap.pixel(x, y).unwrap()
+    pixmap
   }
 
-  /// 满幅版存在的唯一理由：把圆角版四角的透明像素补成不透明。
+  /// 渲染 `px×px` 后取 `(x, y)` 处像素（用于断言四角是否透明）。
+  fn pixel_at(svg: &str, px: u32, x: u32, y: u32) -> tiny_skia::PremultipliedColorU8 {
+    render(svg, px).pixel(x, y).unwrap()
+  }
+
+  /// 圆角母版的四角是透明的（写死这份预期，才能说明满幅版在解决什么问题）。
   #[test]
-  fn bleed_fills_rounded_corners() {
-    let bleed_svg = bleed(SRC).unwrap();
+  fn rounded_master_has_transparent_corners() {
     for (x, y) in [(0, 0), (63, 0), (0, 63), (63, 63)] {
       assert_eq!(
         pixel_at(SRC, 64, x, y).alpha(),
         0,
-        "圆角版 ({x},{y}) 应当是透明白角（故障根因）"
-      );
-      assert_eq!(
-        pixel_at(&bleed_svg, 64, x, y).alpha(),
-        255,
-        "满幅版 ({x},{y}) 必须不透明，否则 iOS 上仍会露白"
+        "圆角版 ({x},{y}) 应当是透明白角"
       );
     }
   }
 
-  /// 中心区域两版必须一致：满幅版只补四角，不该动图面主体。
+  /// 满幅版要交给系统遮罩：四角与四边中点都必须不透明，否则遮罩盖不到的角
+  /// 会把透明像素合成到白底上（iOS 主屏、「启动器圆角方框」两个老问题的根因）。
   #[test]
-  fn bleed_keeps_center_untouched() {
-    let bleed_svg = bleed(SRC).unwrap();
-    for (x, y) in [(32, 32), (16, 48), (48, 20)] {
-      let rounded = pixel_at(SRC, 64, x, y);
-      let full = pixel_at(&bleed_svg, 64, x, y);
+  fn maskable_is_opaque_to_the_edge() {
+    for (x, y) in [
+      (0, 0),
+      (511, 0),
+      (0, 511),
+      (511, 511),
+      (0, 256),
+      (511, 256),
+      (256, 0),
+      (256, 511),
+    ] {
       assert_eq!(
-        (
-          rounded.red(),
-          rounded.green(),
-          rounded.blue(),
-          rounded.alpha()
-        ),
-        (full.red(), full.green(), full.blue(), full.alpha()),
-        "({x},{y}) 两版渲染结果应当一致"
+        pixel_at(MASKABLE, 512, x, y).alpha(),
+        255,
+        "满幅版 ({x},{y}) 必须不透明"
       );
     }
+  }
+
+  /// 图形必须落在 maskable 的安全圆内：启动器的圆形遮罩只保证中心直径 80%
+  /// （半径 0.4 × 512 ≈ 205）里的内容，越界就是被切掉的塔基与电波。
+  ///
+  /// 图形是纯白的，其余部分最亮处（顶部玻璃反光叠上光带）红通道也到不了 200，
+  /// 所以「红通道 > 200」就是「这里是图形」。
+  #[test]
+  fn maskable_art_stays_inside_safe_circle() {
+    const R: f32 = 204.8;
+    let pixmap = render(MASKABLE, 512);
+    let mut farthest: f32 = 0.0;
+    for y in 0..512u32 {
+      for x in 0..512u32 {
+        if pixmap.pixel(x, y).unwrap().red() <= 200 {
+          continue;
+        }
+        let dx = x as f32 + 0.5 - 256.0;
+        let dy = y as f32 + 0.5 - 256.0;
+        farthest = farthest.max(dx.hypot(dy));
+      }
+    }
+    assert!(
+      farthest < R,
+      "最外的图形像素离圆心 {farthest:.1}px，已超出 {R}px 的安全圆"
+    );
+    // 顺带确认图形没被缩成一团：正常缩放后塔基角离圆心约 196。
+    assert!(
+      farthest > 180.0,
+      "图形只铺到离圆心 {farthest:.1}px：缩得太小，启动器上会显得空"
+    );
+  }
+
+  /// 满幅版里不能有圆角裁切，也不能有圆角边缘高光：遮罩之外露出的
+  /// 「圆角方框」接缝与内嵌描边就是这么来的。
+  #[test]
+  fn maskable_has_no_rounded_tile() {
+    assert!(
+      !MASKABLE.contains(r#"clip-path=""#),
+      "满幅版不该再按圆角裁切背景"
+    );
+    assert!(
+      !MASKABLE.contains(r#"rx="115""#),
+      "满幅版不该再画圆角边缘的高光细线"
+    );
   }
 
   /// 背景整体仍是品牌蓝：贴边采样不透明、蓝通道明显压过红绿。
   ///
-  /// 不再断言纯色 —— 图标按 iOS 口径叠了玻璃渐变（顶部反光、斜向光带），
-  /// 但底色不许被换成白底 / 黑框这类别的颜色：采样点与 `bleed` 一样贴边取，
-  /// 高光最亮的顶部（256,4）也在其中。
+  /// 不断言纯色 —— 图标按 iOS 口径叠了玻璃渐变（顶部反光、斜向光带），
+  /// 但底色不许被换成白底 / 黑框这类别的颜色：采样点贴边取，高光最亮的顶部
+  /// （256,4）也在其中。两版都查：满幅版的四角是最容易被改成白底的地方。
   #[test]
   fn background_stays_brand_blue() {
-    for (x, y) in [(256, 4), (4, 256), (508, 256), (256, 508), (256, 484)] {
-      let p = pixel_at(SRC, 512, x, y);
-      let (r, g, b) = (p.red() as i32, p.green() as i32, p.blue() as i32);
-      assert_eq!(p.alpha(), 255, "({x},{y}) 背景应当不透明");
-      assert!(
-        b > r + 0x30 && b > g + 0x30,
-        "({x},{y}) 是 #{r:02x}{g:02x}{b:02x}：不再是品牌蓝底"
-      );
+    for (name, svg) in [("pwa-icon.svg", SRC), ("pwa-maskable.svg", MASKABLE)] {
+      for (x, y) in [(256, 4), (4, 256), (508, 256), (256, 508), (256, 484)] {
+        let p = pixel_at(svg, 512, x, y);
+        let (r, g, b) = (p.red() as i32, p.green() as i32, p.blue() as i32);
+        assert_eq!(p.alpha(), 255, "{name} ({x},{y}) 背景应当不透明");
+        assert!(
+          b > r + 0x30 && b > g + 0x30,
+          "{name} ({x},{y}) 是 #{r:02x}{g:02x}{b:02x}：不再是品牌蓝底"
+        );
+      }
     }
+  }
+
+  /// 几份设计源共用一套品牌色：改了母版却漏改满幅版 / favicon 版会在这里报出来。
+  #[test]
+  fn art_sources_share_brand_palette() {
+    for (name, svg) in [("pwa-icon.svg", SRC), ("pwa-maskable.svg", MASKABLE)] {
+      for stop in ["#5f80ea", "#3b5dc9", "#2d489f"] {
+        assert!(svg.contains(stop), "{name} 缺少品牌色 {stop}");
+      }
+    }
+    assert!(
+      SMALL.contains("#3b5dc9"),
+      "favicon-16.svg 的底色要是品牌蓝的中段"
+    );
+  }
+
+  /// badge 只能是「白色 / 透明」两色：Android 只取 alpha 通道再按系统主题着色，
+  /// 彩色图标会被画成一个实心方块。坐标为整像素 ∕ 6 的倍数，本该没有中间色。
+  #[test]
+  fn badge_is_white_on_transparent() {
+    let pixmap = render(BADGE_ART, 96);
+    for y in 0..96u32 {
+      for x in 0..96u32 {
+        let p = pixmap.pixel(x, y).unwrap();
+        let rgba = (p.red(), p.green(), p.blue(), p.alpha());
+        assert!(
+          rgba == (255, 255, 255, 255) || rgba == (0, 0, 0, 0),
+          "badge ({x},{y}) 是 {rgba:?}：只允许纯白或全透明"
+        );
+      }
+    }
+    assert_eq!(
+      pixel_at(BADGE_ART, 96, 0, 0).alpha(),
+      0,
+      "badge 四角必须透明"
+    );
+    assert_eq!(
+      pixel_at(BADGE_ART, 96, 24, 66).alpha(),
+      255,
+      "塔腿中段应当被填上"
+    );
+    assert_eq!(
+      pixel_at(BADGE_ART, 96, 48, 14).alpha(),
+      255,
+      "塔顶上方的那道波也应当在"
+    );
+    // 留白别把图形挤到边上：96 里图形占 12 × 6 = 72，两侧各 12px。
+    assert_eq!(
+      pixel_at(BADGE_ART, 96, 6, 48).alpha(),
+      0,
+      "badge 左右应当留白"
+    );
   }
 
   /// 圆角按 iOS 图标口径（≈22.4% 边长，rx=115）：它是这套图标的品牌外轮廓，
@@ -296,17 +413,36 @@ mod tests {
         );
       }
     }
-    // 顺带确认图形没被删空：横梁左端是前景、肩部那条 1px 的缝是底色、
+    // 顺带确认图形没被删空：底座左端是前景、两条塔腿之间是底色（桁架要镂空）、
     // 塔顶上方的电波也在。
-    assert_eq!(at(2, 9), FG, "横梁左端");
-    assert_eq!(at(5, 7), BG, "肩部缝");
+    assert_eq!(at(2, 12), FG, "底座左端");
+    assert_eq!(at(7, 7), BG, "两条塔腿之间的缝");
     assert_eq!(at(7, 1), FG, "塔顶上方的波");
+    // 32 档是这份图形的 2 倍整数放大：16 格的每一格都变成 2×2，同样不许有灰边。
+    let p = pixel_at(SMALL, 32, 4, 24);
+    assert_eq!(
+      (p.red(), p.green(), p.blue(), p.alpha()),
+      FG,
+      "32 档放大后底座左端仍应是纯白"
+    );
   }
 
-  /// SVG 改坏时宁可报错，也不要静默产出一张四角透明的「满幅」图标。
+  /// 设计源写坏时在这里失败，而不是安静地产出一张空白 / 四角透明的图标。
   #[test]
-  fn bleed_rejects_malformed_svg() {
-    assert!(bleed("<svg/>").is_err());
-    assert!(bleed("<defs></defs>").is_err());
+  fn art_sources_render_at_every_target_size() {
+    for &(name, px) in ROUNDED {
+      assert_eq!(render(SRC, px).width(), px, "{name}");
+    }
+    for &(name, px) in BLEED {
+      let pixmap = render(MASKABLE, px);
+      assert_eq!(
+        pixmap.pixel(0, 0).unwrap().alpha(),
+        255,
+        "{name} 的四角必须不透明"
+      );
+    }
+    for &(name, px) in BADGE {
+      assert_eq!(render(BADGE_ART, px).width(), px, "{name}");
+    }
   }
 }

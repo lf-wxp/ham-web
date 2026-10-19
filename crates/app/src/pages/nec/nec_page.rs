@@ -18,6 +18,7 @@ use crate::util::{cancel_debounce, debounce, set_title, take_nec_template};
 use super::canvas::WireCanvas;
 use super::design::DesignSection;
 use super::design_archive::DesignArchiveSection;
+use super::direction_table::DirectionTable;
 use super::ground_material::GroundMaterialSection;
 use super::import_export::ImportExportSection;
 use super::lines::parsed as parsed_lines;
@@ -458,6 +459,8 @@ pub fn NecPage() -> impl IntoView {
       <LinesSection lines=lines new_id=Callback::new(move |_| id_gen()) />
 
       <NvisSection result=result />
+
+      <DirectionTable result=result />
     </PageContainer>
   }
 }

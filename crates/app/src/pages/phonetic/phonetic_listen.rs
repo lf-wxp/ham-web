@@ -4,6 +4,7 @@ use leptos::prelude::*;
 
 use crate::components::quiz_option::QuizOption;
 use crate::i18n::t;
+use crate::icons::{Icon, IconKind};
 use crate::speech::speak_en;
 use crate::ui::{Button, Variant};
 use crate::util::random;
@@ -63,6 +64,7 @@ pub(super) fn PhoneticListen() -> impl IntoView {
         <div class="flex flex-col items-center gap-2 border bg-muted/30 px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("morse.tap-to-play-a")}</div>
           <Button on_click=Callback::new(move |_| play())>
+            <Icon kind=IconKind::Volume2 class="size-6" />
             {move || t("morse.play-word")}
           </Button>
         </div>

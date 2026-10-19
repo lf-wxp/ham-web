@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { expect, test } from "./fixtures";
 
 /** 定位某个工具的 section（导航 / 锚点用的 id 与 section 的 id 一致）。 */
@@ -248,6 +248,132 @@ test("小工具：电短天线加载线圈估算谐振电感", async ({ page }) 
   // 输入不合法给出提示
   await section.getByLabel("天线高度 h（m）").fill("0");
   await expect(section.getByText("请输入有效的天线高度、导体直径与频率。")).toBeVisible();
+});
+
+test("小工具：数字模式编码可导出基带 WAV", async ({ page }) => {
+  await page.goto("/tools#mode-encoder");
+  const section = tool(page, "mode-encoder");
+  await expect(section).toBeVisible();
+
+  // 默认文本 "CQ CQ DE BG1AAA" 编出摩尔斯与 RTTY 比特流。
+  await expect(section.getByText("CW 摩尔斯电码", { exact: true })).toBeVisible();
+  await expect(section.getByText("RTTY（ITA2）比特流", { exact: true })).toBeVisible();
+
+  // 下载 CW WAV：文件名 cw.wav。
+  const dl1 = page.waitForEvent("download");
+  await section.getByRole("button", { name: "下载 CW WAV" }).click();
+  expect((await dl1).suggestedFilename()).toBe("cw.wav");
+
+  // 下载 RTTY WAV：文件名 rtty.wav。
+  const dl2 = page.waitForEvent("download");
+  await section.getByRole("button", { name: "下载 RTTY WAV" }).click();
+  expect((await dl2).suggestedFilename()).toBe("rtty.wav");
+
+  // 下载 PSK31 WAV：文件名 psk31.wav。
+  const dl3 = page.waitForEvent("download");
+  await section.getByRole("button", { name: "下载 PSK31 WAV" }).click();
+  expect((await dl3).suggestedFilename()).toBe("psk31.wav");
+
+  // WSPR：110.592 秒 × 12 kHz × 2 字节 + 44 字节 WAV 头，长度是钉死的。
+  const dl4 = page.waitForEvent("download");
+  await section.getByRole("button", { name: "下载 WSPR WAV" }).click();
+  const wspr = await dl4;
+  expect(wspr.suggestedFilename()).toBe("wspr.wav");
+  const wsprPath = await wspr.path();
+  expect(wsprPath).not.toBeNull();
+  const { size } = await stat(wsprPath as string);
+  expect(size).toBe(44 + 162 * 8192 * 2);
+
+  // NAVTEX：报头 + 正文，长度随正文变化，只钉文件名与「不是空文件」。
+  const dl5 = page.waitForEvent("download");
+  await section.getByRole("button", { name: "下载 NAVTEX WAV" }).click();
+  const navtex = await dl5;
+  expect(navtex.suggestedFilename()).toBe("navtex.wav");
+  const navtexPath = await navtex.path();
+  expect(navtexPath).not.toBeNull();
+  const navtexFile = await stat(navtexPath as string);
+  expect(navtexFile.size).toBeGreaterThan(2000);
+
+  // Feld Hell：字库里没有的字符会被跳过，长度随正文变化，同样只钉文件名与非空。
+  const dl6 = page.waitForEvent("download");
+  await section.getByRole("button", { name: "下载 Hell WAV" }).click();
+  const hell = await dl6;
+  expect(hell.suggestedFilename()).toBe("hell.wav");
+  const hellPath = await hell.path();
+  expect(hellPath).not.toBeNull();
+  expect((await stat(hellPath as string)).size).toBeGreaterThan(2000);
+});
+
+test("小工具：WSPR 发端拒绝非法呼号 / 网格", async ({ page }) => {
+  await page.goto("/tools#mode-encoder");
+  const section = tool(page, "mode-encoder");
+  await section.getByLabel("WSPR 发端网格").fill("ZZZZ");
+  await section.getByRole("button", { name: "下载 WSPR WAV" }).click();
+  // 页面上有多个 `role="status"`（各工具的内联结果区），这里只认提示文案。
+  await expect(page.getByText(/呼号与网格要合法/)).toBeVisible();
+});
+
+test("小工具：NAVTEX 发端拒绝非法报头", async ({ page }) => {
+  await page.goto("/tools#mode-encoder");
+  const section = tool(page, "mode-encoder");
+  await section.getByLabel("NAVTEX 台站字母").fill("1");
+  await section.getByRole("button", { name: "下载 NAVTEX WAV" }).click();
+  await expect(page.getByText(/台站与类型各填一个字母/)).toBeVisible();
+});
+
+test("小工具：陷波器给出两波段 trap 偶极子设计", async ({ page }) => {
+  await page.goto("/tools#trap");
+  const section = tool(page, "trap");
+  await expect(section).toBeVisible();
+
+  // 默认 40m+20m、67 pF：电感 ≈ 1.88 µH，内段 ≈ 5.04 m、外段 ≈ 5.10 m。
+  await expect(section.getByText(/电感 1\.88 µH · 内段 5\.04 m · 外段 5\.10 m/)).toBeVisible();
+  await expect(section.getByText(/低波段加载电抗 110\.\d+ Ω/)).toBeVisible();
+
+  // 输入不合法给出提示（高波段不大于低波段）。
+  await section.getByLabel("高波段频率（MHz）").fill("7");
+  await section.getByLabel("低波段频率（MHz）").fill("14");
+  await expect(
+    section.getByText("请输入有效的高 / 低波段频率（高波段需大于低波段）与电容。"),
+  ).toBeVisible();
+});
+
+test("小工具：AX.25 软 TNC 编码下载与解码往返", async ({ page }) => {
+  await page.goto("/tools#soft-tnc");
+  const section = tool(page, "soft-tnc");
+  await expect(section).toBeVisible();
+
+  // 下载 AFSK1200 WAV：文件名 afsk1200.wav。
+  const dl = page.waitForEvent("download");
+  await section.getByRole("button", { name: "下载 AFSK1200 WAV" }).click();
+  const file = await dl;
+  expect(file.suggestedFilename()).toBe("afsk1200.wav");
+
+  // 把下载的 WAV 上传回解码，解出源 / 目的 / 信息。
+  // 解调在 Worker 里跑（wasm 首次加载较慢），放宽到 30s，与其它解码页一致。
+  await section.locator('input[type="file"]').setInputFiles(await file.path());
+  await expect(section.getByText(/源 BG1AAA → 目的 APRS：>hello/)).toBeVisible({
+    timeout: 30000,
+  });
+});
+
+test("小工具：AX.25 软 TNC 信息域超长时单独提示，而不是怪呼号", async ({ page }) => {
+  // `ax25_ui_frame` 对「呼号非法」与「整帧超长」都返回 None：以前一律报「呼号格式不合法」，
+  // 用户会去检查一个其实没有错的呼号（回归见 docs/code-review-2026-10.md M35）。
+  await page.goto("/tools#soft-tnc");
+  const section = tool(page, "soft-tnc");
+  await expect(section).toBeVisible();
+
+  await section.getByLabel("信息", { exact: true }).fill("x".repeat(3000));
+  await section.getByRole("button", { name: "下载 AFSK1200 WAV" }).click();
+  await expect(page.getByText(/信息域超过 \d+ 字节/)).toBeVisible();
+  await expect(page.getByText("呼号格式不合法")).toHaveCount(0);
+
+  // 呼号确实非法时仍然报呼号。
+  await section.getByLabel("信息", { exact: true }).fill(">hello");
+  await section.getByLabel("源呼号").fill("TOOLONGCALL-99");
+  await section.getByRole("button", { name: "下载 AFSK1200 WAV" }).click();
+  await expect(page.getByText(/呼号格式不合法/)).toBeVisible();
 });
 
 // `/tools` 里有很多带表格 / 图表的块，表格自带的 `min-w-[…]` 放进网格子项里会把整列撑宽（需要 `min-w-0`），

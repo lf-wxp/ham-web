@@ -15,7 +15,7 @@ use crate::util::set_title;
 use super::bar_chart::BarChart;
 use super::calendar::CalendarHeatmap;
 use super::heatmap::Heatmap;
-use crate::i18n::{t, tp};
+use crate::i18n::{localized_name, t, tp};
 
 /// 取 Top N（按计数降序）。
 fn top_n(mut map: HashMap<String, usize>, n: usize) -> Vec<(String, usize)> {
@@ -50,19 +50,15 @@ pub fn StatsPage() -> impl IntoView {
         *dxcc
           .entry(
             e.entity()
-              .map(|x| x.name)
-              .unwrap_or_else(|| other.as_str())
-              .to_owned(),
+              .map(|x| localized_name(x.name, x.name_en))
+              .unwrap_or_else(|| other.clone()),
           )
           .or_default() += 1;
       }
       let b = e.band_label();
       if !b.is_empty() {
-        if let Some(entity) = e.entity().map(|x| x.name) {
-          band_dxcc
-            .entry(b.clone())
-            .or_default()
-            .insert(entity.to_owned());
+        if let Some(entity) = e.entity().map(|x| localized_name(x.name, x.name_en)) {
+          band_dxcc.entry(b.clone()).or_default().insert(entity);
         }
         *band.entry(b).or_default() += 1;
       }

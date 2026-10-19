@@ -18,7 +18,7 @@ use super::form_state::LogFormState;
 use super::log_helpers::{PROP_MODES, compass, station_title};
 use super::qsl_image::QslImage;
 use super::{LogEntry, Logbook, StationBook};
-use crate::i18n::{t, tf, tp};
+use crate::i18n::{localized_name, t, tf, tp};
 use crate::util::unique_id;
 
 /// `/api/callsign` 返回的呼号资料（仅取需要字段）。
@@ -213,8 +213,9 @@ pub(super) fn EntryForm(
             let entity = h.entity.map_or_else(
               || t("log.unknown-dxcc-entity"),
               |e| {
+                let name = localized_name(e.name, e.name_en);
                 let (cq, itu) = (e.cq.to_string(), e.itu.to_string());
-                tf("log.cq-itu", &[(e.name), (e.continent), &(cq).to_string(), &(itu).to_string()])
+                tf("log.cq-itu", &[&name, e.continent, &cq, &itu])
               },
             );
             view! {

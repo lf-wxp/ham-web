@@ -22,8 +22,28 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   // E2E_CHANNEL=chrome 可改用本机已安装的 Chrome，免去下载 Playwright 浏览器
+  //
+  // 跨内核冒烟默认关闭：需要先 `npx playwright install firefox webkit`，
+  // 没装时打开这两个 project 会让每次 `npx playwright test` 都红。
+  // 用 `E2E_CROSS=1 npx playwright test --project=firefox --project=webkit` 单独跑。
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"], channel: process.env.E2E_CHANNEL } },
+    ...(process.env.E2E_CROSS
+      ? [
+          // 全量用例依赖 Web Serial、假音频设备与 WebGL2，这两个内核跑不了；
+          // 只跑 `cross_browser.spec.ts`：核心页面能开、无未捕获异常、三维图有 SVG 回退。
+          {
+            name: "firefox",
+            use: { ...devices["Desktop Firefox"] },
+            testMatch: /cross_browser\.spec\.ts/,
+          },
+          {
+            name: "webkit",
+            use: { ...devices["Desktop Safari"] },
+            testMatch: /cross_browser\.spec\.ts/,
+          },
+        ]
+      : []),
   ],
   webServer: external
     ? undefined

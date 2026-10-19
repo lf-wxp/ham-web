@@ -1,10 +1,11 @@
 //! 解码器页面的共享 Worker 桥：统一协议（`{ codec, bytes, params }` → `{ ok, result }`）。
 //!
-//! 九个解码页（APT / SSTV / WSPR / RTTY / NAVTEX / LRPT / DominoEX / Olivia / FT8）此前
+//! 各解码页（APT / SSTV / WSPR / RTTY / NAVTEX / LRPT / DominoEX / Olivia / FT8 / Feld Hell /
+//! WEFAX / 软 TNC）此前
 //! 各自维护一份「spawn worker + 读文件 + 组消息 + 拆回复」的样板，统一入口见
 //! `public/decode-worker.js`；这里把其中的公共部分（spawn / 读文件 / 组信封 /
-//! 超时兜底）收敛成一份。各页仍各自保留 `generation`/`batch`/`cancel` 的编排与
-//! 结果解析 —— 那部分与各页界面状态耦合，尚未收敛。
+//! 超时兜底 / 按码本地化）收敛成一份，代际、取消与重置的编排在
+//! [`crate::decode_session::DecodeSession`]（页面一律经它接入，不再手写生命周期）。
 
 use leptos::prelude::*;
 use wasm_bindgen::JsCast;
@@ -41,7 +42,7 @@ pub fn clear_decode_timeout(timer: StoredValue<Option<TimeoutHandle>>) {
 /// 解码超时兜底：`DECODE_TIMEOUT_SECS` 后若该批次仍在处理中（代际未变且 `processing`
 /// 未复位），调用 `cancel` 终止并把错误文案置为 `message()` —— 正常完成时 `processing`
 /// 已复位，回调直接跳过。文案由调用方给（词条字面量写在调用点；LRPT 的录音大、耗时长，
-/// 提示里要说明原因）。九个解码页经 `DecodeSession` 共用这一份实现。
+/// 提示里要说明原因）。各解码页经 `DecodeSession` 共用这一份实现。
 pub fn arm_decode_timeout_with(
   timer: StoredValue<Option<TimeoutHandle>>,
   generation: StoredValue<u32>,
@@ -84,7 +85,7 @@ pub fn retain_message_handler(
 }
 
 /// 把 Worker 的 `error` 事件转成一条合成的 `{ ok:false, error }` 消息，交给页面原有的
-/// `onmessage` 处理（走同一套代际 / 超时 / 本地化路径，不必改九个页面）。
+/// `onmessage` 处理（走同一套代际 / 超时 / 本地化路径，不必逐页修改）。
 ///
 /// 错误码区分两种来源：没有 `message` 的是加载失败（脚本 404 / 被拦截 / 语法错误），
 /// 有 `message` 的是运行期异常（如 wasm trap）——两者的修复动作不同，不能都报
@@ -285,10 +286,23 @@ fn split_code(raw: &str) -> (&str, &str) {
   raw.split_once(':').unwrap_or((raw, ""))
 }
 
+/// 拆 Olivia 的参数错误：`<音调数>,<带宽>` 或 `<音调数>,<带宽>@<中心频率>`。
+///
+/// worker 用带 `@` 的形态表示「音调带在采样率下摆不下」，与「参数组合不在标准表内」
+/// 是两种不同的补救动作（换个录音 vs 换个采样率），所以文案也要分开。
+fn split_olivia_params(arg: &str) -> (&str, &str, Option<&str>) {
+  let (pair, center) = arg.split_once('@').unwrap_or((arg, ""));
+  let (tones, bandwidth) = pair.split_once(',').unwrap_or((pair, ""));
+  // 只有「音调数也在」才算带中心频率的形态：`@1500` 这种残缺码应当走两占位那条文案，
+  // 而不是显示成「音调带摆不下（空,空,1500）」。
+  let center = (!center.is_empty() && !tones.is_empty()).then_some(center);
+  (tones, bandwidth, center)
+}
+
 /// Worker 的错误是英文错误码而不是界面文案（Worker 在 wasm 里，拿不到当前语言），
 /// 这里按码取各语言词条。不认识的错误（wasm trap、协议错误等）原样返回 ——
 /// 它们本来就是英文细节。
-fn localize_error(raw: &str) -> String {
+pub(crate) fn localize_error(raw: &str) -> String {
   let (code, arg) = split_code(raw);
   match code {
     "not-wav" => t("radio.not-a-valid-wav"),
@@ -300,8 +314,14 @@ fn localize_error(raw: &str) -> String {
     "no-signal" => tf("tools.decode-err-no-signal", &[arg]),
     "unsupported-submode" => tf("tools.decode-err-unsupported-submode", &[arg]),
     "olivia-params" => {
-      let (tones, bandwidth) = arg.split_once(',').unwrap_or((arg, ""));
-      tf("tools.decode-err-olivia-params", &[tones, bandwidth])
+      let (tones, bandwidth, center) = split_olivia_params(arg);
+      match center {
+        Some(center) => tf(
+          "tools.decode-err-olivia-params-range",
+          &[tones, bandwidth, center],
+        ),
+        None => tf("tools.decode-err-olivia-params", &[tones, bandwidth]),
+      }
     }
     "mark-hz-out-of-range" => tf("tools.decode-err-mark-hz", &[arg]),
     "base-hz-out-of-range" => tf("tools.decode-err-base-hz", &[arg]),
@@ -319,7 +339,7 @@ fn localize_error(raw: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-  use super::split_code;
+  use super::{split_code, split_olivia_params};
 
   #[test]
   fn error_codes_split_at_the_first_colon() {
@@ -332,5 +352,23 @@ mod tests {
       ("unknown codec", " x"),
       "含空格的前缀不是已知码，调用方会整段回退"
     );
+  }
+
+  #[test]
+  fn olivia_params_split_tones_bandwidth_and_optional_centre() {
+    assert_eq!(
+      split_olivia_params("32,1000"),
+      ("32", "1000", None),
+      "标准表外的组合只有两个字段"
+    );
+    assert_eq!(
+      split_olivia_params("32,1000@1500"),
+      ("32", "1000", Some("1500")),
+      "带 @ 的第三形态是音调带越界的中心频率"
+    );
+    // 字段缺失时不能 panic，交给占位符显示空串。
+    assert_eq!(split_olivia_params("32"), ("32", "", None));
+    // 只有 `@` 没有音调数：按残缺码处理，别走「音调带越界」那条文案。
+    assert_eq!(split_olivia_params("@1500"), ("", "", None));
   }
 }

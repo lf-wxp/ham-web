@@ -10,6 +10,7 @@ mod csv;
 mod dataset;
 mod dxcc;
 mod dxcc_map;
+mod e2e_coverage;
 mod explanations;
 mod fsutil;
 mod i18n;
@@ -85,6 +86,8 @@ enum Command {
   CheckExplanations,
   /// 界面规范守卫：已失效的圆角类、原生表单控件、类名工厂残留等（docs/ui-components.md §11）
   CheckUi,
+  /// e2e 覆盖对账：coverage-targets.json 的每条核心旅程必须能在 spec 里命中
+  CheckE2e,
   /// 校验 data/i18n/ 的 en / es 词典（重复 key、占位符数量、死条目）并统计按域覆盖率
   CheckI18n {
     /// 导出「源码里有但词典里没有」的文案模板（{zh, text}）
@@ -205,7 +208,7 @@ enum Command {
     #[arg(long)]
     check: bool,
   },
-  /// 由 public/pwa-icon.svg 生成 PWA / Apple Touch 图标与 favicon.ico
+  /// 由 public/pwa-icon.svg、pwa-maskable.svg、pwa-badge.svg 生成站点图标与 favicon.ico
   Icons,
   /// 生成合成 PSK31 测试样本 WAV（用于手动测试 /psk-decode）
   GenPsk31 {
@@ -293,6 +296,10 @@ fn main() -> Result<()> {
     Command::CheckGlossary => explanations::check_glossary(&paths),
     Command::CheckExplanations => explanations::check(&paths),
     Command::CheckUi => ui_check::check(&root),
+    Command::CheckE2e => {
+      e2e_coverage::check(&root)?;
+      Ok(())
+    }
     Command::CheckI18n {
       missing,
       dynamic_calls,

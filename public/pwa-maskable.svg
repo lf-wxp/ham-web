@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>业余无线电</title>
+  <defs>
+    <!--
+      满幅版设计源：给「系统会自己加遮罩」的场景用（Android 的 maskable、iOS 的
+      apple-touch-icon）。与 pwa-icon.svg 同一套品牌色与构图，差别只有三点：
+
+      1. 整块 512 画布都是背景 —— 没有任何 clip-path，玻璃反光 / 柔光 / 光带完整铺到四角，
+         不会在遮罩边缘留下「圆角方框」的接缝；
+      2. 不画圆角边缘的高光细线 —— 那条线在方形图里会被看成画了个圆角描边；
+      3. 图形缩到 0.85 并居中，落在安全圆内（见下方 transform 的注释）。
+
+      改品牌色时三份源（本文件 / pwa-icon.svg / favicon-16.svg）要一起改，
+      `icons.rs` 的 art_sources_share_brand_palette 会盯着这件事。
+    -->
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5f80ea"/>
+      <stop offset="0.55" stop-color="#3b5dc9"/>
+      <stop offset="1" stop-color="#2d489f"/>
+    </linearGradient>
+
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="0.42" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.14" r="0.55">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0.42" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.1"/>
+      <stop offset="0.58" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- 塔：与 pwa-icon.svg 相同的几何（天线针 → 顶板 → 两条塔腿 → 横档 → 底座） -->
+    <g id="tower">
+      <rect x="244" y="200" width="24" height="32"/>
+      <rect x="232" y="232" width="48" height="16"/>
+      <path d="M 240 248 L 176 472" stroke="currentColor" stroke-width="20" fill="none"/>
+      <path d="M 272 248 L 336 472" stroke="currentColor" stroke-width="20" fill="none"/>
+      <rect x="219" y="320" width="74" height="14"/>
+      <rect x="199" y="392" width="114" height="14"/>
+      <rect x="174" y="456" width="164" height="16"/>
+    </g>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <rect width="512" height="512" fill="url(#glass)"/>
+  <rect width="512" height="512" fill="url(#glow)"/>
+
+  <!--
+    图形缩到 0.85 并绕画布中心缩放：maskable 的安全区是中心直径 80% 的圆
+    （半径 204.8），母版尺寸下塔基两角离圆心 230，圆形遮罩会切掉它们。
+    缩放后最外点离圆心约 196，电波外弧约 171，都留有余量。
+    下面两个 g 用同一个 transform：电波与塔分居光带两侧，保持母版的叠放顺序。
+  -->
+  <g transform="translate(256 256) scale(0.85) translate(-256 -256)">
+    <g fill="none" stroke="#ffffff" stroke-linecap="round">
+      <path d="M 179.9 207.28 A 80 80 0 0 1 332.1 207.28" stroke-width="14" stroke-opacity="0.6"/>
+      <path d="M 126.7 190.03 A 136 136 0 0 1 385.3 190.03" stroke-width="11" stroke-opacity="0.44"/>
+      <path d="M 73.4 172.67 A 192 192 0 0 1 438.6 172.67" stroke-width="8" stroke-opacity="0.32"/>
+    </g>
+  </g>
+
+  <rect width="512" height="512" fill="url(#sheen)"/>
+
+  <g transform="translate(256 256) scale(0.85) translate(-256 -256)">
+    <use href="#tower" y="10" fill="#0e1c4d" color="#0e1c4d" opacity="0.42"/>
+    <use href="#tower" fill="#ffffff" color="#ffffff"/>
+  </g>
+</svg>

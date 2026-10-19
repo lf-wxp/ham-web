@@ -23,6 +23,11 @@ members = [
   "crates/olivia-worker",
   "crates/dominoex",
   "crates/dominoex-worker",
+  "crates/hell",
+  "crates/hell-worker",
+  "crates/wefax",
+  "crates/wefax-worker",
+  "crates/afsk1200-worker",
   "crates/lrpt",
   "crates/navtex-worker",
   "crates/lrpt-worker",
@@ -30,7 +35,7 @@ members = [
 default-members = ["crates/core", "crates/server", "crates/tools", "crates/apt"]
 
 [workspace.package]
-version = "0.4.8"
+version = "0.4.9"
 edition = "2024"
 rust-version = "1.88"
 # 工作区默认 MIT；dominoex / lrpt / navtex 及其 worker 六个 crate 因含 GPL-3.0 转写代码，单独声明 GPL-3.0-only。
@@ -53,11 +58,16 @@ ham-web-ft8 = { path = "crates/ft8" }
 ham-web-ft8-worker = { path = "crates/ft8-worker" }
 ham-web-rtty = { path = "crates/rtty" }
 ham-web-rtty-worker = { path = "crates/rtty-worker" }
+ham-web-afsk1200-worker = { path = "crates/afsk1200-worker" }
 ham-web-navtex = { path = "crates/navtex" }
 ham-web-olivia = { path = "crates/olivia" }
 ham-web-olivia-worker = { path = "crates/olivia-worker" }
 ham-web-dominoex = { path = "crates/dominoex" }
 ham-web-dominoex-worker = { path = "crates/dominoex-worker" }
+ham-web-hell = { path = "crates/hell" }
+ham-web-hell-worker = { path = "crates/hell-worker" }
+ham-web-wefax = { path = "crates/wefax" }
+ham-web-wefax-worker = { path = "crates/wefax-worker" }
 ham-web-lrpt = { path = "crates/lrpt" }
 ham-web-navtex-worker = { path = "crates/navtex-worker" }
 ham-web-lrpt-worker = { path = "crates/lrpt-worker" }

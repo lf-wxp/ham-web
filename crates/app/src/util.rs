@@ -334,17 +334,24 @@ pub fn download_text(filename: &str, content: &str, mime: &str) {
   use wasm_bindgen::JsCast;
   use web_sys::{Blob, BlobPropertyBag, Url};
 
+  // 三步里任何一步失败都要让用户知道：静默 `return` 的话页面上什么都没发生，用户会以为
+  // 文件已经下载了（`share_score::download_bytes` 失败时同样报这条）。
+  let fail = || crate::ui::push_error(crate::i18n::t("common.download-failed"));
   let props = BlobPropertyBag::new();
   props.set_type(mime);
   let parts = js_sys::Array::new();
   parts.push(&JsValue::from_str(content));
   let Ok(blob) = Blob::new_with_str_sequence_and_options(&parts, &props) else {
+    fail();
     return;
   };
   let Ok(url) = Url::create_object_url_with_blob(&blob) else {
+    fail();
     return;
   };
   let Ok(el) = document().create_element("a") else {
+    let _ = Url::revoke_object_url(&url);
+    fail();
     return;
   };
   let a: web_sys::HtmlAnchorElement = el.unchecked_into();

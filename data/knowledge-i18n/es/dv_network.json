@@ -17,5 +17,14 @@
   "通话组与私有呼叫": "Grupos de conversación y llamadas privadas",
   "通过网关与反射器（Reflector）实现全球联网。": "Interconexión mundial mediante pasarelas y reflectores.",
   "遵守当地中继的使用规范，避免长时间占用通话组。": "Respete las normas de uso del repetidor local y evite ocupar un grupo de conversación durante mucho tiempo.",
-  "集群调度系统，带控制信道的 trunking 架构，商用为主，业余较少用。": "Sistemas trunking con canal de control; sobre todo comerciales, poco usados por radioaficionados."
+  "集群调度系统，带控制信道的 trunking 架构，商用为主，业余较少用。": "Sistemas trunking con canal de control; sobre todo comerciales, poco usados por radioaficionados.",
+  "业余 VoIP": "VoIP amateur",
+  "用呼号验证后把本地中继或单台接入互联网；节点分 -L（链路）、-R（中继）、-E（用户）三种身份。": "Verifica el indicativo y enlaza un repetidor local o una sola radio a internet; los nodos existen como -L (enlace), -R (repetidor) y -E (usuario).",
+  "基于 Linux 节点与控制板的联网方案，用 DTMF 指令连接远端节点；节点号由节点持有者维护。": "Sistema de enlazado con nodo Linux y placa controladora; te conectas a un nodo remoto con comandos DTMF y el número de nodo lo mantiene su titular.",
+  "基于 Asterisk 的开源语音联网，节点之间可互联，也常用于把模拟中继接进其他网络。": "Enlazado de voz de código abierto sobre Asterisk; los nodos pueden interconectarse y se usa a menudo para llevar un repetidor analógico a otras redes.",
+  "联网语音进入本地中继后仍然占用本地频率：先听再做，别把网关当成自己的专用频道。": "El audio enlazado sigue ocupando la frecuencia local al llegar al repetidor: escucha primero y no trates la pasarela como tu canal privado.",
+  "EchoLink 需要呼号验证；-L / -R 节点由持有者申请与维护，普通用户用 -E 或直接连 -R。": "EchoLink exige validación del indicativo; los nodos -L y -R los solicitan y mantienen sus titulares, mientras que los usuarios normales entran por -E o directamente por un -R.",
+  "IRLP 的 DTMF 指令与节点号由节点持有者设定，连接前先查当地节点的说明。": "Los comandos DTMF y los números de nodo de IRLP los define el titular; consulta las notas del nodo local antes de conectar.",
+  "语音质量取决于两端网络，丢包时听起来像「断续」，不是你的电台出了故障。": "La calidad depende de ambos extremos de la red; la pérdida de paquetes suena entrecortada y no es una avería de tu radio.",
+  "跨境联网要留意当地规定：有些国家要求现场有本地控制操作员。": "El enlazado transfronterizo tiene normas locales: algunos países exigen un operador de control con licencia local presente."
 }

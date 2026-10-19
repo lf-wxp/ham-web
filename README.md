@@ -118,7 +118,7 @@
 | 备考速查 | 考试速查、考点速查手册、易混淆辨析、公式速查、呼号前缀、术语表、简语、字母解释法、RST 信号报告、莫尔斯电码、CW 操作、多国考试对照、操作证权限、法规原文库 |
 | 模式 · 传播 | 模拟模式、业余电视、SSTV 慢扫描电视、数字模式、调制理论、数字通信原理、数字信号处理基础、数字语音组网、现代数字模式、Packet 分组无线电、LoRa / Meshtastic / AREDN、RTTY/PSK31、FT8/FT4、SDR、GNU Radio、APRS、常用频率、频率协调、CQ/ITU 分区地图、传播与电离层、国际信标网络、特殊传播、流星散射、EME、传播预测、WSPR、气象卫星接收、极光通信 |
 | 天线 · 设备 | 天线型式、天线阵列/相控阵、天线极化、匹配与馈线、线材与连接器、巴伦与不平衡变压器、天线 DIY、实用天线专题、天线架设、天线农场、天线调试、天线分析仪、VNA 矢量网络分析仪、天线理论、天线建模、NVIS、电子电路基础、滤波器与双工器、测量误差实验室、测量仪表、电源与电池、电源供应、收发信机、接收机指标、评测文章、设备评测与选购、功率放大器、波段表、波段规划、微波通信、车载/移动电台 |
-| 通联 · 活动 | 通联实务、卫星通联操作、国内业余卫星与 409 MHz 对讲机、通联竞赛、竞赛日志 Cabrillo、DX 奖状、IOTA、DX 技巧、DX 远征、DXCC 世纪俱乐部、QRP、电子 QSL、QSL 卡片设计、无线电测向、应急通信、Winlink 无线邮件、NTS Radiogram / ICS-213、活动日历、SOTA/POTA、网格定位、呼号查询、中继台与网关、中继台建设、日志与竞赛软件 |
+| 通联 · 活动 | 通联实务、卫星通联操作、国内业余卫星与 409 MHz 对讲机、通联竞赛、竞赛日志 Cabrillo、DX 奖状、IOTA、DX 技巧、DX 远征、DXCC 世纪俱乐部、QRP、电子 QSL、QSL 卡片设计、无线电测向、应急通信、Winlink 无线邮件、NTS Radiogram / ICS-213、活动日历、SOTA/POTA、网格定位、呼号查询（顺带给出我在日志里通过几次、从本台看的方向与距离）、中继台与网关、中继台建设、日志与竞赛软件 |
 | 进阶 · 关于 | 国际组织与分区、射频安全、接地与防雷、射频干扰排查、接收环境与噪声、新手入门、学习路径、学习资源、SWL 短波监听、执照申办、频谱管理、法规与管理、业余无线电历史、远程电台、开源项目与 DIY、火腿社区、DIY 实战项目、开发者 API |
 
 其中几项为富交互页面：莫尔斯电码可点击试听、Koch 法抄收训练（Farnsworth 间隔、逐字符错误率、达标自动加字符）、CW 呼号抄收竞赛模拟（每轮 10 个通联、抄呼号与序号计分、自适应速度、截短数字、常错字符统计）、解码练习与按键发报练习、麦克风 CW 解码（带通滤波 + 自适应门限，自动识别发报速度）、字母解释法可朗读、RST 页可试听不同强度信号、波段表按带号 -1～12 呈现完整频段划分（移动端为卡片）、天线建模页含偶极振子计算器与方向图绘制；设备评测页内置机型库与多机参数对比表。每个专题页底部还有「相关主题」内链与「自测 3 题」（从题库相关考点随机抽取、即时判分），把专题串成知识网。
@@ -132,15 +132,15 @@
 
 ### 工具与实时数据
 
-- **🧮 小工具（58 项计算器 + 数据备份）**：频率 ↔ 波长、dBm ↔ 功率、分贝增益、欧姆定律、CW 必要带宽、LC 谐振、容抗/感抗、天线长度、天线匹配网络、史密斯圆图、驻波比 ↔ 反射系数、级联增益、电阻串并联、频率单位换算、电池续航、dBm ↔ dBμV、馈线损耗、滤波器设计、呼号查询（DXCC 实体/稀有度）、两点距离与方位角、传播预测 MUF、卫星多普勒、自由空间路径损耗、菲涅尔区与视距（地球曲率隆起、第一菲涅尔区半径、60% 净空判定）、路径剖面（粘贴高程点，逐点判定并画剖面图，给出两端天线需抬高多少）、EIRP、链路预算、接收机灵敏度、噪声系数级联、天线增益换算、电阻色环、SMD 电阻代码、瓷片电容代码、竞赛记分、线圈/Yagi 振子计算、T/π 型衰减器、变压器阻抗、UTC 时间、传输线阻抗（同轴 / 双线 / 微带线 / 带状线）、单短截线匹配、磁环小环天线、电短加载线圈、离网供电规划、抛物面天线（增益、3 dB 波束宽度、焦距 / 凹陷深度 / 馈源位置，可用实测深度反推未知抛物面的焦点）、互调、谐波与镜频（给定若干发射频率，列出 2 / 3 阶互调与谐波产物并标出落入业余波段的；镜频按高端 / 低端本振两侧给出）、磁环绕线（由目标电感反推匝数、AL 公差带、导线长度与单层窗口占用；内置磁环只收已对照 Fair-Rite 官方零件页核对的，其余可自己填 AL）、矩形波导（截止频率与模式、单模范围、导波波长、导体损耗、截止以下衰减，内置 EIA WR 标准尺寸）、雨衰（ITU-R P.838-3 / P.530-17，地面微波链路）、占空比与平均功率（FCC OET-65B 的模式占空比与滑动平均窗口）、IP3 级联（总 IIP3 / OIP3 与每级对互调的贡献，找瓶颈）、线径压降、晶体振荡、射频暴露评估、亚音与中继频差、APRS 编解码、数字模式编码、LoRa 链路（空中时间、接收灵敏度、链路预算与最大距离，按 Semtech AN1200.13 口径）、NTS Radiogram / ICS-213 报文生成
+- **🧮 小工具（60 项计算器 + 数据备份）**：频率 ↔ 波长、dBm ↔ 功率、分贝增益、欧姆定律、CW 必要带宽、LC 谐振、容抗/感抗、天线长度、天线匹配网络、史密斯圆图、驻波比 ↔ 反射系数、级联增益、电阻串并联、频率单位换算、电池续航、dBm ↔ dBμV、馈线损耗、滤波器设计、呼号查询（DXCC 实体/稀有度）、两点距离与方位角、传播预测 MUF、卫星多普勒、自由空间路径损耗、菲涅尔区与视距（地球曲率隆起、第一菲涅尔区半径、60% 净空判定）、路径剖面（粘贴高程点，逐点判定并画剖面图，给出两端天线需抬高多少）、EIRP、链路预算、接收机灵敏度、噪声系数级联、天线增益换算、电阻色环、SMD 电阻代码、瓷片电容代码、竞赛记分、线圈/Yagi 振子计算、T/π 型衰减器、变压器阻抗、UTC 时间、传输线阻抗（同轴 / 双线 / 微带线 / 带状线）、单短截线匹配、磁环小环天线、电短加载线圈、陷波器（trap）、离网供电规划、抛物面天线（增益、3 dB 波束宽度、焦距 / 凹陷深度 / 馈源位置，可用实测深度反推未知抛物面的焦点）、互调、谐波与镜频（给定若干发射频率，列出 2 / 3 阶互调与谐波产物并标出落入业余波段的；镜频按高端 / 低端本振两侧给出）、磁环绕线（由目标电感反推匝数、AL 公差带、导线长度与单层窗口占用；内置磁环只收已对照 Fair-Rite 官方零件页核对的，其余可自己填 AL）、矩形波导（截止频率与模式、单模范围、导波波长、导体损耗、截止以下衰减，内置 EIA WR 标准尺寸）、雨衰（ITU-R P.838-3 / P.530-17，地面微波链路）、占空比与平均功率（FCC OET-65B 的模式占空比与滑动平均窗口）、IP3 级联（总 IIP3 / OIP3 与每级对互调的贡献，找瓶颈）、线径压降、晶体振荡、射频暴露评估、亚音与中继频差、APRS 编解码、AX.25 软 TNC（帧 ↔ AFSK1200 基带 WAV）、数字模式编码（可导出 CW / RTTY / PSK31 / WSPR / NAVTEX / Feld Hell 基带 WAV）、LoRa 链路（空中时间、接收灵敏度、链路预算与最大距离，按 Semtech AN1200.13 口径）、NTS Radiogram / ICS-213 报文生成
 - **🧭 点对点传播预测**（`/muf` 页内）：输入双方 Maidenhead 网格、月份与太阳黑子数，给出 **24 小时 × 波段**可靠度热力矩阵与逐小时 MUF / LUF 曲线，点任一格子看该时刻的跳数、仰角与路径细节（简化 VOACAP 模型，纯本地计算、离线可用）；可一键取实时太阳通量换算黑子数，K ≥ 4 时提示地磁活跃
 - **📈 实时仪表盘**：太阳活动、空间天气警报、DX 热点、ISS 位置、DXCC 稀有度聚合一屏展示
 - **☀️ 太阳活动**：太阳通量、A/K 指数、黑子数与各波段传播条件（含 K 指数 1 分钟曲线与太阳黑子周期趋势）
 - **📡 DX 实时热点** / **🏆 DXCC 稀有度榜单**：拉取 DX Cluster 热点与 Club Log 最稀有实体；对照本地日志标出新 DXCC / 新波段，可只看需要的；可开启新 DXCC / 新波段 / 关注呼号（支持 `*` 通配）浏览器通知，开启后每 60 秒自动刷新
-- **📡 接收报告查询**：PSK Reporter（`/psk-reporter`）与 RBN 信标网络（`/rbn`）查询「谁收到了我发的信号」，展示接收台、频率、波段、SNR（RBN 另有 WPM），数据来自 PSK Reporter 与 Reverse Beacon Network 实时流
+- **📡 接收报告查询**：PSK Reporter（`/psk-reporter`）与 RBN 信标网络（`/rbn`）查询「谁收到了我发的信号」，展示接收台、频率、波段、SNR（RBN 另有 WPM），数据来自 PSK Reporter 与 Reverse Beacon Network 实时流；两侧都能按本台为原点分 8 个方位扇区看方向覆盖（PSK 另有 24 小时时段分布与接收台分布图，RBN 因数据只有呼号而标注「粗定位」）
 - **🛰️ 业余卫星**：TLE + SGP4 计算未来 24 小时过境（AOS/LOS、最大仰角与方位角），可一键使用本台网格；收藏卫星后可开启过境提醒（提前 5 / 10 / 15 / 30 分钟浏览器通知，页面打开期间每 30 秒检查）；另有 ISS 实时位置追踪与追踪软件推荐
 - **📡 SDR 在线接收站地图**（`/sdr-map`）：世界地图标注长期公开接收站，一键定位并以新标签直达 WebSDR / KiwiSDR 的在线频谱与瀑布图，并汇总公开接收机目录；无需本地硬件即可收听短波
-- **🌊 SDR 瀑布图**（`/sdr-waterfall`）：用麦克风输入实时绘制频谱与瀑布图（FFT 2048、可调 dB 标度），或导入 WAV 文件离线分析（含合成样本），全部在浏览器本地完成、音频不上传；色彩映射与 dB 换算位于 `ham-web-core` 的 `spectrum` 模块
+- **🌊 SDR 瀑布图**（`/sdr-waterfall`）：用麦克风输入实时绘制频谱与瀑布图（FFT 2048、可调 dB 标度），或导入 WAV 文件离线分析（含合成样本），全部在浏览器本地完成、音频不上传；色彩映射与 dB 换算位于 `ham-web-core` 的 `spectrum` 模块；并可就地记录噪声本底（10% 分位 + 占用率），按标签长期对比改造前后与昼夜差异（只做相对比较，不给 dBm）；监听中可录音并导出 WAV，交给站内解码器离线分析
 - **🗓️ 活动日历**（`/events`）：展会 / 火腿节与年度通联活动按下一届开始时间排序，可一键加入倒计时提醒，并汇总 DX 远征与竞赛的追踪入口
 - **🌗 灰线地图**：实时晨昏圈（日出/日落分界），用于判断低频 DX 灰线窗口
 - **🌍 DXCC 世界地图**（`/dxcc-map`）：按通联日志把世界地图着色为「未通联 / 已通联 / 已确认」choropleth，支持按波段切换着色、悬停查看实体、点击实体跳转日志过滤，岛屿等无国界数据的实体以中心点标记；一眼看清 DXCC 进度缺口（边界数据由 `cargo make dxcc-map` 生成）
@@ -150,7 +150,7 @@
 
 ### 天线与射频设计
 
-- **📐 矩量法天线求解器**（`/nec`）：NEC-2 精简矩量法，纯前端求解（上限 200 段）。5 个预设 + Yagi 设计向导；导线表 / 负载表 / 传输线表可编辑，画布上可拖端点、整根平移、按轴阵列复制；地面（自由空间 / 理想地 / 有耗地）与导线材质；输出馈电阻抗、驻波、效率、真实增益、前后比，方位 / 仰角切面、WebGL2 可旋转三维方向图（不支持时回退 SVG）、NVIS 覆盖图；频带扫描给出 SWR 曲线与可用带宽；`.nec` 导入导出（`GW` / `GE` / `GN` / `LD` / `EX` / `TL` / `FR`）；「实用天线」「天线 DIY」方案表可一键把模板加载进求解器；**设计存档**按名字保存、刷新后原样载回，并随数据备份导出。方案库模板与另一套 NEC-2 实现（necpp）交叉验证过（参照是另一套程序，不是实测）
+- **📐 矩量法天线求解器**（`/nec`）：NEC-2 精简矩量法，纯前端求解（上限 200 段）。5 个预设 + Yagi 设计向导；导线表 / 负载表 / 传输线表可编辑，画布上可拖端点、整根平移、按轴阵列复制；地面（自由空间 / 理想地 / 有耗地）与导线材质；输出馈电阻抗、驻波、效率、真实增益、前后比，方位 / 仰角切面、WebGL2 可旋转三维方向图（不支持时回退 SVG）、NVIS 覆盖图；频带扫描给出 SWR 曲线与可用带宽；`.nec` 导入导出（`GW` / `GE` / `GN` / `LD` / `EX` / `TL` / `FR`）；「实用天线」「天线 DIY」方案表可一键把模板加载进求解器；**设计存档**按名字保存、刷新后原样载回，并随数据备份导出，两份存档可并排对比（频率 / 地面 / 增益 / 前后比 / 驻波 / 效率 / 仰角，地面或频率不同时明确警告不可直接比）；结果区还可按 DXCC 实体列出各方向的真实增益与相对峰值的损失（**只算天线本身**，不含传播、噪声与对方天线，口径见 [`docs/antenna-coverage.md`](docs/antenna-coverage.md)）。方案库模板与另一套 NEC-2 实现（necpp）交叉验证过（参照是另一套程序，不是实测）
 - **🎯 Smith 圆图**（`/smith`）：可拖拽阻抗点与等驻波比圆；串 / 并联 L、C 元件即时走轨迹，L 型网络自动求解并折算元件值，给出 SWR ≤ 2 的可用带宽
 - **🛡️ 频率功率合规**（`/compliance`）：选 A / B / C 操作证类别 + 输入频率，即时判断能否发射、功率上限（30 MHz 分界，并叠加 2200 m / 60 m 的 ITU EIRP 脚注上限）、该频段是否需要频率协调，每条结论链到 `/radio-law` 条文
 - **🌊 波形实验室**（`/waveform-lab`）：AM / DSB / USB / LSB / FM 时域频域联动；BPSK / QPSK / 16QAM 星座图与眼图（可调 Es/N0 与滚降）；Butterworth / Chebyshev I / Chebyshev II / 椭圆四类滤波器原型的幅频、相频、群延迟曲线（椭圆原型与 scipy 参考值对拍）；香农容量沙盒
@@ -167,9 +167,9 @@
 - **🔄 多源确认同步**：粘贴或上传 LoTW / eQSL / Club Log / QRZ Logbook 的确认报告，按「远端新增 / 冲突 / 本地缺失」三向对比后逐条裁决再应用；另有 LoTW 签名上传六步指引（证书与签名始终在本机 TQSL 完成，本站不经手）
 - **🎴 QSL 卡片设计**（`/qsl-designer`）：三种版式，从日志挑一条通联带入字段，导出 PNG 或打印 140 × 89 mm 标准卡；打印可选每页 1 张（A4 竖向）或 4 张（A4 横向，带裁切线）
 - **🏷️ QSL 标签打印**（`/qsl-labels`）：把日志按呼号合并（每张最多 2～6 条通联），排到 Avery L7163 / L7160 / L7159 / 5160 / 5163 标签纸上直接打印；可只打未寄出的、按起始日期筛选、跳过已用掉的标签，打印后一键标记「QSL 已寄出」
-- **🏆 竞赛录入**（`/contest-log`）：选定竞赛后专注键盘录入（呼号后回车 / 空格跳到交换信息，回车记录，Esc 清空），实时提示重复与实体，CQ 分区类竞赛自动填分区；实时计分、分波段统计，页内「赛后分析」给出每小时速率与最佳连续 60 分钟、空闲时段（15 / 30 / 60 分钟可选）、各波段还缺的 CQ 分区与「在部分波段拿到、另一些还没有」的乘数缺口；实时呼号补全（Super Check Partial 式：包含候选与只差一位的相近呼号，数据来自自己的日志和自己载入的 `.scp` 文件，本站不带 SCP 数据）；一键导出 Cabrillo 3.0，也能导入别的软件（N1MM、DXLog 等）导出的 Cabrillo 日志（只认每边一个交换字段的格式，读不了的行逐行列出原因，已在日志里的通联自动跳过）；内置 CQ WW / CQ WPX / ARRL DX / All Asian / JIDX / WAE / IARU HF / 俄罗斯 DX 等模板
+- **🏆 竞赛录入**（`/contest-log`）：选定竞赛后专注键盘录入（呼号后回车 / 空格跳到交换信息，回车记录，Esc 清空），实时提示重复与实体，CQ 分区类竞赛自动填分区；实时计分、分波段统计，页内「赛后分析」给出每小时速率与最佳连续 60 分钟、空闲时段（15 / 30 / 60 分钟可选）、各波段还缺的 CQ 分区与「在部分波段拿到、另一些还没有」的乘数缺口；实时呼号补全（Super Check Partial 式：包含候选与只差一位的相近呼号，数据来自自己的日志和自己载入的 `.scp` 文件，本站不带 SCP 数据）；一键导出 Cabrillo 3.0，也能导入别的软件（N1MM、DXLog 等）导出的 Cabrillo 日志（只认每边一个交换字段的格式，读不了的行逐行列出原因，已在日志里的通联自动跳过）；内置 CQ WW / CQ WPX / ARRL DX / All Asian / JIDX / WAE / IARU HF / 俄罗斯 DX 等模板；赛前可设目标 QSO 数与计划时长，赛中显示按线性进度的配速（应完成 / 领先落后 / 剩余时间需要的速率 / ETA）
 - **🗓️ 竞赛日历**（`/contest-calendar`）：全球主要竞赛按下一届开赛时间排序，一键把开赛时间加入倒计时提醒，有对应模板的可直接「开新场次」跳转竞赛录入
-- **🏅 奖状进度**：由日志统计 DXCC（总计 / 分模式 / 分波段）、WAZ、WAC、VUCC、WPX 前缀奖、WAS 美国州、IOTA 岛屿组与 DXCC Challenge 分波段积分，可切换已通联 / 已确认
+- **🏅 奖状进度**：由日志统计 DXCC（总计 / 分模式 / 分波段）、WAZ、WAC、VUCC、WPX 前缀奖、WAS 美国州、IOTA 岛屿组与 DXCC Challenge 分波段积分，可切换已通联 / 已确认；附 DXCC 申请记录表（每个实体一条代表通联、已确认优先，可导出 CSV 核对）
 - **🌍 DXCC 前缀库**：内置 340 个现行 DXCC 实体（数据源 AD1C cty.csv），最长前缀匹配，支持 `VP2E/W1AW`、`/P`、`/MM` 等斜杠呼号
 - **📊 通联统计**（`/stats`）：DXCC / 波段 / 模式分布、QSL 确认率与月度 QSO 趋势
 
@@ -184,6 +184,8 @@
 | WSPR | `/wspr-decode` | WSPR 录音 → 呼号 / 网格 / 功率 |
 | PSK31 | `/psk-decode` | PSK31 录音 → 文本 |
 | RTTY | `/rtty-decode` | 45.45 波特 / 170 Hz 频移 / ITA2 |
+| Feld Hell | `/hell-decode` | AM 点阵模式（980 Hz 载波、122.5 像素/秒、7×7 网格）→ 文本 |
+| WEFAX | `/wefax-decode` | 短波气象传真的简化模型：幅度 = 亮度的视频信号 → 灰度图（未做 1500 / 2300 Hz 副载波 FM 解调，真实电台录音暂解不出） |
 | NAVTEX | `/navtex-decode` | SITOR-B：CCIR 476 检错、ZCZC / NNNN 报文帧、双副本逐字符合并，按报文卡片展示 |
 | Olivia | `/olivia-decode` | 4/125、8/250、16/500、32/1000 四个子模式 |
 | DominoEX | `/dominoex-decode` | 4 / 5 / 8 / 11 / 16 / 22 六个子模式，可选 MultiPSK 兼容的 FEC 模式（须与发送端一致） |
@@ -235,7 +237,7 @@
 | 图标 | Lucide（内联 SVG，与原版路径一致） |
 | 浏览器 API | Web Speech API（朗读）、Web Audio API（摩尔斯 / 信号音 / 实时频谱）、Canvas（照片处理、瀑布图）、WebGL2（天线求解器的三维方向图，不支持时回退 SVG）、Notification（倒计时提醒）、IndexedDB（大体积日志存储） |
 | 服务器 | Axum 0.8 + tower-http（SPA 回退、缓存头、gzip/brotli），并提供 `/api/*` 外部数据代理（`ureq` + 内存缓存 + `sgp4` 过境计算） |
-| 数字信号解码 | `ham-web-apt` / `ham-web-sstv` / `ham-web-wspr` / `ham-web-ft8` 等九个解码 crate（纯 Rust DSP，编译为 Web Worker，音频不上传服务器） |
+| 数字信号解码 | `ham-web-apt` / `ham-web-sstv` / `ham-web-wspr` / `ham-web-ft8` 等十一个解码 crate（纯 Rust DSP，编译为 Web Worker，音频不上传服务器） |
 | 工具链 | `ham-web-tools`（clap、ureq、resvg、sha2、brotli、walkdir） |
 | 任务编排 | [cargo-make](https://github.com/sagiegurari/cargo-make) |
 | PWA | 构建时由 Rust 生成 Service Worker（预缓存 + 运行时缓存策略） |
@@ -296,7 +298,7 @@
 └── public/
     ├── questions/          # 题库 JSON、config.json、题目图片（构建产物，已提交）
     ├── decode-worker.js    # 统一解码 Worker 入口（手写，入库；协议见 docs/decode-worker-protocol.md）
-    ├── apt-worker/         # 以下九个 Worker 目录由 `cargo make build-*-worker` 生成（已被 .gitignore 忽略）
+    ├── apt-worker/         # 以下十一个 Worker 目录由 `cargo make build-*-worker` 生成（已被 .gitignore 忽略）
     ├── sstv-worker/
     ├── wspr-worker/
     ├── rtty-worker/
@@ -308,12 +310,15 @@
     ├── fonts/              # Geist 字体（本地托管）
     ├── dxcc-entities.bin   # DXCC 实体边界（世界地图着色用）
     ├── manifest.json       # PWA manifest
-    ├── pwa-icon.svg        # 图标设计源（512 母版）
+    ├── pwa-icon.svg        # 图标设计源（512 圆角母版）
+    ├── pwa-maskable.svg    # 满幅版设计源（无圆角、图形缩进安全圆）
+    ├── pwa-badge.svg       # 通知栏 badge 设计源（单色透明底）
     ├── icon.svg            # 同设计的 64px 副本（构建不使用）
-    ├── favicon-16.svg      # 16px favicon 专用图形（坐标对齐像素格）
+    ├── favicon-16.svg      # 小尺寸 favicon 图形（ico 的 16 / 32 档，坐标对齐像素格）
     ├── favicon.ico         # 16 / 32 / 48 多尺寸容器
     ├── pwa-icon-*.png      # 圆角图标（manifest `any`、og:image）
     ├── pwa-maskable-*.png  # 满幅图标（manifest `maskable`，圆角由系统遮罩加）
+    ├── pwa-badge-96.png    # 通知栏 badge（Android 只取 alpha 通道着色）
     └── apple-touch-icon*.png  # 满幅图标（iOS 主屏，圆角由系统加）
 ```
 
@@ -439,7 +444,7 @@ cargo make serve          # 用 release 服务器托管 dist/：http://127.0.0.1
 
 ### 浏览器内解码（音频不出本机）
 
-「APT 云图解码」「SSTV 解码器」「WSPR 解码器」「RTTY / Olivia / DominoEX / NAVTEX / LRPT 解码」「FT8 / FT4 解码器」都把音频交给 Web Worker 中的纯 Rust DSP 处理，不上传服务器（九个 Worker 共用 `public/decode-worker.js`，协议见 [`docs/decode-worker-protocol.md`](docs/decode-worker-protocol.md)）；「PSK31 解码」同样只在本机完成，跑在主线程的 `ham-web-core`。可先生成合成样本试跑（每个解码器都有 `<名>-sample` / `<名>-decode` / `<名>-test` 三个任务）：
+「APT 云图解码」「SSTV 解码器」「WSPR 解码器」「RTTY / Olivia / DominoEX / NAVTEX / LRPT 解码」「FT8 / FT4 解码器」都把音频交给 Web Worker 中的纯 Rust DSP 处理，不上传服务器（十一个 Worker 共用 `public/decode-worker.js`，协议见 [`docs/decode-worker-protocol.md`](docs/decode-worker-protocol.md)）；「PSK31 解码」同样只在本机完成，跑在主线程的 `ham-web-core`。可先生成合成样本试跑（每个解码器都有 `<名>-sample` / `<名>-decode` / `<名>-test` 三个任务）：
 
 ```bash
 cargo make apt-sample    && cargo make apt-decode     # 或 apt-test 一步到位
@@ -461,7 +466,7 @@ cargo make spectrum-sample                            # 频谱 / 瀑布图样本
 | `cargo make dev` | 前端开发服务器（默认任务，http://127.0.0.1:3000） |
 | `cargo make dev-full` | 后端 API（3001）+ 前端开发服务器（3000，代理 `/api`） |
 | **构建** | — |
-| `cargo make build-worker` / `build-sstv-worker` / `build-wspr-worker` / `build-rtty-worker` / `build-olivia-worker` / `build-dominoex-worker` / `build-navtex-worker` / `build-lrpt-worker` / `build-ft8-worker` | 构建九个解码 Web Worker（wasm-bindgen `--target no-modules`；APT 的任务名是 `build-worker`，其余带 codec 前缀） |
+| `cargo make build-worker` / `build-sstv-worker` / `build-wspr-worker` / `build-rtty-worker` / `build-olivia-worker` / `build-dominoex-worker` / `build-navtex-worker` / `build-lrpt-worker` / `build-ft8-worker` / `build-hell-worker` / `build-wefax-worker` | 构建单个解码 Web Worker（wasm-bindgen `--target no-modules`；APT 的任务名是 `build-worker`，其余带 codec 前缀）。全部一起构建用 `cargo make build-workers`，清单取自 `crates/*-worker` |
 | `cargo make build-web` | 构建前端（release）并执行 `postbuild`（sw.js / sitemap / 预压缩） |
 | `cargo make build-server` | 构建静态站点服务器（release） |
 | `cargo make build` | 图标 + 前端 + 服务器 |
@@ -487,6 +492,7 @@ cargo make spectrum-sample                            # 频谱 / 瀑布图样本
 | `cargo make i18n-pack` | 生成运行时语言包 `public/data/i18n/{lang}.json`（改了译文后跑一次） |
 | `cargo make i18n-plural-candidates` | 导出复数候选骨架（源码用 `tf`/`tp`、中文带数量占位符的文案）到 `tmp/plural-candidates-en.json`；导出西语用 `cargo run -q -p ham-web-tools -- check-i18n --plural-candidates tmp/plural-candidates-es.json --lang es` |
 | `cargo make knowledge-i18n-check` | 校验知识库正文译文：中文原文作 key，源码改过句子后译文即失效（静默回退中文），已并入 `cargo make check` |
+| `cargo make e2e-check` | e2e 覆盖对账：`e2e/coverage-targets.json` 的每条核心旅程（grep）必须能在 `e2e/tests` 的 spec 里命中，已并入 `cargo make check` |
 | **解码器样本** | — |
 | `cargo make samples` | 一键生成合成测试样本 WAV 到 `tmp/`（apt / sstv / wspr / lrpt / dominoex / olivia / navtex / rtty / psk31 / spectrum；FT8 用 `ft8-sample` 单独生成） |
 | `cargo make apt-sample` / `apt-decode` / `apt-test` | 生成 / 命令行解码 / 端到端自检 APT 样本 WAV |
@@ -510,7 +516,7 @@ cargo make spectrum-sample                            # 频谱 / 瀑布图样本
 | `cargo make fmt` / `fmt-check` | 代码格式化 / 格式检查 |
 | `cargo make clippy` | Clippy（原生 crate + wasm 前端，`-D warnings`） |
 | `cargo make test` | 单元测试 |
-| `cargo make check` | 格式检查 + clippy + 单元测试 + 文案词典校验 + 像素风生成物校验（不构建前端） |
+| `cargo make check` | 格式检查 + clippy + 单元测试 + 文案词典校验 + e2e 覆盖对账 + 像素风生成物校验（不构建前端） |
 | `cargo make e2e` | 构建 release 站点并运行 Playwright 端到端测试（见下文「端到端测试」） |
 | `cargo make e2e-coverage` | 统计 e2e 覆盖率（路由冒烟 / 交互 / 关键流程），报告写入 `e2e/test-results/coverage.{md,json}` |
 | `cargo make size-check` | 性能预算：按 `perf-budget.json` 校验 `dist/` 的 br 压缩后体积（需先 `build-web`） |
@@ -538,8 +544,9 @@ cargo make docker-build && cargo make docker-run
 | --- | --- | --- |
 | `SITE_URL` | `https://ham.onlyxp.me` | 写入 Open Graph 与 `sitemap.xml` 的站点地址 |
 | `REBUILD_DATASET` | `0` | 设为 `1` 时构建阶段从远程 CSV 重新生成题库 |
+| `RUST_VERSION` | `1.99.1` | 构建阶段基础镜像的 tag。钉死具体版本，避免浮动的大版本 tag 让同一提交隔周重建出不同的二进制 |
 | `TRUNK_VERSION` | `0.21.14` | Trunk 版本 |
-| `WASM_BINDGEN_VERSION` | 空 | wasm-bindgen CLI 版本（构建九个解码 Worker）；留空时自动取 `Cargo.lock` 中的版本 |
+| `WASM_BINDGEN_VERSION` | 空 | wasm-bindgen CLI 版本（构建全部解码 Worker，清单取自 `crates/*-worker`）；留空时自动取 `Cargo.lock` 中的版本 |
 
 ```bash
 docker build --build-arg SITE_URL=https://exam.example.com -t ham-web .
@@ -567,10 +574,10 @@ arm64 / 4 vCPU / 16GiB 的 Docker 虚拟机下，一次 `docker build` 的耗时
 | --- | --- | --- |
 | 拉基础镜像 + 编译安装 `wasm-bindgen-cli` | ~1 min | 镜像层，命中即整层跳过 |
 | 下载 Trunk 预编译二进制 | ~5 s | 镜像层 |
-| 编译第三方依赖（原生 tools/server + wasm 前端与九个 Worker） | ~1 min | `--mount=type=cache` |
+| 编译第三方依赖（原生 tools/server + wasm 前端与十一个 Worker） | ~1 min | `--mount=type=cache` |
 | 编译前端 `ham-web-app` | **~5 min** | 不可缓存（每次提交都在变） |
 | Trunk 下载 Tailwind / wasm-opt | ~1 min | `--mount=type=cache` |
-| 图标 / 语言包 / 九个 Worker / postbuild + 产物断言 | < 1 min | — |
+| 图标 / 语言包 / 十一个 Worker / postbuild + 产物断言 | < 1 min | — |
 
 **内存要求**：`wasm-release`（`opt-level = "z"` + `codegen-units = 1`）编译前端时，单个 `rustc` 进程峰值约 6–8GB。Docker 虚拟机只给 4GiB / 8GiB 时会在这一步被 OOM 杀掉，而报错只有 BuildKit 的 `cannot allocate memory`（要加 `--progress=plain` 才看得到 `rustc … SIGKILL: kill`，容易误判成 Dockerfile 有问题）。建议：
 
@@ -823,9 +830,10 @@ cargo make explanations-missing    # 查看因题目修订/新增而缺失的解
 - 刷新后首次打开会显示一次「已更新到新版本」及更新内容；首次访问的用户不会看到；
 - 更新内容写在 `crates/core/src/changelog.rs` 的 `CHANGELOG` 中（新版本插到最前面，日期 + 条目），`postbuild` 会导出为 `dist/changelog.json`；
 - `postbuild` 还会为每个题库计算内容哈希，写入 `dist/questions/config.json` 的 `banks.*.rev`；前端请求题库时带上 `?v=<rev>`，题库内容变化后一定会重新下载。前端记录上次看到的题目摘要，题库变化时提示「题库已更新：修改 N 题，新增 N 题…」；
-- 应用图标由 `cargo make icons` 从 `public/pwa-icon.svg` 渲染（纯 Rust，resvg），同一份 SVG 出两套：
-  - `pwa-icon-192.png` / `pwa-icon-512.png` 与 `favicon.ico`（16 / 32 / 48 三档打包）：保留品牌圆角，供 manifest 的 `any`、`favicon` 与 `og:image` 使用（这些场景不会替我们裁切）—— ICO 的 16px 档改用 `public/favicon-16.svg`，那是同一套构图按 16px 重取值的一版（母版坐标压在半像素上，缩到 16px 会糊）；
-  - `apple-touch-icon*.png` / `pwa-maskable-*.png`：**满幅不透明方形**，圆角交给系统遮罩。iOS 的 `apple-touch-icon` 是按原图直接使用的（不裁圆），自带圆角的 PNG 在四个角会把透明像素合成到白底上，因此这类图标四角必须不透明。
+- 应用图标由 `cargo make icons` 渲染（纯 Rust，resvg），按三份设计源产出三类图标：
+  - `public/pwa-icon.svg`（圆角母版）→ `pwa-icon-192.png` / `pwa-icon-512.png` 与 `favicon.ico`（16 / 32 / 48 三档打包）：保留品牌圆角，供 manifest 的 `any`、`favicon` 与 `og:image` 使用（这些场景不会替我们裁切）—— ICO 的 16 / 32 两档改用 `public/favicon-16.svg`，那是同一套构图按 16px 重取值的一版（母版的塔腿在这个尺度只有 1–2px，插值出来是一团灰；32 档是它的 2 倍整数放大，仍是整像素）；
+  - `public/pwa-maskable.svg`（满幅版）→ `apple-touch-icon*.png` / `pwa-maskable-*.png`：**满幅不透明方形**，圆角交给系统遮罩。iOS 的 `apple-touch-icon` 是按原图直接使用的（不裁圆），自带圆角的 PNG 在四个角会把透明像素合成到白底上，因此这类图标四角必须不透明；图形还缩到 0.8 并居中，落在 maskable 的 80% 安全圆内（启动器的圆形遮罩只保证圆里的内容）。
+  - `public/pwa-badge.svg`（单色版）→ `pwa-badge-96.png`：Web Push 通知栏的 badge。Android 只取它的 alpha 通道再按系统栏颜色着色，拿彩色图标当 badge 会渲染成一个实心方块。
 
 ## 本地存储与兼容性
 
@@ -903,9 +911,9 @@ cargo make explanations-missing    # 查看因题目修订/新增而缺失的解
 - 提交前执行 `cargo make ci`（仅前端样式改动时可先用 `cargo make check` 快速自检，两者均已包含格式、Clippy、单元测试与文案词典校验）；
 - 不依赖浏览器的逻辑（日志、奖状、DX 通知匹配、Koch、错题本、考试判定、CAT 协议解析、CW 解码、标签排版等）放在 `ham-web-core`，并附单元测试；
 - 修改界面文案时同步补 `data/i18n/{lang}/{domain}.json`（按域拆分、语义 key `域.词条`，`cargo make i18n-check` 会校验重复 key、占位符数量、死条目与语言包新鲜度）；改完译文跑一次 `cargo make i18n-pack`；知识库正文译文放在 `data/knowledge-i18n/`（以中文原文为 key，改动 `crates/core` 里的中文句子后要同步改 key，`cargo make knowledge-i18n-check` 会校验，否则译文静默失效、页面上仍是中文）；
-- 改动任一解码 Worker（共九个）时，注意 `wasm-bindgen` CLI 版本必须与 `Cargo.lock` 一致（`cargo make setup` 会按锁文件安装，CI 亦有版本漂移校验）。
+- 改动任一解码 Worker（清单取自 `crates/*-worker`）时，注意 `wasm-bindgen` CLI 版本必须与 `Cargo.lock` 一致（`cargo make setup` 会按锁文件安装，CI 亦有版本漂移校验）。
 
-CI 位于 `.github/workflows/`：`check.yml` 在 push 到 `main` 与 PR 时运行 `cargo make check`，并另起一个 job 构建 release 站点后运行 Playwright 端到端测试（失败时上传报告）；`build-docker.yml` 在 push 到 `main` 或 `v*` tag 时构建并推送 Docker 镜像。
+CI 位于 `.github/workflows/`：`check.yml` 在 push 到 `main` 与 PR 时运行 `cargo make check`，并另起一个 job 构建 release 站点后运行 Playwright 端到端测试（失败时上传报告）；同一份 workflow 还会构建一次 Docker 镜像并跑 `scripts/smoke-image.sh`（依次验证 `/healthz`、首页是否是 `dist/index.html`、SPA 回退、缺失资源 404、语言包与 Worker 是否真的能读到），让 Dockerfile 的改动在 PR 阶段就失败。`build-docker.yml` 在 push 到 `main` 或 `v*` tag 时构建并推送镜像，推送后再从 registry 拉回同一份镜像跑一遍相同的冒烟。
 
 ### 端到端测试
 
@@ -1042,7 +1050,7 @@ ls target/dev-dist/                                          # 正常应有 data
 | 天线 · 设备 | `/antennas` `/antenna-array` `/polarization` `/feedline` `/connectors` `/balun` `/antenna-diy` `/practical-antennas` `/antenna-installation` `/antenna-farm` `/antenna-tuning` `/antenna-analyzer` `/vna` `/antenna-theory` `/antenna-modeling` `/nvis` `/electronics` `/filters` `/measurement-lab` `/meters` `/power` `/power-supply` `/transceiver` `/receiver` `/rig-reviews` `/gear` `/amplifier` `/bands` `/bandplan` `/microwave` `/mobile` |
 | 通联 · 活动 | `/radiogram` `/operating` `/sat-operation` `/china-ham` `/contest` `/cabrillo` `/awards` `/iota` `/dx` `/dxpedition` `/most-wanted` `/qrp` `/eqsl` `/qsl-card` `/ardf` `/emcomm` `/winlink` `/events` `/portable` `/grid` `/callsign` `/repeater` `/repeater-build` `/logging-software` |
 | 进阶 · 关于 | `/organizations` `/safety` `/grounding` `/rfi` `/noise` `/beginner` `/learning-path` `/learning-resources` `/swl` `/license` `/spectrum-admin` `/regulations` `/history` `/remote` `/open-source` `/community` `/diy-projects` `/developers` |
-| 工具 · 计算 · 解码 | `/kiss-tnc` `/vna-reader` `/navtex-decode` `/lrpt-decode` `/dominoex-decode` `/olivia-decode` `/rtty-decode` `/ft8-decode` `/tools` `/nec` `/waveform-lab` `/smith` `/compliance` `/apt-decoder` `/sstv-decode` `/wspr-decode` `/sdr-waterfall` `/psk-decode` `/photo-processor` |
+| 工具 · 计算 · 解码 | `/signal-id` `/kiss-tnc` `/vna-reader` `/navtex-decode` `/lrpt-decode` `/dominoex-decode` `/olivia-decode` `/rtty-decode` `/hell-decode` `/wefax-decode` `/ft8-decode` `/tools` `/nec` `/waveform-lab` `/smith` `/compliance` `/apt-decoder` `/sstv-decode` `/wspr-decode` `/sdr-waterfall` `/psk-decode` `/photo-processor` |
 | 工具 · 日志 · 竞赛 | `/log` `/qsl-labels` `/qsl-designer` `/contest-log` `/contest-calendar` `/stats` |
 | 工具 · 实时数据 | `/dashboard` `/dx-spots` `/psk-reporter` `/rbn` `/solar` |
 | 工具 · 地图 · 卫星 | `/grid-map` `/grayline` `/dxcc-map` `/portable-map` `/satellites` `/sdr-map` |
@@ -1076,7 +1084,7 @@ ls target/dev-dist/                                          # 正常应有 data
 - **练习模式的搜索按钮不见了？** 题目搜索仅在练习模式的顺序模式下可用；跨全站的知识检索请用 `/` 唤起的搜索面板。
 - **朗读 / 摩尔斯试听没有声音？** 浏览器需要一次用户交互后才允许播放音频，请先点击页面；朗读依赖系统 TTS 语音包。
 - **`cargo make dev-full` 和 `cargo make i18n-check` 能同时跑吗？** 不能：两者都要占用 `target/` 的构建锁，同时执行会互相等待，建议串行运行。
-- **改了解码 Worker 却不生效？** 九个 Worker 的 wasm 由 `cargo make build-worker` / `build-sstv-worker` / `build-wspr-worker` / `build-rtty-worker` / `build-olivia-worker` / `build-dominoex-worker` / `build-navtex-worker` / `build-lrpt-worker` / `build-ft8-worker` 生成到 `public/*-worker/`；`cargo make dev` 与 `build-web` 会自动先构建，但单独改了 worker 代码后需重跑对应任务（首次还需 `cargo make setup` 提供版本匹配的 `wasm-bindgen`）。
+- **改了解码 Worker 却不生效？** 十一个 Worker 的 wasm 由 `cargo make build-worker` / `build-sstv-worker` / `build-wspr-worker` / `build-rtty-worker` / `build-olivia-worker` / `build-dominoex-worker` / `build-navtex-worker` / `build-lrpt-worker` / `build-ft8-worker` / `build-hell-worker` / `build-wefax-worker` 生成到 `public/*-worker/`；`cargo make dev` 与 `build-web` 会自动先构建，但单独改了 worker 代码后需重跑对应任务（首次还需 `cargo make setup` 提供版本匹配的 `wasm-bindgen`）。
 - **端到端测试跑不起来？** 首次需在 `e2e/` 下执行 `npm ci && npx playwright install chromium`；`cargo make e2e` 会先构建 release 站点。
 - **通联日志很大还能用吗？** 可以：日志由 `IndexedDB` 承载（突破 localStorage 5MB 配额），localStorage 仅保留静默快照。清浏览器数据会同时清除两者，重要日志请定期用「数据备份」导出。
 

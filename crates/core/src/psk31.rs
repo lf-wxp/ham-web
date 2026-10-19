@@ -168,23 +168,9 @@ pub fn encode(text: &str) -> Vec<bool> {
   bits
 }
 
-/// 线性重采样到目标采样率。
+/// 线性重采样到目标采样率（实现只有一份，在 [`ham_web_wav::resample`]）。
 fn resample(samples: &[f32], from: u32, to: u32) -> Vec<f32> {
-  if from == to || samples.len() < 2 {
-    return samples.to_vec();
-  }
-  let ratio = f64::from(to) / f64::from(from);
-  let n = (samples.len() as f64 * ratio).round() as usize;
-  let mut out = Vec::with_capacity(n);
-  for i in 0..n {
-    let src = i as f64 / ratio;
-    let idx = src as usize;
-    let frac = (src - idx as f64) as f32;
-    let a = samples[idx.min(samples.len() - 1)];
-    let b = samples[(idx + 1).min(samples.len() - 1)];
-    out.push(a + (b - a) * frac);
-  }
-  out
+  ham_web_wav::resample(samples, from, to)
 }
 
 /// 生成低通 FIR 系数（sinc + Hamming 窗），`cutoff` 为归一化频率（0–0.5）。

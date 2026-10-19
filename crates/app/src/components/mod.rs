@@ -15,5 +15,6 @@ pub mod rotor_control;
 pub mod search_dialog;
 pub mod shortcut_help;
 pub mod sidebar_item;
+pub mod spot_coverage;
 pub mod study_plan_card;
 pub mod topic_quiz;

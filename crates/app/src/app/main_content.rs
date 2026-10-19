@@ -16,8 +16,8 @@ use crate::pages::{
   DxpeditionPage, ElectronicsPage, EmcommPage, EmePage, EqslPage, EventsPage, ExamComparisonPage,
   ExamPage, ExamReviewPage, FeedlinePage, FiltersPage, FlashcardsPage, FormulasPage,
   FrequenciesPage, Ft8DecoderPage, Ft8Page, GearPage, GlossaryPage, GnuradioPage, GraylinePage,
-  GridMapPage, GridSystemPage, GroundingPage, HistoryPage, HomePage, IotaPage, KissTncPage,
-  LearningPathPage, LearningResourcesPage, LicenseClassesPage, LicenseCompliancePage,
+  GridMapPage, GridSystemPage, GroundingPage, HellDecoderPage, HistoryPage, HomePage, IotaPage,
+  KissTncPage, LearningPathPage, LearningResourcesPage, LicenseClassesPage, LicenseCompliancePage,
   LicenseNoticePage, LicensePage, ListenPage, LogPage, LoggingSoftwarePage, LoraPage,
   LrptDecoderPage, MeasurementLabPage, MeteorScatterPage, MetersPage, MicrowavePage,
   MistakeTopicsPage, MistakesPage, MobilePage, ModernDigitalModesPage, ModesPage,
@@ -30,9 +30,10 @@ use crate::pages::{
   RadiogramPage, RbnPage, ReceiverPage, ReferencePage, RegulationsPage, RemotePage,
   RepeaterBuildPage, RepeaterPage, ReportPage, RfiPage, RigReviewsPage, RstPage, RttyDecoderPage,
   RttyPage, SafetyPage, SatOperationPage, SatellitesPage, SdrMapPage, SdrPage, SdrWaterfallPage,
-  SmithPage, SolarPage, SpecialPropPage, SpectrumAdminPage, SstvDecoderPage, SstvPage, StatsPage,
-  StudyCalendarPage, SwlPage, ToolsPage, TransceiverPage, VnaPage, VnaReaderPage, WaveformLabPage,
-  WeatherSatPage, WeeklyPage, WinlinkPage, WsprDecoderPage, WsprPage, ZoneMapPage,
+  SignalIdPage, SmithPage, SolarPage, SpecialPropPage, SpectrumAdminPage, SstvDecoderPage,
+  SstvPage, StatsPage, StudyCalendarPage, SwlPage, ToolsPage, TransceiverPage, VnaPage,
+  VnaReaderPage, WaveformLabPage, WeatherSatPage, WeeklyPage, WefaxDecoderPage, WinlinkPage,
+  WsprDecoderPage, WsprPage, ZoneMapPage,
 };
 
 use crate::components::related_topics::RelatedTopics;
@@ -146,6 +147,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/dx") view=DxPage />
         <Route path=path!("/eqsl") view=EqslPage />
         <Route path=path!("/grid") view=GridSystemPage />
+        <Route path=path!("/hell-decode") view=HellDecoderPage />
         <Route path=path!("/history") view=HistoryPage />
         <Route path=path!("/muf") view=MufPage />
         <Route path=path!("/portable") view=PortablePage />
@@ -157,6 +159,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/repeater") view=RepeaterPage />
         <Route path=path!("/wspr") view=WsprPage />
         <Route path=path!("/wspr-decode") view=WsprDecoderPage />
+        <Route path=path!("/wefax-decode") view=WefaxDecoderPage />
         <Route path=path!("/logging-software") view=LoggingSoftwarePage />
         <Route path=path!("/open-source") view=OpenSourcePage />
         <Route path=path!("/microwave") view=MicrowavePage />
@@ -218,6 +221,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/power-supply") view=PowerSupplyPage />
         <Route path=path!("/tools") view=ToolsPage />
         <Route path=path!("/waveform-lab") view=WaveformLabPage />
+        <Route path=path!("/signal-id") view=SignalIdPage />
         <Route path=path!("/nec") view=NecPage />
         <Route path=path!("/smith") view=SmithPage />
         <Route path=path!("/photo-processor") view=PhotoProcessorPage />

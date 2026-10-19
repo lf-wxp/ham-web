@@ -4,7 +4,7 @@ use ham_web_core::dxcc::{Entity, entity_by_dxcc};
 use ham_web_core::logbook::stamp;
 use leptos::prelude::*;
 
-use crate::i18n::{Locale, locale, t, tf, tp};
+use crate::i18n::{localized_name, t, tf, tp};
 use crate::pages::log::LogEntry;
 use crate::ui::{
   Field, NativeSelect, SelectOption, Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -31,18 +31,9 @@ fn duration(minutes: i64) -> String {
   }
 }
 
-fn has_cjk(s: &str) -> bool {
-  s.chars().any(|c| ('\u{4e00}'..='\u{9fff}').contains(&c))
-}
-
 /// 实体名：有译文用译文，没有时非中文界面退回英文名，而不是漏出中文。
 fn entity_label(e: &Entity) -> String {
-  let name = t(e.name);
-  if locale().get() != Locale::Zh && has_cjk(&name) {
-    format!("{} ({})", e.name_en, e.prefix)
-  } else {
-    format!("{name} ({})", e.prefix)
-  }
+  format!("{} ({})", localized_name(e.name, e.name_en), e.prefix)
 }
 
 /// 赛后分析：每小时速率、空闲时段、乘数缺口。数字全部来自 `ham_web_core::contest_analysis`，

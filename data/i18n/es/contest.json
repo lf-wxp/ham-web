@@ -1,5 +1,29 @@
 {
   "contest.november-ssb-december-cw": "Noviembre (SSB) / Diciembre (CW)",
+  "contest.pace-title": "Objetivo y ritmo",
+  "contest.pace-target": "QSO objetivo",
+  "contest.pace-planned-hours": "Horas previstas",
+  "contest.pace-hint": "Muestra dónde deberías estar según un plan lineal. Aritmética pura: no predice propagación y no afecta a la puntuación.",
+  "contest.pace-unset": "Indica un número de QSO objetivo y unas horas previstas para ver el ritmo.",
+  "contest.pace-done": "QSO de esta sesión",
+  "contest.pace-expected": "Esperado a estas alturas",
+  "contest.pace-rate": "Ritmo actual (QSO/h)",
+  "contest.pace-projected": "Total previsto",
+  "contest.pace-ahead": {
+    "one": "{} QSO por delante",
+    "other": "{} QSO por delante"
+  },
+  "contest.pace-behind": {
+    "one": "{} QSO por detrás",
+    "other": "{} QSO por detrás"
+  },
+  "contest.pace-required": "Hacen falta {} QSO/h para el tiempo restante",
+  "contest.pace-eta": "{} minutos para el objetivo al ritmo actual",
+  "contest.pace-overtime": {
+    "one": "El tiempo previsto se agotó, falta {} QSO",
+    "other": "El tiempo previsto se agotó, faltan {} QSO"
+  },
+  "contest.pace-reached": "Objetivo alcanzado",
   "contest.december": "Diciembre",
   "contest.february-cw-march-ssb": "Febrero (CW) / Marzo (SSB)",
   "contest.24-hours": "24 horas",

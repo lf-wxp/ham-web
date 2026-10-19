@@ -4,7 +4,7 @@ use ham_web_core::rpg::{Stage, StageState};
 use leptos::prelude::*;
 
 use crate::cn::cn;
-use crate::i18n::{t, tp};
+use crate::i18n::{t, tf, tp};
 use crate::icons::PixelSprite;
 
 /// 桌面端的横向错位：让关卡沿一条蜿蜒的小路排开，而不是整齐的一列。
@@ -63,6 +63,15 @@ pub(super) fn StageNode(
                 })
                 .collect_view()}
             </span>
+            // 星星是贴图，读屏听不到；补一句文本，名字里也就带上了自己的星级。
+            {(stars > 0)
+              .then(|| {
+                view! {
+                  <span class="sr-only">
+                    {tf("rpg.stars-value", &[&stars.to_string()])}
+                  </span>
+                }
+              })}
           }
             .into_any()
         }
@@ -85,19 +94,10 @@ pub(super) fn StageNode(
             .into_any()
         }
         _ => {
+          // 不再挂 `aria-label`：可见文本（序号、关卡名、题数、星级）已经是一个完整名字，
+          // 手工拼一个更短的名字只会与它对不上（axe 的 label-content-name-mismatch）。
           view! {
-            <a
-              href=href
-              class="pxl-window motion-press flex items-center gap-3 p-3 hover:bg-accent"
-              aria-label=move || {
-                let name = t(stage.name);
-                if stars > 0 {
-                  format!("{name} · {}", crate::i18n::tf("rpg.stars-value", &[&stars.to_string()]))
-                } else {
-                  name
-                }
-              }
-            >
+            <a href=href class="pxl-window motion-press flex items-center gap-3 p-3 hover:bg-accent">
               {inner()}
             </a>
           }

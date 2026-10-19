@@ -1,0 +1,20 @@
+[package]
+name = "ham-web-hell"
+description = "Feld Hell（Feldhellschreiber）编码与解码：AM 点阵、7×7 网格（纯 Rust，无外部依赖）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+
+# `ham-web-apt` 只被 examples（decode_sample）用来解析 WAV，库本身不依赖它。
+[dev-dependencies]
+ham-web-apt.workspace = true
+ham-web-dsp.workspace = true
+ham-web-wav.workspace = true
+
+[lints]
+workspace = true

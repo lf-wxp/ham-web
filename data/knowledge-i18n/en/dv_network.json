@@ -17,5 +17,14 @@
   "通话组与私有呼叫": "Talkgroups and private calls",
   "通过网关与反射器（Reflector）实现全球联网。": "Worldwide linking through gateways and reflectors.",
   "遵守当地中继的使用规范，避免长时间占用通话组。": "Follow the local repeater's rules of use and avoid occupying a talkgroup for long periods.",
-  "集群调度系统，带控制信道的 trunking 架构，商用为主，业余较少用。": "Trunked dispatch systems with a control channel; mainly commercial, rarely used by amateurs."
+  "集群调度系统，带控制信道的 trunking 架构，商用为主，业余较少用。": "Trunked dispatch systems with a control channel; mainly commercial, rarely used by amateurs.",
+  "业余 VoIP": "Amateur VoIP",
+  "用呼号验证后把本地中继或单台接入互联网；节点分 -L（链路）、-R（中继）、-E（用户）三种身份。": "Verifies your callsign and links a local repeater or a single radio to the internet; nodes come as -L (link), -R (repeater) or -E (user).",
+  "基于 Linux 节点与控制板的联网方案，用 DTMF 指令连接远端节点；节点号由节点持有者维护。": "A Linux-node and controller-board linking system; you connect to a remote node with DTMF commands, and the node number is maintained by its owner.",
+  "基于 Asterisk 的开源语音联网，节点之间可互联，也常用于把模拟中继接进其他网络。": "Open-source voice linking built on Asterisk; nodes can interconnect, and it is often used to bring an analog repeater into other networks.",
+  "联网语音进入本地中继后仍然占用本地频率：先听再做，别把网关当成自己的专用频道。": "Linked audio still occupies the local frequency once it reaches the repeater: listen first, and do not treat the gateway as your private channel.",
+  "EchoLink 需要呼号验证；-L / -R 节点由持有者申请与维护，普通用户用 -E 或直接连 -R。": "EchoLink requires callsign validation; -L and -R nodes are applied for and maintained by their owners, while ordinary users connect via -E or straight to an -R.",
+  "IRLP 的 DTMF 指令与节点号由节点持有者设定，连接前先查当地节点的说明。": "IRLP DTMF commands and node numbers are set by the node owner; check the local node's notes before connecting.",
+  "语音质量取决于两端网络，丢包时听起来像「断续」，不是你的电台出了故障。": "Voice quality depends on both ends of the network; packet loss sounds choppy, which is not a fault in your radio.",
+  "跨境联网要留意当地规定：有些国家要求现场有本地控制操作员。": "Cross-border linking has local rules: some countries require a locally licensed control operator on site."
 }

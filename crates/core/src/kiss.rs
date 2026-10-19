@@ -33,6 +33,11 @@ const MAX_ADDRESSES: usize = 10;
 pub const MAX_DIGIPEATERS: usize = MAX_ADDRESSES - 2;
 /// UI 帧固定部分：目的 + 源（各 7 字节）+ 控制 + PID。
 const UI_FIXED_LEN: usize = 7 + 7 + 2;
+/// 不带中继时信息域的字节上限（再长 [`ax25_ui_frame`] 返回 `None`）。
+///
+/// 页面据此把「信息域太长」与「呼号非法」分成两条提示：两者在 `ax25_ui_frame` 里都是
+/// `None`，合并报「呼号格式不合法」会让用户去检查一个其实没有错的呼号。
+pub const MAX_UI_INFO: usize = MAX_FRAME - UI_FIXED_LEN;
 
 /// KISS 帧 → 字节流。命令字节 = `端口 << 4 | 0`（0 = 数据帧）。
 ///
@@ -534,7 +539,7 @@ mod tests {
       ax25_ui_frame("APRS", "BG1AAA", &nine, b"x").is_none(),
       "超过 8 个中继"
     );
-    const ROOM: usize = MAX_FRAME - UI_FIXED_LEN;
+    const ROOM: usize = MAX_UI_INFO;
     assert!(ax25_ui_frame("APRS", "BG1AAA", &[], &[b'a'; ROOM]).is_some());
     assert!(
       ax25_ui_frame("APRS", "BG1AAA", &[], &[b'a'; ROOM + 1]).is_none(),

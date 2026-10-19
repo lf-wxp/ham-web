@@ -23,6 +23,19 @@ pub fn tone_power(samples: &[f32], rate: u32, freq: f64) -> f64 {
   s1 * s1 + s0 * s0 - coeff * s1 * s0
 }
 
+/// 就地加入固定种子的 LCG 均匀噪声（幅度 `amp`，样本 ∈ `[-amp, amp]`）。
+///
+/// 各解码器 sample 生成器此前各抄一份相同的 LCG；统一到这里，保证「同文本 → 同噪声」的
+/// 样本可复现（e2e / 手工对照依赖这一点）。
+pub fn add_noise(signal: &mut [f32], amp: f32) {
+  let mut seed = 0x1234_5678u32;
+  for s in signal {
+    seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+    let u = (seed >> 8) as f32 / 16_777_216.0;
+    *s += amp * (u * 2.0 - 1.0);
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::tone_power;
@@ -53,5 +66,18 @@ mod tests {
     let b: Vec<f32> = a.iter().map(|v| v * 2.0).collect();
     let ratio = tone_power(&b, 8000, 700.0) / tone_power(&a, 8000, 700.0);
     assert!((ratio - 4.0).abs() < 1e-6, "{ratio}");
+  }
+
+  #[test]
+  fn add_noise_is_seeded_and_bounded() {
+    let mut a = vec![0.0f32; 100];
+    let mut b = vec![0.0f32; 100];
+    super::add_noise(&mut a, 0.1);
+    super::add_noise(&mut b, 0.1);
+    // 固定种子：两次结果完全一致。
+    assert_eq!(a, b);
+    // 幅度在 [-amp, amp] 内，且不全是 0。
+    assert!(a.iter().all(|&v| v.abs() <= 0.1 + 1e-6));
+    assert!(a.iter().any(|&v| v != 0.0));
   }
 }

@@ -30,5 +30,7 @@
   "话音": "Fonía",
   "话音 / 信标": "Voz / balizas",
   "话音（SSB）": "Voz (SSB)",
-  "话音（WARC）": "Voz (WARC)"
+  "话音（WARC）": "Voz (WARC)",
+  "仅 CW / 窄带数据（LF，e.i.r.p. ≤1W）": "Solo CW y datos de banda estrecha (LF, p.i.r.e. ≤ 1 W)",
+  "仅 CW / 窄带数据（MF）": "Solo CW y datos de banda estrecha (MF)"
 }

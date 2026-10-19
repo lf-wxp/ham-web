@@ -1,0 +1,37 @@
+{
+  "coverage.title": "Distribución por dirección",
+  "coverage.desc": "Agrupa las estaciones receptoras en ocho sectores de 45° alrededor de tu estación para ver desde qué dirección y banda te reciben más.",
+  "coverage.coarse-hint": "Estos spots solo traen el indicativo del receptor: los rumbos salen del centro de la entidad DXCC convertido a una cuadrícula de 4 caracteres, así que son aproximados y no la posición real de la estación.",
+  "coverage.map-title": "Ubicación de los receptores",
+  "coverage.map-desc": "Cada punto es el centro de la cuadrícula que informó ese receptor; solo posición, sin intensidad de señal.",
+  "coverage.map-count": {
+    "one": "{} receptor",
+    "other": "{} receptores"
+  },
+  "coverage.band-filter": "Filtro de banda",
+  "coverage.all-bands": "Todas las bandas",
+  "coverage.n": "Norte (N)",
+  "coverage.ne": "Noreste (NE)",
+  "coverage.e": "Este (E)",
+  "coverage.se": "Sureste (SE)",
+  "coverage.s": "Sur (S)",
+  "coverage.sw": "Suroeste (SO)",
+  "coverage.w": "Oeste (O)",
+  "coverage.nw": "Noroeste (NO)",
+  "coverage.sector": "Sector",
+  "coverage.reports": "Informes",
+  "coverage.mean-snr": "SNR medio",
+  "coverage.distribution": "Distribución",
+  "coverage.hourly": "Distribución por hora (UTC)",
+  "coverage.hourly-tip": {
+    "one": "{}:00 UTC · {} informe",
+    "other": "{}:00 UTC · {} informes"
+  },
+  "coverage.busiest": "Hora con más informes: {}:00 UTC",
+  "coverage.total": {
+    "one": "{} informe contado (se omitieron los que no tienen locator válido)",
+    "other": "{} informes contados (se omitieron los que no tienen locator válido)"
+  },
+  "coverage.home-missing": "Aún no hay cuadrícula de la estación: define tu cuadrícula Maidenhead en la información de estación del libro de guardia para poder calcular direcciones.",
+  "coverage.empty": "Ninguno de estos informes trae un locator de receptor utilizable."
+}

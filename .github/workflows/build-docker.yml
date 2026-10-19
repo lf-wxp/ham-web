@@ -8,6 +8,12 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+# 同一个 ref 连续 push 时排队，而不是并行：并行构建谁后完成谁最后写 `latest`，慢的旧提交会
+# 把新提交盖掉。不用 `cancel-in-progress`：打断一次正在进行的推送可能留下半成品 tag。
+concurrency:
+  group: build-docker-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -43,19 +49,26 @@ jobs:
           ver=$(grep -m1 '^version = ' Cargo.toml | sed 's/^version = "\(.*\)"/\1/')
           echo "version=${ver}" >> "$GITHUB_OUTPUT"
 
-      # 检查 Docker Hub 上是否已存在该版本号的镜像 tag，避免重复覆盖
+      # 检查 Docker Hub 上是否已存在该版本号的镜像 tag，避免重复覆盖。
+      #
+      # 只有「确实不存在」才允许往下推：网络抖动、限流、鉴权异常也会让 `manifest inspect`
+      # 失败，把这些都当成「不存在」会去覆盖一个已经发布过的版本 tag。判断不了就停下。
       - name: Check if version tag already exists
         id: check
         shell: bash
         run: |
           image="${{ steps.norm.outputs.user }}/ham-web"
           tag="${{ steps.version.outputs.version }}"
-          if docker manifest inspect "${image}:${tag}" >/dev/null 2>&1; then
+          if out=$(docker manifest inspect "${image}:${tag}" 2>&1); then
             echo "exists=true" >> "$GITHUB_OUTPUT"
             echo "version tag ${image}:${tag} already exists, skip pushing it"
-          else
+          elif printf '%s' "$out" | grep -qiE 'no such manifest|manifest unknown|repository does not exist'; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "version tag ${image}:${tag} not found, will push it"
+          else
+            echo "::error::无法确认 ${image}:${tag} 是否已存在（既不是成功也不是「不存在」），为避免覆盖已发布的版本 tag 先停下："
+            printf '%s\n' "$out" >&2
+            exit 1
           fi
 
       - name: Extract metadata (tags, labels) for Docker
@@ -81,6 +94,33 @@ jobs:
           echo "${tags}" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
+      # 先在本地构建并冒烟，通过了才推送：构建成功 ≠ 能跑（`DIST_DIR` 指错、漏拷 dist、
+      # 非 root 读不到文件，都能构建成功、只在部署后暴露）。如果先推后测，坏镜像已经覆盖了
+      # `latest` 与 sha tag，远端 `docker pull` 就会拿到它，门禁形同虚设。
+      #
+      # `load: true` 把镜像装进本地 daemon（docker-container driver 默认不装）。下一步的推送
+      # 构建与这一步共用 gha 缓存，几乎全部命中，不会真的编译两遍。
+      - name: Build image for the smoke test
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: ham-web:smoke
+          # `||` 兜底是必须的：仓库变量未配置时表达式为空串，会**覆盖** Dockerfile 里的
+          # 默认值，而 postbuild 断言 `--site-url` 必须以 http(s):// 开头 —— 构建会直接红。
+          build-args: |
+            SITE_URL=${{ vars.SITE_URL || 'https://ham.onlyxp.me' }}
+          # 用 GitHub Actions Cache 做 BuildKit 缓存（不占 runner 本地磁盘，也避免远端机器磁盘被写满）。
+          # 注意：这里只缓存**镜像层**（基础镜像、wasm-bindgen CLI、Trunk 等）；Dockerfile 里
+          # `--mount=type=cache` 的依赖编译产物不会导出到任何 cache-to 后端，runner 又是一次性的，
+          # 所以依赖与 Trunk 工具每次都会重来一遍——实测约 1–2 分钟，见 README「构建耗时与内存」。
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test the image
+        run: sh scripts/smoke-image.sh ham-web:smoke
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -89,10 +129,6 @@ jobs:
           tags: ${{ steps.tags.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            SITE_URL=${{ vars.SITE_URL }}
-          # 用 GitHub Actions Cache 做 BuildKit 缓存（不占 runner 本地磁盘，也避免远端机器磁盘被写满）。
-          # 注意：这里只缓存**镜像层**（基础镜像、wasm-bindgen CLI、Trunk 等）；Dockerfile 里
-          # `--mount=type=cache` 的依赖编译产物不会导出到任何 cache-to 后端，runner 又是一次性的，
-          # 所以依赖与 Trunk 工具每次都会重来一遍——实测约 1–2 分钟，见 README「构建耗时与内存」。
+            SITE_URL=${{ vars.SITE_URL || 'https://ham.onlyxp.me' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

@@ -116,6 +116,7 @@
   "common.error-failed-to-refresh": "[ERROR] 刷新配置失败 {}",
   "common.error-rate": "错误率 {}%",
   "common.error-response": "错误响应",
+  "common.download-failed": "下载失败：浏览器没能创建文件，请重试。",
   "common.essential-information": "必备信息",
   "common.exam-accuracy-trend": "考试正确率趋势",
   "common.exam-date": "考试日期",

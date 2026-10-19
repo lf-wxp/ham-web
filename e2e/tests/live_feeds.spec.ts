@@ -96,7 +96,8 @@ test("PSK Reporter：呼号规整后查询、报告表格式化、空结果与�
   await page.getByRole("button", { name: "查询" }).click();
   await expect(page.getByRole("heading", { name: "接收报告（2 条）" })).toBeVisible();
   expect(asked).toEqual(["BG4XXX"]);
-  const table = page.getByRole("table");
+  // 报告非空时页面上还有一块「接收方向分布」表，报告表是最后一个。
+  const table = page.getByRole("table").last();
   await expect(table.getByText("14074.5 kHz")).toBeVisible();
   await expect(table.getByText("-12 dB")).toBeVisible();
   await expect(table.getByText("3 dB", { exact: true })).toBeVisible();
@@ -116,7 +117,79 @@ test("PSK Reporter：呼号规整后查询、报告表格式化、空结果与�
   await expect(page.getByText(/查询暂不可用/)).toBeVisible();
 });
 
+test("PSK Reporter：接收方向分布按本台网格落扇区，可切波段", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "station-info",
+      JSON.stringify({
+        callsign: "BG4XXX",
+        operator: "",
+        gridsquare: "OM89",
+        rig: "",
+        antenna: "",
+      }),
+    );
+  });
+  await stubApi(page, {
+    "/api/psk-reporter": {
+      reports: [
+        { receiver: "JA1RX", freq_khz: 14074.5, band: "20m", mode: "FT8", snr: -12, flow_start_seconds: 1_790_000_000, receiver_locator: "PM95" },
+        { receiver: "VK2RX", freq_khz: 7074.1, band: "40m", mode: "FT8", snr: 3, flow_start_seconds: 1_790_000_600, receiver_locator: "QF56" },
+      ],
+    },
+  });
+  await page.goto("/psk-reporter");
+  await page.getByRole("button", { name: "查询" }).click();
+
+  const coverage = page.locator("section", { hasText: "接收方向分布" });
+  await expect(coverage.getByText(/参与统计 2 条/)).toBeVisible();
+  await expect(
+    coverage.getByRole("row", { name: /东（E）/ }),
+  ).toContainText("1");
+  await expect(
+    coverage.getByRole("row", { name: /东南（SE）/ }),
+  ).toContainText("1");
+  // 两条报告的时间戳都落在 14:00 UTC 那个小时。
+  await expect(coverage.getByText(/最忙时段：14:00 UTC/)).toBeVisible();
+
+  // 地图：两个接收台各一个点（MapView 在 x 方向平铺三份，点数会翻倍）。
+  const map = page.locator("section", { hasText: "接收台分布" });
+  await expect(map.getByText("共 2 个接收台")).toBeVisible();
+  expect(await map.locator('circle[data-spot="receiver"]').count()).toBeGreaterThanOrEqual(2);
+
+  // 切到 40m：只剩东南那一条，东扇区归零。
+  await coverage.getByRole("radio", { name: "40m" }).click();
+  await expect(coverage.getByText(/参与统计 1 条/)).toBeVisible();
+  await expect(
+    coverage.getByRole("row", { name: /东（E）/ }),
+  ).toContainText("0");
+  await expect(
+    coverage.getByRole("row", { name: /东南（SE）/ }),
+  ).toContainText("1");
+});
+
+test("PSK Reporter：没有本台网格时不硬算方位", async ({ page }) => {
+  await stubApi(page, {
+    "/api/psk-reporter": {
+      reports: [
+        { receiver: "JA1RX", freq_khz: 14074.5, band: "20m", mode: "FT8", snr: -12, flow_start_seconds: 1_790_000_000, receiver_locator: "PM95" },
+      ],
+    },
+  });
+  await page.goto("/psk-reporter");
+  await page.getByRole("textbox", { name: "呼号" }).fill("BG4XXX");
+  await page.getByRole("button", { name: "查询" }).click();
+
+  await expect(page.getByText(/还没有本台网格/)).toBeVisible();
+});
+
 test("RBN：信标报告带 SNR 与速率，空结果给出说明", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "station-info",
+      JSON.stringify({ callsign: "BG4XXX", operator: "", gridsquare: "OM89", rig: "", antenna: "" }),
+    );
+  });
   await stubApi(page, {
     "/api/rbn": (url: URL) =>
       url.searchParams.get("callsign") === "BG4XXX"
@@ -131,6 +204,12 @@ test("RBN：信标报告带 SNR 与速率，空结果给出说明", async ({ pag
   await expect(row).toContainText("14023.9 kHz");
   await expect(row).toContainText("18 dB");
   await expect(row).toContainText("24");
+
+  // 覆盖区：RBN 没有网格，只能按实体中心做粗方位，页面必须标注，且不画时段条（没有时间戳）。
+  const coverage = page.locator("section", { hasText: "接收方向分布" });
+  await expect(coverage.getByText(/属粗定位/)).toBeVisible();
+  await expect(coverage.getByText("时段分布（UTC）")).toHaveCount(0);
+  await expect(coverage.getByRole("row", { name: /西北（NW）/ })).toContainText("1");
 
   await page.getByRole("textbox", { name: "呼号" }).fill("BA1ZZZ");
   await page.getByRole("button", { name: "查询" }).click();

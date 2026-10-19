@@ -125,6 +125,7 @@
   },
   "common.db": "{} dB",
   "common.decoding-runs-in-a": "La decodificación se realiza en un Web Worker en segundo plano y no bloquea la página.",
+  "common.download-failed": "No se pudo descargar: el navegador no pudo crear el archivo. Inténtalo de nuevo.",
   "common.decrease": "Disminuir",
   "common.design-advice": "Consejos de diseño",
   "common.design-notes": "Notas de diseño",

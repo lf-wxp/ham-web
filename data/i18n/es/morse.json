@@ -130,8 +130,7 @@
   "morse.tone": "Tono",
   "morse.tone-frequency": "Frecuencia del tono",
   "morse.volume-label": "Volumen",
-  "morse.play-icon": "🔊 Reproducir",
-  "morse.play-word": "🔊 Reproducir palabra",
-  "morse.play-spelling": "🔊 Reproducir deletreo",
-  "morse.play-morse": "🔊 Reproducir Morse"
+  "morse.play-word": "Reproducir palabra",
+  "morse.play-spelling": "Reproducir deletreo",
+  "morse.play-morse": "Reproducir Morse"
 }

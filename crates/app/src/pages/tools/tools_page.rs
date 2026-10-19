@@ -55,12 +55,14 @@ use super::resistor_parallel::ResistorParallel;
 use super::rf_exposure::RfExposure;
 use super::smd_resistor_code::SmdResistorCode;
 use super::smith_chart::SmithChart;
+use super::soft_tnc::SoftTnc;
 use super::stub_match::StubMatch;
 use super::swr_converter::SwrConverter;
 use super::tone_squelch::ToneSquelch;
 use super::tool_section::ToolSection;
 use super::toroid_winding::ToroidWinding;
 use super::transformer_calculator::TransformerCalculator;
+use super::trap::TrapTool;
 use super::tx_line::TxLine;
 use super::utc_clock::UtcClock;
 use super::waveguide_calculator::WaveguideCalculator;
@@ -123,11 +125,13 @@ const TOOL_NAV: &[(&str, &str)] = &[
   ("toroid-winding", "tools.toroid-winding"),
   ("magnetic-loop", "tools.magloop"),
   ("loading-coil", "tools.loading-coil"),
+  ("trap", "tools.trap"),
   ("wire-gauge", "tools.wire-gauge-and-voltage"),
   ("oscillator", "tools.crystal-oscillator"),
   ("rf-exposure", "tools.rf-exposure-evaluation"),
   ("tone-squelch", "tools.tone-squelch-and-repeater"),
   ("aprs-codec", "tools.aprs-codec"),
+  ("soft-tnc", "tools.soft-tnc"),
   ("mode-encoder", "tools.digital-mode-encoding"),
   ("backup", "tools.data-backup"),
 ];
@@ -319,6 +323,8 @@ pub fn ToolsPage() -> impl IntoView {
 
             <ToolSection id="loading-coil" title="tools.loading-coil" description="tools.loading-coil-description"><LoadingCoilTool /></ToolSection>
 
+            <ToolSection id="trap" title="tools.trap" description="tools.trap-description"><TrapTool /></ToolSection>
+
             <ToolSection id="wire-gauge" title="tools.wire-gauge-and-voltage" description="tools.estimate-dc-supply-wire"><WireGauge /></ToolSection>
 
             <ToolSection id="oscillator" title="tools.crystal-oscillator" description="tools.crystal-frequency-pulling-load"><Oscillator /></ToolSection>
@@ -328,6 +334,8 @@ pub fn ToolsPage() -> impl IntoView {
             <ToolSection id="tone-squelch" title="tools.tone-squelch-and-repeater" description="tools.repeater-offset-calculation-plus"><ToneSquelch /></ToolSection>
 
             <ToolSection id="aprs-codec" title="tools.aprs-codec" description="tools.encode-and-decode-uncompressed"><AprsCodec /></ToolSection>
+
+            <ToolSection id="soft-tnc" title="tools.soft-tnc" description="tools.soft-tnc-description"><SoftTnc /></ToolSection>
 
             <ToolSection id="mode-encoder" title="tools.digital-mode-encoding" description="tools.text-to-morse-cw"><ModeEncoder /></ToolSection>
 

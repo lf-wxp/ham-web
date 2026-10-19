@@ -1,0 +1,15 @@
+[package]
+name = "ham-web-wefax"
+description = "WEFAX 短波气象传真解码：AM 视频信号 + 行同步 + 图像重建（纯 Rust DSP）"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+ham-web-wav.workspace = true
+
+[lints]
+workspace = true

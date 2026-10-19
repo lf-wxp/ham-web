@@ -54,29 +54,36 @@
 
 按可行性排序。可行性：高 = 数据与参照都在、只差实现；中 = 需要外部样本或硬件才能闭环；低 = 缺可信来源或收益不抵成本。
 
+下表 2026-10-18 按「组合优势优先」重排：**S 系列**是站内数据与基础设施已齐、只差串联的功能；
+**D 系列**是能力空白；**K 系列**是内容补强。每条都写落点与验证口径，完成后移入「已完成」。
+
+> 串口与外部格式类条目（CAT、旋转器、NanoVNA、KISS、CHIRP、SOTA / POTA 导出）的验收口径
+> 统一见 [`docs/hardware-verification.md`](docs/hardware-verification.md)：**单测与假串口通过只算「待验」**，
+> 真机跑过并记录型号 / 固件 / 实际现象才算「已验证」。
+
 | 条目 | 可行性 | 阻塞点 / 下一步 |
 | --- | --- | --- |
-| 竞赛录入页的实体名三语 | 高 | 已知遗留（不是 SCP 补全引入）：录入页实体提示行（`美国 · NA · CQ 5`）与通联表的「实体」列在 en / es 界面仍显示中文国家名。属纯词条 / 数据口径，不涉及判定逻辑 |
-| 解码器补位：WEFAX 气象传真 / Feld Hell | 高 | 均为「有公开样本、可合成对拍」的高价值缺口：WEFAX（AM 调制 120/240 LPM 图像传真）与 APT/LRPT 同脉；Feld Hell 点阵量小，可作新解码器样板 |
-| 低频段专题（2200m / 630m / 160m） | 高 | 135.7–137.8kHz / 472–479kHz 新开放，`/bands` 只到 70cm；依据可标核对日期 |
+
+| **V1 跨内核冒烟**（Firefox / WebKit） | 高 | 用例与 project 已写好：`e2e/tests/cross_browser.spec.ts`（核心页面能开、无未捕获异常、三维图必须有 SVG 回退），`E2E_CROSS=1` 才启用，chromium 基线 2 passed。**卡在浏览器二进制**：本机缓存是 firefox-1511 / webkit-2272，当前 Playwright 要 1543 / 2359，跑一次 `npx playwright install firefox webkit` 即可。站点重度依赖 Web Serial / WebGL2 / PWA，这两个内核**至今零验证** |
+| **S5 噪声本底的绝对口径** | 中 | 相对比较已上线（见「已完成」）：10% 分位本底 + 占用率 + 同标签前后差。仍未做的是把相对值标成绝对噪声温度 —— 需要 ITU-R P.372 的数值表，取不到就只能停在相对值（页面因此不给 dBm：声卡增益与校准未知，换算出来的 dBm 是假的） |
+| **D4 天线缩短系数 / 直径修正 + ATU 覆盖综合** | 中 | 天线长度计算器现在只有一档「×0.95」式系数；补线径与离地高度的 K 因子修正，并给「一段阻抗范围 → 覆盖 160–6m 的 T / Pi-L 网络」自动求解（`/smith` 只有 L 型自动求解）。阻塞：K 因子需要 ARRL Antenna Book 表或 EZNEC 结果对拍，不能凭印象给数 |
 | 天线共模扼流 / ferrite 抑制 | 高 | HF 台站最常见的实操（馈线上套 FT-240-43），现在只有 `/balun` 与 `/rfi` 的文字。数据已有一半：磁环库 4 个 Fair-Rite 零件的 AL / 尺寸已逐个核对，零件页同时给阻抗曲线 → 算 N 匝共模阻抗、插损与自谐振点；对拍用官方阻抗表 + 现有 AL 一致性断言 |
 | SatNOGS 全量转发器库 | 高 | 现只有 5 个线性转发器（AO-7 A/B、FO-29、RS-44、AO-73），FM 卫星与 ISS digipeater 全缺，而后者才是新手真正会用的。SatNOGS DB 是 CC BY-SA 4.0，按其署名要求入库；上下行等宽、卫星业余业务段等护栏已有 |
 | 外部噪声模型（ITU-R P.372）+ 台站链路预算向导 | 中 | 精度缺口里最要紧的一条：`pages/tools/receiver_sensitivity.rs` 只有 `-174 + 10lg(BW) + NF`（纯 290 K），而 80 m 上安静乡村的外部噪声比热噪声高 40–50 dB、城市可高 60 dB——这个计算器现在只在 144 MHz 以上、电磁环境干净时成立。同一改动把 52 个孤立计算器串成「TX 功率 → 馈线 → 天线 → 路径 → RX 天线 → 外部噪声 → 所需 SNR」一条链路，输出余量与最可能失败的环节。阻塞：P.372 的噪声系数-频率曲线多为图，需先取到可程序化的数值表（或按图数字化并记核对日期）；落点 `core/noise_model.rs` + 薄页面 |
 | 地波场强（ITU-R P.368） | 中 | 全站传播只有天波与视距，而 630 m / 160 m / 中波收听、NAVTEX、NDB 全靠地波，现在一个数都没有。ITU 提供 P.368 的场强数据文件，可逐点对拍，地面电导率取 ITU 区域图。阻塞：先确认数据文件的下载与许可 |
 | EME 计划器 | 中 | `/eme` 只有文字，`core/astro.rs` 只有太阳几何。月位（Meeus 简化月球理论）、月相、月面噪声温度（随月相约 200–1500 K）、月距多普勒、共同可见窗口，面板与 `/satellites` 同形。对拍 Meeus 书内算例 + JPL Horizons 公开数值 |
-| 陷波器（trap）/ 梯形馈线 / 多波段偶极子计算 | 中 | 天线 DIY 只有长度与匹配网络（阅读型内容归「天线补强专题」那条）。trap 谐振与 ladder line 阻抗变换用站内 NEC 自证：加 trap 的模型扫频应比无 trap 多一个谐振点 |
-| APRS 软 TNC（音频 → AX.25） | 中 | `/kiss-tnc` 要一台真 TNC，`/aprs` 只有文本层编解码。麦克风 / WAV → AFSK1200（Bell 202）→ HDLC → AX.25 帧，是「零硬件玩 APRS」的最后一环。注意 direwolf 是 GPL-3.0：读公开协议自写解调，或照已有 6 个 GPL crate 的先例单独隔离 |
+| 陷波器（trap）的 NEC 自证 | 中 | trap 的并联 LC 谐振 / 加载计算与两波段偶极子设计已做（见「已完成」），梯形馈线阻抗也已由 `tx_line::twin_lead_z0` 与 NEC `TransmissionLine` 覆盖。**仍缺**：NEC `Load` 建模的是串联 RLC（`X = X_L − X_C`，谐振处短路），与并联 trap 的「谐振处开路」相反，无法直接表达——待 `Load` 支持并联 LC 后再补「加 trap 多一个谐振点」的自证 |
 | 流星雨时刻表 | 中 | `/meteor-scatter` 有原理、`/events` 无 MS 窗口。IMO 年度流星雨表（峰值 ZHR、辐射点、日期）串到倒计时与 `/events`，与 MSK144 / FSK441 解码配套。阻塞：IMO 数据的引用许可待确认 |
 | LRPT：M2-3 / M2-4 的 OQPSK 真实录音 | 中 | M2（QPSK）已在真实录音上出图（`crates/lrpt/tests/real_iq.rs`；录音不进仓库，用 `LRPT_REAL_IQ` 给路径）。现役的 M2-3 / M2-4 是 OQPSK，定时与载波环路要按 I/Q 半符号错位改写；**缺一段真实 OQPSK 基带**（SatNOGS 只存 48 kHz 音频与解好的图片） |
 | LRPT：M2-2（80k）真实录音对拍 | 中 | 重同步、去交织、差分链路已有往返测试；缺真实 80k 录音 |
 | LRPT：软判决 Viterbi | 中 | 弱信号的增益项；现有真实样本硬判决已 99.8% 帧通过，看不出收益，有更弱的样本再做 |
-| 卫星联动：双 VFO 卫星模式 / 跟随旋钮 / 真机验证 | 中 | 上行写入、线性转发器、自定义通带与旋转器自动跟踪已完成（见「已完成」）。**仍未做**：① **卫星模式**（IC-9700 / IC-705 / FT-991A 的主 / 副 VFO 各管一个波段）——各机型 CAT 语义不同（Hamlib 里 IC-7600/7610/7800/785x 的 `25` 命令是 Main/Sub 而非选中 / 未选中，FT-991A 的 `FR`/`FT` 也不是 Kenwood 含义），没有真机逐款验证就上线等于没测；② **线性转发器跟随电台旋钮**——现在是页面持有调谐点、转旋钮会触发「手动改频即停」，要反过来得把回读频率同时当输入和输出，而回读最多有 3 次轮询的延迟，发射会滞后于旋钮；③ **真机验证**——上行写入（FB / `25 01` 在各机型的实际行为、分频设置、电台忙时的回应）与旋转器（GS-232 在各控制器上的应答格式、速度、限位、过顶走哪条路）**一次都没实测过**，只有假串口 |
-| NanoVNA 串口实机验证 | 中 | 协议解析有单测、`.s1p` 入口有 e2e；串口收发需要真实仪器（与 KISS TNC 同一边界） |
+| 卫星联动：双 VFO 卫星模式 / 跟随旋钮 / 真机验证 | 中 | 上行写入、线性转发器、自定义通带与旋转器自动跟踪已完成（见「已完成」）。**仍未做**：① **卫星模式**（IC-9700 / IC-705 / FT-991A 的主 / 副 VFO 各管一个波段）——各机型 CAT 语义不同（Hamlib 里 IC-7600/7610/7800/785x 的 `25` 命令是 Main/Sub 而非选中 / 未选中，FT-991A 的 `FR`/`FT` 也不是 Kenwood 含义），没有真机逐款验证就上线等于没测；② **线性转发器跟随电台旋钮**——现在是页面持有调谐点、转旋钮会触发「手动改频即停」，要反过来得把回读频率同时当输入和输出，而回读最多有 3 次轮询的延迟，发射会滞后于旋钮；③ **真机验证**——上行写入（FB / `25 01` 在各机型的实际行为、分频设置、电台忙时的回应）与旋转器（GS-232 在各控制器上的应答格式、速度、限位、过顶走哪条路）**一次都没实测过**，只有假串口。逐项验收步骤与记录项见 [`docs/hardware-verification.md`](docs/hardware-verification.md) A1–A6 / B1–B4 |
+| NanoVNA 串口实机验证 | 中 | 协议解析有单测、`.s1p` 入口有 e2e；串口收发需要真实仪器（与 KISS TNC 同一边界）。验收步骤与记录项见 [`docs/hardware-verification.md`](docs/hardware-verification.md) C1 / C2 |
 | 磁环库补 Amidon / Micrometals 型号 | 中 | 业余圈常用的 `FT-240-43`、`T-200-2`、`T-50-6` 等按 Amidon 命名；要先找到可逐个核对的官方 AL 表（目录 PDF 或零件页），再进 `toroid::CORES`，每条带核对日期；现有内部一致性测试（AL ≈ µ0·µi·Ae/le）对粉芯不适用（分布气隙），需要另想办法对拍。已确认取不到：Amidon 官网 403、Micrometals 页面没有 AL 表 |
 | 按路由拆分 wasm | 中 | **只在 `erase_components` 之后重测仍不够时再做**：要换掉 Trunk 的 rust 流水线（拆分要插在 cargo 与 `wasm-bindgen` 之间）、补 chunk 内容哈希（否则无 SW 的首访可能旧 chunk 配新主包）、`perf-budget.json` 增加 chunk 与总量项、加 `cfg(split_wasm)` dev 开关（未拆分的 wasm 残留 `__wasm_split_placeholder__` 导入，浏览器无法实例化）。量级参考（`erase_components` 之前测的）：拆 5 条主包 −399 KiB 但总下载 +8%；拆全部（约 1970 个文件）总量 +62%，不可行。只拆体积最大的少数路由 |
 | THOR / MFSK16 解码 | 中 | fldigi 家族，复用 dominoex 的 GPL 转写 + `xcheck` 对拍流程 |
 | MSK144 / FSK441 解码 | 中 | 流星散射专用，联动 `/meteor-scatter`；自实现避开 WSJT GPL |
-| 声卡数字模式发端（基带合成） | 中 | 生成 PSK31/RTTY/FT8 基带 WAV 供声卡馈入，补「只有收没有发」；合成可对拍，声卡馈入需真机 |
+| 声卡数字模式发端：FT8 基带 | 中 | CW / RTTY / PSK31 的基带 WAV 已可导出（见「已完成」）。FT8（8-FSK、6.25 波特）发端需完整实现 77 位报文打包 + 14 位 CRC + LDPC 编码 + 交织 + 格雷码 + 同步；LDPC 校验矩阵与报文打包需参考实现 / 测试向量对拍，而 WSJT-X 是 GPL（要自实现避开），缺参考向量无法验证 |
 | 天线补强专题：垂直天线与地网、天线陷阱、对数周期；dBi↔dBd 实测口径 | 中 | 阅读型，来源 ARRL Antenna Book；dBi↔dBd 接测量误差实验室调性 |
 | RTL-SDR（WebUSB）实时接收 | 低 | 仅 Chromium 且依赖硬件，自动化只能覆盖协议层；能力与 `/sdr-waterfall`（麦克风 / WAV）重叠，净收益低 |
 | 自建社区 | 低 | `/community` 目前只做外链聚合；自建需要账号与内容审核体系，与「隐私优先」「零后端运维」冲突，需先想清楚形态 |
@@ -153,6 +160,12 @@
 | 离网供电逐日能量平衡 | `/tools#off-grid` · `core/off_grid.rs` | 太阳能板 + 电池 + 负载的逐日能量平衡：每日发电（含控制器 / 充电效率）、电池可用（容量 × 电压 × DOD）、净平衡、盈余自持 / 亏空可撑天数。峰值日照（最坏月）由用户按所在地输入，站内不嵌日照表；算术用已知算例对拍 |
 | 微带线 εeff 与带状线阻抗 | `/tools#tx-line` · `core/tx_line.rs` | 微带线（Wheeler 闭式）补 εeff 输出，新增对称带状线（Cohn 闭式，零厚度）。单测钉死 εeff 介于 1 与 εr 之间、带状线宽 / 窄公式在 W/b=0.35 处连续、FR4 上 50Ω 微带线 W/h≈1.9 |
 | 电短天线加载线圈 | `/tools#loading-coil` · `core/loading_coil.rs` | 短单极子（车载鞭天线）的辐射电阻 / 天线电容 / 容抗 / 加载电感（闭式估算，h ≪ λ/4）。`L·C` 往返谐振回 `f`、Rr 随 h² 缩放、算例量级合理；未计地面 / 线圈损耗，页面标注「精确谐振点以实测为准」 |
+| 实体名三语 | `/log` · `i18n::localized_name` | DXCC 实体名按界面语言本地化：中文用 `name`，en/es 优先反查译文、查不到回退 `name_en`。修复录入页提示行、通联表实体列、网格详情、统计标签、网格筛选下拉（提交值仍保持中文以兼容 `dxcc_map` 的查询回环）；e2e 钉死 en 界面显示 `Japan` 而非 `日本` |
+| 数字模式基带合成（CW / RTTY / PSK31） | `/tools#mode-encoder` · `core/mode_audio.rs` | 文本 → CW / RTTY / PSK31 基带采样与 16 位 WAV（8 kHz 单声道），补「只有收没有发」。CW 按 Paris 口径点 1 / 划 3 / 字符 3 / 单词 7 单位；RTTY 45.45 波特 AFSK（起始 0 + 5 位 ITA2 低位在先 + 1.5 停止 1）；PSK31 复用 `psk31::synthesize`（BPSK 31.25 波特，往返解码已对拍）。单测钉死时长、零交叉估频与 WAV 头；e2e 钉死下载 `cw.wav` / `rtty.wav` / `psk31.wav` |
+| 陷波器（trap）偶极子设计 | `/tools#trap` · `core/trap.rs` | 并联 LC 陷波器的谐振 / 加载计算（`X = (X_L·X_C)/(X_C − X_L)`，谐振以下感性、以上容性）与两波段偶极子尺寸（内段 = 高波段半波、外段 = 低波段半波 − 内段）。4 个单测钉死 LC 往返、电抗符号与尺寸量级 |
+| AX.25 软 TNC（空中链路层 + 定时恢复） | `/tools#soft-tnc` · `core/afsk1200.rs` | Bell 202 AFSK1200 的「帧 ↔ 基带音频」：CRC-16/X-25 FCS（反射 0x8408、初值 0xFFFF、**输出取反**，`"123456789"` → `0x906E`，另用 RFC 1662 的剩余值 `0x0F47` 钉死）+ HDLC（0x7E 旗标、位填充、字节低位在前；结束旗标可兼作下一帧起始）+ NRZI + 逐位 Goertzel 相关器解调；**符号定时恢复**把每个位相位都扫一遍并按帧内容合并（同一帧只算一次、真实重发的两帧保留两份），可解任意起始相位的录音；发送侧带前导 / 尾部 flag（`modulate_frame_for_tx`，≈ 213 ms 前导）。复用 `kiss::ax25_ui_frame`（AX.25 层已有）。单测钉死位填充 / 共用旗标 / 空闲旗标、音频往返、相位偏移、电平取反、干扰拒帧、白噪声不出假帧；e2e 钉死下载 `afsk1200.wav` 再上传解回源 / 目的 / 信息。**已知边界**：往返对拍与外部已知答案只证明自洽与 FCS 口径，与 Direwolf / 硬件 TNC 的真机互通仍是「待验」（`docs/hardware-verification.md` C4） |
+| Feld Hell 解码器 | `/hell-decode` · `crates/hell` + `crates/hell-worker` | AM 点阵模式（980 Hz 载波、122.5 像素/秒、7×7 网格）解码：AM 包络 + 逐像素门限 + 5×7 字库匹配。按 `docs/decode-worker-protocol.md` 清单全量接入（core + worker + Makefile + Dockerfile + decode-worker.js + 页面 + e2e 三套实现互锁）。字库自绘、假设字符边界对齐，如实标注「解真实 Feld Hell 需换标准 Hell 字库 + 列相位搜索」 |
+| WEFAX 解码器 | `/wefax-decode` · `crates/wefax` + `crates/wefax-worker` | 短波气象传真：AM 视频信号（幅度 = 亮度）→ 行同步检测 + 灰度图重建，按统一 Worker 协议清单全量接入。行速率/同步占比/像素数自定口径（120 LPM、同步 5%、380 像素/行），未对照真实 WMO 传真样本校准；真实 HF 传真是 1500 / 2300 Hz 调频副载波，当前未做 FM 解调，如实标注 |
 | 抛物面天线 | `/tools#parabolic-dish` · `core/parabolic_dish.rs` | 效率是输入（默认 55% 只是常见量级），表面精度 / 遮挡 / 偏馈 / 双反射面不建模；口径不足 3 个波长时标「增益公式不可靠」 |
 | 波导 / 雨衰 / 占空比 / IP3 级联 | `/tools` · `core/{waveguide,rain_fade,duty_power,ip3_cascade}.rs` | 波导只做矩形、TE10、光滑理想表面；雨衰的 P.838-3 与官方验证数据逐组对拍，**P.530-17 部分没有官方数据（当作估算）且 R0.01 要用户自己给**（P.837 未嵌入）；占空比两种窗口口径都做了并写明差异；IP3 只做三阶 |
 | 竞赛 SCP 呼号补全 | `/contest-log` · `core/scp.rs` | 官方站保留所有权利且无再分发许可，**本站不带任何 SCP 数据**：候选来自自己日志与自己载入的 `.scp` 文件（只进 IndexedDB，不进备份，不上传）；不做 `.dta`、`SCP.DB`、自动更新；候选按字母序而非出现频率排 |
@@ -166,6 +179,26 @@
 | 主包体积：`erase_components` | `.cargo/config.toml`、`perf-budget.json` | 2026-10-16 启用，`map_view.rs` 的 4 处 `.clone()` 随之改掉；主包 wasm br 2351.2 → 1723.3 KiB（干净 HEAD 上对照 −644 KiB，−28%），完整 e2e 全过、挂载更快，上限收紧到 1 900 000 B 把省下的空间锁住；逐帧热路径仍未压测 |
 | 全站手机宽度扫描 | `e2e/tests/mobile_overflow.spec.ts` | 全部路由 × 三语 × 320 / 390px；首轮扫出 6 个页面并逐页修完 |
 | 横向基础设施 | 搜索 · 存储 · 备份 · 门禁 | 统一搜索（含 `dxcc:` / `band:` / `mode:` 前缀）；`kv.rs` 写入版本仲裁（修「写入后立即刷新丢最后一笔」）与 IndexedDB 权威层；备份按模块勾选；交互页必须有专属 e2e（存量欠账已清零）；体积 / 文案 / 解析 / 像素风校验并入 `cargo make check` |
+| 信号听辨向导（S3） | `/signal-id` · `core/signal_id.rs` | 17 个模式的听感特征表（形态 / 节奏 / 占用带宽）＋ 三组条件筛选，末步链到对应解码器页；空结果如实说「条件矛盾」而不猜。单测钉死扇区式筛选与 `pages_exist_in_registry`（所有跳转目标必须在注册表里）；三语文案齐全，e2e 钉死收窄与空态 |
+| 测向交汇定位（S4） | `/ardf` · `core/df_fix.rs` | 4 行「坐标 + 方位角 + 误差」→ 加权最小二乘交点、95% 误差椭圆半轴 / 朝向、残差，并给出 Maidenhead 网格；平行方位如实报无解，长半轴 > 50 km 提示几何太差。单测用「目标周边 5 km、间隔 120° 的三次测向」回到目标 10 m 内，并行 / 越界 / 角度回绕都有用例 |
+| 方向覆盖（S1a） | `/psk-reporter` · `core/spot_coverage.rs` · `components/spot_coverage.rs` | 把接收台网格按本台为原点分 8 个 45° 扇区，给出报告数与平均 SNR，可按波段筛选；本台网格缺失时提示去填，不硬算。单测钉死扇区边界（337.5 / 22.5 归北）、无效网格跳过、按波段均值；e2e 用桩数据钉死扇区计数与波段切换。**RBN 未接入**（其 spot 没有网格，见「未完成」S1b） |
+| CW 解码链路缺陷清理（2026-10-18） | `core/cw_decoder.rs` · `app/pages/morse/cw_decoder.rs` | 三处被**增量缓存掩盖**的坏代码：`MIN_SNR` 常量缺失（dev 用旧 rlib 能过，`wasm-release` 全量构建必失败）、`Session::stop` 仍在操作已删除的 `port` / `node` 字段（改为清轮询 + 断滤波器）、测试缺 `feed` 辅助函数。顺带把 app 里复制的 `Envelope` 换回 core 的实现（单一事实来源），并修「第一块就是信号时被当底噪、首个字符丢失」：底噪改从 0 起算并加 `primed` 标记。`cargo make check`、release 构建、CW / 摩尔斯 e2e 全绿 |
+| WSPR 发端（D3a） | `/tools#mode-encoder` · `crates/wspr` | 消息打包 + 卷积码 + 交织复用解码器同一份 `encode`，4-FSK 用 `synthesize`，导出 12 kHz / 110.592 秒基带 WAV（2.65 MB）。呼号 / 网格 / 功率任一不合法就整条不发并提示。往返闭环由 `crates/wspr` 的 `audio_roundtrip` 与解码器保证，e2e 钉死文件名与**精确字节数**（44 + 162 × 8192 × 2）。主包体积仍在预算内（`size-check` 27 项全过） |
+| 模拟中继联网（K1） | `/dv-network` · `core/dv_network.rs` | EchoLink / IRLP / AllStar Link 三套语音网关单列一张表（不与 DMR / D-STAR 混排，单测断言两侧条目不重叠），另加五条接入要点（网关仍占本地频率、呼号验证、DTMF 与节点号、丢包表现、跨境控制操作员）。正文 en / es 译文齐全，e2e 断言分表与要点 |
+| 麦克风录音机（D5） | `/sdr-waterfall` · `pages/sdr_waterfall/sdr_waterfall_page.rs` | 监听中点「录音」开始累积 PCM，点「结束并保存」把缓冲转成 WAV（采样率取 `AudioContext` 的实际值，16 位单声道）。实现用 `ScriptProcessorNode` 而不是 AudioWorklet：后者要额外 JS 模块与异步加载，这里只需要按块拿 PCM；script processor 必须接到 destination 才会被驱动，中间串一个零增益 `GainNode`，否则麦克风会直通扬声器啸叫。缓冲用 `RwSignal` 而不是 `Rc<RefCell>`（`Closure` 要求 `Send + Sync`）。e2e 用假音频设备录约 1 秒，钉死文件名、>8 KB 与样本部分为偶数，`--repeat-each=3` 稳定。**没做**：录制时长上限、录完直链到解码器（页面只用一句提示说明用途） |
+| 呼号查询三合一（S6） | `/callsign` · `core/callsign_insight.rs` | 查到呼号后补三行：日志里的通联次数与最近一次（日期 / 时段 / 波段）、从本台看的方位、大圆距离；没有本台网格时只答「打过几次」并提示去填，方位留空不猜。**顺带修掉一个既有缺陷**：结果区整列标签原来直接写中文字面量，英文界面下不翻译，已改为语义 key + 渲染时 `t()`。5 个单测钉死大小写 / 空格匹配、同日按时段排序、无网格降级、方位落在东侧 2000 km 量级；e2e 钉死三行与空态 |
+| NEC 设计存档对比（S7） | `/nec` 设计存档 · `pages/nec/design_archive.rs` | 勾选两份存档并排比较：设计频率 / 地面模型 / 最大增益 / 前后比 / 驻波比 / 辐射效率 / 最大增益仰角，差值列为「后者减前者」。两份都在本地重新求解，选满两份才跑。**频率或地面模型不同时页面明确警告**——否则「八木 6.86 dBi < 偶极 7.96 dBi」会被读成八木更差，实际是自由空间 vs 理想导体地面。e2e 钉死 7 项指标与这条警告 |
+| 噪声本底记录（S5 相对版） | `/sdr-waterfall` · `core/noise_floor.rs` | 从 Web Audio 的 dBFS 频谱取 **10% 分位**作本底（均值会被同频强信号抬高十几 dB），另给 99% 分位与「本底 +6 dB 以上」的 bin 占比；记录按标签存 localStorage（最多 100 条），相邻同标签给出差值。**只做相对比较、不给 dBm**。5 个单测钉死分位、占用率、静音帧与差值；e2e 只覆盖「无频谱时如实提示」——成功路径依赖浏览器音频栈的启动时序（试过 `--repeat-each=3` 全红），不能当硬断言，算法不靠它 |
+| e2e 覆盖门禁 | `crates/tools/src/e2e_coverage.rs` · `Makefile.toml` | 把「每个交互页都有专属 e2e」从口头规矩变成硬校验：`coverage-targets.json` 的每条 journey 的 `grep` 必须能在 `e2e/tests` 的 spec 里命中，作为 `e2e-check` 挂进 `cargo make check`。**第一次跑就抓到两条失效条目**：手机宽度用例的标题是模板字符串插值（`（${name}）`），清单里却写死了渲染后的「（中文）」，已改成前缀匹配。临时塞错一条 grep 验证过门禁确实会红。只做正向校验，不反推「每个路由是否都有用例」——后者要靠白名单排除纯展示页，误报率高于收益 |
+| Feld Hell 发端 | `/tools#mode-encoder` · `crates/hell` | 直接复用解码器的 `modulate`（自绘字库 + 7×7 点阵合成），导出 8 kHz 开关键控 WAV；字库里没有的字符跳过。往返由 crate 内 `modulate → decode_audio` 单测保证，不需要外部参考向量；e2e 钉文件名与非空。**之前误判为「需先有标准 Hell 字库」——字库本来就是解码器的一部分，一直具备条件** |
+| NAVTEX 发端（D3b） | `/tools#mode-encoder` · `crates/navtex` | 报头（台站字母 / 类型字母 / 两位序号）可配置：`synthesize_message` 复用解码侧 `message_codes` 与 `encode_char`，合成 100 波特 FSK 基带 WAV；`synthesize` 改为它的固定报头包装，原有样本生成行为不变。往返单测断言解码端把 `F` / `B` / 42 与正文原样读回。页面三个字段任一非法即不产出音频 |
+| 覆盖图的地图与 RBN 粗方位（S1b 收尾） | `/psk-reporter` · `/rbn` · `components/spot_coverage.rs` | PSK Reporter 的接收台按网格中心落到共享 `MapView`（点只表示位置，没有强度）；RBN 的 spot 没有网格，按 DXCC 实体中心换算成 4 位网格，组件用 `coarse` 明确标注「粗定位」，且因接口没有时间戳不画时段条。`/psk-reporter` 因此拆成文件夹模块（页面 + `coverage_map`）。e2e 钉死点数、粗定位提示与「时段条不出现」 |
+| 方向覆盖的时段分布（S1b 部分） | `/psk-reporter` · `core/spot_coverage.rs` | 报告按 UTC 小时分桶（`Coverage.hourly` + `busiest_hour()`），页面画 24 格时段条并标出最忙时段；小时由接口时间戳纯算术换算，不经本地时区。单测钉死越界小时取模与「无报告时无最忙时段」，e2e 钉死 14:00 UTC 那条 |
+| 竞赛赛前目标与配速（D2） | `/contest-log` · `core/contest_pace.rs` · `contest_log/pace.rs` | 目标 QSO 数与计划时长随场次持久化（`Session` 加 serde default 字段）；赛中用线性进度算「应完成 / 领先落后 / 当前速率 / 剩余时间需要的速率 / ETA / 预计总量」，每 60 秒刷新一次，到点或超额时如实说「已达到目标 / 计划时间已用完」。单测钉死 0 时长、时间用完、负已用时间等边界；e2e 用未来起始的场次种子钉死「领先 2 条」 |
+| DXCC 申请记录表（D1） | `/log` 奖状面板 · `core/award_apply.rs` | 每个实体取一条代表通联（**已确认优先、其次最早**），列出实体 / 呼号 / 日期 / 波段 / 模式 / 确认途径，可导出 CSV 作核对清单。**不宣称能直接上传**：ARRL 在线申请没有公开格式，页面正文写明这是逐条核对的清单。单测钉死优先级、去重与排序，e2e 钉死「JA1ABC 被已确认的 JA1XYZ 取代」与 CSV 下载 |
+| 方向增益（S2） | `/nec` · `core/antenna_coverage.rs` · `pages/nec/direction_table.rs` | 按 [`docs/antenna-coverage.md`](docs/antenna-coverage.md) 实现：每个 DXCC 实体一行，给方位 / 大圆距离 / 该方向增益 / 相对峰值损失；两种口径（各仰角最大值 / 水平面切面）；本台网格缺失时不硬算，收起时不渲染表格。8 个单测钉死插值、峰值选取、前后比与排序；e2e 钉死提示文案、340 行与「换地面模型数值跟着变」。**已知边界**：`pattern3d` 10° 网格会低估窄波束峰值（设计说明的方案 B 待实测后再决定），实体中心对大国误差可达 10° |
+| 低频段（2200m / 630m） | `core/bands.rs` · `core/bandplan.rs` · `/compliance` | `AMATEUR_BAND_EDGES` 补 135.7–137.8 kHz 与 472–479 kHz，`BAND_PLANS` 各补一段「仅 CW / 窄带数据」（LF 标 e.i.r.p. ≤1W，正文 en / es 已译）。`band_of`、日志体检、互调标注、竞赛波段统计、CHIRP 导出随之支持；`/compliance` 对 0.136 MHz 给出「可用 / ≤1 W / 5.67A / 需协调」。单测守住 edges ↔ band_of ↔ bandplan 三方一致，e2e 钉死波段卡片与合规结论 |
+| i18n 重复 key 门禁 | `crates/tools/src/i18n.rs` | 解析前用 `MapAccess` 走一遍原始 JSON，检出同一对象内的重复 key（`serde_json::Map` 会静默覆盖，之前两次踩坑就出在这里）。`load_entries` 直接失败并列出 key；单测覆盖顶层 / 嵌套 / 数组内重复，且值里出现同名文字不误报。临时塞一个重复词条验证过门禁确实拦下 |
 
 ### 踩过的坑（避免重犯）
 
@@ -240,5 +273,7 @@ LRPT_REAL_IQ=/path/to/meteor-m2.wav cargo test -p ham-web-lrpt --release --test 
 | [`docs/ui-components.md`](docs/ui-components.md) | UI 组件使用规范（决策表、硬规则、验收） |
 | [`docs/i18n.md`](docs/i18n.md) | 界面文案规范与门禁 |
 | [`docs/decode-worker-protocol.md`](docs/decode-worker-protocol.md) | 解码 Worker 协议与新增解码器清单 |
+| [`docs/hardware-verification.md`](docs/hardware-verification.md) | 真机验收清单：CAT / 旋转器 / NanoVNA / KISS / CHIRP / SOTA / POTA / 解码器真实录音，逐条写「现在测到什么、怎么验、要记什么」 |
+| [`docs/antenna-coverage.md`](docs/antenna-coverage.md) | S2 设计说明：天线方向增益的口径（不是覆盖）、算法、验收与边界 |
 | [`docs/explanations-style.md`](docs/explanations-style.md) | 题目解析写作规范 |
 | [`docs/typography.md`](docs/typography.md) | 题库排版规则（内容指纹稳定性依赖） |

@@ -25,7 +25,9 @@ test("知识卡片：翻面、自评、忘了的卡本轮再出现，首页显�
 
   // 切换卡组
   await page.getByRole("radio", { name: "Q 简语" }).click();
-  await expect(page.locator("button[aria-label='翻面查看答案'] span").first()).toHaveText(/^Q[A-Z]{2}$/);
+  await expect(
+    page.getByRole("button", { name: "翻面查看答案" }).locator("span.font-mono"),
+  ).toHaveText(/^Q[A-Z]{2}$/);
 
   await page.goto("/");
   await expect(page.getByText("已学 2 张")).toBeVisible();

@@ -40,7 +40,8 @@ pub struct RepeaterRow<'a> {
 /// 导出选项。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExportOptions {
-  /// 只导出接收与发射频率都落在业余波段表内的频点（按全站 [`AMATEUR_BAND_EDGES`] 的口径）。
+  /// 只导出接收与发射频率都落在业余波段表内的频点（按全站 [`AMATEUR_BAND_EDGES`] 的口径，
+  /// 含 2200m / 630m —— 这两段能否在当地发射由操作者与合规页确认，导出不做区域判断）。
   pub only_amateur_bands: bool,
   /// 跳过状态里写着 off-air（已停用）的中继。
   pub skip_off_air: bool,
@@ -129,7 +130,8 @@ fn channel_name(callsign: &str) -> String {
     .to_string()
 }
 
-/// CSV 字段转义（RFC 4180）：含逗号、引号或换行时整体加引号并把引号双写。
+/// CSV 字段转义（RFC 4180）：先剔除所有控制字符（含换行，避免多行字段破坏行结构），
+/// 再对含逗号或引号的值整体加引号并把引号双写。
 /// 备注来自第三方数据：以 `= + - @` 开头的在 Excel 里会被当公式，前面补一个空格。
 fn field(raw: &str, comment: bool) -> String {
   let mut s: String = raw.chars().filter(|c| !c.is_control()).collect();

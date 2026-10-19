@@ -6,6 +6,7 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf};
+use crate::icons::{Icon, IconKind};
 use crate::morse_audio::play_morse;
 use crate::speech::speak_en;
 use crate::ui::{Button, ControlSize, Input, NumberField, Size, Variant, button_class};
@@ -174,6 +175,7 @@ pub fn CallsignCopyPage() -> impl IntoView {
             class="w-full"
             on_click=Callback::new(move |_| play())
           >
+            <Icon kind=IconKind::Volume2 class="size-6" />
             {move || if cw.get() { t("morse.play-morse") } else { t("morse.play-spelling") }}
           </Button>
 

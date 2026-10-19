@@ -337,6 +337,6 @@ test.describe("模拟考试 Boss 战", () => {
     await expect(verdict).toContainText("战利品 +350 经验");
     // 经验由存档推算：这一场之后 HUD 等级应已上升（经验 = 40 题 × 10 + 350）。
     await page.goto("/");
-    await expect(page.locator("[data-slot=hud]")).not.toHaveAttribute("aria-label", /^等级 1 /);
+    await expect(page.locator("[data-slot=hud]")).not.toHaveAttribute("aria-label", /^LV 1 ·/);
   });
 });

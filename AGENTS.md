@@ -12,7 +12,10 @@
 | 界面文案 / 译文 | [`docs/i18n.md`](docs/i18n.md)（词条规范、复数、门禁与验收清单）；词条在 `data/i18n/{zh,en,es}/<域>.json` |
 | 题库题面排版（空格、全角半角、指纹） | [`docs/typography.md`](docs/typography.md) |
 | 题目解析的写作 | [`docs/explanations-style.md`](docs/explanations-style.md) |
+| 解码器页面 / 新增解码器 / worker 错误码 | [`docs/decode-worker-protocol.md`](docs/decode-worker-protocol.md)（统一信封、错误码表、Makefile worker 任务、新增清单） |
 | 项目结构、cargo make 任务、路由 | [`README.md`](README.md) |
+| 串口功能（CAT / 旋转器 / NanoVNA / KISS）与外部格式（CHIRP / SOTA / POTA）的验收 | [`docs/hardware-verification.md`](docs/hardware-verification.md)：单测与假串口只算「待验」，真机记录才叫「已验证」 |
+| 天线方向增益（S2）的实现 | [`docs/antenna-coverage.md`](docs/antenna-coverage.md)：口径是「方向增益」，不是覆盖 / 可达 |
 
 ## 2. 硬规则
 

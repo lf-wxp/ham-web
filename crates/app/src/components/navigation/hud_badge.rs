@@ -25,36 +25,56 @@ pub fn HudBadge() -> impl IntoView {
   });
 
   let level = move || profile.get().level;
+  let badge = move || {
+    let l = level();
+    if l.is_max() {
+      t("shell.hud-max-level")
+    } else {
+      format!("LV {}", l.level)
+    }
+  };
+  // 无障碍名必须以可见的「LV 1」开头：axe 的 label-content-name-mismatch 要求可见文本
+  // 原样（连续词序列）出现在名字里。连续天数的数字也算可见文本，留在链接里的话名字只会
+  // 被拖成「LV 1 · 0 · …」这种读不懂的顺序，所以它挪到链接外面（见下面 `Tooltip`）。
   let label = Signal::derive(move || {
-    let Profile { level, xp, .. } = profile.get();
-    let lv = tf("shell.hud-level", &[&level.level.to_string()]);
-    format!("{lv} · {} · {xp} XP", rank_label(level.level))
+    let Profile { level, xp, streak } = profile.get();
+    format!(
+      "{} · {} · {xp} XP · {}",
+      badge(),
+      rank_label(level.level),
+      tf("shell.hud-streak", &[&streak.to_string()])
+    )
   });
 
   view! {
-    <a
-      href="/achievements"
-      data-slot="hud"
-      class="pxl-btn pxl-btn-ghost h-10 gap-2 px-2"
-      aria-label=move || label.get()
-    >
-      <PixelSprite name="hero" scale=2 class="pxl-bob" />
-      <span class="hidden flex-col items-start gap-1 leading-none md:flex">
-        <span class="pxl-label text-xs" aria-hidden="true">
-          {move || {
-            let l = level();
-            if l.is_max() { t("shell.hud-max-level") } else { format!("LV {}", l.level) }
-          }}
+    <span class="flex items-center">
+      <a
+        href="/achievements"
+        data-slot="hud"
+        class="pxl-btn pxl-btn-ghost h-10 gap-2 px-2"
+        aria-label=move || label.get()
+      >
+        <PixelSprite name="hero" scale=2 class="pxl-bob" />
+        <span class="hidden flex-col items-start gap-1 leading-none md:flex">
+          <span class="pxl-label text-xs" aria-hidden="true">{move || badge()}</span>
+          // `hidden` 类必须挂在 Tooltip 的包装 span 上：包装 span 在窄屏只是空盒，但父级
+          // `<a>` 的 `gap-2` 仍会在它与头像之间留一段空隙，把 320px 顶栏撑出 8px。
+          <Tooltip
+            label=Signal::derive(move || xp_progress(level()))
+            class="hidden w-20 md:inline-flex"
+          >
+            // `w-full`：flex 项显式定宽，`pxl-bar` 的 `width: 100%` 才有确定参照。
+            <span aria-hidden="true" class="w-full">
+              <Progress
+                value=Signal::derive(move || i64::from(level().percent()))
+                class="pxl-bar-xp h-2"
+              />
+            </span>
+          </Tooltip>
         </span>
-        // `hidden` 类必须挂在 Tooltip 的包装 span 上：包装 span 在窄屏只是空盒，但父级
-        // `<a>` 的 `gap-2` 仍会在它与头像之间留一段空隙，把 320px 顶栏撑出 8px。
-        <Tooltip label=Signal::derive(move || xp_progress(level())) class="hidden w-20 md:inline-flex">
-          // `w-full`：flex 项显式定宽，`pxl-bar` 的 `width: 100%` 才有确定参照。
-          <span aria-hidden="true" class="w-full">
-            <Progress value=Signal::derive(move || i64::from(level().percent())) class="pxl-bar-xp h-2" />
-          </span>
-        </Tooltip>
-      </span>
+      </a>
+      // 按钮的 `px-2` 右内边距就是这里与徽章之间的间距：链接里原来隔着 `gap-2`，挪出来后
+      // 换成按钮自己的内边距，视觉位置不变。
       <Tooltip
         label=Signal::derive(move || tf("shell.hud-streak", &[&profile.get().streak.to_string()]))
         class="hidden lg:inline-flex"
@@ -67,6 +87,6 @@ pub fn HudBadge() -> impl IntoView {
           {move || profile.get().streak}
         </span>
       </Tooltip>
-    </a>
+    </span>
   }
 }

@@ -2,6 +2,7 @@ use ham_web_core::koch::farnsworth;
 use ham_web_core::morse::COMMON_WORDS;
 use leptos::prelude::*;
 
+use crate::icons::{Icon, IconKind};
 use crate::morse_audio::play_morse_timed_with;
 use crate::morse_settings::use_morse_settings;
 use crate::ui::{Button, Input, Variant};
@@ -59,7 +60,8 @@ pub(super) fn WordCopy() -> impl IntoView {
         <div class="flex flex-col items-center gap-3 border bg-muted/30 px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("morse.tap-play-then-type")}</div>
           <Button on_click=Callback::new(move |_| play())>
-            {move || t("morse.play-icon")}
+            <Icon kind=IconKind::Volume2 class="size-6" />
+            {move || t("morse.play")}
           </Button>
         </div>
         <Input

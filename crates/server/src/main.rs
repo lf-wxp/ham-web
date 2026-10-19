@@ -95,6 +95,11 @@ fn cache_policy(path: &str) -> Option<&'static str> {
     p if p.starts_with("/questions/images/") || p.starts_with("/fonts/") => {
       Some("public, max-age=86400")
     }
+    // 站点图标（favicon / PWA / 通知 badge）也没有内容哈希：重新生成图标后，
+    // 用户下次打开就该拿到新版，因此走协商缓存而不是启发式缓存。
+    p if p.starts_with("/pwa-") || p.starts_with("/apple-touch-icon") || p == "/favicon.ico" => {
+      Some("no-cache")
+    }
     // 开放 API 自带 ETag 与 Cache-Control（见 `api_v1::send`），这里不能覆盖成 no-store。
     p if api_v1::is_v1_path(p) => None,
     p if p.starts_with("/api/") => Some(NO_STORE),
@@ -532,7 +537,17 @@ mod tests {
     ] {
       assert_eq!(cache_policy(p), Some("no-cache"), "{p}");
     }
-    assert_eq!(cache_policy("/pwa-icon.svg"), None);
+    // 站点图标同样没有内容哈希：换图标后靠协商缓存拿新版。
+    for p in [
+      "/pwa-icon.svg",
+      "/pwa-icon-512.png",
+      "/pwa-maskable-512.png",
+      "/pwa-badge-96.png",
+      "/apple-touch-icon.png",
+      "/favicon.ico",
+    ] {
+      assert_eq!(cache_policy(p), Some("no-cache"), "{p}");
+    }
     // 内部代理接口 no-store；开放 API 自管缓存头。
     assert_eq!(cache_policy("/api/solar"), Some(NO_STORE));
     assert_eq!(cache_policy("/api/v1/dxcc"), None);

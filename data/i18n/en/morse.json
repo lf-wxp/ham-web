@@ -130,8 +130,7 @@
   "morse.tone": "Tone",
   "morse.tone-frequency": "Tone frequency",
   "morse.volume-label": "Volume",
-  "morse.play-icon": "🔊 Play",
-  "morse.play-word": "🔊 Play word",
-  "morse.play-spelling": "🔊 Play spelling",
-  "morse.play-morse": "🔊 Play Morse"
+  "morse.play-word": "Play word",
+  "morse.play-spelling": "Play spelling",
+  "morse.play-morse": "Play Morse"
 }

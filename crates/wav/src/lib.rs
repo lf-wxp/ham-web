@@ -44,6 +44,79 @@ impl Error {
 
 impl std::error::Error for Error {}
 
+/// 允许解析的采样率区间（Hz）。
+///
+/// 上限挡住「头部写天文数字」的畸形文件；下限挡住 `resample` 里的比值爆炸——1 Hz 的 3 MB
+/// 文件换算到 48 kHz 就是上百 GB 的内存申请。真实录音（8 kHz 起）远在这个区间内。
+const MIN_RATE: u32 = 4_000;
+const MAX_RATE: u32 = 384_000;
+
+/// 归一化单声道样本（[-1, 1]）→ 16 位 PCM 单声道 WAV 字节。
+///
+/// 各解码器 `examples/generate_sample.rs` 与 `tools` 的样本生成器此前各抄一份 `make_wav`
+/// （签名已漂移：有的传采样率、有的硬编码），统一到这里；输出与 [`parse`] 往返一致。
+#[must_use]
+pub fn encode(samples: &[f32], rate: u32) -> Vec<u8> {
+  let data_len = samples.len() * 2;
+  // RIFF 头里的长度字段是 u32。wasm32 的线性内存只有 4 GiB，原生调用方也只处理几 MB 的
+  // 样本，因此「放不下」属于调用方的 bug：debug 构建直接断死；release 里长度字段饱和到
+  // `u32::MAX`，而不是回绕成一个比实际数据短得多的坏头。
+  debug_assert!(
+    u32::try_from(36 + data_len).is_ok() && rate.checked_mul(2).is_some(),
+    "WAV 头字段放不下：{} 个样本、采样率 {rate}",
+    samples.len()
+  );
+  let data_len_field = u32::try_from(data_len).unwrap_or(u32::MAX);
+  let mut out = Vec::with_capacity(44 + data_len);
+  out.extend_from_slice(b"RIFF");
+  out.extend_from_slice(&data_len_field.saturating_add(36).to_le_bytes());
+  out.extend_from_slice(b"WAVEfmt ");
+  out.extend_from_slice(&16u32.to_le_bytes());
+  out.extend_from_slice(&1u16.to_le_bytes()); // PCM
+  out.extend_from_slice(&1u16.to_le_bytes()); // 单声道
+  out.extend_from_slice(&rate.to_le_bytes());
+  // 字节率 = rate × 声道 × 2 字节；`saturating` 只为不 panic，正常采样率不会触发。
+  out.extend_from_slice(&rate.saturating_mul(2).to_le_bytes());
+  out.extend_from_slice(&2u16.to_le_bytes()); // 块对齐
+  out.extend_from_slice(&16u16.to_le_bytes()); // 16 位
+  out.extend_from_slice(b"data");
+  out.extend_from_slice(&data_len_field.to_le_bytes());
+  for &s in samples {
+    out.extend_from_slice(&((s.clamp(-1.0, 1.0) * 32767.0) as i16).to_le_bytes());
+  }
+  out
+}
+
+/// 线性重采样：把 `from` Hz 的样本换算到 `to` Hz。
+///
+/// 解码器各自需要一个固定工作采样率（AFSK1200 的 48 kHz、WEFAX 的 8 kHz、PSK31 的……），
+/// 此前三个 crate 各抄了一份几乎相同的实现，守卫还不一致（只有一份拒绝 `from == 0`）。
+/// `from == 0` 会让比值变成 inf，`as usize` 饱和成 `usize::MAX` 后 `with_capacity` 直接崩；
+/// `to == 0` 只会得到空结果，同样没意义——两者都按「无法换算」返回空。
+/// [`parse`] 已把文件里的采样率限制在 4 kHz–384 kHz，所以经由它进来的比值有界。
+#[must_use]
+pub fn resample(samples: &[f32], from: u32, to: u32) -> Vec<f32> {
+  if from == 0 || to == 0 {
+    return Vec::new();
+  }
+  if from == to || samples.len() < 2 {
+    return samples.to_vec();
+  }
+  let ratio = f64::from(to) / f64::from(from);
+  let n = (samples.len() as f64 * ratio).round() as usize;
+  let last = samples.len() - 1;
+  let mut out = Vec::with_capacity(n);
+  for i in 0..n {
+    let src = i as f64 / ratio;
+    let idx = src as usize;
+    let frac = (src - idx as f64) as f32;
+    let a = samples[idx.min(last)];
+    let b = samples[(idx + 1).min(last)];
+    out.push(a + (b - a) * frac);
+  }
+  out
+}
+
 /// 解析 WAV 字节，返回 `(归一化单声道样本, 采样率)`。
 pub fn parse(bytes: &[u8]) -> Result<(Vec<f32>, u32), Error> {
   let (fmt, data) = scan_chunks(bytes)?;
@@ -60,7 +133,7 @@ pub fn parse(bytes: &[u8]) -> Result<(Vec<f32>, u32), Error> {
   let rate = u32::from_le_bytes([fmt[4], fmt[5], fmt[6], fmt[7]]);
   let bits = u16::from_le_bytes([fmt[14], fmt[15]]);
 
-  if rate == 0 {
+  if !(MIN_RATE..=MAX_RATE).contains(&rate) {
     return Err(Error::UnsupportedFormat);
   }
 
@@ -138,7 +211,7 @@ pub fn parse_interleaved(bytes: &[u8]) -> Result<(Vec<f32>, u32, u16), Error> {
   let channels = u16::from_le_bytes([fmt[2], fmt[3]]).max(1);
   let rate = u32::from_le_bytes([fmt[4], fmt[5], fmt[6], fmt[7]]);
   let bits = u16::from_le_bytes([fmt[14], fmt[15]]);
-  if rate == 0 {
+  if !(MIN_RATE..=MAX_RATE).contains(&rate) {
     return Err(Error::UnsupportedFormat);
   }
   let samples = match format {
@@ -382,5 +455,55 @@ mod interleave_tests {
     let (interleaved, _, channels) = parse_interleaved(&wav).expect("容错解析");
     assert_eq!(channels, 1);
     assert_eq!(interleaved.len(), 2);
+  }
+}
+
+#[cfg(test)]
+mod encode_tests {
+  use super::*;
+
+  #[test]
+  fn out_of_range_sampling_rates_are_rejected() {
+    // fmt 块的采样率字段在偏移 24；1 Hz 会让重采样申请上百 GB，4000 以下一律拒绝。
+    let samples = vec![0.0f32; 8];
+    let mut wav = encode(&samples, 8000);
+    wav[24..28].copy_from_slice(&1u32.to_le_bytes());
+    assert_eq!(parse(&wav), Err(Error::UnsupportedFormat));
+    wav[24..28].copy_from_slice(&(MAX_RATE + 1).to_le_bytes());
+    assert_eq!(parse(&wav), Err(Error::UnsupportedFormat));
+    wav[24..28].copy_from_slice(&48_000u32.to_le_bytes());
+    assert!(parse(&wav).is_ok());
+  }
+
+  #[test]
+  fn resample_scales_length_and_refuses_zero_rates() {
+    let samples: Vec<f32> = (0..48_000).map(|i| (i as f32 * 0.01).sin()).collect();
+    assert_eq!(resample(&samples, 48_000, 24_000).len(), 24_000);
+    assert_eq!(resample(&samples, 24_000, 48_000).len(), 96_000);
+    assert_eq!(resample(&samples, 48_000, 48_000), samples);
+    // 0 Hz 不能换算：既不能崩（`with_capacity(usize::MAX)`），也不能原样放行。
+    assert!(resample(&samples, 0, 48_000).is_empty());
+    assert!(resample(&samples, 48_000, 0).is_empty());
+  }
+
+  #[test]
+  fn resample_keeps_a_ramp_monotonic() {
+    let ramp: Vec<f32> = (0..100).map(|i| i as f32).collect();
+    let up = resample(&ramp, 8_000, 16_000);
+    assert!(up.windows(2).all(|w| w[1] >= w[0]), "线性插值不该出现回头");
+    assert!((up[1] - 0.5).abs() < 1e-6, "第二个点应落在 0 与 1 的中点");
+  }
+
+  #[test]
+  fn encode_round_trips_through_parse() {
+    let samples = vec![0.0f32, 0.5, -0.5, 1.0, -1.0];
+    let wav = encode(&samples, 8000);
+    let (decoded, rate) = parse(&wav).unwrap();
+    assert_eq!(rate, 8000);
+    assert_eq!(decoded.len(), samples.len());
+    // 16 位量化往返：误差小于半个 LSB。
+    for (a, b) in decoded.iter().zip(&samples) {
+      assert!((a - b).abs() < 1.0 / 32767.0, "{a} vs {b}");
+    }
   }
 }

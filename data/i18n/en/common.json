@@ -125,6 +125,7 @@
   },
   "common.db": "{} dB",
   "common.decoding-runs-in-a": "Decoding runs in a Web Worker background thread and does not block the page.",
+  "common.download-failed": "Download failed: the browser could not create the file. Please try again.",
   "common.decrease": "Decrease",
   "common.design-advice": "Design advice",
   "common.design-notes": "Design notes",

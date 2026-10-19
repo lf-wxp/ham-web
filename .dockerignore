@@ -2,7 +2,7 @@ target/
 dist/
 tmp/
 # 构建期生成物（`.gitignore` 同样排除），本地可能存在旧版本：
-#   * 八个解码 Worker 的胶水与 wasm —— Dockerfile 里由 wasm-bindgen 重新生成；
+#   * 解码 Worker 的胶水与 wasm —— Dockerfile 里由 scripts/build-decode-worker.sh 重新生成；
 #   * i18n 运行时语言包 —— Dockerfile 里由 ham-web-tools i18n-pack 重新生成；
 #   * postbuild 的 sw.js / sitemap.xml —— 只应存在于 dist/，不该从源码树带进镜像。
 # 排除它们，保证 docker build 走的是与干净 checkout 完全一致的路径（否则本地残留

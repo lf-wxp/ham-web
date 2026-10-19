@@ -1,53 +1,90 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <title>业余无线电</title>
-  <defs>
-    <!-- 与 pwa-icon.svg 同一份设计（等比缩小到 64 空间，数值为母版的 1/8），仅供设计参考，构建不使用 -->
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#5f80ea"/>
-      <stop offset="0.55" stop-color="#3b5dc9"/>
-      <stop offset="1" stop-color="#2d489f"/>
-    </linearGradient>
-    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.3"/>
-      <stop offset="0.42" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="0.3" cy="0.14" r="0.55">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0.42" stop-color="#ffffff" stop-opacity="0"/>
-      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.1"/>
-      <stop offset="0.58" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
-    <clipPath id="tile"><rect width="64" height="64" rx="14.375"/></clipPath>
-    <g id="tower">
-      <rect x="26" y="30" width="12" height="3"/>
-      <rect x="29" y="33" width="6" height="6"/>
-      <rect x="14" y="39" width="9" height="6"/>
-      <rect x="26" y="39" width="12" height="6"/>
-      <rect x="41" y="39" width="9" height="6"/>
-      <rect x="14" y="45" width="36" height="6"/>
-      <rect x="14" y="51" width="9" height="6"/>
-      <rect x="26" y="51" width="12" height="6"/>
-      <rect x="41" y="51" width="9" height="6"/>
-    </g>
-  </defs>
+  <!--
+    与 pwa-icon.svg 同一份设计（母版等比缩到 64 空间，1/8），仅供设计参考，构建不使用。
+    母版改动后把下面 <g> 里的内容同步替换即可；favicon-16.svg 才是真正的 16px 专用图形
+    （坐标对齐像素格）。
+  -->
+  <g transform="scale(0.125)">
+    <defs>
+      <!--
+        品牌底色：iOS 口径的竖向渐变（顶部亮 → 底部深），中段压着品牌蓝 #3b5dc9。
+        `cargo make icons` 生成满幅图标（Apple Touch / maskable）时靠 #bg 补出圆角以外的
+        区域，品牌色只写在这一处；改色要连 pwa-maskable.svg 与 favicon-16.svg 一起看。
+      -->
+      <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#5f80ea"/>
+        <stop offset="0.55" stop-color="#3b5dc9"/>
+        <stop offset="1" stop-color="#2d489f"/>
+      </linearGradient>
 
-  <g clip-path="url(#tile)">
-    <rect width="64" height="64" fill="url(#bg)"/>
-    <rect width="64" height="64" fill="url(#glass)"/>
-    <rect width="64" height="64" fill="url(#glow)"/>
-    <g fill="none" stroke="#ffffff" stroke-linecap="round">
-      <path d="M 21.3 27.03 A 11.25 11.25 0 0 1 42.7 27.03" stroke-width="2" stroke-opacity="0.6"/>
-      <path d="M 14.16 24.7 A 18.75 18.75 0 0 1 49.84 24.7" stroke-width="1.625" stroke-opacity="0.44"/>
-      <path d="M 7.63 22.58 A 25.6 25.6 0 0 1 56.37 22.58" stroke-width="1.25" stroke-opacity="0.32"/>
+      <!--
+        玻璃质感三层：
+        - glass：顶部向下的白色反光；
+        - glow：左上受光面的一团柔光；
+        - sheen：斜向扫过玻璃面的一道反射光带。
+      -->
+      <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.3"/>
+        <stop offset="0.42" stop-color="#ffffff" stop-opacity="0"/>
+      </linearGradient>
+      <radialGradient id="glow" cx="0.3" cy="0.14" r="0.55">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
+        <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0.42" stop-color="#ffffff" stop-opacity="0"/>
+        <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.1"/>
+        <stop offset="0.58" stop-color="#ffffff" stop-opacity="0"/>
+      </linearGradient>
+
+      <!-- iOS 图标的圆角比例：22.37% × 512 ≈ 115 -->
+      <clipPath id="tile"><rect width="512" height="512" rx="115"/></clipPath>
+
+      <!--
+        塔形：像素块拼的桁架塔，块 32、共 14 行（y 240 → 464）。从上往下是
+        「塔顶机房 → 四条塔腿，每段 3 行、逐段向外收放 16 → 每段底缘一条横档」，
+        腿之间留 32 / 48 / 64 的缝，读起来是镂空的桁架而不是实心金字塔。
+        底座那条横档把两条腿连起来。
+        几何约束：块宽 32 保证 32px 的 favicon.ico 档渲染时杆件仍有 2px 宽。
+        投影与主体共用一个形状。
+      -->
+      <g id="tower">
+        <rect x="244" y="200" width="24" height="32"/>
+        <rect x="232" y="232" width="48" height="16"/>
+        <path d="M 240 248 L 176 472" stroke="currentColor" stroke-width="20" fill="none"/>
+        <path d="M 272 248 L 336 472" stroke="currentColor" stroke-width="20" fill="none"/>
+        <rect x="219" y="320" width="74" height="14"/>
+        <rect x="199" y="392" width="114" height="14"/>
+        <rect x="174" y="456" width="164" height="16"/>
+      </g>
+    </defs>
+
+    <g clip-path="url(#tile)">
+      <rect width="512" height="512" fill="url(#bg)"/>
+      <rect width="512" height="512" fill="url(#glass)"/>
+      <rect width="512" height="512" fill="url(#glow)"/>
+
+      <!--
+        无线电波：以塔顶 (256,240) 为圆心的三道同心弧，跨角约 144°（两端各落在塔顶
+        下方一点），远弧更细更淡。压在玻璃高光之上 —— 叠在高光下面会被顶部反光冲淡，
+        波就糊了。
+      -->
+      <g fill="none" stroke="#ffffff" stroke-linecap="round">
+        <path d="M 179.9 207.28 A 80 80 0 0 1 332.1 207.28" stroke-width="14" stroke-opacity="0.6"/>
+        <path d="M 126.7 190.03 A 136 136 0 0 1 385.3 190.03" stroke-width="11" stroke-opacity="0.44"/>
+        <path d="M 73.4 172.67 A 192 192 0 0 1 438.6 172.67" stroke-width="8" stroke-opacity="0.32"/>
+      </g>
+
+      <rect width="512" height="512" fill="url(#sheen)"/>
+
+      <!-- 塔：深蓝投影在下、白色主体在上，浮出玻璃面 -->
+      <use href="#tower" y="10" fill="#0e1c4d" color="#0e1c4d" opacity="0.42"/>
+      <use href="#tower" fill="#ffffff" color="#ffffff"/>
     </g>
-    <rect width="64" height="64" fill="url(#sheen)"/>
-    <use href="#tower" y="1.25" fill="#0e1c4d" opacity="0.42"/>
-    <use href="#tower" fill="#ffffff"/>
+
+    <!-- 玻璃边缘的高光细线 -->
+    <rect x="1" y="1" width="510" height="510" rx="114" fill="none" stroke="#ffffff" stroke-opacity="0.42" stroke-width="2"/>
   </g>
-
-  <rect x="0.125" y="0.125" width="63.75" height="63.75" rx="14.25" fill="none" stroke="#ffffff" stroke-opacity="0.42" stroke-width="0.25"/>
 </svg>

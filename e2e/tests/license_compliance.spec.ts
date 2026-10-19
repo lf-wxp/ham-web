@@ -40,6 +40,12 @@ test("合规检查：选类别与频率，给出可用性、功率上限与法�
   await expect(result.getByText("受 ITU 脚注 5.133B 限制：≤ 15 W e.i.r.p.")).toBeVisible();
   await expect(result.getByText("需开展频率协调")).toBeVisible();
 
+  // 2200m（0.136 MHz）：可用，但 5.67A 脚注把功率压到 ≤1 W。
+  await freq.fill("0.136");
+  await expect(status).toHaveText(/^可用$/);
+  await expect(result.getByText("功率上限 ≤ 1 W")).toBeVisible();
+  await expect(result.getByText("受 ITU 脚注 5.67A 限制：≤ 1 W e.i.r.p.")).toBeVisible();
+
   // 不在业余频段内。
   await freq.fill("10.5");
   await expect(status).toHaveText("该频率不在业余业务频段内");

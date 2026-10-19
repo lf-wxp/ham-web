@@ -4,7 +4,7 @@ use leptos::prelude::*;
 
 use super::super::grid_filter::QslStatus;
 use super::state::GridMapState;
-use crate::i18n::t;
+use crate::i18n::{localized_name, t};
 use crate::ui::{
   Button, ControlSize, Input, NativeSelect, SelectOption, Size, Switch, Tooltip, Variant,
 };
@@ -26,7 +26,17 @@ pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
   };
   let band_options = plain(&bands);
   let mode_options = plain(&mode_list);
-  let dxcc_options = plain(&dxcc_list);
+  // DXCC 实体：提交值保持中文（与 `dxcc_map` 的查询回环一致），展示文案按界面语言本地化。
+  let dxcc_options: Vec<SelectOption> = dxcc_list
+    .iter()
+    .map(|name| match ham_web_core::dxcc::entity_by_name(name) {
+      Some(e) => {
+        let (zh, en) = (e.name, e.name_en);
+        SelectOption::new(name.clone(), Signal::derive(move || localized_name(zh, en)))
+      }
+      None => SelectOption::new(name.clone(), name.clone()),
+    })
+    .collect();
   let year_options = plain(&year_list);
   let qsl_options = vec![
     SelectOption::new("confirmed", t("log.confirmed")),

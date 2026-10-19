@@ -568,3 +568,66 @@ test("天线矩量法求解：.nec 的 TL 卡导入成传输线、导出时写�
   await page.getByRole("button", { name: "导出当前几何" }).click();
   await expect(box).toHaveValue(/TL 1, 10, 2, 1, 75\.000000, 1\.200000/);
 });
+
+test("天线矩量法求解：设计存档可以两份并排对比", async ({ page }) => {
+  await page.goto("/nec");
+  await expect(page.getByText(/馈电点阻抗 .+ Ω/)).toBeVisible();
+
+  await page.getByText("设计存档", { exact: true }).click();
+  const archive = page.locator("details").filter({ hasText: "设计存档" });
+
+  // 存当前（水平偶极）。
+  await archive.getByLabel("存档名称").fill("dipole");
+  await archive.getByRole("button", { name: "保存当前设计" }).click();
+  // 保存成功会同时出现「已保存设计：dipole」提示与列表项，这里只认列表。
+  const list = archive.locator('[data-slot="nec-archive-list"]');
+  await expect(list.getByText("dipole", { exact: true })).toBeVisible();
+
+  // 切到三单元八木，等求解稳定后存第二份。
+  await page.getByRole("radio", { name: "三单元八木" }).click();
+  await page.waitForTimeout(800);
+  await archive.getByLabel("存档名称").fill("yagi");
+  await archive.getByRole("button", { name: "保存当前设计" }).click();
+  await expect(list.getByText("yagi", { exact: true })).toBeVisible();
+
+  // 两份都加入对比：表头 + 5 项指标。
+  await archive.getByRole("button", { name: "把「dipole」加入对比" }).click();
+  await archive.getByRole("button", { name: "把「yagi」加入对比" }).click();
+  const compare = page.locator('[data-slot="nec-compare"]');
+  await expect(compare.getByText(/dipole ↔ yagi/)).toBeVisible();
+  // 表头 + 频率 / 地面 / 增益 / 前后比 / 驻波 / 效率 / 仰角。
+  await expect(compare.getByRole("row")).toHaveCount(8);
+
+  const rowsText = await compare.getByRole("row").allInnerTexts();
+  expect(rowsText[1]).toContain("MHz");
+  // 偶极预设有地面、八木是自由空间：必须明确警告两者不能直接比，
+  // 否则「八木 6.86 dBi < 偶极 7.96 dBi」会被读成八木更差。
+  expect(rowsText[2]).toContain("理想导体地面");
+  expect(rowsText[2]).toContain("自由空间");
+  await expect(compare.getByText(/地面模型不同，增益与前后比不能直接比较/)).toBeVisible();
+});
+
+test("天线矩量法求解：方向增益按 DXCC 实体列出，并写明只算天线", async ({ page }) => {
+  await page.goto("/nec");
+  await expect(summary(page)).toBeVisible();
+
+  const section = page.locator('[data-slot="nec-direction"]');
+  await section.getByRole("button", { name: /方向增益/ }).click();
+
+  // 没有网格时先给提示，不硬算。
+  await expect(section.getByText("填一个 Maidenhead 网格，才能算方位。")).toBeVisible();
+
+  await section.getByLabel("本台网格（Maidenhead）").fill("OM89");
+  const rows = section.getByRole("row");
+  // 表头 + 340 个 DXCC 实体；第一行数据要看得到距离与增益。
+  await expect(rows.nth(1)).toBeVisible();
+  await expect(rows.nth(1)).toContainText("km");
+  await expect(rows.nth(1)).toContainText("dBi");
+  // 边界必须写在页面上：只算天线，不含传播。
+  await expect(section.getByText(/未计传播/)).toBeVisible();
+
+  // 换地面模型会重算方向图，表里的数值必须跟着变（不是缓存住的旧结果）。
+  const before = await rows.nth(1).innerText();
+  await page.getByRole("radio", { name: "自由空间" }).click();
+  await expect.poll(async () => (await rows.nth(1).innerText()) !== before).toBe(true);
+});

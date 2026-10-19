@@ -11,6 +11,10 @@ authors.workspace = true
 [dependencies]
 ham-web-core.workspace = true
 ham-web-apt.workspace = true
+# WSPR / NAVTEX 发端：消息打包与 FSK 合成直接用解码器同一份实现（往返测试在其 crate 内）
+ham-web-wspr.workspace = true
+ham-web-navtex.workspace = true
+ham-web-hell.workspace = true
 leptos.workspace = true
 leptos_router.workspace = true
 serde.workspace = true
@@ -36,6 +40,7 @@ features = [
   "AudioDestinationNode",
   "AudioNode",
   "AudioParam",
+  "AudioProcessingEvent",
   "AudioScheduledSourceNode",
   "BaseAudioContext",
   "BiquadFilterNode",
@@ -103,6 +108,7 @@ features = [
   "RequestInit",
   "ResizeObserver",
   "Response",
+  "ScriptProcessorNode",
   "ServiceWorker",
   "ServiceWorkerContainer",
   "ServiceWorkerRegistration",

@@ -21,6 +21,8 @@ pub(super) fn LogStatsPanel(
   // 统计口径（全部 / 某个台站 / 某个操作员）：切页也记着，俱乐部台就不用每次重选。
   let scope = use_stats_scope();
   let scoped = scoped_log_entries(scope);
+  // 奖状申请表的展开态放在闭包外：面板随日志变化整体重建，放在里面会被收起。
+  let apply_open = RwSignal::new(false);
 
   view! {
     {move || {
@@ -90,7 +92,7 @@ pub(super) fn LogStatsPanel(
             .into_any()
           }}
         </section>
-        <AwardsPanel entries=entries.clone() />
+        <AwardsPanel entries=entries.clone() apply_open=apply_open />
         <section class="pxl-card border bg-card p-4">
           <h3 class="mb-2 text-sm font-semibold">
             {move || t("log.qsls-pending")}

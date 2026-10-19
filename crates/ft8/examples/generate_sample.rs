@@ -26,46 +26,13 @@ fn main() {
   };
   let mut signal = signal;
   if noise > 0.0 {
-    add_noise(&mut signal, noise);
+    ham_web_dsp::add_noise(&mut signal, noise);
   }
-  let wav = make_wav(&signal);
+  let wav = ham_web_wav::encode(&signal, RATE);
   std::fs::write(&out_path, &wav).expect("写入 WAV 失败");
   println!(
     "已生成 {out_path}：{message}，{} 样本 ≈ {:.1}s，噪声幅度 {noise:.2}",
     signal.len(),
     signal.len() as f32 / RATE as f32
   );
-}
-
-/// 叠加均匀白噪声（幅度 `amp`，峰峰值 2·amp）。
-fn add_noise(signal: &mut [f32], amp: f32) {
-  let mut seed = 0x1234_5678u32;
-  for s in signal {
-    seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
-    let u = (seed >> 8) as f32 / 16_777_216.0; // 0..1
-    *s += amp * (u * 2.0 - 1.0);
-  }
-}
-
-/// 写为 16 位 PCM 单声道 WAV（采样率 12000 Hz）。
-fn make_wav(signal: &[f32]) -> Vec<u8> {
-  let data_len = signal.len() * 2;
-  let mut out = Vec::with_capacity(44 + data_len);
-  out.extend_from_slice(b"RIFF");
-  out.extend_from_slice(&(36 + data_len as u32).to_le_bytes());
-  out.extend_from_slice(b"WAVE");
-  out.extend_from_slice(b"fmt ");
-  out.extend_from_slice(&16u32.to_le_bytes());
-  out.extend_from_slice(&1u16.to_le_bytes());
-  out.extend_from_slice(&1u16.to_le_bytes());
-  out.extend_from_slice(&RATE.to_le_bytes());
-  out.extend_from_slice(&(RATE * 2).to_le_bytes());
-  out.extend_from_slice(&2u16.to_le_bytes());
-  out.extend_from_slice(&16u16.to_le_bytes());
-  out.extend_from_slice(b"data");
-  out.extend_from_slice(&(data_len as u32).to_le_bytes());
-  for &s in signal {
-    out.extend_from_slice(&((s.clamp(-1.0, 1.0) * 32767.0) as i16).to_le_bytes());
-  }
-  out
 }

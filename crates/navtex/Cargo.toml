@@ -14,8 +14,9 @@ authors.workspace = true
 ham-web-dsp.workspace = true
 
 [dev-dependencies]
-# 仅 examples / tests 用（读 WAV）；库本身不依赖。
+# 仅 examples / tests 用（读 / 写 WAV）；库本身不依赖。
 ham-web-apt.workspace = true
+ham-web-wav.workspace = true
 
 [lints]
 workspace = true

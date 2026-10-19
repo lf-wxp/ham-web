@@ -182,6 +182,8 @@ export type SeedQso = {
   my_pota_ref?: string;
   contact_sota_ref?: string;
   contact_pota_ref?: string;
+  /** 是否已由 LoTW 确认（验证奖状申请记录表的优先级）。 */
+  lotw_rcvd?: boolean;
 };
 
 /**
@@ -204,6 +206,7 @@ export async function seedLog(page: Page, qsos: SeedQso[]) {
     my_pota_ref: q.my_pota_ref ?? "",
     contact_sota_ref: q.contact_sota_ref ?? "",
     contact_pota_ref: q.contact_pota_ref ?? "",
+    lotw_rcvd: q.lotw_rcvd ?? false,
     remark: "",
   }));
   await page.addInitScript((json) => {

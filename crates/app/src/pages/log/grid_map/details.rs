@@ -6,7 +6,7 @@ use leptos::prelude::*;
 use super::super::grid_fill::band_color;
 use super::super::grid_geo::{square_center, square_label};
 use super::state::GridMapState;
-use crate::i18n::{t, tf, tp};
+use crate::i18n::{localized_name, t, tf, tp};
 use crate::ui::{Button, Size, Tooltip, Variant};
 
 #[component]
@@ -156,7 +156,10 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
                   let band = Some(e.band_label()).filter(|b| !b.is_empty()).unwrap_or_else(|| "—".to_owned());
                   // 显示完整网格码：6 位时体现 subsquare，4 位时仅 square。
                   let grid = e.gridsquare.trim().to_ascii_uppercase();
-                  let entity = e.entity().map(|x| x.name).unwrap_or("");
+                  let entity = e
+                    .entity()
+                    .map(|x| localized_name(x.name, x.name_en))
+                    .unwrap_or_default();
                   let rst = if e.rst_sent.is_empty() && e.rst_rcvd.is_empty() {
                     String::new()
                   } else {

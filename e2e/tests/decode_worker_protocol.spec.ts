@@ -3,15 +3,17 @@ import { expect, test } from "./fixtures";
 /**
  * 统一解码 Worker（`/decode-worker.js`）协议冒烟：不经页面 UI，直接对 Worker 发信封。
  *
- * 为什么单列：八个解码器都走 `CODECS` 表里的路径，路径写错（胶水 / wasm 文件名、目录）时
+ * 为什么单列：所有解码器都走 `CODECS` 表里的路径，路径写错（胶水 / wasm 文件名、目录）时
  * 只有对应页面的端到端用例才会红，而 SSTV / WSPR 目前没有专属 spec。这里对每个 codec 发一个
  * 空 WAV，断言回的是**协议错误码**（`ok:false` + 英文码），而不是 `unknown codec`、
- * NetworkError 或 Worker 自己崩掉 —— 能证明 8 条路径都加载、初始化并走进了 `decode`。
+ * NetworkError 或 Worker 自己崩掉 —— 能证明表里每条路径都加载、初始化并走进了 `decode`。
  *
  * 另外钉住 `docs/decode-worker-protocol.md` 里的约束：一个 Worker 只服务一个 codec。
  */
 
-const CODECS = ["apt", "sstv", "wspr", "rtty", "olivia", "dominoex", "navtex", "lrpt"];
+// 与 `public/decode-worker.js` 的 `CODECS` 表、`docs/decode-worker-protocol.md` 的
+// 「已接入的 codec」表保持一一对应：加解码器时三处一起加。
+const CODECS = ["apt", "sstv", "wspr", "rtty", "olivia", "dominoex", "navtex", "lrpt", "ft8", "hell", "wefax", "afsk1200"];
 
 type Reply = { ok: boolean; error?: string; result?: unknown };
 
@@ -44,7 +46,7 @@ async function converse(
   }, messages);
 }
 
-test("解码 Worker：八个 codec 的加载路径都有效，空输入回协议错误码", async ({ page }) => {
+test("解码 Worker：十二个 codec 的加载路径都有效，空输入回协议错误码", async ({ page }) => {
   await page.goto("/");
   for (const codec of CODECS) {
     const [reply] = await converse(page, [{ codec, bytes: true, params: {} }]);

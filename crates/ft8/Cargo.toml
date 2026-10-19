@@ -11,6 +11,8 @@ authors.workspace = true
 # 解码内核本身不依赖任何 workspace crate；WAV 解析只在 `examples/` 里用到。
 [dev-dependencies]
 ham-web-apt.workspace = true
+ham-web-dsp.workspace = true
+ham-web-wav.workspace = true
 
 [lints]
 workspace = true

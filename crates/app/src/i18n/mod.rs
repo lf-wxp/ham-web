@@ -105,6 +105,28 @@ pub fn locale() -> ArcRwSignal<Locale> {
   LOCALE.with(|l| l.clone())
 }
 
+/// 是否含 CJK 汉字。
+#[must_use]
+pub fn has_cjk(s: &str) -> bool {
+  s.chars().any(|c| ('\u{4e00}'..='\u{9fff}').contains(&c))
+}
+
+/// 数据字段（非 UI 词条）的本地化显示。
+///
+/// 中文界面用中文原文；其它界面先按中文原文反查译文（[`t`]），查不到时回退英文名，
+/// 避免把中文漏到英文 / 西文界面里。用于 DXCC 实体名这类「数据里同时带中英文名」的字段。
+pub fn localized_name(zh_name: &'static str, en_name: &'static str) -> String {
+  if locale().get() == Locale::Zh {
+    return zh_name.to_owned();
+  }
+  let name = t(zh_name);
+  if has_cjk(&name) {
+    en_name.to_owned()
+  } else {
+    name
+  }
+}
+
 /// `localStorage` 里保存的语言（没有记录时是中文）。
 fn stored_locale() -> Locale {
   crate::util::storage::get(keys::LOCALE).map_or(Locale::Zh, |s| Locale::from_code(&s))

@@ -369,9 +369,13 @@ pub fn CardsPage() -> impl IntoView {
         <button
           type="button"
           class="flex min-h-48 w-full flex-col items-center justify-center gap-2 pxl-card border bg-card p-6 text-center shadow-sm"
-          aria-label=if revealed.get_untracked() { t("knowledge.back-of-the-card") } else { t("knowledge.flip-to-see-the") }
           on:click=move |_| reveal()
         >
+          // 卡面上的字符（摩斯码 / 字母）就是这张卡的内容，必须留在无障碍名里：
+          // 挂 `aria-label` 会把它整个盖掉，读屏只听到「翻面查看答案」，看不到在学什么。
+          <span class="sr-only">
+            {move || if revealed.get() { t("knowledge.back-of-the-card") } else { t("knowledge.flip-to-see-the") }}
+          </span>
           <span class="font-mono text-3xl font-bold tracking-wide">{c.front.clone()}</span>
           {c.hint.clone().filter(|_| !revealed.get_untracked()).map(|h| view! { <span class="text-xs text-muted-foreground">{h}</span> })}
           {move || revealed.get().then(|| {

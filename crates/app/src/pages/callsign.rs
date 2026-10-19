@@ -3,6 +3,7 @@
 use ham_web_core::award_progress::CONTINENTS;
 use ham_web_core::callsign::parse_callsign;
 use ham_web_core::dxcc::lookup;
+use ham_web_core::logbook::StationInfo;
 use ham_web_core::most_wanted::wanted_prefix;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -11,9 +12,10 @@ use leptos_router::hooks::use_query_map;
 use crate::components::common::{BulletSection, KnowledgePage};
 use crate::data;
 use crate::i18n::{t, tf};
+use crate::pages::log::use_log_store;
 use crate::pages::map::ZoneMap;
 use crate::ui::{Button, Chip, ChipGroup, Input, Size, Variant};
-use crate::util::set_title;
+use crate::util::{set_title, storage};
 
 /// 示例呼号，便于一键试查。
 const EXAMPLES: &[&str] = &["BG4XYZ", "JA1ABC", "K1ZZ/QRP", "P5ABC", "BV9PAA"];
@@ -50,6 +52,14 @@ pub fn CallsignPage() -> impl IntoView {
   let online = RwSignal::new(None::<OnlineInfo>);
   let loading = RwSignal::new(false);
   let failed = RwSignal::new(false);
+  // 自己的日志与本台网格：查询结果里要回答「我打过吗、在哪个方向、多远」。
+  let store = use_log_store();
+  // 网格用信号存并在查询时重读：站信息页改完之后，本页不该继续用挂载时的旧值算方位。
+  let home_grid = RwSignal::new(
+    storage::get_json::<StationInfo>("station-info")
+      .map(|s| s.gridsquare)
+      .unwrap_or_default(),
+  );
   // 分区地图：默认 CQ，高亮当前呼号所属实体。
   let is_cq = RwSignal::new(true);
   let zone_dxcc = Signal::derive(move || {
@@ -66,6 +76,11 @@ pub fn CallsignPage() -> impl IntoView {
       crate::ui::push_error(t("radio.enter-a-callsign-of"));
       return;
     }
+    home_grid.set(
+      storage::get_json::<StationInfo>("station-info")
+        .map(|s| s.gridsquare)
+        .unwrap_or_default(),
+    );
     loading.set(true);
     failed.set(false);
     online.set(None);
@@ -98,47 +113,73 @@ pub fn CallsignPage() -> impl IntoView {
     let parts = parse_callsign(&call);
     let entity = lookup(&call);
     let dash = "—".to_owned();
+
+    // 通联历史与方位都交给 core（`callsign_insight`），页面只管排版。
+    let found = store
+      .logbook
+      .with(|lb| ham_web_core::callsign_insight::insight(&call, &home_grid.get(), &lb.entries));
+    let history = if found.worked == 0 {
+      t("radio.never-worked").to_string()
+    } else {
+      match &found.last {
+        Some(last) => tf(
+          "radio.worked-times-last",
+          &[
+            &found.worked.to_string(),
+            &format!("{} {} {}", last.date, last.time, last.band),
+          ],
+        ),
+        None => tf("radio.worked-times", &[&found.worked.to_string()]),
+      }
+    };
+    // 没有本台网格时只答「打过几次」，方位与距离如实留空。
+    let (bearing, distance) = match (found.azimuth_deg, found.distance_km) {
+      (Some(azimuth), Some(km)) => (format!("{azimuth:.0}°"), format!("{km:.0} km")),
+      _ => (t("radio.fill-home-grid").to_string(), dash.clone()),
+    };
+
+    // 标签返回**语义 key**，渲染时再 `t()`：这几行原来直接写中文，英文界面下整列都是中文。
     vec![
       (
-        "国家 / 地区",
+        "radio.country-region",
         parts
           .entity
           .map(t)
           .unwrap_or_else(|| t("radio.unrecognised")),
       ),
       (
-        "DXCC 实体",
+        "log.dxcc-entities",
         entity.map_or_else(
           || t("radio.unrecognised"),
           |e| format!("#{} {}", e.dxcc, e.name_en),
         ),
       ),
       (
-        "大洲",
+        "radio.continent",
         entity
           .and_then(|e| CONTINENTS.iter().find(|(c, _)| *c == e.continent))
           .map_or_else(|| dash.clone(), |(_, name)| t(name)),
       ),
       (
-        "CQ / ITU 分区",
+        "radio.cq-itu-zones",
         entity.map_or_else(|| dash.clone(), |e| format!("CQ {} / ITU {}", e.cq, e.itu)),
       ),
       (
-        "台站类别",
+        "radio.station-class",
         parts
           .station_type
           .map(t)
           .unwrap_or_else(|| t("radio.non-chinese-callsign")),
       ),
       (
-        "分区",
+        "radio.zone-label",
         match (parts.area, parts.area_regions) {
           (Some(a), Some(r)) => tf("common.zone-with-regions", &[a, r]),
           _ => dash.clone(),
         },
       ),
       (
-        "后缀",
+        "radio.suffix",
         if parts.suffix.is_empty() {
           dash.clone()
         } else {
@@ -146,16 +187,19 @@ pub fn CallsignPage() -> impl IntoView {
         },
       ),
       (
-        "斜杠后缀",
+        "radio.slash-suffix",
         parts.slash.map(t).unwrap_or_else(|| dash.clone()),
       ),
       (
-        "稀有度",
+        "radio.rarity",
         wanted_prefix(&call).map_or_else(
           || t("radio.regular-entity"),
           |p| tf("radio.most-wanted-entity", &[p]),
         ),
       ),
+      ("radio.my-log", history),
+      ("radio.azimuth-from-home", bearing),
+      ("radio.distance-from-home", distance),
     ]
   };
 
@@ -220,7 +264,9 @@ pub fn CallsignPage() -> impl IntoView {
                 .map(|(label, value)| {
                   view! {
                     <div class="flex items-baseline gap-2 px-3 py-2">
-                      <span class="w-28 shrink-0 text-xs text-muted-foreground">{label}</span>
+                      <span class="w-28 shrink-0 text-xs text-muted-foreground">
+                        {move || t(label)}
+                      </span>
                       <span class="text-sm font-medium">{value}</span>
                     </div>
                   }

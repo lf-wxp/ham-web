@@ -21,10 +21,11 @@ use crate::util::{download_text, set_title, storage};
 use super::analysis::ContestAnalysis;
 use super::cabrillo_import::{CabrilloImportButton, ImportReport};
 use super::import_report::ImportReportPanel;
+use super::pace::ContestPace;
 use super::scp_source::{STORAGE_KEY as SCP_KEY, ScpSource};
 use super::scp_suggest::ScpSuggest;
 use super::session::Session;
-use crate::i18n::{t, tf};
+use crate::i18n::{localized_name, t, tf};
 
 pub(super) const SESSION_KEY: &str = "contest-session";
 const MODES: &[&str] = &["CW", "SSB", "FT8", "RTTY"];
@@ -194,7 +195,12 @@ pub fn ContestLogPage() -> impl IntoView {
   let hint = move || {
     let c = call.get();
     let en = lookup(c.trim())?;
-    Some(format!("{} · {} · CQ {}", en.name, en.continent, en.cq))
+    Some(format!(
+      "{} · {} · CQ {}",
+      localized_name(en.name, en.name_en),
+      en.continent,
+      en.cq
+    ))
   };
   let rcvd_placeholder = move || {
     let def = session.with(Session::def);
@@ -591,7 +597,10 @@ pub fn ContestLogPage() -> impl IntoView {
                   .take(50)
                   .map(|e| {
                     let id = e.id;
-                    let entity = e.entity().map(|x| x.name).unwrap_or("—");
+                    let entity = e
+                      .entity()
+                      .map(|x| localized_name(x.name, x.name_en))
+                      .unwrap_or_else(|| "—".to_owned());
                     let time = e.time.clone();
                     let freq = e.freq.clone();
                     let callsign = e.callsign.clone();
@@ -628,6 +637,12 @@ pub fn ContestLogPage() -> impl IntoView {
         </section>
 
         <ImportReportPanel report=import_report />
+
+        <ContestPace
+          session=session
+          done=Signal::derive(move || u32::try_from(entries.with(Vec::len)).unwrap_or(0))
+          save=Callback::new(move |()| save())
+        />
 
         <ContestAnalysis entries=entries def=def my_call=my_call />
 

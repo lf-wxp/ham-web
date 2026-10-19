@@ -11,5 +11,9 @@ authors.workspace = true
 [dependencies]
 ham-web-apt.workspace = true
 
+[dev-dependencies]
+ham-web-dsp.workspace = true
+ham-web-wav.workspace = true
+
 [lints]
 workspace = true

@@ -1,7 +1,7 @@
-// 统一解码 Worker 协议：APT / SSTV / WSPR / RTTY / Olivia / DominoEX / NAVTEX / LRPT 共用这一份入口。
+// 统一解码 Worker 协议：APT / SSTV / WSPR / RTTY / Olivia / DominoEX / NAVTEX / LRPT / FT8 / Feld Hell / WEFAX / AFSK1200 共用这一份入口。
 //
 // 消息信封：
-//   入站：{ codec: "apt"|"sstv"|"wspr"|"rtty"|"olivia"|"dominoex"|"navtex"|"lrpt", bytes: ArrayBuffer, params?: Object }
+//   入站：{ codec: "apt"|"sstv"|"wspr"|"rtty"|"olivia"|"dominoex"|"navtex"|"lrpt"|"ft8"|"hell"|"wefax"|"afsk1200", bytes: ArrayBuffer|ArrayBufferView, params?: Object }
 //   出站：{ ok: true, result } 或 { ok: false, error }
 //   error 是英文错误码（"no-signal:RTTY" / "not-wav" …），页面侧按码取各语言词条
 //   （见 crates/app/src/decode_worker.rs 的 localize_error）；不认识的错误原样显示。
@@ -24,6 +24,9 @@ const CODECS = Object.assign(Object.create(null), {
   navtex: ["/navtex-worker/navtex_worker.js", "/navtex-worker/navtex_worker_bg.wasm"],
   lrpt: ["/lrpt-worker/lrpt_worker.js", "/lrpt-worker/lrpt_worker_bg.wasm"],
   ft8: ["/ft8-worker/ft8_worker.js", "/ft8-worker/ft8_worker_bg.wasm"],
+  hell: ["/hell-worker/hell_worker.js", "/hell-worker/hell_worker_bg.wasm"],
+  wefax: ["/wefax-worker/wefax_worker.js", "/wefax-worker/wefax_worker_bg.wasm"],
+  afsk1200: ["/afsk1200-worker/afsk1200_worker.js", "/afsk1200-worker/afsk1200_worker_bg.wasm"],
 });
 
 // 已加载的 codec 与其 wasm 初始化 Promise（失败也保留：胶水已声明，重试只会得到重复声明错误）。
@@ -36,9 +39,17 @@ function load(codec, entry) {
     }
     return loaded.ready;
   }
-  importScripts(entry[0]);
-  // 单对象参数：位置参数形式在新版 wasm-bindgen 里已弃用并会在控制台告警。
-  const ready = wasm_bindgen({ module_or_path: entry[1] });
+  // 同步失败也要缓存：胶水脚本一旦求值成功，`wasm_bindgen` 就已经在全局声明了，重试再
+  // `importScripts` 只会得到「Identifier 'wasm_bindgen' has already been declared」这条
+  // 误导性错误。把失败包成一个已拒绝的 Promise 存进槽位即可。
+  let ready;
+  try {
+    importScripts(entry[0]);
+    // 单对象参数：位置参数形式在新版 wasm-bindgen 里已弃用并会在控制台告警。
+    ready = wasm_bindgen({ module_or_path: entry[1] });
+  } catch (err) {
+    ready = Promise.reject(err);
+  }
   loaded = { codec, ready };
   return ready;
 }
@@ -66,6 +77,10 @@ function transferables(result) {
 // 本条消息是否已经回信。`unhandledrejection` 可能晚于正常回信（wasm 实例化失败后的
 // 残余 rejection），没有这个标志会在 `ok:true` 之后再补一条 `ok:false`，页面侧会把
 // 已渲染的结果覆盖成错误。
+//
+// 不变量：本 Worker 一次只处理一条消息（页面每次选新文件都先 terminate 再 spawn）。
+// `replied` 与上面的 `loaded` 都建立在这个前提上；若将来改为复用同一 Worker 处理
+// 重叠消息，这两个模块级状态必须改成按消息关联，否则会互相覆盖。
 let replied = false;
 
 self.onmessage = async (event) => {

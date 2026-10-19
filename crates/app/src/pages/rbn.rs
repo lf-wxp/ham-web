@@ -1,11 +1,14 @@
 //! RBN（Reverse Beacon Network）：查询「谁收到了我发的 CW / RTTY 信号」（实时监听）。
 
 use ham_web_core::logbook::StationInfo;
+use ham_web_core::spot_coverage::Spot;
+use ham_web_core::{dxcc, grid};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde::Deserialize;
 
 use crate::components::common::{EmptyState, PageContainer, PageHeader};
+use crate::components::spot_coverage::SpotCoverage;
 use crate::data;
 use crate::i18n::t;
 use crate::ui::{
@@ -42,6 +45,33 @@ pub fn RbnPage() -> impl IntoView {
   let loading = RwSignal::new(false);
   let failed = RwSignal::new(false);
   let queried = RwSignal::new(false);
+  let home_grid = RwSignal::new(
+    storage::get_json::<StationInfo>("station-info")
+      .map(|s| s.gridsquare)
+      .unwrap_or_default(),
+  );
+  // RBN 的 spot 只有 skimmer 呼号、没有网格：按 DXCC 实体中心换算成 4 位网格（约 100 km），
+  // 只能算「粗方位」——组件里用 `coarse` 如实标注，不冒充真实网格。
+  // `Memo`：每条 spot 都要做一次 DXCC 前缀查询 + 网格换算，`Signal::derive` 会在 `SpotCoverage`
+  // 的每个 chip 读取时各重做一遍。
+  let spot_list = Memo::new(move |_| {
+    spots.with(|list| {
+      list
+        .iter()
+        .map(|s| Spot {
+          locator: dxcc::lookup(&s.spotter)
+            .and_then(|entity| grid::grid_from_lat_lon(entity.lat, entity.lon))
+            .map(|g| g.chars().take(4).collect::<String>())
+            .unwrap_or_default(),
+          band: s.band.clone(),
+          snr: f64::from(s.snr),
+          // RBN 数据无时间戳：`None` 让 core 把它排除在 `hourly` 之外，而不是堆到 0 点
+          // （页面也传 `show_hourly=false`，两处口径一致）。
+          hour_utc: None,
+        })
+        .collect::<Vec<_>>()
+    })
+  });
 
   let run = move || {
     let call = callsign.get().trim().to_uppercase();
@@ -49,6 +79,12 @@ pub fn RbnPage() -> impl IntoView {
       crate::ui::push_error(t("common.enter-a-callsign"));
       return;
     }
+    // 站信息里的网格可能在别的页面改过：查询时重读，别用挂载时的旧值算方位。
+    home_grid.set(
+      storage::get_json::<StationInfo>("station-info")
+        .map(|s| s.gridsquare)
+        .unwrap_or_default(),
+    );
     loading.set(true);
     failed.set(false);
     let url = format!("/api/rbn?callsign={call}");
@@ -110,6 +146,7 @@ pub fn RbnPage() -> impl IntoView {
             return view! { <div></div> }.into_any();
           }
           view! {
+            <SpotCoverage home=home_grid spots=spot_list show_hourly=false coarse=true />
             <section class="pxl-card border bg-card">
               <h2 class="border-b px-4 py-3 text-sm font-semibold">
                 {t("radio.beacon-reports")} {list.len()} {t("radio.entry")}

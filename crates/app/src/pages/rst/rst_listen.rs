@@ -3,6 +3,7 @@ use leptos::prelude::*;
 
 use crate::components::quiz_option::QuizOption;
 use crate::i18n::{t, tf};
+use crate::icons::{Icon, IconKind};
 use crate::morse_audio::play_tone;
 use crate::ui::{Button, Variant};
 use crate::util::random;
@@ -54,6 +55,7 @@ pub(super) fn RstListen() -> impl IntoView {
         <div class="flex flex-col items-center gap-2 border bg-muted/30 px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("knowledge.tap-to-play-a")}</div>
           <Button on_click=Callback::new(move |_| play())>
+            <Icon kind=IconKind::Volume2 class="size-6" />
             {move || t("knowledge.play-signal")}
           </Button>
         </div>

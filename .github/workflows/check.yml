@@ -25,9 +25,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 工具链钉死，与 Dockerfile 的 `RUST_VERSION` 同一版本（升级时两处一起改）：
+      # 这里跑 `clippy -D warnings`，浮动的 `stable` 在上游新增 lint 时会让 CI 在代码没动的
+      # 情况下变红，同一个提交隔一周重跑结果还可能不同。
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: 1.99.1
           targets: wasm32-unknown-unknown
           components: rustfmt, clippy
 
@@ -42,6 +46,36 @@ jobs:
       - name: cargo make check
         run: cargo make check
 
+  # Dockerfile 平时只有 push 到 main 后的 build-docker.yml 才会用到：不在 PR 里构建一次，
+  # 构建链路的改动（多阶段拷贝、产物断言、运行镜像缺 libc / 权限）只能等合并后才发现，
+  # 而那时镜像是往上推的、没有「先看它能不能跑」的机会。
+  docker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: ham-web:ci
+          # 与 build-docker.yml 共用 gha 缓存：PR 只读主分支写下的层缓存，不再回写
+          # （PR 的缓存不会进入主分支，写进去只占配额）。
+          cache-from: type=gha
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max' || '' }}
+
+      - name: Smoke test image
+        run: sh scripts/smoke-image.sh ham-web:ci
+
   e2e:
     runs-on: ubuntu-latest
     permissions:
@@ -51,9 +85,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 同上：与 Dockerfile 的 `RUST_VERSION` 保持一致。
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: 1.99.1
           targets: wasm32-unknown-unknown
 
       - name: Cache cargo
@@ -70,6 +106,10 @@ jobs:
       - name: 校验 wasm-bindgen CLI 版本与 Cargo.lock 一致
         run: |
           lock=$(awk -F'"' '/^name = "wasm-bindgen"$/{f=1; next} f && /^version = /{print $2; exit}' Cargo.lock)
+          if [ -z "$lock" ]; then
+            echo "::error::未能在 Cargo.lock 找到 wasm-bindgen 的版本（锁文件缺失或格式变化），请先在仓库根执行 cargo fetch"
+            exit 1
+          fi
           cli=$(wasm-bindgen --version | awk '{print $2}')
           echo "Cargo.lock=$lock CLI=$cli"
           if [ "$lock" != "$cli" ]; then
@@ -98,6 +138,16 @@ jobs:
       - name: Run Playwright
         working-directory: e2e
         run: npx playwright test
+
+      # 跨内核冒烟：默认不跑（firefox / webkit 的浏览器二进制要额外下载，且全套用例依赖
+      # Web Serial / 假音频设备 / WebGL2）。手动触发 workflow 时跑一次，免得这份用例长期
+      # 只有 chromium 一份结果。
+      - name: Cross-browser smoke (Firefox / WebKit)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: e2e
+        run: |
+          npx playwright install --with-deps firefox webkit
+          E2E_CROSS=1 npx playwright test --project=firefox --project=webkit
 
       # 覆盖率按三条口径统计：路由冒烟 / 交互 / 关键流程（详见 e2e/scripts/coverage.mjs）
       - name: E2E coverage report

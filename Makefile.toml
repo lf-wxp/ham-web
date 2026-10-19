@@ -24,7 +24,7 @@ set -e
 WB_VERSION=$(awk -F'"' '/^name = "wasm-bindgen"$/{f=1; next} f && /^version = /{print $2; exit}' Cargo.lock)
 rustup target add wasm32-unknown-unknown
 command -v trunk >/dev/null 2>&1 || cargo install trunk --locked
-# Trunk 自带的 wasm-bindgen 不对外暴露，九个解码 Worker 需要 PATH 上的 CLI，且版本须与 crate 一致
+# Trunk 自带的 wasm-bindgen 不对外暴露，解码 Worker 需要 PATH 上的 CLI，且版本须与 crate 一致
 command -v wasm-bindgen >/dev/null 2>&1 || cargo install wasm-bindgen-cli --version "$WB_VERSION" --locked
 '''
 
@@ -37,7 +37,7 @@ alias = "dev"
 description = "启动前端开发服务器（热重载）：http://127.0.0.1:3000"
 # 语言包必须先生成：`trunk serve` 会把 public/ 拷进产物目录，晚一步拷到的就是旧包
 # （改了 data/i18n/ 却不刷新，页面上仍是旧译文，且不会有任何报错）。
-dependencies = ["i18n-pack", "build-worker", "build-sstv-worker", "build-wspr-worker", "build-rtty-worker", "build-olivia-worker", "build-dominoex-worker", "build-navtex-worker", "build-lrpt-worker", "build-ft8-worker"]
+dependencies = ["i18n-pack", "build-workers"]
 cwd = "${APP_DIR}"
 command = "trunk"
 # 开发产物放在 target/ 下，避免与 release 构建共用 dist/ 互相覆盖
@@ -45,7 +45,7 @@ args = ["serve", "--dist", "../../target/dev-dist"]
 
 [tasks.dev-full]
 description = "同时启动后端 server（3001，仅 API）与前端 trunk dev（3000，代理 /api 到后端）"
-dependencies = ["i18n-pack", "build-worker", "build-sstv-worker", "build-wspr-worker", "build-rtty-worker", "build-olivia-worker", "build-dominoex-worker", "build-navtex-worker", "build-lrpt-worker", "build-ft8-worker"]
+dependencies = ["i18n-pack", "build-workers"]
 script_runner = "@shell"
 script = '''
 set -e
@@ -61,7 +61,14 @@ SERVER_PID=$!
 
 [tasks.build-web]
 description = "构建前端（release）并生成 Service Worker / sitemap"
-dependencies = ["build-worker", "build-sstv-worker", "build-wspr-worker", "build-rtty-worker", "build-olivia-worker", "build-dominoex-worker", "build-navtex-worker", "build-lrpt-worker", "build-ft8-worker", "trunk-build", "postbuild"]
+dependencies = ["build-workers", "trunk-build", "postbuild"]
+
+# 全部 worker 一个任务：清单来自 crates/*-worker（scripts/decode-workers.sh），新增 codec
+# 不必再往 dev / dev-full / build-web 的依赖里各加一行
+[tasks.build-workers]
+description = "构建全部解码 Web Worker（codec 清单取自 crates/*-worker）"
+script_runner = "@shell"
+script = "sh scripts/build-decode-worker.sh"
 
 [tasks.build-worker]
 description = "构建 APT 解码 Web Worker（wasm-bindgen --target no-modules，CLI 版本须与 Cargo.lock 一致）"
@@ -129,7 +136,7 @@ command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "dxcc-map"]
 
 [tasks.icons]
-description = "由 public/pwa-icon.svg 生成 PWA / Apple Touch 图标与 favicon.ico"
+description = "由 public/ 下的设计源生成 PWA / Apple Touch / badge 图标与 favicon.ico"
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "icons"]
 
@@ -381,6 +388,59 @@ description = "构建 FT8 / FT4 解码 Web Worker（wasm-bindgen --target no-mod
 script_runner = "@shell"
 script = "sh scripts/build-decode-worker.sh ft8"
 
+[tasks.hell-sample]
+description = "生成合成 Feld Hell 测试样本 WAV：TEXT='CQ CQ DE BG1AAA' NOISE=0.02 cargo make hell-sample"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-hell --release --example generate_sample -- tmp/hell-sample.wav "${TEXT:-CQ CQ DE BG1AAA}" "${NOISE:-0.02}"
+'''
+
+[tasks.hell-decode]
+description = "命令行解码 Feld Hell 样本：FILE=tmp/hell-sample.wav cargo make hell-decode"
+script_runner = "@shell"
+script = '''
+cargo run -q -p ham-web-hell --release --example decode_sample -- "${FILE:-tmp/hell-sample.wav}"
+'''
+
+[tasks.hell-test]
+description = "生成并解码合成 Feld Hell 样本，端到端自检（依赖 hell-sample → hell-decode）"
+dependencies = ["hell-sample", "hell-decode"]
+
+[tasks.build-hell-worker]
+description = "构建 Feld Hell 解码 Web Worker（wasm-bindgen --target no-modules，CLI 版本须与 Cargo.lock 一致）"
+script_runner = "@shell"
+script = "sh scripts/build-decode-worker.sh hell"
+
+[tasks.wefax-sample]
+description = "生成合成 WEFAX 测试样本 WAV：cargo make wefax-sample"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-wefax --release --example generate_sample -- tmp/wefax-sample.wav
+'''
+
+[tasks.wefax-decode]
+description = "命令行解码 WEFAX 样本：FILE=tmp/wefax-sample.wav cargo make wefax-decode"
+script_runner = "@shell"
+script = '''
+cargo run -q -p ham-web-wefax --release --example decode_sample -- "${FILE:-tmp/wefax-sample.wav}"
+'''
+
+[tasks.wefax-test]
+description = "生成并解码合成 WEFAX 样本，端到端自检（依赖 wefax-sample → wefax-decode）"
+dependencies = ["wefax-sample", "wefax-decode"]
+
+[tasks.build-wefax-worker]
+description = "构建 WEFAX 解码 Web Worker（wasm-bindgen --target no-modules，CLI 版本须与 Cargo.lock 一致）"
+script_runner = "@shell"
+script = "sh scripts/build-decode-worker.sh wefax"
+
+[tasks.build-afsk1200-worker]
+description = "构建 AX.25 AFSK 软 TNC 的 Web Worker（实现留在 ham-web-core，这里只是薄包装）"
+script_runner = "@shell"
+script = "sh scripts/build-decode-worker.sh afsk1200"
+
 [tasks.build-dominoex-worker]
 description = "构建 DominoEX 解码 Web Worker（wasm-bindgen --target no-modules，CLI 版本须与 Cargo.lock 一致）"
 script_runner = "@shell"
@@ -437,17 +497,20 @@ dependencies = ["spectrum-sample", "spectrum-analyze"]
 # ───────────────────────────── 合成测试样本（汇总） ─────────────────────────────
 
 [tasks.samples]
-description = "生成全部合成测试样本 WAV 到 tmp/：apt / sstv / wspr / lrpt / dominoex / olivia / navtex / rtty / psk31 / spectrum"
+description = "生成全部合成测试样本 WAV 到 tmp/：apt / sstv / wspr / ft8 / lrpt / dominoex / olivia / navtex / rtty / hell / wefax / psk31 / spectrum"
 # 各样本任务互为独立产物，汇总只做编排；单跑某个样本仍用对应的 <x>-sample。
 dependencies = [
   "apt-sample",
   "sstv-sample",
   "wspr-sample",
+  "ft8-sample",
   "lrpt-sample",
   "dominoex-sample",
   "olivia-sample",
   "navtex-sample",
   "rtty-sample",
+  "hell-sample",
+  "wefax-sample",
   "psk31-sample",
   "spectrum-sample",
 ]
@@ -498,6 +561,11 @@ description = "生成运行时语言包 public/data/i18n/{lang}.json（非内嵌
 # 整条 release 依赖链（开发时白等几分钟）。
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--", "i18n-pack"]
+
+[tasks.e2e-check]
+description = "e2e 覆盖对账：coverage-targets.json 的每条核心旅程必须能在 e2e/tests 的 spec 里命中"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--", "check-e2e"]
 
 [tasks.i18n-check]
 description = "校验 data/i18n/ 词典（重复 key、占位符、死条目）与运行时语言包新鲜度，并统计文案覆盖率"
@@ -581,8 +649,13 @@ script_runner = "@shell"
 script = '''
 set -e
 cargo clippy --all-targets -p ham-web-core -p ham-web-nec -p ham-web-dsp -p ham-web-wav -p ham-web-tools -p ham-web-server -- -D warnings
-for codec in apt sstv wspr rtty olivia dominoex navtex lrpt ft8; do
-  cargo clippy --all-targets -p "ham-web-$codec" -- -D warnings
+# 先赋值再循环：直接写 for codec in $(…)，清单脚本失败时 for 会静默跑 0 次
+codecs=$(sh scripts/decode-workers.sh)
+for codec in $codecs; do
+  # 解码实现不一定有独立 crate（afsk1200 的实现在 ham-web-core 里）：有目录才检查
+  if [ -f "crates/$codec/Cargo.toml" ]; then
+    cargo clippy --all-targets -p "ham-web-$codec" -- -D warnings
+  fi
   cargo clippy -p "ham-web-$codec-worker" --target wasm32-unknown-unknown -- -D warnings
 done
 cargo clippy -p ham-web-app --target wasm32-unknown-unknown -- -D warnings
@@ -595,8 +668,12 @@ script = '''
 set -e
 cargo test -p ham-web-core -p ham-web-nec -p ham-web-dsp -p ham-web-wav -p ham-web-tools -p ham-web-server -p ham-web-app
 # 各解码 crate 的 examples 同名，逐包执行避免 Cargo 输出文件互相覆盖。
-for codec in apt sstv wspr rtty olivia dominoex navtex lrpt ft8; do
-  cargo test -p "ham-web-$codec"
+codecs=$(sh scripts/decode-workers.sh)
+for codec in $codecs; do
+  # 同上：没有独立解码 crate 的 codec（afsk1200）跳过，它的单测在 ham-web-core 里
+  if [ -f "crates/$codec/Cargo.toml" ]; then
+    cargo test -p "ham-web-$codec"
+  fi
 done
 '''
 
@@ -611,6 +688,7 @@ dependencies = [
   "i18n-check",
   "knowledge-i18n-check",
   "explanations-check",
+  "e2e-check",
   "check-ui",
   "pixel-check",
 ]
@@ -634,9 +712,10 @@ command = "node"
 args = ["scripts/coverage.mjs"]
 
 [tasks.ci]
-description = "CI：格式检查 + clippy + 测试 + 界面文案/知识库译文校验 + 解析表校验 + 界面规范守卫 + 像素风生成物校验 + 前端构建"
+description = "CI：格式检查 + clippy + 测试 + 界面文案/知识库译文校验 + 解析表校验 + e2e 清单对账 + 界面规范守卫 + 像素风生成物校验 + 前端构建"
 # 与 `check` 保持同一套校验：漏掉 knowledge-i18n-check 时，知识库译文 key 漂移
-# 会让页面上静默回退中文，而 CI 不会红。
+# 会让页面上静默回退中文，而 CI 不会红；漏掉 e2e-check 时，e2e 清单与用例标题对不上
+# 也要等到 CI 的覆盖率步骤才红。
 dependencies = [
   "fmt-check",
   "clippy",
@@ -647,6 +726,7 @@ dependencies = [
   "i18n-check",
   "knowledge-i18n-check",
   "explanations-check",
+  "e2e-check",
   "check-ui",
   "pixel-check",
   "build-web",
@@ -662,9 +742,9 @@ command = "docker"
 args = ["build", "--build-arg", "SITE_URL=${SITE_URL}", "-t", "ham-web:latest", "."]
 
 [tasks.docker-run]
-description = "运行 Docker 镜像：http://127.0.0.1:3000"
+description = "运行 Docker 镜像：http://127.0.0.1:3000（/app/data 挂到命名卷，重启不丢推送订阅与 VAPID 密钥）"
 command = "docker"
-args = ["run", "--rm", "-p", "3000:3000", "ham-web:latest"]
+args = ["run", "--rm", "-p", "3000:3000", "-v", "ham-web-data:/app/data", "ham-web:latest"]
 
 [tasks.clean]
 description = "清理构建产物"

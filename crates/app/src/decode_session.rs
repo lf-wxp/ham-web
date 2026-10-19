@@ -22,6 +22,12 @@ use crate::decode_worker::{
 use crate::i18n::{t, tf};
 use crate::util::js_error_message;
 
+/// 各解码页共用的上传体积上限（字节）。
+///
+/// 页面只把「读到的字节」交给 Worker，8 MiB 对一段几十秒到几分钟的录音足够；更大的
+/// 录音应该先自己截取。上限写在一处，避免三个页面各写一份后漂移。
+pub const MAX_UPLOAD_BYTES: u64 = 8 * 1024 * 1024;
+
 /// 会话配置。回调都用函数指针：词条字面量留在各页的调用点（`check-i18n` 只采集直接实参）。
 pub struct DecodeConfig<T> {
   /// 统一信封里的 codec 名（`rtty` / `olivia` / …）。
@@ -75,7 +81,7 @@ impl<T: Send + Sync + 'static> Clone for DecodeSession<T> {
 impl<T: Send + Sync + 'static> Copy for DecodeSession<T> {}
 
 impl<T: Send + Sync + 'static> DecodeSession<T> {
-  /// 创建会话并起第一个 Worker。
+  /// 创建会话（**不**创建 Worker：第一个 Worker 在首次 `start` 时才 spawn）。
   pub fn new(config: DecodeConfig<T>) -> Self {
     let processing = RwSignal::new(false);
     let result = RwSignal::new(None::<T>);
@@ -117,18 +123,30 @@ impl<T: Send + Sync + 'static> DecodeSession<T> {
     session
   }
 
-  /// 终止当前 Worker（已卸载的槽位直接忽略）。
+  /// 终止当前 Worker 并清空槽位（已卸载的槽位直接忽略）。
   fn stop_worker(self) {
     if let Some(Some(w)) = self.worker.try_get_value() {
       shutdown_worker(&w);
+      // 清掉：已经 terminate 的 Worker 留在槽里，后面的 `start` 虽然总会先重建，但别的
+      // 路径若误用它只会静默丢消息。
+      self.worker.try_set_value(None);
     }
   }
 
-  /// 终止旧 Worker、递增代际、起新 Worker，返回新批次号。
-  fn restart_worker(self) -> u32 {
+  /// 让当前这一批作废：终止 Worker、代际递增，**不**新建 Worker。返回新批次号。
+  ///
+  /// 取消 / 超时只需要这一步。Worker 在下次 `start` 时才创建（见 `new` 里「惰性创建」的
+  /// 注释），取消后立刻新建只会白加载一份 wasm，随后又被 `start` 终止重建。
+  fn invalidate(self) -> u32 {
     self.stop_worker();
     let batch = self.generation.get_value().wrapping_add(1);
     self.generation.set_value(batch);
+    batch
+  }
+
+  /// 作废旧批次并起新 Worker，返回新批次号。
+  fn restart_worker(self) -> u32 {
+    let batch = self.invalidate();
     self.worker.set_value(spawn_worker(
       &self.onmessage.get_value(),
       &self.onerror.get_value(),
@@ -136,9 +154,9 @@ impl<T: Send + Sync + 'static> DecodeSession<T> {
     batch
   }
 
-  /// 取消当前解码：terminate + 代际递增 + 重建 Worker（解码是同步的，只能整体丢弃）。
+  /// 取消当前解码：terminate + 代际递增（解码是同步的，只能整体丢弃）。
   pub fn cancel(self) {
-    self.restart_worker();
+    self.invalidate();
     self.processing.set(false);
     self.reading.set(false);
     self.error.set(None);

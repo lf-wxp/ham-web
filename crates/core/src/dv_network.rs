@@ -28,6 +28,37 @@ pub const DV_NETWORK_TIPS: &[&str] = &[
   "遵守当地中继的使用规范，避免长时间占用通话组。",
 ];
 
+/// 模拟中继联网（语音网关）：把普通调频中继或单台接到互联网。
+///
+/// 与上面的数字语音网络分开列：这三套走的是**模拟语音**，不涉及声码器与通话组，
+/// 但对国内火腿来说，「中继以外怎么通」最常见的答案就是它们。
+pub const ANALOG_LINKS: &[(&str, &str, &str)] = &[
+  (
+    "EchoLink",
+    "业余 VoIP",
+    "用呼号验证后把本地中继或单台接入互联网；节点分 -L（链路）、-R（中继）、-E（用户）三种身份。",
+  ),
+  (
+    "IRLP",
+    "业余 VoIP",
+    "基于 Linux 节点与控制板的联网方案，用 DTMF 指令连接远端节点；节点号由节点持有者维护。",
+  ),
+  (
+    "AllStar Link",
+    "开源",
+    "基于 Asterisk 的开源语音联网，节点之间可互联，也常用于把模拟中继接进其他网络。",
+  ),
+];
+
+/// 模拟联网的接入要点。
+pub const ANALOG_LINK_TIPS: &[&str] = &[
+  "联网语音进入本地中继后仍然占用本地频率：先听再做，别把网关当成自己的专用频道。",
+  "EchoLink 需要呼号验证；-L / -R 节点由持有者申请与维护，普通用户用 -E 或直接连 -R。",
+  "IRLP 的 DTMF 指令与节点号由节点持有者设定，连接前先查当地节点的说明。",
+  "语音质量取决于两端网络，丢包时听起来像「断续」，不是你的电台出了故障。",
+  "跨境联网要留意当地规定：有些国家要求现场有本地控制操作员。",
+];
+
 /// DMR 机理速查：时隙、色码与 Tier 分级。
 pub const DMR_BASICS: &[(&str, &str)] = &[
   (
@@ -64,5 +95,18 @@ mod tests {
   fn dv_network_data_populated() {
     assert!(DV_NETWORKS.len() >= 4);
     assert!(!DV_NETWORK_TIPS.is_empty());
+  }
+
+  #[test]
+  fn analog_linking_is_separate_from_digital_networks() {
+    assert_eq!(ANALOG_LINKS.len(), 3);
+    assert!(!ANALOG_LINK_TIPS.is_empty());
+    // 数字语音与模拟联网是两套东西，条目名不能混在一起。
+    for (name, _, _) in ANALOG_LINKS {
+      assert!(
+        !DV_NETWORKS.iter().any(|(n, _, _)| n == name),
+        "{name} 不该同时出现在数字网络表里"
+      );
+    }
   }
 }

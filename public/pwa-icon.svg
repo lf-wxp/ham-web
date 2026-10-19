@@ -5,7 +5,7 @@
     <!--
       品牌底色：iOS 口径的竖向渐变（顶部亮 → 底部深），中段压着品牌蓝 #3b5dc9。
       `cargo make icons` 生成满幅图标（Apple Touch / maskable）时靠 #bg 补出圆角以外的
-      区域，品牌色只写在这一处；改色要连 favicon-16.svg 与 icon.svg 一起看。
+      区域，品牌色只写在这一处；改色要连 pwa-maskable.svg 与 favicon-16.svg 一起看。
     -->
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#5f80ea"/>
@@ -37,20 +37,21 @@
     <clipPath id="tile"><rect width="512" height="512" rx="115"/></clipPath>
 
     <!--
-      塔形（像素块拼的发射塔，原型 512 空间里 12 × 9 块、块宽 32）：缩到 3/4 并下移，
-      给上方发射的电波腾出空间，块宽 24 仍是整像素，32px 一档不至于走形。
+      塔形：像素块拼的桁架塔，块 32、共 14 行（y 240 → 464）。从上往下是
+      「塔顶机房 → 四条塔腿，每段 3 行、逐段向外收放 16 → 每段底缘一条横档」，
+      腿之间留 32 / 48 / 64 的缝，读起来是镂空的桁架而不是实心金字塔。
+      底座那条横档把两条腿连起来。
+      几何约束：块宽 32 保证 32px 的 favicon.ico 档渲染时杆件仍有 2px 宽。
       投影与主体共用一个形状。
     -->
     <g id="tower">
-      <rect x="208" y="240" width="96" height="24"/>
-      <rect x="232" y="264" width="48" height="48"/>
-      <rect x="112" y="312" width="72" height="48"/>
-      <rect x="208" y="312" width="96" height="48"/>
-      <rect x="328" y="312" width="72" height="48"/>
-      <rect x="112" y="360" width="288" height="48"/>
-      <rect x="112" y="408" width="72" height="48"/>
-      <rect x="208" y="408" width="96" height="48"/>
-      <rect x="328" y="408" width="72" height="48"/>
+      <rect x="244" y="200" width="24" height="32"/>
+      <rect x="232" y="232" width="48" height="16"/>
+      <path d="M 240 248 L 176 472" stroke="currentColor" stroke-width="20" fill="none"/>
+      <path d="M 272 248 L 336 472" stroke="currentColor" stroke-width="20" fill="none"/>
+      <rect x="219" y="320" width="74" height="14"/>
+      <rect x="199" y="392" width="114" height="14"/>
+      <rect x="174" y="456" width="164" height="16"/>
     </g>
   </defs>
 
@@ -60,20 +61,21 @@
     <rect width="512" height="512" fill="url(#glow)"/>
 
     <!--
-      无线电波：以塔尖 (256,244) 为圆心的三道同心弧，远弧更细更淡。
-      压在玻璃高光之上 —— 叠在高光下面会被顶部反光冲淡，波就糊了。
+      无线电波：以塔顶 (256,240) 为圆心的三道同心弧，跨角约 144°（两端各落在塔顶
+      下方一点），远弧更细更淡。压在玻璃高光之上 —— 叠在高光下面会被顶部反光冲淡，
+      波就糊了。
     -->
     <g fill="none" stroke="#ffffff" stroke-linecap="round">
-      <path d="M 170.4 216.2 A 90 90 0 0 1 341.6 216.2" stroke-width="16" stroke-opacity="0.6"/>
-      <path d="M 113.3 197.6 A 150 150 0 0 1 398.7 197.6" stroke-width="13" stroke-opacity="0.44"/>
-      <path d="M 61.03 180.65 A 205 205 0 0 1 450.97 180.65" stroke-width="10" stroke-opacity="0.32"/>
+      <path d="M 179.9 207.28 A 80 80 0 0 1 332.1 207.28" stroke-width="14" stroke-opacity="0.6"/>
+      <path d="M 126.7 190.03 A 136 136 0 0 1 385.3 190.03" stroke-width="11" stroke-opacity="0.44"/>
+      <path d="M 73.4 172.67 A 192 192 0 0 1 438.6 172.67" stroke-width="8" stroke-opacity="0.32"/>
     </g>
 
     <rect width="512" height="512" fill="url(#sheen)"/>
 
     <!-- 塔：深蓝投影在下、白色主体在上，浮出玻璃面 -->
-    <use href="#tower" y="10" fill="#0e1c4d" opacity="0.42"/>
-    <use href="#tower" fill="#ffffff"/>
+    <use href="#tower" y="10" fill="#0e1c4d" color="#0e1c4d" opacity="0.42"/>
+    <use href="#tower" fill="#ffffff" color="#ffffff"/>
   </g>
 
   <!-- 玻璃边缘的高光细线 -->

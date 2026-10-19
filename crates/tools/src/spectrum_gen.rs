@@ -32,7 +32,7 @@ pub fn generate(
   noise: f32,
 ) -> Result<()> {
   let samples = ham_web_core::spectrum::synthesize(rate, seconds, tones, noise);
-  let wav = make_wav(&samples, rate);
+  let wav = ham_web_wav::encode(&samples, rate);
   if let Some(parent) = output.parent()
     && !parent.as_os_str().is_empty()
   {
@@ -72,29 +72,6 @@ pub fn analyze(path: &Path, k: usize) -> Result<()> {
     println!("  {}. {:>8.1} Hz  {:>6.1} dB", i + 1, f, v);
   }
   Ok(())
-}
-
-/// 写为 16 位 PCM 单声道 WAV。
-fn make_wav(signal: &[f32], rate: u32) -> Vec<u8> {
-  let data_len = signal.len() * 2;
-  let mut out = Vec::with_capacity(44 + data_len);
-  out.extend_from_slice(b"RIFF");
-  out.extend_from_slice(&(36 + data_len as u32).to_le_bytes());
-  out.extend_from_slice(b"WAVE");
-  out.extend_from_slice(b"fmt ");
-  out.extend_from_slice(&16u32.to_le_bytes());
-  out.extend_from_slice(&1u16.to_le_bytes()); // PCM
-  out.extend_from_slice(&1u16.to_le_bytes()); // 单声道
-  out.extend_from_slice(&rate.to_le_bytes());
-  out.extend_from_slice(&(rate * 2).to_le_bytes()); // 字节率 = 采样率 × 2（16 位）
-  out.extend_from_slice(&2u16.to_le_bytes()); // 块对齐
-  out.extend_from_slice(&16u16.to_le_bytes()); // 位深
-  out.extend_from_slice(b"data");
-  out.extend_from_slice(&(data_len as u32).to_le_bytes());
-  for &s in signal {
-    out.extend_from_slice(&((s.clamp(-1.0, 1.0) * 32767.0) as i16).to_le_bytes());
-  }
-  out
 }
 
 /// 读取 16 位 PCM WAV，返回（样本 f32, 采样率）。多声道时只取第一声道。

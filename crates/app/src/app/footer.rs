@@ -13,7 +13,9 @@ pub(super) fn Footer() -> impl IntoView {
           <nav class="text-xs sm:text-sm">
             <ul class="inline-flex flex-wrap items-center gap-2 sm:gap-3 text-muted-foreground">
               <li>
-                <a href="https://github.com/lf-wxp/ham-web" rel="nofollow" class=LINK aria-label=move || t("shell.repository")>
+                // 可见文本「GitHub 仓库」本身就是完整的名字；再补一个更短的 `aria-label`
+                // 会与可见文本对不上（axe 的 label-content-name-mismatch）。
+                <a href="https://github.com/lf-wxp/ham-web" rel="nofollow" class=LINK>
                   {move || t("shell.github-repository")}
                 </a>
               </li>

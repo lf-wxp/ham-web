@@ -1,11 +1,17 @@
 {
+  "id": "/",
   "name": "业余无线电｜题库 · 知识 · 工具",
   "short_name": "业余无线电",
   "description": "业余无线电一站式平台：A/B/C 类题库练习、模拟考试、知识速查、通联日志与实时传播",
+  "lang": "zh-CN",
+  "dir": "ltr",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#F2E8CF",
-  "theme_color": "#3B5DC9",
+  "theme_color": "#FFF8E1",
+  "categories": ["education", "utilities"],
   "icons": [
     {
       "src": "/pwa-icon-192.png",
@@ -30,6 +36,29 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "题库练习",
+      "short_name": "练习",
+      "description": "按分类刷题，边做边看解析",
+      "url": "/practice",
+      "icons": [{ "src": "/pwa-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "模拟考试",
+      "short_name": "考试",
+      "description": "按真实考试规则限时作答",
+      "url": "/exam",
+      "icons": [{ "src": "/pwa-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "每日挑战",
+      "short_name": "挑战",
+      "description": "每天一组题，连胜可累计",
+      "url": "/daily-challenge",
+      "icons": [{ "src": "/pwa-icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

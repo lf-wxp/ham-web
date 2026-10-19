@@ -187,7 +187,9 @@ self.addEventListener("push", (event) => {
   const options = {
     body: payload.body || "",
     icon: "/pwa-icon-192.png",
-    badge: "/pwa-icon-192.png",
+    // badge 只能是单色透明图：Android 只取它的 alpha 通道再按系统栏颜色着色，
+    // 拿彩色图标当 badge 会渲染成一个实心方块。
+    badge: "/pwa-badge-96.png",
     tag: payload.tag || "ham-exam",
     data: { url: payload.url || "/" },
   };

@@ -13,6 +13,7 @@ ham-web-dsp.workspace = true
 
 [dev-dependencies]
 ham-web-apt.workspace = true
+ham-web-wav.workspace = true
 
 
 [lints]

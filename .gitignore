@@ -12,7 +12,7 @@ public/sitemap.xml
 # 构建链会重新生成，不入库；`cargo make check` 先跑 i18n-pack 再校验。
 public/data/i18n/
 
-# Web Worker 构建产物：9 个 `*-worker` 目录里**全部**是 wasm-bindgen 生成的
+# Web Worker 构建产物：所有 `*-worker` 目录里**全部**是 wasm-bindgen 生成的
 # `*_worker.js` + `*_worker_bg.wasm`（`cargo make build-*-worker` 产出，无手写
 # 文件 —— 统一入口是手写的 `public/decode-worker.js`，要提交）。
 public/*-worker/

@@ -4,26 +4,14 @@
 
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use wasm_bindgen::JsCast;
 use web_sys::File;
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Button, FileDropZone, NumberField, Size, Variant};
-use crate::util::{js_error_message, set_title};
+use crate::util::set_title;
 
 use crate::i18n::{t, tf};
-
-/// 读取文件字节（通过 Blob.array_buffer）。
-async fn read_file_bytes(file: &File) -> Result<Vec<u8>, String> {
-  let blob: web_sys::Blob = file.clone().into();
-  let promise = blob.array_buffer();
-  let buf = wasm_bindgen_futures::JsFuture::from(promise)
-    .await
-    .map_err(|e| js_error_message(&e))?;
-  let arr: js_sys::ArrayBuffer = buf.unchecked_into();
-  Ok(js_sys::Uint8Array::new(&arr).to_vec())
-}
 
 #[component]
 pub fn PskDecodePage() -> impl IntoView {
@@ -42,7 +30,7 @@ pub fn PskDecodePage() -> impl IntoView {
     file_name.set(file.name());
     let c = center.get_untracked();
     spawn_local(async move {
-      match read_file_bytes(&file).await {
+      match crate::decode_worker::read_file_bytes(&file).await {
         Ok(bytes) => match ham_web_apt::parse_wav(&bytes) {
           Ok((samples, rate)) => {
             let text = ham_web_core::psk31::decode_psk31(&samples, rate, c as f32);
