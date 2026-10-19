@@ -118,7 +118,7 @@ C/D/E 的判定口径。
 | 知识库译文 | 中文原文作 key 的漂移检测 | `cargo make knowledge-i18n-check` | 译文静默失效 |
 | 解析表 | 答案一致性、重复注入、同题多版本分叉 | `cargo make explanations-check` | 解析与题库不一致 |
 | 像素风 | 调色板对比度、`schemes.css` 与方案表一致 | `cargo make pixel-check` | 对比度或生成物漂移 |
-| e2e 对账 | 267 条 journey 的 grep 必须在 spec 里唯一命中 | `cargo make e2e-check` | 关键旅程失去用例 |
+| e2e 对账 | 268 条 journey 的 grep 必须在 spec 里唯一命中 | `cargo make e2e-check` | 关键旅程失去用例 / grep 歧义 |
 | 注册表一致性 | 注册表 ↔ 导航 ↔ 路由 ↔ sitemap | `cargo test -p ham-web-app registry_check` | 新增页面漏注册 |
 | 体积预算 | `perf-budget.json`（主包 wasm br 上限 1 900 000 B 等 7 项） | `cargo make size-check`（需先 `build-web`） | 产物超预算 |
 | 端到端 | 全站冒烟 + 无障碍 + 三语布局 + 手机宽度 | `cargo make e2e` | 用户可见回归 |
