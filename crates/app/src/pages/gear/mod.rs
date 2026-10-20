@@ -432,7 +432,7 @@ pub fn GearPage() -> impl IntoView {
       />
 
       <section class="pxl-card border bg-card">
-        <h2 class="border-b px-4 py-3 text-sm font-semibold">
+        <h2 class="pxl-section-title">
           {move || t("knowledge.spec-comparison")}
         </h2>
         <p class="px-4 pt-3 text-xs text-muted-foreground">

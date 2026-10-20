@@ -26,7 +26,7 @@ pub fn ConceptsSection(
   };
   view! {
     <section class="pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t(&title)}</h2>
+      <h2 class="pxl-section-title">{move || t(&title)}</h2>
       <div class="grid gap-1 p-4 sm:grid-cols-2">
         {items
           .iter()

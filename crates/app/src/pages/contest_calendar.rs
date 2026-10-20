@@ -54,7 +54,7 @@ pub fn ContestCalendarPage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.all-contests-sorted-by")}</h2>
+          <h2 class="pxl-section-title">{move || t("contest.all-contests-sorted-by")}</h2>
           <div class="divide-y">
             {scheduled
               .iter()
@@ -113,7 +113,7 @@ pub fn ContestCalendarPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.contest-tips")}</h2>
+          <h2 class="pxl-section-title">{move || t("contest.contest-tips")}</h2>
           <ul class="space-y-2 p-4">
             <li class="flex gap-2 text-sm text-muted-foreground">
               <span class="mt-0.5 shrink-0 text-primary">"•"</span>

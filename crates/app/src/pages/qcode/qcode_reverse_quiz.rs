@@ -72,7 +72,7 @@ pub(super) fn QCodeReverseQuiz(entries: &'static [GlossaryEntry]) -> impl IntoVi
 
   view! {
     <section class="mb-8 pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.q-code-reverse-quiz")}</h2>
+      <h2 class="pxl-section-title">{move || t("knowledge.q-code-reverse-quiz")}</h2>
       <div class="space-y-4 p-4">
         <div class="flex flex-col items-center gap-2 border bg-muted/30 px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("knowledge.which-q-code-matches")}</div>

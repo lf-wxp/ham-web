@@ -23,7 +23,7 @@ pub fn AntennaDiyPage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.classic-home-built-antennas")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.classic-home-built-antennas")}</h2>
           <Table class="min-w-[820px] text-sm">
             <TableHead>
               <TableRow>

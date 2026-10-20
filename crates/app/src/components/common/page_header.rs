@@ -33,8 +33,11 @@ pub fn PageHeader(
   view! {
     <header data-page-header class=cn(&[PAGE_HEADER_BAR, &class])>
       <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
-        <div class="mr-auto">
-          <h1 class="pxl-title text-sm leading-tight">{move || title.get()}</h1>
+        // 主色左轨 + 抬到页级字号的标题：内页的「这是哪一页」全靠这一行，
+        // 12px 的 `text-sm` 标题在 18px 正文旁边读起来只是又一行小字。
+        // `-ml-3` 让标题文字与下方的工具条 / 正文左边缘对齐，主色轨挂在容器的内边距里。
+        <div class="mr-auto -ml-3 border-l-4 border-primary pl-3">
+          <h1 class="pxl-title text-base leading-tight sm:text-lg">{move || title.get()}</h1>
           <div class="text-xs text-muted-foreground">{move || subtitle.get()}</div>
         </div>
         {actions.map(|a| a.run())}

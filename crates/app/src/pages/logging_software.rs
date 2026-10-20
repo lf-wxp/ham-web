@@ -22,7 +22,7 @@ pub fn LoggingSoftwarePage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("log.main-software")}</h2>
+          <h2 class="pxl-section-title">{move || t("log.main-software")}</h2>
           <Table class="min-w-[560px] text-sm">
             <TableHead>
               <TableRow>
@@ -49,7 +49,7 @@ pub fn LoggingSoftwarePage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.usage-notes")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.usage-notes")}</h2>
           <ul class="space-y-2 p-4">
             {SOFTWARE_NOTES
               .iter()

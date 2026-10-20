@@ -11,7 +11,7 @@ pub(super) fn TopicBars(rows: Vec<(&'static str, usize)>) -> impl IntoView {
   let max = rows.iter().map(|(_, n)| *n).max().unwrap_or(1).max(1);
   view! {
     <section class="pxl-window space-y-2 p-4" aria-labelledby="topic-bars-title">
-      <h2 id="topic-bars-title" class="pxl-title text-sm">{move || t("rpg.weak-topics")}</h2>
+      <h2 id="topic-bars-title" class="pxl-section-head">{move || t("rpg.weak-topics")}</h2>
       <ul class="space-y-2">
         {rows
           .into_iter()

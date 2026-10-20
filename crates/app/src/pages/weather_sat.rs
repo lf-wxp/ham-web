@@ -39,7 +39,7 @@ pub fn WeatherSatPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.getting-started-5-steps")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.getting-started-5-steps")}</h2>
           <ol class="space-y-3 p-4">
             {APT_GUIDE
               .iter()
@@ -89,7 +89,7 @@ pub fn WeatherSatPage() -> impl IntoView {
         </Table>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.key-concepts-heading")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.key-concepts-heading")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {WEATHER_CONCEPTS
               .iter()
@@ -106,7 +106,7 @@ pub fn WeatherSatPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.receiving-tips")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.receiving-tips")}</h2>
           <ul class="space-y-2 p-4">
             {WEATHER_TIPS
               .iter()

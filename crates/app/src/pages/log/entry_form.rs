@@ -130,7 +130,7 @@ pub(super) fn EntryForm(
   view! {
     // 新增记录表单
     <section class="pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">
+      <h2 class="pxl-section-title">
         {move || if editing.get().is_some() { t("log.edit-qso") } else { t("log.add-qso") }}
       </h2>
       <div class="px-4 pt-4">

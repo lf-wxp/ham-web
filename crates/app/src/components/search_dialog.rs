@@ -431,7 +431,7 @@ pub fn SearchDialog() -> impl IntoView {
                     let keyword = keyword.clone();
                     view! {
                       <div>
-                        <div class="mb-1 flex items-center gap-2 px-2 text-xs font-semibold text-muted-foreground">
+                        <div class="pxl-label mb-1 flex items-center gap-2 px-2 text-xs text-muted-foreground">
                           <span>{page.clone()}</span>
                           <span class="h-px flex-1 bg-border"></span>
                         </div>

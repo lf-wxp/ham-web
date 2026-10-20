@@ -99,7 +99,7 @@ pub fn MistakeTopicsPage() -> impl IntoView {
                       aria-hidden="true"
                     ></span>
                     <div class="mr-auto min-w-0">
-                      <div class="text-sm font-medium">{name}</div>
+                      <div class="text-sm font-medium">{move || t(name)}</div>
                       <div class="mt-0.5 text-xs text-muted-foreground">
                         {tp("common.questions", domain.mistakes, &[&domain.mistakes.to_string()])}
                         " · "

@@ -334,7 +334,7 @@ pub fn ContestLogPage() -> impl IntoView {
         })}
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.contest-setup")}</h2>
+          <h2 class="pxl-section-title">{move || t("contest.contest-setup")}</h2>
           <div class="px-4 pt-4">
             <CatControl on_reading=move |r: CatReading| {
               // 电台的数据模式在竞赛里通常就是 FT8

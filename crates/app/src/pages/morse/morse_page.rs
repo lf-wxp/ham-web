@@ -146,7 +146,7 @@ pub fn MorsePage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">
+          <h2 class="pxl-section-title">
             {move || t("morse.cw-prosigns")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.sent-as-a-whole")}</span>
           </h2>
@@ -177,7 +177,7 @@ pub fn MorsePage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("morse.signal-timing-standard")}</h2>
+          <h2 class="pxl-section-title">{move || t("morse.signal-timing-standard")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("morse.based-on-one-dot")}</p>
           <div class="grid grid-cols-2 gap-3 p-4 sm:grid-cols-5">
             {TIMING

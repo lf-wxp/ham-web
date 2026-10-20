@@ -46,7 +46,7 @@ pub fn ReceiverPage() -> impl IntoView {
         </Table>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.noise-and-sensitivity-basics")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.noise-and-sensitivity-basics")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {NOISE_BASICS
               .iter()
@@ -63,7 +63,7 @@ pub fn ReceiverPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.improving-reception")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.improving-reception")}</h2>
           <ul class="space-y-2 p-4">
             {RECEIVER_TIPS
               .iter()

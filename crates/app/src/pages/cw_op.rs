@@ -22,7 +22,7 @@ pub fn CwOpPage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.common-cw-abbreviations")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.common-cw-abbreviations")}</h2>
           <Table class="min-w-[560px] text-sm">
             <TableHead>
               <TableRow>
@@ -47,7 +47,7 @@ pub fn CwOpPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.operating-tips")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.operating-tips")}</h2>
           <ul class="space-y-2 p-4">
             {CW_TIPS
               .iter()

@@ -127,7 +127,7 @@ pub fn SmithPage() -> impl IntoView {
 
       <PageContainer>
         <section id="chart" class="scroll-mt-24 pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.impedance-location-and-matching")}</h2>
+          <h2 class="pxl-section-title">{move || t("tools.impedance-location-and-matching")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
             {move || t("tools.the-chart-is-normalised")}
           </p>
@@ -187,7 +187,7 @@ pub fn SmithPage() -> impl IntoView {
         </section>
 
         <section id="match" class="scroll-mt-24 pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.matching-network")}</h2>
+          <h2 class="pxl-section-title">{move || t("tools.matching-network")}</h2>
           <div class="flex flex-wrap items-center gap-2 px-4 pt-3">
             // 传 `t("key")` 的闭包而不是中文原文：`check-i18n` 判死条目时认「`t("key")` 的
             // 直接实参」或「中文原文出现在源码里」，传中文会一直依赖反向索引这条兜底路径
@@ -315,7 +315,7 @@ pub fn SmithPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.related-tools")}</h2>
+          <h2 class="pxl-section-title">{move || t("tools.related-tools")}</h2>
           <div class="grid gap-2 p-4 sm:grid-cols-2">
             <a class="px-3 py-2 text-sm hover:bg-accent" href="/tools#antenna-matcher">
               {move || t("tools.calculators-l-network-antenna")}

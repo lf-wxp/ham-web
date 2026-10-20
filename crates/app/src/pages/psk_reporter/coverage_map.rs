@@ -18,7 +18,7 @@ pub(super) fn CoverageMap(
   let count = Signal::derive(move || points.with(Vec::len));
   view! {
     <section class="pxl-card border bg-card" aria-labelledby="coverage-map-heading">
-      <h2 id="coverage-map-heading" class="border-b px-4 py-3 text-sm font-semibold">
+      <h2 id="coverage-map-heading" class="pxl-section-title">
         {move || t("coverage.map-title")}
       </h2>
       <div class="space-y-2 p-4">

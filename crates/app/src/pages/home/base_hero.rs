@@ -4,7 +4,7 @@ use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
 use crate::icons::PixelSprite;
-use crate::rpg::{load_profile, rank_label, xp_progress};
+use crate::rpg::{load_profile, rank_label};
 use crate::ui::{ButtonLink, Progress, Size, Variant};
 
 /// 基地首屏。
@@ -20,7 +20,8 @@ pub(super) fn BaseHero() -> impl IntoView {
       <div class="pxl-window motion-pop flex flex-col items-center gap-5 p-5 text-center sm:flex-row sm:p-6 sm:text-left">
         <div class="flex shrink-0 flex-col items-center gap-2">
           <PixelSprite name="hero" scale=8 class="pxl-bob" />
-          <span class="pxl-label text-xs text-muted-foreground">
+          // 等级牌做成一块带框的铭牌，而不是又一行灰色小字：它是首屏里唯一的「我是谁」。
+          <span class="pxl-badge bg-secondary text-xs">
             {move || format!("{} · {}", tf("shell.hud-level", &[&level.level.to_string()]), rank_label(level.level))}
           </span>
         </div>
@@ -37,7 +38,17 @@ pub(super) fn BaseHero() -> impl IntoView {
           <div class="space-y-1">
             <div class="flex items-baseline justify-between gap-2 text-xs">
               <span class="pxl-label">{move || t("rpg.exp-label")}</span>
-              <span class="tabular-nums text-muted-foreground">{move || xp_progress(level)}</span>
+              // 只写数字：`xp_progress` 把「经验」也带在句子里，与左边的标签重复，
+              // 英文下更明显（左边 EXP、右边 XP 5 / 80 各说一遍）。
+              <span class="tabular-nums text-muted-foreground">
+                {move || {
+                  if level.is_max() {
+                    t("shell.hud-max-level")
+                  } else {
+                    format!("{} / {}", level.into_level, level.needed)
+                  }
+                }}
+              </span>
             </div>
             <Progress value=percent label=Signal::derive(move || t("rpg.exp-label")) class="pxl-bar-xp" />
             {(!level.is_max())

@@ -68,7 +68,7 @@ pub(super) fn BandQuiz() -> impl IntoView {
 
   view! {
     <section class="pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">
+      <h2 class="pxl-section-title">
         {move || t("knowledge.frequency-band-conversion")}
         <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("knowledge.which-band-does-this")}</span>
       </h2>

@@ -42,7 +42,7 @@ pub(super) fn QuestionRow(q: QuestionItem) -> impl IntoView {
                 class="px-2.5 py-0.5 text-xs font-semibold text-white"
                 style=format!("background: {}", c.color)
               >
-                {c.name}
+                {move || t(c.name)}
               </span>
             }
           })}

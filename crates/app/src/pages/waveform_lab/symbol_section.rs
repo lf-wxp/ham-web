@@ -76,7 +76,7 @@ pub(super) fn SymbolSection() -> impl IntoView {
 
   view! {
     <section id="symbols" class="scroll-mt-24 pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.constellation-and-eye-diagram")}</h2>
+      <h2 class="pxl-section-title">{move || t("tools.constellation-and-eye-diagram")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("tools.a-constellation-shows-how")}
       </p>

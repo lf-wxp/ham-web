@@ -228,7 +228,7 @@ pub fn ToolsPage() -> impl IntoView {
             <ToolSection id="antenna-matcher" title="tools.antenna-matching-network" description="tools.an-l-network-matches"><AntennaMatcher /></ToolSection>
 
             <section id="smith" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.smith-chart")}</h2>
+              <h2 class="pxl-section-title">{move || t("tools.smith-chart")}</h2>
               <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.enter-a-complex-impedance")}</p>
               <div class="p-4"><SmithChart /></div>
               <p class="px-4 pb-4 text-xs text-muted-foreground">

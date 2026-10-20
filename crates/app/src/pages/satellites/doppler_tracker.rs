@@ -259,7 +259,7 @@ pub(super) fn DopplerTracker(
 
   view! {
     <section class="pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.doppler-title")}</h2>
+      <h2 class="pxl-section-title">{move || t("radio.doppler-title")}</h2>
       <div class="space-y-4 p-4">
         <p class="text-xs text-muted-foreground">{move || t("radio.doppler-description")}</p>
 

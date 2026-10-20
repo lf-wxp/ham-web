@@ -62,7 +62,7 @@ pub(super) fn ContestAnalysis(
 
   view! {
     <section class="pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.analysis-heading")}</h2>
+      <h2 class="pxl-section-title">{move || t("contest.analysis-heading")}</h2>
       {move || match analysis.get() {
         None => view! {
           <p class="px-4 py-6 text-sm text-muted-foreground">{move || t("contest.analysis-empty")}</p>

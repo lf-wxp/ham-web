@@ -88,7 +88,7 @@ pub fn LicensePage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.application-process")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.application-process")}</h2>
           <ol class="divide-y">
             {STEPS
               .iter()
@@ -111,7 +111,7 @@ pub fn LicensePage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.operating-classes-and-privileges")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.operating-classes-and-privileges")}</h2>
           <dl class="divide-y">
             {CLASSES
               .iter()
@@ -128,7 +128,7 @@ pub fn LicensePage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.key-notes")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.key-notes")}</h2>
           <ul class="space-y-2 p-4">
             {NOTES
               .iter()
@@ -145,7 +145,7 @@ pub fn LicensePage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("settings.license-expiry-reminder")}</h2>
+          <h2 class="pxl-section-title">{move || t("settings.license-expiry-reminder")}</h2>
           <div class="space-y-3 p-4">
             <p class="text-xs text-muted-foreground">
               {move || t("settings.enter-the-issue-date")}

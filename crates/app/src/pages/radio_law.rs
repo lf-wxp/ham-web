@@ -41,16 +41,16 @@ pub fn RadioLawPage() -> impl IntoView {
           .map(|law| {
             view! {
               <section class="pxl-card border bg-card">
-                <div class="flex flex-wrap items-baseline gap-2 border-b px-4 py-3">
-                  <h2 class="text-sm font-semibold">{law.title}</h2>
-                  <span class="text-xs text-muted-foreground">
+                <div class="flex flex-wrap items-baseline gap-2 pxl-section-title">
+                  <h2>{law.title}</h2>
+                  <span class="text-xs font-normal normal-case text-muted-foreground">
                     {move || format!("{} · {} {}", law.order, t("knowledge.radio-law-effective"), law.effective)}
                   </span>
                   <a
                     href=law.source_url
                     target="_blank"
                     rel="noreferrer"
-                    class="text-xs underline underline-offset-2 hover:text-foreground"
+                    class="text-xs font-normal normal-case underline underline-offset-2 hover:text-foreground"
                   >
                     {move || t("knowledge.radio-law-source")}
                   </a>

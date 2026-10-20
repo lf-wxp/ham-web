@@ -253,8 +253,12 @@ pub fn card_class(extra: &str) -> String {
 pub const CARD_HEADER: &str = "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6";
 
 /// 卡片标题类名。
+///
+/// 走 `pxl-label`（Silkscreen + 18px）而不是 `pxl-title` + `text-sm`：点阵字体没有粗体，
+/// 12px 的标题会比 18px 的正文还小，卡片就只剩「一片平字」。`pxl-title`（Press Start 2P）
+/// 留给页级标题与大号读数，区段标题统一用 label 体。
 pub fn card_title_class(extra: &str) -> String {
-  cn(&["pxl-title text-sm leading-none", extra])
+  cn(&["pxl-label text-base leading-none", extra])
 }
 
 /// 卡片内容类名。

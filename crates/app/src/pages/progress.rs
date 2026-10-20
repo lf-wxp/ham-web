@@ -275,7 +275,7 @@ pub fn ProgressPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.bank-coverage")}</h2>
+          <h2 class="pxl-section-title">{move || t("learning.bank-coverage")}</h2>
           <div class="space-y-3 p-4">
             {move || {
               let list = coverage.get();
@@ -319,7 +319,7 @@ pub fn ProgressPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.achievements")}</h2>
+          <h2 class="pxl-section-title">{move || t("learning.achievements")}</h2>
           <div class="grid grid-cols-2 gap-2 p-4 sm:grid-cols-4">
             {ACHIEVEMENTS
               .iter()
@@ -397,7 +397,7 @@ pub fn ProgressPage() -> impl IntoView {
                         <div class="border p-2.5">
                           <div class="mb-1 flex items-center justify-between gap-2 text-xs">
                             <span class="flex min-w-0 flex-wrap items-center gap-1.5 font-medium">
-                              <span>{name}</span>
+                              <span>{move || t(&name)}</span>
                               <a
                                 href=href
                                 class="border px-1.5 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/10"

@@ -85,7 +85,7 @@ pub(super) fn ContestPace(
 
   view! {
     <section class="pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">
+      <h2 class="pxl-section-title">
         {move || t("contest.pace-title")}
       </h2>
       <div class="space-y-4 p-4">

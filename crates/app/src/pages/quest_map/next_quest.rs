@@ -35,7 +35,7 @@ pub(super) fn NextQuest(
           <PixelSprite name=monster_sprite(stage.key) scale=6 class="pxl-bob" />
           <div class="min-w-0 flex-1 space-y-1">
             <div class="pxl-label text-xs text-muted-foreground">{move || t("rpg.next-quest")}</div>
-            <h2 id="next-quest-title" class="pxl-title text-sm">{move || t(stage.name)}</h2>
+            <h2 id="next-quest-title" class="pxl-section-head">{move || t(stage.name)}</h2>
             <p class="text-sm text-muted-foreground">{move || t(stage.desc)}</p>
             <p class="text-xs text-muted-foreground">
               {move || tp("rpg.stage-questions", stage.count, &[&stage.count.to_string()])}
@@ -59,7 +59,7 @@ pub(super) fn NextQuest(
         <section class="pxl-window flex flex-wrap items-center gap-4 p-4" aria-labelledby="next-quest-title">
           <PixelSprite name="boss" scale=6 class="pxl-bob" />
           <div class="min-w-0 flex-1 space-y-1">
-            <h2 id="next-quest-title" class="pxl-title text-sm">{move || t("rpg.all-cleared")}</h2>
+            <h2 id="next-quest-title" class="pxl-section-head">{move || t("rpg.all-cleared")}</h2>
             <p class="text-sm text-muted-foreground">{move || t("rpg.all-cleared-hint")}</p>
           </div>
           <ButtonLink href=exam variant=Variant::Default size=Size::Lg>

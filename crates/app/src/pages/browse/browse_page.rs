@@ -227,8 +227,10 @@ pub fn BrowsePage() -> impl IntoView {
               })
             >
               <span class="h-2 w-2 shrink-0" style=format!("background: {}", c.color)></span>
-              <Tooltip class="min-w-0 flex-1" label=c.name.to_string()>
-                <span class="w-full truncate">{c.name}</span>
+              // 分类名来自 `crates/core` 的中文常量，必须走 `t` 反查（中文原文 → 词条）；
+              // 直接渲染 `c.name` 会让英文 / 西文界面的侧栏永远停在中文。
+              <Tooltip class="min-w-0 flex-1" label=Signal::derive(move || t(c.name))>
+                <span class="w-full leading-snug">{move || t(c.name)}</span>
               </Tooltip>
               <span class="ml-auto text-xs tabular-nums">{move || cat_count.with(|m| m.get(c.key).copied().unwrap_or(0))}</span>
               <Icon

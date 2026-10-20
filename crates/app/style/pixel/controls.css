@@ -555,6 +555,43 @@
     text-transform: uppercase;
   }
 
+  /* ---------- 区段标题（卡片标题栏 / 页内分组标题） ----------
+     点阵字体没有粗体，`font-semibold` 在这套字体栈里是空操作：标题与正文同重、
+     甚至比正文（18px）更小，卡片因此看起来是「一片平字」。层级只能靠字号、字体族
+     与色带来表达，所以这里给区段标题一套自己的外观：
+       - 字号抬到正文档（18px），标题不再比它管的正文小；
+       - 字体族走 Silkscreen（拉丁），中文落到点阵中文体，与正文的朗读体区分开；
+       - 左边一枚主色方块标记（用背景层画，不占布局，`justify-between` 的标题不受影响）；
+       - `.pxl-section-title` 再加一条微底纹与 2px 墨色下沿，成为真正的「标题栏」。
+
+     写新代码时整块用一个类，不要再手抄 `border-b px-4 py-3 text-sm font-semibold`
+     （那份手抄在 2026-10-20 之前有 200+ 处，标题全都被 `font-semibold` 的空操作压平了）。 */
+  .pxl-section-title,
+  .pxl-section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0 0 1.25rem;
+    background-image: linear-gradient(var(--primary), var(--primary));
+    background-size: 8px 8px;
+    background-position: 0 center;
+    background-repeat: no-repeat;
+    font-family: var(--font-pixel-label);
+    font-size: var(--text-base);
+    line-height: 1.25;
+    /* 不再加 letter-spacing：Silkscreen 本身就宽，320px 的英文长标题会被撑成三行。 */
+    text-transform: uppercase;
+  }
+
+  /* 卡片标题栏：微底纹 + 墨色下沿，与卡片自身的 2px 描边接成窗框。 */
+  .pxl-section-title {
+    padding: 0.625rem 1rem 0.625rem 2rem;
+    background-color: color-mix(in oklab, var(--muted) 55%, transparent);
+    background-position: 0.75rem center;
+    border-bottom: 2px solid var(--pxl-ink);
+  }
+
   .pxl-title {
     font-family: var(--font-pixel-display);
     line-height: 1.5;

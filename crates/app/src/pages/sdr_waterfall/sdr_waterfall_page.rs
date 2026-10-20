@@ -576,7 +576,7 @@ pub fn SdrWaterfallPage() -> impl IntoView {
           </div>
         </section>
         <section class="pxl-card border bg-card" aria-labelledby="noise-floor-heading">
-          <h2 id="noise-floor-heading" class="border-b px-4 py-3 text-sm font-semibold">
+          <h2 id="noise-floor-heading" class="pxl-section-title">
             {move || t("tools.noise-floor")}
           </h2>
           <div class="space-y-3 p-4">

@@ -21,29 +21,30 @@ pub(super) fn QuestRow(
     <li>
       <a
         href=href
-        class="pxl-window motion-press flex h-full flex-wrap items-center gap-x-3 gap-y-1 p-3 hover:bg-accent"
+        class="pxl-window motion-press flex h-full items-start gap-3 p-3 hover:bg-accent"
       >
         <PixelSprite name=sprite scale=3 class=if done { "opacity-50 grayscale" } else { "pxl-bob" } />
-        <span class="min-w-0 flex-1 basis-32">
-          <span class="block text-sm">{move || title.get()}</span>
-          <span class="block text-xs text-muted-foreground">{move || hint.get()}</span>
+        // 奖励与标题同一行、贴着右边：跟说明文字挤在一行时，说明会被奖励截成两段。
+        <span class="flex min-w-0 flex-1 flex-col gap-1">
+          <span class="flex flex-wrap items-baseline justify-between gap-x-2">
+            <span class="text-sm">{move || title.get()}</span>
+            {if done {
+              view! {
+                <span class="pxl-label flex items-center gap-1 text-xs text-win-text">
+                  <Icon kind=IconKind::Check class="size-6" />
+                  {move || t("rpg.done-tag")}
+                </span>
+              }
+                .into_any()
+            } else {
+              view! {
+                <span class="pxl-label text-xs text-gold-text">{move || reward.get()}</span>
+              }
+                .into_any()
+            }}
+          </span>
+          <span class="text-xs text-muted-foreground">{move || hint.get()}</span>
         </span>
-        {if done {
-          view! {
-            <span class="pxl-label ml-auto flex items-center gap-1 text-xs text-win-text">
-              <Icon kind=IconKind::Check class="size-6" />
-              {move || t("rpg.done-tag")}
-            </span>
-          }
-            .into_any()
-        } else {
-          view! {
-            <span class="pxl-label ml-auto text-xs text-gold-text">
-              {move || reward.get()}
-            </span>
-          }
-            .into_any()
-        }}
       </a>
     </li>
   }

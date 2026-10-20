@@ -218,9 +218,9 @@ pub fn DxSpotsPage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold">
+          <h2 class="flex items-center justify-between pxl-section-title">
             {move || t("radio.live-dx-reports")}
-            <span class="text-xs font-normal text-muted-foreground">
+            <span class="text-xs font-normal normal-case text-muted-foreground">
               {move || tf("radio.entry-count", &[&spots.get().len().to_string()])}
             </span>
           </h2>

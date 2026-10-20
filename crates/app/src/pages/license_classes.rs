@@ -51,7 +51,7 @@ pub fn LicenseClassesPage() -> impl IntoView {
         </Table>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.typical-equipment-and-scenarios")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.typical-equipment-and-scenarios")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {CLASS_USAGE
               .iter()
@@ -68,7 +68,7 @@ pub fn LicenseClassesPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.band-privileges-quick-reference")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.band-privileges-quick-reference")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {BAND_PERMISSIONS
               .iter()
@@ -85,7 +85,7 @@ pub fn LicenseClassesPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.exam-tips")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.exam-tips")}</h2>
           <ul class="space-y-2 p-4">
             {CLASS_TIPS
               .iter()

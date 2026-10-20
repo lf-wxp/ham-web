@@ -128,9 +128,9 @@ pub fn SolarPage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold">
+          <h2 class="flex items-center justify-between pxl-section-title">
             {move || t("radio.live-solar-activity")}
-            <span class="text-xs font-normal text-muted-foreground">
+            <span class="text-xs font-normal normal-case text-muted-foreground">
               {move || {
                 let mut parts = Vec::new();
                 if !updated.get().is_empty() {
@@ -198,7 +198,7 @@ pub fn SolarPage() -> impl IntoView {
           (!conds.is_empty()).then(|| {
             view! {
               <section class="pxl-card border bg-card">
-                <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.band-conditions")}</h2>
+                <h2 class="pxl-section-title">{move || t("radio.band-conditions")}</h2>
                 <div class="p-4">
                   <ConditionsTable conditions=conds />
                 </div>
@@ -222,7 +222,7 @@ pub fn SolarPage() -> impl IntoView {
         }}
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.solar-indices")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.solar-indices")}</h2>
           <div class="divide-y">
             {SOLAR_INDICES
               .iter()
@@ -240,7 +240,7 @@ pub fn SolarPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.propagation-condition-scale")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.propagation-condition-scale")}</h2>
           <div class="grid gap-3 p-4 sm:grid-cols-2">
             {CONDITIONS
               .iter()
@@ -257,7 +257,7 @@ pub fn SolarPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.solar-cycle")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.solar-cycle")}</h2>
           <ul class="space-y-2 p-4">
             {CYCLE_NOTES
               .iter()

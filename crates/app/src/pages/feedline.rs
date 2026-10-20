@@ -22,7 +22,7 @@ pub fn FeedlinePage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.common-feedlines")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.common-feedlines")}</h2>
           <Table class="min-w-[560px] text-sm">
             <TableHead>
               <TableRow>
@@ -49,7 +49,7 @@ pub fn FeedlinePage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.matching-components-and-concepts")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.matching-components-and-concepts")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {MATCHING
               .iter()
@@ -66,7 +66,7 @@ pub fn FeedlinePage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.mismatch-degree-and-consequences")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.mismatch-degree-and-consequences")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {MISMATCH
               .iter()

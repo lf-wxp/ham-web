@@ -22,7 +22,7 @@ pub fn MicrowavePage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.microwave-bands")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.microwave-bands")}</h2>
           <Table class="min-w-[560px] text-sm">
             <TableHead>
               <TableRow>
@@ -49,7 +49,7 @@ pub fn MicrowavePage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.key-concepts-heading")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.key-concepts-heading")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {MICROWAVE_CONCEPTS
               .iter()
@@ -66,7 +66,7 @@ pub fn MicrowavePage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.operating-tips")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.operating-tips")}</h2>
           <ul class="space-y-2 p-4">
             {MICROWAVE_TIPS
               .iter()

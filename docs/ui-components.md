@@ -63,6 +63,9 @@
 4. **字体**：正文走点阵中文体（缝合像素）；标题 / HUD / 数字读数用 `pxl-title`（Press Start 2P）
    或 `pxl-label`（Silkscreen）。**点阵字体没有粗体**：不要用 `font-bold` / `font-semibold`
    做强调（会被合成成糊边），改用颜色、`pxl-title` 或加框。
+   **区段标题（卡片标题栏 / 页内分组标题）用 `pxl-section-title` / `pxl-section-head`**（见下）：
+   它们自带 18px 字号与 Silkscreen，不必再写 `text-*`；标题的层级靠字号 / 字体 / 色带表达，
+   因为 `font-semibold` 在这里不产生任何视觉差。
 5. **状态只信 ARIA**：选中 / 按下态由 `aria-checked` / `aria-pressed` / `data-state` 驱动样式，
    不要在 Rust 里再拼一份 `ON` / `OFF` 类名（`Chip` 就是这么做的）。
 6. **颜色分「填充」与「文字」两套**：`--pxl-hp` / `xp` / `gold` / `win` 是画在深色槽里的**填充色**
@@ -88,6 +91,10 @@
 
 - 窗口面板：`pxl-window`（卡片原语，自带 2px 墨色描边 + 硬投影）、`pxl-popover`（弹层）、
   `pxl-titlebar`（标题栏）。
+- 区段标题：`pxl-section-title`（卡片内的标题栏：微底纹 + 2px 墨色下沿 + 左侧主色方块）、
+  `pxl-section-head`（页内分组标题，同样式但不带底纹与下沿，用在卡片外的 `h2`）。
+  **不要再手抄 `border-b px-4 py-3 text-sm font-semibold`** —— 2026-10-20 之前这样的手抄有
+  216 处，`font-semibold` 在点阵字体下不生效，标题既没有字重、又比 18px 的正文更小。
 - 手写卡片：`pxl-card` —— **只是标记，本身不带任何样式**。卡片的 2px 描边、以及「卡片内贴边
   表格去掉最外圈双线」由 `surfaces.css` 按这个标记给（2026-10-13 之前这些规则拿
   `:is(.rounded-xl, …)` 当钩子）。手写卡片写成 `pxl-card border bg-card`；新写卡片优先用
@@ -189,6 +196,7 @@
 | 页脚的依据溯源行（「依据 XX，YYYY-MM 核对」） | `ProvenanceNote` | 手写一行小字 |
 | 空态（图标 + 标题 + 说明 + 操作） | `EmptyState` | 手写居中的提示块 |
 | 内容卡片（标题栏 + 正文） | `SectionCard` | 再抄一份 `pxl-card border bg-card` |
+| 卡片里的区段标题 / 卡片外的分组标题 | `pxl-section-title` / `pxl-section-head` | 手抄 `border-b px-4 py-3 text-sm font-semibold` |
 | 单按钮结果提示（成功 / 失败 / 已复制） | `MessageDialog` | 手搭 `Dialog` + 一个按钮 |
 | 加载中（短等待）/ 首屏骨架 | `Loading` / `Skeleton` | 手写 spinner / 一片留白 |
 | 图例条（色块 + 文字） | `Legend` | 手写色块 + 文字 |

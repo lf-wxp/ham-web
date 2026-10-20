@@ -31,7 +31,7 @@ pub fn LearningPathPage() -> impl IntoView {
 
       // ── 专题依赖图：按拓扑层渲染，前置专题永远在前 ──────────────
       <section class="pxl-card border bg-card">
-        <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.topic-graph")}</h2>
+        <h2 class="pxl-section-title">{move || t("knowledge.topic-graph")}</h2>
         <TopicChips nodes=TOPIC_GRAPH.iter().collect() />
         <p class="border-t px-4 py-2 text-xs text-muted-foreground">
           {move || t("knowledge.topic-graph-hint")}
@@ -40,7 +40,7 @@ pub fn LearningPathPage() -> impl IntoView {
 
       // ── 答错回推：按你的错题本回推要先补的专题 ─────────────
       <section class="pxl-card border bg-card">
-        <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.review-before")}</h2>
+        <h2 class="pxl-section-title">{move || t("knowledge.review-before")}</h2>
         {if reviews.is_empty() {
           view! {
             <p class="px-4 py-6 text-center text-sm text-muted-foreground">

@@ -182,7 +182,7 @@ pub fn SignalIdPage() -> impl IntoView {
       <section class="space-y-3">
         // live region 落在 `role="status"` 的 span 上，而不是 heading 上：`aria-live`
         // 挂在标题角色上时部分读屏不播报，而把 heading 改成 status 又会丢掉标题语义。
-        <h2 class="pxl-title text-sm">
+        <h2 class="pxl-section-head">
           <span role="status">{move || tf("signal.results", &[&candidates.get().len().to_string()])}</span>
         </h2>
         {move || {

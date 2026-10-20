@@ -84,7 +84,7 @@ pub fn CustomPaperDialog(open: RwSignal<bool>, on_confirm: Callback<CustomPaper>
               view! {
                 <div class="flex items-center gap-2">
                   <Checkbox id=format!("custom-cat-{key}") checked=checked on_change=on_change />
-                  <Label r#for=format!("custom-cat-{key}")>{name}</Label>
+                  <Label r#for=format!("custom-cat-{key}")>{move || t(name)}</Label>
                 </div>
               }
             }).collect_view()}

@@ -22,7 +22,7 @@ pub fn BeginnerPage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.beginner-roadmap")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.beginner-roadmap")}</h2>
           <div class="space-y-1 p-4">
             {BEGINNER_STEPS
               .iter()
@@ -39,7 +39,7 @@ pub fn BeginnerPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.equipment-type")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.equipment-type")}</h2>
           <Table class="min-w-[560px] text-sm">
             <TableHead>
               <TableRow>
@@ -68,7 +68,7 @@ pub fn BeginnerPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.first-contact-notes")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.first-contact-notes")}</h2>
           <ul class="space-y-2 p-4">
             {FIRST_QSO_TIPS
               .iter()

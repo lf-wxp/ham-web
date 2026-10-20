@@ -23,7 +23,7 @@ pub fn PortablePage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.main-programmes")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.main-programmes")}</h2>
           <Table class="min-w-[640px] text-sm">
             <TableHead>
               <TableRow>
@@ -52,7 +52,7 @@ pub fn PortablePage() -> impl IntoView {
         <PortableLookup />
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.portable-notes")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.portable-notes")}</h2>
           <ul class="space-y-2 p-4">
             {PORTABLE_TIPS
               .iter()

@@ -23,7 +23,7 @@ pub fn FrequenciesPage() -> impl IntoView {
           .map(|g| {
             view! {
               <section class="pxl-card border bg-card">
-                <h2 class="border-b px-4 py-3 text-sm font-semibold">{g.category}</h2>
+                <h2 class="pxl-section-title">{g.category}</h2>
                 <div class="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2">
                   {g
                     .freqs

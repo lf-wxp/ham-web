@@ -147,7 +147,7 @@ pub fn PskReporterPage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.look-up-reception-reports")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.look-up-reception-reports")}</h2>
           <div class="flex flex-wrap gap-3 p-4">
             <Input
               value=callsign
@@ -191,7 +191,7 @@ pub fn PskReporterPage() -> impl IntoView {
             <SpotCoverage home=home_grid spots=spot_list />
             <CoverageMap points=map_points />
             <section class="pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">
+              <h2 class="pxl-section-title">
                 {t("radio.reception-reports")} {list.len()} {t("radio.entry")}
               </h2>
               <Table class="min-w-[640px] text-sm">

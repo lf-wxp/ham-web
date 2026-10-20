@@ -25,7 +25,7 @@ pub fn AntennaTheoryPage() -> impl IntoView {
           .map(|(title, formulas)| {
             view! {
               <section class="pxl-card border bg-card">
-                <h2 class="border-b px-4 py-3 text-sm font-semibold">
+                <h2 class="pxl-section-title">
                   {move || data::kt_tracked(title)}
                 </h2>
                 <div class="grid gap-3 p-4 md:grid-cols-2">

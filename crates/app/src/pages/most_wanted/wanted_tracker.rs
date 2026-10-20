@@ -43,7 +43,7 @@ pub(super) fn WantedTracker() -> impl IntoView {
 
   view! {
     <section class="pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("log.contact-progress-tracking")}</h2>
+      <h2 class="pxl-section-title">{move || t("log.contact-progress-tracking")}</h2>
       <div class="space-y-3 p-4">
         <Input
           value=query

@@ -47,10 +47,10 @@ pub fn ConfusablesPage() -> impl IntoView {
                 .map(|c| {
                   view! {
                     <section class="pxl-card border bg-card">
-                      <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b px-4 py-3">
-                        <h2 class="text-sm font-semibold">{move || t(c.title)}</h2>
-                        <p class="text-xs text-muted-foreground">{move || t(c.confusion)}</p>
-                      </div>
+                      <h2 class="flex flex-wrap items-baseline gap-x-3 gap-y-1 pxl-section-title">
+                        {move || t(c.title)}
+                        <span class="text-xs font-normal normal-case text-muted-foreground">{move || t(c.confusion)}</span>
+                      </h2>
                       <dl class="divide-y">
                         {c
                           .items

@@ -32,7 +32,7 @@ pub(super) fn CountdownSection() -> impl IntoView {
 
   view! {
     <section class="pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.upcoming-contest-countdown-utc")}</h2>
+      <h2 class="pxl-section-title">{move || t("contest.upcoming-contest-countdown-utc")}</h2>
       <div class="divide-y">
         {UPCOMING
           .iter()

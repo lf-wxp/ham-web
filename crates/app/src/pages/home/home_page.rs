@@ -30,7 +30,7 @@ struct ModuleCard {
   desc: &'static str,
   href: &'static str,
   icon: IconKind,
-  /// 卡片角落的序号水印。
+  /// 标题行左侧的序号（`01` / `02` / `03`）。
   index: &'static str,
   /// 桌面端的纵向错位（阶梯式下沉，形成一条斜向的视线）。
   ///
@@ -47,7 +47,7 @@ const MODULES: &[ModuleCard] = &[
     href: "/practice",
     icon: IconKind::Timer,
     index: "01",
-    offset: "md:mt-0",
+    offset: "lg:mt-0",
     links: &[
       ("练习", "/practice"),
       ("模拟考试", "/exam"),
@@ -64,7 +64,7 @@ const MODULES: &[ModuleCard] = &[
     href: "/reference",
     icon: IconKind::BookOpen,
     index: "02",
-    offset: "md:mt-6",
+    offset: "lg:mt-6",
     links: &[
       ("考试速查", "/reference"),
       ("呼号前缀", "/prefixes"),
@@ -80,7 +80,7 @@ const MODULES: &[ModuleCard] = &[
     href: "/tools",
     icon: IconKind::Calculator,
     index: "03",
-    offset: "md:mt-12",
+    offset: "lg:mt-12",
     links: &[
       ("小工具", "/tools"),
       ("通联日志", "/log"),
@@ -170,7 +170,9 @@ pub fn HomePage() -> impl IntoView {
       </div>
 
       // 模块入口：三列不等宽（首列更宽）+ 阶梯式下沉，打破三等分的呆板网格。
-      <div class="mt-16 grid grid-cols-1 gap-4 md:grid-cols-[1.3fr_1fr_1fr] md:items-start">
+      // 断点放在 lg：md（768px）下三列各只剩 ~220px，18px 的区块标题在英文里撑不下；
+      // 卡片上还带 `min-w-0`，窄到极限时让文字换行而不是把整张卡顶出容器。
+      <div class="mt-16 grid grid-cols-1 gap-4 lg:grid-cols-[1.3fr_1fr_1fr] lg:items-start">
         {MODULES
           .iter()
           .enumerate()
@@ -180,37 +182,41 @@ pub fn HomePage() -> impl IntoView {
                 href=m.href
                 // `motion-press`：悬停上移 2px、按下落回（硬阴影随之消失），见 `motion.css`。
                 class=format!(
-                  "reveal group pxl-window motion-press relative flex flex-col gap-5 overflow-hidden p-5 hover:bg-accent {}",
+                  "reveal group pxl-window motion-press relative flex min-w-0 flex-col gap-4 p-5 hover:bg-accent {}",
                   m.offset,
                 )
                 style=format!("animation-delay: {}ms", 300 + i * 90)
               >
-                // 角落的序号水印：纯装饰。
-                <span
-                  aria-hidden="true"
-                  class="pxl-title pointer-events-none absolute -bottom-3 right-1 select-none text-6xl leading-none text-foreground/10"
-                >
-                  {m.index}
-                </span>
                 <div class="relative flex items-center gap-3">
                   <div class="flex size-12 shrink-0 items-center justify-center border-2 border-ink bg-primary text-primary-foreground">
                     <Icon kind=m.icon class="size-6" />
                   </div>
                   <div class="min-w-0">
-                    <div class="pxl-title text-sm">{move || t(m.title)}</div>
+                    <div class="flex items-baseline gap-2">
+                      // 序号从角落的大水印搬进标题行：水印会压在斜向的链接清单下面，读不清。
+                      <span aria-hidden="true" class="pxl-label text-xs text-muted-foreground">
+                        {m.index}
+                      </span>
+                      <span class="pxl-label text-base">{move || t(m.title)}</span>
+                    </div>
                     <div class="mt-1 text-xs text-muted-foreground">{move || t(m.desc)}</div>
                   </div>
                   <span aria-hidden="true" class="ml-auto shrink-0 text-muted-foreground">
                     <Icon kind=IconKind::ChevronRight class="size-6" />
                   </span>
                 </div>
-                <div class="relative flex flex-wrap gap-2">
+                // 链接清单：这些条目都进同一张卡（同一个 href），所以不能做成可点的 chip ——
+                // 七个看起来能单独点的按钮却都跳到同一处，是假的交互。改成目录式小字。
+                <div class="mt-auto grid grid-cols-1 gap-x-4 gap-y-1.5 border-t-2 border-dashed border-ink/30 pt-3 sm:grid-cols-2">
                   {m
                     .links
                     .iter()
                     .map(|&(label, _)| {
                       view! {
-                        <span class="pxl-badge text-xs">{move || t(label)}</span>
+                        <span class="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span aria-hidden="true" class="size-1 shrink-0 bg-primary"></span>
+                          {move || t(label)}
+                        </span>
                       }
                     })
                     .collect_view()}

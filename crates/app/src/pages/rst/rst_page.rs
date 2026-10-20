@@ -42,12 +42,12 @@ pub fn RstPage() -> impl IntoView {
         </div>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.r-readability")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.r-readability")}</h2>
           <LabelList rows=READABILITY />
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">
+          <h2 class="pxl-section-title">
             {move || t("knowledge.s-strength")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("knowledge.tap-to-play-the")}</span>
           </h2>
@@ -85,12 +85,12 @@ pub fn RstPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.t-tone-cw-only")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.t-tone-cw-only")}</h2>
           <LabelList rows=TONE />
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.common-reports")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.common-reports")}</h2>
           <LabelList rows=RST_EXAMPLES />
         </section>
 

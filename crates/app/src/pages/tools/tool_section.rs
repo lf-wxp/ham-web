@@ -17,7 +17,7 @@ pub(super) fn ToolSection(
 ) -> impl IntoView {
   view! {
     <section id=id class="scroll-mt-24 pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t(title)}</h2>
+      <h2 class="pxl-section-title">{move || t(title)}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t(description)}</p>
       <div class="p-4">{children()}</div>
     </section>

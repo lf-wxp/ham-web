@@ -55,7 +55,7 @@ pub(super) fn ComponentQuiz() -> impl IntoView {
 
   view! {
     <section class="pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">
+      <h2 class="pxl-section-title">
         {move || t("knowledge.component-identification")}
         <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("knowledge.identify-the-component-from")}</span>
       </h2>

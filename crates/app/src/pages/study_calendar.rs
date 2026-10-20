@@ -55,7 +55,7 @@ pub fn StudyCalendarPage() -> impl IntoView {
         <StudyPlanCard editable=true />
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.next-14-days-review")}</h2>
+          <h2 class="pxl-section-title">{move || t("learning.next-14-days-review")}</h2>
           <ul class="divide-y">
             {{
               let target_n = plan.get().days_left(&today).map(|_| {

@@ -25,7 +25,7 @@ pub fn TableSection(
   let title = StoredValue::new(title);
   view! {
     <section class="pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t(&title.get_value())}</h2>
+      <h2 class="pxl-section-title">{move || t(&title.get_value())}</h2>
       <Table aria_label=Signal::derive(move || t(&title.get_value())) class=class>
         <TableHead>
           <TableRow>

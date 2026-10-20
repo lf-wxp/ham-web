@@ -106,7 +106,7 @@ pub(super) fn ReviewCard() -> impl IntoView {
                 view! {
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="text-sm">
-                      {tf("exam.weak-spot", &[name, rate_s.as_str()])}
+                      {tf("exam.weak-spot", &[&t(name), rate_s.as_str()])}
                     </span>
                     <ButtonLink
                       href=format!("/practice?bank={bank}&topic={}", js_sys::encode_uri_component(key))

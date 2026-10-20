@@ -110,7 +110,7 @@ pub fn BandsPage() -> impl IntoView {
         </div>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.footnote")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.footnote")}</h2>
           <dl class="divide-y">{footnotes}</dl>
         </section>
 

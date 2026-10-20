@@ -106,7 +106,7 @@ pub fn ContestPage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.next-contest")}</h2>
+          <h2 class="pxl-section-title">{move || t("contest.next-contest")}</h2>
           <div class="p-4">
             {match next {
               Some((0, m, name)) => view! {
@@ -133,7 +133,7 @@ pub fn ContestPage() -> impl IntoView {
         <CountdownSection />
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.full-year-contest-calendar")}</h2>
+          <h2 class="pxl-section-title">{move || t("contest.full-year-contest-calendar")}</h2>
           <div class="divide-y">
             {scheduled
               .iter()
@@ -158,7 +158,7 @@ pub fn ContestPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("contest.contest-tips-heading")}</h2>
+          <h2 class="pxl-section-title">{move || t("contest.contest-tips-heading")}</h2>
           <ul class="space-y-2 p-4">
             {CONTEST_TIPS
               .iter()

@@ -19,7 +19,7 @@ pub fn PropagationPage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.ionospheric-layers")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.ionospheric-layers")}</h2>
           <div class="divide-y">
             {LAYERS
               .iter()
@@ -37,7 +37,7 @@ pub fn PropagationPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.main-propagation-modes")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.main-propagation-modes")}</h2>
           <dl class="divide-y">
             {PROPAGATION_MODES
               .iter()
@@ -54,7 +54,7 @@ pub fn PropagationPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.key-concepts")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.key-concepts")}</h2>
           <dl class="divide-y">
             {CONCEPTS
               .iter()
@@ -71,7 +71,7 @@ pub fn PropagationPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.lf-160-m-80")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.lf-160-m-80")}</h2>
           <ul class="space-y-2 p-4">
             {LOW_BAND_TIPS
               .iter()

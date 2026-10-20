@@ -191,7 +191,7 @@ pub(super) fn HeatmapCard() -> impl IntoView {
 
   view! {
     <section id="heatmap" class="scroll-mt-24 pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.24-hour-opening-window")}</h2>
+      <h2 class="pxl-section-title">{move || t("tools.24-hour-opening-window")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("tools.running-the-prediction-for")}
       </p>

@@ -20,7 +20,7 @@ pub fn ReferencePage() -> impl IntoView {
       <PageContainer>
         // 操作证类别与权限
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.operator-licence-classes-and")}</h2>
+          <h2 class="pxl-section-title">{move || t("exam.operator-licence-classes-and")}</h2>
           <Table
             aria_label=Signal::derive(move || t("exam.operator-licence-classes-and"))
             class="min-w-[560px]"
@@ -55,7 +55,7 @@ pub fn ReferencePage() -> impl IntoView {
 
         // 分区号
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.amateur-radio-zone-numbers")}</h2>
+          <h2 class="pxl-section-title">{move || t("exam.amateur-radio-zone-numbers")}</h2>
           <div class="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3 lg:grid-cols-5">
             {CALL_AREAS
               .iter()
@@ -73,7 +73,7 @@ pub fn ReferencePage() -> impl IntoView {
 
         // RST 信号报告
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("shell.rst-report")}</h2>
+          <h2 class="pxl-section-title">{move || t("shell.rst-report")}</h2>
           <div class="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
             {RST_SCALES
               .iter()
@@ -108,7 +108,7 @@ pub fn ReferencePage() -> impl IntoView {
 
         // 发射类别
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.emission-designators")}</h2>
+          <h2 class="pxl-section-title">{move || t("exam.emission-designators")}</h2>
           <Table
             aria_label=Signal::derive(move || t("exam.emission-designators"))
             class="min-w-[480px]"
@@ -147,7 +147,7 @@ pub fn ReferencePage() -> impl IntoView {
 
         // 通联英语
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.contact-english-phrases")}</h2>
+          <h2 class="pxl-section-title">{move || t("exam.contact-english-phrases")}</h2>
           <dl class="divide-y">
             {PHRASES
               .iter()

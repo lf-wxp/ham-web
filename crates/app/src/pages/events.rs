@@ -83,7 +83,7 @@ pub fn EventsPage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">
+          <h2 class="pxl-section-title">
             {move || t("knowledge.events-all-year-sorted")}
           </h2>
           <div class="divide-y">
@@ -157,7 +157,7 @@ pub fn EventsPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">
+          <h2 class="pxl-section-title">
             {move || t("knowledge.track-dx-expeditions-and")}
           </h2>
           <div class="grid gap-2 p-4 sm:grid-cols-2">

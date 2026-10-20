@@ -24,7 +24,7 @@ pub fn ElectronicsPage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.common-electronic-components")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.common-electronic-components")}</h2>
           <Table class="min-w-[640px] text-sm">
             <TableHead>
               <TableRow>
@@ -55,7 +55,7 @@ pub fn ElectronicsPage() -> impl IntoView {
         <ComponentQuiz />
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.basic-circuit-units")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.basic-circuit-units")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {CIRCUITS
               .iter()
@@ -72,7 +72,7 @@ pub fn ElectronicsPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.key-formulas")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.key-formulas")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {FORMULAS
               .iter()

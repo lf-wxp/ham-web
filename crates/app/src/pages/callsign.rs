@@ -206,7 +206,7 @@ pub fn CallsignPage() -> impl IntoView {
   view! {
     <KnowledgePage title=t("tools.callsign-lookup") subtitle=t("radio.offline-parsing-dxcc-entity")>
       <section class="pxl-card border bg-card">
-        <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.callsign-lookup")}</h2>
+        <h2 class="pxl-section-title">{move || t("radio.callsign-lookup")}</h2>
         <p class="px-4 pt-3 text-xs text-muted-foreground">
           {move || t("radio.enter-a-callsign-to")}
         </p>

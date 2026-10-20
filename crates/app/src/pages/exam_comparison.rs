@@ -30,12 +30,12 @@ pub fn ExamComparisonPage() -> impl IntoView {
           .map(|s| {
             view! {
               <section class="pxl-card border bg-card">
-                <header class="flex flex-wrap items-baseline gap-2 border-b px-4 py-3">
-                  <span class="text-sm font-semibold">{move || data::kt_tracked(s.country)}</span>
-                  <span class="text-xs text-muted-foreground">
+                <h2 class="flex flex-wrap items-baseline gap-2 pxl-section-title">
+                  {move || data::kt_tracked(s.country)}
+                  <span class="text-xs font-normal normal-case text-muted-foreground">
                     {move || data::kt_tracked(s.title)}
                   </span>
-                </header>
+                </h2>
                 <Table class="min-w-[560px] text-sm">
                   <TableHead>
                     <TableRow>

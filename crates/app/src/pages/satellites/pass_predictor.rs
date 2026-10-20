@@ -138,7 +138,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
 
   view! {
     <section class="pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.pass-predictions-and-reminders")}</h2>
+      <h2 class="pxl-section-title">{move || t("radio.pass-predictions-and-reminders")}</h2>
       <div class="space-y-4 p-4">
         <div class="grid gap-3 sm:grid-cols-3">
           {number_input(Signal::derive(move || t("common.latitude")), "0.0001", |w| w.lat, |w, v| w.lat = v.clamp(-90.0, 90.0))}

@@ -88,7 +88,7 @@ pub(super) fn TermCard(
           class="ml-auto px-2.5 py-0.5 text-xs font-semibold text-white"
           style=format!("background: {color}")
         >
-          {cat_name}
+          {move || t(cat_name)}
         </span>
       </div>
       {entry.en.as_deref().map(|en| view! { <div class="mb-2 text-xs italic text-muted-foreground">{en}</div> })}

@@ -19,7 +19,7 @@ pub fn AprsPage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.key-concepts-heading")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.key-concepts-heading")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {APRS_CONCEPTS
               .iter()
@@ -36,7 +36,7 @@ pub fn AprsPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("shell.common-frequencies")}</h2>
+          <h2 class="pxl-section-title">{move || t("shell.common-frequencies")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {APRS_FREQS
               .iter()
@@ -53,7 +53,7 @@ pub fn AprsPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.main-uses")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.main-uses")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {APRS_USES
               .iter()

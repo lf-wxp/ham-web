@@ -52,7 +52,7 @@ pub fn SdrMapPage() -> impl IntoView {
       </section>
 
       <section class="pxl-card border bg-card">
-        <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.public-receivers")}</h2>
+        <h2 class="pxl-section-title">{move || t("tools.public-receivers")}</h2>
         <div class="divide-y">
           {SDR_SITES
             .iter()
@@ -116,7 +116,7 @@ pub fn SdrMapPage() -> impl IntoView {
       </section>
 
       <section class="pxl-card border bg-card">
-        <h2 class="border-b px-4 py-3 text-sm font-semibold">
+        <h2 class="pxl-section-title">
           {move || t("tools.receiver-directory-and-self")}
         </h2>
         <div class="divide-y">

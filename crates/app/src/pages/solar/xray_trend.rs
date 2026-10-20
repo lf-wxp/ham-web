@@ -45,9 +45,9 @@ pub(super) fn XrayTrend(
 
   view! {
     <section class="pxl-card border bg-card">
-      <h2 class="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold">
+      <h2 class="flex items-center justify-between pxl-section-title">
         {t("radio.x-ray-flux-heading")}
-        <span class="text-xs font-normal text-muted-foreground">
+        <span class="text-xs font-normal normal-case text-muted-foreground">
           {move || match flux {
             Some(f) if !flare_class.is_empty() => {
               // 数值先格式化，译文模板只保留 `{}` 占位符。

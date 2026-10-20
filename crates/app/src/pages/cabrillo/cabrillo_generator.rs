@@ -59,7 +59,7 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
 
   view! {
     <section class="pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("log.contest-log-generator")}</h2>
+      <h2 class="pxl-section-title">{move || t("log.contest-log-generator")}</h2>
       <div class="space-y-3 p-4">
         <div class="grid gap-3 sm:grid-cols-2">
           <label class="flex flex-col gap-1.5 text-sm">

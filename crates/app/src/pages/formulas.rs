@@ -20,7 +20,7 @@ pub fn FormulasPage() -> impl IntoView {
           .map(|g| {
             view! {
               <section class="pxl-card border bg-card">
-                <h2 class="border-b px-4 py-3 text-sm font-semibold">{g.name}</h2>
+                <h2 class="pxl-section-title">{g.name}</h2>
                 <div class="grid gap-2 p-4 sm:grid-cols-2">
                   {g.items
                     .iter()
@@ -51,7 +51,7 @@ pub fn FormulasPage() -> impl IntoView {
           .collect_view()}
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.units-title")}</h2>
+          <h2 class="pxl-section-title">{move || t("exam.units-title")}</h2>
           <div class="space-y-4 p-4">
             {UNIT_CONVERSION_GROUPS
               .iter()

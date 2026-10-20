@@ -77,26 +77,21 @@ pub fn WeeklyPage() -> impl IntoView {
 
   // 分享卡片所需的数据（owned，供分享按钮使用）。
   let mistakes = book.records.len();
-  let weakest_label: Option<String> = weakest.as_ref().map(|(_, name, rate, answered)| {
-    tf(
-      "common.correct-answered",
-      &[
-        &name.to_string(),
-        &format!("{rate:.0}"),
-        &answered.to_string(),
-      ],
-    )
-  });
-  let weakest_label_sv = StoredValue::new(weakest_label.clone());
+  // 分享卡片上的薄弱分类文案在渲染时现算：分类名要按当前语言反查，
+  // 提前算好会把译文冻在页面首次渲染的那一刻。
+  let weakest_meta: Option<(String, f64, u32)> = weakest
+    .as_ref()
+    .map(|(_, name, rate, answered)| (name.clone(), *rate, *answered));
+  let weakest_meta_sv = StoredValue::new(weakest_meta);
   let card = move || {
-    share_score::render_weekly_card(
-      week_answered,
-      week_new,
-      streak,
-      mistakes,
-      weakest_label_sv.get_value().as_deref(),
-    )
-    .ok()
+    let label = weakest_meta_sv.get_value().map(|(name, rate, answered)| {
+      tf(
+        "common.correct-answered",
+        &[&t(&name), &format!("{rate:.0}"), &answered.to_string()],
+      )
+    });
+    share_score::render_weekly_card(week_answered, week_new, streak, mistakes, label.as_deref())
+      .ok()
   };
   // 页头 actions 由 `ViewFn`（要求 `Fn`）承载，闭包需可重复调用，故用 `Callback`（`Copy`）。
   let share = Callback::new({
@@ -207,7 +202,7 @@ pub fn WeeklyPage() -> impl IntoView {
         </div>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.answering-trend-over-the")}</h2>
+          <h2 class="pxl-section-title">{move || t("learning.answering-trend-over-the")}</h2>
           <div class="p-4">
             <div class="flex h-28 items-end gap-1">
               {move || {
@@ -259,10 +254,10 @@ pub fn WeeklyPage() -> impl IntoView {
           };
           view! {
             <section class="pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("exam.weakest-category-this-week")}</h2>
+              <h2 class="pxl-section-title">{move || t("exam.weakest-category-this-week")}</h2>
               <div class="flex items-center gap-3 p-4">
                 <div class="min-w-0 flex-1">
-                  <div class="text-sm font-medium">{name}</div>
+                  <div class="text-sm font-medium">{move || t(&name)}</div>
                   <div class="mt-0.5 text-xs text-muted-foreground tabular-nums">
                     {tp("common.questions-answered-accuracy", answered, &[&(answered).to_string(), &(rate).to_string()])}
                   </div>
@@ -281,7 +276,7 @@ pub fn WeeklyPage() -> impl IntoView {
           }
           view! {
             <section class="pxl-card border bg-card">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.recent-mock-exams")}</h2>
+              <h2 class="pxl-section-title">{move || t("learning.recent-mock-exams")}</h2>
               <div class="divide-y">
                 {exams
                   .iter()

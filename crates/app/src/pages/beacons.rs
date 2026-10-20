@@ -76,7 +76,7 @@ pub fn BeaconsPage() -> impl IntoView {
 
         // 信标台列表。
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.beacons-in-polling-order")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.beacons-in-polling-order")}</h2>
           <div class="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3">
             {BEACONS
               .iter()
@@ -102,7 +102,7 @@ pub fn BeaconsPage() -> impl IntoView {
 
         // 信标频率。
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.beacon-frequency")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.beacon-frequency")}</h2>
           <div class="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-5">
             {BEACON_BANDS
               .iter()
@@ -120,7 +120,7 @@ pub fn BeaconsPage() -> impl IntoView {
 
         // 信号格式。
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.signal-format")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.signal-format")}</h2>
           <div class="space-y-3 p-4">
             <p class="text-sm text-muted-foreground">
               {move || t("knowledge.each-station-transmits-for")}
@@ -145,7 +145,7 @@ pub fn BeaconsPage() -> impl IntoView {
 
         // 使用说明。
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.how-to-read-it")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.how-to-read-it")}</h2>
           <ul class="space-y-2 p-4">
             <li class="flex gap-2 text-sm text-muted-foreground">
               <span class="mt-0.5 shrink-0 text-primary">"•"</span>

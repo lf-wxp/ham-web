@@ -22,7 +22,7 @@ pub fn GnuradioPage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.hardware-selection")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.hardware-selection")}</h2>
           <Table class="min-w-[520px] text-sm">
             <TableHead>
               <TableRow>
@@ -51,7 +51,7 @@ pub fn GnuradioPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.gnu-radio-concepts")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.gnu-radio-concepts")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {GNU_RADIO_CONCEPTS
               .iter()
@@ -68,7 +68,7 @@ pub fn GnuradioPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.getting-started")}</h2>
+          <h2 class="pxl-section-title">{move || t("knowledge.getting-started")}</h2>
           <ul class="space-y-2 p-4">
             {GNU_RADIO_TIPS
               .iter()

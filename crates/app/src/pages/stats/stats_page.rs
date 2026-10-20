@@ -132,7 +132,7 @@ pub fn StatsPage() -> impl IntoView {
           } else {
             view! {
               <section class="pxl-card border bg-card">
-                <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.dxcc-award-progress")}</h2>
+                <h2 class="pxl-section-title">{move || t("radio.dxcc-award-progress")}</h2>
                 <div class="space-y-3 p-4">
                   <div>
                     <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
@@ -167,9 +167,9 @@ pub fn StatsPage() -> impl IntoView {
               {(!missing.is_empty()).then(|| {
                 view! {
                   <section class="pxl-card border bg-card">
-                    <h2 class="flex items-baseline gap-2 border-b px-4 py-3 text-sm font-semibold">
+                    <h2 class="flex items-baseline gap-2 pxl-section-title">
                       {move || t("radio.dxcc-gap-list")}
-                      <span class="text-xs font-normal text-muted-foreground">
+                      <span class="text-xs font-normal normal-case text-muted-foreground">
                         {tp(
                           "radio.entities-to-reach-100",
                           total_missing as u32,
@@ -210,7 +210,7 @@ pub fn StatsPage() -> impl IntoView {
               })}
 
               <section class="pxl-card border bg-card">
-                <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("log.more-award-progress")}</h2>
+                <h2 class="pxl-section-title">{move || t("log.more-award-progress")}</h2>
                 <div class="space-y-3 p-4">
                   <div>
                     <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
@@ -295,7 +295,7 @@ pub fn StatsPage() -> impl IntoView {
               </section>
 
               <section class="pxl-card border bg-card">
-                <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.qsl-confirmation-status")}</h2>
+                <h2 class="pxl-section-title">{move || t("radio.qsl-confirmation-status")}</h2>
                 <div class="space-y-3 p-4">
                   <div>
                     <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
@@ -325,28 +325,28 @@ pub fn StatsPage() -> impl IntoView {
               </section>
 
               <section class="pxl-card border bg-card">
-                <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.dxcc-entity-distribution-top")}</h2>
+                <h2 class="pxl-section-title">{move || t("radio.dxcc-entity-distribution-top")}</h2>
                 <div class="p-4">
                   <BarChart items=dxcc_top.clone() max=dxcc_top.first().map(|(_, c)| *c).unwrap_or(1) />
                 </div>
               </section>
 
               <section class="pxl-card border bg-card">
-                <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.band-distribution")}</h2>
+                <h2 class="pxl-section-title">{move || t("radio.band-distribution")}</h2>
                 <div class="p-4">
                   <BarChart items=band_top.clone() max=band_top.first().map(|(_, c)| *c).unwrap_or(1) />
                 </div>
               </section>
 
               <section class="pxl-card border bg-card">
-                <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.mode-distribution")}</h2>
+                <h2 class="pxl-section-title">{move || t("radio.mode-distribution")}</h2>
                 <div class="p-4">
                   <BarChart items=mode_top.clone() max=mode_top.first().map(|(_, c)| *c).unwrap_or(1) />
                 </div>
               </section>
 
               <section class="pxl-card border bg-card">
-                <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.monthly-qso-trend")}</h2>
+                <h2 class="pxl-section-title">{move || t("radio.monthly-qso-trend")}</h2>
                 <div class="p-4">
                   <div class="flex h-32 items-end gap-1">
                     {months
@@ -377,7 +377,7 @@ pub fn StatsPage() -> impl IntoView {
               {(!heatmap.is_empty()).then(|| {
                 view! {
                   <section class="pxl-card border bg-card">
-                    <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.hour-band-heatmap")}</h2>
+                    <h2 class="pxl-section-title">{move || t("radio.hour-band-heatmap")}</h2>
                     <div class="p-4">
                       <Heatmap rows=heatmap.clone() />
                     </div>
@@ -391,7 +391,7 @@ pub fn StatsPage() -> impl IntoView {
               {(!daily.is_empty()).then(|| {
                 view! {
                   <section class="pxl-card border bg-card">
-                    <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("learning.qso-calendar-heatmap")}</h2>
+                    <h2 class="pxl-section-title">{move || t("learning.qso-calendar-heatmap")}</h2>
                     <div class="p-4">
                       <CalendarHeatmap counts=daily.clone() />
                     </div>

@@ -85,7 +85,7 @@ pub fn ZoneMapPage() -> impl IntoView {
   view! {
     <KnowledgePage title=t("radio.cq-itu-zone-map") subtitle=t("radio.colour-by-zone-locate")>
       <section class="pxl-card border bg-card">
-        <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.zone-map")}</h2>
+        <h2 class="pxl-section-title">{move || t("radio.zone-map")}</h2>
         <div class="flex flex-wrap items-center gap-3 p-4">
           <ChipGroup
             value=Signal::derive(move || (if is_cq.get() { "cq" } else { "itu" }).to_string())
@@ -154,7 +154,7 @@ pub fn ZoneMapPage() -> impl IntoView {
       </section>
 
       <section class="pxl-card border bg-card">
-        <h2 class="border-b px-4 py-3 text-sm font-semibold">
+        <h2 class="pxl-section-title">
           {move || tf("radio.legend-zones-the-number", &[&max_zone.get().to_string()])}
         </h2>
         <ChipGroup
@@ -182,7 +182,7 @@ pub fn ZoneMapPage() -> impl IntoView {
       </section>
 
       <section class="pxl-card border bg-card">
-        <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.zone-composition")}</h2>
+        <h2 class="pxl-section-title">{move || t("radio.zone-composition")}</h2>
         {move || {
           let Some(z) = selected.get() else {
             return view! {

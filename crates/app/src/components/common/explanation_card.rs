@@ -104,7 +104,7 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
           aria_expanded=Signal::derive(move || open.get())
           on_click=Callback::new(move |_| open.update(|v| *v = !*v))
         >
-          <span class="text-base font-semibold leading-none">{move || t("learning.explanation")}</span>
+          <span class="pxl-section-head">{move || t("learning.explanation")}</span>
           <Icon
             kind=IconKind::ChevronDown
             class=Signal::derive(move || {

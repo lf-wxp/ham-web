@@ -32,7 +32,7 @@ pub fn SatellitesPage() -> impl IntoView {
         <IssTracker />
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.antenna-rotator")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.antenna-rotator")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
             {move || t("radio.during-a-pass-connect")}
           </p>
@@ -78,7 +78,7 @@ pub fn SatellitesPage() -> impl IntoView {
         </Table>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.operating-tips")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.operating-tips")}</h2>
           <ul class="space-y-2 p-4">
             {SATELLITE_TIPS
               .iter()
@@ -95,7 +95,7 @@ pub fn SatellitesPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.tracking-and-prediction-software")}</h2>
+          <h2 class="pxl-section-title">{move || t("radio.tracking-and-prediction-software")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {TRACKING_SOFTWARE
               .iter()

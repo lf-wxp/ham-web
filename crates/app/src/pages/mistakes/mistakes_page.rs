@@ -729,7 +729,9 @@ pub fn MistakesPage() -> impl IntoView {
                       {counts
                         .into_iter()
                         .map(|(key, name, n)| {
-                          let tip = tf("learning.show-only-mistakes", &[(name)]);
+                          // 分类名是 `crates/core` 的中文常量，两种展示都要走 `t` 反查；
+                          // tooltip 用 `Signal` 传，切语言时才不会被冻在旧译文里。
+                          let tip = Signal::derive(move || tf("learning.show-only-mistakes", &[&t(name)]));
                           view! {
                             <Tooltip label=tip>
                               <button
@@ -737,7 +739,7 @@ pub fn MistakesPage() -> impl IntoView {
                                 class="whitespace-nowrap border px-3 py-1 text-xs transition-colors hover:bg-accent"
                                 on:click=move |_| filter.set(key.to_owned())
                               >
-                                {name} " " <span class="font-semibold tabular-nums">{n}</span>
+                                {move || t(name)} " " <span class="font-semibold tabular-nums">{n}</span>
                               </button>
                             </Tooltip>
                           }
@@ -780,7 +782,10 @@ pub fn MistakesPage() -> impl IntoView {
                 {{
                   let category_options: Vec<SelectOption> = TOP_CATEGORIES
                     .iter()
-                    .map(|c| SelectOption::new(c.key, c.name))
+                    .map(|c| {
+                      let name = c.name;
+                      SelectOption::new(c.key, Signal::derive(move || t(name)))
+                    })
                     .collect();
                   view! {
                     <NativeSelect

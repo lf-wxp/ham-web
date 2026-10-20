@@ -87,12 +87,12 @@ pub fn RigReviewsPage() -> impl IntoView {
             let rx = gear_rx::for_gear(review.rig_id);
             Some(view! {
               <article class="pxl-card border bg-card">
-                <div class="flex flex-wrap items-baseline gap-2 border-b px-4 py-3">
-                  <h2 class="text-sm font-semibold">{format!("{} {}", gear.brand, gear.model)}</h2>
-                  <span class="text-xs text-muted-foreground">
+                <h2 class="flex flex-wrap items-baseline gap-2 pxl-section-title">
+                  {format!("{} {}", gear.brand, gear.model)}
+                  <span class="text-xs font-normal normal-case text-muted-foreground">
                     {move || format!("{} · {}", text(gear.tier), text(gear.bands))}
                   </span>
-                </div>
+                </h2>
 
                 // 一、测试条件 —— 结构上永远在最前。
                 <section class="border-b px-4 py-3">
@@ -251,7 +251,7 @@ pub fn RigReviewsPage() -> impl IntoView {
 
         // ── 指标名词表（互链目标）──────────────────────────────
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">
+          <h2 class="pxl-section-title">
             {move || t("knowledge.review-glossary")}
           </h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">

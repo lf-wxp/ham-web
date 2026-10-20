@@ -27,6 +27,7 @@ pub(crate) fn CategoryCompare(deltas: Vec<CategoryDelta>) -> impl IntoView {
             .into_iter()
             .map(|d| {
               let change = d.change();
+              let name = d.name;
               let (text, class) = match change {
                 Some(c) if c >= 0.5 => (format!("+{c:.0}"), "text-emerald-700 dark:text-emerald-400"),
                 Some(c) if c <= -0.5 => (format!("{c:.0}"), "text-red-700 dark:text-red-400"),
@@ -35,7 +36,7 @@ pub(crate) fn CategoryCompare(deltas: Vec<CategoryDelta>) -> impl IntoView {
               };
               view! {
                 <tr class="border-t">
-                  <td class="py-1">{d.name}</td>
+                  <td class="py-1">{move || t(name)}</td>
                   <td class="py-1 text-right">
                     {format!("{}/{} · {}", d.exam.correct, d.exam.answered, pct(d.exam.rate()))}
                   </td>

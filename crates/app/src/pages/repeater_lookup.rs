@@ -150,7 +150,7 @@ pub fn RepeaterLookup() -> impl IntoView {
 
   view! {
     <section class="pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.repeater-database-lookup")}</h2>
+      <h2 class="pxl-section-title">{move || t("radio.repeater-database-lookup")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("radio.fetch-repeaters-listed-in")}
       </p>

@@ -20,7 +20,7 @@ pub fn ChinaHamPage() -> impl IntoView {
       <ConceptsSection title="核心概念" items=CHINA_HAM_CONCEPTS />
 
       <section class="pxl-card border bg-card">
-        <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("knowledge.china-ham-xw2")}</h2>
+        <h2 class="pxl-section-title">{move || t("knowledge.china-ham-xw2")}</h2>
         <Table aria_label=Signal::derive(move || t("knowledge.china-ham-xw2")) class="min-w-[640px]">
           <TableHead>
             <TableRow>

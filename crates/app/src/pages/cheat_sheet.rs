@@ -33,13 +33,14 @@ pub fn CheatSheetPage() -> impl IntoView {
           .into_iter()
           .map(|sec| {
             let color = sec.color;
+            let sec_name = sec.name;
             let count = sec.items.len();
             view! {
               <section class="print-avoid-break pxl-card border bg-card print:border-zinc-300">
-                <h2 class="flex items-center gap-2 border-b px-4 py-3 text-sm font-semibold">
+                <h2 class="flex items-center gap-2 pxl-section-title">
                   <span class="h-2.5 w-2.5 shrink-0" style=format!("background: {color}")></span>
-                  {sec.name}
-                  <span class="ml-auto text-xs font-normal text-muted-foreground">
+                  {move || t(sec_name)}
+                  <span class="ml-auto text-xs font-normal normal-case text-muted-foreground">
                     {move || tp("knowledge.points", count as u32, &[&count.to_string()])}
                   </span>
                 </h2>

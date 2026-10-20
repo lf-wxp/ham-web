@@ -41,7 +41,7 @@ pub(super) fn IssTracker() -> impl IntoView {
 
   view! {
     <section class="pxl-card border bg-card">
-      <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("radio.iss-live-position")}</h2>
+      <h2 class="pxl-section-title">{move || t("radio.iss-live-position")}</h2>
       <div class="p-4">
         {move || {
           if loading.get() {

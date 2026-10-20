@@ -22,7 +22,7 @@ pub fn PowerPage() -> impl IntoView {
 
       <PageContainer>
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.common-battery-types")}</h2>
+          <h2 class="pxl-section-title">{move || t("tools.common-battery-types")}</h2>
           <Table class="min-w-[560px] text-sm">
             <TableHead>
               <TableRow>
@@ -49,7 +49,7 @@ pub fn PowerPage() -> impl IntoView {
         </section>
 
         <section class="pxl-card border bg-card">
-          <h2 class="border-b px-4 py-3 text-sm font-semibold">{move || t("tools.power-and-emergency-supply")}</h2>
+          <h2 class="pxl-section-title">{move || t("tools.power-and-emergency-supply")}</h2>
           <ul class="space-y-2 p-4">
             {POWER_TIPS
               .iter()

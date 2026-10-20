@@ -81,7 +81,7 @@ pub fn SpotCoverage(
 
   view! {
     <section class="pxl-card border bg-card" aria-labelledby="spot-coverage-heading">
-      <h2 id="spot-coverage-heading" class="border-b px-4 py-3 text-sm font-semibold">
+      <h2 id="spot-coverage-heading" class="pxl-section-title">
         {move || t("coverage.title")}
       </h2>
       <div class="space-y-3 p-4">

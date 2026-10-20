@@ -240,16 +240,16 @@ pub fn DiyProjectsPage() -> impl IntoView {
                 .collect();
               view! {
                 <article class="pxl-card border bg-card">
-                  <header class="flex flex-wrap items-baseline gap-2 border-b px-4 py-3">
-                    <h2 class="text-sm font-semibold">{move || text(name)}</h2>
-                    <span class="text-xs text-muted-foreground">
+                  <h2 class="flex flex-wrap items-baseline gap-2 pxl-section-title">
+                    {move || text(name)}
+                    <span class="text-xs font-normal normal-case text-muted-foreground">
                       {move || difficulty_label(p.difficulty)}
                       " · "
                       {move || cost_label(p.cost)}
                       " · "
                       {move || tf("diy.hours", &[text(p.hours).as_str()])}
                     </span>
-                  </header>
+                  </h2>
 
                   <div class="space-y-3 px-4 py-3">
                     <p class="text-sm text-muted-foreground">{move || text(p.notes)}</p>
