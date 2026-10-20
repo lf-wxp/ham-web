@@ -143,6 +143,7 @@
 | 互斥选择（工具条上、选项很短、横排一行） | `ChipGroup` + `Chip` | 手写 chip |
 | 互斥选择（**整行宽度的列表**：侧栏、图表配套） | `SidebarItem` | 手写列表项 |
 | 筛选开关（可以一个都不选） | `ChipToggle` | — |
+| **视图切换**（选中项决定下面显示哪一块面板） | `Tabs` + `TabsList` / `TabsTrigger` / `TabsPanel` | 用 `ChipGroup` 冒充（语义是 radio，读屏不会按 tabpanel 播报）/ 手写 `role="tablist"` |
 | 答题选项（点击即判分） | `QuizOption` | 手写 `<button class="…">` |
 | 选择文件（按钮） | `FileInput` | `<input type="file" class="hidden">` + 标签按钮 |
 | 选择文件（**整块拖放区**） | `FileDropZone` | 手写 `<label for>` + 隐藏 input |
@@ -157,7 +158,7 @@
 | 悬停 / 聚焦才显示的提示 | `Tooltip` | 原生 `title=`；子元素不可聚焦时补 `tabindex="0"`，数值信息另写 `aria-label` |
 | 移动端侧栏替代（分类 / 导航：右下角悬浮按钮 + 右侧抽屉） | `MobileNavDrawer` | 手写横滑分类条 / 手搭悬浮按钮 + 抽屉 |
 
-四个易混对子的区别：
+五个易混对子的区别：
 
 - `RadioGroup` 与 `ChipGroup` —— **密度不是语义**（都输出 `role="radiogroup"` / `role="radio"` +
   `aria-checked`）：选项带文字、和 `Field` 标签配套用前者；选项本身很短（`20m`、`三单元八木`）、
@@ -169,6 +170,12 @@
   页面那种「整块区域可点击、可把文件拖进来」的用后者（`title` / `icon` / `hint` / `disabled`
   传不同参数即可，通用提示行「点击选择或拖拽」由组件内置；非音频上传位用 `choose_hint`
   覆盖该行的音频版文案）。
+- `ChipGroup` 与 `Tabs` —— **筛选还是视图**：选中后**下面那块内容被过滤**（`20m`、`A 类`、
+  `未寄出 / 全部`）用 `ChipGroup`（`role="radiogroup"`）；选中后**换了一整块内容**
+  （Koch 训练 / 呼号抄收 / 发报练习这类互斥面板）用 `Tabs`（`role="tablist"`）。
+  判错的代价是语义与键盘行为都错：把筛选器标成 tab，读屏会按 tabpanel 播报；
+  把互斥视图留在 chip 里，则拿不到方向键换页与 `aria-controls` 的关联。
+  一页里**并列且需要同时看**的分区两个都不要用：走 §4 的 `StickyPanel` 目录 + 纵向堆叠。
 
 ### 3.1 按钮的尺寸与变体速查
 
@@ -420,6 +427,12 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
   不要自己写 `role=`、`aria-checked`、`aria-pressed`。`ChipGroup` 的 `Chip`（`role="radio"`）
   支持**方向键移动选择**（选中随焦点，WAI-ARIA 的 radiogroup 交互）；刻意**没做** roving
   tabindex —— 每个 chip 仍在 Tab 序里，读屏按 Tab 逐项经过也能用。
+- **视图切换**：用 `Tabs`，不要自己写 `role="tablist"` / `aria-selected`。`TabsTrigger` 按
+  WAI-ARIA tabs 交互：`←` / `→`（`↑` / `↓`）环形移动**并顺带激活**，`Home` / `End` 跳首尾；
+  组内是 roving tabindex（只有激活项在 Tab 序里）—— 与 `ChipGroup` 刻意不做 roving 的选择
+  不同：tabs 下面挂着一整块面板，方向键是「换页」，逐项 Tab 过去反而会逐个经过看不见的内容。
+  面板常驻挂载、非激活时 `hidden`：`aria-controls` / `aria-labelledby` 靠组件生成的 id 配对，
+  **页面里不要手写这对 id**。
 - **折叠 / 下拉**：`Button` 的 `aria_expanded` / `aria_controls`（面板有 id 时一并给）。
 - **动态提示**：实时结果区用 `aria-live`，并用 `Input` 的 `aria_describedby` 关联 id。
 - Playwright 用例大量使用 `getByLabel(...)` / `getByRole(...)`：**标签关联与 role 是测试契约**。
@@ -517,7 +530,7 @@ label 的 `has-[:focus-visible]:ring-2` 显示。**页面里不要再手写拖�
 | `pages/dx_spots.rs` | 热点表格行内的紧凑内容按钮（呼号 + 国家两行）：像素按钮的高度与内边距会把行高撑开、破坏表格密度 |
 | `components/common/page_header.rs` | 吸顶骨架 `PAGE_HEADER_BAR` 常量：全站吸顶页头只有这一份骨架类名，打印页等「纸宽坐标系」的页头也复用它，吸顶偏移只在这一处改（见文件头注释与 §4） |
 | `pages/print_sheet/print_page.rs` | 打印页量的是纸宽（`max-w-[210mm]`），不套 `PageHeader`；吸顶骨架与全站共用 `PAGE_HEADER_BAR`，偏移保持单一来源 |
-| `pages/bands/bands_page.rs` | 波段表的 tbody 有大量动态 `rowspan` / `colspan`（按波段跨行合并单元格），`TableCell` 的静态 `colspan: u32` 表达不了，整表保留原生 `<table>`（见 docs/ui-audit.md） |
+| `pages/bands/bands_page.rs` | 波段表的 tbody 有大量动态 `rowspan` / `colspan`（按波段跨行合并单元格），`TableCell` 的静态 `colspan: u32` 表达不了，整表保留原生 `<table>` |
 | `ui/pagination.rs` | 页码按钮的「当前页高亮」靠 `aria-current` 属性动态切换，`Button` 的 `class` 是静态串、也没有 `aria_current` 通道；分页条住在 `ui/` 里，样式与 `Button` 同源（`button_class`） |
 
 它们连同 `Button` / `ButtonLink` 内部都继续用 `button_class` —— **`ui::button_class` 是这套

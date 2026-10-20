@@ -3,11 +3,10 @@
 > **这份文档解决什么**：把「全仓代码质量审核」拆成可排期、可分工、可验收的工作包，让人按
 > 范围逐条打勾，而不是凭感觉翻文件。
 >
-> **与既有三份文档的分工**（不要重复劳动）：
+> **与既有两份文档的分工**（不要重复劳动）：
 >
 > | 文档 | 管什么 | 状态 |
 > | --- | --- | --- |
-> | [`ui-audit.md`](ui-audit.md) | UI 组件体系的专项审核与迁移进度（Table / Toast / Skeleton / Tooltip） | 进行中，方向 2 未收尾 |
 > | [`code-audit.md`](code-audit.md) | 重复代码（DRY）收口 | 已完成 |
 > | [`code-review-2026-10.md`](code-review-2026-10.md) | 某一批未提交变更的缺陷审查（五轮，S/M/A 编号） | 已完成 |
 > | **本文** | **面向全仓、可反复执行的审核计划 + 检查清单 + 进度看板** | 待执行 |
@@ -285,7 +284,7 @@ C/D/E 的判定口径。
 | C1.3 | 本地样式常量 | `grep -rn "const INPUT:\|const TEXTAREA:\|CHIP_ON" crates/app/src` | 零命中 | 回潮点 |
 | C1.4 | 组件 API 一致性 | 抽查 10 个 `ui/` 组件 | 都有 `class` 覆盖通道；受控式 API 命名统一（`value` / `on_change`） | API 分歧 |
 | C1.5 | 例外清单准确性 | `grep -rn "刻意的例外" crates/app/src` 对照 `docs/ui-components.md` §10 | 两处一致，且每条有理由 | 过期例外 |
-| C1.6 | 组件缺口 | 对照 `ui-audit.md` 的方向 1–5 | 缺口有明确状态（已补 / 进行中 / 暂缓） | 缺口表 |
+| C1.6 | 组件缺口 | 对照 `docs/ui-components.md` §3 决策表 | 每类原生写法的替代组件已存在；缺的组件有明确待办 | 缺口表 |
 
 ### C2 布局契约
 
@@ -353,7 +352,7 @@ C/D/E 的判定口径。
 
 | ID | 检查项 | 方法 | 判定标准 | 产出 |
 | --- | --- | --- | --- | --- |
-| C8.1 | 表格组件覆盖 | `grep -rn "<table" crates/app/src` | 只在 `ui/table/` 与 `ui-audit.md` 的 5 处例外 | 手写表格 |
+| C8.1 | 表格组件覆盖 | `grep -rn "<table" crates/app/src` | 只在 `ui/table/` 与 `docs/ui-components.md` §10 例外清单内 | 手写表格 |
 | C8.2 | 限高滚动 | 抽查长表格（方向表、申请表、覆盖图） | 用 `Table` 的 `wrapper_class`，不嵌套外层滚动容器 | 双层滚动 |
 | C8.3 | 键盘滚动 | 手动走查 | 滚动容器有 `tabindex="0"` + `role="region"` + 名称 | 不可达 |
 | C8.4 | 分页 | 抽查 22 个曾用 `.slice()` 的页面 | 用 `Pagination` + `core/pagination.rs` 的分页计算 | 假分页 |

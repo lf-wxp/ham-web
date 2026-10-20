@@ -33,6 +33,7 @@ disabled / error 状态反馈因此只有一处定义。
 | `RadioGroup` + `RadioGroupItem` | `<input type="radio">`（表单里的单选，选项带文字） | `value` `on_change` `disabled` |
 | `ChipGroup` + `Chip` | 手写「分段选择」胶囊按钮（工具条上的短选项） | `value` `on_change` `disabled` |
 | `ChipToggle` | 手写「chip 开关」（筛选条上的独立开关） | `active` `on_change` `title` `disabled` |
+| `Tabs` + `TabsList` / `TabsTrigger` / `TabsPanel` | 手写 `role="tablist"` + `if` 藏显面板 / 用 `ChipGroup` 冒充视图切换 | `value` `on_change`；`TabsList` 的 `aria_label`（多组时必填）；`TabsTrigger` 的 `value`（ascii slug，同时拼 id）`disabled`；`TabsPanel` 的 `value`。面板常驻挂载、只切显隐（保留状态）。**筛选用 `ChipGroup`，不要用 Tabs** |
 | `Slider` | `<input type="range">` | `value` `on_change` `min` `max` `step` `aria_valuetext` |
 | `FileInput` | 隐藏 `<input type="file">` + 触发按钮 | `on_files` `accept` `multiple` `label` |
 | `FileDropZone` | 手写 `<label for>` + 隐藏 input 的整块拖放区 | `on_file` `accept` `title`（同时是无障碍名）`icon` `hint` `choose_hint`（覆盖默认的「拖拽音频文件」提示行）`disabled` `id`（e2e 按固定 id 定位时传） |

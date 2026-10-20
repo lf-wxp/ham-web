@@ -132,5 +132,7 @@
   "morse.volume-label": "Volume",
   "morse.play-word": "Play word",
   "morse.play-spelling": "Play spelling",
-  "morse.play-morse": "Play Morse"
+  "morse.play-morse": "Play Morse",
+  "morse.koch": "Koch method",
+  "morse.training-tabs": "Training"
 }

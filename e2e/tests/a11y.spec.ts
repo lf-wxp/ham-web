@@ -40,3 +40,24 @@ test("键盘：对话框命名、Tab 循环、Esc 关闭并还原焦点", async 
   await expect(dialog).toBeHidden();
   await expect(opener).toBeFocused();
 });
+
+test("键盘：Tabs 方向键换页、Home / End 跳首尾", async ({ page }) => {
+  await page.goto("/morse");
+  const tabs = page.getByRole("tablist", { name: "训练" });
+  const koch = tabs.getByRole("tab", { name: "Koch 训练" });
+  const callsign = tabs.getByRole("tab", { name: "呼号抄收" });
+
+  await koch.focus();
+  await page.keyboard.press("ArrowRight");
+  // 自动激活：焦点先过去，随之切到那块面板
+  await expect(callsign).toBeFocused();
+  await expect(callsign).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("heading", { name: "呼号抄收 · 竞赛模拟" })).toBeVisible();
+
+  await page.keyboard.press("End");
+  await expect(tabs.getByRole("tab", { name: "发报练习" })).toBeFocused();
+
+  await page.keyboard.press("Home");
+  await expect(koch).toBeFocused();
+  await expect(koch).toHaveAttribute("aria-selected", "true");
+});

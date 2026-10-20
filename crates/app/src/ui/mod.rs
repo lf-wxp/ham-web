@@ -28,6 +28,7 @@
 //! | [`Slider`] | `<input type="range">` | 轨道 / 滑块自绘，进度用 CSS 变量 |
 //! | [`ChipGroup`] + [`Chip`] | 手写的分段选择胶囊 | 互斥选择，比 [`RadioGroup`] 紧凑，适合工具条 |
 //! | [`ChipToggle`] | 手写的筛选 chip 开关 | `aria-pressed` 语义，允许一个都不选 |
+//! | [`Tabs`] + [`TabsList`] / [`TabsTrigger`] / [`TabsPanel`] | 手写 `role="tablist"` + `if` 藏显面板 | **视图切换**（下面换一块）；筛选用 [`ChipGroup`] |
 //! | [`FileInput`] | 隐藏 `<input type="file">` + 触发按钮 | 按钮外观走 [`button_class`] |
 //! | [`FileDropZone`] | 手写的 `<label for>` + 隐藏 input 拖放区 | 整块可点击、可拖放（上传解码类页面用） |
 //! | [`Field`] | 手写的 `label + 控件 + 提示` 排版 | 标签 / 说明 / 错误文案统一 |
@@ -119,6 +120,7 @@ mod slider;
 mod stat;
 mod switch;
 mod table;
+mod tabs;
 mod textarea;
 mod time_picker;
 mod toast;
@@ -148,6 +150,7 @@ pub use slider::Slider;
 pub use stat::Stat;
 pub use switch::Switch;
 pub use table::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
+pub use tabs::{Tabs, TabsList, TabsPanel, TabsTrigger};
 pub use textarea::Textarea;
 pub use time_picker::TimePicker;
 pub use toast::{ToastKind, ToastRoot, push, push_error, push_success};

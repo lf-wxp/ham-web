@@ -132,5 +132,7 @@
   "morse.volume-label": "音量",
   "morse.play-word": "播放单词",
   "morse.play-spelling": "播放拼读",
-  "morse.play-morse": "播放摩尔斯"
+  "morse.play-morse": "播放摩尔斯",
+  "morse.koch": "Koch 训练",
+  "morse.training-tabs": "训练"
 }

@@ -86,7 +86,7 @@ pub fn BandsPage() -> impl IntoView {
 
         // 刻意的例外：波段表的 tbody 有大量动态 `rowspan` / `colspan`
         // （`table_rows.rs` 按波段跨行合并单元格），`TableCell` 的静态 `colspan: u32`
-        // 表达不了，整表保留原生 `<table>`。见 docs/ui-audit.md。
+        // 表达不了，整表保留原生 `<table>`。
         <div class="hidden overflow-x-auto pxl-card border bg-card md:block">
           <table class="w-full min-w-[960px] border-collapse border-hidden text-sm">
             <thead class="bg-muted/60 text-xs">

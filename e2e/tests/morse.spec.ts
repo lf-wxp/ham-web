@@ -1,26 +1,39 @@
 import { expect, test } from "./fixtures";
 
-test("摩尔斯页：训练区与参考表完整渲染", async ({ page }) => {
+test("摩尔斯页：四个训练面板可切换，参考表完整渲染", async ({ page }) => {
   await page.goto("/morse");
 
   await expect(page.getByRole("heading", { name: "莫尔斯电码" })).toBeVisible();
-  for (const name of [
-    "解码练习",
-    "Koch 法抄收训练",
-    "呼号抄收 · 竞赛模拟",
-    "发报练习",
-    "缩语速答",
-    "CW 解码（麦克风）",
-  ]) {
-    await expect(page.getByRole("heading", { name })).toBeVisible();
-  }
 
+  const tabs = page.getByRole("tablist", { name: "训练" });
+  await expect(tabs.getByRole("tab")).toHaveCount(4);
+
+  // 默认落在 Koch 法（新手入口），其余三块面板常驻挂载但被 hidden 藏起来
+  await expect(tabs.getByRole("tab", { name: "Koch 训练" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.getByRole("heading", { name: "Koch 法抄收训练" })).toBeVisible();
   // Koch 默认第 2 级（已学 K、M）
   await expect(page.getByText("第 2 / 41 级")).toBeVisible();
 
-  // 字母表与数字参考卡片
+  for (const [tab, heading] of [
+    ["呼号抄收", "呼号抄收 · 竞赛模拟"],
+    ["解码练习", "解码练习"],
+    ["发报练习", "发报练习"],
+  ]) {
+    await tabs.getByRole("tab", { name: tab }).click();
+    await expect(tabs.getByRole("tab", { name: tab })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+  }
+
+  // 字母表与数字参考卡片（不在 Tabs 里，任何标签下都可见）
   await expect(page.getByRole("heading", { name: "字母表" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "数字" })).toBeVisible();
+
+  // Tabs 之外的常驻分区（缩语速答 / CW 解码麦克风）任何标签下都可见
+  await expect(page.getByRole("heading", { name: "缩语速答" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "CW 解码（麦克风）" })).toBeVisible();
 
   // CW 专用符号参考
   await expect(page.getByRole("heading", { name: /CW 专用符号/ })).toBeVisible();
@@ -29,6 +42,8 @@ test("摩尔斯页：训练区与参考表完整渲染", async ({ page }) => {
 
 test("发报练习：长按出划并可用重拍清空", async ({ page }) => {
   await page.goto("/morse");
+  await page.getByRole("tab", { name: "发报练习" }).click();
+
   const key = page.getByRole("button", { name: "按住发报" });
   const marks = page.getByTestId("send-marks");
 

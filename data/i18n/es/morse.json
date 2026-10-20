@@ -132,5 +132,7 @@
   "morse.volume-label": "Volumen",
   "morse.play-word": "Reproducir palabra",
   "morse.play-spelling": "Reproducir deletreo",
-  "morse.play-morse": "Reproducir Morse"
+  "morse.play-morse": "Reproducir Morse",
+  "morse.koch": "Método Koch",
+  "morse.training-tabs": "Entrenamiento"
 }

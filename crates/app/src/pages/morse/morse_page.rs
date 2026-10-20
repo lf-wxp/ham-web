@@ -5,7 +5,9 @@ use leptos::prelude::*;
 use crate::components::common::{PageContainer, PageHeader};
 use crate::morse_audio::play_morse_timed_with;
 use crate::morse_settings::{provide_morse_settings, use_morse_settings};
-use crate::ui::{Button, Size, Slider, Stat, Tooltip, Variant};
+use crate::ui::{
+  Button, Size, Slider, Stat, Tabs, TabsList, TabsPanel, TabsTrigger, Tooltip, Variant,
+};
 use crate::util::set_title;
 
 use super::abbrev_quiz::AbbrevQuiz;
@@ -35,6 +37,9 @@ pub fn MorsePage() -> impl IntoView {
   set_title("shell.morse-code");
   provide_morse_settings();
   let settings = use_morse_settings();
+  // 四个训练器各自成块、用的时候只用一个：堆在一页里要滚三四屏，于是收进 Tabs。
+  // 默认落在 Koch 法（新手入口），选中的视图由用户切换，不做持久化。
+  let trainer = RwSignal::new("koch".to_owned());
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
       <PageHeader
@@ -97,13 +102,21 @@ pub fn MorsePage() -> impl IntoView {
           </div>
         </section>
 
-        <KochTrainer />
-
-        <CallsignRunner />
-
-        <MorseTrainer />
-
-        <SendTrainer />
+        <Tabs
+          value=trainer
+          on_change=Callback::new(move |v: String| trainer.set(v))
+        >
+          <TabsList aria_label=Signal::derive(move || t("morse.training-tabs"))>
+            <TabsTrigger value="koch">{move || t("morse.koch")}</TabsTrigger>
+            <TabsTrigger value="callsign">{move || t("shell.callsign-copy")}</TabsTrigger>
+            <TabsTrigger value="copy">{move || t("morse.decoding-practice")}</TabsTrigger>
+            <TabsTrigger value="send">{move || t("morse.sending-practice")}</TabsTrigger>
+          </TabsList>
+          <TabsPanel value="koch"><KochTrainer /></TabsPanel>
+          <TabsPanel value="callsign"><CallsignRunner /></TabsPanel>
+          <TabsPanel value="copy"><MorseTrainer /></TabsPanel>
+          <TabsPanel value="send"><SendTrainer /></TabsPanel>
+        </Tabs>
 
         <AbbrevQuiz />
 
