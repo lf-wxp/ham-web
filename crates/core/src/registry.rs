@@ -24,14 +24,40 @@ pub enum ModuleKind {
   Tool,
 }
 
-/// 分组：考试中心（平铺菜单，无子标题）。
+/// 一级菜单名：考试中心（三个下拉之一）。
+///
+/// 它不再是任何模块的 `group`（条目都挂在下面的子分组上），只作为菜单标题与图标的 key；
+/// `kind_of` 仍把它归为 [`ModuleKind::Exam`]，保持拆分前的契约。
 pub const GROUP_EXAM: &str = "考试中心";
-/// 分组：备考速查。
-pub const GROUP_EXAM_REF: &str = "备考速查";
-/// 分组：模式 · 传播。
-pub const GROUP_MODES: &str = "模式 · 传播";
-/// 分组：天线 · 设备。
-pub const GROUP_ANTENNAS: &str = "天线 · 设备";
+/// 子分组：练题（练习 / 分类浏览 / 闪卡 / 听题 / 每日挑战）。
+pub const GROUP_EXAM_PRACTICE: &str = "练题";
+/// 子分组：模拟考。
+pub const GROUP_EXAM_MOCK: &str = "模拟考";
+/// 子分组：复习。
+pub const GROUP_EXAM_REVIEW: &str = "复习";
+/// 子分组：学习数据。
+pub const GROUP_EXAM_DATA: &str = "学习数据";
+/// 子分组：闯关。
+pub const GROUP_EXAM_RPG: &str = "闯关";
+
+/// 考试中心的子分组（按菜单展示顺序）。
+pub const EXAM_GROUPS: &[&str] = &[
+  GROUP_EXAM_PRACTICE,
+  GROUP_EXAM_MOCK,
+  GROUP_EXAM_REVIEW,
+  GROUP_EXAM_DATA,
+  GROUP_EXAM_RPG,
+];
+/// 分组：备考速查（知识库的第一组，不属于考试中心的 `EXAM_GROUPS`）。
+pub const GROUP_REFERENCE: &str = "备考速查";
+/// 分组：模式 · 数字。
+pub const GROUP_MODES: &str = "模式 · 数字";
+/// 分组：传播 · 频段。
+pub const GROUP_PROPAGATION: &str = "传播 · 频段";
+/// 分组：天线系统（含馈线、巴伦与架设）。
+pub const GROUP_ANTENNAS: &str = "天线系统";
+/// 分组：设备 · 测量。
+pub const GROUP_EQUIPMENT: &str = "设备 · 测量";
 /// 分组：通联 · 活动。
 pub const GROUP_OPERATING: &str = "通联 · 活动";
 /// 分组：进阶 · 关于。
@@ -49,9 +75,11 @@ pub const GROUP_TOOL_TRAIN: &str = "训练 · 辅助";
 
 /// 知识库分组（按导航展示顺序）。
 pub const KNOWLEDGE_GROUPS: &[&str] = &[
-  GROUP_EXAM_REF,
+  GROUP_REFERENCE,
   GROUP_MODES,
+  GROUP_PROPAGATION,
   GROUP_ANTENNAS,
+  GROUP_EQUIPMENT,
   GROUP_OPERATING,
   GROUP_ADVANCED,
 ];
@@ -68,7 +96,7 @@ pub const TOOL_GROUPS: &[&str] = &[
 /// 按分组判断所属一级模块。
 #[must_use]
 pub fn kind_of(group: &str) -> ModuleKind {
-  if group == GROUP_EXAM {
+  if group == GROUP_EXAM || EXAM_GROUPS.contains(&group) {
     ModuleKind::Exam
   } else if TOOL_GROUPS.contains(&group) {
     ModuleKind::Tool
@@ -82,9 +110,16 @@ pub fn kind_of(group: &str) -> ModuleKind {
 pub fn group_icon(group: &str) -> &'static str {
   match group {
     GROUP_EXAM => "timer",
-    GROUP_EXAM_REF => "book-marked",
+    GROUP_EXAM_PRACTICE => "play",
+    GROUP_EXAM_MOCK => "timer",
+    GROUP_EXAM_REVIEW => "refresh-cw",
+    GROUP_EXAM_DATA => "trending-up",
+    GROUP_EXAM_RPG => "map",
+    GROUP_REFERENCE => "book-marked",
     GROUP_MODES => "binary",
+    GROUP_PROPAGATION => "waves",
     GROUP_ANTENNAS => "radio-tower",
+    GROUP_EQUIPMENT => "gauge",
     GROUP_OPERATING => "messages-square",
     GROUP_ADVANCED => "landmark",
     GROUP_TOOL_CALC => "calculator",
@@ -145,7 +180,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "闯关地图",
     icon: "map",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_RPG),
     backend: false,
   },
   // 回合战只能带着 `?stage=` / `?mode=revenge` 进入（由地图与图鉴发起），不进导航与 sitemap。
@@ -162,7 +197,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "怪物图鉴",
     icon: "book-marked",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_RPG),
     backend: false,
   },
   Module {
@@ -170,7 +205,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "练习",
     icon: "clipboard-list",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_PRACTICE),
     backend: false,
   },
   Module {
@@ -178,7 +213,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "模拟考试",
     icon: "timer",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_MOCK),
     backend: false,
   },
   Module {
@@ -186,7 +221,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "每日挑战",
     icon: "flame",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_PRACTICE),
     backend: false,
   },
   Module {
@@ -194,7 +229,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "分类浏览",
     icon: "layout-grid",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_PRACTICE),
     backend: false,
   },
   Module {
@@ -202,7 +237,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "闪卡刷题",
     icon: "zap",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_PRACTICE),
     backend: false,
   },
   Module {
@@ -210,7 +245,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "听题模式",
     icon: "headphones",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_PRACTICE),
     backend: false,
   },
   Module {
@@ -218,7 +253,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "知识卡片",
     icon: "credit-card",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_REVIEW),
     backend: false,
   },
   Module {
@@ -226,7 +261,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "错题集",
     icon: "list-x",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_REVIEW),
     backend: false,
   },
   Module {
@@ -234,7 +269,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "易错知识点",
     icon: "flame",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_REVIEW),
     backend: false,
   },
   Module {
@@ -242,7 +277,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "收藏集",
     icon: "bookmark",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_REVIEW),
     backend: false,
   },
   Module {
@@ -250,7 +285,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "学习周报",
     icon: "activity",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_DATA),
     backend: false,
   },
   Module {
@@ -258,7 +293,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "学习进度",
     icon: "trending-up",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_DATA),
     backend: false,
   },
   Module {
@@ -266,7 +301,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "备考日历",
     icon: "timer",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_DATA),
     backend: false,
   },
   Module {
@@ -274,7 +309,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "考后复盘",
     icon: "clipboard-list",
-    group: Some(GROUP_EXAM),
+    group: Some(GROUP_EXAM_MOCK),
     backend: false,
   },
   Module {
@@ -282,7 +317,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "考试速查",
     icon: "book-marked",
-    group: Some(GROUP_EXAM_REF),
+    group: Some(GROUP_REFERENCE),
     backend: false,
   },
   Module {
@@ -290,7 +325,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "考点速查手册",
     icon: "clipboard-list",
-    group: Some(GROUP_EXAM_REF),
+    group: Some(GROUP_REFERENCE),
     backend: false,
   },
   Module {
@@ -298,7 +333,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "易混淆辨析",
     icon: "arrow-up-down",
-    group: Some(GROUP_EXAM_REF),
+    group: Some(GROUP_REFERENCE),
     backend: false,
   },
   Module {
@@ -306,7 +341,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "公式速查",
     icon: "calculator",
-    group: Some(GROUP_EXAM_REF),
+    group: Some(GROUP_REFERENCE),
     backend: false,
   },
   Module {
@@ -314,7 +349,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "呼号前缀",
     icon: "globe",
-    group: Some(GROUP_EXAM_REF),
+    group: Some(GROUP_REFERENCE),
     backend: false,
   },
   Module {
@@ -322,7 +357,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "术语表",
     icon: "book-open",
-    group: Some(GROUP_EXAM_REF),
+    group: Some(GROUP_REFERENCE),
     backend: false,
   },
   Module {
@@ -330,7 +365,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "简语",
     icon: "radio",
-    group: Some(GROUP_EXAM_REF),
+    group: Some(GROUP_REFERENCE),
     backend: false,
   },
   Module {
@@ -338,7 +373,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "字母解释法",
     icon: "case-upper",
-    group: Some(GROUP_EXAM_REF),
+    group: Some(GROUP_REFERENCE),
     backend: false,
   },
   Module {
@@ -346,7 +381,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "RST 信号报告",
     icon: "signal",
-    group: Some(GROUP_EXAM_REF),
+    group: Some(GROUP_REFERENCE),
     backend: false,
   },
   Module {
@@ -354,7 +389,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "莫尔斯电码",
     icon: "audio-lines",
-    group: Some(GROUP_EXAM_REF),
+    group: Some(GROUP_REFERENCE),
     backend: false,
   },
   Module {
@@ -362,7 +397,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "CW 操作（等幅波）",
     icon: "audio-lines",
-    group: Some(GROUP_EXAM_REF),
+    group: Some(GROUP_REFERENCE),
     backend: false,
   },
   Module {
@@ -370,7 +405,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "多国题库对照",
     icon: "globe",
-    group: Some(GROUP_EXAM_REF),
+    group: Some(GROUP_REFERENCE),
     backend: false,
   },
   Module {
@@ -378,7 +413,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "操作证权限",
     icon: "badge-check",
-    group: Some(GROUP_EXAM_REF),
+    group: Some(GROUP_REFERENCE),
     backend: false,
   },
   Module {
@@ -586,7 +621,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "常用频率",
     icon: "gauge",
-    group: Some(GROUP_MODES),
+    group: Some(GROUP_PROPAGATION),
     backend: false,
   },
   Module {
@@ -594,7 +629,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "频率协调",
     icon: "scale",
-    group: Some(GROUP_MODES),
+    group: Some(GROUP_PROPAGATION),
     backend: false,
   },
   Module {
@@ -602,7 +637,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "CQ / ITU 分区地图",
     icon: "globe",
-    group: Some(GROUP_MODES),
+    group: Some(GROUP_PROPAGATION),
     backend: false,
   },
   Module {
@@ -610,7 +645,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "传播与电离层",
     icon: "waves",
-    group: Some(GROUP_MODES),
+    group: Some(GROUP_PROPAGATION),
     backend: false,
   },
   Module {
@@ -618,7 +653,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "国际信标网络",
     icon: "radio-tower",
-    group: Some(GROUP_MODES),
+    group: Some(GROUP_PROPAGATION),
     backend: false,
   },
   Module {
@@ -626,7 +661,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "特殊传播",
     icon: "sparkles",
-    group: Some(GROUP_MODES),
+    group: Some(GROUP_PROPAGATION),
     backend: false,
   },
   Module {
@@ -634,7 +669,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "流星散射",
     icon: "waves",
-    group: Some(GROUP_MODES),
+    group: Some(GROUP_PROPAGATION),
     backend: false,
   },
   Module {
@@ -642,7 +677,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "极光通信",
     icon: "sparkles",
-    group: Some(GROUP_MODES),
+    group: Some(GROUP_PROPAGATION),
     backend: false,
   },
   Module {
@@ -650,7 +685,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "EME 月面反射（地月地）",
     icon: "orbit",
-    group: Some(GROUP_MODES),
+    group: Some(GROUP_PROPAGATION),
     backend: false,
   },
   Module {
@@ -658,7 +693,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "传播预测",
     icon: "trending-up",
-    group: Some(GROUP_MODES),
+    group: Some(GROUP_PROPAGATION),
     backend: true,
   },
   Module {
@@ -666,7 +701,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "WSPR 弱信号传播",
     icon: "waves",
-    group: Some(GROUP_MODES),
+    group: Some(GROUP_PROPAGATION),
     backend: false,
   },
   Module {
@@ -730,7 +765,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "线材与连接器",
     icon: "plug-zap",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -786,7 +821,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "天线分析仪",
     icon: "gauge",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -794,7 +829,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "VNA 矢量网络分析仪",
     icon: "gauge",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -826,7 +861,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "电子电路基础",
     icon: "cpu",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -834,7 +869,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "滤波器与双工器",
     icon: "filter",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -842,7 +877,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "测量实验室",
     icon: "activity",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -850,7 +885,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "测量仪表",
     icon: "activity",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -858,7 +893,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "电源与电池",
     icon: "battery-charging",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -866,7 +901,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "电源供应",
     icon: "zap",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -874,7 +909,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "收发信机",
     icon: "radio",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -882,7 +917,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "接收机指标",
     icon: "gauge",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -890,7 +925,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "设备评测文章",
     icon: "book-marked",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -898,7 +933,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "设备评测与选购",
     icon: "box",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -906,7 +941,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "功率放大器",
     icon: "flame",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -914,7 +949,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "波段表",
     icon: "satellite",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_PROPAGATION),
     backend: false,
   },
   Module {
@@ -922,7 +957,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "波段规划",
     icon: "sliders-horizontal",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_PROPAGATION),
     backend: false,
   },
   Module {
@@ -930,7 +965,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "微波通信",
     icon: "radio",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -938,7 +973,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "车载 / 移动电台",
     icon: "radio-tower",
-    group: Some(GROUP_ANTENNAS),
+    group: Some(GROUP_EQUIPMENT),
     backend: false,
   },
   Module {
@@ -1097,7 +1132,9 @@ pub const MODULES: &[Module] = &[
   Module {
     path: "/callsign",
     href: None,
-    title: "呼号查询",
+    // 页面已从「查询一个呼号」扩成呼号知识总页（结构、类别、分区、斜杠后缀 + 查询），
+    // 标题跟着改，否则导航里会低估这一页。
+    title: "呼号知识",
     icon: "search",
     group: Some(GROUP_OPERATING),
     backend: true,
@@ -1227,7 +1264,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "法规原文库",
     icon: "landmark",
-    group: Some(GROUP_EXAM_REF),
+    group: Some(GROUP_REFERENCE),
     backend: false,
   },
   Module {
@@ -1381,7 +1418,7 @@ pub const MODULES: &[Module] = &[
     href: None,
     title: "照片处理",
     icon: "camera",
-    group: Some(GROUP_TOOL_CALC),
+    group: Some(GROUP_TOOL_TRAIN),
     backend: false,
   },
   Module {
@@ -1568,12 +1605,22 @@ pub const MODULES: &[Module] = &[
     group: None,
     backend: false,
   },
+  // 数据备份不进三组下拉：它是「保命操作」，入口在设置对话框、页脚与移动菜单，
+  // 不再埋在 /tools 的 60 多个计算器之后。
+  Module {
+    path: "/backup",
+    href: None,
+    title: "数据备份",
+    icon: "download",
+    group: None,
+    backend: false,
+  },
   Module {
     path: "/report",
     href: None,
     title: "学习报告",
     icon: "file-text",
-    group: None,
+    group: Some(GROUP_EXAM_DATA),
     backend: false,
   },
 ];
@@ -1590,10 +1637,10 @@ pub fn in_group(group: &str) -> Vec<&'static Module> {
   MODULES.iter().filter(|m| m.group == Some(group)).collect()
 }
 
-/// 考试中心菜单项（平铺，无子标题）。
+/// 考试中心菜单项（按子分组顺序平铺）。
 #[must_use]
 pub fn exam_items() -> Vec<&'static Module> {
-  in_group(GROUP_EXAM)
+  EXAM_GROUPS.iter().flat_map(|g| in_group(g)).collect()
 }
 
 /// 导航中出现的全部路径（按注册顺序去重）。
@@ -1655,7 +1702,7 @@ mod tests {
       assert!(!m.icon.is_empty(), "{} 缺少图标", m.path);
       if let Some(g) = m.group {
         assert!(
-          g == GROUP_EXAM || KNOWLEDGE_GROUPS.contains(&g) || TOOL_GROUPS.contains(&g),
+          EXAM_GROUPS.contains(&g) || KNOWLEDGE_GROUPS.contains(&g) || TOOL_GROUPS.contains(&g),
           "{} 的分组 {g} 未在分组列表中登记",
           m.path
         );
@@ -1686,20 +1733,26 @@ mod tests {
 
   #[test]
   fn every_group_has_modules_and_an_icon() {
-    for g in KNOWLEDGE_GROUPS.iter().chain(TOOL_GROUPS.iter()) {
+    for g in EXAM_GROUPS
+      .iter()
+      .chain(KNOWLEDGE_GROUPS.iter())
+      .chain(TOOL_GROUPS.iter())
+    {
       assert!(!in_group(g).is_empty(), "分组 {g} 没有任何模块");
       assert_ne!(group_icon(g), "circle", "分组 {g} 缺少图标映射");
-      assert_eq!(
-        kind_of(g),
-        if TOOL_GROUPS.contains(g) {
-          ModuleKind::Tool
-        } else {
-          ModuleKind::Knowledge
-        }
-      );
+      let expected = if EXAM_GROUPS.contains(g) {
+        ModuleKind::Exam
+      } else if TOOL_GROUPS.contains(g) {
+        ModuleKind::Tool
+      } else {
+        ModuleKind::Knowledge
+      };
+      assert_eq!(kind_of(g), expected, "分组 {g} 的一级模块归属不对");
     }
     assert!(!exam_items().is_empty());
+    // 一级菜单名本身不是任何模块的分组,但仍归「考试中心」,与拆分前的契约一致。
     assert_eq!(kind_of(GROUP_EXAM), ModuleKind::Exam);
+    assert!(in_group(GROUP_EXAM).is_empty(), "条目都应挂在子分组上");
   }
 
   #[test]

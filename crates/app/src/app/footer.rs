@@ -28,6 +28,13 @@ pub(super) fn Footer() -> impl IntoView {
               </li>
               <li aria-hidden="true" class="text-border">"·"</li>
               <li>
+                // 站内页面：备份是「丢了就找不回」的操作，页脚是每页都能看到的最后一个入口。
+                <a href="/backup" class=LINK>
+                  {move || t("tools.data-backup")}
+                </a>
+              </li>
+              <li aria-hidden="true" class="text-border">"·"</li>
+              <li>
                 <a href="http://www.crac.org.cn/News/List?type=6&y=" rel="nofollow" class=LINK aria-label=move || t("shell.crac-question-bank-source")>
                   {move || t("shell.crac-question-bank")}
                 </a>

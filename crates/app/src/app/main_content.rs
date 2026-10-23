@@ -7,19 +7,19 @@ use crate::pages::{
   AchievementsPage, AmplifierPage, AnalogModesPage, AntennaAnalyzerPage, AntennaArrayPage,
   AntennaDiyPage, AntennaFarmPage, AntennaInstallationPage, AntennaModelingPage, AntennaTheoryPage,
   AntennaTuningPage, AntennasPage, AprsPage, AptDecoderPage, ArdfPage, AtvPage, AuroraPage,
-  AwardsPage, BalunPage, BandPlanPage, BandsPage, BattlePage, BeaconsPage, BeginnerPage,
-  BestiaryPage, BookmarksPage, BrowsePage, CabrilloPage, CallsignCopyPage, CallsignPage, CardsPage,
-  CheatSheetPage, ChinaHamPage, CommunityPage, ConfusablesPage, ConnectorsPage,
-  ContestCalendarPage, ContestLogPage, ContestPage, CoordinationPage, CountdownPage, CwOpPage,
-  DailyChallengePage, DashboardPage, DevelopersPage, DigitalCommsPage, DiyProjectsPage,
-  DominoexDecoderPage, DspBasicsPage, DvNetworkPage, DxPage, DxSpotsPage, DxccMapPage,
-  DxpeditionPage, ElectronicsPage, EmcommPage, EmePage, EqslPage, EventsPage, ExamComparisonPage,
-  ExamPage, ExamReviewPage, FeedlinePage, FiltersPage, FlashcardsPage, FormulasPage,
-  FrequenciesPage, Ft8DecoderPage, Ft8Page, GearPage, GlossaryPage, GnuradioPage, GraylinePage,
-  GridMapPage, GridSystemPage, GroundingPage, HellDecoderPage, HistoryPage, HomePage, IotaPage,
-  KissTncPage, LearningPathPage, LearningResourcesPage, LicenseClassesPage, LicenseCompliancePage,
-  LicenseNoticePage, LicensePage, ListenPage, LogPage, LoggingSoftwarePage, LoraPage,
-  LrptDecoderPage, MeasurementLabPage, MeteorScatterPage, MetersPage, MicrowavePage,
+  AwardsPage, BackupPage, BalunPage, BandPlanPage, BandsPage, BattlePage, BeaconsPage,
+  BeginnerPage, BestiaryPage, BookmarksPage, BrowsePage, CabrilloPage, CallsignCopyPage,
+  CallsignPage, CardsPage, CheatSheetPage, ChinaHamPage, CommunityPage, ConfusablesPage,
+  ConnectorsPage, ContestCalendarPage, ContestLogPage, ContestPage, CoordinationPage,
+  CountdownPage, CwOpPage, DailyChallengePage, DashboardPage, DevelopersPage, DigitalCommsPage,
+  DiyProjectsPage, DominoexDecoderPage, DspBasicsPage, DvNetworkPage, DxPage, DxSpotsPage,
+  DxccMapPage, DxpeditionPage, ElectronicsPage, EmcommPage, EmePage, EqslPage, EventsPage,
+  ExamComparisonPage, ExamPage, ExamReviewPage, FeedlinePage, FiltersPage, FlashcardsPage,
+  FormulasPage, FrequenciesPage, Ft8DecoderPage, Ft8Page, GearPage, GlossaryPage, GnuradioPage,
+  GraylinePage, GridMapPage, GridSystemPage, GroundingPage, HellDecoderPage, HistoryPage, HomePage,
+  IotaPage, KissTncPage, LearningPathPage, LearningResourcesPage, LicenseClassesPage,
+  LicenseCompliancePage, LicenseNoticePage, LicensePage, ListenPage, LogPage, LoggingSoftwarePage,
+  LoraPage, LrptDecoderPage, MeasurementLabPage, MeteorScatterPage, MetersPage, MicrowavePage,
   MistakeTopicsPage, MistakesPage, MobilePage, ModernDigitalModesPage, ModesPage,
   ModulationTheoryPage, MorsePage, MostWantedPage, MufPage, NavtexDecoderPage, NecPage, NoisePage,
   NotFoundPage, NotificationsPage, NvisPage, OliviaDecoderPage, OpenSourcePage, OperatingPage,
@@ -203,6 +203,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/progress") view=ProgressPage />
         <Route path=path!("/study-calendar") view=StudyCalendarPage />
         <Route path=path!("/achievements") view=AchievementsPage />
+        <Route path=path!("/backup") view=BackupPage />
         <Route path=path!("/weekly") view=WeeklyPage />
         <Route path=path!("/report") view=ReportPage />
         <Route path=path!("/exam-comparison") view=ExamComparisonPage />

@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+use leptos_router::NavigateOptions;
 
 use crate::components::common::{PageContainer, PageHeader, StickyPanel};
 use crate::icons::IconKind;
@@ -9,7 +10,6 @@ use super::antenna_length::AntennaLength;
 use super::antenna_matcher::AntennaMatcher;
 use super::aprs_codec::AprsCodec;
 use super::attenuator_calculator::AttenuatorCalculator;
-use super::backup_tool::BackupTool;
 use super::battery_runtime::BatteryRuntime;
 use super::callsign_lookup::CallsignLookup;
 use super::capacitor_code::CapacitorCode;
@@ -133,7 +133,6 @@ const TOOL_NAV: &[(&str, &str)] = &[
   ("aprs-codec", "tools.aprs-codec"),
   ("soft-tnc", "tools.soft-tnc"),
   ("mode-encoder", "tools.digital-mode-encoding"),
-  ("backup", "tools.data-backup"),
 ];
 
 /// 滚动到指定工具（让出吸顶页头，见 `util::scroll_to_element`）。
@@ -148,10 +147,23 @@ pub fn ToolsPage() -> impl IntoView {
   set_title("shell.calculators");
   // 移动端工具导航抽屉的开关：选中工具后要主动收起。
   let nav_open = RwSignal::new(false);
-  // 路由切换后不会自动跳到锚点（如存储告警里的 `/tools#backup`），挂载后手动滚动
+  // 路由切换后不会自动跳到锚点（如外链 `/tools#parabolic-dish`），挂载后手动滚动
   let hash = leptos_router::hooks::use_location().hash;
+  let navigate = leptos_router::hooks::use_navigate();
   Effect::new(move |_| {
     if let Some(id) = hash.get().strip_prefix('#').filter(|id| !id.is_empty()) {
+      // 备份已独立成 `/backup`：旧书签与外链 `/tools#backup` 在这里转过去。
+      // `replace` 不留历史记录，否则回退键会又被弹回 `/backup`。
+      if id == "backup" {
+        navigate(
+          "/backup",
+          NavigateOptions {
+            replace: true,
+            ..Default::default()
+          },
+        );
+        return;
+      }
       let id = id.to_owned();
       request_animation_frame(move || scroll_to(&id));
     }
@@ -338,8 +350,6 @@ pub fn ToolsPage() -> impl IntoView {
             <ToolSection id="soft-tnc" title="tools.soft-tnc" description="tools.soft-tnc-description"><SoftTnc /></ToolSection>
 
             <ToolSection id="mode-encoder" title="tools.digital-mode-encoding" description="tools.text-to-morse-cw"><ModeEncoder /></ToolSection>
-
-            <ToolSection id="backup" title="tools.data-backup" description="settings.export-all-local-data"><BackupTool /></ToolSection>
           </div>
         </div>
       </PageContainer>

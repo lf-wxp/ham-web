@@ -11,8 +11,9 @@ use ham_web_core::color_scheme::SCHEMES;
 use leptos::prelude::*;
 
 use crate::i18n::t;
+use crate::icons::{Icon, IconKind};
 use crate::theme::{Theme, use_display_prefs, use_theme};
-use crate::ui::{Dialog, DialogHeader, DialogTitle, RadioGroup, Switch};
+use crate::ui::{ButtonLink, Dialog, DialogHeader, DialogTitle, RadioGroup, Switch, Variant};
 
 use super::scheme_choice::SchemeChoice;
 use super::theme_choice::ThemeChoice;
@@ -92,6 +93,23 @@ pub fn SettingsDialog(open: RwSignal<bool>) -> impl IntoView {
             checked=Signal::derive(move || prefs.readable_font())
             on_change=Callback::new(move |on| prefs.set_readable_font(on))
           />
+        </div>
+
+        // 备份与外观无关，但「设置」是用户找数据操作时最先点的地方；
+        // 独立页 `/backup` 同时挂在页脚与移动菜单，别把它再塞回工具页。
+        <div class="border-t pt-4">
+          <ButtonLink
+            href="/backup"
+            variant=Variant::Outline
+            class="w-full justify-start gap-2"
+            on_click=Callback::new(move |_| open.set(false))
+          >
+            <Icon kind=IconKind::Download class="size-6" />
+            {move || t("tools.data-backup")}
+          </ButtonLink>
+          <p class="mt-2 text-xs text-muted-foreground">
+            {move || t("settings.export-all-local-data")}
+          </p>
         </div>
       </div>
     </Dialog>

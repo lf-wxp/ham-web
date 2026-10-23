@@ -1,4 +1,4 @@
-//! 导航里的「分组下拉」：左侧分组栏 + 右侧条目区（知识库、工具两个菜单共用）。
+//! 导航里的「分组下拉」：左侧分组栏 + 右侧条目区（考试中心、知识库、工具三个菜单共用）。
 //!
 //! 旧版把分组一次平铺成五列：条目最多的分组单列高度就接近一屏，直接顶出视口，
 //! 而面板没有任何高度约束、连滚动都做不到（知识库上百个专题时最明显）。这里改成
@@ -24,6 +24,8 @@ use super::menu::MenuKind;
 /// 面板的水平对齐方式（960px 面板不是贴着开关，而是贴着导航容器）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum MenuAlign {
+  /// 相对导航容器左对齐（考试中心）。
+  Left,
   /// 相对导航容器居中（知识库）。
   Center,
   /// 相对导航容器右对齐（工具）。
@@ -31,9 +33,10 @@ pub(crate) enum MenuAlign {
 }
 
 impl MenuAlign {
-  /// 外层定位类名。两个菜单的垂直基准与动效一致，差异只在水平锚点。
+  /// 外层定位类名。三个菜单的垂直基准与动效一致，差异只在水平锚点。
   const fn wrapper_class(self) -> &'static str {
     match self {
+      Self::Left => "absolute left-0 top-full pt-2",
       Self::Center => "absolute left-1/2 top-full -translate-x-1/2 pt-2",
       Self::Right => "absolute right-4 top-full pt-2",
     }
@@ -50,7 +53,7 @@ fn group_count(group: &str) -> usize {
 
 /// 分组下拉：一个开关 + 一个「分组侧栏 + 条目区」面板。
 ///
-/// 知识库与工具两个菜单的结构完全相同，只有分组清单、文案、图标与对齐方式不同 ——
+/// 考试中心、知识库与工具三个菜单的结构完全相同，只有分组清单、文案、图标与对齐方式不同 ——
 /// `groups` 同时决定侧栏内容与「当前页面是否高亮本菜单」。
 #[component]
 pub(crate) fn GroupMenu(
@@ -153,7 +156,9 @@ pub(crate) fn GroupMenu(
           class="motion-popover pxl-popover origin-top flex max-h-[calc(100vh-5rem)] w-[960px] max-w-[calc(100vw-2rem)] gap-2 p-2"
         >
           // 分组栏：常驻，不参与条目区的滚动。
-          <div class="flex w-64 shrink-0 flex-col gap-1 border-2 border-ink bg-muted p-1.5">
+          // 分组名里可能出现「Equipment · Measurement」这类长串：栏宽给到 18rem，
+          // 名称本身允许换行（下面的 `break-words`），否则会被 `truncate` 吃掉尾巴。
+          <div class="flex w-72 shrink-0 flex-col gap-1 border-2 border-ink bg-muted p-1.5">
             {groups
               .iter()
               .map(|&g| {
@@ -204,7 +209,9 @@ pub(crate) fn GroupMenu(
                       />
                       <span class=move || {
                         cn(&[
-                          "min-w-0 flex-1 truncate text-left",
+                          // `whitespace-normal` 必须显式写：按钮本身带 `whitespace-nowrap`，
+                          // 不覆盖的话长组名会顶出侧栏而不是换行。
+                          "min-w-0 flex-1 whitespace-normal break-words text-left leading-snug",
                           if selected() {
                             "text-foreground"
                           } else {

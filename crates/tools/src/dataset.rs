@@ -5,7 +5,8 @@
 //! 题面文本在建库时统一排版（见 `ham_web_core::typography`），保证同一道题在各题库里
 //! 逐字节一致，不会因空格写法不同而分叉出多个指纹。
 
-use std::collections::HashMap;
+use std::cell::RefCell;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -21,6 +22,7 @@ use serde_json::{Map, Value, json};
 use crate::csv::Table;
 use crate::explanations::{self, load_explanations};
 use crate::fsutil::{Paths, read_json, write_json};
+use crate::provenance::{self, Stamp, digest_hex};
 
 const MAX_BODY: u64 = 64 * 1024 * 1024;
 
@@ -29,6 +31,8 @@ pub struct Source<'a> {
   local: Option<&'a Path>,
   remote: &'a str,
   images: HashMap<String, Vec<u8>>,
+  /// 本次读过的每个上游文件的摘要（相对路径 → sha256），用来给题库戳算一个真实的上游摘要。
+  seen: RefCell<BTreeMap<String, String>>,
 }
 
 impl<'a> Source<'a> {
@@ -37,6 +41,7 @@ impl<'a> Source<'a> {
       local,
       remote: remote.trim_end_matches('/'),
       images: HashMap::new(),
+      seen: RefCell::new(BTreeMap::new()),
     }
   }
 
@@ -48,20 +53,46 @@ impl<'a> Source<'a> {
     format!("{}/{rel}", self.remote)
   }
 
+  fn note(&self, rel: &str, bytes: &[u8]) {
+    self
+      .seen
+      .borrow_mut()
+      .insert(rel.to_owned(), digest_hex(bytes));
+  }
+
+  /// 本次构建读过的全部上游文件的合并摘要（按相对路径排序，对「路径 + 各自摘要」再取摘要）。
+  ///
+  /// 上游没有单一文件可摘：题库由多份 CSV 加图片编译而成。合并摘要在上游内容不变时恒定，
+  /// 任何一个文件变了就变，作为戳里的 `digest` 才有意义（旧写法对空字节取摘要，是个常数）。
+  pub fn digest(&self) -> String {
+    let listing: String = self
+      .seen
+      .borrow()
+      .iter()
+      .map(|(rel, d)| format!("{rel} {d}\n"))
+      .collect();
+    digest_hex(listing.as_bytes())
+  }
+
   pub fn text(&self, rel: &str) -> Result<String> {
     if let Some(p) = self.local_path(rel) {
-      return fs::read_to_string(&p).with_context(|| format!("failed to read {}", p.display()));
+      let text =
+        fs::read_to_string(&p).with_context(|| format!("failed to read {}", p.display()))?;
+      self.note(rel, text.as_bytes());
+      return Ok(text);
     }
     let url = self.url(rel);
     let mut res = ureq::get(&url)
       .call()
       .with_context(|| format!("Fetch failed: {url}"))?;
-    res
+    let text = res
       .body_mut()
       .with_config()
       .limit(MAX_BODY)
       .read_to_string()
-      .with_context(|| format!("Fetch failed: {url}"))
+      .with_context(|| format!("Fetch failed: {url}"))?;
+    self.note(rel, text.as_bytes());
+    Ok(text)
   }
 
   pub fn binary(&mut self, rel: &str) -> Result<Vec<u8>> {
@@ -82,6 +113,7 @@ impl<'a> Source<'a> {
         .read_to_vec()
         .with_context(|| format!("Fetch failed: {url}"))?
     };
+    self.note(rel, &data);
     self.images.insert(rel.to_owned(), data.clone());
     Ok(data)
   }
@@ -251,6 +283,19 @@ pub fn build(paths: &Paths, local: Option<&Path>, remote: &str) -> Result<()> {
     );
   }
   refresh_derived_artifacts(paths)?;
+
+  // 来源戳写成边车 `data/provenance/public/questions/config.json.source.json`：JSON 题库
+  // 不能塞注释，但「这批题库引自哪个地址、用的是哪份解析库」必须留痕，否则解析改了却忘了
+  // 重建就会静默不一致（`check-data-sync` 靠这份戳抓）。`digest` 是本次读过的全部上游
+  // 文件的合并摘要，见 `Source::digest`。
+  let source_url = local.map_or_else(
+    || format!("{}/", remote.trim_end_matches('/')),
+    provenance::local_source,
+  );
+  let stamp = Stamp::of_digest(source_url, ctx.source.digest())
+    .with_input(&paths.root, "data/explanations.json");
+  provenance::write_sidecar(&paths.root, &paths.questions.join("config.json"), &stamp)?;
+
   println!("Dataset build complete.");
   Ok(())
 }

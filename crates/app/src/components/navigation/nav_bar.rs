@@ -5,7 +5,7 @@
 //! （见 `docs/ui-components.md` 的「常见坑」）。`aria-expanded` / `aria-controls`
 //! 已经有通道，不再是保留理由 —— 汉堡菜单开关因此收编回 [`Button`]。同一个文件里的
 //! 搜索、语言切换、主题切换等按钮都已经用组件，**不要顺手把剩下的导航项清掉**。
-//! 「知识库」「工具」两个分组下拉的开关与面板是同一套路数，已拆到 `group_menu.rs`。
+//! 「考试中心」「知识库」「工具」三个分组下拉的开关与面板是同一套路数，已拆到 `group_menu.rs`。
 
 use leptos::ev;
 use leptos::prelude::*;
@@ -13,11 +13,11 @@ use leptos_router::hooks::use_location;
 use send_wrapper::SendWrapper;
 use wasm_bindgen::JsCast;
 
-use ham_web_core::registry::{self, GROUP_EXAM, KNOWLEDGE_GROUPS, TOOL_GROUPS};
+use ham_web_core::registry::{self, EXAM_GROUPS, KNOWLEDGE_GROUPS, TOOL_GROUPS};
 
 use crate::cn::cn;
 use crate::icons::{Icon, IconKind, icon_of};
-use crate::ui::{Button, Size, Variant, button_class};
+use crate::ui::{Button, ButtonLink, Size, Variant, button_class};
 
 use super::group_menu::{GroupMenu, MenuAlign};
 use super::hud_badge::HudBadge;
@@ -81,15 +81,6 @@ pub fn Navigation() -> impl IntoView {
   });
 
   let active = move |href: &'static str| location.pathname.get() == href;
-  // 某分组下是否有当前页面（用于给对应的一级菜单加高亮）。
-  let group_active = move |group: &str| {
-    registry::MODULES
-      .iter()
-      .filter(|m| m.group == Some(group))
-      .any(|m| active(m.path))
-  };
-  let exam_active = move || group_active(GROUP_EXAM);
-
   view! {
     // 顶栏是一条实心的「HUD 栏」：底色用 `--card`（不透明）+ 2px 墨色下沿 + 硬偏移投影，
     // 不模糊、不渐变；吸顶时下面滚过的内容被它实实在在地盖住，不需要任何磨砂兜底。
@@ -134,87 +125,16 @@ pub fn Navigation() -> impl IntoView {
               {move || t("shell.home")}
             </a>
 
-            // 考试中心下拉
-            // `self-stretch`：把容器拉满导航行的高度（h-16），`top-full` 才是「导航栏下沿」。
-            // 不加的话 `top-full` 会取按钮自身的高度，这个面板就比另两个高出十几个像素。
-            <div class="group relative flex items-center self-stretch">
-              // 刻意的例外，见文件头：下拉开关要切换 `variant` 并输出 `aria-expanded`。
-              <button
-                type="button"
-                data-slot="button"
-                aria-expanded=move || (open_menu.get() == Some(MenuKind::Exam)).to_string()
-                class=move || {
-                  button_class(
-                    if exam_active() { Variant::Default } else { Variant::Ghost },
-                    Size::Sm,
-                    "inline-flex items-center gap-2 whitespace-nowrap",
-                  )
-                }
-                on:click=move |_| {
-                  open_menu.update(|m| {
-                    *m = if *m == Some(MenuKind::Exam) { None } else { Some(MenuKind::Exam) };
-                  });
-                }
-              >
-                <Icon kind=IconKind::Timer class="size-6" />
-                {move || t("shell.exam-center")}
-                <Icon
-                  kind=IconKind::ChevronDown
-                  class=Signal::derive(move || {
-                    cn(&[
-                      "size-6",
-                      if open_menu.get() == Some(MenuKind::Exam) { "rotate-180" } else { "" },
-                    ])
-                  })
-                />
-              </button>
-              // 外层只管定位与显隐（隐藏后不再参与命中测试）；
-              // `motion-popover` 挂在内层面板上做位移 + 缩放 —— 外层可能带
-              // `-translate-x-1/2` 这类居中 transform，动效若也写 transform 会把它覆盖掉。
-              <div
-                class=move || {
-                  cn(&[
-                    "absolute left-0 top-full pt-2",
-                    if open_menu.get() == Some(MenuKind::Exam) {
-                      "visible opacity-100"
-                    } else {
-                      "invisible opacity-0"
-                    },
-                  ])
-                }
-              >
-                <div
-                  data-open=move || (open_menu.get() == Some(MenuKind::Exam)).to_string()
-                  class="motion-popover pxl-popover origin-top w-52 p-1"
-                >
-                  {registry::MODULES
-                    .iter()
-                    .filter(|m| m.group == Some(GROUP_EXAM))
-                    .map(|m| {
-                      view! {
-                        <a
-                          href=m.nav_href()
-                          on:click=move |_| open_menu.set(None)
-                          class=move || {
-                            cn(&[
-                              "flex items-center gap-2 border-2 px-3 py-2 text-sm",
-                              if active(m.path) {
-                                "border-ink bg-accent text-accent-foreground"
-                              } else {
-                                "border-transparent text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
-                              },
-                            ])
-                          }
-                        >
-                          <Icon kind=icon_of(m.icon) class="size-6" />
-                          {move || t(m.title)}
-                        </a>
-                      }
-                    })
-                    .collect_view()}
-                </div>
-              </div>
-            </div>
+            // 考试中心下拉：17 条平铺会拉成一条长列表，与知识库 / 工具共用
+            // 「分组侧栏 + 条目区」面板（见 `group_menu.rs`）。
+            <GroupMenu
+              kind=MenuKind::Exam
+              groups=EXAM_GROUPS
+              label=Signal::derive(move || t("shell.exam-center"))
+              icon=IconKind::Timer
+              align=MenuAlign::Left
+              open_menu=open_menu
+            />
 
             // 知识库下拉：分组侧栏 + 条目区（上百个专题平铺会顶出视口，
             // 结构与高度约束见 `group_menu.rs`）
@@ -346,7 +266,7 @@ pub fn Navigation() -> impl IntoView {
                   </div>
 
                   // 手机顶栏没有齿轮：「像素动效 / 易读字体 / 主题」都从这里进。
-                  <div class="px-3 pt-2">
+                  <div class="space-y-2 px-3 pt-2">
                     <Button
                       variant=Variant::Outline
                       size=Size::Default
@@ -359,31 +279,50 @@ pub fn Navigation() -> impl IntoView {
                       <Icon kind=IconKind::Settings class="size-6" />
                       {move || t("shell.settings")}
                     </Button>
+                    // 备份不藏在工具页：手机上也给一个直达入口。
+                    <ButtonLink
+                      href="/backup"
+                      variant=Variant::Outline
+                      class="w-full justify-start gap-3"
+                      on_click=Callback::new(move |_| menu_open.set(false))
+                    >
+                      <Icon kind=IconKind::Download class="size-6" />
+                      {move || t("tools.data-backup")}
+                    </ButtonLink>
                   </div>
 
                   <div class="px-3 pt-2 pxl-label text-xs text-muted-foreground">{move || t("shell.exam-center")}</div>
-                  {registry::MODULES
+                  // 与桌面下拉同构：按子分组（练习 / 模拟考 / 复习 / 学习数据 / 闯关）分段。
+                  {EXAM_GROUPS
                     .iter()
-                    .filter(|m| m.group == Some(GROUP_EXAM))
-                    .map(|m| {
+                    .map(|g| {
                       view! {
-                        <a
-                          href=m.nav_href()
-                          class=move || {
-                            cn(&[
-                              "flex items-center gap-3 border-2 px-3 py-2.5 text-sm",
-                              if active(m.path) {
-                                "border-ink bg-accent text-accent-foreground"
-                              } else {
-                                "border-transparent text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
-                              },
-                            ])
-                          }
-                          on:click=move |_| menu_open.set(false)
-                        >
-                          <Icon kind=icon_of(m.icon) class="size-6" />
-                          {move || t(m.title)}
-                        </a>
+                        <div class="px-3 pt-1 text-xs text-muted-foreground">{move || t(g)}</div>
+                        {registry::MODULES
+                          .iter()
+                          .filter(|m| m.group == Some(*g))
+                          .map(|m| {
+                            view! {
+                              <a
+                                href=m.nav_href()
+                                class=move || {
+                                  cn(&[
+                                    "flex items-center gap-3 border-2 px-3 py-2.5 text-sm",
+                                    if active(m.path) {
+                                      "border-ink bg-accent text-accent-foreground"
+                                    } else {
+                                      "border-transparent text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
+                                    },
+                                  ])
+                                }
+                                on:click=move |_| menu_open.set(false)
+                              >
+                                <Icon kind=icon_of(m.icon) class="size-6" />
+                                {move || t(m.title)}
+                              </a>
+                            }
+                          })
+                          .collect_view()}
                       }
                     })
                     .collect_view()}

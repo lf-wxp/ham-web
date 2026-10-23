@@ -1291,5 +1291,6 @@
     "other": "{} more messages have types this decoder cannot parse yet (DXpedition / EU VHF / contest / Field Day, etc.)"
   },
   "tools.ft8-slots": "{} time slots",
-  "tools.radiogram-missing-fields": "Fill in the required fields first: {}"
+  "tools.radiogram-missing-fields": "Fill in the required fields first: {}",
+  "tools.callsign-knowledge": "Callsign knowledge"
 }

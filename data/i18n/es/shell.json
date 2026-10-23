@@ -88,7 +88,7 @@
   "shell.maps-satellites": "Mapas · Satélites",
   "shell.exam-reference": "Referencia de examen",
   "shell.antenna-diy": "Antena DIY",
-  "shell.antennas-equipment": "Antenas · Equipo",
+  "shell.antenna-systems": "Sistemas de antenas",
   "shell.antenna-farms": "Granjas de antenas",
   "shell.antenna-farms-title": "Granjas de antenas",
   "shell.antenna-analyzers": "Analizadores de antena",
@@ -147,7 +147,7 @@
   "shell.local-storage-is-full": "El almacenamiento local está lleno, así que es posible que el progreso / los errores / el registro recientes no se hayan guardado. Exporta antes una copia y luego borra los datos que no necesites.",
   "shell.glossary": "Glosario",
   "shell.view-usage-and-back": "Ver uso y hacer copia",
-  "shell.modes-propagation": "Modos · Propagación",
+  "shell.modes-digital": "Modos · Digitales",
   "shell.analog-modes": "Modos analógicos",
   "shell.mock-exam": "Examen simulado",
   "shell.weather-satellites": "Satélites meteorológicos",
@@ -238,5 +238,12 @@
   "shell.scheme-sunset": "Atardecer",
   "shell.license": "Licencia",
   "shell.license-notice": "Aviso de licencia: el sitio es MIT; los decodificadores DominoEX, LRPT y NAVTEX son GPL-3.0, código fuente en el repositorio de GitHub",
-  "shell.frequency-power-compliance": "Cumplimiento de Frecuencia y Potencia"
+  "shell.frequency-power-compliance": "Cumplimiento de Frecuencia y Potencia",
+  "shell.propagation-bands": "Propagación · Bandas",
+  "shell.equipment-measurement": "Equipos · Medición",
+  "shell.exam-practice": "Práctica",
+  "shell.exam-mock": "Exámenes simulados",
+  "shell.exam-review": "Repaso",
+  "shell.exam-data": "Datos de estudio",
+  "shell.exam-rpg": "Desafíos"
 }

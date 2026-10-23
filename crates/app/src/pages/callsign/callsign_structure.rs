@@ -1,47 +1,44 @@
-use ham_web_core::callsign::{SLASH_SUFFIXES, STATION_TYPES, parse_callsign};
+//! 呼号结构图解 + 交互式解析（原来在 `/prefixes`，现归到呼号知识总页）。
+
+use ham_web_core::callsign::parse_callsign;
 use leptos::prelude::*;
 
+use crate::data;
 use crate::i18n::{t, tf};
 use crate::ui::Input;
 
-/// 示例呼号分块说明：`(字符, 名称, 说明, 配色)`。
-const EXAMPLE_PARTS: &[(&str, &str, &str, &str)] = &[
+/// 示例呼号 `BG4XYZ` 的分段：`(字符, 文案 key, 配色)`。
+const EXAMPLE_PARTS: &[(&str, &str, &str)] = &[
   (
     "B",
-    "前缀",
-    "中国",
+    "radio.prefix",
     "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-400",
   ),
   (
     "G",
-    "台站类别",
-    "个人业余电台",
+    "radio.station-class",
     "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
   ),
   (
     "4",
-    "分区号",
-    "上海 · 山东 · 江苏",
+    "radio.zone-label",
     "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
   ),
   (
     "XYZ",
-    "后缀",
-    "台站唯一标识",
+    "radio.suffix",
     "border-border bg-muted/40 text-foreground",
   ),
 ];
 
-/// 呼号结构图解 + 交互式解析。
 #[component]
-pub(super) fn CallsignAnalyzer() -> impl IntoView {
+pub fn CallsignStructure() -> impl IntoView {
   let input = RwSignal::new("BG4XYZ".to_owned());
 
   view! {
     <section class="pxl-card border bg-card">
       <h2 class="pxl-section-title">{move || t("radio.callsign-breakdown")}</h2>
       <div class="space-y-5 p-4">
-        // 图解示例
         <div>
           <p class="mb-2 text-xs text-muted-foreground">
             {move || t("radio.taking-bg4xyz-as-an")}
@@ -49,12 +46,11 @@ pub(super) fn CallsignAnalyzer() -> impl IntoView {
           <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {EXAMPLE_PARTS
               .iter()
-              .map(|&(ch, label, desc, color)| {
+              .map(|&(ch, key, color)| {
                 view! {
                   <div class=format!("border p-3 text-center {color}")>
                     <div class="font-mono text-2xl font-bold">{ch}</div>
-                    <div class="mt-1 text-xs font-semibold">{label}</div>
-                    <div class="mt-0.5 text-[11px]">{desc}</div>
+                    <div class="mt-1 text-xs font-semibold">{move || t(key)}</div>
                   </div>
                 }
               })
@@ -62,7 +58,6 @@ pub(super) fn CallsignAnalyzer() -> impl IntoView {
           </div>
         </div>
 
-        // 交互解析器
         <div>
           <label class="mb-1.5 block text-xs text-muted-foreground">{move || t("radio.enter-a-callsign-to-analyze")}</label>
           <Input
@@ -76,12 +71,17 @@ pub(super) fn CallsignAnalyzer() -> impl IntoView {
             {move || {
               let p = parse_callsign(&input.get());
               let entity = p.entity.map(t).unwrap_or_else(|| t("radio.unrecognised"));
+              // 类别与斜杠后缀文案来自 core，译文在知识库词典（`kt`），不在界面词典（`t`）。
               let station = p
                 .station_type
-                .map(t)
+                .map(data::kt_tracked)
                 .unwrap_or_else(|| t("radio.non-chinese-callsign"));
               let area = match (p.area, p.area_regions) {
-                (Some(a), Some(r)) => tf("common.zone-with-regions", &[(a), (r)]),
+                // 地区串是知识库正文，要过 `kt` 才翻；直接拼 `tf` 会在英文界面漏出中文省名。
+                (Some(a), Some(r)) => {
+                  let regions = data::kt_tracked(r);
+                  tf("common.zone-with-regions", &[a, &regions])
+                }
                 _ => "—".to_owned(),
               };
               let suffix = if p.suffix.is_empty() {
@@ -89,7 +89,10 @@ pub(super) fn CallsignAnalyzer() -> impl IntoView {
               } else {
                 p.suffix.clone()
               };
-              let slash = p.slash.map(t).unwrap_or_else(|| t("radio.none"));
+              let slash = p
+                .slash
+                .map(data::kt_tracked)
+                .unwrap_or_else(|| t("radio.none"));
               view! {
                 <div class="flex items-baseline gap-2">
                   <span class="w-24 shrink-0 text-xs text-muted-foreground">{move || t("radio.country-region-label")}</span>
@@ -113,42 +116,6 @@ pub(super) fn CallsignAnalyzer() -> impl IntoView {
                 </div>
               }
             }}
-          </div>
-        </div>
-
-        // 台站类别 + 斜杠后缀说明
-        <div class="grid gap-4 sm:grid-cols-2">
-          <div>
-            <h3 class="mb-2 text-xs font-semibold text-muted-foreground">{move || t("radio.chinese-station-class-second")}</h3>
-            <div class="space-y-1">
-              {STATION_TYPES
-                .iter()
-                .map(|&(k, v)| {
-                  view! {
-                    <div class="flex items-baseline gap-2 text-sm">
-                      <span class="w-16 shrink-0 font-mono font-semibold text-primary">{k}</span>
-                      <span class="text-muted-foreground">{v}</span>
-                    </div>
-                  }
-                })
-                .collect_view()}
-            </div>
-          </div>
-          <div>
-            <h3 class="mb-2 text-xs font-semibold text-muted-foreground">{move || t("radio.slash-suffix")}</h3>
-            <div class="space-y-1">
-              {SLASH_SUFFIXES
-                .iter()
-                .map(|&(k, v)| {
-                  view! {
-                    <div class="flex items-baseline gap-2 text-sm">
-                      <span class="w-16 shrink-0 font-mono font-semibold text-primary">{k}</span>
-                      <span class="text-muted-foreground">{v}</span>
-                    </div>
-                  }
-                })
-                .collect_view()}
-            </div>
           </div>
         </div>
       </div>

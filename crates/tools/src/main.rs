@@ -7,6 +7,7 @@
 //! ```
 
 mod csv;
+mod data_sync;
 mod dataset;
 mod dxcc;
 mod dxcc_map;
@@ -18,9 +19,11 @@ mod icons;
 mod knowledge_i18n;
 mod pixel;
 mod postbuild;
+mod provenance;
 mod psk31_gen;
 mod size_check;
 mod spectrum_gen;
+mod structure_check;
 mod ui_check;
 
 use std::path::PathBuf;
@@ -86,8 +89,23 @@ enum Command {
   CheckExplanations,
   /// 界面规范守卫：已失效的圆角类、原生表单控件、类名工厂残留等（docs/ui-components.md §11）
   CheckUi,
+  /// 结构与架构守卫：一文件一组件、手写吸顶偏移、散落 alert()、core 碰浏览器 API、crate 反向依赖、panic 宏（docs/code-quality.md）
+  CheckStructure,
   /// e2e 覆盖对账：coverage-targets.json 的每条核心旅程必须能在 spec 里命中
   CheckE2e,
+  /// 数据产物来源戳的离线一致性（产物有无戳、依赖摘要是否还对得上）
+  CheckDataSync,
+  /// 给已存在的产物补写来源戳（内容不动；用于引入戳之前生成的旧产物）
+  StampData,
+  /// 数据新鲜度：比对上游（需联网；连不上只报告，不判失败）
+  CheckDataFreshness {
+    /// 只检查指定数据源（dxcc / dxcc-map / dataset），默认全部
+    #[arg(long, value_delimiter = ',')]
+    only: Vec<String>,
+    /// 上游连不上时也判失败（CI 定时任务用；本地默认放行）
+    #[arg(long)]
+    strict: bool,
+  },
   /// 校验 data/i18n/ 的 en / es 词典（重复 key、占位符数量、死条目）并统计按域覆盖率
   CheckI18n {
     /// 导出「源码里有但词典里没有」的文案模板（{zh, text}）
@@ -296,6 +314,10 @@ fn main() -> Result<()> {
     Command::CheckGlossary => explanations::check_glossary(&paths),
     Command::CheckExplanations => explanations::check(&paths),
     Command::CheckUi => ui_check::check(&root),
+    Command::CheckStructure => structure_check::check(&root),
+    Command::CheckDataSync => data_sync::run(&root),
+    Command::StampData => data_sync::backfill(&root),
+    Command::CheckDataFreshness { only, strict } => data_sync::freshness(&root, &only, strict),
     Command::CheckE2e => {
       e2e_coverage::check(&root)?;
       Ok(())

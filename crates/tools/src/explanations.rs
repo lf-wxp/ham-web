@@ -19,6 +19,7 @@ use serde::Serialize;
 use serde_json::{Map, Value};
 
 use crate::fsutil::{Paths, read_json, write_json};
+use crate::provenance;
 
 /// 读取解析表，兼容对象（`{指纹: 文本}`）与数组（`[{id, text}]`）两种格式；读取失败返回空表。
 pub fn load_explanations(path: &Path) -> HashMap<String, String> {
@@ -759,10 +760,12 @@ pub fn enhance(paths: &Paths) -> Result<()> {
 /// 把解析表重新应用到 `public/questions/*.json`。
 pub fn apply(paths: &Paths) -> Result<()> {
   let explanations = load_explanations(&paths.explanations);
+  let mut skipped = false;
   for name in ["A", "B", "C", "full"] {
     let file = paths.bank_json(name);
     if !file.is_file() {
       eprintln!("跳过 {}（不存在）", file.display());
+      skipped = true;
       continue;
     }
     let mut qs: Vec<QuestionItem> = read_json(&file)?;
@@ -781,6 +784,12 @@ pub fn apply(paths: &Paths) -> Result<()> {
       "{name}.json：更新 {updated} 条，含解析 {with} / {}",
       qs.len()
     );
+  }
+  // 四个题库都按当前解析库写回了，边车里记的解析库摘要要跟上；否则 `check-data-sync`
+  // 会误以为题库过期并要求联网重跑 `cargo make dataset`。有题库缺失就不刷新：
+  // 那时「题库与解析库一致」并不成立。
+  if !skipped && provenance::refresh_inputs(&paths.root, &paths.questions.join("config.json"))? {
+    println!("已刷新题库来源戳里的解析库摘要");
   }
   Ok(())
 }

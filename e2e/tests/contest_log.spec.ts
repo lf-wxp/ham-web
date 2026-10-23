@@ -512,14 +512,14 @@ test("竞赛录入：赛前目标与配速按线性进度显示", async ({ page 
   await expect(pace.getByText(/按当前速率还需/)).toHaveCount(0);
 
   // 小数要能**逐键**敲进去：旧实现用 `type=number` + 取整回写，敲 "1." 时中间态被清空，
-  // 小数点被吞掉，最终只剩 "5"（回归见 docs/code-review-2026-10.md M15）。
+  // 小数点被吞掉，最终只剩 "5"（回归：小数必须能逐键输入）。
   const hours = pace.getByLabel("计划时长（小时）");
   await hours.clear();
   await hours.pressSequentially("1.5");
   await expect(hours).toHaveValue("1.5");
 
   // 清空目标＝清除（回到「未设置」），而不是被当成非法输入悄悄忽略；
-  // 反过来，非法值（小数、负号）不能把已有目标静默写成 0（回归见 docs/code-review-2026-10.md M30）。
+  // 反过来，非法值（小数、负号）不能把已有目标静默写成 0（回归：非法目标值不得覆盖已有目标）。
   const target = pace.getByLabel("目标通联数");
   await target.fill("1.5");
   await expect(pace.getByText("先填目标通联数与计划时长")).toHaveCount(0);

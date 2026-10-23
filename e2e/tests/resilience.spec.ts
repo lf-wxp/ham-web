@@ -52,7 +52,7 @@ test("存储写入失败：底部弹出提示条并可跳到备份页", async ({
   await expect(banner).toBeVisible();
 
   await banner.getByRole("link", { name: "查看占用并备份" }).click();
-  await expect(page).toHaveURL(/\/tools#backup$/);
+  await expect(page).toHaveURL(/\/backup$/);
 
   // 「知道了」可关闭
   await page.evaluate(() => {

@@ -476,7 +476,7 @@ view! {
 | `pages/morse/morse_page.rs` | 2 × `Slider` |
 | `pages/morse/koch_trainer.rs` | `Input`、`Button`（`ButtonKind::Submit`） |
 | `components/common/note_editor.rs` | `Textarea`、2 × `Button` |
-| `pages/tools/backup_tool.rs` | 2 × `FileInput`、`Button` |
+| `pages/backup/backup_tool.rs` | 2 × `FileInput`、`Button` |
 | `components/search_dialog.rs` | `Input`（`InputType::Search` + 前置图标 + 清除） |
 | `components/practice/practice_search_dialog.rs` | `Input`（回车跳转 + 清除，取代手写输入框与清除按钮） |
 | `pages/browse/browse_page.rs` | `Input`（搜索） |

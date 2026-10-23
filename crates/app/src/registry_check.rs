@@ -8,7 +8,7 @@
 //! 做法是直接读路由表源码：Leptos 的 `<Route view=…>` 需要具体组件类型，无法由数据
 //! 驱动，所以只能反查源码文本。
 
-use ham_web_core::registry::{self, GROUP_EXAM, KNOWLEDGE_GROUPS, TOOL_GROUPS};
+use ham_web_core::registry::{self, EXAM_GROUPS, GROUP_EXAM, KNOWLEDGE_GROUPS, TOOL_GROUPS};
 
 use crate::icons::icon_of;
 
@@ -90,7 +90,11 @@ fn nav_icons_resolve() {
       m.icon
     );
   }
-  for group in KNOWLEDGE_GROUPS.iter().chain(TOOL_GROUPS.iter()) {
+  for group in EXAM_GROUPS
+    .iter()
+    .chain(KNOWLEDGE_GROUPS.iter())
+    .chain(TOOL_GROUPS.iter())
+  {
     let key = registry::group_icon(group);
     assert_eq!(icon_of(key).name(), key, "分组 {group} 的图标 key 无效");
   }

@@ -1261,5 +1261,6 @@
   "tools.radiogram-precedence-emergency": "紧急 EMERGENCY",
   "tools.ft8-unsupported": "另有 {} 条消息的类型暂不支持解析（DXpedition / 欧洲 VHF / 竞赛 / Field Day 等）",
   "tools.ft8-slots": "共 {} 个时隙",
-  "tools.radiogram-missing-fields": "请先填写必填字段：{}"
+  "tools.radiogram-missing-fields": "请先填写必填字段：{}",
+  "tools.callsign-knowledge": "呼号知识"
 }

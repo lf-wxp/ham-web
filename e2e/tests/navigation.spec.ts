@@ -6,9 +6,71 @@ test("主导航：展开考试中心下拉可跳转到错题集", async ({ page 
   await expect(nav).toBeVisible();
 
   await nav.getByRole("button", { name: "考试中心" }).click();
+  // 考试中心已改为分组下拉（练题 / 模拟考 / 复习 / 学习数据 / 闯关），错题集在「复习」里。
+  await nav.getByRole("button", { name: "复习", exact: true }).click();
   await nav.locator('a[href="/mistakes"]').click();
   await expect(page).toHaveURL(/\/mistakes$/);
   await expect(page.getByRole("heading", { level: 1, name: "错题集" })).toBeVisible();
+});
+
+test("主导航：考试中心五个分组各自列出全部条目，共 17 项", async ({ page }) => {
+  await page.goto("/");
+  const nav = page.locator("[data-nav]");
+  await nav.getByRole("button", { name: "考试中心" }).click();
+  // 分组与条目取自注册表：新增 / 挪动页面时这里要同步，防止某个页面从导航里悄悄消失。
+  const expected: Record<string, string[]> = {
+    练题: ["/practice", "/daily-challenge", "/browse", "/flashcards", "/listen"],
+    模拟考: ["/exam", "/exam-review"],
+    复习: ["/cards", "/mistakes", "/mistake-topics", "/bookmarks"],
+    学习数据: ["/weekly", "/progress", "/study-calendar", "/report"],
+    闯关: ["/map", "/bestiary"],
+  };
+  let total = 0;
+  for (const [group, hrefs] of Object.entries(expected)) {
+    await nav.getByRole("button", { name: group, exact: true }).click();
+    const links = nav.locator("#nav-exam-panel a");
+    await expect(links).toHaveCount(hrefs.length);
+    for (const href of hrefs) {
+      await expect(nav.locator(`#nav-exam-panel a[href="${href}"]`)).toBeVisible();
+    }
+    total += hrefs.length;
+  }
+  expect(total).toBe(17);
+});
+
+test("数据备份入口：页脚、设置对话框都能直达 /backup", async ({ page }) => {
+  // 页脚
+  await page.goto("/glossary");
+  await page.locator("footer").getByRole("link", { name: "数据备份" }).click();
+  await expect(page).toHaveURL(/\/backup$/);
+  await expect(page.getByRole("heading", { level: 1, name: "数据备份" })).toBeVisible();
+
+  // 设置对话框（桌面顶栏的齿轮按钮无障碍名是「外观与动效」），点完应关闭对话框
+  await page.goto("/");
+  await page.locator("[data-nav]").getByRole("button", { name: "外观与动效" }).first().click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("link", { name: "数据备份" }).click();
+  await expect(page).toHaveURL(/\/backup$/);
+  await expect(dialog).toHaveCount(0);
+});
+
+test("数据备份入口：移动菜单可直达 /backup", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.locator("[data-nav]").getByRole("button", { name: /菜单|导航/ }).first().click();
+  await page.locator('nav[aria-label*="导航"]').getByRole("link", { name: "数据备份" }).click();
+  await expect(page).toHaveURL(/\/backup$/);
+  await expect(page.getByRole("heading", { level: 1, name: "数据备份" })).toBeVisible();
+});
+
+test("旧链接 /tools#backup 转到 /backup，且回退键不会被弹回重定向", async ({ page }) => {
+  await page.goto("/glossary");
+  await page.goto("/tools#backup");
+  await expect(page).toHaveURL(/\/backup$/);
+  await expect(page.getByRole("heading", { level: 1, name: "数据备份" })).toBeVisible();
+  // `replace` 导航：历史里不留 /tools#backup，回退直接回到上一页。
+  await page.goBack();
+  await expect(page).toHaveURL(/\/glossary$/);
 });
 
 test("主导航：展开工具下拉可跳转到小工具", async ({ page }) => {

@@ -1291,5 +1291,6 @@
     "other": "{} mensajes más tienen tipos que este decodificador aún no puede interpretar (DXpedition / EU VHF / concurso / Field Day, etc.)"
   },
   "tools.ft8-slots": "{} intervalos de tiempo",
-  "tools.radiogram-missing-fields": "Rellena primero los campos obligatorios: {}"
+  "tools.radiogram-missing-fields": "Rellena primero los campos obligatorios: {}",
+  "tools.callsign-knowledge": "Conocimiento de indicativos"
 }

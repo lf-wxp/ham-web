@@ -123,7 +123,7 @@ test("审查修复：SCP 删除失败不清内存、不误报成功，刷新仍�
   await expect(page.locator('[data-slot="scp-source"]')).toContainText("来自载入的 SCP 文件：1 个呼号");
 });
 
-for (const route of ["/tools#backup", "/browse", "/glossary"]) {
+for (const route of ["/tools", "/browse", "/glossary"]) {
   test(`审查修复：${route} 隐藏侧栏滚动后跨断点，吸顶保持在页头下`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(route);

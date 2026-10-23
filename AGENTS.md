@@ -16,6 +16,7 @@
 | 项目结构、cargo make 任务、路由 | [`README.md`](README.md) |
 | 串口功能（CAT / 旋转器 / NanoVNA / KISS）与外部格式（CHIRP / SOTA / POTA）的验收 | [`docs/hardware-verification.md`](docs/hardware-verification.md)：单测与假串口只算「待验」，真机记录才叫「已验证」 |
 | 天线方向增益（S2）的实现 | [`docs/antenna-coverage.md`](docs/antenna-coverage.md)：口径是「方向增益」，不是覆盖 / 可达 |
+| 全仓代码质量（分层边界、可自动化门禁、问题分级与证据口径） | [`docs/code-quality.md`](docs/code-quality.md)：长期标准 + 检查清单，改动前先跑 §2 的门禁 |
 
 ## 2. 硬规则
 
@@ -55,7 +56,7 @@
 - **提交前必须过 `cargo make check`**；动了页面组件再跑相关 e2e。
 
 ```bash
-cargo make check   # fmt-check + clippy + test + i18n-check + knowledge-i18n-check + explanations-check + pixel-check
+cargo make check   # fmt + clippy + test + i18n + knowledge-i18n + explanations + e2e-check + check-ui + check-structure + pixel-check + data-sync-check
 cargo make ci      # 上面 + release 前端构建（提交前用这个）
 ```
 

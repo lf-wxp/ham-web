@@ -46,6 +46,10 @@ fn is_excluded(rel: &str) -> bool {
     || (rel.starts_with("data/i18n/") && rel.ends_with(".json"))
     || rel.starts_with("katex/")
     || rel.ends_with(".map")
+    // 来源戳（`*.source.json`）是构建元数据。正常走 `data/provenance/`，不会出现在 dist；
+    // 这里是第二道防线：万一将来有人把它放回 `public/`，也不会进预缓存——
+    // 否则它的 `fetched_at` 每次生成都变，会让所有用户重下整个预缓存。
+    || rel.ends_with(".source.json")
     || rel.rsplit('/').next().is_some_and(|f| f.starts_with('.'))
 }
 
@@ -427,6 +431,9 @@ mod tests {
     assert!(!is_excluded("index.html"));
     assert!(is_excluded("app_bg.wasm.br"));
     assert!(is_excluded("index.html.gz"));
+    // 来源戳不进预缓存：它的 fetched_at 每次都变，会白白冲掉整个预缓存版本。
+    assert!(is_excluded("questions/config.json.source.json"));
+    assert!(is_excluded("dxcc-entities.bin.source.json"));
   }
 
   /// 语言包不进预缓存：预缓存会在 `install` 阶段被无条件拉一遍，中文用户不该为

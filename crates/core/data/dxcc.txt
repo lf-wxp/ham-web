@@ -1,4 +1,7 @@
-# 由 `ham-web-tools dxcc` 从 country-files.com 的 cty.csv 生成，请勿手工编辑。
+# 由 `ham-web-tools dxcc` 从 https://www.country-files.com/bigcty/cty.csv 生成，请勿手工编辑。
+# 摘要: sha256:c758e80461ce61e6fb8e950bedfe0640cf3b893c31b70fc3c58be11983c5d4b9
+# 抓取: 2026-10-22T09:41:46Z
+# 补戳: 是（摘要是既有产物自身的，不是上游的；下次 `cargo make dxcc` 会写入真实戳）
 246|1A|Sov Mil Order of Malta|EU|15|28|41.90|12.43|1A
 247|1S|Spratly Islands|AS|26|50|9.88|114.23|9M0 BM9S BN9S BO9S BP9S BQ9S BU9S BV9S BW9S BX9S
 260|3A|Monaco|EU|14|27|43.73|7.4|3A

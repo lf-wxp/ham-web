@@ -168,6 +168,12 @@ description = "界面规范守卫：已失效的圆角类、原生表单控件�
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--", "check-ui"]
 
+[tasks.check-structure]
+description = "结构与架构守卫：一文件一组件、页面手写吸顶偏移、散落 alert()、core 碰浏览器 API、crate 反向依赖、panic 宏（只读，见 docs/code-quality.md）"
+# 与 i18n-check 同理不用 --release：只是扫源码文本。
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--", "check-structure"]
+
 [tasks.pixel-check]
 description = "校验像素风生成物：调色板文字色阶与每个配色方案对比度达标，schemes.css 与方案表一致（只读）"
 # 与 i18n-check 同理不用 --release：只是算几个对比度，debug 构建即可。
@@ -562,6 +568,25 @@ description = "生成运行时语言包 public/data/i18n/{lang}.json（非内嵌
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--", "i18n-pack"]
 
+[tasks.data-sync-check]
+description = "数据产物来源戳的离线一致性（产物有无戳、依赖摘要是否与现状一致；不联网）"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--", "check-data-sync"]
+
+[tasks.data-stamp]
+description = "给已存在的旧产物补写来源戳（内容不动；之后由各生成任务写入真实戳）"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--", "stamp-data"]
+
+[tasks.data-freshness]
+description = "比对数据产物与上游是否有更新（需联网；连不上只报告，退出码 0）"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "check-data-freshness"]
+
+[tasks.data-sync]
+description = "拉取上游并重新生成全部外部数据（dxcc + dxcc-map + dataset，需联网）"
+dependencies = ["dxcc", "dxcc-map", "dataset"]
+
 [tasks.e2e-check]
 description = "e2e 覆盖对账：coverage-targets.json 的每条核心旅程必须能在 e2e/tests 的 spec 里命中"
 command = "cargo"
@@ -678,7 +703,7 @@ done
 '''
 
 [tasks.check]
-description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案/知识库译文词典校验 + 解析表校验 + 界面规范守卫 + 像素风生成物校验（不构建前端）"
+description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案/知识库译文词典校验 + 解析表校验 + 界面规范守卫 + 结构守卫 + 像素风生成物校验（不构建前端）"
 dependencies = [
   "fmt-check",
   "clippy",
@@ -690,7 +715,10 @@ dependencies = [
   "explanations-check",
   "e2e-check",
   "check-ui",
+  "check-structure",
   "pixel-check",
+  # 离线：产物有没有来源戳、依赖摘要是否与现状一致（不联网，可放心进 CI）
+  "data-sync-check",
 ]
 
 [tasks.size-check]
@@ -712,10 +740,11 @@ command = "node"
 args = ["scripts/coverage.mjs"]
 
 [tasks.ci]
-description = "CI：格式检查 + clippy + 测试 + 界面文案/知识库译文校验 + 解析表校验 + e2e 清单对账 + 界面规范守卫 + 像素风生成物校验 + 前端构建"
+description = "CI：格式检查 + clippy + 测试 + 界面文案/知识库译文校验 + 解析表校验 + e2e 清单对账 + 界面规范守卫 + 结构守卫 + 像素风生成物校验 + 数据来源戳校验 + 前端构建"
 # 与 `check` 保持同一套校验：漏掉 knowledge-i18n-check 时，知识库译文 key 漂移
 # 会让页面上静默回退中文，而 CI 不会红；漏掉 e2e-check 时，e2e 清单与用例标题对不上
-# 也要等到 CI 的覆盖率步骤才红。
+# 也要等到 CI 的覆盖率步骤才红；漏掉 data-sync-check 时，「提交前跑 ci」的本地流程
+# 会放过过期的数据来源戳。
 dependencies = [
   "fmt-check",
   "clippy",
@@ -728,7 +757,9 @@ dependencies = [
   "explanations-check",
   "e2e-check",
   "check-ui",
+  "check-structure",
   "pixel-check",
+  "data-sync-check",
   "build-web",
   # 体积只能在 release 产物上量，所以挂在 ci（有 build-web）而不是 check 上
   "size-check",

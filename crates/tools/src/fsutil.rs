@@ -10,6 +10,8 @@ use serde::de::DeserializeOwned;
 /// 项目内常用路径。
 #[derive(Debug, Clone)]
 pub struct Paths {
+  /// 仓库根目录
+  pub root: PathBuf,
   /// `public/`
   pub public: PathBuf,
   /// `public/questions/`
@@ -24,6 +26,7 @@ impl Paths {
   pub fn new(root: &Path) -> Self {
     let public = root.join("public");
     Self {
+      root: root.to_path_buf(),
       questions: public.join("questions"),
       public,
       explanations: root.join("data").join("explanations.json"),

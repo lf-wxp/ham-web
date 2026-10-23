@@ -88,7 +88,7 @@
   "shell.maps-satellites": "地图 · 卫星",
   "shell.exam-reference": "备考速查",
   "shell.antenna-diy": "天线 DIY",
-  "shell.antennas-equipment": "天线 · 设备",
+  "shell.antenna-systems": "天线系统",
   "shell.antenna-farms": "天线农场",
   "shell.antenna-farms-title": "天线农场规划",
   "shell.antenna-analyzers": "天线分析仪",
@@ -147,7 +147,7 @@
   "shell.local-storage-is-full": "本地存储空间已满，最新的进度 / 错题 / 日志可能没有保存。请先导出备份，再清理不需要的数据。",
   "shell.glossary": "术语表",
   "shell.view-usage-and-back": "查看占用并备份",
-  "shell.modes-propagation": "模式 · 传播",
+  "shell.modes-digital": "模式 · 数字",
   "shell.analog-modes": "模拟模式",
   "shell.mock-exam": "模拟考试",
   "shell.weather-satellites": "气象卫星接收",
@@ -238,5 +238,12 @@
   "shell.scheme-sunset": "晚霞",
   "shell.license": "许可",
   "shell.license-notice": "许可说明：本站以 MIT 发布，DominoEX、LRPT 与 NAVTEX 解码器为 GPL-3.0，源码在 GitHub 仓库",
-  "shell.frequency-power-compliance": "频率功率合规"
+  "shell.frequency-power-compliance": "频率功率合规",
+  "shell.propagation-bands": "传播 · 频段",
+  "shell.equipment-measurement": "设备 · 测量",
+  "shell.exam-practice": "练题",
+  "shell.exam-mock": "模拟考",
+  "shell.exam-review": "复习",
+  "shell.exam-data": "学习数据",
+  "shell.exam-rpg": "闯关"
 }

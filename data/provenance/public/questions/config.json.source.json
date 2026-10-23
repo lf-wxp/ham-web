@@ -1,0 +1,9 @@
+{
+  "source": "https://raw.githubusercontent.com/xiedada05/crac-amateur-radio-exam-questions-2025-csv/main",
+  "digest": "dfdd06e50f1f0b51deb01c86a9c145facb72a8a7414eff9981eb6e5d34ecf210",
+  "fetched_at": "2026-10-22T09:41:46Z",
+  "inputs": {
+    "data/explanations.json": "08e12e7fb2c593c0769d9d4f6494e791099c78e6e0305245dcf47c52ccc99128"
+  },
+  "backfilled": true
+}

@@ -3,6 +3,7 @@ use ham_web_core::reference::CALL_AREAS;
 use leptos::prelude::*;
 
 use crate::components::quiz_option::QuizOption;
+use crate::data;
 use crate::i18n::{t, tf};
 use crate::ui::Button;
 use crate::util::random;
@@ -75,7 +76,7 @@ pub(super) fn CallAreaQuiz() -> impl IntoView {
                     disabled=Signal::derive(move || feedback.get().is_some())
                     on_click=Callback::new(move |_| judge(chosen.clone()))
                   >
-                    {opt}
+                    {move || data::kt_tracked(&opt)}
                   </QuizOption>
                 }
               })
@@ -94,7 +95,13 @@ pub(super) fn CallAreaQuiz() -> impl IntoView {
                 } else {
                   view! {
                     <span class="font-medium text-red-600 dark:text-red-400">
-                      {t("exam.correct-answer-prefix")} {answer.get_value()}
+                      {move || {
+                        format!(
+                          "{}{}",
+                          t("exam.correct-answer-prefix"),
+                          data::kt_tracked(&answer.get_value()),
+                        )
+                      }}
                     </span>
                   }
                   .into_any()

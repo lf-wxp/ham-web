@@ -501,10 +501,11 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
 ## 10. 例外清单：刻意保留的原生元素
 
 规范之外**有意留下**的地方都在这里。每一处都在代码里写了 `刻意的例外` 注释，
-`grep -rn "刻意的例外" crates/app/src` 可列全（当前 **13 条注释 / 11 个文件**，全在 §10.2，
-其中 `nav_bar.rs` 占 3 条；13 条里 8 条走 `button_class`，其余 —— `nav_bar.rs` 的移动端
-语言切换与 `dx_spots.rs` 的表格行按钮用 `cn` / 原生类名，`page_header.rs` 与 `print_page.rs`
-共用吸顶骨架常量，`bands_page.rs` 保留整表原生 `<table>` —— 各有理由见下表）；
+`grep -rn "刻意的例外" crates/app/src` 可列全（当前 **12 条注释 / 11 个文件**，
+其中 `nav_bar.rs` 占 2 条、`group_menu.rs` 占 1 条；`pagination.rs` 那条只是解释
+「为什么不收录」，不是例外本身）。大多数走 `button_class` + 原生元素，另有几处用
+`cn` / 原生类名（`nav_bar.rs` 的移动端语言切换、`dx_spots.rs` 的表格行按钮）、共用吸顶骨架常量
+（`page_header.rs`、`print_page.rs`）或保留整表原生 `<table>`（`bands_page.rs`）—— 各有理由见下表；
 **新写界面不要模仿它们**，它们各自的理由如下。
 
 ### 10.1 表单控件：拖放上传区（已全部收编）
@@ -521,8 +522,8 @@ label 的 `has-[:focus-visible]:ring-2` 显示。**页面里不要再手写拖�
 
 | 位置 | 为什么保留原生元素 |
 | --- | --- |
-| `components/navigation/nav_bar.rs` | ① 导航项（`<a>`）：高亮要切 `variant`（`ButtonLink.variant` 是静态 prop）；② 分组下拉开关（`<button>`）：高亮随路由切 `variant`（`aria-expanded` / `aria-controls` 已有通道，不再是理由）；③ 移动端面板的语言切换（`<button>`×N）：选中态要重算 `class`（`Button.class` 是静态串，顺带输出 `aria-pressed`） |
-| `components/navigation/group_menu.rs` | 「知识库」「工具」两个下拉开关（共用一条注释，渲染出 2 个 `<button>`）：理由同 nav_bar；面板是分组侧栏 + 条目区，见文件头 |
+| `components/navigation/nav_bar.rs` | ① 导航项（`<a>`）：高亮要切 `variant`（`ButtonLink.variant` 是静态 prop）；② 移动端面板的语言切换（`<button>`×N）：选中态要重算 `class`（`Button.class` 是静态串，顺带输出 `aria-pressed`）。分组下拉开关已拆到 `group_menu.rs`，见下一行 |
+| `components/navigation/group_menu.rs` | 「考试中心」「知识库」「工具」三个下拉开关（三个菜单共用一个组件，同一条注释，渲染出 3 个 `<button>`）：理由同 nav_bar；面板是分组侧栏 + 条目区，见文件头 |
 | `pages/callsign_copy.rs` | 两个模式按钮：选中态切 `variant` |
 | `components/exam/answer_card_sheet.rs` | 答题卡筛选按钮：当前筛选切 `variant` |
 | `pages/home/cards_card.rs` | 「今日待复习」入口：有待复习时切 `variant` |

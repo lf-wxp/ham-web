@@ -24,7 +24,7 @@ pub(super) fn StorageWarning() -> impl IntoView {
               {move || t("shell.local-storage-is-full")}
             </span>
             <ButtonLink
-              href="/tools#backup"
+              href="/backup"
               variant=Variant::Destructive
               size=Size::Sm
             >

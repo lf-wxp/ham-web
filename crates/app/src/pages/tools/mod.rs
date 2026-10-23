@@ -1,4 +1,6 @@
-//! 业余无线电小工具集合：换算、电路与天线估算、代码解码、数据备份。
+//! 业余无线电小工具集合：换算、电路与天线估算、代码解码。
+//!
+//! 数据备份不在本页（存储写满时不好找），独立在 `/backup`，见 `crate::pages::backup`。
 //!
 //! 不在这里维护工具清单（列一次就会过期）：导航项与区块见 `tools_page.rs` 的 `TOOL_NAV`
 //! 与 `<ToolSection>`，两者一一对应。
@@ -7,7 +9,6 @@ mod antenna_length;
 mod antenna_matcher;
 mod aprs_codec;
 mod attenuator_calculator;
-mod backup_tool;
 mod battery_runtime;
 mod callsign_lookup;
 mod capacitor_code;

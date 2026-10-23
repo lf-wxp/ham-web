@@ -21,6 +21,8 @@ use serde::Deserialize;
 
 use ham_web_core::dxcc_map::{DxccShape, DxccShapes, encode_binary, simplify_ring};
 
+use crate::provenance::{self, Stamp};
+
 /// 简化容差（度）：越小越精细、体积越大。
 const TOL: f64 = 0.25;
 
@@ -170,6 +172,10 @@ pub fn convert_json_to_bin(root: &Path, json_path: &Path) -> Result<()> {
     fs::create_dir_all(dir)?;
   }
   fs::write(&path, &bin).with_context(|| format!("failed to write {}", path.display()))?;
+  // 迁移也要留戳：来源记成旧 JSON，实体名同样依赖 `dxcc.txt`。
+  let stamp =
+    Stamp::of_local(json_path, text.as_bytes()).with_input(root, "crates/core/data/dxcc.txt");
+  provenance::write_sidecar(root, &path, &stamp)?;
   println!(
     "Converted {} → {} ({} entities, {} bytes)",
     json_path.display(),
@@ -188,20 +194,24 @@ pub fn generate(root: &Path, input: Option<&Path>, url: &str) -> Result<()> {
   {
     return convert_json_to_bin(root, p);
   }
-  let text = match input {
-    Some(p) => fs::read_to_string(p).with_context(|| format!("failed to read {}", p.display()))?,
+  let (text, mut stamp) = match input {
+    Some(p) => {
+      let bytes = fs::read(p).with_context(|| format!("failed to read {}", p.display()))?;
+      let text =
+        String::from_utf8(bytes.clone()).with_context(|| format!("{} 不是 UTF-8", p.display()))?;
+      (text, Stamp::of_local(p, &bytes))
+    }
     None => {
-      let mut res = ureq::get(url)
-        .call()
-        .with_context(|| format!("failed to download {url}"))?;
-      res
-        .body_mut()
-        .with_config()
-        .limit(64 * 1024 * 1024)
-        .read_to_string()
-        .with_context(|| format!("failed to download {url}"))?
+      let fetched = provenance::download(url, 64 * 1024 * 1024)?;
+      let text =
+        String::from_utf8(fetched.bytes.clone()).with_context(|| format!("{url} 不是 UTF-8"))?;
+      let stamp = Stamp::of(url, &fetched.bytes)
+        .with_validators(fetched.etag.as_deref(), fetched.last_modified.as_deref());
+      (text, stamp)
     }
   };
+  // 实体名来自 `dxcc.txt`：把它记成输入，`check-data-sync` 才能发现「dxcc.txt 变了但 .bin 没重建」。
+  stamp = stamp.with_input(root, "crates/core/data/dxcc.txt");
 
   let fc: FeatureCollection = serde_json::from_str(&text).context("invalid GeoJSON")?;
   let index = name_index();
@@ -250,6 +260,7 @@ pub fn generate(root: &Path, input: Option<&Path>, url: &str) -> Result<()> {
   }
   let bin = encode_binary(&out);
   fs::write(&path, &bin).with_context(|| format!("failed to write {}", path.display()))?;
+  provenance::write_sidecar(root, &path, &stamp)?;
 
   // 报告：未映射要素 + 无几何实体。
   println!(

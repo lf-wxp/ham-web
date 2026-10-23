@@ -1,0 +1,182 @@
+# 外部数据同步：定期比对 cty.csv / Natural Earth / 题库 CSV 有没有新版。
+#
+# 为什么要单独一个 workflow：`check.yml` 必须在离线环境也能跑绿，而这三个数据源要联网。
+# 混进去会让网络抖动变成假红灯。
+#
+# 两个 job，权限分开：
+#   1. `check`（只读）：`check-data-freshness --strict`，把结论写进 job summary。
+#      有更新、上游不可达、检查工具自己崩溃，三种情况都让 job 变红，不会被当成「没有更新」。
+#   2. `regenerate`（需写权限）：仅在手动触发并勾选 `regenerate`、且 `check` 发现有更新时运行，
+#      重新生成并开一个 PR 等人 review——不直接推 main，因为上游改动（比如某个前缀归属变了）
+#      需要人看一眼。
+#
+# 前置条件（仓库设置里一次性配好）：
+#   * Settings → Actions → General → 勾选「Allow GitHub Actions to create and approve pull requests」。
+#   * 用默认的 `GITHUB_TOKEN` 开出来的 PR 不会触发 `check.yml`（GitHub 的防递归规则）。
+#     想让 PR 上自动跑检查，就建一个有 `contents` + `pull-requests` 写权限的 PAT，存成
+#     仓库密钥 `DATA_SYNC_TOKEN`；没配时退回 `GITHUB_TOKEN`，PR 上要手动重跑检查。
+#
+# 网络受限时的行为：`check-data-freshness` 对连不上的数据源只打印「不可达」，退出码仍是 0；
+# 所以这里用 `--strict` 区分「上游真没变」和「根本没连上」，避免把沉默当好消息。
+name: Data Sync
+
+on:
+  schedule:
+    # CTY 通常每周发布 1–2 次；每周一 03:17 UTC 看一次足够，错开整点减少排队。
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      regenerate:
+        description: "重新生成并开 PR（不勾选则只检查是否有更新）"
+        type: boolean
+        default: false
+
+concurrency:
+  group: data-sync
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      updates: ${{ steps.freshness.outputs.updates }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.99.1
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      # 只跑一次（`--strict`）：退出码 0 = 全部可达且无更新；非 0 = 有更新 / 不可达 / 工具崩溃。
+      # 非 0 时靠输出里的标记区分前两种；两种标记都没有，就是工具自己出了问题（编译失败、
+      # panic、参数错误……），必须判红——不能因为「没匹配到关键字」就当成没有更新。
+      - name: Check upstream freshness
+        id: freshness
+        run: |
+          set +e
+          cargo run -q -p ham-web-tools --release -- check-data-freshness --strict > /tmp/freshness.txt 2>&1
+          status=$?
+          set -e
+          cat /tmp/freshness.txt
+          {
+            echo "### 数据新鲜度"
+            echo '```'
+            cat /tmp/freshness.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          updates=false
+          unreachable=false
+          crashed=false
+          if grep -q "上游有新版本\|没有来源戳\|来源戳是补写的" /tmp/freshness.txt; then updates=true; fi
+          if grep -q "连不上上游" /tmp/freshness.txt; then unreachable=true; fi
+          if [ "$status" -ne 0 ] && [ "$updates" = false ] && [ "$unreachable" = false ]; then crashed=true; fi
+
+          {
+            echo "updates=$updates"
+            echo "unreachable=$unreachable"
+            echo "crashed=$crashed"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Fail if the freshness check itself broke
+        if: steps.freshness.outputs.crashed == 'true'
+        run: |
+          echo "::error::新鲜度检查本身失败（既不是有更新，也不是上游不可达），请看上方日志。"
+          exit 1
+
+      - name: Fail if upstream unreachable
+        if: steps.freshness.outputs.unreachable == 'true'
+        run: |
+          echo "::error::上游不可达。若是 runner 网络策略导致（代理、TLS 版本），需要换到能出网的环境再跑。"
+          exit 1
+
+      - name: Report no updates
+        if: steps.freshness.outputs.updates != 'true'
+        run: echo "上游均无新版本，无需处理。"
+
+      - name: Keep the report for the regenerate job
+        if: steps.freshness.outputs.updates == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: freshness-report
+          path: /tmp/freshness.txt
+
+      # 注意：这里的 echo 不能写反引号——双引号里的反引号会被 bash 当成命令替换执行。
+      - name: Fail if updates found but regenerate not requested
+        if: steps.freshness.outputs.updates == 'true' && !inputs.regenerate
+        run: |
+          echo "::warning::上游有新版本。重新运行本工作流并勾选 regenerate 即可生成 PR。"
+          exit 1
+
+  # 只在「有更新 + 手动要求重新生成」时才拿写权限。`check` 为红（不可达 / 工具崩溃）时
+  # 本 job 不会运行，和原来「前一步失败就不往下走」的行为一致。
+  regenerate:
+    needs: check
+    if: needs.check.outputs.updates == 'true' && inputs.regenerate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.99.1
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-make
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-make
+
+      - name: Download freshness report
+        uses: actions/download-artifact@v4
+        with:
+          name: freshness-report
+          path: /tmp/report
+
+      - name: Regenerate data
+        run: cargo make data-sync
+
+      - name: Verify regenerated artifacts
+        run: cargo make data-sync-check
+
+      # PR 正文放进仓库外的临时文件，避免被 create-pull-request 当成改动提交。
+      - name: Compose pull request body
+        run: |
+          {
+            echo "由 data-sync.yml 生成。"
+            echo
+            echo "上游来源戳（地址 / 摘要 / 抓取时间 / 上游版本）已随产物更新，"
+            echo "请确认 crates/core/data/dxcc.txt 头部的版本行，以及 data/provenance/ 下的 .source.json 边车。"
+            echo
+            echo "触发本次同步的新鲜度明细："
+            echo
+            echo '```'
+            cat /tmp/report/freshness.txt
+            echo '```'
+          } > /tmp/pr-body.md
+
+      - name: Open pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.DATA_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+          branch: chore/data-sync
+          delete-branch: true
+          commit-message: "chore(data): 同步上游数据"
+          title: "chore(data): 同步上游数据"
+          body-path: /tmp/pr-body.md

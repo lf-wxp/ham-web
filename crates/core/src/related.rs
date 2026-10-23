@@ -37,7 +37,7 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
       ("/reference", "考试速查"),
       ("/glossary", "术语表"),
       ("/most-wanted", "DXCC 稀有度"),
-      ("/callsign", "呼号查询"),
+      ("/callsign", "呼号知识"),
     ],
   ),
   (
@@ -646,7 +646,7 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
       ("/grid-map", "网格地图"),
       ("/dx", "DX 技巧"),
       ("/log", "通联日志"),
-      ("/callsign", "呼号查询"),
+      ("/callsign", "呼号知识"),
     ],
   ),
   (
@@ -705,7 +705,7 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
     "/zone-map",
     &[
       ("/organizations", "国际组织与分区"),
-      ("/callsign", "呼号查询"),
+      ("/callsign", "呼号知识"),
       ("/coordination", "频率协调"),
       ("/awards", "DX 奖状"),
     ],
@@ -795,7 +795,7 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
   (
     "/developers",
     &[
-      ("/callsign", "呼号查询"),
+      ("/callsign", "呼号知识"),
       ("/grid", "网格定位"),
       ("/muf", "传播预测"),
       ("/open-source", "开源项目与 DIY"),
