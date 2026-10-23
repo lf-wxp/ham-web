@@ -45,7 +45,7 @@ pub(super) fn UtcClock() -> impl IntoView {
   view! {
     <div class="grid gap-3">
       <div class="flex items-center gap-3 border bg-muted/30 px-4 py-3">
-        <div class="font-mono text-3xl font-semibold tabular-nums">{move || utc.get()}</div>
+        <div class="pxl-stat text-3xl">{move || utc.get()}</div>
         <div class="text-sm text-muted-foreground">"UTC / Zulu"</div>
       </div>
 

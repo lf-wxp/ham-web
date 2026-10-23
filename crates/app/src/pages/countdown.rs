@@ -8,8 +8,9 @@ use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsValue;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{EmptyState, PageContainer, PageHeader};
 use crate::i18n::{t, tf};
+use crate::icons::IconKind;
 use crate::ui::{Button, DatePicker, Input, Size, TimePicker, Variant};
 use crate::util::now_ms;
 use crate::util::set_title;
@@ -201,9 +202,10 @@ pub fn CountdownPage() -> impl IntoView {
             events.sort_by_key(|e| e.target_ms);
             if events.is_empty() {
               view! {
-                <div class="pxl-card border bg-card px-4 py-10 text-center text-sm text-muted-foreground">
-                  {move || t("exam.no-countdowns-yet-add")}
-                </div>
+                <EmptyState
+                  title=Signal::derive(move || t("exam.no-countdowns-yet-add"))
+                  icon=IconKind::Timer
+                />
               }
               .into_any()
             } else {

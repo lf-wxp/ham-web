@@ -13,7 +13,7 @@ use crate::ui::{Button, Chip, ChipGroup, Field, Input, Size, Variant};
 
 use super::log_helpers::station_title;
 use super::{Logbook, Removal, StationBook, StationProfile, use_log_store};
-use crate::util::{unique_id, window};
+use crate::util::unique_id;
 
 /// 当前台站名下有多少条通联（面板上显示，也是删除前的提示）。
 fn entry_count(book: &StationBook, logbook: &Logbook) -> usize {
@@ -61,14 +61,19 @@ pub(super) fn StationPanel(book: RwSignal<StationBook>, on_save: Callback<()>) -
       "log.station-remove-confirm",
       &[&title, &count.get_untracked().to_string()],
     );
-    if !window().confirm_with_message(&msg).unwrap_or(false) {
-      return;
-    }
-    let mut outcome = Removal::Removed;
-    book.update(|b| outcome = b.remove(id));
-    if outcome == Removal::LastStation {
-      crate::ui::push_error(t("log.station-keep-at-least-one"));
-    }
+    crate::ui::confirm(
+      msg,
+      "",
+      t("log.station-remove"),
+      crate::ui::ConfirmTone::Danger,
+      Callback::new(move |_| {
+        let mut outcome = Removal::Removed;
+        book.update(|b| outcome = b.remove(id));
+        if outcome == Removal::LastStation {
+          crate::ui::push_error(t("log.station-keep-at-least-one"));
+        }
+      }),
+    );
   });
 
   // 每个字段一个入口：改的是当前档案的同名字段（大小写规整由各字段自己的闭包负责，

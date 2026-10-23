@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import { pickOption } from "./fixtures";
+import { confirmDialog, pickOption } from "./fixtures";
 
 /// 四条通联覆盖四色档位：未寄出 / 已寄出（卡片局）/ LoTW 已确认 / 纸质已收。
 const ADIF = `Generated for e2e
@@ -91,8 +91,8 @@ test("QSL 状态：表单与标签页记录寄出方式，并写进 ADIF", async
   // 标签页批量标记：先选好方式，再标记为已寄出（默认卡片局，这里换成卡片局验证下拉生效）。
   await page.goto("/qsl-labels");
   await pickOption(page, "QSL 寄出方式", "卡片局");
-  page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: /标记为已寄出/ }).click();
+  await confirmDialog(page, "确定");
   await expect(page.getByText("没有待寄出的通联")).toBeVisible();
 
   // 用页面内的「返回日志」链接回到日志（SPA 内跳转，走同一份响应式 store）。

@@ -14,7 +14,6 @@ use crate::data::kt;
 use crate::i18n::{t, tf};
 use crate::ui::{Button, Size, Variant};
 
-use super::log_helpers::confirm;
 use super::use_log_store;
 
 /// 每类问题最多列几条明细（再多只报总数）。
@@ -126,12 +125,17 @@ pub(super) fn LogHealthPanel() -> impl IntoView {
       return;
     }
     // 合并重复项是这里唯一的破坏性操作（会删记录），先问一句。
-    if kind == IssueKind::Duplicate
-      && !confirm(&tf(
-        "log.health-merge-confirm",
-        &[&issues.len().to_string()],
-      ))
-    {
+    if kind == IssueKind::Duplicate {
+      crate::ui::confirm(
+        tf("log.health-merge-confirm", &[&issues.len().to_string()]),
+        "",
+        tf("log.health-fix-kind", &[&issues.len().to_string()]),
+        crate::ui::ConfirmTone::Danger,
+        Callback::new(move |_| {
+          let changed = run(&issues);
+          crate::ui::push_success(tf("log.health-fixed", &[&changed.to_string()]));
+        }),
+      );
       return;
     }
     let changed = run(&issues);
@@ -149,14 +153,16 @@ pub(super) fn LogHealthPanel() -> impl IntoView {
     if issues.is_empty() {
       return;
     }
-    if !confirm(&tf(
-      "log.health-fix-all-confirm",
-      &[&issues.len().to_string()],
-    )) {
-      return;
-    }
-    let changed = run(&issues);
-    crate::ui::push_success(tf("log.health-fixed", &[&changed.to_string()]));
+    crate::ui::confirm(
+      tf("log.health-fix-all-confirm", &[&issues.len().to_string()]),
+      "",
+      tf("log.health-fix-all", &[&issues.len().to_string()]),
+      crate::ui::ConfirmTone::Normal,
+      Callback::new(move |_| {
+        let changed = run(&issues);
+        crate::ui::push_success(tf("log.health-fixed", &[&changed.to_string()]));
+      }),
+    );
   });
 
   view! {

@@ -65,6 +65,7 @@ pub fn App() -> impl IntoView {
       <StorageWarning />
       <crate::achievements::AchievementToast />
       <crate::ui::ToastRoot />
+      <crate::ui::ConfirmRoot />
     </Router>
   }
 }

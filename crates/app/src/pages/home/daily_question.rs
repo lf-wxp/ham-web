@@ -7,7 +7,7 @@ use wasm_bindgen::JsValue;
 use crate::data;
 use crate::i18n::{t, tp};
 use crate::ui::{
-  ButtonLink, CARD_HEADER, Size, Variant, card_class, card_content_class, card_title_class,
+  ButtonLink, CARD_HEADER, Size, Variant, card_content_class, card_title_class, flat_card_class,
 };
 use crate::util::storage;
 
@@ -75,7 +75,7 @@ pub(super) fn DailyQuestion() -> impl IntoView {
   });
 
   view! {
-    <div data-slot="card" class=card_class("")>
+    <div data-slot="card" class=flat_card_class("")>
       <div data-slot="card-header" class=CARD_HEADER>
         <div data-slot="card-title" class=card_title_class("flex items-center justify-between")>
           <span>{move || t("home.daily-question")}</span>

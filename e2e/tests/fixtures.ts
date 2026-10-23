@@ -77,10 +77,36 @@ export async function settleFrames(page: Page) {
   });
 }
 
-/** 练习页「正确答案：A, C」中的字母。 */
+/**
+ * 练习页「正确答案：A, C」中的字母。
+ *
+ * 题目卡片**作答后才显示答案行**（未作答时是开卷，会毁掉练习的自测意义），
+ * 所以未作答时需要先点一次「显示正确答案」把它展开 —— 这条路径不写作答，
+ * 不影响错题本与统计。
+ */
 export async function correctLetters(page: Page): Promise<string[]> {
+  const reveal = page.getByRole("button", { name: "显示正确答案" });
+  if ((await reveal.count()) > 0) {
+    await reveal.first().click();
+  }
   const text = await page.getByText(/^正确答案：/).first().innerText();
-  return text.replace(/^正确答案：/, "").split(/[,，\s]+/).filter(Boolean);
+  // 作答之后同一行还会跟着判定（「作答：A」「正确」），只取紧跟在冒号后的那串字母，
+  // 否则判定里的字母会被当成答案。
+  const m = text.match(/^正确答案：\s*((?:[A-D][,，\s]*)+)/);
+  return m?.[1].match(/[A-D]/g) ?? [];
+}
+
+/**
+ * 确认弹窗（`ui::confirm`）：等它出现，点执行按钮，等它消失。
+ *
+ * 破坏性操作不再用原生 `window.confirm`（不能本地化按钮、与像素主题割裂），
+ * 改由 `ui::ConfirmRoot` 统一渲染，因此测试也不能再靠 `page.on("dialog")`。
+ */
+export async function confirmDialog(page: Page, button: string | RegExp) {
+  const dialog = page.getByRole("dialog").last();
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: button }).click();
+  await expect(dialog).toBeHidden();
 }
 
 /** 第一个不在正确答案中的选项字母。 */

@@ -4,7 +4,7 @@ use leptos::prelude::*;
 use wasm_bindgen::JsValue;
 use web_sys::File;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{DecodeElapsed, PageContainer, PageHeader};
 use crate::decode_session::{DecodeConfig, DecodeSession, MAX_UPLOAD_BYTES};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Button, ButtonLink, FileDropZone, Size, Variant};
@@ -96,6 +96,7 @@ pub fn HellDecoderPage() -> impl IntoView {
                         }
                       }}
                     </span>
+                    <DecodeElapsed ms=session.elapsed_ms />
                     <Button variant=Variant::Outline on_click=cancel>
                       {move || t("exam.cancel")}
                     </Button>

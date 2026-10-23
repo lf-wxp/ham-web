@@ -21,7 +21,7 @@ pub(super) fn QuestRow(
     <li>
       <a
         href=href
-        class="pxl-window motion-press flex h-full items-start gap-3 p-3 hover:bg-accent"
+        class="pxl-card border bg-card motion-press flex h-full items-start gap-3 p-3 hover:bg-accent"
       >
         <PixelSprite name=sprite scale=3 class=if done { "opacity-50 grayscale" } else { "pxl-bob" } />
         // 奖励与标题同一行、贴着右边：跟说明文字挤在一行时，说明会被奖励截成两段。

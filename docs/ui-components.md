@@ -57,6 +57,9 @@
    （**例外**：无模糊半径的像素硬阴影是合规的，如 `shadow-[0_2px_0_0_var(--pxl-shadow)]`。）
 2. **尺寸取 4 的倍数**：间距、控件高度走 Tailwind 刻度（`h-6` / `h-8` / `h-10` / `h-12`）；描边 2px，
    位移 2px 的整数倍。**不要写 `h-[37px]` 这类奇数**，点阵边缘会错位。
+   **触屏密度**：`<sm`（≤639px）下 `pxl-chip` / `pxl-tab` 由 `controls.css` 统一抬到
+   `min-height: 2.25rem`（36px）—— 24–26px 的 chip 在手机上一排六个必然点错。写版式时不用自己加
+   `min-h-*`，类名已覆盖；要更小只允许在 `size` 档位里选（`Size::Xs` 等）。
 3. **图标按 24px 的整数倍显示**（`size-6` / `size-12`）：像素图标是 24×24 网格，
    16 / 20px 会有半个像素的抗锯齿。`size-4` / `h-4 w-4` 在 `surfaces.css` 里被统一抬到 24px，
    新代码直接写 `size-6`。
@@ -84,8 +87,29 @@
    强调面 / 焦点环，亮暗各一套），然后 `cargo make pixel-schemes`。其余变量按规则派生，字色按它
    实际会落到的每个表面校正；单测会拦下「表面太亮 / 太暗」这类会让共享色阶不够对比度的种子色，
    `pixel-check` 再按真实表面审计整套 Tailwind 色阶。**别手改 `schemes.css`**。
-8. **动画只用 `motion.css` 里的**：位移 / 显隐 / 抖动 / 闪烁，缓动一律 `steps()`；
+8. **表面只分三级，一页里只让「当前任务块」用最重的一级**：L0 = 页底（`--background`），
+   L1 = 平卡（`pxl-card border bg-card`，只有 2px 墨框，无影无高光；手写卡片与
+   `flat_card_class()` 都属这一级），L2 = 窗口（`pxl-window` / `card_class()`，带内高光与
+   4px 硬投影）。**一屏里所有块同重量 = 没有落点**：首页只有 Hero 与「快速开始」是 L2，
+   今日任务、模块入口、装饰频谱都是 L1。目录 / 关键指标这类「一眼要看」的块才升到 L2。
+9. **字号按「读」还是「扫」分，不按「长不长」分**：
+   - **主阅读对象**（题干、页面副标题这类必须逐字读的）用 body 默认的 18px（`text-base`）；
+   - **扫读型内容**（解析正文、知识库要点 / 术语 / 步骤、表格、以及所有元信息）用 12px
+     （`text-xs` / `text-sm` 同值）。判据是「一屏要能看几条」：390px 宽下 18px 会把一屏
+     从 6 条压到 3 条，翻页成本高于单条舒适度。**2026-10-23 把解析正文与知识库 section
+     放大到 18px，移动端实测后全部回退** —— 不要再按「长文就该更大」去统一放大；
+   - **数字读数**（倒计时、比分、统计值）走 `pxl-label`（Silkscreen）或 `.pxl-stat`
+     + `tabular-nums`，不要混在 12px 灰字里。
+10. **动画只用 `motion.css` 里的**：位移 / 显隐 / 抖动 / 闪烁，缓动一律 `steps()`；
    **不要做缩放动画**（中间帧会让点阵文字变糊）。新增动画必须同时写静态降级。
+   `animate-in` / `animate-out`（tw-animate）的默认缓动是平滑 `ease`，`motion.css` 已在层外
+   把它们收回 `steps(4, end)`；但**时长仍取 `--motion-*` 四档**（`motion-instant/fast/normal/slow`），
+   新代码不要写 `duration-300` 这类任意值。
+
+11. **答题选项的选中态用「整行」，不要动形状**：单选是切角八边形、多选是方形，形状是用来区分
+   题型的；不要为了「更明显」去换组件或加圆角。选中态给整行浅底 + 左 2px 主色条
+   （`components/question_card.rs` 的 `option_row_class`），并用等量负外边距抵消内边距，
+   保证文字一格都不位移。判分后的对错配色是另一套（`pxl-chip` / 自绘选项），两套不要混。
 
 **可用的像素元素**
 
@@ -155,6 +179,9 @@
 | 列表分页 | `Pagination` | 手写页码 / `.slice()` 截断 |
 | 轻量操作反馈（成功 / 已复制 / 导入完成） | `ui::push_success` / `push_error`（全局 `ToastRoot`） | 原生 `alert`（已清零）/ 内联「成功」文字 |
 | 需要用户确认的失败 | `MessageDialog` | Toast（Toast 自动消失，确认类信息会被错过） |
+| **破坏性 / 不可逆操作**（删除、清空、合并、批量标记） | `ui::confirm(title, description, confirm_text, tone, on_confirm)`（全局 `ConfirmRoot` 挂在 `App`） | 原生 `window.confirm`（2026-10-23 已清零：不能本地化按钮、与像素主题割裂）/ 单击即生效 |
+| 失败态（请求失败 / 解析失败） | `EmptyState` + 就地重试按钮 | 与「没有数据」共用一个空态（用户分不清是网断了还是本来没有） |
+| 解码 / 长任务的「已用时」读数 | `DecodeElapsed`（配 `DecodeSession.elapsed_ms`） | 手写 `setInterval` / 只给一个转圈 |
 | 悬停 / 聚焦才显示的提示 | `Tooltip` | 原生 `title=`；子元素不可聚焦时补 `tabindex="0"`，数值信息另写 `aria-label` |
 | 移动端侧栏替代（分类 / 导航：右下角悬浮按钮 + 右侧抽屉） | `MobileNavDrawer` | 手写横滑分类条 / 手搭悬浮按钮 + 抽屉 |
 
@@ -201,16 +228,22 @@
 |---|---|---|
 | 知识库正文的要点 / 术语 / 三列对照表 / 步骤 | `BulletSection` / `ConceptsSection` / `TableSection` / `StepsSection` | 手写 `<ul>` / 两列网格 / `<table>` |
 | 页脚的依据溯源行（「依据 XX，YYYY-MM 核对」） | `ProvenanceNote` | 手写一行小字 |
-| 空态（图标 + 标题 + 说明 + 操作） | `EmptyState` | 手写居中的提示块 |
+| 空态（图标 + 标题 + 说明 + 操作） | 页面级：`EmptyState`；卡片内：`EmptyState plain=true` | 手写居中的提示块；卡片内再套带框版本（双线框） |
 | 内容卡片（标题栏 + 正文） | `SectionCard` | 再抄一份 `pxl-card border bg-card` |
 | 卡片里的区段标题 / 卡片外的分组标题 | `pxl-section-title` / `pxl-section-head` | 手抄 `border-b px-4 py-3 text-sm font-semibold` |
 | 单按钮结果提示（成功 / 失败 / 已复制） | `MessageDialog` | 手搭 `Dialog` + 一个按钮 |
-| 加载中（短等待）/ 首屏骨架 | `Loading` / `Skeleton` | 手写 spinner / 一片留白 |
+| 加载中（短等待）/ 首屏骨架 / 整页加载 | `Loading` / `Skeleton` / `PageLoading` | 手写 spinner / 一片留白 / 一行 `p-6` 文字（会脱出 `PageContainer`） |
+| 解码 / 长任务的「已用时」读数 | `DecodeElapsed`（配 `DecodeSession.elapsed_ms`） | 手写 `setInterval` 或干脆不给反馈 |
 | 图例条（色块 + 文字） | `Legend` | 手写色块 + 文字 |
 | 题图（缩略图 + 点击放大） | `PreviewableImage` | 手搭 `Dialog` + `<img>` |
 | 题目笔记编辑区 | `NoteEditor` | 手写 `Textarea` + 存取逻辑 |
 | 答题进度头 / 底部固定操作栏 | `QuestionProgressHeader` / `BottomBar` | 手写进度行 / 固定底栏 |
 | 答案解析（折叠 + 法规引用 + 朗读） | `ExplanationCard` | 手写折叠区 |
+
+`EmptyState` 的两个档按**上下文**选，不按文案长短：页面级用默认档（自带 `pxl-card` 与入场），
+卡片内的空列表用 `plain=true`（无边框、上下留白更小，否则卡片里套卡片）。三类**不要**迁：
+打印区（`/print`、QSL 标签：边框与入场会印到纸上）、`<tbody>` 内（`div` 会破坏表格语义）、
+「条幅式提示」（`spot_coverage`：左对齐一条，不是居中空态）。
 
 考试 / 练习 / 导航三族组件（`components/exam/`、`components/practice/`、`components/navigation/`）
 只在对应流程里用，不在此表：改它们直接读文件头注释（弹层的开合、`Portal`、焦点与滚动锁都写在里面）。
@@ -262,6 +295,10 @@ view! {
 
 已知取舍：抽屉永远从**右侧**滑出（复用 `Sheet`），按钮拖到左边也不会换侧；悬浮按钮是
 像素风方形（§2 零圆角），不是系统风格的圆形 FAB；位置存的是绝对像素，不记忆「贴左 / 贴右」。
+
+**入口文案用白话，隐喻只留在图标里**：移动端底部 Tab（`components/navigation/mobile_tabs.rs`）
+与抽屉的分类名按「用户找得到」命名（首页 / 练习 / 考试 / 错题 / 更多），不要用「基地 / 地图 /
+图鉴」这类关卡隐喻 —— 隐喻是氛围，不是导航。
 
 ## 4. 页面骨架与内容宽度
 
@@ -508,6 +545,10 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
 （`page_header.rs`、`print_page.rs`）或保留整表原生 `<table>`（`bands_page.rs`）—— 各有理由见下表；
 **新写界面不要模仿它们**，它们各自的理由如下。
 
+确认类弹窗不在例外之列：破坏性操作的二次确认已全部收口到 `ui::confirm`（全局 `ConfirmRoot`），
+`window.confirm` 在 2026-10-23 清零；「删了就撤销」没做 —— Toast 目前是纯数据（`PartialEq`），
+要撤销得给它加携带回调的动作通道，成本高于「确认一次」。
+
 ### 10.1 表单控件：拖放上传区（已全部收编）
 
 整块拖放目标（解码类页面 + 图片处理页）一律走 `ui::FileDropZone`：组件内部就是 `<label for>` +
@@ -654,6 +695,11 @@ cd e2e && E2E_BASE_URL=http://127.0.0.1:3030 npx playwright test tests/<spec>.sp
 | 2026-10-13 | 提取 `ui::FileDropZone`：解码类页面（APT / SSTV / WSPR / RTTY / Olivia / NAVTEX / LRPT / DominoEX / PSK31 / 离线瀑布分析）与图片处理页的整块拖放上传区全部收口，删除 `AptUploader` 与 psk / 瀑布页手写的拖放区；非音频上传位用 `choose_hint` 覆盖默认的「拖拽音频文件」提示行 |
 | 2026-10-13 | `pages/most_wanted/wanted_tracker.rs` 的手写勾选框 → `ui::Checkbox`（顺带补上 `role="checkbox"` / `aria-checked`；§10.3 的对应条目已删除） |
 | 2026-10-16 | 页内第二根吸顶栏收口：新增 `common::StickyPanel`，browse / glossary / tools 手写的 `sticky top-[136px]` 侧栏与目录全部收编（偏移随页头高度自适应，消除吸顶错位与被页头盖住的问题）；`PageHeader` 吸顶偏移对齐导航下沿（`top-[66px]`），骨架类名抽为 `PAGE_HEADER_BAR`（打印页复用），每日挑战计时条收进 `PageHeader` 的 `children` |
+| 2026-10-23 | 界面评审驱动的一轮收口：破坏性操作统一到 `ui::confirm`（8 处 `window.confirm` 清零、3 处「点了就删」补齐）；空态两档化（`EmptyState` / `plain`）并迁 12 处；字号按「读 / 扫」分档（解析与知识库保持 12px，放大到 18px 的试验在移动端实测后回退）；新增 `.pxl-stat` 读数体（20 处统计 / 时钟）与 `DecodeElapsed`（解码已用时）；`animate-in/out` 缓动收回 `steps()`；`<sm` 下 chip / tab 抬到 36px；移动端底部 Tab 改白话；新增 `PageLoading` 骨架与 `flat_card_class`（L1 平卡） |
+
+2026-10-23 那轮的 e2e 契约变化：破坏性操作不再走原生 `window.confirm`，6 个 spec 的
+`page.on("dialog")` 改为 `fixtures.confirmDialog(page, "…")`；练习页答案改为「作答后才显示」，
+`fixtures.correctLetters()` 会先点一次「显示正确答案」。
 
 **这轮迁移带来的 e2e 契约变化**（改 role 就要同步 spec）：`Chip` 输出 `role="radio"` +
 `aria-checked`，`ChipToggle` 输出 `aria-pressed`；`browse` / `planning` / `practice_flow` /

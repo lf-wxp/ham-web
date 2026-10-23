@@ -279,12 +279,17 @@ fn chroma_at(plane: &[u8], col: usize) -> u8 {
   plane.get(col / 2).copied().unwrap_or(128)
 }
 
-/// 从 VIS 结束位置起，逐行锁定同步、采样并组装图像。
-pub fn assemble(
+/// 从 VIS 结束位置起，逐行锁定同步、采样并组装图像；每解完一行回调一次进度（0..1）。
+///
+/// 逐行扫描是这个解码器的天然分块点（见下面的 `while lines_read < mode.height`），
+/// 进度只用来给界面一个「还在动、到哪了」的读数，不参与解码本身。
+/// 需要不带回调的版本时传 `&mut |_| {}`（[`crate::decode_samples`] 就是这么做的）。
+pub fn assemble_with_progress(
   freq: &[f32],
   mode: &Mode,
   vis_end: usize,
   source_rate: u32,
+  on_progress: &mut dyn FnMut(f32),
 ) -> Result<SstvImage, Error> {
   let sync_len = ms(mode.sync_ms);
   // 同步判定用中值滤波后的副本（去 FM 解调的单点尖峰），采样仍用原始 `freq`（不糊像素边沿）。
@@ -316,6 +321,10 @@ pub fn assemble(
     }
     let line = read_line(freq, anchor, mode);
     lines_read += 1;
+    // 进度按**音频时间轴**算（这一行的终点 / 总样本数），而不是「已读行数 / 模式高度」：
+    // 文件短于整帧时循环会提前 break，按行数算永远到不了 1.0，界面会停在半截。
+    let end = (anchor + ms(hi_ms)).clamp(0.0, freq.len() as f64);
+    on_progress((end / freq.len() as f64) as f32);
     match mode.color {
       ColorKind::Rgb => {
         push_rgb_row(&mut rgba, mode.width, |c| [line.r[c], line.g[c], line.b[c]]);

@@ -2,7 +2,7 @@ use ham_web_core::glossary::GlossaryEntry;
 use leptos::prelude::*;
 use leptos_router::hooks::use_query_map;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{EmptyState, PageContainer, PageHeader};
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
 use crate::ui::{Chip, ChipGroup, Input, InputType, Stat};
@@ -166,9 +166,10 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
                   list.with(|items| {
                     if items.is_empty() {
                       view! {
-                        <div class="border border-dashed py-10 text-center text-sm text-muted-foreground">
-                          {move || t("knowledge.no-matching-codes")}
-                        </div>
+                        <EmptyState
+                          icon=IconKind::Search
+                          title=Signal::derive(move || t("knowledge.no-matching-codes"))
+                        />
                       }
                       .into_any()
                     } else {

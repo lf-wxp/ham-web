@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 
-import { expect, test, type Page } from "./fixtures";
+import { confirmDialog, expect, test, type Page } from "./fixtures";
 
 /** 本台信息面板（台站档案列表）。 */
 function panel(page: Page) {
@@ -30,7 +30,6 @@ async function addQso(page: Page, call: string) {
 }
 
 test("台站档案：多台站的日志各自归属，ADIF 逐条写本台字段", async ({ page }) => {
-  page.on("dialog", (d) => d.accept());
   await page.goto("/log");
 
   // 第一条档案（迁移出来的默认档案）填成家里的固定台；不填档案名，
@@ -75,7 +74,6 @@ test("台站档案：多台站的日志各自归属，ADIF 逐条写本台字段
 });
 
 test("台站档案：最后一个不许删", async ({ page }) => {
-  page.on("dialog", (d) => d.accept());
   await page.goto("/log");
   const p = await openPanel(page);
 
@@ -87,6 +85,7 @@ test("台站档案：最后一个不许删", async ({ page }) => {
   await p.getByRole("button", { name: "新增台站" }).click();
   await expect(remove).toBeEnabled();
   await remove.click();
+  await confirmDialog(page, "删除台站");
   await expect(remove).toBeDisabled();
 });
 

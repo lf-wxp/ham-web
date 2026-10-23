@@ -4,9 +4,9 @@
 
 use leptos::prelude::*;
 
-use crate::components::common::PageContainer;
-use crate::components::common::PageHeader;
+use crate::components::common::{EmptyState, PageContainer, PageHeader};
 use crate::i18n::{t, tf, tp};
+use crate::icons::IconKind;
 use crate::store;
 use crate::ui::{ButtonLink, ChipToggle, Size, Variant};
 use crate::util::set_title;
@@ -22,17 +22,22 @@ pub fn ExamReviewPage() -> impl IntoView {
 
   let body = match review {
     None => view! {
-      <div class="pxl-card border bg-card px-4 py-10 text-center">
-        <div class="text-sm text-muted-foreground">{move || t("exam.no-exam-to-review")}</div>
-        <ButtonLink
-          href="/exam"
-          variant=Variant::Default
-          size=Size::Default
-          class="mt-4 inline-flex"
-        >
-          {move || t("exam.take-a-mock-exam")}
-        </ButtonLink>
-      </div>
+      <EmptyState
+        icon=IconKind::ClipboardList
+        title=Signal::derive(move || t("exam.no-exam-to-review"))
+        actions=ViewFn::from(move || {
+          view! {
+            <ButtonLink
+              href="/exam"
+              variant=Variant::Default
+              size=Size::Default
+              class="mt-2 inline-flex"
+            >
+              {move || t("exam.take-a-mock-exam")}
+            </ButtonLink>
+          }
+        })
+      />
     }
     .into_any(),
     Some(r) => {

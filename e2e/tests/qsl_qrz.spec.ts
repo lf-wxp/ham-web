@@ -51,7 +51,6 @@ async function openSync(page: Page) {
 }
 
 test("QRZ 确认：勾上走电子档位，导出带上扩展字段", async ({ page }) => {
-  page.on("dialog", (d) => d.accept());
   await page.goto("/log");
 
   // 表单里勾「QRZ 已确认」再加一条通联（带的频率让波段/距离有意义）。
@@ -76,7 +75,6 @@ test("QRZ 确认：勾上走电子档位，导出带上扩展字段", async ({ p
 });
 
 test("QRZ 报告：带扩展字段能落库，官方导出只做匹配分析", async ({ page }) => {
-  page.on("dialog", (d) => d.accept());
   await page.goto("/log");
   await importLocal(page);
 

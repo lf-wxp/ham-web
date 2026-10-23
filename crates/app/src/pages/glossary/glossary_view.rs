@@ -8,7 +8,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 
-use crate::components::common::{PageContainer, PageHeader, StickyPanel};
+use crate::components::common::{EmptyState, PageContainer, PageHeader, StickyPanel};
 use crate::components::sidebar_item::SidebarItem;
 use crate::data;
 use crate::icons::{Icon, IconKind};
@@ -168,8 +168,13 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
   let list = move || {
     let total = filtered.with(Vec::len);
     if total == 0 {
-      return view! { <div class="py-20 text-center text-muted-foreground">{move || t("knowledge.no-matching-terms")}</div> }
-        .into_any();
+      return view! {
+        <EmptyState
+          icon=IconKind::Search
+          title=Signal::derive(move || t("knowledge.no-matching-terms"))
+        />
+      }
+      .into_any();
     }
     let shown: Vec<usize> = filtered.with(|f| f.iter().copied().take(visible.get()).collect());
     let shown_len = shown.len();

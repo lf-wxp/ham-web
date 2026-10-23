@@ -65,7 +65,6 @@
   "exam.refresh-config": "Refresh config",
   "exam.refresh-bank-config": "Refresh bank config",
   "exam.remaining": "Remaining: ",
-  "exam.remaining-label": "Remaining: ",
   "exam.power-limit": "Power limit",
   "exam.add-to-group": "Add to group…",
   "exam.loading": "Loading...",
@@ -313,6 +312,7 @@
   "exam.confused-concepts": "Confused concepts",
   "exam.settings": "Settings",
   "exam.preview": "Preview",
+  "exam.questions-count": "Questions: {}",
   "exam.questions-single-multiple": "Questions: {} (single {}, multiple {})",
   "exam.no-questions-in-this": "No questions in this group",
   "exam.no-banks-available-for": "No banks available for this version",
@@ -393,5 +393,8 @@
     "one": " (pass line: {} question)",
     "other": " (pass line: {} questions)"
   },
-  "exam.multiple-in-parens": "(multiple)"
+  "exam.multiple-in-parens": "(multiple)",
+  "exam.delete-group-confirm": "Delete the group “{}”?",
+  "exam.delete-group-hint": "Bookmarks in the group are kept; only the group goes away.",
+  "exam.group-deleted": "Group deleted"
 }

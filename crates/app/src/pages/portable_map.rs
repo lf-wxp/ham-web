@@ -6,7 +6,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde::Deserialize;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{EmptyState, PageContainer, PageHeader};
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::pages::log::use_log_store;
@@ -115,9 +115,7 @@ pub fn PortableMapPage() -> impl IntoView {
               .into_any()
             } else if markers.get().is_empty() {
               view! {
-                <div class="py-12 text-center text-sm text-muted-foreground">
-                  {move || t("radio.no-sota-pota-activations")}
-                </div>
+                <EmptyState plain=true title=Signal::derive(move || t("radio.no-sota-pota-activations")) />
               }
               .into_any()
             } else {

@@ -72,6 +72,9 @@ pub(super) fn BaseHero() -> impl IntoView {
               {move || t("rpg.bestiary")}
             </ButtonLink>
           </div>
+          // 三个入口用 RPG 隐喻命名（闯关 / Boss / 图鉴）：老用户一眼懂，新用户不懂。
+          // 补一行白话对照，比把按钮改成「开始练习」更能保住这套世界观。
+          <p class="text-xs text-muted-foreground">{move || t("home.rpg-entry-legend")}</p>
         </div>
       </div>
     </section>

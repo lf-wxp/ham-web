@@ -5,6 +5,7 @@ use leptos::task::spawn_local;
 use wasm_bindgen::JsValue;
 use web_sys::{Notification, NotificationPermission};
 
+use crate::components::common::EmptyState;
 use crate::pages::log::use_log_store;
 use crate::sat_alert;
 use crate::ui::{
@@ -298,9 +299,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
               </label>
               {if items.is_empty() {
                 view! {
-                  <div class="bg-muted/40 px-3 py-6 text-center text-sm text-muted-foreground">
-                    {move || t("radio.no-passes-match-the")}
-                  </div>
+                  <EmptyState plain=true title=Signal::derive(move || t("radio.no-passes-match-the")) />
                 }.into_any()
               } else {
                 view! {

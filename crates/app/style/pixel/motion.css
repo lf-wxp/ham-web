@@ -468,3 +468,18 @@
   opacity: 0;
   transition: opacity var(--motion-instant) steps(2, end);
 }
+
+/* ---------- 入场动效的缓动统一成逐帧 ----------
+   `animate-in` / `animate-out`（tw-animate）把缓动写成 `var(--tw-ease, ease)`；
+   而 `--tw-ease` 在 Tailwind 的 `*` 重置里是 `initial`，于是全部回落到 CSS 的平滑
+   贝塞尔 `ease` —— 与「缓动一律 steps()」相悖（全仓 120+ 处进场都走这条）。
+   在层外（unlayered）声明，压过 `*` 重置和工具类层。**同一元素上写的 `ease-out` 也会被
+   盖掉** —— 这是有意的：不少页面的入场写成 `animate-in … duration-300 ease-out`，
+   留着它就等于平滑缓动从后门回来。时长仍由调用点的 `duration-*` 决定。
+   用类选择器而不是 `[class*="animate-in"]`：子串匹配会误中 `animate-in-foo` 之类的
+   类名，也要对全 DOM 做子串比较。代价是不覆盖带变体前缀的写法
+   （`data-[state=open]:animate-in`）—— 仓库里目前没有这种用法，新增时请在这里补一条。 */
+.animate-in,
+.animate-out {
+  --tw-ease: steps(4, end);
+}

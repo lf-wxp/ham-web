@@ -4,7 +4,7 @@ use leptos::prelude::*;
 use wasm_bindgen::JsValue;
 use web_sys::File;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{DecodeElapsed, PageContainer, PageHeader};
 use crate::decode_session::{DecodeConfig, DecodeSession};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Button, ButtonLink, FileDropZone, Size, Variant};
@@ -95,6 +95,7 @@ pub fn NavtexDecoderPage() -> impl IntoView {
                       t("radio.decoding-in-the-background")
                     }
                   }}
+                  <DecodeElapsed ms=session.elapsed_ms />
                   <Button variant=Variant::Outline on_click=cancel>
                     {move || t("exam.cancel")}
                   </Button>

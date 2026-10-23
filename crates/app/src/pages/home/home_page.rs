@@ -16,7 +16,6 @@ use crate::util::set_title;
 
 use super::base_hero::BaseHero;
 use super::cards_card::CardsCard;
-use super::daily_challenge_card::DailyChallengeCard;
 use super::daily_question::DailyQuestion;
 use super::propagation_widget::PropagationWidget;
 use super::quest_board::QuestBoard;
@@ -149,14 +148,54 @@ pub fn HomePage() -> impl IntoView {
         <QuestBoard />
       </div>
 
-      // 频谱条（SDR 意象）：保留作为电台气质的点缀，放进一块普通的像素窗口里。
-      <div class="mt-8 w-full">
-        <div class="pxl-window p-4 sm:p-5">
-          <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-            <span class="pxl-label">"Spectrum · 14.000 MHz"</span>
-            <span class="pxl-label pxl-blink">{move || t("home.receiving")}</span>
+      // 快速开始练习（选择题库版本与类别）
+      <div data-slot="card" class=card_class("mt-8")>
+        <div data-slot="card-header" class=CARD_HEADER>
+          <div data-slot="card-title" class=card_title_class("")>{move || t("home.quick-start")}</div>
+          <div class="text-sm text-muted-foreground">{move || t("home.choose-a-bank-version")}</div>
+        </div>
+        <div data-slot="card-content" class=card_content_class("space-y-4")>
+          <QuestionBankSelector selected_version=version selected_bank=bank disabled=checking />
+          <div class="flex flex-wrap gap-3 relative">
+            <ButtonLink
+              href=Signal::derive(practice_href)
+              variant=Variant::Default
+              size=Size::Default
+              on_click=Callback::new(guard)
+            >
+              {move || t("home.start-practice")}
+            </ButtonLink>
+            <ButtonLink
+              href=Signal::derive(exam_href)
+              variant=Variant::Secondary
+              size=Size::Default
+              on_click=Callback::new(guard)
+            >
+              {move || t("home.start-mock-exam")}
+            </ButtonLink>
+            <ButtonLink
+              href=Signal::derive(custom_href)
+              variant=Variant::Outline
+              size=Size::Default
+              on_click=Callback::new(guard)
+            >
+              {move || t("exam.custom-paper")}
+            </ButtonLink>
+            <Bubble open=warn_open text=warn_text />
           </div>
-          <div class="spectrum-bar h-12 border-2 border-ink"></div>
+        </div>
+      </div>
+
+      // 频谱条（SDR 意象）：纯装饰，只做电台气质的一层底纹。
+      // 刻意压扁到 24px 并去掉常驻 `pxl-blink`：它是整页饱和度最高的元素，
+      // 原来 48px 高 + 一直闪的「接收中」会把视线从上面的主入口抢走。
+      <div class="mt-8 w-full">
+        <div class="pxl-card border bg-card px-4 py-3">
+          <div class="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+            <span class="pxl-label">"Spectrum · 14.000 MHz"</span>
+            <span class="pxl-label">{move || t("home.receiving")}</span>
+          </div>
+          <div class="spectrum-bar h-6 border-2 border-ink"></div>
           <div class="spectrum-ticks mt-2 h-3 opacity-60"></div>
           <div
             class="mt-1.5 flex justify-between text-xs tabular-nums text-muted-foreground"
@@ -182,7 +221,7 @@ pub fn HomePage() -> impl IntoView {
                 href=m.href
                 // `motion-press`：悬停上移 2px、按下落回（硬阴影随之消失），见 `motion.css`。
                 class=format!(
-                  "reveal group pxl-window motion-press relative flex min-w-0 flex-col gap-4 p-5 hover:bg-accent {}",
+                  "reveal group pxl-card border bg-card motion-press relative flex min-w-0 flex-col gap-4 p-5 hover:bg-accent {}",
                   m.offset,
                 )
                 style=format!("animation-delay: {}ms", 300 + i * 90)
@@ -227,50 +266,11 @@ pub fn HomePage() -> impl IntoView {
           .collect_view()}
       </div>
 
-      // 快速开始练习（选择题库版本与类别）
-      <div data-slot="card" class=card_class("mt-12")>
-        <div data-slot="card-header" class=CARD_HEADER>
-          <div data-slot="card-title" class=card_title_class("")>{move || t("home.quick-start")}</div>
-          <div class="text-sm text-muted-foreground">{move || t("home.choose-a-bank-version")}</div>
-        </div>
-        <div data-slot="card-content" class=card_content_class("space-y-4")>
-          <QuestionBankSelector selected_version=version selected_bank=bank disabled=checking />
-          <div class="flex flex-wrap gap-3 relative">
-            <ButtonLink
-              href=Signal::derive(practice_href)
-              variant=Variant::Default
-              size=Size::Default
-              on_click=Callback::new(guard)
-            >
-              {move || t("home.start-practice")}
-            </ButtonLink>
-            <ButtonLink
-              href=Signal::derive(exam_href)
-              variant=Variant::Secondary
-              size=Size::Default
-              on_click=Callback::new(guard)
-            >
-              {move || t("home.start-mock-exam")}
-            </ButtonLink>
-            <ButtonLink
-              href=Signal::derive(custom_href)
-              variant=Variant::Outline
-              size=Size::Default
-              on_click=Callback::new(guard)
-            >
-              {move || t("exam.custom-paper")}
-            </ButtonLink>
-            <Bubble open=warn_open text=warn_text />
-          </div>
-        </div>
-      </div>
-
       // 首屏以下的功能卡片随滚动逐个浮现，避免一进页面七张卡片同时刷出来。
       <div node_ref=stack class="space-y-6">
         <StudyPlanCard />
         <ReviewCard />
         <CardsCard />
-        <DailyChallengeCard />
         <WantedCard />
         <DailyQuestion />
         <PropagationWidget />

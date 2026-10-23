@@ -1,6 +1,6 @@
 //! 基地的「今日任务」：每日挑战 / 复仇到期怪物 / 推进关卡。
 
-use ham_web_core::daily_challenge::DailyResults;
+use ham_web_core::daily_challenge::{DailyResults, current_streak, longest_streak};
 use ham_web_core::rpg::{XP_PER_CHALLENGE, XP_PER_CORRECT};
 use leptos::prelude::*;
 
@@ -15,23 +15,39 @@ use super::quest_row::QuestRow;
 #[component]
 pub(super) fn QuestBoard() -> impl IntoView {
   let today = local_today();
-  let daily = storage::get_json::<DailyResults>("daily-challenge")
-    .unwrap_or_default()
-    .days
-    .get(&today)
-    .copied();
+  // 整份存档都要：今日完成情况来自 `days`，连续天数来自整段历史。
+  let results = storage::get_json::<DailyResults>("daily-challenge").unwrap_or_default();
+  let daily = results.days.get(&today).copied();
+  let streak = current_streak(&results.days, &today);
+  let best = longest_streak(&results.days);
   let due = study::load_book().due_count(now_ms());
   let stars = load_stars().total();
 
   // 没完成的任务数：每日挑战没做、有到期怪物各算一项；「推进关卡」永远可做，不计入。
   let left = usize::from(daily.is_none()) + usize::from(due > 0);
 
-  let daily_hint = match daily {
-    Some(r) => tf(
-      "home.completed-today",
-      &[&r.correct.to_string(), &r.total.to_string()],
-    ),
-    None => t("home.a-daily-timed-10"),
+  // 每日挑战只有一个入口（原来首页底部还挂着一张同内容的卡，已合并到这里）：
+  // 今日完成情况 + 连续天数都在这一行的说明里，不再分两处说同一件事。
+  let daily_hint = move || {
+    let base = match daily {
+      Some(r) => tf(
+        "home.completed-today",
+        &[&r.correct.to_string(), &r.total.to_string()],
+      ),
+      None => t("home.a-daily-timed-10"),
+    };
+    if streak > 0 {
+      format!(
+        "{base} · {}",
+        tp(
+          "home.days-in-a-row",
+          streak as u32,
+          &[&streak.to_string(), &best.to_string()]
+        )
+      )
+    } else {
+      base
+    }
   };
 
   view! {
@@ -47,7 +63,7 @@ pub(super) fn QuestBoard() -> impl IntoView {
           href="/daily-challenge"
           sprite="node_coin"
           title=Signal::derive(move || t("learning.daily-challenge"))
-          hint=Signal::derive(move || daily_hint.clone())
+          hint=Signal::derive(daily_hint)
           reward=Signal::derive(move || tf("rpg.reward-xp", &[&XP_PER_CHALLENGE.to_string()]))
           done=daily.is_some()
         />

@@ -4,7 +4,7 @@ use leptos::prelude::*;
 use wasm_bindgen::JsValue;
 use web_sys::File;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{DecodeElapsed, PageContainer, PageHeader};
 use crate::decode_session::{DecodeConfig, DecodeSession};
 use crate::icons::{Icon, IconKind};
 use crate::util::set_title;
@@ -144,6 +144,7 @@ pub fn WsprDecoderPage() -> impl IntoView {
                         }
                       }}
                     </span>
+                    <DecodeElapsed ms=session.elapsed_ms />
                     <Button variant=Variant::Outline size=Size::Sm on_click=move |_| cancel(())>
                       {move || t("exam.cancel")}
                     </Button>

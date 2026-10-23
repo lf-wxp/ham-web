@@ -656,6 +656,17 @@
     letter-spacing: 0;
   }
 
+  /* 统计读数：Silkscreen（拉丁数字窄而清晰）+ 等宽数字。
+     以前这类大数字是 `text-2xl font-semibold tabular-nums` —— 正文点阵体、`font-semibold`
+     在点阵字体下是空操作（`font-synthesis-weight: none`），读起来和普通段落没区别。
+     需要更大的时钟读数就叠 `text-3xl`（工具类层级更高，能覆盖这里的字号）。 */
+  .pxl-stat {
+    font-family: var(--font-pixel-label);
+    font-size: var(--text-2xl);
+    line-height: 1.25;
+    font-variant-numeric: tabular-nums;
+  }
+
   /* ---------- 抽屉（Sheet） ---------- */
   .pxl-sheet {
     background-color: var(--popover);
@@ -714,6 +725,23 @@
     box-shadow: 2px 2px 0 0 var(--pxl-shadow);
   }
 
+  /* ---------- 触屏上的点击目标 ----------
+     chip / tab 在桌面是 24–26px 高（工具条密度需要这样），但在 390px 宽的屏幕上
+     拇指点不准：`<sm` 抬到 36px（仍是 4 的倍数，像素网格不错位），桌面密度不变。
+     放在 `@layer components` 里（和本文件其余规则一致）：调用点的 `hidden` /
+     `min-h-*` 等工具类仍然能覆盖这里的 `display` / `min-height`。 */
+  @media (max-width: 639px) {
+    .pxl-chip,
+    .pxl-tab {
+      display: inline-flex;
+      min-height: 2.25rem;
+      align-items: center;
+    }
+
+    .pxl-chip {
+      justify-content: center;
+    }
+  }
 }
 
 /* ---------- 模态遮罩 ----------

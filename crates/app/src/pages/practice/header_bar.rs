@@ -11,6 +11,9 @@ use crate::ui::{Button, Chip, ChipGroup, ChipToggle, Size, Variant};
 #[component]
 pub(super) fn PracticeHeaderBar(
   #[prop(into)] percent: Signal<i64>,
+  /// 进度文字：`已作答 N / 总数`（比百分比更能反映小步推进）。
+  #[prop(into)]
+  progress_label: Signal<String>,
   #[prop(into)] bank: Signal<Bank>,
   on_switch_bank: Callback<Bank>,
   unique_only: RwSignal<bool>,
@@ -28,6 +31,7 @@ pub(super) fn PracticeHeaderBar(
   view! {
     <QuestionProgressHeader
       percent=percent
+      label=progress_label
       left=move || {
         view! {
           <span class="text-sm text-muted-foreground">{move || t("exam.bank-class")}</span>

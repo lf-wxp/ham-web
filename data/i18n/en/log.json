@@ -478,5 +478,10 @@
   },
   "log.activation-below-minimum": "Fewer than {} contacts; this usually does not count as a valid activation",
   "log.activation-download-file": "Download {}",
-  "log.activation-download": "Download"
+  "log.activation-download": "Download",
+  "log.delete-this-qso": "Delete this QSO?",
+  "log.delete-this-qso-hint": "Its QSL card image is removed too, and deletion cannot be undone.",
+  "log.clear-all": "Clear all",
+  "log.clear-all-done": "Logbook cleared",
+  "log.qso-deleted": "QSO deleted"
 }

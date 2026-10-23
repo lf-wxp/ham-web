@@ -9,6 +9,12 @@ pub fn QuestionProgressHeader(
   #[prop(into)] percent: Signal<i64>,
   #[prop(into)] right: ViewFn,
   #[prop(optional, into)] meta: Option<ViewFn>,
+  /// 进度文字的替代文案（如「已作答 1 / 683」）。不传时显示 `进度 N%`。
+  ///
+  /// 为什么要能换：683 题的题库里答 1 题是 0.146%，百分比会一直显示 0%；
+  /// 用「已作答 N / 总数」这种绝对数才能看出每一步。
+  #[prop(optional, into)]
+  label: Option<Signal<String>>,
   #[prop(optional, into)] left: Option<ViewFn>,
 ) -> impl IntoView {
   let top_row = if left.is_some() {
@@ -24,8 +30,15 @@ pub fn QuestionProgressHeader(
       </div>
       <div class="flex items-center gap-4 justify-between flex-wrap">
         <div class="flex items-center gap-4 w-full sm:w-auto">
-          <div class="min-w-24 text-sm text-muted-foreground">
-            {move || tf("learning.progress-percent", &[&percent.get().to_string()])}
+          <div class="min-w-24 text-sm tabular-nums text-muted-foreground">
+            {move || {
+              label
+                .as_ref()
+                .map_or_else(
+                  || tf("learning.progress-percent", &[&percent.get().to_string()]),
+                  |l| l.get(),
+                )
+            }}
           </div>
           <Progress value=percent class="h-2 flex-1 sm:w-40 sm:flex-none" />
         </div>

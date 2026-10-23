@@ -45,5 +45,7 @@
   },
   "home.choose-a-bank-version": "Elige versión y clase del banco, y empieza práctica o examen simulado",
   "home.question-bank-is-unavailable": "El banco {} no está disponible o está vacío; genera los datos primero.",
-  "home.sunspots": "Manchas solares"
+  "home.sunspots": "Manchas solares",
+  "home.rpg-entry-legend": "Etapa = práctica, Boss = examen simulado, Bestiario = libro de errores",
+  "home.propagation-fetch-failed": "No se pudieron obtener las condiciones: reintenta o abre la página solar"
 }

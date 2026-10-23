@@ -1,4 +1,4 @@
-import { expect, pickTime, test, type Page } from "./fixtures";
+import { confirmDialog, expect, pickTime, test, type Page } from "./fixtures";
 
 /** 一条「干净」的通联：网格、频率、波段都对得上。 */
 const JA1AA = `<CALL:5>JA1AA <QSO_DATE:8>20240501 <TIME_ON:4>1230 <BAND:3>20m <MODE:3>SSB <FREQ:6>14.200 <GRIDSQUARE:4>PM95 <EOR>`;
@@ -26,7 +26,6 @@ function panel(page: Page) {
 }
 
 test("日志体检：频率越界与缺网格各报一条", async ({ page }) => {
-  page.on("dialog", (d) => d.accept());
   await page.goto("/log");
   await importAdif(page, adif(JA1AA, DL1A, W1AW));
   await expect(page.getByText("共 3 条")).toBeVisible();
@@ -43,7 +42,6 @@ test("日志体检：频率越界与缺网格各报一条", async ({ page }) => 
 });
 
 test("日志体检：一键修正把波段按频率改回来", async ({ page }) => {
-  page.on("dialog", (d) => d.accept());
   await page.goto("/log");
   // 频率 14.200 属于 20m，记录里却写着 40m。
   await importAdif(
@@ -58,6 +56,7 @@ test("日志体检：一键修正把波段按频率改回来", async ({ page }) 
   await expect(health.getByText(/→ 20m/)).toBeVisible();
 
   await health.getByRole("button", { name: /一键修正/ }).click();
+  await confirmDialog(page, /一键修正/);
   // 修正后体检通过：说明 `band` 字段真的被改写成了频率推出的那个。
   await expect(health.getByText("体检通过：没有发现明显问题。")).toBeVisible();
 });
@@ -71,7 +70,6 @@ async function addEntry(page: Page, call: string, time: string) {
 }
 
 test("日志体检：合并重复项后只剩一条", async ({ page }) => {
-  page.on("dialog", (d) => d.accept());
   await page.goto("/log");
   // 重复项来自**表单**：导入会按 qso_key 去重，表单不会（同一分钟连加两次同一条通联）。
   await addEntry(page, "JA1AA", "00:01");
@@ -80,14 +78,14 @@ test("日志体检：合并重复项后只剩一条", async ({ page }) => {
 
   const health = panel(page);
   await expect(health.getByText("重复通联（1）")).toBeVisible();
-  // 合并是破坏性的：先出确认框（自动接受），再给结果提示。
+  // 合并是破坏性的：先出确认框，确认后才删记录。
   await health.getByRole("button", { name: "修正（1）" }).click();
+  await confirmDialog(page, "修正（1）");
   await expect(page.getByText("共 1 条")).toBeVisible();
   await expect(health.getByText("体检通过：没有发现明显问题。")).toBeVisible();
 });
 
 test("日志体检：未来的时间只提示、不给自动修", async ({ page }) => {
-  page.on("dialog", (d) => d.accept());
   await page.goto("/log");
   // 2030 年：即便按本地时解释也仍在未来，猜不出该怎么改，所以不给修法。
   await importAdif(
@@ -106,7 +104,6 @@ test("日志体检：未来的时间只提示、不给自动修", async ({ page 
 });
 
 test("日志体检：话务落在 CW 段里被挑出来", async ({ page }) => {
-  page.on("dialog", (d) => d.accept());
   await page.goto("/log");
   // 14.050 按三区规划只给 CW（`bandplan`）；同一频率上的 CW 不该被报。
   await importAdif(

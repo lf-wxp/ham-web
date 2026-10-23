@@ -9,7 +9,7 @@ use crate::ui::{Button, ButtonLink, Input, Size, Variant};
 use crate::util::set_title;
 
 use super::bookmark_card::BookmarkCard;
-use crate::i18n::{t, tp};
+use crate::i18n::{t, tf, tp};
 
 /// 收藏分组过滤方式。
 #[derive(Clone, PartialEq)]
@@ -70,14 +70,24 @@ pub fn BookmarksPage() -> impl IntoView {
     }
   };
 
+  // 分组连同它的成员关系一起删，误点一次就得重建：先问一句。
   let delete_group = move |name: String| {
-    let mut gs = groups.get_untracked();
-    gs.delete(&name);
-    store::save_groups(&gs);
-    groups.set(gs);
-    if matches!(group_filter.get_untracked(), Filter::Group(n) if n == name) {
-      group_filter.set(Filter::All);
-    }
+    crate::ui::confirm(
+      tf("exam.delete-group-confirm", &[&name]),
+      t("exam.delete-group-hint"),
+      t("exam.delete-this-group"),
+      crate::ui::ConfirmTone::Danger,
+      Callback::new(move |_| {
+        let mut gs = groups.get_untracked();
+        gs.delete(&name);
+        store::save_groups(&gs);
+        groups.set(gs);
+        if matches!(group_filter.get_untracked(), Filter::Group(n) if n == name) {
+          group_filter.set(Filter::All);
+        }
+        crate::ui::push_success(t("exam.group-deleted"));
+      }),
+    );
   };
 
   let add_to_group = move |(q, name): (QuestionItem, String)| {

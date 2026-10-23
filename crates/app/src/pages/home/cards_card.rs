@@ -5,7 +5,7 @@ use leptos::prelude::*;
 use crate::i18n::{t, tf, tp};
 use crate::pages::load_card_schedule;
 use crate::ui::{
-  CARD_HEADER, Size, Variant, button_class, card_class, card_content_class, card_title_class,
+  CARD_HEADER, Size, Variant, button_class, card_content_class, card_title_class, flat_card_class,
 };
 use crate::util::now_ms;
 
@@ -16,7 +16,7 @@ pub(super) fn CardsCard() -> impl IntoView {
   let due = schedule.due_total(now);
   let learned = schedule.cards.len();
   view! {
-    <div data-slot="card" class=card_class("")>
+    <div data-slot="card" class=flat_card_class("")>
       <div data-slot="card-header" class=CARD_HEADER>
         <div data-slot="card-title" class=card_title_class("flex items-center justify-between")>
           <span>{move || t("shell.study-cards")}</span>

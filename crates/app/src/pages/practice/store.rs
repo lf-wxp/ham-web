@@ -25,6 +25,11 @@ pub(super) struct PracticeStore {
   pub(super) loading: RwSignal<bool>,
   /// 本轮已计入错题本 / 统计的作答 key。
   pub(super) recorded: StoredValue<HashSet<String>>,
+  /// 本轮点过「显示正确答案」的题 key。
+  ///
+  /// 这类题看着答案作答，**答对**不计入错题本 / 掌握度 / 连对（见 `commit_current`）；
+  /// 答错仍照记。进度（已作答数）照常计。
+  pub(super) peeked: StoredValue<HashSet<String>>,
   /// 当前会话连续答对题数。
   pub(super) streak: RwSignal<u32>,
   /// 当前会话最长连续答对题数。
@@ -43,6 +48,7 @@ impl PracticeStore {
       show_explanation: RwSignal::new(true),
       loading: RwSignal::new(true),
       recorded: StoredValue::new(HashSet::new()),
+      peeked: StoredValue::new(HashSet::new()),
       streak: RwSignal::new(0),
       best_streak: RwSignal::new(0),
     }
@@ -70,6 +76,16 @@ impl PracticeStore {
     else {
       return;
     };
+    // 看过答案再作答：**答对不计**（那不是自测结果，否则一次偷看就能把没学会的题刷成
+    // 「已掌握」）；**答错照记**——偷看只会抬高成绩，看了答案还选错更说明没掌握，漏记才误导。
+    if q.is_answer_correct(&ans)
+      && self
+        .peeked
+        .try_with_value(|p| p.contains(&key))
+        .unwrap_or(false)
+    {
+      return;
+    }
     if self.recorded.try_update_value(|r| r.insert(key)) == Some(true)
       && let Some(outcome) = crate::study::record_answer(&q, &ans)
     {
@@ -88,6 +104,7 @@ impl PracticeStore {
   pub(super) fn reset(self) {
     self.commit_current();
     self.recorded.set_value(HashSet::new());
+    self.peeked.set_value(HashSet::new());
     self.all.set(Arc::new(Vec::new()));
     self.order_idx.set(Vec::new());
     self.index.set(0);
@@ -109,6 +126,7 @@ impl PracticeStore {
   pub(super) fn set_order(self, order: PracticeOrder) {
     self.commit_current();
     self.recorded.set_value(HashSet::new());
+    self.peeked.set_value(HashSet::new());
     let mut idx: Vec<usize> = (0..self.all.with_untracked(|a| a.len())).collect();
     if order == PracticeOrder::Random {
       let mut rng = random;
@@ -157,6 +175,22 @@ impl PracticeStore {
   pub(super) fn current_key(self) -> Option<String> {
     let i = self.index.get();
     self.question_at(i).map(|q| q.answer_key(i))
+  }
+
+  /// 记下当前题点过「显示正确答案」。
+  pub(super) fn mark_peeked(self) {
+    if let Some(key) = self.current_key() {
+      self.peeked.update_value(|p| {
+        p.insert(key);
+      });
+    }
+  }
+
+  /// 当前题是否点过「显示正确答案」（卡片按题重建，翻回来时据此恢复展开态）。
+  pub(super) fn current_peeked(self) -> bool {
+    self
+      .current_key()
+      .is_some_and(|k| self.peeked.with_value(|p| p.contains(&k)))
   }
 
   /// 当前题序下的题目引用列表。

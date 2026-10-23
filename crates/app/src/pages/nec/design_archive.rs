@@ -263,13 +263,19 @@ pub(super) fn DesignArchiveSection(
                             let n = del_name.clone();
                             move |_| {
                               let ask = tf("tools.nec-archive-delete-confirm", &[&n]);
-                              if !crate::util::window().confirm_with_message(&ask).unwrap_or(false) {
-                                return;
-                              }
-                              let mut next = book.get_untracked();
-                              if next.remove(id) {
-                                let _ = commit(next);
-                              }
+                              let label = tf("tools.nec-archive-delete-named", &[&n]);
+                              crate::ui::confirm(
+                                ask,
+                                "",
+                                label,
+                                crate::ui::ConfirmTone::Danger,
+                                Callback::new(move |_| {
+                                  let mut next = book.get_untracked();
+                                  if next.remove(id) {
+                                    let _ = commit(next);
+                                  }
+                                }),
+                              );
                             }
                           })
                         >

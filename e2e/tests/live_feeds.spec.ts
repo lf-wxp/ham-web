@@ -59,6 +59,26 @@ test("DX 热点：接口不可用时给出降级提示", async ({ page }) => {
   await expect(page.getByText("实时热点暂不可用（可能因网络受限），稍后重试。")).toBeVisible();
 });
 
+test("DX 热点：拉取失败可就地重试；接口正常但没有报告是另一种提示", async ({ page }) => {
+  await stubApi(page, {});
+  await page.goto("/dx-spots");
+  await expect(page.getByText("实时热点暂不可用（可能因网络受限），稍后重试。")).toBeVisible();
+
+  // 网络恢复后点「重试」：不用刷新整页就能拿到数据。
+  await page.unroute("**/api/**");
+  await stubApi(page, { "/api/spots": SPOTS });
+  await page.getByRole("button", { name: "重试", exact: true }).click();
+  await expect(page.getByRole("button", { name: /^JA1ABC / })).toBeVisible();
+  await expect(page.getByText("实时热点暂不可用（可能因网络受限），稍后重试。")).toHaveCount(0);
+
+  // 接口正常、列表为空：这是正常结果，不是失败 —— 没有「重试」，文案也不同。
+  await page.unroute("**/api/**");
+  await stubApi(page, { "/api/spots": [] });
+  await page.reload();
+  await expect(page.getByText("暂时没有实时 DX 报告")).toBeVisible();
+  await expect(page.getByRole("button", { name: "重试", exact: true })).toHaveCount(0);
+});
+
 /** `YYYY-MM-DD HH:MM UTC`，与页面同一口径（秒级时间戳按 UTC 格式化）。 */
 function utc(seconds: number): string {
   const iso = new Date(seconds * 1000).toISOString();
@@ -115,6 +135,21 @@ test("PSK Reporter：呼号规整后查询、报告表格式化、空结果与�
   await page.getByRole("textbox", { name: "呼号" }).fill("BA2NEW");
   await page.getByRole("button", { name: "查询" }).click();
   await expect(page.getByText(/查询暂不可用/)).toBeVisible();
+});
+
+test("Toast：同一条提示连点只留一条并带 ×N，不同提示各是各的", async ({ page }) => {
+  await stubApi(page, {});
+  await page.goto("/psk-reporter");
+  await page.getByRole("textbox", { name: "呼号" }).fill("");
+
+  // 空呼号 → 错误 Toast「请输入呼号」。连点两次：队列里仍只有这一条，计数变成 ×2。
+  const query = page.getByRole("button", { name: "查询" });
+  await query.click();
+  await query.click();
+  const toast = page.locator('[data-slot="toast"]');
+  await expect(toast).toHaveCount(1);
+  await expect(toast).toContainText("请输入呼号");
+  await expect(toast).toContainText("×2");
 });
 
 test("PSK Reporter：接收方向分布按本台网格落扇区，可切波段", async ({ page }) => {

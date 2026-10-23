@@ -30,7 +30,7 @@ use crate::components::common::PreviewableImage;
 use crate::i18n::t;
 use crate::photo::{PhotoError, PhotoKind, is_image, process_photo};
 use crate::ui::{Button, FileInput, Size, Variant};
-use crate::util::{storage, window};
+use crate::util::storage;
 
 use super::use_log_store;
 
@@ -205,33 +205,38 @@ pub(super) fn QslImage(entry_id: u64) -> impl IntoView {
   });
 
   let remove = move || {
-    if !window()
-      .confirm_with_message(&t("log.delete-card-image-confirm"))
-      .unwrap_or(false)
-    {
-      return;
-    }
-    issue.set(None);
-    busy.set(true);
-    // 本次删除也会让在途的上传作废（否则它可能刚删完就把图写回去）：上传侧在
-    // `await` 之后会比一次 `generation`，发现代次变了就直接放弃。
-    generation.set_value(generation.get_value() + 1);
-    let alive = alive_remove.clone();
-    spawn_local(async move {
-      // 删失败不能装作删掉了：影像还在 IndexedDB 里，索引与缩略图都得留着，
-      // 否则会出现「索引里没有、数据其实还在」的静默残留。
-      let removed = crate::kv::remove_store_only(&key.get_value()).await;
-      if !alive() {
-        return;
-      }
-      if removed {
-        stored.set(None);
-        mark(store, entry_id, false);
-      } else {
-        issue.set(Some(Issue::DeleteFailed));
-      }
-      busy.set(false);
-    });
+    // 每调用一次取一份守卫（`Arc`），内层回调再 clone 给 async 块：
+    // 直接把捕获的 `alive_remove` move 进 `Callback` 会让外层闭包退化成 `FnOnce`。
+    let guard = alive_remove.clone();
+    crate::ui::confirm(
+      t("log.delete-card-image-confirm"),
+      "",
+      t("log.delete-card-image"),
+      crate::ui::ConfirmTone::Danger,
+      Callback::new(move |_| {
+        issue.set(None);
+        busy.set(true);
+        // 本次删除也会让在途的上传作废（否则它可能刚删完就把图写回去）：上传侧在
+        // `await` 之后会比一次 `generation`，发现代次变了就直接放弃。
+        generation.set_value(generation.get_value() + 1);
+        let alive = guard.clone();
+        spawn_local(async move {
+          // 删失败不能装作删掉了：影像还在 IndexedDB 里，索引与缩略图都得留着，
+          // 否则会出现「索引里没有、数据其实还在」的静默残留。
+          let removed = crate::kv::remove_store_only(&key.get_value()).await;
+          if !alive() {
+            return;
+          }
+          if removed {
+            stored.set(None);
+            mark(store, entry_id, false);
+          } else {
+            issue.set(Some(Issue::DeleteFailed));
+          }
+          busy.set(false);
+        });
+      }),
+    );
   };
 
   view! {

@@ -88,12 +88,36 @@ impl std::error::Error for Error {}
 
 /// 解码一段 WAV 音频字节，返回重建的 RGB 图像。
 pub fn decode(bytes: &[u8]) -> Result<SstvImage, Error> {
+  decode_with_progress(bytes, &mut |_| {})
+}
+
+/// 与 [`decode`] 相同，但按行回报进度（0..1）。
+///
+/// **当前没有调用方（预留）**：Worker 同步执行期间，投递给主线程的 `postMessage` 到不了
+/// 页面（2026-10-23 实测：release / debug 两版 wasm 上都是 0 条，结果信封却正常到达），
+/// 所以界面侧只用前端自算的「已用时」。保留它是因为逐行回调本身是对的、有真实录音单测守着；
+/// 等解码改成「分段往返」
+/// （worker 每解一块就返回、页面再发下一块）时，这里就是现成的分块边界。
+/// 回调只在逐行扫描阶段触发；FM 解调与重采样是一次性数组运算，没有可切分的边界。
+pub fn decode_with_progress(
+  bytes: &[u8],
+  on_progress: &mut dyn FnMut(f32),
+) -> Result<SstvImage, Error> {
   let (samples, rate) = ham_web_wav::parse(bytes)?;
-  decode_samples(&samples, rate)
+  decode_samples_with_progress(&samples, rate, on_progress)
 }
 
 /// 从已归一化的单声道样本（[-1, 1]）与采样率解码。
 pub fn decode_samples(samples: &[f32], rate: u32) -> Result<SstvImage, Error> {
+  decode_samples_with_progress(samples, rate, &mut |_| {})
+}
+
+/// 与 [`decode_samples`] 相同，但按行回报进度。
+pub fn decode_samples_with_progress(
+  samples: &[f32],
+  rate: u32,
+  on_progress: &mut dyn FnMut(f32),
+) -> Result<SstvImage, Error> {
   if samples.is_empty() || rate == 0 {
     return Err(Error::UnsupportedFormat);
   }
@@ -104,5 +128,29 @@ pub fn decode_samples(samples: &[f32], rate: u32) -> Result<SstvImage, Error> {
   let freq = fm::fm_demodulate(&working, WORK_RATE);
   let vis = vis::detect(&freq).ok_or(Error::NoVis)?;
   let mode = modes::by_vis_code(vis.code).ok_or(Error::NoVis)?;
-  decode::assemble(&freq, mode, vis.end, rate)
+  decode::assemble_with_progress(&freq, mode, vis.end, rate, on_progress)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  /// 逐行进度必须是单调的，并且走到 1.0 —— 界面的进度条依赖这两个性质。
+  ///
+  /// 用仓里的真实录音（Martin M1，115.8 秒）而不是合成信号：行同步、行数、提前 break
+  /// 这些边界只有真实样本才会走到。
+  #[test]
+  fn progress_is_monotonic_and_reaches_the_end() {
+    let bytes = include_bytes!("../samples/martin_m1_sunset.wav");
+    let mut seen: Vec<f32> = Vec::new();
+    let img = decode_with_progress(bytes, &mut |p| seen.push(p)).expect("真实录音应能解码");
+    assert!(seen.len() > 100, "回调次数太少：{}", seen.len());
+    assert!(
+      seen.windows(2).all(|w| w[0] <= w[1] + f32::EPSILON),
+      "进度不是单调递增"
+    );
+    let last = *seen.last().expect("至少回调一次");
+    assert!((last - 1.0).abs() < 0.02, "最后一条进度是 {last}");
+    assert_eq!(img.height, 256);
+  }
 }

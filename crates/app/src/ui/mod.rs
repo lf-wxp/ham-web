@@ -98,6 +98,7 @@ mod button;
 mod button_link;
 mod checkbox;
 mod chip;
+mod confirm;
 mod control;
 mod date_picker;
 mod dialog;
@@ -130,6 +131,7 @@ pub use button::{Button, ButtonKind};
 pub use button_link::ButtonLink;
 pub use checkbox::Checkbox;
 pub use chip::{Chip, ChipGroup, ChipToggle};
+pub use confirm::{ConfirmRoot, ConfirmTone, confirm};
 pub use control::{ControlSize, TextValue, control_class};
 pub use date_picker::DatePicker;
 pub use dialog::{Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Sheet};
@@ -250,6 +252,18 @@ pub fn badge_class(variant: BadgeVariant, extra: &str) -> String {
 /// 靠 `style/pixel/surfaces.css` 的兜底规则统一加粗描边，两条路径视觉一致。
 pub fn card_class(extra: &str) -> String {
   cn(&["pxl-window flex flex-col gap-6 py-6 mb-[24px]", extra])
+}
+
+/// 平卡（L1）：只有 2px 墨框，没有投影与内高光。
+///
+/// 全站卡片分三级，**一页里只让「当前任务块」用 L2**（`card_class` / `pxl-window`），
+/// 其余次要块用平卡 —— 368 处手写卡片、29 处窗口时，所有块同重量会让页面没有落点。
+/// 目录 / 关键指标这类「一眼要看」的块才升到 L2。
+pub fn flat_card_class(extra: &str) -> String {
+  cn(&[
+    "pxl-card border bg-card flex flex-col gap-6 py-6 mb-[24px]",
+    extra,
+  ])
 }
 
 /// 卡片头部类名。

@@ -92,27 +92,29 @@ pub fn QslLabelsPage() -> impl IntoView {
     if ids.is_empty() {
       return;
     }
-    if !window()
-      .confirm_with_message(&tp(
+    crate::ui::confirm(
+      tp(
         "log.mark-these-qsos-as",
         ids.len(),
         &[&ids.len().to_string()],
-      ))
-      .unwrap_or(false)
-    {
-      return;
-    }
-    let via = QslVia::from_key(&via_sel.get_untracked());
-    let mut changed = false;
-    store.logbook.update(|lb| {
-      for e in lb.entries.iter_mut().filter(|e| ids.contains(&e.id)) {
-        changed |= mark_sent(e, via);
-      }
-    });
-    // 全部都已经寄出且方式相同 → 没有任何改动，不必落库。
-    if changed {
-      store.persist();
-    }
+      ),
+      "",
+      t("exam.confirm-ok"),
+      crate::ui::ConfirmTone::Normal,
+      Callback::new(move |_| {
+        let via = QslVia::from_key(&via_sel.get_untracked());
+        let mut changed = false;
+        store.logbook.update(|lb| {
+          for e in lb.entries.iter_mut().filter(|e| ids.contains(&e.id)) {
+            changed |= mark_sent(e, via);
+          }
+        });
+        // 全部都已经寄出且方式相同 → 没有任何改动，不必落库。
+        if changed {
+          store.persist();
+        }
+      }),
+    );
   };
 
   let sheets = move || {

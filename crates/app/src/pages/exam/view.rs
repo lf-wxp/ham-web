@@ -12,7 +12,7 @@ use leptos_router::NavigateOptions;
 use leptos_router::hooks::{use_navigate, use_query_map};
 use send_wrapper::SendWrapper;
 
-use crate::components::common::{ExplanationCard, MessageDialog, PageContainer};
+use crate::components::common::{ExplanationCard, MessageDialog, PageContainer, PageLoading};
 use crate::components::exam::{
   AnswerCardFilter, AnswerCardSheet, CustomPaperDialog, ExamResultDialog, ExamResumeDialog,
   ExamSettingsDialog, ExamSubmitConfirmDialog, RulesWalkthroughDialog,
@@ -493,12 +493,16 @@ pub fn ExamPage() -> impl IntoView {
 
   let content = move || {
     if loading.get() {
-      return view! { <div class="p-6" aria-live="polite">{move || t("exam.loading-questions-u-2026")}</div> }
+      return view! { <PageLoading label=Signal::derive(move || t("exam.loading-questions-u-2026")) /> }
         .into_any();
     }
     if store.questions.with(|q| q.is_empty()) {
-      return view! { <div class="p-6" role="alert">{move || t("exam.question-bank-unavailable-or")}</div> }
-        .into_any();
+      return view! {
+        <PageContainer class="space-y-0">
+          <div class="p-6" role="alert">{move || t("exam.question-bank-unavailable-or")}</div>
+        </PageContainer>
+      }
+      .into_any();
     }
     view! {
       <div on:touchstart=swipe_start on:touchend=swipe_end>
@@ -540,6 +544,7 @@ pub fn ExamPage() -> impl IntoView {
                   on_change=set_answer
                   show_answer=finished
                   read_only=finished
+                  reveal_unanswered=true
                 />
                 {move || {
                   (finished.get() && show_explanation.get()).then(|| view! { <ExplanationCard question=expl.clone() /> })

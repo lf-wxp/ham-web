@@ -175,18 +175,18 @@ test.describe("外观与动效设置", () => {
 test.describe("手机底部 Tab", () => {
   test.use({ viewport: { width: 375, height: 740 } });
 
-  test("基地 / 地图 / 考试 / 图鉴 / 更多：可跳转，顶栏不撑出屏幕", async ({ page }) => {
+  test("首页 / 练习 / 考试 / 错题 / 更多：可跳转，顶栏不撑出屏幕", async ({ page }) => {
     await page.goto("/");
     const tabs = page.getByRole("navigation", { name: "底部导航" });
     await expect(tabs).toBeVisible();
-    await expect(tabs.getByRole("link", { name: "基地" })).toHaveAttribute("aria-current", "page");
+    await expect(tabs.getByRole("link", { name: "首页" })).toHaveAttribute("aria-current", "page");
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, "文档横向溢出").toBeLessThanOrEqual(0);
 
-    await tabs.getByRole("link", { name: "地图" }).click();
+    await tabs.getByRole("link", { name: "练习" }).click();
     await expect(page).toHaveURL(/\/map/);
-    await expect(tabs.getByRole("link", { name: "地图" })).toHaveAttribute("aria-current", "page");
+    await expect(tabs.getByRole("link", { name: "练习" })).toHaveAttribute("aria-current", "page");
 
     await tabs.getByRole("button", { name: "更多" }).click();
     await expect(page.getByRole("navigation", { name: "移动端导航" })).toBeVisible();

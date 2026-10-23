@@ -1,4 +1,7 @@
-//! 移动端底部 Tab：基地 / 地图 / 考试 / 图鉴 / 更多。
+//! 移动端底部 Tab：首页 / 练习 / 考试 / 错题 / 更多。
+//!
+//! 文案用**白话**而不是关卡隐喻（基地 / 地图 / 图鉴）：底栏是找入口的地方，
+//! 图标已经承担了像素气质，文字负责让人一眼找到「错题本」这类功能。
 //!
 //! 只在小屏（`<xl`，与顶栏移动菜单同一断点）显示。答题类页面（练习 / 考试 / 回合战）
 //! 会设 `body.no-site-footer` —— 它们自己的固定操作栏就贴在底部，Tab 让位（见 `surfaces.css`）。
@@ -26,13 +29,13 @@ struct Tab {
 const TABS: &[Tab] = &[
   Tab {
     href: "/",
-    label: "shell.tab-base",
+    label: "shell.home",
     icon: IconKind::Home,
     opens_menu: false,
   },
   Tab {
     href: "/map",
-    label: "shell.tab-map",
+    label: "shell.practice",
     icon: IconKind::Map,
     opens_menu: false,
   },
@@ -44,7 +47,7 @@ const TABS: &[Tab] = &[
   },
   Tab {
     href: "/bestiary",
-    label: "shell.tab-bestiary",
+    label: "shell.tab-mistakes",
     icon: IconKind::BookMarked,
     opens_menu: false,
   },

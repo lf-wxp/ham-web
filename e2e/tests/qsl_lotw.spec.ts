@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "./fixtures";
+import { confirmDialog, expect, test, type Page } from "./fixtures";
 
 /** 一条通联（与 LoTW 报告同键：呼号 + 日期 + 时间 + 波段 + 模式）。 */
 const QSO = `Generated for e2e
@@ -18,8 +18,7 @@ async function importQso(page: Page) {
 }
 
 test("LoTW：上传成功后回写「已上传」，计数与标志位跟着变", async ({ page }) => {
-  // 确认框（原生 confirm）自动接受；成功提示走全局 Toast（`role="status"`）。
-  page.on("dialog", (d) => d.accept());
+  // 确认走 `ui::confirm`（像素风弹窗）；成功提示走全局 Toast（`role="status"`）。
 
   await page.goto("/log");
   await importQso(page);
@@ -28,6 +27,7 @@ test("LoTW：上传成功后回写「已上传」，计数与标志位跟着变"
   await expect(mark).toHaveText("标记已上传 LoTW（1）");
 
   await mark.click();
+  await confirmDialog(page, "确定");
   await expect(page.getByRole("status")).toContainText(/已把 1 条通联标记为已上传 LoTW/);
   // 没有可标记的了：计数归零、按钮禁用。
   await expect(mark).toHaveText("标记已上传 LoTW（0）");
@@ -64,7 +64,6 @@ test("LoTW 指引：/eqsl 上有完整步骤与「不代签」边界，同步框
 });
 
 test("LoTW 指引：TQSL 的 Station Location 该填什么算得出来", async ({ page }) => {
-  page.on("dialog", (d) => d.accept());
 
   // 台站信息空着：只说明「先补齐」并指出去哪儿补，不硬凑分区。
   await page.goto("/eqsl");

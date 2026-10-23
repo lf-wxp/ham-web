@@ -5,6 +5,7 @@ use std::sync::Arc;
 use ham_web_core::qsl_status::{QslStatus, QslTone};
 use leptos::prelude::*;
 
+use crate::components::common::EmptyState;
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
   Button, Input, InputType, NativeSelect, Pagination, SelectOption, Size, Table, TableBody,
@@ -100,9 +101,11 @@ pub(super) fn EntryList(
       {move || {
         if logbook.with(|l| l.entries.is_empty()) {
           return view! {
-            <div class="px-4 py-10 text-center text-sm text-muted-foreground">
-              {move || t("log.no-records-yet-add")}
-            </div>
+            <EmptyState
+              plain=true
+              title=Signal::derive(move || t("log.no-records-yet-add"))
+              icon=IconKind::ClipboardList
+            />
           }
           .into_any();
         }

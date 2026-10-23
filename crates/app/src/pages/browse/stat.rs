@@ -7,7 +7,7 @@ pub(super) fn Stat(
 ) -> impl IntoView {
   view! {
     <div class="pxl-card border bg-card p-3">
-      <div class="text-2xl font-semibold tabular-nums">{move || value.get()}</div>
+      <div class="pxl-stat">{move || value.get()}</div>
       <div class="text-xs text-muted-foreground">{label}</div>
     </div>
   }

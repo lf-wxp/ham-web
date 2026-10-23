@@ -161,13 +161,15 @@ test("审查修复：热图提示有描述关联，聚焦首行气泡不被滚�
 test("审查修复：Toast 队尾入队不重置首条计时，模态打开后仍可关闭反馈", async ({ page }) => {
   await page.clock.install();
   await page.goto("/contest-calendar");
-  const add = page.getByRole("button", { name: "加入提醒", exact: true }).first();
-  await add.click();
+  const addReminder = page.getByRole("button", { name: "加入提醒", exact: true });
+  await addReminder.first().click();
   const toast = page.locator('[data-slot="toast"]');
   await expect(toast).toBeVisible();
   const first = await toast.getAttribute("data-toast-id");
   await page.clock.runFor(2000);
-  await add.click();
+  // 第二条必须换一场比赛点：同一场比赛的「加入提醒」文案相同，会按同文案合并成 ×2、
+  // id 不变，验证不到「队尾入队」；换成另一场比赛文案不同，才会新排一条到队尾。
+  await addReminder.nth(1).click();
   await page.clock.runFor(1800);
   await expect(toast).not.toHaveAttribute("data-toast-id", first!);
   await page.getByRole("button", { name: "搜索", exact: true }).click();

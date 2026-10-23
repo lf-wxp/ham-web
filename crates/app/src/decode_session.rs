@@ -7,7 +7,7 @@
 //!
 //! **必须在组件体（有 Owner）内创建**：内部的消息闭包、超时槽位与卸载清理都挂在当前 Owner 上。
 
-use leptos::leptos_dom::helpers::TimeoutHandle;
+use leptos::leptos_dom::helpers::{IntervalHandle, TimeoutHandle, set_interval_with_handle};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use wasm_bindgen::JsValue;
@@ -20,7 +20,7 @@ use crate::decode_worker::{
   retain_message_handler, shutdown_worker, spawn_worker,
 };
 use crate::i18n::{t, tf};
-use crate::util::js_error_message;
+use crate::util::{js_error_message, now_ms};
 
 /// 各解码页共用的上传体积上限（字节）。
 ///
@@ -53,6 +53,15 @@ pub struct DecodeSession<T: Send + Sync + 'static> {
   pub processing: RwSignal<bool>,
   /// 仍在读文件（`processing` 的子阶段）。
   pub reading: RwSignal<bool>,
+  /// 本次解码已用时（毫秒）。
+  ///
+  /// 为什么是「已用时」而不是百分比：Worker 是同步的一次性计算，协议里没有中间进度
+  /// （`decode-worker-protocol.md`），要拿到百分比得改 11 个 worker 的返回。大文件解码
+  /// 时用户最缺的其实只是「它还在动 / 已经跑了多久」，这个前端自己就能给。
+  ///
+  /// 读数是 `现在 - 起点` 的时间戳差，**不是**按 tick 次数累加：解码恰好是用户会切走
+  /// 等待的场景，后台标签页的定时器会被浏览器降频到约 1 次 / 秒，数 tick 会越走越慢。
+  pub elapsed_ms: RwSignal<u64>,
   /// 面向用户的错误文案。
   pub error: RwSignal<Option<String>>,
   /// 当前文件名。
@@ -65,6 +74,9 @@ pub struct DecodeSession<T: Send + Sync + 'static> {
   too_large: fn(&str, &str) -> String,
   timed_out: fn() -> String,
   timer: StoredValue<Option<TimeoutHandle>>,
+  /// 计时器句柄：由 `ticker_slot` 保证 `processing` 一旦回到 `false`（成功 / 失败 / 取消 /
+  /// 超时的任何出口）或页面卸载就停掉，不靠每条出口各自记得调用。
+  ticker: StoredValue<Option<IntervalHandle>>,
   generation: StoredValue<u32>,
   onmessage: StoredValue<js_sys::Function>,
   /// `Worker.onerror` 的转发函数：与 `onmessage` 同生命周期，重建 Worker 时复用。
@@ -86,6 +98,8 @@ impl<T: Send + Sync + 'static> DecodeSession<T> {
     let processing = RwSignal::new(false);
     let result = RwSignal::new(None::<T>);
     let error = RwSignal::new(None::<String>);
+    let elapsed_ms = RwSignal::new(0u64);
+    let ticker = ticker_slot(processing);
     let (parse, failed) = (config.parse, config.failed);
     let handler = Closure::<dyn FnMut(MessageEvent)>::new(move |event: MessageEvent| {
       match parse_outcome(&event.data()).and_then(|raw| parse(&raw)) {
@@ -105,6 +119,7 @@ impl<T: Send + Sync + 'static> DecodeSession<T> {
     let session = DecodeSession {
       processing,
       reading: RwSignal::new(false),
+      elapsed_ms,
       error,
       file_name: RwSignal::new(String::new()),
       result,
@@ -114,6 +129,7 @@ impl<T: Send + Sync + 'static> DecodeSession<T> {
       too_large: config.too_large,
       timed_out: config.timed_out,
       timer: decode_timeout_slot(processing),
+      ticker,
       generation: StoredValue::new(0u32),
       onmessage,
       onerror,
@@ -154,6 +170,24 @@ impl<T: Send + Sync + 'static> DecodeSession<T> {
     batch
   }
 
+  /// 重置并启动「已用时」计时器（先停旧的，连续选文件不会叠出两个 interval）。
+  fn start_ticker(self) {
+    stop_ticker(self.ticker);
+    self.elapsed_ms.set(0);
+    let started = now_ms();
+    let elapsed = self.elapsed_ms;
+    self.ticker.set_value(
+      set_interval_with_handle(
+        // `try_set`：页面卸载后信号已释放，静默忽略而不是 panic。
+        move || {
+          elapsed.try_set((now_ms() - started).max(0) as u64);
+        },
+        std::time::Duration::from_millis(200),
+      )
+      .ok(),
+    );
+  }
+
   /// 取消当前解码：terminate + 代际递增（解码是同步的，只能整体丢弃）。
   pub fn cancel(self) {
     self.invalidate();
@@ -187,6 +221,7 @@ impl<T: Send + Sync + 'static> DecodeSession<T> {
     let batch = self.restart_worker();
     self.processing.set(true);
     self.reading.set(true);
+    self.start_ticker();
     self.error.set(None);
     self.result.set(None);
     self.file_name.set(file.name());
@@ -247,6 +282,31 @@ impl<T: Send + Sync + 'static> DecodeSession<T> {
         }
       }
     });
+  }
+}
+
+/// 计时器槽位：与 `decode_timeout_slot` 同一模式 —— `processing` 回到 `false` 时停表，
+/// 卸载时也停表。
+///
+/// 解码的出口不止一条（成功 / Worker 报错 / 读文件失败 / 参数校验失败 / 取消 / 超时），
+/// 它们的共同点只有「把 `processing` 置回 `false`」，所以挂在这个信号上，而不是让每条
+/// 出口各自记得停表（漏一条就是一个永不停的 `setInterval`）。
+fn ticker_slot(processing: RwSignal<bool>) -> StoredValue<Option<IntervalHandle>> {
+  let ticker = StoredValue::new(None::<IntervalHandle>);
+  Effect::new(move |_| {
+    if !processing.get() {
+      stop_ticker(ticker);
+    }
+  });
+  on_cleanup(move || stop_ticker(ticker));
+  ticker
+}
+
+/// 停掉计时器并清空槽位（重复调用安全；已卸载的槽位直接忽略）。
+fn stop_ticker(ticker: StoredValue<Option<IntervalHandle>>) {
+  if let Some(Some(handle)) = ticker.try_get_value() {
+    handle.clear();
+    ticker.try_set_value(None);
   }
 }
 

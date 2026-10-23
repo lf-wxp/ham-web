@@ -7,8 +7,9 @@ use ham_web_core::categories::top_category;
 use ham_web_core::mistake_book::{heat_level, mistake_domains};
 use leptos::prelude::*;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{EmptyState, PageContainer, PageHeader};
 use crate::i18n::{t, tf, tp};
+use crate::icons::IconKind;
 use crate::study;
 use crate::ui::Tooltip;
 use crate::util::set_title;
@@ -67,12 +68,11 @@ pub fn MistakeTopicsPage() -> impl IntoView {
 
         {if domains.is_empty() {
           view! {
-            <div class="pxl-card border bg-card px-4 py-12 text-center">
-              <div class="text-sm font-medium">{move || t("learning.no-mistakes-yet")}</div>
-              <div class="mt-1 text-xs text-muted-foreground">
-                {move || t("learning.after-answering-in-practice")}
-              </div>
-            </div>
+            <EmptyState
+              icon=IconKind::BookMarked
+              title=Signal::derive(move || t("learning.no-mistakes-yet"))
+              description=Signal::derive(move || t("learning.after-answering-in-practice"))
+            />
           }
           .into_any()
         } else {

@@ -2,6 +2,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde::Deserialize;
 
+use crate::components::common::EmptyState;
 use crate::data;
 use crate::i18n::t;
 
@@ -82,8 +83,10 @@ pub(super) fn IssTracker() -> impl IntoView {
               </p>
             }
             .into_any(),
-            None => view! { <p class="px-3 py-6 text-center text-sm text-muted-foreground">{move || t("radio.no-iss-data-yet")}</p> }
-              .into_any(),
+            None => view! {
+              <EmptyState plain=true title=Signal::derive(move || t("radio.no-iss-data-yet")) />
+            }
+            .into_any(),
           }
         }}
       </div>

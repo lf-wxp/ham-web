@@ -2,7 +2,6 @@
 
 mod base_hero;
 mod cards_card;
-mod daily_challenge_card;
 mod daily_question;
 mod home_page;
 mod propagation_widget;

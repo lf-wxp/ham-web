@@ -180,23 +180,23 @@ pub fn WeeklyPage() -> impl IntoView {
       <PageContainer class="space-y-4">
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <div class="pxl-card border bg-card p-4 text-center">
-            <div class="text-2xl font-semibold tabular-nums">{week_answered}</div>
+            <div class="pxl-stat">{week_answered}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("exam.answered-this-week")}</div>
           </div>
           <div class="pxl-card border bg-card p-4 text-center">
-            <div class="text-2xl font-semibold tabular-nums">{week_new}</div>
+            <div class="pxl-stat">{week_new}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("exam.new-questions-this-week")}</div>
           </div>
           <div class="pxl-card border bg-card p-4 text-center">
-            <div class="text-2xl font-semibold tabular-nums">{streak}</div>
+            <div class="pxl-stat">{streak}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("learning.check-in-streak-days")}</div>
           </div>
           <div class="pxl-card border bg-card p-4 text-center">
-            <div class="text-2xl font-semibold tabular-nums">{mistakes}</div>
+            <div class="pxl-stat">{mistakes}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("exam.current-mistakes")}</div>
           </div>
           <div class="pxl-card border bg-card p-4 text-center">
-            <div class="text-2xl font-semibold tabular-nums">{week_duration_text}</div>
+            <div class="pxl-stat">{week_duration_text}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("learning.study-time-this-week")}</div>
           </div>
         </div>

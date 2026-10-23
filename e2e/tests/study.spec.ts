@@ -22,6 +22,49 @@ test("练习：答错后翻页，题号前进且错题本记录该题", async ({
   await expect(page.getByText(/共 1 道错题/)).toBeVisible();
 });
 
+test("练习：未作答不显示正确答案，「显示正确答案」只展开、不写作答", async ({ page }) => {
+  await page.goto("/practice");
+  await expect(page.getByText(/第 1 \/ \d+ 题/)).toBeVisible();
+  // 答案行不能在没作答时就出现，否则练习等于开卷。
+  await expect(page.getByText(/^正确答案：/)).toHaveCount(0);
+  await expect(page.getByText(/已作答 0 \/ \d+/).first()).toBeVisible();
+
+  await page.getByRole("button", { name: "显示正确答案" }).click();
+  await expect(page.getByText(/^正确答案：/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "显示正确答案" })).toHaveCount(0);
+  // 只是看了一眼：进度仍是 0，没有写作答。
+  await expect(page.getByText(/已作答 0 \/ \d+/).first()).toBeVisible();
+});
+
+test("练习：看过答案再答对不计入作答统计，自己答对的才计", async ({ page }) => {
+  await page.goto("/practice");
+  await expect(page.getByText(/第 1 \/ \d+ 题/)).toBeVisible();
+
+  // 第 1 题：先看答案再照着选对 —— 不是自测，不该算进「本周作答」。
+  for (const letter of await correctLetters(page)) {
+    await option(page, letter).click();
+  }
+  await page.getByRole("button", { name: "下一题" }).first().click();
+  await expect(page.getByText(/第 2 \/ \d+ 题/)).toBeVisible();
+
+  // 第 2 题：没看答案，先随手选一个，再按页面给出的答案改成正确的（答案行作答后才出现）。
+  await option(page, "A").click();
+  const correct = await correctLetters(page);
+  for (const letter of correct) {
+    if (!(await option(page, letter).isChecked())) await option(page, letter).click();
+  }
+  for (const letter of ["A", "B", "C", "D"]) {
+    const o = option(page, letter);
+    if ((await o.count()) > 0 && !correct.includes(letter) && (await o.isChecked())) await o.click();
+  }
+  await page.getByRole("button", { name: "下一题" }).first().click();
+  await expect(page.getByText(/第 3 \/ \d+ 题/)).toBeVisible();
+
+  await page.goto("/weekly");
+  const card = page.getByText("本周作答", { exact: true }).locator("xpath=..");
+  await expect(card).toHaveText(/^1\s*本周作答$/);
+});
+
 test("练习：刷新后可恢复进度", async ({ page }) => {
   await page.goto("/practice");
   await expect(page.getByText(/第 1 \/ \d+ 题/)).toBeVisible();
@@ -58,6 +101,11 @@ test("模拟考试：作答并交卷后显示成绩", async ({ page }) => {
   await result.getByRole("button", { name: "继续浏览题目" }).click();
   await expect(result).toBeHidden();
   await expect(page.getByRole("button", { name: "已交卷" }).first()).toBeVisible();
+
+  // 交卷后回顾：没作答的题也要直接看到正确答案，不能再逐题点「显示正确答案」。
+  await page.getByRole("button", { name: "下一题" }).first().click();
+  await expect(page.getByText(/^正确答案：/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "显示正确答案" })).toHaveCount(0);
 });
 
 test("薄弱项组卷：按常规配额出卷，交卷后显示分类对比且不计入历史趋势", async ({ page }) => {

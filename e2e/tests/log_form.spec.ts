@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { confirmDialog, expect, test } from "./fixtures";
 
 /** 呼号输入框没有 <label> 包裹，用 placeholder 定位。 */
 function callInput(page: import("@playwright/test").Page) {
@@ -82,13 +82,43 @@ test("通联日志：清空需二次确认，取消不丢数据", async ({ page 
   await expect(page.getByRole("heading", { level: 1, name: "通联日志" })).toBeVisible();
   await addEntry(page, "JA1AA");
 
-  page.once("dialog", (d) => d.dismiss());
-  await page.getByRole("button", { name: "清空" }).click();
+  // 页内按钮限定在 `main`：确认框已传送到 body，退场动画期间它的「清空全部」还在 DOM 里。
+  const clear = page.locator("main").getByRole("button", { name: "清空", exact: true });
+
+  // 取消：确认框关掉，数据不动。
+  await clear.click();
+  await page.getByRole("dialog").getByRole("button", { name: "取消" }).click();
   await expect(page.getByText("共 1 条")).toBeVisible();
 
-  page.once("dialog", (d) => d.accept());
-  await page.getByRole("button", { name: "清空" }).click();
+  // 确认：走 `ui::confirm` 的「清空全部」。
+  await clear.click();
+  await confirmDialog(page, "清空全部");
   await expect(page.getByText("暂无记录，添加第一条通联日志吧。")).toBeVisible();
+});
+
+test("通联日志：单条删除需确认，连点「删除」只执行一次", async ({ page }) => {
+  await page.goto("/log");
+  await expect(page.getByRole("heading", { level: 1, name: "通联日志" })).toBeVisible();
+  await addEntry(page, "JA1AA");
+  await addEntry(page, "DL1AA");
+  await expect(page.getByText("共 2 条")).toBeVisible();
+
+  const row = page.getByRole("row").filter({ hasText: "JA1AA" });
+  const dialog = page.getByRole("dialog");
+
+  // 取消：什么都不删。
+  await row.getByRole("button", { name: "删除", exact: true }).click();
+  await expect(dialog).toContainText("删除这条通联记录？");
+  await dialog.getByRole("button", { name: "取消" }).click();
+  await expect(page.getByText("共 2 条")).toBeVisible();
+
+  // 确认时手抖连点两下：删除只发生一次；成功提示若跑了两遍，会被合并成「×2」。
+  await row.getByRole("button", { name: "删除", exact: true }).click();
+  await dialog.getByRole("button", { name: "删除", exact: true }).dblclick();
+  await expect(page.getByText("共 1 条")).toBeVisible();
+  const toast = page.locator('[data-slot="toast"]');
+  await expect(toast).toContainText("已删除该条通联记录");
+  await expect(toast).not.toContainText("×");
 });
 
 test("通联日志：同步 QSL 空报告给出提示", async ({ page }) => {

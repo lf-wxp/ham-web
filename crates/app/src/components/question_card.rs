@@ -13,6 +13,20 @@ use crate::ui::{
 };
 use crate::util::unique_id;
 
+/// 选项行的选中态：**形状不动**（单选是切角八边形、多选是方形，改了会破坏辨识），
+/// 用「整行浅底 + 左 2px 主色条」表达「这行被选中了」。
+///
+/// 只向左出血 8px（`-ml-2 pl-2`）：主色条与浅底比文字更靠左，文字位置一动不动。
+/// 不能向右出血——负的右外边距会让选项行溢出容器（`scrollWidth > clientWidth`），
+/// 被布局审计判成「文本裁剪」。
+fn option_row_class(selected: bool) -> &'static str {
+  if selected {
+    "flex items-start gap-2 -ml-2 border-l-2 border-primary bg-primary/5 pl-2"
+  } else {
+    "flex items-start gap-2 -ml-2 border-l-2 border-transparent pl-2"
+  }
+}
+
 #[component]
 pub fn QuestionCard(
   index: usize,
@@ -22,6 +36,22 @@ pub fn QuestionCard(
   on_change: Callback<Vec<String>>,
   #[prop(into)] show_answer: Signal<bool>,
   #[prop(optional, into)] read_only: Signal<bool>,
+  /// 未作答也直接显示正确答案（交卷后的回顾用）。
+  ///
+  /// 默认 `false`：练习页「允许显示答案」不等于「提前给答案」，没作答就画答案行会让练习
+  /// 变成开卷。但考试交卷后已经结束作答，空白题的答案正是回顾最需要的信息，不该再让人
+  /// 逐题点按钮。
+  #[prop(optional)]
+  reveal_unanswered: bool,
+  /// 这道题此前是否已经「偷看」过答案（卡片按题重建，由调用方把记录带回来）。
+  #[prop(optional)]
+  peeked: bool,
+  /// 用户主动点了「显示正确答案」时通知调用方。
+  ///
+  /// 为什么要通知：看过答案再点出来的「答对」不是自测结果，调用方需要据此不把它计为
+  /// 掌握 / 连对 —— 只在卡片里藏一个本地布尔，统计层就无从知道。
+  #[prop(optional, into)]
+  on_reveal: Option<Callback<()>>,
 ) -> impl IntoView {
   let base_id = unique_id("q");
   let is_multiple = question.is_multiple();
@@ -73,7 +103,7 @@ pub fn QuestionCard(
           on_change.run(next);
         });
         view! {
-          <label class="flex items-start gap-2">
+          <label class=move || option_row_class(checked.get())>
             <Checkbox class="mt-1" checked=checked on_change=toggle disabled=read_only />
             <span class="whitespace-pre-line leading-6">
               <strong class="mr-2">{opt.key} "."</strong>
@@ -87,6 +117,8 @@ pub fn QuestionCard(
   } else {
     let options = question.options.clone();
     let base_id = base_id.clone();
+    // 单选值要在构建选项行之前就有：行的选中态（整行浅底 + 左主色条）由它驱动。
+    let value = Signal::derive(move || selected.with(|s| s.first().cloned().unwrap_or_default()));
     // 选项必须在 RadioGroup 内部（其 context 提供之后）再构建
     let items = move || {
       options
@@ -104,8 +136,13 @@ pub fn QuestionCard(
             }
             .to_owned()
           });
+          let key = opt.key.clone();
+          let row_class = {
+            let key = key.clone();
+            move || option_row_class(value.get() == key)
+          };
           view! {
-            <div class="flex items-start gap-2">
+            <div class=row_class>
               <RadioGroupItem class="mt-1" value=opt.key.clone() id=id.clone() disabled=read_only />
               <Label r#for=id class=label_class>
                 <strong class="mr-2">{opt.key} "."</strong>
@@ -116,7 +153,6 @@ pub fn QuestionCard(
         })
         .collect_view()
     };
-    let value = Signal::derive(move || selected.with(|s| s.first().cloned().unwrap_or_default()));
     let on_value = Callback::new(move |v: String| {
       if !read_only.get_untracked() {
         on_change.run(if v.is_empty() { vec![] } else { vec![v] });
@@ -130,8 +166,15 @@ pub fn QuestionCard(
     .into_any()
   };
 
+  // 手动「看答案」：不想作答、只想对一眼答案时用。它只展开答案行，不写作答，
+  // 因此不会污染错题本与统计。
+  let revealed = RwSignal::new(peeked);
+  // `show_answer` 是「允许显示答案」，不是「提前给答案」：没作答（也没主动展开）就不画
+  // 这一行，否则练习页从第 1 题起就是开卷（错题本记下的也是「照着答案答」的行为）。
   let answer_line = move || {
-    show_answer.get().then(|| {
+    (show_answer.get()
+      && (reveal_unanswered || !selected.with(Vec::is_empty) || revealed.get()))
+    .then(|| {
       let sel = selected.get();
       let correct = !sel.is_empty() && ham_web_core::question::same_set(&sel, &answer_keys);
       let verdict = (!sel.is_empty()).then(|| {
@@ -157,6 +200,27 @@ pub fn QuestionCard(
         <div class="text-sm text-muted-foreground">{move || t("exam.correct-answer-prefix")} {answer_keys.join(", ")} {verdict}</div>
       }
     })
+  };
+
+  // 未作答时给一个「显示正确答案」入口（作答后答案自动出现，按钮随之隐藏）。
+  let reveal_button = move || {
+    (show_answer.get() && !reveal_unanswered && selected.with(Vec::is_empty) && !revealed.get())
+      .then(|| {
+        view! {
+          <Button
+            variant=Variant::Text
+            size=Size::Xs
+            on_click=Callback::new(move |_| {
+              revealed.set(true);
+              if let Some(cb) = on_reveal {
+                cb.run(());
+              }
+            })
+          >
+            {move || t("exam.show-correct-answer")}
+          </Button>
+        }
+      })
   };
 
   view! {
@@ -197,6 +261,7 @@ pub fn QuestionCard(
         <div class="whitespace-pre-line">{question.question.clone()}</div>
         {image}
         <div class="space-y-2">{options}</div>
+        {reveal_button}
         {answer_line}
       </div>
     </div>

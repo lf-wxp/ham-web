@@ -36,5 +36,7 @@
   "home.days-in-a-row": "连续 {} 天 · 最长 {} 天",
   "home.choose-a-bank-version": "选择题库版本与类别，进入练习或模拟考试",
   "home.question-bank-is-unavailable": "题库 {} 暂不可用或为空，请先构建数据集",
-  "home.sunspots": "黑子数"
+  "home.sunspots": "黑子数",
+  "home.rpg-entry-legend": "闯关 = 题库练习，Boss = 模拟考试，图鉴 = 错题本",
+  "home.propagation-fetch-failed": "传播数据获取失败，可以重试或直接打开太阳活动页"
 }

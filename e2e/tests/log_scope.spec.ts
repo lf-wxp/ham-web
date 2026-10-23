@@ -45,7 +45,6 @@ async function fillStation(page: Page, label: string, call: string, grid: string
 }
 
 test("统计范围：按台站与操作员分账，切页也记着", async ({ page }) => {
-  page.on("dialog", (d) => d.accept());
   await page.goto("/log");
   const p = await openPanel(page);
 
@@ -111,7 +110,6 @@ test("统计范围：按台站与操作员分账，切页也记着", async ({ pa
 });
 
 test("统计范围：只有单台站单操作员时不显示选择器", async ({ page }) => {
-  page.on("dialog", (d) => d.accept());
   await page.goto("/log");
   const p = await openPanel(page);
   await fillStation(page, "本台", "BG4XXX", "OM89EW", "WXP");

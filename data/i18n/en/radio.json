@@ -629,5 +629,7 @@
   "radio.see-prefix-page-for": "For a global prefix lookup, see",
   "radio.itu-allocations-and-call-area-quiz": "ITU prefix allocations · China call-area quiz",
   "radio.callsign-structure-lives-on": "The structure breakdown, station classes and slash suffixes now live on",
-  "radio.compliance-coord-none": "No frequency coordination required"
+  "radio.compliance-coord-none": "No frequency coordination required",
+  "radio.check-the-network-then": "Check your network or backend connection, then retry.",
+  "radio.no-live-spots-at-the": "No live DX reports right now"
 }

@@ -12,7 +12,9 @@ use leptos::task::spawn_local;
 use leptos_router::NavigateOptions;
 use leptos_router::hooks::{use_navigate, use_query_map};
 
-use crate::components::common::{ExplanationCard, MessageDialog, NoteEditor, PageContainer};
+use crate::components::common::{
+  ExplanationCard, MessageDialog, NoteEditor, PageContainer, PageLoading,
+};
 use crate::components::practice::{
   PracticeResumeDialog, PracticeSearchDialog, PracticeSettingsDialog,
 };
@@ -467,12 +469,19 @@ pub fn PracticePage() -> impl IntoView {
     on_help: Some(Callback::new(move |()| help_open.set(true))),
   });
 
+  // 进度按「已作答 / 总数」算，与底栏统计行同一口径。按「翻到第几题」算的话，
+  // 683 题的题库在第 1 题显示的是 0%（0.15% 四舍五入），整场都看不出进度条在动。
+  let answered = Signal::derive(move || {
+    store
+      .answers
+      .with(|a| a.values().filter(|v| !v.is_empty()).count())
+  });
   let percent = Signal::derive(move || {
     let n = store.len();
     if n == 0 {
       0
     } else {
-      ((store.index.get() + 1) as f64 / n as f64 * 100.0).round() as i64
+      (answered.get() as f64 / n as f64 * 100.0).round() as i64
     }
   });
   let at_start = Signal::derive(move || store.index.get() == 0);
@@ -483,29 +492,38 @@ pub fn PracticePage() -> impl IntoView {
 
   let content = move || {
     if store.loading.get() {
-      return view! { <div class="p-6">{move || t("exam.loading-questions-u-2026")}</div> }
+      return view! { <PageLoading label=Signal::derive(move || t("exam.loading-questions-u-2026")) /> }
         .into_any();
     }
     if store.len() == 0 {
       if unseen_only.get() {
         return view! {
-          <div class="p-6">
-            {move || t("exam.you-ve-completed-all")}
-            <button type="button" class="ml-2 text-primary underline-offset-4 hover:underline" on:click=move |_| unseen_only.set(false)>
-              {move || t("exam.practice-all")}
-            </button>
-          </div>
+          <PageContainer class="space-y-0">
+            <div class="p-6">
+              {move || t("exam.you-ve-completed-all")}
+              <button type="button" class="ml-2 text-primary underline-offset-4 hover:underline" on:click=move |_| unseen_only.set(false)>
+                {move || t("exam.practice-all")}
+              </button>
+            </div>
+          </PageContainer>
         }
         .into_any();
       }
-      return view! { <div class="p-6">{move || t("exam.question-bank-unavailable-or")}</div> }
-        .into_any();
+      return view! {
+        <PageContainer class="space-y-0">
+          <div class="p-6">{move || t("exam.question-bank-unavailable-or")}</div>
+        </PageContainer>
+      }
+      .into_any();
     }
     view! {
       <div on:touchstart=swipe_start on:touchend=swipe_end>
         <PageContainer class="py-6 space-y-4 pb-24 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
         <PracticeHeaderBar
           percent=percent
+          progress_label=Signal::derive(move || {
+            format!("{} {} / {}", t("exam.answered"), answered.get(), store.len())
+          })
           bank=bank
           on_switch_bank=switch_bank
           unique_only=unique_only
@@ -543,6 +561,8 @@ pub fn PracticePage() -> impl IntoView {
                   selected=selected
                   on_change=set_answer
                   show_answer=store.show_answer
+                  peeked=store.current_peeked()
+                  on_reveal=Callback::new(move |()| store.mark_peeked())
                 />
                 {move || store.show_explanation.get().then(|| view! { <ExplanationCard question=expl.clone() /> })}
                 <NoteEditor question_id=current_id />
@@ -553,7 +573,7 @@ pub fn PracticePage() -> impl IntoView {
         <PracticeBottomBar
           bank=bank
           order=store.order
-          index=store.index
+          answered=answered
           len=Signal::derive(move || store.len())
           at_start=at_start
           at_end=at_end

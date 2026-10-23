@@ -21,12 +21,6 @@ pub(super) fn compass(deg: f64) -> &'static str {
   NAMES[((deg.rem_euclid(360.0) + 22.5) / 45.0) as usize % 8]
 }
 
-pub(super) fn confirm(msg: &str) -> bool {
-  crate::util::window()
-    .confirm_with_message(msg)
-    .unwrap_or(false)
-}
-
 /// 档案的展示名：档案名优先，其次呼号，都没有时用界面默认名（翻译过的）。
 ///
 /// core 的 [`StationProfile::title`] 在两者都空时返回空串（core 不产界面文案），

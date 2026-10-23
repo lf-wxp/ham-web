@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { confirmDialog } from "./fixtures";
+
 /** 1×1 的 PNG：省掉一个 fixture 文件，也足够验证「解码 → 缩放 → 转 JPEG」这条链路。 */
 const PNG_1X1 = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==",
@@ -58,8 +60,8 @@ test("QSL 卡片影像：上传、列表标记、刷新后仍在、可删除", a
   await expect(thumbnail(page)).toBeVisible();
 
   // 删除：确认后回到「上传扫描件」入口，标记也一起消失，刷新后不复现。
-  page.once("dialog", (d) => d.accept());
   await panelButton(page, "删除影像").click();
+  await confirmDialog(page, "删除影像");
   await expect(panelButton(page, "上传扫描件")).toBeVisible();
   await page.reload();
   await expect(page.getByRole("img", { name: "已存有卡片影像" })).toHaveCount(0);

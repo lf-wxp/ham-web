@@ -397,5 +397,10 @@
   "log.activation-file-qsos": "{} · {} 个通联",
   "log.activation-below-minimum": "不足 {} 个通联，通常不会计为一次有效激活",
   "log.activation-download-file": "下载 {}",
-  "log.activation-download": "下载"
+  "log.activation-download": "下载",
+  "log.delete-this-qso": "删除这条通联记录？",
+  "log.delete-this-qso-hint": "它的 QSL 影像会一并清除，删除后无法恢复。",
+  "log.clear-all": "清空全部",
+  "log.clear-all-done": "已清空通联记录",
+  "log.qso-deleted": "已删除该条通联记录"
 }

@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
+use crate::components::common::EmptyState;
 use crate::data;
 
 use super::{Alert, level_color};
@@ -34,7 +35,7 @@ pub(super) fn AlertsCard() -> impl IntoView {
           }
           if failed.get() || alerts.get().is_empty() {
             return view! {
-              <p class="px-3 py-6 text-center text-sm text-muted-foreground">{move || t("radio.no-active-alerts-or")}</p>
+              <EmptyState plain=true title=Signal::derive(move || t("radio.no-active-alerts-or")) />
             }
             .into_any();
           }

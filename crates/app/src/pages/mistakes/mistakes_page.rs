@@ -7,7 +7,9 @@ use leptos::prelude::*;
 use leptos_router::hooks::use_query_map;
 
 use crate::cn::cn;
-use crate::components::common::{ExplanationCard, NoteEditor, PageContainer, PageHeader};
+use crate::components::common::{
+  EmptyState, ExplanationCard, NoteEditor, PageContainer, PageHeader,
+};
 use crate::study;
 use crate::ui::{
   Button, ButtonLink, Chip, ChipGroup, NativeSelect, SelectOption, Size, Tooltip, Variant,
@@ -17,6 +19,7 @@ use crate::util::{download_text, now_ms, set_title};
 use super::mistake_card::MistakeCard;
 use super::mistake_diagnosis::MistakeDiagnosis;
 use crate::i18n::{t, tf, tp};
+use crate::icons::IconKind;
 
 /// 题目所属一级分类（用于分类筛选），无分类码时归入「其他」。
 pub(super) fn top_of(question: &QuestionItem) -> &'static str {
@@ -231,9 +234,19 @@ pub fn MistakesPage() -> impl IntoView {
     download_text("mistakes.txt", &export_text(&filtered()), "text/plain");
   };
 
+  // 移出错题本会让它不再参与复习排程，且没有撤销入口：先问一句。
   let remove = Callback::new(move |key: String| {
-    study::remove_mistake(&key);
-    refresh();
+    crate::ui::confirm(
+      t("learning.remove-mistake-confirm"),
+      t("learning.remove-mistake-hint"),
+      t("learning.remove"),
+      crate::ui::ConfirmTone::Danger,
+      Callback::new(move |_| {
+        study::remove_mistake(&key);
+        refresh();
+        crate::ui::push_success(t("learning.mistake-removed"));
+      }),
+    );
   });
 
   let idle = move || !practicing.get() && !finished.get() && !records.with(Vec::is_empty);
@@ -593,12 +606,11 @@ pub fn MistakesPage() -> impl IntoView {
             .into_any()
           } else if records.with(Vec::is_empty) {
             view! {
-              <div class="pxl-card border bg-card px-4 py-12 text-center">
-                <div class="text-sm font-medium">{move || t("learning.no-mistakes-yet")}</div>
-                <div class="mt-1 text-xs text-muted-foreground">
-                  {move || t("learning.after-answering-in-practice")}
-                </div>
-              </div>
+              <EmptyState
+                icon=IconKind::BookMarked
+                title=Signal::derive(move || t("learning.no-mistakes-yet"))
+                description=Signal::derive(move || t("learning.after-answering-in-practice"))
+              />
             }
             .into_any()
           } else {

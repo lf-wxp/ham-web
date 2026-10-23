@@ -15,7 +15,9 @@ const PRESS_FULL: &str = "w-full active:scale-[0.98] transition-transform";
 pub(super) fn PracticeBottomBar(
   #[prop(into)] bank: Signal<Bank>,
   #[prop(into)] order: Signal<PracticeOrder>,
-  #[prop(into)] index: Signal<usize>,
+  /// 已作答题数（进度口径以它为准，与顶部进度条一致）。
+  #[prop(into)]
+  answered: Signal<usize>,
   #[prop(into)] len: Signal<usize>,
   #[prop(into)] at_start: Signal<bool>,
   #[prop(into)] at_end: Signal<bool>,
@@ -27,7 +29,7 @@ pub(super) fn PracticeBottomBar(
       stats=move || {
         view! {
           {move || t("exam.bank")} " " {move || bank_class(bank.get().as_str())} " · " {move || t(order.get().label())} " · "
-          {move || t("exam.progress")} " " {move || index.get() + 1} " / " {move || len.get()}
+          {move || t("exam.answered")} " " {move || answered.get()} " / " {move || len.get()}
         }
       }
       left=move || {

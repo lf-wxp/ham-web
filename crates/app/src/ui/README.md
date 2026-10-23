@@ -44,12 +44,18 @@ disabled / error 状态反馈因此只有一处定义。
 | `Progress` / `Separator` / `Stat` | — | `Progress` 是分格条；加 `pxl-bar-hp` / `pxl-bar-xp` / `pxl-bar-win` / `pxl-bar-gold` 变血条 / 经验条 / 通关绿 / 金币 |
 | `Table` + `TableHead` / `TableBody` / `TableRow` / `TableHeader` / `TableCell` | 手写的 `<div class="overflow-x-auto"><table>…` | 根组件自带滚动容器；`class` 写 `min-w-[…]` 保列宽；限高写 `wrapper_class="max-h-[…]"`；`borderless` 去网格线；无可见标题传 `aria_label`；`TableHeader` / `TableCell` 支持 `colspan` |
 | `Pagination` | 手写分页 / `.slice()` 截断 | `page` `total_pages`（1 起）`on_change`；页数 ≤1 不渲染；窗口算法在 `ham_web_core::pagination` |
-| `ToastRoot` + `push` / `push_success` / `push_error` | `util::alert`（原生 alert，已清零）/ 内联「成功」文字 | 全局挂载在 `App`，可见反馈传送到 body、位于模态遮罩之上；Dialog / Sheet 内同步公告；只在队首变化时重置计时；页面只调 `push_*`，需确认的失败仍用 `MessageDialog` |
+| `ToastRoot` + `push` / `push_success` / `push_error` | `util::alert`（原生 alert，已清零）/ 内联「成功」文字 | 全局挂载在 `App`，可见反馈传送到 body、位于模态遮罩之上；Dialog / Sheet 内同步公告；只在队首变化时重置计时；同类别同文案合并为 `×N`（退场中的队首不接受合并），入队规则在 `ham_web_core::toast_queue`（带单测）；页面只调 `push_*`，需确认的失败仍用 `MessageDialog` |
+| `ConfirmRoot` + `confirm(title, description, confirmText, tone, onConfirm)` | `window.confirm`（已全站清零）/ 各页面自己搭确认弹窗 | 全局确认服务：`App` 根部挂一次，任何地方调 `confirm(…)` 弹像素风确认框（取消 / 执行）；`ConfirmTone::Danger` 给删除类，`Normal` 给「合并 / 批量标记」这类不可逆但无破坏的动作；执行回调只在点了执行按钮后运行（用 `try_run`，发起确认的页面已卸载则静默放弃；路由一变确认框自动收起；退场动画期间重复点击不会二次执行） |
 | `Tooltip` | 原生 `title=` 气泡 | 悬停 / 聚焦显示，Escape 隐藏；组件为实际触发器关联 `aria-describedby`；气泡传送到 body 并翻转／钳制视口边界；子元素不可聚焦时补 `tabindex`，数值信息另写 `aria-label` |
 | `PixelSprite`（`crate::icons`） | — | 像素精灵：`name` `scale`（每格屏幕像素数）`label`；成就徽章用 `badge_sprite(id)` |
 
 辅助导出：`Variant` / `Size`（按钮）、`ControlSize`（输入类控件）、`TextValue`（文案）、
-`button_class` / `badge_class` / `card_class` / `label_class`（类名工厂）。
+`button_class` / `badge_class` / `card_class`（L2 窗口）/ `flat_card_class`（L1 平卡）/
+`label_class`（类名工厂）。
+
+卡片的两个层级：`card_class` = `pxl-window`（内高光 + 4px 硬投影，给「当前任务块」用），
+`flat_card_class` = `pxl-card border bg-card`（只有 2px 墨框，给次要块用）。一页里不要把
+所有块都写成 L2 —— 全站同重量等于没有层级（见 `docs/ui-components.md` §2 硬规则 8）。
 
 `Button` 与 `ButtonLink` 的分工是**元素语义**：要执行动作（提交、打开弹层）用 `Button`，
 要跳转（能中键新开、能右键复制地址、读屏念「链接」）用 `ButtonLink` —— 两者共用同一份

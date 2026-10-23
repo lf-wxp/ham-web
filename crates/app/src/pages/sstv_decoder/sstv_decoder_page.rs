@@ -5,7 +5,7 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use web_sys::{File, HtmlCanvasElement, ImageData};
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{DecodeElapsed, PageContainer, PageHeader};
 use crate::decode_session::{DecodeConfig, DecodeSession};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Button, ButtonLink, FileDropZone, Size, Variant};
@@ -147,6 +147,7 @@ pub fn SstvDecoderPage() -> impl IntoView {
                         }
                       }}
                     </span>
+                    <DecodeElapsed ms=session.elapsed_ms />
                     <Button variant=Variant::Outline size=Size::Sm on_click=move |_| cancel(())>
                       {move || t("exam.cancel")}
                     </Button>

@@ -226,6 +226,7 @@ pub mod study_plan;
 pub mod swl;
 pub mod tdr;
 pub mod text;
+pub mod toast_queue;
 pub mod tone_squelch;
 pub mod topic_quiz;
 pub mod toroid;

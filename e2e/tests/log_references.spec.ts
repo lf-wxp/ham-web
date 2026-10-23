@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { expect, test } from "./fixtures";
+import { confirmDialog, expect, test } from "./fixtures";
 
 /** 呼号输入框没有 <label> 包裹，用 placeholder 定位。 */
 const callInput = (page: import("@playwright/test").Page) => page.locator('input[placeholder="BG4XXX"]');
@@ -38,8 +38,8 @@ test("山峰 / 公园：我的与对方的分开记，ADIF 按规范写 MY_* 与
   expect(adif).toContain("<POTA_REF:7>JA-0456");
 
   // 清空后把刚导出的文件导回来：四个字段原样回到各自的位置，没有串位
-  page.once("dialog", (d) => d.accept()); // 清空确认
   await page.getByRole("button", { name: /清空/ }).click();
+  await confirmDialog(page, "清空全部");
   await expect(page.getByRole("row", { name: /JA1ZZZ/ })).toHaveCount(0);
   await page
     .locator('input[type="file"][accept*=".adi"]')

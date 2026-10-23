@@ -6,10 +6,11 @@ use ham_web_core::learning_path::{
 use leptos::prelude::*;
 
 use crate::components::common::{
-  BulletSection, KnowledgePage, StepsSection, TableSection, TopicChips,
+  BulletSection, EmptyState, KnowledgePage, StepsSection, TableSection, TopicChips,
 };
 use crate::i18n::t;
 use crate::study;
+use crate::ui::{ButtonLink, Size, Variant};
 use crate::util::set_title;
 
 #[component]
@@ -43,9 +44,17 @@ pub fn LearningPathPage() -> impl IntoView {
         <h2 class="pxl-section-title">{move || t("knowledge.review-before")}</h2>
         {if reviews.is_empty() {
           view! {
-            <p class="px-4 py-6 text-center text-sm text-muted-foreground">
-              {move || t("knowledge.review-before-empty")}
-            </p>
+            <EmptyState
+              plain=true
+              title=Signal::derive(move || t("knowledge.review-before-empty"))
+              actions=ViewFn::from(move || {
+                view! {
+                  <ButtonLink href="/practice" variant=Variant::Outline size=Size::Sm>
+                    {move || t("exam.practice-all")}
+                  </ButtonLink>
+                }
+              })
+            />
           }
             .into_any()
         } else {

@@ -247,5 +247,8 @@
   "learning.first-pass": "Primer aprobado",
   "learning.sunspots": "Manchas solares",
   "learning.accuracy-in-parens": " (precisión {}%)",
-  "learning.marked-don-t-know": "(Marcada como no sé en tarjetas)"
+  "learning.marked-don-t-know": "(Marcada como no sé en tarjetas)",
+  "learning.remove-mistake-confirm": "¿Quitar esta pregunta de los errores?",
+  "learning.remove-mistake-hint": "Saldrá del libro de errores; la planificación de repaso y las estadísticas no cambian.",
+  "learning.mistake-removed": "Pregunta retirada de errores"
 }

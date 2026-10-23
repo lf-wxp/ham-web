@@ -13,7 +13,7 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use web_sys::js_sys;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{EmptyState, PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::ui::{
   Button, ButtonLink, Field, Input, NativeSelect, SelectOption, Size, TextValue, Tooltip, Variant,
@@ -290,9 +290,7 @@ pub fn KissTncPage() -> impl IntoView {
             {move || {
               if rows.with(VecDeque::is_empty) {
                 view! {
-                  <p class="py-6 text-center text-xs text-muted-foreground">
-                    {t("tools.kiss-rx-empty")}
-                  </p>
+                  <EmptyState plain=true title=t("tools.kiss-rx-empty") />
                 }
                   .into_any()
               } else {

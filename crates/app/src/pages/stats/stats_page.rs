@@ -7,7 +7,8 @@ use ham_web_core::award_progress::{
 use ham_web_core::log_stats::{daily_qso_counts, hour_band_heatmap};
 use leptos::prelude::*;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{EmptyState, PageContainer, PageHeader};
+use crate::icons::IconKind;
 use crate::pages::log::{StatsScopeSelect, scoped_log_entries, use_stats_scope};
 use crate::ui::Tooltip;
 use crate::util::set_title;
@@ -99,39 +100,46 @@ pub fn StatsPage() -> impl IntoView {
     view! {
           <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div class="pxl-card border bg-card p-4 text-center">
-              <div class="text-2xl font-semibold tabular-nums">{total}</div>
+              <div class="pxl-stat">{total}</div>
               <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.total-qsos")}</div>
             </div>
             <div class="pxl-card border bg-card p-4 text-center">
-              <div class="text-2xl font-semibold tabular-nums">{dxcc_total}</div>
+              <div class="pxl-stat">{dxcc_total}</div>
               <div class="mt-1 text-xs text-muted-foreground">{move || t("log.dxcc-entities")}</div>
             </div>
             <div class="pxl-card border bg-card p-4 text-center">
-              <div class="text-2xl font-semibold tabular-nums">{band_top.len()}</div>
+              <div class="pxl-stat">{band_top.len()}</div>
               <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.bands")}</div>
             </div>
             <div class="pxl-card border bg-card p-4 text-center">
-              <div class="text-2xl font-semibold tabular-nums">{mode_top.len()}</div>
+              <div class="pxl-stat">{mode_top.len()}</div>
               <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.modes")}</div>
             </div>
           </div>
 
           {if empty {
             view! {
-              <section class="pxl-card border bg-card p-8 text-center text-sm text-muted-foreground">
-                {move || t("radio.no-qso-log-yet")}
-                <a
-                  href="/log"
-                  class="mt-2 inline-block underline underline-offset-4 transition-colors hover:text-foreground"
-                >
-                  {move || t("radio.add-qsos")}
-                </a>
-              </section>
+              <EmptyState
+                icon=IconKind::ClipboardList
+                title=Signal::derive(move || t("radio.no-qso-log-yet"))
+                actions=ViewFn::from(move || {
+                  view! {
+                    <a
+                      href="/log"
+                      class="mt-1 inline-block text-sm underline underline-offset-4 transition-colors hover:text-foreground"
+                    >
+                      {move || t("radio.add-qsos")}
+                    </a>
+                  }
+                })
+              />
             }
             .into_any()
           } else {
             view! {
-              <section class="pxl-card border bg-card">
+              // 整页 14 个块，只让「DXCC 奖项进度」带硬投影（L2）：统计页的第一眼落点。
+              // 其余块保持平卡 —— 全部同重量时，眼睛没有入口（见 ui-components.md §2 硬规则 8）。
+              <section class="pxl-window">
                 <h2 class="pxl-section-title">{move || t("radio.dxcc-award-progress")}</h2>
                 <div class="space-y-3 p-4">
                   <div>

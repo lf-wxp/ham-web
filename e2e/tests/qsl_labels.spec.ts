@@ -1,4 +1,4 @@
-import { expect, pickOption, test } from "./fixtures";
+import { confirmDialog, expect, pickOption, test } from "./fixtures";
 
 const ADIF = `e2e
 <EOH>
@@ -33,8 +33,8 @@ test("QSL 标签：按呼号合并、标记已寄出、切换版式", async ({ p
   await pickOption(page, "标签纸", "Avery 5160 · Letter · 3×10（66.7×25.4 mm）");
   await expect(slots).toHaveCount(30);
 
-  page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "标记为已寄出（3）" }).click();
+  await confirmDialog(page, "确定");
   await expect(page.getByText("没有待寄出的通联")).toBeVisible();
 
   // 通联范围是 `ChipGroup` + `Chip`（互斥选择）：role 是 `radio`，不是 `button`。

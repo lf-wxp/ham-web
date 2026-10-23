@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import { confirmDialog } from "./fixtures";
+
 /// 结果条（阻抗 / 驻波比 / 增益 / 前后比 / 仰角）。
 function summary(page: Page): Locator {
   return page.getByText(/馈电点阻抗 .+ Ω/);
@@ -510,7 +512,6 @@ test("天线矩量法求解：NVIS 仰角-距离覆盖图", async ({ page }) => 
 });
 
 test("天线矩量法求解：设计存档保存、刷新后载回、删除", async ({ page }) => {
-  page.on("dialog", (d) => d.accept());
   await page.goto("/nec");
   await expect(summary(page)).toBeVisible();
 
@@ -535,8 +536,9 @@ test("天线矩量法求解：设计存档保存、刷新后载回、删除", as
   await expect(page.locator('input[aria-label="频率（MHz）"]')).toHaveValue("14.07425");
   await expect(summary(page)).toHaveText(designed);
 
-  // 删除（二次确认已在上面自动接受）。
+  // 删除：先过一遍确认框（`ui::confirm`），再验证存档真的没了。
   await page.getByRole("button", { name: "删除设计 测试偶极" }).click();
+  await confirmDialog(page, "删除设计 测试偶极");
   await expect(page.getByText("还没有存档。")).toBeVisible();
 });
 

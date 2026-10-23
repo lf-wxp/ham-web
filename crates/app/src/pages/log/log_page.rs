@@ -14,7 +14,6 @@ use super::entry_form::EntryForm;
 use super::entry_list::EntryList;
 use super::form_state::LogFormState;
 use super::log_health_panel::LogHealthPanel;
-use super::log_helpers::confirm;
 use super::log_stats_panel::LogStatsPanel;
 use super::qsl_image;
 use super::qsl_sync_dialog::QslSyncDialog;
@@ -75,21 +74,41 @@ pub fn LogPage() -> impl IntoView {
     editing.set(Some(e.id));
   };
 
+  // 单条删除也问一句：误点一次就永久丢一条通联（含它的 QSL 影像），没有第二次机会。
   let remove = move |id: u64| {
-    logbook.update(|l| l.entries.retain(|e| e.id != id));
-    // 影像与 id 绑定，而 `next_id()` 会复用 id —— 一并清掉，别让新通联挂上旧扫描件。
-    qsl_image::purge(store, &[id]);
-    store.persist();
+    crate::ui::confirm(
+      t("log.delete-this-qso"),
+      t("log.delete-this-qso-hint"),
+      t("log.delete"),
+      crate::ui::ConfirmTone::Danger,
+      Callback::new(move |_| {
+        logbook.update(|l| l.entries.retain(|e| e.id != id));
+        // 影像与 id 绑定，而 `next_id()` 会复用 id —— 一并清掉，别让新通联挂上旧扫描件。
+        qsl_image::purge(store, &[id]);
+        store.persist();
+        crate::ui::push_success(t("log.qso-deleted"));
+      }),
+    );
   };
 
   let clear = move || {
     let n = logbook.with_untracked(|l| l.entries.len());
-    if confirm(&tp("log.clear-all-qso-records", n, &[&n.to_string()])) {
-      let ids: Vec<u64> = logbook.with_untracked(|l| l.entries.iter().map(|e| e.id).collect());
-      logbook.set(Logbook::default());
-      qsl_image::purge(store, &ids);
-      store.persist();
+    if n == 0 {
+      return;
     }
+    crate::ui::confirm(
+      tp("log.clear-all-qso-records", n, &[&n.to_string()]),
+      "",
+      t("log.clear-all"),
+      crate::ui::ConfirmTone::Danger,
+      Callback::new(move |_| {
+        let ids: Vec<u64> = logbook.with_untracked(|l| l.entries.iter().map(|e| e.id).collect());
+        logbook.set(Logbook::default());
+        qsl_image::purge(store, &ids);
+        store.persist();
+        crate::ui::push_success(t("log.clear-all-done"));
+      }),
+    );
   };
 
   let export = move || {
@@ -157,18 +176,48 @@ pub fn LogPage() -> impl IntoView {
   // LoTW 状态回写的「已上传」那一半：确认由「同步 QSL」按报告回写，这一半只能由用户在
   // 上传成功后自己宣告 —— 我们无法探测 LoTW 端到底收没收到。
   let mark_lotw = Callback::new(move |()| {
-    let n = pending_lotw.get_untracked();
-    if n == 0 || !confirm(&tp("log.mark-these-qsos-as-uploaded", n, &[&n.to_string()])) {
+    // 范围在弹框那一刻就定下（与 QSL 标签页同一做法）：确认框开着期间新增的通联不在提示的
+    // 「N 条」里，就不该被一起标掉；否则文案说 3 条、实际标了 5 条。
+    let ids: std::collections::HashSet<u64> = logbook.with_untracked(|lb| {
+      lb.entries
+        .iter()
+        .filter(|e| !e.lotw_sent)
+        .map(|e| e.id)
+        .collect()
+    });
+    let n = ids.len();
+    if n == 0 {
       return;
     }
-    logbook.update(|lb| {
-      for e in lb.entries.iter_mut().filter(|e| !e.lotw_sent) {
-        // 复用同步模块的标志位读写：`LOTW_QSL_SENT` 的语义只在一处定义。
-        QslFlag::LotwSent.set(e, true);
-      }
-    });
-    store.persist();
-    crate::ui::push_success(tp("log.marked-as-uploaded-lotw", n, &[&n.to_string()]));
+    crate::ui::confirm(
+      tp("log.mark-these-qsos-as-uploaded", n, &[&n.to_string()]),
+      "",
+      t("exam.confirm-ok"),
+      crate::ui::ConfirmTone::Normal,
+      Callback::new(move |_| {
+        let mut changed = 0usize;
+        logbook.update(|lb| {
+          for e in lb
+            .entries
+            .iter_mut()
+            .filter(|e| !e.lotw_sent && ids.contains(&e.id))
+          {
+            // 复用同步模块的标志位读写：`LOTW_QSL_SENT` 的语义只在一处定义。
+            QslFlag::LotwSent.set(e, true);
+            changed += 1;
+          }
+        });
+        if changed == 0 {
+          return;
+        }
+        store.persist();
+        crate::ui::push_success(tp(
+          "log.marked-as-uploaded-lotw",
+          changed,
+          &[&changed.to_string()],
+        ));
+      }),
+    );
   });
 
   let on_save = Callback::new(move |()| save());

@@ -46,7 +46,7 @@ pub fn BeaconsPage() -> impl IntoView {
         // 当前时隙：正在发射的信标台。
         <section class="pxl-card border bg-card p-4">
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <div class="font-mono text-2xl font-semibold tabular-nums">{move || clock.get()}</div>
+            <div class="pxl-stat">{move || clock.get()}</div>
             {move || {
               let (idx, into) = slot.get();
               let (call, loc, region) = BEACONS[idx];

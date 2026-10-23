@@ -19,12 +19,14 @@ pub(super) fn ExamHeader(
   remaining: RwSignal<i64>,
   on_open_settings: Callback<()>,
 ) -> impl IntoView {
+  // 倒计时是考试页最该被读到的数字：走 HUD 字体（`pxl-label`）+ 正文档字号，
+  // 而不是混在 12px 的灰色元信息里（像素规范：数字读数用 `pxl-title` / `pxl-label`）。
   let remaining_view = move || {
     let ms = remaining.get();
     let class = if ms <= 60_000 {
-      "text-red-600 dark:text-red-400"
+      "pxl-label text-base text-red-600 dark:text-red-400"
     } else {
-      ""
+      "pxl-label text-base text-foreground"
     };
     view! {
       <span class=class aria-live="polite">
@@ -74,16 +76,15 @@ pub(super) fn ExamHeader(
         }
       })
     />
-    <div class="sm:hidden grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
-      <div>{move || t("exam.class-prefix")} {move || bank_class(bank.get().as_str())}</div>
-      <div>
-        {move || {
-          let r = rule.get();
-          tf("exam.questions-single-multiple", &[&r.total.to_string(), &r.singles.to_string(), &r.multiples.to_string()])
-        }}
-      </div>
-      <div>{move || tf("exam.time-limit-min", &[&rule.get().minutes.to_string()])}</div>
-      <div>{move || t("exam.remaining-label")} {remaining_view}</div>
+    // 窄屏只留三项元信息：剩余时间已经是上方的 HUD 读数（`BossStage`），
+    // 这里再写一遍既重复又会把「试题数（单选 32，多选 8）」挤成折行。
+    // `flex-wrap` 而不是两列网格：三项在 390px 下正好一行，320px 下自然折到第二行。
+    <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs text-muted-foreground sm:hidden">
+      <span>{move || t("exam.class-prefix")} {move || bank_class(bank.get().as_str())}</span>
+      <span>
+        {move || tf("exam.questions-count", &[&rule.get().total.to_string()])}
+      </span>
+      <span>{move || tf("exam.time-limit-min", &[&rule.get().minutes.to_string()])}</span>
     </div>
   }
 }

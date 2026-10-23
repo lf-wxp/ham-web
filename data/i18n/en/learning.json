@@ -247,5 +247,8 @@
   "learning.first-pass": "First Pass",
   "learning.sunspots": "Sunspots",
   "learning.accuracy-in-parens": " (accuracy {}%)",
-  "learning.marked-don-t-know": "(Marked don't-know in flashcards)"
+  "learning.marked-don-t-know": "(Marked don't-know in flashcards)",
+  "learning.remove-mistake-confirm": "Remove this question from mistakes?",
+  "learning.remove-mistake-hint": "It leaves the mistake book; review scheduling and practice stats stay as they are.",
+  "learning.mistake-removed": "Removed from mistakes"
 }

@@ -581,5 +581,7 @@
   "radio.see-prefix-page-for": "全球前缀速查见",
   "radio.itu-allocations-and-call-area-quiz": "ITU 前缀分配 · 中国分区小测",
   "radio.callsign-structure-lives-on": "呼号结构图解、台站类别与斜杠后缀已归到",
-  "radio.compliance-coord-none": "无需频率协调"
+  "radio.compliance-coord-none": "无需频率协调",
+  "radio.check-the-network-then": "检查网络或后端连接后重试。",
+  "radio.no-live-spots-at-the": "暂时没有实时 DX 报告"
 }

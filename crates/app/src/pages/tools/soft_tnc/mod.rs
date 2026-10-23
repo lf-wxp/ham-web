@@ -13,6 +13,7 @@ use leptos::prelude::*;
 use wasm_bindgen::JsValue;
 use web_sys::File;
 
+use crate::components::common::DecodeElapsed;
 use crate::decode_session::{DecodeConfig, DecodeSession, MAX_UPLOAD_BYTES};
 use crate::i18n::{t, tf};
 use crate::share_score::download_bytes;
@@ -123,6 +124,7 @@ pub(super) fn SoftTnc() -> impl IntoView {
                       }
                     }}
                   </p>
+                  <DecodeElapsed ms=session.elapsed_ms />
                   <Button variant=Variant::Text size=Size::Xs on_click=cancel>
                     {move || t("exam.cancel")}
                   </Button>

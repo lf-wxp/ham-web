@@ -379,9 +379,31 @@ pub fn DxSpotsPage() -> impl IntoView {
                 }
                 .into_any();
               }
-              if failed.get() || spots.get().is_empty() {
+              // 「拉取失败」与「本来就没有」是两件事：前者要能就地重试，后者是正常结果。
+              // 原来两者共用一个空态，用户既不知道是网断了，也没有第二次机会。
+              if failed.get() {
                 return view! {
-                  <EmptyState title=Signal::derive(move || t("radio.live-spots-are-unavailable")) />
+                  <EmptyState
+                    title=Signal::derive(move || t("radio.live-spots-are-unavailable"))
+                    description=Signal::derive(move || t("radio.check-the-network-then"))
+                    actions=ViewFn::from(move || {
+                      view! {
+                        <Button
+                          variant=Variant::Outline
+                          size=Size::Sm
+                          on_click=Callback::new(move |_| load())
+                        >
+                          {move || t("exam.retry")}
+                        </Button>
+                      }
+                    })
+                  />
+                }
+                .into_any();
+              }
+              if spots.get().is_empty() {
+                return view! {
+                  <EmptyState title=Signal::derive(move || t("radio.no-live-spots-at-the")) />
                 }
                 .into_any();
               }

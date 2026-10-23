@@ -156,7 +156,7 @@ pub fn SolarPage() -> impl IntoView {
           <div class="grid grid-cols-2 gap-3 px-4 pb-4 sm:grid-cols-4">
             <div class="col-span-2 border bg-muted/40 p-3 text-center sm:col-span-4">
               <div class="text-xs text-muted-foreground">{move || t("radio.propagation-conditions-from-k")}</div>
-              <div class="mt-1 text-2xl font-semibold tabular-nums">
+              <div class="mt-1 pxl-stat">
                 {move || {
                   match k.get() {
                     Some(kv) => {

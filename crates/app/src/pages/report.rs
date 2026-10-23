@@ -74,7 +74,7 @@ pub fn ReportPage() -> impl IntoView {
   let stat = |label: &'static str, value: String| {
     view! {
       <div class="pxl-card border bg-card p-4 text-center">
-        <div class="text-2xl font-semibold tabular-nums">{value}</div>
+        <div class="pxl-stat">{value}</div>
         <div class="mt-0.5 text-xs text-muted-foreground">{move || t(label)}</div>
       </div>
     }

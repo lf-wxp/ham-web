@@ -28,15 +28,15 @@ pub fn RstPage() -> impl IntoView {
       <PageContainer>
         <div class="grid grid-cols-3 gap-3">
           <div class="pxl-card border bg-card p-4 text-center">
-            <div class="text-2xl font-semibold tabular-nums">"1–5"</div>
+            <div class="pxl-stat">"1–5"</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("knowledge.readability-r")}</div>
           </div>
           <div class="pxl-card border bg-card p-4 text-center">
-            <div class="text-2xl font-semibold tabular-nums">"1–9"</div>
+            <div class="pxl-stat">"1–9"</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("knowledge.signal-strength-s")}</div>
           </div>
           <div class="pxl-card border bg-card p-4 text-center">
-            <div class="text-2xl font-semibold tabular-nums">"1–9"</div>
+            <div class="pxl-stat">"1–9"</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("knowledge.tone-t-cw")}</div>
           </div>
         </div>

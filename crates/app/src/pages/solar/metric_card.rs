@@ -12,7 +12,7 @@ pub(super) fn MetricCard(
   view! {
     <div class="border bg-muted/40 p-3 text-center">
       <div class="text-xs text-muted-foreground">{label}</div>
-      <div class="mt-1 text-2xl font-semibold tabular-nums">
+      <div class="mt-1 pxl-stat">
         {move || {
           match value.get() {
             Some(v) => format!("{v:.1}"),
