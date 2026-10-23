@@ -12,9 +12,14 @@
 #
 # 前置条件（仓库设置里一次性配好）：
 #   * Settings → Actions → General → 勾选「Allow GitHub Actions to create and approve pull requests」。
+#     没勾时 `GITHUB_TOKEN` 开 PR 会被 API 拒绝，报错原文就是
+#     「GitHub Actions is not permitted to create or approve pull requests.」——这是仓库设置，
+#     不是 workflow 的问题。组织仓库若被上级策略锁住，要在组织层同一条设置里放开。
 #   * 用默认的 `GITHUB_TOKEN` 开出来的 PR 不会触发 `check.yml`（GitHub 的防递归规则）。
 #     想让 PR 上自动跑检查，就建一个有 `contents` + `pull-requests` 写权限的 PAT，存成
 #     仓库密钥 `DATA_SYNC_TOKEN`；没配时退回 `GITHUB_TOKEN`，PR 上要手动重跑检查。
+#     注意：走 PAT 时上面那条仓库设置**不再生效**（限制只针对 `GITHUB_TOKEN`），
+#     所以「开不出 PR」的正解是二选一——勾上设置，或者配好 `DATA_SYNC_TOKEN`。
 #
 # 网络受限时的行为：`check-data-freshness` 对连不上的数据源只打印「不可达」，退出码仍是 0；
 # 所以这里用 `--strict` 区分「上游真没变」和「根本没连上」，避免把沉默当好消息。
@@ -172,7 +177,9 @@ jobs:
           } > /tmp/pr-body.md
 
       - name: Open pull request
+        id: pr
         uses: peter-evans/create-pull-request@v6
+        continue-on-error: true
         with:
           token: ${{ secrets.DATA_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
           branch: chore/data-sync
@@ -180,3 +187,16 @@ jobs:
           commit-message: "chore(data): 同步上游数据"
           title: "chore(data): 同步上游数据"
           body-path: /tmp/pr-body.md
+
+      # 开 PR 失败时，工具/API 只会甩一行「GitHub Actions is not permitted to create or
+      # approve pull requests.」，看不出该改哪里；而这时分支通常已经推上去了。
+      # 所以这里拦一次，把两条出路写进 annotation，并给出人工开 PR 的 compare 链接。
+      - name: Explain pull request failure
+        if: steps.pr.outcome == 'failure'
+        env:
+          REPO: ${{ github.repository }}
+          BASE: ${{ github.event.repository.default_branch }}
+        run: |
+          echo "::error::开 PR 失败。若是「GitHub Actions is not permitted to create or approve pull requests.」，二选一修：① 仓库 Settings → Actions → General 勾选「Allow GitHub Actions to create and approve pull requests」（组织仓库可能还要在组织层放开）；② 建一个有 contents + pull-requests 写权限的 PAT，存成仓库密钥 DATA_SYNC_TOKEN（走 PAT 不受该设置限制，PR 上还会自动跑 check.yml）。"
+          echo "分支 chore/data-sync 已推送，可以人工开 PR：https://github.com/${REPO}/compare/${BASE:-main}...chore/data-sync?expand=1"
+          exit 1

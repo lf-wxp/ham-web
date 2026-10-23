@@ -157,6 +157,18 @@ CTY-3630 里被划归中国），这会直接影响日志、奖状、稀有度�
   建一个有 `contents` + `pull-requests` 写权限的 PAT，存成仓库密钥 `DATA_SYNC_TOKEN`；没配时退回
   `GITHUB_TOKEN`，此时 PR 上要手动重跑检查。
 
+**报错 `GitHub Actions is not permitted to create or approve pull requests.`**：这是上面那条仓库设置
+没勾（组织仓库还可能是组织层的策略锁住），不是 workflow 写错了。两条出路二选一：
+
+1. 勾上 Settings → Actions → General 的「Allow GitHub Actions to create and approve pull requests」；
+2. 配 `DATA_SYNC_TOKEN`（PAT，`contents` + `pull-requests` 写权限）——这条限制只针对 `GITHUB_TOKEN`，
+   走 PAT 不受约束，副作用是 PR 上的 `check.yml` 也会自动跑起来。
+
+`regenerate` job 里 `Open pull request` 是 `continue-on-error`，失败时由下一步
+`Explain pull request failure` 把上面两条出路写成 annotation 并给出
+`https://github.com/<repo>/compare/<base>...chore/data-sync` 的人工开 PR 链接——此时分支已经推上去了，
+不用重跑十分钟的数据重生成。
+
 ---
 
 ## 5. 网络受限时的行为
