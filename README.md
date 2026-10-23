@@ -15,13 +15,13 @@
 目标读者：备考 A/B/C 类操作证的考生、希望系统入门的新手，以及需要日志、奖状与传播工具的进阶火腿。所有个人数据只保存在浏览器本地，不上传服务器；纯静态托管也能离线使用除实时数据外的全部功能。
 
 <p align="center">
-  <a href="docs/images/home-desktop.webp"><img src="docs/images/home-desktop.webp" width="430" alt="首页（浅色主题，桌面）"></a>
-  <a href="docs/images/home-dark.webp"><img src="docs/images/home-dark.webp" width="430" alt="首页（深色主题，桌面）"></a>
+  <a href="docs/images/home-desktop.webp"><img src="docs/images/home-desktop.webp" width="48%" alt="首页（浅色主题，桌面）"></a>
+  <a href="docs/images/home-dark.webp"><img src="docs/images/home-dark.webp" width="48%" alt="首页（深色主题，桌面）"></a>
   <br>
-  <a href="docs/images/map-desktop.webp"><img src="docs/images/map-desktop.webp" width="596" alt="闯关地图（桌面）"></a>
-  <a href="docs/images/home-mobile.webp"><img src="docs/images/home-mobile.webp" width="212" alt="首页（手机）"></a>
+  <a href="docs/images/map-desktop.webp"><img src="docs/images/map-desktop.webp" width="74%" alt="闯关地图（桌面）"></a>
+  <a href="docs/images/home-mobile.webp"><img src="docs/images/home-mobile.webp" width="21.4%" alt="首页（手机）"></a>
   <br>
-  <sub>首页（浅色 / 深色）、闯关地图与手机端，取自本地 release 构建的真实页面；重拍见 <code>e2e/scripts/screenshots.mjs</code></sub>
+  <sub>上：首页浅色 / 深色主题（桌面）；下：闯关地图（桌面）与首页（手机，等比缩放后与地图同高）。<br>取自本地 release 构建的真实页面，重拍见 <code>e2e/scripts/screenshots.mjs</code></sub>
 </p>
 
 ---
