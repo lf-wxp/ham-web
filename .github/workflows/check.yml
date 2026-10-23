@@ -1,4 +1,17 @@
 # 代码检查：格式 + clippy（原生 crate 与 wasm 前端）+ 单元测试，等价于本地 `cargo make check`。
+#
+# `data-sync.yml` 开的 PR（固定分支 `chore/data-sync`）只改数据产物——题库 CSV / JSON、`dxcc.txt`、
+# Natural Earth 边界、`data/provenance/` 边车——所以 `docker` / `e2e` 对它跳过，省掉一轮镜像构建
+# 与浏览器用例。
+#
+# 判据有两层，缺一不可（`scope` job 实现）：
+#   1. 分支名是 `chore/data-sync` 且 head repo 是本仓库（fork 起个同名分支白蹭不到）；
+#   2. `git diff` 确认本次 PR 的改动**全部**落在数据产物路径下。
+# 只认分支名不够：本仓库的协作者也能建一个同名分支塞代码（甚至改本文件把门禁删掉），那样 PR 上
+# 一个门禁都不跑。内容不符时按普通 PR 处理，全跑——门禁只允许往严格的方向失效。
+#
+# `check` job **不跳过**：`dxcc.txt` 是 `include_str!` 进 `ham-web-core` 的、被单测直接消费，
+# 而 `regenerate` job 跑的 `data-sync-check` 只验来源戳与依赖摘要，验不出「数据写坏了、解析不出来」。
 name: Check
 
 on:
@@ -16,6 +29,44 @@ env:
   CARGO_INCREMENTAL: 0
 
 jobs:
+  # 判断这次 PR 能不能跳过 docker / e2e。只在 PR 上跑；任何异常（fetch 失败、diff 出错、
+  # 拿不到 base）都输出 skip=false，也就是「按普通 PR 全跑」。
+  scope:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      skip_expensive: ${{ steps.diff.outputs.skip }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # 要算 `base...HEAD` 需要 merge-base，浅克隆拿不到。
+          fetch-depth: 0
+
+      - name: Decide whether this PR only touches data artifacts
+        id: diff
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REPO: ${{ github.repository }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set +e
+          skip=false
+          if [ "$HEAD_REF" = "chore/data-sync" ] && [ "$HEAD_REPO" = "$REPO" ]; then
+            if git fetch --no-tags origin "$BASE_REF" && changed=$(git diff --name-only "origin/$BASE_REF...HEAD"); then
+              # 白名单与 `cargo make data-sync`（dxcc / dxcc-map / dataset）的产物一致；
+              # 多出一个文件就不跳。
+              if [ -n "$changed" ] && ! printf '%s\n' "$changed" |
+                grep -qvE '^(crates/core/data/dxcc\.txt|public/dxcc-entities\.bin|public/questions/|data/provenance/)'; then
+                skip=true
+              fi
+            fi
+          fi
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+
   check:
     runs-on: ubuntu-latest
     permissions:
@@ -50,6 +101,10 @@ jobs:
   # 构建链路的改动（多阶段拷贝、产物断言、运行镜像缺 libc / 权限）只能等合并后才发现，
   # 而那时镜像是往上推的、没有「先看它能不能跑」的机会。
   docker:
+    needs: scope
+    # `scope` 被跳过（push / 手动触发）时 outputs 为空 → 照常跑；它自己失败时也照常跑，
+    # 所以用 `!cancelled()` 而不是依赖默认的「上游失败即跳过」。理由见文件头。
+    if: ${{ !cancelled() && needs.scope.outputs.skip_expensive != 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -77,6 +132,8 @@ jobs:
         run: sh scripts/smoke-image.sh ham-web:ci
 
   e2e:
+    needs: scope
+    if: ${{ !cancelled() && needs.scope.outputs.skip_expensive != 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -131,11 +131,13 @@ cargo make explanations-apply   # 把解析写回 public/questions/*.json（离�
 
 ```
 check（只读）
-  └─ 检查上游 → ┬─ 无更新          → 结束（绿）
-                ├─ 上游不可达      → 失败（红），提示换环境
-                ├─ 检查工具自己崩溃 → 失败（红）
-                └─ 有更新          → ┬─ 没勾 regenerate → 失败（黄），提示再跑一次
-                                      └─ 勾了 regenerate → 交给 regenerate job
+  └─ 检查上游 → ┬─ 无更新 / 本地产物    → 结束（绿）
+                ├─ 新旧无法判断        → 结束（绿），结论里点名「不猜」
+                ├─ 上游不可达          → 失败（红），提示换环境
+                ├─ 检查工具自己崩溃     → 失败（红）
+                └─ 需要重新生成        → ┬─ 没勾 regenerate → 失败，提示里注明是哪一种
+                    （上游有新版本        └─ 勾了 regenerate → 交给 regenerate job
+                      / 戳是补写的）
 regenerate（contents + pull-requests 写权限，仅此 job 有）
   └─ cargo make data-sync → data-sync-check → 开 PR（正文是新鲜度明细）
 ```
@@ -147,22 +149,51 @@ CTY-3630 里被划归中国），这会直接影响日志、奖状、稀有度�
 只报告、退出码 0，定时任务若据此判定「没问题」，就会把网络故障当成「上游没变」——沉默的假好消息。
 所以工作流用 `--strict` 跑，并按输出里的标记分类；**退出码非 0 却既没有「有更新」标记也没有
 「连不上」标记**，说明是编译失败、panic、参数错误这类工具自身的问题，一律判红，不会落进
-「无更新」。三种分类已用一个假 `cargo` 在本地逐一演练过（clean / updates / unreachable /
-补戳 / 崩溃 / 参数错误）。
+「无更新」。几种分类已用一个假 `cargo` 在本地逐一演练过（clean / updates / unreachable /
+补戳 / 无法判断 / 崩溃 / 参数错误）。
+
+**为什么把「上游有新版本」和「来源戳不可用」分开报**：两者都要重新生成，但性质完全不同——
+前者是上游真的发版了，后者是产物压根没有戳、或戳由 `data-stamp` 补写（摘要取自产物自身，
+比不出新旧，见 §6 第 5 条）。所以 `check` job 分别输出 `upstream` / `stamped`
+（`stamped` 涵盖「没有戳」与「补戳」；`updates` 只是两者合并后的「要不要重新生成」），
+job summary 的结论与失败提示都按实际原因说话：既不会把补戳说成「上游有新版本」，也不会把
+「没有戳」说成「补写的」。
+
+**为什么还有第五类 `unknown`**：派生产物（`dxcc-entities.bin`、题库）的新旧只能靠上游给的
+`ETag` / `Last-Modified` 判断，上游不给时工具如实说「无法判断上游是否变化」，退出码仍是 0。
+这类不判红（不是故障），但也不写「戳可信」——结论里单列一条「有产物的新旧无法判断」，想确认就
+勾一次 regenerate 换成真戳。把「不知道」混进绿灯，正是这套检查最想避免的假好消息（见 §5）。
+
+**混合情况**：一个数据源有新版本、另一个连不上上游时，`updates` 与 `unreachable` 同时为真；
+`check` 因不可达变红，`regenerate` **不会**运行（勾了也一样）。这是有意的：上游拉不到时重新生成
+同样会失败。等网络恢复后重跑一次即可。
 
 **仓库设置前置条件**（workflow 文件头里也写了）：
 
 - Settings → Actions → General → 勾选「Allow GitHub Actions to create and approve pull requests」。
-- 用默认 `GITHUB_TOKEN` 开出的 PR **不会触发** `check.yml`（GitHub 防递归的规定）。要让 PR 上自动跑检查，
-  建一个有 `contents` + `pull-requests` 写权限的 PAT，存成仓库密钥 `DATA_SYNC_TOKEN`；没配时退回
-  `GITHUB_TOKEN`，此时 PR 上要手动重跑检查。
+- 用默认 `GITHUB_TOKEN` 开出的 PR **不会触发** `check.yml`（GitHub 防递归的规定）；走
+  `DATA_SYNC_TOKEN`（有 `contents` + `pull-requests` 写权限的 PAT）会触发，但 `check.yml` 对
+  同时满足下面两条的 PR 主动跳过 `docker` / `e2e`：
+  1. 分支名是 `chore/data-sync`，且 head repo 是本仓库（fork 起个同名分支白蹭不到）；
+  2. `scope` job 用 `git diff` 确认改动**全部**落在数据产物路径下（`crates/core/data/dxcc.txt`、
+     `public/dxcc-entities.bin`、`public/questions/`、`data/provenance/`）。
+
+  只认分支名是不够的：本仓库的协作者也能建一个同名分支塞代码（甚至改 `check.yml` 把门禁删掉），
+  那样 PR 上一个门禁都不跑。内容不符就按普通 PR 全跑——门禁只允许往严格的方向失效。
+  跳过的两个 job 在 PR 上显示为 Skipped，不阻塞合并。
+- `check` job **照跑**：`dxcc.txt` 是 `include_str!` 进 `ham-web-core` 的、被单测直接消费，
+  而 `cargo make data-sync-check` 只验来源戳与依赖摘要，验不出「数据写坏了、解析不出来」。
+- 若分支保护把 `Check / docker`、`Check / e2e` 列为 required，未配 `DATA_SYNC_TOKEN` 时
+  `check.yml` 根本不触发、这两个 check 不会上报，PR 会停在「Expected — Waiting for status to be
+  reported」。想让数据 PR 自动合并，就得把这两个 job 排除在 required 列表之外（合并到 main 的
+  push 仍会补跑一遍）。
 
 **报错 `GitHub Actions is not permitted to create or approve pull requests.`**：这是上面那条仓库设置
 没勾（组织仓库还可能是组织层的策略锁住），不是 workflow 写错了。两条出路二选一：
 
 1. 勾上 Settings → Actions → General 的「Allow GitHub Actions to create and approve pull requests」；
 2. 配 `DATA_SYNC_TOKEN`（PAT，`contents` + `pull-requests` 写权限）——这条限制只针对 `GITHUB_TOKEN`，
-   走 PAT 不受约束，副作用是 PR 上的 `check.yml` 也会自动跑起来。
+   走 PAT 不受约束（`check.yml` 会因此被触发，但对这类数据 PR 会跳过 `docker` / `e2e`）。
 
 `regenerate` job 里 `Open pull request` 是 `continue-on-error`，失败时由下一步
 `Explain pull request failure` 把上面两条出路写成 annotation 并给出
@@ -209,6 +240,14 @@ CTY-3630 里被划归中国），这会直接影响日志、奖状、稀有度�
    无关，所以不影响 `BR` 的结论；等能联网时重新生成即可。
 5. **当前三个产物都是补戳**。在第一次联网重新生成之前，`data-freshness` 对它们一律报「来源戳是补写的」
    （退出码 1）。这是预期行为，不是故障：它在如实说「我不知道这些产物对应上游的哪一期」。
+   `data-sync.yml` 会把这类情况单独归为 `stamped`，提示语是「来源戳不可用（没有戳或戳是补写的），
+   勾 regenerate 重新抓一次换成真戳」，不会再误报成「上游有新版本」。合并一次 regenerate 出来的
+   PR 后此提示自然消失。
+6. **数据同步 PR 少两道门禁**。它只跳过 `docker` / `e2e`（`check` 照跑），镜像与浏览器回归要等
+   合并后 push 到 main 才补跑一次。`check.yml` 的白名单也是按当前产物路径写死的
+   （`crates/core/data/dxcc.txt`、`public/dxcc-entities.bin`、`public/questions/`、
+   `data/provenance/`）：新增数据产物时要同步加进去，否则该 PR 只是退回「全跑」——多等一轮，
+   不会漏门禁。
 
 ---
 

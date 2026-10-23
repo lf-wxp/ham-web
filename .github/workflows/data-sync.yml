@@ -5,9 +5,15 @@
 #
 # 两个 job，权限分开：
 #   1. `check`（只读）：`check-data-freshness --strict`，把结论写进 job summary。
-#      有更新、上游不可达、检查工具自己崩溃，三种情况都让 job 变红，不会被当成「没有更新」。
-#   2. `regenerate`（需写权限）：仅在手动触发并勾选 `regenerate`、且 `check` 发现有更新时运行，
-#      重新生成并开一个 PR 等人 review——不直接推 main，因为上游改动（比如某个前缀归属变了）
+#      四种情况都让 job 变红，不会被当成「没有更新」：上游有新版本、产物没有戳 / 戳是补写的
+#      （摘要取自产物自身，比不出新旧）、上游不可达、检查工具自己崩溃。
+#      前两种情况都意味着「需要重新生成」，但性质不同，所以分开记（`upstream` / `stamped`），
+#      提示文案各说各的——把补戳说成「上游有新版本」会让人以为上游真发版了；反过来把「没有戳」
+#      说成「补写的」也不对，所以 `stamped` 的措辞是中性的「来源戳不可用」。
+#      另有一种「派生产物没拿到 ETag / Last-Modified」的情形，工具不猜、退出码 0；这里单记为
+#      `unknown`，结论里说「无法判断」，不并入上面的绿灯（否则就成了沉默的假好消息）。
+#   2. `regenerate`（需写权限）：仅在手动触发并勾选 `regenerate`、且 `check` 发现需要重新生成时
+#      运行，重新生成并开一个 PR 等人 review——不直接推 main，因为上游改动（比如某个前缀归属变了）
 #      需要人看一眼。
 #
 # 前置条件（仓库设置里一次性配好）：
@@ -15,11 +21,17 @@
 #     没勾时 `GITHUB_TOKEN` 开 PR 会被 API 拒绝，报错原文就是
 #     「GitHub Actions is not permitted to create or approve pull requests.」——这是仓库设置，
 #     不是 workflow 的问题。组织仓库若被上级策略锁住，要在组织层同一条设置里放开。
-#   * 用默认的 `GITHUB_TOKEN` 开出来的 PR 不会触发 `check.yml`（GitHub 的防递归规则）。
-#     想让 PR 上自动跑检查，就建一个有 `contents` + `pull-requests` 写权限的 PAT，存成
-#     仓库密钥 `DATA_SYNC_TOKEN`；没配时退回 `GITHUB_TOKEN`，PR 上要手动重跑检查。
+#   * 用默认的 `GITHUB_TOKEN` 开出来的 PR 不会触发 `check.yml`（GitHub 的防递归规则）；
+#     走 PAT 则会触发，但 `check.yml` 对「`chore/data-sync` 分支 + diff 全在数据产物路径下」
+#     的 PR 主动跳过 `docker` / `e2e`——这个 PR 只改数据，重跑镜像构建与浏览器用例没有意义。
+#     `check` 仍然跑：`dxcc.txt` 是 `include_str!` 进 `ham-web-core` 的、被单测直接消费，
+#     而下面 `regenerate` job 的 `cargo make data-sync-check` 只验来源戳与依赖摘要，验不出
+#     「数据写坏了、解析不出来」。
 #     注意：走 PAT 时上面那条仓库设置**不再生效**（限制只针对 `GITHUB_TOKEN`），
 #     所以「开不出 PR」的正解是二选一——勾上设置，或者配好 `DATA_SYNC_TOKEN`。
+#   * 若分支保护把 `Check / docker`、`Check / e2e` 列为 required，未配 `DATA_SYNC_TOKEN` 时
+#     `check.yml` 根本不触发、这两个 check 不会上报，PR 会停在「Expected」——想让数据 PR
+#     自动通过，就得让这两个 job 不在 required 列表里（合并到 main 后仍会补跑一遍）。
 #
 # 网络受限时的行为：`check-data-freshness` 对连不上的数据源只打印「不可达」，退出码仍是 0；
 # 所以这里用 `--strict` 区分「上游真没变」和「根本没连上」，避免把沉默当好消息。
@@ -50,6 +62,9 @@ jobs:
     permissions:
       contents: read
     outputs:
+      # `updates` 是「需要重新生成」的聚合位（上游有新版本，或来源戳不可用：没有戳 / 戳是补写的），
+      # 供 `regenerate` 判断。`upstream` / `stamped` / `unreachable` / `unknown` / `crashed` 只是
+      # 拆分的提示原因，仅在本 job 内通过 `steps.freshness.outputs.*` 决定文案，不提升为 job 输出。
       updates: ${{ steps.freshness.outputs.updates }}
     steps:
       - uses: actions/checkout@v4
@@ -62,9 +77,10 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      # 只跑一次（`--strict`）：退出码 0 = 全部可达且无更新；非 0 = 有更新 / 不可达 / 工具崩溃。
-      # 非 0 时靠输出里的标记区分前两种；两种标记都没有，就是工具自己出了问题（编译失败、
-      # panic、参数错误……），必须判红——不能因为「没匹配到关键字」就当成没有更新。
+      # 只跑一次（`--strict`）：退出码 0 = 全部可达且无更新（或派生类产物拿不到校验头，工具不猜）；
+      # 非 0 = 需要重新生成 / 不可达 / 工具崩溃。非 0 时靠输出里的标记分类；一个标记都没匹配到，
+      # 就是工具自己出了问题（编译失败、panic、参数错误……），必须判红——不能因为「没匹配到
+      # 关键字」就当成没有更新。
       - name: Check upstream freshness
         id: freshness
         run: |
@@ -80,18 +96,66 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-          updates=false
+          # `↑` 是上游真出新版；`?` 是产物没有戳 / 戳是补写的（摘要取自产物自身，比不出新旧），
+          # 两者都要重新生成，但性质不同，分开记；`!` 是连不上上游；`·` 里的「无法判断上游是否
+          # 变化」是派生产物没拿到校验头（工具不猜，退出码 0）——单独记 `unknown`，别让它落进绿灯。
+          upstream=false
+          stamped=false
           unreachable=false
+          unknown=false
           crashed=false
-          if grep -q "上游有新版本\|没有来源戳\|来源戳是补写的" /tmp/freshness.txt; then updates=true; fi
+          updates=false
+          if grep -q "上游有新版本" /tmp/freshness.txt; then upstream=true; fi
+          if grep -q "没有来源戳\|来源戳是补写的" /tmp/freshness.txt; then stamped=true; fi
           if grep -q "连不上上游" /tmp/freshness.txt; then unreachable=true; fi
+          if grep -q "无法判断上游是否变化" /tmp/freshness.txt; then unknown=true; fi
+          if [ "$upstream" = true ] || [ "$stamped" = true ]; then updates=true; fi
           if [ "$status" -ne 0 ] && [ "$updates" = false ] && [ "$unreachable" = false ]; then crashed=true; fi
 
           {
             echo "updates=$updates"
+            echo "upstream=$upstream"
+            echo "stamped=$stamped"
             echo "unreachable=$unreachable"
+            echo "unknown=$unknown"
             echo "crashed=$crashed"
           } >> "$GITHUB_OUTPUT"
+
+      # 原始输出上面已经整块贴进 summary，这里补一句人话结论：`↑` 与 `?` 混在一句里，
+      # 看的人会以为上游发版了。
+      # 最后那条「没有发现需要重新生成的原因」只在所有标记都为 false 时才写——上游不可达 /
+      # 工具崩溃时也写一句「戳可信」会与紧接着的红灯互相打脸。
+      - name: Append verdict to the job summary
+        env:
+          UPSTREAM: ${{ steps.freshness.outputs.upstream }}
+          STAMPED: ${{ steps.freshness.outputs.stamped }}
+          UNREACHABLE: ${{ steps.freshness.outputs.unreachable }}
+          UNKNOWN: ${{ steps.freshness.outputs.unknown }}
+          CRASHED: ${{ steps.freshness.outputs.crashed }}
+        run: |
+          {
+            echo
+            echo "### 结论"
+            echo
+            if [ "$UPSTREAM" = true ]; then
+              echo "- 上游有新版本：重新运行本工作流并勾选 regenerate 生成 PR。"
+            fi
+            if [ "$STAMPED" = true ]; then
+              echo "- 部分产物没有可用的来源戳（没有戳，或戳是补写的、摘要取自产物自身），判断不了新旧：勾 regenerate 重新抓一次即可换成真戳。"
+            fi
+            if [ "$UNREACHABLE" = true ]; then
+              echo "- 上游不可达：runner 出网有问题，需换到能出网的环境。"
+            fi
+            if [ "$UNKNOWN" = true ]; then
+              echo "- 有产物的新旧无法判断（派生产物没拿到 ETag / Last-Modified）：工具不猜，所以不判红；想确认就重新生成一次换成真戳。"
+            fi
+            if [ "$CRASHED" = true ]; then
+              echo "- 新鲜度检查本身失败（既不是需要重新生成，也不是上游不可达），看上方日志。"
+            fi
+            if [ "$UPSTREAM" = false ] && [ "$STAMPED" = false ] && [ "$UNREACHABLE" = false ] && [ "$UNKNOWN" = false ] && [ "$CRASHED" = false ]; then
+              echo "- 没有发现需要重新生成的原因：上游无新版本（产物来自本地输入时本来就不参与比对）。"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail if the freshness check itself broke
         if: steps.freshness.outputs.crashed == 'true'
@@ -105,9 +169,14 @@ jobs:
           echo "::error::上游不可达。若是 runner 网络策略导致（代理、TLS 版本），需要换到能出网的环境再跑。"
           exit 1
 
-      - name: Report no updates
-        if: steps.freshness.outputs.updates != 'true'
-        run: echo "上游均无新版本，无需处理。"
+      # 与 summary 里「结论」段的绿灯条件保持一致：不可达 / 崩溃时 `updates` 也是 false，
+      # 只写 `updates != 'true'` 会在这里补一句「无需重新生成」，跟上面的红灯对着说。
+      - name: Report no regeneration needed
+        if: >-
+          steps.freshness.outputs.updates != 'true'
+          && steps.freshness.outputs.unreachable != 'true'
+          && steps.freshness.outputs.crashed != 'true'
+        run: echo "没有发现需要重新生成的原因（明细见 job summary）。"
 
       - name: Keep the report for the regenerate job
         if: steps.freshness.outputs.updates == 'true'
@@ -116,15 +185,27 @@ jobs:
           name: freshness-report
           path: /tmp/freshness.txt
 
+      # 两类「需要重新生成」的措辞分开写：补戳不代表上游发版（`stamped` 同时涵盖「没有戳」）。
       # 注意：这里的 echo 不能写反引号——双引号里的反引号会被 bash 当成命令替换执行。
-      - name: Fail if updates found but regenerate not requested
-        if: steps.freshness.outputs.updates == 'true' && !inputs.regenerate
+      - name: Fail if regeneration is needed but not requested
+        if: steps.freshness.outputs.updates == 'true' && inputs.regenerate != true
+        env:
+          UPSTREAM: ${{ steps.freshness.outputs.upstream }}
+          STAMPED: ${{ steps.freshness.outputs.stamped }}
         run: |
-          echo "::warning::上游有新版本。重新运行本工作流并勾选 regenerate 即可生成 PR。"
+          if [ "$UPSTREAM" = true ]; then
+            echo "::warning::上游有新版本。重新运行本工作流并勾选 regenerate 即可生成 PR。"
+          fi
+          if [ "$STAMPED" = true ]; then
+            echo "::warning::部分产物没有可用的来源戳（没有戳，或戳是补写的、摘要取自产物自身），判断不了新旧：重新运行本工作流并勾选 regenerate，重新抓取一次换成真戳。"
+          fi
           exit 1
 
-  # 只在「有更新 + 手动要求重新生成」时才拿写权限。`check` 为红（不可达 / 工具崩溃）时
+  # 只在「需要重新生成 + 手动要求重新生成」时才拿写权限。`check` 为红（不可达 / 工具崩溃）时
   # 本 job 不会运行，和原来「前一步失败就不往下走」的行为一致。
+  # 混合情况：一个源有更新、另一个源不可达时 `updates` 与 `unreachable` 同时为真，而不可达
+  # 那条失败排在前面 → 勾了 regenerate 也不会跑。这是有意的：上游拉不到时重新生成同样会失败，
+  # 等网络恢复后重跑一次即可。
   regenerate:
     needs: check
     if: needs.check.outputs.updates == 'true' && inputs.regenerate
@@ -184,8 +265,9 @@ jobs:
           token: ${{ secrets.DATA_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
           branch: chore/data-sync
           delete-branch: true
-          commit-message: "chore(data): 同步上游数据"
-          title: "chore(data): 同步上游数据"
+          # PR 标题与提交信息用英文，和 git 历史里的 conventional commit 风格一致。
+          commit-message: "chore(data): sync upstream data"
+          title: "chore(data): sync upstream data"
           body-path: /tmp/pr-body.md
 
       # 开 PR 失败时，工具/API 只会甩一行「GitHub Actions is not permitted to create or
