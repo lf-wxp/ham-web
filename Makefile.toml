@@ -583,6 +583,16 @@ description = "比对数据产物与上游是否有更新（需联网；连不�
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "check-data-freshness"]
 
+[tasks.data-staleness]
+description = "人工转录的外部事实（法规 / 器材实测 / 磁环 / 成本档位）多久没复核了（离线；超过 6 个月只告警，日期读不出来 / 在未来才失败）"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--", "check-data-staleness", "--warn-only"]
+
+[tasks.data-staleness-strict]
+description = "同 data-staleness，但超过 6 个月也判失败（周检 / 人工复核用，不进 check）"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--", "check-data-staleness"]
+
 [tasks.data-sync]
 description = "拉取上游并重新生成全部外部数据（dxcc + dxcc-map + dataset，需联网）"
 dependencies = ["dxcc", "dxcc-map", "dataset"]
@@ -703,7 +713,7 @@ done
 '''
 
 [tasks.check]
-description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案/知识库译文词典校验 + 解析表校验 + 界面规范守卫 + 结构守卫 + 像素风生成物校验（不构建前端）"
+description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案/知识库译文词典校验 + 解析表校验 + 界面规范守卫 + 结构守卫 + 像素风生成物校验 + 数据来源戳 / 时效性核对日期（不构建前端）"
 dependencies = [
   "fmt-check",
   "clippy",
@@ -719,6 +729,8 @@ dependencies = [
   "pixel-check",
   # 离线：产物有没有来源戳、依赖摘要是否与现状一致（不联网，可放心进 CI）
   "data-sync-check",
+  # 离线：人工转录的外部事实多久没复核了（到期只告警；日期本身坏了才失败）
+  "data-staleness",
 ]
 
 [tasks.size-check]
@@ -760,6 +772,7 @@ dependencies = [
   "check-structure",
   "pixel-check",
   "data-sync-check",
+  "data-staleness",
   "build-web",
   # 体积只能在 release 产物上量，所以挂在 ci（有 build-web）而不是 check 上
   "size-check",

@@ -484,6 +484,8 @@ cargo make spectrum-sample                            # 频谱 / 瀑布图样本
 | `cargo make data-sync` | 三个外部数据源一起重新生成（dxcc + dxcc-map + dataset，需联网） |
 | `cargo make data-freshness` | 比对上游有无新版；连不上只报告（需联网，见 `docs/data-sync.md`） |
 | `cargo make data-sync-check` | 产物来源戳与依赖摘要的离线一致性（已在 `cargo make check` 里，不联网） |
+| `cargo make data-staleness` | 人工转录的外部事实（法规 / 器材实测 / 磁环 / 成本档位）多久没复核（离线；超过 6 个月只告警，日期读不出来 / 在未来才失败；已在 `check` 里） |
+| `cargo make data-staleness-strict` | 同上，但超过 6 个月也判失败（CI 周检 `staleness` job 用） |
 | `cargo make data-stamp` | 给引入来源戳之前生成的旧产物补戳（内容不动，不联网） |
 | `cargo make icons` | 由 `public/pwa-icon.svg` 生成 PWA / Apple Touch 图标与 favicon.ico |
 | **解析与术语** | — |

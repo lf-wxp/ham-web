@@ -1,0 +1,4 @@
+0.16.21
+# 来源：https://github.com/KaTeX/KaTeX/releases/tag/v0.16.21
+# 本目录只放该发行包里的 katex.min.js / katex.min.css / fonts/ 与 LICENSE，不做任何修改。
+# 升级步骤：整套替换 → cargo make build-web → cargo make size-check（体积预算）+ 公式页 e2e。

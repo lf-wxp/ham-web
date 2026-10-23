@@ -576,7 +576,7 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 
 ```bash
 # 门禁
-cargo make check                 # fmt + clippy + test + i18n + knowledge-i18n + explanations + e2e-check + check-ui + check-structure + pixel-check + data-sync-check
+cargo make check                 # fmt + clippy + test + i18n + knowledge-i18n + explanations + e2e-check + check-ui + check-structure + pixel-check + data-sync-check + data-staleness
 cargo make ci                    # 上面 + release 前端构建 + size-check
 cargo make check-structure       # 结构/架构守卫（一文件一组件、吸顶偏移、alert、core 碰浏览器 API、反向依赖、panic 宏）
 cargo make e2e                   # release 产物 + Playwright 全量

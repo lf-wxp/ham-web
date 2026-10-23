@@ -108,6 +108,14 @@ pub fn core_by_part(part: &str) -> Option<&'static Core> {
   CORES.iter().find(|c| c.part == part.trim())
 }
 
+/// 全部磁环里**最早**的一次核对日期。
+///
+/// 过期检查按「最旧的那条」算：只要有一条没跟着复核，这片数据就不该被算作「刚核对过」。
+#[must_use]
+pub fn oldest_verified() -> Option<&'static str> {
+  CORES.iter().map(|c| c.verified).min()
+}
+
 /// 匝数 → 电感（µH）。`al_nh` 与 `turns` 必须为正的有限数。
 #[must_use]
 pub fn inductance_uh(al_nh: f64, turns: f64) -> Option<f64> {

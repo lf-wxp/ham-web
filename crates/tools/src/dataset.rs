@@ -26,6 +26,9 @@ use crate::provenance::{self, Stamp, digest_hex};
 
 const MAX_BODY: u64 = 64 * 1024 * 1024;
 
+/// 下载时服务端给的校验头：`(ETag, Last-Modified)`。
+type Validators = (Option<String>, Option<String>);
+
 /// 数据源：本地目录优先，其次远程。
 pub struct Source<'a> {
   local: Option<&'a Path>,
@@ -33,6 +36,9 @@ pub struct Source<'a> {
   images: HashMap<String, Vec<u8>>,
   /// 本次读过的每个上游文件的摘要（相对路径 → sha256），用来给题库戳算一个真实的上游摘要。
   seen: RefCell<BTreeMap<String, String>>,
+  /// 远程文本文件下载时服务端给的校验头（相对路径 → 校验头）。
+  /// 题库的上游是个目录，只有逐文件记下它们，新鲜度检查才能用条件 `HEAD` 判断上游动没动。
+  validators: RefCell<BTreeMap<String, Validators>>,
 }
 
 impl<'a> Source<'a> {
@@ -42,6 +48,7 @@ impl<'a> Source<'a> {
       remote: remote.trim_end_matches('/'),
       images: HashMap::new(),
       seen: RefCell::new(BTreeMap::new()),
+      validators: RefCell::new(BTreeMap::new()),
     }
   }
 
@@ -74,6 +81,30 @@ impl<'a> Source<'a> {
     digest_hex(listing.as_bytes())
   }
 
+  /// 逐文件戳：本次从网络下载过的每个文件的摘要与校验头。
+  ///
+  /// 只收下载过、且记下过摘要的文件。本地 `DATASET_DIR` 没有校验头可记（整个产物本来就是
+  /// 「本地来源」，新鲜度检查不联网）；图片也不逐张探活——新题一定伴随 CSV 变化，几百个
+  /// `HEAD` 换来的只是更慢的检查。
+  pub fn file_stamps(&self) -> BTreeMap<String, provenance::FileStamp> {
+    let seen = self.seen.borrow();
+    self
+      .validators
+      .borrow()
+      .iter()
+      .filter_map(|(rel, (etag, last_modified))| {
+        Some((
+          rel.clone(),
+          provenance::FileStamp {
+            digest: seen.get(rel)?.clone(),
+            etag: etag.clone(),
+            last_modified: last_modified.clone(),
+          },
+        ))
+      })
+      .collect()
+  }
+
   pub fn text(&self, rel: &str) -> Result<String> {
     if let Some(p) = self.local_path(rel) {
       let text =
@@ -82,16 +113,17 @@ impl<'a> Source<'a> {
       return Ok(text);
     }
     let url = self.url(rel);
-    let mut res = ureq::get(&url)
-      .call()
-      .with_context(|| format!("Fetch failed: {url}"))?;
-    let text = res
-      .body_mut()
-      .with_config()
-      .limit(MAX_BODY)
-      .read_to_string()
-      .with_context(|| format!("Fetch failed: {url}"))?;
+    // 走 `provenance::download` 而不是裸 `ureq::get`：要的不只是内容，还有服务端给的
+    // `ETag` / `Last-Modified`。题库的上游是个目录，没有「那一个文件的校验头」可比，
+    // 只能逐文件记下来，交给 `check-data-freshness` 发条件 HEAD。
+    let fetched = provenance::download(&url, MAX_BODY)?;
+    let text = String::from_utf8(fetched.bytes)
+      .with_context(|| format!("Fetch failed: {url} 不是 UTF-8"))?;
     self.note(rel, text.as_bytes());
+    self
+      .validators
+      .borrow_mut()
+      .insert(rel.to_owned(), (fetched.etag, fetched.last_modified));
     Ok(text)
   }
 
@@ -293,7 +325,8 @@ pub fn build(paths: &Paths, local: Option<&Path>, remote: &str) -> Result<()> {
     provenance::local_source,
   );
   let stamp = Stamp::of_digest(source_url, ctx.source.digest())
-    .with_input(&paths.root, "data/explanations.json");
+    .with_input(&paths.root, "data/explanations.json")
+    .with_files(ctx.source.file_stamps());
   provenance::write_sidecar(&paths.root, &paths.questions.join("config.json"), &stamp)?;
 
   println!("Dataset build complete.");
@@ -443,5 +476,29 @@ mod tests {
     let re = sanitizer();
     assert_eq!(re.replace_all("选项 [F]LK0500.jpg", "").trim(), "选项");
     assert_eq!(re.replace_all("x [f]LK0942.jpg179", "").trim(), "x");
+  }
+
+  /// 逐文件戳只收「下载过、且记下过摘要」的文件：没有摘要的条目写进戳也没法用，
+  /// 宁可丢掉（脏数据不该变成一条判不了新旧的记录）。
+  #[test]
+  fn file_stamps_require_a_recorded_digest() {
+    let source = Source::new(None, "https://example.test/main");
+    let (seen, validators) = (&source.seen, &source.validators);
+    seen
+      .borrow_mut()
+      .insert("class_a.csv".to_owned(), "aa".to_owned());
+    validators
+      .borrow_mut()
+      .insert("class_a.csv".to_owned(), (Some("\"v1\"".to_owned()), None));
+    validators
+      .borrow_mut()
+      .insert("stray.csv".to_owned(), (Some("\"v2\"".to_owned()), None));
+
+    let files = source.file_stamps();
+    assert_eq!(files.len(), 1, "没有摘要的文件不该出现：{files:?}");
+    let a = &files["class_a.csv"];
+    assert_eq!(a.digest, "aa");
+    assert_eq!(a.etag.as_deref(), Some("\"v1\""));
+    assert!(a.last_modified.is_none());
   }
 }

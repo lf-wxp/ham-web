@@ -106,6 +106,15 @@ enum Command {
     #[arg(long)]
     strict: bool,
   },
+  /// 时效性数据的核对日期是否过期（离线；人工转录的法规 / 器材 / 磁环 / 成本档位）
+  CheckDataStaleness {
+    /// 允许的最大月龄，超过即判失败
+    #[arg(long, default_value_t = 6)]
+    max_months: i64,
+    /// 只对「到期」告警、不失败（日期读不出来 / 在未来仍然失败）；给每个 PR 都跑的 `check` 用
+    #[arg(long)]
+    warn_only: bool,
+  },
   /// 校验 data/i18n/ 的 en / es 词典（重复 key、占位符数量、死条目）并统计按域覆盖率
   CheckI18n {
     /// 导出「源码里有但词典里没有」的文案模板（{zh, text}）
@@ -318,6 +327,10 @@ fn main() -> Result<()> {
     Command::CheckDataSync => data_sync::run(&root),
     Command::StampData => data_sync::backfill(&root),
     Command::CheckDataFreshness { only, strict } => data_sync::freshness(&root, &only, strict),
+    Command::CheckDataStaleness {
+      max_months,
+      warn_only,
+    } => data_sync::staleness(max_months, warn_only),
     Command::CheckE2e => {
       e2e_coverage::check(&root)?;
       Ok(())

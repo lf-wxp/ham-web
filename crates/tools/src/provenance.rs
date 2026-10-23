@@ -46,6 +46,14 @@ pub struct Stamp {
   /// 但两者之间原本没有任何记录，看不出来。
   #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
   pub inputs: BTreeMap<String, String>,
+  /// **多文件来源**的逐文件戳（题库：4 份 CSV + `images.csv`）。
+  ///
+  /// 题库的上游地址是个目录，没有「那个文件的 `ETag`」可比；只有把每个文件的校验头
+  /// 分别记下来，`check-data-freshness` 才能用条件 `HEAD` 判断上游动没动（判定见
+  /// `data_sync::judge`）。单文件产物（`dxcc.txt`、`.bin`）不用这个字段，它们把校验头
+  /// 记在上面的 `etag` / `last_modified` 里。
+  #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+  pub files: BTreeMap<String, FileStamp>,
   /// 这是给**既有产物补写**的戳（`stamp-data`），不是抓取上游时写下的。
   ///
   /// 补戳时拿不到当初那份上游字节，`digest` 只能是产物自己的摘要；若照常拿它去比上游，
@@ -53,6 +61,17 @@ pub struct Stamp {
   /// 「需要重新生成一次来换真戳」，而不是去比摘要。
   #[serde(default, skip_serializing_if = "std::ops::Not::not")]
   pub backfilled: bool,
+}
+
+/// 多文件来源里单个上游文件的戳：内容摘要 + 下载时服务端给的校验头。
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FileStamp {
+  /// 该文件内容（或文本内容）的 sha256。
+  pub digest: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub etag: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub last_modified: Option<String>,
 }
 
 /// 注释块里各字段的前缀。解析时按前缀取值，格式改了也能读回旧文件。
@@ -83,6 +102,7 @@ impl Stamp {
       etag: None,
       last_modified: None,
       inputs: BTreeMap::new(),
+      files: BTreeMap::new(),
       backfilled: false,
     }
   }
@@ -111,6 +131,37 @@ impl Stamp {
   pub fn with_validators(mut self, etag: Option<&str>, last_modified: Option<&str>) -> Self {
     self.etag = etag.filter(|v| !v.is_empty()).map(str::to_owned);
     self.last_modified = last_modified.filter(|v| !v.is_empty()).map(str::to_owned);
+    self
+  }
+
+  /// 记一个上游文件（多文件来源用）：相对路径、内容摘要、下载时拿到的校验头。
+  ///
+  /// 生产路径用 [`Self::with_files`] 一次写全（`dataset` 建库时按本次读过的文件生成）；
+  /// 这个逐条版本只给测试搭桩，免得每个用例都手搓一张 `BTreeMap`。
+  #[cfg(test)]
+  #[must_use]
+  pub fn with_file(
+    mut self,
+    rel: impl Into<String>,
+    digest: impl Into<String>,
+    etag: Option<&str>,
+    last_modified: Option<&str>,
+  ) -> Self {
+    self.files.insert(
+      rel.into(),
+      FileStamp {
+        digest: digest.into(),
+        etag: etag.filter(|v| !v.is_empty()).map(str::to_owned),
+        last_modified: last_modified.filter(|v| !v.is_empty()).map(str::to_owned),
+      },
+    );
+    self
+  }
+
+  /// 整体替换逐文件戳（`dataset` 建库时按本次读过的上游文件生成）。
+  #[must_use]
+  pub fn with_files(mut self, files: BTreeMap<String, FileStamp>) -> Self {
+    self.files = files;
     self
   }
 
@@ -155,6 +206,8 @@ impl Stamp {
     for (rel, digest) in &self.inputs {
       let _ = writeln!(out, "# {TAG_INPUT}{rel} sha256:{digest}");
     }
+    // `files`（逐文件校验头）刻意不写进注释块：唯一的多文件来源是题库，它的戳本来就落在
+    // 边车 JSON 里；文本产物（`dxcc.txt`）是单文件来源，写了也没有读者。
     out
   }
 
@@ -566,6 +619,36 @@ mod tests {
     let text = "# 摘要: sha256:aa\n# 输入: data/some dir/x.json sha256:bb\n";
     let stamp = Stamp::parse(text).expect("有戳");
     assert_eq!(stamp.inputs["data/some dir/x.json"], "bb");
+  }
+
+  /// 多文件来源的逐文件戳必须能从边车里原样读回：题库的新旧完全靠这些校验头判断，
+  /// 少一个字段就会退化成「无法判断」。
+  #[test]
+  fn file_stamps_round_trip_through_the_sidecar() {
+    let dir = std::env::temp_dir().join(format!("prov-files-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).expect("mkdir");
+    let artifact = dir.join("config.json");
+    std::fs::write(&artifact, b"{}").expect("write");
+
+    let stamp = Stamp::of("https://example.test/main/", b"derived")
+      .with_file("class_a.csv", "aa", Some("\"a1\""), None)
+      .with_file(
+        "class_b.csv",
+        "bb",
+        None,
+        Some("Sat, 17 Oct 2026 10:44:30 GMT"),
+      );
+    write_sidecar(&dir, &artifact, &stamp).expect("sidecar");
+    assert_eq!(read_sidecar(&dir, &artifact), Some(stamp.clone()));
+
+    // 空校验头不写，避免存出 `"etag": ""` 这种既占地方又判不出新旧的值。
+    let empty = Stamp::of("x", b"y").with_file("class_c.csv", "cc", Some(""), Some(""));
+    let file = &empty.files["class_c.csv"];
+    assert!(file.etag.is_none() && file.last_modified.is_none());
+
+    // 文本注释块不渲染逐文件戳（唯一的多文件来源走边车），别指望从 `dxcc.txt` 头里读回。
+    assert!(!stamp.header_block("dxcc").contains("class_a.csv"));
+    let _ = std::fs::remove_dir_all(&dir);
   }
 
   /// 补戳标记必须两种载体都能往返，否则新鲜度检查读回来就认不出它是「补的」。

@@ -3,7 +3,7 @@
 # 为什么要单独一个 workflow：`check.yml` 必须在离线环境也能跑绿，而这三个数据源要联网。
 # 混进去会让网络抖动变成假红灯。
 #
-# 两个 job，权限分开：
+# 三个 job，权限分开：
 #   1. `check`（只读）：`check-data-freshness --strict`，把结论写进 job summary。
 #      四种情况都让 job 变红，不会被当成「没有更新」：上游有新版本、产物没有戳 / 戳是补写的
 #      （摘要取自产物自身，比不出新旧）、上游不可达、检查工具自己崩溃。
@@ -15,6 +15,9 @@
 #   2. `regenerate`（需写权限）：仅在手动触发并勾选 `regenerate`、且 `check` 发现需要重新生成时
 #      运行，重新生成并开一个 PR 等人 review——不直接推 main，因为上游改动（比如某个前缀归属变了）
 #      需要人看一眼。
+#   3. `staleness`（只读，独立于上面两个）：`check-data-staleness`，人工转录的外部事实超过
+#      6 个月没复核就变红。它不挡 `regenerate`（到期要的是人去复核，不是重新抓取）；
+#      `cargo make check` 里跑的是 `--warn-only`，所以到期只在这里变红，不会让无关 PR 变红。
 #
 # 前置条件（仓库设置里一次性配好）：
 #   * Settings → Actions → General → 勾选「Allow GitHub Actions to create and approve pull requests」。
@@ -200,6 +203,40 @@ jobs:
             echo "::warning::部分产物没有可用的来源戳（没有戳，或戳是补写的、摘要取自产物自身），判断不了新旧：重新运行本工作流并勾选 regenerate，重新抓取一次换成真戳。"
           fi
           exit 1
+
+  # 人工转录的外部事实（法规 / 器材 / 磁环 / 成本档位）的核对日期是否超过 6 个月。
+  # 单独成 job、不让 `regenerate` 依赖它：到期要的是人去复核再改日期，而不是重新抓取上游；
+  # 它红了不该挡住数据重新生成。`cargo make check` 里跑的是 `--warn-only` 版本，所以
+  # 「到期」只会在这里（每周一）变红，不会让无关 PR 突然变红。
+  staleness:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.99.1
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check curated data staleness
+        run: |
+          set +e
+          cargo run -q -p ham-web-tools --release -- check-data-staleness > /tmp/staleness.txt 2>&1
+          status=$?
+          set -e
+          cat /tmp/staleness.txt
+          {
+            echo "### 时效性数据的核对日期"
+            echo '```'
+            cat /tmp/staleness.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
 
   # 只在「需要重新生成 + 手动要求重新生成」时才拿写权限。`check` 为红（不可达 / 工具崩溃）时
   # 本 job 不会运行，和原来「前一步失败就不往下走」的行为一致。

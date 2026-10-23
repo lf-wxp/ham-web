@@ -219,6 +219,7 @@ pub mod spectrum;
 pub mod spectrum_admin;
 pub mod spot_coverage;
 pub mod sstv;
+pub mod staleness;
 pub mod station;
 pub mod stub_match;
 pub mod study_plan;

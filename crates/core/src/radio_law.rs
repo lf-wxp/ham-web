@@ -512,9 +512,26 @@ pub fn questions_for(law: &str, number: u16) -> &'static [MappedQuestion] {
     .map_or(&[], |m| m.questions)
 }
 
+/// 数据文件的核对日期（`YYYY-MM-DD`），供「时效性数据过期检查」读取。
+///
+/// 从文件头解析，不另设常量：核对日期只能有一份事实，抄成常量迟早会和文件对不上。
+#[must_use]
+pub fn checked_on() -> Option<&'static str> {
+  DATA
+    .lines()
+    .take_while(|line| line.starts_with('#'))
+    .find_map(|line| line.strip_prefix("# 核对日期：").map(str::trim))
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn checked_on_comes_from_the_file_header() {
+    // 过期检查依赖这个值；读不到就等于「不知道上次核对是什么时候」。
+    assert_eq!(checked_on(), Some("2026-10-09"));
+  }
 
   #[test]
   fn the_file_states_its_provenance() {

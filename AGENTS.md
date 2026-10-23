@@ -12,6 +12,7 @@
 | 界面文案 / 译文 | [`docs/i18n.md`](docs/i18n.md)（词条规范、复数、门禁与验收清单）；词条在 `data/i18n/{zh,en,es}/<域>.json` |
 | 题库题面排版（空格、全角半角、指纹） | [`docs/typography.md`](docs/typography.md) |
 | 题目解析的写作 | [`docs/explanations-style.md`](docs/explanations-style.md) |
+| 外部数据（DXCC 前缀表 / 实体边界 / 题库）的来源、来源戳、新鲜度判定与 `data-sync.yml` | [`docs/data-sync.md`](docs/data-sync.md)（规范：戳 schema、判定矩阵、四个命令、CI 分类位与验收） |
 | 解码器页面 / 新增解码器 / worker 错误码 | [`docs/decode-worker-protocol.md`](docs/decode-worker-protocol.md)（统一信封、错误码表、Makefile worker 任务、新增清单） |
 | 项目结构、cargo make 任务、路由 | [`README.md`](README.md) |
 | 串口功能（CAT / 旋转器 / NanoVNA / KISS）与外部格式（CHIRP / SOTA / POTA）的验收 | [`docs/hardware-verification.md`](docs/hardware-verification.md)：单测与假串口只算「待验」，真机记录才叫「已验证」 |
@@ -56,7 +57,7 @@
 - **提交前必须过 `cargo make check`**；动了页面组件再跑相关 e2e。
 
 ```bash
-cargo make check   # fmt + clippy + test + i18n + knowledge-i18n + explanations + e2e-check + check-ui + check-structure + pixel-check + data-sync-check
+cargo make check   # fmt + clippy + test + i18n + knowledge-i18n + explanations + e2e-check + check-ui + check-structure + pixel-check + data-sync-check + data-staleness
 cargo make ci      # 上面 + release 前端构建（提交前用这个）
 ```
 

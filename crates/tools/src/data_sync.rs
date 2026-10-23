@@ -12,6 +12,8 @@
 
 use std::path::Path;
 
+use ham_web_core::staleness::{Age, age, curated};
+
 use crate::fsutil::Paths;
 use crate::provenance::{self, Probe, Stamp, digest_hex, input_digest};
 
@@ -359,6 +361,10 @@ fn judge(relation: Relation, stamp: Option<&Stamp>, url: &str, upstream: &dyn Up
     // `.bin` / 题库 JSON 都不是上游文件的逐字节转写，拿上游摘要比没有意义（会永远报
     // 「有更新」），只认校验头：有就发条件请求，没有就老实说不知道。
     Relation::Derived => {
+      // 多文件来源（题库）：上游地址是目录，没有「那一个文件的校验头」，只能逐文件探。
+      if !stamp.files.is_empty() {
+        return judge_files(stamp, url, upstream);
+      }
       if stamp.etag.is_none() && stamp.last_modified.is_none() {
         return Verdict::Unknown;
       }
@@ -368,6 +374,35 @@ fn judge(relation: Relation, stamp: Option<&Stamp>, url: &str, upstream: &dyn Up
         None => Verdict::Unreachable,
       }
     }
+  }
+}
+
+/// 多文件来源的判定：对戳里记下的每个上游文件发一次条件 `HEAD`。
+///
+/// 优先级有意写成「变了 > 连不上 > 不知道 > 最新」：只要有一个文件确实变了就该重新生成，
+/// 别让另一个文件的网络故障把它盖成「不可达」而白等一周。
+fn judge_files(stamp: &Stamp, base: &str, upstream: &dyn Upstream) -> Verdict {
+  let base = base.trim_end_matches('/');
+  let (mut unreachable, mut unknown) = (false, false);
+  for (rel, file) in &stamp.files {
+    if file.etag.is_none() && file.last_modified.is_none() {
+      // 下载时上游就没给校验头：这个文件判不了，只好说不知道（不猜）。
+      unknown = true;
+      continue;
+    }
+    let url = format!("{base}/{rel}");
+    match upstream.probe(&url, file.etag.as_deref(), file.last_modified.as_deref()) {
+      Some(Probe::NotModified) => {}
+      Some(Probe::Modified) => return Verdict::Changed,
+      None => unreachable = true,
+    }
+  }
+  if unreachable {
+    Verdict::Unreachable
+  } else if unknown {
+    Verdict::Unknown
+  } else {
+    Verdict::UpToDate
   }
 }
 
@@ -446,6 +481,79 @@ pub fn freshness(root: &Path, only: &[String], strict: bool) -> anyhow::Result<(
     println!("（存在不可达的数据源；未要求严格模式，不影响结论）");
   }
   Ok(())
+}
+
+// ─────────────── 时效性数据的核对日期 ───────────────
+
+/// 时间到了就该有人回去看：人工转录的外部事实没有可比的上游摘要，只能按「多久没复核」报警。
+///
+/// 与 [`freshness`] 的分工：那边的上游是可下载的文件（能比摘要 / 校验头），这边的上游是
+/// HTML 页与法规原文（页面模板一改校验头就变，比了也没意义），所以只认 `checked_on` 的年龄。
+/// 登记表在 `ham_web_core::staleness`（数据文件 / 常量各留一份日期，这里只做判定）。
+///
+/// `warn_only` 只放过「到期」：到期随时间自然出现，挂进每个 PR 都要跑的 `cargo make check`
+/// 会让无关改动在某天突然变红；而日期读不出来 / 写在未来是数据本身的错误，任何模式都判失败。
+pub fn staleness(max_months: i64, warn_only: bool) -> anyhow::Result<()> {
+  let now = provenance::now_utc();
+  let today = now.get(..7).unwrap_or(now.as_str());
+  let items = curated();
+  println!("时效性数据的核对日期（今天 {today}，阈值 {max_months} 个月）：");
+
+  let mut stale: Vec<&str> = Vec::new();
+  let mut broken: Vec<&str> = Vec::new();
+  for item in &items {
+    let (key, date, source) = (item.key, item.checked_on, item.source);
+    match age(date, today, max_months) {
+      Age::Fresh(months) => println!("✓ {key}：{date}（{months} 个月）—— {source}"),
+      Age::Stale(months) => {
+        println!("⚠ {key}：{date}（{months} 个月）—— {source}");
+        stale.push(key);
+      }
+      Age::Future(_) => {
+        println!("✗ {key}：核对日期 {date} 晚于今天 —— {source}");
+        broken.push(key);
+      }
+      Age::Unreadable => {
+        println!("✗ {key}：核对日期读不出来（{date:?}）—— {source}");
+        broken.push(key);
+      }
+    }
+  }
+
+  if stale.is_empty() && broken.is_empty() {
+    println!("共 {} 项，全部在 {} 个月内复核过", items.len(), max_months);
+    return Ok(());
+  }
+
+  println!("→ 复核后把日期改成当前月份，改在这些地方：");
+  for key in stale.iter().chain(broken.iter()) {
+    println!("    {key}：{}", fix_hint(key));
+  }
+  if !broken.is_empty() {
+    anyhow::bail!(
+      "{} 项时效性数据的核对日期不可用（读不出来，或晚于今天；格式应为 YYYY-MM 或 YYYY-MM-DD）",
+      broken.len()
+    );
+  }
+  if warn_only {
+    println!(
+      "（--warn-only：{} 项超过 {max_months} 个月未复核，只告警不失败）",
+      stale.len()
+    );
+    return Ok(());
+  }
+  anyhow::bail!("{} 项时效性数据超过 {max_months} 个月未复核", stale.len())
+}
+
+/// 每个登记项的核对日期写在哪（复核完要改的地方）。
+fn fix_hint(key: &str) -> &'static str {
+  match key {
+    "gear-rx" => "`gear_rx::CHECKED_ON` 与 `crates/core/data/gear-rx.txt` 文件头",
+    "radio-law-text" => "`crates/core/data/radio-law.txt` 文件头的 `# 核对日期：`",
+    "toroid" => "`toroid::CORES[].verified`（逐条）",
+    "diy-cost" => "`diy_projects::COST_CHECKED_ON`",
+    _ => "`crates/core/src/provenance.rs` 的 `PROVENANCES` 里该域的 `checked_on`",
+  }
 }
 
 /// 读产物的戳：文本产物读注释头，二进制读边车。
@@ -685,6 +793,18 @@ mod tests {
     }
   }
 
+  /// 按 URL 应答的上游：多文件来源要逐个文件探活，得能区分请求的是哪个文件。
+  struct PerUrl<F: Fn(&str) -> Option<Probe>>(F);
+
+  impl<F: Fn(&str) -> Option<Probe>> Upstream for PerUrl<F> {
+    fn digest(&self, _: &str) -> Option<String> {
+      panic!("多文件来源不该整份下载")
+    }
+    fn probe(&self, url: &str, _: Option<&str>, _: Option<&str>) -> Option<Probe> {
+      (self.0)(url)
+    }
+  }
+
   #[test]
   fn compare_matrix() {
     let remote = Stamp::of("https://example.test/cty.csv", b"body");
@@ -787,6 +907,87 @@ mod tests {
     );
   }
 
+  /// 回归：题库的上游地址是个目录，戳里只有单份校验头时永远判不出新旧（一直是「无法判断」）。
+  /// 逐文件记下校验头之后，全部 `304` 才算最新，任何一个 `200` 就是有新版本。
+  #[test]
+  fn multi_file_source_probes_every_recorded_file() {
+    let base = "https://example.test/main/";
+    let stamp = Stamp::of(base, b"derived")
+      .with_file("class_a.csv", "aa", Some("\"a1\""), None)
+      .with_file("class_b.csv", "bb", Some("\"b1\""), None);
+
+    let all_same = PerUrl(|url: &str| {
+      assert!(
+        url.starts_with("https://example.test/main/class_"),
+        "文件要拼在目录地址后面：{url}"
+      );
+      Some(Probe::NotModified)
+    });
+    assert_eq!(
+      judge(Relation::Derived, Some(&stamp), base, &all_same),
+      Verdict::UpToDate
+    );
+
+    let one_changed = PerUrl(|url: &str| {
+      Some(if url.ends_with("class_b.csv") {
+        Probe::Modified
+      } else {
+        Probe::NotModified
+      })
+    });
+    assert_eq!(
+      judge(Relation::Derived, Some(&stamp), base, &one_changed),
+      Verdict::Changed
+    );
+
+    let down = PerUrl(|_: &str| None);
+    assert_eq!(
+      judge(Relation::Derived, Some(&stamp), base, &down),
+      Verdict::Unreachable
+    );
+  }
+
+  /// 一个文件变了、另一个连不上：要判「有新版本」，别让网络故障把它盖成「不可达」白等一周。
+  #[test]
+  fn changed_file_wins_over_an_unreachable_one() {
+    let base = "https://example.test/main/";
+    let stamp = Stamp::of(base, b"derived")
+      .with_file("a.csv", "a", Some("\"a1\""), None)
+      .with_file("b.csv", "b", Some("\"b1\""), None);
+    let mixed = PerUrl(|url: &str| {
+      if url.ends_with("a.csv") {
+        None
+      } else {
+        Some(Probe::Modified)
+      }
+    });
+    assert_eq!(
+      judge(Relation::Derived, Some(&stamp), base, &mixed),
+      Verdict::Changed
+    );
+  }
+
+  /// 下载时上游就没给校验头的文件判不了：不猜，报「无法判断」，也不为它联网。
+  #[test]
+  fn multi_file_source_without_validators_is_unknown() {
+    let base = "https://example.test/main/";
+    let bare = Stamp::of(base, b"derived").with_file("a.csv", "a", None, None);
+    assert_eq!(
+      judge(Relation::Derived, Some(&bare), base, &Offline),
+      Verdict::Unknown
+    );
+
+    // 一半有、一半没有：其余文件都是 304 也不能说「最新」。
+    let half = Stamp::of(base, b"derived")
+      .with_file("a.csv", "a", Some("\"a1\""), None)
+      .with_file("b.csv", "b", None, None);
+    let same = PerUrl(|_: &str| Some(Probe::NotModified));
+    assert_eq!(
+      judge(Relation::Derived, Some(&half), base, &same),
+      Verdict::Unknown
+    );
+  }
+
   #[test]
   fn no_stamp_and_local_sources_never_touch_the_network() {
     for relation in [Relation::Verbatim, Relation::Derived] {
@@ -813,6 +1014,17 @@ mod tests {
     // dxcc.txt 是逐行转写，可以比摘要。
     let dxcc = TARGETS.iter().find(|t| t.name == "dxcc").expect("dxcc");
     assert_eq!(dxcc.relation, Relation::Verbatim);
+  }
+
+  /// 过期提示要指到「改哪个文件 / 常量」：指不到具体位置，复核的人还得自己找。
+  #[test]
+  fn file_backed_keys_point_at_the_place_to_edit() {
+    assert!(fix_hint("gear-rx").contains("gear_rx::CHECKED_ON"));
+    assert!(fix_hint("radio-law-text").contains("radio-law.txt"));
+    assert!(fix_hint("toroid").contains("verified"));
+    assert!(fix_hint("diy-cost").contains("COST_CHECKED_ON"));
+    // 页面溯源表的域落在同一处，别给每个域各写一句。
+    assert!(fix_hint("bands").contains("PROVENANCES"));
   }
 
   #[test]
