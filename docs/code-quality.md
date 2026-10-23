@@ -163,9 +163,9 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 
 | ID | 检查项 | 方法 | 判定标准 | 产出 |
 | --- | --- | --- | --- | --- |
-| A5.1 | GPL 边界 | 对照 README「例外：GPL-3.0 的六个 crate」读 6 个 `Cargo.toml` | 许可声明齐全，wasm 独立编译，无链接关系 | 声明缺口 |
+| A5.1 | GPL 边界 | 对照 [`licensing.md`](licensing.md) 的 GPL 例外清单读 6 个 `Cargo.toml` | 许可声明齐全，wasm 独立编译，无链接关系 | 声明缺口 |
 | A5.2 | 第三方转写声明 | `LICENSES/` + 各 crate 文件头 | 版权与许可全文随发布物提供 | 缺失文件清单 |
-| A5.3 | 题库数据版权 | 读 README「许可」段与页面文案 | 明确「MIT 不覆盖题库数据」 | 文案缺口 |
+| A5.3 | 题库数据版权 | 读 [`licensing.md`](licensing.md) 与页面文案 | 明确「MIT 不覆盖题库数据」 | 文案缺口 |
 | A5.4 | 数据出处与核对日期 | 抽查时效性页面（法规、波段、卫星、机型） | 页面底部有「依据 + 核对日期」，无来源的标「未收录」 | 无出处清单 |
 
 ---
@@ -184,14 +184,14 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 | B1.2 | wasm-bindgen 版本一致 | `sh scripts/decode-workers.sh` + 三处 awk 解析 `Cargo.lock` | 版本取自锁文件；解析失败有专属报错（不是「版本漂移」） | 误诊风险 |
 | B1.3 | 前端构建参数 | 读 `Trunk.toml` / `index.html` / `.cargo/config.toml` | `wasm-opt` 参数、`erase_components`、release profile 与文档一致 | 参数漂移 |
 | B1.4 | 干净环境构建 | 新目录 `git clone` → `cargo make setup` → `cargo make ci` | 一次通过，无手工步骤 | 缺失步骤 |
-| B1.5 | 构建耗时与内存 | 记录 `cargo make ci` 与 `docker build` 各阶段耗时、峰值内存 | 与 README 实测表同量级；OOM 有明确提示 | 实测表更新 |
-| B1.6 | 生成物入库边界 | 读 `.gitignore` 与 README「项目结构」 | `public/*-worker/`、`public/data/i18n/`、`dist/` 不入库；生成方式有文档 | 边界模糊项 |
+| B1.5 | 构建耗时与内存 | 记录 `cargo make ci` 与 `docker build` 各阶段耗时、峰值内存 | 与 [`deployment.md`](deployment.md) 的实测表同量级；OOM 有明确提示 | 实测表更新 |
+| B1.6 | 生成物入库边界 | 读 `.gitignore` 与 [`architecture.md`](architecture.md) | `public/*-worker/`、`public/data/i18n/`、`dist/` 不入库；生成方式有文档 | 边界模糊项 |
 
 ### B2 产物完整性与预算
 
 | ID | 检查项 | 方法 | 判定标准 | 产出 |
 | --- | --- | --- | --- | --- |
-| B2.1 | 产物清单 | `cargo make build-web` 后核 `dist/`：`index.html`、wasm、`data/i18n/*.json`、`data/knowledge-i18n/*.json`、`questions/`、12 个 `*-worker/`、`sw.js`、`sitemap.xml`、`changelog.json`、`license.html` | 与 README 描述逐项对应 | 缺项清单 |
+| B2.1 | 产物清单 | `cargo make build-web` 后核 `dist/`：`index.html`、wasm、`data/i18n/*.json`、`data/knowledge-i18n/*.json`、`questions/`、12 个 `*-worker/`、`sw.js`、`sitemap.xml`、`changelog.json`、`license.html` | 与 [`architecture.md`](architecture.md) 描述逐项对应 | 缺项清单 |
 | B2.2 | 体积预算 | `cargo make size-check` | 7 项全部在 `perf-budget.json` 上限内；baseline 与实际差异合理 | 超限项 |
 | B2.3 | 预压缩 | 检查 `dist/**/*.br` / `.gz` 与 `size-check` 的口径 | 以 br 压缩后体积判定，与实际传输一致 | 口径偏差 |
 | B2.4 | 资源引用 | `grep -rn "src=\"/\|href=\"/" crates/app/index.html` + 打开 `/license.html` | 无 404、无 `apple-touch-icon-precomposed` 一类死引用 | 死引用清单 |
@@ -204,7 +204,7 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 | B3.1 | SPA 回退 | `curl` 未命中且无扩展名的路径 | 返回 `index.html`；带扩展名的缺失资源返回 404（不是 HTML） | 回退错误 |
 | B3.2 | 缓存头 | `curl -I` 查 `sw.js` / `manifest.json` / `changelog.json` / `index.html` / 带 hash 的静态资源 | 前四者 `no-cache`，带 hash 者长缓存 | 头配置缺口 |
 | B3.3 | 健康检查与容器 | `docker build` → `sh scripts/smoke-image.sh` | `/healthz` 200；distroless 非 root；`/app/data` 可写 | 镜像问题 |
-| B3.4 | 运行时配置 | 逐项核对 README 的环境变量表与 `crates/server` 读取点 | 表里有的代码都认；默认值一致 | 文档漂移 |
+| B3.4 | 运行时配置 | 逐项核对 [`deployment.md`](deployment.md) 的环境变量表与 `crates/server` 读取点 | 表里有的代码都认；默认值一致 | 文档漂移 |
 | B3.5 | 上游容错 | 读 `crates/server` 的超时 / 限流 / 缓存实现 | 建连、端到端、兜底三层超时齐全；429/504 有语义 | 容错缺口 |
 | B3.6 | 静态托管降级 | 无后端启动前端，访问依赖 `/api/*` 的页面 | 显示「数据暂不可用」，不报错、不白屏 | 降级缺口 |
 | B3.7 | 隐私面 | 读 `/api/push/*` 与日志 | 不落个人数据；订阅 endpoint 不可枚举；有总数上限 | 隐私风险 |
@@ -232,10 +232,10 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 
 | ID | 检查项 | 方法 | 判定标准 |
 | --- | --- | --- | --- |
-| B5.1 | `Makefile.toml` 任务 ↔ README 任务表 | 对比 `cargo make --list-all-steps` 与 README | 表里每条都能跑；新增任务已入表 |
+| B5.1 | `Makefile.toml` 任务 ↔ README 任务表 | 对比 `cargo make --list-all-steps` 与 [`tasks.md`](tasks.md) | 表里每条都能跑；新增任务已入表 |
 | B5.2 | `check` / `ci` 组成 | 读 `[tasks.check]` / `[tasks.ci]` 依赖数组 | `ci = check + build-web + size-check`，无遗漏（历史上漏过 `e2e-check`） |
 | B5.3 | 开发服务器口径 | `cargo make dev` / `dev-full` | dev 不注册 SW；产物落 `target/dev-dist`；`/api` 代理可用 |
-| B5.4 | 文档命令可执行 | 抽 10 条 README 命令逐条跑（`apt-test`、`i18n-pack`、`dxcc-map`…） | 命令存在且成功 |
+| B5.4 | 文档命令可执行 | 抽 10 条 README / `tasks.md` 命令逐条跑（`apt-test`、`i18n-pack`、`dxcc-map`…） | 命令存在且成功 |
 
 ---
 
@@ -352,7 +352,7 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 | --- | --- | --- | --- |
 | 1 | 路由 | 注册表 / 路由 / 导航 / sitemap 一致 | `registry_check` 覆盖；参数页有回退 |
 | 2 | 骨架 | `PageHeader` + `PageContainer` | 无自造宽度、无手写吸顶 |
-| 3 | 数据来源 | 静态数据 / `/api/*` / 纯计算 | 与 README「依赖 `/api/*` 的页面」清单一致 |
+| 3 | 数据来源 | 静态数据 / `/api/*` / 纯计算 | 与 [`api.md`](api.md) 的「依赖 `/api/*` 的页面」清单一致 |
 | 4 | 三态 | 加载 / 空 / 错误 | 三态都有文案，不是空白 |
 | 5 | 降级 | 无后端 / 无 WebGL / 无 Web Serial / 无通知权限 | 如实降级，不报错、不假装可用 |
 | 6 | 输入校验 | 空值 / 非法 / 极值 / 超长 | 有提示且不写坏状态 |
@@ -406,7 +406,7 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 | E1.3 | 断点恢复 | 考试中途刷新 / 关标签页 | 能恢复，且不泄露答案 | 缺陷 |
 | E1.4 | 错题与间隔复习 | 连续答对 / 答错各 5 轮 | 难度系数与间隔按设计变化，移出条件正确 | 逻辑错 |
 | E1.5 | 变体题隔离 | 用 `?variant=1` 作答 | 不进统计 / 错题本 / 收藏 / 模拟考 | 串味 |
-| E1.6 | 统计口径 | 对照 README 各统计说明 | 「已做过」「覆盖率」「分类正确率」定义一致 | 口径分歧 |
+| E1.6 | 统计口径 | 对照 README 与 [`features.md`](features.md) 的统计说明 | 「已做过」「覆盖率」「分类正确率」定义一致 | 口径分歧 |
 | E1.7 | 题库更新提示 | 改题库摘要后重新加载 | 提示修改 / 新增数量，不误报 | 误报 |
 
 ### E2 本地存储、备份与迁移

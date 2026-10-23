@@ -14,7 +14,15 @@
 | 题目解析的写作 | [`docs/explanations-style.md`](docs/explanations-style.md) |
 | 外部数据（DXCC 前缀表 / 实体边界 / 题库）的来源、来源戳、新鲜度判定与 `data-sync.yml` | [`docs/data-sync.md`](docs/data-sync.md)（规范：戳 schema、判定矩阵、四个命令、CI 分类位与验收） |
 | 解码器页面 / 新增解码器 / worker 错误码 | [`docs/decode-worker-protocol.md`](docs/decode-worker-protocol.md)（统一信封、错误码表、Makefile worker 任务、新增清单） |
-| 项目结构、cargo make 任务、路由 | [`README.md`](README.md) |
+| 架构、crate 划分与完整目录树 | [`docs/architecture.md`](docs/architecture.md)；上手与部署见 [`README.md`](README.md) |
+| cargo make 任务全集 / 路由表 / 存储 key | [`docs/tasks.md`](docs/tasks.md) · [`docs/routes.md`](docs/routes.md) · [`docs/storage.md`](docs/storage.md) |
+| 本地开发细节、生产构建、Docker、环境变量 | [`docs/deployment.md`](docs/deployment.md) |
+| 后端接口（同源代理 / 开放 API） | [`docs/api.md`](docs/api.md) |
+| 题库数据构建与换版 | [`docs/data-pipeline.md`](docs/data-pipeline.md)；解析维护流程见 [`docs/explanations.md`](docs/explanations.md) |
+| 端到端测试、覆盖率与本地排障 | [`docs/testing.md`](docs/testing.md) |
+| 代码规范、快捷键、像素风与动效降级 | [`docs/development.md`](docs/development.md) |
+| 许可与 GPL 边界 | [`docs/licensing.md`](docs/licensing.md) |
+| 功能清单、README 审核记录与文档对账口径 | [`docs/features.md`](docs/features.md)、[`docs/readme-review.md`](docs/readme-review.md) |
 | 串口功能（CAT / 旋转器 / NanoVNA / KISS）与外部格式（CHIRP / SOTA / POTA）的验收 | [`docs/hardware-verification.md`](docs/hardware-verification.md)：单测与假串口只算「待验」，真机记录才叫「已验证」 |
 | 天线方向增益（S2）的实现 | [`docs/antenna-coverage.md`](docs/antenna-coverage.md)：口径是「方向增益」，不是覆盖 / 可达 |
 | 全仓代码质量（分层边界、可自动化门禁、问题分级与证据口径） | [`docs/code-quality.md`](docs/code-quality.md)：长期标准 + 检查清单，改动前先跑 §2 的门禁 |
@@ -57,7 +65,7 @@
 - **提交前必须过 `cargo make check`**；动了页面组件再跑相关 e2e。
 
 ```bash
-cargo make check   # fmt + clippy + test + i18n + knowledge-i18n + explanations + e2e-check + check-ui + check-structure + pixel-check + data-sync-check + data-staleness
+cargo make check   # fmt + clippy + test + i18n + knowledge-i18n + explanations + e2e-check + check-ui + check-structure + readme-check + pixel-check + data-sync-check + data-staleness
 cargo make ci      # 上面 + release 前端构建（提交前用这个）
 ```
 

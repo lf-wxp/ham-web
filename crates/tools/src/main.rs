@@ -21,6 +21,7 @@ mod pixel;
 mod postbuild;
 mod provenance;
 mod psk31_gen;
+mod readme_check;
 mod size_check;
 mod spectrum_gen;
 mod structure_check;
@@ -93,6 +94,8 @@ enum Command {
   CheckStructure,
   /// e2e 覆盖对账：coverage-targets.json 的每条核心旅程必须能在 spec 里命中
   CheckE2e,
+  /// README 对账：Worker 数量、build-*-worker 任务清单、路由数、docs 链接与章节引用
+  CheckReadme,
   /// 数据产物来源戳的离线一致性（产物有无戳、依赖摘要是否还对得上）
   CheckDataSync,
   /// 给已存在的产物补写来源戳（内容不动；用于引入戳之前生成的旧产物）
@@ -335,6 +338,8 @@ fn main() -> Result<()> {
       e2e_coverage::check(&root)?;
       Ok(())
     }
+    // 放在 e2e 对账旁边：都是「文档 ↔ 代码」的机械一致性，改动 README 后跑同一条命令即可。
+    Command::CheckReadme => readme_check::check(&root),
     Command::CheckI18n {
       missing,
       dynamic_calls,

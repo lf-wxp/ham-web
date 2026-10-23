@@ -602,6 +602,12 @@ description = "e2e 覆盖对账：coverage-targets.json 的每条核心旅程必
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--", "check-e2e"]
 
+[tasks.readme-check]
+description = "README 对账：Worker 数量、build-*-worker 任务清单、路由数、docs 链接与章节引用必须与代码一致"
+# 与 e2e-check 同理不用 --release：只读几个文本文件。
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--", "check-readme"]
+
 [tasks.i18n-check]
 description = "校验 data/i18n/ 词典（重复 key、占位符、死条目）与运行时语言包新鲜度，并统计文案覆盖率"
 # 不用 --release：这只是解析文本，debug 构建即可，省掉整条依赖链的 release 编译。
@@ -713,7 +719,7 @@ done
 '''
 
 [tasks.check]
-description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案/知识库译文词典校验 + 解析表校验 + 界面规范守卫 + 结构守卫 + 像素风生成物校验 + 数据来源戳 / 时效性核对日期（不构建前端）"
+description = "代码检查：格式检查 + clippy + 单元测试 + 界面文案/知识库译文词典校验 + 解析表校验 + 界面规范守卫 + 结构守卫 + README 对账 + 像素风生成物校验 + 数据来源戳 / 时效性核对日期（不构建前端）"
 dependencies = [
   "fmt-check",
   "clippy",
@@ -726,6 +732,8 @@ dependencies = [
   "e2e-check",
   "check-ui",
   "check-structure",
+  # 改了 Worker / 路由 / 任务名却没改 README 时在这里红，别等读者发现
+  "readme-check",
   "pixel-check",
   # 离线：产物有没有来源戳、依赖摘要是否与现状一致（不联网，可放心进 CI）
   "data-sync-check",
@@ -752,7 +760,7 @@ command = "node"
 args = ["scripts/coverage.mjs"]
 
 [tasks.ci]
-description = "CI：格式检查 + clippy + 测试 + 界面文案/知识库译文校验 + 解析表校验 + e2e 清单对账 + 界面规范守卫 + 结构守卫 + 像素风生成物校验 + 数据来源戳校验 + 前端构建"
+description = "CI：格式检查 + clippy + 测试 + 界面文案/知识库译文校验 + 解析表校验 + e2e 清单对账 + 界面规范守卫 + 结构守卫 + README 对账 + 像素风生成物校验 + 数据来源戳校验 + 前端构建"
 # 与 `check` 保持同一套校验：漏掉 knowledge-i18n-check 时，知识库译文 key 漂移
 # 会让页面上静默回退中文，而 CI 不会红；漏掉 e2e-check 时，e2e 清单与用例标题对不上
 # 也要等到 CI 的覆盖率步骤才红；漏掉 data-sync-check 时，「提交前跑 ci」的本地流程
@@ -770,6 +778,7 @@ dependencies = [
   "e2e-check",
   "check-ui",
   "check-structure",
+  "readme-check",
   "pixel-check",
   "data-sync-check",
   "data-staleness",

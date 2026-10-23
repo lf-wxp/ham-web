@@ -1,7 +1,7 @@
 # 路线图
 
 > 只记三件事：**还没做的**、**刻意不做的**、以及**新增内容必须过的门禁**。
-> 已实现的功能见 [`README.md`](README.md#主要特性)；实现细节、设计取舍与精度边界写在各模块的
+> 已实现的功能见 [`docs/features.md`](docs/features.md)（README 的「功能一览」是它的索引）；实现细节、设计取舍与精度边界写在各模块的
 > 文档注释里（例如 `crates/nec/src/nec.rs` 的离散方式与精度表、`crates/app/src/kv.rs` 的写入版本仲裁），
 > 不在这里重复。
 
@@ -44,7 +44,7 @@
 | 天线与射频 | [天线与射频设计](README.md#天线与射频设计)：矩量法求解器、Smith 圆图、波形实验室、测量误差实验室 | 地面用反射系数近似；交叉线 `TL` 与并联导纳不支持；交叉验证参照是另一套 NEC-2 实现，不是实测 |
 | 传播与实时数据 | [工具与实时数据](README.md#工具与实时数据)：24 小时 × 波段热力矩阵、太阳活动、DX Cluster、PSK Reporter / RBN、卫星过境 | 简化 VOACAP 模型，无 SNR 预测；噪声预算按 290 K 热噪声，未接 ITU-R P.372 外部噪声；地磁扰动只提示不建模 |
 | 日志与 QSL | [通联日志与 QSL](README.md#通联日志与-qsl)：ADIF 3.1、多台站 / 操作员与统计范围、日志体检、QSL 全生命周期与多源确认同步、卡片设计与标签打印、竞赛与奖状 | 确认报告靠手动导入（无 OAuth 直连）；模式分段校验只覆盖话务 |
-| 解码与硬件 | [浏览器内解码与硬件互联](README.md#浏览器内解码与硬件互联)：10 个解码器（9 个走 Worker，PSK31 在主线程）、CAT、KISS TNC、NanoVNA | LRPT 的 OQPSK 只在合成信号上验证；串口收发需真实硬件，自动化只覆盖协议层与文件入口 |
+| 解码与硬件 | [浏览器内解码与硬件互联](README.md#浏览器内解码与硬件互联)：12 个解码器（11 个走 Worker，PSK31 在主线程）、CAT、KISS TNC、NanoVNA | LRPT 的 OQPSK 只在合成信号上验证；串口收发需真实硬件，自动化只覆盖协议层与文件入口 |
 | 设备与 DIY | [设备与 DIY](README.md#设备与-diy)：机型库实测指标与加权打分、评测文章、DIY 项目卡片 | 实测数据只覆盖 HF 级接收机；灵敏度、接口、功耗、售价无可引用来源，刻意留空 |
 | 国际化 | [用户体验](README.md#用户体验)：界面与知识库正文中 / 英 / 西三语全覆盖 | 法规原文保持中文（只有官方版本有规范效力） |
 
@@ -132,7 +132,7 @@
 
 ## 已完成
 
-一条一项，只留结论与指针；过程与细节见对应模块的文档注释，功能清单见 README。
+一条一项，只留结论与指针；过程与细节见对应模块的文档注释，功能清单见 [`docs/features.md`](docs/features.md)。
 
 | 条目 | 位置 | 结论与已知边界 |
 | --- | --- | --- |
@@ -232,7 +232,7 @@
 新增页面 / 模块必须满足（仓库内已有自动化守护，新增内容自动受益）：
 
 1. **只改两处**：`crates/core/src/registry.rs` 的 `MODULES` 追加一条 + `crates/app/src/app/main_content.rs` 加一行 `<Route>`。
-   导航菜单、`sitemap.xml` 均由注册表派生，`registry_check.rs` 断言「注册表 ↔ 导航 ↔ 路由」一致，漏注册会让 `cargo make check` 直接失败。README 的路由表也按注册表分组列出，新增页面时同步补上。
+   导航菜单、`sitemap.xml` 均由注册表派生，`registry_check.rs` 断言「注册表 ↔ 导航 ↔ 路由」一致，漏注册会让 `cargo make check` 直接失败。README 的「共 N 个路径」与 [`docs/routes.md`](docs/routes.md) 的完整表都按注册表列出，`cargo make readme-check` 会对账数量。
 2. **内核下沉**：不依赖浏览器的逻辑放 `ham-web-core` + 单元测试；技术性数值在 `knowledge_consistency.rs` 加回归断言。
 3. **大内核走 Worker**：DSP / 求解器按 `ham-web-apt` 的模式拆 Worker，遵循 [`docs/decode-worker-protocol.md`](docs/decode-worker-protocol.md)，注意 `wasm-bindgen` CLI 版本与 `Cargo.lock` 一致。
 4. **文案与翻译**：界面文案同步补 `data/i18n/{lang}/{domain}.json`（语义 key `域.词条`，`cargo make i18n-check` 校验重复 key、占位符、死条目与语言包新鲜度，改完跑 `cargo make i18n-pack`），正文译文放 `data/knowledge-i18n/`（`knowledge-i18n-check` 钉住漂移）。
@@ -253,7 +253,7 @@
 ```bash
 cargo test -p ham-web-core            # 领域逻辑 + knowledge_consistency 回归
 cargo test -p ham-web-app             # registry_check（注册表 ↔ 路由一致性、交互页 e2e 门禁）
-cargo make check                      # fmt + clippy + test + 文案词典 + 解析表 + 像素风
+cargo make check                      # fmt + clippy + test + 文案词典 + 解析表 + 结构/界面/README 守卫 + 像素风
 cargo make e2e                        # 构建 release + Playwright 全站冒烟与无障碍
 cargo make e2e-coverage               # 覆盖率报告 e2e/test-results/coverage.md
 cargo make size-check                 # 性能预算（需先 build-web）
@@ -268,7 +268,22 @@ LRPT_REAL_IQ=/path/to/meteor-m2.wav cargo test -p ham-web-lrpt --release --test 
 
 | 文档 | 作用 |
 | --- | --- |
-| [`README.md`](README.md) | 已实现功能、路由表、开发指南 |
+| [`README.md`](README.md) | 上手、功能一览、文档地图、常用任务与部署（只做索引，细节在 `docs/`） |
+| [`docs/architecture.md`](docs/architecture.md) | 技术栈、完整目录树与分层边界 |
+| [`docs/features.md`](docs/features.md) | 完整功能清单（README「功能一览」的逐条版） |
+| [`docs/storage.md`](docs/storage.md) | 本地存储 key 一览 |
+| [`docs/routes.md`](docs/routes.md) | 完整路由表与带参数页面（由注册表派生） |
+| [`docs/tasks.md`](docs/tasks.md) | cargo make 任务全集 |
+| [`docs/api.md`](docs/api.md) | 后端接口：同源代理与开放 API |
+| [`docs/deployment.md`](docs/deployment.md) | 本地开发细节、生产构建、Docker、环境变量、Web Push |
+| [`docs/data-pipeline.md`](docs/data-pipeline.md) | 题库数据构建与换版 |
+| [`docs/explanations.md`](docs/explanations.md) | 题目解析维护流程（统计 → 撰写 → 合并 → 写入） |
+| [`docs/development.md`](docs/development.md) | 代码规范、快捷键、改 UI 注意点、像素风与动效降级 |
+| [`docs/testing.md`](docs/testing.md) | Playwright 端到端测试、覆盖率口径与本地排障 |
+| [`docs/pwa.md`](docs/pwa.md) | Service Worker 缓存策略、更新提示与图标 |
+| [`docs/licensing.md`](docs/licensing.md) | 许可、第三方声明与 GPL 例外 |
+| [`docs/code-quality.md`](docs/code-quality.md) | 全仓代码质量标准、检查清单与问题分级 |
+| [`docs/readme-review.md`](docs/readme-review.md) | README 审核记录、未做项与文档对账口径 |
 | [`AGENTS.md`](AGENTS.md) | 动代码前的入口：按改动领域指向规范与硬规则 |
 | [`docs/ui-components.md`](docs/ui-components.md) | UI 组件使用规范（决策表、硬规则、验收） |
 | [`docs/i18n.md`](docs/i18n.md) | 界面文案规范与门禁 |
