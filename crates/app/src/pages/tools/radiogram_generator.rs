@@ -300,7 +300,7 @@ pub fn RadiogramGenerator() -> impl IntoView {
 
       <div class="mt-4">
         <div class="mb-2 flex items-center justify-between">
-          <span class="text-sm font-medium">{move || t("tools.radiogram-output")}</span>
+          <span class="text-sm">{move || t("tools.radiogram-output")}</span>
           <Button
             variant=Variant::Outline
             size=Size::Sm
@@ -314,7 +314,7 @@ pub fn RadiogramGenerator() -> impl IntoView {
           let miss = missing.get();
           if miss.is_empty() {
             view! {
-              <pre class="overflow-x-auto border bg-muted/40 p-4 font-mono text-sm leading-relaxed">
+              <pre class="overflow-x-auto border bg-inset p-4 font-mono text-sm leading-relaxed">
                 {output.get()}
               </pre>
             }
@@ -322,7 +322,7 @@ pub fn RadiogramGenerator() -> impl IntoView {
           } else {
             let names = miss.iter().map(|k| k.label()).collect::<Vec<_>>().join(", ");
             view! {
-              <div class="border bg-muted/40 p-4 text-sm text-muted-foreground">
+              <div class="border bg-inset p-4 text-sm text-muted-foreground">
                 {tf("tools.radiogram-missing-fields", &[&names])}
               </div>
             }

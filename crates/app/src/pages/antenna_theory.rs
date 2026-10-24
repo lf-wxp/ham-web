@@ -14,7 +14,7 @@ pub fn AntennaTheoryPage() -> impl IntoView {
   // 本页自带页头、没套 KnowledgePage 外壳，正文译文得自己确保在拉。
   Effect::new(move |_| data::ensure_knowledge_i18n());
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("knowledge.antenna-theory")
         subtitle=move || t("knowledge.antenna-theory-subtitle")
@@ -34,7 +34,7 @@ pub fn AntennaTheoryPage() -> impl IntoView {
                     .map(|f| {
                       view! {
                         <div class="border px-3 py-2">
-                          <div class="text-xs font-medium text-muted-foreground">
+                          <div class="text-xs text-muted-foreground">
                             {move || data::kt_tracked(f.name)}
                           </div>
                           // 公式源带在 data-tex 上：KaTeX 可用时由前端渲染，不可用就显示

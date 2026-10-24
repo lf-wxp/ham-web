@@ -30,7 +30,7 @@ pub(super) fn ImportReportPanel(report: RwSignal<Option<ImportReport>>) -> impl 
             {move || t("contest.cabrillo-import-heading")}
           </h2>
           <div class="space-y-3 p-4 text-sm">
-            <p class="font-medium">
+            <p>
               {tp("contest.cabrillo-imported", r.added, &[&r.added.to_string(), &label])}
             </p>
             {(r.dupes > 0).then(|| view! {
@@ -43,13 +43,13 @@ pub(super) fn ImportReportPanel(report: RwSignal<Option<ImportReport>>) -> impl 
               <p>{tf("contest.cabrillo-switched", &[&label, &start])}</p>
             })}
             {r.assumed_layout.then(|| view! {
-              <p class="border border-amber-500/40 bg-amber-500/10 px-3 py-2">
+              <p class="border border-gold/40 bg-gold/10 px-3 py-2">
                 {tf("contest.cabrillo-assumed", &[&label])}
               </p>
             })}
             {(r.skipped_total > 0).then(|| view! {
               <div class="space-y-1">
-                <p class="font-medium text-red-600 dark:text-red-400">
+                <p class="text-hp-text">
                   {tp("contest.cabrillo-skipped", r.skipped_total, &[&r.skipped_total.to_string()])}
                 </p>
                 <ul class="max-h-60 divide-y overflow-y-auto border font-mono text-xs">

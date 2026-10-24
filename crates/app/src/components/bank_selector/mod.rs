@@ -9,20 +9,18 @@ use ham_web_core::{Bank, QuestionVersion};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::cn::cn;
 use crate::data::{self, VersionStatus};
 use crate::i18n::{bank_class, t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
   BadgeVariant, Button, Label, RadioGroup, RadioGroupItem, Select, SelectItem, Size, Tooltip,
-  Variant, badge_class, button_class,
+  Variant, badge_class, push_success,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum RefreshState {
   Idle,
   Loading,
-  Success,
   Error,
 }
 
@@ -187,13 +185,11 @@ pub fn QuestionBankSelector(
       match data::refresh_all().await {
         Ok(()) => {
           reload().await;
-          refresh_state.set(RefreshState::Success);
+          // 成功不再把按钮染绿 3 秒（那是自造的第二套反馈）：回到空闲态，用全站统一的 Toast 告知。
+          refresh_state.set(RefreshState::Idle);
           retry_count.set(0);
           auto_retrying.set(false);
-          set_timeout(
-            move || refresh_state.set(RefreshState::Idle),
-            Duration::from_secs(3),
-          );
+          push_success(t("exam.refresh-bank-done"));
         }
         Err(e) => {
           web_sys::console::error_1(
@@ -226,67 +222,24 @@ pub fn QuestionBankSelector(
   });
   handle_refresh.set_value(Some(refresh));
 
-  // 刻意的例外：按钮底色随刷新状态（成功 / 失败 / 加载）变化，`Button` 的 `variant` 是
-  // 静态的、`class` 也不接受按状态重算，因此这里直接用 `button_class` 合并类名
-  // （见 `docs/ui-components.md` 的「常见坑」第 4 条）。
-  let refresh_class = move || {
-    let extra = match refresh_state.get() {
-      RefreshState::Success => {
-        "outline border-green-200 bg-green-50 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/40 dark:hover:bg-green-900/40"
-      }
-      RefreshState::Error => {
-        "outline border-red-200 bg-red-50 hover:bg-red-100 border-orange-300 bg-orange-50 hover:bg-orange-100 dark:border-orange-800 dark:bg-orange-950/40 dark:hover:bg-orange-900/40"
-      }
-      RefreshState::Loading | RefreshState::Idle => "outline",
-    };
-    button_class(
-      Variant::Outline,
-      Size::Sm,
-      &cn(&["h-7 px-2 transition-all duration-300", extra]),
-    )
-  };
-
-  let refresh_content = move || {
-    match refresh_state.get() {
+  // 按钮文案随状态变；颜色不变。成功走 Toast，失败详情在下方的错误块里 ——
+  // 以前这里给按钮自造了三种底色（还同时写了 red 与 orange 两套互相冲突的类）。
+  let refresh_label = move || match refresh_state.get() {
     RefreshState::Loading => {
-      let text = if auto_retrying.get() && retry_count.get() > 0 {
+      if auto_retrying.get() && retry_count.get() > 0 {
         tf("exam.auto-retry-2-u", &[&retry_count.get().to_string()])
       } else {
         t("exam.refreshing-u-2026")
-      };
-      view! {
-        <div class="flex items-center gap-1">
-          <Icon kind=IconKind::Loader2 class="h-3 w-3 animate-spin" />
-          <span class="text-xs">{text}</span>
-        </div>
       }
-      .into_any()
     }
-    RefreshState::Success => view! {
-      <div class="flex items-center gap-1">
-        <Icon kind=IconKind::CheckCircle class="h-3 w-3 text-green-500 animate-in fade-in slide-in-from-left-1 duration-300" />
-        <span class="text-xs text-green-600 dark:text-green-400 animate-in fade-in slide-in-from-right-1 duration-300">{move || t("exam.done")}</span>
-      </div>
-    }
-    .into_any(),
     RefreshState::Error => {
-      let label = if retry_count.get() >= 2 || auto_retrying.get() { t("exam.retry") } else { t("exam.failed") };
-      view! {
-        <div class="flex items-center gap-1">
-          <Icon kind=IconKind::XCircle class="h-3 w-3 text-red-500 animate-in fade-in slide-in-from-left-1 duration-300" />
-          <span class="text-xs text-red-600 dark:text-red-400 animate-in fade-in slide-in-from-right-1 duration-300">{label}</span>
-        </div>
+      if retry_count.get() >= 2 || auto_retrying.get() {
+        t("exam.retry")
+      } else {
+        t("exam.failed")
       }
-      .into_any()
     }
-    RefreshState::Idle => view! {
-      <div class="flex items-center gap-1">
-        <Icon kind=IconKind::RefreshCw class="h-3 w-3 transition-transform hover:rotate-12" />
-        <span class="text-xs">{move || t("exam.refresh")}</span>
-      </div>
-    }
-    .into_any(),
-  }
+    RefreshState::Idle => t("exam.refresh"),
   };
 
   let trigger = move || {
@@ -313,7 +266,7 @@ pub fn QuestionBankSelector(
                 {status_icon(&v)}
                 <div class="flex flex-col">
                   <div class="flex items-center gap-2">
-                    <span class="font-medium">{v.version.name.clone()}</span>
+                    <span>{v.version.name.clone()}</span>
                     {v
                       .version
                       .is_latest
@@ -335,19 +288,18 @@ pub fn QuestionBankSelector(
       && (retry_count.get() >= 2 || !auto_retrying.get()))
     .then(|| {
       view! {
-        <div class="mt-2 p-3 bg-orange-50 border border-orange-200 dark:bg-orange-950/40 dark:border-orange-900">
+        <div class="mt-2 border-2 border-destructive bg-card p-3" role="alert">
           <div class="flex items-start gap-2">
-            <Icon kind=IconKind::AlertCircle class="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
+            <Icon kind=IconKind::AlertCircle class="size-6 shrink-0 text-hp-text" />
             <div class="flex-1">
-              <div class="text-sm font-medium text-orange-800 dark:text-orange-200">
+              <div class="text-sm text-hp-text">
                 {move || t("exam.refresh-failed")} {move || error_kind.get().map(|k| format!("({})", k.as_str()))}
               </div>
-              <div class="text-xs text-orange-700 dark:text-orange-300 mt-1">{move || error_message.get()}</div>
+              <div class="mt-1 text-xs text-muted-foreground">{move || error_message.get()}</div>
               <div class="mt-2">
                 <Button
                   variant=Variant::Outline
-                  size=Size::Sm
-                  class="h-6 px-2 text-xs border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-900/40"
+                  size=Size::Xs
                   on_click=Callback::new(move |_| refresh.run(false))
                 >
                   {move || t("exam.retry-manually")}
@@ -373,7 +325,7 @@ pub fn QuestionBankSelector(
         return view! {
           <div class="space-y-4">
             <div class="flex items-center gap-2 text-sm text-muted-foreground">
-              <Icon kind=IconKind::Loader2 class="h-4 w-4 animate-spin" />
+              <Icon kind=IconKind::Loader2 class="size-6 animate-spin" />
               {move || t("exam.loading-bank-versions-u")}
             </div>
           </div>
@@ -399,14 +351,20 @@ pub fn QuestionBankSelector(
                   let m = error_message.get();
                   if m.is_empty() { t("exam.refresh-bank-config") } else { m }
                 })>
-                  <button
-                    class=refresh_class
-                    disabled=move || refresh_state.get() == RefreshState::Loading || disabled.get()
-                    on:click=move |_| refresh.run(false)
+                  <Button
+                    variant=Variant::Outline
+                    size=Size::Xs
+                    loading=Signal::derive(move || refresh_state.get() == RefreshState::Loading)
+                    disabled=disabled
+                    on_click=Callback::new(move |_| refresh.run(false))
                   >
-                    {refresh_content}
+                    {move || {
+                      (refresh_state.get() != RefreshState::Loading)
+                        .then(|| view! { <Icon kind=IconKind::RefreshCw class="size-6" /> })
+                    }}
+                    {refresh_label}
                     <span class="sr-only">{move || t("exam.refresh-config")}</span>
-                  </button>
+                  </Button>
                 </Tooltip>
               </div>
             </div>
@@ -457,7 +415,7 @@ pub fn QuestionBankSelector(
                 .then(|| {
                   view! {
                     <div class="text-sm text-muted-foreground flex items-center gap-2">
-                      <Icon kind=IconKind::XCircle class="h-4 w-4 text-red-500" />
+                      <Icon kind=IconKind::XCircle class="size-6 text-hp-text" />
                       {move || t("exam.no-banks-available-for")}
                     </div>
                   }

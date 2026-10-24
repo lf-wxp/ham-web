@@ -10,8 +10,8 @@ use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 use wasm_bindgen::JsCast;
 
-use crate::components::common::PageContainer;
 use crate::components::common::Skeleton;
+use crate::components::common::{PageContainer, PageHeader};
 use crate::data;
 use crate::gesture::{Swipe, swipe_handlers};
 use crate::i18n::{t, tf, tp};
@@ -222,7 +222,13 @@ pub fn CardsPage() -> impl IntoView {
   };
 
   let handle = window_event_listener(ev::keydown, move |e| {
-    if e.repeat() || e.ctrl_key() || e.meta_key() || e.alt_key() || typing_in_field(&e) {
+    if e.repeat()
+      || e.ctrl_key()
+      || e.meta_key()
+      || e.alt_key()
+      || typing_in_field(&e)
+      || crate::shortcuts::modal_is_open()
+    {
       return;
     }
     match e.key().as_str() {
@@ -251,10 +257,10 @@ pub fn CardsPage() -> impl IntoView {
     let label = view! {
       {move || t(d.label())}
       {move || (due() > 0).then(|| view! {
-        <span class="bg-amber-500/20 px-1.5 tabular-nums text-amber-800 dark:text-amber-300">{due()}</span>
+        <span class="bg-gold/20 px-1.5 tabular-nums text-gold-text">{due()}</span>
       })}
     }
-      .into_any();
+    .into_any();
     view! { <Chip value=d.label().to_owned()>{label}</Chip> }
   };
 
@@ -306,8 +312,8 @@ pub fn CardsPage() -> impl IntoView {
             role="img"
             aria-label=tip
           >
-            <div class="bg-emerald-500/70" style=format!("width: {mature_w}")></div>
-            <div class="bg-sky-400/70" style=format!("width: {learned_w}")></div>
+            <div class="bg-win/70" style=format!("width: {mature_w}")></div>
+            <div class="bg-xp/70" style=format!("width: {learned_w}")></div>
           </div>
         </Tooltip>
       }
@@ -338,7 +344,7 @@ pub fn CardsPage() -> impl IntoView {
       });
       return view! {
         <div class="space-y-3 py-10 text-center">
-          <p class="text-base font-semibold">{tf("common.today-s-cards-are", &[(deck.get_untracked().label())])}</p>
+          <p class="text-base">{tf("common.today-s-cards-are", &[(deck.get_untracked().label())])}</p>
           <p class="text-sm text-muted-foreground">
             {move || if reviewed.get() > 0 { tp("common.reviewed-cards-this-round", reviewed.get(), &[&(reviewed.get()).to_string()]) } else { t("exam.due-cards-and-new") }}
           </p>
@@ -376,7 +382,7 @@ pub fn CardsPage() -> impl IntoView {
           <span class="sr-only">
             {move || if revealed.get() { t("knowledge.back-of-the-card") } else { t("knowledge.flip-to-see-the") }}
           </span>
-          <span class="font-mono text-3xl font-bold tracking-wide">{c.front.clone()}</span>
+          <span class="font-mono text-3xl tracking-wide">{c.front.clone()}</span>
           {c.hint.clone().filter(|_| !revealed.get_untracked()).map(|h| view! { <span class="text-xs text-muted-foreground">{h}</span> })}
           {move || revealed.get().then(|| {
             let c = c.clone();
@@ -436,12 +442,16 @@ pub fn CardsPage() -> impl IntoView {
   };
 
   view! {
-    <PageContainer class="space-y-4 py-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <div>
-        <h1 class="text-base font-semibold leading-tight">{move || t("shell.study-cards")}</h1>
-        <p class="text-xs text-muted-foreground">{move || t("exam.reviews-follow-a-forgetting")}</p>
-      </div>
-      <ChipGroup
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
+      // 页头走 `PageHeader`（与全站一致：吸顶 + `pxl-title` + 主色左轨）。
+      // 以前是页内手写的 `<h1 class="text-base">`：标题用的是正文字体、没有响应式字号，
+      // 和别的页面放在一起看就是「另一套标题」。
+      <PageHeader
+        title=Signal::derive(move || t("shell.study-cards"))
+        subtitle=Signal::derive(move || t("exam.reviews-follow-a-forgetting"))
+      />
+      <PageContainer class="space-y-4 py-6">
+        <ChipGroup
         value=Signal::derive(move || deck.get().label().to_owned())
         on_change=Callback::new(move |v: String| {
           if let Some(d) = Deck::ALL.into_iter().find(|d| d.label() == v) {
@@ -453,9 +463,10 @@ pub fn CardsPage() -> impl IntoView {
       >
         {Deck::ALL.into_iter().map(chip).collect_view()}
       </ChipGroup>
-      <p class="text-xs text-muted-foreground tabular-nums">{progress}</p>
-      {mastery_bar}
-      {card_view}
-    </PageContainer>
+        <p class="text-xs text-muted-foreground tabular-nums">{progress}</p>
+        {mastery_bar}
+        {card_view}
+      </PageContainer>
+    </div>
   }
 }

@@ -35,7 +35,7 @@ pub(super) fn ScpSuggest(
               <div aria-live="polite">
                 {if l.exact {
                   view! {
-                    <span class="font-medium text-emerald-600 dark:text-emerald-400">
+                    <span class="text-win-text">
                       {tf("contest.scp-exact", &[&typed])}
                     </span>
                   }

@@ -8,8 +8,9 @@ use crate::icons::{Icon, IconKind};
 use super::shared::{on_open, state_attr, trap_tab, use_presence};
 use crate::i18n::t;
 
-/// 退场动画时长（毫秒）：与类名里的 `duration-200` 对应 —— 卸载得晚于动画结束，
-/// 否则退场会被截断。
+/// 退场动画时长（毫秒）：与 `pxl-enter` 的 `--motion-normal`（0.24s，见 `motion.css`）对应 ——
+/// 卸载得晚于动画结束，否则退场会被截断。留 200ms 是因为 `pxl-enter` 的退场走 `steps(3)`，
+/// 第三帧在 160ms 落定。
 const EXIT_MS: u64 = 200;
 
 /// 居中模态对话框。

@@ -20,6 +20,7 @@ use crate::pages::log::use_log_store;
 use crate::share_score::download;
 use crate::ui::{
   Button, Field, Input, NativeSelect, RadioGroup, RadioGroupItem, SelectOption, Size, Variant,
+  card_title_class,
 };
 use crate::util::{
   cancel_debounce, debounce, document, js_error_message, set_title, storage, window,
@@ -326,7 +327,7 @@ pub fn QslDesignerPage() -> impl IntoView {
   };
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       // 屏幕上的一切都不打印；打印时只留下面那张 A4 卡片。
       <div class="print-hide">
         <PageHeader
@@ -337,7 +338,7 @@ pub fn QslDesignerPage() -> impl IntoView {
           <div class="grid gap-4 lg:grid-cols-2">
             // 表单
             <section class="pxl-card border bg-card p-4">
-              <h2 class="mb-3 text-sm font-semibold">{move || t("log.card-template")}</h2>
+              <h2 class=card_title_class("mb-3")>{move || t("log.card-template")}</h2>
               <RadioGroup
                 value=Signal::derive(move || template.get().id().to_owned())
                 on_change=Callback::new(move |v: String| {
@@ -410,7 +411,7 @@ pub fn QslDesignerPage() -> impl IntoView {
                   .into_any()
               }}
 
-              <h2 class="mb-3 text-sm font-semibold">{move || t("log.card-info")}</h2>
+              <h2 class=card_title_class("mb-3")>{move || t("log.card-info")}</h2>
               <div class="space-y-3">
                 <div class="grid grid-cols-2 gap-3">
                   {field("log.station-callsign", f.my_call, "BG4XXX")}
@@ -438,8 +439,8 @@ pub fn QslDesignerPage() -> impl IntoView {
 
             // 预览 + 导出 / 打印
             <section class="pxl-card border bg-card p-4">
-              <h2 class="mb-3 text-sm font-semibold">{move || t("log.preview")}</h2>
-              <div class="overflow-hidden border bg-muted/30 p-2">
+              <h2 class=card_title_class("mb-3")>{move || t("log.preview")}</h2>
+              <div class="overflow-hidden border bg-inset p-2">
                 <img
                   src=move || preview.get()
                   alt=t("log.qsl-card-preview")

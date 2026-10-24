@@ -1,6 +1,6 @@
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
-use crate::ui::{ButtonLink, Variant};
+use crate::ui::{ButtonLink, Variant, card_title_class};
 use crate::util::set_title;
 use leptos::prelude::*;
 
@@ -14,7 +14,7 @@ pub fn LicenseNoticePage() -> impl IntoView {
     />
     <PageContainer>
       <section class="pxl-window bg-card text-card-foreground">
-        <h2 class="border-b-2 border-ink px-4 py-3 text-sm text-primary">{move || t("shell.software-license-components")}</h2>
+        <h2 class=card_title_class("border-b-2 border-ink px-4 py-3 text-primary")>{move || t("shell.software-license-components")}</h2>
         <div class="space-y-4 p-4 text-sm leading-7">
           <p>{move || t("shell.software-license-mit")}</p>
           <p class="font-mono">"Copyright (c) 2026 lf-wxp"</p>
@@ -30,7 +30,7 @@ pub fn LicenseNoticePage() -> impl IntoView {
         </div>
       </section>
       <section class="pxl-window bg-card text-card-foreground">
-        <h2 class="border-b-2 border-ink px-4 py-3 text-sm text-primary">{move || t("shell.software-license-source")}</h2>
+        <h2 class=card_title_class("border-b-2 border-ink px-4 py-3 text-primary")>{move || t("shell.software-license-source")}</h2>
         <div class="space-y-4 p-4 text-sm leading-7">
           <p>{move || t("shell.software-license-source-details")}</p>
           <p>{move || t("shell.software-license-source-version")}</p>
@@ -40,7 +40,7 @@ pub fn LicenseNoticePage() -> impl IntoView {
         </div>
       </section>
       <section class="pxl-window bg-card text-card-foreground">
-        <h2 class="border-b-2 border-ink px-4 py-3 text-sm text-primary">{move || t("shell.software-license-provenance")}</h2>
+        <h2 class=card_title_class("border-b-2 border-ink px-4 py-3 text-primary")>{move || t("shell.software-license-provenance")}</h2>
         <ul class="space-y-4 p-4 text-sm leading-7">
           <li>
             <a href="https://github.com/w1hkj/fldigi" class="text-primary underline underline-offset-4">"DominoEX · fldigi"</a>

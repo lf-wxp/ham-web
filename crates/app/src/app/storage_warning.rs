@@ -17,7 +17,7 @@ pub(super) fn StorageWarning() -> impl IntoView {
       view! {
         <div
           role="alert"
-          class="fixed inset-x-0 bottom-0 z-50 border-t border-red-500/40 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-lg dark:bg-red-950 dark:text-red-200"
+          class="fixed inset-x-0 bottom-0 z-50 border-t border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-hp-text shadow-lg"
         >
           <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3">
             <span class="mr-auto">

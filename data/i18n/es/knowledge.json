@@ -414,7 +414,7 @@
   "knowledge.preset-satellite": "Satélites",
   "knowledge.radar-title": "Radar de seis ejes",
   "knowledge.radar-hint": "Cada eje se normaliza con una escala fija dentro de esta biblioteca: más hacia fuera es mejor. Un eje sin datos queda en el centro.",
-  "knowledge.best-marked-bold": "La negrita marca el mejor de la fila.",
+  "knowledge.best-marked": "La celda resaltada es la mejor de la fila.",
   "knowledge.rx-metrics-from": "Las métricas de receptor vienen de {}: esa tabla solo mide receptores de la clase HF / 50 MHz, así que los equipos no incluidos quedan en blanco. Los valores y las condiciones de medida son los de la tabla.",
   "knowledge.axis-imd-narrow": "DR de separación estrecha",
   "knowledge.axis-imd-wide": "DR de separación ancha",

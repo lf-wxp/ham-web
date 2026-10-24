@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn HistoryPage() -> impl IntoView {
   set_title("shell.amateur-radio-history");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.amateur-radio-history")
         subtitle=move || t("knowledge.key-figures-milestone-timeline")
@@ -26,7 +26,7 @@ pub fn HistoryPage() -> impl IntoView {
               .map(|&(year, event)| {
                 view! {
                   <div class="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-baseline sm:gap-4">
-                    <span class="shrink-0 font-mono text-sm font-semibold text-primary">{year}</span>
+                    <span class="shrink-0 font-mono text-sm text-primary">{year}</span>
                     <span class="text-sm text-muted-foreground">{event}</span>
                   </div>
                 }

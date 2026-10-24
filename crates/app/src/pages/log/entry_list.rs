@@ -9,7 +9,7 @@ use crate::components::common::EmptyState;
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
   Button, Input, InputType, NativeSelect, Pagination, SelectOption, Size, Table, TableBody,
-  TableCell, TableHead, TableHeader, TableRow, Tooltip, Variant,
+  TableCell, TableHead, TableHeader, TableRow, Tooltip, Variant, card_title_class,
 };
 
 use super::card_image_mark::CardImageMark;
@@ -75,7 +75,7 @@ pub(super) fn EntryList(
     // 日志列表
     <section class="pxl-card border bg-card">
       <div class="flex items-center justify-between border-b px-4 py-3">
-        <h2 class="text-sm font-semibold">
+        <h2 class=card_title_class("")>
           {move || t("log.records-heading")}
           <span class="ml-2 text-xs font-normal text-muted-foreground">
             {move || {
@@ -229,7 +229,7 @@ pub(super) fn EntryList(
                         </TableCell>
                         <TableCell class=format!("{CELL} whitespace-nowrap")>{mode}</TableCell>
                         <TableCell class=format!("{CELL} whitespace-nowrap")>
-                          <span class="font-mono font-medium">{callsign}</span>
+                          <span class="font-mono">{callsign}</span>
                           // 多台站时标出这条通联的归属：只有一个台站（绝大多数人）时不显示，
                           // 免得每行都挂一个没信息量的标签。
                           {move || {
@@ -262,7 +262,7 @@ pub(super) fn EntryList(
                           {remark}
                           {tags
                             .into_iter()
-                            .map(|t| view! { <span class="ml-1 inline-block border px-1 text-[10px]">{t}</span> })
+                            .map(|t| view! { <span class="ml-1 inline-block border px-1 text-xs">{t}</span> })
                             .collect_view()}
                         </TableCell>
                         <td data-slot="qsl-cell" class=format!("{CELL} whitespace-nowrap")>
@@ -283,7 +283,7 @@ pub(super) fn EntryList(
                             <Button
                               variant=Variant::Text
                               size=Size::Xs
-                              class="hover:text-destructive"
+                              class="hover:text-hp-text"
                               on_click=Callback::new(move |_| on_remove.run(id))
                             >
                               {move || t("log.delete")}

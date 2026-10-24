@@ -69,9 +69,9 @@ pub(super) fn PatternPlot() -> impl IntoView {
 
   let tab_class = move |active: bool| {
     if active {
-      "bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground"
+      "bg-primary px-2.5 py-1.5 text-xs text-primary-foreground"
     } else {
-      "px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent"
+      "px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-accent"
     }
   };
 
@@ -90,15 +90,15 @@ pub(super) fn PatternPlot() -> impl IntoView {
   view! {
     <div class="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
       <div class="flex flex-col gap-2 sm:w-40">
-        <div class="text-[10px] font-semibold text-muted-foreground">{move || t("knowledge.azimuth")}</div>
+        <div class="text-xs text-muted-foreground">{move || t("knowledge.azimuth")}</div>
         {AZIMUTH.iter().map(|&k| button(k)).collect_view()}
-        <div class="mt-1 text-[10px] font-semibold text-muted-foreground">{move || t("knowledge.elevation")}</div>
+        <div class="mt-1 text-xs text-muted-foreground">{move || t("knowledge.elevation")}</div>
         {ELEVATION.iter().map(|&k| button(k)).collect_view()}
         {move || {
           (kind.get() == PatternKind::DipoleEl).then(|| {
             view! {
-              <div class="mt-2 border bg-muted/30 px-3 py-2">
-                <div class="flex items-center justify-between text-[10px] text-muted-foreground">
+              <div class="mt-2 border bg-inset px-3 py-2">
+                <div class="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{move || t("knowledge.height")}</span>
                   <span class="font-mono tabular-nums">{format!("{:.2} λ", height_wl.get())}</span>
                 </div>

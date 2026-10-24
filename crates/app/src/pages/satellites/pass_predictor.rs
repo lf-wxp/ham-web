@@ -174,16 +174,16 @@ pub(super) fn PassPredictor() -> impl IntoView {
           </span>
         </div>
 
-        <div class="border bg-muted/30 p-3">
+        <div class="border bg-inset p-3">
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-            <label class="inline-flex cursor-pointer items-center gap-2 font-medium">
+            <label class="inline-flex cursor-pointer items-center gap-2">
               <Checkbox
                 checked=Signal::derive(move || watch.with(|w| w.alerts))
                 on_change=Callback::new(move |on: bool| toggle_alerts(on))
               />
               {move || t("radio.notify-me-before-a")}
             </label>
-            <label class="inline-flex cursor-pointer items-center gap-2 font-medium">
+            <label class="inline-flex cursor-pointer items-center gap-2">
               <Checkbox
                 checked=Signal::derive(move || watch.with(|w| w.apt_alert))
                 on_change=Callback::new(move |on: bool| toggle_apt(on))
@@ -240,7 +240,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
                 } else {
                   next.into_iter().take(3).map(|p| view! {
                     <div class="flex flex-wrap items-baseline gap-x-2">
-                      <span class="font-medium">{p.name.clone()}</span>
+                      <span>{p.name.clone()}</span>
                       <span class="font-mono tabular-nums">{fmt_pass_time(p.aos)}</span>
                       <span class="text-xs text-muted-foreground">
                         {tf("radio.max-entering-from-min", &[&format!("{:.0}", p.max_elev), (compass(p.azimuth)), &((p.los - p.aos + 59) / 60).to_string()])}
@@ -256,7 +256,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
         {move || {
           if loading.get() {
             return view! {
-              <div class="bg-muted/40 px-3 py-8 text-center text-sm text-muted-foreground">
+              <div class="bg-inset px-3 py-8 text-center text-sm text-muted-foreground">
                 {move || t("radio.calculating-pass-predictions")}
               </div>
             }
@@ -264,7 +264,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
           }
           if failed.get() {
             return view! {
-              <div class="bg-muted/40 px-3 py-6 text-center text-sm text-muted-foreground">
+              <div class="bg-inset px-3 py-6 text-center text-sm text-muted-foreground">
                 {move || t("radio.pass-data-is-unavailable")}
               </div>
             }
@@ -327,7 +327,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
                               <TableCell class=format!("{CELL} w-10 text-center")>
                                 <button
                                   type="button"
-                                  class=move || if fav() { "text-amber-500" } else { "text-muted-foreground hover:text-amber-500" }
+                                  class=move || if fav() { "text-gold-text" } else { "text-muted-foreground hover:text-gold-text" }
                                   aria-pressed=move || fav().to_string()
                                   aria-label=tf("radio.save", &[&(name).to_string()])
                                   on:click={
@@ -340,7 +340,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
                                   {move || if fav() { "★" } else { "☆" }}
                                 </button>
                               </TableCell>
-                              <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{p.name.clone()}</TableCell>
+                              <TableCell class=format!("{CELL} whitespace-nowrap")>{p.name.clone()}</TableCell>
                               <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")
                                 title=tf("radio.max-elevation-at", &[&(fmt_pass_time(p.max_elev_time)).to_string()])
                               >

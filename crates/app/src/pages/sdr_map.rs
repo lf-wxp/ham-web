@@ -34,7 +34,7 @@ pub fn SdrMapPage() -> impl IntoView {
                   cx=x.to_string()
                   cy=y.to_string()
                   r="3"
-                  class="fill-emerald-500 stroke-emerald-500/60"
+                  class="fill-win/70 stroke-win/60"
                   stroke-width="1"
                   vector-effect="non-scaling-stroke"
                 >
@@ -61,13 +61,13 @@ pub fn SdrMapPage() -> impl IntoView {
                 <div class="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center">
                   <div class="min-w-0 flex-1">
                     <div class="flex flex-wrap items-baseline gap-x-2">
-                      <span class="text-sm font-medium">
+                      <span class="text-sm">
                         {move || {
                           data::track_knowledge();
                           kt(s.name)
                         }}
                       </span>
-                      <span class="border bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
+                      <span class="border bg-inset px-2 py-0.5 text-xs text-muted-foreground">
                         {move || {
                           data::track_knowledge();
                           kt(s.kind)
@@ -104,7 +104,7 @@ pub fn SdrMapPage() -> impl IntoView {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <Icon kind=IconKind::ExternalLink class="size-3.5" />
+                      <Icon kind=IconKind::ExternalLink class="size-6" />
                       {move || t("tools.open-receiver")}
                     </ButtonLink>
                   </div>
@@ -128,9 +128,9 @@ pub fn SdrMapPage() -> impl IntoView {
                   href=d.url
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="flex flex-col gap-0.5 px-4 py-3 transition-colors hover:bg-muted/40 sm:flex-row sm:items-baseline sm:gap-3"
+                  class="flex flex-col gap-0.5 px-4 py-3 transition-colors hover:bg-inset sm:flex-row sm:items-baseline sm:gap-3"
                 >
-                  <span class="shrink-0 text-sm font-medium text-primary">
+                  <span class="shrink-0 text-sm text-primary">
                     {move || {
                       data::track_knowledge();
                       kt(d.name)

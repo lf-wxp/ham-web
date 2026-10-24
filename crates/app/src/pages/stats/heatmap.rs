@@ -5,7 +5,7 @@ use leptos::prelude::*;
 /// 根据计数值与最大值返回色阶类名（完整字面量，供 Tailwind 扫描）。
 fn cell_class(count: u32, max: u32) -> &'static str {
   if count == 0 {
-    return "bg-muted/50";
+    return "bg-inset";
   }
   let ratio = count as f64 / max as f64;
   if ratio >= 0.8 {
@@ -34,12 +34,12 @@ pub(super) fn Heatmap(rows: Vec<(String, [u32; 24])>) -> impl IntoView {
   view! {
     <div class="space-y-1.5">
       <div class="flex items-center gap-1">
-        <span class="w-12 shrink-0 text-right text-[10px] text-muted-foreground">"UTC"</span>
+        <span class="w-12 shrink-0 text-right text-xs text-muted-foreground">"UTC"</span>
         <div class="flex flex-1 gap-px">
           {(0..24)
             .map(|h| {
               view! {
-                <div class="flex-1 text-center text-[9px] leading-none text-muted-foreground">
+                <div class="min-w-0 flex-1 text-center text-xs leading-none text-muted-foreground">
                   {if h % 3 == 0 { h.to_string() } else { String::new() }}
                 </div>
               }
@@ -79,7 +79,7 @@ pub(super) fn Heatmap(rows: Vec<(String, [u32; 24])>) -> impl IntoView {
                   })
                   .collect_view()}
               </div>
-              <span class="w-8 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">
+              <span class="w-8 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
                 {total}
               </span>
             </div>

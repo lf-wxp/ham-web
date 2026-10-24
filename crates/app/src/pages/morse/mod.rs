@@ -7,6 +7,7 @@ mod callsign_session;
 mod cw_decoder;
 mod koch_trainer;
 mod morse_card;
+mod morse_key;
 mod morse_page;
 mod morse_trainer;
 mod pill_button;
@@ -190,10 +191,10 @@ fn random_index(len: usize) -> usize {
   (random() * len as f64) as usize
 }
 
-fn pill_class(active: bool) -> &'static str {
-  if active {
-    "inline-flex items-center justify-center whitespace-nowrap border border-primary bg-primary px-3 py-1 text-xs font-medium text-primary-foreground shadow-sm shadow-primary/20 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-  } else {
-    "inline-flex items-center justify-center whitespace-nowrap border bg-card px-3 py-1 text-xs transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-  }
+/// 呼号抄收页里「静态标签」的胶囊样式。
+///
+/// 曾经带一个 `active` 参数、还有一支主色底 + `shadow-primary/20` 的分支，但唯一的调用点
+/// （`callsign_runner.rs`）一直传 `false` 且挂在 `<span>` 上 —— 那一支是死代码，已删。
+fn pill_class() -> &'static str {
+  "inline-flex items-center justify-center whitespace-nowrap border bg-card px-3 py-1 text-xs"
 }

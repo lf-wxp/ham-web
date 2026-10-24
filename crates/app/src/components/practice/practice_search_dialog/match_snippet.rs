@@ -30,7 +30,7 @@ pub(super) fn match_snippet(text: &str, query: &str) -> AnyView {
     <span class="inline-flex items-center gap-1 max-w-[46ch]">
       <span class="truncate">
         {prefix} {slice(start, idx)}
-        <mark class="bg-yellow-200 text-yellow-900 dark:bg-yellow-500/30 dark:text-yellow-100 px-0.5">{slice(idx, idx + q.len())}</mark>
+        <mark class="bg-gold/20 text-gold-text px-0.5">{slice(idx, idx + q.len())}</mark>
         {slice(idx + q.len(), end)} {suffix}
       </span>
     </span>

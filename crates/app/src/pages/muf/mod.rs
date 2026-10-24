@@ -17,7 +17,7 @@ use voacap_card::VoacapCard;
 pub fn MufPage() -> impl IntoView {
   set_title("shell.propagation-forecast");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.propagation-forecast")
         subtitle=move || t("tools.muf-luf-optimum-working")
@@ -36,7 +36,7 @@ pub fn MufPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
+                    <span class="text-sm">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
                 }
@@ -53,7 +53,7 @@ pub fn MufPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex items-baseline gap-2 px-3 py-2">
-                    <span class="shrink-0 text-sm font-medium">{t}</span>
+                    <span class="shrink-0 text-sm">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
                 }

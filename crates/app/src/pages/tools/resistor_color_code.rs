@@ -75,7 +75,7 @@ pub(super) fn ResistorColorCode() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class="sm:col-span-2 bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
+      <div class="sm:col-span-2 bg-inset px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let value = (ring1.get() * 10.0 + ring2.get()) * 10f64.powf(mult.get());
           tf(

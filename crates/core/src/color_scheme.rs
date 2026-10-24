@@ -300,6 +300,13 @@ const DARK_TEXT: Rgb = Rgb::from_u32(0x1a1c2c);
 /// 字色的最低要求：比 AA 的 4.5 留一点余量。
 const MIN_TEXT: f64 = 4.8;
 
+/// 控件 / 窗口描边（`--pxl-ink`）对它所在表面的最低要求：WCAG 1.4.11（非文本对比度）的 3:1。
+///
+/// 为什么单独列：像素风的核心是那圈 2px 墨框。亮色下墨框是近黑，对卡片 13–20:1；暗色下它曾是
+/// 「底色往边色靠 55%」的一条灰，对卡片只有 2.6–2.9、对按钮底最低 2.0 —— 同一套设计，暗色的
+/// 「框」薄得只剩内高光在撑。这里按暗色里最亮的几个表面把它推到够 3:1 为止。
+const MIN_EDGE: f64 = 3.0;
+
 /// 在 `bg` 上读得最清楚的字色（浅 / 深二选一）；两个都不够 4.5 时返回 `Err`。
 fn best_text_on(bg: Rgb, what: &str) -> Result<Rgb, String> {
   let best = [LIGHT_TEXT, DARK_TEXT]
@@ -377,7 +384,14 @@ impl Scheme {
     // 暗色下描边用「墨色往底色靠 30%」的灰；亮色下直接用墨色。
     let edge = ink.mix(bg, 0.30);
     let (input, border, pxl_ink) = if dark {
-      (edge, Value::Alpha(edge, 0.26), bg.mix(edge, 0.55))
+      // 墨框：从原来的灰出发往墨色推，直到在每个会被它描边的表面上都 >= MIN_EDGE。
+      let frame = readable(
+        bg.mix(edge, 0.55),
+        ink,
+        &[bg, card, popover, secondary, muted, field],
+        MIN_EDGE,
+      );
+      (edge, Value::Alpha(edge, 0.26), frame)
     } else {
       (ink, Value::Alpha(ink, 0.22), ink)
     };
@@ -535,6 +549,32 @@ mod tests {
         assert!(r >= 4.5, "{} dark={dark}: 强调面上的字只有 {r:.2}", s.id);
         let r = get(&t, "--primary-foreground").contrast(get(&t, "--primary"));
         assert!(r >= 4.5, "{} dark={dark}: 主色上的字只有 {r:.2}", s.id);
+      }
+    }
+  }
+
+  #[test]
+  fn the_ink_frame_clears_non_text_contrast_on_every_surface_it_outlines() {
+    // 亮色一直是近黑墨框；暗色曾只有 2.0–2.9:1（见 `MIN_EDGE`）。
+    for s in SCHEMES {
+      for dark in [false, true] {
+        let t = s.tokens(dark).unwrap();
+        let ink = get(&t, "--pxl-ink");
+        for name in [
+          "--background",
+          "--card",
+          "--popover",
+          "--secondary",
+          "--muted",
+          "--pxl-field",
+        ] {
+          let r = ink.contrast(get(&t, name));
+          assert!(
+            r >= MIN_EDGE,
+            "{} dark={dark}: 墨框落在 {name} 上只有 {r:.2}",
+            s.id
+          );
+        }
       }
     }
   }

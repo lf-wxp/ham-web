@@ -35,7 +35,7 @@ pub fn ContestCalendarPage() -> impl IntoView {
   };
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.contest-calendar")
         subtitle=move || t("contest.major-global-contests-add")
@@ -65,8 +65,8 @@ pub fn ContestCalendarPage() -> impl IntoView {
                   <div class="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_auto]">
                     <div class="min-w-0">
                       <div class="flex flex-wrap items-baseline gap-x-2">
-                        <span class="font-medium">{move || t(ev.name)}</span>
-                        <span class="border bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
+                        <span>{move || t(ev.name)}</span>
+                        <span class="border bg-inset px-2 py-0.5 text-xs text-muted-foreground">
                           {move || t(ev.mode)}
                         </span>
                       </div>

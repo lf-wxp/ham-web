@@ -10,7 +10,7 @@ pub(super) fn LabelList(rows: &'static [(&'static str, &'static str)]) -> impl I
         .map(|&(k, v)| {
           view! {
             <div class="grid gap-1 px-4 py-3 sm:grid-cols-[12rem_1fr]">
-              <dt class="font-medium">{k}</dt>
+              <dt>{k}</dt>
               <dd class="text-sm text-muted-foreground">{v}</dd>
             </div>
           }

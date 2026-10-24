@@ -223,24 +223,27 @@
 /* ---------- 交互反馈：可点击区块的抬起 ----------
    给「整块可点」的卡片 / 统计格用；纯内容区块（正文卡片、表格）不要加，
    悬停时内容整体位移反而干扰阅读。位移 2px（一个 art-pixel），阴影同步拉长。 */
+/* 位移用独立的 `translate` 属性（不是 `transform`）：卡片同时挂着入场动画
+   （`reveal` / `pxl-enter` 用的是 `transform`），两者各占一个属性才不会互相覆盖；
+   `pxl-btn` 也是这套 —— 全站的「上抬 / 下沉」只有一种实现（e2e 读的也是 `translate`）。 */
 .motion-lift {
   position: relative;
   transition:
-    transform var(--motion-fast) steps(2, end),
+    translate var(--motion-fast) steps(2, end),
     border-color var(--motion-fast) steps(2, end),
     box-shadow var(--motion-fast) steps(2, end);
 }
 
 @media (hover: hover) {
   .motion-lift:hover {
-    transform: translate3d(0, -2px, 0);
+    translate: 0 -2px;
     border-color: var(--primary);
     box-shadow: 4px 6px 0 0 var(--pxl-shadow);
   }
 }
 
 .motion-lift:active {
-  transform: translate3d(0, 2px, 0);
+  translate: 0 2px;
   box-shadow: 0 0 0 0 var(--pxl-shadow);
   transition-duration: var(--motion-instant);
 }

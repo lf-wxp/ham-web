@@ -15,7 +15,7 @@ use crate::i18n::{t, tf, tp};
 use crate::pages::log::{
   GridMap, StatsScopeSelect, scoped_log_entries, use_log_store, use_stats_scope,
 };
-use crate::ui::{Field, Input};
+use crate::ui::{Field, Input, card_title_class};
 use crate::util::set_title;
 
 /// 反向地理编码结果（/api/geocode）。
@@ -82,7 +82,7 @@ pub fn GridMapPage() -> impl IntoView {
   });
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=Signal::derive(move || t("shell.grid-map"))
         subtitle=Signal::derive(move || t("radio.maidenhead-grid-locator-lookup"))
@@ -96,7 +96,7 @@ pub fn GridMapPage() -> impl IntoView {
       />
       <PageContainer>
         <section class="pxl-card border bg-card p-4">
-          <h2 class="mb-3 text-sm font-semibold">{move || t("radio.grid-lookup")}</h2>
+          <h2 class=card_title_class("mb-3")>{move || t("radio.grid-lookup")}</h2>
           <div class="grid gap-3 sm:grid-cols-2">
             <Field
               label=Signal::derive(move || t("radio.enter-a-maidenhead-grid"))
@@ -111,7 +111,7 @@ pub fn GridMapPage() -> impl IntoView {
                 class="font-mono uppercase"
               />
             </Field>
-            <div class="flex items-center bg-muted/40 px-3 py-2 text-sm tabular-nums">
+            <div class="flex items-center bg-inset px-3 py-2 text-sm tabular-nums">
               {move || {
                 let q = query.get().trim().to_ascii_uppercase();
                 if q.is_empty() {

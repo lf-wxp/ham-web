@@ -18,7 +18,7 @@ pub fn SatellitesPage() -> impl IntoView {
   // 多普勒面板此刻要对准的方向，旋转器控制条据此自动跟踪（默认关闭，需手动勾选）。
   let aim = RwSignal::new(None::<Aim>);
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.satellites")
         subtitle=move || t("radio.fm-repeaters-and-linear")
@@ -63,7 +63,7 @@ pub fn SatellitesPage() -> impl IntoView {
                 view! {
                   <TableRow>
                     <TableCell class=format!("{CELL} whitespace-nowrap")>
-                      <div class="font-medium">{s.name}</div>
+                      <div>{s.name}</div>
                       <div class="font-mono text-xs text-muted-foreground">{s.callsign}</div>
                     </TableCell>
                     <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{s.kind}</TableCell>
@@ -102,7 +102,7 @@ pub fn SatellitesPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex items-baseline gap-2 px-3 py-2">
-                    <span class="shrink-0 text-sm font-medium">{t}</span>
+                    <span class="shrink-0 text-sm">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
                 }

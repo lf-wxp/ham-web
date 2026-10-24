@@ -59,9 +59,9 @@ pub(super) fn CallAreaQuiz() -> impl IntoView {
     <section class="pxl-card border bg-card">
       <h2 class="pxl-section-title">{move || t("radio.zone-quiz")}</h2>
       <div class="space-y-4 p-4">
-        <div class="flex flex-col items-center gap-2 border bg-muted/30 px-4 py-6">
+        <div class="flex flex-col items-center gap-2 border bg-inset px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("radio.which-region-does-this")}</div>
-          <div class="font-mono text-3xl font-semibold text-primary">{move || tf("common.zone", &[&(question.get()).to_string()])}</div>
+          <div class="font-mono text-3xl text-primary">{move || tf("common.zone", &[&(question.get()).to_string()])}</div>
         </div>
         <div class="grid gap-2 sm:grid-cols-2">
           {move || {
@@ -89,12 +89,12 @@ pub(super) fn CallAreaQuiz() -> impl IntoView {
               feedback.get().map(|ok| {
                 if ok {
                   view! {
-                    <span class="font-medium text-emerald-600 dark:text-emerald-400">{move || t("learning.correct")}</span>
+                    <span class="text-win-text">{move || t("learning.correct")}</span>
                   }
                   .into_any()
                 } else {
                   view! {
-                    <span class="font-medium text-red-600 dark:text-red-400">
+                    <span class="text-hp-text">
                       {move || {
                         format!(
                           "{}{}",
@@ -113,8 +113,8 @@ pub(super) fn CallAreaQuiz() -> impl IntoView {
             {move || t("exam.next")}
           </Button>
           <div class="text-xs text-muted-foreground">
-            {t("common.correct-label")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
-            {t("common.wrong-label")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
+            {t("common.correct-label")} <span class="tabular-nums text-foreground">{move || correct.get()}</span>
+            {t("common.wrong-label")} <span class="tabular-nums text-foreground">{move || wrong.get()}</span>
           </div>
         </div>
       </div>

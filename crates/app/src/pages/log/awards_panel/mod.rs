@@ -33,7 +33,7 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>, apply_open: RwSignal<bool>) ->
   view! {
     <section id="awards" class="scroll-mt-24 pxl-card border bg-card">
       <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-        <h3 class="mr-auto text-sm font-semibold">{move || t("log.award-progress")}</h3>
+        <h3 class="mr-auto text-sm">{move || t("log.award-progress")}</h3>
         <RadioGroup
           value=Signal::derive(move || {
             if confirmed.get() { "confirmed" } else { "worked" }.to_owned()
@@ -78,8 +78,8 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>, apply_open: RwSignal<bool>) ->
           view! {
             <div class="space-y-5 p-4">
               {(!gaps.is_empty()).then(|| view! {
-                <div class="border bg-muted/30 p-3">
-                  <div class="mb-1.5 text-xs font-semibold">{move || t("log.sprint-suggestions")}</div>
+                <div class="border bg-inset p-3">
+                  <div class="mb-1.5 text-xs">{move || t("log.sprint-suggestions")}</div>
                   <div class="flex flex-wrap gap-1.5">
                     {gaps
                       .iter()
@@ -93,7 +93,7 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>, apply_open: RwSignal<bool>) ->
                       })
                       .collect_view()}
                   </div>
-                  <p class="mt-1.5 text-[11px] text-muted-foreground">{move || t("log.closer-to-the-goal")}</p>
+                  <p class="mt-1.5 text-xs text-muted-foreground">{move || t("log.closer-to-the-goal")}</p>
                 </div>
               })}
               <div class="space-y-3">
@@ -102,7 +102,7 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>, apply_open: RwSignal<bool>) ->
                   {modes
                     .into_iter()
                     .map(|(m, n)| view! {
-                      <span>{m} " " <span class="font-semibold tabular-nums text-foreground">{n}</span></span>
+                      <span>{m} " " <span class="tabular-nums text-foreground">{n}</span></span>
                     })
                     .collect_view()}
                 </div>
@@ -111,8 +111,8 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>, apply_open: RwSignal<bool>) ->
                     {bands
                       .into_iter()
                       .map(|(b, n)| view! {
-                        <span class="border bg-muted/40 px-2.5 py-0.5 text-xs">
-                          {b} " " <span class="font-semibold tabular-nums">{n}</span>
+                        <span class="border bg-inset px-2.5 py-0.5 text-xs">
+                          {b} " " <span class="tabular-nums">{n}</span>
                         </span>
                       })
                       .collect_view()}
@@ -131,9 +131,9 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>, apply_open: RwSignal<bool>) ->
                         <Tooltip label=tip>
                           <span
                             class=if on {
-                              "w-full bg-primary py-0.5 text-center text-[10px] font-medium tabular-nums text-primary-foreground"
+                              "w-full bg-primary py-0.5 text-center text-xs tabular-nums text-primary-foreground"
                             } else {
-                              "w-full bg-muted py-0.5 text-center text-[10px] tabular-nums text-muted-foreground"
+                              "w-full bg-muted py-0.5 text-center text-xs tabular-nums text-muted-foreground"
                             }
                           >
                             {z}
@@ -180,7 +180,7 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>, apply_open: RwSignal<bool>) ->
 
               <div class="space-y-3">
                 <div class="flex items-center justify-between text-xs">
-                  <span class="font-medium">{"DXCC Challenge"}</span>
+                  <span>{"DXCC Challenge"}</span>
                   <span class="tabular-nums text-muted-foreground">{p.dxcc_challenge}</span>
                 </div>
                 {bar_row("WPX".to_owned(), count(&p.wpx, c), WPX_TARGET)}

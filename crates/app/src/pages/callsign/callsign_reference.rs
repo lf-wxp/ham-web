@@ -47,7 +47,7 @@ pub fn CallsignReference() -> impl IntoView {
       {move || t("radio.see-prefix-page-for")}
       <a
         href="/prefixes"
-        class="ml-1 font-medium text-primary underline underline-offset-2"
+        class="ml-1 text-primary underline underline-offset-2"
       >
         {move || t("shell.callsign-prefixes")}
       </a>

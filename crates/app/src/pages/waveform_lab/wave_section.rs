@@ -272,7 +272,7 @@ pub(super) fn WaveSection() -> impl IntoView {
             y1=PAD
             x2=spec_cx
             y2=SPEC_H - PAD
-            class="stroke-amber-500/60"
+            class="stroke-gold/60"
             stroke-dasharray="3 3"
             stroke-width="1"
           />
@@ -320,8 +320,8 @@ pub(super) fn WaveSection() -> impl IntoView {
                 <div class="flex h-4 overflow-hidden" role="img"
                   aria-label=move || t("tools.power-split-carrier-and")>
                   <div class="bg-primary" style=format!("width: {}", pct(p.carrier))></div>
-                  <div class="bg-emerald-500" style=format!("width: {}", pct(p.sideband_each))></div>
-                  <div class="bg-sky-500" style=format!("width: {}", pct(p.sideband_each))></div>
+                  <div class="bg-win/70" style=format!("width: {}", pct(p.sideband_each))></div>
+                  <div class="bg-xp/70" style=format!("width: {}", pct(p.sideband_each))></div>
                 </div>
                 <div class=RESULT>
                   {move || {

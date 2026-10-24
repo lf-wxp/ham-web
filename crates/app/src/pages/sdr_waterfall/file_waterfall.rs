@@ -8,7 +8,7 @@ use web_sys::{
 
 use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
-use crate::ui::{Button, ButtonLink, FileDropZone, Variant};
+use crate::ui::{Button, ButtonLink, FileDropZone, Variant, card_title_class};
 use crate::util::{document, js_error_message};
 
 use super::{CEIL_DB, FLOOR_DB};
@@ -143,7 +143,7 @@ pub(super) fn FileWaterfall() -> impl IntoView {
   view! {
     <section class="pxl-card border bg-card">
       <div class="border-b px-4 py-3">
-        <h2 class="text-sm font-semibold">{move || t("radio.offline-analysis-upload-wav")}</h2>
+        <h2 class=card_title_class("")>{move || t("radio.offline-analysis-upload-wav")}</h2>
         <p class="text-xs text-muted-foreground">
           {move || t("radio.upload-an-audio-recording")}
         </p>
@@ -176,8 +176,8 @@ pub(super) fn FileWaterfall() -> impl IntoView {
 
         {move || {
           error.get().map(|e| view! {
-            <div class="flex items-start gap-2 border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-              <Icon kind=IconKind::AlertCircle class="mt-0.5 h-5 w-5 shrink-0" />
+            <div class="flex items-start gap-2 border border-destructive/40 bg-destructive/10 p-4 text-hp-text">
+              <Icon kind=IconKind::AlertCircle class="mt-0.5 size-6 shrink-0" />
               <div class="text-sm">{e}</div>
             </div>
           })
@@ -186,8 +186,8 @@ pub(super) fn FileWaterfall() -> impl IntoView {
         {move || {
           result.get().map(|r| view! {
             <div class="space-y-4">
-              <div class="flex flex-wrap gap-x-1.5 gap-y-1 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                <span class="max-w-[16rem] truncate font-medium text-foreground">{file_name.get_untracked()}</span>
+              <div class="flex flex-wrap gap-x-1.5 gap-y-1 bg-inset px-3 py-2 text-xs text-muted-foreground">
+                <span class="max-w-[16rem] truncate text-foreground">{file_name.get_untracked()}</span>
                 <span>"·"</span>
                 <span>{format!("{:.0} Hz", r.sample_rate)}</span>
                 <span>"·"</span>
@@ -196,20 +196,20 @@ pub(super) fn FileWaterfall() -> impl IntoView {
                 <span>{format!("{} × {}", r.width, r.height)}</span>
               </div>
               <div>
-                <div class="mb-1 text-xs font-medium text-muted-foreground">{move || t("radio.waterfall-newest-at-the")}</div>
+                <div class="mb-1 text-xs text-muted-foreground">{move || t("radio.waterfall-newest-at-the")}</div>
                 <img src=r.waterfall_url.clone() alt=t("tools.spectrum-waterfall") class="w-full border" />
               </div>
               <div>
-                <div class="mb-1 text-xs font-medium text-muted-foreground">{move || t("radio.average-spectrum")}</div>
+                <div class="mb-1 text-xs text-muted-foreground">{move || t("radio.average-spectrum")}</div>
                 <img src=r.spectrum_url.clone() alt=t("radio.average-spectrum") class="w-full border" />
               </div>
               <div class="flex justify-center gap-2">
                 <ButtonLink href=r.waterfall_url.clone() download="waterfall.png">
-                  <Icon kind=IconKind::Download class="h-4 w-4" />
+                  <Icon kind=IconKind::Download class="size-6 w-4" />
                   {move || t("radio.download-waterfall-png")}
                 </ButtonLink>
                 <Button variant=Variant::Outline on_click=Callback::new(move |_| reset())>
-                  <Icon kind=IconKind::RefreshCw class="h-4 w-4" />
+                  <Icon kind=IconKind::RefreshCw class="size-6 w-4" />
                   {move || t("radio.analyse-another-file")}
                 </Button>
               </div>

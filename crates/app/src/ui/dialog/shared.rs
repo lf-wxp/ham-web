@@ -14,6 +14,11 @@ thread_local! {
   static SCROLL_LOCKS: Cell<u32> = const { Cell::new(0) };
 }
 
+/// 关掉 / 恢复窗口滚动（弹层、抽屉打开时）。
+///
+/// 窗口滚动条已被 `ui::ScrollBar` 接管（原生那条在 `surfaces.css` 里隐藏了），所以这里不
+/// 需要像传统做法那样补 `padding-right` 来抵消滚动条宽度 —— 隐藏前后布局宽度不变，
+/// 页面不会横向跳。这个前提写在 `surfaces.css` 的 `html` 规则里，改那边要回来一起看。
 pub(super) fn lock_scroll(on: bool) {
   let count = SCROLL_LOCKS.with(|c| {
     let n = if on {
@@ -24,14 +29,15 @@ pub(super) fn lock_scroll(on: bool) {
     c.set(n);
     n
   });
-  if let Some(b) = body() {
-    let style = b.style();
-    let _ = if count > 0 {
-      style.set_property("overflow", "hidden")
-    } else {
-      style.remove_property("overflow").map(|_| ())
-    };
-  }
+  let Some(b) = body() else {
+    return;
+  };
+  let style = b.style();
+  let _ = if count > 0 {
+    style.set_property("overflow", "hidden")
+  } else {
+    style.remove_property("overflow").map(|_| ())
+  };
 }
 
 const FOCUSABLE: &str = "input:not([disabled]), button:not([disabled]), [href], select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";

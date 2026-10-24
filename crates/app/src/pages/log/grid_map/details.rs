@@ -36,11 +36,11 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
         state.show_grayline.get().then(|| {
           view! {
             <span class="flex items-center gap-1.5">
-              <span class="inline-block h-3 w-3 bg-amber-500/40"></span>
+              <span class="inline-block h-3 w-3 bg-gold/40"></span>
               <span>{move || t("log.terminator")}</span>
-              <span class="ml-1 inline-block h-2.5 w-2.5 bg-amber-500"></span>
+              <span class="ml-1 inline-block h-2.5 w-2.5 bg-gold/70"></span>
               <span>{move || t("log.subsolar-point")}</span>
-              <span class="inline-block h-2.5 w-2.5 border border-amber-500"></span>
+              <span class="inline-block h-2.5 w-2.5 border border-gold"></span>
               <span>{move || t("log.antipode")}</span>
             </span>
           }
@@ -81,9 +81,9 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
         let mut list = state.field_grids.get().get(&(fl, fa)).cloned().unwrap_or_default();
         list.sort();
         view! {
-          <div class="mt-2 border bg-muted/30 p-3">
+          <div class="mt-2 border bg-inset p-3">
             <div class="mb-2 flex items-center justify-between text-xs">
-              <span class="font-semibold">{tf("log.grid-with-locator", &[&(format!("{f_lon}{f_lat}")).to_string()])}</span>
+              <span>{tf("log.grid-with-locator", &[&(format!("{f_lon}{f_lat}")).to_string()])}</span>
               <Button
                 variant=Variant::Text
                 size=Size::Xs
@@ -97,7 +97,7 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
                 .into_iter()
                 .map(|g| {
                   view! {
-                    <span class="bg-muted/60 px-2 py-0.5 font-mono text-xs">{g}</span>
+                    <span class="bg-inset px-2 py-0.5 font-mono text-xs">{g}</span>
                   }
                 })
                 .collect_view()}
@@ -123,9 +123,9 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
           )
         });
         view! {
-          <div class="mt-2 border bg-muted/30 p-3">
+          <div class="mt-2 border bg-inset p-3">
             <div class="mb-2 flex items-center justify-between text-xs">
-              <span class="font-semibold">
+              <span>
                 {if confirmed > 0 {
                   tp(
                     "log.grid-qsos-confirmed",
@@ -168,11 +168,11 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
                     format!("RST {s}/{r}")
                   };
                   let span_class = if e.qsl_rcvd {
-                    "bg-muted/60 px-2 py-0.5 font-mono text-xs text-emerald-600 dark:text-emerald-400"
+                    "bg-inset px-2 py-0.5 font-mono text-xs text-win-text"
                   } else if e.qsl_sent {
-                    "bg-muted/60 px-2 py-0.5 font-mono text-xs text-amber-600 dark:text-amber-400"
+                    "bg-inset px-2 py-0.5 font-mono text-xs text-gold-text"
                   } else {
-                    "bg-muted/60 px-2 py-0.5 font-mono text-xs"
+                    "bg-inset px-2 py-0.5 font-mono text-xs"
                   };
                   let mut detail = format!("{} · {} · {} · {}", e.callsign, grid, band, e.mode);
                   if !rst.is_empty() {

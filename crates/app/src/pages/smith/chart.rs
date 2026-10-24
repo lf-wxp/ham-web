@@ -228,7 +228,7 @@ pub(super) fn InteractiveChart(
               cx=C
               cy=C
               r=mag * R
-              class="fill-none stroke-amber-500/40"
+              class="fill-none stroke-gold/40"
               stroke-dasharray="4 3"
               stroke-width="1"
               vector-effect="non-scaling-stroke"
@@ -244,7 +244,7 @@ pub(super) fn InteractiveChart(
               view! {
                 <path
                   d=to_path(&arc)
-                  class="fill-none stroke-sky-500"
+                  class="fill-none stroke-xp/70"
                   stroke-width="2"
                   vector-effect="non-scaling-stroke"
                 />
@@ -263,7 +263,7 @@ pub(super) fn InteractiveChart(
               y=py(gi) - 4.0
               width="8"
               height="8"
-              class=if matched { "fill-emerald-500" } else { "fill-sky-500" }
+              class=if matched { "fill-win/70" } else { "fill-xp/70" }
             />
           }
         }}

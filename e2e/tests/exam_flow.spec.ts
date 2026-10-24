@@ -17,16 +17,19 @@ test("模拟考试：A / B 类按各自规则初始化题量、限时与倒计�
   await expect(page.getByText("试题数：40（单选 32，多选 8）").first()).toBeVisible();
   await expect(page.getByText("限时：40 分钟").first()).toBeVisible();
   await expect(page.getByText(/剩余时间：/).first()).toBeVisible();
-  // 倒计时在页面上有两处（BossStage 窄屏读数 + 页头 meta），窄屏那处在桌面视口是隐藏的；
-  // 页头那处带 `aria-live`，且是桌面下唯一可见的读数，用它定位而不是 `.first()`。
-  await expect(page.locator('main [aria-live="polite"]').getByText(/^\d{2}:\d{2}$/)).toBeVisible();
+  // 倒计时在页面上有三处：BossStage 窄屏读数、页头 meta、底部操作栏（Portal 到 body，不在 main 里）。
+  // 窄屏那处在桌面视口是隐藏的；`main` 内可见的只剩页头 meta 一处。读数不带 `aria-live`
+  // （每秒变一次，朗读出来是噪声），用 `data-slot="exam-clock"` 定位。
+  await expect(page.locator('main [data-slot="exam-clock"]:visible')).toHaveText(/^\d{2}:\d{2}$/);
+  // 底部栏也固定放一份：长题 / 看图滚动后，页头那份早已滚出视口。
+  await expect(page.getByRole("region", { name: "操作栏" }).locator('[data-slot="exam-clock"]').first()).toBeVisible();
   await expect(stats(page)).toContainText("0 / 40");
 
   await page.goto("/exam?bank=B");
   await expect(page.getByText("试题数：60（单选 45，多选 15）").first()).toBeVisible();
   await expect(page.getByText("限时：60 分钟").first()).toBeVisible();
   // 60 分钟首秒为 HH:MM:SS，之后回落到 MM:SS
-  await expect(page.locator('main [aria-live="polite"]').getByText(/^\d{2}:\d{2}(:\d{2})?$/)).toBeVisible();
+  await expect(page.locator('main [data-slot="exam-clock"]:visible')).toHaveText(/^\d{2}:\d{2}(:\d{2})?$/);
 });
 
 test("模拟考试：标记与答题卡联动，可按未答 / 标记筛选并跳转", async ({ page }) => {

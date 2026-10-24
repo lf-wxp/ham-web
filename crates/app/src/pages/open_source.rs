@@ -7,6 +7,7 @@ use crate::components::common::{KnowledgePage, SectionCard};
 use crate::data::{self, kt};
 use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
+use crate::ui::card_title_class;
 use crate::util::set_title;
 
 #[component]
@@ -16,7 +17,7 @@ pub fn OpenSourcePage() -> impl IntoView {
     <KnowledgePage title=t("knowledge.open-source-projects-and") subtitle=t("knowledge.community-open-source-software")>
       <section class="pxl-card border bg-card">
         <div class="border-b px-4 py-3">
-          <h2 class="text-sm font-semibold">{move || t("knowledge.featured-open-source-projects")}</h2>
+          <h2 class=card_title_class("")>{move || t("knowledge.featured-open-source-projects")}</h2>
           <p class="mt-0.5 text-xs text-muted-foreground">
             {move || t("knowledge.grouped-by-purpose-click")}
           </p>
@@ -28,7 +29,7 @@ pub fn OpenSourcePage() -> impl IntoView {
               let items: Vec<_> = OSS_PROJECTS.iter().filter(|p| p.category == *cat).collect();
               view! {
                 <div>
-                  <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                  <h3 class="mb-2 text-xs uppercase tracking-wide text-primary">
                     {move || t(cat)}
                   </h3>
                   <div class="grid gap-2 sm:grid-cols-2">
@@ -47,7 +48,7 @@ pub fn OpenSourcePage() -> impl IntoView {
                               class="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
                             />
                             <span class="min-w-0">
-                              <span class="block text-sm font-medium">
+                              <span class="block text-sm">
                                 {move || {
                                   data::track_knowledge();
                                   kt(p.name)
@@ -80,9 +81,9 @@ pub fn OpenSourcePage() -> impl IntoView {
               view! {
                 <a
                   href=*href
-                  class="flex flex-col gap-0.5 px-4 py-3 transition-colors hover:bg-muted/40 sm:flex-row sm:items-baseline sm:gap-3"
+                  class="flex flex-col gap-0.5 px-4 py-3 transition-colors hover:bg-inset sm:flex-row sm:items-baseline sm:gap-3"
                 >
-                  <span class="shrink-0 text-sm font-medium text-primary">
+                  <span class="shrink-0 text-sm text-primary">
                     {move || {
                       data::track_knowledge();
                       kt(name)

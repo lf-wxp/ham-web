@@ -57,6 +57,10 @@ pub fn Button(
   /// `aria-controls`：展开面板的 DOM id（与 `aria_expanded` 配套）。
   #[prop(optional, into)]
   aria_controls: Option<TextValue>,
+  /// `aria-current`：一组按钮里「当前这个」（答题卡里的当前题、分页的当前页）。传 `true` 才输出
+  /// `aria-current="true"`；`false` / 不传不输出该属性。
+  #[prop(optional, into)]
+  aria_current: Signal<bool>,
   #[prop(optional, into)] on_click: Option<Callback<()>>,
   #[prop(optional)] node_ref: NodeRef<html::Button>,
   children: Children,
@@ -71,6 +75,7 @@ pub fn Button(
       title=move || title.as_ref().map(TextValue::get)
       aria-expanded=move || aria_expanded.as_ref().map(|s| s.get().to_string())
       aria-controls=move || aria_controls.as_ref().map(TextValue::get)
+      aria-current=move || aria_current.get().then_some("true")
       aria-busy=move || loading.get().then_some("true")
       disabled=move || disabled.get() || loading.get()
       on:click=move |_| {
@@ -87,7 +92,7 @@ pub fn Button(
             // 直接把 spinner 塞成子 svg 会在加载中把纯文字按钮的左右内边距压窄一档。
             view! {
               <span class="inline-flex shrink-0" aria-hidden="true">
-                <Icon kind=IconKind::Loader2 class="size-4 animate-spin" />
+                <Icon kind=IconKind::Loader2 class="size-6 animate-spin" />
               </span>
             }
           })

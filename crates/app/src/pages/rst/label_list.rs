@@ -10,7 +10,7 @@ pub(super) fn LabelList(rows: &'static [(&'static str, &'static str)]) -> impl I
         .map(|&(k, v)| {
           view! {
             <div class="flex items-baseline gap-3 px-4 py-2.5">
-              <dt class="w-12 shrink-0 font-mono text-sm font-semibold text-primary">{k}</dt>
+              <dt class="w-12 shrink-0 font-mono text-sm text-primary">{k}</dt>
               <dd class="text-sm text-muted-foreground">{v}</dd>
             </div>
           }

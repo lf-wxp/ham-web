@@ -14,7 +14,7 @@ pub fn PrefixesPage() -> impl IntoView {
   // 本页自带页头（不是 `KnowledgePage`），译文要自己挂一次，否则大洲与前缀表在英文界面仍是中文。
   Effect::new(move |_| data::ensure_knowledge_i18n());
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.callsign-prefixes")
         subtitle=move || t("radio.itu-allocations-and-call-area-quiz")
@@ -25,7 +25,7 @@ pub fn PrefixesPage() -> impl IntoView {
           {move || t("radio.callsign-structure-lives-on")}
           <a
             href="/callsign"
-            class="ml-1 font-medium text-primary underline underline-offset-2"
+            class="ml-1 text-primary underline underline-offset-2"
           >
             {move || t("tools.callsign-knowledge")}
           </a>
@@ -53,7 +53,7 @@ pub fn PrefixesPage() -> impl IntoView {
                       let entity = p.entity;
                       view! {
                         <div class="flex items-baseline gap-2 px-2 py-1.5">
-                          <span class="w-32 shrink-0 font-mono text-sm font-semibold text-primary">{p.prefix}</span>
+                          <span class="w-32 shrink-0 font-mono text-sm text-primary">{p.prefix}</span>
                           <span class="text-sm text-muted-foreground">{move || data::kt_tracked(entity)}</span>
                         </div>
                       }

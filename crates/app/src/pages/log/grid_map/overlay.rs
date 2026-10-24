@@ -332,7 +332,7 @@ pub(super) fn GridOverlay(state: GridMapState) -> impl IntoView {
         let (lat, lon) = lat_lon_from_grid(&g).unwrap_or((0.0, 0.0));
         let (x, y) = project(lon, lat);
         view! {
-          <g class="stroke-red-500" vector-effect="non-scaling-stroke">
+          <g class="stroke-destructive/70" vector-effect="non-scaling-stroke">
             <circle cx=x.to_string() cy=y.to_string() r="9" fill="none" stroke-width="2.5" />
             <line x1=(x - 13.0).to_string() y1=y.to_string() x2=(x + 13.0).to_string() y2=y.to_string() stroke-width="2" />
             <line x1=x.to_string() y1=(y - 13.0).to_string() x2=x.to_string() y2=(y + 13.0).to_string() stroke-width="2" />

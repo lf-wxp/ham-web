@@ -55,7 +55,7 @@ pub fn LicenseCompliancePage() -> impl IntoView {
   });
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=Signal::derive(move || t("shell.frequency-power-compliance"))
         subtitle=Signal::derive(move || t("radio.compliance-subtitle"))
@@ -115,7 +115,7 @@ pub fn LicenseCompliancePage() -> impl IntoView {
             {move || match parsed.get() {
               None => {
                 view! {
-                  <p role="alert" class="text-sm text-destructive">
+                  <p role="alert" class="text-sm text-hp-text">
                     {move || t("radio.compliance-invalid-freq")}
                   </p>
                 }
@@ -126,7 +126,7 @@ pub fn LicenseCompliancePage() -> impl IntoView {
                 match c.allocation {
                   None => {
                     view! {
-                      <p role="status" class="text-sm font-semibold text-destructive">
+                      <p role="status" class="text-sm text-hp-text">
                         {move || t("radio.compliance-not-in-band")}
                       </p>
                     }
@@ -152,7 +152,7 @@ pub fn LicenseCompliancePage() -> impl IntoView {
                       });
                       view! {
                         <div class="space-y-1.5">
-                          <p role="status" class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                          <p role="status" class="text-sm text-win-text">
                             {move || t("radio.compliance-usable")}
                           </p>
                           <p class="text-sm">{band_line}</p>
@@ -190,7 +190,7 @@ pub fn LicenseCompliancePage() -> impl IntoView {
                       let class_label = tf("learning.class", &[class.get().label()]);
                       view! {
                         <div class="space-y-1.5">
-                          <p role="status" class="text-sm font-semibold text-destructive">
+                          <p role="status" class="text-sm text-hp-text">
                             {move || t("radio.unusable")}
                           </p>
                           <p class="text-sm">{band_line}</p>

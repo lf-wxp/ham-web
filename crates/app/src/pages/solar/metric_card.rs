@@ -10,7 +10,7 @@ pub(super) fn MetricCard(
   #[prop(into)] failed: Signal<bool>,
 ) -> impl IntoView {
   view! {
-    <div class="border bg-muted/40 p-3 text-center">
+    <div class="border bg-inset p-3 text-center">
       <div class="text-xs text-muted-foreground">{label}</div>
       <div class="mt-1 pxl-stat">
         {move || {
@@ -22,7 +22,7 @@ pub(super) fn MetricCard(
           }
         }}
       </div>
-      <div class="mt-0.5 text-[11px] text-muted-foreground">{unit}</div>
+      <div class="mt-0.5 text-xs text-muted-foreground">{unit}</div>
     </div>
   }
 }

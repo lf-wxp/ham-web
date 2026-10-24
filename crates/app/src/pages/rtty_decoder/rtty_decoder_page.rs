@@ -68,7 +68,7 @@ pub fn RttyDecoderPage() -> impl IntoView {
   });
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("tools.rtty-decoder")
         subtitle=move || t("tools.rtty-decoder-subtitle")
@@ -158,11 +158,11 @@ pub fn RttyDecoderPage() -> impl IntoView {
               view! {
                 <div
                   role="alert"
-                  class="flex items-start gap-2 border border-destructive/40 bg-destructive/5 p-4 text-destructive"
+                  class="flex items-start gap-2 border border-destructive/40 bg-destructive/5 p-4 text-hp-text"
                 >
-                  <Icon kind=IconKind::AlertCircle class="mt-0.5 h-5 w-5 shrink-0" />
+                  <Icon kind=IconKind::AlertCircle class="mt-0.5 size-6 shrink-0" />
                   <div class="flex-1">
-                    <div class="font-medium">{move || t("radio.decoding-failed")}</div>
+                    <div>{move || t("radio.decoding-failed")}</div>
                     <div class="mt-1 text-sm">{e}</div>
                   </div>
                 </div>
@@ -174,7 +174,7 @@ pub fn RttyDecoderPage() -> impl IntoView {
             result.get().map(|p| {
               view! {
                 <div class="space-y-4">
-                  <div class="bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                  <div class="bg-inset px-3 py-2 text-xs text-muted-foreground">
                     {tf(
                       "tools.rtty-result-meta",
                       &[&file_name.get_untracked(), &format!("{:.0}", decoded_mark_hz.get())],

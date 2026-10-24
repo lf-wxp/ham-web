@@ -16,7 +16,7 @@ use leptos_router::hooks::use_query_map;
 use crate::components::common::{BulletSection, KnowledgePage};
 use crate::i18n::t;
 use crate::pages::map::ZoneMap;
-use crate::ui::{Chip, ChipGroup};
+use crate::ui::{Chip, ChipGroup, card_title_class};
 use crate::util::set_title;
 
 use callsign_lookup::CallsignLookup;
@@ -52,7 +52,7 @@ pub fn CallsignPage() -> impl IntoView {
 
       <section class="pxl-card border bg-card">
         <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
-          <h2 class="mr-auto text-sm font-semibold">{move || t("radio.zone-map-cq-itu")}</h2>
+          <h2 class=card_title_class("mr-auto")>{move || t("radio.zone-map-cq-itu")}</h2>
           <ChipGroup
             value=Signal::derive(move || (if is_cq.get() { "cq" } else { "itu" }).to_string())
             on_change=Callback::new(move |v: String| is_cq.set(v == "cq"))
@@ -82,7 +82,7 @@ pub fn CallsignPage() -> impl IntoView {
                 format!("/zone-map?q={}", js_sys::encode_uri_component(&call))
               }
             }
-            class="ml-1 font-medium text-primary underline underline-offset-2"
+            class="ml-1 text-primary underline underline-offset-2"
           >
             {move || t("radio.open-the-full-zone")}
           </a>

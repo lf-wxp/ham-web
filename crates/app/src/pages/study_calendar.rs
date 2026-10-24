@@ -45,7 +45,7 @@ pub fn StudyCalendarPage() -> impl IntoView {
   let today_n = day_number(&today).unwrap_or(0);
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("learning.study-calendar")
         subtitle=move || t("learning.the-next-14-days")
@@ -80,16 +80,16 @@ pub fn StudyCalendarPage() -> impl IntoView {
                       "flex items-center gap-3 px-4 py-3"
                     }>
                       <div class="flex w-20 shrink-0 flex-col">
-                        <span class=if is_today { "text-sm font-semibold text-primary" } else { "text-sm font-semibold" }>
+                        <span class=if is_today { "text-sm text-primary" } else { "text-sm" }>
                           {day[5..].to_owned()}
                         </span>
-                        <span class="text-[10px] text-muted-foreground">
+                        <span class="text-xs text-muted-foreground">
                           {if is_today { t("exam.today") } else { t(wd) }}
                         </span>
                       </div>
                       <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                         {is_exam.then(|| view! {
-                          <span class="bg-primary px-2 py-0.5 font-medium text-primary-foreground">{move || t("learning.exam-day")}</span>
+                          <span class="bg-primary px-2 py-0.5 text-primary-foreground">{move || t("learning.exam-day")}</span>
                         })}
                         {(!is_exam && days_left.is_some()).then(|| view! {
                           <span class="text-muted-foreground">
@@ -101,19 +101,19 @@ pub fn StudyCalendarPage() -> impl IntoView {
                           </span>
                         })}
                         {mock.then(|| view! {
-                          <span class="border px-2 py-0.5 text-amber-700 dark:text-amber-400">{move || t("learning.mock-exam-suggested")}</span>
+                          <span class="border px-2 py-0.5 text-gold-text">{move || t("learning.mock-exam-suggested")}</span>
                         })}
                         {checked.then(|| view! {
-                          <span class="text-emerald-700 dark:text-emerald-400">{move || t("learning.checked-in")}</span>
+                          <span class="text-win-text">{move || t("learning.checked-in")}</span>
                         })}
                       </div>
                       <div class="shrink-0 text-right">
                         {if due > 0 {
                           view! {
-                            <div class="text-sm font-semibold text-primary tabular-nums">
+                            <div class="text-sm text-primary tabular-nums">
                               {tp("learning.questions", due, &[&due.to_string()])}
                             </div>
-                            <div class="text-[10px] text-muted-foreground">{move || t("learning.due-for-review")}</div>
+                            <div class="text-xs text-muted-foreground">{move || t("learning.due-for-review")}</div>
                           }
                           .into_any()
                         } else {

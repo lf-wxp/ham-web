@@ -69,7 +69,7 @@ pub(super) fn RfExposure() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class="sm:col-span-2 space-y-1 bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+      <div class="sm:col-span-2 space-y-1 bg-inset px-3 py-2 text-sm text-muted-foreground">
         {move || {
           match assess(power.get(), freq.get(), gain.get(), distance.get()) {
             Some(r) => {

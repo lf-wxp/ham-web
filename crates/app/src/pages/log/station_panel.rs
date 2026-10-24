@@ -96,7 +96,7 @@ pub(super) fn StationPanel(book: RwSignal<StationBook>, on_save: Callback<()>) -
         // 文字色必须显式给：`Variant::Text` 的 `--btn-fg` 是 `muted-foreground`，而这里是区块标题。
         // `whitespace-normal`：按钮基类不换行，右侧的台站摘要（含「未设置呼号，点击设置」）在 320px
         // 下放不下，会把整页撑出横向滚动。
-        class="h-auto w-full justify-between whitespace-normal px-4 py-3 text-left text-sm font-semibold text-foreground"
+        class="h-auto w-full justify-between whitespace-normal px-4 py-3 text-left text-sm text-foreground"
         aria_expanded=Signal::derive(move || show_station.get())
         on_click=Callback::new(move |_| show_station.update(|v| *v = !*v))
       >

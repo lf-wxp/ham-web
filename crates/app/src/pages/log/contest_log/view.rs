@@ -13,7 +13,7 @@ use crate::pages::log::qsl_image;
 use crate::pages::log::{LogEntry, use_log_store, utc_now_time, utc_today};
 use crate::ui::{
   Button, ButtonKind, ButtonLink, ControlSize, Field, Input, NativeSelect, SelectOption, Size,
-  Stat, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Variant,
+  Stat, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Variant, card_title_class,
 };
 use crate::util::unique_id as ui_id;
 use crate::util::{download_text, set_title, storage};
@@ -299,7 +299,7 @@ pub fn ContestLogPage() -> impl IntoView {
     Memo::new(move |_| entries.with(|list| ham_web_core::log_stats::band_counts(list)));
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.contest-log")
         subtitle=move || t("contest.fast-keyboard-entry-live")
@@ -324,10 +324,10 @@ pub fn ContestLogPage() -> impl IntoView {
 
       <PageContainer class="space-y-5">
         {move || my_call.get().is_empty().then(|| view! {
-          <p class="border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
+          <p class="border border-gold/40 bg-gold/10 px-3 py-2 text-sm">
             {move || t("contest.station-callsign-not-set")}
             " "
-            <a href="/log" class="font-medium underline underline-offset-4">{move || t("contest.qso-log-station-info")}</a>
+            <a href="/log" class="underline underline-offset-4">{move || t("contest.qso-log-station-info")}</a>
             " "
             {move || t("contest.to-fill-it-in")}
           </p>
@@ -493,11 +493,11 @@ pub fn ContestLogPage() -> impl IntoView {
                 aria_describedby="contest-call-hint"
                 aria_label=Signal::derive(move || t("contest.their-callsign"))
                 size=ControlSize::Lg
-                class="h-12 px-3 font-mono text-2xl md:text-2xl font-semibold tracking-wider uppercase"
+                class="h-12 px-3 font-mono text-2xl md:text-2xl tracking-wider uppercase"
               />
             </Field>
             <Field label=Signal::derive(move || t("contest.sent"))>
-              <div class="flex h-12 items-center border bg-muted/40 px-3 font-mono text-lg tabular-nums text-foreground">
+              <div class="flex h-12 items-center border bg-inset px-3 font-mono text-lg tabular-nums text-foreground">
                 {move || format!("{} {}", default_rst(&session.with(Session::mode)), sent_exch())}
               </div>
             </Field>
@@ -520,7 +520,7 @@ pub fn ContestLogPage() -> impl IntoView {
                   tf("contest.received-field", &[&t(session.with(|s| s.def().rcvd.label()))])
                 })
                 size=ControlSize::Lg
-                class="h-12 w-28 px-3 font-mono text-2xl md:text-2xl font-semibold uppercase"
+                class="h-12 w-28 px-3 font-mono text-2xl md:text-2xl uppercase"
               />
             </Field>
             <Button kind=ButtonKind::Submit class="h-12 px-6">
@@ -530,9 +530,9 @@ pub fn ContestLogPage() -> impl IntoView {
           <div id="contest-call-hint" aria-live="polite" class="mt-2 min-h-5 text-sm">
             {move || {
               if dupe.get() {
-                view! { <span class="font-medium text-red-600 dark:text-red-400">{move || t("contest.dupe-already-worked-on")}</span> }.into_any()
+                view! { <span class="text-hp-text">{move || t("contest.dupe-already-worked-on")}</span> }.into_any()
               } else if let Some(m) = message.get() {
-                view! { <span class="text-emerald-600 dark:text-emerald-400">{m}</span> }.into_any()
+                view! { <span class="text-win-text">{m}</span> }.into_any()
               } else {
                 view! { <span class="text-muted-foreground">{hint}</span> }.into_any()
               }
@@ -563,7 +563,7 @@ pub fn ContestLogPage() -> impl IntoView {
 
         <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("contest.session-qsos")}</h2>
+            <h2 class=card_title_class("mr-auto")>{move || t("contest.session-qsos")}</h2>
             {move || per_band.get().into_iter().map(|(b, n)| view! {
               <span class="border px-2 py-0.5 text-xs text-muted-foreground">{format!("{b} {n}")}</span>
             }).collect_view()}
@@ -611,7 +611,7 @@ pub fn ContestLogPage() -> impl IntoView {
                       <TableRow class="border-b font-mono last:border-0">
                         <TableCell class="px-4 py-1.5 tabular-nums">{time}</TableCell>
                         <TableCell class="px-2 py-1.5 tabular-nums">{freq}</TableCell>
-                        <TableCell class="px-2 py-1.5 font-semibold">{callsign}</TableCell>
+                        <TableCell class="px-2 py-1.5">{callsign}</TableCell>
                         <TableCell class="px-2 py-1.5">{sent}</TableCell>
                         <TableCell class="px-2 py-1.5">{rcvd}</TableCell>
                         <TableCell class="px-2 py-1.5 font-sans text-xs text-muted-foreground">{entity}</TableCell>
@@ -619,7 +619,7 @@ pub fn ContestLogPage() -> impl IntoView {
                           <Button
                             variant=Variant::Text
                             size=Size::Xs
-                            class="font-sans hover:text-red-600"
+                            class="font-sans hover:text-hp-text"
                             aria_label=tf("contest.delete", &[&delete_label])
                             on_click=Callback::new(move |_| remove(id))
                           >

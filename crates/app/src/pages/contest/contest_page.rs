@@ -98,7 +98,7 @@ pub fn ContestPage() -> impl IntoView {
   let next = scheduled.first().map(|&(w, m, c)| (w, m, c.name));
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.contesting")
         subtitle="CQ WW · WPX · IARU · ARRL".to_string()
@@ -111,14 +111,14 @@ pub fn ContestPage() -> impl IntoView {
             {match next {
               Some((0, m, name)) => view! {
                 <div class="border bg-primary/10 px-4 py-3">
-                  <div class="text-sm font-semibold">{tf("contest.this-month-with-name", &[&(t(name)).to_string(), &m.to_string()])}</div>
+                  <div class="text-sm">{tf("contest.this-month-with-name", &[&(t(name)).to_string(), &m.to_string()])}</div>
                   <div class="mt-1 text-xs text-muted-foreground">{move || t("contest.get-ready-and-remember")}</div>
                 </div>
               }
               .into_any(),
               Some((w, m, name)) => view! {
                 <div class="border bg-primary/10 px-4 py-3">
-                  <div class="text-sm font-semibold">{tf("contest.next", &[&(t(name)).to_string(), &m.to_string()])}</div>
+                  <div class="text-sm">{tf("contest.next", &[&(t(name)).to_string(), &m.to_string()])}</div>
                   <div class="mt-1 text-xs text-muted-foreground">
                     {tp("contest.held-in-about-months", w, &[&w.to_string()])}
                   </div>
@@ -140,9 +140,9 @@ pub fn ContestPage() -> impl IntoView {
               .map(|&(wait, _month, c)| {
                 view! {
                   <div class="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_11rem_6rem_1fr]">
-                    <div class="font-medium">{move || t(c.name)}</div>
+                    <div>{move || t(c.name)}</div>
                     <div class="text-xs text-muted-foreground">{move || t(c.months)}</div>
-                    <div class=if wait == 0 { "text-xs font-medium text-primary" } else { "text-xs text-muted-foreground" }>
+                    <div class=if wait == 0 { "text-xs text-primary" } else { "text-xs text-muted-foreground" }>
                       {if wait == 0 {
                         t("contest.this-month")
                       } else {

@@ -214,7 +214,7 @@ pub(super) fn LinearTuner(
             <Label r#for=custom_inverting_id.get_value()>{move || t("radio.linear-custom-inverting")}</Label>
           </div>
           {move || custom_error.get().map(|e| view! {
-            <div class="text-xs text-destructive" role="alert">{passband_error_text(e)}</div>
+            <div class="text-xs text-hp-text" role="alert">{passband_error_text(e)}</div>
           })}
           <p class="text-xs text-muted-foreground">{move || t("radio.linear-custom-note")}</p>
         </div>
@@ -231,7 +231,7 @@ pub(super) fn LinearTuner(
           view! {
             <div class="space-y-1 text-xs text-muted-foreground tabular-nums">
               <div>{tf("radio.linear-passband", &[&ul_lo, &ul_hi, &dl_lo, &dl_hi, &kind])}</div>
-              <div class="font-medium text-foreground" role="status">
+              <div class="text-foreground" role="status">
                 {match ul {
                   Some(ul) => tf("radio.linear-mapped", &[&fmt_mhz(dl), &fmt_mhz(ul)]),
                   // 防御：`tuned_hz` 恒被 clamp 在通带内，此分支正常不可达。
@@ -239,7 +239,7 @@ pub(super) fn LinearTuner(
                 }}
               </div>
               {was_clamped.get().then(|| view! {
-                <div class="text-destructive" role="alert">{t("radio.linear-clamped")}</div>
+                <div class="text-hp-text" role="alert">{t("radio.linear-clamped")}</div>
               })}
             </div>
           }

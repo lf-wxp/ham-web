@@ -100,7 +100,7 @@ pub(super) fn RainFade() -> impl IntoView {
             let capped = o.path_factor_capped;
             let warnings = o.warnings.clone();
             view! {
-              <div class="font-medium text-foreground">
+              <div class="text-foreground">
                 {tf(
                   "tools.rain-result",
                   &[&fmt_num(o.a_p_db), &percent.get().map_or_else(String::new, |v| v.to_string())],

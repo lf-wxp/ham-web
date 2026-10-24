@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn Ft8Page() -> impl IntoView {
   set_title("FT8 / FT4");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title="FT8 / FT4".to_string()
         subtitle=move || t("knowledge.weak-signal-digital-modes")
@@ -26,7 +26,7 @@ pub fn Ft8Page() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
+                    <span class="text-sm">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
                 }
@@ -43,7 +43,7 @@ pub fn Ft8Page() -> impl IntoView {
               .map(|&(freq, band)| {
                 view! {
                   <div class="flex items-baseline gap-2 px-3 py-2">
-                    <span class="w-28 shrink-0 font-mono text-sm font-semibold text-primary">{freq}</span>
+                    <span class="w-28 shrink-0 font-mono text-sm text-primary">{freq}</span>
                     <span class="text-sm text-muted-foreground">{band}</span>
                   </div>
                 }

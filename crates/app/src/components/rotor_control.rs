@@ -240,7 +240,7 @@ pub fn RotorControl(#[prop(into)] aim: Signal<Option<Aim>>) -> impl IntoView {
   view! {
     <div class="space-y-2 border border-dashed px-3 py-2 text-xs text-muted-foreground">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="font-medium text-foreground">{move || t("radio.antenna-rotator")}</span>
+        <span class="text-foreground">{move || t("radio.antenna-rotator")}</span>
         {if supported {
           view! {
             <Button
@@ -297,7 +297,7 @@ pub fn RotorControl(#[prop(into)] aim: Signal<Option<Aim>>) -> impl IntoView {
             {move || match status.get() {
               Status::Error(msg) => {
                 view! {
-                  <span class="text-destructive" role="alert">
+                  <span class="text-hp-text" role="alert">
                     {tf("common.connection-failed", &[&msg])}
                   </span>
                 }
@@ -332,7 +332,7 @@ pub fn RotorControl(#[prop(into)] aim: Signal<Option<Aim>>) -> impl IntoView {
             />
             <Label r#for=track_id.clone()>{move || t("radio.rotor-auto-track")}</Label>
           </div>
-          <p class="text-destructive">{move || t("radio.rotor-auto-track-warning")}</p>
+          <p class="text-hp-text">{move || t("radio.rotor-auto-track-warning")}</p>
           <div class="tabular-nums" aria-live="polite">
             {move || {
               let n = writes.get();
@@ -356,7 +356,7 @@ pub fn RotorControl(#[prop(into)] aim: Signal<Option<Aim>>) -> impl IntoView {
               .get()
               .then(|| {
                 view! {
-                  <div class="text-destructive" role="alert">
+                  <div class="text-hp-text" role="alert">
                     {t("radio.rotor-auto-overridden")}
                   </div>
                 }

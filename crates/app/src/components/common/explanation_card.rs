@@ -24,16 +24,16 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
     return view! {
       <div data-slot="card" class=card_class("gap-0 py-0")>
         <div class="flex flex-wrap items-center gap-x-2 gap-y-1 px-6 py-4 text-sm text-muted-foreground">
-          <Icon kind=IconKind::BookOpen class="h-4 w-4 shrink-0" />
+          <Icon kind=IconKind::BookOpen class="size-6 w-4 shrink-0" />
           <span>{move || t("knowledge.no-explanation-yet-for")}</span>
           <a
             href="https://github.com/lf-wxp/ham-web"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center gap-1 font-medium text-primary underline-offset-2 hover:underline"
+            class="inline-flex items-center gap-1 text-primary underline-offset-2 hover:underline"
           >
             {move || t("knowledge.contribute")}
-            <Icon kind=IconKind::ExternalLink class="h-3 w-3" />
+            <Icon kind=IconKind::ExternalLink class="size-6 w-3" />
           </a>
         </div>
       </div>
@@ -123,7 +123,7 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
           aria_label=Signal::derive(move || t("learning.read-explanation-aloud"))
           on_click=Callback::new(move |_| speech::speak_zh(&speak_text))
         >
-          <Icon kind=IconKind::Volume2 class="h-4 w-4" />
+          <Icon kind=IconKind::Volume2 class="size-6 w-4" />
         </Button>
       </div>
       <div class=panel data-open=move || open.get().to_string()>
@@ -136,7 +136,7 @@ pub fn ExplanationCard(question: QuestionItem) -> impl IntoView {
                     <Tooltip label=title>
                       <a
                         href=href
-                        class="font-medium text-primary underline underline-offset-2 hover:opacity-80"
+                        class="text-primary underline underline-offset-2 hover:opacity-80"
                       >
                         {part}
                       </a>

@@ -37,7 +37,7 @@ pub fn BeaconsPage() -> impl IntoView {
   });
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=Signal::derive(move || t("knowledge.international-beacon-network"))
         subtitle=Signal::derive(move || t("knowledge.ncdxf-iaru-18-beacons"))
@@ -55,7 +55,7 @@ pub fn BeaconsPage() -> impl IntoView {
               view! {
                 <div class="ml-auto flex items-center gap-3">
                   <div class="text-right">
-                    <div class="text-sm font-semibold">
+                    <div class="text-sm">
                       {tf("knowledge.transmitting-now", &[call, loc, region])}
                     </div>
                     <div class="text-xs text-muted-foreground">
@@ -64,7 +64,7 @@ pub fn BeaconsPage() -> impl IntoView {
                   </div>
                   <div class="h-2 w-24 overflow-hidden bg-muted">
                     <div
-                      class="h-full bg-primary transition-all"
+                      class="h-full bg-primary transition"
                       style=format!("width: {pct}%")
                     ></div>
                   </div>
@@ -90,7 +90,7 @@ pub fn BeaconsPage() -> impl IntoView {
                   }>
                     <div class="flex items-center gap-2">
                       <span class="font-mono text-xs text-muted-foreground">{format!("{:02}", i + 1)}</span>
-                      <span class="font-mono text-sm font-semibold">{call}</span>
+                      <span class="font-mono text-sm">{call}</span>
                     </div>
                     <div class="mt-0.5 text-xs text-muted-foreground">{tf("common.pair", &[loc, region])}</div>
                   </div>
@@ -110,7 +110,7 @@ pub fn BeaconsPage() -> impl IntoView {
                 view! {
                   <div class="border px-3 py-2 text-center">
                     <div class="text-xs text-muted-foreground">{band}</div>
-                    <div class="font-mono text-sm font-semibold tabular-nums">{format!("{freq:.3} MHz")}</div>
+                    <div class="font-mono text-sm tabular-nums">{format!("{freq:.3} MHz")}</div>
                   </div>
                 }
               })
@@ -130,7 +130,7 @@ pub fn BeaconsPage() -> impl IntoView {
                 .iter()
                 .map(|&(label, pwr)| {
                   view! {
-                    <span class="bg-muted/60 px-2 py-1 text-xs tabular-nums">
+                    <span class="bg-inset px-2 py-1 text-xs tabular-nums">
                       {tf("common.watt-value", &[label, &format!("{pwr}")])}
                     </span>
                   }

@@ -97,7 +97,7 @@ pub fn FlashcardsPage() -> impl IntoView {
   }));
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.flashcards")
         subtitle=move || t("exam.quick-review-self-rate")
@@ -134,13 +134,13 @@ pub fn FlashcardsPage() -> impl IntoView {
             let total = known.get() + unknown.get() + skipped.get();
             view! {
               <div class="pxl-card border bg-card px-4 py-10 text-center">
-                <div class="text-lg font-semibold">{move || t("exam.round-complete")}</div>
+                <div class="text-lg">{move || t("exam.round-complete")}</div>
                 <div class="mt-2 text-sm text-muted-foreground">
-                  {t("exam.total")} {total} {move || t("exam.questions-know")} <span class="font-semibold text-emerald-700 dark:text-emerald-400">{known.get()}</span>
-                  {move || t("exam.don-t-know")} <span class="font-semibold text-red-700 dark:text-red-400">{unknown.get()}</span>
+                  {t("exam.total")} {total} {move || t("exam.questions-know")} <span class="text-win-text">{known.get()}</span>
+                  {move || t("exam.don-t-know")} <span class="text-hp-text">{unknown.get()}</span>
                   {move || {
                     (skipped.get() > 0).then(|| {
-                      view! { <span>{move || t("exam.skipped")} <span class="font-semibold text-muted-foreground">{skipped.get()}</span></span> }
+                      view! { <span>{move || t("exam.skipped")} <span class="text-muted-foreground">{skipped.get()}</span></span> }
                     })
                   }}
                 </div>
@@ -161,12 +161,12 @@ pub fn FlashcardsPage() -> impl IntoView {
             };
             let total = questions.get_untracked().len();
             view! {
-              <div on:touchstart=swipe_start on:touchend=swipe_end class="pxl-card border bg-card p-5">
+              <div on:touchstart=swipe_start on:touchend=swipe_end class="pxl-card border bg-card p-4">
                 <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{move || t("exam.no")} <span class="font-semibold text-foreground">{current.get() + 1}</span> {" / "} {total} {move || t("exam.questions")}</span>
-                  <span>{move || t("exam.know")} <span class="font-semibold text-emerald-700 dark:text-emerald-400">{known.get()}</span> {move || t("exam.don-t-know")} <span class="font-semibold text-red-700 dark:text-red-400">{unknown.get()}</span></span>
+                  <span>{move || t("exam.no")} <span class="text-foreground">{current.get() + 1}</span> {" / "} {total} {move || t("exam.questions")}</span>
+                  <span>{move || t("exam.know")} <span class="text-win-text">{known.get()}</span> {move || t("exam.don-t-know")} <span class="text-hp-text">{unknown.get()}</span></span>
                 </div>
-                <p class="whitespace-pre-line text-base font-medium leading-relaxed">{q.question.clone()}</p>
+                <p class="whitespace-pre-line text-base leading-relaxed">{q.question.clone()}</p>
 
                 {move || {
                   if revealed.get() {
@@ -177,7 +177,7 @@ pub fn FlashcardsPage() -> impl IntoView {
                           view! {
                             <div class=format!(
                               "text-sm {}",
-                              if correct { "font-medium text-emerald-600 dark:text-emerald-400" } else { "text-muted-foreground" },
+                              if correct { "text-win-text" } else { "text-muted-foreground" },
                             )>
                               <span class="font-mono">{o.key.clone()}</span> "　" {o.text.clone()}
                             </div>

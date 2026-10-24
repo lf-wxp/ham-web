@@ -46,7 +46,7 @@ pub(super) fn WireTable(
   view! {
     <div class="overflow-x-auto pxl-card border bg-card">
       <div class="flex items-center justify-between border-b px-4 py-3">
-        <span class="text-sm font-semibold">{move || t("tools.nec-wire-geometry")}</span>
+        <span class="text-sm">{move || t("tools.nec-wire-geometry")}</span>
         <Button
           variant=Variant::Outline
           size=Size::Xs
@@ -56,7 +56,7 @@ pub(super) fn WireTable(
         </Button>
       </div>
       <table data-slot="nec-wires" class="w-full border-collapse text-xs">
-        <thead class="bg-muted/50">
+        <thead class="bg-inset">
           <tr>
             <th class="border px-2 py-1 text-left">"#"</th>
             <th class="border px-2 py-1 text-left">{move || t("tools.nec-start-point")}</th>

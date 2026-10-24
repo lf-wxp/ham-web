@@ -15,7 +15,7 @@ use crate::util::set_title;
 pub fn ReferencePage() -> impl IntoView {
   set_title("shell.exam-reference-title");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader title=t("shell.exam-reference-title") subtitle=t("exam.licence-privileges-zones-rst") />
       <PageContainer>
         // 操作证类别与权限
@@ -39,7 +39,7 @@ pub fn ReferencePage() -> impl IntoView {
                 .map(|c| {
                   view! {
                     <TableRow>
-                      <TableCell class="align-top font-mono font-semibold">
+                      <TableCell class="align-top font-mono">
                         {c.class} " 类"
                       </TableCell>
                       <TableCell class="align-top">{c.freq}</TableCell>
@@ -61,8 +61,8 @@ pub fn ReferencePage() -> impl IntoView {
               .iter()
               .map(|a| {
                 view! {
-                  <div class="flex items-start gap-2 border bg-muted/30 p-3">
-                    <span class="font-mono text-lg font-semibold text-primary">{a.digit}</span>
+                  <div class="flex items-start gap-2 border bg-inset p-3">
+                    <span class="font-mono text-lg text-primary">{a.digit}</span>
                     <span class="text-xs leading-5 text-muted-foreground">{a.regions}</span>
                   </div>
                 }
@@ -80,9 +80,9 @@ pub fn ReferencePage() -> impl IntoView {
               .map(|s| {
                 view! {
                   <div class="border">
-                    <div class="border-b bg-muted/40 px-3 py-2">
-                      <span class="font-mono font-semibold text-primary">{s.key}</span>
-                      <span class="ml-2 text-sm font-medium">{s.name}</span>
+                    <div class="border-b bg-inset px-3 py-2">
+                      <span class="font-mono text-primary">{s.key}</span>
+                      <span class="ml-2 text-sm">{s.name}</span>
                       <div class="text-xs text-muted-foreground">{s.note}</div>
                     </div>
                     <dl class="divide-y text-sm">
@@ -92,7 +92,7 @@ pub fn ReferencePage() -> impl IntoView {
                         .map(|&(num, desc)| {
                           view! {
                             <div class="flex gap-2 px-3 py-1.5">
-                              <dt class="font-mono font-semibold tabular-nums">{num}</dt>
+                              <dt class="font-mono tabular-nums">{num}</dt>
                               <dd class="text-muted-foreground">{desc}</dd>
                             </div>
                           }
@@ -126,7 +126,7 @@ pub fn ReferencePage() -> impl IntoView {
                 .map(|e| {
                   view! {
                     <TableRow>
-                      <TableCell class="align-top font-mono font-semibold">{e.code}</TableCell>
+                      <TableCell class="align-top font-mono">{e.code}</TableCell>
                       <TableCell class="align-top">{e.name}</TableCell>
                       <TableCell class="align-top text-muted-foreground">{e.desc}</TableCell>
                     </TableRow>

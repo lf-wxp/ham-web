@@ -94,7 +94,7 @@ pub fn LrptDecoderPage() -> impl IntoView {
   let on_file = Callback::new(move |file: File| session.start(file, || Ok(JsValue::UNDEFINED)));
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("tools.lrpt-decoder")
         subtitle=move || t("tools.lrpt-decoder-subtitle")
@@ -162,7 +162,7 @@ pub fn LrptDecoderPage() -> impl IntoView {
               view! {
                 <div
                   role="alert"
-                  class="border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+                  class="border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-hp-text"
                 >
                   {e}
                 </div>
@@ -177,7 +177,7 @@ pub fn LrptDecoderPage() -> impl IntoView {
                 <div class="space-y-3">
                   <div class="flex flex-wrap items-center justify-between gap-3">
                     <div class="min-w-0">
-                      <p class="truncate text-sm font-medium">{file_name.get()}</p>
+                      <p class="truncate text-sm">{file_name.get()}</p>
                       <p class="text-xs text-muted-foreground">{dims}</p>
                     </div>
                     <div class="flex items-center gap-2">
@@ -197,7 +197,7 @@ pub fn LrptDecoderPage() -> impl IntoView {
                   <img
                     src=p.image_url.clone()
                     alt=t("tools.lrpt-decoder")
-                    class="w-full border bg-muted/30"
+                    class="w-full border bg-inset"
                   />
                 </div>
               }

@@ -191,7 +191,7 @@ pub fn QslLabelsPage() -> impl IntoView {
     .collect();
 
   view! {
-    <div class="min-h-screen bg-muted/40 pb-10 print:bg-white print:pb-0">
+    <div class="min-h-screen bg-inset pb-10 print:bg-white print:pb-0">
       <style>{move || page_css(&current.get())}</style>
       <PageHeader
         class="print-hide"
@@ -311,7 +311,7 @@ pub fn QslLabelsPage() -> impl IntoView {
           <p class="mx-auto max-w-5xl px-4 pb-3 text-xs text-amber-800 dark:text-amber-300">
             {move || t("log.station-callsign-not-set")}
             " "
-            <a href="/log" class="font-medium underline underline-offset-4">{move || t("contest.qso-log-station-info")}</a>
+            <a href="/log" class="underline underline-offset-4">{move || t("contest.qso-log-station-info")}</a>
             " "
             {move || t("contest.to-fill-it-in")}
           </p>

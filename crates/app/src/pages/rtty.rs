@@ -14,7 +14,7 @@ const CELL: &str = "border px-3 py-2 align-top";
 pub fn RttyPage() -> impl IntoView {
   set_title("RTTY / PSK31");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title="RTTY / PSK31".to_string()
         subtitle=move || t("knowledge.radioteletype-phase-shift-keying")
@@ -37,7 +37,7 @@ pub fn RttyPage() -> impl IntoView {
                 .map(|&(name, alias, desc)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono font-semibold text-primary")>
+                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-primary")>
                         {name}
                       </TableCell>
                       <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{alias}</TableCell>
@@ -58,7 +58,7 @@ pub fn RttyPage() -> impl IntoView {
               .map(|&(freq, usage)| {
                 view! {
                   <div class="flex items-baseline gap-2 px-3 py-2">
-                    <span class="shrink-0 font-mono text-sm font-semibold text-primary">{freq}</span>
+                    <span class="shrink-0 font-mono text-sm text-primary">{freq}</span>
                     <span class="text-sm text-muted-foreground">{usage}</span>
                   </div>
                 }

@@ -75,7 +75,7 @@ pub(super) fn TxLine() -> impl IntoView {
           />
         </Field>
       </div>
-      <div class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
+      <div class="bg-inset px-3 py-2 text-sm text-muted-foreground tabular-nums">
         {move || {
           let z = coax_z0(er.get(), d_outer.get(), d_inner.get());
           if z.is_nan() {
@@ -112,7 +112,7 @@ pub(super) fn TxLine() -> impl IntoView {
           />
         </Field>
       </div>
-      <div class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
+      <div class="bg-inset px-3 py-2 text-sm text-muted-foreground tabular-nums">
         {move || {
           let z = twin_lead_z0(er.get(), spacing.get(), diameter.get());
           if z.is_nan() {
@@ -149,7 +149,7 @@ pub(super) fn TxLine() -> impl IntoView {
           />
         </Field>
       </div>
-      <div class="space-y-1 bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
+      <div class="space-y-1 bg-inset px-3 py-2 text-sm text-muted-foreground tabular-nums">
         {move || {
           // 一次算完 Z0 与 εeff：两者共用同一份 εr / 宽 / 厚。
           let (z, ee) = microstrip(er.get(), width.get(), height.get());
@@ -191,7 +191,7 @@ pub(super) fn TxLine() -> impl IntoView {
           />
         </Field>
       </div>
-      <div class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
+      <div class="bg-inset px-3 py-2 text-sm text-muted-foreground tabular-nums">
         {move || {
           let z = stripline_z0(er.get(), strip_width.get(), strip_spacing.get());
           if z.is_nan() {

@@ -73,7 +73,7 @@ pub(super) fn ToneSquelch() -> impl IntoView {
             {move || t("tools.positive-offset")}
           </label>
         </RadioGroup>
-        <div class="sm:col-span-2 space-y-1 bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+        <div class="sm:col-span-2 space-y-1 bg-inset px-3 py-2 text-sm text-muted-foreground">
           {move || {
             match offset() {
               Some((o, note)) => {

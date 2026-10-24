@@ -33,7 +33,7 @@ pub fn ConceptsSection(
           .map(|(term, desc)| {
             view! {
               <div class=row>
-                <span class="text-sm font-medium">{move || translate(term, ui)}</span>
+                <span class="text-sm">{move || translate(term, ui)}</span>
                 <span class="text-sm text-muted-foreground">{move || translate(desc, ui)}</span>
               </div>
             }

@@ -52,7 +52,7 @@ pub fn ZoneOverlay(
               .map_or_else(|| "transparent".to_owned(), |z| zone_color(*z, max));
             let is_hl = hl == Some(s.dxcc);
             let stroke = if is_hl {
-              "stroke-amber-500"
+              "stroke-gold/70"
             } else {
               "stroke-foreground/30"
             };

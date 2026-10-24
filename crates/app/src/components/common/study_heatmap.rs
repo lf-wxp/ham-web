@@ -9,7 +9,7 @@ use crate::ui::Tooltip;
 /// 按每日作答量返回色阶类名（完整字面量，供 Tailwind 扫描）。
 fn level(count: u32) -> &'static str {
   if count == 0 {
-    "bg-muted/50"
+    "bg-inset"
   } else if count < 5 {
     "bg-primary/20"
   } else if count < 15 {
@@ -55,7 +55,7 @@ pub fn StudyHeatmap(days: HashMap<String, u32>, today: String) -> impl IntoView 
             .iter()
             .map(|wd| {
               view! {
-                <div class="flex-1 text-center text-[9px] leading-none text-muted-foreground">
+                <div class="flex-1 text-center text-xs leading-none text-muted-foreground">
                   {move || t(wd)}
                 </div>
               }
@@ -69,7 +69,7 @@ pub fn StudyHeatmap(days: HashMap<String, u32>, today: String) -> impl IntoView 
           let month = row[0].0.get(5..7).unwrap_or("").to_owned();
           view! {
             <div class="flex items-center gap-1">
-              <span class="w-8 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">
+              <span class="w-8 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
                 {month}
               </span>
               <div class="flex flex-1 gap-px">
@@ -99,9 +99,9 @@ pub fn StudyHeatmap(days: HashMap<String, u32>, today: String) -> impl IntoView 
           }
         })
         .collect_view()}
-      <div class="flex items-center justify-end gap-1.5 text-[10px] text-muted-foreground">
+      <div class="flex items-center justify-end gap-1.5 text-xs text-muted-foreground">
         <span>{t("learning.less")}</span>
-        <span class="h-3 w-3 bg-muted/50"></span>
+        <span class="h-3 w-3 bg-inset"></span>
         <span class="h-3 w-3 bg-primary/20"></span>
         <span class="h-3 w-3 bg-primary/40"></span>
         <span class="h-3 w-3 bg-primary/70"></span>

@@ -18,7 +18,7 @@ pub(super) fn task_row(
       <span
         aria-hidden="true"
         class=if done {
-          "flex size-5 shrink-0 items-center justify-center bg-emerald-500 text-xs text-white"
+          "flex size-5 shrink-0 items-center justify-center border-2 border-win bg-card text-xs text-win-text"
         } else {
           "size-5 shrink-0 border-2 border-muted-foreground/40"
         }
@@ -26,7 +26,7 @@ pub(super) fn task_row(
         {done.then_some("✓")}
       </span>
       <div class="min-w-0 flex-1">
-        <div class=if done { "text-sm text-muted-foreground line-through" } else { "text-sm font-medium" }>
+        <div class=if done { "text-sm text-muted-foreground line-through" } else { "text-sm" }>
           {label}
           {done.then(|| view! { <span class="sr-only">{move || t("common.done")}</span> })}
         </div>

@@ -126,7 +126,7 @@ pub fn NumberField(
           class="flex size-6 items-center justify-center border-2 border-transparent text-muted-foreground outline-none hover:border-ink hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50"
           on:click=move |_| bump.run(delta)
         >
-          <Icon kind=icon class="size-4" />
+          <Icon kind=icon class="size-6" />
         </button>
       }
       .into_any()

@@ -117,7 +117,7 @@ pub(super) fn ResultSection(
                   {elevation_grid(peak, ground_kind.get() != 0)}
                   <path
                     d=el_path
-                    class="fill-none stroke-emerald-500"
+                    class="fill-none stroke-win/70"
                     stroke-width="1.6"
                     vector-effect="non-scaling-stroke"
                   />

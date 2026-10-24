@@ -7,8 +7,9 @@ use crate::icons::{Icon, IconKind};
 use super::shared::{on_open, state_attr, trap_tab, use_presence};
 use crate::i18n::t;
 
-/// 退场动画时长（毫秒）：与抽屉类名里的 `duration-300` 对应，卸载前要等它播完。
-const EXIT_MS: u64 = 300;
+/// 退场动画时长（毫秒）：与抽屉类名里的 `duration-(--motion-normal)`（`tokens.css` 的 0.24s）对应，
+/// 卸载前要等它播完。改了 token 要同步这里，否则退场会被截断（偏小）或多留一帧空壳（偏大）。
+const EXIT_MS: u64 = 240;
 
 /// 右侧抽屉（答题卡）。
 #[component]
@@ -46,7 +47,7 @@ pub fn Sheet(open: RwSignal<bool>, children: ChildrenFn) -> impl IntoView {
             }
             data-slot="sheet-content"
             data-state=state
-            class="pxl-sheet data-[state=open]:animate-in data-[state=closed]:animate-out fill-mode-both fixed z-50 flex flex-col gap-4 data-[state=closed]:duration-200 data-[state=open]:duration-300 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 sm:max-w-sm"
+            class="pxl-sheet data-[state=open]:animate-in data-[state=closed]:animate-out fill-mode-both fixed z-50 flex flex-col gap-4 data-[state=closed]:duration-(--motion-normal) data-[state=open]:duration-(--motion-normal) data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 sm:max-w-sm"
           >
             {children()}
             <super::toast_live_region::ToastLiveRegion />
@@ -56,7 +57,7 @@ pub fn Sheet(open: RwSignal<bool>, children: ChildrenFn) -> impl IntoView {
               class="pxl-btn pxl-btn-destructive absolute top-2 right-2 size-8 px-0"
               on:click=move |_| open.set(false)
             >
-              <Icon kind=IconKind::X class="size-5" />
+              <Icon kind=IconKind::X class="size-6" />
               <span class="sr-only">{move || t("log.close")}</span>
             </button>
           </div>

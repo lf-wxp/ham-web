@@ -43,7 +43,7 @@ pub(super) fn DxccApplySheet(
       <Button
         variant=Variant::Text
         size=Size::Sm
-        class="w-full justify-start px-4 py-3 text-sm font-semibold"
+        class="w-full justify-start px-4 py-3 text-sm"
         aria_expanded=Signal::derive(move || open.get())
         aria_controls="dxcc-apply-body"
         on_click=Callback::new(move |_| open.update(|v| *v = !*v))
@@ -58,7 +58,7 @@ pub(super) fn DxccApplySheet(
           rows.with_value(|rows| {
             if rows.is_empty() {
               return view! {
-                <p class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                <p class="bg-inset px-3 py-2 text-sm text-muted-foreground">
                   {move || t("log.apply-sheet-empty")}
                 </p>
               }
@@ -75,7 +75,7 @@ pub(super) fn DxccApplySheet(
                 let via = t(via_key(row.via));
                 view! {
                   <TableRow>
-                    <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>
+                    <TableCell class=format!("{CELL} whitespace-nowrap")>
                       {entity}
                     </TableCell>
                     <TableCell class=format!("{CELL} whitespace-nowrap font-mono")>

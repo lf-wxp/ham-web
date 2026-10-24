@@ -27,7 +27,7 @@ pub fn ExamSubmitConfirmDialog(
         </div>
         <div class="flex items-center justify-between">
           <span>{move || t("exam.unanswered")}</span>
-          <span class=move || (unanswered() > 0).then_some("text-red-600 dark:text-red-400")>{unanswered}</span>
+          <span class=move || (unanswered() > 0).then_some("text-hp-text")>{unanswered}</span>
         </div>
         <div class="flex items-center justify-between">
           <span>{move || t("exam.flagged")}</span>

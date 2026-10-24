@@ -19,7 +19,7 @@ pub fn Loading(
       "motion-pop flex items-center justify-center gap-2 py-20 text-sm text-muted-foreground",
       &class,
     ])>
-      <Icon kind=IconKind::Loader2 class="h-5 w-5 animate-spin" />
+      <Icon kind=IconKind::Loader2 class="size-6 w-5 animate-spin" />
       {label.map(|l| view! { <span>{move || l.get()}</span> })}
     </div>
   }

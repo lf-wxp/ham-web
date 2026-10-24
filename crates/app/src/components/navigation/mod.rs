@@ -5,6 +5,7 @@ mod hud_badge;
 mod locale_toggle;
 mod menu;
 mod mobile_menu;
+mod mobile_nav_section;
 mod mobile_tabs;
 mod nav_bar;
 mod scheme_choice;

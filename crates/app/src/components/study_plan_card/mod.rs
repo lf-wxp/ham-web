@@ -10,9 +10,10 @@ use ham_web_core::study_plan::{DailyGoal, Phase, StudyPlan, daily_goal};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
+use crate::components::common::SectionCard;
 use crate::i18n::{t, tf, tp};
 use crate::ui::{
-  CARD_HEADER, Chip, ChipGroup, DatePicker, TimePicker, card_class, card_content_class,
+  CARD_HEADER, Chip, ChipGroup, DatePicker, Field, TimePicker, card_class, card_content_class,
   card_title_class,
 };
 use crate::util::{local_day, local_today, now_ms};
@@ -134,7 +135,7 @@ pub fn StudyPlanCard(
     };
     Some(view! {
       <div class="space-y-1">
-        <div class="text-sm font-medium">{headline}</div>
+        <div class="text-sm">{headline}</div>
         <div class="text-xs text-muted-foreground">{tp("common.answered-questions-today-of", log.answered, &[&log.answered.to_string(), &log.new.to_string()])}</div>
         {rows}
       </div>
@@ -146,76 +147,106 @@ pub fn StudyPlanCard(
     return ().into_any();
   }
 
-  view! {
-    <section id="plan" data-slot="card" class=card_class("scroll-mt-24")>
-      <div data-slot="card-header" class=CARD_HEADER>
-        <h2 data-slot="card-title" class=card_title_class("flex items-center justify-between gap-2")>
-          <span>{move || t("common.study-plan")}</span>
-          {(!editable).then(|| view! {
-            <a href="/progress#plan" class="text-xs font-normal text-muted-foreground hover:text-foreground">{move || t("common.adjust")}</a>
-          })}
-        </h2>
+  // 正文只写一份，按场景套不同的外壳：
+  // - 首页（只读摘要）：和其它首页卡片一样用 `SectionCard`（L1 平卡 + 像素标题栏）；
+  // - 学习进度页（可编辑）：它就是这一页的主角，保持窗口级（`card_class`，L2）。
+  let body = view! {
+    {editable.then(|| view! {
+      // 标签统一走 `Field`（`<label for>` ↔ 控件 `id` 配对）：以前这里用裸 `<label>` 包住整个
+      // 选择器，点标签文字会把点击转发给面板里的第一个可聚焦元素 —— 意外开面板。
+      <div class="flex flex-wrap items-end gap-4">
+        <Field
+          label=Signal::derive(move || t("common.exam-date"))
+          r#for="plan-date"
+          class="w-44"
+        >
+          <DatePicker
+            id="plan-date"
+            value=Signal::derive(move || plan.with(|p| p.target_date.clone()))
+            on_change=Callback::new(move |v: String| update(&|p| p.target_date = v.clone()))
+            class="w-full"
+          />
+        </Field>
+        <div class="flex flex-col gap-1.5">
+          <span class="text-xs text-muted-foreground">{move || t("common.target-class")}</span>
+          <ChipGroup
+            value=Signal::derive(move || bank.get().as_str().to_string())
+            on_change=Callback::new(move |v: String| {
+              if let Ok(b) = v.parse::<Bank>() {
+                update(&|p| p.bank = Some(b));
+              }
+            })
+            aria_label=Signal::derive(move || t("common.target-class"))
+          >
+            {Bank::ALL
+              .into_iter()
+              .map(|b| {
+                let label = view! { {tf("learning.class", &[&b.to_string()])} }.into_any();
+                view! { <Chip value=b.as_str().to_string()>{label}</Chip> }
+              })
+              .collect_view()}
+          </ChipGroup>
+        </div>
+        <Field
+          label=Signal::derive(move || t("settings.daily-reminder-time"))
+          r#for="plan-reminder"
+          class="w-32"
+        >
+          <TimePicker
+            id="plan-reminder"
+            value=Signal::derive(move || plan.with(|p| p.reminder_time.clone()))
+            on_change=Callback::new(move |v: String| update(&|p| p.reminder_time = v.clone()))
+            class="w-full"
+          />
+        </Field>
       </div>
-      <div data-slot="card-content" class=card_content_class("space-y-4")>
-        {editable.then(|| view! {
-          <div class="flex flex-wrap items-end gap-4">
-            <label class="flex flex-col gap-1.5 text-sm">
-              <span class="text-xs text-muted-foreground">{move || t("common.exam-date")}</span>
-              <DatePicker
-                value=Signal::derive(move || plan.with(|p| p.target_date.clone()))
-                on_change=Callback::new(move |v: String| update(&|p| p.target_date = v.clone()))
-                aria_label=Signal::derive(move || t("common.exam-date"))
-                class="w-44"
-              />
-            </label>
-            <div class="flex flex-col gap-1.5">
-              <span class="text-xs text-muted-foreground">{move || t("common.target-class")}</span>
-              <ChipGroup
-                value=Signal::derive(move || bank.get().as_str().to_string())
-                on_change=Callback::new(move |v: String| {
-                  if let Ok(b) = v.parse::<Bank>() {
-                    update(&|p| p.bank = Some(b));
-                  }
-                })
-                aria_label=Signal::derive(move || t("common.target-class"))
-              >
-                {Bank::ALL
-                  .into_iter()
-                  .map(|b| {
-                    let label = view! { {tf("learning.class", &[&b.to_string()])} }.into_any();
-                    view! { <Chip value=b.as_str().to_string()>{label}</Chip> }
-                  })
-                  .collect_view()}
-              </ChipGroup>
-            </div>
-            <label class="flex flex-col gap-1.5 text-sm">
-              <span class="text-xs text-muted-foreground">{move || t("settings.daily-reminder-time")}</span>
-              <TimePicker
-                value=Signal::derive(move || plan.with(|p| p.reminder_time.clone()))
-                on_change=Callback::new(move |v: String| update(&|p| p.reminder_time = v.clone()))
-                aria_label=Signal::derive(move || t("settings.daily-reminder-time"))
-                class="w-32"
-              />
-            </label>
-          </div>
-        })}
-        {move || {
-          if !has_plan() {
-            return view! {
-              <p class="text-sm text-muted-foreground">
-                {move || t("common.once-you-set-an")}
-              </p>
-            }
-            .into_any();
+    })}
+    {move || {
+      if !has_plan() {
+        return view! {
+          <p class="text-sm text-muted-foreground">
+            {move || t("common.once-you-set-an")}
+          </p>
+        }
+        .into_any();
+      }
+      match tasks() {
+        Some(v) => v.into_any(),
+        None => view! { <p class="text-sm text-muted-foreground">{move || t("exam.loading-questions-u-2026")}</p> }.into_any(),
+      }
+    }}
+    {editable.then(|| history_bars(&today))}
+  };
+
+  if editable {
+    view! {
+      <section id="plan" data-slot="card" class=card_class("scroll-mt-24")>
+        <div data-slot="card-header" class=CARD_HEADER>
+          <h2 data-slot="card-title" class=card_title_class("flex items-center justify-between gap-2")>
+            <span>{move || t("common.study-plan")}</span>
+          </h2>
+        </div>
+        <div data-slot="card-content" class=card_content_class("space-y-4")>{body}</div>
+      </section>
+    }
+    .into_any()
+  } else {
+    view! {
+      <SectionCard
+        id="plan"
+        class="scroll-mt-24"
+        title=Signal::derive(move || t("common.study-plan"))
+        meta=ViewFn::from(move || {
+          view! {
+            <a href="/progress#plan" class="underline underline-offset-4 hover:text-foreground">
+              {move || t("common.adjust")}
+            </a>
           }
-          match tasks() {
-            Some(v) => v.into_any(),
-            None => view! { <p class="text-sm text-muted-foreground">{move || t("exam.loading-questions-u-2026")}</p> }.into_any(),
-          }
-        }}
-        {editable.then(|| history_bars(&today))}
-      </div>
-    </section>
+        })
+      >
+        <div class="space-y-4 p-4">{body}</div>
+      </SectionCard>
+    }
+    .into_any()
   }
-  .into_any()
 }

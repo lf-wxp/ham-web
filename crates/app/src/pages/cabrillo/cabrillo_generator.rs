@@ -124,14 +124,14 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
               <p class="text-xs text-muted-foreground">
                 {move || t("log.reads-records-in-the")}
                 " "
-                <a href="/contest-log" class="font-medium text-foreground underline underline-offset-4">{move || t("shell.contest-log")}</a>
+                <a href="/contest-log" class="text-foreground underline underline-offset-4">{move || t("shell.contest-log")}</a>
                 {move || t("log.automatic-serials-live-dupe")}
               </p>
             }
             .into_any()
           } else {
             view! {
-              <pre class="max-h-64 overflow-auto border bg-muted/40 p-3 font-mono text-xs leading-5">
+              <pre class="max-h-64 overflow-auto border bg-inset p-3 font-mono text-xs leading-5">
                 {text}
               </pre>
             }

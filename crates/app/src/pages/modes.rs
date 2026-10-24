@@ -14,7 +14,7 @@ const CELL: &str = "border px-3 py-2 align-top";
 pub fn ModesPage() -> impl IntoView {
   set_title("shell.digital-modes");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader title=t("shell.digital-modes") subtitle=t("knowledge.digital-voice-and-data") />
       <PageContainer>
         <Table class="min-w-[720px] text-sm" wrapper_class="pxl-card border bg-card">
@@ -33,7 +33,7 @@ pub fn ModesPage() -> impl IntoView {
                 view! {
                   <TableRow>
                     <TableCell class=format!("{CELL} whitespace-nowrap")>
-                      <div class="font-medium">{m.name}</div>
+                      <div>{m.name}</div>
                       <div class="font-mono text-xs text-muted-foreground">{m.abbr}</div>
                     </TableCell>
                     <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{m.kind}</TableCell>
@@ -53,7 +53,7 @@ pub fn ModesPage() -> impl IntoView {
               .map(|&(k, v)| {
                 view! {
                   <div class="grid gap-1 px-4 py-3 sm:grid-cols-[12rem_1fr]">
-                    <dt class="font-medium">{k}</dt>
+                    <dt>{k}</dt>
                     <dd class="text-sm text-muted-foreground">{v}</dd>
                   </div>
                 }

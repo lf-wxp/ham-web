@@ -11,7 +11,7 @@ use crate::ui::{Button, Chip, ChipGroup, Field, NumberField, Size, Variant};
 use crate::util::unique_id;
 
 const NOTE: &str = "text-xs text-muted-foreground";
-const RESULT: &str = "bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
+const RESULT: &str = "bg-inset px-3 py-2 text-sm text-muted-foreground";
 
 /// 判断「可用带宽」的驻波比上限（业余界常用判据）。
 const SWR_LIMIT: f64 = 2.0;
@@ -67,7 +67,7 @@ pub(super) fn SweepSection(
   view! {
     <div class="space-y-3 pxl-card border bg-card p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <span class="text-sm font-semibold">{move || t("tools.nec-sweep-title")}</span>
+        <span class="text-sm">{move || t("tools.nec-sweep-title")}</span>
         <Button
           variant=Variant::Outline
           size=Size::Xs
@@ -227,7 +227,7 @@ pub(super) fn SweepSection(
                       y=PAD
                       width=width
                       height=h
-                      class="fill-emerald-500/10"
+                      class="fill-win/10"
                       stroke="none"
                     />
                   }
@@ -237,11 +237,11 @@ pub(super) fn SweepSection(
                 y1=y2
                 x2=PAD + w
                 y2=y2
-                class="stroke-amber-500/70"
+                class="stroke-gold/70"
                 stroke-dasharray="4 3"
                 stroke-width="1"
               />
-              <text x=4.0 y=y2 + 3.0 class="fill-muted-foreground text-[10px]">
+              <text x=4.0 y=y2 + 3.0 class="fill-muted-foreground text-xs">
                 {format!("{SWR_LIMIT:.1}")}
               </text>
               <line
@@ -267,17 +267,17 @@ pub(super) fn SweepSection(
                       x=px(f)
                       y=PLOT_H - 8.0
                       text-anchor="middle"
-                      class="fill-muted-foreground text-[10px]"
+                      class="fill-muted-foreground text-xs"
                     >
                       {label(f)}
                     </text>
                   }
                 })
                 .collect_view()}
-              <text x=4.0 y=PAD + 4.0 class="fill-muted-foreground text-[10px]">
+              <text x=4.0 y=PAD + 4.0 class="fill-muted-foreground text-xs">
                 {format!("{y_max:.1}")}
               </text>
-              <text x=PAD + w y=PLOT_H - 8.0 text-anchor="end" class="fill-muted-foreground text-[10px]">
+              <text x=PAD + w y=PLOT_H - 8.0 text-anchor="end" class="fill-muted-foreground text-xs">
                 {move || t("tools.frequency-mhz")}
               </text>
             </svg>

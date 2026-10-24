@@ -130,7 +130,7 @@ pub fn SignalIdPage() -> impl IntoView {
     <PageContainer>
       <section class="space-y-4" aria-label=move || t("signal.filters")>
         <div class="space-y-2">
-          <div class="text-xs font-semibold text-muted-foreground">{move || t("signal.group-sound")}</div>
+          <div class="text-xs text-muted-foreground">{move || t("signal.group-sound")}</div>
           <ChipGroup
             value=Signal::derive(move || sound.get())
             on_change=Callback::new(move |v: String| sound.set(v))
@@ -147,7 +147,7 @@ pub fn SignalIdPage() -> impl IntoView {
         </div>
 
         <div class="space-y-2">
-          <div class="text-xs font-semibold text-muted-foreground">{move || t("signal.group-rhythm")}</div>
+          <div class="text-xs text-muted-foreground">{move || t("signal.group-rhythm")}</div>
           <ChipGroup
             value=Signal::derive(move || rhythm.get())
             on_change=Callback::new(move |v: String| rhythm.set(v))
@@ -163,7 +163,7 @@ pub fn SignalIdPage() -> impl IntoView {
         </div>
 
         <div class="space-y-2">
-          <div class="text-xs font-semibold text-muted-foreground">{move || t("signal.group-bandwidth")}</div>
+          <div class="text-xs text-muted-foreground">{move || t("signal.group-bandwidth")}</div>
           <ChipGroup
             value=Signal::derive(move || bandwidth.get())
             on_change=Callback::new(move |v: String| bandwidth.set(v))
@@ -189,7 +189,7 @@ pub fn SignalIdPage() -> impl IntoView {
           let list = candidates.get();
           if list.is_empty() {
             return view! {
-              <p class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground">{move || t("signal.empty")}</p>
+              <p class="bg-inset px-3 py-2 text-sm text-muted-foreground">{move || t("signal.empty")}</p>
             }
               .into_any();
           }
@@ -200,7 +200,7 @@ pub fn SignalIdPage() -> impl IntoView {
               view! {
                 <article class="pxl-card border bg-card">
                   <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3">
-                    <h3 class="text-sm font-semibold">{move || t(name_key(p.key))}</h3>
+                    <h3 class="text-sm">{move || t(name_key(p.key))}</h3>
                     <span class="text-xs tabular-nums text-muted-foreground">
                       {bandwidth_text(p.bandwidth_hz.0, p.bandwidth_hz.1)}
                     </span>

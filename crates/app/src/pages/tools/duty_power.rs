@@ -204,7 +204,7 @@ pub(super) fn DutyPower() -> impl IntoView {
       <div class=format!("{RESULT} tabular-nums") role="status">
         {move || match outcome.get() {
           Ok(o) => view! {
-            <div class="font-medium text-foreground">
+            <div class="text-foreground">
               {tf(
                 "tools.duty-result-average",
                 &[

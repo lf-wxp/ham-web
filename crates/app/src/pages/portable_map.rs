@@ -93,7 +93,7 @@ pub fn PortableMapPage() -> impl IntoView {
   });
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=Signal::derive(move || t("radio.sota-pota-map"))
         subtitle=Signal::derive(move || t("radio.activated-summits-and-parks"))
@@ -131,7 +131,7 @@ pub fn PortableMapPage() -> impl IntoView {
                           cx=x.to_string()
                           cy=y.to_string()
                           r="3"
-                          class="fill-red-500 stroke-red-500/60"
+                          class="fill-destructive/70 stroke-destructive/60"
                           stroke-width="1"
                           vector-effect="non-scaling-stroke"
                         >

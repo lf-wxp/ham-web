@@ -42,21 +42,21 @@ pub(super) fn polar_grid() -> impl IntoView {
       class="stroke-muted-foreground/25"
       stroke-width="1"
     />
-    <text x=c y=12.0 text-anchor="middle" class="fill-muted-foreground text-[10px]">
+    <text x=c y=12.0 text-anchor="middle" class="fill-muted-foreground text-xs">
       "+Y"
     </text>
-    <text x=c y=POLAR - 4.0 text-anchor="middle" class="fill-muted-foreground text-[10px]">
+    <text x=c y=POLAR - 4.0 text-anchor="middle" class="fill-muted-foreground text-xs">
       "−Y"
     </text>
     <text
       x=POLAR - 4.0
       y=c - 4.0
       text-anchor="end"
-      class="fill-muted-foreground text-[10px]"
+      class="fill-muted-foreground text-xs"
     >
       "+X"
     </text>
-    <text x=4.0 y=c - 4.0 class="fill-muted-foreground text-[10px]">
+    <text x=4.0 y=c - 4.0 class="fill-muted-foreground text-xs">
       "−X"
     </text>
   }

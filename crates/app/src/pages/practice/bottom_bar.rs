@@ -4,12 +4,9 @@ use ham_web_core::Bank;
 use ham_web_core::practice::PracticeOrder;
 use leptos::prelude::*;
 
-use crate::components::common::BottomBar;
+use crate::components::common::{BottomBar, KeyHints};
 use crate::i18n::{bank_class, t};
 use crate::ui::{Button, Size, Variant};
-
-const PRESS: &str = "active:scale-[0.98] transition-transform";
-const PRESS_FULL: &str = "w-full active:scale-[0.98] transition-transform";
 
 #[component]
 pub(super) fn PracticeBottomBar(
@@ -28,8 +25,11 @@ pub(super) fn PracticeBottomBar(
     <BottomBar
       stats=move || {
         view! {
-          {move || t("exam.bank")} " " {move || bank_class(bank.get().as_str())} " · " {move || t(order.get().label())} " · "
-          {move || t("exam.answered")} " " {move || answered.get()} " / " {move || len.get()}
+          <div>
+            {move || t("exam.bank")} " " {move || bank_class(bank.get().as_str())} " · " {move || t(order.get().label())} " · "
+            {move || t("exam.answered")} " " {move || answered.get()} " / " {move || len.get()}
+          </div>
+          <KeyHints />
         }
       }
       left=move || {
@@ -37,7 +37,6 @@ pub(super) fn PracticeBottomBar(
           <Button
             variant=Variant::Secondary
             size=Size::Default
-            class=PRESS
             disabled=Signal::derive(move || at_start.get())
             on_click=Callback::new(move |_| on_prev.run(()))
           >
@@ -50,7 +49,6 @@ pub(super) fn PracticeBottomBar(
           <Button
             variant=Variant::Default
             size=Size::Default
-            class=PRESS
             disabled=Signal::derive(move || at_end.get())
             on_click=Callback::new(move |_| on_next.run(()))
           >
@@ -64,7 +62,7 @@ pub(super) fn PracticeBottomBar(
             <Button
               variant=Variant::Secondary
               size=Size::Default
-              class=PRESS_FULL
+              class="w-full"
               disabled=Signal::derive(move || at_start.get())
               on_click=Callback::new(move |_| on_prev.run(()))
             >
@@ -73,7 +71,7 @@ pub(super) fn PracticeBottomBar(
             <Button
               variant=Variant::Default
               size=Size::Default
-              class=PRESS_FULL
+              class="w-full"
               disabled=Signal::derive(move || at_end.get())
               on_click=Callback::new(move |_| on_next.run(()))
             >

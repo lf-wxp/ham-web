@@ -101,7 +101,7 @@ pub(super) fn WaveguideReport(report: Report, size: String) -> impl IntoView {
   });
 
   view! {
-    <div class="font-medium text-foreground">{move || cutoff.get()}</div>
+    <div class="text-foreground">{move || cutoff.get()}</div>
     <div>{move || single_mode.get()}</div>
     <div>{move || band.get()}</div>
     <div>{move || modes_line.get()}</div>

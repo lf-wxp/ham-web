@@ -13,7 +13,7 @@ use crate::ui::{Button, Chip, ChipGroup, Size, Variant};
 use crate::util::sleep;
 
 const NOTE: &str = "text-xs text-muted-foreground";
-const RESULT: &str = "bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
+const RESULT: &str = "bg-inset px-3 py-2 text-sm text-muted-foreground";
 
 const CELL: &str = "border px-2 py-1 tabular-nums";
 
@@ -114,7 +114,7 @@ pub(super) fn DesignSection(
 
   view! {
     <div class="space-y-3 pxl-card border bg-card p-4">
-      <div class="text-sm font-semibold">{move || t("tools.nec-design-title")}</div>
+      <div class="text-sm">{move || t("tools.nec-design-title")}</div>
       <p class=NOTE>{move || t("tools.nec-design-note")}</p>
 
       <div class="flex flex-wrap items-center gap-2">
@@ -184,7 +184,7 @@ pub(super) fn DesignSection(
         view! {
           <div class="overflow-x-auto">
             <table data-slot="nec-design" class="w-full border-collapse text-xs">
-              <thead class="bg-muted/50">
+              <thead class="bg-inset">
                 <tr>
                   <th class="border px-2 py-1 text-left">"#"</th>
                   <th class="border px-2 py-1 text-left">

@@ -93,7 +93,7 @@ pub fn SstvDecoderPage() -> impl IntoView {
   let on_file = Callback::new(move |file: File| session.start(file, || Ok(JsValue::NULL)));
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("tools.sstv-decoder")
         subtitle=move || t("tools.audio-fm-demodulation-vis")
@@ -159,10 +159,10 @@ pub fn SstvDecoderPage() -> impl IntoView {
           {move || {
             error.get().map(|e| {
               view! {
-                <div class="flex items-start gap-2 border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-                  <Icon kind=IconKind::AlertCircle class="mt-0.5 h-5 w-5 shrink-0" />
+                <div class="flex items-start gap-2 border border-destructive/40 bg-destructive/10 p-4 text-hp-text">
+                  <Icon kind=IconKind::AlertCircle class="mt-0.5 size-6 shrink-0" />
                   <div class="flex-1">
-                    <div class="font-medium">{move || t("radio.decoding-failed")}</div>
+                    <div>{move || t("radio.decoding-failed")}</div>
                     <div class="mt-1 text-sm">{e}</div>
                   </div>
                 </div>
@@ -174,10 +174,10 @@ pub fn SstvDecoderPage() -> impl IntoView {
             result.get().map(|r| {
               view! {
                 <div class="space-y-4">
-                  <div class="flex flex-wrap gap-x-1.5 gap-y-1 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                    <span class="max-w-[16rem] truncate font-medium text-foreground">{file_name.get_untracked()}</span>
+                  <div class="flex flex-wrap gap-x-1.5 gap-y-1 bg-inset px-3 py-2 text-xs text-muted-foreground">
+                    <span class="max-w-[16rem] truncate text-foreground">{file_name.get_untracked()}</span>
                     <span>"·"</span>
-                    <span class="font-medium text-foreground">{r.mode}</span>
+                    <span class="text-foreground">{r.mode}</span>
                     <span>"·"</span>
                     <span>{format!("{} × {}", r.width, r.height)}</span>
                     <span>"·"</span>

@@ -64,7 +64,7 @@ pub(super) fn NvisSection(result: Memo<Option<NecResult>>) -> impl IntoView {
   view! {
     <div class="space-y-3 pxl-card border bg-card p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <span class="text-sm font-semibold">{move || t("tools.nec-nvis")}</span>
+        <span class="text-sm">{move || t("tools.nec-nvis")}</span>
         <div class="flex flex-wrap items-end gap-2">
           <Field label=Signal::derive(move || t("tools.nec-nvis-layer")) r#for=layer_id.clone()>
             <Input
@@ -178,7 +178,7 @@ pub(super) fn NvisSection(result: Memo<Option<NecResult>>) -> impl IntoView {
               <text
                 x=(peak_x + 4.0).min(W - 90.0)
                 y=PAD_T + 24.0
-                class="fill-primary text-[10px]"
+                class="fill-primary text-xs"
               >
                 {format!("{peak_km:.0} km / {peak_elev:.0}°")}
               </text>
@@ -210,7 +210,7 @@ pub(super) fn NvisSection(result: Memo<Option<NecResult>>) -> impl IntoView {
               )
             }}
           </p>
-          <p class=if low_lobe { "text-xs text-destructive" } else { "text-xs text-muted-foreground" }>
+          <p class=if low_lobe { "text-xs text-hp-text" } else { "text-xs text-muted-foreground" }>
             {move || {
               if low_lobe {
                 tf_low(peak_elev)

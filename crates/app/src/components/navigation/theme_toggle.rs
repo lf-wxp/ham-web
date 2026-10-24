@@ -27,9 +27,9 @@ pub fn ThemeToggle(#[prop(optional)] class: &'static str) -> impl IntoView {
     >
       {move || {
         if theme.is_dark() {
-          view! { <Icon kind=IconKind::Sun class="h-4 w-4" /> }
+          view! { <Icon kind=IconKind::Sun class="size-6 w-4" /> }
         } else {
-          view! { <Icon kind=IconKind::Moon class="h-4 w-4" /> }
+          view! { <Icon kind=IconKind::Moon class="size-6 w-4" /> }
         }
       }}
     </Button>

@@ -260,7 +260,7 @@ pub fn MistakesPage() -> impl IntoView {
   let mastery = interval_buckets(&study::load_book());
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.mistakes")
         subtitle=tf("learning.questions-answered-wrong-in", &[&MASTER_STREAK.to_string()])
@@ -341,7 +341,7 @@ pub fn MistakesPage() -> impl IntoView {
           confirm_clear.get().then(|| {
             view! {
               <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-4 pb-3 text-sm">
-                <span class="mr-auto text-red-700 dark:text-red-400">{move || t("learning.clear-all-mistakes-this")}</span>
+                <span class="mr-auto text-hp-text">{move || t("learning.clear-all-mistakes-this")}</span>
                 <Button
                   variant=Variant::Destructive
                   size=Size::Sm
@@ -376,15 +376,15 @@ pub fn MistakesPage() -> impl IntoView {
             let total = session.with_untracked(Vec::len);
             let q = m.question.clone();
             view! {
-              <div class="pxl-card border bg-card p-5">
+              <div class="pxl-card border bg-card p-4">
                 <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
                   <span>{move || tf("exam.question", &[&(current.get() + 1).to_string(), &total.to_string()])}</span>
                   <span>
-                    {move || t("learning.know")} <span class="font-semibold text-emerald-600">{card_known.get()}</span>
-                    " · " {move || t("learning.don-t-know")} <span class="font-semibold text-red-600">{card_unknown.get()}</span>
+                    {move || t("learning.know")} <span class="text-win-text">{card_known.get()}</span>
+                    " · " {move || t("learning.don-t-know")} <span class="text-hp-text">{card_unknown.get()}</span>
                   </span>
                 </div>
-                <p class="whitespace-pre-line text-base font-medium leading-relaxed">{q.question.clone()}</p>
+                <p class="whitespace-pre-line text-base leading-relaxed">{q.question.clone()}</p>
                 {q.image().map(|src| view! { <img src=src.to_owned() alt=move || t("exam.question-image") class="max-h-64 border" /> })}
                 {move || {
                   if card_revealed.get() {
@@ -395,7 +395,7 @@ pub fn MistakesPage() -> impl IntoView {
                           view! {
                             <div class=format!(
                               "text-sm {}",
-                              if correct { "font-medium text-emerald-600 dark:text-emerald-400" } else { "text-muted-foreground" },
+                              if correct { "text-win-text" } else { "text-muted-foreground" },
                             )>
                               <span class="font-mono">{o.key.clone()}</span> "　" {o.text.clone()}
                             </div>
@@ -471,15 +471,15 @@ pub fn MistakesPage() -> impl IntoView {
             let m_note = m.question.clone();
             let note_id = Signal::derive(move || m_note.stable_id().unwrap_or_default());
             view! {
-              <div class="space-y-4 pxl-card border bg-card p-5">
+              <div class="space-y-4 pxl-card border bg-card p-4">
                 <div class="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{move || tf("exam.question", &[&(current.get() + 1).to_string(), &total.to_string()])}</span>
                   <span>
-                    {move || t("exam.correct-label")} <span class="font-semibold text-emerald-600">{correct.get()}</span>
-                    "　" {move || t("exam.wrong-label")} <span class="font-semibold text-red-600">{wrong.get()}</span>
+                    {move || t("exam.correct-label")} <span class="text-win-text">{correct.get()}</span>
+                    "　" {move || t("exam.wrong-label")} <span class="text-hp-text">{wrong.get()}</span>
                   </span>
                 </div>
-                <p class="whitespace-pre-line text-sm font-medium leading-snug">{m.question.question.clone()}</p>
+                <p class="whitespace-pre-line text-sm leading-snug">{m.question.question.clone()}</p>
                 {m.question.image().map(|src| view! { <img src=src.to_owned() alt=move || t("exam.question-image") class="max-h-64 border" /> })}
                 <div class="space-y-2">
                   {m.question.options.iter().map(|o| {
@@ -533,8 +533,8 @@ pub fn MistakesPage() -> impl IntoView {
                     feedback.get().map(|outcome| match outcome {
                       RecordOutcome::Wrong => view! {
                         <div class="space-y-2">
-                          <span class="font-medium text-red-700 dark:text-red-400">
-                            {move || t("exam.correct-answer-prefix")} <span class="font-mono font-semibold">{answer.clone()}</span>
+                          <span class="text-hp-text">
+                            {move || t("exam.correct-answer-prefix")} <span class="font-mono">{answer.clone()}</span>
                             <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("learning.the-correct-in-a")}</span>
                           </span>
                           <div class="flex flex-wrap items-center gap-1.5">
@@ -561,15 +561,15 @@ pub fn MistakesPage() -> impl IntoView {
                         </div>
                       }.into_any(),
                       RecordOutcome::Mastered => view! {
-                        <span class="font-medium text-emerald-700 dark:text-emerald-400">{move || t("learning.correct-mastered-removed-from")}</span>
+                        <span class="text-win-text">{move || t("learning.correct-mastered-removed-from")}</span>
                       }.into_any(),
                       RecordOutcome::Progressed { streak, target, next_days } => view! {
-                        <span class="font-medium text-emerald-700 dark:text-emerald-400">
+                        <span class="text-win-text">
                           {tp("learning.correct-in-a-row", u32::from(next_days), &[&streak.to_string(), &target.to_string(), &next_days.to_string()])}
                         </span>
                       }.into_any(),
                       RecordOutcome::Correct => view! {
-                        <span class="font-medium text-emerald-700 dark:text-emerald-400">{move || t("learning.correct")}</span>
+                        <span class="text-win-text">{move || t("learning.correct")}</span>
                       }.into_any(),
                     })
                   }}
@@ -587,11 +587,11 @@ pub fn MistakesPage() -> impl IntoView {
           } else if finished.get() {
             view! {
               <div class="pxl-card border bg-card px-4 py-10 text-center">
-                <div class="text-lg font-semibold">{move || t("learning.retry-complete")}</div>
+                <div class="text-lg">{move || t("learning.retry-complete")}</div>
                 <div class="mt-2 text-sm text-muted-foreground">
-                  {move || t("exam.correct-label")} " " <span class="font-semibold text-emerald-600">{correct.get()}</span>
-                  "　" {move || t("exam.wrong-label")} " " <span class="font-semibold text-red-600">{wrong.get()}</span>
-                  "　" {move || t("learning.mastered")} " " <span class="font-semibold text-foreground">{mastered.get()}</span>
+                  {move || t("exam.correct-label")} " " <span class="text-win-text">{correct.get()}</span>
+                  "　" {move || t("exam.wrong-label")} " " <span class="text-hp-text">{wrong.get()}</span>
+                  "　" {move || t("learning.mastered")} " " <span class="text-foreground">{mastered.get()}</span>
                 </div>
                 <Button
                   variant=Variant::Default
@@ -624,7 +624,7 @@ pub fn MistakesPage() -> impl IntoView {
                     view! {
                       <div class="pxl-card border bg-card p-4">
                         <div class="mb-2 flex items-center justify-between">
-                          <h3 class="text-sm font-semibold">{move || t("exam.review-forecast")}</h3>
+                          <h3 class="text-sm">{move || t("exam.review-forecast")}</h3>
                           <span class="text-xs text-muted-foreground">
                             {tp("exam.questions-due-for-review", review_total, &[&review_total.to_string()])}
                           </span>
@@ -660,7 +660,7 @@ pub fn MistakesPage() -> impl IntoView {
                                     aria-label=tip
                                   >
                                     <div class=format!("{bar_class} w-full") style=format!("height: {h}%")></div>
-                                    <span class="text-[9px] text-muted-foreground">{label}</span>
+                                    <span class="max-w-full truncate text-xs text-muted-foreground">{label}</span>
                                   </div>
                                 </Tooltip>
                               }
@@ -685,32 +685,32 @@ pub fn MistakesPage() -> impl IntoView {
                     view! {
                       <div class="pxl-card border bg-card p-4">
                         <div class="mb-2 flex items-center justify-between">
-                          <h3 class="text-sm font-semibold">{move || t("learning.memory-consolidation")}</h3>
+                          <h3 class="text-sm">{move || t("learning.memory-consolidation")}</h3>
                           <span class="text-xs text-muted-foreground">
                             {move || t("learning.correct-answers-stretch-the")}
                           </span>
                         </div>
                         <div class="flex h-3 w-full overflow-hidden bg-muted">
-                          <div class="bg-red-400/60" style=format!("width: {}", pct(mastery.learning))></div>
-                          <div class="bg-amber-400/70" style=format!("width: {}", pct(mastery.short))></div>
-                          <div class="bg-sky-400/70" style=format!("width: {}", pct(mastery.medium))></div>
-                          <div class="bg-emerald-500/70" style=format!("width: {}", pct(mastery.mature))></div>
+                          <div class="bg-destructive/60" style=format!("width: {}", pct(mastery.learning))></div>
+                          <div class="bg-gold/70" style=format!("width: {}", pct(mastery.short))></div>
+                          <div class="bg-xp/70" style=format!("width: {}", pct(mastery.medium))></div>
+                          <div class="bg-win/70" style=format!("width: {}", pct(mastery.mature))></div>
                         </div>
                         <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                           <span class="inline-flex items-center gap-1">
-                            {dot("bg-red-400/60")}
+                            {dot("bg-destructive/60")}
                             {tf("learning.learning", &[&mastery.learning.to_string()])}
                           </span>
                           <span class="inline-flex items-center gap-1">
-                            {dot("bg-amber-400/70")}
+                            {dot("bg-gold/70")}
                             {tf("learning.1-6-days", &[&mastery.short.to_string()])}
                           </span>
                           <span class="inline-flex items-center gap-1">
-                            {dot("bg-sky-400/70")}
+                            {dot("bg-xp/70")}
                             {tf("learning.7-20-days", &[&mastery.medium.to_string()])}
                           </span>
                           <span class="inline-flex items-center gap-1">
-                            {dot("bg-emerald-500/70")}
+                            {dot("bg-win/70")}
                             {tf("learning.21-days", &[&mastery.mature.to_string()])}
                           </span>
                         </div>
@@ -736,7 +736,7 @@ pub fn MistakesPage() -> impl IntoView {
                 }
                 view! {
                   <div class="pxl-card border bg-card p-4">
-                    <h3 class="mb-2 text-sm font-semibold">{move || t("learning.weak-categories")}</h3>
+                    <h3 class="mb-2 text-sm">{move || t("learning.weak-categories")}</h3>
                     <div class="flex flex-wrap gap-1.5">
                       {counts
                         .into_iter()
@@ -751,7 +751,7 @@ pub fn MistakesPage() -> impl IntoView {
                                 class="whitespace-nowrap border px-3 py-1 text-xs transition-colors hover:bg-accent"
                                 on:click=move |_| filter.set(key.to_owned())
                               >
-                                {move || t(name)} " " <span class="font-semibold tabular-nums">{n}</span>
+                                {move || t(name)} " " <span class="tabular-nums">{n}</span>
                               </button>
                             </Tooltip>
                           }
@@ -770,7 +770,7 @@ pub fn MistakesPage() -> impl IntoView {
                   has_cause.then(|| {
                     view! {
                       <div class="pxl-card border bg-card p-4">
-                        <h3 class="mb-2 text-sm font-semibold">{move || t("exam.mistake-causes")}</h3>
+                        <h3 class="mb-2 text-sm">{move || t("exam.mistake-causes")}</h3>
                         <div class="flex flex-wrap gap-1.5">
                           {cause_counts
                             .iter()
@@ -778,7 +778,7 @@ pub fn MistakesPage() -> impl IntoView {
                             .map(|&(_, name, n)| {
                               view! {
                                 <span class="whitespace-nowrap border px-3 py-1 text-xs">
-                                  {move || t(name)} " " <span class="font-semibold tabular-nums">{n}</span>
+                                  {move || t(name)} " " <span class="tabular-nums">{n}</span>
                                 </span>
                               }
                             })

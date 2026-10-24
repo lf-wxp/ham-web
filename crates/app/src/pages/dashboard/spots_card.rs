@@ -48,7 +48,7 @@ pub(super) fn SpotsCard() -> impl IntoView {
 
   view! {
     <a href="/dx-spots" class="pxl-card border bg-card p-4 transition-colors hover:bg-accent/40">
-      <div class="text-sm font-semibold">{move || t("shell.dx-spots")}</div>
+      <div class="text-sm">{move || t("shell.dx-spots")}</div>
       <div class="mt-2 space-y-1">
         {move || {
           if loading.get() {
@@ -64,7 +64,7 @@ pub(super) fn SpotsCard() -> impl IntoView {
               .map(|s| {
                 view! {
                   <div class="flex items-center gap-2 text-sm">
-                    <span class="font-mono font-semibold text-primary">{s.dx.clone()}</span>
+                    <span class="font-mono text-primary">{s.dx.clone()}</span>
                     <span class="font-mono text-xs tabular-nums text-muted-foreground">{fmt_freq(s.freq_khz)}</span>
                     <span class="ml-auto text-xs text-muted-foreground">{s.time.clone()}</span>
                   </div>

@@ -24,9 +24,6 @@ use crate::data::Questions;
 use crate::pages::{DEFAULT_TITLE, bank_href, use_bank_query, use_no_site_footer};
 use crate::shortcuts::{DigitDetail, Shortcuts, digit_answer, use_question_shortcuts};
 use crate::store;
-use crate::ui::{
-  Button, Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Size, Variant,
-};
 use crate::util::now_ms;
 use crate::util::set_title;
 
@@ -114,8 +111,6 @@ pub fn PracticePage() -> impl IntoView {
   });
   let generation = StoredValue::new(0u32);
   let help_shown = StoredValue::new(false);
-  let pending_order = RwSignal::new(None::<PracticeOrder>);
-  let confirm_order_open = RwSignal::new(false);
 
   Effect::new(move |_| {
     no_prompt.set(store::load_no_resume(bank.get(), version.get().as_deref()));
@@ -333,19 +328,18 @@ pub fn PracticePage() -> impl IntoView {
       .answers
       .with_untracked(|a| a.values().any(|v| !v.is_empty()));
     if next == PracticeOrder::Random && has_answers {
-      pending_order.set(Some(next));
-      confirm_order_open.set(true);
+      // 会清空全部作答：走全站统一的确认服务，语气按「破坏性」给 Danger
+      // （以前自己搭 Dialog，确认键是普通主色按钮，和后果不匹配）。
+      crate::ui::confirm(
+        t("exam.changing-order-clears-answers"),
+        t("exam.switching-to-random-reshuffles"),
+        t("exam.switch"),
+        crate::ui::ConfirmTone::Danger,
+        Callback::new(move |()| apply_order(next)),
+      );
       return;
     }
     apply_order(next);
-  });
-
-  let confirm_change_order = Callback::new(move |()| {
-    if let Some(next) = pending_order.get_untracked() {
-      apply_order(next);
-    }
-    confirm_order_open.set(false);
-    pending_order.set(None);
   });
 
   let selected = Signal::derive(move || {
@@ -518,7 +512,7 @@ pub fn PracticePage() -> impl IntoView {
     }
     view! {
       <div on:touchstart=swipe_start on:touchend=swipe_end>
-        <PageContainer class="py-6 space-y-4 pb-24 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+        <PageContainer class="py-6 space-y-4 pb-24 sm:pb-28 animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal)">
         <PracticeHeaderBar
           percent=percent
           progress_label=Signal::derive(move || {
@@ -546,7 +540,7 @@ pub fn PracticePage() -> impl IntoView {
                 {move || {
                   (store.streak.get() >= 2).then(|| {
                     view! {
-                      <div class="flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                      <div class="flex items-center gap-1 text-xs text-win-text">
                         <span>{tf("radio.correct-in-a-row", &[&store.streak.get().to_string()])}</span>
                         <span class="text-muted-foreground">{" · "}</span>
                         <span>{tf("radio.longest-streak", &[&store.best_streak.get().to_string()])}</span>
@@ -561,6 +555,7 @@ pub fn PracticePage() -> impl IntoView {
                   selected=selected
                   on_change=set_answer
                   show_answer=store.show_answer
+                  confirm_multiple=true
                   peeked=store.current_peeked()
                   on_reveal=Callback::new(move |()| store.mark_peeked())
                 />
@@ -608,31 +603,6 @@ pub fn PracticePage() -> impl IntoView {
       on_pick=Callback::new(move |pos| store.jump(pos))
       on_jump=on_jump
     />
-    <Dialog open=confirm_order_open>
-      <DialogHeader>
-        <DialogTitle>{move || t("exam.changing-order-clears-answers")}</DialogTitle>
-        <DialogDescription>{move || t("exam.switching-to-random-reshuffles")}</DialogDescription>
-      </DialogHeader>
-      <DialogFooter>
-        <Button
-          variant=Variant::Outline
-          size=Size::Default
-          on_click=Callback::new(move |_| {
-                    confirm_order_open.set(false);
-                    pending_order.set(None);
-                  })
-        >
-          {move || t("exam.cancel")}
-        </Button>
-        <Button
-          variant=Variant::Default
-          size=Size::Default
-          on_click=Callback::new(move |_| confirm_change_order.run(()))
-        >
-          {move || t("exam.switch")}
-        </Button>
-      </DialogFooter>
-    </Dialog>
     <MessageDialog open=error_open title=t("exam.load-failed") description=error_text confirm_text=t("exam.ok") />
     <ShortcutHelpDialog open=help_open />
   }

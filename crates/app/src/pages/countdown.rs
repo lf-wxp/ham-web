@@ -143,7 +143,7 @@ pub fn CountdownPage() -> impl IntoView {
   };
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("exam.countdowns-and-reminders")
         subtitle=move || t("exam.exam-dates-licence-expiry")
@@ -219,13 +219,13 @@ pub fn CountdownPage() -> impl IntoView {
                     view! {
                       <div class="flex items-center gap-4 pxl-card border bg-card px-4 py-4">
                         <div class="min-w-0 flex-1">
-                          <div class="truncate font-medium">{e.title.clone()}</div>
+                          <div class="truncate">{e.title.clone()}</div>
                           <div class="mt-0.5 text-xs text-muted-foreground tabular-nums">
                             {format_local(e.target_ms)}
                           </div>
                         </div>
                         <div class=format!(
-                          "shrink-0 text-right font-mono text-lg font-semibold tabular-nums {}",
+                          "shrink-0 text-right font-mono text-lg tabular-nums {}",
                           if expired { "text-muted-foreground" } else { "text-primary" },
                         )>
                           {format_remaining(remain)}
@@ -233,7 +233,7 @@ pub fn CountdownPage() -> impl IntoView {
                         <Button
                           variant=Variant::Text
                           size=Size::Xs
-                          class="shrink-0 hover:text-destructive"
+                          class="shrink-0 hover:text-hp-text"
                           on_click=Callback::new(move |_| remove(id))
                         >
                           {move || t("log.delete")}

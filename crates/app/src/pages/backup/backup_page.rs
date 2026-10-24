@@ -11,7 +11,7 @@ use super::backup_tool::BackupTool;
 pub fn BackupPage() -> impl IntoView {
   set_title("tools.data-backup");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("tools.data-backup")
         subtitle=move || t("settings.export-all-local-data")

@@ -61,7 +61,7 @@ pub fn PskDecodePage() -> impl IntoView {
   };
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=t("radio.psk31-decoder")
         subtitle=t("radio.bpsk-31-25-baud")
@@ -135,10 +135,10 @@ pub fn PskDecodePage() -> impl IntoView {
           {move || {
             error.get().map(|e| {
               view! {
-                <div class="flex items-start gap-2 border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-                  <Icon kind=IconKind::AlertCircle class="mt-0.5 h-5 w-5 shrink-0" />
+                <div class="flex items-start gap-2 border border-destructive/40 bg-destructive/10 p-4 text-hp-text">
+                  <Icon kind=IconKind::AlertCircle class="mt-0.5 size-6 shrink-0" />
                   <div class="flex-1">
-                    <div class="font-medium">{t("radio.decoding-failed")}</div>
+                    <div>{t("radio.decoding-failed")}</div>
                     <div class="mt-1 text-sm">{e}</div>
                   </div>
                 </div>
@@ -161,7 +161,7 @@ pub fn PskDecodePage() -> impl IntoView {
                       {t("radio.choose-another")}
                     </Button>
                   </div>
-                  <pre class="whitespace-pre-wrap break-words border bg-muted/40 p-4 text-sm font-mono">{text}</pre>
+                  <pre class="whitespace-pre-wrap break-words border bg-inset p-4 text-sm font-mono">{text}</pre>
                 </div>
               }
             })

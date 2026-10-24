@@ -34,7 +34,7 @@ pub fn SettingsDialog(open: RwSignal<bool>) -> impl IntoView {
         <DialogTitle>{move || t("shell.settings")}</DialogTitle>
       </DialogHeader>
 
-      <div class="flex min-h-0 flex-col gap-5 overflow-y-auto">
+      <div class="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain">
         // 单选组没有单个控件可以挂 `for`：整组靠 `aria_label` 命名，标签文字只是可见的小标题。
         <p class="pxl-label text-xs text-muted-foreground">{move || t("shell.settings-theme")}</p>
         <div>

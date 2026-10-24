@@ -17,6 +17,7 @@ use crate::components::common::{EmptyState, PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::ui::{
   Button, ButtonLink, Field, Input, NativeSelect, SelectOption, Size, TextValue, Tooltip, Variant,
+  card_title_class,
 };
 use crate::util::{js_error_message, set_title, unique_id};
 use crate::web_serial::{Conn, call, close_serial, is_user_cancel, open_serial, prop, serial};
@@ -211,7 +212,7 @@ pub fn KissTncPage() -> impl IntoView {
   on_cleanup(disconnect);
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("tools.kiss-tnc")
         subtitle=move || t("tools.kiss-tnc-subtitle")
@@ -257,7 +258,7 @@ pub fn KissTncPage() -> impl IntoView {
             <div class="ml-auto flex items-center gap-2">
               {move || {
                 if !supported {
-                  view! { <span class="text-xs text-destructive">{t("common.this-browser-does-not")}</span> }
+                  view! { <span class="text-xs text-hp-text">{t("common.this-browser-does-not")}</span> }
                     .into_any()
                 } else if connected.get() {
                   view! {
@@ -279,13 +280,13 @@ pub fn KissTncPage() -> impl IntoView {
           </div>
           {move || {
             error.get().map(|e| {
-              view! { <p class="mt-3 text-xs text-destructive">{e}</p> }
+              view! { <p class="mt-3 text-xs text-hp-text">{e}</p> }
             })
           }}
         </section>
 
         <section class="border bg-card p-4">
-          <h2 class="text-sm font-semibold">{move || t("tools.kiss-rx")}</h2>
+          <h2 class=card_title_class("")>{move || t("tools.kiss-rx")}</h2>
           <div class="mt-3 space-y-1.5">
             {move || {
               if rows.with(VecDeque::is_empty) {
@@ -302,7 +303,7 @@ pub fn KissTncPage() -> impl IntoView {
                     let text = r.text.clone();
                     view! {
                       <Tooltip label=hex.clone()>
-                        <div class="flex flex-wrap items-baseline gap-2 bg-muted/40 px-3 py-2 text-xs">
+                        <div class="flex flex-wrap items-baseline gap-2 bg-inset px-3 py-2 text-xs">
                           <span class="font-mono text-muted-foreground">
                             [{tf("tools.kiss-rx-bytes", &[&(hex.len() / 2).to_string()])}]
                           </span>
@@ -319,7 +320,7 @@ pub fn KissTncPage() -> impl IntoView {
         </section>
 
         <section class="border bg-card p-4">
-          <h2 class="text-sm font-semibold">{move || t("tools.kiss-tx")}</h2>
+          <h2 class=card_title_class("")>{move || t("tools.kiss-tx")}</h2>
           <div class="mt-3 grid gap-3 sm:grid-cols-3">
             {{
               let src_id = unique_id("kiss-src");
@@ -381,7 +382,7 @@ pub fn KissTncPage() -> impl IntoView {
                   <span class="text-xs text-muted-foreground">
                     {tf("tools.kiss-preview", &[&p.frame_len.to_string()])}
                     " "
-                    <code class="break-all bg-muted/60 px-1.5 py-0.5 font-mono">
+                    <code class="break-all bg-inset px-1.5 py-0.5 font-mono">
                       {hex_text}
                     </code>
                   </span>

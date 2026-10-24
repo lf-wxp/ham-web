@@ -135,14 +135,14 @@ pub(super) fn PathProfileChart(report: ProfileReport) -> impl IntoView {
         stroke-width="1"
         vector-effect="non-scaling-stroke"
       />
-      <text x=PAD_L - 6.0 y=PAD_T + 8.0 text-anchor="end" class="fill-muted-foreground text-[10px]">
+      <text x=PAD_L - 6.0 y=PAD_T + 8.0 text-anchor="end" class="fill-muted-foreground text-xs">
         {top_label}
       </text>
-      <text x=PAD_L - 6.0 y=bottom text-anchor="end" class="fill-muted-foreground text-[10px]">
+      <text x=PAD_L - 6.0 y=bottom text-anchor="end" class="fill-muted-foreground text-xs">
         {bottom_label}
       </text>
-      <text x=PAD_L y=H - 6.0 class="fill-muted-foreground text-[10px]">"0 km"</text>
-      <text x=W - PAD_R y=H - 6.0 text-anchor="end" class="fill-muted-foreground text-[10px]">
+      <text x=PAD_L y=H - 6.0 class="fill-muted-foreground text-xs">"0 km"</text>
+      <text x=W - PAD_R y=H - 6.0 text-anchor="end" class="fill-muted-foreground text-xs">
         {end_label}
       </text>
     </svg>

@@ -69,7 +69,7 @@ pub(super) fn table_rows(jump: Callback<&'static str>) -> impl IntoView {
           }
           .into_any(),
         };
-        view! { <tr class="transition-colors hover:bg-muted/40">{band_cells} {alloc_cells}</tr> }
+        view! { <tr class="transition-colors hover:bg-inset">{band_cells} {alloc_cells}</tr> }
       })
     })
     .collect_view()

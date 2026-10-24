@@ -18,16 +18,19 @@ use table_rows::table_rows;
 use ham_web_core::bands::Usage;
 
 const CELL: &str = "border px-2 py-1.5 text-center align-middle";
-const SAT_ICON: &str = "h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400";
+const SAT_ICON: &str = "h-3.5 w-3.5 shrink-0 text-gold-text";
 
+/// 用途徽章的配色。
+///
+/// 「唯一主要」与「主要」在语义 token 里同属信息档（`xp`），只靠底色时两者在同一张表里
+/// 长得一模一样 —— 层级（唯一 / 之一）反而丢了。所以四档都带同宽描边：唯一主要用实描边，
+/// 主要用透明描边（等同无框），层级落在这个第二通道上，布局也不因为有没有边框而抖动。
 fn usage_class(u: Usage) -> &'static str {
   match u {
-    Usage::Exclusive => {
-      "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
-    }
-    Usage::SolePrimary => "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-    Usage::Primary => "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300",
-    Usage::Secondary => "bg-muted text-muted-foreground",
+    Usage::Exclusive => "border border-transparent bg-win/10 text-win-text",
+    Usage::SolePrimary => "border border-xp bg-xp/10 text-xp-text",
+    Usage::Primary => "border border-transparent bg-xp/10 text-xp-text",
+    Usage::Secondary => "border border-transparent bg-muted text-muted-foreground",
   }
 }
 

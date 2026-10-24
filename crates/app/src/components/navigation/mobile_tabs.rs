@@ -92,8 +92,14 @@ pub fn MobileTabs() -> impl IntoView {
             // （fit-content），不撑满的话「更多」的图标会贴在格子左缘，五个图标间距不齐。
             let class = move || {
               cn(&[
-                "flex w-full flex-col items-center gap-0.5 py-2 text-xs",
-                if active() { "text-primary" } else { "text-muted-foreground" },
+                "flex w-full flex-col items-center gap-0.5 border-t-4 py-2 text-xs",
+                // 激活态 = 顶部 4px 主色条 + 浅底 + 主色字：形状通道，不只靠字色
+                // （Game Boy / CGA 这类强约束方案里 primary 与 muted 的字色差很小）。
+                if active() {
+                  "border-primary bg-primary/10 text-primary"
+                } else {
+                  "border-transparent text-muted-foreground"
+                },
               ])
             };
             let is_current = move || active();

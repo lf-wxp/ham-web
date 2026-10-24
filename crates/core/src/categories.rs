@@ -1,5 +1,34 @@
 //! 题库分类体系：一级分类（题目类型）+ 二级分类（官方分类码 P → 大类/子类）+ 知识点 + 参考资料。
 
+/// 一级分类的标识色**档位**（不是色值）。
+///
+/// 为什么不带色值：数据层写死 `#rrggbb` 会让 11 套配色方案全部失效（切到 Game Boy / CGA
+/// 时分类圆点还是玫瑰红），而且「任意底色 + 白字」的对比度无法审计。具体颜色由界面层
+/// 映射到调色板的 `--cat-*`（`crates/app/src/tone.rs`），同色值只在那里出现一次。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CategoryTone {
+  /// 第 1 档。
+  One,
+  /// 第 2 档。
+  Two,
+  /// 第 3 档。
+  Three,
+  /// 第 4 档。
+  Four,
+  /// 第 5 档。
+  Five,
+  /// 第 6 档。
+  Six,
+  /// 第 7 档。
+  Seven,
+  /// 第 8 档。
+  Eight,
+  /// 第 9 档。
+  Nine,
+  /// 第 10 档。
+  Ten,
+}
+
 /// 一级分类。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TopCategory {
@@ -9,8 +38,8 @@ pub struct TopCategory {
   pub name: &'static str,
   /// 描述。
   pub desc: &'static str,
-  /// 标识色。
-  pub color: &'static str,
+  /// 标识色档位（`CategoryTone`，具体颜色由界面层映射，数据层不带色值）。
+  pub tone: CategoryTone,
 }
 
 /// 二级分类。
@@ -59,13 +88,13 @@ const fn top(
   key: &'static str,
   name: &'static str,
   desc: &'static str,
-  color: &'static str,
+  tone: CategoryTone,
 ) -> TopCategory {
   TopCategory {
     key,
     name,
     desc,
-    color,
+    tone,
   }
 }
 
@@ -95,61 +124,61 @@ pub const TOP_CATEGORIES: &[TopCategory] = &[
     "法规",
     "无线电法规与管理",
     "无线电管理法规、电台设置许可、执照与呼号、操作能力验证、通联行为禁则与法律责任",
-    "#e11d48",
+    CategoryTone::One,
   ),
   top(
     "频率",
     "频率与波段",
     "频率划分与使用规则、业余业务频段、ITU 区域划分、IARU 波段规划",
-    "#2563eb",
+    CategoryTone::Two,
   ),
   top(
     "操作",
     "通联程序与规范",
     "呼叫与应答、频率占用与插入、电台日志与 QSL 卡片、中继台通联、DX 与竞赛",
-    "#047857",
+    CategoryTone::Three,
   ),
   top(
     "用语",
     "通联用语与缩语",
     "ITU 语音字母拼读法、Q 简语、CW/通联常用缩语与英语短句",
-    "#7c3aed",
+    CategoryTone::Four,
   ),
   top(
     "调制",
     "调制方式与数字通信",
     "发射类别、AM/FM/SSB/CW 调制特点、数字语音与数字业余电视",
-    "#db2777",
+    CategoryTone::Five,
   ),
   top(
     "设备",
     "收发设备与技术指标",
     "收发信机组成、发射机与接收机原理、接收机与发射机主要技术指标",
-    "#0891b2",
+    CategoryTone::Six,
   ),
   top(
     "天线",
     "天线与馈线",
     "天线增益与极化、驻波比、同轴电缆馈线、常见天线型式",
-    "#ea580c",
+    CategoryTone::Seven,
   ),
   top(
     "传播",
     "电波传播与卫星",
     "多径传播、视距传播极限、业余卫星、EME、流星余迹与散射通信",
-    "#4f46e5",
+    CategoryTone::Eight,
   ),
   top(
     "基础",
     "电子电工基础",
     "导体与绝缘体、静电与直流电、电学单位、电源、元件与电路、万用表测量",
-    "#65a30d",
+    CategoryTone::Nine,
   ),
   top(
     "安全",
     "安全与电磁防护",
     "发射设备技术指标、电磁环境控制限值、防雷接地、用电与电池安全",
-    "#b45309",
+    CategoryTone::Ten,
   ),
 ];
 

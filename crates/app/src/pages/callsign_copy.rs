@@ -112,17 +112,17 @@ pub fn CallsignCopyPage() -> impl IntoView {
   };
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.callsign-copy-training")
         subtitle=move || t("morse.listen-to-phonetic-spelling")
       />
 
       <PageContainer class="space-y-4">
-        <section class="pxl-card border bg-card p-5">
+        <section class="pxl-card border bg-card p-4">
           <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-            <span>{move || t("common.correct-label")} <span class="font-semibold text-emerald-600">{correct.get()}</span> {" / "} {total.get()}</span>
-            <span>{move || t("morse.streak-count")} <span class="font-semibold text-foreground">{streak.get()}</span> {move || t("exam.questions")}</span>
+            <span>{move || t("common.correct-label")} <span class="text-win-text">{correct.get()}</span> {" / "} {total.get()}</span>
+            <span>{move || t("morse.streak-count")} <span class="text-foreground">{streak.get()}</span> {move || t("exam.questions")}</span>
           </div>
 
           // 刻意的例外：这两个模式按钮靠切换 `variant` 表示当前选中，而 `Button` 的
@@ -210,7 +210,7 @@ pub fn CallsignCopyPage() -> impl IntoView {
               } else {
                 let ok = feedback.get().unwrap_or(false);
                 view! {
-                  <span class=if ok { "text-sm font-medium text-emerald-700 dark:text-emerald-400" } else { "text-sm font-medium text-red-700 dark:text-red-400" }>
+                  <span class=if ok { "text-sm text-win-text" } else { "text-sm text-hp-text" }>
                     {if ok { t("learning.correct") } else { tf("common.the-answer-is", &[&(callsign.get()).to_string()]) }}
                   </span>
                   <Button
@@ -228,14 +228,14 @@ pub fn CallsignCopyPage() -> impl IntoView {
         </section>
 
         <details class="pxl-card border bg-card">
-          <summary class="cursor-pointer px-4 py-3 text-sm font-semibold">{move || t("morse.phonetic-alphabet-reference")}</summary>
+          <summary class="cursor-pointer px-4 py-3 text-sm">{move || t("morse.phonetic-alphabet-reference")}</summary>
           <div class="grid grid-cols-2 gap-x-6 gap-y-1 px-4 pb-4 sm:grid-cols-3">
             {PHONETIC
               .iter()
               .map(|e| {
                 view! {
                   <div class="flex items-baseline gap-2 text-sm">
-                    <span class="w-6 shrink-0 font-mono font-semibold text-primary">{e.letter}</span>
+                    <span class="w-6 shrink-0 font-mono text-primary">{e.letter}</span>
                     <span class="text-muted-foreground">{e.word} " " <span class="text-xs">({e.pronunciation})</span></span>
                   </div>
                 }

@@ -33,7 +33,7 @@ const PAGE_HEADER_MARKER: &str = "[data-page-header]";
 /// （折行、切语言、断点切换）都自动跟随，吸顶前后面板位置零错位。
 ///
 /// 面板元素上同时写一个 CSS 变量 `--sticky-top`（px），面板内需要限高的滚动子元素
-/// 用它计算剩余高度，如 `max-h-[calc(100vh-var(--sticky-top)-16px)]`。
+/// 用它计算剩余高度，如 `max-h-[calc(100svh-var(--sticky-top)-16px)]`。
 ///
 /// 测量方式：把面板临时设为 `position: static` 读它的自然位置（吸顶状态下读
 /// `getBoundingClientRect` 得到的是吸顶后的位置，会被旧偏移污染），

@@ -11,6 +11,8 @@
 //! - C6.1 散落的 `alert()`：反馈应走 Toast / MessageDialog；
 //! - A1.1 core 依赖浏览器 API：`web_sys` / `js_sys` / `wasm_bindgen` 出现在 core 源码；
 //! - A1.3 crate 反向依赖 app/server：任何 crate 的依赖里出现 ham-web-app / ham-web-server；
+//! - A2.1 数据显示层带色值：`crates/core` 里出现 `"#rrggbb"` 字面量（分类色这类「标识色」
+//!   必须只给档位，色值归界面层的 `--cat-*`，否则 11 套配色方案会失效）；
 //! - 运行时 panic 宏：`todo!()` / `unimplemented!()` 不应留到提交。
 //!
 //! 判定口径：每行先剥掉 `//` 之后的内容，`/*` 与 `*` 开头的行整行跳过（历史说明不算违规），
@@ -63,6 +65,14 @@ const RULES: &[LineRule] = &[
     hits: has_browser_api,
     advice: "不依赖浏览器的逻辑放 ham-web-core；这三样只能在 crates/app 与各 worker 里出现",
   },
+  // 色值白名单：`color.rs` / `color_scheme.rs` / 像素调色板工具本来就是「定义颜色」的地方。
+  LineRule {
+    name: "数据显示层带色值（`crates/core` 里的 `\"#rrggbb\"`）",
+    roots: &["crates/core/src"],
+    skip: &["color.rs", "color_scheme.rs", "/pixel/"],
+    hits: has_hex_color,
+    advice: "分类标识色只给档位（`CategoryTone`），色值在 `crates/app/src/tone.rs` 映射到 `--cat-*`；数据层写死色值会让 11 套配色方案失效",
+  },
   // 本文件自身需要写 `todo!()` / `unimplemented!()` 这些词来识别它们，跳过自身避免误报。
   LineRule {
     name: "运行时 panic 宏（`todo!()` / `unimplemented!()`）",
@@ -92,6 +102,21 @@ fn has_browser_api(line: &str) -> bool {
   ["web_sys", "js_sys", "wasm_bindgen"]
     .iter()
     .any(|n| line.contains(n))
+}
+
+/// `"#rrggbb"` / `"#rgb"` 字面量（色值）：大小写都算，`"#` 后面至少 3 位十六进制。
+fn has_hex_color(line: &str) -> bool {
+  let bytes = line.as_bytes();
+  for i in 0..bytes.len().saturating_sub(3) {
+    if bytes[i] == b'"' && bytes[i + 1] == b'#' {
+      let hex = &line[i + 2..];
+      let n = hex.chars().take_while(|c| c.is_ascii_hexdigit()).count();
+      if matches!(n, 3 | 4 | 6 | 8) && hex[n..].starts_with('"') {
+        return true;
+      }
+    }
+  }
+  false
 }
 
 fn has_panic_macro(line: &str) -> bool {
@@ -341,6 +366,12 @@ mod tests {
     assert!(has_browser_api("use wasm_bindgen::prelude::*;"));
     assert!(has_browser_api("web_sys::window()"));
     assert!(!has_browser_api("let dom_api = 1;"));
+    assert!(has_hex_color("color: \"#e11d48\","));
+    assert!(has_hex_color("let c = \"#b13e53\";"));
+    assert!(!has_hex_color("/// 见 `#e11d48` 的说明"));
+    assert!(!has_hex_color("let id = \"q3\";"));
+    assert!(has_hex_color("assert_eq!(hex, \"#b13e53ff\");"));
+    assert!(!has_hex_color("let n = \"#12345\";"));
     assert!(has_panic_macro("todo!()"));
     assert!(has_panic_macro("unimplemented!()"));
   }

@@ -60,25 +60,25 @@ pub(super) fn IssTracker() -> impl IntoView {
           match iss.get() {
             Some(d) => view! {
               <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div class="border bg-muted/40 p-3 text-center">
+                <div class="border bg-inset p-3 text-center">
                   <div class="text-xs text-muted-foreground">{move || t("radio.latitude")}</div>
-                  <div class="mt-1 text-lg font-semibold tabular-nums">{format!("{:.2}°", d.latitude)}</div>
+                  <div class="mt-1 text-lg tabular-nums">{format!("{:.2}°", d.latitude)}</div>
                 </div>
-                <div class="border bg-muted/40 p-3 text-center">
+                <div class="border bg-inset p-3 text-center">
                   <div class="text-xs text-muted-foreground">{move || t("radio.longitude")}</div>
-                  <div class="mt-1 text-lg font-semibold tabular-nums">{format!("{:.2}°", d.longitude)}</div>
+                  <div class="mt-1 text-lg tabular-nums">{format!("{:.2}°", d.longitude)}</div>
                 </div>
-                <div class="border bg-muted/40 p-3 text-center">
+                <div class="border bg-inset p-3 text-center">
                   <div class="text-xs text-muted-foreground">{move || t("radio.altitude-label")}</div>
-                  <div class="mt-1 text-lg font-semibold tabular-nums">{format!("{:.0} km", d.altitude)}</div>
+                  <div class="mt-1 text-lg tabular-nums">{format!("{:.0} km", d.altitude)}</div>
                 </div>
-                <div class="border bg-muted/40 p-3 text-center">
+                <div class="border bg-inset p-3 text-center">
                   <div class="text-xs text-muted-foreground">{move || t("radio.speed")}</div>
-                  <div class="mt-1 text-lg font-semibold tabular-nums">{format!("{:.1} km/s", d.velocity)}</div>
+                  <div class="mt-1 text-lg tabular-nums">{format!("{:.1} km/s", d.velocity)}</div>
                 </div>
               </div>
               <p class="mt-3 text-xs text-muted-foreground">
-                {move || t("radio.current-state")} <span class="font-medium text-foreground">{move || t(visibility_label(d.visibility.as_str()))}</span>
+                {move || t("radio.current-state")} <span class="text-foreground">{move || t(visibility_label(d.visibility.as_str()))}</span>
                 {move || t("radio.data-from-wheretheiss-at")}
               </p>
             }

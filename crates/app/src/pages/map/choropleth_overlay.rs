@@ -33,7 +33,7 @@ pub struct RegionShape {
 /// 按状态返回填充/描边类名（完整字面量，供 Tailwind 扫描）。
 fn fill_class(status: RegionStatus) -> &'static str {
   match status {
-    RegionStatus::Confirmed => "fill-emerald-600/70 stroke-emerald-500/80",
+    RegionStatus::Confirmed => "fill-win/70 stroke-win/80",
     RegionStatus::Worked => "fill-primary/40 stroke-primary/50",
     RegionStatus::Empty => "fill-foreground/5 stroke-foreground/20",
   }

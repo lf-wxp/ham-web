@@ -101,7 +101,7 @@ pub(super) fn SoftTnc() -> impl IntoView {
       </div>
 
       <div class="space-y-2 border-t pt-3">
-        <div class="text-xs font-medium text-foreground/70">{move || t("tools.soft-tnc-rx-title")}</div>
+        <div class="text-xs text-foreground/70">{move || t("tools.soft-tnc-rx-title")}</div>
         <FileInput
           on_files=on_files
           accept=".wav,audio/wav,audio/x-wav"
@@ -135,7 +135,7 @@ pub(super) fn SoftTnc() -> impl IntoView {
         {move || {
           error.get().map(|e| {
             view! {
-              <p role="alert" class="text-sm text-destructive">{e}</p>
+              <p role="alert" class="text-sm text-hp-text">{e}</p>
             }
           })
         }}
@@ -153,15 +153,15 @@ pub(super) fn SoftTnc() -> impl IntoView {
                   .truncated
                   .then(|| {
                     view! {
-                      <p class="text-xs text-amber-600 dark:text-amber-400">
+                      <p class="text-xs text-gold-text">
                         {move || t("tools.soft-tnc-truncated")}
                       </p>
                     }
                   })}
-                <div class="bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                <div class="bg-inset px-3 py-2 text-xs text-muted-foreground">
                   {crate::i18n::tf("radio.decoded", &[&file_name.get_untracked()])}
                 </div>
-                <pre class="whitespace-pre-wrap break-words border bg-muted/40 p-3 text-sm font-mono">{lines}</pre>
+                <pre class="whitespace-pre-wrap break-words border bg-inset p-3 text-sm font-mono">{lines}</pre>
                 <div class="flex justify-center">
                   <Button variant=Variant::Outline on_click=move |_| reset(())>
                     {move || t("tools.decode-another-file")}

@@ -60,7 +60,7 @@ pub(super) fn MorseCard(entry: &'static MorseChar) -> impl IntoView {
       <div class="flex items-baseline gap-1.5">
         <span class="pxl-title text-base leading-none tabular-nums">{entry.ch}</span>
         {word_of(entry.ch)
-          .map(|p| view! { <span class="text-[11px] leading-none text-muted-foreground">{p}</span> })}
+          .map(|p| view! { <span class="text-xs leading-none text-muted-foreground">{p}</span> })}
       </div>
       <span class="font-mono text-sm tracking-wider">
         {move || {
@@ -71,7 +71,7 @@ pub(super) fn MorseCard(entry: &'static MorseChar) -> impl IntoView {
             .map(|(i, ch)| {
               let active = highlight.get() == Some(i);
               view! {
-                <span class=if active { "text-emerald-500 dark:text-emerald-400" } else { "text-primary" }>{ch.to_string()}</span>
+                <span class=if active { "text-win-text" } else { "text-primary" }>{ch.to_string()}</span>
               }
             })
             .collect_view()

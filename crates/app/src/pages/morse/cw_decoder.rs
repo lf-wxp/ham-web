@@ -15,7 +15,7 @@ use web_sys::{
 };
 
 use crate::i18n::{t, tf};
-use crate::ui::{Button, Input, Size, Slider, Variant};
+use crate::ui::{Button, Input, Size, Slider, Variant, card_title_class};
 use crate::util::{copy_text, js_error_message, window};
 
 /// 轮询周期（毫秒）。时序以音频时钟为准，定时器迟到不影响点划判断。
@@ -242,7 +242,7 @@ pub fn CwDecoder() -> impl IntoView {
     <section class="pxl-card border bg-card" aria-labelledby="cw-decoder-title">
       <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <div class="mr-auto">
-          <h2 id="cw-decoder-title" class="text-sm font-semibold">{move || t("morse.cw-decoding-microphone")}</h2>
+          <h2 id="cw-decoder-title" class=card_title_class("")>{move || t("morse.cw-decoding-microphone")}</h2>
           <p class="text-xs text-muted-foreground">{move || t("morse.hold-the-microphone-near")}</p>
         </div>
         <Button
@@ -260,9 +260,9 @@ pub fn CwDecoder() -> impl IntoView {
       </div>
       <div class="space-y-3 p-4">
         {(!supported).then(|| view! {
-          <p role="alert" class="text-sm text-amber-800 dark:text-amber-300">{move || t("morse.this-browser-cannot-access")}</p>
+          <p role="alert" class="text-sm text-gold-text">{move || t("morse.this-browser-cannot-access")}</p>
         })}
-        {move || error.get().map(|e| view! { <p role="alert" class="text-sm text-destructive">{e}</p> })}
+        {move || error.get().map(|e| view! { <p role="alert" class="text-sm text-hp-text">{e}</p> })}
         <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
           <label class="inline-flex items-center gap-2">
             {move || t("morse.tone")}
@@ -280,7 +280,7 @@ pub fn CwDecoder() -> impl IntoView {
           </label>
           <span class="inline-flex items-center gap-1.5">
             <span
-              class=move || if keyed.get() { "h-2.5 w-2.5 bg-emerald-500" } else { "h-2.5 w-2.5 bg-muted-foreground/30" }
+              class=move || if keyed.get() { "h-2.5 w-2.5 bg-win/70" } else { "h-2.5 w-2.5 bg-muted-foreground/30" }
               aria-hidden="true"
             ></span>
             {move || t("morse.key")}
@@ -288,7 +288,7 @@ pub fn CwDecoder() -> impl IntoView {
           <span class="inline-flex items-center gap-1.5">
             {move || t("morse.level")}
             <span class="h-1.5 w-24 overflow-hidden bg-muted" aria-hidden="true">
-              <span class="block h-full bg-primary transition-[width] duration-75" style:width=move || format!("{:.0}%", level.get() * 100.0)></span>
+              <span class="block h-full bg-primary transition-[width] duration-(--motion-fast)" style:width=move || format!("{:.0}%", level.get() * 100.0)></span>
             </span>
           </span>
           <span class="tabular-nums" data-testid="cw-wpm">
@@ -298,7 +298,7 @@ pub fn CwDecoder() -> impl IntoView {
         <div
           role="log"
           aria-label=move || t("morse.decoded-result")
-          class="min-h-24 whitespace-pre-wrap break-all bg-muted/40 p-3 font-mono text-sm leading-relaxed"
+          class="min-h-24 whitespace-pre-wrap break-all bg-inset p-3 font-mono text-sm leading-relaxed"
         >
           {move || text.get()}
           <span class="text-muted-foreground">{move || pending.get()}</span>
@@ -339,7 +339,7 @@ pub fn CwDecoder() -> impl IntoView {
               <div class="flex items-center gap-2 text-xs text-muted-foreground">
                 <span class="tabular-nums">{tf("common.matched", &[&(matched).to_string(), &(total).to_string()])}</span>
                 <div class="h-1.5 flex-1 overflow-hidden bg-muted">
-                  <div class="h-full bg-emerald-500" style=format!("width: {pct:.0}%")></div>
+                  <div class="h-full bg-win/70" style=format!("width: {pct:.0}%")></div>
                 </div>
               </div>
             }.into_any()

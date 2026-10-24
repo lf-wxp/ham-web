@@ -53,9 +53,9 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
     <section class="pxl-card border bg-card">
       <h2 class="pxl-section-title">{move || t("morse.abbreviation-quiz")}</h2>
       <div class="space-y-4 p-4">
-        <div class="flex flex-col items-center gap-3 border bg-muted/30 px-4 py-6">
+        <div class="flex flex-col items-center gap-3 border bg-inset px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("morse.what-does-this-abbreviation")}</div>
-          <div class="font-mono text-4xl font-semibold tabular-nums text-primary">
+          <div class="font-mono text-4xl tabular-nums text-primary">
             {move || CW_ABBREVIATIONS[current.get()].0}
           </div>
           <div class="grid w-full max-w-md grid-cols-1 gap-2 sm:grid-cols-2">
@@ -69,7 +69,7 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
                     <button
                       type="button"
                       on:click=move |_| choose(idx)
-                      class="inline-flex min-h-10 items-center justify-center pxl-card border bg-card px-3 py-2 text-sm transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                      class="inline-flex min-h-10 items-center justify-center pxl-card border bg-card px-3 py-2 text-sm transition duration-(--motion-normal) ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground"
                     >
                       {meaning}
                     </button>
@@ -83,13 +83,13 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
               feedback.get().map(|ok| {
                 if ok {
                   view! {
-                    <span class="inline-flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400 animate-in fade-in zoom-in-95 duration-200">{move || t("learning.correct")}</span>
+                    <span class="inline-flex items-center gap-1.5 text-win-text animate-in fade-in duration-(--motion-normal)">{move || t("learning.correct")}</span>
                   }
                   .into_any()
                 } else {
                   let ans = current.get();
                   view! {
-                    <span class="font-medium text-red-600 dark:text-red-400">"答案是 " {CW_ABBREVIATIONS[ans].1}</span>
+                    <span class="text-hp-text">"答案是 " {CW_ABBREVIATIONS[ans].1}</span>
                   }
                   .into_any()
                 }
@@ -99,10 +99,10 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
         </div>
         <div class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
           <span>
-            {move || t("common.correct-label")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
+            {move || t("common.correct-label")} <span class="tabular-nums text-foreground">{move || correct.get()}</span>
           </span>
           <span>
-            {move || t("morse.wrong")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
+            {move || t("morse.wrong")} <span class="tabular-nums text-foreground">{move || wrong.get()}</span>
           </span>
           <Button
             variant=Variant::Outline

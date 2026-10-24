@@ -79,7 +79,7 @@ pub(super) fn LinesSection(
   view! {
     <div class="space-y-2 pxl-card border bg-card p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <span class="text-sm font-semibold">{move || t("tools.nec-lines")}</span>
+        <span class="text-sm">{move || t("tools.nec-lines")}</span>
         <Button variant=Variant::Outline size=Size::Xs on_click=Callback::new(move |_| add(()))>
           {move || t("tools.nec-add-line")}
         </Button>
@@ -176,7 +176,7 @@ pub(super) fn LinesSection(
         view! {
           <div class="overflow-x-auto">
             <table data-slot="nec-lines" class="w-full min-w-[760px] border-collapse text-xs">
-              <thead class="bg-muted/50">
+              <thead class="bg-inset">
                 <tr>
                   <th class=format!("{CELL} text-left")>"#"</th>
                   <th class=format!("{CELL} text-left")>

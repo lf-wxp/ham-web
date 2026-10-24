@@ -12,6 +12,7 @@ use crate::morse_settings::use_morse_settings;
 use crate::ui::{Button, ButtonKind, Chip, ChipGroup, ChipToggle, Input, Slider, Variant};
 use crate::util::random;
 
+use super::morse_key::MorseKey;
 use super::stats_panel::MorseStatsPanel;
 use super::{
   Feedback, MODES, Mode, MorseStats, Question, Scope, Target, TrainerSettings, load_stats,
@@ -243,7 +244,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
 
   // 快捷键：空格重播、→ 下一题。
   window_event_listener(leptos::ev::keydown, move |e| {
-    if is_interactive(&e) {
+    if is_interactive(&e) || crate::shortcuts::modal_is_open() {
       return;
     }
     match e.key().as_str() {
@@ -403,7 +404,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
         </div>
 
         // 题目区
-        <div class="flex flex-col items-center gap-3 border bg-muted/30 px-4 py-8">
+        <div class="flex flex-col items-center gap-3 border bg-inset px-4 py-8">
           {move || {
             let question = current.get();
             if mode.get() == Mode::Read {
@@ -417,9 +418,9 @@ pub(super) fn MorseTrainer() -> impl IntoView {
               view! {
                 <div
                   class=if compact {
-                    "flex max-w-2xl flex-wrap items-center justify-center gap-x-2 gap-y-1.5 font-mono text-lg font-semibold leading-relaxed tracking-[0.15em]"
+                    "flex max-w-2xl flex-wrap items-center justify-center gap-x-2 gap-y-1.5 font-mono text-lg leading-relaxed tracking-[0.15em]"
                   } else {
-                    "flex flex-wrap items-center justify-center gap-x-1.5 font-mono text-3xl font-semibold tracking-[0.3em]"
+                    "flex flex-wrap items-center justify-center gap-x-1.5 font-mono text-3xl tracking-[0.3em]"
                   }
                 >
                   {tokens
@@ -427,7 +428,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                     .enumerate()
                     .map(|(i, tok)| {
                       view! {
-                        <span class=if read_highlight.get() == Some(i) { "text-emerald-500 dark:text-emerald-400" } else { "text-primary" }>
+                        <span class=if read_highlight.get() == Some(i) { "text-win-text" } else { "text-primary" }>
                           {morse_display(&tok)}
                         </span>
                       }
@@ -437,9 +438,9 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                 <button
                   type="button"
                   on:click=move |_| play_current()
-                  class="inline-flex items-center gap-1.5 whitespace-nowrap border bg-card px-3 py-1 text-xs transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                  class="inline-flex items-center gap-1.5 whitespace-nowrap border bg-card px-3 py-1 text-xs transition duration-(--motion-normal) ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground"
                 >
-                  <Icon kind=IconKind::Volume2 class="h-3.5 w-3.5" />
+                  <Icon kind=IconKind::Volume2 class="size-6 w-3.5" />
                   {move || t("exam.preview")}
                 </button>
               }
@@ -451,29 +452,22 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                 t("morse.tap-play-and-type")
               };
               view! {
-                <button
-                  type="button"
-                  aria-label=move || t("morse.play")
-                  on:click=move |_| play_current()
-                  class="relative flex size-20 items-center justify-center bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 ease-out hover:scale-105 hover:shadow-xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95"
+                <MorseKey
+                  class="size-20"
+                  active=playing
+                  aria_label=Signal::derive(move || t("morse.play"))
+                  on_click=Callback::new(move |()| play_current())
                 >
-                  {move || {
-                    playing.get().then(|| {
-                      view! {
-                        <span class="absolute inset-0 bg-primary/40 animate-ping [animation-duration:1.4s]"></span>
-                      }
-                    })
-                  }}
                   <span class="relative">
                     {move || {
                       if playing.get() {
-                        view! { <Icon kind=IconKind::AudioLines class="h-8 w-8" /> }.into_any()
+                        view! { <Icon kind=IconKind::AudioLines class="size-12" /> }.into_any()
                       } else {
-                        view! { <Icon kind=IconKind::Play class="h-8 w-8" /> }.into_any()
+                        view! { <Icon kind=IconKind::Play class="size-12" /> }.into_any()
                       }
                     }}
                   </span>
-                </button>
+                </MorseKey>
                 <div class="text-xs text-muted-foreground">{hint}</div>
               }
               .into_any()
@@ -496,7 +490,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                         <button
                           type="button"
                           on:click=move |_| submit_guess(text.clone())
-                          class="inline-flex min-h-10 items-center justify-center pxl-card border bg-card px-3 py-2 font-mono text-sm font-semibold uppercase tracking-wide transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                          class="inline-flex min-h-10 items-center justify-center pxl-card border bg-card px-3 py-2 font-mono text-sm uppercase tracking-wide transition duration-(--motion-normal) ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground"
                         >
                           {text.clone()}
                         </button>
@@ -522,7 +516,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
               // 宽度随目标文案类型变化，而 `Input` 的 `class` 是静态串 —— 在外层闭包里先算出来
               // （闭包会随 `target` 变化重建，取到新宽度）。
               let width = if target.get() == Target::Sentence { "w-64 sm:w-80" } else { "w-32" };
-              let answer_class = format!("h-10 {width} px-3 text-center text-lg font-semibold uppercase");
+              let answer_class = format!("h-10 {width} px-3 text-center text-lg uppercase");
               view! {
                 <form
                   class="flex flex-wrap items-center justify-center gap-2"
@@ -574,17 +568,17 @@ pub(super) fn MorseTrainer() -> impl IntoView {
               feedback.get().map(|fb| {
                 if fb.ok {
                   view! {
-                    <span class="inline-flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400 animate-in fade-in zoom-in-95 duration-200">
-                      <Icon kind=IconKind::CheckCircle2 class="h-4 w-4" />
+                    <span class="inline-flex items-center gap-1.5 text-win-text animate-in fade-in duration-(--motion-normal)">
+                      <Icon kind=IconKind::CheckCircle2 class="size-6 w-4" />
                       {move || t("learning.correct")}
                     </span>
                   }
                   .into_any()
                 } else {
                   view! {
-                    <span class="inline-flex items-center gap-1.5 font-medium text-red-600 dark:text-red-400 animate-in fade-in zoom-in-95 duration-200">
-                      <Icon kind=IconKind::XCircle class="h-4 w-4" />
-                      {move || t("morse.the-answer-is")} <span class="font-mono font-semibold">{fb.question.text}</span> "　"
+                    <span class="inline-flex items-center gap-1.5 text-hp-text animate-in fade-in duration-(--motion-normal)">
+                      <Icon kind=IconKind::XCircle class="size-6 w-4" />
+                      {move || t("morse.the-answer-is")} <span class="font-mono">{fb.question.text}</span> "　"
                       <span class="font-mono">{morse_display(&fb.question.code)}</span>
                     </span>
                   }

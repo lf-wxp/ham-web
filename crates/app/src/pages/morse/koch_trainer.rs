@@ -7,10 +7,13 @@ use leptos::prelude::*;
 use crate::icons::{Icon, IconKind};
 use crate::morse_audio::play_morse_timed_with;
 use crate::morse_settings::use_morse_settings;
-use crate::ui::{Button, ButtonKind, ControlSize, Input, Size, Slider, Tooltip, Variant};
+use crate::ui::{
+  Button, ButtonKind, ControlSize, Input, Size, Slider, Tooltip, Variant, card_title_class,
+};
 use crate::util::{random, storage};
 
 use super::encode_words;
+use super::morse_key::MorseKey;
 use crate::i18n::{t, tf, tp};
 
 const KEY: &str = "morse-koch";
@@ -121,7 +124,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
   view! {
     <section class="pxl-card border bg-card">
       <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-        <h2 class="mr-auto text-sm font-semibold">
+        <h2 class=card_title_class("mr-auto")>
           {move || t("morse.koch-method-copying-practice")}
           <span class="ml-2 text-xs font-normal text-muted-foreground">
             {move || tf("common.level", &[&(progress.with(|p| p.level)).to_string(), &(max_level()).to_string()])}
@@ -171,7 +174,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
                   let class = if Some(c) == newest {
                     "border-primary bg-primary/10 text-primary"
                   } else if err.is_some_and(|e| e > 0.2) {
-                    "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
+                    "border-destructive/40 bg-destructive/10 text-hp-text"
                   } else {
                     "text-foreground"
                   };
@@ -192,30 +195,23 @@ pub(super) fn KochTrainer() -> impl IntoView {
           }}
         </div>
 
-        <div class="flex flex-col items-center gap-3 border bg-muted/30 px-4 py-6">
-          <button
-            type="button"
-            aria-label=move || t("morse.play")
-            on:click=move |_| play()
-            class="relative flex size-16 items-center justify-center bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 ease-out hover:scale-105 hover:shadow-xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95"
+        <div class="flex flex-col items-center gap-3 border bg-inset px-4 py-6">
+          <MorseKey
+            class="size-16"
+            active=playing
+            aria_label=Signal::derive(move || t("morse.play"))
+            on_click=Callback::new(move |()| play())
           >
-            {move || {
-              playing.get().then(|| {
-                view! {
-                  <span class="absolute inset-0 bg-primary/40 animate-ping [animation-duration:1.4s]"></span>
-                }
-              })
-            }}
             <span class="relative">
               {move || {
                 if playing.get() {
-                  view! { <Icon kind=IconKind::AudioLines class="h-7 w-7" /> }.into_any()
+                  view! { <Icon kind=IconKind::AudioLines class="size-6" /> }.into_any()
                 } else {
-                  view! { <Icon kind=IconKind::Play class="h-7 w-7" /> }.into_any()
+                  view! { <Icon kind=IconKind::Play class="size-6" /> }.into_any()
                 }
               }}
             </span>
-          </button>
+          </MorseKey>
           <div class="text-xs text-muted-foreground">
             {tp("common.each-round-has-groups", GROUPS, &[&(GROUPS).to_string(), &(GROUP_LEN).to_string()])}
           </div>
@@ -233,7 +229,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
               size=ControlSize::Lg
               placeholder=Signal::derive(move || t("morse.copied-text"))
               autocomplete="off"
-              class="h-10 w-56 text-center font-mono text-lg md:text-lg font-semibold uppercase tracking-widest"
+              class="h-10 w-56 text-center font-mono text-lg md:text-lg uppercase tracking-widest"
             />
             <Button
               kind=ButtonKind::Submit
@@ -258,7 +254,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
                           {group
                             .iter()
                             .map(|&(c, ok)| view! {
-                              <span class={if ok { "text-emerald-600 dark:text-emerald-400" } else { "bg-red-500/15 px-0.5 text-red-600 dark:text-red-400" }}>
+                              <span class={if ok { "text-win-text" } else { "bg-destructive/15 px-0.5 text-hp-text" }}>
                                 {c.to_string()}
                               </span>
                             })
@@ -270,7 +266,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
                   <div class="text-sm">
                     {tp("common.copied-correct", total as u32, &[&(correct).to_string(), &(total).to_string()])}
                     {r.leveled_up.then(|| view! {
-                      <span class="ml-2 font-semibold text-emerald-600 dark:text-emerald-400">
+                      <span class="ml-2 text-win-text">
                         {move || tf("common.level-up-new-character", &[&(progress.with(|p| p.newest().map(String::from).unwrap_or_default())).to_string()])}
                       </span>
                     })}
@@ -295,7 +291,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
                 </div>
                 <div class="h-2 w-full overflow-hidden bg-muted">
                   <div
-                    class={if rate >= PASS_RATE * 100.0 { "h-full bg-emerald-500" } else { "h-full bg-primary" }}
+                    class={if rate >= PASS_RATE * 100.0 { "h-full bg-win/70" } else { "h-full bg-primary" }}
                     style=format!("width: {pct:.1}%")
                   ></div>
                 </div>
@@ -317,7 +313,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
             rows.sort_by(|a, b| b.1.total_cmp(&a.1));
             (!rows.is_empty()).then(|| view! {
               <div>
-                <h3 class="mb-2 text-xs font-medium text-muted-foreground">{move || t("morse.character-error-rate-high")}</h3>
+                <h3 class="mb-2 text-xs text-muted-foreground">{move || t("morse.character-error-rate-high")}</h3>
                 <div class="grid grid-cols-4 gap-x-4 gap-y-1 text-xs sm:grid-cols-6 lg:grid-cols-8">
                   {rows
                     .into_iter()
@@ -326,8 +322,8 @@ pub(super) fn KochTrainer() -> impl IntoView {
                       view! {
                         <Tooltip label=tip>
                           <div class="flex items-baseline gap-2">
-                            <span class="font-mono font-semibold">{c.to_string()}</span>
-                            <span class={if err > 0.2 { "tabular-nums text-red-600 dark:text-red-400" } else { "tabular-nums text-muted-foreground" }}>
+                            <span class="font-mono">{c.to_string()}</span>
+                            <span class={if err > 0.2 { "tabular-nums text-hp-text" } else { "tabular-nums text-muted-foreground" }}>
                               {format!("{:.0}%", err * 100.0)}
                             </span>
                           </div>

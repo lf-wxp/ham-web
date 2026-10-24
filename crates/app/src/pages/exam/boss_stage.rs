@@ -12,12 +12,13 @@
 
 use ham_web_core::ExamRule;
 use ham_web_core::rpg::boss_hp_percent;
-use ham_web_core::text::format_ms;
 use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
 use crate::icons::PixelSprite;
 use crate::ui::Progress;
+
+use super::exam_clock::ExamClock;
 
 /// Boss 舞台。
 #[component]
@@ -56,14 +57,6 @@ pub(super) fn BossStage(
     }
   });
   let timed = Signal::derive(move || rule.get().minutes > 0);
-  // 最后一分钟转红：与考试页 meta 行的规则一致。
-  let clock_class = move || {
-    if remaining.get() <= 60_000 {
-      "pxl-label text-base text-red-600 dark:text-red-400"
-    } else {
-      "pxl-label text-base text-foreground"
-    }
-  };
   let sealed_hint = move || {
     if finished.get() {
       tf("rpg.boss-hp-left", &[&boss_hp.get().to_string()])
@@ -96,14 +89,14 @@ pub(super) fn BossStage(
             timed
               .get()
               .then(|| {
-                // 不加 `aria-live`：倒计时每秒变一次，朗读出来是持续噪声，读屏用户
-                // 想知道剩余时间时自己去读这个节点就行。
+                // 读数不加 `aria-live`（见 `ExamClock`）：倒计时每秒变一次，朗读出来是持续噪声，
+                // 跨档的提醒由 Toast 负责。
                 view! {
-                  <span class="flex items-baseline gap-1 sm:hidden">
+                  <span class="flex items-center gap-1 sm:hidden">
                     <span class="text-xs text-muted-foreground">
                       {move || t("learning.time-left")}
                     </span>
-                    <span class=clock_class>{move || format_ms(remaining.get())}</span>
+                    <ExamClock remaining=remaining rule=rule />
                   </span>
                 }
               })

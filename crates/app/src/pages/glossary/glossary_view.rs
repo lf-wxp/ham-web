@@ -125,7 +125,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
     categories()
       .into_iter()
       .map(|key| {
-        let (name, color) = category_meta(key);
+        let (name, cat_tone) = category_meta(key);
         view! {
           <SidebarItem
             active=Signal::derive(move || cat.with(|c| c == key))
@@ -134,7 +134,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               cat_open.set(false);
             })
           >
-            <span class="h-2 w-2 shrink-0" style=format!("background: {color}")></span>
+            <span class=format!("size-2 shrink-0 {}", cat_tone.map_or("bg-muted", crate::tone::dot))></span>
             // 分类名来自 `crates/core` 的中文常量，必须走 `t` 反查（中文原文 → 词条）；
             // 直接渲染 `name` 会让英文 / 西文界面的侧栏永远停在中文。
             <Tooltip class="min-w-0 flex-1" label=Signal::derive(move || t(name))>
@@ -201,7 +201,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
   };
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.glossary")
         subtitle=move || t("knowledge.common-ham-terms-english")
@@ -235,7 +235,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
 
       <PageContainer class="space-y-0 grid grid-cols-1 gap-5 md:grid-cols-[240px_1fr]">
         <aside class="hidden md:block">
-          <StickyPanel class="max-h-[calc(100vh-var(--sticky-top)-16px)] overflow-y-auto pxl-card border bg-card p-2">
+          <StickyPanel class="max-h-[calc(100svh-var(--sticky-top)-16px)] overflow-y-auto overscroll-contain pxl-card border bg-card p-2">
             {category_tree()}
           </StickyPanel>
         </aside>

@@ -68,7 +68,7 @@ pub(super) fn AttenuatorCalculator() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class="sm:col-span-2 space-y-1 bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+      <div class="sm:col-span-2 space-y-1 bg-inset px-3 py-2 text-sm text-muted-foreground">
         {move || {
           match (tee_attenuator(z0.get(), db.get()), pi_attenuator(z0.get(), db.get())) {
             (Some((t_series, t_shunt)), Some((p_shunt, p_series))) => view! {

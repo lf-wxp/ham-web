@@ -10,12 +10,11 @@ pub use glossary_page::GlossaryPage;
 use std::sync::Arc;
 
 use ham_web_core::Bank;
-use ham_web_core::categories::{TOP_CATEGORIES, top_category};
+use ham_web_core::categories::{CategoryTone, TOP_CATEGORIES, top_category};
 use ham_web_core::glossary::OTHER_CATEGORY;
 
 const PAGE: usize = 60;
 const ALL: &str = "全部";
-const OTHER_COLOR: &str = "#71717a";
 
 /// 各题库题目的小写搜索文本（与分类浏览页的关键词搜索范围一致）。
 type Haystacks = Arc<Vec<(Bank, Vec<String>)>>;
@@ -28,8 +27,8 @@ fn category_pos(key: &str) -> usize {
     .unwrap_or(TOP_CATEGORIES.len())
 }
 
-fn category_meta(key: &str) -> (&'static str, &'static str) {
-  top_category(key).map_or((OTHER_CATEGORY, OTHER_COLOR), |c| (c.name, c.color))
+fn category_meta(key: &str) -> (&'static str, Option<CategoryTone>) {
+  top_category(key).map_or((OTHER_CATEGORY, None), |c| (c.name, Some(c.tone)))
 }
 
 /// 过短的纯 ASCII 术语（如 `K`、`73`、`DE`）做子串统计会产生大量误匹配，不统计题库出现次数。

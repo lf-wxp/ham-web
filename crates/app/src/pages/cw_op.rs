@@ -14,7 +14,7 @@ const CELL: &str = "border px-3 py-2 align-top";
 pub fn CwOpPage() -> impl IntoView {
   set_title("shell.cw-operating");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.cw-operating")
         subtitle=move || t("knowledge.common-abbreviations-operating-etiquette")
@@ -36,7 +36,7 @@ pub fn CwOpPage() -> impl IntoView {
                 .map(|&(abbr, meaning)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono font-semibold text-primary")>{abbr}</TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-primary")>{abbr}</TableCell>
                       <TableCell class=format!("{CELL} text-muted-foreground")>{meaning}</TableCell>
                     </TableRow>
                   }

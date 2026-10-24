@@ -12,6 +12,7 @@ use crate::components::common::{EmptyState, PageContainer, PageHeader, Skeleton,
 use crate::components::sidebar_item::SidebarItem;
 use crate::data::{self, Questions};
 use crate::icons::{Icon, IconKind};
+use crate::tone;
 use crate::ui::{
   Button, Chip, ChipGroup, ChipToggle, Input, InputType, MobileNavDrawer, Tooltip, Variant,
 };
@@ -200,7 +201,7 @@ pub fn BrowsePage() -> impl IntoView {
                     cn(&[
                       "block w-full truncate px-2 py-1 text-left text-xs transition-colors",
                       if sub.get() == Some(name) {
-                        "bg-accent font-medium text-foreground"
+                        "bg-accent text-foreground"
                       } else {
                         "text-muted-foreground hover:bg-accent/60"
                       },
@@ -226,7 +227,7 @@ pub fn BrowsePage() -> impl IntoView {
                 cat_open.set(false);
               })
             >
-              <span class="h-2 w-2 shrink-0" style=format!("background: {}", c.color)></span>
+              <span class=format!("size-2 shrink-0 {}", tone::dot(c.tone))></span>
               // 分类名来自 `crates/core` 的中文常量，必须走 `t` 反查（中文原文 → 词条）；
               // 直接渲染 `c.name` 会让英文 / 西文界面的侧栏永远停在中文。
               <Tooltip class="min-w-0 flex-1" label=Signal::derive(move || t(c.name))>
@@ -319,7 +320,7 @@ pub fn BrowsePage() -> impl IntoView {
   };
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.browse-questions")
         subtitle=move || t("exam.grouped-by-question-type")
@@ -376,7 +377,7 @@ pub fn BrowsePage() -> impl IntoView {
 
       <PageContainer class="space-y-0 grid grid-cols-1 gap-5 md:grid-cols-[240px_1fr]">
         <aside class="hidden md:block">
-          <StickyPanel class="max-h-[calc(100vh-var(--sticky-top)-16px)] overflow-y-auto pxl-card border bg-card p-2">
+          <StickyPanel class="max-h-[calc(100svh-var(--sticky-top)-16px)] overflow-y-auto overscroll-contain pxl-card border bg-card p-2">
             {category_tree()}
           </StickyPanel>
         </aside>

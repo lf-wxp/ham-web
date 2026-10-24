@@ -14,7 +14,7 @@ pub fn ConfusablesPage() -> impl IntoView {
   set_title("exam.confusing-concepts");
   let quiz = RwSignal::new(false);
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("exam.confusing-concepts-explained")
         subtitle=move || if quiz.get() { t("exam.active-recall-judge-true") } else { t("exam.the-most-easily-mixed") }
@@ -58,16 +58,16 @@ pub fn ConfusablesPage() -> impl IntoView {
                           .map(|&(name, desc)| {
                             view! {
                               <div class="flex gap-3 px-4 py-2.5">
-                                <dt class="w-28 shrink-0 text-sm font-medium text-primary sm:w-36">{move || t(name)}</dt>
+                                <dt class="w-28 shrink-0 text-sm text-primary sm:w-36">{move || t(name)}</dt>
                                 <dd class="text-sm text-muted-foreground">{move || t(desc)}</dd>
                               </div>
                             }
                           })
                           .collect_view()}
                       </dl>
-                      <div class="flex items-start gap-2 border-t bg-muted/40 px-4 py-3">
-                        <span class="mt-0.5 shrink-0 text-sm font-semibold text-foreground">{move || t("exam.remember")}</span>
-                        <p class="text-sm font-medium">{move || t(c.tip)}</p>
+                      <div class="flex items-start gap-2 border-t bg-inset px-4 py-3">
+                        <span class="mt-0.5 shrink-0 text-sm text-foreground">{move || t("exam.remember")}</span>
+                        <p class="text-sm">{move || t(c.tip)}</p>
                       </div>
                     </section>
                   }

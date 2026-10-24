@@ -91,7 +91,7 @@ pub fn DxccMapPage() -> impl IntoView {
   });
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=Signal::derive(move || t("radio.dxcc-world-map"))
         subtitle=Signal::derive(move || t("radio.colored-by-your-log"))
@@ -114,17 +114,17 @@ pub fn DxccMapPage() -> impl IntoView {
         // 统计条（跟随波段选择）
         <section class="grid grid-cols-3 gap-2">
           <div class="pxl-card border bg-card p-3 text-center">
-            <div class="text-xl font-semibold tabular-nums">{move || worked.get().len()}</div>
+            <div class="text-xl tabular-nums">{move || worked.get().len()}</div>
             <div class="mt-0.5 text-xs text-muted-foreground">{move || t("log.worked")}</div>
           </div>
           <div class="pxl-card border bg-card p-3 text-center">
-            <div class="text-xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+            <div class="text-xl tabular-nums text-win-text">
               {move || confirmed.get().len()}
             </div>
             <div class="mt-0.5 text-xs text-muted-foreground">{move || t("log.confirmed")}</div>
           </div>
           <div class="pxl-card border bg-card p-3 text-center">
-            <div class="text-xl font-semibold tabular-nums">
+            <div class="text-xl tabular-nums">
               {move || total_entities.saturating_sub(worked.get().len())}
             </div>
             <div class="mt-0.5 text-xs text-muted-foreground">{move || t("radio.not-worked-label")}</div>
@@ -185,7 +185,7 @@ pub fn DxccMapPage() -> impl IntoView {
           <div class="mt-3 space-y-1.5">
             <Legend
               items=vec![
-                ("h-3 w-3 bg-emerald-600/70", "log.confirmed"),
+                ("h-3 w-3 bg-win/70", "log.confirmed"),
                 ("h-3 w-3 bg-primary/40", "log.worked"),
                 ("h-3 w-3 border bg-foreground/5", "radio.not-worked-label"),
               ]

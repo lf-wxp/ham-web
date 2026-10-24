@@ -94,9 +94,9 @@ pub(super) fn PracticeHeaderBar(
           >
             {move || {
               if bookmarked.get() {
-                view! { <Icon kind=IconKind::BookMarked class="h-4 w-4" /> }
+                view! { <Icon kind=IconKind::BookMarked class="size-6 w-4" /> }
               } else {
-                view! { <Icon kind=IconKind::Bookmark class="h-4 w-4" /> }
+                view! { <Icon kind=IconKind::Bookmark class="size-6 w-4" /> }
               }
             }}
           </Button>
@@ -111,7 +111,7 @@ pub(super) fn PracticeHeaderBar(
                     title=Signal::derive(move || t("shell.search"))
                     on_click=Callback::new(move |_| on_open_search.run(()))
                   >
-                    <Icon kind=IconKind::Search class="h-4 w-4" />
+                    <Icon kind=IconKind::Search class="size-6 w-4" />
                   </Button>
                 }
               })
@@ -123,7 +123,7 @@ pub(super) fn PracticeHeaderBar(
             title=Signal::derive(move || t("exam.settings"))
             on_click=Callback::new(move |_| on_open_settings.run(()))
           >
-            <Icon kind=IconKind::Settings class="h-4 w-4" />
+            <Icon kind=IconKind::Settings class="size-6 w-4" />
           </Button>
         }
       }

@@ -31,7 +31,7 @@ pub(super) fn TrapTool() -> impl IntoView {
         <NumberField id=cap_id.clone() value=Signal::derive(move || cap.get()) on_change=Callback::new(move |v: String| cap.set(v)) controls=false />
       </Field>
 
-      <div class="sm:col-span-2 space-y-1 bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
+      <div class="sm:col-span-2 space-y-1 bg-inset px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let (Ok(fh), Ok(fl), Ok(c)) = (
             f_high.get().trim().parse::<f64>(),

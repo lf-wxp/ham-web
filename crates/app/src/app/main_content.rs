@@ -45,15 +45,37 @@ use crate::motion::ROUTE_CONTENT_ID;
 pub(super) fn MainContent() -> impl IntoView {
   let location = use_location();
   let backup_busy = crate::pages::log::use_log_store().backup_busy;
+  // 路由切换后回到顶部 —— 但浏览器「后退 / 前进」要保持原来的位置。
+  //
+  // 同文档的历史条目本来就各自带着滚动位置（浏览器负责还原），无条件置 0 等于把用户刚翻到的
+  // 地方抹掉：「列表 → 详情 → 后退」是最常见的路径，回到顶部会让人重新找一遍。
+  //
+  // 时序上 `popstate` 先于路由更新触发，但两者谁先跑到这里不确定，所以不在 Effect 里直接判，
+  // 而是推到下一帧再决定：帧内看到标记就认为这次是历史回放，跳过复位。
+  let popped = StoredValue::new(false);
+  window_event_listener(leptos::ev::popstate, move |_| {
+    popped.set_value(true);
+    // 只改 hash 的导航不触发下面的复位（pathname 没变），标记要在很短的时间内自己失效，
+    // 否则接下来第一次「正常跳转」会被误判成后退、停在上一个页面的滚动位置。
+    set_timeout(
+      move || popped.set_value(false),
+      std::time::Duration::from_millis(300),
+    );
+  });
   Effect::new(move |_| {
     let _ = location.pathname.get();
-    // 路由切换后立即复位滚动（覆盖 html 的 smooth 行为，避免导航菜单与内容不同步）。
-    if let Some(el) = web_sys::window()
-      .and_then(|w| w.document())
-      .and_then(|d| d.document_element())
-    {
-      el.set_scroll_top(0);
-    }
+    request_animation_frame(move || {
+      if popped.get_value() {
+        popped.set_value(false);
+        return;
+      }
+      if let Some(el) = web_sys::window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.document_element())
+      {
+        el.set_scroll_top(0);
+      }
+    });
   });
 
   view! {

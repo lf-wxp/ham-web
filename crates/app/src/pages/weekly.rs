@@ -143,7 +143,7 @@ pub fn WeeklyPage() -> impl IntoView {
   };
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.weekly-report")
         subtitle=move || t("learning.two-week-answering-trend")
@@ -222,13 +222,13 @@ pub fn WeeklyPage() -> impl IntoView {
                       // Tooltip 包整列：柱的百分比高度相对包含块，中间多一层会塌。
                       <Tooltip class="group flex min-w-0 flex-1 flex-col items-center gap-1" label=tip.clone()>
                         <div
-                          class="w-full bg-primary/70 outline-none transition-all group-hover:bg-primary focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
+                          class="w-full bg-primary/70 outline-none transition group-hover:bg-primary focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
                           style=format!("height: {h}%")
                           tabindex="0"
                           role="img"
                           aria-label=tip
                         ></div>
-                        <span class="text-[9px] text-muted-foreground">{label}</span>
+                        <span class="text-xs text-muted-foreground">{label}</span>
                       </Tooltip>
                     }
                   })
@@ -237,10 +237,10 @@ pub fn WeeklyPage() -> impl IntoView {
             </div>
             <div class="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
               <span>
-                {t("learning.new")} <span class="font-semibold text-foreground tabular-nums">{week_new}</span>
+                {t("learning.new")} <span class="text-foreground tabular-nums">{week_new}</span>
               </span>
               <span>
-                {t("learning.reviews")} <span class="font-semibold text-foreground tabular-nums">{week_review}</span>
+                {t("learning.reviews")} <span class="text-foreground tabular-nums">{week_review}</span>
               </span>
               <span class="ml-auto tabular-nums">{move || t("learning.share-of-new-questions")} {format!("{new_pct:.0}%")}</span>
             </div>
@@ -257,7 +257,7 @@ pub fn WeeklyPage() -> impl IntoView {
               <h2 class="pxl-section-title">{move || t("exam.weakest-category-this-week")}</h2>
               <div class="flex items-center gap-3 p-4">
                 <div class="min-w-0 flex-1">
-                  <div class="text-sm font-medium">{move || t(&name)}</div>
+                  <div class="text-sm">{move || t(&name)}</div>
                   <div class="mt-0.5 text-xs text-muted-foreground tabular-nums">
                     {tp("common.questions-answered-accuracy", answered, &[&(answered).to_string(), &(rate).to_string()])}
                   </div>
@@ -287,7 +287,7 @@ pub fn WeeklyPage() -> impl IntoView {
                       <div class="flex items-center gap-3 px-4 py-2.5 text-sm">
                         <span class="w-8 shrink-0 font-mono text-xs text-muted-foreground">{r.bank.clone()}</span>
                         <span class="tabular-nums text-muted-foreground">{r.correct} " / " {r.total}</span>
-                        <span class=if passed { "ml-auto text-xs font-medium text-emerald-700 dark:text-emerald-400" } else { "ml-auto text-xs font-medium text-red-700 dark:text-red-400" }>
+                        <span class=if passed { "ml-auto text-xs text-win-text" } else { "ml-auto text-xs text-hp-text" }>
                           {if passed { t("exam.passed") } else { t("learning.not-passed") }}
                         </span>
                       </div>

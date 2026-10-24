@@ -47,7 +47,7 @@ pub(super) fn LoadingCoilTool() -> impl IntoView {
               <p>{tf("tools.loading-coil-xc-l", &[&fmt_resistance(r.capacitive_reactance), &format_inductance_h(r.inductance_h)])}</p>
               // h 超过 λ/4 后闭式近似迅速失真：算出来的值仍要显示，但必须标明只能当量级参考。
               {(!r.electrically_short).then(|| view! {
-                <p class="text-amber-600 dark:text-amber-400">{move || t("tools.loading-coil-out-of-range")}</p>
+                <p class="text-gold-text">{move || t("tools.loading-coil-out-of-range")}</p>
               })}
             }
               .into_any(),

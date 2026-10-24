@@ -35,7 +35,7 @@ pub fn Field(
         {move || label.get()}
         {required
           .then(|| {
-            view! { <span class="text-destructive" aria-hidden="true">"*"</span> }
+            view! { <span class="text-hp-text" aria-hidden="true">"*"</span> }
           })}
       </label>
       {children()}
@@ -47,7 +47,7 @@ pub fn Field(
         .map(|e| {
           view! {
             <Show when=move || !e.get().is_empty()>
-              <p class="text-xs text-destructive" role="alert">{move || e.get()}</p>
+              <p class="text-xs text-hp-text" role="alert">{move || e.get()}</p>
             </Show>
           }
         })}

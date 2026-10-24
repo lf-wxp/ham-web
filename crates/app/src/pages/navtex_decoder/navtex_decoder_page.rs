@@ -43,7 +43,7 @@ pub fn NavtexDecoderPage() -> impl IntoView {
   let on_file = Callback::new(move |file: File| session.start(file, || Ok(JsValue::UNDEFINED)));
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("tools.navtex-decoder")
         subtitle=move || t("tools.navtex-decoder-subtitle")
@@ -109,7 +109,7 @@ pub fn NavtexDecoderPage() -> impl IntoView {
               view! {
                 <div
                   role="alert"
-                  class="border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+                  class="border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-hp-text"
                 >
                   {e}
                 </div>
@@ -123,7 +123,7 @@ pub fn NavtexDecoderPage() -> impl IntoView {
               view! {
                 <div class="space-y-3">
                   <div class="flex items-center justify-between gap-3">
-                    <p class="min-w-0 truncate text-sm font-medium">{file_name.get()}</p>
+                    <p class="min-w-0 truncate text-sm">{file_name.get()}</p>
                     <Button variant=Variant::Outline on_click=reset>
                       {move || t("tools.decode-another-file")}
                     </Button>
@@ -136,16 +136,16 @@ pub fn NavtexDecoderPage() -> impl IntoView {
                     .map(|m| {
                       let header = format!("{}{} {:02}", m.transmitter, m.category, m.serial);
                       view! {
-                        <div class="border bg-muted/20 p-4">
+                        <div class="border bg-inset p-4">
                           <div class="mb-2 flex flex-wrap items-center gap-2 text-sm">
-                            <span class="font-mono font-semibold">{header}</span>
+                            <span class="font-mono">{header}</span>
                             <span
                               class=format!(
                                 "px-1.5 py-0.5 text-xs {}",
                                 if m.accepted {
-                                  "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                                  "bg-win/15 text-win-text"
                                 } else {
-                                  "bg-destructive/10 text-destructive"
+                                  "bg-destructive/10 text-hp-text"
                                 }
                               )
                             >

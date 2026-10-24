@@ -8,7 +8,7 @@ use crate::components::common::{EmptyState, PageContainer, PageHeader};
 use crate::i18n::{t, tf, tp};
 use crate::icons::IconKind;
 use crate::store;
-use crate::ui::{ButtonLink, ChipToggle, Size, Variant};
+use crate::ui::{ButtonLink, ChipToggle, Size, Variant, card_title_class};
 use crate::util::set_title;
 
 /// 考后复盘页。
@@ -64,7 +64,7 @@ pub fn ExamReviewPage() -> impl IntoView {
           </section>
 
           <section class="pxl-card border bg-card p-4">
-            <h2 class="mb-2 text-sm font-semibold">{move || t("exam.performance-by-category-most")}</h2>
+            <h2 class=card_title_class("mb-2")>{move || t("exam.performance-by-category-most")}</h2>
             <ul class="space-y-1.5">
               {cats
                 .into_iter()
@@ -75,7 +75,7 @@ pub fn ExamReviewPage() -> impl IntoView {
                     <li class="flex items-center gap-2 text-sm">
                       <span class="w-20 shrink-0 font-mono text-xs text-muted-foreground">{c.code.clone()}</span>
                       <div class="h-3 flex-1 overflow-hidden bg-muted">
-                        <div class="h-full bg-emerald-500" style=format!("width: {pct}%")></div>
+                        <div class="h-full bg-win/70" style=format!("width: {pct}%")></div>
                       </div>
                       <span class="w-28 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
                         {tp(
@@ -92,7 +92,7 @@ pub fn ExamReviewPage() -> impl IntoView {
           </section>
 
           <section class="space-y-3">
-            <h2 class="text-sm font-semibold">{move || t("exam.per-question-review")}</h2>
+            <h2 class=card_title_class("")>{move || t("exam.per-question-review")}</h2>
             {items
               .into_iter()
               .enumerate()
@@ -105,9 +105,9 @@ pub fn ExamReviewPage() -> impl IntoView {
                   item.given.join("、")
                 };
                 let border = if ok {
-                  "border-emerald-500/40"
+                  "border-win/40"
                 } else {
-                  "border-red-500/40"
+                  "border-destructive/40"
                 };
                 // 快照里的 `id` 是 stable_id，正好用来就地收藏 —— 复盘时最容易
                 // 产生的动作就是「把这题收起来回头再看」。
@@ -117,8 +117,8 @@ pub fn ExamReviewPage() -> impl IntoView {
                   <div class=format!("pxl-card border bg-card p-4 {border}")>
                     <div class="mb-2 flex items-start gap-2">
                       <span class="mt-0.5 shrink-0 bg-muted px-1.5 py-0.5 font-mono text-xs">{i + 1}</span>
-                      <p class="flex-1 text-sm font-medium leading-snug">{item.question.clone()}</p>
-                      <span class=format!("shrink-0 text-xs {}", if ok { "text-emerald-600 dark:text-emerald-400" } else { "text-red-600 dark:text-red-400" })>
+                      <p class="flex-1 text-sm leading-snug">{item.question.clone()}</p>
+                      <span class=format!("shrink-0 text-xs {}", if ok { "text-win-text" } else { "text-hp-text" })>
                         {if ok { t("exam.correct-label") } else { t("exam.wrong-label") }}
                       </span>
                     </div>
@@ -163,7 +163,7 @@ pub fn ExamReviewPage() -> impl IntoView {
   };
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader title=t("exam.post-exam-review") subtitle=t("exam.per-question-results-correct") />
       <PageContainer class="space-y-4">
         <p class="text-sm text-muted-foreground">

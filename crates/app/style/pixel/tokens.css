@@ -34,6 +34,17 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  /* 分类标识色（`CategoryTone` 的落点）：只做图形锚点（圆点 / 2px 描边），
+     不当文字色、不铺整块底 —— 分类名始终在旁，颜色只是视觉索引。
+     10 个分类循环用 8 个色相，第 9 / 10 档用「空心」第二通道区分（见 `crates/app/src/tone.rs`）。 */
+  --color-cat-1: var(--cat-1);
+  --color-cat-2: var(--cat-2);
+  --color-cat-3: var(--cat-3);
+  --color-cat-4: var(--cat-4);
+  --color-cat-5: var(--cat-5);
+  --color-cat-6: var(--cat-6);
+  --color-cat-7: var(--cat-7);
+  --color-cat-8: var(--cat-8);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -43,6 +54,10 @@
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
+  /* 内凹面（表头带 / 代码块 / 键帽 / 内嵌面板）：不透明的「比卡片低一层」。
+     以前这些位置写 `bg-muted/50`、`/60`，alpha 叠在卡片上会随背景变色，
+     与「限色 + 零模糊」冲突（见 docs/ui-review.md I2）。 */
+  --color-inset: var(--inset);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
@@ -67,6 +82,11 @@
 }
 
 @theme {
+  /* 具名断点：Tailwind 默认 `sm`（640px）之上/之下差得太远，窄屏手机上确实需要一档
+     「比 320 宽、比 sm 窄」的中间态（导航内边距、两列切三列）。新增中间态请加在这里，
+     页面里不要写 `min-[400px]:` 这类任意值（`ui_check` ㉒ 已拦）。 */
+  --breakpoint-xs: 400px;
+
   /* 零圆角：`rounded-*` 全部归零（视图里已在 2026-10-13 清干净，这里仍是兜底）。
      `rounded-full` / 裸 `rounded` 是字面量，由 surfaces.css 的全局规则兜底；
      真正需要圆形的元素加 `data-keep-round`。 */
@@ -207,6 +227,9 @@
   --secondary: #e8dbb5;
   --secondary-foreground: #1a1c2c;
   --muted: #eadfc0;
+  /* 内凹面：**用公式而不是固定色值**，这样 11 套方案 × 明暗都跟着 `--card` / `--muted` 走。
+     固定色值曾把 nes 亮色的公式文字（`text-primary` #d82800）压到 4.22:1 —— 只有这一套方案会红。 */
+  --inset: color-mix(in oklab, var(--muted) 40%, var(--card));
   --muted-foreground: #42566c;
   --accent: #ffcd75;
   --accent-foreground: #1a1c2c;
@@ -222,6 +245,14 @@
   --chart-3: #38b764;
   --chart-4: #8a3f8a;
   --chart-5: #b13e53;
+  --cat-1: #b13e53;
+  --cat-2: #3b5dc9;
+  --cat-3: #257179;
+  --cat-4: #8a3f8a;
+  --cat-5: #ef7d57;
+  --cat-6: #5d275d;
+  --cat-7: #29366f;
+  --cat-8: #566c86;
   --sidebar: #eadfc0;
   --sidebar-foreground: #1a1c2c;
   --sidebar-primary: #3b5dc9;
@@ -234,7 +265,10 @@
 
 /* ---------- 暗色：夜空 / 深蓝掌机 ---------- */
 .dark {
-  --pxl-ink: #566c86;
+  /* 墨框：对本方案所有会被它描边的暗色表面（背景 / 卡片 / 弹层 / 按钮底 / 输入底）都 >= 3:1
+     （WCAG 1.4.11）。旧值 #566c86 对卡片只有 2.6、对按钮底 2.0，暗色的「框」薄得只剩内高光在撑。
+     其余 10 套方案的同一变量由 `color_scheme.rs` 按 `MIN_EDGE` 派生，单测守着。 */
+  --pxl-ink: #77899d;
   --pxl-shadow: rgb(0 0 0 / 0.55);
   --pxl-hi: rgb(255 255 255 / 0.14);
   --pxl-lo: rgb(0 0 0 / 0.38);
@@ -270,6 +304,14 @@
   --chart-3: #a7f070;
   --chart-4: #ffcd75;
   --chart-5: #73eff7;
+  --cat-1: #ef7d57;
+  --cat-2: #41a6f6;
+  --cat-3: #38b764;
+  --cat-4: #73eff7;
+  --cat-5: #ffcd75;
+  --cat-6: #a7f070;
+  --cat-7: #94b0c2;
+  --cat-8: #f4f4f4;
   --sidebar: #1f2338;
   --sidebar-foreground: #f4f4f4;
   --sidebar-primary: #41a6f6;

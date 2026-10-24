@@ -56,7 +56,7 @@ pub fn RigReviewsPage() -> impl IntoView {
   Effect::new(move |_| data::ensure_knowledge_i18n());
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("knowledge.rig-reviews")
         subtitle=move || t("knowledge.rig-reviews-subtitle")
@@ -96,10 +96,10 @@ pub fn RigReviewsPage() -> impl IntoView {
 
                 // 一、测试条件 —— 结构上永远在最前。
                 <section class="border-b px-4 py-3">
-                  <h3 class="text-xs font-semibold text-primary">
+                  <h3 class="text-xs text-primary">
                     {move || t("knowledge.review-conditions")}
                   </h3>
-                  <p class="mt-0.5 mb-2 text-[11px] text-muted-foreground">
+                  <p class="mt-0.5 mb-2 text-xs text-muted-foreground">
                     {move || t("knowledge.review-conditions-hint")}
                   </p>
                   <div class="grid gap-1 sm:grid-cols-2">
@@ -126,7 +126,7 @@ pub fn RigReviewsPage() -> impl IntoView {
 
                 // 二、指标实测 —— 数值与机型库同源，不抄一份。
                 <section class="border-b px-4 py-3">
-                  <h3 class="text-xs font-semibold text-primary">
+                  <h3 class="text-xs text-primary">
                     {move || t("knowledge.review-measured")}
                   </h3>
                   <Table class="text-sm" wrapper_class="mt-2">
@@ -148,7 +148,7 @@ pub fn RigReviewsPage() -> impl IntoView {
                           let how = REVIEW_GLOSSARY[glossary].2;
                           view! {
                             <TableRow>
-                              <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>
+                              <TableCell class=format!("{CELL} whitespace-nowrap")>
                                 // 指标名互链到页面底部的术语表；悬停出释义。
                                 <Tooltip label=Signal::derive(move || text(meaning))>
                                   <a
@@ -169,7 +169,7 @@ pub fn RigReviewsPage() -> impl IntoView {
                   </Table>
                   {if rx.is_some() {
                     view! {
-                      <p class="mt-2 text-[11px] text-muted-foreground">
+                      <p class="mt-2 text-xs text-muted-foreground">
                         {move || {
                           tf(
                             "knowledge.rx-metrics-from",
@@ -190,7 +190,7 @@ pub fn RigReviewsPage() -> impl IntoView {
                       .into_any()
                   } else {
                     view! {
-                      <p class="mt-2 text-[11px] text-muted-foreground">
+                      <p class="mt-2 text-xs text-muted-foreground">
                         {move || t("knowledge.review-measure-yourself")}
                         " "
                         <a
@@ -207,7 +207,7 @@ pub fn RigReviewsPage() -> impl IntoView {
 
                 // 三、主观评价（明确标注，不冒充测量）
                 <section class="border-b px-4 py-3">
-                  <h3 class="text-xs font-semibold text-primary">
+                  <h3 class="text-xs text-primary">
                     {move || t("knowledge.review-subjective")}
                   </h3>
                   <ul class="mt-2 space-y-1.5">
@@ -231,16 +231,16 @@ pub fn RigReviewsPage() -> impl IntoView {
                 <section class="px-4 py-3">
                   <div class="grid gap-2 sm:grid-cols-2">
                     <div class="flex flex-col gap-0.5 px-3 py-1.5">
-                      <span class="text-[11px] text-muted-foreground">
+                      <span class="text-xs text-muted-foreground">
                         {move || t("knowledge.review-for-whom")}
                       </span>
                       <span class="text-sm">{move || text(review.for_whom)}</span>
                     </div>
                     <div class="flex flex-col gap-0.5 px-3 py-1.5">
-                      <span class="text-[11px] text-muted-foreground">
+                      <span class="text-xs text-muted-foreground">
                         {move || t("knowledge.review-conclusion")}
                       </span>
-                      <span class="text-sm font-medium">{move || text(review.conclusion)}</span>
+                      <span class="text-sm">{move || text(review.conclusion)}</span>
                     </div>
                   </div>
                 </section>
@@ -264,7 +264,7 @@ pub fn RigReviewsPage() -> impl IntoView {
                 let how = *how;
                 view! {
                   <div id=format!("glossary-{i}") class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm font-medium">{move || text(name)}</span>
+                    <span class="text-sm">{move || text(name)}</span>
                     <span class="text-sm text-muted-foreground">{move || text(meaning)}</span>
                     <span class="text-xs text-muted-foreground">{move || text(how)}</span>
                   </div>

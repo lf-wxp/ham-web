@@ -145,7 +145,7 @@ pub(super) fn PathProfile() -> impl IntoView {
             view! {
               <div
                 role="alert"
-                class="bg-muted/40 px-3 py-2 text-sm text-destructive"
+                class="bg-inset px-3 py-2 text-sm text-hp-text"
               >
                 {failure_message(f)}
               </div>
@@ -225,8 +225,8 @@ pub(super) fn PathProfile() -> impl IntoView {
               })
               .collect_view();
             view! {
-              <div class="space-y-1 bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
-                <div role="status" class="font-medium text-foreground">{verdict}</div>
+              <div class="space-y-1 bg-inset px-3 py-2 text-sm tabular-nums text-muted-foreground">
+                <div role="status" class="text-foreground">{verdict}</div>
                 <div>{summary}</div>
                 <div>{worst_text}</div>
                 <div>{advice}</div>

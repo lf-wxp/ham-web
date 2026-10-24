@@ -24,7 +24,7 @@ use crate::ui::{
 use super::use_log_store;
 
 const HINT: &str = "text-xs text-muted-foreground";
-const TH: &str = "border-b px-2 py-1.5 font-medium text-muted-foreground";
+const TH: &str = "border-b px-2 py-1.5 text-muted-foreground";
 
 /// 差异表里显示的本地缺失行数上限（再多就只报总数）。
 const MISSING_PREVIEW: usize = 8;
@@ -348,11 +348,11 @@ pub fn QslSyncDialog(open: RwSignal<bool>) -> impl IntoView {
                               view! {
                                 <TableRow class="border-b last:border-b-0">
                                   <TableCell class="px-2 py-1.5 align-top">
-                                    <span class="font-mono font-medium">{callsign}</span>
+                                    <span class="font-mono">{callsign}</span>
                                     <span class="block text-muted-foreground">{meta}</span>
                                   </TableCell>
                                   <TableCell class="px-2 py-1.5 align-top">{added_text}</TableCell>
-                                  <TableCell class="px-2 py-1.5 align-top text-amber-600 dark:text-amber-400">
+                                  <TableCell class="px-2 py-1.5 align-top text-gold-text">
                                     {conflict_text}
                                   </TableCell>
                                   <TableCell class="px-2 py-1.5 align-top">

@@ -55,7 +55,7 @@ pub(super) fn LotwStationLocation() -> impl IntoView {
               <p class="text-xs text-muted-foreground">
                 {move || t("log.tqsl-set-station-first")}
                 " "
-                <a href="/log" class="font-medium underline underline-offset-4">
+                <a href="/log" class="underline underline-offset-4">
                   {move || t("log.station-info")}
                 </a>
               </p>

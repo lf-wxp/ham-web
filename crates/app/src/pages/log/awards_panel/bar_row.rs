@@ -11,15 +11,15 @@ pub(super) fn bar_row(label: String, n: usize, target: usize) -> impl IntoView {
   view! {
     <div>
       <div class="mb-1 flex items-center justify-between text-xs">
-        <span class="font-medium">{label}</span>
+        <span>{label}</span>
         <span class="tabular-nums text-muted-foreground">
           {format!("{n} / {target}")}
-          {done.then(|| view! { <span class="ml-1.5 font-semibold text-emerald-600 dark:text-emerald-400">{move || t("log.achieved")}</span> })}
+          {done.then(|| view! { <span class="ml-1.5 text-win-text">{move || t("log.achieved")}</span> })}
         </span>
       </div>
       <div class="h-2 w-full overflow-hidden bg-muted">
         <div
-          class=if done { "h-full bg-emerald-500" } else { "h-full bg-primary" }
+          class=if done { "h-full bg-win/70" } else { "h-full bg-primary" }
           style=format!("width: {pct:.1}%")
         ></div>
       </div>

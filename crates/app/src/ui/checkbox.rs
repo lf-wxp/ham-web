@@ -48,7 +48,7 @@ pub fn Checkbox(
                 class="motion-check flex items-center justify-center text-current"
                 style="pointer-events: none;"
               >
-                <Icon kind=IconKind::Check class="size-4" />
+                <Icon kind=IconKind::Check class="size-6" />
               </span>
             }
           })

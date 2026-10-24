@@ -3,6 +3,7 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::ui::Stat;
+use crate::ui::card_title_class;
 use crate::util::set_title;
 
 use super::phonetic_card::PhoneticCard;
@@ -13,7 +14,7 @@ use crate::i18n::t;
 pub fn PhoneticPage() -> impl IntoView {
   set_title("shell.phonetic-alphabet");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.phonetic-alphabet")
         subtitle=move || t("morse.itu-phonetic-alphabet-spell")
@@ -31,7 +32,7 @@ pub fn PhoneticPage() -> impl IntoView {
         </div>
 
         <section>
-          <h2 class="mb-3 text-sm font-semibold">{move || t("morse.phonetic-alphabet")}</h2>
+          <h2 class=card_title_class("mb-3")>{move || t("morse.phonetic-alphabet")}</h2>
           <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {PHONETIC.iter().map(|e| view! { <PhoneticCard entry=e /> }).collect_view()}
           </div>

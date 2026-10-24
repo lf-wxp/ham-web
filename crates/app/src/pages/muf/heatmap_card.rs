@@ -17,7 +17,7 @@ use crate::ui::{
 };
 
 const NOTE: &str = "text-xs text-muted-foreground";
-const RESULT: &str = "bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
+const RESULT: &str = "bg-inset px-3 py-2 text-sm text-muted-foreground";
 const CURVE_W: f64 = 600.0;
 const CURVE_H: f64 = 110.0;
 const CURVE_PAD: f64 = 24.0;
@@ -51,13 +51,13 @@ fn cell_class(r: f64) -> &'static str {
   if r <= 0.0 {
     "bg-muted"
   } else if r < 0.25 {
-    "bg-sky-500/25"
+    "bg-xp/25"
   } else if r < 0.5 {
-    "bg-sky-500/50"
+    "bg-xp/50"
   } else if r < 0.75 {
-    "bg-emerald-500/60"
+    "bg-win/60"
   } else {
-    "bg-emerald-500/90"
+    "bg-win/90"
   }
 }
 
@@ -337,7 +337,7 @@ pub(super) fn HeatmapCard() -> impl IntoView {
                     {(0..24usize)
                       .map(|h| {
                         view! {
-                          <div class="flex-1 text-center text-[10px] tabular-nums text-muted-foreground">
+                          <div class="flex-1 text-center text-xs tabular-nums text-muted-foreground">
                             {hour_label(h)}
                           </div>
                         }
@@ -355,7 +355,7 @@ pub(super) fn HeatmapCard() -> impl IntoView {
                         let cells = row.cells.clone();
                         view! {
                       <div class="flex items-center gap-0.5">
-                        <div class="w-12 shrink-0 text-xs font-medium">{band}</div>
+                        <div class="w-12 shrink-0 text-xs">{band}</div>
                         <div class="flex flex-1 gap-0.5">
                           {cells
                             .iter()
@@ -368,7 +368,7 @@ pub(super) fn HeatmapCard() -> impl IntoView {
                                   "h-5 flex-1 cursor-pointer p-0 transition-shadow",
                                   cell_class(c),
                                   if selected.get() == Some((band, h)) {
-                                    "ring-2 ring-primary ring-inset"
+                                    "ring-primary ring-inset"
                                   } else {
                                     ""
                                   },
@@ -524,19 +524,19 @@ pub(super) fn HeatmapCard() -> impl IntoView {
                   y1=CURVE_PAD
                   x2=marker_x
                   y2=CURVE_H - CURVE_PAD
-                  class="stroke-amber-500/60"
+                  class="stroke-gold/60"
                   stroke-dasharray="3 3"
                   stroke-width="1"
                 />
                 <path
                   d=move || curve_path(1)
-                  class="fill-none stroke-amber-500"
+                  class="fill-none stroke-gold/70"
                   stroke-width="1.5"
                   vector-effect="non-scaling-stroke"
                 />
                 <path
                   d=move || curve_path(0)
-                  class="fill-none stroke-sky-500"
+                  class="fill-none stroke-xp/70"
                   stroke-width="1.8"
                   vector-effect="non-scaling-stroke"
                 />
@@ -562,9 +562,9 @@ pub(super) fn HeatmapCard() -> impl IntoView {
                       let pct = r * 100.0;
                       view! {
                         <div class="flex items-center gap-2 text-sm">
-                          <span class="w-12 shrink-0 font-medium">{band}</span>
+                          <span class="w-12 shrink-0">{band}</span>
                           <div class="h-3 flex-1 overflow-hidden bg-muted">
-                            <div class="h-full bg-emerald-500" style=format!("width: {pct:.0}%")></div>
+                            <div class="h-full bg-win/70" style=format!("width: {pct:.0}%")></div>
                           </div>
                           <span class="w-14 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
                             {format!("{pct:.0}%")}

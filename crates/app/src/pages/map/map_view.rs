@@ -466,7 +466,7 @@ pub fn MapView(
           let lon_dir = if lon < 0.0 { "W" } else { "E" };
           view! {
             <div
-              class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full bg-foreground/90 px-1.5 py-0.5 font-mono text-[10px] leading-none text-background shadow"
+              class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full bg-foreground/90 px-1.5 py-0.5 font-mono text-xs leading-none text-background shadow"
               style=format!("left: {:.0}px; top: {:.0}px;", css_x, css_y)
             >
               {format!("{:.1}°{}  {:.1}°{}", lat.abs(), lat_dir, lon.abs(), lon_dir)}

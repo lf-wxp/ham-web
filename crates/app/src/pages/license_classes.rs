@@ -15,7 +15,7 @@ const CELL: &str = "border px-3 py-2 align-top";
 pub fn LicenseClassesPage() -> impl IntoView {
   set_title("shell.a-b-c-license");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.a-b-c-license")
         subtitle=move || t("radio.frequency-range-power-limit")
@@ -37,7 +37,7 @@ pub fn LicenseClassesPage() -> impl IntoView {
               .map(|c| {
                 view! {
                   <TableRow>
-                    <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>
+                    <TableCell class=format!("{CELL} whitespace-nowrap")>
                       {tf("learning.class", &[(c.class)])}
                     </TableCell>
                     <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{c.freq}</TableCell>
@@ -58,7 +58,7 @@ pub fn LicenseClassesPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
+                    <span class="text-sm">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
                 }
@@ -75,7 +75,7 @@ pub fn LicenseClassesPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex items-baseline gap-2 px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
+                    <span class="text-sm">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
                 }

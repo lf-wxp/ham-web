@@ -17,7 +17,7 @@ pub fn HistoryChart() -> impl IntoView {
 
   view! {
     <div class="mt-4 border-t pt-3">
-      <div class="text-sm font-medium">
+      <div class="text-sm">
         {tp("learning.recent-accuracy-last-attempts", recent.len(), &[&recent.len().to_string()])}
       </div>
       <div class="mt-3 flex items-end gap-1.5">
@@ -32,7 +32,7 @@ pub fn HistoryChart() -> impl IntoView {
                 title=tf("common.class-with-score", &[&(r.bank).to_string(), &(r.correct).to_string(), &(r.total).to_string(), &(pct.round() as i64).to_string()])
               >
                 <div class="w-full bg-primary" style=format!("height: {h:.1}px")></div>
-                <span class="text-[10px] tabular-nums text-muted-foreground">{pct.round() as i64}</span>
+                <span class="text-xs tabular-nums text-muted-foreground">{pct.round() as i64}</span>
               </div>
             }
           })

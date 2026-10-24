@@ -67,7 +67,7 @@ pub(super) fn WantedTracker() -> impl IntoView {
           </div>
           <div class="h-2 w-full overflow-hidden bg-muted">
             <div
-              class="h-full bg-primary transition-all"
+              class="h-full bg-primary transition"
               style=move || {
                 let d = done.get();
                 let n = WANTED_ENTITIES
@@ -98,11 +98,11 @@ pub(super) fn WantedTracker() -> impl IntoView {
                         on_change=Callback::new(move |_| toggle(prefix))
                         aria_label=tf("common.marker", &[(name)])
                       />
-                      <span class="w-16 shrink-0 font-mono text-sm font-semibold">{prefix}</span>
+                      <span class="w-16 shrink-0 font-mono text-sm">{prefix}</span>
                       <span class="flex-1 text-sm">{name}</span>
                       {if from_log {
                         view! {
-                          <span class="shrink-0 bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{move || t("radio.log")}</span>
+                          <span class="shrink-0 bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{move || t("radio.log")}</span>
                         }
                         .into_any()
                       } else {

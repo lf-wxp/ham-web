@@ -3,7 +3,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use ham_web_core::exam::CustomPaper;
+use ham_web_core::exam_clock::{ClockTone, crossed_line};
 use ham_web_core::saved_state::{ExamSavedState, keys};
+use ham_web_core::text::format_ms;
 use ham_web_core::weak_exam::{self, CategoryDelta};
 use ham_web_core::{ExamRule, ExamScore, QuestionItem};
 use leptos::prelude::*;
@@ -23,7 +25,7 @@ use crate::data;
 use crate::pages::{DEFAULT_TITLE, use_bank_query, use_no_site_footer};
 use crate::shortcuts::{DigitDetail, Shortcuts, digit_answer, use_question_shortcuts};
 use crate::store;
-use crate::ui::{ButtonLink, Size, Variant};
+use crate::ui::{ButtonLink, Size, Variant, push_error, push_info};
 use crate::util::now_ms;
 use crate::util::set_title;
 use crate::util::storage;
@@ -274,14 +276,30 @@ pub fn ExamPage() -> impl IntoView {
     }
   }));
 
-  // 倒计时
+  // 倒计时：每秒一次，顺带负责「跨档提醒」和「时间到」。
+  // `prev_left` 用来判定「这一秒刚好跨过某条线」—— 提醒由跨越触发而不是由所处档位触发，
+  // 每条线一场考试只响一次。首次 tick 前它是 0，随后跳到真实剩余是「往回走」，不算跨越。
+  let prev_left = StoredValue::new(0i64);
   let tick = move || {
     let Some(Some(end)) = store.end_at.try_get_untracked() else {
       return;
     };
     let left = (end - now_ms()).max(0);
+    let prev = prev_left.get_value();
+    prev_left.set_value(left);
     remaining.set(left);
-    if left == 0 && !store.finished.get_untracked() && pending.with_untracked(Option::is_none) {
+    let live = !store.finished.get_untracked() && pending.with_untracked(Option::is_none);
+    if live && let Some(tone) = crossed_line(prev, left, rule.get_untracked().duration_ms()) {
+      let clock = format_ms(left);
+      match tone {
+        ClockTone::Warn => push_info(tf("exam.time-warning", &[&clock])),
+        ClockTone::Danger => push_error(tf("exam.time-danger", &[&clock])),
+        ClockTone::Calm => {}
+      }
+    }
+    if left == 0 && live {
+      // 以前超时直接弹成绩，没有任何交代；用户会以为是自己误点了交卷。
+      push_error(t("exam.time-up-submitted"));
       submit();
     }
   };
@@ -506,7 +524,7 @@ pub fn ExamPage() -> impl IntoView {
     }
     view! {
       <div on:touchstart=swipe_start on:touchend=swipe_end>
-        <PageContainer class="py-6 space-y-4 pb-28 sm:pb-20 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+        <PageContainer class="py-6 space-y-4 pb-28 sm:pb-28 animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal)">
         <BossStage
           answered=answered
           total=total
@@ -590,6 +608,9 @@ pub fn ExamPage() -> impl IntoView {
           finished=store.finished
           at_start=at_start
           at_end=at_end
+          strict=strict
+          remaining=remaining
+          rule=rule
           on_prev=Callback::new(move |()| {
             if !strict.get_untracked() {
               store.prev();
@@ -646,6 +667,7 @@ pub fn ExamPage() -> impl IntoView {
         }
       })
       current_index=store.index
+      jump_locked=strict
     />
     <ExamSubmitConfirmDialog
       open=confirm_open

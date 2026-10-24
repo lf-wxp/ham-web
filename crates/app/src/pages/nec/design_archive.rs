@@ -166,7 +166,7 @@ pub(super) fn DesignArchiveSection(
 
   view! {
     <details class="pxl-card border bg-card">
-      <summary class="cursor-pointer px-4 py-3 text-sm font-semibold">
+      <summary class="cursor-pointer px-4 py-3 text-sm">
         {move || t("tools.nec-archive")}
       </summary>
       <div class="space-y-3 px-4 pb-4">
@@ -208,7 +208,7 @@ pub(super) fn DesignArchiveSection(
                   let pick_name = d.name.clone();
                   view! {
                     <li class="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
-                      <span class="font-medium">{title}</span>
+                      <span>{title}</span>
                       <span class="text-xs text-muted-foreground tabular-nums">{d.saved_at.clone()}</span>
                       <span class="ml-auto flex gap-2">
                         <Button
@@ -370,7 +370,7 @@ pub(super) fn DesignArchiveSection(
                     {mismatch
                       .then(|| {
                         view! {
-                          <p class="text-xs text-amber-700 dark:text-amber-300">
+                          <p class="text-xs text-gold-text">
                             {move || t("tools.nec-compare-model-mismatch")}
                           </p>
                         }

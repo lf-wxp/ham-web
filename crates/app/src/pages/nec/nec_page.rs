@@ -11,7 +11,7 @@ use ham_web_core::nec::{
 use ham_web_core::nec_templates::nec_template;
 use leptos::prelude::*;
 
-use crate::components::common::PageContainer;
+use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::util::{cancel_debounce, debounce, set_title, take_nec_template};
 
@@ -363,8 +363,14 @@ pub fn NecPage() -> impl IntoView {
   let remove_load = Callback::new(move |id: usize| loads.update(|l| l.retain(|r| r.id != id)));
 
   view! {
-    <PageContainer class="space-y-4">
-      <h1 class="text-lg font-semibold">{move || t("tools.nec-antenna-solver")}</h1>
+    // 页头走 `PageHeader`：标题字体（`pxl-title`）、吸顶、主色左轨只有一份来源；
+    // 长说明仍留在正文里（塞进副标题会把吸顶栏撑成三行）。
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
+      <PageHeader
+        title=Signal::derive(move || t("tools.nec-antenna-solver"))
+        subtitle=Signal::derive(String::new)
+      />
+      <PageContainer class="space-y-4">
       <p class=NOTE>
         {move || t("tools.nec-solves-wire-antennas")}
       </p>
@@ -461,6 +467,7 @@ pub fn NecPage() -> impl IntoView {
       <NvisSection result=result />
 
       <DirectionTable result=result />
-    </PageContainer>
+      </PageContainer>
+    </div>
   }
 }

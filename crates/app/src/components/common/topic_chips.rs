@@ -19,7 +19,7 @@ pub fn TopicChips(
 ) -> impl IntoView {
   let total = nodes.len();
   let chip_class = if numbered {
-    "bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+    "bg-primary/10 px-3 py-1.5 text-xs text-primary transition-colors hover:bg-primary/20"
   } else {
     "border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
   };
@@ -36,7 +36,7 @@ pub fn TopicChips(
                 {move || data::kt_tracked(node.name)}
                 {(!numbered && !node.prerequisites.is_empty()).then(|| {
                   view! {
-                    <span class="ml-1 text-[10px] text-muted-foreground">
+                    <span class="ml-1 text-xs text-muted-foreground">
                       {move || {
                         tp(
                           "knowledge.n-prerequisites",

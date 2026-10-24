@@ -44,12 +44,12 @@ pub fn BandsPage() -> impl IntoView {
           id=footnote_id(code)
           class=move || {
             format!(
-              "grid scroll-mt-24 grid-cols-[4.5rem_1fr] gap-3 px-4 py-3 text-sm transition-colors duration-500 {}",
+              "grid scroll-mt-24 grid-cols-[4.5rem_1fr] gap-3 px-4 py-3 text-sm transition-colors duration-(--motion-slow) {}",
               if active.get() == Some(code) { "bg-accent" } else { "" },
             )
           }
         >
-          <dt class="font-mono font-semibold">{code}</dt>
+          <dt class="font-mono">{code}</dt>
           <dd class="leading-6 text-muted-foreground">{f.text}</dd>
         </div>
       }
@@ -62,7 +62,7 @@ pub fn BandsPage() -> impl IntoView {
     .collect_view();
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.band-chart-title")
         subtitle=move || t("radio.upper-limits-included-lower")
@@ -89,7 +89,7 @@ pub fn BandsPage() -> impl IntoView {
         // 表达不了，整表保留原生 `<table>`。
         <div class="hidden overflow-x-auto pxl-card border bg-card md:block">
           <table class="w-full min-w-[960px] border-collapse border-hidden text-sm">
-            <thead class="bg-muted/60 text-xs">
+            <thead class="bg-inset text-xs">
               <tr>
                 <th class=CELL>{move || t("radio.reference")}</th>
                 <th class=CELL colspan="2">{move || t("radio.band-name")}</th>

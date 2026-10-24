@@ -120,7 +120,7 @@ pub fn SpotCoverage(
           match coverage.get() {
             None => {
               view! {
-                <p class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                <p class="bg-inset px-3 py-2 text-sm text-muted-foreground">
                   {move || t("coverage.home-missing")}
                 </p>
               }
@@ -128,7 +128,7 @@ pub fn SpotCoverage(
             }
             Some(cov) if cov.total == 0 => {
               view! {
-                <p class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                <p class="bg-inset px-3 py-2 text-sm text-muted-foreground">
                   {move || t("coverage.empty")}
                 </p>
               }
@@ -161,7 +161,7 @@ pub fn SpotCoverage(
                       </TableCell>
                       <TableCell class="border px-3 py-2">
                         <div class="h-2 w-full bg-muted" role="presentation">
-                          <div class="h-2 bg-emerald-500" style=format!("width: {pct:.0}%")></div>
+                          <div class="h-2 bg-win/70" style=format!("width: {pct:.0}%")></div>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -177,7 +177,7 @@ pub fn SpotCoverage(
                     .then(|| {
                       view! {
                         <div class="space-y-1">
-                          <p class="text-xs font-medium text-foreground/70">
+                          <p class="text-xs text-foreground/70">
                             {move || t("coverage.hourly")}
                           </p>
                     <div class="flex h-8 items-end gap-0.5">
@@ -203,7 +203,7 @@ pub fn SpotCoverage(
                               aria-label=label
                             >
                               <div
-                                class="w-full bg-emerald-500"
+                                class="w-full bg-win/70"
                                 style=format!("height: {pct:.0}%")
                               ></div>
                             </div>

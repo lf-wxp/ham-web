@@ -89,6 +89,11 @@ export async function correctLetters(page: Page): Promise<string[]> {
   if ((await reveal.count()) > 0) {
     await reveal.first().click();
   }
+  // 多选题勾选后要点「检查答案」才判分（勾上第一个框就亮出整套答案会让练习变成抄答案）。
+  const check = page.getByRole("button", { name: "检查答案" });
+  if ((await check.count()) > 0) {
+    await check.first().click();
+  }
   const text = await page.getByText(/^正确答案：/).first().innerText();
   // 作答之后同一行还会跟着判定（「作答：A」「正确」），只取紧跟在冒号后的那串字母，
   // 否则判定里的字母会被当成答案。

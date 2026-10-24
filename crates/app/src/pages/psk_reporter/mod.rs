@@ -139,7 +139,7 @@ pub fn PskReporterPage() -> impl IntoView {
   };
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.psk-reporter")
         subtitle=move || t("radio.digital-mode-reception-reports")
@@ -213,7 +213,7 @@ pub fn PskReporterPage() -> impl IntoView {
                       view! {
                         <TableRow>
                           <TableCell class="border px-3 py-2 tabular-nums text-muted-foreground">{format_utc(r.flow_start_seconds)}</TableCell>
-                          <TableCell class="border px-3 py-2 font-medium">
+                          <TableCell class="border px-3 py-2">
                             {r.receiver.clone()}
                             {(!r.receiver_locator.is_empty()).then(|| view! {
                               <span class="ml-1.5 font-mono text-xs text-muted-foreground">{r.receiver_locator.clone()}</span>
@@ -222,7 +222,7 @@ pub fn PskReporterPage() -> impl IntoView {
                           <TableCell class="border px-3 py-2 tabular-nums text-muted-foreground">{format!("{:.1} kHz", r.freq_khz)}</TableCell>
                           <TableCell class="border px-3 py-2">{r.band.clone()}</TableCell>
                           <TableCell class="border px-3 py-2">{r.mode.clone()}</TableCell>
-                          <TableCell class=format!("border px-3 py-2 text-right tabular-nums {}", if r.snr >= 0 { "text-emerald-600" } else { "text-muted-foreground" })>
+                          <TableCell class=format!("border px-3 py-2 text-right tabular-nums {}", if r.snr >= 0 { "text-win-text" } else { "text-muted-foreground" })>
                             {format!("{} dB", r.snr)}
                           </TableCell>
                         </TableRow>

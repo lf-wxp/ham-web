@@ -67,7 +67,7 @@ pub(super) fn DirectionTable(result: Memo<Option<NecResult>>) -> impl IntoView {
       <Button
         variant=Variant::Text
         size=Size::Sm
-        class="w-full justify-start px-4 py-3 text-sm font-semibold"
+        class="w-full justify-start px-4 py-3 text-sm"
         aria_expanded=Signal::derive(move || open.get())
         aria_controls="nec-direction-body"
         on_click=Callback::new(move |_| open.update(|v| *v = !*v))
@@ -107,7 +107,7 @@ pub(super) fn DirectionTable(result: Memo<Option<NecResult>>) -> impl IntoView {
               {move || t("tools.nec-direction-reload")}
             </Button>
             <div class="space-y-1.5">
-              <span class="text-sm font-medium">{move || t("tools.nec-direction-mode")}</span>
+              <span class="text-sm">{move || t("tools.nec-direction-mode")}</span>
               <ChipGroup
                 value=Signal::derive(move || {
                   if best_elevation.get() { "best" } else { "horizontal" }.to_owned()
@@ -124,7 +124,7 @@ pub(super) fn DirectionTable(result: Memo<Option<NecResult>>) -> impl IntoView {
           {move || match state.get() {
             State::NoResult => {
               view! {
-                <p class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                <p class="bg-inset px-3 py-2 text-sm text-muted-foreground">
                   {move || t("tools.nec-direction-no-result")}
                 </p>
               }
@@ -132,7 +132,7 @@ pub(super) fn DirectionTable(result: Memo<Option<NecResult>>) -> impl IntoView {
             }
             State::NoGrid => {
               view! {
-                <p class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                <p class="bg-inset px-3 py-2 text-sm text-muted-foreground">
                   {move || t("tools.nec-direction-no-grid")}
                 </p>
               }
@@ -140,7 +140,7 @@ pub(super) fn DirectionTable(result: Memo<Option<NecResult>>) -> impl IntoView {
             }
             State::BadGrid => {
               view! {
-                <p class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                <p class="bg-inset px-3 py-2 text-sm text-muted-foreground">
                   {move || t("tools.nec-direction-bad-grid")}
                 </p>
               }
@@ -157,7 +157,7 @@ pub(super) fn DirectionTable(result: Memo<Option<NecResult>>) -> impl IntoView {
                   let loss = format!("{:.1} dB", row.loss_db);
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>
+                      <TableCell class=format!("{CELL} whitespace-nowrap")>
                         {name}
                       </TableCell>
                       <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>

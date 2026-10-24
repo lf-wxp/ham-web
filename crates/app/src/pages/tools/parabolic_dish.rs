@@ -110,7 +110,7 @@ pub(super) fn ParabolicDish() -> impl IntoView {
                   &[&fmt_num(r.wavelength_m), &fmt_num(r.diameter_wavelengths)],
                 )}
               </div>
-              <div role="status" class="font-medium text-foreground">
+              <div role="status" class="text-foreground">
                 {tf(
                   "tools.dish-gain-result",
                   &[
@@ -132,7 +132,7 @@ pub(super) fn ParabolicDish() -> impl IntoView {
               {r.small_aperture
                 .then(|| {
                   view! {
-                    <div class="text-destructive">{move || t("tools.dish-small-aperture")}</div>
+                    <div class="text-hp-text">{move || t("tools.dish-small-aperture")}</div>
                   }
                 })}
             }
@@ -141,7 +141,7 @@ pub(super) fn ParabolicDish() -> impl IntoView {
         }}
       </div>
 
-      <h3 class="sm:col-span-2 pt-2 text-xs font-medium text-foreground">
+      <h3 class="sm:col-span-2 pt-2 text-xs text-foreground">
         {move || t("tools.dish-measure-title")}
       </h3>
       <Field

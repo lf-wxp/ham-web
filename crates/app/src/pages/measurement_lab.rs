@@ -68,7 +68,7 @@ pub fn MeasurementLabPage() -> impl IntoView {
     Signal::derive(move || tf("measurement.line-loss", &[&format!("{:.1}", loss_db.get())]));
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=Signal::derive(move || t("measurement.lab-title"))
         subtitle=Signal::derive(move || t("measurement.lab-subtitle"))
@@ -186,11 +186,11 @@ pub fn MeasurementLabPage() -> impl IntoView {
                 })
                 .collect_view()}
             </ChipGroup>
-            <div class="mt-3 bg-muted/50 px-3 py-2">
+            <div class="mt-3 bg-inset px-3 py-2">
               {move || {
                 let (title, desc) = solt_step_text(solt_step.get());
                 view! {
-                  <p class="text-sm font-medium">{title}</p>
+                  <p class="text-sm">{title}</p>
                   <p class="mt-1 text-sm text-muted-foreground">{desc}</p>
                 }
               }}
@@ -223,7 +223,7 @@ pub fn MeasurementLabPage() -> impl IntoView {
                 let desc = *desc;
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm font-medium">{move || text(title)}</span>
+                    <span class="text-sm">{move || text(title)}</span>
                     <span class="text-sm text-muted-foreground">{move || text(desc)}</span>
                   </div>
                 }

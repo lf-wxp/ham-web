@@ -14,11 +14,9 @@ use crate::i18n::t;
 pub(super) fn tone_class(tone: QslTone) -> &'static str {
   match tone {
     QslTone::Muted => "bg-muted text-muted-foreground",
-    QslTone::Amber => "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-    QslTone::Sky => "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300",
-    QslTone::Emerald => {
-      "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
-    }
+    QslTone::Amber => "bg-gold/10 text-gold-text",
+    QslTone::Sky => "bg-xp/10 text-xp-text",
+    QslTone::Emerald => "bg-win/10 text-win-text",
   }
 }
 
@@ -65,7 +63,7 @@ pub(super) fn QslBadge(status: QslStatus) -> impl IntoView {
   };
   view! {
     <span class=format!(
-      "inline-flex items-center gap-1 whitespace-nowrap px-2 py-0.5 text-xs font-medium {}",
+      "inline-flex items-center gap-1 whitespace-nowrap px-2 py-0.5 text-xs {}",
       tone_class(status.tone()),
     )>
       {move || status_label(status)}

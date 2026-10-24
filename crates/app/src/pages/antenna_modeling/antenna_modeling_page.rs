@@ -17,7 +17,7 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 pub fn AntennaModelingPage() -> impl IntoView {
   set_title("shell.antenna-modeling-title");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.antenna-modeling-title")
         subtitle="EZNEC · MMANA-GAL · 4NEC2".to_string()
@@ -71,7 +71,7 @@ pub fn AntennaModelingPage() -> impl IntoView {
                 view! {
                   <a
                     href=*href
-                    class="border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    class="border bg-inset px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
                     {move || t(label)}
                   </a>
@@ -97,7 +97,7 @@ pub fn AntennaModelingPage() -> impl IntoView {
                 .map(|&(name, kind, desc)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono font-semibold text-primary")>
+                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-primary")>
                         {name}
                       </TableCell>
                       <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{kind}</TableCell>
@@ -118,7 +118,7 @@ pub fn AntennaModelingPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
+                    <span class="text-sm">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
                 }

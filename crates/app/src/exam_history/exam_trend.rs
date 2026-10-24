@@ -5,11 +5,9 @@ use leptos::prelude::*;
 
 fn verdict_class(v: Verdict) -> &'static str {
   match v {
-    Verdict::Ready => {
-      "border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-    }
-    Verdict::Almost => "border-amber-500/40 bg-amber-500/15 text-amber-700 dark:text-amber-300",
-    Verdict::NotYet => "border-red-500/40 bg-red-500/15 text-red-700 dark:text-red-300",
+    Verdict::Ready => "border-win/40 bg-win/15 text-win-text",
+    Verdict::Almost => "border-gold/40 bg-gold/15 text-gold-text",
+    Verdict::NotYet => "border-destructive/40 bg-destructive/15 text-hp-text",
     Verdict::NeedMore => "text-muted-foreground",
   }
 }
@@ -81,21 +79,21 @@ pub fn ExamTrend(history: Vec<ExamRecord>, bank: Bank) -> impl IntoView {
   let pass_y = y_of(pass_pct);
   let trend = readiness.trend;
   let trend_class = if trend >= 0.0 {
-    "font-semibold tabular-nums text-emerald-600"
+    "tabular-nums text-win-text"
   } else {
-    "font-semibold tabular-nums text-red-600"
+    "tabular-nums text-hp-text"
   };
   view! {
     <div class="space-y-3">
       <div class="flex flex-wrap items-center gap-2 text-sm">
-        <span class=format!("border px-2.5 py-0.5 text-xs font-semibold {}", verdict_class(readiness.verdict))>
+        <span class=format!("border px-2.5 py-0.5 text-xs {}", verdict_class(readiness.verdict))>
           {readiness.verdict.label()}
         </span>
         <span class="text-muted-foreground">{verdict_hint(&readiness, rule.pass, rule.total)}</span>
       </div>
       <div class="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
-        <span>{move || t("common.last")} {readiness.count} {move || t("common.avg")} <span class="font-semibold text-foreground tabular-nums">{format!("{:.0}%", readiness.average)}</span></span>
-        <span>{move || t("common.passed")} <span class="font-semibold text-foreground tabular-nums">{format!("{} / {}", readiness.passed, readiness.count)}</span></span>
+        <span>{move || t("common.last")} {readiness.count} {move || t("common.avg")} <span class="text-foreground tabular-nums">{format!("{:.0}%", readiness.average)}</span></span>
+        <span>{move || t("common.passed")} <span class="text-foreground tabular-nums">{format!("{} / {}", readiness.passed, readiness.count)}</span></span>
         {(readiness.count >= 2).then(|| view! {
           <span>
             {move || t("common.change")}
@@ -113,8 +111,8 @@ pub fn ExamTrend(history: Vec<ExamRecord>, bank: Bank) -> impl IntoView {
             <text x="-6" y=y_of(p) dy="4" text-anchor="end" font-size="11" class="fill-muted-foreground">{format!("{p:.0}%")}</text>
           })
           .collect_view()}
-        <text x="-6" y=pass_y dy="4" text-anchor="end" font-size="11" class="fill-amber-600">{format!("{pass_pct:.0}%")}</text>
-        <line x1="0" x2=w y1=pass_y y2=pass_y class="stroke-amber-500" stroke-width="1" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" />
+        <text x="-6" y=pass_y dy="4" text-anchor="end" font-size="11" class="fill-gold">{format!("{pass_pct:.0}%")}</text>
+        <line x1="0" x2=w y1=pass_y y2=pass_y class="stroke-gold/70" stroke-width="1" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" />
         <polyline points=points fill="none" class="stroke-primary" stroke-width="2" vector-effect="non-scaling-stroke" />
         {records
           .iter()
@@ -126,7 +124,7 @@ pub fn ExamTrend(history: Vec<ExamRecord>, bank: Bank) -> impl IntoView {
                 cx=x_of(i)
                 cy=y_of(r.percent())
                 r="3"
-                class=if passed { "fill-emerald-500" } else { "fill-red-500" }
+                class=if passed { "fill-win/70" } else { "fill-destructive/70" }
               >
                 <title>{format!("{}/{}（{:.0}%）", r.correct, r.total, r.percent())}</title>
               </circle>

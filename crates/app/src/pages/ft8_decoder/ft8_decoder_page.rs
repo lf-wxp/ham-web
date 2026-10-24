@@ -62,7 +62,7 @@ pub fn Ft8DecoderPage() -> impl IntoView {
   });
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("tools.ft8-decoder")
         subtitle=move || t("tools.ft8-decoder-subtitle")
@@ -154,11 +154,11 @@ pub fn Ft8DecoderPage() -> impl IntoView {
               view! {
                 <div
                   role="alert"
-                  class="flex items-start gap-2 border border-destructive/40 bg-destructive/5 p-4 text-destructive"
+                  class="flex items-start gap-2 border border-destructive/40 bg-destructive/5 p-4 text-hp-text"
                 >
-                  <Icon kind=IconKind::AlertCircle class="mt-0.5 h-5 w-5 shrink-0" />
+                  <Icon kind=IconKind::AlertCircle class="mt-0.5 size-6 shrink-0" />
                   <div class="flex-1">
-                    <div class="font-medium">{move || t("radio.decoding-failed")}</div>
+                    <div>{move || t("radio.decoding-failed")}</div>
                     <div class="mt-1 text-sm">{e}</div>
                   </div>
                 </div>
@@ -172,7 +172,7 @@ pub fn Ft8DecoderPage() -> impl IntoView {
               let slots = p.slots;
               view! {
                 <div class="space-y-4">
-                  <div class="bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                  <div class="bg-inset px-3 py-2 text-xs text-muted-foreground">
                     {tf(
                       "tools.ft8-result-meta",
                       &[&file_name.get_untracked(), &decoded_protocol.get(), &format!("{}", p.messages.len())],
@@ -187,7 +187,7 @@ pub fn Ft8DecoderPage() -> impl IntoView {
                   {(unsupported > 0)
                     .then(|| {
                       view! {
-                        <div class="bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                        <div class="bg-inset px-3 py-2 text-xs text-muted-foreground">
                           {tp(
                             "tools.ft8-unsupported",
                             unsupported,
@@ -217,7 +217,7 @@ pub fn Ft8DecoderPage() -> impl IntoView {
                               let text = m.text.clone();
                               view! {
                                 <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b px-3 py-2 text-sm last:border-0">
-                                  <span class="font-mono font-semibold text-primary">{text}</span>
+                                  <span class="font-mono text-primary">{text}</span>
                                   <span class="ml-auto shrink-0 font-mono text-xs text-muted-foreground">
                                     {tf("tools.ft8-message-meta", &[&freq, &time, &sync])}
                                   </span>

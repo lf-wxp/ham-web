@@ -44,18 +44,18 @@ const MODES: &[&str] = &["CW", "SSB", "FT8", "FT4", "RTTY"];
 /// 波段 → chip 着色样式（深色模式改用更亮的文字色以保证对比度）。
 fn band_color(band: &str) -> &'static str {
   match band {
-    "160m" => "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300",
-    "80m" => "border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300",
-    "40m" => "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-    "30m" => "border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300",
-    "20m" => "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300",
-    "17m" => "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-    "15m" => "border-teal-500/30 bg-teal-500/10 text-teal-700 dark:text-teal-300",
-    "12m" => "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
-    "10m" => "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
-    "6m" => "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300",
-    "2m" => "border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-300",
-    _ => "border bg-muted/40 text-muted-foreground",
+    "160m" => "border-destructive/30 bg-destructive/10 text-hp-text",
+    "80m" => "border-gold/30 bg-gold/10 text-gold-text",
+    "40m" => "border-gold/30 bg-gold/10 text-gold-text",
+    "30m" => "border-gold/30 bg-gold/10 text-gold-text",
+    "20m" => "border-win/30 bg-win/10 text-win-text",
+    "17m" => "border-win/30 bg-win/10 text-win-text",
+    "15m" => "border-win/30 bg-win/10 text-win-text",
+    "12m" => "border-xp/30 bg-xp/10 text-xp-text",
+    "10m" => "border-xp/30 bg-xp/10 text-xp-text",
+    "6m" => "border-chart-4/30 bg-chart-4/10 text-chart-4",
+    "2m" => "border-foreground/30 bg-foreground/5 text-foreground",
+    _ => "border bg-inset text-muted-foreground",
   }
 }
 
@@ -198,7 +198,7 @@ pub fn DxSpotsPage() -> impl IntoView {
   };
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.dx-spots")
         subtitle=move || t("radio.dx-cluster-global-real")
@@ -320,7 +320,7 @@ pub fn DxSpotsPage() -> impl IntoView {
             {move || {
               show_alerts.get().then(|| {
                 view! {
-                  <div class="space-y-3 border bg-muted/30 p-3">
+                  <div class="space-y-3 border bg-inset p-3">
                     <div class="flex flex-wrap gap-x-5 gap-y-2">
                       // 两个开关各写一遍而不是抽 `toggle(label, …)` 闭包：词条字面量必须写在
                       // `t()` 的直接实参位，`check-i18n` 只采集直接调用，经参数中转会漏检。
@@ -440,8 +440,8 @@ pub fn DxSpotsPage() -> impl IntoView {
                         s.country.clone()
                       };
                       let badge = match need {
-                        Need::NewDxcc => Some((t("radio.new-dxcc"), "border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300")),
-                        Need::NewBand => Some((t("radio.new-band"), "border-sky-500/40 bg-sky-500/15 text-sky-700 dark:text-sky-300")),
+                        Need::NewDxcc => Some((t("radio.new-dxcc"), "border-win/40 bg-win/15 text-win-text")),
+                        Need::NewBand => Some((t("radio.new-band"), "border-xp/40 bg-xp/15 text-xp-text")),
                         Need::Worked => Some((t("radio.worked-badge"), "text-muted-foreground")),
                         Need::None => None,
                       };
@@ -463,7 +463,7 @@ pub fn DxSpotsPage() -> impl IntoView {
                             title=move || t("radio.click-to-log")
                             on:click=move |_| add_to_log(dx_btn.clone(), freq, comment_btn.clone())
                           >
-                            <div class="font-mono text-sm font-semibold text-primary">{dx.clone()}</div>
+                            <div class="font-mono text-sm text-primary">{dx.clone()}</div>
                             {if country.is_empty() {
                               view! { <div></div> }.into_any()
                             } else {
@@ -483,10 +483,10 @@ pub fn DxSpotsPage() -> impl IntoView {
                             {mode_of(&comment)}
                           </span>
                           {badge.map(|(text, class)| view! {
-                            <span class=format!("shrink-0 border px-1.5 py-0.5 text-xs font-medium {class}")>{text}</span>
+                            <span class=format!("shrink-0 border px-1.5 py-0.5 text-xs {class}")>{text}</span>
                           })}
                           {watched.then(|| view! {
-                            <span class="shrink-0 border border-amber-500/40 bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">{move || t("radio.watched")}</span>
+                            <span class="shrink-0 border border-gold/40 bg-gold/15 px-1.5 py-0.5 text-xs text-gold-text">{move || t("radio.watched")}</span>
                           })}
                           <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
                             {if comment.is_empty() { "—".to_owned() } else { comment.clone() }}

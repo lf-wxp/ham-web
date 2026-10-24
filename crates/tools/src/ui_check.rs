@@ -10,6 +10,31 @@
 //!   判不出来时放过，宁可漏报）；
 //! - ⑧ 的页面级宽度容器是**封闭清单** —— 清单外命中、清单内计数漂移都算失败。
 //!
+//! 2026-10-24 界面评审补上「文档写了、门禁没拦」的一批（见 `docs/ui-components.md` §11），全部是
+//! class token 级判定（先取字符串字面量、再按空白切 token、剥掉变体前缀）：
+//! - ⑪ 字重类（`font-semibold` / `font-bold` / `font-medium`）：点阵字体下是空操作，
+//!   易读字体下却会生效，两种模式层级不一致；
+//! - ⑫ 缩放 / 悬停旋转（`scale-*` / `zoom-*` / `hover:rotate-*`）：中间帧会让点阵文字变糊；
+//! - ⑬ `transition-all` 与写死毫秒的 `duration-<数字>`：时长只取 `--motion-*` 四档；
+//! - ⑭ 实线焦点环（`ring-*` / `ring-offset-*`）：全站焦点语言是 2px 虚线；
+//! - ⑮ 非 6 倍数的任意像素字号（`text-[10px]` 等）：点阵字体按整数倍缩放才不糊；
+//! - ⑯ Tailwind 原始色阶（`bg-emerald-500` 等）：绕过 11 套配色方案，状态色走语义 token；
+//! - ⑰ 手写的悬停反馈（`hover:-translate-y-1`、`hover:shadow-*`、`shadow-<颜色>/NN`）：
+//!   整卡可点的悬停反馈只有 `motion-lift`（`SectionCard href` 自带）一份，首页追台卡曾手写
+//!   4px 上抬 + 主色软阴影，和同页其它卡片是两套语言。
+//! - ⑱ 空的 `class=""` / `style=""`：批量删类名（字重 / 色阶）后留下的空属性，56 处，
+//!   没有语义也不生成任何样式，是纯噪声。
+//! - ⑲ `text-destructive`：`destructive` 是按钮的填充色，当文字色用时暗色下对弹层表面
+//!   不足 4.5:1（axe 在 `rpg_flow` 抓到过）；写字用 `text-hp-text`。
+//! - ⑳ 页面里手写 `<h1>` 且没带 `pxl-title` / `sr-only`：页面标题的字体族会漂成正文点阵
+//!   （2026-10-24 的第一轮整改里，5 个页面的标题就是这样和别处不一样）。
+//! - ㉑ 卡片标题 `<h2>` 用 `text-sm`（12px）：比它管的 18px 正文还小，卡片就「一片平字」；
+//!   区段标题统一走 `card_title_class(...)`（`pxl-label` + 18px）。
+//! - ㉒ 任意值断点 `min-[NNNpx]:`：断点词汇只有 `xs`（400px）/ `sm` / `md` / `lg`，
+//!   新增中间态写在 `tokens.css` 的 `--breakpoint-*` 里，别在页面里现造。
+//! - ㉓ `<Icon>` 写 `h-3/3.5/4/5`（16 / 20px）：像素图标是 24px 网格，这些值会被
+//!   `surfaces.css` 隐式抬到 24px，源码与实际渲染不符；直接写 `size-6`。
+//!
 //! 判不了、仍留给人工的：`mm` 尺寸的打印页（⑧ 的例外）、内联 `style` 里的阴影、
 //! ⑨ 的例外注释计数。
 //!
@@ -98,6 +123,105 @@ const RULES: &[Rule] = &[
     hits: has_soft_arbitrary_shadow,
     advice: "任意值阴影只写像素硬阴影 `x y 0 0 <色>`（模糊位必须是 0）；要层次感就加粗描边 / 换色，命名档位（`shadow-sm` 等）在 tokens.css 里已经是硬阴影、可以直接用",
   },
+  Rule {
+    name: "字重类（`font-semibold` / `font-bold` / `font-medium`）",
+    roots: &["crates/app/src"],
+    skip: &["cn.rs"],
+    hits: has_font_weight,
+    advice: "点阵字体没有粗体，这些类默认模式下是空操作、易读字体下却会生效；强调靠颜色 / `pxl-label` / `pxl-title` / `pxl-section-title`（§2 硬规则 4）",
+  },
+  Rule {
+    name: "缩放 / 悬停旋转（`scale-*` / `zoom-*` / `hover:rotate-*`）",
+    roots: &["crates/app/src"],
+    skip: &["cn.rs"],
+    hits: has_scale_motion,
+    advice: "不做缩放动画（中间帧让点阵文字变糊）；按压反馈用 `pxl-btn` 自带的下沉 / `motion-press`（§2 硬规则 10）",
+  },
+  Rule {
+    name: "`transition-all` / 写死毫秒的 `duration-<数字>`",
+    roots: &["crates/app/src"],
+    skip: &["cn.rs"],
+    hits: has_loose_motion,
+    advice: "`transition-all` 会动画布局属性，写 `transition`；时长取 `duration-(--motion-fast|normal|slow)`，不要 `duration-300`（§2 硬规则 10）",
+  },
+  Rule {
+    name: "实线焦点环（`ring-*` / `ring-offset-*`）",
+    roots: &["crates/app/src"],
+    skip: &["cn.rs"],
+    hits: has_solid_ring,
+    advice: "全站焦点是 2px 虚线（`:focus-visible` 全局规则 + `pxl-*` 控件自带）；不要用 `ring-*` 顶替它，也不用为它加 `outline-none`（§2 / MOTION.md）",
+  },
+  Rule {
+    name: "非 6 倍数的任意像素字号（`text-[10px]` 等）",
+    roots: &["crates/app/src"],
+    // nvis.rs：SVG `<text>` 的字号是 viewBox 用户单位、随图缩放，不是 CSS 像素；
+    // print_sheet：打印页量的是纸（§4「为什么打印类页面不用 max-w-5xl」同理）。
+    skip: &["cn.rs", "pages/nec/nvis.rs", "pages/print_sheet/"],
+    hits: has_off_grid_font_px,
+    advice: "点阵字体按 6 的倍数（12 / 18 / 24px）缩放才不糊：小字用 `text-xs`（§2 字号阶梯）",
+  },
+  Rule {
+    name: "Tailwind 原始色阶（`bg-emerald-500` / `text-red-600` 等）",
+    roots: &["crates/app/src"],
+    // 打印 / 导出画布按白纸固定配色，不随配色方案变（§2 硬规则 7 的括注）。
+    skip: &[
+      "cn.rs",
+      "pages/print_sheet/",
+      "pages/qsl_labels/",
+      "pages/qsl_designer.rs",
+    ],
+    hits: has_raw_palette_color,
+    advice: "状态色走语义 token：文字 `text-win-text` / `text-hp-text` / `text-gold-text` / `text-xp-text`（别用 `text-destructive`，那是填充色），底色 `bg-win/10` 等；原始色阶会跳出 11 套配色方案（§2 硬规则 7）",
+  },
+  Rule {
+    name: "手写的悬停反馈（`hover:-translate-y-*` / `hover:shadow-*` / `shadow-<颜色>/NN`）",
+    roots: &["crates/app/src"],
+    skip: &["cn.rs"],
+    hits: has_ad_hoc_hover_lift,
+    advice: "整卡可点的悬停反馈只有一份：`SectionCard href=…`（自带 `motion-lift`：上抬 2px + 硬投影）；单个元素用 `motion-lift` / `motion-press`。不要手写位移 / 带色软阴影（§2 硬规则 1、10）",
+  },
+  Rule {
+    name: "空属性（`class=\"\"` / `style=\"\"`）",
+    roots: &["crates/app/src"],
+    skip: &[],
+    hits: has_empty_attribute,
+    advice: "批量删类名后把属性一起删掉：空 `class` / `style` 不产生任何样式，只会让人以为这里本该有样式（§11 ⑱）",
+  },
+  Rule {
+    name: "图标写 16/20px（`<Icon class=\"h-4 w-4\">`）",
+    roots: &["crates/app/src"],
+    skip: &[],
+    hits: has_small_icon,
+    advice: "像素图标是 24px 网格：写 `size-6`（源码 = 渲染）。16/20px 会被 `surfaces.css` 隐式抬到 24px",
+  },
+  Rule {
+    name: "任意值断点（`min-[NNNpx]:`）",
+    roots: &["crates/app/src"],
+    skip: &[],
+    hits: has_arbitrary_breakpoint,
+    advice: "断点只有 `xs`（400px）/ `sm` / `md` / `lg` 四档；新增中间态写进 `tokens.css` 的 `--breakpoint-*`",
+  },
+  Rule {
+    name: "卡片标题用 12px（`<h2>` + `text-sm`）",
+    roots: &["crates/app/src"],
+    skip: &["print_page.rs"],
+    hits: has_small_heading,
+    advice: "区段标题走 `card_title_class(...)`（`pxl-label` + 18px）；12px 的标题会比它管的正文还小",
+  },
+  Rule {
+    name: "页面标题没走 `pxl-title`（手写 `<h1>`）",
+    roots: &["crates/app/src/pages"],
+    skip: &["print_page.rs"],
+    hits: has_bare_h1,
+    advice: "页头用 `PageHeader`（`pxl-title` + 吸顶 + 主色左轨的唯一来源）；确需手写 `<h1>` 时带 `pxl-title`，纯无障碍标题用 `sr-only`",
+  },
+  Rule {
+    name: "把 `destructive` 填充色当文字色（`text-destructive`）",
+    roots: &["crates/app/src"],
+    skip: &["cn.rs"],
+    hits: has_destructive_as_text,
+    advice: "`text-destructive` 是按钮填充色，暗色下落在弹层 / 卡片表面上不足 4.5:1；写字用 `text-hp-text`（§2 硬规则 6）",
+  },
 ];
 
 /// 一行里有没有圆角**类**：只看字符串字面量内部的 `rounded` token。
@@ -168,6 +292,64 @@ fn has_native_control(line: &str) -> bool {
   line.contains("<input") || line.contains("<select") || line.contains("<textarea")
 }
 
+/// §11 ⑱：空的 `class=""` / `style=""`。
+///
+/// 只认这两个属性名 + 紧邻的空双引号 —— `cn(&["", ""])`、`format!("")` 这类空字符串不是空属性。
+/// 属性名前后不设边界：`data-class=""` 这种同样没有意义，一并拦。
+fn has_empty_attribute(line: &str) -> bool {
+  line.contains("class=\"\"") || line.contains("style=\"\"")
+}
+
+/// §2 硬规则 6：`text-destructive` 把填充色当文字色用。
+///
+/// `text-destructive-foreground`（实色按钮上的字）是另一个 token，不归这条管 —— 它由
+/// `.pxl-btn-destructive` 在 `controls.css` 里成套使用，调用点不会单独写。
+/// ㉓ `<Icon>` 上用 16/20px 的尺寸类（`h-4 w-4` / `size-4` …）。
+fn has_small_icon(line: &str) -> bool {
+  let Some(start) = line.find("<Icon") else {
+    return false;
+  };
+  let tail = &line[start..];
+  let end = tail.find('>').map_or(tail.len(), |i| i + 1);
+  class_tokens(&tail[..end]).iter().any(|(_, base)| {
+    matches!(
+      base.as_str(),
+      "h-3" | "h-3.5" | "h-4" | "h-5" | "size-3" | "size-3.5" | "size-4" | "size-5"
+    )
+  })
+}
+
+/// ㉒ 任意值断点：`min-[560px]:` 这类现造的媒体查询断点。
+fn has_arbitrary_breakpoint(line: &str) -> bool {
+  let needle = "min-[";
+  let mut from = 0;
+  while let Some(i) = line[from..].find(needle) {
+    let at = from + i + needle.len();
+    let digits = line[at..].chars().take_while(char::is_ascii_digit).count();
+    if digits > 0 && line[at + digits..].starts_with("px]:") {
+      return true;
+    }
+    from = at;
+  }
+  false
+}
+
+/// ㉑ 卡片标题 `<h2>` 带 `text-sm`（12px）：比正文（18px）还小的标题。
+fn has_small_heading(line: &str) -> bool {
+  line.contains("<h2") && line.contains("text-sm")
+}
+
+/// ⑳ 手写 `<h1>` 且既不是 `pxl-title` 也不是 `sr-only`：标题字体就会退化成正文点阵。
+fn has_bare_h1(line: &str) -> bool {
+  line.contains("<h1") && !line.contains("pxl-title") && !line.contains("sr-only")
+}
+
+fn has_destructive_as_text(line: &str) -> bool {
+  class_tokens(line)
+    .iter()
+    .any(|(_, base)| base == "text-destructive" || base.starts_with("text-destructive/"))
+}
+
 /// §11 ⑦：把填充色 token（hp / xp / gold / win）当文字色用，对比度不达标。
 fn has_fill_token_as_text(line: &str) -> bool {
   ["hp", "xp", "gold", "win"]
@@ -188,6 +370,166 @@ fn has_fill_token_as_text(line: &str) -> bool {
 fn has_blur_or_gradient(line: &str) -> bool {
   const NEEDLES: &[&str] = &["blur", "drop-shadow-", "bg-gradient", "bg-linear"];
   NEEDLES.iter().any(|n| line.contains(n))
+}
+
+/// 把一行里所有字符串字面量切成 class token，并拆成 `(变体前缀, 基础类)`。
+///
+/// 变体前缀里的冒号可能落在方括号 / 圆括号里（`data-[state=open]:`、`[&:not(:disabled)]:`），
+/// 只认**最外层**的最后一个冒号。例：`dark:hover:bg-red-500/10` -> (`dark:hover:`, `bg-red-500/10`)。
+fn class_tokens(line: &str) -> Vec<(String, String)> {
+  let mut out = Vec::new();
+  for token in string_contents(line).split_whitespace() {
+    let mut depth = 0i32;
+    let mut cut = 0usize;
+    for (i, c) in token.char_indices() {
+      match c {
+        '[' | '(' => depth += 1,
+        ']' | ')' => depth -= 1,
+        ':' if depth == 0 => cut = i + 1,
+        _ => {}
+      }
+    }
+    out.push((token[..cut].to_owned(), token[cut..].to_owned()));
+  }
+  out
+}
+
+/// §2 硬规则 4：字重类。
+fn has_font_weight(line: &str) -> bool {
+  class_tokens(line).iter().any(|(_, base)| {
+    matches!(
+      base.as_str(),
+      "font-semibold" | "font-bold" | "font-medium" | "font-extrabold"
+    )
+  })
+}
+
+/// §2 硬规则 10：缩放 / 悬停（或按下）旋转。静态的 `rotate-180`（展开箭头翻转）不算动画。
+fn has_scale_motion(line: &str) -> bool {
+  class_tokens(line).iter().any(|(variant, base)| {
+    let b = base.strip_prefix('-').unwrap_or(base);
+    let is_scale = b.strip_prefix("scale-").is_some_and(|rest| {
+      let rest = rest
+        .strip_prefix("x-")
+        .or_else(|| rest.strip_prefix("y-"))
+        .unwrap_or(rest);
+      rest.starts_with('[') || rest.chars().next().is_some_and(|c| c.is_ascii_digit())
+    });
+    let is_zoom = b.starts_with("zoom-in-") || b.starts_with("zoom-out-");
+    let is_interactive_rotate = b.starts_with("rotate-")
+      && (variant.contains("hover:") || variant.contains("active:") || variant.contains("focus"));
+    is_scale || is_zoom || is_interactive_rotate
+  })
+}
+
+/// §2 硬规则 10：`transition-all` 与写死毫秒的 `duration-<数字>`。
+/// `duration-(--motion-fast)` 这种引用 token 的写法合规。
+fn has_loose_motion(line: &str) -> bool {
+  class_tokens(line).iter().any(|(_, base)| {
+    base == "transition-all"
+      || base
+        .strip_prefix("duration-")
+        .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
+  })
+}
+
+/// 实线焦点环：`ring`、`ring-2`、`ring-ring/60`、`ring-offset-2`、`ring-offset-background`。
+/// `focus-visible:outline-ring`（虚线焦点的颜色）不是它。
+fn has_solid_ring(line: &str) -> bool {
+  class_tokens(line).iter().any(|(_, base)| {
+    base == "ring"
+      || base.starts_with("ring-offset")
+      || base.strip_prefix("ring-").is_some_and(|rest| {
+        rest == "ring"
+          || rest.starts_with("ring/")
+          || rest.chars().next().is_some_and(|c| c.is_ascii_digit())
+      })
+  })
+}
+
+/// 任意像素字号 `text-[Npx]`，N 不是 6 的倍数。
+fn has_off_grid_font_px(line: &str) -> bool {
+  class_tokens(line).iter().any(|(_, base)| {
+    base
+      .strip_prefix("text-[")
+      .and_then(|rest| rest.strip_suffix("px]"))
+      .and_then(|n| n.parse::<f64>().ok())
+      .is_some_and(|n| (n % 6.0).abs() > f64::EPSILON)
+  })
+}
+
+/// Tailwind 默认色阶的色族。
+const PALETTE_FAMILIES: &[&str] = &[
+  "slate", "gray", "zinc", "neutral", "stone", "red", "orange", "amber", "yellow", "lime", "green",
+  "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink",
+  "rose",
+];
+
+/// 原始色阶：`<属性>-<色族>-<两三位数字>[/不透明度]`，如 `bg-emerald-500/10`、`fill-sky-600`。
+/// 带 `print:` 变体的放过（打印是白纸，不随配色方案变）。
+fn has_raw_palette_color(line: &str) -> bool {
+  const PROPS: &[&str] = &[
+    "bg",
+    "text",
+    "border",
+    "ring",
+    "fill",
+    "stroke",
+    "from",
+    "to",
+    "via",
+    "divide",
+    "outline",
+    "decoration",
+    "shadow",
+    "accent",
+    "caret",
+  ];
+  class_tokens(line).iter().any(|(variant, base)| {
+    if variant.contains("print:") {
+      return false;
+    }
+    let base = base.split('/').next().unwrap_or(base);
+    let mut parts = base.splitn(3, '-');
+    let (Some(prop), Some(family), Some(shade)) = (parts.next(), parts.next(), parts.next()) else {
+      return false;
+    };
+    PROPS.contains(&prop)
+      && PALETTE_FAMILIES.contains(&family)
+      && (2..=3).contains(&shade.len())
+      && shade.chars().all(|c| c.is_ascii_digit())
+  })
+}
+
+/// 手写的悬停反馈：悬停 / 按下时的位移、悬停时才出现的阴影、带颜色的阴影。
+///
+/// 放过：居中用的 `-translate-y-1/2`（没有悬停变体、也不是位移反馈）；`group-hover:-translate-y-0.5`
+/// 这种 2px 以内的位移（品牌图标上抬）按「一个 art-pixel」算合规。
+fn has_ad_hoc_hover_lift(line: &str) -> bool {
+  class_tokens(line).iter().any(|(variant, base)| {
+    let b = base.strip_prefix('-').unwrap_or(base);
+    let interactive =
+      variant.contains("hover:") || variant.contains("active:") || variant.contains("focus");
+    // 位移：只认 `translate-y-<整数 >= 1>`，0.5（2px）以内放过。
+    let lifts = interactive
+      && b
+        .strip_prefix("translate-y-")
+        .and_then(|n| n.parse::<f64>().ok())
+        .is_some_and(|n| n >= 1.0);
+    // 悬停才出现的阴影：命名档位（`hover:shadow-lg`）与颜色（`hover:shadow-primary/10`）都算。
+    let hover_shadow = interactive && b.starts_with("shadow-");
+    // 带颜色的阴影：`shadow-primary/25`；命名档位（`shadow-sm`）与任意值（另有规则）不是它。
+    let colored = b.strip_prefix("shadow-").is_some_and(|rest| {
+      let name = rest.split('/').next().unwrap_or(rest);
+      !matches!(
+        name,
+        "none" | "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "inner"
+      ) && !name.starts_with('[')
+        && !name.starts_with('(')
+        && name.chars().next().is_some_and(|c| c.is_ascii_alphabetic())
+    });
+    lifts || hover_shadow || colored
+  })
 }
 
 /// §11 ⑥：任意值阴影 `shadow-[…]` 里有没有模糊半径。
@@ -649,6 +991,188 @@ mod tests {
     // 多层阴影：任一段有模糊就算
     assert!(has_soft_arbitrary_shadow(
       "class=\"shadow-[0_2px_0_0_#000,0_0_12px_rgba(0,0,0,.5)]\""
+    ));
+  }
+
+  #[test]
+  fn class_tokens_split_variants_at_the_outermost_colon() {
+    let t = class_tokens(
+      r#"class="dark:hover:bg-red-500/10 data-[state=open]:font-medium [&:not(:disabled)]:ring-2 px-2""#,
+    );
+    let got: Vec<(&str, &str)> = t.iter().map(|(v, b)| (v.as_str(), b.as_str())).collect();
+    assert_eq!(
+      got,
+      vec![
+        ("dark:hover:", "bg-red-500/10"),
+        ("data-[state=open]:", "font-medium"),
+        ("[&:not(:disabled)]:", "ring-2"),
+        ("", "px-2"),
+      ]
+    );
+  }
+
+  #[test]
+  fn font_weight_rule_sees_variants_but_not_font_normal() {
+    assert!(has_font_weight(r#"class="text-sm font-semibold""#));
+    assert!(has_font_weight(r#"class="group-hover:font-medium""#));
+    assert!(!has_font_weight(r#"class="font-normal font-mono""#));
+  }
+
+  #[test]
+  fn scale_rule_ignores_static_rotation() {
+    assert!(has_scale_motion(r#"class="active:scale-95""#));
+    assert!(has_scale_motion(r#"class="hover:scale-[1.02]""#));
+    assert!(has_scale_motion(r#"class="animate-in zoom-in-95""#));
+    assert!(has_scale_motion(r#"class="transition hover:rotate-12""#));
+    assert!(!has_scale_motion(r#"class="rotate-180 transition""#));
+    assert!(!has_scale_motion(r#"class="scale-text""#));
+  }
+
+  #[test]
+  fn motion_rule_accepts_token_durations_only() {
+    assert!(has_loose_motion(r#"class="transition-all""#));
+    assert!(has_loose_motion(r#"class="animate-in duration-300""#));
+    assert!(has_loose_motion(
+      r#"class="data-[state=open]:duration-200""#
+    ));
+    assert!(!has_loose_motion(
+      r#"class="duration-(--motion-normal) transition""#
+    ));
+    assert!(!has_loose_motion(r#"class="transition-colors""#));
+  }
+
+  #[test]
+  fn empty_attribute_rule_ignores_empty_string_arguments() {
+    assert!(has_empty_attribute(r#"<span class="">{v}</span>"#));
+    assert!(has_empty_attribute(r#"<div class="px-2" style="">x</div>"#));
+    assert!(has_empty_attribute(r#"<p class=""></p>"#));
+    // 空字符串作为实参 / 值不是空属性
+    assert!(!has_empty_attribute(r#"cn(&["", "px-2"])"#));
+    assert!(!has_empty_attribute(r#"let s = format!("");"#));
+    assert!(!has_empty_attribute(r#"<p class="text-sm">{s}</p>"#));
+  }
+
+  #[test]
+  fn small_icon_rule_looks_at_icon_only() {
+    assert!(has_small_icon(
+      r#"<Icon kind=IconKind::X class="h-4 w-4" />"#
+    ));
+    assert!(has_small_icon(
+      r#"<Icon class="size-4 text-muted-foreground" />"#
+    ));
+    assert!(!has_small_icon(r#"<Icon class="size-6" />"#));
+    assert!(!has_small_icon(r#"<span class="h-4 w-4" />"#));
+  }
+
+  #[test]
+  fn arbitrary_breakpoint_rule_ignores_table_min_widths() {
+    assert!(has_arbitrary_breakpoint(r#"class="min-[560px]:flex""#));
+    assert!(!has_arbitrary_breakpoint(r#"class="min-w-[560px]""#));
+    assert!(!has_arbitrary_breakpoint(r#"class="sm:flex""#));
+  }
+
+  #[test]
+  fn small_heading_rule_sees_h2_only() {
+    assert!(has_small_heading(r#"<h2 class="mr-auto text-sm">"#));
+    assert!(!has_small_heading(
+      r#"<h2 class=card_title_class("mr-auto")>"#
+    ));
+    assert!(!has_small_heading(r#"<p class="text-sm">"#));
+  }
+
+  #[test]
+  fn bare_h1_rule_accepts_title_and_sr_only() {
+    assert!(has_bare_h1(r#"<h1 class="text-base leading-tight">"#));
+    assert!(!has_bare_h1(r#"<h1 class="pxl-title text-lg">"#));
+    assert!(!has_bare_h1(r#"<h1 class="sr-only">"#));
+    assert!(!has_bare_h1(r#"<h2 class="text-base">"#));
+  }
+
+  #[test]
+  fn destructive_as_text_rule_keeps_foreground_token() {
+    assert!(has_destructive_as_text(
+      r#"class="text-xs text-destructive""#
+    ));
+    assert!(has_destructive_as_text(
+      r#"class="hover:text-destructive/80""#
+    ));
+    assert!(!has_destructive_as_text(
+      r#"class="text-destructive-foreground""#
+    ));
+    assert!(!has_destructive_as_text(
+      r#"class="bg-destructive/10 text-hp-text border-destructive/40""#
+    ));
+  }
+
+  #[test]
+  fn ring_rule_does_not_confuse_dashed_outline_colors() {
+    assert!(has_solid_ring(r#"class="focus-visible:ring-2""#));
+    assert!(has_solid_ring(
+      r#"class="focus-visible:ring-ring/60 ring-offset-2""#
+    ));
+    assert!(has_solid_ring(r#"class="ring""#));
+    assert!(!has_solid_ring(
+      r#"class="focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring""#
+    ));
+    assert!(!has_solid_ring(r#"class="string-width spring-load""#));
+  }
+
+  #[test]
+  fn font_px_rule_wants_multiples_of_six() {
+    assert!(has_off_grid_font_px(r#"class="text-[10px]""#));
+    assert!(has_off_grid_font_px(
+      r#"class="text-[9px] text-muted-foreground""#
+    ));
+    assert!(!has_off_grid_font_px(r#"class="text-[12px]""#));
+    assert!(!has_off_grid_font_px(
+      r#"class="text-[clamp(1.1rem,5.5vw,2rem)]""#
+    ));
+    assert!(!has_off_grid_font_px(r#"class="text-xs""#));
+  }
+
+  #[test]
+  fn ad_hoc_hover_lift_rule_allows_centering_and_one_art_pixel() {
+    // 追台卡当年的写法
+    assert!(has_ad_hoc_hover_lift(
+      r#"class="block transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10""#
+    ));
+    assert!(has_ad_hoc_hover_lift(
+      r#"class="shadow-lg shadow-primary/25""#
+    ));
+    assert!(has_ad_hoc_hover_lift(r#"class="active:translate-y-2""#));
+    // 居中、2px 以内的位移、命名档位的静态阴影都合规
+    assert!(!has_ad_hoc_hover_lift(
+      r#"class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2""#
+    ));
+    assert!(!has_ad_hoc_hover_lift(
+      r#"class="group-hover:-translate-y-0.5""#
+    ));
+    assert!(!has_ad_hoc_hover_lift(r#"class="shadow-sm shadow-xs""#));
+    assert!(!has_ad_hoc_hover_lift(
+      r#"class="shadow-[0_2px_0_0_var(--pxl-shadow)]""#
+    ));
+  }
+
+  #[test]
+  fn palette_rule_targets_default_scales_only() {
+    assert!(has_raw_palette_color(
+      r#"class="bg-emerald-500/10 text-red-600""#
+    ));
+    assert!(has_raw_palette_color(r#"class="dark:text-amber-300""#));
+    assert!(has_raw_palette_color(
+      r#"class="fill-sky-600 stroke-sky-600""#
+    ));
+    // 语义 token 与打印变体合规
+    assert!(!has_raw_palette_color(
+      r#"class="bg-win/10 text-win-text border-destructive""#
+    ));
+    assert!(!has_raw_palette_color(r#"class="print:border-zinc-300""#));
+    assert!(!has_raw_palette_color(
+      r#"class="text-muted-foreground bg-card""#
+    ));
+    // 名字撞车但不是色阶
+    assert!(!has_raw_palette_color(
+      r#"class="text-xs border-2 bg-primary/70""#
     ));
   }
 

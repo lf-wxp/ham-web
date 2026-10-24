@@ -23,7 +23,7 @@ pub(super) fn ScoreRow(
         <span class="truncate text-sm">{label}</span>
         {if insufficient {
           view! {
-            <span class="shrink-0 border px-2 py-0.5 text-[10px] text-muted-foreground">
+            <span class="shrink-0 border px-2 py-0.5 text-xs text-muted-foreground">
               {move || t("knowledge.score-insufficient")}
             </span>
           }
@@ -31,7 +31,7 @@ pub(super) fn ScoreRow(
         } else {
           let points = score.points.unwrap_or_default();
           view! {
-            <span class="shrink-0 font-mono text-sm font-semibold text-primary">
+            <span class="shrink-0 font-mono text-sm text-primary">
               {format!("{points:.0}")}
             </span>
           }
@@ -41,7 +41,7 @@ pub(super) fn ScoreRow(
       {user_based
         .then(|| {
           view! {
-            <p class="text-[11px] text-primary">
+            <p class="text-xs text-primary">
               {move || t("knowledge.score-uses-your-values")}
             </p>
           }
@@ -49,7 +49,7 @@ pub(super) fn ScoreRow(
       {insufficient
         .then(|| {
           view! {
-            <p class="text-[11px] text-muted-foreground">
+            <p class="text-xs text-muted-foreground">
               {move || t("knowledge.score-insufficient-hint")}
             </p>
           }
@@ -58,7 +58,7 @@ pub(super) fn ScoreRow(
         .then(|| {
           let list = missing.join(" · ");
           view! {
-            <p class="text-[11px] text-muted-foreground">
+            <p class="text-xs text-muted-foreground">
               {tf("knowledge.score-missing", &[&list])}
             </p>
           }

@@ -98,7 +98,7 @@ pub(super) fn ActivationExportPanel() -> impl IntoView {
 
   view! {
     <details class="pxl-card border bg-card">
-      <summary class="cursor-pointer px-4 py-3 text-sm font-semibold">
+      <summary class="cursor-pointer px-4 py-3 text-sm">
         {move || t("log.activation-title")}
       </summary>
       <div class="space-y-3 border-t p-4">
@@ -180,7 +180,7 @@ pub(super) fn ActivationExportPanel() -> impl IntoView {
             } else {
               "log.activation-bad-pota-ref"
             };
-            view! { <p class="text-xs text-destructive" role="alert">{t(key)}</p> }.into_any()
+            view! { <p class="text-xs text-hp-text" role="alert">{t(key)}</p> }.into_any()
           }
           Outcome::Done(x) => {
             let p = platform_of(&platform.get());
@@ -222,7 +222,7 @@ pub(super) fn ActivationExportPanel() -> impl IntoView {
                           {short
                             .then(|| {
                               view! {
-                                <span class="text-xs text-destructive">
+                                <span class="text-xs text-hp-text">
                                   {tf("log.activation-below-minimum", &[&min.to_string()])}
                                 </span>
                               }

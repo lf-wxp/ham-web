@@ -2,6 +2,7 @@
 
 mod boss_stage;
 mod exam_bottom_bar;
+mod exam_clock;
 mod exam_header;
 mod paper;
 mod store;

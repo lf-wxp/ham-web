@@ -32,15 +32,15 @@ pub(super) fn square_fill_class(n: usize, max: usize) -> &'static str {
 pub(super) fn square_fill_class_confirmed(n: usize, max: usize) -> &'static str {
   let r = n as f64 / max.max(1) as f64;
   if r <= 0.2 {
-    "fill-emerald-500/30"
+    "fill-win/30"
   } else if r <= 0.4 {
-    "fill-emerald-500/50"
+    "fill-win/50"
   } else if r <= 0.6 {
-    "fill-emerald-500/70"
+    "fill-win/70"
   } else if r <= 0.8 {
-    "fill-emerald-500/85"
+    "fill-win/85"
   } else {
-    "fill-emerald-500"
+    "fill-win/70"
   }
 }
 
@@ -48,15 +48,15 @@ pub(super) fn square_fill_class_confirmed(n: usize, max: usize) -> &'static str 
 pub(super) fn square_fill_class_sent(n: usize, max: usize) -> &'static str {
   let r = n as f64 / max.max(1) as f64;
   if r <= 0.2 {
-    "fill-amber-500/30"
+    "fill-gold/30"
   } else if r <= 0.4 {
-    "fill-amber-500/50"
+    "fill-gold/50"
   } else if r <= 0.6 {
-    "fill-amber-500/70"
+    "fill-gold/70"
   } else if r <= 0.8 {
-    "fill-amber-500/85"
+    "fill-gold/85"
   } else {
-    "fill-amber-500"
+    "fill-gold/70"
   }
 }
 

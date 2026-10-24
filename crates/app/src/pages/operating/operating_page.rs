@@ -14,7 +14,7 @@ use crate::i18n::t;
 pub fn OperatingPage() -> impl IntoView {
   set_title("shell.operating-practice");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.operating-practice")
         subtitle=move || t("knowledge.contact-procedure-log-qsl")

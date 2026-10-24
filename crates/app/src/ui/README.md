@@ -19,7 +19,7 @@ disabled / error 状态反馈因此只有一处定义。
 
 | 组件 | 替代的原生写法 | 关键 props |
 |---|---|---|
-| `Button` | `<button class=button_class(…)>` | `variant` `size` `kind` `disabled` `loading` `class` `aria_label` `title` `aria_expanded` `aria_controls`（折叠 / 下拉开关）`on_click` `node_ref` |
+| `Button` | `<button class=button_class(…)>` | `variant` `size` `kind` `disabled` `loading` `class` `aria_label` `title` `aria_expanded` `aria_controls`（折叠 / 下拉开关）`aria_current`（一组里「当前这个」，如答题卡的当前题）`on_click` `node_ref` |
 | `ButtonLink` | `<a href class=button_class(…)>`（跳转用的「按钮」） | `href`（`TextValue`）`variant` `size` `class` `aria_label` `title` `target` `rel` `download`（保存 `data:` / `blob:` 资源时的文件名）`on_click`（收 `MouseEvent`） |
 | `Input` | `<input>`（text / search / password / email / tel / url；日期与时间见 `DatePicker` / `TimePicker`） | `value` `on_change` `kind` `size` `prefix` `suffix` `clearable` `on_enter` `on_keydown` `invalid` `maxlength` `title` `autocomplete` `autocapitalize` `spellcheck` `aria_describedby` `node_ref` |
 | `NumberField` | `<input type="number">` | `value` `on_change` `min` `max` `step` `controls`（加减步进）`kind`（`NumberKind::Decimal` = 文本框 + 数字键盘，负数与半截输入可用） |
@@ -44,7 +44,7 @@ disabled / error 状态反馈因此只有一处定义。
 | `Progress` / `Separator` / `Stat` | — | `Progress` 是分格条；加 `pxl-bar-hp` / `pxl-bar-xp` / `pxl-bar-win` / `pxl-bar-gold` 变血条 / 经验条 / 通关绿 / 金币 |
 | `Table` + `TableHead` / `TableBody` / `TableRow` / `TableHeader` / `TableCell` | 手写的 `<div class="overflow-x-auto"><table>…` | 根组件自带滚动容器；`class` 写 `min-w-[…]` 保列宽；限高写 `wrapper_class="max-h-[…]"`；`borderless` 去网格线；无可见标题传 `aria_label`；`TableHeader` / `TableCell` 支持 `colspan` |
 | `Pagination` | 手写分页 / `.slice()` 截断 | `page` `total_pages`（1 起）`on_change`；页数 ≤1 不渲染；窗口算法在 `ham_web_core::pagination` |
-| `ToastRoot` + `push` / `push_success` / `push_error` | `util::alert`（原生 alert，已清零）/ 内联「成功」文字 | 全局挂载在 `App`，可见反馈传送到 body、位于模态遮罩之上；Dialog / Sheet 内同步公告；只在队首变化时重置计时；同类别同文案合并为 `×N`（退场中的队首不接受合并），入队规则在 `ham_web_core::toast_queue`（带单测）；页面只调 `push_*`，需确认的失败仍用 `MessageDialog` |
+| `ToastRoot` + `push` / `push_success` / `push_error` / `push_info` | `util::alert`（原生 alert，已清零）/ 内联「成功」文字 | 全局挂载在 `App`，可见反馈传送到 body、位于模态遮罩之上；悬停 / 聚焦时暂停计时，离开后再留 2 秒（WCAG 2.2.1）；`push_info` 给既非成功也非失败的中性提示（计时预警这类）；Dialog / Sheet 内同步公告；只在队首变化时重置计时；同类别同文案合并为 `×N`（退场中的队首不接受合并），入队规则在 `ham_web_core::toast_queue`（带单测）；页面只调 `push_*`，需确认的失败仍用 `MessageDialog` |
 | `ConfirmRoot` + `confirm(title, description, confirmText, tone, onConfirm)` | `window.confirm`（已全站清零）/ 各页面自己搭确认弹窗 | 全局确认服务：`App` 根部挂一次，任何地方调 `confirm(…)` 弹像素风确认框（取消 / 执行）；`ConfirmTone::Danger` 给删除类，`Normal` 给「合并 / 批量标记」这类不可逆但无破坏的动作；执行回调只在点了执行按钮后运行（用 `try_run`，发起确认的页面已卸载则静默放弃；路由一变确认框自动收起；退场动画期间重复点击不会二次执行） |
 | `Tooltip` | 原生 `title=` 气泡 | 悬停 / 聚焦显示，Escape 隐藏；组件为实际触发器关联 `aria-describedby`；气泡传送到 body 并翻转／钳制视口边界；子元素不可聚焦时补 `tabindex`，数值信息另写 `aria-label` |
 | `PixelSprite`（`crate::icons`） | — | 像素精灵：`name` `scale`（每格屏幕像素数）`label`；成就徽章用 `badge_sprite(id)` |
@@ -107,7 +107,7 @@ view! {
   是 24px 网格，1:1 正好撑满）。`Lg` 配更大的字号，只给落地页的主操作（首页 Hero 的三个
   入口）用，表单与工具栏里不要用。
 - `Variant::Text` 是文字按钮（透明底、无边框与投影，悬停只换文字色）：句内的「编辑 /
-  删除 / 关闭」用它配 `Size::Xs`；要悬停变红就在调用点补 `class="hover:text-destructive"`。
+  删除 / 关闭」用它配 `Size::Xs`；要悬停变红就在调用点补 `class="hover:text-hp-text"`。
 
 `Default` 在移动端保留 16px 字号，避免 iOS 聚焦时页面被自动放大。
 
@@ -115,7 +115,7 @@ view! {
 
 | 状态 | 表现 |
 |---|---|
-| hover | 按钮上浮 2px + `brightness(1.1)`，外投影变长；输入框描边换成 `--ring`。都只在 `@media (hover: hover)` 生效，触屏不会「粘住」悬停态 |
+| hover | 按钮上浮 2px，外投影变长（不用 `brightness()` 滤镜：它会算出调色板之外的颜色）；输入框描边换成 `--ring`。都只在 `@media (hover: hover)` 生效，触屏不会「粘住」悬停态 |
 | active | 按钮沉 2px、外投影归零、内高光与内阴影对调（像真被按进去） |
 | focus-visible | 按钮与输入类控件统一是「主色 2px 断开虚线框」（`outline: 2px dashed var(--ring)`），不是柔光环 |
 | disabled | 按钮：抖动网点遮罩（`::after`）+ 去投影 + `saturate(.4)`；输入框：网点底 + `opacity: .7`；两者都 `cursor-not-allowed` + `pointer-events-none` |

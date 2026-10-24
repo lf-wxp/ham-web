@@ -55,8 +55,8 @@ pub(super) fn LiveRanking() -> impl IntoView {
                 .iter()
                 .map(|e| {
                   view! {
-                    <span class="border bg-muted/40 px-2.5 py-1 text-xs tabular-nums">
-                      <span class="font-semibold text-foreground">{format!("#{}", e.rank)}</span>
+                    <span class="border bg-inset px-2.5 py-1 text-xs tabular-nums">
+                      <span class="text-foreground">{format!("#{}", e.rank)}</span>
                       " DXCC " <span class="font-mono">{e.adif}</span>
                     </span>
                   }

@@ -83,7 +83,7 @@ pub fn HudBadge() -> impl IntoView {
           class="flex items-center gap-1 text-xs text-muted-foreground"
           aria-hidden="true"
         >
-          <Icon kind=IconKind::Flame class="size-6 text-destructive" />
+          <Icon kind=IconKind::Flame class="size-6 text-hp-text" />
           {move || profile.get().streak}
         </span>
       </Tooltip>

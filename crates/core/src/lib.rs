@@ -88,6 +88,7 @@ pub mod eme;
 pub mod eqsl;
 pub mod events;
 pub mod exam;
+pub mod exam_clock;
 pub mod exam_comparison;
 pub mod exam_history;
 pub mod exam_review;

@@ -14,7 +14,7 @@ const CELL: &str = "border px-3 py-2 align-top";
 pub fn GridSystemPage() -> impl IntoView {
   set_title("shell.grid-locator");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("radio.maidenhead-grid-locator")
         subtitle=move || t("radio.grid-levels-precision-uses")
@@ -37,7 +37,7 @@ pub fn GridSystemPage() -> impl IntoView {
                 .map(|&(bits, example, precision)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{bits}</TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap")>{bits}</TableCell>
                       <TableCell class=format!("{CELL} whitespace-nowrap font-mono")>{example}</TableCell>
                       <TableCell class=format!("{CELL} text-muted-foreground")>{precision}</TableCell>
                     </TableRow>

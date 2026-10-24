@@ -17,9 +17,9 @@ pub(super) fn AntennaCard(entry: &'static AntennaType) -> impl IntoView {
         inner_html=entry.svg
       ></svg>
       <div class="mt-3 flex items-baseline gap-2">
-        <h2 class="font-semibold">{move || text(entry.name)}</h2>
+        <h2>{move || text(entry.name)}</h2>
         // 缩写（DP / YAGI / EFHW）是国际通用写法，不翻译
-        <span class="font-mono text-xs font-semibold text-muted-foreground">{entry.abbr}</span>
+        <span class="font-mono text-xs text-muted-foreground">{entry.abbr}</span>
       </div>
       <div class="mt-1.5 flex flex-wrap gap-1.5 text-xs">
         <span class="bg-muted px-2 py-0.5 text-muted-foreground">

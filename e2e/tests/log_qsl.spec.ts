@@ -44,17 +44,17 @@ test("QSL 状态：四色徽章按确认途径着色，筛选按档位收敛", a
   await badgeText(page, "JA1AA").toBe("未寄出");
   expect(await badgeClass(page, "JA1AA")).toContain("bg-muted");
 
-  // 已寄出（卡片局）：琥珀，且徽章带上寄出方式后缀。
+  // 已寄出（卡片局）：金（警示档），且徽章带上寄出方式后缀。
   await badgeText(page, "W1AW").toBe("已寄出·卡片局");
-  expect(await badgeClass(page, "W1AW")).toContain("amber");
+  expect(await badgeClass(page, "W1AW")).toContain("gold");
 
-  // LoTW 已确认：蓝。这条曾显示成「—」（旧列表只看 qsl_rcvd），是本次修掉的核心问题。
+  // LoTW 已确认：蓝（信息档，语义 token `xp`）。这条曾显示成「—」（旧列表只看 qsl_rcvd），是本次修掉的核心问题。
   await badgeText(page, "DL1ABC").toBe("LoTW已确认");
-  expect(await badgeClass(page, "DL1ABC")).toContain("sky");
+  expect(await badgeClass(page, "DL1ABC")).toContain("xp");
 
-  // 纸质已收：绿。
+  // 纸质已收：绿（通关档，语义 token `win`）。
   await badgeText(page, "K1TTT").toBe("QSL已收到");
-  expect(await badgeClass(page, "K1TTT")).toContain("emerald");
+  expect(await badgeClass(page, "K1TTT")).toContain("win");
 
   // 按档位筛选：电子已确认只留下 LoTW 那条。
   await pickOption(page, "QSL 筛选", "电子已确认");

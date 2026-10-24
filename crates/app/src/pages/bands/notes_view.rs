@@ -19,7 +19,7 @@ pub(super) fn notes_view(notes: &'static [Note], jump: Callback<&'static str>) -
           <Tooltip label=tf("common.view-footnote", &[(code)])>
             <button
               type="button"
-              class="font-mono font-medium text-blue-600 underline underline-offset-2 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+              class="font-mono text-xp-text underline underline-offset-2 hover:text-xp-text"
               aria-label=tf("common.view-footnote", &[(code)])
               on:click=move |_| jump.run(code)
             >

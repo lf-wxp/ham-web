@@ -60,9 +60,9 @@ pub(super) fn ComponentQuiz() -> impl IntoView {
         <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("knowledge.identify-the-component-from")}</span>
       </h2>
       <div class="space-y-4 p-4">
-        <div class="flex flex-col items-center gap-2 border bg-muted/30 px-4 py-6">
+        <div class="flex flex-col items-center gap-2 border bg-inset px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("knowledge.which-component-matches-this")}</div>
-          <div class="font-mono text-base font-semibold text-primary">{move || question.get()}</div>
+          <div class="font-mono text-base text-primary">{move || question.get()}</div>
         </div>
         <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {move || {
@@ -73,7 +73,7 @@ pub(super) fn ComponentQuiz() -> impl IntoView {
                 let chosen = opt.clone();
                 view! {
                   <QuizOption
-                    class="text-center font-medium"
+                    class="text-center"
                     disabled=Signal::derive(move || feedback.get().is_some())
                     on_click=Callback::new(move |_| judge(chosen.clone()))
                   >
@@ -90,13 +90,13 @@ pub(super) fn ComponentQuiz() -> impl IntoView {
               feedback.get().map(|ok| {
                 if ok {
                   view! {
-                    <span class="font-medium text-emerald-600 dark:text-emerald-400">{move || t("learning.correct")}</span>
+                    <span class="text-win-text">{move || t("learning.correct")}</span>
                   }
                   .into_any()
                 } else {
                   view! {
-                    <span class="font-medium text-red-600 dark:text-red-400">
-                      {move || t("exam.correct-answer-prefix")} <span class="font-semibold">{answer.get_value()}</span>
+                    <span class="text-hp-text">
+                      {move || t("exam.correct-answer-prefix")} <span>{answer.get_value()}</span>
                     </span>
                   }
                   .into_any()
@@ -108,8 +108,8 @@ pub(super) fn ComponentQuiz() -> impl IntoView {
             {move || t("exam.next")}
           </Button>
           <div class="text-xs text-muted-foreground">
-            "正确 " <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
-            "　错误 " <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
+            "正确 " <span class="tabular-nums text-foreground">{move || correct.get()}</span>
+            "　错误 " <span class="tabular-nums text-foreground">{move || wrong.get()}</span>
           </div>
         </div>
       </div>

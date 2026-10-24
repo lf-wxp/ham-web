@@ -85,15 +85,15 @@ pub(super) fn XrayTrend(
             .collect_view()}
           <path
             d=d
-            class="fill-none stroke-amber-500"
+            class="fill-none stroke-gold/70"
             stroke-width="1.5"
             vector-effect="non-scaling-stroke"
           />
           {last_y.map(|y| {
-            view! { <circle cx=W cy=y r="3" class="fill-amber-500" /> }.into_any()
+            view! { <circle cx=W cy=y r="3" class="fill-gold/70" /> }.into_any()
           })}
         </svg>
-        <div class="mt-1 flex justify-between text-[10px] text-muted-foreground">
+        <div class="mt-1 flex justify-between text-xs text-muted-foreground">
           <span>{fmt_iso_time(&first.time)}</span>
           <span>{format!("{} UTC", fmt_iso_time(&last.time))}</span>
         </div>

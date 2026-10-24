@@ -481,7 +481,7 @@ pub fn GearPage() -> impl IntoView {
 
         // ── 按用途加权：决定雷达图的轴与得分口径 ────────────────────────
         <div class="flex flex-wrap items-center gap-2 border-t px-4 py-3">
-          <span class="text-xs font-medium text-muted-foreground">
+          <span class="text-xs text-muted-foreground">
             {move || t("knowledge.weigh-by-use")}
           </span>
           <ChipGroup
@@ -516,7 +516,7 @@ pub fn GearPage() -> impl IntoView {
             // ── 雷达图 ────────────────────────────────────────────
             <div class="space-y-3 border-t p-4">
               <div class="flex flex-wrap items-baseline justify-between gap-2">
-                <h3 class="text-sm font-semibold">{move || t("knowledge.radar-title")}</h3>
+                <h3 class="text-sm">{move || t("knowledge.radar-title")}</h3>
                 <span class="text-xs text-muted-foreground">
                   {move || t("knowledge.radar-hint")}
                 </span>
@@ -526,7 +526,7 @@ pub fn GearPage() -> impl IntoView {
 
             // ── 加权得分 ──────────────────────────────────────────
             <div class="border-t px-4 py-3">
-              <h3 class="mb-1 text-sm font-semibold">
+              <h3 class="mb-1 text-sm">
                 {move || t("knowledge.weighted-score")}
               </h3>
               <div class="divide-y">
@@ -558,7 +558,7 @@ pub fn GearPage() -> impl IntoView {
             // 焦点一起换掉 —— 快速连打时后面的字符就丢了（e2e 的 `pressSequentially` 钉的
             // 就是这条）。输入框的值由草稿信号驱动（见 `drafts`），只有日期那一行自己订阅。
             <div class="border-t px-4 py-3">
-              <h3 class="text-sm font-semibold">
+              <h3 class="text-sm">
                 {move || t("knowledge.user-measurements")}
               </h3>
               <p class="mt-1 mb-3 text-xs text-muted-foreground">
@@ -574,11 +574,11 @@ pub fn GearPage() -> impl IntoView {
                       view! {
                       <div class="border p-3">
                         <div class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                          <span class="text-xs font-medium">
+                          <span class="text-xs">
                             {format!("{} {}", g.brand, g.model)}
                           </span>
                           // 日期这一行自己订阅存储：录入区不重建，它也得跟着更新。
-                          <span class="text-[10px] text-muted-foreground">
+                          <span class="text-xs text-muted-foreground">
                             {move || {
                               let on = measurements
                                 .get()
@@ -657,7 +657,7 @@ pub fn GearPage() -> impl IntoView {
                             .collect_view()}
                         </div>
                         <div class="mt-2 flex items-center justify-between gap-2">
-                          <p class="text-[10px] text-muted-foreground">
+                          <p class="text-xs text-muted-foreground">
                             {move || t("knowledge.measure-no-baseline")}
                           </p>
                           <Button
@@ -697,7 +697,7 @@ pub fn GearPage() -> impl IntoView {
                           .map(|g| {
                             view! {
                               <TableHeader>
-                                <div class="font-semibold">{g.brand}</div>
+                                <div>{g.brand}</div>
                                 <div class="font-normal text-muted-foreground">{g.model}</div>
                               </TableHeader>
                             }
@@ -712,7 +712,7 @@ pub fn GearPage() -> impl IntoView {
                           let best = row.best;
                           view! {
                             <TableRow>
-                              <TableHeader scope="row" class="align-top whitespace-nowrap font-medium">
+                              <TableHeader scope="row" class="align-top whitespace-nowrap">
                                 {row.label}
                               </TableHeader>
                               {row
@@ -720,9 +720,10 @@ pub fn GearPage() -> impl IntoView {
                                 .into_iter()
                                 .enumerate()
                                 .map(|(i, value)| {
-                                  // 差异高亮：该行最好的一格加重（表下注释里说明「加粗 = 最好」）。
+                                  // 差异高亮：该行最好的一格上底色（表下注释里说明「高亮 = 最好」）。
+                                  // 原来靠 `font-semibold` 加重，点阵字体下根本不渲染，只剩一点字色差。
                                   let class = if best.contains(&i) {
-                                    "align-top font-semibold text-foreground"
+                                    "align-top bg-win/10 text-foreground"
                                   } else {
                                     "align-top text-muted-foreground"
                                   };
@@ -756,7 +757,7 @@ pub fn GearPage() -> impl IntoView {
           </a>
         </p>
         <p class="border-t px-4 py-3 text-xs text-muted-foreground">
-          {move || t("knowledge.best-marked-bold")}
+          {move || t("knowledge.best-marked")}
           " "
           {move || {
             tf(

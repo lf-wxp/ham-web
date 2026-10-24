@@ -3,7 +3,7 @@
 //! 旧版把分组一次平铺成五列：条目最多的分组单列高度就接近一屏，直接顶出视口，
 //! 而面板没有任何高度约束、连滚动都做不到（知识库上百个专题时最明显）。这里改成
 //! 主从两栏：分组常驻侧栏，条目区只渲染当前分组（两列），面板再以
-//! `max-h-[calc(100vh-5rem)]` 兜底 —— 窗口再矮也只是条目区内部滚动。
+//! `max-h-[calc(100svh-5rem)]` 兜底 —— 窗口再矮也只是条目区内部滚动。
 //!
 //! 下拉开关保留原生 `<button>` + [`button_class`] 的原因见 `nav_bar.rs` 文件头与
 //! `docs/ui-components.md` §10.2：高亮要随当前路由切换 `variant`（`Button` 的 `variant`
@@ -153,7 +153,7 @@ pub(crate) fn GroupMenu(
         <div
           id=panel_id
           data-open=move || is_open().to_string()
-          class="motion-popover pxl-popover origin-top flex max-h-[calc(100vh-5rem)] w-[960px] max-w-[calc(100vw-2rem)] gap-2 p-2"
+          class="motion-popover pxl-popover origin-top flex max-h-[calc(100svh-5rem)] w-[960px] max-w-[calc(100vw-2rem)] gap-2 p-2"
         >
           // 分组栏：常驻，不参与条目区的滚动。
           // 分组名里可能出现「Equipment · Measurement」这类长串：栏宽给到 18rem，
@@ -233,7 +233,7 @@ pub(crate) fn GroupMenu(
               .collect_view()}
           </div>
           // 条目区：只渲染当前分组，窗口矮时在这里内部滚动。
-          <div class="min-w-0 flex-1 overflow-y-auto p-1">
+          <div class="min-w-0 flex-1 overflow-y-auto overscroll-contain p-1">
             <div class="grid grid-cols-2 gap-x-2 gap-y-0.5">
               {move || {
                 registry::MODULES

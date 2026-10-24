@@ -28,7 +28,7 @@ pub fn RulesWalkthroughDialog(
       <div class="space-y-4">
         // 规则对照：真实考场 vs 本站仿真（词条字面量写在调用点，检查器才认得出）。
         <div class="overflow-hidden border">
-          <div class="grid grid-cols-2 border-b bg-muted/60 text-xs font-medium">
+          <div class="grid grid-cols-2 border-b bg-inset text-xs">
             <div class="px-3 py-2">{move || t("exam.rules-real-col")}</div>
             <div class="px-3 py-2">{move || t("exam.rules-sim-col")}</div>
           </div>
@@ -48,7 +48,7 @@ pub fn RulesWalkthroughDialog(
 
         // 考前准备：证件照与练习的一条龙衔接。
         <div>
-          <div class="text-xs font-medium text-muted-foreground">
+          <div class="text-xs text-muted-foreground">
             {move || t("exam.rules-prep")}
           </div>
           <ul class="mt-1 space-y-1 text-sm">

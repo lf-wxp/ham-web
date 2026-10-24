@@ -319,7 +319,7 @@ pub(super) fn DopplerRig(
   view! {
     <div class="space-y-2 border border-dashed px-3 py-2 text-xs text-muted-foreground">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="font-medium text-foreground">{move || t("radio.doppler-rig-title")}</span>
+        <span class="text-foreground">{move || t("radio.doppler-rig-title")}</span>
         {if supported {
           view! {
             <NativeSelect
@@ -394,7 +394,7 @@ pub(super) fn DopplerRig(
       {move || match status.get() {
         Status::Error(msg) => {
           Some(view! {
-            <p class="text-destructive" role="alert">
+            <p class="text-hp-text" role="alert">
               {tf("common.connection-failed", &[&msg])}
             </p>
           })
@@ -437,7 +437,7 @@ pub(super) fn DopplerRig(
             />
             <Label r#for=tx_id.clone()>{move || t("radio.doppler-rig-uplink")}</Label>
           </div>
-          <p class="text-destructive">{move || t("radio.doppler-rig-uplink-warning")}</p>
+          <p class="text-hp-text">{move || t("radio.doppler-rig-uplink-warning")}</p>
         </div>
         <div class="space-y-0.5 tabular-nums" aria-live="polite">
           <div>
@@ -475,7 +475,7 @@ pub(super) fn DopplerRig(
               .get()
               .map(|why| {
                 view! {
-                  <div class="text-destructive" role="alert">
+                  <div class="text-hp-text" role="alert">
                     {refusal_text(why)}
                   </div>
                 }
@@ -492,7 +492,7 @@ pub(super) fn DopplerRig(
               .get()
               .then(|| {
                 view! {
-                  <div class="text-destructive" role="alert">
+                  <div class="text-hp-text" role="alert">
                     {move || t("radio.doppler-rig-paused")}
                   </div>
                 }

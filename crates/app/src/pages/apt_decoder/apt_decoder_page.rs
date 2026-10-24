@@ -64,7 +64,7 @@ pub fn AptDecoderPage() -> impl IntoView {
   let on_file = Callback::new(move |file: File| session.start(file, || Ok(JsValue::NULL)));
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("radio.noaa-apt-decoder")
         subtitle=move || t("radio.audio-am-demodulation-image")
@@ -141,10 +141,10 @@ pub fn AptDecoderPage() -> impl IntoView {
           {move || {
             error.get().map(|e| {
               view! {
-                <div class="flex items-start gap-2 border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-                  <Icon kind=IconKind::AlertCircle class="mt-0.5 h-5 w-5 shrink-0" />
+                <div class="flex items-start gap-2 border border-destructive/40 bg-destructive/10 p-4 text-hp-text">
+                  <Icon kind=IconKind::AlertCircle class="mt-0.5 size-6 shrink-0" />
                   <div class="flex-1">
-                    <div class="font-medium">{move || t("radio.decoding-failed")}</div>
+                    <div>{move || t("radio.decoding-failed")}</div>
                     <div class="mt-1 text-sm">{e}</div>
                   </div>
                 </div>

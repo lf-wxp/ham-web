@@ -141,7 +141,7 @@ pub(super) fn ShannonSection() -> impl IntoView {
             y1=move || marker().1
             x2=move || marker().0
             y2=H - PAD
-            class="stroke-amber-500/70"
+            class="stroke-gold/70"
             stroke-dasharray="4 3"
             stroke-width="1"
           />
@@ -150,7 +150,7 @@ pub(super) fn ShannonSection() -> impl IntoView {
             y1=move || marker().1
             x2=move || marker().0
             y2=move || marker().1
-            class="stroke-amber-500/70"
+            class="stroke-gold/70"
             stroke-dasharray="4 3"
             stroke-width="1"
           />
@@ -158,10 +158,10 @@ pub(super) fn ShannonSection() -> impl IntoView {
             cx=move || marker().0
             cy=move || marker().1
             r="4.5"
-            class="fill-amber-500 stroke-background"
+            class="fill-gold/70 stroke-background"
             stroke-width="1.5"
           />
-          <text x=PAD y=H - 8.0 class="fill-muted-foreground text-[10px]">
+          <text x=PAD y=H - 8.0 class="fill-muted-foreground text-xs">
             {move || t("tools.snr-db")}
           </text>
         </svg>

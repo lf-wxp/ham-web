@@ -149,20 +149,20 @@ pub fn StatsPage() -> impl IntoView {
                     </div>
                     <div class="h-2 w-full overflow-hidden bg-muted">
                       <div
-                        class="h-full bg-primary transition-all"
+                        class="h-full bg-primary transition"
                         style=format!("width: {:.1}%", dxcc_total.min(100) as f64)
                       ></div>
                     </div>
                   </div>
                   <div>
-                    <div class="mb-1.5 text-xs font-medium text-muted-foreground">{move || t("radio.dxcc-entities-by-band")}</div>
+                    <div class="mb-1.5 text-xs text-muted-foreground">{move || t("radio.dxcc-entities-by-band")}</div>
                     <div class="flex flex-wrap gap-1.5">
                       {band_dxcc_list
                         .iter()
                         .map(|(b, n)| {
                           view! {
-                            <span class="border bg-muted/40 px-2.5 py-0.5 text-xs tabular-nums">
-                              {b.clone()} " " <span class="font-semibold text-primary">{*n}</span>
+                            <span class="border bg-inset px-2.5 py-0.5 text-xs tabular-nums">
+                              {b.clone()} " " <span class="text-primary">{*n}</span>
                             </span>
                           }
                         })
@@ -192,7 +192,7 @@ pub fn StatsPage() -> impl IntoView {
                         .map(|(continent, ents)| {
                           view! {
                             <div>
-                              <div class="mb-1.5 text-xs font-medium text-muted-foreground">
+                              <div class="mb-1.5 text-xs text-muted-foreground">
                                 {continent} " " <span class="tabular-nums text-muted-foreground">({ents.len()})</span>
                               </div>
                               <div class="flex flex-wrap gap-1.5">
@@ -200,7 +200,7 @@ pub fn StatsPage() -> impl IntoView {
                                   .into_iter()
                                   .map(|e| {
                                     view! {
-                                      <span class="inline-flex items-center gap-1 border bg-muted/40 px-2 py-0.5 text-xs">
+                                      <span class="inline-flex items-center gap-1 border bg-inset px-2 py-0.5 text-xs">
                                         <span class="font-mono text-muted-foreground">{e.prefix}</span>
                                         <span>{e.name}</span>
                                       </span>
@@ -227,7 +227,7 @@ pub fn StatsPage() -> impl IntoView {
                     </div>
                     <div class="h-2 w-full overflow-hidden bg-muted">
                       <div
-                        class="h-full bg-primary transition-all"
+                        class="h-full bg-primary transition"
                         style=format!("width: {:.1}%", awards.waz.worked.len() as f64 / WAZ_TARGET as f64 * 100.0)
                       ></div>
                     </div>
@@ -239,20 +239,20 @@ pub fn StatsPage() -> impl IntoView {
                     </div>
                     <div class="h-2 w-full overflow-hidden bg-muted">
                       <div
-                        class="h-full bg-primary transition-all"
+                        class="h-full bg-primary transition"
                         style=format!("width: {:.1}%", awards.wac.worked.len() as f64 / CONTINENTS.len() as f64 * 100.0)
                       ></div>
                     </div>
                   </div>
                   {(!awards.vucc.is_empty()).then(|| view! {
                     <div>
-                      <div class="mb-1.5 text-xs font-medium text-muted-foreground">{move || t("learning.vucc-grids-vhf-uhf")}</div>
+                      <div class="mb-1.5 text-xs text-muted-foreground">{move || t("learning.vucc-grids-vhf-uhf")}</div>
                       <div class="flex flex-wrap gap-1.5">
                         {awards.vucc.iter().map(|(band, p)| {
                           let target = vucc_target(band).unwrap_or(1);
                           view! {
-                            <span class="border bg-muted/40 px-2.5 py-0.5 text-xs tabular-nums">
-                              {band.clone()} " " <span class="font-semibold text-primary">{p.worked.len()}</span> " / " {target}
+                            <span class="border bg-inset px-2.5 py-0.5 text-xs tabular-nums">
+                              {band.clone()} " " <span class="text-primary">{p.worked.len()}</span> " / " {target}
                             </span>
                           }
                         }).collect_view()}
@@ -270,7 +270,7 @@ pub fn StatsPage() -> impl IntoView {
                     </div>
                     <div class="h-2 w-full overflow-hidden bg-muted">
                       <div
-                        class="h-full bg-primary transition-all"
+                        class="h-full bg-primary transition"
                         style=format!("width: {:.1}%", awards.wpx.worked.len() as f64 / WPX_TARGET as f64 * 100.0)
                       ></div>
                     </div>
@@ -282,7 +282,7 @@ pub fn StatsPage() -> impl IntoView {
                     </div>
                     <div class="h-2 w-full overflow-hidden bg-muted">
                       <div
-                        class="h-full bg-primary transition-all"
+                        class="h-full bg-primary transition"
                         style=format!("width: {:.1}%", awards.was.worked.len() as f64 / WAS_TARGET as f64 * 100.0)
                       ></div>
                     </div>
@@ -294,7 +294,7 @@ pub fn StatsPage() -> impl IntoView {
                     </div>
                     <div class="h-2 w-full overflow-hidden bg-muted">
                       <div
-                        class="h-full bg-primary transition-all"
+                        class="h-full bg-primary transition"
                         style=format!("width: {:.1}%", awards.iota.worked.len() as f64 / IOTA_TARGET as f64 * 100.0)
                       ></div>
                     </div>
@@ -312,7 +312,7 @@ pub fn StatsPage() -> impl IntoView {
                     </div>
                     <div class="h-2 w-full overflow-hidden bg-muted">
                       <div
-                        class="h-full bg-emerald-500"
+                        class="h-full bg-win/70"
                         style=format!("width: {:.1}%", qsl_rcvd_count as f64 / total.max(1) as f64 * 100.0)
                       ></div>
                     </div>
@@ -324,7 +324,7 @@ pub fn StatsPage() -> impl IntoView {
                     </div>
                     <div class="h-2 w-full overflow-hidden bg-muted">
                       <div
-                        class="h-full bg-amber-500"
+                        class="h-full bg-gold/70"
                         style=format!("width: {:.1}%", qsl_sent_count as f64 / total.max(1) as f64 * 100.0)
                       ></div>
                     </div>
@@ -367,13 +367,13 @@ pub fn StatsPage() -> impl IntoView {
                           // Tooltip 包整列：柱的百分比高度相对包含块，中间多一层会塌。
                           <Tooltip class="group flex min-w-0 flex-1 flex-col items-center gap-1" label=label.clone()>
                             <div
-                              class="w-full bg-primary/70 outline-none transition-all group-hover:bg-primary focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
+                              class="w-full bg-primary/70 outline-none transition group-hover:bg-primary focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
                               style=format!("height: {h}%")
                               tabindex="0"
                               role="img"
                               aria-label=label
                             ></div>
-                            <span class="text-[10px] text-muted-foreground">{month_label}</span>
+                            <span class="text-xs text-muted-foreground">{month_label}</span>
                           </Tooltip>
                         }
                       })
@@ -416,7 +416,7 @@ pub fn StatsPage() -> impl IntoView {
   };
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("learning.statistics")
         subtitle=move || t("radio.log-visualisation-dxcc-band")

@@ -36,7 +36,7 @@ pub fn ChinaHamPage() -> impl IntoView {
               .map(|(name, dl, ul, bcn)| {
                 view! {
                   <TableRow>
-                    <TableCell class="align-top whitespace-nowrap font-medium">
+                    <TableCell class="align-top whitespace-nowrap">
                       {move || {
                         data::track_knowledge();
                         data::kt(name)

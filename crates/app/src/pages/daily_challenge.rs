@@ -134,7 +134,7 @@ pub fn DailyChallengePage() -> impl IntoView {
   };
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("learning.daily-challenge")
         subtitle=tf("learning.questions-a-day-in", &[&CHALLENGE_COUNT.to_string(), &CHALLENGE_MINUTES.to_string()])
@@ -167,7 +167,7 @@ pub fn DailyChallengePage() -> impl IntoView {
               <div class="mx-auto flex max-w-5xl items-center gap-2 px-4 pb-3">
                 <div class="flex w-full items-center gap-3 pxl-card border bg-card p-3">
                   <span class="text-xs text-muted-foreground">{move || t("learning.time-left")}</span>
-                  <span class="font-mono text-lg font-semibold tabular-nums">{mmss}</span>
+                  <span class="font-mono text-lg tabular-nums">{mmss}</span>
                   <Button
                     variant=Variant::Default
                     size=Size::Sm
@@ -192,7 +192,7 @@ pub fn DailyChallengePage() -> impl IntoView {
             let done = today_result();
             return view! {
               <section class="pxl-card border bg-card px-4 py-10 text-center">
-                <div class="text-lg font-semibold">{move || t("learning.today-s-challenge")}</div>
+                <div class="text-lg">{move || t("learning.today-s-challenge")}</div>
                 <div class="mt-2 text-sm text-muted-foreground">
                   {tf("learning.questions-minute-limit-counts", &[&CHALLENGE_COUNT.to_string(), &CHALLENGE_MINUTES.to_string()])}
                 </div>
@@ -231,7 +231,7 @@ pub fn DailyChallengePage() -> impl IntoView {
             let done = today_result();
             return view! {
               <section class="pxl-card border bg-card px-4 py-10 text-center">
-                <div class="text-lg font-semibold">{move || t("learning.challenge-complete")}</div>
+                <div class="text-lg">{move || t("learning.challenge-complete")}</div>
                 {done.map(|r| view! {
                   <div class="mt-2 text-sm text-muted-foreground">
                     {tp(

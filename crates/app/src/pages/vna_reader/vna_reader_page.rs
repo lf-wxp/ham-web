@@ -15,7 +15,9 @@ use super::{NOTE, fmt_hz, parse_error_text};
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::share_score::download;
-use crate::ui::{Button, ButtonLink, ControlSize, Field, FileInput, NumberField, Size, Variant};
+use crate::ui::{
+  Button, ButtonLink, ControlSize, Field, FileInput, NumberField, Size, Variant, card_title_class,
+};
 use crate::util::{js_error_message, read_file_text, set_title};
 use crate::web_serial::{
   Conn, close_serial, is_timeout, is_user_cancel, open_serial, read_chunk_within, serial,
@@ -161,7 +163,7 @@ pub fn VnaReaderPage() -> impl IntoView {
   };
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=Signal::derive(move || t("tools.vna-reader"))
         subtitle=Signal::derive(move || t("tools.vna-reader-subtitle"))
@@ -169,7 +171,7 @@ pub fn VnaReaderPage() -> impl IntoView {
       <PageContainer class="space-y-4">
         <div class="grid gap-4 md:grid-cols-2">
           <section class="pxl-card space-y-2 border bg-card p-4">
-            <h2 class="text-sm font-semibold">{move || t("tools.vna-import-s1p")}</h2>
+            <h2 class=card_title_class("")>{move || t("tools.vna-import-s1p")}</h2>
             <p class=NOTE>{move || t("tools.vna-import-note")}</p>
             <FileInput
               accept=".s1p,.S1P,.txt"
@@ -179,7 +181,7 @@ pub fn VnaReaderPage() -> impl IntoView {
             />
           </section>
           <section class="pxl-card space-y-2 border bg-card p-4">
-            <h2 class="text-sm font-semibold">{move || t("tools.vna-serial")}</h2>
+            <h2 class=card_title_class("")>{move || t("tools.vna-serial")}</h2>
             {if supported {
               view! {
                 <p class=NOTE>{move || t("tools.vna-serial-note")}</p>
@@ -225,7 +227,7 @@ pub fn VnaReaderPage() -> impl IntoView {
           </section>
         </div>
 
-        {move || error.get().map(|e| view! { <p class="text-sm text-destructive" role="alert">{e}</p> })}
+        {move || error.get().map(|e| view! { <p class="text-sm text-hp-text" role="alert">{e}</p> })}
 
         {move || {
           let Some(s) = sweep.get() else {
@@ -263,7 +265,7 @@ pub fn VnaReaderPage() -> impl IntoView {
               {best_line
                 .map(|(a, b)| {
                   view! {
-                    <p class="text-sm font-medium" data-slot="vna-best">{a}</p>
+                    <p class="text-sm" data-slot="vna-best">{a}</p>
                     <p class="text-sm">{b}</p>
                   }
                 })}

@@ -246,7 +246,7 @@ pub fn CatControl(#[prop(into)] on_reading: Callback<CatReading>) -> impl IntoVi
 
   view! {
     <div class="flex flex-wrap items-center gap-2 border border-dashed px-3 py-2 text-xs text-muted-foreground">
-      <span class="font-medium text-foreground">{move || t("common.rig-cat")}</span>
+      <span class="text-foreground">{move || t("common.rig-cat")}</span>
       {if supported {
         view! {
           <NativeSelect
@@ -313,9 +313,9 @@ pub fn CatControl(#[prop(into)] on_reading: Callback<CatReading>) -> impl IntoVi
               Status::Connected => {
                 let f = freq.get().map_or_else(|| t("common.waiting-for-the-rig"), |hz| format!("{} MHz", format_mhz(hz)));
                 let m = mode.get().map(|m| format!(" · {m}")).unwrap_or_default();
-                view! { <span class="text-emerald-700 dark:text-emerald-400">{tf("common.connected", &[&(f).to_string(), &(m).to_string()])}</span> }.into_any()
+                view! { <span class="text-win-text">{tf("common.connected", &[&(f).to_string(), &(m).to_string()])}</span> }.into_any()
               }
-              Status::Error(msg) => view! { <span class="text-destructive">{tf("common.connection-failed", &[&(msg).to_string()])}</span> }.into_any(),
+              Status::Error(msg) => view! { <span class="text-hp-text">{tf("common.connection-failed", &[&(msg).to_string()])}</span> }.into_any(),
               _ => view! { <span>{(!connected()).then_some(t("common.frequency-and-mode-fill"))}</span> }.into_any(),
             }}
           </span>

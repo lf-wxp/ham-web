@@ -42,7 +42,7 @@ pub fn GraylinePage() -> impl IntoView {
   });
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=Signal::derive(move || t("shell.grayline-map"))
         subtitle=Signal::derive(move || t("radio.live-terminator-lf-dx"))
@@ -55,14 +55,14 @@ pub fn GraylinePage() -> impl IntoView {
 
           <div class="mt-3 flex flex-col gap-2">
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-              <span class="font-mono text-sm font-semibold tabular-nums">{move || clock.get()}</span>
+              <span class="font-mono text-sm tabular-nums">{move || clock.get()}</span>
               {move || {
                 let off = time_offset.get();
                 if off.abs() < 1e-9 {
                   view! { <span class="text-muted-foreground">{move || t("radio.current-time")}</span> }.into_any()
                 } else {
                   view! {
-                    <span class="bg-amber-500/15 px-1.5 py-0.5 font-medium text-amber-600">
+                    <span class="bg-gold/15 px-1.5 py-0.5 text-gold-text">
                       {move || {
                         tf(
                           "radio.offset-h",
@@ -120,8 +120,8 @@ pub fn GraylinePage() -> impl IntoView {
           <div class="mt-2 space-y-1.5">
             <Legend
               items=vec![
-                ("h-3 w-3 bg-amber-500/40", "晨昏圈"),
-                ("h-2.5 w-2.5 bg-amber-500", "太阳直射点"),
+                ("h-3 w-3 bg-gold/40", "晨昏圈"),
+                ("h-2.5 w-2.5 bg-gold/70", "太阳直射点"),
               ]
             />
             <div class="text-xs text-muted-foreground">{move || t("radio.scroll-pinch-to-zoom-lat-lon")}</div>

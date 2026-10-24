@@ -236,9 +236,108 @@ pub fn multi_error_kind(selected: &[String], answer_keys: &[String]) -> Option<M
   }
 }
 
+/// 题目卡片的「答案行」该不该显示。
+///
+/// 为什么单独成一个判定：练习页的原则是「作答后才给答案」，但多选题只要勾上第一个框
+/// 就算「已作答」，答案行当场把整套正确答案亮出来 —— 后面的框照着抄就行，练习失去意义。
+/// 多选题因此要先点「检查答案」（`needs_check`）才算作答完毕。判定放在 core 里带单测，
+/// 视图只负责把几个信号喂进来。
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct AnswerGate {
+  /// 调用方允许显示答案（练习页的开关；考试进行中是 `false`）。
+  pub allowed: bool,
+  /// 未作答也直接显示（交卷后的回顾）。
+  pub reveal_unanswered: bool,
+  /// 用户主动点了「显示正确答案」。
+  pub revealed: bool,
+  /// 已经选了至少一项。
+  pub answered: bool,
+  /// 这道题要求先点「检查答案」（多选 + 调用方开启了该模式）。
+  pub needs_check: bool,
+  /// 已经点过「检查答案」。
+  pub checked: bool,
+}
+
+impl AnswerGate {
+  /// 答案行是否可见。
+  #[must_use]
+  pub const fn visible(self) -> bool {
+    if !self.allowed {
+      return false;
+    }
+    if self.reveal_unanswered || self.revealed {
+      return true;
+    }
+    self.answered && (!self.needs_check || self.checked)
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn answer_gate_hides_answer_until_the_question_is_really_answered() {
+    let base = AnswerGate {
+      allowed: true,
+      ..AnswerGate::default()
+    };
+    assert!(!base.visible(), "没作答：不给答案");
+    assert!(
+      AnswerGate {
+        answered: true,
+        ..base
+      }
+      .visible(),
+      "单选选了就判分"
+    );
+  }
+
+  #[test]
+  fn answer_gate_makes_multi_select_wait_for_the_check_button() {
+    let multi = AnswerGate {
+      allowed: true,
+      answered: true,
+      needs_check: true,
+      ..AnswerGate::default()
+    };
+    assert!(!multi.visible(), "勾上第一个框不能亮出整套答案");
+    assert!(
+      AnswerGate {
+        checked: true,
+        ..multi
+      }
+      .visible()
+    );
+  }
+
+  #[test]
+  fn answer_gate_respects_the_global_switch_and_explicit_reveals() {
+    // 考试进行中：什么都不给，哪怕交卷后才有的开关被误设
+    let exam = AnswerGate {
+      allowed: false,
+      reveal_unanswered: true,
+      revealed: true,
+      answered: true,
+      needs_check: false,
+      checked: true,
+    };
+    assert!(!exam.visible());
+    // 主动「显示正确答案」与交卷回顾：不要求作答，也不要求检查
+    let peek = AnswerGate {
+      allowed: true,
+      revealed: true,
+      needs_check: true,
+      ..AnswerGate::default()
+    };
+    assert!(peek.visible());
+    let review = AnswerGate {
+      allowed: true,
+      reveal_unanswered: true,
+      ..AnswerGate::default()
+    };
+    assert!(review.visible());
+  }
 
   #[test]
   fn deserializes_dataset_format() {

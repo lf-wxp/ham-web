@@ -368,7 +368,7 @@ pub fn SearchDialog() -> impl IntoView {
         />
 
         // 结果列表
-        <div class="max-h-[60vh] overflow-y-auto">
+        <div class="max-h-[60svh] overflow-y-auto overscroll-contain">
           {move || {
             glossary_ready.track();
             question_ready.track();
@@ -408,7 +408,7 @@ pub fn SearchDialog() -> impl IntoView {
             if raw.is_empty() {
               return view! {
                 <div class="px-2 py-8 text-center text-sm text-muted-foreground">
-                  {move || t("shell.no-results-for-u")} <span class="font-medium text-foreground">{q.clone()}</span> {move || t("shell.u-201d-try-another")}
+                  {move || t("shell.no-results-for-u")} <span class="text-foreground">{q.clone()}</span> {move || t("shell.u-201d-try-another")}
                 </div>
               }
               .into_any();
@@ -447,7 +447,7 @@ pub fn SearchDialog() -> impl IntoView {
                                     class="block px-3 py-2 transition-colors hover:bg-accent"
                                     on:click=move |_| open.set(false)
                                   >
-                                    <div class="text-sm font-medium" inner_html=highlight(&title, &kw)></div>
+                                    <div class="text-sm" inner_html=highlight(&title, &kw)></div>
                                     <div class="mt-0.5 truncate text-xs text-muted-foreground" inner_html=highlight(&text, &kw)></div>
                                   </a>
                                 </li>
@@ -466,7 +466,7 @@ pub fn SearchDialog() -> impl IntoView {
         </div>
 
         // 底部提示
-        <div class="flex items-center justify-between border-t pt-3 text-[11px] text-muted-foreground">
+        <div class="flex items-center justify-between border-t pt-3 text-xs text-muted-foreground">
           <span>{move || t("shell.click-a-result-to")}</span>
           <span>{move || t("shell.esc-to-close-to")}</span>
         </div>

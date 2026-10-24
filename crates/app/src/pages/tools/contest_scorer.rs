@@ -80,7 +80,7 @@ pub(super) fn ContestScorer() -> impl IntoView {
           />
         </Field>
       </div>
-      <div class="bg-muted/40 px-3 py-2 text-sm tabular-nums">
+      <div class="bg-inset px-3 py-2 text-sm tabular-nums">
         {move || {
           let q = qsos.get().max(0.0) as u32;
           let m = mult.get().max(0.0) as u32;

@@ -14,7 +14,7 @@ const CELL: &str = "border px-3 py-2 align-top";
 pub fn AwardsPage() -> impl IntoView {
   set_title("shell.dx-awards-title");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.dx-awards-title")
         subtitle=move || t("log.dxcc-waz-all-cq")
@@ -38,10 +38,10 @@ pub fn AwardsPage() -> impl IntoView {
                 .map(|&(abbr, full, org, rule)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono font-semibold text-primary")>
+                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-primary")>
                         {abbr}
                       </TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{full}</TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap")>{full}</TableCell>
                       <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{org}</TableCell>
                       <TableCell class=format!("{CELL} text-muted-foreground")>{rule}</TableCell>
                     </TableRow>

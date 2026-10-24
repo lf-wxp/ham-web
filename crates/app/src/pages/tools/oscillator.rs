@@ -63,7 +63,7 @@ pub(super) fn Oscillator() -> impl IntoView {
           />
         </Field>
       </div>
-      <div class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
+      <div class="bg-inset px-3 py-2 text-sm text-muted-foreground tabular-nums">
         {move || {
           let ppm = crystal_pull_ppm(c1.get() * 1e-15, c0.get() * 1e-12, cl.get() * 1e-12);
           if ppm.is_nan() {
@@ -100,7 +100,7 @@ pub(super) fn Oscillator() -> impl IntoView {
           />
         </Field>
       </div>
-      <div class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground tabular-nums">
+      <div class="bg-inset px-3 py-2 text-sm text-muted-foreground tabular-nums">
         {move || {
           let f = series_resonance_hz(l.get() * 1e-6, c.get() * 1e-12);
           if f.is_nan() {

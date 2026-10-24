@@ -190,7 +190,7 @@ pub(super) fn Ip3Cascade() -> impl IntoView {
         {move || match outcome.get() {
           Ok(c) => match (c.iip3_dbm, c.oip3_dbm) {
             (Some(iip3), Some(oip3)) => view! {
-              <div class="font-medium text-foreground">
+              <div class="text-foreground">
                 {tf(
                   "tools.ip3-total",
                   &[&fmt_num(c.gain_db), &fmt_num(iip3), &fmt_num(oip3)],
@@ -237,7 +237,8 @@ pub(super) fn Ip3Cascade() -> impl IntoView {
                       };
                       let (gain_before, limiting) = (fmt_num(s.gain_before_db), c.limiting == Some(i));
                       view! {
-                        <TableRow class=if limiting { "font-semibold" } else { "" }>
+                        // 瓶颈级用金色底标出（原来靠 `font-semibold`，点阵字体下根本看不出来）。
+                        <TableRow class=if limiting { "bg-gold/20" } else { "" }>
                           <TableCell class="px-2 py-1">{i + 1}</TableCell>
                           <TableCell class="px-2 py-1 text-right">{gain_before}</TableCell>
                           <TableCell class="px-2 py-1 text-right">{iip3}</TableCell>

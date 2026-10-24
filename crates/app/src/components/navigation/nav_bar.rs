@@ -13,10 +13,10 @@ use leptos_router::hooks::use_location;
 use send_wrapper::SendWrapper;
 use wasm_bindgen::JsCast;
 
-use ham_web_core::registry::{self, EXAM_GROUPS, KNOWLEDGE_GROUPS, TOOL_GROUPS};
+use ham_web_core::registry::{EXAM_GROUPS, KNOWLEDGE_GROUPS, TOOL_GROUPS};
 
 use crate::cn::cn;
-use crate::icons::{Icon, IconKind, icon_of};
+use crate::icons::{Icon, IconKind};
 use crate::ui::{Button, ButtonLink, Size, Variant, button_class};
 
 use super::group_menu::{GroupMenu, MenuAlign};
@@ -27,6 +27,7 @@ use super::theme_toggle::ThemeToggle;
 
 use super::menu::MenuKind;
 use super::mobile_menu::{MOBILE_NAV_PANEL_ID, use_mobile_menu};
+use super::mobile_nav_section::MobileNavSection;
 use crate::i18n::{self, Locale, t};
 
 #[component]
@@ -85,7 +86,7 @@ pub fn Navigation() -> impl IntoView {
     // 顶栏是一条实心的「HUD 栏」：底色用 `--card`（不透明）+ 2px 墨色下沿 + 硬偏移投影，
     // 不模糊、不渐变；吸顶时下面滚过的内容被它实实在在地盖住，不需要任何磨砂兜底。
     <nav data-nav aria-label=move || t("shell.main-navigation") class="sticky top-0 z-50 border-b-2 border-ink bg-card shadow-[0_2px_0_0_var(--pxl-shadow)]">
-      <div class="container relative mx-auto px-1 min-[360px]:px-2 sm:px-4">
+      <div class="container relative mx-auto px-1 xs:px-2 sm:px-4">
         <div class="flex h-16 items-center justify-between gap-2 sm:gap-3">
           // 品牌标识
           <a
@@ -212,7 +213,7 @@ pub fn Navigation() -> impl IntoView {
             view! {
               <div
                 id=MOBILE_NAV_PANEL_ID
-                class="motion-pop absolute inset-x-0 top-full z-40 max-h-[calc(100vh-4rem)] overflow-y-auto border-b-2 border-ink bg-card shadow-[0_4px_0_0_var(--pxl-shadow)] xl:hidden"
+                class="motion-pop absolute inset-x-0 top-full z-40 max-h-[calc(100svh-4rem)] overflow-y-auto overscroll-contain border-b-2 border-ink bg-card shadow-[0_4px_0_0_var(--pxl-shadow)] xl:hidden"
               >
                 <nav aria-label=move || t("shell.mobile-navigation") class="container mx-auto grid grid-cols-1 gap-1 px-4 py-3">
                   <a
@@ -291,111 +292,25 @@ pub fn Navigation() -> impl IntoView {
                     </ButtonLink>
                   </div>
 
-                  <div class="px-3 pt-2 pxl-label text-xs text-muted-foreground">{move || t("shell.exam-center")}</div>
-                  // 与桌面下拉同构：按子分组（练习 / 模拟考 / 复习 / 学习数据 / 闯关）分段。
-                  {EXAM_GROUPS
-                    .iter()
-                    .map(|g| {
-                      view! {
-                        <div class="px-3 pt-1 text-xs text-muted-foreground">{move || t(g)}</div>
-                        {registry::MODULES
-                          .iter()
-                          .filter(|m| m.group == Some(*g))
-                          .map(|m| {
-                            view! {
-                              <a
-                                href=m.nav_href()
-                                class=move || {
-                                  cn(&[
-                                    "flex items-center gap-3 border-2 px-3 py-2.5 text-sm",
-                                    if active(m.path) {
-                                      "border-ink bg-accent text-accent-foreground"
-                                    } else {
-                                      "border-transparent text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
-                                    },
-                                  ])
-                                }
-                                on:click=move |_| menu_open.set(false)
-                              >
-                                <Icon kind=icon_of(m.icon) class="size-6" />
-                                {move || t(m.title)}
-                              </a>
-                            }
-                          })
-                          .collect_view()}
-                      }
-                    })
-                    .collect_view()}
-
-                  <div class="px-3 pt-2 pxl-label text-xs text-muted-foreground">{move || t("shell.knowledge")}</div>
-                  {KNOWLEDGE_GROUPS
-                    .iter()
-                    .map(|g| {
-                      view! {
-                        <div class="px-3 pt-1 text-xs text-muted-foreground">{move || t(g)}</div>
-                        {registry::MODULES
-                          .iter()
-                          .filter(|m| m.group == Some(*g))
-                          .map(|m| {
-                            view! {
-                              <a
-                                href=m.nav_href()
-                                class=move || {
-                                  cn(&[
-                                    "flex items-center gap-3 border-2 px-3 py-2.5 text-sm",
-                                    if active(m.path) {
-                                      "border-ink bg-accent text-accent-foreground"
-                                    } else {
-                                      "border-transparent text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
-                                    },
-                                  ])
-                                }
-                                on:click=move |_| menu_open.set(false)
-                              >
-                                <Icon kind=icon_of(m.icon) class="size-6" />
-                                {move || t(m.title)}
-                              </a>
-                            }
-                          })
-                          .collect_view()}
-                      }
-                    })
-                    .collect_view()}
-
-                  <div class="px-3 pt-2 pxl-label text-xs text-muted-foreground">{move || t("shell.tools")}</div>
-                  {TOOL_GROUPS
-                    .iter()
-                    .map(|g| {
-                      view! {
-                        <div class="px-3 pt-1 text-xs text-muted-foreground">{move || t(g)}</div>
-                        {registry::MODULES
-                          .iter()
-                          .filter(|m| m.group == Some(*g))
-                          .map(|m| {
-                            view! {
-                              <a
-                                href=m.nav_href()
-                                class=move || {
-                                  cn(&[
-                                    "flex items-center gap-3 border-2 px-3 py-2.5 text-sm",
-                                    if active(m.path) {
-                                      "border-ink bg-accent text-accent-foreground"
-                                    } else {
-                                      "border-transparent text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
-                                    },
-                                  ])
-                                }
-                                on:click=move |_| menu_open.set(false)
-                              >
-                                <Icon kind=icon_of(m.icon) class="size-6" />
-                                {move || t(m.title)}
-                              </a>
-                            }
-                          })
-                          .collect_view()}
-                      }
-                    })
-                    .collect_view()}
+                  // 三大段可折叠、当前页所在的那段默认展开（见 `MobileNavSection`）。
+                  <MobileNavSection
+                    title=Signal::derive(move || t("shell.exam-center"))
+                    groups=EXAM_GROUPS
+                    pathname=Signal::derive(move || location.pathname.get())
+                    on_navigate=Callback::new(move |()| menu_open.set(false))
+                  />
+                  <MobileNavSection
+                    title=Signal::derive(move || t("shell.knowledge"))
+                    groups=KNOWLEDGE_GROUPS
+                    pathname=Signal::derive(move || location.pathname.get())
+                    on_navigate=Callback::new(move |()| menu_open.set(false))
+                  />
+                  <MobileNavSection
+                    title=Signal::derive(move || t("shell.tools"))
+                    groups=TOOL_GROUPS
+                    pathname=Signal::derive(move || location.pathname.get())
+                    on_navigate=Callback::new(move |()| menu_open.set(false))
+                  />
                 </nav>
               </div>
             }

@@ -47,7 +47,7 @@ pub(super) fn SwrPlot(sweep: Memo<Option<Sweep>>) -> impl IntoView {
             data-slot="vna-swr"
           >
             <rect x=PAD y=PAD width=W - 2.0 * PAD height=H - 2.0 * PAD fill="none" class="stroke-muted-foreground/50" stroke-width="0.5" />
-            <line x1=PAD y1=y2 x2=W - PAD y2=y2 class="stroke-amber-500" stroke-width="0.8" stroke-dasharray="4 3" />
+            <line x1=PAD y1=y2 x2=W - PAD y2=y2 class="stroke-gold/70" stroke-width="0.8" stroke-dasharray="4 3" />
             <text x=PAD - 4.0 y=y2 + 3.0 text-anchor="end" class="fill-muted-foreground" font-size="9">"2"</text>
             <text x=PAD - 4.0 y=H - PAD + 3.0 text-anchor="end" class="fill-muted-foreground" font-size="9">"1"</text>
             <text x=PAD - 4.0 y=PAD + 3.0 text-anchor="end" class="fill-muted-foreground" font-size="9">"5"</text>

@@ -36,23 +36,23 @@ pub(super) fn BandCard(band: &'static Band, jump: Callback<&'static str>) -> imp
   view! {
     <article class="pxl-card border bg-card p-4">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="bg-muted px-2 py-0.5 font-mono text-xs font-semibold text-foreground">
+        <span class="bg-muted px-2 py-0.5 font-mono text-xs text-foreground">
           {move || t("radio.reference")} " " {band.number}
         </span>
-        <h3 class="font-semibold">{band.name}</h3>
+        <h3>{band.name}</h3>
         {band
           .microwave
           .then(|| view! { <span class="border px-2 py-0.5 text-xs text-muted-foreground">{move || t("knowledge.microwave")}</span> })}
-        <span class="ml-auto font-mono text-sm font-semibold">{band.freq_abbr}</span>
+        <span class="ml-auto font-mono text-sm">{band.freq_abbr}</span>
       </div>
       <dl class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
         <div>
           <dt class="text-muted-foreground">{move || t("radio.wavelength-range")}</dt>
-          <dd class="font-medium tabular-nums">{band.wavelength}</dd>
+          <dd class="tabular-nums">{band.wavelength}</dd>
         </div>
         <div>
           <dt class="text-muted-foreground">{move || t("knowledge.band")}</dt>
-          <dd class="font-medium tabular-nums">{band.freq_name} " · " {band.freq_range}</dd>
+          <dd class="tabular-nums">{band.freq_name} " · " {band.freq_range}</dd>
         </div>
       </dl>
       {allocations}

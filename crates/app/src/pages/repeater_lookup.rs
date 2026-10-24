@@ -275,7 +275,7 @@ pub fn RepeaterLookup() -> impl IntoView {
               <TableBody>
                 {list.into_iter().map(|r| view! {
                   <TableRow>
-                    <TableCell class="border px-3 py-1.5 font-mono font-semibold">{r.callsign}</TableCell>
+                    <TableCell class="border px-3 py-1.5 font-mono">{r.callsign}</TableCell>
                     <TableCell class="border px-3 py-1.5 tabular-nums text-muted-foreground">{r.frequency_mhz}</TableCell>
                     <TableCell class="border px-3 py-1.5 tabular-nums text-muted-foreground">{r.offset_mhz}</TableCell>
                     <TableCell class="border px-3 py-1.5 tabular-nums text-muted-foreground">{if r.pl.is_empty() { "—".to_owned() } else { r.pl }}</TableCell>

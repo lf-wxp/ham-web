@@ -9,8 +9,8 @@ pub(crate) fn Notice(
   children: Children,
 ) -> impl IntoView {
   view! {
-    <div role="status" class="pointer-events-auto pxl-card border bg-card p-4 text-sm shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <p class="font-semibold">{title}</p>
+    <div role="status" class="pointer-events-auto pxl-card border bg-card p-4 text-sm shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal)">
+      <p>{title}</p>
       {detail.map(|d| view! { <p class="mt-1 text-muted-foreground">{d}</p> })}
       {(!items.is_empty()).then(|| view! {
         <ul class="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">

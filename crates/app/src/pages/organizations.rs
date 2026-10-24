@@ -14,7 +14,7 @@ const CELL: &str = "border px-3 py-2 align-top";
 pub fn OrganizationsPage() -> impl IntoView {
   set_title("shell.organizations-zones");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.organizations-zones")
         subtitle=move || t("knowledge.itu-iaru-arrl-cq")
@@ -37,10 +37,10 @@ pub fn OrganizationsPage() -> impl IntoView {
                 .map(|&(abbr, full, role)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono font-semibold text-primary")>
+                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-primary")>
                         {abbr}
                       </TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{full}</TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap")>{full}</TableCell>
                       <TableCell class=format!("{CELL} text-muted-foreground")>{role}</TableCell>
                     </TableRow>
                   }
@@ -58,7 +58,7 @@ pub fn OrganizationsPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
+                    <span class="text-sm">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
                 }

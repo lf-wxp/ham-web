@@ -414,7 +414,7 @@
   "knowledge.preset-satellite": "Satellites",
   "knowledge.radar-title": "Six-axis radar",
   "knowledge.radar-hint": "Each axis is normalised against a fixed scale within this library; further out is better. An axis with no data sits at the centre.",
-  "knowledge.best-marked-bold": "Bold marks the best on that row.",
+  "knowledge.best-marked": "The highlighted cell is the best on that row.",
   "knowledge.rx-metrics-from": "Receiver metrics come from {}: that table only tests HF / 50 MHz-class receivers, so unlisted rigs are left blank. Values and measurement conditions are the table's.",
   "knowledge.axis-imd-narrow": "Narrow-spaced DR",
   "knowledge.axis-imd-wide": "Wide-spaced DR",

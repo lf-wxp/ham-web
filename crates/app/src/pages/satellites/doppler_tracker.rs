@@ -380,7 +380,7 @@ pub(super) fn DopplerTracker(
         {move || match load.get() {
           Load::Idle | Load::Loading => None,
           Load::PassesFailed => {
-            Some(view! { <p class="text-xs text-destructive" role="alert">{t("radio.pass-data-is-unavailable")}</p> }
+            Some(view! { <p class="text-xs text-hp-text" role="alert">{t("radio.pass-data-is-unavailable")}</p> }
               .into_any())
           }
           Load::NoPass => {
@@ -388,11 +388,11 @@ pub(super) fn DopplerTracker(
               .into_any())
           }
           Load::TrackFailed => {
-            Some(view! { <p class="text-xs text-destructive" role="alert">{t("radio.doppler-error-track")}</p> }
+            Some(view! { <p class="text-xs text-hp-text" role="alert">{t("radio.doppler-error-track")}</p> }
               .into_any())
           }
           Load::TrackInvalid => {
-            Some(view! { <p class="text-xs text-destructive" role="alert">{t("radio.doppler-error-invalid")}</p> }
+            Some(view! { <p class="text-xs text-hp-text" role="alert">{t("radio.doppler-error-invalid")}</p> }
               .into_any())
           }
           Load::Ready(r) => {
@@ -408,9 +408,9 @@ pub(super) fn DopplerTracker(
             );
             let (aos, los) = (pass.aos, pass.los);
             Some(view! {
-              <div class="space-y-1 border bg-muted/30 px-3 py-2 text-sm tabular-nums">
+              <div class="space-y-1 border bg-inset px-3 py-2 text-sm tabular-nums">
                 <div class="text-xs text-muted-foreground">{info}</div>
-                <div role="status" class="font-medium">
+                <div role="status">
                   {move || {
                     let t_now = now.get() as i64;
                     if t_now < aos {
@@ -458,7 +458,7 @@ pub(super) fn DopplerTracker(
                         {rx
                           .map(|f| {
                             view! {
-                              <div class="font-medium text-foreground">
+                              <div class="text-foreground">
                                 {tf(
                                   "radio.doppler-rx",
                                   &[&fmt_mhz(f), &fmt_shift(f - rx_nominal)],
@@ -469,7 +469,7 @@ pub(super) fn DopplerTracker(
                         {tx
                           .map(|f| {
                             view! {
-                              <div class="font-medium text-foreground">
+                              <div class="text-foreground">
                                 {tf(
                                   "radio.doppler-tx",
                                   &[&fmt_mhz(f), &fmt_shift(f - tx_nominal)],

@@ -187,51 +187,52 @@ pub fn HomePage() -> impl IntoView {
       </div>
 
       // 频谱条（SDR 意象）：纯装饰，只做电台气质的一层底纹。
-      // 刻意压扁到 24px 并去掉常驻 `pxl-blink`：它是整页饱和度最高的元素，
-      // 原来 48px 高 + 一直闪的「接收中」会把视线从上面的主入口抢走。
-      <div class="mt-8 w-full">
-        <div class="pxl-card border bg-card px-4 py-3">
-          <div class="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+      // 压成一条细带（标题行 + 24px 条）：它是整页饱和度最高的元素，原来带刻度尺和三个频率数字
+      // 一共 100+px，会把下面的模块入口往下推，在手机上尤其明显。
+      <div class="mt-6 w-full">
+        <div class="pxl-card border bg-card px-3 py-2" aria-hidden="true">
+          <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
             <span class="pxl-label">"Spectrum · 14.000 MHz"</span>
             <span class="pxl-label">{move || t("home.receiving")}</span>
           </div>
           <div class="spectrum-bar h-6 border-2 border-ink"></div>
-          <div class="spectrum-ticks mt-2 h-3 opacity-60"></div>
-          <div
-            class="mt-1.5 flex justify-between text-xs tabular-nums text-muted-foreground"
-            aria-hidden="true"
-          >
-            <span>"14.000"</span>
-            <span>"14.175"</span>
-            <span>"14.350"</span>
-          </div>
         </div>
       </div>
 
       // 模块入口：三列不等宽（首列更宽）+ 阶梯式下沉，打破三等分的呆板网格。
       // 断点放在 lg：md（768px）下三列各只剩 ~220px，18px 的区块标题在英文里撑不下；
       // 卡片上还带 `min-w-0`，窄到极限时让文字换行而不是把整张卡顶出容器。
+      //
+      // 卡片本身不再是一整个链接：标题行去「模块总览」，下面每个条目都是各自的真链接
+      // （数据里一直带着 href，只是以前被丢弃，七个条目只能全跳到同一处，想进「错题集」
+      // 得先进卡再找，多一跳）。嵌套 `<a>` 不合法，所以拆成「标题链接 + 条目链接」两层。
       <div class="mt-16 grid grid-cols-1 gap-4 lg:grid-cols-[1.3fr_1fr_1fr] lg:items-start">
         {MODULES
           .iter()
           .enumerate()
           .map(|(i, m)| {
             view! {
-              <a
-                href=m.href
-                // `motion-press`：悬停上移 2px、按下落回（硬阴影随之消失），见 `motion.css`。
+              // 用 `<div>` 而不是 `<section>`：卡片里没有标题元素可作 `aria-labelledby`
+              // （标题是 `pxl-label` 的 `<span>`），`<section>` 会变成三个没有名字的 landmark。
+              // 页面标题层级还是 h1（Hero）→ h2（下方 `SectionCard`），不在这里插 h3。
+              <div
                 class=format!(
-                  "reveal group pxl-card border bg-card motion-press relative flex min-w-0 flex-col gap-4 p-5 hover:bg-accent {}",
+                  "reveal pxl-card border bg-card relative flex min-w-0 flex-col gap-3 p-4 {}",
                   m.offset,
                 )
                 style=format!("animation-delay: {}ms", 300 + i * 90)
               >
-                <div class="relative flex items-center gap-3">
+                <a
+                  href=m.href
+                  // `motion-press` 只提供两帧的过渡（`motion.css`），并不自己位移；悬停反馈是
+                  // `hover:bg-accent` 换底色。整卡可点、需要上抬 + 硬投影的是 `SectionCard href`（`motion-lift`）。
+                  class="motion-press group relative flex items-center gap-3 hover:bg-accent"
+                >
                   <div class="flex size-12 shrink-0 items-center justify-center border-2 border-ink bg-primary text-primary-foreground">
                     <Icon kind=m.icon class="size-6" />
                   </div>
                   <div class="min-w-0">
-                    <div class="flex items-baseline gap-2">
+                    <div class="flex flex-wrap items-baseline gap-x-2">
                       // 序号从角落的大水印搬进标题行：水印会压在斜向的链接清单下面，读不清。
                       <span aria-hidden="true" class="pxl-label text-xs text-muted-foreground">
                         {m.index}
@@ -243,24 +244,28 @@ pub fn HomePage() -> impl IntoView {
                   <span aria-hidden="true" class="ml-auto shrink-0 text-muted-foreground">
                     <Icon kind=IconKind::ChevronRight class="size-6" />
                   </span>
-                </div>
-                // 链接清单：这些条目都进同一张卡（同一个 href），所以不能做成可点的 chip ——
-                // 七个看起来能单独点的按钮却都跳到同一处，是假的交互。改成目录式小字。
-                <div class="mt-auto grid grid-cols-1 gap-x-4 gap-y-1.5 border-t-2 border-dashed border-ink/30 pt-3 sm:grid-cols-2">
+                </a>
+                <ul class="mt-auto grid grid-cols-1 gap-x-4 border-t-2 border-dashed border-ink/30 pt-2 sm:grid-cols-2">
                   {m
                     .links
                     .iter()
-                    .map(|&(label, _)| {
+                    .map(|&(label, href)| {
                       view! {
-                        <span class="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span aria-hidden="true" class="size-1 shrink-0 bg-primary"></span>
-                          {move || t(label)}
-                        </span>
+                        <li>
+                          <a
+                            href=href
+                            // 条目是 12px 小字，点击区靠 `min-h-9`（36px）撑开，手机上不会点错行。
+                            class="flex min-h-9 items-center gap-2 border-2 border-transparent px-1 text-xs text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <span aria-hidden="true" class="size-1 shrink-0 bg-primary"></span>
+                            {move || t(label)}
+                          </a>
+                        </li>
                       }
                     })
                     .collect_view()}
-                </div>
-              </a>
+                </ul>
+              </div>
             }
           })
           .collect_view()}

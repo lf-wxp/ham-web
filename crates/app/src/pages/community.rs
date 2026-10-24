@@ -7,6 +7,7 @@ use crate::components::common::{KnowledgePage, SectionCard};
 use crate::data::{self, kt};
 use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
+use crate::ui::card_title_class;
 use crate::util::set_title;
 
 #[component]
@@ -26,7 +27,7 @@ pub fn CommunityPage() -> impl IntoView {
 
       <section class="pxl-card border bg-card">
         <div class="border-b px-4 py-3">
-          <h2 class="text-sm font-semibold">{move || t("knowledge.community-index")}</h2>
+          <h2 class=card_title_class("")>{move || t("knowledge.community-index")}</h2>
           <p class="mt-0.5 text-xs text-muted-foreground">
             {move || t("knowledge.organized-by-category-click")}
           </p>
@@ -38,7 +39,7 @@ pub fn CommunityPage() -> impl IntoView {
               let items: Vec<_> = COMMUNITY_LINKS.iter().filter(|l| l.category == *cat).collect();
               view! {
                 <div>
-                  <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                  <h3 class="mb-2 text-xs uppercase tracking-wide text-primary">
                     {move || t(cat)}
                   </h3>
                   <div class="grid gap-2 sm:grid-cols-2">
@@ -57,7 +58,7 @@ pub fn CommunityPage() -> impl IntoView {
                               class="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
                             />
                             <span class="min-w-0">
-                              <span class="block text-sm font-medium">
+                              <span class="block text-sm">
                                 {move || {
                                   data::track_knowledge();
                                   kt(l.name)

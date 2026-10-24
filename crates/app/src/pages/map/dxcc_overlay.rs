@@ -84,7 +84,7 @@ pub fn DxccOverlay(
           let is_worked = worked.contains(&e.dxcc);
           let is_confirmed = confirmed.contains(&e.dxcc);
           let cls = if is_confirmed {
-            "fill-emerald-600 stroke-emerald-500/80"
+            "fill-win stroke-win/80"
           } else if is_worked {
             "fill-primary stroke-primary/60"
           } else {

@@ -81,7 +81,7 @@ pub fn ReportPage() -> impl IntoView {
   };
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=Signal::derive(move || t("learning.study-report"))
         subtitle=Signal::derive(move || t("learning.local-data-summary-export"))

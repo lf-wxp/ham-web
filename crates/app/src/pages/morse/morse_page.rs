@@ -7,6 +7,7 @@ use crate::morse_audio::play_morse_timed_with;
 use crate::morse_settings::{provide_morse_settings, use_morse_settings};
 use crate::ui::{
   Button, Size, Slider, Stat, Tabs, TabsList, TabsPanel, TabsTrigger, Tooltip, Variant,
+  card_title_class,
 };
 use crate::util::set_title;
 
@@ -41,7 +42,7 @@ pub fn MorsePage() -> impl IntoView {
   // 默认落在 Koch 法（新手入口），选中的视图由用户切换，不做持久化。
   let trainer = RwSignal::new("koch".to_owned());
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.morse-code")
         subtitle=move || t("morse.international-morse-code-itu")
@@ -135,24 +136,24 @@ pub fn MorsePage() -> impl IntoView {
         </div>
 
         <section>
-          <h2 class="mb-3 text-sm font-semibold">
+          <h2 class=card_title_class("mb-3")>
             {move || t("morse.alphabet")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.includes-itu-phonetic-alphabet")}</span>
           </h2>
-          <div class="grid grid-cols-2 gap-2 min-[400px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+          <div class="grid grid-cols-2 gap-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
             {LETTERS.iter().map(|c| view! { <MorseCard entry=c /> }).collect_view()}
           </div>
         </section>
 
         <section>
-          <h2 class="mb-3 text-sm font-semibold">{move || t("morse.digits")}</h2>
+          <h2 class=card_title_class("mb-3")>{move || t("morse.digits")}</h2>
           <div class="grid grid-cols-5 gap-2 sm:grid-cols-10">
             {DIGITS.iter().map(|c| view! { <MorseCard entry=c /> }).collect_view()}
           </div>
         </section>
 
         <section>
-          <h2 class="mb-3 text-sm font-semibold">{move || t("morse.common-punctuation")}</h2>
+          <h2 class=card_title_class("mb-3")>{move || t("morse.common-punctuation")}</h2>
           <div class="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-9">
             {PUNCTUATION.iter().map(|c| view! { <MorseCard entry=c /> }).collect_view()}
           </div>
@@ -174,10 +175,10 @@ pub fn MorsePage() -> impl IntoView {
                       on:click=move |_| {
                         play_morse_timed_with(code, farnsworth(20.0, 20.0), settings.tone_hz(), settings.volume());
                       }
-                      class="group w-full border bg-muted/40 p-3 text-center transition-all duration-200 ease-out hover:border-primary/40 hover:bg-accent/60 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                      class="group w-full border bg-inset p-3 text-center transition duration-(--motion-normal) ease-out hover:border-primary/40 hover:bg-accent/60"
                     >
-                    <div class="text-lg font-semibold tabular-nums">{label}</div>
-                    <div class="font-mono text-base font-semibold tracking-widest text-primary">
+                    <div class="text-lg tabular-nums">{label}</div>
+                    <div class="font-mono text-base tracking-widest text-primary">
                       {morse_display(code)}
                     </div>
                     <div class="mt-1 text-xs text-muted-foreground">{meaning}</div>
@@ -197,8 +198,8 @@ pub fn MorsePage() -> impl IntoView {
               .iter()
               .map(|&(k, v)| {
                 view! {
-                  <div class="border bg-muted/40 p-3 text-center">
-                    <div class="text-xl font-semibold tabular-nums">{v}</div>
+                  <div class="border bg-inset p-3 text-center">
+                    <div class="text-xl tabular-nums">{v}</div>
                     <div class="mt-1 text-xs text-muted-foreground">{k}</div>
                   </div>
                 }

@@ -41,7 +41,7 @@ pub(super) fn CoverageMap(
                     cx=x
                     cy=y
                     r="3"
-                    class="fill-emerald-500"
+                    class="fill-win/70"
                     data-spot="receiver"
                   />
                 }

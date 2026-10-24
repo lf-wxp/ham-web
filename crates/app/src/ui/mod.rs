@@ -115,6 +115,7 @@ mod pagination;
 mod popover;
 mod progress;
 mod radio;
+mod scrollbar;
 mod select;
 mod separator;
 mod slider;
@@ -146,6 +147,7 @@ pub use number_field::{NumberField, NumberKind};
 pub use pagination::Pagination;
 pub use progress::Progress;
 pub use radio::{RadioGroup, RadioGroupItem};
+pub use scrollbar::ScrollBar;
 pub use select::{Select, SelectItem};
 pub use separator::Separator;
 pub use slider::Slider;
@@ -155,7 +157,7 @@ pub use table::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 pub use tabs::{Tabs, TabsList, TabsPanel, TabsTrigger};
 pub use textarea::Textarea;
 pub use time_picker::TimePicker;
-pub use toast::{ToastKind, ToastRoot, push, push_error, push_success};
+pub use toast::{ToastKind, ToastRoot, push, push_error, push_info, push_success};
 pub use tooltip::Tooltip;
 pub(crate) use tooltip::setup_tooltip_popup;
 
@@ -171,7 +173,7 @@ pub enum Variant {
   Secondary,
   Ghost,
   /// 文字按钮：透明底、无边框与投影，悬停只换文字色（句内「编辑 / 删除」这类）。
-  /// 要悬停变红就在调用点补 `class="hover:text-destructive"`（工具类优先级更高）。
+  /// 要悬停变红就在调用点补 `class="hover:text-hp-text"`（工具类优先级更高）。
   Text,
 }
 
@@ -184,8 +186,8 @@ pub enum Size {
   /// 紧凑 `h-6`（24px）：表格行内 / 工具条上的**纯文本**小按钮。
   /// 图标按钮走 [`Size::IconSm`] —— 24px 的图标会撑满这个高度。
   Xs,
-  /// 大号 `h-12`：落地页主操作（首页 Hero 的三个入口）。更大的圆角与字号，
-  /// 让它在版面里明显是「主角」；表单与工具栏里不要用。
+  /// 大号 `h-12`：落地页主操作（首页 Hero 的三个入口）。更大的字号与内边距
+  /// 让它在版面里明显是「主角」；表单与工具栏里不要用。（全站零圆角，这里不再提「更大的圆角」。）
   Lg,
   /// 图标按钮 `size-10`（40px）。
   Icon,
@@ -200,7 +202,8 @@ const BUTTON_BASE: &str = "pxl-btn [&_svg:not([class*='size-'])]:size-6";
 
 /// 生成按钮类名。
 ///
-/// 悬停上浮 2px 并提亮，按下下沉 2px、投影消失、内高光翻转成内阴影；
+/// 悬停上浮 2px（投影拉长，不再用 `brightness()` 提亮），按下下沉 2px、投影消失、
+/// 内高光翻转成内阴影；
 /// 禁用态是抖动网点遮罩而不是半透明。
 pub fn button_class(variant: Variant, size: Size, extra: &str) -> String {
   let v = match variant {
@@ -215,10 +218,12 @@ pub fn button_class(variant: Variant, size: Size, extra: &str) -> String {
   let s = match size {
     Size::Default => "h-10 px-4 has-[>svg]:px-3",
     Size::Sm => "h-8 gap-1.5 px-3 has-[>svg]:px-2",
-    Size::Xs => "h-6 gap-1 px-2 text-xs",
+    // `pxl-btn-tight`：粗指针（触屏）下由 `controls.css` 抬到 32px —— 24px 只是
+    // WCAG 2.5.8 的下限，手机上点不准（见 `docs/ui-components.md` §2 规则 2）。
+    Size::Xs => "pxl-btn-tight h-6 gap-1 px-2 text-xs",
     Size::Lg => "h-12 px-6 text-base has-[>svg]:px-4",
     Size::Icon => "size-10 px-0",
-    Size::IconSm => "size-6 px-0",
+    Size::IconSm => "pxl-btn-tight size-6 px-0",
   };
   cn(&[BUTTON_BASE, v, s, extra])
 }
@@ -237,8 +242,8 @@ const BADGE_BASE: &str = "pxl-badge [&>svg]:size-4 [&>svg]:pointer-events-none";
 /// 生成徽标类名。
 pub fn badge_class(variant: BadgeVariant, extra: &str) -> String {
   let v = match variant {
-    BadgeVariant::Default => "bg-primary text-primary-foreground [a&]:hover:brightness-110",
-    BadgeVariant::Secondary => "bg-secondary text-secondary-foreground [a&]:hover:brightness-110",
+    BadgeVariant::Default => "bg-primary text-primary-foreground [a&]:hover:underline",
+    BadgeVariant::Secondary => "bg-secondary text-secondary-foreground [a&]:hover:underline",
     BadgeVariant::Outline => {
       "bg-card text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground"
     }

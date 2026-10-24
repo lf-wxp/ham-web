@@ -7,6 +7,7 @@ use crate::cn::cn;
 use crate::components::common::{Loading, PAGE_HEADER_BAR};
 use crate::ui::{
   Button, Checkbox, Chip, ChipGroup, ControlSize, NativeSelect, SelectOption, Size, Variant,
+  card_title_class,
 };
 use crate::util::{local_today, set_title_with_args};
 
@@ -46,12 +47,12 @@ pub fn PrintPage() -> impl IntoView {
     let _ = window().print();
   };
   view! {
-    <div class="min-h-screen bg-muted/40 pb-10 print:bg-white print:pb-0">
+    <div class="min-h-screen bg-inset pb-10 print:bg-white print:pb-0">
       // 刻意的例外：打印页量的是纸宽（max-w-[210mm]），不套 PageHeader；
       // 但吸顶骨架与全站页头共用 PAGE_HEADER_BAR，偏移只有一处来源。
       <div class=cn(&[PAGE_HEADER_BAR, "print-hide"])>
         <div class="mx-auto flex max-w-[210mm] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-          <h1 class="mr-auto text-base font-semibold">{move || t("radio.print-version")}</h1>
+          <h1 class="mr-auto text-base">{move || t("radio.print-version")}</h1>
           <ChipGroup
             value=Signal::derive(move || source.get().title().to_owned())
             on_change=Callback::new(move |v: String| {
@@ -144,8 +145,8 @@ pub fn PrintPage() -> impl IntoView {
             view! {
               <header class="mb-2 flex items-end justify-between border-b-2 border-zinc-900 pb-2">
                 <div>
-                  <div class="text-lg font-bold">{tf("radio.amateur-radio-licence", &[(source.get().title())])}</div>
-                  <div class="text-[11px] text-zinc-500">
+                  <div class="text-lg">{tf("radio.amateur-radio-licence", &[(source.get().title())])}</div>
+                  <div class="text-xs text-zinc-500">
                     {tp(
                       "radio.questions",
                       list.len() as u32,
@@ -153,14 +154,14 @@ pub fn PrintPage() -> impl IntoView {
                     )}
                   </div>
                 </div>
-                <div class="text-[11px] text-zinc-500">{move || t("radio.name-score")}</div>
+                <div class="text-xs text-zinc-500">{move || t("radio.name-score")}</div>
               </header>
               {list.into_iter().enumerate().map(|(i, item)| view! {
                 <QuestionBlock index=i + 1 item=item answers=mode explain=with_explain />
               }).collect_view()}
               {(mode == AnswerMode::End).then(|| view! {
                 <section class="print-break-before mt-6 border-t-2 border-zinc-900 pt-3">
-                  <h2 class="mb-2 text-sm font-bold">{move || t("radio.reference-answer")}</h2>
+                  <h2 class=card_title_class("mb-2")>{move || t("radio.reference-answer")}</h2>
                   <ol class="grid grid-cols-5 gap-x-4 gap-y-1 text-[12px] tabular-nums print:grid-cols-6">
                     {key_list.iter().enumerate().map(|(i, it)| view! {
                       <li>{format!("{}. {}", i + 1, it.q.answer_keys.join(""))}</li>
@@ -169,7 +170,7 @@ pub fn PrintPage() -> impl IntoView {
                   {with_explain.then(|| view! {
                     <div class="mt-4 space-y-1.5 text-[12px] leading-relaxed text-zinc-700">
                       {key_list.iter().enumerate().filter_map(|(i, it)| explanation(&it.q).map(|t| view! {
-                        <p class="print-avoid-break"><span class="font-semibold text-zinc-900">{format!("{}. ", i + 1)}</span>{t}</p>
+                        <p class="print-avoid-break"><span class="text-zinc-900">{format!("{}. ", i + 1)}</span>{t}</p>
                       })).collect_view()}
                     </div>
                   })}

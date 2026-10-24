@@ -12,7 +12,7 @@ use leptos::prelude::*;
 
 use crate::data::kt;
 use crate::i18n::{t, tf};
-use crate::ui::{Button, Size, Variant};
+use crate::ui::{Button, Size, Variant, card_title_class};
 
 use super::use_log_store;
 
@@ -168,7 +168,7 @@ pub(super) fn LogHealthPanel() -> impl IntoView {
   view! {
     <section class="pxl-card border bg-card">
       <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-        <h2 class="mr-auto text-sm font-semibold">{move || t("log.health-title")}</h2>
+        <h2 class=card_title_class("mr-auto")>{move || t("log.health-title")}</h2>
         {move || {
           let r = report.get();
           (!r.is_clean())
@@ -217,7 +217,7 @@ pub(super) fn LogHealthPanel() -> impl IntoView {
               view! {
                 <div class="space-y-1">
                   <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-xs font-medium">{kind_title(kind, issues.len())}</span>
+                    <span class="text-xs">{kind_title(kind, issues.len())}</span>
                     {(fixable > 0)
                       .then(|| {
                         view! {

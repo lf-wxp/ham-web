@@ -24,7 +24,7 @@ const Z0: f64 = 50.0;
 const BAND_SWR_LIMIT: f64 = 2.0;
 
 const NOTE: &str = "text-xs text-muted-foreground";
-const RESULT: &str = "bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
+const RESULT: &str = "bg-inset px-3 py-2 text-sm text-muted-foreground";
 
 /// 元件文案。
 fn element_text(e: Element) -> String {
@@ -119,7 +119,7 @@ pub fn SmithPage() -> impl IntoView {
   };
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("tools.smith-chart-and-matching")
         subtitle=move || t("tools.drag-to-place-the")

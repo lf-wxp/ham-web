@@ -41,7 +41,7 @@ pub fn GridMap(entries: Vec<LogEntry>, station_grid: String) -> impl IntoView {
       // 空状态：无通联记录时提示
       {entries_empty.then(|| {
         view! {
-          <div class="mb-3 border bg-muted/30 p-4 text-center text-sm text-muted-foreground">
+          <div class="mb-3 border bg-inset p-4 text-center text-sm text-muted-foreground">
             {move || t("log.no-qsos-yet-add")}
           </div>
         }

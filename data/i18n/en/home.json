@@ -46,6 +46,6 @@
   "home.choose-a-bank-version": "Choose a bank version and class, then start practice or a mock exam",
   "home.question-bank-is-unavailable": "Question bank {} is unavailable or empty; build the dataset first.",
   "home.sunspots": "Sunspots",
-  "home.rpg-entry-legend": "Stage = question practice, Boss = mock exam, Bestiary = mistake book",
+  "home.rpg-entry-legend": "Quest = question-bank practice, Bestiary = your mistakes; mock exams are under Quick start below",
   "home.propagation-fetch-failed": "Couldn't fetch live conditions - retry, or open the solar page"
 }

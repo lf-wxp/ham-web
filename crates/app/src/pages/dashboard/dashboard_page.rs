@@ -14,7 +14,7 @@ use crate::i18n::t;
 pub fn DashboardPage() -> impl IntoView {
   set_title("shell.live-dashboard");
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.live-dashboard")
         subtitle=move || t("learning.solar-activity-alerts-dx")

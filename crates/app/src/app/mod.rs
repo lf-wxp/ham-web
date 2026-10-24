@@ -41,7 +41,7 @@ pub fn App() -> impl IntoView {
     <Router>
       <a
         href="#main-content"
-        class="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
+        class="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:text-primary-foreground"
         on:click=|e| {
           e.prevent_default();
           if let Some(main) = crate::util::window()
@@ -60,6 +60,7 @@ pub fn App() -> impl IntoView {
       <MainContent />
       <RouteTransition />
       <MobileTabs />
+      <crate::ui::ScrollBar />
       <Footer />
       <SearchDialog />
       <StorageWarning />

@@ -15,7 +15,7 @@ const CELL: &str = "border px-3 py-2 align-top";
 pub fn AntennaDiyPage() -> impl IntoView {
   set_title("shell.antenna-diy");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.antenna-diy")
         subtitle=move || t("knowledge.dipole-gp-j-pole")
@@ -40,7 +40,7 @@ pub fn AntennaDiyPage() -> impl IntoView {
                 .map(|&(name, material, size, desc, template)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{name}</TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap")>{name}</TableCell>
                       <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{material}</TableCell>
                       <TableCell class=format!("{CELL} font-mono tabular-nums")>{size}</TableCell>
                       <TableCell class=format!("{CELL} text-muted-foreground")>{desc}</TableCell>

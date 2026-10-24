@@ -23,19 +23,19 @@ fn date_key_from_ms(ms: f64) -> String {
 /// 根据计数值返回绿色色阶（完整字面量，供 Tailwind 扫描）。
 fn cell_class(count: u32, max: u32) -> &'static str {
   if count == 0 {
-    return "bg-muted/60";
+    return "bg-inset";
   }
   let ratio = count as f64 / max as f64;
   if ratio >= 0.8 {
-    "bg-emerald-600"
+    "bg-win"
   } else if ratio >= 0.6 {
-    "bg-emerald-500"
+    "bg-win/70"
   } else if ratio >= 0.4 {
-    "bg-emerald-400"
+    "bg-win/50"
   } else if ratio >= 0.2 {
-    "bg-emerald-300"
+    "bg-win/35"
   } else {
-    "bg-emerald-200"
+    "bg-win/20"
   }
 }
 
@@ -75,14 +75,14 @@ pub(super) fn CalendarHeatmap(counts: BTreeMap<String, u32>) -> impl IntoView {
 
   view! {
     <div class="space-y-2">
-      <div class="flex items-center justify-end gap-1 text-[10px] text-muted-foreground">
+      <div class="flex items-center justify-end gap-1 text-xs text-muted-foreground">
         <span>{move || t("learning.less")}</span>
-        <span class="h-3 w-3 bg-muted/60"></span>
-        <span class="h-3 w-3 bg-emerald-200"></span>
-        <span class="h-3 w-3 bg-emerald-300"></span>
-        <span class="h-3 w-3 bg-emerald-400"></span>
-        <span class="h-3 w-3 bg-emerald-500"></span>
-        <span class="h-3 w-3 bg-emerald-600"></span>
+        <span class="h-3 w-3 bg-inset"></span>
+        <span class="h-3 w-3 bg-win/20"></span>
+        <span class="h-3 w-3 bg-win/35"></span>
+        <span class="h-3 w-3 bg-win/50"></span>
+        <span class="h-3 w-3 bg-win/70"></span>
+        <span class="h-3 w-3 bg-win"></span>
         <span>{move || t("learning.more")}</span>
       </div>
       <div class="overflow-x-auto">

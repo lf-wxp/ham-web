@@ -33,6 +33,7 @@ mod speech;
 mod store;
 mod study;
 mod theme;
+mod tone;
 pub mod ui;
 mod util;
 mod web_serial;

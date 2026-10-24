@@ -16,7 +16,7 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 pub fn ElectronicsPage() -> impl IntoView {
   set_title("shell.electronics-basics");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.electronics-basics")
         subtitle=move || t("knowledge.common-components-basic-circuits")
@@ -39,7 +39,7 @@ pub fn ElectronicsPage() -> impl IntoView {
                 .map(|&(name, unit, desc)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{name}</TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap")>{name}</TableCell>
                       <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-xs text-muted-foreground")>
                         {unit}
                       </TableCell>
@@ -62,7 +62,7 @@ pub fn ElectronicsPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
+                    <span class="text-sm">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
                 }
@@ -79,7 +79,7 @@ pub fn ElectronicsPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm font-medium text-primary">{t}</span>
+                    <span class="text-sm text-primary">{t}</span>
                     <span class="font-mono text-sm text-muted-foreground">{d}</span>
                   </div>
                 }

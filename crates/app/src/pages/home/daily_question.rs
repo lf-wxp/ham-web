@@ -4,11 +4,10 @@ use leptos::task::spawn_local;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsValue;
 
+use crate::components::common::SectionCard;
 use crate::data;
 use crate::i18n::{t, tp};
-use crate::ui::{
-  ButtonLink, CARD_HEADER, Size, Variant, card_content_class, card_title_class, flat_card_class,
-};
+use crate::ui::{ButtonLink, Size, Variant};
 use crate::util::storage;
 
 /// 学习打卡状态。
@@ -75,19 +74,14 @@ pub(super) fn DailyQuestion() -> impl IntoView {
   });
 
   view! {
-    <div data-slot="card" class=flat_card_class("")>
-      <div data-slot="card-header" class=CARD_HEADER>
-        <div data-slot="card-title" class=card_title_class("flex items-center justify-between")>
-          <span>{move || t("home.daily-question")}</span>
-          <span class="text-sm font-normal text-muted-foreground">
-            {move || {
-              let n = streak.get() as u32;
-              tp("home.day-streak", n, &[&n.to_string()])
-            }}
-          </span>
-        </div>
-      </div>
-      <div data-slot="card-content" class=card_content_class("space-y-3")>
+    <SectionCard
+      title=Signal::derive(move || t("home.daily-question"))
+      meta=ViewFn::from(move || {
+        let n = streak.get() as u32;
+        tp("home.day-streak", n, &[&n.to_string()])
+      })
+    >
+      <div class="space-y-3 p-4">
         {move || {
           question.get().map(|q| {
             view! {
@@ -116,6 +110,6 @@ pub(super) fn DailyQuestion() -> impl IntoView {
           })
         }}
       </div>
-    </div>
+    </SectionCard>
   }
 }

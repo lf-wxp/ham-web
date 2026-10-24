@@ -20,14 +20,14 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
     {field_label.map(|(f_lon, f_lat)| {
       let done = data.hunt_done.len();
       view! {
-        <div class="mt-2 border bg-muted/30 p-3">
+        <div class="mt-2 border bg-inset p-3">
           <div class="flex items-center justify-between text-xs">
-            <span class="font-medium">{tf("log.grid-hunt-field", &[&f_lon.to_string(), &f_lat.to_string()])}</span>
+            <span>{tf("log.grid-hunt-field", &[&f_lon.to_string(), &f_lat.to_string()])}</span>
             <span class="tabular-nums text-muted-foreground">{done} " / 100"</span>
           </div>
           <div class="mt-1.5 h-1.5 w-full overflow-hidden bg-muted">
             <div
-              class="h-full bg-primary transition-all"
+              class="h-full bg-primary transition"
               style=format!("width: {}%", done)
             ></div>
           </div>
@@ -36,14 +36,14 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
     })}
 
     // 全球 square 猎取进度（全部 32400 个 square）
-    <div class="mt-2 border bg-muted/30 p-3">
+    <div class="mt-2 border bg-inset p-3">
       <div class="flex items-center justify-between text-xs">
-        <span class="font-medium">{move || t("log.global-square-hunt")}</span>
+        <span>{move || t("log.global-square-hunt")}</span>
         <span class="tabular-nums text-muted-foreground">{data.world_done} " / " {WORLD_SQUARES}</span>
       </div>
       <div class="mt-1.5 h-1.5 w-full overflow-hidden bg-muted">
         <div
-          class="h-full bg-primary transition-all"
+          class="h-full bg-primary transition"
           style=format!("width: {:.3}%", world_pct)
         ></div>
       </div>
@@ -52,15 +52,15 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
     // 通联最多 square（Top 榜，全量）
     {(!data.top_squares.is_empty()).then(|| {
       view! {
-        <div class="mt-2 border bg-muted/30 p-3 text-xs">
-          <div class="mb-1.5 font-medium">{move || t("log.most-worked-squares")}</div>
+        <div class="mt-2 border bg-inset p-3 text-xs">
+          <div class="mb-1.5">{move || t("log.most-worked-squares")}</div>
           <div class="flex flex-wrap gap-1.5">
             {data.top_squares
               .iter()
               .map(|((sl, sa), n)| {
                 let label = square_label((*sl, *sa));
                 view! {
-                  <span class="bg-muted/60 px-2 py-0.5 font-mono text-xs">{format!("{label} ×{n}")}</span>
+                  <span class="bg-inset px-2 py-0.5 font-mono text-xs">{format!("{label} ×{n}")}</span>
                 }
               })
               .collect_view()}
@@ -72,8 +72,8 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
     // 邻近未通联推荐（本台 square 8 邻域，按距离排序）
     {(!data.neighbor_hits.is_empty()).then(|| {
       view! {
-        <div class="mt-2 border bg-muted/30 p-3">
-          <div class="mb-1.5 text-xs font-medium">{move || t("log.nearby-unworked-click-to")}</div>
+        <div class="mt-2 border bg-inset p-3">
+          <div class="mb-1.5 text-xs">{move || t("log.nearby-unworked-click-to")}</div>
           <div class="flex flex-wrap gap-1.5">
             {data.neighbor_hits
               .iter()
@@ -95,7 +95,7 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
                   <Tooltip label=title>
                     <button
                       type="button"
-                      class="bg-muted/60 px-2 py-0.5 font-mono text-xs transition-colors hover:bg-accent"
+                      class="bg-inset px-2 py-0.5 font-mono text-xs transition-colors hover:bg-accent"
                       on:click=move |_| state.focus_square(k)
                     >
                       {meta}
@@ -113,9 +113,9 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
     {move || {
       state.click_inspect.get().map(|(lat, lon, grid, label, worked)| {
         view! {
-          <div class="mt-2 border bg-muted/30 p-3 text-xs">
+          <div class="mt-2 border bg-inset p-3 text-xs">
             <div class="mb-1 flex items-center justify-between">
-              <span class="font-semibold">{move || t("log.click-inspector")}</span>
+              <span>{move || t("log.click-inspector")}</span>
               <Button
                 variant=Variant::Text
                 size=Size::Xs

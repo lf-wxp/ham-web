@@ -146,7 +146,7 @@ pub(super) fn SymbolSection() -> impl IntoView {
                     cx=const_axes.px(re)
                     cy=const_axes.py(im)
                     r="4.5"
-                    class="fill-none stroke-amber-500"
+                    class="fill-none stroke-gold/70"
                     stroke-width="1.6"
                   />
                 }
@@ -238,7 +238,7 @@ pub(super) fn SymbolSection() -> impl IntoView {
             y1=PAD
             x2=eye_axes.px(SPS as f64)
             y2=EYE_H - PAD
-            class="stroke-amber-500/70"
+            class="stroke-gold/70"
             stroke-dasharray="4 3"
             stroke-width="1"
           />

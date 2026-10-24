@@ -85,7 +85,7 @@ pub(super) fn IntermodCalculator() -> impl IntoView {
       <div class="sm:col-span-2 space-y-3">
         {move || match outcome.get() {
           Err(e) => {
-            view! { <p role="alert" class="text-xs text-destructive">{error_message(e)}</p> }
+            view! { <p role="alert" class="text-xs text-hp-text">{error_message(e)}</p> }
               .into_any()
           }
           Ok(a) => {
@@ -164,7 +164,7 @@ pub(super) fn IntermodCalculator() -> impl IntoView {
         }}
       </div>
 
-      <h3 class="sm:col-span-2 pt-2 text-xs font-medium text-foreground">
+      <h3 class="sm:col-span-2 pt-2 text-xs text-foreground">
         {move || t("tools.intermod-image-title")}
       </h3>
       <Field label=Signal::derive(move || t("tools.receive-frequency-mhz")) r#for=rx_id.clone()>

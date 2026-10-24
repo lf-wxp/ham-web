@@ -18,7 +18,7 @@ use crate::components::study_plan_card::StudyPlanCard;
 use crate::exam_history::ExamTrend;
 use crate::i18n::{t, tf};
 use crate::pages::log::use_log_store;
-use crate::ui::{Chip, ChipGroup, Stat, Tooltip};
+use crate::ui::{Chip, ChipGroup, Stat, Tooltip, card_title_class};
 use crate::util::{local_today, now_ms, set_title, storage};
 use crate::{data, store, study};
 
@@ -197,7 +197,7 @@ pub fn ProgressPage() -> impl IntoView {
   });
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.progress")
         subtitle=move || t("learning.practice-exam-mistakes-bookmarks")
@@ -217,19 +217,19 @@ pub fn ProgressPage() -> impl IntoView {
         </div>
 
         <section class="pxl-card border bg-card p-4">
-          <h2 class="mb-3 text-sm font-semibold">{move || t("learning.daily-study-check-in")}</h2>
+          <h2 class=card_title_class("mb-3")>{move || t("learning.daily-study-check-in")}</h2>
           <StudyHeatmap days=heatmap_days today=local_today() />
         </section>
 
         <section class="pxl-card border bg-card p-4">
-          <h2 class="mb-2 text-sm font-semibold">{move || t("learning.dxcc-rarity-progress")}</h2>
+          <h2 class=card_title_class("mb-2")>{move || t("learning.dxcc-rarity-progress")}</h2>
           <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
             <span>{move || t("learning.worked-incl-auto-detected")}</span>
             <span class="tabular-nums">{format!("{dxcc_done} / {dxcc_total}")}</span>
           </div>
           <div class="h-2 w-full overflow-hidden bg-muted">
             <div
-              class="h-full bg-primary transition-all"
+              class="h-full bg-primary transition"
               style=format!("width: {:.1}%", dxcc_done as f64 / dxcc_total as f64 * 100.0)
             ></div>
           </div>
@@ -247,7 +247,7 @@ pub fn ProgressPage() -> impl IntoView {
 
         <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("learning.prep-status")}</h2>
+            <h2 class=card_title_class("mr-auto")>{move || t("learning.prep-status")}</h2>
             <ChipGroup
               value=Signal::derive(move || exam_bank.get().as_str().to_string())
               on_change=Callback::new(move |v: String| {
@@ -290,12 +290,12 @@ pub fn ProgressPage() -> impl IntoView {
                   view! {
                     <div>
                       <div class="mb-1 flex items-center justify-between text-xs">
-                        <span class="font-medium">
+                        <span>
                           {tf("learning.class", &[&b.to_string()])}
                           {(left > 0 && covered > 0).then(|| view! {
                             <a
                               href=format!("/practice?bank={b}&unseen=1")
-                              class="ml-1.5 border px-1.5 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/10"
+                              class="ml-1.5 border px-1.5 py-0.5 text-xs text-primary transition-colors hover:bg-primary/10"
                             >
                               {tf("learning.practice-the-unseen", &[&left.to_string()])}
                             </a>
@@ -306,7 +306,7 @@ pub fn ProgressPage() -> impl IntoView {
                         </span>
                       </div>
                       <div class="h-2 w-full overflow-hidden bg-muted">
-                        <div class="h-full bg-primary transition-all" style=format!("width: {pct:.1}%")></div>
+                        <div class="h-full bg-primary transition" style=format!("width: {pct:.1}%")></div>
                       </div>
                     </div>
                   }
@@ -332,8 +332,8 @@ pub fn ProgressPage() -> impl IntoView {
                     "border border-dashed p-3 text-center text-muted-foreground"
                   }>
                     <div class="text-2xl">{a.icon}</div>
-                    <div class="mt-1 text-xs font-medium">{move || t(a.name)}</div>
-                    <div class="mt-0.5 text-[10px] text-muted-foreground">{move || t(a.desc)}</div>
+                    <div class="mt-1 text-xs">{move || t(a.name)}</div>
+                    <div class="mt-0.5 text-xs text-muted-foreground">{move || t(a.desc)}</div>
                   </div>
                 }
               })
@@ -343,7 +343,7 @@ pub fn ProgressPage() -> impl IntoView {
 
         <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("learning.weak-area-analysis")}</h2>
+            <h2 class=card_title_class("mr-auto")>{move || t("learning.weak-area-analysis")}</h2>
             <ChipGroup
               value=Signal::derive(move || bank_tab.get().map(|b| b.as_str().to_string()).unwrap_or_default())
               on_change=Callback::new(move |v: String| bank_tab.set(v.parse::<Bank>().ok()))
@@ -379,11 +379,11 @@ pub fn ProgressPage() -> impl IntoView {
                     .map(|s| {
                       let rate = s.correct as f64 / s.total.max(1) as f64 * 100.0;
                       let bar = if rate < 50.0 {
-                        "bg-red-500"
+                        "bg-destructive/70"
                       } else if rate < 80.0 {
-                        "bg-amber-500"
+                        "bg-gold/70"
                       } else {
-                        "bg-emerald-500"
+                        "bg-win/70"
                       };
                       let bank = bank_tab.get_untracked().or(main_bank).unwrap_or_default();
                       let name = s.name.clone();
@@ -396,11 +396,11 @@ pub fn ProgressPage() -> impl IntoView {
                       view! {
                         <div class="border p-2.5">
                           <div class="mb-1 flex items-center justify-between gap-2 text-xs">
-                            <span class="flex min-w-0 flex-wrap items-center gap-1.5 font-medium">
+                            <span class="flex min-w-0 flex-wrap items-center gap-1.5">
                               <span>{move || t(&name)}</span>
                               <a
                                 href=href
-                                class="border px-1.5 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/10"
+                                class="border px-1.5 py-0.5 text-xs text-primary transition-colors hover:bg-primary/10"
                               >
                                 {move || t("shell.practice")}
                               </a>
@@ -410,7 +410,7 @@ pub fn ProgressPage() -> impl IntoView {
                                   view! {
                                     <a
                                       href=*route
-                                      class="border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent"
+                                      class="border px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent"
                                     >
                                       {*label}
                                     </a>
@@ -441,11 +441,11 @@ pub fn ProgressPage() -> impl IntoView {
                                     let name = sub.name.clone();
                                     let sub_rate = sub.correct as f64 / sub.total.max(1) as f64 * 100.0;
                                     let sub_bar = if sub_rate < 50.0 {
-                                      "bg-red-400"
+                                      "bg-destructive/50"
                                     } else if sub_rate < 80.0 {
-                                      "bg-amber-400"
+                                      "bg-gold/50"
                                     } else {
-                                      "bg-emerald-400"
+                                      "bg-win/50"
                                     };
                                     let sub_href = format!(
                                       "/practice?bank={bank}&sub={}",
@@ -453,9 +453,9 @@ pub fn ProgressPage() -> impl IntoView {
                                     );
                                     view! {
                                       <div>
-                                        <div class="flex items-center justify-between gap-2 text-[11px]">
+                                        <div class="flex items-center justify-between gap-2 text-xs">
                                           <span class="flex min-w-0 items-center gap-1 text-muted-foreground">
-                                            <span class="shrink-0 font-mono text-[10px] text-muted-foreground">
+                                            <span class="shrink-0 font-mono text-xs text-muted-foreground">
                                               {code}
                                             </span>
                                             <Tooltip class="min-w-0 flex-1" label=name.clone()>
@@ -463,7 +463,7 @@ pub fn ProgressPage() -> impl IntoView {
                                             </Tooltip>
                                             <a
                                               href=sub_href
-                                              class="shrink-0 border px-1 py-px text-[10px] text-primary transition-colors hover:bg-primary/10"
+                                              class="shrink-0 border px-1 py-px text-xs text-primary transition-colors hover:bg-primary/10"
                                             >
                                               {move || t("learning.practice")}
                                             </a>

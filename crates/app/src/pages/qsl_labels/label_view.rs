@@ -32,18 +32,18 @@ pub(crate) fn LabelView(
       <div class="flex items-baseline justify-between gap-2">
         <span>
           <span class="mr-1 text-zinc-500">"To Radio"</span>
-          <span class=format!("font-mono font-bold {call_size}")>{label.callsign.clone()}</span>
+          <span class=format!("font-mono {call_size}")>{label.callsign.clone()}</span>
         </span>
         <span class="text-zinc-500">"Confirming QSO"</span>
       </div>
       <table class="mt-[1mm] w-full border-collapse tabular-nums">
         <thead>
           <tr class="border-b border-zinc-400 text-left text-zinc-600">
-            <th class="font-medium">"Date"</th>
-            <th class="font-medium">"UTC"</th>
-            <th class="font-medium">"MHz"</th>
-            <th class="font-medium">"Mode"</th>
-            <th class="font-medium">"RST"</th>
+            <th>"Date"</th>
+            <th>"UTC"</th>
+            <th>"MHz"</th>
+            <th>"Mode"</th>
+            <th>"RST"</th>
           </tr>
         </thead>
         <tbody>

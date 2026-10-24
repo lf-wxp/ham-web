@@ -13,7 +13,7 @@ pub fn CheatSheetPage() -> impl IntoView {
   set_title("exam.exam-points-handbook");
   let secs = sections();
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader title=t("exam.exam-points-handbook") subtitle=t("exam.exam-points-subtitle") />
       <PageContainer>
         <div class="print-hide flex flex-wrap items-center justify-between gap-3">
@@ -32,13 +32,13 @@ pub fn CheatSheetPage() -> impl IntoView {
         {secs
           .into_iter()
           .map(|sec| {
-            let color = sec.color;
+            let cat_tone = sec.tone;
             let sec_name = sec.name;
             let count = sec.items.len();
             view! {
               <section class="print-avoid-break pxl-card border bg-card print:border-zinc-300">
                 <h2 class="flex items-center gap-2 pxl-section-title">
-                  <span class="h-2.5 w-2.5 shrink-0" style=format!("background: {color}")></span>
+                  <span class=format!("size-2.5 shrink-0 {}", crate::tone::dot(cat_tone))></span>
                   {move || t(sec_name)}
                   <span class="ml-auto text-xs font-normal normal-case text-muted-foreground">
                     {move || tp("knowledge.points", count as u32, &[&count.to_string()])}
@@ -50,10 +50,10 @@ pub fn CheatSheetPage() -> impl IntoView {
                     .into_iter()
                     .map(|it| {
                       view! {
-                        <div class="print-avoid-break border bg-muted/30 p-3">
+                        <div class="print-avoid-break border bg-inset p-3">
                           <div class="flex items-baseline gap-2">
-                            <span class="text-sm font-medium">{it.name}</span>
-                            <span class="font-mono text-[10px] text-muted-foreground">{it.code}</span>
+                            <span class="text-sm">{it.name}</span>
+                            <span class="font-mono text-xs text-muted-foreground">{it.code}</span>
                           </div>
                           <p class="mt-1 text-xs leading-5 text-muted-foreground">{it.note}</p>
                         </div>

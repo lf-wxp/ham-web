@@ -81,7 +81,7 @@ pub(super) fn DfPanel() -> impl IntoView {
           .collect_view()}
       </div>
 
-      <div class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground" aria-live="polite">
+      <div class="bg-inset px-3 py-2 text-sm text-muted-foreground" aria-live="polite">
         {move || {
           match outcome.get() {
             Outcome::NeedMore => {
@@ -129,7 +129,7 @@ pub(super) fn DfPanel() -> impl IntoView {
                   {wide
                     .then(|| {
                       view! {
-                        <p class="text-amber-600 dark:text-amber-400">
+                        <p class="text-gold-text">
                           {move || t("ardf.df-wide")}
                         </p>
                       }
@@ -137,7 +137,7 @@ pub(super) fn DfPanel() -> impl IntoView {
                   {(fix.behind > 0)
                     .then(|| {
                       view! {
-                        <p class="text-amber-600 dark:text-amber-400">
+                        <p class="text-gold-text">
                           {tp(
                             "ardf.df-behind",
                             fix.behind,

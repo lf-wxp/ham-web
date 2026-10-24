@@ -14,7 +14,7 @@ const CELL: &str = "border px-3 py-2 align-top";
 pub fn WeatherSatPage() -> impl IntoView {
   set_title("shell.weather-satellites");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.weather-satellites")
         subtitle=move || t("radio.noaa-apt-meteor-lrpt")
@@ -24,14 +24,14 @@ pub fn WeatherSatPage() -> impl IntoView {
         <section class="border bg-primary/5 p-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div class="text-sm font-semibold">{move || t("radio.got-an-apt-recording")}</div>
+              <div class="text-sm">{move || t("radio.got-an-apt-recording")}</div>
               <div class="mt-0.5 text-xs text-muted-foreground">
                 {move || t("radio.upload-a-wav-to")}
               </div>
             </div>
             <a
               href="/apt-decoder"
-              class="bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+              class="bg-primary px-3 py-1.5 text-xs text-primary-foreground"
             >
               {move || t("radio.open-the-apt-decoder")}
             </a>
@@ -46,7 +46,7 @@ pub fn WeatherSatPage() -> impl IntoView {
               .map(|(title, desc, link)| {
                 view! {
                   <li>
-                    <div class="text-sm font-medium">{*title}</div>
+                    <div class="text-sm">{*title}</div>
                     <div class="mt-0.5 text-sm text-muted-foreground">{*desc}</div>
                     {link.map(|href| {
                       view! {
@@ -77,7 +77,7 @@ pub fn WeatherSatPage() -> impl IntoView {
               .map(|s| {
                 view! {
                   <TableRow>
-                    <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{s.name}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap")>{s.name}</TableCell>
                     <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{s.signal}</TableCell>
                     <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{s.freq}</TableCell>
                     <TableCell class=format!("{CELL} text-muted-foreground")>{s.note}</TableCell>
@@ -96,7 +96,7 @@ pub fn WeatherSatPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
+                    <span class="text-sm">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
                 }

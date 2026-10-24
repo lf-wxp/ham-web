@@ -14,7 +14,7 @@ const CELL: &str = "border px-3 py-2 align-top";
 pub fn AnalogModesPage() -> impl IntoView {
   set_title("shell.analog-modes");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.analog-modes")
         subtitle=move || t("knowledge.cw-ssb-am-fm")
@@ -39,7 +39,7 @@ pub fn AnalogModesPage() -> impl IntoView {
                 view! {
                   <TableRow>
                     <TableCell class=format!("{CELL} whitespace-nowrap")>
-                      <div class="font-medium">{m.name}</div>
+                      <div>{m.name}</div>
                       <div class="font-mono text-xs text-muted-foreground">{m.abbr}</div>
                     </TableCell>
                     <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-muted-foreground")>{m.emission}</TableCell>
@@ -79,7 +79,7 @@ pub fn AnalogModesPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
+                    <span class="text-sm">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
                 }

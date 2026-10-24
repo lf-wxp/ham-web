@@ -80,8 +80,8 @@ pub(super) fn ScpSource(
   });
 
   view! {
-    <details class="mt-3 border bg-muted/30 px-3 py-2 text-sm" data-slot="scp-source">
-      <summary class="cursor-pointer font-medium">{move || t("contest.scp-source-heading")}</summary>
+    <details class="mt-3 border bg-inset px-3 py-2 text-sm" data-slot="scp-source">
+      <summary class="cursor-pointer">{move || t("contest.scp-source-heading")}</summary>
       <div class="mt-2 space-y-2">
         <p>{move || tp("contest.scp-from-log", from_log.get(), &[&from_log.get().to_string()])}</p>
         <p>

@@ -30,7 +30,7 @@ pub fn NecTemplateLink(template: &'static str) -> impl IntoView {
     <Tooltip label=name>
       <a
         href="/nec"
-        class="inline-flex items-center gap-1 whitespace-nowrap border bg-background px-2 py-0.5 text-xs font-medium hover:bg-accent"
+        class="inline-flex items-center gap-1 whitespace-nowrap border bg-background px-2 py-0.5 text-xs hover:bg-accent"
         on:click=move |_| stash_nec_template(id)
       >
         {move || t("tools.nec-open-in-solver")}

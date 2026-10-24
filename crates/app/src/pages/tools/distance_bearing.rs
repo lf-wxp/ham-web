@@ -33,7 +33,7 @@ pub(super) fn DistanceBearing() -> impl IntoView {
           placeholder="JN18EU"
         />
       </Field>
-      <div class="sm:col-span-2 bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
+      <div class="sm:col-span-2 bg-inset px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let a = lat_lon_from_grid(g1.get().trim());
           let b = lat_lon_from_grid(g2.get().trim());

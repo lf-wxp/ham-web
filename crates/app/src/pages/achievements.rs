@@ -112,7 +112,7 @@ pub fn AchievementsPage() -> impl IntoView {
   grid.on_load(|el| crate::motion::reveal_children(&el));
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("learning.achievement-wall")
         subtitle=move || t("learning.unlock-milestones-as-you")
@@ -128,7 +128,7 @@ pub fn AchievementsPage() -> impl IntoView {
       <PageContainer class="space-y-5">
         <section class="pxl-card border bg-card p-4">
           <div class="mb-1 flex items-center justify-between text-sm">
-            <span class="font-medium">{move || t("learning.achievements-unlocked")}</span>
+            <span>{move || t("learning.achievements-unlocked")}</span>
             <span class="tabular-nums text-muted-foreground">
               {move || tf("common.ratio", &[&unlocked_ids.with(Vec::len).to_string(), &total.to_string()])}
             </span>

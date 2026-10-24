@@ -83,7 +83,7 @@ pub fn DominoexDecoderPage() -> impl IntoView {
     .collect();
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("tools.dominoex-decoder")
         subtitle=move || t("tools.dominoex-decoder-subtitle")
@@ -183,7 +183,7 @@ pub fn DominoexDecoderPage() -> impl IntoView {
               view! {
                 <div
                   role="alert"
-                  class="border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+                  class="border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-hp-text"
                 >
                   {e}
                 </div>
@@ -196,12 +196,12 @@ pub fn DominoexDecoderPage() -> impl IntoView {
               view! {
                 <div class="space-y-3">
                   <div class="flex items-center justify-between gap-3">
-                    <p class="min-w-0 truncate text-sm font-medium">{file_name.get()}</p>
+                    <p class="min-w-0 truncate text-sm">{file_name.get()}</p>
                     <Button variant=Variant::Outline on_click=reset>
                       {move || t("tools.decode-another-file")}
                     </Button>
                   </div>
-                  <pre class="whitespace-pre-wrap break-all bg-muted/50 p-4 font-mono text-sm">
+                  <pre class="whitespace-pre-wrap break-all bg-inset p-4 font-mono text-sm">
                     {p.text.clone()}
                   </pre>
                   {move || {

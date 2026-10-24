@@ -102,9 +102,9 @@ fn fmt_resistance(ohm: f64) -> String {
 const TAU: f64 = std::f64::consts::TAU;
 
 /// 结果区（只读，不是表单控件）。
-const RESULT: &str = "sm:col-span-2 bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
+const RESULT: &str = "sm:col-span-2 bg-inset px-3 py-2 text-sm text-muted-foreground";
 
 /// 结果区（单列布局用）：与 [`RESULT`] 同一套底色 / 内距 / 字号，但不跨列。
 ///
 /// 单列网格里写 `sm:col-span-2` 会凭空长出第二列，所以单列工具（代码解码这类）用这一份。
-const RESULT_INLINE: &str = "bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground";
+const RESULT_INLINE: &str = "bg-inset px-3 py-2 text-sm tabular-nums text-muted-foreground";

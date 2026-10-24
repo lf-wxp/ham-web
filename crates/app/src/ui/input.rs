@@ -257,7 +257,7 @@ pub fn Input(
                 ])
                 on:click=clear
               >
-                <Icon kind=IconKind::X class="size-4" />
+                <Icon kind=IconKind::X class="size-6" />
               </button>
             </Show>
           }

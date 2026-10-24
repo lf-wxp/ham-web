@@ -454,7 +454,7 @@ pub(super) fn FilterSection() -> impl IntoView {
                       x=x
                       y=MAG_H - 6.0
                       text-anchor="middle"
-                      class="fill-muted-foreground text-[10px]"
+                      class="fill-muted-foreground text-xs"
                     >
                       {fmt_freq(f)}
                     </text>
@@ -483,7 +483,7 @@ pub(super) fn FilterSection() -> impl IntoView {
           >
             <path
               d=phase_path
-              class="fill-none stroke-sky-500"
+              class="fill-none stroke-xp/70"
               stroke-width="1.6"
               vector-effect="non-scaling-stroke"
             />
@@ -499,7 +499,7 @@ pub(super) fn FilterSection() -> impl IntoView {
           >
             <path
               d=delay_path
-              class="fill-none stroke-emerald-500"
+              class="fill-none stroke-win/70"
               stroke-width="1.6"
               vector-effect="non-scaling-stroke"
             />

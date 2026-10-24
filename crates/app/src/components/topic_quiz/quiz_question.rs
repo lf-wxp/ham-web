@@ -32,7 +32,7 @@ pub(super) fn QuizQuestion(q: QuestionItem) -> impl IntoView {
 
   view! {
     <div class="border p-3">
-      <div class="text-sm font-medium">{question}</div>
+      <div class="text-sm">{question}</div>
       <div class="mt-2 space-y-1.5">
         {options
           .into_iter()
@@ -53,9 +53,9 @@ pub(super) fn QuizQuestion(q: QuestionItem) -> impl IntoView {
                   let base = "w-full border px-3 py-1.5 text-left text-sm transition-colors";
                   if answered() {
                     if correct_key.contains(&class_key) {
-                      format!("{base} border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40")
+                      format!("{base} border-win bg-win/10")
                     } else if is_sel() {
-                      format!("{base} border-red-400 bg-red-50 dark:bg-red-950/40")
+                      format!("{base} border-destructive bg-destructive/10")
                     } else {
                       base.to_string()
                     }
@@ -76,11 +76,11 @@ pub(super) fn QuizQuestion(q: QuestionItem) -> impl IntoView {
       {move || {
         answered().then(|| {
           if correct() {
-            view! { <div class="mt-1.5 text-xs text-emerald-600">{move || t("common.correct-verdict")}</div> }.into_any()
+            view! { <div class="mt-1.5 text-xs text-win-text">{move || t("common.correct-verdict")}</div> }.into_any()
           } else {
             view! {
-              <div class="mt-1.5 text-xs text-red-600">
-                {move || t("exam.correct-answer-prefix")} <span class="font-mono font-semibold">{answer_keys.join("、")}</span>
+              <div class="mt-1.5 text-xs text-hp-text">
+                {move || t("exam.correct-answer-prefix")} <span class="font-mono">{answer_keys.join("、")}</span>
               </div>
             }
             .into_any()

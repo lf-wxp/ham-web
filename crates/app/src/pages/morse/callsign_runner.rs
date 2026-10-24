@@ -10,7 +10,7 @@ use crate::morse_audio::{play_morse_timed_with, play_pileup};
 use crate::morse_settings::use_morse_settings;
 use crate::ui::{
   Button, ButtonKind, Checkbox, ControlSize, Field, Input, Slider, Table, TableBody, TableCell,
-  TableHead, TableHeader, TableRow, Tooltip,
+  TableHead, TableHeader, TableRow, Tooltip, card_title_class,
 };
 use crate::util::{random, storage, unique_id};
 
@@ -237,7 +237,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
   view! {
     <section class="pxl-card border bg-card">
       <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-        <h2 class="mr-auto text-sm font-semibold">
+        <h2 class=card_title_class("mr-auto")>
           {move || t("morse.callsign-copying-contest-simulation")}
           <span class="ml-2 text-xs font-normal text-muted-foreground">
             {move || {
@@ -252,7 +252,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
             stats.set(RunnerStats::default());
             save(&stats.get_untracked());
           }
-          class="px-2 py-0.5 text-xs text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+          class="px-2 py-0.5 text-xs text-muted-foreground transition duration-(--motion-normal) hover:bg-accent hover:text-foreground"
         >
           {move || t("morse.reset-score")}
         </button>
@@ -282,7 +282,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
           {toggle("叠听（多一个干扰台）", |s| s.pileup, |s, v| s.pileup = v)}
         </div>
 
-        <div class="flex flex-col items-center gap-3 border bg-muted/30 px-4 py-6">
+        <div class="flex flex-col items-center gap-3 border bg-inset px-4 py-6">
           {move || {
             if in_progress() {
               let (n, score) = session.with(|s| s.as_ref().map_or((0, 0), |s| (s.attempted() + 1, s.score())));
@@ -294,9 +294,9 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                     let d = wpm_delta.get();
                     (d != 0).then(|| {
                       let cls = if d > 0 {
-                        "tabular-nums text-emerald-600 dark:text-emerald-400"
+                        "tabular-nums text-win-text"
                       } else {
-                        "tabular-nums text-red-600 dark:text-red-400"
+                        "tabular-nums text-hp-text"
                       };
                       let sign = if d > 0 { "+" } else { "" };
                       view! {
@@ -311,9 +311,9 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                   <PillButton on_click=Callback::new(move |_| replay())>
                     {move || {
                       if playing.get() {
-                        view! { <Icon kind=IconKind::AudioLines class="h-4 w-4 animate-pulse" /> }.into_any()
+                        view! { <Icon kind=IconKind::AudioLines class="size-6 w-4 animate-pulse" /> }.into_any()
                       } else {
-                        view! { <Icon kind=IconKind::Play class="h-4 w-4" /> }.into_any()
+                        view! { <Icon kind=IconKind::Play class="size-6 w-4" /> }.into_any()
                       }
                     }}
                     {move || t("morse.replay")}
@@ -331,7 +331,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                 {move || {
                   stats.with(|s| s.pileup).then(|| {
                     view! {
-                      <div class="text-xs text-amber-700 dark:text-amber-300">{move || t("morse.pile-up-the-interferer")}</div>
+                      <div class="text-xs text-gold-text">{move || t("morse.pile-up-the-interferer")}</div>
                     }
                   })
                 }}
@@ -370,7 +370,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                 autocapitalize="characters"
                 spellcheck="false"
                 size=ControlSize::Lg
-                class="h-10 w-40 px-3 text-center font-mono text-lg md:text-lg font-semibold uppercase tracking-widest"
+                class="h-10 w-40 px-3 text-center font-mono text-lg md:text-lg uppercase tracking-widest"
               />
             </Field>
             <Field label=Signal::derive(move || t("contest.serial")) r#for=serial_id.clone()>
@@ -383,7 +383,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                 autocomplete="off"
                 inputmode="numeric"
                 size=ControlSize::Lg
-                class="h-10 w-24 px-3 text-center font-mono text-lg md:text-lg font-semibold uppercase tracking-widest"
+                class="h-10 w-24 px-3 text-center font-mono text-lg md:text-lg uppercase tracking-widest"
               />
             </Field>
             <Button
@@ -398,14 +398,14 @@ pub(super) fn CallsignRunner() -> impl IntoView {
             {move || revealed.get().map(|ex| {
               view! {
                 <span class="text-muted-foreground">
-                  {move || t("morse.answer")} <span class="font-mono font-semibold">{format!("{} 5NN {}", ex.call, ex.serial)}</span>
+                  {move || t("morse.answer")} <span class="font-mono">{format!("{} 5NN {}", ex.call, ex.serial)}</span>
                 </span>
               }
             })}
             {move || last().map(|l| {
               let ok = l.result.call_ok && l.result.serial_ok;
               view! {
-                <span class=if ok { "text-emerald-600 dark:text-emerald-400" } else { "text-red-600 dark:text-red-400" }>
+                <span class=if ok { "text-win-text" } else { "text-hp-text" }>
                   {if ok { "✓ " } else { "✗ " }}
                   <span class="font-mono">{format!("{} 5NN {}", l.ex.call, l.ex.serial)}</span>
                 </span>
@@ -428,10 +428,10 @@ pub(super) fn CallsignRunner() -> impl IntoView {
             let best = stats.with(|st| st.best_score);
             view! {
               <div class="space-y-2">
-                <div class="text-sm font-medium">
+                <div class="text-sm">
                   {tf("common.round-score", &[&(score).to_string(), &(SESSION_QSOS * 3).to_string()])}
                   {(score >= best && score > 0).then(|| view! {
-                    <span class="ml-2 text-emerald-600 dark:text-emerald-400">{move || t("morse.new-record")}</span>
+                    <span class="ml-2 text-win-text">{move || t("morse.new-record")}</span>
                   })}
                 </div>
                 <Table borderless=true class="text-xs">
@@ -461,7 +461,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                           <TableRow class="border-t">
                             <TableCell class="py-1 pr-3 text-muted-foreground">{i + 1}</TableCell>
                             <TableCell class="py-1 pr-3">{their}</TableCell>
-                            <TableCell class=if ok { "py-1 pr-3" } else { "py-1 pr-3 text-red-600 dark:text-red-400" }>
+                            <TableCell class=if ok { "py-1 pr-3" } else { "py-1 pr-3 text-hp-text" }>
                               {copied}
                             </TableCell>
                             <TableCell class="py-1 pr-3 tabular-nums">{wpm}</TableCell>
@@ -495,8 +495,8 @@ pub(super) fn CallsignRunner() -> impl IntoView {
                         let tip = tp("common.missed-times", n, &[&(n).to_string()]);
                         view! {
                           <Tooltip label=tip>
-                            <span class=pill_class(false)>
-                              <span class="font-mono font-semibold">{c.to_string()}</span>
+                            <span class=pill_class()>
+                              <span class="font-mono">{c.to_string()}</span>
                               <span class="ml-1 tabular-nums">{n}</span>
                             </span>
                           </Tooltip>

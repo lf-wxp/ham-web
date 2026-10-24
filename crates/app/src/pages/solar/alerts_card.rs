@@ -56,7 +56,7 @@ pub(super) fn AlertsCard() -> impl IntoView {
                           view! { <span></span> }.into_any()
                         } else {
                           view! {
-                            <span class=format!("bg-muted px-1.5 py-0.5 font-mono text-xs font-semibold {color}")>
+                            <span class=format!("bg-muted px-1.5 py-0.5 font-mono text-xs {color}")>
                               {a.level.clone()}
                             </span>
                           }

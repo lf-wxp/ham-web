@@ -61,18 +61,18 @@ pub(super) fn BaseHero() -> impl IntoView {
               })}
           </div>
 
-          <div class="flex flex-wrap justify-center gap-3 sm:justify-start">
+          // 首屏只有一个最重的主操作：「出去闯关」。以前这里并排三个 `Lg` 按钮，其中「挑战 Boss」
+          // （/exam）与下面「快速开始」里的「开始模拟考试」是同一处去向，两块 L2 窗口里各摆一遍，
+          // 视线没有落点（`docs/ui-components.md` §2 硬规则 8）。模拟考试留给带题库选择的快速开始。
+          <div class="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
             <ButtonLink href="/map" variant=Variant::Default size=Size::Lg>
               {move || t("rpg.to-stage")}
             </ButtonLink>
-            <ButtonLink href="/exam" variant=Variant::Secondary size=Size::Lg>
-              {move || t("rpg.to-boss")}
-            </ButtonLink>
-            <ButtonLink href="/bestiary" variant=Variant::Outline size=Size::Lg>
+            <ButtonLink href="/bestiary" variant=Variant::Ghost size=Size::Default>
               {move || t("rpg.bestiary")}
             </ButtonLink>
           </div>
-          // 三个入口用 RPG 隐喻命名（闯关 / Boss / 图鉴）：老用户一眼懂，新用户不懂。
+          // 入口用 RPG 隐喻命名（闯关 / 图鉴）：老用户一眼懂，新用户不懂。
           // 补一行白话对照，比把按钮改成「开始练习」更能保住这套世界观。
           <p class="text-xs text-muted-foreground">{move || t("home.rpg-entry-legend")}</p>
         </div>

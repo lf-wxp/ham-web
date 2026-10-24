@@ -101,7 +101,7 @@ pub fn RbnPage() -> impl IntoView {
   };
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.rbn")
         subtitle=move || t("radio.live-cw-rtty-skimmer")
@@ -169,11 +169,11 @@ pub fn RbnPage() -> impl IntoView {
                       let s = s.clone();
                       view! {
                         <TableRow>
-                          <TableCell class="border px-3 py-2 font-medium">{s.spotter.clone()}</TableCell>
+                          <TableCell class="border px-3 py-2">{s.spotter.clone()}</TableCell>
                           <TableCell class="border px-3 py-2 tabular-nums text-muted-foreground">{format!("{:.1} kHz", s.freq_khz)}</TableCell>
                           <TableCell class="border px-3 py-2">{s.band.clone()}</TableCell>
                           <TableCell class="border px-3 py-2">{s.mode.clone()}</TableCell>
-                          <TableCell class=format!("border px-3 py-2 text-right tabular-nums {}", if s.snr >= 0 { "text-emerald-600" } else { "text-muted-foreground" })>
+                          <TableCell class=format!("border px-3 py-2 text-right tabular-nums {}", if s.snr >= 0 { "text-win-text" } else { "text-muted-foreground" })>
                             {format!("{} dB", s.snr)}
                           </TableCell>
                           <TableCell class="border px-3 py-2 text-right tabular-nums text-muted-foreground">{s.wpm}</TableCell>

@@ -27,7 +27,7 @@ pub fn RadioLawPage() -> impl IntoView {
   set_title("knowledge.radio-law");
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=Signal::derive(move || t("knowledge.radio-law"))
         subtitle=Signal::derive(move || t("knowledge.radio-law-subtitle"))
@@ -61,7 +61,7 @@ pub fn RadioLawPage() -> impl IntoView {
                   .map(|(chapter, numbers)| {
                     view! {
                       <div class="border-b px-4 py-3 last:border-b-0">
-                        <h3 class="mb-2 text-xs font-semibold text-primary">{chapter}</h3>
+                        <h3 class="mb-2 text-xs text-primary">{chapter}</h3>
                         <div class="space-y-1">
                           {numbers
                             .into_iter()
@@ -74,16 +74,16 @@ pub fn RadioLawPage() -> impl IntoView {
                                 <div
                                   // 锚点带法律 key：办法与条例都有「第30条」，不带会撞。
                                   id=format!("{}-{number}", law.key)
-                                  class="scroll-mt-20 px-3 py-2 transition-colors hover:bg-muted/40"
+                                  class="scroll-mt-20 px-3 py-2 transition-colors hover:bg-inset"
                                 >
                                   <div class="flex flex-wrap items-baseline gap-2">
-                                    <span class="text-sm font-semibold">
+                                    <span class="text-sm">
                                       {move || tf("knowledge.radio-law-article-n", &[&number.to_string()])}
                                     </span>
                                     {(n_questions > 0)
                                       .then(|| {
                                         view! {
-                                          <span class="text-[11px] text-muted-foreground">
+                                          <span class="text-xs text-muted-foreground">
                                             {move || {
                                               tf(
                                                 "knowledge.radio-law-n-questions",
@@ -102,7 +102,7 @@ pub fn RadioLawPage() -> impl IntoView {
                                     .then(|| {
                                       view! {
                                         <div class="mt-2 border-t pt-2">
-                                          <p class="text-[11px] text-muted-foreground">
+                                          <p class="text-xs text-muted-foreground">
                                             {move || t("knowledge.radio-law-citing-questions")}
                                           </p>
                                           <ul class="mt-1 space-y-1">

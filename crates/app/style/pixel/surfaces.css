@@ -48,6 +48,14 @@
 
   html {
     font-family: var(--font-pixel-body);
+    /* 滚动模型：全站只有**窗口**在纵向滚动（浮层与吸顶侧栏是唯一允许的嵌套滚动）。
+       原生窗口滚动条被隐藏（见下面的 `html::-webkit-scrollbar`），改由 `ui::ScrollBar` 画一条
+       从吸顶导航下沿开始的像素滚动条 —— 导航是「机身」、滚动条属于「屏幕」，不并排到头部去。
+       因此：① 页面不会因为滚动条有无而横向跳动（`lock_scroll` 不需要补 padding）；
+       ② 不要再写 `scrollbar-gutter`（没有槽位可言）。
+       `scroll-behavior: auto` 是显式声明：像素风不做平滑滚动（位移用 steps()，平滑滚动会把
+       `scroll_to_element` 的逐帧语言冲掉），系统「减少动效」时的 `auto !important` 因此只是兜底。 */
+    scroll-behavior: auto;
     /* 点阵字体不抗锯齿才锐利；易读字体模式下恢复灰度抗锯齿。 */
     -webkit-font-smoothing: none;
     -moz-osx-font-smoothing: auto;
@@ -385,6 +393,18 @@ body::before {
    scrollbar-width——它们是继承属性，一旦生效，Chromium 会改用标准滚动条绘制并忽略
    ::-webkit-scrollbar，下面的宽度设置随之失效（实测会退回默认宽度）。标准属性仅用于
    Firefox 回退，见下方的 @supports 块。 */
+/* 窗口滚动条由 `ui::ScrollBar` 自绘（只覆盖内容区，见 `ui/scrollbar.rs`），这里把**原生窗口
+   滚动条**藏掉；嵌套滚动区（表格 / 弹层 / 吸顶侧栏）仍用下面这套原生自绘样式。
+   `scrollbar-width` 只给 Firefox，Chromium 上它会让 `::-webkit-scrollbar` 失效——所以要
+   分开写：`html` 独占一个选择器，不落在 `*` 上。 */
+html {
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+}
+
 *::-webkit-scrollbar {
   width: 12px;
   height: 12px;
@@ -408,6 +428,47 @@ body::before {
 
 *::-webkit-scrollbar-corner {
   background: var(--muted);
+}
+
+/* ---------- 窗口滚动条（`ui::ScrollBar`） ----------
+   从吸顶导航下沿开始，到视口底部；`top` 由组件按 `[data-nav]` 实测写入。
+   **浮在内容之上、不占布局**：没有轨道底色，只有 thumb，所以不需要给 `main` 留 12px
+   （留了会在没滚动条时也空出一条，且滚动条出现 / 消失时内容会横向抖）。代价是拖动区
+   覆盖最右 12px，与系统覆盖式滚动条一致。
+   外壳不吃指针事件（右边缘的内容该点还能点），只有 thumb 接拖动。
+   触屏没有常驻滚动条，整条隐藏（`hover: none`），避免手指滚动时多一个浮层。 */
+.pxl-scrollbar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: 12px;
+  z-index: 40; /* 低于弹层（z-50）：模态打开时被遮罩盖住，不会浮在弹窗上 */
+  pointer-events: none;
+  display: none;
+}
+
+.pxl-scrollbar-thumb {
+  position: absolute;
+  left: 0;
+  width: 12px;
+  height: 48px;
+  background-color: var(--primary);
+  border: 2px solid var(--pxl-ink);
+  box-shadow: inset 2px 2px 0 0 rgb(255 255 255 / 0.35);
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+}
+
+.pxl-scrollbar-thumb:active {
+  background-color: var(--accent);
+  cursor: grabbing;
+}
+
+@media (hover: none) {
+  .pxl-scrollbar {
+    display: none !important;
+  }
 }
 
 /* Firefox 等不支持 ::-webkit-scrollbar 的浏览器：回退到标准属性。
@@ -453,9 +514,11 @@ body::before {
 
 /* ---------- 像素图标与精灵 ----------
    图标是 24×24 网格、整数坐标的方块：按网格的整数倍显示才锐利。
-   站内大量的 `h-4 w-4`（16px）会让 2px 的像素格缩成 1.33px，边缘出现灰边；
-   这里把 16px / 20px 的图标统一抬到 24px（三个常见尺寸：24 / 32 / 48），
-   而不是一个个去改调用点。`size-*` 与 `h-* w-*` 两种写法都要覆盖。 */
+   新代码一律写 `size-6`（24px，1:1）。
+   下面这段兜底只针对**还没改过来的** `h-3/3.5/4/5`、`size-3/3.5/4/5`（16 / 20px）：
+   它们会让 2px 的像素格缩成 1.33px、边缘发灰，所以统一抬到 24px。
+   写 `h-4 w-4` 的调用点现在已被 `ui_check` ㉓ 拦下（源码里 0 处），
+   这段留着是给动态 HTML / 第三方片段兜底。 */
 .pxl-icon {
   flex-shrink: 0;
   image-rendering: pixelated;

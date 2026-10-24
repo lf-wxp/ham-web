@@ -23,7 +23,7 @@ pub fn StepsSection(
           .map(|(step, desc)| {
             view! {
               <div class="flex flex-col gap-1 px-3 py-2 sm:flex-row sm:items-baseline sm:gap-3">
-                <span class="shrink-0 text-sm font-semibold text-primary">{move || { data::track_knowledge(); data::kt(step) }}</span>
+                <span class="shrink-0 text-sm text-primary">{move || { data::track_knowledge(); data::kt(step) }}</span>
                 <span class="text-sm text-muted-foreground">{move || { data::track_knowledge(); data::kt(desc) }}</span>
               </div>
             }

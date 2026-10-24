@@ -271,7 +271,7 @@ pub fn DiyProjectsPage() -> impl IntoView {
 
                     // BOM：每行带「已采购」勾选（只存本机）。
                     <div>
-                      <h3 class="text-xs font-semibold text-primary">{move || t("diy.bom")}</h3>
+                      <h3 class="text-xs text-primary">{move || t("diy.bom")}</h3>
                       <ul class="mt-1 divide-y">
                         {p
                           .bom
@@ -304,7 +304,7 @@ pub fn DiyProjectsPage() -> impl IntoView {
                                     tf("diy.bom-bought-label", &[text(item).as_str()])
                                   })
                                 />
-                                <span class="font-medium">{move || text(item)}</span>
+                                <span>{move || text(item)}</span>
                                 <span class="text-muted-foreground">{move || text(how)}</span>
                               </li>
                             }
@@ -318,7 +318,7 @@ pub fn DiyProjectsPage() -> impl IntoView {
                       .then(|| {
                         view! {
                           <div>
-                            <h3 class="text-xs font-semibold text-primary">{move || t("diy.links")}</h3>
+                            <h3 class="text-xs text-primary">{move || t("diy.links")}</h3>
                             <ul class="mt-1 space-y-0.5 text-sm">
                               {p.links.iter().copied().map(|(label, url)| {
                                 let external = url.starts_with("https://");
@@ -342,7 +342,7 @@ pub fn DiyProjectsPage() -> impl IntoView {
 
                     // 测试步骤。
                     <div>
-                      <h3 class="text-xs font-semibold text-primary">{move || t("diy.tests")}</h3>
+                      <h3 class="text-xs text-primary">{move || t("diy.tests")}</h3>
                       <ol class="mt-1 list-decimal space-y-0.5 pl-5 text-sm text-muted-foreground">
                         {p.tests.iter().map(|step| {
                           let step = *step;
@@ -353,7 +353,7 @@ pub fn DiyProjectsPage() -> impl IntoView {
 
                     // 常见问题。
                     <div>
-                      <h3 class="text-xs font-semibold text-primary">{move || t("diy.pitfalls")}</h3>
+                      <h3 class="text-xs text-primary">{move || t("diy.pitfalls")}</h3>
                       <ul class="mt-1 space-y-0.5 text-sm text-muted-foreground">
                         {p.pitfalls.iter().map(|tip| {
                           let tip = *tip;

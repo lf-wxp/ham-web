@@ -45,12 +45,14 @@ pub fn Bubble(open: RwSignal<bool>, #[prop(into)] text: Signal<String>) -> impl 
               class="opacity-70 hover:opacity-100 transition-opacity"
               aria-label=move || t("learning.dismiss")
             >
-              <Icon kind=IconKind::X class="h-3.5 w-3.5" />
+              <Icon kind=IconKind::X class="size-6 w-3.5" />
             </button>
           </div>
           <div
             class="absolute left-4 -bottom-2 w-0 h-0"
             aria-hidden="true"
+            // 三角形气泡箭头：左右两条透明边 + 上边框上色。别把三条并成两条——
+            // `border-right: border-top: …` 是非法声明，浏览器会整条丢弃，箭头直接消失。
             style="border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid hsl(var(--popover)); filter: drop-shadow(0 1px 0 rgba(0,0,0,0.06));"
           ></div>
         </div>

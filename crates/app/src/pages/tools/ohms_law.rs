@@ -53,8 +53,8 @@ pub(super) fn OhmsLaw() -> impl IntoView {
           match calc.get() {
             Some((name, value, power)) => view! {
               <span>
-                {name} " = " <span class="font-mono font-semibold text-foreground">{fmt_num(value)}</span>
-                {move || t("tools.power-p")} <span class="font-mono font-semibold text-foreground">{fmt_num(power)}</span> " W"
+                {name} " = " <span class="font-mono text-foreground">{fmt_num(value)}</span>
+                {move || t("tools.power-p")} <span class="font-mono text-foreground">{fmt_num(power)}</span> " W"
               </span>
             }.into_any(),
             None => view! { {move || t("tools.fill-in-any-two")} }.into_any(),

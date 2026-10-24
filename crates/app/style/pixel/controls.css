@@ -48,8 +48,9 @@
   }
 
   @media (hover: hover) {
+    /* 悬停 = 上抬 2px + 投影拉长。不再叠 `brightness()`：滤镜会算出调色板之外的颜色，
+       而「限色」是这套像素风的前提；像素游戏里的悬停反馈本来就是位移 / 换帧，不是调亮。 */
     .pxl-btn:hover:not(:disabled) {
-      filter: brightness(1.1);
       translate: 0 -2px;
       box-shadow:
         inset 2px 2px 0 0 var(--pxl-hi),
@@ -68,9 +69,32 @@
       0 0 0 0 var(--pxl-shadow);
   }
 
+  /* 「正在按住 / 正在播放」的常驻按下态：morse 大圆键由 `data-state="active"` 驱动，
+     与 `:active` 同一套外观 —— 不做缩放（中间帧会让点阵文字变糊），位移 + 阴影翻转即可。
+     放在 `:hover` 规则之后：同权重下后者胜，悬停上抬不会盖掉按下态。 */
+  .pxl-btn[data-state="active"]:not(:disabled) {
+    translate: 2px 2px;
+    filter: none;
+    box-shadow:
+      inset 2px 2px 0 0 var(--btn-lo),
+      inset -2px -2px 0 0 var(--pxl-hi),
+      0 0 0 0 var(--pxl-shadow);
+  }
+
   .pxl-btn:focus-visible {
     outline: 2px dashed var(--ring);
     outline-offset: 3px;
+  }
+
+  /* 粗指针（触屏 / 平板）：紧凑按钮抬到 32px。
+     24px 是 WCAG 2.5.8 的下限、不是舒适区；`Size::Xs` / `IconSm` 在表格行、
+     工具条里用得多，手机上 24px 很容易点到隔壁。只抬带 `pxl-btn-tight` 的两档，
+     不动其它档位 —— 否则桌面工具栏的密度也会跟着变。 */
+  @media (pointer: coarse) {
+    .pxl-btn-tight {
+      min-height: 2rem;
+      min-width: 2rem;
+    }
   }
 
   /* 禁用：抖动网点遮罩 + 去投影。网点而不是半透明：像素风里「灰掉」就是镂空。 */
@@ -705,6 +729,19 @@
     --btn-bg: var(--primary);
     --btn-fg: var(--primary-foreground);
     --btn-lo: rgb(0 0 0 / 0.3);
+  }
+
+  /* ---------- 整卡可点的内容卡片（SectionCard 带 href） ----------
+     标题里的链接用 `after:inset-0` 铺满整张卡（stretched link），浏览器默认的焦点环
+     只会画在标题那几个字上，键盘用户看不出「整张卡」是目标。这里把虚线焦点环画到整张卡上，
+     链接自身不再画。悬停反馈（上抬 + 硬投影）是 `motion-lift`，由 SectionCard 一并带上。 */
+  .pxl-card-link:has(> .pxl-section-title a[data-card-link]:focus-visible) {
+    outline: 2px dashed var(--ring);
+    outline-offset: 2px;
+  }
+
+  .pxl-card-link a[data-card-link]:focus-visible {
+    outline: none;
   }
 
   /* 可见气泡在 body 的传送层，位置由触发器 rect 与视口边界决定，不受滚动容器裁剪。 */

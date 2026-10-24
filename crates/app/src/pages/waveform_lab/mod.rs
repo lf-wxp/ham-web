@@ -21,7 +21,7 @@ use symbol_section::SymbolSection;
 use wave_section::WaveSection;
 
 /// 结果条。
-pub(super) const RESULT: &str = "bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
+pub(super) const RESULT: &str = "bg-inset px-3 py-2 text-sm text-muted-foreground";
 /// 说明文字。
 pub(super) const NOTE: &str = "text-xs text-muted-foreground";
 /// 绘图区外层容器。
@@ -46,7 +46,7 @@ pub(super) fn fmt_num(v: f64) -> String {
 pub fn WaveformLabPage() -> impl IntoView {
   set_title("tools.waveform-lab");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("tools.waveform-lab")
         subtitle=move || t("tools.modulated-waveforms-and-spectra")

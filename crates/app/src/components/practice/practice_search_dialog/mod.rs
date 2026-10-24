@@ -85,7 +85,7 @@ pub fn PracticeSearchDialog(
                 }
               })
               .collect_view();
-            view! { <ul class="divide-y max-h-[40svh] overflow-auto">{items}</ul> }.into_any()
+            view! { <ul class="divide-y max-h-[40svh] overflow-auto overscroll-contain">{items}</ul> }.into_any()
           }}
         </div>
       </div>

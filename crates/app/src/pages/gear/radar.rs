@@ -16,22 +16,18 @@ use super::shared::axis_label;
 
 /// 最多同时对比 4 台，配色与 [`GearRadar`] 的取值一一对应（画多边形用）。
 pub(super) const SERIES_CLASSES: [&str; 4] = [
-  "fill-sky-500/10 stroke-sky-500",
-  "fill-emerald-500/10 stroke-emerald-500",
-  "fill-amber-500/10 stroke-amber-500",
-  "fill-violet-500/10 stroke-violet-500",
+  "fill-xp/10 stroke-xp/70",
+  "fill-win/10 stroke-win/70",
+  "fill-gold/10 stroke-gold/70",
+  "fill-foreground/10 stroke-foreground",
 ];
 
 /// 图例色块的颜色。
 ///
 /// 刻意**不复用** [`SERIES_CLASSES`]：`fill` / `stroke` 只对 SVG 图形生效，写在 HTML
 /// `<span>` 上等于没写（色块会是透明的）。图例要的是背景色，两处颜色必须一起改。
-pub(super) const SERIES_SWATCHES: [&str; 4] = [
-  "bg-sky-500",
-  "bg-emerald-500",
-  "bg-amber-500",
-  "bg-violet-500",
-];
+pub(super) const SERIES_SWATCHES: [&str; 4] =
+  ["bg-xp/70", "bg-win/70", "bg-gold/70", "bg-foreground"];
 
 /// 图上的一条序列（一台机型；原表一条实线，用户实测一条同色虚线）。
 #[derive(Debug, Clone, PartialEq)]

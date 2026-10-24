@@ -56,7 +56,7 @@ pub(super) fn PropagationEstimator() -> impl IntoView {
           />
         </Field>
       </div>
-      <div class="bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
+      <div class="bg-inset px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let s = sfi.get();
           let kk = k.get();
@@ -79,7 +79,7 @@ pub(super) fn PropagationEstimator() -> impl IntoView {
         }}
       </div>
       <div>
-        <div class="mb-1.5 text-xs font-medium text-muted-foreground">{move || t("tools.likely-usable-bands-centre")}</div>
+        <div class="mb-1.5 text-xs text-muted-foreground">{move || t("tools.likely-usable-bands-centre")}</div>
         <div class="flex flex-wrap gap-1.5">
           {move || {
             let muf = estimate_muf(sfi.get());
@@ -91,7 +91,7 @@ pub(super) fn PropagationEstimator() -> impl IntoView {
                   view! {
                     <span
                       class=if ok {
-                        "border border-primary/40 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-foreground"
+                        "border border-primary/40 bg-primary/10 px-2.5 py-0.5 text-xs text-foreground"
                       } else {
                         "border px-2.5 py-0.5 text-xs text-muted-foreground line-through"
                       }

@@ -464,7 +464,7 @@ pub fn SdrWaterfallPage() -> impl IntoView {
   });
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       // 页头走 `PageHeader`（全站唯一来源）：标题 / 副标题随语言刷新，开始-停止按钮放 `actions`。
       // 手写 `<h1>` 会让吸顶偏移与排版和别的页面慢慢漂开，而且点阵字体没有 `font-semibold`。
       <PageHeader
@@ -492,11 +492,11 @@ pub fn SdrWaterfallPage() -> impl IntoView {
         <section class="pxl-card border bg-card">
           <div class="space-y-4 p-4">
             {(!supported).then(|| view! {
-              <p role="alert" class="text-sm text-amber-800 dark:text-amber-300">
+              <p role="alert" class="text-sm text-gold-text">
                 {move || t("morse.this-browser-cannot-access")}
               </p>
             })}
-            {move || error.get().map(|e| view! { <p role="alert" class="text-sm text-destructive">{e}</p> })}
+            {move || error.get().map(|e| view! { <p role="alert" class="text-sm text-hp-text">{e}</p> })}
 
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
               <label class="inline-flex items-center gap-2">
@@ -546,7 +546,7 @@ pub fn SdrWaterfallPage() -> impl IntoView {
             </div>
 
             <div>
-              <div class="mb-1 text-xs font-medium text-muted-foreground">{move || t("tools.live-spectrum")}</div>
+              <div class="mb-1 text-xs text-muted-foreground">{move || t("tools.live-spectrum")}</div>
               // 裸 `<canvas>` 没有隐式 role，`aria-label` 不会被读屏暴露，必须显式 `role="img"`。
               <canvas
                 node_ref=spectrum_ref
@@ -559,7 +559,7 @@ pub fn SdrWaterfallPage() -> impl IntoView {
             </div>
 
             <div>
-              <div class="mb-1 text-xs font-medium text-muted-foreground">{move || t("tools.waterfall-scrolling-down-over")}</div>
+              <div class="mb-1 text-xs text-muted-foreground">{move || t("tools.waterfall-scrolling-down-over")}</div>
               <canvas
                 node_ref=waterfall_ref
                 width="1024"
@@ -600,7 +600,7 @@ pub fn SdrWaterfallPage() -> impl IntoView {
                 .get()
                 .map(|f| {
                   view! {
-                    <p class="bg-muted/40 px-3 py-2 text-sm tabular-nums">
+                    <p class="bg-inset px-3 py-2 text-sm tabular-nums">
                       {tf("tools.noise-floor-floor", &[&format!("{:.1}", f.floor_db)])}
                       " · "
                       {tf(
@@ -626,7 +626,7 @@ pub fn SdrWaterfallPage() -> impl IntoView {
               let list = noise_samples.get();
               if list.is_empty() {
                 return view! {
-                  <p class="bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                  <p class="bg-inset px-3 py-2 text-sm text-muted-foreground">
                     {move || t("tools.noise-floor-empty")}
                   </p>
                 }

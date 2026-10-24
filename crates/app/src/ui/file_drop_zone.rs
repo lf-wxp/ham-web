@@ -55,7 +55,7 @@ pub fn FileDropZone(
     let state = if disabled.get() {
       "opacity-50 cursor-not-allowed"
     } else {
-      "hover:bg-muted/40 cursor-pointer"
+      "hover:bg-inset cursor-pointer"
     };
     let border = if drag_over.get() {
       "border-primary bg-primary/5"
@@ -63,7 +63,7 @@ pub fn FileDropZone(
       "border-border"
     };
     format!(
-      "flex flex-col items-center justify-center gap-1 border-2 border-dashed p-8 text-center transition-all duration-200 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring {state} {border}"
+      "flex flex-col items-center justify-center gap-1 border-2 border-dashed p-8 text-center transition duration-(--motion-normal) {state} {border}"
     )
   };
 
@@ -102,7 +102,7 @@ pub fn FileDropZone(
         }
       >
         <Icon kind=icon class="mb-1 h-8 w-8 text-muted-foreground" />
-        <span class="text-sm font-medium">{move || title.get()}</span>
+        <span class="text-sm">{move || title.get()}</span>
         <span class="text-xs text-muted-foreground">
           {move || match choose_hint.as_ref() {
             Some(h) => h.get(),

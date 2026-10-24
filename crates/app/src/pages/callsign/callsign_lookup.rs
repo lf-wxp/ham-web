@@ -252,7 +252,7 @@ pub fn CallsignLookup(input: RwSignal<String>) -> impl IntoView {
                     <span class="w-28 shrink-0 text-xs text-muted-foreground">
                       {move || t(label)}
                     </span>
-                    <span class="text-sm font-medium">{value}</span>
+                    <span class="text-sm">{value}</span>
                   </div>
                 }
               })
@@ -286,7 +286,7 @@ pub fn CallsignLookup(input: RwSignal<String>) -> impl IntoView {
             .collect();
             view! {
               <div class="space-y-2 border-t px-4 py-4">
-                <div class="text-xs font-semibold text-muted-foreground">{move || t("radio.online-data")}</div>
+                <div class="text-xs text-muted-foreground">{move || t("radio.online-data")}</div>
                 <div class="grid gap-1 sm:grid-cols-2">
                   {fields
                     .into_iter()
@@ -294,7 +294,7 @@ pub fn CallsignLookup(input: RwSignal<String>) -> impl IntoView {
                       view! {
                         <div class="flex items-baseline gap-2">
                           <span class="w-20 shrink-0 text-xs text-muted-foreground">{move || t(label)}</span>
-                          <span class="text-sm font-medium">{value}</span>
+                          <span class="text-sm">{value}</span>
                         </div>
                       }
                     })

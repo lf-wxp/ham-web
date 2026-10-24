@@ -82,7 +82,7 @@ pub(super) fn LinkBudgetCalculator() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class="sm:col-span-2 bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
+      <div class="sm:col-span-2 bg-inset px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let (p, d, f) = (power.get(), dist.get(), freq.get());
           if p <= 0.0 || d <= 0.0 || f <= 0.0 {

@@ -104,13 +104,13 @@ pub(super) fn MistakeDiagnosis() -> impl IntoView {
 
   view! {
     <div class="pxl-card border bg-card p-4">
-      <h3 class="mb-2 text-sm font-semibold">{move || t("exam.mistake-diagnosis")}</h3>
+      <h3 class="mb-2 text-sm">{move || t("exam.mistake-diagnosis")}</h3>
       <p class="text-sm text-muted-foreground">{summary}</p>
       <div class="mt-3 flex flex-wrap gap-1.5">
         {top_cat_href.map(|href| view! {
           <a
             href=href
-            class="bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+            class="bg-primary/10 px-3 py-1 text-xs text-primary transition-colors hover:bg-primary/20"
           >
             {move || t("exam.review-weak-topic")}
           </a>

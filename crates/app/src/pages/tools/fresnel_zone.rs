@@ -138,7 +138,7 @@ pub(super) fn FresnelZone() -> impl IntoView {
             let required_pct = format!("{:.0}", MIN_CLEARANCE_RATIO * 100.0);
             let full_pct = format!("{:.0}", FULL_CLEARANCE_RATIO * 100.0);
             view! {
-              <div role="status" class="font-medium text-foreground">{verdict}</div>
+              <div role="status" class="text-foreground">{verdict}</div>
               <div>
                 {tf(
                   "tools.fresnel-zone-result",

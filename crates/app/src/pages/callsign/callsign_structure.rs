@@ -9,25 +9,21 @@ use crate::ui::Input;
 
 /// 示例呼号 `BG4XYZ` 的分段：`(字符, 文案 key, 配色)`。
 const EXAMPLE_PARTS: &[(&str, &str, &str)] = &[
-  (
-    "B",
-    "radio.prefix",
-    "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-400",
-  ),
+  ("B", "radio.prefix", "border-xp/40 bg-xp/10 text-xp-text"),
   (
     "G",
     "radio.station-class",
-    "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+    "border-win/40 bg-win/10 text-win-text",
   ),
   (
     "4",
     "radio.zone-label",
-    "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+    "border-gold/40 bg-gold/10 text-gold-text",
   ),
   (
     "XYZ",
     "radio.suffix",
-    "border-border bg-muted/40 text-foreground",
+    "border-border bg-inset text-foreground",
   ),
 ];
 
@@ -49,8 +45,8 @@ pub fn CallsignStructure() -> impl IntoView {
               .map(|&(ch, key, color)| {
                 view! {
                   <div class=format!("border p-3 text-center {color}")>
-                    <div class="font-mono text-2xl font-bold">{ch}</div>
-                    <div class="mt-1 text-xs font-semibold">{move || t(key)}</div>
+                    <div class="font-mono text-2xl">{ch}</div>
+                    <div class="mt-1 text-xs">{move || t(key)}</div>
                   </div>
                 }
               })
@@ -67,7 +63,7 @@ pub fn CallsignStructure() -> impl IntoView {
             aria_label=Signal::derive(move || t("radio.enter-a-callsign-to-analyze"))
             class="font-mono uppercase"
           />
-          <div class="mt-3 space-y-1.5 bg-muted/40 p-3">
+          <div class="mt-3 space-y-1.5 bg-inset p-3">
             {move || {
               let p = parse_callsign(&input.get());
               let entity = p.entity.map(t).unwrap_or_else(|| t("radio.unrecognised"));
@@ -96,7 +92,7 @@ pub fn CallsignStructure() -> impl IntoView {
               view! {
                 <div class="flex items-baseline gap-2">
                   <span class="w-24 shrink-0 text-xs text-muted-foreground">{move || t("radio.country-region-label")}</span>
-                  <span class="text-sm font-medium">{entity}</span>
+                  <span class="text-sm">{entity}</span>
                 </div>
                 <div class="flex items-baseline gap-2">
                   <span class="w-24 shrink-0 text-xs text-muted-foreground">{move || t("radio.station-class")}</span>

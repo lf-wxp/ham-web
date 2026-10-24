@@ -12,7 +12,7 @@ fn pct(rate: Option<f64>) -> String {
 pub(crate) fn CategoryCompare(deltas: Vec<CategoryDelta>) -> impl IntoView {
   view! {
     <div class="mt-3 border-t pt-3">
-      <div class="text-sm font-medium">{move || t("exam.category-comparison-this-previous")}</div>
+      <div class="text-sm">{move || t("exam.category-comparison-this-previous")}</div>
       <table class="mt-2 w-full text-xs tabular-nums">
         <thead class="text-muted-foreground">
           <tr>
@@ -29,8 +29,8 @@ pub(crate) fn CategoryCompare(deltas: Vec<CategoryDelta>) -> impl IntoView {
               let change = d.change();
               let name = d.name;
               let (text, class) = match change {
-                Some(c) if c >= 0.5 => (format!("+{c:.0}"), "text-emerald-700 dark:text-emerald-400"),
-                Some(c) if c <= -0.5 => (format!("{c:.0}"), "text-red-700 dark:text-red-400"),
+                Some(c) if c >= 0.5 => (format!("+{c:.0}"), "text-win-text"),
+                Some(c) if c <= -0.5 => (format!("{c:.0}"), "text-hp-text"),
                 Some(_) => (t("exam.same"), "text-muted-foreground"),
                 None => ("—".to_owned(), "text-muted-foreground"),
               };
@@ -41,7 +41,7 @@ pub(crate) fn CategoryCompare(deltas: Vec<CategoryDelta>) -> impl IntoView {
                     {format!("{}/{} · {}", d.exam.correct, d.exam.answered, pct(d.exam.rate()))}
                   </td>
                   <td class="py-1 text-right">{pct(d.before)}</td>
-                  <td class=format!("py-1 text-right font-medium {class}")>{text}</td>
+                  <td class=format!("py-1 text-right {class}")>{text}</td>
                 </tr>
               }
             })

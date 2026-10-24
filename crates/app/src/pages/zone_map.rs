@@ -133,7 +133,7 @@ pub fn ZoneMapPage() -> impl IntoView {
               .and_then(dxcc::entity_by_dxcc)
               .map(|e| {
                 view! {
-                  <span class="border border-amber-500 bg-amber-500/10 px-3 py-1 text-xs">
+                  <span class="border border-gold bg-gold/10 px-3 py-1 text-xs">
                     {tf("radio.located", &[e.name])}
                   </span>
                 }
@@ -203,7 +203,7 @@ pub fn ZoneMapPage() -> impl IntoView {
           view! {
             <div class="border-t">
               <div class="flex flex-wrap items-baseline gap-x-3 px-4 py-3">
-                <span class="text-sm font-semibold">
+                <span class="text-sm">
                   {tf("radio.zone", &[&label, &z.to_string()])}
                 </span>
                 <span class="text-xs text-muted-foreground">

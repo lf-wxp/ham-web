@@ -14,7 +14,7 @@ const CELL: &str = "border px-3 py-2 align-top";
 pub fn ReceiverPage() -> impl IntoView {
   set_title("shell.receiver-specs");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.receiver-specs")
         subtitle=move || t("knowledge.sensitivity-selectivity-dynamic-range")
@@ -35,7 +35,7 @@ pub fn ReceiverPage() -> impl IntoView {
               .map(|&(name, meaning, factor)| {
                 view! {
                   <TableRow>
-                    <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{name}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap")>{name}</TableCell>
                     <TableCell class=format!("{CELL} text-muted-foreground")>{meaning}</TableCell>
                     <TableCell class=format!("{CELL} text-muted-foreground")>{factor}</TableCell>
                   </TableRow>
@@ -53,7 +53,7 @@ pub fn ReceiverPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
+                    <span class="text-sm">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
                 }

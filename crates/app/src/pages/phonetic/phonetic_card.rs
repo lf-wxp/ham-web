@@ -15,8 +15,8 @@ pub(super) fn PhoneticCard(entry: &'static PhoneticEntry) -> impl IntoView {
         class="group flex w-full flex-col items-center gap-1.5 pxl-card border bg-card p-3 text-center transition-colors hover:bg-accent/60"
       >
       <div class="flex items-baseline gap-2">
-        <span class="text-2xl font-semibold leading-none text-primary">{entry.letter}</span>
-        <span class="text-sm font-medium">{entry.word}</span>
+        <span class="text-2xl leading-none text-primary">{entry.letter}</span>
+        <span class="text-sm">{entry.word}</span>
       </div>
       <span class="font-mono text-xs tracking-widest text-muted-foreground">{entry.pronunciation}</span>
       </button>

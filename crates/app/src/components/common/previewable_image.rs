@@ -3,54 +3,31 @@ use leptos::prelude::*;
 use crate::i18n::t;
 use crate::ui::{Dialog, DialogDescription, DialogHeader, DialogTitle};
 
-/// 题图：默认渲染缩略图，点击放大；也可通过 `trigger` 自定义触发元素。
+/// 题图：缩略图 + 点击放大。
+///
+/// 只提供「整块缩略图」一种触发器：曾经还有一个 `small_trigger`（塞进答题卡格子的 16px
+/// 「图」角标），它必然压住 36px 题号按钮的角上可点区，点偏了就变成开图而不是跳题，已删除。
 #[component]
 pub fn PreviewableImage(
   #[prop(into)] src: String,
   #[prop(into)] alt: String,
   #[prop(optional, into)] title: Option<String>,
-  #[prop(optional)] small_trigger: bool,
 ) -> impl IntoView {
   let open = RwSignal::new(false);
   let title = title.unwrap_or_else(|| alt.clone());
-  let trigger = if small_trigger {
-    view! {
-      <span
-        role="button"
-        tabindex="0"
-        aria-label=move || t("common.preview-question-image")
-        class="absolute -top-1 -left-1 inline-flex items-center justify-center h-4 min-w-4 px-1 bg-background/90 border text-[10px] leading-none cursor-pointer"
-        on:click=move |e| {
-          e.stop_propagation();
-          open.set(true);
-        }
-        on:keydown=move |e| {
-          if e.key() == "Enter" || e.key() == " " {
-            e.prevent_default();
-            e.stop_propagation();
-            open.set(true);
-          }
-        }
-      >
-        {move || t("common.chart")}
-      </span>
-    }
-    .into_any()
-  } else {
-    view! {
-      <div class="relative w-full h-40 sm:h-64">
-        <img
-          src=src.clone()
-          alt=alt.clone()
-          loading="lazy"
-          decoding="async"
-          class="absolute inset-0 h-full w-full object-contain border cursor-zoom-in"
-          on:click=move |_| open.set(true)
-        />
-      </div>
-    }
-    .into_any()
-  };
+  let trigger = view! {
+    <div class="relative w-full h-40 sm:h-64">
+      <img
+        src=src.clone()
+        alt=alt.clone()
+        loading="lazy"
+        decoding="async"
+        class="absolute inset-0 h-full w-full object-contain border cursor-zoom-in"
+        on:click=move |_| open.set(true)
+      />
+    </div>
+  }
+  .into_any();
 
   let (src, title) = (StoredValue::new(src), StoredValue::new(title));
   view! {

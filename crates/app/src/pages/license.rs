@@ -80,7 +80,7 @@ pub fn LicensePage() -> impl IntoView {
     added.set(true);
   };
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("knowledge.licence-operator-permit-application")
         subtitle=move || t("knowledge.register-exam-set-up")
@@ -96,11 +96,11 @@ pub fn LicensePage() -> impl IntoView {
               .map(|(i, &(k, v))| {
                 view! {
                   <li class="flex gap-3 px-4 py-3">
-                    <span class="flex size-6 shrink-0 items-center justify-center bg-primary text-xs font-semibold text-primary-foreground">
+                    <span class="flex size-6 shrink-0 items-center justify-center bg-primary text-xs text-primary-foreground">
                       {i + 1}
                     </span>
                     <div>
-                      <div class="font-medium">{move || t(k)}</div>
+                      <div>{move || t(k)}</div>
                       <div class="mt-0.5 text-sm text-muted-foreground">{move || t(v)}</div>
                     </div>
                   </li>
@@ -118,7 +118,7 @@ pub fn LicensePage() -> impl IntoView {
               .map(|&(k, v)| {
                 view! {
                   <div class="flex gap-3 px-4 py-3">
-                    <dt class="w-14 shrink-0 font-mono font-semibold text-primary">{move || t(k)}</dt>
+                    <dt class="w-14 shrink-0 font-mono text-primary">{move || t(k)}</dt>
                     <dd class="text-sm text-muted-foreground">{move || t(v)}</dd>
                   </div>
                 }
@@ -181,7 +181,7 @@ pub fn LicensePage() -> impl IntoView {
             {move || {
               added.get().then(|| {
                 view! {
-                  <p class="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                  <p class="text-xs text-win-text">
                     {move || t("settings.added-to-countdown-the")}
                     <a href="/countdown" class="ml-1 text-primary underline underline-offset-4 hover:underline">
                       {move || t("settings.view-countdown")}

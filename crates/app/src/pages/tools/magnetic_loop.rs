@@ -68,7 +68,7 @@ pub(super) fn MagneticLoopTool() -> impl IntoView {
               <p>{tf("tools.magloop-voltage", &[&format_voltage_v(l.cap_voltage)])}</p>
               // 小环近似有前提（周长 ≤ λ/2π）：出了适用域要在结果下面直说，别让读数被当成准数。
               {(!l.electrically_small).then(|| view! {
-                <p class="text-amber-600 dark:text-amber-400">{move || t("tools.magloop-out-of-range")}</p>
+                <p class="text-gold-text">{move || t("tools.magloop-out-of-range")}</p>
               })}
             }
               .into_any(),

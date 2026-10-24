@@ -40,7 +40,7 @@ pub fn PracticalAntennasPage() -> impl IntoView {
               .map(|&(name, feature, scene, template)| {
                 view! {
                   <TableRow>
-                    <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>
+                    <TableCell class=format!("{CELL} whitespace-nowrap")>
                       {move || text(name)}
                     </TableCell>
                     <TableCell class=format!("{CELL} text-muted-foreground")>{move || text(feature)}</TableCell>

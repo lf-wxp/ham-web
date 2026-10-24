@@ -219,10 +219,10 @@ pub(super) fn VoacapCard() -> impl IntoView {
                         let pct = b.reliability * 100.0;
                         view! {
                           <div class="flex items-center gap-2 text-sm">
-                            <span class="w-12 shrink-0 font-medium">{b.band.clone()}</span>
+                            <span class="w-12 shrink-0">{b.band.clone()}</span>
                             <div class="h-3 flex-1 overflow-hidden bg-muted">
                               <div
-                                class=format!("h-full {}", if b.usable { "bg-emerald-500" } else { "bg-muted-foreground/30" })
+                                class=format!("h-full {}", if b.usable { "bg-win/70" } else { "bg-muted-foreground/30" })
                                 style=format!("width: {pct:.0}%")
                               ></div>
                             </div>

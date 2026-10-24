@@ -4,9 +4,9 @@ use leptos::prelude::*;
 #[component]
 pub(super) fn SlangCard(entry: &'static GlossaryEntry) -> impl IntoView {
   let term_class = if entry.term.is_ascii() {
-    "font-mono text-base font-semibold"
+    "font-mono text-base"
   } else {
-    "text-base font-semibold"
+    "text-base"
   };
   view! {
     <article class="flex flex-col pxl-card border bg-card p-4">

@@ -115,8 +115,8 @@ pub(super) fn AptResultView(
 
   view! {
     <div class="space-y-4">
-      <div class="flex flex-wrap gap-x-1.5 gap-y-1 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-        <span class="max-w-[16rem] truncate font-medium text-foreground">{file_name}</span>
+      <div class="flex flex-wrap gap-x-1.5 gap-y-1 bg-inset px-3 py-2 text-xs text-muted-foreground">
+        <span class="max-w-[16rem] truncate text-foreground">{file_name}</span>
         <span>"·"</span>
         <span>{format!("{width} × {height}")}</span>
         <span>"·"</span>

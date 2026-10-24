@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::categories::{SUB_NOTES, TOP_CATEGORIES, sub_category};
+use crate::categories::{CategoryTone, SUB_NOTES, TOP_CATEGORIES, sub_category};
 
 /// 一条考点速查。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -23,8 +23,8 @@ pub struct CheatSheetSection {
   pub key: &'static str,
   /// 一级分类名。
   pub name: &'static str,
-  /// 标识色。
-  pub color: &'static str,
+  /// 标识色档位（同 `TopCategory::tone`，界面层映射成具体颜色）。
+  pub tone: CategoryTone,
   /// 该分类下的考点。
   pub items: Vec<CheatSheetItem>,
 }
@@ -50,7 +50,7 @@ pub fn sections() -> Vec<CheatSheetSection> {
       Some(CheatSheetSection {
         key: top.key,
         name: top.name,
-        color: top.color,
+        tone: top.tone,
         items: items.clone(),
       })
     })

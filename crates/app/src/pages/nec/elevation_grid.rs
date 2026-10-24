@@ -29,7 +29,7 @@ pub(super) fn elevation_grid(peak: f64, grounded: bool) -> impl IntoView {
             class="stroke-muted-foreground/20"
             stroke-width="1"
           />
-          <text x=2.0 y=y + 3.0 class="fill-muted-foreground text-[10px]">
+          <text x=2.0 y=y + 3.0 class="fill-muted-foreground text-xs">
             {format!("{db:.0}")}
           </text>
         }
@@ -52,7 +52,7 @@ pub(super) fn elevation_grid(peak: f64, grounded: bool) -> impl IntoView {
             x=x
             y=CART_H - 6.0
             text-anchor="middle"
-            class="fill-muted-foreground text-[10px]"
+            class="fill-muted-foreground text-xs"
           >
             {format!("{el:.0}°")}
           </text>
@@ -64,7 +64,7 @@ pub(super) fn elevation_grid(peak: f64, grounded: bool) -> impl IntoView {
       y1=CART_PAD
       x2=el_to_x(0.0)
       y2=CART_H - CART_PAD
-      class="stroke-amber-500/50"
+      class="stroke-gold/50"
       stroke-dasharray="3 3"
       stroke-width="1"
     />

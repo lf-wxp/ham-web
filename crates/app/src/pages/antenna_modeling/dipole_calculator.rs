@@ -47,7 +47,7 @@ pub(super) fn DipoleCalculator() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class="sm:col-span-2 bg-muted/40 px-3 py-2 text-sm tabular-nums text-muted-foreground">
+      <div class="sm:col-span-2 bg-inset px-3 py-2 text-sm tabular-nums text-muted-foreground">
         {move || {
           let f = freq.get();
           let kk = k.get().clamp(0.5, 1.0);

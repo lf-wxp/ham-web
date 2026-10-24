@@ -204,7 +204,7 @@ pub(super) fn EntryForm(
             </Button>
           </div>
           {move || lookup_msg.get().map(|m| view! {
-            <span class="text-[11px] text-muted-foreground">{m}</span>
+            <span class="text-xs text-muted-foreground">{m}</span>
           })}
         </Field>
         {text_input(Signal::derive(move || t("log.signal-report-sent-rst")), "59 / 599", form.rst_sent, "")}
@@ -219,7 +219,7 @@ pub(super) fn EntryForm(
               },
             );
             view! {
-              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 bg-muted/40 px-3 py-2 text-xs sm:col-span-2 lg:col-span-3">
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 bg-inset px-3 py-2 text-xs sm:col-span-2 lg:col-span-3">
                 <span class="text-muted-foreground">{entity}</span>
                 {path.map(|p| {
                   let tip = if p.approximate { t("log.no-grid-given-estimated") } else { t("log.computed-from-both-grids") };
@@ -240,13 +240,13 @@ pub(super) fn EntryForm(
                   }
                 })}
                 {h.new_dxcc.then(|| view! {
-                  <span class="bg-emerald-500/15 px-2 py-0.5 font-medium text-emerald-700 dark:text-emerald-300">{move || t("log.new-dxcc")}</span>
+                  <span class="bg-win/15 px-2 py-0.5 text-win-text">{move || t("log.new-dxcc")}</span>
                 })}
                 {h.new_band.then(|| view! {
-                  <span class="bg-sky-500/15 px-2 py-0.5 font-medium text-sky-700 dark:text-sky-300">{move || t("log.new-band-for-this")}</span>
+                  <span class="bg-xp/15 px-2 py-0.5 text-xp-text">{move || t("log.new-band-for-this")}</span>
                 })}
                 {h.dupe.then(|| view! {
-                  <span class="bg-amber-500/15 px-2 py-0.5 font-medium text-amber-700 dark:text-amber-300">{move || t("log.dupe-already-worked-on")}</span>
+                  <span class="bg-gold/15 px-2 py-0.5 text-gold-text">{move || t("log.dupe-already-worked-on")}</span>
                 })}
                 <span class="text-muted-foreground">
                   {match (h.worked, h.last.clone()) {

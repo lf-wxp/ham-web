@@ -66,7 +66,7 @@ pub fn WsprDecoderPage() -> impl IntoView {
   });
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("tools.wspr-decoder")
         subtitle=move || t("tools.weak-signal-propagation-reports")
@@ -156,10 +156,10 @@ pub fn WsprDecoderPage() -> impl IntoView {
           {move || {
             error.get().map(|e| {
               view! {
-                <div class="flex items-start gap-2 border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-                  <Icon kind=IconKind::AlertCircle class="mt-0.5 h-5 w-5 shrink-0" />
+                <div class="flex items-start gap-2 border border-destructive/40 bg-destructive/10 p-4 text-hp-text">
+                  <Icon kind=IconKind::AlertCircle class="mt-0.5 size-6 shrink-0" />
                   <div class="flex-1">
-                    <div class="font-medium">{move || t("radio.decoding-failed")}</div>
+                    <div>{move || t("radio.decoding-failed")}</div>
                     <div class="mt-1 text-sm">{e}</div>
                   </div>
                 </div>
@@ -171,17 +171,17 @@ pub fn WsprDecoderPage() -> impl IntoView {
             result.get().map(|p| {
               view! {
                 <div class="space-y-4">
-                  <div class="flex flex-wrap gap-x-1.5 gap-y-1 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                    <span class="max-w-[16rem] truncate font-medium text-foreground">{file_name.get_untracked()}</span>
+                  <div class="flex flex-wrap gap-x-1.5 gap-y-1 bg-inset px-3 py-2 text-xs text-muted-foreground">
+                    <span class="max-w-[16rem] truncate text-foreground">{file_name.get_untracked()}</span>
                     <span>"·"</span>
                     <span>{format!("{} Hz", decoded_base_hz.get())}</span>
                   </div>
                   <div class="border bg-card p-6 text-center">
-                    <div class="text-3xl font-semibold tracking-tight">{p.text}</div>
+                    <div class="text-3xl tracking-tight">{p.text}</div>
                     <div class="mt-3 flex flex-wrap justify-center gap-2 text-sm">
-                      <span class="bg-muted/60 px-2 py-1">{move || tf("tools.wspr-callsign", &[p.callsign.as_str()])}</span>
-                      <span class="bg-muted/60 px-2 py-1">{move || tf("tools.wspr-locator", &[p.locator.as_str()])}</span>
-                      <span class="bg-muted/60 px-2 py-1">{move || tf("tools.wspr-power", &[p.power.to_string().as_str()])}</span>
+                      <span class="bg-inset px-2 py-1">{move || tf("tools.wspr-callsign", &[p.callsign.as_str()])}</span>
+                      <span class="bg-inset px-2 py-1">{move || tf("tools.wspr-locator", &[p.locator.as_str()])}</span>
+                      <span class="bg-inset px-2 py-1">{move || tf("tools.wspr-power", &[p.power.to_string().as_str()])}</span>
                     </div>
                   </div>
                   <div class="flex justify-center">

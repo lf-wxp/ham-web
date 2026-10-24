@@ -1,12 +1,11 @@
 use ham_web_core::categories::top_category;
 use leptos::prelude::*;
 
+use crate::components::common::SectionCard;
 use crate::i18n::{bank_class, t, tf, tp};
 use crate::pages::load_card_schedule;
 use crate::study;
-use crate::ui::{
-  ButtonLink, CARD_HEADER, Size, Variant, card_content_class, card_title_class, flat_card_class,
-};
+use crate::ui::{ButtonLink, Size, Variant};
 use crate::util::now_ms;
 
 /// 今日学习队列：错题、知识卡片与薄弱分类的统一定期复习入口。
@@ -41,16 +40,11 @@ pub(super) fn ReviewCard() -> impl IntoView {
     .count();
 
   view! {
-    <div data-slot="card" class=flat_card_class("")>
-      <div data-slot="card-header" class=CARD_HEADER>
-        <div data-slot="card-title" class=card_title_class("flex items-center justify-between")>
-          <span>{t("exam.today-s-study-queue")}</span>
-          <span class="text-sm font-normal text-muted-foreground">
-            {move || tp("exam.items-due-today", total_due, &[&total_due.to_string()])}
-          </span>
-        </div>
-      </div>
-      <div data-slot="card-content" class=card_content_class("space-y-2")>
+    <SectionCard
+      title=Signal::derive(move || t("exam.today-s-study-queue"))
+      meta=ViewFn::from(move || tp("exam.items-due-today", total_due, &[&total_due.to_string()]))
+    >
+      <div class="space-y-2 p-4">
         {move || {
           if total_due == 0 {
             return view! {
@@ -133,7 +127,7 @@ pub(super) fn ReviewCard() -> impl IntoView {
           .into_any()
         }}
       </div>
-    </div>
+    </SectionCard>
   }
   .into_any()
 }

@@ -7,6 +7,7 @@
 >
 > 从哪读起：新写 / 改页面看 §1 → §3（控件在 §3.1、内容块在 §3.2）→ §4；改外观看 §2；
 > 遇到「这里为什么有原生 `<button>`」查 §10（例外清单）；收工前过 §12。
+> 本文件只写**规范**：怎么写、为什么这么定、怎么验。评审过程与量化数字是历史，看 `git log`。
 
 ## 目录
 
@@ -22,7 +23,6 @@
 10. 例外清单：刻意保留的原生元素
 11. 自检命令
 12. 验收清单
-- 附录 A：控件收口记录
 
 ## 1. 三条底线
 
@@ -62,27 +62,57 @@
    `min-h-*`，类名已覆盖；要更小只允许在 `size` 档位里选（`Size::Xs` 等）。
 3. **图标按 24px 的整数倍显示**（`size-6` / `size-12`）：像素图标是 24×24 网格，
    16 / 20px 会有半个像素的抗锯齿。`size-4` / `h-4 w-4` 在 `surfaces.css` 里被统一抬到 24px，
-   新代码直接写 `size-6`。
+   新代码直接写 `size-6`（`check-ui` ㉓ 已拦 `h-3/3.5/4/5`）——**源码要等于渲染**，
+   靠 CSS 隐式放大只会让后来者以为那里是 16px。
 4. **字体**：正文走点阵中文体（缝合像素）；标题 / HUD / 数字读数用 `pxl-title`（Press Start 2P）
-   或 `pxl-label`（Silkscreen）。**点阵字体没有粗体**：不要用 `font-bold` / `font-semibold`
-   做强调（会被合成成糊边），改用颜色、`pxl-title` 或加框。
+   或 `pxl-label`（Silkscreen）。**点阵字体没有粗体**：不要用 `font-bold` / `font-semibold` / `font-medium`
+   做强调（会被合成成糊边；**易读字体模式下它们反而会生效，两种模式层级就不一致了**），
+   改用颜色、`pxl-title` 或加框。`cargo make check-ui` 已拦（⑪）。
    **区段标题（卡片标题栏 / 页内分组标题）用 `pxl-section-title` / `pxl-section-head`**（见下）：
    它们自带 18px 字号与 Silkscreen，不必再写 `text-*`；标题的层级靠字号 / 字体 / 色带表达，
    因为 `font-semibold` 在这里不产生任何视觉差。
+   **卡片内的标题用 `card_title_class(...)`**（`pxl-label` + 18px），不要写 `<h2 class="… text-sm">`
+   ——12px 的标题比它管的 18px 正文还小，卡片就「一片平字」（`check-ui` ㉑ 已拦）。
+   **页面标题只有一个来源**：`PageHeader`（`pxl-title` + 吸顶 + 主色左轨）。页面里不要手写
+   `<h1 class="text-lg">`（字体族会退化成正文点阵，字号也不跟断点走）；纯无障碍标题写
+   `sr-only`，确需页内 `<h1>` 时带 `pxl-title`（`check-ui` ⑳ 已拦，只放过 404 与打印页）。
 5. **状态只信 ARIA**：选中 / 按下态由 `aria-checked` / `aria-pressed` / `data-state` 驱动样式，
    不要在 Rust 里再拼一份 `ON` / `OFF` 类名（`Chip` 就是这么做的）。
 6. **颜色分「填充」与「文字」两套**：`--pxl-hp` / `xp` / `gold` / `win` 是画在深色槽里的**填充色**
    （血条、金币），直接拿来写字对比度不够（亮色下金色文字落在奶油底只有 1.4:1）。**写字一律用
    `text-hp-text` / `text-xp-text` / `text-gold-text` / `text-win-text`**；不要写
-   `text-[color:var(--pxl-gold)]` 这类任意值。Tailwind 色阶（`text-green-600`、`dark:text-red-400`）
-   可以照常用 —— 它们的文字档由 `cargo make pixel-palette` 保证在真实表面上达标。
+   `text-[color:var(--pxl-gold)]` 这类任意值。**不要再写 Tailwind 原始色阶**（`text-green-600`、`bg-emerald-500`、`dark:text-red-400`）：
+   它们是 Sweetie-16 的固定色相，不随 11 套配色方案变，切到 Game Boy / CGA 就跳出方案；
+   `cargo make check-ui` 已拦（⑯，只放过打印 / 导出画布）。状态一律用语义 token：
+   对 / 通关 `win`、错 / 危险 `destructive`（文字用 `text-hp-text`）、警示 `gold`、信息 `xp`
+   （文字 `text-win-text` / `text-hp-text` / `text-gold-text` / `text-xp-text`，底色 `bg-win/10`，
+   描边 `border-win`），它们自己随明暗换色，**不用再写 `dark:` 对**。
+   **红色文字不要写 `text-destructive`**：那是按钮填充色，暗色下落在较亮的弹层面上不足 4.5:1
+   （axe 在 `rpg_flow` 的「交卷空卷（dark）」里抓到过），写字一律 `text-hp-text`
+   （`check-ui` ⑲ 已拦）。
+   **「身份色」（分类标识、图表序列）也不许从数据层带 `#rrggbb`**：知识库分类色曾经是
+   `crates/core` 里的 10 个 hex，切到 Game Boy / CGA 时圆点还是玫瑰红、徽章还是「任意底色 + 白字」。
+   现在数据层只给档位（`CategoryTone`），颜色在 `crates/app/src/tone.rs` 映射到
+   `--cat-1..8`（第 9 / 10 档用「空心」第二通道区分）；`check-structure` 已拦
+   `crates/core` 里的色值字面量。用法约束：分类色**只做图形锚点**（圆点 / 2px 描边 / 浅底），
+   不铺整块文字底。
+   **色相不够用时补方案种子，不要回退色阶**：11 套方案 + 16 色盘下，波段用途、雷达序列、
+  分类标识这类「需要互相区分」的场景一定会撞色。现状是「语义 token 循环 + 第二通道（描边 /
+  空心 / 图案）」；真要更多色相，就改 `crates/core/src/color_scheme.rs` 的种子（见下），
+  而不是在页面里写 Tailwind 原始色阶。
+  `pixel-palette` 仍保证共享色阶的文字档在真实表面上达标（给第三方 / 动态 HTML 兜底），
    改了调色板就跑它（`cargo make pixel-check` 只审计，不达标时退出码为 1，已并入 `check` / `ci`）。
 7. **配色一律走语义 token，别在页面里写死色值**：`bg-card` / `text-muted-foreground` /
    `border-ink` 会随用户选的**配色方案**（11 套：经典 / 森林 / 海洋 / 晚霞 / 石墨 +
    PICO-8 / Game Boy / 红白机 / C64 / CGA / ZX Spectrum，与明暗正交）换色；
    写死 `#fff8e1` 的地方切方案后就成了孤岛（DOM 里没有这类写死的色值；`share_score.rs` 这类导出成绩
    图的画布色是有意固定的，不在此列）。状态色（`hp` / `xp` / `gold` / `win` / `destructive`）
-   是语义色，不随方案变。
+   是语义色，不随方案变 —— 这正是状态要用它们、而不是原始色阶的原因（规则 6）。
+   **实色填充上不要放白字**（`bg-win text-white` 只有 2.6:1）：改成「`bg-card` 底 + 同色描边 +
+   `text-win-text`」（答题卡的 ✓ / ✗ 小牌就是这么做的）。
+   **表面不要用 alpha 调浓淡**：`bg-muted/50` 这类写法叠在卡片上会随背后内容变色（等于绕过限色）。
+   「比卡片低一层」的内凹面用 `bg-inset`（不透明 token）；热力 / 进度这类「同色不同浓淡」用
+   `color-mix(in srgb, var(--cat-N) X%, var(--card))` —— 混的是两个调色板颜色、结果不透明。
    **新增 / 调整一个方案**：只改 `crates/core/src/color_scheme.rs` 里的 5 个种子色（底 / 墨 / 主色 /
    强调面 / 焦点环，亮暗各一套），然后 `cargo make pixel-schemes`。其余变量按规则派生，字色按它
    实际会落到的每个表面校正；单测会拦下「表面太亮 / 太暗」这类会让共享色阶不够对比度的种子色，
@@ -93,6 +123,10 @@
    4px 硬投影）。**一屏里所有块同重量 = 没有落点**：首页只有 Hero 与「快速开始」是 L2，
    今日任务、模块入口、装饰频谱都是 L1。目录 / 关键指标这类「一眼要看」的块才升到 L2。
 9. **字号按「读」还是「扫」分，不按「长不长」分**：
+   先记住字阶实际只有一串整数倍：**12 / 18 / 24 / 30 / 36…px**。`text-xs` 与 `text-sm` 同为 12px，
+   `text-lg` 与 `text-xl` 同为 24px（`tokens.css`）—— 层级靠颜色与字体族，不靠 2px 的字号差；
+   不要写 `text-[10px]` / `text-[11px]` 这类非 6 倍数的任意字号（点阵字体非整数倍缩放会发糊，
+   `check-ui` ⑮ 已拦；SVG `<text>` 的字号是 viewBox 用户单位，不在此列）。
    - **主阅读对象**（题干、页面副标题这类必须逐字读的）用 body 默认的 18px（`text-base`）；
    - **扫读型内容**（解析正文、知识库要点 / 术语 / 步骤、表格、以及所有元信息）用 12px
      （`text-xs` / `text-sm` 同值）。判据是「一屏要能看几条」：390px 宽下 18px 会把一屏
@@ -101,15 +135,29 @@
    - **数字读数**（倒计时、比分、统计值）走 `pxl-label`（Silkscreen）或 `.pxl-stat`
      + `tabular-nums`，不要混在 12px 灰字里。
 10. **动画只用 `motion.css` 里的**：位移 / 显隐 / 抖动 / 闪烁，缓动一律 `steps()`；
-   **不要做缩放动画**（中间帧会让点阵文字变糊）。新增动画必须同时写静态降级。
+   **不要做缩放动画**（`scale-*` / `zoom-*` / 悬停旋转；中间帧会让点阵文字变糊，`check-ui` ⑫ 已拦）。
+   **「上抬 / 下沉」只有一种实现：独立的 `translate` 属性**（`.pxl-btn` 与 `.motion-lift` 都是），
+   `transform` 留给入场动画（`pxl-enter` / `reveal`）——两者各占一个属性才不会互相覆盖，
+   测试读 `getComputedStyle(el).translate` 而不是矩阵。
+   **焦点环是 2px 虚线**（全局 `:focus-visible` + `pxl-*` 控件自带），不要写 `ring-*` /
+   `ring-offset-*` 顶替它（⑭）。悬停反馈是上抬 + 投影拉长，不用 `brightness()` 滤镜
+   （会算出调色板之外的颜色）。新增动画必须同时写静态降级。
    `animate-in` / `animate-out`（tw-animate）的默认缓动是平滑 `ease`，`motion.css` 已在层外
    把它们收回 `steps(4, end)`；但**时长仍取 `--motion-*` 四档**（`motion-instant/fast/normal/slow`），
-   新代码不要写 `duration-300` 这类任意值。
+   写成 `duration-(--motion-normal)`；不要写 `duration-300` 这类毫秒数，也不要 `transition-all`
+   （会动画布局属性）——写 `transition`（⑬）。
 
 11. **答题选项的选中态用「整行」，不要动形状**：单选是切角八边形、多选是方形，形状是用来区分
    题型的；不要为了「更明显」去换组件或加圆角。选中态给整行浅底 + 左 2px 主色条
    （`components/question_card.rs` 的 `option_row_class`），并用等量负外边距抵消内边距，
    保证文字一格都不位移。判分后的对错配色是另一套（`pxl-chip` / 自绘选项），两套不要混。
+   **判分时机由 `AnswerGate` 决定**（`ham_web_core::question`）：`show_answer` 只表示「允许显示答案」，
+   不是「提前给答案」——没作答（也没主动展开）就不画答案行；多选题要显式「检查答案」
+   （`QuestionCard.confirm_multiple`），勾第一个框不能把整套答案亮出来（练习页已开启）。
+   判分结论给三个通道：行边色 + 行尾 ✓/✗（`common::OptionMark`）+ 常驻 `role="status"` 的文字结论。
+   **「先选 → 看到答案 → 改成正确项」算不算偷看是统计语义**（影响错题本 / 连对 / 本周作答），
+   改它要同时改 `question_card.rs` 与 `study.spec.ts`（「自己答对的才计」是既有契约），
+   不要在界面层单独改。
 
 **可用的像素元素**
 
@@ -210,7 +258,7 @@
 |---|---|
 | 表格行内 / 工具条的**纯文本**小按钮 | `Size::Xs`（`h-6`）+ `Variant::Outline` |
 | 紧凑图标按钮（朗读、关闭、缩放、删除） | `Size::IconSm`（`size-6`）+ `Variant::Ghost` / `Outline`；**必填** `aria_label` |
-| 句内的「编辑 / 删除 / 关闭」（透明底、悬停换色） | `Variant::Text` + `Size::Xs`；悬停变红补 `class="hover:text-destructive"` |
+| 句内的「编辑 / 删除 / 关闭」（透明底、悬停换色） | `Variant::Text` + `Size::Xs`；悬停变红补 `class="hover:text-hp-text"` |
 | 工具栏筛选、卡片操作 | `Size::Sm`（`h-8`） |
 | 表单主体、弹层主操作 | `Size::Default`（`h-10`，默认档） |
 | 落地页主操作（首页 Hero） | `Size::Lg`（`h-12`）—— 表单与工具栏里不要用 |
@@ -229,7 +277,7 @@
 | 知识库正文的要点 / 术语 / 三列对照表 / 步骤 | `BulletSection` / `ConceptsSection` / `TableSection` / `StepsSection` | 手写 `<ul>` / 两列网格 / `<table>` |
 | 页脚的依据溯源行（「依据 XX，YYYY-MM 核对」） | `ProvenanceNote` | 手写一行小字 |
 | 空态（图标 + 标题 + 说明 + 操作） | 页面级：`EmptyState`；卡片内：`EmptyState plain=true` | 手写居中的提示块；卡片内再套带框版本（双线框） |
-| 内容卡片（标题栏 + 正文） | `SectionCard` | 再抄一份 `pxl-card border bg-card` |
+| 内容卡片（标题栏 + 正文） | `SectionCard`（`meta` 放标题栏右侧元信息，`href` 做整卡可点，见下） | 再抄一份 `pxl-card border bg-card`；整张手写 `<a class="block pxl-card …">`；`flat_card_class` + `CARD_HEADER` + `card_title_class` 那三件套（新代码） |
 | 卡片里的区段标题 / 卡片外的分组标题 | `pxl-section-title` / `pxl-section-head` | 手抄 `border-b px-4 py-3 text-sm font-semibold` |
 | 单按钮结果提示（成功 / 失败 / 已复制） | `MessageDialog` | 手搭 `Dialog` + 一个按钮 |
 | 加载中（短等待）/ 首屏骨架 / 整页加载 | `Loading` / `Skeleton` / `PageLoading` | 手写 spinner / 一片留白 / 一行 `p-6` 文字（会脱出 `PageContainer`） |
@@ -238,7 +286,27 @@
 | 题图（缩略图 + 点击放大） | `PreviewableImage` | 手搭 `Dialog` + `<img>` |
 | 题目笔记编辑区 | `NoteEditor` | 手写 `Textarea` + 存取逻辑 |
 | 答题进度头 / 底部固定操作栏 | `QuestionProgressHeader` / `BottomBar` | 手写进度行 / 固定底栏 |
+| 限时考试的剩余时间读数 | `ExamClock`（档位由 `ham_web_core::exam_clock` 判定） | 手抄 `format_ms` + 自己定「最后 60 秒变红」 |
+| 答题卡（抽屉 + 题号格子） | `AnswerCardSheet` / `AnswerCardCell` | 手写格子网格 |
 | 答案解析（折叠 + 法规引用 + 朗读） | `ExplanationCard` | 手写折叠区 |
+
+**内容卡片的外壳只有一份（`SectionCard`）**。首页下半部分曾同时存在三种外壳（窗口级
+`card_class`、平卡 `flat_card_class`、整张手写的 `<a>`）：标题体、内边距、卡片间距、悬停反馈
+各不相同，用户凭外观判断不出哪张能点。统一后：
+
+| 场景 | 写法 | 外观 |
+|---|---|---|
+| 普通内容卡 | `<SectionCard title=… meta=…>正文（自带 p-4）</SectionCard>` | L1 平卡：2px 墨框、零投影；标题栏是 `pxl-section-title`（Silkscreen + 主色方块 + 墨色下沿）；标题是真正的 `h2` |
+| 标题栏右侧的元信息（待复习数、连续天数、「查看详情 →」） | `meta=ViewFn::from(move \|\| …)` | 12px 灰字，放在 `h2` **外面**，不进标题的无障碍名 |
+| **整卡可点** | `href="/x"`（标题成为铺满整卡的链接） | 额外带 `motion-lift`：悬停上抬 2px + 硬投影 + 淡强调底；键盘焦点是画在**整张卡**上的虚线框 |
+| 一页里的「当前任务块」 | 不用 `SectionCard`，用 `card_class` / `pxl-window`（L2） | 内高光 + 4px 硬投影（§2 硬规则 8） |
+
+约定：**悬停有反馈 = 整卡可点**，不可点的卡片不要加 `motion-lift`（悬停位移会干扰阅读）。
+整卡可点的卡片里如果还有按钮 / 链接，给它们 `relative z-10` 浮到铺满的标题链接之上（否则点不到），
+也不要把整张卡写成一个 `<a>`（链接里嵌按钮是无效嵌套）。卡片之间的间距由外层容器的 `space-y-6`
+给，卡片自己**不带** `mb-*`（`card_class` / `flat_card_class` 带 `mb-[24px]`，混用会让间距时 24 时 48）。
+手写悬停位移 / 带色软阴影（`hover:-translate-y-1`、`hover:shadow-lg`、`shadow-primary/10`）
+`check-ui` ⑰ 已拦。
 
 `EmptyState` 的两个档按**上下文**选，不按文案长短：页面级用默认档（自带 `pxl-card` 与入场），
 卡片内的空列表用 `plain=true`（无边框、上下留白更小，否则卡片里套卡片）。三类**不要**迁：
@@ -249,6 +317,10 @@
 只在对应流程里用，不在此表：改它们直接读文件头注释（弹层的开合、`Portal`、焦点与滚动锁都写在里面）。
 
 ### 3.3 移动端侧栏替代（`MobileNavDrawer`）
+
+应用外壳自己的移动端导航也只有一个来源：`nav_bar.rs` 的三段折叠（`MobileNavSection`，
+原生 `<details>`，当前页所在段默认展开）与底部 `MobileTabs`（激活态 = 顶部 4px 主色条 + 浅底，
+不只靠字色）。页面不要另写导航 / 底部条。
 
 侧栏在移动端被 `hidden md:block` / `hidden lg:block` 藏掉之后，分类 / 导航入口要用
 `ui::MobileNavDrawer`（右下角悬浮按钮 + 右侧抽屉，复用 `Sheet`）补上。浏览 / 术语表 /
@@ -324,6 +396,59 @@ view! {
 | 内容块滚动浮现 | `PageContainer` 的 `reveal=true` | 直接子元素进入视口时逐个浮现（同批 60ms 错峰）；`KnowledgePage` 已默认开启，普通内容页不必开 |
 | 知识库正文页 | `KnowledgePage` | = `PageHeader` + `PageContainer`，并负责按需拉取知识库译文 |
 | 打印类内容（`/print` 的纸、QSL 标签、QSL 设计器画布） | 物理尺寸（`max-w-[210mm]`、`@page size`、`mm` 值） | 量的是**纸**，不是内容宽度 —— **唯一**不受 `max-w-5xl` 约束的地方，理由见下 |
+
+### 断点只有四档
+
+Tailwind 的 `sm` / `md` / `lg` 之外，只多一档 `xs`（400px，定义在 `tokens.css` 的
+`--breakpoint-xs`）。**不要在页面里写 `min-[560px]:` 这类任意值断点**（`check-ui` ㉒ 已拦）；
+确实需要新的中间态，就加一条 `--breakpoint-*` 再全局用。
+
+注意区分两种「方括号里的像素值」：
+
+- `min-[…px]:` = 断点（上面这条管着）；
+- `min-w-[560px]` = **表格最小宽度**，靠它触发横向滚动（全仓 87 处，各表按列数取，
+  不受断点规则约束）。改窄屏布局时不要顺手把它们删掉 —— 删了表格会挤成一坨。
+
+### 滚动模型
+
+纵向滚动**只有一层**：窗口（`html` / `body`）。页面里不要造「整页高度 + `overflow-auto`」的
+滚动容器，也不要用 `h-screen` 包住内容 —— 会出现双滚动条、吸顶错位、移动端地址栏收回时跳动。
+
+**窗口滚动条是自绘的**（`ui::ScrollBar`，挂在 `App` 根部）：
+
+- 原生窗口滚动条在 `surfaces.css` 里隐藏（`html::-webkit-scrollbar { display: none }` +
+  `html { scrollbar-width: none }`），改画一条 12px 的像素滚动条，**从吸顶导航下沿开始**到视口底部
+  （导航是「机身」、滚动条属于「屏幕」，不并排到头部去）。`top` 由组件实测 `[data-nav]` 的高度写入。
+- **浮在内容之上，不占布局**：没有轨道底色、只有 thumb，`main` / `footer` **不要**留 12px
+  内边距 —— 留了会在没有滚动条时也空出一条，而且滚动条出现 / 消失时内容会横向抖。
+  代价是拖动区覆盖最右 12px（与系统覆盖式滚动条一致），所以**不要**在右边缘 12px 内放
+  必须点的控件。**改这三处要一起看**：`ui/scrollbar.rs`、`surfaces.css` 的 `html` 段与
+  `.pxl-scrollbar*` 段、`dialog/shared.rs::lock_scroll`。
+- **不要再写 `scrollbar-gutter`**：原生窗口滚动条已不存在，没有槽位可言；弹层锁滚动时也**不需要**
+  补 `padding-right`（隐藏前后布局宽度不变，页面不会横向跳）。
+- 触屏（`hover: none`）整条隐藏 —— 那里没有常驻滚动条，手指滚动时多一条浮层只是噪声。
+- **嵌套滚动区仍用原生自绘样式**（`*::-webkit-scrollbar`）：宽表格、弹层内容、吸顶侧栏。
+
+**唯一允许的嵌套纵向滚动**是这几类局部区域：
+
+| 区域 | 限高写法 | 必须带 |
+|---|---|---|
+| 弹层 / 抽屉的内容区（`Dialog` / `Sheet` / 答题卡） | `max-h-[calc(100svh-2rem)]` 这类，由组件自己给 | `overscroll-contain` |
+| 吸顶侧栏里的目录 / 列表（`StickyPanel` 内） | `max-h-[calc(100svh-var(--sticky-top)-16px)]` | `overscroll-contain` |
+| 下拉面板 / 搜索弹层的结果区 | `max-h-[60svh]` 之类 | `overscroll-contain` |
+
+- **限高一律 `svh`，不要 `vh`**：`vh` 按「地址栏收起后」的大视口算，移动端上浮层会伸出屏幕，
+  底部按钮点不到。`svh` 取小视口、且不随地址栏伸缩重排。
+- **页面根不要写 `min-h-screen`**：`<body>` 已经是 `min-h-dvh flex flex-col`、`<main>` 是 `flex-1`。
+  再写一层 `min-h-screen`（= `100vh`）在手机上必然多出一截可滚动的空白（现在统一写 `min-h-svh`）。
+- **不做平滑滚动**：`html` 是 `scroll-behavior: auto`（这套语言的位移是逐帧的，平滑滚动会把
+  `steps()` 的手感冲掉）。跳到锚点用 `util::scroll_to_element`（按吸顶页头的**实际底边**算偏移），
+  不要手写 `scroll-mt-24` —— 页头高度随译文折行变化。
+- **路由**：进入新页面回到顶部；**浏览器后退 / 前进保留原位置**（`app/main_content.rs` 用
+  `popstate` 标记跳过复位）。改这段时注意「只改 hash」的导航不会触发复位，标记要能自己失效。
+- **横向滚动**只出现在宽表格：`Table` 自带 `overflow-x-auto` + 调用点给 `min-w-[…px]`；
+  不要在页面里再包一层 `overflow-x-auto`，也不要为了「不横滚」把列删掉（`mobile_overflow`
+  守的是**整页**不横滚，表格内部横滚是预期行为）。
 
 ### 页内第二根吸顶栏（`StickyPanel`）
 
@@ -471,7 +596,17 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
   面板常驻挂载、非激活时 `hidden`：`aria-controls` / `aria-labelledby` 靠组件生成的 id 配对，
   **页面里不要手写这对 id**。
 - **折叠 / 下拉**：`Button` 的 `aria_expanded` / `aria_controls`（面板有 id 时一并给）。
+- **一组按钮里的「当前」**：`Button` 的 `aria_current`（答题卡当前题、分页当前页），
+  不要用自定义 class 表达；`aria-current` 只在一处为真。
 - **动态提示**：实时结果区用 `aria-live`，并用 `Input` 的 `aria_describedby` 关联 id。
+  判分 / 倒计时这类「用户刚做完一件事」的结论放**常驻**的 `role="status"` 容器（节点先于内容存在，
+  部分读屏器不播报「插入时就带内容」的区域）；每秒变化的读数（倒计时）**不要**加 `aria-live`，
+  否则是持续噪声 —— 跨档提醒交给 Toast。
+- **模态与快捷键**：任何 window 级键盘监听都要先 `shortcuts::modal_is_open()`
+  （判 `[aria-modal="true"]`），否则弹层开着时数字键 / 方向键会改到背后的内容。
+  `Dialog` / `Sheet` 关掉时有 200–240ms 退场，这段时间快捷键仍被挡住（可接受）。
+- **限时提示**：Toast 悬停 / 聚焦暂停计时（WCAG 2.2.1），离开后按剩余时间续（不短于 2 秒）；
+  同类同文合并为 `×N`。页面只调 `push_*`，需要用户确认的失败仍用 `MessageDialog`。
 - Playwright 用例大量使用 `getByLabel(...)` / `getByRole(...)`：**标签关联与 role 是测试契约**。
   改了 `role` / `aria-*` 必须同步 spec（§12）。
 
@@ -515,11 +650,20 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
 9. **`Chip` / `ChipToggle` 的 children 要包一层 `view!`**：`ChipGroup` 的 children 里，
    每个 `Chip` 的 children 写成 `{view! { {move || …} }.into_any()}` —— 直接把
    `{move || …}` 放在外层会让响应式文本失去响应式上下文。
+10. **别让动作「看起来能点、点了没反应」**：不可用的动作把 `disabled` 传下去（`Button`
+    会如实置灰，读屏也读得到），不要在回调里 `if !allowed { return; }` 静默吞掉
+    （机考仿真的「上一题」、答题卡的跳转都踩过）。
+11. **`ui_check` 只看 `.rs` 里的类名字面量**：写在 `.css` 或内联 `style="…"` 里的同类问题
+    在射程外（曾经把一条 `border-right` 声明并成非法值、箭头直接消失，门禁全绿）。
+    改 `.css` / `style=` 时人眼过一遍 `+` 侧。
 
 ## 9. 新增 / 扩展组件
 
 - **先扩展现有组件**：缺通道（例如 `title`、`maxlength`、`aria_expanded`）时，优先给现有组件
   补 prop，而不是在页面里退回原生元素。补完在 `ui/README.md` 组件表里补一行。
+  **「只是颜色淡一点 / 小一号 / 更紧凑」也一样**：先补 `Size` 档（`Xs` / `IconSm`）或
+  `Variant`（`Text` / `Ghost`），不要在页面里复制一份 `class`——复制出去的那份不会跟着
+  `pxl-btn` 的悬停 / 按下 / 禁用态一起变。
 - **什么时候才新增组件**：同一个交互在 ≥3 处重复，且现有组件 + prop 表达不了。
 - **放哪**：基础控件放 `crates/app/src/ui/<name>.rs`（在 `ui/mod.rs` 里 `mod` + `pub use`，
   并在 `ui/README.md` 组件表登记）；业务组件放 `crates/app/src/components/<name>.rs`
@@ -538,7 +682,7 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
 ## 10. 例外清单：刻意保留的原生元素
 
 规范之外**有意留下**的地方都在这里。每一处都在代码里写了 `刻意的例外` 注释，
-`grep -rn "刻意的例外" crates/app/src` 可列全（当前 **12 条注释 / 11 个文件**，
+`grep -rn "刻意的例外" crates/app/src` 可列全（当前 **11 条注释 / 10 个文件**，
 其中 `nav_bar.rs` 占 2 条、`group_menu.rs` 占 1 条；`pagination.rs` 那条只是解释
 「为什么不收录」，不是例外本身）。大多数走 `button_class` + 原生元素，另有几处用
 `cn` / 原生类名（`nav_bar.rs` 的移动端语言切换、`dx_spots.rs` 的表格行按钮）、共用吸顶骨架常量
@@ -568,7 +712,6 @@ label 的 `has-[:focus-visible]:ring-2` 显示。**页面里不要再手写拖�
 | `pages/callsign_copy.rs` | 两个模式按钮：选中态切 `variant` |
 | `components/exam/answer_card_sheet.rs` | 答题卡筛选按钮：当前筛选切 `variant` |
 | `pages/home/cards_card.rs` | 「今日待复习」入口：有待复习时切 `variant` |
-| `components/bank_selector/mod.rs` | 刷新按钮：底色随刷新状态（成功 / 失败 / 加载）变化，`class` 也要按状态合并 |
 | `pages/dx_spots.rs` | 热点表格行内的紧凑内容按钮（呼号 + 国家两行）：像素按钮的高度与内边距会把行高撑开、破坏表格密度 |
 | `components/common/page_header.rs` | 吸顶骨架 `PAGE_HEADER_BAR` 常量：全站吸顶页头只有这一份骨架类名，打印页等「纸宽坐标系」的页头也复用它，吸顶偏移只在这一处改（见文件头注释与 §4） |
 | `pages/print_sheet/print_page.rs` | 打印页量的是纸宽（`max-w-[210mm]`），不套 `PageHeader`；吸顶骨架与全站共用 `PAGE_HEADER_BAR`，偏移保持单一来源 |
@@ -584,7 +727,7 @@ label 的 `has-[:focus-visible]:ring-2` 显示。**页面里不要再手写拖�
 |---|---|---|
 | 多选 / 带对错态的答题选项 | `mistakes/*` 的选项、`components/topic_quiz/quiz_question.rs` | 多选 + 判分后的对错配色，单选款的 `QuizOption` 表达不了 |
 | 卡片点击区、热图格、地图区域 | `pages/cards.rs` 卡片、`morse_card` / `phonetic_card`、`muf` 热图格、`zone_map` 地图 | 点的是「内容」不是按钮，`Button` 的尺寸与视觉都表达不了 |
-| morse 大圆键 | `koch_trainer` / `morse_trainer` 的试听键、`send_trainer` 的长按发报键 | 交互不同（点击 vs 长按，带扩散圈动画），共用的只有外壳 |
+| morse 大圆键 | `pages/morse/morse_key.rs` 的 `MorseKey`（`koch_trainer` / `morse_trainer` 的试听键、`send_trainer` 的长按发报键共用） | 要 `pointerdown` / `pointerup` / `pointerleave` 一组事件，`Button` 没有这条通道。外观是 `pxl-btn pxl-btn-primary`，「播放中 / 按住中」由 `data-state="active"` 驱动按下态，不做缩放（原先的 `animate-ping` 扩散圈也是缩放，已换成内框逐帧闪烁） |
 | 二级子分类项 | `pages/browse/browse_page.rs` 的 `ml-4` 缩进项 | 刻意更轻的选中态（`bg-accent`，不是主色填充），与一级项的重量分级 |
 | 导航胶囊 / 快捷入口 | `pages/tools/tools_page.rs` 的工具条、`mistakes` 的薄弱分类 | 是「跳到某处」，没有选中态 |
 | chip 旁带第二个按钮 | `pages/bookmarks/bookmarks_page.rs` 的分组筛选（每个 chip 带「×」删除） | `Chip` 内不能嵌套按钮 |
@@ -599,13 +742,16 @@ label 的 `has-[:focus-visible]:ring-2` 显示。**页面里不要再手写拖�
   `/gear` 的类别、机型、预设三组曾这么写过，已迁到 `ui::ChipGroup` + `ui::Chip`（互斥）/
   `ui::ChipToggle`（可开关）。新写选择器时先看 ⑤ 的清单里有没有 `<button`，
   有就说明又长出一只手写 chip。
-- **迁移历史**（哪一轮迁了什么、e2e 契约怎么变的）见附录 A。
+- **迁移历史**（哪一轮迁了什么、e2e 契约怎么变的）看 `git log --oneline -- crates/app/src/ui`；
+  本章只留判断依据，不记流水账。
 
 ## 11. 自检命令
 
 **机械可判定的条目已经接进 CI**：`cargo make check-ui`（含在 `cargo make check` 与 `cargo make ci`
 里，源码见 `crates/tools/src/ui_check.rs`）会扫 ①②③④⑤⑦、⑥ 的模糊 / 渐变与**任意值阴影的模糊位**、
-⑧ 的**页面级宽度容器封闭清单**（清单外命中、清单内计数漂移都会红），命中即让门禁红。
+⑧ 的**页面级宽度容器封闭清单**（清单外命中、清单内计数漂移都会红），以及 2026-10-24 补上的 ⑪–㉓
+（字重 / 缩放 / `transition-all`+`duration-N` / 实线焦点环 / 非 6 倍数字号 / 原始色阶 / 手写悬停位移 /
+空属性 / `text-destructive` / 手写 `<h1>` / 12px 卡片标题 / 任意值断点 / 16px 图标），命中即让门禁红。
 下面保留手工命令是为了看清判定细节，以及覆盖工具刻意不做的部分：内联 `style` 里的阴影、
 打印页的 `mm` 尺寸、⑨ 的例外注释计数。
 
@@ -636,16 +782,44 @@ grep -rnE --include='*.rs' 'text-\[color:var\(--pxl-(hp|xp|gold|win)\)\]' .
 #    check-ui 已按同一份清单机械守着（清单外命中、清单内计数漂移都会红），这条用来复核
 grep -rn --include='*.rs' --exclude-dir=ui -E 'class="[^"]*\bmax-w-(2xl|3xl|4xl|5xl|6xl)\b|class="container' pages components app \
   | grep -vE '<Dialog|sm:max-w'
-# ⑨ 刻意保留的原生元素：应等于 §10.2 的清单（13 条注释 / 11 个文件）
+# ⑨ 刻意保留的原生元素：应等于 §10.2 的清单（11 条注释 / 10 个文件）
 grep -rn "刻意的例外" .
+# ⑪ 字重类：应为 0（check-ui 已拦）
+grep -rnE --include='*.rs' '\bfont-(semibold|bold|medium|extrabold)\b' . | grep -v 'cn.rs'
+# ⑫ 缩放 / 悬停旋转：应为 0（check-ui 已拦）
+grep -rnE --include='*.rs' '(^|[ "])([a-z-]+:)*(-?scale-|zoom-(in|out)-|hover:rotate-)' . | grep -v 'cn.rs'
+# ⑬ transition-all 与写死毫秒的 duration：应为 0（check-ui 已拦；`duration-(--motion-*)` 合规）
+grep -rnE --include='*.rs' 'transition-all|\bduration-[0-9]+' . | grep -v 'cn.rs'
+# ⑭ 实线焦点环：应为 0（check-ui 已拦；`focus-visible:outline-ring` 是虚线的颜色，不算）
+grep -rnE --include='*.rs' '(^|[ "])([a-z-]+:)*ring(-offset-[a-z0-9]+|-[0-9]+|-ring(/[0-9]+)?)?([ "]|$)' . | grep -v 'cn.rs'
+# ⑮ 非 6 倍数的任意像素字号：应为 0（check-ui 已拦；放过 nec/nvis.rs 的 SVG <text> 与 print_sheet）
+grep -rnE --include='*.rs' 'text-\[[0-9.]+px\]' . | grep -v 'cn.rs\|nvis.rs\|print_sheet'
+# ⑯ Tailwind 原始色阶：应为 0（check-ui 已拦；放过 print_sheet / qsl_labels / qsl_designer 与 print: 变体）
+grep -rnE --include='*.rs' '(bg|text|border|ring|fill|stroke|from|to|via|divide|outline)-(red|green|emerald|amber|blue|yellow|orange|sky|rose|purple|indigo|teal|violet|gray|zinc|slate)-[0-9]{2,3}' . | grep -v 'cn.rs\|print_sheet\|qsl_\|print:'
+# ⑰ 手写的悬停位移 / 悬停阴影 / 带色阴影：应为 0（check-ui 已拦；居中的 `-translate-y-1/2` 与 2px 的 `-translate-y-0.5` 不算）
+grep -rnE --include='*.rs' '(hover:|active:)-?translate-y-[1-9]|hover:shadow-|shadow-(primary|accent|win|hp|xp|gold|destructive)/' . | grep -v 'cn.rs'
+# ⑱ 空属性：应为 0（check-ui 已拦）。批量删类名（字重 / 色阶）后把属性一起删掉
+grep -rnE --include='*.rs' 'class=""|style=""' .
+# ⑳ 页面手写 <h1>：只允许 PageHeader / 带 pxl-title / sr-only（check-ui 已拦；print_page 为例外）
+grep -rn --include='*.rs' '<h1' crates/app/src/pages | grep -v 'sr-only\|pxl-title'
+# ㉑ 卡片标题用 12px：应为 0（check-ui 已拦）。区段标题走 card_title_class(...)
+grep -rn --include='*.rs' '<h2' crates/app/src | grep 'text-sm'
+# ㉒ 任意值断点：应为 0（check-ui 已拦；断点只有 xs / sm / md / lg）
+grep -rnE --include='*.rs' 'min-\[[0-9]+px\]:' crates/app/src
+# ㉓ 图标写 16/20px：应为 0（check-ui 已拦；像素图标是 24px 网格，写 size-6）
+grep -rn --include='*.rs' '<Icon' crates/app/src | grep -E 'class="[^"]*\b(h-[345]|size-[345])\b'
+# ⑲ 把 destructive 填充色当文字色：应为 0（check-ui 已拦）。
+#    这是填充色，暗色下落在弹层表面上不足 4.5:1；写字用 text-hp-text。
+#    `text-destructive-foreground`（实色按钮上的字）是另一个 token，不在此列
+grep -rnE --include='*.rs' 'text-destructive([^-]|$)' . | grep -v 'cn.rs'
 # ⑩ 页面里手写的页内吸顶偏移：应为 0（第二根吸顶栏走 StickyPanel，见 §4；
 #     吸顶骨架唯一来源是 common 里的 PAGE_HEADER_BAR；表格粘性表头的 `sticky top-0` 不在此列）
 grep -rnE --include='*.rs' 'sticky top-\[[0-9]' pages components | grep -v 'components/common'
 ```
 
-各条当前状态（2026-10-16 复核）：①0 ②**0** ③0 ④0 ⑤**0**（`rounded-*` 已从视图清零，
+各条当前状态（2026-10-24 第二轮复核）：①0 ②**0** ③0 ④0 ⑤**0**（`rounded-*` 已从视图清零，
 卡片皮肤改用 `pxl-card` 标记）⑥0（剩下的 4 行是 3 处像素硬阴影 —— `shadow-[0_2px_0_0_…]` 与它的
-`-2px` / `4px` 变体 —— 与 `cn.rs` 里的冲突组配置，都合规）⑦0 ⑧11 行 / 9 文件（= §4 的封闭清单）⑨13
+`-2px` / `4px` 变体 —— 与 `cn.rs` 里的冲突组配置，都合规）⑦0 ⑧11 行 / 9 文件（= §4 的封闭清单）⑨11 条 / 10 文件（2026-10-24 刷新按钮收编后）⑪–㉓ 0（2026-10-24 新增）
 ⑩0（2026-10-16：browse / glossary / tools 已收口到 `StickyPanel`）。
 其中 ①②③④⑤、⑥ 的模糊 / 渐变与任意值阴影、⑧ 的封闭清单由 `cargo make check-ui` 持续守着，
 不必再靠人工记得跑。
@@ -681,37 +855,17 @@ cd e2e && E2E_BASE_URL=http://127.0.0.1:3030 npx playwright test tests/<spec>.sp
   不是代码问题。
 - **dev 构建没有 `wasm-opt`**，CPU 密集用例（如 Yagi 优化）并行时容易超时，
   `--workers=1` 复跑通过即非回归。整批回归请用 `cargo make e2e`（release 口径，与 CI 一致）。
+- **只跑 `check-ui` 不够**：它只查类名字面量。wasm 目标的 clippy 也不覆盖 host 的测试构建
+  （`impl IntoView` 默认把入参生命周期带进返回类型，只有 `cargo test` 会报，改法是
+  `impl IntoView + use<>`）。**收工前跑一次 `cargo make check`。**
 
-## 附录 A：控件收口记录
+**按改动类型挑 e2e**（这些用例是规范的可执行部分，改对应面必跑）：
 
-> 收口分多轮完成，这里是**结果索引**（逐文件明细看 git log）。写新代码不需要读它；
-> 遇到「这里为什么是 chip / 那边为什么留了原生按钮」时来查。
-
-| 轮次 | 做了什么 |
+| 改了什么 | 必须跑 |
 |---|---|
-| 早前 | 原生表单控件清零（`Input` / `Select` / `Textarea` / `Slider` / `NumberField` / `Checkbox` / `Switch`…），`input_class` 工厂删除；内容宽度收口到 `PageHeader` / `PageContainer`；像素风基线与 `pxl-*` 控件原语落地 |
-| 2026-10-12 | 手写动作按钮 → `Button` / `ButtonLink`（13 文件）；手写互斥选择 / 开关 → `ChipGroup` / `Chip` / `ChipToggle`（15 文件，含 morse 三件套、打印页、错题页） |
-| 2026-10-13 | 给 `Button` 补 `Size::Xs` / `Size::IconSm` / `Variant::Text` / `aria_expanded` / `aria_controls`；收编 nec 表格工具条（11）、文字按钮（8）、图标按钮（6）、折叠开关（5）；提取 `QuizOption`（8 处）/ `SidebarItem`（4 处）/ `PillButton`（4 处）；两处同名的 `pill()` 私有函数删除 |
-| 2026-10-13 | 提取 `ui::FileDropZone`：解码类页面（APT / SSTV / WSPR / RTTY / Olivia / NAVTEX / LRPT / DominoEX / PSK31 / 离线瀑布分析）与图片处理页的整块拖放上传区全部收口，删除 `AptUploader` 与 psk / 瀑布页手写的拖放区；非音频上传位用 `choose_hint` 覆盖默认的「拖拽音频文件」提示行 |
-| 2026-10-13 | `pages/most_wanted/wanted_tracker.rs` 的手写勾选框 → `ui::Checkbox`（顺带补上 `role="checkbox"` / `aria-checked`；§10.3 的对应条目已删除） |
-| 2026-10-16 | 页内第二根吸顶栏收口：新增 `common::StickyPanel`，browse / glossary / tools 手写的 `sticky top-[136px]` 侧栏与目录全部收编（偏移随页头高度自适应，消除吸顶错位与被页头盖住的问题）；`PageHeader` 吸顶偏移对齐导航下沿（`top-[66px]`），骨架类名抽为 `PAGE_HEADER_BAR`（打印页复用），每日挑战计时条收进 `PageHeader` 的 `children` |
-| 2026-10-23 | 界面评审驱动的一轮收口：破坏性操作统一到 `ui::confirm`（8 处 `window.confirm` 清零、3 处「点了就删」补齐）；空态两档化（`EmptyState` / `plain`）并迁 12 处；字号按「读 / 扫」分档（解析与知识库保持 12px，放大到 18px 的试验在移动端实测后回退）；新增 `.pxl-stat` 读数体（20 处统计 / 时钟）与 `DecodeElapsed`（解码已用时）；`animate-in/out` 缓动收回 `steps()`；`<sm` 下 chip / tab 抬到 36px；移动端底部 Tab 改白话；新增 `PageLoading` 骨架与 `flat_card_class`（L1 平卡） |
-
-2026-10-23 那轮的 e2e 契约变化：破坏性操作不再走原生 `window.confirm`，6 个 spec 的
-`page.on("dialog")` 改为 `fixtures.confirmDialog(page, "…")`；练习页答案改为「作答后才显示」，
-`fixtures.correctLetters()` 会先点一次「显示正确答案」。
-
-**这轮迁移带来的 e2e 契约变化**（改 role 就要同步 spec）：`Chip` 输出 `role="radio"` +
-`aria-checked`，`ChipToggle` 输出 `aria-pressed`；`browse` / `planning` / `practice_flow` /
-`cards` / `study_modes` 的定位与 `fixtures.option()`（选项正则加负向断言，避开「A 类」
-这类同名 chip）都已同步。
-
-**沉淀下来的原则**（为什么这么迁）：
-
-- 外观与 `pxl-btn` 一致的 → 直接用 `Button`；只是「颜色淡一点 / 小一号」的，先补尺寸档
-  （`Size::Xs` / `Size::IconSm`）或变体（`Variant::Text`），**不要**在页面里复制一份样式。
-- 「可点的互斥 / 开关按钮自己写样式」→ `ChipGroup` / `ChipToggle`（顺带补上
-  `role="radio"` / `aria-pressed`）。
-- 同一个交互复制 **≥3 次**且现有组件表达不了 → 提取组件（`QuizOption` / `SidebarItem` /
-  `PillButton` 都是这么来的）。
-- 缺的只是**通道**（`aria_expanded` / `aria_controls` / 尺寸档）→ 补 `Button`，不要退回原生元素。
+| 颜色 / 表面 token / 配色方案 | `color_scheme.spec.ts`（11 方案 × 明暗 × 设置弹层，**axe 对比度**）+ `smoke.spec.ts`（全站 × 明暗，含 axe） |
+| 布局 / 字号 / 间距 / 断点 | `mobile_overflow.spec.ts` + `i18n_layout.spec.ts`（**180 路由 × 三语** × 320 / 390px） |
+| 题目卡 / 答题卡 / 底栏 / 首页卡片 / 移动菜单 | `ui_spec.spec.ts`（用例标题带编号，能对上 §2 的规则） |
+| 判分 / 练习 / 考试流程 | `study.spec.ts`、`study_modes.spec.ts`、`exam_flow.spec.ts`、`practice_flow.spec.ts` |
+| 表格密度 / 触控目标 | `mobile_overflow.spec.ts` + 目视 320px 下的一屏条数 |
+| 组件改名 / 新增 `role`、`aria-*` | 按属性全仓搜 spec（不要按页面名找） |

@@ -7,7 +7,7 @@ use web_sys::{Notification, NotificationPermission};
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf, tp};
-use crate::ui::{Button, ChipToggle, Size, Variant};
+use crate::ui::{Button, ChipToggle, Size, Variant, card_title_class};
 use crate::util::{notification_permission, set_title, storage};
 
 const DX_KEY: &str = "dx-alerts";
@@ -67,7 +67,7 @@ pub fn NotificationsPage() -> impl IntoView {
   };
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("settings.notifications")
         subtitle=move || t("settings.manage-browser-notification-permission")
@@ -76,7 +76,7 @@ pub fn NotificationsPage() -> impl IntoView {
       <PageContainer class="space-y-4">
         <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("settings.browser-notification-permission")}</h2>
+            <h2 class=card_title_class("mr-auto")>{move || t("settings.browser-notification-permission")}</h2>
             <span class="text-xs text-muted-foreground">{perm_label}</span>
             {move || {
               permission.get().is_some_and(|p| p != NotificationPermission::Granted).then(|| {
@@ -99,7 +99,7 @@ pub fn NotificationsPage() -> impl IntoView {
 
         <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("settings.countdown-reminders")}</h2>
+            <h2 class=card_title_class("mr-auto")>{move || t("settings.countdown-reminders")}</h2>
             <span class="text-xs text-muted-foreground">
               {tp("settings.countdowns", count.get() as u32, &[&count.get().to_string()])}
             </span>
@@ -114,7 +114,7 @@ pub fn NotificationsPage() -> impl IntoView {
 
         <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("tools.dx-spot-alerts")}</h2>
+            <h2 class=card_title_class("mr-auto")>{move || t("tools.dx-spot-alerts")}</h2>
           </div>
           <div class="space-y-3 px-4 py-3">
             <div class="flex items-center justify-between gap-2">
@@ -151,7 +151,7 @@ pub fn NotificationsPage() -> impl IntoView {
 
         <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("settings.satellite-pass-alerts")}</h2>
+            <h2 class=card_title_class("mr-auto")>{move || t("settings.satellite-pass-alerts")}</h2>
           </div>
           <div class="space-y-3 px-4 py-3">
             <div class="flex items-center justify-between gap-2">
@@ -185,7 +185,7 @@ pub fn NotificationsPage() -> impl IntoView {
 
         <section class="pxl-card border bg-card">
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-            <h2 class="mr-auto text-sm font-semibold">{move || t("settings.background-push")}</h2>
+            <h2 class=card_title_class("mr-auto")>{move || t("settings.background-push")}</h2>
             <span class="text-xs text-muted-foreground">
               {move || if subscribed.get() { t("settings.subscribed") } else { t("settings.not-subscribed") }}
             </span>
@@ -244,7 +244,7 @@ pub fn NotificationsPage() -> impl IntoView {
             {move || {
               status.get().map(|s| {
                 view! {
-                  <p class="text-xs font-medium text-red-700 dark:text-red-400">{s}</p>
+                  <p class="text-xs text-hp-text">{s}</p>
                 }
               })
             }}

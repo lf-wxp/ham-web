@@ -19,7 +19,7 @@ const TONE_FREQ: f32 = 700.0;
 pub fn RstPage() -> impl IntoView {
   set_title("shell.rst-report");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.rst-report")
         subtitle=move || t("knowledge.readability-r-strength-s")
@@ -59,7 +59,7 @@ pub fn RstPage() -> impl IntoView {
                 let level = 0.05 + 0.10 * i as f32;
                 let pct = (i + 1) * 100 / SIGNAL_STRENGTH.len();
                 view! {
-                  <div class="flex items-center gap-3 px-1 py-2 transition-colors hover:bg-muted/40">
+                  <div class="flex items-center gap-3 px-1 py-2 transition-colors hover:bg-inset">
                     <Button
                       variant=Variant::Outline
                       size=Size::IconSm
@@ -67,12 +67,12 @@ pub fn RstPage() -> impl IntoView {
                       aria_label=tf("common.preview", &[(k)])
                       on_click=Callback::new(move |_| play_tone(TONE_FREQ, level, 0.7))
                     >
-                      <Icon kind=IconKind::Play class="h-3.5 w-3.5" />
+                      <Icon kind=IconKind::Play class="size-6 w-3.5" />
                     </Button>
-                    <span class="w-10 shrink-0 font-mono text-sm font-semibold">{k}</span>
+                    <span class="w-10 shrink-0 font-mono text-sm">{k}</span>
                     <div class="h-2 flex-1 overflow-hidden bg-muted">
                       <div
-                        class="h-full bg-primary transition-all"
+                        class="h-full bg-primary transition"
                         style=format!("width: {pct}%")
                       ></div>
                     </div>

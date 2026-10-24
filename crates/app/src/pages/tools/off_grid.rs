@@ -101,13 +101,13 @@ pub(super) fn OffGrid() -> impl IntoView {
               <p>{tf("tools.offgrid-summary", &[&format!("{:.0} Wh", r.daily_solar_wh), &format!("{:.0} Wh", r.battery_usable_wh)])}</p>
               {match r.autonomy_days {
                 None => view! {
-                  <p class="text-emerald-600 dark:text-emerald-400">
+                  <p class="text-win-text">
                     {tf("tools.offgrid-surplus", &[&format!("{:.0} Wh", r.net_wh)])}
                   </p>
                 }
                   .into_any(),
                 Some(days) => view! {
-                  <p class="text-amber-600 dark:text-amber-400">
+                  <p class="text-gold-text">
                     {tf("tools.offgrid-deficit", &[&format!("{:.0} Wh", -r.net_wh), &format!("{days:.1}")])}
                   </p>
                 }

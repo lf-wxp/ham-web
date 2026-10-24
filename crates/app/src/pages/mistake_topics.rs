@@ -14,22 +14,12 @@ use crate::study;
 use crate::ui::Tooltip;
 use crate::util::set_title;
 
-/// 热力档位 → 域色的透明度（8 位十六进制，拼在 `#rrggbb` 后面）。
-fn heat_alpha(level: u8) -> &'static str {
-  match level {
-    0 => "00",
-    1 => "1F",
-    2 => "38",
-    3 => "54",
-    4 => "73",
-    _ => "00",
-  }
-}
-
-/// 域色（`#rrggbb`）→ 热力格子的背景色。
-fn heat_bg(level: u8, color: &str) -> String {
-  let color = color.trim_start_matches('#');
-  format!("background-color:#{color}{}", heat_alpha(level))
+/// 域色 token → 热力格子的背景（同色相、按档位与卡片色混合，保持不透明）。
+fn heat_bg(level: u8, cat_var: &str) -> String {
+  format!(
+    "background-color: color-mix(in srgb, {cat_var} {}%, var(--card))",
+    crate::tone::heat_percent(level)
+  )
 }
 
 #[component]
@@ -48,7 +38,7 @@ pub fn MistakeTopicsPage() -> impl IntoView {
   let domain_max = domains.iter().map(|d| d.mistakes).max().unwrap_or(0);
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("exam.error-prone-topics")
         subtitle=move || t("exam.mistake-heatmap-subtitle")
@@ -85,7 +75,8 @@ pub fn MistakeTopicsPage() -> impl IntoView {
               } else {
                 (domain.mistakes as f64 / domain_max as f64 * 100.0).round() as u32
               };
-              let color = top_category(domain.top).map_or("#888888", |c| c.color);
+              let cat_tone = top_category(domain.top).map(|c| c.tone);
+              let cat_var = cat_tone.map_or("var(--muted-foreground)", crate::tone::var);
               let name = top_category(domain.top).map_or(domain.top, |c| c.name);
               view! {
                 <section class="pxl-card border bg-card">
@@ -94,12 +85,11 @@ pub fn MistakeTopicsPage() -> impl IntoView {
                     class="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/50"
                   >
                     <span
-                      class="size-2.5 shrink-0"
-                      style=format!("background-color:{color}")
+                      class=format!("size-2.5 shrink-0 {}", cat_tone.map_or("bg-muted", crate::tone::dot))
                       aria-hidden="true"
                     ></span>
                     <div class="mr-auto min-w-0">
-                      <div class="text-sm font-medium">{move || t(name)}</div>
+                      <div class="text-sm">{move || t(name)}</div>
                       <div class="mt-0.5 text-xs text-muted-foreground">
                         {tp("common.questions", domain.mistakes, &[&domain.mistakes.to_string()])}
                         " · "
@@ -113,7 +103,7 @@ pub fn MistakeTopicsPage() -> impl IntoView {
                       <div class="mt-1 h-1.5 w-full max-w-56 overflow-hidden bg-muted">
                         <div
                           class="h-full"
-                          style=format!("width:{bar_pct}%;background-color:{color}")
+                          style=format!("width:{bar_pct}%;background-color:color-mix(in srgb, {cat_var} 85%, var(--card))")
                         ></div>
                       </div>
                     </div>
@@ -124,7 +114,7 @@ pub fn MistakeTopicsPage() -> impl IntoView {
                   <div class="flex flex-wrap gap-1.5 border-t px-4 py-3">
                     {domain.topics.into_iter().map(|topic| {
                       let level = heat_level(topic.mistakes, global_max);
-                      let bg = heat_bg(level, color);
+                      let bg = heat_bg(level, cat_var);
                       let rate = stats
                         .total
                         .subs
@@ -144,7 +134,7 @@ pub fn MistakeTopicsPage() -> impl IntoView {
                             class="flex items-center gap-2 border px-2.5 py-1.5 text-xs transition-colors hover:border-primary/60"
                             style=bg
                           >
-                            <span class="max-w-48 truncate font-medium">{topic.name}</span>
+                            <span class="max-w-48 truncate">{topic.name}</span>
                             <span class="tabular-nums text-muted-foreground">{topic.mistakes}</span>
                             {rate.map(|r| view! {
                               <span class="tabular-nums text-muted-foreground">{tf("common.accuracy", &[&r.to_string()])}</span>

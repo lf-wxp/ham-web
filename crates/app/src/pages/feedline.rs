@@ -14,7 +14,7 @@ const CELL: &str = "border px-3 py-2 align-top";
 pub fn FeedlinePage() -> impl IntoView {
   set_title("shell.matching-feedlines");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.matching-feedlines")
         subtitle=move || t("knowledge.coax-baluns-atus-swr")
@@ -37,7 +37,7 @@ pub fn FeedlinePage() -> impl IntoView {
                 .map(|&(name, z, desc)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{name}</TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap")>{name}</TableCell>
                       <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{z}</TableCell>
                       <TableCell class=format!("{CELL} text-muted-foreground")>{desc}</TableCell>
                     </TableRow>
@@ -56,7 +56,7 @@ pub fn FeedlinePage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm font-medium">{t}</span>
+                    <span class="text-sm">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
                 }
@@ -73,7 +73,7 @@ pub fn FeedlinePage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex items-baseline gap-2 px-3 py-2">
-                    <span class="shrink-0 font-mono text-sm font-semibold text-primary">{t}</span>
+                    <span class="shrink-0 font-mono text-sm text-primary">{t}</span>
                     <span class="text-sm text-muted-foreground">{d}</span>
                   </div>
                 }

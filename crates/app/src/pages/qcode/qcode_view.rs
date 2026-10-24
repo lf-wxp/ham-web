@@ -5,7 +5,7 @@ use leptos_router::hooks::use_query_map;
 use crate::components::common::{EmptyState, PageContainer, PageHeader};
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
-use crate::ui::{Chip, ChipGroup, Input, InputType, Stat};
+use crate::ui::{Chip, ChipGroup, Input, InputType, Stat, card_title_class};
 
 use super::qcode_quiz::QCodeQuiz;
 use super::qcode_reverse_quiz::QCodeReverseQuiz;
@@ -102,7 +102,7 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
   let lists = [qcode, abbrev, phrase];
 
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.q-codes-title")
         subtitle=move || t("knowledge.q-codes-cw-abbreviations")
@@ -156,7 +156,7 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
             view! {
               <section class="mb-8 last:mb-0">
                 <div class="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <h2 class="text-sm font-semibold">{move || t(group.label())}</h2>
+                  <h2 class=card_title_class("")>{move || t(group.label())}</h2>
                   <span class="text-xs text-muted-foreground">{move || t(group.hint())}</span>
                   <span class="ml-auto text-xs tabular-nums text-muted-foreground">
                     {move || list.with(Vec::len)}

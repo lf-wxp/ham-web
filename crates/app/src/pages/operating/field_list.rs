@@ -10,7 +10,7 @@ pub(super) fn FieldList(fields: &'static [(&'static str, &'static str)]) -> impl
         .map(|&(k, v)| {
           view! {
             <div class="grid gap-1 px-4 py-2.5 sm:grid-cols-[8rem_1fr]">
-              <dt class="text-sm font-medium">{k}</dt>
+              <dt class="text-sm">{k}</dt>
               <dd class="text-sm text-muted-foreground">{v}</dd>
             </div>
           }

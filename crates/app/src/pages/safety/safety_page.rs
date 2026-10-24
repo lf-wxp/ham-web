@@ -13,7 +13,7 @@ use crate::i18n::t;
 pub fn SafetyPage() -> impl IntoView {
   set_title("shell.rf-safety");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("knowledge.rf-safety-and-electromagnetic")
         subtitle=move || t("knowledge.sar-exposure-limits-safe")

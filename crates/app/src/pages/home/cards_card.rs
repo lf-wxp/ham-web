@@ -2,11 +2,10 @@
 
 use leptos::prelude::*;
 
+use crate::components::common::SectionCard;
 use crate::i18n::{t, tf, tp};
 use crate::pages::load_card_schedule;
-use crate::ui::{
-  CARD_HEADER, Size, Variant, button_class, card_content_class, card_title_class, flat_card_class,
-};
+use crate::ui::{Size, Variant, button_class};
 use crate::util::now_ms;
 
 #[component]
@@ -16,18 +15,11 @@ pub(super) fn CardsCard() -> impl IntoView {
   let due = schedule.due_total(now);
   let learned = schedule.cards.len();
   view! {
-    <div data-slot="card" class=flat_card_class("")>
-      <div data-slot="card-header" class=CARD_HEADER>
-        <div data-slot="card-title" class=card_title_class("flex items-center justify-between")>
-          <span>{move || t("shell.study-cards")}</span>
-          {(learned > 0).then(|| view! {
-            <span class="text-sm font-normal text-muted-foreground">
-              {move || tf("home.learned", &[&learned.to_string()])}
-            </span>
-          })}
-        </div>
-      </div>
-      <div data-slot="card-content" class=card_content_class("flex flex-wrap items-center gap-3")>
+    <SectionCard
+      title=Signal::derive(move || t("shell.study-cards"))
+      meta=ViewFn::from(move || (learned > 0).then(|| tf("home.learned", &[&learned.to_string()])))
+    >
+      <div class="flex flex-wrap items-center gap-3 p-4">
         <p class="mr-auto text-sm text-muted-foreground">
           {move || {
             if learned == 0 {
@@ -45,6 +37,6 @@ pub(super) fn CardsCard() -> impl IntoView {
           {move || if due > 0 { tf("home.review", &[&due.to_string()]) } else if learned == 0 { t("home.start-learning") } else { t("home.learn-new") }}
         </a>
       </div>
-    </div>
+    </SectionCard>
   }
 }

@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn PropagationPage() -> impl IntoView {
   set_title("shell.propagation");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.propagation")
         subtitle=move || t("radio.ionospheric-layers-propagation-modes")
@@ -26,7 +26,7 @@ pub fn PropagationPage() -> impl IntoView {
               .map(|&(name, range, desc)| {
                 view! {
                   <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_10rem_1fr]">
-                    <div class="font-medium">{name}</div>
+                    <div>{name}</div>
                     <div class="font-mono text-xs text-muted-foreground">{range}</div>
                     <div class="text-sm text-muted-foreground">{desc}</div>
                   </div>
@@ -44,7 +44,7 @@ pub fn PropagationPage() -> impl IntoView {
               .map(|&(k, v)| {
                 view! {
                   <div class="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr]">
-                    <dt class="font-medium">{k}</dt>
+                    <dt>{k}</dt>
                     <dd class="text-sm text-muted-foreground">{v}</dd>
                   </div>
                 }
@@ -61,7 +61,7 @@ pub fn PropagationPage() -> impl IntoView {
               .map(|&(k, v)| {
                 view! {
                   <div class="grid gap-1 px-4 py-3 sm:grid-cols-[12rem_1fr]">
-                    <dt class="font-medium">{k}</dt>
+                    <dt>{k}</dt>
                     <dd class="text-sm text-muted-foreground">{v}</dd>
                   </div>
                 }

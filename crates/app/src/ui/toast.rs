@@ -12,9 +12,11 @@ use std::time::Duration;
 use ham_web_core::toast_queue::{ToastEntry, enqueue};
 use leptos::portal::Portal;
 use leptos::prelude::*;
+use wasm_bindgen::JsCast;
 
 use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
+use crate::util::now_ms;
 
 /// Toast 类别（决定图标、强调色与停留时长）。定义与入队规则在 core（带单测）。
 pub use ham_web_core::toast_queue::ToastKind;
@@ -23,7 +25,7 @@ pub use ham_web_core::toast_queue::ToastKind;
 const fn kind_accent(kind: ToastKind) -> (&'static str, &'static str) {
   match kind {
     ToastKind::Success => ("text-win-text", "border-l-win"),
-    ToastKind::Error => ("text-destructive", "border-l-destructive"),
+    ToastKind::Error => ("text-hp-text", "border-l-destructive"),
     ToastKind::Info => ("text-primary", "border-l-primary"),
   }
 }
@@ -62,6 +64,11 @@ pub fn push_error(text: impl Into<String>) {
   push(ToastKind::Error, text);
 }
 
+/// 中性提示（计时预警、已自动保存这类「看一眼就够」但既不算成功也不算失败的信息）。
+pub fn push_info(text: impl Into<String>) {
+  push(ToastKind::Info, text);
+}
+
 /// 模态内公告读取当前播放的消息，避免 aria-modal 排除根部 live region。
 pub(crate) fn current_message() -> String {
   QUEUE.with(|q| q.with(|v| v.front().map_or_else(String::new, |m| m.text.clone())))
@@ -69,6 +76,26 @@ pub(crate) fn current_message() -> String {
 
 /// 退场时长：与 `--motion-fast`（150ms）对齐并留余量，保证退出动画播完再卸载。
 const TOAST_EXIT_MS: u64 = 180;
+
+/// 悬停 / 聚焦离开后的**最短**停留：用户已经把视线放上去读了，不能一松手就消失。
+///
+/// 上限取「暂停时算出的剩余时间」而不是固定值 —— 一条 8s 的错误提示被鼠标扫过 0.5s 就
+/// 只剩 2s，等于悬停反而缩短了它的寿命（WCAG 2.2.1 要的是「给够时间读完」）。
+const TOAST_RESUME_MS: u64 = 2000;
+
+/// `focusout` 之后焦点是否还留在这张 Toast 里（`related_target` 是下一个获得焦点的元素）。
+fn focus_stays_inside(e: &web_sys::FocusEvent) -> bool {
+  let root = e
+    .current_target()
+    .and_then(|t| t.dyn_into::<web_sys::Node>().ok());
+  let next = e
+    .related_target()
+    .and_then(|t| t.dyn_into::<web_sys::Node>().ok());
+  match (root, next) {
+    (Some(root), Some(next)) => root.contains(Some(&next)),
+    _ => false,
+  }
+}
 
 /// 全局 Toast 挂载点：挂在 App 根部，逐条展示、自动消失、可手动关闭。
 #[component]
@@ -86,6 +113,15 @@ pub fn ToastRoot() -> impl IntoView {
     FRONT_LEAVING.with(|c| c.set(v));
   };
   let timer: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
+  // 本轮计时的总时长与起算时刻：暂停时要靠它们算出「还剩多少」，恢复时接着这个剩余量走。
+  let armed_ms: StoredValue<u64> = StoredValue::new(0);
+  let armed_at: StoredValue<i64> = StoredValue::new(0);
+  let left_ms: StoredValue<u64> = StoredValue::new(0);
+  // 暂停来源分开记（鼠标 / 焦点）：只有两个都离开才算恢复，否则焦点还在 Toast 里、
+  // 鼠标划出去一下就把倒计时重新挂上了。
+  let hovered: StoredValue<bool> = StoredValue::new(false);
+  let focused: StoredValue<bool> = StoredValue::new(false);
+  let paused = move || hovered.get_value() || focused.get_value();
   // 退场动画播完后的「弹出队首」定时器：与 `timer` 一样需要能在队列变化时取消，
   // 否则退场期间新消息到达、`Effect` 重置 `leaving` 后，这个已排队的 pop 仍会提前出队。
   let pop_timer: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
@@ -113,18 +149,68 @@ pub fn ToastRoot() -> impl IntoView {
     }
   };
 
+  // 「N 毫秒后退场」的计时器：先清掉旧的再挂新的，悬停暂停 / 离开续时共用这一处。
+  let arm = {
+    let dismiss = dismiss.clone();
+    move |ms: u64| {
+      if let Some(h) = timer.get_value() {
+        h.clear();
+      }
+      armed_ms.set_value(ms);
+      armed_at.set_value(now_ms());
+      left_ms.set_value(ms);
+      let h = set_timeout_with_handle(dismiss.clone(), Duration::from_millis(ms)).ok();
+      timer.set_value(h);
+    }
+  };
+  // 悬停 / 聚焦期间暂停计时（WCAG 2.2.1：限时内容要能让用户有足够时间读完）；
+  // 已经在退场的不理会，免得把正在消失的提示又拉回来。
+  let pause = move |hover: bool| {
+    let was_paused = paused();
+    if hover {
+      hovered.set_value(true);
+    } else {
+      focused.set_value(true);
+    }
+    if was_paused || leaving.get_untracked() {
+      return;
+    }
+    if let Some(h) = timer.get_value() {
+      h.clear();
+    }
+    let elapsed = (now_ms() - armed_at.get_value()).max(0) as u64;
+    left_ms.set_value(armed_ms.get_value().saturating_sub(elapsed));
+  };
+  let resume = {
+    let arm = arm.clone();
+    move |hover: bool| {
+      if hover {
+        hovered.set_value(false);
+      } else {
+        focused.set_value(false);
+      }
+      if paused() || leaving.get_untracked() {
+        return;
+      }
+      arm(left_ms.get_value().max(TOAST_RESUME_MS));
+    }
+  };
+
   // 只在「队首换成另一条」时重置计时：同一条消息被合并（`count` 变大）不该延长它的寿命，
   // 否则用户每多点一次，已经看到的那条就多留几秒。
   let front_id = Memo::new(move |_| front.get().map(|m| m.id));
   Effect::new({
-    let dismiss = dismiss.clone();
+    let arm = arm.clone();
     move |prev: Option<Option<u64>>| {
       let id = front_id.get();
       if prev == Some(id) {
         return id;
       }
-      // 队首变化（新消息入场或旧消息出队）时重置退场态，让下一条从入场态重新开始。
+      // 队首变化（新消息入场或旧消息出队）时重置退场态，让下一条从入场态重新开始；
+      // 暂停来源也要清掉 —— 节点是换了一条新消息，上一条的悬停 / 焦点状态对它不成立。
       set_leaving(false);
+      hovered.set_value(false);
+      focused.set_value(false);
       if let Some(h) = timer.get_value() {
         h.clear();
       }
@@ -132,15 +218,7 @@ pub fn ToastRoot() -> impl IntoView {
         h.clear();
       }
       if let Some(hold) = front.with(|f| f.as_ref().map(|m| m.kind.display_ms())) {
-        let h = set_timeout_with_handle(
-          {
-            let dismiss = dismiss.clone();
-            move || dismiss()
-          },
-          Duration::from_millis(hold),
-        )
-        .ok();
-        timer.set_value(h);
+        arm(hold);
       }
       id
     }
@@ -160,6 +238,7 @@ pub fn ToastRoot() -> impl IntoView {
     // `dismiss` 捕获了非 `Copy` 的 `pending`，本身也不再 `Copy`；外层闭包是 `FnMut`，
     // 每次渲染都要重新 clone 一份交给事件处理器。
     let dismiss = dismiss.clone();
+    let resume = resume.clone();
     front.get().map(|m| {
       let icon = match m.kind {
         ToastKind::Success => IconKind::CheckCircle,
@@ -175,6 +254,19 @@ pub fn ToastRoot() -> impl IntoView {
           data-slot="toast"
           data-toast-id=m.id.to_string()
           data-leaving=move || leaving.get().to_string()
+          on:mouseenter=move |_| pause(true)
+          on:focusin=move |_| pause(false)
+          on:mouseleave={let resume = resume.clone(); move |_| resume(true)}
+          // `focusout` 会在 Toast 内部换焦点时也冒泡（唯一的子控件是关闭按钮）：只在焦点
+          // 真的离开这张 Toast 时才恢复计时。
+          on:focusout={
+            let resume = resume.clone();
+            move |e: web_sys::FocusEvent| {
+              if !focus_stays_inside(&e) {
+                resume(false);
+              }
+            }
+          }
           class=format!("motion-toast pxl-popover fixed bottom-20 right-4 z-[60] flex w-72 items-center gap-3 border-l-4 p-3 xl:bottom-4 {band}")
         >
           <Icon kind=icon class=format!("size-6 shrink-0 {accent}") />

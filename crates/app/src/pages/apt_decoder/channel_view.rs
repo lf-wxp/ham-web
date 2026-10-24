@@ -32,7 +32,7 @@ pub(super) fn ChannelView(
   view! {
     <div class="space-y-2">
       <div class="flex items-center justify-between">
-        <h3 class="text-sm font-medium">{label}</h3>
+        <h3 class="text-sm">{label}</h3>
         <Button
           variant=Variant::Outline
           size=Size::Sm

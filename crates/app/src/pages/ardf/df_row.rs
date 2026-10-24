@@ -22,7 +22,7 @@ pub(super) fn DfRow(
 
   view! {
     <fieldset class="space-y-3 border p-3">
-      <legend class="px-1 text-xs font-semibold text-muted-foreground">
+      <legend class="px-1 text-xs text-muted-foreground">
         {move || tf("ardf.df-row", &[&number.to_string()])}
       </legend>
       <div class="grid gap-3 sm:grid-cols-2">

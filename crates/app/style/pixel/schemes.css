@@ -67,7 +67,7 @@ html[data-scheme="forest"].dark {
   --sidebar-accent-foreground: #f4f4f4;
   --sidebar-border: rgb(167 178 168 / 0.26);
   --sidebar-ring: #c9e58a;
-  --pxl-ink: #636e66;
+  --pxl-ink: #778279;
   --pxl-field: #0c1611;
 }
 
@@ -131,7 +131,7 @@ html[data-scheme="ocean"].dark {
   --sidebar-accent-foreground: #f4f4f4;
   --sidebar-border: rgb(165 176 185 / 0.26);
   --sidebar-ring: #7ee8e8;
-  --pxl-ink: #606d79;
+  --pxl-ink: #74818c;
   --pxl-field: #091421;
 }
 
@@ -195,7 +195,7 @@ html[data-scheme="sunset"].dark {
   --sidebar-accent-foreground: #f4f4f4;
   --sidebar-border: rgb(182 169 178 / 0.26);
   --sidebar-ring: #ffb86b;
-  --pxl-ink: #726773;
+  --pxl-ink: #847984;
   --pxl-field: #18111e;
 }
 
@@ -259,7 +259,7 @@ html[data-scheme="graphite"].dark {
   --sidebar-accent-foreground: #f4f4f4;
   --sidebar-border: rgb(171 171 171 / 0.26);
   --sidebar-ring: #f0c24b;
-  --pxl-ink: #666666;
+  --pxl-ink: #7d7d7d;
   --pxl-field: #0e0e0e;
 }
 
@@ -323,7 +323,7 @@ html[data-scheme="pico"].dark {
   --sidebar-accent-foreground: #f4f4f4;
   --sidebar-border: rgb(184 177 179 / 0.26);
   --sidebar-ring: #ffec27;
-  --pxl-ink: #6e6e7c;
+  --pxl-ink: #7e7c88;
   --pxl-field: #0f162c;
 }
 
@@ -387,7 +387,7 @@ html[data-scheme="gameboy"].dark {
   --sidebar-accent-foreground: #f4f4f4;
   --sidebar-border: rgb(164 175 164 / 0.26);
   --sidebar-ring: #c4e58a;
-  --pxl-ink: #5d695e;
+  --pxl-ink: #6c786d;
   --pxl-field: #051007;
 }
 
@@ -451,7 +451,7 @@ html[data-scheme="nes"].dark {
   --sidebar-accent-foreground: #f4f4f4;
   --sidebar-border: rgb(176 176 178 / 0.26);
   --sidebar-ring: #f8b800;
-  --pxl-ink: #68686d;
+  --pxl-ink: #737378;
   --pxl-field: #0c0c13;
 }
 
@@ -515,7 +515,7 @@ html[data-scheme="commodore"].dark {
   --sidebar-accent-foreground: #f4f4f4;
   --sidebar-border: rgb(171 169 191 / 0.26);
   --sidebar-ring: #edf171;
-  --pxl-ink: #67667c;
+  --pxl-ink: #7c7b91;
   --pxl-field: #101022;
 }
 
@@ -579,7 +579,7 @@ html[data-scheme="cga"].dark {
   --sidebar-accent-foreground: #f4f4f4;
   --sidebar-border: rgb(174 174 177 / 0.26);
   --sidebar-ring: #ff55ff;
-  --pxl-ink: #64646a;
+  --pxl-ink: #78787d;
   --pxl-field: #080810;
 }
 
@@ -643,6 +643,6 @@ html[data-scheme="spectrum"].dark {
   --sidebar-accent-foreground: #f4f4f4;
   --sidebar-border: rgb(174 174 177 / 0.26);
   --sidebar-ring: #ffe94a;
-  --pxl-ink: #65656b;
+  --pxl-ink: #79797e;
   --pxl-field: #090911;
 }

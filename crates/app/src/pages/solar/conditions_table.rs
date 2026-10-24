@@ -46,8 +46,8 @@ pub(super) fn ConditionsTable(conditions: Vec<BandCond>) -> impl IntoView {
             view! {
               <TableRow>
                 <TableCell class="border px-3 py-2 font-mono">{band}</TableCell>
-                <TableCell class=format!("border px-3 py-2 font-medium {day_color}")>{day}</TableCell>
-                <TableCell class=format!("border px-3 py-2 font-medium {night_color}")>{night}</TableCell>
+                <TableCell class=format!("border px-3 py-2 {day_color}")>{day}</TableCell>
+                <TableCell class=format!("border px-3 py-2 {night_color}")>{night}</TableCell>
               </TableRow>
             }
           })

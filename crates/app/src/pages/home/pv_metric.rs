@@ -10,7 +10,7 @@ pub(super) fn PvMetric(
   #[prop(into)] loading: Signal<bool>,
 ) -> impl IntoView {
   view! {
-    <div class="border bg-muted/40 p-3 text-center">
+    <div class="border bg-inset p-3 text-center">
       <div class="text-xs text-muted-foreground">{label}</div>
       <div class="mt-1 pxl-stat">
         {move || match value.get() {

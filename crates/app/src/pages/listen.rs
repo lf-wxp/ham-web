@@ -15,7 +15,7 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::SpeechSynthesisUtterance;
 
 use super::print_sheet::{Source as Collection, load_items};
-use crate::components::common::PageContainer;
+use crate::components::common::{PageContainer, PageHeader};
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
@@ -287,30 +287,30 @@ pub fn ListenPage() -> impl IntoView {
     let answer = q.answer_keys.join("、");
     let answer_keys = q.answer_keys.clone();
     view! {
-      <div class="p-5">
+      <div class="p-4">
         <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
           <span class="tabular-nums">{tf("common.question", &[&(i + 1).to_string(), &total.to_string(), &(t(q.kind.label())).to_string()])}</span>
           <span
-            class=move || if phase.get().is_some() { "bg-primary/10 px-2 py-0.5 font-medium text-foreground" } else { "px-2 py-0.5" }
+            class=move || if phase.get().is_some() { "bg-primary/10 px-2 py-0.5 text-foreground" } else { "px-2 py-0.5" }
             aria-live="polite"
           >
             {move || t(phase_label(phase.get()))}
           </span>
         </div>
-        <p class="whitespace-pre-line text-base font-medium leading-relaxed">{q.question.clone()}</p>
+        <p class="whitespace-pre-line text-base leading-relaxed">{q.question.clone()}</p>
         <ul class="mt-3 space-y-1.5 text-sm">
           {q.options.iter().map(|o| {
             let correct = answer_keys.contains(&o.key);
             let key = o.key.clone();
             view! {
-              <li class=move || if revealed() && correct { "bg-emerald-500/10 px-2 py-1 font-medium text-emerald-800 dark:text-emerald-300" } else { "px-2 py-1" }>
+              <li class=move || if revealed() && correct { "bg-win/10 px-2 py-1 text-win-text" } else { "px-2 py-1" }>
                 <span class="font-mono">{key.clone()}</span> "　" {o.text.clone()}
               </li>
             }
           }).collect_view()}
         </ul>
         <div class="mt-3 min-h-5 text-sm">
-          {move || revealed().then(|| view! { <span>{move || t("exam.correct-answer-prefix")} <span class="font-mono font-semibold">{answer.clone()}</span></span> })}
+          {move || revealed().then(|| view! { <span>{move || t("exam.correct-answer-prefix")} <span class="font-mono">{answer.clone()}</span></span> })}
         </div>
       </div>
     }
@@ -318,14 +318,15 @@ pub fn ListenPage() -> impl IntoView {
   };
 
   view! {
-    <PageContainer class="space-y-4 py-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-      <div>
-        <h1 class="text-base font-semibold leading-tight">{move || t("shell.listening")}</h1>
-        <p class="text-xs text-muted-foreground">{move || t("exam.reads-the-question-and")}</p>
-      </div>
-
+    // 页头走 `PageHeader`，与全站统一（标题字体 / 吸顶 / 主色左轨只有一份来源）。
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
+      <PageHeader
+        title=Signal::derive(move || t("shell.listening"))
+        subtitle=Signal::derive(move || t("exam.reads-the-question-and"))
+      />
+      <PageContainer class="space-y-4 py-6">
       {(!supported).then(|| view! {
-        <div role="alert" class="border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
+        <div role="alert" class="border border-gold/40 bg-gold/10 px-3 py-2 text-sm text-gold-text">
           {move || t("exam.this-browser-does-not")}
         </div>
       })}
@@ -425,7 +426,7 @@ pub fn ListenPage() -> impl IntoView {
           disabled=Signal::derive(move || !supported || loading.get() || questions.with(|q| q.is_empty()))
           on_click=Callback::new(move |_| toggle())
         >
-          <Icon kind=IconKind::Headphones class="h-4 w-4" />
+          <Icon kind=IconKind::Headphones class="size-6 w-4" />
           {move || if phase.get().is_some() { t("exam.pause") } else { t("exam.start-listening") }}
         </Button>
         <Button
@@ -435,6 +436,7 @@ pub fn ListenPage() -> impl IntoView {
         >{move || t("exam.next")}</Button>
       </div>
       <p class="text-center text-xs text-muted-foreground">{move || t("exam.some-phones-pause-speech")}</p>
-    </PageContainer>
+      </PageContainer>
+    </div>
   }
 }

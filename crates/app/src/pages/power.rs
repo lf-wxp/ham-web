@@ -14,7 +14,7 @@ const CELL: &str = "border px-3 py-2 align-top";
 pub fn PowerPage() -> impl IntoView {
   set_title("shell.power-batteries");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.power-batteries")
         subtitle=move || t("tools.battery-types-dc-power")
@@ -37,7 +37,7 @@ pub fn PowerPage() -> impl IntoView {
                 .map(|&(name, v, desc)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-medium")>{name}</TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap")>{name}</TableCell>
                       <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{v}</TableCell>
                       <TableCell class=format!("{CELL} text-muted-foreground")>{desc}</TableCell>
                     </TableRow>

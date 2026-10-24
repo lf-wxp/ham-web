@@ -29,10 +29,11 @@ test("机型库：接收机实测值带出处、差异高亮标出该行最好",
   const imd = p.getByRole("row").filter({ hasText: "窄间隔（2–3 kHz）三阶互调动态范围" });
   await expect(imd).toContainText("107 dB（2 kHz）");
 
-  // 差异高亮：该行最好的一格加重（表下注释里写明「加粗 = 该行最好」）。
+  // 差异高亮：该行最好的一格上底色（表下注释里写明「高亮 = 该行最好」）。
+  // 原来断言 `font-semibold`，但点阵字体没有粗体，那个类在默认模式下是空操作。
   const best = imd.locator("td").filter({ hasText: "107 dB（2 kHz）" }).first();
-  await expect(best).toHaveClass(/font-semibold/);
-  await expect(p.getByText(/加粗 = 该行最好/)).toBeVisible();
+  await expect(best).toHaveClass(/bg-win\/10/);
+  await expect(p.getByText(/高亮 = 该行最好/)).toBeVisible();
 
   // 出处与核对日期必须写出来，否则这些数字没有来源。
   await expect(p.getByText(/Rob Sherwood \(NC0B\).*2026-10-08/)).toBeVisible();

@@ -43,7 +43,7 @@ pub fn TableSection(
             .map(|(name, mid, last)| {
               view! {
                 <TableRow>
-                  <TableCell class="align-top whitespace-nowrap font-medium">
+                  <TableCell class="align-top whitespace-nowrap">
                     {move || {
                       data::track_knowledge();
                       data::kt(name)

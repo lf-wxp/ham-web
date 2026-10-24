@@ -143,8 +143,8 @@ pub fn PortableLookup() -> impl IntoView {
             LookupResult::Summit(s) => view! {
               <div class="space-y-1 border-t px-4 py-4 text-sm">
                 <div class="flex flex-wrap items-baseline gap-x-2">
-                  <span class="font-mono font-semibold">{s.reference.clone()}</span>
-                  <span class="font-medium">{s.name}</span>
+                  <span class="font-mono">{s.reference.clone()}</span>
+                  <span>{s.name}</span>
                   <span class="text-xs text-muted-foreground">{s.region}</span>
                 </div>
                 <div class="flex flex-wrap gap-x-5 text-xs text-muted-foreground">
@@ -160,8 +160,8 @@ pub fn PortableLookup() -> impl IntoView {
             LookupResult::Park(p) => view! {
               <div class="space-y-1 border-t px-4 py-4 text-sm">
                 <div class="flex flex-wrap items-baseline gap-x-2">
-                  <span class="font-mono font-semibold">{p.reference.clone()}</span>
-                  <span class="font-medium">{p.name}</span>
+                  <span class="font-mono">{p.reference.clone()}</span>
+                  <span>{p.name}</span>
                   <span class="text-xs text-muted-foreground">{p.entity}</span>
                 </div>
                 <div class="flex flex-wrap gap-x-5 text-xs text-muted-foreground">

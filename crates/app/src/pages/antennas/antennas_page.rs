@@ -16,7 +16,7 @@ pub fn AntennasPage() -> impl IntoView {
   // 没套 KnowledgePage 外壳，所以译文得自己确保在拉。
   Effect::new(move |_| data::ensure_knowledge_i18n());
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.antenna-types")
         subtitle=move || t("knowledge.common-amateur-antennas-diagrams")

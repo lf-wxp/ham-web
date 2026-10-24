@@ -81,7 +81,7 @@ pub(super) fn TdrPanel(sweep: Memo<Option<Sweep>>, vf_text: RwSignal<String>) ->
   view! {
     <div class="space-y-2" data-slot="vna-tdr">
       <div class="flex flex-wrap items-end gap-x-4 gap-y-2">
-        <h3 class="text-sm font-semibold">{move || t("tools.vna-tdr-title")}</h3>
+        <h3 class="text-sm">{move || t("tools.vna-tdr-title")}</h3>
         <Field
           label=Signal::derive(move || t("tools.vna-tdr-vf-label"))
           hint=Signal::derive(move || t("tools.vna-tdr-vf-hint"))
@@ -153,7 +153,7 @@ pub(super) fn TdrPanel(sweep: Memo<Option<Sweep>>, vf_text: RwSignal<String>) ->
                   data-slot="vna-tdr-plot"
                 >
                   <rect x=PAD y=PAD width=W - 2.0 * PAD height=H - 2.0 * PAD fill="none" class="stroke-muted-foreground/50" stroke-width="0.5" />
-                  <line x1=PAD y1=y(threshold) x2=W - PAD y2=y(threshold) class="stroke-amber-500" stroke-width="0.8" stroke-dasharray="4 3" />
+                  <line x1=PAD y1=y(threshold) x2=W - PAD y2=y(threshold) class="stroke-gold/70" stroke-width="0.8" stroke-dasharray="4 3" />
                   <text x=PAD - 4.0 y=y(0.0) + 3.0 text-anchor="end" class="fill-muted-foreground" font-size="9">{db_tick(0.0)}</text>
                   <text x=PAD - 4.0 y=y(threshold) + 3.0 text-anchor="end" class="fill-muted-foreground" font-size="9">{db_tick(threshold)}</text>
                   <text x=PAD - 4.0 y=H - PAD + 3.0 text-anchor="end" class="fill-muted-foreground" font-size="9">{db_tick(DB_MIN)}</text>

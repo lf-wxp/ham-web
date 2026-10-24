@@ -12,7 +12,7 @@ use crate::util::set_title;
 pub fn FormulasPage() -> impl IntoView {
   set_title("exam.formula-reference");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader title=t("exam.formula-reference") subtitle=t("exam.must-know-formulas-tap") />
       <PageContainer>
         {FORMULA_GROUPS
@@ -29,15 +29,15 @@ pub fn FormulasPage() -> impl IntoView {
                       view! {
                         <a
                           href=href
-                          class="group border bg-muted/30 p-3 transition-colors hover:bg-accent/60"
+                          class="group border bg-inset p-3 transition-colors hover:bg-accent/60"
                         >
-                          <div class="text-sm font-medium">{f.name}</div>
+                          <div class="text-sm">{f.name}</div>
                           // KaTeX 可用时渲染 data-tex，否则保留 Unicode 表达式。
-                          <div class="mt-1 font-mono text-sm font-semibold text-primary" data-tex=tex_of(f.name)>
+                          <div class="mt-1 font-mono text-sm text-primary" data-tex=tex_of(f.name)>
                             {f.expr}
                           </div>
                           <div class="mt-0.5 text-xs text-muted-foreground">{f.desc}</div>
-                          <div class="mt-1 text-[11px] text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                          <div class="mt-1 text-xs text-primary opacity-0 transition-opacity group-hover:opacity-100">
                             {move || t("knowledge.calculate")}
                           </div>
                         </a>
@@ -58,7 +58,7 @@ pub fn FormulasPage() -> impl IntoView {
               .map(|g| {
                 view! {
                   <div>
-                    <h3 class="mb-2 text-xs font-semibold text-muted-foreground">{move || t(g.name)}</h3>
+                    <h3 class="mb-2 text-xs text-muted-foreground">{move || t(g.name)}</h3>
                     <div class="grid gap-2 sm:grid-cols-2">
                       {g.items
                         .iter()
@@ -67,12 +67,12 @@ pub fn FormulasPage() -> impl IntoView {
                           view! {
                             <a
                               href=href
-                              class="group border bg-muted/30 p-3 transition-colors hover:bg-accent/60"
+                              class="group border bg-inset p-3 transition-colors hover:bg-accent/60"
                             >
-                              <div class="text-sm font-medium">{move || t(c.name)}</div>
-                              <div class="mt-1 font-mono text-sm font-semibold text-primary">{c.expr}</div>
+                              <div class="text-sm">{move || t(c.name)}</div>
+                              <div class="mt-1 font-mono text-sm text-primary">{c.expr}</div>
                               <div class="mt-0.5 text-xs text-muted-foreground">{move || t(c.example)}</div>
-                              <div class="mt-1 text-[11px] text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                              <div class="mt-1 text-xs text-primary opacity-0 transition-opacity group-hover:opacity-100">
                                 {move || t("knowledge.calculate")}
                               </div>
                             </a>

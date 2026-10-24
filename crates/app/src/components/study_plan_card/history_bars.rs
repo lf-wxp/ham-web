@@ -7,7 +7,11 @@ use crate::study;
 use crate::ui::Tooltip;
 
 /// 最近 14 天每日作答量柱状图。
-pub(super) fn history_bars(today: &str) -> impl IntoView {
+///
+/// `+ use<>`（Rust 2024 的精确捕获）：`today` 只在函数体里用来取数据，返回的视图不借用它。
+/// 不写这一句的话，`impl IntoView` 会把入参的生命周期带进返回类型，调用点
+/// `editable.then(|| history_bars(&today))` 就要求 `&today` 是 `'static`（host 的 test 构建报 E0597）。
+pub(super) fn history_bars(today: &str) -> impl IntoView + use<> {
   let days = study::load_daily().recent(today, 14);
   let max = days
     .iter()

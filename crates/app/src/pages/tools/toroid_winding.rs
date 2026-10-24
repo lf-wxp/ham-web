@@ -198,7 +198,7 @@ pub(super) fn ToroidWinding() -> impl IntoView {
             let one_turn = fmt_num(inductance_uh(c.al_nh, 1.0).unwrap_or_default());
             view! {
               <div>{spec}</div>
-              <div role="status" class="font-medium text-foreground">{turns}</div>
+              <div role="status" class="text-foreground">{turns}</div>
               <div>{actual}</div>
               {wire.map(|text| view! { <div>{text}</div> })}
               <div>{window}</div>

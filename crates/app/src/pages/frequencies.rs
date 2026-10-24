@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn FrequenciesPage() -> impl IntoView {
   set_title("shell.common-frequencies");
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.common-frequencies")
         subtitle=move || t("knowledge.distress-and-emergency-beacons")
@@ -31,7 +31,7 @@ pub fn FrequenciesPage() -> impl IntoView {
                     .map(|&(freq, usage)| {
                       view! {
                         <div class="flex items-baseline gap-2 px-2 py-1.5">
-                          <span class="w-36 shrink-0 font-mono text-sm font-semibold text-primary">{freq}</span>
+                          <span class="w-36 shrink-0 font-mono text-sm text-primary">{freq}</span>
                           <span class="text-sm text-muted-foreground">{usage}</span>
                         </div>
                       }

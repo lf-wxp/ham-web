@@ -62,7 +62,7 @@ const MATERIALS: [Material; 4] = [
   (|| t("tools.nec-material-brass"), Some(1.6e7)),
 ];
 
-const RESULT: &str = "bg-muted/40 px-3 py-2 text-sm text-muted-foreground";
+const RESULT: &str = "bg-inset px-3 py-2 text-sm text-muted-foreground";
 const NOTE: &str = "text-xs text-muted-foreground";
 const PLOT: &str = "mx-auto w-full";
 

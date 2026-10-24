@@ -7,6 +7,7 @@ use crate::morse_audio::{start_tone, stop_tone};
 use crate::morse_settings::use_morse_settings;
 use crate::util::storage;
 
+use super::morse_key::MorseKey;
 use super::{morse_display, random_index};
 use crate::i18n::t;
 use crate::ui::{Button, Chip, ChipGroup, Variant};
@@ -224,10 +225,10 @@ pub(super) fn SendTrainer() -> impl IntoView {
           </ChipGroup>
         </div>
 
-        <div class="flex flex-col items-center gap-2 border bg-muted/30 px-4 py-6">
+        <div class="flex flex-col items-center gap-2 border bg-inset px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("morse.target")}</div>
-          <div class="text-4xl font-semibold tabular-nums tracking-widest">{move || target.get()}</div>
-          <div data-testid="send-marks" class="font-mono text-2xl font-semibold tracking-[0.3em] text-primary">
+          <div class="text-4xl tabular-nums tracking-widest">{move || target.get()}</div>
+          <div data-testid="send-marks" class="font-mono text-2xl tracking-[0.3em] text-primary">
             {move || {
               let m = marks.get();
               if m.is_empty() { "…".to_owned() } else { morse_display(&m) }
@@ -237,27 +238,14 @@ pub(super) fn SendTrainer() -> impl IntoView {
         </div>
 
         <div class="flex flex-col items-center gap-3">
-          <button
-            type="button"
-            on:pointerdown=on_down
-            on:pointerup=on_up
-            on:pointerleave=on_up
-            on:pointercancel=on_up
-            style="touch-action: none;"
-            class=move || {
-              format!(
-                "relative flex h-28 w-28 select-none items-center justify-center bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-transform duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background {}",
-                if pressing.get() { "scale-90" } else { "hover:scale-105" }
-              )
-            }
+          <MorseKey
+            class="h-28 w-28"
+            active=pressing
+            on_down=Callback::new(move |()| on_down(()))
+            on_up=Callback::new(move |()| on_up(()))
           >
-            {move || {
-              pressing.get().then(|| {
-                view! { <span class="absolute inset-0 bg-primary/40 animate-ping"></span> }
-              })
-            }}
-            <span class="relative text-sm font-semibold">{move || t("morse.hold-to-send")}</span>
-          </button>
+            <span class="relative text-sm">{move || t("morse.hold-to-send")}</span>
+          </MorseKey>
 
           <div class="text-xs text-muted-foreground">
             {move || {
@@ -267,13 +255,13 @@ pub(super) fn SendTrainer() -> impl IntoView {
               match (wpm, score) {
                 (Some(w), Some(sc)) => view! {
                   <span>
-                    {move || t("morse.estimated")} <span class="font-semibold tabular-nums text-foreground">{format!("{w:.0}")}</span> " WPM"
-                    {move || t("morse.rhythm")} <span class="font-semibold tabular-nums text-foreground">{format!("{sc:.0}")}</span> "/100"
+                    {move || t("morse.estimated")} <span class="tabular-nums text-foreground">{format!("{w:.0}")}</span> " WPM"
+                    {move || t("morse.rhythm")} <span class="tabular-nums text-foreground">{format!("{sc:.0}")}</span> "/100"
                   </span>
                 }.into_any(),
                 (Some(w), None) => view! {
                   <span>
-                    {move || t("morse.estimated")} <span class="font-semibold tabular-nums text-foreground">{format!("{w:.0}")}</span> " WPM"
+                    {move || t("morse.estimated")} <span class="tabular-nums text-foreground">{format!("{w:.0}")}</span> " WPM"
                   </span>
                 }.into_any(),
                 _ => view! { {move || t("morse.sending-estimates-your-speed")} }.into_any(),
@@ -311,8 +299,8 @@ pub(super) fn SendTrainer() -> impl IntoView {
               feedback.get().map(|ok| {
                 if ok {
                   view! {
-                    <span class="inline-flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400 animate-in fade-in zoom-in-95 duration-200">
-                      <Icon kind=IconKind::CheckCircle2 class="h-4 w-4" />
+                    <span class="inline-flex items-center gap-1.5 text-win-text animate-in fade-in duration-(--motion-normal)">
+                      <Icon kind=IconKind::CheckCircle2 class="size-6 w-4" />
                       {move || t("learning.correct")}
                     </span>
                   }
@@ -320,8 +308,8 @@ pub(super) fn SendTrainer() -> impl IntoView {
                 } else {
                   let expected: String = target.get().chars().filter_map(code_of).collect();
                   view! {
-                    <span class="inline-flex items-center gap-1.5 font-medium text-red-600 dark:text-red-400 animate-in fade-in zoom-in-95 duration-200">
-                      <Icon kind=IconKind::XCircle class="h-4 w-4" />
+                    <span class="inline-flex items-center gap-1.5 text-hp-text animate-in fade-in duration-(--motion-normal)">
+                      <Icon kind=IconKind::XCircle class="size-6 w-4" />
                       {move || t("morse.the-answer-is")} <span class="font-mono">{target.get()}</span> "　"
                       <span class="font-mono">{morse_display(&expected)}</span>
                     </span>
@@ -334,24 +322,24 @@ pub(super) fn SendTrainer() -> impl IntoView {
 
           <div class="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
             <span>
-              {move || t("common.correct-label")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().correct}</span>
+              {move || t("common.correct-label")} <span class="tabular-nums text-foreground">{move || stats.get().correct}</span>
             </span>
             <span>
-              {move || t("morse.wrong")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().wrong}</span>
+              {move || t("morse.wrong")} <span class="tabular-nums text-foreground">{move || stats.get().wrong}</span>
             </span>
             <span>
-              {move || t("morse.accuracy")} <span class="font-semibold tabular-nums text-foreground">{move || format!("{:.0}%", rate())}</span>
+              {move || t("morse.accuracy")} <span class="tabular-nums text-foreground">{move || format!("{:.0}%", rate())}</span>
             </span>
             <span>
-              {move || t("morse.streak")} <span class="font-semibold tabular-nums text-foreground">{move || streak.get()}</span>
+              {move || t("morse.streak")} <span class="tabular-nums text-foreground">{move || streak.get()}</span>
             </span>
             <span>
-              {move || t("morse.best-streak")} <span class="font-semibold tabular-nums text-foreground">{move || stats.get().best_streak}</span>
+              {move || t("morse.best-streak")} <span class="tabular-nums text-foreground">{move || stats.get().best_streak}</span>
             </span>
             <button
               type="button"
               on:click=move |_| reset_stats()
-              class="px-2 py-0.5 transition-all duration-200 hover:bg-accent hover:text-foreground active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              class="px-2 py-0.5 transition duration-(--motion-normal) hover:bg-accent hover:text-foreground"
             >
               {move || t("morse.reset")}
             </button>

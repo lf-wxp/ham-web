@@ -3,10 +3,9 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde::Deserialize;
 
+use crate::components::common::SectionCard;
 use crate::data;
-use crate::ui::{
-  Button, CARD_HEADER, Size, Variant, card_content_class, card_title_class, flat_card_class,
-};
+use crate::ui::{Button, Size, Variant};
 
 use super::pv_metric::PvMetric;
 use crate::i18n::t;
@@ -50,40 +49,33 @@ pub(super) fn PropagationWidget() -> impl IntoView {
   load();
 
   view! {
-    // 整卡可点：标题链接用 `after:inset-0` 铺满整张卡（stretched link）。不能像以前那样
-    // 直接把卡片做成一个 `<a>` —— 里面现在有「重试」按钮，链接嵌按钮是无效的交互嵌套；
-    // 而热区缩到只剩标题那一行，又是一次实打实的退步。
-    <div data-slot="card" class=flat_card_class("group relative transition-colors hover:bg-accent/40")>
-      <div data-slot="card-header" class=CARD_HEADER>
-        <div data-slot="card-title" class=card_title_class("flex items-center justify-between")>
-          <a href="/solar" class="after:absolute after:inset-0 group-hover:underline">
-            {move || t("home.live-propagation")}
-          </a>
-          // 视觉提示而非第二个链接：两个指向同一页的链接对读屏是噪声，点击由上面的标题链接接管。
-          <span class="text-sm font-normal text-muted-foreground group-hover:underline" aria-hidden="true">
-            {move || t("home.details")}
-          </span>
-        </div>
-      </div>
-      <div data-slot="card-content" class=card_content_class("space-y-3")>
+    // 整卡可点（`href`）：标题链接铺满整张卡。不能把卡片本身做成一个 `<a>` —— 里面有「重试」
+    // 按钮，链接嵌按钮是无效的交互嵌套；按钮自己用 `relative z-10` 浮在铺满的链接之上。
+    // 右上角的「查看详情 →」只是视觉提示，不是第二个链接（两个指向同一页的链接对读屏是噪声）。
+    <SectionCard
+      href="/solar"
+      title=Signal::derive(move || t("home.live-propagation"))
+      meta=ViewFn::from(move || view! { <span aria-hidden="true">{t("home.details")}</span> })
+    >
+      <div class="space-y-3 p-4">
         <div class="grid grid-cols-3 gap-3">
           <PvMetric label=t("home.k-index") value=k loading=loading />
           <PvMetric label=t("home.solar-flux") value=sfi loading=loading />
           <PvMetric label=t("home.sunspots") value=ssn loading=loading />
         </div>
-        <div class="border bg-muted/40 px-3 py-2 text-sm">
+        <div class="border bg-inset px-3 py-2 text-sm">
           {move || {
             match k.get() {
               Some(kv) => {
                 let lvl = propagation_level(kv, ssn.get().unwrap_or(0.0), sfi.get().unwrap_or(0.0));
                 let color = match lvl {
-                  PropagationLevel::Excellent => "text-emerald-700 dark:text-emerald-400",
-                  PropagationLevel::Good => "text-sky-700 dark:text-sky-400",
-                  PropagationLevel::Fair => "text-amber-700 dark:text-amber-400",
-                  PropagationLevel::Poor => "text-red-700 dark:text-red-400",
+                  PropagationLevel::Excellent => "text-win-text",
+                  PropagationLevel::Good => "text-xp-text",
+                  PropagationLevel::Fair => "text-gold-text",
+                  PropagationLevel::Poor => "text-hp-text",
                 };
                 view! {
-                  <span>{move || t("home.conditions")} <span class=format!("font-semibold {color}")>{move || t(lvl.label())}</span></span>
+                  <span>{move || t("home.conditions")} <span class=color>{move || t(lvl.label())}</span></span>
                 }
                 .into_any()
               }
@@ -109,6 +101,6 @@ pub(super) fn PropagationWidget() -> impl IntoView {
           }}
         </div>
       </div>
-    </div>
+    </SectionCard>
   }
 }

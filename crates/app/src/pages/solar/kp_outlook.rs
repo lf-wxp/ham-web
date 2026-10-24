@@ -25,10 +25,10 @@ fn short_date(date: &str) -> &str {
 /// 一格的底色。颜色只是辅助：数值本身写在格子里，磁暴格另带 `G*` 字样。
 const fn level_class(l: KpLevel) -> &'static str {
   match l {
-    KpLevel::Quiet => "bg-muted/40",
-    KpLevel::Active => "bg-amber-500/25",
-    KpLevel::Storm(1 | 2) => "bg-red-500/30",
-    KpLevel::Storm(_) => "bg-red-600/50",
+    KpLevel::Quiet => "bg-inset",
+    KpLevel::Active => "bg-gold/25",
+    KpLevel::Storm(1 | 2) => "bg-destructive/30",
+    KpLevel::Storm(_) => "bg-destructive/50",
   }
 }
 
@@ -91,7 +91,7 @@ pub(super) fn KpOutlook(forecast: KpForecast, outlook: Outlook) -> impl IntoView
 
   view! {
     {move || match summary.get() {
-      Some(s) => view! { <p class="font-medium">{s}</p> }.into_any(),
+      Some(s) => view! { <p>{s}</p> }.into_any(),
       None => view! { <p class="text-muted-foreground">{move || t("radio.kp-forecast-no-forecast")}</p> }.into_any(),
     }}
     <Table aria_label=Signal::derive(move || t("radio.kp-forecast-table")) class="text-center font-mono text-xs">
@@ -132,7 +132,7 @@ pub(super) fn KpOutlook(forecast: KpForecast, outlook: Outlook) -> impl IntoView
                       view! {
                         <TableCell class=class>
                           {format!("{:.2}", s.kp)}
-                          {g.map(|g| view! { <span class="font-semibold">{g}</span> })}
+                          {g.map(|g| view! { <span>{g}</span> })}
                           <span class="sr-only">{move || format!(" {}", t(kind_key(s.kind)))}</span>
                         </TableCell>
                       }

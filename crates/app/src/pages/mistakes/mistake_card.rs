@@ -42,11 +42,11 @@ pub(super) fn MistakeCard(
   };
   // 掌握度：难度系数越小，间隔增长越慢、越难掌握。
   let difficulty = if record.ease < 1.8 {
-    (t("exam.hard"), "text-red-700 dark:text-red-400")
+    (t("exam.hard"), "text-hp-text")
   } else if record.ease < 2.3 {
-    (t("exam.medium"), "text-amber-700 dark:text-amber-400")
+    (t("exam.medium"), "text-gold-text")
   } else {
-    (t("exam.easy"), "text-emerald-700 dark:text-emerald-400")
+    (t("exam.easy"), "text-win-text")
   };
   let my_answer = if record.my_answer.is_empty() {
     t("learning.marked-don-t-know")
@@ -70,7 +70,7 @@ pub(super) fn MistakeCard(
     <div class="pxl-card border bg-card p-4">
       <div class="mb-2 flex items-baseline gap-2">
         <span class="shrink-0 bg-muted px-1.5 py-0.5 font-mono text-xs">{j}</span>
-        <p class="whitespace-pre-line text-sm font-medium leading-snug">{q.question.clone()}</p>
+        <p class="whitespace-pre-line text-sm leading-snug">{q.question.clone()}</p>
       </div>
       <div class="space-y-1">
         {q
@@ -86,34 +86,34 @@ pub(super) fn MistakeCard(
           .collect_view()}
       </div>
       <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs">
-        <span class="text-red-700 dark:text-red-400">
-          {move || t("learning.my-answer")} <span class="font-mono font-semibold">{my_answer}</span>
+        <span class="text-hp-text">
+          {move || t("learning.my-answer")} <span class="font-mono">{my_answer}</span>
         </span>
-        <span class="text-emerald-700 dark:text-emerald-400">
-          {move || t("exam.correct-answer-prefix")} <span class="font-mono font-semibold">{q.answer_keys.join("、")}</span>
+        <span class="text-win-text">
+          {move || t("exam.correct-answer-prefix")} <span class="font-mono">{q.answer_keys.join("、")}</span>
         </span>
         <span class="text-muted-foreground">
           {move || t("learning.topic")}
           {match topic_href {
             Some(href) => view! {
-              <a href=href class="font-medium text-foreground underline-offset-4 hover:underline">{move || t(topic)}</a>
+              <a href=href class="text-foreground underline underline-offset-4">{move || t(topic)}</a>
             }
             .into_any(),
-            None => view! { <span class="font-medium text-foreground">{move || t(topic)}</span> }.into_any(),
+            None => view! { <span class="text-foreground">{move || t(topic)}</span> }.into_any(),
           }}
           {topic_rate.map(|r| view! { <span class="ml-1 tabular-nums">{tf("learning.accuracy-in-parens", &[&r.to_string()])}</span> })}
           {same_href.map(|href| view! {
-            <a href=href class="ml-1 font-medium text-primary underline-offset-4 hover:underline">
+            <a href=href class="ml-1 text-primary underline underline-offset-4">
               {move || t("exam.practise-similar-link")}
             </a>
           })}
         </span>
       </div>
       <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <span>{move || t("learning.wrong")} <span class="font-semibold text-foreground tabular-nums">{record.wrong_count}</span> {move || t("learning.times")}</span>
+        <span>{move || t("learning.wrong")} <span class="text-foreground tabular-nums">{record.wrong_count}</span> {move || t("learning.times")}</span>
         <span>{tf("learning.in-a-row", &[&record.streak.to_string(), &record.target_streak().to_string()])}</span>
         <span>
-          {move || t("exam.difficulty")} <span class=format!("font-semibold {}", difficulty.1)>{difficulty.0}</span>
+          {move || t("exam.difficulty")} <span class=difficulty.1>{difficulty.0}</span>
         </span>
         <span>{tp("exam.day-interval", record.interval_days.round() as i64, &[&format!("{:.0}", record.interval_days)])}</span>
         <span>{due}</span>

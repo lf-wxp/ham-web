@@ -78,14 +78,14 @@ pub(super) fn ContestAnalysis(
           view! {
             <div class="space-y-6 p-4">
               {(a.untimed > 0).then(|| view! {
-                <p class="border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs">
+                <p class="border border-gold/40 bg-gold/10 px-3 py-2 text-xs">
                   {tp("contest.analysis-untimed", a.untimed, &[&a.untimed.to_string()])}
                 </p>
               })}
 
               // ── 每小时速率 ──────────────────────────────
               <div class="space-y-2">
-                <h3 class="text-sm font-semibold">{move || t("contest.analysis-hourly")}</h3>
+                <h3 class="text-sm">{move || t("contest.analysis-hourly")}</h3>
                 {a.best_hour.map(|b| view! {
                   <p class="text-sm">
                     {tp("contest.analysis-best-hour", b.qsos, &[&b.qsos.to_string(), &clock(b.start)])}
@@ -128,7 +128,7 @@ pub(super) fn ContestAnalysis(
 
               // ── 空闲时段 ───────────────────────────────
               <div class="space-y-2">
-                <h3 class="text-sm font-semibold">{move || t("contest.analysis-idle-heading")}</h3>
+                <h3 class="text-sm">{move || t("contest.analysis-idle-heading")}</h3>
                 <p class="text-xs text-muted-foreground">{move || t("contest.analysis-idle-note")}</p>
                 <Field label=Signal::derive(move || t("contest.analysis-idle-min")) r#for=field_id class="max-w-xs">
                   <NativeSelect
@@ -170,7 +170,7 @@ pub(super) fn ContestAnalysis(
 
               // ── 乘数缺口 ───────────────────────────────
               <div class="space-y-2">
-                <h3 class="text-sm font-semibold">{move || t("contest.analysis-mult-gaps")}</h3>
+                <h3 class="text-sm">{move || t("contest.analysis-mult-gaps")}</h3>
                 {if !a.per_band_mults {
                   view! {
                     <p class="text-sm text-muted-foreground">{move || t("contest.analysis-no-universe")}</p>
@@ -193,7 +193,7 @@ pub(super) fn ContestAnalysis(
                       .into_any()
                     } else {
                       view! {
-                        <h4 class="pt-1 text-xs font-medium text-muted-foreground">{move || t("contest.analysis-cross-band")}</h4>
+                        <h4 class="pt-1 text-xs text-muted-foreground">{move || t("contest.analysis-cross-band")}</h4>
                         <ul class="max-h-72 divide-y overflow-y-auto border text-sm">
                           {a.cross_band.iter().take(MAX_CROSS_ROWS).map(|g| {
                             let label = match g.mult.kind {
@@ -223,7 +223,7 @@ pub(super) fn ContestAnalysis(
                       .into_any()
                     }}
                     {(!a.zones.is_empty()).then(|| view! {
-                      <h4 class="pt-2 text-xs font-medium text-muted-foreground">{move || t("contest.analysis-zones")}</h4>
+                      <h4 class="pt-2 text-xs text-muted-foreground">{move || t("contest.analysis-zones")}</h4>
                       <ul class="divide-y border text-sm">
                         {a.zones.iter().map(|z| {
                           let text = if z.missing.is_empty() {

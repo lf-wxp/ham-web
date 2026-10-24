@@ -265,7 +265,7 @@ pub fn NativeSelect(
           kind=IconKind::ChevronDown
           class=Signal::derive(move || {
             cn(&[
-              "h-4 w-4 shrink-0 opacity-50 transition-transform duration-200",
+              "h-4 w-4 shrink-0 opacity-50 transition-transform duration-(--motion-normal)",
               if open.get() { "rotate-180" } else { "" },
             ])
           })
@@ -308,7 +308,7 @@ pub fn NativeSelect(
                               value
                                 .get()
                                 .is_empty()
-                                .then(|| view! { <Icon kind=IconKind::Check class="h-4 w-4" /> })
+                                .then(|| view! { <Icon kind=IconKind::Check class="size-6 w-4" /> })
                             }}
                           </span>
                           <span class="w-full text-muted-foreground">{move || label.get()}</span>
@@ -363,7 +363,7 @@ pub fn NativeSelect(
                                     }
                                   >
                                     <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-                                      {selected.then(|| view! { <Icon kind=IconKind::Check class="h-4 w-4" /> })}
+                                      {selected.then(|| view! { <Icon kind=IconKind::Check class="size-6 w-4" /> })}
                                     </span>
                                     <span class="w-full">{move || label.get()}</span>
                                   </div>
@@ -378,7 +378,7 @@ pub fn NativeSelect(
                                   <div role="group" aria-label=name>
                                     <div
                                       role="presentation"
-                                      class="px-2 pt-2 pb-1 text-xs font-medium text-muted-foreground"
+                                      class="px-2 pt-2 pb-1 text-xs text-muted-foreground"
                                     >
                                       {heading}
                                     </div>

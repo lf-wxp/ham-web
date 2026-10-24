@@ -57,7 +57,7 @@ pub(super) fn WordCopy() -> impl IntoView {
         <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.listen-to-morse-for")}</span>
       </h2>
       <div class="space-y-4 p-4">
-        <div class="flex flex-col items-center gap-3 border bg-muted/30 px-4 py-6">
+        <div class="flex flex-col items-center gap-3 border bg-inset px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("morse.tap-play-then-type")}</div>
           <Button on_click=Callback::new(move |_| play())>
             <Icon kind=IconKind::Volume2 class="size-6" />
@@ -90,7 +90,7 @@ pub(super) fn WordCopy() -> impl IntoView {
             } else {
               let ok = feedback.get().unwrap_or(false);
               view! {
-                <span class=if ok { "text-sm font-medium text-emerald-600 dark:text-emerald-400" } else { "text-sm font-medium text-red-600 dark:text-red-400" }>
+                <span class=if ok { "text-sm text-win-text" } else { "text-sm text-hp-text" }>
                   {if ok { t("learning.correct") } else { tf("common.the-answer-is", &[(word.get())]) }}
                 </span>
                 <Button
@@ -108,8 +108,8 @@ pub(super) fn WordCopy() -> impl IntoView {
             on_click=Callback::new(move |_| play())
           >{move || t("morse.replay-button")}</Button>
           <span class="ml-auto text-xs text-muted-foreground">
-            {move || t("common.correct-label")} <span class="font-semibold tabular-nums text-foreground">{move || correct.get()}</span>
-            {move || t("common.wrong-label")} <span class="font-semibold tabular-nums text-foreground">{move || wrong.get()}</span>
+            {move || t("common.correct-label")} <span class="tabular-nums text-foreground">{move || correct.get()}</span>
+            {move || t("common.wrong-label")} <span class="tabular-nums text-foreground">{move || wrong.get()}</span>
           </span>
         </div>
       </div>

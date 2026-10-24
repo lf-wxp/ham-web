@@ -11,11 +11,11 @@ pub(super) fn TermCard(
   haystacks: RwSignal<Option<Haystacks>>,
   on_jump: Callback<String>,
 ) -> impl IntoView {
-  let (cat_name, color) = category_meta(entry.category_key());
+  let (cat_name, cat_tone) = category_meta(entry.category_key());
   let term_class = if entry.term.is_ascii() {
-    "font-mono text-base font-semibold"
+    "font-mono text-base"
   } else {
-    "text-base font-semibold"
+    "text-base"
   };
   let abbr = entry.abbr.as_deref().filter(|a| *a != entry.term);
   let countable = is_countable(&entry.term);
@@ -58,7 +58,7 @@ pub(super) fn TermCard(
                 >
                   {b.as_str()}
                   {t("knowledge.class")}
-                  <span class="font-semibold tabular-nums">{n}</span>
+                  <span class="tabular-nums">{n}</span>
                 </a>
               </Tooltip>
             }
@@ -81,13 +81,10 @@ pub(super) fn TermCard(
         {abbr
           .map(|a| {
             view! {
-              <span class="bg-muted px-2 py-0.5 font-mono text-xs font-semibold text-foreground">{a}</span>
+              <span class="bg-muted px-2 py-0.5 font-mono text-xs text-foreground">{a}</span>
             }
           })}
-        <span
-          class="ml-auto px-2.5 py-0.5 text-xs font-semibold text-white"
-          style=format!("background: {color}")
-        >
+        <span class=format!("ml-auto border-2 px-2 py-0.5 text-xs text-foreground {}", cat_tone.map_or("bg-muted", crate::tone::chip))>
           {move || t(cat_name)}
         </span>
       </div>
@@ -106,7 +103,7 @@ pub(super) fn TermCard(
               {move || t("knowledge.see-also")}
               <button
                 type="button"
-                class="font-medium text-foreground underline-offset-2 hover:underline"
+                class="text-foreground underline-offset-2 hover:underline"
                 on:click=move |_| on_jump.run(see.to_owned())
               >
                 {see}

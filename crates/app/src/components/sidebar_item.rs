@@ -19,7 +19,7 @@ pub fn SidebarItem(
 ) -> impl IntoView {
   let class = Signal::derive(move || {
     cn(&[
-      "flex w-full items-center gap-2 px-3 py-2 text-sm font-medium transition-colors",
+      "flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors",
       &class,
       if active.get() {
         "bg-primary text-primary-foreground"

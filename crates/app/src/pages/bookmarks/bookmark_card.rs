@@ -35,16 +35,16 @@ pub(super) fn BookmarkCard(
     <div class="pxl-card border bg-card p-4">
       <div class="mb-2 flex items-start gap-2">
         <span class="mt-0.5 shrink-0 bg-muted px-1.5 py-0.5 font-mono text-xs">{j}</span>
-        <p class="flex-1 text-sm font-medium leading-snug">{question.question.clone()}</p>
+        <p class="flex-1 text-sm leading-snug">{question.question.clone()}</p>
         <Button
           variant=Variant::Text
           size=Size::IconSm
-          class="shrink-0 hover:text-destructive"
+          class="shrink-0 hover:text-hp-text"
           title=Signal::derive(move || t("exam.remove-bookmark"))
           aria_label=Signal::derive(move || t("exam.remove-bookmark"))
           on_click=Callback::new(move |_| on_remove.run(q.clone()))
         >
-          <Icon kind=IconKind::BookMarked class="h-4 w-4" />
+          <Icon kind=IconKind::BookMarked class="size-6 w-4" />
         </Button>
       </div>
       <div class="space-y-1">
@@ -60,8 +60,8 @@ pub(super) fn BookmarkCard(
           })
           .collect_view()}
       </div>
-      <div class="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
-        {move || t("exam.answer")} <span class="font-mono font-semibold">{question.answer_keys.join("、")}</span>
+      <div class="mt-2 text-xs text-win-text">
+        {move || t("exam.answer")} <span class="font-mono">{question.answer_keys.join("、")}</span>
       </div>
       <div class="mt-3 flex flex-wrap items-center gap-1.5 border-t pt-2">
         <span class="text-xs text-muted-foreground">{move || t("exam.group")}</span>
@@ -74,7 +74,7 @@ pub(super) fn BookmarkCard(
               <Tooltip label=Signal::derive(move || t("exam.remove-from-this-group"))>
                 <button
                   type="button"
-                  class="inline-flex items-center gap-1 border bg-accent px-2 py-0.5 text-[11px] transition-colors hover:bg-destructive/10"
+                  class="inline-flex items-center gap-1 border bg-accent px-2 py-0.5 text-xs transition-colors hover:bg-destructive/10"
                   on:click=move |_| on_remove_from_group.run((qr.clone(), n.clone()))
                 >
                   {name} " ×"
@@ -101,7 +101,7 @@ pub(super) fn BookmarkCard(
               placeholder=Signal::derive(move || t("exam.add-to-group"))
               size=ControlSize::Sm
               aria_label=Signal::derive(move || t("exam.add-to-group"))
-              class="h-7 w-auto px-2 py-0 text-[11px] md:text-[11px]"
+              class="h-7 w-auto px-2 py-0 text-xs md:text-xs"
             />
           }
         })}

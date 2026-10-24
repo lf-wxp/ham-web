@@ -28,11 +28,11 @@ pub fn EmptyState(
   let title_class = if plain {
     "text-sm text-muted-foreground"
   } else {
-    "text-sm font-medium text-foreground"
+    "text-sm text-foreground"
   };
   view! {
     <div class=root>
-      {icon.map(|k| view! { <Icon kind=k class="h-8 w-8 text-muted-foreground/40" /> })}
+      {icon.map(|k| view! { <Icon kind=k class="size-12 text-muted-foreground" /> })}
       <div class=title_class>{move || title.get()}</div>
       {description.map(|d| view! { <div class="text-xs text-muted-foreground">{move || d.get()}</div> })}
       {actions.map(|a| a.run())}

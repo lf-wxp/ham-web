@@ -1,6 +1,5 @@
 //! 考试页顶部：进度头、薄弱项标识、考试元信息（类别 / 题数 / 限时 / 剩余）与设置入口。
 
-use ham_web_core::text::format_ms;
 use ham_web_core::{Bank, ExamRule};
 use leptos::prelude::*;
 
@@ -8,6 +7,8 @@ use crate::components::common::QuestionProgressHeader;
 use crate::i18n::{bank_class, t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Button, ButtonLink, Size, Variant};
+
+use super::exam_clock::ExamClock;
 
 #[component]
 pub(super) fn ExamHeader(
@@ -19,22 +20,6 @@ pub(super) fn ExamHeader(
   remaining: RwSignal<i64>,
   on_open_settings: Callback<()>,
 ) -> impl IntoView {
-  // 倒计时是考试页最该被读到的数字：走 HUD 字体（`pxl-label`）+ 正文档字号，
-  // 而不是混在 12px 的灰色元信息里（像素规范：数字读数用 `pxl-title` / `pxl-label`）。
-  let remaining_view = move || {
-    let ms = remaining.get();
-    let class = if ms <= 60_000 {
-      "pxl-label text-base text-red-600 dark:text-red-400"
-    } else {
-      "pxl-label text-base text-foreground"
-    };
-    view! {
-      <span class=class aria-live="polite">
-        {format_ms(ms)}
-      </span>
-    }
-  };
-
   view! {
     <QuestionProgressHeader
       percent=percent
@@ -59,20 +44,25 @@ pub(super) fn ExamHeader(
             title=Signal::derive(move || t("exam.settings"))
             on_click=Callback::new(move |_| on_open_settings.run(()))
           >
-            <Icon kind=IconKind::Settings class="h-4 w-4" />
+            <Icon kind=IconKind::Settings class="size-6" />
           </Button>
         }
       }
       meta=ViewFn::from(move || {
         view! {
-          {move || weak.get().then(|| view! { <span class="mr-1 bg-amber-500/15 px-1.5 py-0.5 text-amber-800 dark:text-amber-300">{move || t("exam.weak-area-exam")}</span> })}
+          {move || weak.get().then(|| view! { <span class="mr-1 bg-gold/15 px-1.5 py-0.5 text-gold-text">{move || t("exam.weak-area-exam")}</span> })}
           {move || t("exam.class-prefix")} {move || bank_class(bank.get().as_str())} "｜"
           {move || {
             let r = rule.get();
             tf("exam.questions-single-multiple", &[&r.total.to_string(), &r.singles.to_string(), &r.multiples.to_string()])
           }}
-          "｜" {move || tf("exam.time-limit-min", &[&rule.get().minutes.to_string()])} "｜"
-          {move || t("exam.remaining")} {remaining_view}
+          // `minutes == 0` 是不限时的自定义组卷：没有「限时 0 分钟 / 剩余 00:00」这种读数可言。
+          {move || {
+            (rule.get().minutes > 0).then(|| view! {
+              "｜" {move || tf("exam.time-limit-min", &[&rule.get().minutes.to_string()])} "｜"
+              {move || t("exam.remaining")} <ExamClock remaining=remaining rule=rule />
+            })
+          }}
         }
       })
     />
@@ -84,7 +74,10 @@ pub(super) fn ExamHeader(
       <span>
         {move || tf("exam.questions-count", &[&rule.get().total.to_string()])}
       </span>
-      <span>{move || tf("exam.time-limit-min", &[&rule.get().minutes.to_string()])}</span>
+      {move || {
+        (rule.get().minutes > 0)
+          .then(|| view! { <span>{move || tf("exam.time-limit-min", &[&rule.get().minutes.to_string()])}</span> })
+      }}
     </div>
   }
 }

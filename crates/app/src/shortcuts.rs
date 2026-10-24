@@ -43,6 +43,23 @@ fn is_typing_target(target: Option<web_sys::EventTarget>) -> bool {
   tag == "input" || tag == "textarea" || el.is_content_editable()
 }
 
+/// 是否有模态层正开着。
+///
+/// `Dialog` 与 `Sheet`（答题卡、移动端抽屉）都输出 `aria-modal="true"` 并挂在 `body` 的
+/// Portal 里，所以用这一个属性做判据就够：全局快捷键监听挂在 `window` 上，不会因为焦点在
+/// 模态里就停手 —— 不判的话，交卷确认框打开时按 `1-9` 仍会改答案、按 `←/→` 仍会翻题，
+/// 用户眼前是确认框、背后的题却变了。
+pub fn modal_is_open() -> bool {
+  web_sys::window()
+    .and_then(|w| w.document())
+    .is_some_and(|d| {
+      d.query_selector("[aria-modal=\"true\"]")
+        .ok()
+        .flatten()
+        .is_some()
+    })
+}
+
 /// 自身响应 Enter / 方向键的控件（按钮、链接、下拉、单选组等），交给浏览器默认行为。
 fn handles_own_keys(target: Option<web_sys::EventTarget>, key: &str) -> bool {
   let Some(el) = target.and_then(|t| t.dyn_into::<web_sys::Element>().ok()) else {
@@ -71,7 +88,7 @@ fn handles_own_keys(target: Option<web_sys::EventTarget>, key: &str) -> bool {
 /// 注册全局快捷键，组件卸载时自动移除。
 pub fn use_question_shortcuts(opts: Shortcuts) {
   let handle = window_event_listener(ev::keydown, move |e| {
-    if is_typing_target(e.target()) {
+    if is_typing_target(e.target()) || modal_is_open() {
       return;
     }
     let key = e.key();

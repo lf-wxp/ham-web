@@ -127,14 +127,14 @@ pub fn BookmarksPage() -> impl IntoView {
 
   let filter_tab = |on: bool| {
     if on {
-      "border bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
+      "border bg-primary px-3 py-1 text-xs text-primary-foreground"
     } else {
       "border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
     }
   };
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.bookmarks")
         subtitle=move || t("exam.key-questions-bookmarked-during")
@@ -189,7 +189,7 @@ pub fn BookmarksPage() -> impl IntoView {
                     </button>
                     <button
                       type="button"
-                      class="text-muted-foreground/60 transition-colors hover:text-destructive"
+                      class="text-muted-foreground/60 transition-colors hover:text-hp-text"
                       aria-label=move || t("exam.delete-this-group")
                       on:click=move |_| delete_group(del_name.clone())
                     >

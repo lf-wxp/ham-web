@@ -44,7 +44,7 @@ pub(super) fn LoadTable(
   view! {
     <div class="overflow-x-auto pxl-card border bg-card">
       <div class="flex items-center justify-between border-b px-4 py-3">
-        <span class="text-sm font-semibold">{move || t("tools.nec-loads")}</span>
+        <span class="text-sm">{move || t("tools.nec-loads")}</span>
         <Button
           variant=Variant::Outline
           size=Size::Xs
@@ -64,7 +64,7 @@ pub(super) fn LoadTable(
         } else {
           view! {
             <table data-slot="nec-loads" class="w-full border-collapse text-xs">
-              <thead class="bg-muted/50">
+              <thead class="bg-inset">
                 <tr>
                   <th class="border px-2 py-1 text-left">{move || t("tools.nec-load-wire-index")}</th>
                   <th class="border px-2 py-1 text-left">{move || t("tools.nec-load-position")}</th>

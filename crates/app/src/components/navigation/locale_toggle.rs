@@ -27,7 +27,7 @@ pub fn LocaleToggle() -> impl IntoView {
 
   view! {
     <div class="inline-flex items-center gap-1">
-      <Icon kind=IconKind::Globe class="h-4 w-4 shrink-0 text-muted-foreground" />
+      <Icon kind=IconKind::Globe class="size-6 w-4 shrink-0 text-muted-foreground" />
       <Select
         value=value
         on_change=Callback::new(move |v: String| i18n::set_locale(Locale::from_code(&v)))

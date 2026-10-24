@@ -300,7 +300,7 @@ pub(super) fn WireCanvas(
   view! {
     <div class="space-y-3 pxl-card border bg-card p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <span class="text-sm font-semibold">{move || t("tools.nec-canvas")}</span>
+        <span class="text-sm">{move || t("tools.nec-canvas")}</span>
         <span class="text-xs text-muted-foreground">
           {move || {
             let v = view.get();
@@ -364,7 +364,7 @@ pub(super) fn WireCanvas(
       >
         <svg
           viewBox=format!("0 0 {SIZE} {SIZE}")
-          class="w-full border bg-muted/20"
+          class="w-full border bg-inset"
           role="img"
           aria-label=move || t("tools.nec-canvas-alt")
         >

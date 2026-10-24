@@ -155,8 +155,8 @@ pub(super) fn BackupTool() -> impl IntoView {
         />
       </div>
 
-      <div class="border bg-muted/20 p-3">
-        <p class="mb-2 text-xs font-semibold text-muted-foreground">
+      <div class="border bg-inset p-3">
+        <p class="mb-2 text-xs text-muted-foreground">
           {move || t("tools.backup-modules")}
         </p>
         <ul class="space-y-1.5 text-sm">
@@ -195,9 +195,9 @@ pub(super) fn BackupTool() -> impl IntoView {
         let total: usize = list.iter().map(|(_, n)| n).sum();
         let pct = total as f64 / storage::QUOTA_UNITS as f64 * 100.0;
         let bar = if pct >= 80.0 {
-          "bg-red-500"
+          "bg-destructive/70"
         } else if pct >= 50.0 {
-          "bg-amber-500"
+          "bg-gold/70"
         } else {
           "bg-primary"
         };
@@ -236,7 +236,7 @@ pub(super) fn BackupTool() -> impl IntoView {
                 .collect_view()}
             </ul>
             {(pct >= 80.0).then(|| view! {
-              <p class="text-xs text-red-600 dark:text-red-400">
+              <p class="text-xs text-hp-text">
                 {move || t("tools.storage-is-nearly-full")}
               </p>
             })}

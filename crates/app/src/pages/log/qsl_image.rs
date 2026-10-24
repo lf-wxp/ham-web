@@ -304,7 +304,7 @@ pub(super) fn QslImage(entry_id: u64) -> impl IntoView {
       {move || {
         issue
           .get()
-          .map(|issue| view! { <span class="text-xs text-destructive">{issue_message(issue)}</span> })
+          .map(|issue| view! { <span class="text-xs text-hp-text">{issue_message(issue)}</span> })
       }}
     </div>
   }

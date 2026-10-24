@@ -108,7 +108,7 @@ pub fn SolarPage() -> impl IntoView {
   load();
 
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.solar-data")
         subtitle=move || t("radio.solar-indices-propagation-conditions")
@@ -154,7 +154,7 @@ pub fn SolarPage() -> impl IntoView {
             <MetricCard label=t("radio.a-index") value=a unit=t("radio.daily-geomagnetic-index") loading=loading failed=failed />
           </div>
           <div class="grid grid-cols-2 gap-3 px-4 pb-4 sm:grid-cols-4">
-            <div class="col-span-2 border bg-muted/40 p-3 text-center sm:col-span-4">
+            <div class="col-span-2 border bg-inset p-3 text-center sm:col-span-4">
               <div class="text-xs text-muted-foreground">{move || t("radio.propagation-conditions-from-k")}</div>
               <div class="mt-1 pxl-stat">
                 {move || {
@@ -162,10 +162,10 @@ pub fn SolarPage() -> impl IntoView {
                     Some(kv) => {
                       let lvl = propagation_level(kv, ssn.get().unwrap_or(0.0), sfi.get().unwrap_or(0.0));
                       let color = match lvl {
-                        PropagationLevel::Excellent => "text-emerald-700 dark:text-emerald-400",
-                        PropagationLevel::Good => "text-sky-700 dark:text-sky-400",
-                        PropagationLevel::Fair => "text-amber-700 dark:text-amber-400",
-                        PropagationLevel::Poor => "text-red-700 dark:text-red-400",
+                        PropagationLevel::Excellent => "text-win-text",
+                        PropagationLevel::Good => "text-xp-text",
+                        PropagationLevel::Fair => "text-gold-text",
+                        PropagationLevel::Poor => "text-hp-text",
                       };
                       view! { <span class=color>{lvl.label()}</span> }.into_any()
                     }
@@ -229,7 +229,7 @@ pub fn SolarPage() -> impl IntoView {
               .map(|&(name, range, desc)| {
                 view! {
                   <div class="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_12rem_1fr]">
-                    <div class="font-medium">{name}</div>
+                    <div>{name}</div>
                     <div class="font-mono text-xs text-muted-foreground">{range}</div>
                     <div class="text-sm text-muted-foreground">{desc}</div>
                   </div>
@@ -246,8 +246,8 @@ pub fn SolarPage() -> impl IntoView {
               .iter()
               .map(|&(level, desc)| {
                 view! {
-                  <div class="border bg-muted/40 p-3">
-                    <div class="font-medium">{level}</div>
+                  <div class="border bg-inset p-3">
+                    <div>{level}</div>
                     <div class="mt-1 text-sm text-muted-foreground">{desc}</div>
                   </div>
                 }

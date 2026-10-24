@@ -191,7 +191,7 @@ pub fn ToolsPage() -> impl IntoView {
       .collect_view()
   };
   view! {
-    <div class="min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.calculators")
         subtitle=move || t("tools.frequency-wavelength-power-gain")
@@ -212,8 +212,8 @@ pub fn ToolsPage() -> impl IntoView {
           <aside class="hidden lg:block">
             <StickyPanel class="pxl-card border bg-card p-3">
               <nav aria-label=move || t("tools.tool-catalogue")>
-                <div class="mb-2 px-2 text-xs font-semibold text-muted-foreground">{move || t("tools.tool-navigation")}</div>
-                <ul class="max-h-[calc(100vh-var(--sticky-top)-70px)] space-y-0.5 overflow-y-auto pr-1">
+                <div class="mb-2 px-2 text-xs text-muted-foreground">{move || t("tools.tool-navigation")}</div>
+                <ul class="max-h-[calc(100svh-var(--sticky-top)-70px)] space-y-0.5 overflow-y-auto overscroll-contain pr-1">
                   {tool_nav_items()}
                 </ul>
               </nav>
