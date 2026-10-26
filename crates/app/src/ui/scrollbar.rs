@@ -6,10 +6,10 @@
 //!
 //! 为什么只换滚动条、不动滚动容器：把滚动容器从窗口挪到内容区（app shell）会连带改
 //! `util::scroll_to_element`、路由复位、iOS 地址栏收起、嵌套吸顶的全部计算；而这里要的只是
-//! 「滚动条别盖住头部」。隐藏的原生窗口滚动条由 CSS 完成：Chromium / Safari 走
-//! `html::-webkit-scrollbar { display: none }`，Firefox / Zen 走 `@supports not
-//! selector(::-webkit-scrollbar)` 里的 `html { scrollbar-width: none }`
-//! （两条缺一，那边就会多出第二条原生滚动条）。嵌套滚动区（表格 / 弹层 / 侧栏）仍是原生样式。
+//! 「滚动条别盖住头部」。隐藏的原生窗口滚动条由 CSS 完成，根元素上两条并存 ——
+//! `html { scrollbar-width: none }`（Chromium 121+ / Firefox）与
+//! `html::-webkit-scrollbar { display: none }`（老 Chromium / Safari）；少任何一条，
+//! 对应内核就会多出第二条原生滚动条。嵌套滚动区（表格 / 弹层 / 侧栏）仍是原生样式。
 //!
 //! 只做三件事：按 `scrollY` 摆 thumb、拖动 thumb 改 `scrollY`、内容不够长就不显示。
 //! 键盘 / 滚轮 / 触屏滚动完全走原生，这里不做拦截。触屏设备没有常驻滚动条，整条隐藏。

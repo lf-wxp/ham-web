@@ -322,6 +322,30 @@
 原生 `<details>`，当前页所在段默认展开）与底部 `MobileTabs`（激活态 = 顶部 4px 主色条 + 浅底，
 不只靠字色）。页面不要另写导航 / 底部条。
 
+那个下拉面板**挂在 `<nav>` 上，不在顶栏那层 `container` 里**：`container` 在 400–639px 之间是
+定宽居中（`max-w` 400）的，面板若以它为定位祖先，左右就会各空出一条、露出下面的页面；挪到
+`<nav>` 下（`sticky` 即定位祖先）后铺满整宽，内容仍由面板内部的 `container` 与顶栏对齐。
+
+排版在 `nav_bar.rs` 的网格上，顺序是**先导航、后设置**：
+
+- `<sm`（手机竖屏）一列：三段折叠在上，虚线之下是「语言 / 外观与动效 / 数据备份」；
+- `sm`–`xl`（横屏手机 / 平板 / 窄桌面）三列：三段各占一列，虚线之下是同一排工具。
+
+单列铺到 640–1279px 会拉成一条通栏长列表（900px 下高约 370px，三列后约 146px）。面板里**不放
+「首页」**：底部 `MobileTabs` 与顶栏 brand 都直达首页，再列一次只会把导航挤到第二屏；工具也没
+必要放在最上面 —— 点开菜单第一眼看到的应该是导航。
+**分隔虚线也画在那里**：一列时是三条（三段之间 + 工具区前一条）、三列时只有一条横跨整行，第一段上面不画；不要塞回
+`MobileNavSection`（三列并排时每段自带的 `border-t` 会断成三段短虚线）。
+工具区那一排三格必须「一条基线」：左缘与段标题图标齐平（同款 `px-3`），竖直方向互相居中
+（`sm:self-center`）—— 少任何一条，三列并排时就出现「语言那格两行、右边一格一行」的高低错落。
+
+- 两个按钮是 `h-auto … whitespace-normal`：`.pxl-btn` 默认 `nowrap` + 固定 `h-10`，西语
+  「Apariencia y movimiento」在窄格里会溢出边框；它们各自包在 `px-3` 里（外层 `sm:contents`
+  让包装在一列时是两格、多列时各占一格），按钮左缘必须和段标题图标齐平，否则偏出 12px。
+- 「语言」与三个语言按钮同处一行（`px-2` 的按钮才放得下），标签 `hidden md:inline`：
+  `sm` 那档每列只有 192px，塞不进一行；读屏名字由 `role=group` 的 `aria-label` 提供，
+  可见标签 `aria-hidden`，不重复念。
+
 侧栏在移动端被 `hidden md:block` / `hidden lg:block` 藏掉之后，分类 / 导航入口要用
 `ui::MobileNavDrawer`（右下角悬浮按钮 + 右侧抽屉，复用 `Sheet`）补上。浏览 / 术语表 /
 工具目录三个页面已收口到这里 —— 以后「小屏藏侧栏」的场景照这个来，**不要再写横滑分类条**，
@@ -416,15 +440,18 @@ Tailwind 的 `sm` / `md` / `lg` 之外，只多一档 `xs`（400px，定义在 `
 
 **窗口滚动条是自绘的**（`ui::ScrollBar`，挂在 `App` 根部）：
 
-- 原生窗口滚动条在 `surfaces.css` 里隐藏，两个内核各走一条：Chromium / Safari 用
-  `html::-webkit-scrollbar { display: none }`，Firefox / Zen 用 `@supports not selector(::-webkit-scrollbar)`
-  里的 `html { scrollbar-width: none }`。改画一条 12px 的像素滚动条，**从吸顶导航下沿开始**到视口底部
+- 原生窗口滚动条在 `surfaces.css` 里隐藏，**根元素要两条规则一起写**：
+  `html { scrollbar-width: none }`（Chromium 121+ / Firefox 64+ 的标准属性，新版 Chromium 的
+  根滚动条实际靠它关 —— 只留伪元素那条时 macOS 上仍会画出原生浮层条）+ 
+  `html::-webkit-scrollbar { display: none }`（老 Chromium / Safari）。Firefox 另外在
+  `@supports not selector(::-webkit-scrollbar)` 里补 `scrollbar-color` 与
+  `* { scrollbar-width: auto }`。改画一条 12px 的像素滚动条，**从吸顶导航下沿开始**到视口底部
   （导航是「机身」、滚动条属于「屏幕」，不并排到头部去）。`top` 由组件实测 `[data-nav]` 的高度写入。
-  **标准属性（`scrollbar-width` / `scrollbar-color`）只能出现在那个 `@supports` 块里**：它们是继承属性，
-  落在会被 Chromium 命中的选择器上会让 `*::-webkit-scrollbar` 整体失效；而该块里的根元素必须保持
-  `scrollbar-width: none` —— 写成 `auto`（或漏写）会让 Firefox / Zen 把原生窗口滚动条画回来，
-  与自绘那条叠成两条。嵌套滚动区的可见滚动条由块内的 `* { scrollbar-width: auto }` 兜住
-  （`*` 特异性 (0,0,0) 低于 `html` 的 (0,0,1)，碰不到根元素）。
+  `scrollbar-width` 规范上是**非继承**属性（MDN 明确，只有 `scrollbar-color` 才继承）：`html`
+  为 `none` 时嵌套滚动区算出来仍是 `auto`，12px 像素滚动条照旧，所以嵌套滚动区不用在
+  Chromium / Firefox 侧再兜。`* { scrollbar-width: auto }` 只是防御性兜底（显式钉回 `auto`，
+  不依赖「非继承」这一实现细节），`*` 的特异性 (0,0,0) 低于 `html` 的 (0,0,1)，碰不到根元素
+  —— 根一旦拿到 `auto`，原生窗口滚动条会回来和自绘那条叠成两条。
 - **浮在内容之上，不占布局**：没有轨道底色、只有 thumb，`main` / `footer` **不要**留 12px
   内边距 —— 留了会在没有滚动条时也空出一条，而且滚动条出现 / 消失时内容会横向抖。
   代价是拖动区覆盖最右 12px（与系统覆盖式滚动条一致），所以**不要**在右边缘 12px 内放

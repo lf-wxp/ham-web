@@ -207,36 +207,71 @@ pub fn Navigation() -> impl IntoView {
           </div>
         </div>
 
-        // 移动端下拉菜单
-        {move || {
-          menu_open.get().then(|| {
-            view! {
-              <div
-                id=MOBILE_NAV_PANEL_ID
-                class="motion-pop absolute inset-x-0 top-full z-40 max-h-[calc(100svh-4rem)] overflow-y-auto overscroll-contain border-b-2 border-ink bg-card shadow-[0_4px_0_0_var(--pxl-shadow)] xl:hidden"
-              >
-                <nav aria-label=move || t("shell.mobile-navigation") class="container mx-auto grid grid-cols-1 gap-1 px-4 py-3">
-                  <a
-                    href="/"
-                    class=move || {
-                      cn(&[
-                        "flex items-center gap-3 border-2 px-3 py-2.5 text-sm",
-                        if active("/") {
-                          "border-ink bg-accent text-accent-foreground"
-                        } else {
-                          "border-transparent text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
-                        },
-                      ])
-                    }
-                    on:click=move |_| menu_open.set(false)
-                  >
-                    <Icon kind=IconKind::Home class="size-6" />
-                    {move || t("shell.home")}
-                  </a>
+      </div>
 
-                  <div class="px-3 pt-2 pxl-label text-xs text-muted-foreground">{move || t("shell.language")}</div>
+      // 移动端下拉菜单。挂在 `<nav>` 上、不放进那层 `container` 里：`container` 在 400–639px
+      // 之间是**定宽居中**的（`max-w` 400），面板跟着它走就会在左右各空出一条，露出下面的页面。
+      // 内容宽度仍由面板里的 `container` 对齐：两侧边界与顶栏 `container` 同宽（同一 max-w），
+      // 内边距是面板自己的 `px-4`（菜单需要缩进，不跟顶栏的 `px-1/2/4` 逐档一致）。
+      {move || {
+        menu_open.get().then(|| {
+          view! {
+            <div
+              id=MOBILE_NAV_PANEL_ID
+              class="motion-pop absolute inset-x-0 top-full z-40 max-h-[calc(100svh-4rem)] overflow-y-auto overscroll-contain border-b-2 border-ink bg-card shadow-[0_4px_0_0_var(--pxl-shadow)] xl:hidden"
+            >
+              // 布局与顺序：**先导航、后设置**，两种宽度共用同一份结构。
+              // - `<sm`（手机竖屏）一列：三段折叠在上，虚线之下是语言 / 外观与动效 / 备份；
+              // - `sm`–`xl`（横屏手机 / 平板 / 窄桌面）三列：三段各占一列，虚线之下仍是那排工具。
+              // 以前把「首页 / 语言 / 设置 / 备份」放在最上面，点开菜单第一眼看到的是三个跟导航
+              // 无关的控件，像误入设置页；首页也不必放 —— 底部 Tab 与顶栏 brand 都直达（见
+              // `mobile_tabs.rs`）。单列铺到 640–1279px 还会拉成通栏长列表（900px 下约 370px 高）。
+              //
+              // 分隔虚线由这里画（一列时是三条，三列时只有一条横跨整行），不放在
+              // `MobileNavSection` 里 —— 三列并排时每段自带的 `border-t` 会断成三段短虚线。
+              <nav
+                aria-label=move || t("shell.mobile-navigation")
+                class="container mx-auto grid grid-cols-1 gap-1 px-4 py-3 sm:grid-cols-3 sm:items-start sm:gap-x-4"
+              >
+                // 三大段可折叠、当前页所在的那段默认展开（见 `MobileNavSection`）。
+                <MobileNavSection
+                  icon=IconKind::Timer
+                  title=Signal::derive(move || t("shell.exam-center"))
+                  groups=EXAM_GROUPS
+                  pathname=Signal::derive(move || location.pathname.get())
+                  on_navigate=Callback::new(move |()| menu_open.set(false))
+                />
+                <div class="border-t-2 border-dashed border-ink/30 sm:hidden"></div>
+                <MobileNavSection
+                  icon=IconKind::BookOpen
+                  title=Signal::derive(move || t("shell.knowledge"))
+                  groups=KNOWLEDGE_GROUPS
+                  pathname=Signal::derive(move || location.pathname.get())
+                  on_navigate=Callback::new(move |()| menu_open.set(false))
+                />
+                <div class="border-t-2 border-dashed border-ink/30 sm:hidden"></div>
+                <MobileNavSection
+                  icon=IconKind::Calculator
+                  title=Signal::derive(move || t("shell.tools"))
+                  groups=TOOL_GROUPS
+                  pathname=Signal::derive(move || location.pathname.get())
+                  on_navigate=Callback::new(move |()| menu_open.set(false))
+                />
+
+                // 工具区与导航之间的那条线：一列时也画（三列时横跨整行）。
+                <div class="border-t-2 border-dashed border-ink/30 sm:col-span-3"></div>
+
+                // 「语言」与两个按钮排在同一行、竖直居中对齐：标签单独占一行时，左边两行、
+                // 右边一行的落差看起来就像没对齐。可见的标签只是给眼睛的，读屏名字由 `role=group`
+                // 的 `aria-label` 提供，所以 `aria-hidden` 掉，免得重复念一遍。
+                // `hidden md:inline`：`sm`（640）那档每列只有 192px，图标 + 三个语言按钮塞不进一行，
+                // 标签会把这一格顶成三行；那里只留按钮本身（中文 / English / Español 自解释）。
+                <div class="flex flex-wrap items-center gap-2 px-3 pt-1 sm:self-center">
+                  <span class="hidden pxl-label text-xs text-muted-foreground md:inline" aria-hidden="true">
+                    {move || t("shell.language")}
+                  </span>
                   <div
-                    class="flex flex-wrap gap-1.5 px-3"
+                    class="flex flex-wrap gap-1.5"
                     role="group"
                     aria-label=move || t("shell.language")
                   >
@@ -250,7 +285,9 @@ pub fn Navigation() -> impl IntoView {
                           aria-pressed=move || (i18n::locale().get() == l).to_string()
                           class=move || {
                             cn(&[
-                              "border-2 px-3 py-1.5 text-sm",
+                              // `px-2`：三个语言按钮要和「语言」同处一行，`px-3` 时
+                              // 在这排三列（每列 234px）里放不下、会折到第二行。
+                              "border-2 px-2 py-1.5 text-sm",
                               if i18n::locale().get() == l {
                                 "border-ink bg-primary text-primary-foreground"
                               } else {
@@ -265,13 +302,22 @@ pub fn Navigation() -> impl IntoView {
                       })
                       .collect_view()}
                   </div>
+                </div>
 
-                  // 手机顶栏没有齿轮：「像素动效 / 易读字体 / 主题」都从这里进。
-                  <div class="space-y-2 px-3 pt-2">
+                // 手机顶栏没有齿轮：「像素动效 / 易读字体 / 主题」都从这里进。
+                // 一列时两个入口并排（省下一整行高度）；`sm:contents` 让外层消失、两个 `px-3`
+                // 包装各占一格 —— 那圈内边距让按钮左缘与段标题的图标（`px-3`）齐平，
+                // 否则按钮会顶到列边，比上面那排段标题偏出 12px。
+                <div class="grid grid-cols-2 gap-1 sm:contents">
+                  // `sm:self-center`：640px 那档语言按钮会折成两行、把这一格撑高，
+                  // 不加就让按钮贴在这一格的顶边（整排看起来又是一高一低）。
+                  <div class="px-3 sm:self-center">
                     <Button
                       variant=Variant::Outline
                       size=Size::Default
-                      class="w-full justify-start gap-3"
+                      // `h-auto` + `whitespace-normal`：西语的「Aparición y movimiento」在窄格里
+                      // 放不下一行（`.pxl-btn` 默认 nowrap + 固定 h-10），允许折行而不是溢出边框。
+                      class="h-auto min-h-10 w-full justify-start whitespace-normal py-2 text-left"
                       on_click=Callback::new(move |_| {
                         menu_open.set(false);
                         settings_open.set(true);
@@ -280,43 +326,25 @@ pub fn Navigation() -> impl IntoView {
                       <Icon kind=IconKind::Settings class="size-6" />
                       {move || t("shell.settings")}
                     </Button>
-                    // 备份不藏在工具页：手机上也给一个直达入口。
+                  </div>
+                  // 备份不藏在工具页：手机上也给一个直达入口。
+                  <div class="px-3 sm:self-center">
                     <ButtonLink
                       href="/backup"
                       variant=Variant::Outline
-                      class="w-full justify-start gap-3"
+                      class="h-auto min-h-10 w-full justify-start whitespace-normal py-2 text-left"
                       on_click=Callback::new(move |_| menu_open.set(false))
                     >
                       <Icon kind=IconKind::Download class="size-6" />
                       {move || t("tools.data-backup")}
                     </ButtonLink>
                   </div>
-
-                  // 三大段可折叠、当前页所在的那段默认展开（见 `MobileNavSection`）。
-                  <MobileNavSection
-                    title=Signal::derive(move || t("shell.exam-center"))
-                    groups=EXAM_GROUPS
-                    pathname=Signal::derive(move || location.pathname.get())
-                    on_navigate=Callback::new(move |()| menu_open.set(false))
-                  />
-                  <MobileNavSection
-                    title=Signal::derive(move || t("shell.knowledge"))
-                    groups=KNOWLEDGE_GROUPS
-                    pathname=Signal::derive(move || location.pathname.get())
-                    on_navigate=Callback::new(move |()| menu_open.set(false))
-                  />
-                  <MobileNavSection
-                    title=Signal::derive(move || t("shell.tools"))
-                    groups=TOOL_GROUPS
-                    pathname=Signal::derive(move || location.pathname.get())
-                    on_navigate=Callback::new(move |()| menu_open.set(false))
-                  />
-                </nav>
-              </div>
-            }
-          })
-        }}
-      </div>
+                </div>
+              </nav>
+            </div>
+          }
+        })
+      }}
       <SettingsDialog open=settings_open />
     </nav>
   }

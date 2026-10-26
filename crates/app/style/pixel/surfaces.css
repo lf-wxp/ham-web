@@ -388,13 +388,20 @@ body::before {
 }
 
 /* ---------- 滚动条：方块滑块 + 抖动轨道 ---------- */
-/* Chromium / Safari：用 ::-webkit-scrollbar 自绘滚动条。
-   标准属性（scrollbar-width / scrollbar-color）一律只写在下面的 Firefox 兜底里：
-   它们是**继承属性**，只要在会被 Chromium 命中的地方生效（哪怕只写在 `html` 上），
-   Chromium 就会改走标准滚动条绘制、忽略 ::-webkit-scrollbar，并且沿 DOM 继承下去，
-   把表格 / 弹层里的像素滚动条一起打回默认宽度。所以 Chromium 分支只碰伪元素。 */
 /* 窗口滚动条由 `ui::ScrollBar` 自绘（只覆盖内容区，见 `ui/scrollbar.rs`），这里把**原生窗口
-   滚动条**藏掉；嵌套滚动区（表格 / 弹层 / 吸顶侧栏）仍用下面这套原生自绘样式。 */
+   滚动条**藏掉；嵌套滚动区（表格 / 弹层 / 吸顶侧栏）仍用下面这套原生自绘样式。
+
+   根滚动条要**两条一起写**，各管一半浏览器：
+   - `scrollbar-width: none`：Chromium 121+ 与 Firefox 64+ 的标准属性。新版 Chromium
+     的根滚动条实际靠它关（只有伪元素那条时，macOS 上仍会画出原生浮层条 —— 实测）。
+   - `html::-webkit-scrollbar { display: none }`：老 Chromium / Safari 用的伪元素路径。
+   `scrollbar-width` 规范上是**非继承**属性（MDN 明确，只有 `scrollbar-color` 才继承），
+   所以 `html` 设 `none` 只作用于根、不波及嵌套滚动区：后者的 `scrollbar-width` 仍是
+   `auto`，`*::-webkit-scrollbar` 的 12px 像素滚动条照旧生效。 */
+html {
+  scrollbar-width: none;
+}
+
 html::-webkit-scrollbar {
   display: none;
 }
@@ -467,15 +474,15 @@ html::-webkit-scrollbar {
 
 /* Firefox 等不支持 ::-webkit-scrollbar 的浏览器：回退到标准属性（Chromium 走不进这个
    @supports，所以不会反过来禁用上面的伪元素样式）。
-   先重述一遍窗口滚动条的前提：**根元素必须 `scrollbar-width: none`**。把它写成 `auto`
-   （或干脆不写、任由 `*` 兜底）就等于把原生窗口滚动条重新画出来 —— Firefox / Zen 里会和
-   `ui::ScrollBar` 叠成两条，Zen 那条还是滚动时才淡入的浮层条，看起来像「虚拟滚动条」。
-   嵌套滚动区（表格 / 弹层 / 侧栏）要能看见滚动条，由 `*` 给回 `auto`：它的特异性是
-   (0,0,0)，低于 `html` 的 (0,0,1)，够不到根元素。`scrollbar-color` 是继承的，写在
-   `html` 上就能给这些嵌套滚动条上色。 */
+   根元素的 `scrollbar-width: none` 由上面那条共用规则给（Firefox 也认标准属性），这里
+   只补两件事：
+   - `scrollbar-color`：继承属性，写在 `html` 上就能给嵌套滚动条上像素配色；
+   - `* { scrollbar-width: auto }`：防御性兜底 —— `scrollbar-width` 规范上非继承（见上），
+     嵌套滚动区本该不受根影响，但显式钉回 `auto` 更稳、不依赖实现细节。`*` 的特异性
+     (0,0,0) 低于 `html` 的 (0,0,1)，所以根元素不会被它改成 auto —— 那等于把原生窗口
+     滚动条重新画出来，和 `ui::ScrollBar` 叠成两条。 */
 @supports not selector(::-webkit-scrollbar) {
   html {
-    scrollbar-width: none;
     scrollbar-color: var(--primary) var(--muted);
   }
 

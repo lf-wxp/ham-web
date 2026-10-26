@@ -13,9 +13,14 @@ use crate::icons::{Icon, IconKind, icon_of};
 ///
 /// 用原生 `<details>` / `<summary>`：键盘（Enter / Space）、读屏（展开 / 收起状态）都是浏览器给的，
 /// 不用再写一套 `aria-expanded`。菜单每次打开都会重建，所以 `open` 只需在构建时算一次。
+///
+/// 分隔虚线不在这里画：一层一列时它是「段与段之间」的横线，三列并排时它是一条横跨整行的线，
+/// 由 `nav_bar.rs` 的网格负责（两种形态共用同一份结构）。
 #[component]
 pub(super) fn MobileNavSection(
   #[prop(into)] title: Signal<String>,
+  /// 段标题前的图标：与桌面下拉里那三个分组开关用同一套图标，两端的识认一致。
+  icon: IconKind,
   /// 这一大段包含的子分组（`EXAM_GROUPS` 等）。
   groups: &'static [&'static str],
   #[prop(into)] pathname: Signal<String>,
@@ -28,9 +33,10 @@ pub(super) fn MobileNavSection(
     .any(|m| m.group.is_some_and(|g| groups.contains(&g)) && m.path == current);
 
   view! {
-    <details open=has_current class="group border-t-2 border-dashed border-ink/30 pt-1">
-      <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between px-3 pxl-label text-xs text-muted-foreground [&::-webkit-details-marker]:hidden">
-        <span>{move || title.get()}</span>
+    <details open=has_current class="group pt-1">
+      <summary class="flex min-h-11 cursor-pointer list-none items-center gap-3 px-3 text-sm text-foreground [&::-webkit-details-marker]:hidden">
+        <Icon kind=icon class="size-6" />
+        <span class="flex-1">{move || title.get()}</span>
         <Icon kind=IconKind::ChevronDown class="size-6 group-open:rotate-180" />
       </summary>
       <div class="grid gap-1 pb-2">
