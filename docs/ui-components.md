@@ -416,9 +416,15 @@ Tailwind 的 `sm` / `md` / `lg` 之外，只多一档 `xs`（400px，定义在 `
 
 **窗口滚动条是自绘的**（`ui::ScrollBar`，挂在 `App` 根部）：
 
-- 原生窗口滚动条在 `surfaces.css` 里隐藏（`html::-webkit-scrollbar { display: none }` +
-  `html { scrollbar-width: none }`），改画一条 12px 的像素滚动条，**从吸顶导航下沿开始**到视口底部
+- 原生窗口滚动条在 `surfaces.css` 里隐藏，两个内核各走一条：Chromium / Safari 用
+  `html::-webkit-scrollbar { display: none }`，Firefox / Zen 用 `@supports not selector(::-webkit-scrollbar)`
+  里的 `html { scrollbar-width: none }`。改画一条 12px 的像素滚动条，**从吸顶导航下沿开始**到视口底部
   （导航是「机身」、滚动条属于「屏幕」，不并排到头部去）。`top` 由组件实测 `[data-nav]` 的高度写入。
+  **标准属性（`scrollbar-width` / `scrollbar-color`）只能出现在那个 `@supports` 块里**：它们是继承属性，
+  落在会被 Chromium 命中的选择器上会让 `*::-webkit-scrollbar` 整体失效；而该块里的根元素必须保持
+  `scrollbar-width: none` —— 写成 `auto`（或漏写）会让 Firefox / Zen 把原生窗口滚动条画回来，
+  与自绘那条叠成两条。嵌套滚动区的可见滚动条由块内的 `* { scrollbar-width: auto }` 兜住
+  （`*` 特异性 (0,0,0) 低于 `html` 的 (0,0,1)，碰不到根元素）。
 - **浮在内容之上，不占布局**：没有轨道底色、只有 thumb，`main` / `footer` **不要**留 12px
   内边距 —— 留了会在没有滚动条时也空出一条，而且滚动条出现 / 消失时内容会横向抖。
   代价是拖动区覆盖最右 12px（与系统覆盖式滚动条一致），所以**不要**在右边缘 12px 内放
