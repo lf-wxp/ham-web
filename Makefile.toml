@@ -135,6 +135,11 @@ description = "从 Natural Earth 国界 GeoJSON 生成 DXCC 实体边界 public/
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "dxcc-map"]
 
+[tasks.cn-map]
+description = "从 Natural Earth 1:50m 州省 GeoJSON 生成中国省级边界 public/cn-provinces.bin（分区号地图用，i16 定点 + delta 二进制）"
+command = "cargo"
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "cn-map"]
+
 [tasks.icons]
 description = "由 public/ 下的设计源生成 PWA / Apple Touch / badge 图标与 favicon.ico"
 command = "cargo"
@@ -594,8 +599,8 @@ command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--", "check-data-staleness"]
 
 [tasks.data-sync]
-description = "拉取上游并重新生成全部外部数据（dxcc + dxcc-map + dataset，需联网）"
-dependencies = ["dxcc", "dxcc-map", "dataset"]
+description = "拉取上游并重新生成全部外部数据（dxcc + dxcc-map + cn-map + dataset，需联网）"
+dependencies = ["dxcc", "dxcc-map", "cn-map", "dataset"]
 
 [tasks.e2e-check]
 description = "e2e 覆盖对账：coverage-targets.json 的每条核心旅程必须能在 e2e/tests 的 spec 里命中"

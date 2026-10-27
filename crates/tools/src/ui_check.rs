@@ -103,11 +103,11 @@ const RULES: &[Rule] = &[
     advice: "用 ui/ 的 ChipGroup / Chip / ChipToggle",
   },
   Rule {
-    name: "把填充色 token 当文字色（对比度不够）",
+    name: "把填充色 token 当文字色（`text-gold` / `text-[color:var(--pxl-gold)]` / SVG 文字的 `fill-gold` 等，对比度不够）",
     roots: &["crates/app/src"],
     skip: &[],
     hits: has_fill_token_as_text,
-    advice: "文字用 `--pxl-ink` / 语义前景色，填充色只做背景（§9）",
+    advice: "文字用 `text-hp-text` / `text-xp-text` / `text-gold-text` / `text-win-text`（SVG `<text>` 用 `fill-*-text`，或语义前景色）；`hp` / `xp` / `gold` / `win` 是填充色，只做背景 / 描边 / 几何填充（§2 硬规则 6）",
   },
   Rule {
     name: "模糊 / 渐变（零模糊零渐变）",
@@ -351,10 +351,33 @@ fn has_destructive_as_text(line: &str) -> bool {
 }
 
 /// §11 ⑦：把填充色 token（hp / xp / gold / win）当文字色用，对比度不达标。
+///
+/// 三种写法都算：
+/// - 任意值 `text-[color:var(--pxl-gold)]`；
+/// - 基础类 `text-gold` / `text-gold/50`（带变体前缀的如 `hover:text-win` 也算）；
+/// - SVG 文字：同一行里有 `<text` 元素，又带 `fill-gold` / `fill-gold/50`。SVG 里字的颜色是
+///   `fill`，不是 `color`，所以 `<text class="fill-gold">` 与 `text-gold` 是同一个问题。
+///
+/// 文字专用 token（`text-gold-text` / `fill-gold-text`）是另一个类，不命中。`bg-gold` /
+/// `border-gold` / `stroke-gold`，以及画在 `<circle>` / `<path>` / `<rect>` 上的 `fill-gold/70`
+/// 都是填充与描边的正当用法（热力格、圆点、choropleth），不命中。
+///
+/// 已知局限：本守卫逐行匹配、不解析元素，所以只抓得住「`<text` 与 class 写在同一行」的写法；
+/// 把 class 折到下一行的 `<text>` 会漏掉。新增 SVG 文字时请沿用 `fill-*-text`。
 fn has_fill_token_as_text(line: &str) -> bool {
-  ["hp", "xp", "gold", "win"]
-    .iter()
-    .any(|t| line.contains(&format!("text-[color:var(--pxl-{t})]")))
+  const TOKENS: [&str; 4] = ["hp", "xp", "gold", "win"];
+  let classes = class_tokens(line);
+  let is_svg_text = line.contains("<text");
+  TOKENS.iter().any(|t| {
+    let (text, text_alpha) = (format!("text-{t}"), format!("text-{t}/"));
+    let (fill, fill_alpha) = (format!("fill-{t}"), format!("fill-{t}/"));
+    line.contains(&format!("text-[color:var(--pxl-{t})]"))
+      || classes.iter().any(|(_, base)| {
+        *base == text
+          || base.starts_with(&text_alpha)
+          || (is_svg_text && (*base == fill || base.starts_with(&fill_alpha)))
+      })
+  })
 }
 
 /// §11 ⑥：模糊 / 渐变。
@@ -946,6 +969,41 @@ mod tests {
     assert!(!has_fill_token_as_text(
       "class=\"text-[color:var(--pxl-ink)]\""
     ));
+    // 基础类写法曾经溜得过去（`text-gold` 在浅色主题只有 1.27:1）；文字专用 token 与
+    // 背景 / 描边的正当用法不算
+    assert!(has_fill_token_as_text(
+      "class=\"font-mono text-lg text-gold\""
+    ));
+    assert!(has_fill_token_as_text("class=\"hover:text-win/50\""));
+    assert!(has_fill_token_as_text("class=\"text-hp\""));
+    assert!(has_fill_token_as_text("class=\"dark:text-xp\""));
+    assert!(!has_fill_token_as_text("class=\"text-gold-text\""));
+    assert!(!has_fill_token_as_text(
+      "class=\"text-hp-text text-win-text\""
+    ));
+    assert!(!has_fill_token_as_text(
+      "class=\"bg-gold border-gold bg-win/10\""
+    ));
+    // SVG 文字：字色是 `fill`。`<text class="fill-gold">` 曾溜过去（浅色主题只有 1.39:1）。
+    assert!(has_fill_token_as_text(
+      r#"<text x="-6" font-size="11" class="fill-gold">{pct}</text>"#
+    ));
+    assert!(has_fill_token_as_text(
+      r#"<text class="fill-win/70">x</text>"#
+    ));
+    assert!(!has_fill_token_as_text(
+      r#"<text x="-6" class="fill-gold-text">{pct}</text>"#
+    ));
+    // 几何上的填充是正当用法（热力格 / 圆点 / choropleth），不能误伤。
+    assert!(!has_fill_token_as_text(
+      r#"<circle r="3" class="fill-gold/70" />"#
+    ));
+    assert!(!has_fill_token_as_text(
+      r#"class=if m { "fill-win/70" } else { "fill-xp/70" }"#
+    ));
+    assert!(!has_fill_token_as_text(r#""fill-win/10 stroke-win/70","#));
+    // 已知局限：逐行匹配，`<text` 与 class 不在同一行就漏掉（文档里写明了，别当成已覆盖）。
+    assert!(!has_fill_token_as_text(r#"  class="fill-gold""#));
     assert!(has_blur_or_gradient("class=\"backdrop-blur-sm\""));
     assert!(has_blur_or_gradient("class=\"blur-lg\""));
     assert!(has_blur_or_gradient("class=\"drop-shadow-md\""));

@@ -1,6 +1,6 @@
 # 外部数据同步规范
 
-> **这份文档解决什么**：项目里有三份数据从外部拉来，会不定期更新。本文规定它们的来源、产物、
+> **这份文档解决什么**：项目里有四份数据从外部拉来，会不定期更新。本文规定它们的来源、产物、
 > 来源戳的结构与口径、新鲜度判定矩阵、四个命令、CI 流程与验收方式。
 >
 > **它是规范，不是教程**：每条都对应代码里的实现（正文标注文件与函数）。行为改了必须同步改这里；
@@ -11,7 +11,7 @@
 ## 1. 模型
 
 ```
-上游（HTTP） ──► 生成器（ham-web-tools dxcc / dxcc-map / dataset）
+上游（HTTP） ──► 生成器（ham-web-tools dxcc / dxcc-map / cn-map / dataset）
                       │
                       ├─► 产物（提交入库）
                       └─► 来源戳（产物头部注释 / data/provenance/*.source.json）
@@ -34,12 +34,13 @@ check-data-sync（离线，挂 cargo make check）      check-data-freshness（�
 
 ## 2. 数据源与产物
 
-### 2.1 三个源
+### 2.1 四个源
 
 | 数据 | 生成器 | 上游 | 默认地址 | 关系 |
 | --- | --- | --- | --- | --- |
 | DXCC 前缀表 | `dxcc`（`dxcc.rs`） | AD1C 的 cty.csv | `https://www.country-files.com/bigcty/cty.csv` | 逐行转写 |
 | DXCC 实体边界 | `dxcc-map`（`dxcc_map.rs`） | Natural Earth 1:110m | `https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson` | 派生 |
+| 中国省级边界 | `cn-map`（`cn_map.rs`） | Natural Earth 1:50m 州省 | `https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_1_states_provinces.geojson` | 派生 |
 | 题库 | `dataset`（`dataset.rs`） | 第三方 CSV 仓库 | `https://raw.githubusercontent.com/xiedada05/crac-amateur-radio-exam-questions-2025-csv/main` | 派生（多文件） |
 
 ### 2.2 两种关系决定判定方式
@@ -62,6 +63,7 @@ check-data-sync（离线，挂 cargo make check）      check-data-freshness（�
 | --- | --- | --- |
 | `crates/core/data/dxcc.txt` | `dxcc` | 文件头 `#` 注释 |
 | `public/dxcc-entities.bin` | `dxcc-map` | `data/provenance/public/dxcc-entities.bin.source.json` |
+| `public/cn-provinces.bin` | `cn-map` | `data/provenance/public/cn-provinces.bin.source.json` |
 | `public/questions/{A,B,C,full}.json`、`public/questions/images/*`、`public/questions/search-index.json` | `dataset` | `data/provenance/public/questions/config.json.source.json` |
 
 两点容易误会：
@@ -75,12 +77,12 @@ check-data-sync（离线，挂 cargo make check）      check-data-freshness（�
 
 ### 2.4 谁进这套机制、谁不进
 
-仓库里带「外部来源」的东西不止上面三份，但**不该用同一套办法**。按「上游能不能对拍」分四桶：
+仓库里带「外部来源」的东西不止上面四份，但**不该用同一套办法**。按「上游能不能对拍」分四桶：
 
 | 桶 | 例子 | 判新旧的方式 | 现状 |
 | --- | --- | --- | --- |
 | A 可下载、可逐字比对 | `dxcc.txt`（cty.csv） | 摘要 | 已纳入 `data-freshness` |
-| B 可下载、只能比校验头 | `dxcc-entities.bin`、题库 | 条件 `HEAD`（题库逐文件） | 已纳入 |
+| B 可下载、只能比校验头 | `dxcc-entities.bin`、`cn-provinces.bin`、题库 | 条件 `HEAD`（题库逐文件） | 已纳入 |
 | C 人工转录、上游是 HTML / 法规页 | `crates/core/data/gear-rx.txt`、`crates/core/data/radio-law.txt`、`toroid::CORES`、`provenance::PROVENANCES` 的 8 个知识域、`diy_projects::COST_CHECKED_ON` | **只能看核对日期的年龄** | 已纳入 `data-staleness`（§6.2） |
 | D 第三方 vendored、版本固定 | `public/vendor/katex`、`public/fonts/*`、`pixel/sprite_art.rs`（源自 pixelarticons） | 记版本 + 人工升级 | **不自动同步**（版本记录见下） |
 
@@ -168,6 +170,11 @@ worker bundles / wasm / `sw.js` / `sitemap.xml` / PWA 图标 / `style/pixel/sche
   就该重建——此前两者之间没有任何记录，看不出来。
 - 题库的解析来自 `data/explanations.json`，所以边车记着它的摘要。解析改了却忘了重建题库，会被抓出来。
 
+`cn-provinces.bin` **刻意没有 `inputs`**：它的几何纯粹由上游 GeoJSON 决定，省份名与分区号
+的对应关系在 `reference::CHINA_PROVINCES` 里，但改那张表（比如调措辞）不该触发一次联网重建。
+「产物里的地名码集合 == 省份表」由 `cn_map` 的单测 `committed_artifact_covers_exactly_the_province_table`
+离线守着 —— 改了表却没重建，`cargo make test` 会直接红。
+
 **摘要口径**（`provenance::input_digest`）：`.txt` 数据文件只摘**数据行**、跳过 `#` 注释头；
 其余文件按原始字节。原因：`dxcc.txt` 的注释头里有抓取时间，上游没变、只重跑了一遍
 `cargo make dxcc`，文件也会变；摘要若把注释头算进去，依赖它的 `.bin` 就会被误判过期。
@@ -253,14 +260,14 @@ worker bundles / wasm / `sw.js` / `sitemap.xml` / PWA 图标 / `style/pixel/sche
 
 | 命令 | 联网 | 读 | 写 | 用在 |
 | --- | --- | --- | --- | --- |
-| `cargo make data-sync` | 要 | 上游 | 三个产物 + 三份真戳 | 人触发重新生成（CI 由 `regenerate` job 跑） |
+| `cargo make data-sync` | 要 | 上游 | 四个产物 + 四份真戳 | 人触发重新生成（CI 由 `regenerate` job 跑） |
 | `cargo make data-sync-check` | 不要 | 产物 + 边车 + `inputs` 指向的本地文件 | 无 | **已在 `cargo make check` / `ci` 里**（§6.1） |
 | `cargo make data-freshness` | 要 | 戳 + 上游 | 无 | 本地想知道「上游动没动」 |
 | `cargo make data-stamp` | 不要 | 既有产物 | 只补戳，**内容一个字不动** | 引入戳之前的旧产物（一次性） |
 | `cargo make data-staleness` | 不要 | 各处核对日期 | 无 | **已在 `cargo make check` / `ci` 里**，到期只告警（§6.2） |
 | `cargo make data-staleness-strict` | 不要 | 各处核对日期 | 无 | 到期也判失败；CI 周检 `staleness` job 用，本地复核前也可跑 |
 
-对应的子命令：`check-data-sync` / `stamp-data` / `check-data-freshness [--only dxcc,dxcc-map,dataset]
+对应的子命令：`check-data-sync` / `stamp-data` / `check-data-freshness [--only dxcc,dxcc-map,cn-map,dataset]
 [--strict]` / `check-data-staleness [--max-months 6] [--warn-only]`。
 
 ### 5.2 生成器与本地输入
@@ -269,6 +276,7 @@ worker bundles / wasm / `sw.js` / `sitemap.xml` / PWA 图标 / `style/pixel/sche
 | --- | --- | --- | --- |
 | `dxcc` | `--input <cty.csv>` | `--url` | 本地输入时 `source` 记成 `file://cty.csv` |
 | `dxcc-map` | `--input <geojson>`（也接受旧版 JSON，走 `convert_json_to_bin`） | `--url` | 任何情况下都记 `dxcc.txt` 为输入 |
+| `cn-map` | `--input <geojson>` | `--url` | 只取 `adm0_a3 = CHN` 的 31 个要素；地名码与 `CHINA_PROVINCES` 对齐，对不上会打印报告 |
 | `dataset` | `DATASET_DIR` / `--dataset-dir` | `DATASET_REMOTE` / `--remote` | 本地目录时 `source` 记成 `file://<目录名>` |
 
 本地输入意味着「这批产物不来自上游」，`data-freshness` 会归为 `LocalOnly`（绿、不比对）；
@@ -295,7 +303,7 @@ cargo make explanations-apply   # 把解析写回 public/questions/*.json（离�
 
 `data-stamp` 记的是「既有产物自身的摘要」，并写 `backfilled` 标记（文本头里是 `# 补戳: 是`）。
 新鲜度检查见到这个标记，**不去比摘要，也不联网**，直接报「来源戳是补写的，需要重新生成」。
-下次真正执行 `cargo make dxcc` / `dxcc-map` / `dataset` 时写入真戳，标记随之消失。
+下次真正执行 `cargo make dxcc` / `dxcc-map` / `cn-map` / `dataset` 时写入真戳，标记随之消失。
 
 两个已知副作用：
 
@@ -317,9 +325,9 @@ cargo make explanations-apply   # 把解析写回 public/questions/*.json（离�
 
 | 检查 | 抓什么 | 修复提示 |
 | --- | --- | --- |
-| 产物有没有戳 | `dxcc.txt` 的头部、`.bin` / 题库的边车 | `cargo make dxcc` / `dxcc-map` / `dataset` |
+| 产物有没有戳 | `dxcc.txt` 的头部、两个 `.bin` / 题库的边车 | `cargo make dxcc` / `dxcc-map` / `cn-map` / `dataset` |
 | 戳字段齐不齐 | `dxcc.txt` 的摘要长度、抓取时间 | `cargo make dxcc` |
-| 依赖变没变 | 边车 `inputs` 里每个文件的当前摘要 | `.bin` → `dxcc-map`；题库 → `explanations-apply`（离线）或 `dataset`（重新拉上游） |
+| 依赖变没变 | 边车 `inputs` 里每个文件的当前摘要（`cn-provinces.bin` 没有 `inputs`，见 §2.3） | `dxcc-entities.bin` → `dxcc-map`；题库 → `explanations-apply`（离线）或 `dataset`（重新拉上游） |
 
 输出与退出码：
 
@@ -443,7 +451,7 @@ inputs.regenerate` 时运行。
 
 - **混合**：一个源有新版本、另一个连不上时 `updates` 与 `unreachable` 同时为真；`check` 因不可达
   变红，`regenerate` **不会**运行（勾了也一样）。这是有意的：上游拉不到时重新生成同样会失败。
-- **补戳期间**（三个产物都是补戳时）：
+- **补戳期间**（仅当仓库里**存在**补戳产物时；现状没有，见 §11 第 5 条）：
   - **定时任务会一直红**。`regenerate` 只有 `workflow_dispatch` 有，`schedule` 触发时恒为 false，
     所以每周都会落到「需要重新生成但没勾 regenerate → 失败」。要消掉只能手动 dispatch 一次
     （勾 `regenerate`）并把 PR 合掉；不想每周收红灯就先注释掉 `schedule`。
@@ -472,8 +480,10 @@ annotation，并给出人工开 PR 的 compare 链接——此时分支已经推
 但对同时满足下面两条的 PR 主动跳过 `docker` / `e2e`：
 
 1. 分支名是 `chore/data-sync`，且 head repo 是本仓库（fork 起个同名分支白蹭不到）；
-2. `git diff` 确认改动**全部**落在数据产物路径下（`crates/core/data/dxcc.txt`、
-   `public/dxcc-entities.bin`、`public/questions/`、`data/provenance/`）。
+2. `git diff` 确认改动**全部**落在数据产物路径下：三个文件按**整串**匹配（`crates/core/data/dxcc.txt`、
+   `public/dxcc-entities.bin`、`public/cn-provinces.bin`），两个目录按前缀匹配（`public/questions/`、
+   `data/provenance/`）。整串匹配是有意的：`public/cn-provinces.bin.js`、`dxcc.txt.bak` 这类「前缀相同」
+   的路径不算数据产物，会按普通 PR 全跑。
 
 只认分支名是不够的：本仓库的协作者也能建一个同名分支塞代码（甚至改 `check.yml` 把门禁删掉），
 那样 PR 上一个门禁都不跑。内容不符就按普通 PR 全跑——门禁只允许往严格的方向失效。跳过的两个 job
@@ -524,12 +534,14 @@ cargo make ci      # 同上 + release 前端构建
 ### 9.3 更接近真实的验收（需要出网）
 
 单测里的联网路径跑在本地桩服务器上（绕开代理变量），只能证明协议行为。真正的验收要看一次
-**补戳换成真戳**之后的运行：
+真实上游的运行——**引入新数据源或给旧产物补戳之后**尤其要做：
 
-1. `workflow_dispatch` 勾 `regenerate` 跑一次，确认 PR 里三个产物都带真戳（`dxcc.txt` 头有
-   `# 上游版本:`，题库边车有 `files`）。
+1. `workflow_dispatch` 勾 `regenerate` 跑一次，确认 PR 里每个产物都带真戳（`dxcc.txt` 头有
+   `# 上游版本:`，`.bin` 边车有 `etag` 或 `last_modified`，题库边车有 `files`）。
 2. 合 PR 后再跑一次定时任务 / 手动触发，确认 `check` 变绿且 summary 里没有「无法判断」。
 3. 若上游不给校验头，确认报告是「无法判断」而不是「没更新」。
+
+本机的快速自检：`cargo make data-freshness`。2026-10-26 的一次结果见 §11 第 3 条。
 
 ---
 
@@ -557,16 +569,23 @@ cargo make ci      # 同上 + release 前端构建
    取不到时戳里就没有 `version`，只能靠摘要比对。
 2. **派生产物的新鲜度只能靠校验头**。上游不给 `ETag` / `Last-Modified` 时只能报「无法判断」；
    这时跑一次 `cargo make dxcc-map` / `dataset` 把校验头记进戳即可。
-3. **联网路径没有打过真实上游**。本地桩服务器验证了 `ETag` → `If-None-Match`、只有
-   `Last-Modified` → `If-Modified-Since`、两者都有时只发 `If-None-Match`、`304` / `200` / 4xx 的
-   区分，以及下载时校验头被原样存进戳。**仍未验证**：country-files.com 与 raw.githubusercontent.com
-   是否真的给出这些校验头。`data-sync.yml` 虽然跑过几轮，但产物全是补戳，`judge` 在联网前就短路，
-   一个请求都没发出去——**补戳期间这条路是盲的**（§7.5）。
-4. **本地 `dxcc.txt` 没有上游期号**。它是补戳产物，头部只有摘要，没有 `# 上游版本:`，「落后上游
-   几期」现在无从核对。另外两套编号别混：戳里记的是 cty.csv 自带的 `VER20261017`，
-   `CTY-3631` / `CTY-3632` 是 AD1C 的发布编号，文件里不会出现。
-5. **当前三个产物都是补戳**。第一次联网重新生成前，`data-freshness` 对它们一律报「来源戳是补写的」
-   （退出码 1）。这是预期行为，不是故障：它在如实说「我不知道这些产物对应上游的哪一期」。
+3. **联网路径只在 raw.githubusercontent.com 上打过真实上游**。本地桩服务器验证了 `ETag` →
+   `If-None-Match`、只有 `Last-Modified` → `If-Modified-Since`、两者都有时只发 `If-None-Match`、
+   `304` / `200` / 4xx 的区分，以及下载时校验头被原样存进戳。真实上游方面：2026-10-26 在本机对
+   raw.githubusercontent.com 跑 `cargo make data-freshness`，`dxcc-map` 与 `cn-map` 的戳里记着
+   `ETag`，条件 `HEAD` 回 `304`，判为「上游无变化」。**仍未验证**：country-files.com 一侧——同一
+   次运行里 `dxcc` 的整份下载以 TLS 错误失败（`received corrupt message of type
+   InvalidContentType`）。本机没有设置任何代理变量，`curl` 直连同一地址也在握手阶段失败
+   （`tlsv1 alert protocol version`），所以问题出在该站点与本机客户端的 TLS 协商，不在工具；
+   CI 的 runner 上是否复现要看实际运行。按设计这种情况只报「连不上」而不判新旧。
+4. **`dxcc.txt` 的期号有两套，别混**。戳里记的是 cty.csv 自带的 `VER20261017`（头部 `# 上游版本:`），
+   `CTY-3631` / `CTY-3632` 是 AD1C 的发布编号，文件里不会出现；所以「落后上游几期」只能按
+   `VER…` 日期核对，不能按发布编号。
+5. **补戳是一次性的迁移手段，现状里没有补戳产物**。`data-stamp` 与 `backfilled` 标记仍在（工具与
+   单测都保留，用于引入戳之前的旧产物）；四个产物现在都带真戳（`dxcc.txt` 头有 `# 上游版本:`，
+   两份 `.bin` 的边车有 `etag`，题库边车有 `files`）。以后若再给**新增**的产物补戳，
+   在第一次联网重新生成前，`data-freshness` 会对它报「来源戳是补写的」（退出码 1）——那是
+   预期行为，不是故障。
 6. **数据同步 PR 少两道门禁**。只跳过 `docker` / `e2e`（`check` 照跑），镜像与浏览器回归要等合并后
    push 到 main 才补跑一次。
 7. **C 桶的检查只判年龄**。`data-staleness` 说的是「该回去看了」，说不了「上游真的变了」——复核完

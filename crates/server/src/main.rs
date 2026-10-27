@@ -84,8 +84,9 @@ fn cache_policy(path: &str) -> Option<&'static str> {
   match path {
     "/" | "/index.html" | "/sw.js" | "/manifest.json" | "/changelog.json" => Some(NO_STORE),
     p if p.starts_with("/questions/") && p.ends_with(".json") => Some("no-cache"),
-    // DXCC 几何二进制：无内容哈希，用协商缓存保证重新生成后能拿到新版本。
-    "/dxcc-entities.bin" => Some("no-cache"),
+    // 几何二进制（DXCC 实体边界 / 中国省级边界）：无内容哈希、会被 `data-sync` 重新生成，
+    // 用协商缓存保证重新生成后能拿到新版本；漏登记时只剩 `Last-Modified` 的启发式缓存。
+    "/dxcc-entities.bin" | "/cn-provinces.bin" => Some("no-cache"),
     // 解码 Worker 入口、各 wasm 胶水与语言包都没有内容哈希：不加协商缓存的话，无 SW 的首访
     // 可能按启发式缓存拿到旧胶水配新 wasm（导入对象不匹配，实例化失败）或新代码配旧语言包。
     "/decode-worker.js" => Some("no-cache"),
@@ -527,7 +528,10 @@ mod tests {
   fn cache_policies() {
     assert_eq!(cache_policy("/sw.js"), Some(NO_STORE));
     assert_eq!(cache_policy("/questions/A.json"), Some("no-cache"));
-    assert_eq!(cache_policy("/dxcc-entities.bin"), Some("no-cache"));
+    // 无内容哈希的几何二进制：重新生成后靠协商缓存拿新版（`cn-provinces.bin` 曾漏登记）。
+    for p in ["/dxcc-entities.bin", "/cn-provinces.bin"] {
+      assert_eq!(cache_policy(p), Some("no-cache"), "{p}");
+    }
     // 无内容哈希的解码 Worker 资源与语言包必须协商缓存。
     for p in [
       "/decode-worker.js",

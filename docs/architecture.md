@@ -79,6 +79,7 @@
     ├── fonts/              # 像素字体分片与 Geist（本地托管，许可见 fonts/LICENSES）
     ├── vendor/             # 自托管第三方资源（KaTeX）
     ├── dxcc-entities.bin   # DXCC 实体边界（世界地图着色用）
+    ├── cn-provinces.bin    # 中国省级边界（分区号地图用）
     ├── manifest.json       # PWA manifest
     └── pwa-*.svg / *.png   # 图标设计源与生成物（见「PWA 与离线」）
 ```

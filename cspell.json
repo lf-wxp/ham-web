@@ -107,6 +107,7 @@
 		"CTCSS",
 		"cuadrícula",
 		"cuenta",
+		"d'Ivoire",
 		"dasharray",
 		"datas",
 		"Datelike",
@@ -167,6 +168,7 @@
 		"Equirectangular",
 		"esac",
 		"Español",
+		"Eswatini",
 		"etapa",
 		"etiqueta",
 		"evals",
@@ -297,6 +299,7 @@
 		"Leitner",
 		"leptos",
 		"lerp",
+		"Leste",
 		"lgwin",
 		"licence",
 		"liga",
@@ -506,6 +509,7 @@
 		"susceptance",
 		"svidaniya",
 		"Swatinem",
+		"Swatini",
 		"SWPC",
 		"Symb",
 		"symbolbuf",
@@ -547,9 +551,11 @@
 		"valuetext",
 		"varicode",
 		"varidecode",
+		"varint",
 		"venv",
 		"verts",
 		"vhea",
+		"viewbox",
 		"VIMAG",
 		"visibilitychange",
 		"visualisation",
@@ -587,6 +593,8 @@
 		"Yagi",
 		"ZARYA",
 		"ZCZC",
-		"zona"
+		"zona",
+		"Δlat",
+		"Δlon"
 	]
 }

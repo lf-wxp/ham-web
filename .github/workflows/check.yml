@@ -57,10 +57,13 @@ jobs:
           skip=false
           if [ "$HEAD_REF" = "chore/data-sync" ] && [ "$HEAD_REPO" = "$REPO" ]; then
             if git fetch --no-tags origin "$BASE_REF" && changed=$(git diff --name-only "origin/$BASE_REF...HEAD"); then
-              # 白名单与 `cargo make data-sync`（dxcc / dxcc-map / dataset）的产物一致；
-              # 多出一个文件就不跳。
+              # 白名单与 `cargo make data-sync`（dxcc / dxcc-map / cn-map / dataset）的产物一致；
+              # 多出一个文件就不跳。精确文件名要带行尾锚点：否则 `public/cn-provinces.bin.js`、
+              # `crates/core/data/dxcc.txt.bak` 这类「前缀相同」的路径也会被当成数据产物而绕过门禁。
+              exact='^(crates/core/data/dxcc\.txt|public/dxcc-entities\.bin|public/cn-provinces\.bin)$'
+              prefix='^(public/questions/|data/provenance/)'
               if [ -n "$changed" ] && ! printf '%s\n' "$changed" |
-                grep -qvE '^(crates/core/data/dxcc\.txt|public/dxcc-entities\.bin|public/questions/|data/provenance/)'; then
+                grep -qvE "$exact|$prefix"; then
                 skip=true
               fi
             fi

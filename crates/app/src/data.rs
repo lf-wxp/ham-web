@@ -207,6 +207,73 @@ pub async fn fetch_bytes(url: &str) -> Result<Vec<u8>, AppError> {
   Ok(js_sys::Uint8Array::new(&buf).to_vec())
 }
 
+/// 一份「拉取 + 解码」型二进制资源的加载状态。
+///
+/// 用一个枚举而不是 `loading` / `failed` 两个布尔：两个布尔能凑出「正在加载且已失败」这种
+/// 不存在的组合，视图里还得记住先判哪个。
+#[derive(Debug, Clone, PartialEq)]
+pub enum LoadState<T> {
+  /// 请求还没回来。
+  Loading,
+  /// 拉到了并解码成功。
+  Ready(T),
+  /// 网络失败、HTTP 非 2xx，或字节无法按格式解码（不区分原因：页面只需要「失败」一档文案）。
+  Failed,
+}
+
+impl<T: Clone + Default> LoadState<T> {
+  /// 就绪的值；还在加载或失败时给 `T::default()`（空几何），供只接受 `Signal<T>` 的下游组件用。
+  /// 下游只在就绪分支里渲染，所以这个默认值从不会被画出来。
+  #[must_use]
+  pub fn ready_or_default(&self) -> T {
+    match self {
+      Self::Ready(v) => v.clone(),
+      Self::Loading | Self::Failed => T::default(),
+    }
+  }
+}
+
+/// 把 `ReadSignal<LoadState<T>>` 变成下游要的 `Signal<T>`，**只克隆一次**。
+///
+/// 直接写 `Signal::derive(move || load.get().ready_or_default())` 会先克隆整个 `LoadState`
+/// （含全部几何）、再克隆里面的值，等于每次读都复制两份。这里用 `with` 借用 `LoadState`，
+/// 只在取出就绪值时克隆一次 —— 与改动前读 `RwSignal<T>` 的开销相同（切波段 / 日志变化时
+/// 下游会反复读它）。
+pub fn ready_signal<T>(
+  load: leptos::prelude::ReadSignal<LoadState<T>>,
+) -> leptos::prelude::Signal<T>
+where
+  T: Clone + Default + Send + Sync + 'static,
+{
+  use leptos::prelude::*;
+  Signal::derive(move || load.with(LoadState::ready_or_default))
+}
+
+/// 拉取 `url` 并用 `decode` 解码，返回随结果更新的 [`LoadState`]。
+///
+/// 供「几何二进制」类地图组件共用（`dxcc-entities.bin`、`cn-provinces.bin`）：它们的差别只有
+/// 地址、解码函数与失败时的文案，视图与文案仍由调用方决定。必须在组件体里调用（信号归属于
+/// 当前组件，组件销毁后结果会被丢弃而不是写入已失效的信号）。
+pub fn load_binary<T, F>(url: &'static str, decode: F) -> leptos::prelude::ReadSignal<LoadState<T>>
+where
+  T: Send + Sync + 'static,
+  F: FnOnce(&[u8]) -> Option<T> + 'static,
+{
+  // 通配导入把 `try_set` 所在的信号 trait 带进作用域（popover / dialog 同样这样用）。
+  use leptos::prelude::*;
+
+  let (state, set_state) = signal(LoadState::Loading);
+  leptos::task::spawn_local(async move {
+    let next = match fetch_bytes(url).await {
+      Ok(bytes) => decode(&bytes).map_or(LoadState::Failed, LoadState::Ready),
+      Err(_) => LoadState::Failed,
+    };
+    // 组件在请求回来之前就被销毁时，信号已被回收：`try_set` 把值还回来，丢弃即可（`set` 会 panic）。
+    let _ = set_state.try_set(next);
+  });
+  state
+}
+
 /// 持有 `setTimeout` 句柄，析构时清除，避免超时定时器在请求提前结束后空转。
 struct ClearTimeout(i32);
 

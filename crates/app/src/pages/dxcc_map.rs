@@ -3,15 +3,14 @@
 use std::collections::BTreeSet;
 
 use ham_web_core::award_progress::AwardProgress;
-use ham_web_core::dxcc_map::{DxccShapes, decode_binary};
+use ham_web_core::dxcc_map::decode_binary;
 use ham_web_core::log_stats::BAND_ORDER;
 use leptos::prelude::*;
-use leptos::task::spawn_local;
 use leptos_router::NavigateOptions;
 use leptos_router::hooks::use_navigate;
 
 use crate::components::common::{Legend, PageContainer, PageHeader};
-use crate::data;
+use crate::data::{self, LoadState};
 use crate::i18n::{t, tp};
 use crate::pages::log::{StatsScopeSelect, scoped_log_entries, use_stats_scope};
 use crate::pages::map::{DxccOverlay, MapView};
@@ -22,20 +21,8 @@ use crate::util::set_title;
 pub fn DxccMapPage() -> impl IntoView {
   set_title("radio.dxcc-world-map");
 
-  let shapes = RwSignal::new(DxccShapes::default());
-  let loading = RwSignal::new(true);
-  let load_error = RwSignal::new(false);
-
-  spawn_local(async move {
-    match data::fetch_bytes("/dxcc-entities.bin").await {
-      Ok(bytes) => match decode_binary(&bytes) {
-        Some(s) => shapes.set(s),
-        None => load_error.set(true),
-      },
-      Err(_) => load_error.set(true),
-    }
-    loading.set(false);
-  });
+  let load = data::load_binary("/dxcc-entities.bin", decode_binary);
+  let shapes = data::ready_signal(load);
 
   // 统计口径与日志页 / `/stats` 共用：选了某个台站，地图也只按那个台站的通联着色。
   let scope = use_stats_scope();
@@ -156,22 +143,24 @@ pub fn DxccMapPage() -> impl IntoView {
 
         // 地图
         <section class="pxl-card border bg-card p-4">
-          {move || {
-            if loading.get() {
+          {move || match load.get() {
+            LoadState::Loading => {
               view! {
                 <div class="py-12 text-center text-sm text-muted-foreground">
                   {move || t("radio.loading-map-data")}
                 </div>
               }
               .into_any()
-            } else if load_error.get() {
+            }
+            LoadState::Failed => {
               view! {
                 <div class="py-12 text-center text-sm text-muted-foreground">
                   {move || t("radio.failed-to-load-dxcc")}
                 </div>
               }
               .into_any()
-            } else {
+            }
+            LoadState::Ready(_) => {
               view! {
                 <MapView>
                   <DxccOverlay shapes=shapes worked=worked confirmed=confirmed on_entity_click=on_entity_click />

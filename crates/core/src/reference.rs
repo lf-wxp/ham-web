@@ -85,6 +85,205 @@ pub const CALL_AREAS: &[CallArea] = &[
   },
 ];
 
+/// 省级行政区与它所辖的分区号（分区号地图用）。
+///
+/// 只列呼号分区 1–0 覆盖的 31 个省级行政区：港澳台的呼号归入其他 DXCC 实体，
+/// 不在这套分区号里。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Province {
+  /// ISO 3166-2 的地名码后缀（`CN-BJ` → `BJ`），与 `public/cn-provinces.bin` 的 key 对应。
+  pub code: &'static str,
+  /// 简称，措辞与 [`CALL_AREAS`] 的 `regions` 一致（同一份官方分区表）。
+  pub name: &'static str,
+  /// 分区号（呼号第三位数字）。
+  pub area: &'static str,
+}
+
+/// 31 个省级行政区 → 分区号，按 [`CALL_AREAS`] 的分区顺序排列。
+pub const CHINA_PROVINCES: &[Province] = &[
+  Province {
+    code: "BJ",
+    name: "北京",
+    area: "1",
+  },
+  Province {
+    code: "HL",
+    name: "黑龙江",
+    area: "2",
+  },
+  Province {
+    code: "JL",
+    name: "吉林",
+    area: "2",
+  },
+  Province {
+    code: "LN",
+    name: "辽宁",
+    area: "2",
+  },
+  Province {
+    code: "TJ",
+    name: "天津",
+    area: "3",
+  },
+  Province {
+    code: "HE",
+    name: "河北",
+    area: "3",
+  },
+  Province {
+    code: "NM",
+    name: "内蒙古",
+    area: "3",
+  },
+  Province {
+    code: "SX",
+    name: "山西",
+    area: "3",
+  },
+  Province {
+    code: "SH",
+    name: "上海",
+    area: "4",
+  },
+  Province {
+    code: "SD",
+    name: "山东",
+    area: "4",
+  },
+  Province {
+    code: "JS",
+    name: "江苏",
+    area: "4",
+  },
+  Province {
+    code: "ZJ",
+    name: "浙江",
+    area: "5",
+  },
+  Province {
+    code: "JX",
+    name: "江西",
+    area: "5",
+  },
+  Province {
+    code: "FJ",
+    name: "福建",
+    area: "5",
+  },
+  Province {
+    code: "AH",
+    name: "安徽",
+    area: "6",
+  },
+  Province {
+    code: "HA",
+    name: "河南",
+    area: "6",
+  },
+  Province {
+    code: "HB",
+    name: "湖北",
+    area: "6",
+  },
+  Province {
+    code: "HN",
+    name: "湖南",
+    area: "7",
+  },
+  Province {
+    code: "GD",
+    name: "广东",
+    area: "7",
+  },
+  Province {
+    code: "GX",
+    name: "广西",
+    area: "7",
+  },
+  Province {
+    code: "HI",
+    name: "海南",
+    area: "7",
+  },
+  Province {
+    code: "SC",
+    name: "四川",
+    area: "8",
+  },
+  Province {
+    code: "CQ",
+    name: "重庆",
+    area: "8",
+  },
+  Province {
+    code: "GZ",
+    name: "贵州",
+    area: "8",
+  },
+  Province {
+    code: "YN",
+    name: "云南",
+    area: "8",
+  },
+  Province {
+    code: "SN",
+    name: "陕西",
+    area: "9",
+  },
+  Province {
+    code: "GS",
+    name: "甘肃",
+    area: "9",
+  },
+  Province {
+    code: "NX",
+    name: "宁夏",
+    area: "9",
+  },
+  Province {
+    code: "QH",
+    name: "青海",
+    area: "9",
+  },
+  Province {
+    code: "XJ",
+    name: "新疆",
+    area: "0",
+  },
+  Province {
+    code: "XZ",
+    name: "西藏",
+    area: "0",
+  },
+];
+
+/// 按 ISO 3166-2 地名码后缀（如 `BJ`）查省份。
+#[must_use]
+pub fn province_by_code(code: &str) -> Option<&'static Province> {
+  CHINA_PROVINCES.iter().find(|p| p.code == code)
+}
+
+/// 分区号 → 地图配色（HSL 字符串，SVG `fill` 可直接用）。
+///
+/// 色相是**固定的十档**而不是按分区号均分：1（红）与 0 在均分方案里正好隔着色相环的
+/// 接缝，只差 36°，肉眼容易混；这里把 0 推到品红端（310°），与红、紫都拉开。
+/// 相邻分区再交替明度（按分区在 [`CALL_AREAS`] 里的**序号**奇偶，不是数字本身 ——
+/// 「0」排在最后，序号是 9），同一分区号在任何页面都得到同一颜色。
+///
+/// 不在表里的分区号退回第一档（红）；调用方应先确认分区号合法（地图组件只画
+/// [`province_by_code`] 查得到的省）。
+#[must_use]
+pub fn call_area_color(area: &str) -> String {
+  /// 按 [`CALL_AREAS`] 顺序排列的色相。
+  const HUES: [f64; 10] = [
+    0.0, 40.0, 70.0, 120.0, 160.0, 190.0, 215.0, 245.0, 275.0, 310.0,
+  ];
+  let idx = CALL_AREAS.iter().position(|a| a.digit == area).unwrap_or(0);
+  let hue = HUES[idx.min(HUES.len() - 1)];
+  crate::zone::area_hsl(hue, idx.is_multiple_of(2))
+}
+
 /// RST 信号报告的一组刻度。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RstScale {
@@ -381,6 +580,11 @@ pub const PHRASES: &[Phrase] = &[
 mod tests {
   use super::*;
 
+  /// 某个分区号包含的省份（顺序与 [`CALL_AREAS`] 的地区文字一致）。只有对齐测试用，不进公开 API。
+  fn provinces_in_area(area: &str) -> Vec<&'static Province> {
+    CHINA_PROVINCES.iter().filter(|p| p.area == area).collect()
+  }
+
   #[test]
   fn license_and_areas_complete() {
     assert_eq!(LICENSE_CLASSES.len(), 3);
@@ -390,6 +594,78 @@ mod tests {
     assert!(EMISSION_DESIGNATION.len() >= 4);
     assert!(EMISSION_TYPES.len() >= 15, "发射类别完整表至少 15 项");
     assert!(!PHRASES.is_empty());
+  }
+
+  /// 省份表必须与分区表逐字对齐：`CALL_AREAS` 的「黑龙江 · 吉林 · 辽宁」就是 2 区的三个省。
+  /// 两处各写一份是会漂的，这条把它们钉死。
+  #[test]
+  fn provinces_match_the_call_area_table() {
+    assert_eq!(CHINA_PROVINCES.len(), 31);
+    for area in CALL_AREAS {
+      let expected: Vec<&str> = area.regions.split(" · ").collect();
+      let got: Vec<&str> = provinces_in_area(area.digit)
+        .iter()
+        .map(|p| p.name)
+        .collect();
+      assert_eq!(got, expected, "{} 区的省份与分区表不一致", area.digit);
+    }
+    // 每个省份的分区号都得是分区表里有的（写错数字时不会被 split 对比漏掉）。
+    for p in CHINA_PROVINCES {
+      assert!(
+        CALL_AREAS.iter().any(|a| a.digit == p.area),
+        "{} 的分区号 {} 不在分区表里",
+        p.name,
+        p.area
+      );
+    }
+  }
+
+  #[test]
+  fn province_codes_are_unique_and_resolvable() {
+    let mut codes: Vec<&str> = CHINA_PROVINCES.iter().map(|p| p.code).collect();
+    let total = codes.len();
+    codes.sort_unstable();
+    codes.dedup();
+    assert_eq!(codes.len(), total, "ISO 地名码重复");
+    for p in CHINA_PROVINCES {
+      assert_eq!(province_by_code(p.code).map(|x| x.name), Some(p.name));
+    }
+    assert!(province_by_code("TW").is_none(), "港澳台不在呼号分区表里");
+  }
+
+  #[test]
+  fn call_area_colours_are_stable_and_distinct() {
+    let colors: Vec<String> = CALL_AREAS
+      .iter()
+      .map(|a| call_area_color(a.digit))
+      .collect();
+    assert_eq!(colors[0], call_area_color("1"));
+    let unique: std::collections::BTreeSet<&String> = colors.iter().collect();
+    assert_eq!(unique.len(), colors.len(), "十个分区号必须有十种颜色");
+  }
+
+  /// 只比「互不相同」看不出色相表被改、明度奇偶口径被换：把十档的精确输出钉死。
+  /// 明度按分区在表里的**序号**奇偶交替（「0」序号是 9，所以是较暗的 45%），不是数字本身。
+  #[test]
+  fn call_area_colours_match_the_documented_scheme() {
+    let expected = [
+      ("1", "hsl(0 68% 62%)"),
+      ("2", "hsl(40 68% 45%)"),
+      ("3", "hsl(70 68% 62%)"),
+      ("4", "hsl(120 68% 45%)"),
+      ("5", "hsl(160 68% 62%)"),
+      ("6", "hsl(190 68% 45%)"),
+      ("7", "hsl(215 68% 62%)"),
+      ("8", "hsl(245 68% 45%)"),
+      ("9", "hsl(275 68% 62%)"),
+      ("0", "hsl(310 68% 45%)"),
+    ];
+    for (digit, color) in expected {
+      assert_eq!(call_area_color(digit), color, "{digit} 区");
+    }
+    // 不在表里的分区号退回第一档（调用方应先确认分区号合法）。
+    assert_eq!(call_area_color("x"), call_area_color("1"));
+    assert_eq!(call_area_color(""), call_area_color("1"));
   }
 
   #[test]

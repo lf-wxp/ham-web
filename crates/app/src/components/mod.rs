@@ -2,6 +2,7 @@
 
 pub mod bank_selector;
 pub mod bubble;
+pub mod call_area_map;
 pub mod cat_control;
 pub mod common;
 pub mod exam;

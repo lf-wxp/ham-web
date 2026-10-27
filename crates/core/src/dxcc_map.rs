@@ -104,6 +104,34 @@ fn encode_varint(v: i32, out: &mut Vec<u8>) {
   }
 }
 
+/// 编码一个环：`u16 点数 · i16 首点 lon×10 · i16 首点 lat×10 · 其后每点 zigzag-varint Δlon/Δlat`。
+///
+/// 供 [`encode_binary`] 与 [`crate::province_map`] 共用：两种产物只在「环外面」的字段不同，
+/// 环本身的格式只写这一份。
+///
+/// # Panics
+/// 环的点数超过 `u16::MAX` 时 panic（生成器的输入是简化后的几百个点，超限是上游数据异常）。
+pub(crate) fn encode_ring(ring: &[(f64, f64)], out: &mut Vec<u8>) {
+  out.extend_from_slice(
+    &u16::try_from(ring.len())
+      .expect("point count exceeds u16")
+      .to_be_bytes(),
+  );
+  let mut prev = (0i32, 0i32);
+  for (i, &(lon, lat)) in ring.iter().enumerate() {
+    let x = (lon * 10.0).round() as i32;
+    let y = (lat * 10.0).round() as i32;
+    if i == 0 {
+      out.extend_from_slice(&(x as i16).to_be_bytes());
+      out.extend_from_slice(&(y as i16).to_be_bytes());
+    } else {
+      encode_varint(x - prev.0, out);
+      encode_varint(y - prev.1, out);
+    }
+    prev = (x, y);
+  }
+}
+
 /// 把几何编码为紧凑二进制。
 #[must_use]
 pub fn encode_binary(shapes: &DxccShapes) -> Vec<u8> {
@@ -118,37 +146,25 @@ pub fn encode_binary(shapes: &DxccShapes) -> Vec<u8> {
     out.extend_from_slice(&s.dxcc.to_be_bytes());
     out.push(u8::try_from(s.polys.len()).expect("ring count exceeds u8"));
     for ring in &s.polys {
-      out.extend_from_slice(
-        &u16::try_from(ring.len())
-          .expect("point count exceeds u16")
-          .to_be_bytes(),
-      );
-      let mut prev = (0i32, 0i32);
-      for (i, &(lon, lat)) in ring.iter().enumerate() {
-        let x = (lon * 10.0).round() as i32;
-        let y = (lat * 10.0).round() as i32;
-        if i == 0 {
-          out.extend_from_slice(&(x as i16).to_be_bytes());
-          out.extend_from_slice(&(y as i16).to_be_bytes());
-        } else {
-          encode_varint(x - prev.0, &mut out);
-          encode_varint(y - prev.1, &mut out);
-        }
-        prev = (x, y);
-      }
+      encode_ring(ring, &mut out);
     }
   }
   out
 }
 
-fn read_u8(bytes: &[u8], pos: &mut usize) -> Option<u8> {
+pub(crate) fn read_u8(bytes: &[u8], pos: &mut usize) -> Option<u8> {
   let b = *bytes.get(*pos)?;
   *pos += 1;
   Some(b)
 }
 
-fn read_u16(bytes: &[u8], pos: &mut usize) -> Option<u16> {
+pub(crate) fn read_u16(bytes: &[u8], pos: &mut usize) -> Option<u16> {
   Some((u16::from(read_u8(bytes, pos)?) << 8) | u16::from(read_u8(bytes, pos)?))
+}
+
+/// 读一个大端 `i16`（首点坐标用）。
+pub(crate) fn read_i16(bytes: &[u8], pos: &mut usize) -> Option<i16> {
+  read_u16(bytes, pos).map(|v| v as i16)
 }
 
 /// zigzag + LEB128 解码。
@@ -169,6 +185,30 @@ fn read_varint(bytes: &[u8], pos: &mut usize) -> Option<i32> {
   Some(((result >> 1) as i32) ^ -((result & 1) as i32))
 }
 
+/// 解码一个环（[`encode_ring`] 的逆）；数据截断或累加越界返回 `None`。
+///
+/// 累加用 `checked_add`：构造出来的超大 delta 会让 `i32` 溢出，debug 下 panic、release 下
+/// 静默回绕成别处的点 —— 与「损坏就返回 `None`」的契约不符。
+pub(crate) fn decode_ring(bytes: &[u8], pos: &mut usize) -> Option<Vec<(f64, f64)>> {
+  let point_count = usize::from(read_u16(bytes, pos)?);
+  let mut ring = Vec::with_capacity(point_count);
+  let mut prev = (0i32, 0i32);
+  for i in 0..point_count {
+    let (x, y) = if i == 0 {
+      let x = i32::from(read_i16(bytes, pos)?);
+      let y = i32::from(read_i16(bytes, pos)?);
+      (x, y)
+    } else {
+      let dx = read_varint(bytes, pos)?;
+      let dy = read_varint(bytes, pos)?;
+      (prev.0.checked_add(dx)?, prev.1.checked_add(dy)?)
+    };
+    prev = (x, y);
+    ring.push((f64::from(x) / 10.0, f64::from(y) / 10.0));
+  }
+  Some(ring)
+}
+
 /// 从紧凑二进制解码几何；格式不符或数据损坏返回 `None`。
 #[must_use]
 pub fn decode_binary(bytes: &[u8]) -> Option<DxccShapes> {
@@ -183,23 +223,7 @@ pub fn decode_binary(bytes: &[u8]) -> Option<DxccShapes> {
     let ring_count = usize::from(read_u8(bytes, &mut pos)?);
     let mut polys = Vec::with_capacity(ring_count);
     for _ in 0..ring_count {
-      let point_count = usize::from(read_u16(bytes, &mut pos)?);
-      let mut ring = Vec::with_capacity(point_count);
-      let mut prev = (0i32, 0i32);
-      for i in 0..point_count {
-        let (x, y) = if i == 0 {
-          let x = i32::from(read_u16(bytes, &mut pos)? as i16);
-          let y = i32::from(read_u16(bytes, &mut pos)? as i16);
-          (x, y)
-        } else {
-          let dx = read_varint(bytes, &mut pos)?;
-          let dy = read_varint(bytes, &mut pos)?;
-          (prev.0 + dx, prev.1 + dy)
-        };
-        prev = (x, y);
-        ring.push((f64::from(x) / 10.0, f64::from(y) / 10.0));
-      }
-      polys.push(ring);
+      polys.push(decode_ring(bytes, &mut pos)?);
     }
     shapes.push(DxccShape { dxcc, polys });
   }
@@ -268,5 +292,62 @@ mod tests {
   fn binary_rejects_garbage() {
     assert!(decode_binary(&[]).is_none());
     assert!(decode_binary(&[9, 0, 0]).is_none()); // 非法 version
+  }
+
+  /// 环格式的字节布局是已提交产物的契约：这里钉死一个手算的小例子，重构 / 换实现后
+  /// 只要产物字节变了就会红（两个 `.bin` 都靠它）。
+  #[test]
+  fn ring_encoding_matches_the_documented_layout() {
+    // 3 个点：首点 (73.5, 53.5) → i16 735 / 535；之后 Δ=(+5, +1)、(−5, −1)。
+    let ring = vec![(73.5, 53.5), (74.0, 53.6), (73.5, 53.5)];
+    let mut out = Vec::new();
+    encode_ring(&ring, &mut out);
+    let mut expected = vec![0, 3]; // u16 点数
+    expected.extend(735i16.to_be_bytes());
+    expected.extend(535i16.to_be_bytes());
+    expected.extend([0x0a, 0x02]); // zigzag(+5)=10、zigzag(+1)=2
+    expected.extend([0x09, 0x01]); // zigzag(−5)=9、zigzag(−1)=1
+    assert_eq!(out, expected);
+
+    let mut pos = 0;
+    assert_eq!(decode_ring(&out, &mut pos), Some(ring));
+    assert_eq!(pos, out.len(), "解码要恰好吃完这个环的字节");
+  }
+
+  /// 解码契约是「损坏返回 `None`」。构造一个 delta 累加后超出 `i32` 的环：
+  /// 修复前 debug 下 panic（`attempt to add with overflow`）、release 下静默回绕成别处的点。
+  #[test]
+  fn decoding_overflowing_deltas_returns_none_instead_of_panicking() {
+    let mut bytes = vec![0, 3, 0, 0, 0, 0]; // 3 个点，首点 (0, 0)
+    for _ in 0..2 {
+      encode_varint(i32::MAX, &mut bytes); // Δlon：两次累加越过 i32::MAX
+      encode_varint(0, &mut bytes);
+    }
+    let mut pos = 0;
+    assert_eq!(decode_ring(&bytes, &mut pos), None);
+
+    // 负方向同理。
+    let mut bytes = vec![0, 3, 0, 0, 0, 0];
+    for _ in 0..2 {
+      encode_varint(i32::MIN, &mut bytes);
+      encode_varint(0, &mut bytes);
+    }
+    let mut pos = 0;
+    assert_eq!(decode_ring(&bytes, &mut pos), None);
+
+    // 整份二进制里也一样（version 1、1 个实体 dxcc=1、1 个环）。
+    let mut whole = vec![1, 0, 1, 0, 1, 1];
+    whole.extend(&bytes);
+    assert!(decode_binary(&whole).is_none());
+  }
+
+  #[test]
+  fn truncated_rings_return_none() {
+    let mut out = Vec::new();
+    encode_ring(&[(1.0, 2.0), (1.5, 2.5), (2.0, 3.0)], &mut out);
+    for cut in 0..out.len() {
+      let mut pos = 0;
+      assert_eq!(decode_ring(&out[..cut], &mut pos), None, "截到 {cut} 字节");
+    }
   }
 }

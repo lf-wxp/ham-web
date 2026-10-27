@@ -111,7 +111,7 @@ pub fn ExamTrend(history: Vec<ExamRecord>, bank: Bank) -> impl IntoView {
             <text x="-6" y=y_of(p) dy="4" text-anchor="end" font-size="11" class="fill-muted-foreground">{format!("{p:.0}%")}</text>
           })
           .collect_view()}
-        <text x="-6" y=pass_y dy="4" text-anchor="end" font-size="11" class="fill-gold">{format!("{pass_pct:.0}%")}</text>
+        <text x="-6" y=pass_y dy="4" text-anchor="end" font-size="11" class="fill-gold-text">{format!("{pass_pct:.0}%")}</text>
         <line x1="0" x2=w y1=pass_y y2=pass_y class="stroke-gold/70" stroke-width="1" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" />
         <polyline points=points fill="none" class="stroke-primary" stroke-width="2" vector-effect="non-scaling-stroke" />
         {records

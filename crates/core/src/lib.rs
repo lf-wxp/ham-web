@@ -172,6 +172,7 @@ pub mod practice;
 pub mod prefixes;
 pub mod propagation;
 pub mod provenance;
+pub mod province_map;
 pub mod psk31;
 pub mod qrp;
 pub mod qsl_card;

@@ -12,6 +12,26 @@ pub const CQ_ZONE_MAX: u8 = 40;
 /// ITU 分区总数（1–90）。
 pub const ITU_ZONE_MAX: u8 = 90;
 
+/// 分区着色的饱和度（%）：两档明度共用，所有「按分区号着色」的地图都用它。
+const AREA_SATURATION: u8 = 68;
+/// 偶数档的明度（%）：较亮。
+const AREA_LIGHT_EVEN: u8 = 62;
+/// 奇数档的明度（%）：较暗。与偶数档交替，让色相接近的相邻区域仍能区分。
+const AREA_LIGHT_ODD: u8 = 45;
+
+/// 分区着色的统一出口：`hsl(H S% L%)`，SVG `fill` 可直接用。
+///
+/// `even` 决定明度档：调用方按**自己的**口径给出奇偶（`zone_color` 看分区号本身，
+/// [`crate::reference::call_area_color`] 看分区在表里的序号），所以这里不替它们推导。
+pub(crate) fn area_hsl(hue: f64, even: bool) -> String {
+  let light = if even {
+    AREA_LIGHT_EVEN
+  } else {
+    AREA_LIGHT_ODD
+  };
+  format!("hsl({hue:.0} {AREA_SATURATION}% {light}%)")
+}
+
 /// 分区号 → 稳定的区分色（HSL 字符串）。
 ///
 /// 同一分区号在任何地图与任何分区制式下都得到同一颜色；相邻分区交替明度，
@@ -21,8 +41,7 @@ pub fn zone_color(zone: u8, max: u8) -> String {
   let total = f64::from(max.max(1));
   let z = f64::from(zone.max(1));
   let hue = ((z - 1.0) * 360.0 / total).rem_euclid(360.0);
-  let light = if zone.is_multiple_of(2) { 62 } else { 45 };
-  format!("hsl({hue:.0} 68% {light}%)")
+  area_hsl(hue, zone.is_multiple_of(2))
 }
 
 /// 某个 CQ 分区内的 DXCC 实体（按中文名排序）。

@@ -7,6 +7,10 @@
 //! 3. **依赖变没变**：`dxcc-entities.bin` 记着它依据的 `dxcc.txt` 摘要，题库记着
 //!    `data/explanations.json` 的摘要——这两处是「上游没变但产物该重建」的唯一线索。
 //!
+//! `cn-provinces.bin` 只适用第 1 条：它的几何纯粹由上游 GeoJSON 决定，没有仓库内的输入可记
+//! （省份名与分区号的对应关系由 `cn_map` 的单测守着），所以这里能判的只有「产物是不是本工具
+//! 生成的」。
+//!
 //! 发现问题时只**报告并要求重新生成**，不尝试自动修复：重建 `dxcc-entities.bin` 需要联网，
 //! 把一个网络依赖塞进本地检查会让离线环境无故变红。
 
@@ -58,14 +62,23 @@ pub fn backfill(root: &Path) -> anyhow::Result<()> {
   }
 
   // 二进制/JSON 产物：写边车，摘要按「产物自身内容」算。
-  for (rel, url) in [
+  for (rel, url, input) in [
     (
       "public/dxcc-entities.bin",
       "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
+      Some("crates/core/data/dxcc.txt"),
+    ),
+    (
+      // 几何只由上游 GeoJSON 决定；省份名与分区号在 `reference.rs` 里，但那边改一个字
+      // 不意味着边界要重建（对应关系由 `cn_map` 的单测守着）。
+      "public/cn-provinces.bin",
+      "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_1_states_provinces.geojson",
+      None,
     ),
     (
       "public/questions/config.json",
       "https://raw.githubusercontent.com/xiedada05/crac-amateur-radio-exam-questions-2025-csv/main",
+      Some("data/explanations.json"),
     ),
   ] {
     let path = root.join(rel);
@@ -75,11 +88,9 @@ pub fn backfill(root: &Path) -> anyhow::Result<()> {
     let bytes =
       std::fs::read(&path).map_err(|e| anyhow::anyhow!("读不到 {}：{e}", path.display()))?;
     let mut stamp = Stamp::of(url, &bytes).into_backfilled();
-    // 依赖能算就算：`.bin` 依赖 dxcc.txt，题库依赖解析库。
-    if rel.ends_with(".bin") {
-      stamp = stamp.with_input(root, "crates/core/data/dxcc.txt");
-    } else {
-      stamp = stamp.with_input(root, "data/explanations.json");
+    // 依赖能算就算：实体边界名依赖 dxcc.txt，题库依赖解析库。
+    if let Some(input) = input {
+      stamp = stamp.with_input(root, input);
     }
     provenance::write_sidecar(root, &path, &stamp)?;
     println!("✓ 已为 {rel} 补边车");
@@ -91,7 +102,7 @@ pub fn backfill(root: &Path) -> anyhow::Result<()> {
   } else {
     println!(
       "共补 {done} 处；这些戳带「补戳」标记，`data-freshness` 会要求重新生成一次：\
-       下次 `cargo make dxcc` / `dxcc-map` / `dataset` 会写入真实戳"
+       下次 `cargo make dxcc` / `dxcc-map` / `cn-map` / `dataset` 会写入真实戳"
     );
   }
   Ok(())
@@ -173,6 +184,18 @@ pub fn run(root: &Path) -> anyhow::Result<()> {
         }
       }
     }
+  }
+
+  // ── 2b. cn-provinces.bin：只查戳齐不齐 ──────────────────────
+  // 它没有仓库内输入（几何纯粹由上游 GeoJSON 决定，省份名与分区号的对应关系由
+  // `cn_map` 的单测守着），所以这里能判的只有「产物是不是本工具生成的」。
+  let cn_path = root.join("public/cn-provinces.bin");
+  if provenance::read_sidecar(root, &cn_path).is_none() {
+    findings.push(Finding {
+      target: "public/cn-provinces.bin".to_owned(),
+      problem: "没有 .source.json 边车".to_owned(),
+      fix: "cargo make cn-map（需联网）".to_owned(),
+    });
   }
 
   // ── 3. 题库：解析库变更后是否忘了重建 ────────────────────────
@@ -259,6 +282,13 @@ const TARGETS: &[Target] = &[
     artifact: "public/dxcc-entities.bin",
     url: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
     fix: "cargo make dxcc-map",
+    relation: Relation::Derived,
+  },
+  Target {
+    name: "cn-map",
+    artifact: "public/cn-provinces.bin",
+    url: "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_1_states_provinces.geojson",
+    fix: "cargo make cn-map",
     relation: Relation::Derived,
   },
   Target {
@@ -412,7 +442,9 @@ pub fn freshness(root: &Path, only: &[String], strict: bool) -> anyhow::Result<(
     .filter(|t| only.is_empty() || only.iter().any(|n| n == t.name))
     .collect();
   if selected.is_empty() {
-    anyhow::bail!("没有匹配的数据源：{only:?}（可用：dxcc / dxcc-map / dataset）");
+    // 可用清单从 `TARGETS` 派生：以后再加数据源，这条提示不会再落后一个。
+    let known: Vec<&str> = TARGETS.iter().map(|t| t.name).collect();
+    anyhow::bail!("没有匹配的数据源：{only:?}（可用：{}）", known.join(" / "));
   }
 
   let http = Http(ureq::Agent::new_with_defaults());
@@ -580,6 +612,19 @@ mod tests {
     root
   }
 
+  /// 分区号地图的产物：只有戳，没有 `inputs`（几何只由上游 GeoJSON 决定，
+  /// 省份名与分区号的对应关系由 `cn_map` 的单测守着）。
+  fn write_stamped_cn_bin(root: &Path) {
+    let path = root.join("public/cn-provinces.bin");
+    std::fs::write(&path, [0u8]).expect("write cn bin");
+    provenance::write_sidecar(
+      root,
+      &path,
+      &Stamp::of("https://example.test/provinces.geojson", &[0]),
+    )
+    .expect("cn sidecar");
+  }
+
   fn write_stamped_dxcc(root: &Path, body: &str) -> Stamp {
     let stamp = Stamp::of("https://example.test/cty.csv", body.as_bytes());
     let text = format!("{}{body}", stamp.header_block("dxcc"));
@@ -590,6 +635,7 @@ mod tests {
   #[test]
   fn reports_no_findings_when_everything_matches() {
     let root = scaffold("ok");
+    write_stamped_cn_bin(&root);
     write_stamped_dxcc(&root, "110|KH6|Hawaii\n");
     // .bin 的边车：记录当前 dxcc.txt 的摘要。
     let bin = root.join("public/dxcc-entities.bin");
@@ -614,6 +660,54 @@ mod tests {
     .expect("sidecar2");
 
     run(&root).expect("应当无问题");
+    let _ = std::fs::remove_dir_all(&root);
+  }
+
+  /// 写一份完全合法的最小仓库（三个产物都有戳、依赖摘要对得上）。
+  fn write_valid_repo(root: &Path) {
+    write_stamped_cn_bin(root);
+    write_stamped_dxcc(root, "110|KH6|Hawaii\n");
+    let bin = root.join("public/dxcc-entities.bin");
+    std::fs::write(&bin, [0u8]).expect("write bin");
+    provenance::write_sidecar(
+      root,
+      &bin,
+      &Stamp::of("https://example.test/ne.geojson", &[0])
+        .with_input(root, "crates/core/data/dxcc.txt"),
+    )
+    .expect("sidecar");
+    std::fs::write(root.join("data/explanations.json"), b"{}").expect("write expl");
+    provenance::write_sidecar(
+      root,
+      &root.join("public/questions/config.json"),
+      &Stamp::of("x", b"y").with_input(root, "data/explanations.json"),
+    )
+    .expect("sidecar2");
+  }
+
+  /// `cn-provinces.bin` 没有边车必须被抓到：其余产物全部合法，所以红只可能来自这一段检查。
+  #[test]
+  fn catches_a_missing_cn_provinces_sidecar() {
+    let root = scaffold("cn-missing");
+    write_valid_repo(&root);
+    run(&root).expect("基线应当是绿的，否则下面的红说明不了问题");
+
+    let sidecar = provenance::sidecar_path(&root, &root.join("public/cn-provinces.bin"));
+    std::fs::remove_file(&sidecar).expect("删掉 cn 边车");
+    let err = run(&root).expect_err("缺 cn-provinces.bin 的边车应当报错");
+    assert!(err.to_string().contains("重新生成"), "{err}");
+    let _ = std::fs::remove_dir_all(&root);
+  }
+
+  /// 报错里的「可用」清单必须覆盖 `TARGETS` 里的每一个源（以前手写，加了 `cn-map` 没跟上）。
+  #[test]
+  fn unknown_source_error_lists_every_known_target() {
+    let root = scaffold("only");
+    let err = freshness(&root, &["nope".to_owned()], false).expect_err("未知数据源应当报错");
+    let msg = err.to_string();
+    for t in TARGETS {
+      assert!(msg.contains(t.name), "报错里少了 {}：{msg}", t.name);
+    }
     let _ = std::fs::remove_dir_all(&root);
   }
 
@@ -654,6 +748,7 @@ mod tests {
   #[test]
   fn regenerating_dxcc_with_unchanged_data_does_not_stale_the_bin() {
     let root = scaffold("rerun");
+    write_stamped_cn_bin(&root);
     write_stamped_dxcc(&root, "110|KH6|Hawaii\n");
     let bin = root.join("public/dxcc-entities.bin");
     std::fs::write(&bin, [0u8]).expect("write bin");
@@ -691,6 +786,7 @@ mod tests {
   #[test]
   fn explanations_change_is_cleared_by_refreshing_the_sidecar() {
     let root = scaffold("expl");
+    write_stamped_cn_bin(&root);
     write_stamped_dxcc(&root, "110|KH6|Hawaii\n");
     let bin = root.join("public/dxcc-entities.bin");
     std::fs::write(&bin, [0u8]).expect("write bin");
@@ -732,6 +828,7 @@ mod tests {
     )
     .expect("write dxcc");
     std::fs::write(root.join("public/dxcc-entities.bin"), [1u8, 2]).expect("write bin");
+    std::fs::write(root.join("public/cn-provinces.bin"), [3u8, 4]).expect("write cn bin");
     std::fs::write(root.join("public/questions/config.json"), b"{}").expect("write cfg");
     std::fs::write(root.join("data/explanations.json"), b"{}").expect("write expl");
 
@@ -746,7 +843,11 @@ mod tests {
       "摘要是数据部分自己的"
     );
     assert!(text.ends_with(dxcc), "数据行一个字不能动");
-    for rel in ["public/dxcc-entities.bin", "public/questions/config.json"] {
+    for rel in [
+      "public/dxcc-entities.bin",
+      "public/cn-provinces.bin",
+      "public/questions/config.json",
+    ] {
       let side = provenance::read_sidecar(&root, &root.join(rel)).expect(rel);
       assert!(side.backfilled, "{rel}");
     }

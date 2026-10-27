@@ -2,18 +2,35 @@
 
 use ham_web_core::reference::{
   CALL_AREAS, EMISSION_DESIGNATION, EMISSION_TYPES, KNOWLEDGE_SOURCES, LICENSE_CLASSES, PHRASES,
-  RST_SCALES,
+  RST_SCALES, call_area_color,
 };
 use leptos::prelude::*;
 
+use crate::components::call_area_map::CallAreaMap;
 use crate::components::common::{PageContainer, PageHeader, TableSection};
+use crate::data;
 use crate::i18n::t;
-use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
+use crate::ui::{Chip, ChipGroup, Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
 #[component]
 pub fn ReferencePage() -> impl IntoView {
   set_title("shell.exam-reference-title");
+  // 分区号与省名是知识库正文（`crates/core` 的数据表），译文按模块维护；本页不是
+  // `KnowledgePage`，译文要自己挂一次，否则英文 / 西语界面里这一节仍是中文。
+  Effect::new(move |_| data::ensure_knowledge_i18n());
+  // 地图与色块共用同一个选区：`None` 表示「不分分区，全部同色」。
+  let selected = RwSignal::new(None::<String>);
+  // 点已选中的分区（或「全部」传空串）→ 取消选择。
+  let toggle_area = Callback::new(move |area: String| {
+    selected.update(|cur| {
+      *cur = if area.is_empty() || cur.as_deref() == Some(area.as_str()) {
+        None
+      } else {
+        Some(area.clone())
+      };
+    });
+  });
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader title=t("shell.exam-reference-title") subtitle=t("exam.licence-privileges-zones-rst") />
@@ -53,21 +70,67 @@ pub fn ReferencePage() -> impl IntoView {
           </Table>
         </section>
 
-        // 分区号
+        // 分区号：地图 + 色块图例 + 分区号表
         <section class="pxl-card border bg-card">
           <h2 class="pxl-section-title">{move || t("exam.amateur-radio-zone-numbers")}</h2>
-          <div class="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3 lg:grid-cols-5">
+          <p class="px-4 pt-3 text-xs leading-5 text-muted-foreground">
+            {move || t("exam.call-area-map-hint")}
+          </p>
+          <div class="px-4 py-3">
+            <CallAreaMap selected=selected on_select=toggle_area />
+          </div>
+          <ChipGroup
+            value=Signal::derive(move || selected.get().unwrap_or_default())
+            on_change=toggle_area
+            aria_label=Signal::derive(move || t("exam.call-area-map"))
+            class="gap-1.5 border-t px-4 py-3"
+          >
             {CALL_AREAS
               .iter()
               .map(|a| {
-                view! {
-                  <div class="flex items-start gap-2 border bg-inset p-3">
-                    <span class="font-mono text-lg text-primary">{a.digit}</span>
-                    <span class="text-xs leading-5 text-muted-foreground">{a.regions}</span>
-                  </div>
+                let color = call_area_color(a.digit);
+                let label = view! {
+                  <span
+                    class="inline-block h-3 w-3"
+                    style=format!("background-color: {color}")
+                  ></span>
+                  <span class="font-mono">{a.digit}</span>
                 }
+                  .into_any();
+                view! { <Chip value=a.digit.to_string()>{label}</Chip> }
               })
               .collect_view()}
+            // 空串 = 清空选区（与 `toggle_area` 的约定一致），默认就停在「全部」。
+            <Chip value=String::new()>{move || t("exam.all")}</Chip>
+          </ChipGroup>
+          <div class="grid grid-cols-2 gap-2 border-t p-4 sm:grid-cols-3 lg:grid-cols-5">
+            {move || {
+              let sel = selected.get();
+              CALL_AREAS
+                .iter()
+                .map(|a| {
+                  let is_sel = sel.as_deref() == Some(a.digit);
+                  let cell = if is_sel {
+                    "flex items-start gap-2 border border-gold bg-inset p-3"
+                  } else {
+                    "flex items-start gap-2 border bg-inset p-3"
+                  };
+                  let digit_class = if is_sel {
+                    "font-mono text-lg text-gold-text"
+                  } else {
+                    "font-mono text-lg text-primary"
+                  };
+                  view! {
+                    <div class=cell>
+                      <span class=digit_class>{a.digit}</span>
+                      <span class="text-xs leading-5 text-muted-foreground">
+                        {move || data::kt_tracked(a.regions)}
+                      </span>
+                    </div>
+                  }
+                })
+                .collect_view()
+            }}
           </div>
         </section>
 

@@ -54,6 +54,86 @@ test("灰线地图：时间偏移联动时钟、滑块与晨昏圈", async ({ pa
   await expect.poll(() => map.innerHTML()).toBe(before);
 });
 
+test("分区号地图：按分区号着色，选一个分区只留下它", async ({ page }) => {
+  await page.goto("/reference");
+  const map = page.getByRole("img", { name: /^中国业余电台分区号地图/ });
+  await expect(map).toBeVisible();
+  const all = page.getByRole("radio", { name: "全部" });
+  const zone3 = page.getByRole("radio", { name: "3", exact: true });
+
+  // 31 个省级行政区各有一块（多环的省份会画成多个 polygon，所以按「至少」断言）；
+  // 每个省两个文本：省名 + 分区号。
+  await expect.poll(() => map.locator("polygon").count()).toBeGreaterThanOrEqual(31);
+  await expect(map.locator("text")).toHaveCount(62);
+  await expect(map.getByText("内蒙古", { exact: true })).toHaveCount(1);
+  await expect(map.getByText("北京", { exact: true })).toHaveCount(1);
+  // 默认「全部」：没有选区，每块都是同一个状态；每块都带自己的分区号。
+  await expect(all).toHaveAttribute("aria-checked", "true");
+  await expect(map.locator('polygon:not([data-state="all"])')).toHaveCount(0);
+  await expect(map.locator("polygon:not([data-area])")).toHaveCount(0);
+
+  // 选 3 区：天津 · 河北 · 内蒙古 · 山西 亮起，其余淡出。
+  await zone3.click();
+  await expect(zone3).toHaveAttribute("aria-checked", "true");
+  await expect(map.locator('polygon[data-state="selected"]').first()).toBeAttached();
+  await expect(map.locator('polygon[data-state="dimmed"]').first()).toBeAttached();
+  await expect(map.locator('polygon[data-state="all"]')).toHaveCount(0);
+  // 亮起的全部属于 3 区，3 区的全部都亮起：不多不少。
+  await expect(map.locator('polygon[data-state="selected"]:not([data-area="3"])')).toHaveCount(0);
+  await expect(map.locator('polygon[data-area="3"]:not([data-state="selected"])')).toHaveCount(0);
+
+  // 「全部」清掉选区，回到全图。
+  await all.click();
+  await expect(all).toHaveAttribute("aria-checked", "true");
+  await expect(map.locator('polygon:not([data-state="all"])')).toHaveCount(0);
+});
+
+test("分区号地图：点省份选中它所属的分区，再点取消", async ({ page }) => {
+  await page.goto("/reference");
+  const map = page.getByRole("img", { name: /^中国业余电台分区号地图/ });
+  await expect(map).toBeVisible();
+  const all = page.getByRole("radio", { name: "全部" });
+  const zone3 = page.getByRole("radio", { name: "3", exact: true });
+  await expect(all).toHaveAttribute("aria-checked", "true");
+
+  // 多边形互相相邻，真实鼠标点会落到最上层的邻省上：直接对目标元素派发 click。
+  await map.locator('polygon[data-area="3"]').first().dispatchEvent("click");
+  await expect(zone3).toHaveAttribute("aria-checked", "true");
+  await expect(map.locator('polygon[data-state="selected"]').first()).toBeAttached();
+
+  await map.locator('polygon[data-area="3"]').first().dispatchEvent("click");
+  await expect(all).toHaveAttribute("aria-checked", "true");
+  await expect(map.locator('polygon:not([data-state="all"])')).toHaveCount(0);
+
+  // 悬停提示（`<title>`）是「省名（N 区）」。
+  await expect(map.locator("polygon title", { hasText: "（3 区）" }).first()).toBeAttached();
+});
+
+test("分区号地图：选中的省画在淡出省的标签之上", async ({ page }) => {
+  await page.goto("/reference");
+  const map = page.getByRole("img", { name: /^中国业余电台分区号地图/ });
+  await expect(map).toBeVisible();
+  await expect.poll(() => map.locator("polygon").count()).toBeGreaterThanOrEqual(31);
+
+  // 北京（1 区）的标注点落在河北（3 区）上：选 3 区后，淡出的「北京」标签必须在文档里排在
+  // 所有选中多边形之前（SVG 后画的盖住先画的），否则它会浮在被点亮的河北之上、读起来像河北的字。
+  await page.getByRole("radio", { name: "3", exact: true }).click();
+  const order = await map.evaluate((svg) => {
+    const nodes = [...svg.querySelectorAll("polygon, text[data-label]")];
+    const firstSelected = nodes.findIndex(
+      (n) => n.tagName.toLowerCase() === "polygon" && (n as SVGElement).dataset.state === "selected",
+    );
+    const beijing = nodes.findIndex((n) => (n as SVGElement).dataset.label === "BJ");
+    const hebei = nodes.findIndex((n) => (n as SVGElement).dataset.label === "HE");
+    return { firstSelected, beijing, hebei };
+  });
+  expect(order.firstSelected).toBeGreaterThan(-1);
+  expect(order.beijing).toBeGreaterThan(-1);
+  expect(order.beijing).toBeLessThan(order.firstSelected);
+  // 选中省自己的标签仍在多边形之后，读得出来。
+  expect(order.hebei).toBeGreaterThan(order.firstSelected);
+});
+
 test("SOTA / POTA 地图：按日志里的编号逐个定位，查不到的跳过", async ({ page }) => {
   await seedLog(page, [
     { callsign: "W6AA", my_sota_ref: "w6/ct-001" },

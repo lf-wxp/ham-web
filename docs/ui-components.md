@@ -81,7 +81,8 @@
 6. **颜色分「填充」与「文字」两套**：`--pxl-hp` / `xp` / `gold` / `win` 是画在深色槽里的**填充色**
    （血条、金币），直接拿来写字对比度不够（亮色下金色文字落在奶油底只有 1.4:1）。**写字一律用
    `text-hp-text` / `text-xp-text` / `text-gold-text` / `text-win-text`**；不要写
-   `text-[color:var(--pxl-gold)]` 这类任意值。**不要再写 Tailwind 原始色阶**（`text-green-600`、`bg-emerald-500`、`dark:text-red-400`）：
+   `text-[color:var(--pxl-gold)]` 这类任意值，也不要写 `text-gold` / `text-win` 这类基础类
+   （它们引用的就是填充色，浅色主题下 `text-gold` 只有 1.27:1）；**SVG 里的字同理**：`<text>` 的颜色是 `fill`，写 `fill-gold-text` 而不是 `fill-gold`（浅色主题 1.39:1）。`check-ui` ⑦ 三种写法都拦；画在 `<circle>` / `<path>` / `<rect>` 上的 `fill-gold/70`（圆点、热力格、choropleth）是正当的几何填充。**不要再写 Tailwind 原始色阶**（`text-green-600`、`bg-emerald-500`、`dark:text-red-400`）：
    它们是 Sweetie-16 的固定色相，不随 11 套配色方案变，切到 Game Boy / CGA 就跳出方案；
    `cargo make check-ui` 已拦（⑯，只放过打印 / 导出画布）。状态一律用语义 token：
    对 / 通关 `win`、错 / 危险 `destructive`（文字用 `text-hp-text`）、警示 `gold`、信息 `xp`
@@ -96,6 +97,15 @@
    `--cat-1..8`（第 9 / 10 档用「空心」第二通道区分）；`check-structure` 已拦
    `crates/core` 里的色值字面量。用法约束：分类色**只做图形锚点**（圆点 / 2px 描边 / 浅底），
    不铺整块文字底。
+   **例外：地图的「按分区号着色」**（`/zone-map` 的 CQ / ITU 分区、`/reference` 的呼号分区）
+   不走 `--cat-*`，由 `crates/core/src/zone.rs` 的 `area_hsl` 统一返回 `hsl(H S% L%)`
+   （`zone_color` 与 `reference::call_area_color` 是它仅有的两个调用方）。理由：这里要互相区分的
+   是 10 / 40 / 90 个分区，而 `--cat-*` 只有 8 档（第 9 / 10 档靠「空心」第二通道，铺成整块多边形
+   填充就没有第二通道可用）；填色是 SVG 几何上的**半透明填充**，不承载文字（省名与分区号写在
+   旁边的 `<text>` 上，走 `fill-foreground` 等语义 token），所以规则 6 的「填充色当文字色」不适用。
+   **代价要认**：这些颜色不随 11 套配色方案变，切到 Game Boy / CGA 时地图仍是原色相 ——
+   同一分区号在任何页面、任何方案下颜色一致，这是它被当作「数据身份色」而非「主题色」的取舍。
+   新增别的「按数据着色」的地图先复用 `area_hsl`，不要再各自拼一份 `hsl()` 字符串。
    **色相不够用时补方案种子，不要回退色阶**：11 套方案 + 16 色盘下，波段用途、雷达序列、
   分类标识这类「需要互相区分」的场景一定会撞色。现状是「语义 token 循环 + 第二通道（描边 /
   空心 / 图案）」；真要更多色相，就改 `crates/core/src/color_scheme.rs` 的种子（见下），
@@ -809,8 +819,9 @@ grep -rnE --include='*.rs' --exclude-dir=ui --exclude=cn.rs \
 #    （输出里 `shadow-[0_Npx_0_0_…]` 是像素硬阴影，合规；`cn.rs` 里的
 #    `("backdrop-blur", …)` 是 cn 的冲突组配置，不是 class，故排除）
 grep -rnE --include='*.rs' --exclude-dir=ui --exclude=cn.rs 'blur|drop-shadow-|bg-gradient|bg-linear|shadow-\[0' .
-# ⑦ 把填充色 token 当文字色用（对比度不够）：应为 0
-grep -rnE --include='*.rs' 'text-\[color:var\(--pxl-(hp|xp|gold|win)\)\]' .
+# ⑦ 把填充色 token 当文字色用（对比度不够）：应为 0（check-ui 已拦；含任意值、`text-gold` 这类基础类，
+#    以及同一行里 `<text` 带 `fill-gold` 的 SVG 文字；class 折到下一行的 `<text>` 机械守卫抓不到，要人工看）
+grep -rnE --include='*.rs' 'text-\[color:var\(--pxl-(hp|xp|gold|win)\)\]|text-(hp|xp|gold|win)([^-a-zA-Z]|$)|<text[^>]*fill-(hp|xp|gold|win)([^-a-zA-Z]|$)' .
 # ⑧ 页面级宽度类：输出应等于 §4 那份封闭清单（11 行 / 9 文件：组件自身 / 页头对齐行 / 顶栏 container / 横幅）
 #    check-ui 已按同一份清单机械守着（清单外命中、清单内计数漂移都会红），这条用来复核
 grep -rn --include='*.rs' --exclude-dir=ui -E 'class="[^"]*\bmax-w-(2xl|3xl|4xl|5xl|6xl)\b|class="container' pages components app \

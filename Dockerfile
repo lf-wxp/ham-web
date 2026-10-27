@@ -123,6 +123,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
       dist/sitemap.xml \
       dist/decode-worker.js \
       dist/dxcc-entities.bin \
+      dist/cn-provinces.bin \
       dist/data/i18n/en.json \
       dist/data/i18n/es.json \
       dist/data/knowledge-i18n/en.json \

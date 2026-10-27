@@ -17,10 +17,10 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::{Context, Result};
-use serde::Deserialize;
 
-use ham_web_core::dxcc_map::{DxccShape, DxccShapes, encode_binary, simplify_ring};
+use ham_web_core::dxcc_map::{DxccShape, DxccShapes, encode_binary};
 
+use crate::geojson::{self, prop_string};
 use crate::provenance::{self, Stamp};
 
 /// 简化容差（度）：越小越精细、体积越大。
@@ -63,30 +63,6 @@ const NAME_ALIASES: &[(&str, &str)] = &[
   ("Malaysia", "West Malaysia"),
 ];
 
-// ---- GeoJSON 结构 ----
-
-#[derive(Deserialize)]
-struct FeatureCollection {
-  features: Vec<Feature>,
-}
-
-#[derive(Deserialize)]
-struct Feature {
-  properties: serde_json::Map<String, serde_json::Value>,
-  geometry: Geometry,
-}
-
-#[derive(Deserialize)]
-struct Geometry {
-  #[serde(rename = "type")]
-  ty: String,
-  coordinates: serde_json::Value,
-}
-
-fn prop_string(props: &serde_json::Map<String, serde_json::Value>, key: &str) -> Option<String> {
-  props.get(key).and_then(|v| v.as_str()).map(str::to_owned)
-}
-
 /// 归一化英文名：仅保留字母数字并转小写，用于模糊匹配国名差异。
 fn normalize(s: &str) -> String {
   s.chars()
@@ -111,54 +87,6 @@ fn resolve_dxcc(name: &str, index: &HashMap<String, u16>) -> Option<u16> {
     let alias = NAME_ALIASES.iter().find(|(n, _)| normalize(n) == norm)?;
     index.get(&normalize(alias.1)).copied()
   })
-}
-
-/// 提取 Geometry 的所有外环（`Polygon` 取第一个环，`MultiPolygon` 逐多边形取首环）。
-fn outer_rings(geometry: &Geometry) -> Vec<Vec<(f64, f64)>> {
-  match geometry.ty.as_str() {
-    "Polygon" => polygon_first_ring(&geometry.coordinates)
-      .into_iter()
-      .collect(),
-    "MultiPolygon" => {
-      let serde_json::Value::Array(polys) = &geometry.coordinates else {
-        return Vec::new();
-      };
-      polys.iter().filter_map(polygon_first_ring).collect()
-    }
-    _ => Vec::new(),
-  }
-}
-
-/// 取单个 Polygon 的首个环（外环）。
-fn polygon_first_ring(coords: &serde_json::Value) -> Option<Vec<(f64, f64)>> {
-  coords.as_array()?.first().map(ring_to_points)
-}
-
-/// 一个环 `[[lon,lat], …]` → 顶点序列。
-fn ring_to_points(ring: &serde_json::Value) -> Vec<(f64, f64)> {
-  let serde_json::Value::Array(pts) = ring else {
-    return Vec::new();
-  };
-  pts
-    .iter()
-    .filter_map(|p| {
-      let arr = p.as_array()?;
-      Some((arr.first()?.as_f64()?, arr.get(1)?.as_f64()?))
-    })
-    .collect()
-}
-
-/// 把坐标量化到 0.1°（1 位小数）并去除连续重复点，减小 JSON 体积。
-/// 110m 数据本身是粗粒度，0.1°（约 11km）精度对世界地图着色足够。
-fn quantize_ring(ring: Vec<(f64, f64)>) -> Vec<(f64, f64)> {
-  let mut out: Vec<(f64, f64)> = Vec::with_capacity(ring.len());
-  for (x, y) in ring {
-    let p = ((x * 10.0).round() / 10.0, (y * 10.0).round() / 10.0);
-    if out.last() != Some(&p) {
-      out.push(p);
-    }
-  }
-  out
 }
 
 /// 由旧版 JSON（[`DxccShapes`] 结构）直接转换为二进制，无需重新下载 GeoJSON。
@@ -194,26 +122,10 @@ pub fn generate(root: &Path, input: Option<&Path>, url: &str) -> Result<()> {
   {
     return convert_json_to_bin(root, p);
   }
-  let (text, mut stamp) = match input {
-    Some(p) => {
-      let bytes = fs::read(p).with_context(|| format!("failed to read {}", p.display()))?;
-      let text =
-        String::from_utf8(bytes.clone()).with_context(|| format!("{} 不是 UTF-8", p.display()))?;
-      (text, Stamp::of_local(p, &bytes))
-    }
-    None => {
-      let fetched = provenance::download(url, 64 * 1024 * 1024)?;
-      let text =
-        String::from_utf8(fetched.bytes.clone()).with_context(|| format!("{url} 不是 UTF-8"))?;
-      let stamp = Stamp::of(url, &fetched.bytes)
-        .with_validators(fetched.etag.as_deref(), fetched.last_modified.as_deref());
-      (text, stamp)
-    }
-  };
+  let (fc, stamp) = geojson::load(input, url)?;
   // 实体名来自 `dxcc.txt`：把它记成输入，`check-data-sync` 才能发现「dxcc.txt 变了但 .bin 没重建」。
-  stamp = stamp.with_input(root, "crates/core/data/dxcc.txt");
+  let stamp = stamp.with_input(root, "crates/core/data/dxcc.txt");
 
-  let fc: FeatureCollection = serde_json::from_str(&text).context("invalid GeoJSON")?;
   let index = name_index();
 
   let mut shapes: Vec<DxccShape> = Vec::new();
@@ -235,12 +147,7 @@ pub fn generate(root: &Path, input: Option<&Path>, url: &str) -> Result<()> {
       continue;
     };
 
-    let rings: Vec<Vec<(f64, f64)>> = outer_rings(&feature.geometry)
-      .into_iter()
-      .map(|r| simplify_ring(&r, TOL))
-      .map(quantize_ring)
-      .filter(|r| r.len() >= 3)
-      .collect();
+    let rings = geojson::prepared_rings(&feature.geometry, TOL);
     if rings.is_empty() {
       continue;
     }
@@ -314,26 +221,5 @@ mod tests {
     assert_eq!(resolve_dxcc("China", &idx), Some(318));
     assert_eq!(resolve_dxcc("United States of America", &idx), Some(291));
     assert_eq!(resolve_dxcc("Nowhere", &idx), None);
-  }
-
-  #[test]
-  fn extracts_outer_rings() {
-    let geom = Geometry {
-      ty: "MultiPolygon".into(),
-      coordinates: serde_json::json!([[
-        [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]],
-        [[0.1, 0.1], [0.2, 0.1], [0.2, 0.2]] // 内环应被忽略
-      ]]),
-    };
-    let rings = outer_rings(&geom);
-    assert_eq!(rings.len(), 1);
-    assert_eq!(rings[0].len(), 4);
-  }
-
-  #[test]
-  fn simplify_filters_tiny_rings() {
-    let ring = vec![(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 0.0)];
-    let simplified = simplify_ring(&ring, 0.25);
-    assert!(simplified.len() >= 3);
   }
 }

@@ -6,13 +6,12 @@
 use std::collections::BTreeMap;
 
 use ham_web_core::dxcc;
-use ham_web_core::dxcc_map::{DxccShapes, decode_binary};
+use ham_web_core::dxcc_map::decode_binary;
 use ham_web_core::zone::{CQ_ZONE_MAX, ITU_ZONE_MAX};
 use leptos::prelude::*;
-use leptos::task::spawn_local;
 
 use super::{MapView, ZoneOverlay};
-use crate::data;
+use crate::data::{self, LoadState};
 use crate::i18n::{t, tf};
 
 /// 分区地图：自带边界数据加载，按当前分区制式着色并高亮指定实体。
@@ -31,20 +30,8 @@ pub fn ZoneMap(
   #[prop(optional)]
   on_region_click: Option<Callback<String>>,
 ) -> impl IntoView {
-  let shapes = RwSignal::new(DxccShapes::default());
-  let loading = RwSignal::new(true);
-  let failed = RwSignal::new(false);
-
-  spawn_local(async move {
-    match data::fetch_bytes("/dxcc-entities.bin").await {
-      Ok(bytes) => match decode_binary(&bytes) {
-        Some(s) => shapes.set(s),
-        None => failed.set(true),
-      },
-      Err(_) => failed.set(true),
-    }
-    loading.set(false);
-  });
+  let load = data::load_binary("/dxcc-entities.bin", decode_binary);
+  let shapes = data::ready_signal(load);
 
   let max_zone = Signal::derive(move || {
     if is_cq.get() {
@@ -79,39 +66,41 @@ pub fn ZoneMap(
   let on_click = on_region_click.unwrap_or_else(|| Callback::new(|_: String| {}));
 
   view! {
-    {move || {
-      if loading.get() {
-        return view! {
+    {move || match load.get() {
+      LoadState::Loading => {
+        view! {
           <div class="py-12 text-center text-sm text-muted-foreground">
             {move || t("radio.loading-map-data")}
           </div>
         }
-        .into_any();
+        .into_any()
       }
-      if failed.get() {
-        return view! {
+      LoadState::Failed => {
+        view! {
           <div class="py-12 text-center text-sm text-muted-foreground">
             {move || t("radio.failed-to-load-boundary")}
           </div>
         }
-        .into_any();
+        .into_any()
       }
-      view! {
-        <MapView
-          aria_label=Signal::derive(move || t("radio.cq-itu-zone-map-with-hints"))
-          focus=focus
-        >
-          <ZoneOverlay
-            shapes=shapes
-            zone_of=zone_of
-            max_zone=max_zone
-            highlight=highlight
-            title_of=title_of
-            on_click=on_click
-          />
-        </MapView>
+      LoadState::Ready(_) => {
+        view! {
+          <MapView
+            aria_label=Signal::derive(move || t("radio.cq-itu-zone-map-with-hints"))
+            focus=focus
+          >
+            <ZoneOverlay
+              shapes=shapes
+              zone_of=zone_of
+              max_zone=max_zone
+              highlight=highlight
+              title_of=title_of
+              on_click=on_click
+            />
+          </MapView>
+        }
+        .into_any()
       }
-      .into_any()
     }}
   }
 }

@@ -21,7 +21,8 @@
 | `cargo make questions-normalize` | 一次性迁移：把已提交题库按排版规则归一化（含解析表 key 迁移与搜索索引刷新），不重新下载 CSV |
 | `cargo make dxcc` | 从 country-files.com 拉取 cty.csv，重新生成 `crates/core/data/dxcc.txt` |
 | `cargo make dxcc-map` | 从 Natural Earth 国界 GeoJSON 生成 DXCC 实体边界 `public/dxcc-entities.bin`（i16 定点 + delta 二进制编码） |
-| `cargo make data-sync` | 三个外部数据源一起重新生成（dxcc + dxcc-map + dataset，需联网） |
+| `cargo make cn-map` | 从 Natural Earth 1:50m 州省 GeoJSON 生成中国省级边界 `public/cn-provinces.bin`（分区号地图用，同一套 i16 定点 + delta 编码） |
+| `cargo make data-sync` | 四个外部数据源一起重新生成（dxcc + dxcc-map + cn-map + dataset，需联网） |
 | `cargo make data-freshness` | 比对上游有无新版；连不上只报告（需联网，见 `docs/data-sync.md`） |
 | `cargo make data-sync-check` | 产物来源戳与依赖摘要的离线一致性（已在 `cargo make check` 里，不联网） |
 | `cargo make data-staleness` | 人工转录的外部事实（法规 / 器材实测 / 磁环 / 成本档位）多久没复核（离线；超过 6 个月只告警，日期读不出来 / 在未来才失败；已在 `check` 里） |

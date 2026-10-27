@@ -1,6 +1,6 @@
-# 外部数据同步：定期比对 cty.csv / Natural Earth / 题库 CSV 有没有新版。
+# 外部数据同步：定期比对 cty.csv / Natural Earth（国界与中国省界）/ 题库 CSV 有没有新版。
 #
-# 为什么要单独一个 workflow：`check.yml` 必须在离线环境也能跑绿，而这三个数据源要联网。
+# 为什么要单独一个 workflow：`check.yml` 必须在离线环境也能跑绿，而这些数据源要联网。
 # 混进去会让网络抖动变成假红灯。
 #
 # 三个 job，权限分开：

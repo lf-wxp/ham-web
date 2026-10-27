@@ -6,6 +6,7 @@
 //! cargo run -p ham-web-tools -- <SUBCOMMAND> --help
 //! ```
 
+mod cn_map;
 mod csv;
 mod data_sync;
 mod dataset;
@@ -14,6 +15,7 @@ mod dxcc_map;
 mod e2e_coverage;
 mod explanations;
 mod fsutil;
+mod geojson;
 mod i18n;
 mod icons;
 mod knowledge_i18n;
@@ -102,7 +104,7 @@ enum Command {
   StampData,
   /// 数据新鲜度：比对上游（需联网；连不上只报告，不判失败）
   CheckDataFreshness {
-    /// 只检查指定数据源（dxcc / dxcc-map / dataset），默认全部
+    /// 只检查指定数据源（dxcc / dxcc-map / cn-map / dataset），默认全部
     #[arg(long, value_delimiter = ',')]
     only: Vec<String>,
     /// 上游连不上时也判失败（CI 定时任务用；本地默认放行）
@@ -210,6 +212,15 @@ enum Command {
     input: Option<PathBuf>,
     /// 下载地址
     #[arg(long, default_value = dxcc_map::DEFAULT_URL)]
+    url: String,
+  },
+  /// 由 Natural Earth 州省 GeoJSON 生成中国省级边界（public/cn-provinces.bin）
+  CnMap {
+    /// 本地 GeoJSON（默认从 Natural Earth 下载）
+    #[arg(long)]
+    input: Option<PathBuf>,
+    /// 下载地址
+    #[arg(long, default_value = cn_map::DEFAULT_URL)]
     url: String,
   },
   /// 生成像素图标与精灵的数据文件（icons/pixel/{icon_paths,sprite_data}.rs）
@@ -500,6 +511,7 @@ fn main() -> Result<()> {
     } => explanations::missing(&paths, bank, output.as_deref(), context.as_deref(), limit),
     Command::Dxcc { input, url } => dxcc::generate(&root, input.as_deref(), &url),
     Command::DxccMap { input, url } => dxcc_map::generate(&root, input.as_deref(), &url),
+    Command::CnMap { input, url } => cn_map::generate(&root, input.as_deref(), &url),
     Command::Icons => icons::generate(&paths),
     Command::PixelSprites { pixelarticons } => pixel::sprites::generate(&root, &pixelarticons),
     Command::PixelFonts { src } => pixel::fonts::generate(&root, &src),
