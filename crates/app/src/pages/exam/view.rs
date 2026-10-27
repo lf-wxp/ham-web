@@ -205,7 +205,7 @@ pub fn ExamPage() -> impl IntoView {
         qs.iter()
           .enumerate()
           .map(|(i, q)| ReviewItem {
-            id: q.stable_id().unwrap_or_else(|| q.answer_key(i)),
+            id: q.answer_key(i),
             code: q.j_code().unwrap_or_default().to_owned(),
             question: q.question.clone(),
             options: q

@@ -1,14 +1,63 @@
+use std::collections::HashSet;
+
 use ham_web_core::QuestionItem;
 use ham_web_core::categories::{self, RefKind};
 use leptos::prelude::*;
 
 use crate::cn::cn;
-use crate::i18n::{t, tp};
+use crate::i18n::{t, tf, tp};
 use crate::icons::{Icon, IconKind};
+use crate::store;
 use crate::tone;
+use crate::ui::ChipToggle;
 
 #[component]
-pub(super) fn QuestionRow(q: QuestionItem) -> impl IntoView {
+pub(super) fn QuestionRow(
+  q: QuestionItem,
+  /// 列表页持有的收藏快照：本行从里面读自己的状态，切换时就地改它。
+  /// 不直接读 `store::is_bookmarked()`：那是普通函数、不参与响应式，点了不会变色。
+  bookmarks: RwSignal<HashSet<String>>,
+) -> impl IntoView {
+  // 没有稳定编号（`id` 与 `J` 都缺）的题不给收藏入口：位置兜底键 `pos:N` 随列表顺序变，
+  // 写进存储后练习页对不上、收藏集也列不出来，用户还取消不了。
+  let bookmark_toggle = q.stable_id().map(|id| {
+    // 每行一个 Memo：快照整体变了，只有本题那一位翻转的行才继续通知下游绑定。
+    let marked = Memo::new({
+      let id = id.clone();
+      move |_| bookmarks.with(|set| set.contains(&id))
+    });
+    // 名称恒定、带题号：切换状态只交给 `aria-pressed`，读屏也分得清是哪一题。
+    let label = Signal::derive({
+      let id = id.clone();
+      move || tf("exam.bookmark-question", &[&id])
+    });
+    let title = Signal::derive(move || {
+      if marked.get() {
+        t("exam.remove-bookmark")
+      } else {
+        t("exam.bookmark-this-question")
+      }
+    });
+    // 以存储为准：`toggle_bookmark` 返回切换后的真实状态，不信按钮传来的目标值。
+    let on_change = Callback::new(move |_: bool| {
+      let added = store::toggle_bookmark(&id);
+      bookmarks.update(|set| {
+        if added {
+          set.insert(id.clone());
+        } else {
+          set.remove(&id);
+        }
+      });
+    });
+    view! {
+      <ChipToggle active=marked on_change=on_change aria_label=label title=title>
+        {view! {
+          {move || if marked.get() { t("exam.bookmarked") } else { t("exam.bookmark") }}
+        }
+          .into_any()}
+      </ChipToggle>
+    }
+  });
   let sub = q.p_code().and_then(categories::sub_category);
   let top_cat = sub.and_then(|s| categories::top_category(s.top));
   let answers: Vec<_> = q
@@ -54,7 +103,11 @@ pub(super) fn QuestionRow(q: QuestionItem) -> impl IntoView {
               </span>
             }
           })}
-        <span class="ml-auto font-mono text-xs text-muted-foreground">{q.p_code().map(ToOwned::to_owned)}</span>
+        // 编号与收藏同组：窄屏换行时两者一起靠右，不会让收藏单独落在一行的最左边。
+        <span class="ml-auto flex items-center gap-2">
+          <span class="font-mono text-xs text-muted-foreground">{q.p_code().map(ToOwned::to_owned)}</span>
+          {bookmark_toggle}
+        </span>
       </div>
 
       <div class="mb-3 leading-relaxed">{q.question.clone()}</div>

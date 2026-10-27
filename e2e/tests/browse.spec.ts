@@ -66,6 +66,42 @@ test("分类浏览：一级分类筛选与只看本类新增", async ({ page }) 
   await expect.poll(() => rows.count()).toBeLessThanOrEqual(allB);
 });
 
+test("分类浏览：卡片可就地收藏，取消后从收藏集消失", async ({ page }) => {
+  // 无障碍名恒为「收藏题目 {题号}」：状态只交给 aria-pressed，
+  // 所以同一个定位器在点击前后都命中；可见文字仍在「收藏 / 已收藏」间切换。
+  const BOOKMARK = /^收藏题目 \S+/;
+  await page.goto("/browse");
+  const rows = page.locator("main article");
+  const first = rows.first();
+  const second = rows.nth(1);
+  await expect(second).toBeVisible();
+
+  const add = first.getByRole("button", { name: BOOKMARK });
+  await expect(add).toHaveAttribute("aria-pressed", "false");
+  await expect(add).toHaveText("收藏");
+  await add.click();
+  await expect(add).toHaveAttribute("aria-pressed", "true");
+  await expect(add).toHaveText("已收藏");
+  // 收藏状态按题目 id 派生：点第一题不能连带第二题变色
+  await expect(second.getByRole("button", { name: BOOKMARK })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+
+  await page.goto("/bookmarks");
+  await expect(page.getByText("共 1 题", { exact: true })).toBeVisible();
+
+  // 回到浏览页：收藏状态从存储里恢复，取消后收藏集回到空态
+  await page.goto("/browse");
+  const again = rows.first().getByRole("button", { name: BOOKMARK });
+  await expect(again).toHaveAttribute("aria-pressed", "true");
+  await again.click();
+  await expect(again).toHaveAttribute("aria-pressed", "false");
+
+  await page.goto("/bookmarks");
+  await expect(page.getByText("暂无收藏")).toBeVisible();
+});
+
 test("分类浏览：加载更多分页", async ({ page }) => {
   await page.goto("/browse");
   const rows = page.locator("main article");

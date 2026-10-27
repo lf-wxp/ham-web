@@ -57,14 +57,14 @@ pub fn PracticePage() -> impl IntoView {
     let Some((i, q)) = store.current() else {
       return;
     };
-    let id = q.stable_id().unwrap_or_else(|| q.answer_key(i));
+    let id = q.answer_key(i);
     bookmarked.set(store::is_bookmarked(&id));
   });
   let on_toggle_bookmark = Callback::new(move |()| {
     let Some((i, q)) = store.current() else {
       return;
     };
-    let id = q.stable_id().unwrap_or_else(|| q.answer_key(i));
+    let id = q.answer_key(i);
     // 变体只在当次练习里存在，收藏没有意义（下次就换题了）；按钮已置灰，这里兜住快捷键等其它入口。
     if id.starts_with(ham_web_core::calc_variants::VARIANT_PREFIX) {
       return;

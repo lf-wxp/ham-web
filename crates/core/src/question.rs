@@ -121,6 +121,11 @@ impl QuestionItem {
   }
 
   /// 作答状态存储使用的 key：优先 `id`，其次 `J`，最后退化为 `pos:{pos}`。
+  ///
+  /// 有稳定标识时它就是 [`stable_id`](Self::stable_id)，所以不必再写
+  /// `stable_id().unwrap_or_else(|| answer_key(pos))`（恒等于本函数）。
+  /// 区别只在兜底：位置键 `pos:N` 随列表顺序变，**不能当持久化标识**（收藏、笔记）用；
+  /// 需要「没有稳定编号就不存」的场景请直接用 `stable_id`。
   #[must_use]
   pub fn answer_key(&self, pos: usize) -> String {
     self
@@ -129,7 +134,7 @@ impl QuestionItem {
       .map_or_else(|| format!("pos:{pos}"), ToOwned::to_owned)
   }
 
-  /// 恢复考试时用于重建题目集合的稳定标识（`id` 或 `J`）。
+  /// 恢复考试时用于重建题目集合的稳定标识（`id` 或 `J`）；两者都缺时为 `None`。
   #[must_use]
   pub fn stable_id(&self) -> Option<String> {
     self
@@ -364,6 +369,51 @@ mod tests {
       explanation: None,
     };
     assert_eq!(q.answer_key(7), "pos:7");
+  }
+
+  /// 钉住 `answer_key` 与 `stable_id` 的关系：调用点据此把
+  /// `stable_id().unwrap_or_else(|| answer_key(i))` 化简成 `answer_key(i)`，
+  /// 而「没有稳定编号就不给收藏入口」依赖 `stable_id` 在两码皆缺时为 `None`。
+  #[test]
+  fn answer_key_agrees_with_stable_id_and_only_differs_in_the_fallback() {
+    let blank = |id: Option<&str>, j: Option<&str>| QuestionItem {
+      id: id.map(str::to_owned),
+      codes: Codes {
+        j: j.map(str::to_owned),
+        p: None,
+      },
+      question: "q".into(),
+      options: vec![],
+      answer_keys: vec![],
+      kind: QuestionType::Single,
+      pages: None,
+      image_url: None,
+      explanation: None,
+    };
+
+    let with_id = blank(Some("A-1"), Some("LY0001"));
+    assert_eq!(with_id.stable_id().as_deref(), Some("A-1"), "id 优先于 J");
+    assert_eq!(with_id.answer_key(9), "A-1");
+
+    let only_j = blank(Some(""), Some("LY0001"));
+    assert_eq!(only_j.stable_id().as_deref(), Some("LY0001"), "空 id 不算");
+    assert_eq!(only_j.answer_key(9), "LY0001");
+
+    let neither = blank(None, Some(""));
+    assert_eq!(neither.stable_id(), None, "两码皆缺：没有稳定标识");
+    assert_eq!(
+      neither.answer_key(9),
+      "pos:9",
+      "answer_key 才会退化为位置键"
+    );
+
+    for q in [&with_id, &only_j, &neither] {
+      assert_eq!(
+        q.stable_id().unwrap_or_else(|| q.answer_key(3)),
+        q.answer_key(3),
+        "两种写法恒等"
+      );
+    }
   }
 
   #[test]
