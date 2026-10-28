@@ -19,6 +19,7 @@ use super::{
   load_trainer_settings, morse_display, random_choice, random_question, roll_today, save_stats,
   save_trainer_settings,
 };
+use crate::data::kt_tracked;
 use crate::i18n::t;
 
 /// 目标元素是否可输入/可交互（用于快捷键跳过）。
@@ -298,7 +299,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
               {MODES
                 .iter()
                 .map(|&m| {
-                  let label = view! { {m.label()} }.into_any();
+                  let label = view! { {move || kt_tracked(m.label())} }.into_any();
                   view! { <Chip value=m.label().to_owned()>{label}</Chip> }
                 })
                 .collect_view()}
@@ -322,7 +323,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
               {Target::ALL
                 .iter()
                 .map(|&kind| {
-                  let label = view! { {kind.label()} }.into_any();
+                  let label = view! { {move || kt_tracked(kind.label())} }.into_any();
                   view! { <Chip value=kind.label().to_owned()>{label}</Chip> }
                 })
                 .collect_view()}
@@ -348,7 +349,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
               {Scope::ALL
                 .iter()
                 .map(|&s| {
-                  let label = view! { {s.label()} }.into_any();
+                  let label = view! { {move || kt_tracked(s.label())} }.into_any();
                   view! { <Chip value=s.label().to_owned()>{label}</Chip> }
                 })
                 .collect_view()}
@@ -529,7 +530,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                     node_ref=input_ref
                     value=answer
                     on_change=Callback::new(move |v: String| answer.set(v))
-                    placeholder=Signal::derive(move || target.get().placeholder().to_owned())
+                    placeholder=Signal::derive(move || kt_tracked(target.get().placeholder()))
                     maxlength=Signal::derive(move || target.get().max_len().to_string())
                     aria_label=Signal::derive(move || t("morse.copy-input"))
                     autocomplete="off"

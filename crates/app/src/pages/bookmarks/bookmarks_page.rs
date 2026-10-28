@@ -225,8 +225,8 @@ pub fn BookmarksPage() -> impl IntoView {
           } else if questions.get().is_empty() {
             view! {
               <EmptyState
-                title=t("exam.no-bookmarks-yet")
-                description=t("exam.tap-the-bookmark-icon")
+                title=Signal::derive(move || t("exam.no-bookmarks-yet"))
+                description=Signal::derive(move || t("exam.tap-the-bookmark-icon"))
               />
             }
             .into_any()
@@ -234,7 +234,7 @@ pub fn BookmarksPage() -> impl IntoView {
             let list: Vec<QuestionItem> = filtered().collect();
             if list.is_empty() {
               return view! {
-                <EmptyState title=t("exam.no-questions-in-this") description=t("exam.add-bookmarks-to-this") />
+                <EmptyState title=Signal::derive(move || t("exam.no-questions-in-this")) description=t("exam.add-bookmarks-to-this") />
               }
               .into_any();
             }

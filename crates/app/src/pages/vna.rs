@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn VnaPage() -> impl IntoView {
   set_title("knowledge.vna-vector-network-analyzer");
   view! {
-    <KnowledgePage title=t("knowledge.vna-vector-network-analyzer") subtitle=t("knowledge.calibration-methods-and-antenna")>
+    <KnowledgePage title=move || t("knowledge.vna-vector-network-analyzer") subtitle=move || t("knowledge.calibration-methods-and-antenna")>
       <ConceptsSection title="核心概念" items=VNA_CONCEPTS />
       <StepsSection title="测量流程" items=VNA_STEPS />
       <TableSection title="常见测量对象" headers=&["对象", "主要看", "意义"] rows=VNA_USES />

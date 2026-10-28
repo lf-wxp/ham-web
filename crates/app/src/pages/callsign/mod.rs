@@ -43,8 +43,8 @@ pub fn CallsignPage() -> impl IntoView {
 
   view! {
     <KnowledgePage
-      title=t("tools.callsign-knowledge")
-      subtitle=t("radio.callsign-knowledge-hub")
+      title=move || t("tools.callsign-knowledge")
+      subtitle=move || t("radio.callsign-knowledge-hub")
     >
       <CallsignStructure />
       <CallsignLookup input=input />

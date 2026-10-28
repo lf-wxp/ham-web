@@ -6,12 +6,16 @@ use ham_web_core::beacons::{BEACON_BANDS, BEACONS, DASH_POWERS, SLOT_SECS, beaco
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::data;
 use crate::i18n::{t, tf};
 use crate::util::set_title;
 
 #[component]
 pub fn BeaconsPage() -> impl IntoView {
   set_title("knowledge.international-beacon-network");
+  // 本页渲染 `crates/core` 的中文原文（`kt_tracked`），译文词典要自己挂一次拉取，
+  // 否则以英文 / 西语直接打开本页时词典永远不来、这些文案停在中文。
+  data::use_knowledge_i18n();
 
   let now_ms = RwSignal::new(js_sys::Date::new_0().get_time());
   if let Ok(handle) = set_interval_with_handle(
@@ -56,10 +60,10 @@ pub fn BeaconsPage() -> impl IntoView {
                 <div class="ml-auto flex items-center gap-3">
                   <div class="text-right">
                     <div class="text-sm">
-                      {tf("knowledge.transmitting-now", &[call, loc, region])}
+                      {move || tf("knowledge.transmitting-now", &[call, &data::kt_tracked(loc), &data::kt_tracked(region)])}
                     </div>
                     <div class="text-xs text-muted-foreground">
-                      {tf("knowledge.about-s-left-for", &[&remaining.to_string()])}
+                      {move || tf("knowledge.about-s-left-for", &[&remaining.to_string()])}
                     </div>
                   </div>
                   <div class="h-2 w-24 overflow-hidden bg-muted">
@@ -92,7 +96,7 @@ pub fn BeaconsPage() -> impl IntoView {
                       <span class="font-mono text-xs text-muted-foreground">{format!("{:02}", i + 1)}</span>
                       <span class="font-mono text-sm">{call}</span>
                     </div>
-                    <div class="mt-0.5 text-xs text-muted-foreground">{tf("common.pair", &[loc, region])}</div>
+                    <div class="mt-0.5 text-xs text-muted-foreground">{move || tf("common.pair", &[&data::kt_tracked(loc), &data::kt_tracked(region)])}</div>
                   </div>
                 }
               })
@@ -131,7 +135,7 @@ pub fn BeaconsPage() -> impl IntoView {
                 .map(|&(label, pwr)| {
                   view! {
                     <span class="bg-inset px-2 py-1 text-xs tabular-nums">
-                      {tf("common.watt-value", &[label, &format!("{pwr}")])}
+                      {move || tf("common.watt-value", &[&data::kt_tracked(label), &format!("{pwr}")])}
                     </span>
                   }
                 })

@@ -12,11 +12,11 @@ pub fn ConnectorsPage() -> impl IntoView {
   set_title("knowledge.cables-and-connectors");
   view! {
     <KnowledgePage
-      title=t("knowledge.cables-and-connectors")
-      subtitle=t("knowledge.cable-selection-rf-connectors")
+      title=move || t("knowledge.cables-and-connectors")
+      subtitle=move || t("knowledge.cable-selection-rf-connectors")
     >
       <TableSection
-        title=t("knowledge.rf-connector-comparison")
+        title="knowledge.rf-connector-comparison"
         headers=&[
           "knowledge.model",
           "knowledge.impedance-and-frequency-limit",
@@ -25,9 +25,9 @@ pub fn ConnectorsPage() -> impl IntoView {
         rows=CONNECTORS
         class="min-w-[720px]"
       />
-      <BulletSection title=t("knowledge.connector-selection-tips") items=SELECTION_TIPS />
+      <BulletSection title="knowledge.connector-selection-tips" items=SELECTION_TIPS />
       <TableSection
-        title=t("knowledge.common-cable-selection")
+        title="knowledge.common-cable-selection"
         headers=&[
           "knowledge.model",
           "knowledge.structure-and-shielding",
@@ -37,10 +37,10 @@ pub fn ConnectorsPage() -> impl IntoView {
         class="min-w-[640px]"
       />
       <BulletSection
-        title=t("knowledge.connector-installation-and-waterproofing")
+        title="knowledge.connector-installation-and-waterproofing"
         items=INSTALL_TIPS
       />
-      <BulletSection title=t("knowledge.common-faults-and-troubleshooting") items=FAULTS />
+      <BulletSection title="knowledge.common-faults-and-troubleshooting" items=FAULTS />
     </KnowledgePage>
   }
 }

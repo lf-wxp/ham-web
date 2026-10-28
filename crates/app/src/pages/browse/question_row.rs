@@ -69,14 +69,17 @@ pub(super) fn QuestionRow(
   let note = q.p_code().and_then(categories::sub_note);
   let refs = top_cat.map_or(&[][..], |c| categories::top_refs(c.key));
   let is_multiple = q.is_multiple();
-  let answer_title = if is_multiple {
-    tp(
-      "common.correct-answers-items",
-      answers.len(),
-      &[&(answers.len()).to_string()],
-    )
-  } else {
-    t("exam.correct-answer")
+  let answer_count = answers.len();
+  let answer_title = move || {
+    if is_multiple {
+      tp(
+        "common.correct-answers-items",
+        answer_count,
+        &[&answer_count.to_string()],
+      )
+    } else {
+      t("exam.correct-answer")
+    }
   };
 
   view! {
@@ -90,11 +93,11 @@ pub(super) fn QuestionRow(
             let chip = tone::chip(c.tone);
             view! {
               <span class=format!("border-2 px-2 py-0.5 text-xs text-foreground {chip}")>
-                {move || t(c.name)}
+                {move || crate::data::core_text_tracked(c.name)}
               </span>
             }
           })}
-        {sub.map(|s| view! { <span class="bg-accent px-2.5 py-0.5 text-xs text-muted-foreground">{s.name}</span> })}
+        {sub.map(|s| view! { <span class="bg-accent px-2.5 py-0.5 text-xs text-muted-foreground">{move || crate::data::kt_tracked(s.name)}</span> })}
         {is_multiple
           .then(|| {
             view! {
@@ -163,9 +166,9 @@ pub(super) fn QuestionRow(
           view! {
             <div class="mb-3 border-t border-dashed pt-3">
               <div class="mb-1 text-xs text-muted-foreground">
-                {move || t("knowledge.topic")} {sub.map(|s| s.name)}
+                {move || t("knowledge.topic")} {move || sub.map(|s| crate::data::kt_tracked(s.name))}
               </div>
-              <div class="text-sm leading-6 text-muted-foreground">{n}</div>
+              <div class="text-sm leading-6 text-muted-foreground">{move || crate::data::kt_tracked(n)}</div>
             </div>
           }
         })}
@@ -195,16 +198,16 @@ pub(super) fn QuestionRow(
                           rel="noopener noreferrer"
                           class="inline-flex items-center gap-1 underline-offset-2 hover:underline"
                         >
-                          {r.text}
+                          {move || crate::data::kt_tracked(r.text)}
                           <Icon kind=IconKind::ExternalLink class="size-6 w-3" />
                         </a>
                       }
                       .into_any(),
-                      None => view! { <span>{r.text}</span> }.into_any(),
+                      None => view! { <span>{move || crate::data::kt_tracked(r.text)}</span> }.into_any(),
                     };
                     view! {
                       <li class="flex items-start gap-2 text-sm text-muted-foreground">
-                        <span class=badge>{r.kind.label()}</span>
+                        <span class=badge>{move || crate::data::kt_tracked(r.kind.label())}</span>
                         {body}
                       </li>
                     }

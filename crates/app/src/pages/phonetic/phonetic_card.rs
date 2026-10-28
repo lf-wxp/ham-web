@@ -8,7 +8,7 @@ use crate::ui::Tooltip;
 #[component]
 pub(super) fn PhoneticCard(entry: &'static PhoneticEntry) -> impl IntoView {
   view! {
-    <Tooltip class="min-w-0" label=tf("common.read-aloud", &[(entry.word)])>
+    <Tooltip class="min-w-0" label=Signal::derive(move || tf("common.read-aloud", &[(entry.word)]))>
       <button
         type="button"
         on:click=move |_| speak_en(entry.word)

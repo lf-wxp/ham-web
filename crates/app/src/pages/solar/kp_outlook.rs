@@ -3,6 +3,7 @@ use ham_web_core::kp_forecast::{
 };
 use leptos::prelude::*;
 
+use crate::data::kt_tracked;
 use crate::i18n::{t, tf};
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 
@@ -62,7 +63,10 @@ pub(super) fn KpOutlook(forecast: KpForecast, outlook: Outlook) -> impl IntoView
         let tail = match p.g {
           Some(g) => tf(
             "radio.kp-forecast-storm",
-            &[&g.to_string(), &t(g_name_key(g))],
+            &[
+              &g.to_string(),
+              &crate::data::core_text_tracked(g_name_key(g)),
+            ],
           ),
           None => t("radio.kp-forecast-below-scale"),
         };
@@ -91,7 +95,7 @@ pub(super) fn KpOutlook(forecast: KpForecast, outlook: Outlook) -> impl IntoView
 
   view! {
     {move || match summary.get() {
-      Some(s) => view! { <p>{s}</p> }.into_any(),
+      Some(s) => view! { <p>{move || kt_tracked(&s)}</p> }.into_any(),
       None => view! { <p class="text-muted-foreground">{move || t("radio.kp-forecast-no-forecast")}</p> }.into_any(),
     }}
     <Table aria_label=Signal::derive(move || t("radio.kp-forecast-table")) class="text-center font-mono text-xs">
@@ -104,7 +108,7 @@ pub(super) fn KpOutlook(forecast: KpForecast, outlook: Outlook) -> impl IntoView
             .iter()
             .cloned()
             .map(|d| view! {
-              <TableHeader scope="col" class="px-2 py-1.5 text-center font-normal">{d}</TableHeader>
+              <TableHeader scope="col" class="px-2 py-1.5 text-center font-normal">{move || kt_tracked(&d)}</TableHeader>
             })
             .collect_view()}
         </TableRow>
@@ -132,8 +136,8 @@ pub(super) fn KpOutlook(forecast: KpForecast, outlook: Outlook) -> impl IntoView
                       view! {
                         <TableCell class=class>
                           {format!("{:.2}", s.kp)}
-                          {g.map(|g| view! { <span>{g}</span> })}
-                          <span class="sr-only">{move || format!(" {}", t(kind_key(s.kind)))}</span>
+                          {g.map(|g| view! { <span>{move || kt_tracked(&g)}</span> })}
+                          <span class="sr-only">{move || format!(" {}", crate::data::core_text_tracked(kind_key(s.kind)))}</span>
                         </TableCell>
                       }
                       .into_any()
@@ -147,7 +151,7 @@ pub(super) fn KpOutlook(forecast: KpForecast, outlook: Outlook) -> impl IntoView
       </TableBody>
     </Table>
     <p class="text-xs text-muted-foreground">{move || t("radio.kp-forecast-legend")}</p>
-    {move || updated.get().map(|u| view! { <p class="text-xs text-muted-foreground">{u}</p> }.into_any())}
+    {move || updated.get().map(|u| view! { <p class="text-xs text-muted-foreground">{move || kt_tracked(&u)}</p> }.into_any())}
     <p class="text-xs text-muted-foreground">{move || t("radio.kp-forecast-note")}</p>
   }
 }

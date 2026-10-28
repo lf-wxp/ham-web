@@ -82,9 +82,13 @@ impl TextValue {
   }
 
   /// 是否为空（空串的属性一律不渲染，见各组件的 `non_empty` 处理）。
+  ///
+  /// 各组件在组件体里一次性调用它（决定属性渲不渲染），那里没有响应式观察者；
+  /// 用 `untrack` 明确声明「这里不订阅」，否则动态文案会让 debug 构建对每次挂载都报
+  /// 「outside a reactive tracking context」。
   #[must_use]
   pub fn is_empty(&self) -> bool {
-    self.get().is_empty()
+    untrack(|| self.get().is_empty())
   }
 }
 

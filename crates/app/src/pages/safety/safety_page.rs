@@ -4,6 +4,7 @@ use ham_web_core::safety::{
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::data::kt_tracked;
 use crate::util::set_title;
 
 use super::label_list::LabelList;
@@ -12,6 +13,8 @@ use crate::i18n::t;
 #[component]
 pub fn SafetyPage() -> impl IntoView {
   set_title("shell.rf-safety");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
@@ -44,7 +47,7 @@ pub fn SafetyPage() -> impl IntoView {
                 view! {
                   <li class="flex gap-2 text-sm text-muted-foreground">
                     <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-                    <span>{*tip}</span>
+                    <span>{move || kt_tracked(tip)}</span>
                   </li>
                 }
               })
@@ -61,7 +64,7 @@ pub fn SafetyPage() -> impl IntoView {
                 view! {
                   <li class="flex gap-2 text-sm text-muted-foreground">
                     <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-                    <span>{*tip}</span>
+                    <span>{move || kt_tracked(tip)}</span>
                   </li>
                 }
               })

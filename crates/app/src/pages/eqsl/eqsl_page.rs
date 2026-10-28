@@ -11,7 +11,7 @@ use super::lotw_station_location::LotwStationLocation;
 pub fn EqslPage() -> impl IntoView {
   set_title("shell.eqsl");
   view! {
-    <KnowledgePage title=t("shell.eqsl") subtitle=t("log.lotw-confirmations-eqsl-qrz")>
+    <KnowledgePage title=move || t("shell.eqsl") subtitle=move || t("log.lotw-confirmations-eqsl-qrz")>
       <TableSection title="主要服务" headers=&["服务", "类型", "说明"] rows=EQSL_SERVICES class="min-w-[640px]" />
       // 流程放在服务表后面：先知道有哪几家，再看 LoTW 这条路怎么走通。
       // 工具本身在通联日志页（导出 ADIF / 标记已上传 / 同步 QSL），这里只讲步骤与边界。

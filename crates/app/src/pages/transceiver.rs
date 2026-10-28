@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn TransceiverPage() -> impl IntoView {
   set_title("shell.transceivers");
   view! {
-    <KnowledgePage title=t("shell.transceivers") subtitle=t("knowledge.receiver-specs-superheterodyne-architecture")>
+    <KnowledgePage title=move || t("shell.transceivers") subtitle=move || t("knowledge.receiver-specs-superheterodyne-architecture")>
       <TableSection title="接收机关键指标" headers=&["指标", "含义", "影响"] rows=RECEIVER_METRICS class="min-w-[640px]" />
       <ConceptsSection title="核心概念" items=TRANSCEIVER_CONCEPTS />
       <BulletSection title="选购要点" items=BUYING_TIPS />

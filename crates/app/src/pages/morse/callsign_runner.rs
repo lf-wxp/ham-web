@@ -222,7 +222,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
             save(&stats.get_untracked());
           })
         />
-        {label}
+        {move || crate::data::core_text_tracked(label)}
       </label>
     }
   };

@@ -27,6 +27,13 @@ pub fn Textarea(
   aria_label: Option<TextValue>,
   #[prop(optional, into)] id: Option<String>,
   #[prop(optional, into)] name: Option<String>,
+  /// 与 [`super::Input`] 同名同义。填令牌、密钥这类内容时要设 `off`，免得浏览器记住或联想。
+  #[prop(optional, into)]
+  autocomplete: Option<String>,
+  #[prop(optional, into)] autocapitalize: Option<String>,
+  /// `"false"` 关掉拼写检查。Chrome 的增强拼写检查会把文本框内容发给服务商，令牌不该经过它。
+  #[prop(optional, into)]
+  spellcheck: Option<String>,
   #[prop(optional, into)] disabled: Signal<bool>,
   #[prop(optional, into)] readonly: Signal<bool>,
   /// 错误态。
@@ -73,6 +80,9 @@ pub fn Textarea(
       data-slot="textarea"
       id=id
       name=name
+      autocomplete=autocomplete
+      autocapitalize=autocapitalize
+      spellcheck=spellcheck
       rows=rows
       placeholder=move || placeholder.as_ref().map(TextValue::get)
       aria-label=move || aria_label.as_ref().map(TextValue::get)

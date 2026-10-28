@@ -11,6 +11,7 @@ use leptos::prelude::*;
 use crate::components::common::{
   BulletSection, ConceptsSection, KnowledgePage, SectionCard, TableSection,
 };
+use crate::data::kt_tracked;
 use crate::i18n::{t, tp};
 use crate::util::set_title;
 
@@ -57,10 +58,10 @@ const ERROR_HEADERS: &[&str] = &["HTTP", "code", "说明"];
 pub fn DevelopersPage() -> impl IntoView {
   set_title("knowledge.open-api");
   view! {
-    <KnowledgePage title=t("knowledge.open-api") subtitle=t("knowledge.versioned-cors-enabled-pure")>
+    <KnowledgePage title=move || t("knowledge.open-api") subtitle=move || t("knowledge.versioned-cors-enabled-pure")>
       <ConceptsSection title="接入约定" items=CONVENTIONS ui=true />
 
-      <SectionCard title=t("knowledge.quotas-authentication")>
+      <SectionCard title=Signal::derive(move || t("knowledge.quotas-authentication"))>
         <div class="space-y-2 p-4 text-sm text-muted-foreground">
           <p>
             {move || {
@@ -93,7 +94,7 @@ pub fn DevelopersPage() -> impl IntoView {
         </div>
       </SectionCard>
 
-      <SectionCard title=t("knowledge.endpoints")>
+      <SectionCard title=Signal::derive(move || t("knowledge.endpoints"))>
         <div class="divide-y">
           {ENDPOINTS
             .iter()
@@ -106,10 +107,10 @@ pub fn DevelopersPage() -> impl IntoView {
                     </span>
                     <code class="break-all font-mono text-sm">{e.path}</code>
                     <span class="border px-2 py-0.5 text-xs text-muted-foreground">
-                      {move || t(e.tag)}
+                      {move || crate::data::core_text_tracked(e.tag)}
                     </span>
                   </div>
-                  <p class="text-sm text-muted-foreground">{move || t(e.summary)}</p>
+                  <p class="text-sm text-muted-foreground">{move || crate::data::core_text_tracked(e.summary)}</p>
                   {(!e.params.is_empty())
                     .then(|| {
                       view! {
@@ -120,7 +121,7 @@ pub fn DevelopersPage() -> impl IntoView {
                             .map(|p| {
                               view! {
                                 <li class="flex flex-wrap items-baseline gap-x-2 text-xs">
-                                  <code class="font-mono">{p.name}</code>
+                                  <code class="font-mono">{move || kt_tracked(p.name)}</code>
                                   <span class="text-muted-foreground">
                                     {format!("{} · ", p.schema)}
                                     {move || {
@@ -131,7 +132,7 @@ pub fn DevelopersPage() -> impl IntoView {
                                       }
                                     }}
                                   </span>
-                                  <span class="text-muted-foreground">{move || t(p.desc)}</span>
+                                  <span class="text-muted-foreground">{move || crate::data::core_text_tracked(p.desc)}</span>
                                 </li>
                               }
                             })

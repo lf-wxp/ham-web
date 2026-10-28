@@ -51,6 +51,9 @@ struct CategoryStat {
 #[component]
 pub fn ProgressPage() -> impl IntoView {
   set_title("shell.progress");
+  // 本页渲染 `crates/core` 的中文原文（`kt_tracked`），译文词典要自己挂一次拉取，
+  // 否则以英文 / 西语直接打开本页时词典永远不来、这些文案停在中文。
+  data::use_knowledge_i18n();
 
   // 同步统计。
   let checkin: CheckinLite = storage::get_json("daily-checkin").unwrap_or_default();
@@ -205,15 +208,15 @@ pub fn ProgressPage() -> impl IntoView {
 
       <PageContainer>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label=t("learning.day-streak") value=move || checkin.streak />
-          <Stat label=t("learning.mistakes") value=move || mistakes />
-          <Stat label=t("home.due-for-review") value=move || due />
-          <Stat label=t("learning.answered-total") value=move || answered_total.get() />
-          <Stat label=t("learning.bookmarks") value=move || bookmarks />
-          <Stat label=t("shell.logbook") value=move || log_count />
-          <Stat label=t("learning.grids-worked") value=move || grid_count />
-          <Stat label=t("learning.dxcc-rarity") value=move || dxcc_done />
-          <Stat label=t("learning.total-study-min") value=move || total_minutes />
+          <Stat label=Signal::derive(move || t("learning.day-streak")) value=move || checkin.streak />
+          <Stat label=Signal::derive(move || t("learning.mistakes")) value=move || mistakes />
+          <Stat label=Signal::derive(move || t("home.due-for-review")) value=move || due />
+          <Stat label=Signal::derive(move || t("learning.answered-total")) value=move || answered_total.get() />
+          <Stat label=Signal::derive(move || t("learning.bookmarks")) value=move || bookmarks />
+          <Stat label=Signal::derive(move || t("shell.logbook")) value=move || log_count />
+          <Stat label=Signal::derive(move || t("learning.grids-worked")) value=move || grid_count />
+          <Stat label=Signal::derive(move || t("learning.dxcc-rarity")) value=move || dxcc_done />
+          <Stat label=Signal::derive(move || t("learning.total-study-min")) value=move || total_minutes />
         </div>
 
         <section class="pxl-card border bg-card p-4">
@@ -260,7 +263,7 @@ pub fn ProgressPage() -> impl IntoView {
               {Bank::ALL
                 .into_iter()
                 .map(|b| {
-                  let label = view! { {tf("learning.class", &[&b.to_string()])} }.into_any();
+                  let label = view! { {move || tf("learning.class", &[&b.to_string()])} }.into_any();
                   view! { <Chip value=b.as_str().to_string()>{label}</Chip> }
                 })
                 .collect_view()}
@@ -355,7 +358,7 @@ pub fn ProgressPage() -> impl IntoView {
               {Bank::ALL
                 .into_iter()
                 .map(|b| {
-                  let label = view! { {tf("learning.class", &[&b.to_string()])} }.into_any();
+                  let label = view! { {move || tf("learning.class", &[&b.to_string()])} }.into_any();
                   view! { <Chip value=b.as_str().to_string()>{label}</Chip> }
                 })
                 .collect_view()}

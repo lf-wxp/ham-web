@@ -63,15 +63,15 @@ pub fn PskDecodePage() -> impl IntoView {
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
-        title=t("radio.psk31-decoder")
-        subtitle=t("radio.bpsk-31-25-baud")
+        title=move || t("radio.psk31-decoder")
+        subtitle=move || t("radio.bpsk-31-25-baud")
         actions=ViewFn::from(move || {
           view! {
             <a
               href="/modes"
               class="border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              {t("radio.digital-modes-reference")}
+              {move || t("radio.digital-modes-reference")}
             </a>
           }
         })
@@ -80,9 +80,9 @@ pub fn PskDecodePage() -> impl IntoView {
       <PageContainer class="space-y-5">
         <section class="pxl-card border bg-card p-4 text-sm text-muted-foreground">
           <p>
-            {t("radio.upload-a-psk31-audio")}
+            {move || t("radio.upload-a-psk31-audio")}
             " "
-            {t("radio.the-carrier-is-usually")}
+            {move || t("radio.the-carrier-is-usually")}
           </p>
         </section>
 

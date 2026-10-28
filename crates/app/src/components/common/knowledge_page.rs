@@ -18,7 +18,7 @@ pub fn KnowledgePage(
   #[prop(into)] subtitle: Signal<String>,
   children: Children,
 ) -> impl IntoView {
-  Effect::new(move |_| data::ensure_knowledge_i18n());
+  data::use_knowledge_i18n();
   view! {
     <div>
       <PageHeader title=title subtitle=subtitle />

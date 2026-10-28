@@ -3,6 +3,7 @@ use leptos::task::spawn_local;
 
 use crate::components::common::EmptyState;
 use crate::data;
+use crate::data::kt_tracked;
 
 use super::{Alert, level_color};
 use crate::i18n::t;
@@ -65,7 +66,7 @@ pub(super) fn AlertsCard() -> impl IntoView {
                         <span class="font-mono text-xs text-muted-foreground">{a.product_id.clone()}</span>
                         <span class="ml-auto text-xs text-muted-foreground">{a.issue_time.clone()}</span>
                       </div>
-                      <p class="mt-1 text-xs text-muted-foreground">{msg}</p>
+                      <p class="mt-1 text-xs text-muted-foreground">{move || kt_tracked(&msg)}</p>
                     </div>
                   }
                 })

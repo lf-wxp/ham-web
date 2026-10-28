@@ -17,7 +17,7 @@ use crate::util::set_title;
 pub fn PracticalAntennasPage() -> impl IntoView {
   set_title("knowledge.practical-antenna-topics");
   view! {
-    <KnowledgePage title=t("knowledge.practical-antenna-topics") subtitle=t("knowledge.how-to-choose-between")>
+    <KnowledgePage title=move || t("knowledge.practical-antenna-topics") subtitle=move || t("knowledge.how-to-choose-between")>
       <ConceptsSection title="核心概念" items=PRACTICAL_ANTENNAS_CONCEPTS />
       // 对比表比通用三列表格多一列「求解器模型」：能建模的方案直接跳到 `/nec`，
       // 不能的（小环、Beverage、K9AY）如实写「暂无可用模型」而不是硬凑一个。

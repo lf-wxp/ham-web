@@ -19,7 +19,7 @@ use crate::util::window;
 use super::stat::Stat;
 use super::term_card::TermCard;
 use super::{ALL, Haystacks, PAGE, category_meta, category_pos};
-use crate::i18n::t;
+use crate::i18n::{t, tf};
 
 /// 术语表主体：搜索、分类筛选与词条列表。
 #[component]
@@ -137,8 +137,8 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
             <span class=format!("size-2 shrink-0 {}", cat_tone.map_or("bg-muted", crate::tone::dot))></span>
             // 分类名来自 `crates/core` 的中文常量，必须走 `t` 反查（中文原文 → 词条）；
             // 直接渲染 `name` 会让英文 / 西文界面的侧栏永远停在中文。
-            <Tooltip class="min-w-0 flex-1" label=Signal::derive(move || t(name))>
-              <span class="w-full leading-snug">{move || t(name)}</span>
+            <Tooltip class="min-w-0 flex-1" label=Signal::derive(move || crate::data::core_text_tracked(name))>
+              <span class="w-full leading-snug">{move || crate::data::core_text_tracked(name)}</span>
             </Tooltip>
             <span class="ml-auto text-xs tabular-nums">{move || cat_count.with(|m| m.get(key).copied().unwrap_or(0))}</span>
           </SidebarItem>
@@ -192,7 +192,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               class="mt-4 w-full"
               on_click=Callback::new(move |_| visible.update(|v| *v += PAGE))
             >
-              {t("knowledge.load-more-showing")} {shown_len} " / " {total} {t("common.closing-paren")}
+              {move || tf("knowledge.load-more-count", &[&shown_len.to_string(), &total.to_string()])}
             </Button>
           }
         })}
@@ -252,10 +252,10 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
 
         <div class="min-w-0">
           <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label=t("knowledge.total-terms") value=Signal::derive(move || base.with(Vec::len)) />
-            <Stat label=t("knowledge.english-abbreviations") value=abbr_count />
-            <Stat label=t("knowledge.term-categories") value=category_total />
-            <Stat label=t("exam.current-filter") value=Signal::derive(move || filtered.with(Vec::len)) />
+            <Stat label=Signal::derive(move || t("knowledge.total-terms")) value=Signal::derive(move || base.with(Vec::len)) />
+            <Stat label=Signal::derive(move || t("knowledge.english-abbreviations")) value=abbr_count />
+            <Stat label=Signal::derive(move || t("knowledge.term-categories")) value=category_total />
+            <Stat label=Signal::derive(move || t("exam.current-filter")) value=Signal::derive(move || filtered.with(Vec::len)) />
           </div>
           {list}
         </div>

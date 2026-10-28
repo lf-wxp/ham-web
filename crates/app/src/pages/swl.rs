@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn SwlPage() -> impl IntoView {
   set_title("shell.swl");
   view! {
-    <KnowledgePage title=t("shell.swl") subtitle=t("knowledge.shortwave-broadcast-data-decoding")>
+    <KnowledgePage title=move || t("shell.swl") subtitle=move || t("knowledge.shortwave-broadcast-data-decoding")>
       <TableSection title="可监听内容" headers=&["名称", "类别", "说明"] rows=SWL_TARGETS class="min-w-[520px]" />
       <ConceptsSection title="常用短波广播频段" items=SWL_BANDS inline=true />
       <BulletSection title="入门要点" items=SWL_TIPS />

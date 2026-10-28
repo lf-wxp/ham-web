@@ -4,7 +4,8 @@ use ham_web_core::cw_op::CW_ABBREVIATIONS;
 use leptos::prelude::*;
 
 use super::random_index;
-use crate::i18n::t;
+use crate::data::kt_tracked;
+use crate::i18n::{t, tf};
 use crate::ui::{Button, Variant};
 
 /// CW 缩语速答：给出缩语，从四个含义中选出正确项。
@@ -64,14 +65,14 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
                 .get()
                 .iter()
                 .map(|&idx| {
-                  let meaning = CW_ABBREVIATIONS[idx].1.to_owned();
+                  let meaning = CW_ABBREVIATIONS[idx].1;
                   view! {
                     <button
                       type="button"
                       on:click=move |_| choose(idx)
                       class="inline-flex min-h-10 items-center justify-center pxl-card border bg-card px-3 py-2 text-sm transition duration-(--motion-normal) ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground"
                     >
-                      {meaning}
+                      {move || kt_tracked(meaning)}
                     </button>
                   }
                 })
@@ -89,7 +90,7 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
                 } else {
                   let ans = current.get();
                   view! {
-                    <span class="text-hp-text">"答案是 " {CW_ABBREVIATIONS[ans].1}</span>
+                    <span class="text-hp-text">{move || tf("common.the-answer-is", &[&kt_tracked(CW_ABBREVIATIONS[ans].1)])}</span>
                   }
                   .into_any()
                 }

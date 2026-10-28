@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn PowerSupplyPage() -> impl IntoView {
   set_title("shell.power-supplies");
   view! {
-    <KnowledgePage title=t("shell.power-supplies") subtitle=t("tools.linear-supplies-switch-mode")>
+    <KnowledgePage title=move || t("shell.power-supplies") subtitle=move || t("tools.linear-supplies-switch-mode")>
       <TableSection title="电源类型" headers=&["类型", "原理", "特点"] rows=SUPPLY_TYPES class="min-w-[640px]" />
       <ConceptsSection title="稳压与供电概念" items=SUPPLY_CONCEPTS />
       <BulletSection title="选用要点" items=SUPPLY_TIPS />

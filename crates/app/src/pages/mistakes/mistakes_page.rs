@@ -263,7 +263,7 @@ pub fn MistakesPage() -> impl IntoView {
     <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("shell.mistakes")
-        subtitle=tf("learning.questions-answered-wrong-in", &[&MASTER_STREAK.to_string()])
+        subtitle=move || tf("learning.questions-answered-wrong-in", &[&MASTER_STREAK.to_string()])
         actions=ViewFn::from(move || {
           view! {
             {move || {
@@ -821,7 +821,7 @@ pub fn MistakesPage() -> impl IntoView {
                     .chain(Bank::ALL.into_iter().map(Some))
                     .map(|b| {
                       let label = view! {
-                        {b.map_or_else(|| t("exam.all"), |b| tf("learning.class", &[&b.to_string()]))}
+                        {move || b.map_or_else(|| t("exam.all"), |b| tf("learning.class", &[&b.to_string()]))}
                       }
                         .into_any();
                       view! { <Chip value=b.map_or(String::new(), |b| b.as_str().to_owned())>{label}</Chip> }

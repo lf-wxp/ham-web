@@ -83,6 +83,8 @@ fn months_until(start: &[u32], current: u32) -> (u32, u32) {
 #[component]
 pub fn ContestPage() -> impl IntoView {
   set_title("shell.contesting");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   // 当前月份（1–12），用于计算下一个竞赛。
   let current = js_sys::Date::new_0().get_month() + 1;
 
@@ -111,16 +113,16 @@ pub fn ContestPage() -> impl IntoView {
             {match next {
               Some((0, m, name)) => view! {
                 <div class="border bg-primary/10 px-4 py-3">
-                  <div class="text-sm">{tf("contest.this-month-with-name", &[&(t(name)).to_string(), &m.to_string()])}</div>
+                  <div class="text-sm">{move || tf("contest.this-month-with-name", &[&(crate::data::core_text_tracked(name)).to_string(), &m.to_string()])}</div>
                   <div class="mt-1 text-xs text-muted-foreground">{move || t("contest.get-ready-and-remember")}</div>
                 </div>
               }
               .into_any(),
               Some((w, m, name)) => view! {
                 <div class="border bg-primary/10 px-4 py-3">
-                  <div class="text-sm">{tf("contest.next", &[&(t(name)).to_string(), &m.to_string()])}</div>
+                  <div class="text-sm">{move || tf("contest.next", &[&(crate::data::core_text_tracked(name)).to_string(), &m.to_string()])}</div>
                   <div class="mt-1 text-xs text-muted-foreground">
-                    {tp("contest.held-in-about-months", w, &[&w.to_string()])}
+                    {move || tp("contest.held-in-about-months", w, &[&w.to_string()])}
                   </div>
                 </div>
               }
@@ -140,16 +142,18 @@ pub fn ContestPage() -> impl IntoView {
               .map(|&(wait, _month, c)| {
                 view! {
                   <div class="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_11rem_6rem_1fr]">
-                    <div>{move || t(c.name)}</div>
-                    <div class="text-xs text-muted-foreground">{move || t(c.months)}</div>
+                    <div>{move || crate::data::core_text_tracked(c.name)}</div>
+                    <div class="text-xs text-muted-foreground">{move || crate::data::core_text_tracked(c.months)}</div>
                     <div class=if wait == 0 { "text-xs text-primary" } else { "text-xs text-muted-foreground" }>
-                      {if wait == 0 {
-                        t("contest.this-month")
-                      } else {
-                        tp("contest.in-about-months", wait, &[&wait.to_string()])
+                      {move || {
+                        if wait == 0 {
+                          t("contest.this-month")
+                        } else {
+                          tp("contest.in-about-months", wait, &[&wait.to_string()])
+                        }
                       }}
                     </div>
-                    <div class="text-sm text-muted-foreground">{move || t(c.desc)}</div>
+                    <div class="text-sm text-muted-foreground">{move || crate::data::core_text_tracked(c.desc)}</div>
                   </div>
                 }
               })
@@ -166,7 +170,7 @@ pub fn ContestPage() -> impl IntoView {
                 view! {
                   <li class="flex gap-2 text-sm text-muted-foreground">
                     <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-                    <span>{move || t(tip)}</span>
+                    <span>{move || crate::data::core_text_tracked(tip)}</span>
                   </li>
                 }
               })

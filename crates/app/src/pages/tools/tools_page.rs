@@ -145,6 +145,8 @@ fn scroll_to(id: &str) {
 #[component]
 pub fn ToolsPage() -> impl IntoView {
   set_title("shell.calculators");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   // 移动端工具导航抽屉的开关：选中工具后要主动收起。
   let nav_open = RwSignal::new(false);
   // 路由切换后不会自动跳到锚点（如外链 `/tools#parabolic-dish`），挂载后手动滚动
@@ -183,7 +185,7 @@ pub fn ToolsPage() -> impl IntoView {
                 nav_open.set(false);
               }
             >
-              {move || t(key)}
+              {move || crate::data::core_text_tracked(key)}
             </button>
           </li>
         }

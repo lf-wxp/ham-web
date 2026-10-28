@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 
+use crate::data::kt_tracked;
 use crate::i18n::{t, tf};
 
 use super::{XrayPoint, fmt_iso_time};
@@ -79,7 +80,7 @@ pub(super) fn XrayTrend(
                   stroke-width="1"
                   stroke-dasharray="4 4"
                 />
-                <text x=3.0 y=y - 3.0 font-size="8" class="fill-muted-foreground">{*label}</text>
+                <text x=3.0 y=y - 3.0 font-size="8" class="fill-muted-foreground">{move || kt_tracked(label)}</text>
               }
             })
             .collect_view()}

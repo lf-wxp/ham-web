@@ -2,6 +2,7 @@ use ham_web_core::rst::SIGNAL_STRENGTH;
 use leptos::prelude::*;
 
 use crate::components::quiz_option::QuizOption;
+use crate::data::kt_tracked;
 use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::morse_audio::play_tone;
@@ -70,7 +71,7 @@ pub(super) fn RstListen() -> impl IntoView {
                   disabled=Signal::derive(move || feedback.get().is_some())
                   on_click=Callback::new(move |_| judge(i))
                 >
-                  {k}
+                  {move || kt_tracked(k)}
                 </QuizOption>
               }
             })

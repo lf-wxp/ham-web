@@ -20,12 +20,15 @@ use storage_warning::StorageWarning;
 
 #[component]
 pub fn App() -> impl IntoView {
+  // 第一行：它要在应用自己往存储里写任何东西之前，看一眼「本机原来有没有数据」。
+  let auto_sync = crate::auto_sync::snapshot();
   provide_theme();
   provide_mobile_menu();
   // 动效环境要在任何页面组件挂载前就位：页面里的 `Reveal` 一挂载就会注册浮现观察器。
   crate::motion::provide_motion();
   crate::i18n::provide_locale();
   crate::pages::log::provide_log_store();
+  crate::auto_sync::start(crate::pages::log::use_log_store(), auto_sync);
   leptos::task::spawn_local(async move {
     crate::study::ensure_seeded().await;
     // 迁移旧数据后，把最新的「今日待复习数」同步给后端，供 Web Push 每日提醒附带数量。

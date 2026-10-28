@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use ham_web_core::most_wanted::{WANTED_ENTITIES, wanted_prefix};
 use leptos::prelude::*;
 
+use crate::data::kt_tracked;
 use crate::i18n::{t, tf};
 use crate::pages::log::use_log_store;
 use crate::ui::{Checkbox, Input};
@@ -96,10 +97,10 @@ pub(super) fn WantedTracker() -> impl IntoView {
                       <Checkbox
                         checked=Signal::derive(checked)
                         on_change=Callback::new(move |_| toggle(prefix))
-                        aria_label=tf("common.marker", &[(name)])
+                        aria_label=Signal::derive(move || tf("common.marker", &[&kt_tracked(name)]))
                       />
                       <span class="w-16 shrink-0 font-mono text-sm">{prefix}</span>
-                      <span class="flex-1 text-sm">{name}</span>
+                      <span class="flex-1 text-sm">{move || kt_tracked(name)}</span>
                       {if from_log {
                         view! {
                           <span class="shrink-0 bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{move || t("radio.log")}</span>
@@ -108,7 +109,7 @@ pub(super) fn WantedTracker() -> impl IntoView {
                       } else {
                         view! { <span></span> }.into_any()
                       }}
-                      <span class="shrink-0 text-xs text-muted-foreground">{level}</span>
+                      <span class="shrink-0 text-xs text-muted-foreground">{move || kt_tracked(level)}</span>
                     </div>
                   }
                 })

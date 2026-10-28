@@ -99,7 +99,7 @@ pub fn WantedCard() -> impl IntoView {
             let (label, class) = level_badge(lv);
             view! {
               <span class=format!("pxl-badge {class}")>
-                {tf("radio.propagation", &[&t(label)])}
+                {tf("radio.propagation", &[&crate::data::core_text_tracked(label)])}
               </span>
             }
           })
@@ -109,7 +109,7 @@ pub fn WantedCard() -> impl IntoView {
         {move || {
           band_hint(sfi.get(), k.get()).map(|(text, class)| {
             view! {
-              <p class=format!("text-xs {}", class)>{t(text)}</p>
+              <p class=format!("text-xs {}", class)>{crate::data::core_text_tracked(text)}</p>
             }
           })
         }}
@@ -127,8 +127,8 @@ pub fn WantedCard() -> impl IntoView {
                     view! {
                       <div class="flex items-center justify-between text-sm">
                         <span class="font-mono text-xs text-muted-foreground">{p}</span>
-                        <span class="min-w-0 flex-1 truncate px-2">{name}</span>
-                        <span class="shrink-0 border bg-muted px-2 py-0.5 text-xs">{rarity}</span>
+                        <span class="min-w-0 flex-1 truncate px-2">{move || data::kt_tracked(name)}</span>
+                        <span class="shrink-0 border bg-muted px-2 py-0.5 text-xs">{move || data::kt_tracked(rarity)}</span>
                       </div>
                     }
                   })

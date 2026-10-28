@@ -41,8 +41,8 @@ pub(super) fn CountdownSection() -> impl IntoView {
             let target = month_start + (d as f64 - 1.0) * 86_400_000.0;
             view! {
               <div class="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr_9rem]">
-                <div>{move || t(name)}</div>
-                <div class="text-sm text-muted-foreground">{tf("contest.entry", &[&m.to_string(), &d.to_string(), &(t(desc)).to_string()])}</div>
+                <div>{move || crate::data::core_text_tracked(name)}</div>
+                <div class="text-sm text-muted-foreground">{move || tf("contest.entry", &[&m.to_string(), &d.to_string(), &(crate::data::core_text_tracked(desc)).to_string()])}</div>
                 <div class="text-right text-sm tabular-nums text-primary">
                   {move || {
                     let left = target - now.get();

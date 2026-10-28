@@ -58,7 +58,7 @@ fn solt_step_text(step: usize) -> (String, String) {
 pub fn MeasurementLabPage() -> impl IntoView {
   set_title("measurement.lab-title");
   // 本页自带页头、没套 KnowledgePage 外壳，正文译文（SOLT / 读数陷阱）得自己确保在拉。
-  Effect::new(move |_| data::ensure_knowledge_i18n());
+  data::use_knowledge_i18n();
   // 演示 A：馈线单程损耗（dB）。
   let loss_db = RwSignal::new(0.5f64);
   // 演示 B：SOLT 步骤下标（0..SOLT_STEPS.len()）。

@@ -1,7 +1,5 @@
 use leptos::prelude::*;
 
-use crate::i18n::t;
-
 /// 一个计算器块：卡片 + 标题 + 说明 + 内容。
 ///
 /// 46 个块的外壳完全相同，原先每处都在 `view!` 里手写一遍，Leptos 会为每一处各生成一整套
@@ -17,8 +15,8 @@ pub(super) fn ToolSection(
 ) -> impl IntoView {
   view! {
     <section id=id class="scroll-mt-24 pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t(title)}</h2>
-      <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t(description)}</p>
+      <h2 class="pxl-section-title">{move || crate::data::core_text_tracked(title)}</h2>
+      <p class="px-4 pt-3 text-xs text-muted-foreground">{move || crate::data::core_text_tracked(description)}</p>
       <div class="p-4">{children()}</div>
     </section>
   }

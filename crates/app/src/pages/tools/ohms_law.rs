@@ -29,7 +29,7 @@ pub(super) fn OhmsLaw() -> impl IntoView {
   let field = move |signal: RwSignal<String>, label: &'static str, unit: &'static str| {
     let id = unique_id("ohms");
     view! {
-      <Field label=Signal::derive(move || format!("{}（{unit}）", t(label))) r#for=id.clone()>
+      <Field label=Signal::derive(move || format!("{}（{unit}）", crate::data::core_text_tracked(label))) r#for=id.clone()>
         <NumberField
           id=id
           value=signal

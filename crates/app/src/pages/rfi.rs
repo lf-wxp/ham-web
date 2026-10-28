@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn RfiPage() -> impl IntoView {
   set_title("shell.rfi-troubleshooting");
   view! {
-    <KnowledgePage title=t("shell.rfi-troubleshooting") subtitle=t("tools.rfi-emc-tracing-and")>
+    <KnowledgePage title=move || t("shell.rfi-troubleshooting") subtitle=move || t("tools.rfi-emc-tracing-and")>
       <ConceptsSection title="常见干扰源" items=RFI_SOURCES />
       <ConceptsSection title="排查与抑制手段" items=RFI_SOLUTIONS />
       <BulletSection title="处理要点" items=RFI_TIPS />

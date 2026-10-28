@@ -3,6 +3,7 @@
 use ham_web_core::bands::{self, BANDS};
 use leptos::prelude::*;
 
+use crate::data::kt_tracked;
 use crate::i18n::t;
 
 use super::usage_badge::UsageBadge;
@@ -25,7 +26,7 @@ pub(super) fn table_rows(jump: Callback<&'static str>) -> impl IntoView {
               <span class="font-mono">{band.number}</span>
             </td>
             <td class=CELL rowspan=span.clone() colspan=if band.microwave { "1" } else { "2" }>
-              {band.name}
+              {move || kt_tracked(band.name)}
             </td>
             {(band.microwave && first_mw == Some(bi))
               .then(|| {
@@ -35,13 +36,13 @@ pub(super) fn table_rows(jump: Callback<&'static str>) -> impl IntoView {
                   </td>
                 }
               })}
-            <td class=CELL rowspan=span.clone()>{band.wavelength}</td>
-            <td class=CELL rowspan=span.clone()>{band.freq_name}</td>
+            <td class=CELL rowspan=span.clone()>{move || kt_tracked(band.wavelength)}</td>
+            <td class=CELL rowspan=span.clone()>{move || kt_tracked(band.freq_name)}</td>
             <td class=CELL rowspan=span.clone()>
-              <span class="font-mono">{band.freq_abbr}</span>
+              <span class="font-mono">{move || kt_tracked(band.freq_abbr)}</span>
             </td>
             <td class=CELL rowspan=span.clone()>
-              <span class="whitespace-nowrap">{band.freq_range}</span>
+              <span class="whitespace-nowrap">{move || kt_tracked(band.freq_range)}</span>
             </td>
           }
         });

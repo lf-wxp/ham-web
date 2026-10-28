@@ -14,8 +14,8 @@ pub fn SpectrumAdminPage() -> impl IntoView {
   set_title("knowledge.spectrum-admin");
   view! {
     <KnowledgePage
-      title=t("knowledge.spectrum-admin")
-      subtitle=t("knowledge.spectrum-admin-subtitle")
+      title=move || t("knowledge.spectrum-admin")
+      subtitle=move || t("knowledge.spectrum-admin-subtitle")
     >
       <StepsSection title="干扰查处流程" items=MONITORING_STEPS />
       <ConceptsSection title="knowledge.rr-structure" items=RR_STRUCTURE />

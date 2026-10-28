@@ -36,7 +36,7 @@ pub(super) fn WireTable(
             });
           })
           size=ControlSize::Sm
-          aria_label=$label
+          aria_label=Signal::derive(move || $label)
           class="w-full"
         />
       }

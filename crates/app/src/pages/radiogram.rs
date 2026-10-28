@@ -15,8 +15,8 @@ pub fn RadiogramPage() -> impl IntoView {
   set_title("knowledge.radiogram");
   view! {
     <KnowledgePage
-      title=t("knowledge.radiogram")
-      subtitle=t("knowledge.radiogram-subtitle")
+      title=move || t("knowledge.radiogram")
+      subtitle=move || t("knowledge.radiogram-subtitle")
     >
       <ConceptsSection title="核心概念" items=RADIOGRAM_CONCEPTS />
       <TableSection

@@ -1,12 +1,12 @@
 {
   "note": "性能预算：release 构建产物（postbuild 预压缩后的 .br，即线上实际传输体积）的上限。由 `cargo make size-check` 校验；超限即失败。上调 max 之前先回答「这次增量换来了什么、能不能拆进 Worker」，并在 ROADMAP「工程门禁 · 体积」记一笔。baseline 是上次核对时的实测值（一项匹配多个文件时取其中最大的那个），只用来显示增量，不参与判定。",
-  "checked": "2026-10-16",
+  "checked": "2026-10-28",
   "assets": [
     {
       "name": "主包 wasm",
       "pattern": "ham-web-app-*_bg.wasm",
-      "baseline": 1764675,
-      "max": 1900000
+      "baseline": 1911868,
+      "max": 1950000
     },
     {
       "name": "主包 JS 胶水",

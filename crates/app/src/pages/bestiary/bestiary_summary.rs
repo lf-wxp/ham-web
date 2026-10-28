@@ -13,9 +13,9 @@ pub(super) fn BestiarySummary(alive: usize, defeated: usize, due: usize) -> impl
   view! {
     <section class="space-y-3" aria-label=move || t("rpg.dex-progress")>
       <div class="grid grid-cols-3 gap-3">
-        <Stat label=t("rpg.alive") value=alive />
-        <Stat label=t("rpg.defeated") value=defeated />
-        <Stat label=t("rpg.due-label") value=due />
+        <Stat label=Signal::derive(move || t("rpg.alive")) value=alive />
+        <Stat label=Signal::derive(move || t("rpg.defeated")) value=defeated />
+        <Stat label=Signal::derive(move || t("rpg.due-label")) value=due />
       </div>
       <div class="space-y-1">
         <div class="flex items-baseline justify-between text-xs text-muted-foreground">

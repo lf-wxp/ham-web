@@ -28,16 +28,18 @@ pub fn WeeklyPage() -> impl IntoView {
   let week_review = week_answered.saturating_sub(week_new);
   // 本周累计学习时长（毫秒），格式化为「X 分钟 / X.X 小时」。
   let week_duration_ms: u64 = week.iter().map(|(_, t)| t.duration_ms).sum();
-  let week_duration_text = if week_duration_ms >= 3_600_000 {
-    tf(
-      "learning.hours",
-      &[&format!("{:.1}", week_duration_ms as f64 / 3_600_000.0)],
-    )
-  } else {
-    tf(
-      "radio.min",
-      &[&format!("{:.0}", week_duration_ms as f64 / 60_000.0)],
-    )
+  let week_duration_text = move || {
+    if week_duration_ms >= 3_600_000 {
+      tf(
+        "learning.hours",
+        &[&format!("{:.1}", week_duration_ms as f64 / 3_600_000.0)],
+      )
+    } else {
+      tf(
+        "radio.min",
+        &[&format!("{:.0}", week_duration_ms as f64 / 60_000.0)],
+      )
+    }
   };
 
   // 连续打卡天数：从今天往回数连续有作答的天数。
@@ -213,20 +215,22 @@ pub fn WeeklyPage() -> impl IntoView {
                     let h = (answered as f64 / max_day as f64 * 100.0)
                       .max(if answered > 0 { 4.0 } else { 0.0 });
                     let label = day.get(8..).unwrap_or(&day).to_owned();
-                    let tip = tp(
-                      "common.questions-new",
-                      answered,
-                      &[&(day).to_string(), &(answered).to_string(), &(new).to_string()],
-                    );
+                    let tip = Signal::derive(move || {
+                      tp(
+                        "common.questions-new",
+                        answered,
+                        &[&(day).to_string(), &(answered).to_string(), &(new).to_string()],
+                      )
+                    });
                     view! {
                       // Tooltip 包整列：柱的百分比高度相对包含块，中间多一层会塌。
-                      <Tooltip class="group flex min-w-0 flex-1 flex-col items-center gap-1" label=tip.clone()>
+                      <Tooltip class="group flex min-w-0 flex-1 flex-col items-center gap-1" label=tip>
                         <div
                           class="w-full bg-primary/70 outline-none transition group-hover:bg-primary focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
                           style=format!("height: {h}%")
                           tabindex="0"
                           role="img"
-                          aria-label=tip
+                          aria-label=move || tip.get()
                         ></div>
                         <span class="text-xs text-muted-foreground">{label}</span>
                       </Tooltip>
@@ -237,10 +241,10 @@ pub fn WeeklyPage() -> impl IntoView {
             </div>
             <div class="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
               <span>
-                {t("learning.new")} <span class="text-foreground tabular-nums">{week_new}</span>
+                {move || t("learning.new")} <span class="text-foreground tabular-nums">{week_new}</span>
               </span>
               <span>
-                {t("learning.reviews")} <span class="text-foreground tabular-nums">{week_review}</span>
+                {move || t("learning.reviews")} <span class="text-foreground tabular-nums">{week_review}</span>
               </span>
               <span class="ml-auto tabular-nums">{move || t("learning.share-of-new-questions")} {format!("{new_pct:.0}%")}</span>
             </div>

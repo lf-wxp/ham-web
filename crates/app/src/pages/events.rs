@@ -33,6 +33,8 @@ const TRACKING_LINKS: &[(&str, &str, &str)] = &[
 #[component]
 pub fn EventsPage() -> impl IntoView {
   set_title("knowledge.event-calendar");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
 
   let now = js_sys::Date::new_0();
   let now_t = (
@@ -91,33 +93,36 @@ pub fn EventsPage() -> impl IntoView {
               .iter()
               .map(|(e, (y, m, d))| {
                 let ev = *e;
-                let dur = if ev.duration_days <= 1 {
-                  t("knowledge.1-day")
-                } else {
-                  tp("common.days", ev.duration_days, &[&ev.duration_days.to_string()])
-                };
+                let (y, m, d) = (*y, *m, *d);
                 view! {
                   <div class="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_auto]">
                     <div class="min-w-0">
                       <div class="flex flex-wrap items-baseline gap-x-2">
-                        <span>{move || t(ev.name)}</span>
+                        <span>{move || crate::data::core_text_tracked(ev.name)}</span>
                         <span class="border bg-inset px-2 py-0.5 text-xs text-muted-foreground">
-                          {move || t(ev.kind)}
+                          {move || crate::data::core_text_tracked(ev.kind)}
                         </span>
                       </div>
                       <div class="mt-0.5 text-xs tabular-nums text-muted-foreground">
-                        {tf(
-                          "knowledge.entry",
-                          &[
-                            &y.to_string(),
-                            &m.to_string(),
-                            &d.to_string(),
-                            &dur,
-                            &t(ev.location),
-                          ],
-                        )}
+                        {move || {
+                          let dur = if ev.duration_days <= 1 {
+                            t("knowledge.1-day")
+                          } else {
+                            tp("common.days", ev.duration_days, &[&ev.duration_days.to_string()])
+                          };
+                          tf(
+                            "knowledge.entry",
+                            &[
+                              &y.to_string(),
+                              &m.to_string(),
+                              &d.to_string(),
+                              &dur,
+                              &crate::data::core_text_tracked(ev.location),
+                            ],
+                          )
+                        }}
                       </div>
-                      <div class="mt-1 text-sm text-muted-foreground">{move || t(ev.desc)}</div>
+                      <div class="mt-1 text-sm text-muted-foreground">{move || crate::data::core_text_tracked(ev.desc)}</div>
                     </div>
                     <div class="flex items-center gap-2 sm:justify-end">
                       {(!ev.source.is_empty())
@@ -169,8 +174,8 @@ pub fn EventsPage() -> impl IntoView {
                     href=*href
                     class="flex flex-col gap-0.5 border px-3 py-2 transition-colors hover:bg-accent"
                   >
-                    <span class="text-sm">{move || t(name)}</span>
-                    <span class="text-xs text-muted-foreground">{move || t(desc)}</span>
+                    <span class="text-sm">{move || crate::data::core_text_tracked(name)}</span>
+                    <span class="text-xs text-muted-foreground">{move || crate::data::core_text_tracked(desc)}</span>
                   </a>
                 }
               })

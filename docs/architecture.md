@@ -57,6 +57,7 @@
 │   │       ├── store.rs    # 收藏 / 分组 / 笔记等本地持久化（带跨标签页缓存同步）
 │   │       ├── kv.rs       # 统一存储门面：小数据 localStorage、大数据 IndexedDB 双写
 │   │       ├── idb.rs      # IndexedDB KV 封装（承载通联日志等大体积数据）
+│   │       ├── remote_sync.rs · auto_sync.rs  # 自定义远端同步：fetch 封装 / 打开页面自动获取 + 改动后自动写入（决策与重试策略在 core/remote_sync.rs）
 │   │       ├── i18n/       # 界面文案运行时：mod.rs（t/tf/Locale）+ catalog.rs + pack.rs
 │   │       └── …           # exam_history / achievements / bank_updates / shortcuts / speech / theme / photo / pwa / rpg
 │   ├── apt/ · sstv/ · wspr/ · ft8/ · rtty/ · olivia/ · dominoex/ · navtex/ · lrpt/ · hell/ · wefax/

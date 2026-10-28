@@ -57,7 +57,9 @@ pub fn StudyCalendarPage() -> impl IntoView {
         <section class="pxl-card border bg-card">
           <h2 class="pxl-section-title">{move || t("learning.next-14-days-review")}</h2>
           <ul class="divide-y">
-            {{
+            {move || {
+              // 必须包成闭包：上面每 2 秒轮询同步的 `plan` 只有在响应式上下文里读才会让日历重算，
+              // 裸块只在挂载时求值一次，顶部卡片改了考试日期这里不会跟。
               let target_n = plan.get().days_left(&today).map(|_| {
                 day_number(&plan.get().target_date).unwrap_or(0)
               });

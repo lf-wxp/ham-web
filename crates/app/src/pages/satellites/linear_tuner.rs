@@ -1,6 +1,7 @@
 use ham_web_core::sat_transponder::{PassbandError, TRANSPONDERS, Transponder};
 use leptos::prelude::*;
 
+use crate::data::kt_tracked;
 use crate::i18n::{t, tf};
 use crate::ui::{
   Button, Checkbox, Field, Label, NativeSelect, NumberField, SelectOption, Size, Variant,
@@ -269,7 +270,7 @@ pub(super) fn LinearTuner(
                   }
                 })
               >
-                {label}
+                {move || kt_tracked(&label)}
               </Button>
             }
           })

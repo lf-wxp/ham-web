@@ -4,12 +4,15 @@ use ham_web_core::propagation::{CONCEPTS, LAYERS, LOW_BAND_TIPS, PROPAGATION_MOD
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::data::kt_tracked;
 use crate::i18n::t;
 use crate::util::set_title;
 
 #[component]
 pub fn PropagationPage() -> impl IntoView {
   set_title("shell.propagation");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
@@ -26,9 +29,9 @@ pub fn PropagationPage() -> impl IntoView {
               .map(|&(name, range, desc)| {
                 view! {
                   <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_10rem_1fr]">
-                    <div>{name}</div>
-                    <div class="font-mono text-xs text-muted-foreground">{range}</div>
-                    <div class="text-sm text-muted-foreground">{desc}</div>
+                    <div>{move || kt_tracked(name)}</div>
+                    <div class="font-mono text-xs text-muted-foreground">{move || kt_tracked(range)}</div>
+                    <div class="text-sm text-muted-foreground">{move || kt_tracked(desc)}</div>
                   </div>
                 }
               })
@@ -44,8 +47,8 @@ pub fn PropagationPage() -> impl IntoView {
               .map(|&(k, v)| {
                 view! {
                   <div class="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr]">
-                    <dt>{k}</dt>
-                    <dd class="text-sm text-muted-foreground">{v}</dd>
+                    <dt>{move || kt_tracked(k)}</dt>
+                    <dd class="text-sm text-muted-foreground">{move || kt_tracked(v)}</dd>
                   </div>
                 }
               })
@@ -61,8 +64,8 @@ pub fn PropagationPage() -> impl IntoView {
               .map(|&(k, v)| {
                 view! {
                   <div class="grid gap-1 px-4 py-3 sm:grid-cols-[12rem_1fr]">
-                    <dt>{k}</dt>
-                    <dd class="text-sm text-muted-foreground">{v}</dd>
+                    <dt>{move || kt_tracked(k)}</dt>
+                    <dd class="text-sm text-muted-foreground">{move || kt_tracked(v)}</dd>
                   </div>
                 }
               })
@@ -79,7 +82,7 @@ pub fn PropagationPage() -> impl IntoView {
                 view! {
                   <li class="flex gap-2 text-sm text-muted-foreground">
                     <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-                    <span>{*tip}</span>
+                    <span>{move || kt_tracked(tip)}</span>
                   </li>
                 }
               })

@@ -6,6 +6,7 @@ use leptos::task::spawn_local;
 
 use crate::components::common::{PageContainer, PageHeader};
 use crate::data;
+use crate::data::kt_tracked;
 use crate::ui::{Button, Size, Variant};
 use crate::util::set_title;
 
@@ -23,13 +24,19 @@ use crate::i18n::{t, tf};
 #[component]
 pub fn SolarPage() -> impl IntoView {
   set_title("shell.solar-data");
+  // 本页渲染 `crates/core` 的中文原文（`kt_tracked`），译文词典要自己挂一次拉取，
+  // 否则以英文 / 西语直接打开本页时词典永远不来、这些文案停在中文。
+  data::use_knowledge_i18n();
 
   let k = RwSignal::new(None::<f64>);
   let sfi = RwSignal::new(None::<f64>);
   let ssn = RwSignal::new(None::<f64>);
   let a = RwSignal::new(None::<f64>);
   let xray = RwSignal::new(String::new());
+  // 更新时间的原文；`kp_fallback` 为真表示它来自 NOAA 降级路径，展示时要套「Kp 更新于 … UTC」。
+  // 不能在落地时就拼成译文存进来：切语言后那句话会停在旧语言。
   let updated = RwSignal::new(String::new());
+  let kp_fallback = RwSignal::new(false);
   let conditions = RwSignal::new(Vec::<BandCond>::new());
   let loading = RwSignal::new(true);
   let failed = RwSignal::new(false);
@@ -70,6 +77,7 @@ pub fn SolarPage() -> impl IntoView {
         a.set(api.a_index.map(f64::from));
         xray.set(api.xray.unwrap_or_default());
         updated.set(api.updated.unwrap_or_default());
+        kp_fallback.set(false);
         conditions.set(api.conditions);
         loading.set(false);
         return;
@@ -82,10 +90,8 @@ pub fn SolarPage() -> impl IntoView {
         && let Some(v) = last.estimated_kp.or_else(|| last.kp_index.map(f64::from))
       {
         k.set(Some(v));
-        updated.set(tf(
-          "radio.kp-updated-utc",
-          &[&(fmt_iso_time(&last.time_tag)).to_string()],
-        ));
+        updated.set(fmt_iso_time(&last.time_tag).to_string());
+        kp_fallback.set(true);
         any = true;
       }
       if let Ok(entries) = data::fetch_external_json::<Vec<SolarEntry>>(SOLAR_URL).await {
@@ -134,7 +140,11 @@ pub fn SolarPage() -> impl IntoView {
               {move || {
                 let mut parts = Vec::new();
                 if !updated.get().is_empty() {
-                  parts.push(updated.get());
+                  parts.push(if kp_fallback.get() {
+                    tf("radio.kp-updated-utc", &[&updated.get()])
+                  } else {
+                    updated.get()
+                  });
                 }
                 if !xray.get().is_empty() {
                   parts.push(tf("radio.x-ray-flux", &[&xray.get().to_string()]));
@@ -148,10 +158,10 @@ pub fn SolarPage() -> impl IntoView {
             </span>
           </h2>
           <div class="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
-            <MetricCard label=t("home.k-index") value=k unit=t("radio.0-9-lower-is") loading=loading failed=failed />
-            <MetricCard label=t("tools.solar-flux-sfi") value=sfi unit=t("radio.10-7-cm-flux") loading=loading failed=failed />
-            <MetricCard label=t("radio.sunspot-number-ssn") value=ssn unit=t("radio.relative-number") loading=loading failed=failed />
-            <MetricCard label=t("radio.a-index") value=a unit=t("radio.daily-geomagnetic-index") loading=loading failed=failed />
+            <MetricCard label=Signal::derive(move || t("home.k-index")) value=k unit=Signal::derive(move || t("radio.0-9-lower-is")) loading=loading failed=failed />
+            <MetricCard label=Signal::derive(move || t("tools.solar-flux-sfi")) value=sfi unit=Signal::derive(move || t("radio.10-7-cm-flux")) loading=loading failed=failed />
+            <MetricCard label=Signal::derive(move || t("radio.sunspot-number-ssn")) value=ssn unit=Signal::derive(move || t("radio.relative-number")) loading=loading failed=failed />
+            <MetricCard label=Signal::derive(move || t("radio.a-index")) value=a unit=Signal::derive(move || t("radio.daily-geomagnetic-index")) loading=loading failed=failed />
           </div>
           <div class="grid grid-cols-2 gap-3 px-4 pb-4 sm:grid-cols-4">
             <div class="col-span-2 border bg-inset p-3 text-center sm:col-span-4">
@@ -167,7 +177,7 @@ pub fn SolarPage() -> impl IntoView {
                         PropagationLevel::Fair => "text-gold-text",
                         PropagationLevel::Poor => "text-hp-text",
                       };
-                      view! { <span class=color>{lvl.label()}</span> }.into_any()
+                      view! { <span class=color>{move || data::kt_tracked(lvl.label())}</span> }.into_any()
                     }
                     None if loading.get() => view! { <span>"…"</span> }.into_any(),
                     None => view! { <span>"—"</span> }.into_any(),
@@ -229,9 +239,9 @@ pub fn SolarPage() -> impl IntoView {
               .map(|&(name, range, desc)| {
                 view! {
                   <div class="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_12rem_1fr]">
-                    <div>{name}</div>
-                    <div class="font-mono text-xs text-muted-foreground">{range}</div>
-                    <div class="text-sm text-muted-foreground">{desc}</div>
+                    <div>{move || kt_tracked(name)}</div>
+                    <div class="font-mono text-xs text-muted-foreground">{move || kt_tracked(range)}</div>
+                    <div class="text-sm text-muted-foreground">{move || kt_tracked(desc)}</div>
                   </div>
                 }
               })
@@ -247,8 +257,8 @@ pub fn SolarPage() -> impl IntoView {
               .map(|&(level, desc)| {
                 view! {
                   <div class="border bg-inset p-3">
-                    <div>{level}</div>
-                    <div class="mt-1 text-sm text-muted-foreground">{desc}</div>
+                    <div>{move || crate::data::core_text_tracked(level)}</div>
+                    <div class="mt-1 text-sm text-muted-foreground">{move || kt_tracked(desc)}</div>
                   </div>
                 }
               })
@@ -265,7 +275,7 @@ pub fn SolarPage() -> impl IntoView {
                 view! {
                   <li class="flex gap-2 text-sm text-muted-foreground">
                     <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-                    <span>{*note}</span>
+                    <span>{move || kt_tracked(note)}</span>
                   </li>
                 }
               })

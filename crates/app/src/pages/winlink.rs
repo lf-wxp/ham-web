@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn WinlinkPage() -> impl IntoView {
   set_title("knowledge.winlink-radio-email");
   view! {
-    <KnowledgePage title=t("knowledge.winlink-radio-email") subtitle=t("knowledge.send-and-receive-email")>
+    <KnowledgePage title=move || t("knowledge.winlink-radio-email") subtitle=move || t("knowledge.send-and-receive-email")>
       <ConceptsSection title="核心概念" items=WINLINK_CONCEPTS />
       <TableSection title="常用调制方式" headers=&["方式", "类型", "说明"] rows=WINLINK_MODES class="min-w-[640px]" />
       <BulletSection title="应急用法与要点" items=WINLINK_TIPS />

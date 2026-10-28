@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn GroundingPage() -> impl IntoView {
   set_title("shell.grounding-lightning");
   view! {
-    <KnowledgePage title=t("shell.grounding-lightning") subtitle=t("knowledge.rf-grounding-lightning-grounding")>
+    <KnowledgePage title=move || t("shell.grounding-lightning") subtitle=move || t("knowledge.rf-grounding-lightning-grounding")>
       <ConceptsSection title="接地类型" items=GROUND_TYPES />
       <ConceptsSection title="接地做法" items=GROUNDING_PRACTICE />
       <ConceptsSection title="防雷器件" items=SURGE_DEVICES />

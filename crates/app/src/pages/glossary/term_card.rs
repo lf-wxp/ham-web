@@ -77,7 +77,7 @@ pub(super) fn TermCard(
   view! {
     <article class="flex flex-col pxl-card border bg-card p-4 sm:p-5">
       <div class="mb-2 flex flex-wrap items-center gap-2">
-        <h2 class=term_class>{entry.term.as_str()}</h2>
+        <h2 class=term_class>{move || crate::data::kt_tracked(entry.term.as_str())}</h2>
         {abbr
           .map(|a| {
             view! {
@@ -85,14 +85,14 @@ pub(super) fn TermCard(
             }
           })}
         <span class=format!("ml-auto border-2 px-2 py-0.5 text-xs text-foreground {}", cat_tone.map_or("bg-muted", crate::tone::chip))>
-          {move || t(cat_name)}
+          {move || crate::data::core_text_tracked(cat_name)}
         </span>
       </div>
       {entry.en.as_deref().map(|en| view! { <div class="mb-2 text-xs italic text-muted-foreground">{en}</div> })}
-      <p class="text-sm leading-6 text-muted-foreground">{entry.desc.as_str()}</p>
+      <p class="text-sm leading-6 text-muted-foreground">{move || crate::data::kt_tracked(entry.desc.as_str())}</p>
       {(!entry.aliases.is_empty())
         .then(|| {
-          view! { <div class="mt-2 text-xs text-muted-foreground">{t("knowledge.also-known-as")} {entry.aliases.join("、")}</div> }
+          view! { <div class="mt-2 text-xs text-muted-foreground">{move || t("knowledge.also-known-as")} {move || entry.aliases.iter().map(|a| crate::data::kt_tracked(a)).collect::<Vec<_>>().join("、")}</div> }
         })}
       {entry
         .see

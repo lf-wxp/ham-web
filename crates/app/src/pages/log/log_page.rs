@@ -253,7 +253,7 @@ pub fn LogPage() -> impl IntoView {
             >{move || t("log.print-qsl-labels")}</ButtonLink>
             <FileInput
               accept=".adi,.adif,.txt"
-              label=t("log.import-adif")
+              label=Signal::derive(move || t("log.import-adif"))
               variant=Variant::Outline
               size=Size::Sm
               on_files=import_adif

@@ -20,6 +20,7 @@ use serde::Deserialize;
 use super::doppler_rig::{DopplerRig, TxPlan};
 use super::linear_tuner::LinearTuner;
 use crate::components::rotor_control::Aim;
+use crate::data::kt_tracked;
 use crate::i18n::{t, tf};
 use crate::sat_alert;
 use crate::ui::{
@@ -409,7 +410,7 @@ pub(super) fn DopplerTracker(
             let (aos, los) = (pass.aos, pass.los);
             Some(view! {
               <div class="space-y-1 border bg-inset px-3 py-2 text-sm tabular-nums">
-                <div class="text-xs text-muted-foreground">{info}</div>
+                <div class="text-xs text-muted-foreground">{move || kt_tracked(&info)}</div>
                 <div role="status">
                   {move || {
                     let t_now = now.get() as i64;

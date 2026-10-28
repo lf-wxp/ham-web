@@ -31,8 +31,8 @@ fn now_secs() -> i64 {
   (js_sys::Date::now() / 1000.0) as i64
 }
 
-fn permission_label() -> String {
-  match notification_permission() {
+fn permission_label(state: Option<NotificationPermission>) -> String {
+  match state {
     None => t("radio.notifications-unsupported"),
     Some(NotificationPermission::Granted) => t("radio.allowed"),
     Some(NotificationPermission::Denied) => t("radio.blocked-by-the-browser"),
@@ -53,8 +53,9 @@ pub(super) fn PassPredictor() -> impl IntoView {
   let failed = RwSignal::new(false);
   let queried = RwSignal::new(false);
   let only_fav = RwSignal::new(false);
-  let permission = RwSignal::new(permission_label());
-  let station_grid = use_log_store().active_station().gridsquare;
+  // 存权限状态而不是译文：译文要在视图里按当前语言现翻，存成字符串切语言后会停在旧语言。
+  let permission = RwSignal::new(notification_permission());
+  let station_grid = use_log_store().active_station_untracked().gridsquare;
   let station_pos = lat_lon_from_grid(&station_grid);
 
   // 查询代际：挂载时的自动查询与用户手动点「查询过境」可能并发，快照又各不相同；
@@ -92,7 +93,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
     {
       spawn_local(async move {
         let _ = wasm_bindgen_futures::JsFuture::from(p).await;
-        permission.set(permission_label());
+        permission.set(notification_permission());
       });
     }
     update(&|w| w.alerts = on);
@@ -105,7 +106,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
     {
       spawn_local(async move {
         let _ = wasm_bindgen_futures::JsFuture::from(p).await;
-        permission.set(permission_label());
+        permission.set(notification_permission());
       });
     }
     update(&|w| w.apt_alert = on);
@@ -219,7 +220,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
                 }
               }}
             </label>
-            <span class="text-xs text-muted-foreground">{move || tf("radio.notification-permission", &[&(permission.get()).to_string()])}</span>
+            <span class="text-xs text-muted-foreground">{move || tf("radio.notification-permission", &[&permission_label(permission.get())])}</span>
           </div>
           <p class="mt-2 text-xs text-muted-foreground">
             {move || t("radio.tap-in-the-table")}
@@ -348,7 +349,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
                               </TableCell>
                               <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{format!("{:.0}°", p.max_elev)}</TableCell>
                               <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{format!("{:.0}° {}", p.azimuth, compass(p.azimuth))}</TableCell>
-                              <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{tf("radio.min", &[&(dur_min).to_string()])}</TableCell>
+                              <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{move || tf("radio.min", &[&(dur_min).to_string()])}</TableCell>
                             </TableRow>
                           }
                         })

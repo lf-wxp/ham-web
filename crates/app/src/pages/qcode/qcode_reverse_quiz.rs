@@ -3,6 +3,7 @@ use ham_web_core::glossary::GlossaryEntry;
 use leptos::prelude::*;
 
 use crate::components::quiz_option::QuizOption;
+use crate::data::kt_tracked;
 use crate::i18n::t;
 use crate::pages::SLANG_CATEGORY;
 use crate::ui::{Button, Variant};
@@ -91,7 +92,7 @@ pub(super) fn QCodeReverseQuiz(entries: &'static [GlossaryEntry]) -> impl IntoVi
                     disabled=Signal::derive(move || feedback.get().is_some())
                     on_click=Callback::new(move |_| judge(chosen.clone()))
                   >
-                    {opt}
+                    {move || kt_tracked(&opt)}
                   </QuizOption>
                 }
               })
@@ -110,7 +111,7 @@ pub(super) fn QCodeReverseQuiz(entries: &'static [GlossaryEntry]) -> impl IntoVi
                 } else {
                   view! {
                     <span class="text-hp-text">
-                      {move || t("exam.correct-answer-prefix")} <span class="font-mono">{answer.get_value()}</span>
+                      {move || t("exam.correct-answer-prefix")} <span class="font-mono">{move || crate::data::kt_tracked(&answer.get_value())}</span>
                     </span>
                   }
                   .into_any()

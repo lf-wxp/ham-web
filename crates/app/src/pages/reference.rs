@@ -9,7 +9,8 @@ use leptos::prelude::*;
 use crate::components::call_area_map::CallAreaMap;
 use crate::components::common::{PageContainer, PageHeader, TableSection};
 use crate::data;
-use crate::i18n::t;
+use crate::data::kt_tracked;
+use crate::i18n::{t, tf};
 use crate::ui::{Chip, ChipGroup, Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
@@ -18,7 +19,7 @@ pub fn ReferencePage() -> impl IntoView {
   set_title("shell.exam-reference-title");
   // 分区号与省名是知识库正文（`crates/core` 的数据表），译文按模块维护；本页不是
   // `KnowledgePage`，译文要自己挂一次，否则英文 / 西语界面里这一节仍是中文。
-  Effect::new(move |_| data::ensure_knowledge_i18n());
+  data::use_knowledge_i18n();
   // 地图与色块共用同一个选区：`None` 表示「不分分区，全部同色」。
   let selected = RwSignal::new(None::<String>);
   // 点已选中的分区（或「全部」传空串）→ 取消选择。
@@ -33,7 +34,7 @@ pub fn ReferencePage() -> impl IntoView {
   });
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
-      <PageHeader title=t("shell.exam-reference-title") subtitle=t("exam.licence-privileges-zones-rst") />
+      <PageHeader title=move || t("shell.exam-reference-title") subtitle=move || t("exam.licence-privileges-zones-rst") />
       <PageContainer>
         // 操作证类别与权限
         <section class="pxl-card border bg-card">
@@ -57,11 +58,11 @@ pub fn ReferencePage() -> impl IntoView {
                   view! {
                     <TableRow>
                       <TableCell class="align-top font-mono">
-                        {c.class} " 类"
+                        {move || tf("learning.class", &[c.class])}
                       </TableCell>
-                      <TableCell class="align-top">{c.freq}</TableCell>
-                      <TableCell class="align-top">{c.power}</TableCell>
-                      <TableCell class="align-top text-muted-foreground">{c.note}</TableCell>
+                      <TableCell class="align-top">{move || kt_tracked(c.freq)}</TableCell>
+                      <TableCell class="align-top">{move || kt_tracked(c.power)}</TableCell>
+                      <TableCell class="align-top text-muted-foreground">{move || kt_tracked(c.note)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -145,8 +146,8 @@ pub fn ReferencePage() -> impl IntoView {
                   <div class="border">
                     <div class="border-b bg-inset px-3 py-2">
                       <span class="font-mono text-primary">{s.key}</span>
-                      <span class="ml-2 text-sm">{s.name}</span>
-                      <div class="text-xs text-muted-foreground">{s.note}</div>
+                      <span class="ml-2 text-sm">{move || kt_tracked(s.name)}</span>
+                      <div class="text-xs text-muted-foreground">{move || kt_tracked(s.note)}</div>
                     </div>
                     <dl class="divide-y text-sm">
                       {s
@@ -156,7 +157,7 @@ pub fn ReferencePage() -> impl IntoView {
                           view! {
                             <div class="flex gap-2 px-3 py-1.5">
                               <dt class="font-mono tabular-nums">{num}</dt>
-                              <dd class="text-muted-foreground">{desc}</dd>
+                              <dd class="text-muted-foreground">{move || kt_tracked(desc)}</dd>
                             </div>
                           }
                         })
@@ -190,8 +191,8 @@ pub fn ReferencePage() -> impl IntoView {
                   view! {
                     <TableRow>
                       <TableCell class="align-top font-mono">{e.code}</TableCell>
-                      <TableCell class="align-top">{e.name}</TableCell>
-                      <TableCell class="align-top text-muted-foreground">{e.desc}</TableCell>
+                      <TableCell class="align-top">{move || kt_tracked(e.name)}</TableCell>
+                      <TableCell class="align-top text-muted-foreground">{move || kt_tracked(e.desc)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -217,10 +218,10 @@ pub fn ReferencePage() -> impl IntoView {
               .map(|p| {
                 view! {
                   <div class="grid gap-1 px-4 py-3 sm:grid-cols-[7rem_1fr]">
-                    <dt class="text-xs text-muted-foreground">{p.usage}</dt>
+                    <dt class="text-xs text-muted-foreground">{move || kt_tracked(p.usage)}</dt>
                     <dd>
                       <div class="font-mono text-sm text-foreground">{p.en}</div>
-                      <div class="mt-0.5 text-sm text-muted-foreground">{p.zh}</div>
+                      <div class="mt-0.5 text-sm text-muted-foreground">{move || kt_tracked(p.zh)}</div>
                     </dd>
                   </div>
                 }

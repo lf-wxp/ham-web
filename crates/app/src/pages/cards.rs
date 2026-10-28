@@ -145,6 +145,8 @@ fn typing_in_field(e: &web_sys::KeyboardEvent) -> bool {
 #[component]
 pub fn CardsPage() -> impl IntoView {
   set_title("shell.study-cards");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   let query = use_query_map();
   let schedule = RwSignal::new(load_schedule());
   let initial = query
@@ -255,7 +257,7 @@ pub fn CardsPage() -> impl IntoView {
   let chip = move |d: Deck| {
     let due = move || schedule.with(|s| s.due_by_deck(now_ms()).get(&d).copied().unwrap_or(0));
     let label = view! {
-      {move || t(d.label())}
+      {move || crate::data::core_text_tracked(d.label())}
       {move || (due() > 0).then(|| view! {
         <span class="bg-gold/20 px-1.5 tabular-nums text-gold-text">{due()}</span>
       })}

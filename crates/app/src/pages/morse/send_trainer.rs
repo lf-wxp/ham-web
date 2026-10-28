@@ -218,7 +218,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
             {SendTarget::ALL
               .iter()
               .map(|&target_kind| {
-                let label = view! { {move || t(target_kind.label())} }.into_any();
+                let label = view! { {move || crate::data::core_text_tracked(target_kind.label())} }.into_any();
                 view! { <Chip value=target_kind.label().to_owned()>{label}</Chip> }
               })
               .collect_view()}

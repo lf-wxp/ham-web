@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn SdrPage() -> impl IntoView {
   set_title("shell.software-defined-radio-title");
   view! {
-    <KnowledgePage title=t("shell.software-defined-radio-title") subtitle=t("radio.concepts-architecture-common-software")>
+    <KnowledgePage title=move || t("shell.software-defined-radio-title") subtitle=move || t("radio.concepts-architecture-common-software")>
       <ConceptsSection title="核心概念" items=SDR_CONCEPTS />
       <ConceptsSection title="常用软件" items=SDR_SOFTWARE />
       <ConceptsSection title="在线收听（无需本地硬件）" items=WEB_SDR />

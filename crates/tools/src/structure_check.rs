@@ -13,7 +13,10 @@
 //! - A1.3 crate 反向依赖 app/server：任何 crate 的依赖里出现 ham-web-app / ham-web-server；
 //! - A2.1 数据显示层带色值：`crates/core` 里出现 `"#rrggbb"` 字面量（分类色这类「标识色」
 //!   必须只给档位，色值归界面层的 `--cat-*`，否则 11 套配色方案会失效）；
-//! - 运行时 panic 宏：`todo!()` / `unimplemented!()` 不应留到提交。
+//! - 运行时 panic 宏：`todo!()` / `unimplemented!()` 不应留到提交；
+//! - 知识库译文词典挂载：页面用了 `kt_tracked` / `core_text_tracked` 渲染 `crates/core` 的中文原文，
+//!   就必须在该页面（或其目录）里调 `use_knowledge_i18n()` 或走 `KnowledgePage` 外壳，
+//!   否则以英文 / 西语直接打开该页时词典永远不来、文案静默停在中文。
 //!
 //! 判定口径：每行先剥掉 `//` 之后的内容，`/*` 与 `*` 开头的行整行跳过（历史说明不算违规），
 //! 与 `ui_check::code_part` 同语义 —— 这比手工 grep 更严格地「只看代码」，`qsl_image.rs` 里
@@ -306,10 +309,77 @@ fn check_no_reverse_deps(root: &Path) -> bool {
   false
 }
 
+/// 这一行是不是在用知识库译文（`crates/core` 中文原文 → 当前语言）。
+fn uses_knowledge_text(code: &str) -> bool {
+  code.contains("kt_tracked(") || code.contains("core_text_tracked(")
+}
+
+/// 这一行是不是在保证译文词典会被拉取：直接调 `use_knowledge_i18n`，或走自带它的 `KnowledgePage` 外壳。
+fn loads_knowledge_dict(code: &str) -> bool {
+  code.contains("use_knowledge_i18n") || code.contains("KnowledgePage")
+}
+
+/// A3.1：用了知识库译文的页面必须挂词典拉取。
+///
+/// 以 `pages/` 下的一级条目为单位（单文件页面看这个文件；目录页面看整个目录——子组件的词典由
+/// 同目录的页面主体负责拉取）。`components/` 里的共享组件挂在各页面之下，没有「页面」这个边界可判，
+/// 不在这条规则里。
+fn check_knowledge_dict_is_loaded(root: &Path) -> bool {
+  let pages = root.join("crates/app/src/pages");
+  let Ok(entries) = std::fs::read_dir(&pages) else {
+    return true;
+  };
+  let mut units: Vec<_> = entries.flatten().map(|e| e.path()).collect();
+  units.sort();
+
+  let mut report: Vec<String> = Vec::new();
+  for unit in units {
+    let (mut uses, mut loads) = (false, false);
+    for entry in WalkDir::new(&unit).into_iter().filter_map(Result::ok) {
+      let path = entry.path();
+      if !entry.file_type().is_file() || path.extension().is_none_or(|e| e != "rs") {
+        continue;
+      }
+      let Ok(text) = std::fs::read_to_string(path) else {
+        continue;
+      };
+      for line in text.lines() {
+        let code = code_part(line);
+        uses |= uses_knowledge_text(code);
+        loads |= loads_knowledge_dict(code);
+      }
+    }
+    if uses && !loads {
+      let rel = unit
+        .strip_prefix(root)
+        .unwrap_or(&unit)
+        .to_string_lossy()
+        .replace('\\', "/");
+      report.push(format!("    {rel}"));
+    }
+  }
+
+  if report.is_empty() {
+    println!("✓ 知识库译文词典：用了 `kt_tracked` / `core_text_tracked` 的页面都挂了词典拉取");
+    return true;
+  }
+  println!(
+    "✗ 知识库译文词典：{} 个页面用了知识库译文却没挂词典拉取",
+    report.len()
+  );
+  for line in &report {
+    println!("{line}");
+  }
+  println!(
+    "    → 在页面组件体里调 `data::use_knowledge_i18n()`（或改用 KnowledgePage 外壳）；否则英文 / 西语界面直接打开该页时文案停在中文"
+  );
+  false
+}
+
 /// 跑全部守卫：全部 0 违规返回 `Ok`，否则打印证据并 `bail`。
 pub fn check(root: &Path) -> Result<()> {
   println!(
-    "结构与架构守卫：{} 条规则 + 一文件一组件 + crate 依赖方向（对应 docs/code-quality.md）",
+    "结构与架构守卫：{} 条规则 + 一文件一组件 + crate 依赖方向 + 知识库译文词典挂载（对应 docs/code-quality.md）",
     RULES.len()
   );
   let mut failed = run_line_rules(root);
@@ -319,6 +389,9 @@ pub fn check(root: &Path) -> Result<()> {
   }
   if !check_no_reverse_deps(root) {
     failed.push("crate 依赖方向".to_owned());
+  }
+  if !check_knowledge_dict_is_loaded(root) {
+    failed.push("知识库译文词典挂载".to_owned());
   }
 
   if !failed.is_empty() {
@@ -347,6 +420,19 @@ mod tests {
     assert_eq!(VIEW_FN_RE.find_iter("-> IntoView").count(), 1);
     // 没有箭头的普通类型不匹配
     assert_eq!(VIEW_FN_RE.find_iter("let x: IntoView = y;").count(), 0);
+  }
+
+  #[test]
+  fn knowledge_text_usage_and_dict_loading_are_told_apart() {
+    assert!(uses_knowledge_text("{move || kt_tracked(s.name)}"));
+    assert!(uses_knowledge_text("crate::data::core_text_tracked(label)"));
+    // 只是 `use` 进来，不算在用；定义在 data.rs 里也不是页面。
+    assert!(!uses_knowledge_text("use crate::data::kt_tracked;"));
+    assert!(loads_knowledge_dict("crate::data::use_knowledge_i18n();"));
+    assert!(loads_knowledge_dict(
+      "<KnowledgePage title=move || t(\"x\")>"
+    ));
+    assert!(!loads_knowledge_dict("let x = 1;"));
   }
 
   #[test]

@@ -37,7 +37,7 @@ pub fn ContestLogPage() -> impl IntoView {
   let session = RwSignal::new(storage::get_json::<Session>(SESSION_KEY).unwrap_or_default());
   // 支持 `/contest-log?contest=ID` 预选竞赛（如从竞赛日历「开新场次」进入）。
   let query = use_query_map();
-  if let Some(cid) = query.with(|q| q.get("contest"))
+  if let Some(cid) = query.with_untracked(|q| q.get("contest"))
     && ham_web_core::contest::contest(&cid).is_some()
   {
     session.update(|s| {
@@ -554,11 +554,11 @@ pub fn ContestLogPage() -> impl IntoView {
         </section>
 
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <Stat label=t("contest.valid-qsos") value=Signal::derive(move || tally.get().qsos as usize) />
-          <Stat label=t("contest.dupes") value=Signal::derive(move || tally.get().dupes as usize) />
-          <Stat label=t("contest.points") value=Signal::derive(move || tally.get().points as usize) />
-          <Stat label=t("contest.multipliers") value=Signal::derive(move || tally.get().mults as usize) />
-          <Stat label=t("contest.claimed-score") value=Signal::derive(move || tally.get().total as usize) />
+          <Stat label=Signal::derive(move || t("contest.valid-qsos")) value=Signal::derive(move || tally.get().qsos as usize) />
+          <Stat label=Signal::derive(move || t("contest.dupes")) value=Signal::derive(move || tally.get().dupes as usize) />
+          <Stat label=Signal::derive(move || t("contest.points")) value=Signal::derive(move || tally.get().points as usize) />
+          <Stat label=Signal::derive(move || t("contest.multipliers")) value=Signal::derive(move || tally.get().mults as usize) />
+          <Stat label=Signal::derive(move || t("contest.claimed-score")) value=Signal::derive(move || tally.get().total as usize) />
         </div>
 
         <section class="pxl-card border bg-card">
@@ -620,7 +620,7 @@ pub fn ContestLogPage() -> impl IntoView {
                             variant=Variant::Text
                             size=Size::Xs
                             class="font-sans hover:text-hp-text"
-                            aria_label=tf("contest.delete", &[&delete_label])
+                            aria_label=Signal::derive(move || tf("contest.delete", &[&delete_label]))
                             on_click=Callback::new(move |_| remove(id))
                           >
                             {move || t("log.delete")}

@@ -159,7 +159,12 @@ pub fn ListenPage() -> impl IntoView {
   let think_options: Vec<SelectOption> = THINK_CHOICES
     .iter()
     .copied()
-    .map(|s| SelectOption::new(s.to_string(), tf("common.s", &[&s.to_string()])))
+    .map(|s| {
+      SelectOption::new(
+        s.to_string(),
+        Signal::derive(move || tf("common.s", &[&s.to_string()])),
+      )
+    })
     .collect();
 
   let stop = move || {

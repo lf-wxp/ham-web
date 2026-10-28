@@ -113,8 +113,8 @@ pub(super) fn CallAreaQuiz() -> impl IntoView {
             {move || t("exam.next")}
           </Button>
           <div class="text-xs text-muted-foreground">
-            {t("common.correct-label")} <span class="tabular-nums text-foreground">{move || correct.get()}</span>
-            {t("common.wrong-label")} <span class="tabular-nums text-foreground">{move || wrong.get()}</span>
+            {move || t("common.correct-label")} <span class="tabular-nums text-foreground">{move || correct.get()}</span>
+            {move || t("common.wrong-label")} <span class="tabular-nums text-foreground">{move || wrong.get()}</span>
           </div>
         </div>
       </div>

@@ -59,9 +59,9 @@ pub(super) fn PropagationWidget() -> impl IntoView {
     >
       <div class="space-y-3 p-4">
         <div class="grid grid-cols-3 gap-3">
-          <PvMetric label=t("home.k-index") value=k loading=loading />
-          <PvMetric label=t("home.solar-flux") value=sfi loading=loading />
-          <PvMetric label=t("home.sunspots") value=ssn loading=loading />
+          <PvMetric label=Signal::derive(move || t("home.k-index")) value=k loading=loading />
+          <PvMetric label=Signal::derive(move || t("home.solar-flux")) value=sfi loading=loading />
+          <PvMetric label=Signal::derive(move || t("home.sunspots")) value=ssn loading=loading />
         </div>
         <div class="border bg-inset px-3 py-2 text-sm">
           {move || {
@@ -75,7 +75,7 @@ pub(super) fn PropagationWidget() -> impl IntoView {
                   PropagationLevel::Poor => "text-hp-text",
                 };
                 view! {
-                  <span>{move || t("home.conditions")} <span class=color>{move || t(lvl.label())}</span></span>
+                  <span>{move || t("home.conditions")} <span class=color>{move || crate::data::core_text_tracked(lvl.label())}</span></span>
                 }
                 .into_any()
               }

@@ -2,6 +2,7 @@ use ham_web_core::rst::{READABILITY, RST_EXAMPLES, SIGNAL_STRENGTH, TONE};
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::data::kt_tracked;
 use crate::icons::{Icon, IconKind};
 use crate::morse_audio::play_tone;
 use crate::util::set_title;
@@ -18,6 +19,8 @@ const TONE_FREQ: f32 = 700.0;
 #[component]
 pub fn RstPage() -> impl IntoView {
   set_title("shell.rst-report");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
@@ -64,19 +67,19 @@ pub fn RstPage() -> impl IntoView {
                       variant=Variant::Outline
                       size=Size::IconSm
                       class="shrink-0 text-primary"
-                      aria_label=tf("common.preview", &[(k)])
+                      aria_label=Signal::derive(move || tf("common.preview", &[(k)]))
                       on_click=Callback::new(move |_| play_tone(TONE_FREQ, level, 0.7))
                     >
                       <Icon kind=IconKind::Play class="size-6 w-3.5" />
                     </Button>
-                    <span class="w-10 shrink-0 font-mono text-sm">{k}</span>
+                    <span class="w-10 shrink-0 font-mono text-sm">{move || kt_tracked(k)}</span>
                     <div class="h-2 flex-1 overflow-hidden bg-muted">
                       <div
                         class="h-full bg-primary transition"
                         style=format!("width: {pct}%")
                       ></div>
                     </div>
-                    <span class="w-24 shrink-0 text-sm text-muted-foreground">{v}</span>
+                    <span class="w-24 shrink-0 text-sm text-muted-foreground">{move || kt_tracked(v)}</span>
                   </div>
                 }
               })

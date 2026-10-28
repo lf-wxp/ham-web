@@ -101,7 +101,6 @@
   "knowledge.key-points-for-building": "制作与使用要点",
   "knowledge.build-safety-reminders": "制作安全提醒",
   "knowledge.power-amplification-linearity-imd": "功率放大 · 线性度 · IMD",
-  "knowledge.load-more-showing": "加载更多（已显示 ",
   "knowledge.loading-glossary": "加载术语表...",
   "knowledge.loading-abbreviations": "加载简语...",
   "knowledge.matching-components-and-concepts": "匹配器件与概念",
@@ -506,5 +505,13 @@
   "knowledge.china-ham-pmr-vs-ham": "公众对讲机 vs 业余手台",
   "knowledge.china-ham-dimension": "维度",
   "knowledge.china-ham-pmr": "公众对讲机（409 MHz）",
-  "knowledge.china-ham-ham": "业余手台（UHF）"
+  "knowledge.china-ham-ham": "业余手台（UHF）",
+  "knowledge.mode-windows": "按调制方式的可实际占用频率",
+  "knowledge.modulation-mode": "工作模式",
+  "knowledge.usable-range": "可实际占用",
+  "knowledge.note": "边界说明",
+  "knowledge.avoid-range": "应避免占用",
+  "knowledge.reason": "原因",
+  "knowledge.avoid-ranges": "应避免占用的频段",
+  "knowledge.load-more-count": "加载更多（已显示 {} / {}）"
 }

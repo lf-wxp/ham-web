@@ -104,7 +104,6 @@
   "knowledge.key-points-for-building": "Key points for building and using",
   "knowledge.build-safety-reminders": "Build safety reminders",
   "knowledge.power-amplification-linearity-imd": "Power amplification · linearity · IMD",
-  "knowledge.load-more-showing": "Load more (showing ",
   "knowledge.loading-glossary": "Loading glossary...",
   "knowledge.loading-abbreviations": "Loading abbreviations...",
   "knowledge.matching-components-and-concepts": "Matching components and concepts",
@@ -512,5 +511,13 @@
   "knowledge.china-ham-pmr-vs-ham": "PMR radio vs amateur handheld",
   "knowledge.china-ham-dimension": "Aspect",
   "knowledge.china-ham-pmr": "PMR radio (409 MHz)",
-  "knowledge.china-ham-ham": "Amateur handheld (UHF)"
+  "knowledge.china-ham-ham": "Amateur handheld (UHF)",
+  "knowledge.mode-windows": "Usable ranges by emission mode",
+  "knowledge.modulation-mode": "Mode",
+  "knowledge.usable-range": "Usable range",
+  "knowledge.note": "Why these edges",
+  "knowledge.avoid-range": "Avoid",
+  "knowledge.reason": "Reason",
+  "knowledge.avoid-ranges": "Ranges to avoid",
+  "knowledge.load-more-count": "Load more (showing {} / {})"
 }

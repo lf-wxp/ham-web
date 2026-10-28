@@ -21,6 +21,7 @@ use super::morse_trainer::MorseTrainer;
 use super::send_trainer::SendTrainer;
 use super::signal_bars::SignalBars;
 use super::word_copy::WordCopy;
+use crate::data;
 use crate::i18n::{t, tf};
 
 /// CW 专用符号（合并码，整体拍发、字符间无间隔）。
@@ -36,6 +37,9 @@ const PROSIGNS: &[(&str, &str, &str)] = &[
 #[component]
 pub fn MorsePage() -> impl IntoView {
   set_title("shell.morse-code");
+  // 本页渲染 `crates/core` 的中文原文（`kt_tracked`），译文词典要自己挂一次拉取，
+  // 否则以英文 / 西语直接打开本页时词典永远不来、这些文案停在中文。
+  data::use_knowledge_i18n();
   provide_morse_settings();
   let settings = use_morse_settings();
   // 四个训练器各自成块、用的时候只用一个：堆在一页里要滚三四屏，于是收进 Tabs。
@@ -55,10 +59,10 @@ pub fn MorsePage() -> impl IntoView {
 
       <PageContainer>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label=t("morse.letters") value=LETTERS.len() />
-          <Stat label=t("morse.digits") value=DIGITS.len() />
-          <Stat label=t("morse.punctuation") value=PUNCTUATION.len() />
-          <Stat label=t("morse.total-characters") value=LETTERS.len() + DIGITS.len() + PUNCTUATION.len() />
+          <Stat label=Signal::derive(move || t("morse.letters")) value=LETTERS.len() />
+          <Stat label=Signal::derive(move || t("morse.digits")) value=DIGITS.len() />
+          <Stat label=Signal::derive(move || t("morse.punctuation")) value=PUNCTUATION.len() />
+          <Stat label=Signal::derive(move || t("morse.total-characters")) value=LETTERS.len() + DIGITS.len() + PUNCTUATION.len() />
         </div>
 
         <section class="pxl-card border bg-card">
@@ -169,7 +173,7 @@ pub fn MorsePage() -> impl IntoView {
               .iter()
               .map(|&(label, code, meaning)| {
                 view! {
-                  <Tooltip class="min-w-0" label=tf("common.preview", &[(label)])>
+                  <Tooltip class="min-w-0" label=Signal::derive(move || tf("common.preview", &[(label)]))>
                     <button
                       type="button"
                       on:click=move |_| {
@@ -181,7 +185,7 @@ pub fn MorsePage() -> impl IntoView {
                     <div class="font-mono text-base tracking-widest text-primary">
                       {morse_display(code)}
                     </div>
-                    <div class="mt-1 text-xs text-muted-foreground">{meaning}</div>
+                    <div class="mt-1 text-xs text-muted-foreground">{move || crate::data::core_text_tracked(meaning)}</div>
                     </button>
                   </Tooltip>
                 }
@@ -200,7 +204,7 @@ pub fn MorsePage() -> impl IntoView {
                 view! {
                   <div class="border bg-inset p-3 text-center">
                     <div class="text-xl tabular-nums">{v}</div>
-                    <div class="mt-1 text-xs text-muted-foreground">{k}</div>
+                    <div class="mt-1 text-xs text-muted-foreground">{move || data::kt_tracked(k)}</div>
                   </div>
                 }
               })

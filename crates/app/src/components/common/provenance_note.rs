@@ -11,7 +11,7 @@ use crate::i18n::tf;
 #[component]
 pub fn ProvenanceNote(domain: &'static str) -> impl IntoView {
   // 宿主页面不一定套了 KnowledgePage（法规 / 波段 / 卫星页都没套），依据译文得自己确保在拉。
-  Effect::new(move |_| data::ensure_knowledge_i18n());
+  data::use_knowledge_i18n();
   let p = provenance::for_domain(domain);
   // 「没条目就不标」是有意的，但 domain 拼错也会表现成不标 —— 开发构建里喊一声。
   #[cfg(debug_assertions)]

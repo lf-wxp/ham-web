@@ -13,7 +13,7 @@ use crate::util::set_title;
 pub fn ExamComparisonPage() -> impl IntoView {
   set_title("knowledge.exam-comparison");
   // 本页自带页头、没套 KnowledgePage 外壳，正文译文得自己确保在拉。
-  Effect::new(move |_| data::ensure_knowledge_i18n());
+  data::use_knowledge_i18n();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader

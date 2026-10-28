@@ -3,6 +3,7 @@ use ham_web_core::rst::{READABILITY, SIGNAL_STRENGTH, TONE};
 use leptos::prelude::*;
 
 use crate::components::quiz_option::QuizOption;
+use crate::data::kt_tracked;
 use crate::i18n::t;
 use crate::ui::Button;
 use crate::util::random;
@@ -80,7 +81,7 @@ pub(super) fn RstQuiz() -> impl IntoView {
                     disabled=Signal::derive(move || feedback.get().is_some())
                     on_click=Callback::new(move |_| judge(chosen.clone()))
                   >
-                    {opt}
+                    {move || kt_tracked(&opt)}
                   </QuizOption>
                 }
               })
@@ -99,7 +100,7 @@ pub(super) fn RstQuiz() -> impl IntoView {
                 } else {
                   view! {
                     <span class="text-hp-text">
-                      {move || t("exam.correct-answer-prefix")} {answer.get_value()}
+                      {move || t("exam.correct-answer-prefix")} {move || crate::data::kt_tracked(&answer.get_value())}
                     </span>
                   }
                   .into_any()

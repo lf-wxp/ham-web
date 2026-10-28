@@ -3,6 +3,7 @@
 use ham_web_core::bands::Note;
 use leptos::prelude::*;
 
+use crate::data::kt_tracked;
 use crate::i18n::tf;
 use crate::ui::Tooltip;
 
@@ -14,13 +15,13 @@ pub(super) fn notes_view(notes: &'static [Note], jump: Callback<&'static str>) -
     .map(|(i, note)| {
       let sep = (i > 0).then(|| view! { <span class="text-muted-foreground/60">"、"</span> });
       let body = match *note {
-        Note::Text(t) => view! { <span>{t}</span> }.into_any(),
+        Note::Text(t) => view! { <span>{move || kt_tracked(t)}</span> }.into_any(),
         Note::Ref(code) => view! {
-          <Tooltip label=tf("common.view-footnote", &[(code)])>
+          <Tooltip label=Signal::derive(move || tf("common.view-footnote", &[(code)]))>
             <button
               type="button"
               class="font-mono text-xp-text underline underline-offset-2 hover:text-xp-text"
-              aria-label=tf("common.view-footnote", &[(code)])
+              aria-label=Signal::derive(move || tf("common.view-footnote", &[(code)]))
               on:click=move |_| jump.run(code)
             >
               {code}

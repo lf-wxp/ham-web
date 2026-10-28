@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn MobilePage() -> impl IntoView {
   set_title("shell.mobile-stations");
   view! {
-    <KnowledgePage title=t("shell.mobile-stations") subtitle=t("radio.mobile-installation-power-wiring")>
+    <KnowledgePage title=move || t("shell.mobile-stations") subtitle=move || t("radio.mobile-installation-power-wiring")>
       <ConceptsSection title="核心概念" items=MOBILE_CONCEPTS />
       <ConceptsSection title="安装要点" items=MOBILE_INSTALL />
       <BulletSection title="操作要点" items=MOBILE_TIPS />

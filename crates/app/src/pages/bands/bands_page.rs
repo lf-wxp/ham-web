@@ -4,6 +4,7 @@ use ham_web_core::bands::{self, BANDS, FOOTNOTES, Usage};
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
+use crate::data::kt_tracked;
 use crate::icons::{Icon, IconKind};
 use crate::ui::Stat;
 use crate::util::{document, scroll_to_element, set_title};
@@ -17,6 +18,8 @@ use crate::i18n::t;
 #[component]
 pub fn BandsPage() -> impl IntoView {
   set_title("shell.band-chart-title");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   let active = RwSignal::new(None::<&'static str>);
 
   let jump = Callback::new(move |code: &'static str| {
@@ -50,7 +53,7 @@ pub fn BandsPage() -> impl IntoView {
           }
         >
           <dt class="font-mono">{code}</dt>
-          <dd class="leading-6 text-muted-foreground">{f.text}</dd>
+          <dd class="leading-6 text-muted-foreground">{move || kt_tracked(f.text)}</dd>
         </div>
       }
     })
@@ -70,10 +73,10 @@ pub fn BandsPage() -> impl IntoView {
 
       <PageContainer class="space-y-4">
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label=t("radio.band") value=BANDS.len() />
-          <Stat label=t("knowledge.amateur-bands") value=bands::allocation_count() />
-          <Stat label=t("knowledge.also-available-to-the") value=bands::satellite_count() />
-          <Stat label=t("radio.footnote") value=FOOTNOTES.len() />
+          <Stat label=Signal::derive(move || t("radio.band")) value=BANDS.len() />
+          <Stat label=Signal::derive(move || t("knowledge.amateur-bands")) value=bands::allocation_count() />
+          <Stat label=Signal::derive(move || t("knowledge.also-available-to-the")) value=bands::satellite_count() />
+          <Stat label=Signal::derive(move || t("radio.footnote")) value=FOOTNOTES.len() />
         </div>
 
         <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">

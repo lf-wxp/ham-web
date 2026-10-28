@@ -15,7 +15,7 @@ use df_panel::DfPanel;
 pub fn ArdfPage() -> impl IntoView {
   set_title("shell.ardf-title");
   view! {
-    <KnowledgePage title=t("shell.ardf-title") subtitle=t("knowledge.amateur-radio-direction-finding")>
+    <KnowledgePage title=move || t("shell.ardf-title") subtitle=move || t("knowledge.amateur-radio-direction-finding")>
       <ConceptsSection title="核心概念" items=ARDF_CONCEPTS />
       <ConceptsSection title="常用频段" items=ARDF_BANDS />
       <DfPanel />

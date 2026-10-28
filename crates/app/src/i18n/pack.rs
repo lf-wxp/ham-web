@@ -81,7 +81,12 @@ thread_local! {
 }
 
 /// 订阅语言包的载入状态；包到达后调用方会重新求值（在非响应式上下文里是空操作）。
+///
+/// 先判断有没有观察者再订阅，理由见 [`super::observed`]。
 pub(super) fn track() {
+  if !super::observed() {
+    return;
+  }
   READY.with(|s| s.track());
 }
 

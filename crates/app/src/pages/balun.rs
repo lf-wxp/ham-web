@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn BalunPage() -> impl IntoView {
   set_title("knowledge.baluns-and-ununs");
   view! {
-    <KnowledgePage title=t("knowledge.baluns-and-ununs") subtitle=t("knowledge.balanced-to-unbalanced-impedance")>
+    <KnowledgePage title=move || t("knowledge.baluns-and-ununs") subtitle=move || t("knowledge.balanced-to-unbalanced-impedance")>
       <ConceptsSection title="核心概念" items=BALUN_CONCEPTS />
       <TableSection title="阻抗比与用途" headers=&["阻抗比", "典型用途", "说明"] rows=BALUN_RATIOS class="min-w-[640px]" />
       <BulletSection title="绕制与选型要点" items=BALUN_TIPS />

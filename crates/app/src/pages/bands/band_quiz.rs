@@ -2,6 +2,7 @@ use ham_web_core::exam::shuffle_in_place;
 use leptos::prelude::*;
 
 use crate::components::quiz_option::QuizOption;
+use crate::data::kt_tracked;
 use crate::i18n::t;
 use crate::ui::{Button, Variant};
 use crate::util::random;
@@ -90,7 +91,7 @@ pub(super) fn BandQuiz() -> impl IntoView {
                     disabled=Signal::derive(move || feedback.get().is_some())
                     on_click=Callback::new(move |_| judge(chosen.clone()))
                   >
-                    {opt}
+                    {move || kt_tracked(&opt)}
                   </QuizOption>
                 }
               })
@@ -109,7 +110,7 @@ pub(super) fn BandQuiz() -> impl IntoView {
                 } else {
                   view! {
                     <span class="text-hp-text">
-                      {move || t("exam.correct-answer-prefix")} <span class="font-mono">{answer.get_value()}</span>
+                      {move || t("exam.correct-answer-prefix")} <span class="font-mono">{move || crate::data::kt_tracked(&answer.get_value())}</span>
                     </span>
                   }
                   .into_any()
@@ -121,8 +122,8 @@ pub(super) fn BandQuiz() -> impl IntoView {
             {move || t("exam.next")}
           </Button>
           <div class="text-xs text-muted-foreground">
-            "正确 " <span class="tabular-nums text-foreground">{move || correct.get()}</span>
-            "　错误 " <span class="tabular-nums text-foreground">{move || wrong.get()}</span>
+            {move || t("common.correct-label")} " " <span class="tabular-nums text-foreground">{move || correct.get()}</span>
+            "　" {move || t("common.wrong-label")} " " <span class="tabular-nums text-foreground">{move || wrong.get()}</span>
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ use ham_web_core::cheat_sheet::sections;
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::data::kt_tracked;
 use crate::i18n::{t, tp};
 use crate::ui::{Button, Size, Variant};
 use crate::util::{set_title, window};
@@ -11,10 +12,12 @@ use crate::util::{set_title, window};
 #[component]
 pub fn CheatSheetPage() -> impl IntoView {
   set_title("exam.exam-points-handbook");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   let secs = sections();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
-      <PageHeader title=t("exam.exam-points-handbook") subtitle=t("exam.exam-points-subtitle") />
+      <PageHeader title=move || t("exam.exam-points-handbook") subtitle=move || t("exam.exam-points-subtitle") />
       <PageContainer>
         <div class="print-hide flex flex-wrap items-center justify-between gap-3">
           <p class="text-xs text-muted-foreground">{move || t("exam.high-frequency-exam-points")}</p>
@@ -39,7 +42,7 @@ pub fn CheatSheetPage() -> impl IntoView {
               <section class="print-avoid-break pxl-card border bg-card print:border-zinc-300">
                 <h2 class="flex items-center gap-2 pxl-section-title">
                   <span class=format!("size-2.5 shrink-0 {}", crate::tone::dot(cat_tone))></span>
-                  {move || t(sec_name)}
+                  {move || crate::data::core_text_tracked(sec_name)}
                   <span class="ml-auto text-xs font-normal normal-case text-muted-foreground">
                     {move || tp("knowledge.points", count as u32, &[&count.to_string()])}
                   </span>
@@ -52,10 +55,10 @@ pub fn CheatSheetPage() -> impl IntoView {
                       view! {
                         <div class="print-avoid-break border bg-inset p-3">
                           <div class="flex items-baseline gap-2">
-                            <span class="text-sm">{it.name}</span>
+                            <span class="text-sm">{move || kt_tracked(it.name)}</span>
                             <span class="font-mono text-xs text-muted-foreground">{it.code}</span>
                           </div>
-                          <p class="mt-1 text-xs leading-5 text-muted-foreground">{it.note}</p>
+                          <p class="mt-1 text-xs leading-5 text-muted-foreground">{move || kt_tracked(it.note)}</p>
                         </div>
                       }
                     })

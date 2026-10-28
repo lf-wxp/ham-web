@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn DxpeditionPage() -> impl IntoView {
   set_title("radio.dxpeditions");
   view! {
-    <KnowledgePage title=t("radio.dxpeditions") subtitle=t("radio.dxpeditions-and-chasing-rare")>
+    <KnowledgePage title=move || t("radio.dxpeditions") subtitle=move || t("radio.dxpeditions-and-chasing-rare")>
       <ConceptsSection title="核心概念" items=DXPED_CONCEPTS />
       <BulletSection title="追远征台要点" items=DXPED_TIPS />
     </KnowledgePage>

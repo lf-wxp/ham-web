@@ -421,8 +421,8 @@ pub fn GearPage() -> impl IntoView {
 
   view! {
     <KnowledgePage
-      title=t("knowledge.gear-reviews-buying-guide")
-      subtitle=t("knowledge.featured-radios-spec-comparison")
+      title=move || t("knowledge.gear-reviews-buying-guide")
+      subtitle=move || t("knowledge.featured-radios-spec-comparison")
     >
       <TableSection
         title="knowledge.recommendations-by-use"
@@ -521,7 +521,12 @@ pub fn GearPage() -> impl IntoView {
                   {move || t("knowledge.radar-hint")}
                 </span>
               </div>
-              {move || view! { <GearRadar axes=preset.get().axes() series=series.get() /> }}
+              {move || {
+                // 轴名与 `viewBox` 宽度都在 `GearRadar` 构建时一次算出，所以切语言要整图重建：
+                // 在这里订阅界面语言（`series` 里的图例文字同理由 `Memo` 内的 `t()` 订阅）。
+                let _ = crate::i18n::locale().get();
+                view! { <GearRadar axes=preset.get().axes() series=series.get() /> }
+              }}
             </div>
 
             // ── 加权得分 ──────────────────────────────────────────
@@ -533,6 +538,8 @@ pub fn GearPage() -> impl IntoView {
                 {move || {
                   let preset = preset.get();
                   let ms = measurements.get();
+                  // `ScoreRow` 在构建时把缺失轴名算成 `String`，切语言要重建。
+                  let _ = crate::i18n::locale().get();
                   models
                     .get()
                     .iter()
@@ -727,7 +734,7 @@ pub fn GearPage() -> impl IntoView {
                                   } else {
                                     "align-top text-muted-foreground"
                                   };
-                                  view! { <TableCell class=class>{value}</TableCell> }
+                                  view! { <TableCell class=class>{move || crate::data::kt_tracked(&value)}</TableCell> }
                                 })
                                 .collect_view()}
                             </TableRow>

@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::{BandCond, condition_color};
+use crate::data::kt_tracked;
 use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 
@@ -45,9 +46,9 @@ pub(super) fn ConditionsTable(conditions: Vec<BandCond>) -> impl IntoView {
             let night_color = condition_color(&night);
             view! {
               <TableRow>
-                <TableCell class="border px-3 py-2 font-mono">{band}</TableCell>
-                <TableCell class=format!("border px-3 py-2 {day_color}")>{day}</TableCell>
-                <TableCell class=format!("border px-3 py-2 {night_color}")>{night}</TableCell>
+                <TableCell class="border px-3 py-2 font-mono">{move || kt_tracked(&band)}</TableCell>
+                <TableCell class=format!("border px-3 py-2 {day_color}")>{move || kt_tracked(&day)}</TableCell>
+                <TableCell class=format!("border px-3 py-2 {night_color}")>{move || kt_tracked(&night)}</TableCell>
               </TableRow>
             }
           })

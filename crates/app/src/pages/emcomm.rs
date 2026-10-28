@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn EmcommPage() -> impl IntoView {
   set_title("shell.emergency-comms-title");
   view! {
-    <KnowledgePage title=t("shell.emergency-comms-title") subtitle=t("knowledge.ares-amateur-emergency-service")>
+    <KnowledgePage title=move || t("shell.emergency-comms-title") subtitle=move || t("knowledge.ares-amateur-emergency-service")>
       <ConceptsSection title="组织与概念" items=EMCOMM_CONCEPTS />
       <ConceptsSection title="应急常用频率" items=EMCOMM_FREQS />
       <BulletSection title="操作要点" items=EMCOMM_TIPS />

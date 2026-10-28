@@ -241,6 +241,9 @@ pub fn body_class(class: &str, on: bool) {
 /// `localStorage` 读写。读取失败时返回 `None`；写入失败（通常是配额已满）时在 `window` 上派发
 /// [`storage::WRITE_FAILED_EVENT`] 事件，由全局提示条提醒用户导出备份。
 pub mod storage {
+  use std::cell::RefCell;
+  use std::rc::Rc;
+
   use serde::Serialize;
   use serde::de::DeserializeOwned;
 
@@ -249,12 +252,46 @@ pub mod storage {
   /// 主流浏览器每个源约可存 5M 个 UTF-16 字符（key + value）。
   pub const QUOTA_UNITS: usize = 5 * 1024 * 1024;
 
+  type WriteHook = Rc<dyn Fn(&str)>;
+
+  thread_local! {
+    /// 写入 / 删除后的回调，供自动同步感知「数据变了」（见 `crate::auto_sync`）。
+    static WRITE_HOOK: RefCell<Option<WriteHook>> = const { RefCell::new(None) };
+  }
+
+  /// 注册写入回调（只保留最后一个）。回调拿到被写入 / 删除的 key，**必须很轻**：
+  /// 它在每一次 `localStorage` 写入的同步路径上。
+  pub fn set_write_hook(hook: impl Fn(&str) + 'static) {
+    WRITE_HOOK.with(|h| *h.borrow_mut() = Some(Rc::new(hook)));
+  }
+
+  /// 通知「这个 key 刚被写过 / 删过」。写入失败（配额）也通知：多一次无谓的检查，
+  /// 好过漏掉 IndexedDB 那一侧已经生效的改动（通联日志的快照写满时就是这样）。
+  pub fn notify_write(key: &str) {
+    // 先把 `Rc` 克隆出来再调用：回调里可能又写存储（保存同步状态），
+    // 持着 `RefCell` 借用去重入会 panic。
+    let hook = WRITE_HOOK.with(|h| h.borrow().clone());
+    if let Some(hook) = hook {
+      hook(key);
+    }
+  }
+
   fn local() -> Option<web_sys::Storage> {
     super::window().local_storage().ok().flatten()
   }
 
   pub fn get(key: &str) -> Option<String> {
     local()?.get_item(key).ok().flatten()
+  }
+
+  /// 当前所有 key（不读值，比 [`usage`] 轻）。
+  pub fn keys() -> Vec<String> {
+    let Some(s) = local() else {
+      return Vec::new();
+    };
+    (0..s.length().unwrap_or(0))
+      .filter_map(|i| s.key(i).ok().flatten())
+      .collect()
   }
 
   pub fn set(key: &str, value: &str) {
@@ -267,6 +304,7 @@ pub mod storage {
         let _ = super::window().dispatch_event(&ev);
       }
     }
+    notify_write(key);
   }
 
   /// 各 key 的占用（UTF-16 字符数，key + value），从大到小排列。
@@ -294,6 +332,7 @@ pub mod storage {
     if let Some(s) = local() {
       let _ = s.remove_item(key);
     }
+    notify_write(key);
   }
 
   pub fn get_json<T: DeserializeOwned>(key: &str) -> Option<T> {
@@ -313,7 +352,9 @@ pub mod storage {
   /// 是否落地 —— [`crate::kv`] 靠它保证「值 + 版本号」这一对要么一起新、要么一起旧。
   #[must_use]
   pub fn set_silent(key: &str, value: &str) -> bool {
-    local().is_some_and(|s| s.set_item(key, value).is_ok())
+    let ok = local().is_some_and(|s| s.set_item(key, value).is_ok());
+    notify_write(key);
+    ok
   }
 
   /// [`set_json`] 的静默版本，见 [`set_silent`]。
@@ -427,6 +468,22 @@ pub struct BackupModules {
   pub other: bool,
 }
 
+impl BackupModules {
+  /// 远端同步写出的模块：日志和其他数据总是带上，QSL 影像可按配置去掉。
+  ///
+  /// 远端是一份整体替换的快照，不能让用户逐个模块勾选——漏掉日志就等于把它从远端抹掉，
+  /// 而远端又不再等于本机，基线也就没法用来判断「有没有变」。唯一的例外是体积最大的 QSL 影像：
+  /// 去掉它是一个明确的、整份同步都遵守的范围（见 `RemoteSyncConfig::exclude_qsl_images`）。
+  #[must_use]
+  pub const fn for_sync(include_qsl_images: bool) -> Self {
+    Self {
+      log: true,
+      qsl_images: include_qsl_images,
+      other: true,
+    }
+  }
+}
+
 fn insert_backup_value(
   map: &mut std::collections::BTreeMap<String, String>,
   key: String,
@@ -451,6 +508,58 @@ fn insert_backup_value(
 /// QSL 影像本体从 IndexedDB 异步读取后并入同一份 JSON（结构不变：`{key: value}`，
 /// 导入侧对 `qsl-image:` 前缀走 IndexedDB 直写，避开 localStorage 配额）。
 pub async fn export_backup(modules: BackupModules) -> Result<usize, String> {
+  let (json, count) = build_backup(modules).await?;
+  let d = js_sys::Date::new_0();
+  let stamp = format!(
+    "{:04}{:02}{:02}",
+    d.get_full_year() as i32,
+    d.get_month() as i32 + 1,
+    d.get_date() as i32
+  );
+  download_text(
+    &format!("ham-backup-{stamp}.json"),
+    &json,
+    "application/json",
+  );
+  Ok(count)
+}
+
+/// 按模块生成备份 JSON，返回 `(JSON 文本, 条目数)`（手动下载用，内容是完整的）。
+pub async fn build_backup(modules: BackupModules) -> Result<(String, usize), String> {
+  let map = collect_backup(modules).await?;
+  let json = serialize_backup(&map)?;
+  Ok((json, map.len()))
+}
+
+/// 远端同步用的备份内容：在 [`build_backup`] 的基础上去掉设备专属的 key
+/// （见 [`ham_web_core::remote_sync::is_device_local_key`]）。
+///
+/// 手动写入与自动写入共用它，内容才可比：自动写入靠指纹判断「有没有变」，
+/// 两条路径各带各的缓存 / 偏好，指纹永远对不上。返回 map 而不是文本，是因为指纹要在 map 上算。
+pub async fn build_sync_backup(
+  modules: BackupModules,
+) -> Result<std::collections::BTreeMap<String, String>, String> {
+  let mut map = collect_backup(modules).await?;
+  map.retain(|key, _| !ham_web_core::remote_sync::is_device_local_key(key));
+  Ok(map)
+}
+
+/// 把备份 map 序列化成 JSON，并按可恢复性检查体积。
+pub fn serialize_backup(
+  map: &std::collections::BTreeMap<String, String>,
+) -> Result<String, String> {
+  let Ok(json) = serde_json::to_string(map) else {
+    return Err(t("common.file-read-failed"));
+  };
+  if !ham_web_core::backup_merge::backup_size_is_supported(json.len()) {
+    return Err(t("tools.backup-too-large"));
+  }
+  Ok(json)
+}
+
+async fn collect_backup(
+  modules: BackupModules,
+) -> Result<std::collections::BTreeMap<String, String>, String> {
   let Some(local) = window().local_storage().ok().flatten() else {
     return Err(t("shell.localstorage-unavailable"));
   };
@@ -458,6 +567,7 @@ pub async fn export_backup(modules: BackupModules) -> Result<usize, String> {
   let mut map = std::collections::BTreeMap::new();
   for i in 0..len {
     if let Ok(Some(key)) = local.key(i)
+      && !ham_web_core::remote_sync::is_excluded_from_backup(&key)
       && let Ok(Some(value)) = local.get_item(&key)
     {
       let keep = match ham_web_core::classify_key(&key) {
@@ -508,26 +618,7 @@ pub async fn export_backup(modules: BackupModules) -> Result<usize, String> {
       }
     }
   }
-  let count = map.len();
-  let Ok(json) = serde_json::to_string(&map) else {
-    return Err(t("common.file-read-failed"));
-  };
-  if !ham_web_core::backup_merge::backup_size_is_supported(json.len()) {
-    return Err(t("tools.backup-too-large"));
-  }
-  let d = js_sys::Date::new_0();
-  let stamp = format!(
-    "{:04}{:02}{:02}",
-    d.get_full_year() as i32,
-    d.get_month() as i32 + 1,
-    d.get_date() as i32
-  );
-  download_text(
-    &format!("ham-backup-{stamp}.json"),
-    &json,
-    "application/json",
-  );
-  Ok(count)
+  Ok(map)
 }
 
 /// 导入一条 QSL 影像：备份是外部输入，key 与值都按本站写出的格式校验，不合格的
@@ -605,7 +696,10 @@ async fn import_backup_inner(json: &str) -> Result<usize, String> {
     }
   }
   for (k, v) in map {
-    if k == qsl_image::BACKUP_LOG_KEY || k.ends_with(crate::kv::VERSION_SUFFIX) {
+    if k == qsl_image::BACKUP_LOG_KEY
+      || k.ends_with(crate::kv::VERSION_SUFFIX)
+      || ham_web_core::remote_sync::is_excluded_from_backup(&k)
+    {
       continue;
     }
     if k == qsl_image::INDEX_KEY {
@@ -701,6 +795,7 @@ async fn import_backup_merge_inner(json: &str) -> Result<usize, String> {
       k.as_str(),
       "logbook" | qsl_image::INDEX_KEY | qsl_image::BACKUP_LOG_KEY
     ) || k.ends_with(crate::kv::VERSION_SUFFIX)
+      || ham_web_core::remote_sync::is_excluded_from_backup(&k)
     {
       continue;
     }

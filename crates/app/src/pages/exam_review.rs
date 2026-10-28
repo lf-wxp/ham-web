@@ -164,7 +164,7 @@ pub fn ExamReviewPage() -> impl IntoView {
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
-      <PageHeader title=t("exam.post-exam-review") subtitle=t("exam.per-question-results-correct") />
+      <PageHeader title=move || t("exam.post-exam-review") subtitle=move || t("exam.per-question-results-correct") />
       <PageContainer class="space-y-4">
         <p class="text-sm text-muted-foreground">
           {move || t("exam.review-your-latest-mock")}

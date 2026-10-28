@@ -168,19 +168,19 @@ pub(super) fn ContestPace(
                 <div class="space-y-3">
                   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <Stat
-                      label=t("contest.pace-done")
+                      label=Signal::derive(move || t("contest.pace-done"))
                       value=Signal::derive(move || pace.done as usize)
                     />
                     <Stat
-                      label=t("contest.pace-expected")
+                      label=Signal::derive(move || t("contest.pace-expected"))
                       value=Signal::derive(move || whole(pace.expected))
                     />
                     <Stat
-                      label=t("contest.pace-rate")
+                      label=Signal::derive(move || t("contest.pace-rate"))
                       value=Signal::derive(move || whole(pace.current_rate))
                     />
                     <Stat
-                      label=t("contest.pace-projected")
+                      label=Signal::derive(move || t("contest.pace-projected"))
                       value=Signal::derive(move || whole(pace.projected))
                     />
                   </div>

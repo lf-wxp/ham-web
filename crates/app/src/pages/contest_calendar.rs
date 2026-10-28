@@ -60,7 +60,7 @@ pub fn ContestCalendarPage() -> impl IntoView {
               .iter()
               .map(|(e, (y, m, d))| {
                 let ev = *e;
-                let dur = if ev.duration_days <= 1 { t("contest.24-hours") } else { t("contest.48-hours") };
+                let (y, m, d) = (*y, *m, *d);
                 view! {
                   <div class="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_auto]">
                     <div class="min-w-0">
@@ -71,16 +71,23 @@ pub fn ContestCalendarPage() -> impl IntoView {
                         </span>
                       </div>
                       <div class="mt-0.5 text-xs tabular-nums text-muted-foreground">
-                        {tf(
-                          "contest.exchange",
-                          &[
-                            &y.to_string(),
-                            &m.to_string(),
-                            &d.to_string(),
-                            &dur,
-                            &t(ev.exchange),
-                          ],
-                        )}
+                        {move || {
+                          let dur = if ev.duration_days <= 1 {
+                            t("contest.24-hours")
+                          } else {
+                            t("contest.48-hours")
+                          };
+                          tf(
+                            "contest.exchange",
+                            &[
+                              &y.to_string(),
+                              &m.to_string(),
+                              &d.to_string(),
+                              &dur,
+                              &t(ev.exchange),
+                            ],
+                          )
+                        }}
                       </div>
                       <div class="mt-1 text-sm text-muted-foreground">{move || t(ev.desc)}</div>
                     </div>

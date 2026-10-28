@@ -7,6 +7,7 @@ use ham_web_core::muf::{BAND_CHOICE, MUF_CONCEPTS};
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::data::kt_tracked;
 use crate::util::set_title;
 
 use crate::i18n::t;
@@ -16,6 +17,8 @@ use voacap_card::VoacapCard;
 #[component]
 pub fn MufPage() -> impl IntoView {
   set_title("shell.propagation-forecast");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
@@ -36,8 +39,8 @@ pub fn MufPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm">{t}</span>
-                    <span class="text-sm text-muted-foreground">{d}</span>
+                    <span class="text-sm">{move || kt_tracked(t)}</span>
+                    <span class="text-sm text-muted-foreground">{move || kt_tracked(d)}</span>
                   </div>
                 }
               })
@@ -53,8 +56,8 @@ pub fn MufPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex items-baseline gap-2 px-3 py-2">
-                    <span class="shrink-0 text-sm">{t}</span>
-                    <span class="text-sm text-muted-foreground">{d}</span>
+                    <span class="shrink-0 text-sm">{move || kt_tracked(t)}</span>
+                    <span class="text-sm text-muted-foreground">{move || kt_tracked(d)}</span>
                   </div>
                 }
               })

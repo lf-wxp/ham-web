@@ -24,18 +24,21 @@ pub(super) fn history_bars(today: &str) -> impl IntoView + use<> {
     <div>
       <div class="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
         <span>{move || t("common.last-14-days")}</span>
-        <span class="tabular-nums">{tp("common.questions-total", total, &[&total.to_string()])}</span>
+        <span class="tabular-nums">{move || tp("common.questions-total", total, &[&total.to_string()])}</span>
       </div>
-      <div class="flex h-16 items-end gap-1" role="img" aria-label=tp("common.questions-answered-in-the", total, &[&total.to_string()])>
+      <div class="flex h-16 items-end gap-1" role="img" aria-label=move || tp("common.questions-answered-in-the", total, &[&total.to_string()])>
         {days
           .into_iter()
           .map(|(day, t)| {
             let h = f64::from(t.answered) / f64::from(max) * 100.0;
-            let tip = tp(
-              "common.questions-new",
-              t.answered,
-              &[&day[5..], &t.answered.to_string(), &t.new.to_string()],
-            );
+            let (answered, new) = (t.answered, t.new);
+            let tip = Signal::derive(move || {
+              tp(
+                "common.questions-new",
+                answered,
+                &[&day[5..], &answered.to_string(), &new.to_string()],
+              )
+            });
             view! {
               // 柱的百分比高度相对 `h-16` 的 flex 容器；包一层后 span 用 `self-stretch`
               // 撑到容器高度，包含块才有确定高度（父级已带整图 role="img" 名称，

@@ -2,6 +2,7 @@ use ham_web_core::antenna_modeling::{MODELING_SOFTWARE, MODELING_STEPS, MODELING
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::data::kt_tracked;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
@@ -9,6 +10,7 @@ use super::dipole_calculator::DipoleCalculator;
 use super::pattern_plot::PatternPlot;
 use super::vertical_calculator::VerticalCalculator;
 use super::yagi_calculator::YagiCalculator;
+use crate::data;
 use crate::i18n::t;
 
 const CELL: &str = "border px-3 py-2 text-left align-top";
@@ -16,6 +18,9 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 #[component]
 pub fn AntennaModelingPage() -> impl IntoView {
   set_title("shell.antenna-modeling-title");
+  // 本页渲染 `crates/core` 的中文原文（`kt_tracked`），译文词典要自己挂一次拉取，
+  // 否则以英文 / 西语直接打开本页时词典永远不来、这些文案停在中文。
+  data::use_knowledge_i18n();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
@@ -73,7 +78,7 @@ pub fn AntennaModelingPage() -> impl IntoView {
                     href=*href
                     class="border bg-inset px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
-                    {move || t(label)}
+                    {move || crate::data::core_text_tracked(label)}
                   </a>
                 }
               })
@@ -98,10 +103,10 @@ pub fn AntennaModelingPage() -> impl IntoView {
                   view! {
                     <TableRow>
                       <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-primary")>
-                        {name}
+                        {move || kt_tracked(name)}
                       </TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{kind}</TableCell>
-                      <TableCell class=format!("{CELL} text-muted-foreground")>{desc}</TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(kind)}</TableCell>
+                      <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -118,8 +123,8 @@ pub fn AntennaModelingPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm">{t}</span>
-                    <span class="text-sm text-muted-foreground">{d}</span>
+                    <span class="text-sm">{move || kt_tracked(t)}</span>
+                    <span class="text-sm text-muted-foreground">{move || kt_tracked(d)}</span>
                   </div>
                 }
               })
@@ -136,7 +141,7 @@ pub fn AntennaModelingPage() -> impl IntoView {
                 view! {
                   <li class="flex gap-2 text-sm text-muted-foreground">
                     <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-                    <span>{*tip}</span>
+                    <span>{move || kt_tracked(tip)}</span>
                   </li>
                 }
               })

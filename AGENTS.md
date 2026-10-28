@@ -26,6 +26,7 @@
 | 串口功能（CAT / 旋转器 / NanoVNA / KISS）与外部格式（CHIRP / SOTA / POTA）的验收 | [`docs/hardware-verification.md`](docs/hardware-verification.md)：单测与假串口只算「待验」，真机记录才叫「已验证」 |
 | 天线方向增益（S2）的实现 | [`docs/antenna-coverage.md`](docs/antenna-coverage.md)：口径是「方向增益」，不是覆盖 / 可达 |
 | 全仓代码质量（分层边界、可自动化门禁、问题分级与证据口径） | [`docs/code-quality.md`](docs/code-quality.md)：长期标准 + 检查清单，改动前先跑 §2 的门禁 |
+| 自定义远端同步（`/backup`）的行为约束与存储 key 归类 | [`docs/storage.md`](docs/storage.md)「自定义远端的自动同步」；新增本地存储 key 要在 `core/remote_sync.rs` 的 `every_documented_key_is_classified` 里归类 |
 
 ## 2. 硬规则
 
@@ -56,6 +57,9 @@
   主组件与共享 helper 放 `mod.rs`，子组件各占一个文件，共享的样式 token / context 放
   `shared.rs`。命名注意：`chip/chip.rs` 这类「模块与父模块同名」会被 Rust 拒绝，照
   `dialog_root.rs` / `select_root.rs` / `chip_item.rs` 起名。
+- **页面渲染 `crates/core` 的中文原文（`kt_tracked` / `core_text_tracked`）就要挂词典拉取**：
+  在页面组件体里调 `data::use_knowledge_i18n()`（走 `KnowledgePage` 外壳的页面由外壳代劳）；
+  漏了的话以英文 / 西语直接打开该页时文案静默停在中文。`cargo make check-structure` 守着。
 - **文案必须走 `t("域.词条")` 且字面量写在调用点**；新增词条要 zh / en / es 三份齐全，
   再 `cargo make i18n-pack`。不要硬编码界面中文（检查器抓不到，但 en / es 界面会露馅）。
 - **标签关联与无障碍名要写全**：`Field` 的 `r#for` 与控件 `id` 配对；没有可见标签的控件 /

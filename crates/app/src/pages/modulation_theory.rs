@@ -13,7 +13,7 @@ use crate::util::set_title;
 pub fn ModulationTheoryPage() -> impl IntoView {
   set_title("knowledge.modulation-theory");
   view! {
-    <KnowledgePage title=t("knowledge.modulation-theory") subtitle=t("knowledge.how-information-is-loaded")>
+    <KnowledgePage title=move || t("knowledge.modulation-theory") subtitle=move || t("knowledge.how-information-is-loaded")>
       <ConceptsSection title="核心概念" items=MOD_CONCEPTS />
       <TableSection
         title="模拟调制方式对比"

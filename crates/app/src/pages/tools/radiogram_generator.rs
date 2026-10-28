@@ -159,12 +159,12 @@ pub fn RadiogramGenerator() -> impl IntoView {
       .map(|p| {
         SelectOption::new(
           p.to_owned(),
-          match p {
+          Signal::derive(move || match p {
             "P" => t("tools.radiogram-precedence-priority"),
             "W" => t("tools.radiogram-precedence-welfare"),
             "E" => t("tools.radiogram-precedence-emergency"),
             _ => t("tools.radiogram-precedence-routine"),
-          },
+          }),
         )
       })
       .collect::<Vec<SelectOption>>(),
@@ -175,11 +175,13 @@ pub fn RadiogramGenerator() -> impl IntoView {
       .map(|h| {
         SelectOption::new(
           h.to_owned(),
-          if h == "none" {
-            t("radio.none")
-          } else {
-            h.to_owned()
-          },
+          Signal::derive(move || {
+            if h == "none" {
+              t("radio.none")
+            } else {
+              h.to_owned()
+            }
+          }),
         )
       })
       .collect::<Vec<SelectOption>>(),

@@ -270,7 +270,7 @@ pub fn KissTncPage() -> impl IntoView {
                 } else {
                   view! {
                     <Button on_click=move |_| connect() disabled=move || opening.get()>
-                      {t("tools.kiss-connect")}
+                      {move || t("tools.kiss-connect")}
                     </Button>
                   }
                     .into_any()
@@ -291,7 +291,7 @@ pub fn KissTncPage() -> impl IntoView {
             {move || {
               if rows.with(VecDeque::is_empty) {
                 view! {
-                  <EmptyState plain=true title=t("tools.kiss-rx-empty") />
+                  <EmptyState plain=true title=Signal::derive(move || t("tools.kiss-rx-empty")) />
                 }
                   .into_any()
               } else {
@@ -332,7 +332,7 @@ pub fn KissTncPage() -> impl IntoView {
                 >
                   <Input
                     id=src_id
-                    placeholder=t("tools.kiss-src-placeholder")
+                    placeholder=Signal::derive(move || t("tools.kiss-src-placeholder"))
                     value=Signal::derive(move || src.get())
                     on_change=Callback::new(move |v: String| src.set(v))
                   />
@@ -365,7 +365,7 @@ pub fn KissTncPage() -> impl IntoView {
                 >
                   <Input
                     id=info_id
-                    placeholder=t("tools.kiss-info-placeholder")
+                    placeholder=Signal::derive(move || t("tools.kiss-info-placeholder"))
                     value=Signal::derive(move || info.get())
                     on_change=Callback::new(move |v: String| info.set(v))
                   />

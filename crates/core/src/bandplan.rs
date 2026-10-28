@@ -422,6 +422,115 @@ pub fn phone_out_of_segment(
   (!seg.modes.phone_allowed()).then_some((plan, seg))
 }
 
+/// 某种调制方式在某个波段里「可实际占用」的频率窗口。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ModeWindow {
+  /// 波段名，与 [`BandPlan::band`] 一致。
+  pub band: &'static str,
+  /// 调制方式（LSB / USB / FM）。
+  pub mode: &'static str,
+  /// 可实际占用的频率窗口（MHz）。
+  pub window: &'static str,
+  /// 边界为什么这么划（给人看的正文）。
+  pub note: &'static str,
+}
+
+/// 各波段按调制方式给出的可实际占用窗口（题库 LK0164–LK0170 那一组的口径）。
+///
+/// 与 [`BAND_PLANS`] 分工不同：规划表回答「哪一段允许什么模式」，这里回答「实际能落在哪」——
+/// 已把 CW / 数字段、IARU 信标的 ±500Hz 保护带、波段顶部的专用 FM 段扣掉。
+/// 只看规划表推不出 `29.510` 这种边界，这也是这组口径原先只存在于题目里的原因。
+pub const MODE_WINDOWS: &[ModeWindow] = &[
+  ModeWindow {
+    band: "40m",
+    mode: "LSB",
+    window: "7.030–7.200 MHz",
+    note: "7.030 以下留给 CW 与数字模式",
+  },
+  ModeWindow {
+    band: "20m",
+    mode: "USB",
+    window: "14.100–14.350 MHz",
+    note: "起点让开 14.100 的 IARU 信标频率",
+  },
+  ModeWindow {
+    band: "17m",
+    mode: "USB",
+    window: "18.1105–18.168 MHz",
+    note: "让开 18.110 信标 ±500Hz，上限到波段顶端",
+  },
+  ModeWindow {
+    band: "15m",
+    mode: "USB",
+    window: "21.125–21.450 MHz（除去 21.1495–21.1505）",
+    note: "中间扣掉 21.150 信标 ±500Hz 的保护带",
+  },
+  ModeWindow {
+    band: "12m",
+    mode: "USB",
+    window: "24.9305–24.990 MHz",
+    note: "让开 24.930 信标，上限到 24.990",
+  },
+  ModeWindow {
+    band: "10m",
+    mode: "USB",
+    window: "28.300–29.300 MHz",
+    note: "避开下端的 CW / 数字段与上端的专用段",
+  },
+  ModeWindow {
+    band: "10m",
+    mode: "FM",
+    window: "29.510–29.700 MHz",
+    note: "10 米波段顶部专门给 FM 的一段",
+  },
+];
+
+/// 「应避免占用」的一个区段。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AvoidRange {
+  /// 波段名，与 [`BandPlan::band`] 一致。
+  pub band: &'static str,
+  /// 应避开的区段（一段一行，同一波段有多段就多列一行）。
+  pub range: &'static str,
+  /// 这一段留给什么用。
+  pub note: &'static str,
+}
+
+/// 应避免占用的区段：卫星业余业务专用段 + 本地联络要让开的弱信号段。
+///
+/// 与 [`MODE_WINDOWS`] 相反：那张表说「能占哪」，这张表说「别占哪」。两条来源口径：
+/// - 卫星专用段（题库 LK1031–LK1033）：10m 29.3–29.51、2m 145.8–146、70cm 435–438，
+///   话音及其他通信方式不应占用 —— 这也解释了 10m 的 SSB 上限 29.3 与 FM 下限 29.51；
+/// - 本地联络避让（题库 LK0171–LK0172）：2m 另让开低端 144–144.035（弱信号 / EME），
+///   70cm 另让开 431.9–432.240（弱信号 / EME）。
+pub const AVOID_RANGES: &[AvoidRange] = &[
+  AvoidRange {
+    band: "10m",
+    range: "29.3–29.51 MHz",
+    note: "卫星业余业务专用，话音及其他通信方式不应占用",
+  },
+  AvoidRange {
+    band: "2m",
+    range: "144–144.035 MHz",
+    note: "弱信号优先段（EME / 流星散射等）",
+  },
+  AvoidRange {
+    band: "2m",
+    range: "145.8–146 MHz",
+    note: "卫星业余业务专用，本地通联与话音不应占用",
+  },
+  AvoidRange {
+    band: "70cm",
+    range: "431.9–432.240 MHz",
+    note: "弱信号 / EME 优先段",
+  },
+  AvoidRange {
+    band: "70cm",
+    range: "435–438 MHz",
+    note: "卫星业余业务专用，地面通信应主动避让",
+  },
+];
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -601,5 +710,96 @@ mod tests {
     assert_eq!(parse_range("18.068"), None);
     assert_eq!(parse_range("14.150–14.000"), None, "反着写不算");
     assert_eq!(parse_range(""), None);
+  }
+
+  /// 可实际占用窗口必须落回同名波段内，且边界要与题库答案一致 —— 抄错一位都是错的速查表。
+  #[test]
+  fn mode_windows_sit_inside_their_bands() {
+    // 题库 LK0164–LK0170 的 7 条口径必须都在；以后补充别的口径不该被条数卡住。
+    for (band, mode) in [
+      ("40m", "LSB"),
+      ("20m", "USB"),
+      ("17m", "USB"),
+      ("15m", "USB"),
+      ("12m", "USB"),
+      ("10m", "USB"),
+      ("10m", "FM"),
+    ] {
+      assert!(
+        MODE_WINDOWS
+          .iter()
+          .any(|w| w.band == band && w.mode == mode),
+        "缺少 {band} {mode} 的可占用窗口"
+      );
+    }
+    for w in MODE_WINDOWS {
+      assert!(
+        !w.mode.is_empty() && !w.note.is_empty(),
+        "{} 缺字段",
+        w.band
+      );
+      let plan = BAND_PLANS
+        .iter()
+        .find(|p| p.band == w.band)
+        .unwrap_or_else(|| panic!("波段 {} 不在 BAND_PLANS 里", w.band));
+      let (band_lo, band_hi) =
+        parse_range(plan.freq_range).unwrap_or_else(|| panic!("波段 {} 的范围解析失败", w.band));
+      // 15m 那条带「（除去 …）」字样，比较范围时只看括号之前的主窗口。
+      let head = w.window.split('（').next().unwrap_or(w.window).trim();
+      let (lo, hi) = parse_range(head)
+        .unwrap_or_else(|| panic!("{} {} 的窗口解析失败：{}", w.band, w.mode, w.window));
+      assert!(
+        lo >= band_lo && hi <= band_hi,
+        "{} {} 的窗口 {lo}–{hi} 越出波段 {band_lo}–{band_hi}",
+        w.band,
+        w.mode
+      );
+    }
+    // 用户最容易记错的就是 10 米：SSB 与 FM 各占一段，FM 只在 29.51 以上。
+    let fm = MODE_WINDOWS
+      .iter()
+      .find(|w| w.band == "10m" && w.mode == "FM")
+      .expect("10m 应有 FM 窗口");
+    assert_eq!(fm.window, "29.510–29.700 MHz");
+    let ssb = MODE_WINDOWS
+      .iter()
+      .find(|w| w.band == "10m" && w.mode == "USB")
+      .expect("10m 应有 USB 窗口");
+    assert_eq!(ssb.window, "28.300–29.300 MHz");
+  }
+
+  /// 避让表必须与题库口径一致（LK1031–LK1033 卫星段 + LK0171–LK0172 本地避让），
+  /// 且每段都落在该波段内、彼此不重叠。
+  #[test]
+  fn avoid_ranges_match_the_question_bank() {
+    let mut seen: Vec<(f64, f64)> = Vec::new();
+    for a in AVOID_RANGES {
+      let plan = BAND_PLANS
+        .iter()
+        .find(|p| p.band == a.band)
+        .unwrap_or_else(|| panic!("波段 {} 不在 BAND_PLANS 里", a.band));
+      let (band_lo, band_hi) =
+        parse_range(plan.freq_range).unwrap_or_else(|| panic!("波段 {} 的范围解析失败", a.band));
+      let (lo, hi) =
+        parse_range(a.range).unwrap_or_else(|| panic!("{} 的避让段解析失败：{}", a.band, a.range));
+      assert!(
+        lo >= band_lo && hi <= band_hi,
+        "{} 的避让段 {lo}–{hi} 越出波段 {band_lo}–{band_hi}",
+        a.band
+      );
+      assert!(!a.note.is_empty(), "{} 缺原因", a.band);
+      assert!(
+        !seen.iter().any(|(s, e)| lo < *e && hi > *s),
+        "避让段 {} 与其他行重叠",
+        a.range
+      );
+      seen.push((lo, hi));
+    }
+    let rows: Vec<(&str, &str)> = AVOID_RANGES.iter().map(|a| (a.band, a.range)).collect();
+    assert!(rows.contains(&("10m", "29.3–29.51 MHz")));
+    assert!(rows.contains(&("2m", "144–144.035 MHz")));
+    assert!(rows.contains(&("2m", "145.8–146 MHz")));
+    assert!(rows.contains(&("70cm", "431.9–432.240 MHz")));
+    assert!(rows.contains(&("70cm", "435–438 MHz")));
   }
 }

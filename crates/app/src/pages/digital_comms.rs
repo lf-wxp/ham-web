@@ -16,7 +16,7 @@ use crate::util::set_title;
 pub fn DigitalCommsPage() -> impl IntoView {
   set_title("knowledge.digital-communications");
   view! {
-    <KnowledgePage title=t("knowledge.digital-communications") subtitle=t("knowledge.how-bits-travel-reliably")>
+    <KnowledgePage title=move || t("knowledge.digital-communications") subtitle=move || t("knowledge.how-bits-travel-reliably")>
       <ConceptsSection title="核心概念" items=DIGITAL_CONCEPTS />
       <TableSection
         title="数字调制方式"

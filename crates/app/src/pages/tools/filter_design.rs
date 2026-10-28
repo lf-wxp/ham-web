@@ -75,7 +75,7 @@ pub(super) fn FilterDesign() -> impl IntoView {
             view! {
               <label class="flex cursor-pointer items-center gap-2 text-sm">
                 <RadioGroupItem value=value id=id />
-                {move || t(label)}
+                {move || crate::data::core_text_tracked(label)}
               </label>
             }
           })

@@ -8,6 +8,7 @@ use ham_web_core::radio_law::{MappedQuestion, article, chapters, laws, questions
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
+use crate::data::kt_tracked;
 use crate::i18n::{t, tf};
 use crate::ui::Tooltip;
 use crate::util::set_title;
@@ -25,6 +26,8 @@ fn short_stem(stem: &str) -> String {
 #[component]
 pub fn RadioLawPage() -> impl IntoView {
   set_title("knowledge.radio-law");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
@@ -42,7 +45,7 @@ pub fn RadioLawPage() -> impl IntoView {
             view! {
               <section class="pxl-card border bg-card">
                 <div class="flex flex-wrap items-baseline gap-2 pxl-section-title">
-                  <h2>{law.title}</h2>
+                  <h2>{move || kt_tracked(law.title)}</h2>
                   <span class="text-xs font-normal normal-case text-muted-foreground">
                     {move || format!("{} · {} {}", law.order, t("knowledge.radio-law-effective"), law.effective)}
                   </span>
@@ -61,7 +64,7 @@ pub fn RadioLawPage() -> impl IntoView {
                   .map(|(chapter, numbers)| {
                     view! {
                       <div class="border-b px-4 py-3 last:border-b-0">
-                        <h3 class="mb-2 text-xs text-primary">{chapter}</h3>
+                        <h3 class="mb-2 text-xs text-primary">{move || kt_tracked(chapter)}</h3>
                         <div class="space-y-1">
                           {numbers
                             .into_iter()
@@ -95,7 +98,7 @@ pub fn RadioLawPage() -> impl IntoView {
                                       })}
                                   </div>
                                   <p class="mt-1 whitespace-pre-line text-sm leading-6 text-muted-foreground">
-                                    {text}
+                                    {move || kt_tracked(&text)}
                                   </p>
                                   // 反向关联：题库里引用这条的题目（人工维护的映射）。
                                   {(n_questions > 0)

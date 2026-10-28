@@ -94,6 +94,8 @@ const MODULES: &[ModuleCard] = &[
 #[component]
 pub fn HomePage() -> impl IntoView {
   set_title(DEFAULT_TITLE);
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   let version = RwSignal::new(None::<String>);
   let bank = RwSignal::new(Bank::A);
   let checking = RwSignal::new(false);
@@ -237,9 +239,9 @@ pub fn HomePage() -> impl IntoView {
                       <span aria-hidden="true" class="pxl-label text-xs text-muted-foreground">
                         {m.index}
                       </span>
-                      <span class="pxl-label text-base">{move || t(m.title)}</span>
+                      <span class="pxl-label text-base">{move || crate::data::core_text_tracked(m.title)}</span>
                     </div>
-                    <div class="mt-1 text-xs text-muted-foreground">{move || t(m.desc)}</div>
+                    <div class="mt-1 text-xs text-muted-foreground">{move || crate::data::core_text_tracked(m.desc)}</div>
                   </div>
                   <span aria-hidden="true" class="ml-auto shrink-0 text-muted-foreground">
                     <Icon kind=IconKind::ChevronRight class="size-6" />
@@ -258,7 +260,7 @@ pub fn HomePage() -> impl IntoView {
                             class="flex min-h-9 items-center gap-2 border-2 border-transparent px-1 text-xs text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
                           >
                             <span aria-hidden="true" class="size-1 shrink-0 bg-primary"></span>
-                            {move || t(label)}
+                            {move || crate::data::core_text_tracked(label)}
                           </a>
                         </li>
                       }

@@ -91,7 +91,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
     answer.set(String::new());
     result.set(None);
   };
-  let speed = move |label: String,
+  let speed = move |label: Signal<String>,
                     min: u32,
                     get: fn(&KochProgress) -> u32,
                     set: fn(&mut KochProgress, u32)| {
@@ -99,7 +99,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
       // `min-w-0`（而不是 `shrink-0`）：这一行要能被收缩，否则窄屏下「标签 + 滑块 + 读数」
       // 会顶出卡片，整页横向滚动。
       <div class="flex min-w-0 items-center gap-2">
-        <span class="whitespace-nowrap text-xs text-muted-foreground">{label.clone()}</span>
+        <span class="whitespace-nowrap text-xs text-muted-foreground">{move || label.get()}</span>
         <Slider
           value=Signal::derive(move || f64::from(progress.with(get)))
           on_change=Callback::new(move |v: f64| {
@@ -112,7 +112,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
           min=f64::from(min)
           max=35.0
           step=1.0
-          aria_label=label.clone()
+          aria_label=label
           aria_valuetext=Signal::derive(move || format!("{} WPM", progress.with(get)))
           class="w-28"
         />
@@ -158,8 +158,8 @@ pub(super) fn KochTrainer() -> impl IntoView {
 
       <div class="space-y-4 p-4">
         <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
-          {speed(t("morse.character-speed"), 12, |p| p.char_wpm, |p, v| p.char_wpm = v)}
-          {speed(t("morse.effective-speed"), 5, |p| p.effective_wpm, |p, v| p.effective_wpm = v)}
+          {speed(Signal::derive(move || t("morse.character-speed")), 12, |p| p.char_wpm, |p, v| p.char_wpm = v)}
+          {speed(Signal::derive(move || t("morse.effective-speed")), 5, |p| p.effective_wpm, |p, v| p.effective_wpm = v)}
         </div>
 
         <div class="flex flex-wrap items-center gap-1.5">
@@ -213,7 +213,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
             </span>
           </MorseKey>
           <div class="text-xs text-muted-foreground">
-            {tp("common.each-round-has-groups", GROUPS, &[&(GROUPS).to_string(), &(GROUP_LEN).to_string()])}
+            {move || tp("common.each-round-has-groups", GROUPS, &[&(GROUPS).to_string(), &(GROUP_LEN).to_string()])}
           </div>
           <form
             class="flex flex-wrap items-center justify-center gap-2"

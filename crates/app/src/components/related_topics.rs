@@ -1,4 +1,5 @@
 use crate::components::common::PageContainer;
+use crate::data;
 use crate::i18n::t;
 use ham_web_core::related::RELATED;
 use leptos::prelude::*;
@@ -15,6 +16,8 @@ pub fn RelatedTopics() -> impl IntoView {
         .iter()
         .find(|(p, _)| *p == path)
         .map(|(_, items)| {
+          // 标签走知识库词典：本组件挂在路由外壳里，页面自己不一定拉了词典。
+          data::use_knowledge_i18n();
           view! {
             <PageContainer class="pt-0 pb-10">
               <section class="pxl-card border bg-card">
@@ -28,9 +31,10 @@ pub fn RelatedTopics() -> impl IntoView {
                           href=href
                           class="border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                         >
-                          // 文案来自 `crates/core` 的关联表（中文原文），要走反向索引翻一遍 ——
-                          // 原样渲染的话英文 / 西语界面上整块「相关主题」都是中文。
-                          {move || t(label)}
+                          // 文案来自 `crates/core` 的关联表（中文原文）：先走界面词典的反向索引
+                          // （页面标题、分类名），查不到再走知识库词典 —— 两边都不查的话，
+                          // 英文 / 西语界面上整块「相关主题」仍是中文。
+                          {move || data::core_text_tracked(label)}
                         </a>
                       }
                     })

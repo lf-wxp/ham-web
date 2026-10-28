@@ -5,5 +5,6 @@
 
 mod backup_page;
 mod backup_tool;
+mod remote_sync_panel;
 
 pub use backup_page::BackupPage;

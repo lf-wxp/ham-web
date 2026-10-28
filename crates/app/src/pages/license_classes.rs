@@ -5,6 +5,7 @@ use ham_web_core::reference::LICENSE_CLASSES;
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
+use crate::data::kt_tracked;
 use crate::i18n::{t, tf};
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
@@ -14,6 +15,8 @@ const CELL: &str = "border px-3 py-2 align-top";
 #[component]
 pub fn LicenseClassesPage() -> impl IntoView {
   set_title("shell.a-b-c-license");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
@@ -38,11 +41,11 @@ pub fn LicenseClassesPage() -> impl IntoView {
                 view! {
                   <TableRow>
                     <TableCell class=format!("{CELL} whitespace-nowrap")>
-                      {tf("learning.class", &[(c.class)])}
+                      {move || tf("learning.class", &[c.class])}
                     </TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{c.freq}</TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{c.power}</TableCell>
-                    <TableCell class=format!("{CELL} text-muted-foreground")>{c.note}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(c.freq)}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(c.power)}</TableCell>
+                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(c.note)}</TableCell>
                   </TableRow>
                 }
               })
@@ -58,8 +61,8 @@ pub fn LicenseClassesPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm">{t}</span>
-                    <span class="text-sm text-muted-foreground">{d}</span>
+                    <span class="text-sm">{move || kt_tracked(t)}</span>
+                    <span class="text-sm text-muted-foreground">{move || kt_tracked(d)}</span>
                   </div>
                 }
               })
@@ -75,8 +78,8 @@ pub fn LicenseClassesPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex items-baseline gap-2 px-3 py-2">
-                    <span class="text-sm">{t}</span>
-                    <span class="text-sm text-muted-foreground">{d}</span>
+                    <span class="text-sm">{move || kt_tracked(t)}</span>
+                    <span class="text-sm text-muted-foreground">{move || kt_tracked(d)}</span>
                   </div>
                 }
               })
@@ -93,7 +96,7 @@ pub fn LicenseClassesPage() -> impl IntoView {
                 view! {
                   <li class="flex gap-2 text-sm text-muted-foreground">
                     <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-                    <span>{*tip}</span>
+                    <span>{move || kt_tracked(tip)}</span>
                   </li>
                 }
               })

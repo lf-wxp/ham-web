@@ -1,3 +1,4 @@
+use crate::data::kt_tracked;
 use leptos::prelude::*;
 
 /// 渲染一个要点列表。
@@ -11,7 +12,7 @@ pub(super) fn TipList(tips: &'static [&'static str]) -> impl IntoView {
           view! {
             <li class="flex gap-2 text-sm text-muted-foreground">
               <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-              <span>{*tip}</span>
+              <span>{move || kt_tracked(tip)}</span>
             </li>
           }
         })

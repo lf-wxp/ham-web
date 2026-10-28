@@ -130,6 +130,12 @@ impl LogStore {
     self.station.with(|book| book.active().info())
   }
 
+  /// [`Self::active_station`] 的不订阅版本：组件体里「只带一次」的预填用它，
+  /// 那里没有响应式观察者，订阅既无意义又会在 debug 构建里报警告。
+  pub fn active_station_untracked(self) -> StationInfo {
+    self.station.with_untracked(|book| book.active().info())
+  }
+
   /// 备份写入成功或部分失败后同步内存状态，防止下一次编辑把恢复结果覆回旧整库。
   pub async fn refresh_from_storage(self) {
     let loaded = crate::kv::load_large_strict(LOG_KEY).await;

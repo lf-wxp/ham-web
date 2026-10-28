@@ -4,12 +4,18 @@ use ham_web_core::frequencies::FREQ_GROUPS;
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::data;
+use crate::data::kt_tracked;
 use crate::i18n::t;
 use crate::util::set_title;
 
 #[component]
 pub fn FrequenciesPage() -> impl IntoView {
   set_title("shell.common-frequencies");
+  // 分组名 / 用途 / 脚注都是 `crates/core` 的中文正文（渲染时走 `data::kt_tracked`），
+  // 本页要自己挂一次词典拉取，否则以英文 / 西语直接打开本页时这些文案停在中文。
+  data::use_knowledge_i18n();
+
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
@@ -23,7 +29,7 @@ pub fn FrequenciesPage() -> impl IntoView {
           .map(|g| {
             view! {
               <section class="pxl-card border bg-card">
-                <h2 class="pxl-section-title">{g.category}</h2>
+                <h2 class="pxl-section-title">{move || data::kt_tracked(g.category)}</h2>
                 <div class="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2">
                   {g
                     .freqs
@@ -31,13 +37,24 @@ pub fn FrequenciesPage() -> impl IntoView {
                     .map(|&(freq, usage)| {
                       view! {
                         <div class="flex items-baseline gap-2 px-2 py-1.5">
-                          <span class="w-36 shrink-0 font-mono text-sm text-primary">{freq}</span>
-                          <span class="text-sm text-muted-foreground">{usage}</span>
+                          <span class="w-36 shrink-0 font-mono text-sm text-primary">{move || kt_tracked(freq)}</span>
+                          <span class="text-sm text-muted-foreground">
+                            {move || data::kt_tracked(usage)}
+                          </span>
                         </div>
                       }
                     })
                     .collect_view()}
                 </div>
+                {g
+                  .note
+                  .map(|note| {
+                    view! {
+                      <p class="border-t px-4 py-2 text-xs text-muted-foreground">
+                        {move || data::kt_tracked(note)}
+                      </p>
+                    }
+                  })}
               </section>
             }
           })

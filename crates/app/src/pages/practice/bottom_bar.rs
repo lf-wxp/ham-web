@@ -5,6 +5,7 @@ use ham_web_core::practice::PracticeOrder;
 use leptos::prelude::*;
 
 use crate::components::common::{BottomBar, KeyHints};
+use crate::data::kt_tracked;
 use crate::i18n::{bank_class, t};
 use crate::ui::{Button, Size, Variant};
 
@@ -26,7 +27,7 @@ pub(super) fn PracticeBottomBar(
       stats=move || {
         view! {
           <div>
-            {move || t("exam.bank")} " " {move || bank_class(bank.get().as_str())} " · " {move || t(order.get().label())} " · "
+            {move || t("exam.bank")} " " {move || bank_class(bank.get().as_str())} " · " {move || kt_tracked(order.get().label())} " · "
             {move || t("exam.answered")} " " {move || answered.get()} " / " {move || len.get()}
           </div>
           <KeyHints />

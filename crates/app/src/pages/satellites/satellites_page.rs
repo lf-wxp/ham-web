@@ -3,6 +3,7 @@ use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader, ProvenanceNote};
 use crate::components::rotor_control::{Aim, RotorControl};
+use crate::data::kt_tracked;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
@@ -15,6 +16,8 @@ use crate::i18n::t;
 #[component]
 pub fn SatellitesPage() -> impl IntoView {
   set_title("shell.satellites");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   // 多普勒面板此刻要对准的方向，旋转器控制条据此自动跟踪（默认关闭，需手动勾选）。
   let aim = RwSignal::new(None::<Aim>);
   view! {
@@ -63,13 +66,13 @@ pub fn SatellitesPage() -> impl IntoView {
                 view! {
                   <TableRow>
                     <TableCell class=format!("{CELL} whitespace-nowrap")>
-                      <div>{s.name}</div>
-                      <div class="font-mono text-xs text-muted-foreground">{s.callsign}</div>
+                      <div>{move || kt_tracked(s.name)}</div>
+                      <div class="font-mono text-xs text-muted-foreground">{move || kt_tracked(s.callsign)}</div>
                     </TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{s.kind}</TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{s.uplink}</TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{s.downlink}</TableCell>
-                    <TableCell class=format!("{CELL} text-muted-foreground")>{s.note}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(s.kind)}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(s.uplink)}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(s.downlink)}</TableCell>
+                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(s.note)}</TableCell>
                   </TableRow>
                 }
               })
@@ -86,7 +89,7 @@ pub fn SatellitesPage() -> impl IntoView {
                 view! {
                   <li class="flex gap-2 text-sm text-muted-foreground">
                     <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-                    <span>{*tip}</span>
+                    <span>{move || kt_tracked(tip)}</span>
                   </li>
                 }
               })
@@ -102,8 +105,8 @@ pub fn SatellitesPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex items-baseline gap-2 px-3 py-2">
-                    <span class="shrink-0 text-sm">{t}</span>
-                    <span class="text-sm text-muted-foreground">{d}</span>
+                    <span class="shrink-0 text-sm">{move || kt_tracked(t)}</span>
+                    <span class="text-sm text-muted-foreground">{move || kt_tracked(d)}</span>
                   </div>
                 }
               })

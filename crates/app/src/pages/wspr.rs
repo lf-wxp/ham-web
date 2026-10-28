@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn WsprPage() -> impl IntoView {
   set_title("shell.wspr");
   view! {
-    <KnowledgePage title=t("knowledge.wspr-weak-signal-propagation") subtitle=t("knowledge.weak-signal-propagation-reports")>
+    <KnowledgePage title=move || t("knowledge.wspr-weak-signal-propagation") subtitle=move || t("knowledge.weak-signal-propagation-reports")>
       <ConceptsSection title="核心概念" items=WSPR_CONCEPTS />
       <BulletSection title="使用要点" items=WSPR_NOTES />
     </KnowledgePage>

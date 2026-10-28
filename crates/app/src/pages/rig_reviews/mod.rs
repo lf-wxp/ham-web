@@ -53,7 +53,7 @@ fn metric_text(glossary: usize, rx: Option<&gear_rx::GearRx>) -> String {
 pub fn RigReviewsPage() -> impl IntoView {
   set_title("knowledge.rig-reviews");
   // 本页自带页头、没套 KnowledgePage 外壳，正文译文（条件 / 主观 / 结论等）得自己确保在拉。
-  Effect::new(move |_| data::ensure_knowledge_i18n());
+  data::use_knowledge_i18n();
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">

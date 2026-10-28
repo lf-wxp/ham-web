@@ -52,10 +52,10 @@ pub(super) fn LogStatsPanel(
       view! {
         <StatsScopeSelect scope=scope count=Signal::derive(move || scoped.with(Vec::len)) />
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label=t("log.total-qsos") value=move || total />
-          <Stat label=t("log.unique-callsigns") value=move || n_calls />
-          <Stat label=t("log.dxcc-entities") value=move || n_dxcc />
-          <Stat label=t("log.qsl-confirmed") value=move || confirmed />
+          <Stat label=Signal::derive(move || t("log.total-qsos")) value=move || total />
+          <Stat label=Signal::derive(move || t("log.unique-callsigns")) value=move || n_calls />
+          <Stat label=Signal::derive(move || t("log.dxcc-entities")) value=move || n_dxcc />
+          <Stat label=Signal::derive(move || t("log.qsl-confirmed")) value=move || confirmed />
         </div>
         <section class="grid gap-4 sm:grid-cols-2">
           <div class="pxl-card border bg-card p-4">

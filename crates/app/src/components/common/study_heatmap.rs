@@ -78,9 +78,9 @@ pub fn StudyHeatmap(days: HashMap<String, u32>, today: String) -> impl IntoView 
                   .map(|(day, c)| {
                     // 数值信息不能只挂在 hover 气泡上：格子补 `tabindex` + `aria-label`，
                     // 键盘用户与读屏也能拿到「这天答了多少题」（tooltip 由 `:focus-within` 触发）。
-                    let label = tp("learning.answered", c, &[&day, &c.to_string()]);
+                    let label = Signal::derive(move || tp("learning.answered", c, &[&day, &c.to_string()]));
                     view! {
-                      <Tooltip class="flex-1" label=label.clone()>
+                      <Tooltip class="flex-1" label=label>
                         <div
                           class=format!(
                             "h-4 w-full {} outline-none focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring",
@@ -88,7 +88,7 @@ pub fn StudyHeatmap(days: HashMap<String, u32>, today: String) -> impl IntoView 
                           )
                           tabindex="0"
                           role="img"
-                          aria-label=label
+                          aria-label=move || label.get()
                         ></div>
                       </Tooltip>
                     }
@@ -100,13 +100,13 @@ pub fn StudyHeatmap(days: HashMap<String, u32>, today: String) -> impl IntoView 
         })
         .collect_view()}
       <div class="flex items-center justify-end gap-1.5 text-xs text-muted-foreground">
-        <span>{t("learning.less")}</span>
+        <span>{move || t("learning.less")}</span>
         <span class="h-3 w-3 bg-inset"></span>
         <span class="h-3 w-3 bg-primary/20"></span>
         <span class="h-3 w-3 bg-primary/40"></span>
         <span class="h-3 w-3 bg-primary/70"></span>
         <span class="h-3 w-3 bg-primary"></span>
-        <span>{t("learning.more")}</span>
+        <span>{move || t("learning.more")}</span>
       </div>
     </div>
   }

@@ -45,7 +45,7 @@ pub(super) fn DutyPower() -> impl IntoView {
       let (label, pct) = (m.label, (m.duty * 100.0).round());
       SelectOption::new(
         m.id,
-        Signal::derive(move || format!("{} · {pct}%", t(label))),
+        Signal::derive(move || format!("{} · {pct}%", crate::data::core_text_tracked(label))),
       )
     })
     .collect();

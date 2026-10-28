@@ -88,7 +88,7 @@ pub(super) fn LogHealthPanel() -> impl IntoView {
   let logbook = store.logbook;
   // 「话务落在不允许话务的子段」那条明细后半段是知识库正文（IARU 模式子段文案），
   // 因此这里也要确保译文在拉 —— 日志页其余部分都是词典文案，不带这个依赖。
-  Effect::new(move |_| crate::data::ensure_knowledge_i18n());
+  crate::data::use_knowledge_i18n();
 
   // 「现在」每次重算都取一次：面板只在日志变化时重算，不会自己定时刷新。
   let report = Memo::new(move |_| {

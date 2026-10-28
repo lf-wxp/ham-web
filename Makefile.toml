@@ -174,7 +174,7 @@ command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--", "check-ui"]
 
 [tasks.check-structure]
-description = "结构与架构守卫：一文件一组件、页面手写吸顶偏移、散落 alert()、core 碰浏览器 API、crate 反向依赖、panic 宏（只读，见 docs/code-quality.md）"
+description = "结构与架构守卫：一文件一组件、页面手写吸顶偏移、散落 alert()、core 碰浏览器 API、crate 反向依赖、panic 宏、知识库译文词典挂载（只读，见 docs/code-quality.md）"
 # 与 i18n-check 同理不用 --release：只是扫源码文本。
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--", "check-structure"]

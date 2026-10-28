@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn AuroraPage() -> impl IntoView {
   set_title("knowledge.aurora-communication");
   view! {
-    <KnowledgePage title=t("knowledge.aurora-communication") subtitle=t("knowledge.polar-region-reflection-on")>
+    <KnowledgePage title=move || t("knowledge.aurora-communication") subtitle=move || t("knowledge.polar-region-reflection-on")>
       <ConceptsSection title="核心概念" items=AURORA_CONCEPTS />
       <TableSection title="常用波段" headers=&["波段", "频率", "说明"] rows=AURORA_BANDS />
       <ConceptsSection title="预测与监测" items=AURORA_FORECAST />

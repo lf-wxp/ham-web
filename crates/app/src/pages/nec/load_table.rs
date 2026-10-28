@@ -34,7 +34,7 @@ pub(super) fn LoadTable(
             });
           })
           size=ControlSize::Sm
-          aria_label=$label
+          aria_label=Signal::derive(move || $label)
           class="w-full"
         />
       }
@@ -81,7 +81,7 @@ pub(super) fn LoadTable(
                     let idx = move || {
                       loads.with(|rs| rs.iter().position(|r| r.id == id).unwrap_or(0))
                     };
-                    let label = |f: String| format!("{f} {}", idx() + 1);
+                    let label = move |f: String| format!("{f} {}", idx() + 1);
                     view! {
                       <tr>
                         <td class="border p-1">{cell!(loads, id, wire, label(t("tools.nec-load-wire-index")))}</td>

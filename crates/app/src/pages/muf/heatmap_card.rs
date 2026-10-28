@@ -11,6 +11,7 @@ use serde::Deserialize;
 
 use crate::cn::cn;
 use crate::data;
+use crate::data::kt_tracked;
 use crate::i18n::{t, tf, tp};
 use crate::ui::{
   Button, ControlSize, Input, InputType, NumberField, Size, Slider, Tooltip, Variant,
@@ -355,7 +356,7 @@ pub(super) fn HeatmapCard() -> impl IntoView {
                         let cells = row.cells.clone();
                         view! {
                       <div class="flex items-center gap-0.5">
-                        <div class="w-12 shrink-0 text-xs">{band}</div>
+                        <div class="w-12 shrink-0 text-xs">{move || kt_tracked(band)}</div>
                         <div class="flex flex-1 gap-0.5">
                           {cells
                             .iter()
@@ -562,7 +563,7 @@ pub(super) fn HeatmapCard() -> impl IntoView {
                       let pct = r * 100.0;
                       view! {
                         <div class="flex items-center gap-2 text-sm">
-                          <span class="w-12 shrink-0">{band}</span>
+                          <span class="w-12 shrink-0">{move || kt_tracked(band)}</span>
                           <div class="h-3 flex-1 overflow-hidden bg-muted">
                             <div class="h-full bg-win/70" style=format!("width: {pct:.0}%")></div>
                           </div>

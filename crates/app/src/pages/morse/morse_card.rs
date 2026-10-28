@@ -48,7 +48,7 @@ pub(super) fn MorseCard(entry: &'static MorseChar) -> impl IntoView {
   };
 
   view! {
-    <Tooltip class="min-w-0" label=tf("common.preview-with-code", &[(entry.ch), (entry.code)])>
+    <Tooltip class="min-w-0" label=Signal::derive(move || tf("common.preview-with-code", &[(entry.ch), (entry.code)]))>
       <button
         type="button"
         on:click=play_card

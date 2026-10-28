@@ -2,6 +2,7 @@
 
 mod achievements;
 mod app;
+mod auto_sync;
 mod bank_updates;
 mod cn;
 mod components;
@@ -25,6 +26,7 @@ mod pwa;
 mod radio_law_check;
 #[cfg(test)]
 mod registry_check;
+mod remote_sync;
 mod rpg;
 mod sat_alert;
 mod share_score;

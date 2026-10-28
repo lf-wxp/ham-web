@@ -4,6 +4,7 @@ use ham_web_core::receiver::{NOISE_BASICS, RECEIVER_METRICS, RECEIVER_TIPS};
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::data::kt_tracked;
 use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
@@ -13,6 +14,8 @@ const CELL: &str = "border px-3 py-2 align-top";
 #[component]
 pub fn ReceiverPage() -> impl IntoView {
   set_title("shell.receiver-specs");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
@@ -35,9 +38,9 @@ pub fn ReceiverPage() -> impl IntoView {
               .map(|&(name, meaning, factor)| {
                 view! {
                   <TableRow>
-                    <TableCell class=format!("{CELL} whitespace-nowrap")>{name}</TableCell>
-                    <TableCell class=format!("{CELL} text-muted-foreground")>{meaning}</TableCell>
-                    <TableCell class=format!("{CELL} text-muted-foreground")>{factor}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap")>{move || kt_tracked(name)}</TableCell>
+                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(meaning)}</TableCell>
+                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(factor)}</TableCell>
                   </TableRow>
                 }
               })
@@ -53,8 +56,8 @@ pub fn ReceiverPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm">{t}</span>
-                    <span class="text-sm text-muted-foreground">{d}</span>
+                    <span class="text-sm">{move || kt_tracked(t)}</span>
+                    <span class="text-sm text-muted-foreground">{move || kt_tracked(d)}</span>
                   </div>
                 }
               })
@@ -71,7 +74,7 @@ pub fn ReceiverPage() -> impl IntoView {
                 view! {
                   <li class="flex gap-2 text-sm text-muted-foreground">
                     <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-                    <span>{*tip}</span>
+                    <span>{move || kt_tracked(tip)}</span>
                   </li>
                 }
               })

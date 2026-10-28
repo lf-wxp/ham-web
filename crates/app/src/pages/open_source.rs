@@ -14,7 +14,7 @@ use crate::util::set_title;
 pub fn OpenSourcePage() -> impl IntoView {
   set_title("knowledge.open-source-projects-and");
   view! {
-    <KnowledgePage title=t("knowledge.open-source-projects-and") subtitle=t("knowledge.community-open-source-software")>
+    <KnowledgePage title=move || t("knowledge.open-source-projects-and") subtitle=move || t("knowledge.community-open-source-software")>
       <section class="pxl-card border bg-card">
         <div class="border-b px-4 py-3">
           <h2 class=card_title_class("")>{move || t("knowledge.featured-open-source-projects")}</h2>
@@ -30,7 +30,7 @@ pub fn OpenSourcePage() -> impl IntoView {
               view! {
                 <div>
                   <h3 class="mb-2 text-xs uppercase tracking-wide text-primary">
-                    {move || t(cat)}
+                    {move || crate::data::core_text_tracked(cat)}
                   </h3>
                   <div class="grid gap-2 sm:grid-cols-2">
                     {items
@@ -73,7 +73,7 @@ pub fn OpenSourcePage() -> impl IntoView {
         </div>
       </section>
 
-      <SectionCard title=t("knowledge.diy-and-build-tutorials")>
+      <SectionCard title=Signal::derive(move || t("knowledge.diy-and-build-tutorials"))>
         <div class="divide-y">
           {DIY_GUIDES
             .iter()

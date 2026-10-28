@@ -13,7 +13,7 @@ use crate::util::set_title;
 pub fn DvNetworkPage() -> impl IntoView {
   set_title("shell.digital-voice");
   view! {
-    <KnowledgePage title=t("shell.digital-voice") subtitle=t("knowledge.d-star-dmr-digital")>
+    <KnowledgePage title=move || t("shell.digital-voice") subtitle=move || t("knowledge.d-star-dmr-digital")>
       <TableSection title="主要网络" headers=&["网络", "厂商", "说明"] rows=DV_NETWORKS class="min-w-[520px]" />
       <ConceptsSection title="DMR 机理：时隙 / 色码 / Tier" items=DMR_BASICS />
       <BulletSection title="接入要点" items=DV_NETWORK_TIPS />

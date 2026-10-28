@@ -20,8 +20,8 @@ pub fn SdrMapPage() -> impl IntoView {
 
   view! {
     <KnowledgePage
-      title=t("tools.online-sdr-receiver-map")
-      subtitle=t("tools.no-local-hardware-needed")
+      title=move || t("tools.online-sdr-receiver-map")
+      subtitle=move || t("tools.no-local-hardware-needed")
     >
       <section class="pxl-card border bg-card p-4">
         <MapView focus=Signal::derive(move || focus.get())>

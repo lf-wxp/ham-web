@@ -212,7 +212,7 @@ pub fn AchievementToast() -> impl IntoView {
           <button
             type="button"
             class="opacity-60 transition-opacity hover:opacity-100"
-            aria-label=t("learning.dismiss")
+            aria-label=Signal::derive(move || t("learning.dismiss"))
             on:click=move |_| dismiss()
           >
             <Icon kind=IconKind::X class="size-6" />

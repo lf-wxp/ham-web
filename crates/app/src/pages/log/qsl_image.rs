@@ -262,7 +262,7 @@ pub(super) fn QslImage(entry_id: u64) -> impl IntoView {
                 <div class="flex flex-col items-start gap-2">
                   <FileInput
                     accept="image/*"
-                    label=t("log.replace-card-image")
+                    label=Signal::derive(move || t("log.replace-card-image"))
                     variant=Variant::Outline
                     size=Size::Sm
                     disabled=Signal::derive(move || busy.get())
@@ -289,7 +289,7 @@ pub(super) fn QslImage(entry_id: u64) -> impl IntoView {
             view! {
               <FileInput
                 accept="image/*"
-                label=t("log.upload-card-image")
+                label=Signal::derive(move || t("log.upload-card-image"))
                 variant=Variant::Outline
                 size=Size::Sm
                 disabled=Signal::derive(move || busy.get())

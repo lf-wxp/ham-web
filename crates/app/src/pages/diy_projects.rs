@@ -97,7 +97,7 @@ pub fn DiyProjectsPage() -> impl IntoView {
   });
 
   view! {
-    <KnowledgePage title=t("knowledge.hands-on-diy-project") subtitle=t("knowledge.hands-on-projects-from")>
+    <KnowledgePage title=move || t("knowledge.hands-on-diy-project") subtitle=move || t("knowledge.hands-on-projects-from")>
       // ── 筛选：难度 / 成本 / 波段 / 所需仪表 ────────────────────
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <NativeSelect

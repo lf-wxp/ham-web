@@ -240,7 +240,7 @@ pub fn QslDesignerPage() -> impl IntoView {
   );
 
   // 本台信息只带一次（空着才填）：之后用户手改的不会被覆盖。
-  let station = store.active_station();
+  let station = store.active_station_untracked();
   if !station.callsign.trim().is_empty() {
     f.my_call.set(station.callsign.clone());
   }
@@ -443,7 +443,7 @@ pub fn QslDesignerPage() -> impl IntoView {
               <div class="overflow-hidden border bg-inset p-2">
                 <img
                   src=move || preview.get()
-                  alt=t("log.qsl-card-preview")
+                  alt=move || t("log.qsl-card-preview")
                   class="w-full"
                   style="aspect-ratio: 140/89"
                 />
@@ -538,7 +538,7 @@ pub fn QslDesignerPage() -> impl IntoView {
                   view! {
                     <img
                       src=src.clone()
-                      alt=t("log.qsl-card-preview")
+                      alt=move || t("log.qsl-card-preview")
                       class="absolute"
                       style=format!("left: {x}mm; top: {y}mm; width: {cw}mm; height: {chh}mm;")
                     />

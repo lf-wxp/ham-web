@@ -22,6 +22,7 @@
   "应有足够多的频率条目，实际 {total}": "There should be enough frequency entries, got {total}",
   "数字模式常用（FT8 / RTTY / SSTV / PSK）": "Commonly used for digital modes (FT8 / RTTY / SSTV / PSK)",
   "海上遇险与呼叫（话音）": "Maritime distress and calling (voice)",
+  "短波业余电台应避免在 IARU 信标工作频率 ±500Hz 范围内发射。": "HF amateur stations should avoid transmitting within ±500 Hz of the IARU beacon frequencies.",
   "航空遇险（VHF）": "Aviation distress (VHF)",
   "航空遇险（军用）": "Aviation distress (military)",
   "遇险与应急": "Distress and emergency"

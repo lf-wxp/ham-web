@@ -1,3 +1,4 @@
+use crate::data::kt_tracked;
 use crate::i18n::t;
 use crate::ui::Tooltip;
 use leptos::prelude::*;
@@ -28,7 +29,7 @@ pub(super) fn FluxTrend(history: Vec<(String, f64)>) -> impl IntoView {
                   aria-label=tip
                 >
                   <div class="w-full bg-primary" style=format!("height: {h:.1}px")></div>
-                  <span class="text-xs tabular-nums text-muted-foreground">{label}</span>
+                  <span class="text-xs tabular-nums text-muted-foreground">{move || kt_tracked(&label)}</span>
                 </div>
               </Tooltip>
             }

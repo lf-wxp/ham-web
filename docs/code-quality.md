@@ -90,14 +90,14 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 | 静态检查 | clippy `-D warnings`（原生 + wasm 前端，含 12 个 worker） | `cargo make clippy` | 有 lint 级缺陷 |
 | 单元测试 | core / app / 各解码 crate | `cargo make test` | 逻辑回归 |
 | 界面规范 | 8 条机械守卫（圆角 / 原生控件 / 类名工厂 / CHIP_ON / 填充色当文字 / 模糊渐变 / 软阴影 / 宽度容器封闭清单） | `cargo make check-ui` | UI 规范回潮 |
-| 结构守卫 | 一文件一组件 / 页面手写吸顶偏移 / 散落 alert() / core 碰浏览器 API / crate 反向依赖 / panic 宏 | `cargo make check-structure` | 结构/架构规范回潮 |
+| 结构守卫 | 一文件一组件 / 页面手写吸顶偏移 / 散落 alert() / core 碰浏览器 API / crate 反向依赖 / panic 宏 / 知识库译文词典挂载 | `cargo make check-structure` | 结构/架构规范回潮 |
 | 文案 | 重复 key、占位符数量、复数变体、死条目、语言包新鲜度、覆盖率 | `cargo make i18n-check` | 三语不齐或死词条 |
 | 知识库译文 | 中文原文作 key 的漂移检测 | `cargo make knowledge-i18n-check` | 译文静默失效 |
 | 解析表 | 答案一致性、重复注入、同题多版本分叉 | `cargo make explanations-check` | 解析与题库不一致 |
 | 像素风 | 调色板对比度、`schemes.css` 与方案表一致 | `cargo make pixel-check` | 对比度或生成物漂移 |
 | e2e 对账 | 271 条 journey 的 grep 必须在 spec 里唯一命中 | `cargo make e2e-check` | 关键旅程失去用例 / grep 歧义 |
 | 注册表一致性 | 注册表 ↔ 导航 ↔ 路由 ↔ sitemap | `cargo test -p ham-web-app registry_check` | 新增页面漏注册 |
-| 体积预算 | `perf-budget.json`（主包 wasm br 上限 1 900 000 B 等 7 项） | `cargo make size-check`（需先 `build-web`） | 产物超预算 |
+| 体积预算 | `perf-budget.json`（主包 wasm br 上限 1 950 000 B 等 7 项） | `cargo make size-check`（需先 `build-web`） | 产物超预算 |
 | 端到端 | 全站冒烟 + 无障碍 + 三语布局 + 手机宽度 | `cargo make e2e` | 用户可见回归 |
 | 覆盖率 | 路由冒烟 / 交互 / 关键流程三口径 | `cargo make e2e-coverage` | 覆盖趋势下降 |
 | 镜像 | `/healthz`、SPA 回退、缺失资源 404、语言包与 Worker 可读 | `sh scripts/smoke-image.sh <image>` | 交付物不可用 |
@@ -274,6 +274,7 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 | C3.2 | 一族组件用文件夹模块 | 抽查 `ui/` 与 `pages/` 的多组件家族 | `mod.rs` 只放声明与重导出，子组件各占一文件 | 结构偏离 |
 | C3.3 | 命名冲突规避 | 抽查 `dialog_root.rs` / `select_root.rs` / `chip_item.rs` 类命名 | 不存在 `mod` 与父模块同名的文件 | 命名风险 |
 | C3.4 | 共享 token / context | 抽查文件夹模块 | 共享样式在 `shared.rs`，不在各子组件复制 | 重复常量 |
+| C3.5 | 知识库译文词典挂载 | `cargo make check-structure` | 用了 `kt_tracked` / `core_text_tracked` 的页面（`pages/` 一级条目）里调了 `data::use_knowledge_i18n()` 或走 `KnowledgePage` | 漏挂的页面 |
 
 ### C4 表单与无障碍契约
 
@@ -578,7 +579,7 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 # 门禁
 cargo make check                 # fmt + clippy + test + i18n + knowledge-i18n + explanations + e2e-check + check-ui + check-structure + pixel-check + data-sync-check + data-staleness
 cargo make ci                    # 上面 + release 前端构建 + size-check
-cargo make check-structure       # 结构/架构守卫（一文件一组件、吸顶偏移、alert、core 碰浏览器 API、反向依赖、panic 宏）
+cargo make check-structure       # 结构/架构守卫（一文件一组件、吸顶偏移、alert、core 碰浏览器 API、反向依赖、panic 宏、知识库译文词典挂载）
 cargo make e2e                   # release 产物 + Playwright 全量
 cargo make e2e-coverage          # 覆盖率报告 e2e/test-results/coverage.md
 cargo make size-check            # 体积预算（需先 build-web）

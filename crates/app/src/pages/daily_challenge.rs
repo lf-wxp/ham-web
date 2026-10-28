@@ -137,7 +137,7 @@ pub fn DailyChallengePage() -> impl IntoView {
     <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
         title=move || t("learning.daily-challenge")
-        subtitle=tf("learning.questions-a-day-in", &[&CHALLENGE_COUNT.to_string(), &CHALLENGE_MINUTES.to_string()])
+        subtitle=move || tf("learning.questions-a-day-in", &[&CHALLENGE_COUNT.to_string(), &CHALLENGE_MINUTES.to_string()])
         actions=ViewFn::from(move || {
           let nav = navigate.clone();
           view! {

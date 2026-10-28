@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn DxPage() -> impl IntoView {
   set_title("shell.dx-techniques");
   view! {
-    <KnowledgePage title=t("shell.dx-techniques") subtitle=t("radio.split-operation-dx-window")>
+    <KnowledgePage title=move || t("shell.dx-techniques") subtitle=move || t("radio.split-operation-dx-window")>
       <ConceptsSection title="核心概念" items=DX_CONCEPTS />
       <BulletSection title="追台要点" items=DX_TIPS />
     </KnowledgePage>

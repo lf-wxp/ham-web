@@ -22,6 +22,7 @@
   "应有足够多的频率条目，实际 {total}": "Debería haber suficientes entradas de frecuencia; se obtuvieron {total}",
   "数字模式常用（FT8 / RTTY / SSTV / PSK）": "Uso habitual en modos digitales (FT8 / RTTY / SSTV / PSK)",
   "海上遇险与呼叫（话音）": "Socorro y llamada marítimos (fonía)",
+  "短波业余电台应避免在 IARU 信标工作频率 ±500Hz 范围内发射。": "Las estaciones de radioaficionado en HF deben evitar transmitir dentro de ±500 Hz de las frecuencias de baliza de la IARU.",
   "航空遇险（VHF）": "Socorro aeronáutico (VHF)",
   "航空遇险（军用）": "Socorro aeronáutico (militar)",
   "遇险与应急": "Socorro y emergencia"

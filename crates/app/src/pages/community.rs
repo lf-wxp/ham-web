@@ -14,8 +14,8 @@ use crate::util::set_title;
 pub fn CommunityPage() -> impl IntoView {
   set_title("knowledge.ham-community");
   view! {
-    <KnowledgePage title=t("knowledge.ham-community") subtitle=t("knowledge.ham-radio-forums-q")>
-      <SectionCard title=t("knowledge.about-this-community")>
+    <KnowledgePage title=move || t("knowledge.ham-community") subtitle=move || t("knowledge.ham-radio-forums-q")>
+      <SectionCard title=Signal::derive(move || t("knowledge.about-this-community"))>
         <p class="text-sm leading-relaxed text-muted-foreground">
           {move || {
             t(
@@ -40,7 +40,7 @@ pub fn CommunityPage() -> impl IntoView {
               view! {
                 <div>
                   <h3 class="mb-2 text-xs uppercase tracking-wide text-primary">
-                    {move || t(cat)}
+                    {move || crate::data::core_text_tracked(cat)}
                   </h3>
                   <div class="grid gap-2 sm:grid-cols-2">
                     {items

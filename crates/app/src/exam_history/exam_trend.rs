@@ -1,3 +1,4 @@
+use crate::data::kt_tracked;
 use crate::i18n::{t, tf, tp};
 use ham_web_core::exam_history::{ExamRecord, Readiness, Verdict, assess, of_bank};
 use ham_web_core::{Bank, ExamRule};
@@ -39,7 +40,7 @@ pub fn ExamTrend(history: Vec<ExamRecord>, bank: Bank) -> impl IntoView {
   let Some(readiness) = assess(&history, bank) else {
     return view! {
       <p class="text-sm text-muted-foreground">
-        {tf("common.no-class-mock-exam", &[&bank.to_string()])}
+        {move || tf("common.no-class-mock-exam", &[&bank.to_string()])}
         <a href=format!("/exam?bank={bank}") class="ml-1 text-primary underline underline-offset-4">
           {move || t("common.take-one-link")}
         </a>
@@ -87,7 +88,7 @@ pub fn ExamTrend(history: Vec<ExamRecord>, bank: Bank) -> impl IntoView {
     <div class="space-y-3">
       <div class="flex flex-wrap items-center gap-2 text-sm">
         <span class=format!("border px-2.5 py-0.5 text-xs {}", verdict_class(readiness.verdict))>
-          {readiness.verdict.label()}
+          {move || kt_tracked(readiness.verdict.label())}
         </span>
         <span class="text-muted-foreground">{verdict_hint(&readiness, rule.pass, rule.total)}</span>
       </div>

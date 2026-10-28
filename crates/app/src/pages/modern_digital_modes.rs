@@ -14,8 +14,8 @@ pub fn ModernDigitalModesPage() -> impl IntoView {
   set_title("knowledge.modern-digital-modes");
   view! {
     <KnowledgePage
-      title=t("knowledge.modern-digital-modes")
-      subtitle=t("knowledge.modern-digital-modes-subtitle")
+      title=move || t("knowledge.modern-digital-modes")
+      subtitle=move || t("knowledge.modern-digital-modes-subtitle")
     >
       <ConceptsSection title="核心概念" items=MODERN_DIGITAL_CONCEPTS />
       <TableSection

@@ -4,6 +4,7 @@ use ham_web_core::confusables::CONFUSABLE_QUIZ;
 use leptos::prelude::*;
 
 use crate::components::common::PageContainer;
+use crate::data::kt_tracked;
 use crate::i18n::{t, tf, tp};
 use crate::ui::{Button, Size, Variant};
 
@@ -57,7 +58,7 @@ pub(super) fn ConfusablesQuiz() -> impl IntoView {
               <div class="mt-2 text-sm text-muted-foreground">
                 {move || t("exam.correct-label")} " " <span class="text-win-text">{c}</span>
                 "　" {move || t("exam.wrong-label")} " " <span class="text-hp-text">{w}</span>
-                "　" {tp("common.questions-total", total, &[&total.to_string()])}
+                "　" {move || tp("common.questions-total", total, &[&total.to_string()])}
               </div>
               <Button
                 variant=Variant::Default
@@ -81,7 +82,7 @@ pub(super) fn ConfusablesQuiz() -> impl IntoView {
                   "　" {move || t("exam.wrong-label")} " " <span class="text-hp-text">{wrong.get()}</span>
                 </span>
               </div>
-              <p class="min-h-16 text-base leading-relaxed">{item.statement}</p>
+              <p class="min-h-16 text-base leading-relaxed">{move || kt_tracked(item.statement)}</p>
               <div class="mt-4 flex items-center gap-2">
                 <Button
                   variant=Variant::Default
@@ -124,9 +125,9 @@ pub(super) fn ConfusablesQuiz() -> impl IntoView {
                           {format!("{} {}", t("exam.correct-answer-prefix"), if item.answer { t("exam.correct-label") } else { t("exam.wrong-label") })}
                         </span>
                       </div>
-                      <div class="text-muted-foreground">{item.explain}</div>
+                      <div class="text-muted-foreground">{move || kt_tracked(item.explain)}</div>
                       <div class="text-xs text-primary">
-                        {format!("{} {}", t("exam.related-topic"), t(item.topic))}
+                        {format!("{} {}", t("exam.related-topic"), crate::data::core_text_tracked(item.topic))}
                         <a href="#confusables-list" class="ml-1 underline underline-offset-4 hover:underline">
                           {move || t("exam.review-table")}
                         </a>

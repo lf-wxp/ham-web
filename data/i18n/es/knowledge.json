@@ -104,7 +104,6 @@
   "knowledge.key-points-for-building": "Puntos clave de construcción y uso",
   "knowledge.build-safety-reminders": "Recordatorios de seguridad al construir",
   "knowledge.power-amplification-linearity-imd": "Amplificación de potencia · linealidad · IMD",
-  "knowledge.load-more-showing": "Cargar más (mostrando ",
   "knowledge.loading-glossary": "Cargando glosario...",
   "knowledge.loading-abbreviations": "Cargando abreviaturas...",
   "knowledge.matching-components-and-concepts": "Componentes y conceptos de adaptación",
@@ -512,5 +511,13 @@
   "knowledge.china-ham-pmr-vs-ham": "Radio PMR vs walkie de aficionado",
   "knowledge.china-ham-dimension": "Aspecto",
   "knowledge.china-ham-pmr": "Radio PMR (409 MHz)",
-  "knowledge.china-ham-ham": "Walkie de aficionado (UHF)"
+  "knowledge.china-ham-ham": "Walkie de aficionado (UHF)",
+  "knowledge.mode-windows": "Rangos utilizables por modo de emisión",
+  "knowledge.modulation-mode": "Modo",
+  "knowledge.usable-range": "Rango utilizable",
+  "knowledge.note": "Por qué estos límites",
+  "knowledge.avoid-range": "Evitar",
+  "knowledge.reason": "Motivo",
+  "knowledge.avoid-ranges": "Rangos que deben evitarse",
+  "knowledge.load-more-count": "Cargar más (mostrando {} / {})"
 }

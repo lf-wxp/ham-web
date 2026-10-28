@@ -4,6 +4,7 @@ use ham_web_core::weather_sat::{APT_GUIDE, WEATHER_CONCEPTS, WEATHER_SATS, WEATH
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::data::kt_tracked;
 use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
@@ -13,6 +14,8 @@ const CELL: &str = "border px-3 py-2 align-top";
 #[component]
 pub fn WeatherSatPage() -> impl IntoView {
   set_title("shell.weather-satellites");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
@@ -46,8 +49,8 @@ pub fn WeatherSatPage() -> impl IntoView {
               .map(|(title, desc, link)| {
                 view! {
                   <li>
-                    <div class="text-sm">{*title}</div>
-                    <div class="mt-0.5 text-sm text-muted-foreground">{*desc}</div>
+                    <div class="text-sm">{move || kt_tracked(title)}</div>
+                    <div class="mt-0.5 text-sm text-muted-foreground">{move || kt_tracked(desc)}</div>
                     {link.map(|href| {
                       view! {
                         <a href=href class="mt-1 inline-block text-xs text-primary underline-offset-4 hover:underline">
@@ -77,10 +80,10 @@ pub fn WeatherSatPage() -> impl IntoView {
               .map(|s| {
                 view! {
                   <TableRow>
-                    <TableCell class=format!("{CELL} whitespace-nowrap")>{s.name}</TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{s.signal}</TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{s.freq}</TableCell>
-                    <TableCell class=format!("{CELL} text-muted-foreground")>{s.note}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap")>{move || kt_tracked(s.name)}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(s.signal)}</TableCell>
+                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(s.freq)}</TableCell>
+                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(s.note)}</TableCell>
                   </TableRow>
                 }
               })
@@ -96,8 +99,8 @@ pub fn WeatherSatPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm">{t}</span>
-                    <span class="text-sm text-muted-foreground">{d}</span>
+                    <span class="text-sm">{move || kt_tracked(t)}</span>
+                    <span class="text-sm text-muted-foreground">{move || kt_tracked(d)}</span>
                   </div>
                 }
               })
@@ -114,7 +117,7 @@ pub fn WeatherSatPage() -> impl IntoView {
                 view! {
                   <li class="flex gap-2 text-sm text-muted-foreground">
                     <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-                    <span>{*tip}</span>
+                    <span>{move || kt_tracked(tip)}</span>
                   </li>
                 }
               })

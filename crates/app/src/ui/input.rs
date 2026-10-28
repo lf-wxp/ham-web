@@ -157,7 +157,7 @@ pub fn Input(
   let min = non_empty(min);
   let max = non_empty(max);
   let step = non_empty(step);
-  let maxlength = maxlength.filter(|v| !v.get().is_empty());
+  let maxlength = maxlength.filter(|v| !v.get_untracked().is_empty());
 
   let pad_l = if prefix.is_some() { "pl-9" } else { "" };
   let pad_r = if suffix.is_some() || clearable {

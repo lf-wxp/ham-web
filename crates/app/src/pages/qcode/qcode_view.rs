@@ -136,11 +136,11 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
 
       <PageContainer class="space-y-0">
         <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label=t("knowledge.q-codes") value=Signal::derive(move || qcode.with(Vec::len)) />
-          <Stat label=t("knowledge.contact-abbreviations") value=Signal::derive(move || abbrev.with(Vec::len)) />
-          <Stat label=t("knowledge.contact-phrases") value=Signal::derive(move || phrase.with(Vec::len)) />
+          <Stat label=Signal::derive(move || t("knowledge.q-codes")) value=Signal::derive(move || qcode.with(Vec::len)) />
+          <Stat label=Signal::derive(move || t("knowledge.contact-abbreviations")) value=Signal::derive(move || abbrev.with(Vec::len)) />
+          <Stat label=Signal::derive(move || t("knowledge.contact-phrases")) value=Signal::derive(move || phrase.with(Vec::len)) />
           <Stat
-            label=t("knowledge.current-matches")
+            label=Signal::derive(move || t("knowledge.current-matches"))
             value=Signal::derive(move || lists.iter().map(|l| l.with(Vec::len)).sum::<usize>())
           />
         </div>
@@ -156,8 +156,8 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
             view! {
               <section class="mb-8 last:mb-0">
                 <div class="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <h2 class=card_title_class("")>{move || t(group.label())}</h2>
-                  <span class="text-xs text-muted-foreground">{move || t(group.hint())}</span>
+                  <h2 class=card_title_class("")>{move || crate::data::core_text_tracked(group.label())}</h2>
+                  <span class="text-xs text-muted-foreground">{move || crate::data::core_text_tracked(group.hint())}</span>
                   <span class="ml-auto text-xs tabular-nums text-muted-foreground">
                     {move || list.with(Vec::len)}
                   </span>

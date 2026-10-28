@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn AntennaTuningPage() -> impl IntoView {
   set_title("shell.antenna-tuning");
   view! {
-    <KnowledgePage title=t("shell.antenna-tuning") subtitle=t("knowledge.antenna-analysers-trimming-workflow")>
+    <KnowledgePage title=move || t("shell.antenna-tuning") subtitle=move || t("knowledge.antenna-analysers-trimming-workflow")>
       <StepsSection title="调试步骤" items=TUNING_STEPS />
       <BulletSection title="调试要点" items=TUNING_TIPS />
     </KnowledgePage>

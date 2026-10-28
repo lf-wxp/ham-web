@@ -4,6 +4,7 @@ use ham_web_core::rtty::{RTTY_FREQS, RTTY_MODES, RTTY_TIPS};
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::data::kt_tracked;
 use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
@@ -13,6 +14,8 @@ const CELL: &str = "border px-3 py-2 align-top";
 #[component]
 pub fn RttyPage() -> impl IntoView {
   set_title("RTTY / PSK31");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
@@ -38,10 +41,10 @@ pub fn RttyPage() -> impl IntoView {
                   view! {
                     <TableRow>
                       <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-primary")>
-                        {name}
+                        {move || kt_tracked(name)}
                       </TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{alias}</TableCell>
-                      <TableCell class=format!("{CELL} text-muted-foreground")>{desc}</TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(alias)}</TableCell>
+                      <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -58,8 +61,8 @@ pub fn RttyPage() -> impl IntoView {
               .map(|&(freq, usage)| {
                 view! {
                   <div class="flex items-baseline gap-2 px-3 py-2">
-                    <span class="shrink-0 font-mono text-sm text-primary">{freq}</span>
-                    <span class="text-sm text-muted-foreground">{usage}</span>
+                    <span class="shrink-0 font-mono text-sm text-primary">{move || kt_tracked(freq)}</span>
+                    <span class="text-sm text-muted-foreground">{move || kt_tracked(usage)}</span>
                   </div>
                 }
               })
@@ -76,7 +79,7 @@ pub fn RttyPage() -> impl IntoView {
                 view! {
                   <li class="flex gap-2 text-sm text-muted-foreground">
                     <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-                    <span>{*tip}</span>
+                    <span>{move || kt_tracked(tip)}</span>
                   </li>
                 }
               })

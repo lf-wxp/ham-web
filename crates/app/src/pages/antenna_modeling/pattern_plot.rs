@@ -1,3 +1,4 @@
+use crate::data::kt_tracked;
 use crate::i18n::t;
 use crate::ui::Slider;
 use ham_web_core::antenna_pattern::{PatternKind, elevation_pattern, pattern};
@@ -82,7 +83,7 @@ pub(super) fn PatternPlot() -> impl IntoView {
         class=move || tab_class(kind.get() == k)
         on:click=move |_| kind.set(k)
       >
-        {k.label()}
+        {move || kt_tracked(k.label())}
       </button>
     }
   };

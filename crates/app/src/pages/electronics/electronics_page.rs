@@ -4,6 +4,7 @@ use ham_web_core::electronics::{CIRCUITS, COMPONENTS, FORMULAS};
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::data::kt_tracked;
 use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
@@ -15,6 +16,8 @@ const CELL: &str = "border px-3 py-2 text-left align-top";
 #[component]
 pub fn ElectronicsPage() -> impl IntoView {
   set_title("shell.electronics-basics");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
@@ -39,11 +42,11 @@ pub fn ElectronicsPage() -> impl IntoView {
                 .map(|&(name, unit, desc)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap")>{name}</TableCell>
+                      <TableCell class=format!("{CELL} whitespace-nowrap")>{move || kt_tracked(name)}</TableCell>
                       <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-xs text-muted-foreground")>
-                        {unit}
+                        {move || kt_tracked(unit)}
                       </TableCell>
-                      <TableCell class=format!("{CELL} text-muted-foreground")>{desc}</TableCell>
+                      <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -62,8 +65,8 @@ pub fn ElectronicsPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm">{t}</span>
-                    <span class="text-sm text-muted-foreground">{d}</span>
+                    <span class="text-sm">{move || kt_tracked(t)}</span>
+                    <span class="text-sm text-muted-foreground">{move || kt_tracked(d)}</span>
                   </div>
                 }
               })
@@ -79,8 +82,8 @@ pub fn ElectronicsPage() -> impl IntoView {
               .map(|&(t, d)| {
                 view! {
                   <div class="flex flex-col gap-1 px-3 py-2">
-                    <span class="text-sm text-primary">{t}</span>
-                    <span class="font-mono text-sm text-muted-foreground">{d}</span>
+                    <span class="text-sm text-primary">{move || kt_tracked(t)}</span>
+                    <span class="font-mono text-sm text-muted-foreground">{move || kt_tracked(d)}</span>
                   </div>
                 }
               })

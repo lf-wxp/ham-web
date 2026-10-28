@@ -121,8 +121,8 @@ pub fn CallsignCopyPage() -> impl IntoView {
       <PageContainer class="space-y-4">
         <section class="pxl-card border bg-card p-4">
           <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
-            <span>{move || t("common.correct-label")} <span class="text-win-text">{correct.get()}</span> {" / "} {total.get()}</span>
-            <span>{move || t("morse.streak-count")} <span class="text-foreground">{streak.get()}</span> {move || t("exam.questions")}</span>
+            <span>{move || t("common.correct-label")} <span class="text-win-text">{move || correct.get()}</span> {" / "} {move || total.get()}</span>
+            <span>{move || t("morse.streak-count")} <span class="text-foreground">{move || streak.get()}</span> {move || t("exam.questions")}</span>
           </div>
 
           // 刻意的例外：这两个模式按钮靠切换 `variant` 表示当前选中，而 `Button` 的

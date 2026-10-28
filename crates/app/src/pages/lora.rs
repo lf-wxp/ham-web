@@ -12,8 +12,8 @@ pub fn LoraPage() -> impl IntoView {
   set_title("knowledge.lora-meshtastic-aredn");
   view! {
     <KnowledgePage
-      title=t("knowledge.lora-meshtastic-aredn")
-      subtitle=t("knowledge.lora-meshtastic-aredn-subtitle")
+      title=move || t("knowledge.lora-meshtastic-aredn")
+      subtitle=move || t("knowledge.lora-meshtastic-aredn-subtitle")
     >
       <ConceptsSection title="核心概念" items=LORA_CONCEPTS />
       <TableSection

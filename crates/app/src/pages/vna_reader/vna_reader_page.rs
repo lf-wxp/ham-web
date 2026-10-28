@@ -175,7 +175,7 @@ pub fn VnaReaderPage() -> impl IntoView {
             <p class=NOTE>{move || t("tools.vna-import-note")}</p>
             <FileInput
               accept=".s1p,.S1P,.txt"
-              label=t("tools.vna-import-s1p")
+              label=Signal::derive(move || t("tools.vna-import-s1p"))
               variant=Variant::Outline
               on_files=on_files
             />

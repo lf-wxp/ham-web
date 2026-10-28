@@ -14,7 +14,7 @@ pub fn AntennasPage() -> impl IntoView {
   set_title("shell.antenna-types");
   // 卡片与理论要点都是 `crates/core` 正文（渲染时走 [`data::kt`]）：本页自带页头、
   // 没套 KnowledgePage 外壳，所以译文得自己确保在拉。
-  Effect::new(move |_| data::ensure_knowledge_i18n());
+  data::use_knowledge_i18n();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader

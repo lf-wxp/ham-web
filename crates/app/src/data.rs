@@ -285,6 +285,39 @@ impl Drop for ClearTimeout {
   }
 }
 
+/// 请求超时守卫：到点就 `abort()` 对应的 `fetch`，守卫析构时清掉定时器。
+///
+/// 守卫要活到响应体读完为止（超时覆盖整个请求，而不只是拿到响应头）：把它绑定到局部变量，
+/// 别用 `_` 丢掉。自定义远端同步（`crate::remote_sync`）也用它，两处不再各写一份。
+pub(crate) struct AbortTimeout {
+  controller: web_sys::AbortController,
+  _clear: ClearTimeout,
+}
+
+impl AbortTimeout {
+  /// 开始计时。
+  pub(crate) fn start(timeout_ms: i32) -> Result<Self, wasm_bindgen::JsValue> {
+    let controller = web_sys::AbortController::new()?;
+    let c = controller.clone();
+    let timer = wasm_bindgen::closure::Closure::once_into_js(move || c.abort());
+    let timer_id = window()
+      .set_timeout_with_callback_and_timeout_and_arguments_0(
+        timer.as_ref().unchecked_ref(),
+        timeout_ms,
+      )
+      .unwrap_or(0);
+    Ok(Self {
+      controller,
+      _clear: ClearTimeout(timer_id),
+    })
+  }
+
+  /// 交给 `RequestInit::set_signal` 的信号。
+  pub(crate) fn signal(&self) -> web_sys::AbortSignal {
+    self.controller.signal()
+  }
+}
+
 /// 拉取文本，`timeout_ms` 毫秒超时（通过 `AbortController` 中断）。
 ///
 /// 同源资源（如运行时语言包）也走这里：挂载前会同步等它返回，没有超时就会一直卡在启动页。
@@ -292,27 +325,12 @@ pub(crate) async fn fetch_text_with_timeout(
   url: &str,
   timeout_ms: i32,
 ) -> Result<String, AppError> {
-  use wasm_bindgen::JsCast;
   use wasm_bindgen_futures::JsFuture;
-  use web_sys::{AbortController, Request, RequestInit, Response};
 
   let init = RequestInit::new();
-  let controller = AbortController::new().map_err(|e| AppError::Network(js_error_message(&e)))?;
-  let signal = controller.signal();
-  init.set_signal(Some(&signal));
-
-  // 超时后中断请求
-  let c = controller.clone();
-  let timer = wasm_bindgen::closure::Closure::once_into_js(move || {
-    c.abort();
-  });
-  let timer_id = window()
-    .set_timeout_with_callback_and_timeout_and_arguments_0(
-      timer.as_ref().unchecked_ref(),
-      timeout_ms,
-    )
-    .unwrap_or(0);
-  let _clear = ClearTimeout(timer_id);
+  let timeout =
+    AbortTimeout::start(timeout_ms).map_err(|e| AppError::Network(js_error_message(&e)))?;
+  init.set_signal(Some(&timeout.signal()));
 
   let request = Request::new_with_str_and_init(url, &init)
     .map_err(|e| AppError::Network(js_error_message(&e)))?;
@@ -592,7 +610,13 @@ thread_local! {
 }
 
 /// 订阅知识库译文的加载状态；译文到达后调用方会重新求值。
+///
+/// 没有响应式观察者时（事件回调 / `spawn_local` / 挂载前）不订阅，理由见
+/// [`crate::i18n`] 的 `observed`。
 pub fn track_knowledge() {
+  if !crate::i18n::observed() {
+    return;
+  }
   KNOWLEDGE_READY.with(|s| s.track());
 }
 
@@ -655,6 +679,15 @@ pub fn ensure_knowledge_i18n() {
   }
 }
 
+/// 在页面 / 组件体里调用一次：挂上 [`ensure_knowledge_i18n`] 的 `Effect`。
+///
+/// 页面用了 `kt_tracked` / `core_text_tracked` 渲染 `crates/core` 的中文原文，就必须调它（或者走
+/// [`KnowledgePage`](crate::components::common::KnowledgePage) 外壳）——不然以英文 / 西语直接
+/// 打开该页时词典永远不来，文案停在中文。这条由 `cargo make check-structure` 守着。
+pub fn use_knowledge_i18n() {
+  leptos::prelude::Effect::new(move |_| ensure_knowledge_i18n());
+}
+
 /// 替换当前译文并通知订阅方重算。
 fn set_knowledge_i18n(lang: String, dict: HashMap<String, String>) {
   KNOWLEDGE_I18N.with(|c| *c.borrow_mut() = Some((lang, dict)));
@@ -683,6 +716,18 @@ pub fn kt(text: &str) -> String {
 pub fn kt_tracked(text: &str) -> String {
   track_knowledge();
   kt(text)
+}
+
+/// 翻译 `crates/core` 里的中文原文标签：界面词典的反向索引（页面标题、分类名）优先，
+/// 查不到再回退知识库词典。
+///
+/// 数据驱动的 `t(变量)` 调用点（取值来自 core 数据表）用它：这类原文有的只在界面词典、
+/// 有的只在知识库词典，单走 `t` 会让后者在英文 / 西语界面里原样漏出中文。同样要在
+/// `move ||` 闭包里调用，并保证页面已挂 [`ensure_knowledge_i18n`]。
+#[must_use]
+pub fn core_text_tracked(text: &str) -> String {
+  let ui = crate::i18n::t(text);
+  if ui == text { kt_tracked(text) } else { ui }
 }
 
 thread_local! {

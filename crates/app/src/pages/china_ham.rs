@@ -14,8 +14,8 @@ pub fn ChinaHamPage() -> impl IntoView {
   set_title("knowledge.china-ham");
   view! {
     <KnowledgePage
-      title=t("knowledge.china-ham")
-      subtitle=t("knowledge.china-ham-subtitle")
+      title=move || t("knowledge.china-ham")
+      subtitle=move || t("knowledge.china-ham-subtitle")
     >
       <ConceptsSection title="核心概念" items=CHINA_HAM_CONCEPTS />
 

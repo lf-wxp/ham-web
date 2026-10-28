@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn LearningResourcesPage() -> impl IntoView {
   set_title("knowledge.learning-resources");
   view! {
-    <KnowledgePage title=t("knowledge.learning-resources") subtitle=t("knowledge.video-courses-technical-documentation")>
+    <KnowledgePage title=move || t("knowledge.learning-resources") subtitle=move || t("knowledge.video-courses-technical-documentation")>
       <TableSection title="视频资源" headers=&["平台", "内容", "建议"] rows=VIDEO_RESOURCES />
       <TableSection title="技术文档" headers=&["文档", "内容", "用途"] rows=DOC_RESOURCES />
       <BulletSection title="自学建议" items=LEARNING_RESOURCES_TIPS />

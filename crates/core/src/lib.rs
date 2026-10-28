@@ -193,6 +193,7 @@ pub mod registry;
 pub mod regulations;
 pub mod related;
 pub mod remote;
+pub mod remote_sync;
 pub mod repeater;
 pub mod repeater_build;
 pub mod rf_exposure;

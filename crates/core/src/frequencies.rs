@@ -6,6 +6,8 @@ pub struct FreqGroup {
   pub category: &'static str,
   /// (频率, 用途) 列表。
   pub freqs: &'static [(&'static str, &'static str)],
+  /// 分组脚注（操作提醒这类正文），界面用 `data::kt` 翻译后显示；无则 `None`。
+  pub note: Option<&'static str>,
 }
 
 /// 常用频率分组。
@@ -18,6 +20,7 @@ pub const FREQ_GROUPS: &[FreqGroup] = &[
       ("243.0 MHz", "航空遇险（军用）"),
       ("406.0–406.1 MHz", "卫星应急示位信标 EPIRB（COSPAS-SARSAT）"),
     ],
+    note: None,
   },
   FreqGroup {
     category: "国际信标网络（NCDXF/IARU）",
@@ -28,6 +31,9 @@ pub const FREQ_GROUPS: &[FreqGroup] = &[
       ("24.930 MHz", "12m 信标"),
       ("28.200 MHz", "10m 信标"),
     ],
+    // 题库「信标工作频率 ±500Hz 内应避免发射」那条就落在这组频率上，速查页顺手给出来，
+    // 免得读者只记住频点、不知道这几 kHz 是留给信标的保护带。
+    note: Some("短波业余电台应避免在 IARU 信标工作频率 ±500Hz 范围内发射。"),
   },
   FreqGroup {
     category: "DX / SSB 呼叫",
@@ -37,6 +43,7 @@ pub const FREQ_GROUPS: &[FreqGroup] = &[
       ("432.100 MHz", "70cm SSB 呼叫"),
       ("29.600 MHz", "10m FM 呼叫"),
     ],
+    note: None,
   },
   FreqGroup {
     category: "FM 呼叫（中国常用）",
@@ -49,6 +56,7 @@ pub const FREQ_GROUPS: &[FreqGroup] = &[
       ),
       ("438.500 MHz", "70cm FM 呼叫（部分地区约定）"),
     ],
+    note: None,
   },
   FreqGroup {
     category: "APRS",
@@ -56,6 +64,7 @@ pub const FREQ_GROUPS: &[FreqGroup] = &[
       ("144.390 MHz", "北美 APRS 常用频率"),
       ("144.640 MHz", "中国 APRS 常用频率"),
     ],
+    note: None,
   },
   FreqGroup {
     category: "数字模式常用（FT8 / RTTY / SSTV / PSK）",
@@ -70,6 +79,7 @@ pub const FREQ_GROUPS: &[FreqGroup] = &[
       ("14.070 MHz", "20m PSK31"),
       ("14.230 MHz", "20m SSTV"),
     ],
+    note: None,
   },
 ];
 
@@ -124,5 +134,18 @@ mod tests {
     // 界面取这一支：未命中是 `None`，由页面翻成当前语言。
     assert_eq!(band_of_opt(433.0), Some("70cm"));
     assert_eq!(band_of_opt(1.2), None);
+  }
+
+  /// 信标那组必须带 ±500Hz 避让提醒：频点本身有 `beacons::BEACON_BANDS` 兜着，
+  /// 但「别在保护带里发射」这条只在这里陈述，丢了就没有第二个来源。
+  #[test]
+  fn beacon_group_keeps_500hz_guard_note() {
+    let beacon = FREQ_GROUPS
+      .iter()
+      .find(|g| g.category.contains("NCDXF"))
+      .expect("应有国际信标网络分组");
+    let note = beacon.note.expect("信标分组应带 ±500Hz 避让说明");
+    assert!(note.contains("±500Hz"), "说明应写明保护带宽：{note}");
+    assert!(note.contains("IARU"), "说明应点名 IARU：{note}");
   }
 }

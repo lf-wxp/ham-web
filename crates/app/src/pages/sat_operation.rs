@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn SatOperationPage() -> impl IntoView {
   set_title("knowledge.satellite-operating");
   view! {
-    <KnowledgePage title=t("knowledge.satellite-operating") subtitle=t("knowledge.the-complete-qso-procedure")>
+    <KnowledgePage title=move || t("knowledge.satellite-operating") subtitle=move || t("knowledge.the-complete-qso-procedure")>
       <section class="pxl-card border bg-card p-4 text-sm text-muted-foreground">
         <span>{move || t("knowledge.first-go-to")}</span>
         <a href="/satellites" class="mx-1 text-primary underline underline-offset-2">

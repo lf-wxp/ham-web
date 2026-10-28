@@ -101,7 +101,7 @@ pub fn NotificationsPage() -> impl IntoView {
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class=card_title_class("mr-auto")>{move || t("settings.countdown-reminders")}</h2>
             <span class="text-xs text-muted-foreground">
-              {tp("settings.countdowns", count.get() as u32, &[&count.get().to_string()])}
+              {move || tp("settings.countdowns", count.get() as u32, &[&count.get().to_string()])}
             </span>
           </div>
           <div class="px-4 py-3 text-xs text-muted-foreground">

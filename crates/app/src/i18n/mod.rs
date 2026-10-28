@@ -21,6 +21,7 @@ mod pack;
 use std::cell::Cell;
 
 use leptos::prelude::*;
+use leptos::reactive::graph::Observer;
 
 use ham_web_core::plural;
 use ham_web_core::saved_state::keys;
@@ -105,6 +106,26 @@ pub fn locale() -> ArcRwSignal<Locale> {
   LOCALE.with(|l| l.clone())
 }
 
+/// 当前是否处在响应式观察者之内（`Effect` / `Memo` / 视图闭包）。
+///
+/// [`t`] 这类同步查表函数既会在视图闭包里被调用，也会在事件回调、`spawn_local`、
+/// 挂载前这些没有观察者的地方被调用：前者要订阅信号，后者无处可订，硬订阅只会让
+/// debug 构建的 Leptos 对每次调用打一条「outside a reactive tracking context」警告。
+pub(crate) fn observed() -> bool {
+  Observer::get().is_some()
+}
+
+/// 读当前界面语言：有观察者时订阅（切语言后调用方重算），没有时只读值。
+fn current() -> Locale {
+  LOCALE.with(|l| {
+    if observed() {
+      l.get()
+    } else {
+      l.get_untracked()
+    }
+  })
+}
+
 /// 是否含 CJK 汉字。
 #[must_use]
 pub fn has_cjk(s: &str) -> bool {
@@ -116,7 +137,7 @@ pub fn has_cjk(s: &str) -> bool {
 /// 中文界面用中文原文；其它界面先按中文原文反查译文（[`t`]），查不到时回退英文名，
 /// 避免把中文漏到英文 / 西文界面里。用于 DXCC 实体名这类「数据里同时带中英文名」的字段。
 pub fn localized_name(zh_name: &'static str, en_name: &'static str) -> String {
-  if locale().get() == Locale::Zh {
+  if current() == Locale::Zh {
     return zh_name.to_owned();
   }
   let name = t(zh_name);
@@ -200,7 +221,7 @@ pub fn t(key: &str) -> String {
   // 订阅语言包版本：包异步到达后，已渲染的视图要重算（否则非内嵌域停在中文）。
   pack::track();
   // 渲染时调用极其频繁，直接读 thread_local，省掉 `locale()` 返回时的一次 `Arc` clone。
-  match LOCALE.with(|l| l.get()) {
+  match current() {
     Locale::Zh => zh(key),
     Locale::En => translate("en", catalog::en_map(), key),
     Locale::Es => translate("es", catalog::es_map(), key),
@@ -264,7 +285,7 @@ pub fn tp(key: &str, count: impl Into<plural::Count>, args: &[&str]) -> String {
   // 复数变体可能整条来自运行时语言包（不经 [`t`]），所以这里也要订阅包版本。
   pack::track();
   let n = count.into();
-  match LOCALE.with(|l| l.get()) {
+  match current() {
     Locale::Zh => tf(key, args),
     Locale::En => tp_in("en", catalog::en_map(), key, n, args),
     Locale::Es => tp_in("es", catalog::es_map(), key, n, args),
@@ -330,7 +351,7 @@ fn substitute(mut s: String, args: &[&str]) -> String {
 
 /// 题库类别标签（按语言调整词序）：中文「B 类」、英文「Class B」、西班牙文「Clase B」。
 pub fn bank_class(bank: &str) -> String {
-  match locale().get() {
+  match current() {
     Locale::Zh => format!("{bank} 类"),
     Locale::En => format!("Class {bank}"),
     Locale::Es => format!("Clase {bank}"),

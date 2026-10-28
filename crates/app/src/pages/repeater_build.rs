@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn RepeaterBuildPage() -> impl IntoView {
   set_title("shell.repeater-building-title");
   view! {
-    <KnowledgePage title=t("shell.repeater-building-title") subtitle=t("radio.site-selection-duplexers-coverage")>
+    <KnowledgePage title=move || t("shell.repeater-building-title") subtitle=move || t("radio.site-selection-duplexers-coverage")>
       <ConceptsSection title="建设要素" items=REPEATER_BUILD />
       <BulletSection title="维护要点" items=REPEATER_MAINT />
     </KnowledgePage>

@@ -83,7 +83,7 @@ pub fn ZoneMapPage() -> impl IntoView {
   });
 
   view! {
-    <KnowledgePage title=t("radio.cq-itu-zone-map") subtitle=t("radio.colour-by-zone-locate")>
+    <KnowledgePage title=move || t("radio.cq-itu-zone-map") subtitle=move || t("radio.colour-by-zone-locate")>
       <section class="pxl-card border bg-card">
         <h2 class="pxl-section-title">{move || t("radio.zone-map")}</h2>
         <div class="flex flex-wrap items-center gap-3 p-4">

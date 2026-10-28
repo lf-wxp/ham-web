@@ -79,7 +79,7 @@ pub fn PrintPage() -> impl IntoView {
           >
             {[None, Some(Bank::A), Some(Bank::B), Some(Bank::C)].into_iter().map(|b| {
               let label = view! {
-                {b.map_or_else(|| t("exam.all"), |b| tf("learning.class", &[&(b).to_string()]))}
+                {move || b.map_or_else(|| t("exam.all"), |b| tf("learning.class", &[&(b).to_string()]))}
               }
                 .into_any();
               view! { <Chip value=b.map_or(String::new(), |b| b.as_str().to_owned())>{label}</Chip> }
@@ -131,7 +131,7 @@ pub fn PrintPage() -> impl IntoView {
 
       <div class="print-sheet mx-auto mt-6 max-w-[210mm] bg-white px-[14mm] py-[12mm] text-zinc-900 shadow-sm print:mt-0 print:max-w-none print:p-0 print:shadow-none">
         {move || match items.get() {
-          None => view! { <Loading label=t("exam.loading-questions") class="py-16" /> }.into_any(),
+          None => view! { <Loading label=Signal::derive(move || t("exam.loading-questions")) class="py-16" /> }.into_any(),
           Some(list) if list.is_empty() => view! {
             <p class="py-16 text-center text-sm text-zinc-500">
               {tf("radio.is-empty-practise-first", &[(source.get().title())])}

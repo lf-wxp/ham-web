@@ -20,7 +20,7 @@ use crate::components::practice::{
 };
 use crate::components::question_card::QuestionCard;
 use crate::components::shortcut_help::ShortcutHelpDialog;
-use crate::data::Questions;
+use crate::data::{self, Questions};
 use crate::pages::{DEFAULT_TITLE, bank_href, use_bank_query, use_no_site_footer};
 use crate::shortcuts::{DigitDetail, Shortcuts, digit_answer, use_question_shortcuts};
 use crate::store;
@@ -35,6 +35,9 @@ use crate::i18n::{t, tf};
 #[component]
 pub fn PracticePage() -> impl IntoView {
   set_title(DEFAULT_TITLE);
+  // 本页渲染 `crates/core` 的中文原文（`kt_tracked`），译文词典要自己挂一次拉取，
+  // 否则以英文 / 西语直接打开本页时词典永远不来、这些文案停在中文。
+  data::use_knowledge_i18n();
   use_no_site_footer();
   let (version, bank) = use_bank_query();
   let query = use_query_map();

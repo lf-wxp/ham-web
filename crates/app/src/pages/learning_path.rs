@@ -26,7 +26,7 @@ pub fn LearningPathPage() -> impl IntoView {
   let reviews = suggested_reviews(&wrong_codes);
 
   view! {
-    <KnowledgePage title=t("knowledge.learning-path-and-certification") subtitle=t("knowledge.a-step-by-step")>
+    <KnowledgePage title=move || t("knowledge.learning-path-and-certification") subtitle=move || t("knowledge.a-step-by-step")>
       <StepsSection title="学习路径" items=LEARNING_PATH />
       <TableSection title="各级别重点" headers=&["级别", "重点", "对应页面"] rows=LEARNING_LEVELS />
 

@@ -11,6 +11,8 @@ use crate::i18n::t;
 #[component]
 pub fn QCodePage() -> impl IntoView {
   set_title("shell.q-codes-title");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   let glossary = LocalResource::new(data::load_glossary);
   move || match glossary.get() {
     Some(g) => view! { <QCodeView entries=g.entries() /> }.into_any(),

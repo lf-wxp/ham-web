@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn NvisPage() -> impl IntoView {
   set_title("shell.nvis");
   view! {
-    <KnowledgePage title=t("shell.nvis") subtitle=t("radio.antenna-techniques-for-close")>
+    <KnowledgePage title=move || t("shell.nvis") subtitle=move || t("radio.antenna-techniques-for-close")>
       <ConceptsSection title="核心概念" items=NVIS_CONCEPTS />
       <BulletSection title="应用与要点" items=NVIS_TIPS />
     </KnowledgePage>

@@ -3,15 +3,15 @@ use leptos::prelude::*;
 /// 展示一个实时指标。
 #[component]
 pub(super) fn MetricCard(
-  #[prop(into)] label: String,
+  #[prop(into)] label: Signal<String>,
   #[prop(into)] value: Signal<Option<f64>>,
-  #[prop(into)] unit: String,
+  #[prop(into)] unit: Signal<String>,
   #[prop(into)] loading: Signal<bool>,
   #[prop(into)] failed: Signal<bool>,
 ) -> impl IntoView {
   view! {
     <div class="border bg-inset p-3 text-center">
-      <div class="text-xs text-muted-foreground">{label}</div>
+      <div class="text-xs text-muted-foreground">{move || label.get()}</div>
       <div class="mt-1 pxl-stat">
         {move || {
           match value.get() {
@@ -22,7 +22,7 @@ pub(super) fn MetricCard(
           }
         }}
       </div>
-      <div class="mt-0.5 text-xs text-muted-foreground">{unit}</div>
+      <div class="mt-0.5 text-xs text-muted-foreground">{move || unit.get()}</div>
     </div>
   }
 }

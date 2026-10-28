@@ -89,8 +89,8 @@ pub fn ReportPage() -> impl IntoView {
       <PageContainer>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {stat("learning.answered-total", data.answered.to_string())}
-          {stat("learning.accuracy", tf("common.percent", &[&data.correct_rate.to_string()]))}
-          {stat("learning.day-streak", tp("common.days", data.streak, &[&data.streak.to_string()]))}
+          {move || stat("learning.accuracy", tf("common.percent", &[&data.correct_rate.to_string()]))}
+          {move || stat("learning.day-streak", tp("common.days", data.streak, &[&data.streak.to_string()]))}
           {stat("exam.current-mistakes", data.mistakes.to_string())}
           {stat("learning.bookmarks", data.bookmarks.to_string())}
           {stat("exam.achievement-unlocked", data.achievements.to_string())}

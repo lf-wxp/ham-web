@@ -22,11 +22,14 @@ use crate::util::set_title;
 use super::question_row::QuestionRow;
 use super::stat::Stat;
 use super::{ALL, OTHER, PAGE, sub_name_of, top_of};
-use crate::i18n::{bank_class, t};
+use crate::i18n::{bank_class, t, tf};
 
 #[component]
 pub fn BrowsePage() -> impl IntoView {
   set_title("shell.browse-questions");
+  // 本页渲染 `crates/core` 的中文原文（`kt_tracked`），译文词典要自己挂一次拉取，
+  // 否则以英文 / 西语直接打开本页时词典永远不来、这些文案停在中文。
+  data::use_knowledge_i18n();
   let all: RwSignal<Questions> = RwSignal::new(Arc::new(Vec::new()));
   let loading = RwSignal::new(true);
   let bank = RwSignal::new(Bank::A);
@@ -211,8 +214,8 @@ pub fn BrowsePage() -> impl IntoView {
                     ])
                   }
                 >
-                  <Tooltip class="min-w-0 flex-1" label=name.to_string()>
-                    <span class="w-full truncate">{name}</span>
+                  <Tooltip class="min-w-0 flex-1" label=Signal::derive(move || crate::data::kt_tracked(name))>
+                    <span class="w-full truncate">{move || crate::data::kt_tracked(name)}</span>
                   </Tooltip>
                   <span class="ml-1 opacity-60">{move || sub_count.with(|m| m.get(name).copied().unwrap_or(0))}</span>
                 </button>
@@ -233,8 +236,8 @@ pub fn BrowsePage() -> impl IntoView {
               <span class=format!("size-2 shrink-0 {}", tone::dot(c.tone))></span>
               // 分类名来自 `crates/core` 的中文常量，必须走 `t` 反查（中文原文 → 词条）；
               // 直接渲染 `c.name` 会让英文 / 西文界面的侧栏永远停在中文。
-              <Tooltip class="min-w-0 flex-1" label=Signal::derive(move || t(c.name))>
-                <span class="w-full leading-snug">{move || t(c.name)}</span>
+              <Tooltip class="min-w-0 flex-1" label=Signal::derive(move || crate::data::core_text_tracked(c.name))>
+                <span class="w-full leading-snug">{move || crate::data::core_text_tracked(c.name)}</span>
               </Tooltip>
               <span class="ml-auto text-xs tabular-nums">{move || cat_count.with(|m| m.get(c.key).copied().unwrap_or(0))}</span>
               <Icon
@@ -294,7 +297,7 @@ pub fn BrowsePage() -> impl IntoView {
     }
     let total = filtered.with(Vec::len);
     if total == 0 {
-      return view! { <EmptyState title=t("exam.no-matching-questions") /> }.into_any();
+      return view! { <EmptyState title=Signal::derive(move || t("exam.no-matching-questions")) /> }.into_any();
     }
     let shown: Vec<usize> = filtered.with(|f| f.iter().copied().take(visible.get()).collect());
     let shown_len = shown.len();
@@ -314,7 +317,7 @@ pub fn BrowsePage() -> impl IntoView {
               class="mt-4 w-full"
               on_click=Callback::new(move |_| visible.update(|v| *v += PAGE))
             >
-              "加载更多（已显示 " {shown_len} " / " {total} "）"
+              {move || tf("knowledge.load-more-count", &[&shown_len.to_string(), &total.to_string()])}
             </Button>
           }
         })}
@@ -397,10 +400,10 @@ pub fn BrowsePage() -> impl IntoView {
 
         <div class="min-w-0">
           <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label=t("exam.total-questions") value=Signal::derive(move || bank_questions.with(Vec::len)) />
-            <Stat label=t("exam.multiple-answer") value=multi_count />
-            <Stat label=t("exam.question-types") value=Signal::stored(TOP_CATEGORIES.len()) />
-            <Stat label=t("exam.current-filter") value=Signal::derive(move || filtered.with(Vec::len)) />
+            <Stat label=Signal::derive(move || t("exam.total-questions")) value=Signal::derive(move || bank_questions.with(Vec::len)) />
+            <Stat label=Signal::derive(move || t("exam.multiple-answer")) value=multi_count />
+            <Stat label=Signal::derive(move || t("exam.question-types")) value=Signal::stored(TOP_CATEGORIES.len()) />
+            <Stat label=Signal::derive(move || t("exam.current-filter")) value=Signal::derive(move || filtered.with(Vec::len)) />
           </div>
           {list}
         </div>

@@ -290,7 +290,7 @@ pub(super) fn FilterSection() -> impl IntoView {
           .map(|&r| {
             // 逐条写成字面量：`i18n-check` 只采集调用点上的字符串字面量，
             // 走函数返回值会漏统计（词条仍能翻译，但覆盖率对不上）。
-            let label = match r {
+            let label = move || match r {
               FilterResponse::Butterworth => t("tools.butterworth-maximally-flat"),
               FilterResponse::Chebyshev1 => t("tools.chebyshev-i-passband-ripple"),
               FilterResponse::Chebyshev2 => t("tools.chebyshev-ii-stopband-ripple"),

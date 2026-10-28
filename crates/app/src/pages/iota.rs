@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn IotaPage() -> impl IntoView {
   set_title("shell.iota");
   view! {
-    <KnowledgePage title=t("shell.iota") subtitle=t("radio.islands-on-the-air")>
+    <KnowledgePage title=move || t("shell.iota") subtitle=move || t("radio.islands-on-the-air")>
       <ConceptsSection title="核心概念" items=IOTA_CONCEPTS />
       <BulletSection title="参与要点" items=IOTA_TIPS />
     </KnowledgePage>

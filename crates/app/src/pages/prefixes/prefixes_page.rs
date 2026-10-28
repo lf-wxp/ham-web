@@ -12,7 +12,7 @@ use crate::i18n::{t, tf};
 pub fn PrefixesPage() -> impl IntoView {
   set_title("shell.callsign-prefixes");
   // 本页自带页头（不是 `KnowledgePage`），译文要自己挂一次，否则大洲与前缀表在英文界面仍是中文。
-  Effect::new(move |_| data::ensure_knowledge_i18n());
+  data::use_knowledge_i18n();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader

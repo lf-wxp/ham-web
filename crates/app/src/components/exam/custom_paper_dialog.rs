@@ -34,7 +34,7 @@ pub fn CustomPaperDialog(open: RwSignal<bool>, on_confirm: Callback<CustomPaper>
       </DialogHeader>
       <div class="space-y-5">
         <div class="grid grid-cols-3 gap-3">
-          <Field label=t("exam.single-choice-count") r#for="custom-single">
+          <Field label=Signal::derive(move || t("exam.single-choice-count")) r#for="custom-single">
             <NumberField
               id="custom-single"
               value=Signal::derive(move || singles.get().to_string())
@@ -43,7 +43,7 @@ pub fn CustomPaperDialog(open: RwSignal<bool>, on_confirm: Callback<CustomPaper>
               max=300.0
             />
           </Field>
-          <Field label=t("exam.multiple-choice-count") r#for="custom-multi">
+          <Field label=Signal::derive(move || t("exam.multiple-choice-count")) r#for="custom-multi">
             <NumberField
               id="custom-multi"
               value=Signal::derive(move || multiples.get().to_string())
@@ -52,7 +52,7 @@ pub fn CustomPaperDialog(open: RwSignal<bool>, on_confirm: Callback<CustomPaper>
               max=100.0
             />
           </Field>
-          <Field label=t("exam.time-limit-minutes-0") r#for="custom-minutes">
+          <Field label=Signal::derive(move || t("exam.time-limit-minutes-0")) r#for="custom-minutes">
             <NumberField
               id="custom-minutes"
               value=Signal::derive(move || minutes.get().to_string())

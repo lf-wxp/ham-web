@@ -39,9 +39,12 @@ pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
     .collect();
   let year_options = plain(&year_list);
   let qsl_options = vec![
-    SelectOption::new("confirmed", t("log.confirmed")),
-    SelectOption::new("sent_pending", t("log.sent-unconfirmed")),
-    SelectOption::new("not_sent", t("log.not-sent")),
+    SelectOption::new("confirmed", Signal::derive(move || t("log.confirmed"))),
+    SelectOption::new(
+      "sent_pending",
+      Signal::derive(move || t("log.sent-unconfirmed")),
+    ),
+    SelectOption::new("not_sent", Signal::derive(move || t("log.not-sent"))),
   ];
 
   view! {

@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn SpecialPropPage() -> impl IntoView {
   set_title("shell.special-propagation-title");
   view! {
-    <KnowledgePage title=t("shell.special-propagation-title") subtitle=t("radio.eme-meteor-scatter-aurora")>
+    <KnowledgePage title=move || t("shell.special-propagation-title") subtitle=move || t("radio.eme-meteor-scatter-aurora")>
       <TableSection title="特殊传播方式" headers=&["方式", "原理", "特点"] rows=SPECIAL_MODES class="min-w-[640px]" />
     </KnowledgePage>
   }

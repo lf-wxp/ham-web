@@ -254,7 +254,7 @@ pub fn QslSyncDialog(open: RwSignal<bool>) -> impl IntoView {
         <div class="flex flex-wrap items-center gap-2">
           <FileInput
             accept=".adi,.adif,.txt"
-            label=t("log.upload-report-file")
+            label=Signal::derive(move || t("log.upload-report-file"))
             variant=Variant::Outline
             size=Size::Sm
             on_files=upload

@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn PolarizationPage() -> impl IntoView {
   set_title("shell.polarization");
   view! {
-    <KnowledgePage title=t("shell.polarization") subtitle=t("knowledge.horizontal-vertical-circular-polarisation")>
+    <KnowledgePage title=move || t("shell.polarization") subtitle=move || t("knowledge.horizontal-vertical-circular-polarisation")>
       <ConceptsSection title="极化类型" items=POLARIZATION_TYPES />
       <BulletSection title="选择与匹配要点" items=POLARIZATION_TIPS />
     </KnowledgePage>

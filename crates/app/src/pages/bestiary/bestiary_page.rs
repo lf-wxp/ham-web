@@ -159,8 +159,8 @@ pub fn BestiaryPage() -> impl IntoView {
       {if alive == 0 && defeated == 0 {
         view! {
           <EmptyState
-            title=t("rpg.dex-empty")
-            description=t("rpg.dex-empty-hint")
+            title=Signal::derive(move || t("rpg.dex-empty"))
+            description=Signal::derive(move || t("rpg.dex-empty-hint"))
             icon=IconKind::Trophy
             actions=ViewFn::from(|| {
               view! {

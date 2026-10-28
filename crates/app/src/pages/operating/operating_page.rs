@@ -13,6 +13,8 @@ use crate::i18n::t;
 #[component]
 pub fn OperatingPage() -> impl IntoView {
   set_title("shell.operating-practice");
+  // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
+  crate::data::use_knowledge_i18n();
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader

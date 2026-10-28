@@ -64,8 +64,8 @@ pub(super) fn UtcClock() -> impl IntoView {
               view! {
                 <TableRow>
                   <TableCell class="border px-3 py-2">
-                    <div>{name}</div>
-                    <div class="text-xs text-muted-foreground">{note}</div>
+                    <div>{move || t(name)}</div>
+                    <div class="text-xs text-muted-foreground">{move || t(note)}</div>
                   </TableCell>
                   <TableCell class="border px-3 py-2 font-mono tabular-nums text-muted-foreground">
                     {format!("UTC{offset:+.0}")}

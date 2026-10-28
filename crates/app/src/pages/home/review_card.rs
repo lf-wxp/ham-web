@@ -100,13 +100,13 @@ pub(super) fn ReviewCard() -> impl IntoView {
                 view! {
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="text-sm">
-                      {tf("exam.weak-spot", &[&t(name), rate_s.as_str()])}
+                      {tf("exam.weak-spot", &[&crate::data::core_text_tracked(name), rate_s.as_str()])}
                     </span>
                     <ButtonLink
                       href=format!("/practice?bank={bank}&topic={}", js_sys::encode_uri_component(key))
                       variant=Variant::Outline
                       size=Size::Sm
-                      title=t("home.lowest-accuracy-topic")
+                      title=Signal::derive(move || t("home.lowest-accuracy-topic"))
                     >
                       {t("learning.focused-practice")}
                     </ButtonLink>
@@ -114,7 +114,7 @@ pub(super) fn ReviewCard() -> impl IntoView {
                       href=format!("/exam?bank={bank}&mode=weak")
                       variant=Variant::Outline
                       size=Size::Sm
-                      title=t("home.mock-exam-weighted-by")
+                      title=Signal::derive(move || t("home.mock-exam-weighted-by"))
                     >
                       {t("exam.weak-area-exam")}
                     </ButtonLink>

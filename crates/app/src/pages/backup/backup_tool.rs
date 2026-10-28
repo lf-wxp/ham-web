@@ -7,6 +7,8 @@ use crate::i18n::{t, tf, tp};
 use crate::ui::{Button, Checkbox, FileInput, Variant};
 use crate::util::{BackupModules, storage};
 
+use super::remote_sync_panel::RemoteSyncPanel;
+
 /// 本地存储 key 的中文说明。
 fn key_label(key: &str) -> &'static str {
   match key {
@@ -43,6 +45,9 @@ pub(super) fn BackupTool() -> impl IntoView {
   let export_log = RwSignal::new(true);
   let export_qsl = RwSignal::new(true);
   let export_other = RwSignal::new(true);
+  // 自定义远端同步进行中（面板自己维护，这里只用来禁用本地导入 / 导出）。
+  let syncing = RwSignal::new(false);
+  let busy = Signal::derive(move || importing.get() || exporting.get() || syncing.get());
 
   let run_import = move |file: web_sys::File, merge: bool| {
     let Some(task) = crate::util::begin_backup_task(log_store.backup_busy) else {
@@ -66,6 +71,10 @@ pub(super) fn BackupTool() -> impl IntoView {
         crate::util::import_backup(&text).await
       };
       log_store.refresh_from_storage().await;
+      // 手动导入直接写 `localStorage`，不经过存储钩子：要自己告诉自动同步「数据变了」。
+      if result.is_ok() {
+        crate::auto_sync::mark_dirty();
+      }
       drop(task);
       if !alive() {
         return;
@@ -133,9 +142,9 @@ pub(super) fn BackupTool() -> impl IntoView {
       <div class="flex flex-wrap items-center gap-2">
         <FileInput
           accept=".json"
-          label=t("tools.import-backup")
+          label=Signal::derive(move || t("tools.import-backup"))
           variant=Variant::Outline
-          disabled=move || importing.get() || exporting.get()
+          disabled=move || busy.get()
           on_files=Callback::new(move |files: Vec<web_sys::File>| {
             if let Some(f) = files.into_iter().next() {
               run_import(f, false);
@@ -144,9 +153,9 @@ pub(super) fn BackupTool() -> impl IntoView {
         />
         <FileInput
           accept=".json"
-          label=t("settings.merge-import")
+          label=Signal::derive(move || t("settings.merge-import"))
           variant=Variant::Outline
-          disabled=move || importing.get() || exporting.get()
+          disabled=move || busy.get()
           on_files=Callback::new(move |files: Vec<web_sys::File>| {
             if let Some(f) = files.into_iter().next() {
               run_import(f, true);
@@ -176,7 +185,7 @@ pub(super) fn BackupTool() -> impl IntoView {
         <div class="mt-3">
           <Button
             variant=Variant::Default
-            disabled=move || importing.get() || exporting.get() || nothing_selected()
+            disabled=move || busy.get() || nothing_selected()
             on_click=Callback::new(run_export)
           >
             {move || {
@@ -189,6 +198,12 @@ pub(super) fn BackupTool() -> impl IntoView {
           </Button>
         </div>
       </div>
+
+      <RemoteSyncPanel
+        busy=Signal::derive(move || importing.get() || exporting.get())
+        syncing=syncing
+        on_done=Callback::new(move |()| usage.set(storage::usage()))
+      />
 
       {move || {
         let list = usage.get();

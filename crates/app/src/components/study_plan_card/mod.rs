@@ -143,7 +143,8 @@ pub fn StudyPlanCard(
   };
 
   let has_plan = move || plan.with(|p| !p.target_date.is_empty());
-  if !editable && !has_plan() {
+  // 组件体里的一次性判断：只决定「只读且没有计划时不渲染」，不订阅。
+  if !editable && plan.with_untracked(|p| p.target_date.is_empty()) {
     return ().into_any();
   }
 
@@ -181,7 +182,7 @@ pub fn StudyPlanCard(
             {Bank::ALL
               .into_iter()
               .map(|b| {
-                let label = view! { {tf("learning.class", &[&b.to_string()])} }.into_any();
+                let label = view! { {move || tf("learning.class", &[&b.to_string()])} }.into_any();
                 view! { <Chip value=b.as_str().to_string()>{label}</Chip> }
               })
               .collect_view()}

@@ -11,7 +11,7 @@ use crate::util::set_title;
 pub fn PacketPage() -> impl IntoView {
   set_title("shell.packet-radio");
   view! {
-    <KnowledgePage title=t("shell.packet-radio") subtitle=t("knowledge.ax-25-tnc-winlink")>
+    <KnowledgePage title=move || t("shell.packet-radio") subtitle=move || t("knowledge.ax-25-tnc-winlink")>
       <ConceptsSection title="核心概念" items=PACKET_CONCEPTS />
       <ConceptsSection title="典型应用" items=PACKET_APPS />
       <BulletSection title="操作要点" items=PACKET_TIPS />

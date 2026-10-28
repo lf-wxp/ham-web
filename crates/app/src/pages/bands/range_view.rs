@@ -3,6 +3,7 @@
 use ham_web_core::bands::Allocation;
 use leptos::prelude::*;
 
+use crate::data::kt_tracked;
 use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 
@@ -18,7 +19,7 @@ pub(super) fn range_view(a: &'static Allocation) -> impl IntoView {
             <span class="sr-only">{move || t("knowledge.amateur-satellite-service")}</span>
           }
         })}
-      <span class="tabular-nums">{a.range}</span>
+      <span class="tabular-nums">{move || kt_tracked(a.range)}</span>
     </span>
   }
 }
