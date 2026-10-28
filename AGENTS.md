@@ -22,7 +22,7 @@
 | 端到端测试、覆盖率与本地排障 | [`docs/testing.md`](docs/testing.md) |
 | 代码规范、快捷键、像素风与动效降级 | [`docs/development.md`](docs/development.md) |
 | 许可与 GPL 边界 | [`docs/licensing.md`](docs/licensing.md) |
-| 功能清单、README 审核记录与文档对账口径 | [`docs/features.md`](docs/features.md)、[`docs/readme-review.md`](docs/readme-review.md) |
+| 功能清单与文档对账口径 | [`docs/features.md`](docs/features.md) |
 | 串口功能（CAT / 旋转器 / NanoVNA / KISS）与外部格式（CHIRP / SOTA / POTA）的验收 | [`docs/hardware-verification.md`](docs/hardware-verification.md)：单测与假串口只算「待验」，真机记录才叫「已验证」 |
 | 天线方向增益（S2）的实现 | [`docs/antenna-coverage.md`](docs/antenna-coverage.md)：口径是「方向增益」，不是覆盖 / 可达 |
 | 全仓代码质量（分层边界、可自动化门禁、问题分级与证据口径） | [`docs/code-quality.md`](docs/code-quality.md)：长期标准 + 检查清单，改动前先跑 §2 的门禁 |

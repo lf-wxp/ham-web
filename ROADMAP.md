@@ -297,7 +297,6 @@ LRPT_REAL_IQ=/path/to/meteor-m2.wav cargo test -p ham-web-lrpt --release --test 
 | [`docs/pwa.md`](docs/pwa.md) | Service Worker 缓存策略、更新提示与图标 |
 | [`docs/licensing.md`](docs/licensing.md) | 许可、第三方声明与 GPL 例外 |
 | [`docs/code-quality.md`](docs/code-quality.md) | 全仓代码质量标准、检查清单与问题分级 |
-| [`docs/readme-review.md`](docs/readme-review.md) | README 审核记录、未做项与文档对账口径 |
 | [`AGENTS.md`](AGENTS.md) | 动代码前的入口：按改动领域指向规范与硬规则 |
 | [`docs/ui-components.md`](docs/ui-components.md) | UI 组件使用规范（决策表、硬规则、验收） |
 | [`docs/i18n.md`](docs/i18n.md) | 界面文案规范与门禁 |

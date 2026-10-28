@@ -16,7 +16,8 @@ use std::rc::Rc;
 use ham_web_core::backup_merge::backup_size_is_supported;
 use ham_web_core::remote_sync::{
   Fingerprint, HeaderError, PullOutcome, RemoteSyncConfig, STORAGE_KEY, UrlError, check_url,
-  classify_pull, fingerprint, fingerprint_json, is_retryable_status, parse_headers,
+  classify_pull, fingerprint, fingerprint_json, is_content_type_header, is_retryable_status,
+  parse_headers,
 };
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
@@ -155,26 +156,47 @@ fn classify_js_error(e: &JsValue) -> SyncError {
   }
 }
 
+/// 把备份 JSON 包装成 `multipart/form-data`：字段名固定 `file`，文件名 `backup.json`，
+/// 文件类型 `application/json`。
+///
+/// 用 `Blob`（而不是字符串）append，后端才会把 `file` 当文件（`Content-Disposition` 带
+/// filename）；给 `Blob` 声明类型，是因为空类型会以 `application/octet-stream` 发出，按 MIME
+/// 校验上传的后端可能拒收。`Content-Type` 请求头不在这里写——浏览器生成时会带上 boundary，
+/// 手写会丢掉它。
+///
+/// 内存：构造过程中 Rust 侧的 `json` 与 JS 侧的 `Blob` 各占一份，返回后调用方应尽早丢掉 `json`
+/// （备份上限 64 MiB，低内存的手机上，上传期间多留一份 Rust 字符串是实打实的压力）。
+fn multipart_file(json: &str) -> Result<web_sys::FormData, JsValue> {
+  let parts = js_sys::Array::new();
+  parts.push(&JsValue::from_str(json));
+  let props = web_sys::BlobPropertyBag::new();
+  props.set_type("application/json");
+  let blob = web_sys::Blob::new_with_str_sequence_and_options(&parts, &props)?;
+  let form = web_sys::FormData::new()?;
+  form.append_with_blob_and_filename("file", &blob, "backup.json")?;
+  Ok(form)
+}
+
 /// 发一次请求，返回 `(状态码, 响应体文本)`。
 ///
 /// 超时覆盖到响应体读完为止：`AbortTimeout` 守卫活到函数返回。
-/// 带请求体时才加 `Content-Type: application/json`：GET 上多一个非安全请求头就会无端多一次预检。
+///
+/// 带请求体时（写入）是 `multipart/form-data`，由 [`multipart_file`] 构造。`Content-Type` 只能
+/// 由浏览器生成（值里要有 boundary），所以用户请求头里的 `Content-Type` 在这种请求里被忽略，
+/// 见 [`is_content_type_header`]；GET 没有请求体，用户的头原样发出。
 async fn request(
   method: &str,
   url: &str,
   headers: &[(String, String)],
-  body: Option<&str>,
+  body: Option<web_sys::FormData>,
   timeout_ms: i32,
 ) -> Result<(u16, String), SyncError> {
   let net = |e: JsValue| SyncError::Network(js_error_message(&e));
   let header_map = Headers::new().map_err(net)?;
-  if body.is_some() {
-    header_map
-      .set("Content-Type", "application/json")
-      .map_err(net)?;
-  }
-  // 用户的头排在后面：想改 Content-Type（如某些网盘要 `text/plain`）可以覆盖。
   for (name, value) in headers {
+    if body.is_some() && is_content_type_header(name) {
+      continue;
+    }
     header_map.set(name, value).map_err(net)?;
   }
 
@@ -185,8 +207,8 @@ async fn request(
   // 同步读的必须是远端当下的内容，不能被 HTTP 缓存顶替。
   init.set_cache(RequestCache::NoStore);
   init.set_signal(Some(&timeout.signal()));
-  if let Some(body) = body {
-    init.set_body(&JsValue::from_str(body));
+  if let Some(body) = &body {
+    init.set_body(body);
   }
 
   let request = Request::new_with_str_and_init(url, &init).map_err(net)?;
@@ -341,21 +363,26 @@ async fn build(cfg: &RemoteSyncConfig) -> Result<Built, PushError> {
 }
 
 async fn send(cfg: &RemoteSyncConfig, built: Built) -> Result<Pushed, PushError> {
-  let json = crate::util::serialize_backup(&built.map).map_err(PushError::permanent)?;
-  let (status, _) = request(
-    cfg.method.as_str(),
-    &built.url,
-    &built.headers,
-    Some(&json),
-    TIMEOUT_MS,
-  )
-  .await
-  .map_err(|e| PushError::from_sync(&e))?;
+  let Built {
+    url,
+    headers,
+    map,
+    fp,
+  } = built;
+  let count = map.len();
+  let json = crate::util::serialize_backup(&map).map_err(PushError::permanent)?;
+  // 构造失败（多半是内存不够）是本机的确定性问题，重试无益：走永久失败，而不是被当成网络错误，
+  // 否则自动写入会按退避一直重试，每次都白读一遍整个本地库。文案本身是完整一句，不套前缀。
+  let form =
+    multipart_file(&json).map_err(|_| PushError::permanent(t("tools.remote-build-failed")))?;
+  // 下面的 await 会持续整个上传：map 与 json 的内容此时已经在 `form` 里，不要让它们陪到响应回来。
+  drop(json);
+  drop(map);
+  let (status, _) = request(cfg.method.as_str(), &url, &headers, Some(form), TIMEOUT_MS)
+    .await
+    .map_err(|e| PushError::from_sync(&e))?;
   if (200..300).contains(&status) {
-    Ok(Pushed {
-      count: built.map.len(),
-      fp: built.fp,
-    })
+    Ok(Pushed { count, fp })
   } else {
     Err(PushError::from_sync(&SyncError::Http(status)))
   }

@@ -64,6 +64,7 @@ features = [
   "File",
   "FileList",
   "FileReader",
+  "FormData",
   "GainNode",
   "Headers",
   "HtmlAnchorElement",

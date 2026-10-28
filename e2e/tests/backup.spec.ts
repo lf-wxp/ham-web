@@ -1,6 +1,40 @@
 import { readFile } from "node:fs/promises";
 import { expect, test } from "./fixtures";
 
+type PwRequest = import("@playwright/test").Request;
+
+/**
+ * 取出写入请求里 multipart/form-data 的 `file` 部分。
+ *
+ * 写入接口用 `FormData`（字段名固定 `file`）上传，body 不是裸 JSON。这里**严格**按协议解析：
+ * 不是 multipart、缺 boundary 或没有 `file` 字段就抛错——协议被改回裸 JSON 时，依赖它的用例必须红，
+ * 而不是因为解析函数“宽容地原样返回”而悄悄通过。
+ */
+function readPushedFile(req: PwRequest): { filename: string; type: string; text: string } {
+  const contentType = req.headers()["content-type"] ?? "";
+  const boundary = /^multipart\/form-data;\s*boundary=(.+)$/i.exec(contentType)?.[1];
+  if (!boundary) {
+    throw new Error(`写入请求不是 multipart/form-data：${contentType || "（没有 Content-Type）"}`);
+  }
+  for (const part of (req.postData() ?? "").split(`--${boundary}`)) {
+    const headerEnd = part.indexOf("\r\n\r\n");
+    if (headerEnd < 0) continue;
+    const head = part.slice(0, headerEnd);
+    // `;\s*name=` 而不是 `name=`：别把 `filename="…"` 误认成字段名。
+    if (!/;\s*name="file"/.test(head)) continue;
+    return {
+      filename: /;\s*filename="([^"]*)"/.exec(head)?.[1] ?? "",
+      type: /^content-type:\s*(.+)$/im.exec(head)?.[1].trim() ?? "",
+      // 文件内容后紧跟 `\r\n` 再接下一个 boundary。
+      text: part.slice(headerEnd + 4).replace(/\r\n$/, ""),
+    };
+  }
+  throw new Error("multipart 请求体里没有名为 `file` 的字段");
+}
+
+/** 写入请求里那份备份 JSON（已解析）。 */
+const pushedJson = (req: PwRequest): Record<string, string> => JSON.parse(readPushedFile(req).text);
+
 /**
  * 数据备份（`/backup`）。
  *
@@ -216,12 +250,9 @@ test.describe("自定义远端同步", () => {
 
   test("写入远端：按所选方法提交备份 JSON，带上自定义请求头", async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem("e2e-backup-key", "e2e-value"));
-    let seen: { method: string; auth: string | undefined; body: string } | undefined;
+    let seen: PwRequest | undefined;
     await page.route(`${REMOTE}/put`, async (route) => {
-      const req = route.request();
-      if (req.method() !== "OPTIONS") {
-        seen = { method: req.method(), auth: req.headers()["authorization"], body: req.postData() ?? "" };
-      }
+      if (route.request().method() !== "OPTIONS") seen = route.request();
       await route.fulfill({ status: 204 });
     });
     await page.goto("/backup");
@@ -230,12 +261,35 @@ test.describe("自定义远端同步", () => {
     await page.getByRole("button", { name: "写入远端" }).click();
     await expect(page.locator('[data-slot="toast"]')).toContainText(/^已写入远端 \d+ 项$/);
 
-    expect(seen?.method).toBe("PUT");
-    expect(seen?.auth).toBe("Bearer secret");
-    const body = JSON.parse(seen?.body ?? "{}");
+    expect(seen?.method()).toBe("PUT");
+    expect(seen?.headers()["authorization"]).toBe("Bearer secret");
+    // 请求体是 multipart/form-data：字段名固定 `file`，内容是带文件名与 JSON 类型的文件。
+    const file = readPushedFile(seen!);
+    expect(file.filename).toBe("backup.json");
+    expect(file.type).toBe("application/json");
+    const body = JSON.parse(file.text);
     expect(body["e2e-backup-key"]).toBe("e2e-value");
     // 配置含鉴权头，只属于这台设备，不能随备份外流。
     expect(body["remote-sync"]).toBeUndefined();
+  });
+
+  test("写入请求头里的 Content-Type 会被忽略：multipart 的 boundary 只能由浏览器生成", async ({ page }) => {
+    let seen: PwRequest | undefined;
+    await page.route(`${REMOTE}/put`, async (route) => {
+      if (route.request().method() !== "OPTIONS") seen = route.request();
+      await route.fulfill({ status: 204 });
+    });
+    await page.goto("/backup");
+    await page.locator("#remote-put-url").fill(`${REMOTE}/put`);
+    // 旧版本允许用这行把 JSON 改成别的类型；现在带上它会让服务端读不到 boundary。
+    await page.locator("#remote-put-headers").fill("Content-Type: text/plain\nAuthorization: Bearer secret");
+    await page.getByRole("button", { name: "写入远端" }).click();
+    await expect(page.locator('[data-slot="toast"]')).toContainText(/^已写入远端 \d+ 项$/);
+
+    expect(seen?.headers()["content-type"]).toMatch(/^multipart\/form-data;\s*boundary=/i);
+    // 其余自定义请求头照常发出。
+    expect(seen?.headers()["authorization"]).toBe("Bearer secret");
+    expect(readPushedFile(seen!).filename).toBe("backup.json");
   });
 
   test("读取和写入各用各自的令牌，互不串用", async ({ page }) => {
@@ -344,10 +398,9 @@ test.describe("自定义远端同步", () => {
       localStorage.setItem("logbook", JSON.stringify({ entries: [] }));
       localStorage.setItem("e2e-backup-key", "e2e-value");
     });
-    let body = "";
+    let pushed: PwRequest | undefined;
     await page.route(`${REMOTE}/put`, async (route) => {
-      const req = route.request();
-      if (req.method() !== "OPTIONS") body = req.postData() ?? "";
+      if (route.request().method() !== "OPTIONS") pushed = route.request();
       await route.fulfill({ status: 204 });
     });
     await page.goto("/backup");
@@ -359,16 +412,16 @@ test.describe("自定义远端同步", () => {
     await page.getByRole("button", { name: "写入远端" }).click();
     await expect(page.locator('[data-slot="toast"]')).toContainText(/^已写入远端 \d+ 项$/);
 
-    const data = JSON.parse(body);
+    const data = pushedJson(pushed!);
     expect(data["logbook"]).toBeDefined();
     expect(data["e2e-backup-key"]).toBe("e2e-value");
   });
 
   test("同步时不含 QSL 影像：勾选后写出的内容不再带影像，取消勾选又带上", async ({ page }) => {
-    const bodies: Record<string, string>[] = [];
+    // 路由回调里只收请求、不解析：解析失败（协议被改坏）要在用例里报，而不是在回调里吞掉。
+    const pushes: PwRequest[] = [];
     await page.route(`${REMOTE}/put`, async (route) => {
-      const req = route.request();
-      if (req.method() !== "OPTIONS") bodies.push(JSON.parse(req.postData() ?? "{}"));
+      if (route.request().method() !== "OPTIONS") pushes.push(route.request());
       await route.fulfill({ status: 204 });
     });
     await page.goto("/backup");
@@ -387,8 +440,8 @@ test.describe("自定义远端同步", () => {
     await page.locator("#remote-put-url").fill(`${REMOTE}/put`);
     await page.getByRole("button", { name: "写入远端" }).click();
     await expect(toast).toContainText(/^已写入远端/);
-    expect(bodies).toHaveLength(1);
-    expect(bodies[0]["qsl-image:7"]).toBe(png);
+    expect(pushes).toHaveLength(1);
+    expect(pushedJson(pushes[0])["qsl-image:7"]).toBe(png);
     await expect(toast).toHaveCount(0);
 
     const exclude = page.getByRole("checkbox", { name: "同步时不含 QSL 影像" });
@@ -396,8 +449,8 @@ test.describe("自定义远端同步", () => {
     await expect(exclude).toHaveAttribute("aria-checked", "true");
     await page.getByRole("button", { name: "写入远端" }).click();
     await expect(toast).toContainText(/^已写入远端/);
-    expect(bodies).toHaveLength(2);
-    expect(bodies[1]["qsl-image:7"]).toBeUndefined();
+    expect(pushes).toHaveLength(2);
+    expect(pushedJson(pushes[1])["qsl-image:7"]).toBeUndefined();
     await expect(toast).toHaveCount(0);
 
     // 开关随配置保存，刷新后还在。
@@ -524,7 +577,7 @@ test.describe("自动同步", () => {
     // 自动写入有约 5 秒的攒批延时。
     const sent = page.waitForRequest((r) => r.url() === PUT && r.method() === "PUT", { timeout: 20_000 });
     await page.getByRole("button", { name: "添加记录" }).click();
-    const body = JSON.parse((await sent).postData() ?? "{}");
+    const body = pushedJson(await sent);
     expect(JSON.parse(body.logbook).entries.map((e: { callsign: string }) => e.callsign)).toContain("BG4AUTO");
     for (const deviceOnly of ["remote-sync", "remote-sync-state", "theme", "locale"]) {
       expect(body[deviceOnly], deviceOnly).toBeUndefined();
@@ -532,9 +585,9 @@ test.describe("自动同步", () => {
   });
 
   test("没「上岗」前不自动写：刚填的地址可能还是半截，手动同步成功后才开始自动写", async ({ page }) => {
-    const puts: string[] = [];
+    const puts: PwRequest[] = [];
     await page.route(PUT, (route) => {
-      if (route.request().method() === "PUT") puts.push(route.request().postData() ?? "");
+      if (route.request().method() === "PUT") puts.push(route.request());
       return route.fulfill({ status: 204 });
     });
     await page.goto("/backup");
@@ -561,7 +614,7 @@ test.describe("自动同步", () => {
     await expect(toast(page)).toHaveCount(0);
     await importFile({ "e2e-b": "2" });
     await expect.poll(() => puts.length, { timeout: 20_000 }).toBe(2);
-    expect(JSON.parse(puts[1])["e2e-b"]).toBe("2");
+    expect(pushedJson(puts[1])["e2e-b"]).toBe("2");
   });
 
   const section = (page: import("@playwright/test").Page) => page.locator("section#backup");
@@ -569,11 +622,11 @@ test.describe("自动同步", () => {
     route.fulfill({ status: route.request().method() === "OPTIONS" ? 204 : status, body: "" });
 
   test("首次连接：远端是空的（404）而本机有数据 → 不自动上传，提示手动写入一次", async ({ page }) => {
-    const puts: string[] = [];
+    const puts: PwRequest[] = [];
     await seed(page, { config: { get_url: GET, put_url: PUT }, items: { bookmarks: "[]" } });
     await page.route(GET, (route) => route.fulfill({ status: 404, body: "nope" }));
     await page.route(PUT, (route) => {
-      if (route.request().method() === "PUT") puts.push(route.request().postData() ?? "");
+      if (route.request().method() === "PUT") puts.push(route.request());
       return route.fulfill({ status: 204 });
     });
     await page.goto("/backup");
@@ -600,7 +653,7 @@ test.describe("自动同步", () => {
     await page.route(PUT, (route) => route.fulfill({ status: 204 }));
     const sent = page.waitForRequest((r) => r.url() === PUT && r.method() === "PUT", { timeout: 20_000 });
     await page.goto("/backup");
-    const body = JSON.parse((await sent).postData() ?? "{}");
+    const body = pushedJson(await sent);
     expect(body["bookmarks"]).toBe("[1]");
   });
 
@@ -673,7 +726,7 @@ test.describe("自动同步", () => {
     await page.getByRole("dialog").getByRole("button", { name: "从远端恢复（覆盖）" }).click();
     await expect(toast(page)).toContainText(/^已恢复/);
     // 覆盖导入不会删掉远端没有的 key：远端因此还缺这一份，自动同步要把它补回去。
-    const body = JSON.parse((await sent).postData() ?? "{}");
+    const body = pushedJson(await sent);
     expect(body["e2e-local"]).toBe("mine");
     expect(body["e2e-remote"]).toBe("1");
   });

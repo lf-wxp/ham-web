@@ -5,10 +5,13 @@
 //!
 //! # 接口约定
 //!
-//! - **获取**：`GET <get_url>`，响应体是与「导出备份」同格式的 JSON（`{ key: value }`）。
-//!   `404` / `204` / 空响应体都视为「远端还没有数据」，不算错误。
-//! - **写入**：`<method> <put_url>`（`PUT` 或 `POST`），请求体是同一份 JSON，
-//!   `Content-Type: application/json`。任何 2xx 都算成功。
+//! - **获取**：`GET <get_url>`，响应体是与「导出备份」同格式的 JSON 文本（`{ key: value }`），
+//!   原样返回——不经 JSON 包装、也不经 base64。`404` / `204` / 空响应体都视为
+//!   「远端还没有数据」，不算错误。
+//! - **写入**：`<method> <put_url>`（`PUT` 或 `POST`），请求体是 `multipart/form-data`，
+//!   字段名固定为 `file`、文件名 `backup.json`、文件类型 `application/json`，内容是那份 JSON。
+//!   任何 2xx 都算成功。`Content-Type` 由浏览器生成（要带 boundary），用户在写入请求头里填的
+//!   `Content-Type` 会被忽略，见 [`is_content_type_header`]。
 //! - 鉴权靠用户自填的请求头（如 `Authorization: Bearer …`）；获取与写入**各有一份**请求头，
 //!   所以读、写可以用不同的令牌。
 //!
@@ -426,6 +429,17 @@ fn is_header_name(name: &str) -> bool {
       .all(|c| c.is_ascii_alphanumeric() || "!#$%&'*+-.^_`|~".contains(c))
 }
 
+/// 请求头名是不是 `Content-Type`（名字不分大小写）。
+///
+/// 带请求体的写入是 `multipart/form-data`，值里必须有浏览器生成的 `boundary`；用户填的
+/// `Content-Type` 会把它盖掉，服务端就读不到 `file` 字段。旧版本的写入是裸 JSON，那时允许用这一行
+/// 改类型（如某些网盘要 `text/plain`），升级后这类配置还留在本机——所以**发请求时忽略它**，
+/// 而不是在校验里报错：报「第 N 行格式不对」既不准，又会让已经配好的自动写入无声地停摆。
+#[must_use]
+pub fn is_content_type_header(name: &str) -> bool {
+  name.eq_ignore_ascii_case("content-type")
+}
+
 fn is_header_value(value: &str) -> bool {
   value
     .chars()
@@ -606,6 +620,28 @@ mod tests {
       Err(HeaderError { line: 2 })
     );
     assert_eq!(parse_headers("A: x\u{7}y"), Err(HeaderError { line: 1 }));
+  }
+
+  #[test]
+  fn content_type_is_recognised_regardless_of_case() {
+    for name in [
+      "Content-Type",
+      "content-type",
+      "CONTENT-TYPE",
+      "cOnTeNt-TyPe",
+    ] {
+      assert!(is_content_type_header(name), "{name}");
+    }
+    // 只认整个名字：相近的头不能被连带忽略。
+    for name in [
+      "Content-Length",
+      "Content-Type-Options",
+      "X-Content-Type",
+      "Accept",
+      "",
+    ] {
+      assert!(!is_content_type_header(name), "{name:?}");
+    }
   }
 
   #[test]

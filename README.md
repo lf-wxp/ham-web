@@ -124,7 +124,7 @@ README 只做索引与上手；细节按下面的表找。
 | 天线方向增益的口径 | [`docs/antenna-coverage.md`](docs/antenna-coverage.md) |
 | 代码质量、分层边界、问题分级 | [`docs/code-quality.md`](docs/code-quality.md) |
 | 许可与 GPL 边界 | [`docs/licensing.md`](docs/licensing.md) |
-| 未完成项与「刻意不做」的边界 / README 审核记录 | [`ROADMAP.md`](ROADMAP.md) · [`docs/readme-review.md`](docs/readme-review.md) |
+| 未完成项与「刻意不做」的边界 | [`ROADMAP.md`](ROADMAP.md) |
 
 > README 里的数字与清单（Worker 数量、路由数量、计算器数量、`build-*-worker` 任务表、截图文件）由
 > `cargo make readme-check` 对账；被搬走的章节改名或删除时它也会红。

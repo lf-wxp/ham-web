@@ -32,7 +32,7 @@
 ├── cspell.json             # 专有名词拼写白名单
 ├── perf-budget.json        # 性能预算（size-check 读它）
 ├── LICENSE / LICENSES/     # MIT 全文与第三方 / GPL 许可全文（随发布物分发）
-├── docs/                   # 专题规范（UI / i18n / 数据源 / 解码器协议 / 代码质量 / README 审核记录）与 images/ 截图
+├── docs/                   # 专题规范（UI / i18n / 数据源 / 解码器协议 / 代码质量）与 images/ 截图
 ├── scripts/                # 构建脚本：解码 Worker 清单、Docker 镜像冒烟
 ├── .github/workflows/      # check.yml（检查 + e2e + 镜像冒烟）、build-docker.yml、data-sync.yml
 ├── crates/
