@@ -1,4 +1,11 @@
-import { expect, test } from "./fixtures";
+import {
+  type BankQuestion,
+  bankQuestion,
+  expandExplanations,
+  expect,
+  explanationHead,
+  test,
+} from "./fixtures";
 
 /** 注入一份复盘快照到 localStorage（避免为了测试真的考完一套题）。 */
 const REVIEW = {
@@ -56,10 +63,70 @@ test("考后复盘：逐题展示对错、你的作答与解析", async ({ page 
   await expect(page.getByText("1", { exact: true }).first()).toBeVisible();
 
   await expect(page.getByText("第二题题干")).toBeVisible();
+  // 解析是折叠卡片：默认收起，点开才读得到；没有解析的第三题给出「暂无解析」提示
+  const explain = page.getByRole("button", { name: "答案解析" });
+  await expect(explain).toHaveCount(2);
+  await expect(explain.first()).toHaveAttribute("aria-expanded", "false");
+  // 折叠时正文不在 DOM 里（首次展开才构建），而不是只被样式藏起来
+  await expect(page.getByText("第二题解析")).toHaveCount(0);
+  await explain.nth(1).click();
+  await expect(explain.nth(1)).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByText("第二题解析")).toBeVisible();
+  await expect(page.getByText("此题暂无解析")).toHaveCount(1);
   await expect(page.getByText("错误").first()).toBeVisible();
   // 未作答单独标出，而不是笼统计为「错误」
   await expect(page.getByText("未作答")).toBeVisible();
+});
+
+/** 与题库同一道题的复盘项（题干 / 选项 / 答案逐字一致），只有存档里的解析是订正前的。 */
+function reviewItem(q: BankQuestion, overrides: Record<string, unknown> = {}) {
+  return {
+    id: q.id,
+    code: "LY0001",
+    question: q.question,
+    options: q.options.map((o) => `${o.key}. ${o.text}`),
+    answer: q.answer_keys,
+    given: ["B"],
+    explanation: "交卷时的旧解析",
+    category: "1.1.1",
+    ...overrides,
+  };
+}
+
+function reviewOf(...items: ReturnType<typeof reviewItem>[]) {
+  return { bank: "A", finished_at_ms: 1_700_000_000_000, items };
+}
+
+test("考后复盘：解析读题库现在的，不用交卷时存下的旧文字", async ({ page }) => {
+  const q = bankQuestion(0);
+  await page.addInitScript((data) => {
+    localStorage.setItem("exam:last-review", JSON.stringify(data));
+  }, reviewOf(reviewItem(q)));
+
+  await page.goto("/exam-review");
+  // 解析卡首次展开前不渲染正文：先展开，再等题库异步加载完、现在的解析换上来
+  await expandExplanations(page);
+  await expect(page.locator("main")).toContainText(explanationHead(q));
+  await expect(page.getByText("交卷时的旧解析")).toHaveCount(0);
+});
+
+test("考后复盘：答案与题库对不上的题，沿用交卷时存下的解析", async ({ page }) => {
+  const mismatched = bankQuestion(0);
+  const control = bankQuestion(1);
+  // 编号、题干都一致，但存档里的答案与题库现在的不同（题库勘误过）：
+  // 把针对新答案的解析安给旧答案会自相矛盾，所以不换
+  const staleAnswer = mismatched.answer_keys.length === 1 ? ["Z"] : mismatched.answer_keys.slice(1);
+  await page.addInitScript((data) => {
+    localStorage.setItem("exam:last-review", JSON.stringify(data));
+  }, reviewOf(reviewItem(mismatched, { answer: staleAnswer }), reviewItem(control)));
+
+  await page.goto("/exam-review");
+  await expandExplanations(page);
+  // 对照题与题库完全一致：它的解析换上来，就说明题库索引已经到了
+  await expect(page.locator("main")).toContainText(explanationHead(control));
+  // 此时答案对不上的那题仍是存档里的，没有被换成题库的
+  await expect(page.getByText("交卷时的旧解析")).toHaveCount(1);
+  await expect(page.locator("main")).not.toContainText(explanationHead(mismatched));
 });
 
 test("考后复盘：分类表现按错得多的在前排序", async ({ page }) => {

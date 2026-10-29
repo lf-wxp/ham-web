@@ -565,7 +565,7 @@ pub fn ExamPage() -> impl IntoView {
                   reveal_unanswered=true
                 />
                 {move || {
-                  (finished.get() && show_explanation.get()).then(|| view! { <ExplanationCard question=expl.clone() /> })
+                  (finished.get() && show_explanation.get()).then(|| view! { <ExplanationCard explanation=expl.explanation.clone() /> })
                 }}
                 {move || {
                   if !finished.get() {

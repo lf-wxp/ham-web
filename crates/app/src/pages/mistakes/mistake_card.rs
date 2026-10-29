@@ -1,18 +1,25 @@
 use crate::i18n::{t, tf, tp};
 use ham_web_core::Bank;
 use ham_web_core::categories::{sub_category, top_pages};
+use ham_web_core::explanation_index::ExplanationIndex;
 use ham_web_core::mistake_book::{MistakeRecord, WRONG_CAUSES};
 use leptos::prelude::*;
 
+use crate::components::common::ExplanationCard;
+use crate::data;
 use crate::ui::ChipToggle;
 
 const DAY_MS: i64 = 24 * 60 * 60 * 1000;
 
 /// 一道错题视图。
+///
+/// `fresh` 是题库当前版本的解析索引：快照里的解析是答错当时的，展示时经它换成最新的，
+/// 索引到达只换卡片里的文字，已展开的卡片不会收起。
 #[component]
 pub(super) fn MistakeCard(
   record: MistakeRecord,
   now_ms: i64,
+  fresh: ReadSignal<ExplanationIndex>,
   on_remove: Callback<String>,
 ) -> impl IntoView {
   let q = &record.question;
@@ -54,6 +61,7 @@ pub(super) fn MistakeCard(
     record.my_answer.join("、")
   };
   let key = record.key.clone();
+  let explain = data::snapshot_explanation(fresh, record.question.clone());
   let cause = RwSignal::new(record.cause.clone());
   let set_cause = {
     let key = key.clone();
@@ -141,6 +149,10 @@ pub(super) fn MistakeCard(
             }
           })
           .collect_view()}
+      </div>
+      // 默认折叠：错题多时列表很长，解析只在想看时展开。
+      <div class="mt-3">
+        <ExplanationCard explanation=explain />
       </div>
     </div>
   }

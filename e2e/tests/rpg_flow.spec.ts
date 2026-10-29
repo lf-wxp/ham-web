@@ -2,7 +2,18 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { expect, option, settleFrames, test, waitSettled } from "./fixtures";
+import {
+  bankQuestion,
+  expandExplanations,
+  expect,
+  explanationHead,
+  mistakeRecord,
+  option,
+  settleFrames,
+  test,
+  waitSettled,
+  wrongLetter,
+} from "./fixtures";
 
 // 闯关地图 / 回合战 / 怪物图鉴 / 外观设置 / 底部 Tab 的回归。
 // 作答靠读题库文件判对错（与 smoke.spec.ts 读路由表同一思路），不依赖页面会泄露答案的文案。
@@ -121,6 +132,23 @@ test.describe("怪物图鉴", () => {
     // 只制造了一只怪物且已被击败：图鉴进度 100%。别写成 `not.toContainText("0%")` ——
     // 「100%」本身就含有子串「0%」。
     await expect(page.getByText("已击败 100%")).toBeVisible();
+  });
+
+  test("复仇：答错弹出的解析读题库现在的，不用错题快照里的旧文字", async ({ page }) => {
+    const q = bankQuestion(0);
+    await page.addInitScript(
+      (records) => localStorage.setItem("mistake-book", JSON.stringify({ records })),
+      [mistakeRecord({ ...q, explanation: "过期的旧解析" })],
+    );
+    await page.goto("/battle?mode=revenge");
+    await expect(stem(page)).toBeVisible();
+    // 选一个不在正确答案里的选项，一定答错（不假设这道题是单选还是多选）
+    await option(page, wrongLetter(q.answer_keys)).click();
+    await page.getByRole("button", { name: "攻击", exact: true }).click();
+    // 答错才弹解析，卡片首次展开前不渲染正文：展开后再断言
+    await expandExplanations(page);
+    await expect(page.locator("main")).toContainText(explanationHead(q));
+    await expect(page.getByText("过期的旧解析")).toHaveCount(0);
   });
 });
 

@@ -298,7 +298,7 @@
 | 答题进度头 / 底部固定操作栏 | `QuestionProgressHeader` / `BottomBar` | 手写进度行 / 固定底栏 |
 | 限时考试的剩余时间读数 | `ExamClock`（档位由 `ham_web_core::exam_clock` 判定） | 手抄 `format_ms` + 自己定「最后 60 秒变红」 |
 | 答题卡（抽屉 + 题号格子） | `AnswerCardSheet` / `AnswerCardCell` | 手写格子网格 |
-| 答案解析（折叠 + 法规引用 + 朗读） | `ExplanationCard` | 手写折叠区 |
+| 答案解析（折叠 + 法规引用 + 朗读） | `ExplanationCard`（入参是解析文本；题目来自存档快照的，文本经 `data::snapshot_explanation` / `data::review_explanation` 取，见 [`explanations.md`](explanations.md)「存档快照里的解析」；首次展开前不渲染正文） | 手写折叠区 |
 
 **内容卡片的外壳只有一份（`SectionCard`）**。首页下半部分曾同时存在三种外壳（窗口级
 `card_class`、平卡 `flat_card_class`、整张手写的 `<a>`）：标题体、内边距、卡片间距、悬停反馈

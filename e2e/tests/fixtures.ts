@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   expect,
   test as base,
@@ -119,6 +121,71 @@ export function wrongLetter(correct: string[]): string {
   const letter = ["A", "B", "C", "D"].find((l) => !correct.includes(l));
   if (!letter) throw new Error(`no wrong option among ${correct.join(",")}`);
   return letter;
+}
+
+/** 题库里的一道题（只列用例用得到的字段，其余原样透传）。 */
+export type BankQuestion = {
+  id: string;
+  question: string;
+  options: { key: string; text: string }[];
+  answer_keys: string[];
+  explanation: string;
+  [field: string]: unknown;
+};
+
+let bankA: BankQuestion[] | undefined;
+
+/**
+ * A 类题库文件里的第 `i` 题。
+ *
+ * 读文件而不是读页面：用例要播种「与题库是同一道题、但存档里的解析是旧的」，
+ * 需要题干 / 选项 / 答案与题库逐字一致，才能验证页面认得出它并改读题库现在的解析。
+ */
+export function bankQuestion(i = 0): BankQuestion {
+  bankA ??= JSON.parse(readFileSync(join(__dirname, "../../public/questions/A.json"), "utf8"));
+  return (bankA as BankQuestion[])[i];
+}
+
+/**
+ * 题库解析的开头一截：不含空白，用来断言页面读到了题库现在的解析。
+ * 解析里的法规引用会把文字切成多个节点，`toContainText` 看的是拼起来的文本，不受影响。
+ *
+ * 取不到就直接抛错：空串会让 `toContainText("")` 恒真，用例等于没断言。
+ */
+export function explanationHead(q: BankQuestion, length = 20): string {
+  const head = (q.explanation ?? "").trim().split(/\s/)[0].slice(0, length);
+  if (!head) throw new Error(`题库第 ${q.id} 题没有可用来断言的解析开头`);
+  return head;
+}
+
+/**
+ * 点开页面上所有折叠着的「答案解析」。
+ *
+ * 解析卡片首次展开前不渲染正文（折叠时 DOM 里读不到文字），断言解析内容前要先展开。
+ */
+export async function expandExplanations(page: Page) {
+  const toggles = page.getByRole("button", { name: "答案解析" });
+  const count = await toggles.count();
+  for (let i = 0; i < count; i++) {
+    const toggle = toggles.nth(i);
+    if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+  }
+}
+
+/**
+ * 一条错题本记录。`key` 放占位：加载时会按题面重算，与真实 key 无关。
+ * 题目不必来自题库 —— 传一道题库里没有的题，就是「快照里有、题库认不出」的情形。
+ */
+export function mistakeRecord(question: Record<string, unknown>) {
+  return {
+    key: "0000000000000000",
+    question,
+    my_answer: ["B"],
+    wrong_count: 1,
+    streak: 0,
+    last_wrong_ms: 1,
+    due_ms: 1,
+  };
 }
 
 /**

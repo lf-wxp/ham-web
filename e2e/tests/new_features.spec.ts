@@ -30,8 +30,15 @@ test("错题集：闪卡复习显示答案后自评", async ({ page }) => {
   // 进入闪卡复习，先显示答案，再自评「不会」
   await page.getByRole("button", { name: "闪卡复习" }).click();
   await expect(page.getByRole("button", { name: "显示答案" })).toBeVisible();
+  // 揭晓前不能有解析，否则等于提前泄题
+  await expect(page.getByRole("button", { name: "答案解析" })).toHaveCount(0);
   await page.getByRole("button", { name: "显示答案" }).click();
   await expect(page.getByRole("button", { name: "会 ✓", exact: true })).toBeVisible();
+  // 揭晓后出现默认折叠的答案解析，点开后展开
+  const explain = page.getByRole("button", { name: "答案解析" });
+  await expect(explain).toHaveAttribute("aria-expanded", "false");
+  await explain.click();
+  await expect(explain).toHaveAttribute("aria-expanded", "true");
   await page.getByRole("button", { name: "不会 ✗", exact: true }).click();
   // 只有一道错题，自评后回到列表
   await expect(page.getByRole("heading", { level: 1, name: "错题集" })).toBeVisible();

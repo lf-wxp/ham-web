@@ -2,9 +2,11 @@
 //!
 //! 交卷弹窗关掉后，原本无法再回看「哪道题错了、正确答案是什么」，这里补上。
 
+use ham_web_core::explanation_index::{ExplanationIndex, banks_for};
 use leptos::prelude::*;
 
-use crate::components::common::{EmptyState, PageContainer, PageHeader};
+use crate::components::common::{EmptyState, ExplanationCard, PageContainer, PageHeader};
+use crate::data;
 use crate::i18n::{t, tf, tp};
 use crate::icons::IconKind;
 use crate::store;
@@ -19,6 +21,16 @@ pub fn ExamReviewPage() -> impl IntoView {
   let review = store::load_exam_review();
   // 题库直接展示快照里存的字符串：`bank_class` 需要 `Bank`，而解析失败时回退展示原文更直观。
   let bank = review.as_ref().map(|r| r.bank.clone());
+
+  // 题库当前版本的解析索引：复盘快照里的解析是交卷当时的，展示时经它换成题库现在的。
+  // 只拉复盘里的题涉及的题库，没有复盘记录就不拉；到之前沿用快照，到了只换卡片里的文字。
+  let fresh = RwSignal::new(ExplanationIndex::default());
+  if let Some(r) = &review {
+    data::spawn_explanation_index(
+      banks_for(r.items.iter().map(|i| Some(i.id.as_str()))),
+      fresh,
+    );
+  }
 
   let body = match review {
     None => view! {
@@ -113,6 +125,9 @@ pub fn ExamReviewPage() -> impl IntoView {
                 // 产生的动作就是「把这题收起来回头再看」。
                 let item_id = item.id.clone();
                 let marked = RwSignal::new(store::is_bookmarked(&item_id));
+                // 复盘快照里的解析是交卷当时的版本，展示时读题库现在的；索引没来之前、或题库里
+                // 认不出这道题时用快照的。
+                let explanation = data::review_explanation(fresh.read_only(), item.clone());
                 view! {
                   <div class=format!("pxl-card border bg-card p-4 {border}")>
                     <div class="mb-2 flex items-start gap-2">
@@ -145,12 +160,10 @@ pub fn ExamReviewPage() -> impl IntoView {
                           .into_any()}
                       </ChipToggle>
                     </div>
-                    {(!item.explanation.is_empty())
-                      .then(|| {
-                        view! {
-                          <p class="mt-2 border-t pt-2 text-xs text-muted-foreground">{item.explanation.clone()}</p>
-                        }
-                      })}
+                    // 回顾页一次铺开几十道题，解析默认折叠，想看哪题再展开。
+                    <div class="mt-3">
+                      <ExplanationCard explanation=explanation />
+                    </div>
                   </div>
                 }
               })

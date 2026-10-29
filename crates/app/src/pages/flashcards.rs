@@ -5,7 +5,7 @@ use ham_web_core::{Bank, QuestionItem};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{ExplanationCard, PageContainer, PageHeader};
 use crate::data;
 use crate::i18n::{bank_class, t};
 use crate::ui::{Button, Chip, ChipGroup, Size, Variant};
@@ -183,6 +183,10 @@ pub fn FlashcardsPage() -> impl IntoView {
                             </div>
                           }
                         }).collect_view()}
+                      </div>
+                      // 揭晓答案后才出现，避免提前泄题；切到下一题时整块重建，自动恢复折叠。
+                      <div class="mt-3">
+                        <ExplanationCard explanation=q.explanation.clone() />
                       </div>
                     }
                     .into_any()

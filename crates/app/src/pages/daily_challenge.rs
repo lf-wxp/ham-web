@@ -13,7 +13,7 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_navigate;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{ExplanationCard, PageContainer, PageHeader};
 use crate::components::question_card::QuestionCard;
 use crate::data;
 use crate::i18n::{bank_class, t, tf, tp};
@@ -46,6 +46,8 @@ pub fn DailyChallengePage() -> impl IntoView {
   let loading = RwSignal::new(true);
   let started = RwSignal::new(false);
   let finished = RwSignal::new(false);
+  // 交卷后点「查看题目」进入的逐题回顾态；与 `started` / `finished` 互斥。
+  let reviewing = RwSignal::new(false);
   let deadline = RwSignal::new(0i64);
   let remaining = RwSignal::new(i64::from(CHALLENGE_MINUTES) * 60);
   let results = RwSignal::new(load_results());
@@ -57,6 +59,7 @@ pub fn DailyChallengePage() -> impl IntoView {
     answers.set(HashMap::new());
     started.set(false);
     finished.set(false);
+    reviewing.set(false);
     loading.set(true);
     spawn_local(async move {
       if let Ok(qs) = data::load_bank(v.as_deref(), b, true).await {
@@ -125,6 +128,16 @@ pub fn DailyChallengePage() -> impl IntoView {
     on_cleanup(move || interval.clear());
   });
 
+  // 开始 / 重新挑战：清掉上一轮作答与回顾态，重置倒计时。
+  let start = move || {
+    answers.set(HashMap::new());
+    finished.set(false);
+    reviewing.set(false);
+    started.set(true);
+    deadline.set(now_ms() + i64::from(CHALLENGE_MINUTES) * 60_000);
+    remaining.set(i64::from(CHALLENGE_MINUTES) * 60);
+  };
+
   let today_result = move || results.with(|r| r.days.get(&today_sv.get_value()).copied());
   let cur_streak = move || results.with(|r| current_streak(&r.days, &today_sv.get_value()));
   let best_streak = move || results.with(|r| longest_streak(&r.days));
@@ -190,6 +203,36 @@ pub fn DailyChallengePage() -> impl IntoView {
           }
           if !started.get() && !finished.get() {
             let done = today_result();
+            // 交卷后点「查看题目」：在开始卡片下方铺开逐题回顾（用户作答 + 正确答案 + 解析）。
+            // 作答只留在内存里，刷新页面后回到只有开始卡片的状态，所以这里只在本次会话内可用。
+            let review = reviewing.get().then(|| {
+              let qs = questions.get();
+              let total = qs.len();
+              let items = qs
+                .iter()
+                .enumerate()
+                .map(|(i, q)| {
+                  let sel_key = q.answer_key(i);
+                  let selected = Signal::derive(move || answers.with(|a| a.get(&sel_key).cloned().unwrap_or_default()));
+                  view! {
+                    <div class="space-y-2">
+                      <QuestionCard
+                        index=i
+                        total=total
+                        question=q.clone()
+                        selected=selected
+                        on_change=Callback::new(|_: Vec<String>| {})
+                        show_answer=Signal::derive(|| true)
+                        read_only=Signal::derive(|| true)
+                        reveal_unanswered=true
+                      />
+                      <ExplanationCard explanation=q.explanation.clone() />
+                    </div>
+                  }
+                })
+                .collect_view();
+              view! { <div class="space-y-4">{items}</div> }
+            });
             return view! {
               <section class="pxl-card border bg-card px-4 py-10 text-center">
                 <div class="text-lg">{move || t("learning.today-s-challenge")}</div>
@@ -214,17 +257,12 @@ pub fn DailyChallengePage() -> impl IntoView {
                   variant=Variant::Default
                   size=Size::Default
                   class="mt-5"
-                  on_click=Callback::new(move |_| {
-                                    answers.set(HashMap::new());
-                                    finished.set(false);
-                                    started.set(true);
-                                    deadline.set(now_ms() + i64::from(CHALLENGE_MINUTES) * 60_000);
-                                    remaining.set(i64::from(CHALLENGE_MINUTES) * 60);
-                                  })
+                  on_click=Callback::new(move |_| start())
                 >
                   {if done.is_some() { t("learning.try-again") } else { t("learning.start-challenge") }}
                 </Button>
               </section>
+              {review}
             }.into_any();
           }
           if finished.get() {
@@ -250,7 +288,10 @@ pub fn DailyChallengePage() -> impl IntoView {
                   variant=Variant::Default
                   size=Size::Default
                   class="mt-5"
-                  on_click=Callback::new(move |_| { finished.set(false); })
+                  on_click=Callback::new(move |_| {
+                    finished.set(false);
+                    reviewing.set(true);
+                  })
                 >
                   {move || t("learning.view-questions")}
                 </Button>

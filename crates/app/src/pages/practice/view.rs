@@ -562,7 +562,7 @@ pub fn PracticePage() -> impl IntoView {
                   peeked=store.current_peeked()
                   on_reveal=Callback::new(move |()| store.mark_peeked())
                 />
-                {move || store.show_explanation.get().then(|| view! { <ExplanationCard question=expl.clone() /> })}
+                {move || store.show_explanation.get().then(|| view! { <ExplanationCard explanation=expl.explanation.clone() /> })}
                 <NoteEditor question_id=current_id />
               }
             })

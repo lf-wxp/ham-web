@@ -1,3 +1,4 @@
+use ham_web_core::explanation_index::{ExplanationIndex, banks_for};
 use ham_web_core::rpg::{Outcome, stars_of};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -7,6 +8,7 @@ use leptos_router::params::ParamsMap;
 use crate::components::common::ExplanationCard;
 use crate::components::common::PageContainer;
 use crate::components::question_card::QuestionCard;
+use crate::data;
 use crate::i18n::{t, tf};
 use crate::pages::{bank_href, use_bank_query, use_no_site_footer};
 use crate::shortcuts::{DigitDetail, Shortcuts, digit_answer, use_question_shortcuts};
@@ -53,6 +55,8 @@ pub fn BattlePage() -> impl IntoView {
   let phase = RwSignal::new(Phase::Loading);
   let meta = RwSignal::new(None::<Meta>);
   let settlement = RwSignal::new(None::<Settlement>);
+  // 题库当前版本的解析索引（只有复仇战会填，见加载 Effect）。
+  let fresh = RwSignal::new(ExplanationIndex::default());
   // 「再战一次」递增它，让下面的加载 Effect 重跑并重新抽题。
   let attempt = RwSignal::new(0u32);
   let generation = StoredValue::new(0u32);
@@ -77,6 +81,12 @@ pub fn BattlePage() -> impl IntoView {
       match result {
         Ok(d) => {
           let crit = d.meta.stage_id.is_some();
+          // 复仇队的题目取自错题快照，快照里的解析是答错当时的版本：后台拉一份题库现在的，
+          // 答错弹出解析时读它。不挡开局 —— 索引没到、题库加载失败都只是沿用快照。
+          // 闯关的题目直接来自题库，用不着。
+          if !crit {
+            data::spawn_explanation_index(banks_for(d.questions.iter().map(|q| q.id_str())), fresh);
+          }
           meta.set(Some(d.meta));
           // 复仇队不开暴击：每只怪物都要出场一次，暴击会让血条提前打空。
           run.start(d.questions, crit);
@@ -209,7 +219,7 @@ pub fn BattlePage() -> impl IntoView {
                 run.feedback
                   .get()
                   .filter(|fb| !fb.correct)
-                  .map(|_| view! { <ExplanationCard question=expl.clone() /> })
+                  .map(|_| view! { <ExplanationCard explanation=data::snapshot_explanation(fresh.read_only(), expl.clone()) /> })
               }}
             }
           })

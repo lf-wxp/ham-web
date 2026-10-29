@@ -1,6 +1,10 @@
 import {
+  bankQuestion,
   correctLetters,
+  expandExplanations,
   expect,
+  explanationHead,
+  mistakeRecord,
   option,
   settleFrames,
   test,
@@ -156,6 +160,91 @@ test("错题本：显示记忆巩固分布", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "错题集" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "记忆巩固" })).toBeVisible();
   await expect(page.getByText("学习中 1 道")).toBeVisible();
+});
+
+test("错题集：列表里每道错题带可展开的答案解析", async ({ page }) => {
+  await page.goto("/practice");
+  await expect(page.getByText(/第 1 \/ \d+ 题/)).toBeVisible();
+  const correct = await correctLetters(page);
+  await option(page, wrongLetter(correct)).click();
+  await page.getByRole("button", { name: "下一题" }).first().click();
+  await expect(page.getByText(/第 2 \/ \d+ 题/)).toBeVisible();
+
+  await page.goto("/mistakes");
+  await expect(page.getByRole("heading", { level: 1, name: "错题集" })).toBeVisible();
+
+  // 默认折叠，点开后 aria-expanded 翻转
+  const toggle = page.getByRole("button", { name: "答案解析" }).first();
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+});
+
+test("错题集：解析读题库现在的，题库认不出的题才沿用存档里的", async ({ page }) => {
+  const q = bankQuestion(0);
+  // 与题库同一道题，但存档里的解析是订正前的旧文字
+  const stale = mistakeRecord({ ...q, explanation: "过期的旧解析" });
+  // 题库里没有这道题（编号和题干都对不上）：只能用存档里的
+  const orphan = mistakeRecord({
+    ...bankQuestion(1),
+    id: "A-99999",
+    question: "只存在于存档里的题干",
+    explanation: "只存在于存档里的解析",
+  });
+  await page.addInitScript(
+    (records) => localStorage.setItem("mistake-book", JSON.stringify({ records })),
+    [stale, orphan],
+  );
+
+  await page.goto("/mistakes");
+  await expect(page.getByRole("heading", { level: 1, name: "错题集" })).toBeVisible();
+  const main = page.locator("main");
+  // 解析卡首次展开前不渲染正文：先全部展开，再等题库异步加载完、现在的解析换上来
+  await expandExplanations(page);
+  await expect(main).toContainText(explanationHead(q));
+  await expect(page.getByText("过期的旧解析")).toHaveCount(0);
+  await expect(main).toContainText("只存在于存档里的解析");
+
+  // 换上来的是展示，不改存档
+  const saved = await page.evaluate(() => localStorage.getItem("mistake-book") ?? "");
+  expect(saved).toContain("过期的旧解析");
+});
+
+test("错题集：题库解析晚到时，已展开的卡片保持展开、只换文字", async ({ page }) => {
+  const q = bankQuestion(0);
+  // 先把题库响应扣住：模拟弱网下用户在索引到达之前就点开了解析
+  let release: () => void = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/questions/A.json*", async (route) => {
+    await gate;
+    await route.continue();
+  });
+  await page.addInitScript(
+    (records) => localStorage.setItem("mistake-book", JSON.stringify({ records })),
+    [mistakeRecord({ ...q, explanation: "过期的旧解析" })],
+  );
+
+  try {
+    await page.goto("/mistakes");
+    const toggle = page.getByRole("button", { name: "答案解析" }).first();
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    // 索引没到之前沿用存档里的
+    await expect(page.getByText("过期的旧解析")).toBeVisible();
+  } finally {
+    release();
+  }
+
+  await expect(page.locator("main")).toContainText(explanationHead(q));
+  await expect(page.getByText("过期的旧解析")).toHaveCount(0);
+  // 卡片没有因为换文字而被重建收起
+  await expect(page.getByRole("button", { name: "答案解析" }).first()).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
 });
 
 test.describe("首次进入", () => {

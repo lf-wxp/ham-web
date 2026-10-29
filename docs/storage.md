@@ -29,7 +29,7 @@
 | `countdowns` | 倒计时条目 |
 | `morse-stats` | 摩尔斯解码练习统计 |
 | `dxcc_wanted_done` | 已通联的 DXCC 稀有前缀集合 |
-| `mistake-book` | 错题本（题目快照、错误次数、连续答对次数、难度系数、复习间隔、下次复习时间，最多 1000 题） |
+| `mistake-book` | 错题本（题目快照、错误次数、连续答对次数、难度系数、复习间隔、下次复习时间，最多 1000 题）；快照里的解析只是存档当时的兜底，**展示时以题库当前版本为准**，见 [`explanations.md`](explanations.md)「存档快照里的解析」 |
 | `study-stats` | 按分类累计的作答数与正确数（含 A/B/C 分题库统计与已做过题目集合） |
 | `mistake-book:seeded` | 是否已从旧版练习 / 考试存档迁移错题 |
 | `study-stats:seen-seeded` | 是否已从旧版存档补齐「已做过」题目集合 |
@@ -55,7 +55,7 @@
 | `push-subscription` | Web Push 订阅的本地快照 |
 | `morse-trainer` / `morse-send` | Koch 抄收与按键发报训练设置 |
 | `sat-apt-notified` | 已提醒过的 APT 录制机会 |
-| `exam:last-review` | 上次考后复盘的题目与作答 |
+| `exam:last-review` | 上次考后复盘的题目与作答（解析同 `mistake-book`：展示时以题库当前版本为准，存档里的只在题库认不出这道题时兜底） |
 | `remote-sync` | 自定义远端同步配置（获取 / 写入接口地址、写入方法，以及获取、写入**各自一份**请求头，读写可用不同令牌；是否去掉 QSL 影像）；令牌明文只存本机，**不进备份**，见下 |
 | `remote-sync-state` | 自动同步状态：`base`（上次同步成功时远端内容的指纹）、`dirty`（本机有没写出去的改动）；**不进备份** |
 

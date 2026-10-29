@@ -66,6 +66,22 @@ test("收藏集：笔记按需展开，不占满列表", async ({ page }) => {
   await expect(page.getByRole("button", { name: "笔记" }).first().locator("span")).toBeVisible();
 });
 
+test("收藏集：每道收藏题带可展开的答案解析", async ({ page }) => {
+  await page.goto("/practice");
+  await expect(page.getByText(/第 1 \/ \d+ 题/)).toBeVisible();
+  await page.getByRole("button", { name: "收藏" }).first().click();
+
+  await page.goto("/bookmarks");
+  await expect(page.getByRole("heading", { level: 1, name: "收藏集" })).toBeVisible();
+
+  // 默认折叠，点开后 aria-expanded 翻转
+  const toggle = page.getByRole("button", { name: "答案解析" }).first();
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+});
+
 test("快捷键：? 唤起帮助面板，Esc 可关闭", async ({ page }) => {
   await page.goto("/practice");
   await expect(page.getByText(/第 1 \/ \d+ 题/)).toBeVisible();

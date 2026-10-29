@@ -6,9 +6,12 @@ use std::fmt;
 use std::rc::Rc;
 use std::sync::{Arc, OnceLock};
 
+use ham_web_core::exam_review::ReviewItem;
+use ham_web_core::explanation_index::ExplanationIndex;
 use ham_web_core::glossary::{GLOSSARY_FILES, Glossary};
 use ham_web_core::{Bank, BankConfig, QuestionItem, QuestionSearchEntry, QuestionVersion};
-use leptos::prelude::{ArcRwSignal, Get, Track, Update};
+use leptos::prelude::{ArcRwSignal, Get, ReadSignal, RwSignal, Signal, Track, Update, With};
+use leptos::task::spawn_local;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestCache, RequestInit, Response};
@@ -465,6 +468,43 @@ pub async fn load_bank(
 /// 题库是否可用（存在且非空）。
 pub async fn bank_available(version: Option<&str>, bank: Bank) -> bool {
   load_bank(version, bank, true).await.is_ok()
+}
+
+/// 在后台把这些题库当前版本（默认版本）的解析并入 `index`。
+///
+/// 错题本、考后复盘的快照里存的是存档当时的解析；页面展示时用 `index` 换成题库现在的，
+/// 保证全站读到的是同一份解析。要点：
+/// - **只拉调用方传进来的题库**（用 `banks_for` 按快照 id 算），没有快照就传空、什么都不拉；
+/// - **每个题库各自并发地拉、各自并入**，哪个先到哪个先生效，页面从不等它；
+/// - 某个题库加载失败只是少一部分，对认不出的题沿用快照，页面不会因此依赖网络；
+/// - 等题库期间页面被销毁时信号已释放，`try_update` 什么都不写。
+///
+/// 副作用：`load_bank` 首次加载默认题库会记录内容摘要（见 `bank_updates::observe`），
+/// 所以这里拉过的题库之后有更新也会提示 —— 快照来自这些题库，用户本就在用它们。
+pub fn spawn_explanation_index(banks: Vec<Bank>, index: RwSignal<ExplanationIndex>) {
+  for bank in banks {
+    spawn_local(async move {
+      if let Ok(qs) = load_bank(None, bank, false).await {
+        index.try_update(|idx| idx.extend(qs.iter()));
+      }
+    });
+  }
+}
+
+/// 题目快照该显示的解析，随 `index` 的到达自动更新（交给 `ExplanationCard`）。
+pub fn snapshot_explanation(
+  index: ReadSignal<ExplanationIndex>,
+  question: QuestionItem,
+) -> Signal<Option<String>> {
+  Signal::derive(move || index.with(|idx| idx.question_explanation(&question)))
+}
+
+/// 考后复盘某一项该显示的解析，随 `index` 的到达自动更新（交给 `ExplanationCard`）。
+pub fn review_explanation(
+  index: ReadSignal<ExplanationIndex>,
+  item: ReviewItem,
+) -> Signal<Option<String>> {
+  Signal::derive(move || index.with(|idx| idx.review_explanation(&item)))
 }
 
 async fn check_version(version_id: &str) -> VersionStatus {

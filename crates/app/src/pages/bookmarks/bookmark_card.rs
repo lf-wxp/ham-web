@@ -1,7 +1,7 @@
 use ham_web_core::QuestionItem;
 use leptos::prelude::*;
 
-use crate::components::common::NoteEditor;
+use crate::components::common::{ExplanationCard, NoteEditor};
 use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 use crate::store;
@@ -23,6 +23,7 @@ pub(super) fn BookmarkCard(
     .unwrap_or_else(|| "—".to_owned());
   let q = question.clone();
   let q_add = question.clone();
+  let explain = question.explanation.clone();
   let pick = RwSignal::new(String::new());
   // 笔记按需展开：收藏列表可能很长，每题都铺开一个输入框会把页面撑得没法浏览。
   let q_note = question.clone();
@@ -62,6 +63,10 @@ pub(super) fn BookmarkCard(
       </div>
       <div class="mt-2 text-xs text-win-text">
         {move || t("exam.answer")} <span class="font-mono">{question.answer_keys.join("、")}</span>
+      </div>
+      // 默认折叠：收藏列表可能很长，解析只在想看时展开。
+      <div class="mt-3">
+        <ExplanationCard explanation=explain />
       </div>
       <div class="mt-3 flex flex-wrap items-center gap-1.5 border-t pt-2">
         <span class="text-xs text-muted-foreground">{move || t("exam.group")}</span>

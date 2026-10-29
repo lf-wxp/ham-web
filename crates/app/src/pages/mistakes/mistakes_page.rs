@@ -1,4 +1,5 @@
 use ham_web_core::categories::{TOP_CATEGORIES, sub_category};
+use ham_web_core::explanation_index::{ExplanationIndex, banks_for};
 use ham_web_core::mistake_book::{
   MASTER_STREAK, MistakeRecord, RecordOutcome, WRONG_CAUSES, cause_stats, interval_buckets,
 };
@@ -10,6 +11,7 @@ use crate::cn::cn;
 use crate::components::common::{
   EmptyState, ExplanationCard, NoteEditor, PageContainer, PageHeader,
 };
+use crate::data;
 use crate::study;
 use crate::ui::{
   Button, ButtonLink, Chip, ChipGroup, NativeSelect, SelectOption, Size, Tooltip, Variant,
@@ -74,6 +76,15 @@ pub fn MistakesPage() -> impl IntoView {
   );
   let records = RwSignal::new(study::load_book().sorted());
   let refresh = move || records.set(study::load_book().sorted());
+  // 题库当前版本的解析索引。错题快照里存的是答错当时的解析，订正后不会自己更新，所以
+  // 展示时一律经它取（`data::snapshot_explanation`）—— 只影响显示，快照与存档原样不动。
+  // 只拉快照涉及的题库，没有错题就一个都不拉；索引没到之前沿用快照，到了之后卡片只换文字，
+  // 已经展开的卡片不会因此被重建而收起。
+  let fresh = RwSignal::new(ExplanationIndex::default());
+  data::spawn_explanation_index(
+    records.with_untracked(|rs| banks_for(rs.iter().map(|r| r.question.id_str()))),
+    fresh,
+  );
   let in_bank = move |m: &MistakeRecord| bank.get().is_none_or(|b| m.in_bank(b));
   let due_count = Memo::new(move |_| {
     let now = now_ms();
@@ -402,6 +413,10 @@ pub fn MistakesPage() -> impl IntoView {
                           }
                         }).collect_view()}
                       </div>
+                      // 揭晓答案后才出现，避免提前泄题；切到下一张卡时整块重建，自动恢复折叠。
+                      <div class="mt-3">
+                        <ExplanationCard explanation=data::snapshot_explanation(fresh.read_only(), q.clone()) />
+                      </div>
                     }
                     .into_any()
                   } else {
@@ -574,7 +589,7 @@ pub fn MistakesPage() -> impl IntoView {
                     })
                   }}
                 </div>
-                {move || feedback.get().is_some().then(|| view! { <ExplanationCard question=expl.clone() /> })}
+                {move || feedback.get().is_some().then(|| view! { <ExplanationCard explanation=data::snapshot_explanation(fresh.read_only(), expl.clone()) /> })}
                 // 答完看到解析后正好是记笔记的时机：把易错点写下来，下次复习时一起出现。
                 {move || {
                   feedback.get().is_some().then(|| {
@@ -836,7 +851,7 @@ pub fn MistakesPage() -> impl IntoView {
                   .get()
                   .into_iter()
                   .filter(|m| (f.is_empty() || top_of(&m.question) == f.as_str()) && in_bank(m))
-                  .map(|m| view! { <MistakeCard record=m now_ms=now on_remove=remove /> })
+                  .map(|m| view! { <MistakeCard record=m now_ms=now fresh=fresh.read_only() on_remove=remove /> })
                   .collect_view()
               }}
             }

@@ -3,6 +3,7 @@
 use ham_web_core::QuestionItem;
 use leptos::prelude::*;
 
+use crate::components::common::ExplanationCard;
 use crate::i18n::t;
 
 /// 一道自测题（独立组件，管理自己的作答状态）。
@@ -28,6 +29,10 @@ pub(super) fn QuizQuestion(q: QuestionItem) -> impl IntoView {
     });
   };
   let answered = move || !selected.get().is_empty();
+  // 解析卡片只关心「有没有作答」这个布尔值：用 Memo 去重，改选项时不会把卡片重建、
+  // 把用户刚展开的解析又收起来（对错提示那一行跟着选项重渲染，不受影响）。
+  let has_answer = Memo::new(move |_| answered());
+  let explain = q.explanation.clone();
   let correct = move || q.is_answer_correct(&selected.get());
 
   view! {
@@ -84,6 +89,16 @@ pub(super) fn QuizQuestion(q: QuestionItem) -> impl IntoView {
               </div>
             }
             .into_any()
+          }
+        })
+      }}
+      // 作答后才出现，避免提前泄题。
+      {move || {
+        has_answer.get().then(|| {
+          view! {
+            <div class="mt-2">
+              <ExplanationCard explanation=explain.clone() />
+            </div>
           }
         })
       }}
