@@ -8,83 +8,182 @@
   -->
   <g transform="scale(0.125)">
     <defs>
-      <!--
-        品牌底色：iOS 口径的竖向渐变（顶部亮 → 底部深），中段压着品牌蓝 #3b5dc9。
-        `cargo make icons` 生成满幅图标（Apple Touch / maskable）时靠 #bg 补出圆角以外的
-        区域，品牌色只写在这一处；改色要连 pwa-maskable.svg 与 favicon-16.svg 一起看。
-      -->
-      <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#5f80ea"/>
-        <stop offset="0.55" stop-color="#3b5dc9"/>
-        <stop offset="1" stop-color="#2d489f"/>
-      </linearGradient>
+      <!-- 轮廓：超椭圆 |x|^5 + |y|^5 = 1（苹果图标的 squircle，不是圆也不是普通圆角矩形），半径 248 -->
+      <path id="sq" d="M 504.00 256.00 C 504.00 292.61 504.58 329.25 503.15 365.83 C 502.70 377.39 501.98 388.95 500.58 400.43 C 499.59 408.65 498.23 416.84 496.27 424.88 C 494.69 431.37 492.69 437.78 490.13 443.95 C 487.91 449.30 485.24 454.50 482.07 459.34 C 479.12 463.85 475.70 468.09 471.90 471.90 C 468.09 475.70 463.85 479.12 459.34 482.07 C 454.50 485.24 449.30 487.91 443.95 490.13 C 437.78 492.69 431.37 494.69 424.88 496.27 C 416.84 498.23 408.65 499.59 400.43 500.58 C 388.95 501.98 377.39 502.70 365.83 503.15 C 329.25 504.58 292.61 504.00 256.00 504.00 C 219.39 504.00 182.75 504.58 146.17 503.15 C 134.61 502.70 123.05 501.98 111.57 500.58 C 103.35 499.59 95.16 498.23 87.12 496.27 C 80.63 494.69 74.22 492.69 68.05 490.13 C 62.70 487.91 57.50 485.24 52.66 482.07 C 48.15 479.12 43.91 475.70 40.10 471.90 C 36.30 468.09 32.88 463.85 29.93 459.34 C 26.76 454.50 24.09 449.30 21.87 443.95 C 19.31 437.78 17.31 431.37 15.73 424.88 C 13.77 416.84 12.41 408.65 11.42 400.43 C 10.02 388.95 9.30 377.39 8.85 365.83 C 7.42 329.25 8.00 292.61 8.00 256.00 C 8.00 219.39 7.42 182.75 8.85 146.17 C 9.30 134.61 10.02 123.05 11.42 111.57 C 12.41 103.35 13.77 95.16 15.73 87.12 C 17.31 80.63 19.31 74.22 21.87 68.05 C 24.09 62.70 26.76 57.50 29.93 52.66 C 32.88 48.15 36.30 43.91 40.10 40.10 C 43.91 36.30 48.15 32.88 52.66 29.93 C 57.50 26.76 62.70 24.09 68.05 21.87 C 74.22 19.31 80.63 17.31 87.12 15.73 C 95.16 13.77 103.35 12.41 111.57 11.42 C 123.05 10.02 134.61 9.30 146.17 8.85 C 182.75 7.42 219.39 8.00 256.00 8.00 C 292.61 8.00 329.25 7.42 365.83 8.85 C 377.39 9.30 388.95 10.02 400.43 11.42 C 408.65 12.41 416.84 13.77 424.88 15.73 C 431.37 17.31 437.78 19.31 443.95 21.87 C 449.30 24.09 454.50 26.76 459.34 29.93 C 463.85 32.88 468.09 36.30 471.90 40.10 C 475.70 43.91 479.12 48.15 482.07 52.66 C 485.24 57.50 487.91 62.70 490.13 68.05 C 492.69 74.22 494.69 80.63 496.27 87.12 C 498.23 95.16 499.59 103.35 500.58 111.57 C 501.98 123.05 502.70 134.61 503.15 146.17 C 504.58 182.75 504.00 219.39 504.00 256.00 Z"/>
+      <clipPath id="face"><use href="#sq"/></clipPath>
 
       <!--
-        玻璃质感三层：
-        - glass：顶部向下的白色反光；
-        - glow：左上受光面的一团柔光；
-        - sheen：斜向扫过玻璃面的一道反射光带。
+        调谐器面板：钴蓝 → 青绿的玻璃底，三道同心电波从右上角扩散，
+        一根琥珀色指针横过只有刻线的频率刻度，右下角是拉丝铝旋钮。
+        四层玻璃（底板 / 弧光盘 / 刻度窗 / 旋钮座）各有自己的毛玻璃填充与边缘折射线。
+        改品牌色时三份源（本文件 / pwa-maskable.svg / favicon-16.svg）要一起看，
+        `icons.rs` 的 art_sources_share_brand_palette 会盯着这件事。
       -->
-      <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#ffffff" stop-opacity="0.3"/>
-        <stop offset="0.42" stop-color="#ffffff" stop-opacity="0"/>
+      <linearGradient id="base" gradientUnits="userSpaceOnUse" x1="40" y1="20" x2="470" y2="500">
+        <stop offset="0" stop-color="#0b3d91"/>
+        <stop offset="0.5" stop-color="#0a5c8c"/>
+        <stop offset="1" stop-color="#0f766e"/>
       </linearGradient>
-      <radialGradient id="glow" cx="0.3" cy="0.14" r="0.55">
-        <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
+      <radialGradient id="glow" gradientUnits="userSpaceOnUse" cx="150" cy="70" r="320">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.11"/>
         <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
       </radialGradient>
-      <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0.42" stop-color="#ffffff" stop-opacity="0"/>
-        <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.1"/>
-        <stop offset="0.58" stop-color="#ffffff" stop-opacity="0"/>
+      <radialGradient id="depth" gradientUnits="userSpaceOnUse" cx="420" cy="470" r="300">
+        <stop offset="0" stop-color="#022b2a" stop-opacity="0.2"/>
+        <stop offset="1" stop-color="#022b2a" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="gloss" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="230">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.12"/>
+        <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
       </linearGradient>
 
-      <!-- iOS 图标的圆角比例：22.37% × 512 ≈ 115 -->
-      <clipPath id="tile"><rect width="512" height="512" rx="115"/></clipPath>
+      <!-- 毛玻璃：白色半透明渐变；边缘折射线：受光边亮、背光边淡 -->
+      <radialGradient id="frostArc" gradientUnits="userSpaceOnUse" cx="446" cy="70" r="160">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.05"/>
+        <stop offset="1" stop-color="#ffffff" stop-opacity="0.15"/>
+      </radialGradient>
+      <linearGradient id="rimArc" gradientUnits="userSpaceOnUse" x1="286" y1="70" x2="446" y2="230">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.42"/>
+        <stop offset="1" stop-color="#ffffff" stop-opacity="0.1"/>
+      </linearGradient>
+      <linearGradient id="frostPlate" gradientUnits="userSpaceOnUse" x1="0" y1="236" x2="0" y2="332">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.26"/>
+        <stop offset="1" stop-color="#ffffff" stop-opacity="0.08"/>
+      </linearGradient>
+      <linearGradient id="rimPlate" gradientUnits="userSpaceOnUse" x1="0" y1="236" x2="0" y2="332">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.7"/>
+        <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.12"/>
+        <stop offset="1" stop-color="#ffffff" stop-opacity="0.3"/>
+      </linearGradient>
+      <radialGradient id="frostSeat" gradientUnits="userSpaceOnUse" cx="366" cy="394" r="76">
+        <stop offset="0.6" stop-color="#ffffff" stop-opacity="0.06"/>
+        <stop offset="1" stop-color="#ffffff" stop-opacity="0.24"/>
+      </radialGradient>
+      <linearGradient id="rimSeat" gradientUnits="userSpaceOnUse" x1="306" y1="334" x2="426" y2="454">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.7"/>
+        <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.1"/>
+        <stop offset="1" stop-color="#ffffff" stop-opacity="0.32"/>
+      </linearGradient>
 
-      <!--
-        塔形：像素块拼的桁架塔，块 32、共 14 行（y 240 → 464）。从上往下是
-        「塔顶机房 → 四条塔腿，每段 3 行、逐段向外收放 16 → 每段底缘一条横档」，
-        腿之间留 32 / 48 / 64 的缝，读起来是镂空的桁架而不是实心金字塔。
-        底座那条横档把两条腿连起来。
-        几何约束：块宽 32 保证 32px 的 favicon.ico 档渲染时杆件仍有 2px 宽。
-        投影与主体共用一个形状。
-      -->
-      <g id="tower">
-        <rect x="244" y="200" width="24" height="32"/>
-        <rect x="232" y="232" width="48" height="16"/>
-        <path d="M 240 248 L 176 472" stroke="currentColor" stroke-width="20" fill="none"/>
-        <path d="M 272 248 L 336 472" stroke="currentColor" stroke-width="20" fill="none"/>
-        <rect x="219" y="320" width="74" height="14"/>
-        <rect x="199" y="392" width="114" height="14"/>
-        <rect x="174" y="456" width="164" height="16"/>
-      </g>
+      <linearGradient id="needle" gradientUnits="userSpaceOnUse" x1="0" y1="190" x2="0" y2="370">
+        <stop offset="0" stop-color="#fbbf24"/>
+        <stop offset="0.55" stop-color="#f59e0b"/>
+        <stop offset="1" stop-color="#e08a06"/>
+      </linearGradient>
+
+      <linearGradient id="alu" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#f8fafc"/>
+        <stop offset="0.5" stop-color="#cbd5e1"/>
+        <stop offset="1" stop-color="#7c8aa0"/>
+      </linearGradient>
+      <linearGradient id="aluRim" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/>
+        <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+        <stop offset="1" stop-color="#475569" stop-opacity="0.5"/>
+      </linearGradient>
+      <linearGradient id="aluFace" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#eef2f7"/>
+        <stop offset="0.55" stop-color="#d3dbe6"/>
+        <stop offset="1" stop-color="#aeb9c9"/>
+      </linearGradient>
+      <clipPath id="knobClip"><circle r="42"/></clipPath>
+
+      <filter id="blur3" x="-30%" y="-10%" width="160%" height="120%"><feGaussianBlur stdDeviation="3"/></filter>
+      <filter id="blur6" x="-60%" y="-10%" width="220%" height="120%"><feGaussianBlur stdDeviation="6"/></filter>
+      <filter id="blur8" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="8"/></filter>
+      <!-- 上下沿静态高光：只落在边缘，上沿强、下沿弱，中段完全不亮 -->
+      <linearGradient id="rimFace" gradientUnits="userSpaceOnUse" x1="0" y1="8" x2="0" y2="504">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/>
+        <stop offset="0.1" stop-color="#ffffff" stop-opacity="0.22"/>
+        <stop offset="0.24" stop-color="#ffffff" stop-opacity="0"/>
+        <stop offset="0.8" stop-color="#ffffff" stop-opacity="0"/>
+        <stop offset="0.92" stop-color="#ffffff" stop-opacity="0.22"/>
+        <stop offset="1" stop-color="#ffffff" stop-opacity="0.55"/>
+      </linearGradient>
+      <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0a2f6e"/>
+        <stop offset="1" stop-color="#053b37"/>
+      </linearGradient>
+      <filter id="blurShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="16"/>
+      </filter>
     </defs>
 
-    <g clip-path="url(#tile)">
-      <rect width="512" height="512" fill="url(#bg)"/>
-      <rect width="512" height="512" fill="url(#glass)"/>
-      <rect width="512" height="512" fill="url(#glow)"/>
+    <!-- 画布外留白 20%：脸缩到 0.82（≈ 80%），下方是边缘厚度与柔和投影 -->
+    <g transform="translate(256 248) scale(0.82) translate(-256 -256)">
+      <use href="#sq" y="26" fill="#03142e" fill-opacity="0.42" filter="url(#blurShadow)"/>
+      <use href="#sq" y="8" fill="url(#edge)"/>
 
-      <!--
-        无线电波：以塔顶 (256,240) 为圆心的三道同心弧，跨角约 144°（两端各落在塔顶
-        下方一点），远弧更细更淡。压在玻璃高光之上 —— 叠在高光下面会被顶部反光冲淡，
-        波就糊了。
-      -->
+      <g clip-path="url(#face)">
+        <rect width="512" height="512" fill="url(#base)"/>
+        <rect width="512" height="512" fill="url(#depth)"/>
+        <rect width="512" height="512" fill="url(#glow)"/>
+        <rect width="512" height="230" fill="url(#gloss)"/>
+
+      <!-- 第二层玻璃：右上角的弧光毛玻璃盘，电波从这个角往左下扩散 -->
+      <circle cx="446" cy="70" r="160" fill="url(#frostArc)"/>
+      <circle cx="446" cy="70" r="160" fill="none" stroke="url(#rimArc)" stroke-width="2"/>
+      <circle cx="446" cy="70" r="153" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="2"/>
+
+      <!-- 广播电波：三道同心细弧，圆心在右上角，没有圆心点 —— 不是 Wi-Fi 的「点 + 扇弧」 -->
       <g fill="none" stroke="#ffffff" stroke-linecap="round">
-        <path d="M 179.9 207.28 A 80 80 0 0 1 332.1 207.28" stroke-width="14" stroke-opacity="0.6"/>
-        <path d="M 126.7 190.03 A 136 136 0 0 1 385.3 190.03" stroke-width="11" stroke-opacity="0.44"/>
-        <path d="M 73.4 172.67 A 192 192 0 0 1 438.6 172.67" stroke-width="8" stroke-opacity="0.32"/>
+      <path d="M 434.9 133.0 A 64 64 0 0 1 383.0 81.1" stroke-width="9" stroke-opacity="0.96"/>
+      <path d="M 427.9 172.4 A 104 104 0 0 1 343.6 88.1" stroke-width="7.5" stroke-opacity="0.78"/>
+      <path d="M 421.0 211.8 A 144 144 0 0 1 304.2 95.0" stroke-width="6" stroke-opacity="0.58"/>
       </g>
 
-      <rect width="512" height="512" fill="url(#sheen)"/>
+      <!-- 第三层玻璃：频率刻度的毛玻璃窗 -->
+      <rect x="52" y="236" width="408" height="96" rx="30" fill="url(#frostPlate)"/>
+      <rect x="53" y="237" width="406" height="94" rx="29" fill="none" stroke="url(#rimPlate)" stroke-width="2"/>
+      <rect x="55" y="327" width="402" height="2" rx="1" fill="#04162f" fill-opacity="0.18"/>
 
-      <!-- 塔：深蓝投影在下、白色主体在上，浮出玻璃面 -->
-      <use href="#tower" y="10" fill="#0e1c4d" color="#0e1c4d" opacity="0.42"/>
-      <use href="#tower" fill="#ffffff" color="#ffffff"/>
+      <!-- 刻度：先画一层偏移的青色折射影，再画主刻度；只有刻线，没有数字 -->
+      <g fill="none" stroke="#7dd3fc" stroke-opacity="0.28" stroke-linecap="round">
+        <path d="M 77.5 264.5 V 316.5 M 137.5 264.5 V 316.5 M 197.5 264.5 V 316.5 M 257.5 264.5 V 316.5 M 317.5 264.5 V 316.5 M 377.5 264.5 V 316.5 M 437.5 264.5 V 316.5" stroke-width="4"/>
+        <path d="M 89.5 286.5 V 316.5 M 101.5 286.5 V 316.5 M 113.5 286.5 V 316.5 M 125.5 286.5 V 316.5 M 149.5 286.5 V 316.5 M 161.5 286.5 V 316.5 M 173.5 286.5 V 316.5 M 185.5 286.5 V 316.5 M 209.5 286.5 V 316.5 M 221.5 286.5 V 316.5 M 233.5 286.5 V 316.5 M 245.5 286.5 V 316.5 M 269.5 286.5 V 316.5 M 281.5 286.5 V 316.5 M 293.5 286.5 V 316.5 M 305.5 286.5 V 316.5 M 329.5 286.5 V 316.5 M 341.5 286.5 V 316.5 M 353.5 286.5 V 316.5 M 365.5 286.5 V 316.5 M 389.5 286.5 V 316.5 M 401.5 286.5 V 316.5 M 413.5 286.5 V 316.5 M 425.5 286.5 V 316.5" stroke-width="3"/>
+      </g>
+      <g fill="none" stroke="#ffffff" stroke-linecap="round">
+        <path d="M 76 262 V 314 M 136 262 V 314 M 196 262 V 314 M 256 262 V 314 M 316 262 V 314 M 376 262 V 314 M 436 262 V 314" stroke-width="4" stroke-opacity="0.95"/>
+        <path d="M 88 284 V 314 M 100 284 V 314 M 112 284 V 314 M 124 284 V 314 M 148 284 V 314 M 160 284 V 314 M 172 284 V 314 M 184 284 V 314 M 208 284 V 314 M 220 284 V 314 M 232 284 V 314 M 244 284 V 314 M 268 284 V 314 M 280 284 V 314 M 292 284 V 314 M 304 284 V 314 M 328 284 V 314 M 340 284 V 314 M 352 284 V 314 M 364 284 V 314 M 388 284 V 314 M 400 284 V 314 M 412 284 V 314 M 424 284 V 314" stroke-width="3" stroke-opacity="0.62"/>
+      </g>
+
+      <!-- 琥珀色调谐指针：柔光、投影、本体、左缘高光 -->
+      <line x1="208.2" y1="190" x2="186.2" y2="370" stroke="#f59e0b" stroke-width="18" stroke-linecap="round" stroke-opacity="0.32" filter="url(#blur6)"/>
+      <line x1="215.2" y1="199" x2="193.2" y2="379" stroke="#04162f" stroke-width="8" stroke-linecap="round" stroke-opacity="0.34" filter="url(#blur3)"/>
+      <line x1="208.2" y1="190" x2="186.2" y2="370" stroke="url(#needle)" stroke-width="9" stroke-linecap="round"/>
+      <line x1="206.6" y1="196" x2="184.6" y2="362" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-opacity="0.55"/>
+
+      <!-- 第四层玻璃：旋钮底座的毛玻璃圆台 -->
+      <circle cx="366" cy="394" r="76" fill="url(#frostSeat)"/>
+      <circle cx="366" cy="394" r="75" fill="none" stroke="url(#rimSeat)" stroke-width="2"/>
+
+      <!-- 拉丝铝旋钮 -->
+      <ellipse cx="371" cy="414" rx="56" ry="48" fill="#021a3a" fill-opacity="0.5" filter="url(#blur8)"/>
+      <g transform="translate(366 394)">
+        <circle r="56" fill="url(#alu)"/>
+        <circle r="51" fill="none" stroke="#334155" stroke-opacity="0.38" stroke-width="8" stroke-dasharray="2.67 2.67"/>
+        <circle r="56" fill="none" stroke="url(#aluRim)" stroke-width="2.5"/>
+        <circle r="42" fill="url(#aluFace)"/>
+        <g fill="none" stroke-width="1.1">
+          <circle r="6" stroke="#ffffff" stroke-opacity="0.55"/>
+          <circle r="10" stroke="#64748b" stroke-opacity="0.16"/>
+          <circle r="14" stroke="#ffffff" stroke-opacity="0.55"/>
+          <circle r="18" stroke="#64748b" stroke-opacity="0.16"/>
+          <circle r="22" stroke="#ffffff" stroke-opacity="0.55"/>
+          <circle r="26" stroke="#64748b" stroke-opacity="0.16"/>
+          <circle r="30" stroke="#ffffff" stroke-opacity="0.55"/>
+          <circle r="34" stroke="#64748b" stroke-opacity="0.16"/>
+          <circle r="38" stroke="#ffffff" stroke-opacity="0.55"/>
+        </g>
+        <g clip-path="url(#knobClip)" fill="#ffffff">
+          <path d="M 0 0 L 7.6 -43.3 L 28.3 -33.7 Z" fill-opacity="0.32"/>
+          <path d="M 0 0 L -7.6 43.3 L -28.3 33.7 Z" fill-opacity="0.26"/>
+        </g>
+        <circle r="42" fill="none" stroke="#475569" stroke-opacity="0.35" stroke-width="1.5"/>
+        <line x1="-9.8" y1="-13.9" x2="-18.9" y2="-27.0" stroke="#334155" stroke-width="5" stroke-linecap="round"/>
+      </g>
+        <use href="#sq" fill="none" stroke="url(#rimFace)" stroke-width="7"/>
+      </g>
     </g>
-
-    <!-- 玻璃边缘的高光细线 -->
-    <rect x="1" y="1" width="510" height="510" rx="114" fill="none" stroke="#ffffff" stroke-opacity="0.42" stroke-width="2"/>
   </g>
 </svg>

@@ -5,26 +5,38 @@
     通知栏 badge 的设计源：96 × 96、透明底、纯白图形。
 
     Android 把一个 badge 当作 alpha 掩膜处理 —— 只取透明度、按系统栏颜色重新上色，
-    所以这里不能有品牌蓝底或渐变（那会被渲染成一个实心圆角方块）。图形直接取
-    favicon-16.svg 的 16px 像素稿，按 6 倍放大并居中（16 × 6 = 96 的整数倍，
-    每个方块都落在整像素上，不会出现灰边）。
+    所以这里不能有品牌色底或渐变（那会被渲染成一个实心圆角方块）。图形直接取
+    favicon-16.svg 的 16px 像素稿（去掉底色与刻度窗，指针、旋钮、电波、刻线全部纯白），
+    按 6 倍放大并居中（16 × 6 = 96 的整数倍，每个方块都落在整像素上，不会出现灰边）。
+    图形占 x 2…15、y 1…14，所以向左平移一格（-6）后水平居中。
   -->
-  <g transform="translate(0 6) scale(6)" fill="#ffffff">
+  <g transform="translate(-6 0) scale(6)" fill="#ffffff">
     <!-- 电波 -->
-    <rect x="7" y="1" width="2" height="1"/>
-    <rect x="5" y="2" width="2" height="1"/>
-    <rect x="9" y="2" width="2" height="1"/>
-    <rect x="3" y="3" width="2" height="1"/>
-    <rect x="11" y="3" width="2" height="1"/>
-    <!-- 塔 -->
-    <rect x="7" y="4" width="2" height="1"/>
-    <rect x="6" y="5" width="4" height="1"/>
-    <rect x="5" y="6" width="2" height="2"/>
-    <rect x="9" y="6" width="2" height="2"/>
-    <rect x="4" y="8" width="8" height="1"/>
-    <rect x="4" y="9" width="2" height="2"/>
-    <rect x="10" y="9" width="2" height="2"/>
-    <rect x="3" y="11" width="10" height="1"/>
-    <rect x="2" y="12" width="12" height="1"/>
+    <rect x="13" y="1" width="1" height="1"/>
+    <rect x="13" y="2" width="1" height="1"/>
+    <rect x="14" y="3" width="2" height="1"/>
+    <rect x="10" y="1" width="1" height="1"/>
+    <rect x="10" y="2" width="1" height="1"/>
+    <rect x="11" y="3" width="1" height="1"/>
+    <rect x="12" y="4" width="1" height="1"/>
+    <rect x="13" y="5" width="2" height="1"/>
+    <rect x="8" y="1" width="1" height="1"/>
+    <rect x="8" y="2" width="1" height="1"/>
+    <rect x="8" y="3" width="1" height="1"/>
+    <rect x="9" y="4" width="1" height="1"/>
+    <rect x="10" y="5" width="1" height="1"/>
+    <rect x="11" y="6" width="1" height="1"/>
+    <rect x="12" y="7" width="2" height="1"/>
+    <!-- 刻线 -->
+    <rect x="2" y="10" width="1" height="3"/>
+    <rect x="4" y="11" width="1" height="2"/>
+    <!-- 指针 -->
+    <rect x="6" y="6" width="2" height="9"/>
+    <!-- 旋钮 -->
+    <rect x="11" y="10" width="3" height="1"/>
+    <rect x="10" y="11" width="5" height="1"/>
+    <rect x="10" y="12" width="5" height="1"/>
+    <rect x="10" y="13" width="5" height="1"/>
+    <rect x="11" y="14" width="3" height="1"/>
   </g>
 </svg>

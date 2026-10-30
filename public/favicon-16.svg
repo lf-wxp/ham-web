@@ -3,36 +3,56 @@
   <title>业余无线电</title>
   <defs>
     <!--
-      小尺寸专用图形：与 pwa-icon.svg 同一套构图（圆角、塔 + 上方电波），但整像素双色 ——
-      16px 上渐变与细弧会被插值成灰边，只有实色块才立得住；`icons.rs` 的
-      favicon_16_stays_crisp 与圆角检查都盯着这点。
+      小尺寸专用图形：与 pwa-icon.svg 同一套构图（调谐器面板：右上角电波、刻度窗、琥珀指针、
+      右下旋钮），但整像素实色 —— 16px 上渐变、毛玻璃与细弧会被插值成灰边，只有实色块才立得住；
+      `icons.rs` 的 favicon_16_stays_crisp 盯着这点。
 
       ico 的 16 与 32 两档都用这一份（32 档按 2 倍整数放大，仍是整像素）。
-      塔：天线针（2 宽）→ 顶板（4 宽）→ 两条塔腿逐级外张 → 两条横档 → 底座。
-      底色是母版 #bg 的中段（品牌蓝），改母版时要连这版一起看。
+      底色是母版 #base 钴蓝 → 青绿渐变的中段 #0a5c8c；刻度窗是它叠 18% 白后的实色。
+      改母版时要连这版一起看。
     -->
-    <clipPath id="tile"><rect width="16" height="16" rx="3"/></clipPath>
+    <clipPath id="tile"><rect width="16" height="16" rx="3.5"/></clipPath>
   </defs>
 
   <g clip-path="url(#tile)">
-    <rect width="16" height="16" fill="#3b5dc9"/>
+    <rect width="16" height="16" fill="#0a5c8c"/>
+    <!-- 刻度窗（毛玻璃的实色稿） -->
+    <rect x="1" y="9" width="14" height="5" fill="#3679a1"/>
     <g fill="#ffffff">
-      <!-- 电波（母版三道同心弧的像素化） -->
-      <rect x="7" y="1" width="2" height="1"/>
-      <rect x="5" y="2" width="2" height="1"/>
-      <rect x="9" y="2" width="2" height="1"/>
-      <rect x="3" y="3" width="2" height="1"/>
-      <rect x="11" y="3" width="2" height="1"/>
-      <!-- 塔 -->
-      <rect x="7" y="4" width="2" height="1"/>
-      <rect x="6" y="5" width="4" height="1"/>
-      <rect x="5" y="6" width="2" height="2"/>
-      <rect x="9" y="6" width="2" height="2"/>
-      <rect x="4" y="8" width="8" height="1"/>
-      <rect x="4" y="9" width="2" height="2"/>
-      <rect x="10" y="9" width="2" height="2"/>
-      <rect x="3" y="11" width="10" height="1"/>
-      <rect x="2" y="12" width="12" height="1"/>
+      <!-- 电波：三道同心台阶弧，圆心在右上角 -->
+      <rect x="13" y="1" width="1" height="1"/>
+      <rect x="13" y="2" width="1" height="1"/>
+      <rect x="14" y="3" width="2" height="1"/>
+      <rect x="10" y="1" width="1" height="1"/>
+      <rect x="10" y="2" width="1" height="1"/>
+      <rect x="11" y="3" width="1" height="1"/>
+      <rect x="12" y="4" width="1" height="1"/>
+      <rect x="13" y="5" width="2" height="1"/>
+      <rect x="8" y="1" width="1" height="1"/>
+      <rect x="8" y="2" width="1" height="1"/>
+      <rect x="8" y="3" width="1" height="1"/>
+      <rect x="9" y="4" width="1" height="1"/>
+      <rect x="10" y="5" width="1" height="1"/>
+      <rect x="11" y="6" width="1" height="1"/>
+      <rect x="12" y="7" width="2" height="1"/>
+      <!-- 刻线 -->
+      <rect x="2" y="10" width="1" height="3"/>
+      <rect x="4" y="11" width="1" height="2"/>
+    </g>
+    <!-- 琥珀指针 -->
+    <rect x="6" y="6" width="2" height="9" fill="#f59e0b"/>
+    <!-- 铝旋钮 -->
+    <g fill="#e2e8f0">
+      <rect x="11" y="10" width="3" height="1"/>
+      <rect x="10" y="11" width="5" height="1"/>
+      <rect x="10" y="12" width="5" height="1"/>
+      <rect x="10" y="13" width="5" height="1"/>
+      <rect x="11" y="14" width="3" height="1"/>
+    </g>
+    <g fill="#94a3b8">
+      <rect x="14" y="12" width="1" height="1"/>
+      <rect x="14" y="13" width="1" height="1"/>
+      <rect x="13" y="14" width="1" height="1"/>
     </g>
   </g>
 </svg>
