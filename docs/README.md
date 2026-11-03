@@ -22,6 +22,7 @@
 | 提交前要跑什么 | [`engineering/code-quality.md`](engineering/code-quality.md) §2 |
 | 新增解码器 / worker 错误码 | [`domain/decode-worker-protocol.md`](domain/decode-worker-protocol.md) |
 | 新增本地存储 key | [`reference/storage.md`](reference/storage.md)（并在 `core/remote_sync.rs` 的 `every_documented_key_is_classified` 里归类） |
+| 动同步（自定义远端 / 在线账号）、账号接口、数据库表 | [`domain/account-sync.md`](domain/account-sync.md) |
 | 为什么这么设计 / 这条规则怎么来的 | [`ui/decisions.md`](ui/decisions.md)（含颜色 / 几何 / 字体这些视觉语言的来历，§11） |
 
 ## 文档分类
@@ -60,6 +61,7 @@
 | [`engineering/deployment.md`](engineering/deployment.md) | 本地开发细节、生产构建、Docker、环境变量、Web Push | 构建与部署 |
 | [`engineering/code-quality.md`](engineering/code-quality.md) | **代码质量规范**：分层边界、单一来源、**门禁一览（§2）**、问题分级与证据口径、分范围检查清单 | 提交前 / 做审查 |
 | [`engineering/licensing.md`](engineering/licensing.md) | 许可、第三方声明、GPL 例外与部署方义务 | 引入依赖 / 字体 / 分发 |
+| [`engineering/review-account-sync.md`](engineering/review-account-sync.md) | 在线账号改动的审查问题与整改追踪（按 `code-quality.md` §1.3 模板；**全部关闭后删除**） | 复核 / 接手账号同步的整改 |
 
 ### data / 数据与内容
 
@@ -78,7 +80,7 @@
 | --- | --- | --- |
 | [`reference/features.md`](reference/features.md) | 完整功能清单（README「功能一览」的逐条版） | 查某个功能有没有 / 限制是什么 |
 | [`reference/routes.md`](reference/routes.md) | 完整路由表与带参数页面（由注册表派生） | 查路径 |
-| [`reference/storage.md`](reference/storage.md) | 本地存储 key 一览与自定义远端自动同步的约束 | 查 / 加存储 key |
+| [`reference/storage.md`](reference/storage.md) | 本地存储 key 一览与自动同步（两条通道）的约束 | 查 / 加存储 key |
 | [`reference/api.md`](reference/api.md) | 后端接口：同源代理与开放 API（`/api/v1/*`） | 对接后端 |
 
 ### domain / 领域功能
@@ -89,6 +91,7 @@
 | [`domain/hardware-verification.md`](domain/hardware-verification.md) | 真机验收：单测与假串口只算「待验」，真机记录才叫「已验证」 | 动串口 / 外部格式 |
 | [`domain/antenna-coverage.md`](domain/antenna-coverage.md) | 天线方向增益 × DXCC 实体的口径与实现（口径是「方向增益」，不是覆盖 / 可达） | 动天线分析 |
 | [`domain/pwa.md`](domain/pwa.md) | PWA：Service Worker 生成、缓存策略、更新提示、图标 | 动离线 / 缓存 |
+| [`domain/account-sync.md`](domain/account-sync.md) | 在线账号与同步通道：与自定义远端怎么共存、基线与冲突、SQLite 表结构、安全、Docker 持久化 | 动同步 / 账号 / 部署数据卷 |
 
 另有：[`ROADMAP.md`](../ROADMAP.md)（还没做的、刻意不做的、新增内容必须过的门禁）、[`images/`](images/)（README 截图）。
 

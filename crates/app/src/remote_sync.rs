@@ -13,6 +13,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use ham_web_core::account::ErrorCode;
 use ham_web_core::backup_merge::backup_size_is_supported;
 use ham_web_core::remote_sync::{
   Fingerprint, HeaderError, PullOutcome, RemoteSyncConfig, STORAGE_KEY, UrlError, check_url,
@@ -71,19 +72,33 @@ fn modules(cfg: &RemoteSyncConfig) -> BackupModules {
   BackupModules::for_sync(!cfg.exclude_qsl_images)
 }
 
+/// 按这份配置生成同步内容后的本机指纹（不发请求）。
+///
+/// 用来判断「本机与远端其实已经一样」：从没同步过的通道遇到远端有数据时，内容相同就不必让用户选。
+pub async fn local_fingerprint(cfg: &RemoteSyncConfig) -> Option<Fingerprint> {
+  crate::util::build_sync_backup(modules(cfg))
+    .await
+    .ok()
+    .map(|map| fingerprint(&map))
+}
+
 /// 一次远端请求失败的原因。
-enum SyncError {
+///
+/// 自定义远端与在线账号两条通道共用（账号通道的 HTTP 在 `crate::account_sync`）。
+pub(crate) enum SyncError {
   Url(UrlError),
   Headers(HeaderError),
   Network(String),
   Timeout,
   Http(u16),
   TooLarge,
+  /// 在线账号服务返回了带错误码的 JSON 错误。
+  Account(ErrorCode),
 }
 
 impl SyncError {
   /// 面向用户的说明。
-  fn message(&self) -> String {
+  pub(crate) fn message(&self) -> String {
     match self {
       Self::Url(e) => url_message(*e),
       Self::Headers(e) => headers_message(*e),
@@ -91,14 +106,19 @@ impl SyncError {
       Self::Timeout => t("tools.remote-timeout"),
       Self::Http(status) => tf("tools.remote-http-error", &[&status.to_string()]),
       Self::TooLarge => t("tools.remote-response-too-large"),
+      Self::Account(code) => crate::account_sync::error_message(*code),
     }
   }
 
   /// 过一会儿再试有没有可能成功：网络 / 超时 / 服务端 5xx 是；地址、请求头、令牌、体积不对不是。
-  fn retryable(&self) -> bool {
+  ///
+  /// 账号通道里：服务器内部错误值得重试；没登录 / 会话过期、云端已被别处更新、换了账号都要
+  /// 用户处理，重试多少次都一样。
+  pub(crate) fn retryable(&self) -> bool {
     match self {
       Self::Network(_) | Self::Timeout => true,
       Self::Http(status) => is_retryable_status(*status),
+      Self::Account(code) => matches!(code, ErrorCode::Internal | ErrorCode::TooManyAttempts),
       Self::Url(_) | Self::Headers(_) | Self::TooLarge => false,
     }
   }
@@ -184,17 +204,22 @@ fn multipart_file(json: &str) -> Result<web_sys::FormData, JsValue> {
 /// 带请求体时（写入）是 `multipart/form-data`，由 [`multipart_file`] 构造。`Content-Type` 只能
 /// 由浏览器生成（值里要有 boundary），所以用户请求头里的 `Content-Type` 在这种请求里被忽略，
 /// 见 [`is_content_type_header`]；GET 没有请求体，用户的头原样发出。
-async fn request(
+pub(crate) async fn request(
   method: &str,
   url: &str,
   headers: &[(String, String)],
-  body: Option<web_sys::FormData>,
+  body: Option<JsValue>,
   timeout_ms: i32,
 ) -> Result<(u16, String), SyncError> {
   let net = |e: JsValue| SyncError::Network(js_error_message(&e));
   let header_map = Headers::new().map_err(net)?;
+  // 只有 `multipart/form-data` 的 `Content-Type` 必须由浏览器生成（带 boundary）；
+  // 其余请求体（账号接口的 JSON）的类型头由调用方自己定。
+  let is_form = body
+    .as_ref()
+    .is_some_and(|b| b.is_instance_of::<web_sys::FormData>());
   for (name, value) in headers {
-    if body.is_some() && is_content_type_header(name) {
+    if is_form && is_content_type_header(name) {
       continue;
     }
     header_map.set(name, value).map_err(net)?;
@@ -286,10 +311,30 @@ pub enum PullResult {
 ///
 /// `merge` 为真时走「合并导入」（并集 / 累加），否则整体覆盖。错误已是带前缀的界面文案。
 pub async fn pull(cfg: &RemoteSyncConfig, merge: bool) -> Result<PullResult, String> {
-  let Fetched::Data(body) = fetch(cfg, TIMEOUT_MS).await? else {
+  let fetched = fetch(cfg, TIMEOUT_MS).await?;
+  import_fetched(
+    fetched,
+    merge,
+    "tools.remote-pull-failed",
+    "tools.remote-not-a-backup",
+  )
+  .await
+}
+
+/// 把取回的内容恢复到本机（两条通道共用）。
+///
+/// `fail_key` 是「获取失败：{}」那条词条、`not_a_backup_key` 是「内容不是有效备份」那条
+/// （自定义远端叫「远端」、账号通道叫「云端」）；词条 key 由调用点以字面量传入，静态扫描才认得出。
+pub(crate) async fn import_fetched(
+  fetched: Fetched,
+  merge: bool,
+  fail_key: &str,
+  not_a_backup_key: &str,
+) -> Result<PullResult, String> {
+  let Fetched::Data(body) = fetched else {
     return Ok(PullResult::Empty);
   };
-  let fp = fingerprint_of(&body)?;
+  let fp = fingerprint_json(&body).ok_or_else(|| tf(fail_key, &[&t(not_a_backup_key)]))?;
   let result = if merge {
     crate::util::import_backup_merge(&body).await
   } else {
@@ -297,7 +342,7 @@ pub async fn pull(cfg: &RemoteSyncConfig, merge: bool) -> Result<PullResult, Str
   };
   result
     .map(|count| PullResult::Imported { count, fp })
-    .map_err(|e| tf("tools.remote-pull-failed", &[&e]))
+    .map_err(|e| tf(fail_key, &[&e]))
 }
 
 /// 一次成功写出的结果。
@@ -321,7 +366,7 @@ pub struct PushError {
 
 impl PushError {
   /// 重试无益的失败（本机数据或配置本身的问题）。
-  fn permanent(message: String) -> Self {
+  pub(crate) fn permanent(message: String) -> Self {
     Self {
       message,
       retryable: false,
@@ -332,6 +377,17 @@ impl PushError {
     let fail = tf("tools.remote-push-failed", &[&e.message()]);
     Self {
       message: fail,
+      retryable: e.retryable(),
+    }
+  }
+
+  /// 账号通道的写入失败：文案前缀换成「云端」。
+  pub(crate) fn from_account(e: &SyncError) -> Self {
+    Self {
+      message: tf(
+        "tools.account-push-failed",
+        &[&crate::account_sync::describe(e)],
+      ),
       retryable: e.retryable(),
     }
   }
@@ -378,9 +434,15 @@ async fn send(cfg: &RemoteSyncConfig, built: Built) -> Result<Pushed, PushError>
   // 下面的 await 会持续整个上传：map 与 json 的内容此时已经在 `form` 里，不要让它们陪到响应回来。
   drop(json);
   drop(map);
-  let (status, _) = request(cfg.method.as_str(), &url, &headers, Some(form), TIMEOUT_MS)
-    .await
-    .map_err(|e| PushError::from_sync(&e))?;
+  let (status, _) = request(
+    cfg.method.as_str(),
+    &url,
+    &headers,
+    Some(form.into()),
+    TIMEOUT_MS,
+  )
+  .await
+  .map_err(|e| PushError::from_sync(&e))?;
   if (200..300).contains(&status) {
     Ok(Pushed { count, fp })
   } else {

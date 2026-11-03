@@ -1,22 +1,17 @@
 use ham_web_core::remote_sync::{RemoteSyncConfig, WriteMethod};
+use ham_web_core::sync_channel::SyncChannel;
 use leptos::prelude::*;
-use leptos::task::spawn_local;
 
-use crate::auto_sync::AutoStatus;
-use crate::i18n::{t, tf, tp};
-use crate::remote_sync::{self, PullResult};
+use crate::i18n::t;
+use crate::remote_sync;
 use crate::ui::{
   Button, Checkbox, ConfirmTone, Field, Input, InputType, SelectOption, SimpleSelect, Textarea,
-  ToastKind, Variant,
+  Variant,
 };
 
-/// 三个同步动作。
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Action {
-  PullOverwrite,
-  PullMerge,
-  Push,
-}
+use super::auto_sync_switch::AutoSyncSwitch;
+use super::sync_runner::{SyncAction, use_sync_runner};
+use super::sync_status_line::SyncStatusLine;
 
 /// 改配置并立即落盘：字段很少、体积很小，逐次保存比再配一个「保存」按钮少一种中间状态。
 fn edit(cfg: RwSignal<RemoteSyncConfig>, apply: impl FnOnce(&mut RemoteSyncConfig)) {
@@ -39,10 +34,6 @@ pub(super) fn RemoteSyncPanel(
   on_done: Callback<()>,
 ) -> impl IntoView {
   let cfg = RwSignal::new(remote_sync::config());
-  let auto_status = crate::auto_sync::status();
-  let alive = StoredValue::new(crate::util::mount_guard());
-  let log_store = crate::pages::log::use_log_store();
-
   let get_error = Signal::derive(move || {
     cfg
       .with(|c| remote_sync::url_error(&c.get_url))
@@ -79,62 +70,7 @@ pub(super) fn RemoteSyncPanel(
       || !put_headers_error.get().is_empty()
   });
 
-  let run = move |action: Action| {
-    let Some(task) = crate::util::begin_backup_task(log_store.backup_busy) else {
-      return;
-    };
-    syncing.set(true);
-    let config = cfg.get_untracked();
-    let alive = alive.get_value();
-    spawn_local(async move {
-      let (kind, text) = match action {
-        Action::Push => match remote_sync::push(&config).await {
-          Ok(pushed) => {
-            // 写出的总是完整快照，远端现在就等于本机，可以当自动同步的基线。
-            crate::auto_sync::note_pushed(pushed.fp);
-            (
-              ToastKind::Success,
-              tp(
-                "tools.remote-pushed",
-                pushed.count as u32,
-                &[&pushed.count.to_string()],
-              ),
-            )
-          }
-          Err(e) => (ToastKind::Error, e),
-        },
-        Action::PullOverwrite | Action::PullMerge => {
-          let merge = action == Action::PullMerge;
-          let outcome = remote_sync::pull(&config, merge).await;
-          // 恢复可能写了一半才失败，所以无论成败都把日志 Store 对齐到存储（与手动导入一致）。
-          if !matches!(outcome, Ok(PullResult::Empty)) {
-            log_store.refresh_from_storage().await;
-          }
-          match outcome {
-            Ok(PullResult::Empty) => (ToastKind::Info, t("tools.remote-no-data")),
-            Ok(PullResult::Imported { count: n, fp }) => {
-              crate::auto_sync::note_pulled(fp, merge);
-              // 与手动导入同一套词条（走语义 key + `tp`，见 `backup_tool.rs` 的同类注释）。
-              let msg = if merge {
-                tp("settings.merged-items", n as u32, &[&n.to_string()])
-              } else {
-                tp("tools.restored-records", n as u32, &[&n.to_string()])
-              };
-              (ToastKind::Success, msg)
-            }
-            Err(e) => (ToastKind::Error, e),
-          }
-        }
-      };
-      drop(task);
-      if !alive() {
-        return;
-      }
-      syncing.set(false);
-      crate::ui::push(kind, text);
-      on_done.run(());
-    });
-  };
+  let run = use_sync_runner(SyncChannel::Custom, busy, syncing, on_done);
 
   // 覆盖会丢掉本机尚未同步出去的改动，而地址配错也会拉回别人的数据：先确认一次。
   let ask_overwrite = move |_| {
@@ -143,7 +79,7 @@ pub(super) fn RemoteSyncPanel(
       t("tools.remote-pull-overwrite-desc"),
       t("tools.remote-pull-overwrite"),
       ConfirmTone::Danger,
-      Callback::new(move |()| run(Action::PullOverwrite)),
+      Callback::new(move |()| run.run(SyncAction::PullOverwrite)),
     );
   };
 
@@ -153,7 +89,7 @@ pub(super) fn RemoteSyncPanel(
     .collect();
 
   view! {
-    <div class="space-y-3 border bg-inset p-3">
+    <div class="space-y-3 border bg-inset p-3" data-testid="remote-sync-panel">
       // 像素风保持 `pxl-label`（它没有标题栏，与相邻的 `bg-inset` 块是一体的）；
       // 现代风换成区块标题，否则这一屏里只有它会落回点阵字体。
       <h2 class=if crate::kit::is_modern_at_mount() { "md-section-title" } else { "pxl-label text-base" }>
@@ -275,20 +211,11 @@ pub(super) fn RemoteSyncPanel(
 
       <p class="text-xs text-muted-foreground">{move || t("tools.remote-protocol-hint")}</p>
       <p class="text-xs text-muted-foreground">{move || t("tools.remote-auto-hint")}</p>
-      {move || {
-        let (text, is_problem) = match auto_status.get() {
-          AutoStatus::Off => return None,
-          AutoStatus::Syncing => (t("tools.remote-auto-syncing"), false),
-          AutoStatus::Synced(at) => (tf("tools.remote-auto-synced", &[&at]), false),
-          AutoStatus::Conflict => (t("tools.remote-auto-conflict"), true),
-          AutoStatus::NeedsFirstPush => (t("tools.remote-auto-first-push"), true),
-          AutoStatus::PullFailed(e) => (tf("tools.remote-auto-pull-paused", &[&e]), true),
-          AutoStatus::PushFailed(e) => (tf("tools.remote-auto-push-retry", &[&e]), true),
-          AutoStatus::PushPaused(e) => (tf("tools.remote-auto-push-paused", &[&e]), true),
-        };
-        let class = if is_problem { "text-xs text-hp-text" } else { "text-xs" };
-        Some(view! { <p role="status" class=class>{text}</p> })
-      }}
+      <AutoSyncSwitch
+        channel=SyncChannel::Custom
+        disabled=Signal::derive(move || !cfg.with(|c| c.can_pull() || c.can_push()))
+      />
+      <SyncStatusLine channel=SyncChannel::Custom />
 
       <div class="flex flex-wrap items-center gap-2">
         <Button
@@ -303,7 +230,7 @@ pub(super) fn RemoteSyncPanel(
           variant=Variant::Outline
           class=crate::kit::btn_wrap_class()
           disabled=pull_disabled
-          on_click=Callback::new(move |()| run(Action::PullMerge))
+          on_click=Callback::new(move |()| run.run(SyncAction::PullMerge))
         >
           {move || t("tools.remote-pull-merge")}
         </Button>
@@ -311,7 +238,7 @@ pub(super) fn RemoteSyncPanel(
           variant=Variant::Default
           class=crate::kit::btn_wrap_class()
           disabled=push_disabled
-          on_click=Callback::new(move |()| run(Action::Push))
+          on_click=Callback::new(move |()| run.run(SyncAction::Push))
         >
           {move || t("tools.remote-push")}
         </Button>

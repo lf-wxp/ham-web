@@ -4,6 +4,7 @@
 //! 与构建/维护工具（`ham-web-tools`）使用，保证两端的题目格式、内容指纹、
 //! 考试规则与分类体系完全一致。
 
+pub mod account;
 pub mod achievements;
 pub mod activation_export;
 pub mod adif;
@@ -235,6 +236,7 @@ pub mod station;
 pub mod stub_match;
 pub mod study_plan;
 pub mod swl;
+pub mod sync_channel;
 pub mod tdr;
 pub mod text;
 pub mod toast_queue;

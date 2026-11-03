@@ -64,10 +64,17 @@
 | `exam:last-review` | 上次考后复盘的题目与作答（解析同 `mistake-book`：展示时以题库当前版本为准，存档里的只在题库认不出这道题时兜底） |
 | `remote-sync` | 自定义远端同步配置（获取 / 写入接口地址、写入方法，以及获取、写入**各自一份**请求头，读写可用不同令牌；是否去掉 QSL 影像）；令牌明文只存本机，**不进备份**，见下 |
 | `remote-sync-state` | 自动同步状态：`base`（上次同步成功时远端内容的指纹）、`dirty`（本机有没写出去的改动）；**不进备份** |
+| `account-sync-state` | 在线账号通道的同步状态，形状同 `remote-sync-state`，另有 `owner`（这条基线属于哪个账号 id）；与自定义远端**各存各的**，互不覆盖；**不进备份** |
+| `account-sync-options` | 在线账号通道的同步选项（是否去掉 QSL 影像）；与 `remote-sync` 里的同名开关各管各的；**不进备份** |
+| `sync-channel` | 自动同步用哪条通道（`custom` / `account` / `off`）；没有这个 key = 没选过，按「配了自定义接口就用它」处理；**不进备份** |
 
 > 通联日志（`logbook`）可能超过 localStorage 5MB 配额：日志改由 `IndexedDB` 权威存储 + `localStorage` 静默快照双写（见 `crates/app/src/kv.rs` / `idb.rs`），跨标签页可见性由 `storage` 事件保证。数据备份仍以 localStorage 快照为准；日志极大（快照被静默丢弃）时建议同时用「通联日志 → 导出 ADIF」留底。
 
-## 自定义远端的自动同步
+## 自动同步（两条通道）
+
+同步有两条并列的通道：**自定义远端**（下面这套）与**在线账号**（本站服务器的 SQLite，设计见 [`docs/domain/account-sync.md`](../domain/account-sync.md)）。两者交换同一份备份内容、各存各的状态（`remote-sync-state` / `account-sync-state`），**自动同步一次只跑一条**（`sync-channel` 偏好决定）；下面讲的判定、重试与「设备专属 key」对两条通道一视同仁，接口约定则只属于自定义远端。
+
+### 自定义远端
 
 配了获取 / 写入接口后（`/backup` 页），应用会自动同步；实现见 `crates/app/src/auto_sync.rs`，决策逻辑与重试策略见 `crates/core/src/remote_sync.rs`（`plan_startup` / `retry_delay_ms`，带单测）。
 
@@ -90,5 +97,5 @@
 - **拉取之后会补写**：覆盖导入是按 key 叠加的，远端没有、本机独有的 key 会留下；所以手动恢复 / 合并以及自动快进之后（配了写入接口时）都会置脏位，让下一次自动写入把差异补回远端——写出前会再比一次指纹，没有差异就不发请求。只配了获取接口时无处可写，覆盖后清掉脏位。
 - **为什么自动获取不用合并**：合并对答题统计是累加的（`merge_study_stats`），同一份远端数据合并两次计数就翻倍，不幂等。
 - **远端指纹与本机同口径**：远端内容求指纹前先去掉设备专属 key，所以远端是一份手工导出的完整备份（带主题、接口缓存…）也不会因此永远对不上本机。
-- **设备专属、不同步的 key**（`is_device_local_key`）：`theme`、`locale`、`ui:*`、`fab-position`、`cat-settings`（电台串口参数跟着这台设备连的那台电台走）、`api-cache:*`、`*:kv-version`、`bank-digest:*`、`push-subscription`、`app:changelog-seen`、`sat-*-notified`、`nec.pending-template`，以及 `remote-sync` / `remote-sync-state` 本身。**新增本地存储 key 时必须在上面的表里登记，并在 `crates/core/src/remote_sync.rs` 的 `every_documented_key_is_classified` 测试里归类（同步 / 设备专属）**——漏归类测试会红，而不是悄悄变成「每次写入都触发一次同步」。
+- **设备专属、不同步的 key**（`is_device_local_key`）：`theme`、`locale`、`ui:*`、`fab-position`、`cat-settings`（电台串口参数跟着这台设备连的那台电台走）、`api-cache:*`、`*:kv-version`、`bank-digest:*`、`push-subscription`、`app:changelog-seen`、`sat-*-notified`、`nec.pending-template`，以及同步自己的 `remote-sync` / `remote-sync-state` / `account-sync-state` / `account-sync-options` / `sync-channel`。**新增本地存储 key 时必须在上面的表里登记，并在 `crates/core/src/remote_sync.rs` 的 `every_documented_key_is_classified` 测试里归类（同步 / 设备专属）**——漏归类测试会红，而不是悄悄变成「每次写入都触发一次同步」。
 - **手动导入直接写 `localStorage`**，不经过存储钩子，要自己调 `auto_sync::mark_dirty()`。

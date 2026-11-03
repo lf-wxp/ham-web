@@ -165,6 +165,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
+name = "argon2"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "134c52ddac6d63c576bef8168db10c83c49c26444ecbc68060fef078925a901c"
+dependencies = [
+ "base64ct",
+ "blake2",
+ "cpufeatures 0.3.1",
+ "password-hash",
+]
+
+[[package]]
 name = "arrayref"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -345,6 +357,15 @@ name = "bitflags"
 version = "2.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ded4057c258ba199e2d26386d3af3780957ecaee6c4ef4041c6b4b8b97c0b06"
+
+[[package]]
+name = "blake2"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b5d4d889834ee8ecfc0f8426ad30faf7cdcb10f741a8e6d7224d95325479f6f"
+dependencies = [
+ "digest 0.11.3",
+]
 
 [[package]]
 name = "block-buffer"
@@ -975,6 +996,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "fallible-iterator"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2acce4a10f12dc2fb14a218589d4f1f62ef011b2d0cc4b3cb1bba8e94da14649"
+
+[[package]]
+name = "fallible-streaming-iterator"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
+
+[[package]]
 name = "fdeflate"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1027,6 +1060,12 @@ name = "foldhash"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
+
+[[package]]
+name = "foldhash"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
 
 [[package]]
 name = "font-types"
@@ -1320,7 +1359,7 @@ checksum = "17e2ac29387b1aa07a1e448f7bb4f35b500787971e965b02842b900afa5c8f6f"
 
 [[package]]
 name = "ham-web-afsk1200-worker"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-core",
  "ham-web-wav",
@@ -1330,7 +1369,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-app"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "console_error_panic_hook",
  "ham-web-apt",
@@ -1351,7 +1390,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-apt"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-dsp",
  "ham-web-wav",
@@ -1359,7 +1398,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-apt-worker"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-apt",
  "js-sys",
@@ -1368,7 +1407,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-core"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-nec",
  "ham-web-wav",
@@ -1378,7 +1417,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-dominoex"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1387,7 +1426,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-dominoex-worker"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-apt",
  "ham-web-dominoex",
@@ -1397,11 +1436,11 @@ dependencies = [
 
 [[package]]
 name = "ham-web-dsp"
-version = "0.5.0"
+version = "0.5.1"
 
 [[package]]
 name = "ham-web-ft8"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1410,7 +1449,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-ft8-worker"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-apt",
  "ham-web-ft8",
@@ -1420,7 +1459,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-hell"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1429,7 +1468,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-hell-worker"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-hell",
  "ham-web-wav",
@@ -1439,14 +1478,14 @@ dependencies = [
 
 [[package]]
 name = "ham-web-lrpt"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-apt",
 ]
 
 [[package]]
 name = "ham-web-lrpt-worker"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "console_error_panic_hook",
  "ham-web-apt",
@@ -1457,7 +1496,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-navtex"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1466,7 +1505,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-navtex-worker"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-apt",
  "ham-web-navtex",
@@ -1476,11 +1515,11 @@ dependencies = [
 
 [[package]]
 name = "ham-web-nec"
-version = "0.5.0"
+version = "0.5.1"
 
 [[package]]
 name = "ham-web-olivia"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1489,7 +1528,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-olivia-worker"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-apt",
  "ham-web-olivia",
@@ -1499,7 +1538,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-rtty"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1508,7 +1547,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-rtty-worker"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-apt",
  "ham-web-rtty",
@@ -1518,10 +1557,11 @@ dependencies = [
 
 [[package]]
 name = "ham-web-server"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "aes-gcm",
  "anyhow",
+ "argon2",
  "axum",
  "base64 0.23.1",
  "chrono",
@@ -1530,6 +1570,7 @@ dependencies = [
  "p256",
  "rand",
  "regex",
+ "rusqlite",
  "serde",
  "serde_json",
  "sgp4",
@@ -1544,7 +1585,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-sstv"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-dsp",
  "ham-web-wav",
@@ -1552,7 +1593,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-sstv-worker"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-sstv",
  "js-sys",
@@ -1561,7 +1602,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-tools"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "anyhow",
  "brotli 9.0.0",
@@ -1584,18 +1625,18 @@ dependencies = [
 
 [[package]]
 name = "ham-web-wav"
-version = "0.5.0"
+version = "0.5.1"
 
 [[package]]
 name = "ham-web-wefax"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-wav",
 ]
 
 [[package]]
 name = "ham-web-wefax-worker"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-wefax",
  "js-sys",
@@ -1604,7 +1645,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-wspr"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1613,7 +1654,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-wspr-worker"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ham-web-apt",
  "ham-web-wspr",
@@ -1641,7 +1682,16 @@ checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
 dependencies = [
  "allocator-api2",
  "equivalent",
- "foldhash",
+ "foldhash 0.1.5",
+]
+
+[[package]]
+name = "hashbrown"
+version = "0.16.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "841d1cc9bed7f9236f321df977030373f4a4163ae1a7dbfe1a51a2c1a51d9100"
+dependencies = [
+ "foldhash 0.2.0",
 ]
 
 [[package]]
@@ -1649,6 +1699,18 @@ name = "hashbrown"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
+dependencies = [
+ "foldhash 0.2.0",
+]
+
+[[package]]
+name = "hashlink"
+version = "0.12.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a596f1b20ed2cc5ecac41a164aaebc7258057060f06c0cf7a2ba3991ee7990fb"
+dependencies = [
+ "hashbrown 0.17.1",
+]
 
 [[package]]
 name = "heck"
@@ -2206,6 +2268,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 
 [[package]]
+name = "libsqlite3-sys"
+version = "0.39.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14a5f01b87b92705d07b433c06f96cbc764637d81a0bffb5734ce17cf0f9a2b3"
+dependencies = [
+ "cc",
+ "pkg-config",
+ "vcpkg",
+]
+
+[[package]]
 name = "litemap"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2395,6 +2468,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f38d5652c16fde515bb1ecef450ab0f6a219d619a7274976324d5e377f7dceba"
 
 [[package]]
+name = "password-hash"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aab41826031698d6ffcd9cff78ef56ef998e39dc7e5067cdfebe373842d4723b"
+dependencies = [
+ "getrandom 0.4.3",
+ "phc",
+]
+
+[[package]]
 name = "paste"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2420,6 +2503,17 @@ name = "percent-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
+
+[[package]]
+name = "phc"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44dc769b75f93afdddd8c7fa12d685292ddeff1e66f7f0f3a234cf1818afe892"
+dependencies = [
+ "base64ct",
+ "ctutils",
+ "getrandom 0.4.3",
+]
 
 [[package]]
 name = "pico-args"
@@ -2462,6 +2556,12 @@ dependencies = [
  "der",
  "spki",
 ]
+
+[[package]]
+name = "pkg-config"
+version = "0.3.34"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6b464fbc74e149a392436b17d523f769e057cb6877f6a5c4618bc6f11800548"
 
 [[package]]
 name = "png"
@@ -2816,6 +2916,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rsqlite-vfs"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c51c9ae4df8a7fba42103df5c621fa3c37eccf3a3c650879e90fc48b11cc192c"
+dependencies = [
+ "hashbrown 0.16.1",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "rstml"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2828,6 +2938,21 @@ dependencies = [
  "syn 2.0.119",
  "syn_derive",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "rusqlite"
+version = "0.41.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da9bba6f3506135e120a6586df05be18b48d18896600646a4bec8f993d91a594"
+dependencies = [
+ "bitflags",
+ "fallible-iterator",
+ "fallible-streaming-iterator",
+ "hashlink",
+ "libsqlite3-sys",
+ "smallvec",
+ "sqlite-wasm-rs",
 ]
 
 [[package]]
@@ -3235,6 +3360,18 @@ checksum = "1d9efca8738c78ee9484207732f728b1ef517bbb1833d6fc0879ca898a522f6f"
 dependencies = [
  "base64ct",
  "der",
+]
+
+[[package]]
+name = "sqlite-wasm-rs"
+version = "0.5.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc3efc0da82635d7e1ced0053bbbfa8c7ab9645d0bf36ceb4f7127bb85315d75"
+dependencies = [
+ "cc",
+ "js-sys",
+ "rsqlite-vfs",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -3843,6 +3980,12 @@ name = "valuable"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
+
+[[package]]
+name = "vcpkg"
+version = "0.2.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "version_check"

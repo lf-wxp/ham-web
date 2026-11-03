@@ -28,6 +28,7 @@ use tower_http::services::{ServeDir, ServeFile};
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
+mod account;
 mod alerts;
 mod api_v1;
 mod cache;
@@ -57,6 +58,8 @@ const IMMUTABLE: &str = "public, max-age=31536000, immutable";
 struct Config {
   addr: SocketAddr,
   dist: PathBuf,
+  /// 在线账号（未配 `ACCOUNT_DB` 时是「未启用」的空壳）。
+  account: account::AccountService,
 }
 
 impl Config {
@@ -67,7 +70,12 @@ impl Config {
       .parse()
       .with_context(|| format!("invalid listen address {host}:{port}"))?;
     let dist = PathBuf::from(std::env::var("DIST_DIR").unwrap_or_else(|_| "dist".to_owned()));
-    Ok(Self { addr, dist })
+    let account = account::AccountService::new(account::AccountConfig::from_env()?)?;
+    Ok(Self {
+      addr,
+      dist,
+      account,
+    })
   }
 }
 
@@ -404,6 +412,8 @@ fn app(cfg: &Config, push_service: push::PushService) -> Router {
     .route("/api/v1/link-budget", get(api_v1::link_budget))
     .route("/api/v1/openapi.json", get(api_v1::openapi_json))
     .route("/api/v1/{*rest}", get(api_v1::not_found))
+    // 在线账号：与前端「自定义远端同步」并列的另一条同步通道，数据在 SQLite（见 `account` 模块文档）。
+    .merge(cfg.account.router())
     .fallback_service(static_files)
     .layer(middleware::from_fn(cache_headers))
     .layer(middleware::from_fn(limit_mw))
@@ -483,6 +493,8 @@ async fn main() -> anyhow::Result<()> {
       cfg.dist.join("index.html").display()
     );
   }
+
+  cfg.account.spawn_maintenance();
 
   let push_service = push::PushService::default();
   push_service.init()?;
@@ -584,6 +596,7 @@ mod tests {
     Config {
       addr: "127.0.0.1:0".parse().expect("valid addr"),
       dist: dist.path.clone(),
+      account: account::AccountService::disabled(),
     }
   }
 
@@ -833,5 +846,41 @@ mod tests {
       .await
       .expect("response");
     assert!(!res.headers().contains_key("access-control-allow-origin"));
+  }
+
+  fn config_with_accounts(dist: &TempDist) -> Config {
+    Config {
+      account: account::AccountService::in_memory(true),
+      ..config(dist)
+    }
+  }
+
+  #[tokio::test]
+  async fn account_api_is_never_cached_and_stays_same_origin() {
+    let dist = TempDist::new();
+    let res = app(&config_with_accounts(&dist), push::PushService::default())
+      .oneshot(get("/api/account/session"))
+      .await
+      .expect("response");
+    assert_eq!(res.status(), StatusCode::OK);
+    // 登录态与云端备份绝不能被浏览器或中间层缓存。
+    assert_eq!(res.headers()["cache-control"], NO_STORE);
+    assert_eq!(res.headers()["content-type"], "application/json");
+    // 带 Cookie 的接口不开放跨域：只有 `/api/v1/*` 是公开 API。
+    assert!(!res.headers().contains_key("access-control-allow-origin"));
+  }
+
+  #[tokio::test]
+  async fn mounting_accounts_does_not_break_the_spa_fallback() {
+    let dist = TempDist::new();
+    let app = app(&config_with_accounts(&dist), push::PushService::default());
+    let res = app.clone().oneshot(get("/exam/A")).await.expect("response");
+    assert_eq!(res.status(), StatusCode::OK);
+    let body = axum::body::to_bytes(res.into_body(), usize::MAX)
+      .await
+      .expect("body");
+    assert_eq!(&body[..], b"<html>app</html>");
+    let missing = app.oneshot(get("/missing.js")).await.expect("response");
+    assert_eq!(missing.status(), StatusCode::NOT_FOUND);
   }
 }

@@ -51,7 +51,8 @@ script = '''
 set -e
 cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
 trap cleanup EXIT INT TERM
-PORT=3001 SKIP_DIST_CHECK=1 cargo run -p ham-web-server &
+# ACCOUNT_DB：本地联调也启用在线账号（库文件在 tmp/，随 `cargo make clean` 清掉）。
+ACCOUNT_DB=tmp/accounts.db PORT=3001 SKIP_DIST_CHECK=1 cargo run -p ham-web-server &
 SERVER_PID=$!
 (cd crates/app && trunk serve --dist ../../target/dev-dist)
 '''
@@ -800,7 +801,7 @@ command = "docker"
 args = ["build", "--build-arg", "SITE_URL=${SITE_URL}", "-t", "ham-web:latest", "."]
 
 [tasks.docker-run]
-description = "运行 Docker 镜像：http://127.0.0.1:3000（/app/data 挂到命名卷，重启不丢推送订阅与 VAPID 密钥）"
+description = "运行 Docker 镜像：http://127.0.0.1:3000（/app/data 挂到命名卷，重建容器不丢推送订阅、VAPID 密钥与在线账号数据库）"
 command = "docker"
 args = ["run", "--rm", "-p", "3000:3000", "-v", "ham-web-data:/app/data", "ham-web:latest"]
 

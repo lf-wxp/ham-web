@@ -6,7 +6,7 @@
 
 | 层 | 技术 |
 | --- | --- |
-| 语言 | Rust 2024 edition（MSRV 1.88） |
+| 语言 | Rust 2024 edition（MSRV 1.99.1） |
 | 前端 | [Leptos 0.8](https://leptos.dev)（CSR）+ `leptos_router`，编译为 WebAssembly |
 | 前端构建 | [Trunk](https://trunkrs.dev)（自动下载 Tailwind CSS v4 独立版、wasm-bindgen、wasm-opt） |
 | 样式 | Tailwind CSS v4 + tw-animate-css，沿用原 shadcn/ui（new-york）设计令牌与类名 |
@@ -49,7 +49,7 @@
 .
 ├── AGENTS.md               # 动代码前的入口：文档索引 + 硬规则
 ├── ROADMAP.md              # 路线图：未完成项、刻意不做的边界与工程门禁
-├── Cargo.toml              # workspace（edition 2024、MSRV 1.88、统一依赖与 lint）
+├── Cargo.toml              # workspace（edition 2024、MSRV 1.99.1、统一依赖与 lint）
 ├── Makefile.toml           # cargo make 任务
 ├── Dockerfile              # 多阶段构建（distroless 运行镜像）
 ├── rustfmt.toml            # 2 空格缩进、行宽 100
@@ -81,13 +81,13 @@
 │   │       ├── store.rs    # 收藏 / 分组 / 笔记等本地持久化（带跨标签页缓存同步）
 │   │       ├── kv.rs       # 统一存储门面：小数据 localStorage、大数据 IndexedDB 双写
 │   │       ├── idb.rs      # IndexedDB KV 封装（承载通联日志等大体积数据）
-│   │       ├── remote_sync.rs · auto_sync.rs  # 自定义远端同步：fetch 封装 / 打开页面自动获取 + 改动后自动写入（决策与重试策略在 core/remote_sync.rs）
+│   │       ├── remote_sync.rs · account_sync.rs · sync_io.rs · auto_sync.rs  # 两条同步通道：自定义远端 / 在线账号的 fetch 封装、按通道分派的 I/O、打开页面自动获取 + 改动后自动写入（决策与重试策略在 core/remote_sync.rs · sync_channel.rs，设计见 docs/domain/account-sync.md）
 │   │       ├── i18n/       # 界面文案运行时：mod.rs（t/tf/Locale）+ catalog.rs + pack.rs
 │   │       └── …           # exam_history / achievements / bank_updates / shortcuts / speech / theme / photo / pwa / rpg
 │   ├── apt/ · sstv/ · wspr/ · ft8/ · rtty/ · olivia/ · dominoex/ · navtex/ · lrpt/ · hell/ · wefax/
 │   │                       # 十一个解码核心（纯 Rust DSP + 单测 + 对拍；dominoex / navtex / lrpt 含 GPL 转写）
 │   ├── *-worker/           # 十二个 Worker 胶水（wasm-bindgen --target no-modules）；afsk1200 的解码实现在 core
-│   ├── server/             # Axum 静态站点服务器 + /api 代理 + /api/v1 开放接口
+│   ├── server/             # Axum 静态站点服务器 + /api 代理 + /api/v1 开放接口 + /api/account 在线账号（`account/`：SQLite 存取 / 会话 / Argon2 / 路由）
 │   └── tools/              # 构建/维护 CLI（数据集、解析、术语表、i18n、图标、sw.js、sitemap、各项守卫）
 │       └── templates/sw.js # Service Worker 模板
 ├── data/

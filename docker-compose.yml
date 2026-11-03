@@ -1,0 +1,31 @@
+# 用 Compose 起站点（含在线账号）：
+#
+#   docker compose up -d --build
+#
+# `ham-web-data` 是命名卷：`docker compose down` 删掉容器后数据仍在，
+# 只有 `docker compose down -v`（或手动 `docker volume rm`）才会删掉它。
+# 卷里有在线账号的 SQLite 库（accounts.db，含 -wal / -shm）、Web Push 订阅与 VAPID 私钥。
+# 换成宿主目录（`./data:/app/data`）时，目录要对 UID 65532（镜像里的 nonroot）可写。
+services:
+  ham-web:
+    build:
+      context: .
+      args:
+        SITE_URL: ${SITE_URL:-https://ham.onlyxp.me}
+    image: ham-web:latest
+    ports:
+      - "3000:3000"
+    environment:
+      # 在线账号：默认已在镜像里启用（ACCOUNT_DB=/app/data/accounts.db）。
+      # 关闭注册（只允许已有账号登录）：ACCOUNT_REGISTRATION=closed
+      ACCOUNT_REGISTRATION: ${ACCOUNT_REGISTRATION:-open}
+      # 账号总数上限（0 = 不限）：对公网开放注册时按磁盘预算调，最坏占盘 ≈ 人数 × 64 MiB。
+      ACCOUNT_MAX_USERS: ${ACCOUNT_MAX_USERS:-1000}
+      # 经 HTTPS 反代时设 auto（默认，认 X-Forwarded-Proto）或 1；纯 HTTP 内网设 0。
+      ACCOUNT_COOKIE_SECURE: ${ACCOUNT_COOKIE_SECURE:-auto}
+    volumes:
+      - ham-web-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  ham-web-data:

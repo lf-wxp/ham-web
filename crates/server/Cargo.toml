@@ -32,5 +32,10 @@ base64 = "0.23"
 rand = "0.10"
 sha2 = "0.11"
 
+# 在线账号（`/api/account/*`）：SQLite 存账户 / 会话 / 云端备份，Argon2id 存口令。
+# `bundled` 把 SQLite 静态链进二进制：运行镜像是 distroless，没有系统 libsqlite3。
+rusqlite = { version = "0.41", features = ["bundled"] }
+argon2 = { version = "0.6", features = ["password-hash"] }
+
 [lints]
 workspace = true

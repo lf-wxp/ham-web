@@ -1,6 +1,11 @@
-//! 自定义远端的自动同步：打开页面时自动获取，数据变化后自动写入。
+//! 自动同步：打开页面时自动获取，数据变化后自动写入。
 //!
-//! 「该不该覆盖、该不该停下来问用户」是纯逻辑，在 `ham_web_core::remote_sync::plan_startup`
+//! 有两条同步通道（自定义远端、在线账号，见 `ham_web_core::sync_channel`），**自动同步一次只跑一条**，
+//! 由「通道偏好 + 有没有配自定义接口」决定（`resolve`）；另一条仍可手动「写入 / 恢复 / 合并」。
+//! 两条通道各存各的同步状态（基线与脏位），互不覆盖。通道的 I/O 差异收在 `crate::sync_io`，
+//! 这里的状态机对两条通道一视同仁。
+//!
+//! 「该不该覆盖、该不该停下来问用户」是纯逻辑，在 `ham_web_core::sync_channel::plan_for`
 //! （带单测）；这里只负责把它接到浏览器上：写入钩子、定时器、网络请求与状态展示。
 //!
 //! # 几条不能破的约束
@@ -22,20 +27,28 @@
 //!   无关：远端是一份整体替换的快照，漏掉某个模块就等于把它从远端抹掉。
 //! - **不占用备份锁去写。** 备份锁会让整个页面 `inert`，每次改动都冻结界面不可接受。
 //!   自动写入只读本地数据，不需要它；只有会改写本地数据的自动获取才拿锁。
+//! - **换通道、换账号都不沿用旧基线。** 通道不在跑时本机的改动没人追踪，旧基线会把「期间改过」
+//!   当成「没改过」；离开通道时作废它（`ham_web_core::sync_channel::leave`），账号基线还记着主人
+//!   （`adopt_owner`）。异步任务带「代」号（`GEN`）：换通道后，旧通道还在路上的请求回来也不许改新通道的状态。
 
 use std::cell::Cell;
 use std::time::Duration;
 
 use ham_web_core::remote_sync::{
-  Fingerprint, Remote, STATE_KEY, StartupPlan, SyncState, has_user_data, is_device_local_key,
-  plan_startup, retry_delay_ms,
+  Fingerprint, Remote, StartupPlan, SyncState, has_user_data, is_device_local_key, retry_delay_ms,
+};
+use ham_web_core::sync_channel::{
+  CHANNEL_KEY, ChannelPref, SyncChannel, adopt_owner, leave, plan_for, pref_after_login,
+  pref_after_logout, resolve,
 };
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
+use crate::account_sync::{self, AccountState};
 use crate::i18n::{t, tf};
 use crate::pages::log::LogStore;
 use crate::remote_sync::{self, AUTO_FETCH_TIMEOUT_MS, Fetched};
+use crate::sync_io;
 use crate::util::storage;
 
 /// 数据变化后等多久再写：攒一批改动，也给用户留出改主意的余地。
@@ -64,12 +77,19 @@ pub enum AutoStatus {
   PushFailed(String),
   /// 自动写入遇到重试无益的错误（令牌 / 地址 / 体积），已暂停；附原因。
   PushPaused(String),
+  /// 在线账号通道：没登录（或登录已过期），已暂停；登录后自动恢复。
+  SignedOut,
 }
 
 thread_local! {
   static STATUS: ArcRwSignal<AutoStatus> = ArcRwSignal::new(AutoStatus::Off);
-  static STATE: Cell<SyncState> = const { Cell::new(SyncState { base: None, dirty: false }) };
+  /// 正在自动同步的通道（给界面显示「谁在自动同步」）。
+  static ACTIVE_SIGNAL: ArcRwSignal<Option<SyncChannel>> = ArcRwSignal::new(None);
+  static ACTIVE: Cell<Option<SyncChannel>> = const { Cell::new(None) };
+  static STATE: Cell<SyncState> = const { Cell::new(SyncState { base: None, owner: None, dirty: false }) };
   static LOG: Cell<Option<LogStore>> = const { Cell::new(None) };
+  /// 通道「代」号：换通道 / 重新启动时加一。在路上的异步任务回来先比一下，不一致就丢弃结果。
+  static GEN: Cell<u64> = const { Cell::new(0) };
   /// 允许自动写入（见模块文档「先上岗」）。
   static ARMED: Cell<bool> = const { Cell::new(false) };
   /// 因冲突 / 启动获取失败 / 写入遇到永久性错误而暂停。
@@ -87,7 +107,13 @@ thread_local! {
   /// 用户碰过页面（第一次指针按下 / 按键）。此前的存储写入都是应用自己的启动逻辑。
   static INTERACTED: Cell<bool> = const { Cell::new(false) };
   /// 用户碰过页面之后发生过存储写入：启动判定里要当成「本机有未同步的改动」。
+  ///
+  /// **不论有没有通道在自动同步都记**：登录是运行中才发生的事，那一刻要知道「用户在本次打开之后
+  /// 动过数据没有」，而不是只能拿一份此刻的存储快照——此刻的存储里已经有应用自己启动时写的默认值，
+  /// 拿它判断，一个全新浏览器也会被当成「用过的」，永远走不到「直接取回云端」。
   static USER_WROTE: Cell<bool> = const { Cell::new(false) };
+  /// 本页打开前，本机有没有用户数据（`snapshot` 在应用写任何默认值之前取的）。
+  static BOOT_HAS_DATA: Cell<bool> = const { Cell::new(false) };
 }
 
 /// 自动同步状态（给「数据备份」页展示）。
@@ -95,23 +121,48 @@ pub fn status() -> ArcRwSignal<AutoStatus> {
   STATUS.with(Clone::clone)
 }
 
+/// 正在自动同步的通道；都没开为 `None`。
+pub fn active_channel() -> ArcRwSignal<Option<SyncChannel>> {
+  ACTIVE_SIGNAL.with(Clone::clone)
+}
+
 fn set_status(next: AutoStatus) {
   STATUS.with(|s| s.set(next));
+}
+
+fn active() -> Option<SyncChannel> {
+  ACTIVE.with(Cell::get)
+}
+
+fn set_active(next: Option<SyncChannel>) {
+  ACTIVE.with(|a| a.set(next));
+  ACTIVE_SIGNAL.with(|s| s.set(next));
 }
 
 fn state() -> SyncState {
   STATE.with(Cell::get)
 }
 
-/// 改状态并落盘；没变化就不写。
+/// 把状态写到某条通道的存储 key 下。
+fn persist(channel: SyncChannel, state: &SyncState) {
+  storage::set_json(channel.state_key(), state);
+}
+
+/// 改状态并落盘（落在正在跑的通道名下）；没变化就不写。
 fn update_state(f: impl FnOnce(&mut SyncState)) {
   let before = state();
   let mut next = before;
   f(&mut next);
   if next != before {
     STATE.with(|s| s.set(next));
-    storage::set_json(STATE_KEY, &next);
+    if let Some(channel) = active() {
+      persist(channel, &next);
+    }
   }
+}
+
+fn load_state(channel: SyncChannel) -> SyncState {
+  storage::get_json(channel.state_key()).unwrap_or_default()
 }
 
 fn now_ms() -> f64 {
@@ -125,6 +176,22 @@ fn now_hhmm() -> String {
 
 fn seq() -> u64 {
   SEQ.with(Cell::get)
+}
+
+fn generation() -> u64 {
+  GEN.with(Cell::get)
+}
+
+fn bump_generation() -> u64 {
+  GEN.with(|g| {
+    g.set(g.get() + 1);
+    g.get()
+  })
+}
+
+/// 异步任务发出时的那一代已经过去了（换了通道、或重新启动过）。
+fn is_stale(generation_at_start: u64) -> bool {
+  generation() != generation_at_start
 }
 
 /// 导入期间屏蔽写入钩子，离开作用域自动恢复。
@@ -143,8 +210,33 @@ impl Drop for Suppress {
   }
 }
 
+// ───────────────────────── 通道偏好 ─────────────────────────
+
+fn pref() -> Option<ChannelPref> {
+  storage::get(CHANNEL_KEY).and_then(|v| ChannelPref::parse(&v))
+}
+
+fn save_pref(pref: Option<ChannelPref>) {
+  match pref {
+    Some(p) => storage::set(CHANNEL_KEY, p.as_str()),
+    None => storage::remove(CHANNEL_KEY),
+  }
+}
+
+/// 配了自定义接口（读或写任一个）：没选过通道时，这就是「自定义远端在自动同步」的依据。
+fn custom_configured() -> bool {
+  remote_sync::with_config(|c| c.can_pull() || c.can_push())
+}
+
+fn resolved_channel() -> Option<SyncChannel> {
+  resolve(pref(), custom_configured())
+}
+
+// ───────────────────────── 启动 ─────────────────────────
+
 /// 启动前的本机快照（见 `plan_startup` 为什么要「启动前」）。
 pub struct Snapshot {
+  channel: Option<SyncChannel>,
   state: SyncState,
   local_has_data: bool,
 }
@@ -153,8 +245,10 @@ pub struct Snapshot {
 /// （日志 store 写默认台站档案，`ensure_seeded` 写迁移标记和默认统计），晚一步取，
 /// 一个从没用过的浏览器也会因为这些默认值被当成「本机有数据」。
 pub fn snapshot() -> Snapshot {
+  let channel = resolved_channel();
   Snapshot {
-    state: storage::get_json(STATE_KEY).unwrap_or_default(),
+    channel,
+    state: channel.map(load_state).unwrap_or_default(),
     local_has_data: has_user_data(storage::keys().iter().map(String::as_str)),
   }
 }
@@ -162,6 +256,8 @@ pub fn snapshot() -> Snapshot {
 /// 在 `App` 根部（日志 store 就绪后）调用一次：装上写入钩子，并按配置做启动时的自动获取。
 pub fn start(log: LogStore, snapshot: Snapshot) {
   LOG.with(|l| l.set(Some(log)));
+  BOOT_HAS_DATA.with(|b| b.set(snapshot.local_has_data));
+  set_active(snapshot.channel);
   STATE.with(|s| s.set(snapshot.state));
 
   storage::set_write_hook(on_write);
@@ -179,22 +275,38 @@ pub fn start(log: LogStore, snapshot: Snapshot) {
       spawn_local(push_now());
     }
   });
-  spawn_local(startup(snapshot.state.dirty, snapshot.local_has_data));
+  if let Some(channel) = snapshot.channel {
+    let generation = bump_generation();
+    spawn_local(startup(
+      channel,
+      generation,
+      snapshot.state.dirty,
+      snapshot.local_has_data,
+    ));
+  }
 }
 
 fn on_write(key: &str) {
   if SUPPRESS.with(Cell::get) > 0 || is_device_local_key(key) {
     return;
   }
+  if INTERACTED.with(Cell::get) {
+    USER_WROTE.with(|w| w.set(true));
+  }
   mark_dirty();
+}
+
+/// 此刻「本机有没有用户数据」：打开页面前就有，或打开之后用户写过。
+fn local_has_data_now() -> bool {
+  BOOT_HAS_DATA.with(Cell::get) || USER_WROTE.with(Cell::get)
 }
 
 /// 本机数据变了：记下来，稍后自动写入。
 ///
 /// 存储写入的钩子会自动调它；直接写 `localStorage` 的路径（备份导入）要手动调。
 pub fn mark_dirty() {
-  // 没配接口就不跟踪：用户没开这个功能，不该给每一次存储写入平白加开销。
-  if !remote_sync::with_config(|c| c.can_pull() || c.can_push()) {
+  // 没有通道在自动同步就不跟踪：用户没开这个功能，不该给每一次存储写入平白加开销。
+  if active().is_none() {
     return;
   }
   if INTERACTED.with(Cell::get) {
@@ -243,8 +355,10 @@ async fn push_now() {
   if PUSHING.with(Cell::get) || !ARMED.with(Cell::get) || PAUSED.with(Cell::get) {
     return;
   }
-  let cfg = remote_sync::config();
-  if !cfg.can_push() || !state().dirty {
+  let Some(channel) = active() else {
+    return;
+  };
+  if !sync_io::can_push(channel) || !state().dirty {
     return;
   }
   let Some(log) = LOG.with(Cell::get) else {
@@ -257,10 +371,15 @@ async fn push_now() {
   }
 
   PUSHING.with(|p| p.set(true));
+  let at = generation();
   let sent_seq = seq();
   set_status(AutoStatus::Syncing);
   // 本机内容与基线一致就不发请求：很多写入只是写了同样的值。
-  let result = remote_sync::push_if_changed(&cfg, state().base).await;
+  let result = sync_io::push_if_changed(channel, state().base).await;
+  // 等网络期间换了通道：这次的结果属于旧通道，不能碰新通道的状态（`PUSHING` 也早已被换通道时重置）。
+  if is_stale(at) {
+    return;
+  }
   PUSHING.with(|p| p.set(false));
 
   match result {
@@ -297,16 +416,29 @@ async fn push_now() {
   }
 }
 
+/// 账号通道出问题时顺手问一次登录态：多半是会话过期，面板应当回到登录表单。
+fn recheck_account_session() {
+  if active() == Some(SyncChannel::Account) {
+    spawn_local(async {
+      account_sync::refresh().await;
+    });
+  }
+}
+
 fn pause_conflict() {
   pause();
   set_status(AutoStatus::Conflict);
-  crate::ui::push_error(t("tools.remote-auto-conflict"));
+  crate::ui::push_error(match active() {
+    Some(SyncChannel::Account) => t("tools.account-auto-conflict"),
+    _ => t("tools.remote-auto-conflict"),
+  });
 }
 
 fn pause_pull_failed(reason: String) {
   pause();
   set_status(AutoStatus::PullFailed(reason.clone()));
   crate::ui::push_error(reason);
+  recheck_account_session();
 }
 
 fn pause_push_failed(reason: String) {
@@ -314,6 +446,7 @@ fn pause_push_failed(reason: String) {
   FAIL_STREAK.with(|f| f.set(0));
   set_status(AutoStatus::PushPaused(reason.clone()));
   crate::ui::push_error(reason);
+  recheck_account_session();
 }
 
 fn pause_first_push() {
@@ -322,22 +455,44 @@ fn pause_first_push() {
   crate::ui::push_info(t("tools.remote-auto-first-push"));
 }
 
-async fn startup(stale_dirty: bool, local_has_data: bool) {
-  let cfg = remote_sync::config();
-  if !cfg.can_pull() && !cfg.can_push() {
+fn pause_signed_out() {
+  pause();
+  set_status(AutoStatus::SignedOut);
+  crate::ui::push_info(t("tools.account-auto-signed-out"));
+}
+
+async fn startup(channel: SyncChannel, at: u64, stale_dirty: bool, local_has_data: bool) {
+  let (can_pull, can_push) = (sync_io::can_pull(channel), sync_io::can_push(channel));
+  if !can_pull && !can_push {
     return;
   }
-  if !cfg.can_pull() {
+  if !can_pull {
     // 只配了写入：没有可对照的远端，按配置直接开启自动写入。
     arm();
     return;
   }
 
   set_status(AutoStatus::Syncing);
-  let (remote, body) = match remote_sync::fetch(&cfg, AUTO_FETCH_TIMEOUT_MS).await {
+  if channel == SyncChannel::Account {
+    // 账号通道先问一次登录态：没登录就停下来说明，而不是发一个必然 401 的请求；
+    // 登录的是谁也要在这里认定，基线只对它的主人有效（`adopt_owner`）。
+    match account_sync::refresh().await {
+      _ if is_stale(at) => return,
+      AccountState::SignedIn(user) => update_state(|s| *s = adopt_owner(*s, user.id)),
+      AccountState::SignedOut { .. } => return pause_signed_out(),
+      AccountState::Unknown | AccountState::Unavailable => {
+        return pause_pull_failed(t("tools.account-err-unavailable"));
+      }
+    }
+  }
+  let fetched = sync_io::fetch(channel, AUTO_FETCH_TIMEOUT_MS).await;
+  if is_stale(at) {
+    return;
+  }
+  let (remote, body) = match fetched {
     Err(e) => return pause_pull_failed(e),
     Ok(Fetched::Empty) => (Remote::Empty, None),
-    Ok(Fetched::Data(body)) => match remote_sync::fingerprint_of(&body) {
+    Ok(Fetched::Data(body)) => match sync_io::fingerprint_of(channel, &body) {
       Ok(fp) => (Remote::Data(fp), Some((body, fp))),
       Err(e) => return pause_pull_failed(e),
     },
@@ -345,19 +500,44 @@ async fn startup(stale_dirty: bool, local_has_data: bool) {
 
   // 取远端要等网络：这段时间用户可能已经在答题 / 记通联，这些改动不在启动前的快照里。
   let stale_dirty = stale_dirty || USER_WROTE.with(Cell::get);
-  match plan_startup(&state(), stale_dirty, remote, local_has_data) {
+  // 从没同步过（或基线被作废：换了通道 / 退出过登录），本机又有数据：先看看两边其实是不是一样的。
+  // 内容相同就没有谁覆盖谁的问题，直接认作基线；否则每次退出再登录、每台装过同一份数据的设备
+  // 都要被问一遍「谁覆盖谁」。只在这条少见的路径上才付出「生成一遍同步内容」的代价。
+  if state().base.is_none()
+    && local_has_data
+    && let Remote::Data(fp) = remote
+  {
+    let same = sync_io::local_fingerprint(channel).await == Some(fp);
+    if is_stale(at) {
+      return;
+    }
+    if same {
+      update_state(|s| {
+        s.base = Some(fp);
+        s.dirty = false;
+      });
+      return finish_in_sync();
+    }
+  }
+  match plan_for(channel, &state(), stale_dirty, remote, local_has_data) {
     StartupPlan::InSync => finish_in_sync(),
     // 只配了获取：没有可上传的去处，不置脏位、不等写入。
-    StartupPlan::Upload | StartupPlan::NeedsFirstPush if !cfg.can_push() => finish_in_sync(),
+    StartupPlan::Upload | StartupPlan::NeedsFirstPush if !can_push => finish_in_sync(),
     StartupPlan::Upload => {
-      update_state(|s| s.dirty = true);
+      update_state(|s| {
+        s.dirty = true;
+        // 账号通道的云端「空了」就是真的空了：旧基线对不上，带着它写会被服务端按条件挡下。
+        if channel == SyncChannel::Account {
+          s.base = None;
+        }
+      });
       arm();
       set_status(AutoStatus::Syncing);
     }
     StartupPlan::NeedsFirstPush => pause_first_push(),
     StartupPlan::FastForward => {
       if let Some((body, fp)) = body {
-        fast_forward(body, fp).await;
+        fast_forward(channel, at, body, fp).await;
       }
     }
     StartupPlan::Conflict => pause_conflict(),
@@ -381,15 +561,19 @@ async fn acquire_lock(log: LogStore) -> Option<crate::util::BackupTaskGuard> {
 }
 
 /// 用远端覆盖本机（调用方已确认本机没有未同步的改动）。
-async fn fast_forward(body: String, fp: Fingerprint) {
+async fn fast_forward(channel: SyncChannel, at: u64, body: String, fp: Fingerprint) {
   let Some(log) = LOG.with(Cell::get) else {
     return;
   };
   let Some(task) = acquire_lock(log).await else {
     return pause_pull_failed(t("tools.backup-in-progress"));
   };
-  // 等锁期间用户又改了数据：现在覆盖就会把这些改动静默吞掉。拿到锁之后页面是 `inert` 的，
-  // 用户动不了了，所以这里是最后一次、也是足够的检查点。
+  // 等锁期间换了通道，或用户又改了数据：现在覆盖就会用旧通道的内容盖掉别的东西，或把这些改动静默吞掉。
+  // 拿到锁之后页面是 `inert` 的，用户动不了了，所以这里是最后一次、也是足够的检查点。
+  if is_stale(at) {
+    drop(task);
+    return;
+  }
   if USER_WROTE.with(Cell::get) {
     drop(task);
     return pause_conflict();
@@ -405,17 +589,38 @@ async fn fast_forward(body: String, fp: Fingerprint) {
 
   match result {
     Ok(_) => {
-      note_pulled(fp, false);
-      crate::ui::push_info(t("tools.remote-auto-updated"));
+      note_pulled(channel, fp, false);
+      crate::ui::push_info(match channel {
+        SyncChannel::Account => t("tools.account-auto-updated"),
+        SyncChannel::Custom => t("tools.remote-auto-updated"),
+      });
     }
-    Err(e) => pause_pull_failed(tf("tools.remote-pull-failed", &[&e])),
+    Err(e) => pause_pull_failed(match channel {
+      SyncChannel::Account => tf("tools.account-pull-failed", &[&e]),
+      SyncChannel::Custom => tf("tools.remote-pull-failed", &[&e]),
+    }),
   }
 }
 
-/// 手动「写入远端」成功：远端现在就等于本机，可以当基线。
-pub fn note_pushed(fp: Fingerprint) {
+/// 账号通道的基线要记主人（见 `adopt_owner`）；自定义远端没有。
+fn owner_of(channel: SyncChannel) -> Option<u64> {
+  match channel {
+    SyncChannel::Account => account_sync::current_user_id(),
+    SyncChannel::Custom => None,
+  }
+}
+
+/// 手动「写入」成功：远端现在就等于本机，可以当基线。
+///
+/// 只有正在自动同步的通道才记基线：另一条通道的手动操作不该改动它的状态——
+/// 它不在跑，本机之后的改动没人追踪，留下的基线只会在将来误导判断（见 `leave`）。
+pub fn note_pushed(channel: SyncChannel, fp: Fingerprint) {
+  if active() != Some(channel) {
+    return;
+  }
   update_state(|s| {
     s.base = Some(fp);
+    s.owner = owner_of(channel);
     s.dirty = false;
   });
   arm();
@@ -428,23 +633,108 @@ pub fn note_pushed(fp: Fingerprint) {
 /// 合并之后本机更是两边的并集。能写出去（配了写入接口）时一律置脏位，让下一次自动写入
 /// 把差异补回远端——写出前会再比一次指纹，没有差异就不发请求。
 /// 只配了获取接口时无处可写：覆盖后清掉脏位，免得它永远清不掉、下次远端一更新就被当成冲突。
-pub fn note_pulled(fp: Fingerprint, merged: bool) {
-  let can_push = remote_sync::with_config(|c| c.can_push());
+///
+/// 通道不是正在自动同步的那条时不记（理由同 [`note_pushed`]）。
+pub fn note_pulled(channel: SyncChannel, fp: Fingerprint, merged: bool) {
+  if active() != Some(channel) {
+    return;
+  }
+  let can_push = sync_io::can_push(channel);
   update_state(|s| {
     s.base = Some(fp);
+    s.owner = owner_of(channel);
     s.dirty = merged || can_push;
   });
   arm();
   set_status(AutoStatus::Synced(now_hhmm()));
 }
 
-/// 用户改了接口地址。
+// ───────────────────────── 通道切换 ─────────────────────────
+
+/// 把自动同步切到 `next`。
+///
+/// 通道变了：作废旧通道的基线（`leave`）、换上新通道自己的状态、重置运行时标志并换「代」。
+/// `restart`：新通道马上做一次启动判定（用户主动开启 / 刚登录时要；只是在后台改了配置时不要）。
+fn activate(next: Option<SyncChannel>, restart: bool) {
+  let prev = active();
+  if prev != next {
+    if let Some(prev) = prev {
+      persist(prev, &leave(state()));
+    }
+    set_active(next);
+    STATE.with(|s| s.set(next.map(load_state).unwrap_or_default()));
+    ARMED.with(|a| a.set(false));
+    PAUSED.with(|p| p.set(false));
+    PUSHING.with(|p| p.set(false));
+    FAIL_STREAK.with(|f| f.set(0));
+    set_status(AutoStatus::Off);
+  }
+  if !restart {
+    if prev != next {
+      bump_generation();
+    }
+    return;
+  }
+  let Some(channel) = next else {
+    bump_generation();
+    return;
+  };
+  // 重新启动（含「通道没变、但刚登录」）：旧的在途任务作废，从头判定。
+  // 在途的写入回来发现自己过期会直接返回、不会替它复位 `PUSHING`：通道没变时上面那段重置被跳过了，
+  // 这里不复位，`PUSHING` 会永远是真，之后所有自动写入都被它拦下，界面却停在"同步中"。
+  ARMED.with(|a| a.set(false));
+  PAUSED.with(|p| p.set(false));
+  PUSHING.with(|p| p.set(false));
+  FAIL_STREAK.with(|f| f.set(0));
+  let at = bump_generation();
+  spawn_local(startup(channel, at, state().dirty, local_has_data_now()));
+}
+
+/// 用户在面板里选了「谁来自动同步」（`None` = 清掉选择，回到默认规则）。
+pub fn set_pref(pref: Option<ChannelPref>) {
+  save_pref(pref);
+  let next = resolved_channel();
+  activate(next, next != active());
+}
+
+/// 登录 / 注册成功。
+///
+/// 还没有通道在自动同步时（见 `pref_after_login`）顺手选上账号；账号通道正在跑（会话过期后重新登录）
+/// 则重新做一次启动判定。
+pub fn account_signed_in() {
+  save_pref(pref_after_login(pref(), custom_configured()));
+  let next = resolved_channel();
+  let restart = next == Some(SyncChannel::Account);
+  activate(next, restart);
+}
+
+/// 退出登录 / 注销账号成功：账号通道没了去处，作废它的基线并回到默认规则。
+///
+/// 不论账号通道是不是正在跑都要清：它不在跑的时候本机的改动没人追踪，留着旧基线，
+/// 下次登录（哪怕是同一个账号）就会把「期间改过」当成「没改过」（见 `leave`）。
+pub fn account_signed_out() {
+  save_pref(pref_after_logout(pref()));
+  let account_state = if active() == Some(SyncChannel::Account) {
+    state()
+  } else {
+    load_state(SyncChannel::Account)
+  };
+  persist(SyncChannel::Account, &leave(account_state));
+  let next = resolved_channel();
+  activate(next, next != active());
+}
+
+/// 用户改了自定义接口地址。
 ///
 /// 旧基线属于另一组接口，不能再拿来判断；改的过程中地址往往是半截的，也不能自动往上写
 /// （见模块文档「先上岗」）。重新手动同步一次、或下次打开页面，才会再次上岗。
+/// 地址从无到有 / 从有到无时，「自定义远端是不是在自动同步」也跟着变（没选过通道时由它是否配好决定）。
 pub fn config_changed() {
-  ARMED.with(|a| a.set(false));
-  PAUSED.with(|p| p.set(false));
-  update_state(|s| s.base = None);
-  set_status(AutoStatus::Off);
+  activate(resolved_channel(), false);
+  if active() == Some(SyncChannel::Custom) {
+    ARMED.with(|a| a.set(false));
+    PAUSED.with(|p| p.set(false));
+    update_state(|s| s.base = None);
+    set_status(AutoStatus::Off);
+  }
 }

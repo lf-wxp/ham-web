@@ -104,14 +104,31 @@ impl RemoteSyncConfig {
   }
 }
 
-/// 该 key 是否只属于这台设备、不进备份文件。
+/// 该 key 是否只属于这台设备、不进备份文件：同步自己的配置与记账（两条通道各一份，见
+/// [`crate::sync_channel`]）。
 #[must_use]
 pub fn is_excluded_from_backup(key: &str) -> bool {
-  key == STORAGE_KEY || key == STATE_KEY
+  matches!(
+    key,
+    STORAGE_KEY | STATE_KEY | ACCOUNT_STATE_KEY | ACCOUNT_OPTIONS_KEY | CHANNEL_KEY
+  )
 }
 
 /// 自动同步的状态在 `localStorage` 里的 key（见 [`SyncState`]）。
 pub const STATE_KEY: &str = "remote-sync-state";
+
+// 下面三个 key 属于「同步通道」（`crate::sync_channel` 重新导出，调用方照旧从那里取）。
+// 定义放在这里是为了依赖单向：`sync_channel` 依赖本模块，而不是互相引用——
+// 「哪些 key 不进备份」本来就是本模块的事。
+
+/// 自动同步通道的偏好在 `localStorage` 里的 key（设备专属，不进备份）。
+pub const CHANNEL_KEY: &str = "sync-channel";
+
+/// 在线账号通道的同步状态在 `localStorage` 里的 key（设备专属，不进备份）。
+pub const ACCOUNT_STATE_KEY: &str = "account-sync-state";
+
+/// 在线账号通道的同步选项在 `localStorage` 里的 key（设备专属，不进备份）。
+pub const ACCOUNT_OPTIONS_KEY: &str = "account-sync-options";
 
 // ───────────────────────── 自动同步 ─────────────────────────
 //
@@ -175,6 +192,20 @@ pub fn has_user_data<'a>(keys: impl IntoIterator<Item = &'a str>) -> bool {
 #[serde(transparent)]
 pub struct Fingerprint(u64);
 
+impl Fingerprint {
+  /// 指纹的数值（跨进程传递用：服务端存库、放进 `If-Match`）。
+  #[must_use]
+  pub const fn get(self) -> u64 {
+    self.0
+  }
+
+  /// 从数值还原（`get` 的逆）。
+  #[must_use]
+  pub const fn from_u64(n: u64) -> Self {
+    Self(n)
+  }
+}
+
 /// 一份备份内容的指纹。
 ///
 /// 值本身是不透明字符串，所以服务端重新排版外层 JSON（缩进、键序）不会改变指纹 ——
@@ -216,6 +247,12 @@ pub fn fingerprint_json(json: &str) -> Option<Fingerprint> {
 pub struct SyncState {
   /// 上次成功同步时远端内容的指纹；`None` 表示这组接口还没同步成功过。
   pub base: Option<Fingerprint>,
+  /// 这条基线属于哪个在线账号（账号 id）；自定义远端恒为 `None`。
+  ///
+  /// 同一台浏览器可能换账号登录，A 的基线不能拿来判断 B 的云端，见 [`crate::sync_channel::adopt_owner`]。
+  /// 旧版本存下来的状态没有这个字段，按 `None` 读。
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub owner: Option<u64>,
   /// 本机自上次同步以来有改动、且还没成功写出去。
   ///
   /// 持久化的原因：改动后关掉标签页、写入失败或离线，下次打开时它才是「两边是否分叉」的依据。
@@ -713,6 +750,9 @@ mod tests {
     for key in [
       "remote-sync",
       "remote-sync-state",
+      "account-sync-state",
+      "account-sync-options",
+      "sync-channel",
       "logbook:kv-version",
       "api-cache:/api/solar",
       "ui:shortcutsHelpSeen:practice",
@@ -764,6 +804,7 @@ mod tests {
 
   const CLEAN: SyncState = SyncState {
     base: Some(fp(7)),
+    owner: None,
     dirty: false,
   };
 
@@ -888,6 +929,7 @@ mod tests {
     // 换成新类型之后，旧版本已经写进 localStorage 的状态仍然读得出来。
     let json = serde_json::to_string(&SyncState {
       base: Some(fp(5)),
+      owner: None,
       dirty: true,
     })
     .unwrap();
@@ -958,6 +1000,9 @@ mod tests {
       "sat-apt-notified",
       "remote-sync",
       "remote-sync-state",
+      "account-sync-state",
+      "account-sync-options",
+      "sync-channel",
     ];
 
     /// 文档表格第一列里每个反引号包起来的 key；带 `{…}` 的是前缀模式，取 `{` 之前的部分。
@@ -1105,8 +1150,32 @@ mod tests {
   }
 
   #[test]
+  fn fingerprint_survives_a_round_trip_through_its_number() {
+    let f = fingerprint(&map(&[("a", "b")]));
+    assert_eq!(Fingerprint::from_u64(f.get()), f);
+  }
+
+  #[test]
+  fn state_written_before_accounts_existed_still_reads() {
+    // 旧状态没有 `owner`：读成 `None`；`None` 也不写出来，已有的存储格式不变。
+    let s: SyncState = serde_json::from_str(r#"{"base":9,"dirty":true}"#).unwrap();
+    assert_eq!(s.owner, None);
+    let with_owner = SyncState {
+      owner: Some(3),
+      ..s
+    };
+    let back: SyncState =
+      serde_json::from_str(&serde_json::to_string(&with_owner).unwrap()).unwrap();
+    assert_eq!(back, with_owner);
+  }
+
+  #[test]
   fn only_sync_bookkeeping_is_excluded_from_backups() {
     assert!(is_excluded_from_backup("remote-sync-state"));
+    // 两条通道各一份记账，另有自动同步的通道偏好：都只属于这台设备。
+    assert!(is_excluded_from_backup("account-sync-state"));
+    assert!(is_excluded_from_backup("account-sync-options"));
+    assert!(is_excluded_from_backup("sync-channel"));
     // 备份仍包含主题等设备偏好（手动导出 / 恢复要完整），只有同步自己的两个 key 例外。
     assert!(!is_excluded_from_backup("theme"));
   }

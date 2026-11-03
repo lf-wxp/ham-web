@@ -50,7 +50,7 @@
 
 ### 环境要求
 
-- Rust ≥ 1.88（推荐最新 stable，见 `.tool-versions`）
+- Rust ≥ 1.99.1（与 `.tool-versions`、`Cargo.toml` 的 `rust-version`、CI 与 Dockerfile 的工具链一致）
 - `wasm32-unknown-unknown` 目标、[Trunk](https://trunkrs.dev)、[cargo-make](https://github.com/sagiegurari/cargo-make)
 - Node.js ≥ 22（**仅跑端到端测试需要**；构建与开发不需要 Node）
 
@@ -133,7 +133,7 @@ ADIF 3.1 日志与多台站 / 操作员、日志体检、QSL 全生命周期与�
 
 ## 技术栈
 
-Rust 2024（MSRV 1.88）+ [Leptos 0.8](https://leptos.dev)（CSR，编译为 WebAssembly）+ Tailwind CSS v4，由 [Trunk](https://trunkrs.dev) 构建；
+Rust 2024（MSRV 1.99.1）+ [Leptos 0.8](https://leptos.dev)（CSR，编译为 WebAssembly）+ Tailwind CSS v4，由 [Trunk](https://trunkrs.dev) 构建；
 服务器是 Axum 0.8（静态站点 + `/api/*` 同源代理）；数字信号解码是纯 Rust DSP，编译为 Worker，音频不上传服务器；
 任务编排用 [cargo-make](https://github.com/sagiegurari/cargo-make)；PWA 的 Service Worker 由构建时的 Rust 工具生成。
 许可 MIT，DominoEX / LRPT / NAVTEX 解码器及其 Worker 例外为 GPL-3.0（见[许可](#许可)）。
@@ -186,7 +186,10 @@ docs/                        专题规范（本 README 的细节都在这里）
 ```bash
 docker build -t ham-web .
 docker run -d --name ham-web -p 3000:3000 -v ham-web-data:/app/data ham-web
+# 或：docker compose up -d --build
 ```
+
+`/app/data` 里有在线账号的 SQLite 库、Web Push 订阅与 VAPID 私钥，**务必挂卷**（命名卷或宿主目录），容器重建后数据才不丢。
 
 构建参数（`SITE_URL` / `REBUILD_DATASET` / 工具链版本）、运行时与上游调优环境变量、实测构建耗时与
 内存要求（前端编译峰值 6–8GB，Docker 虚拟机给 4–8GiB 会被 OOM 杀掉）、Web Push 的 VAPID 与订阅鉴权
@@ -213,7 +216,9 @@ docker run -d --name ham-web -p 3000:3000 -v ham-web-data:/app/data ham-web
 全部 key 的清单见 [`docs/reference/storage.md`](docs/reference/storage.md)。
 
 数据备份走站内 `/backup` 页（顶栏「设置」对话框、移动菜单与页脚均可进入）：导出全部本地数据为
-`ham-backup-YYYYMMDD.json`，可在其他设备或清缓存后一键导入恢复，也可按模块勾选、跨设备合并导入。
+`ham-backup-YYYYMMDD.json`，可在其他设备或清缓存后一键导入恢复，也可按模块勾选、跨设备合并导入；
+还能用**在线账号**（账号与云端备份存在服务器的 SQLite，Docker 部署需挂数据卷）或**自定义远端**（自己的接口）跨设备同步，
+两条通道并存、自动同步一次只跑一条（设计见 [`docs/domain/account-sync.md`](docs/domain/account-sync.md)）。
 
 ## 开发与测试
 

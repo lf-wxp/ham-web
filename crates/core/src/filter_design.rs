@@ -60,9 +60,9 @@ pub fn butterworth_g(n: usize) -> Option<&'static [f64]> {
     ]),
     5 => Some(&[
       0.618_033_988_7,
-      1.618_033_988_7,
+      std::f64::consts::GOLDEN_RATIO,
       2.0,
-      1.618_033_988_7,
+      std::f64::consts::GOLDEN_RATIO,
       0.618_033_988_7,
     ]),
     _ => None,

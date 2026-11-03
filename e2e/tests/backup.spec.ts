@@ -485,6 +485,13 @@ test.describe("自定义远端同步", () => {
  * 种子用 `sessionStorage` 标记「只种一次」，而不是 localStorage：后者本身会被算成「本机有数据」，
  * 影响「全新浏览器」这类判断；用 sessionStorage 则刷新后不会重复覆盖应用写下的状态。
  */
+/**
+ * 自定义远端面板。`/backup` 页上还有「在线账号」面板，它自己也有 `role="status"` 的提示
+ * （如"此服务器没有启用在线账号"）——自动同步的状态行必须限定在远端面板里找，
+ * 否则 `section#backup` 下的 `getByRole("status")` 会命中两个元素（strict mode 违规）。
+ */
+const remotePanel = (page: import("@playwright/test").Page) => page.getByTestId("remote-sync-panel");
+
 test.describe("自动同步", () => {
   const REMOTE = "https://remote.test";
   const GET = `${REMOTE}/get`;
@@ -529,7 +536,7 @@ test.describe("自动同步", () => {
     await serveRemote(page, { "e2e-from-remote": "yes" });
     await page.goto("/backup");
     await expect(toast(page)).toContainText("已暂停自动同步");
-    await expect(page.locator("section#backup").getByRole("status")).toContainText("已暂停自动同步");
+    await expect(remotePanel(page).getByRole("status")).toContainText("已暂停自动同步");
     expect(await ls(page, "e2e-from-remote")).toBeNull();
   });
 
@@ -541,7 +548,7 @@ test.describe("自动同步", () => {
     });
     await serveRemote(page, { "e2e-from-remote": "yes", "e2e-local": "theirs" });
     await page.goto("/backup");
-    await expect(page.locator("section#backup").getByRole("status")).toContainText("已暂停自动同步");
+    await expect(remotePanel(page).getByRole("status")).toContainText("已暂停自动同步");
     expect(await ls(page, "e2e-local")).toBe("mine");
     expect(await ls(page, "e2e-from-remote")).toBeNull();
   });
@@ -557,7 +564,7 @@ test.describe("自动同步", () => {
     const fetched = page.waitForResponse((r) => r.url() === GET);
     await page.reload();
     await fetched;
-    await expect(page.locator("section#backup").getByRole("status")).toContainText(/已自动同步（\d{2}:\d{2}）/);
+    await expect(remotePanel(page).getByRole("status")).toContainText(/已自动同步（\d{2}:\d{2}）/);
     expect(await ls(page, "e2e-from-remote")).toBe("local");
   });
 
@@ -566,7 +573,7 @@ test.describe("自动同步", () => {
     await page.route(GET, (route) => route.fulfill({ status: 500, body: "" }));
     await page.goto("/backup");
     await expect(toast(page)).toContainText("HTTP 500");
-    await expect(page.locator("section#backup").getByRole("status")).toContainText("已暂停自动写入");
+    await expect(remotePanel(page).getByRole("status")).toContainText("已暂停自动写入");
   });
 
   test("数据变化后自动写入：只写同步内容，不含设备专属的 key", async ({ page }) => {
@@ -632,7 +639,7 @@ test.describe("自动同步", () => {
     await page.goto("/backup");
     // 404 可能只是获取地址写错了：没人确认过这组接口，不能替用户把本机推上去。
     await expect(toast(page)).toContainText("请先手动点一次「写入远端」");
-    await expect(section(page).getByRole("status")).toContainText("请先手动点一次「写入远端」");
+    await expect(remotePanel(page).getByRole("status")).toContainText("请先手动点一次「写入远端」");
     await page.waitForTimeout(7_000);
     expect(puts).toHaveLength(0);
 
@@ -691,7 +698,7 @@ test.describe("自动同步", () => {
       buffer: Buffer.from(JSON.stringify({ "e2e-a": "1" })),
     });
     // 令牌不对重试多少次都一样：不进入「稍后重试」，而是暂停并让用户处理。
-    const status = section(page).getByRole("status");
+    const status = remotePanel(page).getByRole("status");
     await expect(status).toContainText("HTTP 401", { timeout: 20_000 });
     await expect(status).toContainText("处理好后手动点一次「写入远端」");
     await expect(status).not.toContainText("稍后会自动重试");
@@ -706,7 +713,7 @@ test.describe("自动同步", () => {
       mimeType: "application/json",
       buffer: Buffer.from(JSON.stringify({ "e2e-a": "1" })),
     });
-    const status = section(page).getByRole("status");
+    const status = remotePanel(page).getByRole("status");
     await expect(status).toContainText("HTTP 503", { timeout: 20_000 });
     await expect(status).toContainText("稍后会自动重试");
   });

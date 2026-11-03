@@ -35,9 +35,9 @@ members = [
 default-members = ["crates/core", "crates/server", "crates/tools", "crates/apt"]
 
 [workspace.package]
-version = "0.5.0"
+version = "0.5.1"
 edition = "2024"
-rust-version = "1.88"
+rust-version = "1.99.1"
 # 工作区默认 MIT；dominoex / lrpt / navtex 及其 worker 六个 crate 因含 GPL-3.0 转写代码，单独声明 GPL-3.0-only。
 license = "MIT"
 repository = "https://github.com/lf-wxp/ham-web"

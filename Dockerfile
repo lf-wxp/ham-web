@@ -20,7 +20,7 @@
 
 # 钉到具体版本而不是浮动的大版本 `1`：rust:1-bookworm 会随上游更新悄悄换工具链，
 # 同一个提交隔一周重建可能得到不同的 wasm / 原生二进制。升级工具链时改这里，
-# 与 Cargo.toml 的 `rust-version`（1.88）一起看；.github/workflows/check.yml 里的 toolchain
+# 与 Cargo.toml 的 `rust-version`（1.99.1）一起看；.github/workflows/check.yml 里的 toolchain
 # 也要同步到这个版本（CI 与镜像用不同版本时，lint 结果会不一致）。
 ARG RUST_VERSION=1.99.1
 
@@ -159,14 +159,23 @@ LABEL org.opencontainers.image.title="ham-web" \
 WORKDIR /app
 COPY --from=builder --chown=nonroot:nonroot /out/ham-web-server /app/ham-web-server
 COPY --from=builder --chown=nonroot:nonroot /out/dist /app/dist
-# 可写数据目录：VAPID 密钥与推送订阅持久化（首次启动自动生成密钥）
+# 可写数据目录：VAPID 密钥与推送订阅、在线账号的 SQLite 库都在这里（首次启动自动生成密钥 / 建库）
 COPY --from=builder --chown=nonroot:nonroot /out/data /app/data
 
+# ACCOUNT_DB：在线账号的 SQLite 文件。要持久化的是**整个 /app/data 目录**而不是单个文件：
+# WAL 模式会在库文件旁边生成 `accounts.db-wal` / `accounts.db-shm`，只挂一个文件会丢掉最近的写入。
 ENV HOST=0.0.0.0 \
     PORT=3000 \
     DIST_DIR=/app/dist \
     PUSH_STORE=/app/data/push-subscriptions.json \
+    ACCOUNT_DB=/app/data/accounts.db \
     RUST_LOG=info,tower_http=warn
+
+# 声明数据卷：即使忘了 `-v`，数据也落在匿名卷而不是容器可写层，`docker restart` / 重建同名容器
+# 沿用同一个匿名卷的情形下不丢；但要在**删除容器后**仍保留，必须显式挂命名卷或宿主目录
+# （`-v ham-web-data:/app/data`，见 docs/engineering/deployment.md「数据持久化」）。
+# 挂宿主目录时该目录要对 UID 65532（nonroot）可写。
+VOLUME ["/app/data"]
 
 EXPOSE 3000
 USER nonroot

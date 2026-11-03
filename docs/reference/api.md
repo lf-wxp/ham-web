@@ -32,6 +32,34 @@
 | POST | `/api/push/unsubscribe` | 删除 Web Push 订阅 | 本地 | — |
 | POST | `/api/push/review-count` | 同步「今日待复习数」（错题 + 卡片），供每日提醒推送附带数量 | 本地 | — |
 
+### 在线账号（`/api/account/*`）
+
+与前端「自定义远端同步」并列的另一条同步通道：账号、会话与云端备份存在服务器的 SQLite（`ACCOUNT_DB`）里。
+没设 `ACCOUNT_DB` 时整组接口回 `503 unavailable`（`session` 例外，见下）。设计、表结构与安全取舍见
+[`domain/account-sync.md`](../domain/account-sync.md)；请求 / 响应结构与错误码的单一来源是 `crates/core/src/account.rs`。
+
+| 方法 | 路径 | 作用 |
+| --- | --- | --- |
+| GET | `/api/account/session` | 探测登录态：**永远 `200`**（会话刚续期时会带一条重发的 `Set-Cookie`），`{ enabled, registration_open, user: null \| { id, username, created_at, backup } }`（未登录是 `user: null`，不是 401） |
+| POST | `/api/account/register` | 注册并登录，`201`，下发会话 Cookie；账号名 3–32 位（字母 / 数字 / `_-.`，不分大小写唯一），口令 8–128 字节；关闭注册或账号数已达 `ACCOUNT_MAX_USERS` 时 `403 registration_closed` |
+| POST | `/api/account/login` | 登录，`200`；账号不存在与口令不对的响应、耗时都一样（`401 bad_credentials`） |
+| POST | `/api/account/logout` | 退出，`204`，幂等 |
+| POST | `/api/account/password` | 改口令 `{ current, new }`，`204`；其他设备的会话全部失效 |
+| POST | `/api/account/delete` | 注销 `{ password }`，`204`；账号与云端备份一并删除 |
+| GET | `/api/account/backup` | 云端备份原文（与「导出备份」同格式的 JSON），`200` + `ETag`（内容指纹）；还没有为 `204` |
+| PUT | `/api/account/backup` | 整体替换云端备份，`200` + `{ size, updated_at, fingerprint }`；见下「条件写入」 |
+| DELETE | `/api/account/backup` | 清掉云端备份，`204` |
+
+约定：
+
+- **鉴权**：`HttpOnly` + `SameSite=Strict` 的 `ham_session` Cookie（经 `X-Forwarded-Proto: https` 或 `ACCOUNT_COOKIE_SECURE=1` 时加 `Secure`）。**只支持同源**：没有 CORS，不给第三方用（第三方请用 `/api/v1/*`）；
+- **请求体**：JSON 接口一律要求 `Content-Type: application/json`（跨站表单发不出这个类型，是 `SameSite` 之外的第二道 CSRF 防线）；登录 / 注册 / 改口令 / 注销的请求体上限 16 KiB（超出回 `413`）；备份上限 64 MiB（与导入同口径，超出回 `413 too_large`），内容必须是 `{ key: value }` 的字符串表。`PUT /backup` 先鉴权再读体，未登录的请求回 `401`，不会为它读请求体；
+- **条件写入**：`PUT /backup` 带 `If-Match: <指纹>`（云端必须还是这份内容）或 `If-None-Match: *`（云端必须还是空的）时，条件不满足回 `412 precondition_failed`，条件检查与写入在同一个事务里；都不带 = 无条件覆盖。看不懂的条件头回 `400`，不会悄悄变成无条件覆盖；
+- **`X-Account-Id`**：前端在备份请求里带上自己认定的账号 id，与当前会话不一致回 `409 account_changed`（两个标签页登录了不同账号时防串写）；
+- **错误**：`{ "error": { "code", "message" } }`，`code` 有 `unavailable` / `unauthorized` / `bad_credentials` / `invalid_username` / `invalid_password` / `username_taken` / `registration_closed` / `too_many_attempts` / `invalid_backup` / `too_large` / `precondition_failed` / `account_changed` / `bad_request` / `internal`，前端按码翻成三语文案；`message` 只给排查用；
+- **限流**：登录 / 注册每 IP 每 10 分钟 20 次（成败都算）；猜口令**只数失败**，登录 / 改口令 / 注销共用：每个（账号名，来源 IP）每 10 分钟 10 次失败、每个账号名（不分来源）每 10 分钟 100 次失败，口令对了不耗额度；超限 `429 too_many_attempts`；其余沿用 `/api/*` 的每 IP 配额；
+- **指纹是 `u64`**：解析请用能保精度的 JSON 解析器（超过 2^53 的数走 JS 的 `JSON.parse` 会丢精度）。
+
 > **关于 `/api/callsign` 的覆盖范围**：上游 Callook 只覆盖**美国 / 加拿大**呼号；其他国家和地区需要在服务端配置 `HAMQTH_USER` / `HAMQTH_PASS` 才会返回姓名 / QTH / 网格。两者都拿不到时，接口退回**内置 DXCC 前缀库**，只返回国家 / 地区（响应里的 `source` 为 `DXCC`），**不会**凭空生成网格或 QTH。状态码：`200` 有结果、`400` 呼号非法、`404` 前缀无法识别（多为拼写错误）、`503` 仅表示服务内部异常。
 >
 > 只启动前端（`cargo make dev`，仅 3000 端口）时 `/api/*` 无处转发，请求会失败；调试这些接口请用 `cargo make dev-full`（后端 3001 + 前端 3000 代理）。

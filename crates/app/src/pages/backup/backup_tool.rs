@@ -7,6 +7,7 @@ use crate::i18n::{t, tf, tp};
 use crate::ui::{Button, Checkbox, FileInput, Variant};
 use crate::util::{BackupModules, storage};
 
+use super::account_panel::AccountPanel;
 use super::remote_sync_panel::RemoteSyncPanel;
 
 /// 本地存储 key 的中文说明。
@@ -199,6 +200,12 @@ pub(super) fn BackupTool() -> impl IntoView {
         </div>
       </div>
 
+      // 两条并列的同步通道：在线账号（零配置）在前，自定义远端（自备接口）在后。
+      <AccountPanel
+        busy=Signal::derive(move || importing.get() || exporting.get())
+        syncing=syncing
+        on_done=Callback::new(move |()| usage.set(storage::usage()))
+      />
       <RemoteSyncPanel
         busy=Signal::derive(move || importing.get() || exporting.get())
         syncing=syncing

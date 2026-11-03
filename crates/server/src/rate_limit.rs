@@ -40,17 +40,25 @@ impl RateLimiter {
     }
   }
 
-  fn allow_bucket(&self, bucket: Bucket) -> bool {
-    let now = Instant::now();
-    // 临界区里 panic 会毒化锁；限流器不是账本，沿用里面那份数据好过让之后的每个请求都 panic。
-    let mut map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
-    // 条目过多时全量清理过期时间戳与空条目，避免大量不同 IP 扫描导致内存膨胀。
+  /// 临界区里 panic 会毒化锁；限流器不是账本，沿用里面那份数据好过让之后的每个请求都 panic。
+  fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<Bucket, Vec<Instant>>> {
+    self.inner.lock().unwrap_or_else(|e| e.into_inner())
+  }
+
+  /// 条目过多时全量清理过期时间戳与空条目，避免大量不同来源扫描导致内存膨胀。
+  fn shrink_if_large(&self, map: &mut HashMap<Bucket, Vec<Instant>>, now: Instant) {
     if map.len() >= 10_000 {
       map.retain(|_, w| {
         w.retain(|t| now.duration_since(*t) < self.window);
         !w.is_empty()
       });
     }
+  }
+
+  fn allow_bucket(&self, bucket: Bucket) -> bool {
+    let now = Instant::now();
+    let mut map = self.lock();
+    self.shrink_if_large(&mut map, now);
     let entry = map.entry(bucket).or_default();
     entry.retain(|t| now.duration_since(*t) < self.window);
     if entry.len() >= self.limit {
@@ -67,6 +75,41 @@ impl RateLimiter {
   /// 按字符串身份分桶：不同 key 各自独立计数。
   pub fn allow_by_key(&self, key: &str) -> bool {
     self.allow_bucket(Bucket::Key(key.to_owned()))
+  }
+
+  // 下面三个是「只数失败」的用法（登录猜口令）：先 `is_blocked_by_key` 看一眼，
+  // 失败了 `record_by_key`，成功了 `clear_by_key`。与 `allow_by_key`「每次请求都计一次」不同，
+  // 正确的请求不消耗额度，别人也无法靠反复访问把本人挤出额度。
+
+  /// 该身份在窗口内的记录是否已达上限（只看不记）。
+  pub fn is_blocked_by_key(&self, key: &str) -> bool {
+    let now = Instant::now();
+    let mut map = self.lock();
+    let bucket = Bucket::Key(key.to_owned());
+    let Some(window) = map.get_mut(&bucket) else {
+      return false;
+    };
+    window.retain(|t| now.duration_since(*t) < self.window);
+    if window.is_empty() {
+      map.remove(&bucket);
+      return false;
+    }
+    window.len() >= self.limit
+  }
+
+  /// 给该身份记一次（不检查上限）。
+  pub fn record_by_key(&self, key: &str) {
+    let now = Instant::now();
+    let mut map = self.lock();
+    self.shrink_if_large(&mut map, now);
+    let entry = map.entry(Bucket::Key(key.to_owned())).or_default();
+    entry.retain(|t| now.duration_since(*t) < self.window);
+    entry.push(now);
+  }
+
+  /// 清掉该身份的记录。
+  pub fn clear_by_key(&self, key: &str) {
+    self.lock().remove(&Bucket::Key(key.to_owned()));
   }
 }
 
@@ -92,7 +135,7 @@ fn is_local_or_private(ip: IpAddr) -> bool {
 }
 
 /// 从连接信息或转发头解析客户端 IP。
-fn client_ip(conn: Option<ConnectInfo<SocketAddr>>, req: &Request) -> Option<IpAddr> {
+pub fn client_ip(conn: Option<ConnectInfo<SocketAddr>>, req: &Request) -> Option<IpAddr> {
   let forwarded = forwarded_ip(req);
   match conn {
     // 直连公网客户端：TCP 对端就是真相，XFF 可能是伪造的，不采用。
@@ -108,5 +151,44 @@ pub fn allow(limiter: &RateLimiter, conn: Option<ConnectInfo<SocketAddr>>, req: 
   match client_ip(conn, req) {
     Some(ip) => limiter.allow_ip(ip),
     None => true,
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn counting_only_failures_never_penalises_a_clean_key() {
+    let l = RateLimiter::new(3, Duration::from_secs(60));
+    // 只看不记：反复看也不会把额度耗掉。
+    for _ in 0..10 {
+      assert!(!l.is_blocked_by_key("alice"));
+    }
+    for _ in 0..3 {
+      assert!(!l.is_blocked_by_key("alice"));
+      l.record_by_key("alice");
+    }
+    assert!(l.is_blocked_by_key("alice"));
+    // 别的身份不受牵连。
+    assert!(!l.is_blocked_by_key("bob"));
+  }
+
+  #[test]
+  fn clearing_a_key_lifts_the_block() {
+    let l = RateLimiter::new(1, Duration::from_secs(60));
+    l.record_by_key("alice");
+    assert!(l.is_blocked_by_key("alice"));
+    l.clear_by_key("alice");
+    assert!(!l.is_blocked_by_key("alice"));
+  }
+
+  #[test]
+  fn records_expire_with_the_window() {
+    let l = RateLimiter::new(1, Duration::from_millis(30));
+    l.record_by_key("alice");
+    assert!(l.is_blocked_by_key("alice"));
+    std::thread::sleep(Duration::from_millis(60));
+    assert!(!l.is_blocked_by_key("alice"));
   }
 }

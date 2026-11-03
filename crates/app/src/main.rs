@@ -1,5 +1,6 @@
 //! 业余无线电执照考试模拟：Leptos CSR 前端入口。
 
+mod account_sync;
 mod achievements;
 mod app;
 mod auto_sync;
@@ -39,6 +40,7 @@ mod shortcuts;
 mod speech;
 mod store;
 mod study;
+mod sync_io;
 mod theme;
 mod tone;
 pub mod ui;
