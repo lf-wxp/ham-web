@@ -13,6 +13,17 @@ pub fn PracticeResumeDialog(
   on_restart: Callback<()>,
   on_resume: Callback<()>,
 ) -> impl IntoView {
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <crate::kit_modern::ModernPracticeResume
+        open=open
+        no_prompt=no_prompt
+        on_restart=on_restart
+        on_resume=on_resume
+      />
+    }
+    .into_any();
+  }
   view! {
     <Dialog open=open>
       <DialogHeader>
@@ -47,4 +58,5 @@ pub fn PracticeResumeDialog(
       </DialogFooter>
     </Dialog>
   }
+  .into_any()
 }

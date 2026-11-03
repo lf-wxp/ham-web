@@ -9,8 +9,6 @@ use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 #[component]
 pub fn GnuradioPage() -> impl IntoView {
   set_title("shell.sdr-gnu-radio");
@@ -24,14 +22,14 @@ pub fn GnuradioPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.hardware-selection")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.hardware-selection")}</h2>
           <Table class="min-w-[520px] text-sm">
             <TableHead>
               <TableRow>
-                <TableHeader class=CELL>{move || t("knowledge.hardware")}</TableHeader>
-                <TableHeader class=CELL>{move || t("radio.type")}</TableHeader>
-                <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.hardware")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.type")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.notes")}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -40,11 +38,11 @@ pub fn GnuradioPage() -> impl IntoView {
                 .map(|&(name, kind, desc)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-primary")>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono text-primary")>
                         {move || kt_tracked(name)}
                       </TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(kind)}</TableCell>
-                      <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap text-muted-foreground")>{move || kt_tracked(kind)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -53,8 +51,8 @@ pub fn GnuradioPage() -> impl IntoView {
           </Table>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.gnu-radio-concepts")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.gnu-radio-concepts")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {GNU_RADIO_CONCEPTS
               .iter()
@@ -70,8 +68,8 @@ pub fn GnuradioPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.getting-started")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.getting-started")}</h2>
           <ul class="space-y-2 p-4">
             {GNU_RADIO_TIPS
               .iter()

@@ -5,6 +5,7 @@ use serde::Deserialize;
 use crate::components::common::EmptyState;
 use crate::data;
 use crate::i18n::t;
+use crate::ui::intl::decimal;
 
 /// `/api/iss` 返回结构。
 #[derive(Deserialize, Clone)]
@@ -41,8 +42,8 @@ pub(super) fn IssTracker() -> impl IntoView {
   });
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("radio.iss-live-position")}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t("radio.iss-live-position")}</h2>
       <div class="p-4">
         {move || {
           if loading.get() {
@@ -62,19 +63,19 @@ pub(super) fn IssTracker() -> impl IntoView {
               <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div class="border bg-inset p-3 text-center">
                   <div class="text-xs text-muted-foreground">{move || t("radio.latitude")}</div>
-                  <div class="mt-1 text-lg tabular-nums">{format!("{:.2}°", d.latitude)}</div>
+                  <div class="mt-1 text-lg tabular-nums">{format!("{}°", decimal(d.latitude, 2))}</div>
                 </div>
                 <div class="border bg-inset p-3 text-center">
                   <div class="text-xs text-muted-foreground">{move || t("radio.longitude")}</div>
-                  <div class="mt-1 text-lg tabular-nums">{format!("{:.2}°", d.longitude)}</div>
+                  <div class="mt-1 text-lg tabular-nums">{format!("{}°", decimal(d.longitude, 2))}</div>
                 </div>
                 <div class="border bg-inset p-3 text-center">
                   <div class="text-xs text-muted-foreground">{move || t("radio.altitude-label")}</div>
-                  <div class="mt-1 text-lg tabular-nums">{format!("{:.0} km", d.altitude)}</div>
+                  <div class="mt-1 text-lg tabular-nums">{format!("{} km", decimal(d.altitude, 0))}</div>
                 </div>
                 <div class="border bg-inset p-3 text-center">
                   <div class="text-xs text-muted-foreground">{move || t("radio.speed")}</div>
-                  <div class="mt-1 text-lg tabular-nums">{format!("{:.1} km/s", d.velocity)}</div>
+                  <div class="mt-1 text-lg tabular-nums">{format!("{} km/s", decimal(d.velocity, 1))}</div>
                 </div>
               </div>
               <p class="mt-3 text-xs text-muted-foreground">

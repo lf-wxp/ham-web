@@ -1,7 +1,7 @@
 use ham_web_core::practice::SearchMatch;
 use leptos::prelude::*;
 
-mod match_snippet;
+pub(crate) mod match_snippet;
 use match_snippet::match_snippet;
 
 use crate::i18n::{t, tf, tp};
@@ -28,6 +28,18 @@ pub fn PracticeSearchDialog(
     open.set(false);
   };
 
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <crate::kit_modern::ModernPracticeSearch
+        open=open
+        input=input
+        matches=matches
+        on_pick=on_pick
+        on_jump=on_jump
+      />
+    }
+    .into_any();
+  }
   view! {
     <Dialog open=open class="sm:max-w-[640px]">
       <DialogHeader>
@@ -100,4 +112,5 @@ pub fn PracticeSearchDialog(
       </DialogFooter>
     </Dialog>
   }
+  .into_any()
 }

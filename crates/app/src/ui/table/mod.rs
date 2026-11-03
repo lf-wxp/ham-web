@@ -40,6 +40,7 @@ mod table_header;
 mod table_root;
 mod table_row;
 
+pub use shared::TableDensity;
 pub use table_body::TableBody;
 pub use table_cell::TableCell;
 pub use table_head::TableHead;

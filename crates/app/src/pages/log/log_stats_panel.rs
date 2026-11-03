@@ -58,16 +58,16 @@ pub(super) fn LogStatsPanel(
           <Stat label=Signal::derive(move || t("log.qsl-confirmed")) value=move || confirmed />
         </div>
         <section class="grid gap-4 sm:grid-cols-2">
-          <div class="pxl-card border bg-card p-4">
+          <div class=crate::kit::card_pad_class()>
             <h3 class="mb-3 text-sm">{move || t("log.by-mode")}</h3>
             <BarList items=modes />
           </div>
-          <div class="pxl-card border bg-card p-4">
+          <div class=crate::kit::card_pad_class()>
             <h3 class="mb-3 text-sm">{move || t("log.by-band")}</h3>
             <BarList items=bands />
           </div>
         </section>
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           <h3 class="mb-2 text-sm">
             {move || t("log.dxcc-entities")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">
@@ -93,7 +93,7 @@ pub(super) fn LogStatsPanel(
           }}
         </section>
         <AwardsPanel entries=entries.clone() apply_open=apply_open />
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           <h3 class="mb-2 text-sm">
             {move || t("log.qsls-pending")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">
@@ -131,7 +131,7 @@ pub(super) fn LogStatsPanel(
             .into_any()
           }}
         </section>
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           <h3 class="mb-2 text-sm">
             {move || t("learning.grids-worked")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">

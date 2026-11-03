@@ -9,8 +9,6 @@ use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 #[component]
 pub fn ModesPage() -> impl IntoView {
   set_title("shell.digital-modes");
@@ -20,13 +18,13 @@ pub fn ModesPage() -> impl IntoView {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader title=move || t("shell.digital-modes") subtitle=move || t("knowledge.digital-voice-and-data") />
       <PageContainer>
-        <Table class="min-w-[720px] text-sm" wrapper_class="pxl-card border bg-card">
+        <Table class="min-w-[720px]" wrapper_class=crate::kit::card_class() density=crate::ui::TableDensity::Compact>
           <TableHead>
             <TableRow>
-              <TableHeader class=CELL>{move || t("log.mode")}</TableHeader>
-              <TableHeader class=CELL>{move || t("radio.type")}</TableHeader>
-              <TableHeader class=CELL>{move || t("tools.bandwidth")}</TableHeader>
-              <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("log.mode")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.type")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.bandwidth")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.notes")}</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -35,13 +33,13 @@ pub fn ModesPage() -> impl IntoView {
               .map(|m| {
                 view! {
                   <TableRow>
-                    <TableCell class=format!("{CELL} whitespace-nowrap")>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>
                       <div>{move || kt_tracked(m.name)}</div>
                       <div class="font-mono text-xs text-muted-foreground">{move || kt_tracked(m.abbr)}</div>
                     </TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(m.kind)}</TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(m.bandwidth)}</TableCell>
-                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(m.desc)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap text-muted-foreground")>{move || kt_tracked(m.kind)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(m.bandwidth)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(m.desc)}</TableCell>
                   </TableRow>
                 }
               })

@@ -76,8 +76,8 @@ pub fn MeasurementLabPage() -> impl IntoView {
 
       <PageContainer>
         // ── 演示 A：馈线掩盖 ──────────────────────────────────
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>
             {move || t("measurement.swr-demo-title")}
           </h2>
           <div class="grid gap-4 px-4 py-3 md:grid-cols-[240px_1fr]">
@@ -159,8 +159,8 @@ pub fn MeasurementLabPage() -> impl IntoView {
         </section>
 
         // ── 演示 B：SOLT 校准分步 ─────────────────────────────
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>
             {move || t("measurement.solt-title")}
           </h2>
           <div class="px-4 py-3">
@@ -211,8 +211,8 @@ pub fn MeasurementLabPage() -> impl IntoView {
 
         // ── 读数陷阱速查 ──────────────────────────────────────
         // 标题是界面文案（t），条目是知识内容（kt）：两类词典不同，不能混用 ConceptsSection 的 ui 开关。
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>
             {move || t("measurement.pitfalls-title")}
           </h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">

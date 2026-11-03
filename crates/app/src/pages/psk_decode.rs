@@ -78,7 +78,7 @@ pub fn PskDecodePage() -> impl IntoView {
       />
 
       <PageContainer class="space-y-5">
-        <section class="pxl-card border bg-card p-4 text-sm text-muted-foreground">
+        <section class=crate::kit::card_class_with("p-4 text-sm text-muted-foreground")>
           <p>
             {move || t("radio.upload-a-psk31-audio")}
             " "
@@ -86,7 +86,7 @@ pub fn PskDecodePage() -> impl IntoView {
           </p>
         </section>
 
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           {move || {
             (result.with(String::is_empty) && error.with(Option::is_none) && !processing.get())
               .then(|| {

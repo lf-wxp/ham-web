@@ -9,7 +9,7 @@ use leptos::prelude::*;
 use crate::components::common::{BulletSection, KnowledgePage, StepsSection};
 use crate::data;
 use crate::i18n::{t, tf};
-use crate::ui::{Checkbox, NativeSelect, SelectOption, Tooltip};
+use crate::ui::{Checkbox, SelectOption, SimpleSelect, Tooltip};
 use crate::util::{set_title, unique_id};
 
 /// 制作进度的存储 key（只存本机）。
@@ -96,11 +96,19 @@ pub fn DiyProjectsPage() -> impl IntoView {
       .collect::<Vec<_>>()
   });
 
+  // 参考链接是列表里的行内链接：行高 16px 时点击目标低于 WCAG 2.5.8 的 24×24，
+  // 现代风用 `py-1` 把可点区做到 24；像素风的版式冻结，保持原样。
+  let link_class = if crate::kit::is_modern_at_mount() {
+    "md-link inline-block py-1"
+  } else {
+    "pxl-link"
+  };
+
   view! {
     <KnowledgePage title=move || t("knowledge.hands-on-diy-project") subtitle=move || t("knowledge.hands-on-projects-from")>
       // ── 筛选：难度 / 成本 / 波段 / 所需仪表 ────────────────────
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <NativeSelect
+        <SimpleSelect
           value=Signal::derive(move || {
             filters
               .with(|f| match f.difficulty {
@@ -128,7 +136,7 @@ pub fn DiyProjectsPage() -> impl IntoView {
           aria_label=Signal::derive(move || t("exam.difficulty"))
           class="w-full"
         />
-        <NativeSelect
+        <SimpleSelect
           value=Signal::derive(move || {
             filters
               .with(|f| match f.cost {
@@ -155,7 +163,7 @@ pub fn DiyProjectsPage() -> impl IntoView {
           aria_label=Signal::derive(move || t("diy.cost"))
           class="w-full"
         />
-        <NativeSelect
+        <SimpleSelect
           value=Signal::derive(move || {
             filters
               .with(|f| match f.band {
@@ -185,7 +193,7 @@ pub fn DiyProjectsPage() -> impl IntoView {
           aria_label=Signal::derive(move || t("knowledge.band"))
           class="w-full"
         />
-        <NativeSelect
+        <SimpleSelect
           value=Signal::derive(move || {
             filters
               .with(|f| match f.instrument {
@@ -239,8 +247,8 @@ pub fn DiyProjectsPage() -> impl IntoView {
                 .map(|(i, (_, _))| (i, unique_id(&format!("diy-buy-{i}"))))
                 .collect();
               view! {
-                <article class="pxl-card border bg-card">
-                  <h2 class="flex flex-wrap items-baseline gap-2 pxl-section-title">
+                <article class=crate::kit::card_class()>
+                  <h2 class=crate::cn::cn(&["flex flex-wrap items-baseline gap-2", crate::kit::card_title_class()])>
                     {move || text(name)}
                     <span class="text-xs font-normal normal-case text-muted-foreground">
                       {move || difficulty_label(p.difficulty)}
@@ -328,7 +336,7 @@ pub fn DiyProjectsPage() -> impl IntoView {
                                       href=url
                                       target=external.then_some("_blank")
                                       rel=external.then_some("noreferrer")
-                                      class="text-primary underline-offset-2 hover:underline"
+                                      class=link_class
                                     >
                                       {move || text(label)}
                                     </a>

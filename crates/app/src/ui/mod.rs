@@ -5,7 +5,7 @@
 //! `<textarea>` / `<input type="range">` 等原生元素，统一用这里的组件，颜色、圆角、
 //! 间距、字体与 hover / focus / disabled / error 状态反馈才能始终一致。
 //!
-//! > **写代码前先读 `docs/ui-components.md`**：那是使用规范（决策表「要什么用哪个」、
+//! > **写代码前先读 `docs/ui/pixel.md`**：那是使用规范（决策表「要什么用哪个」、
 //! > prop 约定、无障碍与多语言要求、常见坑、验收清单）；本文件与 `src/ui/README.md`
 //! > 是组件清单与示例。改动本目录时也要同步更新那两份文档。
 //!
@@ -18,8 +18,8 @@
 //! | [`Input`] | `<input>`（text / search / password / email / tel / url；日期与时间见下两行） | 支持前缀、后缀、一键清除、回车回调 |
 //! | [`NumberField`] | `<input type="number">` | 数值录入 + 可选加减步进；负数 / 要保留半截输入时用 `kind=NumberKind::Decimal` |
 //! | [`Textarea`] | `<textarea>` | 支持随内容自动增高 |
-//! | [`Select`] + [`SelectItem`] | `<select>`（选项需富文本展示时） | 弹层式单选，对应 Radix Select（语言切换即用此组件） |
-//! | [`NativeSelect`] | `<select>`（选项固定的筛选器） | 弹层式单选，外观复用 [`Select`]，故与语言切换一致 |
+//! | [`Select`] + [`SelectItem`] / [`SelectGroup`] | `<select>`（选项需富文本展示时） | 弹层式单选，对应 Radix Select（选项带图标 / 徽章时用，目前只有题库版本选择器）。**全站唯一的下拉引擎**（键盘 / 焦点 / ARIA / 箭头动画都在这里） |
+//! | [`SimpleSelect`] | `<select>`（选项固定的筛选器） | `Select` 的数据式封装（传 `Vec` 或 `Signal<Vec<SelectOption>>`），自己没有交互逻辑；选项只是文字时用它（语言切换也是） |
 //! | [`DatePicker`] | `<input type="date">` | 弹层日历，样式同 [`Select`] |
 //! | [`TimePicker`] | `<input type="time">` | 弹层双列（时 / 分），样式同 [`Select`] |
 //! | [`Checkbox`] | `<input type="checkbox">`（表单项） | 对应 Radix Checkbox |
@@ -57,7 +57,7 @@
 //!
 //! ```text
 //! use leptos::prelude::*;
-//! use crate::ui::{ControlSize, Field, Input, InputType, NativeSelect, NumberField, SelectOption};
+//! use crate::ui::{ControlSize, Field, Input, InputType, SimpleSelect, NumberField, SelectOption};
 //!
 //! let kw = RwSignal::new(String::new());
 //! let band = RwSignal::new(String::new());
@@ -76,7 +76,7 @@
 //!     />
 //!   </Field>
 //!
-//!   <NativeSelect
+//!   <SimpleSelect
 //!     value=band
 //!     on_change=Callback::new(move |v| band.set(v))
 //!     options=vec![
@@ -106,18 +106,18 @@ mod field;
 mod file_drop_zone;
 mod file_input;
 mod input;
-mod intl;
+pub(crate) mod intl;
 mod label;
 mod mobile_nav_drawer;
-mod native_select;
 mod number_field;
 mod pagination;
-mod popover;
+pub(crate) mod popover;
 mod progress;
 mod radio;
 mod scrollbar;
 mod select;
 mod separator;
+mod simple_select;
 mod slider;
 mod stat;
 mod switch;
@@ -142,18 +142,18 @@ pub use file_input::FileInput;
 pub use input::{Input, InputType};
 pub use label::Label;
 pub use mobile_nav_drawer::MobileNavDrawer;
-pub use native_select::{NativeSelect, SelectOption};
 pub use number_field::{NumberField, NumberKind};
 pub use pagination::Pagination;
 pub use progress::Progress;
 pub use radio::{RadioGroup, RadioGroupItem};
 pub use scrollbar::ScrollBar;
-pub use select::{Select, SelectItem};
+pub use select::{Select, SelectGroup, SelectItem};
 pub use separator::Separator;
+pub use simple_select::{SelectOption, SimpleSelect};
 pub use slider::Slider;
 pub use stat::Stat;
 pub use switch::Switch;
-pub use table::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
+pub use table::{Table, TableBody, TableCell, TableDensity, TableHead, TableHeader, TableRow};
 pub use tabs::{Tabs, TabsList, TabsPanel, TabsTrigger};
 pub use textarea::Textarea;
 pub use time_picker::TimePicker;
@@ -206,6 +206,27 @@ const BUTTON_BASE: &str = "pxl-btn [&_svg:not([class*='size-'])]:size-6";
 /// 内高光翻转成内阴影；
 /// 禁用态是抖动网点遮罩而不是半透明。
 pub fn button_class(variant: Variant, size: Size, extra: &str) -> String {
+  // 现代风：按钮换成 `md-btn` 体系。高度/内距/字号取控件 token，与输入框、下拉同高
+  // （原来 `.pxl-btn` 是 32 高、`.md-btn` 是 40 高，同一行里会一大一小）。
+  if crate::kit::is_modern_at_mount() {
+    let v = match variant {
+      Variant::Default => "md-btn-accent",
+      Variant::Destructive => "md-btn-danger",
+      Variant::Outline => "md-btn-line",
+      Variant::Secondary => "md-btn-quiet",
+      Variant::Ghost => "md-btn-ghost",
+      Variant::Text => "md-btn-text",
+    };
+    let s = match size {
+      Size::Default => "",
+      Size::Sm => "md-btn-sm",
+      Size::Xs => "md-btn-xs",
+      Size::Lg => "md-btn-lg",
+      Size::Icon => "md-btn-icon",
+      Size::IconSm => "md-btn-icon md-btn-xs",
+    };
+    return cn(&["md-btn", v, s, extra]);
+  }
   let v = match variant {
     Variant::Default => "pxl-btn-primary",
     Variant::Destructive => "pxl-btn-destructive",
@@ -219,7 +240,7 @@ pub fn button_class(variant: Variant, size: Size, extra: &str) -> String {
     Size::Default => "h-10 px-4 has-[>svg]:px-3",
     Size::Sm => "h-8 gap-1.5 px-3 has-[>svg]:px-2",
     // `pxl-btn-tight`：粗指针（触屏）下由 `controls.css` 抬到 32px —— 24px 只是
-    // WCAG 2.5.8 的下限，手机上点不准（见 `docs/ui-components.md` §2 规则 2）。
+    // WCAG 2.5.8 的下限，手机上点不准（见 `docs/ui/pixel.md` §2 规则 2）。
     Size::Xs => "pxl-btn-tight h-6 gap-1 px-2 text-xs",
     Size::Lg => "h-12 px-6 text-base has-[>svg]:px-4",
     Size::Icon => "size-10 px-0",
@@ -237,18 +258,31 @@ pub enum BadgeVariant {
   Outline,
 }
 
-const BADGE_BASE: &str = "pxl-badge [&>svg]:size-4 [&>svg]:pointer-events-none";
+/// 徽标皮肤：现代风 `md-badge`（1px 描边胶囊），像素风 `pxl-badge`（墨框 + 硬投影）。
+#[must_use]
+pub fn badge_skin() -> &'static str {
+  if crate::kit::is_modern_at_mount() {
+    "md-badge"
+  } else {
+    "pxl-badge"
+  }
+}
 
 /// 生成徽标类名。
 pub fn badge_class(variant: BadgeVariant, extra: &str) -> String {
   let v = match variant {
-    BadgeVariant::Default => "bg-primary text-primary-foreground [a&]:hover:underline",
-    BadgeVariant::Secondary => "bg-secondary text-secondary-foreground [a&]:hover:underline",
+    BadgeVariant::Default => "bg-primary text-primary-foreground",
+    BadgeVariant::Secondary => "bg-secondary text-secondary-foreground",
     BadgeVariant::Outline => {
       "bg-card text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground"
     }
   };
-  cn(&[BADGE_BASE, v, extra])
+  cn(&[
+    badge_skin(),
+    "[&>svg]:size-4 [&>svg]:pointer-events-none",
+    v,
+    extra,
+  ])
 }
 
 /// 卡片容器类名：像素「窗口面板」。
@@ -256,6 +290,9 @@ pub fn badge_class(variant: BadgeVariant, extra: &str) -> String {
 /// 描边 / 内高光 / 硬偏移投影在 `.pxl-window`。存量手写的 `rounded-xl border bg-card` 卡片
 /// 靠 `style/pixel/surfaces.css` 的兜底规则统一加粗描边，两条路径视觉一致。
 pub fn card_class(extra: &str) -> String {
+  if crate::kit::is_modern_at_mount() {
+    return cn(&["md-panel flex flex-col gap-6 py-6 mb-[24px]", extra]);
+  }
   cn(&["pxl-window flex flex-col gap-6 py-6 mb-[24px]", extra])
 }
 
@@ -265,6 +302,9 @@ pub fn card_class(extra: &str) -> String {
 /// 其余次要块用平卡 —— 368 处手写卡片、29 处窗口时，所有块同重量会让页面没有落点。
 /// 目录 / 关键指标这类「一眼要看」的块才升到 L2。
 pub fn flat_card_class(extra: &str) -> String {
+  if crate::kit::is_modern_at_mount() {
+    return cn(&["md-panel flex flex-col gap-6 py-6 mb-[24px]", extra]);
+  }
   cn(&[
     "pxl-card border bg-card flex flex-col gap-6 py-6 mb-[24px]",
     extra,
@@ -280,6 +320,9 @@ pub const CARD_HEADER: &str = "@container/card-header grid auto-rows-min grid-ro
 /// 12px 的标题会比 18px 的正文还小，卡片就只剩「一片平字」。`pxl-title`（Press Start 2P）
 /// 留给页级标题与大号读数，区段标题统一用 label 体。
 pub fn card_title_class(extra: &str) -> String {
+  if crate::kit::is_modern_at_mount() {
+    return cn(&["md-card-title", extra]);
+  }
   cn(&["pxl-label text-base leading-none", extra])
 }
 

@@ -1,7 +1,10 @@
-像素字体：来源与许可证
-======================
+站点字体：来源与许可证（像素风 + 现代风）
+==========================================
 
-本目录下 pixel-*.woff2 是下列开源字体的「子集化」产物（只保留项目实际用到的字形，
+本目录的字体分两组：`pixel-*`（像素风，下面这一节）与现代风字体（Geist / Bricolage / Plex Mono /
+Noto Sans SC Display，见后文各节与附录 E–H）。全部是 SIL OFL 1.1，许可全文附在本文件末尾。
+
+【像素风】本目录下 pixel-*.woff2 是下列开源字体的「子集化」产物（只保留项目实际用到的字形，
 并转成 woff2；字形本身未修改）。三者均采用 SIL Open Font License 1.1，完整许可证文本附在本文件末尾。
 
 | 文件 | 来源字体 | 版权 / 项目 |
@@ -26,7 +29,32 @@ Press Start 2P 声明了保留字体名。子集化产物在 CSS 里仍以 "Pres
 
 Geist / Geist Mono（pixel-* 之外的字体）
 ---------------------------------------------------
-Geist 与 Geist Mono 仅在设置里打开「易读字体」后使用，同为 SIL OFL 1.1。
+Geist 与 Geist Mono 在现代风里是正文声部与「易读字体」的正文，同为 SIL OFL 1.1。
+
+| 文件 | 来源字体 | 版权 / 项目 |
+|---|---|---|
+| geist-{latin,latin-ext,cyrillic,cyrillic-ext,vietnamese}.woff2 | Geist | Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font.git) |
+| geist-mono-{latin,latin-ext,cyrillic,cyrillic-ext,vietnamese,symbols}.woff2 | Geist Mono | 同上 |
+
+按 Google Fonts 的分片原样取用，未改字形、未改字体名。版权行与许可说明见附录 H。
+
+现代风的另外两个声部（2026-11）
+-------------------------------
+| 文件 | 来源字体 | 版权 / 项目 |
+|---|---|---|
+| bricolage-latin.woff2 / bricolage-latin-ext.woff2 | Bricolage Grotesque（可变：opsz 12–96 / wght 200–800） | Copyright 2022 The Bricolage Grotesque Project Authors (https://github.com/ateliertriay/bricolage) |
+| plex-mono-latin-{400,500,600}.woff2 | IBM Plex Mono（400 / 500 / 600） | Copyright 2017 IBM Corp. All rights reserved. |
+| noto-sans-sc-display-{0..6}.woff2 | Noto Sans SC 900（思源黑体 Heavy，子集分片） | Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'，见附录 G |
+
+三款的许可全文与附录 A 相同（SIL OFL 1.1），版权行见附录 E / F / G。
+- Bricolage / Plex Mono：按 Google Fonts 的 latin / latin-ext 分片**原样取用**（unicode-range 见
+  `crates/app/style/modern/fonts.css`）；
+- Noto Sans SC 900：由 Noto Sans SC 按界面用字重新分成 7 片（unicode-range 见 `fonts-cjk.css`），
+  只做分片、未改字形。
+两者都未改字体名 —— 属于「同一字体的子集分发」，与 Google Fonts 自身的分发方式一致，
+不构成 OFL 意义上的修改版。仓库里**没有**这批现代风字体的生成工具，重新生成靠下面的手工步骤。
+升级方式：从 `https://fonts.googleapis.com/css2?family=…` 取同名字族的分片直链重新下载，
+同时核对版权行与体积（latin 分片 Bricolage 77KB、Plex Mono 10KB/档）。
 
 ======================================================================
 附录 A：Press Start 2P — OFL
@@ -629,3 +657,43 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
+
+======================================================================
+附录 E：Bricolage Grotesque — OFL
+======================================================================
+Copyright 2022 The Bricolage Grotesque Project Authors (https://github.com/ateliertriay/bricolage)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+许可全文见附录 A（同为 OFL 1.1，不再重复抄一遍）。保留字体名（Reserved Font Name）为
+"Bricolage Grotesque"；本项目只做子集分发，未改字形、未改字体名。
+
+======================================================================
+附录 F：IBM Plex Mono — OFL
+======================================================================
+Copyright 2017 IBM Corp. All rights reserved.
+IBM Plex(r) is a trademark of IBM Corp, registered in many jurisdictions worldwide.
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+许可全文见附录 A（同为 OFL 1.1）。保留字体名（Reserved Font Name）为 "Plex"；本项目只做子集分发，
+未改字形、未改字体名。
+
+======================================================================
+附录 G：Noto Sans SC 900（思源黑体 Heavy）— OFL
+======================================================================
+Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'
+（上面一行取自 Google Fonts 随包的 ofl/notosanssc/OFL.txt 首行，2026-11-02 逐字核对；
+保留字体名（Reserved Font Name）为 "Source"。）
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+许可全文见附录 A（同为 OFL 1.1）。本项目的 noto-sans-sc-display-*.woff2 是按界面用字
+子集化后的分发（unicode-range 见 crates/app/style/modern/fonts-cjk.css），未改字形、
+未改字体名。
+
+======================================================================
+附录 H：Geist / Geist Mono — OFL
+======================================================================
+Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font.git)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+许可全文见附录 A（同为 OFL 1.1，不再重复抄一遍）。本项目按 Google Fonts 的分片原样分发
+（geist-*.woff2 / geist-mono-*.woff2），未改字形、未改字体名。

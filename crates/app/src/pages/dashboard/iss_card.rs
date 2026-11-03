@@ -33,7 +33,7 @@ pub(super) fn IssCard() -> impl IntoView {
   }
 
   view! {
-    <a href="/satellites" class="pxl-card border bg-card p-4 transition-colors hover:bg-accent/40">
+    <a href="/satellites" class=crate::kit::card_class_with("p-4 transition-colors hover:bg-accent/40")>
       <div class="text-sm">{move || t("learning.iss-international-space-station")}</div>
       <div class="mt-2 text-sm tabular-nums text-muted-foreground">
         {move || match iss.get() {

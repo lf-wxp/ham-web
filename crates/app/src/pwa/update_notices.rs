@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use leptos::prelude::*;
-use send_wrapper::SendWrapper;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen_futures::JsFuture;
@@ -56,6 +55,9 @@ async fn fetch_new_items() -> (String, Vec<String>) {
 /// 页面右下角的更新提示：发现新版本、本次更新内容、题库内容变化。不弹模态框，避免打断考试。
 #[component]
 pub fn UpdateNotices() -> impl IntoView {
+  // 更新日志条目是 `crates/core` 的中文原文，经 `core_text_tracked` 查知识库词典；
+  // 词典不会自己到，组件体里挂一次拉取（切语言后由 Effect 重新判断）。
+  data::use_knowledge_i18n();
   let open = RwSignal::new(false);
   let new_items = RwSignal::new(Vec::<String>::new());
   let new_date = RwSignal::new(String::new());
@@ -106,14 +108,15 @@ pub fn UpdateNotices() -> impl IntoView {
   let setup = move |reg: ServiceWorkerRegistration| {
     // 长时间开着的页面（如挂机听题、竞赛录入）也能定期发现新版本
     let reg_poll = reg.clone();
-    if let Ok(handle) = set_interval_with_handle(
+    // `setup` 在 `.await` 之后才执行，此时没有 Owner：`on_cleanup` 会被直接丢弃、什么也清不掉
+    // （这里曾经写了 `on_cleanup(handle.clear())`，是空操作）。「检查更新」本来就该活到文档结束，
+    // 所以句柄不保留、监听器用 `forget()` 显式常驻，不假装它们会被清理。
+    let _ = set_interval_with_handle(
       move || {
         let _ = reg_poll.update();
       },
       UPDATE_CHECK_INTERVAL,
-    ) {
-      on_cleanup(move || handle.clear());
-    }
+    );
 
     let reg_vis = reg.clone();
     let on_visibility = Closure::<dyn Fn()>::new(move || {
@@ -144,12 +147,9 @@ pub fn UpdateNotices() -> impl IntoView {
     let _ = reg.add_event_listener_with_callback("updatefound", on_update.as_ref().unchecked_ref());
     on_update.forget();
 
-    let guard = SendWrapper::new(on_visibility);
-    on_cleanup(move || {
-      let cb = guard.take();
-      let _ = document()
-        .remove_event_listener_with_callback("visibilitychange", cb.as_ref().unchecked_ref());
-    });
+    // 常驻：闭包若在这里被 drop，`document` 上的监听还在，之后每次切标签页都会抛
+    // “closure invoked after being dropped”，「回前台检查新版本」就失效了。
+    on_visibility.forget();
   };
 
   if !cfg!(debug_assertions)

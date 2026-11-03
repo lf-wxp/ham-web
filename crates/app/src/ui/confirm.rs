@@ -96,6 +96,43 @@ pub fn ConfirmRoot() -> impl IntoView {
     path
   });
 
+  // 现代风：换成现代弹层（服务、开合、路由收起、连点保护全部沿用本组件）。
+  if crate::kit::is_modern_at_mount() {
+    let close_modern = close;
+    return view! {
+      {move || {
+        shown
+          .get()
+          .map(|req| {
+            let title = req.title.clone();
+            let description = req.description.clone();
+            let confirm_text = req.confirm_text.clone();
+            let danger = req.tone == ConfirmTone::Danger;
+            let on_confirm = req.on_confirm;
+            view! {
+              <crate::kit_modern::ModernConfirm
+                open=open
+                title=Signal::derive(move || title.clone())
+                description=Signal::derive(move || description.clone())
+                confirm_text=Signal::derive(move || confirm_text.clone())
+                danger=Signal::derive(move || danger)
+                on_confirm=Callback::new(move |()| {
+                  // 退场动画期间按钮仍在 DOM 里：已经关了就不再响应，否则连点两下会跑两遍。
+                  if !open.get_untracked() {
+                    return;
+                  }
+                  close_modern.run(());
+                  on_confirm.try_run(());
+                })
+                on_cancel=Callback::new(move |()| close_modern.run(()))
+              />
+            }
+          })
+      }}
+    }
+    .into_any();
+  }
+
   view! {
     <Dialog open=open>
       {move || {
@@ -144,4 +181,5 @@ pub fn ConfirmRoot() -> impl IntoView {
       }}
     </Dialog>
   }
+  .into_any()
 }

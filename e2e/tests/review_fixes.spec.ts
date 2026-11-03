@@ -142,7 +142,7 @@ for (const route of ["/tools", "/browse", "/glossary"]) {
 test("审查修复：热图提示有描述关联，聚焦首行气泡不被滚动裁剪", async ({ page }) => {
   await seedStation(page, [{ id: 1, date: "2026-10-01", time: "12:00", freq: "14.074", mode: "FT8", callsign: "W1AW" }]);
   await page.goto("/stats");
-  const trigger = page.locator("main .pxl-tip [tabindex='0']").first();
+  const trigger = page.locator("main [data-tip] [tabindex='0']").first();
   await expect(trigger).toHaveAttribute("aria-describedby", /tooltip-/);
   const id = await trigger.getAttribute("aria-describedby");
   await expect(page.locator(`[id="${id}"]`)).not.toHaveText("");

@@ -17,7 +17,7 @@ pub(super) fn GroundMaterialSection(
   material: RwSignal<usize>,
 ) -> impl IntoView {
   view! {
-    <div class="space-y-2 pxl-card border bg-card p-4">
+    <div class=crate::kit::card_class_with("space-y-2 p-4")>
       <div class="flex flex-wrap items-center gap-2">
         <span class=NOTE>{move || t("tools.nec-ground")}</span>
         <ChipGroup

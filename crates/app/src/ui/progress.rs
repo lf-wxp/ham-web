@@ -19,7 +19,18 @@ pub fn Progress(
   #[prop(optional, into)] label: Option<TextValue>,
   #[prop(optional, into)] class: String,
 ) -> impl IntoView {
-  let class = cn(&["pxl-bar", &class]);
+  // 现代风：换成 `md-bar-track` + `md-bar-fill`（与图表、血量条同一套轨道）。
+  let modern = crate::kit::is_modern_at_mount();
+  let class = if modern {
+    cn(&["md-bar-track", &class])
+  } else {
+    cn(&["pxl-bar", &class])
+  };
+  let fill = if modern {
+    "md-bar-fill"
+  } else {
+    "pxl-bar-fill"
+  };
   view! {
     <div
       data-slot="progress"
@@ -37,7 +48,7 @@ pub fn Progress(
     >
       <div
         data-slot="progress-indicator"
-        class="pxl-bar-fill"
+        class=fill
         style=move || format!("width: {}%", value.get().clamp(0, 100))
       ></div>
     </div>

@@ -43,11 +43,11 @@ pub fn CallsignReference() -> impl IntoView {
     />
     <BulletSection title="radio.callsign-rules" items=CALLSIGN_RULES />
 
-    <section class="pxl-card border bg-card p-4 text-sm text-muted-foreground">
+    <section class=crate::kit::card_class_with("p-4 text-sm text-muted-foreground")>
       {move || t("radio.see-prefix-page-for")}
       <a
         href="/prefixes"
-        class="ml-1 text-primary underline underline-offset-2"
+        class="ml-1 text-primary"
       >
         {move || t("shell.callsign-prefixes")}
       </a>

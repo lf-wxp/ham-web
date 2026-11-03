@@ -380,7 +380,9 @@
     opacity: 0.5;
   }
 
-  .pxl-check[aria-invalid="true"] {
+  .pxl-check[aria-invalid="true"],
+  .pxl-switch[aria-invalid="true"],
+  [role="radiogroup"][aria-invalid="true"] .pxl-check {
     border-color: var(--destructive);
   }
 
@@ -760,6 +762,16 @@
     color: var(--popover-foreground);
     border: 2px solid var(--pxl-ink);
     box-shadow: 2px 2px 0 0 var(--pxl-shadow);
+  }
+
+  /* 气泡的进出场：`ui::tooltip` 在显示时写 `data-state="open"`，隐藏前先写 `closed` 播完再 `hidden`。
+     来得快也要走得快：用 fast 档（与 Rust 侧 `ExitSpeed::Fast` 读同一个 token）。 */
+  .pxl-tip-popup[data-state="open"] {
+    animation: fade-in-only var(--motion-fast) steps(3, end) both;
+  }
+
+  .pxl-tip-popup[data-state="closed"] {
+    animation: fade-out-only var(--motion-fast) steps(3, end) both;
   }
 
   /* ---------- 触屏上的点击目标 ----------

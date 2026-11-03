@@ -46,6 +46,40 @@ test("全局搜索：公式速查与单位换算按条目命中", async ({ page 
   await expect(page.getByText("dBm = 10·lg(P/mW)").first()).toBeVisible();
 });
 
+// 用户级回归：「切换界面风格后顶栏搜索点了没反应」。
+//
+// 成因是两套顶栏用 `expect_context::<RwSignal<bool>>()` 取站内搜索的状态，而现代风顶栏
+// 自己也 provide 过一个同类型的 `RwSignal<bool>`（设置面板开关）；风格一换，像素风顶栏
+// 拿到的是前者留下的、已随组件销毁的信号，`set(true)` 落在死信号上。现在前者换成
+// `SearchOpen` 包装类型、后者改成显式 prop —— 这条用例按「像素 → 现代 → 像素」走一遍，
+// 每一步都点顶栏的按钮（`/` 是同一信号的另一条入口，覆盖不到按钮本身）。
+test("全局搜索：切换界面风格后顶栏入口仍可用", async ({ page }) => {
+  await page.goto("/");
+  const dialog = page.getByRole("dialog", { name: "全站搜索" });
+
+  await expect(page.getByRole("button", { name: "搜索" })).toBeVisible();
+  await page.getByRole("button", { name: "搜索" }).click();
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+
+  // 像素 → 现代
+  await page.getByRole("button", { name: "外观与动效" }).first().click();
+  await page.getByRole("radio", { name: "现代风" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-ui-style", "modern");
+  await page.locator(".md-search-trigger").click();
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+
+  // 现代 → 像素：这一步是原来的失败点
+  await page.locator(".md-nav-actions .md-text-btn-icon").click();
+  await page.getByRole("button", { name: "像素风" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-ui-style", "pixel");
+  await page.getByRole("button", { name: "搜索" }).click();
+  await expect(dialog).toBeVisible();
+});
+
 test("全局搜索：本地日志 QSO 命中且排在最前", async ({ page }) => {
   // 预置一条本地日志（localStorage 快照，与日志页同一存储格式）
   await page.addInitScript(() => {

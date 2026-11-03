@@ -6,7 +6,7 @@ use super::super::grid_filter::QslStatus;
 use super::state::GridMapState;
 use crate::i18n::{localized_name, t};
 use crate::ui::{
-  Button, ControlSize, Input, NativeSelect, SelectOption, Size, Switch, Tooltip, Variant,
+  Button, ControlSize, Input, SelectOption, SimpleSelect, Size, Switch, Tooltip, Variant,
 };
 
 #[component]
@@ -71,7 +71,7 @@ pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
         aria_label=Signal::derive(move || t("log.callsign-search"))
         class="w-32 font-mono uppercase"
       />
-      <NativeSelect
+      <SimpleSelect
         value=Signal::derive(move || state.band_filter.get().unwrap_or_default())
         on_change=Callback::new(move |v: String| state.band_filter.set(if v.is_empty() { None } else { Some(v) }))
         options=band_options
@@ -80,7 +80,7 @@ pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
         aria_label=Signal::derive(move || t("log.band-filter"))
         class="w-auto"
       />
-      <NativeSelect
+      <SimpleSelect
         value=Signal::derive(move || state.mode_filter.get().unwrap_or_default())
         on_change=Callback::new(move |v: String| state.mode_filter.set(if v.is_empty() { None } else { Some(v) }))
         options=mode_options
@@ -89,7 +89,7 @@ pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
         aria_label=Signal::derive(move || t("log.mode-filter"))
         class="w-auto"
       />
-      <NativeSelect
+      <SimpleSelect
         value=Signal::derive(move || state.dxcc_filter.get().unwrap_or_default())
         on_change=Callback::new(move |v: String| state.dxcc_filter.set(if v.is_empty() { None } else { Some(v) }))
         options=dxcc_options
@@ -98,7 +98,7 @@ pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
         aria_label=Signal::derive(move || t("log.entity-filter"))
         class="w-auto"
       />
-      <NativeSelect
+      <SimpleSelect
         value=Signal::derive(move || state.year_filter.get().unwrap_or_default())
         on_change=Callback::new(move |v: String| state.year_filter.set(if v.is_empty() { None } else { Some(v) }))
         options=year_options
@@ -107,7 +107,7 @@ pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
         aria_label=Signal::derive(move || t("log.year-filter"))
         class="w-auto"
       />
-      <NativeSelect
+      <SimpleSelect
         value=Signal::derive(move || {
           match state.qsl_filter.get() {
             Some(QslStatus::Confirmed) => "confirmed".to_owned(),

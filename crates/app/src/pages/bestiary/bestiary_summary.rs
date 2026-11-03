@@ -10,6 +10,38 @@ use crate::ui::{Progress, Stat};
 #[component]
 pub(super) fn BestiarySummary(alive: usize, defeated: usize, due: usize) -> impl IntoView {
   let percent = bestiary_percent(defeated, alive);
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <section class="md-panel" aria-label=move || t("rpg.dex-progress")>
+        <div class="md-dex-stats">
+          <div class="md-dex-stat">
+            <span class="md-dex-value">{alive}</span>
+            <span class="md-dex-label">{move || t("rpg.alive")}</span>
+          </div>
+          <div class="md-dex-stat">
+            <span class="md-dex-value">{defeated}</span>
+            <span class="md-dex-label">{move || t("rpg.defeated")}</span>
+          </div>
+          <div class="md-dex-stat">
+            <span class="md-dex-value md-dex-due">{due}</span>
+            <span class="md-dex-label">{move || t("rpg.due-label")}</span>
+          </div>
+        </div>
+        <div class="md-dex-progress">
+          <div class="md-dex-progress-head">
+            <span>{move || t("rpg.dex-progress")}</span>
+            <span class="md-mono">
+              {move || tf("rpg.dex-percent", &[&percent.to_string()])}
+            </span>
+          </div>
+          <div class="md-bar-track">
+            <span class="md-bar-fill md-bar-fill-done" style=format!("width: {percent}%")></span>
+          </div>
+        </div>
+      </section>
+    }
+    .into_any();
+  }
   view! {
     <section class="space-y-3" aria-label=move || t("rpg.dex-progress")>
       <div class="grid grid-cols-3 gap-3">
@@ -30,4 +62,5 @@ pub(super) fn BestiarySummary(alive: usize, defeated: usize, due: usize) -> impl
       </div>
     </section>
   }
+  .into_any()
 }

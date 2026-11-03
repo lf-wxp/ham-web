@@ -70,12 +70,12 @@ pub(super) fn DecibelGain() -> impl IntoView {
         <div class="mb-1.5 text-xs text-muted-foreground">
           {move || t("tools.common-db-ratios")}
         </div>
-        <Table class="text-sm">
+        <Table density=crate::ui::TableDensity::Compact>
           <TableHead>
             <TableRow>
-              <TableHeader class="border px-3 py-2">{move || t("tools.db")}</TableHeader>
-              <TableHeader class="border px-3 py-2">{move || t("tools.power-ratio")}</TableHeader>
-              <TableHeader class="border px-3 py-2">{move || t("tools.voltage-ratio")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.db")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.power-ratio")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.voltage-ratio")}</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -85,11 +85,11 @@ pub(super) fn DecibelGain() -> impl IntoView {
                 let label = if d > 0.0 { format!("+{d:.0}") } else { format!("{d:.0}") };
                 view! {
                   <TableRow>
-                    <TableCell class="border px-3 py-2 tabular-nums">{label}</TableCell>
-                    <TableCell class="border px-3 py-2 tabular-nums">
+                    <TableCell class=crate::kit::table_cell_class("tabular-nums")>{label}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("tabular-nums")>
                       {format_ratio(db_to_power_ratio(d))}
                     </TableCell>
-                    <TableCell class="border px-3 py-2 tabular-nums">
+                    <TableCell class=crate::kit::table_cell_class("tabular-nums")>
                       {format_ratio(db_to_voltage_ratio(d))}
                     </TableCell>
                   </TableRow>

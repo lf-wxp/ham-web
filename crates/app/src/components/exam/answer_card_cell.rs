@@ -1,7 +1,8 @@
 use leptos::prelude::*;
 
-use crate::i18n::t;
 use crate::ui::{Button, Size, Variant};
+
+use super::answer_card_model::cell_label;
 
 /// 答题卡里的一格题号。
 ///
@@ -39,19 +40,8 @@ pub fn AnswerCardCell(
   } else {
     Variant::Outline
   };
-  // 无障碍名：题号 + 状态。可见文本仍是纯题号（label-in-name 成立）。
-  let label = {
-    let mut parts = vec![number.to_string()];
-    if flagged {
-      parts.push(t("exam.flagged"));
-    }
-    match verdict {
-      Some(true) => parts.push(t("exam.correct-label")),
-      Some(false) => parts.push(t("exam.wrong-label")),
-      None => {}
-    }
-    parts.join(" · ")
-  };
+  // 无障碍名：题号 + 状态。可见文本仍是纯题号（label-in-name 成立）；规则与现代版共用。
+  let label = cell_label(number.to_string(), flagged, verdict);
   view! {
     <Button
       variant=variant

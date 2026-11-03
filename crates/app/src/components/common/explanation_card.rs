@@ -8,13 +8,13 @@ use crate::speech;
 use crate::ui::{Button, Size, Tooltip, Variant, card_class};
 
 /// 解析正文切出的一段：普通文字，或带法规链接（`(href, 悬停文案)`）的引用。
-struct Segment {
-  text: String,
-  link: Option<(String, String)>,
+pub(crate) struct Segment {
+  pub(crate) text: String,
+  pub(crate) link: Option<(String, String)>,
 }
 
 /// 把解析按法规引用切成「普通文字 + 链接」交替的片段；没有引用时就是整段一个片段。
-fn segments(text: &str) -> Vec<Segment> {
+pub(crate) fn segments(text: &str) -> Vec<Segment> {
   let mut out = Vec::new();
   let mut cursor = 0usize;
   for r in find_refs(text) {
@@ -98,6 +98,12 @@ pub fn ExplanationCard(#[prop(into)] explanation: Signal<Option<String>>) -> imp
   });
 
   move || {
+    if crate::kit::is_modern() {
+      return view! {
+        <crate::kit_modern::ModernExplanation explanation=explanation />
+      }
+      .into_any();
+    }
     let Some(body) = text.get() else {
       return view! {
         <div data-slot="card" class=card_class("gap-0 py-0")>
@@ -108,7 +114,7 @@ pub fn ExplanationCard(#[prop(into)] explanation: Signal<Option<String>>) -> imp
               href="https://github.com/lf-wxp/ham-web"
               target="_blank"
               rel="noopener noreferrer"
-              class="inline-flex items-center gap-1 text-primary underline-offset-2 hover:underline"
+              class=format!("{} {}", crate::kit::link_class(), "inline-flex items-center gap-1")
             >
               {move || t("knowledge.contribute")}
               <Icon kind=IconKind::ExternalLink class="size-6 w-3" />
@@ -133,7 +139,7 @@ pub fn ExplanationCard(#[prop(into)] explanation: Signal<Option<String>>) -> imp
               opened_once.set(true);
             })
           >
-            <span class="pxl-section-head">{move || t("learning.explanation")}</span>
+            <span class=crate::kit::section_head_class()>{move || t("learning.explanation")}</span>
             <Icon
               kind=IconKind::ChevronDown
               class=Signal::derive(move || {
@@ -168,7 +174,7 @@ pub fn ExplanationCard(#[prop(into)] explanation: Signal<Option<String>>) -> imp
                             <Tooltip label=title>
                               <a
                                 href=href
-                                class="text-primary underline underline-offset-2 hover:opacity-80"
+                                class="text-primary hover:opacity-80"
                               >
                                 {text}
                               </a>

@@ -33,9 +33,9 @@ pub(super) fn ConditionsTable(conditions: Vec<BandCond>) -> impl IntoView {
     <Table class="min-w-[320px] text-sm">
       <TableHead>
         <TableRow>
-          <TableHeader class="border px-3 py-2">{move || t("radio.band")}</TableHeader>
-          <TableHeader class="border px-3 py-2">{move || t("radio.day")}</TableHeader>
-          <TableHeader class="border px-3 py-2">{move || t("radio.night")}</TableHeader>
+          <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.band")}</TableHeader>
+          <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.day")}</TableHeader>
+          <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.night")}</TableHeader>
         </TableRow>
       </TableHead>
       <TableBody>
@@ -46,7 +46,7 @@ pub(super) fn ConditionsTable(conditions: Vec<BandCond>) -> impl IntoView {
             let night_color = condition_color(&night);
             view! {
               <TableRow>
-                <TableCell class="border px-3 py-2 font-mono">{move || kt_tracked(&band)}</TableCell>
+                <TableCell class=crate::kit::table_cell_class("font-mono")>{move || kt_tracked(&band)}</TableCell>
                 <TableCell class=format!("border px-3 py-2 {day_color}")>{move || kt_tracked(&day)}</TableCell>
                 <TableCell class=format!("border px-3 py-2 {night_color}")>{move || kt_tracked(&night)}</TableCell>
               </TableRow>

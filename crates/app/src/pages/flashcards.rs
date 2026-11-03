@@ -133,7 +133,7 @@ pub fn FlashcardsPage() -> impl IntoView {
           } else if finished.get() {
             let total = known.get() + unknown.get() + skipped.get();
             view! {
-              <div class="pxl-card border bg-card px-4 py-10 text-center">
+              <div class=crate::kit::card_class_with("px-4 py-10 text-center")>
                 <div class="text-lg">{move || t("exam.round-complete")}</div>
                 <div class="mt-2 text-sm text-muted-foreground">
                   {t("exam.total")} {total} {move || t("exam.questions-know")} <span class="text-win-text">{known.get()}</span>
@@ -161,7 +161,7 @@ pub fn FlashcardsPage() -> impl IntoView {
             };
             let total = questions.get_untracked().len();
             view! {
-              <div on:touchstart=swipe_start on:touchend=swipe_end class="pxl-card border bg-card p-4">
+              <div on:touchstart=swipe_start on:touchend=swipe_end class=crate::kit::card_pad_class()>
                 <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
                   <span>{move || t("exam.no")} <span class="text-foreground">{current.get() + 1}</span> {" / "} {total} {move || t("exam.questions")}</span>
                   <span>{move || t("exam.know")} <span class="text-win-text">{known.get()}</span> {move || t("exam.don-t-know")} <span class="text-hp-text">{unknown.get()}</span></span>

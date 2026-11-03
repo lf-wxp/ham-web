@@ -11,6 +11,7 @@ use ham_web_core::nec::{NecResult, coverage_peak, one_hop_coverage, one_hop_dist
 use leptos::prelude::*;
 
 use crate::i18n::t;
+use crate::ui::intl::decimal;
 use crate::ui::{ControlSize, Field, Input};
 use crate::util::unique_id;
 
@@ -62,7 +63,7 @@ pub(super) fn NvisSection(result: Memo<Option<NecResult>>) -> impl IntoView {
   let max_id = unique_id("nec-nvis-max");
 
   view! {
-    <div class="space-y-3 pxl-card border bg-card p-4">
+    <div class=crate::kit::card_class_with("space-y-3 p-4")>
       <div class="flex flex-wrap items-center justify-between gap-2">
         <span class="text-sm">{move || t("tools.nec-nvis")}</span>
         <div class="flex flex-wrap items-end gap-2">
@@ -159,10 +160,10 @@ pub(super) fn NvisSection(result: Memo<Option<NecResult>>) -> impl IntoView {
                 stroke-width="1"
               />
               <text x="2" y=PAD_T + 8.0 class="fill-muted-foreground text-[9px]">
-                {format!("{:.1} dBi", peak.gain_dbi)}
+                {format!("{} dBi", decimal(peak.gain_dbi, 1))}
               </text>
               <text x="2" y=H - PAD_B class="fill-muted-foreground text-[9px]">
-                {format!("{:.0} dBi", lo)}
+                {format!("{} dBi", decimal(lo, 0))}
               </text>
               <path d=path class="fill-none stroke-primary" stroke-width="1.6" />
               <circle cx=peak_x cy=peak_y r="3.5" class="fill-primary" />

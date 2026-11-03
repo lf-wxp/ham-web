@@ -149,8 +149,8 @@ pub fn RepeaterLookup() -> impl IntoView {
   };
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("radio.repeater-database-lookup")}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t("radio.repeater-database-lookup")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("radio.fetch-repeaters-listed-in")}
       </p>
@@ -260,16 +260,16 @@ pub fn RepeaterLookup() -> impl IntoView {
                 &[&(c).to_string(), &(list.len()).to_string()],
               )}
             </div>
-            <Table class="min-w-[720px] text-sm">
+            <Table class="min-w-[720px]" density=crate::ui::TableDensity::Compact>
               <TableHead>
                 <TableRow>
-                  <TableHeader class="border px-3 py-2">{move || t("log.callsign")}</TableHeader>
-                  <TableHeader class="border px-3 py-2">{move || t("contest.freq")}</TableHeader>
-                  <TableHeader class="border px-3 py-2">{move || t("radio.offset")}</TableHeader>
-                  <TableHeader class="border px-3 py-2">{move || t("radio.ctcss")}</TableHeader>
-                  <TableHeader class="border px-3 py-2">{move || t("radio.city")}</TableHeader>
-                  <TableHeader class="border px-3 py-2">{move || t("radio.use")}</TableHeader>
-                  <TableHeader class="border px-3 py-2">{move || t("radio.status-column")}</TableHeader>
+                  <TableHeader class=crate::kit::table_cell_class("")>{move || t("log.callsign")}</TableHeader>
+                  <TableHeader class=crate::kit::table_cell_class("")>{move || t("contest.freq")}</TableHeader>
+                  <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.offset")}</TableHeader>
+                  <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.ctcss")}</TableHeader>
+                  <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.city")}</TableHeader>
+                  <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.use")}</TableHeader>
+                  <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.status-column")}</TableHeader>
                 </TableRow>
               </TableHead>
               <TableBody>

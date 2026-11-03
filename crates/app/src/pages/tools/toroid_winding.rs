@@ -5,7 +5,7 @@ use leptos::prelude::*;
 
 use super::{RESULT, fmt_num};
 use crate::i18n::{t, tf, tp};
-use crate::ui::{Field, NativeSelect, NumberField, SelectOption};
+use crate::ui::{Field, NumberField, SelectOption, SimpleSelect};
 use crate::util::unique_id;
 
 /// 下拉里的「自定义」选项值。
@@ -87,7 +87,7 @@ pub(super) fn ToroidWinding() -> impl IntoView {
         hint=Signal::derive(move || t("tools.toroid-core-hint"))
         r#for=part_id.clone()
       >
-        <NativeSelect
+        <SimpleSelect
           id=part_id
           value=part
           on_change=Callback::new(move |v: String| part.set(v))

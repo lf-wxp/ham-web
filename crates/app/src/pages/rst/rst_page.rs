@@ -30,27 +30,27 @@ pub fn RstPage() -> impl IntoView {
 
       <PageContainer>
         <div class="grid grid-cols-3 gap-3">
-          <div class="pxl-card border bg-card p-4 text-center">
-            <div class="pxl-stat">"1–5"</div>
+          <div class=crate::kit::card_class_with("p-4 text-center")>
+            <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>"1–5"</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("knowledge.readability-r")}</div>
           </div>
-          <div class="pxl-card border bg-card p-4 text-center">
-            <div class="pxl-stat">"1–9"</div>
+          <div class=crate::kit::card_class_with("p-4 text-center")>
+            <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>"1–9"</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("knowledge.signal-strength-s")}</div>
           </div>
-          <div class="pxl-card border bg-card p-4 text-center">
-            <div class="pxl-stat">"1–9"</div>
+          <div class=crate::kit::card_class_with("p-4 text-center")>
+            <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>"1–9"</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("knowledge.tone-t-cw")}</div>
           </div>
         </div>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.r-readability")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.r-readability")}</h2>
           <LabelList rows=READABILITY />
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>
             {move || t("knowledge.s-strength")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("knowledge.tap-to-play-the")}</span>
           </h2>
@@ -87,13 +87,13 @@ pub fn RstPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.t-tone-cw-only")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.t-tone-cw-only")}</h2>
           <LabelList rows=TONE />
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.common-reports")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.common-reports")}</h2>
           <LabelList rows=RST_EXAMPLES />
         </section>
 

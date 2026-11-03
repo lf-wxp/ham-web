@@ -22,7 +22,7 @@ pub(super) fn BattleFeedback(
           .map(|fb| {
             if fb.correct {
               view! {
-                <div class="pxl-window motion-pop flex flex-wrap items-center gap-x-4 gap-y-1 p-3 text-sm">
+                <div class=crate::kit::feedback_class()>
                   <span class="pxl-title text-win-text">{t("rpg.hit-correct")}</span>
                   {(fb.turn.damage > 1)
                     .then(|| view! { <span class="pxl-label text-xs">{t("rpg.crit")}</span> })}
@@ -53,7 +53,7 @@ pub(super) fn BattleFeedback(
               .into_any()
             } else {
               view! {
-                <div class="pxl-window motion-pop flex flex-wrap items-center gap-x-4 gap-y-1 p-3 text-sm">
+                <div class=crate::kit::feedback_class()>
                   <span class="pxl-title text-hp-text">{t("rpg.hit-wrong")}</span>
                   <span>{t("rpg.in-bestiary")}</span>
                   {(!fb.finished)

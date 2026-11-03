@@ -20,6 +20,19 @@ pub fn EmptyState(
   // `motion-pop`：空态是「结果出来了，只是没有内容」，用回弹出场强调这是一次响应，
   // 而不是页面本身没加载完。卡片内的 `plain` 不播入场：它跟着父卡片一起出现，
   // 再弹一次会让整块内容「抖两下」。
+  // 现代风：不画像素图标（那是一套 16×16 点阵字形），改用一圈虚线 + 淡色副标题。
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <div class=if plain { "md-empty-plain" } else { "md-empty-card" }>
+        <span class="md-empty-mark" aria-hidden="true"></span>
+        <div class="md-empty-title">{move || title.get()}</div>
+        {description
+          .map(|d| view! { <div class="md-muted md-sm">{move || d.get()}</div> })}
+        {actions.map(|a| a.run())}
+      </div>
+    }
+    .into_any();
+  }
   let root = if plain {
     "flex flex-col items-center justify-center gap-1 px-2 py-6 text-center"
   } else {
@@ -38,4 +51,5 @@ pub fn EmptyState(
       {actions.map(|a| a.run())}
     </div>
   }
+  .into_any()
 }

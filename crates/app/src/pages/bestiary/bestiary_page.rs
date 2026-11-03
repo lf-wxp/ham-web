@@ -93,6 +93,38 @@ pub fn BestiaryPage() -> impl IntoView {
   let chips = {
     let rows = rows.clone();
     move || {
+      if crate::kit::is_modern() {
+        return view! {
+          <div class="md-chip-row md-filter-chips" role="group" aria-label=move || t("rpg.filter-topic")>
+            <button
+              type="button"
+              class="md-chip"
+              aria-pressed=move || filter.with(String::is_empty).to_string()
+              on:click=move |_| filter.set(String::new())
+            >
+              {move || t("rpg.topic-all")}
+            </button>
+            {rows
+              .iter()
+              .map(|&(key, name, n)| {
+                let set_key = key.to_owned();
+                view! {
+                  <button
+                    type="button"
+                    class="md-chip"
+                    aria-pressed=move || (filter.get() == key).to_string()
+                    on:click=move |_| filter.set(set_key.clone())
+                  >
+                    {move || t(name)}
+                    <span class="md-menu-count">{n}</span>
+                  </button>
+                }
+              })
+              .collect_view()}
+          </div>
+        }
+        .into_any();
+      }
       view! {
         <ChipGroup
           value=filter
@@ -108,6 +140,7 @@ pub fn BestiaryPage() -> impl IntoView {
             .collect_view()}
         </ChipGroup>
       }
+      .into_any()
     }
   };
 
@@ -131,7 +164,11 @@ pub fn BestiaryPage() -> impl IntoView {
       (cards, total)
     });
     view! {
-      <ul class="grid gap-3 sm:grid-cols-2">{cards}</ul>
+      <ul class=if crate::kit::is_modern() {
+        "md-monster-list"
+      } else {
+        "grid gap-3 sm:grid-cols-2"
+      }>{cards}</ul>
       {(total > limit)
         .then(|| {
           view! {
@@ -139,6 +176,7 @@ pub fn BestiaryPage() -> impl IntoView {
               <Button
                 variant=Variant::Outline
                 size=Size::Default
+                class=if crate::kit::is_modern() { "md-btn md-btn-ghost" } else { "" }
                 on_click=Callback::new(move |()| shown.update(|n| *n += PAGE))
               >
                 {move || tf("rpg.show-more", &[&(total - limit).to_string()])}

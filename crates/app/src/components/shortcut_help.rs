@@ -13,9 +13,12 @@ use crate::ui::Dialog;
 /// 列表直接渲染 `SHORTCUT_HELP`，新增键位只需改那一处。
 #[component]
 pub fn ShortcutHelpDialog(open: RwSignal<bool>) -> impl IntoView {
+  if crate::kit::is_modern_at_mount() {
+    return view! { <crate::kit_modern::ModernShortcutHelp open=open /> }.into_any();
+  }
   view! {
-    <Dialog open=open class="sm:max-w-sm" label=t("exam.shortcuts")>
-      <h2 class="pxl-section-head">{move || t("exam.shortcuts")}</h2>
+    <Dialog open=open class="sm:max-w-sm" label="exam.shortcuts">
+      <h2 class=crate::kit::section_head_class()>{move || t("exam.shortcuts")}</h2>
       <p class="text-xs text-muted-foreground">{move || t("common.press-while-answering-to")}</p>
       <div class="space-y-2 text-sm">
         {SHORTCUT_HELP
@@ -27,4 +30,5 @@ pub fn ShortcutHelpDialog(open: RwSignal<bool>) -> impl IntoView {
       </div>
     </Dialog>
   }
+  .into_any()
 }

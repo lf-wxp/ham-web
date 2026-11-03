@@ -73,7 +73,7 @@ pub(super) fn FilterDesign() -> impl IntoView {
           .map(|&(_, value, label)| {
             let id = unique_id("filter-kind");
             view! {
-              <label class="flex cursor-pointer items-center gap-2 text-sm">
+              <label class=format!("{} text-sm", crate::kit::check_row_class())>
                 <RadioGroupItem value=value id=id />
                 {move || crate::data::core_text_tracked(label)}
               </label>
@@ -153,14 +153,14 @@ pub(super) fn FilterDesign() -> impl IntoView {
         }}
       </div>
 
-      <Table class="min-w-[480px] text-sm" wrapper_class="border">
+      <Table class="min-w-[480px]" wrapper_class="border" density=crate::ui::TableDensity::Compact>
         <TableHead>
           <TableRow>
-            <TableHeader class="border px-3 py-2">{move || t("tools.stage")}</TableHeader>
-            <TableHeader class="border px-3 py-2">{move || t("tools.position")}</TableHeader>
-            <TableHeader class="border px-3 py-2">{move || t("tools.in-arm-configuration")}</TableHeader>
-            <TableHeader class="border px-3 py-2">{move || t("tools.inductance-h-label")}</TableHeader>
-            <TableHeader class="border px-3 py-2">{move || t("tools.capacitance-pf")}</TableHeader>
+            <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.stage")}</TableHeader>
+            <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.position")}</TableHeader>
+            <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.in-arm-configuration")}</TableHeader>
+            <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.inductance-h-label")}</TableHeader>
+            <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.capacitance-pf")}</TableHeader>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -171,11 +171,11 @@ pub(super) fn FilterDesign() -> impl IntoView {
                 .map(|(i, &s)| {
                   view! {
                     <TableRow>
-                      <TableCell class="border px-3 py-2 font-mono tabular-nums">{i + 1}</TableCell>
-                      <TableCell class="border px-3 py-2 text-muted-foreground">
+                      <TableCell class=crate::kit::table_cell_class("font-mono tabular-nums")>{i + 1}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>
                         {move || if s.series { t("tools.series") } else { t("tools.shunt") }}
                       </TableCell>
-                      <TableCell class="border px-3 py-2 text-muted-foreground">
+                      <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>
                         {move || {
                           match s.topology {
                             ResonatorTopology::Single => "—".to_string(),
@@ -184,10 +184,10 @@ pub(super) fn FilterDesign() -> impl IntoView {
                           }
                         }}
                       </TableCell>
-                      <TableCell class="border px-3 py-2 font-mono tabular-nums">
+                      <TableCell class=crate::kit::table_cell_class("font-mono tabular-nums")>
                         {move || s.l_uh.map(|v| tf("common.microhenry", &[&fmt_num(v)])).unwrap_or_else(|| "—".into())}
                       </TableCell>
-                      <TableCell class="border px-3 py-2 font-mono tabular-nums">
+                      <TableCell class=crate::kit::table_cell_class("font-mono tabular-nums")>
                         {move || s.c_pf.map(|v| tf("common.picofarad", &[&fmt_num(v)])).unwrap_or_else(|| "—".into())}
                       </TableCell>
                     </TableRow>

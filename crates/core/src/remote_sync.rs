@@ -135,7 +135,7 @@ pub const STATE_KEY: &str = "remote-sync-state";
 ///
 /// 同一份名单有三个用处：不触发自动写入、不进同步内容、不计入「本机有没有数据」。
 ///
-/// 新增本地存储 key 时必须在 `docs/storage.md` 登记，并在本模块的 `every_documented_key_is_classified`
+/// 新增本地存储 key 时必须在 `docs/reference/storage.md` 登记，并在本模块的 `every_documented_key_is_classified`
 /// 测试里归类（同步 / 设备专属）——漏归类会让测试变红，而不是悄悄变成「每次写入都触发一次同步」。
 #[must_use]
 pub fn is_device_local_key(key: &str) -> bool {
@@ -894,7 +894,7 @@ mod tests {
     assert_eq!(json, r#"{"base":5,"dirty":true}"#);
   }
 
-  /// `docs/storage.md` 登记的每个 key 必须在这里归类（同步 / 设备专属），且与 [`is_device_local_key`] 一致。
+  /// `docs/reference/storage.md` 登记的每个 key 必须在这里归类（同步 / 设备专属），且与 [`is_device_local_key`] 一致。
   ///
   /// 新增 key 却忘了归类，会让它的每次写入都触发一次同步，或者把只属于这台设备的东西同步到别处。
   /// 这条测试把「新增 key 要想一想它该不该同步」变成必须回答的问题。
@@ -938,10 +938,16 @@ mod tests {
       "morse-trainer",
       "morse-send",
       "exam:last-review",
+      "rpg-stars",
+      "rpg-bestiary",
     ];
     // 只属于这台设备。
     const DEVICE: &[&str] = &[
       "ui:shortcutsHelpSeen",
+      "ui:uiStyle",
+      "ui:colorScheme",
+      "ui:pixelMotion",
+      "ui:readableFont",
       "theme",
       "locale",
       "cat-settings",
@@ -956,7 +962,7 @@ mod tests {
 
     /// 文档表格第一列里每个反引号包起来的 key；带 `{…}` 的是前缀模式，取 `{` 之前的部分。
     fn documented_keys() -> Vec<(String, bool)> {
-      include_str!("../../../docs/storage.md")
+      include_str!("../../../docs/reference/storage.md")
         .lines()
         .filter(|line| line.starts_with("| `"))
         .flat_map(|line| {
@@ -981,7 +987,7 @@ mod tests {
     let documented = documented_keys();
     assert!(
       documented.len() > 40,
-      "没解析出 docs/storage.md 的 key 表：{}",
+      "没解析出 docs/reference/storage.md 的 key 表：{}",
       documented.len()
     );
     for (token, is_prefix) in &documented {
@@ -989,7 +995,7 @@ mod tests {
       let device = DEVICE.contains(&token.as_str());
       assert!(
         synced ^ device,
-        "docs/storage.md 登记的 `{token}` 必须且只能在 SYNCED / DEVICE 之一里归类（改 is_device_local_key 或本测试）"
+        "docs/reference/storage.md 登记的 `{token}` 必须且只能在 SYNCED / DEVICE 之一里归类（改 is_device_local_key 或本测试）"
       );
       // 前缀模式（`practice:{版本}:{题库}`）用一个真实长相的 key 去探。
       let probe = if *is_prefix {
@@ -1007,9 +1013,95 @@ mod tests {
     for name in SYNCED.iter().chain(DEVICE) {
       assert!(
         documented.iter().any(|(token, _)| token == name),
-        "归类名单里的 `{name}` 在 docs/storage.md 里找不到"
+        "归类名单里的 `{name}` 在 docs/reference/storage.md 里找不到"
       );
     }
+  }
+
+  /// `前缀:{a,b}` → `["前缀:a", "前缀:b"]`。
+  ///
+  /// 只有「单元格以 `{…}` 结尾、且花括号里**有逗号**」才算分支列表。`practice:{版本}:{题库}` 里的
+  /// `{版本}` / `{题库}` 是单项占位符（没有逗号），整个单元格是一个**模式**，原样返回，
+  /// 不会被拆成 `practice:{版本}:题库` 这种既不是模式也不是 key 的东西。
+  fn expand_braces(cell: &str) -> Vec<String> {
+    if let Some((prefix, list)) = cell.strip_suffix('}').and_then(|c| c.rsplit_once('{'))
+      && list.contains(',')
+    {
+      return list
+        .split(',')
+        .map(|branch| format!("{prefix}{}", branch.trim()))
+        .collect();
+    }
+    vec![cell.to_owned()]
+  }
+
+  /// `saved_state::keys` 里声明的每个本地存储 key 都必须登记在 `docs/reference/storage.md`。
+  ///
+  /// 为什么需要它：上面那条归类测试只管「文档里有的 key 都归了类」，**反方向没人管** ——
+  /// 代码里新增一个 key 却忘了登记，它既不会让归类测试变红、也不会出现在文档里
+  /// （`ui:colorScheme` / `ui:pixelMotion` / `ui:readableFont` / `rpg-stars` / `rpg-bestiary`
+  /// 就是这样静默缺了很久）。
+  ///
+  /// 覆盖范围只到 `saved_state::keys`（集中声明键的地方）：应用里还有大量直接写字面量的 key，
+  /// 没有可靠的办法从源码枚举它们，那部分仍靠人在新增时登记。
+  #[test]
+  fn every_declared_key_is_documented() {
+    let source = include_str!("saved_state.rs");
+    let docs = include_str!("../../../docs/reference/storage.md");
+    let keys_mod = source
+      .split("pub mod keys {")
+      .nth(1)
+      .expect("saved_state.rs 里应有 `pub mod keys`");
+    let declared: Vec<&str> = keys_mod
+      .lines()
+      .filter_map(|l| l.trim().strip_prefix("pub const "))
+      .filter_map(|l| l.split_once(": &str = \""))
+      .filter_map(|(_, rest)| rest.split_once('"').map(|(k, _)| k))
+      .collect();
+    assert!(
+      declared.len() >= 8,
+      "没从 saved_state::keys 解析出 key 常量（模块结构变了？）：{declared:?}"
+    );
+    // 文档里允许 `ui:shortcutsHelpSeen:{practice,exam}` 这种花括号合并写法：先把每个反引号单元格
+    // 展开成具体的 key（`前缀:{a,b}` → `前缀:a` / `前缀:b`），再精确比对。不能只认「前缀出现过」：
+    // 那会把 `…:{practice,exam}` 之外新增的第三个分支也放过。
+    let documented: Vec<String> = docs
+      .lines()
+      .filter(|l| l.starts_with("| `"))
+      .flat_map(|l| {
+        l.trim_start_matches("| ")
+          .split(" | ")
+          .next()
+          .unwrap_or_default()
+          .split('`')
+          .skip(1)
+          .step_by(2)
+          .flat_map(expand_braces)
+          .collect::<Vec<_>>()
+      })
+      .collect();
+    let missing: Vec<&&str> = declared
+      .iter()
+      .filter(|k| !documented.iter().any(|d| d == **k))
+      .collect();
+    assert!(
+      missing.is_empty(),
+      "saved_state::keys 声明了这些 key，docs/reference/storage.md 里没登记：{missing:?}\n\
+       登记后还要在 `every_documented_key_is_classified` 里归类（同步 / 设备专属）"
+    );
+  }
+
+  #[test]
+  fn brace_lists_expand_into_exact_keys() {
+    assert_eq!(
+      expand_braces("ui:shortcutsHelpSeen:{practice,exam}"),
+      vec!["ui:shortcutsHelpSeen:practice", "ui:shortcutsHelpSeen:exam"]
+    );
+    // 没有花括号：原样。
+    assert_eq!(expand_braces("bookmarks"), vec!["bookmarks"]);
+    // 模式（花括号是占位符、且不在「末尾列表」位置）：不展开成具体 key。
+    let pattern = expand_braces("practice:{版本}:{题库}");
+    assert_eq!(pattern, vec!["practice:{版本}:{题库}"]);
   }
 
   #[test]

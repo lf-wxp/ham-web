@@ -43,8 +43,8 @@ pub(super) fn LotwStationLocation() -> impl IntoView {
   };
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>
         {move || t("log.tqsl-station-location")}
       </h2>
       <div class="p-4">
@@ -55,7 +55,7 @@ pub(super) fn LotwStationLocation() -> impl IntoView {
               <p class="text-xs text-muted-foreground">
                 {move || t("log.tqsl-set-station-first")}
                 " "
-                <a href="/log" class="underline underline-offset-4">
+                <a href="/log">
                   {move || t("log.station-info")}
                 </a>
               </p>

@@ -21,11 +21,45 @@ pub fn TableSection(
   #[prop(optional, into, default = "min-w-[640px]".into())] class: String,
 ) -> impl IntoView {
   // `StoredValue`（Copy）：标题要进两个 `'static` 属性闭包（h2 文案与表格无障碍名），
-  // 直接 move 会让组件体闭包退化（见 docs/ui-components.md §8 坑 1）。
+  // 直接 move 会让组件体闭包退化（见 docs/ui/pixel.md §8 坑 1）。
   let title = StoredValue::new(title);
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <section class="md-panel">
+        <h2 class="md-panel-title">{move || t(&title.get_value())}</h2>
+        <div class="md-table-scroll">
+          <table class=class aria-label=move || t(&title.get_value())>
+            <thead>
+              <tr>
+                {headers
+                  .iter()
+                  .map(|h| view! { <th>{move || t(h)}</th> })
+                  .collect_view()}
+              </tr>
+            </thead>
+            <tbody>
+              {rows
+                .iter()
+                .map(|(name, mid, last)| {
+                  view! {
+                    <tr>
+                      <th scope="row">{move || { data::track_knowledge(); data::kt(name) }}</th>
+                      <td>{move || { data::track_knowledge(); data::kt(mid) }}</td>
+                      <td class="md-muted">{move || { data::track_knowledge(); data::kt(last) }}</td>
+                    </tr>
+                  }
+                })
+                .collect_view()}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+    .into_any();
+  }
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t(&title.get_value())}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t(&title.get_value())}</h2>
       <Table aria_label=Signal::derive(move || t(&title.get_value())) class=class>
         <TableHead>
           <TableRow>
@@ -69,4 +103,5 @@ pub fn TableSection(
       </Table>
     </section>
   }
+  .into_any()
 }

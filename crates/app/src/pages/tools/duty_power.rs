@@ -5,7 +5,7 @@ use leptos::prelude::*;
 
 use super::{RESULT, fmt_num};
 use crate::i18n::{t, tf};
-use crate::ui::{Field, NativeSelect, NumberField, SelectOption};
+use crate::ui::{Field, NumberField, SelectOption, SimpleSelect};
 use crate::util::unique_id;
 
 const PATTERN_WINDOW: &str = "window";
@@ -110,7 +110,7 @@ pub(super) fn DutyPower() -> impl IntoView {
         />
       </Field>
       <Field label=Signal::derive(move || t("tools.duty-mode")) r#for=mode_id.clone()>
-        <NativeSelect
+        <SimpleSelect
           id=mode_id
           value=Signal::derive(move || mode.get())
           on_change=Callback::new(move |v: String| mode.set(v))
@@ -118,7 +118,7 @@ pub(super) fn DutyPower() -> impl IntoView {
         />
       </Field>
       <Field label=Signal::derive(move || t("tools.duty-pattern")) r#for=pattern_id.clone()>
-        <NativeSelect
+        <SimpleSelect
           id=pattern_id
           value=Signal::derive(move || pattern.get())
           on_change=Callback::new(move |v: String| pattern.set(v))
@@ -131,7 +131,7 @@ pub(super) fn DutyPower() -> impl IntoView {
           let options = window_options.clone();
           view! {
             <Field label=Signal::derive(move || t("tools.duty-window")) r#for=window_id.clone()>
-              <NativeSelect
+              <SimpleSelect
                 id=window_id
                 value=Signal::derive(move || window_min.get())
                 on_change=Callback::new(move |v: String| window_min.set(v))

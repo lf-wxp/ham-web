@@ -11,6 +11,10 @@ export default defineConfig({
   timeout: 60_000,
   expect: { timeout: 15_000 },
   fullyParallel: true,
+  // 这几套用例（尤其 a11y 扫描）对本地 `trunk serve` 压力很大：worker 拉满时
+  // 单个用例会偶发超时（同一批里失败的那条每次都不一样）。压到 2 个 worker 后稳定通过，
+  // 总时长基本不变（瓶颈是页面渲染，不是并发度）。机器好 / 压力小时可用 E2E_WORKERS 调大。
+  workers: Number(process.env.E2E_WORKERS ?? 2) || 2,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",

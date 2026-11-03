@@ -53,8 +53,8 @@ pub fn ContestCalendarPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("contest.all-contests-sorted-by")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("contest.all-contests-sorted-by")}</h2>
           <div class="divide-y">
             {scheduled
               .iter()
@@ -119,8 +119,8 @@ pub fn ContestCalendarPage() -> impl IntoView {
           </p>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("contest.contest-tips")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("contest.contest-tips")}</h2>
           <ul class="space-y-2 p-4">
             <li class="flex gap-2 text-sm text-muted-foreground">
               <span class="mt-0.5 shrink-0 text-primary">"•"</span>
@@ -132,7 +132,7 @@ pub fn ContestCalendarPage() -> impl IntoView {
             </li>
           </ul>
           <div class="px-4 pb-4">
-            <a href="/contest-log" class="text-xs text-primary underline-offset-4 hover:underline">
+            <a href="/contest-log" class=format!("{} {}", crate::kit::link_class(), "text-xs")>
               {move || t("contest.go-to-contest-logging")}
             </a>
           </div>

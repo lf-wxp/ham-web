@@ -16,7 +16,7 @@
 # 导出 —— 本机构建靠它跳过依赖编译，CI（一次性 runner）每次都要重编。实测这些依赖
 # 只占 1 分钟上下，占大头的是前端那 ~5 分钟不可缓存的编译，所以没有为 CI 改成
 # cargo-chef 式的依赖分层（代价是 gha 缓存多占 3–4GB，收益只有 1.5–2 分钟）。
-# 详见 README「Docker 部署 → 构建耗时与缓存」。
+# 详见 docs/engineering/deployment.md「构建耗时与内存（实测）」。
 
 # 钉到具体版本而不是浮动的大版本 `1`：rust:1-bookworm 会随上游更新悄悄换工具链，
 # 同一个提交隔一周重建可能得到不同的 wasm / 原生二进制。升级工具链时改这里，
@@ -87,7 +87,7 @@ COPY . .
 #
 # 新增 / 删除一个解码 Worker 时本文件**不需要改**：codec 清单由脚本扫描 crates/*-worker
 # 得出（scripts/decode-workers.sh），构建与产物断言都用同一份清单。
-# 规范见 docs/decode-worker-protocol.md「wasm 胶水契约 → Dockerfile 里的 worker 构建」。
+# 规范见 docs/domain/decode-worker-protocol.md「wasm 胶水契约 → Dockerfile 里的 worker 构建」。
 #
 # 收尾对产物做一次存在性断言：上面这些生成物少任何一个，镜像照样能构建成功、
 # 直到运行时才暴露（页面缺资源 / 语言包里是旧译文）。断言让它在构建期就红，

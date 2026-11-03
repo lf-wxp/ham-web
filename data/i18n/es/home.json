@@ -3,7 +3,7 @@
   "home.a-b-c-question": "Bancos A/B/C · práctica · exámenes simulados",
   "home.k-index": "Índice K",
   "home.q-codes-abbreviations-phonetic": "Códigos Q, abreviaturas, alfabeto fonético, Morse y glosario: unos minutos al día con repaso espaciado.",
-  "home.one-platform-for-exam": "Una plataforma para practicar exámenes, consultar y usar herramientas de radio — desde la preparación A/B/C hasta la propagación en vivo.",
+  "home.one-platform-for-exam": "Una plataforma para practicar con el banco de preguntas, consultar referencias rápidas y usar herramientas de radio — desde la preparación A/B/C hasta la propagación en vivo.",
   "home.fair": "Regular",
   "home.all-cards-reviewed-today": "Repaso de hoy completado; puedes aprender tarjetas nuevas.",
   "home.completed-today": "Completado hoy: {} / {}.",
@@ -47,5 +47,36 @@
   "home.question-bank-is-unavailable": "El banco {} no está disponible o está vacío; genera los datos primero.",
   "home.sunspots": "Manchas solares",
   "home.rpg-entry-legend": "Misión = práctica del banco, Bestiario = tus errores; el simulacro está en «Inicio rápido» abajo",
-  "home.propagation-fetch-failed": "No se pudieron obtener las condiciones: reintenta o abre la página solar"
+  "home.propagation-fetch-failed": "No se pudieron obtener las condiciones: reintenta o abre la página solar",
+  "home.quick-actions": "Accesos rápidos",
+  "home.modules": "Secciones",
+  "home.continue-learning": "Seguir aprendiendo",
+  "home.hero-badge": "Bancos A/B/C · edición 2025",
+  "home.hero-title-a": "Empieza por una pregunta,",
+  "home.hero-title-b": "termina con tu licencia.",
+  "home.hero-trust": "Sin registro · el progreso se queda en tu equipo",
+  "home.answered": "Preguntas respondidas",
+  "home.streak-days-label": "Días seguidos",
+  "home.view-all": "Ver todo",
+  "home.closing-title": "Diez preguntas al día crean el instinto.",
+  "home.onair-title": "Hoy en el aire",
+  "home.onair-left": {
+    "one": "Queda {} tarea",
+    "other": "Quedan {} tareas"
+  },
+  "home.onair-all-done": "Todo lo de hoy está hecho",
+  "home.onair-state-done": "Hecho hoy",
+  "home.onair-state-todo": "En cola",
+  "home.onair-state-open": "Siempre abierto",
+  "home.record-title": "Registro de estudio",
+  "home.waterfall-title": "Últimos 7 días",
+  "home.waterfall-total": {
+    "one": "{} pregunta en 7 días",
+    "other": "{} preguntas en 7 días"
+  },
+  "home.waterfall-summary": "Preguntas respondidas por día en los últimos 7 días",
+  "home.waterfall-empty": "Aún no hay registro. ¿Empezamos hoy?",
+  "home.waterfall-cell": "{} · {} preguntas",
+  "home.live-unavailable": "Los datos en vivo no están disponibles",
+  "home.live-updated": "Actualizado {}"
 }

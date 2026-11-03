@@ -6,6 +6,7 @@
 mod badge;
 mod icon_kind;
 mod icon_lookup;
+mod modern_map;
 mod pixel;
 
 pub use badge::badge_sprite;
@@ -28,6 +29,20 @@ pub fn sprite_exists(name: &str) -> bool {
 /// 抗锯齿过渡，所以推荐用 `size-6`（24px）与 `size-12`（48px）这类整数倍。
 #[component]
 pub fn Icon(kind: IconKind, #[prop(optional, into)] class: Signal<String>) -> impl IntoView {
+  // 现代风：换成线性图标（`ui/` 的日历、chevron、勾选等控件都用这个组件）。
+  if crate::kit::is_modern_at_mount()
+    && let Some((icon, extra)) = modern_map::to_modern(kind)
+  {
+    // `class` 是响应式的（下拉箭头靠它在展开时加 `rotate-180`）：以信号传下去，
+    // 在 `get_untracked()` 里取值会把旋转冻死在首帧。
+    return view! {
+      <crate::kit_modern::ModernIcon
+        kind=icon
+        class=Signal::derive(move || format!("{extra} {}", class.get()))
+      />
+    }
+    .into_any();
+  }
   let class = move || format!("pxl-icon pxl-icon-{} {}", kind.name(), class.get());
   view! {
     <svg
@@ -43,4 +58,5 @@ pub fn Icon(kind: IconKind, #[prop(optional, into)] class: Signal<String>) -> im
       <path d=pixel::icon_path(kind) />
     </svg>
   }
+  .into_any()
 }

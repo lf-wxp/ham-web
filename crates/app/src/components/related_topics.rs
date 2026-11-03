@@ -18,10 +18,32 @@ pub fn RelatedTopics() -> impl IntoView {
         .map(|(_, items)| {
           // 标签走知识库词典：本组件挂在路由外壳里，页面自己不一定拉了词典。
           data::use_knowledge_i18n();
+          if crate::kit::is_modern() {
+            return view! {
+              <div class="md-page md-related">
+                <section class="md-panel">
+                  <h2 class="md-panel-title">{move || t("common.related-topics")}</h2>
+                  <div class="md-chip-row">
+                    {items
+                      .iter()
+                      .map(|&(href, label)| {
+                        view! {
+                          <a class="md-chip" href=href>
+                            {move || data::core_text_tracked(label)}
+                          </a>
+                        }
+                      })
+                      .collect_view()}
+                  </div>
+                </section>
+              </div>
+            }
+            .into_any();
+          }
           view! {
             <PageContainer class="pt-0 pb-10">
-              <section class="pxl-card border bg-card">
-                <h2 class="pxl-section-title">{move || t("common.related-topics")}</h2>
+              <section class=crate::kit::card_class()>
+                <h2 class=crate::kit::card_title_class()>{move || t("common.related-topics")}</h2>
                 <div class="flex flex-wrap gap-2 p-4">
                   {items
                     .iter()
@@ -43,6 +65,7 @@ pub fn RelatedTopics() -> impl IntoView {
               </section>
             </PageContainer>
           }
+          .into_any()
         })
     }}
   }

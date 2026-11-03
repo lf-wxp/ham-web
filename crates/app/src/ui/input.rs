@@ -64,6 +64,68 @@ impl InputType {
   }
 }
 
+/// 长尾小数的显示收敛：只处理「纯数值且小数位过长」的字符串，其余一律原样返回。
+///
+/// 不改调用方的值，只影响 `<input>` 的显示。量级越大保留的小数越少：
+/// `>=1000` 两位、`>=1` 四位、其余六位，末尾零去掉。
+///
+/// 三条硬约束（都是踩过的坑，别再放开）：
+/// 1. **只给 `type="number"` 用**（调用点判断，见 `Input` 的 `display`）：文本框里
+///    的值可能恰好是纯数字串（序号、长整数），收敛会把 `1234567890123456789` 显示成
+///    `1234567890123456800` —— 看见的值不是真值；
+/// 2. **小数位本来就不超档的原样返回**：整数与短小数没有可收敛的地方，动它就是改值；
+/// 3. **数量级太小不收敛**：`1e-7` 会被 6 位小数抹成 `"0"`，看起来像被清零。
+fn tidy_number(raw: &str) -> String {
+  /// 小于这个数量级的数值不收敛：再往下保留 6 位小数只会得到 `"0"` / `"-0"`。
+  const MIN_ABS: f64 = 1e-4;
+
+  let t = raw.trim();
+  if t.is_empty() {
+    return raw.to_owned();
+  }
+  if !t
+    .chars()
+    .all(|c| c.is_ascii_digit() || c == '.' || c == '-' || c == '+')
+  {
+    return raw.to_owned();
+  }
+  let Ok(v) = t.parse::<f64>() else {
+    return raw.to_owned();
+  };
+  if !v.is_finite() || v.abs() < MIN_ABS {
+    return raw.to_owned();
+  }
+  let decimals = if v.abs() >= 1000.0 {
+    2
+  } else if v.abs() >= 1.0 {
+    4
+  } else {
+    6
+  };
+  // 小数位本来就不超档：没有需要收敛的东西（整数尤其不能碰）。
+  if t
+    .split('.')
+    .nth(1)
+    .is_none_or(|frac| frac.len() <= decimals)
+  {
+    return raw.to_owned();
+  }
+  let mut s = format!("{v:.decimals$}");
+  if s.contains('.') {
+    while s.ends_with('0') {
+      s.pop();
+    }
+    if s.ends_with('.') {
+      s.pop();
+    }
+  }
+  // 收敛只允许「看起来更整齐」，不允许改动有效数字。
+  match s.parse::<f64>() {
+    Ok(tidy) if (tidy - v).abs() <= v.abs() * 1e-3 => s,
+    _ => raw.to_owned(),
+  }
+}
+
 /// 把空串视为「未设置」，避免渲染出 `min=""` 这类无效属性。
 fn non_empty(v: Option<String>) -> Option<String> {
   v.filter(|s| !s.is_empty())
@@ -165,7 +227,32 @@ pub fn Input(
   } else {
     ""
   };
-  let input_class = control_class(size, &cn(&[kind.appearance_class(), pad_l, pad_r, &class]));
+  // 现代风只换类名（`.md-input`），DOM 结构与输入事件处理完全共用 —— 这样 46 个计算器、
+  // 通联日志、各处搜索框一次性换装，不需要逐个页面改。
+  let modern = crate::kit::is_modern_at_mount();
+  // 计算器的结果经常是 `2.0689655172413794` 这种长尾。聚焦时保持原文（不能动光标），
+  // 失焦后按量级取整显示；值本身不变，只是「看起来」干净。
+  //
+  // 只对 `type="number"` 生效：文本框中纯数字串（序号、长整数）不该被重写，
+  // 那会让「看到的值」与「提交的值」不一致。
+  // 聚焦期间冻结显示：否则一点进去就从 `2.069` 跳成 `2.0689655172413794`，
+  // 用户看到的是一个「爆炸」的数字。失焦后重新按量级收敛。
+  let frozen = RwSignal::new(None::<String>);
+  let display = Memo::new(move |_| {
+    let raw = value.get();
+    if !modern || kind != InputType::Number {
+      return raw;
+    }
+    if let Some(f) = frozen.get() {
+      return f;
+    }
+    tidy_number(&raw)
+  });
+  let input_class = if modern {
+    cn(&["md-input", &class])
+  } else {
+    control_class(size, &cn(&[kind.appearance_class(), pad_l, pad_r, &class]))
+  };
 
   let field = view! {
     <input
@@ -191,7 +278,9 @@ pub fn Input(
       disabled=move || disabled.get()
       readonly=move || readonly.get()
       class=input_class
-      prop:value=move || value.get()
+      prop:value=move || display.get()
+      on:focus=move |_| frozen.set(Some(display.get_untracked()))
+      on:blur=move |_| frozen.set(None)
       on:input=move |e| {
         // 数字框的半截输入（`-`、`1.`）`value` 是空串，别当成「清空」（见 helper 的注释）。
         if kind == InputType::Number && is_incomplete_number(&e) {
@@ -222,24 +311,39 @@ pub fn Input(
     "right-2"
   };
 
+  let (wrap_class, prefix_class, suffix_class) = if modern {
+    (
+      "md-input-wrap",
+      "md-adorn md-adorn-left",
+      "md-adorn md-adorn-right",
+    )
+  } else {
+    (
+      "relative",
+      "pointer-events-none absolute left-3 top-1/2 flex -translate-y-1/2 items-center text-muted-foreground [&_svg]:size-4",
+      "absolute right-3 top-1/2 flex -translate-y-1/2 items-center text-muted-foreground [&_svg]:size-4",
+    )
+  };
+
+  // 有图标时输入框要让出内边距。以前靠 `.md-input-wrap:has(.md-adorn-left)`，Firefox 120 及以下
+  // 不认 `:has()`，图标就压在输入文字上；现在由这里写属性，CSS 用普通属性选择器。
+  let adorn_left = (modern && prefix.is_some()).then_some("");
+  let adorn_right = (modern && suffix.is_some()).then_some("");
+
   view! {
-    <div class=cn(&["relative", &wrapper_class])>
+    <div
+      class=cn(&[wrap_class, &wrapper_class])
+      data-adorn-left=adorn_left
+      data-adorn-right=adorn_right
+    >
       {field}
       {prefix
         .map(|p| {
-          view! {
-            <span class="pointer-events-none absolute left-3 top-1/2 flex -translate-y-1/2 items-center text-muted-foreground [&_svg]:size-4">
-              {p.run()}
-            </span>
-          }
+          view! { <span class=prefix_class>{p.run()}</span> }
         })}
       {suffix
         .map(|s| {
-          view! {
-            <span class="absolute right-3 top-1/2 flex -translate-y-1/2 items-center text-muted-foreground [&_svg]:size-4">
-              {s.run()}
-            </span>
-          }
+          view! { <span class=suffix_class>{s.run()}</span> }
         })}
       {clearable
         .then(|| {
@@ -251,10 +355,14 @@ pub fn Input(
                 tabindex="-1"
                 aria-label=move || t("exam.clear")
                 data-slot="input-clear"
-                class=cn(&[
-                  "absolute top-1/2 flex size-6 -translate-y-1/2 items-center justify-center border-2 border-transparent text-muted-foreground outline-none hover:border-ink hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring",
-                  clear_pos,
-                ])
+                class=if modern {
+                  "md-input-clear".to_owned()
+                } else {
+                  cn(&[
+                    "absolute top-1/2 flex size-6 -translate-y-1/2 items-center justify-center border-2 border-transparent text-muted-foreground outline-none hover:border-ink hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring",
+                    clear_pos,
+                  ])
+                }
                 on:click=clear
               >
                 <Icon kind=IconKind::X class="size-6" />
@@ -265,4 +373,41 @@ pub fn Input(
     </div>
   }
   .into_any()
+}
+
+#[cfg(test)]
+mod tests {
+  use super::tidy_number;
+
+  #[test]
+  fn tidy_number_shortens_only_long_tails() {
+    // 计算器结果的长尾：`>=1` 保留四位小数，末尾零去掉。
+    assert_eq!(tidy_number("2.0689655172413794"), "2.069");
+    assert_eq!(tidy_number("1234.5678"), "1234.57");
+    assert_eq!(tidy_number("14.074000"), "14.074");
+  }
+
+  #[test]
+  fn tidy_number_leaves_integers_and_short_decimals_alone() {
+    // 整数没有可收敛的小数位：动它就是改值（长整数经 f64 往返会丢低位）。
+    assert_eq!(tidy_number("1234567890123456789"), "1234567890123456789");
+    assert_eq!(tidy_number("12"), "12");
+    assert_eq!(tidy_number("12.5"), "12.5");
+    assert_eq!(tidy_number("0"), "0");
+  }
+
+  #[test]
+  fn tidy_number_never_shows_a_tiny_value_as_zero() {
+    // 6 位小数会把 1e-7 抹成 "0"：那样用户读到的是「值被清零了」。
+    assert_eq!(tidy_number("0.0000001"), "0.0000001");
+    assert_eq!(tidy_number("-0.0000001"), "-0.0000001");
+  }
+
+  #[test]
+  fn tidy_number_ignores_non_numeric_text() {
+    assert_eq!(tidy_number(""), "");
+    assert_eq!(tidy_number("14.074 MHz"), "14.074 MHz");
+    assert_eq!(tidy_number("尚在输入"), "尚在输入");
+    assert_eq!(tidy_number("1.2.3"), "1.2.3");
+  }
 }

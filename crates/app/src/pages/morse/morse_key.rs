@@ -14,7 +14,7 @@ use crate::ui::TextValue;
 /// 里拼类名。扩散圈原来用 `animate-ping`（放大 + 淡出），同样是缩放动画；换成内框逐帧闪烁。
 ///
 /// 仍是原生 `<button>`：长按发报要 `pointerdown` / `pointerup` / `pointerleave` 一组事件，
-/// `Button` 没有这条通道（见 `docs/ui-components.md` §10.3）。
+/// `Button` 没有这条通道（见 `docs/ui/pixel.md` §10.3）。
 #[component]
 pub(super) fn MorseKey(
   /// 尺寸类（`size-16` / `size-20` / `h-28 w-28`），都取 4 的倍数。
@@ -47,7 +47,11 @@ pub(super) fn MorseKey(
       aria-label=move || aria_label.as_ref().map(TextValue::get)
       // 只有长按发报键需要禁掉浏览器手势：`None` 时不输出 `style`，别留一个空属性。
       style=move || on_down.is_some().then_some("touch-action: none;")
-      class=format!("pxl-btn pxl-btn-primary relative select-none {class}")
+      class=if crate::kit::is_modern_at_mount() {
+        format!("md-morse-key select-none {class}")
+      } else {
+        format!("pxl-btn pxl-btn-primary relative select-none {class}")
+      }
       on:click=move |_| run(on_click)
       on:pointerdown=move |_| run(on_down)
       on:pointerup=move |_| run(on_up)

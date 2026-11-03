@@ -17,7 +17,6 @@ use table_rows::table_rows;
 
 use ham_web_core::bands::Usage;
 
-const CELL: &str = "border px-2 py-1.5 text-center align-middle";
 const SAT_ICON: &str = "h-3.5 w-3.5 shrink-0 text-gold-text";
 
 /// 用途徽章的配色。

@@ -10,7 +10,6 @@ use crate::components::nec_template_link::NecTemplateLink;
 use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 
-const CELL: &str = "border px-3 py-2 align-top";
 use crate::util::set_title;
 
 #[component]
@@ -21,17 +20,17 @@ pub fn PracticalAntennasPage() -> impl IntoView {
       <ConceptsSection title="核心概念" items=PRACTICAL_ANTENNAS_CONCEPTS />
       // 对比表比通用三列表格多一列「求解器模型」：能建模的方案直接跳到 `/nec`，
       // 不能的（小环、Beverage、K9AY）如实写「暂无可用模型」而不是硬凑一个。
-      <section class="pxl-card border bg-card">
-        <h2 class="pxl-section-title">
+      <section class=crate::kit::card_class()>
+        <h2 class=crate::kit::card_title_class()>
           {move || t("knowledge.antenna-comparison")}
         </h2>
         <Table class="min-w-[820px] text-sm">
           <TableHead>
             <TableRow>
-              <TableHeader class=CELL>{move || t("log.antenna")}</TableHeader>
-              <TableHeader class=CELL>{move || t("knowledge.features")}</TableHeader>
-              <TableHeader class=CELL>{move || t("knowledge.best-for")}</TableHeader>
-              <TableHeader class=CELL>{move || t("tools.nec-model-column")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("log.antenna")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.features")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.best-for")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.nec-model-column")}</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -40,12 +39,12 @@ pub fn PracticalAntennasPage() -> impl IntoView {
               .map(|&(name, feature, scene, template)| {
                 view! {
                   <TableRow>
-                    <TableCell class=format!("{CELL} whitespace-nowrap")>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>
                       {move || text(name)}
                     </TableCell>
-                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || text(feature)}</TableCell>
-                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || text(scene)}</TableCell>
-                    <TableCell class=CELL>
+                    <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || text(feature)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || text(scene)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("")>
                       <NecTemplateLink template=template />
                     </TableCell>
                   </TableRow>

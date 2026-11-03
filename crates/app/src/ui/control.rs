@@ -1,7 +1,7 @@
 //! 表单控件的共享基线：尺寸刻度与类名工厂。
 //!
 //! 所有替代原生元素的控件（[`crate::ui::Input`]、[`crate::ui::Textarea`]、
-//! [`crate::ui::NativeSelect`] …）都走同一条基线，保证边框、圆角、聚焦环、禁用态与
+//! [`crate::ui::SimpleSelect`] …）都走同一条基线，保证边框、圆角、聚焦环、禁用态与
 //! 错误态在项目内只有一处定义。
 
 use leptos::prelude::*;
@@ -40,7 +40,13 @@ impl ControlSize {
 pub const CONTROL_BASE: &str = "pxl-field file:text-foreground selection:bg-primary selection:text-primary-foreground px-3 py-1 file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm";
 
 /// 生成控件类名：`基线 + 尺寸 + 调用方覆盖`。
+///
+/// 现代风直接给 `md-input`：它内置高度 / 内距 / 圆角 / 聚焦环，与下拉、按钮同高；
+/// 再叠像素的 `h-8` / `px-3` 只会把控件拉回旧尺寸。像素风保持原样。
 pub fn control_class(size: ControlSize, extra: &str) -> String {
+  if crate::kit::is_modern_at_mount() {
+    return cn(&["md-input", extra]);
+  }
   cn(&[CONTROL_BASE, size.class(), extra])
 }
 

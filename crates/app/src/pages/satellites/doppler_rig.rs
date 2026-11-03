@@ -31,7 +31,7 @@ use wasm_bindgen::JsCast;
 use crate::components::cat_control::{load_settings, save_settings};
 use crate::i18n::{t, tf, tp};
 use crate::ui::{
-  Button, Checkbox, ControlSize, Input, Label, NativeSelect, SelectOption, Size, Variant,
+  Button, Checkbox, ControlSize, Input, Label, SelectOption, SimpleSelect, Size, Variant,
 };
 use crate::util::{js_error_message, sleep, unique_id};
 use crate::web_serial::{
@@ -322,7 +322,7 @@ pub(super) fn DopplerRig(
         <span class="text-foreground">{move || t("radio.doppler-rig-title")}</span>
         {if supported {
           view! {
-            <NativeSelect
+            <SimpleSelect
               value=Signal::derive(move || {
                 if settings.with(|s| s.protocol) == Protocol::Icom {
                   "icom".to_owned()
@@ -343,7 +343,7 @@ pub(super) fn DopplerRig(
               aria_label=Signal::derive(move || t("common.cat-protocol"))
               class="w-auto"
             />
-            <NativeSelect
+            <SimpleSelect
               value=Signal::derive(move || settings.with(|s| s.baud).to_string())
               on_change=Callback::new(move |v: String| {
                 settings.update(|s| s.baud = v.parse().unwrap_or(9600));

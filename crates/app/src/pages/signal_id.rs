@@ -182,7 +182,7 @@ pub fn SignalIdPage() -> impl IntoView {
       <section class="space-y-3">
         // live region 落在 `role="status"` 的 span 上，而不是 heading 上：`aria-live`
         // 挂在标题角色上时部分读屏不播报，而把 heading 改成 status 又会丢掉标题语义。
-        <h2 class="pxl-section-head">
+        <h2 class=crate::kit::section_head_class()>
           <span role="status">{move || tf("signal.results", &[&candidates.get().len().to_string()])}</span>
         </h2>
         {move || {
@@ -198,7 +198,7 @@ pub fn SignalIdPage() -> impl IntoView {
             .map(|p| {
               let key = p.key;
               view! {
-                <article class="pxl-card border bg-card">
+                <article class=crate::kit::card_class()>
                   <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3">
                     <h3 class="text-sm">{move || t(name_key(p.key))}</h3>
                     <span class="text-xs tabular-nums text-muted-foreground">

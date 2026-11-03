@@ -50,11 +50,15 @@ pub(super) fn js_year(y: i32) -> u32 {
 /// `set_full_year` 按字面值设置，因此这里对任意年份都正确。
 fn date_of(y: i32, m: u32, d: u32) -> js_sys::Date {
   let date = js_sys::Date::new_0();
-  // `set_full_year` 按**字面值**设置年份（`1900 + y` 的偏移只作用于 `new Date(y, …)`
+  // `set_full_year*` 按**字面值**设置年份（`1900 + y` 的偏移只作用于 `new Date(y, …)`
   // 这个构造函数），所以 `0024` 就是公元 24 年。接口是 `u32`，负数按 0 处理。
-  date.set_full_year(y.max(0) as u32);
-  date.set_month(m.saturating_sub(1));
-  date.set_date(d);
+  //
+  // 年 / 月 / 日必须**一次**设完：从「今天」出发分三步设会先溢出再覆盖 —— 今天是 31 日时
+  // `set_month(1)` 会先滚到 3 月，之后 `set_date(1)` 得到的是 3 月 1 日而不是 2 月 1 日
+  // （每月 29 / 30 / 31 日，日历标题与单元格的无障碍名都会错一个月）。
+  date.set_full_year_with_month_date(y.max(0) as u32, m.saturating_sub(1) as i32, d as i32);
+  // 钉在正午：保留「现在」的钟点可能落进夏令时的空档，把日期推到隔天。
+  date.set_hours(12);
   date
 }
 
@@ -113,6 +117,58 @@ pub(super) fn day_label(y: i32, m: u32, d: u32) -> String {
     m,
     d,
     &[("year", "numeric"), ("month", "long"), ("day", "numeric")],
+  )
+}
+
+/// 按当前界面语言格式化小数（`digits` 为固定小数位）。
+///
+/// 页面里不要直接 `format!("{:.1}", v)`：小数点恒为 `.`，西语界面不符合本地习惯
+/// （`12.5` 应为 `12,5`）。与日期文案一样在**响应式上下文**里调用，切语言才会重算。
+pub(crate) fn decimal(value: f64, digits: usize) -> String {
+  // js-sys 的 `Number::to_locale_string` 只接收 locale、接不了 options，这里直接调
+  // 原型上的 `toLocaleString`（不是 eval，严格 CSP 下也能用）。
+  let fallback = format!("{value:.digits$}");
+  let number = js_sys::Number::from(value);
+  let Ok(f) = js_sys::Reflect::get(&number, &JsValue::from_str("toLocaleString"))
+    .and_then(|v| v.dyn_into::<js_sys::Function>())
+  else {
+    return fallback;
+  };
+  let options: JsValue = js_sys::Object::new().unchecked_into();
+  let d = JsValue::from_f64(digits as f64);
+  for key in ["minimumFractionDigits", "maximumFractionDigits"] {
+    let _ = js_sys::Reflect::set(&options, &JsValue::from_str(key), &d);
+  }
+  // 关掉千分位：`419` / `14050` 这类读数加逗号会与既有文案、e2e 正则对不上，
+  // 这里只解决「小数分隔符按语言」这一件事。
+  let _ = js_sys::Reflect::set(
+    &options,
+    &JsValue::from_str("useGrouping"),
+    &JsValue::from_bool(false),
+  );
+  f.call2(&number, &JsValue::from_str(locale_code()), &options)
+    .ok()
+    .and_then(|v| v.as_string())
+    .unwrap_or(fallback)
+}
+
+/// 按当前界面语言格式化 `YYYY-MM-DD`（只到日，不做时间换算）。
+///
+/// 传进来的不是这个形状时原样返回：调用点常在数据不干净的路径上，宁可显示原文也不要空串。
+pub(crate) fn date_iso(iso: &str) -> String {
+  let parts: Vec<i32> = iso.split('-').filter_map(|p| p.parse().ok()).collect();
+  if parts.len() != 3 {
+    return iso.to_owned();
+  }
+  fmt(
+    parts[0],
+    parts[1].max(1) as u32,
+    parts[2].max(1) as u32,
+    &[
+      ("year", "numeric"),
+      ("month", "numeric"),
+      ("day", "numeric"),
+    ],
   )
 }
 

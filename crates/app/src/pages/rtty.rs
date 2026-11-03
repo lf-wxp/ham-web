@@ -9,8 +9,6 @@ use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 #[component]
 pub fn RttyPage() -> impl IntoView {
   set_title("RTTY / PSK31");
@@ -24,14 +22,14 @@ pub fn RttyPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.mode-notes")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.mode-notes")}</h2>
           <Table class="min-w-[560px] text-sm">
             <TableHead>
               <TableRow>
-                <TableHeader class=CELL>{move || t("log.mode")}</TableHeader>
-                <TableHeader class=CELL>{move || t("knowledge.alias")}</TableHeader>
-                <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("log.mode")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.alias")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.notes")}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -40,11 +38,11 @@ pub fn RttyPage() -> impl IntoView {
                 .map(|&(name, alias, desc)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-primary")>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono text-primary")>
                         {move || kt_tracked(name)}
                       </TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(alias)}</TableCell>
-                      <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap text-muted-foreground")>{move || kt_tracked(alias)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -53,8 +51,8 @@ pub fn RttyPage() -> impl IntoView {
           </Table>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("shell.common-frequencies")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("shell.common-frequencies")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {RTTY_FREQS
               .iter()
@@ -70,8 +68,8 @@ pub fn RttyPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.operating-tips")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.operating-tips")}</h2>
           <ul class="space-y-2 p-4">
             {RTTY_TIPS
               .iter()

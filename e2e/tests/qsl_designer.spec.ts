@@ -44,7 +44,7 @@ test("QSL 卡片设计：换版式、从日志带入、导出 PNG、打印页就
     .not.toBe(classic);
 
   // 从日志带入一条通联：呼号 / 网格 / RST 一次填好。
-  // 下拉是自定义弹层（`ui::NativeSelect`），选项文案带日期时间，所以用正则匹配呼号。
+  // 下拉是自定义弹层（`ui::SimpleSelect`），选项文案带日期时间，所以用正则匹配呼号。
   await pickOption(page, "从日志填入一条通联", /JA1AA/);
   await expect(page.locator('input[placeholder="JA1XXX"]')).toHaveValue("JA1AA");
   // 网格也跟着带过来（不只是呼号）。

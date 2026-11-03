@@ -183,6 +183,8 @@ pub mod keys {
   pub const READABLE_FONT: &str = "ui:readableFont";
   /// 配色方案 id（[`crate::color_scheme`]；缺省或不认识时用默认方案）。
   pub const COLOR_SCHEME: &str = "ui:colorScheme";
+  /// 界面风格（[`crate::ui_style::UiStyle`]；缺省为像素风）。
+  pub const UI_STYLE: &str = "ui:uiStyle";
   /// 闯关星级（[`crate::rpg::StageStars`]）。
   pub const RPG_STARS: &str = "rpg-stars";
   /// 怪物图鉴（[`crate::rpg::Bestiary`]）。

@@ -70,6 +70,74 @@ impl PropagationLevel {
   }
 }
 
+/// 首页实时传播卡用的「可能缺数据」版等级：任何**决定结论**的指数缺失就返回 `None`。
+///
+/// 为什么不直接把缺失当 0 喂给 [`propagation_level`]：接口里 SFI / SSN 都是 `Option`，
+/// 缺失当 0 会在 K 正常时判成「一般」—— 编造了一个没有数据支撑的等级，与「不编造等级」的口径矛盾。
+/// 只有结论真的依赖它时才要求它存在：K≥4 时等级只看 K；SFI≥130 时「优秀 / 良好」才取决于 SSN。
+#[must_use]
+pub fn live_level(kp: Option<i32>, ssn: Option<i32>, sfi: Option<i32>) -> Option<PropagationLevel> {
+  let kp = f64::from(kp?);
+  if kp >= 4.0 {
+    return Some(propagation_level(kp, 0.0, 0.0));
+  }
+  let f107 = f64::from(sfi?);
+  if f107 >= 130.0 {
+    ssn?;
+  }
+  Some(propagation_level(kp, ssn.map_or(0.0, f64::from), f107))
+}
+
+/// 一条波段条件（HamQSL 的 `time` 为 `day` / `night`）。
+///
+/// 三个字段都给 `default`：接口里只要有一行缺词（`condition` 为空、`time` 拼错），
+/// 严格反序列化会让**整张传播卡**进失败态 —— 一行脏数据不该换掉另外十几行读数。
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+pub struct BandCondition {
+  #[serde(default)]
+  pub band: String,
+  #[serde(default)]
+  pub time: String,
+  #[serde(default)]
+  pub condition: String,
+}
+
+/// 从全量条件里挑当前时段的那一批；时段字段缺失（全挑不出来）时退回全部。
+#[must_use]
+pub fn select_bands(all: &[BandCondition], period: &str) -> Vec<BandCondition> {
+  let rows: Vec<BandCondition> = all
+    .iter()
+    .filter(|c| !c.band.is_empty() && c.time == period)
+    .cloned()
+    .collect();
+  if !rows.is_empty() {
+    return rows;
+  }
+  all.iter().filter(|c| !c.band.is_empty()).cloned().collect()
+}
+
+/// HamQSL 的条件值 → 界面词条 key；不认识的值为 `None`（显示破折号，不编造等级）。
+#[must_use]
+pub fn condition_label_key(condition: &str) -> Option<&'static str> {
+  match condition {
+    "Good" => Some("home.good"),
+    "Fair" => Some("home.fair"),
+    "Poor" => Some("home.poor"),
+    _ => None,
+  }
+}
+
+/// 条件值 → 色条档位（颜色由界面层的 `[data-tone]` 决定）。
+#[must_use]
+pub fn condition_tone(condition: &str) -> &'static str {
+  match condition {
+    "Good" => "good",
+    "Fair" => "warn",
+    "Poor" => "muted",
+    _ => "unknown",
+  }
+}
+
 /// 根据 Kp 指数、太阳黑子数与太阳通量判断传播条件。
 ///
 /// 规则：Kp≥5 视为磁暴（差）；Kp≥4 视为地磁活跃（一般）；
@@ -92,6 +160,58 @@ pub fn propagation_level(kp: f64, ssn: f64, f107: f64) -> PropagationLevel {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn live_level_never_invents_a_level() {
+    use PropagationLevel::*;
+    // K 缺失：一律未知。
+    assert_eq!(live_level(None, Some(100), Some(150)), None);
+    // K≥4 时等级只看 K，SFI / SSN 缺失也能给出结论。
+    assert_eq!(live_level(Some(5), None, None), Some(Poor));
+    assert_eq!(live_level(Some(4), None, None), Some(Fair));
+    // K 正常：SFI 缺失 = 未知（以前当 0 会判成「一般」，是编造的）。
+    assert_eq!(live_level(Some(2), Some(90), None), None);
+    // SFI≥130 时优秀 / 良好取决于 SSN：SSN 缺失 = 未知。
+    assert_eq!(live_level(Some(2), None, Some(150)), None);
+    assert_eq!(live_level(Some(2), Some(90), Some(150)), Some(Excellent));
+    // SFI 在 100–129：只看 SFI，SSN 缺失不影响。
+    assert_eq!(live_level(Some(2), None, Some(110)), Some(Good));
+    assert_eq!(live_level(Some(2), None, Some(80)), Some(Fair));
+  }
+
+  #[test]
+  fn band_selection_prefers_the_period_and_falls_back() {
+    let c = |band: &str, time: &str| BandCondition {
+      band: band.into(),
+      time: time.into(),
+      condition: "Good".into(),
+    };
+    let all = [
+      c("20m", "day"),
+      c("20m", "night"),
+      c("", "day"),
+      c("40m", "dusk"),
+    ];
+    let day = select_bands(&all, "day");
+    assert_eq!(day.len(), 1);
+    assert_eq!(day[0].time, "day");
+    // 时段字段拼错 / 缺失：挑不出来时退回全部有波段名的行，而不是空表。
+    let fallback = select_bands(&all, "noon");
+    assert_eq!(fallback.len(), 3);
+    assert!(fallback.iter().all(|r| !r.band.is_empty()));
+    assert!(select_bands(&[], "day").is_empty());
+  }
+
+  #[test]
+  fn condition_words_map_to_keys_and_tones() {
+    assert_eq!(condition_label_key("Good"), Some("home.good"));
+    assert_eq!(condition_label_key("Poor"), Some("home.poor"));
+    assert_eq!(condition_label_key("Band Closed"), None);
+    assert_eq!(condition_tone("Fair"), "warn");
+    assert_eq!(condition_tone(""), "unknown");
+    // 大小写敏感：HamQSL 的取值固定，宁可显示破折号也不猜。
+    assert_eq!(condition_label_key("good"), None);
+  }
 
   #[test]
   fn solar_data_populated() {

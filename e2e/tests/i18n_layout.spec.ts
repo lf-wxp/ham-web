@@ -1,12 +1,16 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, waitSettled } from "./fixtures";
+import { AUDIT } from "./layout_audit";
 
 // 路由表以 main_content.rs 为准，与 smoke.spec.ts 保持一致
 const source = readFileSync(join(__dirname, "../../crates/app/src/app/main_content.rs"), "utf8");
 const routes = [...source.matchAll(/path!\("([^"]+)"\)/g)]
   .map((m) => m[1])
   .filter((p) => !p.includes(":") && !p.includes("*"));
+
+/** 被测界面风格：`E2E_UI_STYLE=modern` 切到现代风，其余一律像素风。 */
+const uiStyle = process.env.E2E_UI_STYLE === "modern" ? "modern" : "pixel";
 
 const LANGS = [
   { code: "zh", htmlLang: "zh-CN", name: "中文" },
@@ -17,94 +21,6 @@ const LANGS = [
 const OUT_DIR = join(__dirname, "../test-results/i18n-layout");
 const limit = Number(process.env.I18N_MAX_FINDINGS ?? 40);
 
-/**
- * 页面内布局审计：
- * 1. 文档横向滚动 —— 任何语言都不该出现（硬失败）
- * 2. 文本被裁掉 —— 自身内容宽于可视宽，且不是刻意省略（ellipsis / line-clamp）
- * 3. 元素越过视口右边界 —— 排除地图 / 横向可滚容器
- * SVG 内部元素由 viewBox 决定坐标，不遵循 HTML 布局，仅统计不判定。
- */
-const AUDIT = () => {
-  const doc = document.documentElement;
-  const vw = window.innerWidth;
-  const hScroll = Math.max(0, doc.scrollWidth - doc.clientWidth);
-  const clipped: { sel: string; detail: string }[] = [];
-  const overRight: { sel: string; detail: string }[] = [];
-  const svgOver: string[] = [];
-
-  const describe = (el: Element) => {
-    const id = el.id ? `#${el.id}` : "";
-    const cls = (el.getAttribute("class") || "").split(/\s+/).filter(Boolean).slice(0, 4).join(".");
-    const text = (el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 70);
-    return `${el.tagName.toLowerCase()}${id}${cls ? "." + cls : ""} :: ${text}`;
-  };
-
-  // 横向可滚容器：`scrollWidth > clientWidth` 是它的正常工作状态，不是「文本被裁掉」
-  const scrollableX = (el: Element) => {
-    const cs = getComputedStyle(el);
-    return cs.overflowX === "auto" || cs.overflowX === "scroll";
-  };
-  // 祖先是横向可滚容器时，后代超出视口右边界是合法的（宽表格本来就该横向滚），
-  // 只判容器**自身**有没有越界 —— 否则 `min-w-[680px]` 这类表格会刷出几十条假阳性。
-  const inScrollableX = (el: Element | null) => {
-    for (let p = el; p; p = p.parentElement) {
-      if (scrollableX(p)) return true;
-    }
-    return false;
-  };
-
-  for (const el of Array.from(document.querySelectorAll("main *"))) {
-    if ((el as SVGElement).ownerSVGElement) {
-      const r = el.getBoundingClientRect();
-      if (r.width > 0 && r.right > vw + 1) svgOver.push(describe(el));
-      continue;
-    }
-    const cs = getComputedStyle(el);
-    if (cs.display === "none" || cs.visibility === "hidden") continue;
-    const rect = el.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) continue;
-    if (!(el.textContent || "").trim()) continue;
-    // sr-only / 1px 视觉隐藏元素（clip 技巧）不参与判定
-    if (el.clientWidth <= 2 || el.clientHeight <= 2) continue;
-
-    // 刻意截断（ellipsis / line-clamp）属设计意图，不计入
-    const lineClamp = (cs as unknown as { webkitLineClamp?: string }).webkitLineClamp;
-    const intentional = cs.textOverflow === "ellipsis" || (!!lineClamp && lineClamp !== "none");
-
-    if (
-      !intentional &&
-      !scrollableX(el) &&
-      el.clientWidth > 0 &&
-      el.scrollWidth > el.clientWidth + 2
-    ) {
-      clipped.push({
-        sel: describe(el),
-        detail: `scrollW=${el.scrollWidth} clientW=${el.clientWidth}`,
-      });
-    }
-
-    if (
-      rect.right > vw + 1 &&
-      cs.position !== "fixed" &&
-      cs.position !== "sticky" &&
-      !inScrollableX(el.parentElement)
-    ) {
-      overRight.push({
-        sel: describe(el),
-        detail: `right=${Math.round(rect.right)} viewport=${vw}`,
-      });
-    }
-  }
-  // 未取整的浮点数（格式化丢失的典型特征）：文本里出现 6 位以上小数
-  const longDecimals: string[] = [];
-  for (const el of Array.from(document.querySelectorAll("main *"))) {
-    if (el.children.length > 0) continue;
-    const m = (el.textContent || "").trim().match(/\d+\.\d{6,}/);
-    if (m) longDecimals.push(`${describe(el)} → ${m[0]}`);
-  }
-
-  return { hScroll, clipped, overRight, svgOver, longDecimals };
-};
 
 for (const lang of LANGS) {
   test.describe(`双语布局回归（${lang.name}）`, () => {
@@ -112,15 +28,23 @@ for (const lang of LANGS) {
 
     test(`全部 ${routes.length} 个路由：无横向溢出 / 文本裁剪 / 越界`, async ({ page }) => {
       await page.addInitScript((code) => localStorage.setItem("locale", code), lang.code);
+      // E2E_UI_STYLE=modern 把整套全站审计切到现代风（默认像素风）：dock、768 / 900 断点与大量
+      // `md-*` 版式只在现代风下出现，默认只跑像素风就等于现代风没有被「全部路由 × 三语」覆盖。
+      await page.addInitScript((style) => {
+        if (window !== window.top) return;
+        localStorage.setItem("ui:uiStyle", style);
+        if (style === "modern") localStorage.setItem("theme", "dark");
+      }, uiStyle);
 
       const findings: { sel: string; detail: string }[] = [];
       const svgNotes: string[] = [];
 
-      for (const route of routes) {
+      for (const [index, route] of routes.entries()) {
         await page.goto(route, { waitUntil: "domcontentloaded" });
         try {
-          // Leptos 客户端渲染：等主内容挂载
-          await page.waitForSelector("main", { timeout: 15_000 });
+          // Leptos 客户端渲染：等主内容挂载。第一个路由要承担 wasm 的冷启动（三个 worker 同时起时尤其慢，
+          // 曾在 `/map`、`/` 上各因 15 秒不够误报过「main 未挂载」），后面的路由是热的。
+          await page.waitForSelector("main", { timeout: index === 0 ? 45_000 : 15_000 });
           // 再等异步内容到位（骨架 / spinner 消失）：否则量到的是「还没渲染完」的中间态，
           // 布局结论既可能漏报也可能误报。原先固定 sleep 120ms 同样是在赌。
           await waitSettled(page);
@@ -129,8 +53,17 @@ for (const lang of LANGS) {
           continue;
         }
 
-        const attr = await page.getAttribute("html", "lang");
-        if (attr !== lang.htmlLang) {
+        // 同 `mobile_overflow`：语言包异步加载，`<html lang>` 比 `main` 挂载稍晚落定，
+        // 直接读会偶发抓到模板里的 zh-CN。等一会儿再判（等不到才算问题）。
+        const applied = await page
+          .waitForFunction((l) => document.documentElement.lang === l, lang.htmlLang, {
+            timeout: 5_000,
+            polling: 50,
+          })
+          .then(() => true)
+          .catch(() => false);
+        if (!applied) {
+          const attr = await page.getAttribute("html", "lang");
           findings.push({
             sel: `${route} :: <html lang>`,
             detail: `实为 ${attr}，期望 ${lang.htmlLang}`,

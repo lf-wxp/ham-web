@@ -65,6 +65,21 @@ pub fn ExamResultDialog(
       });
     }
   };
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <crate::kit_modern::ModernExamResult
+        open=open
+        score=score
+        pass_line=pass_line
+        deltas=deltas
+        weak=weak
+        wrong_count=wrong_count
+        wrong_href=wrong_href
+        bank=bank
+      />
+    }
+    .into_any();
+  }
   view! {
     <Dialog open=open>
       <DialogHeader>
@@ -148,4 +163,5 @@ pub fn ExamResultDialog(
       </DialogFooter>
     </Dialog>
   }
+  .into_any()
 }

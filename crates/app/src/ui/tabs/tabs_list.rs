@@ -24,7 +24,11 @@ pub fn TabsList(
       role="tablist"
       data-slot="tabs-list"
       aria-label=move || aria_label.as_ref().map(TextValue::get)
-      class=cn(&["pxl-tablist", &class])
+      class=if crate::kit::is_modern_at_mount() {
+        cn(&["md-tablist", &class])
+      } else {
+        cn(&["pxl-tablist", &class])
+      }
     >
       {children()}
     </div>

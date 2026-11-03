@@ -6,7 +6,7 @@ use leptos::prelude::*;
 
 use super::{RESULT, fmt_num};
 use crate::i18n::{t, tf};
-use crate::ui::{Field, NativeSelect, NumberField, SelectOption};
+use crate::ui::{Field, NumberField, SelectOption, SimpleSelect};
 use crate::util::unique_id;
 
 /// 雨衰：地面微波链路的单位长度雨衰、有效路径长度与指定时间百分比的雨衰（ITU-R P.838-3 / P.530-17）。
@@ -79,7 +79,7 @@ pub(super) fn RainFade() -> impl IntoView {
         />
       </Field>
       <Field label=Signal::derive(move || t("tools.rain-pol")) r#for=pol_id.clone()>
-        <NativeSelect
+        <SimpleSelect
           id=pol_id
           value=Signal::derive(move || pol.get())
           on_change=Callback::new(move |v: String| pol.set(v))

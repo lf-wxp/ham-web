@@ -8,11 +8,13 @@ mod mobile_menu;
 mod mobile_nav_section;
 mod mobile_tabs;
 mod nav_bar;
+mod nav_root;
 mod scheme_choice;
 mod settings_dialog;
+mod style_choice;
 mod theme_choice;
 mod theme_toggle;
 
 pub use mobile_menu::provide_mobile_menu;
 pub use mobile_tabs::MobileTabs;
-pub use nav_bar::Navigation;
+pub use nav_root::Navigation;

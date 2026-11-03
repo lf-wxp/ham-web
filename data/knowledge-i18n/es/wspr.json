@@ -1,0 +1,11 @@
+{
+  "Weak Signal Propagation Reporter，用极低功率（mW 级）测试传播的弱信号模式。": "Weak Signal Propagation Reporter: un modo de señal débil que sondea la propagación con potencias del orden de milivatios.",
+  "与 FT8 同样需要严格时间同步。": "Como FT8, requiere una sincronización horaria estricta.",
+  "传播研究": "Estudio de propagación",
+  "信标": "Baliza",
+  "全球接收站汇总数据，可查看各波段实时传播图。": "Las estaciones receptoras de todo el mundo agregan los datos, lo que permite ver mapas de propagación en tiempo real por banda.",
+  "发射功率可低至 mW 级（WSPR 编码下限 0 dBm = 1mW），传播良好时即可被全球接收站解码。": "La potencia de emisión puede bajar al rango de milivatios (0 dBm = 1 mW, el mínimo de la codificación WSPR); con buena propagación basta para que estaciones de todo el mundo la decodifiquen.",
+  "发射后到 wsprnet.org 查看自己的信号被哪些台站接收。": "Tras emitir, consulta wsprnet.org para ver qué estaciones han recibido tu señal.",
+  "周期发送呼号、网格、功率等信息，接收站解码并上传到 WSPRnet 数据库。": "Transmite periódicamente el indicativo, la cuadrícula y la potencia; las estaciones receptoras lo decodifican y lo suben a la base de datos de WSPRnet.",
+  "遵守功率限制，WSPR 是信标模式，不应占用话音通联频率。": "Respeta el límite de potencia: WSPR es un modo de baliza y no debe ocupar frecuencias de voz."
+}

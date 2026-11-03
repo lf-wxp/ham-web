@@ -90,9 +90,9 @@ enum Command {
   CheckGlossary,
   /// 校验解析表：答案一致性、重复/错位注入、裸释义、同题多版本分叉
   CheckExplanations,
-  /// 界面规范守卫：已失效的圆角类、原生表单控件、类名工厂残留等（docs/ui-components.md §11）
+  /// 界面规范守卫：已失效的圆角类、原生表单控件、类名工厂残留等（docs/ui/pixel.md §11）
   CheckUi,
-  /// 结构与架构守卫：一文件一组件、手写吸顶偏移、散落 alert()、core 碰浏览器 API、crate 反向依赖、panic 宏（docs/code-quality.md）
+  /// 结构与架构守卫：一文件一组件、手写吸顶偏移、散落 alert()、core 碰浏览器 API、crate 反向依赖、panic 宏（docs/engineering/code-quality.md）
   CheckStructure,
   /// e2e 覆盖对账：coverage-targets.json 的每条核心旅程必须能在 spec 里命中
   CheckE2e,

@@ -54,24 +54,28 @@ test("备考日历：14 天里标出考试日、倒数、模拟考建议、打�
   await page.goto("/study-calendar");
 
   // 顶部备考计划卡里也有列表：限定在「未来 14 天」那一节。
+  // 取 `last()`：`#route-content` 里还有一层风格重建用的 `<section data-style-root>`，
+  // 它也「包含」这个标题，不收紧会把两层 section 的行一起算进来。
   const days = page
     .locator("section", { has: page.getByRole("heading", { name: "未来 14 天复习日历" }) })
+    .last()
     .locator("ul > li");
   await expect(days).toHaveCount(14);
   const row = (mmdd: string) => days.filter({ hasText: mmdd });
 
-  const today = row("10-14");
+  // 日期文案走 `Intl`（按界面语言排序），中文下形如 `2026/10/14`。
+  const today = row("2026/10/14");
   await expect(today).toContainText("今天");
   await expect(today).toContainText("距考试 6 天");
   await expect(today).toContainText("建议模拟考");
   await expect(today).toContainText("已打卡");
   await expect(today).toContainText("2 道");
-  await expect(row("10-16")).toContainText("1 道");
-  await expect(row("10-15")).toContainText("—");
-  await expect(row("10-15")).not.toContainText("已打卡");
+  await expect(row("2026/10/16")).toContainText("1 道");
+  await expect(row("2026/10/15")).toContainText("—");
+  await expect(row("2026/10/15")).not.toContainText("已打卡");
 
-  await expect(row("10-20")).toContainText("考试日");
-  await expect(row("10-20")).not.toContainText("建议模拟考");
+  await expect(row("2026/10/20")).toContainText("考试日");
+  await expect(row("2026/10/20")).not.toContainText("建议模拟考");
   // 考前 7 天内都建议模拟考，考后一律「已过」。
   await expect(days.filter({ hasText: "建议模拟考" })).toHaveCount(6);
   await expect(days.filter({ hasText: "已过" })).toHaveCount(7);

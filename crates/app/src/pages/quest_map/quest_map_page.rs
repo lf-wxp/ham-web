@@ -73,7 +73,33 @@ pub fn QuestMapPage() -> impl IntoView {
     );
   });
 
+  // 这个闭包会被 `PageHeader` 在**组件体里**调一次（`actions` 槽位），那里没有观察者；
+  // 风格切换本来就会重建整棵路由子树，所以这里用构造期求值版，别订阅信号。
   let bank_chips = move || {
+    if crate::kit::is_modern_at_mount() {
+      return view! {
+        <div class="md-chip-row" role="group" aria-label=move || t("exam.bank-class")>
+          {Bank::ALL
+            .into_iter()
+            .map(|b| {
+              let value = b.as_str().to_owned();
+              let set_value = value.clone();
+              view! {
+                <button
+                  type="button"
+                  class="md-chip"
+                  aria-pressed=move || (bank.get().as_str() == value).to_string()
+                  on:click=move |_| switch_bank.run(set_value.clone())
+                >
+                  {move || bank_class(b.as_str())}
+                </button>
+              }
+            })
+            .collect_view()}
+        </div>
+      }
+      .into_any();
+    }
     view! {
       <ChipGroup
         value=Signal::derive(move || bank.get().as_str().to_owned())
@@ -86,12 +112,13 @@ pub fn QuestMapPage() -> impl IntoView {
           .collect_view()}
       </ChipGroup>
     }
+    .into_any()
   };
 
   let body = move || {
     if failed.get() {
       return view! {
-        <section class="pxl-window space-y-3 p-6" role="alert">
+        <section class="md-panel space-y-3" role="alert">
           <p>{t("rpg.load-failed")}</p>
           <Button
             variant=Variant::Default
@@ -105,11 +132,16 @@ pub fn QuestMapPage() -> impl IntoView {
       .into_any();
     }
     let Some(data) = map.get() else {
-      return view! { <div class="pxl-window p-6" aria-live="polite">{t("rpg.map-loading")}</div> }
-        .into_any();
+      return view! {
+        <div class="md-panel" aria-live="polite">
+          <div class="md-skel md-skel-line" style="width: 38%"></div>
+          <div class="md-skel md-skel-line mt-3" style="width: 62%"></div>
+        </div>
+      }
+      .into_any();
     };
     if data.stages.is_empty() {
-      return view! { <div class="pxl-window p-6">{t("rpg.map-empty")}</div> }.into_any();
+      return view! { <div class="md-panel">{t("rpg.map-empty")}</div> }.into_any();
     }
 
     let (b, v) = (bank.get_untracked(), version.get_untracked());
@@ -151,7 +183,7 @@ pub fn QuestMapPage() -> impl IntoView {
       .collect_view();
 
     view! {
-      <p class="pxl-label text-xs text-muted-foreground" aria-live="polite">
+      <p class=if crate::kit::is_modern() { "md-map-summary" } else { "pxl-label text-xs text-muted-foreground" } aria-live="polite">
         {tf(
           "rpg.map-summary",
           &[
@@ -163,7 +195,12 @@ pub fn QuestMapPage() -> impl IntoView {
         )}
       </p>
       <NextQuest stage=next bank=b version=v />
-      <ol class="space-y-3" aria-label=move || t("rpg.quest-map")>{nodes}</ol>
+      <ol
+        class=if crate::kit::is_modern() { "md-stage-list" } else { "space-y-3" }
+        aria-label=move || t("rpg.quest-map")
+      >
+        {nodes}
+      </ol>
     }
     .into_any()
   };

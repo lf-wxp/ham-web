@@ -11,7 +11,7 @@ pub(super) fn SlangCard(entry: &'static GlossaryEntry) -> impl IntoView {
     "text-base"
   };
   view! {
-    <article class="flex flex-col pxl-card border bg-card p-4">
+    <article class=crate::kit::card_class_with("flex flex-col p-4")>
       <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <h3 class=term_class>{move || crate::data::kt_tracked(entry.term.as_str())}</h3>
         {entry

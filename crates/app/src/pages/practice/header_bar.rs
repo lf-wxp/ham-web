@@ -28,6 +28,26 @@ pub(super) fn PracticeHeaderBar(
   on_open_search: Callback<()>,
   on_open_settings: Callback<()>,
 ) -> impl IntoView {
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <crate::kit_modern::ModernPracticeHeader
+        percent=percent
+        progress_label=progress_label
+        bank=bank
+        on_switch_bank=on_switch_bank
+        unique_only=unique_only
+        unseen_only=unseen_only
+        multi_only=multi_only
+        bookmarked=bookmarked
+        bookmark_disabled=bookmark_disabled
+        on_toggle_bookmark=on_toggle_bookmark
+        sequential=sequential
+        on_open_search=on_open_search
+        on_open_settings=on_open_settings
+      />
+    }
+    .into_any();
+  }
   view! {
     <QuestionProgressHeader
       percent=percent
@@ -129,4 +149,5 @@ pub(super) fn PracticeHeaderBar(
       }
     />
   }
+  .into_any()
 }

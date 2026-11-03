@@ -9,9 +9,39 @@ use crate::ui::Progress;
 #[component]
 pub(super) fn TopicBars(rows: Vec<(&'static str, usize)>) -> impl IntoView {
   let max = rows.iter().map(|(_, n)| *n).max().unwrap_or(1).max(1);
+  if crate::kit::is_modern_at_mount() {
+    let data: Vec<(&'static str, usize, f64)> = rows
+      .iter()
+      .map(|(name, n)| (*name, *n, *n as f64 / max as f64 * 100.0))
+      .collect();
+    return view! {
+      <section class="md-panel" aria-labelledby="topic-bars-title">
+        <h2 id="topic-bars-title" class="md-panel-title">{move || t("rpg.weak-topics")}</h2>
+        <div class="md-bars">
+          {data
+            .into_iter()
+            .map(|(name, count, pct)| {
+              view! {
+                <div class="md-bar-row">
+                  <span class="md-bar-label">{move || t(name)}</span>
+                  <span class="md-bar-track">
+                    <span class="md-bar-fill" style=format!("width: {pct:.1}%")></span>
+                  </span>
+                  <span class="md-bar-count">
+                    {move || tp("rpg.monsters-count", count, &[&count.to_string()])}
+                  </span>
+                </div>
+              }
+            })
+            .collect_view()}
+        </div>
+      </section>
+    }
+    .into_any();
+  }
   view! {
     <section class="pxl-window space-y-2 p-4" aria-labelledby="topic-bars-title">
-      <h2 id="topic-bars-title" class="pxl-section-head">{move || t("rpg.weak-topics")}</h2>
+      <h2 id="topic-bars-title" class=crate::kit::section_head_class()>{move || t("rpg.weak-topics")}</h2>
       <ul class="space-y-2">
         {rows
           .into_iter()
@@ -31,4 +61,5 @@ pub(super) fn TopicBars(rows: Vec<(&'static str, usize)>) -> impl IntoView {
       </ul>
     </section>
   }
+  .into_any()
 }

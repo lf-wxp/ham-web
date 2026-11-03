@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use ham_web_core::answer_card::{AnswerCardFilter, Answers, Flags, Jump};
 use leptos::prelude::*;
 
 use crate::data::Questions;
@@ -7,41 +6,14 @@ use crate::i18n::t;
 use crate::ui::{Button, Separator, Sheet, Size, Variant, button_class};
 
 use super::answer_card_cell::AnswerCardCell;
-
-/// 答题卡筛选。
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub enum AnswerCardFilter {
-  #[default]
-  All,
-  Unanswered,
-  Flagged,
-}
-
-impl AnswerCardFilter {
-  pub const fn as_str(self) -> &'static str {
-    match self {
-      Self::All => "all",
-      Self::Unanswered => "unanswered",
-      Self::Flagged => "flagged",
-    }
-  }
-
-  pub fn parse(s: &str) -> Option<Self> {
-    match s {
-      "all" => Some(Self::All),
-      "unanswered" => Some(Self::Unanswered),
-      "flagged" => Some(Self::Flagged),
-      _ => None,
-    }
-  }
-}
+use super::answer_card_model::AnswerCardModel;
 
 #[component]
 pub fn AnswerCardSheet(
   open: RwSignal<bool>,
   #[prop(into)] questions: Signal<Questions>,
-  #[prop(into)] answers: Signal<HashMap<String, Vec<String>>>,
-  #[prop(into)] flags: Signal<HashMap<String, bool>>,
+  #[prop(into)] answers: Signal<Answers>,
+  #[prop(into)] flags: Signal<Flags>,
   #[prop(into)] finished: Signal<bool>,
   #[prop(into)] filter: Signal<AnswerCardFilter>,
   on_change_filter: Callback<AnswerCardFilter>,
@@ -51,24 +23,42 @@ pub fn AnswerCardSheet(
   #[prop(optional, into)]
   jump_locked: Signal<bool>,
 ) -> impl IntoView {
-  let is_answered = move |key: &str| answers.with(|a| a.get(key).is_some_and(|v| !v.is_empty()));
-  let is_flagged = move |key: &str| flags.with(|f| f.get(key).copied().unwrap_or(false));
-  let answered_count = move || answers.with(|a| a.values().filter(|v| !v.is_empty()).count());
-  let flagged_count = move || flags.with(|f| f.values().filter(|v| **v).count());
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <crate::kit_modern::ModernAnswerCard
+        open=open
+        questions=questions
+        answers=answers
+        flags=flags
+        finished=finished
+        filter=filter
+        on_change_filter=on_change_filter
+        on_jump=on_jump
+        current_index=current_index
+        jump_locked=jump_locked
+      />
+    }
+    .into_any();
+  }
 
-  let find = move |from: Option<usize>, pred: &dyn Fn(&str) -> bool| -> Option<usize> {
-    let start = from.map_or(0, |f| f + 1);
-    questions.with(|qs| (start..qs.len()).find(|&i| pred(&qs[i].answer_key(i))))
+  // 取数与判定在 `AnswerCardModel` / core 的 `answer_card`，与现代版共用同一份。
+  let model = AnswerCardModel {
+    questions,
+    answers,
+    flags,
+    finished,
+    filter,
+    current_index,
   };
-  let jump = move |target: Option<usize>| {
-    if let Some(i) = target {
+  let jump = move |kind: Jump| {
+    if let Some(i) = model.jump_target(kind) {
       on_jump.run(i);
       open.set(false);
     }
   };
 
   // 刻意的例外：筛选按钮靠切换 `variant` 表示当前筛选，而 `Button` 的 `variant` 是静态
-  // prop（见 `docs/ui-components.md` 的「常见坑」第 4 条）。同文件的关闭按钮已用组件。
+  // prop（见 `docs/ui/pixel.md` 的「常见坑」第 4 条）。同文件的关闭按钮已用组件。
   //
   // `label` 收语义 key（`exam.all` 这类），不是中文原文：以前传的是「全部」，
   // 靠 `catalog::resolve` 的中文反查才命中，属于约定外的一层间接。
@@ -88,43 +78,28 @@ pub fn AnswerCardSheet(
   };
 
   let grid = move || {
-    let fin = finished.get();
-    let filt = filter.get();
     let locked = jump_locked.get();
-    let current = current_index.get();
-    questions.with(|qs| {
-      qs.iter()
-        .enumerate()
-        .filter_map(|(i, q)| {
-          let key = q.answer_key(i);
-          let user = answers.with(|a| a.get(&key).cloned().unwrap_or_default());
-          let answered = !user.is_empty();
-          let flagged = is_flagged(&key);
-          let visible = match filt {
-            AnswerCardFilter::All => true,
-            AnswerCardFilter::Unanswered => !answered,
-            AnswerCardFilter::Flagged => flagged,
-          };
-          if !visible {
-            return None;
-          }
-          Some(view! {
-            <AnswerCardCell
-              number=i + 1
-              answered=answered
-              current=i == current
-              flagged=flagged
-              verdict=fin.then(|| q.is_answer_correct(&user))
-              locked=locked
-              on_pick=Callback::new(move |()| {
-                on_jump.run(i);
-                open.set(false);
-              })
-            />
-          })
-        })
-        .collect_view()
-    })
+    model
+      .cells()
+      .into_iter()
+      .map(|cell| {
+        let index = cell.index;
+        view! {
+          <AnswerCardCell
+            number=cell.number()
+            answered=cell.answered
+            current=cell.current
+            flagged=cell.flagged
+            verdict=cell.verdict
+            locked=locked
+            on_pick=Callback::new(move |()| {
+              on_jump.run(index);
+              open.set(false);
+            })
+          />
+        }
+      })
+      .collect_view()
   };
 
   view! {
@@ -135,7 +110,7 @@ pub fn AnswerCardSheet(
       <div class="px-4 space-y-3 overflow-y-auto overscroll-contain pt-1">
         <div class="flex items-center justify-between gap-3 text-sm">
           <div class="text-muted-foreground">
-            {move || t("exam.answered-summary")} " " {answered_count} " / " {move || questions.with(|q| q.len())} "｜" {move || t("exam.flag")} " " {flagged_count}
+            {move || t("exam.answered-summary")} " " {move || model.answered_count()} " / " {move || model.total()} "｜" {move || t("exam.flag")} " " {move || model.flagged_count()}
           </div>
           <div class="flex items-center gap-2">
             {filter_button(AnswerCardFilter::All, "exam.all")}
@@ -156,7 +131,7 @@ pub fn AnswerCardSheet(
               variant=Variant::Outline
               size=Size::Sm
               disabled=jump_locked
-              on_click=Callback::new(move |_| jump(find(None, &|k| !is_answered(k))))
+              on_click=Callback::new(move |_| jump(Jump::FirstUnanswered))
             >
               {move || t("exam.first-unanswered")}
             </Button>
@@ -164,7 +139,7 @@ pub fn AnswerCardSheet(
               variant=Variant::Outline
               size=Size::Sm
               disabled=jump_locked
-              on_click=Callback::new(move |_| jump(find(Some(current_index.get_untracked()), &|k| !is_answered(k))))
+              on_click=Callback::new(move |_| jump(Jump::NextUnanswered))
             >
               {move || t("exam.next-unanswered")}
             </Button>
@@ -172,7 +147,7 @@ pub fn AnswerCardSheet(
               variant=Variant::Outline
               size=Size::Sm
               disabled=jump_locked
-              on_click=Callback::new(move |_| jump(find(Some(current_index.get_untracked()), &|k| is_flagged(k))))
+              on_click=Callback::new(move |_| jump(Jump::NextFlagged))
             >
               {move || t("exam.next-flagged")}
             </Button>
@@ -217,4 +192,5 @@ pub fn AnswerCardSheet(
       </div>
     </Sheet>
   }
+  .into_any()
 }

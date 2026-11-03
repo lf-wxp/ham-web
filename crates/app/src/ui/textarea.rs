@@ -45,8 +45,13 @@ pub fn Textarea(
 ) -> impl IntoView {
   // 没有前缀 / 后缀插槽，不需要外包裹层；`py-2` 覆盖基线的 `py-1`，
   // `min-h` 只在自动增高时接管（否则交给 `rows`）。
+  // 现代风换成 `md-textarea`（自带描边 / 圆角 / 内距 / 字号），不再继承像素的多行输入外观。
   let class = cn(&[
-    CONTROL_BASE,
+    if crate::kit::is_modern_at_mount() {
+      "md-textarea"
+    } else {
+      CONTROL_BASE
+    },
     "resize-y py-2 leading-relaxed",
     if auto_resize {
       "resize-none overflow-hidden"

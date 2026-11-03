@@ -21,8 +21,8 @@ pub fn PropagationPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.ionospheric-layers")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.ionospheric-layers")}</h2>
           <div class="divide-y">
             {LAYERS
               .iter()
@@ -39,8 +39,8 @@ pub fn PropagationPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.main-propagation-modes")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.main-propagation-modes")}</h2>
           <dl class="divide-y">
             {PROPAGATION_MODES
               .iter()
@@ -56,8 +56,8 @@ pub fn PropagationPage() -> impl IntoView {
           </dl>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.key-concepts")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.key-concepts")}</h2>
           <dl class="divide-y">
             {CONCEPTS
               .iter()
@@ -73,8 +73,8 @@ pub fn PropagationPage() -> impl IntoView {
           </dl>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.lf-160-m-80")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.lf-160-m-80")}</h2>
           <ul class="space-y-2 p-4">
             {LOW_BAND_TIPS
               .iter()

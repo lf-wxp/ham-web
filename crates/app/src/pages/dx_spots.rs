@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use ham_web_core::dx_watch::{
-  AlertReason, AlertSettings, Need, Worked, alert_key, band_of_khz as band_of,
+  AlertReason, AlertSettings, Need, OTHER, Worked, alert_key, band_of_khz as band_of,
   mode_of_comment as mode_of,
 };
 use ham_web_core::dxcc::lookup;
@@ -17,7 +17,7 @@ use crate::components::common::{EmptyState, Loading, PageContainer, PageHeader};
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::pages::log::use_log_store;
-use crate::ui::{Button, Checkbox, ChipToggle, Input, Size, Tooltip, Variant};
+use crate::ui::{Button, Checkbox, ChipToggle, Field, Input, Size, Tooltip, Variant};
 use crate::util::{notify, request_notify_permission, set_title, storage};
 
 const ALERTS_KEY: &str = "dx-alerts";
@@ -59,8 +59,8 @@ fn band_color(band: &str) -> &'static str {
   }
 }
 
-/// 频率格式化：kHz → MHz（去尾随 0）。
-fn fmt_freq(khz: u32) -> String {
+/// 频率 kHz → MHz 数字串（去尾随 0）。
+fn fmt_mhz(khz: u32) -> String {
   let mhz = khz as f64 / 1000.0;
   let mut s = format!("{mhz:.3}");
   while s.ends_with('0') {
@@ -69,7 +69,12 @@ fn fmt_freq(khz: u32) -> String {
   if s.ends_with('.') {
     s.pop();
   }
-  format!("{s} MHz")
+  s
+}
+
+/// 频率格式化：kHz → `x MHz`。
+fn fmt_freq(khz: u32) -> String {
+  format!("{} MHz", fmt_mhz(khz))
 }
 
 #[component]
@@ -107,6 +112,20 @@ pub fn DxSpotsPage() -> impl IntoView {
       request_notify_permission();
     }
   };
+  // 把输入框里的草稿解析成关注列表并提交（失焦 / 回车触发，见下方 `Input` 的注释）。
+  let commit_watch = move || {
+    let calls: Vec<String> = watch_input
+      .get_untracked()
+      .split([' ', ',', '，'])
+      .map(|s| s.trim().to_uppercase())
+      .filter(|s| !s.is_empty())
+      .collect();
+    // 没变就不写：失焦与回车会连着触发两次，重复提交会白写一次存储。
+    if alerts.with_untracked(|a| a.calls == calls) {
+      return;
+    }
+    update_alerts(&|a| a.calls.clone_from(&calls));
+  };
   Effect::new(move |_| {
     let settings = alerts.get();
     if !settings.enabled() {
@@ -132,10 +151,10 @@ pub fn DxSpotsPage() -> impl IntoView {
           AlertReason::NewBand => t("radio.new-band"),
         };
         hits.push(format!(
-          "{} {} {}（{why}）",
+          "{} {} {} ({why})",
           s.dx,
           fmt_freq(s.freq_khz),
-          mode_of(&s.comment)
+          t(mode_of(&s.comment))
         ));
       }
     });
@@ -148,11 +167,20 @@ pub fn DxSpotsPage() -> impl IntoView {
     }
   });
 
+  // 请求代数：手动刷新与每分钟轮询可能交叠，慢的旧响应不能盖掉新的。
+  let generation = StoredValue::new(0u32);
   let load = move || {
     loading.set(true);
     failed.set(false);
+    generation.update_value(|g| *g = g.wrapping_add(1));
+    let mine = generation.get_value();
     spawn_local(async move {
-      match data::fetch_external_json::<Vec<Spot>>("/api/spots").await {
+      let result = data::fetch_external_json::<Vec<Spot>>("/api/spots").await;
+      // 组件已卸载（`try_*` 返回 None）或已有更新的请求在途：丢弃这次结果。
+      if generation.try_get_value() != Some(mine) {
+        return;
+      }
+      match result {
         Ok(s) => {
           spots.try_set(s);
         }
@@ -178,16 +206,9 @@ pub fn DxSpotsPage() -> impl IntoView {
 
   // 点击呼号一键记入日志。
   let add_to_log = move |dx: String, freq_khz: u32, comment: String| {
-    let mhz = freq_khz as f64 / 1000.0;
-    let mut s = format!("{mhz:.3}");
-    while s.ends_with('0') {
-      s.pop();
-    }
-    if s.ends_with('.') {
-      s.pop();
-    }
+    let s = fmt_mhz(freq_khz);
     let mode = mode_of(&comment);
-    let mode = if mode == "其他" { "SSB" } else { mode };
+    let mode = if mode == OTHER { "SSB" } else { mode };
     if !store.quick_add(&dx, &s, mode) {
       return; // 备份 / 恢复进行中：`quick_add` 已提示，不能再报「已记录」。
     }
@@ -217,11 +238,11 @@ pub fn DxSpotsPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="flex items-center justify-between pxl-section-title">
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::cn::cn(&["flex items-center justify-between", crate::kit::card_title_class()])>
             {move || t("radio.live-dx-reports")}
             <span class="text-xs font-normal normal-case text-muted-foreground">
-              {move || tf("radio.entry-count", &[&spots.get().len().to_string()])}
+              {move || tf("radio.entry-count", &[&spots.with(Vec::len).to_string()])}
             </span>
           </h2>
           <div class="space-y-2 p-3">
@@ -343,26 +364,25 @@ pub fn DxSpotsPage() -> impl IntoView {
                         {move || t("radio.notify-on-a-new")}
                       </label>
                     </div>
-                    <label class="flex flex-col gap-1.5 text-sm">
-                      <span class="text-xs text-muted-foreground">{move || t("radio.watched-callsigns-space-or")}</span>
-                      <Input
-                        value=watch_input
-                        on_change=Callback::new(move |v: String| {
-                          watch_input.set(v);
-                          // 原先是 `on:change`（失焦才解析），`Input` 只有输入即触发的一条通道；
-                          // 解析本身是幂等的，每次按键重算一遍不影响结果。
-                          let calls: Vec<String> = watch_input
-                            .get_untracked()
-                            .split([' ', ',', '，'])
-                            .map(|s| s.trim().to_uppercase())
-                            .filter(|s| !s.is_empty())
-                            .collect();
-                          update_alerts(&|a| a.calls.clone_from(&calls));
-                        })
-                        placeholder="VP8* 3Y0J"
-                        class="uppercase"
-                      />
-                    </label>
+                    <Field
+                      label=Signal::derive(move || t("radio.watched-callsigns-space-or"))
+                      r#for="dx-watch-calls"
+                    >
+                      // 输入过程只改草稿，失焦或回车才提交：呼号支持通配符（`3Y*`），逐键提交会让
+                      // `*` / `3Y*` 这类半截输入命中整张列表、批量弹通知，还把这些 spot 记进
+                      // 「已提醒」，之后真正匹配时反而被去重掉。
+                      <div on:focusout=move |_| commit_watch()>
+                        <Input
+                          id="dx-watch-calls"
+                          value=watch_input
+                          on_change=Callback::new(move |v: String| watch_input.set(v))
+                          on_enter=Callback::new(move |()| commit_watch())
+                          aria_label=Signal::derive(move || t("radio.watched-callsigns-space-or"))
+                          placeholder="VP8* 3Y0J"
+                          class="uppercase"
+                        />
+                      </div>
+                    </Field>
                     <p class="text-xs text-muted-foreground">
                       {move || t("radio.once-enabled-the-page")}
                     </p>
@@ -373,15 +393,17 @@ pub fn DxSpotsPage() -> impl IntoView {
           </div>
           <div class="p-2">
             {move || {
-              if loading.get() {
+              // 只有「还没有任何数据」才整块换成加载态：后台轮询每分钟都会置 `loading`，
+              // 若无条件替换，列表会闪成 spinner、滚动位置丢失。
+              if loading.get() && spots.with(Vec::is_empty) {
                 return view! {
                   <Loading label=Signal::derive(move || t("radio.fetching-live-spots")) class="py-8" />
                 }
                 .into_any();
               }
               // 「拉取失败」与「本来就没有」是两件事：前者要能就地重试，后者是正常结果。
-              // 原来两者共用一个空态，用户既不知道是网断了，也没有第二次机会。
-              if failed.get() {
+              // 已有旧数据时失败不清空列表（继续展示上一次的结果，右上角按钮可重试）。
+              if failed.get() && spots.with(Vec::is_empty) {
                 return view! {
                   <EmptyState
                     title=Signal::derive(move || t("radio.live-spots-are-unavailable"))
@@ -401,7 +423,7 @@ pub fn DxSpotsPage() -> impl IntoView {
                 }
                 .into_any();
               }
-              if spots.get().is_empty() {
+              if spots.with(Vec::is_empty) {
                 return view! {
                   <EmptyState title=Signal::derive(move || t("radio.no-live-spots-at-the")) />
                 }
@@ -445,10 +467,12 @@ pub fn DxSpotsPage() -> impl IntoView {
                         Need::Worked => Some((t("radio.worked-badge"), "text-muted-foreground")),
                         Need::None => None,
                       };
-                      let watched = alerts.with_untracked(|a| {
+                      // 订阅 `alerts`：提交关注列表后，行内「已关注」徽标要随之更新。
+                      let watched = alerts.with(|a| {
                         matches!(a.reason(&s.dx, Need::None), Some(AlertReason::Watched(_)))
                       });
                       let comment = s.comment.clone();
+                      let comment_mode = comment.clone();
                       let time = s.time.clone();
                       let spotter = s.spotter.clone();
                       let dx_btn = dx.clone();
@@ -477,10 +501,10 @@ pub fn DxSpotsPage() -> impl IntoView {
                           <span
                             class=format!("shrink-0 border px-1.5 py-0.5 text-xs {}", band_color(band_of(freq)))
                           >
-                            {band_of(freq)}
+                            {move || t(band_of(freq))}
                           </span>
                           <span class="shrink-0 border px-1.5 py-0.5 text-xs text-muted-foreground">
-                            {mode_of(&comment)}
+                            {move || t(mode_of(&comment_mode))}
                           </span>
                           {badge.map(|(text, class)| view! {
                             <span class=format!("shrink-0 border px-1.5 py-0.5 text-xs {class}")>{text}</span>

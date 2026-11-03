@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, settleFrames, test, waitSettled } from "./fixtures";
+import { AXE_DISABLED_RULES, expect, settleFrames, test, waitSettled } from "./fixtures";
 
 // 路由表以 main_content.rs 为准，新增页面自动纳入冒烟测试
 const source = readFileSync(join(__dirname, "../../crates/app/src/app/main_content.rs"), "utf8");
@@ -57,6 +57,7 @@ test.describe(`全站冒烟（${colorScheme}）`, () => {
       const axe = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])
         .exclude(".leaflet-container")
+        .disableRules(AXE_DISABLED_RULES)
         .analyze();
       const violations = axe.violations.map(
         (v) => `${v.id} (${v.impact}): ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`,

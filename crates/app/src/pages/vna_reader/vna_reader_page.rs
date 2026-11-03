@@ -170,7 +170,7 @@ pub fn VnaReaderPage() -> impl IntoView {
       />
       <PageContainer class="space-y-4">
         <div class="grid gap-4 md:grid-cols-2">
-          <section class="pxl-card space-y-2 border bg-card p-4">
+          <section class=crate::kit::card_class_with("space-y-2 p-4")>
             <h2 class=card_title_class("")>{move || t("tools.vna-import-s1p")}</h2>
             <p class=NOTE>{move || t("tools.vna-import-note")}</p>
             <FileInput
@@ -180,7 +180,7 @@ pub fn VnaReaderPage() -> impl IntoView {
               on_files=on_files
             />
           </section>
-          <section class="pxl-card space-y-2 border bg-card p-4">
+          <section class=crate::kit::card_class_with("space-y-2 p-4")>
             <h2 class=card_title_class("")>{move || t("tools.vna-serial")}</h2>
             {if supported {
               view! {
@@ -258,7 +258,7 @@ pub fn VnaReaderPage() -> impl IntoView {
             )
           });
           view! {
-            <section class="pxl-card space-y-3 border bg-card p-4" data-slot="vna-result">
+            <section class=crate::kit::card_class_with("space-y-3 p-4") data-slot="vna-result">
               <p class="text-sm" data-slot="vna-summary">
                 {source.get()} " · " {tf("tools.vna-summary", &[&n.to_string(), &fmt_hz(f0), &fmt_hz(f1)])}
               </p>

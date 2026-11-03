@@ -21,8 +21,8 @@ pub fn RegulationsPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.operator-licence-classes")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.operator-licence-classes")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-3">
             {LICENSE_LEVELS
               .iter()
@@ -38,8 +38,8 @@ pub fn RegulationsPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.management-notes")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.management-notes")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {REGULATIONS
               .iter()
@@ -55,8 +55,8 @@ pub fn RegulationsPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.compliance-notes")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.compliance-notes")}</h2>
           <ul class="space-y-2 p-4">
             {REG_TIPS
               .iter()

@@ -283,12 +283,74 @@ impl ExamScore {
     }
     (self.correct as f64 / self.total as f64 * 100.0).round() as i64
   }
+
+  /// 把正确率换算成业余无线电的「信号报告」：`(R 可读度 1–5, S 强度 1–9)`。
+  ///
+  /// 这是 Ham 圈的通用语言 —— 看到 R5 S9 就知道「满格」，比 92 分更有记忆点。
+  /// R 按正确率分五档（90 / 75 / 60 / 40）；S 把 0–100% 线性铺到 1–9。
+  #[must_use]
+  pub fn signal_report(self) -> (u8, u8) {
+    let p = self.percent();
+    let r = match p {
+      90.. => 5,
+      75..=89 => 4,
+      60..=74 => 3,
+      40..=59 => 2,
+      _ => 1,
+    };
+    let s = (p as f64 / 100.0 * 8.0).round() as i64 + 1;
+    (r, s.clamp(1, 9) as u8)
+  }
+}
+
+/// 数字框写回：空串 / 半截输入 / 负数 / 非数字按 0，超过 `max` 夹住。
+///
+/// 只有 `min` / `max` 属性是不够的 —— 原生属性只约束提交，不约束输入；不夹住的话
+/// 手输 `9999` 会原样进组卷参数。
+#[must_use]
+pub fn clamp_count(raw: &str, max: u32) -> u32 {
+  raw.trim().parse::<u32>().map_or(0, |v| v.min(max))
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
   use crate::question::{Codes, QuestionType};
+
+  #[test]
+  fn signal_report_maps_percent_to_rs() {
+    let score = |correct, total| ExamScore { correct, total };
+    // R 五档的边界：90 / 75 / 60 / 40。
+    assert_eq!(score(100, 100).signal_report(), (5, 9));
+    assert_eq!(score(90, 100).signal_report().0, 5);
+    assert_eq!(score(89, 100).signal_report().0, 4);
+    assert_eq!(score(75, 100).signal_report().0, 4);
+    assert_eq!(score(74, 100).signal_report().0, 3);
+    assert_eq!(score(60, 100).signal_report().0, 3);
+    assert_eq!(score(59, 100).signal_report().0, 2);
+    assert_eq!(score(40, 100).signal_report().0, 2);
+    assert_eq!(score(39, 100).signal_report().0, 1);
+    // S 线性铺到 1–9，零分是 S1，满分是 S9；没有题目时不除零。
+    assert_eq!(score(0, 100).signal_report(), (1, 1));
+    assert_eq!(score(50, 100).signal_report(), (2, 5));
+    assert_eq!(score(0, 0).signal_report(), (1, 1));
+  }
+
+  #[test]
+  fn clamp_count_handles_garbage_input() {
+    assert_eq!(clamp_count("12", 300), 12);
+    assert_eq!(clamp_count("  7 ", 300), 7);
+    assert_eq!(clamp_count("9999", 300), 300);
+    assert_eq!(clamp_count("", 300), 0);
+    assert_eq!(clamp_count("-5", 300), 0);
+    assert_eq!(clamp_count("abc", 300), 0);
+    assert_eq!(clamp_count("1.5", 300), 0);
+    assert_eq!(
+      clamp_count("99999999999999999999", 300),
+      0,
+      "溢出的数当作无效输入"
+    );
+  }
 
   fn q(id: usize, kind: QuestionType) -> QuestionItem {
     QuestionItem {

@@ -8,10 +8,10 @@ import { expect, test } from "./fixtures";
  * 空 WAV，断言回的是**协议错误码**（`ok:false` + 英文码），而不是 `unknown codec`、
  * NetworkError 或 Worker 自己崩掉 —— 能证明表里每条路径都加载、初始化并走进了 `decode`。
  *
- * 另外钉住 `docs/decode-worker-protocol.md` 里的约束：一个 Worker 只服务一个 codec。
+ * 另外钉住 `docs/domain/decode-worker-protocol.md` 里的约束：一个 Worker 只服务一个 codec。
  */
 
-// 与 `public/decode-worker.js` 的 `CODECS` 表、`docs/decode-worker-protocol.md` 的
+// 与 `public/decode-worker.js` 的 `CODECS` 表、`docs/domain/decode-worker-protocol.md` 的
 // 「已接入的 codec」表保持一一对应：加解码器时三处一起加。
 const CODECS = ["apt", "sstv", "wspr", "rtty", "olivia", "dominoex", "navtex", "lrpt", "ft8", "hell", "wefax", "afsk1200"];
 

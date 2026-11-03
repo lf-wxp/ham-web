@@ -133,6 +133,159 @@ pub fn BookmarksPage() -> impl IntoView {
     }
   };
 
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <div class="md-root">
+        <div class="md-page md-article-page">
+          <crate::kit_modern::ModernPageHead
+            title=Signal::derive(move || t("shell.bookmarks"))
+            subtitle=Signal::derive(move || t("exam.key-questions-bookmarked-during"))
+          />
+
+          <div class="md-glossary-bar">
+            <crate::kit_modern::ModernInput
+              value=new_group
+              on_input=Callback::new(move |v: String| new_group.set(v))
+              placeholder=Signal::derive(move || t("exam.new-group-name"))
+              class="md-glossary-search"
+            />
+            <button type="button" class="md-btn md-btn-quiet" on:click=move |_| create_group()>
+              {move || t("exam.new-group")}
+            </button>
+            <a class="md-btn md-btn-ghost" href="/print?src=bookmarks">
+              {move || t("learning.print")}
+            </a>
+          </div>
+
+          <div class="md-chip-row mb-4">
+            <button
+              type="button"
+              class="md-chip"
+              aria-pressed=move || (group_filter.get() == Filter::All).to_string()
+              on:click=move |_| group_filter.set(Filter::All)
+            >
+              {move || t("exam.all")}
+            </button>
+            <button
+              type="button"
+              class="md-chip"
+              aria-pressed=move || (group_filter.get() == Filter::Ungrouped).to_string()
+              on:click=move |_| group_filter.set(Filter::Ungrouped)
+            >
+              {move || t("exam.ungrouped")}
+            </button>
+            {move || {
+              groups
+                .get()
+                .groups
+                .clone()
+                .into_iter()
+                .map(|g| {
+                  let label = g.name.clone();
+                  let click = g.name.clone();
+                  let click_aria = g.name.clone();
+                  let del = g.name.clone();
+                  let count = g.ids.len();
+                  view! {
+                    <span class="inline-flex items-center gap-1">
+                      <button
+                        type="button"
+                        class="md-chip"
+                        aria-pressed=move || (group_filter.get() == Filter::Group(click_aria.clone())).to_string()
+                        on:click=move |_| group_filter.set(Filter::Group(click.clone()))
+                      >
+                        {label}
+                        <span class="md-menu-count">{count}</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="md-icon-btn md-icon-btn-xs"
+                        aria-label=move || t("exam.delete-this-group")
+                        on:click=move |_| delete_group(del.clone())
+                      >
+                        <crate::kit_modern::ModernIcon kind=crate::kit_modern::MIcon::Close />
+                      </button>
+                    </span>
+                  }
+                })
+                .collect_view()
+            }}
+            <span class="md-muted md-sm ml-auto">
+              {move || tp("common.questions-total", questions.get().len(), &[&(questions.get().len()).to_string()])}
+            </span>
+          </div>
+
+          {move || {
+            if loading.get() {
+              return view! {
+                <div class="flex flex-col gap-3">
+                  <span class="sr-only" role="status">{move || t("exam.loading")}</span>
+                  {(0..4)
+                    .map(|_| {
+                      view! {
+                        <div class="md-skel" style="height: 96px; border-radius: var(--md-r-lg)"></div>
+                      }
+                    })
+                    .collect_view()}
+                </div>
+              }
+                .into_any();
+            }
+            if questions.get().is_empty() {
+              return view! {
+                <div class="md-panel md-empty">
+                  <h2 class="md-panel-title">{move || t("exam.no-bookmarks-yet")}</h2>
+                  <p class="md-muted md-sm">{move || t("exam.tap-the-bookmark-icon")}</p>
+                </div>
+              }
+                .into_any();
+            }
+            let list: Vec<QuestionItem> = filtered().collect();
+            if list.is_empty() {
+              return view! {
+                <div class="md-panel md-empty">
+                  <h2 class="md-panel-title">{move || t("exam.no-questions-in-this")}</h2>
+                  <p class="md-muted md-sm">{move || t("exam.add-bookmarks-to-this")}</p>
+                </div>
+              }
+                .into_any();
+            }
+            let gs = groups.get();
+            let all_groups: Vec<String> = gs.groups.iter().map(|g| g.name.clone()).collect();
+            view! {
+              <div class="md-bookmark-list">
+                {list
+                  .into_iter()
+                  .map(|q| {
+                    let id = q.stable_id().unwrap_or_default();
+                    let groups_of = gs
+                      .groups
+                      .iter()
+                      .filter(|g| g.ids.iter().any(|x| x == &id))
+                      .map(|g| g.name.clone())
+                      .collect::<Vec<_>>();
+                    view! {
+                      <BookmarkCard
+                        question=q
+                        groups_of=groups_of
+                        all_groups=all_groups.clone()
+                        on_remove=Callback::new(remove)
+                        on_add_to_group=Callback::new(add_to_group)
+                        on_remove_from_group=Callback::new(remove_from_group)
+                      />
+                    }
+                  })
+                  .collect_view()}
+              </div>
+            }
+              .into_any()
+          }}
+        </div>
+      </div>
+    }
+    .into_any();
+  }
+
   view! {
     <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
@@ -212,7 +365,7 @@ pub fn BookmarksPage() -> impl IntoView {
                 {(0..4)
                   .map(|_| {
                     view! {
-                      <div class="pxl-card border bg-card p-4">
+                      <div class=crate::kit::card_pad_class()>
                         <Skeleton class="h-3 w-32" />
                         <Skeleton class="mt-3 h-4 w-3/4" />
                       </div>
@@ -265,4 +418,5 @@ pub fn BookmarksPage() -> impl IntoView {
       </PageContainer>
     </div>
   }
+  .into_any()
 }

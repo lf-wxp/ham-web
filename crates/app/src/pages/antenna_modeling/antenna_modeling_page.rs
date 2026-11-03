@@ -13,8 +13,6 @@ use super::yagi_calculator::YagiCalculator;
 use crate::data;
 use crate::i18n::t;
 
-const CELL: &str = "border px-3 py-2 text-left align-top";
-
 #[component]
 pub fn AntennaModelingPage() -> impl IntoView {
   set_title("shell.antenna-modeling-title");
@@ -29,40 +27,40 @@ pub fn AntennaModelingPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.radiation-pattern-visualisation")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.radiation-pattern-visualisation")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
             {move || t("radio.polar-plots-show-the")}
           </p>
           <div class="p-4"><PatternPlot /></div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.dipole-dimension-estimate")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.dipole-dimension-estimate")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
             {move || t("radio.estimate-the-size-before")}
           </p>
           <div class="p-4"><DipoleCalculator /></div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.yagi-antenna-dimensions")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.yagi-antenna-dimensions")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
             {move || t("knowledge.the-reflector-is-slightly")}
           </p>
           <div class="p-4"><YagiCalculator /></div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.vertical-antenna-dimensions")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.vertical-antenna-dimensions")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
             {move || t("knowledge.quarter-wave-vertical-radials")}
           </p>
           <div class="p-4"><VerticalCalculator /></div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.related-calculators")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.related-calculators")}</h2>
           <div class="flex flex-wrap gap-2 p-4">
             {[
               ("/tools#antenna-length", "天线长度"),
@@ -86,14 +84,14 @@ pub fn AntennaModelingPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.common-software")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.common-software")}</h2>
           <Table class="min-w-[520px] text-sm">
             <TableHead>
               <TableRow>
-                <TableHeader class="border px-3 py-2 align-top">{move || t("radio.software")}</TableHeader>
-                <TableHeader class="border px-3 py-2 align-top">{move || t("radio.type")}</TableHeader>
-                <TableHeader class="border px-3 py-2 align-top">{move || t("radio.notes")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("radio.software")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("radio.type")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("radio.notes")}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -102,11 +100,11 @@ pub fn AntennaModelingPage() -> impl IntoView {
                 .map(|&(name, kind, desc)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-primary")>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono text-primary")>
                         {move || kt_tracked(name)}
                       </TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(kind)}</TableCell>
-                      <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap text-muted-foreground")>{move || kt_tracked(kind)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -115,8 +113,8 @@ pub fn AntennaModelingPage() -> impl IntoView {
           </Table>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.modelling-workflow")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.modelling-workflow")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {MODELING_STEPS
               .iter()
@@ -132,8 +130,8 @@ pub fn AntennaModelingPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.usage-notes")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.usage-notes")}</h2>
           <ul class="space-y-2 p-4">
             {MODELING_TIPS
               .iter()

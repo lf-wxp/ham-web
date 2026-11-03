@@ -9,6 +9,7 @@ use crate::components::common::{PageContainer, PageHeader};
 use crate::components::study_plan_card::StudyPlanCard;
 use crate::i18n::{t, tp};
 use crate::study;
+use crate::ui::intl::date_iso;
 use crate::util::{local_today, now_ms, set_title};
 
 const WEEKDAYS: [&str; 7] = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
@@ -54,8 +55,8 @@ pub fn StudyCalendarPage() -> impl IntoView {
       <PageContainer class="space-y-4">
         <StudyPlanCard editable=true />
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("learning.next-14-days-review")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("learning.next-14-days-review")}</h2>
           <ul class="divide-y">
             {move || {
               // 必须包成闭包：上面每 2 秒轮询同步的 `plan` 只有在响应式上下文里读才会让日历重算，
@@ -83,7 +84,7 @@ pub fn StudyCalendarPage() -> impl IntoView {
                     }>
                       <div class="flex w-20 shrink-0 flex-col">
                         <span class=if is_today { "text-sm text-primary" } else { "text-sm" }>
-                          {day[5..].to_owned()}
+                          {date_iso(&day)}
                         </span>
                         <span class="text-xs text-muted-foreground">
                           {if is_today { t("exam.today") } else { t(wd) }}

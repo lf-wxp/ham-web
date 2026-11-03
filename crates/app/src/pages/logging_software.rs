@@ -9,8 +9,6 @@ use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 #[component]
 pub fn LoggingSoftwarePage() -> impl IntoView {
   set_title("shell.logging-software");
@@ -24,14 +22,14 @@ pub fn LoggingSoftwarePage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("log.main-software")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("log.main-software")}</h2>
           <Table class="min-w-[560px] text-sm">
             <TableHead>
               <TableRow>
-                <TableHeader class=CELL>{move || t("radio.software")}</TableHeader>
-                <TableHeader class=CELL>{move || t("radio.type")}</TableHeader>
-                <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.software")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.type")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.notes")}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -40,9 +38,9 @@ pub fn LoggingSoftwarePage() -> impl IntoView {
                 .map(|&(name, kind, desc)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap")>{move || kt_tracked(name)}</TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(kind)}</TableCell>
-                      <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>{move || kt_tracked(name)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap text-muted-foreground")>{move || kt_tracked(kind)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -51,8 +49,8 @@ pub fn LoggingSoftwarePage() -> impl IntoView {
           </Table>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.usage-notes")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.usage-notes")}</h2>
           <ul class="space-y-2 p-4">
             {SOFTWARE_NOTES
               .iter()

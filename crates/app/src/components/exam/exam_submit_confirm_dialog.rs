@@ -14,6 +14,18 @@ pub fn ExamSubmitConfirmDialog(
   #[prop(into)] flagged: Signal<usize>,
 ) -> impl IntoView {
   let unanswered = move || total.get().saturating_sub(answered.get());
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <crate::kit_modern::ModernExamSubmit
+        open=open
+        on_confirm=on_confirm
+        total=total
+        answered=answered
+        flagged=flagged
+      />
+    }
+    .into_any();
+  }
   view! {
     <Dialog open=open>
       <DialogHeader>
@@ -52,4 +64,5 @@ pub fn ExamSubmitConfirmDialog(
       </DialogFooter>
     </Dialog>
   }
+  .into_any()
 }

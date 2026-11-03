@@ -4,13 +4,15 @@
 //! `build-*-worker` 清单漏掉 `afsk1200`、`cargo make check` 的构成少了五项。这类「改了代码没改
 //! README」在 PR 里靠眼睛看不出，只能机械对账；和 `structure_check` / `ui_check` 是同一个思路。
 //!
-//! 覆盖七条（任一不符就失败）：
+//! 覆盖八条（任一不符就失败）：
 //! - README 里每处「N 个 Worker」都等于 `crates/*-worker` 的目录数；
 //! - `Makefile.toml` 里每个 `build*-worker` 任务都在 README 出现过（任务清单不漏项）；
 //! - README 里「共 N 个路径」等于 `crates/core/src/registry.rs` 的注册路径数；
 //! - README 里「N 项计算器」等于 `tools_page.rs` 里 `TOOL_NAV` 的条目数；
-//! - `docs/*.md` 每个文件至少被 README 或 `AGENTS.md` 链接一次（文档不孤儿）；
-//! - `docs/*.md`、`ROADMAP.md` 与 `Makefile.toml` 里写的 `README「章节名」` 在 README 仍找得到；
+//! - `docs/**/*.md`（递归）每个文件都在 `docs/README.md` 里有一行链接（文档不孤儿；`docs/README.md`
+//!   是**唯一索引**，README 与 `AGENTS.md` 只指向它，不各自再维护一份）；
+//! - README 与 `AGENTS.md` 都链接了 `docs/README.md`（入口不断）；
+//! - `docs/**/*.md`、`ROADMAP.md` 与 `Makefile.toml` 里写的 `README「章节名」` 在 README 仍找得到；
 //! - README 里引用的 `docs/images/*` 截图真实存在（重命名/删图后不会留破图）。
 
 use std::path::Path;
@@ -64,19 +66,21 @@ pub fn check(root: &Path) -> Result<()> {
     std::fs::read_to_string(root.join("Makefile.toml")).context("failed to read Makefile.toml")?;
   let roadmap = std::fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
   let docs = read_docs(root)?;
+  let infra = read_infra(root);
 
   let mut failures: Vec<String> = Vec::new();
   check_worker_count(&readme, root, &mut failures)?;
   check_worker_tasks(&readme, &makefile, &mut failures);
   check_route_count(&readme, root, &mut failures)?;
   check_tool_count(&readme, root, &mut failures)?;
-  check_docs_linked(&docs, &readme, &agents, &mut failures);
-  check_section_refs(&docs, &readme, &makefile, &roadmap, &mut failures);
+  check_docs_linked(&docs, &mut failures);
+  check_entry_links(&readme, &agents, &mut failures);
+  check_section_refs(&docs, &readme, &makefile, &roadmap, &infra, &mut failures);
   check_images(&readme, root, &mut failures);
 
   if failures.is_empty() {
     println!(
-      "✓ README 与代码对账通过（Worker 数量 / 任务清单 / 路由数 / 计算器数量 / 文档链接 / 章节引用 / 截图）"
+      "✓ README 与代码对账通过（Worker 数量 / 任务清单 / 路由数 / 计算器数量 / 文档索引 / 章节引用 / 截图）"
     );
     return Ok(());
   }
@@ -214,16 +218,36 @@ fn check_tool_count(readme: &str, root: &Path, failures: &mut Vec<String>) -> Re
   Ok(())
 }
 
-fn check_docs_linked(
-  docs: &[(String, String)],
-  readme: &str,
-  agents: &str,
-  failures: &mut Vec<String>,
-) {
+/// `docs/` 下每份文档（`docs/README.md` 自己除外）都必须在 `docs/README.md` 里有一行链接。
+///
+/// 为什么只认索引、不再认 README / AGENTS：三处各维护一份「文档地图」，就会各漏各的、各写各的
+/// （改动前它们对同一批文档的描述已经互相对不上）。索引只有一份，漏了就是漏了。
+/// 匹配的是 `](相对路径` 这种链接写法，而不是子串：`ui/modern.md` 不该被一段碰巧提到它的正文放过。
+fn check_docs_linked(docs: &[(String, String)], failures: &mut Vec<String>) {
+  let Some((_, index)) = docs.iter().find(|(name, _)| name == INDEX) else {
+    failures.push("docs/README.md 不存在（文档索引没了）".into());
+    return;
+  };
   for (name, _) in docs {
-    if !readme.contains(name.as_str()) && !agents.contains(name.as_str()) {
+    if name == INDEX {
+      continue;
+    }
+    let linked = index.contains(&format!("]({name}")) || index.contains(&format!("](./{name}"));
+    if !linked {
       failures.push(format!(
-        "docs/{name} 没有被 README 或 AGENTS.md 链接（文档地图里漏了它）"
+        "docs/{name} 没有被 docs/README.md 链接（索引里漏了它）"
+      ));
+    }
+  }
+}
+
+/// README 与 `AGENTS.md` 是两个最常被点开的入口：它们必须指向 `docs/README.md`，
+/// 而不是各自再列一遍文档。
+fn check_entry_links(readme: &str, agents: &str, failures: &mut Vec<String>) {
+  for (label, text) in [("README.md", readme), ("AGENTS.md", agents)] {
+    if !text.contains("docs/README.md") {
+      failures.push(format!(
+        "{label} 没有链接 docs/README.md（入口指不到唯一索引）"
       ));
     }
   }
@@ -232,20 +256,35 @@ fn check_docs_linked(
 /// `docs/`、`ROADMAP.md` 与 `Makefile.toml` 里 `README「章节」` 的引用必须在 README 仍能找到这段文字。
 ///
 /// 章节改名后引用会静默失效（读者翻过去找不到），所以要求文字原样还在 —— 允许它落在标题、
-/// 段落或清单图例里（`docs/code-quality.md` 就引用了「依赖 `/api/*` 的页面」这段清单说明）。
+/// 段落或清单图例里（`docs/engineering/code-quality.md` 就引用了「依赖 `/api/*` 的页面」这段清单说明）。
 fn check_section_refs(
   docs: &[(String, String)],
   readme: &str,
   makefile: &str,
   roadmap: &str,
+  infra: &[(String, String)],
   failures: &mut Vec<String>,
 ) {
-  let mut seen: Vec<String> = Vec::new();
   let sources = docs
     .iter()
     .map(|(name, text)| (format!("docs/{name}"), text.as_str()))
     .chain(std::iter::once(("Makefile.toml".to_owned(), makefile)))
-    .chain(std::iter::once(("ROADMAP.md".to_owned(), roadmap)));
+    .chain(std::iter::once(("ROADMAP.md".to_owned(), roadmap)))
+    .chain(
+      infra
+        .iter()
+        .map(|(name, text)| (name.clone(), text.as_str())),
+    );
+  failures.extend(dangling_section_refs(sources, readme));
+}
+
+/// 在若干 `(来源名, 文本)` 里找出「`README「章节」` 但 README 里已没有这段文字」的引用（每个来源 × 章节只报一次）。
+fn dangling_section_refs<'a>(
+  sources: impl IntoIterator<Item = (String, &'a str)>,
+  readme: &str,
+) -> Vec<String> {
+  let mut seen: Vec<String> = Vec::new();
+  let mut out = Vec::new();
   for (source, text) in sources {
     for caps in SECTION_REF_RE.captures_iter(text) {
       let section = caps.get(1).map(|m| m.as_str()).unwrap_or_default();
@@ -255,12 +294,42 @@ fn check_section_refs(
       }
       seen.push(key);
       if !readme.contains(section) {
-        failures.push(format!(
+        out.push(format!(
           "{source} 引用了 README「{section}」，但 README 里已找不到这段文字（改名后忘了同步？）"
         ));
       }
     }
   }
+  out
+}
+
+/// `Dockerfile` 与 `.github/workflows/*.yml`：它们的注释里也会写「见 README「某章节」」。
+///
+/// 为什么要读：README 改成索引时搬走了章节，这两处的引用没人同步（`Dockerfile` 与 `build-docker.yml`
+/// 各留了一条死引用），而只扫 `docs/` / `ROADMAP.md` / `Makefile.toml` 的检查看不见它们。
+/// 读不到的文件静默跳过（比如没有 `.github/` 的发行包），因为这是「额外来源」，不是必需输入。
+fn read_infra(root: &Path) -> Vec<(String, String)> {
+  let mut out = Vec::new();
+  if let Ok(text) = std::fs::read_to_string(root.join("Dockerfile")) {
+    out.push(("Dockerfile".to_owned(), text));
+  }
+  if let Ok(entries) = std::fs::read_dir(root.join(".github/workflows")) {
+    let mut paths: Vec<_> = entries
+      .flatten()
+      .map(|e| e.path())
+      .filter(|p| p.extension().is_some_and(|x| x == "yml" || x == "yaml"))
+      .collect();
+    paths.sort();
+    for path in paths {
+      if let (Some(name), Ok(text)) = (
+        path.file_name().and_then(|n| n.to_str()),
+        std::fs::read_to_string(&path),
+      ) {
+        out.push((format!(".github/workflows/{name}"), text));
+      }
+    }
+  }
+  out
 }
 
 /// README 引用的截图必须真的在 `docs/images/` 里。
@@ -283,20 +352,133 @@ fn check_images(readme: &str, root: &Path, failures: &mut Vec<String>) {
   }
 }
 
-/// 读 `docs/` 下全部 `.md`（按文件名排序，输出稳定）。
+/// 文档索引的文件名（相对 `docs/`）。
+const INDEX: &str = "README.md";
+
+/// 递归读 `docs/` 下全部 `.md`，键是相对 `docs/` 的路径（`ui/modern.md`，分隔符统一为 `/`），
+/// 按路径排序，输出稳定。
+///
+/// 必须递归：`docs/` 按读者问题分了子目录，若只扫顶层，移进子目录的文档就整体逃出了
+/// 「不孤儿」检查 —— 而且静默（扫不到 = 不检查 = 不报错）。
 fn read_docs(root: &Path) -> Result<Vec<(String, String)>> {
+  let base = root.join("docs");
   let mut docs = Vec::new();
-  for entry in std::fs::read_dir(root.join("docs")).context("failed to list docs/")? {
-    let entry = entry?;
+  for entry in walkdir::WalkDir::new(&base).sort_by_file_name() {
+    let entry = entry.context("failed to walk docs/")?;
     let path = entry.path();
-    if !entry.file_type()?.is_file() || path.extension().is_none_or(|e| e != "md") {
+    if !entry.file_type().is_file() || path.extension().is_none_or(|e| e != "md") {
       continue;
     }
-    let name = entry.file_name().to_string_lossy().into_owned();
-    let text = std::fs::read_to_string(&path)
+    let name = path
+      .strip_prefix(&base)
+      .unwrap_or(path)
+      .to_string_lossy()
+      .replace('\\', "/");
+    let text = std::fs::read_to_string(path)
       .with_context(|| format!("failed to read {}", path.display()))?;
     docs.push((name, text));
   }
   docs.sort_by(|a, b| a.0.cmp(&b.0));
   Ok(docs)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn doc(name: &str) -> (String, String) {
+    (name.to_owned(), String::new())
+  }
+
+  fn index_doc(text: &str) -> (String, String) {
+    (INDEX.to_owned(), text.to_owned())
+  }
+
+  #[test]
+  fn every_doc_must_be_in_the_index_including_subdirectories() {
+    let docs = vec![
+      index_doc("| [现代风](ui/modern.md) | 规范 |\n| [任务](./engineering/tasks.md) | 清单 |"),
+      doc("ui/modern.md"),
+      doc("engineering/tasks.md"),
+      doc("data/i18n.md"),
+    ];
+    let mut failures = Vec::new();
+    check_docs_linked(&docs, &mut failures);
+    assert_eq!(
+      failures,
+      vec!["docs/data/i18n.md 没有被 docs/README.md 链接（索引里漏了它）".to_owned()],
+      "`./` 开头与不带 `./` 的写法都算链接；漏的那份必须被点名"
+    );
+  }
+
+  #[test]
+  fn a_prose_mention_is_not_a_link() {
+    // 正文里提到了文件名但没有链接：不算「索引里有」。
+    let docs = vec![index_doc("详见 ui/modern.md 的第二节"), doc("ui/modern.md")];
+    let mut failures = Vec::new();
+    check_docs_linked(&docs, &mut failures);
+    assert_eq!(failures.len(), 1, "只有 `](路径` 才算链接，提到名字不算");
+  }
+
+  #[test]
+  fn a_longer_name_does_not_vouch_for_a_shorter_one() {
+    // `ui/modern-classes.md` 的链接不能顺带让 `ui/modern.md` 过关（前缀 / 子串陷阱）。
+    let docs = vec![
+      index_doc("[类名](ui/modern-classes.md)"),
+      doc("ui/modern.md"),
+      doc("ui/modern-classes.md"),
+    ];
+    let mut failures = Vec::new();
+    check_docs_linked(&docs, &mut failures);
+    assert_eq!(failures.len(), 1);
+    assert!(failures[0].contains("ui/modern.md"), "{failures:?}");
+  }
+
+  #[test]
+  fn dangling_readme_section_refs_are_reported_once_per_source() {
+    let readme = "## 常见问题\n\n正文";
+    let sources = vec![
+      (
+        "Dockerfile".to_owned(),
+        "# 见 README「构建耗时与缓存」，再见 README「构建耗时与缓存」",
+      ),
+      (".github/x.yml".to_owned(), "# README「常见问题」"),
+    ];
+    let out = dangling_section_refs(sources, readme);
+    assert_eq!(
+      out,
+      vec![
+        "Dockerfile 引用了 README「构建耗时与缓存」，但 README 里已找不到这段文字（改名后忘了同步？）"
+          .to_owned()
+      ],
+      "同一来源同一章节只报一次；README 里还在的章节不报"
+    );
+  }
+
+  #[test]
+  fn a_missing_index_is_a_failure_not_a_pass() {
+    let mut failures = Vec::new();
+    check_docs_linked(&[doc("ui/modern.md")], &mut failures);
+    assert_eq!(
+      failures,
+      vec!["docs/README.md 不存在（文档索引没了）".to_owned()]
+    );
+  }
+
+  #[test]
+  fn the_index_itself_is_exempt() {
+    let mut failures = Vec::new();
+    check_docs_linked(&[index_doc("")], &mut failures);
+    assert!(failures.is_empty());
+  }
+
+  #[test]
+  fn readme_and_agents_must_point_at_the_index() {
+    let mut failures = Vec::new();
+    check_entry_links("见 [索引](docs/README.md)", "没有任何链接", &mut failures);
+    assert_eq!(
+      failures,
+      vec!["AGENTS.md 没有链接 docs/README.md（入口指不到唯一索引）".to_owned()]
+    );
+  }
 }

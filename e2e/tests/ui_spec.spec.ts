@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 import { expect, option, test } from "./fixtures";
 
-// 界面评审整改的回归：用例标题里的编号对应 `docs/ui-components.md` §2 的硬规则，改动时能对上。
+// 界面评审整改的回归：用例标题里的编号对应 `docs/README.md` §2 的硬规则，改动时能对上。
 
 /** 打开只出多选题的练习页（`?multi=1` 强制随机序，第一题必是多选）。 */
 async function openMultiOnlyPractice(page: Page) {
@@ -253,6 +253,29 @@ test("F4 首页整卡可点的卡片：键盘焦点画在整张卡上（虚线�
 });
 
 test("F5 首页卡片的标题栏元信息是响应式的：异步数据到了会出现，切语言会跟着变", async ({ page }) => {
+  // 追台卡的传播等级徽标依赖 `/api/solar`。真实后端只在联调时存在，
+  // 不 mock 的话这条用例在其他环境里必然超时（与界面无关的假失败）。
+  await page.route("**/api/solar", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        source: "N0NBH / HamQSL",
+        updated: "31 Oct 2026 1200 GMT",
+        solar_flux: 118,
+        a_index: 7,
+        k_index: 2,
+        sunspots: 62,
+        xray: "C1.2",
+        conditions: [
+          { band: "80m-40m", time: "day", condition: "Good" },
+          { band: "30m-20m", time: "day", condition: "Fair" },
+          { band: "80m-40m", time: "night", condition: "Poor" },
+          { band: "30m-20m", time: "night", condition: "Good" },
+        ],
+      }),
+    }),
+  );
   await page.goto("/");
   // 追台卡的传播等级徽标依赖异步拉到的太阳数据：同页「实时传播条件」能显示数据，
   // 这里就必须也出现徽标（`{m.run()}` 只执行一次时它永远不会出现）。
@@ -267,3 +290,5 @@ test("F5 首页卡片的标题栏元信息是响应式的：异步数据到了�
   await expect(daily.locator(":scope > .pxl-section-title")).toContainText(/streak|day/i);
   await expect(daily.locator(":scope > .pxl-section-title")).not.toContainText("打卡");
 });
+
+// 双风格运行时隔离的回归在 `dual_isolation.spec.ts`（带「等挂载 + 正向对照 + 表面必须打开」三道护栏）。

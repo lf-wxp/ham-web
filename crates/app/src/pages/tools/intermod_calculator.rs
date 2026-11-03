@@ -143,14 +143,14 @@ pub(super) fn IntermodCalculator() -> impl IntoView {
                   .into_any()
               } else {
                 view! {
-                  <Table class="min-w-[480px] text-sm" wrapper_class="max-h-[28rem] border">
+                  <Table class="min-w-[480px]" wrapper_class="max-h-[28rem] border" density=crate::ui::TableDensity::Compact>
                       <TableHead>
                         <TableRow>
-                          <TableHeader class="border px-3 py-2">{move || t("radio.type")}</TableHeader>
-                          <TableHeader class="border px-3 py-2">{move || t("tools.intermod-col-order")}</TableHeader>
-                          <TableHeader class="border px-3 py-2">{move || t("tools.intermod-col-expr")}</TableHeader>
-                          <TableHeader class="border px-3 py-2">{move || t("log.frequency-mhz")}</TableHeader>
-                          <TableHeader class="border px-3 py-2">{move || t("tools.intermod-col-band")}</TableHeader>
+                          <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.type")}</TableHeader>
+                          <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.intermod-col-order")}</TableHeader>
+                          <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.intermod-col-expr")}</TableHeader>
+                          <TableHeader class=crate::kit::table_cell_class("")>{move || t("log.frequency-mhz")}</TableHeader>
+                          <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.intermod-col-band")}</TableHeader>
                         </TableRow>
                       </TableHead>
                       <TableBody>{rows}</TableBody>

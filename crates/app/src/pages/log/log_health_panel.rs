@@ -166,7 +166,7 @@ pub(super) fn LogHealthPanel() -> impl IntoView {
   });
 
   view! {
-    <section class="pxl-card border bg-card">
+    <section class=crate::kit::card_class()>
       <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
         <h2 class=card_title_class("mr-auto")>{move || t("log.health-title")}</h2>
         {move || {

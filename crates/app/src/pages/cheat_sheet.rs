@@ -39,8 +39,8 @@ pub fn CheatSheetPage() -> impl IntoView {
             let sec_name = sec.name;
             let count = sec.items.len();
             view! {
-              <section class="print-avoid-break pxl-card border bg-card print:border-zinc-300">
-                <h2 class="flex items-center gap-2 pxl-section-title">
+              <section class=crate::kit::card_class_with("print-avoid-break print:border-zinc-300")>
+                <h2 class=crate::cn::cn(&["flex items-center gap-2", crate::kit::card_title_class()])>
                   <span class=format!("size-2.5 shrink-0 {}", crate::tone::dot(cat_tone))></span>
                   {move || crate::data::core_text_tracked(sec_name)}
                   <span class="ml-auto text-xs font-normal normal-case text-muted-foreground">

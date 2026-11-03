@@ -13,8 +13,9 @@ use crate::components::common::{
 };
 use crate::data;
 use crate::study;
+use crate::ui::intl::decimal;
 use crate::ui::{
-  Button, ButtonLink, Chip, ChipGroup, NativeSelect, SelectOption, Size, Tooltip, Variant,
+  Button, ButtonLink, Chip, ChipGroup, SelectOption, SimpleSelect, Size, Tooltip, Variant,
 };
 use crate::util::{download_text, now_ms, set_title};
 
@@ -387,7 +388,7 @@ pub fn MistakesPage() -> impl IntoView {
             let total = session.with_untracked(Vec::len);
             let q = m.question.clone();
             view! {
-              <div class="pxl-card border bg-card p-4">
+              <div class=crate::kit::card_pad_class()>
                 <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
                   <span>{move || tf("exam.question", &[&(current.get() + 1).to_string(), &total.to_string()])}</span>
                   <span>
@@ -486,7 +487,7 @@ pub fn MistakesPage() -> impl IntoView {
             let m_note = m.question.clone();
             let note_id = Signal::derive(move || m_note.stable_id().unwrap_or_default());
             view! {
-              <div class="space-y-4 pxl-card border bg-card p-4">
+              <div class=crate::kit::card_class_with("space-y-4 p-4")>
                 <div class="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{move || tf("exam.question", &[&(current.get() + 1).to_string(), &total.to_string()])}</span>
                   <span>
@@ -601,7 +602,7 @@ pub fn MistakesPage() -> impl IntoView {
             .into_any()
           } else if finished.get() {
             view! {
-              <div class="pxl-card border bg-card px-4 py-10 text-center">
+              <div class=crate::kit::card_class_with("px-4 py-10 text-center")>
                 <div class="text-lg">{move || t("learning.retry-complete")}</div>
                 <div class="mt-2 text-sm text-muted-foreground">
                   {move || t("exam.correct-label")} " " <span class="text-win-text">{correct.get()}</span>
@@ -637,7 +638,7 @@ pub fn MistakesPage() -> impl IntoView {
                 move || {
                   (review_total > 0).then(|| {
                     view! {
-                      <div class="pxl-card border bg-card p-4">
+                      <div class=crate::kit::card_pad_class()>
                         <div class="mb-2 flex items-center justify-between">
                           <h3 class="text-sm">{move || t("exam.review-forecast")}</h3>
                           <span class="text-xs text-muted-foreground">
@@ -667,15 +668,21 @@ pub fn MistakesPage() -> impl IntoView {
                               };
                               let tip = tp("exam.category-questions", *n, &[&label, &n.to_string()]);
                               view! {
-                                <Tooltip class="min-w-0 flex-1" label=tip.clone()>
+                                // 列撑满 96px（`h-full`）：柱的百分比高度要有一个**确定高度**的
+                                // 包含块。原先列高由内容撑开，`height: {h}%` 相对 auto 高度解析不出来，
+                                // 柱塌成几像素、标签被 flex 压掉一半 —— 就是「今天」被遮挡的样子。
+                                <Tooltip class="h-full min-w-0 flex-1" label=tip.clone()>
                                   <div
-                                    class="flex w-full flex-col items-center gap-1 outline-none focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
+                                    class="flex h-full w-full flex-col items-center gap-1 outline-none focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
                                     tabindex="0"
                                     role="img"
                                     aria-label=tip
                                   >
-                                    <div class=format!("{bar_class} w-full") style=format!("height: {h}%")></div>
-                                    <span class="max-w-full truncate text-xs text-muted-foreground">{label}</span>
+                                    // 轨道吃满「容器高 − 标签行高」，柱再按比例填充轨道。
+                                    <div class="flex w-full min-h-0 flex-1 items-end">
+                                      <div class=format!("{bar_class} w-full") style=format!("height: {h}%")></div>
+                                    </div>
+                                    <span class="w-full shrink-0 truncate text-center text-xs text-muted-foreground">{label}</span>
                                   </div>
                                 </Tooltip>
                               }
@@ -692,13 +699,13 @@ pub fn MistakesPage() -> impl IntoView {
                   let total = mastery.total();
                   (total > 0).then(|| {
                     let pct = |n: usize| -> String {
-                      format!("{:.2}%", n as f64 / total as f64 * 100.0)
+                      format!("{}%", decimal(n as f64 / total as f64 * 100.0, 2))
                     };
                     let dot = |color: &'static str| {
                       view! { <span class=format!("inline-block h-2 w-2 {color}")></span> }
                     };
                     view! {
-                      <div class="pxl-card border bg-card p-4">
+                      <div class=crate::kit::card_pad_class()>
                         <div class="mb-2 flex items-center justify-between">
                           <h3 class="text-sm">{move || t("learning.memory-consolidation")}</h3>
                           <span class="text-xs text-muted-foreground">
@@ -750,7 +757,7 @@ pub fn MistakesPage() -> impl IntoView {
                   return view! { <div></div> }.into_any();
                 }
                 view! {
-                  <div class="pxl-card border bg-card p-4">
+                  <div class=crate::kit::card_pad_class()>
                     <h3 class="mb-2 text-sm">{move || t("learning.weak-categories")}</h3>
                     <div class="flex flex-wrap gap-1.5">
                       {counts
@@ -784,7 +791,7 @@ pub fn MistakesPage() -> impl IntoView {
                 move || {
                   has_cause.then(|| {
                     view! {
-                      <div class="pxl-card border bg-card p-4">
+                      <div class=crate::kit::card_pad_class()>
                         <h3 class="mb-2 text-sm">{move || t("exam.mistake-causes")}</h3>
                         <div class="flex flex-wrap gap-1.5">
                           {cause_counts
@@ -815,7 +822,7 @@ pub fn MistakesPage() -> impl IntoView {
                     })
                     .collect();
                   view! {
-                    <NativeSelect
+                    <SimpleSelect
                       value=filter
                       on_change=Callback::new(move |v: String| filter.set(v))
                       options=category_options

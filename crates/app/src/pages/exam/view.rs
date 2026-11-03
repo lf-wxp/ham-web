@@ -511,6 +511,14 @@ pub fn ExamPage() -> impl IntoView {
 
   let content = move || {
     if loading.get() {
+      if crate::kit::is_modern() {
+        return view! {
+          <crate::kit_modern::ModernLoading
+            label=Signal::derive(move || t("exam.loading-questions-u-2026"))
+          />
+        }
+        .into_any();
+      }
       return view! { <PageLoading label=Signal::derive(move || t("exam.loading-questions-u-2026")) /> }
         .into_any();
     }
@@ -522,17 +530,53 @@ pub fn ExamPage() -> impl IntoView {
       }
       .into_any();
     }
+    // 与练习页同一口径：首屏不播「推题」动画，第一次换题之后才允许。
+    let settled = RwSignal::new(false);
+    Effect::new(move |prev: Option<Option<usize>>| {
+      let cur = store.current().map(|(i, _)| i);
+      if prev.flatten().is_some_and(|p| Some(p) != cur) {
+        settled.set(true);
+      }
+      cur
+    });
+    // 现代风下收起底部 dock、换底部留白：版式依赖它，所以用属性而不是 `:has()`（见 `page_mode.rs`）。
+    crate::kit_modern::use_page_mode("exam");
     view! {
-      <div on:touchstart=swipe_start on:touchend=swipe_end>
-        <PageContainer class="py-6 space-y-4 pb-28 sm:pb-28 animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal)">
-        <BossStage
-          answered=answered
-          total=total
-          remaining=remaining
-          rule=rule
-          finished=store.finished
-          correct=Signal::derive(move || score.get().correct)
-        />
+      // 现代风：整页套 `md-root`，字体/字号/行高才会切成现代那一套；
+      // 不套的话，题卡之外的文字（胶囊、元信息）会回落到 body 的点阵字体。
+      <div
+        class=move || {
+          if crate::kit::is_modern() {
+            if settled.get() { "md-root md-exam md-settled" } else { "md-root md-exam" }
+          } else {
+            ""
+          }
+        }
+        on:touchstart=swipe_start
+        on:touchend=swipe_end
+      >
+        <PageContainer class=if crate::kit::is_modern() {
+          "py-6 space-y-4 pb-28 sm:pb-28"
+        } else {
+          "py-6 space-y-4 pb-28 sm:pb-28 animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal)"
+        }>
+        // 现代风不显示 Boss 舞台：RPG 隐喻属于像素风，同样的信息（进度 / 剩余时间）
+        // 由现代页头与底栏承担，见 `docs/ui/decisions.md` §5。
+        {move || {
+          (!crate::kit::is_modern())
+            .then(|| {
+              view! {
+                <BossStage
+                  answered=answered
+                  total=total
+                  remaining=remaining
+                  rule=rule
+                  finished=store.finished
+                  correct=Signal::derive(move || score.get().correct)
+                />
+              }
+            })
+        }}
         <ExamHeader
           percent=percent
           weak=weak
@@ -712,7 +756,7 @@ pub fn ExamPage() -> impl IntoView {
       on_resume=on_resume
       on_restart=on_restart
     />
-    <MessageDialog open=error_open title=t("exam.load-failed") description=error_text confirm_text=t("exam.ok") />
+    <MessageDialog open=error_open title="exam.load-failed" description=error_text confirm_text="exam.ok" />
     <RulesWalkthroughDialog
       open=rules_open
       on_confirm=Callback::new(move |()| {

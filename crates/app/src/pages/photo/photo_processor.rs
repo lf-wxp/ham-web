@@ -59,7 +59,7 @@ pub(super) fn PhotoProcessor() -> impl IntoView {
               href="http://82.157.138.16:8091/CRAC/crac/index.html"
               target="_blank"
               rel="nofollow noopener noreferrer"
-              class="text-xp-text hover:text-xp-text underline"
+              class="text-xp-text hover:text-xp-text"
             >
               {move || t("tools.amateur-radio-operator-competence")}
             </a>

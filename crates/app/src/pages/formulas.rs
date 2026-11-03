@@ -22,8 +22,8 @@ pub fn FormulasPage() -> impl IntoView {
           .iter()
           .map(|g| {
             view! {
-              <section class="pxl-card border bg-card">
-                <h2 class="pxl-section-title">{move || kt_tracked(g.name)}</h2>
+              <section class=crate::kit::card_class()>
+                <h2 class=crate::kit::card_title_class()>{move || kt_tracked(g.name)}</h2>
                 <div class="grid gap-2 p-4 sm:grid-cols-2">
                   {g.items
                     .iter()
@@ -53,8 +53,8 @@ pub fn FormulasPage() -> impl IntoView {
           })
           .collect_view()}
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("exam.units-title")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("exam.units-title")}</h2>
           <div class="space-y-4 p-4">
             {UNIT_CONVERSION_GROUPS
               .iter()

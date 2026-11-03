@@ -5,7 +5,7 @@ use leptos::prelude::*;
 use crate::cn::cn;
 use crate::icons::{Icon, IconKind};
 
-use super::control::TextValue;
+use super::control::{TextValue, invalid_attr};
 
 #[component]
 pub fn Checkbox(
@@ -16,9 +16,18 @@ pub fn Checkbox(
   #[prop(optional, into)]
   aria_label: Option<TextValue>,
   #[prop(optional, into)] disabled: Signal<bool>,
+  /// 校验未通过（如「必须勾选同意」）：描边变红，读屏念「无效」。
+  #[prop(optional, into)]
+  invalid: Signal<bool>,
   #[prop(optional, into)] class: String,
 ) -> impl IntoView {
-  let class = cn(&["pxl-check peer", &class]);
+  // 现代风：`md-check`（16px 圆角方块，选中橙底 + 白色对勾）。
+  let modern = crate::kit::is_modern_at_mount();
+  let class = if modern {
+    cn(&["md-check peer", &class])
+  } else {
+    cn(&["pxl-check peer", &class])
+  };
   view! {
     <button
       type="button"
@@ -28,6 +37,7 @@ pub fn Checkbox(
       class=class
       aria-checked=move || checked.get().to_string()
       aria-label=move || aria_label.as_ref().map(TextValue::get)
+      aria-invalid=invalid_attr(invalid)
       data-state=move || if checked.get() { "checked" } else { "unchecked" }
       data-disabled=move || disabled.get().then_some("")
       disabled=move || disabled.get()
@@ -45,10 +55,17 @@ pub fn Checkbox(
               <span
                 data-slot="checkbox-indicator"
                 data-state="checked"
-                class="motion-check flex items-center justify-center text-current"
+                class=if modern {
+                  "md-check-mark"
+                } else {
+                  "motion-check flex items-center justify-center text-current"
+                }
                 style="pointer-events: none;"
               >
-                <Icon kind=IconKind::Check class="size-6" />
+                <Icon
+                  kind=IconKind::Check
+                  class=if modern { "md-check-mark-icon" } else { "size-6" }
+                />
               </span>
             }
           })

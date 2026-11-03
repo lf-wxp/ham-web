@@ -114,6 +114,7 @@
   "exam.misread-the-question": "审题看错",
   "exam.submitted": "已交卷",
   "exam.answered": "已作答",
+  "exam.bar-label": "答题操作条",
   "exam.saved": "已保存",
   "exam.due": "已到期",
   "exam.bookmarked": "已收藏",
@@ -382,5 +383,9 @@
   "exam.multiple-in-parens": "（多选）",
   "exam.delete-group-confirm": "删除分组「{}」？",
   "exam.delete-group-hint": "分组里的书签不会被删除，仍保留在收藏里。",
-  "exam.group-deleted": "已删除分组"
+  "exam.group-deleted": "已删除分组",
+  "exam.keys-pick": "选选项",
+  "exam.keys-turn": "翻题",
+  "exam.signal-report": "信号报告",
+  "exam.unknown-error-detail": "未知错误：{}"
 }

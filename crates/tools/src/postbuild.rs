@@ -37,6 +37,21 @@ const SW_TEMPLATE: &str = include_str!("../templates/sw.js");
 /// 模拟都是按需加载的（见 `core/question.rs` 的 `search-index` 说明），预取等于让
 /// 每个用户（包括从不用搜索的人）在 install 阶段付 1.6 MB + 1.7 MB。
 /// `/questions/*.json` 已被 `sw.js` 的 `RUNTIME.questions` 覆盖，离线仍可用。
+/// 现代风专用字体（Bricolage / Plex Mono / Noto Sans SC Display，合计约 750 KB）。
+///
+/// 不进预缓存：默认界面是像素风，用不到它们；而这些文件带 `unicode-range`，浏览器本来就只会按
+/// 页面实际用到的字符懒加载 —— 预缓存会在 install 阶段把全部 12 个文件拉一遍，等于把懒加载
+/// 白做，还和 wasm 抢首访带宽。改由 `sw.js` 的 `RUNTIME.fonts` 在首次真正请求时缓存。
+fn is_modern_font(rel: &str) -> bool {
+  ["bricolage-", "plex-mono-", "noto-sans-sc-display-"]
+    .iter()
+    .any(|prefix| {
+      rel
+        .strip_prefix("fonts/")
+        .is_some_and(|name| name.starts_with(prefix))
+    })
+}
+
 fn is_excluded(rel: &str) -> bool {
   is_precompressed(rel)
     || rel == "sw.js"
@@ -45,6 +60,7 @@ fn is_excluded(rel: &str) -> bool {
     || rel == "questions/search-index.json"
     || (rel.starts_with("data/i18n/") && rel.ends_with(".json"))
     || rel.starts_with("katex/")
+    || is_modern_font(rel)
     || rel.ends_with(".map")
     // 来源戳（`*.source.json`）是构建元数据。正常走 `data/provenance/`，不会出现在 dist；
     // 这里是第二道防线：万一将来有人把它放回 `public/`，也不会进预缓存——
@@ -428,6 +444,12 @@ mod tests {
     // 而搜索索引 1.7 MB 只在用户真的搜索时才需要（`RUNTIME.questions` 已覆盖离线）。
     assert!(is_excluded("questions/search-index.json"));
     assert!(!is_excluded("questions/A.json"));
+    // 现代风字体按需缓存（`RUNTIME.fonts`），像素风字体与 Geist 仍预缓存。
+    assert!(is_excluded("fonts/bricolage-latin.woff2"));
+    assert!(is_excluded("fonts/plex-mono-latin-400.woff2"));
+    assert!(is_excluded("fonts/noto-sans-sc-display-3.woff2"));
+    assert!(!is_excluded("fonts/pixel-fusion-latin.woff2"));
+    assert!(!is_excluded("fonts/geist-latin.woff2"));
     assert!(!is_excluded("index.html"));
     assert!(is_excluded("app_bg.wasm.br"));
     assert!(is_excluded("index.html.gz"));

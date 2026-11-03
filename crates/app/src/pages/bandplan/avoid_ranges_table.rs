@@ -20,8 +20,8 @@ const HEADERS: &[&str] = &[
 #[component]
 pub(super) fn AvoidRangesTable() -> impl IntoView {
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("knowledge.avoid-ranges")}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t("knowledge.avoid-ranges")}</h2>
       <Table
         aria_label=Signal::derive(move || t("knowledge.avoid-ranges"))
         class="min-w-[560px]"

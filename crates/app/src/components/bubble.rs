@@ -9,6 +9,9 @@ use crate::icons::{Icon, IconKind};
 
 #[component]
 pub fn Bubble(open: RwSignal<bool>, #[prop(into)] text: Signal<String>) -> impl IntoView {
+  if crate::kit::is_modern_at_mount() {
+    return view! { <crate::kit_modern::ModernBubble open=open text=text /> }.into_any();
+  }
   let timer: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
   Effect::new(move |_| {
     if open.get() {
@@ -29,7 +32,7 @@ pub fn Bubble(open: RwSignal<bool>, #[prop(into)] text: Signal<String>) -> impl 
     }
   });
 
-  move || {
+  (move || {
     open.get().then(|| {
       view! {
         <div
@@ -58,5 +61,6 @@ pub fn Bubble(open: RwSignal<bool>, #[prop(into)] text: Signal<String>) -> impl 
         </div>
       }
     })
-  }
+  })
+    .into_any()
 }

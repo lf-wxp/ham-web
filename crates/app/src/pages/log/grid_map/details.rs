@@ -19,7 +19,7 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
       <span class="flex items-center gap-1.5">
         <span class="text-muted-foreground">{move || t("log.density")}</span>
         // 分级色块而不是渐变条：地图填充本来就是按密度分档的（见 `fill_classes`），
-        // 且像素规范里零渐变（`docs/ui-components.md` §2）。
+        // 且像素规范里零渐变（`docs/ui/pixel.md` §2）。
         <span class="flex h-2 w-24">
           <span class="h-2 flex-1 bg-primary/15"></span>
           <span class="h-2 flex-1 bg-primary/40"></span>

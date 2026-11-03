@@ -7,7 +7,7 @@ use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
 use crate::share_score::download_bytes;
-use crate::ui::{Button, Field, Input, NativeSelect, SelectOption, Size, Variant, push_error};
+use crate::ui::{Button, Field, Input, SelectOption, SimpleSelect, Size, Variant, push_error};
 use crate::util::unique_id;
 
 /// WSPR 基带采样率：12 kHz 下每符号正好 8192 样本，162 符号 = 110.592 秒。
@@ -201,7 +201,7 @@ pub(super) fn ModeEncoder() -> impl IntoView {
           />
         </Field>
         <Field label=Signal::derive(|| t("tools.wspr-tx-power")) r#for=power_id.clone()>
-          <NativeSelect
+          <SimpleSelect
             id=power_id
             value=wspr_power
             on_change=Callback::new(move |v: String| wspr_power.set(v))

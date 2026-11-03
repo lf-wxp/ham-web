@@ -467,5 +467,14 @@
   "common.topic-basics-desc": "Conductors and insulators, static and direct current, electrical units, power supplies, components and circuits, multimeter measurements",
   "common.topic-safety": "Safety and EMC protection",
   "common.topic-safety-desc": "Transmitter specifications, electromagnetic environment exposure limits, lightning protection and grounding, electrical and battery safety",
-  "common.cat-protocol-kenwood": "Kenwood / Elecraft / newer Yaesu"
+  "common.cat-protocol-kenwood": "Kenwood / Elecraft / newer Yaesu",
+  "common.quiz-summary": "All three done — carry on reading",
+  "common.quiz-retry": "Shuffle again",
+  "common.error-invalid-json": "Invalid JSON: {}",
+  "common.error-http-status": "HTTP error: {}",
+  "common.error-load-bank-config": "Failed to load question bank config: {}",
+  "common.error-invalid-bank-config": "Invalid question bank config: {}",
+  "common.error-load-questions": "Failed to load question data: {}",
+  "common.error-invalid-questions": "Invalid question data: {}",
+  "common.check-this-field": "Check this field (format or range)"
 }

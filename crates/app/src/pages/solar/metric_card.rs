@@ -12,7 +12,7 @@ pub(super) fn MetricCard(
   view! {
     <div class="border bg-inset p-3 text-center">
       <div class="text-xs text-muted-foreground">{move || label.get()}</div>
-      <div class="mt-1 pxl-stat">
+      <div class=if crate::kit::is_modern_at_mount() { "md-stat-text mt-1" } else { "mt-1 pxl-stat" }>
         {move || {
           match value.get() {
             Some(v) => format!("{v:.1}"),

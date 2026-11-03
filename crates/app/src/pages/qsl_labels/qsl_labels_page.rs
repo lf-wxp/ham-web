@@ -8,8 +8,8 @@ use leptos::prelude::*;
 use crate::components::common::PageHeader;
 use crate::pages::log::{LogEntry, use_log_store};
 use crate::ui::{
-  Button, ButtonLink, Chip, ChipGroup, ControlSize, DatePicker, NativeSelect, NumberField,
-  SelectOption, Size, Tooltip, Variant,
+  Button, ButtonLink, Chip, ChipGroup, ControlSize, DatePicker, NumberField, SelectOption,
+  SimpleSelect, Size, Tooltip, Variant,
 };
 use crate::util::{set_title, storage, window};
 
@@ -204,7 +204,7 @@ pub fn QslLabelsPage() -> impl IntoView {
               variant=Variant::Ghost
               size=Size::Sm
             >{move || t("log.back-to-log")}</ButtonLink>
-            <NativeSelect
+            <SimpleSelect
               value=via_sel
               on_change=Callback::new(move |v: String| via_sel.set(v))
               options=via_options.clone()
@@ -257,7 +257,7 @@ pub fn QslLabelsPage() -> impl IntoView {
           // 撑到 320px 之外，允许收缩后由下拉自己截断。
           <label class="inline-flex min-w-0 items-center gap-1.5">
             {move || t("log.label-sheet")}
-            <NativeSelect
+            <SimpleSelect
               value=layout_id
               on_change=Callback::new(move |v: String| {
                 storage::set(LAYOUT_KEY, &v);
@@ -311,7 +311,7 @@ pub fn QslLabelsPage() -> impl IntoView {
           <p class="mx-auto max-w-5xl px-4 pb-3 text-xs text-amber-800 dark:text-amber-300">
             {move || t("log.station-callsign-not-set")}
             " "
-            <a href="/log" class="underline underline-offset-4">{move || t("contest.qso-log-station-info")}</a>
+            <a href="/log">{move || t("contest.qso-log-station-info")}</a>
             " "
             {move || t("contest.to-fill-it-in")}
           </p>

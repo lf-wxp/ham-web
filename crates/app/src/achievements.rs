@@ -115,9 +115,6 @@ pub fn detect_new() {
   NEW.with(|sig| sig.update(|v| v.extend(newly)));
 }
 
-/// Toast 退场时长：与 `--motion-fast`（150ms）对齐并留一点余量，保证退出动画播完再卸载。
-const TOAST_EXIT_MS: u64 = 180;
-
 /// 全局成就解锁提示：右下角弹出，逐条展示，自动消失。
 #[component]
 pub fn AchievementToast() -> impl IntoView {
@@ -148,7 +145,11 @@ pub fn AchievementToast() -> impl IntoView {
     move || {
       if !leaving.get_untracked() {
         leaving.set(true);
-        let h = set_timeout_with_handle(pop.clone(), Duration::from_millis(TOAST_EXIT_MS)).ok();
+        let h = set_timeout_with_handle(
+          pop.clone(),
+          Duration::from_millis(crate::presence::exit_ms(crate::presence::ExitSpeed::Normal)),
+        )
+        .ok();
         pop_timer.set_value(h);
       }
     }
@@ -201,13 +202,31 @@ pub fn AchievementToast() -> impl IntoView {
           data-leaving=move || leaving.get().to_string()
           class="motion-toast pxl-popover fixed bottom-20 right-4 z-50 flex w-72 items-start gap-3 p-3 xl:bottom-4"
         >
-          <PixelSprite name=badge_sprite(a.id) scale=3 class="pxl-bob" />
+          // 徽章精灵是像素语言的一部分（20 枚手绘点阵图）。现代风没有精灵，
+          // 用同一套线性图标里的奖杯顶上 —— 否则每次解锁成就都会在柔和卡片里
+          // 弹出一块 3 倍放大的点阵图。
+          {move || {
+            if crate::kit::is_modern() {
+              view! {
+                <crate::kit_modern::ModernIcon
+                  kind=crate::kit_modern::MIcon::Trophy
+                  class="size-8 shrink-0"
+                />
+              }
+                .into_any()
+            } else {
+              view! { <PixelSprite name=badge_sprite(a.id) scale=3 class="pxl-bob" /> }
+                .into_any()
+            }
+          }}
           <div class="min-w-0 flex-1">
             <div class="pxl-label text-xs text-muted-foreground">
               {t("exam.achievement-unlocked")}
             </div>
-            <div class="mt-0.5 text-sm">{a.name}</div>
-            <div class="mt-0.5 text-xs leading-snug text-muted-foreground">{a.desc}</div>
+            // 成就名与说明是中文原文：经 `t()` 的原文反查翻成当前语言（成就页同样这么写），
+            // 直接渲染的话英文 / 西语界面的解锁提示会露出中文。
+            <div class="mt-0.5 text-sm">{move || t(a.name)}</div>
+            <div class="mt-0.5 text-xs leading-snug text-muted-foreground">{move || t(a.desc)}</div>
           </div>
           <button
             type="button"

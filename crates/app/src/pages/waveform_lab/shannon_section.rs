@@ -62,8 +62,8 @@ pub(super) fn ShannonSection() -> impl IntoView {
   let marker = move || (axes.px(snr.get()), axes.py(se().min(SE_MAX)));
 
   view! {
-    <section id="shannon" class="scroll-mt-24 pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("tools.shannon-capacity-sandbox")}</h2>
+    <section id="shannon" class=crate::kit::card_class_with("scroll-mt-24")>
+      <h2 class=crate::kit::card_title_class()>{move || t("tools.shannon-capacity-sandbox")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("tools.shannon-s-formula-c")}
       </p>

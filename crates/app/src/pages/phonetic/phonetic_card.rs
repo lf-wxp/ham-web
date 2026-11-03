@@ -12,7 +12,7 @@ pub(super) fn PhoneticCard(entry: &'static PhoneticEntry) -> impl IntoView {
       <button
         type="button"
         on:click=move |_| speak_en(entry.word)
-        class="group flex w-full flex-col items-center gap-1.5 pxl-card border bg-card p-3 text-center transition-colors hover:bg-accent/60"
+        class=crate::kit::card_class_with("group flex w-full flex-col items-center gap-1.5 p-3 text-center transition-colors hover:bg-accent/60")
       >
       <div class="flex items-baseline gap-2">
         <span class="text-2xl leading-none text-primary">{entry.letter}</span>

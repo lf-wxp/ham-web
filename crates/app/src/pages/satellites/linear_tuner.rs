@@ -4,7 +4,7 @@ use leptos::prelude::*;
 use crate::data::kt_tracked;
 use crate::i18n::{t, tf};
 use crate::ui::{
-  Button, Checkbox, Field, Label, NativeSelect, NumberField, SelectOption, Size, Variant,
+  Button, Checkbox, Field, Label, NumberField, SelectOption, SimpleSelect, Size, Variant,
 };
 use crate::util::unique_id;
 
@@ -132,7 +132,7 @@ pub(super) fn LinearTuner(
     <div class="space-y-3 border border-dashed px-3 py-3" data-slot="linear-tuner">
       <div class="grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
         <Field label=Signal::derive(move || t("radio.linear-transponder")) r#for=tp_id.clone()>
-          <NativeSelect
+          <SimpleSelect
             id=tp_id
             value=Signal::derive(move || {
               if custom_on.get() {

@@ -19,7 +19,7 @@ pub fn BackupPage() -> impl IntoView {
       // `id="backup"`：e2e 按这个 id 定位整块备份区；旧链接 `/tools#backup` 由
       // `ToolsPage` 负责转到本页，锚点本身在这里已无意义。
       <PageContainer>
-        <section id="backup" class="pxl-card border bg-card p-4">
+        <section id="backup" class=crate::kit::card_pad_class()>
           <BackupTool />
         </section>
       </PageContainer>

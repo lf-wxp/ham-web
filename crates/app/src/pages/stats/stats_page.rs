@@ -99,20 +99,20 @@ pub fn StatsPage() -> impl IntoView {
 
     view! {
           <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div class="pxl-card border bg-card p-4 text-center">
-              <div class="pxl-stat">{total}</div>
+            <div class=crate::kit::card_class_with("p-4 text-center")>
+              <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{total}</div>
               <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.total-qsos")}</div>
             </div>
-            <div class="pxl-card border bg-card p-4 text-center">
-              <div class="pxl-stat">{dxcc_total}</div>
+            <div class=crate::kit::card_class_with("p-4 text-center")>
+              <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{dxcc_total}</div>
               <div class="mt-1 text-xs text-muted-foreground">{move || t("log.dxcc-entities")}</div>
             </div>
-            <div class="pxl-card border bg-card p-4 text-center">
-              <div class="pxl-stat">{band_top.len()}</div>
+            <div class=crate::kit::card_class_with("p-4 text-center")>
+              <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{band_top.len()}</div>
               <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.bands")}</div>
             </div>
-            <div class="pxl-card border bg-card p-4 text-center">
-              <div class="pxl-stat">{mode_top.len()}</div>
+            <div class=crate::kit::card_class_with("p-4 text-center")>
+              <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{mode_top.len()}</div>
               <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.modes")}</div>
             </div>
           </div>
@@ -126,7 +126,7 @@ pub fn StatsPage() -> impl IntoView {
                   view! {
                     <a
                       href="/log"
-                      class="mt-1 inline-block text-sm underline underline-offset-4 transition-colors hover:text-foreground"
+                      class="mt-1 inline-block text-sm transition-colors hover:text-foreground"
                     >
                       {move || t("radio.add-qsos")}
                     </a>
@@ -138,9 +138,9 @@ pub fn StatsPage() -> impl IntoView {
           } else {
             view! {
               // 整页 14 个块，只让「DXCC 奖项进度」带硬投影（L2）：统计页的第一眼落点。
-              // 其余块保持平卡 —— 全部同重量时，眼睛没有入口（见 ui-components.md §2 硬规则 8）。
+              // 其余块保持平卡 —— 全部同重量时，眼睛没有入口（见 ui-pixel.md §2 硬规则 8）。
               <section class="pxl-window">
-                <h2 class="pxl-section-title">{move || t("radio.dxcc-award-progress")}</h2>
+                <h2 class=crate::kit::card_title_class()>{move || t("radio.dxcc-award-progress")}</h2>
                 <div class="space-y-3 p-4">
                   <div>
                     <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
@@ -174,8 +174,8 @@ pub fn StatsPage() -> impl IntoView {
 
               {(!missing.is_empty()).then(|| {
                 view! {
-                  <section class="pxl-card border bg-card">
-                    <h2 class="flex items-baseline gap-2 pxl-section-title">
+                  <section class=crate::kit::card_class()>
+                    <h2 class=crate::cn::cn(&["flex items-baseline gap-2", crate::kit::card_title_class()])>
                       {move || t("radio.dxcc-gap-list")}
                       <span class="text-xs font-normal normal-case text-muted-foreground">
                         {tp(
@@ -217,8 +217,8 @@ pub fn StatsPage() -> impl IntoView {
                 }
               })}
 
-              <section class="pxl-card border bg-card">
-                <h2 class="pxl-section-title">{move || t("log.more-award-progress")}</h2>
+              <section class=crate::kit::card_class()>
+                <h2 class=crate::kit::card_title_class()>{move || t("log.more-award-progress")}</h2>
                 <div class="space-y-3 p-4">
                   <div>
                     <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
@@ -302,8 +302,8 @@ pub fn StatsPage() -> impl IntoView {
                 </div>
               </section>
 
-              <section class="pxl-card border bg-card">
-                <h2 class="pxl-section-title">{move || t("radio.qsl-confirmation-status")}</h2>
+              <section class=crate::kit::card_class()>
+                <h2 class=crate::kit::card_title_class()>{move || t("radio.qsl-confirmation-status")}</h2>
                 <div class="space-y-3 p-4">
                   <div>
                     <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
@@ -332,29 +332,29 @@ pub fn StatsPage() -> impl IntoView {
                 </div>
               </section>
 
-              <section class="pxl-card border bg-card">
-                <h2 class="pxl-section-title">{move || t("radio.dxcc-entity-distribution-top")}</h2>
+              <section class=crate::kit::card_class()>
+                <h2 class=crate::kit::card_title_class()>{move || t("radio.dxcc-entity-distribution-top")}</h2>
                 <div class="p-4">
                   <BarChart items=dxcc_top.clone() max=dxcc_top.first().map(|(_, c)| *c).unwrap_or(1) />
                 </div>
               </section>
 
-              <section class="pxl-card border bg-card">
-                <h2 class="pxl-section-title">{move || t("radio.band-distribution")}</h2>
+              <section class=crate::kit::card_class()>
+                <h2 class=crate::kit::card_title_class()>{move || t("radio.band-distribution")}</h2>
                 <div class="p-4">
                   <BarChart items=band_top.clone() max=band_top.first().map(|(_, c)| *c).unwrap_or(1) />
                 </div>
               </section>
 
-              <section class="pxl-card border bg-card">
-                <h2 class="pxl-section-title">{move || t("radio.mode-distribution")}</h2>
+              <section class=crate::kit::card_class()>
+                <h2 class=crate::kit::card_title_class()>{move || t("radio.mode-distribution")}</h2>
                 <div class="p-4">
                   <BarChart items=mode_top.clone() max=mode_top.first().map(|(_, c)| *c).unwrap_or(1) />
                 </div>
               </section>
 
-              <section class="pxl-card border bg-card">
-                <h2 class="pxl-section-title">{move || t("radio.monthly-qso-trend")}</h2>
+              <section class=crate::kit::card_class()>
+                <h2 class=crate::kit::card_title_class()>{move || t("radio.monthly-qso-trend")}</h2>
                 <div class="p-4">
                   <div class="flex h-32 items-end gap-1">
                     {months
@@ -364,16 +364,20 @@ pub fn StatsPage() -> impl IntoView {
                         let label = tp("radio.qsos", *c as u32, &[&(m).to_string(), &c.to_string()]);
                         let month_label = m.get(5..).unwrap_or(m).to_owned();
                         view! {
-                          // Tooltip 包整列：柱的百分比高度相对包含块，中间多一层会塌。
-                          <Tooltip class="group flex min-w-0 flex-1 flex-col items-center gap-1" label=label.clone()>
-                            <div
-                              class="w-full bg-primary/70 outline-none transition group-hover:bg-primary focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
-                              style=format!("height: {h}%")
-                              tabindex="0"
-                              role="img"
-                              aria-label=label
-                            ></div>
-                            <span class="text-xs text-muted-foreground">{month_label}</span>
+                          // 列要撑满整条轨道（`h-full`）：柱的百分比高度必须有**确定高度**的包含块。
+                          // 列高交给内容决定时 `height: h%` 解析成 auto，柱高为 0、只剩标签。
+                          <Tooltip class="group flex h-full min-w-0 flex-1 flex-col items-center gap-1" label=label.clone()>
+                            // 内层轨道吃满「列高 − 标签行高」，柱再按比例填轨道。
+                            <div class="flex w-full min-h-0 flex-1 items-end">
+                              <div
+                                class="w-full bg-primary/70 outline-none transition group-hover:bg-primary focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
+                                style=format!("height: {h}%")
+                                tabindex="0"
+                                role="img"
+                                aria-label=label
+                              ></div>
+                            </div>
+                            <span class="shrink-0 text-xs text-muted-foreground">{month_label}</span>
                           </Tooltip>
                         }
                       })
@@ -384,8 +388,8 @@ pub fn StatsPage() -> impl IntoView {
 
               {(!heatmap.is_empty()).then(|| {
                 view! {
-                  <section class="pxl-card border bg-card">
-                    <h2 class="pxl-section-title">{move || t("radio.hour-band-heatmap")}</h2>
+                  <section class=crate::kit::card_class()>
+                    <h2 class=crate::kit::card_title_class()>{move || t("radio.hour-band-heatmap")}</h2>
                     <div class="p-4">
                       <Heatmap rows=heatmap.clone() />
                     </div>
@@ -398,8 +402,8 @@ pub fn StatsPage() -> impl IntoView {
 
               {(!daily.is_empty()).then(|| {
                 view! {
-                  <section class="pxl-card border bg-card">
-                    <h2 class="pxl-section-title">{move || t("learning.qso-calendar-heatmap")}</h2>
+                  <section class=crate::kit::card_class()>
+                    <h2 class=crate::kit::card_title_class()>{move || t("learning.qso-calendar-heatmap")}</h2>
                     <div class="p-4">
                       <CalendarHeatmap counts=daily.clone() />
                     </div>

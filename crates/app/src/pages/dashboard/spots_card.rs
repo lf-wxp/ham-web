@@ -47,7 +47,7 @@ pub(super) fn SpotsCard() -> impl IntoView {
   }
 
   view! {
-    <a href="/dx-spots" class="pxl-card border bg-card p-4 transition-colors hover:bg-accent/40">
+    <a href="/dx-spots" class=crate::kit::card_class_with("p-4 transition-colors hover:bg-accent/40")>
       <div class="text-sm">{move || t("shell.dx-spots")}</div>
       <div class="mt-2 space-y-1">
         {move || {

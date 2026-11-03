@@ -41,7 +41,7 @@ pub fn ExamTrend(history: Vec<ExamRecord>, bank: Bank) -> impl IntoView {
     return view! {
       <p class="text-sm text-muted-foreground">
         {move || tf("common.no-class-mock-exam", &[&bank.to_string()])}
-        <a href=format!("/exam?bank={bank}") class="ml-1 text-primary underline underline-offset-4">
+        <a href=format!("/exam?bank={bank}") class="ml-1 text-primary">
           {move || t("common.take-one-link")}
         </a>
       </p>

@@ -9,8 +9,6 @@ use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 #[component]
 pub fn GridSystemPage() -> impl IntoView {
   set_title("shell.grid-locator");
@@ -24,14 +22,14 @@ pub fn GridSystemPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.grid-levels")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.grid-levels")}</h2>
           <Table class="min-w-[560px] text-sm">
             <TableHead>
               <TableRow>
-                <TableHeader class=CELL>{move || t("radio.digits")}</TableHeader>
-                <TableHeader class=CELL>{move || t("radio.example-names")}</TableHeader>
-                <TableHeader class=CELL>{move || t("radio.accuracy")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.digits")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.example-names")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.accuracy")}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -40,9 +38,9 @@ pub fn GridSystemPage() -> impl IntoView {
                 .map(|&(bits, example, precision)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap")>{move || kt_tracked(bits)}</TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono")>{move || kt_tracked(example)}</TableCell>
-                      <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(precision)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>{move || kt_tracked(bits)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono")>{move || kt_tracked(example)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(precision)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -51,8 +49,8 @@ pub fn GridSystemPage() -> impl IntoView {
           </Table>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.notes-heading")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.notes-heading")}</h2>
           <ul class="space-y-2 p-4">
             {GRID_NOTES
               .iter()

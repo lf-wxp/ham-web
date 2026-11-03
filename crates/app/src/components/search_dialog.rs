@@ -1,18 +1,63 @@
 //! 全局搜索命令面板：`/` 快捷键或导航栏搜索按钮唤起，居中弹出、不打断当前流程。
+//!
+//! 两套皮肤共用这一个弹层（外观由 `ui::Dialog` / `ui::Input` 按皮肤分派）；
+//! 现代风的顶栏搜索按钮与 `/` 也指向它 —— 现代风没有「另一套搜索」。
 
+use ham_web_core::registry;
 use ham_web_core::search::{parse_query, qso_matches, search, tokenize};
 use ham_web_core::unit_conversions::UNIT_CONVERSION_GROUPS;
 use leptos::prelude::*;
 
 use crate::data;
+use crate::data::core_text_tracked;
 use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
 use crate::ui::{ControlSize, Dialog, Input, InputType};
 
+/// 站内搜索的开闭状态（App 层 `provide_context`，两套顶栏的按钮与 `/` 共用）。
+///
+/// **必须是独立的 newtype，不能直接 provide `RwSignal<bool>`**：现代风顶栏过去也
+/// provide 过自己的 `RwSignal<bool>`（设置面板开关），`expect_context` 按类型查找，
+/// 于是切换风格后像素风顶栏拿到的是前者留下的、已随组件销毁的信号 ——
+/// 点击搜索按钮时 `set(true)` 写在死信号上，弹层永远不出现。
+#[derive(Clone, Copy)]
+pub struct SearchOpen(pub RwSignal<bool>);
+
 /// 日志 QSO 命中上限：本地日志动辄上千条，搜索面板里只放最相关的几条，
 /// 其余交给 `/log` 页的筛选。
 const MAX_QSO_RESULTS: usize = 5;
+
+/// 页面命中上限：页面是「直达」类结果，排在内容之前但不能挤满整屏。
+const MAX_PAGE_RESULTS: usize = 3;
+
+/// 按页面标题与路由搜页面（标题是中文原文，渲染时再过一层词典）。
+///
+/// 知识索引只覆盖有正文的页面，`/log`、`/backup` 这类入口页不在里面；
+/// 少了这一段，站内搜索就找不回「输入页面名直接跳过去」的能力。
+fn search_pages(q: &str) -> Vec<(String, String, String, String)> {
+  let needle = q.trim().to_lowercase();
+  if needle.is_empty() {
+    return Vec::new();
+  }
+  let group = t("shell.search-pages");
+  registry::MODULES
+    .iter()
+    .filter(|m| {
+      m.title.to_lowercase().contains(&needle) || m.nav_href().to_lowercase().contains(&needle)
+    })
+    .take(MAX_PAGE_RESULTS)
+    .map(|m| {
+      let href = m.nav_href().to_owned();
+      (
+        group.clone(),
+        href.clone(),
+        core_text_tracked(m.title),
+        href,
+      )
+    })
+    .collect()
+}
 
 /// 在本地日志里搜索 QSO（根 `LogStore` 的内存状态，按引用读取、不克隆）。
 ///
@@ -317,10 +362,10 @@ mod tests {
   }
 }
 
-/// 全局搜索命令面板。开闭状态由 App 层 `provide_context::<RwSignal<bool>>()` 提供。
+/// 全局搜索命令面板。开闭状态由 App 层 `provide_context(SearchOpen(..))` 提供。
 #[component]
 pub fn SearchDialog() -> impl IntoView {
-  let open = expect_context::<RwSignal<bool>>();
+  let SearchOpen(open) = expect_context::<SearchOpen>();
   let query = RwSignal::new(String::new());
 
   // 术语表 / 题目搜索索引按需加载：首次打开面板时拉取，加载完成后结果自动刷新。
@@ -328,6 +373,13 @@ pub fn SearchDialog() -> impl IntoView {
   let question_ready = RwSignal::new(data::question_index_loaded().is_some());
   // 索引真正换新（修订号变化）后加一：题库数据更新会换出新索引，用它驱动结果重算。
   let index_epoch = RwSignal::new(0u32);
+
+  // 分组标题：像素风是点阵小标签，现代风用面板里的小节标题档（12px / 600 / 字距）。
+  let group_label = if crate::kit::is_modern_at_mount() {
+    "md-group-title mb-1 flex items-center gap-2"
+  } else {
+    "pxl-label mb-1 flex items-center gap-2 px-2 text-xs text-muted-foreground"
+  };
 
   // 打开时清空输入。
   Effect::new(move |_| {
@@ -353,7 +405,7 @@ pub fn SearchDialog() -> impl IntoView {
   });
 
   view! {
-    <Dialog open=open class="sm:max-w-2xl" show_close=false label=t("shell.site-search")>
+    <Dialog open=open class="sm:max-w-2xl" show_close=false label="shell.site-search">
       <div class="flex flex-col gap-3">
         // 搜索框
         <Input
@@ -367,8 +419,13 @@ pub fn SearchDialog() -> impl IntoView {
           clearable=true
         />
 
-        // 结果列表
-        <div class="max-h-[60svh] overflow-y-auto overscroll-contain">
+        // 结果列表。`md-search-text` 给现代风的命中高亮（`mark` 底色），像素风不能挂 ——
+        // 样式表不分层，像素风里挂上会命中现代的 `mark` 配色。
+        <div class=if crate::kit::is_modern_at_mount() {
+          "md-search-text max-h-[60svh] overflow-y-auto overscroll-contain"
+        } else {
+          "max-h-[60svh] overflow-y-auto overscroll-contain"
+        }>
           {move || {
             glossary_ready.track();
             question_ready.track();
@@ -389,6 +446,8 @@ pub fn SearchDialog() -> impl IntoView {
             // 自己的日志排最前：用户搜呼号时第一条就该是那条通联。
             let mut raw: Vec<(String, String, String, String)> =
               search_qsos(&qso_terms, &qso_filters);
+            // 其次是页面：键入的若是页面名（「史密斯」「通联日志」），第一条就该能直达。
+            raw.extend(search_pages(&q));
             raw.extend(
               search_glossary(&q)
                 .into_iter()
@@ -431,7 +490,7 @@ pub fn SearchDialog() -> impl IntoView {
                     let keyword = keyword.clone();
                     view! {
                       <div>
-                        <div class="pxl-label mb-1 flex items-center gap-2 px-2 text-xs text-muted-foreground">
+                        <div class=group_label>
                           <span>{page.clone()}</span>
                           <span class="h-px flex-1 bg-border"></span>
                         </div>

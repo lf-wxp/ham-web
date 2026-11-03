@@ -1,6 +1,5 @@
 use super::StationProfile;
 
-pub(super) const CELL: &str = "border px-3 py-2 text-left align-top";
 pub(super) const PAGE_SIZE: usize = 50;
 pub(super) const PROP_MODES: &[(&str, &str)] = &[
   ("", "—"),

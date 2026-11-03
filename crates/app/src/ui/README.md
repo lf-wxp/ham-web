@@ -1,6 +1,6 @@
 # 基础 UI 组件（`crates/app/src/ui`）
 
-> **写代码前先读 [`docs/ui-components.md`](../../../../docs/ui-components.md)**：那里是「用哪个组件、
+> **写代码前先读 [`docs/ui/pixel.md`](../../../../docs/ui/pixel.md)（像素风）与 [`docs/ui/modern.md`](../../../../docs/ui/modern.md)（现代风）**：那里是「用哪个组件、
 > 怎么写、有哪些坑、怎么验收」的规范；本文件是组件清单、props 与逐个使用示例。
 
 本目录是全站**表单控件的唯一来源**。页面里不再直接写 `<input>` / `<select>` / `<textarea>` /
@@ -11,7 +11,7 @@ disabled / error 状态反馈因此只有一处定义。
 （`tokens.css` 调色板 / 零圆角 / 硬阴影，`controls.css` 的 `pxl-btn` / `pxl-field` / `pxl-window` …）。
 语义 token 名沿用 shadcn（`--primary` / `--muted` / `--ring` / `--destructive`），只换了值，
 所以页面里的 `bg-card` / `text-primary` 照常可用；暗色由 `.dark` 覆盖。组件只拼 `pxl-*` 类名，
-**像素规范与硬规则见 [`docs/ui-components.md` §2](../../../../docs/ui-components.md)**。
+**两套系统的规范见 [`docs/ui/pixel.md`](../../../../docs/ui/pixel.md) 与 [`docs/ui/modern.md`](../../../../docs/ui/modern.md)**。
 
 ---
 
@@ -24,13 +24,13 @@ disabled / error 状态反馈因此只有一处定义。
 | `Input` | `<input>`（text / search / password / email / tel / url；日期与时间见 `DatePicker` / `TimePicker`） | `value` `on_change` `kind` `size` `prefix` `suffix` `clearable` `on_enter` `on_keydown` `invalid` `maxlength` `title` `autocomplete` `autocapitalize` `spellcheck` `aria_describedby` `node_ref` |
 | `NumberField` | `<input type="number">` | `value` `on_change` `min` `max` `step` `controls`（加减步进）`kind`（`NumberKind::Decimal` = 文本框 + 数字键盘，负数与半截输入可用） |
 | `Textarea` | `<textarea>` | `value` `on_change` `rows` `auto_resize` `autocomplete` `autocapitalize` `spellcheck`（填令牌 / 密钥时设 `off` / `false`） |
-| `Select` + `SelectItem` | `<select>`（选项需要富文本展示时） | `value` `on_change` `trigger` `placeholder` `size` `invalid` |
-| `NativeSelect` | `<select>`（选项固定的筛选器） | `value` `on_change` `options`（`SelectOption::grouped` 可加分组标题）`placeholder` `size` |
+| `Select` + `SelectItem`（+ `SelectGroup`） | `<select>`（选项需要图标 / 徽章等富文本时，目前只有题库版本选择器）。**全站唯一的下拉引擎**：键盘、焦点、ARIA、箭头动画只在这里写一遍 | `value` `on_change` `trigger` `placeholder` `size` `invalid` `aria_label` `title` |
+| `SimpleSelect` | `<select>`（选项是纯文字：筛选器、语言切换、日志「模式」）。`Select` 的数据式封装，**自己没有任何交互逻辑** | `value` `on_change` `options`（`Vec` 或 `Signal<Vec>`；`SelectOption::grouped` 可加分组标题）`placeholder` `clearable` `size` `aria_label` `title` |
 | `DatePicker` | `<input type="date">` | `value`（`YYYY-MM-DD`）`on_change` `placeholder` `size` |
 | `TimePicker` | `<input type="time">` | `value`（`HH:MM`）`on_change` `placeholder` `size` |
-| `Checkbox` | `<input type="checkbox">`（表单项） | `checked` `on_change` `id` `aria_label` `disabled` `class` |
+| `Checkbox` | `<input type="checkbox">`（表单项） | `checked` `on_change` `id` `aria_label` `disabled` `invalid` `class` |
 | `Switch` | `<input type="checkbox">`（切换即生效的设置） | `checked` `on_change` `id` `aria_label` `disabled` `invalid` `class` |
-| `RadioGroup` + `RadioGroupItem` | `<input type="radio">`（表单里的单选，选项带文字） | `value` `on_change` `disabled` |
+| `RadioGroup` + `RadioGroupItem` | `<input type="radio">`（表单里的单选，选项带文字） | `value` `on_change` `disabled` `invalid`（挂在 `radiogroup` 上，样式往下传给每个单选框） |
 | `ChipGroup` + `Chip` | 手写「分段选择」胶囊按钮（工具条上的短选项） | `value` `on_change` `disabled` |
 | `ChipToggle` | 手写「chip 开关」（筛选条上的独立开关） | `active` `on_change` `title` `disabled` |
 | `Tabs` + `TabsList` / `TabsTrigger` / `TabsPanel` | 手写 `role="tablist"` + `if` 藏显面板 / 用 `ChipGroup` 冒充视图切换 | `value` `on_change`；`TabsList` 的 `aria_label`（多组时必填）；`TabsTrigger` 的 `value`（ascii slug，同时拼 id）`disabled`；`TabsPanel` 的 `value`。面板常驻挂载、只切显隐（保留状态）。**筛选用 `ChipGroup`，不要用 Tabs** |
@@ -40,7 +40,7 @@ disabled / error 状态反馈因此只有一处定义。
 | `Field` | 手写的 `label + 控件 + 提示` 排版 | `label` `r#for` `hint` `error` `required` |
 | `Label` | `<label>`（单独使用，如 Checkbox 旁） | `r#for` |
 | `Dialog` / `Sheet` 及 `DialogHeader` 等 | — | 见源码 |
-| `MobileNavDrawer` | 移动端手写「悬浮按钮 + 抽屉」/ 横滑分类条（小屏下替代被 `hidden` 藏掉的侧栏） | `open`（由调用方持有，选中项后主动 `set(false)`）`title` `button_label`（悬浮按钮无障碍名）`icon` `class`（断点类，与侧栏断点配套）+ `children`（抽屉内容，与桌面侧栏共用同一份列表）；悬浮按钮可拖动改位置，收拢视口内并持久化在 `localStorage["fab-position"]`（全站共享）；用法与坑见 `docs/ui-components.md` §3.3 |
+| `MobileNavDrawer` | 移动端手写「悬浮按钮 + 抽屉」/ 横滑分类条（小屏下替代被 `hidden` 藏掉的侧栏） | `open`（由调用方持有，选中项后主动 `set(false)`）`title` `button_label`（悬浮按钮无障碍名）`icon` `class`（断点类，与侧栏断点配套）+ `children`（抽屉内容，与桌面侧栏共用同一份列表）；悬浮按钮可拖动改位置，收拢视口内并持久化在 `localStorage["fab-position"]`（全站共享）；用法与坑见 `docs/ui/pixel.md` §3.3 |
 | `Progress` / `Separator` / `Stat` | — | `Progress` 是分格条；加 `pxl-bar-hp` / `pxl-bar-xp` / `pxl-bar-win` / `pxl-bar-gold` 变血条 / 经验条 / 通关绿 / 金币 |
 | `Table` + `TableHead` / `TableBody` / `TableRow` / `TableHeader` / `TableCell` | 手写的 `<div class="overflow-x-auto"><table>…` | 根组件自带滚动容器；`class` 写 `min-w-[…]` 保列宽；限高写 `wrapper_class="max-h-[…]"`；`borderless` 去网格线；无可见标题传 `aria_label`；`TableHeader` / `TableCell` 支持 `colspan` |
 | `Pagination` | 手写分页 / `.slice()` 截断 | `page` `total_pages`（1 起）`on_change`；页数 ≤1 不渲染；窗口算法在 `ham_web_core::pagination` |
@@ -55,7 +55,7 @@ disabled / error 状态反馈因此只有一处定义。
 
 卡片的两个层级：`card_class` = `pxl-window`（内高光 + 4px 硬投影，给「当前任务块」用），
 `flat_card_class` = `pxl-card border bg-card`（只有 2px 墨框，给次要块用）。一页里不要把
-所有块都写成 L2 —— 全站同重量等于没有层级（见 `docs/ui-components.md` §2 硬规则 8）。
+所有块都写成 L2 —— 全站同重量等于没有层级（见 `docs/ui/pixel.md` §2 硬规则 8）。
 
 `Button` 与 `ButtonLink` 的分工是**元素语义**：要执行动作（提交、打开弹层）用 `Button`，
 要跳转（能中键新开、能右键复制地址、读屏念「链接」）用 `ButtonLink` —— 两者共用同一份
@@ -71,9 +71,14 @@ disabled / error 状态反馈因此只有一处定义。
 `aria-pressed` 语义，不是单选。
 `input_class` 已随表单控件迁移完成删除（见下「表单控件已经收敛」）。
 
-四个**弹层**控件（`Select` / `NativeSelect` / `DatePicker` / `TimePicker`）的类名与开合行为
+四个**弹层**控件（`Select` / `SimpleSelect` / `DatePicker` / `TimePicker`）的类名与开合行为
 集中在 `ui/popover.rs`：弹层容器、选项行、遮罩、退场延迟卸载、`Esc` 关闭都只有一份实现，
 所以「弹出的选择框和语言切换一样」是结构上的保证，而不是靠人工对齐。
+
+下拉再进一步：`SimpleSelect` 不是第二个下拉，它把 `Vec<SelectOption>` 拼成 `Select` + `SelectItem`
++ `SelectGroup` 交给 `Select`。键盘导航（`ham_web_core::listbox`，有单测）、`aria-activedescendant`、
+Tab 离开即收起、箭头旋转过渡都只在 `Select` 里写一遍 —— 语言切换、日志「模式」与页面里的 66 处筛选器
+（全是 `SimpleSelect`）和题库版本选择器（组合式 `Select`）行为天然一致。**不要**再单独写一份「简化版下拉」，要新形态就在 `Select` 上加。
 
 ---
 
@@ -99,7 +104,7 @@ view! {
 
 ### 2. 尺寸
 
-- 输入类（`Input` / `NumberField` / `Textarea` / `Select` / `NativeSelect` / `DatePicker` /
+- 输入类（`Input` / `NumberField` / `Textarea` / `Select` / `SimpleSelect` / `DatePicker` /
   `TimePicker`）用 `ControlSize`：
   `Sm` = `h-8`（工具栏筛选）、`Default` = `h-10`（表单主体）、`Lg` = `h-12`（触屏主表单）。
 - 按钮用 `Size`：`Xs`（`h-6`，表格行内 / 工具条的**纯文本**小按钮）/ `Sm`（`h-8`）/ `Default`
@@ -157,7 +162,7 @@ placeholder = Signal::derive(move || t("搜索题目"))       // 响应式：切
 注意尺寸类带 `md:` 断点（如 `text-base md:text-sm`），要覆盖字号需同时写
 `text-lg md:text-lg`。
 
-带前缀 / 后缀 / 清除按钮的 `Input`（以及 `NativeSelect`）会多包一层 `relative` 容器用于
+带前缀 / 后缀 / 清除按钮的 `Input`（以及 `SimpleSelect`）会多包一层 `relative` 容器用于
 绝对定位。此时 `flex-1`、`min-w-*` 这类需要作用在**外层 flex 子项**上的类要写进
 `wrapper_class`，写进 `class` 只会作用于 `<input>` 本身：
 
@@ -175,7 +180,7 @@ placeholder = Signal::derive(move || t("搜索题目"))       // 响应式：切
 
 全站的原生 `<input>` / `<select>` / `<textarea>` 已清干净，`input_class()` 这个「让未迁移的
 输入框暂时长得一样」的类名工厂也随之删除 —— 表单控件现在只有一个来源：`ui/` 的
-`Input` / `NumberField` / `Textarea` / `NativeSelect` / `Select` / `Slider` / `Checkbox` /
+`Input` / `NumberField` / `Textarea` / `SimpleSelect` / `Select` / `Slider` / `Checkbox` /
 `Switch` / `RadioGroup` / `FileInput` / `FileDropZone`。**页面里已经没有手写的
 `<input type="file">`**：按钮式的上传走 `FileInput`，整块拖放区走 `FileDropZone` —— 后者内部是
 `sr-only` 的 input，留在 Tab 序里、焦点环由 label 的 `has-[:focus-visible]` 显示
@@ -238,45 +243,54 @@ view! {
 
 ### 下拉菜单（弹层式，选项可带富文本）
 
-`Select` 是自绘的弹层列表（`role="combobox"` + `role="option"`），用于**不希望出现原生下拉面板**的场合，
-例如导航栏的语言切换：
+`Select` 是自绘的弹层列表（`role="combobox"` + `role="option"`），用于**不希望出现原生下拉面板**的场合。
+**选项只是文字就不要直接用它**，用下面的 `SimpleSelect`（导航栏的语言切换、日志表单的「模式」都是）。
+只有选项里要放图标、徽章、多行文字时才用组合式 —— 目前全站只有题库版本选择器：
 
 ```rust
-let locale = i18n::locale();
-let current = locale.clone();
-let trigger = move || view! { {current.get().label()} }.into_any();
+let trigger = move || view! { <span>{selected_version_name()}</span> }.into_any();
 
 view! {
   <Select
-    value=Signal::derive(move || Some(locale.get().code().to_owned()))
-    on_change=Callback::new(move |v: String| i18n::set_locale(Locale::from_code(&v)))
-    placeholder=Signal::derive(move || t("切换语言"))
+    value=selected_version                       // Signal<Option<String>>：None = 没有选中项，显示 placeholder
+    on_change=Callback::new(move |v| selected_version.set(Some(v)))
+    placeholder=Signal::derive(move || t("exam.select-a-bank-version"))
     trigger=trigger
-    size=ControlSize::Sm
-    class="w-auto max-w-[8rem]"
   >
-    {move || {
-      Locale::ALL
-        .iter()
-        .map(|&l| view! { <SelectItem value=l.code()>{l.label()}</SelectItem> })
-        .collect_view()
-    }}
+    {move || versions.get().into_iter().map(|v| view! {
+      <SelectItem value=v.id.clone()>
+        <div class="flex items-center gap-2">{status_icon(&v)} <span>{v.name.clone()}</span> {latest_badge(&v)}</div>
+      </SelectItem>
+    }).collect_view()}
   </Select>
 }
 ```
 
 `trigger` 会在响应式上下文里重跑，因此直接读信号即可拿到最新文案。
 注意它不是 `<select>`，Playwright 要用 `getByRole("combobox")` + `getByRole("option")`，
-不能用 `selectOption()`（`NativeSelect` / `DatePicker` / `TimePicker` 同理，
+不能用 `selectOption()`（`SimpleSelect` / `DatePicker` / `TimePicker` 同理，
 见 `e2e/tests/fixtures.ts` 的 `pickOption` / `pickDate` / `pickTime`）。
 
-### 下拉筛选（弹层式，与语言切换同款）
+键盘（焦点始终留在触发器上，用 `aria-activedescendant` 指当前行）：`↓` / `↑` 打开并移动，
+`Home` / `End` 跳首尾，`Enter` / `Space` 选中，`Esc` 收起，`Tab` / `Shift+Tab` 离开即收起。
+行为契约在 `e2e/tests/select.spec.ts`（组合式 × 数据式 × 两套皮肤各跑一遍）。
 
-筛选器选项固定，用 `Vec<SelectOption>` 描述数据即可。弹层外观与 `Select` **共用
-`ui/popover.rs` 的定义**，因此和导航栏语言切换长得一模一样：
+两条写 `Select` 周边代码时容易踩的坑（都在这个组件里踩过）：
+
+- **同一页并排的多个 `Select` 不能靠 `provide_context` 共享上下文。** Leptos 的组件不会各自开一个
+  作用域，后创建的会覆盖先创建的，先创建那个的选项（打开面板时才构建）读到的是兄弟的值，
+  `aria-selected` / 键盘高亮全部判错。根组件用 `leptos::context::Provider` 给每个下拉自己的作用域；
+  新写类似的「根 + 子项」组件同理。
+- **`role="listbox"` 要挂在可滚动的那一层。** 放在外层、里面再套一层带 `tabindex` 的滚动容器，
+  axe 的 `aria-required-children` 会判列表框里没有合格子节点。外层只管外观与进出场动画。
+
+### 下拉筛选（数据式，`Select` 的封装）
+
+筛选器选项固定，用 `Vec<SelectOption>` 描述数据即可。它内部就是 `Select`，
+因此外观、键盘、动画和导航栏语言切换完全一样：
 
 ```rust
-use crate::ui::{ControlSize, NativeSelect, SelectOption};
+use crate::ui::{ControlSize, SimpleSelect, SelectOption};
 
 let options: Vec<SelectOption> = bands
   .iter()
@@ -284,7 +298,7 @@ let options: Vec<SelectOption> = bands
   .collect();
 
 view! {
-  <NativeSelect
+  <SimpleSelect
     value=band_filter
     on_change=Callback::new(move |v: String| band_filter.set(v))
     options=options
@@ -299,8 +313,12 @@ view! {
 空串表示「未选择」：触发器显示 `placeholder`，同时弹层首行就是这条 `placeholder`
 （`value=""`）—— 原生的 `<select>` 正是把它渲染成第一个 `<option>`，筛选器靠它回到
 「全部」。`SelectOption::label` 是 `TextValue`，传 `Signal::derive` 即可跟随语言切换。
-选项**动态**变化时（如录入表单的「模式」会带上 CAT 读到的非标准模式）改用
-`Select` + `SelectItem`，它的子节点是响应式的。
+`options` 既可以直接传 `Vec<SelectOption>`（固定的筛选器，66 处都是这样），也可以传 `Signal::derive(…)`：
+选项随别的状态变化时（日志表单的「模式」会把导入记录里的非预设模式补进列表）信号一变列表就跟着更新，
+打开着的面板不会被重建。
+
+**必填项**要「空值时显示占位、但列表里不能选回空」，传 `clearable=false`（默认是有占位文案就放「清空」行）。
+没有可见标签的下拉（导航栏语言切换）传 `aria_label` 与 `title`；语言永远有值，所以不传 `placeholder`。
 
 ### 选择日期与时间
 
@@ -324,6 +342,23 @@ view! {
 
 星期与月份名称由浏览器 `Intl` 按当前界面语言生成（`ui/intl.rs`），既不占词典词条，
 新增语言时也不会漏翻。
+
+### 用枚举驱动单选（`RadioGroup` 只认 `String`）
+
+`RadioGroup` 的 `value` / `on_change` 对外只有 `String`。选项来自一个枚举时，不要拿下标当值，
+写一张 `(枚举值, 单选值, 文案 key)` 的常量表，双向查：
+
+```rust
+// pages/tools/filter_design.rs
+const KINDS: [(FilterKind, &str, &str); 4] = [
+  (FilterKind::LowPass, "low-pass", "低通"),
+  (FilterKind::HighPass, "high-pass", "高通"),
+  // …
+];
+```
+
+单选值取**语义名**（`"low-pass"`）而不是下标：重排选项不会把用户已经选的那一项换成另一项，
+也不会让存在 `localStorage` 里的旧值悄悄指向别的东西。
 
 ### 开关
 
@@ -414,7 +449,7 @@ view! {
 
 ---
 
-## 四、迁移对照表
+## 四、写法对照表（原生元素 → 该用哪个组件）
 
 | 原来写法 | 改为 |
 |---|---|
@@ -424,7 +459,7 @@ view! {
 | `<input type="datetime-local">` | `<DatePicker>` + `<TimePicker>`（各自只改自己那一半） |
 | `<input type="number">` | `<NumberField>` |
 | `<textarea>` | `<Textarea>` |
-| `<select>` + `<option>`（选项固定） | `<NativeSelect options=…>`（弹层式，外观同语言切换） |
+| `<select>` + `<option>`（选项固定） | `<SimpleSelect options=…>`（弹层式，外观同语言切换） |
 | `<select>`（选项需富文本 / 动态） | `<Select>` + `<SelectItem>` |
 | `<input type="checkbox">`（表单项） | `<Checkbox>` |
 | `<input type="checkbox">`（设置项） | `<Switch>` |
@@ -436,7 +471,7 @@ view! {
 | `<button class=button_class(…)>` | `<Button>` |
 | 手写 `<div class="space-y-1.5"><label>…</label>…` | `<Field>` |
 
-迁移步骤：
+把已有的原生写法换成组件时：
 
 1. 把原生元素的 `prop:value` / `on:input` 换成 `value` / `on_change`（回调收的是新值字符串）；
 2. 修饰类（宽度、字体等）搬到 `class="…"`，高度交给 `size`；
@@ -448,95 +483,6 @@ view! {
 
 ## 五、开源方案评估
 
-结论：**不引入第三方组件库，继续在本目录自维护**。理由：
-
-1. **没有与本项目管线对齐的成熟实现**。shadcn/ui 官方只覆盖 React / Vue / Svelte，
-   其「复制粘贴式组件」的精髓就是类名写在自己仓库里；Leptos 侧的移植项目
-   （如 `leptonic`、各类 `leptos-shadcn` 尝试）要么自带一套与本项目 oklch Token 不兼容的
-   主题体系，要么跟进 Leptos 版本滞后（`leptos` 0.8 的响应式 API 在 0.7 之后有破坏性变更）。
-2. **可定制性**。本项目的 `cn()`（`src/cn.rs`）已经实现了 tailwind-merge 的冲突组覆盖，
-   组件类名可直接被 `class` 覆盖；引入外部库反而要跨过它的样式封装层去改。
-3. **体积与构建**。前端是 `wasm32` + `wasm-opt -z` 的体积优先构建，任何额外的
-   组件依赖都会直接体现在产物大小上；而当前每个组件只是几十行 `view!`，编译期即展开。
-4. **兼容性**。项目是纯 CSR（`leptos::mount::mount_to_body`），没有 SSR / hydration 约束，
-   自维护组件的边界处理（滚动锁、焦点、Portal）已在 `ui/dialog/shared.rs` 里沉淀。
-
-需要新增组件时，按 `ui/` 现有约定补齐即可：优先复用 `control_class` / `CONTROL_BASE`
-保证外观一致，交互与无障碍处理参考 `dialog/shared.rs`。
-
----
-
-## 六、本轮迁移进度
-
-基线（改动前全量扫描 `src/`）：原生 `<select>` 26 处、`<textarea>` 2 处、`<input>` 约 207 处
-（其中 number 106、text 37、checkbox 16、range 10、file 10、date 4、time 3、search 2）。
-
-已替换为组件：
-
-| 位置 | 替换内容 |
-|---|---|
-| `pages/log/grid_map/toolbar.rs` | 2 × `Input`、5 × `NativeSelect`、2 × `Switch`、`Button` |
-| `pages/log/entry_list.rs` | `Input`（search + 清除）、3 × `NativeSelect` |
-| `pages/tools/ohms_law.rs` | 3 × `NumberField` + `Field` |
-| `components/exam/custom_paper_dialog.rs` | 3 × `NumberField` + `Field`、2 × `Button` |
-| `pages/morse/morse_page.rs` | 2 × `Slider` |
-| `pages/morse/koch_trainer.rs` | `Input`、`Button`（`ButtonKind::Submit`） |
-| `components/common/note_editor.rs` | `Textarea`、2 × `Button` |
-| `pages/backup/backup_tool.rs` | 2 × `FileInput`、`Button` |
-| `components/search_dialog.rs` | `Input`（`InputType::Search` + 前置图标 + 清除） |
-| `components/practice/practice_search_dialog.rs` | `Input`（回车跳转 + 清除，取代手写输入框与清除按钮） |
-| `pages/browse/browse_page.rs` | `Input`（搜索） |
-| `pages/glossary/glossary_view.rs` | `Input`（搜索，内置清除取代手写清除按钮） |
-| `pages/qcode/qcode_view.rs` | `Input`（搜索） |
-| `pages/most_wanted/wanted_tracker.rs` | `Input`（搜索） |
-| `components/navigation/locale_toggle.rs` | `Select` + `SelectItem`（界面语言切换，弹层式菜单） |
-
-### 下拉与日期时间统一（本轮）
-
-- 全站剩余原生 `<select>` **20 处** → `NativeSelect`（`cat_control` 2、`qsl_labels` 2、
-  `entry_form` 2、`contest_log/view` 3、`listen` 2、`cabrillo` / `print_page` / `voacap_card` /
-  `nec/canvas` / `bookmark_card` / `contest_scorer` / `feedline_loss` / `pass_predictor` /
-  `mistakes` 各 1）；选项动态的「模式」用 `Select` + `SelectItem`。
-- 原生 `date` 4 处、`time` 3 处、`datetime-local` 1 处 → `DatePicker` / `TimePicker`。
-- 新增 `ui/popover.rs`（弹层基座）、`ui/intl.rs`（`Intl` 日期格式化）；
-  新增词条 `common.previous-month` / `common.next-month` / `exam.target-date`。
-
-剩余部分集中在 `pages/log/*`（表单与筛选）、`pages/morse/*`（range 与文本输入），
-可按上表逐页推进；`pages/*/…_calculator.rs`、`pages/log/qsl_sync_dialog.rs` 与
-`pages/tools/mod.rs` 的本地 `const INPUT` / `const TEXTAREA` 均已删除（`grep` 自检 ① 通过）。
-
-### 小工具页统一（本轮）
-
-`pages/tools/*` 的 39 个工具组件此前各自手写表单，同一个页面里「欧姆定律」和它的邻居长得
-不一样：
-
-- **控件**：原生 `type="number"` 输入约 90 处、`type="text"` 7 处、弹层下拉 2 处；
-- **标签**：两种排版 —— 手写 `<label>` 里的小字 `text-xs text-muted-foreground`，
-  与 `Field` 的 `text-sm font-medium` 混用；
-- **互斥小按钮**：4 种互不相同的写法（`rounded-md` 实心、`rounded-full` 实心、
-  `rounded-full` 描边 + `bg-primary/10`、`rounded-lg` 描边 + `bg-primary/10`），
-  选中态在 `bg-primary` 与 `border-primary bg-primary/10` 之间摇摆。
-
-本轮全部改为 `ui/` 组件：
-
-| 原来写法 | 改为 | 出现位置 |
-|---|---|---|
-| 原生 `<input type="number">` | `<Field>` + `<NumberField controls=false>` | 35 个文件，90 处 |
-| 原生 `<input type="text">` | `<Field>` + `<Input>` | `aprs_codec` / `callsign_lookup` / `cascade_gain` / `distance_bearing` / `mode_encoder` / `resistor_parallel` |
-| 手写 `<label>` + 小字标签 | `<Field label=… r#for=…>`（`id` 由 `util::unique_id` 生成） | 全部 39 个工具组件 |
-| 手写互斥 chip 按钮 | `<RadioGroup>` + `<RadioGroupItem>` | `filter_design`（滤波类型）、`cw_bandwidth`（衰落 / 非衰落）、`tone_squelch`（中继波段、正负频差） |
-| `<select>` 外包手写标签 | `<Field>` + `<NativeSelect>` | `contest_scorer` / `feedline_loss` |
-
-两个取舍：
-
-1. **`controls=false`**：工具页录入的是连续量（14.2 MHz、0.1 步进、任意小数），加减步进按钮
-   既没用又挤占宽度；同页已迁移的 `ohms_law` 也是这么写的，保持一致。
-2. **删除 `pages/tools/mod.rs` 的本地 `const INPUT`**：它自带一套 `rounded-lg … ring-2` 的
-   圆角柔光质感，与全站 `control_class` 的 `.pxl-field`（2px 硬描边 + 左上内阴影的凹陷输入框）
-   不是同一种控件 —— 这正是「同一页两种输入框」的来源。`const RESULT` 保留：它只是只读结果区，
-   不是表单控件。
-
-`RadioGroup` 对外只有 `String`，因此 `filter_design` 的 `FilterKind` 走一张
-`(枚举值, 单选值, 文案 key)` 常量表做双向映射（单选值取语义名而不是下标，重排选项不会
-把用户的选择换掉）。
-
+结论：**不引入第三方组件库，继续在本目录自维护**。理由（逐条）见
+[`docs/ui/decisions.md`](../../../../docs/ui/decisions.md) §10。需要新增组件时，按 `ui/` 现有约定补齐即可：
+优先复用 `control_class` / `CONTROL_BASE` 保证外观一致，交互与无障碍处理参考 `dialog/shared.rs`。

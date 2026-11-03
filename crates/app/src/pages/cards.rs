@@ -326,7 +326,7 @@ pub fn CardsPage() -> impl IntoView {
     if cards.with(Option::is_none) {
       // 首屏数据未到时铺骨架卡（轮廓占位，避免 spinner 消失瞬间的高度跳变）。
       return view! {
-        <div class="pxl-card border bg-card p-6">
+        <div class=crate::kit::card_class_with("p-6")>
           <span class="sr-only" role="status">{move || t("exam.loading-cards")}</span>
           <Skeleton class="h-3 w-20" />
           <Skeleton class="mt-4 h-6 w-2/3" />
@@ -376,7 +376,7 @@ pub fn CardsPage() -> impl IntoView {
         </div>
         <button
           type="button"
-          class="flex min-h-48 w-full flex-col items-center justify-center gap-2 pxl-card border bg-card p-6 text-center shadow-sm"
+          class=crate::kit::card_class_with("flex min-h-48 w-full flex-col items-center justify-center gap-2 p-6 text-center shadow-sm")
           on:click=move |_| reveal()
         >
           // 卡面上的字符（摩斯码 / 字母）就是这张卡的内容，必须留在无障碍名里：

@@ -126,6 +126,7 @@
   "shell.receiver-specs-title": "接收机指标",
   "shell.search": "搜索",
   "shell.search-keywords": "搜索关键词",
+  "shell.search-pages": "页面",
   "shell.search-terms-frequencies-callsigns": "搜索术语、频率、呼号、天线、元件……",
   "shell.search-with-shortcut": "搜索（/）",
   "shell.action-bar": "操作栏",
@@ -243,5 +244,10 @@
   "shell.exam-mock": "模拟考",
   "shell.exam-review": "复习",
   "shell.exam-data": "学习数据",
-  "shell.exam-rpg": "闯关"
+  "shell.exam-rpg": "闯关",
+  "shell.settings-style": "界面风格",
+  "shell.settings-style-hint": "两套独立的设计系统：切换后布局、控件与动效都会改变，不只是换配色。第一次切到现代风会先用深色，之后仍可单独切换明暗。",
+  "shell.style-pixel": "像素风",
+  "shell.style-modern": "现代风",
+  "shell.close-settings": "关闭设置"
 }

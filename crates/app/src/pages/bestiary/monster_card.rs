@@ -35,6 +35,50 @@ pub(super) fn MonsterCard(
   );
   let wrong = record.wrong_count;
 
+  if crate::kit::is_modern_at_mount() {
+    let (icon, tone) = crate::kit_modern::emblem_variant(top_key);
+    return view! {
+      <li class="md-monster">
+        <crate::kit_modern::ModernEmblem
+          icon=icon
+          tone=tone
+          size=52
+          locked=Signal::derive(|| false)
+        />
+        <div class="md-monster-body">
+          <div class="md-monster-top">
+            <span class="md-mono">{code}</span>
+            <span class="truncate">{move || t(top_name)}</span>
+          </div>
+          <p class="md-monster-q">{record.question.question.clone()}</p>
+          <div class="md-monster-meta">
+            <span>{move || tp("learning.wrong-times", wrong, &[&wrong.to_string()])}</span>
+            <span class=move || if due { "md-due" } else { "" }>
+              {move || {
+                if due {
+                  t("rpg.monster-due")
+                } else {
+                  tp("rpg.monster-wait", days, &[&days.to_string()])
+                }
+              }}
+            </span>
+          </div>
+          <div class="md-bar-track">
+            <span class="md-bar-fill" style=format!("width: {hp}%")></span>
+          </div>
+          <div class="md-monster-foot">
+            <span class="md-mono md-muted md-sm">
+              {move || tp("rpg.monster-hits-left", u32::from(left), &[&left.to_string()])}
+            </span>
+            <a class="md-btn md-btn-ghost md-btn-sm" href=href.clone()>
+              {move || t("rpg.monster-challenge")}
+            </a>
+          </div>
+        </div>
+      </li>
+    }
+    .into_any();
+  }
   view! {
     <li class="pxl-window flex gap-3 p-3">
       <PixelSprite name=monster_sprite(top_key) scale=4 class="pxl-bob" />
@@ -68,4 +112,5 @@ pub(super) fn MonsterCard(
       </div>
     </li>
   }
+  .into_any()
 }

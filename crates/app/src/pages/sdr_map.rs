@@ -23,7 +23,7 @@ pub fn SdrMapPage() -> impl IntoView {
       title=move || t("tools.online-sdr-receiver-map")
       subtitle=move || t("tools.no-local-hardware-needed")
     >
-      <section class="pxl-card border bg-card p-4">
+      <section class=crate::kit::card_pad_class()>
         <MapView focus=Signal::derive(move || focus.get())>
           {SDR_SITES
             .iter()
@@ -51,8 +51,8 @@ pub fn SdrMapPage() -> impl IntoView {
         </p>
       </section>
 
-      <section class="pxl-card border bg-card">
-        <h2 class="pxl-section-title">{move || t("tools.public-receivers")}</h2>
+      <section class=crate::kit::card_class()>
+        <h2 class=crate::kit::card_title_class()>{move || t("tools.public-receivers")}</h2>
         <div class="divide-y">
           {SDR_SITES
             .iter()
@@ -115,8 +115,8 @@ pub fn SdrMapPage() -> impl IntoView {
         </div>
       </section>
 
-      <section class="pxl-card border bg-card">
-        <h2 class="pxl-section-title">
+      <section class=crate::kit::card_class()>
+        <h2 class=crate::kit::card_title_class()>
           {move || t("tools.receiver-directory-and-self")}
         </h2>
         <div class="divide-y">

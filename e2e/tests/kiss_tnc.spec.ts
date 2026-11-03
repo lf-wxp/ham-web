@@ -118,8 +118,8 @@ test("KISS TNC：串口参数与发送帧正确（stub navigator.serial）", asy
   });
 
   await page.goto("/kiss-tnc");
-  // `NativeSelect` 是自定义 combobox（不是原生 <select>）：点开再选。
-  await page.getByLabel("波特率").click();
+  // `SimpleSelect` 是自定义 combobox（不是原生 <select>）：点开再选。
+  await page.getByRole("combobox", { name: "波特率", exact: true }).click();
   await page.getByRole("option", { name: "19200", exact: true }).click();
   await page.getByLabel("源呼号").fill("BG1AAA-7");
   await page.getByLabel("目的呼号").fill("APRS");

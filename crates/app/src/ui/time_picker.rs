@@ -26,7 +26,7 @@ fn parse_time(s: &str) -> Option<(u32, u32)> {
 /// 单个可选项类名。
 fn opt_class(selected: bool) -> String {
   cn(&[
-    popover::ITEM,
+    popover::item_base(),
     "cursor-pointer justify-center pl-2 font-mono tabular-nums",
     if selected {
       "bg-primary text-primary-foreground border-ink hover:text-primary-foreground"
@@ -59,7 +59,7 @@ pub fn TimePicker(
   #[prop(optional, into)] class: String,
 ) -> impl IntoView {
   let open = RwSignal::new(false);
-  let mounted = popover::mount_on_open(open);
+  let mounted = crate::presence::use_presence(open).visible;
   popover::close_on_escape(open);
   // 面板引用：既作 `node_ref`，也给「焦点移出容器就关闭」的判定用
   // （见 `popover::close_on_focus_out`）。
@@ -81,7 +81,7 @@ pub fn TimePicker(
       return;
     }
     // 也要订阅 `value`：弹层开着时列表会随 `value` 重建（DOM 换成新节点），只盯
-    // `mounted` 的话新节点不会被滚进可视区（`native_select` 的同类 Effect 同时依赖
+    // `mounted` 的话新节点不会被滚进可视区（`simple_select` 的同类 Effect 同时依赖
     // `mounted` 与当前激活项）。`track()` 只建立依赖、不取值。
     value.track();
     for col in [hour_col, min_col] {
@@ -138,11 +138,12 @@ pub fn TimePicker(
         .collect_view();
 
       view! {
-        <div class=popover::OVERLAY on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
+        <div class=popover::OVERLAY data-state=state inert=popover::inert(open) aria-hidden=popover::aria_hidden(open) on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
         <div
           role="dialog"
           aria-label=panel_label
           data-state=state
+          inert=popover::inert(open) aria-hidden=popover::aria_hidden(open)
           data-slot="time-picker"
           class=popover::panel_class("w-40 p-1")
           node_ref=panel_ref

@@ -9,12 +9,11 @@ use crate::components::common::EmptyState;
 use crate::pages::log::use_log_store;
 use crate::sat_alert;
 use crate::ui::{
-  Button, Checkbox, ControlSize, Field, NativeSelect, NumberField, SelectOption, Size, Table,
+  Button, Checkbox, ControlSize, Field, NumberField, SelectOption, SimpleSelect, Size, Table,
   TableBody, TableCell, TableHead, TableHeader, TableRow, Variant,
 };
 use crate::util::notification_permission;
 
-use super::CELL;
 use crate::i18n::{t, tf, tp};
 
 /// Unix 秒 → 本地时间 `MM-DD HH:MM`。
@@ -139,8 +138,8 @@ pub(super) fn PassPredictor() -> impl IntoView {
   };
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("radio.pass-predictions-and-reminders")}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t("radio.pass-predictions-and-reminders")}</h2>
       <div class="space-y-4 p-4">
         <div class="grid gap-3 sm:grid-cols-3">
           {number_input(Signal::derive(move || t("common.latitude")), "0.0001", |w| w.lat, |w, v| w.lat = v.clamp(-90.0, 90.0))}
@@ -177,14 +176,14 @@ pub(super) fn PassPredictor() -> impl IntoView {
 
         <div class="border bg-inset p-3">
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-            <label class="inline-flex cursor-pointer items-center gap-2">
+            <label class=format!("inline-flex {}", crate::kit::check_row_class())>
               <Checkbox
                 checked=Signal::derive(move || watch.with(|w| w.alerts))
                 on_change=Callback::new(move |on: bool| toggle_alerts(on))
               />
               {move || t("radio.notify-me-before-a")}
             </label>
-            <label class="inline-flex cursor-pointer items-center gap-2">
+            <label class=format!("inline-flex {}", crate::kit::check_row_class())>
               <Checkbox
                 checked=Signal::derive(move || watch.with(|w| w.apt_alert))
                 on_change=Callback::new(move |on: bool| toggle_apt(on))
@@ -205,7 +204,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
                   })
                   .collect();
                 view! {
-                  <NativeSelect
+                  <SimpleSelect
                     value=Signal::derive(move || watch.with(|w| w.lead_min.to_string()))
                     on_change=Callback::new(move |v: String| {
                       if let Ok(n) = v.parse::<u32>() {
@@ -287,7 +286,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
             .collect();
           view! {
             <div class="space-y-2">
-              <label class="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+              <label class=format!("inline-flex {} text-xs text-muted-foreground", crate::kit::check_row_class())>
                 <Checkbox
                   checked=only_fav
                   on_change=Callback::new(move |on: bool| only_fav.set(on))
@@ -304,15 +303,15 @@ pub(super) fn PassPredictor() -> impl IntoView {
                 }.into_any()
               } else {
                 view! {
-                  <Table class="min-w-[560px] text-sm" wrapper_class="max-h-[32rem]">
+                  <Table class="min-w-[560px]" wrapper_class="max-h-[32rem]" density=crate::ui::TableDensity::Compact>
                     <TableHead class="sticky top-0 z-10 bg-muted text-xs">
                       <TableRow>
-                        <TableHeader class=CELL><span class="sr-only">{move || t("exam.bookmark")}</span></TableHeader>
-                        <TableHeader class=CELL>{move || t("radio.satellite")}</TableHeader>
-                        <TableHeader class=CELL>{move || t("radio.start-aos")}</TableHeader>
-                        <TableHeader class=CELL>{move || t("radio.max-elevation")}</TableHeader>
-                        <TableHeader class=CELL>{move || t("radio.entry-bearing")}</TableHeader>
-                        <TableHeader class=CELL>{move || t("radio.duration")}</TableHeader>
+                        <TableHeader class=crate::kit::table_cell_class("")><span class="sr-only">{move || t("exam.bookmark")}</span></TableHeader>
+                        <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.satellite")}</TableHeader>
+                        <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.start-aos")}</TableHeader>
+                        <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.max-elevation")}</TableHeader>
+                        <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.entry-bearing")}</TableHeader>
+                        <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.duration")}</TableHeader>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -325,7 +324,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
                           let fav = move || watch.with(|w| w.is_favorite(norad));
                           view! {
                             <TableRow>
-                              <TableCell class=format!("{CELL} w-10 text-center")>
+                              <TableCell class=crate::kit::table_cell_class("w-10 text-center")>
                                 <button
                                   type="button"
                                   class=move || if fav() { "text-gold-text" } else { "text-muted-foreground hover:text-gold-text" }
@@ -341,15 +340,15 @@ pub(super) fn PassPredictor() -> impl IntoView {
                                   {move || if fav() { "★" } else { "☆" }}
                                 </button>
                               </TableCell>
-                              <TableCell class=format!("{CELL} whitespace-nowrap")>{p.name.clone()}</TableCell>
-                              <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")
+                              <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>{p.name.clone()}</TableCell>
+                              <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono tabular-nums")
                                 title=tf("radio.max-elevation-at", &[&(fmt_pass_time(p.max_elev_time)).to_string()])
                               >
                                 {fmt_pass_time(p.aos)}
                               </TableCell>
-                              <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{format!("{:.0}°", p.max_elev)}</TableCell>
-                              <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{format!("{:.0}° {}", p.azimuth, compass(p.azimuth))}</TableCell>
-                              <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{move || tf("radio.min", &[&(dur_min).to_string()])}</TableCell>
+                              <TableCell class=crate::kit::table_cell_class("whitespace-nowrap tabular-nums")>{format!("{:.0}°", p.max_elev)}</TableCell>
+                              <TableCell class=crate::kit::table_cell_class("whitespace-nowrap tabular-nums")>{format!("{:.0}° {}", p.azimuth, compass(p.azimuth))}</TableCell>
+                              <TableCell class=crate::kit::table_cell_class("whitespace-nowrap tabular-nums")>{move || tf("radio.min", &[&(dur_min).to_string()])}</TableCell>
                             </TableRow>
                           }
                         })

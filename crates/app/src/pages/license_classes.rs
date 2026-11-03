@@ -10,8 +10,6 @@ use crate::i18n::{t, tf};
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 #[component]
 pub fn LicenseClassesPage() -> impl IntoView {
   set_title("shell.a-b-c-license");
@@ -25,13 +23,13 @@ pub fn LicenseClassesPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <Table class="min-w-[640px] text-sm" wrapper_class="pxl-card border bg-card">
+        <Table class="min-w-[640px] text-sm" wrapper_class=crate::kit::card_class()>
           <TableHead>
             <TableRow>
-              <TableHeader class=CELL>{move || t("exam.class-column")}</TableHeader>
-              <TableHeader class=CELL>{move || t("exam.frequency-range")}</TableHeader>
-              <TableHeader class=CELL>{move || t("exam.power-limit")}</TableHeader>
-              <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("exam.class-column")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("exam.frequency-range")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("exam.power-limit")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.notes")}</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -40,12 +38,12 @@ pub fn LicenseClassesPage() -> impl IntoView {
               .map(|c| {
                 view! {
                   <TableRow>
-                    <TableCell class=format!("{CELL} whitespace-nowrap")>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>
                       {move || tf("learning.class", &[c.class])}
                     </TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(c.freq)}</TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(c.power)}</TableCell>
-                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(c.note)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap text-muted-foreground")>{move || kt_tracked(c.freq)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap text-muted-foreground")>{move || kt_tracked(c.power)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(c.note)}</TableCell>
                   </TableRow>
                 }
               })
@@ -53,8 +51,8 @@ pub fn LicenseClassesPage() -> impl IntoView {
           </TableBody>
         </Table>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.typical-equipment-and-scenarios")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.typical-equipment-and-scenarios")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {CLASS_USAGE
               .iter()
@@ -70,8 +68,8 @@ pub fn LicenseClassesPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.band-privileges-quick-reference")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.band-privileges-quick-reference")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {BAND_PERMISSIONS
               .iter()
@@ -87,8 +85,8 @@ pub fn LicenseClassesPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.exam-tips")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.exam-tips")}</h2>
           <ul class="space-y-2 p-4">
             {CLASS_TIPS
               .iter()

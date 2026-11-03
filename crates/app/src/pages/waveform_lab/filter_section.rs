@@ -235,8 +235,8 @@ pub(super) fn FilterSection() -> impl IntoView {
   };
 
   view! {
-    <section id="filter" class="scroll-mt-24 pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("tools.filter-response-curves")}</h2>
+    <section id="filter" class=crate::kit::card_class_with("scroll-mt-24")>
+      <h2 class=crate::kit::card_title_class()>{move || t("tools.filter-response-curves")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("tools.all-three-prototypes-butterworth")}
       </p>

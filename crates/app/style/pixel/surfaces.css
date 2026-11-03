@@ -12,13 +12,16 @@
    ============================================================ */
 
 /* ---------- 全局：零圆角 ----------
-   视图里已经不再写 `rounded-*`（2026-10-13 清理干净，见 docs/ui-components.md §2 硬规则 1）；
+   视图里已经不再写 `rounded-*`（2026-10-13 清理干净，见 docs/ui/pixel.md §2 硬规则 1）；
    这一条是给第三方 / 动态 HTML（如搜索命中的 `<mark>`）与将来漏写的类兜底的。
    `rounded-full` 与裸 `rounded` 是字面量、命名档位（`--radius-*`）管不到，所以必须在层外兜住。
    需要保留圆形的元素（极少）加 `data-keep-round`。 */
-*:not([data-keep-round]),
-*:not([data-keep-round])::before,
-*:not([data-keep-round])::after {
+/* 只在像素风格内生效：现代风格（`html[data-ui-style="modern"]`）要靠圆角建立层级，
+   这条层外规则如果是全局的，会把现代样式层写的每一处 `border-radius` 都压平。
+   作用域挂在 `<html>` 上而不是给每条规则加例外，新增现代组件时不必再回来改这里。 */
+html[data-ui-style="pixel"] *:not([data-keep-round]),
+html[data-ui-style="pixel"] *:not([data-keep-round])::before,
+html[data-ui-style="pixel"] *:not([data-keep-round])::after {
   border-radius: 0;
 }
 
@@ -63,6 +66,15 @@
     /* 点阵字体没有粗体：浏览器合成的「伪粗体」会把 1px 笔画抹成 1.5px 的糊边，直接关掉。
        强调靠颜色与字体（拉丁标题走 Press Start 2P）。 */
     font-synthesis-weight: none;
+  }
+
+  /* 现代风格要抗锯齿与真实字重（它有 100–900 的 Geist）：上面那两条是像素字体专用的，
+     在这里反向钉回来，而不是让现代样式层去「解除」它。 */
+  html[data-ui-style="modern"] {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-synthesis-weight: auto;
   }
 
   html[data-readable-font="on"] {
@@ -125,6 +137,13 @@ canvas.pxl-img {
    - 暗色下 `::after` 是一组固定的「星点」—— 一个 2×2 的元素用 `box-shadow` 复制出多颗星，
      用 steps(1) 在两组星点之间切换，形成缓慢的闪烁。
    固定定位伪元素而不是 `background-attachment: fixed`：后者在 iOS Safari 上滚动时会持续重绘。 */
+/* 现代风格不要这两层「像素底纹」：抖动棋盘与暗色星空是像素语言的一部分，
+   留着会在现代页面上露出上一套 UI 的痕迹（判定标准见 `docs/ui/decisions.md` §2）。 */
+html[data-ui-style="modern"] body::before,
+html[data-ui-style="modern"] body::after {
+  content: none;
+}
+
 body::before {
   content: "";
   position: fixed;

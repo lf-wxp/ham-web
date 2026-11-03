@@ -7,6 +7,7 @@ use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf, tp};
 use crate::share_score;
 use crate::study;
+use crate::ui::intl::decimal;
 use crate::ui::{Button, Size, Tooltip, Variant};
 use crate::util::{local_today, set_title};
 
@@ -32,12 +33,12 @@ pub fn WeeklyPage() -> impl IntoView {
     if week_duration_ms >= 3_600_000 {
       tf(
         "learning.hours",
-        &[&format!("{:.1}", week_duration_ms as f64 / 3_600_000.0)],
+        &[&decimal(week_duration_ms as f64 / 3_600_000.0, 1)],
       )
     } else {
       tf(
         "radio.min",
-        &[&format!("{:.0}", week_duration_ms as f64 / 60_000.0)],
+        &[&decimal(week_duration_ms as f64 / 60_000.0, 0)],
       )
     }
   };
@@ -172,7 +173,7 @@ pub fn WeeklyPage() -> impl IntoView {
             >
               {move || t("learning.system-share")}
             </Button>
-            <a href="/progress" class="text-xs text-primary underline-offset-4 hover:underline">
+            <a href="/progress" class=format!("{} {}", crate::kit::link_class(), "text-xs")>
               {move || t("learning.progress")}
             </a>
           }
@@ -181,30 +182,30 @@ pub fn WeeklyPage() -> impl IntoView {
 
       <PageContainer class="space-y-4">
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <div class="pxl-card border bg-card p-4 text-center">
-            <div class="pxl-stat">{week_answered}</div>
+          <div class=crate::kit::card_class_with("p-4 text-center")>
+            <div class=crate::kit::stat_class()>{week_answered}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("exam.answered-this-week")}</div>
           </div>
-          <div class="pxl-card border bg-card p-4 text-center">
-            <div class="pxl-stat">{week_new}</div>
+          <div class=crate::kit::card_class_with("p-4 text-center")>
+            <div class=crate::kit::stat_class()>{week_new}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("exam.new-questions-this-week")}</div>
           </div>
-          <div class="pxl-card border bg-card p-4 text-center">
-            <div class="pxl-stat">{streak}</div>
+          <div class=crate::kit::card_class_with("p-4 text-center")>
+            <div class=crate::kit::stat_class()>{streak}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("learning.check-in-streak-days")}</div>
           </div>
-          <div class="pxl-card border bg-card p-4 text-center">
-            <div class="pxl-stat">{mistakes}</div>
+          <div class=crate::kit::card_class_with("p-4 text-center")>
+            <div class=crate::kit::stat_class()>{mistakes}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("exam.current-mistakes")}</div>
           </div>
-          <div class="pxl-card border bg-card p-4 text-center">
-            <div class="pxl-stat">{week_duration_text}</div>
+          <div class=crate::kit::card_class_with("p-4 text-center")>
+            <div class=crate::kit::stat_class()>{week_duration_text}</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("learning.study-time-this-week")}</div>
           </div>
         </div>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("learning.answering-trend-over-the")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("learning.answering-trend-over-the")}</h2>
           <div class="p-4">
             <div class="flex h-28 items-end gap-1">
               {move || {
@@ -223,16 +224,20 @@ pub fn WeeklyPage() -> impl IntoView {
                       )
                     });
                     view! {
-                      // Tooltip 包整列：柱的百分比高度相对包含块，中间多一层会塌。
-                      <Tooltip class="group flex min-w-0 flex-1 flex-col items-center gap-1" label=tip>
-                        <div
-                          class="w-full bg-primary/70 outline-none transition group-hover:bg-primary focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
-                          style=format!("height: {h}%")
-                          tabindex="0"
-                          role="img"
-                          aria-label=move || tip.get()
-                        ></div>
-                        <span class="text-xs text-muted-foreground">{label}</span>
+                      // 列要撑满整条轨道（`h-full`）：柱的百分比高度必须有**确定高度**的包含块。
+                      // 列高交给内容决定时 `height: h%` 解析成 auto，柱高为 0、只剩标签。
+                      <Tooltip class="group flex h-full min-w-0 flex-1 flex-col items-center gap-1" label=tip>
+                        // 内层轨道吃满「列高 − 标签行高」，柱再按比例填轨道。
+                        <div class="flex w-full min-h-0 flex-1 items-end">
+                          <div
+                            class="w-full bg-primary/70 outline-none transition group-hover:bg-primary focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
+                            style=format!("height: {h}%")
+                            tabindex="0"
+                            role="img"
+                            aria-label=move || tip.get()
+                          ></div>
+                        </div>
+                        <span class="shrink-0 text-xs text-muted-foreground">{label}</span>
                       </Tooltip>
                     }
                   })
@@ -257,8 +262,8 @@ pub fn WeeklyPage() -> impl IntoView {
             None => format!("/practice?topic={key}"),
           };
           view! {
-            <section class="pxl-card border bg-card">
-              <h2 class="pxl-section-title">{move || t("exam.weakest-category-this-week")}</h2>
+            <section class=crate::kit::card_class()>
+              <h2 class=crate::kit::card_title_class()>{move || t("exam.weakest-category-this-week")}</h2>
               <div class="flex items-center gap-3 p-4">
                 <div class="min-w-0 flex-1">
                   <div class="text-sm">{move || t(&name)}</div>
@@ -279,8 +284,8 @@ pub fn WeeklyPage() -> impl IntoView {
             return view! { <div></div> }.into_any();
           }
           view! {
-            <section class="pxl-card border bg-card">
-              <h2 class="pxl-section-title">{move || t("learning.recent-mock-exams")}</h2>
+            <section class=crate::kit::card_class()>
+              <h2 class=crate::kit::card_title_class()>{move || t("learning.recent-mock-exams")}</h2>
               <div class="divide-y">
                 {exams
                   .iter()

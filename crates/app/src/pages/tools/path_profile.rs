@@ -214,12 +214,12 @@ pub(super) fn PathProfile() -> impl IntoView {
                 let emphasized = if i == worst_index { "bg-accent" } else { "" };
                 view! {
                   <TableRow class=emphasized>
-                    <TableCell class="border px-3 py-2 font-mono tabular-nums">{dist}</TableCell>
-                    <TableCell class="border px-3 py-2 font-mono tabular-nums">{elev}</TableCell>
-                    <TableCell class="border px-3 py-2 font-mono tabular-nums">{bulge}</TableCell>
-                    <TableCell class="border px-3 py-2 font-mono tabular-nums">{fresnel}</TableCell>
-                    <TableCell class="border px-3 py-2 font-mono tabular-nums">{clearance}</TableCell>
-                    <TableCell class="border px-3 py-2 font-mono tabular-nums">{ratio}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("font-mono tabular-nums")>{dist}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("font-mono tabular-nums")>{elev}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("font-mono tabular-nums")>{bulge}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("font-mono tabular-nums")>{fresnel}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("font-mono tabular-nums")>{clearance}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("font-mono tabular-nums")>{ratio}</TableCell>
                   </TableRow>
                 }
               })
@@ -233,15 +233,15 @@ pub(super) fn PathProfile() -> impl IntoView {
               </div>
               <PathProfileChart report=r />
               <p class="text-xs text-muted-foreground">{move || t("tools.profile-chart-note")}</p>
-              <Table class="min-w-[560px] text-sm" wrapper_class="border">
+              <Table class="min-w-[560px]" wrapper_class="border" density=crate::ui::TableDensity::Compact>
                 <TableHead>
                   <TableRow>
-                      <TableHeader class="border px-3 py-2">{move || t("tools.distance-km")}</TableHeader>
-                      <TableHeader class="border px-3 py-2">{move || t("tools.profile-col-elevation")}</TableHeader>
-                      <TableHeader class="border px-3 py-2">{move || t("tools.profile-col-bulge")}</TableHeader>
-                      <TableHeader class="border px-3 py-2">{move || t("tools.profile-col-fresnel")}</TableHeader>
-                      <TableHeader class="border px-3 py-2">{move || t("tools.profile-col-clearance")}</TableHeader>
-                      <TableHeader class="border px-3 py-2">{move || t("tools.profile-col-ratio")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.distance-km")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.profile-col-elevation")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.profile-col-bulge")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.profile-col-fresnel")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.profile-col-clearance")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.profile-col-ratio")}</TableHeader>
                     </TableRow>
                   </TableHead>
                   <TableBody>{rows}</TableBody>

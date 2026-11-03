@@ -13,11 +13,22 @@ pub(super) fn ToolSection(
   description: &'static str,
   children: Children,
 ) -> impl IntoView {
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <section id=id class="scroll-mt-24 md-panel">
+        <h2 class="md-panel-title">{move || crate::data::core_text_tracked(title)}</h2>
+        <p class="md-muted md-sm">{move || crate::data::core_text_tracked(description)}</p>
+        <div class="mt-3">{children()}</div>
+      </section>
+    }
+    .into_any();
+  }
   view! {
-    <section id=id class="scroll-mt-24 pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || crate::data::core_text_tracked(title)}</h2>
+    <section id=id class=crate::kit::card_class_with("scroll-mt-24")>
+      <h2 class=crate::kit::card_title_class()>{move || crate::data::core_text_tracked(title)}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">{move || crate::data::core_text_tracked(description)}</p>
       <div class="p-4">{children()}</div>
     </section>
   }
+  .into_any()
 }

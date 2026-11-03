@@ -62,7 +62,7 @@ pub fn LicenseCompliancePage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
+        <section class=crate::kit::card_class()>
           <div class="grid gap-4 p-4 sm:grid-cols-2">
             // 单选组的可见标签：`Field` 的 `r#for` 是可选的，这里刻意不传 —— 组不是单一控件，
             // 没有可关联的 `id`；组的无障碍名走 `RadioGroup` 的 `aria_label`。
@@ -77,15 +77,15 @@ pub fn LicenseCompliancePage() -> impl IntoView {
                 aria_label=Signal::derive(move || t("radio.compliance-class-label"))
                 class="flex flex-wrap items-center gap-4 pt-1"
               >
-                <label class="flex cursor-pointer items-center gap-2 text-sm">
+                <label class=format!("{} text-sm", crate::kit::check_row_class())>
                   <RadioGroupItem value="A" id=a_id />
                   {move || tf("learning.class", &["A"])}
                 </label>
-                <label class="flex cursor-pointer items-center gap-2 text-sm">
+                <label class=format!("{} text-sm", crate::kit::check_row_class())>
                   <RadioGroupItem value="B" id=b_id />
                   {move || tf("learning.class", &["B"])}
                 </label>
-                <label class="flex cursor-pointer items-center gap-2 text-sm">
+                <label class=format!("{} text-sm", crate::kit::check_row_class())>
                   <RadioGroupItem value="C" id=c_id />
                   {move || tf("learning.class", &["C"])}
                 </label>
@@ -110,7 +110,7 @@ pub fn LicenseCompliancePage() -> impl IntoView {
 
         // `data-slot` 是 e2e 的定位契约：页面上还有全局的 `role="status"`（toast / PWA 通知 /
         // 备份提示），不限定作用域会在那些元素同时出现时命中多个。
-        <section class="pxl-card border bg-card" data-slot="compliance-result">
+        <section class=crate::kit::card_class() data-slot="compliance-result">
           <div class="space-y-2 p-4">
             {move || match parsed.get() {
               None => {
@@ -177,7 +177,7 @@ pub fn LicenseCompliancePage() -> impl IntoView {
                             view! {
                               <a
                                 href=href
-                                class="text-xs text-primary underline-offset-2 hover:underline"
+                                class=format!("{} {}", crate::kit::link_class(), "text-xs")
                               >
                                 {text}
                               </a>
@@ -200,7 +200,7 @@ pub fn LicenseCompliancePage() -> impl IntoView {
                             view! {
                               <a
                                 href=href
-                                class="text-xs text-primary underline-offset-2 hover:underline"
+                                class=format!("{} {}", crate::kit::link_class(), "text-xs")
                               >
                                 {text}
                               </a>

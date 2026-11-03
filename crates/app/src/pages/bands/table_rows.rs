@@ -7,7 +7,7 @@ use crate::data::kt_tracked;
 use crate::i18n::t;
 
 use super::usage_badge::UsageBadge;
-use super::{CELL, notes_view, range_view};
+use super::{notes_view, range_view};
 
 pub(super) fn table_rows(jump: Callback<&'static str>) -> impl IntoView {
   let mw_rows = bands::microwave_rows().to_string();
@@ -22,47 +22,47 @@ pub(super) fn table_rows(jump: Callback<&'static str>) -> impl IntoView {
       (0..rows).map(move |ri| {
         let band_cells = (ri == 0).then(|| {
           view! {
-            <td class=CELL rowspan=span.clone()>
+            <td class=crate::kit::table_cell_class("") rowspan=span.clone()>
               <span class="font-mono">{band.number}</span>
             </td>
-            <td class=CELL rowspan=span.clone() colspan=if band.microwave { "1" } else { "2" }>
+            <td class=crate::kit::table_cell_class("") rowspan=span.clone() colspan=if band.microwave { "1" } else { "2" }>
               {move || kt_tracked(band.name)}
             </td>
             {(band.microwave && first_mw == Some(bi))
               .then(|| {
                 view! {
-                  <td class=CELL rowspan=mw_rows.clone()>
+                  <td class=crate::kit::table_cell_class("") rowspan=mw_rows.clone()>
                     <span class="[writing-mode:vertical-rl] tracking-[0.4em]">{move || t("knowledge.microwave")}</span>
                   </td>
                 }
               })}
-            <td class=CELL rowspan=span.clone()>{move || kt_tracked(band.wavelength)}</td>
-            <td class=CELL rowspan=span.clone()>{move || kt_tracked(band.freq_name)}</td>
-            <td class=CELL rowspan=span.clone()>
+            <td class=crate::kit::table_cell_class("") rowspan=span.clone()>{move || kt_tracked(band.wavelength)}</td>
+            <td class=crate::kit::table_cell_class("") rowspan=span.clone()>{move || kt_tracked(band.freq_name)}</td>
+            <td class=crate::kit::table_cell_class("") rowspan=span.clone()>
               <span class="font-mono">{move || kt_tracked(band.freq_abbr)}</span>
             </td>
-            <td class=CELL rowspan=span.clone()>
+            <td class=crate::kit::table_cell_class("") rowspan=span.clone()>
               <span class="whitespace-nowrap">{move || kt_tracked(band.freq_range)}</span>
             </td>
           }
         });
         let alloc_cells = match band.allocations.get(ri) {
           None => view! {
-            <td class=format!("{CELL} text-muted-foreground")>"/"</td>
-            <td class=format!("{CELL} text-muted-foreground")>"/"</td>
-            <td class=format!("{CELL} text-muted-foreground")>"/"</td>
+            <td class=crate::kit::table_cell_class("text-muted-foreground")>"/"</td>
+            <td class=crate::kit::table_cell_class("text-muted-foreground")>"/"</td>
+            <td class=crate::kit::table_cell_class("text-muted-foreground")>"/"</td>
           }
           .into_any(),
           Some(a) => view! {
-            <td class=CELL>{range_view(a)}</td>
-            <td class=CELL>
+            <td class=crate::kit::table_cell_class("")>{range_view(a)}</td>
+            <td class=crate::kit::table_cell_class("")>
               <UsageBadge usage=a.usage />
             </td>
             {band
               .remark_span(ri)
               .map(|n| {
                 view! {
-                  <td class=format!("{CELL} text-xs") rowspan=n.to_string()>
+                  <td class=crate::kit::table_cell_class("text-xs") rowspan=n.to_string()>
                     {notes_view(band.remark_for(ri), jump)}
                   </td>
                 }

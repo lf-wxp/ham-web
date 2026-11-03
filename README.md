@@ -14,14 +14,34 @@
 
 目标读者：备考 A/B/C 类操作证的考生、希望系统入门的新手，以及需要日志、奖状与传播工具的进阶火腿。所有个人数据只保存在浏览器本地，不上传服务器；纯静态托管也能离线使用除实时数据外的全部功能。
 
+**两套界面风格，同一份内容**：默认的**像素风**（RPG 闯关的复古质感）与**现代风**（深浅双主题、响应式版面、键盘优先的答题）是两套互相独立的设计系统 ——
+不只是换配色，布局、控件与动效都不同；顶栏「外观与动效」面板里的「界面风格」随时切换（第一次切到现代风会先用深色），偏好只存在本机。
+
+### 像素风（默认）
+
 <p align="center">
-  <a href="docs/images/home-desktop.webp"><img src="docs/images/home-desktop.webp" width="48%" alt="首页（浅色主题，桌面）"></a>
-  <a href="docs/images/home-dark.webp"><img src="docs/images/home-dark.webp" width="48%" alt="首页（深色主题，桌面）"></a>
+  <a href="docs/images/home-desktop.webp"><img src="docs/images/home-desktop.webp" width="48%" alt="像素风：首页（浅色主题，桌面）"></a>
+  <a href="docs/images/home-dark.webp"><img src="docs/images/home-dark.webp" width="48%" alt="像素风：首页（深色主题，桌面）"></a>
   <br>
-  <a href="docs/images/map-desktop.webp"><img src="docs/images/map-desktop.webp" width="74%" alt="闯关地图（桌面）"></a>
-  <a href="docs/images/home-mobile.webp"><img src="docs/images/home-mobile.webp" width="21.4%" alt="首页（手机）"></a>
+  <a href="docs/images/map-desktop.webp"><img src="docs/images/map-desktop.webp" width="74%" alt="像素风：闯关地图（桌面）"></a>
+  <a href="docs/images/home-mobile.webp"><img src="docs/images/home-mobile.webp" width="21.4%" alt="像素风：首页（手机）"></a>
   <br>
-  <sub>上：首页浅色 / 深色主题（桌面）；下：闯关地图（桌面）与首页（手机，等比缩放后与地图同高）。<br>取自本地 release 构建的真实页面，重拍见 <code>e2e/scripts/screenshots.mjs</code></sub>
+  <sub>上：首页浅色 / 深色主题（桌面）；下：闯关地图（桌面）与首页（手机，等比缩放后与地图同高）。</sub>
+</p>
+
+### 现代风
+
+<p align="center">
+  <a href="docs/images/home-modern-dark.webp"><img src="docs/images/home-modern-dark.webp" width="48%" alt="现代风：首页（深色主题，桌面）"></a>
+  <a href="docs/images/home-modern-light.webp"><img src="docs/images/home-modern-light.webp" width="48%" alt="现代风：首页（浅色主题，桌面）"></a>
+  <br>
+  <a href="docs/images/map-modern.webp"><img src="docs/images/map-modern.webp" width="74%" alt="现代风：闯关地图（桌面）"></a>
+  <a href="docs/images/home-modern-mobile.webp"><img src="docs/images/home-modern-mobile.webp" width="21.4%" alt="现代风：首页（手机，底部导航）"></a>
+  <br>
+  <a href="docs/images/practice-modern.webp"><img src="docs/images/practice-modern.webp" width="74%" alt="现代风：练习答题页（深色主题，桌面）"></a>
+  <br>
+  <sub>上：首页深色 / 浅色主题（桌面）；中：闯关地图（桌面）与首页（手机，底部导航，等比缩放后与地图同高）；下：练习答题页（深色，键盘优先）。<br>
+  取自本地 release 构建的真实页面，重拍见 <code>e2e/scripts/screenshots.mjs</code>（<code>node scripts/screenshots.mjs [pixel|modern]</code>）。</sub>
 </p>
 
 ---
@@ -48,8 +68,8 @@ cargo make setup          # 安装 wasm32 目标、Trunk 与 wasm-bindgen CLI
 | 需要实时数据页（依赖 `/api/*`） | `cargo make dev-full` → 后端 3001 + 前端 3000 代理 |
 | 生产构建 / 本地跑 release | `cargo make build` / `cargo make serve` → http://127.0.0.1:8080 |
 
-完整任务清单见 [`docs/tasks.md`](docs/tasks.md)；本地开发细节、生产构建与部署见
-[`docs/deployment.md`](docs/deployment.md)。
+完整任务清单见 [`docs/engineering/tasks.md`](docs/engineering/tasks.md)；本地开发细节、生产构建与部署见
+[`docs/engineering/deployment.md`](docs/engineering/deployment.md)。
 
 ### 浏览器支持
 
@@ -65,7 +85,7 @@ cargo make setup          # 安装 wasm32 目标、Trunk 与 wasm-bindgen CLI
 ## 功能一览
 
 按模块列能力与关键约束；每条功能的完整说明（路径、参数、边界与已知限制）见
-[`docs/features.md`](docs/features.md)。
+[`docs/reference/features.md`](docs/reference/features.md)。
 
 ### 考试中心
 
@@ -89,7 +109,7 @@ ADIF 3.1 日志与多台站 / 操作员、日志体检、QSL 全生命周期与�
 
 ### 浏览器内解码与硬件互联
 
-十二个 Worker（十一个解码器 + AX.25 软 TNC）在浏览器内完成解码，音频不上传；Web Serial 接电台 CAT、KISS TNC、NanoVNA 与旋转器（写电台默认关闭，写前过硬护栏）。解码器清单见 [`docs/features.md`](docs/features.md)。
+十二个 Worker（十一个解码器 + AX.25 软 TNC）在浏览器内完成解码，音频不上传；Web Serial 接电台 CAT、KISS TNC、NanoVNA 与旋转器（写电台默认关闭，写前过硬护栏）。解码器清单见 [`docs/reference/features.md`](docs/reference/features.md)。
 
 ### 设备与 DIY
 
@@ -97,54 +117,27 @@ ADIF 3.1 日志与多台站 / 操作员、日志体检、QSL 全生命周期与�
 
 ### 用户体验
 
-`/` 唤起全站搜索（支持 `dxcc:` / `band:` / `mode:` 前缀）、11 套配色与明暗主题正交、三语界面、无障碍、PWA 可离线、wasm 失败兜底；所有个人数据只存本地。
+`/` 唤起全站搜索（支持 `dxcc:` / `band:` / `mode:` 前缀）、两套界面风格（像素风 / 现代风，设置里切换）、像素风下 11 套配色与明暗主题正交、三语界面、无障碍、PWA 可离线、wasm 失败兜底；所有个人数据只存本地。
 
 ## 文档地图
 
-README 只做索引与上手；细节按下面的表找。
+细节都在 [`docs/`](docs/README.md)：那里是**唯一的文档索引**，按「界面 / 工程 / 数据 / 速查 / 领域」分目录，并写明每份文档何时看、谁维护。最常用的入口：
 
-| 想做什么 | 看哪份 |
-| --- | --- |
-| 动代码前的总入口、硬规则、验收命令 | [`AGENTS.md`](AGENTS.md) |
-| 架构、crate 划分、完整目录树 | [`docs/architecture.md`](docs/architecture.md) |
-| 功能清单 / 存储 key / 路由表 / 任务清单 | [`docs/features.md`](docs/features.md) · [`docs/storage.md`](docs/storage.md) · [`docs/routes.md`](docs/routes.md) · [`docs/tasks.md`](docs/tasks.md) |
-| 本地开发细节、生产构建、Docker、环境变量、Web Push | [`docs/deployment.md`](docs/deployment.md) |
-| 题库数据：数据集构建、新增题库版本 | [`docs/data-pipeline.md`](docs/data-pipeline.md) |
-| 题目解析：维护流程 / 写作规范 | [`docs/explanations.md`](docs/explanations.md) · [`docs/explanations-style.md`](docs/explanations-style.md) |
-| 后端接口：同源代理与开放 API | [`docs/api.md`](docs/api.md) |
-| PWA 缓存策略与图标 | [`docs/pwa.md`](docs/pwa.md) |
-| 界面 / 表单控件 / 按钮 / 弹层 / 页头宽度 | [`docs/ui-components.md`](docs/ui-components.md) → [`crates/app/src/ui/README.md`](crates/app/src/ui/README.md) |
-| 界面文案、译文、复数与三语门禁 | [`docs/i18n.md`](docs/i18n.md) |
-| 代码规范、快捷键、像素风与动效降级 | [`docs/development.md`](docs/development.md) |
-| 端到端测试、覆盖率与本地排障 | [`docs/testing.md`](docs/testing.md) |
-| 解码器页面 / 新增解码器 / worker 协议 | [`docs/decode-worker-protocol.md`](docs/decode-worker-protocol.md) |
-| 题库题面排版（空格、全角半角、指纹） | [`docs/typography.md`](docs/typography.md) |
-| 外部数据（DXCC / 实体边界 / 题库）来源与新鲜度 | [`docs/data-sync.md`](docs/data-sync.md) |
-| 串口功能与外部格式（CHIRP / SOTA / POTA）验收 | [`docs/hardware-verification.md`](docs/hardware-verification.md) |
-| 天线方向增益的口径 | [`docs/antenna-coverage.md`](docs/antenna-coverage.md) |
-| 代码质量、分层边界、问题分级 | [`docs/code-quality.md`](docs/code-quality.md) |
-| 许可与 GPL 边界 | [`docs/licensing.md`](docs/licensing.md) |
-| 未完成项与「刻意不做」的边界 | [`ROADMAP.md`](ROADMAP.md) |
+- 动代码前：[`AGENTS.md`](AGENTS.md) —— 硬规则与验收命令
+- 界面规范：[`docs/ui/modern.md`](docs/ui/modern.md)（现代风）· [`docs/ui/pixel.md`](docs/ui/pixel.md)（像素风）
+- 架构与完整目录树：[`docs/engineering/architecture.md`](docs/engineering/architecture.md)
+- 还没做的与「刻意不做」的：[`ROADMAP.md`](ROADMAP.md)
 
 > README 里的数字与清单（Worker 数量、路由数量、计算器数量、`build-*-worker` 任务表、截图文件）由
 > `cargo make readme-check` 对账；被搬走的章节改名或删除时它也会红。
 
 ## 技术栈
 
-| 层 | 技术 |
-| --- | --- |
-| 语言 | Rust 2024 edition（MSRV 1.88） |
-| 前端 | [Leptos 0.8](https://leptos.dev)（CSR）+ `leptos_router`，编译为 WebAssembly |
-| 前端构建 | [Trunk](https://trunkrs.dev)（自动下载 Tailwind CSS v4 独立版、wasm-bindgen、wasm-opt） |
-| 样式 | Tailwind CSS v4 + tw-animate-css，沿用原 shadcn/ui（new-york）设计令牌与类名 |
-| 图标 | Lucide（内联 SVG，与原版路径一致） |
-| 浏览器 API | Web Speech API（朗读）、Web Audio API（摩尔斯 / 信号音 / 实时频谱）、Canvas（照片处理、瀑布图）、WebGL2（天线求解器的三维方向图，不支持时回退 SVG）、Notification（倒计时提醒）、IndexedDB（大体积日志存储） |
-| 服务器 | Axum 0.8 + tower-http（SPA 回退、缓存头、gzip/brotli），并提供 `/api/*` 外部数据代理（`ureq` + 内存缓存 + `sgp4` 过境计算） |
-| 数字信号解码 | `ham-web-apt` / `ham-web-sstv` / `ham-web-wspr` / `ham-web-ft8` 等十一个解码 crate（纯 Rust DSP，编译为 Worker，音频不上传服务器；另有一个 AX.25 软 TNC Worker，解码核心在 `ham-web-core`） |
-| 工具链 | `ham-web-tools`（clap、ureq、resvg、sha2、brotli、walkdir） |
-| 任务编排 | [cargo-make](https://github.com/sagiegurari/cargo-make) |
-| PWA | 构建时由 Rust 生成 Service Worker（预缓存 + 运行时缓存策略） |
-| 许可 | MIT（见仓库根目录 [`LICENSE`](LICENSE)）；DominoEX / LRPT / NAVTEX 解码器及其 Worker 例外，为 GPL-3.0（见[许可](#许可)） |
+Rust 2024（MSRV 1.88）+ [Leptos 0.8](https://leptos.dev)（CSR，编译为 WebAssembly）+ Tailwind CSS v4，由 [Trunk](https://trunkrs.dev) 构建；
+服务器是 Axum 0.8（静态站点 + `/api/*` 同源代理）；数字信号解码是纯 Rust DSP，编译为 Worker，音频不上传服务器；
+任务编排用 [cargo-make](https://github.com/sagiegurari/cargo-make)；PWA 的 Service Worker 由构建时的 Rust 工具生成。
+许可 MIT，DominoEX / LRPT / NAVTEX 解码器及其 Worker 例外为 GPL-3.0（见[许可](#许可)）。
+逐层的技术栈表（含浏览器 API 与工具链）见 [`docs/engineering/architecture.md`](docs/engineering/architecture.md)。
 
 ## 项目结构
 
@@ -161,13 +154,13 @@ data/ · public/ · e2e/       数据与译文、构建产物与静态资源、P
 docs/                        专题规范（本 README 的细节都在这里）
 ```
 
-逐目录说明与分层边界见 [`docs/architecture.md`](docs/architecture.md)（`docs/code-quality.md` 里有
+逐目录说明与分层边界见 [`docs/engineering/architecture.md`](docs/engineering/architecture.md)（`docs/engineering/code-quality.md` 里有
 「core 不许碰浏览器 API」「crate 不许反向依赖 app / server」这类守卫说明）。
 
 ## 后端接口
 
 `/api/*` 是**前端专用的同源代理**（Axum 代上游请求 + 内存缓存，规避 CORS），接口、上游数据源与缓存
-时长逐条列在 [`docs/api.md`](docs/api.md)；第三方请用物理隔离、向后兼容的 `/api/v1/*`（OpenAPI 3.1：
+时长逐条列在 [`docs/reference/api.md`](docs/reference/api.md)；第三方请用物理隔离、向后兼容的 `/api/v1/*`（OpenAPI 3.1：
 `/api/v1/openapi.json`，文档页 `/developers`）。依赖 `/api/*` 的页面清单与纯静态托管时的降级行为
 也在该文档里。
 
@@ -186,7 +179,7 @@ docs/                        专题规范（本 README 的细节都在这里）
 | `cargo make readme-check` | README 数字与清单、`docs/` 链接、截图文件的对账 |
 | `cargo make clean` | 清理 `cargo clean` + `dist` / `tmp` |
 
-完整任务表（解码器样本、像素风资源、数据同步、解析维护等）见 [`docs/tasks.md`](docs/tasks.md)。
+完整任务表（解码器样本、像素风资源、数据同步、解析维护等）见 [`docs/engineering/tasks.md`](docs/engineering/tasks.md)。
 
 ## 部署
 
@@ -197,48 +190,46 @@ docker run -d --name ham-web -p 3000:3000 -v ham-web-data:/app/data ham-web
 
 构建参数（`SITE_URL` / `REBUILD_DATASET` / 工具链版本）、运行时与上游调优环境变量、实测构建耗时与
 内存要求（前端编译峰值 6–8GB，Docker 虚拟机给 4–8GiB 会被 OOM 杀掉）、Web Push 的 VAPID 与订阅鉴权
-都在 [`docs/deployment.md`](docs/deployment.md)。
+都在 [`docs/engineering/deployment.md`](docs/engineering/deployment.md)。
 
 ## 数据与题库
 
 - 题库 JSON 与图片已提交在 `public/questions/`，日常开发不必重建；需要更新时跑 `cargo make dataset`。
-  数据源、CSV 列与产物清单见 [`docs/data-pipeline.md`](docs/data-pipeline.md)。
+  数据源、CSV 列与产物清单见 [`docs/data/data-pipeline.md`](docs/data/data-pipeline.md)。
 - 官方换版时按同文档的「新增题库版本」改 `public/questions/config.json`。
 - 解析以**内容指纹**为 key 存在 `data/explanations.json`：统计缺失 → 撰写 → 合并 / 增强 / 写入的
-  流程见 [`docs/explanations.md`](docs/explanations.md)，写作规范见
-  [`docs/explanations-style.md`](docs/explanations-style.md)，术语表字段也在该流程文档里。
+  流程见 [`docs/data/explanations.md`](docs/data/explanations.md)，写作规范见
+  [`docs/data/explanations-style.md`](docs/data/explanations-style.md)，术语表字段也在该流程文档里。
 
 ## PWA 与离线
 
 `postbuild` 扫描 `dist/` 生成 `sw.js`（题库 NetworkFirst、题目图片 StaleWhileRevalidate、其余预缓存），
 部署后页面可见时每小时检查更新并提示；应用图标由 `cargo make icons` 从三份设计源渲染。缓存策略、
-更新流程与图标细节见 [`docs/pwa.md`](docs/pwa.md)。
+更新流程与图标细节见 [`docs/domain/pwa.md`](docs/domain/pwa.md)。
 
 ## 本地存储与兼容性
 
 题库相关的 key 与数据结构与旧版（Next.js）完全一致，升级后用户已有进度与偏好可继续使用；
-全部 key 的清单见 [`docs/storage.md`](docs/storage.md)。
+全部 key 的清单见 [`docs/reference/storage.md`](docs/reference/storage.md)。
 
 数据备份走站内 `/backup` 页（顶栏「设置」对话框、移动菜单与页脚均可进入）：导出全部本地数据为
 `ham-backup-YYYYMMDD.json`，可在其他设备或清缓存后一键导入恢复，也可按模块勾选、跨设备合并导入。
-
-> 通联日志（`logbook`）可能超过 localStorage 5MB 配额：日志改由 `IndexedDB` 权威存储 + `localStorage` 静默快照双写（见 `crates/app/src/kv.rs` / `idb.rs`），跨标签页可见性由 `storage` 事件保证。数据备份仍以 localStorage 快照为准；日志极大（快照被静默丢弃）时建议同时用「通联日志 → 导出 ADIF」留底。
 
 ## 开发与测试
 
 - 提交前跑 `cargo make check`（不构建前端），正式提交用 `cargo make ci`；两者都含 `readme-check`。
 - 动界面后跑 `cargo make e2e`；新增交互要补用例并把旅程写进 `e2e/coverage-targets.json`，口径与
-  常见红见 [`docs/testing.md`](docs/testing.md)。
-- 界面控件与页宽只有一套来源（`crates/app/src/ui/`），规则见 [`docs/ui-components.md`](docs/ui-components.md)。
+  常见红见 [`docs/engineering/testing.md`](docs/engineering/testing.md)。
+- 界面控件与页宽只有一套来源（`crates/app/src/ui/`），两套皮肤的规则见 [`docs/ui/modern.md`](docs/ui/modern.md) 与 [`docs/ui/pixel.md`](docs/ui/pixel.md)（索引：[`docs/README.md`](docs/README.md)）。
 - 文案走 `t("域.词条")`，新增词条 zh / en / es 三份齐全后跑 `cargo make i18n-pack`，规则见
-  [`docs/i18n.md`](docs/i18n.md)。
-- 代码规范、快捷键、改 UI 的注意点、像素风与动效降级见 [`docs/development.md`](docs/development.md)。
+  [`docs/data/i18n.md`](docs/data/i18n.md)。
+- 代码规范、快捷键、改 UI 的注意点、像素风与动效降级见 [`docs/engineering/development.md`](docs/engineering/development.md)。
 
 ## 路由
 
 页面按三大模块组织（共 180 个路径）；路由表在 `crates/app/src/app/main_content.rs`，路径 / 标题 /
 图标 / 分组的唯一来源是 `crates/core/src/registry.rs`。完整路径表与带参数页面（`/practice?bank=A&multi=1`、
-`/battle?stage=…`、`/cards?deck=…` 等）见 [`docs/routes.md`](docs/routes.md)。
+`/battle?stage=…`、`/cards?deck=…` 等）见 [`docs/reference/routes.md`](docs/reference/routes.md)。
 
 ## 常见问题
 
@@ -250,9 +241,9 @@ docker run -d --name ham-web -p 3000:3000 -v ham-web-data:/app/data ham-web
 - **练习模式的搜索按钮不见了？** 题目搜索仅在练习模式的顺序模式下可用；跨全站的知识检索请用 `/` 唤起的搜索面板。
 - **朗读 / 摩尔斯试听没有声音？** 浏览器需要一次用户交互后才允许播放音频，请先点击页面；朗读依赖系统 TTS 语音包。
 - **`cargo make dev-full` 和 `cargo make i18n-check` 能同时跑吗？** 不能：两者都要占用 `target/` 的构建锁，同时执行会互相等待，建议串行运行。
-- **改了解码 Worker 却不生效？** 十二个 Worker 的 wasm 由 `cargo make build-worker` / `build-sstv-worker` / `build-wspr-worker` / `build-rtty-worker` / `build-olivia-worker` / `build-dominoex-worker` / `build-navtex-worker` / `build-lrpt-worker` / `build-ft8-worker` / `build-hell-worker` / `build-wefax-worker` / `build-afsk1200-worker` 生成到 `public/*-worker/`（清单见 [`docs/tasks.md`](docs/tasks.md)，`cargo make readme-check` 会对账）；`cargo make dev` 与 `build-web` 会自动先构建，但单独改了 worker 代码后需重跑对应任务（首次还需 `cargo make setup` 提供版本匹配的 `wasm-bindgen`）。
+- **改了解码 Worker 却不生效？** 十二个 Worker 的 wasm 由 `cargo make build-worker` / `build-sstv-worker` / `build-wspr-worker` / `build-rtty-worker` / `build-olivia-worker` / `build-dominoex-worker` / `build-navtex-worker` / `build-lrpt-worker` / `build-ft8-worker` / `build-hell-worker` / `build-wefax-worker` / `build-afsk1200-worker` 生成到 `public/*-worker/`（清单见 [`docs/engineering/tasks.md`](docs/engineering/tasks.md)，`cargo make readme-check` 会对账）；`cargo make dev` 与 `build-web` 会自动先构建，但单独改了 worker 代码后需重跑对应任务（首次还需 `cargo make setup` 提供版本匹配的 `wasm-bindgen`）。
 - **端到端测试跑不起来？** 首次需在 `e2e/` 下执行 `npm ci && npx playwright install chromium`；`cargo make e2e` 会先构建 release 站点。
-- **通联日志很大还能用吗？** 可以：日志由 `IndexedDB` 承载（突破 localStorage 5MB 配额），localStorage 仅保留静默快照。清浏览器数据会同时清除两者，重要日志请定期用「数据备份」导出。
+- **通联日志很大还能用吗？** 可以：日志由 `IndexedDB` 承载，突破 localStorage 的 5MB 配额；清浏览器数据会同时清除两者，重要日志请定期用「数据备份」导出。双写与快照的细节见 [`docs/reference/storage.md`](docs/reference/storage.md)。
 
 ## 贡献指南
 
@@ -270,7 +261,7 @@ docker run -d --name ham-web -p 3000:3000 -v ham-web-data:/app/data ham-web
 
 | 想做的事 | 从哪开始 |
 | --- | --- |
-| 修订 / 补充题目解析 | `data/explanations.json`，流程见 [`docs/explanations.md`](docs/explanations.md) |
+| 修订 / 补充题目解析 | `data/explanations.json`，流程见 [`docs/data/explanations.md`](docs/data/explanations.md) |
 | 补充术语 | `data/glossary/*.json`，随后 `cargo make glossary-check` |
 | 新增知识专题页 | `crates/core/src/<name>.rs`（数据）+ `crates/app/src/pages/<name>.rs`（页面）+ `crates/core/src/registry.rs` 注册一条 + `main_content.rs` 加路由（导航与站点地图自动派生） |
 | 界面文案翻译 | `data/i18n/`（界面，按域拆分）与 `data/knowledge-i18n/`（知识库正文） |
@@ -290,11 +281,11 @@ LRPT / NAVTEX 及其 Worker）单独按 `GPL-3.0-only` 发布，因此完整站�
 **MIT 不覆盖题库数据**：题目与解析版权归上游作者。
 
 例外清单、第三方 MIT / BSD 声明（ft8_lib、KISS FFT）、发布物需随附的许可文件与部署方义务见
-[`docs/licensing.md`](docs/licensing.md)。
+[`docs/engineering/licensing.md`](docs/engineering/licensing.md)。
 
 ## 致谢
 
 - **题库数据**：[xiedada05/crac-amateur-radio-exam-questions-2025-csv](https://github.com/xiedada05/crac-amateur-radio-exam-questions-2025-csv)
 - **相关项目**：[AlliotTech/ham-exam-web](https://github.com/AlliotTech/ham-exam-web)
-- **开源项目**：Leptos、Axum、Trunk、Tailwind CSS、tw-animate-css、Lucide、Geist 字体、resvg、sgp4、[ft8_lib](https://github.com/kgoba/ft8_lib)（FT8 / FT4 内核转写来源，MIT）
+- **开源项目**：Leptos、Axum、Trunk、Tailwind CSS、tw-animate-css、Lucide、Geist / Bricolage Grotesque / IBM Plex Mono / Noto Sans SC 字体、resvg、sgp4、[ft8_lib](https://github.com/kgoba/ft8_lib)（FT8 / FT4 内核转写来源，MIT）
 - **数据来源**：HamQSL、NOAA SWPC、Celestrak、DXWatch、Club Log、wheretheiss.at、BigDataCloud、PE0SAT / CAMSAT（XW-2 转发器频率）、工业和信息化部（409 MHz 公众对讲机规定）

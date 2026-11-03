@@ -239,7 +239,7 @@ pub fn StudyPlanCard(
         title=Signal::derive(move || t("common.study-plan"))
         meta=ViewFn::from(move || {
           view! {
-            <a href="/progress#plan" class="underline underline-offset-4 hover:text-foreground">
+            <a href="/progress#plan" class="hover:text-foreground">
               {move || t("common.adjust")}
             </a>
           }

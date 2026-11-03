@@ -9,8 +9,6 @@ use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 #[component]
 pub fn MicrowavePage() -> impl IntoView {
   set_title("shell.microwave");
@@ -24,14 +22,14 @@ pub fn MicrowavePage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.microwave-bands")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.microwave-bands")}</h2>
           <Table class="min-w-[560px] text-sm">
             <TableHead>
               <TableRow>
-                <TableHeader class=CELL>{move || t("radio.band")}</TableHeader>
-                <TableHeader class=CELL>{move || t("contest.freq")}</TableHeader>
-                <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.band")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("contest.freq")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.notes")}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -40,9 +38,9 @@ pub fn MicrowavePage() -> impl IntoView {
                 .map(|&(band, freq, desc)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap")>{move || kt_tracked(band)}</TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(freq)}</TableCell>
-                      <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>{move || kt_tracked(band)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(freq)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -51,8 +49,8 @@ pub fn MicrowavePage() -> impl IntoView {
           </Table>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.key-concepts-heading")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.key-concepts-heading")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {MICROWAVE_CONCEPTS
               .iter()
@@ -68,8 +66,8 @@ pub fn MicrowavePage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.operating-tips")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.operating-tips")}</h2>
           <ul class="space-y-2 p-4">
             {MICROWAVE_TIPS
               .iter()

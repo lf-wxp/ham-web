@@ -47,22 +47,34 @@ pub(super) fn MorseCard(entry: &'static MorseChar) -> impl IntoView {
     );
   };
 
+  // 现代风：一张「字符卡」= 表面底 + 细描边 + 悬停抬升；不再用像素窗体。
+  let modern = crate::kit::is_modern_at_mount();
   view! {
     <Tooltip class="min-w-0" label=Signal::derive(move || tf("common.preview-with-code", &[(entry.ch), (entry.code)]))>
       <button
         type="button"
         on:click=play_card
-        class="group pxl-window motion-press relative flex w-full flex-col items-center gap-1.5 px-1 py-3 text-center hover:bg-accent"
+        class=if modern {
+          "md-morse-card motion-press"
+        } else {
+          "group pxl-window motion-press relative flex w-full flex-col items-center gap-1.5 px-1 py-3 text-center hover:bg-accent"
+        }
       >
-      <span class="absolute right-1 top-1 text-primary opacity-0 group-hover:opacity-100">
+      <span class=if modern {
+        "md-morse-play text-primary opacity-0 group-hover:opacity-100"
+      } else {
+        "absolute right-1 top-1 text-primary opacity-0 group-hover:opacity-100"
+      }>
         <Icon kind=IconKind::Play class="size-6" />
       </span>
       <div class="flex items-baseline gap-1.5">
-        <span class="pxl-title text-base leading-none tabular-nums">{entry.ch}</span>
+        <span class=if modern { "md-morse-ch" } else { "pxl-title text-base leading-none tabular-nums" }>
+          {entry.ch}
+        </span>
         {word_of(entry.ch)
           .map(|p| view! { <span class="text-xs leading-none text-muted-foreground">{p}</span> })}
       </div>
-      <span class="font-mono text-sm tracking-wider">
+      <span class=if modern { "md-morse-code" } else { "font-mono text-sm tracking-wider" }>
         {move || {
           let code = morse_display(entry.code);
           code

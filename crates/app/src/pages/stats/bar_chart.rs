@@ -6,6 +6,36 @@ use crate::ui::Tooltip;
 #[component]
 pub(super) fn BarChart(items: Vec<(String, usize)>, max: usize) -> impl IntoView {
   let max = max.max(1) as f64;
+  // 现代风：细条 + 渐变填充 + 圆角，标签与计数用等宽数字。
+  if crate::kit::is_modern_at_mount() {
+    let rows: Vec<_> = items
+      .into_iter()
+      .map(|(label, count)| {
+        let w = count as f64 / max * 100.0;
+        (label, count, w)
+      })
+      .collect();
+    return view! {
+      <div class="md-bars">
+        {rows
+          .into_iter()
+          .map(|(label, count, w)| {
+            let title = label.clone();
+            view! {
+              <div class="md-bar-row">
+                <span class="md-bar-label" title=title>{label}</span>
+                <span class="md-bar-track">
+                  <span class="md-bar-fill" style=format!("width: {w:.1}%")></span>
+                </span>
+                <span class="md-bar-count">{count}</span>
+              </div>
+            }
+          })
+          .collect_view()}
+      </div>
+    }
+    .into_any();
+  }
   view! {
     <div class="space-y-1.5">
       {items
@@ -33,4 +63,5 @@ pub(super) fn BarChart(items: Vec<(String, usize)>, max: usize) -> impl IntoView
         .collect_view()}
     </div>
   }
+  .into_any()
 }

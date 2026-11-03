@@ -347,5 +347,14 @@
   "common.topic-basics-desc": "导体与绝缘体、静电与直流电、电学单位、电源、元件与电路、万用表测量",
   "common.topic-safety": "安全与电磁防护",
   "common.topic-safety-desc": "发射设备技术指标、电磁环境控制限值、防雷接地、用电与电池安全",
-  "common.cat-protocol-kenwood": "Kenwood / Elecraft / 新款 Yaesu"
+  "common.cat-protocol-kenwood": "Kenwood / Elecraft / 新款 Yaesu",
+  "common.quiz-summary": "三题答完，可以继续往下读了",
+  "common.quiz-retry": "换一组",
+  "common.error-invalid-json": "JSON 格式错误：{}",
+  "common.error-http-status": "HTTP 错误：{}",
+  "common.error-load-bank-config": "题库配置加载失败：{}",
+  "common.error-invalid-bank-config": "题库配置格式错误：{}",
+  "common.error-load-questions": "题库数据加载失败：{}",
+  "common.error-invalid-questions": "题库数据格式错误：{}",
+  "common.check-this-field": "请检查该输入（格式或范围不对）"
 }

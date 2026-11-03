@@ -25,10 +25,15 @@ pub fn Switch(
   #[prop(optional, into)] invalid: Signal<bool>,
   #[prop(optional, into)] class: String,
 ) -> impl IntoView {
-  // 轨道 / 滑块的像素外观在 `.pxl-switch` / `.pxl-switch-thumb`：关 = 凹陷的暗槽，
-  // 开 = 绿底；滑块用 3 帧的 steps() 位移，而不是平滑滑动。开 / 关的信息仍由位置与
-  // `aria-checked` 承担，不靠颜色单独传达。
-  let class = cn(&["pxl-switch", &class]);
+  // 像素风：轨道 / 滑块在 `.pxl-switch` / `.pxl-switch-thumb`（关 = 凹陷暗槽、开 = 绿底、
+  // 3 帧 steps 位移）。现代风换成 `.md-switch`（36×20 药丸、关 = 表面 3 档灰、开 = 品牌蓝、
+  // 滑块平滑滑动）。开 / 关仍由位置与 `aria-checked` 承担，不靠颜色单独传达。
+  let modern = crate::kit::is_modern_at_mount();
+  let class = if modern {
+    cn(&["md-switch", &class])
+  } else {
+    cn(&["pxl-switch", &class])
+  };
   view! {
     <button
       type="button"
@@ -50,7 +55,7 @@ pub fn Switch(
     >
       <span
         data-slot="switch-thumb"
-        class="pxl-switch-thumb"
+        class=if modern { "md-switch-thumb" } else { "pxl-switch-thumb" }
         data-state=move || if checked.get() { "checked" } else { "unchecked" }
       ></span>
     </button>

@@ -1,0 +1,260 @@
+/* ============================================================
+   共享工具类的现代取值（modern only）
+   ------------------------------------------------------------
+   页面模板里同时被两套皮肤使用的那批**工具类**（`bg-card` / `bg-inset` / `text-primary` /
+   `font-mono` / `border` / `border-dashed` / `.motion-press` / `kbd` …）在像素风的样式表里
+   有像素取值；现代风必须给同一批类名另一套取值，否则「现代页面里悬停闪出像素深蓝」。
+   所以这个文件**不是过渡桥，而是现代风的 token 层**：只要页面还写着这些工具类，它就得在。
+
+   历史：以前叫 `style/bridge.css`（过渡桥），把「组件级像素类的映射」也混在一起
+   （卡片 / 按钮 / 输入框 / 复选等）。那些组件现在都有了真正的现代分支，对应规则已逐条删除；
+   剩下的只有本文件这些**语义工具类**与少量元素级兜底（`kbd` / `input[type=range]`）。
+
+   规则边界（写新规则前先读）：
+   - 只覆盖容器与排版（背景 / 描边 / 圆角 / 字号 / 线），不碰交互与状态色；
+   - 全部限定在 `html[data-ui-style="modern"]` 内，像素风零影响；
+   - **不要加 `.md-root` 限定**：`Dialog` / `Toast` / `Tooltip` / 下拉弹层都经 Portal 挂在
+     `body` 上，不在 `.md-root` 子树里 —— 带上限定等于整条规则落空；
+   - 新增规则前先确认：这个类名**真的还在页面里用**（`rg` 源码里的字面量；`e2e/audit/` 里没有统计
+     工具类命中数的脚本 —— 以前的 `bridge_rules.mjs` 随 `bridge.css` 一起删了，`dual_sweep.mjs`
+     只按 `pxl-*` / `md-*` 计数）。
+   ============================================================ */
+
+/* 字体兜底：像素风把点阵字体挂在 `<html>` 上，现代风只在 `.md-root` 里覆盖，
+   于是 `main` 之外的挂件（「相关主题」「随堂测」）与 Portal 出来的表面会回落成
+   点阵字 —— 表现为「英文界面里突然出现一行像素中文」。这里一次钉死整棵树。 */
+html[data-ui-style="modern"] body {
+  font-family: var(--md-font);
+}
+
+/* 动效兜底：像素风把**所有** Tailwind `transition-*` 工具类的默认缓动改成
+   `steps(4, end)`（`--default-transition-timing-function`）。不改回来的话，
+   未迁移页面里每个 `transition-colors` 的悬停都是四帧跳变 —— 一处两处看不出来，
+   整页（法律页 140 处、术语页 140 处）会一起「卡帧」。 */
+html[data-ui-style="modern"] {
+  --default-transition-timing-function: var(--md-ease);
+  --default-transition-duration: var(--md-dur);
+}
+
+/* 像素语义色的现代对应（`--primary` / `--accent` / `--muted` / `--card` …）。
+   桥接页大量用这些工具类（`hover:bg-accent` 69 处、`text-primary` 30+ 处），
+   不映射就会出现「现代页里悬停闪出像素风的深蓝 / 青柠」—— 这正是 §2 禁止的 token 交叉。
+   写在 `body` 上而不是 `html`：非经典配色方案用的是 `html[data-scheme="x"].dark`（0,2,1），
+   挂在 `html[..][data-scheme] body`（0,2,2）上才稳定胜出，不依赖文件引入顺序。 */
+html[data-ui-style="modern"][data-scheme] body {
+  --background: var(--md-bg);
+  --foreground: var(--md-fg);
+  --card: var(--md-surface);
+  --card-foreground: var(--md-fg);
+  --popover: var(--md-surface);
+  --popover-foreground: var(--md-fg);
+  --primary: var(--md-orange);
+  --primary-foreground: var(--md-primary-fg);
+  --secondary: var(--md-surface-2);
+  --secondary-foreground: var(--md-fg);
+  --muted: var(--md-surface-2);
+  --muted-foreground: var(--md-fg-muted);
+  /* 像素风的 `accent` 是「选中 / 悬停」的青柠，现代风里对应一档中性抬升面；
+     蓝色只留给真正的选中态（`.md-chip[aria-checked]`、题卡选项），不铺在悬停上。 */
+  --accent: var(--md-surface-2);
+  --accent-foreground: var(--md-fg);
+  --border: var(--md-border);
+  --input: var(--md-border);
+  --ring: var(--md-ring);
+  --destructive: var(--md-danger-fill);
+  --destructive-foreground: var(--md-danger-fill-fg);
+  /* 字体不在这一层换：见文件下方对 `.font-sans` / `.font-mono` 的逐类覆盖。 */
+  /* 血量 / 胜利语义色（`text-hp-text` / `text-win-text`）：同样是变量层替换。 */
+  --color-hp-text: var(--md-danger-ink);
+  --color-win-text: var(--md-green);
+}
+
+/* `text-primary` 在现代风里用墨色而不是橙：行动橙是「平涂的主 CTA」，不是「高亮文字」——
+   12px 的橙字在浅色底上只有 3.3:1（AA 要 4.5），而且满页橙标签会冲淡唯一的焦点。
+   填充色（`bg-primary`）仍是橙，`bg-primary/10` 这类浅底也保留。 */
+html[data-ui-style="modern"] .text-primary {
+  color: var(--md-fg);
+}
+
+/* 链接本身取行动的**文字档**（`--md-accent-ink`：浅色下 5.4:1、深色下 9:1）：
+   桥接页没有 `.md-link-inline` 这类现代类名，`text-primary` 是它们唯一的链接出口，
+   这里不接管，全站一半页面的链接就还是墨色，主题色只剩按钮上有。
+   下划线全站免掉（见 `input.css` 的 `a` 兜底），可点性靠行动色 + 悬停换色。 */
+html[data-ui-style="modern"] a.text-primary {
+  color: var(--md-accent-ink);
+}
+
+html[data-ui-style="modern"] a.text-primary:hover {
+  color: var(--md-accent);
+}
+
+/* 跳转链接在 `.md-root` 之外（它是页面的第一个可聚焦元素，必须排在皮肤根节点之前），
+   拿不到现代风的实线焦点环 —— 键盘用户按第一下 Tab 看到的是像素虚线。 */
+html[data-ui-style="modern"] [data-skip-link]:focus-visible {
+  outline: 2px solid var(--md-ring);
+  outline-offset: 2px;
+}
+
+/* 手写的 1px 描边块（`border` + 内距工具类，全站 100+ 处）：像素风是直角框，
+   现代风必须跟卡片同一档圆角，否则一页里圆角面板与直角框混排（`/q-code` 的测验选项、
+   `/open-source` 的链接行都是这一类）。表格单元格 `<th>/<td>` 与像素卡片不在其列。 */
+html[data-ui-style="modern"]
+  :is(a, button, div, section, li, article, aside, p, fieldset, figure)[class~="border"]:not(
+    [class*="rounded"],
+    .md-root,
+    [data-slot="table"]
+  ) {
+  border-radius: var(--md-r-md);
+}
+
+html[data-ui-style="modern"] span[class~="border"]:not([class*="rounded"]) {
+  border-radius: var(--md-r-sm);
+}
+
+html[data-ui-style="modern"] .bg-inset {
+  background-color: var(--md-surface-2);
+  border-radius: var(--md-r-sm);
+}
+
+/* 键位提示（`<kbd>`）：像素风靠窄体点阵挤压按键宽度，现代走等宽字体。 */
+html[data-ui-style="modern"] kbd {
+  font-family: var(--md-font-mono);
+  letter-spacing: 0;
+}
+
+/* 滑杆：交给浏览器的 accent-color，轨道与滑块都跟着品牌色 */
+html[data-ui-style="modern"] .ui-slider,
+html[data-ui-style="modern"] input[type="range"] {
+  accent-color: var(--md-blue);
+  height: 24px;
+}
+
+/* `ui::Slider` 的轨道 / 滑块是像素自绘（2px 墨框 + 方块滑块 + 内阴影），
+   `accent-color` 对它无效 —— 要逐条改伪元素。读数类控件用「细轨道 + 圆滑块」，
+   填色走蓝（当前值），橙留给页面唯一的主行动。 */
+html[data-ui-style="modern"] .ui-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border: 0;
+  border-radius: var(--md-r-pill);
+  background: linear-gradient(
+    to right,
+    var(--md-blue) var(--slider-fill, 0%),
+    var(--md-surface-3) var(--slider-fill, 0%)
+  );
+  box-shadow: none;
+}
+
+html[data-ui-style="modern"] .ui-slider::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border: 0;
+  border-radius: var(--md-r-pill);
+  background: var(--md-surface);
+  box-shadow:
+    0 0 0 1px var(--md-border-strong),
+    var(--md-shadow-1);
+}
+
+html[data-ui-style="modern"] .ui-slider::-moz-range-track {
+  height: 4px;
+  border: 0;
+  border-radius: var(--md-r-pill);
+  background: linear-gradient(
+    to right,
+    var(--md-blue) var(--slider-fill, 0%),
+    var(--md-surface-3) var(--slider-fill, 0%)
+  );
+  box-shadow: none;
+}
+
+html[data-ui-style="modern"] .ui-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: var(--md-r-pill);
+  background: var(--md-surface);
+  box-shadow:
+    0 0 0 1px var(--md-border-strong),
+    var(--md-shadow-1);
+}
+
+html[data-ui-style="modern"] .ui-slider:active::-webkit-slider-thumb,
+html[data-ui-style="modern"] .ui-slider:active::-moz-range-thumb {
+  background: var(--md-surface);
+  box-shadow:
+    0 0 0 2px var(--md-blue),
+    var(--md-shadow-1);
+}
+
+@keyframes md-bar-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* 逐帧动效 → 平滑曲线。只改时序函数，关键帧与时长各自保留。
+   （像素弹层入场那两条已随迁移删除：现代风不再渲染那些类。） */
+html[data-ui-style="modern"] .motion-press,
+html[data-ui-style="modern"] .motion-popover,
+html[data-ui-style="modern"] .motion-toast {
+  transition-timing-function: var(--md-ease);
+  animation-timing-function: var(--md-ease-out);
+}
+
+/* 路由切换时顶栏那条 4px 读条：像素版是金色 / 主色交替的虚线段（逐帧扫过），
+   每次导航都会露一次脸。现代风换成橙→蓝的 2px 渐变细线。 */
+html[data-ui-style="modern"] .route-sweep {
+  height: 2px;
+  background-image: linear-gradient(90deg, var(--md-orange), var(--md-violet), var(--md-blue));
+  animation-duration: 520ms;
+  animation-timing-function: var(--md-ease-out);
+}
+
+/* ============================================================
+   桥接页正文的节奏对齐（2026-10 布局一致性）
+   ------------------------------------------------------------
+   `PageContainer` 自带 `px-4 py-5`（16 / 20），迁移页 `.md-page` 是
+   24 / 32（含桌面 32 / 40）。不统一的话，同一层级的两条路由首块内容
+   上下差 20–40px，换页时像换了套排版。
+   选择器带 `.space-y-6`：只命中 PageContainer，不碰页头内层的 `max-w-5xl`。
+   ============================================================ */
+html[data-ui-style="modern"] main .max-w-5xl.space-y-6 {
+  /* 顶部不加内边距：页头自己带 24/40 的顶部留白，再加一层会与迁移页错开。 */
+  padding-block: 0 24px;
+}
+
+@media (min-width: 1024px) {
+  html[data-ui-style="modern"] main .max-w-5xl.space-y-6 {
+    padding-block: 0 40px;
+  }
+}
+
+html[data-ui-style="modern"] .md-root .border-2.border-primary {
+  border-width: 1px;
+  border-radius: var(--md-r-xs);
+}
+
+/* 分类图例的小色块（`border-2 border-cat-N`）：现代风改成 1px 圆点。 */
+html[data-ui-style="modern"] .md-root [class*="border-cat-"] {
+  border-width: 1px;
+  border-radius: var(--md-r-pill);
+}
+
+/* 字体：像素风在 `@theme inline` 里把 `--font-sans` / `--font-mono` 指向 `--font-pixel-body` /
+   `--font-pixel-mono`，Tailwind 生成工具类时就把它们换成了值，所以 `.font-sans` / `.font-mono`
+   在运行时读的是 `--font-pixel-*`，不再读 `--font-sans` / `--font-mono`。在变量层重映射后者
+   没有读者、不起作用（以前这里有两行这样的声明，已删）—— 只能逐类覆盖。 */
+html[data-ui-style="modern"] .font-sans {
+  font-family: var(--md-font);
+}
+
+html[data-ui-style="modern"] .font-mono {
+  font-family: var(--md-font-mono);
+}
+
+/* 虚线框：像素版描边比 `--border` 更明显，现代风统一压回 `--md-border`。 */
+html[data-ui-style="modern"] .border-dashed,
+html[data-ui-style="modern"] [class*="border-dashed"] {
+  border-color: var(--md-border);
+}

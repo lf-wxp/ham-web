@@ -1,25 +1,44 @@
+use std::sync::atomic::{AtomicU32, Ordering};
+
 use leptos::prelude::*;
 
 use super::super::popover;
 use super::select_root::SelectCtx;
 
 /// 下拉选项。
+///
+/// 行的 DOM id 全局唯一（键盘高亮靠 `aria-activedescendant` 指它）；是否高亮由根组件持有的
+/// `active` 与自己的 id 比较得出，行本身不需要知道自己排第几。
+///
+/// 点击与键盘 `Enter` 走同一个处理函数：键盘选中是对高亮行触发一次 `click()`，
+/// 所以「选中 → 回调 → 关闭」只写了这一遍。
 #[component]
 pub fn SelectItem(#[prop(into)] value: String, children: Children) -> impl IntoView {
+  static SEQ: AtomicU32 = AtomicU32::new(0);
+
   let ctx = expect_context::<SelectCtx>();
+  let id = format!("select-opt-{}", SEQ.fetch_add(1, Ordering::Relaxed));
+  let my_id = StoredValue::new(id.clone());
   let v = StoredValue::new(value);
   let selected = move || {
     ctx
       .value
       .with(|cur| v.with_value(|v| cur.as_deref() == Some(v.as_str())))
   };
+  let highlighted = move || {
+    ctx
+      .active
+      .with(|a| my_id.with_value(|mine| a.as_deref() == Some(mine.as_str())))
+  };
   view! {
     <div
       role="option"
+      id=id
       aria-selected=move || selected().to_string()
       data-state=move || if selected() { "checked" } else { "unchecked" }
+      data-active=move || highlighted().to_string()
       tabindex="-1"
-      class=popover::ITEM
+      class=popover::item_class()
       on:click=move |e| {
         popover::swallow(&e);
         ctx.on_change.run(v.get_value());

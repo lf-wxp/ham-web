@@ -21,8 +21,8 @@ pub fn Ft8Page() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.key-concepts-heading")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.key-concepts-heading")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {FT8_CONCEPTS
               .iter()
@@ -38,8 +38,8 @@ pub fn Ft8Page() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.standard-frequencies-usb")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.standard-frequencies-usb")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {FT8_FREQS
               .iter()
@@ -55,8 +55,8 @@ pub fn Ft8Page() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.operating-tips")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.operating-tips")}</h2>
           <ul class="space-y-2 p-4">
             {FT8_TIPS
               .iter()

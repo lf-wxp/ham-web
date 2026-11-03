@@ -1,7 +1,7 @@
 # 路线图
 
 > 只记三件事：**还没做的**、**刻意不做的**、以及**新增内容必须过的门禁**。
-> 已实现的功能见 [`docs/features.md`](docs/features.md)（README 的「功能一览」是它的索引）；实现细节、设计取舍与精度边界写在各模块的
+> 已实现的功能见 [`docs/reference/features.md`](docs/reference/features.md)（README 的「功能一览」是它的索引）；实现细节、设计取舍与精度边界写在各模块的
 > 文档注释里（例如 `crates/nec/src/nec.rs` 的离散方式与精度表、`crates/app/src/kv.rs` 的写入版本仲裁），
 > 不在这里重复。
 
@@ -58,7 +58,7 @@
 **D 系列**是能力空白；**K 系列**是内容补强。每条都写落点与验证口径，完成后移入「已完成」。
 
 > 串口与外部格式类条目（CAT、旋转器、NanoVNA、KISS、CHIRP、SOTA / POTA 导出）的验收口径
-> 统一见 [`docs/hardware-verification.md`](docs/hardware-verification.md)：**单测与假串口通过只算「待验」**，
+> 统一见 [`docs/domain/hardware-verification.md`](docs/domain/hardware-verification.md)：**单测与假串口通过只算「待验」**，
 > 真机跑过并记录型号 / 固件 / 实际现象才算「已验证」。
 
 | 条目 | 可行性 | 阻塞点 / 下一步 |
@@ -77,14 +77,17 @@
 | LRPT：M2-3 / M2-4 的 OQPSK 真实录音 | 中 | M2（QPSK）已在真实录音上出图（`crates/lrpt/tests/real_iq.rs`；录音不进仓库，用 `LRPT_REAL_IQ` 给路径）。现役的 M2-3 / M2-4 是 OQPSK，定时与载波环路要按 I/Q 半符号错位改写；**缺一段真实 OQPSK 基带**（SatNOGS 只存 48 kHz 音频与解好的图片） |
 | LRPT：M2-2（80k）真实录音对拍 | 中 | 重同步、去交织、差分链路已有往返测试；缺真实 80k 录音 |
 | LRPT：软判决 Viterbi | 中 | 弱信号的增益项；现有真实样本硬判决已 99.8% 帧通过，看不出收益，有更弱的样本再做 |
-| 卫星联动：双 VFO 卫星模式 / 跟随旋钮 / 真机验证 | 中 | 上行写入、线性转发器、自定义通带与旋转器自动跟踪已完成（见「已完成」）。**仍未做**：① **卫星模式**（IC-9700 / IC-705 / FT-991A 的主 / 副 VFO 各管一个波段）——各机型 CAT 语义不同（Hamlib 里 IC-7600/7610/7800/785x 的 `25` 命令是 Main/Sub 而非选中 / 未选中，FT-991A 的 `FR`/`FT` 也不是 Kenwood 含义），没有真机逐款验证就上线等于没测；② **线性转发器跟随电台旋钮**——现在是页面持有调谐点、转旋钮会触发「手动改频即停」，要反过来得把回读频率同时当输入和输出，而回读最多有 3 次轮询的延迟，发射会滞后于旋钮；③ **真机验证**——上行写入（FB / `25 01` 在各机型的实际行为、分频设置、电台忙时的回应）与旋转器（GS-232 在各控制器上的应答格式、速度、限位、过顶走哪条路）**一次都没实测过**，只有假串口。逐项验收步骤与记录项见 [`docs/hardware-verification.md`](docs/hardware-verification.md) A1–A6 / B1–B4 |
-| NanoVNA 串口实机验证 | 中 | 协议解析有单测、`.s1p` 入口有 e2e；串口收发需要真实仪器（与 KISS TNC 同一边界）。验收步骤与记录项见 [`docs/hardware-verification.md`](docs/hardware-verification.md) C1 / C2 |
+| 卫星联动：双 VFO 卫星模式 / 跟随旋钮 / 真机验证 | 中 | 上行写入、线性转发器、自定义通带与旋转器自动跟踪已完成（见「已完成」）。**仍未做**：① **卫星模式**（IC-9700 / IC-705 / FT-991A 的主 / 副 VFO 各管一个波段）——各机型 CAT 语义不同（Hamlib 里 IC-7600/7610/7800/785x 的 `25` 命令是 Main/Sub 而非选中 / 未选中，FT-991A 的 `FR`/`FT` 也不是 Kenwood 含义），没有真机逐款验证就上线等于没测；② **线性转发器跟随电台旋钮**——现在是页面持有调谐点、转旋钮会触发「手动改频即停」，要反过来得把回读频率同时当输入和输出，而回读最多有 3 次轮询的延迟，发射会滞后于旋钮；③ **真机验证**——上行写入（FB / `25 01` 在各机型的实际行为、分频设置、电台忙时的回应）与旋转器（GS-232 在各控制器上的应答格式、速度、限位、过顶走哪条路）**一次都没实测过**，只有假串口。逐项验收步骤与记录项见 [`docs/domain/hardware-verification.md`](docs/domain/hardware-verification.md) A1–A6 / B1–B4 |
+| NanoVNA 串口实机验证 | 中 | 协议解析有单测、`.s1p` 入口有 e2e；串口收发需要真实仪器（与 KISS TNC 同一边界）。验收步骤与记录项见 [`docs/domain/hardware-verification.md`](docs/domain/hardware-verification.md) C1 / C2 |
 | 磁环库补 Amidon / Micrometals 型号 | 中 | 业余圈常用的 `FT-240-43`、`T-200-2`、`T-50-6` 等按 Amidon 命名；要先找到可逐个核对的官方 AL 表（目录 PDF 或零件页），再进 `toroid::CORES`，每条带核对日期；现有内部一致性测试（AL ≈ µ0·µi·Ae/le）对粉芯不适用（分布气隙），需要另想办法对拍。已确认取不到：Amidon 官网 403、Micrometals 页面没有 AL 表 |
 | 按路由拆分 wasm | 中 | **只在 `erase_components` 之后重测仍不够时再做**：要换掉 Trunk 的 rust 流水线（拆分要插在 cargo 与 `wasm-bindgen` 之间）、补 chunk 内容哈希（否则无 SW 的首访可能旧 chunk 配新主包）、`perf-budget.json` 增加 chunk 与总量项、加 `cfg(split_wasm)` dev 开关（未拆分的 wasm 残留 `__wasm_split_placeholder__` 导入，浏览器无法实例化）。量级参考（`erase_components` 之前测的）：拆 5 条主包 −399 KiB 但总下载 +8%；拆全部（约 1970 个文件）总量 +62%，不可行。只拆体积最大的少数路由 |
 | THOR / MFSK16 解码 | 中 | fldigi 家族，复用 dominoex 的 GPL 转写 + `xcheck` 对拍流程 |
 | MSK144 / FSK441 解码 | 中 | 流星散射专用，联动 `/meteor-scatter`；自实现避开 WSJT GPL |
 | 声卡数字模式发端：FT8 基带 | 中 | CW / RTTY / PSK31 的基带 WAV 已可导出（见「已完成」）。FT8（8-FSK、6.25 波特）发端需完整实现 77 位报文打包 + 14 位 CRC + LDPC 编码 + 交织 + 格雷码 + 同步；LDPC 校验矩阵与报文打包需参考实现 / 测试向量对拍，而 WSJT-X 是 GPL（要自实现避开），缺参考向量无法验证 |
 | 天线补强专题：垂直天线与地网、天线陷阱、对数周期；dBi↔dBd 实测口径 | 中 | 阅读型，来源 ARRL Antenna Book；dBi↔dBd 接测量误差实验室调性 |
+| 弹层遮罩的 `Portal` 化（`SimpleSelect` / `DatePicker` / `TimePicker` 的 `OVERLAY`） | 中 | 这些遮罩是 `fixed inset-0`，没走 `<Portal>`。现代风的 `.md-page` 有 `container-type`，命中它的 fixed 后代**包含块会变**（遮罩只盖住页面容器而不是视口）。**还没在浏览器里确认**这些弹层是否真的渲染在 `.md-page` 内：先实测（打开下拉，量遮罩的 `getBoundingClientRect` 是否等于视口），再决定要不要改；改了要连带核对进出场（`crate::presence`）与滚动锁。规则见 [`docs/ui/modern.md`](docs/ui/modern.md) §3 |
+| `check-ui` 的「原生控件封闭清单」没有固定命中计数 | 低 | `check_native_controls` 的例外文件里再多写一个 `<input` 会被放行（清单只管「哪些文件允许」，不管「每个文件允许几处」）。门禁盲点，不是产品问题；补法是给清单加计数、与 [`docs/ui/pixel.md`](docs/ui/pixel.md) §10 的条数对账 |
+| 字体许可证：Bricolage Grotesque / IBM Plex Mono 的版权行核对 | 高 | `public/fonts/LICENSES` 里这两家的版权行是凭记忆写的，**没有对照上游**（Geist 与 Noto Sans SC 已于 2026-11-02 对照 Google Fonts 随包的 `OFL.txt` 逐字核对，其中 Noto 的原先是错的）。做法同上：取 `google/fonts` 仓库里这两个字体各自的 `OFL.txt` 首行（先确认目录名），逐字比对；另可核对字体文件内嵌的 name 表版权串（`fontTools` 读 `name` 表 ID 0 / 13）是否与 `LICENSES` 一致。改动小，但分发字体的声明写错有合规风险 |
 | RTL-SDR（WebUSB）实时接收 | 低 | 仅 Chromium 且依赖硬件，自动化只能覆盖协议层；能力与 `/sdr-waterfall`（麦克风 / WAV）重叠，净收益低 |
 | 自建社区 | 低 | `/community` 目前只做外链聚合；自建需要账号与内容审核体系，与「隐私优先」「零后端运维」冲突，需先想清楚形态 |
 
@@ -126,13 +129,17 @@
 | PACTOR / FreeDV（Codec2）/ M17 解码 | PACTOR 无公开规范；Codec2 声码器的体积与许可在浏览器内都不现实；M17 的参考实现 libm17 是 GPL-3.0，而 4FSK 通道已有 RTTY 可借鉴，收益 / 代价比差。三者的「能不能收」在 `/modern-digital-modes` 里说清即可 |
 | 塔架 / 拉线机械强度计算 | EIA-222 一类规范无免费可引数据，算不出可对拍的数；`/antenna-installation` 只给定性与施工要点 |
 | Es（突发 E 层）季节预测 / 长期传播气候 | 没有可验证的物理模型，历史统计也没有干净数据源；维持 `/special-prop` 的现象说明 |
+| 界面性能微调：`spotlight` 合帧、`spectrum_paint` 按颜色分组 `fillStyle`、`.md-aurora` 去掉 `blur`、`will-change` 常驻 | 2026-11 审查时**没有量到任何卡顿**；这几项都是「可能更快」而非「已知慢」。没有浏览器里的前后对比就不改（盲改动效 / 绘制的风险大于收益）。出现具体的掉帧报告再带着 profile 回来 |
+| 合并 `.md-panel table:not(.md-table)` 的两份规则 | 看着像重复，其实不是：一份在 `@layer components` 里服务知识页的**裸表格**（`TableSection`），一份在层外服务计算器里的像素 `Table`（工具类底色压不过层内规则，只能写在层外）。合并会改变层叠结果，收益只是少几十行 CSS |
+| 现代风的无障碍小项：进度条 `role`、`exam_clock` 的可访问名与 live region、`skeleton` 的 `role=status`、答题格「已答」状态 | 逐项核对后**不是缺口**：进度条旁边紧挨着文字进度（`第 N / 总数 题`），进度条本身是装饰；倒计时有意不加 `aria-live`（每秒播报会淹没读屏，像素版同一口径，见 `exam_clock.rs` 文件头）；`skeleton` 是 `aria-hidden`，加载态由页面级的 `Loading` 负责播报；答题格的 `aria-label` 已含「标记 / 对 / 错」。真有缺口的是「答题格没有『已答』状态」，影响面小，等有用户反馈再做 |
+| 英文 / 西语文案的标点 / 大小写统一、`rpg.you` 与 quest / stage / mission 术语统一 | 没有用户可见的错误，是风格偏好；三语词条由 `i18n-check` 守着齐全与占位符，不守措辞 |
 | 与现有工具重复的孤立计算器 | 52 个已过边际收益；新计算器要么能串进「链路预算向导」这类工作流，要么替掉旧的，否则不加 |
 
 ---
 
 ## 已完成
 
-一条一项，只留结论与指针；过程与细节见对应模块的文档注释，功能清单见 [`docs/features.md`](docs/features.md)。
+一条一项，只留结论与指针；过程与细节见对应模块的文档注释，功能清单见 [`docs/reference/features.md`](docs/reference/features.md)。
 
 | 条目 | 位置 | 结论与已知边界 |
 | --- | --- | --- |
@@ -163,8 +170,8 @@
 | 实体名三语 | `/log` · `i18n::localized_name` | DXCC 实体名按界面语言本地化：中文用 `name`，en/es 优先反查译文、查不到回退 `name_en`。修复录入页提示行、通联表实体列、网格详情、统计标签、网格筛选下拉（提交值仍保持中文以兼容 `dxcc_map` 的查询回环）；e2e 钉死 en 界面显示 `Japan` 而非 `日本` |
 | 数字模式基带合成（CW / RTTY / PSK31） | `/tools#mode-encoder` · `core/mode_audio.rs` | 文本 → CW / RTTY / PSK31 基带采样与 16 位 WAV（8 kHz 单声道），补「只有收没有发」。CW 按 Paris 口径点 1 / 划 3 / 字符 3 / 单词 7 单位；RTTY 45.45 波特 AFSK（起始 0 + 5 位 ITA2 低位在先 + 1.5 停止 1）；PSK31 复用 `psk31::synthesize`（BPSK 31.25 波特，往返解码已对拍）。单测钉死时长、零交叉估频与 WAV 头；e2e 钉死下载 `cw.wav` / `rtty.wav` / `psk31.wav` |
 | 陷波器（trap）偶极子设计 | `/tools#trap` · `core/trap.rs` | 并联 LC 陷波器的谐振 / 加载计算（`X = (X_L·X_C)/(X_C − X_L)`，谐振以下感性、以上容性）与两波段偶极子尺寸（内段 = 高波段半波、外段 = 低波段半波 − 内段）。4 个单测钉死 LC 往返、电抗符号与尺寸量级 |
-| AX.25 软 TNC（空中链路层 + 定时恢复） | `/tools#soft-tnc` · `core/afsk1200.rs` | Bell 202 AFSK1200 的「帧 ↔ 基带音频」：CRC-16/X-25 FCS（反射 0x8408、初值 0xFFFF、**输出取反**，`"123456789"` → `0x906E`，另用 RFC 1662 的剩余值 `0x0F47` 钉死）+ HDLC（0x7E 旗标、位填充、字节低位在前；结束旗标可兼作下一帧起始）+ NRZI + 逐位 Goertzel 相关器解调；**符号定时恢复**把每个位相位都扫一遍并按帧内容合并（同一帧只算一次、真实重发的两帧保留两份），可解任意起始相位的录音；发送侧带前导 / 尾部 flag（`modulate_frame_for_tx`，≈ 213 ms 前导）。复用 `kiss::ax25_ui_frame`（AX.25 层已有）。单测钉死位填充 / 共用旗标 / 空闲旗标、音频往返、相位偏移、电平取反、干扰拒帧、白噪声不出假帧；e2e 钉死下载 `afsk1200.wav` 再上传解回源 / 目的 / 信息。**已知边界**：往返对拍与外部已知答案只证明自洽与 FCS 口径，与 Direwolf / 硬件 TNC 的真机互通仍是「待验」（`docs/hardware-verification.md` C4） |
-| Feld Hell 解码器 | `/hell-decode` · `crates/hell` + `crates/hell-worker` | AM 点阵模式（980 Hz 载波、122.5 像素/秒、7×7 网格）解码：AM 包络 + 逐像素门限 + 5×7 字库匹配。按 `docs/decode-worker-protocol.md` 清单全量接入（core + worker + Makefile + Dockerfile + decode-worker.js + 页面 + e2e 三套实现互锁）。字库自绘、假设字符边界对齐，如实标注「解真实 Feld Hell 需换标准 Hell 字库 + 列相位搜索」 |
+| AX.25 软 TNC（空中链路层 + 定时恢复） | `/tools#soft-tnc` · `core/afsk1200.rs` | Bell 202 AFSK1200 的「帧 ↔ 基带音频」：CRC-16/X-25 FCS（反射 0x8408、初值 0xFFFF、**输出取反**，`"123456789"` → `0x906E`，另用 RFC 1662 的剩余值 `0x0F47` 钉死）+ HDLC（0x7E 旗标、位填充、字节低位在前；结束旗标可兼作下一帧起始）+ NRZI + 逐位 Goertzel 相关器解调；**符号定时恢复**把每个位相位都扫一遍并按帧内容合并（同一帧只算一次、真实重发的两帧保留两份），可解任意起始相位的录音；发送侧带前导 / 尾部 flag（`modulate_frame_for_tx`，≈ 213 ms 前导）。复用 `kiss::ax25_ui_frame`（AX.25 层已有）。单测钉死位填充 / 共用旗标 / 空闲旗标、音频往返、相位偏移、电平取反、干扰拒帧、白噪声不出假帧；e2e 钉死下载 `afsk1200.wav` 再上传解回源 / 目的 / 信息。**已知边界**：往返对拍与外部已知答案只证明自洽与 FCS 口径，与 Direwolf / 硬件 TNC 的真机互通仍是「待验」（`docs/domain/hardware-verification.md` C4） |
+| Feld Hell 解码器 | `/hell-decode` · `crates/hell` + `crates/hell-worker` | AM 点阵模式（980 Hz 载波、122.5 像素/秒、7×7 网格）解码：AM 包络 + 逐像素门限 + 5×7 字库匹配。按 `docs/domain/decode-worker-protocol.md` 清单全量接入（core + worker + Makefile + Dockerfile + decode-worker.js + 页面 + e2e 三套实现互锁）。字库自绘、假设字符边界对齐，如实标注「解真实 Feld Hell 需换标准 Hell 字库 + 列相位搜索」 |
 | WEFAX 解码器 | `/wefax-decode` · `crates/wefax` + `crates/wefax-worker` | 短波气象传真：AM 视频信号（幅度 = 亮度）→ 行同步检测 + 灰度图重建，按统一 Worker 协议清单全量接入。行速率/同步占比/像素数自定口径（120 LPM、同步 5%、380 像素/行），未对照真实 WMO 传真样本校准；真实 HF 传真是 1500 / 2300 Hz 调频副载波，当前未做 FM 解调，如实标注 |
 | 抛物面天线 | `/tools#parabolic-dish` · `core/parabolic_dish.rs` | 效率是输入（默认 55% 只是常见量级），表面精度 / 遮挡 / 偏馈 / 双反射面不建模；口径不足 3 个波长时标「增益公式不可靠」 |
 | 波导 / 雨衰 / 占空比 / IP3 级联 | `/tools` · `core/{waveguide,rain_fade,duty_power,ip3_cascade}.rs` | 波导只做矩形、TE10、光滑理想表面；雨衰的 P.838-3 与官方验证数据逐组对拍，**P.530-17 部分没有官方数据（当作估算）且 R0.01 要用户自己给**（P.837 未嵌入）；占空比两种窗口口径都做了并写明差异；IP3 只做三阶 |
@@ -196,7 +203,7 @@
 | 方向覆盖的时段分布（S1b 部分） | `/psk-reporter` · `core/spot_coverage.rs` | 报告按 UTC 小时分桶（`Coverage.hourly` + `busiest_hour()`），页面画 24 格时段条并标出最忙时段；小时由接口时间戳纯算术换算，不经本地时区。单测钉死越界小时取模与「无报告时无最忙时段」，e2e 钉死 14:00 UTC 那条 |
 | 竞赛赛前目标与配速（D2） | `/contest-log` · `core/contest_pace.rs` · `contest_log/pace.rs` | 目标 QSO 数与计划时长随场次持久化（`Session` 加 serde default 字段）；赛中用线性进度算「应完成 / 领先落后 / 当前速率 / 剩余时间需要的速率 / ETA / 预计总量」，每 60 秒刷新一次，到点或超额时如实说「已达到目标 / 计划时间已用完」。单测钉死 0 时长、时间用完、负已用时间等边界；e2e 用未来起始的场次种子钉死「领先 2 条」 |
 | DXCC 申请记录表（D1） | `/log` 奖状面板 · `core/award_apply.rs` | 每个实体取一条代表通联（**已确认优先、其次最早**），列出实体 / 呼号 / 日期 / 波段 / 模式 / 确认途径，可导出 CSV 作核对清单。**不宣称能直接上传**：ARRL 在线申请没有公开格式，页面正文写明这是逐条核对的清单。单测钉死优先级、去重与排序，e2e 钉死「JA1ABC 被已确认的 JA1XYZ 取代」与 CSV 下载 |
-| 方向增益（S2） | `/nec` · `core/antenna_coverage.rs` · `pages/nec/direction_table.rs` | 按 [`docs/antenna-coverage.md`](docs/antenna-coverage.md) 实现：每个 DXCC 实体一行，给方位 / 大圆距离 / 该方向增益 / 相对峰值损失；两种口径（各仰角最大值 / 水平面切面）；本台网格缺失时不硬算，收起时不渲染表格。8 个单测钉死插值、峰值选取、前后比与排序；e2e 钉死提示文案、340 行与「换地面模型数值跟着变」。**已知边界**：`pattern3d` 10° 网格会低估窄波束峰值（设计说明的方案 B 待实测后再决定），实体中心对大国误差可达 10° |
+| 方向增益（S2） | `/nec` · `core/antenna_coverage.rs` · `pages/nec/direction_table.rs` | 按 [`docs/domain/antenna-coverage.md`](docs/domain/antenna-coverage.md) 实现：每个 DXCC 实体一行，给方位 / 大圆距离 / 该方向增益 / 相对峰值损失；两种口径（各仰角最大值 / 水平面切面）；本台网格缺失时不硬算，收起时不渲染表格。8 个单测钉死插值、峰值选取、前后比与排序；e2e 钉死提示文案、340 行与「换地面模型数值跟着变」。**已知边界**：`pattern3d` 10° 网格会低估窄波束峰值（设计说明的方案 B 待实测后再决定），实体中心对大国误差可达 10° |
 | 低频段（2200m / 630m） | `core/bands.rs` · `core/bandplan.rs` · `/compliance` | `AMATEUR_BAND_EDGES` 补 135.7–137.8 kHz 与 472–479 kHz，`BAND_PLANS` 各补一段「仅 CW / 窄带数据」（LF 标 e.i.r.p. ≤1W，正文 en / es 已译）。`band_of`、日志体检、互调标注、竞赛波段统计、CHIRP 导出随之支持；`/compliance` 对 0.136 MHz 给出「可用 / ≤1 W / 5.67A / 需协调」。单测守住 edges ↔ band_of ↔ bandplan 三方一致，e2e 钉死波段卡片与合规结论 |
 | i18n 重复 key 门禁 | `crates/tools/src/i18n.rs` | 解析前用 `MapAccess` 走一遍原始 JSON，检出同一对象内的重复 key（`serde_json::Map` 会静默覆盖，之前两次踩坑就出在这里）。`load_entries` 直接失败并列出 key；单测覆盖顶层 / 嵌套 / 数组内重复，且值里出现同名文字不误报。临时塞一个重复词条验证过门禁确实拦下 |
 
@@ -232,9 +239,9 @@
 新增页面 / 模块必须满足（仓库内已有自动化守护，新增内容自动受益）：
 
 1. **只改两处**：`crates/core/src/registry.rs` 的 `MODULES` 追加一条 + `crates/app/src/app/main_content.rs` 加一行 `<Route>`。
-   导航菜单、`sitemap.xml` 均由注册表派生，`registry_check.rs` 断言「注册表 ↔ 导航 ↔ 路由」一致，漏注册会让 `cargo make check` 直接失败。README 的「共 N 个路径」与 [`docs/routes.md`](docs/routes.md) 的完整表都按注册表列出，`cargo make readme-check` 会对账数量。
+   导航菜单、`sitemap.xml` 均由注册表派生，`registry_check.rs` 断言「注册表 ↔ 导航 ↔ 路由」一致，漏注册会让 `cargo make check` 直接失败。README 的「共 N 个路径」与 [`docs/reference/routes.md`](docs/reference/routes.md) 的完整表都按注册表列出，`cargo make readme-check` 会对账数量。
 2. **内核下沉**：不依赖浏览器的逻辑放 `ham-web-core` + 单元测试；技术性数值在 `knowledge_consistency.rs` 加回归断言。
-3. **大内核走 Worker**：DSP / 求解器按 `ham-web-apt` 的模式拆 Worker，遵循 [`docs/decode-worker-protocol.md`](docs/decode-worker-protocol.md)，注意 `wasm-bindgen` CLI 版本与 `Cargo.lock` 一致。
+3. **大内核走 Worker**：DSP / 求解器按 `ham-web-apt` 的模式拆 Worker，遵循 [`docs/domain/decode-worker-protocol.md`](docs/domain/decode-worker-protocol.md)，注意 `wasm-bindgen` CLI 版本与 `Cargo.lock` 一致。
 4. **文案与翻译**：界面文案同步补 `data/i18n/{lang}/{domain}.json`（语义 key `域.词条`，`cargo make i18n-check` 校验重复 key、占位符、死条目与语言包新鲜度，改完跑 `cargo make i18n-pack`），正文译文放 `data/knowledge-i18n/`（`knowledge-i18n-check` 钉住漂移）。
 5. **测试**：新增交互补 Playwright 用例，并把旅程追加到 `e2e/coverage-targets.json`（`grep` 子串需唯一命中）。
    工具 / 考试类路由没有任何功能用例字面量 `page.goto` 过时，`registry_check` 直接失败。依赖 `/api/*` 的页面用 `fixtures.ts` 的 `stubApi` 打桩，时间相关断言用 `page.clock` 固定。
@@ -267,7 +274,7 @@
 ```bash
 cargo test -p ham-web-core            # 领域逻辑 + knowledge_consistency 回归
 cargo test -p ham-web-app             # registry_check（注册表 ↔ 路由一致性、交互页 e2e 门禁）
-cargo make check                      # fmt + clippy + test + 文案词典 + 解析表 + 结构/界面/README 守卫 + 像素风
+cargo make check                      # 提交前门禁（组成见 docs/engineering/code-quality.md §2）
 cargo make e2e                        # 构建 release + Playwright 全站冒烟与无障碍
 cargo make e2e-coverage               # 覆盖率报告 e2e/test-results/coverage.md
 cargo make size-check                 # 性能预算（需先 build-web）
@@ -280,28 +287,8 @@ LRPT_REAL_IQ=/path/to/meteor-m2.wav cargo test -p ham-web-lrpt --release --test 
 
 ## 相关文档
 
-| 文档 | 作用 |
-| --- | --- |
-| [`README.md`](README.md) | 上手、功能一览、文档地图、常用任务与部署（只做索引，细节在 `docs/`） |
-| [`docs/architecture.md`](docs/architecture.md) | 技术栈、完整目录树与分层边界 |
-| [`docs/features.md`](docs/features.md) | 完整功能清单（README「功能一览」的逐条版） |
-| [`docs/storage.md`](docs/storage.md) | 本地存储 key 一览 |
-| [`docs/routes.md`](docs/routes.md) | 完整路由表与带参数页面（由注册表派生） |
-| [`docs/tasks.md`](docs/tasks.md) | cargo make 任务全集 |
-| [`docs/api.md`](docs/api.md) | 后端接口：同源代理与开放 API |
-| [`docs/deployment.md`](docs/deployment.md) | 本地开发细节、生产构建、Docker、环境变量、Web Push |
-| [`docs/data-pipeline.md`](docs/data-pipeline.md) | 题库数据构建与换版 |
-| [`docs/explanations.md`](docs/explanations.md) | 题目解析维护流程（统计 → 撰写 → 合并 → 写入） |
-| [`docs/development.md`](docs/development.md) | 代码规范、快捷键、改 UI 注意点、像素风与动效降级 |
-| [`docs/testing.md`](docs/testing.md) | Playwright 端到端测试、覆盖率口径与本地排障 |
-| [`docs/pwa.md`](docs/pwa.md) | Service Worker 缓存策略、更新提示与图标 |
-| [`docs/licensing.md`](docs/licensing.md) | 许可、第三方声明与 GPL 例外 |
-| [`docs/code-quality.md`](docs/code-quality.md) | 全仓代码质量标准、检查清单与问题分级 |
-| [`AGENTS.md`](AGENTS.md) | 动代码前的入口：按改动领域指向规范与硬规则 |
-| [`docs/ui-components.md`](docs/ui-components.md) | UI 组件使用规范（决策表、硬规则、验收） |
-| [`docs/i18n.md`](docs/i18n.md) | 界面文案规范与门禁 |
-| [`docs/decode-worker-protocol.md`](docs/decode-worker-protocol.md) | 解码 Worker 协议与新增解码器清单 |
-| [`docs/hardware-verification.md`](docs/hardware-verification.md) | 真机验收清单：CAT / 旋转器 / NanoVNA / KISS / CHIRP / SOTA / POTA / 解码器真实录音，逐条写「现在测到什么、怎么验、要记什么」 |
-| [`docs/antenna-coverage.md`](docs/antenna-coverage.md) | S2 设计说明：天线方向增益的口径（不是覆盖）、算法、验收与边界 |
-| [`docs/explanations-style.md`](docs/explanations-style.md) | 题目解析写作规范 |
-| [`docs/typography.md`](docs/typography.md) | 题库排版规则（内容指纹稳定性依赖） |
+全部文档的目录与「何时看」见 [`docs/README.md`](docs/README.md)（唯一索引）。与本文直接相关的：
+
+- [`README.md`](README.md) —— 上手、功能一览、常用任务与部署
+- [`docs/reference/features.md`](docs/reference/features.md) —— 已实现功能的完整清单（本文「已完成」只留结论与指针）
+- [`docs/engineering/code-quality.md`](docs/engineering/code-quality.md) —— 新增内容必须过的门禁（§2）

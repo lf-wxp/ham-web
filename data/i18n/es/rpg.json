@@ -3,7 +3,6 @@
   "rpg.battle": "Combate",
   "rpg.bestiary": "Bestiario",
   "rpg.map-subtitle": "Supera cada tema en orden; termina sin perder vida para tres estrellas",
-  "rpg.map-loading": "Desplegando el mapa…",
   "rpg.map-empty": "Este banco de preguntas aún no tiene temas para jugar.",
   "rpg.map-summary": "Niveles superados: {} / {} · Estrellas: {} / {}",
   "rpg.stage-questions": {
@@ -32,7 +31,6 @@
   "rpg.settle": "Resultados",
   "rpg.retreat": "Retirarse",
   "rpg.pick-answer-first": "Elige una respuesta primero",
-  "rpg.battle-loading": "Invocando monstruos…",
   "rpg.hit-correct": "¡Impacto!",
   "rpg.hit-wrong": "¡Ay…!",
   "rpg.in-bestiary": "Añadido al bestiario",

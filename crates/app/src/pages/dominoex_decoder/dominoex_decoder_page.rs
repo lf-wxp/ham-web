@@ -8,7 +8,7 @@ use crate::components::common::{DecodeElapsed, PageContainer, PageHeader};
 use crate::decode_session::{DecodeConfig, DecodeSession};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
-  Button, ButtonLink, Checkbox, Field, FileDropZone, NativeSelect, SelectOption, Size, TextValue,
+  Button, ButtonLink, Checkbox, Field, FileDropZone, SelectOption, SimpleSelect, Size, TextValue,
   Variant,
 };
 use crate::util::set_title;
@@ -115,7 +115,7 @@ pub fn DominoexDecoderPage() -> impl IntoView {
                 r#for=label_for
                 class="mb-4 sm:max-w-xs"
               >
-                <NativeSelect
+                <SimpleSelect
                   id=mode_id
                   value=Signal::derive(move || mode.get())
                   on_change=Callback::new(move |v: String| mode.set(v))

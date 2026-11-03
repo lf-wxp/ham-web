@@ -246,7 +246,6 @@ pub fn RotorControl(#[prop(into)] aim: Signal<Option<Aim>>) -> impl IntoView {
             <Button
               variant=Variant::Outline
               size=Size::Sm
-              class="h-7"
               disabled=Signal::derive(move || matches!(status.get(), Status::Connecting))
               on_click=Callback::new(move |_| if busy() { disconnect() } else { connect() })
             >
@@ -277,16 +276,14 @@ pub fn RotorControl(#[prop(into)] aim: Signal<Option<Aim>>) -> impl IntoView {
               <Button
                 variant=Variant::Default
                 size=Size::Sm
-                class="h-7"
-                on_click=Callback::new(move |_| rotate_az())
+                  on_click=Callback::new(move |_| rotate_az())
               >
                 {move || t("common.rotate")}
               </Button>
               <Button
                 variant=Variant::Ghost
                 size=Size::Sm
-                class="h-7"
-                on_click=Callback::new(move |_| {
+                  on_click=Callback::new(move |_| {
                   take_over();
                   send(rotor::STOP.to_vec());
                 })

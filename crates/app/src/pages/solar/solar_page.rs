@@ -133,8 +133,8 @@ pub fn SolarPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="flex items-center justify-between pxl-section-title">
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::cn::cn(&["flex items-center justify-between", crate::kit::card_title_class()])>
             {move || t("radio.live-solar-activity")}
             <span class="text-xs font-normal normal-case text-muted-foreground">
               {move || {
@@ -166,7 +166,7 @@ pub fn SolarPage() -> impl IntoView {
           <div class="grid grid-cols-2 gap-3 px-4 pb-4 sm:grid-cols-4">
             <div class="col-span-2 border bg-inset p-3 text-center sm:col-span-4">
               <div class="text-xs text-muted-foreground">{move || t("radio.propagation-conditions-from-k")}</div>
-              <div class="mt-1 pxl-stat">
+              <div class=if crate::kit::is_modern_at_mount() { "md-stat-text mt-1" } else { "mt-1 pxl-stat" }>
                 {move || {
                   match k.get() {
                     Some(kv) => {
@@ -207,8 +207,8 @@ pub fn SolarPage() -> impl IntoView {
           let conds = conditions.get();
           (!conds.is_empty()).then(|| {
             view! {
-              <section class="pxl-card border bg-card">
-                <h2 class="pxl-section-title">{move || t("radio.band-conditions")}</h2>
+              <section class=crate::kit::card_class()>
+                <h2 class=crate::kit::card_title_class()>{move || t("radio.band-conditions")}</h2>
                 <div class="p-4">
                   <ConditionsTable conditions=conds />
                 </div>
@@ -231,8 +231,8 @@ pub fn SolarPage() -> impl IntoView {
           (!hist.is_empty()).then(|| view! { <FluxTrend history=hist /> })
         }}
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.solar-indices")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.solar-indices")}</h2>
           <div class="divide-y">
             {SOLAR_INDICES
               .iter()
@@ -249,8 +249,8 @@ pub fn SolarPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.propagation-condition-scale")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.propagation-condition-scale")}</h2>
           <div class="grid gap-3 p-4 sm:grid-cols-2">
             {CONDITIONS
               .iter()
@@ -266,8 +266,8 @@ pub fn SolarPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.solar-cycle")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.solar-cycle")}</h2>
           <ul class="space-y-2 p-4">
             {CYCLE_NOTES
               .iter()

@@ -24,9 +24,30 @@ pub fn ConceptsSection(
   } else {
     "flex flex-col gap-1 px-3 py-2"
   };
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <section class="md-panel">
+        <h2 class="md-panel-title">{move || t(&title)}</h2>
+        <dl class="md-concepts">
+          {items
+            .iter()
+            .map(|(term, desc)| {
+              view! {
+                <div class="md-concept">
+                  <dt>{move || translate(term, ui)}</dt>
+                  <dd class="md-muted">{move || translate(desc, ui)}</dd>
+                </div>
+              }
+            })
+            .collect_view()}
+        </dl>
+      </section>
+    }
+    .into_any();
+  }
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t(&title)}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t(&title)}</h2>
       <div class="grid gap-1 p-4 sm:grid-cols-2">
         {items
           .iter()
@@ -42,6 +63,7 @@ pub fn ConceptsSection(
       </div>
     </section>
   }
+  .into_any()
 }
 
 /// 按文案来源选词典：`ui` 为真走界面词典，否则走知识库词典。

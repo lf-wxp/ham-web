@@ -86,7 +86,7 @@ pub fn DevelopersPage() -> impl IntoView {
               href="/api/v1/openapi.json"
               target="_blank"
               rel="noopener noreferrer"
-              class="text-primary underline-offset-2 hover:underline"
+              class=crate::kit::link_class()
             >
               {move || t("knowledge.download-the-openapi-3")}
             </a>

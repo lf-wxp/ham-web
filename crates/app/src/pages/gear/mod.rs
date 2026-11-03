@@ -431,8 +431,8 @@ pub fn GearPage() -> impl IntoView {
         class="min-w-[720px]"
       />
 
-      <section class="pxl-card border bg-card">
-        <h2 class="pxl-section-title">
+      <section class=crate::kit::card_class()>
+        <h2 class=crate::kit::card_title_class()>
           {move || t("knowledge.spec-comparison")}
         </h2>
         <p class="px-4 pt-3 text-xs text-muted-foreground">
@@ -758,7 +758,7 @@ pub fn GearPage() -> impl IntoView {
           " "
           <a
             href="/rig-reviews"
-            class="underline underline-offset-2 hover:text-foreground"
+            class="hover:text-foreground"
           >
             {move || t("knowledge.rig-reviews")}
           </a>
@@ -777,7 +777,7 @@ pub fn GearPage() -> impl IntoView {
             href=gear_rx::SOURCE_URL
             target="_blank"
             rel="noopener noreferrer"
-            class="underline underline-offset-2 hover:text-foreground"
+            class="hover:text-foreground"
           >
             {gear_rx::SOURCE_URL}
           </a>

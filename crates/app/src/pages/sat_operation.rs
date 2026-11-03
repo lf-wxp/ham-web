@@ -12,9 +12,9 @@ pub fn SatOperationPage() -> impl IntoView {
   set_title("knowledge.satellite-operating");
   view! {
     <KnowledgePage title=move || t("knowledge.satellite-operating") subtitle=move || t("knowledge.the-complete-qso-procedure")>
-      <section class="pxl-card border bg-card p-4 text-sm text-muted-foreground">
+      <section class=crate::kit::card_class_with("p-4 text-sm text-muted-foreground")>
         <span>{move || t("knowledge.first-go-to")}</span>
-        <a href="/satellites" class="mx-1 text-primary underline underline-offset-2">
+        <a href="/satellites" class="mx-1 text-primary">
           {move || t("knowledge.amateur-satellites")}
         </a>
         <span>{move || t("knowledge.to-look-up-pass")}</span>

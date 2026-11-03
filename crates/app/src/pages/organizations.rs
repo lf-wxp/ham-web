@@ -9,8 +9,6 @@ use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 #[component]
 pub fn OrganizationsPage() -> impl IntoView {
   set_title("shell.organizations-zones");
@@ -24,14 +22,14 @@ pub fn OrganizationsPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.main-organisations")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.main-organisations")}</h2>
           <Table class="min-w-[640px] text-sm">
             <TableHead>
               <TableRow>
-                <TableHeader class=CELL>{move || t("tools.abbreviation")}</TableHeader>
-                <TableHeader class=CELL>{move || t("common.full-name")}</TableHeader>
-                <TableHeader class=CELL>{move || t("knowledge.responsibilities")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.abbreviation")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("common.full-name")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.responsibilities")}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -40,11 +38,11 @@ pub fn OrganizationsPage() -> impl IntoView {
                 .map(|&(abbr, full, role)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-primary")>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono text-primary")>
                         {move || kt_tracked(abbr)}
                       </TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap")>{move || kt_tracked(full)}</TableCell>
-                      <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(role)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>{move || kt_tracked(full)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(role)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -53,8 +51,8 @@ pub fn OrganizationsPage() -> impl IntoView {
           </Table>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.zone-concepts")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.zone-concepts")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {ZONES
               .iter()

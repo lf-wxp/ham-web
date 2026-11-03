@@ -74,7 +74,7 @@ pub fn NotificationsPage() -> impl IntoView {
       />
 
       <PageContainer class="space-y-4">
-        <section class="pxl-card border bg-card">
+        <section class=crate::kit::card_class()>
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class=card_title_class("mr-auto")>{move || t("settings.browser-notification-permission")}</h2>
             <span class="text-xs text-muted-foreground">{perm_label}</span>
@@ -97,7 +97,7 @@ pub fn NotificationsPage() -> impl IntoView {
           </p>
         </section>
 
-        <section class="pxl-card border bg-card">
+        <section class=crate::kit::card_class()>
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class=card_title_class("mr-auto")>{move || t("settings.countdown-reminders")}</h2>
             <span class="text-xs text-muted-foreground">
@@ -106,13 +106,13 @@ pub fn NotificationsPage() -> impl IntoView {
           </div>
           <div class="px-4 py-3 text-xs text-muted-foreground">
             {move || t("settings.add-targets-like-exam")}
-            <a href="/countdown" class="ml-1 text-primary underline underline-offset-4 hover:underline">
+            <a href="/countdown" class="ml-1">
               {move || t("settings.manage-countdowns")}
             </a>
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
+        <section class=crate::kit::card_class()>
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class=card_title_class("mr-auto")>{move || t("tools.dx-spot-alerts")}</h2>
           </div>
@@ -142,14 +142,14 @@ pub fn NotificationsPage() -> impl IntoView {
                 let n = dx.get().calls.len();
                 tp("settings.watched-callsigns", n as u32, &[&n.to_string()])
               }}
-              <a href="/dx-spots" class="ml-1 text-primary underline underline-offset-4 hover:underline">
+              <a href="/dx-spots" class="ml-1">
                 {move || t("settings.configure-on-dx-spots")}
               </a>
             </div>
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
+        <section class=crate::kit::card_class()>
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class=card_title_class("mr-auto")>{move || t("settings.satellite-pass-alerts")}</h2>
           </div>
@@ -176,14 +176,14 @@ pub fn NotificationsPage() -> impl IntoView {
             </div>
             <div class="text-xs text-muted-foreground">
               {move || t("settings.favorite-satellites-and-lead")}
-              <a href="/satellites" class="ml-1 text-primary underline underline-offset-4 hover:underline">
+              <a href="/satellites" class="ml-1">
                 {move || t("settings.configure-on-satellites-page")}
               </a>
             </div>
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
+        <section class=crate::kit::card_class()>
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class=card_title_class("mr-auto")>{move || t("settings.background-push")}</h2>
             <span class="text-xs text-muted-foreground">

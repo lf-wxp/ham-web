@@ -7,7 +7,7 @@ use leptos::prelude::*;
 use super::RESULT;
 use super::waveguide_report::WaveguideReport;
 use crate::i18n::t;
-use crate::ui::{Field, NativeSelect, NumberField, SelectOption};
+use crate::ui::{Field, NumberField, SelectOption, SimpleSelect};
 use crate::util::unique_id;
 
 const CUSTOM: &str = "custom";
@@ -88,7 +88,7 @@ pub(super) fn WaveguideCalculator() -> impl IntoView {
   view! {
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <Field label=Signal::derive(move || t("tools.waveguide-size")) r#for=size_id.clone()>
-        <NativeSelect
+        <SimpleSelect
           id=size_id
           value=Signal::derive(move || size.get())
           on_change=Callback::new(move |v: String| {

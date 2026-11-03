@@ -219,12 +219,12 @@ pub fn ProgressPage() -> impl IntoView {
           <Stat label=Signal::derive(move || t("learning.total-study-min")) value=move || total_minutes />
         </div>
 
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           <h2 class=card_title_class("mb-3")>{move || t("learning.daily-study-check-in")}</h2>
           <StudyHeatmap days=heatmap_days today=local_today() />
         </section>
 
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           <h2 class=card_title_class("mb-2")>{move || t("learning.dxcc-rarity-progress")}</h2>
           <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
             <span>{move || t("learning.worked-incl-auto-detected")}</span>
@@ -237,10 +237,10 @@ pub fn ProgressPage() -> impl IntoView {
             ></div>
           </div>
           <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1">
-            <a href="/most-wanted" class="text-xs text-muted-foreground underline-offset-4 hover:underline">
+            <a href="/most-wanted" class=format!("{} {}", crate::kit::link_class(), "text-xs")>
               {move || t("learning.go-to-dxcc-rarity")}
             </a>
-            <a href="/log#awards" class="text-xs text-muted-foreground underline-offset-4 hover:underline">
+            <a href="/log#awards" class=format!("{} {}", crate::kit::link_class(), "text-xs")>
               {move || t("learning.dxcc-waz-wac-vucc")}
             </a>
           </div>
@@ -248,7 +248,7 @@ pub fn ProgressPage() -> impl IntoView {
 
         <StudyPlanCard editable=true />
 
-        <section class="pxl-card border bg-card">
+        <section class=crate::kit::card_class()>
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class=card_title_class("mr-auto")>{move || t("learning.prep-status")}</h2>
             <ChipGroup
@@ -277,8 +277,8 @@ pub fn ProgressPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("learning.bank-coverage")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("learning.bank-coverage")}</h2>
           <div class="space-y-3 p-4">
             {move || {
               let list = coverage.get();
@@ -321,8 +321,8 @@ pub fn ProgressPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("learning.achievements")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("learning.achievements")}</h2>
           <div class="grid grid-cols-2 gap-2 p-4 sm:grid-cols-4">
             {ACHIEVEMENTS
               .iter()
@@ -344,7 +344,7 @@ pub fn ProgressPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
+        <section class=crate::kit::card_class()>
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class=card_title_class("mr-auto")>{move || t("learning.weak-area-analysis")}</h2>
             <ChipGroup

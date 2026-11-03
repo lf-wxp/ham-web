@@ -21,8 +21,8 @@ pub fn HistoryPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.milestone-timeline")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.milestone-timeline")}</h2>
           <div class="divide-y">
             {HISTORY_TIMELINE
               .iter()

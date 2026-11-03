@@ -56,11 +56,11 @@ pub(super) fn StubMatch() -> impl IntoView {
         aria_label=Signal::derive(move || t("tools.stub-match-kind"))
         class="flex flex-wrap items-end gap-4 pb-2"
       >
-        <label class="flex cursor-pointer items-center gap-2 text-sm">
+        <label class=format!("{} text-sm", crate::kit::check_row_class())>
           <RadioGroupItem value="short" id=short_id />
           {move || t("tools.stub-match-short")}
         </label>
-        <label class="flex cursor-pointer items-center gap-2 text-sm">
+        <label class=format!("{} text-sm", crate::kit::check_row_class())>
           <RadioGroupItem value="open" id=open_id />
           {move || t("tools.stub-match-open")}
         </label>

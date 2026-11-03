@@ -8,6 +8,7 @@ use ham_web_core::nec_designs::{CORRUPT_KEY, DESIGNS_KEY, DesignBook, SaveError,
 use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
+use crate::ui::intl::decimal;
 use crate::ui::{
   Button, Field, Input, Size, Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
   Variant,
@@ -165,7 +166,7 @@ pub(super) fn DesignArchiveSection(
   };
 
   view! {
-    <details class="pxl-card border bg-card">
+    <details class=crate::kit::card_class()>
       <summary class="cursor-pointer px-4 py-3 text-sm">
         {move || t("tools.nec-archive")}
       </summary>
@@ -310,14 +311,14 @@ pub(super) fn DesignArchiveSection(
                   ),
                   (
                     t("tools.nec-compare-gain-label"),
-                    format!("{:.2} dBi", view.a.gain_max_dbi),
-                    format!("{:.2} dBi", view.b.gain_max_dbi),
+                    format!("{} dBi", decimal(view.a.gain_max_dbi, 2)),
+                    format!("{} dBi", decimal(view.b.gain_max_dbi, 2)),
                     format!("{:+.2}", view.b.gain_max_dbi - view.a.gain_max_dbi),
                   ),
                   (
                     t("tools.nec-compare-f2b-label"),
-                    format!("{:.1} dB", view.a.front_to_back_db),
-                    format!("{:.1} dB", view.b.front_to_back_db),
+                    format!("{} dB", decimal(view.a.front_to_back_db, 1)),
+                    format!("{} dB", decimal(view.b.front_to_back_db, 1)),
                     format!("{:+.1}", view.b.front_to_back_db - view.a.front_to_back_db),
                   ),
                   (
@@ -328,8 +329,8 @@ pub(super) fn DesignArchiveSection(
                   ),
                   (
                     t("tools.nec-compare-eff-label"),
-                    format!("{:.1}%", view.a.efficiency * 100.0),
-                    format!("{:.1}%", view.b.efficiency * 100.0),
+                    format!("{}%", decimal(view.a.efficiency * 100.0, 1)),
+                    format!("{}%", decimal(view.b.efficiency * 100.0, 1)),
                     format!("{:+.1}", (view.b.efficiency - view.a.efficiency) * 100.0),
                   ),
                   (
@@ -347,14 +348,14 @@ pub(super) fn DesignArchiveSection(
                   .map(|(label, av, bv, dv)| {
                     view! {
                       <TableRow>
-                        <TableCell class="border px-3 py-2 align-top">{label}</TableCell>
-                        <TableCell class="border px-3 py-2 align-top whitespace-nowrap tabular-nums">
+                        <TableCell class=crate::kit::table_cell_class("align-top")>{label}</TableCell>
+                        <TableCell class=crate::kit::table_cell_class("align-top whitespace-nowrap tabular-nums")>
                           {av}
                         </TableCell>
-                        <TableCell class="border px-3 py-2 align-top whitespace-nowrap tabular-nums">
+                        <TableCell class=crate::kit::table_cell_class("align-top whitespace-nowrap tabular-nums")>
                           {bv}
                         </TableCell>
-                        <TableCell class="border px-3 py-2 align-top whitespace-nowrap tabular-nums text-muted-foreground">
+                        <TableCell class=crate::kit::table_cell_class("align-top whitespace-nowrap tabular-nums text-muted-foreground")>
                           {dv}
                         </TableCell>
                       </TableRow>
@@ -378,12 +379,12 @@ pub(super) fn DesignArchiveSection(
                     <Table class="min-w-[520px] text-sm">
                       <TableHead>
                         <TableRow>
-                          <TableHeader class="border px-3 py-2">
+                          <TableHeader class=crate::kit::table_cell_class("")>
                             {move || t("tools.nec-compare-metric")}
                           </TableHeader>
-                          <TableHeader class="border px-3 py-2">{a_head}</TableHeader>
-                          <TableHeader class="border px-3 py-2">{b_head}</TableHeader>
-                          <TableHeader class="border px-3 py-2">
+                          <TableHeader class=crate::kit::table_cell_class("")>{a_head}</TableHeader>
+                          <TableHeader class=crate::kit::table_cell_class("")>{b_head}</TableHeader>
+                          <TableHeader class=crate::kit::table_cell_class("")>
                             {move || t("tools.nec-compare-delta")}
                           </TableHeader>
                         </TableRow>

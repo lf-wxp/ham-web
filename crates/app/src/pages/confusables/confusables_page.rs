@@ -48,8 +48,8 @@ pub fn ConfusablesPage() -> impl IntoView {
                 .iter()
                 .map(|c| {
                   view! {
-                    <section class="pxl-card border bg-card">
-                      <h2 class="flex flex-wrap items-baseline gap-x-3 gap-y-1 pxl-section-title">
+                    <section class=crate::kit::card_class()>
+                      <h2 class=crate::cn::cn(&["flex flex-wrap items-baseline gap-x-3 gap-y-1", crate::kit::card_title_class()])>
                         {move || crate::data::core_text_tracked(c.title)}
                         <span class="text-xs font-normal normal-case text-muted-foreground">{move || crate::data::core_text_tracked(c.confusion)}</span>
                       </h2>

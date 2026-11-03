@@ -283,7 +283,7 @@ pub fn BrowsePage() -> impl IntoView {
           {(0..6)
             .map(|_| {
               view! {
-                <div class="pxl-card border bg-card p-4">
+                <div class=crate::kit::card_pad_class()>
                   <Skeleton class="h-3 w-20" />
                   <Skeleton class="mt-3 h-4 w-3/4" />
                   <Skeleton class="mt-2.5 h-4 w-1/2" />
@@ -324,6 +324,209 @@ pub fn BrowsePage() -> impl IntoView {
     }
     .into_any()
   };
+
+  // 现代风：分类从「可展开的树」改成两排胶囊（大类 + 选中的大类下的子类），
+  // 窄屏不再需要抽屉；筛选与搜索同一条工具行。
+  let modern_list = move || {
+    if loading.get() {
+      return view! {
+        <div class="flex flex-col gap-3">
+          <span class="sr-only" role="status">{move || t("exam.loading-the-question-bank")}</span>
+          {(0..5)
+            .map(|_| view! { <div class="md-skel" style="height: 108px; border-radius: var(--md-r-lg)"></div> })
+            .collect_view()}
+        </div>
+      }
+        .into_any();
+    }
+    let total = filtered.with(Vec::len);
+    if total == 0 {
+      return view! {
+        <div class="md-panel md-empty">
+          <p class="md-muted">{move || t("exam.no-matching-questions")}</p>
+        </div>
+      }
+      .into_any();
+    }
+    let shown: Vec<usize> = filtered.with(|f| f.iter().copied().take(visible.get()).collect());
+    let shown_len = shown.len();
+    let rows = all.with(|qs| {
+      shown
+        .iter()
+        .map(|&i| view! { <QuestionRow q=qs[i].clone() bookmarks=bookmarks /> })
+        .collect_view()
+    });
+    view! {
+      <div class="flex flex-col gap-3">{rows}</div>
+      {(shown_len < total)
+        .then(|| {
+          view! {
+            <button
+              type="button"
+              class="md-btn md-btn-outline mt-4 w-full"
+              on:click=move |_| visible.update(|v| *v += PAGE)
+            >
+              {move || tf("knowledge.load-more-count", &[&shown_len.to_string(), &total.to_string()])}
+            </button>
+          }
+        })}
+    }
+      .into_any()
+  };
+
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <div class="md-root">
+        <div class="md-page">
+          <crate::kit_modern::ModernPageHead
+            title=Signal::derive(move || t("shell.browse-questions"))
+            subtitle=Signal::derive(move || t("exam.grouped-by-question-type"))
+          />
+
+          <div class="md-glossary-bar">
+            <crate::kit_modern::ModernInput
+              value=kw
+              on_input=Callback::new(move |v: String| {
+                kw.set(v);
+                visible.set(PAGE);
+              })
+              kind="search"
+              placeholder=Signal::derive(move || t("exam.search-question-answer-explanation"))
+              aria_label=Signal::derive(move || t("exam.search-question-answer-explanation"))
+              class="md-glossary-search"
+            />
+            <button
+              type="button"
+              class="md-chip"
+              aria-pressed=move || multi_only.get().to_string()
+              on:click=move |_| multi_only.update(|v| *v = !*v)
+            >
+              {move || t("exam.multiple-only")}
+            </button>
+            <button
+              type="button"
+              class="md-chip"
+              aria-pressed=move || unique_only.get().to_string()
+              on:click=move |_| unique_only.update(|v| *v = !*v)
+            >
+              {move || t("exam.new-in-this-class")}
+            </button>
+          </div>
+
+          <div class="md-chip-row mb-2">
+            {Bank::ALL
+              .into_iter()
+              .map(|b| {
+                view! {
+                  <button
+                    type="button"
+                    class="md-chip"
+                    aria-pressed=move || (bank.get() == b).to_string()
+                    on:click=move |_| {
+                      bank.set(b);
+                      visible.set(PAGE);
+                      select_top(ALL);
+                    }
+                  >
+                    {move || bank_class(b.as_str())}
+                  </button>
+                }
+              })
+              .collect_view()}
+          </div>
+
+          <div class="md-chip-row mb-2">
+            <button
+              type="button"
+              class="md-chip"
+              aria-pressed=move || top.with(|t| t == ALL).to_string()
+              on:click=move |_| select_top(ALL)
+            >
+              {move || t("exam.all-questions")}
+              <span class="md-menu-count">{move || bank_questions.with(Vec::len)}</span>
+            </button>
+            {TOP_CATEGORIES
+              .iter()
+              .map(|c| {
+                let key = c.key;
+                view! {
+                  <button
+                    type="button"
+                    class="md-chip"
+                    aria-pressed=move || top.with(|t| t == key).to_string()
+                    on:click=move |_| select_top(key)
+                  >
+                    {move || crate::data::core_text_tracked(c.name)}
+                    <span class="md-menu-count">
+                      {move || cat_count.with(|m| m.get(key).copied().unwrap_or(0))}
+                    </span>
+                  </button>
+                }
+              })
+              .collect_view()}
+          </div>
+
+          {move || {
+            (top.with(|t| t != ALL))
+              .then(|| {
+                let current_top = top.get();
+                view! {
+                  <div class="md-chip-row mb-4">
+                    {categories::sub_names_of(&current_top)
+                      .into_iter()
+                      .filter(|name| sub_count.with(|m| m.get(name).copied().unwrap_or(0)) > 0)
+                      .map(|name| {
+                        view! {
+                          <button
+                            type="button"
+                            class="md-chip md-chip-sm"
+                            aria-pressed=move || (sub.get() == Some(name)).to_string()
+                            on:click=move |_| {
+                              sub.set(Some(name));
+                              visible.set(PAGE);
+                            }
+                          >
+                            {move || crate::data::kt_tracked(name)}
+                          </button>
+                        }
+                      })
+                      .collect_view()}
+                  </div>
+                }
+              })
+          }}
+
+          <div class="md-strip mb-5">
+            <div class="md-strip-item">
+              <crate::kit_modern::ModernStatValue value=Signal::derive(move || {
+                  Some(bank_questions.with(Vec::len))
+              }) />
+              <span class="md-strip-label">{move || t("exam.total-questions")}</span>
+            </div>
+            <div class="md-strip-item">
+              <crate::kit_modern::ModernStatValue value=Signal::derive(move || {
+                  Some(multi_count.get())
+              }) />
+              <span class="md-strip-label">{move || t("exam.multiple-answer")}</span>
+            </div>
+            <div class="md-strip-item">
+              <crate::kit_modern::ModernStatValue value=Signal::stored(Some(TOP_CATEGORIES.len())) />
+              <span class="md-strip-label">{move || t("exam.question-types")}</span>
+            </div>
+            <div class="md-strip-item">
+              <crate::kit_modern::ModernStatValue value=Signal::derive(move || {
+                  Some(filtered.with(Vec::len))
+              }) />
+              <span class="md-strip-label">{move || t("exam.current-filter")}</span>
+            </div>
+          </div>
+
+          {modern_list}
+        </div>
+      </div>
+    }
+    .into_any();
+  }
 
   view! {
     <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
@@ -383,7 +586,7 @@ pub fn BrowsePage() -> impl IntoView {
 
       <PageContainer class="space-y-0 grid grid-cols-1 gap-5 md:grid-cols-[240px_1fr]">
         <aside class="hidden md:block">
-          <StickyPanel class="max-h-[calc(100svh-var(--sticky-top)-16px)] overflow-y-auto overscroll-contain pxl-card border bg-card p-2">
+          <StickyPanel class=crate::kit::card_class_with("max-h-[calc(100svh-var(--sticky-top)-16px)] overflow-y-auto overscroll-contain p-2")>
             {category_tree()}
           </StickyPanel>
         </aside>
@@ -410,4 +613,5 @@ pub fn BrowsePage() -> impl IntoView {
       </PageContainer>
     </div>
   }
+  .into_any()
 }

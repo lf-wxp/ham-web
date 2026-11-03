@@ -11,8 +11,6 @@ use crate::util::set_title;
 
 use super::component_quiz::ComponentQuiz;
 
-const CELL: &str = "border px-3 py-2 text-left align-top";
-
 #[component]
 pub fn ElectronicsPage() -> impl IntoView {
   set_title("shell.electronics-basics");
@@ -26,14 +24,14 @@ pub fn ElectronicsPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.common-electronic-components")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.common-electronic-components")}</h2>
           <Table class="min-w-[640px] text-sm">
             <TableHead>
               <TableRow>
-                <TableHeader class="border px-3 py-2 align-top">{move || t("knowledge.component")}</TableHeader>
-                <TableHeader class="border px-3 py-2 align-top">{move || t("knowledge.symbol-unit")}</TableHeader>
-                <TableHeader class="border px-3 py-2 align-top">{move || t("knowledge.function")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("knowledge.component")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("knowledge.symbol-unit")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("knowledge.function")}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -42,11 +40,11 @@ pub fn ElectronicsPage() -> impl IntoView {
                 .map(|&(name, unit, desc)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap")>{move || kt_tracked(name)}</TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-xs text-muted-foreground")>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>{move || kt_tracked(name)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono text-xs text-muted-foreground")>
                         {move || kt_tracked(unit)}
                       </TableCell>
-                      <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -57,8 +55,8 @@ pub fn ElectronicsPage() -> impl IntoView {
 
         <ComponentQuiz />
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.basic-circuit-units")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.basic-circuit-units")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {CIRCUITS
               .iter()
@@ -74,8 +72,8 @@ pub fn ElectronicsPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.key-formulas")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.key-formulas")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {FORMULAS
               .iter()

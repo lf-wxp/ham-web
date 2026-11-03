@@ -8,5 +8,3 @@ mod pass_predictor;
 mod satellites_page;
 
 pub use satellites_page::SatellitesPage;
-
-const CELL: &str = "border px-3 py-2 text-left align-top";

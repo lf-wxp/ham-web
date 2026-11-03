@@ -6,7 +6,7 @@ use crate::data;
 #[component]
 pub(super) fn AntennaCard(entry: &'static AntennaType) -> impl IntoView {
   view! {
-    <article class="flex flex-col pxl-card border bg-card p-4">
+    <article class=crate::kit::card_class_with("flex flex-col p-4")>
       <svg
         viewBox="0 0 100 60"
         class="h-16 w-full text-primary"

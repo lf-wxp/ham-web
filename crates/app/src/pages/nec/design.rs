@@ -15,8 +15,6 @@ use crate::util::sleep;
 const NOTE: &str = "text-xs text-muted-foreground";
 const RESULT: &str = "bg-inset px-3 py-2 text-sm text-muted-foreground";
 
-const CELL: &str = "border px-2 py-1 tabular-nums";
-
 /// 可选的单元数。
 const ELEMENT_CHOICES: [usize; 4] = [2, 3, 4, 5];
 
@@ -113,7 +111,7 @@ pub(super) fn DesignSection(
   };
 
   view! {
-    <div class="space-y-3 pxl-card border bg-card p-4">
+    <div class=crate::kit::card_class_with("space-y-3 p-4")>
       <div class="text-sm">{move || t("tools.nec-design-title")}</div>
       <p class=NOTE>{move || t("tools.nec-design-note")}</p>
 
@@ -204,10 +202,10 @@ pub(super) fn DesignSection(
                   .map(|(idx, role, len, gap)| {
                     view! {
                       <tr>
-                        <td class=CELL>{idx}</td>
-                        <td class=CELL>{role}</td>
-                        <td class=CELL>{len}</td>
-                        <td class=CELL>{gap}</td>
+                        <td class=crate::kit::table_cell_class("")>{idx}</td>
+                        <td class=crate::kit::table_cell_class("")>{role}</td>
+                        <td class=crate::kit::table_cell_class("")>{len}</td>
+                        <td class=crate::kit::table_cell_class("")>{gap}</td>
                       </tr>
                     }
                   })

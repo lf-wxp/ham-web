@@ -39,7 +39,7 @@ pub(super) fn SchemeChoice(scheme: &'static Scheme, dark: Signal<bool>) -> impl 
       .collect_view()
   };
   view! {
-    <label for=for_id class="flex cursor-pointer items-center gap-2 text-sm">
+    <label for=for_id class=format!("{} text-sm", crate::kit::check_row_class())>
       <RadioGroupItem value=scheme.id id=id />
       <span aria-hidden="true" class="flex shrink-0 border-2 border-ink">
         {swatch}

@@ -7,7 +7,7 @@ use serde::Deserialize;
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::ui::{
-  Button, ControlSize, Field, Input, NativeSelect, NumberField, SelectOption, Size, Variant,
+  Button, ControlSize, Field, Input, NumberField, SelectOption, SimpleSelect, Size, Variant,
 };
 use crate::util::unique_id;
 
@@ -97,8 +97,8 @@ pub(super) fn VoacapCard() -> impl IntoView {
   };
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("radio.point-to-point-propagation")}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t("radio.point-to-point-propagation")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("tools.enter-both-grids-month")}
       </p>
@@ -154,7 +154,7 @@ pub(super) fn VoacapCard() -> impl IntoView {
             controls=false
           />
         </Field>
-        <NativeSelect
+        <SimpleSelect
           value=Signal::derive(move || hour.get().map_or_else(String::new, |h| h.to_string()))
           on_change=Callback::new(move |v: String| {
             hour.set(if v.is_empty() { None } else { v.parse::<u32>().ok() });

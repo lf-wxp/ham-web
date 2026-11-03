@@ -6,7 +6,7 @@ use leptos::prelude::*;
 use super::{SNIPPET_CONTEXT, SNIPPET_MAX};
 
 /// 搜索结果摘要，高亮命中片段。
-pub(super) fn match_snippet(text: &str, query: &str) -> AnyView {
+pub(crate) fn match_snippet(text: &str, query: &str) -> AnyView {
   let chars: Vec<char> = text.chars().collect();
   let plain = || {
     let head: String = chars.iter().take(SNIPPET_MAX).collect();

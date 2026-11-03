@@ -44,7 +44,7 @@ pub fn MistakeTopicsPage() -> impl IntoView {
         subtitle=move || t("exam.mistake-heatmap-subtitle")
         actions=ViewFn::from(move || {
           view! {
-            <a href="/mistakes" class="text-xs text-primary underline-offset-4 hover:underline">
+            <a href="/mistakes" class=format!("{} {}", crate::kit::link_class(), "text-xs")>
               {move || t("exam.all-mistakes")}
             </a>
           }
@@ -79,7 +79,7 @@ pub fn MistakeTopicsPage() -> impl IntoView {
               let cat_var = cat_tone.map_or("var(--muted-foreground)", crate::tone::var);
               let name = top_category(domain.top).map_or(domain.top, |c| c.name);
               view! {
-                <section class="pxl-card border bg-card">
+                <section class=crate::kit::card_class()>
                   <a
                     href=format!("/practice?topic={}", domain.top)
                     class="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/50"

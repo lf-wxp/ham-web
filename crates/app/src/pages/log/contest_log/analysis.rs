@@ -7,7 +7,7 @@ use leptos::prelude::*;
 use crate::i18n::{localized_name, t, tf, tp};
 use crate::pages::log::LogEntry;
 use crate::ui::{
-  Field, NativeSelect, SelectOption, Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Field, SelectOption, SimpleSelect, Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 };
 use crate::util::unique_id;
 
@@ -61,8 +61,8 @@ pub(super) fn ContestAnalysis(
   });
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("contest.analysis-heading")}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t("contest.analysis-heading")}</h2>
       {move || match analysis.get() {
         None => view! {
           <p class="px-4 py-6 text-sm text-muted-foreground">{move || t("contest.analysis-empty")}</p>
@@ -117,7 +117,7 @@ pub(super) fn ContestAnalysis(
                           <TableCell class="px-2 py-1.5 text-right tabular-nums">{points}</TableCell>
                           <TableCell class="px-2 py-1.5 text-right tabular-nums">{new_mults}</TableCell>
                           <TableCell class="hidden px-3 py-1.5 sm:table-cell" aria_hidden=true>
-                            <div class="h-2 bg-primary/70" style=format!("width:{pct}%")></div>
+                            <div class=crate::kit::mini_bar_class() style=format!("width:{pct}%")></div>
                           </TableCell>
                         </TableRow>
                       }
@@ -131,7 +131,7 @@ pub(super) fn ContestAnalysis(
                 <h3 class="text-sm">{move || t("contest.analysis-idle-heading")}</h3>
                 <p class="text-xs text-muted-foreground">{move || t("contest.analysis-idle-note")}</p>
                 <Field label=Signal::derive(move || t("contest.analysis-idle-min")) r#for=field_id class="max-w-xs">
-                  <NativeSelect
+                  <SimpleSelect
                     id=select_id
                     value=Signal::derive(move || idle_min.get().to_string())
                     on_change=Callback::new(move |v: String| {

@@ -6,8 +6,8 @@ pub(super) fn Stat(
   #[prop(into)] value: Signal<usize>,
 ) -> impl IntoView {
   view! {
-    <div class="pxl-card border bg-card p-3">
-      <div class="pxl-stat">{move || value.get()}</div>
+    <div class=crate::kit::card_class_with("p-3")>
+      <div class=crate::kit::stat_class()>{move || value.get()}</div>
       <div class="text-xs text-muted-foreground">{move || label.get()}</div>
     </div>
   }

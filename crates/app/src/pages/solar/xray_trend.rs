@@ -45,8 +45,8 @@ pub(super) fn XrayTrend(
   let last_y = flux.map(y_of);
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="flex items-center justify-between pxl-section-title">
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::cn::cn(&["flex items-center justify-between", crate::kit::card_title_class()])>
         {t("radio.x-ray-flux-heading")}
         <span class="text-xs font-normal normal-case text-muted-foreground">
           {move || match flux {
@@ -64,7 +64,7 @@ pub(super) fn XrayTrend(
           viewBox=format!("0 0 {W:.0} {H:.0}")
           class="w-full"
           role="img"
-          aria-label=t("radio.x-ray-flux-curve")
+          aria-label=move || t("radio.x-ray-flux-curve")
         >
           {LEVELS
             .iter()

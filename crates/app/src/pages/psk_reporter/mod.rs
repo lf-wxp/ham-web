@@ -146,8 +146,8 @@ pub fn PskReporterPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.look-up-reception-reports")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.look-up-reception-reports")}</h2>
           <div class="flex flex-wrap gap-3 p-4">
             <Input
               value=callsign
@@ -190,19 +190,19 @@ pub fn PskReporterPage() -> impl IntoView {
           view! {
             <SpotCoverage home=home_grid spots=spot_list />
             <CoverageMap points=map_points />
-            <section class="pxl-card border bg-card">
-              <h2 class="pxl-section-title">
+            <section class=crate::kit::card_class()>
+              <h2 class=crate::kit::card_title_class()>
                 {t("radio.reception-reports")} {list.len()} {t("radio.entry")}
               </h2>
-              <Table class="min-w-[640px] text-sm">
+              <Table class="min-w-[640px]" density=crate::ui::TableDensity::Compact>
                 <TableHead>
                   <TableRow>
-                    <TableHeader class="border px-3 py-2">{move || t("log.time")}</TableHeader>
-                    <TableHeader class="border px-3 py-2">{move || t("radio.receivers")}</TableHeader>
-                    <TableHeader class="border px-3 py-2">{move || t("contest.freq")}</TableHeader>
-                    <TableHeader class="border px-3 py-2">{move || t("radio.band")}</TableHeader>
-                    <TableHeader class="border px-3 py-2">{move || t("log.mode")}</TableHeader>
-                    <TableHeader class="border px-3 py-2 text-right">{move || t("radio.snr")}</TableHeader>
+                    <TableHeader class=crate::kit::table_cell_class("")>{move || t("log.time")}</TableHeader>
+                    <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.receivers")}</TableHeader>
+                    <TableHeader class=crate::kit::table_cell_class("")>{move || t("contest.freq")}</TableHeader>
+                    <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.band")}</TableHeader>
+                    <TableHeader class=crate::kit::table_cell_class("")>{move || t("log.mode")}</TableHeader>
+                    <TableHeader class=crate::kit::table_cell_class("text-right")>{move || t("radio.snr")}</TableHeader>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -212,16 +212,16 @@ pub fn PskReporterPage() -> impl IntoView {
                       let r = r.clone();
                       view! {
                         <TableRow>
-                          <TableCell class="border px-3 py-2 tabular-nums text-muted-foreground">{format_utc(r.flow_start_seconds)}</TableCell>
-                          <TableCell class="border px-3 py-2">
+                          <TableCell class=crate::kit::table_cell_class("tabular-nums text-muted-foreground")>{format_utc(r.flow_start_seconds)}</TableCell>
+                          <TableCell class=crate::kit::table_cell_class("")>
                             {r.receiver.clone()}
                             {(!r.receiver_locator.is_empty()).then(|| view! {
                               <span class="ml-1.5 font-mono text-xs text-muted-foreground">{r.receiver_locator.clone()}</span>
                             })}
                           </TableCell>
-                          <TableCell class="border px-3 py-2 tabular-nums text-muted-foreground">{format!("{:.1} kHz", r.freq_khz)}</TableCell>
-                          <TableCell class="border px-3 py-2">{r.band.clone()}</TableCell>
-                          <TableCell class="border px-3 py-2">{r.mode.clone()}</TableCell>
+                          <TableCell class=crate::kit::table_cell_class("tabular-nums text-muted-foreground")>{format!("{:.1} kHz", r.freq_khz)}</TableCell>
+                          <TableCell class=crate::kit::table_cell_class("")>{r.band.clone()}</TableCell>
+                          <TableCell class=crate::kit::table_cell_class("")>{r.mode.clone()}</TableCell>
                           <TableCell class=format!("border px-3 py-2 text-right tabular-nums {}", if r.snr >= 0 { "text-win-text" } else { "text-muted-foreground" })>
                             {format!("{} dB", r.snr)}
                           </TableCell>

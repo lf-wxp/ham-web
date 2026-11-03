@@ -6,7 +6,7 @@ use leptos_router::hooks::use_query_map;
 use crate::cn::cn;
 use crate::components::common::{Loading, PAGE_HEADER_BAR};
 use crate::ui::{
-  Button, Checkbox, Chip, ChipGroup, ControlSize, NativeSelect, SelectOption, Size, Variant,
+  Button, Checkbox, Chip, ChipGroup, ControlSize, SelectOption, SimpleSelect, Size, Variant,
   card_title_class,
 };
 use crate::util::{local_today, set_title_with_args};
@@ -87,7 +87,7 @@ pub fn PrintPage() -> impl IntoView {
           </ChipGroup>
           <label class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
             {move || t("radio.answer")}
-            <NativeSelect
+            <SimpleSelect
               value=Signal::derive(move || {
                 match answers.get() {
                   AnswerMode::Hidden => "hidden",

@@ -20,6 +20,20 @@ pub(super) fn ExamHeader(
   remaining: RwSignal<i64>,
   on_open_settings: Callback<()>,
 ) -> impl IntoView {
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <crate::kit_modern::ModernExamHead
+        percent=percent
+        weak=weak
+        version=version
+        bank=bank
+        rule=rule
+        remaining=remaining
+        on_open_settings=on_open_settings
+      />
+    }
+    .into_any();
+  }
   view! {
     <QuestionProgressHeader
       percent=percent
@@ -80,4 +94,5 @@ pub(super) fn ExamHeader(
       }}
     </div>
   }
+  .into_any()
 }

@@ -34,11 +34,11 @@ pub(super) fn CwBandwidth() -> impl IntoView {
         on_change=Callback::new(move |v: String| fading.set(v == "fading"))
         class="flex flex-wrap items-end gap-4 pb-2"
       >
-        <label class="flex cursor-pointer items-center gap-2 text-sm">
+        <label class=format!("{} text-sm", crate::kit::check_row_class())>
           <RadioGroupItem value="fading" id=fading_id />
           {move || t("tools.fading-k-5")}
         </label>
-        <label class="flex cursor-pointer items-center gap-2 text-sm">
+        <label class=format!("{} text-sm", crate::kit::check_row_class())>
           <RadioGroupItem value="non-fading" id=non_fading_id />
           {move || t("tools.non-fading-k-3")}
         </label>

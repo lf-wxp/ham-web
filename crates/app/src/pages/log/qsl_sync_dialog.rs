@@ -211,7 +211,7 @@ pub fn QslSyncDialog(open: RwSignal<bool>) -> impl IntoView {
               .into_iter()
               .map(|s| {
                 view! {
-                  <label class="flex cursor-pointer items-center gap-2 text-sm">
+                  <label class=format!("{} text-sm", crate::kit::check_row_class())>
                     <RadioGroupItem value=s.id().to_owned() />
                     {move || source_label(s)}
                   </label>
@@ -282,7 +282,7 @@ pub fn QslSyncDialog(open: RwSignal<bool>) -> impl IntoView {
         <p class=HINT>
           {move || t("log.no-report-yet-sign")}
           " "
-          <a href="/eqsl" class="underline underline-offset-2 hover:text-foreground">
+          <a href="/eqsl" class="hover:text-foreground">
             {move || t("log.lotw-upload-guide")}
           </a>
         </p>
@@ -323,7 +323,7 @@ pub fn QslSyncDialog(open: RwSignal<bool>) -> impl IntoView {
                 {(!d.records.is_empty())
                   .then(|| {
                     view! {
-                      <Table class="text-xs" wrapper_class="max-h-80 border">
+                      <Table wrapper_class="max-h-80 border" density=crate::ui::TableDensity::Compact>
                         <TableHead>
                           <TableRow>
                             <TableHeader class=TH>{move || t("log.callsign")}</TableHeader>

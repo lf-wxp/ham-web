@@ -6,7 +6,7 @@ mod bullet_section;
 mod concepts_section;
 mod decode_elapsed;
 mod empty_state;
-mod explanation_card;
+pub(crate) mod explanation_card;
 mod key_hints;
 mod knowledge_page;
 mod legend;

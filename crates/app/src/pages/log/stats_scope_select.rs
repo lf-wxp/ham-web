@@ -10,7 +10,7 @@ use super::LogEntry;
 use super::log_helpers::station_title;
 use super::use_log_store;
 use crate::i18n::{t, tp};
-use crate::ui::{NativeSelect, SelectOption};
+use crate::ui::{SelectOption, SimpleSelect};
 
 /// 统计口径的持久化 key（视图偏好，不进备份正文）。
 const SCOPE_KEY: &str = "log-stats-scope";
@@ -81,7 +81,7 @@ pub fn StatsScopeSelect(
       view! {
         <div class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>{move || t("log.stats-scope")}</span>
-          <NativeSelect
+          <SimpleSelect
             value=Signal::derive(move || scope.get())
             on_change=set_scope
             options=options

@@ -8,14 +8,16 @@
 //! - 点阵字体在长篇题面与解析里读起来累，切回抗锯齿字体是最直接的可用性兜底。
 
 use ham_web_core::color_scheme::SCHEMES;
+use ham_web_core::ui_style::UiStyle;
 use leptos::prelude::*;
 
 use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
-use crate::theme::{Theme, use_display_prefs, use_theme};
+use crate::theme::{Theme, style_defaults_theme, use_display_prefs, use_theme};
 use crate::ui::{ButtonLink, Dialog, DialogHeader, DialogTitle, RadioGroup, Switch, Variant};
 
 use super::scheme_choice::SchemeChoice;
+use super::style_choice::StyleChoice;
 use super::theme_choice::ThemeChoice;
 
 /// 设置对话框。`open` 由顶栏的设置按钮控制。
@@ -26,6 +28,7 @@ pub fn SettingsDialog(open: RwSignal<bool>) -> impl IntoView {
 
   let theme_value = Signal::derive(move || theme.mode().as_str().to_owned());
   let scheme_value = Signal::derive(move || prefs.scheme().to_owned());
+  let style_value = Signal::derive(move || prefs.ui_style().as_str().to_owned());
   let dark = Signal::derive(move || theme.is_dark());
 
   view! {
@@ -35,6 +38,28 @@ pub fn SettingsDialog(open: RwSignal<bool>) -> impl IntoView {
       </DialogHeader>
 
       <div class="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain">
+        // 界面风格：两套独立设计系统（像素 / 现代）。切换会重建外壳与页面，故放在最上面。
+        <p class="pxl-label text-xs text-muted-foreground">{move || t("shell.settings-style")}</p>
+        <div class="space-y-2">
+          <RadioGroup
+            value=style_value
+            on_change=Callback::new(move |v: String| {
+              let style = UiStyle::parse(&v);
+              prefs.set_ui_style(style);
+              // 切到现代风且从未选过明暗时，代选「深色电波」（见 `style_defaults_theme`）。
+              if let Some(mode) = style_defaults_theme(style) {
+                theme.set(mode);
+              }
+            })
+            aria_label=Signal::derive(move || t("shell.settings-style"))
+            class="grid-cols-2"
+          >
+            <StyleChoice value="pixel" label=Signal::derive(move || t("shell.style-pixel")) />
+            <StyleChoice value="modern" label=Signal::derive(move || t("shell.style-modern")) />
+          </RadioGroup>
+          <p class="text-xs text-muted-foreground">{move || t("shell.settings-style-hint")}</p>
+        </div>
+
         // 单选组没有单个控件可以挂 `for`：整组靠 `aria_label` 命名，标签文字只是可见的小标题。
         <p class="pxl-label text-xs text-muted-foreground">{move || t("shell.settings-theme")}</p>
         <div>

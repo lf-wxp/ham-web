@@ -55,8 +55,8 @@ pub(super) fn PhoneticListen() -> impl IntoView {
   };
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>
         {move || t("morse.listen-to-the-spelling")}
         <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.play-the-word-and")}</span>
       </h2>

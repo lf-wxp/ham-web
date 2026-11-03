@@ -40,6 +40,28 @@ pub(super) fn ExamBottomBar(
   };
   let prev_disabled = Signal::derive(move || at_start.get() || strict.get());
 
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <crate::kit_modern::ModernExamBar
+        answered=answered
+        total=total
+        flagged=flagged
+        is_flagged=is_flagged
+        finished=finished
+        at_start=at_start
+        at_end=at_end
+        strict=strict
+        remaining=remaining
+        rule=rule
+        on_prev=on_prev
+        on_next=on_next
+        on_toggle_flag=on_toggle_flag
+        on_open_card=on_open_card
+        on_submit=on_submit
+      />
+    }
+    .into_any();
+  }
   view! {
     <BottomBar
       stats=move || view! {
@@ -157,4 +179,5 @@ pub(super) fn ExamBottomBar(
       })
     />
   }
+  .into_any()
 }

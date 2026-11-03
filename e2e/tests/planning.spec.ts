@@ -20,6 +20,20 @@ test("倒计时：添加、持久化与删除", async ({ page }) => {
   await expect(page.getByText("暂无倒计时，添加一个目标时间吧。")).toBeVisible();
 });
 
+test("日期选择器：今天是 31 日时翻到 30 天的月份，标题与单元格不错位", async ({ page }) => {
+  // 回归：`date_of` 曾从「今天」出发分步 set_month / set_date，31 日会先溢出到下个月再覆盖。
+  await page.clock.setFixedTime(new Date("2026-10-31T12:00:00"));
+  await page.goto("/countdown");
+  await page.getByRole("combobox", { name: "目标日期" }).click();
+  const panel = page.locator('[data-slot="date-picker"]');
+  const title = panel.locator('[data-slot="date-picker-title"]');
+  await expect(title).toHaveText("2026年10月");
+  await panel.getByRole("button", { name: "下个月" }).click();
+  await expect(title).toHaveText("2026年11月");
+  await expect(panel.getByRole("button", { name: "2026年11月30日" })).toBeVisible();
+  await expect(panel.getByRole("button", { name: "2026年11月1日" })).toBeVisible();
+});
+
 test("倒计时：标题为空时静默失败，不产生条目", async ({ page }) => {
   await page.goto("/countdown");
   await expect(page.getByRole("heading", { level: 1, name: "倒计时与提醒" })).toBeVisible();

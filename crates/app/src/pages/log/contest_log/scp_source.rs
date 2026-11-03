@@ -114,7 +114,7 @@ pub(super) fn ScpSource(
             href=OFFICIAL_SITE
             target="_blank"
             rel="noopener noreferrer"
-            class="text-xs underline underline-offset-4"
+            class="text-xs"
           >
             {move || t("contest.scp-official-site")}
           </a>

@@ -68,7 +68,21 @@ pub fn BossVerdict(
           </span>
         </div>
       </div>
-      <PixelSprite name=sprite scale=4 class="pxl-bob" />
+      {move || {
+        if crate::kit::is_modern() {
+          view! {
+            <crate::kit_modern::ModernEmblem
+              icon=crate::kit_modern::emblem_icon(sprite.get_untracked())
+              tone=crate::kit_modern::emblem_tone(sprite.get_untracked())
+              size=72
+              locked=Signal::derive(|| false)
+            />
+          }
+            .into_any()
+        } else {
+          view! { <PixelSprite name=sprite scale=4 class="pxl-bob" /> }.into_any()
+        }
+      }}
     </section>
   }
 }

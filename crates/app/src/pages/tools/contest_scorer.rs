@@ -2,7 +2,7 @@ use ham_web_core::contest_score::{arrl_dx_score, cqww_score, wpx_score};
 use leptos::prelude::*;
 
 use crate::i18n::{t, tp};
-use crate::ui::{Field, NativeSelect, NumberField, SelectOption};
+use crate::ui::{Field, NumberField, SelectOption, SimpleSelect};
 use crate::util::unique_id;
 
 /// 竞赛记分器：CQ WPX / CQ WW / ARRL DX 分数计算。
@@ -30,7 +30,7 @@ pub(super) fn ContestScorer() -> impl IntoView {
     <div class="space-y-3">
       <div class="grid gap-3 sm:grid-cols-4">
         <Field label=Signal::derive(move || t("contest.contest")) r#for=kind_id.clone()>
-          <NativeSelect
+          <SimpleSelect
             id=kind_id
             value=kind
             on_change=Callback::new(move |v: String| kind.set(v))

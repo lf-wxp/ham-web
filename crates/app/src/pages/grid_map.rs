@@ -95,7 +95,7 @@ pub fn GridMapPage() -> impl IntoView {
         })
       />
       <PageContainer>
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           <h2 class=card_title_class("mb-3")>{move || t("radio.grid-lookup")}</h2>
           <div class="grid gap-3 sm:grid-cols-2">
             <Field
@@ -149,7 +149,7 @@ pub fn GridMapPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           <div class="mb-3">
             <StatsScopeSelect scope=scope count=Signal::derive(move || scoped.with(Vec::len)) />
           </div>

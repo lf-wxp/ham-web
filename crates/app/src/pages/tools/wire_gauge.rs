@@ -76,13 +76,13 @@ pub(super) fn WireGauge() -> impl IntoView {
 
       <div>
         <div class="mb-1.5 text-xs text-muted-foreground">{move || t("tools.common-awg-wire-gauges")}</div>
-        <Table class="text-sm">
+        <Table density=crate::ui::TableDensity::Compact>
           <TableHead>
             <TableRow>
-              <TableHeader class="border px-3 py-2">{move || t("common.awg")}</TableHeader>
-              <TableHeader class="border px-3 py-2">{move || t("tools.diameter-mm")}</TableHeader>
-              <TableHeader class="border px-3 py-2">{move || t("tools.cross-section-mm")}</TableHeader>
-              <TableHeader class="border px-3 py-2">{move || t("common.ohm-per-100m")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("common.awg")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.diameter-mm")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.cross-section-mm")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("common.ohm-per-100m")}</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -91,10 +91,10 @@ pub(super) fn WireGauge() -> impl IntoView {
               .map(|(awg, dia, area, ohm)| {
                 view! {
                   <TableRow>
-                    <TableCell class="border px-3 py-2 tabular-nums">{*awg}</TableCell>
-                    <TableCell class="border px-3 py-2 tabular-nums">{format!("{dia:.3}")}</TableCell>
-                    <TableCell class="border px-3 py-2 tabular-nums">{format!("{area:.2}")}</TableCell>
-                    <TableCell class="border px-3 py-2 tabular-nums">{format!("{ohm:.2}")}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("tabular-nums")>{*awg}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("tabular-nums")>{format!("{dia:.3}")}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("tabular-nums")>{format!("{area:.2}")}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("tabular-nums")>{format!("{ohm:.2}")}</TableCell>
                   </TableRow>
                 }
               })

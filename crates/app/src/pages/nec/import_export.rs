@@ -15,7 +15,7 @@ pub(super) fn ImportExportSection(
   on_export: Callback<(), ()>,
 ) -> impl IntoView {
   view! {
-    <details class="pxl-card border bg-card">
+    <details class=crate::kit::card_class()>
       <summary class="cursor-pointer px-4 py-3 text-sm">
         {move || t("tools.nec-import-export")}
       </summary>

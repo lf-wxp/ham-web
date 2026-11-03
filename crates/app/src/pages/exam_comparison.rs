@@ -29,8 +29,8 @@ pub fn ExamComparisonPage() -> impl IntoView {
           .iter()
           .map(|s| {
             view! {
-              <section class="pxl-card border bg-card">
-                <h2 class="flex flex-wrap items-baseline gap-2 pxl-section-title">
+              <section class=crate::kit::card_class()>
+                <h2 class=crate::cn::cn(&["flex flex-wrap items-baseline gap-2", crate::kit::card_title_class()])>
                   {move || data::kt_tracked(s.country)}
                   <span class="text-xs font-normal normal-case text-muted-foreground">
                     {move || data::kt_tracked(s.title)}
@@ -39,13 +39,13 @@ pub fn ExamComparisonPage() -> impl IntoView {
                 <Table class="min-w-[560px] text-sm">
                   <TableHead>
                     <TableRow>
-                      <TableHeader class="border px-3 py-2 align-top">
+                      <TableHeader class=crate::kit::table_cell_class("align-top")>
                         {move || t("knowledge.exam-level")}
                       </TableHeader>
-                      <TableHeader class="border px-3 py-2 align-top">
+                      <TableHeader class=crate::kit::table_cell_class("align-top")>
                         {move || t("knowledge.exam-privileges")}
                       </TableHeader>
-                      <TableHeader class="border px-3 py-2 align-top">
+                      <TableHeader class=crate::kit::table_cell_class("align-top")>
                         {move || t("knowledge.exam-format")}
                       </TableHeader>
                     </TableRow>
@@ -56,13 +56,13 @@ pub fn ExamComparisonPage() -> impl IntoView {
                       .map(|l| {
                         view! {
                           <TableRow>
-                            <TableCell class="border px-3 py-2 align-top">
+                            <TableCell class=crate::kit::table_cell_class("align-top")>
                               {move || data::kt_tracked(l.name)}
                             </TableCell>
-                            <TableCell class="border px-3 py-2 align-top text-muted-foreground">
+                            <TableCell class=crate::kit::table_cell_class("align-top text-muted-foreground")>
                               {move || data::kt_tracked(l.privileges)}
                             </TableCell>
-                            <TableCell class="border px-3 py-2 align-top text-muted-foreground">
+                            <TableCell class=crate::kit::table_cell_class("align-top text-muted-foreground")>
                               {move || data::kt_tracked(l.exam)}
                             </TableCell>
                           </TableRow>
@@ -77,7 +77,7 @@ pub fn ExamComparisonPage() -> impl IntoView {
                     href=s.source.1
                     target="_blank"
                     rel="noreferrer"
-                    class="text-primary underline-offset-2 hover:underline"
+                    class=crate::kit::link_class()
                   >
                     {move || data::kt_tracked(s.source.0)}
                   </a>

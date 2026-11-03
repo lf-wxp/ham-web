@@ -19,10 +19,23 @@ pub fn KnowledgePage(
   children: Children,
 ) -> impl IntoView {
   data::use_knowledge_i18n();
+  if crate::kit::is_modern_at_mount() {
+    // 现代风：没有吸顶页头与卡片流，换成「文章页」——大标题 + 副标题 + 细线分隔的内容区。
+    return view! {
+      <div class="md-root">
+        <div class="md-page md-article-page">
+          <crate::kit_modern::ModernPageHead title=title subtitle=subtitle />
+          <div class="md-article">{children()}</div>
+        </div>
+      </div>
+    }
+    .into_any();
+  }
   view! {
     <div>
       <PageHeader title=title subtitle=subtitle />
       <PageContainer reveal=true>{children()}</PageContainer>
     </div>
   }
+  .into_any()
 }

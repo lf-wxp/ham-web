@@ -294,6 +294,18 @@
   animation: pop-in var(--motion-normal) steps(3, end) both;
 }
 
+/* `pop-in` 的反向：位移 + 显隐，同样没有缩放。 */
+@keyframes pop-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+}
+
 /* ---------- 出现式反馈：Toast / 通知（成就解锁、版本更新等） ----------
    与居中弹窗的「向上跳出」区分：Toast 是「临时插话」，从右缘滑入、退场沿原路滑出。
    `data-leaving` 由组件在移除前置真，让退场动画播完再卸载（见 achievements.rs）。 */
@@ -324,7 +336,7 @@
 }
 
 .motion-toast[data-leaving="true"] {
-  animation: toast-out var(--motion-fast) steps(3, end) both;
+  animation: toast-out var(--motion-normal) steps(3, end) both;
 }
 
 /* ---------- 微交互：勾选标记「啪」一下出现（Checkbox / Radio） ---------- */
@@ -352,6 +364,15 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes fade-out-only {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 
@@ -458,9 +479,11 @@
   animation: pop-in var(--motion-normal) steps(3, end) both;
 }
 
+/* 退场必须是**动画**而不是过渡：同一次样式变更里入场动画被移除，Chrome 不会从动画的当前值起一个
+   过渡，`transition: opacity` 因此从来没播过 —— 面板在关闭后第一帧就是透明的（逐帧实测）。
+   时长取 `--motion-normal`，与 Rust 侧的卸载延迟（`presence::exit_ms`）读同一个 token。 */
 .pxl-enter[data-state="closed"] {
-  opacity: 0;
-  transition: opacity var(--motion-instant) steps(2, end);
+  animation: pop-out var(--motion-normal) steps(3, end) both;
 }
 
 .pxl-enter-fade[data-state="open"] {
@@ -468,8 +491,7 @@
 }
 
 .pxl-enter-fade[data-state="closed"] {
-  opacity: 0;
-  transition: opacity var(--motion-instant) steps(2, end);
+  animation: fade-out-only var(--motion-normal) steps(3, end) both;
 }
 
 /* ---------- 入场动效的缓动统一成逐帧 ----------

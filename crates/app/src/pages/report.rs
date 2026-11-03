@@ -73,8 +73,8 @@ pub fn ReportPage() -> impl IntoView {
 
   let stat = |label: &'static str, value: String| {
     view! {
-      <div class="pxl-card border bg-card p-4 text-center">
-        <div class="pxl-stat">{value}</div>
+      <div class=crate::kit::card_class_with("p-4 text-center")>
+        <div class=crate::kit::stat_class()>{value}</div>
         <div class="mt-0.5 text-xs text-muted-foreground">{move || t(label)}</div>
       </div>
     }
@@ -102,7 +102,7 @@ pub fn ReportPage() -> impl IntoView {
           {move || stat("log.dxcc-entities", report.get().dxcc_count.to_string())}
         </div>
 
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           <Button
             variant=Variant::Default
             size=Size::Default

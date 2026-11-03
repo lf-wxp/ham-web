@@ -21,8 +21,10 @@ async function importAdif(page: Page, buffer: Buffer, name = "health.adi") {
 }
 
 /** 体检面板。 */
+// `last()`：`#route-content` 里还有一层风格重建用的 `<section data-style-root>`，
+// 它也包含「日志体检」这几个字，不收紧会连带命中日志表格里的频率单元格。
 function panel(page: Page) {
-  return page.locator("section", { hasText: "日志体检" });
+  return page.locator("section", { hasText: "日志体检" }).last();
 }
 
 test("日志体检：频率越界与缺网格各报一条", async ({ page }) => {

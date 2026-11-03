@@ -23,8 +23,9 @@ use crate::components::rotor_control::Aim;
 use crate::data::kt_tracked;
 use crate::i18n::{t, tf};
 use crate::sat_alert;
+use crate::ui::intl::decimal;
 use crate::ui::{
-  Button, Field, NativeSelect, NumberField, RadioGroup, RadioGroupItem, SelectOption, Size, Variant,
+  Button, Field, NumberField, RadioGroup, RadioGroupItem, SelectOption, SimpleSelect, Size, Variant,
 };
 use crate::util::unique_id;
 
@@ -78,7 +79,7 @@ fn fmt_countdown(secs: i64) -> String {
 
 /// MHz，保留到 1 Hz（6 位小数）。
 fn fmt_mhz(hz: f64) -> String {
-  format!("{:.6}", hz / 1e6)
+  decimal(hz / 1e6, 6)
 }
 
 /// 带符号的整数 Hz，如 `+10222`。
@@ -259,15 +260,15 @@ pub(super) fn DopplerTracker(
     .collect();
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("radio.doppler-title")}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t("radio.doppler-title")}</h2>
       <div class="space-y-4 p-4">
         <p class="text-xs text-muted-foreground">{move || t("radio.doppler-description")}</p>
 
         // `[&>*]:min-w-0`：网格子项默认 `min-width:auto`，长文案会把整列撑宽，手机宽度下整页横向滚动。
         <div class="grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
           <Field label=Signal::derive(move || t("radio.satellite")) r#for=preset_id.clone()>
-            <NativeSelect
+            <SimpleSelect
               id=preset_id
               value=preset_key
               on_change=Callback::new(move |v: String| {
@@ -339,11 +340,11 @@ pub(super) fn DopplerTracker(
           aria_label=Signal::derive(move || t("radio.doppler-mode"))
           class="flex flex-wrap gap-4"
         >
-          <label class="flex cursor-pointer items-center gap-2 text-sm">
+          <label class=format!("{} text-sm", crate::kit::check_row_class())>
             <RadioGroupItem value="fixed" />
             {move || t("radio.doppler-mode-fixed")}
           </label>
-          <label class="flex cursor-pointer items-center gap-2 text-sm">
+          <label class=format!("{} text-sm", crate::kit::check_row_class())>
             <RadioGroupItem value="linear" />
             {move || t("radio.doppler-mode-linear")}
           </label>
@@ -373,7 +374,10 @@ pub(super) fn DopplerTracker(
           <span class="text-xs text-muted-foreground">
             {move || {
               let w = sat_alert::load();
-              tf("radio.doppler-position", &[&format!("{:.2}", w.lat), &format!("{:.2}", w.lon)])
+              tf(
+                "radio.doppler-position",
+                &[&decimal(w.lat, 2), &decimal(w.lon, 2)],
+              )
             }}
           </span>
         </div>
@@ -404,7 +408,7 @@ pub(super) fn DopplerTracker(
                 &pass.name,
                 &sat_alert::local_hm(pass.aos),
                 &sat_alert::local_hm(pass.los),
-                &format!("{:.0}", pass.max_elev),
+                &decimal(pass.max_elev, 0),
               ],
             );
             let (aos, los) = (pass.aos, pass.los);
@@ -449,10 +453,10 @@ pub(super) fn DopplerTracker(
                           {tf(
                             "radio.doppler-look",
                             &[
-                              &format!("{:.0}", o.az),
-                              &format!("{:.1}", o.el),
-                              &format!("{:.0}", o.range_km),
-                              &format!("{:.3}", o.range_rate_km_s),
+                              &decimal(o.az, 0),
+                              &decimal(o.el, 1),
+                              &decimal(o.range_km, 0),
+                              &decimal(o.range_rate_km_s, 3),
                             ],
                           )}
                         </div>

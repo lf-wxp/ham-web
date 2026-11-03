@@ -15,9 +15,30 @@ pub fn BulletSection(
   items: &'static [&'static str],
   #[prop(optional)] ui: bool,
 ) -> impl IntoView {
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <section class="md-panel">
+        <h2 class="md-panel-title">{move || t(&title)}</h2>
+        <ul class="md-bullets">
+          {items
+            .iter()
+            .map(|note| {
+              view! {
+                <li>
+                  <span class="md-bullet-dot" aria-hidden="true"></span>
+                  <span>{move || translate(note, ui)}</span>
+                </li>
+              }
+            })
+            .collect_view()}
+        </ul>
+      </section>
+    }
+    .into_any();
+  }
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t(&title)}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t(&title)}</h2>
       <ul class="space-y-2 p-4">
         {items
           .iter()
@@ -33,6 +54,7 @@ pub fn BulletSection(
       </ul>
     </section>
   }
+  .into_any()
 }
 
 /// 按文案来源选词典：`ui` 为真走界面词典，否则走知识库词典。

@@ -9,8 +9,6 @@ use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 #[component]
 pub fn AnalogModesPage() -> impl IntoView {
   set_title("shell.analog-modes");
@@ -24,15 +22,15 @@ pub fn AnalogModesPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <Table class="min-w-[720px] text-sm" wrapper_class="pxl-card border bg-card">
+        <Table class="min-w-[720px] text-sm" wrapper_class=crate::kit::card_class()>
           <TableHead>
             <TableRow>
-              <TableHeader class=CELL>{move || t("log.mode")}</TableHeader>
-              <TableHeader class=CELL>{move || t("knowledge.emission-type")}</TableHeader>
-              <TableHeader class=CELL>{move || t("tools.bandwidth")}</TableHeader>
-              <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
-              <TableHeader class=CELL>{move || t("knowledge.features")}</TableHeader>
-              <TableHeader class=CELL>{move || t("knowledge.typical-use")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("log.mode")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.emission-type")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.bandwidth")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.notes")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.features")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.typical-use")}</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -41,15 +39,15 @@ pub fn AnalogModesPage() -> impl IntoView {
               .map(|m| {
                 view! {
                   <TableRow>
-                    <TableCell class=format!("{CELL} whitespace-nowrap")>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>
                       <div>{move || kt_tracked(m.name)}</div>
                       <div class="font-mono text-xs text-muted-foreground">{move || kt_tracked(m.abbr)}</div>
                     </TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-muted-foreground")>{move || kt_tracked(m.emission)}</TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(m.bandwidth)}</TableCell>
-                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(m.desc)}</TableCell>
-                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(m.pros)}</TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(m.usage)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono text-muted-foreground")>{move || kt_tracked(m.emission)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(m.bandwidth)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(m.desc)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(m.pros)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap text-muted-foreground")>{move || kt_tracked(m.usage)}</TableCell>
                   </TableRow>
                 }
               })
@@ -57,8 +55,8 @@ pub fn AnalogModesPage() -> impl IntoView {
           </TableBody>
         </Table>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.usb-lsb-sideband-conventions")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.usb-lsb-sideband-conventions")}</h2>
           <ul class="space-y-2 p-4">
             {SIDEBAND_RULES
               .iter()
@@ -74,8 +72,8 @@ pub fn AnalogModesPage() -> impl IntoView {
           </ul>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.analogue-vs-digital")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.analogue-vs-digital")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {ANALOG_VS_DIGITAL
               .iter()

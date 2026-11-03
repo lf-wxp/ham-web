@@ -21,16 +21,95 @@ fn cell_class(count: u32, max: u32) -> &'static str {
   }
 }
 
-/// UTC 时段 × 波段的通联密度热力图。
-#[component]
-pub(super) fn Heatmap(rows: Vec<(String, [u32; 24])>) -> impl IntoView {
-  let max = rows
+/// 现代风色阶：0 = 空格，1–5 由浅到深（CSS 里按 `data-level` 取色）。
+pub(super) fn heat_level(count: u32, max: u32) -> u8 {
+  if count == 0 {
+    return 0;
+  }
+  let ratio = f64::from(count) / f64::from(max.max(1));
+  if ratio >= 0.8 {
+    5
+  } else if ratio >= 0.6 {
+    4
+  } else if ratio >= 0.4 {
+    3
+  } else if ratio >= 0.2 {
+    2
+  } else {
+    1
+  }
+}
+
+/// 全表最大值，至少 1：色阶按它归一（两个 `cell_class` / `heat_level` 都要除以它）。
+fn max_cell(rows: &[(String, [u32; 24])]) -> u32 {
+  rows
     .iter()
     .flat_map(|(_, h)| h.iter().copied())
     .max()
     .unwrap_or(0)
-    .max(1);
+    .max(1)
+}
 
+/// UTC 时段 × 波段的通联密度热力图。
+#[component]
+pub(super) fn Heatmap(rows: Vec<(String, [u32; 24])>) -> impl IntoView {
+  if crate::kit::is_modern_at_mount() {
+    let max = max_cell(&rows);
+    return view! {
+      <div class="md-heat">
+        <div class="md-heat-head">
+          <span class="md-heat-rowlabel">"UTC"</span>
+          <div class="md-heat-cells">
+            {(0..24)
+              .map(|h| {
+                view! { <span class="md-heat-tick">{if h % 3 == 0 { h.to_string() } else { String::new() }}</span> }
+              })
+              .collect_view()}
+          </div>
+          <span class="md-heat-total"></span>
+        </div>
+        {rows
+          .iter()
+          .map(|(band, hours)| {
+            let total: u32 = hours.iter().sum();
+            view! {
+              <div class="md-heat-row">
+                <span class="md-heat-rowlabel">{band.clone()}</span>
+                <div class="md-heat-cells">
+                  {hours
+                    .iter()
+                    .enumerate()
+                    .map(|(h, &c)| {
+                      // 无障碍名按当前语言现算（`band` 先克隆：闭包要 `'static`）。
+                      let band_text = band.clone();
+                      view! {
+                        <span
+                          class="md-heat-cell"
+                          data-level=heat_level(c, max).to_string()
+                          tabindex="0"
+                          role="img"
+                          aria-label=move || {
+                            tp(
+                              "common.00-utc-records",
+                              c,
+                              &[&band_text, &h.to_string(), &c.to_string()],
+                            )
+                          }
+                        ></span>
+                      }
+                    })
+                    .collect_view()}
+                </div>
+                <span class="md-heat-total">{total}</span>
+              </div>
+            }
+          })
+          .collect_view()}
+      </div>
+    }
+    .into_any();
+  }
+  let max = max_cell(&rows);
   view! {
     <div class="space-y-1.5">
       <div class="flex items-center gap-1">
@@ -88,4 +167,5 @@ pub(super) fn Heatmap(rows: Vec<(String, [u32; 24])>) -> impl IntoView {
         .collect_view()}
     </div>
   }
+  .into_any()
 }

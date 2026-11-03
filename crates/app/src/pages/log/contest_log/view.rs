@@ -12,7 +12,7 @@ use crate::components::common::{PageContainer, PageHeader};
 use crate::pages::log::qsl_image;
 use crate::pages::log::{LogEntry, use_log_store, utc_now_time, utc_today};
 use crate::ui::{
-  Button, ButtonKind, ButtonLink, ControlSize, Field, Input, NativeSelect, SelectOption, Size,
+  Button, ButtonKind, ButtonLink, ControlSize, Field, Input, SelectOption, SimpleSelect, Size,
   Stat, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Variant, card_title_class,
 };
 use crate::util::unique_id as ui_id;
@@ -301,40 +301,40 @@ pub fn ContestLogPage() -> impl IntoView {
   view! {
     <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
-        title=move || t("shell.contest-log")
-        subtitle=move || t("contest.fast-keyboard-entry-live")
-        actions=ViewFn::from(move || {
-          view! {
-            <ButtonLink
-              href="/log"
-              variant=Variant::Outline
-              size=Size::Sm
-            >{move || t("shell.logbook")}</ButtonLink>
-            <CabrilloImportButton session=session report=import_report />
-            <Button
-              variant=Variant::Default
-              size=Size::Sm
-              on_click=Callback::new(move |_| export())
-            >
-              {move || t("contest.export-cabrillo")}
-            </Button>
-          }
-        })
-      />
+  title=move || t("shell.contest-log")
+  subtitle=move || t("contest.fast-keyboard-entry-live")
+  actions=ViewFn::from(move || {
+    view! {
+      <ButtonLink
+        href="/log"
+        variant=Variant::Outline
+        size=Size::Sm
+      >{move || t("shell.logbook")}</ButtonLink>
+      <CabrilloImportButton session=session report=import_report />
+      <Button
+        variant=Variant::Default
+        size=Size::Sm
+        on_click=Callback::new(move |_| export())
+      >
+        {move || t("contest.export-cabrillo")}
+          </Button>
+            }
+          })
+        />
 
       <PageContainer class="space-y-5">
         {move || my_call.get().is_empty().then(|| view! {
           <p class="border border-gold/40 bg-gold/10 px-3 py-2 text-sm">
             {move || t("contest.station-callsign-not-set")}
             " "
-            <a href="/log" class="underline underline-offset-4">{move || t("contest.qso-log-station-info")}</a>
+            <a href="/log">{move || t("contest.qso-log-station-info")}</a>
             " "
             {move || t("contest.to-fill-it-in")}
           </p>
         })}
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("contest.contest-setup")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("contest.contest-setup")}</h2>
           <div class="px-4 pt-4">
             <CatControl on_reading=move |r: CatReading| {
               // 电台的数据模式在竞赛里通常就是 FT8
@@ -356,7 +356,7 @@ pub fn ContestLogPage() -> impl IntoView {
               r#for=contest_id_field.clone()
               class="lg:col-span-2"
             >
-              <NativeSelect
+              <SimpleSelect
                 id=contest_id_field.clone()
                 value=Signal::derive(move || session.with(|s| s.contest_id.clone()))
                 on_change=Callback::new(move |id: String| {
@@ -391,7 +391,7 @@ pub fn ContestLogPage() -> impl IntoView {
               />
             </Field>
             <Field label=Signal::derive(move || t("log.mode")) r#for=mode_id.clone()>
-              <NativeSelect
+              <SimpleSelect
                 id=mode_id.clone()
                 value=Signal::derive(move || session.with(Session::mode))
                 on_change=Callback::new(move |v: String| {
@@ -431,7 +431,7 @@ pub fn ContestLogPage() -> impl IntoView {
               label=Signal::derive(move || t("contest.power-category"))
               r#for=power_id.clone()
             >
-              <NativeSelect
+              <SimpleSelect
                 id=power_id.clone()
                 value=Signal::derive(move || session.with(|s| s.power.clone()))
                 on_change=Callback::new(move |v: String| {
@@ -455,7 +455,7 @@ pub fn ContestLogPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           <form
             class="grid gap-3 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end"
             on:submit=move |e| {
@@ -463,7 +463,7 @@ pub fn ContestLogPage() -> impl IntoView {
               log_it();
             }
           >
-            <Field label=Signal::derive(move || t("contest.their-callsign")) r#for=call_id.clone()>
+            <Field label=Signal::derive(move || t("contest.their-callsign")) r#for=call_id.clone() invalid=dupe>
               <Input
                 id=call_id.clone()
                 node_ref=call_ref
@@ -561,7 +561,7 @@ pub fn ContestLogPage() -> impl IntoView {
           <Stat label=Signal::derive(move || t("contest.claimed-score")) value=Signal::derive(move || tally.get().total as usize) />
         </div>
 
-        <section class="pxl-card border bg-card">
+        <section class=crate::kit::card_class()>
           <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
             <h2 class=card_title_class("mr-auto")>{move || t("contest.session-qsos")}</h2>
             {move || per_band.get().into_iter().map(|(b, n)| view! {
@@ -571,7 +571,7 @@ pub fn ContestLogPage() -> impl IntoView {
           // `relative`：表头里的 `sr-only`（`position: absolute` 的 1px 盒子）需要一个在
           // 滚动容器内部的包含块。否则它以卡片为包含块，那 1px 会被算进**文档**的可滚动
           // 溢出区 —— 手机宽度下整页多出二十来像素的横向滚动（表格本身横向滚是正常的）。
-          <Table class="relative text-sm">
+          <Table class="relative" density=crate::ui::TableDensity::Compact>
             <TableHead>
               <TableRow>
                 <TableHeader class="px-4 py-2 font-normal">{move || t("log.time")}</TableHeader>

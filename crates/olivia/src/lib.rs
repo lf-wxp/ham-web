@@ -602,7 +602,7 @@ mod tests {
 
   #[test]
   fn noise_does_not_panic_and_reports_what_it_decoded() {
-    // 噪声下 WHT 门限只是概率性的（见 docs/decode-worker-protocol.md「门限是概率性的」）：
+    // 噪声下 WHT 门限只是概率性的（见 docs/domain/decode-worker-protocol.md「门限是概率性的」）：
     // 这里只钉死「不 panic、结果只含可打印字符或为 None」，不宣称噪声必为 None。
     for seed0 in [0x1234_5678u32, 0x9E37_79B9, 0x5BD1_E995, 0x85EB_CA6B] {
       let mut seed = seed0;

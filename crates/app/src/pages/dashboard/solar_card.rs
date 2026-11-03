@@ -38,7 +38,7 @@ pub(super) fn SolarCard() -> impl IntoView {
   }
 
   view! {
-    <a href="/solar" class="pxl-card border bg-card p-4 transition-colors hover:bg-accent/40">
+    <a href="/solar" class=crate::kit::card_class_with("p-4 transition-colors hover:bg-accent/40")>
       <div class="text-sm">{move || t("shell.solar-data")}</div>
       <div class="mt-2 grid grid-cols-3 gap-2 text-center">
         <div class="bg-inset p-2">

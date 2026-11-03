@@ -225,6 +225,66 @@ pub fn LogPage() -> impl IntoView {
   let on_remove = Callback::new(remove);
   let on_clear = Callback::new(move |()| clear());
 
+  // 现代风：文章页头 + 胶囊工具条；六个面板仍由各自组件渲染（容器语义由共享工具类的现代取值映射）。
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <div class="md-page">
+        <crate::kit_modern::ModernPageHead
+          title=Signal::derive(move || t("shell.logbook"))
+          subtitle=Signal::derive(move || t("log.log-online-saved-locally"))
+        />
+
+        <div class="md-glossary-bar">
+          <button type="button" class="md-btn md-btn-ghost" on:click=move |_| export()>
+            {move || t("log.export-adif")}
+          </button>
+          <button type="button" class="md-btn md-btn-ghost" on:click=move |_| export_csv_btn()>
+            {move || t("log.export-csv")}
+          </button>
+          <a class="md-btn md-btn-ghost" href="/qsl-labels">
+            {move || t("log.print-qsl-labels")}
+          </a>
+          <FileInput
+            accept=".adi,.adif,.txt"
+            label=Signal::derive(move || t("log.import-adif"))
+            variant=Variant::Outline
+            size=Size::Sm
+            on_files=import_adif
+          />
+          <button type="button" class="md-btn md-btn-ghost" on:click=move |_| qsl_open.set(true)>
+            {move || t("log.sync-qsl")}
+          </button>
+          <button
+            type="button"
+            class="md-btn md-btn-quiet"
+            disabled=move || pending_lotw.get() == 0
+            on:click=move |_| mark_lotw.run(())
+          >
+            {move || tf("log.mark-lotw-uploaded", &[&pending_lotw.get().to_string()])}
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-5">
+          <StationPanel book=book on_save=save_station_btn />
+          <LogStatsPanel logbook=logbook book=book />
+          <LogHealthPanel />
+          <ActivationExportPanel />
+          <EntryForm form=form logbook=logbook book=book editing=editing on_save=on_save />
+          <EntryList
+            logbook=logbook
+            on_edit=on_edit
+            on_remove=on_remove
+            on_clear=on_clear
+            initial_query=initial_query.unwrap_or_default()
+          />
+        </div>
+
+        <QslSyncDialog open=qsl_open />
+      </div>
+    }
+    .into_any();
+  }
+
   view! {
     <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
@@ -288,4 +348,5 @@ pub fn LogPage() -> impl IntoView {
       <QslSyncDialog open=qsl_open />
     </div>
   }
+  .into_any()
 }

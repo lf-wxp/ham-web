@@ -53,7 +53,7 @@ pub(super) fn ConfusablesQuiz() -> impl IntoView {
           let c = correct.get();
           let w = wrong.get();
           view! {
-            <div class="pxl-card border bg-card px-4 py-10 text-center">
+            <div class=crate::kit::card_class_with("px-4 py-10 text-center")>
               <div class="text-lg">{move || t("exam.practice-complete")}</div>
               <div class="mt-2 text-sm text-muted-foreground">
                 {move || t("exam.correct-label")} " " <span class="text-win-text">{c}</span>
@@ -74,7 +74,7 @@ pub(super) fn ConfusablesQuiz() -> impl IntoView {
         } else {
           let item = CONFUSABLE_QUIZ[index.get()];
           view! {
-            <div class="pxl-card border bg-card p-4">
+            <div class=crate::kit::card_pad_class()>
               <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
                 <span>{tf("exam.question", &[&(index.get() + 1).to_string(), &total.to_string()])}</span>
                 <span>
@@ -128,7 +128,7 @@ pub(super) fn ConfusablesQuiz() -> impl IntoView {
                       <div class="text-muted-foreground">{move || kt_tracked(item.explain)}</div>
                       <div class="text-xs text-primary">
                         {format!("{} {}", t("exam.related-topic"), crate::data::core_text_tracked(item.topic))}
-                        <a href="#confusables-list" class="ml-1 underline underline-offset-4 hover:underline">
+                        <a href="#confusables-list" class="ml-1">
                           {move || t("exam.review-table")}
                         </a>
                       </div>

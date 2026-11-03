@@ -20,7 +20,7 @@ use crate::data;
 use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
-  Button, Checkbox, Chip, ChipGroup, ControlSize, NativeSelect, SelectOption, Size, Variant,
+  Button, Checkbox, Chip, ChipGroup, ControlSize, SelectOption, SimpleSelect, Size, Variant,
 };
 use crate::util::{random, set_title, sleep, storage, window};
 
@@ -377,7 +377,7 @@ pub fn ListenPage() -> impl IntoView {
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
         <label class="inline-flex items-center gap-1.5">
           {move || t("exam.speed")}
-          <NativeSelect
+          <SimpleSelect
             value=Signal::derive(move || {
               settings.with(|s| {
                 RATE_CHOICES
@@ -400,7 +400,7 @@ pub fn ListenPage() -> impl IntoView {
         </label>
         <label class="inline-flex items-center gap-1.5">
           {move || t("exam.think-time")}
-          <NativeSelect
+          <SimpleSelect
             value=Signal::derive(move || settings.with(|s| s.think_secs.to_string()))
             on_change=Callback::new(move |v: String| {
               let secs: u32 = v.parse().unwrap_or(5);
@@ -415,7 +415,7 @@ pub fn ListenPage() -> impl IntoView {
         </label>
       </div>
 
-      <section class="pxl-card border bg-card" aria-label=move || t("exam.current-question")>{card}</section>
+      <section class=crate::kit::card_class() aria-label=move || t("exam.current-question")>{card}</section>
 
       // `flex-wrap`：三个按钮的文案在英文 / 西语下加起来宽于 320px，不换行会顶出视口。
       <div class="flex flex-wrap items-center justify-center gap-3">

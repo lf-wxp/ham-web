@@ -7,6 +7,7 @@ use ham_web_core::nec::{NecInput, TransmissionLine, sweep_with_lines, swr_bandwi
 use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
+use crate::ui::intl::decimal;
 use crate::ui::{Button, Chip, ChipGroup, Field, NumberField, Size, Variant};
 use crate::util::unique_id;
 
@@ -65,7 +66,7 @@ pub(super) fn SweepSection(
   });
 
   view! {
-    <div class="space-y-3 pxl-card border bg-card p-4">
+    <div class=crate::kit::card_class_with("space-y-3 p-4")>
       <div class="flex flex-wrap items-center justify-between gap-2">
         <span class="text-sm">{move || t("tools.nec-sweep-title")}</span>
         <Button
@@ -182,28 +183,28 @@ pub(super) fn SweepSection(
             })
             .unwrap_or(pts[0])
             .swr_50;
-          let mhz = |f: f64| format!("{:.4}", f / 1e6);
+          let mhz = |f: f64| decimal(f / 1e6, 4);
           let ticks = [f_lo, f0, f_hi];
           let label = |f: f64| {
             if (f - f0).abs() < 1.0 {
-              format!("{:.3}*", f / 1e6)
+              format!("{}*", decimal(f / 1e6, 3))
             } else {
-              format!("{:.3}", f / 1e6)
+              decimal(f / 1e6, 3)
             }
           };
           let (lo_s, hi_s, span_khz, rel_s) = match band {
             Some((lo, hi)) => (
               mhz(lo),
               mhz(hi),
-              format!("{:.0}", (hi - lo) / 1e3),
-              format!("{:.1}", (hi - lo) / f0 * 100.0),
+              decimal((hi - lo) / 1e3, 0),
+              decimal((hi - lo) / f0 * 100.0, 1),
             ),
             None => (String::new(), String::new(), String::new(), String::new()),
           };
-          let center_s = format!("{center_swr:.2}");
-          let best_s = format!("{:.2}", best.swr_50);
+          let center_s = decimal(center_swr, 2);
+          let best_s = decimal(best.swr_50, 2);
           let best_f = mhz(best.freq_hz);
-          let span_s = format!("{:.0}", span_frac() * 100.0);
+          let span_s = decimal(span_frac() * 100.0, 0);
           view! {
             <svg
               viewBox=format!("0 0 {PLOT_W} {PLOT_H}")

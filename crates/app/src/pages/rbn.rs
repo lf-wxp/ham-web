@@ -11,6 +11,7 @@ use crate::components::common::{EmptyState, PageContainer, PageHeader};
 use crate::components::spot_coverage::SpotCoverage;
 use crate::data;
 use crate::i18n::t;
+use crate::ui::intl::decimal;
 use crate::ui::{
   Button, Input, Size, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Variant,
 };
@@ -108,8 +109,8 @@ pub fn RbnPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.look-up-reception-reports")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.look-up-reception-reports")}</h2>
           <div class="flex flex-wrap gap-3 p-4">
             <Input
               value=callsign
@@ -147,19 +148,19 @@ pub fn RbnPage() -> impl IntoView {
           }
           view! {
             <SpotCoverage home=home_grid spots=spot_list show_hourly=false coarse=true />
-            <section class="pxl-card border bg-card">
-              <h2 class="pxl-section-title">
+            <section class=crate::kit::card_class()>
+              <h2 class=crate::kit::card_title_class()>
                 {t("radio.beacon-reports")} {list.len()} {t("radio.entry")}
               </h2>
-              <Table class="min-w-[560px] text-sm">
+              <Table class="min-w-[560px]" density=crate::ui::TableDensity::Compact>
                 <TableHead>
                   <TableRow>
-                    <TableHeader class="border px-3 py-2">{move || t("radio.skimmers")}</TableHeader>
-                    <TableHeader class="border px-3 py-2">{move || t("contest.freq")}</TableHeader>
-                    <TableHeader class="border px-3 py-2">{move || t("radio.band")}</TableHeader>
-                    <TableHeader class="border px-3 py-2">{move || t("log.mode")}</TableHeader>
-                    <TableHeader class="border px-3 py-2 text-right">"SNR"</TableHeader>
-                    <TableHeader class="border px-3 py-2 text-right">"WPM"</TableHeader>
+                    <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.skimmers")}</TableHeader>
+                    <TableHeader class=crate::kit::table_cell_class("")>{move || t("contest.freq")}</TableHeader>
+                    <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.band")}</TableHeader>
+                    <TableHeader class=crate::kit::table_cell_class("")>{move || t("log.mode")}</TableHeader>
+                    <TableHeader class=crate::kit::table_cell_class("text-right")>"SNR"</TableHeader>
+                    <TableHeader class=crate::kit::table_cell_class("text-right")>"WPM"</TableHeader>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -169,14 +170,14 @@ pub fn RbnPage() -> impl IntoView {
                       let s = s.clone();
                       view! {
                         <TableRow>
-                          <TableCell class="border px-3 py-2">{s.spotter.clone()}</TableCell>
-                          <TableCell class="border px-3 py-2 tabular-nums text-muted-foreground">{format!("{:.1} kHz", s.freq_khz)}</TableCell>
-                          <TableCell class="border px-3 py-2">{s.band.clone()}</TableCell>
-                          <TableCell class="border px-3 py-2">{s.mode.clone()}</TableCell>
+                          <TableCell class=crate::kit::table_cell_class("")>{s.spotter.clone()}</TableCell>
+                          <TableCell class=crate::kit::table_cell_class("tabular-nums text-muted-foreground")>{format!("{} kHz", decimal(s.freq_khz, 1))}</TableCell>
+                          <TableCell class=crate::kit::table_cell_class("")>{s.band.clone()}</TableCell>
+                          <TableCell class=crate::kit::table_cell_class("")>{s.mode.clone()}</TableCell>
                           <TableCell class=format!("border px-3 py-2 text-right tabular-nums {}", if s.snr >= 0 { "text-win-text" } else { "text-muted-foreground" })>
                             {format!("{} dB", s.snr)}
                           </TableCell>
-                          <TableCell class="border px-3 py-2 text-right tabular-nums text-muted-foreground">{s.wpm}</TableCell>
+                          <TableCell class=crate::kit::table_cell_class("text-right tabular-nums text-muted-foreground")>{s.wpm}</TableCell>
                         </TableRow>
                       }
                     })

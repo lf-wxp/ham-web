@@ -6,12 +6,12 @@
 use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 
-use super::shared::{CHIP_BASE, ChipCtx};
+use super::shared::{ChipCtx, chip_base};
 
 /// 方向键在同一组内移动选择：焦点先落到目标项，再交给它的 `click` ——
 /// 于是 `aria-checked` 与 `on_change` 都只有一条实现（WAI-ARIA 的「选中随焦点」）。
 ///
-/// 刻意没做 roving tabindex：所有 chip 仍在 Tab 序里（见 `docs/ui-components.md` §6）。
+/// 刻意没做 roving tabindex：所有 chip 仍在 Tab 序里（见 `docs/ui/pixel.md` §6）。
 fn move_focus(ev: &web_sys::KeyboardEvent, step: isize) {
   let Some(current) = ev
     .current_target()
@@ -66,7 +66,7 @@ pub fn Chip(#[prop(into)] value: String, children: Children) -> impl IntoView {
       aria-checked=move || checked().to_string()
       data-state=move || if checked() { "checked" } else { "unchecked" }
       disabled=move || ctx.disabled.get()
-      class=CHIP_BASE
+      class=chip_base()
       on:click=move |_| {
         if !ctx.disabled.get_untracked() && !checked() {
           ctx.on_change.run(v.get_value());

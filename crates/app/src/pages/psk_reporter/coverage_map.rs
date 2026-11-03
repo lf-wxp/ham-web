@@ -17,8 +17,8 @@ pub(super) fn CoverageMap(
   // 只要长度：`with` 借用，不把整份点集克隆一遍。
   let count = Signal::derive(move || points.with(Vec::len));
   view! {
-    <section class="pxl-card border bg-card" aria-labelledby="coverage-map-heading">
-      <h2 id="coverage-map-heading" class="pxl-section-title">
+    <section class=crate::kit::card_class() aria-labelledby="coverage-map-heading">
+      <h2 id="coverage-map-heading" class=crate::kit::card_title_class()>
         {move || t("coverage.map-title")}
       </h2>
       <div class="space-y-2 p-4">

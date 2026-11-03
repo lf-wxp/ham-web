@@ -74,9 +74,6 @@ pub(crate) fn current_message() -> String {
   QUEUE.with(|q| q.with(|v| v.front().map_or_else(String::new, |m| m.text.clone())))
 }
 
-/// 退场时长：与 `--motion-fast`（150ms）对齐并留余量，保证退出动画播完再卸载。
-const TOAST_EXIT_MS: u64 = 180;
-
 /// 悬停 / 聚焦离开后的**最短**停留：用户已经把视线放上去读了，不能一松手就消失。
 ///
 /// 上限取「暂停时算出的剩余时间」而不是固定值 —— 一条 8s 的错误提示被鼠标扫过 0.5s 就
@@ -143,7 +140,11 @@ pub fn ToastRoot() -> impl IntoView {
     move || {
       if !leaving.get_untracked() {
         set_leaving(true);
-        let h = set_timeout_with_handle(pop.clone(), Duration::from_millis(TOAST_EXIT_MS)).ok();
+        let h = set_timeout_with_handle(
+          pop.clone(),
+          Duration::from_millis(crate::presence::exit_ms(crate::presence::ExitSpeed::Normal)),
+        )
+        .ok();
         pop_timer.set_value(h);
       }
     }
@@ -246,6 +247,14 @@ pub fn ToastRoot() -> impl IntoView {
         ToastKind::Info => IconKind::AlertCircle,
       };
       let (accent, band) = kind_accent(m.kind);
+      // 现代风：胶囊式浮层（左侧不画 4px 色条，改用图标着色 + 细描边）。
+      let modern = crate::kit::is_modern_at_mount();
+      let kind_key = match m.kind {
+        ToastKind::Success => "success",
+        ToastKind::Error => "error",
+        ToastKind::Info => "info",
+      };
+
       view! {
         <Portal>
         <div
@@ -267,9 +276,22 @@ pub fn ToastRoot() -> impl IntoView {
               }
             }
           }
-          class=format!("motion-toast pxl-popover fixed bottom-20 right-4 z-[60] flex w-72 items-center gap-3 border-l-4 p-3 xl:bottom-4 {band}")
+          data-kind=kind_key
+          class=if modern {
+            // `z-[80]`（= `--md-z-top`）：要盖过 `.md-modal`（70）与 `ui::Dialog` 现代分支（70），否则在弹层里
+            // 触发的提示会被弹层压在下面。
+            "md-toast fixed bottom-20 right-4 z-[80] flex w-80 items-start gap-3 xl:bottom-4".to_owned()
+          } else {
+            format!(
+              "motion-toast pxl-popover fixed bottom-20 right-4 z-[60] flex w-72 items-center gap-3 border-l-4 p-3 xl:bottom-4 {band}"
+            )
+          }
         >
-          <Icon kind=icon class=format!("size-6 shrink-0 {accent}") />
+          <Icon kind=icon class=if modern {
+            "md-toast-icon".to_owned()
+          } else {
+            format!("size-6 shrink-0 {accent}")
+          } />
           <div class="min-w-0 flex-1 text-sm">
             {m.text.clone()}
             {(m.count > 1)

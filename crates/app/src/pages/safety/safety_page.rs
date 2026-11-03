@@ -23,23 +23,23 @@ pub fn SafetyPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.basic-concepts")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.basic-concepts")}</h2>
           <LabelList rows=SAR_CONCEPTS />
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.emf-exposure-limits-gb")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.emf-exposure-limits-gb")}</h2>
           <LabelList rows=EXPOSURE_LIMITS />
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.safe-distance-reference")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.safe-distance-reference")}</h2>
           <LabelList rows=SAFETY_DISTANCE />
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.safe-operating-notes")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.safe-operating-notes")}</h2>
           <ul class="space-y-2 p-4">
             {SAFETY_TIPS
               .iter()
@@ -55,8 +55,8 @@ pub fn SafetyPage() -> impl IntoView {
           </ul>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.antenna-installation-safety")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.antenna-installation-safety")}</h2>
           <ul class="space-y-2 p-4">
             {ANTENNA_SAFETY
               .iter()

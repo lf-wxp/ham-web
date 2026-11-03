@@ -43,12 +43,13 @@ pub(super) fn WantedTracker() -> impl IntoView {
   let total = WANTED_ENTITIES.len();
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("log.contact-progress-tracking")}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t("log.contact-progress-tracking")}</h2>
       <div class="space-y-3 p-4">
         <Input
           value=query
           on_change=Callback::new(move |v: String| query.set(v))
+          aria_label=Signal::derive(move || t("shell.search"))
           placeholder=Signal::derive(move || t("log.search-prefix-or-entity"))
           clearable=true
         />

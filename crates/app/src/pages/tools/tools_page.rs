@@ -139,6 +139,16 @@ const TOOL_NAV: &[(&str, &str)] = &[
 fn scroll_to(id: &str) {
   if let Some(el) = document().get_element_by_id(id) {
     scroll_to_element(&el);
+    // 落点闪一下：46 个计算器长得一模一样，跳过去之后如果没有任何标记，
+    // 用户会怀疑「到底跳到哪了」。属性只写给现代风的 `.md-panel`，像素页没有这条规则。
+    let _ = el.set_attribute("data-flash", "true");
+    let target = el.clone();
+    set_timeout(
+      move || {
+        let _ = target.remove_attribute("data-flash");
+      },
+      std::time::Duration::from_millis(900),
+    );
   }
 }
 
@@ -192,37 +202,10 @@ pub fn ToolsPage() -> impl IntoView {
       })
       .collect_view()
   };
-  view! {
-    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
-      <PageHeader
-        title=move || t("shell.calculators")
-        subtitle=move || t("tools.frequency-wavelength-power-gain")
-      />
-
-      <PageContainer class="space-y-0">
-        <MobileNavDrawer
-          open=nav_open
-          title=Signal::derive(move || t("tools.tool-catalogue"))
-          button_label=Signal::derive(move || t("tools.tool-catalogue"))
-          icon=IconKind::SlidersHorizontal
-          class="lg:hidden"
-        >
-          <ul class="space-y-0.5">{tool_nav_items()}</ul>
-        </MobileNavDrawer>
-
-        <div class="grid gap-6 lg:grid-cols-[14rem_1fr]">
-          <aside class="hidden lg:block">
-            <StickyPanel class="pxl-card border bg-card p-3">
-              <nav aria-label=move || t("tools.tool-catalogue")>
-                <div class="mb-2 px-2 text-xs text-muted-foreground">{move || t("tools.tool-navigation")}</div>
-                <ul class="max-h-[calc(100svh-var(--sticky-top)-70px)] space-y-0.5 overflow-y-auto overscroll-contain pr-1">
-                  {tool_nav_items()}
-                </ul>
-              </nav>
-            </StickyPanel>
-          </aside>
-
-          <div class="min-w-0 space-y-6">
+  // 46 个计算器块：外壳与内容不变，只把外层容器抽出来，供两套视图共用。
+  let sections = move || {
+    view! {
+      <div class="space-y-6">
             <ToolSection id="freq-wavelength" title="tools.frequency-wavelength" description="tools.300-f-mhz-approximate"><FreqWavelength /></ToolSection>
 
             <ToolSection id="dbm-power" title="tools.dbm-power" description="tools.0-dbm-1-mw"><DbmConverter /></ToolSection>
@@ -241,13 +224,13 @@ pub fn ToolsPage() -> impl IntoView {
 
             <ToolSection id="antenna-matcher" title="tools.antenna-matching-network" description="tools.an-l-network-matches"><AntennaMatcher /></ToolSection>
 
-            <section id="smith" class="scroll-mt-24 pxl-card border bg-card">
-              <h2 class="pxl-section-title">{move || t("tools.smith-chart")}</h2>
+            <section id="smith" class=crate::kit::card_class_with("scroll-mt-24")>
+              <h2 class=crate::kit::card_title_class()>{move || t("tools.smith-chart")}</h2>
               <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.enter-a-complex-impedance")}</p>
               <div class="p-4"><SmithChart /></div>
               <p class="px-4 pb-4 text-xs text-muted-foreground">
                 {move || t("tools.for-drag-to-position")}
-                <a href="/smith" class="ml-1 text-primary underline underline-offset-4">
+                <a href="/smith" class="ml-1 text-primary">
                   {move || t("tools.smith-chart-and-matching")}
                 </a>
               </p>
@@ -352,9 +335,102 @@ pub fn ToolsPage() -> impl IntoView {
             <ToolSection id="soft-tnc" title="tools.soft-tnc" description="tools.soft-tnc-description"><SoftTnc /></ToolSection>
 
             <ToolSection id="mode-encoder" title="tools.digital-mode-encoding" description="tools.text-to-morse-cw"><ModeEncoder /></ToolSection>
+      </div>
+    }
+  };
+  // 现代风：文章页头 + 可折叠目录（窄屏）+ 桌面固定索引 + 计算器面板。
+  if crate::kit::is_modern_at_mount() {
+    // 目录落点：滚到哪个计算器，目录里就亮哪一条。46 个块全是长面板，
+    // 没有落点提示时用户永远不知道自己读到第几个。
+    let spy =
+      crate::kit_modern::motion::use_scroll_spy(TOOL_NAV.iter().map(|&(id, _)| id).collect());
+    let modern_nav = move || {
+      TOOL_NAV
+        .iter()
+        .map(|&(id, key)| {
+          view! {
+            <li>
+              <button
+                type="button"
+                class="md-tool-link"
+                data-spy=move || (spy.get() == Some(id)).to_string()
+                on:click=move |_| scroll_to(id)
+              >
+                {move || crate::data::core_text_tracked(key)}
+              </button>
+            </li>
+          }
+        })
+        .collect_view()
+    };
+
+    return view! {
+      <div class="md-root">
+        <div class="md-page">
+          <crate::kit_modern::ModernPageHead
+            title=Signal::derive(move || t("shell.calculators"))
+            subtitle=Signal::derive(move || t("tools.frequency-wavelength-power-gain"))
+          />
+
+          // 窄屏：目录折叠条吸顶，滚到任意计算器都还能换工具。
+          <details class="md-panel md-tools-drawer">
+            // 箭头只由 `.md-root details > summary::before` 提供（左侧细 chevron）。
+            // 这里曾额外画一个右侧箭头，窄屏上两只箭头并存且展开后方向不一致。
+            <summary>
+              <span class="md-tools-drawer-label">{move || t("tools.tool-catalogue")}</span>
+            </summary>
+            <ul class="md-tool-list">{modern_nav()}</ul>
+          </details>
+
+          <div class="md-tools-grid">
+            <aside class="md-tools-aside">
+              <nav class="md-panel md-tools-index" aria-label=move || t("tools.tool-catalogue")>
+                <p class="md-group-title">{move || t("tools.tool-navigation")}</p>
+                <ul class="md-tool-list">{modern_nav()}</ul>
+              </nav>
+            </aside>
+            <div class="min-w-0">{sections()}</div>
           </div>
+        </div>
+      </div>
+    }
+    .into_any();
+  }
+
+  view! {
+    <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
+      <PageHeader
+        title=move || t("shell.calculators")
+        subtitle=move || t("tools.frequency-wavelength-power-gain")
+      />
+
+      <PageContainer class="space-y-0">
+        <MobileNavDrawer
+          open=nav_open
+          title=Signal::derive(move || t("tools.tool-catalogue"))
+          button_label=Signal::derive(move || t("tools.tool-catalogue"))
+          icon=IconKind::SlidersHorizontal
+          class="lg:hidden"
+        >
+          <ul class="space-y-0.5">{tool_nav_items()}</ul>
+        </MobileNavDrawer>
+
+        <div class="grid gap-6 lg:grid-cols-[14rem_1fr]">
+          <aside class="hidden lg:block">
+            <StickyPanel class=crate::kit::card_class_with("p-3")>
+              <nav aria-label=move || t("tools.tool-catalogue")>
+                <div class="mb-2 px-2 text-xs text-muted-foreground">{move || t("tools.tool-navigation")}</div>
+                <ul class="max-h-[calc(100svh-var(--sticky-top)-70px)] space-y-0.5 overflow-y-auto overscroll-contain pr-1">
+                  {tool_nav_items()}
+                </ul>
+              </nav>
+            </StickyPanel>
+          </aside>
+
+          {sections()}
         </div>
       </PageContainer>
     </div>
   }
+  .into_any()
 }

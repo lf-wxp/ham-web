@@ -9,8 +9,6 @@ use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 #[component]
 pub fn WeatherSatPage() -> impl IntoView {
   set_title("shell.weather-satellites");
@@ -41,8 +39,8 @@ pub fn WeatherSatPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.getting-started-5-steps")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.getting-started-5-steps")}</h2>
           <ol class="space-y-3 p-4">
             {APT_GUIDE
               .iter()
@@ -53,7 +51,7 @@ pub fn WeatherSatPage() -> impl IntoView {
                     <div class="mt-0.5 text-sm text-muted-foreground">{move || kt_tracked(desc)}</div>
                     {link.map(|href| {
                       view! {
-                        <a href=href class="mt-1 inline-block text-xs text-primary underline-offset-4 hover:underline">
+                        <a href=href class=format!("{} {}", crate::kit::link_class(), "mt-1 inline-block text-xs")>
                           {move || t("radio.go")}
                         </a>
                       }
@@ -65,13 +63,13 @@ pub fn WeatherSatPage() -> impl IntoView {
           </ol>
         </section>
 
-        <Table class="min-w-[640px] text-sm" wrapper_class="pxl-card border bg-card">
+        <Table class="min-w-[640px] text-sm" wrapper_class=crate::kit::card_class()>
           <TableHead>
             <TableRow>
-              <TableHeader class=CELL>{move || t("radio.satellite")}</TableHeader>
-              <TableHeader class=CELL>{move || t("radio.signal")}</TableHeader>
-              <TableHeader class=CELL>{move || t("contest.freq")}</TableHeader>
-              <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.satellite")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.signal")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("contest.freq")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.notes")}</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -80,10 +78,10 @@ pub fn WeatherSatPage() -> impl IntoView {
               .map(|s| {
                 view! {
                   <TableRow>
-                    <TableCell class=format!("{CELL} whitespace-nowrap")>{move || kt_tracked(s.name)}</TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(s.signal)}</TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(s.freq)}</TableCell>
-                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(s.note)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>{move || kt_tracked(s.name)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap text-muted-foreground")>{move || kt_tracked(s.signal)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(s.freq)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(s.note)}</TableCell>
                   </TableRow>
                 }
               })
@@ -91,8 +89,8 @@ pub fn WeatherSatPage() -> impl IntoView {
           </TableBody>
         </Table>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.key-concepts-heading")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.key-concepts-heading")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {WEATHER_CONCEPTS
               .iter()
@@ -108,8 +106,8 @@ pub fn WeatherSatPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.receiving-tips")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.receiving-tips")}</h2>
           <ul class="space-y-2 p-4">
             {WEATHER_TIPS
               .iter()

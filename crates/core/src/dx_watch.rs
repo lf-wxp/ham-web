@@ -7,7 +7,13 @@ use serde::{Deserialize, Serialize};
 use crate::dxcc::lookup;
 use crate::logbook::LogEntry;
 
-/// 频率 kHz → 业余波段（DX Cluster 常见波段），无法归类时为「其他」。
+/// 波段 / 模式无法归类时的取值（中文原文，界面经 `t()` 的原文反查翻成当前语言）。
+///
+/// 常量而不是散落的字面量：页面要拿它做「是不是未知」的判断，也要把它显示出来 ——
+/// 判断用这个常量、显示走 `t()`，才不会在英文 / 西语界面里露出中文。
+pub const OTHER: &str = "其他";
+
+/// 频率 kHz → 业余波段（DX Cluster 常见波段），无法归类时为 [`OTHER`]。
 #[must_use]
 pub const fn band_of_khz(khz: u32) -> &'static str {
   match khz {
@@ -23,7 +29,7 @@ pub const fn band_of_khz(khz: u32) -> &'static str {
     28000..=29700 => "10m",
     50000..=54000 => "6m",
     144000..=148000 => "2m",
-    _ => "其他",
+    _ => OTHER,
   }
 }
 
@@ -34,7 +40,7 @@ pub fn mode_of_comment(comment: &str) -> &'static str {
   ["FT8", "FT4", "RTTY", "CW", "SSB", "PSK"]
     .into_iter()
     .find(|m| c.contains(m))
-    .unwrap_or("其他")
+    .unwrap_or(OTHER)
 }
 
 /// 某条 spot 相对本地日志的需要程度。

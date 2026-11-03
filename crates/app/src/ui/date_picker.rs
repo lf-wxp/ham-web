@@ -110,7 +110,7 @@ pub fn DatePicker(
   #[prop(optional, into)] class: String,
 ) -> impl IntoView {
   let open = RwSignal::new(false);
-  let mounted = popover::mount_on_open(open);
+  let mounted = crate::presence::use_presence(open).visible;
   popover::close_on_escape(open);
   // 面板引用：既作 `node_ref`，也给「焦点移出容器就关闭」的判定用
   // （见 `popover::close_on_focus_out`）。
@@ -165,11 +165,12 @@ pub fn DatePicker(
       let title = intl::month_title(y, m);
       let panel_label = title.clone();
       view! {
-        <div class=popover::OVERLAY on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
+        <div class=popover::OVERLAY data-state=state inert=popover::inert(open) aria-hidden=popover::aria_hidden(open) on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
         <div
           role="dialog"
           aria-label=panel_label
           data-state=state
+          inert=popover::inert(open) aria-hidden=popover::aria_hidden(open)
           data-slot="date-picker"
           class=popover::panel_class("w-[18.5rem] p-2")
           node_ref=panel_ref
@@ -184,7 +185,7 @@ pub fn DatePicker(
             >
               <Icon kind=IconKind::ChevronLeft class="size-6" />
             </button>
-            <div class="pxl-title text-xs" data-slot="date-picker-title">{title}</div>
+            <div class=if crate::kit::is_modern_at_mount() { "md-picker-title" } else { "pxl-title text-xs" } data-slot="date-picker-title">{title}</div>
             <button
               type="button"
               aria-label=move || t("common.next-month")

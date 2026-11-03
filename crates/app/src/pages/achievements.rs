@@ -111,6 +111,69 @@ pub fn AchievementsPage() -> impl IntoView {
   let grid = NodeRef::<leptos::html::Div>::new();
   grid.on_load(|el| crate::motion::reveal_children(&el));
 
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <div class="md-root">
+        <div class="md-page">
+          <crate::kit_modern::ModernPageHead
+            title=Signal::derive(move || t("learning.achievement-wall"))
+            subtitle=Signal::derive(move || t("learning.unlock-milestones-as-you"))
+          />
+
+          <div class="md-panel md-ach-progress">
+            <div class="md-ach-progress-head">
+              <span>{move || t("learning.achievements-unlocked")}</span>
+              <span class="md-mono">
+                {move || {
+                  tf("common.ratio", &[&unlocked_ids.with(Vec::len).to_string(), &total.to_string()])
+                }}
+              </span>
+            </div>
+            <div class="md-bar-track">
+              <span
+                class="md-bar-fill"
+                style=move || {
+                  let pct = unlocked_ids.with(Vec::len) * 100 / total.max(1);
+                  format!("width: {pct}%")
+                }
+              ></span>
+            </div>
+          </div>
+
+          <div class="md-ach-grid">
+            {ACHIEVEMENTS
+              .iter()
+              .map(|a| {
+                let unlocked = move || unlocked_ids.with(|ids| ids.contains(&a.id));
+                let sprite = badge_sprite(a.id);
+                view! {
+                  <article class="md-ach" data-locked=move || (!unlocked()).to_string()>
+                    <crate::kit_modern::ModernEmblem
+                      icon=crate::kit_modern::emblem_icon(sprite)
+                      tone=crate::kit_modern::emblem_tone(sprite)
+                      size=48
+                      locked=Signal::derive(move || {
+                        !unlocked_ids.with(|ids| ids.contains(&a.id))
+                      })
+                    />
+                    <p class="md-ach-name">{move || t(a.name)}</p>
+                    <p class="md-ach-desc">{move || t(a.desc)}</p>
+                    <span class="md-ach-state">
+                      {move || if unlocked() { t("learning.unlocked") } else { t("learning.locked") }}
+                    </span>
+                  </article>
+                }
+              })
+              .collect_view()}
+          </div>
+
+          <p class="md-muted md-sm mt-4">{move || t("learning.achievements-are-determined-from")}</p>
+        </div>
+      </div>
+    }
+    .into_any();
+  }
+
   view! {
     <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
@@ -118,7 +181,7 @@ pub fn AchievementsPage() -> impl IntoView {
         subtitle=move || t("learning.unlock-milestones-as-you")
         actions=ViewFn::from(move || {
           view! {
-            <a href="/progress" class="text-xs text-primary underline-offset-4 hover:underline">
+            <a href="/progress" class=format!("{} {}", crate::kit::link_class(), "text-xs")>
               {move || t("learning.progress")}
             </a>
           }
@@ -126,7 +189,7 @@ pub fn AchievementsPage() -> impl IntoView {
       />
 
       <PageContainer class="space-y-5">
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           <div class="mb-1 flex items-center justify-between text-sm">
             <span>{move || t("learning.achievements-unlocked")}</span>
             <span class="tabular-nums text-muted-foreground">
@@ -186,4 +249,5 @@ pub fn AchievementsPage() -> impl IntoView {
       </PageContainer>
     </div>
   }
+  .into_any()
 }

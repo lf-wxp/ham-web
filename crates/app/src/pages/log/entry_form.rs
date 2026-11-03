@@ -10,8 +10,8 @@ use ham_web_core::qsl_status::QslVia;
 use crate::components::cat_control::{CatControl, CatReading};
 use crate::data;
 use crate::ui::{
-  Button, Checkbox, DatePicker, Field, Input, NativeSelect, NumberField, Select, SelectItem,
-  SelectOption, Size, TimePicker, Tooltip, Variant,
+  Button, Checkbox, DatePicker, Field, Input, NumberField, SelectOption, SimpleSelect, Size,
+  TimePicker, Tooltip, Variant,
 };
 
 use super::form_state::LogFormState;
@@ -80,13 +80,15 @@ pub(super) fn EntryForm(
     spawn_local(async move {
       match data::fetch_external_json::<CallsignInfo>(&url).await {
         Ok(info) => {
-          if form.name.get().trim().is_empty() {
+          // 异步续体不在响应式上下文里（await 之后读信号只会刷警告，且订阅没有意义），
+          // 只判断「用户还没自己填」所以走 untracked。
+          if form.name.get_untracked().trim().is_empty() {
             form.name.set(info.name);
           }
-          if form.gridsquare.get().trim().is_empty() {
+          if form.gridsquare.get_untracked().trim().is_empty() {
             form.gridsquare.set(info.grid);
           }
-          if form.qth.get().trim().is_empty() {
+          if form.qth.get_untracked().trim().is_empty() {
             form.qth.set(info.qth);
           }
           lookup_msg.set(Some(t("log.name-grid-qth-filled")));
@@ -129,8 +131,8 @@ pub(super) fn EntryForm(
 
   view! {
     // 新增记录表单
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>
         {move || if editing.get().is_some() { t("log.edit-qso") } else { t("log.add-qso") }}
       </h2>
       <div class="px-4 pt-4">
@@ -162,29 +164,29 @@ pub(super) fn EntryForm(
         </Field>
         {text_input(Signal::derive(move || t("log.frequency-mhz")), "14.074", form.freq, "")}
         <Field label=Signal::derive(move || t("log.mode")) r#for=mode_id.clone()>
-          <Select
+          <SimpleSelect
             id=mode_id
-            value=Signal::derive(move || {
-              let v = form.mode.get();
-              (!v.is_empty()).then_some(v)
-            })
+            value=form.mode
             on_change=Callback::new(move |v: String| form.mode.set(v))
-            placeholder=Signal::derive(move || t("log.mode"))
-            trigger=move || view! { <span class="block truncate text-left">{form.mode.get()}</span> }.into_any()
-            aria_label=Signal::derive(move || t("log.mode"))
-          >
-            {move || {
+            // 选项随当前值变化：编辑一条导入的记录时，它的模式可能不在 `MODES` 里（如 PSK63），
+            // 要把它补进列表，否则触发器里什么也显示不出来。
+            options=Signal::derive(move || {
               let current = form.mode.get();
-              let mut list: Vec<String> = MODES.iter().map(|m| (*m).to_owned()).collect();
-              if !current.is_empty() && !list.contains(&current) {
-                list.push(current);
+              let mut list: Vec<SelectOption> = MODES
+                .iter()
+                .map(|m| SelectOption::new(*m, *m))
+                .collect();
+              if !current.is_empty() && !MODES.contains(&current.as_str()) {
+                list.push(SelectOption::new(current.clone(), current));
               }
               list
-                .into_iter()
-                .map(|m| view! { <SelectItem value=m.clone()>{m.clone()}</SelectItem> })
-                .collect_view()
-            }}
-          </Select>
+            })
+            // 空值时显示「模式」占位，但模式是必填项：列表里不放「清空」行。
+            placeholder=Signal::derive(move || t("log.mode"))
+            clearable=false
+            aria_label=Signal::derive(move || t("log.mode"))
+            title=Signal::derive(move || t("log.mode"))
+          />
         </Field>
         <Field label=Signal::derive(move || t("log.their-callsign")) r#for=callsign_id.clone()>
           <div class="flex gap-2">
@@ -274,7 +276,7 @@ pub(super) fn EntryForm(
           />
         </Field>
         <Field label=Signal::derive(move || t("log.qsl-sent-via")) r#for=qsl_via_id.clone()>
-          <NativeSelect
+          <SimpleSelect
             id=qsl_via_id
             value=Signal::derive(move || form.qsl_via.get())
             on_change=Callback::new(move |v: String| form.qsl_via.set(v))
@@ -293,7 +295,7 @@ pub(super) fn EntryForm(
             class="w-full"
           />
         </Field>
-        <label class="flex cursor-pointer items-center gap-2">
+        <label class=crate::kit::check_row_class()>
           <Checkbox
             checked=form.qsl_rcvd
             on_change=Callback::new(move |v: bool| form.qsl_rcvd.set(v))
@@ -330,7 +332,7 @@ pub(super) fn EntryForm(
                   label=Signal::derive(move || t("log.qso-station"))
                   r#for=station_id.clone()
                 >
-                  <NativeSelect
+                  <SimpleSelect
                     id=station_id
                     value=Signal::derive(move || {
                       book.with(|b| b.resolve(form.station_id.get()).id).to_string()
@@ -348,7 +350,7 @@ pub(super) fn EntryForm(
               }
             })
         }}
-        <label class="flex cursor-pointer items-center gap-2">
+        <label class=crate::kit::check_row_class()>
           <Checkbox
             checked=form.lotw_sent
             on_change=Callback::new(move |v: bool| form.lotw_sent.set(v))
@@ -356,7 +358,7 @@ pub(super) fn EntryForm(
           />
           <span class="text-xs text-muted-foreground">{move || t("log.lotw-uploaded")}</span>
         </label>
-        <label class="flex cursor-pointer items-center gap-2">
+        <label class=crate::kit::check_row_class()>
           <Checkbox
             checked=form.lotw_rcvd
             on_change=Callback::new(move |v: bool| form.lotw_rcvd.set(v))
@@ -364,7 +366,7 @@ pub(super) fn EntryForm(
           />
           <span class="text-xs text-muted-foreground">{move || t("log.lotw-confirmed")}</span>
         </label>
-        <label class="flex cursor-pointer items-center gap-2">
+        <label class=crate::kit::check_row_class()>
           <Checkbox
             checked=form.qrz_rcvd
             on_change=Callback::new(move |v: bool| form.qrz_rcvd.set(v))
@@ -372,7 +374,7 @@ pub(super) fn EntryForm(
           />
           <span class="text-xs text-muted-foreground">{move || t("log.qrz-confirmed")}</span>
         </label>
-        <label class="flex cursor-pointer items-center gap-2">
+        <label class=crate::kit::check_row_class()>
           <Checkbox
             checked=form.eqsl_sent
             on_change=Callback::new(move |v: bool| form.eqsl_sent.set(v))
@@ -380,7 +382,7 @@ pub(super) fn EntryForm(
           />
           <span class="text-xs text-muted-foreground">{move || t("log.eqsl-sent")}</span>
         </label>
-        <label class="flex cursor-pointer items-center gap-2">
+        <label class=crate::kit::check_row_class()>
           <Checkbox
             checked=form.eqsl_rcvd
             on_change=Callback::new(move |v: bool| form.eqsl_rcvd.set(v))
@@ -443,7 +445,7 @@ pub(super) fn EntryForm(
                     .map(|&(v, l)| SelectOption::new(v, Signal::derive(move || t(l))))
                     .collect();
                   view! {
-                    <NativeSelect
+                    <SimpleSelect
                       id=prop_mode_id.clone()
                       value=form.prop_mode
                       on_change=Callback::new(move |v: String| form.prop_mode.set(v))

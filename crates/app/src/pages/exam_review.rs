@@ -62,7 +62,7 @@ pub fn ExamReviewPage() -> impl IntoView {
 
       view! {
         <div class="space-y-4">
-          <section class="pxl-card border bg-card p-4">
+          <section class=crate::kit::card_pad_class()>
             <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm">
               // 空格留在模板里而不写进文案：带尾空格的中文 key 在翻译时极易漏掉，
               // 一旦漏掉就永远匹配不上（`check-i18n` 也查不出来）。
@@ -75,7 +75,7 @@ pub fn ExamReviewPage() -> impl IntoView {
             </div>
           </section>
 
-          <section class="pxl-card border bg-card p-4">
+          <section class=crate::kit::card_pad_class()>
             <h2 class=card_title_class("mb-2")>{move || t("exam.performance-by-category-most")}</h2>
             <ul class="space-y-1.5">
               {cats
@@ -129,7 +129,7 @@ pub fn ExamReviewPage() -> impl IntoView {
                 // 认不出这道题时用快照的。
                 let explanation = data::review_explanation(fresh.read_only(), item.clone());
                 view! {
-                  <div class=format!("pxl-card border bg-card p-4 {border}")>
+                  <div class=crate::kit::card_class_with(&format!("p-4 {border}"))>
                     <div class="mb-2 flex items-start gap-2">
                       <span class="mt-0.5 shrink-0 bg-muted px-1.5 py-0.5 font-mono text-xs">{i + 1}</span>
                       <p class="flex-1 text-sm leading-snug">{item.question.clone()}</p>

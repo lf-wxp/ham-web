@@ -1,5 +1,5 @@
 //! 明暗主题：`light` / `dark` / `system`，持久化到 `localStorage["theme"]`；
-//! 以及三个像素风相关的显示偏好：「配色方案」「像素动效」与「易读字体」。
+//! 以及四个显示偏好：「界面风格」（像素 / 现代）、「配色方案」「像素动效」与「易读字体」。
 //!
 //! 三个偏好都以 `<html>` 上的 `data-*` 属性落地（见 `style/pixel/`），CSS 一处响应，
 //! 不需要组件各自订阅信号。首屏前由 `index.html` 的内联脚本先写一遍，避免闪烁。
@@ -9,6 +9,7 @@
 
 use ham_web_core::color_scheme;
 use ham_web_core::saved_state::keys;
+use ham_web_core::ui_style::UiStyle;
 use leptos::prelude::*;
 use send_wrapper::SendWrapper;
 use wasm_bindgen::JsCast;
@@ -93,20 +94,29 @@ fn apply(theme: Theme) -> bool {
   dark
 }
 
-/// 把 `<meta name="theme-color">` 对齐到当前顶栏底色（`--card`）。
+/// 把 `<meta name="theme-color">` 对齐到当前顶栏底色。
 ///
 /// iOS Safari 用它给页面上方的状态栏 / 工具栏区域着色；静态值跟不上站内切换的明暗与配色方案，
 /// 那一条就会和顶栏断开（例如系统浅色、站内深色时露出浅色带）。读计算样式而不是硬编码，
 /// 新增方案时不用再改这里。
+///
+/// 读 `<body>` 而不是 `<html>`：现代风把 `--card` 等语义色重映射在 `body` 上
+/// （`style/modern/legacy-utilities.css`），读 `<html>` 拿到的永远是像素色板；像素风下
+/// body 继承 html，读哪个结果相同。现代风的顶栏与页面同底，取页面底色 `--md-bg`。
 fn sync_theme_color() {
-  let Some(root) = document().document_element() else {
+  let Some(body) = document().body() else {
     return;
   };
+  let var = if DisplayPrefs::style_is_modern_dom() {
+    "--md-bg"
+  } else {
+    "--card"
+  };
   let Some(color) = window()
-    .get_computed_style(&root)
+    .get_computed_style(&body)
     .ok()
     .flatten()
-    .and_then(|s| s.get_property_value("--card").ok())
+    .and_then(|s| s.get_property_value(var).ok())
     .map(|v| v.trim().to_owned())
     .filter(|v| !v.is_empty())
   else {
@@ -142,6 +152,13 @@ fn apply_readable_font(on: bool) {
   }
 }
 
+/// 把界面风格写到 `<html data-ui-style>`：两套设计系统的开关（见 `docs/ui/decisions.md`）。
+fn apply_ui_style(style: UiStyle) {
+  if let Some(root) = document().document_element() {
+    let _ = root.set_attribute("data-ui-style", style.as_str());
+  }
+}
+
 /// 把配色方案写到 `<html data-scheme>`：`schemes.css` 里按它选择变量块（经典方案没有块，沿用 `tokens.css`）。
 fn apply_scheme(id: &str) {
   if let Some(root) = document().document_element() {
@@ -157,15 +174,64 @@ pub(crate) fn pixel_motion_enabled() -> bool {
   storage::get(keys::PIXEL_MOTION).as_deref() != Some("off")
 }
 
-/// 显示偏好上下文：像素动效 / 易读字体。
+/// 显示偏好上下文：界面风格 / 配色方案 / 像素动效 / 易读字体。
 #[derive(Clone, Copy)]
 pub struct DisplayPrefs {
   pixel_motion: RwSignal<bool>,
   readable_font: RwSignal<bool>,
   scheme: RwSignal<&'static str>,
+  ui_style: RwSignal<UiStyle>,
 }
 
 impl DisplayPrefs {
+  /// 当前界面风格（像素 / 现代）。
+  ///
+  /// **会订阅信号**：只在 `view!` 的属性闭包 / `move ||` 里调用；组件体里做派发要用
+  /// [`Self::is_modern_at_mount`]。
+  pub fn ui_style(self) -> UiStyle {
+    self.ui_style.get()
+  }
+
+  /// 是否现代风格。调用约束同 [`Self::ui_style`]。
+  pub fn is_modern(self) -> bool {
+    self.ui_style.get().is_modern()
+  }
+
+  /// 构造期求值一次的风格判断，**不订阅信号**。
+  ///
+  /// 组件体里的 `if is_modern() { return 现代实现 }` 在 Leptos 里本来就只跑一次：订阅不会让
+  /// 它重渲染，只会在 dev 构建里记一条「在跟踪上下文之外读信号」的告警。真正让组件体重新执行
+  /// 的是切换路径本身 —— `MainContent` 用两个根元素类型不同的分支重建整棵路由子树。
+  pub fn is_modern_at_mount(self) -> bool {
+    self.ui_style.get_untracked().is_modern()
+  }
+
+  /// 当前界面风格（**不依赖响应式上下文**）。
+  ///
+  /// 给「在根 Owner 之外运行的普通闭包」用：那里 `use_display_prefs()` 没有上下文，
+  /// 会直接 panic。读 `<html data-ui-style>` 是同一事实来源（`apply` 时写入），
+  /// 只是不需要上下文。页面与组件不要直接用，走 `kit::is_modern()`。
+  #[must_use]
+  pub fn style_is_modern_dom() -> bool {
+    web_sys::window()
+      .and_then(|w| w.document())
+      .and_then(|d| d.document_element())
+      .and_then(|el| el.get_attribute("data-ui-style"))
+      .is_some_and(|v| v == "modern")
+  }
+
+  /// 设置并持久化界面风格。
+  ///
+  /// 与 [`Self::set_scheme`] 同理：先改 `<html>` 属性、后写信号 —— 订阅者在被唤醒时
+  /// 读到的已经是新风格的 DOM 状态，不会出现「组件已按新风格渲染、属性还是旧的」的一帧。
+  pub fn set_ui_style(self, style: UiStyle) {
+    storage::set(keys::UI_STYLE, style.as_str());
+    apply_ui_style(style);
+    self.ui_style.set(style);
+    // 风格换了，状态栏颜色的来源变量也换了（`--card` ↔ `--md-bg`）。
+    sync_theme_color();
+  }
+
   /// 当前配色方案的 id（始终是方案表里存在的一个）。
   pub fn scheme(self) -> &'static str {
     self.scheme.get()
@@ -185,6 +251,14 @@ impl DisplayPrefs {
   /// 像素动效是否开启。
   pub fn pixel_motion(self) -> bool {
     self.pixel_motion.get()
+  }
+
+  /// 像素动效偏好（**不订阅**）：给事件回调这类没有响应式上下文的地方现读。
+  ///
+  /// 与 [`Self::pixel_motion`] 的区别只在「订阅 / 不订阅」：回调里订阅既不会带来
+  /// 重渲染，还会在 dev 构建刷一条「在跟踪上下文之外读信号」。
+  pub fn pixel_motion_now(self) -> bool {
+    self.pixel_motion.get_untracked()
   }
 
   /// 易读字体是否开启。
@@ -210,6 +284,18 @@ impl DisplayPrefs {
   }
 }
 
+/// 切到现代风时应当顺带采用的明暗；没有默认建议时返回 `None`。
+///
+/// 现代风的签名外观是深色电波（`style/modern/tokens.css` 的 `.dark` 块）。这里只在
+/// localStorage **没有任何 `theme` 记录**时才代选一次深色：即「从未手动动过明暗开关」的
+/// 用户首次切现代风，给一个深色签名外观。一旦用户显式选过（浅色 / 深色 / 跟随系统），
+/// `theme` 键就存在了，这里返回 `None` 尊重既有选择。
+/// 「从未选过」默认是跟随系统，所以系统为浅色的这类用户会被临时替成深色 —— 这是首屏的
+/// 有意取舍，用户随后可在设置里改回；不要把它理解成「不覆盖跟随系统」。
+pub fn style_defaults_theme(style: UiStyle) -> Option<Theme> {
+  (style.is_modern() && storage::get(keys::THEME).is_none()).then_some(Theme::Dark)
+}
+
 /// 读取显示偏好上下文。
 pub fn use_display_prefs() -> DisplayPrefs {
   expect_context::<DisplayPrefs>()
@@ -220,13 +306,16 @@ pub fn provide_theme() {
   let pixel_motion = pixel_motion_enabled();
   let readable_font = storage::get(keys::READABLE_FONT).as_deref() == Some("on");
   let scheme = color_scheme::resolve(&storage::get(keys::COLOR_SCHEME).unwrap_or_default()).id;
+  let ui_style = UiStyle::parse(&storage::get(keys::UI_STYLE).unwrap_or_default());
   apply_pixel_motion(pixel_motion);
   apply_readable_font(readable_font);
   apply_scheme(scheme);
+  apply_ui_style(ui_style);
   provide_context(DisplayPrefs {
     pixel_motion: RwSignal::new(pixel_motion),
     readable_font: RwSignal::new(readable_font),
     scheme: RwSignal::new(scheme),
+    ui_style: RwSignal::new(ui_style),
   });
 
   let stored = storage::get(keys::THEME).map_or(Theme::System, |s| Theme::parse(&s));

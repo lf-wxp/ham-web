@@ -98,7 +98,7 @@ pub fn WantedCard() -> impl IntoView {
           .map(|lv| {
             let (label, class) = level_badge(lv);
             view! {
-              <span class=format!("pxl-badge {class}")>
+              <span class=format!("{} {class}", crate::ui::badge_skin())>
                 {tf("radio.propagation", &[&crate::data::core_text_tracked(label)])}
               </span>
             }

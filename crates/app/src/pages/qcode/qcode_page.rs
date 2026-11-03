@@ -27,7 +27,7 @@ pub fn QCodePage() -> impl IntoView {
         {(0..6)
           .map(|_| {
             view! {
-              <div class="pxl-card border bg-card p-4">
+              <div class=crate::kit::card_pad_class()>
                 <Skeleton class="h-3 w-24" />
                 <Skeleton class="mt-3 h-4 w-3/4" />
               </div>

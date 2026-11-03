@@ -44,9 +44,11 @@ impl DailyLog {
   /// 记一次作答；`new` 表示这道题以前没做过，`duration_ms` 为本次作答耗时。
   pub fn add(&mut self, day: &str, new: bool, duration_ms: u64) {
     let t = self.days.entry(day.to_owned()).or_default();
-    t.answered += 1;
-    t.new += u32::from(new);
-    t.duration_ms += duration_ms;
+    // 饱和加：这三个数来自 `localStorage` 反序列化，被手改成接近上限的值时，
+    // 普通 `+=` 在 debug 构建会 panic、release 会回绕成很小的数。
+    t.answered = t.answered.saturating_add(1);
+    t.new = t.new.saturating_add(u32::from(new));
+    t.duration_ms = t.duration_ms.saturating_add(duration_ms);
     while self.days.len() > KEEP_DAYS {
       self.days.pop_first();
     }
@@ -73,6 +75,38 @@ impl DailyLog {
       })
       .collect()
   }
+}
+
+/// 「信号瀑布」的强度档位上限。
+pub const INTENSITY_MAX: u8 = 5;
+
+/// 把一组每日作答量折算成瀑布图的强度档位（`0` = 当天未开台，`1..=5` 由浅到深）。
+///
+/// 基准优先取 `goal`（当天目标题量）；没有目标时退回这一组里的最大值。
+/// 首页是本地快照，不为了给几格上色去异步加载题库算「今日目标」—— 那会让首屏多一次请求，
+/// 而这里的视觉目的是「哪天亮、哪天暗」，不是「今天完成了几成」。
+/// 全组为 0（从未作答）时逐项返回 0，让视图画空状态，而不是画一排假的浅色格子。
+#[must_use]
+pub fn intensity_levels(days: impl IntoIterator<Item = u32>, goal: Option<u32>) -> Vec<u8> {
+  let counts: Vec<u32> = days.into_iter().collect();
+  let base = goal
+    .filter(|g| *g > 0)
+    .or_else(|| counts.iter().copied().max())
+    .unwrap_or(0);
+  if base == 0 {
+    return vec![0; counts.len()];
+  }
+  counts
+    .into_iter()
+    .map(|n| {
+      if n == 0 {
+        return 0;
+      }
+      // 向上取整：只要有作答就至少亮一档，否则「做了一道」与「没做」在图上一样。
+      let level = (u64::from(n) * u64::from(INTENSITY_MAX)).div_ceil(u64::from(base));
+      u8::try_from(level.min(u64::from(INTENSITY_MAX))).unwrap_or(INTENSITY_MAX)
+    })
+    .collect()
 }
 
 /// 备考计划（`localStorage` 中 `learning-plan`）。
@@ -181,15 +215,24 @@ pub fn daily_goal(days_left: i64, unseen: usize, new_today: usize, due: usize) -
 #[must_use]
 pub fn day_number(s: &str) -> Option<i64> {
   let mut it = s.trim().splitn(3, '-');
-  let y: i64 = it.next()?.parse().ok()?;
-  let m: i64 = it.next()?.parse().ok()?;
-  let d: i64 = it.next()?.parse().ok()?;
+  // 只收纯数字：`str::parse::<i64>` 会放过 `+2026` 这类带符号的写法，日期格式契约里没有它。
+  let mut field = || -> Option<i64> {
+    let part = it.next()?;
+    if part.is_empty() || !part.bytes().all(|b| b.is_ascii_digit()) {
+      return None;
+    }
+    part.parse().ok()
+  };
+  let y = field()?;
+  let m = field()?;
+  let d = field()?;
   // 年份也要限：`era * 146_097` 要 6×10^15 年才溢出 i64，但畸形输入（上游 JSON 里
   // 十七位的年份、手改过的目标日期）会让 debug 构建直接 panic —— 日期格式契约是 4 位年。
   if !(1..=9999).contains(&y) {
     return None;
   }
-  if !(1..=12).contains(&m) || !(1..=31).contains(&d) {
+  if !(1..=12).contains(&m) || d < 1 || d > days_in_month(y, m) {
+    // 按当月真实天数判：`2026-02-31` 以前会被接受并悄悄算成 3 月 3 日。
     return None;
   }
   // Howard Hinnant 的 days_from_civil
@@ -202,10 +245,23 @@ pub fn day_number(s: &str) -> Option<i64> {
   Some(era * 146_097 + doe - 719_468)
 }
 
-/// 天数 → `YYYY-MM-DD`。
+/// 公历某年某月的天数（`m` 为 1–12）。
+fn days_in_month(y: i64, m: i64) -> i64 {
+  match m {
+    1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+    4 | 6 | 9 | 11 => 30,
+    _ if (y % 4 == 0 && y % 100 != 0) || y % 400 == 0 => 29,
+    _ => 28,
+  }
+}
+
+/// 日期算法的天数取值范围（约 ±11 亿年）：超出就夹住，避免 `days + 719_468` 之类溢出。
+const DAY_RANGE: i64 = 1 << 32;
+
+/// 天数 → `YYYY-MM-DD`。`days` 夹在 ±[`DAY_RANGE`] 内（正常日期远在其中）。
 #[must_use]
 pub fn format_day(days: i64) -> String {
-  let z = days + 719_468;
+  let z = days.clamp(-DAY_RANGE, DAY_RANGE) + 719_468;
   let era = z.div_euclid(146_097);
   let doe = z - era * 146_097;
   let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
@@ -237,6 +293,24 @@ mod tests {
     assert_eq!(day_number("99999-01-01"), None);
     assert_eq!(day_number("0000-01-01"), None);
     assert_eq!(day_number("-2026-01-01"), None);
+    // 月内天数按真实历法判：以前 `2026-02-31` 会被算成 3 月 3 日。
+    assert_eq!(day_number("2026-02-31"), None);
+    assert_eq!(day_number("2026-04-31"), None);
+    assert_eq!(day_number("2025-02-29"), None);
+    assert!(day_number("2024-02-29").is_some());
+    assert_eq!(day_number("1900-02-29"), None, "1900 不是闰年");
+    assert!(day_number("2000-02-29").is_some(), "2000 是闰年");
+    // 带符号 / 空段不是合法写法。
+    assert_eq!(day_number("+2026-+10-+01"), None);
+    assert_eq!(day_number("2026--01"), None);
+    assert_eq!(day_number("2026-10-"), None);
+  }
+
+  #[test]
+  fn format_day_survives_extreme_input() {
+    // 不 panic、也不回绕出一个看似合理的日期：夹住后是确定的字符串。
+    assert_eq!(format_day(i64::MAX), format_day(DAY_RANGE));
+    assert_eq!(format_day(i64::MIN), format_day(-DAY_RANGE));
   }
 
   #[test]
@@ -284,6 +358,60 @@ mod tests {
       log.add(&format_day(d), false, 0);
     }
     assert_eq!(log.days.len(), KEEP_DAYS);
+  }
+
+  #[test]
+  fn daily_log_keeps_the_newest_days() {
+    // 只断言条数会放过「删错了一头」：必须验证留下的是**最新**的 KEEP_DAYS 天。
+    let mut log = DailyLog::default();
+    for d in 0..100 {
+      log.add(&format_day(d), false, 0);
+    }
+    assert_eq!(log.days.len(), KEEP_DAYS);
+    let newest = 99;
+    let oldest_kept = newest - KEEP_DAYS as i64 + 1;
+    assert_eq!(log.days.keys().next(), Some(&format_day(oldest_kept)));
+    assert_eq!(log.days.keys().next_back(), Some(&format_day(newest)));
+    assert!(!log.days.contains_key(&format_day(oldest_kept - 1)));
+  }
+
+  #[test]
+  fn daily_log_counters_saturate() {
+    let mut log = DailyLog::default();
+    log.days.insert(
+      "2026-10-01".to_owned(),
+      DayTally {
+        answered: u32::MAX,
+        new: u32::MAX,
+        duration_ms: u64::MAX,
+      },
+    );
+    log.add("2026-10-01", true, 1);
+    let t = log.on("2026-10-01");
+    assert_eq!(
+      (t.answered, t.new, t.duration_ms),
+      (u32::MAX, u32::MAX, u64::MAX)
+    );
+  }
+
+  #[test]
+  fn intensity_needs_a_base() {
+    // 从未作答：整列 0，视图据此画空状态。
+    assert_eq!(intensity_levels([0, 0, 0], None), vec![0, 0, 0]);
+    assert_eq!(intensity_levels([], None), Vec::<u8>::new());
+    // goal = 0 等同于没有目标，不能除零，也不能把所有格子点亮。
+    assert_eq!(intensity_levels([0, 0], Some(0)), vec![0, 0]);
+    // goal = 0 要「回退到这一组的最大值」：用 `[0, 0]` 区分不出回退与直接全 0，
+    // 这里让最大值非零 —— 最大那天满档，没做的那天仍是 0。
+    assert_eq!(intensity_levels([3, 0], Some(0)), vec![5, 0]);
+  }
+
+  #[test]
+  fn intensity_scales_against_goal() {
+    // 目标 10 题：1 题也至少亮一档，10 题满档，超额封顶。
+    assert_eq!(intensity_levels([1, 5, 10, 40], Some(10)), vec![1, 3, 5, 5]);
+    // 没有目标时按这一组最大值归一：最大那天满档。
+    assert_eq!(intensity_levels([0, 2, 8], None), vec![0, 2, 5]);
   }
 
   #[test]

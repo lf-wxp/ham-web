@@ -25,8 +25,8 @@ pub(super) fn ImportReportPanel(report: RwSignal<Option<ImportReport>>) -> impl 
       let label = contest_label(&r);
       let hidden = r.skipped_total.saturating_sub(r.samples.len());
       view! {
-        <section class="pxl-card border bg-card" aria-labelledby="cabrillo-import-heading">
-          <h2 id="cabrillo-import-heading" class="pxl-section-title">
+        <section class=crate::kit::card_class() aria-labelledby="cabrillo-import-heading">
+          <h2 id="cabrillo-import-heading" class=crate::kit::card_title_class()>
             {move || t("contest.cabrillo-import-heading")}
           </h2>
           <div class="space-y-3 p-4 text-sm">

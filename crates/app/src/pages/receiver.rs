@@ -9,8 +9,6 @@ use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 #[component]
 pub fn ReceiverPage() -> impl IntoView {
   set_title("shell.receiver-specs");
@@ -24,12 +22,12 @@ pub fn ReceiverPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <Table class="min-w-[640px] text-sm" wrapper_class="pxl-card border bg-card">
+        <Table class="min-w-[640px] text-sm" wrapper_class=crate::kit::card_class()>
           <TableHead>
             <TableRow>
-              <TableHeader class=CELL>{move || t("knowledge.metrics")}</TableHeader>
-              <TableHeader class=CELL>{move || t("knowledge.meaning")}</TableHeader>
-              <TableHeader class=CELL>{move || t("knowledge.deciding-factors")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.metrics")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.meaning")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.deciding-factors")}</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -38,9 +36,9 @@ pub fn ReceiverPage() -> impl IntoView {
               .map(|&(name, meaning, factor)| {
                 view! {
                   <TableRow>
-                    <TableCell class=format!("{CELL} whitespace-nowrap")>{move || kt_tracked(name)}</TableCell>
-                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(meaning)}</TableCell>
-                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(factor)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>{move || kt_tracked(name)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(meaning)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(factor)}</TableCell>
                   </TableRow>
                 }
               })
@@ -48,8 +46,8 @@ pub fn ReceiverPage() -> impl IntoView {
           </TableBody>
         </Table>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.noise-and-sensitivity-basics")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.noise-and-sensitivity-basics")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {NOISE_BASICS
               .iter()
@@ -65,8 +63,8 @@ pub fn ReceiverPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.improving-reception")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.improving-reception")}</h2>
           <ul class="space-y-2 p-4">
             {RECEIVER_TIPS
               .iter()

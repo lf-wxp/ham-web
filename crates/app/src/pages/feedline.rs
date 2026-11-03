@@ -9,8 +9,6 @@ use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 #[component]
 pub fn FeedlinePage() -> impl IntoView {
   set_title("shell.matching-feedlines");
@@ -24,14 +22,14 @@ pub fn FeedlinePage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.common-feedlines")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.common-feedlines")}</h2>
           <Table class="min-w-[560px] text-sm">
             <TableHead>
               <TableRow>
-                <TableHeader class=CELL>{move || t("knowledge.model")}</TableHeader>
-                <TableHeader class=CELL>{move || t("knowledge.characteristic-impedance")}</TableHeader>
-                <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.model")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.characteristic-impedance")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.notes")}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -40,9 +38,9 @@ pub fn FeedlinePage() -> impl IntoView {
                 .map(|&(name, z, desc)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap")>{move || kt_tracked(name)}</TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(z)}</TableCell>
-                      <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>{move || kt_tracked(name)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(z)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -51,8 +49,8 @@ pub fn FeedlinePage() -> impl IntoView {
           </Table>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.matching-components-and-concepts")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.matching-components-and-concepts")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {MATCHING
               .iter()
@@ -68,8 +66,8 @@ pub fn FeedlinePage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.mismatch-degree-and-consequences")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.mismatch-degree-and-consequences")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {MISMATCH
               .iter()

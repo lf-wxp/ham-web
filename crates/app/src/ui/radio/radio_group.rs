@@ -2,7 +2,7 @@ use leptos::prelude::*;
 
 use crate::cn::cn;
 
-use super::super::control::TextValue;
+use super::super::control::{TextValue, invalid_attr};
 
 #[derive(Clone, Copy)]
 pub(super) struct RadioCtx {
@@ -19,6 +19,9 @@ pub fn RadioGroup(
   #[prop(optional, into)]
   aria_label: Option<TextValue>,
   #[prop(optional, into)] disabled: Signal<bool>,
+  /// 整组校验未通过（如「必须选一项」）：属性挂在 `radiogroup` 上，样式由 CSS 往下传给每个单选框。
+  #[prop(optional, into)]
+  invalid: Signal<bool>,
   #[prop(optional, into)] class: String,
   children: Children,
 ) -> impl IntoView {
@@ -32,6 +35,7 @@ pub fn RadioGroup(
       role="radiogroup"
       data-slot="radio-group"
       aria-label=move || aria_label.as_ref().map(TextValue::get)
+      aria-invalid=invalid_attr(invalid)
       class=cn(&["grid gap-3", &class])
       data-disabled=move || disabled.get().then_some("")
     >

@@ -5,7 +5,7 @@
 //!
 //! 词条本体维护在 `data/i18n/{lang}/{domain}.json`（按语言 / 域拆分），由 `build.rs` 在
 //! 构建期编成静态表；代码里不含任何词条，改文案不用碰 Rust 源文件。规范见
-//! `docs/i18n.md`。
+//! `docs/data/i18n.md`。
 //!
 //! 只有中文与内嵌域（见 `build.rs` 的 `BUNDLED_DOMAINS`）编进 wasm，其余域的译文由
 //! [`pack`] 在运行时按语言拉一次 —— 拉包发生在挂载之前与切语言之前，因此 [`t`] 仍是
@@ -170,7 +170,12 @@ pub async fn load_stored() {
 /// 初始化语言：从 `localStorage` 读取并提供上下文，同时同步 `<html lang>`。
 pub fn provide_locale() {
   let signal = locale();
-  signal.set(stored_locale());
+  let initial = stored_locale();
+  signal.set(initial);
+  // 先把 `<html lang>` 写上再建 Effect：Effect 要等首次渲染之后才跑，而读屏、翻译插件
+  // 与 e2e 都是「主内容一出现就读这个属性」。晚一帧就会出现「界面已经是英文、
+  // `<html lang>` 还是 zh-CN」的窗口（`mobile_overflow` 曾偶发抓到）。
+  apply_lang(initial);
   Effect::new(move |_| {
     let l = signal.get();
     apply_lang(l);

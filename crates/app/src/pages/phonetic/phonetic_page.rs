@@ -23,7 +23,7 @@ pub fn PhoneticPage() -> impl IntoView {
       <PageContainer>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-4">
           <Stat label=Signal::derive(move || t("morse.letters")) value=PHONETIC.len() />
-          <div class="pxl-card border bg-card p-4 sm:col-span-3">
+          <div class=crate::kit::card_class_with("p-4 sm:col-span-3")>
             <p class="text-sm leading-6 text-muted-foreground">
               {move || t("morse.each-letter-is-represented")}
             </p>

@@ -31,8 +31,8 @@ pub fn MufPage() -> impl IntoView {
 
         <VoacapCard />
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.key-concepts-heading")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.key-concepts-heading")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {MUF_CONCEPTS
               .iter()
@@ -48,8 +48,8 @@ pub fn MufPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("tools.band-selection-advice")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("tools.band-selection-advice")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {BAND_CHOICE
               .iter()

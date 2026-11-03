@@ -5,7 +5,7 @@ use leptos::prelude::*;
 use crate::cn::cn;
 
 use super::super::control::TextValue;
-use super::shared::CHIP_BASE;
+use super::shared::chip_base;
 
 /// 单个 chip 开关（筛选条上的「只看需要的」「提醒」这类独立开关）。
 ///
@@ -25,7 +25,7 @@ pub fn ChipToggle(
   #[prop(optional, into)] class: String,
   children: Children,
 ) -> impl IntoView {
-  let class = cn(&[CHIP_BASE, &class]);
+  let class = cn(&[chip_base(), &class]);
   view! {
     <button
       type="button"

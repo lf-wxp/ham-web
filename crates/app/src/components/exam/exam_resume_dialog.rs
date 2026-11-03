@@ -16,6 +16,19 @@ pub fn ExamResumeDialog(
     let ms = expires_in_ms.get().max(0);
     format!("{:02}:{:02}", ms / 60_000, (ms % 60_000) / 1000)
   };
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <crate::kit_modern::ModernExamResume
+        open=open
+        expires_in_ms=expires_in_ms
+        answered=answered
+        total=total
+        on_resume=on_resume
+        on_restart=on_restart
+      />
+    }
+    .into_any();
+  }
   view! {
     <Dialog open=open class="sm:max-w-[520px]">
       <DialogHeader>
@@ -47,4 +60,5 @@ pub fn ExamResumeDialog(
       </div>
     </Dialog>
   }
+  .into_any()
 }

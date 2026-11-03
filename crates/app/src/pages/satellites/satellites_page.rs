@@ -7,7 +7,6 @@ use crate::data::kt_tracked;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-use super::CELL;
 use super::doppler_tracker::DopplerTracker;
 use super::iss_tracker::IssTracker;
 use super::pass_predictor::PassPredictor;
@@ -34,8 +33,8 @@ pub fn SatellitesPage() -> impl IntoView {
 
         <IssTracker />
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.antenna-rotator")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.antenna-rotator")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
             {move || t("radio.during-a-pass-connect")}
           </p>
@@ -45,18 +44,18 @@ pub fn SatellitesPage() -> impl IntoView {
         // 横向可滚区域必须可聚焦，否则键盘用户滚不动它（axe: scrollable-region-focusable）
         <Table
           class="min-w-[680px] text-sm"
-          wrapper_class="pxl-card border bg-card"
+          wrapper_class=crate::kit::card_class()
           tabindex="0"
           role="region"
           aria_label=Signal::derive(move || t("radio.satellite-frequency-table"))
         >
           <TableHead>
             <TableRow>
-              <TableHeader class=CELL>{move || t("radio.satellite")}</TableHeader>
-              <TableHeader class=CELL>{move || t("radio.type")}</TableHeader>
-              <TableHeader class=CELL>{move || t("radio.uplink")}</TableHeader>
-              <TableHeader class=CELL>{move || t("radio.downlink")}</TableHeader>
-              <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.satellite")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.type")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.uplink")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.downlink")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.notes")}</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -65,14 +64,14 @@ pub fn SatellitesPage() -> impl IntoView {
               .map(|s| {
                 view! {
                   <TableRow>
-                    <TableCell class=format!("{CELL} whitespace-nowrap")>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>
                       <div>{move || kt_tracked(s.name)}</div>
                       <div class="font-mono text-xs text-muted-foreground">{move || kt_tracked(s.callsign)}</div>
                     </TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(s.kind)}</TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(s.uplink)}</TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(s.downlink)}</TableCell>
-                    <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(s.note)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap text-muted-foreground")>{move || kt_tracked(s.kind)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(s.uplink)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono tabular-nums")>{move || kt_tracked(s.downlink)}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(s.note)}</TableCell>
                   </TableRow>
                 }
               })
@@ -80,8 +79,8 @@ pub fn SatellitesPage() -> impl IntoView {
           </TableBody>
         </Table>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.operating-tips")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.operating-tips")}</h2>
           <ul class="space-y-2 p-4">
             {SATELLITE_TIPS
               .iter()
@@ -97,8 +96,8 @@ pub fn SatellitesPage() -> impl IntoView {
           </ul>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.tracking-and-prediction-software")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.tracking-and-prediction-software")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {TRACKING_SOFTWARE
               .iter()

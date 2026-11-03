@@ -6,7 +6,7 @@ use crate::auto_sync::AutoStatus;
 use crate::i18n::{t, tf, tp};
 use crate::remote_sync::{self, PullResult};
 use crate::ui::{
-  Button, Checkbox, ConfirmTone, Field, Input, InputType, NativeSelect, SelectOption, Textarea,
+  Button, Checkbox, ConfirmTone, Field, Input, InputType, SelectOption, SimpleSelect, Textarea,
   ToastKind, Variant,
 };
 
@@ -154,7 +154,11 @@ pub(super) fn RemoteSyncPanel(
 
   view! {
     <div class="space-y-3 border bg-inset p-3">
-      <h2 class="pxl-label text-base">{move || t("tools.remote-sync-title")}</h2>
+      // 像素风保持 `pxl-label`（它没有标题栏，与相邻的 `bg-inset` 块是一体的）；
+      // 现代风换成区块标题，否则这一屏里只有它会落回点阵字体。
+      <h2 class=if crate::kit::is_modern_at_mount() { "md-section-title" } else { "pxl-label text-base" }>
+        {move || t("tools.remote-sync-title")}
+      </h2>
       <p class="text-xs text-muted-foreground">{move || t("tools.remote-sync-desc")}</p>
 
       <Field
@@ -223,7 +227,7 @@ pub(super) fn RemoteSyncPanel(
         r#for="remote-method"
         class="sm:w-40"
       >
-        <NativeSelect
+        <SimpleSelect
           id="remote-method"
           value=Signal::derive(move || cfg.with(|c| c.method.as_str().to_owned()))
           on_change=Callback::new(move |v: String| {
@@ -287,11 +291,17 @@ pub(super) fn RemoteSyncPanel(
       }}
 
       <div class="flex flex-wrap items-center gap-2">
-        <Button variant=Variant::Outline disabled=pull_disabled on_click=Callback::new(ask_overwrite)>
+        <Button
+          variant=Variant::Outline
+          class=crate::kit::btn_wrap_class()
+          disabled=pull_disabled
+          on_click=Callback::new(ask_overwrite)
+        >
           {move || t("tools.remote-pull-overwrite")}
         </Button>
         <Button
           variant=Variant::Outline
+          class=crate::kit::btn_wrap_class()
           disabled=pull_disabled
           on_click=Callback::new(move |()| run(Action::PullMerge))
         >
@@ -299,6 +309,7 @@ pub(super) fn RemoteSyncPanel(
         </Button>
         <Button
           variant=Variant::Default
+          class=crate::kit::btn_wrap_class()
           disabled=push_disabled
           on_click=Callback::new(move |()| run(Action::Push))
         >

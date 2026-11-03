@@ -126,6 +126,7 @@
   "shell.receiver-specs-title": "Receiver Specs",
   "shell.search": "Search",
   "shell.search-keywords": "Search keywords",
+  "shell.search-pages": "Pages",
   "shell.search-terms-frequencies-callsigns": "Search terms, frequencies, callsigns, antennas, components…",
   "shell.search-with-shortcut": "Search (/)",
   "shell.action-bar": "Action bar",
@@ -243,5 +244,10 @@
   "shell.exam-mock": "Mock exams",
   "shell.exam-review": "Review",
   "shell.exam-data": "Study data",
-  "shell.exam-rpg": "Quests"
+  "shell.exam-rpg": "Quests",
+  "shell.settings-style": "Interface style",
+  "shell.settings-style-hint": "Two independent design systems: switching changes layout, controls and motion — not just colors. The first switch to modern starts in dark; you can still change light or dark on its own.",
+  "shell.style-pixel": "Pixel",
+  "shell.style-modern": "Modern",
+  "shell.close-settings": "Close settings"
 }

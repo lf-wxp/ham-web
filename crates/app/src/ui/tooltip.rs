@@ -2,12 +2,14 @@
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
+use std::time::Duration;
 
 use leptos::{ev, html, prelude::*};
 use send_wrapper::SendWrapper;
 use wasm_bindgen::{JsCast, closure::Closure};
 
 use crate::cn::cn;
+use crate::presence::{ExitSpeed, exit_ms};
 use crate::ui::TextValue;
 use crate::util::{document, unique_id, window};
 
@@ -15,7 +17,7 @@ fn closest_tip(target: Option<web_sys::EventTarget>) -> Option<web_sys::Element>
   target?
     .dyn_into::<web_sys::Element>()
     .ok()?
-    .closest(".pxl-tip")
+    .closest("[data-tip]")
     .ok()
     .flatten()
 }
@@ -28,7 +30,13 @@ pub(crate) fn setup_tooltip_popup() {
   else {
     return;
   };
-  popup.set_class_name("pxl-tip-popup");
+  // 初始类名也按当前风格给：否则现代风的 DOM 里会先挂着一个 `.pxl-tip-popup`
+  //（虽然 `hidden`，但静态审计会把它当成残留，第一次显示前也可能闪一帧像素样式）。
+  popup.set_class_name(if crate::theme::DisplayPrefs::style_is_modern_dom() {
+    "md-tip-popup"
+  } else {
+    "pxl-tip-popup"
+  });
   popup.set_hidden(true);
   let _ = popup.set_attribute("data-slot", "tooltip-popup");
   let _ = popup.set_attribute("aria-hidden", "true");
@@ -39,18 +47,64 @@ pub(crate) fn setup_tooltip_popup() {
   let hovered = Rc::new(RefCell::new(None::<web_sys::Element>));
   let focused = Rc::new(RefCell::new(None::<web_sys::Element>));
   let dismissed = Rc::new(Cell::new(false));
+  // 退场：先挂 `data-state="closed"` 播完淡出（动画，见 `tip-popup` 的 CSS），再 `hidden`。
+  // 代际号让「淡出途中又悬停到下一个触发器」取消那次延迟隐藏，否则新气泡刚出现就被旧计时器藏掉。
+  let hide_gen = Rc::new(Cell::new(0u32));
+  let hide = {
+    let popup = popup.clone();
+    let hide_gen = Rc::clone(&hide_gen);
+    move || {
+      if popup.hidden() || popup.get_attribute("data-state").as_deref() == Some("closed") {
+        return;
+      }
+      let _ = popup.set_attribute("data-state", "closed");
+      let ticket = hide_gen.get().wrapping_add(1);
+      hide_gen.set(ticket);
+      let popup = popup.clone();
+      let hide_gen = Rc::clone(&hide_gen);
+      set_timeout(
+        move || {
+          if hide_gen.get() == ticket {
+            popup.set_hidden(true);
+          }
+        },
+        Duration::from_millis(exit_ms(ExitSpeed::Fast)),
+      );
+    }
+  };
+  let show = {
+    let popup = popup.clone();
+    let hide_gen = Rc::clone(&hide_gen);
+    move || {
+      hide_gen.set(hide_gen.get().wrapping_add(1));
+      popup.set_hidden(false);
+      let _ = popup.set_attribute("data-state", "open");
+    }
+  };
   let render = {
     let popup = popup.clone();
+    let hide = hide.clone();
+    let show = show.clone();
     let hovered = Rc::clone(&hovered);
     let focused = Rc::clone(&focused);
     let dismissed = Rc::clone(&dismissed);
     move || {
+      // 风格可能在运行中切换，所以每次显示前按当前风格重设类名。
+      // 这里**不能**用 `kit::is_modern_at_mount()`：气泡渲染在根 Owner 之外的普通闭包里，
+      // 取 `DisplayPrefs` 上下文会直接 panic（实测会在悬停时弹出致命错误页）。
+      // 读根元素上的 `data-ui-style` 是同一事实来源，且不依赖任何上下文。
+      let modern = crate::theme::DisplayPrefs::style_is_modern_dom();
+      popup.set_class_name(if modern {
+        "md-tip-popup"
+      } else {
+        "pxl-tip-popup"
+      });
       let anchor = focused
         .borrow()
         .clone()
         .or_else(|| hovered.borrow().clone());
       let Some(anchor) = anchor.filter(|a| a.is_connected() && !dismissed.get()) else {
-        popup.set_hidden(true);
+        hide();
         return;
       };
       let Some(label) = anchor
@@ -61,7 +115,7 @@ pub(crate) fn setup_tooltip_popup() {
         return;
       };
       popup.set_text_content(label.text_content().as_deref());
-      popup.set_hidden(false);
+      show();
       let a = anchor.get_bounding_client_rect();
       let r = popup.get_bounding_client_rect();
       let width = document()
@@ -90,13 +144,11 @@ pub(crate) fn setup_tooltip_popup() {
     let hovered = Rc::clone(&hovered);
     let dismissed = Rc::clone(&dismissed);
     let render = render.clone();
+    // `MediaQueryList` 建一次：`match_media` 每次调用都新建一个对象，而 `mouseover` 是高频事件。
+    // 对象本身是活的，用户换了输入设备（接上 / 拔掉鼠标）后下一次 `matches()` 读到的就是新值。
+    let hover_query = window().match_media("(hover: hover)").ok().flatten();
     move |e| {
-      if !window()
-        .match_media("(hover: hover)")
-        .ok()
-        .flatten()
-        .is_some_and(|m| m.matches())
-      {
+      if !hover_query.as_ref().is_some_and(|m| m.matches()) {
         return;
       }
       let tip = closest_tip(e.target());
@@ -203,7 +255,9 @@ pub fn Tooltip(
     }
   });
   view! {
-    <span node_ref=root class=cn(&["pxl-tip relative inline-flex", &class])>
+    // `data-tip` 是**纯钩子**（事件代理用它找触发器），与皮肤无关 ——
+    // 两套设计系统都不该在 DOM 上互相留痕，所以不叫 `pxl-tip` 也不叫 `md-tip`。
+    <span node_ref=root data-tip="" class=cn(&["relative inline-flex", &class])>
       {children()}
       <span id=id role="tooltip" hidden>{move || label.get()}</span>
     </span>

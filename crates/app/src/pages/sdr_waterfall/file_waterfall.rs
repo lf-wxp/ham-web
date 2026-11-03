@@ -141,7 +141,7 @@ pub(super) fn FileWaterfall() -> impl IntoView {
   };
 
   view! {
-    <section class="pxl-card border bg-card">
+    <section class=crate::kit::card_class()>
       <div class="border-b px-4 py-3">
         <h2 class=card_title_class("")>{move || t("radio.offline-analysis-upload-wav")}</h2>
         <p class="text-xs text-muted-foreground">

@@ -83,7 +83,7 @@ pub fn AptDecoderPage() -> impl IntoView {
             {move || t("radio.upload-apt-audio-received")}
             {move || t("common.decoding-runs-in-a")}
             {move || t("common.a-typical-pass-lasts")}
-            <a href="/satellites" class="text-primary underline underline-offset-2">{move || t("radio.pass-predictions")}</a>
+            <a href="/satellites" class="text-primary">{move || t("radio.pass-predictions")}</a>
             {move || t("radio.record-in-advance-the")}
           </p>
         </section>

@@ -122,13 +122,14 @@
   "exam.multiple": "Múltiple",
   "exam.multiple-answer": "Respuesta múltiple",
   "exam.multiple-choice-count": "Nº de preguntas de opción múltiple",
-  "exam.failed": "Falló",
+  "exam.failed": "No aprobado",
   "exam.misread-the-question": "Leí mal la pregunta",
   "exam.submitted": "Entregado",
   "exam.answered": "Respondidas",
+  "exam.bar-label": "Controles del examen",
   "exam.saved": "Guardado",
   "exam.due": "Vencida",
-  "exam.bookmarked": "Guardado",
+  "exam.bookmarked": "En favoritos",
   "exam.flagged": "Marcada",
   "exam.answered-summary": "Respondidas",
   "exam.answered-correct": "Correcta",
@@ -412,5 +413,9 @@
   "exam.multiple-in-parens": "(múltiple)",
   "exam.delete-group-confirm": "¿Eliminar el grupo «{}»?",
   "exam.delete-group-hint": "Los marcadores del grupo se conservan; solo se elimina el grupo.",
-  "exam.group-deleted": "Grupo eliminado"
+  "exam.group-deleted": "Grupo eliminado",
+  "exam.keys-pick": "para elegir",
+  "exam.keys-turn": "para pasar",
+  "exam.signal-report": "informe de señal",
+  "exam.unknown-error-detail": "Error desconocido: {}"
 }

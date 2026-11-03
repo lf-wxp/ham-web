@@ -1,4 +1,4 @@
-//! 界面规范的机械守卫：把 `docs/ui-components.md` §11 里「应为 0」的几条搬进 `cargo make check`。
+//! 界面规范的机械守卫：把 `docs/ui/pixel.md` §11 里「应为 0」的几条搬进 `cargo make check`。
 //!
 //! 为什么落成工具：`rounded-*` 这类「写了也没效果」的类曾被 `surfaces.css` 当存量卡片皮肤的
 //! 钩子用（2026-10-13 才换成 `pxl-card` 标记清理干净），手写 `<input>` 与 `input_class()` 类名
@@ -10,7 +10,7 @@
 //!   判不出来时放过，宁可漏报）；
 //! - ⑧ 的页面级宽度容器是**封闭清单** —— 清单外命中、清单内计数漂移都算失败。
 //!
-//! 2026-10-24 界面评审补上「文档写了、门禁没拦」的一批（见 `docs/ui-components.md` §11），全部是
+//! 2026-10-24 界面评审补上「文档写了、门禁没拦」的一批（见 `docs/ui/pixel.md` §11），全部是
 //! class token 级判定（先取字符串字面量、再按空白切 token、剥掉变体前缀）：
 //! - ⑪ 字重类（`font-semibold` / `font-bold` / `font-medium`）：点阵字体下是空操作，
 //!   易读字体下却会生效，两种模式层级不一致；
@@ -82,13 +82,6 @@ const RULES: &[Rule] = &[
     advice: "控件样式只在 ui/ 里定义；页面要局部调整就用组件的 `class` 参数",
   },
   Rule {
-    name: "原生表单控件（`<input>` / `<select>` / `<textarea>`）",
-    roots: &["crates/app/src/pages", "crates/app/src/components"],
-    skip: &[],
-    hits: has_native_control,
-    advice: "用 ui/ 的 Input / NativeSelect / Textarea / FileInput / FileDropZone（§3 决策表）",
-  },
-  Rule {
     name: "类名工厂 `input_class(`（已删除）",
     roots: &["crates/app/src"],
     skip: &["/ui/"],
@@ -149,7 +142,7 @@ const RULES: &[Rule] = &[
     roots: &["crates/app/src"],
     skip: &["cn.rs"],
     hits: has_solid_ring,
-    advice: "全站焦点是 2px 虚线（`:focus-visible` 全局规则 + `pxl-*` 控件自带）；不要用 `ring-*` 顶替它，也不用为它加 `outline-none`（§2 / MOTION.md）",
+    advice: "全站焦点是 2px 虚线（`:focus-visible` 全局规则 + `pxl-*` 控件自带）；不要用 `ring-*` 顶替它，也不用为它加 `outline-none`（§2 / docs/ui/motion.md）",
   },
   Rule {
     name: "非 6 倍数的任意像素字号（`text-[10px]` 等）",
@@ -211,7 +204,10 @@ const RULES: &[Rule] = &[
   Rule {
     name: "页面标题没走 `pxl-title`（手写 `<h1>`）",
     roots: &["crates/app/src/pages"],
-    skip: &["print_page.rs"],
+    // `print_page.rs`：纸面版式自带标题排版；
+    // `not_found.rs`：404 在路由兜底里渲染，标题类名按 `<html data-ui-style>` 现场决定
+    //（`pxl-title` / `md-h2` 都合法），规则是逐行匹配的，看不出这个分支。
+    skip: &["print_page.rs", "not_found.rs"],
     hits: has_bare_h1,
     advice: "页头用 `PageHeader`（`pxl-title` + 吸顶 + 主色左轨的唯一来源）；确需手写 `<h1>` 时带 `pxl-title`，纯无障碍标题用 `sr-only`",
   },
@@ -300,38 +296,50 @@ fn has_empty_attribute(line: &str) -> bool {
   line.contains("class=\"\"") || line.contains("style=\"\"")
 }
 
-/// §2 硬规则 6：`text-destructive` 把填充色当文字色用。
-///
-/// `text-destructive-foreground`（实色按钮上的字）是另一个 token，不归这条管 —— 它由
-/// `.pxl-btn-destructive` 在 `controls.css` 里成套使用，调用点不会单独写。
 /// ㉓ `<Icon>` 上用 16/20px 的尺寸类（`h-4 w-4` / `size-4` …）。
 fn has_small_icon(line: &str) -> bool {
-  let Some(start) = line.find("<Icon") else {
-    return false;
-  };
-  let tail = &line[start..];
-  let end = tail.find('>').map_or(tail.len(), |i| i + 1);
-  class_tokens(&tail[..end]).iter().any(|(_, base)| {
-    matches!(
-      base.as_str(),
-      "h-3" | "h-3.5" | "h-4" | "h-5" | "size-3" | "size-3.5" | "size-4" | "size-5"
-    )
+  // 一行里可能有多个 `<Icon`：逐个看（只看第一个会漏掉后面那个小尺寸的）。
+  // 且必须是 `<Icon` 后紧跟空白或 `>` —— `<IconButton` / `<IconKind` 不是图标组件。
+  line.match_indices("<Icon").any(|(start, _)| {
+    let tail = &line[start..];
+    let after = tail["<Icon".len()..].chars().next();
+    if !after.is_some_and(|c| c.is_whitespace() || c == '>' || c == '/') {
+      return false;
+    }
+    let end = tail.find('>').map_or(tail.len(), |i| i + 1);
+    class_tokens(&tail[..end]).iter().any(|(_, base)| {
+      matches!(
+        base.as_str(),
+        "h-3" | "h-3.5" | "h-4" | "h-5" | "size-3" | "size-3.5" | "size-4" | "size-5"
+      )
+    })
   })
 }
 
 /// ㉒ 任意值断点：`min-[560px]:` 这类现造的媒体查询断点。
 fn has_arbitrary_breakpoint(line: &str) -> bool {
-  let needle = "min-[";
-  let mut from = 0;
-  while let Some(i) = line[from..].find(needle) {
-    let at = from + i + needle.len();
-    let digits = line[at..].chars().take_while(char::is_ascii_digit).count();
-    if digits > 0 && line[at + digits..].starts_with("px]:") {
-      return true;
+  // `max-[…]:` 与 `min-[…]:` 同样是现造的媒体查询断点；`rem` / `em` 写法一并拦。
+  ["min-[", "max-["].iter().any(|needle| {
+    let mut from = 0;
+    while let Some(i) = line[from..].find(needle) {
+      let at = from + i + needle.len();
+      let digits = line[at..]
+        .chars()
+        .take_while(|c| c.is_ascii_digit() || *c == '.')
+        .count();
+      if digits > 0 {
+        let unit = &line[at + digits..];
+        if ["px]:", "rem]:", "em]:"]
+          .iter()
+          .any(|u| unit.starts_with(u))
+        {
+          return true;
+        }
+      }
+      from = at;
     }
-    from = at;
-  }
-  false
+    false
+  })
 }
 
 /// ㉑ 卡片标题 `<h2>` 带 `text-sm`（12px）：比正文（18px）还小的标题。
@@ -341,9 +349,19 @@ fn has_small_heading(line: &str) -> bool {
 
 /// ⑳ 手写 `<h1>` 且既不是 `pxl-title` 也不是 `sr-only`：标题字体就会退化成正文点阵。
 fn has_bare_h1(line: &str) -> bool {
-  line.contains("<h1") && !line.contains("pxl-title") && !line.contains("sr-only")
+  // 现代风有自己的标题类（`md-article-title` / `md-display`）：它们自带字体与字号，
+  // 不属于「标题字体漂成正文点阵」这条规则要防的问题。
+  line.contains("<h1")
+    && !line.contains("pxl-title")
+    && !line.contains("md-article-title")
+    && !line.contains("md-display")
+    && !line.contains("sr-only")
 }
 
+/// §2 硬规则 6：`text-destructive` 把填充色当文字色用。
+///
+/// `text-destructive-foreground`（实色按钮上的字）是另一个 token，不归这条管 —— 它由
+/// `.pxl-btn-destructive` 在 `controls.css` 里成套使用，调用点不会单独写。
 fn has_destructive_as_text(line: &str) -> bool {
   class_tokens(line)
     .iter()
@@ -662,7 +680,10 @@ fn is_shadow_length(token: &str) -> bool {
 ///
 /// 键 = 相对项目根的路径。**新增一处就得同时改这里与 §4 的清单** —— 这正是「封闭清单」的意思。
 const WIDTH_ALLOWED: &[(&str, &str)] = &[
-  ("crates/app/src/app/footer.rs", "页脚"),
+  (
+    "crates/app/src/app/pixel_footer.rs",
+    "页脚（像素风实现；现代风页脚用 `md-*` 不走这条）",
+  ),
   ("crates/app/src/app/storage_warning.rs", "存储告警横幅"),
   (
     "crates/app/src/components/common/bottom_bar.rs",
@@ -836,13 +857,253 @@ fn check_width_containers(root: &Path) -> bool {
   false
 }
 
+/// 现代风 CSS 的圆角必须走 `--md-r-*` 阶梯。
+///
+/// 组件里写裸 px 会让「同一套阶梯」在组件之间漂移：历史上同时存在 2 / 3 / 4 / 5px
+/// 四种近似值，肉眼分不出差别，却让「改一处圆角」变成全文件搜索。
+/// 允许的例外：`0`、`50%`（正圆）、`inherit`、`calc(...)`（跟随尺寸的徽记）。
+///
+/// 扫 `style/modern/` 下**全部** CSS（`tokens.css` 是阶梯的定义处，不扫）：以前是手写
+/// 文件清单，`legacy-utilities.css` 因此一直在规则外，里面就躺着一处裸 `3px`。
+/// 改成扫目录后，新增文件自动纳入，清单没法再腐化。
+/// `border-radius` 的值是否合规：简写里**每一个**值都要是阶梯 token / 0 / 50% / inherit / `calc()`。
+///
+/// 只看第一个值会放过 `var(--md-r-lg) 3px 0 0`（后面的 3px 是裸值），
+/// 也会误报 `0 0 var(--md-r-sm) var(--md-r-sm)`（第一个是 0 却被当成整体判）。
+fn radius_value_allowed(value: &str) -> bool {
+  let mut parts: Vec<&str> = Vec::new();
+  let (mut depth, mut start) = (0i32, 0usize);
+  for (i, c) in value.char_indices() {
+    match c {
+      '(' => depth += 1,
+      ')' => depth -= 1,
+      c if c.is_whitespace() && depth == 0 => {
+        if i > start {
+          parts.push(&value[start..i]);
+        }
+        start = i + c.len_utf8();
+      }
+      _ => {}
+    }
+  }
+  if start < value.len() {
+    parts.push(&value[start..]);
+  }
+  !parts.is_empty()
+    && parts.iter().all(|p| {
+      p.starts_with("var(--md-")
+        || matches!(*p, "0" | "50%" | "inherit" | "/" | "!important")
+        || p.starts_with("calc(")
+    })
+}
+
+fn check_modern_radius_tokens(root: &Path) -> bool {
+  let dir = root.join("crates/app/style/modern");
+  let mut scanned = 0usize;
+  let mut found = 0usize;
+  let mut report: Vec<String> = Vec::new();
+
+  for entry in WalkDir::new(&dir)
+    .sort_by_file_name()
+    .into_iter()
+    .filter_map(Result::ok)
+  {
+    let path = entry.path();
+    if !entry.file_type().is_file() || path.extension().is_none_or(|e| e != "css") {
+      continue;
+    }
+    let rel = path
+      .strip_prefix(root)
+      .unwrap_or(path)
+      .to_string_lossy()
+      .replace('\\', "/");
+    if rel.ends_with("modern/tokens.css") {
+      continue;
+    }
+    let Ok(text) = std::fs::read_to_string(path) else {
+      continue;
+    };
+    scanned += 1;
+    // 先剥注释（`strip_css_comments` 保留换行，行号仍对齐）：注释里举例写的
+    // `border-radius: 4px` 不是声明，不该报。
+    let stripped = crate::structure_check::strip_css_comments(&text);
+    for (i, line) in stripped.lines().enumerate() {
+      let Some((_, tail)) = line.split_once("border-radius:") else {
+        continue;
+      };
+      // 只取到本条声明结束：同一行后面还有 `color: red` 之类的声明时，整段当值会误报。
+      let value = tail.split([';', '}']).next().unwrap_or("").trim();
+      if radius_value_allowed(value) {
+        continue;
+      }
+      found += 1;
+      if report.len() < MAX_REPORT {
+        report.push(format!("    {rel}:{}  {}", i + 1, line.trim()));
+      }
+    }
+  }
+
+  if scanned == 0 {
+    println!("✗ 现代风圆角阶梯：`crates/app/style/modern/` 下一个 CSS 都没扫到（目录改名了？）");
+    return false;
+  }
+  if found == 0 {
+    println!(
+      "✓ 现代风圆角只走 `--md-r-*` 阶梯（xs / sm / ctl / lg / xl / pill），扫了 {scanned} 个 CSS"
+    );
+    return true;
+  }
+  println!("✗ 现代风圆角有 {found} 处裸值");
+  for line in &report {
+    println!("{line}");
+  }
+  if found > report.len() {
+    println!("    …（另有 {} 处）", found - report.len());
+  }
+  println!(
+    "    → 在 `tokens.css` 的六档里选一档（xs 4 / sm 6 / ctl 8 / lg 10 / xl 14 / pill），组件里不写 px"
+  );
+  false
+}
+
+/// 现代风自己的控件封装：原生控件写在它们里面是本职。
+const MODERN_CONTROL_WRAPPERS: &[&str] = &[
+  "crates/app/src/kit_modern/input.rs",
+  "crates/app/src/kit_modern/select.rs",
+  "crates/app/src/kit_modern/textarea.rs",
+];
+
+/// 原生控件的封闭清单（清单外命中 = 违规，清单内计数为 0 = 过期例外）。
+///
+/// 键 = 相对项目根的路径；理由必须一并写清，并登记到 `docs/ui/pixel.md` §10。
+const NATIVE_CONTROL_ALLOWED: &[(&str, &str)] = &[
+  (
+    "crates/app/src/kit_modern/palette.rs",
+    "刻意的例外：命令面板输入框嵌在「图标 + 输入 + kbd」的 flex 行里，包 `md-input-wrap` 会改这一行布局",
+  ),
+  (
+    "crates/app/src/kit_modern/menu.rs",
+    "刻意的例外：目录抽屉的搜索行同理（图标 + 输入 + 站内搜索按钮同一行）",
+  ),
+];
+
+/// §11 ③：原生 `<input>` / `<select>` / `<textarea>` 只允许出现在控件封装与上面的例外里。
+///
+/// 为什么不再按目录列举：双设计系统之后控件有两套封装（`ui/` 与 `kit_modern/`），
+/// 按目录写的 `roots` 必然漏掉新增的那一套 —— 这条规则曾只认 `pages/` + `components/`，
+/// 整个 `kit_modern/` 都在规则外，于是 `custom_paper.rs` 的三个数字框既没走封装、
+/// 也没有可访问名称，门禁却一直是绿的。改成「扫全树、只放行封装与封闭清单」，
+/// 漏一个就红。
+fn check_native_controls(root: &Path) -> bool {
+  let mut violations = 0usize;
+  let mut report: Vec<String> = Vec::new();
+  let mut allowed_hits: Vec<(&str, usize)> = Vec::new();
+
+  for entry in WalkDir::new(root.join("crates/app/src"))
+    .sort_by_file_name()
+    .into_iter()
+    .filter_map(Result::ok)
+  {
+    let path = entry.path();
+    if !entry.file_type().is_file() || path.extension().is_none_or(|e| e != "rs") {
+      continue;
+    }
+    let rel = path
+      .strip_prefix(root)
+      .unwrap_or(path)
+      .to_string_lossy()
+      .replace('\\', "/");
+    // 像素 Kit 自己就是封装层；现代风三个封装文件同理。
+    if rel.starts_with("crates/app/src/ui/") || MODERN_CONTROL_WRAPPERS.contains(&rel.as_str()) {
+      continue;
+    }
+    let Ok(text) = std::fs::read_to_string(path) else {
+      continue;
+    };
+    let exception = NATIVE_CONTROL_ALLOWED
+      .iter()
+      .find(|(p, _)| *p == rel)
+      .map(|(p, _)| *p);
+    for (i, line) in text.lines().enumerate() {
+      let code = code_part(line);
+      if code.is_empty() || !has_native_control(code) {
+        continue;
+      }
+      if let Some(key) = exception {
+        match allowed_hits.iter_mut().find(|(p, _)| *p == key) {
+          Some((_, n)) => *n += 1,
+          None => allowed_hits.push((key, 1)),
+        }
+        continue;
+      }
+      violations += 1;
+      if report.len() < MAX_REPORT {
+        report.push(format!("    {rel}:{}  {}", i + 1, code.trim()));
+      }
+    }
+  }
+
+  let stale: Vec<&str> = NATIVE_CONTROL_ALLOWED
+    .iter()
+    .map(|(p, _)| *p)
+    .filter(|p| !allowed_hits.iter().any(|(hit, _)| hit == p))
+    .collect();
+  if violations == 0 && stale.is_empty() {
+    let total: usize = allowed_hits.iter().map(|(_, n)| *n).sum();
+    println!(
+      "✓ 原生表单控件（`<input>` / `<select>` / `<textarea>`）：封装外零残留（封闭清单 {total} 处 / {} 文件）",
+      allowed_hits.len()
+    );
+    return true;
+  }
+  if violations > 0 {
+    println!("✗ 原生表单控件（`<input>` / `<select>` / `<textarea>`）：{violations} 处");
+    for line in &report {
+      println!("{line}");
+    }
+    if violations > report.len() {
+      println!(
+        "    …（另有 {} 处，先修上面这些）",
+        violations - report.len()
+      );
+    }
+    println!(
+      "    → 像素风用 `ui/` 的 Input / SimpleSelect / Textarea / FileInput / FileDropZone；现代风用 `kit_modern/` 的 ModernInput / ModernSelect / ModernTextarea。都不合用就在本清单里登记理由"
+    );
+  }
+  if !stale.is_empty() {
+    println!("✗ 原生表单控件的封闭清单已过期：{}", stale.join("、"));
+    println!(
+      "    → 这些文件不再写原生控件；从 `NATIVE_CONTROL_ALLOWED` 与 `docs/ui/pixel.md` §10 里删掉"
+    );
+  }
+  false
+}
+
 /// 跑全部规则：全部 0 违规返回 `Ok`，否则打印证据并 `bail`。
 pub fn check(root: &Path) -> Result<()> {
   println!(
-    "界面规范守卫：{} 条规则 + 1 份封闭清单（对应 docs/ui-components.md §11）",
+    "界面规范守卫：{} 条规则 + 2 份封闭清单（对应 docs/ui/pixel.md §11）",
     RULES.len()
   );
   let mut failed: Vec<String> = Vec::new();
+
+  // fail-closed：扫描目录不存在 = 这条规则没生效，不能当成「没有违规」。
+  // 历史教训：`roots` 靠目录名列举，双设计系统新增目录时漏改，规则静默失效且照样打印 ✓。
+  let missing: BTreeSet<&str> = RULES
+    .iter()
+    .flat_map(|r| r.roots.iter())
+    .copied()
+    .filter(|d| !root.join(d).is_dir())
+    .collect();
+  if !missing.is_empty() {
+    println!(
+      "✗ 扫描目录不存在：{}",
+      missing.into_iter().collect::<Vec<_>>().join("、")
+    );
+    println!("    → 目录改名 / 挪位置要同步本工具的 roots，否则规则静默失效");
+    failed.push("扫描目录存在性".to_owned());
+  }
 
   for rule in RULES {
     let mut found = 0usize;
@@ -901,6 +1162,14 @@ pub fn check(root: &Path) -> Result<()> {
     failed.push("页面级宽度容器（§11 ⑧）".to_owned());
   }
 
+  if !check_native_controls(root) {
+    failed.push("原生表单控件（§11 ③）".to_owned());
+  }
+
+  if !check_modern_radius_tokens(root) {
+    failed.push("现代风圆角阶梯（docs/ui/decisions.md §11.4）".to_owned());
+  }
+
   if !failed.is_empty() {
     bail!("界面规范守卫未通过：{}", failed.join("、"));
   }
@@ -909,6 +1178,38 @@ pub fn check(root: &Path) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+  #[test]
+  fn small_icon_and_breakpoint_rules_cover_their_edges() {
+    assert!(has_small_icon("<Icon kind=IconKind::X class=\"size-4\" />"));
+    // 一行里第二个 `<Icon` 才是小尺寸：以前只看第一个会漏掉。
+    assert!(has_small_icon(
+      "<Icon kind=A class=\"size-6\" /> <Icon kind=B class=\"h-4 w-4\" />"
+    ));
+    // `<IconButton` 不是图标组件，不能被前缀匹配带进来。
+    assert!(!has_small_icon("<IconButton class=\"size-4\" />"));
+    assert!(!has_small_icon("<Icon kind=A class=\"size-6\" />"));
+
+    assert!(has_arbitrary_breakpoint("class=\"min-[560px]:flex\""));
+    assert!(has_arbitrary_breakpoint("class=\"max-[600px]:hidden\""));
+    assert!(has_arbitrary_breakpoint("class=\"min-[40rem]:flex\""));
+    // 容器查询变体 / 任意属性不是视口断点。
+    assert!(!has_arbitrary_breakpoint("class=\"min-w-[560px]\""));
+    assert!(!has_arbitrary_breakpoint("class=\"sm:flex\""));
+  }
+
+  #[test]
+  fn radius_shorthand_is_checked_value_by_value() {
+    assert!(radius_value_allowed("var(--md-r-lg)"));
+    assert!(radius_value_allowed("0 0 var(--md-r-sm) var(--md-r-sm)"));
+    assert!(radius_value_allowed("calc(var(--md-r-lg) - 2px)"));
+    assert!(radius_value_allowed("50%"));
+    assert!(radius_value_allowed("var(--md-r-lg) !important"));
+    // 简写里只要有一个裸值就不合规（以前只看第一个值，会放过它）。
+    assert!(!radius_value_allowed("var(--md-r-lg) 3px 0 0"));
+    assert!(!radius_value_allowed("4px"));
+    assert!(!radius_value_allowed(""));
+  }
+
   use super::*;
 
   #[test]
@@ -1142,6 +1443,7 @@ mod tests {
   fn bare_h1_rule_accepts_title_and_sr_only() {
     assert!(has_bare_h1(r#"<h1 class="text-base leading-tight">"#));
     assert!(!has_bare_h1(r#"<h1 class="pxl-title text-lg">"#));
+    assert!(!has_bare_h1(r#"<h1 class="md-article-title">"#));
     assert!(!has_bare_h1(r#"<h1 class="sr-only">"#));
     assert!(!has_bare_h1(r#"<h2 class="text-base">"#));
   }

@@ -126,8 +126,8 @@ pub fn SmithPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section id="chart" class="scroll-mt-24 pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("tools.impedance-location-and-matching")}</h2>
+        <section id="chart" class=crate::kit::card_class_with("scroll-mt-24")>
+          <h2 class=crate::kit::card_title_class()>{move || t("tools.impedance-location-and-matching")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">
             {move || t("tools.the-chart-is-normalised")}
           </p>
@@ -186,8 +186,8 @@ pub fn SmithPage() -> impl IntoView {
           </div>
         </section>
 
-        <section id="match" class="scroll-mt-24 pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("tools.matching-network")}</h2>
+        <section id="match" class=crate::kit::card_class_with("scroll-mt-24")>
+          <h2 class=crate::kit::card_title_class()>{move || t("tools.matching-network")}</h2>
           <div class="flex flex-wrap items-center gap-2 px-4 pt-3">
             // 传 `t("key")` 的闭包而不是中文原文：`check-i18n` 判死条目时认「`t("key")` 的
             // 直接实参」或「中文原文出现在源码里」，传中文会一直依赖反向索引这条兜底路径
@@ -200,11 +200,11 @@ pub fn SmithPage() -> impl IntoView {
               aria_label=Signal::derive(move || t("tools.matching-network"))
               class="flex items-center gap-4"
             >
-              <label class="flex cursor-pointer items-center gap-2 text-xs">
+              <label class=format!("{} text-xs", crate::kit::check_row_class())>
                 <RadioGroupItem value="series-first" />
                 {move || t("tools.series-then-shunt")}
               </label>
-              <label class="flex cursor-pointer items-center gap-2 text-xs">
+              <label class=format!("{} text-xs", crate::kit::check_row_class())>
                 <RadioGroupItem value="shunt-first" />
                 {move || t("tools.shunt-then-series")}
               </label>
@@ -314,8 +314,8 @@ pub fn SmithPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("tools.related-tools")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("tools.related-tools")}</h2>
           <div class="grid gap-2 p-4 sm:grid-cols-2">
             <a class="px-3 py-2 text-sm hover:bg-accent" href="/tools#antenna-matcher">
               {move || t("tools.calculators-l-network-antenna")}

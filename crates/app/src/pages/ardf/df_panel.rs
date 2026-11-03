@@ -60,7 +60,7 @@ pub(super) fn DfPanel() -> impl IntoView {
 
   view! {
     <section class="space-y-4" aria-labelledby="df-fix-heading">
-      <h2 id="df-fix-heading" class="pxl-section-head">
+      <h2 id="df-fix-heading" class=crate::kit::section_head_class()>
         {move || t("ardf.df-title")}
       </h2>
       <p class="text-sm text-muted-foreground">{move || t("ardf.df-desc")}</p>

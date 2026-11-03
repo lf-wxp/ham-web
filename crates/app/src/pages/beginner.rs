@@ -9,8 +9,6 @@ use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 #[component]
 pub fn BeginnerPage() -> impl IntoView {
   set_title("shell.beginner-s-guide-title");
@@ -24,8 +22,8 @@ pub fn BeginnerPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.beginner-roadmap")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.beginner-roadmap")}</h2>
           <div class="space-y-1 p-4">
             {BEGINNER_STEPS
               .iter()
@@ -41,14 +39,14 @@ pub fn BeginnerPage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.equipment-type")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.equipment-type")}</h2>
           <Table class="min-w-[560px] text-sm">
             <TableHead>
               <TableRow>
-                <TableHeader class=CELL>{move || t("radio.type")}</TableHeader>
-                <TableHeader class=CELL>{move || t("knowledge.band")}</TableHeader>
-                <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.type")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.band")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.notes")}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -57,11 +55,11 @@ pub fn BeginnerPage() -> impl IntoView {
                 .map(|&(name, band, desc)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap")>{move || kt_tracked(name)}</TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-muted-foreground")>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>{move || kt_tracked(name)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono text-muted-foreground")>
                         {move || kt_tracked(band)}
                       </TableCell>
-                      <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -70,8 +68,8 @@ pub fn BeginnerPage() -> impl IntoView {
           </Table>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.first-contact-notes")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.first-contact-notes")}</h2>
           <ul class="space-y-2 p-4">
             {FIRST_QSO_TIPS
               .iter()

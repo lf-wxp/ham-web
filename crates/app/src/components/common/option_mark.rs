@@ -21,7 +21,20 @@ pub enum OptionVerdict {
 /// 播报，这里不再重复念一遍。
 #[component]
 pub fn OptionMark(#[prop(into)] verdict: Signal<OptionVerdict>) -> impl IntoView {
-  move || match verdict.get() {
+  if crate::kit::is_modern_at_mount() {
+    // 现代风：行尾一个小圆点徽记（✓ / ✗），不再用像素图标。
+    return (move || match verdict.get() {
+      OptionVerdict::None => ().into_any(),
+      OptionVerdict::Right => {
+        view! { <span class="md-mark md-mark-right" aria-hidden="true">"✓"</span> }.into_any()
+      }
+      OptionVerdict::Wrong => {
+        view! { <span class="md-mark md-mark-wrong" aria-hidden="true">"✗"</span> }.into_any()
+      }
+    })
+    .into_any();
+  }
+  (move || match verdict.get() {
     OptionVerdict::None => ().into_any(),
     OptionVerdict::Right => {
       view! { <Icon kind=IconKind::Check class="ml-auto size-6 shrink-0 text-win-text" /> }
@@ -30,5 +43,6 @@ pub fn OptionMark(#[prop(into)] verdict: Signal<OptionVerdict>) -> impl IntoView
     OptionVerdict::Wrong => {
       view! { <Icon kind=IconKind::X class="ml-auto size-6 shrink-0 text-hp-text" /> }.into_any()
     }
-  }
+  })
+  .into_any()
 }

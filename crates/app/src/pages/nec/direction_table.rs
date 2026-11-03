@@ -1,7 +1,7 @@
 //! 方向增益表：每个 DXCC 实体方向上的天线真实增益。
 //!
 //! 口径是「方向增益」而不是「覆盖」：只算天线本身（含地面模型与效率），
-//! 不计传播、噪声、功率与对方天线。详见 `docs/antenna-coverage.md`。
+//! 不计传播、噪声、功率与对方天线。详见 `docs/domain/antenna-coverage.md`。
 
 use ham_web_core::antenna_coverage::{self, EntityGain, GainMode, PatternSlices};
 use ham_web_core::logbook::StationInfo;
@@ -9,13 +9,12 @@ use ham_web_core::nec::NecResult;
 use leptos::prelude::*;
 
 use crate::i18n::{localized_name, t};
+use crate::ui::intl::decimal;
 use crate::ui::{
   Button, Chip, ChipGroup, Field, Input, Size, Table, TableBody, TableCell, TableHead, TableHeader,
   TableRow, Variant,
 };
 use crate::util::storage;
-
-const CELL: &str = "border px-3 py-2 align-top";
 
 #[derive(Clone, PartialEq)]
 enum State {
@@ -61,13 +60,22 @@ pub(super) fn DirectionTable(result: Memo<Option<NecResult>>) -> impl IntoView {
     })
   });
 
+  // 折叠标题的标签可能很长（西语：「Ganancia por dirección (frente a entidades DXCC)」）：现代风允许换行，
+  // 换行后文字靠左（它是整行宽的左对齐标题，不是居中的药丸）。像素风不变。
+  let wrap = crate::kit::btn_wrap_class();
+  let title_class = if wrap.is_empty() {
+    "w-full justify-start px-4 py-3 text-sm".to_owned()
+  } else {
+    format!("w-full justify-start px-4 py-3 text-sm text-left {wrap}")
+  };
+
   view! {
     // 与同级区块（`nvis.rs` 等）同一套卡片写法：`pxl-card border bg-card`。
-    <div class="pxl-card border bg-card" data-slot="nec-direction">
+    <div class=crate::kit::card_class() data-slot="nec-direction">
       <Button
         variant=Variant::Text
         size=Size::Sm
-        class="w-full justify-start px-4 py-3 text-sm"
+        class=title_class
         aria_expanded=Signal::derive(move || open.get())
         aria_controls="nec-direction-body"
         on_click=Callback::new(move |_| open.update(|v| *v = !*v))
@@ -151,25 +159,26 @@ pub(super) fn DirectionTable(result: Memo<Option<NecResult>>) -> impl IntoView {
                 .iter()
                 .map(|row| {
                   let name = localized_name(row.name, row.name_en);
-                  let azimuth = format!("{:.0}°", row.azimuth_deg);
-                  let distance = format!("{:.0} km", row.distance_km);
-                  let gain = format!("{:.1} dBi", row.gain_dbi);
-                  let loss = format!("{:.1} dB", row.loss_db);
+                  // 数值走 `decimal`：小数点按界面语言（西语是逗号）。
+                  let azimuth = format!("{}°", decimal(row.azimuth_deg, 0));
+                  let distance = format!("{} km", decimal(row.distance_km, 0));
+                  let gain = format!("{} dBi", decimal(row.gain_dbi, 1));
+                  let loss = format!("{} dB", decimal(row.loss_db, 1));
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap")>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>
                         {name}
                       </TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap tabular-nums")>
                         {azimuth}
                       </TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap tabular-nums")>
                         {distance}
                       </TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap tabular-nums")>
                         {gain}
                       </TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums text-muted-foreground")>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap tabular-nums text-muted-foreground")>
                         {loss}
                       </TableCell>
                     </TableRow>
@@ -181,23 +190,24 @@ pub(super) fn DirectionTable(result: Memo<Option<NecResult>>) -> impl IntoView {
               // 键盘用户滚不动。`tabindex` + `role="region"` + 名称让它可聚焦、可读出。
               view! {
                 <Table
-                  class="min-w-[560px] text-sm"
+                  class="min-w-[560px]"
                   wrapper_class="max-h-[28rem]"
+                  density=crate::ui::TableDensity::Compact
                   aria_label=Signal::derive(|| t("tools.nec-direction-title"))
                   tabindex="0"
                   role="region"
                 >
                   <TableHead>
                     <TableRow>
-                      <TableHeader class=CELL>{move || t("contest.entity")}</TableHeader>
-                      <TableHeader class=CELL>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("contest.entity")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>
                         {move || t("tools.nec-direction-bearing")}
                       </TableHeader>
-                      <TableHeader class=CELL>
+                      <TableHeader class=crate::kit::table_cell_class("")>
                         {move || t("tools.nec-direction-distance")}
                       </TableHeader>
-                      <TableHeader class=CELL>{move || t("tools.nec-direction-gain")}</TableHeader>
-                      <TableHeader class=CELL>{move || t("tools.nec-direction-loss")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.nec-direction-gain")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.nec-direction-loss")}</TableHeader>
                     </TableRow>
                   </TableHead>
                   <TableBody>{body}</TableBody>

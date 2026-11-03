@@ -56,7 +56,7 @@
   --color-muted: var(--muted);
   /* 内凹面（表头带 / 代码块 / 键帽 / 内嵌面板）：不透明的「比卡片低一层」。
      以前这些位置写 `bg-muted/50`、`/60`，alpha 叠在卡片上会随背景变色，
-     与「限色 + 零模糊」冲突（见 docs/ui-review.md I2）。 */
+     与「限色 + 零模糊」冲突（见 docs/ui/pixel.md I2）。 */
   --color-inset: var(--inset);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);

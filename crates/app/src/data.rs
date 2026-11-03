@@ -133,7 +133,8 @@ fn api_cache_get(url: &str) -> Option<String> {
 }
 
 fn parse_json<T: serde::de::DeserializeOwned>(text: &str) -> Result<T, AppError> {
-  serde_json::from_str(text).map_err(|e| AppError::Validation(format!("Invalid JSON: {e}")))
+  serde_json::from_str(text)
+    .map_err(|e| AppError::Validation(tf("common.error-invalid-json", &[&e.to_string()])))
 }
 
 /// 一般接口的取数超时。
@@ -198,7 +199,10 @@ pub async fn fetch_bytes(url: &str) -> Result<Vec<u8>, AppError> {
     .map_err(|e| AppError::Network(js_error_message(&e)))?
     .unchecked_into();
   if !resp.ok() {
-    return Err(AppError::Network(format!("HTTP {}", resp.status())));
+    return Err(AppError::Network(tf(
+      "common.error-http-status",
+      &[&resp.status().to_string()],
+    )));
   }
   let buf = JsFuture::from(
     resp
@@ -342,7 +346,10 @@ pub(crate) async fn fetch_text_with_timeout(
     .map_err(|e| AppError::Network(js_error_message(&e)))?
     .unchecked_into();
   if !resp.ok() {
-    return Err(AppError::Network(format!("HTTP {}", resp.status())));
+    return Err(AppError::Network(tf(
+      "common.error-http-status",
+      &[&resp.status().to_string()],
+    )));
   }
   let text = JsFuture::from(
     resp
@@ -387,9 +394,9 @@ pub async fn load_config(force: bool) -> Result<Rc<BankConfig>, AppError> {
   }
   let text = fetch_text("/questions/config.json", CacheMode::NoCache)
     .await
-    .map_err(|e| AppError::Network(format!("Failed to load question bank config: {e}")))?;
+    .map_err(|e| AppError::Network(tf("common.error-load-bank-config", &[&e.to_string()])))?;
   let cfg: BankConfig = serde_json::from_str(&text)
-    .map_err(|e| AppError::Validation(format!("Invalid question bank config: {e}")))?;
+    .map_err(|e| AppError::Validation(tf("common.error-invalid-bank-config", &[&e.to_string()])))?;
   let cfg = Rc::new(cfg);
   CACHE.with_borrow_mut(|c| {
     if c
@@ -429,9 +436,9 @@ async fn load_url(url: &str) -> Result<Questions, AppError> {
   }
   let text = fetch_text(url, CacheMode::ForceCache)
     .await
-    .map_err(|e| AppError::Network(format!("Failed to load questions JSON: {e}")))?;
+    .map_err(|e| AppError::Network(tf("common.error-load-questions", &[&e.to_string()])))?;
   let data: Vec<QuestionItem> = serde_json::from_str(&text)
-    .map_err(|e| AppError::Validation(format!("Invalid questions JSON: {e}")))?;
+    .map_err(|e| AppError::Validation(tf("common.error-invalid-questions", &[&e.to_string()])))?;
   let data = Arc::new(data);
   CACHE.with_borrow_mut(|c| c.questions.insert(url.to_owned(), data.clone()));
   Ok(data)
@@ -692,6 +699,12 @@ pub async fn load_knowledge_i18n(lang: &str) {
     Ok(text) => serde_json::from_str(&text).ok(),
     Err(_) => None,
   };
+  // 过期响应丢弃：拉取期间用户又切了语言（en → es），慢的旧语言包晚到会把西语词典覆盖掉，
+  // 而 `ensure_knowledge_i18n` 只订阅语言、不会重拉 —— 界面就停在英文正文直到下次切换。
+  // 同一思路见 `i18n::set_locale` 的 `SWITCH_SEQ`。
+  if leptos::prelude::GetUntracked::get_untracked(&crate::i18n::locale()).code() != lang {
+    return;
+  }
   // 空词典不落常驻缓存：否则一次拉取失败（或尚未翻译）就会让后续请求一直走不到重试。
   if let Some(d) = dict.filter(|d| !d.is_empty()) {
     set_knowledge_i18n(lang.to_owned(), d);

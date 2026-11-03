@@ -15,6 +15,9 @@ const only = (process.env.MOBILE_ONLY ?? "")
   .filter(Boolean);
 const routes = only.length ? allRoutes.filter((r) => only.some((o) => r.includes(o))) : allRoutes;
 
+/** 被测界面风格：`E2E_UI_STYLE=modern` 切到现代风，其余一律像素风。 */
+const uiStyle = process.env.E2E_UI_STYLE === "modern" ? "modern" : "pixel";
+
 const LANGS = [
   { code: "zh", htmlLang: "zh-CN", name: "中文" },
   { code: "en", htmlLang: "en", name: "English" },
@@ -85,6 +88,13 @@ for (const lang of LANGS) {
 
     test(`全部 ${routes.length} 个路由：320 / 390px 无整页横向滚动`, async ({ page }) => {
       await page.addInitScript((code) => localStorage.setItem("locale", code), lang.code);
+      // E2E_UI_STYLE=modern 把整套全站审计切到现代风（默认像素风）：dock、768 / 900 断点与大量
+      // `md-*` 版式只在现代风下出现，默认只跑像素风就等于现代风没有被「全部路由 × 三语」覆盖。
+      await page.addInitScript((style) => {
+        if (window !== window.top) return;
+        localStorage.setItem("ui:uiStyle", style);
+        if (style === "modern") localStorage.setItem("theme", "dark");
+      }, uiStyle);
 
       const findings: { sel: string; detail: string }[] = [];
       // 每扫完一条路由就落盘：整批要跑十几分钟，中途超时也不能把清单丢了
@@ -109,9 +119,18 @@ for (const lang of LANGS) {
           continue;
         }
 
-        // 语言没生效的话，这三条用例量的是同一份中文排版 —— 扫描本身就失去意义，所以也当问题报
-        const attr = await page.getAttribute("html", "lang");
-        if (attr !== lang.htmlLang) {
+        // 语言没生效的话，这三条用例量的是同一份中文排版 —— 扫描本身就失去意义，所以也当问题报。
+        // 判定要等一会儿：语言包是启动后异步加载的（`i18n::provide_locale`），
+        // 而 `main` 挂载与 `<html lang>` 落定之间有一个很短的窗口，直接读会偶发抓到 zh-CN。
+        const applied = await page
+          .waitForFunction((l) => document.documentElement.lang === l, lang.htmlLang, {
+            timeout: 5_000,
+            polling: 50,
+          })
+          .then(() => true)
+          .catch(() => false);
+        if (!applied) {
+          const attr = await page.getAttribute("html", "lang");
           findings.push({
             sel: `${route} :: <html lang>`,
             detail: `实为 ${attr}，期望 ${lang.htmlLang}`,

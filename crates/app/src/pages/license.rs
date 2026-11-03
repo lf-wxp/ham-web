@@ -6,7 +6,7 @@ use wasm_bindgen::JsValue;
 use super::countdown::add_countdown;
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::t;
-use crate::ui::{Button, DatePicker, Size, Variant};
+use crate::ui::{Button, DatePicker, Field, Size, Variant};
 use crate::util::set_title;
 
 /// 由发照日期推算到期日期（有效期 5 年，按公历加 5 年）。返回毫秒时间戳。
@@ -80,80 +80,79 @@ pub fn LicensePage() -> impl IntoView {
     added.set(true);
   };
   view! {
-    <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
-      <PageHeader
-        title=move || t("knowledge.licence-operator-permit-application")
-        subtitle=move || t("knowledge.register-exam-set-up")
-      />
+      <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
+        <PageHeader
+          title=move || t("knowledge.licence-operator-permit-application")
+          subtitle=move || t("knowledge.register-exam-set-up")
+        />
 
-      <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.application-process")}</h2>
-          <ol class="divide-y">
-            {STEPS
-              .iter()
-              .enumerate()
-              .map(|(i, &(k, v))| {
-                view! {
-                  <li class="flex gap-3 px-4 py-3">
-                    <span class="flex size-6 shrink-0 items-center justify-center bg-primary text-xs text-primary-foreground">
-                      {i + 1}
-                    </span>
-                    <div>
-                      <div>{move || t(k)}</div>
-                      <div class="mt-0.5 text-sm text-muted-foreground">{move || t(v)}</div>
+        <PageContainer>
+          <section class=crate::kit::card_class()>
+            <h2 class=crate::kit::card_title_class()>{move || t("knowledge.application-process")}</h2>
+            <ol class="divide-y">
+              {STEPS
+                .iter()
+                .enumerate()
+                .map(|(i, &(k, v))| {
+                  view! {
+                    <li class="flex gap-3 px-4 py-3">
+                      <span class="flex size-6 shrink-0 items-center justify-center bg-primary text-xs text-primary-foreground">
+                        {i + 1}
+                      </span>
+                      <div>
+                        <div>{move || t(k)}</div>
+                        <div class="mt-0.5 text-sm text-muted-foreground">{move || t(v)}</div>
+                      </div>
+                    </li>
+                  }
+                })
+                .collect_view()}
+            </ol>
+          </section>
+
+          <section class=crate::kit::card_class()>
+            <h2 class=crate::kit::card_title_class()>{move || t("knowledge.operating-classes-and-privileges")}</h2>
+            <dl class="divide-y">
+              {CLASSES
+                .iter()
+                .map(|&(k, v)| {
+                  view! {
+                    <div class="flex gap-3 px-4 py-3">
+                      <dt class="w-14 shrink-0 font-mono text-primary">{move || t(k)}</dt>
+                      <dd class="text-sm text-muted-foreground">{move || t(v)}</dd>
                     </div>
-                  </li>
-                }
-              })
-              .collect_view()}
-          </ol>
-        </section>
+                  }
+                })
+                .collect_view()}
+            </dl>
+          </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.operating-classes-and-privileges")}</h2>
-          <dl class="divide-y">
-            {CLASSES
-              .iter()
-              .map(|&(k, v)| {
-                view! {
-                  <div class="flex gap-3 px-4 py-3">
-                    <dt class="w-14 shrink-0 font-mono text-primary">{move || t(k)}</dt>
-                    <dd class="text-sm text-muted-foreground">{move || t(v)}</dd>
-                  </div>
-                }
-              })
-              .collect_view()}
-          </dl>
-        </section>
+          <section class=crate::kit::card_class()>
+            <h2 class=crate::kit::card_title_class()>{move || t("knowledge.key-notes")}</h2>
+            <ul class="space-y-2 p-4">
+              {NOTES
+                .iter()
+                .map(|note| {
+                  view! {
+                    <li class="flex gap-2 text-sm text-muted-foreground">
+                      <span class="mt-0.5 shrink-0 text-primary">"•"</span>
+                      <span>{move || t(note)}</span>
+                    </li>
+                  }
+                })
+                .collect_view()}
+            </ul>
+          </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.key-notes")}</h2>
-          <ul class="space-y-2 p-4">
-            {NOTES
-              .iter()
-              .map(|note| {
-                view! {
-                  <li class="flex gap-2 text-sm text-muted-foreground">
-                    <span class="mt-0.5 shrink-0 text-primary">"•"</span>
-                    <span>{move || t(note)}</span>
-                  </li>
-                }
-              })
-              .collect_view()}
-          </ul>
-        </section>
-
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("settings.license-expiry-reminder")}</h2>
-          <div class="space-y-3 p-4">
-            <p class="text-xs text-muted-foreground">
-              {move || t("settings.enter-the-issue-date")}
-            </p>
-            <div class="grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-end">
-              <label class="flex flex-col gap-1.5 text-sm">
-                <span class="text-xs text-muted-foreground">{move || t("settings.issue-date")}</span>
-                <DatePicker
+          <section class=crate::kit::card_class()>
+            <h2 class=crate::kit::card_title_class()>{move || t("settings.license-expiry-reminder")}</h2>
+            <div class="space-y-3 p-4">
+              <p class="text-xs text-muted-foreground">
+                {move || t("settings.enter-the-issue-date")}
+              </p>
+              <div class="grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-end">
+                <Field label=Signal::derive(move || t("settings.issue-date"))>
+  <DatePicker
                   value=issue
                   on_change=Callback::new(move |v: String| {
                     issue.set(v);
@@ -162,37 +161,37 @@ pub fn LicensePage() -> impl IntoView {
                   aria_label=Signal::derive(move || t("settings.issue-date"))
                   class="w-44"
                 />
-              </label>
-              <div class="flex flex-col gap-1.5 text-sm">
-                <span class="text-xs text-muted-foreground">{move || t("settings.expiry-date")}</span>
-                <span class="font-mono tabular-nums">
-                  {move || expiry_label().unwrap_or_else(|| "—".to_owned())}
-                </span>
+  </Field>
+                <div class="flex flex-col gap-1.5 text-sm">
+                  <span class="text-xs text-muted-foreground">{move || t("settings.expiry-date")}</span>
+                  <span class="font-mono tabular-nums">
+                    {move || expiry_label().unwrap_or_else(|| "—".to_owned())}
+                  </span>
+                </div>
+                <Button
+                  variant=Variant::Default
+                  size=Size::Default
+                  disabled=Signal::derive(move || issue.get().is_empty())
+                  on_click=Callback::new(move |_| add_reminder())
+                >
+                  {move || t("settings.add-expiry-reminder")}
+                </Button>
               </div>
-              <Button
-                variant=Variant::Default
-                size=Size::Default
-                disabled=Signal::derive(move || issue.get().is_empty())
-                on_click=Callback::new(move |_| add_reminder())
-              >
-                {move || t("settings.add-expiry-reminder")}
-              </Button>
+              {move || {
+                added.get().then(|| {
+                  view! {
+                    <p class="text-xs text-win-text">
+                      {move || t("settings.added-to-countdown-the")}
+                      <a href="/countdown" class="ml-1">
+                        {move || t("settings.view-countdown")}
+                      </a>
+                    </p>
+                  }
+                })
+              }}
             </div>
-            {move || {
-              added.get().then(|| {
-                view! {
-                  <p class="text-xs text-win-text">
-                    {move || t("settings.added-to-countdown-the")}
-                    <a href="/countdown" class="ml-1 text-primary underline underline-offset-4 hover:underline">
-                      {move || t("settings.view-countdown")}
-                    </a>
-                  </p>
-                }
-              })
-            }}
-          </div>
-        </section>
-      </PageContainer>
-    </div>
-  }
+          </section>
+        </PageContainer>
+      </div>
+    }
 }

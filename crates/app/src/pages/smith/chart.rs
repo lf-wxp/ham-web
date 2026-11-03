@@ -159,7 +159,7 @@ pub(super) fn InteractiveChart(
           set_from_event(&e);
         }
         on:pointermove=move |e: web_sys::PointerEvent| {
-          if dragging.get() {
+          if dragging.get_untracked() {
             set_from_event(&e);
           }
         }

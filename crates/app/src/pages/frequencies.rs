@@ -28,8 +28,8 @@ pub fn FrequenciesPage() -> impl IntoView {
           .iter()
           .map(|g| {
             view! {
-              <section class="pxl-card border bg-card">
-                <h2 class="pxl-section-title">{move || data::kt_tracked(g.category)}</h2>
+              <section class=crate::kit::card_class()>
+                <h2 class=crate::kit::card_title_class()>{move || data::kt_tracked(g.category)}</h2>
                 <div class="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2">
                   {g
                     .freqs

@@ -18,6 +18,12 @@ pub fn RulesWalkthroughDialog(
   /// 确认后真正开考（由调用方挂起的一次组卷）。
   on_confirm: Callback<()>,
 ) -> impl IntoView {
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <crate::kit_modern::ModernExamRules open=open on_confirm=on_confirm />
+    }
+    .into_any();
+  }
   view! {
     <Dialog open=open class="sm:max-w-[560px]">
       <DialogHeader>
@@ -55,13 +61,13 @@ pub fn RulesWalkthroughDialog(
             <li>
               <a
                 href="/photo-processor"
-                class="text-primary underline-offset-2 hover:underline"
+                class=crate::kit::link_class()
               >
                 {move || t("exam.rules-prep-photo")}
               </a>
             </li>
             <li>
-              <a href="/practice" class="text-primary underline-offset-2 hover:underline">
+              <a href="/practice" class=crate::kit::link_class()>
                 {move || t("exam.rules-prep-practice")}
               </a>
             </li>
@@ -81,4 +87,5 @@ pub fn RulesWalkthroughDialog(
       </DialogFooter>
     </Dialog>
   }
+  .into_any()
 }

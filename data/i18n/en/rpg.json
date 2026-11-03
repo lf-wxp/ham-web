@@ -3,7 +3,6 @@
   "rpg.battle": "Battle",
   "rpg.bestiary": "Bestiary",
   "rpg.map-subtitle": "Clear each topic in order; finish without losing HP for three stars",
-  "rpg.map-loading": "Unrolling the map…",
   "rpg.map-empty": "This question bank has no topics to play yet.",
   "rpg.map-summary": "Stages cleared: {} / {} · Stars: {} / {}",
   "rpg.stage-questions": {
@@ -32,7 +31,6 @@
   "rpg.settle": "Results",
   "rpg.retreat": "Retreat",
   "rpg.pick-answer-first": "Pick an answer first",
-  "rpg.battle-loading": "Summoning monsters…",
   "rpg.hit-correct": "Hit!",
   "rpg.hit-wrong": "Ouch…",
   "rpg.in-bestiary": "Added to the bestiary",

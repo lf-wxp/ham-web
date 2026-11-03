@@ -20,6 +20,7 @@ pub(super) fn BattleStage(
   enemy_sprite: &'static str,
   #[prop(into)] hit: Signal<HitFx>,
 ) -> impl IntoView {
+  let modern = crate::kit::is_modern_at_mount();
   let player_hp = Signal::derive(move || i64::from(battle.get().hp_percent()));
   let enemy_hp = Signal::derive(move || i64::from(battle.get().enemy_percent()));
 
@@ -30,7 +31,21 @@ pub(super) fn BattleStage(
     view! {
       <div class="relative">
         <div class=if hurt { "pxl-shake" } else { "pxl-bob" }>
-          <PixelSprite name="hero" scale=5 />
+          {move || {
+            if crate::kit::is_modern() {
+              view! {
+                <crate::kit_modern::ModernEmblem
+                  icon=crate::kit_modern::MIcon::Antenna
+                  tone=crate::kit_modern::EmblemTone::Green
+                  size=84
+                  locked=Signal::derive(|| false)
+                />
+              }
+                .into_any()
+            } else {
+              view! { <PixelSprite name="hero" scale=5 /> }.into_any()
+            }
+          }}
         </div>
         {hurt
           .then(|| {
@@ -57,7 +72,21 @@ pub(super) fn BattleStage(
     view! {
       <div class="relative">
         <div class=if strike.is_some() { "pxl-flash" } else { "pxl-bob" }>
-          <PixelSprite name=enemy_sprite scale=5 />
+          {move || {
+            if crate::kit::is_modern() {
+              view! {
+                <crate::kit_modern::ModernEmblem
+                  icon=crate::kit_modern::emblem_variant(enemy_sprite).0
+                  tone=crate::kit_modern::emblem_variant(enemy_sprite).1
+                  size=84
+                  locked=Signal::derive(|| false)
+                />
+              }
+                .into_any()
+            } else {
+              view! { <PixelSprite name=enemy_sprite scale=5 /> }.into_any()
+            }
+          }}
         </div>
         {strike
           .map(|(damage, xp)| {
@@ -84,43 +113,84 @@ pub(super) fn BattleStage(
     let c = battle.get().combo;
     (c >= 2).then(|| {
       view! {
-        <div class="pxl-blink pxl-label text-xs text-gold-text">
+        <div class=if modern { "md-combo" } else { "pxl-blink pxl-label text-xs text-gold-text" }>
           {tf("rpg.combo", &[&c.to_string()])}
         </div>
-        {(c >= CRIT_COMBO).then(|| view! { <div class="pxl-label text-xs">{t("rpg.crit")}</div> })}
+        {(c >= CRIT_COMBO)
+          .then(|| {
+            view! {
+              <div class=if modern { "md-combo-crit" } else { "pxl-label text-xs" }>
+                {t("rpg.crit")}
+              </div>
+            }
+          })}
       }
     })
   };
 
   view! {
-    <section class="pxl-window p-3 sm:p-4" aria-label=move || t("rpg.battle")>
+    <section
+      class=if modern { "md-battle-stage" } else { "pxl-window p-3 sm:p-4" }
+      aria-label=move || t("rpg.battle")
+    >
       <div class="grid grid-cols-[1fr_auto_1fr] items-end gap-2 sm:gap-4">
         <div class="flex min-w-0 flex-col items-start gap-2">
           <div class="pxl-label text-xs">{move || t("rpg.you")}</div>
           {player}
-          <Progress
-            value=player_hp
-            label=Signal::derive(move || t("rpg.hp-label"))
-            class="pxl-bar-win pxl-bar-danger"
-          />
+          {move || {
+            if modern {
+              let pct = player_hp.get().clamp(0, 100);
+              let low = pct <= 30;
+              view! {
+                <div class="md-hp-track" data-low=low.to_string()>
+                  <span class="md-hp-fill" style=format!("width: {pct}%")></span>
+                </div>
+              }
+                .into_any()
+            } else {
+              view! {
+                <Progress
+                  value=player_hp
+                  label=Signal::derive(move || t("rpg.hp-label"))
+                  class="pxl-bar-win pxl-bar-danger"
+                />
+              }
+                .into_any()
+            }
+          }}
           <div class="text-xs tabular-nums text-muted-foreground">
             {move || tf("rpg.hp-value", &[&battle.get().hp.to_string(), &PLAYER_MAX_HP.to_string()])}
           </div>
         </div>
 
         <div class="flex min-w-12 flex-col items-center gap-1 pb-16 text-center" aria-live="polite">
-          <span class="pxl-title text-sm" aria-hidden="true">"VS"</span>
+          <span class=if modern { "md-vs" } else { "pxl-title text-sm" } aria-hidden="true">"VS"</span>
           {combo}
         </div>
 
         <div class="flex min-w-0 flex-col items-end gap-2">
           <div class="pxl-label max-w-full truncate text-xs">{move || enemy_name.get()}</div>
           {enemy}
-          <Progress
-            value=enemy_hp
-            label=Signal::derive(move || t("rpg.enemy-hp-label"))
-            class="pxl-bar-hp"
-          />
+          {move || {
+            if modern {
+              let pct = enemy_hp.get().clamp(0, 100);
+              view! {
+                <div class="md-hp-track md-hp-enemy">
+                  <span class="md-hp-fill" style=format!("width: {pct}%")></span>
+                </div>
+              }
+                .into_any()
+            } else {
+              view! {
+                <Progress
+                  value=enemy_hp
+                  label=Signal::derive(move || t("rpg.enemy-hp-label"))
+                  class="pxl-bar-hp"
+                />
+              }
+                .into_any()
+            }
+          }}
           <div class="text-xs tabular-nums text-muted-foreground">
             {move || {
               let b = battle.get();

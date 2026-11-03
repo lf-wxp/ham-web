@@ -35,12 +35,13 @@ pub(super) fn BandCard(band: &'static Band, jump: Callback<&'static str>) -> imp
     view! { <ul class="mt-3 divide-y border-t border-dashed">{items}</ul> }.into_any()
   };
   view! {
-    <article class="pxl-card border bg-card p-4">
+    <article class=crate::kit::card_pad_class()>
       <div class="flex flex-wrap items-center gap-2">
         <span class="bg-muted px-2 py-0.5 font-mono text-xs text-foreground">
           {move || t("radio.reference")} " " {band.number}
         </span>
-        <h3>{move || kt_tracked(band.name)}</h3>
+        // h2：波段卡是页面的顶层分区（页头是 h1），用 h3 会让标题层级从 1 跳到 3。
+        <h2>{move || kt_tracked(band.name)}</h2>
         {band
           .microwave
           .then(|| view! { <span class="border px-2 py-0.5 text-xs text-muted-foreground">{move || t("knowledge.microwave")}</span> })}

@@ -1,0 +1,400 @@
+/* ============================================================
+   现代设计令牌（Modern Tokens）
+   ------------------------------------------------------------
+   这是**第二套设计系统**的取值，不是像素风的换色（见 docs/ui/decisions.md）。
+
+   设计方向：**深色电波（Dark Electric）** ——
+   近黑的夜航底色、电光蓝紫的辉光、信号橙作为唯一行动色，配发射塔与同心电波的主视觉。
+   浅色是同一套语言的「白天模式」：冷白纸面 + 同一批色的低饱和版本，不是另一套设计。
+
+   隔离约定（改动前先读这一节）：
+   - 变量一律 `--md-*` 前缀，不覆盖 `--primary` / `--card` 这类像素风在用的语义名 ——
+     否则未迁移的页面会跟着变，切风格时出现「一半现代一半像素」的糊状态；
+   - 只在 `.md-root`（现代页面根节点）与 `html[data-ui-style="modern"]` 上定义；
+   - 类名一律 `md-*`，与 `pxl-*` 没有交集，`ui_check` 会按目录与前缀双向拦截。
+   ============================================================ */
+
+/* 白天模式（浅色）：冷白纸面，同一批色相的低饱和版本。 */
+html[data-ui-style="modern"] {
+  --md-bg: #f4f3ee;
+  --md-fg: #0a0b0d;
+  --md-fg-muted: #565b66;
+  --md-surface: #fffefb;
+  --md-surface-2: #ecebe4;
+  --md-surface-3: #e0dfd6;
+  --md-border: #e2e0d7;
+  --md-border-strong: #c3c1b6;
+  /* 分隔线：比 border 更「墨」，用来画版面骨架（章节尺、数据条、栅栏），
+     与「卡片描边」拉开一档 —— 两者混用会让整页看起来像表格。 */
+  --md-rule: color-mix(in srgb, var(--md-fg) 18%, transparent);
+  --md-ink: #0a0b0d;
+  /* 工程网格：首页内容区铺一层 24px 正交细线，给版面「图纸」的秩序感。
+     比 `--md-rule` 淡一个数量级 —— 它是底纹，不是分隔线。 */
+  --md-grid: color-mix(in srgb, var(--md-fg) 4%, transparent);
+  /* 几何面：实心几何块（三角角标、圆盘）用的同色相双档渐变。
+     只允许在这类「不承载文字的纯色面」上出现，不用于标题文字与柔光。 */
+  --md-face-a: color-mix(in srgb, var(--md-fg) 7%, var(--md-surface));
+  --md-face-b: color-mix(in srgb, var(--md-fg) 2%, var(--md-surface));
+
+  --md-orange: #ff4d1f;
+  --md-orange-soft: #ffe4da;
+  --md-blue: #2540ff;
+  --md-blue-soft: #e3e7ff;
+  /* 蓝色实心面上的文字色：浅色主题的蓝很深，用白字；深色主题的蓝很亮，用墨字。 */
+  --md-blue-fg: #ffffff;
+  /* 浅色下的绿用于「正确 / 达成」的文字：原来的 #00875a 在暖纸底上只有 3.8:1，
+     压暗到 #00734f 后 4.9:1（AA 4.5）。深色下仍是高亮绿。 */
+  --md-green: #00734f;
+  --md-green-soft: #d9f2e8;
+  --md-violet: #5b2bff;
+
+  /* ---- 状态色：危险 / 警示 / 金，每个角色按**承载面**拆开 ----
+     写死 `#ff7a7a` 这类「按深色底调的浅粉红」会让浅色下的红字只有 2.1:1（AA 要 4.5），
+     金色字更只有 1.2:1。所以组件**不许**再写红 / 琥珀 / 金的字面色值，按承载面取：
+
+       danger          图形面：描边、浅底（`color-mix`）、渐变端点、辉光（UI 部件要求 ≥3:1）
+       danger-ink      文字面：错误提示、判错标记、倒计时告急（AA 4.5，含压在 22% 红底上的最差情形）
+       danger-fill     实心按钮底，配 `danger-fill-fg`；`-hover` 是悬停态
+       danger-face     小块实心标记（题号块、错误角标），配 `danger-face-fg`
+       warn-ink        琥珀文字（倒计时将尽）；warn-fill 是实心旗标底，配 `warn-fill-fg`
+       gold / gold-ink 金：图形面（辉光、描边、星标填充）/ 文字面（星标描线、连击）
+       blue-ink 等     纹章（emblem）图标的前景：浅色下取各自的深色，深色下取浅粉彩
+       green-fg        绿色实心面上的字（浅色是深绿底→白字，深色是亮绿底→墨字）
+
+     `check-structure` 的「状态色字面值」守着：红 / 琥珀色相的十六进制只能写在本文件。 */
+  --md-danger: #d62f2f;
+  --md-danger-ink: #9b1c14;
+  --md-danger-fill: #d93b3b;
+  --md-danger-fill-hover: #bf2f2f;
+  --md-danger-fill-fg: #ffffff;
+  --md-danger-face: var(--md-danger-fill);
+  --md-danger-face-fg: #ffffff;
+  --md-warn-ink: #8a5200;
+  --md-warn-fill: #ffb02e;
+  --md-warn-fill-fg: #241a00;
+  --md-gold: #c98a00;
+  --md-gold-ink: #7f5400;
+  --md-blue-ink: #2540ff;
+  --md-violet-ink: #5b2bff;
+  --md-green-ink: #00734f;
+  --md-green-fg: #ffffff;
+
+  /* 「反差面」：两套明暗都保持与页面底色相反的对比。 */
+  --md-contrast-bg: #0b0d12;
+  --md-contrast-fg: #f4f6fb;
+
+  /* ---- 行动色阶梯（主题色唯一的出口，四级） ----
+     品牌橙不是「一处装饰」，而是全站的识别色；但它不能只有一档 ——
+     一档橙既能铺主 CTA，又当链接色时，浅色主题直接掉到 2.96:1（AA 要 4.5）。
+     所以按**承载面**拆成四级，每一级只有一个用途，组件不许跨界：
+
+       accent      实心面：主 CTA、当前焦点块、页头方块记号
+       accent-ink  文字面：链接、章节编号、kicker / 分组标题、图标、数据标签
+       accent-soft 浅底：印记卡、强调块的背景（=`--md-orange-soft`）
+       accent-line 骨架面：分割线端点、悬停描边、表头下沿（1px 专用）
+       accent-wash 悬停底：链接 / 图标按钮悬停时的极浅底
+
+     蓝 / 绿 / 琥珀仍是**语义色**（选中 / 正确 / 提醒），不参与识别色；
+     行动橙也不许拿来标选中态（那样「行动」与「选中」就读不开了）。 */
+  --md-accent: var(--md-orange);
+  /* 橙底上的文字：白字在这两档橙上都只有 3.3 / 2.8（AA 要 4.5），
+     暖墨字则到 5.8 / 6.7 —— 顺带与「暖纸 + 深墨」的语言一致。 */
+  --md-accent-fg: #1a0c05;
+  /* 橙当**文字**用时压暗一档：色相不动，只是「墨化」。
+     #ff4d1f 在暖纸底上 2.96:1；压到 #b8340d 后 5.4:1（bg）/ 6.0:1（surface）/ 5.0:1（surface-2）。 */
+  --md-accent-ink: #b8340d;
+  --md-accent-soft: var(--md-orange-soft);
+  /* 34% 是「看得见是一条橙线、又不抢文字」的那一档；再淡就与 `--md-rule` 分不出。 */
+  --md-accent-line: color-mix(in srgb, var(--md-accent) 34%, transparent);
+  --md-accent-wash: color-mix(in srgb, var(--md-accent) 8%, transparent);
+
+  /* 语义别名：既有组件仍按 `--md-primary*` 取色，改阶梯时不用全文件替换。 */
+  --md-primary: var(--md-accent);
+  --md-primary-fg: var(--md-accent-fg);
+  --md-primary-soft: var(--md-accent-soft);
+
+  /* 辉光：首屏与 CTA 的背景光斑，浅色下低透明度，暗色下才会真正「发光」。 */
+  --md-glow-1: color-mix(in srgb, var(--md-orange) 16%, transparent);
+  --md-glow-2: color-mix(in srgb, var(--md-blue) 14%, transparent);
+  --md-glow-3: color-mix(in srgb, var(--md-violet) 12%, transparent);
+
+  /* 西文 Geist（自带 100–900 可变字重），中文按「优先现代屏显黑体」的顺序回退：
+     HarmonyOS Sans / MiSans 的字面与 Geist 更接近，PingFang 之后才是雅黑兜底。 */
+  --md-font:
+    "Geist", "Geist Fallback", ui-sans-serif, system-ui, "PingFang SC", "HarmonyOS Sans SC",
+    "MiSans", "Source Han Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB",
+    "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  /* 顶栏高度：页面级 sticky 元素（目录、内页头、调谐台）用它做偏移。
+     必须等于「.md-nav-inner 的高度 + 1px 下边框」—— 少算边框会让吸顶元素
+     往上钻进顶栏 1~5px，页头第一行被裁掉一条。两个值同源，改高度只改这两行。 */
+  --md-nav-inner-h: 60px;
+  --md-nav-h: calc(var(--md-nav-inner-h) + 1px);
+
+  /* 固定层级阶梯：同一底边 / 同一视口位置只允许一层，数值从下到上递增。
+     页面里写 `z-index` 一律取这里的档位（Tailwind 的 `z-[…]` 同理）：
+     底栏 40 → 浮动「下一题」41 → dock 55 → 抽屉 60 → 模态 / 对话框 70 → 气泡 / toast 80。
+     曾经 `ui::Dialog` 写 `z-50` 被 dock（55）压住、tooltip / toast 写 60 被模态（70）压住。 */
+  --md-z-bar: 40;
+  --md-z-dock: 55;
+  --md-z-sheet: 60;
+  --md-z-modal: 70;
+  --md-z-top: 80;
+
+  /* 版心：现代风**只有这一个宽度**。首页 `.md-shell`、内容页 `.md-page`、文章页
+     `.md-article-page`、以及桥接页的 `PageContainer` / `PageHeader` / 页脚 / 底部工具条
+     全部取它（桥接页那条在 `kit.css` 末尾按 `.max-w-5xl` 覆盖）。
+     历史上这里是三个数：1200（首页与内容页）、860（文章页）、1024（桥接页），
+     换页时版心左右跳，视觉上像换了套排版 —— 现在收敛成一个。 */
+  --md-page-max: 1200px;
+  --md-page-pad: 24px;
+  /* 辅助声部（编号 / 读数 / 标签 / 键帽）：IBM Plex Mono。
+     选它不是「换个等宽」——界面里到处都是等宽小字（章节编号、频率、日期、来源、
+     数据条标签），这一层是中文界面上唯一「每一屏都能看见西文字形」的地方，
+     换字族的效果比换标题体更明显。Plex 的方形字碗与折线端头带仪器面板的工程感，
+     与「深色电波」的主视觉同源；字宽 0.6em 与 Geist Mono 一致，表格不会重排。
+     中文字形不在分片里，逐字落到系统等宽，行盒由 "Plex Mono Fallback" 兜住。 */
+  --md-font-mono:
+    "IBM Plex Mono", "Plex Mono Fallback", ui-monospace, "SFMono-Regular", Menlo, Consolas,
+    "PingFang SC", monospace;
+  /* 展示声部（≥26px 的标题）：拉丁 Bricolage Grotesque + 汉字 Noto Sans SC 900。
+     拉丁那支是「法国海报体」谱系的可变无衬线：字口略窄、竖笔末端带斜切，
+     opsz 轴让 72px 的字距与字口自动收紧 —— 大字号有版画感，小字号仍是正常 grotesque。
+     汉字那支是**自托管的思源黑体 Heavy**：系统黑体给不出 900（PingFang 最高
+     Semibold、雅黑最高 Bold），标题只能停在「半粗」；分片后只多 81KB 就能让
+     中文标题也落到海报级的字重，且三端字面一致。
+     层级仍由**字号 + 字重 + 留白**承担（这条没变），换的只是「大字号用什么字面画」；
+     正文继续 Geist，三种字面都是 grotesque 谱系，气质同源、不会一半宋一半黑。
+     栈序即分工：拉丁先命中 Bricolage，汉字跳过它落到 Noto，二者都不认识的
+     生僻字才落到系统黑体 —— 基线由同一行高对齐。 */
+  --md-font-display:
+    "Bricolage Grotesque", "Bricolage Fallback", "Noto Sans SC Display", "PingFang SC",
+    "HarmonyOS Sans SC", "MiSans", "Source Han Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB",
+    "Microsoft YaHei UI", "Microsoft YaHei", ui-sans-serif, sans-serif;
+
+  /* ---- 圆角阶梯（6 档，每档一个场景） ----
+     xs   4  内嵌细条（进度槽、色条、代码块标记）
+     sm   6  chip / tag / 小按钮
+     ctl  8  可交互控件（输入 / 下拉 / 按钮 / 文本域）
+     md  10  卡片 / 面板 / 列表容器（`md` 是历史别名，与 `lg` 同值，新代码用 `lg`）
+     xl  14  大容器 / 弹层 / 抽屉 / 首屏读数条
+     pill    胶囊与圆点
+     新增圆角只能在 `tokens.css` 里加档；组件里不写裸 px（`check-ui` 有规则守着）。 */
+  --md-r-xs: 4px;
+  --md-r-sm: 6px;
+  --md-r-ctl: 8px;
+  --md-r-md: 10px;
+  --md-r-lg: 10px;
+  --md-r-xl: 14px;
+  --md-r-pill: 999px;
+
+  /* 控件规格：所有「可交互控件」（输入 / 下拉 / 按钮 / 文本域）共用同一组尺寸，
+     免得同一行里出现 44 高的输入 + 36 高的下拉 + 32 高的按钮。 */
+  --md-control-h: 40px;
+  --md-control-h-sm: 30px;
+  --md-control-r: var(--md-r-ctl);
+  --md-control-pad: 12px;
+
+  /* ---- 间距阶梯（4px 网格 + 两个半档） ----
+     2 / 4 / 6 只服务控件内部（描边内缩、图标与文字、chip 内边距）；
+     8 起才用于版面：控件之间、列表行、卡片内元素、卡片 padding、章节间距。
+     10 / 14 是历史值（仍在用，但新代码不要再选），归并方向见
+     `docs/ui/decisions.md` §11.4。 */
+  --md-space-0-5: 2px;
+  --md-space-1: 4px;
+  --md-space-1-5: 6px;
+  --md-space-2: 8px;
+  --md-space-2-5: 10px;
+  --md-space-3: 12px;
+  --md-space-3-5: 14px;
+  --md-space-4: 16px;
+  --md-space-5: 20px;
+  --md-space-6: 24px;
+  --md-space-8: 32px;
+  --md-space-12: 48px;
+  --md-space-16: 64px;
+
+  /* ---- 语义内边距：组件只认这几个名字，不自己拼 px ----
+     card  卡片 / 面板的标准内边距（24）
+     block 区块内的分组间距（16）
+     inline 控件横向内边距（10，历史值，随控件规格走） */
+  --md-pad-card: var(--md-space-6);
+  --md-pad-block: var(--md-space-4);
+  --md-pad-inline: var(--md-space-2-5);
+
+  /* ---- 着色三档 ----
+     `color-mix(… transparent)` 的百分比只允许这三档，避免 12/14/18/22/26%
+     在同一屏并存却看不出差别。weak=悬停底色，soft=选中/斑马底，strong=描边。 */
+  --md-tint-weak: 8%;
+  --md-tint-soft: 14%;
+  --md-tint-strong: 22%;
+
+  --md-shadow-1: 0 1px 2px rgb(11 13 18 / 0.06), 0 2px 8px rgb(11 13 18 / 0.05);
+  --md-shadow-2: 0 2px 8px -2px rgb(11 13 18 / 0.1), 0 16px 36px -18px rgb(11 13 18 / 0.25);
+  --md-shadow-3: 0 12px 30px -12px rgb(11 13 18 / 0.18), 0 36px 72px -36px rgb(11 13 18 / 0.35);
+  --md-shadow-accent: 0 12px 32px -12px color-mix(in srgb, var(--md-orange) 55%, transparent);
+  --md-shadow-glow: 0 0 0 1px color-mix(in srgb, var(--md-blue) 22%, transparent);
+
+  --md-ring: color-mix(in srgb, var(--md-blue) 50%, transparent);
+
+  --md-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --md-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --md-dur-fast: 120ms;
+  --md-dur: 180ms;
+  --md-dur-slow: 320ms;
+
+  /* 字号阶梯：3xs / 2xs 只给等宽小字（日期、来源、kicker），正文最小到 sm（13）。
+     `lede` 是页头副标题与首屏引文的专用档（19），介于 base 与 lg 之间。 */
+  --md-text-3xs: 10px;
+  --md-text-2xs: 11px;
+  --md-text-xs: 12px;
+  --md-text-sm: 13px;
+  --md-text-base: 16px;
+  --md-text-md: 17px;
+  --md-text-lede: 19px;
+  --md-text-lg: 22px;
+  --md-text-xl: 28px;
+  --md-text-2xl: 34px;
+  --md-text-3xl: 44px;
+
+  /* 展示级字号：只有大标题、首屏主张、数据条读数用它。
+     用 clamp 而不是断点，是因为这里要的是「随视口连续放大」的版面感，
+     不是三档跳变（后者看起来像三个不同页面）。 */
+  /* 上限对齐 Pixel 的 6xl（72px）：再大就没有参照物，也不再有「版心」可言。
+     下限 36px 保证 320px 宽下标题不超过 3 行。 */
+  --md-display-1: clamp(36px, 5.6vw, 72px);
+  --md-display-2: clamp(30px, 4.2vw, 52px);
+  --md-display-3: clamp(24px, 3vw, 34px);
+  --md-display-4: clamp(22px, 2.2vw, 26px);
+
+  /* 版面节奏：章节之间的大留白。所有「一段内容结束」的地方都用它，
+     页面才会有「一屏一件事」的呼吸，而不是卡片一张接一张。 */
+  --md-gap-section: 48px;
+}
+
+/* 中文语境下的两档小字各抬 1px。
+   10 / 11px 是给「等宽西文 kicker」定的：西文小写字面窄、x-height 高，10px 仍成形；
+   汉字是满格方块，10px 时笔画糊成一团（底部 dock 标签、热力刻度、日期都是这一档）。
+   只覆盖变量而不是改基础值，英文 / 西语界面的节奏保持原设计。 */
+html[data-ui-style="modern"][lang^="zh"] {
+  --md-text-3xs: 11px;
+  --md-text-2xs: 12px;
+}
+
+/* 窄屏用 20px、宽屏用 32px 的内边距：与像素风的 `px-4` 相比内边距更大，
+   所以桥接页在现代风下也要换成这一档（否则正文左边缘与顶栏差 12px）。 */
+@media (min-width: 1024px) {
+  html[data-ui-style="modern"] {
+    --md-page-pad: 32px;
+    --md-gap-section: 64px;
+  }
+}
+
+/* 夜间模式（深色电波）：这是这套语言的**签名外观**。 */
+html[data-ui-style="modern"].dark {
+  --md-bg: #04050a;
+  --md-fg: #f2f4fa;
+  --md-fg-muted: #8a92a6;
+  --md-surface: #0b0d13;
+  --md-surface-2: #12151f;
+  --md-surface-3: #1b2030;
+  --md-border: #222839;
+  --md-border-strong: #3a4460;
+  --md-rule: color-mix(in srgb, var(--md-fg) 16%, transparent);
+  --md-ink: #f2f4fa;
+  --md-grid: color-mix(in srgb, var(--md-fg) 5%, transparent);
+  --md-face-a: color-mix(in srgb, var(--md-fg) 9%, var(--md-surface));
+  --md-face-b: color-mix(in srgb, var(--md-fg) 3%, var(--md-surface));
+
+  --md-orange: #ff6a3d;
+  --md-orange-soft: #2a1610;
+  --md-blue: #6f8cff;
+  --md-blue-soft: #141c33;
+  --md-blue-fg: #05060a;
+  --md-green: #35e39f;
+  --md-green-soft: #0b2a22;
+  --md-violet: #a97bff;
+
+  /* 状态色（深色）：沿用原先写死在组件里的高亮粉彩，数值不变，只是收回到这里。
+     危险按钮 / 琥珀旗标是实心面，两套明暗共用同一对颜色，所以这里不重复声明。 */
+  --md-danger: #ff5d5d;
+  --md-danger-ink: #ff7a7a;
+  --md-danger-face: #ff5d5d;
+  --md-danger-face-fg: #1a0808;
+  --md-warn-ink: #ffb02e;
+  --md-gold: #ffcf6b;
+  --md-gold-ink: #ffcf6b;
+  --md-blue-ink: #8fb4ff;
+  --md-violet-ink: #b79dff;
+  --md-green-ink: #7fe3a8;
+  --md-green-fg: #08130c;
+
+  --md-contrast-bg: #121724;
+  --md-contrast-fg: #eef1f8;
+
+  /* 夜航底的行动色阶梯：高饱和橙在近黑底上本来就够亮（#ff6a3d 对 #04050a 是 7.4:1），
+     文字面只需要再亮半档，别用一个暗掉的砖红去压暗色主题。
+     骨架面抬到 46%：深色下 34% 的橙线几乎看不见。 */
+  --md-accent-ink: #ff8a63;
+  --md-accent-line: color-mix(in srgb, var(--md-accent) 46%, transparent);
+  --md-accent-wash: color-mix(in srgb, var(--md-accent) 12%, transparent);
+
+  --md-glow-1: color-mix(in srgb, var(--md-orange) 42%, transparent);
+  --md-glow-2: color-mix(in srgb, var(--md-blue) 38%, transparent);
+  --md-glow-3: color-mix(in srgb, var(--md-violet) 32%, transparent);
+
+  --md-shadow-1: 0 1px 2px rgb(0 0 0 / 0.6);
+  --md-shadow-2: 0 2px 10px -2px rgb(0 0 0 / 0.55), 0 18px 40px -20px rgb(0 0 0 / 0.85);
+  --md-shadow-3: 0 14px 34px -14px rgb(0 0 0 / 0.7), 0 40px 80px -40px rgb(0 0 0 / 0.9);
+  --md-shadow-accent: 0 12px 38px -10px color-mix(in srgb, var(--md-orange) 45%, transparent);
+  --md-shadow-glow: 0 0 0 1px color-mix(in srgb, var(--md-blue) 35%, transparent);
+
+  --md-ring: color-mix(in srgb, var(--md-blue) 70%, transparent);
+}
+
+/* body 只换底色与文字色（这是「外壳」，未迁移页面也吃这一条）；
+   字体不在这里改 —— 未迁移的像素页面继续用点阵字体，避免半现代。 */
+html[data-ui-style="modern"] body {
+  background-color: var(--md-bg);
+  color: var(--md-fg);
+}
+
+/* 现代页面根节点：字体、字号、行高都在这里落，作用范围仅限它自己的子树。 */
+.md-root {
+  font-family: var(--md-font);
+  font-size: var(--md-text-base);
+  line-height: 1.6;
+  color: var(--md-fg);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Portal 出来的表面（对话框 / 抽屉 / 调谐台 / 气泡 / toast）挂在 body 上，不在 `.md-root` 子树里，
+     必须逐个列出，否则「减少动态效果」对它们不生效（`ui::Dialog` 的 `md-dialog-*` 也是 Portal）。 */
+  .md-root *,
+  .md-root *::before,
+  .md-root *::after,
+  .md-modal,
+  .md-modal *,
+  .md-sheet,
+  .md-sheet *,
+  .md-palette,
+  .md-palette *,
+  .md-dialog-veil,
+  .md-dialog-panel,
+  .md-dialog-panel *,
+  .md-tip-popup,
+  .md-toast,
+  .md-toast *,
+  .md-bubble,
+  .md-bubble * {
+    transition-duration: 1ms !important; /* important-ok: 降级动画 */
+    animation-duration: 1ms !important; /* important-ok: 降级动画 */
+    /* 把「无限循环」也压成一次：只压时长不压次数，`animation: … infinite` 会变成每毫秒一圈的闪烁。 */
+    animation-iteration-count: 1 !important; /* important-ok: 降级动画 */
+  }
+
+  /* 转圈（spinner）是「正在加载」的唯一提示：压成一次就等于没有，改成不转 + 静止的半圈。 */
+  .md-root .animate-spin {
+    animation: none !important; /* important-ok: 降级动画 */
+  }
+}

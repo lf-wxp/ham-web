@@ -15,7 +15,7 @@ pub fn OpenSourcePage() -> impl IntoView {
   set_title("knowledge.open-source-projects-and");
   view! {
     <KnowledgePage title=move || t("knowledge.open-source-projects-and") subtitle=move || t("knowledge.community-open-source-software")>
-      <section class="pxl-card border bg-card">
+      <section class=crate::kit::card_class()>
         <div class="border-b px-4 py-3">
           <h2 class=card_title_class("")>{move || t("knowledge.featured-open-source-projects")}</h2>
           <p class="mt-0.5 text-xs text-muted-foreground">

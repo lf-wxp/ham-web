@@ -82,8 +82,138 @@ pub(super) fn QuestionRow(
     }
   };
 
+  if crate::kit::is_modern_at_mount() {
+    let modern_id = q.stable_id();
+    let j_text = q.j_code().map(str::to_owned);
+    // 初值只在挂载时取一次快照（组件体里没有观察者，`with` 会报「跟踪上下文之外读信号」）；
+    // 之后的同步靠下面 `bookmarks.update` 与本地 `marked`，不依赖这里的订阅。
+    let marked = RwSignal::new(
+      modern_id
+        .clone()
+        .is_some_and(|id| bookmarks.with_untracked(|s| s.contains(&id))),
+    );
+    let toggle_bookmark = {
+      let id = modern_id.clone();
+      move |_| {
+        let Some(id) = id.clone() else { return };
+        let added = store::toggle_bookmark(&id);
+        marked.set(added);
+        bookmarks.update(|set| {
+          if added {
+            set.insert(id.clone());
+          } else {
+            set.remove(&id);
+          }
+        });
+      }
+    };
+
+    return view! {
+      <article class="md-q-row">
+        <div class="md-q-row-head">
+          {j_text
+            .map(|j| view! { <span class="md-q-row-id">{j}</span> }.into_any())}
+          <p class="md-q-row-text">{q.question.clone()}</p>
+          {modern_id
+            .is_some()
+            .then(|| {
+              view! {
+                <button
+                  type="button"
+                  class="md-icon-btn md-icon-btn-xs"
+                  aria-pressed=move || marked.get().to_string()
+                  aria-label=move || t("exam.bookmark-this-question")
+                  on:click=toggle_bookmark
+                >
+                  <crate::kit_modern::ModernIcon kind=crate::kit_modern::MIcon::Book />
+                </button>
+              }
+            })}
+        </div>
+
+        <ul class="md-q-row-opts">
+          {q
+            .options
+            .iter()
+            .map(|o| {
+              let right = q.answer_keys.contains(&o.key);
+              view! {
+                <li data-right=right.to_string()>
+                  <span class="md-mono">{o.key.clone()}</span>
+                  <span>{o.text.clone()}</span>
+                </li>
+              }
+            })
+            .collect_view()}
+        </ul>
+
+        <p class="md-q-row-answer">
+          "✓ " {answer_title}
+        </p>
+
+        <div class="md-q-row-meta">
+          {q
+            .explanation
+            .clone()
+            .filter(|e| !e.is_empty())
+            .map(|e| {
+              view! {
+                <div class="md-q-row-block">
+                  <span class="md-stat-label">{move || t("exam.explanation")}</span>
+                  <p class="md-muted md-sm whitespace-pre-line">{e}</p>
+                </div>
+              }
+            })}
+          {note
+            .map(|n| {
+              view! {
+                <div class="md-q-row-block">
+                  <span class="md-stat-label">
+                    {move || t("knowledge.topic")} " "
+                    {move || sub.map(|s| crate::data::kt_tracked(s.name))}
+                  </span>
+                  <p class="md-muted md-sm">{move || crate::data::kt_tracked(n)}</p>
+                </div>
+              }
+            })}
+          {(!refs.is_empty())
+            .then(|| {
+              view! {
+                <div class="md-q-row-block">
+                  <span class="md-stat-label">{move || t("exam.references")}</span>
+                  <ul class="md-q-row-refs">
+                    {refs
+                      .iter()
+                      .map(|r| {
+                        view! {
+                          <li>
+                            <span class="md-ref-badge">{move || crate::data::kt_tracked(r.kind.label())}</span>
+                            {match r.url {
+                              Some(url) => view! {
+                                <a href=url target="_blank" rel="noopener noreferrer">
+                                  {move || crate::data::kt_tracked(r.text)}
+                                </a>
+                              }
+                                .into_any(),
+                              None => view! { <span>{move || crate::data::kt_tracked(r.text)}</span> }
+                                .into_any(),
+                            }}
+                          </li>
+                        }
+                      })
+                      .collect_view()}
+                  </ul>
+                </div>
+              }
+            })}
+        </div>
+      </article>
+    }
+    .into_any();
+  }
+
   view! {
-    <article class="pxl-card border bg-card p-4 sm:p-5">
+    <article class=crate::kit::card_class_with("p-4 sm:p-5")>
       <div class="mb-3 flex flex-wrap items-center gap-2">
         <span class="bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
           {q.id_str().or(q.j_code()).map(ToOwned::to_owned)}
@@ -196,7 +326,7 @@ pub(super) fn QuestionRow(
                           href=url
                           target="_blank"
                           rel="noopener noreferrer"
-                          class="inline-flex items-center gap-1 underline-offset-2 hover:underline"
+                          class=format!("{} {}", crate::kit::link_class(), "inline-flex items-center gap-1")
                         >
                           {move || crate::data::kt_tracked(r.text)}
                           <Icon kind=IconKind::ExternalLink class="size-6 w-3" />
@@ -219,4 +349,5 @@ pub(super) fn QuestionRow(
         })}
     </article>
   }
+  .into_any()
 }

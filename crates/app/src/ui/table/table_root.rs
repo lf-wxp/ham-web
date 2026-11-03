@@ -5,7 +5,7 @@ use leptos::prelude::*;
 use crate::cn::cn;
 use crate::ui::TextValue;
 
-use super::shared::table_class;
+use super::shared::{TableDensity, table_class};
 
 /// 表格根：外层 `overflow-x-auto` 滚动容器（移动端列宽保不住的兜底），内层 `<table>`。
 ///
@@ -25,22 +25,29 @@ pub fn Table(
   #[prop(optional, into)] wrapper_class: String,
   #[prop(optional)] tabindex: Option<&'static str>,
   #[prop(optional)] role: Option<&'static str>,
+  /// 密度：默认标准（8/12 内距）；行数 ≥ 15 的表用 [`TableDensity::Compact`]（判据与例外见
+  /// `docs/ui/modern.md` §4.3）。
+  #[prop(optional)]
+  density: TableDensity,
   children: Children,
 ) -> impl IntoView {
   let aria_label = aria_label.filter(|v| !v.is_empty());
   let region_label = aria_label.clone();
+  // `aria-label` 在无 role 的 `div` 上不被支持（axe: aria-prohibited-attr）。
+  // 只有调用方明确要 region 时才把名字挂到滚动容器上，否则留给内层 `<table>`。
+  let wrapper_label = role.and_then(|_| region_label.clone());
   view! {
     <div
       class=cn(&["relative w-full overflow-x-auto", &wrapper_class])
       data-slot="table-container"
       tabindex=tabindex
       role=role
-      aria-label=move || region_label.as_ref().map(TextValue::get)
+      aria-label=move || wrapper_label.as_ref().map(TextValue::get)
     >
       <table
         data-slot="table"
         aria-label=move || aria_label.as_ref().map(TextValue::get)
-        class=table_class(borderless, &class)
+        class=table_class(borderless, density, &class)
       >
         {children()}
       </table>

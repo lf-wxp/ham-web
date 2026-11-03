@@ -11,8 +11,8 @@ pub(super) fn FluxTrend(history: Vec<(String, f64)>) -> impl IntoView {
   }
   let max = history.iter().map(|(_, v)| *v).fold(f64::MIN, f64::max);
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("radio.solar-flux-trend-last")}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t("radio.solar-flux-trend-last")}</h2>
       <div class="flex items-end gap-1 p-4">
         {history
           .iter()

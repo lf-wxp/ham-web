@@ -67,6 +67,13 @@ pub(super) fn DfRow(
         <Field
           label=Signal::derive(move || tf("ardf.df-sigma-n", &[&number.to_string()]))
           r#for=sigma_id.clone()
+          invalid=Signal::derive(move || {
+            sigma
+              .get()
+              .trim()
+              .parse::<f64>()
+              .is_ok_and(|v| !v.is_finite() || v <= 0.0 || v > 45.0)
+          })
         >
           <NumberField
             id=sigma_id.clone()

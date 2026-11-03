@@ -16,7 +16,7 @@
 //!
 //! 往返对拍只能证明两端自洽，证明不了与真实设备互通——FCS 少一次取反这种错，自编自解永远
 //! 全绿。所以 FCS 另有外部已知答案钉死（CRC-16/X-25 的公开校验值与 RFC 1662 的剩余值），
-//! 但与 Direwolf / 硬件 TNC 的真机互通仍记在 `docs/hardware-verification.md` 的 C4（待验）。
+//! 但与 Direwolf / 硬件 TNC 的真机互通仍记在 `docs/domain/hardware-verification.md` 的 C4（待验）。
 
 use std::f64::consts::TAU;
 

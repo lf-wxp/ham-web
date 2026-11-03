@@ -200,6 +200,145 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
     .into_any()
   };
 
+  // 现代风：文章页头 + 搜索/筛选条 + 术语卡两列。分类从侧栏改成横向胶囊，
+  // 窄屏不用再开抽屉（原来侧栏在 <md 时是隐藏的，等于手机上没法切分类）。
+  let modern_list = move || {
+    let total = filtered.with(Vec::len);
+    if total == 0 {
+      return view! {
+        <p class="md-palette-empty">{move || t("knowledge.no-matching-terms")}</p>
+      }
+      .into_any();
+    }
+    let shown: Vec<usize> = filtered.with(|f| f.iter().copied().take(visible.get()).collect());
+    let shown_len = shown.len();
+    view! {
+      <div class="md-term-grid">
+        {shown
+          .into_iter()
+          .map(|i| view! { <TermCard entry=&entries[i] haystacks=haystacks on_jump=jump_to /> })
+          .collect_view()}
+      </div>
+      {(shown_len < total)
+        .then(|| {
+          view! {
+            <button
+              type="button"
+              class="md-btn md-btn-outline mt-4 w-full"
+              on:click=move |_| visible.update(|v| *v += PAGE)
+            >
+              {move || tf("knowledge.load-more-count", &[&shown_len.to_string(), &total.to_string()])}
+            </button>
+          }
+        })}
+    }
+      .into_any()
+  };
+
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <div class="md-root">
+        <div class="md-page md-article-page">
+          <crate::kit_modern::ModernPageHead
+            title=Signal::derive(move || t("shell.glossary"))
+            subtitle=Signal::derive(move || t("knowledge.common-ham-terms-english"))
+          />
+
+          <div class="md-glossary-bar">
+            <crate::kit_modern::ModernInput
+              value=kw
+              on_input=Callback::new(move |v: String| {
+                kw.set(v);
+                visible.set(PAGE);
+              })
+              kind="search"
+              placeholder=Signal::derive(move || t("knowledge.search-terms-abbreviations-explanations"))
+              aria_label=Signal::derive(move || t("knowledge.search-terms-abbreviations-explanations"))
+              class="md-glossary-search"
+            />
+            <button
+              type="button"
+              class="md-chip"
+              aria-pressed=move || abbr_only.get().to_string()
+              on:click=move |_| {
+                abbr_only.update(|v| *v = !*v);
+                visible.set(PAGE);
+              }
+            >
+              {move || t("knowledge.english-abbreviations-only")}
+            </button>
+          </div>
+
+          // 窄屏：分类条吸顶（横向滚动单行），滚到列表深处也能换分类。
+          <div class="md-filter-bar">
+          <div class="md-chip-row mb-4">
+            <button
+              type="button"
+              class="md-chip"
+              aria-pressed=move || (cat.with(|c| c == ALL)).to_string()
+              on:click=move |_| select_cat(ALL)
+            >
+              {move || t("knowledge.all-terms")}
+              <span class="md-menu-count">{move || base.with(Vec::len)}</span>
+            </button>
+            {move || {
+              categories()
+                .into_iter()
+                .map(|key| {
+                  let (name, _) = category_meta(key);
+                  view! {
+                    <button
+                      type="button"
+                      class="md-chip"
+                      aria-pressed=move || cat.with(|c| c == key).to_string()
+                      on:click=move |_| select_cat(key)
+                    >
+                      {move || crate::data::core_text_tracked(name)}
+                      <span class="md-menu-count">
+                        {move || cat_count.with(|m| m.get(key).copied().unwrap_or(0))}
+                      </span>
+                    </button>
+                  }
+                })
+                .collect_view()
+            }}
+          </div>
+          </div>
+
+          <div class="md-strip mb-6">
+            <div class="md-strip-item">
+              <crate::kit_modern::ModernStatValue value=Signal::derive(move || {
+                  Some(base.with(Vec::len))
+              }) />
+              <span class="md-strip-label">{move || t("knowledge.total-terms")}</span>
+            </div>
+            <div class="md-strip-item">
+              <crate::kit_modern::ModernStatValue value=Signal::derive(move || {
+                  Some(abbr_count.get())
+              }) />
+              <span class="md-strip-label">{move || t("knowledge.english-abbreviations")}</span>
+            </div>
+            <div class="md-strip-item">
+              <crate::kit_modern::ModernStatValue value=Signal::derive(move || {
+                  Some(category_total.get())
+              }) />
+              <span class="md-strip-label">{move || t("knowledge.term-categories")}</span>
+            </div>
+            <div class="md-strip-item">
+              <crate::kit_modern::ModernStatValue value=Signal::derive(move || {
+                  Some(filtered.with(Vec::len))
+              }) />
+              <span class="md-strip-label">{move || t("exam.current-filter")}</span>
+            </div>
+          </div>
+
+          {modern_list}
+        </div>
+      </div>
+    }
+    .into_any();
+  }
+
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader
@@ -235,7 +374,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
 
       <PageContainer class="space-y-0 grid grid-cols-1 gap-5 md:grid-cols-[240px_1fr]">
         <aside class="hidden md:block">
-          <StickyPanel class="max-h-[calc(100svh-var(--sticky-top)-16px)] overflow-y-auto overscroll-contain pxl-card border bg-card p-2">
+          <StickyPanel class=crate::kit::card_class_with("max-h-[calc(100svh-var(--sticky-top)-16px)] overflow-y-auto overscroll-contain p-2")>
             {category_tree()}
           </StickyPanel>
         </aside>
@@ -262,4 +401,5 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
       </PageContainer>
     </div>
   }
+  .into_any()
 }

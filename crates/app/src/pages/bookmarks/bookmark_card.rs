@@ -5,7 +5,7 @@ use crate::components::common::{ExplanationCard, NoteEditor};
 use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 use crate::store;
-use crate::ui::{Button, ControlSize, NativeSelect, SelectOption, Size, Tooltip, Variant};
+use crate::ui::{Button, ControlSize, SelectOption, SimpleSelect, Size, Tooltip, Variant};
 
 /// 一道收藏题卡片；`groups_of` 为该题当前所属分组，`all_groups` 为全部分组（用于下拉加入）。
 #[component]
@@ -32,8 +32,118 @@ pub(super) fn BookmarkCard(
   // 已有笔记的题目标出来，省得逐条展开去找（笔记保存后展开状态会重渲染，此处够用）。
   let q_has_note = question.clone();
   let has_note = store::load_note(&q_has_note.stable_id().unwrap_or_default()).is_some();
+  if crate::kit::is_modern_at_mount() {
+    let pick_modern = pick;
+    let opts = Signal::derive({
+      let all = all_groups.clone();
+      move || {
+        all
+          .iter()
+          .map(|g| (g.clone(), g.clone()))
+          .collect::<Vec<(String, String)>>()
+      }
+    });
+    let q_add_modern = q_add.clone();
+    return view! {
+      <article class="md-bookmark">
+        <div class="md-bookmark-head">
+          <span class="md-bookmark-j">{j}</span>
+          <p class="md-bookmark-q">{question.question.clone()}</p>
+          <button
+            type="button"
+            class="md-icon-btn md-bookmark-remove"
+            aria-label=move || t("exam.remove-bookmark")
+            on:click=move |_| on_remove.run(q.clone())
+          >
+            <crate::kit_modern::ModernIcon kind=crate::kit_modern::MIcon::Book />
+          </button>
+        </div>
+
+        <ul class="md-bookmark-opts">
+          {question
+            .options
+            .iter()
+            .map(|o| {
+              view! {
+                <li>
+                  <span class="md-mono">{o.key.clone()}</span>
+                  <span>{o.text.clone()}</span>
+                </li>
+              }
+            })
+            .collect_view()}
+        </ul>
+
+        <p class="md-bookmark-answer">
+          {move || t("exam.answer")} " "
+          <span class="md-mono">{question.answer_keys.join("、")}</span>
+        </p>
+
+        <div class="mt-3">
+          <ExplanationCard explanation=explain />
+        </div>
+
+        <div class="md-bookmark-foot">
+          <span class="md-stat-label">{move || t("exam.group")}</span>
+          {groups_of
+            .into_iter()
+            .map(|name| {
+              let n = name.clone();
+              let qr = question.clone();
+              view! {
+                <button
+                  type="button"
+                  class="md-chip md-chip-sm"
+                  on:click=move |_| on_remove_from_group.run((qr.clone(), n.clone()))
+                >
+                  {name} " ×"
+                </button>
+              }
+            })
+            .collect_view()}
+          {(!all_groups.is_empty())
+            .then(|| {
+              view! {
+                <crate::kit_modern::ModernSelect
+                  value=pick_modern
+                  on_change=Callback::new(move |v: String| {
+                    on_add_to_group.run((q_add_modern.clone(), v));
+                  })
+                  options=opts
+                  placeholder=Signal::derive(move || t("exam.add-to-group"))
+                  aria_label=Signal::derive(move || t("exam.add-to-group"))
+                  class="md-select-sm"
+                />
+              }
+            })}
+          <button
+            type="button"
+            class="md-btn md-btn-ghost md-btn-sm ml-auto"
+            aria-expanded=move || note_open.get().to_string()
+            on:click=move |_| note_open.update(|v| *v = !*v)
+          >
+            {move || t("exam.notes")}
+            {has_note.then(|| view! { <span class="md-dot-badge" aria-hidden="true"></span> })}
+          </button>
+        </div>
+
+        {move || {
+          note_open
+            .get()
+            .then(|| {
+              view! {
+                <div class="mt-3">
+                  <NoteEditor question_id=note_id />
+                </div>
+              }
+            })
+        }}
+      </article>
+    }
+    .into_any();
+  }
   view! {
-    <div class="pxl-card border bg-card p-4">
+    <div class=crate::kit::card_pad_class()>
       <div class="mb-2 flex items-start gap-2">
         <span class="mt-0.5 shrink-0 bg-muted px-1.5 py-0.5 font-mono text-xs">{j}</span>
         <p class="flex-1 text-sm leading-snug">{question.question.clone()}</p>
@@ -94,7 +204,7 @@ pub(super) fn BookmarkCard(
             .map(|g| SelectOption::new(g.clone(), g.clone()))
             .collect();
           view! {
-            <NativeSelect
+            <SimpleSelect
               value=pick
               on_change=Callback::new(move |v: String| {
                 if !v.is_empty() {
@@ -136,4 +246,5 @@ pub(super) fn BookmarkCard(
       }}
     </div>
   }
+  .into_any()
 }

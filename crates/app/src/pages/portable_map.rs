@@ -106,7 +106,7 @@ pub fn PortableMapPage() -> impl IntoView {
         })
       />
       <PageContainer>
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           {move || {
             if loading.get() {
               view! {

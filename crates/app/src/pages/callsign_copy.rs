@@ -119,14 +119,14 @@ pub fn CallsignCopyPage() -> impl IntoView {
       />
 
       <PageContainer class="space-y-4">
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
             <span>{move || t("common.correct-label")} <span class="text-win-text">{move || correct.get()}</span> {" / "} {move || total.get()}</span>
             <span>{move || t("morse.streak-count")} <span class="text-foreground">{move || streak.get()}</span> {move || t("exam.questions")}</span>
           </div>
 
           // 刻意的例外：这两个模式按钮靠切换 `variant` 表示当前选中，而 `Button` 的
-          // `variant` 是静态 prop（见 `docs/ui-components.md` 的「常见坑」第 4 条）。
+          // `variant` 是静态 prop（见 `docs/ui/pixel.md` 的「常见坑」第 4 条）。
           <div class="mb-3 flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -227,7 +227,7 @@ pub fn CallsignCopyPage() -> impl IntoView {
           </div>
         </section>
 
-        <details class="pxl-card border bg-card">
+        <details class=crate::kit::card_class()>
           <summary class="cursor-pointer px-4 py-3 text-sm">{move || t("morse.phonetic-alphabet-reference")}</summary>
           <div class="grid grid-cols-2 gap-x-6 gap-y-1 px-4 pb-4 sm:grid-cols-3">
             {PHONETIC

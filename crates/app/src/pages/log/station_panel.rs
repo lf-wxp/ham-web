@@ -90,7 +90,7 @@ pub(super) fn StationPanel(book: RwSignal<StationBook>, on_save: Callback<()>) -
   };
 
   view! {
-    <section class="pxl-card border bg-card">
+    <section class=crate::kit::card_class()>
       <Button
         variant=Variant::Text
         // 文字色必须显式给：`Variant::Text` 的 `--btn-fg` 是 `muted-foreground`，而这里是区块标题。

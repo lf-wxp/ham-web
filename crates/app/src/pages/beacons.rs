@@ -48,9 +48,9 @@ pub fn BeaconsPage() -> impl IntoView {
       />
       <PageContainer>
         // 当前时隙：正在发射的信标台。
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <div class="pxl-stat">{move || clock.get()}</div>
+            <div class=crate::kit::stat_class()>{move || clock.get()}</div>
             {move || {
               let (idx, into) = slot.get();
               let (call, loc, region) = BEACONS[idx];
@@ -79,8 +79,8 @@ pub fn BeaconsPage() -> impl IntoView {
         </section>
 
         // 信标台列表。
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.beacons-in-polling-order")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.beacons-in-polling-order")}</h2>
           <div class="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3">
             {BEACONS
               .iter()
@@ -105,14 +105,14 @@ pub fn BeaconsPage() -> impl IntoView {
         </section>
 
         // 信标频率。
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.beacon-frequency")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.beacon-frequency")}</h2>
           <div class="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-5">
             {BEACON_BANDS
               .iter()
               .map(|&(band, freq)| {
                 view! {
-                  <div class="border px-3 py-2 text-center">
+                  <div class=crate::kit::table_cell_class("text-center")>
                     <div class="text-xs text-muted-foreground">{band}</div>
                     <div class="font-mono text-sm tabular-nums">{format!("{freq:.3} MHz")}</div>
                   </div>
@@ -123,8 +123,8 @@ pub fn BeaconsPage() -> impl IntoView {
         </section>
 
         // 信号格式。
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.signal-format")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.signal-format")}</h2>
           <div class="space-y-3 p-4">
             <p class="text-sm text-muted-foreground">
               {move || t("knowledge.each-station-transmits-for")}
@@ -148,8 +148,8 @@ pub fn BeaconsPage() -> impl IntoView {
         </section>
 
         // 使用说明。
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.how-to-read-it")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.how-to-read-it")}</h2>
           <ul class="space-y-2 p-4">
             <li class="flex gap-2 text-sm text-muted-foreground">
               <span class="mt-0.5 shrink-0 text-primary">"•"</span>

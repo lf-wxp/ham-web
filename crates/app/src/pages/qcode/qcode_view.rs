@@ -125,6 +125,7 @@ pub(crate) fn QCodeView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               value=kw
               on_change=Callback::new(move |v: String| kw.set(v))
               kind=InputType::Search
+              aria_label=Signal::derive(move || t("shell.search"))
               placeholder=Signal::derive(move || t("knowledge.search-code-meaning"))
               prefix=move || view! { <Icon kind=IconKind::Search /> }
               clearable=true

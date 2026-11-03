@@ -2,7 +2,7 @@
 //!
 //! 原先四份逐字相同的 `<button class="… rounded-full …">`，只有图标与文案不同 ——
 //! 收成一个组件（顺带去掉了 `active:scale-95`：像素风不做缩放动画，见
-//! `docs/ui-components.md` §2）。
+//! `docs/ui/pixel.md` §2）。
 
 use leptos::prelude::*;
 

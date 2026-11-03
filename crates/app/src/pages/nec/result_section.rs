@@ -8,6 +8,7 @@ use ham_web_core::nec::{NecResult, wavelength};
 use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
+use crate::ui::intl::decimal;
 
 use super::elevation_grid::elevation_grid;
 use super::polar_grid::polar_grid;
@@ -29,18 +30,18 @@ pub(super) fn ResultSection(
       .into_any(),
       Some(r) => {
         let z = fmt_z(r.impedance.0, r.impedance.1);
-        let swr = format!("{:.2}", r.swr_50);
-        let gain = format!("{:.2}", r.gain_max_dbi);
-        let fb = format!("{:.1}", r.front_to_back_db);
-        let elev = format!("{:.0}", r.gain_max_elevation_deg);
+        let swr = decimal(r.swr_50, 2);
+        let gain = decimal(r.gain_max_dbi, 2);
+        let fb = decimal(r.front_to_back_db, 1);
+        let elev = decimal(r.gain_max_elevation_deg, 0);
         let segs = r.segments.to_string();
         let unknown = r.unknowns.to_string();
-        let eff = format!("{:.1}", r.efficiency * 100.0);
-        let loss = format!("{:.2}", r.loss_db);
-        let dir = format!("{:.2}", r.directivity_dbi);
+        let eff = decimal(r.efficiency * 100.0, 1);
+        let loss = decimal(r.loss_db, 2);
+        let dir = decimal(r.directivity_dbi, 2);
         let peak = r.gain_max_dbi;
         let lam = wavelength(freq_hz.get());
-        let elec = format!("{:.3}", len_m.get() / lam);
+        let elec = decimal(len_m.get() / lam, 3);
         let lam_s = fmt(lam);
         let az_path = polar_path(&r.azimuth, peak);
         let el_path = elevation_path(&r.elevation, peak);

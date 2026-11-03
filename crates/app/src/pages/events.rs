@@ -84,8 +84,8 @@ pub fn EventsPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>
             {move || t("knowledge.events-all-year-sorted")}
           </h2>
           <div class="divide-y">
@@ -161,8 +161,8 @@ pub fn EventsPage() -> impl IntoView {
           </p>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>
             {move || t("knowledge.track-dx-expeditions-and")}
           </h2>
           <div class="grid gap-2 p-4 sm:grid-cols-2">

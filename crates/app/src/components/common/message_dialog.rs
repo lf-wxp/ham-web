@@ -13,6 +13,19 @@ pub fn MessageDialog(
   #[prop(into)] description: Signal<String>,
   #[prop(into, default = "确定".into())] confirm_text: String,
 ) -> impl IntoView {
+  if crate::kit::is_modern_at_mount() {
+    let title = StoredValue::new(title);
+    let confirm_text = StoredValue::new(confirm_text);
+    return view! {
+      <crate::kit_modern::ModernMessage
+        open=open
+        title=Signal::derive(move || t(&title.get_value()))
+        description=description
+        confirm_text=Signal::derive(move || t(&confirm_text.get_value()))
+      />
+    }
+    .into_any();
+  }
   let title = StoredValue::new(title);
   let confirm_text = StoredValue::new(confirm_text);
   view! {
@@ -39,4 +52,5 @@ pub fn MessageDialog(
       </DialogFooter>
     </Dialog>
   }
+  .into_any()
 }

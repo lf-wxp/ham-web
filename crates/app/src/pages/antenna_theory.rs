@@ -24,8 +24,8 @@ pub fn AntennaTheoryPage() -> impl IntoView {
           .iter()
           .map(|(title, formulas)| {
             view! {
-              <section class="pxl-card border bg-card">
-                <h2 class="pxl-section-title">
+              <section class=crate::kit::card_class()>
+                <h2 class=crate::kit::card_title_class()>
                   {move || data::kt_tracked(title)}
                 </h2>
                 <div class="grid gap-3 p-4 md:grid-cols-2">
@@ -33,7 +33,7 @@ pub fn AntennaTheoryPage() -> impl IntoView {
                     .iter()
                     .map(|f| {
                       view! {
-                        <div class="border px-3 py-2">
+                        <div class=crate::kit::table_cell_class("")>
                           <div class="text-xs text-muted-foreground">
                             {move || data::kt_tracked(f.name)}
                           </div>

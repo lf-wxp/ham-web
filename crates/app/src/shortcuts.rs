@@ -45,19 +45,13 @@ fn is_typing_target(target: Option<web_sys::EventTarget>) -> bool {
 
 /// 是否有模态层正开着。
 ///
-/// `Dialog` 与 `Sheet`（答题卡、移动端抽屉）都输出 `aria-modal="true"` 并挂在 `body` 的
-/// Portal 里，所以用这一个属性做判据就够：全局快捷键监听挂在 `window` 上，不会因为焦点在
-/// 模态里就停手 —— 不判的话，交卷确认框打开时按 `1-9` 仍会改答案、按 `←/→` 仍会翻题，
-/// 用户眼前是确认框、背后的题却变了。
+/// `Dialog` 与 `Sheet`（答题卡、移动端抽屉）、现代风的各个弹层都带 `data-modal-root`
+/// 并挂在 `body` 的 Portal 里，所以用 [`crate::focus::has_open_modal`] 这一个判据就够：
+/// 全局快捷键监听挂在 `window` 上，不会因为焦点在模态里就停手 —— 不判的话，交卷确认框
+/// 打开时按 `1-9` 仍会改答案、按 `←/→` 仍会翻题，用户眼前是确认框、背后的题却变了。
+/// 退场动画中的面板（`data-state=closed`）不算：否则关弹层后的 200ms 内快捷键仍被吞。
 pub fn modal_is_open() -> bool {
-  web_sys::window()
-    .and_then(|w| w.document())
-    .is_some_and(|d| {
-      d.query_selector("[aria-modal=\"true\"]")
-        .ok()
-        .flatten()
-        .is_some()
-    })
+  crate::focus::has_open_modal()
 }
 
 /// 自身响应 Enter / 方向键的控件（按钮、链接、下拉、单选组等），交给浏览器默认行为。

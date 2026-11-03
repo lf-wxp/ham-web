@@ -12,7 +12,7 @@ use crate::util::{document, scroll_to_element, set_title};
 use super::band_card::BandCard;
 use super::band_quiz::BandQuiz;
 use super::usage_badge::UsageBadge;
-use super::{CELL, SAT_ICON, footnote_id, table_rows};
+use super::{SAT_ICON, footnote_id, table_rows};
 use crate::i18n::t;
 
 #[component]
@@ -90,18 +90,18 @@ pub fn BandsPage() -> impl IntoView {
         // 刻意的例外：波段表的 tbody 有大量动态 `rowspan` / `colspan`
         // （`table_rows.rs` 按波段跨行合并单元格），`TableCell` 的静态 `colspan: u32`
         // 表达不了，整表保留原生 `<table>`。
-        <div class="hidden overflow-x-auto pxl-card border bg-card md:block">
+        <div class=crate::kit::card_class_with("hidden overflow-x-auto md:block")>
           <table class="w-full min-w-[960px] border-collapse border-hidden text-sm">
             <thead class="bg-inset text-xs">
               <tr>
-                <th class=CELL>{move || t("radio.reference")}</th>
-                <th class=CELL colspan="2">{move || t("radio.band-name")}</th>
-                <th class=CELL>{move || t("radio.wavelength-range")}</th>
-                <th class=CELL colspan="2">{move || t("radio.frequency-band-name")}</th>
-                <th class=CELL>{move || t("radio.band-range")}</th>
-                <th class=CELL>{move || t("radio.amateur-amateur-satellite-bands")}</th>
-                <th class=CELL>{move || t("radio.status")}</th>
-                <th class=CELL>{move || t("radio.footnote-notes")}</th>
+                <th class=crate::kit::table_cell_class("")>{move || t("radio.reference")}</th>
+                <th class=crate::kit::table_cell_class("") colspan="2">{move || t("radio.band-name")}</th>
+                <th class=crate::kit::table_cell_class("")>{move || t("radio.wavelength-range")}</th>
+                <th class=crate::kit::table_cell_class("") colspan="2">{move || t("radio.frequency-band-name")}</th>
+                <th class=crate::kit::table_cell_class("")>{move || t("radio.band-range")}</th>
+                <th class=crate::kit::table_cell_class("")>{move || t("radio.amateur-amateur-satellite-bands")}</th>
+                <th class=crate::kit::table_cell_class("")>{move || t("radio.status")}</th>
+                <th class=crate::kit::table_cell_class("")>{move || t("radio.footnote-notes")}</th>
               </tr>
             </thead>
             <tbody>{table_rows(jump)}</tbody>
@@ -112,8 +112,8 @@ pub fn BandsPage() -> impl IntoView {
           {BANDS.iter().map(|band| view! { <BandCard band=band jump=jump /> }).collect_view()}
         </div>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.footnote")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.footnote")}</h2>
           <dl class="divide-y">{footnotes}</dl>
         </section>
 

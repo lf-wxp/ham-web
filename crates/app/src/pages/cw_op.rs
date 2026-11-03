@@ -9,8 +9,6 @@ use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 #[component]
 pub fn CwOpPage() -> impl IntoView {
   set_title("shell.cw-operating");
@@ -25,13 +23,13 @@ pub fn CwOpPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.common-cw-abbreviations")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.common-cw-abbreviations")}</h2>
           <Table class="min-w-[560px] text-sm">
             <TableHead>
               <TableRow>
-                <TableHeader class=CELL>{move || t("knowledge.abbreviations")}</TableHeader>
-                <TableHeader class=CELL>{move || t("knowledge.meaning")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.abbreviations")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.meaning")}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -40,8 +38,8 @@ pub fn CwOpPage() -> impl IntoView {
                 .map(|&(abbr, meaning)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap font-mono text-primary")>{move || kt_tracked(abbr)}</TableCell>
-                      <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(meaning)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono text-primary")>{move || kt_tracked(abbr)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(meaning)}</TableCell>
                     </TableRow>
                   }
                 })
@@ -50,8 +48,8 @@ pub fn CwOpPage() -> impl IntoView {
           </Table>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("radio.operating-tips")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.operating-tips")}</h2>
           <ul class="space-y-2 p-4">
             {CW_TIPS
               .iter()

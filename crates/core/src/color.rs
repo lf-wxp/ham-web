@@ -33,6 +33,27 @@ impl Rgb {
     Some(Self(ch(0)?, ch(2)?, ch(4)?))
   }
 
+  /// 解析 CSS 里的字面色值：`#rrggbb` 或 `#rgb`（必须带 `#`，前后空白会被忽略）。
+  ///
+  /// 与 [`Self::parse`] 的区别：这里接受三位简写（`#abc` ≡ `#aabbcc`），因为它面对的是
+  /// 浏览器吐回来的自定义属性值；`parse` 面对的是调色板源码，写错了应当报错。
+  /// 不认 `color-mix(...)` / `rgb(...)` 这类未展开的声明值，由调用点的兜底色接住。
+  #[must_use]
+  pub fn parse_css(raw: &str) -> Option<Self> {
+    let hex = raw.trim().strip_prefix('#')?;
+    if !hex.is_ascii() {
+      return None;
+    }
+    match hex.len() {
+      6 => Self::parse(hex),
+      3 => {
+        let d = |i: usize| u8::from_str_radix(&hex[i..=i], 16).ok().map(|v| v * 17);
+        Some(Self(d(0)?, d(1)?, d(2)?))
+      }
+      _ => None,
+    }
+  }
+
   /// 小写 `#rrggbb`。
   #[must_use]
   pub fn hex(self) -> String {
@@ -82,6 +103,26 @@ impl Rgb {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn parse_css_accepts_short_and_long_hex_only() {
+    assert_eq!(Rgb::parse_css("#ff4d1f"), Some(Rgb(255, 77, 31)));
+    assert_eq!(Rgb::parse_css("  #FF4D1F  "), Some(Rgb(255, 77, 31)));
+    // `#abc` ≡ `#aabbcc`：一位要乘 17 才是 0–255 的那一档。
+    assert_eq!(Rgb::parse_css("#abc"), Some(Rgb(0xaa, 0xbb, 0xcc)));
+    assert_eq!(Rgb::parse_css("#fff"), Some(Rgb(255, 255, 255)));
+    assert_eq!(Rgb::parse_css("#000"), Some(Rgb(0, 0, 0)));
+    // 必须带 `#`，长度只能是 3 / 6，字符必须是十六进制，不认未展开的声明值。
+    assert_eq!(Rgb::parse_css("ff4d1f"), None);
+    assert_eq!(Rgb::parse_css("#ff4d1"), None);
+    assert_eq!(Rgb::parse_css("#ff4d1f00"), None);
+    assert_eq!(Rgb::parse_css("#ggg"), None);
+    assert_eq!(Rgb::parse_css("color-mix(in srgb, red 50%, blue)"), None);
+    // 非 ASCII 不能让按字节切片 panic。
+    assert_eq!(Rgb::parse_css("#é1"), None);
+    assert_eq!(Rgb::parse_css("#ééé"), None);
+    assert_eq!(Rgb::parse_css(""), None);
+  }
 
   #[test]
   fn parses_and_prints_lowercase_hex() {

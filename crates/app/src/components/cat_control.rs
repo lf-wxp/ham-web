@@ -14,7 +14,7 @@ use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 
 use crate::i18n::{t, tf};
-use crate::ui::{Button, ControlSize, Input, NativeSelect, SelectOption, Size, Variant};
+use crate::ui::{Button, ControlSize, Input, SelectOption, SimpleSelect, Size, Variant};
 use crate::util::{js_error_message, sleep, storage, window};
 
 const KEY: &str = "cat-settings";
@@ -249,7 +249,7 @@ pub fn CatControl(#[prop(into)] on_reading: Callback<CatReading>) -> impl IntoVi
       <span class="text-foreground">{move || t("common.rig-cat")}</span>
       {if supported {
         view! {
-          <NativeSelect
+          <SimpleSelect
             value=Signal::derive(move || {
               if settings.with(|s| s.protocol) == Protocol::Icom {
                 "icom".to_owned()
@@ -267,7 +267,7 @@ pub fn CatControl(#[prop(into)] on_reading: Callback<CatReading>) -> impl IntoVi
             aria_label=Signal::derive(move || t("common.cat-protocol"))
             class="w-auto"
           />
-          <NativeSelect
+          <SimpleSelect
             value=Signal::derive(move || settings.with(|s| s.baud).to_string())
             on_change=Callback::new(move |v: String| {
               settings.update(|s| s.baud = v.parse().unwrap_or(9600));
@@ -283,7 +283,7 @@ pub fn CatControl(#[prop(into)] on_reading: Callback<CatReading>) -> impl IntoVi
             <Input
               aria_label=Signal::derive(move || t("common.ci-v-address-hex"))
               title=Signal::derive(move || t("common.ci-v-address-hex-examples"))
-              class="h-7 w-14 py-0 font-mono text-xs uppercase"
+              class="md-input-sm w-14 font-mono uppercase"
               maxlength=Signal::derive(|| "2".to_owned())
               disabled=Signal::derive(busy)
               value=Signal::derive(move || format!("{:02X}", settings.with(|s| s.civ_addr)))
@@ -298,7 +298,6 @@ pub fn CatControl(#[prop(into)] on_reading: Callback<CatReading>) -> impl IntoVi
           <Button
             variant=Variant::Outline
             size=Size::Sm
-            class="h-7"
             disabled=Signal::derive(move || matches!(status.get(), Status::Connecting))
             on_click=Callback::new(move |_| if busy() { disconnect(); status.set(Status::Idle); } else { connect(); })
           >

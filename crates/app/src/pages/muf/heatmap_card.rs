@@ -191,8 +191,8 @@ pub(super) fn HeatmapCard() -> impl IntoView {
   let marker_x = move || CURVE_PAD + hour_idx() as f64 / 23.0 * (CURVE_W - 2.0 * CURVE_PAD);
 
   view! {
-    <section id="heatmap" class="scroll-mt-24 pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("tools.24-hour-opening-window")}</h2>
+    <section id="heatmap" class=crate::kit::card_class_with("scroll-mt-24")>
+      <h2 class=crate::kit::card_title_class()>{move || t("tools.24-hour-opening-window")}</h2>
       <p class="px-4 pt-3 text-xs text-muted-foreground">
         {move || t("tools.running-the-prediction-for")}
       </p>
@@ -365,8 +365,10 @@ pub(super) fn HeatmapCard() -> impl IntoView {
                               let label = format!("{band} · {h:02}:00 UTC · {:.0}%", c * 100.0);
                               let aria = label.clone();
                               let class = move || {
+                                // 格子高度 24：20px 时指针目标只有 39.9×20，
+                                // 达不到 WCAG 2.5.8 的 24×24（axe target-size 会红）。
                                 cn(&[
-                                  "h-5 flex-1 cursor-pointer p-0 transition-shadow",
+                                  "h-6 flex-1 cursor-pointer p-0 transition-shadow",
                                   cell_class(c),
                                   if selected.get() == Some((band, h)) {
                                     "ring-primary ring-inset"

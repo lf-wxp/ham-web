@@ -98,7 +98,7 @@ pub(super) fn KpOutlook(forecast: KpForecast, outlook: Outlook) -> impl IntoView
       Some(s) => view! { <p>{move || kt_tracked(&s)}</p> }.into_any(),
       None => view! { <p class="text-muted-foreground">{move || t("radio.kp-forecast-no-forecast")}</p> }.into_any(),
     }}
-    <Table aria_label=Signal::derive(move || t("radio.kp-forecast-table")) class="text-center font-mono text-xs">
+    <Table aria_label=Signal::derive(move || t("radio.kp-forecast-table")) class="text-center font-mono" density=crate::ui::TableDensity::Compact>
       <TableHead class="text-muted-foreground">
         <TableRow>
           <TableHeader scope="col" class="px-2 py-1.5 text-left font-normal">

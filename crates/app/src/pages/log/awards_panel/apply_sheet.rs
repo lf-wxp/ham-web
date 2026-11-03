@@ -10,8 +10,6 @@ use crate::ui::{
 };
 use crate::util::download_text;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 fn via_key(via: ApplyVia) -> &'static str {
   match via {
     ApplyVia::None => "log.via-none",
@@ -75,18 +73,18 @@ pub(super) fn DxccApplySheet(
                 let via = t(via_key(row.via));
                 view! {
                   <TableRow>
-                    <TableCell class=format!("{CELL} whitespace-nowrap")>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>
                       {entity}
                     </TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap font-mono")>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono")>
                       {callsign}
                     </TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap tabular-nums")>
                       {date}
                     </TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap")>{band}</TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap")>{mode}</TableCell>
-                    <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>{band}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>{mode}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("whitespace-nowrap text-muted-foreground")>
                       {via}
                     </TableCell>
                   </TableRow>
@@ -101,19 +99,20 @@ pub(super) fn DxccApplySheet(
                   </Button>
                 </div>
                 <Table
-                  class="min-w-[640px] text-sm"
+                  class="min-w-[640px]"
+                  density=crate::ui::TableDensity::Compact
                   aria_label=Signal::derive(|| t("log.apply-sheet-table"))
                   tabindex="0"
                   role="region"
                 >
                   <TableHead>
                     <TableRow>
-                      <TableHeader class=CELL>{move || t("contest.entity")}</TableHeader>
-                      <TableHeader class=CELL>{move || t("log.callsign")}</TableHeader>
-                      <TableHeader class=CELL>{move || t("log.date")}</TableHeader>
-                      <TableHeader class=CELL>{move || t("radio.band")}</TableHeader>
-                      <TableHeader class=CELL>{move || t("log.mode")}</TableHeader>
-                      <TableHeader class=CELL>{move || t("log.qsl-via")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("contest.entity")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("log.callsign")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("log.date")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.band")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("log.mode")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("log.qsl-via")}</TableHeader>
                     </TableRow>
                   </TableHead>
                   <TableBody>{body}</TableBody>

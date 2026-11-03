@@ -439,7 +439,7 @@ pub fn decode_audio(samples: &[f32], sample_rate: u32) -> Option<String> {
   }
   // 只要不是纯静音，逐像素门限对白噪声也能切出一串随机点阵；命中率过低说明这根本不是
   // 本字库的 Hell 信号，报「无信号」比丢一串 `?` 给用户更有用（约定见
-  // docs/decode-worker-protocol.md 的质量门限）。一个有内容的块都没有（全是空白）同样
+  // docs/domain/decode-worker-protocol.md 的质量门限）。一个有内容的块都没有（全是空白）同样
   // 没有可报告的文本。
   if inked == 0 || (matched_inked as f64) / (inked as f64) < MIN_GLYPH_MATCH {
     return None;

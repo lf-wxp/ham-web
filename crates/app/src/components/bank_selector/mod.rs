@@ -62,7 +62,10 @@ fn classify(message: &str) -> (ErrorKind, String) {
   } else if message.is_empty() {
     (ErrorKind::Unknown, t("exam.unknown-error-u-2014"))
   } else {
-    (ErrorKind::Unknown, message.to_owned())
+    (
+      ErrorKind::Unknown,
+      tf("exam.unknown-error-detail", &[message]),
+    )
   }
 }
 
@@ -85,9 +88,14 @@ fn status_text(v: &VersionWithStatus) -> String {
   }
 }
 
+/// 按 **当前界面语言** 格式化版本日期。
+///
+/// 调用点必须把整条日期（连同前面的「更新于」）放进同一个 `move ||`：
+/// 只在里面包 `t()` 会让日期停在首次渲染时的语言。
 fn locale_date(iso: &str) -> String {
   let d = js_sys::Date::new(&wasm_bindgen::JsValue::from_str(iso));
-  String::from(d.to_locale_date_string("zh-CN", &wasm_bindgen::JsValue::UNDEFINED))
+  let locale = crate::i18n::locale().get_untracked().intl_code();
+  String::from(d.to_locale_date_string(locale, &wasm_bindgen::JsValue::UNDEFINED))
 }
 
 #[component]
@@ -342,8 +350,11 @@ pub fn QuestionBankSelector(
                   selected_data
                     .get()
                     .map(|v| {
+                      let updated_at = v.version.updated_at.clone();
                       view! {
-                        <div class="text-xs text-muted-foreground">{move || t("exam.updated")} {locale_date(&v.version.updated_at)}</div>
+                        <div class="text-xs text-muted-foreground">
+                          {move || format!("{} {}", t("exam.updated"), locale_date(&updated_at))}
+                        </div>
                       }
                     })
                 }}

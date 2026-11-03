@@ -178,7 +178,7 @@ pub fn DailyChallengePage() -> impl IntoView {
           (started.get() && !finished.get()).then(|| {
             view! {
               <div class="mx-auto flex max-w-5xl items-center gap-2 px-4 pb-3">
-                <div class="flex w-full items-center gap-3 pxl-card border bg-card p-3">
+                <div class=crate::kit::card_class_with("flex w-full items-center gap-3 p-3")>
                   <span class="text-xs text-muted-foreground">{move || t("learning.time-left")}</span>
                   <span class="font-mono text-lg tabular-nums">{mmss}</span>
                   <Button
@@ -199,7 +199,7 @@ pub fn DailyChallengePage() -> impl IntoView {
       <PageContainer class="space-y-4">
         {move || {
           if loading.get() {
-            return view! { <div class="pxl-card border bg-card px-4 py-12 text-center text-sm text-muted-foreground">{move || t("learning.loading-today-s-questions")}</div> }.into_any();
+            return view! { <div class=crate::kit::card_class_with("px-4 py-12 text-center text-sm text-muted-foreground")>{move || t("learning.loading-today-s-questions")}</div> }.into_any();
           }
           if !started.get() && !finished.get() {
             let done = today_result();
@@ -234,7 +234,7 @@ pub fn DailyChallengePage() -> impl IntoView {
               view! { <div class="space-y-4">{items}</div> }
             });
             return view! {
-              <section class="pxl-card border bg-card px-4 py-10 text-center">
+              <section class=crate::kit::card_class_with("px-4 py-10 text-center")>
                 <div class="text-lg">{move || t("learning.today-s-challenge")}</div>
                 <div class="mt-2 text-sm text-muted-foreground">
                   {tf("learning.questions-minute-limit-counts", &[&CHALLENGE_COUNT.to_string(), &CHALLENGE_MINUTES.to_string()])}
@@ -268,7 +268,7 @@ pub fn DailyChallengePage() -> impl IntoView {
           if finished.get() {
             let done = today_result();
             return view! {
-              <section class="pxl-card border bg-card px-4 py-10 text-center">
+              <section class=crate::kit::card_class_with("px-4 py-10 text-center")>
                 <div class="text-lg">{move || t("learning.challenge-complete")}</div>
                 {done.map(|r| view! {
                   <div class="mt-2 text-sm text-muted-foreground">

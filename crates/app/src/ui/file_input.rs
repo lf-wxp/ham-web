@@ -37,13 +37,15 @@ pub fn FileInput(
   // 因此必须自带无障碍名称（可见的按钮文案充当不了它的 label）。
   let aria_label = label.clone();
 
+  // 两个闭包都只是事件回调，没有观察者：读 `NodeRef` 用 `get_untracked()`，
+  // 否则 dev 构建每点一次就刷一条「outside a reactive tracking context」。
   let pick = move |_| {
-    if let Some(el) = node_ref.get() {
+    if let Some(el) = node_ref.get_untracked() {
       el.click();
     }
   };
   let read = move |_| {
-    let Some(el) = node_ref.get() else {
+    let Some(el) = node_ref.get_untracked() else {
       return;
     };
     let mut out = Vec::new();

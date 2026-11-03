@@ -51,13 +51,34 @@ pub(super) fn BattleResult(
   let stars = s.stars.unwrap_or(0);
 
   view! {
-    <section class="pxl-window motion-pop space-y-4 p-4 sm:p-6" aria-labelledby="battle-result-title">
+    <section
+      class=if crate::kit::is_modern() { "md-panel motion-pop space-y-4" } else { "pxl-window motion-pop space-y-4 p-4 sm:p-6" }
+      aria-labelledby="battle-result-title"
+    >
       <div class="flex flex-col items-center gap-2 text-center">
-        <PixelSprite
-          name=if s.victory { "badge_trophy" } else { "badge_lock" }
-          scale=6
-          class="pxl-bob"
-        />
+        {move || {
+          if crate::kit::is_modern() {
+            let sprite = if s.victory { "badge_trophy" } else { "badge_lock" };
+            view! {
+              <crate::kit_modern::ModernEmblem
+                icon=crate::kit_modern::emblem_icon(sprite)
+                tone=crate::kit_modern::emblem_tone(sprite)
+                size=76
+                locked=Signal::derive(move || !s.victory)
+              />
+            }
+              .into_any()
+          } else {
+            view! {
+              <PixelSprite
+                name=if s.victory { "badge_trophy" } else { "badge_lock" }
+                scale=6
+                class="pxl-bob"
+              />
+            }
+              .into_any()
+          }
+        }}
         <h2 id="battle-result-title" class="pxl-title text-base">
           {move || {
             match (s.victory, s.revenge) {
@@ -80,11 +101,26 @@ pub(super) fn BattleResult(
                 {(1..=3u8)
                   .map(|n| {
                     view! {
-                      <PixelSprite
-                        name="badge_star"
-                        scale=3
-                        class=if n <= stars { "" } else { "opacity-25 grayscale" }
-                      />
+                      {move || {
+                        if crate::kit::is_modern() {
+                          view! {
+                            <crate::kit_modern::ModernIcon
+                              kind=crate::kit_modern::MIcon::Star
+                              class=if n <= stars { "md-star-on" } else { "md-star-off" }
+                            />
+                          }
+                            .into_any()
+                        } else {
+                          view! {
+                            <PixelSprite
+                              name="badge_star"
+                              scale=3
+                              class=if n <= stars { "" } else { "opacity-25 grayscale" }
+                            />
+                          }
+                            .into_any()
+                        }
+                      }}
                     }
                   })
                   .collect_view()}

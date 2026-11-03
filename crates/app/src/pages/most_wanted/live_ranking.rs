@@ -33,8 +33,8 @@ pub(super) fn LiveRanking() -> impl IntoView {
   });
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("log.club-log-live-most")}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t("log.club-log-live-most")}</h2>
       <div class="p-4">
         {move || {
           if loading.get() {

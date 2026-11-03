@@ -123,7 +123,11 @@ pub fn NumberField(
           tabindex="-1"
           aria-label=move || label.get()
           disabled=move || disabled.get()
-          class="flex size-6 items-center justify-center border-2 border-transparent text-muted-foreground outline-none hover:border-ink hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50"
+          class=if crate::kit::is_modern_at_mount() {
+            "md-step-btn"
+          } else {
+            "flex size-6 items-center justify-center border-2 border-transparent text-muted-foreground outline-none hover:border-ink hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50"
+          }
           on:click=move |_| bump.run(delta)
         >
           <Icon kind=icon class="size-6" />

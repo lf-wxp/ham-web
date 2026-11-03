@@ -1,7 +1,7 @@
 //! 解码页的会话状态机：一份实现，替掉各页逐字重复的「五个信号 + 四个 `StoredValue` +
 //! 取消 / 选文件 / 重置」约 100 行样板。
 //!
-//! 生命周期约定与 `docs/decode-worker-protocol.md` 一致：每次选新文件**先 terminate 旧
+//! 生命周期约定与 `docs/domain/decode-worker-protocol.md` 一致：每次选新文件**先 terminate 旧
 //! Worker 再 spawn 新的**（Worker 无法取消在途解码），用代际计数丢弃过期回复；文件读取
 //! `await` 之后先查代际 / 是否已卸载，再碰任何信号。
 //!

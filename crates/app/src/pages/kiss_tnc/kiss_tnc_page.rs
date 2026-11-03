@@ -16,7 +16,7 @@ use web_sys::js_sys;
 use crate::components::common::{EmptyState, PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::ui::{
-  Button, ButtonLink, Field, Input, NativeSelect, SelectOption, Size, TextValue, Tooltip, Variant,
+  Button, ButtonLink, Field, Input, SelectOption, SimpleSelect, Size, TextValue, Tooltip, Variant,
   card_title_class,
 };
 use crate::util::{js_error_message, set_title, unique_id};
@@ -241,7 +241,7 @@ pub fn KissTncPage() -> impl IntoView {
                   r#for=label_for
                   class="sm:max-w-44"
                 >
-                  <NativeSelect
+                  <SimpleSelect
                     id=baud_id
                     value=Signal::derive(move || baud.get().to_string())
                     on_change=Callback::new(move |v: String| {

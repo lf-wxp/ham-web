@@ -238,7 +238,14 @@ pub fn BattlePage() -> impl IntoView {
       DeckError::Empty => t("rpg.no-monsters"),
     };
     view! {
-      <section class="pxl-window space-y-4 p-6" role="alert">
+      <section
+        class=if crate::kit::is_modern_at_mount() {
+          "md-panel space-y-4"
+        } else {
+          "pxl-window space-y-4 p-4"
+        }
+        role="alert"
+      >
         <p>{message}</p>
         <div class="flex flex-wrap gap-3">
           {(e == DeckError::Load)
@@ -276,7 +283,27 @@ pub fn BattlePage() -> impl IntoView {
     <PageContainer class="space-y-4 py-4 pb-24">
       {move || match phase.get() {
         Phase::Loading => {
-          view! { <div class="pxl-window p-6" aria-live="polite">{t("rpg.battle-loading")}</div> }
+          // 骨架也按皮肤分叉：`md-skel` 是现代风的占位条，像素风用 `bg-inset` 硬块。
+          let modern = crate::kit::is_modern_at_mount();
+          view! {
+            <div
+              class=if modern { "md-panel" } else { "pxl-window space-y-3 p-4" }
+              aria-live="polite"
+            >
+              <div
+                class=if modern { "md-skel md-skel-line" } else { "h-3 bg-inset" }
+                style="width: 40%"
+              ></div>
+              <div
+                class=if modern {
+                  "md-skel md-skel-line mt-3"
+                } else {
+                  "mt-3 h-3 bg-inset"
+                }
+                style="width: 72%"
+              ></div>
+            </div>
+          }
             .into_any()
         }
         Phase::Failed(e) => failed(e).into_any(),

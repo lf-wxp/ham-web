@@ -12,6 +12,10 @@ async function jumpToVariant(page: import("@playwright/test").Page) {
   await expect(search.getByText(/匹配 \d+ 条/)).toBeVisible();
   await search.locator("li").filter({ hasText: /第 \d+ 题/ }).first().click();
   await expect(search).toBeHidden();
+  // 等对话框**卸载**，而不只是「不可见」：退场动画期间面板还在 DOM 里（`aria-hidden`，所以 `getByRole` 已认定它
+  // 不存在，`toBeHidden()` 因此通过），但 `getByText` 不看无障碍树 —— 搜索结果里的每条摘要都含「〔变体 · 」，
+  // 紧接着数题干里的同样文字会得到 11 个命中（strict mode violation）。
+  await expect(page.locator('[data-slot="dialog-content"]')).toHaveCount(0);
 }
 
 test("计算变体：设置里开启，同型题换数进练习", async ({ page }) => {

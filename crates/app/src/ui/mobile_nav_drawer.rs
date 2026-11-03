@@ -77,7 +77,7 @@ fn load_pos() -> (f64, f64) {
 ///
 /// - `open`：抽屉开关，由调用方持有 —— 点分类项后要能主动 `open.set(false)` 收起；
 /// - `title`：抽屉标题（响应式文案）；
-/// - `button_label`：悬浮按钮的无障碍名（图标按钮必填，见 `docs/ui-components.md` §6）；
+/// - `button_label`：悬浮按钮的无障碍名（图标按钮必填，见 `docs/ui/pixel.md` §6）；
 /// - `class`：悬浮按钮容器的断点类（浏览 / 术语表侧栏是 `md:block` 用 `md:hidden`，
 ///   工具目录侧栏是 `lg:block` 用 `lg:hidden`）；
 /// - `children`：抽屉内容（与桌面侧栏共用同一份列表）。

@@ -467,5 +467,14 @@
   "common.topic-basics-desc": "Conductores y aislantes, electricidad estática y continua, unidades eléctricas, fuentes de alimentación, componentes y circuitos, medidas con multímetro",
   "common.topic-safety": "Seguridad y protección electromagnética",
   "common.topic-safety-desc": "Especificaciones del equipo transmisor, límites de exposición al entorno electromagnético, protección contra rayos y puesta a tierra, seguridad eléctrica y de baterías",
-  "common.cat-protocol-kenwood": "Kenwood / Elecraft / Yaesu recientes"
+  "common.cat-protocol-kenwood": "Kenwood / Elecraft / Yaesu recientes",
+  "common.quiz-summary": "Las tres hechas: sigue leyendo",
+  "common.quiz-retry": "Otra tanda",
+  "common.error-invalid-json": "JSON no válido: {}",
+  "common.error-http-status": "Error HTTP: {}",
+  "common.error-load-bank-config": "No se pudo cargar la configuración del banco de preguntas: {}",
+  "common.error-invalid-bank-config": "Configuración del banco de preguntas no válida: {}",
+  "common.error-load-questions": "No se pudieron cargar los datos de las preguntas: {}",
+  "common.error-invalid-questions": "Datos de las preguntas no válidos: {}",
+  "common.check-this-field": "Revisa este campo (formato o rango)"
 }

@@ -29,6 +29,22 @@ pub fn PracticeSettingsDialog(
       on_change_order.run(o);
     }
   });
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <crate::kit_modern::ModernPracticeSettings
+        open=open
+        order=order
+        on_change_order=on_change_order
+        show_answer=show_answer
+        on_toggle_show_answer=on_toggle_show_answer
+        show_explanation=show_explanation
+        on_toggle_show_explanation=on_toggle_show_explanation
+        variants=variants
+        on_toggle_variants=on_toggle_variants
+      />
+    }
+    .into_any();
+  }
   view! {
     <Dialog open=open class="sm:max-w-[520px]">
       <DialogHeader>
@@ -82,4 +98,5 @@ pub fn PracticeSettingsDialog(
       </div>
     </Dialog>
   }
+  .into_any()
 }

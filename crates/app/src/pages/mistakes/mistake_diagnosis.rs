@@ -50,8 +50,13 @@ pub(super) fn MistakeDiagnosis() -> impl IntoView {
 
   let top_cat = cat_counts.first().copied();
 
-  // 生成结论。
-  let summary = {
+  // `weakest` 借的是本地 `stats`，而结论要在视图闭包里跟着语言重算，先把 key 拷成 owned。
+  let weakest_owned = weakest.map(|(key, tally)| (key.to_owned(), tally));
+
+  // 生成结论。写成闭包（而不是在组件体里算一次）：`t` / `tp` 只在观察者之内订阅语言，
+  // 组件体里没有观察者，既会在 debug 构建里报「outside a reactive tracking context」，
+  // 切语言后整句也停在旧语言。
+  let summary = move || {
     let mut parts: Vec<String> = Vec::new();
     if let Some((key, n)) = top_cat {
       parts.push(tp(
@@ -71,7 +76,7 @@ pub(super) fn MistakeDiagnosis() -> impl IntoView {
         &[&t("exam.main-cause-is"), &t(name), &n.to_string()],
       ));
     }
-    if let Some((key, tally)) = weakest {
+    if let Some((key, tally)) = &weakest_owned {
       let rate = (tally.rate().unwrap_or(0.0) * 100.0).round() as u32;
       parts.push(tf(
         "common.correct",
@@ -103,7 +108,7 @@ pub(super) fn MistakeDiagnosis() -> impl IntoView {
   let weak_href = weakest.and_then(|(key, _)| top_pages(key).first().map(|&(href, _)| href));
 
   view! {
-    <div class="pxl-card border bg-card p-4">
+    <div class=crate::kit::card_pad_class()>
       <h3 class="mb-2 text-sm">{move || t("exam.mistake-diagnosis")}</h3>
       <p class="text-sm text-muted-foreground">{summary}</p>
       <div class="mt-3 flex flex-wrap gap-1.5">

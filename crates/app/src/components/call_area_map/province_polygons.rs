@@ -14,11 +14,8 @@ use crate::i18n::tf;
 /// （选不选由调用方决定，便于再点一次取消）。
 pub(super) fn province_polygons(d: &Drawn<'_>, on_select: Callback<String>) -> impl IntoView {
   let area = d.province.area;
+  let name = d.province.name;
   let fill = call_area_color(area);
-  let title = tf(
-    "exam.province-in-call-area",
-    &[&data::kt_tracked(d.province.name), area],
-  );
   let (opacity, stroke, state) = (
     d.layer.fill_opacity(),
     d.layer.stroke_class(),
@@ -29,7 +26,7 @@ pub(super) fn province_polygons(d: &Drawn<'_>, on_select: Callback<String>) -> i
     .polys
     .iter()
     .map(|ring| {
-      let (fill, title) = (fill.clone(), title.clone());
+      let fill = fill.clone();
       view! {
         <polygon
           points=ring_points(ring)
@@ -42,7 +39,8 @@ pub(super) fn province_polygons(d: &Drawn<'_>, on_select: Callback<String>) -> i
           data-state=state
           on:click=move |_| on_select.run(area.to_owned())
         >
-          <title>{title}</title>
+          // 悬停提示在闭包里现算：省名走知识库译文，切语言后跟着变。
+          <title>{move || tf("exam.province-in-call-area", &[&data::kt_tracked(name), area])}</title>
         </polygon>
       }
     })

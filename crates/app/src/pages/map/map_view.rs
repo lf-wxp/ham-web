@@ -80,7 +80,7 @@ pub fn MapView(
   });
 
   let zoom_by = move |factor: f64| {
-    let (x, y, w, h) = view_box.get();
+    let (x, y, w, h) = view_box.get_untracked();
     let nw = (w * factor).clamp(MAP_W / 16.0, MAP_W);
     let nh = (h * factor).clamp(MAP_H / 16.0, MAP_H);
     let nx = (x + (w - nw) / 2.0).rem_euclid(MAP_W);
@@ -93,7 +93,7 @@ pub fn MapView(
 
   let on_wheel = move |ev: web_sys::WheelEvent| {
     ev.prevent_default();
-    let Some(el) = svg_ref.get() else {
+    let Some(el) = svg_ref.get_untracked() else {
       return;
     };
     let rect = el.get_bounding_client_rect();
@@ -103,7 +103,7 @@ pub fn MapView(
     let factor = if ev.delta_y() < 0.0 { 0.8 } else { 1.25 };
     let px = (f64::from(ev.client_x()) - rect.left()) / rect.width();
     let py = (f64::from(ev.client_y()) - rect.top()) / rect.height();
-    let (x, y, w, h) = view_box.get();
+    let (x, y, w, h) = view_box.get_untracked();
     let nw = (w * factor).clamp(MAP_W / 16.0, MAP_W);
     let nh = (h * factor).clamp(MAP_H / 16.0, MAP_H);
     let wx = x + px * w;
@@ -118,7 +118,7 @@ pub fn MapView(
       return;
     }
     click_anchor.set_value((f64::from(ev.client_x()), f64::from(ev.client_y())));
-    if let Some(el) = svg_ref.get() {
+    if let Some(el) = svg_ref.get_untracked() {
       let _ = el.set_pointer_capture(ev.pointer_id());
     }
     let mut pts = active_pointers.get_untracked();
@@ -158,7 +158,7 @@ pub fn MapView(
       if !dragging.get_untracked() {
         return;
       }
-      let Some(el) = svg_ref.get() else {
+      let Some(el) = svg_ref.get_untracked() else {
         return;
       };
       let rect = el.get_bounding_client_rect();
@@ -207,7 +207,7 @@ pub fn MapView(
       hover.set(None);
       return;
     }
-    let Some(el) = svg_ref.get() else {
+    let Some(el) = svg_ref.get_untracked() else {
       return;
     };
     let rect = el.get_bounding_client_rect();
@@ -242,7 +242,7 @@ pub fn MapView(
     if dx * dx + dy * dy > 16.0 {
       return;
     }
-    let Some(el) = svg_ref.get() else {
+    let Some(el) = svg_ref.get_untracked() else {
       return;
     };
     let rect = el.get_bounding_client_rect();

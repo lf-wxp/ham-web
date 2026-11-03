@@ -13,7 +13,6 @@ use crate::i18n::{t, tf};
 use crate::ui::{Button, Size, Variant};
 
 const NOTE: &str = "text-xs text-muted-foreground";
-const CELL: &str = "border px-2 py-1";
 
 /// 一行传输线（表格里的字符串状态）。
 #[derive(Debug, Clone, PartialEq)]
@@ -77,7 +76,7 @@ pub(super) fn LinesSection(
   };
 
   view! {
-    <div class="space-y-2 pxl-card border bg-card p-4">
+    <div class=crate::kit::card_class_with("space-y-2 p-4")>
       <div class="flex flex-wrap items-center justify-between gap-2">
         <span class="text-sm">{move || t("tools.nec-lines")}</span>
         <Button variant=Variant::Outline size=Size::Xs on_click=Callback::new(move |_| add(()))>
@@ -115,7 +114,7 @@ pub(super) fn LinesSection(
             };
             view! {
               <tr>
-                <td class=CELL>{idx + 1}</td>
+                <td class=crate::kit::table_cell_class("")>{idx + 1}</td>
                 {field(
                   label(t("tools.nec-line-wire-a"), idx),
                   text(|r| &r.wire_a),
@@ -158,7 +157,7 @@ pub(super) fn LinesSection(
                   Callback::new(move |v: String| set(|r| &mut r.vf, v)),
                   "w-14",
                 )}
-                <td class=CELL>
+                <td class=crate::kit::table_cell_class("")>
                   <Button
                     variant=Variant::Outline
                     size=Size::IconSm
@@ -178,21 +177,21 @@ pub(super) fn LinesSection(
             <table data-slot="nec-lines" class="w-full min-w-[760px] border-collapse text-xs">
               <thead class="bg-inset">
                 <tr>
-                  <th class=format!("{CELL} text-left")>"#"</th>
-                  <th class=format!("{CELL} text-left")>
+                  <th class=crate::kit::table_cell_class("text-left")>"#"</th>
+                  <th class=crate::kit::table_cell_class("text-left")>
                     {move || t("tools.nec-line-port-a")}
                   </th>
-                  <th class=format!("{CELL} text-left")>
+                  <th class=crate::kit::table_cell_class("text-left")>
                     {move || t("tools.nec-line-port-b")}
                   </th>
-                  <th class=format!("{CELL} text-left")>"Z0 (Ω)"</th>
-                  <th class=format!("{CELL} text-left")>
+                  <th class=crate::kit::table_cell_class("text-left")>"Z0 (Ω)"</th>
+                  <th class=crate::kit::table_cell_class("text-left")>
                     {move || t("tools.nec-line-length")}
                   </th>
-                  <th class=format!("{CELL} text-left")>
+                  <th class=crate::kit::table_cell_class("text-left")>
                     {move || t("tools.nec-line-vf")}
                   </th>
-                  <th class=format!("{CELL} text-left")>{move || t("log.actions")}</th>
+                  <th class=crate::kit::table_cell_class("text-left")>{move || t("log.actions")}</th>
                 </tr>
               </thead>
               <tbody>{body}</tbody>

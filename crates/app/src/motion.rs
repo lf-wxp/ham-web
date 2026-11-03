@@ -20,12 +20,66 @@
 //! 结果是：老浏览器 / 无障碍偏好下动效「没有」，而不是内容「卡住」。
 
 use std::cell::RefCell;
+use std::time::Duration;
 
 use leptos::prelude::*;
 use leptos_router::hooks::use_location;
 use send_wrapper::SendWrapper;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::closure::Closure;
+
+/// 数字滚动：把目标值包成「逐步逼近」的展示值。**全站唯一一份。**
+///
+/// 以前两份：`ui::Stat`（立方缓出、600ms / 12 步）与 `kit_modern::motion::use_count_up`
+/// （归一化 expo-out、760ms / 16 步）。骨架完全一样（代际号防串台、`try_get_value` 防卸载后访问），
+/// 只有曲线不同 —— 而曲线才是出过 bug 的地方（未归一化的 expo-out 末步差 1，XP 5000 永久停在 4995）。
+/// 现在曲线只在 `core::count_up`（有单测守着「末步恒等于目标」），这里只负责排定时器。
+///
+/// - `from_zero`：首次挂载从 0 起跳（数据条这类「报数滚上来」的场景）；`false` 则直接显示当前值，
+///   之后每次变化才滚动（计数 +1 这类反馈）。动效被关时两者都直接落位。
+/// - 时长 / 步数按风格取：现代风 760ms / 16 步（更缓的收尾），像素风 600ms / 12 步。
+#[must_use]
+pub fn use_count_up(value: Signal<usize>, from_zero: bool) -> Signal<usize> {
+  let (total_ms, steps): (u64, u32) = if crate::kit::is_modern_at_mount() {
+    (760, 16)
+  } else {
+    (600, 12)
+  };
+  let start = if from_zero && motion_allowed() {
+    0
+  } else {
+    value.get_untracked()
+  };
+  let display = RwSignal::new(start);
+  let generation = StoredValue::new(0u32);
+
+  Effect::new(move |_| {
+    let target = value.get();
+    let from = display.get_untracked();
+    generation.update_value(|g| *g += 1);
+    let epoch = generation.get_value();
+    if from == target {
+      return;
+    }
+    if !motion_allowed() {
+      display.set(target);
+      return;
+    }
+    for i in 1..=steps {
+      let step = ham_web_core::count_up::count_step(from, target, i, steps);
+      set_timeout(
+        move || {
+          if generation.try_get_value() == Some(epoch) {
+            display.set(step);
+          }
+        },
+        Duration::from_millis(total_ms * u64::from(i) / u64::from(steps)),
+      );
+    }
+  });
+
+  display.into()
+}
 
 /// `<html>` 上的标记类：存在才启用 JS 驱动的入场动效。
 const MOTION_READY: &str = "js-motion";
@@ -78,13 +132,22 @@ pub fn provide_motion() {
 ///
 /// 供 JS 驱动的非 CSS 动效（如 [`crate::ui::Stat`] 的数字滚动）在启动前判断，
 /// 避免在动效被关时仍跑计时器动画。
-pub(crate) fn motion_allowed() -> bool {
-  let reduced = crate::util::window()
+/// 系统层面是否允许动效（`prefers-reduced-motion`），与设置里的开关无关。
+pub(crate) fn system_allows_motion() -> bool {
+  !crate::util::window()
     .match_media("(prefers-reduced-motion: reduce)")
     .ok()
     .flatten()
-    .is_some_and(|m| m.matches());
-  !reduced && crate::theme::pixel_motion_enabled()
+    .is_some_and(|m| m.matches())
+}
+
+/// 动效是否允许（系统偏好 + 设置开关）。
+///
+/// **别在事件回调里用**：它会同步读一次 `localStorage`。高频路径（`pointerdown` /
+/// 滚动 / 逐帧）请用 [`system_allows_motion`] 加 `DisplayPrefs::pixel_motion_now`，
+/// 后者读的是已经加载好的信号。
+pub(crate) fn motion_allowed() -> bool {
+  system_allows_motion() && crate::theme::pixel_motion_enabled()
 }
 
 fn set_motion_ready(on: bool) {
@@ -180,28 +243,127 @@ pub fn reveal_children(parent: &web_sys::Element) {
   let Ok(nodes) = parent.query_selector_all(":scope > *") else {
     return;
   };
+  let viewport_h = viewport_height();
   for i in 0..nodes.length() {
     let Some(node) = nodes.item(i) else { continue };
     let Some(el) = node.dyn_ref::<web_sys::Element>() else {
       continue;
     };
+    // 比视口高的子块不登记：观察器阈值是「自身 8% 可见」，一个整屏都装不下的块
+    // 永远不会触发 —— 登记了就是把它永久藏起来（工具页的 46 个计算器踩过一次）。
+    if el.get_bounding_client_rect().height() > viewport_h * 0.92 {
+      continue;
+    }
     reveal_on_scroll(el, 0);
   }
 }
 
-/// 路由过渡：切换路径时重放主内容区的像素溶解入场，并在顶栏走一遍读条。
+/// 视口高度（拿不到时按 800 兜底：常见笔记本视口，宁可少登记也不要多登记）。
+fn viewport_height() -> f64 {
+  crate::util::window()
+    .inner_height()
+    .ok()
+    .and_then(|v| v.as_f64())
+    .unwrap_or(800.0)
+}
+
+/// 现代风页面的入场编排：路由切换后把页面主体与常见列表项逐个登记进浮现观察器。
+///
+/// 像素风靠 `PageContainer` 在组件里登记（它拿得到 `NodeRef`）；现代风页面是
+/// 一层 `md-page` 平铺，逐页加 `NodeRef` 只会让每个页面都多一行样板，所以统一在这里
+/// 按类名扫一遍。选择器只写现代风的 `md-*`，像素页上一条也匹配不到。
+///
+/// 已经带 `data-reveal` 的元素跳过：`.md-page > *` 与 `.md-panel` 会重叠，重复登记
+/// 会让同一元素在观察器里排队两次（错峰序号被吃掉，后面的元素集体晚一拍）。
+///
+/// 两段式（先收集、后写入）是为了不抖布局：`get_bounding_client_rect` 会强制同步布局，
+/// 与随后的 `class` 写入交替进行时，每登记一个元素就重排一次 —— 工具页（46 个计算器）
+/// 那种长页面上很贵。查询也限定在 `#route-content` 内，弹层与导航不该被登记。
+pub fn reveal_modern_page() {
+  // `.md-page > *` 管迁移过的现代页；桥接页的内容块由 `PageContainer` 在挂载时自己登记
+  // （见 `components/common/page_container.rs`）—— 两条合起来才是「所有页面同一套换页
+  // 手感」，只做前者的话桥接页只有整页淡入、现代页却是「淡入 + 内容上浮」，一眼能看出差别。
+  const TARGETS: [&str; 7] = [
+    ".md-page > *",
+    ".md-q-row",
+    ".md-term",
+    ".md-bookmark",
+    ".md-tool-link",
+    ".md-log-row",
+    ".md-panel",
+  ];
+  let Some(scope) = crate::util::document().get_element_by_id(ROUTE_CONTENT_ID) else {
+    return;
+  };
+  // 比视口还高的容器一律不登记：观察器的阈值是「自身 8% 可见」，
+  // 一个 20000px 高的 `.md-tools-grid` 永远达不到 —— 登记了就等于把它永久藏起来。
+  // 这类容器本来也不该整体入场，它的子块（`.md-panel`）各自登记。
+  let mut targets: Vec<web_sys::Element> = Vec::new();
+  for sel in TARGETS {
+    let Ok(nodes) = scope.query_selector_all(sel) else {
+      continue;
+    };
+    for i in 0..nodes.length() {
+      let Some(node) = nodes.item(i) else { continue };
+      let Some(el) = node.dyn_ref::<web_sys::Element>() else {
+        continue;
+      };
+      if el.get_attribute("data-reveal").is_some() || targets.contains(el) {
+        continue;
+      }
+      targets.push(el.clone());
+    }
+  }
+  let viewport_h = viewport_height();
+  let eligible: Vec<web_sys::Element> = targets
+    .into_iter()
+    .filter(|el| el.get_bounding_client_rect().height() <= viewport_h * 0.92)
+    .collect();
+  for el in &eligible {
+    reveal_on_scroll(el, 0);
+  }
+}
+
+/// 路由过渡：切换路径时重放主内容区的入场，并落位交互签名与换页方向。
 ///
 /// 必须放在 `<Router>` 内（要读 `use_location`），且排在 `app::MainContent`
 /// 之后，这样首次运行时容器已经挂载。
+///
+/// 现代风的换页由 `data-nav-dir` 分流（前进自下、后退自上、平级只淡入）；
+/// 像素风继续走 4px 网点溶解，不受影响（样式层的分支都带 `[data-ui-style="modern"]`）。
 #[component]
 pub fn RouteTransition() -> impl IntoView {
   let location = use_location();
   // 每次递增就换掉读条这个 DOM 节点 —— 换节点即重播动画，比手动摘加类名可靠。
   let beat = RwSignal::new(0u32);
+  // 上一次的路径：换页方向要比对「从哪来」，首屏没有上一页。
+  let previous = StoredValue::new(Option::<String>::None);
 
   Effect::new(move |_| {
-    let _ = location.pathname.get();
+    let path = location.pathname.get();
+    let from = previous.get_value();
+    crate::kit_modern::interaction::apply_route_signature(&path, from.as_deref());
+    previous.set_value(Some(path));
     beat.update(|n| *n += 1);
+    // 现代风的入场登记要等 DOM 写完之后再做：Leptos 的更新是异步的，
+    // 这里同步查 `.md-page` 只会拿到上一页的节点。
+    //
+    // 三趟而不是一趟：题库浏览 / 术语表的列表要等本地 JSON 取回才渲染，
+    // 只扫首帧的话整批 `.md-q-row` 会漏掉（于是它们干脆不做入场，看起来像「有的页有动效、
+    // 有的页没有」）。后两趟成本很低：`reveal_modern_page` 对已登记的元素直接跳过。
+    {
+      let cb = Closure::once_into_js(move || {
+        let again = Closure::once_into_js(reveal_modern_page);
+        if let Some(w) = web_sys::window() {
+          let _ = w.request_animation_frame(again.unchecked_ref());
+        }
+      });
+      if let Some(w) = web_sys::window() {
+        let _ = w.request_animation_frame(cb.unchecked_ref());
+      }
+      set_timeout(reveal_modern_page, std::time::Duration::from_millis(220));
+      set_timeout(reveal_modern_page, std::time::Duration::from_millis(640));
+    }
     let Some(el) = crate::util::document().get_element_by_id(ROUTE_CONTENT_ID) else {
       return;
     };

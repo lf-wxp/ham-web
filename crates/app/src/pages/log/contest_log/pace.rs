@@ -84,8 +84,8 @@ pub(super) fn ContestPace(
   let whole = |value: f64| value.max(0.0).round() as usize;
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>
         {move || t("contest.pace-title")}
       </h2>
       <div class="space-y-4 p-4">

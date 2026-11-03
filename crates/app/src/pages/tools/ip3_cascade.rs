@@ -4,7 +4,7 @@ use leptos::prelude::*;
 use super::{RESULT, fmt_num};
 use crate::i18n::{t, tf};
 use crate::ui::{
-  Button, Field, NativeSelect, NumberField, SelectOption, Size, Table, TableBody, TableCell,
+  Button, Field, NumberField, SelectOption, SimpleSelect, Size, Table, TableBody, TableCell,
   TableHead, TableHeader, TableRow, Variant,
 };
 use crate::util::unique_id;
@@ -107,7 +107,7 @@ pub(super) fn Ip3Cascade() -> impl IntoView {
         label=Signal::derive(move || t("tools.ip3-referred"))
         r#for=referred_id.clone()
       >
-        <NativeSelect
+        <SimpleSelect
           id=referred_id
           value=Signal::derive(move || by_output.get())
           on_change=Callback::new(move |v: String| by_output.set(v))
@@ -215,7 +215,7 @@ pub(super) fn Ip3Cascade() -> impl IntoView {
         outcome.get().ok().map(|c| {
           view! {
             <div class="sm:col-span-2">
-              <Table aria_label=Signal::derive(move || t("tools.ip3-table")) class="text-sm">
+              <Table aria_label=Signal::derive(move || t("tools.ip3-table")) density=crate::ui::TableDensity::Compact>
                 <TableHead class="text-xs text-muted-foreground">
                   <TableRow>
                     <TableHeader scope="col" class="px-2 py-1.5 font-normal">{move || t("tools.stage")}</TableHeader>

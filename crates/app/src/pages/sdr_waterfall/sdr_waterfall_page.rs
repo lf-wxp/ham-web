@@ -261,10 +261,10 @@ pub fn SdrWaterfallPage() -> impl IntoView {
         let canvases =
           (|| -> Result<(CanvasRenderingContext2d, CanvasRenderingContext2d), JsValue> {
             let spectrum_canvas: HtmlCanvasElement = spectrum_ref
-              .get()
+              .get_untracked()
               .ok_or_else(|| JsValue::from_str(&t("common.spectrum-canvas-not-ready")))?;
             let waterfall_canvas: HtmlCanvasElement = waterfall_ref
-              .get()
+              .get_untracked()
               .ok_or_else(|| JsValue::from_str(&t("common.waterfall-canvas-not-ready")))?;
             spectrum_canvas.set_width(FFT_SIZE / 2);
             spectrum_canvas.set_height(SPECTRUM_H);
@@ -489,7 +489,7 @@ pub fn SdrWaterfallPage() -> impl IntoView {
       />
 
       <PageContainer class="space-y-5">
-        <section class="pxl-card border bg-card">
+        <section class=crate::kit::card_class()>
           <div class="space-y-4 p-4">
             {(!supported).then(|| view! {
               <p role="alert" class="text-sm text-gold-text">
@@ -575,8 +575,8 @@ pub fn SdrWaterfallPage() -> impl IntoView {
             </p>
           </div>
         </section>
-        <section class="pxl-card border bg-card" aria-labelledby="noise-floor-heading">
-          <h2 id="noise-floor-heading" class="pxl-section-title">
+        <section class=crate::kit::card_class() aria-labelledby="noise-floor-heading">
+          <h2 id="noise-floor-heading" class=crate::kit::card_title_class()>
             {move || t("tools.noise-floor")}
           </h2>
           <div class="space-y-3 p-4">
@@ -642,14 +642,14 @@ pub fn SdrWaterfallPage() -> impl IntoView {
                   let occupied = format!("{:.0}%", f64::from(s.occupied_ratio) * 100.0);
                   view! {
                     <TableRow>
-                      <TableCell class="border px-3 py-2 align-top whitespace-nowrap tabular-nums">
+                      <TableCell class=crate::kit::table_cell_class("align-top whitespace-nowrap tabular-nums")>
                         {time}
                       </TableCell>
-                      <TableCell class="border px-3 py-2 align-top">{label}</TableCell>
-                      <TableCell class="border px-3 py-2 align-top whitespace-nowrap tabular-nums">
+                      <TableCell class=crate::kit::table_cell_class("align-top")>{label}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("align-top whitespace-nowrap tabular-nums")>
                         {floor}
                       </TableCell>
-                      <TableCell class="border px-3 py-2 align-top whitespace-nowrap tabular-nums text-muted-foreground">
+                      <TableCell class=crate::kit::table_cell_class("align-top whitespace-nowrap tabular-nums text-muted-foreground")>
                         {occupied}
                       </TableCell>
                     </TableRow>
@@ -665,10 +665,10 @@ pub fn SdrWaterfallPage() -> impl IntoView {
                 >
                   <TableHead>
                     <TableRow>
-                      <TableHeader class="border px-3 py-2">{move || t("tools.noise-floor-time")}</TableHeader>
-                      <TableHeader class="border px-3 py-2">{move || t("tools.noise-floor-label")}</TableHeader>
-                      <TableHeader class="border px-3 py-2">{move || t("tools.noise-floor-floor-head")}</TableHeader>
-                      <TableHeader class="border px-3 py-2">{move || t("tools.noise-floor-occupied-head")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.noise-floor-time")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.noise-floor-label")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.noise-floor-floor-head")}</TableHeader>
+                      <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.noise-floor-occupied-head")}</TableHeader>
                     </TableRow>
                   </TableHead>
                   <TableBody>{body}</TableBody>

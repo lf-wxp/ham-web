@@ -2,7 +2,7 @@
 //!
 //! 本文件里的**导航项与分组下拉开关**保留原生元素 + [`button_class`]：高亮态要随当前
 //! 路由切换 `variant`，而 [`Button`] / [`ButtonLink`] 的 `variant` 是静态 prop
-//! （见 `docs/ui-components.md` 的「常见坑」）。`aria-expanded` / `aria-controls`
+//! （见 `docs/ui/pixel.md` 的「常见坑」）。`aria-expanded` / `aria-controls`
 //! 已经有通道，不再是保留理由 —— 汉堡菜单开关因此收编回 [`Button`]。同一个文件里的
 //! 搜索、语言切换、主题切换等按钮都已经用组件，**不要顺手把剩下的导航项清掉**。
 //! 「考试中心」「知识库」「工具」三个分组下拉的开关与面板是同一套路数，已拆到 `group_menu.rs`。
@@ -16,6 +16,7 @@ use wasm_bindgen::JsCast;
 use ham_web_core::registry::{EXAM_GROUPS, KNOWLEDGE_GROUPS, TOOL_GROUPS};
 
 use crate::cn::cn;
+use crate::components::search_dialog::SearchOpen;
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Button, ButtonLink, Size, Variant, button_class};
 
@@ -31,7 +32,7 @@ use super::mobile_nav_section::MobileNavSection;
 use crate::i18n::{self, Locale, t};
 
 #[component]
-pub fn Navigation() -> impl IntoView {
+pub(crate) fn PixelNav() -> impl IntoView {
   let location = use_location();
   // 移动端菜单状态与底部 Tab 共享：Tab 的「更多」打开的就是这个面板。
   let menu_open = use_mobile_menu().open;
@@ -58,7 +59,7 @@ pub fn Navigation() -> impl IntoView {
   });
 
   // 全局「/」快捷键：非输入框内按下打开站内搜索面板。
-  let search_open = expect_context::<RwSignal<bool>>();
+  let SearchOpen(search_open) = expect_context::<SearchOpen>();
   let search_handle = window_event_listener(ev::keydown, move |e| {
     if let Some(el) = e
       .target()
@@ -159,8 +160,10 @@ pub fn Navigation() -> impl IntoView {
             />
           </div>
 
-          // 右侧：搜索 + 主题切换 + 移动端菜单按钮
-          <div class="flex items-center gap-1">
+          // 右侧：搜索 + 主题切换 + 移动端菜单按钮。
+          // `min-w-0`：flex 子项的最小宽度默认取内容的 min-content，不写的话 320px 的西语界面里这一组
+          // （搜索 + 语言名 + HUD + 菜单按钮）比可用宽度多 1px，把页面横向撑出 1px（`locale_toggle.rs` 的根节点同理）。
+          <div class="flex min-w-0 items-center gap-1">
             <Button
               variant=Variant::Ghost
               size=Size::Icon

@@ -100,17 +100,17 @@ pub fn DxccMapPage() -> impl IntoView {
         <StatsScopeSelect scope=scope count=Signal::derive(move || scoped.with(Vec::len)) />
         // 统计条（跟随波段选择）
         <section class="grid grid-cols-3 gap-2">
-          <div class="pxl-card border bg-card p-3 text-center">
+          <div class=crate::kit::card_class_with("p-3 text-center")>
             <div class="text-xl tabular-nums">{move || worked.get().len()}</div>
             <div class="mt-0.5 text-xs text-muted-foreground">{move || t("log.worked")}</div>
           </div>
-          <div class="pxl-card border bg-card p-3 text-center">
+          <div class=crate::kit::card_class_with("p-3 text-center")>
             <div class="text-xl tabular-nums text-win-text">
               {move || confirmed.get().len()}
             </div>
             <div class="mt-0.5 text-xs text-muted-foreground">{move || t("log.confirmed")}</div>
           </div>
-          <div class="pxl-card border bg-card p-3 text-center">
+          <div class=crate::kit::card_class_with("p-3 text-center")>
             <div class="text-xl tabular-nums">
               {move || total_entities.saturating_sub(worked.get().len())}
             </div>
@@ -142,7 +142,7 @@ pub fn DxccMapPage() -> impl IntoView {
         </ChipGroup>
 
         // 地图
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           {move || match load.get() {
             LoadState::Loading => {
               view! {

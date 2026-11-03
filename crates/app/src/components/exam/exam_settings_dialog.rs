@@ -15,6 +15,20 @@ pub fn ExamSettingsDialog(
   #[prop(into)] strict: Signal<bool>,
   on_change_strict: Callback<bool>,
 ) -> impl IntoView {
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <crate::kit_modern::ModernExamSettings
+        open=open
+        show_explanation=show_explanation
+        on_change_show_explanation=on_change_show_explanation
+        weighted=weighted
+        on_change_weighted=on_change_weighted
+        strict=strict
+        on_change_strict=on_change_strict
+      />
+    }
+    .into_any();
+  }
   view! {
     <Dialog open=open class="sm:max-w-[520px]">
       <DialogHeader>
@@ -57,4 +71,5 @@ pub fn ExamSettingsDialog(
       </div>
     </Dialog>
   }
+  .into_any()
 }

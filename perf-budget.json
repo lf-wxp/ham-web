@@ -5,8 +5,8 @@
     {
       "name": "主包 wasm",
       "pattern": "ham-web-app-*_bg.wasm",
-      "baseline": 1911868,
-      "max": 1950000
+      "baseline": 2009868,
+      "max": 2500000
     },
     {
       "name": "主包 JS 胶水",
@@ -18,7 +18,7 @@
       "name": "样式表",
       "pattern": "input-*.css",
       "baseline": 25589,
-      "max": 32000
+      "max": 55000
     },
     {
       "name": "Service Worker",

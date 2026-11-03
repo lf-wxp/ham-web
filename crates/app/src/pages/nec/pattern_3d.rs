@@ -43,7 +43,7 @@ pub(super) fn Pattern3d(result: Memo<Option<NecResult>>) -> impl IntoView {
           }
         }
         on:pointermove=move |e: web_sys::PointerEvent| {
-          if !dragging.get() {
+          if !dragging.get_untracked() {
             return;
           }
           let (x0, y0) = last_pointer.get_value();

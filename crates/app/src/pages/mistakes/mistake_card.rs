@@ -75,7 +75,7 @@ pub(super) fn MistakeCard(
     }
   };
   view! {
-    <div class="pxl-card border bg-card p-4">
+    <div class=crate::kit::card_pad_class()>
       <div class="mb-2 flex items-baseline gap-2">
         <span class="shrink-0 bg-muted px-1.5 py-0.5 font-mono text-xs">{j}</span>
         <p class="whitespace-pre-line text-sm leading-snug">{q.question.clone()}</p>
@@ -104,14 +104,14 @@ pub(super) fn MistakeCard(
           {move || t("learning.topic")}
           {match topic_href {
             Some(href) => view! {
-              <a href=href class="text-foreground underline underline-offset-4">{move || t(topic)}</a>
+              <a href=href class="text-foreground">{move || t(topic)}</a>
             }
             .into_any(),
             None => view! { <span class="text-foreground">{move || t(topic)}</span> }.into_any(),
           }}
           {topic_rate.map(|r| view! { <span class="ml-1 tabular-nums">{tf("learning.accuracy-in-parens", &[&r.to_string()])}</span> })}
           {same_href.map(|href| view! {
-            <a href=href class="ml-1 text-primary underline underline-offset-4">
+            <a href=href class="ml-1 text-primary">
               {move || t("exam.practise-similar-link")}
             </a>
           })}

@@ -489,6 +489,14 @@ pub fn PracticePage() -> impl IntoView {
 
   let content = move || {
     if store.loading.get() {
+      if crate::kit::is_modern() {
+        return view! {
+          <crate::kit_modern::ModernLoading
+            label=Signal::derive(move || t("exam.loading-questions-u-2026"))
+          />
+        }
+        .into_any();
+      }
       return view! { <PageLoading label=Signal::derive(move || t("exam.loading-questions-u-2026")) /> }
         .into_any();
     }
@@ -513,9 +521,37 @@ pub fn PracticePage() -> impl IntoView {
       }
       .into_any();
     }
+    // 首屏不播「翻题上浮」：题卡挂载时就播一次 20px 上浮，看起来像内容自己跳了一下。
+    // 记录题号变化，**第一次换题之后**才允许播（那时上浮正是「翻页」的方向感）。
+    let settled = RwSignal::new(false);
+    Effect::new(move |prev: Option<Option<usize>>| {
+      let cur = store.current().map(|(i, _)| i);
+      if prev.flatten().is_some_and(|p| Some(p) != cur) {
+        settled.set(true);
+      }
+      cur
+    });
+    // 现代风下收起底部 dock、换底部留白：版式依赖它，所以用属性而不是 `:has()`（见 `page_mode.rs`）。
+    crate::kit_modern::use_page_mode("practice");
     view! {
-      <div on:touchstart=swipe_start on:touchend=swipe_end>
-        <PageContainer class="py-6 space-y-4 pb-24 sm:pb-28 animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal)">
+      // 现代风：整页套 `md-root`，字体/字号/行高才会切成现代那一套；
+      // 不套的话，题卡之外的文字（胶囊、元信息）会回落到 body 的点阵字体。
+      <div
+        class=move || {
+          if crate::kit::is_modern() {
+            if settled.get() { "md-root md-practice md-settled" } else { "md-root md-practice" }
+          } else {
+            ""
+          }
+        }
+        on:touchstart=swipe_start
+        on:touchend=swipe_end
+      >
+        <PageContainer class=if crate::kit::is_modern() {
+          "py-6 space-y-4 pb-24 sm:pb-28"
+        } else {
+          "py-6 space-y-4 pb-24 sm:pb-28 animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal)"
+        }>
         <PracticeHeaderBar
           percent=percent
           progress_label=Signal::derive(move || {
@@ -572,6 +608,7 @@ pub fn PracticePage() -> impl IntoView {
           bank=bank
           order=store.order
           answered=answered
+          current_answered=Signal::derive(move || !selected.get().is_empty())
           len=Signal::derive(move || store.len())
           at_start=at_start
           at_end=at_end
@@ -606,7 +643,7 @@ pub fn PracticePage() -> impl IntoView {
       on_pick=Callback::new(move |pos| store.jump(pos))
       on_jump=on_jump
     />
-    <MessageDialog open=error_open title=t("exam.load-failed") description=error_text confirm_text=t("exam.ok") />
+    <MessageDialog open=error_open title="exam.load-failed" description=error_text confirm_text="exam.ok" />
     <ShortcutHelpDialog open=help_open />
   }
 }

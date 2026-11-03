@@ -122,7 +122,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
   };
 
   view! {
-    <section class="pxl-card border bg-card">
+    <section class=crate::kit::card_class()>
       <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
         <h2 class=card_title_class("mr-auto")>
           {move || t("morse.koch-method-copying-practice")}
@@ -227,6 +227,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
               value=answer
               on_change=Callback::new(move |v: String| answer.set(v))
               size=ControlSize::Lg
+              aria_label=Signal::derive(move || t("morse.copied-text"))
               placeholder=Signal::derive(move || t("morse.copied-text"))
               autocomplete="off"
               class="h-10 w-56 text-center font-mono text-lg md:text-lg uppercase tracking-widest"

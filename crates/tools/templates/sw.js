@@ -28,6 +28,10 @@ const RUNTIME = {
   // is_excluded），只有公式页首次出现 `[data-tex]` 时才由 index.html 按需注入，
   // 之后缓存优先 + 后台更新，离线仍可用。文件是自托管的固定版本，不随构建换名。
   katex: { name: "katex-runtime", maxEntries: 40, maxAgeSeconds: 90 * 24 * 60 * 60 },
+  // 现代风专用字体（约 750 KB，带 unicode-range 按页面用字懒加载）：**不预缓存**（见
+  // postbuild.rs 的 is_modern_font），首次真正请求时才缓存，之后缓存优先 + 后台更新。
+  // 文件名固定、不随构建换名，所以不用带版本号。
+  fonts: { name: "modern-fonts", maxEntries: 20, maxAgeSeconds: 180 * 24 * 60 * 60 },
 };
 const TS_HEADER = "x-sw-cached-at";
 
@@ -168,6 +172,8 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(staleWhileRevalidate(event, RUNTIME.i18n));
   } else if (/^\/katex\//.test(url.pathname)) {
     event.respondWith(staleWhileRevalidate(event, RUNTIME.katex));
+  } else if (/^\/fonts\/(?:bricolage|plex-mono|noto-sans-sc-display)-[^/]+\.woff2$/.test(url.pathname)) {
+    event.respondWith(staleWhileRevalidate(event, RUNTIME.fonts));
   } else if (request.mode === "navigate") {
     event.respondWith(navigation(event));
   } else if (PRECACHE_URLS.has(url.pathname) && !url.search) {

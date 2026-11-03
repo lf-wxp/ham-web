@@ -26,10 +26,13 @@ pub fn NoteEditor(#[prop(into)] question_id: Signal<String>) -> impl IntoView {
     saved.set(false);
   };
 
+  if crate::kit::is_modern_at_mount() {
+    return view! { <crate::kit_modern::ModernNote question_id=question_id /> }.into_any();
+  }
   view! {
-    <div class="pxl-card border bg-card p-4">
+    <div class=crate::kit::card_pad_class()>
       <div class="mb-2 flex items-center justify-between">
-        <div class="pxl-section-head">{move || t("exam.my-notes")}</div>
+        <div class=crate::kit::section_head_class()>{move || t("exam.my-notes")}</div>
         <span class="text-xs text-muted-foreground">
           {move || saved.get().then(|| t("exam.saved"))}
         </span>
@@ -56,4 +59,5 @@ pub fn NoteEditor(#[prop(into)] question_id: Signal<String>) -> impl IntoView {
       </div>
     </div>
   }
+  .into_any()
 }

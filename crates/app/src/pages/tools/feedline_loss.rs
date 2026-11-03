@@ -3,7 +3,7 @@ use leptos::prelude::*;
 
 use super::fmt_num;
 use crate::i18n::{t, tf};
-use crate::ui::{Field, NativeSelect, NumberField, SelectOption};
+use crate::ui::{Field, NumberField, SelectOption, SimpleSelect};
 use crate::util::unique_id;
 
 /// 馈线损耗估算：按型号取速度因子与损耗数据，随频率按 √f 插值。
@@ -29,7 +29,7 @@ pub(super) fn FeedlineLoss() -> impl IntoView {
   view! {
     <div class="grid gap-3 sm:grid-cols-3">
       <Field label=Signal::derive(move || t("tools.feedline-model")) r#for=model_id.clone()>
-        <NativeSelect
+        <SimpleSelect
           id=model_id
           value=Signal::derive(move || kind.get().to_string())
           on_change=Callback::new(move |v: String| {

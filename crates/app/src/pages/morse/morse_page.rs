@@ -65,7 +65,7 @@ pub fn MorsePage() -> impl IntoView {
           <Stat label=Signal::derive(move || t("morse.total-characters")) value=LETTERS.len() + DIGITS.len() + PUNCTUATION.len() />
         </div>
 
-        <section class="pxl-card border bg-card">
+        <section class=crate::kit::card_class()>
           <div class="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
             <div class="flex items-center gap-2">
               <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("morse.tone")}</span>
@@ -163,8 +163,8 @@ pub fn MorsePage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>
             {move || t("morse.cw-prosigns")}
             <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.sent-as-a-whole")}</span>
           </h2>
@@ -194,8 +194,8 @@ pub fn MorsePage() -> impl IntoView {
           </div>
         </section>
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("morse.signal-timing-standard")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("morse.signal-timing-standard")}</h2>
           <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("morse.based-on-one-dot")}</p>
           <div class="grid grid-cols-2 gap-3 p-4 sm:grid-cols-5">
             {TIMING

@@ -126,6 +126,7 @@
   "shell.receiver-specs-title": "Especificaciones de receptor",
   "shell.search": "Buscar",
   "shell.search-keywords": "Palabras clave",
+  "shell.search-pages": "Páginas",
   "shell.search-terms-frequencies-callsigns": "Busca términos, frecuencias, indicativos, antenas, componentes…",
   "shell.search-with-shortcut": "Buscar (/)",
   "shell.action-bar": "Barra de acciones",
@@ -243,5 +244,10 @@
   "shell.exam-mock": "Exámenes simulados",
   "shell.exam-review": "Repaso",
   "shell.exam-data": "Datos de estudio",
-  "shell.exam-rpg": "Desafíos"
+  "shell.exam-rpg": "Desafíos",
+  "shell.settings-style": "Estilo de la interfaz",
+  "shell.settings-style-hint": "Dos sistemas de diseño independientes: al cambiar se modifican la disposición, los controles y las animaciones, no solo los colores. El primer cambio al estilo moderno empieza en oscuro; luego puedes cambiar claro u oscuro por separado.",
+  "shell.style-pixel": "Píxel",
+  "shell.style-modern": "Moderno",
+  "shell.close-settings": "Cerrar ajustes"
 }

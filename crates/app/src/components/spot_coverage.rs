@@ -80,8 +80,8 @@ pub fn SpotCoverage(
   });
 
   view! {
-    <section class="pxl-card border bg-card" aria-labelledby="spot-coverage-heading">
-      <h2 id="spot-coverage-heading" class="pxl-section-title">
+    <section class=crate::kit::card_class() aria-labelledby="spot-coverage-heading">
+      <h2 id="spot-coverage-heading" class=crate::kit::card_title_class()>
         {move || t("coverage.title")}
       </h2>
       <div class="space-y-3 p-4">
@@ -152,14 +152,14 @@ pub fn SpotCoverage(
                   };
                   view! {
                     <TableRow>
-                      <TableCell class="border px-3 py-2">{t(sector_key(i))}</TableCell>
-                      <TableCell class="border px-3 py-2 text-right tabular-nums">
+                      <TableCell class=crate::kit::table_cell_class("")>{t(sector_key(i))}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("text-right tabular-nums")>
                         {stat.count}
                       </TableCell>
-                      <TableCell class="border px-3 py-2 text-right tabular-nums text-muted-foreground">
+                      <TableCell class=crate::kit::table_cell_class("text-right tabular-nums text-muted-foreground")>
                         {snr}
                       </TableCell>
-                      <TableCell class="border px-3 py-2">
+                      <TableCell class=crate::kit::table_cell_class("")>
                         <div class="h-2 w-full bg-muted" role="presentation">
                           <div class="h-2 bg-win/70" style=format!("width: {pct:.0}%")></div>
                         </div>
@@ -231,16 +231,16 @@ pub fn SpotCoverage(
                   >
                     <TableHead>
                       <TableRow>
-                        <TableHeader class="border px-3 py-2">
+                        <TableHeader class=crate::kit::table_cell_class("")>
                           {move || t("coverage.sector")}
                         </TableHeader>
-                        <TableHeader class="border px-3 py-2 text-right">
+                        <TableHeader class=crate::kit::table_cell_class("text-right")>
                           {move || t("coverage.reports")}
                         </TableHeader>
-                        <TableHeader class="border px-3 py-2 text-right">
+                        <TableHeader class=crate::kit::table_cell_class("text-right")>
                           {move || t("coverage.mean-snr")}
                         </TableHeader>
-                        <TableHeader class="border px-3 py-2">
+                        <TableHeader class=crate::kit::table_cell_class("")>
                           {move || t("coverage.distribution")}
                         </TableHeader>
                       </TableRow>

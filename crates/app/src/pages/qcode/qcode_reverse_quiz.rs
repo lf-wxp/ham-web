@@ -72,8 +72,8 @@ pub(super) fn QCodeReverseQuiz(entries: &'static [GlossaryEntry]) -> impl IntoVi
   };
 
   view! {
-    <section class="mb-8 pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("knowledge.q-code-reverse-quiz")}</h2>
+    <section class=crate::kit::card_class_with("mb-8")>
+      <h2 class=crate::kit::card_title_class()>{move || t("knowledge.q-code-reverse-quiz")}</h2>
       <div class="space-y-4 p-4">
         <div class="flex flex-col items-center gap-2 border bg-inset px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("knowledge.which-q-code-matches")}</div>

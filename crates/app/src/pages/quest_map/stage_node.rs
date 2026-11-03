@@ -79,6 +79,85 @@ pub(super) fn StageNode(
     }
   };
 
+  if crate::kit::is_modern_at_mount() {
+    let state_key = match state {
+      StageState::Locked => "locked",
+      StageState::Open => "open",
+      StageState::Cleared(_) => "cleared",
+    };
+    let mark_icon = match state {
+      StageState::Locked => crate::kit_modern::MIcon::Shield,
+      StageState::Open => crate::kit_modern::MIcon::Play,
+      StageState::Cleared(_) => crate::kit_modern::MIcon::Check,
+    };
+    let star_views = (1..=3u8)
+      .map(|n| {
+        view! {
+          <crate::kit_modern::ModernIcon
+            kind=crate::kit_modern::MIcon::Star
+            class=if n <= stars { "md-star-on" } else { "md-star-off" }
+          />
+        }
+      })
+      .collect_view();
+
+    // 记号必须是卡片的**兄弟**节点：带 `transform` 的元素会成为绝对定位后代的包含块。
+    // 早先卡片 hover 会 `translateX`，记号放在卡片内部就被一起拖走，表现为
+    // 「鼠标一上去，圆形图标跳到文字上」。现在 hover 只换描边与底色、不再位移，但兄弟结构要保留 ——
+    // 以后给卡片加任何 transform（按压、入场）都不会再把记号带走。
+    let mark = view! {
+      <span class="md-stage-mark" data-state=state_key aria-hidden="true">
+        <crate::kit_modern::ModernIcon kind=mark_icon />
+      </span>
+    };
+
+    let body = view! {
+      <span class="md-stage-body">
+        <span class="md-stage-num">{format!("{:02}", index + 1)}</span>
+        <span class="md-stage-name">{t(stage.name)}</span>
+        <span class="md-stage-meta">
+          {tp("rpg.stage-questions", stage.count, &[&stage.count.to_string()])}
+        </span>
+      </span>
+      {if state == StageState::Locked {
+        view! { <span class="md-stage-lock">{move || t("learning.locked")}</span> }.into_any()
+      } else {
+        view! {
+          <span class="md-stage-stars" aria-hidden="true">{star_views}</span>
+          {(stars > 0)
+            .then(|| {
+              view! {
+                <span class="sr-only">{tf("rpg.stars-value", &[&stars.to_string()])}</span>
+              }
+            })}
+        }
+          .into_any()
+      }}
+    };
+
+    return view! {
+      <li class="md-stage-item">
+        {mark}
+        {if state == StageState::Locked {
+          view! {
+            <div class="md-stage" data-state="locked" aria-disabled="true">
+              {body}
+            </div>
+          }
+            .into_any()
+        } else {
+          view! {
+            <a class="md-stage" data-state=state_key href=href.clone()>
+              {body}
+            </a>
+          }
+            .into_any()
+        }}
+      </li>
+    }
+    .into_any();
+  }
+
   view! {
     <li class=cn(&["list-none", offset])>
       {match state {
@@ -106,4 +185,5 @@ pub(super) fn StageNode(
       }}
     </li>
   }
+  .into_any()
 }

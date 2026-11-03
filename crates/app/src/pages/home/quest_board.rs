@@ -53,7 +53,7 @@ pub(super) fn QuestBoard() -> impl IntoView {
   view! {
     <section class="space-y-3" aria-labelledby="quest-board-title">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="quest-board-title" class="pxl-section-head">{move || t("rpg.quest-board")}</h2>
+        <h2 id="quest-board-title" class=crate::kit::section_head_class()>{move || t("rpg.quest-board")}</h2>
         <span class="text-xs text-muted-foreground">
           {move || tp("rpg.quests-left", left, &[&left.to_string()])}
         </span>

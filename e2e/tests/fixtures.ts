@@ -9,6 +9,18 @@ import {
 
 export { expect };
 
+/**
+ * 全站 axe 扫描明示豁免的规则（`AxeBuilder.disableRules` 用）。
+ *
+ * `link-in-text-block`（WCAG 1.4.1）：要求正文里的行内链接除了颜色之外还有下划线 / 字重 / 描边
+ * 这类视觉区分。本产品**全站 `<a>` 一律不带下划线**（`crates/app/style/input.css` 的 `a` 兜底、
+ * `docs/ui/modern.md` 的 `.md-link`），可点性只由「行动色 + 悬停换色」表达，两边不可能同时成立。
+ * 靠提高对比度也走不通：亮色配色下「链接对卡片 ≥ 4.5:1」与「链接与周围正文相差 ≥ 3:1」没有交集。
+ *
+ * 所以这是一次**明示的取舍**，不是漏扫：其余规则照旧全开，新页面不需要再各自写一遍豁免。
+ */
+export const AXE_DISABLED_RULES = ["link-in-text-block"];
+
 // 练习 / 考试首次进入会自动弹出快捷键说明，默认标记为已看过，避免遮挡后续操作
 export const test = base.extend<{ helpSeen: boolean }>({
   helpSeen: [true, { option: true }],
@@ -189,7 +201,7 @@ export function mistakeRecord(question: Record<string, unknown>) {
 }
 
 /**
- * 弹层式下拉（`ui::Select` / `ui::NativeSelect`）：点触发器 → 在弹层里点选项。
+ * 弹层式下拉（`ui::Select` / `ui::SimpleSelect`）：点触发器 → 在弹层里点选项。
  *
  * 它们不是原生 `<select>`，因此 `selectOption()` 用不了，必须走 `role=combobox` +
  * `role=option` 这条路径（与导航栏语言切换一致，见 navigation.spec.ts）。

@@ -50,7 +50,7 @@ pub fn CallsignPage() -> impl IntoView {
       <CallsignLookup input=input />
       <CallsignReference />
 
-      <section class="pxl-card border bg-card">
+      <section class=crate::kit::card_class()>
         <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
           <h2 class=card_title_class("mr-auto")>{move || t("radio.zone-map-cq-itu")}</h2>
           <ChipGroup
@@ -82,7 +82,7 @@ pub fn CallsignPage() -> impl IntoView {
                 format!("/zone-map?q={}", js_sys::encode_uri_component(&call))
               }
             }
-            class="ml-1 text-primary underline underline-offset-2"
+            class="ml-1 text-primary"
           >
             {move || t("radio.open-the-full-zone")}
           </a>

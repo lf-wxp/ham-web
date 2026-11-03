@@ -42,8 +42,8 @@ pub(super) fn KpForecastCard(#[prop(into)] refresh: Signal<u32>) -> impl IntoVie
   });
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("radio.kp-forecast-heading")}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t("radio.kp-forecast-heading")}</h2>
       <div class="space-y-3 p-4 text-sm">
         {move || {
           if loading.get() {

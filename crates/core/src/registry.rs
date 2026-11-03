@@ -1625,6 +1625,18 @@ pub const MODULES: &[Module] = &[
   },
 ];
 
+/// 路径里是否有以 `word` 开头的**词**（路径按 `/` `-` `_` 切词）。
+///
+/// 图标推断按路径关键词匹配。子串匹配会误判：`/kiss-tnc` 含 `iss` 被配成卫星、
+/// `/analog-modes` 含 `log` 被配成奖杯。按词首匹配既挡住这类误判，又保留复数写法
+/// （`satellites` 以 `satellite` 开头）。
+#[must_use]
+pub fn path_has_word(path: &str, word: &str) -> bool {
+  path
+    .split(['/', '-', '_'])
+    .any(|token| !token.is_empty() && token.starts_with(word))
+}
+
 /// 按路径查找（同名路径返回第一个，如 `/practice` 的两个入口）。
 #[must_use]
 pub fn by_path(path: &str) -> Option<&'static Module> {
@@ -1693,6 +1705,18 @@ pub fn sitemap_entries() -> Vec<(&'static str, &'static str, &'static str)> {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn path_words_match_at_word_start_only() {
+    assert!(path_has_word("/satellites", "satellite"));
+    assert!(path_has_word("/ft8-decode", "decode"));
+    assert!(path_has_word("/dxcc/map", "map"));
+    // 子串误判的反例：以前都会命中。
+    assert!(!path_has_word("/kiss-tnc", "iss"));
+    assert!(!path_has_word("/analog-modes", "log"));
+    assert!(!path_has_word("/grayline", "line"));
+    assert!(!path_has_word("", "map"));
+  }
 
   #[test]
   fn every_module_is_well_formed() {

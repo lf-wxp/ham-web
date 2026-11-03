@@ -51,8 +51,8 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
   };
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("morse.abbreviation-quiz")}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t("morse.abbreviation-quiz")}</h2>
       <div class="space-y-4 p-4">
         <div class="flex flex-col items-center gap-3 border bg-inset px-4 py-6">
           <div class="text-xs text-muted-foreground">{move || t("morse.what-does-this-abbreviation")}</div>
@@ -70,7 +70,7 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
                     <button
                       type="button"
                       on:click=move |_| choose(idx)
-                      class="inline-flex min-h-10 items-center justify-center pxl-card border bg-card px-3 py-2 text-sm transition duration-(--motion-normal) ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground"
+                      class=crate::kit::card_class_with("inline-flex min-h-10 items-center justify-center px-3 py-2 text-sm transition duration-(--motion-normal) ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground")
                     >
                       {move || kt_tracked(meaning)}
                     </button>

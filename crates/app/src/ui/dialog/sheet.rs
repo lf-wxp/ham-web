@@ -1,34 +1,34 @@
-use leptos::html;
 use leptos::portal::Portal;
 use leptos::prelude::*;
 
 use crate::icons::{Icon, IconKind};
 
-use super::shared::{on_open, state_attr, trap_tab, use_presence};
+use super::shared::{aria_hidden_attr, inert_attr, state_attr};
+use crate::focus::{use_escape_close, use_modal_focus};
 use crate::i18n::t;
-
-/// 退场动画时长（毫秒）：与抽屉类名里的 `duration-(--motion-normal)`（`tokens.css` 的 0.24s）对应，
-/// 卸载前要等它播完。改了 token 要同步这里，否则退场会被截断（偏小）或多留一帧空壳（偏大）。
-const EXIT_MS: u64 = 240;
 
 /// 右侧抽屉（答题卡）。
 #[component]
 pub fn Sheet(open: RwSignal<bool>, children: ChildrenFn) -> impl IntoView {
-  let mounted = use_presence(open, EXIT_MS);
+  let mounted = crate::presence::use_presence(open).visible;
+  // 模态三件套（焦点 / 滚动锁 / Esc）走共享实现：`check-structure` 的 C7.8 守着。
+  use_modal_focus(open);
+  crate::overlay::use_scroll_lock(open);
+  use_escape_close(open);
   let state = state_attr(open);
+  let inert = inert_attr(open);
+  let hidden = aria_hidden_attr(open);
   move || {
     mounted.get().then(|| {
       let children = children.clone();
-      let content = NodeRef::<html::Div>::new();
-      content.on_load(move |el| {
-        request_animation_frame(move || on_open(&el));
-      });
       view! {
         <Portal>
           <div
             data-slot="sheet-overlay"
             data-state=state
-            class="pxl-overlay pxl-enter-fade fixed inset-0 z-50"
+            inert=inert
+            aria-hidden=hidden
+            class="pxl-overlay pxl-enter-fade data-[state=closed]:pointer-events-none fixed inset-0 z-50"
             // 用 pointerdown 而不是 click 关闭：`MobileNavDrawer` 在 pointerup 里打开抽屉
             //（区分轻点 / 拖动），随后浏览器派发同一次手势的合成 click —— 那时遮罩已
             // 盖住触发按钮，click 的命中测试落在遮罩上，会立刻把刚打开的抽屉关掉。
@@ -36,18 +36,15 @@ pub fn Sheet(open: RwSignal<bool>, children: ChildrenFn) -> impl IntoView {
             on:pointerdown=move |_| open.set(false)
           ></div>
           <div
-            node_ref=content
+            data-modal-root=""
             role="dialog"
             aria-modal="true"
             tabindex="-1"
-            on:keydown=move |e| {
-              if let Some(el) = content.get_untracked() {
-                trap_tab(&e, &el);
-              }
-            }
             data-slot="sheet-content"
             data-state=state
-            class="pxl-sheet data-[state=open]:animate-in data-[state=closed]:animate-out fill-mode-both fixed z-50 flex flex-col gap-4 data-[state=closed]:duration-(--motion-normal) data-[state=open]:duration-(--motion-normal) data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 sm:max-w-sm"
+            inert=inert
+            aria-hidden=hidden
+            class="pxl-sheet data-[state=closed]:pointer-events-none data-[state=open]:animate-in data-[state=closed]:animate-out fill-mode-both fixed z-50 flex flex-col gap-4 data-[state=closed]:duration-(--motion-normal) data-[state=open]:duration-(--motion-normal) data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 sm:max-w-sm"
           >
             {children()}
             <super::toast_live_region::ToastLiveRegion />

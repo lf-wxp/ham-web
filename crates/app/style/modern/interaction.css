@@ -1,0 +1,573 @@
+/* ============================================================
+   交互层：逐页签名（`data-sig`）+ 换页方向（`data-nav-dir`）+ 按压反馈
+   ------------------------------------------------------------
+   与本目录其他文件的分工是**互斥**的：
+
+   - `tokens.css` 定义值；`kit.css` 定义组件外观（静态长什么样）；
+   - 这里只定义「动作」：悬停、滚动、拖拽、点击、换页。新增页面时不要再往
+     `kit.css` 里塞逐页动画 —— 按签名加一条即可（见 docs/ui/interaction.md）。
+
+   所有规则都以 `#route-content[data-sig=…]` 或 `html[data-ui-style="modern"]` 开头，
+   像素风一个字节都不受影响。`#route-content` 是 `kit_modern/interaction.rs`
+   在路由变化时写属性的节点，桥接页与迁移页共用。
+
+   曲线与时长只用 token（`--md-ease*` / `--md-dur*`）：全站一套手感，
+   「每页不一样」靠动作不同，而不是各页自己发明缓动。
+   ============================================================ */
+
+/* ---------- 1) 换页方向 ----------
+   前进（层级变深）自下升起、后退自上落回、平级只交叉淡入。
+   必须写在 `@layer` 之外：`kit.css` 的 `.motion-page` 是无层级声明，
+   层内的规则压不住它（无层级 > 任何 @layer）。
+   位移 12px 是刻意的小：换页动画是「方向提示」，不是转场特效。 */
+html[data-ui-style="modern"] #route-content.motion-page[data-nav-dir="forward"] {
+  animation-name: md-route-forward;
+}
+
+html[data-ui-style="modern"] #route-content.motion-page[data-nav-dir="back"] {
+  animation-name: md-route-back;
+  animation-duration: 300ms;
+}
+
+html[data-ui-style="modern"] #route-content.motion-page[data-nav-dir="lateral"] {
+  animation-name: md-route-lateral;
+  animation-duration: 240ms;
+}
+
+@keyframes md-route-forward {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+
+@keyframes md-route-back {
+  from {
+    opacity: 0;
+    translate: 0 -10px;
+  }
+}
+
+@keyframes md-route-lateral {
+  from {
+    opacity: 0;
+    scale: 0.995;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-ui-style="modern"] #route-content.motion-page[data-nav-dir] {
+    animation-name: none;
+  }
+}
+
+@layer components {
+  /* ---------- 2) 按压反馈：声呐点 / 声呐环 ----------
+     点状涟漪给「形状规整的控件」（按钮、胶囊、导航链接），
+     边缘声呐环给「整块表面」（选项行、题行、卡片）—— 后者内部常有绝对定位
+     的装饰，注入子节点会把布局挤歪。
+     宿主元素由 `interaction.rs` 临时加 `md-pressing`：建立定位上下文并裁掉溢出，
+     松手后类名自动摘掉，不改变常态下的 overflow。 */
+  .md-pressing {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .md-ping {
+    position: absolute;
+    inset-block-start: var(--md-press-y);
+    inset-inline-start: var(--md-press-x);
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;
+    border-radius: var(--md-r-pill);
+    background-color: currentColor;
+    opacity: 0.22;
+    pointer-events: none;
+    animation: md-ping 560ms var(--md-ease-out) forwards;
+  }
+
+  @keyframes md-ping {
+    from {
+      scale: 0.4;
+      opacity: 0.26;
+    }
+
+    to {
+      scale: 14;
+      opacity: 0;
+    }
+  }
+
+  /* 声呐环用 `box-shadow` 而不是 `outline`：后者会盖住焦点环，键盘用户看不出自己在哪。 */
+  .md-sonar {
+    animation: md-sonar 560ms var(--md-ease-out);
+  }
+
+  @keyframes md-sonar {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--md-blue) 42%, transparent);
+    }
+
+    100% {
+      box-shadow: 0 0 0 12px transparent;
+    }
+  }
+
+  /* ---------- 3) 横向轨道（拖拽） ----------
+     `ModernRail` 同时挂 `md-track` 与业务类名。轨道自身是滚动容器，
+     所以窄屏不会被 `mobile_overflow` 判成整页横滚。
+     拖拽中（`md-tracking`）临时关掉 scroll-snap：吸附会跟手打架，
+     松手恢复吸附时浏览器自己把卡片对回中线。 */
+  .md-track {
+    display: flex;
+    gap: var(--md-space-4);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    scroll-behavior: smooth;
+  }
+
+  .md-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .md-track:focus-visible {
+    outline: 2px solid var(--md-ring);
+    outline-offset: 4px;
+  }
+
+  .md-track > * {
+    scroll-snap-align: start;
+  }
+
+  .md-track.md-tracking {
+    scroll-snap-type: none;
+    scroll-behavior: auto;
+    cursor: grabbing;
+    user-select: none;
+  }
+
+  .md-track.md-tracking :is(a, button) {
+    cursor: grabbing;
+  }
+
+  /* 首页的模块卡：桌面是三列网格，窄屏是「可拖拽的卡片甲板」。
+     `md-modules` 原本写死 `display: grid`，这里用双类名把两条断点各自说清楚。 */
+  .md-modules.md-track {
+    display: grid;
+  }
+
+  /* 桌面根本不需要横向轨道，但 `.md-track` 的 `overflow-x: auto` 会一直生效 ——
+     而按 CSS 规范，一个方向不是 `visible` 时，另一个方向的 `visible` 会被算成 `auto`。
+     结果就是：卡片 hover 上浮 3px 的顶部与它的投影都被这个滚动容器裁掉。
+     桌面上直接关掉裁剪；平板仍需要横向滚动，用 `padding` 留出上浮空间（见下一条）。 */
+  @media (min-width: 900px) {
+    .md-modules.md-track {
+      overflow: visible;
+      scroll-snap-type: none;
+    }
+  }
+
+  /* 甲板只在 640–900 出现：手机（<640）上横向轨道会把 2/3 的入口藏起来，
+     首页的职责是「尽快找到入口」，那里必须回退成纵向列表。 */
+  @media (min-width: 640px) and (max-width: 900px) {
+    .md-modules.md-track {
+      display: flex;
+      gap: var(--md-space-3);
+      /* 甲板必须保留横向滚动，纵向就一定会裁：上下各留 8px 给 hover 上浮与投影，
+         再用负外边距把视觉位置抵消回来（章节间距不变）。 */
+      padding-block: var(--md-space-2);
+      margin-block: calc(var(--md-space-2) * -1);
+      scroll-padding-inline: var(--md-page-pad);
+    }
+
+    .md-modules.md-track > .md-mod {
+      flex: 0 0 78%;
+    }
+  }
+
+  /* ---------- 4) 逐页签名 ----------
+     签名只改「动作」，不改静态样式：颜色、圆角、字号仍由 token 与 kit.css 决定。 */
+
+  /* 4.1 阅读型（知识库 / 法规 / 参考）：章节编号 + 链接下划线擦出。
+     编号用 CSS counter：正文一个字都不用改，也不会因为翻译换行而错位。 */
+  @media (min-width: 1024px) {
+    #route-content[data-sig="read"] .md-root h2 {
+      counter-increment: md-chapter;
+    }
+
+    #route-content[data-sig="read"] .md-root h2::before {
+      content: counter(md-chapter, decimal-leading-zero);
+      margin-inline-end: 10px;
+      font-family: var(--md-font-mono);
+      font-size: 0.62em;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.06em;
+      color: var(--md-fg-muted);
+      opacity: 0.7;
+      vertical-align: 0.18em;
+    }
+  }
+
+  /* 计数器必须挂在共同祖先上：每个页面重新从 01 开始，而不是全站累加。 */
+  #route-content[data-sig="read"] .md-root {
+    counter-reset: md-chapter;
+  }
+
+  @media (hover: hover) {
+    #route-content[data-sig="read"]
+      .md-root
+      a:not(.md-btn):not(.md-nav-link):not(.md-link) {
+      background-image: linear-gradient(currentColor, currentColor);
+      background-repeat: no-repeat;
+      background-position: 0 100%;
+      background-size: 0% 1px;
+      transition: background-size var(--md-dur) var(--md-ease);
+    }
+
+    #route-content[data-sig="read"]
+      .md-root
+      a:not(.md-btn):not(.md-nav-link):not(.md-link):hover {
+      background-size: 100% 1px;
+    }
+  }
+
+  /* 4.2 索引型（术语 / 速查 / 呼号）：条目悬停时向左「抽出一格」，
+     暗示它在一张竖排索引里；只动 translate，不参与入场动画的 transform。 */
+  @media (hover: hover) {
+    #route-content[data-sig="index"] .md-term,
+    #route-content[data-sig="index"] .md-link {
+      transition:
+        translate var(--md-dur-fast) var(--md-ease),
+        border-color var(--md-dur-fast) var(--md-ease),
+        background-color var(--md-dur-fast) var(--md-ease);
+    }
+
+    #route-content[data-sig="index"] .md-term:hover,
+    #route-content[data-sig="index"] .md-link:hover {
+      translate: 3px 0;
+    }
+  }
+
+  /* 4.2.1 检索页的筛选条随滚动常驻：结果列表很长时，改关键词 / 切题库不必先滚回顶部。
+     吸附偏移用 `--md-nav-h`（与顶栏同源），不写死像素。 */
+  /* 吸附只给桌面：窄屏上搜索条 + 分类条会叠成两层吸顶（约 110px 高），
+     内容区被压得只剩半屏。窄屏改为「只有分类条吸顶」（见 kit.css 的 `.md-filter-bar`），
+     搜索条随页面滚走。 */
+  @media (min-width: 900px) {
+    #route-content[data-sig="index"] .md-glossary-bar,
+    #route-content[data-sig="browse"] .md-glossary-bar {
+      position: sticky;
+      inset-block-start: var(--md-nav-h);
+      z-index: 20;
+      padding-block: var(--md-space-2-5);
+      margin-block-end: 10px;
+      border-bottom: 1px solid var(--md-border);
+      background-color: color-mix(in srgb, var(--md-bg) 88%, transparent);
+      backdrop-filter: blur(10px);
+    }
+  }
+
+  /* 4.3 日志型：一条贯穿页面的时间轴脊柱，滚动进度用 scroll-driven 动画填色。
+     不支持 `animation-timeline` 时整条脊柱不画（`@supports` 兜底），
+     而不是画一条永远满格的假进度。 */
+  @supports (animation-timeline: scroll()) {
+    @media (min-width: 900px) {
+      #route-content[data-sig="log"] .md-page {
+        position: relative;
+      }
+
+      #route-content[data-sig="log"] .md-page::before {
+        content: "";
+        position: absolute;
+        inset-block: 56px 104px;
+        inset-inline-start: -14px;
+        width: 2px;
+        border-radius: var(--md-r-pill);
+        background-color: var(--md-border);
+      }
+
+      #route-content[data-sig="log"] .md-page::after {
+        content: "";
+        position: absolute;
+        inset-block-start: 56px;
+        inset-inline-start: -14px;
+        width: 2px;
+        height: calc(100% - 160px);
+        border-radius: var(--md-r-pill);
+        background-color: var(--md-blue);
+        transform-origin: top center;
+        scale: 1 0;
+        animation: md-spine-grow linear both;
+        animation-timeline: scroll(root);
+      }
+    }
+  }
+
+  @keyframes md-spine-grow {
+    to {
+      scale: 1 1;
+    }
+  }
+
+  /* 4.4 看板型（进度 / 统计 / 成就）：卡片悬停上抬，读数已经在 `ModernStatValue`
+     里滚过一次；这里补的是「扫一眼就能比较」的层级感。 */
+  @media (hover: hover) {
+    #route-content[data-sig="board"] .md-panel,
+    #route-content[data-sig="board"] .md-root section {
+      transition:
+        translate var(--md-dur) var(--md-ease),
+        box-shadow var(--md-dur) var(--md-ease);
+    }
+
+    #route-content[data-sig="board"] .md-panel:hover {
+      translate: 0 -2px;
+      box-shadow: var(--md-shadow-2);
+    }
+
+    /* 桥接页的 section 可能是「整段正文」那么大，上抬会让人以为整块都能点：
+       只提阴影，不位移。 */
+    #route-content[data-sig="board"] .md-root section:hover {
+      box-shadow: var(--md-shadow-1);
+    }
+  }
+
+  /* 4.5 实验型（解码器 / 波形 / 仪器）：面板顶部一条扫描带在悬停时走一遍。
+     只改 `background-position`，不触发布局；动效被关时停在静止态。
+     命中面有两种：迁移过的 `.md-panel`，以及仍是桥接页的卡片 `section.bg-card`。
+     后者才是解码器 / 波形 / 史密斯图今天真正的 DOM，只写 `.md-panel` 会一个节点都匹配不到
+     （`interaction.spec.ts` 里有一条用例专门守这件事）。
+
+     **必须带 `html[data-ui-style="modern"]`**：`data-sig` 在像素风下也会写到 `#route-content`
+     （`kit_modern::interaction` 统一落位），不加这层门禁，像素风的 lab 页会凭空多出一条
+     蓝色渐变带与平滑扫描动画 —— 那是现代风的动作，像素风只允许逐帧位移。 */
+  html[data-ui-style="modern"] #route-content[data-sig="lab"] :is(.md-panel, section.bg-card) {
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--md-blue) 14%, transparent),
+      transparent
+    );
+    background-repeat: no-repeat;
+    background-size: 220px 100%;
+    background-position: -220px 0;
+  }
+
+  @media (hover: hover) {
+    html[data-ui-style="modern"] #route-content[data-sig="lab"] :is(.md-panel, section.bg-card):hover {
+      animation: md-lab-scan 1100ms var(--md-ease) 1;
+    }
+  }
+
+  @keyframes md-lab-scan {
+    to {
+      background-position: calc(100% + 220px) 0;
+    }
+  }
+
+  /* 4.6 地图型：标记悬停提亮写在层外（见文件末尾「6) 地图标记悬停」）。
+     这里**不再**给 `svg` / `canvas` 统一设 `cursor: grab`：`MapView` 已经用内联样式
+     按拖拽状态切换 grab / grabbing，而旧选择器还会命中同页所有别的 `svg`：
+     `/grid-map` 下拉框的箭头、`/map` 的关卡精灵图，以及 `/satellites`（页内根本没有地图）
+     的 4 个箭头，鼠标移上去都变成抓手。 */
+
+  /* 4.7 工具型：目录项与面板已有的落点高亮之外，补一条「跳过去之后目标面板亮一下」
+     的静态描边（`data-flash` 的动画在 kit.css 里，这里只处理悬停）。 */
+  @media (hover: hover) {
+    #route-content[data-sig="tools"] .md-tool-link:hover {
+      translate: 2px 0;
+    }
+  }
+
+  /* 4.8 首页（landing）：清单逐行入位、瀑布逐格点亮、模块入口右移。
+     计划里的「视差首屏 / 横向轨道 / 数字起跳」在组件里，这里补的是首屏之下
+     三块新内容的节奏 —— 它们同时出现在首屏后 200px 内，不做错峰就是一整块同时刷出。
+
+     必须带 `html[data-ui-style="modern"]`：`data-sig` 在像素风首页也会写
+     （`kit_modern::interaction` 统一落位），少了门禁等于给冻结的像素首页加新动效。 */
+  /* 章节头的刻度尺：上沿那条 72px 的八格刻度从左侧「画」出来。
+     `background-size` 可插值，不支持时只是少一段动画，刻度本身仍在。 */
+  html[data-ui-style="modern"]
+    #route-content[data-sig="landing"]
+    .md-page
+    > section:not(.md-closing) {
+    animation: md-sect-rule 720ms var(--md-ease-out) both;
+  }
+
+  @keyframes md-sect-rule {
+    from {
+      background-size: 0 5px;
+    }
+  }
+
+  html[data-ui-style="modern"] #route-content[data-sig="landing"] .md-onair-row {
+    animation: md-landing-row 520ms var(--md-ease-out) both;
+  }
+
+  html[data-ui-style="modern"]
+    #route-content[data-sig="landing"]
+    .md-onair
+    > li:nth-child(2)
+    .md-onair-row {
+    animation-delay: 70ms;
+  }
+
+  html[data-ui-style="modern"]
+    #route-content[data-sig="landing"]
+    .md-onair
+    > li:nth-child(3)
+    .md-onair-row {
+    animation-delay: 140ms;
+  }
+
+  @keyframes md-landing-row {
+    from {
+      opacity: 0;
+      translate: 0 10px;
+    }
+  }
+
+  /* 瀑布：从最后一格往前逐格亮起，读起来像信号在扫过这七天。 */
+  html[data-ui-style="modern"] #route-content[data-sig="landing"] .md-wf-cell {
+    animation: md-landing-lit 420ms var(--md-ease-out) both;
+  }
+
+  html[data-ui-style="modern"] #route-content[data-sig="landing"] .md-wf-col:nth-child(1) .md-wf-cell {
+    animation-delay: 240ms;
+  }
+
+  html[data-ui-style="modern"] #route-content[data-sig="landing"] .md-wf-col:nth-child(2) .md-wf-cell {
+    animation-delay: 200ms;
+  }
+
+  html[data-ui-style="modern"] #route-content[data-sig="landing"] .md-wf-col:nth-child(3) .md-wf-cell {
+    animation-delay: 160ms;
+  }
+
+  html[data-ui-style="modern"] #route-content[data-sig="landing"] .md-wf-col:nth-child(4) .md-wf-cell {
+    animation-delay: 120ms;
+  }
+
+  html[data-ui-style="modern"] #route-content[data-sig="landing"] .md-wf-col:nth-child(5) .md-wf-cell {
+    animation-delay: 80ms;
+  }
+
+  html[data-ui-style="modern"] #route-content[data-sig="landing"] .md-wf-col:nth-child(6) .md-wf-cell {
+    animation-delay: 40ms;
+  }
+
+  /* 瀑布格用斜切展开（而不是缩放）：形状本身就是这条瀑布的语言，
+     让「斜」先出现、再落成色块，比整格放大更像信号扫过。 */
+  @keyframes md-landing-lit {
+    from {
+      opacity: 0;
+      clip-path: polygon(15% 0, 15% 0, 0 100%, 0 100%);
+    }
+  }
+
+  /* 首屏主卡右下角的同心圆：从卡角放大出来，与「波前扩散」的方向一致。 */
+  html[data-ui-style="modern"] #route-content[data-sig="landing"] .md-feature-accent::after {
+    animation: md-disc-in 640ms var(--md-ease-out) both;
+  }
+
+  @keyframes md-disc-in {
+    from {
+      opacity: 0;
+      scale: 0.55;
+    }
+  }
+
+  /* 模块入口：指针/焦点所在的卡片把条目右推 3px（与 index 签名同一套位移语言）。
+     颜色仍由 kit.css 的 `.md-link-row:hover` 负责，这里只加位置。 */
+  @media (hover: hover) {
+    html[data-ui-style="modern"] #route-content[data-sig="landing"] .md-mod .md-link-row {
+      transition:
+        translate var(--md-dur-fast) var(--md-ease),
+        background-color var(--md-dur-fast) var(--md-ease),
+        color var(--md-dur-fast) var(--md-ease);
+    }
+
+    html[data-ui-style="modern"] #route-content[data-sig="landing"] .md-mod .md-link-row:hover {
+      translate: 3px 0;
+    }
+  }
+
+  /* 键盘用户看不到 hover：焦点在卡内任一链接时，卡片边框也提亮一次。 */
+  html[data-ui-style="modern"] #route-content[data-sig="landing"] .md-mod:focus-within {
+    border-color: color-mix(in srgb, var(--tone) 45%, var(--md-border));
+  }
+
+  /* 4.9 页头「一把尺」的入场沿用 `md-rule-in`（见 kit.css 动效层）：
+     整条 100% 宽的尺（橙线 + 右端刻度）从左侧 `scaleX` 展开，全站统一。
+     这里不再单独定义动画 —— 两套动画叠在同一条伪元素上会互相覆盖。 */
+
+  /* ---------- 5) 降级 ----------
+     动效被关时：没有涟漪、没有声呐环、没有扫描带、没有脊柱进度，
+     但内容与层级一个都不少。 */
+  @media (prefers-reduced-motion: reduce) {
+    .md-ping,
+    .md-sonar,
+    html[data-ui-style="modern"] #route-content[data-sig="lab"] :is(.md-panel, section.bg-card):hover {
+      animation: none;
+    }
+
+    /* 首屏之下的错峰入场整段关掉：`animation: none` 同时摘掉 `both`，
+       元素直接落在终态，不会停在 `opacity: 0`（e2e 有专门用例守这条）。
+       几何入场（刻度尺 / 波前圆 / 瀑布斜切）一并关掉。 */
+    /* 伪元素不能放进 `:is()`（那会让整条规则失效），单列一行。 */
+    html[data-ui-style="modern"]
+      #route-content[data-sig="landing"]
+      :is(.md-onair-row, .md-wf-cell),
+    html[data-ui-style="modern"]
+      #route-content[data-sig="landing"]
+      .md-feature-accent::after,
+    html[data-ui-style="modern"]
+      #route-content[data-sig="landing"]
+      .md-page
+      > section:not(.md-closing) {
+      animation: none;
+    }
+
+    .md-track {
+      scroll-behavior: auto;
+    }
+
+    #route-content[data-sig="log"] .md-page::after {
+      display: none;
+    }
+  }
+}
+
+/* ---------- 6) 地图标记悬停 ----------
+   必须写在 `@layer` 之外：标记的描边颜色来自 Tailwind 的 `stroke-*` 工具类（utilities 层），
+   层内规则再具体也压不住；`stroke-width` 是 SVG 呈现属性，本来就最弱。
+   只给「可点击」的标记（国家 / 分区 / 网格 / 台站）：这些元素都带 `<title>` 子节点，
+   而陆地底图与经纬网没有 —— 用 `:has(> title)` 区分，避免鼠标一过整张底图都在闪。
+   不支持 `:has()` 的浏览器会丢掉整条规则，退回没有悬停提亮，功能不受影响（每处 `:has()` 行尾的
+   `has-ok` 标注就是这个声明，`check-structure` 要求有）。
+
+   同样必须带 `html[data-ui-style="modern"]`：地图页今天还是像素风 DOM（`map_view.rs` 的
+   `svg[role="img"]` + `dxcc_overlay.rs` 的 `<circle><title>`），而 `data-sig` 两套风格都会写。
+   少了这层门禁，像素风的地图标记会在悬停时变成现代蓝描边 + 平滑过渡。 */
+html[data-ui-style="modern"] #route-content[data-sig="map"] svg[role="img"]
+  :is(polygon, circle, rect):has(> title) { /* has-ok: 悬停提亮，缺失时只是没有高亮 */
+  cursor: pointer;
+  transition: stroke-width var(--md-dur-fast) var(--md-ease);
+}
+
+@media (hover: hover) {
+  html[data-ui-style="modern"] #route-content[data-sig="map"] svg[role="img"]
+    :is(polygon, circle, rect):has(> title):hover { /* has-ok: 悬停提亮，缺失时只是没有高亮 */
+    stroke: var(--md-blue);
+    stroke-width: 1.6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-ui-style="modern"] #route-content[data-sig="map"] svg[role="img"]
+    :is(polygon, circle, rect):has(> title) { /* has-ok: 悬停提亮，缺失时只是没有高亮 */
+    transition: none;
+  }
+}

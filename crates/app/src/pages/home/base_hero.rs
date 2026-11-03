@@ -21,7 +21,7 @@ pub(super) fn BaseHero() -> impl IntoView {
         <div class="flex shrink-0 flex-col items-center gap-2">
           <PixelSprite name="hero" scale=8 class="pxl-bob" />
           // 等级牌做成一块带框的铭牌，而不是又一行灰色小字：它是首屏里唯一的「我是谁」。
-          <span class="pxl-badge bg-secondary text-xs">
+          <span class=format!("{} bg-secondary text-xs", crate::ui::badge_skin())>
             {move || format!("{} · {}", tf("shell.hud-level", &[&level.level.to_string()]), rank_label(level.level))}
           </span>
         </div>
@@ -63,7 +63,7 @@ pub(super) fn BaseHero() -> impl IntoView {
 
           // 首屏只有一个最重的主操作：「出去闯关」。以前这里并排三个 `Lg` 按钮，其中「挑战 Boss」
           // （/exam）与下面「快速开始」里的「开始模拟考试」是同一处去向，两块 L2 窗口里各摆一遍，
-          // 视线没有落点（`docs/ui-components.md` §2 硬规则 8）。模拟考试留给带题库选择的快速开始。
+          // 视线没有落点（`docs/ui/pixel.md` §2 硬规则 8）。模拟考试留给带题库选择的快速开始。
           <div class="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
             <ButtonLink href="/map" variant=Variant::Default size=Size::Lg>
               {move || t("rpg.to-stage")}

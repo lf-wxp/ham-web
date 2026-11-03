@@ -3,6 +3,7 @@
 
 use std::collections::BTreeMap;
 
+use super::heatmap::heat_level;
 use crate::i18n::{t, tp};
 use crate::ui::Tooltip;
 use leptos::prelude::*;
@@ -73,6 +74,53 @@ pub(super) fn CalendarHeatmap(counts: BTreeMap<String, u32>) -> impl IntoView {
     grid.push(week);
   }
 
+  if crate::kit::is_modern_at_mount() {
+    let weeks: Vec<Vec<(String, u32, bool)>> = grid.clone();
+    return view! {
+      <div class="md-cal">
+        <div class="md-cal-legend">
+          <span class="md-muted md-sm">{move || t("learning.less")}</span>
+          {(0..=5)
+            .map(|l| view! { <span class="md-cal-cell" data-level=l.to_string()></span> })
+            .collect_view()}
+          <span class="md-muted md-sm">{move || t("learning.more")}</span>
+        </div>
+        <div class="md-cal-scroll">
+          <div class="md-cal-grid">
+            {weeks
+              .into_iter()
+              .map(|week| {
+                view! {
+                  <div class="md-cal-week">
+                    {week
+                      .into_iter()
+                      .map(|(key, count, future)| {
+                        let label = tp(
+                          "common.records",
+                          count,
+                          &[&(key).to_string(), &(count).to_string()],
+                        );
+                        view! {
+                          <span
+                            class="md-cal-cell"
+                            data-level=if future { "blank".to_owned() } else { heat_level(count, max).to_string() }
+                            tabindex="0"
+                            role="img"
+                            aria-label=label
+                          ></span>
+                        }
+                      })
+                      .collect_view()}
+                  </div>
+                }
+              })
+              .collect_view()}
+          </div>
+        </div>
+      </div>
+    }
+    .into_any();
+  }
   view! {
     <div class="space-y-2">
       <div class="flex items-center justify-end gap-1 text-xs text-muted-foreground">
@@ -100,16 +148,20 @@ pub(super) fn CalendarHeatmap(counts: BTreeMap<String, u32>) -> impl IntoView {
                       } else {
                         cell_class(count, max)
                       };
-                      let label = tp("common.records", count, &[&(key).to_string(), &(count).to_string()]);
+                      // 悬停提示与无障碍名都要跟着切语言重算：`Signal::derive` 里现算词条。
+                      let key_text = key.to_string();
+                      let label = Signal::derive(move || {
+                        tp("common.records", count, &[&key_text, &count.to_string()])
+                      });
                       view! {
-                        <Tooltip label=label.clone()>
+                        <Tooltip label=label>
                           <div
                             class=format!(
                               "h-3 w-3 {cls} outline-none focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
                             )
                             tabindex="0"
                             role="img"
-                            aria-label=label
+                            aria-label=move || label.get()
                           ></div>
                         </Tooltip>
                       }
@@ -123,4 +175,5 @@ pub(super) fn CalendarHeatmap(counts: BTreeMap<String, u32>) -> impl IntoView {
       </div>
     </div>
   }
+  .into_any()
 }

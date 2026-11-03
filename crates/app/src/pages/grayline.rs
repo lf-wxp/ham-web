@@ -48,7 +48,7 @@ pub fn GraylinePage() -> impl IntoView {
         subtitle=Signal::derive(move || t("radio.live-terminator-lf-dx"))
       />
       <PageContainer>
-        <section class="pxl-card border bg-card p-4">
+        <section class=crate::kit::card_pad_class()>
           <MapView aria_label=Signal::derive(move || t("radio.grayline-map-scroll-to"))>
             <GraylineOverlay now_ms=display_ms />
           </MapView>

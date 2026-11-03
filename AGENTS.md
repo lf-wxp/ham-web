@@ -1,106 +1,65 @@
 # 给 AI agent 的入口
 
-这份文件是**动这个仓库的代码之前先读的东西**：指向各领域的规范，并列出几条不要违反的硬规则。
+动这个仓库的代码之前先读这份：**几条不能违反的硬规则**，加上「改完怎么验」。
+每条规则只写结论，原因、取值与例外都在落点文档里 —— 这里不重复它们。
 
-## 1. 按你要改的东西找文档
+**找文档先看 [`docs/README.md`](docs/README.md)**（唯一的文档索引，含「常见任务直达」）。
 
-| 要改什么 | 先读 |
-|---|---|
-| **界面 / 表单控件 / 按钮 / 弹层** | [`docs/ui-components.md`](docs/ui-components.md)（使用规范：决策表、硬规则、坑、验收）→ [`crates/app/src/ui/README.md`](crates/app/src/ui/README.md)（组件清单与示例） |
-| **页面骨架 / 内容宽度（页头、正文容器）** | [`docs/ui-components.md`](docs/ui-components.md) §4：宽度只有 `max-w-5xl` 一种，页头用 `PageHeader`、正文用 `PageContainer` |
-| 仓库里那些「刻意的例外」（没走组件的原生元素） | `grep -rn "刻意的例外" crates/app/src`；清单与原因见 `docs/ui-components.md` §10 |
-| 界面文案 / 译文 | [`docs/i18n.md`](docs/i18n.md)（词条规范、复数、门禁与验收清单）；词条在 `data/i18n/{zh,en,es}/<域>.json` |
-| 题库题面排版（空格、全角半角、指纹） | [`docs/typography.md`](docs/typography.md) |
-| 题目解析的写作 | [`docs/explanations-style.md`](docs/explanations-style.md) |
-| 外部数据（DXCC 前缀表 / 实体边界 / 题库）的来源、来源戳、新鲜度判定与 `data-sync.yml` | [`docs/data-sync.md`](docs/data-sync.md)（规范：戳 schema、判定矩阵、四个命令、CI 分类位与验收） |
-| 解码器页面 / 新增解码器 / worker 错误码 | [`docs/decode-worker-protocol.md`](docs/decode-worker-protocol.md)（统一信封、错误码表、Makefile worker 任务、新增清单） |
-| 架构、crate 划分与完整目录树 | [`docs/architecture.md`](docs/architecture.md)；上手与部署见 [`README.md`](README.md) |
-| cargo make 任务全集 / 路由表 / 存储 key | [`docs/tasks.md`](docs/tasks.md) · [`docs/routes.md`](docs/routes.md) · [`docs/storage.md`](docs/storage.md) |
-| 本地开发细节、生产构建、Docker、环境变量 | [`docs/deployment.md`](docs/deployment.md) |
-| 后端接口（同源代理 / 开放 API） | [`docs/api.md`](docs/api.md) |
-| 题库数据构建与换版 | [`docs/data-pipeline.md`](docs/data-pipeline.md)；解析维护流程见 [`docs/explanations.md`](docs/explanations.md) |
-| 端到端测试、覆盖率与本地排障 | [`docs/testing.md`](docs/testing.md) |
-| 代码规范、快捷键、像素风与动效降级 | [`docs/development.md`](docs/development.md) |
-| 许可与 GPL 边界 | [`docs/licensing.md`](docs/licensing.md) |
-| 功能清单与文档对账口径 | [`docs/features.md`](docs/features.md) |
-| 串口功能（CAT / 旋转器 / NanoVNA / KISS）与外部格式（CHIRP / SOTA / POTA）的验收 | [`docs/hardware-verification.md`](docs/hardware-verification.md)：单测与假串口只算「待验」，真机记录才叫「已验证」 |
-| 天线方向增益（S2）的实现 | [`docs/antenna-coverage.md`](docs/antenna-coverage.md)：口径是「方向增益」，不是覆盖 / 可达 |
-| 全仓代码质量（分层边界、可自动化门禁、问题分级与证据口径） | [`docs/code-quality.md`](docs/code-quality.md)：长期标准 + 检查清单，改动前先跑 §2 的门禁 |
-| 自定义远端同步（`/backup`）的行为约束与存储 key 归类 | [`docs/storage.md`](docs/storage.md)「自定义远端的自动同步」；新增本地存储 key 要在 `core/remote_sync.rs` 的 `every_documented_key_is_classified` 里归类 |
+## 1. 硬规则
 
-## 2. 硬规则
+### 界面
 
-- **界面控件只有一套来源**：`crates/app/src/ui/`。页面里不写原生 `<input>` / `<select>` /
-  `<textarea>` / `<input type="range">`，不新增本地 `const INPUT` / `CHIP_ON`，
-  不直接调用类名工厂（`button_class` 只给 `Button` / `ButtonLink` 内部与
-  `docs/ui-components.md` §10 清单里的几处「刻意的例外」用 ——
-  `grep -rn "刻意的例外" crates/app/src` 可列全）。
-- **页面宽度只有一个来源**：内容宽度 = `PageHeader`（`components/common/page_header.rs`）与
-  `PageContainer`（`components/common/page_container.rs`）里的 `max-w-5xl`（1024px）。
-  页面里不写 `max-w-*` / `container` / 自造的 `mx-auto` 宽度容器；间距用 `PageContainer` 的
-  `class` 覆盖；多行页头用 `PageHeader` 的 `children`。详见 `docs/ui-components.md` §4。
-- **页内第二根吸顶栏只有一个来源**：`StickyPanel`（`components/common/sticky_panel.rs`）。
-  页面里不手写 `sticky top-[…px]` 的吸顶偏移（页头折行 / 切语言会让固定偏移错位或被盖）；
-  面板内限高滚动子元素用 `var(--sticky-top)` 算剩余高度。用法与自检 ⑩ 见
-  `docs/ui-components.md` §4 / §11。
-- **一个文件只放一个组件 —— 共享组件与业务组件都是**（`crates/app/src/ui/`、`components/`、
-  `pages/` 一视同仁）。「组件」既指 `#[component]`，也指任何**返回视图的函数**
-  （`-> impl IntoView` / `-> AnyView`，例如表格单元格、列表行这类视图构造函数）：
-  一个文件里出现两个就必须拆开，别往里加第三个。
-  自检（应无输出）：
-  ```bash
-  grep -rEo '\->[[:space:]]*(impl[[:space:]]+[A-Za-z_:]*[[:space:]]*)?(IntoView|AnyView)' \
-    crates/app/src --include='*.rs' | cut -d: -f1 | sort | uniq -c | awk '$1>1'
-  ```
-- **一族 / 主从多个组件用文件夹模块**（`dialog/`、`radio/`、`select/`、`chip/`、
-  `pages/bands/`、`pages/log/awards_panel/`、`components/study_plan_card/` 都是这么放的）：
-  主组件与共享 helper 放 `mod.rs`，子组件各占一个文件，共享的样式 token / context 放
-  `shared.rs`。命名注意：`chip/chip.rs` 这类「模块与父模块同名」会被 Rust 拒绝，照
-  `dialog_root.rs` / `select_root.rs` / `chip_item.rs` 起名。
-- **页面渲染 `crates/core` 的中文原文（`kt_tracked` / `core_text_tracked`）就要挂词典拉取**：
-  在页面组件体里调 `data::use_knowledge_i18n()`（走 `KnowledgePage` 外壳的页面由外壳代劳）；
-  漏了的话以英文 / 西语直接打开该页时文案静默停在中文。`cargo make check-structure` 守着。
-- **文案必须走 `t("域.词条")` 且字面量写在调用点**；新增词条要 zh / en / es 三份齐全，
-  再 `cargo make i18n-pack`。不要硬编码界面中文（检查器抓不到，但 en / es 界面会露馅）。
-- **标签关联与无障碍名要写全**：`Field` 的 `r#for` 与控件 `id` 配对；没有可见标签的控件 /
-  图标按钮必填 `aria_label`。这些同时是 e2e 的定位契约。
-- **不依赖浏览器的逻辑放 `ham-web-core` 并带单元测试**（判定、匹配、解析、排版等），
-  `crates/app` 只做 DOM 与视图。
-- **提交前必须过 `cargo make check`**；动了页面组件再跑相关 e2e。
+- **先确定改的是哪套皮肤**：现代风（`md-*` 类、`kit_modern/`、`style/modern/`）还是像素风（`pxl-*` 与工具类、`components/`、`style/pixel/`）。
+  两者不共享类名与 token。→ [`docs/ui/decisions.md`](docs/ui/decisions.md) §3
+- **界面控件只有一套来源：`crates/app/src/ui/`。** 页面里不写原生 `<input>` / `<select>` / `<textarea>`，不新增本地 `const INPUT` / `CHIP_ON`，
+  不直接调类名工厂；`grep -rn "刻意的例外" crates/app/src` 列全仅有的例外。→ [`docs/ui/pixel.md`](docs/ui/pixel.md) §10
+- **页面宽度只有一个来源**：`PageHeader` 与 `PageContainer` 里的 `max-w-5xl`。页面里不写 `max-w-*` / `container` / 自造的 `mx-auto` 宽度容器。
+  → [`docs/ui/pixel.md`](docs/ui/pixel.md) §4 · [`docs/ui/modern.md`](docs/ui/modern.md) §3
+- **风格派发不许在组件体里订阅信号**：组件体用 `kit::is_modern_at_mount()`，`kit::is_modern()` 只留给 `view!` 属性闭包 / `move ||`。
+  dev 构建的 `you access a RwSignal<UiStyle> outside a reactive tracking context` 告警，病灶在调用点，不在 `theme.rs`。→ [`docs/ui/decisions.md`](docs/ui/decisions.md) §7
+- **模态的焦点与滚动锁各只有一份实现**：每个弹层都调 `crate::focus::use_modal_focus` 与 `crate::overlay::use_scroll_lock`，不自己写 `body.style.overflow`。
+  → [`docs/ui/decisions.md`](docs/ui/decisions.md) §7
+- **弹层退场是动画、时长读 token、卸载延迟只用 `crate::presence`、关闭态不拦截点击**；新按钮变体的悬停 / 按下规则带 `:not(:disabled)`；
+  表单控件的错误态只认 `aria-invalid`。→ [`docs/ui/motion.md`](docs/ui/motion.md) §五、§六
+- **页面级动效只有一条来源**：逐页动作写在 `interaction.css` 的 `#route-content[data-sig="…"]` 分支；新增路由必须在
+  `PageSignature::paths` 里挑一个签名（漏了 `cargo test` 会红）。→ [`docs/ui/interaction.md`](docs/ui/interaction.md) §6.1
+- **页内第二根吸顶栏只有一个来源**：`StickyPanel`；页面里不手写 `sticky top-[…px]`。→ [`docs/ui/pixel.md`](docs/ui/pixel.md) §4、§11
+- **现代风 CSS**：视口断点只有五档（480 / 640 / 720 / 900 / 1024）外加 dock 的 768，窄屏档写 640 不写 639；同一底边只允许一层固定层；
+  状态色只走 token 不写字面色值；`:has()` 不能决定版式。→ [`docs/ui/modern.md`](docs/ui/modern.md) §2.1、§3、§6.5
+- **加 / 删现代风 `md-*` 类名要同步改 [`docs/ui/modern-classes.md`](docs/ui/modern-classes.md)**（`check-structure` 精确双向校验）。
+
+### 代码与文案
+
+- **一个文件只放一个组件**（含任何返回视图的函数），一族组件用文件夹模块。→ [`docs/engineering/code-quality.md`](docs/engineering/code-quality.md) C3
+- **不依赖浏览器的逻辑放 `ham-web-core` 并带单元测试**，`crates/app` 只做 DOM 与视图。→ [`docs/engineering/architecture.md`](docs/engineering/architecture.md)「分层与依赖方向」
+- **文案必须走 `t("域.词条")`，字面量写在调用点**；新增词条 zh / en / es 三份齐全，再 `cargo make i18n-pack`。
+  页面渲染 `crates/core` 的中文原文（`kt_tracked` / `core_text_tracked`）要挂词典拉取。→ [`docs/data/i18n.md`](docs/data/i18n.md)
+- **标签关联与无障碍名要写全**：`Field` 的 `r#for` 与控件 `id` 配对；无可见标签的控件 / 图标按钮必填 `aria_label`。这些同时是 e2e 的定位契约。
+- **风格**：Rust 2024，`rustfmt.toml`（2 空格、行宽 100），clippy 的 `correctness/suspicious/style/complexity/perf` 是错误级。
+  注释写「为什么」不写「做了什么」；注释、文案、文档一律中文（专有名词与代码标识符除外）。
+
+### 文档
+
+- **一件事一个家**：每个事实只在一处写全，其它地方链接过去。新增 / 移动 / 删除文档先看 [`docs/README.md`](docs/README.md) 的「文档约定」。
+
+## 2. 提交前与改完怎么验
 
 ```bash
-cargo make check   # fmt + clippy + test + i18n + knowledge-i18n + explanations + e2e-check + check-ui + check-structure + readme-check + pixel-check + data-sync-check + data-staleness
-cargo make ci      # 上面 + release 前端构建（提交前用这个）
+cargo make check   # 提交前门禁（组成与「失败意味着什么」见 docs/engineering/code-quality.md §2）
+cargo make ci      # check + release 前端构建 + 体积预算（正式提交用这个）
 ```
 
-## 3. 改完界面后怎么验
+改了界面再验：
 
 ```bash
-cargo make i18n-pack   # 生成 public/data/i18n/{en,es}.json：该目录是生成物、不入库，
-                       # 新克隆或改了词条后漏跑它，en / es 界面会回退中文
+cargo make i18n-pack   # 生成 public/data/i18n/{en,es}.json（生成物不入库；漏跑 en / es 界面会回退中文）
 cd crates/app && trunk serve --dist ../../target/dev-dist --port 3030 --no-autoreload
 cd e2e && E2E_BASE_URL=http://127.0.0.1:3030 npx playwright test tests/<相关 spec>.spec.ts
 ```
 
-- 改了 `role` / `aria-*`：按「断言里出现过这些属性」全仓搜 spec，**不要按页面名找**
-  （smith 的用例住在 `waveform_lab.spec.ts` 里）。
-- 手机宽度（320 / 390px）的整页横向滚动由 `mobile_overflow.spec.ts` 守（全部路由 × 三语）。
-  改「标签 + 控件」这类横向排版（尤其带 `shrink-0` / 网格子项 / 长文案下拉）时跑它 ——
-  桌面宽度下看不出来。
-- 看到「页面空白 / 整页挂载失败 / 英文界面回退中文」这类红，**先怀疑 dev 产物缺资产**：
-  最常见的是漏跑 `cargo make i18n-pack`（`public/data/i18n/` 已不入库）；
-  `curl -s http://127.0.0.1:3030/data/i18n/en.json | head -c 1` 返回 `<` 则说明 `public/`
-  没被拷进产物（`trunk serve` 的拷贝没发生 / 产物被覆盖），重来一次即可。
-  `dist/data/knowledge-i18n/{lang}.json` 同理：它由 postbuild 把
-  `data/knowledge-i18n/{lang}/*.json` 合并而成，而 `trunk serve` 不跑 postbuild ——
-  缺失时 `knowledge_i18n.spec.ts`、`i18n_layout.spec.ts` 与 `mobile_overflow.spec.ts` 会红，
-  别急着怀疑代码。
-- dev 构建没有 `wasm-opt`，CPU 密集用例（如 `nec.spec.ts:305` 的 Yagi 优化）并行时容易
-  超时 —— `--workers=1` 复跑通过就不是回归。整批回归用 `cargo make e2e`（release 口径）。
-
-## 4. 写代码的风格
-
-- Rust 2024，`rustfmt.toml`（2 空格、行宽 100），clippy 的
-  `correctness/suspicious/style/complexity/perf` 是**错误级**（`-D warnings`）。
-- 注释写「为什么」，不写「做了什么」；只在别人会问「为什么这么写」的地方加注释。
-- 注释、文案、文档一律中文（除专有名词与代码标识符）。
+- 改了 `role` / `aria-*`：按「断言里出现过这些属性」**全仓搜 spec，不要按页面名找**。
+- 改了横向排版（标签 + 控件、`shrink-0`、网格子项、长文案下拉）：跑 `mobile_overflow.spec.ts` 与 `i18n_layout.spec.ts`，
+  **像素风与现代风（`E2E_UI_STYLE=modern`）各一档** —— 桌面宽度下看不出来，两档也不能互相代替。
+- 红了先分清是不是环境问题（dev 产物缺 `public/` 资产、缺 `postbuild` 才生成的知识库词典、dev 构建没有 `wasm-opt` 导致 CPU 密集用例超时）：
+  → [`docs/engineering/testing.md`](docs/engineering/testing.md)「已知的失败与本地排障」。整批回归用 `cargo make e2e`（release 口径）。
+- 写 / 改 e2e 用例的约定（空洞断言、`toBeHidden` 与卸载、检测器要配自测、变异验证）→ 同文档「写用例的约定」。

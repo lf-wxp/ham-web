@@ -89,7 +89,7 @@ async function seedStation(page: Page) {
   }, JSON.stringify({ next_id: 2, profiles: [{ id: 1, callsign: "BG4ABC" }], active_id: 1 }));
 }
 
-async function seedContest(page: Page, contest: string, rows: ContestSeed[]) {
+async function seedContest(page: Page, contest: string, rows: ContestSeed[], start = "2026-10-31 00:00") {
   const entries = rows.map((r, i) => ({
     id: i + 1,
     date: r.date ?? "2026-10-31",
@@ -115,7 +115,7 @@ async function seedContest(page: Page, contest: string, rows: ContestSeed[]) {
       JSON.stringify({ entries }),
       JSON.stringify({
         contest_id: contest,
-        start: "2026-10-31 00:00",
+        start,
         my_exch: "24",
         freq: "14.025",
         mode: "CW",
@@ -128,6 +128,17 @@ async function seedContest(page: Page, contest: string, rows: ContestSeed[]) {
       }),
     ],
   );
+}
+
+/**
+ * UTC 的 `YYYY-MM-DD HH:MM`（场次时间戳的口径）。
+ *
+ * 配速的「已用时间」是「此刻 − 场次开始」，写死日期会随时间腐烂：日期一落到过去，
+ * 「已用 0 分钟」那套期望值（领先 N 条 / 剩余时间需要 X 条每小时）就全翻。
+ */
+function utcStamp(at: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${at.getUTCFullYear()}-${pad(at.getUTCMonth() + 1)}-${pad(at.getUTCDate())} ${pad(at.getUTCHours())}:${pad(at.getUTCMinutes())}`;
 }
 
 const ANALYSIS_LOG: ContestSeed[] = [
@@ -492,10 +503,21 @@ test("竞赛录入：不是 SCP 的文件被拒并说明原因，不会改动已
 });
 
 test("竞赛录入：赛前目标与配速按线性进度显示", async ({ page }) => {
-  await seedContest(page, "CQ-WW-CW", [
-    { time: "00:10", call: "W1AW", freq: "14.020", zone: "5" },
-    { time: "00:20", call: "JA1ABC", freq: "14.021", zone: "25" },
-  ]);
+  // 场次「还没开场」（开始时间在一小时后）却已录了两条：已用时间按 0 计，
+  // 于是「应完成 0、已完成 2」→ 领先 2 条。通联时间必须落在场次窗口内（`>= 开始时间`），
+  // 所以跟着开始时间一起往后挪；都写死日期的话，日期一过这套期望值就不成立了。
+  const startAt = Date.now() + 60 * 60_000;
+  const at = (minutes: number) => utcStamp(new Date(startAt + minutes * 60_000));
+  const row = (minutes: number, call: string, freq: string, zone: string): ContestSeed => {
+    const stamp = at(minutes);
+    return { date: stamp.slice(0, 10), time: stamp.slice(11), call, freq, zone };
+  };
+  await seedContest(
+    page,
+    "CQ-WW-CW",
+    [row(10, "W1AW", "14.020", "5"), row(20, "JA1ABC", "14.021", "25")],
+    utcStamp(new Date(startAt)),
+  );
   await page.goto("/contest-log");
 
   const pace = page

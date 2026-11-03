@@ -17,6 +17,7 @@
 use leptos::html;
 use leptos::prelude::*;
 use leptos_router::hooks::use_location;
+use send_wrapper::SendWrapper;
 use wasm_bindgen::JsCast;
 
 use crate::util::{document, window};
@@ -41,7 +42,14 @@ pub fn ScrollBar() -> impl IntoView {
   let travel = StoredValue::new(1.0);
 
   // 量一次导航高度并写到 `top`：导航在断点间会换高度（桌面两行 / 手机一行）。
+  //
+  // 下面所有 `measure_nav` / `sync` 都可能在组件卸载之后才被执行（rAF、`set_timeout`、
+  // 尚未摘除的窗口监听）：现代风会把整条滚动条卸掉，这时 `NodeRef` / `StoredValue`
+  // 已经随 Owner 释放，直接读会 panic，所以入口先判一次释放。
   let measure_nav = move || {
+    if host.is_disposed() {
+      return;
+    }
     let h = document()
       .query_selector("[data-nav]")
       .ok()
@@ -59,6 +67,9 @@ pub fn ScrollBar() -> impl IntoView {
 
   // 按当前 `scrollY` 摆 thumb；页面不够长就把整条隐藏。
   let sync = move || {
+    if host.is_disposed() || thumb.is_disposed() {
+      return;
+    }
     let (Some(host_el), Some(thumb_el)) = (host.get_untracked(), thumb.get_untracked()) else {
       return;
     };
@@ -92,14 +103,22 @@ pub fn ScrollBar() -> impl IntoView {
       .set_property("transform", &format!("translateY({}px)", progress * t));
   };
 
-  window_event_listener(leptos::ev::scroll, move |_| {
+  // 句柄必须在卸载时摘除：`window_event_listener` 返回的句柄 drop 时**不会**自动移除监听，
+  // 丢掉它等于监听器永久留在 `window` 上（切到现代风后每次滚动都会唤醒一个死组件）。
+  let scroll_handle = window_event_listener(leptos::ev::scroll, move |_| {
     request_animation_frame(sync);
   });
-  window_event_listener(leptos::ev::resize, move |_| {
+  let resize_handle = window_event_listener(leptos::ev::resize, move |_| {
     request_animation_frame(move || {
       measure_nav();
       sync();
     });
+  });
+  let handles = SendWrapper::new((scroll_handle, resize_handle));
+  on_cleanup(move || {
+    let (scroll_handle, resize_handle) = handles.take();
+    scroll_handle.remove();
+    resize_handle.remove();
   });
 
   // 首次挂载：等字体 / 图标落位后再量（一次是挂载当帧，一次是稍后）。

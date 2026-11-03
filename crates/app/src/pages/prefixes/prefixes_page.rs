@@ -21,11 +21,11 @@ pub fn PrefixesPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card p-4 text-sm text-muted-foreground">
+        <section class=crate::kit::card_class_with("p-4 text-sm text-muted-foreground")>
           {move || t("radio.callsign-structure-lives-on")}
           <a
             href="/callsign"
-            class="ml-1 text-primary underline underline-offset-2"
+            class="ml-1 text-primary"
           >
             {move || t("tools.callsign-knowledge")}
           </a>
@@ -38,8 +38,8 @@ pub fn PrefixesPage() -> impl IntoView {
           .map(|g| {
             let region = g.region;
             view! {
-              <section class="pxl-card border bg-card">
-                <h2 class="pxl-section-title">
+              <section class=crate::kit::card_class()>
+                <h2 class=crate::kit::card_title_class()>
                   {move || data::kt_tracked(region)}
                   <span class="ml-2 text-xs font-normal text-muted-foreground">
                     {move || tf("log.entry", &[&g.prefixes.len().to_string()])}

@@ -95,11 +95,11 @@ pub(super) fn DbmConverter() -> impl IntoView {
 
       <div>
         <div class="mb-1.5 text-xs text-muted-foreground">{move || t("tools.dbm-mw-reference")}</div>
-        <Table class="text-sm">
+        <Table density=crate::ui::TableDensity::Compact>
           <TableHead>
             <TableRow>
-              <TableHeader class="border px-3 py-2">{move || t("tools.dbm")}</TableHeader>
-              <TableHeader class="border px-3 py-2">{move || t("tools.power-mw-w")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.dbm")}</TableHeader>
+              <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.power-mw-w")}</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -108,8 +108,8 @@ pub(super) fn DbmConverter() -> impl IntoView {
               .map(|&d| {
                 view! {
                   <TableRow>
-                    <TableCell class="border px-3 py-2 tabular-nums">{format!("{d:.0}")}</TableCell>
-                    <TableCell class="border px-3 py-2 tabular-nums">{format_mw(dbm_to_mw(d))}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("tabular-nums")>{format!("{d:.0}")}</TableCell>
+                    <TableCell class=crate::kit::table_cell_class("tabular-nums")>{format_mw(dbm_to_mw(d))}</TableCell>
                   </TableRow>
                 }
               })

@@ -19,9 +19,28 @@ pub(super) fn PracticeBottomBar(
   #[prop(into)] len: Signal<usize>,
   #[prop(into)] at_start: Signal<bool>,
   #[prop(into)] at_end: Signal<bool>,
+  /// 当前题已作答：现代风据此浮出「下一题」。
+  #[prop(into)]
+  current_answered: Signal<bool>,
   on_prev: Callback<()>,
   on_next: Callback<()>,
 ) -> impl IntoView {
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <crate::kit_modern::ModernPracticeBar
+        bank=bank
+        order=order
+        answered=answered
+        len=len
+        at_start=at_start
+        at_end=at_end
+        on_prev=on_prev
+        on_next=on_next
+        current_answered=current_answered
+      />
+    }
+    .into_any();
+  }
   view! {
     <BottomBar
       stats=move || {
@@ -83,4 +102,5 @@ pub(super) fn PracticeBottomBar(
       }
     />
   }
+  .into_any()
 }

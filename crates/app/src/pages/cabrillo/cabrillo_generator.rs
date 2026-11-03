@@ -3,8 +3,8 @@ use leptos::prelude::*;
 
 use crate::i18n::{t, tp};
 use crate::pages::log::{LogEntry, use_log_store};
-use crate::ui::{Button, Input, NativeSelect, SelectOption, Size, Variant};
-use crate::util::download_text;
+use crate::ui::{Button, Field, Input, SelectOption, SimpleSelect, Size, Variant};
+use crate::util::{download_text, unique_id};
 
 /// 从通联日志按竞赛规则生成可提交的 Cabrillo 文件。
 #[component]
@@ -16,6 +16,12 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
   let gridsquare = RwSignal::new(station.gridsquare.clone());
   let contest_id = RwSignal::new(CONTESTS[0].id.to_owned());
   let generated = RwSignal::new(String::new());
+
+  // 三个输入框各自要有 id 才能与 `Field` 的标签配对：没有关联的标签是 axe 的
+  // `label (critical)`，鼠标点标签也不会聚焦到输入框。
+  let callsign_id = unique_id("cabrillo-callsign");
+  let operator_id = unique_id("cabrillo-operator");
+  let grid_id = unique_id("cabrillo-grid");
 
   let tagged = Memo::new(move |_| {
     let id = contest_id.get();
@@ -58,21 +64,20 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
     .collect();
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("log.contest-log-generator")}</h2>
-      <div class="space-y-3 p-4">
-        <div class="grid gap-3 sm:grid-cols-2">
-          <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">{move || t("log.station-callsign")}</span>
-            <Input
+      <section class=crate::kit::card_class()>
+        <h2 class=crate::kit::card_title_class()>{move || t("log.contest-log-generator")}</h2>
+        <div class="space-y-3 p-4">
+          <div class="grid gap-3 sm:grid-cols-2">
+            <Field label=Signal::derive(move || t("log.station-callsign")) r#for=callsign_id.clone()>
+  <Input
+              id=callsign_id
               value=callsign
               on_change=Callback::new(move |v: String| callsign.set(v.to_uppercase()))
               class="uppercase"
             />
-          </label>
-          <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">{move || t("contest.contest")}</span>
-            <NativeSelect
+  </Field>
+            <Field label=Signal::derive(move || t("contest.contest"))>
+  <SimpleSelect
               value=contest_id
               on_change=Callback::new(move |v: String| {
                 contest_id.set(v);
@@ -81,64 +86,67 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
               options=contest_options
               aria_label=Signal::derive(move || t("contest.contest"))
             />
-          </label>
-          <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">{move || t("log.operator")}</span>
-            <Input value=operator on_change=Callback::new(move |v: String| operator.set(v)) />
-          </label>
-          <label class="flex flex-col gap-1.5 text-sm">
-            <span class="text-xs text-muted-foreground">{move || t("log.station-grid")}</span>
-            <Input
+  </Field>
+            <Field label=Signal::derive(move || t("log.operator")) r#for=operator_id.clone()>
+  <Input
+              id=operator_id
+              value=operator
+              on_change=Callback::new(move |v: String| operator.set(v))
+            />
+  </Field>
+            <Field label=Signal::derive(move || t("log.station-grid")) r#for=grid_id.clone()>
+  <Input
+              id=grid_id
               value=gridsquare
               on_change=Callback::new(move |v: String| gridsquare.set(v.to_uppercase()))
               class="uppercase"
             />
-          </label>
-        </div>
+  </Field>
+          </div>
 
-        <div class="flex flex-wrap items-center gap-2">
-          <Button
-            variant=Variant::Default
-            size=Size::Default
-            on_click=Callback::new(move |_| generate())
-          >
-            {move || t("log.generate-cabrillo")}
-          </Button>
-          <Button
-            variant=Variant::Outline
-            size=Size::Default
-            disabled=Signal::derive(move || generated.with(String::is_empty))
-            on_click=Callback::new(move |_| download())
-          >
-            {move || t("log.download-cbr")}
-          </Button>
-          <span class="text-xs text-muted-foreground">
-            { move || { let n = tagged.with(Vec::len); tp("log.qsos-tagged-with-this", n, &[&n.to_string()]) } }
-          </span>
-        </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <Button
+              variant=Variant::Default
+              size=Size::Default
+              on_click=Callback::new(move |_| generate())
+            >
+              {move || t("log.generate-cabrillo")}
+            </Button>
+            <Button
+              variant=Variant::Outline
+              size=Size::Default
+              disabled=Signal::derive(move || generated.with(String::is_empty))
+              on_click=Callback::new(move |_| download())
+            >
+              {move || t("log.download-cbr")}
+            </Button>
+            <span class="text-xs text-muted-foreground">
+              { move || { let n = tagged.with(Vec::len); tp("log.qsos-tagged-with-this", n, &[&n.to_string()]) } }
+            </span>
+          </div>
 
-        {move || {
-          let text = generated.get();
-          if text.is_empty() {
-            view! {
-              <p class="text-xs text-muted-foreground">
-                {move || t("log.reads-records-in-the")}
-                " "
-                <a href="/contest-log" class="text-foreground underline underline-offset-4">{move || t("shell.contest-log")}</a>
-                {move || t("log.automatic-serials-live-dupe")}
-              </p>
+          {move || {
+            let text = generated.get();
+            if text.is_empty() {
+              view! {
+                <p class="text-xs text-muted-foreground">
+                  {move || t("log.reads-records-in-the")}
+                  " "
+                  <a href="/contest-log" class="text-foreground">{move || t("shell.contest-log")}</a>
+                  {move || t("log.automatic-serials-live-dupe")}
+                </p>
+              }
+              .into_any()
+            } else {
+              view! {
+                <pre class="max-h-64 overflow-auto border bg-inset p-3 font-mono text-xs leading-5">
+                  {text}
+                </pre>
+              }
+              .into_any()
             }
-            .into_any()
-          } else {
-            view! {
-              <pre class="max-h-64 overflow-auto border bg-inset p-3 font-mono text-xs leading-5">
-                {text}
-              </pre>
-            }
-            .into_any()
-          }
-        }}
-      </div>
-    </section>
-  }
+          }}
+        </div>
+      </section>
+    }
 }

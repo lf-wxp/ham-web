@@ -2,7 +2,7 @@
 //!
 //! 色值只在这一处出现 —— 数据层（`crates/core/src/categories.rs`）只给档位，
 //! 因为它写死 `#rrggbb` 会让 11 套配色方案全部失效，而且「任意底色 + 白字」的对比度
-//! 无法审计（见 `docs/ui-components.md` §2 规则 6）。
+//! 无法审计（见 `docs/ui/pixel.md` §2 规则 6）。
 //!
 //! 用法约束：分类色**只做图形锚点**（8px 圆点、2px 描边、浅底），不铺整块文字底 ——
 //! 分类名始终在标记旁边，颜色只是视觉索引，所以第 9 / 10 档允许循环到第 1 / 2 档的色相，
@@ -32,7 +32,7 @@ pub const fn dot(tone: CategoryTone) -> &'static str {
 /// 徽章配色：**2px 同色描边 + 极浅同色底**，文字一律 `text-foreground`。
 ///
 /// 不写「实色底 + 白字」：白字落在任意色上对比度不可控（`#0891b2` 只有 3.2:1），
-/// 这条与 `docs/ui-components.md` §2 规则 7「实色填充上不要放白字」一致。
+/// 这条与 `docs/ui/pixel.md` §2 规则 7「实色填充上不要放白字」一致。
 /// 调用点补 `border-2 px-2 py-0.5 text-xs text-foreground`。
 pub const fn chip(tone: CategoryTone) -> &'static str {
   match tone {

@@ -108,7 +108,7 @@
   "exam.practise-similar": "Practise similar",
   "exam.practise-similar-link": "Practise similar →",
   "exam.name": "Name",
-  "exam.day-after": "Day after",
+  "exam.day-after": "Day after tomorrow",
   "exam.review-table": "Review table →",
   "exam.correct": "Correct!",
   "exam.wrong": "Wrong.",
@@ -126,6 +126,7 @@
   "exam.misread-the-question": "Misread the question",
   "exam.submitted": "Submitted",
   "exam.answered": "Answered",
+  "exam.bar-label": "Exam controls",
   "exam.saved": "Saved",
   "exam.due": "Due",
   "exam.bookmarked": "Bookmarked",
@@ -412,5 +413,9 @@
   "exam.multiple-in-parens": "(multiple)",
   "exam.delete-group-confirm": "Delete the group “{}”?",
   "exam.delete-group-hint": "Bookmarks in the group are kept; only the group goes away.",
-  "exam.group-deleted": "Group deleted"
+  "exam.group-deleted": "Group deleted",
+  "exam.keys-pick": "to pick",
+  "exam.keys-turn": "to turn",
+  "exam.signal-report": "signal report",
+  "exam.unknown-error-detail": "Unknown error: {}"
 }

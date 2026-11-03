@@ -45,16 +45,16 @@ pub(super) fn UtcClock() -> impl IntoView {
   view! {
     <div class="grid gap-3">
       <div class="flex items-center gap-3 border bg-inset px-4 py-3">
-        <div class="pxl-stat text-3xl">{move || utc.get()}</div>
+        <div class=if crate::kit::is_modern_at_mount() { "md-stat-text text-3xl" } else { "pxl-stat text-3xl" }>{move || utc.get()}</div>
         <div class="text-sm text-muted-foreground">"UTC / Zulu"</div>
       </div>
 
-      <Table class="min-w-[480px] text-sm" wrapper_class="border">
+      <Table class="min-w-[480px]" wrapper_class="border" density=crate::ui::TableDensity::Compact>
         <TableHead>
           <TableRow>
-            <TableHeader class="border px-3 py-2">{move || t("tools.time-zone")}</TableHeader>
-            <TableHeader class="border px-3 py-2">{move || t("tools.offset")}</TableHeader>
-            <TableHeader class="border px-3 py-2">{move || t("radio.current-time")}</TableHeader>
+            <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.time-zone")}</TableHeader>
+            <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.offset")}</TableHeader>
+            <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.current-time")}</TableHeader>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -63,14 +63,14 @@ pub(super) fn UtcClock() -> impl IntoView {
             .map(|&(name, offset, note)| {
               view! {
                 <TableRow>
-                  <TableCell class="border px-3 py-2">
+                  <TableCell class=crate::kit::table_cell_class("")>
                     <div>{move || t(name)}</div>
                     <div class="text-xs text-muted-foreground">{move || t(note)}</div>
                   </TableCell>
-                  <TableCell class="border px-3 py-2 font-mono tabular-nums text-muted-foreground">
+                  <TableCell class=crate::kit::table_cell_class("font-mono tabular-nums text-muted-foreground")>
                     {format!("UTC{offset:+.0}")}
                   </TableCell>
-                  <TableCell class="border px-3 py-2 font-mono tabular-nums">{move || zoned(now_ms.get(), offset)}</TableCell>
+                  <TableCell class=crate::kit::table_cell_class("font-mono tabular-nums")>{move || zoned(now_ms.get(), offset)}</TableCell>
                 </TableRow>
               }
             })

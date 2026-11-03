@@ -144,7 +144,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
     answer.set(String::new());
     feedback.set(None);
     read_highlight.set(None);
-    if let Some(el) = input_ref.get() {
+    if let Some(el) = input_ref.get_untracked() {
       let _ = el.focus();
     }
   };
@@ -219,7 +219,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
       }));
       // 清空输入，避免重复回车重复计错
       answer.set(String::new());
-      if let Some(el) = input_ref.get() {
+      if let Some(el) = input_ref.get_untracked() {
         let _ = el.focus();
       }
     }
@@ -272,8 +272,8 @@ pub(super) fn MorseTrainer() -> impl IntoView {
   });
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>
         {move || t("morse.decoding-practice")}
         <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.space-to-replay-next")}</span>
       </h2>
@@ -491,7 +491,7 @@ pub(super) fn MorseTrainer() -> impl IntoView {
                         <button
                           type="button"
                           on:click=move |_| submit_guess(text.clone())
-                          class="inline-flex min-h-10 items-center justify-center pxl-card border bg-card px-3 py-2 font-mono text-sm uppercase tracking-wide transition duration-(--motion-normal) ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground"
+                          class=crate::kit::card_class_with("inline-flex min-h-10 items-center justify-center px-3 py-2 font-mono text-sm uppercase tracking-wide transition duration-(--motion-normal) ease-out hover:border-primary/40 hover:bg-accent hover:text-accent-foreground")
                         >
                           {text.clone()}
                         </button>

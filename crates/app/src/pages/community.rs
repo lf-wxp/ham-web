@@ -25,7 +25,7 @@ pub fn CommunityPage() -> impl IntoView {
         </p>
       </SectionCard>
 
-      <section class="pxl-card border bg-card">
+      <section class=crate::kit::card_class()>
         <div class="border-b px-4 py-3">
           <h2 class=card_title_class("")>{move || t("knowledge.community-index")}</h2>
           <p class="mt-0.5 text-xs text-muted-foreground">

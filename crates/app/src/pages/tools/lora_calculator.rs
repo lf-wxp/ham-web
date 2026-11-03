@@ -12,7 +12,7 @@ use leptos::prelude::*;
 
 use super::{RESULT, fmt_num};
 use crate::i18n::{t, tf};
-use crate::ui::{Field, NativeSelect, NumberField, SelectOption};
+use crate::ui::{Field, NumberField, SelectOption, SimpleSelect};
 use crate::util::unique_id;
 
 /// LoRa 链路计算器。
@@ -174,28 +174,28 @@ pub(super) fn LoraCalculator() -> impl IntoView {
     <div class="space-y-4">
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0">
         <Field label=Signal::derive(move || t("tools.lora-sf")) r#for=sf_id.clone()>
-          <NativeSelect id=sf_id value=sf on_change=Callback::new(move |v: String| sf.set(v)) options=sf_options aria_label=Signal::derive(move || t("tools.lora-sf")) />
+          <SimpleSelect id=sf_id value=sf on_change=Callback::new(move |v: String| sf.set(v)) options=sf_options aria_label=Signal::derive(move || t("tools.lora-sf")) />
         </Field>
         <Field label=Signal::derive(move || t("tools.lora-bw-khz")) r#for=bw_id.clone()>
-          <NativeSelect id=bw_id value=bw on_change=Callback::new(move |v: String| bw.set(v)) options=bw_options aria_label=Signal::derive(move || t("tools.lora-bw-khz")) />
+          <SimpleSelect id=bw_id value=bw on_change=Callback::new(move |v: String| bw.set(v)) options=bw_options aria_label=Signal::derive(move || t("tools.lora-bw-khz")) />
         </Field>
         <Field label=Signal::derive(move || t("tools.lora-cr")) r#for=cr_id.clone()>
-          <NativeSelect id=cr_id value=cr on_change=Callback::new(move |v: String| cr.set(v)) options=cr_options aria_label=Signal::derive(move || t("tools.lora-cr")) />
+          <SimpleSelect id=cr_id value=cr on_change=Callback::new(move |v: String| cr.set(v)) options=cr_options aria_label=Signal::derive(move || t("tools.lora-cr")) />
         </Field>
-        <Field label=Signal::derive(move || t("tools.lora-payload-bytes")) r#for=payload_id.clone()>
+        <Field label=Signal::derive(move || t("tools.lora-payload-bytes")) r#for=payload_id.clone() invalid=payload_invalid>
           <NumberField id=payload_id value=Signal::derive(move || payload.get().map_or_else(String::new, |v| v.to_string())) on_change=Callback::new(move |v: String| payload.set(v.trim().parse::<f64>().ok())) controls=false invalid=payload_invalid />
         </Field>
-        <Field label=Signal::derive(move || t("tools.lora-preamble")) r#for=preamble_id.clone()>
+        <Field label=Signal::derive(move || t("tools.lora-preamble")) r#for=preamble_id.clone() invalid=preamble_invalid>
           <NumberField id=preamble_id value=Signal::derive(move || preamble.get().map_or_else(String::new, |v| v.to_string())) on_change=Callback::new(move |v: String| preamble.set(v.trim().parse::<f64>().ok())) controls=false invalid=preamble_invalid />
         </Field>
         <Field label=Signal::derive(move || t("tools.lora-header")) r#for=header_id.clone()>
-          <NativeSelect id=header_id value=header on_change=Callback::new(move |v: String| header.set(v)) options=header_options aria_label=Signal::derive(move || t("tools.lora-header")) />
+          <SimpleSelect id=header_id value=header on_change=Callback::new(move |v: String| header.set(v)) options=header_options aria_label=Signal::derive(move || t("tools.lora-header")) />
         </Field>
         <Field label=Signal::derive(move || t("tools.lora-crc")) r#for=crc_id.clone()>
-          <NativeSelect id=crc_id value=crc on_change=Callback::new(move |v: String| crc.set(v)) options=crc_options aria_label=Signal::derive(move || t("tools.lora-crc")) />
+          <SimpleSelect id=crc_id value=crc on_change=Callback::new(move |v: String| crc.set(v)) options=crc_options aria_label=Signal::derive(move || t("tools.lora-crc")) />
         </Field>
         <Field label=Signal::derive(move || t("tools.lora-ldro")) r#for=ldro_id.clone()>
-          <NativeSelect id=ldro_id value=ldro on_change=Callback::new(move |v: String| ldro.set(v)) options=ldro_options aria_label=Signal::derive(move || t("tools.lora-ldro")) />
+          <SimpleSelect id=ldro_id value=ldro on_change=Callback::new(move |v: String| ldro.set(v)) options=ldro_options aria_label=Signal::derive(move || t("tools.lora-ldro")) />
         </Field>
       </div>
 
@@ -218,22 +218,22 @@ pub(super) fn LoraCalculator() -> impl IntoView {
       </div>
 
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0">
-        <Field label=Signal::derive(move || t("tools.noise-figure-nf-db")) r#for=nf_id.clone()>
+        <Field label=Signal::derive(move || t("tools.noise-figure-nf-db")) r#for=nf_id.clone() invalid=nf_invalid>
           <NumberField id=nf_id value=Signal::derive(move || nf.get().map_or_else(String::new, |v| v.to_string())) on_change=Callback::new(move |v: String| nf.set(v.trim().parse::<f64>().ok())) controls=false invalid=nf_invalid />
         </Field>
-        <Field label=Signal::derive(move || t("log.frequency-mhz")) r#for=freq_id.clone()>
+        <Field label=Signal::derive(move || t("log.frequency-mhz")) r#for=freq_id.clone() invalid=freq_invalid>
           <NumberField id=freq_id value=Signal::derive(move || freq.get().map_or_else(String::new, |v| v.to_string())) on_change=Callback::new(move |v: String| freq.set(v.trim().parse::<f64>().ok())) controls=false invalid=freq_invalid />
         </Field>
-        <Field label=Signal::derive(move || t("tools.lora-tx-dbm")) r#for=tx_id.clone()>
+        <Field label=Signal::derive(move || t("tools.lora-tx-dbm")) r#for=tx_id.clone() invalid=tx_invalid>
           <NumberField id=tx_id value=Signal::derive(move || tx_dbm.get().map_or_else(String::new, |v| v.to_string())) on_change=Callback::new(move |v: String| tx_dbm.set(v.trim().parse::<f64>().ok())) controls=false invalid=tx_invalid />
         </Field>
-        <Field label=Signal::derive(move || t("tools.transmit-antenna-gain-dbi")) r#for=tx_gain_id.clone()>
+        <Field label=Signal::derive(move || t("tools.transmit-antenna-gain-dbi")) r#for=tx_gain_id.clone() invalid=tx_gain_invalid>
           <NumberField id=tx_gain_id value=Signal::derive(move || tx_gain.get().map_or_else(String::new, |v| v.to_string())) on_change=Callback::new(move |v: String| tx_gain.set(v.trim().parse::<f64>().ok())) controls=false invalid=tx_gain_invalid />
         </Field>
-        <Field label=Signal::derive(move || t("tools.receive-antenna-gain-dbi")) r#for=rx_gain_id.clone()>
+        <Field label=Signal::derive(move || t("tools.receive-antenna-gain-dbi")) r#for=rx_gain_id.clone() invalid=rx_gain_invalid>
           <NumberField id=rx_gain_id value=Signal::derive(move || rx_gain.get().map_or_else(String::new, |v| v.to_string())) on_change=Callback::new(move |v: String| rx_gain.set(v.trim().parse::<f64>().ok())) controls=false invalid=rx_gain_invalid />
         </Field>
-        <Field label=Signal::derive(move || t("tools.lora-extra-loss-db")) r#for=extra_id.clone()>
+        <Field label=Signal::derive(move || t("tools.lora-extra-loss-db")) r#for=extra_id.clone() invalid=extra_invalid>
           <NumberField id=extra_id value=Signal::derive(move || extra.get().map_or_else(String::new, |v| v.to_string())) on_change=Callback::new(move |v: String| extra.set(v.trim().parse::<f64>().ok())) controls=false invalid=extra_invalid />
         </Field>
         <Field label=Signal::derive(move || t("tools.distance-km")) r#for=dist_id.clone()>

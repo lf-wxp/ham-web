@@ -33,7 +33,7 @@ pub(super) fn AlertCard() -> impl IntoView {
   }
 
   view! {
-    <a href="/solar" class="pxl-card border bg-card p-4 transition-colors hover:bg-accent/40">
+    <a href="/solar" class=crate::kit::card_class_with("p-4 transition-colors hover:bg-accent/40")>
       <div class="text-sm">{move || t("learning.space-weather-alerts")}</div>
       <div class="mt-2">
         {move || match alert.get() {

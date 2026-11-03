@@ -31,7 +31,7 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>, apply_open: RwSignal<bool>) ->
   let confirmed = RwSignal::new(false);
 
   view! {
-    <section id="awards" class="scroll-mt-24 pxl-card border bg-card">
+    <section id="awards" class=crate::kit::card_class_with("scroll-mt-24")>
       <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
         <h3 class="mr-auto text-sm">{move || t("log.award-progress")}</h3>
         <RadioGroup
@@ -42,11 +42,11 @@ pub(super) fn AwardsPanel(entries: Vec<LogEntry>, apply_open: RwSignal<bool>) ->
           aria_label=Signal::derive(move || t("log.award-progress"))
           class="flex items-center gap-4"
         >
-          <label class="flex cursor-pointer items-center gap-2 text-xs">
+          <label class=format!("{} text-xs", crate::kit::check_row_class())>
             <RadioGroupItem value="worked" />
             {move || t("log.worked")}
           </label>
-          <label class="flex cursor-pointer items-center gap-2 text-xs">
+          <label class=format!("{} text-xs", crate::kit::check_row_class())>
             <RadioGroupItem value="confirmed" />
             {move || t("log.confirmed-qsl")}
           </label>

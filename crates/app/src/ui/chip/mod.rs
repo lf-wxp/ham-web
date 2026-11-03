@@ -8,7 +8,7 @@
 //!
 //! 两者都是「互斥选择」，都输出 `role="radiogroup"` / `role="radio"` + `aria-checked`，
 //! 读屏与键盘的行为一致（`Chip` 支持方向键移动选择，Tab 也仍会逐项经过 —— 没做
-//! roving tabindex，见 `docs/ui-components.md` §6）。单个开关（筛选器上的「只看需要的」）
+//! roving tabindex，见 `docs/ui/pixel.md` §6）。单个开关（筛选器上的「只看需要的」）
 //! 用 [`ChipToggle`]，它表达的是独立的开 / 关，因此用 `aria-pressed`。
 //!
 //! 样式只有一份：迁移前 `nec/*`、`waveform_lab/*`、`smith`、`qsl_designer`、`dx_spots`

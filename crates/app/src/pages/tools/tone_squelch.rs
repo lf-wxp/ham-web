@@ -37,7 +37,7 @@ pub(super) fn ToneSquelch() -> impl IntoView {
             .map(|(name, _, _, _)| {
               let band_name = *name;
               view! {
-                <label class="flex cursor-pointer items-center gap-2 text-sm">
+                <label class=format!("{} text-sm", crate::kit::check_row_class())>
                   <RadioGroupItem value=band_name.to_string() />
                   {band_name}
                 </label>
@@ -64,11 +64,11 @@ pub(super) fn ToneSquelch() -> impl IntoView {
           on_change=Callback::new(move |v: String| positive.set(v == "positive"))
           class="flex flex-wrap items-end gap-4 pb-2"
         >
-          <label class="flex cursor-pointer items-center gap-2 text-sm">
+          <label class=format!("{} text-sm", crate::kit::check_row_class())>
             <RadioGroupItem value="negative" />
             {move || t("tools.negative-offset")}
           </label>
-          <label class="flex cursor-pointer items-center gap-2 text-sm">
+          <label class=format!("{} text-sm", crate::kit::check_row_class())>
             <RadioGroupItem value="positive" />
             {move || t("tools.positive-offset")}
           </label>

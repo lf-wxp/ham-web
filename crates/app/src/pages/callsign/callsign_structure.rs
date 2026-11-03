@@ -5,7 +5,7 @@ use leptos::prelude::*;
 
 use crate::data;
 use crate::i18n::{t, tf};
-use crate::ui::Input;
+use crate::ui::{Field, Input};
 
 /// 示例呼号 `BG4XYZ` 的分段：`(字符, 文案 key, 配色)`。
 const EXAMPLE_PARTS: &[(&str, &str, &str)] = &[
@@ -32,8 +32,8 @@ pub fn CallsignStructure() -> impl IntoView {
   let input = RwSignal::new("BG4XYZ".to_owned());
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("radio.callsign-breakdown")}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t("radio.callsign-breakdown")}</h2>
       <div class="space-y-5 p-4">
         <div>
           <p class="mb-2 text-xs text-muted-foreground">
@@ -54,16 +54,17 @@ pub fn CallsignStructure() -> impl IntoView {
           </div>
         </div>
 
-        <div>
-          <label class="mb-1.5 block text-xs text-muted-foreground">{move || t("radio.enter-a-callsign-to-analyze")}</label>
-          <Input
+        <div class="space-y-3">
+          <Field label=Signal::derive(move || t("radio.enter-a-callsign-to-analyze"))>
+            <Input
             value=input
             on_change=Callback::new(move |v: String| input.set(v))
             placeholder=Signal::derive(move || t("radio.e-g-bg4xyz-ja1abc"))
             aria_label=Signal::derive(move || t("radio.enter-a-callsign-to-analyze"))
             class="font-mono uppercase"
           />
-          <div class="mt-3 space-y-1.5 bg-inset p-3">
+          </Field>
+          <div class="space-y-1.5 bg-inset p-3">
             {move || {
               let p = parse_callsign(&input.get());
               let entity = p.entity.map(t).unwrap_or_else(|| t("radio.unrecognised"));

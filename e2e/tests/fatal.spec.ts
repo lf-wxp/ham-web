@@ -41,11 +41,31 @@ test("兜底页跟随保存的界面语言（wasm 未加载时不走词典）", 
   await expect(fatal.getByText("Error details")).toBeVisible();
 });
 
-test("兜底页在没有保存语言时回中文（与应用默认一致，不看浏览器语言）", async ({ browser }) => {
-  const ctx = await browser.newContext({ locale: "en-US" });
-  const page = await ctx.newPage();
+// 兜底页由 index.html 的内联样式渲染（wasm 已崩，用不到两套 Kit），所以风格派发要在那里
+// 按 `data-ui-style` 分支：漏了就是「现代风界面 + 像素墨框弹层」。
+test("现代风下兜底页也是现代样式", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("ui:uiStyle", "modern");
+    localStorage.setItem("theme", "dark");
+  });
   await page.route(/_bg\.wasm$/, (route) => route.abort());
   await page.goto("/");
-  await expect(page.getByRole("alertdialog", { name: "加载失败" })).toBeVisible();
-  await ctx.close();
+  const fatal = page.getByRole("alertdialog", { name: "加载失败" });
+  await expect(fatal).toBeVisible();
+  const panel = fatal.locator("section");
+  await expect(panel).toHaveCSS("border-radius", "14px");
+  await expect(panel).toHaveCSS("border-top-width", "1px");
+  await expect(panel).toHaveCSS("background-color", "rgb(11, 13, 19)");
+  await expect(fatal.getByRole("button", { name: "重新加载" })).toHaveCSS("border-radius", "999px");
+});
+
+// 浏览器语言设成英文：兜底页仍应回中文（与应用默认一致）。用 `test.use` 而不是手动
+// `newContext`：断言失败时手动创建的 context 不会被关闭，会泄漏到后面的用例。
+test.describe("浏览器语言为英文", () => {
+  test.use({ locale: "en-US" });
+  test("兜底页在没有保存语言时回中文（与应用默认一致，不看浏览器语言）", async ({ page }) => {
+    await page.route(/_bg\.wasm$/, (route) => route.abort());
+    await page.goto("/");
+    await expect(page.getByRole("alertdialog", { name: "加载失败" })).toBeVisible();
+  });
 });

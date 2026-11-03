@@ -4,7 +4,7 @@ use ham_web_core::radiogram::{Hx, Ics213, NtsRadiogram, Precedence};
 use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
-use crate::ui::{Button, Field, Input, NativeSelect, SelectOption, Size, Textarea, Variant};
+use crate::ui::{Button, Field, Input, SelectOption, SimpleSelect, Size, Textarea, Variant};
 use crate::util::copy_text;
 
 #[component]
@@ -190,7 +190,7 @@ pub fn RadiogramGenerator() -> impl IntoView {
   view! {
     <div class="space-y-4">
       <Field label=Signal::derive(move || t("tools.radiogram-format")) r#for="radiogram-format" class="sm:max-w-xs">
-        <NativeSelect
+        <SimpleSelect
           id="radiogram-format"
           value=format
           on_change=Callback::new(move |v: String| format.set(v))
@@ -245,7 +245,7 @@ pub fn RadiogramGenerator() -> impl IntoView {
                 <Input id="rg-number" value=number on_change=Callback::new(move |v: String| number.set(v)) />
               </Field>
               <Field label=Signal::derive(move || t("tools.radiogram-precedence")) r#for="rg-precedence">
-                <NativeSelect
+                <SimpleSelect
                   id="rg-precedence"
                   value=precedence
                   on_change=Callback::new(move |v: String| precedence.set(v))
@@ -254,7 +254,7 @@ pub fn RadiogramGenerator() -> impl IntoView {
                 />
               </Field>
               <Field label=Signal::derive(move || t("tools.radiogram-hx")) r#for="rg-hx">
-                <NativeSelect
+                <SimpleSelect
                   id="rg-hx"
                   value=hx
                   on_change=Callback::new(move |v: String| hx.set(v))

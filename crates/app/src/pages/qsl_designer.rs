@@ -19,7 +19,7 @@ use crate::i18n::t;
 use crate::pages::log::use_log_store;
 use crate::share_score::download;
 use crate::ui::{
-  Button, Field, Input, NativeSelect, RadioGroup, RadioGroupItem, SelectOption, Size, Variant,
+  Button, Field, Input, RadioGroup, RadioGroupItem, SelectOption, SimpleSelect, Size, Variant,
   card_title_class,
 };
 use crate::util::{
@@ -337,7 +337,7 @@ pub fn QslDesignerPage() -> impl IntoView {
         <PageContainer>
           <div class="grid gap-4 lg:grid-cols-2">
             // 表单
-            <section class="pxl-card border bg-card p-4">
+            <section class=crate::kit::card_pad_class()>
               <h2 class=card_title_class("mb-3")>{move || t("log.card-template")}</h2>
               <RadioGroup
                 value=Signal::derive(move || template.get().id().to_owned())
@@ -354,7 +354,7 @@ pub fn QslDesignerPage() -> impl IntoView {
                   .into_iter()
                   .map(|tpl| {
                     view! {
-                      <label class="flex cursor-pointer items-center gap-2 text-sm">
+                      <label class=format!("{} text-sm", crate::kit::check_row_class())>
                         <RadioGroupItem value=tpl.id().to_owned() />
                         {move || template_label(tpl)}
                       </label>
@@ -398,7 +398,7 @@ pub fn QslDesignerPage() -> impl IntoView {
                     <span class="text-xs text-muted-foreground">
                       {move || t("log.fill-qso-from-the")}
                     </span>
-                    <NativeSelect
+                    <SimpleSelect
                       value=Signal::derive(move || picked.get())
                       on_change=pick
                       options=options
@@ -438,7 +438,7 @@ pub fn QslDesignerPage() -> impl IntoView {
             </section>
 
             // 预览 + 导出 / 打印
-            <section class="pxl-card border bg-card p-4">
+            <section class=crate::kit::card_pad_class()>
               <h2 class=card_title_class("mb-3")>{move || t("log.preview")}</h2>
               <div class="overflow-hidden border bg-inset p-2">
                 <img
@@ -462,7 +462,7 @@ pub fn QslDesignerPage() -> impl IntoView {
                   .into_iter()
                   .map(|imp| {
                     view! {
-                      <label class="flex cursor-pointer items-center gap-2 text-sm">
+                      <label class=format!("{} text-sm", crate::kit::check_row_class())>
                         <RadioGroupItem value=imp.id().to_owned() />
                         {move || match imp {
                           Imposition::Single => t("log.print-layout-single"),

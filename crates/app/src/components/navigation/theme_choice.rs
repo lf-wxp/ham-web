@@ -13,7 +13,7 @@ pub(super) fn ThemeChoice(
   let id = format!("settings-theme-{value}");
   let for_id = id.clone();
   view! {
-    <label for=for_id class="flex cursor-pointer items-center gap-2 text-sm">
+    <label for=for_id class=format!("{} text-sm", crate::kit::check_row_class())>
       <RadioGroupItem value=value id=id />
       {move || label.get()}
     </label>

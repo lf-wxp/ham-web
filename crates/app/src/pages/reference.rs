@@ -32,13 +32,209 @@ pub fn ReferencePage() -> impl IntoView {
       };
     });
   });
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <div class="md-root">
+        <div class="md-page md-article-page">
+          <crate::kit_modern::ModernPageHead
+            title=Signal::derive(move || t("shell.exam-reference-title"))
+            subtitle=Signal::derive(move || t("exam.licence-privileges-zones-rst"))
+          />
+
+          <div class="md-article">
+            <section class="md-panel">
+              <h2 class="md-panel-title">{move || t("exam.operator-licence-classes-and")}</h2>
+              <div class="md-table-scroll">
+                <table class="md-table">
+                  <thead>
+                    <tr>
+                      <th>{move || t("exam.class-column")}</th>
+                      <th>{move || t("exam.frequency-range")}</th>
+                      <th>{move || t("exam.power-limit")}</th>
+                      <th>{move || t("radio.notes")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {LICENSE_CLASSES
+                      .iter()
+                      .map(|c| {
+                        view! {
+                          <tr>
+                            <th scope="row" class="md-mono">{move || tf("learning.class", &[c.class])}</th>
+                            <td>{move || kt_tracked(c.freq)}</td>
+                            <td>{move || kt_tracked(c.power)}</td>
+                            <td class="md-muted">{move || kt_tracked(c.note)}</td>
+                          </tr>
+                        }
+                      })
+                      .collect_view()}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="md-panel">
+              <h2 class="md-panel-title">{move || t("exam.amateur-radio-zone-numbers")}</h2>
+              <p class="md-muted md-sm">{move || t("exam.call-area-map-hint")}</p>
+              <div class="mt-3">
+                <CallAreaMap selected=selected on_select=toggle_area />
+              </div>
+              <div class="md-chip-row mt-3">
+                {CALL_AREAS
+                  .iter()
+                  .map(|a| {
+                    let digit = a.digit.to_string();
+                    view! {
+                      <button
+                        type="button"
+                        class="md-chip"
+                        aria-pressed=move || (selected.get().as_deref() == Some(a.digit)).to_string()
+                        on:click=move |_| toggle_area.run(digit.clone())
+                      >
+                        <span class="md-area-dot" style=format!("background: {}", call_area_color(a.digit))></span>
+                        <span class="md-mono">{a.digit}</span>
+                      </button>
+                    }
+                  })
+                  .collect_view()}
+                <button
+                  type="button"
+                  class="md-chip"
+                  aria-pressed=move || selected.get().is_none().to_string()
+                  on:click=move |_| toggle_area.run(String::new())
+                >
+                  {move || t("exam.all")}
+                </button>
+              </div>
+              <div class="md-area-grid">
+                {move || {
+                  let sel = selected.get();
+                  CALL_AREAS
+                    .iter()
+                    .map(|a| {
+                      let active = sel.as_deref() == Some(a.digit);
+                      view! {
+                        <div class="md-area-cell" data-active=active.to_string()>
+                          <span class="md-area-digit">{a.digit}</span>
+                          <span class="md-muted md-sm">{move || data::kt_tracked(a.regions)}</span>
+                        </div>
+                      }
+                    })
+                    .collect_view()
+                }}
+              </div>
+            </section>
+
+            <section class="md-panel">
+              <h2 class="md-panel-title">{move || t("shell.rst-report")}</h2>
+              <div class="md-rst-grid">
+                {RST_SCALES
+                  .iter()
+                  .map(|s| {
+                    view! {
+                      <div class="md-rst-card">
+                        <div class="md-rst-card-head">
+                          <span class="md-mono md-rst-key">{s.key}</span>
+                          <span>{move || kt_tracked(s.name)}</span>
+                        </div>
+                        <p class="md-muted md-sm">{move || kt_tracked(s.note)}</p>
+                        <dl class="md-rst-levels">
+                          {s
+                            .levels
+                            .iter()
+                            .map(|&(num, desc)| {
+                              view! {
+                                <div>
+                                  <dt class="md-mono">{num}</dt>
+                                  <dd class="md-muted">{move || kt_tracked(desc)}</dd>
+                                </div>
+                              }
+                            })
+                            .collect_view()}
+                        </dl>
+                      </div>
+                    }
+                  })
+                  .collect_view()}
+              </div>
+            </section>
+
+            <section class="md-panel">
+              <h2 class="md-panel-title">{move || t("exam.emission-designators")}</h2>
+              <div class="md-table-scroll">
+                <table class="md-table">
+                  <thead>
+                    <tr>
+                      <th>{move || t("exam.designator")}</th>
+                      <th>{move || t("exam.name")}</th>
+                      <th>{move || t("radio.notes")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {EMISSION_TYPES
+                      .iter()
+                      .map(|e| {
+                        view! {
+                          <tr>
+                            <th scope="row" class="md-mono">{e.code}</th>
+                            <td>{move || kt_tracked(e.name)}</td>
+                            <td class="md-muted">{move || kt_tracked(e.desc)}</td>
+                          </tr>
+                        }
+                      })
+                      .collect_view()}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <TableSection
+              title="发射类别标识的构成"
+              headers=&["组成", "含义", "示例"]
+              rows=EMISSION_DESIGNATION
+              class="min-w-[720px]"
+            />
+
+            <section class="md-panel">
+              <h2 class="md-panel-title">{move || t("exam.contact-english-phrases")}</h2>
+              <dl class="md-phrases">
+                {PHRASES
+                  .iter()
+                  .map(|p| {
+                    view! {
+                      <div class="md-phrase">
+                        <dt class="md-muted md-sm">{move || kt_tracked(p.usage)}</dt>
+                        <dd>
+                          <div class="md-mono">{p.en}</div>
+                          <div class="md-muted md-sm">{move || kt_tracked(p.zh)}</div>
+                        </dd>
+                      </div>
+                    }
+                  })
+                  .collect_view()}
+              </dl>
+            </section>
+
+            <TableSection
+              title="知识来源与时效"
+              headers=&["领域", "来源", "说明"]
+              rows=KNOWLEDGE_SOURCES
+              class="min-w-[720px]"
+            />
+          </div>
+        </div>
+      </div>
+    }
+    .into_any();
+  }
+
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
       <PageHeader title=move || t("shell.exam-reference-title") subtitle=move || t("exam.licence-privileges-zones-rst") />
       <PageContainer>
         // 操作证类别与权限
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("exam.operator-licence-classes-and")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("exam.operator-licence-classes-and")}</h2>
           <Table
             aria_label=Signal::derive(move || t("exam.operator-licence-classes-and"))
             class="min-w-[560px]"
@@ -72,8 +268,8 @@ pub fn ReferencePage() -> impl IntoView {
         </section>
 
         // 分区号：地图 + 色块图例 + 分区号表
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("exam.amateur-radio-zone-numbers")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("exam.amateur-radio-zone-numbers")}</h2>
           <p class="px-4 pt-3 text-xs leading-5 text-muted-foreground">
             {move || t("exam.call-area-map-hint")}
           </p>
@@ -136,8 +332,8 @@ pub fn ReferencePage() -> impl IntoView {
         </section>
 
         // RST 信号报告
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("shell.rst-report")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("shell.rst-report")}</h2>
           <div class="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
             {RST_SCALES
               .iter()
@@ -171,8 +367,8 @@ pub fn ReferencePage() -> impl IntoView {
         </section>
 
         // 发射类别
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("exam.emission-designators")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("exam.emission-designators")}</h2>
           <Table
             aria_label=Signal::derive(move || t("exam.emission-designators"))
             class="min-w-[480px]"
@@ -210,8 +406,8 @@ pub fn ReferencePage() -> impl IntoView {
         />
 
         // 通联英语
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("exam.contact-english-phrases")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("exam.contact-english-phrases")}</h2>
           <dl class="divide-y">
             {PHRASES
               .iter()
@@ -239,4 +435,5 @@ pub fn ReferencePage() -> impl IntoView {
       </PageContainer>
     </div>
   }
+  .into_any()
 }

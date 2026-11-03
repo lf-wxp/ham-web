@@ -8,13 +8,13 @@ use leptos::prelude::*;
 use crate::components::common::EmptyState;
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
-  Button, Input, InputType, NativeSelect, Pagination, SelectOption, Size, Table, TableBody,
+  Button, Input, InputType, Pagination, SelectOption, SimpleSelect, Size, Table, TableBody,
   TableCell, TableHead, TableHeader, TableRow, Tooltip, Variant, card_title_class,
 };
 
 use super::card_image_mark::CardImageMark;
 use super::grid_cell::GridCell;
-use super::log_helpers::{CELL, PAGE_SIZE, station_title};
+use super::log_helpers::{PAGE_SIZE, station_title};
 use super::qsl_badge::{QslBadge, tone_label};
 use super::{LogEntry, Logbook, use_log_store};
 use crate::i18n::{t, tf, tp};
@@ -73,7 +73,7 @@ pub(super) fn EntryList(
 
   view! {
     // 日志列表
-    <section class="pxl-card border bg-card">
+    <section class=crate::kit::card_class()>
       <div class="flex items-center justify-between border-b px-4 py-3">
         <h2 class=card_title_class("")>
           {move || t("log.records-heading")}
@@ -139,7 +139,7 @@ pub(super) fn EntryList(
               clearable=true
               wrapper_class="min-w-48 flex-1"
             />
-            <NativeSelect
+            <SimpleSelect
               value=band_filter
               on_change=Callback::new(move |v: String| band_filter.set(v))
               options=band_options
@@ -147,7 +147,7 @@ pub(super) fn EntryList(
               aria_label=Signal::derive(move || t("log.band-filter"))
               class="w-28"
             />
-            <NativeSelect
+            <SimpleSelect
               value=mode_filter
               on_change=Callback::new(move |v: String| mode_filter.set(v))
               options=mode_options
@@ -155,7 +155,7 @@ pub(super) fn EntryList(
               aria_label=Signal::derive(move || t("log.mode-filter"))
               class="w-28"
             />
-            <NativeSelect
+            <SimpleSelect
               value=qsl_filter
               on_change=Callback::new(move |v: String| qsl_filter.set(v))
               options=tone_options
@@ -164,19 +164,19 @@ pub(super) fn EntryList(
               class="w-32"
             />
           </div>
-          <Table class="min-w-[880px] text-sm">
+          <Table class="min-w-[880px]" density=crate::ui::TableDensity::Compact>
             <TableHead>
               <TableRow>
-                <TableHeader class="border px-3 py-2 align-top">{move || t("log.date")}</TableHeader>
-                <TableHeader class="border px-3 py-2 align-top">{move || t("log.time")}</TableHeader>
-                <TableHeader class="border px-3 py-2 align-top">{move || t("log.freq-band")}</TableHeader>
-                <TableHeader class="border px-3 py-2 align-top">{move || t("log.mode")}</TableHeader>
-                <TableHeader class="border px-3 py-2 align-top">{move || t("log.callsign")}</TableHeader>
-                <TableHeader class="border px-3 py-2 align-top">{move || t("log.rst-sent-rcvd")}</TableHeader>
-                <TableHeader class="border px-3 py-2 align-top">{move || t("log.grid")}</TableHeader>
-                <TableHeader class="border px-3 py-2 align-top">{move || t("log.notes")}</TableHeader>
-                <TableHeader class="border px-3 py-2 align-top">"QSL"</TableHeader>
-                <TableHeader class="border px-3 py-2 align-top">{move || t("log.actions")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("log.date")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("log.time")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("log.freq-band")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("log.mode")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("log.callsign")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("log.rst-sent-rcvd")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("log.grid")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("log.notes")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>"QSL"</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("log.actions")}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -221,14 +221,14 @@ pub(super) fn EntryList(
                     let qsl = QslStatus::of(e);
                     view! {
                       <TableRow>
-                        <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{date}</TableCell>
-                        <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{time}</TableCell>
-                        <TableCell class=format!("{CELL} whitespace-nowrap font-mono tabular-nums")>
+                        <TableCell class=crate::kit::table_cell_class("whitespace-nowrap tabular-nums")>{date}</TableCell>
+                        <TableCell class=crate::kit::table_cell_class("whitespace-nowrap tabular-nums")>{time}</TableCell>
+                        <TableCell class=crate::kit::table_cell_class("whitespace-nowrap font-mono tabular-nums")>
                           {if freq.is_empty() { "—".to_owned() } else { freq }}
                           <span class="ml-1.5 text-xs text-muted-foreground">{band}</span>
                         </TableCell>
-                        <TableCell class=format!("{CELL} whitespace-nowrap")>{mode}</TableCell>
-                        <TableCell class=format!("{CELL} whitespace-nowrap")>
+                        <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>{mode}</TableCell>
+                        <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>
                           <span class="font-mono">{callsign}</span>
                           // 多台站时标出这条通联的归属：只有一个台站（绝大多数人）时不显示，
                           // 免得每行都挂一个没信息量的标签。
@@ -250,28 +250,28 @@ pub(super) fn EntryList(
                               })
                           }}
                         </TableCell>
-                        <TableCell class=format!("{CELL} whitespace-nowrap tabular-nums")>{rst}</TableCell>
-                        <TableCell class=format!("{CELL} whitespace-nowrap")>
+                        <TableCell class=crate::kit::table_cell_class("whitespace-nowrap tabular-nums")>{rst}</TableCell>
+                        <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>
                           {if gridsquare.is_empty() {
                             view! { <span class="text-muted-foreground">"—"</span> }.into_any()
                           } else {
                             view! { <GridCell grid=gridsquare /> }.into_any()
                           }}
                         </TableCell>
-                        <TableCell class=format!("{CELL} text-muted-foreground")>
+                        <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>
                           {remark}
                           {tags
                             .into_iter()
                             .map(|t| view! { <span class="ml-1 inline-block border px-1 text-xs">{t}</span> })
                             .collect_view()}
                         </TableCell>
-                        <td data-slot="qsl-cell" class=format!("{CELL} whitespace-nowrap")>
+                        <td data-slot="qsl-cell" class=crate::kit::table_cell_class("whitespace-nowrap")>
                           <div class="flex items-center gap-1">
                             <QslBadge status=qsl />
                             <CardImageMark entry_id=id />
                           </div>
                         </td>
-                        <TableCell class=format!("{CELL} whitespace-nowrap")>
+                        <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>
                           <div class="flex items-center gap-2">
                             <Button
                               variant=Variant::Text

@@ -12,7 +12,7 @@ use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 
 use crate::i18n::t;
-use crate::ui::{Button, ControlSize, Field, Input, NativeSelect, SelectOption, Size, Variant};
+use crate::ui::{Button, ControlSize, Field, Input, SelectOption, SimpleSelect, Size, Variant};
 use crate::util::unique_id;
 
 use super::WireRow;
@@ -298,7 +298,7 @@ pub(super) fn WireCanvas(
   };
 
   view! {
-    <div class="space-y-3 pxl-card border bg-card p-4">
+    <div class=crate::kit::card_class_with("space-y-3 p-4")>
       <div class="flex flex-wrap items-center justify-between gap-2">
         <span class="text-sm">{move || t("tools.nec-canvas")}</span>
         <span class="text-xs text-muted-foreground">
@@ -314,7 +314,7 @@ pub(super) fn WireCanvas(
           <span class="text-xs text-muted-foreground">
             {move || t("tools.nec-array-axis")}
           </span>
-          <NativeSelect
+          <SimpleSelect
             value=Signal::derive(move || axis.get().to_string())
             on_change=Callback::new(move |v: String| {
               axis.set(v.parse::<usize>().unwrap_or(0));

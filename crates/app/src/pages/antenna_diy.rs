@@ -10,8 +10,6 @@ use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 use crate::util::set_title;
 
-const CELL: &str = "border px-3 py-2 align-top";
-
 #[component]
 pub fn AntennaDiyPage() -> impl IntoView {
   set_title("shell.antenna-diy");
@@ -25,16 +23,16 @@ pub fn AntennaDiyPage() -> impl IntoView {
       />
 
       <PageContainer>
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("knowledge.classic-home-built-antennas")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("knowledge.classic-home-built-antennas")}</h2>
           <Table class="min-w-[820px] text-sm">
             <TableHead>
               <TableRow>
-                <TableHeader class=CELL>{move || t("log.antenna")}</TableHeader>
-                <TableHeader class=CELL>{move || t("knowledge.materials")}</TableHeader>
-                <TableHeader class=CELL>{move || t("knowledge.dimension-estimates")}</TableHeader>
-                <TableHeader class=CELL>{move || t("radio.notes")}</TableHeader>
-                <TableHeader class=CELL>{move || t("tools.nec-model-column")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("log.antenna")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.materials")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("knowledge.dimension-estimates")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.notes")}</TableHeader>
+                <TableHeader class=crate::kit::table_cell_class("")>{move || t("tools.nec-model-column")}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -43,11 +41,11 @@ pub fn AntennaDiyPage() -> impl IntoView {
                 .map(|&(name, material, size, desc, template)| {
                   view! {
                     <TableRow>
-                      <TableCell class=format!("{CELL} whitespace-nowrap")>{move || kt_tracked(name)}</TableCell>
-                      <TableCell class=format!("{CELL} whitespace-nowrap text-muted-foreground")>{move || kt_tracked(material)}</TableCell>
-                      <TableCell class=format!("{CELL} font-mono tabular-nums")>{move || kt_tracked(size)}</TableCell>
-                      <TableCell class=format!("{CELL} text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
-                      <TableCell class=CELL>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>{move || kt_tracked(name)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("whitespace-nowrap text-muted-foreground")>{move || kt_tracked(material)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("font-mono tabular-nums")>{move || kt_tracked(size)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || kt_tracked(desc)}</TableCell>
+                      <TableCell class=crate::kit::table_cell_class("")>
                         <NecTemplateLink template=template />
                       </TableCell>
                     </TableRow>

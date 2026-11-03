@@ -68,6 +68,10 @@ async function stubDoppler(page: Page, asked: TrackAsk[] = []) {
 
 const at = (page: Page, unix: number) => page.clock.setFixedTime(new Date(unix * 1000));
 
+// 下拉是自定义 combobox：触发器与弹出的列表框**同名**（W3C APG 的 select-only combobox 示例里两者也用同一个
+// 标签），所以 `getByLabel("转发器")` 会命中两个元素。按角色定位：`getByRole("combobox", { name })`，
+// 与 `fixtures.pickOption` 一致。
+
 function panel(page: Page) {
   return page.locator("section").filter({ has: page.getByRole("heading", { name: "多普勒修正与电台联动" }) });
 }
@@ -659,14 +663,14 @@ test("线性转发器：选转发器必须连带换卫星（NORAD），并作废
   await expect(norad).toHaveValue("7530"); // 第一个转发器 AO-7 · A
 
   // 换成 FO-29：NORAD 变成 24278，请求的轨迹也是它的。
-  await p.getByLabel("转发器", { exact: true }).click();
+  await p.getByRole("combobox", { name: "转发器", exact: true }).click();
   await page.getByRole("option", { name: /FO-29/ }).click();
   await expect(norad).toHaveValue("24278");
   await loadPass(p);
   expect(asked.at(-1)?.norad).toBe("24278");
 
   // 再换 AO-7 · B：回到 7530，已加载的 FO-29 过境作废（不能拿它的轨迹给 AO-7 算）。
-  await p.getByLabel("转发器", { exact: true }).click();
+  await p.getByRole("combobox", { name: "转发器", exact: true }).click();
   await page.getByRole("option", { name: /AO-7 · B/ }).click();
   await expect(norad).toHaveValue("7530");
   await expect(p.getByText(/^接收（下行）调到/)).toHaveCount(0);
@@ -675,7 +679,7 @@ test("线性转发器：选转发器必须连带换卫星（NORAD），并作废
 test("线性转发器 FO-29：调谐点一动上下行一起动（反相），收发各做多普勒修正，写 VFO A / B", async ({ page }) => {
   const p = await connectedAt(page, 100);
   await p.getByRole("radio", { name: "线性转发器（上下行联动）" }).click();
-  await p.getByLabel("转发器", { exact: true }).click();
+  await p.getByRole("combobox", { name: "转发器", exact: true }).click();
   await page.getByRole("option", { name: /FO-29/ }).click();
 
   // 通带与映射：上行 145.9–146.0、下行 435.8–435.9、反相；默认调谐点在通带中心。
@@ -700,7 +704,7 @@ test("线性转发器 FO-29：调谐点一动上下行一起动（反相），�
 test("线性转发器：调谐点夹在通带内；AO-7 B 的 432 MHz 上行不在卫星业余业务段，被护栏拒写并说明原因", async ({ page }) => {
   const p = await connectedAt(page, 100);
   await p.getByRole("radio", { name: "线性转发器（上下行联动）" }).click();
-  await p.getByLabel("转发器", { exact: true }).click();
+  await p.getByRole("combobox", { name: "转发器", exact: true }).click();
   await page.getByRole("option", { name: /FO-29/ }).click();
 
   // 步进推不出通带：连点 +1 kHz 到顶，停在 435.900000；手填越界的值被拉回通带。
@@ -712,7 +716,7 @@ test("线性转发器：调谐点夹在通带内；AO-7 B 的 432 MHz 上行不�
   await expect(p.getByText("下行 435.850000 MHz ↔ 上行 145.950000 MHz")).toBeVisible();
 
   // 换成 AO-7 B：反相、上行 432.125–432.175。
-  await p.getByLabel("转发器", { exact: true }).click();
+  await p.getByRole("combobox", { name: "转发器", exact: true }).click();
   await page.getByRole("option", { name: /AO-7 · B/ }).click();
   await expect(p.getByText("下行 145.950000 MHz ↔ 上行 432.150000 MHz")).toBeVisible();
   await p.getByRole("button", { name: "加载下一次过境" }).click();
@@ -729,7 +733,7 @@ test("线性转发器：调谐点夹在通带内；AO-7 B 的 432 MHz 上行不�
 test("线性转发器：非反相的 AO-7 A 上下行同向（下行 +1 kHz，上行也 +1 kHz）", async ({ page }) => {
   const p = await connectedAt(page, 100);
   await p.getByRole("radio", { name: "线性转发器（上下行联动）" }).click();
-  await p.getByLabel("转发器", { exact: true }).click();
+  await p.getByRole("combobox", { name: "转发器", exact: true }).click();
   await page.getByRole("option", { name: /AO-7 · A/ }).click();
   await expect(p.getByText(/（非反相）/)).toBeVisible();
   await expect(p.getByText("下行 29.450000 MHz ↔ 上行 145.900000 MHz")).toBeVisible();
@@ -743,7 +747,7 @@ test("线性转发器：手填调谐点保持原文，越界拉回并提示，�
   await page.goto("/satellites");
   const p = panel(page);
   await p.getByRole("radio", { name: "线性转发器（上下行联动）" }).click();
-  await p.getByLabel("转发器", { exact: true }).click();
+  await p.getByRole("combobox", { name: "转发器", exact: true }).click();
   await page.getByRole("option", { name: /FO-29/ }).click();
 
   const dl = p.getByLabel("下行调谐点（MHz，卫星坐标系）");
@@ -776,7 +780,7 @@ test("线性转发器：手填调谐点保持原文，越界拉回并提示，�
 async function openCustom(page: Page) {
   const p = panel(page);
   await p.getByRole("radio", { name: "线性转发器（上下行联动）" }).click();
-  await p.getByLabel("转发器", { exact: true }).click();
+  await p.getByRole("combobox", { name: "转发器", exact: true }).click();
   await page.getByRole("option", { name: "自定义通带" }).click();
   return p;
 }
@@ -915,7 +919,7 @@ test("自定义通带：从预置转发器切到「自定义」时，正在进�
   const p = panel(page);
   // 先用预置的 FO-29 联动起来：下行 + 上行都在写。
   await p.getByRole("radio", { name: "线性转发器（上下行联动）" }).click();
-  await p.getByLabel("转发器", { exact: true }).click();
+  await p.getByRole("combobox", { name: "转发器", exact: true }).click();
   await page.getByRole("option", { name: /FO-29/ }).click();
   await p.getByLabel("NORAD 编号").fill("25544"); // 过境桩是 ISS 这条
   await loadPass(p);
@@ -927,7 +931,7 @@ test("自定义通带：从预置转发器切到「自定义」时，正在进�
   await expect.poll(async () => uplinkCommands(await written(page)).length).toBe(1);
 
   // 切到「自定义」：通带摘要消失（不再展示 FO-29），目标变空，联动停止写电台。
-  await p.getByLabel("转发器", { exact: true }).click();
+  await p.getByRole("combobox", { name: "转发器", exact: true }).click();
   await page.getByRole("option", { name: "自定义通带" }).click();
   await expect(p.getByText(/通带：上行 145\.900000/)).toHaveCount(0);
   const fa = setCommands(await written(page)).length;

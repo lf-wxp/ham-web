@@ -97,7 +97,7 @@ pub fn TabsTrigger(
       // roving tabindex：非激活项不进 Tab 序，组内靠方向键。
       tabindex=move || if active() { "0" } else { "-1" }
       disabled=move || disabled.get()
-      class="pxl-tab"
+      class=if crate::kit::is_modern_at_mount() { "md-tab" } else { "pxl-tab" }
       on:click=move |_| {
         if !disabled.get_untracked() && !active() {
           ctx.on_change.run(v.get_value());

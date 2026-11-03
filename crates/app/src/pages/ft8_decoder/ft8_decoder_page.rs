@@ -9,7 +9,7 @@ use crate::components::common::{DecodeElapsed, PageContainer, PageHeader};
 use crate::decode_session::{DecodeConfig, DecodeSession};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
-  Button, ButtonLink, Field, FileDropZone, NativeSelect, SelectOption, Size, Variant,
+  Button, ButtonLink, Field, FileDropZone, SelectOption, SimpleSelect, Size, Variant,
 };
 use crate::util::set_title;
 
@@ -98,7 +98,7 @@ pub fn Ft8DecoderPage() -> impl IntoView {
                 r#for=label_for
                 class="mb-4 sm:max-w-xs"
               >
-                <NativeSelect
+                <SimpleSelect
                   id=base_id
                   value=protocol
                   on_change=Callback::new(move |v: String| protocol.set(v))

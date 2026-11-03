@@ -23,8 +23,6 @@ use crate::util::set_title;
 
 use condition_row::ConditionRow;
 
-const CELL: &str = "border px-3 py-2 text-left align-top";
-
 /// 知识库正文译文：先订阅加载状态（切语言后要重算），再查词典。
 fn text(zh: &'static str) -> String {
   data::track_knowledge();
@@ -86,8 +84,8 @@ pub fn RigReviewsPage() -> impl IntoView {
             let gear = gear::by_id(review.rig_id)?;
             let rx = gear_rx::for_gear(review.rig_id);
             Some(view! {
-              <article class="pxl-card border bg-card">
-                <h2 class="flex flex-wrap items-baseline gap-2 pxl-section-title">
+              <article class=crate::kit::card_class()>
+                <h2 class=crate::cn::cn(&["flex flex-wrap items-baseline gap-2", crate::kit::card_title_class()])>
                   {format!("{} {}", gear.brand, gear.model)}
                   <span class="text-xs font-normal normal-case text-muted-foreground">
                     {move || format!("{} · {}", text(gear.tier), text(gear.bands))}
@@ -132,9 +130,9 @@ pub fn RigReviewsPage() -> impl IntoView {
                   <Table class="text-sm" wrapper_class="mt-2">
                     <TableHead>
                       <TableRow>
-                        <TableHeader class="border px-3 py-2 align-top">{move || t("knowledge.metrics")}</TableHeader>
-                        <TableHeader class="border px-3 py-2 align-top">{move || t("knowledge.review-value")}</TableHeader>
-                        <TableHeader class="border px-3 py-2 align-top">{move || t("knowledge.review-how-to-measure")}</TableHeader>
+                        <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("knowledge.metrics")}</TableHeader>
+                        <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("knowledge.review-value")}</TableHeader>
+                        <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("knowledge.review-how-to-measure")}</TableHeader>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -148,19 +146,19 @@ pub fn RigReviewsPage() -> impl IntoView {
                           let how = REVIEW_GLOSSARY[glossary].2;
                           view! {
                             <TableRow>
-                              <TableCell class=format!("{CELL} whitespace-nowrap")>
+                              <TableCell class=crate::kit::table_cell_class("whitespace-nowrap")>
                                 // 指标名互链到页面底部的术语表；悬停出释义。
                                 <Tooltip label=Signal::derive(move || text(meaning))>
                                   <a
                                     href=href
-                                    class="underline decoration-dotted underline-offset-2 hover:text-foreground"
+                                    class="hover:text-foreground"
                                   >
                                     {move || text(name)}
                                   </a>
                                 </Tooltip>
                               </TableCell>
-                              <TableCell class=format!("{CELL} font-mono")>{move || metric_text(glossary, rx)}</TableCell>
-                              <TableCell class=format!("{CELL} text-muted-foreground")>{move || text(how)}</TableCell>
+                              <TableCell class=crate::kit::table_cell_class("font-mono")>{move || metric_text(glossary, rx)}</TableCell>
+                              <TableCell class=crate::kit::table_cell_class("text-muted-foreground")>{move || text(how)}</TableCell>
                             </TableRow>
                           }
                         })
@@ -181,7 +179,7 @@ pub fn RigReviewsPage() -> impl IntoView {
                           href=gear_rx::SOURCE_URL
                           target="_blank"
                           rel="noreferrer"
-                          class="underline underline-offset-2 hover:text-foreground"
+                          class="hover:text-foreground"
                         >
                           {gear_rx::SOURCE_URL}
                         </a>
@@ -195,7 +193,7 @@ pub fn RigReviewsPage() -> impl IntoView {
                         " "
                         <a
                           href="/gear"
-                          class="underline underline-offset-2 hover:text-foreground"
+                          class="hover:text-foreground"
                         >
                           {move || t("knowledge.review-go-to-gear")}
                         </a>
@@ -250,8 +248,8 @@ pub fn RigReviewsPage() -> impl IntoView {
           .collect_view()}
 
         // ── 指标名词表（互链目标）──────────────────────────────
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>
             {move || t("knowledge.review-glossary")}
           </h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">

@@ -27,6 +27,12 @@ pub fn CustomPaperDialog(open: RwSignal<bool>, on_confirm: Callback<CustomPaper>
     });
   };
 
+  if crate::kit::is_modern_at_mount() {
+    return view! {
+      <crate::kit_modern::ModernCustomPaper open=open on_confirm=on_confirm />
+    }
+    .into_any();
+  }
   view! {
     <Dialog open=open class="sm:max-w-[560px]">
       <DialogHeader>
@@ -105,4 +111,5 @@ pub fn CustomPaperDialog(open: RwSignal<bool>, on_confirm: Callback<CustomPaper>
       </DialogFooter>
     </Dialog>
   }
+  .into_any()
 }

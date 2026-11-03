@@ -31,21 +31,20 @@ pub fn SectionCard(
   #[prop(optional, into)] class: String,
   children: Children,
 ) -> impl IntoView {
-  let root = cn(&[
-    "pxl-card border bg-card",
-    if href.is_some() {
-      "pxl-card-link group relative motion-lift hover:bg-accent/40"
-    } else {
-      ""
-    },
-    class.as_str(),
-  ]);
+  // 整卡可点时仍要「悬浮层 + 焦点环」：像素风走 `pxl-card-link`，现代风走自己的 `md-card-link`
+  // （现代风下不能出现 `pxl-*`，隔离门禁会拦；两套焦点规则各自只认自己的标题类）。
+  let link = match (href.is_some(), crate::kit::is_modern_at_mount()) {
+    (false, _) => "",
+    (true, true) => "md-card-link group relative",
+    (true, false) => "pxl-card-link group relative motion-lift hover:bg-accent/40",
+  };
+  let root = crate::kit::card_class_with(&cn(&[link, class.as_str()]));
   let heading = match href {
     Some(href) => view! {
       <a
         href=href
         data-card-link
-        class="underline-offset-4 after:absolute after:inset-0"
+        class="after:absolute after:inset-0"
       >
         {move || title.get()}
       </a>
@@ -55,7 +54,7 @@ pub fn SectionCard(
   };
   view! {
     <section id=id class=root>
-      <div class="pxl-section-title">
+      <div class=crate::kit::card_title_class()>
         <h2 class="min-w-0">{heading}</h2>
         {meta
           .map(|m| {

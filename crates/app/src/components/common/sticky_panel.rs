@@ -25,6 +25,16 @@ type AnimationWatcher =
 /// 万一它排在页头前面就会量错元素 —— 面板会吸在没有页头的位置。
 const PAGE_HEADER_MARKER: &str = "[data-page-header]";
 
+/// 页头当前是否随内容滚动（现代风）。
+fn header_is_static(header: &web_sys::Element) -> bool {
+  crate::util::window()
+    .get_computed_style(header)
+    .ok()
+    .flatten()
+    .and_then(|style| style.get_property_value("position").ok())
+    .is_some_and(|position| position == "static")
+}
+
 /// 页内粘性面板：吸在吸顶页头正下方，偏移随页头高度自适应。
 ///
 /// 手写 `top-[136px]` 这类固定偏移有两个坑：页头随宽度 / 译文长度折行，高度一变，
@@ -110,7 +120,19 @@ pub fn StickyPanel(#[prop(optional, into)] class: String, children: Children) ->
       let gap = Rc::clone(&gap);
       move || {
         measure_gap();
-        let top = (header.get_bounding_client_rect().bottom() + gap.get().unwrap_or(0.0)).max(0.0);
+        // 现代风页头是 `static`（标题进正文流）：它滚走之后，第二根栏要吸在**顶栏下沿**，
+        // 而不是「页头底边」—— 后者会随滚动变成负值，面板会钻进顶栏或留下一条空白。
+        // 像素风页头是 sticky，行为保持原样。
+        let base = if header_is_static(&header) {
+          crate::util::document()
+            .query_selector(".md-nav")
+            .ok()
+            .flatten()
+            .map_or(0.0, |nav| nav.get_bounding_client_rect().height())
+        } else {
+          header.get_bounding_client_rect().bottom()
+        };
+        let top = (base + gap.get().unwrap_or(0.0)).max(0.0);
         let style = web_sys::HtmlElement::style(&el);
         let _ = style.set_property("top", &format!("{top}px"));
         let _ = style.set_property("--sticky-top", &format!("{top}px"));

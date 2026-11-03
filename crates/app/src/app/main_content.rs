@@ -55,6 +55,8 @@ pub(super) fn MainContent() -> impl IntoView {
   let popped = StoredValue::new(false);
   window_event_listener(leptos::ev::popstate, move |_| {
     popped.set_value(true);
+    // 换页方向也要知道这次是历史回放（层级没变时只看层级会误判成平级）。
+    crate::kit_modern::interaction::note_history_navigation();
     // 只改 hash 的导航不触发下面的复位（pathname 没变），标记要在很短的时间内自己失效，
     // 否则接下来第一次「正常跳转」会被误判成后退、停在上一个页面的滚动位置。
     set_timeout(
@@ -89,7 +91,16 @@ pub(super) fn MainContent() -> impl IntoView {
         </p>
       </Show>
       <div id=ROUTE_CONTENT_ID inert=move || backup_busy.get()>
-        <Routes fallback=|| view! { <NotFoundPage /> }>
+        // 风格切换时**重建整棵路由子树**：页面组件里的 `kit::is_modern_at_mount()` 是构造期求值，
+        // 不重建就会停在旧皮肤（表现为「切完要手动刷新才干净」）。
+        // 两个分支的根元素类型不同（div / section），Leptos 才会丢弃旧子树重新挂载。
+        // 像素风这边是 `div`：`section` 会把整页包成一个 `<section>`，页面上任何
+        // `locator("section").filter(...)`（e2e 与无障碍树都按「一节内容＝一个 section」）都会
+        // 连带命中它，等于把所有卡片都变成二元组。
+        {move || {
+          let routes = move || {
+            view! {
+              <Routes fallback=|| view! { <NotFoundPage /> }>
         <Route path=path!("/") view=HomePage />
         <Route path=path!("/map") view=QuestMapPage />
         <Route path=path!("/battle") view=BattlePage />
@@ -270,7 +281,15 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/developers") view=DevelopersPage />
         <Route path=path!("/learning-resources") view=LearningResourcesPage />
         <Route path=path!("/community") view=CommunityPage />
-      </Routes>
+              </Routes>
+            }
+          };
+          if crate::kit::is_modern() {
+            view! { <section data-style-root="modern" class="md-root">{routes()}</section> }.into_any()
+          } else {
+            view! { <div data-style-root="pixel">{routes()}</div> }.into_any()
+          }
+        }}
       </div>
       <TopicQuiz />
       <RelatedTopics />

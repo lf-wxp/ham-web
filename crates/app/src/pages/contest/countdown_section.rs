@@ -31,8 +31,8 @@ pub(super) fn CountdownSection() -> impl IntoView {
   let year = js_sys::Date::new_0().get_utc_full_year() as f64;
 
   view! {
-    <section class="pxl-card border bg-card">
-      <h2 class="pxl-section-title">{move || t("contest.upcoming-contest-countdown-utc")}</h2>
+    <section class=crate::kit::card_class()>
+      <h2 class=crate::kit::card_title_class()>{move || t("contest.upcoming-contest-countdown-utc")}</h2>
       <div class="divide-y">
         {UPCOMING
           .iter()

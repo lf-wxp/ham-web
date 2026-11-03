@@ -239,7 +239,7 @@ pub fn CwDecoder() -> impl IntoView {
   });
 
   view! {
-    <section class="pxl-card border bg-card" aria-labelledby="cw-decoder-title">
+    <section class=crate::kit::card_class() aria-labelledby="cw-decoder-title">
       <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <div class="mr-auto">
           <h2 id="cw-decoder-title" class=card_title_class("")>{move || t("morse.cw-decoding-microphone")}</h2>

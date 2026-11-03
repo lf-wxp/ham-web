@@ -6,7 +6,7 @@
 //! `max-h-[calc(100svh-5rem)]` 兜底 —— 窗口再矮也只是条目区内部滚动。
 //!
 //! 下拉开关保留原生 `<button>` + [`button_class`] 的原因见 `nav_bar.rs` 文件头与
-//! `docs/ui-components.md` §10.2：高亮要随当前路由切换 `variant`（`Button` 的 `variant`
+//! `docs/ui/pixel.md` §10.2：高亮要随当前路由切换 `variant`（`Button` 的 `variant`
 //! 是静态 prop）。`aria-expanded` / `aria-controls` 已经有通道，不再是保留理由。
 
 use leptos::prelude::*;

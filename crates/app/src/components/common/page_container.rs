@@ -21,7 +21,10 @@ pub fn PageContainer(
 ) -> impl IntoView {
   let node = NodeRef::<html::Div>::new();
   node.on_load(move |el| {
-    if reveal {
+    // 现代风：所有页面的内容块都要浮现（路由层只负责整页淡入）。
+    // 页面上有没有写 `reveal=true` 是像素风的旧开关，现代风不认 —— 否则桥接页
+    // 与迁移页的换页手感对不上：一个只有淡入，一个淡入之后内容还往上浮一截。
+    if reveal || crate::kit::is_modern_at_mount() {
       crate::motion::reveal_children(&el);
     }
   });

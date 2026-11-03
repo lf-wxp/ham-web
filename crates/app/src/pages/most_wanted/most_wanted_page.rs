@@ -24,8 +24,8 @@ pub fn MostWantedPage() -> impl IntoView {
       <PageContainer>
         <LiveRanking />
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("log.rarity-concepts")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("log.rarity-concepts")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">
             {WANTED_CONCEPTS
               .iter()
@@ -43,8 +43,8 @@ pub fn MostWantedPage() -> impl IntoView {
 
         <WantedTracker />
 
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("log.chasing-strategy")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("log.chasing-strategy")}</h2>
           <ul class="space-y-2 p-4">
             {WANTED_TIPS
               .iter()

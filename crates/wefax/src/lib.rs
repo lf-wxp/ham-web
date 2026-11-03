@@ -18,7 +18,7 @@
 //! 行速率 / 同步脉冲占比 / 每行像素数同样是**自定口径**（120 LPM、同步占 5%、每行 380
 //! 像素），未对照真实 WMO 传真样本校准——往返合成对拍只证明「本实现自洽」。解调假设
 //! **行对齐**（首个同步脉冲后按固定行长切分）。真实录音的验收状态见
-//! `docs/hardware-verification.md` 的 E4。
+//! `docs/domain/hardware-verification.md` 的 E4。
 
 /// 工作采样率（Hz）。
 pub const SAMPLE_RATE: u32 = 8_000;

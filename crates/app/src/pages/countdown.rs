@@ -150,8 +150,8 @@ pub fn CountdownPage() -> impl IntoView {
       />
 
       <PageContainer class="space-y-5">
-        <section class="pxl-card border bg-card">
-          <h2 class="pxl-section-title">{move || t("exam.add-countdown")}</h2>
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("exam.add-countdown")}</h2>
           <div class="grid gap-3 p-4 sm:grid-cols-[1fr_auto_auto_auto]">
             <Input
               value=title
@@ -217,7 +217,7 @@ pub fn CountdownPage() -> impl IntoView {
                     let remain = e.target_ms - now.get();
                     let expired = remain <= 0;
                     view! {
-                      <div class="flex items-center gap-4 pxl-card border bg-card px-4 py-4">
+                      <div class=crate::kit::card_class_with("flex items-center gap-4 px-4 py-4")>
                         <div class="min-w-0 flex-1">
                           <div class="truncate">{e.title.clone()}</div>
                           <div class="mt-0.5 text-xs text-muted-foreground tabular-nums">

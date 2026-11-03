@@ -3,7 +3,7 @@
 
 /* 像素设计系统（取代原来的「极光 + 玻璃」材质）。顺序有讲究：
    palette 先于 tokens（后者会引用前者里的色阶），motion 最后（降级规则要压过前面的动画声明）。
-   各文件的分工与分层规则见文件头注释；组件用法见 docs/ui-components.md 的「像素规范」。 */
+   各文件的分工与分层规则见文件头注释；组件用法见 docs/ui/pixel.md（像素规范）与 docs/ui/modern.md（现代规范）。 */
 @import "./pixel/palette.css";
 @import "./pixel/fonts.css";
 @import "./pixel/fonts-pixel.css";
@@ -13,8 +13,32 @@
 @import "./pixel/controls.css";
 @import "./pixel/motion.css";
 
+/* 第二套设计系统（现代风）。必须放在像素层之后：同层同权重的选择器后写者胜，
+   而现代层里有个别声明（如 `body` 底色）本来就是用来覆盖像素底色的。
+   隔离规则见 docs/ui/decisions.md §6 —— 这里只允许出现 `--md-*` 与 `.md-*`。
+   字体面先于令牌：`--md-font-*` 里引用的字族必须已经声明过，
+   否则冷启动时会先按系统字族排一次版、再被 swap 拉回来。 */
+@import "./modern/fonts.css";
+/* 中文展示字（生成物）：7 片 unicode-range 分片，只有标题才会拉起对应片。 */
+@import "./modern/fonts-cjk.css";
+@import "./modern/tokens.css";
+@import "./modern/kit.css";
+/* 交互层：逐页签名 / 换页方向 / 按压反馈。只写 `data-sig` 与 `data-nav-dir` 分支，
+   不定义静态外观（见 docs/ui/interaction.md）。 */
+@import "./modern/interaction.css";
+/* 共享工具类的现代取值（`bg-card` / `font-mono` / `text-primary` …）。
+   不是过渡桥：页面模板两套皮肤共用这些类名，这里给现代风的那一套取值。 */
+@import "./modern/legacy-utilities.css";
+
 /* Tailwind 扫描 Rust 源码与 HTML 模板中的类名 */
 @source "../src";
 @source "../index.html";
 
 @custom-variant dark (&:is(.dark *));
+
+/* 全站 `<a>` 一律不带下划线（产品要求）：可点性由颜色与悬停反馈表达。
+   写在层外 —— 无层规则压过 `utilities` 层的 `underline` / `hover:underline`，
+   任何遗留的下划线工具类都不会再生效。 */
+a {
+  text-decoration: none;
+}
