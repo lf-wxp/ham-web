@@ -1,8 +1,30 @@
 {
   "source": "https://raw.githubusercontent.com/xiedada05/crac-amateur-radio-exam-questions-2025-csv/main/",
   "digest": "dbc55cda8592fc0359df849df2223a0a6f7dd6e1649153ec80ed29874e65ef7a",
-  "fetched_at": "2026-10-23T03:14:16Z",
+  "fetched_at": "2026-11-05T03:13:20Z",
   "inputs": {
     "data/explanations.json": "08e12e7fb2c593c0769d9d4f6494e791099c78e6e0305245dcf47c52ccc99128"
+  },
+  "files": {
+    "class_a.csv": {
+      "digest": "7eb3ad217dc64a3b9bdb6d5fdca77082871721e9366acba46f7ae84cf3024a33",
+      "etag": "W/\"18390591323c09f27d6807cd61bf35af4abd1c57a5a90602812b51b60fa3bd1c\""
+    },
+    "class_b.csv": {
+      "digest": "d4d676dc19577485ac5cf09e1e882a862e4e4e13dcca9166d40f499004692ba9",
+      "etag": "W/\"3aa036e62c300fa065365c54ed0b3dd9b0d6baeda0307f84f93d349570c9add7\""
+    },
+    "class_c.csv": {
+      "digest": "52d29bed9592dfb238c499c629ca0a0f9ee4a563776c8b67a621c8af4a02548e",
+      "etag": "W/\"d3f094461457323e0d071a34e817b5d45f1f1d5a9ca89e82b412b3195d2028c1\""
+    },
+    "full.csv": {
+      "digest": "25cd04e1ee9c8686a0e7bad243309996d844bfb9469592b4f7c04959110349e8",
+      "etag": "W/\"b0408611c39c53fd8a388060322ef1e8fdd5ab676c2620353ba7a14558bc9f0e\""
+    },
+    "images.csv": {
+      "digest": "e4e15ed5093e19f7b7393edff692925645bd687839c9e5484ab708f3baa2b4ed",
+      "etag": "W/\"1420e9bac315a3819647be5c1587ecee68ba7796fcbcd9cc4314c193a2561172\""
+    }
   }
 }
