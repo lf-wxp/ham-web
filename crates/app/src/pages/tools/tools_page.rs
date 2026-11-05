@@ -338,12 +338,20 @@ pub fn ToolsPage() -> impl IntoView {
       </div>
     }
   };
-  // 现代风：文章页头 + 可折叠目录（窄屏）+ 桌面固定索引 + 计算器面板。
+  // 现代风：文章页头 + 窄屏吸顶目录条 + 桌面固定索引 + 计算器面板。
   if crate::kit::is_modern_at_mount() {
     // 目录落点：滚到哪个计算器，目录里就亮哪一条。46 个块全是长面板，
     // 没有落点提示时用户永远不知道自己读到第几个。
     let spy =
       crate::kit_modern::motion::use_scroll_spy(TOOL_NAV.iter().map(|&(id, _)| id).collect());
+    // 索引卡自己是滚动容器（60 条比一屏高）：高亮换到屏外那一条时，卡片要跟着滚过去。
+    let index_ref = NodeRef::<leptos::html::Nav>::new();
+    Effect::new(move |_| {
+      let _ = spy.get();
+      let Some(nav) = index_ref.get() else { return };
+      // 等本轮 `data-spy` 属性写完再量位置。
+      request_animation_frame(move || crate::kit_modern::motion::reveal_spy_in(&nav));
+    });
     let modern_nav = move || {
       TOOL_NAV
         .iter()
@@ -364,6 +372,31 @@ pub fn ToolsPage() -> impl IntoView {
         .collect_view()
     };
 
+    // 窄屏的同一份目录：抽屉里的行式列表（与题库分类、术语分类同一个抽屉）。
+    // 选中项跟着滚动高亮走 —— 46 个块滚到第 30 个时，抽屉打开就该看见第 30 条。
+    let modern_drawer_nav = move || {
+      TOOL_NAV
+        .iter()
+        .map(|&(id, key)| {
+          view! {
+            <li>
+              <button
+                type="button"
+                class="md-drawer-item"
+                aria-pressed=move || (spy.get() == Some(id)).to_string()
+                on:click=move |_| {
+                  scroll_to(id);
+                  nav_open.set(false);
+                }
+              >
+                {move || crate::data::core_text_tracked(key)}
+              </button>
+            </li>
+          }
+        })
+        .collect_view()
+    };
+
     return view! {
       <div class="md-root">
         <div class="md-page">
@@ -372,19 +405,18 @@ pub fn ToolsPage() -> impl IntoView {
             subtitle=Signal::derive(move || t("tools.frequency-wavelength-power-gain"))
           />
 
-          // 窄屏：目录折叠条吸顶，滚到任意计算器都还能换工具。
-          <details class="md-panel md-tools-drawer">
-            // 箭头只由 `.md-root details > summary::before` 提供（左侧细 chevron）。
-            // 这里曾额外画一个右侧箭头，窄屏上两只箭头并存且展开后方向不一致。
-            <summary>
-              <span class="md-tools-drawer-label">{move || t("tools.tool-catalogue")}</span>
-            </summary>
-            <ul class="md-tool-list">{modern_nav()}</ul>
-          </details>
+          // 窄屏：目录收进右下角悬浮按钮的抽屉（>=768 按钮隐藏，由左侧索引卡接管）。
+          <crate::kit_modern::ModernMenuDrawer
+            open=nav_open
+            title=Signal::derive(move || t("tools.tool-catalogue"))
+            button_label=Signal::derive(move || t("tools.tool-catalogue"))
+          >
+            <ul class="md-drawer-list">{modern_drawer_nav()}</ul>
+          </crate::kit_modern::ModernMenuDrawer>
 
           <div class="md-tools-grid">
             <aside class="md-tools-aside">
-              <nav class="md-panel md-tools-index" aria-label=move || t("tools.tool-catalogue")>
+              <nav node_ref=index_ref class="md-panel md-tools-index" aria-label=move || t("tools.tool-catalogue")>
                 <p class="md-group-title">{move || t("tools.tool-navigation")}</p>
                 <ul class="md-tool-list">{modern_nav()}</ul>
               </nav>

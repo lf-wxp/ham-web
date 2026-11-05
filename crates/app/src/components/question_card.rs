@@ -182,7 +182,7 @@ pub fn QuestionCard(
         view! {
           <label class=move || option_row_class(checked_sel.get(), verdict.get(), modern)>
             <Checkbox class=input_class checked=checked_sel on_change=toggle disabled=read_only />
-            <span class="whitespace-pre-line leading-6 text-base">
+            <span data-slot="option-text" class="whitespace-pre-line leading-6 text-base">
               <strong class="mr-2">{opt.key} "."</strong>
               {opt.text}
             </span>
@@ -191,7 +191,7 @@ pub fn QuestionCard(
         }
       })
       .collect_view();
-    view! { <div class="grid gap-2">{items}</div> }.into_any()
+    view! { <div data-slot="option-group" class="grid gap-2">{items}</div> }.into_any()
   } else {
     let options = question.options.clone();
     let base_id = base_id.clone();
@@ -421,6 +421,12 @@ pub fn QuestionCard(
                 </Tooltip>
               }
             })}
+        </div>
+        // 朗读按钮是 `card-header` 的直接子元素（`data-slot="card-action"`），不挤在标题行里：
+        // `CARD_HEADER` 见到 action 就切成 `1fr auto` 两列，标题无论怎么折行，按钮都钉在右上。
+        // 挤在标题行里时，320px 下一行放不下它就整行换行 —— 一个 44px 的图标白占一整行高度。
+        // 包一层 `<div>` 而不是给按钮本身加属性：像素风的 `ui::Button` 不透传任意属性。
+        <div data-slot="card-action" class="ml-auto shrink-0 self-start">
           {if modern {
             // 刻意的例外：现代风的图标按钮不是 `ui::Button`（那套只产出像素类名），
             // `kit_modern` 的 `md-icon-btn` 也没有单控件组件 —— 这里手写原生 `<button>`，
@@ -428,7 +434,7 @@ pub fn QuestionCard(
             view! {
               <button
                 type="button"
-                class="md-icon-btn ml-auto shrink-0"
+                class="md-icon-btn"
                 aria-label=move || t("exam.read-question-aloud")
                 on:click=move |_| speech::speak_zh(&question_text_modern)
               >
@@ -441,7 +447,6 @@ pub fn QuestionCard(
               <Button
                 variant=Variant::Ghost
                 size=Size::IconSm
-                class="ml-auto shrink-0"
                 title=Signal::derive(move || t("exam.read-question-aloud"))
                 aria_label=Signal::derive(move || t("exam.read-question-aloud"))
                 on_click=Callback::new(move |_| speech::speak_zh(&question_text))

@@ -24,7 +24,7 @@
 - **页面级动效只有一条来源**：逐页动作写在 `interaction.css` 的 `#route-content[data-sig="…"]` 分支；新增路由必须在
   `PageSignature::paths` 里挑一个签名（漏了 `cargo test` 会红）。→ [`docs/ui/interaction.md`](docs/ui/interaction.md) §6.1
 - **页内第二根吸顶栏只有一个来源**：`StickyPanel`；页面里不手写 `sticky top-[…px]`。→ [`docs/ui/pixel.md`](docs/ui/pixel.md) §4、§11
-- **现代风 CSS**：视口断点只有五档（480 / 640 / 720 / 900 / 1024）外加 dock 的 768，窄屏档写 640 不写 639；同一底边只允许一层固定层；
+- **现代风 CSS**：视口断点只有五档（480 / 640 / 720 / 900 / 1024）外加 dock 与页内菜单按钮的 768，窄屏档写 640 不写 639；同一底边只允许一层固定层；
   状态色只走 token 不写字面色值；`:has()` 不能决定版式。→ [`docs/ui/modern.md`](docs/ui/modern.md) §2.1、§3、§6.5
 - **加 / 删现代风 `md-*` 类名要同步改 [`docs/ui/modern-classes.md`](docs/ui/modern-classes.md)**（`check-structure` 精确双向校验）。
 

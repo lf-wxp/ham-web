@@ -89,6 +89,30 @@ test.describe("布局审计：文本裁剪", () => {
     );
     expect(r.clipped.length).toBeGreaterThanOrEqual(1);
   });
+
+  // KaTeX 把给读屏用的 MathML 副本塞进 `.katex-mathml`（1px + clip 技巧），
+  // Chromium 会给那个 `<math>` 一个比内容窄的宽度，于是 math / semantics / mrow 逐层
+  // `scrollWidth > clientWidth`（`/formulas` 的英文 / 西语页各报 3 条）。它本来就看不见，
+  // 不是「文本被裁掉」—— 但只压容器不压祖先时，审计仍然要抓。
+  test("视觉隐藏的祖先（sr-only / clip）里的溢出 —— 放过", async ({ page }) => {
+    const r = await audit(
+      page,
+      `<div style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(1px,1px,1px,1px)">
+         <span style="display:block;width:260px">被视觉隐藏的无障碍副本</span>
+       </div>`,
+    );
+    expect(r.clipped).toHaveLength(0);
+  });
+
+  test("同样被压到 1px、但没裁掉溢出的祖先 —— 仍然抓", async ({ page }) => {
+    const r = await audit(
+      page,
+      `<div style="width:1px;height:1px;overflow:visible">
+         <span style="display:block;width:40px;overflow:hidden;white-space:nowrap">很长很长很长很长的文字</span>
+       </div>`,
+    );
+    expect(r.clipped.length).toBeGreaterThanOrEqual(1);
+  });
 });
 
 test.describe("布局审计：未取整的浮点数", () => {

@@ -626,6 +626,8 @@ pub fn MistakesPage() -> impl IntoView {
                 icon=IconKind::BookMarked
                 title=Signal::derive(move || t("learning.no-mistakes-yet"))
                 description=Signal::derive(move || t("learning.after-answering-in-practice"))
+                action_text=Signal::derive(move || t("exam.practice"))
+                action_href="/practice".to_owned()
               />
             }
             .into_any()

@@ -98,6 +98,12 @@ pub const UNIT_CONVERSION_GROUPS: &[UnitConversionGroup] = &[
         "dbm-dbuv",
       ),
       u(
+        "exam.units-dbuv-uv",
+        "dBμV = 20·lg(μV)",
+        "exam.units-dbuv-uv-example",
+        "dbm-dbuv",
+      ),
+      u(
         "exam.units-uv-dbm",
         "dBm = 20·lg(μV) − 107",
         "exam.units-uv-dbm-example",

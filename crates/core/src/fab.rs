@@ -1,7 +1,19 @@
 //! 悬浮导航按钮（FAB）拖动的位置计算。
 //!
-//! 拖动判定与视口收拢都是纯计算，放这里配单测；Pointer 事件监听与位置持久化
-//! 留在前端（`crates/app/src/ui/mobile_nav_drawer.rs`）。
+//! 拖动判定、视口收拢与位置串解析都是纯计算，放这里配单测；Pointer 事件监听与位置持久化
+//! 留在前端（`crates/app/src/fab.rs`、`ui/mobile_nav_drawer.rs`、`kit_modern/menu_drawer.rs`）。
+
+/// 解析持久化的位置串 `"x,y"`；缺逗号、不是数、或任一分量不是**有限**数 → `None`。
+///
+/// 为什么要单独校验有限性：`"NaN"` / `"inf"` 都能被 `f64::parse` 接受，而 `f64::clamp`
+/// 对 `NaN` 原样返回 —— 收拢之后仍是 `NaN`，前端会拼出 `left:NaNpx`，
+/// 现代风还会同时清掉 CSS 的默认定位，按钮就掉进文档流里找不到了。
+#[must_use]
+pub fn parse_pos(raw: &str) -> Option<(f64, f64)> {
+  let (x, y) = raw.split_once(',')?;
+  let finite = |s: &str| s.trim().parse::<f64>().ok().filter(|v| v.is_finite());
+  Some((finite(x)?, finite(y)?))
+}
 
 /// 一次拖动手势：记住按下时的指针位置与按钮位置，随指针移动累计**路径长度**并算出新位置。
 #[derive(Debug, Clone, Copy)]
@@ -52,6 +64,21 @@ impl FabDrag {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn parse_pos_reads_the_saved_pair() {
+    assert_eq!(parse_pos("12,34"), Some((12.0, 34.0)));
+    assert_eq!(parse_pos(" 12.5 , -3 "), Some((12.5, -3.0)));
+  }
+
+  #[test]
+  fn parse_pos_rejects_anything_that_is_not_two_finite_numbers() {
+    for bad in [
+      "", "12", "12,", ",34", "a,b", "12,34,56", "NaN,1", "1,NaN", "inf,1", "1,-inf", "nan,nan",
+    ] {
+      assert_eq!(parse_pos(bad), None, "{bad:?}");
+    }
+  }
 
   #[test]
   fn small_movement_is_a_tap() {

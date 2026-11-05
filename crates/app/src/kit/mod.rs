@@ -134,7 +134,7 @@ pub fn check_row_class() -> &'static str {
   if is_modern_at_mount() {
     "md-check-row"
   } else {
-    "flex cursor-pointer items-center gap-2"
+    "flex cursor-pointer items-center gap-2 pointer-coarse:min-h-11"
   }
 }
 
@@ -149,6 +149,20 @@ pub fn table_cell_class(extra: &str) -> String {
     crate::cn::cn(&[extra])
   } else {
     crate::cn::cn(&["border px-3 py-2", extra])
+  }
+}
+
+/// 正文里的脚注引用（如波段表的「1」「5.162A」）：现代风 `md-footnote`，像素风为空。
+///
+/// 现代风靠 `::after` 把 18px 高的行内小字撑到 44 的触控命中区（见 `kit.css`）；
+/// 像素风的版式冻结，命中区不做放大。这个类名不能被写死在共享视图里 ——
+/// 像素风 DOM 里出现 `md-*` 会被 `dual_isolation.spec.ts` 判为跨皮肤污染。
+#[must_use]
+pub fn footnote_class() -> &'static str {
+  if is_modern_at_mount() {
+    "md-footnote"
+  } else {
+    ""
   }
 }
 

@@ -519,5 +519,10 @@
   "knowledge.avoid-range": "Evitar",
   "knowledge.reason": "Motivo",
   "knowledge.avoid-ranges": "Rangos que deben evitarse",
-  "knowledge.load-more-count": "Cargar más (mostrando {} / {})"
+  "knowledge.load-more-count": "Cargar más (mostrando {} / {})",
+  "knowledge.level-conversions-50-ohm": "Conversiones de nivel a 50 Ω (dBm · dBμV · FEM)",
+  "knowledge.power-and-dbm-table": "Tabla de potencia y dBm (con los límites de potencia de la licencia)",
+  "knowledge.unit-prefixes-and-magnitudes": "Prefijos de unidades y magnitudes",
+  "knowledge.conversion": "Conversión",
+  "knowledge.multiplier": "Multiplicador"
 }

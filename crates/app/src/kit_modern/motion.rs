@@ -52,6 +52,9 @@ const SPY_LINE: f64 = 140.0;
 /// 滚动落点：观察一组 `#id`，返回「当前阅读到的那一节」。
 ///
 /// 传进来的 id 全都不在 DOM 里时返回 `None`（页面主体可能还没渲染）。
+///
+/// 目录自己是滚动容器时（条目比卡片高），高亮项会被推出可视区 —— 配合
+/// [`reveal_spy_in`] 让容器跟着走，否则用户只看到「没有高亮」。
 #[must_use]
 pub fn use_scroll_spy(ids: Vec<&'static str>) -> Signal<Option<&'static str>> {
   let active = RwSignal::new(Option::<&'static str>::None);
@@ -79,6 +82,14 @@ pub fn use_scroll_spy(ids: Vec<&'static str>) -> Signal<Option<&'static str>> {
         if top <= y {
           current = Some(*id);
         }
+      }
+      // 还没滚过第一节（页面顶，第一节标题在 140px 线以下）时落到第一条：
+      // 否则索引卡一片没有高亮，读者看不出「现在是第几条」。
+      if current.is_none() {
+        current = ids
+          .iter()
+          .copied()
+          .find(|id| doc.get_element_by_id(id).is_some());
       }
       // `try_*`：已排队的 rAF 可能在页面卸载后才跑，`active` 那时已被释放。
       if active.try_get_untracked() != Some(current) {
@@ -120,4 +131,29 @@ pub fn use_scroll_spy(ids: Vec<&'static str>) -> Signal<Option<&'static str>> {
   });
 
   active.into()
+}
+
+/// 让 `container` 里带 `data-spy="true"` 的那一项留在可视区内（只滚容器自己，不动窗口）。
+///
+/// 不用 `scroll_into_view`：它会连带滚动窗口，读者正在读的正文会被拽走。
+/// 已经完整可见时不动，避免高亮每换一节目录就抖一下。
+pub fn reveal_spy_in(container: &web_sys::HtmlElement) {
+  let Some(item) = container
+    .query_selector("[data-spy=\"true\"]")
+    .ok()
+    .flatten()
+  else {
+    return;
+  };
+  let box_rect = container.get_bounding_client_rect();
+  let item_rect = item.get_bounding_client_rect();
+  let pad = 8.0;
+  let delta = if item_rect.top() < box_rect.top() + pad {
+    item_rect.top() - box_rect.top() - pad
+  } else if item_rect.bottom() > box_rect.bottom() - pad {
+    item_rect.bottom() - box_rect.bottom() + pad
+  } else {
+    return;
+  };
+  container.set_scroll_top(container.scroll_top() + delta.round() as i32);
 }

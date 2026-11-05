@@ -51,7 +51,7 @@ pub fn RelatedTopics() -> impl IntoView {
                       view! {
                         <a
                           href=href
-                          class="border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                          class="inline-flex items-center border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground pointer-coarse:min-h-11"
                         >
                           // 文案来自 `crates/core` 的关联表（中文原文）：先走界面词典的反向索引
                           // （页面标题、分类名），查不到再走知识库词典 —— 两边都不查的话，

@@ -341,10 +341,31 @@ pub fn BrowsePage() -> impl IntoView {
     }
     let total = filtered.with(Vec::len);
     if total == 0 {
+      // 筛到零条时给一条明确出口：把所有筛选一起清掉。
+      // 只写一句「没有匹配的题目」，用户还得自己回头找是哪一项设的限。
+      let reset = Callback::new(move |_| {
+        kw.set(String::new());
+        multi_only.set(false);
+        unique_only.set(false);
+        select_top(ALL);
+        sub.set(None);
+        visible.set(PAGE);
+      });
       return view! {
-        <div class="md-panel md-empty">
-          <p class="md-muted">{move || t("exam.no-matching-questions")}</p>
-        </div>
+        <EmptyState
+          title=Signal::derive(move || t("exam.no-matching-questions"))
+          actions=ViewFn::from(move || {
+            view! {
+              <button
+                type="button"
+                class="md-btn md-btn-outline mt-1"
+                on:click=move |_| reset.run(())
+              >
+                {move || t("exam.all-questions")}
+              </button>
+            }
+          })
+        />
       }
       .into_any();
     }
@@ -375,6 +396,157 @@ pub fn BrowsePage() -> impl IntoView {
   };
 
   if crate::kit::is_modern_at_mount() {
+    // 分类的两种宽度、两种控件，数据只有一份：
+    //   · `>=768`：胶囊行（桌面一屏铺得下，点一下换一层）；
+    //   · `<768`：右下角悬浮按钮 + 抽屉（`ModernMenuDrawer`），与工具目录、术语分类同一种交互。
+    // 窄屏不能留胶囊行：三行胶囊换行时 9 个分类铺成 5 行，首屏就只剩筛选器。
+    let type_chips = move || {
+      view! {
+        <button
+          type="button"
+          class="md-chip"
+          aria-pressed=move || top.with(|t| t == ALL).to_string()
+          on:click=move |_| select_top(ALL)
+        >
+          {move || t("exam.all-questions")}
+          <span class="md-menu-count">{move || bank_questions.with(Vec::len)}</span>
+        </button>
+        {TOP_CATEGORIES
+          .iter()
+          .map(|c| {
+            let key = c.key;
+            view! {
+              <button
+                type="button"
+                class="md-chip"
+                aria-pressed=move || top.with(|t| t == key).to_string()
+                on:click=move |_| select_top(key)
+              >
+                {move || crate::data::core_text_tracked(c.name)}
+                <span class="md-menu-count">
+                  {move || cat_count.with(|m| m.get(key).copied().unwrap_or(0))}
+                </span>
+              </button>
+            }
+          })
+          .collect_view()}
+      }
+    };
+    let sub_chips = move || {
+      let current = top.get();
+      view! {
+        <button
+          type="button"
+          class="md-chip"
+          aria-pressed=move || sub.with(Option::is_none).to_string()
+          on:click=move |_| sub.set(None)
+        >
+          {move || t("exam.all-questions")}
+        </button>
+        {categories::sub_names_of(&current)
+          .into_iter()
+          .filter(|name| sub_count.with(|m| m.get(name).copied().unwrap_or(0)) > 0)
+          .map(|name| {
+            view! {
+              <button
+                type="button"
+                class="md-chip md-chip-sm"
+                aria-pressed=move || (sub.get() == Some(name)).to_string()
+                on:click=move |_| {
+                  sub.set(Some(name));
+                  visible.set(PAGE);
+                }
+              >
+                {move || crate::data::core_text_tracked(name)}
+              </button>
+            }
+          })
+          .collect_view()}
+      }
+    };
+    // 抽屉内容：题型一层，子类**缩进挂在被选中那一类的下面**（不是另起一段）。
+    // 选题型不关抽屉 —— 子类就在它下面；选「全部题目」或某个子类才收起。
+    let drawer_tree = move || {
+      view! {
+        <ul class="md-drawer-list">
+          <li>
+            <button
+              type="button"
+              class="md-drawer-item"
+              aria-pressed=move || top.with(|t| t == ALL).to_string()
+              on:click=move |_| {
+                select_top(ALL);
+                cat_open.set(false);
+              }
+            >
+              {move || t("exam.all-questions")}
+              <span class="md-menu-count">{move || bank_questions.with(Vec::len)}</span>
+            </button>
+          </li>
+          {TOP_CATEGORIES
+            .iter()
+            .map(|c| {
+              let key = c.key;
+              view! {
+                <li>
+                  <button
+                    type="button"
+                    class="md-drawer-item"
+                    aria-pressed=move || top.with(|t| t == key).to_string()
+                    // 已经有子类展开时再点一次：不会收起（那一类仍是当前分类），
+                    // 只把子类选择清掉 —— 「本类全部」就是这个状态。
+                    on:click=move |_| select_top(key)
+                  >
+                    {move || crate::data::core_text_tracked(c.name)}
+                    <span class="md-menu-count">
+                      {move || cat_count.with(|m| m.get(key).copied().unwrap_or(0))}
+                    </span>
+                  </button>
+                  {move || {
+                    (top.with(|t| t == key))
+                      .then(|| {
+                        view! {
+                          <ul class="md-drawer-sublist">
+                            {categories::sub_names_of(key)
+                              .into_iter()
+                              .filter(|name| {
+                                sub_count.with(|m| m.get(name).copied().unwrap_or(0)) > 0
+                              })
+                              .map(|name| {
+                                view! {
+                                  <li>
+                                    <button
+                                      type="button"
+                                      class="md-drawer-item"
+                                      aria-pressed=move || (sub.get() == Some(name)).to_string()
+                                      on:click=move |_| {
+                                        sub.set(Some(name));
+                                        visible.set(PAGE);
+                                        cat_open.set(false);
+                                      }
+                                    >
+                                      {move || crate::data::core_text_tracked(name)}
+                                      <span class="md-menu-count">
+                                        {move || sub_count
+                                          .with(|m| m.get(name).copied().unwrap_or(0))}
+                                      </span>
+                                    </button>
+                                  </li>
+                                }
+                              })
+                              .collect_view()}
+                          </ul>
+                        }
+                      })
+                  }}
+                </li>
+              }
+            })
+            .collect_view()}
+        </ul>
+      }
+    };
+
     return view! {
       <div class="md-root">
         <div class="md-page">
@@ -395,106 +567,66 @@ pub fn BrowsePage() -> impl IntoView {
               aria_label=Signal::derive(move || t("exam.search-question-answer-explanation"))
               class="md-glossary-search"
             />
-            <button
-              type="button"
-              class="md-chip"
-              aria-pressed=move || multi_only.get().to_string()
-              on:click=move |_| multi_only.update(|v| *v = !*v)
-            >
-              {move || t("exam.multiple-only")}
-            </button>
-            <button
-              type="button"
-              class="md-chip"
-              aria-pressed=move || unique_only.get().to_string()
-              on:click=move |_| unique_only.update(|v| *v = !*v)
-            >
-              {move || t("exam.new-in-this-class")}
-            </button>
+            // 题库选择是「这份列表的数据范围」，与搜索 / 多选 / 新增同一层：
+            // 它是数据源、不是分类导航，所以不进下面的菜单条（像素风也放在页头）。
+            // `md-chip-bar`：≥641 是 `display: contents`（胶囊仍与搜索框同处一条 flex-wrap 行，版式与以前一致）；
+            // ≤640 变成独占一行的横滚条 —— 5 颗胶囊以前折成两行 98px，把首张题卡推到视口 60% 以下。
+            <div class="md-chip-bar">
+              {Bank::ALL
+                .into_iter()
+                .map(|b| {
+                  view! {
+                    <button
+                      type="button"
+                      class="md-chip"
+                      aria-pressed=move || (bank.get() == b).to_string()
+                      on:click=move |_| {
+                        bank.set(b);
+                        visible.set(PAGE);
+                        select_top(ALL);
+                      }
+                    >
+                      {move || bank_class(b.as_str())}
+                    </button>
+                  }
+                })
+                .collect_view()}
+              <button
+                type="button"
+                class="md-chip"
+                aria-pressed=move || multi_only.get().to_string()
+                on:click=move |_| multi_only.update(|v| *v = !*v)
+              >
+                {move || t("exam.multiple-only")}
+              </button>
+              <button
+                type="button"
+                class="md-chip"
+                aria-pressed=move || unique_only.get().to_string()
+                on:click=move |_| unique_only.update(|v| *v = !*v)
+              >
+                {move || t("exam.new-in-this-class")}
+              </button>
+            </div>
           </div>
 
-          <div class="md-chip-row mb-2">
-            {Bank::ALL
-              .into_iter()
-              .map(|b| {
-                view! {
-                  <button
-                    type="button"
-                    class="md-chip"
-                    aria-pressed=move || (bank.get() == b).to_string()
-                    on:click=move |_| {
-                      bank.set(b);
-                      visible.set(PAGE);
-                      select_top(ALL);
-                    }
-                  >
-                    {move || bank_class(b.as_str())}
-                  </button>
-                }
-              })
-              .collect_view()}
+          // `>=768`：分类胶囊行（题型一层 + 选了题型后的子类一层）。
+          <div class="md-menu-chips">
+            <div class="md-chip-row mb-2">{type_chips()}</div>
+            {move || {
+              (top.with(|t| t != ALL))
+                .then(|| view! { <div class="md-chip-row mb-4">{sub_chips()}</div> })
+            }}
           </div>
 
-          <div class="md-chip-row mb-2">
-            <button
-              type="button"
-              class="md-chip"
-              aria-pressed=move || top.with(|t| t == ALL).to_string()
-              on:click=move |_| select_top(ALL)
-            >
-              {move || t("exam.all-questions")}
-              <span class="md-menu-count">{move || bank_questions.with(Vec::len)}</span>
-            </button>
-            {TOP_CATEGORIES
-              .iter()
-              .map(|c| {
-                let key = c.key;
-                view! {
-                  <button
-                    type="button"
-                    class="md-chip"
-                    aria-pressed=move || top.with(|t| t == key).to_string()
-                    on:click=move |_| select_top(key)
-                  >
-                    {move || crate::data::core_text_tracked(c.name)}
-                    <span class="md-menu-count">
-                      {move || cat_count.with(|m| m.get(key).copied().unwrap_or(0))}
-                    </span>
-                  </button>
-                }
-              })
-              .collect_view()}
-          </div>
-
-          {move || {
-            (top.with(|t| t != ALL))
-              .then(|| {
-                let current_top = top.get();
-                view! {
-                  <div class="md-chip-row mb-4">
-                    {categories::sub_names_of(&current_top)
-                      .into_iter()
-                      .filter(|name| sub_count.with(|m| m.get(name).copied().unwrap_or(0)) > 0)
-                      .map(|name| {
-                        view! {
-                          <button
-                            type="button"
-                            class="md-chip md-chip-sm"
-                            aria-pressed=move || (sub.get() == Some(name)).to_string()
-                            on:click=move |_| {
-                              sub.set(Some(name));
-                              visible.set(PAGE);
-                            }
-                          >
-                            {move || crate::data::kt_tracked(name)}
-                          </button>
-                        }
-                      })
-                      .collect_view()}
-                  </div>
-                }
-              })
-          }}
+          // `<768`：同一个分类树收进抽屉，按钮在右下角。
+          <crate::kit_modern::ModernMenuDrawer
+            open=cat_open
+            title=Signal::derive(move || t("exam.question-types"))
+            button_label=Signal::derive(move || t("exam.category"))
+          >
+            {drawer_tree()}
+          </crate::kit_modern::ModernMenuDrawer>
 
           <div class="md-strip mb-5">
             <div class="md-strip-item">
@@ -513,12 +645,8 @@ pub fn BrowsePage() -> impl IntoView {
               <crate::kit_modern::ModernStatValue value=Signal::stored(Some(TOP_CATEGORIES.len())) />
               <span class="md-strip-label">{move || t("exam.question-types")}</span>
             </div>
-            <div class="md-strip-item">
-              <crate::kit_modern::ModernStatValue value=Signal::derive(move || {
-                  Some(filtered.with(Vec::len))
-              }) />
-              <span class="md-strip-label">{move || t("exam.current-filter")}</span>
-            </div>
+            // 第四格「当前筛选」删掉了：默认筛选下它恒等于「总题数」，
+            // 两个一样的数字并排只是占位。
           </div>
 
           {modern_list}

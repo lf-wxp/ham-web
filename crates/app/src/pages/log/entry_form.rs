@@ -402,17 +402,32 @@ pub(super) fn EntryForm(
             </div>
           }.into_any(),
         }}
+        // 「更多字段」展开钮。像素风保持原样（下划线是它的悬停反馈，Text 变体的悬停换色被 `text-primary` 压住）。
+        // 现代风换成一颗整行按钮 + 随展开旋转的 chevron：原来是 12px 粗体黑字 + 下划线、`line-height: 1`，
+        // 文案很长（列出了折叠区里的全部字段），折成两行后第二行顶着第一行的下划线，
+        // 既不像可点控件，高度也只有 34。
+        // 文案很长：按钮基类是定高 + 不换行，手机宽度下它的最小内容宽度会把单列网格撑到 500px 以上，
+        // 整页出现横向滚动，所以两套皮肤都允许换行。
         <Button
           variant=Variant::Text
-          size=Size::Xs
-          // Text 变体的悬停换色被 `text-primary` 压住，所以这里用下划线做悬停反馈。
-          // 文案很长（列出了折叠区里的全部字段）：按钮基类是定高 + 不换行，手机宽度下
-          // 它的最小内容宽度会把单列网格撑到 500px 以上，整页出现横向滚动，所以允许换行。
-          class="h-auto min-h-6 whitespace-normal py-1 text-left text-primary underline underline-offset-4 hover:underline sm:col-span-2 lg:col-span-3"
+          size=if crate::kit::is_modern_at_mount() { Size::Sm } else { Size::Xs }
+          class=if crate::kit::is_modern_at_mount() {
+            "group md-btn-wrap h-auto w-full justify-between gap-2 text-left sm:col-span-2 lg:col-span-3"
+          } else {
+            "h-auto min-h-6 whitespace-normal py-1 text-left text-primary underline underline-offset-4 hover:underline sm:col-span-2 lg:col-span-3"
+          }
           aria_expanded=Signal::derive(move || form.show_more.get())
           on_click=Callback::new(move |_| form.show_more.update(|v| *v = !*v))
         >
-          {move || if form.show_more.get() { t("log.hide-extra-fields") } else { t("log.more-fields-power-end") }}
+          <span class="min-w-0 flex-1">
+            {move || if form.show_more.get() { t("log.hide-extra-fields") } else { t("log.more-fields-power-end") }}
+          </span>
+          {crate::kit::is_modern_at_mount().then(|| view! {
+            <crate::icons::Icon
+              kind=crate::icons::IconKind::ChevronDown
+              class="size-6 shrink-0 transition-transform group-aria-expanded:rotate-180"
+            />
+          })}
         </Button>
         {move || {
           form.show_more.get().then(|| {

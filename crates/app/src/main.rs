@@ -11,6 +11,7 @@ mod data;
 mod decode_session;
 mod decode_worker;
 mod exam_history;
+mod fab;
 mod focus;
 mod gesture;
 mod i18n;

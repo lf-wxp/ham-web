@@ -4,7 +4,8 @@
 //!
 //! 悬浮按钮可以按住拖动改位置：位置收拢在视口内、持久化到 `localStorage`，
 //! 三个页面共享同一个位置。轻点（位移小于阈值）打开抽屉，拖动不打开 ——
-//! 判定与收拢在 `ham_web_core::fab`，这里只做事件监听与持久化。
+//! 判定在 `ham_web_core::fab`，收拢与持久化在 `crate::fab`（与
+//! `kit_modern::ModernMenuDrawer` 共用同一份 key），这里只做事件监听与视图。
 
 use std::time::Duration;
 
@@ -16,7 +17,6 @@ use wasm_bindgen::JsCast;
 
 use crate::cn::cn;
 use crate::icons::{Icon, IconKind};
-use crate::util::{storage, window};
 
 use super::{Button, Sheet, Size, Variant};
 
@@ -24,53 +24,19 @@ use super::{Button, Sheet, Size, Variant};
 const FAB_SIZE: f64 = 40.0;
 /// 累计位移超过该值视为拖动（否则是轻点，打开抽屉）。
 const DRAG_THRESHOLD: f64 = 6.0;
-/// 位置持久化的 key（浏览 / 术语表 / 工具目录共享）。
-const POS_KEY: &str = "fab-position";
 /// 默认位置：距右 16px（原 `right-4`）。
 const DEFAULT_GAP: f64 = 16.0;
 /// 默认位置：距底 96px（原 `bottom-24`，避开底部 Tab 与其 safe-area）。
 const DEFAULT_BOTTOM: f64 = 96.0;
 
-/// 视口尺寸（读不到时为 0，收拢逻辑会退化成「钉在原点」）。
-fn viewport() -> (f64, f64) {
-  let w = window();
-  let width = w.inner_width().ok().and_then(|v| v.as_f64()).unwrap_or(0.0);
-  let height = w
-    .inner_height()
-    .ok()
-    .and_then(|v| v.as_f64())
-    .unwrap_or(0.0);
-  (width, height)
-}
-
-/// 默认位置（右下角）。
+/// 默认位置（右下角）。位置收拢与持久化在 [`crate::fab`]（与
+/// `kit_modern::ModernMenuDrawer` 共用同一份 key 与口径）。
 fn default_pos() -> (f64, f64) {
-  let (vw, vh) = viewport();
+  let (vw, vh) = crate::fab::viewport();
   (
     (vw - FAB_SIZE - DEFAULT_GAP).max(0.0),
     (vh - FAB_SIZE - DEFAULT_BOTTOM).max(0.0),
   )
-}
-
-/// 把位置收拢进当前视口（旋转 / 换设备后旧位置可能出界）。
-fn clamp_to_viewport(pos: (f64, f64)) -> (f64, f64) {
-  let (vw, vh) = viewport();
-  let max_x = (vw - FAB_SIZE).max(0.0);
-  let max_y = (vh - FAB_SIZE).max(0.0);
-  (pos.0.clamp(0.0, max_x), pos.1.clamp(0.0, max_y))
-}
-
-fn load_pos() -> (f64, f64) {
-  let Some(raw) = storage::get(POS_KEY) else {
-    return default_pos();
-  };
-  let Some((x, y)) = raw.split_once(',') else {
-    return default_pos();
-  };
-  match (x.trim().parse::<f64>(), y.trim().parse::<f64>()) {
-    (Ok(x), Ok(y)) => clamp_to_viewport((x, y)),
-    _ => default_pos(),
-  }
 }
 
 /// 悬浮按钮 + 右侧抽屉的组合。
@@ -90,7 +56,7 @@ pub fn MobileNavDrawer(
   #[prop(optional, into)] class: String,
   children: ChildrenFn,
 ) -> impl IntoView {
-  let pos = RwSignal::new(load_pos());
+  let pos = RwSignal::new(crate::fab::load_pos(FAB_SIZE).unwrap_or_else(default_pos));
   // 进行中的手势（None = 没有按下）。
   let drag = StoredValue::new(None::<FabDrag>);
   // 拖动后抑制随后可能派发的合成 click（不同浏览器对 pointerdown
@@ -117,7 +83,7 @@ pub fn MobileNavDrawer(
     let Some(mut d) = drag.get_value() else {
       return;
     };
-    let (vw, vh) = viewport();
+    let (vw, vh) = crate::fab::viewport();
     let next = d.drag_to(
       (f64::from(ev.client_x()), f64::from(ev.client_y())),
       ((vw - FAB_SIZE).max(0.0), (vh - FAB_SIZE).max(0.0)),
@@ -144,8 +110,7 @@ pub fn MobileNavDrawer(
         move || suppress_click.set_value(false),
         Duration::from_millis(0),
       );
-      let p = pos.get_untracked();
-      storage::set(POS_KEY, &format!("{},{}", p.0, p.1));
+      crate::fab::save_pos(pos.get_untracked());
     } else {
       // 轻点：打开抽屉。
       open.set(true);
@@ -162,7 +127,7 @@ pub fn MobileNavDrawer(
   };
   // 视口变化（旋转 / 分屏）后把位置收拢回屏内。
   let resize_handle = window_event_listener(ev::resize, move |_| {
-    pos.update(|p| *p = clamp_to_viewport(*p));
+    pos.update(|p| *p = crate::fab::clamp_to_viewport(*p, FAB_SIZE));
   });
   let resize_handle = SendWrapper::new(Some(resize_handle));
   on_cleanup(move || {

@@ -53,6 +53,39 @@ test("DX 热点：按波段 / 模式筛选、对照日志标出需要的实体�
   await expect(rows.first()).toContainText("PY2AA");
 });
 
+test("DX 热点：频率缺失显示「—」而不是 0 MHz，记入日志时频率留空；备注完整可读", async ({ page }) => {
+  await stubApi(page, {
+    "/api/spots": [
+      { spotter: "N1MIW", freq_khz: 0, dx: "KI4R", country: "United States", comment: "FN41<F2>EM63 FT8  Sent: -20  Rcvd: -05", time: "0344z", age: 1 },
+      { spotter: "DL1AA", freq_khz: 14294, dx: "ZZ5UNO", country: "Brazil", comment: "", time: "0354z", age: 2 },
+    ],
+  });
+  await page.goto("/dx-spots");
+
+  const missing = page.getByRole("button", { name: /^KI4R / });
+  const row = page.locator('[data-slot="spot-row"]', { has: missing });
+  await expect(row).toContainText("—");
+  // 「0 MHz」是看着合法的错误数据：整页都不许出现。
+  await expect(page.locator("main")).not.toContainText(/(^|\s)0 MHz/);
+  // 没有频率就不画波段徽标（以前会画一个「其他」）。
+  await expect(row).not.toContainText("其他");
+  // 备注是完整的一段文字，不被压成「FT8…」。
+  await expect(row.locator("p")).toHaveText("FN41<F2>EM63 FT8  Sent: -20  Rcvd: -05");
+  // 有频率的那条照常显示 MHz 与波段。
+  await expect(page.locator("main")).toContainText("14.294 MHz");
+
+  // 点呼号记入日志：频率留空，提示里也不出现 0 MHz。
+  await missing.click();
+  await expect(page.getByRole("status")).toContainText("已加入日志：KI4R");
+  await expect(page.getByRole("status")).not.toContainText("0 MHz");
+  const freq = await page.evaluate(() => {
+    const raw = localStorage.getItem("logbook");
+    const entries = raw ? (JSON.parse(raw).entries as { callsign: string; freq: string }[]) : [];
+    return entries.find((e) => e.callsign === "KI4R")?.freq;
+  });
+  expect(freq).toBe("");
+});
+
 test("DX 热点：接口不可用时给出降级提示", async ({ page }) => {
   await stubApi(page, {});
   await page.goto("/dx-spots");

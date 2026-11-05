@@ -1215,7 +1215,9 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
     font-weight: 500;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    opacity: 0.72;
+    /* 0.72 是「贴着橙底算出来的极限」：深墨字在品牌橙上，叠到 0.72 只剩约 3.3:1，
+       低于 12px 小字的 4.5。0.86 约 4.6:1，视觉上仍是「比标题淡一档」的元信息。 */
+    opacity: 0.86;
   }
 
   .md-feature-title {
@@ -1618,6 +1620,7 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
   .md-root :focus-visible,
   .md-sheet :focus-visible,
   .md-nav :focus-visible,
+  .md-drawer-fab:focus-visible,
   .md-modal-panel :focus-visible,
   .md-sheet-panel :focus-visible,
   .md-palette :focus-visible,
@@ -1781,11 +1784,28 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
     gap: var(--md-space-2);
   }
 
+  /* 换行的胶囊行不写 `nowrap`：胶囊 `flex-shrink: 0`，短标签本来就不会在行内折断，
+     只有比整行还宽的长标签才会折行 —— 那时折行好过把文字撑出胶囊（见 `.md-chip`）。
+     真正横滚的容器（闪卡分类条、练习页头、`.md-chip-bar`）各自单独 nowrap。 */
+
+  /* 显式横滚的分类条（闪卡）：胶囊既不折行也不被压缩，宽度不够时整条横滚。 */
+  .md-chip-scroll .md-chip {
+    white-space: nowrap;
+  }
+
   .md-chip {
     display: inline-flex;
     align-items: center;
-    height: 32px;
-    padding-inline: var(--md-space-3);
+    /* 高度是下限而不是定值：长标签（西语的滤波器名这类）在 320px 下会折行，
+       定高会让文字溢出胶囊；短标签仍是 32。 */
+    min-height: 32px;
+    /* 不被 flex 压缩：闪卡分类条曾把「Q 简语」挤成上下两行。
+       不写全局 `white-space: nowrap` —— 那会让长标签把胶囊撑出容器（西语 320px 溢出 3px）；
+       横滚容器里的胶囊在下面单独 nowrap。 */
+    flex-shrink: 0;
+    max-width: 100%;
+    padding: var(--md-space-1) var(--md-space-3);
+    line-height: 1.35;
     border-radius: var(--md-r-pill);
     border: 1px solid var(--md-border);
     background-color: var(--md-surface);
@@ -2194,7 +2214,7 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
     padding: 1px 8px;
     border-radius: var(--md-r-pill);
     border: 1px solid var(--md-orange);
-    color: var(--md-orange);
+    color: var(--md-accent-ink);
     font-size: var(--md-text-xs);
   }
 
@@ -2577,6 +2597,37 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
      页头 / 页脚 / 底部工具条在换页时左右跳。 */
   .md-article-page {
     max-width: var(--md-page-max);
+    /* 阅读正文随视口连续放大（`--md-text-prose`，手机 15 / 桌面封顶 17.5）。
+       只在这一层落字号：卡片标题、表格、徽标、控件各自有固定档，不受它影响。
+       行高 1.75 是「成段读」的下限 —— 1.6 适合界面文案，长段落会显得挤。 */
+    font-size: var(--md-text-prose);
+    line-height: 1.75;
+  }
+
+  /* 成段的文本（段落 / 列表项 / 引用）按 measure 限宽：
+     版心 1200 时一行有 60+ 个汉字，眼睛回行时会串行。
+     限宽用 `em`，字号随视口变时每行字数仍然不变。
+     表格、按钮、徽标、卡片本身不限 —— 它们是块，不是段落。 */
+  .md-article :is(p, li, dd, blockquote) {
+    max-width: var(--md-measure);
+  }
+
+  /* 手机的阅读页：卡片内距与块间距各收一档。
+     24 的页面内距 + 24 的卡片内距在 390px 上吃掉 96px（正文只剩 294），
+     相当于每行少两个字；块间距 22 在手机上也比段落的 26px 行高更抢眼。 */
+  @media (max-width: 640px) {
+    .md-article {
+      gap: var(--md-space-4);
+    }
+
+    .md-article .md-panel {
+      padding: var(--md-space-4);
+    }
+
+    /* 章节标题比正文档高三档即可，24px 在手机上会把「核心概念」读成页标题。 */
+    .md-article .md-panel-title {
+      font-size: var(--md-text-lg);
+    }
   }
 
   .md-article-head {
@@ -2684,7 +2735,9 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
   .md-bullets li {
     display: flex;
     gap: var(--md-space-2-5);
-    font-size: var(--md-text-base);
+    /* 字号跟着宿主走：文章页里继承 `--md-text-prose`（随视口放大），
+       其它页面继承 `.md-root` 的 `--md-text-base`。写死 16 的话，
+       阅读页里唯一不跟着放大的就是这一族列表。 */
     color: var(--md-fg-muted);
     line-height: 1.65;
   }
@@ -2720,7 +2773,7 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
     font-family: var(--md-font-mono);
     font-size: var(--md-text-sm);
     font-weight: 640;
-    color: var(--md-orange);
+    color: var(--md-accent-ink);
   }
 
   .md-step-name {
@@ -2747,7 +2800,9 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
     gap: var(--md-space-0-5);
     padding: var(--md-space-2-5);
     border-radius: var(--md-r-sm);
-    font-size: var(--md-text-base);
+    /* 概念卡只出现在知识库文章页（`ConceptsSection`），字号跟着宿主走，
+       不吃固定 16 —— 否则整页正文放大时只有这一块原地不动。 */
+    font-size: inherit;
   }
 
   .md-concept:hover {
@@ -2761,7 +2816,9 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
 
   .md-concept dd {
     margin: 0;
-    font-size: var(--md-text-sm);
+    /* 相对宿主（`.md-concept` 继承的 `--md-text-prose`）：释义要比术语小一档保持层级，
+       又要跟着正文一起随视口放大 —— 固定 13px 时，桌面正文 17.5 旁边挂着 13 的释义。 */
+    font-size: 0.9em;
     line-height: 1.6;
   }
 
@@ -3057,7 +3114,9 @@ html[data-ui-style="modern"] .md-q [data-slot="badge"] {
     background: transparent;
     color: var(--md-fg-muted);
     font-family: inherit;
-    font-size: var(--md-text-3xs);
+    /* 2xs（中文 12 / 英西 11），不是 3xs（中文 11 / 英西 10）：dock 是常驻导航，不是脚注。
+       西语的长词靠上面的 `hyphens` + `text-wrap: balance` 断行，不靠缩字号。 */
+    font-size: var(--md-text-2xs);
     letter-spacing: 0.01em;
     cursor: pointer;
     transition:
@@ -3088,8 +3147,19 @@ html[data-ui-style="modern"] .md-q [data-slot="badge"] {
 
     /* 给 dock 让位，避免最后一行内容被盖住。
        必须叠加 `env(safe-area-inset-bottom)`：dock 自己的内边距含这一项（见上方 `.md-dock`），
-       少算它在 iPhone 上会把最后一行再吃掉 34px（全面屏 home indicator 的高度）。 */
-    .md-root {
+       少算它在 iPhone 上会把最后一行再吃掉 34px（全面屏 home indicator 的高度）。
+
+       **只挂在一个元素上**：以前写在 `.md-root` 上，
+       而 `.md-root` 是「字体作用域」，页面里、页脚里被反复嵌套，嵌一层就多算一层 ——
+       实测普通页叠 3–4 个 84px，页尾多出 168–252px 空白，考试页（184px 一档）叠到 736px。
+       现在：站点页脚（`body > footer`，在页面最底）承担让位；页脚选择器必须带
+       `html[data-ui-style="modern"]`：本文件两套皮肤都会加载，像素风在 `pixel/surfaces.css`
+       对同一个 `body > footer` 另有 4rem 的让位，不带门禁时这里（层序更靠后）会把它盖成 84px；
+       页脚被隐藏的答题页由下面的
+       `.md-practice` / `.md-exam` 各自承担；页脚被隐藏、dock 仍在的页面（`/daily-challenge`、`/battle`，
+       没有 `data-page-mode`）只让外壳 `[data-style-root]` 承担这一份。 */
+    html[data-ui-style="modern"] body > footer,
+    body.no-site-footer:not([data-page-mode]) [data-style-root="modern"] {
       padding-bottom: calc(84px + env(safe-area-inset-bottom));
     }
   }
@@ -3897,10 +3967,9 @@ html[data-ui-style="modern"]:not(.dark) .md-hero-art svg circle[fill="url(#md-mo
   }
 }
 
-/* 5) 标题渐变改用 OKLCH 插值：中间不会发灰，色彩更"电"。不支持时退回 sRGB 版本。 */
-.md-display-gradient {
-  color: var(--md-orange);
-}
+/* （`.md-display-gradient` 的颜色只在 `@layer components` 里定义，浅色补丁见文件末尾附近。
+   这里曾有一条**未分层**的 `color: var(--md-orange)`：未分层规则永远压过分层规则，
+   浅色下「掺深色」的补丁从未生效，hero 大字停在 2.98:1。）*/
 
 @media (prefers-reduced-motion: reduce) {
   .md-feature-accent,
@@ -4380,13 +4449,15 @@ html[data-ui-style="modern"]:not(.dark) .md-hero-art svg rect {
     transition-delay: 0s;
   }
 
-  /* 练习页在 <900 都显示底部操作条（`.md-bar-practice`，z-index 40），而专注模式下 dock 已
-     收起：浮层要抬到操作条之上，并叠安全区（刘海屏底部手势条）。以前按「dock 66 + 22」写成
-     88px 且只在 ≤768 生效，769–899 的浮层就压在操作条上面。 */
-  @media (max-width: 900px) {
+  /* `<900` 底部操作条（`.md-bar-practice`）本身就有「下一题」：浮钮再出一个，同屏两个橙色主行动
+     （违反「一屏只给一个主行动」），而且它浮在 y≈704，正好盖住 44×44 的「朗读解析」、
+     下滚后压在「保存笔记」上。所以窄屏直接不要它；`display: none` 同时把它移出 Tab 序与无障碍树。
+     `≥900` 底栏不显示（两侧箭头翻页），浮钮仍是答完题后的出口，保留。
+     两档互斥，边界只属于一边：用范围语法 `width < 900px`，恰好 900 属于「底栏隐藏、浮钮保留」那一档，
+     写成 `max-width: 900px` 会让 900px 的练习页既没有底栏、也没有浮钮（见 `modern.md` §3）。 */
+  @media (width < 900px) {
     .md-next-float {
-      inset-inline-end: 16px;
-      inset-block-end: calc(96px + env(safe-area-inset-bottom));
+      display: none;
     }
   }
 
@@ -4493,8 +4564,9 @@ html[data-ui-style="modern"]:not(.dark) {
 }
 
 /* 考试页的底栏在**所有**宽度都是 fixed（桌面也不换成侧边栏），
-   所以底部留白必须无断点地成立：96px = 桌面单行底栏 + 一行余量。 */
-body[data-page-mode="exam"] .md-root {
+   所以底部留白必须无断点地成立：96px = 桌面单行底栏 + 一行余量。
+   只挂在 `.md-exam`（页根）上，不挂 `.md-root`：后者是会嵌套的字体作用域（见 C2.6-1）。 */
+body[data-page-mode="exam"] .md-exam {
   padding-bottom: calc(96px + env(safe-area-inset-bottom));
 }
 
@@ -4523,7 +4595,6 @@ body[data-page-mode="exam"] .md-root {
 
   /* 考试底栏在窄屏会换成两行（按钮 `flex: 1 1 auto` + `flex-wrap`），
      132px 够中文的单行版；具体行数由下方按宽度再抬一档。 */
-  body[data-page-mode="exam"] .md-root,
   body[data-page-mode="exam"] .md-exam {
     padding-bottom: calc(132px + env(safe-area-inset-bottom));
   }
@@ -4532,7 +4603,6 @@ body[data-page-mode="exam"] .md-root {
 /* 更窄的屏（≤480）：考试底栏的按钮会换成两到三行，
    留白按最高一档给，宁可多滚一点，也不要最后一个按钮被压在底栏下面。 */
 @media (max-width: 480px) {
-  body[data-page-mode="exam"] .md-root,
   body[data-page-mode="exam"] .md-exam {
     padding-bottom: calc(184px + env(safe-area-inset-bottom));
   }
@@ -4742,7 +4812,7 @@ body[data-page-mode="exam"] .md-root {
     font-family: var(--md-font-mono);
     font-size: var(--md-text-md);
     font-weight: 640;
-    color: var(--md-orange);
+    color: var(--md-accent-ink);
   }
 
   .md-rst-grid {
@@ -4768,7 +4838,7 @@ body[data-page-mode="exam"] .md-root {
   .md-rst-key {
     font-size: var(--md-text-md);
     font-weight: 700;
-    color: var(--md-orange);
+    color: var(--md-accent-ink);
   }
 
   .md-rst-levels {
@@ -4945,8 +5015,10 @@ body[data-page-mode="exam"] .md-root {
     color: var(--md-fg-muted);
   }
 
+  /* 释义是成段阅读文本，不是界面副文本：13px 在手机上笔画糊、也不符合
+     `ui/modern.md` §2.3 的「阅读正文 15~17.5」；用 compact 档（窄屏 15 / 桌面 16）。 */
   .md-term-desc {
-    font-size: var(--md-text-sm);
+    font-size: var(--md-text-compact);
     line-height: 1.7;
     color: var(--md-fg-muted);
   }
@@ -5191,7 +5263,7 @@ body[data-page-mode="exam"] .md-root {
 
   .md-field-required {
     margin-inline-start: 3px;
-    color: var(--md-orange);
+    color: var(--md-accent-ink);
   }
 
   .md-field-hint {
@@ -5272,7 +5344,9 @@ body[data-page-mode="exam"] .md-root {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  @media (min-width: 1024px) {
+  /* 侧栏与「悬浮按钮 + 抽屉」互斥，分界与顶栏同一条（768）：`<768` 侧栏让位给
+     `ModernMenuDrawer`（见文件末尾的「窄屏分类 / 目录菜单」一节），`>=768` 目录回到左侧常驻索引。 */
+  @media (min-width: 768px) {
     .md-tools-grid {
       grid-template-columns: 208px minmax(0, 1fr);
     }
@@ -5282,7 +5356,7 @@ body[data-page-mode="exam"] .md-root {
     display: none;
   }
 
-  @media (min-width: 1024px) {
+  @media (min-width: 768px) {
     .md-tools-aside {
       display: block;
     }
@@ -5328,28 +5402,6 @@ body[data-page-mode="exam"] .md-root {
     color: var(--md-fg);
   }
 
-  /* 窄屏：目录折叠成一行 */
-  .md-tools-drawer {
-    margin-bottom: 18px;
-    padding: var(--md-space-3-5) var(--md-space-4);
-  }
-
-  @media (min-width: 1024px) {
-    .md-tools-drawer {
-      display: none;
-    }
-  }
-
-  .md-tools-drawer summary {
-    cursor: pointer;
-    font-size: var(--md-text-base);
-    font-weight: 560;
-    color: var(--md-fg);
-  }
-
-  .md-tools-drawer[open] summary {
-    margin-bottom: var(--md-space-2-5);
-  }
 }
 
 /* ============================================================
@@ -5363,6 +5415,30 @@ html[data-ui-style="modern"] .md-root .bg-inset {
   background-color: var(--md-surface-2);
   border-radius: var(--md-r-sm);
   color: var(--md-fg);
+}
+
+/* 小工具页的计算结果。
+   上面那条「只覆盖背景与圆角，字号仍由原类名决定」对结果框不够：`text-sm` 在这套阶梯里是 12px，
+   于是页面上**输入框是 16px、答案却是 12px**（390px 实测 `/tools` 全页文字的 84% 是 12px），
+   读数层级是倒的。只在 `≤640` 抬 —— 桌面是宽屏三列，12–13px 的密度是合适的。
+   选择器挂在已有的页面作用域 `.md-tools-grid` 上，不为这一条新增类名；
+   字段标签 / 提示（`.md-field-label` / `.md-field-hint`）仍是 12px，规范 §2.3 钉死，不动。 */
+@media (max-width: 640px) {
+  html[data-ui-style="modern"] .md-tools-grid .bg-inset {
+    font-size: var(--md-text-compact);
+    line-height: 1.5;
+  }
+
+  /* 公式 / 适用条件这类说明段：12 → 13，仍是「说明」档，只是不再比字段标签还小。 */
+  html[data-ui-style="modern"] .md-tools-grid p.text-xs {
+    font-size: var(--md-text-sm);
+    line-height: 1.55;
+  }
+
+  /* 西语 / 英文的面板标题两行时，24px × 1.3 偏挤。 */
+  html[data-ui-style="modern"] .md-tools-grid .md-panel-title {
+    line-height: 1.35;
+  }
 }
 
 html[data-ui-style="modern"] .md-root .bg-muted {
@@ -5424,9 +5500,19 @@ html[data-ui-style="modern"] .md-panel table:not(.md-table) tbody tr:last-child 
     gap: var(--md-space-2-5);
   }
 
+  /* 标签行：题号 + 分类 + 题型 + 分类码。不定宽的胶囊挤在同一行，窄屏必须换行；
+     换行后各行仍需与题干同一条左边缘，所以这一行只是标签自己的容器，题干不在这里。 */
+  .md-q-row-tags {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--md-space-1-5);
+    min-width: 0;
+  }
+
   .md-q-row-id {
     flex-shrink: 0;
-    margin-top: var(--md-space-0-5);
     padding: 1px 7px;
     border-radius: var(--md-r-pill);
     background-color: var(--md-surface-2);
@@ -5435,9 +5521,53 @@ html[data-ui-style="modern"] .md-panel table:not(.md-table) tbody tr:last-child 
     color: var(--md-fg-muted);
   }
 
+  /* 分类名：与 `.md-q-row-id` 同一枚胶囊，但用正文字族 —— 编号是等宽机器码，名字是自然语言。
+     名字不截断：英文 / 西语最长到 40 多字符（「Modulation modes and digital communication」），
+     320px 下会超过一行，胶囊就在自己的行里折行 —— 分类名是这张卡片的「这是什么题」，
+     省略号一截就答不上来了（像素风同样完整显示）。`max-width` 只防它顶破卡片。 */
+  .md-q-row-tag {
+    max-width: 100%;
+    padding: 1px 7px;
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-pill);
+    font-size: var(--md-text-xs);
+    line-height: 1.5;
+    color: var(--md-fg-muted);
+  }
+
+  /* 圆点是行内元素而不是 flex 子项：折行时它会留在**首行**文字前，
+     而不是被垂直居中到两行之间（flex 的 `align-items` 做不到这一点）。 */
+  .md-q-row-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-inline-end: var(--md-space-1-5);
+    border-radius: var(--md-r-pill);
+    vertical-align: middle;
+  }
+
+  /* 题型是唯一「会改变怎么作答」的信息（要选几项），给一档强调色，
+     与像素风同一个来源（像素卡片的多选徽标也是金底金字）。金在这里只做文字 + 浅底，
+     对比度 10.6:1（深色）/ 5.9:1（浅色），压在浅底上仍过 AA。 */
+  .md-q-row-tag-multi {
+    border-color: color-mix(in srgb, var(--md-gold) 40%, var(--md-border));
+    background-color: color-mix(in srgb, var(--md-gold) 12%, var(--md-surface));
+    color: var(--md-gold-ink);
+  }
+
+  /* 官方分类码：等宽小字，比胶囊更安静 —— 它是「去官方题库对照」时才用的编号，
+     不该和分类名抢同一层的注意力（像素风里它同样是裸等宽文字）。
+     只靠「无胶囊、无底色」降低重量，不再叠 `opacity`：12px 文字压在 `--md-surface` 上
+     本来就只有 5.7–6.8:1，再乘 0.8 掉到 4.15:1，低于正文 4.5 的下限。 */
+  .md-q-row-code {
+    flex-shrink: 0;
+    font-size: var(--md-text-xs);
+    color: var(--md-fg-muted);
+  }
+
+  /* 题干在自己的块里：从卡片内距起排，不再被前导胶囊挤到右边。 */
   .md-q-row-text {
-    flex: 1;
-    min-width: 0;
+    margin-top: var(--md-space-2-5);
     font-size: var(--md-text-base);
     line-height: 1.6;
   }
@@ -6147,6 +6277,18 @@ html[data-ui-style="modern"] .max-w-5xl {
       flex-direction: column;
       gap: var(--md-space-4);
     }
+
+    /* 页头是每页最先吃掉首屏的东西：桌面那份 24px 上下内距 + 19px 副标题，
+       在 390px 上常常折成 2~3 行，加起来 250px。
+       收一档内距、副标题降到正文档 —— 它的职责是「这一页干什么」，一句话说完。 */
+    .md-page-head {
+      padding-block: var(--md-space-4) var(--md-space-3);
+    }
+
+    .md-page-head .md-lede {
+      font-size: var(--md-text-base);
+      line-height: 1.45;
+    }
   }
 }
 
@@ -6537,7 +6679,7 @@ html[data-ui-style="modern"] body[data-page-mode="exam"] .motion-page {
 
   .md-quiz[data-answered="true"] .md-quiz-num {
     background-color: color-mix(in srgb, var(--md-orange) 18%, var(--md-surface));
-    color: var(--md-orange);
+    color: var(--md-accent-ink);
   }
 
   .md-quiz-q {
@@ -6719,65 +6861,137 @@ html[data-ui-style="modern"] body[data-page-mode="exam"] .motion-page {
 
 @layer components {
   /* ============================================================
-     窄屏的「页内导航」——侧栏在手机上消失后，必须有一个等价入口
+     窄屏「分类 / 目录」菜单（`kit_modern::ModernMenuDrawer`）
      ------------------------------------------------------------
-     工具页的目录、术语表的分类条在桌面是侧栏 / 常驻行；到了手机上原本只是
-     「回到页面顶部才有」，滚进内容里就找不到了。这里把两者做成吸顶条：
-       · 术语表：单行横向滚动，滚到第 50 个术语也能换分类；
-       · 工具页：折叠条吸顶，展开后是内部滚动的面板。
+     题库分类、术语分类、工具目录在桌面是侧栏；`<768` 侧栏让位给右下角悬浮按钮 →
+     右侧抽屉。三页共用一种交互，动作与像素风同一套（`MobileNavDrawer`），样式换成
+     现代风的语言：56px 圆形行动色按钮、`md-sheet` 抽屉、44px 行式列表。
+     分界取 768（与顶栏 / dock 同一条）：平板竖屏不会出现「侧栏 + 手机菜单」并存。
+     按钮与抽屉都由组件 `Portal` 到 `body`，所以这里的规则**不能**带 `.md-root` 限定。
      ============================================================ */
-  @media (max-width: 900px) {
-    .md-filter-bar {
-      position: sticky;
-      inset-block-start: var(--md-nav-h);
-      z-index: 15;
-      margin-inline: calc(var(--md-page-pad) * -1);
-      padding: 8px var(--md-page-pad);
-      background-color: color-mix(in srgb, var(--md-bg) 90%, transparent);
-      -webkit-backdrop-filter: blur(12px);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--md-border);
-    }
+  .md-drawer-fab {
+    position: fixed;
+    /* 让开底部 dock（84px 含安全区，见 `.md-dock` 给 `.md-root` 留的同款高度）再留 16px 呼吸 */
+    inset-block-end: calc(84px + env(safe-area-inset-bottom, 0px) + 16px);
+    inset-inline-end: 16px;
+    /* dock 之上、抽屉（`--md-z-sheet`）之下：开抽屉时按钮被遮罩盖住，与像素风同序 */
+    z-index: calc(var(--md-z-dock) + 1);
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--md-r-pill);
+    background-color: var(--md-accent);
+    color: var(--md-accent-fg);
+    box-shadow: var(--md-shadow-2);
+    cursor: pointer;
+    /* 可以按住拖动：`touch-action: none` 拦住滚动，否则手指一动页面就跟着滚，
+       拖到一半变成「边滚边拖」（像素风那颗用的是 Tailwind 的 `touch-none`）。 */
+    touch-action: none;
+    transition:
+      transform var(--md-dur-fast) var(--md-ease),
+      box-shadow var(--md-dur-fast) var(--md-ease);
+  }
 
-    .md-filter-bar .md-chip-row {
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      overscroll-behavior-x: contain;
-      scrollbar-width: none;
-      margin-bottom: 0;
-      /* 右侧渐隐：告诉用户「还能往右划」，而不是被硬生生裁断 */
-      -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
-      mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
-    }
+  .md-drawer-fab:active {
+    transform: scale(0.94);
+  }
 
-    .md-filter-bar .md-chip-row::-webkit-scrollbar {
+  @media (hover: hover) {
+    .md-drawer-fab:hover {
+      box-shadow: var(--md-shadow-3);
+    }
+  }
+
+  /* `>=768` 由桌面侧栏 / 胶囊行接管（工具页的索引卡用同一条断点）。 */
+  @media (width >= 768px) {
+    .md-drawer-fab {
       display: none;
     }
+  }
 
-    .md-filter-bar .md-chip {
-      flex: 0 0 auto;
+  /* 桌面版的分类胶囊行：`<768` 整块让位给抽屉，同一屏不留两份菜单。 */
+  @media (width < 768px) {
+    .md-menu-chips {
+      display: none;
     }
+  }
 
-    .md-tools-drawer {
-      position: sticky;
-      inset-block-start: var(--md-nav-h);
-      z-index: 15;
-      margin-bottom: var(--md-space-3-5);
-      background-color: color-mix(in srgb, var(--md-bg) 92%, transparent);
-      -webkit-backdrop-filter: blur(12px);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 6px 16px -12px rgb(0 0 0 / 0.6);
-    }
+  .md-drawer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
 
-    /* 折叠条的 `<summary>` 排版与箭头统一交给 `.md-root details > summary`
-       （那里已有 flex 布局、`list-style: none`、原生 marker 隐藏与自绘细 chevron）。
-       这里曾再画一只 `.md-tools-drawer-chev` 放在右侧：窄屏上两只箭头同时出现，
-       展开后左边那只转向朝下、右边那只保持不动，看起来像两个不同的图标。 */
-    .md-tools-drawer[open] {
-      max-height: 60svh;
-      overflow-y: auto;
-      overscroll-behavior: contain;
+  .md-drawer-item {
+    display: flex;
+    align-items: center;
+    gap: var(--md-space-2);
+    width: 100%;
+    /* 44px：触屏可点目标的下限 */
+    min-height: 44px;
+    padding: var(--md-space-2) var(--md-space-3);
+    border: 0;
+    border-radius: var(--md-r-sm);
+    background: transparent;
+    color: var(--md-fg);
+    font-family: inherit;
+    /* `compact`（窄屏 15px）而不是 13px：抽屉是手机上唯一的分类入口，
+       这一档本来就是「手机上要一屏扫完的清单」（见 tokens 的字号阶梯说明）。 */
+    font-size: var(--md-text-compact);
+    text-align: start;
+    cursor: pointer;
+    transition: background-color var(--md-dur-fast) var(--md-ease);
+  }
+
+  @media (hover: hover) {
+    .md-drawer-item:hover {
+      background-color: var(--md-surface-2);
     }
+  }
+
+  /* 「当前」的记号与顶栏 / dock 同一个（行动色浅底 + 行动色文字），不新造一种选中态。 */
+  .md-drawer-item[aria-pressed="true"] {
+    background-color: var(--md-accent-wash);
+    color: var(--md-accent-ink);
+  }
+
+  /* 计数贴到行尾（`.md-menu-count` 自带 8px 左外边距，这里改成自动推开）。 */
+  .md-drawer-item > .md-menu-count {
+    margin-inline-start: auto;
+  }
+
+  /* 子类：缩进挂在被选中的主类下面，一条细引线表示归属。
+     行高仍守 44px（触屏下限），只把字号降一档 —— 小一号但照样好点。 */
+  .md-drawer-sublist {
+    margin: 2px 0 var(--md-space-2) var(--md-space-3);
+    padding-inline-start: var(--md-space-2);
+    border-inline-start: 1px solid var(--md-border);
+    list-style: none;
+    /* 展开子类：挂载即播的一次性入场（淡入 + 6px 下滑，只动合成器属性）。
+       收起不播退场 —— 子类是卸载，下面的行必须立刻让出空间；给它播退场会让整列
+       先抖两下再归位。减少动态效果由 `tokens.css` 的 `.md-sheet *` 统一压到 1ms。 */
+    animation: md-drawer-sub-in var(--md-dur) var(--md-ease-out);
+  }
+
+  @keyframes md-drawer-sub-in {
+    from {
+      opacity: 0;
+      translate: 0 -6px;
+    }
+    to {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+
+  .md-drawer-sublist .md-drawer-item {
+    font-size: var(--md-text-sm);
   }
 }
 
@@ -7074,7 +7288,7 @@ html[data-ui-style="modern"] body[data-page-mode="exam"] .motion-page {
     background-color: color-mix(in srgb, var(--md-orange) 18%, var(--md-surface));
     font-size: var(--md-text-xs);
     font-weight: 560;
-    color: var(--md-orange);
+    color: var(--md-accent-ink);
   }
 
   .md-combo-crit {
@@ -7149,7 +7363,7 @@ html[data-ui-style="modern"] body[data-page-mode="exam"] .motion-page {
   }
 
   .md-dex-due {
-    color: var(--md-orange);
+    color: var(--md-accent-ink);
   }
 
   .md-dex-label {
@@ -7335,12 +7549,19 @@ html[data-ui-style="modern"] body[data-page-mode="exam"] .motion-page {
     color: var(--md-fg-muted);
   }
 
+  /* 关卡名是这页的主标识：右侧让位给星星 / 锁之后只剩 116–186px，单行 ellipsis 会把
+     「无线电法规与…」「Radio regulations and …」截掉（英文 390 宽 8 处、西语 9 处）。
+     允许折到三行（西语最长的「Fundamentos de electrónica y electricidad」在 390 下要 3 行），
+     仍有上限：再长才用省略号。 */
   .md-stage-name {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
     font-size: var(--md-text-base);
     font-weight: 560;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
   }
 
   .md-stage-meta {
@@ -7804,7 +8025,7 @@ html[data-ui-style="modern"] body[data-page-mode="exam"] .motion-page {
     font-family: var(--md-font-mono);
     font-size: var(--md-text-sm);
     letter-spacing: 0.08em;
-    color: var(--md-orange);
+    color: var(--md-accent-ink);
   }
 }
 
@@ -8114,6 +8335,28 @@ html[data-ui-style="modern"] body[data-page-mode="exam"] .motion-page {
       min-width: 0;
       flex-basis: 100%;
     }
+
+    /* 统计条（`ModernStatValue` + `.md-strip`）在手机上压成一行：
+       它是「这一屏有多少内容」的注脚，2×2 的大数字要吃掉 190px，
+       把第一张卡推到一屏之外（`/browse`、`/glossary` 都是这个症状）。
+       格数不写死 —— 用 `grid-auto-flow: column`，3 格 / 4 格都并排。 */
+    .md-page > .md-strip {
+      grid-template-columns: none;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(0, 1fr);
+      gap: var(--md-space-2) var(--md-space-3);
+      padding-block: var(--md-space-3) 0;
+    }
+
+    .md-page > .md-strip .md-strip-value {
+      font-size: var(--md-text-xl);
+      letter-spacing: -0.02em;
+    }
+
+    .md-page > .md-strip .md-strip-label {
+      font-size: var(--md-text-2xs);
+      line-height: 1.35;
+    }
   }
 
   @media (pointer: coarse) {
@@ -8143,6 +8386,117 @@ html[data-ui-style="modern"] body[data-page-mode="exam"] .motion-page {
     .md-select-sm {
       min-height: 32px;
     }
+
+    /* 以下四族补的是「按类逐个列举」抬档时漏掉的：
+       它们都不是新控件 —— 28px 的筛选胶囊、
+       38px 的自测选项、36px 的模块入口行在拇指下只能靠猜。 */
+
+    /* 密集筛选胶囊（分类条）28px 高。只抬 `<button>`：卡片里当分类标签用的
+       `<a class="md-chip-sm">` 是「这条术语出现在哪几类题库」，信息密度优先，抬到 32 即可。 */
+    button.md-chip-sm {
+      min-height: 44px;
+    }
+
+    a.md-chip-sm {
+      min-height: 32px;
+    }
+
+    .md-quiz-opt,
+    .md-link-row,
+    .md-x-toggle {
+      min-height: 44px;
+    }
+
+    /* 开关的轨道是 36×20 的药丸，放大就变形；用伪元素把命中区撑到 44。
+       伪元素不参与布局，视觉一行都不变。 */
+    .md-switch::after {
+      content: "";
+      position: absolute;
+      inset-block-start: 50%;
+      inset-inline-start: 50%;
+      width: 44px;
+      height: 44px;
+      transform: translate(-50%, -50%);
+    }
+
+    /* 顶栏品牌链接：高度由行高决定（29），补纵向内距到 44，文字基线不变。 */
+    .md-brand {
+      min-height: 44px;
+    }
+
+    /* 首页模块卡的标题链接（`md-mod-title`，38）与数据条的「学习进度」入口（21）：
+       都是整卡/整条里的主链接，不是装饰。`md-mod-title` 原本是 inline，
+       `min-height` 对 inline 无效，得先变成 flex。 */
+    .md-mod-title {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
+
+    .md-strip-link {
+      min-height: 44px;
+    }
+
+    /* 波段表正文里的脚注引用（`md-footnote`）视觉只有 18px 高：靠内距放大命中区
+       会把整行行高顶开、正文排版散架，所以用伪元素就地撑到 44。
+       相邻脚注的字符间距一般大于 44，重叠可忽略。 */
+    .md-footnote {
+      position: relative;
+    }
+
+    .md-footnote::after {
+      content: "";
+      position: absolute;
+      inset-block-start: 50%;
+      inset-inline-start: 50%;
+      width: 44px;
+      height: 44px;
+      transform: translate(-50%, -50%);
+    }
+
+    /* 以下几族同样是「按类逐个列举」抬档时被漏掉的。 */
+
+    /* 勾选 / 单选行：控件只有 16×16、整行 18px 高，行距又只有 ~12px，拇指一落就是邻行。
+       整行抬到 44（`label` 本身可点，命中区 = 整行）。 */
+    .md-check-row {
+      min-height: 44px;
+    }
+
+    /* 不在 `label` 里的裸 `.md-check`（文字是旁边的 `<span>`）：行本身撑不起命中区，
+       用伪元素把 16×16 的方框就地撑到 44×44，视觉不变；与开关（`.md-switch::after`）同一手法。 */
+    .md-check {
+      position: relative;
+    }
+
+    .md-check::after {
+      content: "";
+      position: absolute;
+      inset: -14px;
+    }
+
+    /* 页签 36 → 44；换行按钮（`.md-btn-wrap` 把 `height` 换成了 `min-height: 40`，
+       复合选择器（0,2,0）压过上面的 `.md-btn`（0,1,0），所以要单独写）。 */
+    .md-tab {
+      min-height: 44px;
+    }
+
+    .md-btn.md-btn-wrap,
+    .md-btn.md-btn-wrap.md-btn-sm {
+      min-height: 44px;
+    }
+
+    /* 页脚链接（`.md-nav-link` 在顶栏里是 60px 高的导航项，只有页脚里是一行 34px 的文字链接）。 */
+    footer .md-nav-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
+
+    /* 快捷键说明在触屏上没有对应的操作方式：整段不占位（考试设置弹层里它原本排 7 行）。
+       只作用于现代风 —— 像素风是「桌面优先」的表皮，键位表在那里仍是有效信息。 */
+    html[data-ui-style="modern"] .md-shortcut-list {
+      display: none;
+    }
   }
 
   /* 筛选胶囊是窄屏上最高频的触控目标，但一屏能有 6–10 个：
@@ -8150,6 +8504,14 @@ html[data-ui-style="modern"] body[data-page-mode="exam"] .motion-page {
   @media (pointer: coarse) and (max-width: 900px) {
     .md-chip:not(.md-chip-sm) {
       min-height: 44px;
+    }
+
+    /* 但**嵌在字段里**的胶囊不抬：目录搜索框 `.md-menu-search` 是 40px 高的字段，
+       44 的胶囊会从上下边框各顶出 2px（手机上的「全站搜索」就是这个症状）。
+       与字段内的清除按钮、`.md-select-sm` 同一条规矩 —— 贴着字段边缘的控件按字段高度收，
+       不跟着外面的触控目标涨。32 仍高于 WCAG 2.5.8 的 24，宽度方向本来就是整颗胶囊。 */
+    .md-menu-search .md-chip {
+      min-height: 32px;
     }
   }
 }
@@ -8678,5 +9040,296 @@ html[data-ui-style="modern"] .animate-spin {
   .md-link:focus-visible {
     outline: 2px solid var(--md-ring);
     outline-offset: 2px;
+  }
+}
+
+
+/* ============================================================
+   窄屏练习 / 考试：题卡竖向密度
+   ------------------------------------------------------------
+   手机（≤640）竖屏一屏 ~844px，题卡却按桌面的呼吸感排：卡内距 24 + 卡头 14/18
+   + 卡内容 18，再加 18px 选项字配 24px 行高 —— 一道四选一要滚过一屏才看得完，
+   而「一眼扫完四个选项」正是练习最常用的动作（先判断会不会，再决定是否作答）。
+
+   收的是**内距、行高与三处字号错位**，不碰控件尺寸：
+      · 选项字 18px 比题干 17px 还大。`text-base` 这个工具类解析的是**像素风**阶梯
+        （`--text-base: 1.125rem`），在现代风里就成了「选项比题干更醒目、更早折行」。
+        统一到 `--md-text-compact`（窄屏 15），行高 24 → 1.4。
+      · 题干 17 → 15（同一档）、行高 1.6 → 1.45：中文正文 1.45 仍不挤。
+        15px 不是「随便小一点」：16px 下「《中华人民共和国无线电管理条例》」这类 16 字选项
+        必折一行，15px 配上收窄的左右内距才能一行放下 —— 四个选项各少一行就是 60px。
+      · 卡内距 24 → 14、卡头 14/18 → 6/14、卡内容 18 → 8/12：三层内距各收一档，
+        横向多出 16px 给文字（同上，让长选项少折一行）。
+      · 卡壳的 `gap-6`（卡头与卡内容之间那 24px 纯空白）清零，改由卡内容自己的上内距给。
+      · 题号 17 → 13：它是「第几题」这种元信息，比选项正文还大是反的；收到 13 后
+        320px 下「题号 + 两个徽标」才稳定在一行。
+      · 朗读按钮从标题行里搬出来，绝对定位到卡头右上、视觉缩到 18px 的裸图标
+        （命中区仍是 44）：它跟 13px 的题号并排时，一个 44×44 的描边方块会抢走整张卡的
+        视觉重心；搬出来之后卡头高度也从 56 降到 37。
+      · 选项行上下 10 → 8、纵向间距 6 → 4、题干与选项之间 8 → 6、徽标收一档。
+      · 页头的键位提示（`1–4` / `Enter` / `← →`）在触屏上按不出来，`pointer: coarse` 下不占那一行。
+
+   不动的东西：`.md-icon-btn` 的 44×44（`pointer: coarse` 的命中区下限）、
+   焦点环、`prefers-reduced-motion`。
+
+   为什么写在层外：`py-6` / `px-6` / `text-base` / `leading-6` / `space-y-3` / `gap-2`
+   都是 Tailwind 工具类（utilities 层），层内规则再高优先级也压不住它们。选择器全部带
+   `md-`，只命中现代风的题卡；像素风的题卡用另一套类名，不受影响。
+   ============================================================ */
+@media (max-width: 640px) {
+  /* ---------- 页头：删掉手机上按不出来的一行，内距收一档 ---------- */
+  .md-practice-head {
+    gap: var(--md-space-2-5);
+    padding: 14px 0 12px;
+  }
+
+  /* 键位提示（`1–4` / `Enter` / `← →`）在触屏上没有对应的输入方式，窄屏又是最贵的一行。
+     只对「窄屏 + 粗指针」隐藏：640px 以下的桌面窄窗口仍能按键，提示留着。 */
+  @media (pointer: coarse) {
+    .md-practice-head .md-keys {
+      display: none;
+    }
+  }
+
+  /* ---------- 题卡外壳：三层内距各收一档，清掉卡头与卡内容之间的 24px ---------- */
+  .md-practice .md-q,
+  .md-exam .md-q {
+    gap: 0;
+    padding: var(--md-space-4);
+  }
+
+  .md-practice .md-q [data-slot="card-header"],
+  .md-exam .md-q [data-slot="card-header"] {
+    /* 朗读按钮绝对定位在右上（见下一条），所以卡头的高度由标题行决定，
+       不再被它的 44px 命中区撑成 56。右侧让出 48px（44 命中区 + 4 内距）给它落位，
+       标题折行时每一行都自动避开它。 */
+    position: relative;
+    padding: var(--md-space-1-5) var(--md-space-3-5);
+    padding-inline-end: var(--md-space-12);
+    /* `CARD_HEADER` 是 `grid-rows-[auto_auto]` + `gap-1.5`：标题只有一项，
+       第二行是空的，但那 6px 行距照样占位。窄屏这一行尤其贵。 */
+    row-gap: 0;
+  }
+
+  /* 朗读按钮：视觉缩到与 13px 题号同一量级，命中区仍是 44×44。
+     做法是「透明盒子 + 18px 图标」而不是改盒子尺寸 —— `pointer: coarse` 的
+     44px 下限是无障碍硬线，不能为了好看缩到 30。垂直居中于 37px 高的卡头，
+     上下各溢出约 4px，落在卡头上边与分隔线上，那里没有可点控件。 */
+  .md-practice .md-q [data-slot="card-action"],
+  .md-exam .md-q [data-slot="card-action"] {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: var(--md-space-1);
+    transform: translateY(-50%);
+  }
+
+  .md-practice .md-q [data-slot="card-action"] .md-icon-btn,
+  .md-exam .md-q [data-slot="card-action"] .md-icon-btn {
+    border-color: transparent;
+    background-color: transparent;
+    color: var(--md-fg-muted);
+  }
+
+  .md-practice .md-q [data-slot="card-action"] .md-icon-btn svg,
+  .md-exam .md-q [data-slot="card-action"] .md-icon-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .md-practice .md-q [data-slot="card-content"],
+  .md-exam .md-q [data-slot="card-content"] {
+    padding: var(--md-space-2) var(--md-space-3);
+    font-size: var(--md-text-compact);
+    line-height: 1.45;
+  }
+
+  /* 题号 / 徽标在同一行：标题行 `gap-2`（8px）在 320px 下是决定「换不换行」的
+     那几像素，收到 6；徽标的横内距也跟着收。390px 下这一行本来就宽松，收这 2px 不影响观感。 */
+  .md-practice .md-q [data-slot="card-title"],
+  .md-exam .md-q [data-slot="card-title"] {
+    gap: var(--md-space-1-5);
+    /* 题号是元信息（第几题），不该比选项正文更抢眼。17px → 13px 与徽标同档，
+       顺便让这一行在 320px 下压到 222px（可用 240px），朗读按钮不再被挤到第二行。
+       必须在层外：`md-card-title` 的字号写在 components 层，与这里同权时后者才生效。 */
+    font-size: var(--md-text-sm);
+    font-weight: 620;
+  }
+
+  /* 徽标：12px 字 + 10px 横内距 + 1.6 行高 ≈ 27px，比同行的 17px 题号还高，
+     把标题行顶成 44。收到 11px / 6px / 1.5 后与题号同高，四件内容在 390px 下一行放得下
+     （三位数的「第 683 / 683 题」也放得下）。`--md-text-2xs` 在中文界面被
+     `[lang^="zh"]` 抬到 12 —— 这里要的是「比题号小一档」的关系，不是某个像素值。
+     必须带 `html[data-ui-style="modern"]`：`kit.css` 里已有一条同为层外的
+     `html[data-ui-style="modern"] .md-q [data-slot="badge"]`（0,3,1），
+     选择器权重不够就静默失效。 */
+  html[data-ui-style="modern"] .md-practice .md-q [data-slot="badge"],
+  html[data-ui-style="modern"] .md-exam .md-q [data-slot="badge"] {
+    padding: var(--md-space-0-5) var(--md-space-1-5);
+    font-size: var(--md-text-2xs);
+    line-height: 1.5;
+  }
+
+  /* ---------- 题干 / 选项之间的三段间距 ---------- */
+  /* `space-y-3` 用的是「除最后一个之外都加下外边距」，只盖 `margin-block-start`
+     会把两段间距叠成 12 + 10。先把工具类的两条外边距清零，再只给后续兄弟加上间距。 */
+  .md-practice .md-q [data-slot="card-content"] > *,
+  .md-exam .md-q [data-slot="card-content"] > * {
+    margin-block: 0;
+  }
+
+  .md-practice .md-q [data-slot="card-content"] > * + *,
+  .md-exam .md-q [data-slot="card-content"] > * + * {
+    margin-block-start: var(--md-space-1-5);
+  }
+
+  .md-practice .md-q [data-slot="option-group"],
+  .md-practice .md-q [data-slot="radio-group"],
+  .md-exam .md-q [data-slot="option-group"],
+  .md-exam .md-q [data-slot="radio-group"] {
+    row-gap: var(--md-space-1);
+  }
+
+  /* ---------- 选项行 ---------- */
+  .md-practice .md-q .md-opt,
+  .md-exam .md-q .md-opt {
+    padding: var(--md-space-2) var(--md-space-2);
+    column-gap: var(--md-space-1-5);
+    /* 内距收到 8 后单行选项只剩 39px，低于 44 的触控目标（整行就是可点区域）。
+       内距换高度：最小值钉在 44，双行 / 三行的选项本来就超过它，不受影响。 */
+    min-height: 44px;
+  }
+
+  /* 选项文字：`text-base`（像素阶梯 18px）与 `leading-6`（24px 行高）都是工具类，
+     必须层外覆盖。判分圆点 `.md-mark` 不动（自带 22px 尺寸）。
+     用 `--md-text-compact`（窄屏 15）：16px 下「《中华人民共和国无线电管理条例》」
+     这类 16 字选项一定折行，15px 配上收窄的左右内距就能一行放下。 */
+  .md-practice .md-q .md-opt [data-slot="option-text"],
+  .md-practice .md-q .md-opt > label,
+  .md-exam .md-q .md-opt [data-slot="option-text"],
+  .md-exam .md-q .md-opt > label {
+    font-size: var(--md-text-compact);
+    line-height: 1.4;
+  }
+}
+
+/* ============================================================
+   小屏首屏：页头与底栏别把题卡挤出视口
+   ------------------------------------------------------------
+   320×568 量过：顶栏 61 + 考试页头 208 + 两排底栏 121，题卡里 4 个选项一个都落不进底栏之上；
+   练习页头 246（题库 / 筛选胶囊 148 换成 3 行）。判据是「第一道题的选项在首屏可见」，
+   不是页头好不好看，所以只动**占高度的间距与折行**，不动触控目标（按钮 / 胶囊仍 44）。
+
+   · 页头内距与行距收一档；
+   · 考试元信息（类别 / 题数 / 限时）并成一行并降到 `--md-text-xs`，矮屏（高 ≤ 700）整行收起：
+     进度与题数在底栏 / 答题卡里仍可见；
+   · 练习页的题库 + 筛选胶囊在窄屏改成一条横滚行（复用 `.md-chip-scroll` 的「不折行、不压缩」口径），
+     三行变一行；
+   · 考试底栏内距与行距收一档。
+
+   写在层外是为了压过上面分层里同名选择器与 Tailwind 工具类（`gap-3` / `py-*`）。
+   ============================================================ */
+@media (max-width: 640px) {
+  .md-exam .md-practice-head {
+    gap: var(--md-space-2);
+    padding: 10px 0 8px;
+  }
+
+  /* 考试元信息：三项并一行，字号取阶梯最小正文档；行高 1.35（不是 1.6）。 */
+  .md-exam .md-practice-head > .md-muted {
+    column-gap: var(--md-space-2-5);
+    row-gap: 0;
+    font-size: var(--md-text-xs);
+    line-height: 1.35;
+  }
+
+  /* 考试页头第一行（标题 + 倒计时 | 「薄弱项组卷」 + 设置）：320px 下 272px 放不下，
+     折成 83px 两行。窄屏让「薄弱项组卷」胶囊只留文字最短形态、行距收到 6，
+     并让左右两组各自不再被压缩，折行时是「标题组一行 + 操作组一行」而不是胶囊内部断字。 */
+  .md-exam .md-practice-head > div:first-child {
+    row-gap: var(--md-space-1-5);
+  }
+
+  .md-exam .md-practice-head > div:first-child .md-chip {
+    white-space: nowrap;
+  }
+
+  /* 练习页：题库 / 筛选胶囊一条横滚行。分组竖线在一条线上没有意义，一并隐藏（F5-7）。 */
+  .md-practice .md-practice-head .md-chip-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    /* 让最后一颗胶囊滚出右缘时也有呼吸，不被页边裁成半颗。 */
+    padding-inline-end: var(--md-space-4);
+    margin-inline-end: calc(-1 * var(--md-page-pad));
+  }
+
+  .md-practice .md-practice-head .md-chip-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .md-practice .md-practice-head .md-chip-row .md-chip {
+    white-space: nowrap;
+  }
+
+  /* 行首的「题库类别」标签：横滚行里它是 flex 子项，不写 `flex-shrink: 0` 会被压到 13px 宽、
+     逐字竖排成 83px 高（实测），把一行重新撑成三行。 */
+  .md-practice .md-practice-head .md-chip-row > .md-muted {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .md-chip-row-divider {
+    display: none;
+  }
+
+  /* 考试底栏：内距 12→8，两排之间 8→6。按钮高度仍是 44。 */
+  .md-bar-exam {
+    padding-block: var(--md-space-2);
+  }
+
+  .md-bar-exam .md-bar-actions {
+    gap: var(--md-space-1-5);
+  }
+}
+
+/* 浏览页的「题库 + 筛选」胶囊组。
+   ≥641：`display: contents`，子胶囊直接成为 `.md-glossary-bar` 的 flex 子项，版式与没有这层包裹时完全一致；
+   ≤640：独占一行、不折行、横向滚动（与 `/cards` 的分类条同一读法）。5 颗胶囊折成两行是 98px（含行距），
+   一条滚动行是 44px，首张题卡因此上移一行。 */
+.md-chip-bar {
+  display: contents;
+}
+
+@media (max-width: 640px) {
+  .md-chip-bar {
+    display: flex;
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--md-space-2);
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    /* 末尾留一档呼吸：最后一颗滚出右缘时不被页边裁成半颗。 */
+    padding-inline-end: var(--md-space-4);
+    margin-inline-end: calc(-1 * var(--md-page-pad));
+  }
+
+  .md-chip-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .md-chip-bar .md-chip {
+    white-space: nowrap;
+  }
+}
+
+/* 矮屏（iPhone SE / 老安卓，高度 ≤ 700）：考试元信息整行收起。
+   「A 类 · 40 题 · 40 分钟」开考前已经看过，倒计时与进度条仍在页头，题数在底栏。 */
+@media (max-width: 640px) and (max-height: 700px) {
+  .md-exam .md-practice-head > .md-muted {
+    display: none;
   }
 }

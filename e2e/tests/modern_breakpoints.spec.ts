@@ -147,6 +147,79 @@ test.describe("现代风断点", () => {
     expect(probe.ok, `交卷按钮被 ${probe.reason} 覆盖`).toBe(true);
   });
 
+  // `.md-root` 是「字体作用域」，页面里、页脚里被反复嵌套；让位用的 `padding-bottom`
+  // 以前写在它身上，嵌一层叠一次 —— 普通页尾多出 168–252px 空白，考试页（184px 一档）叠到 736px。
+  // 判据不写死像素：看「同一条祖先链上所有 `.md-root` 的 padding-bottom 之和」不超过最大的单层，
+  // 即只有一层承担让位；同时断言末行没被固定层盖住（只留一层也不能漏让位）。
+  for (const [name, url, width, height] of [
+    ["普通页（有页脚）", "/stats", 390, 844],
+    ["普通页（有页脚，嵌套页根）", "/glossary", 390, 844],
+    ["考试页（页脚隐藏，底栏两排）", "/exam", 320, 568],
+    ["每日挑战（页脚隐藏，dock 仍在）", "/daily-challenge", 390, 844],
+  ] as const) {
+    test(`底部让位只算一次：${name}`, async ({ page }) => {
+      await seed(page);
+      await page.setViewportSize({ width, height });
+      await open(page, url);
+      // 练习 / 考试进入后有「规则页 / 考前页」：能点就点，已在作答中就跳过。
+      for (const label of [/我已了解/, /开始考试/]) {
+        const button = page.getByRole("button", { name: label }).first();
+        if ((await button.count()) > 0) {
+          await button.click();
+          await waitSettled(page);
+          break;
+        }
+      }
+      await page.evaluate(() => window.scrollTo(0, 1e6));
+      const r = await page.evaluate(() => {
+        const pads = (el: Element) => {
+          const chain: number[] = [];
+          for (let p: Element | null = el; p; p = p.parentElement) {
+            if (p.classList.contains("md-root")) {
+              chain.push(parseFloat(getComputedStyle(p).paddingBottom));
+            }
+          }
+          return chain;
+        };
+        const roots = Array.from(document.querySelectorAll(".md-root"));
+        const chains = roots.map(pads);
+        const worst = chains.reduce(
+          (acc, c) => {
+            const sum = c.reduce((a, b) => a + b, 0);
+            return sum > acc.sum ? { sum, max: Math.max(...c, 0) } : acc;
+          },
+          { sum: 0, max: 0 },
+        );
+        // 固定层（dock / 底栏）的顶边与「最后一个有内容的叶子」的底边。
+        const covers = Array.from(document.querySelectorAll(".md-dock, .md-bar, .md-bar-practice")).filter(
+          (b) => getComputedStyle(b).display !== "none" && getComputedStyle(b).position === "fixed",
+        );
+        const coverTop = covers.length
+          ? Math.min(...covers.map((b) => b.getBoundingClientRect().top))
+          : window.innerHeight;
+        const leaves = Array.from(document.querySelectorAll("body *")).filter((e) => {
+          if (e.closest(".md-bar, .md-dock, [data-modal-root], nav.md-nav, [data-skip-link]")) return false;
+          const cs = getComputedStyle(e);
+          if (cs.display === "none" || cs.visibility === "hidden" || cs.position === "fixed") return false;
+          const b = e.getBoundingClientRect();
+          if (b.height < 6 || b.width < 6) return false;
+          return (
+            Array.from(e.childNodes).some((n) => n.nodeType === 3 && (n.nodeValue ?? "").trim()) ||
+            /^(BUTTON|A|INPUT|TEXTAREA|SELECT)$/.test(e.tagName)
+          );
+        });
+        const lastBottom = Math.max(...leaves.map((e) => e.getBoundingClientRect().bottom));
+        return { ...worst, clear: Math.round(coverTop - lastBottom), roots: roots.length };
+      });
+      expect(r.roots, "没找到 .md-root，用例失去意义").toBeGreaterThan(0);
+      expect(
+        r.sum,
+        `同一条祖先链上 .md-root 的 padding-bottom 叠加了 ${r.sum}px（单层最大 ${r.max}px）：让位只能算一次`,
+      ).toBeLessThanOrEqual(r.max);
+      expect(r.clear, "页面末行被固定层（dock / 底栏）盖住了").toBeGreaterThanOrEqual(0);
+    });
+  }
+
   test("320px：窄屏表格在自己的容器里滚，不撑破页面", async ({ page }) => {
     await seed(page);
     await page.setViewportSize({ width: 320, height: 720 });

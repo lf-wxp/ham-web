@@ -31,9 +31,9 @@ pub fn AnswerCardCell(
   on_pick: Callback<()>,
 ) -> impl IntoView {
   let class = if current {
-    "relative h-9 w-full border-b-4 border-b-gold"
+    "relative h-9 w-full border-b-4 border-b-gold pointer-coarse:h-11"
   } else {
-    "relative h-9 w-full"
+    "relative h-9 w-full pointer-coarse:h-11"
   };
   let variant = if answered {
     Variant::Default

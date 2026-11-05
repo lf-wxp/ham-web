@@ -269,41 +269,91 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
             </button>
           </div>
 
-          // 窄屏：分类条吸顶（横向滚动单行），滚到列表深处也能换分类。
-          <div class="md-filter-bar">
-          <div class="md-chip-row mb-4">
-            <button
-              type="button"
-              class="md-chip"
-              aria-pressed=move || (cat.with(|c| c == ALL)).to_string()
-              on:click=move |_| select_cat(ALL)
-            >
-              {move || t("knowledge.all-terms")}
-              <span class="md-menu-count">{move || base.with(Vec::len)}</span>
-            </button>
-            {move || {
-              categories()
-                .into_iter()
-                .map(|key| {
-                  let (name, _) = category_meta(key);
-                  view! {
-                    <button
-                      type="button"
-                      class="md-chip"
-                      aria-pressed=move || cat.with(|c| c == key).to_string()
-                      on:click=move |_| select_cat(key)
-                    >
-                      {move || crate::data::core_text_tracked(name)}
-                      <span class="md-menu-count">
-                        {move || cat_count.with(|m| m.get(key).copied().unwrap_or(0))}
-                      </span>
-                    </button>
+          // `>=768`：分类胶囊行（桌面一屏铺得下）。
+          <div class="md-menu-chips">
+            <div class="md-chip-row mb-4">
+              <button
+                type="button"
+                class="md-chip"
+                aria-pressed=move || (cat.with(|c| c == ALL)).to_string()
+                on:click=move |_| select_cat(ALL)
+              >
+                {move || t("knowledge.all-terms")}
+                <span class="md-menu-count">{move || base.with(Vec::len)}</span>
+              </button>
+              {move || {
+                categories()
+                  .into_iter()
+                  .map(|key| {
+                    let (name, _) = category_meta(key);
+                    view! {
+                      <button
+                        type="button"
+                        class="md-chip"
+                        aria-pressed=move || cat.with(|c| c == key).to_string()
+                        on:click=move |_| select_cat(key)
+                      >
+                        {move || crate::data::core_text_tracked(name)}
+                        <span class="md-menu-count">
+                          {move || cat_count.with(|m| m.get(key).copied().unwrap_or(0))}
+                        </span>
+                      </button>
+                    }
+                  })
+                  .collect_view()
+              }}
+            </div>
+          </div>
+
+          // `<768`：同一份分类收进右下角悬浮按钮的抽屉（与题库分类、工具目录同一种交互）。
+          <crate::kit_modern::ModernMenuDrawer
+            open=cat_open
+            title=Signal::derive(move || t("knowledge.term-categories"))
+            button_label=Signal::derive(move || t("knowledge.term-categories"))
+          >
+            <ul class="md-drawer-list">
+              <li>
+                <button
+                  type="button"
+                  class="md-drawer-item"
+                  aria-pressed=move || (cat.with(|c| c == ALL)).to_string()
+                  on:click=move |_| {
+                    select_cat(ALL);
+                    cat_open.set(false);
                   }
-                })
-                .collect_view()
-            }}
-          </div>
-          </div>
+                >
+                  {move || t("knowledge.all-terms")}
+                  <span class="md-menu-count">{move || base.with(Vec::len)}</span>
+                </button>
+              </li>
+              {move || {
+                categories()
+                  .into_iter()
+                  .map(|key| {
+                    let (name, _) = category_meta(key);
+                    view! {
+                      <li>
+                        <button
+                          type="button"
+                          class="md-drawer-item"
+                          aria-pressed=move || cat.with(|c| c == key).to_string()
+                          on:click=move |_| {
+                            select_cat(key);
+                            cat_open.set(false);
+                          }
+                        >
+                          {move || crate::data::core_text_tracked(name)}
+                          <span class="md-menu-count">
+                            {move || cat_count.with(|m| m.get(key).copied().unwrap_or(0))}
+                          </span>
+                        </button>
+                      </li>
+                    }
+                  })
+                  .collect_view()
+              }}
+            </ul>
+          </crate::kit_modern::ModernMenuDrawer>
 
           <div class="md-strip mb-6">
             <div class="md-strip-item">
@@ -324,12 +374,8 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               }) />
               <span class="md-strip-label">{move || t("knowledge.term-categories")}</span>
             </div>
-            <div class="md-strip-item">
-              <crate::kit_modern::ModernStatValue value=Signal::derive(move || {
-                  Some(filtered.with(Vec::len))
-              }) />
-              <span class="md-strip-label">{move || t("exam.current-filter")}</span>
-            </div>
+            // 第四格「当前筛选」删掉了：默认筛选下它恒等于「术语总数」，
+            // 两个一样的数字并排只是占位。
           </div>
 
           {modern_list}

@@ -21,7 +21,8 @@ pub fn QuizOption(
   children: Children,
 ) -> impl IntoView {
   let class = cn(&[
-    "border px-3 py-2.5 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60",
+    // `pointer-coarse:min-h-11`：触屏上整颗选项是命中区，不能低于 44px（桌面不受影响）。
+    "border px-3 py-2.5 text-sm transition-colors hover:bg-accent pointer-coarse:min-h-11 disabled:cursor-not-allowed disabled:opacity-60",
     &class,
   ]);
   view! {

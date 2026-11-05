@@ -170,6 +170,13 @@ fn build_index() -> Vec<SearchEntry> {
     "/reference",
     reference::EMISSION_DESIGNATION,
   );
+  for table in [
+    reference::LEVEL_CONVERSIONS,
+    reference::POWER_DBM_TABLE,
+    reference::UNIT_PREFIXES,
+  ] {
+    triples(&mut out, "考试速查", "/reference", table);
+  }
   for p in reference::PHRASES {
     push(
       &mut out,

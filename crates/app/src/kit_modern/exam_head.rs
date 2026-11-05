@@ -47,7 +47,8 @@ pub fn ModernExamHead(
             aria-label=move || t("exam.settings")
             on:click=move |_| on_open_settings.run(())
           >
-            <ModernIcon kind=MIcon::Settings />
+            // 与顶栏「外观与动效」的图标区分开（见 `practice_head.rs`）。
+            <ModernIcon kind=MIcon::Sliders />
           </button>
         </div>
       </div>

@@ -92,6 +92,44 @@ export async function settleFrames(page: Page) {
 }
 
 /**
+ * 等现代风的入场浮现落位：视口内不再有「已登记但还没入场」的元素。
+ *
+ * 浮现登记分三趟（rAF / 220ms / 640ms，见 `motion::reveal_modern_page`），每登记一个元素就
+ * 立刻把它置成「透明 + 下移 18px」，再由观察器改成 `[data-reveal="in"]` 走上浮过渡。
+ * 在这段窗口里量坐标、按下鼠标，落点会跟着浮移动 —— 本地快机上「碰巧」错开，慢机上必现
+ * 「点了没反应」。
+ *
+ * 判据只看视口内的未入场元素：折叠线以下的元素要等滚动才会入场，等它们等于永等。
+ * 要求「连续 200ms 干净」才算落位 —— 单次采样会落在两趟登记的间隙里，误判成已经稳定。
+ */
+export async function settleReveal(page: Page) {
+  await page.evaluate(() => {
+    delete (window as unknown as { __revealCleanSince?: number }).__revealCleanSince;
+  });
+  await page.waitForFunction(
+    () => {
+      const w = window as unknown as { __revealCleanSince?: number };
+      const vh = window.innerHeight;
+      const pending = [...document.querySelectorAll('[data-reveal]:not([data-reveal="in"])')]
+        .filter((el) => {
+          const r = el.getBoundingClientRect();
+          return r.height > 0 && r.top < vh * 0.9 && r.bottom > 0;
+        })
+        .length;
+      if (pending > 0) {
+        w.__revealCleanSince = undefined;
+        return false;
+      }
+      w.__revealCleanSince ??= performance.now();
+      return performance.now() - w.__revealCleanSince >= 200;
+    },
+    undefined,
+    { timeout: 20_000, polling: 50 },
+  );
+  await settleFrames(page);
+}
+
+/**
  * 练习页「正确答案：A, C」中的字母。
  *
  * 题目卡片**作答后才显示答案行**（未作答时是开卷，会毁掉练习的自测意义），

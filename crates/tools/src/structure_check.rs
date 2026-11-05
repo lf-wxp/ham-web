@@ -23,6 +23,9 @@
 //!   否则以英文 / 西语直接打开该页时词典永远不来、文案静默停在中文；
 //! - 双设计系统守卫：现代风目录不得出现像素风标识、像素专用文件不得出现 `md-*`、
 //!   现代风样式的风格门禁 / 层外门禁 / `!important` 标注 / 视口断点白名单 / 类名索引；
+//! - 阅读正文：`--md-text-prose` 必须是 `clamp(…vw…)`、`--md-measure` 必须是 `em`、
+//!   `.md-article-page` 必须落这两个 token，且与 `docs/ui/modern.md` §2.3 写出的值一致
+//!   （规范见该节「正文分两档」）；
 //! - 现代风 `:has()` 标注 / 状态色字面值：`:has()` 必须同行写明缺失时的降级（`has-ok`），
 //!   红 / 琥珀色相的十六进制只能写在 `tokens.css`（其余地方走 `--md-danger*` / `--md-warn*` / `--md-gold*`）；
 //! - 退场时长 / 延迟卸载：退场动画（`*-out`）的时长必须走 token（两套皮肤读同一个值，Rust 侧的卸载延迟读它），
@@ -162,8 +165,17 @@ fn has_pixel_marker(line: &str) -> bool {
 /// 现代风样式里「会指向像素风 DOM」的标识：选择器提到它们就必须带风格门禁。
 ///
 /// 只列真正跨风格的：`pxl-*` 类名、`data-sig`（两套风格都会写到 `#route-content`）、
-/// 以及桥接页卡片的调色板工具类（`bg-card` / `bg-muted` 这些不出现在现代风 DOM 上）。
-const PIXEL_DOM_MARKERS: &[&str] = &["pxl-", "bg-card", "bg-muted", "bg-background", "border-ink"];
+/// 桥接页卡片的调色板工具类（`bg-card` / `bg-muted` 这些不出现在现代风 DOM 上），
+/// 以及两套皮肤共用的站点页脚 `body > footer`（像素风在 `pixel/surfaces.css` 对它另有底部让位，
+/// 现代风的规则层序更靠后，漏掉门禁就会把像素风的 4rem 盖成现代风的 84px）。
+const PIXEL_DOM_MARKERS: &[&str] = &[
+  "pxl-",
+  "bg-card",
+  "bg-muted",
+  "bg-background",
+  "border-ink",
+  "body > footer",
+];
 
 /// 按**顶层**逗号切开选择器列表（括号 / 方括号里的逗号不切，如 `:is(a, b)` / `[x="a,b"]`）。
 ///
@@ -1391,6 +1403,98 @@ fn check_modern_breakpoints(root: &Path) -> bool {
   false
 }
 
+/// 阅读正文规范：`docs/ui/modern.md` §2.3「正文分两档」。
+///
+/// 这条规范的全部价值在两个关系上：字号随视口**连续**变化、每行字数**恒定**。
+/// 两者都只靠 CSS 里的两行声明撑着（`--md-text-prose` 的 `clamp(…vw…)` 与 `--md-measure` 的 `em`）。
+/// 把字号改回固定档、或把 measure 换成 `px` / `ch`，页面照常能看、文档照常写着规范 ——
+/// 只有这里会发现两者对不上。值本身也要与文档表格逐字对齐：规范文档是唯一说明「为什么是 15~17.5」的地方。
+fn check_prose_type_scale(root: &Path) -> bool {
+  static PROSE_DECL: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"--md-text-prose:\s*([^;]+);").expect("token 正则应能编译"));
+  static MEASURE_DECL: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"--md-measure:\s*([^;]+);").expect("token 正则应能编译"));
+  static ARTICLE_PAGE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\.md-article-page\s*\{([^}]*)\}").expect("容器正则应能编译"));
+  // 只认「数字 + em」：`36rem` 也以 `em` 结尾，但它按根字号算，不随正文缩放。
+  static EM_ONLY: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[0-9.]+em$").expect("单位正则应能编译"));
+
+  let (Ok(tokens_raw), Ok(kit_raw), Ok(doc)) = (
+    std::fs::read_to_string(root.join("crates/app/style/modern/tokens.css")),
+    std::fs::read_to_string(root.join("crates/app/style/modern/kit.css")),
+    std::fs::read_to_string(root.join("docs/ui/modern.md")),
+  ) else {
+    println!("✗ 阅读正文规范：缺 tokens.css / kit.css / docs/ui/modern.md（改名或搬家了？）");
+    return false;
+  };
+  let tokens = strip_css_comments(&tokens_raw);
+  let kit = strip_css_comments(&kit_raw);
+  let mut problems: Vec<String> = Vec::new();
+
+  let prose = PROSE_DECL.captures(&tokens).map(|c| c[1].trim().to_owned());
+  match &prose {
+    Some(v) if v.contains("clamp(") && v.contains("vw") => {}
+    Some(v) => problems.push(format!(
+      "`--md-text-prose` 是 `{v}`：阅读正文必须用 `clamp(…vw…)`，断点跳变会让整段换行位置跟着跳"
+    )),
+    None => problems.push("`tokens.css` 里没有 `--md-text-prose`".to_owned()),
+  }
+
+  match MEASURE_DECL
+    .captures(&tokens)
+    .map(|c| c[1].trim().to_owned())
+  {
+    Some(v) if EM_ONLY.is_match(&v) => {}
+    Some(v) => problems.push(format!(
+      "`--md-measure` 是 `{v}`：行宽必须按 `em` 给（随字号缩放），`px` 会让每行字数跟着视口涨"
+    )),
+    None => problems.push("`tokens.css` 里没有 `--md-measure`".to_owned()),
+  }
+
+  let uses_prose = ARTICLE_PAGE.captures_iter(&kit).any(|c| {
+    let body = c[1].to_ascii_lowercase();
+    body.contains("font-size: var(--md-text-prose)")
+  });
+  if !uses_prose {
+    problems.push(
+      "`.md-article-page` 没有落 `font-size: var(--md-text-prose)`：阅读页回到了固定字号"
+        .to_owned(),
+    );
+  }
+  if !kit.contains("var(--md-measure)") {
+    problems.push("`kit.css` 里没有用 `var(--md-measure)`：成段文本没有行宽上限".to_owned());
+  }
+
+  // 文档要写出与人眼比对的同一份值（表格里是 `clamp(15px, 0.36vw + 13.4px, 17.5px)`）。
+  let squash = |s: &str| s.chars().filter(|c| !c.is_whitespace()).collect::<String>();
+  for token in ["--md-text-prose", "--md-measure"] {
+    if !doc.contains(token) {
+      problems.push(format!("`docs/ui/modern.md` 没写 `{token}`：规范没有落纸"));
+    }
+  }
+  if let Some(v) = &prose
+    && !squash(&doc).contains(&squash(v))
+  {
+    problems.push(format!(
+      "文档里的 `--md-text-prose` 值与 `tokens.css` 不一致（CSS 是 `{v}`）"
+    ));
+  }
+
+  if problems.is_empty() {
+    println!("✓ 阅读正文规范：字号随视口流体、行宽按字数恒定，且与 `docs/ui/modern.md` §2.3 一致");
+    return true;
+  }
+  println!("✗ 阅读正文规范：{} 处不符", problems.len());
+  for p in problems.iter().take(MAX_REPORT) {
+    println!("    {p}");
+  }
+  println!(
+    "    → 规范见 docs/ui/modern.md §2.3「正文分两档」；实现落点是 .md-article-page 与 :is(p, li, dd, blockquote)"
+  );
+  false
+}
+
 /// 现代风类名索引：`kit.css` 里声明的每个 `md-*` 类都必须在 `docs/ui/modern-classes.md` 登记。
 ///
 /// 为什么需要：类名只增不减是这类设计系统最常见的腐化方式（本轮就清掉过
@@ -1820,6 +1924,9 @@ pub fn check(root: &Path) -> Result<()> {
   if !check_modern_breakpoints(root) {
     failed.push("现代风断点".to_owned());
   }
+  if !check_prose_type_scale(root) {
+    failed.push("阅读正文规范".to_owned());
+  }
 
   println!("\n── 数据与文案 ──");
   if !check_knowledge_dict_is_loaded(root) {
@@ -2148,6 +2255,22 @@ const FRAME_MS: u64 = 16;
     // 按 `data-sig` 分支却一个 `md-` 都没有：也要门禁。
     assert!(needs_style_gate(
       r#"#route-content[data-sig="board"] section"#
+    ));
+  }
+
+  #[test]
+  fn shared_site_footer_needs_the_style_gate() {
+    // 站点页脚两套皮肤共用，像素风对它另有底部让位：裸写会盖掉像素风的值。
+    assert!(needs_style_gate("body > footer"));
+    assert!(needs_style_gate(
+      r#"html[data-ui-style="modern"] body > footer, body > footer"#
+    ));
+    assert!(!needs_style_gate(
+      r#"html[data-ui-style="modern"] body > footer"#
+    ));
+    // 现代风自己的外壳选择器不受影响。
+    assert!(!needs_style_gate(
+      r#"body.no-site-footer:not([data-page-mode]) [data-style-root="modern"]"#
     ));
   }
 

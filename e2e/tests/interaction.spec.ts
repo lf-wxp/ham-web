@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, settleFrames, test } from "./fixtures";
+import { expect, settleFrames, settleReveal, test } from "./fixtures";
 
 // 交互层回归：逐页签名、换页方向、按压反馈、可拖拽轨道、降级。
 // 判据与 `docs/ui/interaction.md` §7 一一对应。
@@ -64,11 +64,11 @@ test("按压有涟漪（控件）且 600ms 后自清理", async ({ page }) => {
   await seed(page, "modern");
   await page.goto("/glossary");
   const chip = page.locator(".md-chip").first();
-  await chip.scrollIntoViewIfNeeded();
-  const box = await chip.boundingBox();
-  if (!box) throw new Error("chip 不可见");
-
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  // 入场浮现会把内容整体下移 18px 再上浮（640ms）：没落位就按下，坐标在按下的那一刻已经
+  // 过期，`pointerdown` 落到旁边元素上 —— 慢机上必现「按了没涟漪」。
+  await settleReveal(page);
+  // 落点交给 `hover()`：它会等元素稳定、滚动到可点位置，并校验这一点真的命中它。
+  await chip.hover();
   await page.mouse.down();
   await expect(chip.locator(".md-ping")).toHaveCount(1);
   await page.mouse.up();
@@ -83,16 +83,20 @@ test("平板宽度下模块卡是可拖拽轨道：拖动与方向键都能滚�
   await page.setViewportSize({ width: 768, height: 1024 });
   await page.goto("/");
 
+  // 首页的模块甲板同样在入场浮现里（整块下移 18px 再上浮），没落位时量的坐标按下去已经偏了。
+  await settleReveal(page);
   const rail = page.locator(".md-modules.md-track");
-  await rail.scrollIntoViewIfNeeded();
   await expect(rail).toBeVisible();
   const overflow = await rail.evaluate((el) => el.scrollWidth - el.clientWidth);
   expect(overflow, "轨道在窄屏应该溢出，否则拖动没有意义").toBeGreaterThan(0);
 
+  // 落点交给 `hover()`：自己算坐标时，慢机上页面还在长高（实时传播面板从骨架变成读数），
+  // 按下会落到轨道外面，整个拖动静默失效。
+  const size = await rail.evaluate((el) => ({ w: el.clientWidth, h: el.clientHeight }));
+  await rail.hover({ position: { x: size.w - 24, y: size.h / 2 } });
   const box = await rail.boundingBox();
   if (!box) throw new Error("轨道不可见");
   const y = box.y + box.height / 2;
-  await page.mouse.move(box.x + box.width - 24, y);
   await page.mouse.down();
   await page.mouse.move(box.x + 24, y, { steps: 12 });
   await page.mouse.up();

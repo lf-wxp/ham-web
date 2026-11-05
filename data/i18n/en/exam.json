@@ -211,6 +211,8 @@
   "exam.units-db-voltage-ratio-example": "6 dB ≈ voltage ×2, 20 dB = ×10",
   "exam.units-dbm-dbuv": "dBm ↔ dBμV (50 Ω)",
   "exam.units-dbm-dbuv-example": "0 dBm = 107 dBμV, -73 dBm = 34 dBμV",
+  "exam.units-dbuv-uv": "dBμV ↔ μV",
+  "exam.units-dbuv-uv-example": "0 dBμV = 1 μV, 40 dBμV = 100 μV, 60 dBμV = 1 mV",
   "exam.units-dbm-mw": "dBm ↔ mW / W",
   "exam.units-dbm-mw-example": "0 dBm = 1 mW, 30 dBm = 1000 mW = 1 W",
   "exam.units-dbi-dbd": "dBi ↔ dBd",

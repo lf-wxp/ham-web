@@ -369,13 +369,21 @@ pub fn ExamPage() -> impl IntoView {
     }
   });
 
-  // 首次进入自动展示快捷键说明
+  // 首次进入自动展示快捷键说明。风格在构造期取一次：副作用闭包里不再碰上下文。
+  let modern_skin = crate::kit::is_modern_at_mount();
   Effect::new(move |_| {
     if help_shown.get_value() || store.questions.with(|q| q.is_empty()) {
       return;
     }
     help_shown.set_value(true);
     if store::help_seen(keys::HELP_SEEN_EXAM) {
+      return;
+    }
+    // 现代风 + 触屏：设置弹层里的键位表在粗指针下整段不显示（`.md-shortcut-list`），
+    // 自动弹出的只剩几个常规设置，白白挡住首屏。直接记成「看过」，之后不再尝试。
+    // 只对现代风生效：像素风在触屏上仍显示键位表（带键盘的平板用得上），照常首次提示。
+    if modern_skin && crate::util::is_coarse_pointer() {
+      store::mark_help_seen(keys::HELP_SEEN_EXAM);
       return;
     }
     if let Ok(handle) = set_timeout_with_handle(

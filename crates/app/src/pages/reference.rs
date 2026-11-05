@@ -1,8 +1,9 @@
-//! 考试速查页：操作证权限、分区号、RST 信号报告、发射类别标识、通联英语短句。
+//! 考试速查页：操作证权限、分区号、RST 信号报告、发射类别标识、
+//! 50Ω 电平换算、功率与 dBm 对照、单位前缀、通联英语短句。
 
 use ham_web_core::reference::{
-  CALL_AREAS, EMISSION_DESIGNATION, EMISSION_TYPES, KNOWLEDGE_SOURCES, LICENSE_CLASSES, PHRASES,
-  RST_SCALES, call_area_color,
+  CALL_AREAS, EMISSION_DESIGNATION, EMISSION_TYPES, KNOWLEDGE_SOURCES, LEVEL_CONVERSIONS,
+  LICENSE_CLASSES, PHRASES, POWER_DBM_TABLE, RST_SCALES, UNIT_PREFIXES, call_area_color,
 };
 use leptos::prelude::*;
 
@@ -192,6 +193,27 @@ pub fn ReferencePage() -> impl IntoView {
               title="发射类别标识的构成"
               headers=&["组成", "含义", "示例"]
               rows=EMISSION_DESIGNATION
+              class="min-w-[720px]"
+            />
+
+            <TableSection
+              title="50Ω 电平换算（dBm · dBμV · 电动势）"
+              headers=&["换算", "公式", "说明"]
+              rows=LEVEL_CONVERSIONS
+              class="min-w-[720px]"
+            />
+
+            <TableSection
+              title="功率与 dBm 对照（含操作证功率上限）"
+              headers=&["功率", "dBm", "说明"]
+              rows=POWER_DBM_TABLE
+              class="min-w-[720px]"
+            />
+
+            <TableSection
+              title="单位前缀与量级"
+              headers=&["前缀", "倍数", "示例"]
+              rows=UNIT_PREFIXES
               class="min-w-[720px]"
             />
 
@@ -402,6 +424,26 @@ pub fn ReferencePage() -> impl IntoView {
           title="发射类别标识的构成"
           headers=&["组成", "含义", "示例"]
           rows=EMISSION_DESIGNATION
+          class="min-w-[720px]"
+        />
+
+        // 电平换算 / 功率对照 / 单位前缀
+        <TableSection
+          title="50Ω 电平换算（dBm · dBμV · 电动势）"
+          headers=&["换算", "公式", "说明"]
+          rows=LEVEL_CONVERSIONS
+          class="min-w-[720px]"
+        />
+        <TableSection
+          title="功率与 dBm 对照（含操作证功率上限）"
+          headers=&["功率", "dBm", "说明"]
+          rows=POWER_DBM_TABLE
+          class="min-w-[720px]"
+        />
+        <TableSection
+          title="单位前缀与量级"
+          headers=&["前缀", "倍数", "示例"]
+          rows=UNIT_PREFIXES
           class="min-w-[720px]"
         />
 

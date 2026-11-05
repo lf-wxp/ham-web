@@ -1,4 +1,4 @@
-//! 公式速查：高频必背公式，每条关联到 `/tools` 页对应计算器，点击跳转代入计算。
+//! 公式速查：高频必背公式；有对应计算器的点击跳转到 `/tools` 代入计算，没有的只展示。
 
 use ham_web_core::formulas::{FORMULA_GROUPS, tex_of};
 use ham_web_core::unit_conversions::UNIT_CONVERSION_GROUPS;
@@ -28,22 +28,35 @@ pub fn FormulasPage() -> impl IntoView {
                   {g.items
                     .iter()
                     .map(|f| {
-                      let href = format!("/tools#{}", f.tool);
-                      view! {
-                        <a
-                          href=href
-                          class="group border bg-inset p-3 transition-colors hover:bg-accent/60"
-                        >
-                          <div class="text-sm">{move || kt_tracked(f.name)}</div>
-                          // KaTeX 可用时渲染 data-tex，否则保留 Unicode 表达式。
-                          <div class="mt-1 font-mono text-sm text-primary" data-tex=tex_of(f.name)>
-                            {move || kt_tracked(f.expr)}
-                          </div>
-                          <div class="mt-0.5 text-xs text-muted-foreground">{move || kt_tracked(f.desc)}</div>
-                          <div class="mt-1 text-xs text-primary opacity-0 transition-opacity group-hover:opacity-100">
-                            {move || t("knowledge.calculate")}
-                          </div>
-                        </a>
+                      let body = view! {
+                        <div class="text-sm">{move || kt_tracked(f.name)}</div>
+                        // KaTeX 可用时渲染 data-tex，否则保留 Unicode 表达式。
+                        <div class="mt-1 font-mono text-sm text-primary" data-tex=tex_of(f.name)>
+                          {move || kt_tracked(f.expr)}
+                        </div>
+                        <div class="mt-0.5 text-xs text-muted-foreground">{move || kt_tracked(f.desc)}</div>
+                        {f.tool.map(|_| {
+                          view! {
+                            <div class="mt-1 text-xs text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                              {move || t("knowledge.calculate")}
+                            </div>
+                          }
+                        })}
+                      };
+                      // 没有对应计算器的公式只展示：不做成链接，也不出「计算」提示（点进去算不出这条公式）。
+                      match f.tool {
+                        Some(tool) => {
+                          view! {
+                            <a
+                              href=format!("/tools#{tool}")
+                              class="group border bg-inset p-3 transition-colors hover:bg-accent/60"
+                            >
+                              {body}
+                            </a>
+                          }
+                            .into_any()
+                        }
+                        None => view! { <div class="border bg-inset p-3">{body}</div> }.into_any(),
                       }
                     })
                     .collect_view()}

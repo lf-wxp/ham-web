@@ -1,4 +1,5 @@
-//! 考试速查数据：操作证类别与权限、分区号、RST 信号报告、发射类别标识、通联英语短句。
+//! 考试速查数据：操作证类别与权限、分区号、RST 信号报告、发射类别标识、
+//! 50Ω 电平换算、功率与 dBm 对照、单位前缀、通联英语短句。
 
 /// 操作证类别与使用权限。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -486,6 +487,87 @@ pub const EMISSION_DESIGNATION: &[(&str, &str, &str)] = &[
   ),
 ];
 
+/// 50Ω 系统下的电平换算：功率（dBm）、端口电压、开路电动势（EMF）三者的加减关系。
+///
+/// 107 是 50Ω 下 dBm → dBμV 的取整偏移（与 [`crate::decibel::DBM_DBUV_OFFSET_50_OHM`] 同源）。
+/// 匹配时端口电压只有电动势的一半，即差 20·lg2 ≈ 6 dB，所以电动势到功率是 −107 − 6 = −113。
+/// 列：(换算, 公式, 说明)。
+pub const LEVEL_CONVERSIONS: &[(&str, &str, &str)] = &[
+  (
+    "功率 ↔ 端口电压",
+    "P(dBm) = V(dBμV，端口) − 107",
+    "端口电压是 50Ω 输入端的实测电压；0 dBm = 107 dBμV（精确值 106.99，取 107）",
+  ),
+  (
+    "电动势 ↔ 端口电压",
+    "V(dBμV，EMF) = V(dBμV，端口) + 6",
+    "匹配时端口电压只有开路电动势的一半，所以电动势高 6 dB",
+  ),
+  (
+    "功率 ↔ 电动势",
+    "P(dBm) = V(dBμV，EMF) − 113",
+    "前两条合并：−107 − 6 = −113",
+  ),
+  (
+    "dBμV ↔ μV",
+    "V(dBμV) = 20·lg(V/μV)",
+    "0 dBμV = 1 μV，20 dBμV = 10 μV，60 dBμV = 1 mV",
+  ),
+  ("dBW ↔ dBm", "P(dBm) = P(dBW) + 30", "1 W = 0 dBW = 30 dBm"),
+  (
+    "S9（30MHz 以下）",
+    "50 μV = 34 dBμV = −73 dBm",
+    "这是端口电压，对应电动势 100 μV = 40 dBμV；每低一格 6 dB（电压减半）",
+  ),
+  (
+    "S9（30MHz 以上）",
+    "5 μV = 14 dBμV = −93 dBm",
+    "比 30MHz 以下的 S9 低 20 dB（IARU 一区建议值）",
+  ),
+  (
+    "其他阻抗 R（通式）",
+    "dBμV = dBm + 90 + 10·lg(R)",
+    "R = 50Ω 时偏移为 106.99，R = 75Ω 时为 108.75",
+  ),
+];
+
+/// 功率与 dBm 对照，附操作证的功率上限。
+///
+/// 功率列必须写成「数值 空格 mW 或 W」，单测据此回算电平列，防止手抄的 dBm 悄悄错一位；
+/// 带「≈」的是取整值。列：(功率, 电平, 说明)。
+pub const POWER_DBM_TABLE: &[(&str, &str, &str)] = &[
+  ("1 mW", "0 dBm", "基准：0 dBm = 1 mW"),
+  ("2 mW", "≈ 3 dBm", "功率 ×2，电平加约 3 dB"),
+  ("10 mW", "10 dBm", "功率 ×10，电平加 10 dB"),
+  ("100 mW", "20 dBm", "功率 ×100，电平加 20 dB"),
+  ("1 W", "30 dBm", "1 W = 1000 mW"),
+  ("5 W", "≈ 37 dBm", "手持电台常见的发射功率"),
+  ("10 W", "40 dBm", "比 1 W 高 10 dB"),
+  ("15 W", "≈ 41.8 dBm", "B 类操作证 30MHz 以下的功率上限"),
+  (
+    "25 W",
+    "≈ 44 dBm",
+    "A 类操作证，以及 B、C 类 30MHz 以上的功率上限",
+  ),
+  ("100 W", "50 dBm", "常见 HF 电台的满功率"),
+  ("1000 W", "60 dBm", "C 类操作证 30MHz 以下的功率上限"),
+];
+
+/// 常用单位前缀与量级，示例专挑考试里容易算错的换算。列：(前缀, 倍数, 示例)。
+pub const UNIT_PREFIXES: &[(&str, &str, &str)] = &[
+  ("p · 皮", "10⁻¹²", "1 nF = 1000 pF"),
+  ("n · 纳", "10⁻⁹", "1 μF = 1000 nF"),
+  ("μ · 微", "10⁻⁶", "1 mV = 1000 μV；1 mH = 1000 μH"),
+  (
+    "m · 毫",
+    "10⁻³",
+    "1 W = 1000 mW（mW 是毫瓦，MW 是兆瓦，大小写不能混）",
+  ),
+  ("k · 千", "10³", "1 MHz = 1000 kHz；1 kΩ = 1000 Ω"),
+  ("M · 兆", "10⁶", "1 GHz = 1000 MHz；1 MΩ = 10⁶ Ω"),
+  ("G · 吉", "10⁹", "1 GHz = 10⁹ Hz = 10⁶ kHz"),
+];
+
 /// 主要知识的来源与时效（便于核对更新）。
 ///
 /// 时效性内容（法规版本、卫星状态、频率惯例）会随时间变化，请以来源方最新公告为准。
@@ -682,5 +764,91 @@ mod tests {
     let by_code = |code: &str| EMISSION_TYPES.iter().find(|e| e.code == code).unwrap();
     assert_eq!(by_code("J3C").name, "单边带传真");
     assert_eq!(by_code("J3F").name, "单边带电视");
+  }
+
+  #[test]
+  fn quick_tables_are_populated() {
+    // 不钉死条数：加一行表项不该让单测变红。电平换算至少 3 条，是因为下一条用例按下标 0..=2 取公式。
+    assert!(LEVEL_CONVERSIONS.len() >= 3);
+    assert!(!POWER_DBM_TABLE.is_empty());
+    assert!(!UNIT_PREFIXES.is_empty());
+    for &(a, b, c) in LEVEL_CONVERSIONS
+      .iter()
+      .chain(POWER_DBM_TABLE)
+      .chain(UNIT_PREFIXES)
+    {
+      assert!(!a.is_empty() && !b.is_empty() && !c.is_empty());
+    }
+  }
+
+  /// 表里写的 107 / +6 / 113 要和 `decibel` 内核是同一套数，且三条加减关系自洽。
+  #[test]
+  fn level_conversions_agree_with_the_decibel_kernel() {
+    use crate::decibel::{DBM_DBUV_OFFSET_50_OHM, dbuv_to_dbm, dbuv_to_uv, uv_to_dbuv};
+
+    let text = |i: usize| LEVEL_CONVERSIONS[i].1;
+    assert!(text(0).ends_with("− 107"));
+    assert!(text(1).ends_with("+ 6"));
+    assert!(text(2).ends_with("− 113"));
+    // 匹配时端口电压是电动势的一半：差 20·lg2 ≈ 6 dB。
+    let emf_over_port = uv_to_dbuv(2.0) - uv_to_dbuv(1.0);
+    assert!((emf_over_port - 6.0).abs() < 0.03, "{emf_over_port}");
+    assert!((DBM_DBUV_OFFSET_50_OHM + 6.0 - 113.0).abs() < 1e-12);
+    // S9 两个锚点：端口电压 50 μV / 5 μV 对应 34 / 14 dBμV，即 −73 / −93 dBm。
+    assert!((uv_to_dbuv(50.0) - 34.0).abs() < 0.03);
+    assert!((dbuv_to_dbm(34.0) + 73.0).abs() < 1e-9);
+    assert!((uv_to_dbuv(5.0) - 14.0).abs() < 0.03);
+    assert!((dbuv_to_dbm(14.0) + 93.0).abs() < 1e-9);
+    // 电动势 = 端口 + 6 dB，所以 S9 的电动势是 100 μV = 40 dBμV。
+    assert!((dbuv_to_uv(40.0) - 100.0).abs() < 1e-9);
+    // 通式 dBμV = dBm + 90 + 10·lg(R)：R = 50Ω / 75Ω 的偏移。
+    let offset = |r: f64| 90.0 + 10.0 * r.log10();
+    assert!((offset(50.0) - 106.99).abs() < 0.005);
+    assert!((offset(75.0) - 108.75).abs() < 0.005);
+  }
+
+  /// 功率表的电平列必须由功率列算得出来：手抄的 dBm 数字最容易悄悄错一位。
+  #[test]
+  fn power_table_levels_match_the_power_column() {
+    use crate::decibel::mw_to_dbm;
+
+    for &(power, level, _) in POWER_DBM_TABLE {
+      let (num, unit) = power.split_once(' ').expect("功率列应是「数值 单位」");
+      let value: f64 = num.parse().expect("功率数值应可解析");
+      let mw = match unit {
+        "mW" => value,
+        "W" => value * 1000.0,
+        other => panic!("未知功率单位：{other}"),
+      };
+      let dbm: f64 = level
+        .trim_start_matches("≈ ")
+        .trim_end_matches(" dBm")
+        .parse()
+        .expect("电平数值应可解析");
+      let exact = mw_to_dbm(mw);
+      assert!(
+        (exact - dbm).abs() < 0.05,
+        "{power} 应为 {dbm} dBm，实际 {exact:.2}"
+      );
+    }
+  }
+
+  /// 功率表里的三个操作证上限必须真的出现在权限表里，改了一边另一边会红。
+  #[test]
+  fn power_table_limits_come_from_the_license_table() {
+    for w in ["15", "25", "1000"] {
+      assert!(
+        LICENSE_CLASSES
+          .iter()
+          .any(|c| c.power.contains(&format!("{w}W"))),
+        "权限表里没有 {w}W"
+      );
+      assert!(
+        POWER_DBM_TABLE
+          .iter()
+          .any(|&(p, _, _)| p == format!("{w} W")),
+        "功率表里没有 {w} W"
+      );
+    }
   }
 }

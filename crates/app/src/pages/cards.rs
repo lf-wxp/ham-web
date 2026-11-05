@@ -461,7 +461,7 @@ pub fn CardsPage() -> impl IntoView {
           }
         })
         aria_label=Signal::derive(move || t("exam.deck"))
-        class="flex-nowrap overflow-x-auto pb-1"
+        class="md-chip-scroll flex-nowrap overflow-x-auto pb-1"
       >
         {Deck::ALL.into_iter().map(chip).collect_view()}
       </ChipGroup>

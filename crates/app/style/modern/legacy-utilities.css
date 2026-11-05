@@ -129,6 +129,16 @@ html[data-ui-style="modern"] input[type="range"] {
   height: 24px;
 }
 
+/* 触屏上的滑杆：轨道 24px 高、滑块 16px，拇指几乎抓不住。只撑命中区（高度），不动轨道视觉。
+   必须写在上一条**之后**：两条同权重、都未分层，后写者胜 —— 写进 `kit.css` 的 `@layer components`
+   或放在它前面都会被 24px 盖掉（实测 `/morse` 的滑杆因此停在 24）。 */
+@media (pointer: coarse) {
+  html[data-ui-style="modern"] .ui-slider,
+  html[data-ui-style="modern"] input[type="range"] {
+    height: 44px;
+  }
+}
+
 /* `ui::Slider` 的轨道 / 滑块是像素自绘（2px 墨框 + 方块滑块 + 内阴影），
    `accent-color` 对它无效 —— 要逐条改伪元素。读数类控件用「细轨道 + 圆滑块」，
    填色走蓝（当前值），橙留给页面唯一的主行动。 */

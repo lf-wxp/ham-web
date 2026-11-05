@@ -50,7 +50,9 @@ pub fn ModernExamSettings(
         />
       </div>
 
-      <div class="md-kbd-list">
+      // `md-shortcut-list`：触屏（粗指针）上没有键盘可按，这一整段不占位（见 `kit.css`）。
+      // 单独挂这个类而不是改 `md-kbd-list`：后者也是 `?` 快捷键面板本身的列表，那里必须一直显示。
+      <div class="md-kbd-list md-shortcut-list">
         <span class="md-setting-title">{move || t("exam.shortcuts")}</span>
         {SHORTCUT_HELP
           .iter()

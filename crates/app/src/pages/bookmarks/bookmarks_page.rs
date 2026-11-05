@@ -233,20 +233,22 @@ pub fn BookmarksPage() -> impl IntoView {
             }
             if questions.get().is_empty() {
               return view! {
-                <div class="md-panel md-empty">
-                  <h2 class="md-panel-title">{move || t("exam.no-bookmarks-yet")}</h2>
-                  <p class="md-muted md-sm">{move || t("exam.tap-the-bookmark-icon")}</p>
-                </div>
+                <EmptyState
+                  title=Signal::derive(move || t("exam.no-bookmarks-yet"))
+                  description=Signal::derive(move || t("exam.tap-the-bookmark-icon"))
+                  action_text=Signal::derive(move || t("exam.practice"))
+                  action_href="/practice".to_owned()
+                />
               }
                 .into_any();
             }
             let list: Vec<QuestionItem> = filtered().collect();
             if list.is_empty() {
               return view! {
-                <div class="md-panel md-empty">
-                  <h2 class="md-panel-title">{move || t("exam.no-questions-in-this")}</h2>
-                  <p class="md-muted md-sm">{move || t("exam.add-bookmarks-to-this")}</p>
-                </div>
+                <EmptyState
+                  title=Signal::derive(move || t("exam.no-questions-in-this"))
+                  description=Signal::derive(move || t("exam.add-bookmarks-to-this"))
+                />
               }
                 .into_any();
             }

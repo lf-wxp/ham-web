@@ -84,7 +84,10 @@ pub(super) fn QuestionRow(
 
   if crate::kit::is_modern_at_mount() {
     let modern_id = q.stable_id();
-    let j_text = q.j_code().map(str::to_owned);
+    // 标签行与像素风取同一组字段（`id` 退化到 `J`、一级 / 二级分类、题型、官方分类码 `P`），
+    // 两套皮肤对「这一题是什么」给出同一份答案。`id` 形如 `A-1`，本身就带题库类字母。
+    let row_id = q.id_str().or(q.j_code()).map(ToOwned::to_owned);
+    let p_code = q.p_code().map(ToOwned::to_owned);
     // 初值只在挂载时取一次快照（组件体里没有观察者，`with` 会报「跟踪上下文之外读信号」）；
     // 之后的同步靠下面 `bookmarks.update` 与本地 `marked`，不依赖这里的订阅。
     let marked = RwSignal::new(
@@ -110,17 +113,48 @@ pub(super) fn QuestionRow(
 
     return view! {
       <article class="md-q-row">
+        // 标签行与题干分成两个块级行：题号 / 分类这些不定宽的胶囊若与题干同处一个 flex 行，
+        // 题干首行会被推到胶囊右侧、换行后又回到最左边，左边缘就参差不齐。标签独占一行后，
+        // 题干在自己的块里从卡片内距起排，窄屏与桌面宽度下都是同一条竖线。
         <div class="md-q-row-head">
-          {j_text
-            .map(|j| view! { <span class="md-q-row-id">{j}</span> }.into_any())}
-          <p class="md-q-row-text">{q.question.clone()}</p>
+          <div class="md-q-row-tags">
+            {row_id
+              .map(|id| view! { <span class="md-q-row-id">{id}</span> }.into_any())}
+            {top_cat
+              .map(|c| {
+                // 分类标识色只做图形锚点（7px 圆点），与像素风用同一个 `tone::dot` 映射 ——
+                // 分类名本身仍是中性文字色，颜色只是索引。
+                view! {
+                  <span class="md-q-row-tag">
+                    <span class=format!("md-q-row-dot {}", tone::dot(c.tone)) aria-hidden="true"></span>
+                    {move || crate::data::core_text_tracked(c.name)}
+                  </span>
+                }
+              })}
+            {sub
+              .map(|s| {
+                view! {
+                  <span class="md-q-row-tag">{move || crate::data::kt_tracked(s.name)}</span>
+                }
+              })}
+            {is_multiple
+              .then(|| {
+                view! {
+                  <span class="md-q-row-tag md-q-row-tag-multi">{move || t("exam.multiple")}</span>
+                }
+              })}
+            {p_code
+              .map(|p| view! { <span class="md-q-row-code md-mono">{p}</span> })}
+          </div>
           {modern_id
             .is_some()
             .then(|| {
               view! {
+                // 不用 `md-icon-btn-xs`：那是「贴着输入框右缘」的尺寸（32，抬档也只到 32），
+                // 这里是列表行里的独立目标，用整档的 `md-icon-btn`（coarse 下 44）。
                 <button
                   type="button"
-                  class="md-icon-btn md-icon-btn-xs"
+                  class="md-icon-btn"
                   aria-pressed=move || marked.get().to_string()
                   aria-label=move || t("exam.bookmark-this-question")
                   on:click=toggle_bookmark
@@ -130,6 +164,8 @@ pub(super) fn QuestionRow(
               }
             })}
         </div>
+
+        <p class="md-q-row-text">{q.question.clone()}</p>
 
         <ul class="md-q-row-opts">
           {q
@@ -190,7 +226,12 @@ pub(super) fn QuestionRow(
                             <span class="md-ref-badge">{move || crate::data::kt_tracked(r.kind.label())}</span>
                             {match r.url {
                               Some(url) => view! {
-                                <a href=url target="_blank" rel="noopener noreferrer">
+                                <a
+                                  href=url
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  class="inline-flex items-center pointer-coarse:min-h-11"
+                                >
                                   {move || crate::data::kt_tracked(r.text)}
                                 </a>
                               }
@@ -326,7 +367,7 @@ pub(super) fn QuestionRow(
                           href=url
                           target="_blank"
                           rel="noopener noreferrer"
-                          class=format!("{} {}", crate::kit::link_class(), "inline-flex items-center gap-1")
+                          class=format!("{} {}", crate::kit::link_class(), "inline-flex items-center gap-1 pointer-coarse:min-h-11")
                         >
                           {move || crate::data::kt_tracked(r.text)}
                           <Icon kind=IconKind::ExternalLink class="size-6 w-3" />

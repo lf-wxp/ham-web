@@ -98,7 +98,7 @@ pub(super) fn ActivationExportPanel() -> impl IntoView {
 
   view! {
     <details class=crate::kit::card_class()>
-      <summary class="cursor-pointer px-4 py-3 text-sm">
+      <summary class="cursor-pointer px-4 py-3 text-sm pointer-coarse:min-h-11">
         {move || t("log.activation-title")}
       </summary>
       <div class="space-y-3 border-t p-4">

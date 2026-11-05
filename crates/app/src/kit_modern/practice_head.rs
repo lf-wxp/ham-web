@@ -64,7 +64,9 @@ pub fn ModernPracticeHeader(
             aria-label=move || t("exam.settings")
             on:click=move |_| on_open_settings.run(())
           >
-            <ModernIcon kind=MIcon::Settings />
+            // 不用 `Settings`：顶栏「外观与动效」已经是这个图标，相距不到 100px 的两个同形图标
+            // 只靠 `aria-label` 区分（读屏能分，眼睛分不出）。页内设置是「调参数」，用 `Sliders`。
+            <ModernIcon kind=MIcon::Sliders />
           </button>
         </div>
       </div>

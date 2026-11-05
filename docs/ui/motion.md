@@ -113,7 +113,8 @@ transition: transform var(--motion-fast) var(--ease-out-expo);
 - 现代风**不用 `steps()`**，像素风**不用平滑缓动**；两套皮肤的动画不要互相借用（现代风的单选框曾借用像素风的
   `motion-check`，逐格跳的动画漏进了平滑的界面里）。
 - 减少动态效果：`tokens.css` 的 `@media (prefers-reduced-motion: reduce)` 把 `.md-root` 与各个 Portal 出来的表面
-  （对话框 / 抽屉 / 调谐台 / 气泡 / Toast / 提示气泡）的时长压到 1ms。**新增一个 Portal 表面，要把它的根类加进这份名单。**
+  （对话框 / 抽屉 / 调谐台 / 气泡 / Toast / 提示气泡 / 页内菜单的悬浮按钮）的时长压到 1ms。
+  **新增一个 Portal 表面，要把它的根类加进这份名单。**
 
 ## 五、弹层的进出场：一份「在场」实现，一个时长 token
 

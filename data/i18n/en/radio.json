@@ -224,6 +224,7 @@
   "radio.summit-and-park-activations": "Summit and park activations, with reference lookups.",
   "radio.allowed": "Allowed",
   "radio.logged-mhz": "Logged: {} ({} MHz {})",
+  "radio.logged-no-freq": "Logged: {} ({}, frequency to fill in)",
   "radio.located": "Located: {}",
   "radio.sent-awaiting-confirmation": "Sent (awaiting confirmation)",
   "radio.on": "On: {}",

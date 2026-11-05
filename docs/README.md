@@ -61,7 +61,6 @@
 | [`engineering/deployment.md`](engineering/deployment.md) | 本地开发细节、生产构建、Docker、环境变量、Web Push | 构建与部署 |
 | [`engineering/code-quality.md`](engineering/code-quality.md) | **代码质量规范**：分层边界、单一来源、**门禁一览（§2）**、问题分级与证据口径、分范围检查清单 | 提交前 / 做审查 |
 | [`engineering/licensing.md`](engineering/licensing.md) | 许可、第三方声明、GPL 例外与部署方义务 | 引入依赖 / 字体 / 分发 |
-| [`engineering/review-account-sync.md`](engineering/review-account-sync.md) | 在线账号改动的审查问题与整改追踪（按 `code-quality.md` §1.3 模板；**全部关闭后删除**） | 复核 / 接手账号同步的整改 |
 
 ### data / 数据与内容
 

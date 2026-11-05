@@ -519,5 +519,10 @@
   "knowledge.avoid-range": "Avoid",
   "knowledge.reason": "Reason",
   "knowledge.avoid-ranges": "Ranges to avoid",
-  "knowledge.load-more-count": "Load more (showing {} / {})"
+  "knowledge.load-more-count": "Load more (showing {} / {})",
+  "knowledge.level-conversions-50-ohm": "50 Ω level conversions (dBm · dBμV · EMF)",
+  "knowledge.power-and-dbm-table": "Power and dBm table (with licence power limits)",
+  "knowledge.unit-prefixes-and-magnitudes": "Unit prefixes and magnitudes",
+  "knowledge.conversion": "Conversion",
+  "knowledge.multiplier": "Multiplier"
 }

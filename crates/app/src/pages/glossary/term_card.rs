@@ -65,7 +65,7 @@ pub(super) fn TermCard(
             let item_class = if modern {
               "md-chip md-chip-sm"
             } else {
-              "border px-2 py-0.5 transition-colors hover:bg-accent hover:text-foreground"
+              "inline-flex items-center border px-2 py-0.5 transition-colors hover:bg-accent hover:text-foreground pointer-coarse:min-h-8"
             };
             // 这两段是**两套皮肤共用**的 `body`：现代类名必须按风格分叉，
             // 否则像素风里会命中 `.md-mono` 的等宽/字号规则（样式表不分层）。

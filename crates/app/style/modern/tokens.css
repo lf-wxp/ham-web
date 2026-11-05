@@ -243,11 +243,14 @@ html[data-ui-style="modern"] {
   --md-dur-slow: 320ms;
 
   /* 字号阶梯：3xs / 2xs 只给等宽小字（日期、来源、kicker），正文最小到 sm（13）。
-     `lede` 是页头副标题与首屏引文的专用档（19），介于 base 与 lg 之间。 */
+     `lede` 是页头副标题与首屏引文的专用档（19），介于 base 与 lg 之间。
+     `compact` 是「列表型正文」：桌面等于 base，窄屏降到 15（见下方的断点覆盖）——
+     手机上要一屏扫完的选项 / 清单用它，16px 会让十几个汉字的选择项多折一行。 */
   --md-text-3xs: 10px;
   --md-text-2xs: 11px;
   --md-text-xs: 12px;
   --md-text-sm: 13px;
+  --md-text-compact: 16px;
   --md-text-base: 16px;
   --md-text-md: 17px;
   --md-text-lede: 19px;
@@ -255,6 +258,19 @@ html[data-ui-style="modern"] {
   --md-text-xl: 28px;
   --md-text-2xl: 34px;
   --md-text-3xl: 44px;
+
+  /* 阅读正文（prose）：只给「以成段阅读为主」的页面用（`.md-article-page` 的子树：
+     知识库文章、参考页、术语表、收藏页）。用 clamp 随视口连续放大而不是三档断点 ——
+     断点处换行位置会整段跳一次（30 字/行 → 22 字/行），读者会觉得「换了个页面」。
+     下限 15（与小屏题卡同档，一屏多装几行），上限 17.5（再大就与卡片标题抢层级）。 */
+  --md-text-prose: clamp(15px, 0.36vw + 13.4px, 17.5px);
+
+  /* 行宽（measure）：36em = 36 个汉字 / 行（西文约 62 个字符），是中文正文的舒适区。
+     单位必须是 em 而不是 px —— 字号随视口变，行宽跟着变，**每行的字数**才恒定；
+     换成 px 的话，宽屏上字号变大了、每行字数也跟着涨，等于没约束。
+     也不用 ch：`ch` 是「0」的宽度（Geist 约 0.66em），中文方块字是 1em，
+     68ch 在中文里会变成 45 字/行，比不约束好不了多少。 */
+  --md-measure: 36em;
 
   /* 展示级字号：只有大标题、首屏主张、数据条读数用它。
      用 clamp 而不是断点，是因为这里要的是「随视口连续放大」的版面感，
@@ -286,6 +302,15 @@ html[data-ui-style="modern"][lang^="zh"] {
   html[data-ui-style="modern"] {
     --md-page-pad: 32px;
     --md-gap-section: 64px;
+  }
+}
+
+/* 手机上的「紧凑正文」：15px。卡片里的选项要按「一行放得下十二三个汉字」排版，
+   16px 下 16 字的选择项必折一行；13px（`--md-text-sm`）又跌出正文档，读起来像脚注。
+   只覆盖这一档，其余阶梯不动。 */
+@media (max-width: 640px) {
+  html[data-ui-style="modern"] {
+    --md-text-compact: 15px;
   }
 }
 
@@ -377,6 +402,9 @@ html[data-ui-style="modern"] body {
   .md-modal *,
   .md-sheet,
   .md-sheet *,
+  /* 页内菜单的悬浮按钮也是 Portal 出来的（`ModernMenuDrawer`）：按下缩放要一起降级。 */
+  .md-drawer-fab,
+  .md-drawer-fab *,
   .md-palette,
   .md-palette *,
   .md-dialog-veil,

@@ -1,3 +1,4 @@
+use ham_web_core::dx_watch::freq_label;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde::Deserialize;
@@ -11,19 +12,6 @@ struct Spot {
   dx: String,
   freq_khz: u32,
   time: String,
-}
-
-/// 频率 kHz → MHz（去尾随 0）。
-fn fmt_freq(khz: u32) -> String {
-  let mhz = khz as f64 / 1000.0;
-  let mut s = format!("{mhz:.3}");
-  while s.ends_with('0') {
-    s.pop();
-  }
-  if s.ends_with('.') {
-    s.pop();
-  }
-  format!("{s} MHz")
 }
 
 /// DX 热点摘要卡片（前 5 条）。
@@ -65,7 +53,7 @@ pub(super) fn SpotsCard() -> impl IntoView {
                 view! {
                   <div class="flex items-center gap-2 text-sm">
                     <span class="font-mono text-primary">{s.dx.clone()}</span>
-                    <span class="font-mono text-xs tabular-nums text-muted-foreground">{fmt_freq(s.freq_khz)}</span>
+                    <span class="font-mono text-xs tabular-nums text-muted-foreground">{freq_label(s.freq_khz)}</span>
                     <span class="ml-auto text-xs text-muted-foreground">{s.time.clone()}</span>
                   </div>
                 }

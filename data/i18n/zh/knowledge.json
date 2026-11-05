@@ -513,5 +513,10 @@
   "knowledge.avoid-range": "应避免占用",
   "knowledge.reason": "原因",
   "knowledge.avoid-ranges": "应避免占用的频段",
-  "knowledge.load-more-count": "加载更多（已显示 {} / {}）"
+  "knowledge.load-more-count": "加载更多（已显示 {} / {}）",
+  "knowledge.level-conversions-50-ohm": "50Ω 电平换算（dBm · dBμV · 电动势）",
+  "knowledge.power-and-dbm-table": "功率与 dBm 对照（含操作证功率上限）",
+  "knowledge.unit-prefixes-and-magnitudes": "单位前缀与量级",
+  "knowledge.conversion": "换算",
+  "knowledge.multiplier": "倍数"
 }

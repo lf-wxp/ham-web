@@ -98,40 +98,38 @@ pub fn StatsPage() -> impl IntoView {
     let total_missing: usize = missing.iter().map(|(_, v)| v.len()).sum();
 
     view! {
-          <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div class=crate::kit::card_class_with("p-4 text-center")>
-              <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{total}</div>
-              <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.total-qsos")}</div>
-            </div>
-            <div class=crate::kit::card_class_with("p-4 text-center")>
-              <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{dxcc_total}</div>
-              <div class="mt-1 text-xs text-muted-foreground">{move || t("log.dxcc-entities")}</div>
-            </div>
-            <div class=crate::kit::card_class_with("p-4 text-center")>
-              <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{band_top.len()}</div>
-              <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.bands")}</div>
-            </div>
-            <div class=crate::kit::card_class_with("p-4 text-center")>
-              <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{mode_top.len()}</div>
-              <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.modes")}</div>
-            </div>
-          </div>
+          // 四条 0 值统计卡在空态下没有任何信息量，先把首屏让给「去记录第一通」的出口。
+          {(!empty)
+            .then(|| {
+              view! {
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div class=crate::kit::card_class_with("p-4 text-center")>
+                    <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{total}</div>
+                    <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.total-qsos")}</div>
+                  </div>
+                  <div class=crate::kit::card_class_with("p-4 text-center")>
+                    <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{dxcc_total}</div>
+                    <div class="mt-1 text-xs text-muted-foreground">{move || t("log.dxcc-entities")}</div>
+                  </div>
+                  <div class=crate::kit::card_class_with("p-4 text-center")>
+                    <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{band_top.len()}</div>
+                    <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.bands")}</div>
+                  </div>
+                  <div class=crate::kit::card_class_with("p-4 text-center")>
+                    <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{mode_top.len()}</div>
+                    <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.modes")}</div>
+                  </div>
+                </div>
+              }
+            })}
 
           {if empty {
             view! {
               <EmptyState
                 icon=IconKind::ClipboardList
                 title=Signal::derive(move || t("radio.no-qso-log-yet"))
-                actions=ViewFn::from(move || {
-                  view! {
-                    <a
-                      href="/log"
-                      class="mt-1 inline-block text-sm transition-colors hover:text-foreground"
-                    >
-                      {move || t("radio.add-qsos")}
-                    </a>
-                  }
-                })
+                action_text=Signal::derive(move || t("radio.add-qsos"))
+                action_href="/log".to_owned()
               />
             }
             .into_any()

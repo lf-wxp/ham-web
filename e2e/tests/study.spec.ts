@@ -263,4 +263,33 @@ test.describe("首次进入", () => {
     await settleFrames(page);
     await expect(help).toBeHidden();
   });
+
+  // 触屏上考试设置里的键位表只在现代风被隐藏（`.md-shortcut-list`）：
+  // 自动弹出的弹层只剩几个常规设置，白白挡住首屏 → 现代风不弹、直接记成已看过；
+  // 像素风的键位表仍在（带键盘的平板用得上），首次进入照常弹出。
+  test.describe("考试页 · 触屏", () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+    test("现代风：不自动弹出设置，并记成已看过", async ({ page }) => {
+      await page.addInitScript(() => {
+        if (window !== window.top) return;
+        localStorage.setItem("ui:uiStyle", "modern");
+      });
+      await page.goto("/exam");
+      await expect(page.locator("main .md-opt").first()).toBeVisible();
+      // 负向断言：等「该弹的都弹过了」再确认它没出现；记号写入是它走了「跳过」分支的正向证据。
+      await waitSettled(page);
+      await settleFrames(page);
+      await expect(page.getByRole("dialog", { name: "设置" })).toBeHidden();
+      expect(
+        await page.evaluate(() => localStorage.getItem("ui:shortcutsHelpSeen:exam")),
+        "现代风触屏应直接记成已看过",
+      ).toBe("1");
+    });
+
+    test("像素风：仍自动弹出设置", async ({ page }) => {
+      await page.goto("/exam");
+      await expect(page.getByRole("dialog", { name: "设置" })).toBeVisible();
+    });
+  });
 });

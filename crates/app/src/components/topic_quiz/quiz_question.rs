@@ -180,7 +180,7 @@ pub(super) fn QuizQuestion(
               <button
                 type="button"
                 class=move || {
-                  let base = "w-full border px-3 py-1.5 text-left text-sm transition-colors";
+                  let base = "w-full border px-3 py-1.5 text-left text-sm transition-colors pointer-coarse:min-h-11";
                   if answered() {
                     if correct_key.contains(&class_key) {
                       format!("{base} border-win bg-win/10")

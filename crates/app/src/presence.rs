@@ -19,6 +19,8 @@
 use std::time::Duration;
 
 use leptos::prelude::*;
+use wasm_bindgen::JsCast;
+use wasm_bindgen::closure::Closure;
 
 /// 退场节奏的两档，各对应两套皮肤里一个时长 token。
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -42,8 +44,46 @@ impl ExitSpeed {
   }
 }
 
-/// 卸载比动画结束晚一帧：动画的最后一帧要先画出来，不然会闪一下「还原成可见」。
-const FRAME_MS: u64 = 16;
+/// 卸载比动画结束晚两帧。
+///
+/// 一帧给「动画真正开始」：`data-state="closed"` 的样式计算在帧内完成，动画从那一刻起算，
+/// 而计时器可能早于它；一帧给「动画的最后一帧画出来」，不然会闪一下「还原成可见」。
+const FRAME_MS: u64 = 32;
+
+/// 在下一帧再起算卸载计时。
+///
+/// 退场动画要等浏览器把 `data-state="closed"` 的样式应用上去才开始播，而这里是在
+/// `open` 信号刚变假时就跑 —— 两者之间隔了一次 Leptos 更新 + 样式计算。机器忙时这段
+/// 间隔能到几十毫秒，计时器会先到点，动画在最后一截被截断（CI 上实测 135ms 卸载 /
+/// 180ms 动画）。把起算推到下一帧，计时与动画就从同一起点开始，只剩 [`FRAME_MS`] 的余量。
+///
+/// 后台标签页里 `requestAnimationFrame` 整个暂停：那时没有「下一帧」可等（动画本身也不会推进），
+/// 排进去只会让弹层卡在「退场中」（`inert` + `aria-hidden`）直到用户切回来，所以直接起算。
+fn start_exit_timer(wait: Duration, fire: impl FnOnce() + 'static) {
+  let window = web_sys::window();
+  let hidden = window
+    .as_ref()
+    .and_then(web_sys::Window::document)
+    .is_some_and(|d| d.hidden());
+  let pending = std::rc::Rc::new(std::cell::RefCell::new(Some(fire)));
+  let scheduled = !hidden
+    && window.is_some_and(|w| {
+      let queued = pending.clone();
+      let start = Closure::once_into_js(move || {
+        if let Some(fire) = queued.borrow_mut().take() {
+          set_timeout(fire, wait);
+        }
+      });
+      w.request_animation_frame(start.unchecked_ref()).is_ok()
+    });
+  if !scheduled {
+    // 后台标签页 / 拿不到窗口 / 帧回调排不进去（文档正在销毁）：退回同步起算。
+    // 宁可少几毫秒余量，也不能让弹层永远不卸载。
+    if let Some(fire) = pending.borrow_mut().take() {
+      set_timeout(fire, wait);
+    }
+  }
+}
 
 /// 读 `<html>` 上的自定义属性（token 都定义在根上，Portal 出来的弹层也读得到）。
 fn root_var(name: &str) -> Option<String> {
@@ -53,7 +93,7 @@ fn root_var(name: &str) -> Option<String> {
   (!value.trim().is_empty()).then_some(value)
 }
 
-/// 当前风格下，指定档位的「退场动画时长 + 一帧」，毫秒。
+/// 当前风格下，指定档位的「退场动画时长 + 两帧余量」，毫秒。
 ///
 /// 每次关闭时现读（而不是缓存）：用户运行中切换风格，两套皮肤的 token 值并不相同。
 #[must_use]
@@ -91,7 +131,8 @@ pub fn use_presence(open: RwSignal<bool>) -> Presence {
       closing.set(true);
       generation.update(|g| *g = g.wrapping_add(1));
       let mine = generation.get_untracked();
-      set_timeout(
+      start_exit_timer(
+        Duration::from_millis(exit_ms(ExitSpeed::Normal)),
         move || {
           // 计时器回来时组件可能已经卸载（退场途中跳转页面）：信号随 Owner 释放，
           // `get_untracked` 会 panic 并带崩整个 wasm 实例；`try_*` 在已释放时返回 `None`。
@@ -100,7 +141,6 @@ pub fn use_presence(open: RwSignal<bool>) -> Presence {
             closing.try_set(false);
           }
         },
-        Duration::from_millis(exit_ms(ExitSpeed::Normal)),
       );
     }
   });

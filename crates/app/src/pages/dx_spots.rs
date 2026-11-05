@@ -5,8 +5,8 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use ham_web_core::dx_watch::{
-  AlertReason, AlertSettings, Need, OTHER, Worked, alert_key, band_of_khz as band_of,
-  mode_of_comment as mode_of,
+  AlertReason, AlertSettings, Need, OTHER, Worked, alert_key, band_of_khz as band_of, format_mhz,
+  freq_label, mode_of_comment as mode_of,
 };
 use ham_web_core::dxcc::lookup;
 use leptos::prelude::*;
@@ -57,24 +57,6 @@ fn band_color(band: &str) -> &'static str {
     "2m" => "border-foreground/30 bg-foreground/5 text-foreground",
     _ => "border bg-inset text-muted-foreground",
   }
-}
-
-/// 频率 kHz → MHz 数字串（去尾随 0）。
-fn fmt_mhz(khz: u32) -> String {
-  let mhz = khz as f64 / 1000.0;
-  let mut s = format!("{mhz:.3}");
-  while s.ends_with('0') {
-    s.pop();
-  }
-  if s.ends_with('.') {
-    s.pop();
-  }
-  s
-}
-
-/// 频率格式化：kHz → `x MHz`。
-fn fmt_freq(khz: u32) -> String {
-  format!("{} MHz", fmt_mhz(khz))
 }
 
 #[component]
@@ -153,7 +135,7 @@ pub fn DxSpotsPage() -> impl IntoView {
         hits.push(format!(
           "{} {} {} ({why})",
           s.dx,
-          fmt_freq(s.freq_khz),
+          freq_label(s.freq_khz),
           t(mode_of(&s.comment))
         ));
       }
@@ -206,16 +188,18 @@ pub fn DxSpotsPage() -> impl IntoView {
 
   // 点击呼号一键记入日志。
   let add_to_log = move |dx: String, freq_khz: u32, comment: String| {
-    let s = fmt_mhz(freq_khz);
+    // 上游没给出频率时留空，让用户之后在日志里补：写一个 `0` 进去就是一条看着合法的错误数据。
+    let s = format_mhz(freq_khz).unwrap_or_default();
     let mode = mode_of(&comment);
     let mode = if mode == OTHER { "SSB" } else { mode };
     if !store.quick_add(&dx, &s, mode) {
       return; // 备份 / 恢复进行中：`quick_add` 已提示，不能再报「已记录」。
     }
-    crate::ui::push_success(tf(
-      "radio.logged-mhz",
-      &[&(dx).to_string(), &(s).to_string(), (mode)],
-    ));
+    crate::ui::push_success(if s.is_empty() {
+      tf("radio.logged-no-freq", &[&dx, mode])
+    } else {
+      tf("radio.logged-mhz", &[&dx, &s, mode])
+    });
   };
 
   view! {
@@ -478,49 +462,61 @@ pub fn DxSpotsPage() -> impl IntoView {
                       let dx_btn = dx.clone();
                       let comment_btn = comment.clone();
                       view! {
-                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5">
-                          // 刻意的例外：热点表格行内的紧凑多行内容按钮（呼号 + 国家），
-                          // `ui::Button` 的像素风高度与内边距会把行高撑开、破坏表格密度。
-                          <button
-                            type="button"
-                            class="w-28 shrink-0 text-left"
-                            title=move || t("radio.click-to-log")
-                            on:click=move |_| add_to_log(dx_btn.clone(), freq, comment_btn.clone())
-                          >
-                            <div class="font-mono text-sm text-primary">{dx.clone()}</div>
-                            {if country.is_empty() {
-                              view! { <div></div> }.into_any()
-                            } else {
-                              view! {
-                                <div class="truncate text-xs text-muted-foreground">{country.clone()}</div>
-                              }
-                              .into_any()
-                            }}
-                          </button>
-                          <span class="w-24 shrink-0 font-mono text-sm tabular-nums">{fmt_freq(freq)}</span>
-                          <span
-                            class=format!("shrink-0 border px-1.5 py-0.5 text-xs {}", band_color(band_of(freq)))
-                          >
-                            {move || t(band_of(freq))}
-                          </span>
-                          <span class="shrink-0 border px-1.5 py-0.5 text-xs text-muted-foreground">
-                            {move || t(mode_of(&comment_mode))}
-                          </span>
-                          {badge.map(|(text, class)| view! {
-                            <span class=format!("shrink-0 border px-1.5 py-0.5 text-xs {class}")>{text}</span>
-                          })}
-                          {watched.then(|| view! {
-                            <span class="shrink-0 border border-gold/40 bg-gold/15 px-1.5 py-0.5 text-xs text-gold-text">{move || t("radio.watched")}</span>
-                          })}
-                          <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-                            {if comment.is_empty() { "—".to_owned() } else { comment.clone() }}
-                          </span>
-                          <span class="shrink-0 text-xs text-muted-foreground">{time.clone()}</span>
-                          <Tooltip label=Signal::derive(move || t("radio.spotter"))>
-                            <span class="shrink-0 text-xs text-muted-foreground">
-                              {spotter.clone()}
+                        // 三段：①「呼号 + 国家」「频率」「波段」；② 模式 / 需要度 / 关注 + 时间 + 报告者；
+                        // ③ 备注（至多两行）。以前是一整行 flex-wrap，备注是唯一可压缩的子项，
+                        // 在 390px 下被挤到 30–50px、只剩「FT8…」。
+                        <div data-slot="spot-row" class="space-y-1 px-3 py-2.5">
+                          <div class="flex items-center gap-x-3">
+                            // 刻意的例外：热点表格行内的紧凑多行内容按钮（呼号 + 国家），
+                            // `ui::Button` 的像素风高度与内边距会把行高撑开、破坏表格密度。
+                            // `min-h-11`：整块是可点区域，触屏上不能低于 44px。
+                            <button
+                              type="button"
+                              class="min-h-11 min-w-0 flex-1 text-left"
+                              title=move || t("radio.click-to-log")
+                              on:click=move |_| add_to_log(dx_btn.clone(), freq, comment_btn.clone())
+                            >
+                              <div class="font-mono text-sm text-primary">{dx.clone()}</div>
+                              {if country.is_empty() {
+                                view! { <div></div> }.into_any()
+                              } else {
+                                view! {
+                                  <div class="truncate text-xs text-muted-foreground">{country.clone()}</div>
+                                }
+                                .into_any()
+                              }}
+                            </button>
+                            <span class="shrink-0 font-mono text-sm tabular-nums">{freq_label(freq)}</span>
+                            {(freq != 0).then(|| view! {
+                              <span
+                                class=format!("shrink-0 border px-1.5 py-0.5 text-xs {}", band_color(band_of(freq)))
+                              >
+                                {move || t(band_of(freq))}
+                              </span>
+                            })}
+                          </div>
+                          <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span class="shrink-0 border px-1.5 py-0.5 text-xs text-muted-foreground">
+                              {move || t(mode_of(&comment_mode))}
                             </span>
-                          </Tooltip>
+                            {badge.map(|(text, class)| view! {
+                              <span class=format!("shrink-0 border px-1.5 py-0.5 text-xs {class}")>{text}</span>
+                            })}
+                            {watched.then(|| view! {
+                              <span class="shrink-0 border border-gold/40 bg-gold/15 px-1.5 py-0.5 text-xs text-gold-text">{move || t("radio.watched")}</span>
+                            })}
+                            <span class="ml-auto shrink-0 text-xs text-muted-foreground">{time.clone()}</span>
+                            <Tooltip label=Signal::derive(move || t("radio.spotter"))>
+                              <span class="shrink-0 text-xs text-muted-foreground">
+                                {spotter.clone()}
+                              </span>
+                            </Tooltip>
+                          </div>
+                          {(!comment.is_empty()).then(|| view! {
+                            <p class="line-clamp-2 break-words text-sm text-muted-foreground">
+                              {comment.clone()}
+                            </p>
+                          })}
                         </div>
                       }
                     })

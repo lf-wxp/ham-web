@@ -33,6 +33,33 @@ pub const fn band_of_khz(khz: u32) -> &'static str {
   }
 }
 
+/// 频率 kHz → MHz 数字串（至多 3 位小数、去尾随 0）；`0` 表示「上游没给出可用频率」，返回 `None`。
+///
+/// 为什么不直接把 0 格式化成 `"0"`：页面会把它显示成「0 MHz」，点呼号记日志时还会把 `0`
+/// 当频率写进用户的日志。「没有频率」必须是一个能被调用方显式处理的状态，而不是一个看着合法的数。
+#[must_use]
+pub fn format_mhz(khz: u32) -> Option<String> {
+  if khz == 0 {
+    return None;
+  }
+  let mut s = format!("{:.3}", f64::from(khz) / 1000.0);
+  while s.ends_with('0') {
+    s.pop();
+  }
+  if s.ends_with('.') {
+    s.pop();
+  }
+  Some(s)
+}
+
+/// 频率展示串：`x MHz`；上游没给出可用频率（0）时是占位破折号「—」，不是「0 MHz」。
+///
+/// `/dx-spots` 与仪表盘的热点摘要卡共用这一份，两处的频率口径不能各写一遍。
+#[must_use]
+pub fn freq_label(khz: u32) -> String {
+  format_mhz(khz).map_or_else(|| "—".to_owned(), |mhz| format!("{mhz} MHz"))
+}
+
 /// 从 spot 备注推断模式，无法判断时为「其他」。
 #[must_use]
 pub fn mode_of_comment(comment: &str) -> &'static str {
@@ -192,6 +219,24 @@ mod tests {
       freq: freq.into(),
       ..Default::default()
     }
+  }
+
+  #[test]
+  fn formats_mhz_and_treats_zero_as_unknown() {
+    assert_eq!(format_mhz(14_074).as_deref(), Some("14.074"));
+    assert_eq!(format_mhz(7_000).as_deref(), Some("7"));
+    assert_eq!(format_mhz(1_842).as_deref(), Some("1.842"));
+    assert_eq!(format_mhz(144_390).as_deref(), Some("144.39"));
+    assert_eq!(format_mhz(1).as_deref(), Some("0.001"));
+    // 0 = 上游没给出可用频率：不是「0 MHz」。
+    assert_eq!(format_mhz(0), None);
+  }
+
+  #[test]
+  fn freq_label_shows_a_dash_instead_of_zero_mhz() {
+    assert_eq!(freq_label(14_074), "14.074 MHz");
+    assert_eq!(freq_label(7_000), "7 MHz");
+    assert_eq!(freq_label(0), "—");
   }
 
   #[test]

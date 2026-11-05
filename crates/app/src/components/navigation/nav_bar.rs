@@ -92,7 +92,7 @@ pub(crate) fn PixelNav() -> impl IntoView {
           // 品牌标识
           <a
             href="/"
-            class="group flex shrink-0 items-center gap-2.5"
+            class="group flex shrink-0 items-center gap-2.5 pointer-coarse:min-h-11"
             on:click=move |_| menu_open.set(false)
           >
             <div class="brand-mark flex size-10 items-center justify-center text-primary-foreground group-hover:-translate-y-0.5">

@@ -18,9 +18,15 @@ pub(super) fn notes_view(notes: &'static [Note], jump: Callback<&'static str>) -
         Note::Text(t) => view! { <span>{move || kt_tracked(t)}</span> }.into_any(),
         Note::Ref(code) => view! {
           <Tooltip label=Signal::derive(move || tf("common.view-footnote", &[(code)]))>
+            // `md-footnote` 只给现代风补命中区（触屏下用伪元素撑到 44，见 `kit.css`）：
+            // 这类引用是行内小字，靠内距放大命中区会把整行行高顶开。
+            // 类名必须按皮肤派发 —— 写死会把 `md-*` 漏进像素风 DOM（双风格隔离用例会红）。
             <button
               type="button"
-              class="font-mono text-xp-text underline underline-offset-2 hover:text-xp-text"
+              class=crate::cn::cn(&[
+                crate::kit::footnote_class(),
+                "font-mono text-xp-text underline underline-offset-2 hover:text-xp-text",
+              ])
               aria-label=Signal::derive(move || tf("common.view-footnote", &[(code)]))
               on:click=move |_| jump.run(code)
             >

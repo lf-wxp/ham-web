@@ -209,6 +209,7 @@
   "radio.summit-and-park-activations": "山顶与公园活动，含编号查询。",
   "radio.allowed": "已允许",
   "radio.logged-mhz": "已加入日志：{}（{} MHz {}）",
+  "radio.logged-no-freq": "已加入日志：{}（{}，频率待补）",
   "radio.located": "已定位：{}",
   "radio.sent-awaiting-confirmation": "已寄出（待确认）",
   "radio.on": "已开启：{}",

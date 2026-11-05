@@ -64,6 +64,19 @@ export const AUDIT = () => {
     return found;
   };
 
+  // 视觉隐藏（`sr-only` / clip 技巧）的容器：自身被压到 1px 且溢出裁掉，
+  // 里面的文字**对用户本来就不显示**，它的溢出不是「文本被裁掉」。
+  // 典型就是 KaTeX 的 `.katex-mathml`（给读屏用的 MathML 副本，1px + `clip: rect(1px,1px,1px,1px)`）：
+  // Chromium 会给里面那个 `<math>` 一个比内容窄的宽度，逐层报 `scrollWidth > clientWidth`。
+  const inVisuallyHidden = (el: Element) => {
+    for (let p = el.parentElement; p; p = p.parentElement) {
+      if (p.clientWidth > 2 || p.clientHeight > 2) continue;
+      const cs = getComputedStyle(p);
+      if (cs.overflow !== "visible" || cs.clip !== "auto") return true;
+    }
+    return false;
+  };
+
   for (const el of Array.from(document.querySelectorAll("main *"))) {
     if ((el as SVGElement).ownerSVGElement) {
       const r = el.getBoundingClientRect();
@@ -77,6 +90,8 @@ export const AUDIT = () => {
     if (!(el.textContent || "").trim()) continue;
     // sr-only / 1px 视觉隐藏元素（clip 技巧）不参与判定
     if (el.clientWidth <= 2 || el.clientHeight <= 2) continue;
+    // 同上，但视觉隐藏发生在祖先上：容器被压到 1px 且裁掉溢出，后代再宽也看不见。
+    if (inVisuallyHidden(el)) continue;
 
     // 刻意截断（ellipsis / line-clamp）属设计意图，不计入
     const lineClamp = (cs as unknown as { webkitLineClamp?: string }).webkitLineClamp;

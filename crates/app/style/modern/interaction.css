@@ -254,8 +254,12 @@ html[data-ui-style="modern"] #route-content.motion-page[data-nav-dir="lateral"] 
   /* 4.2.1 检索页的筛选条随滚动常驻：结果列表很长时，改关键词 / 切题库不必先滚回顶部。
      吸附偏移用 `--md-nav-h`（与顶栏同源），不写死像素。 */
   /* 吸附只给桌面：窄屏上搜索条 + 分类条会叠成两层吸顶（约 110px 高），
-     内容区被压得只剩半屏。窄屏改为「只有分类条吸顶」（见 kit.css 的 `.md-filter-bar`），
-     搜索条随页面滚走。 */
+     内容区被压得只剩半屏。窄屏既没有分类条（分类收进抽屉，见 `kit_modern::ModernMenuDrawer`），
+     搜索条也随页面滚走 —— 窄屏一律不留吸顶横条。 */
+  /* 吸顶条的底色必须**等于页面底色**（不透明）：半透明 + 模糊会让底下的题卡透上来，
+     整条比页面亮一档，看起来是「另一块板子」。
+     横向范围就是内容宽度，不要用负外边距铺到版心边缘：底色既然与页面同色，
+     铺出去只会让下边框比下面的卡片宽出一截，多出一条两侧探头的横线。 */
   @media (min-width: 900px) {
     #route-content[data-sig="index"] .md-glossary-bar,
     #route-content[data-sig="browse"] .md-glossary-bar {
@@ -265,8 +269,7 @@ html[data-ui-style="modern"] #route-content.motion-page[data-nav-dir="lateral"] 
       padding-block: var(--md-space-2-5);
       margin-block-end: 10px;
       border-bottom: 1px solid var(--md-border);
-      background-color: color-mix(in srgb, var(--md-bg) 88%, transparent);
-      backdrop-filter: blur(10px);
+      background-color: var(--md-bg);
     }
   }
 

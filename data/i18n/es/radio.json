@@ -224,6 +224,7 @@
   "radio.summit-and-park-activations": "Activaciones de cumbres y parques, con consulta de referencias.",
   "radio.allowed": "Permitido",
   "radio.logged-mhz": "Registrado: {} ({} MHz {})",
+  "radio.logged-no-freq": "Registrado: {} ({}, falta la frecuencia)",
   "radio.located": "Localizado: {}",
   "radio.sent-awaiting-confirmation": "Enviada (pendiente de confirmación)",
   "radio.on": "Activo: {}",

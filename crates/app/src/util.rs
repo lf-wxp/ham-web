@@ -126,25 +126,59 @@ pub fn document() -> web_sys::Document {
   window().document().expect("document should exist")
 }
 
+/// 当前设备是否是「粗指针」（触屏），取值同 CSS 的 `@media (pointer: coarse)`。
+///
+/// **样式一律用 CSS 媒体查询**，不要在组件体里拿它切 class（那等于在信号外读环境）。
+/// 这里只服务「要不要执行某个交互」：例如首次进入考试页是否自动弹快捷键说明 ——
+/// 触屏上没有键盘，弹出来只是挡住首屏。
+pub fn is_coarse_pointer() -> bool {
+  window()
+    .match_media("(pointer: coarse)")
+    .ok()
+    .flatten()
+    .is_some_and(|mql| mql.matches())
+}
+
 pub fn body() -> Option<web_sys::HtmlElement> {
   document().body()
+}
+
+/// 吸顶层的下沿（视口坐标）：滚动落点要让出的高度。
+///
+/// 两套皮肤吸在顶上的不是同一个东西：
+/// - 像素风：页头 `sticky`，它的底边就是让位线；
+/// - 现代风：页头是 `static`（标题进正文流、随内容滚走），吸顶的只有顶栏 `.md-nav`。
+///   这时仍量页头底边，它会随滚动变成负数、偏移被反向叠加 —— 离页顶越远冲得越过头，
+///   在页顶时又多让出整个页头的高度。
+fn sticky_inset() -> f64 {
+  let doc = document();
+  let header = doc.query_selector("main header").ok().flatten();
+  let header_pinned = header.as_ref().is_some_and(|h| {
+    window()
+      .get_computed_style(h)
+      .ok()
+      .flatten()
+      .and_then(|style| style.get_property_value("position").ok())
+      .is_some_and(|position| position == "sticky" || position == "fixed")
+  });
+  if !header_pinned && let Some(nav) = doc.query_selector(".md-nav").ok().flatten() {
+    return nav.get_bounding_client_rect().bottom().max(0.0);
+  }
+  header
+    .map(|h| h.get_bounding_client_rect().bottom())
+    .unwrap_or(0.0)
 }
 
 /// 滚动到元素可见位置，让出「导航栏 + 吸顶页头」的高度。
 ///
 /// 点目录 / 表格跳转时，`scroll_into_view` 把目标滚到视口顶部，开头会被吸顶的
 /// 页头盖住 —— 页头高度随译文长度与折行变化，固定的 `scroll-mt-24` 跟不上。
-/// 这里按 `main header` 的**实际底边**算偏移（与 `StickyPanel` 同一个选择器口径），
-/// 目标顶部落在页头下方 12px 处。
+/// 这里按吸顶层的**实际下沿**算偏移（口径见 [`sticky_inset`]），
+/// 目标顶部落在它下方 12px 处。
 pub fn scroll_to_element(el: &web_sys::Element) {
-  let header_bottom = document()
-    .query_selector("main header")
-    .ok()
-    .flatten()
-    .map(|h| h.get_bounding_client_rect().bottom())
-    .unwrap_or(0.0);
-  let y =
-    el.get_bounding_client_rect().top() + window().scroll_y().unwrap_or(0.0) - header_bottom - 12.0;
+  let y = el.get_bounding_client_rect().top() + window().scroll_y().unwrap_or(0.0)
+    - sticky_inset()
+    - 12.0;
   window().scroll_to_with_x_and_y(0.0, y.max(0.0));
 }
 

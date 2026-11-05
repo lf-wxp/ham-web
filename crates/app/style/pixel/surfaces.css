@@ -270,6 +270,13 @@ body::before {
   outline: none;
 }
 
+/* 触屏：只撑命中区（轨道与滑块是伪元素，在 input 内垂直居中，视觉不变）。 */
+@media (pointer: coarse) {
+  .ui-slider {
+    height: 2.75rem;
+  }
+}
+
 .ui-slider::-webkit-slider-runnable-track {
   height: 0.5rem;
   border: 2px solid var(--pxl-ink);

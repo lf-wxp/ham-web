@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, settleFrames, test } from "./fixtures";
+import { expect, settleFrames, settleReveal, test } from "./fixtures";
 
 // 双设计系统的回归：现代风 / 像素风互不串味、切换不刷新、无横向溢出。
 // 判据见 `docs/ui/modern.md` §7（门禁与自检）与 `docs/ui/decisions.md` §8（两套皮肤互不串的验证方法）。
@@ -62,7 +62,12 @@ test("现代风：入场动画不会把内容永久藏住（工具 / 题库 / �
   // 这是所有入场动画里唯一「不能靠肉眼一眼看出」的失败模式（工具页整页空白踩过一次）。
   for (const url of ["/tools", "/browse", "/glossary"]) {
     await page.goto(url);
-    await page.waitForTimeout(1200);
+    // 登记分三趟（rAF / 220ms / 640ms）：慢机上主线程被题库索引占住时，最后一趟会晚到，
+    // 固定等 1200ms 会读到「一个都还没登记」。判据不变（必须有元素被登记），只是给它时间。
+    await expect
+      .poll(() => page.locator("[data-reveal]").count(), { timeout: 20_000 })
+      .toBeGreaterThan(0);
+    await settleReveal(page);
     const { total, stuck } = await page.evaluate(() => {
       const vh = window.innerHeight;
       const els = [...document.querySelectorAll("[data-reveal]")];
@@ -784,6 +789,266 @@ test("现代风：短标签的按钮加了 md-btn-wrap 也不变（高度仍是�
   const btns = page.locator("main button.md-btn-wrap");
   await expect(btns.first()).toBeVisible();
   const heights = await btns.evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
-  // 中文标签都放得下一行：三个按钮都应是 `--md-control-h`（40px），不因为允许换行而变高或变矮。
-  expect(heights).toEqual([40, 40, 40]);
+  // 中文标签都放得下一行：每个按钮都应是 `--md-control-h`（40px），不因为允许换行而变高或变矮。
+  // 不写死数量 —— 备份页每加一个操作就会多一个 `md-btn-wrap`，写死 3 会跟着页面内容变红。
+  expect(heights.length, "没量到带 md-btn-wrap 的按钮").toBeGreaterThan(0);
+  expect(
+    heights.every((h) => h === 40),
+    `有按钮不是控件高（实际 ${heights.join(" / ")}）`,
+  ).toBe(true);
+});
+
+// 分类浏览的题目行：标签行与题干分成两个块级行。
+//
+// 回归：标签与题干曾同处一个 flex 行，题干首行被推到胶囊右侧、换行后回到最左边，
+// 左边缘呈锯齿（首行缩进、其余顶格）。用例量的是**题干每一行文本的左边缘**与标签行起点，
+// 三者必须落在同一条竖线上 —— 只看卡片左内距发现不了，因为卡片与标签一直是齐的。
+//
+// 同时守住「卡片带分类标签」这件事：分类名来自 core 数据（`P` 码 → 二级 / 一级分类），
+// 曾经只有像素风渲染它们，现代风只显示题号。
+for (const width of [390, 1280] as const) {
+  test(`现代风题目行：${width}px 下标签独占一行、题干左边缘对齐且带分类标签`, async ({ page }) => {
+    await seed(page, "modern");
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/browse");
+    const row = page.locator(".md-q-row").first();
+    await expect(row).toBeVisible();
+    await settleFrames(page);
+
+    const m = await row.evaluate((el) => {
+      const head = el.querySelector(".md-q-row-head");
+      const tags = el.querySelector(".md-q-row-tags");
+      const text = el.querySelector(".md-q-row-text");
+      if (!head || !tags || !text) return { missing: true };
+      // 逐行量题干：Range 的每一块 client rect 就是一行。
+      const range = document.createRange();
+      range.selectNodeContents(text);
+      const lines = [...range.getClientRects()].filter((r) => r.width > 1 && r.height > 1);
+      return {
+        missing: false,
+        tagCount: el.querySelectorAll(".md-q-row-tag").length,
+        // 分类标签的可见文字：一级 + 二级分类名，两枚都要有内容。
+        tagTexts: [...el.querySelectorAll(".md-q-row-tag")].map((t) => (t.textContent ?? "").trim()),
+        // 标签名不许被省略号截断（分类名是「这是什么题」的答案，截了就读不出来）
+        truncatedTags: [...el.querySelectorAll(".md-q-row-tag")].filter(
+          (t) => t.scrollWidth > t.clientWidth + 1,
+        ).length,
+        tagLefts: [...el.querySelectorAll(".md-q-row-tags > *")].map((t) =>
+          Math.round(t.getBoundingClientRect().left),
+        ),
+        headLeft: Math.round(head.getBoundingClientRect().left),
+        headBottom: head.getBoundingClientRect().bottom,
+        textTop: text.getBoundingClientRect().top,
+        textLeft: Math.round(text.getBoundingClientRect().left),
+        lineLefts: lines.map((r) => Math.round(r.left)),
+        // 卡片左右内沿（padding box 边界，含 1px 描边）：胶囊不得越过，题干必须从内沿起排
+        innerLeft:
+          el.getBoundingClientRect().left +
+          parseFloat(getComputedStyle(el).borderLeftWidth) +
+          parseFloat(getComputedStyle(el).paddingLeft),
+        innerRight:
+          el.getBoundingClientRect().right -
+          parseFloat(getComputedStyle(el).borderRightWidth) -
+          parseFloat(getComputedStyle(el).paddingRight),
+        tagRights: [...el.querySelectorAll(".md-q-row-tags > *")].map((t) =>
+          t.getBoundingClientRect().right,
+        ),
+        docOverflow: document.documentElement.scrollWidth - window.innerWidth,
+      };
+    });
+
+    expect(m.missing, "题目行里找不到标签行 / 题干").toBe(false);
+    if (m.missing) return;
+    // 先证明真的渲染出了分类标签：否则下面「左边缘对齐」的断言在标签为 0 时也可通过。
+    expect(m.tagCount, "题目行没有分类标签").toBeGreaterThanOrEqual(2);
+    expect(m.tagTexts.length, "分类标签没有可见文字").toBeGreaterThanOrEqual(2);
+    expect(m.tagTexts.every((t) => t.length > 0), `分类标签文字为空：${JSON.stringify(m.tagTexts)}`).toBe(true);
+    expect(m.truncatedTags, "分类标签被截断了（英文 / 西语长分类名在窄屏放不下时应折行）").toBe(0);
+
+    // 题干每一行的左边缘 == 题干盒子的左边缘 == 卡片内沿 —— 不再有「首行缩进」。
+    expect(new Set(m.lineLefts).size, `题干各行左边缘不一致：${JSON.stringify(m.lineLefts)}`).toBe(1);
+    expect(m.lineLefts[0], "题干没有从卡片内沿起排").toBe(m.textLeft);
+    expect(m.textLeft, "题干没有落在卡片内沿").toBe(m.innerLeft);
+    // 标签行自己也从同一条竖线起排。
+    expect(m.headLeft, "标签行与题干不在同一条左边缘").toBe(m.textLeft);
+    expect(m.tagLefts[0], "第一枚标签与题干不在同一条左边缘").toBe(m.textLeft);
+    // 两个块级行：标签行的底边在题干顶部之上（同行时它们会重叠）。
+    expect(m.headBottom, "题干与标签仍挤在同一行").toBeLessThanOrEqual(m.textTop + 1);
+    // 胶囊收在卡片内：中文 / 长分类名都不许顶出去。
+    expect(Math.max(...m.tagRights), "标签越过了卡片右内沿").toBeLessThanOrEqual(m.innerRight + 1);
+    expect(m.docOverflow, "文档横向溢出").toBeLessThanOrEqual(0);
+  });
+}
+
+// ---------------------------------------------------------------------------------------------
+// 手机宽度下的版式与可读性回归。
+// 都在 390px、粗指针下量**渲染结果**：类名换了但版式没坏时不该红，版式坏了类名还在时必须红。
+// ---------------------------------------------------------------------------------------------
+test.describe("手机宽度版式回归", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  // 关卡名是 `/map` 的主标识，单行 ellipsis 把「Radio regulations and …」截掉。
+  for (const [locale, label] of [["en", "英文"], ["es", "西语"]] as const) {
+    test(`闯关地图：${label}关卡名不被截断`, async ({ page }) => {
+      await seed(page, "modern");
+      await page.addInitScript((l) => localStorage.setItem("locale", l), locale);
+      await page.goto("/map");
+      await expect(page.locator(".md-stage-name").first()).toBeVisible();
+      await settleFrames(page);
+      const r = await page.evaluate(() => {
+        const names = Array.from(document.querySelectorAll<HTMLElement>(".md-stage-name"));
+        return {
+          total: names.length,
+          // 两个方向都要量：旧版式是单行 `text-overflow: ellipsis`（水平溢出，`scrollHeight` 不变），
+          // 新版式是多行 `line-clamp`（垂直溢出）。只量一个方向，退回另一种写法时用例照样绿。
+          cut: names
+            .filter((e) => e.scrollWidth > e.clientWidth + 1 || e.scrollHeight > e.clientHeight + 1)
+            .map((e) => e.textContent),
+        };
+      });
+      expect(r.total, "没找到关卡").toBeGreaterThan(0);
+      expect(r.cut, `这些关卡名被截断了：${r.cut.join(" | ")}`).toEqual([]);
+    });
+  }
+
+  // 输入框 16px、答案却是 12px，读数层级是倒的。
+  test("小工具：计算结果字号不小于输入框的 90%（≤640）", async ({ page }) => {
+    await seed(page, "modern");
+    await page.goto("/tools");
+    await expect(page.locator(".md-tools-grid .bg-inset").first()).toBeVisible();
+    await settleFrames(page);
+    const r = await page.evaluate(() => {
+      const result = document.querySelector(".md-tools-grid .bg-inset") as HTMLElement;
+      const input = document.querySelector(".md-tools-grid input.md-input, .md-tools-grid input") as HTMLElement;
+      return {
+        result: parseFloat(getComputedStyle(result).fontSize),
+        input: parseFloat(getComputedStyle(input).fontSize),
+      };
+    });
+    expect(r.input, "没量到输入框字号").toBeGreaterThan(0);
+    expect(r.result, `结果 ${r.result}px 比输入框 ${r.input}px 小太多：答案的层级比字段还低`).toBeGreaterThanOrEqual(
+      r.input * 0.9,
+    );
+  });
+
+  // 「更多字段」展开钮——现代风下是整行按钮：行高 1.4 以上、不带下划线、有 chevron、高度 ≥ 44。
+  test("通联日志：「更多字段」是带 chevron 的整行按钮，不再是下划线粗体字", async ({ page }) => {
+    await seed(page, "modern");
+    await page.goto("/log");
+    const btn = page.getByRole("button", { name: /更多字段/ });
+    await expect(btn).toBeVisible();
+    await btn.scrollIntoViewIfNeeded();
+    const m = await btn.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      const b = el.getBoundingClientRect();
+      return {
+        h: b.height,
+        underline: cs.textDecorationLine,
+        lh: parseFloat(cs.lineHeight) / parseFloat(cs.fontSize),
+        hasIcon: !!el.querySelector("svg"),
+        expanded: el.getAttribute("aria-expanded"),
+      };
+    });
+    expect(m.h, "按钮高度低于触控目标").toBeGreaterThanOrEqual(44);
+    expect(m.underline, "现代风下不该再用下划线当按钮").not.toContain("underline");
+    expect(m.lh, "折行后行高太小，第二行会顶着第一行").toBeGreaterThanOrEqual(1.2);
+    expect(m.hasIcon, "缺少展开 chevron").toBe(true);
+    expect(m.expanded).toBe("false");
+    await btn.click();
+    await expect(btn).toHaveAttribute("aria-expanded", "true");
+  });
+
+  // 浏览页的「题库 + 筛选」胶囊在窄屏是一条横滚行；桌面仍与搜索框同处一行（display: contents）。
+  test("题库浏览：窄屏筛选胶囊是一条横滚行，不折成两行；桌面版式不变", async ({ page }) => {
+    await seed(page, "modern");
+    await page.goto("/browse");
+    const bar = page.locator(".md-chip-bar");
+    await expect(bar).toBeVisible();
+    const phone = await bar.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      const tops = Array.from(el.children).map((c) => Math.round(c.getBoundingClientRect().top));
+      return {
+        overflowX: cs.overflowX,
+        oneRow: new Set(tops).size === 1,
+        scrolls: el.scrollWidth > el.clientWidth,
+        docOverflow: document.documentElement.scrollWidth - innerWidth,
+      };
+    });
+    expect(phone.overflowX).toBe("auto");
+    expect(phone.oneRow, "胶囊折成了多行").toBe(true);
+    expect(phone.scrolls, "胶囊放得下就不必横滚，用例失去意义").toBe(true);
+    expect(phone.docOverflow, "横滚条不能把整页撑出横向滚动").toBeLessThanOrEqual(1);
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await settleFrames(page);
+    const desktop = await page.evaluate(() => {
+      const barEl = document.querySelector(".md-chip-bar") as HTMLElement;
+      const search = document.querySelector(".md-glossary-search") as HTMLElement;
+      const chip = barEl.querySelector(".md-chip") as HTMLElement;
+      return {
+        display: getComputedStyle(barEl).display,
+        sameRow: Math.abs(search.getBoundingClientRect().top - chip.getBoundingClientRect().top) < 30,
+      };
+    });
+    expect(desktop.display, "桌面应是 display: contents（与没有这层包裹时一致）").toBe("contents");
+    expect(desktop.sameRow, "桌面的胶囊应与搜索框同处一行").toBe(true);
+  });
+
+  // dock 是常驻导航，不是脚注。
+  test("底部 dock 的标签字号不小于 12px（中文）", async ({ page }) => {
+    await seed(page, "modern");
+    await page.goto("/");
+    await expect(page.locator(".md-dock-item").first()).toBeVisible();
+    const sizes = await page
+      .locator(".md-dock-item span")
+      .evaluateAll((els) => els.map((e) => parseFloat(getComputedStyle(e).fontSize)));
+    expect(sizes.length, "dock 里没有文字标签").toBeGreaterThan(0);
+    for (const s of sizes) expect(s, `dock 标签 ${s}px 过小`).toBeGreaterThanOrEqual(12);
+  });
+
+  // F5-7：窄屏筛选行里的分组竖线换行后会变成孤立的竖线，窄屏直接不显示。
+  test("练习页：窄屏没有孤立的分组竖线", async ({ page }) => {
+    await seed(page, "modern");
+    await page.goto("/practice?bank=A");
+    await expect(page.locator(".md-chip-row").first()).toBeVisible();
+    const display = await page
+      .locator(".md-chip-row-divider")
+      .first()
+      .evaluate((e) => getComputedStyle(e).display);
+    expect(display).toBe("none");
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// 考试设置里的键位表：触屏上没有键盘可按，整段不占位；鼠标设备照常显示。
+// 隐藏规则（`kit.css` 的 `.md-shortcut-list`）必须挂在现代风自己的弹层 DOM 上：
+// 曾经把类名写进了像素风弹窗，CSS 却只作用于现代风 —— 两头都成立、却永远对不上。
+// ---------------------------------------------------------------------------------------------
+test.describe("现代风考试设置的键位表", () => {
+  async function openExamSettings(page: Page) {
+    await seed(page, "modern");
+    await page.goto("/exam");
+    await expect(page.locator("main .md-opt").first()).toBeVisible();
+    await page.locator("main").getByRole("button", { name: "设置", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "设置" });
+    await expect(dialog).toBeVisible();
+    return dialog;
+  }
+
+  test("鼠标设备：键位表可见", async ({ page }) => {
+    const dialog = await openExamSettings(page);
+    await expect(dialog.locator(".md-shortcut-list"), "弹层里没有键位表，用例失去意义").toHaveCount(1);
+    await expect(dialog.locator(".md-shortcut-list")).toBeVisible();
+  });
+
+  test.describe("触屏", () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+    test("键位表整段不占位", async ({ page }) => {
+      const dialog = await openExamSettings(page);
+      // 先证明元素在 DOM 里：不在的话 `toBeHidden` 会空洞通过。
+      await expect(dialog.locator(".md-shortcut-list"), "弹层里没有键位表，用例失去意义").toHaveCount(1);
+      await expect(dialog.locator(".md-shortcut-list")).toBeHidden();
+    });
+  });
 });

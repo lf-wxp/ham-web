@@ -95,6 +95,35 @@
       min-height: 2rem;
       min-width: 2rem;
     }
+
+    /* 其余按钮 / 输入框 / 胶囊 / 页签：触屏上抬到 44px（Apple HIG；WCAG 2.5.8 的 24 只是下限）。
+       实测像素风 390px 下 `.pxl-chip` 36、输入框 40、`Size::Sm` 按钮 32 —— 与现代风
+       （`style/modern/kit.css` 的 coarse 块）同一条线。`.pxl-btn-tight` 保持 32：它们是表格行 /
+       工具条里的紧凑档，与现代风 `.md-icon-btn-xs` 同口径；桌面（鼠标）版式不动。
+       写在 `.pxl-btn-tight` 之后且用 `:not()` 排除它，不依赖源码顺序。 */
+    .pxl-btn:not(.pxl-btn-tight),
+    .pxl-field,
+    .pxl-chip,
+    .pxl-tab {
+      min-height: 2.75rem;
+    }
+
+    /* 方形图标按钮（`Size::Icon` 是 40×40）：高度抬了，宽度也要跟，否则成了 40×44 的瘦长块。 */
+    .pxl-btn:not(.pxl-btn-tight) {
+      min-width: 2.75rem;
+    }
+
+    /* 勾选 / 单选框是 20×20：用伪元素把命中区就地撑到 44×44，视觉与行距都不变
+       （与现代风 `.md-check::after` 同一手法）。 */
+    .pxl-check {
+      position: relative;
+    }
+
+    .pxl-check::after {
+      content: "";
+      position: absolute;
+      inset: -0.75rem;
+    }
   }
 
   /* 禁用：抖动网点遮罩 + 去投影。网点而不是半透明：像素风里「灰掉」就是镂空。 */
@@ -777,18 +806,28 @@
   /* ---------- 触屏上的点击目标 ----------
      chip / tab 在桌面是 24–26px 高（工具条密度需要这样），但在 390px 宽的屏幕上
      拇指点不准：`<sm` 抬到 36px（仍是 4 的倍数，像素网格不错位），桌面密度不变。
+     这是「窄窗口」档（按视口宽度，鼠标用户缩窄浏览器也吃到）。**粗指针**设备由文件前面的
+     `@media (pointer: coarse)` 统一抬到 44px —— 那条与这条同权重、而这条写得更晚，
+     原样并存时 36 会盖掉 44（实测 `.pxl-chip` 因此停在 36）。所以 36px 只给 `pointer: fine`，
+     不靠源码顺序。
      放在 `@layer components` 里（和本文件其余规则一致）：调用点的 `hidden` /
      `min-h-*` 等工具类仍然能覆盖这里的 `display` / `min-height`。 */
   @media (max-width: 639px) {
     .pxl-chip,
     .pxl-tab {
       display: inline-flex;
-      min-height: 2.25rem;
       align-items: center;
     }
 
     .pxl-chip {
       justify-content: center;
+    }
+  }
+
+  @media (max-width: 639px) and (pointer: fine) {
+    .pxl-chip,
+    .pxl-tab {
+      min-height: 2.25rem;
     }
   }
 }
