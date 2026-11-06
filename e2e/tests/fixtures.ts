@@ -21,6 +21,20 @@ export { expect };
  */
 export const AXE_DISABLED_RULES = ["link-in-text-block"];
 
+/**
+ * 浏览器报的 `Failed to load resource` 是不是可以忽略。
+ *
+ * 测试环境没有外网：页面里的第三方脚本（AdSense 这类）必然 `net::ERR_CONNECTION_REFUSED`，
+ * 报错来自浏览器、地址是外域，与本站代码无关；`/api` 的降级是各页面自己兜底的事
+ * （用例里用 `stubApi` / 假服务），也不该让「页面没崩」这类用例红。
+ * 只有**本站自己的静态资源**加载失败才必须暴露出来。
+ */
+export function ignoredLoadError(text: string, url: string, base: string): boolean {
+  if (!text.startsWith("Failed to load resource")) return false;
+  if (!url.startsWith(base)) return true;
+  return new URL(url).pathname.startsWith("/api/");
+}
+
 // 练习 / 考试首次进入会自动弹出快捷键说明，默认标记为已看过，避免遮挡后续操作
 export const test = base.extend<{ helpSeen: boolean }>({
   helpSeen: [true, { option: true }],

@@ -1,7 +1,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
-import { AXE_DISABLED_RULES, expect, settleFrames, test, waitSettled } from "./fixtures";
+import {
+  AXE_DISABLED_RULES,
+  expect,
+  ignoredLoadError,
+  settleFrames,
+  test,
+  waitSettled,
+} from "./fixtures";
 
 // 路由表以 main_content.rs 为准，新增页面自动纳入冒烟测试
 const source = readFileSync(join(__dirname, "../../crates/app/src/app/main_content.rs"), "utf8");
@@ -48,7 +55,7 @@ test.describe(`全站冒烟（${colorScheme}）`, () => {
         }
         if (msg.type() !== "error") return;
         const url = msg.location().url;
-        if (msg.text().startsWith("Failed to load resource") && ignoredRequest(url, base)) return;
+        if (ignoredLoadError(text, url, base)) return;
         // 浏览器对外部站点的 report-only CSP 报告（如 Google frame-ancestors），非本页错误，忽略
         if (msg.text().includes("report-only Content Security Policy")) return;
         problems.push(`console: ${msg.text()}`);

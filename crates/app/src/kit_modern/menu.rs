@@ -137,9 +137,9 @@ pub fn ModernMenu(open: RwSignal<bool>, settings_open: RwSignal<bool>) -> impl I
             <div
               class="md-sheet"
               data-anchored="true"
-              data-state=move || { if presence.closing.get() { "closed" } else { "open" } }
-              inert=move || presence.closing.get().then_some("")
-              aria-hidden=move || presence.closing.get().then_some("true")
+              data-state=presence.state()
+              inert=presence.inert()
+              aria-hidden=presence.aria_hidden()
               // 只在「点遮罩」时关闭，不在面板上 `stop_propagation`：后者会把路由的全局
               // click 拦截一起挡掉，面板里的链接就退化成整页跳转（见 `backdrop.rs`）。
               on:pointerdown=backdrop.on_pointerdown()

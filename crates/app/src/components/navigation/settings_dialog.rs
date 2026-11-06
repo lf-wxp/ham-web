@@ -16,9 +16,12 @@ use crate::icons::{Icon, IconKind};
 use crate::theme::{Theme, style_defaults_theme, use_display_prefs, use_theme};
 use crate::ui::{ButtonLink, Dialog, DialogHeader, DialogTitle, RadioGroup, Switch, Variant};
 
+use super::choice_row::ChoiceRow;
 use super::scheme_choice::SchemeChoice;
-use super::style_choice::StyleChoice;
-use super::theme_choice::ThemeChoice;
+
+/// 两组单选的 DOM id 前缀。同一组的每一行共用它，拼错会让 `<label for>` 悄悄失效，所以只写一次。
+const STYLE_ID: &str = "settings-ui-style";
+const THEME_ID: &str = "settings-theme";
 
 /// 设置对话框。`open` 由顶栏的设置按钮控制。
 #[component]
@@ -54,8 +57,16 @@ pub fn SettingsDialog(open: RwSignal<bool>) -> impl IntoView {
             aria_label=Signal::derive(move || t("shell.settings-style"))
             class="grid-cols-2"
           >
-            <StyleChoice value="pixel" label=Signal::derive(move || t("shell.style-pixel")) />
-            <StyleChoice value="modern" label=Signal::derive(move || t("shell.style-modern")) />
+            <ChoiceRow
+              id_prefix=STYLE_ID
+              value="pixel"
+              label=Signal::derive(move || t("shell.style-pixel"))
+            />
+            <ChoiceRow
+              id_prefix=STYLE_ID
+              value="modern"
+              label=Signal::derive(move || t("shell.style-modern"))
+            />
           </RadioGroup>
           <p class="text-xs text-muted-foreground">{move || t("shell.settings-style-hint")}</p>
         </div>
@@ -69,9 +80,21 @@ pub fn SettingsDialog(open: RwSignal<bool>) -> impl IntoView {
             aria_label=Signal::derive(move || t("shell.settings-theme"))
             class="grid-cols-3"
           >
-            <ThemeChoice value="light" label=Signal::derive(move || t("shell.theme-light")) />
-            <ThemeChoice value="dark" label=Signal::derive(move || t("shell.theme-dark")) />
-            <ThemeChoice value="system" label=Signal::derive(move || t("shell.theme-system")) />
+            <ChoiceRow
+              id_prefix=THEME_ID
+              value="light"
+              label=Signal::derive(move || t("shell.theme-light"))
+            />
+            <ChoiceRow
+              id_prefix=THEME_ID
+              value="dark"
+              label=Signal::derive(move || t("shell.theme-dark"))
+            />
+            <ChoiceRow
+              id_prefix=THEME_ID
+              value="system"
+              label=Signal::derive(move || t("shell.theme-system"))
+            />
           </RadioGroup>
         </div>
 

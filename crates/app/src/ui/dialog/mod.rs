@@ -8,7 +8,6 @@ mod dialog_footer;
 mod dialog_header;
 mod dialog_root;
 mod dialog_title;
-mod shared;
 mod sheet;
 mod toast_live_region;
 

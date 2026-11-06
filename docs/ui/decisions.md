@@ -203,6 +203,8 @@ localStorage["ui:uiStyle"] = "pixel" | "modern"     ← 默认 pixel（D3：像�
   「焦点丢到 body」。**这两个各只有一份实现，两套 Kit 的每个弹层都必须调用**：不要自己写
   `body.style.overflow`，也不要只补一个 Esc —— 少一样就是「键盘用户进不去」（`use_modal_focus`：打开聚焦面板 /
   Tab 循环 / 关闭归还焦点）或「切风格后页面滚不动」（`use_scroll_lock`：打开锁滚动、**卸载时释放**）。
+  打开时的聚焦是**延迟一帧**发出的（面板这一帧才挂上），所以只在焦点还没进面板时才送：那一帧里
+  用户已经在第二个输入框里打字时，抢回第一个输入框会把字送进别的字段。
 - `#route-content` 里两套风格的根节点分别带 `data-style-root="modern"` / `"pixel"`：排查时用它
   确认「当前挂的是哪套根节点」（样式层与其他代码都不依赖它，e2e 判据用的是类名与 `data-ui-style`）。
   换页签名 `data-sig` **两套都会写**：
@@ -265,7 +267,8 @@ node e2e/audit/surface_sweep.mjs modern && node e2e/audit/surface_sweep.mjs pixe
 3. **体积与构建**。前端是 `wasm32` + `wasm-opt -z` 的体积优先构建，任何额外的
    组件依赖都会直接体现在产物大小上；而当前每个组件只是几十行 `view!`，编译期即展开。
 4. **兼容性**。项目是纯 CSR（`leptos::mount::mount_to_body`），没有 SSR / hydration 约束，
-   自维护组件的边界处理（滚动锁、焦点、Portal）已在 `ui/dialog/shared.rs` 里沉淀。
+   自维护组件的边界处理已经沉淀成共享实现：滚动锁在 `crate::overlay`，焦点与 Esc 在 `crate::focus`，
+   退场卸载在 `crate::presence`，Portal 的用法见 `ui/dialog/`。
 
 ## 11. 视觉语言与字体的取舍
 

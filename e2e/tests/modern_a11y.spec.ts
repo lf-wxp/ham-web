@@ -112,6 +112,9 @@ test("打开态表面：设置 / 搜索 / 快捷键帮助 / 练习设置 / 答�
 
   // 快捷键帮助
   await page.goto("/practice");
+  // 全局快捷键监听是页面（WASM）挂载时注册的，`goto` 只等到 `load`：没等页面出来就按键，
+  // 这一次按键直接落空，后面的断言只能等超时。设置按钮就在同一个页面上，等它即等挂载。
+  await expect(page.locator('button[aria-label="设置"]').first()).toBeVisible();
   await page.keyboard.press("?");
   await expect(page.locator(".md-modal-panel")).toHaveCount(1);
   await settle(page);

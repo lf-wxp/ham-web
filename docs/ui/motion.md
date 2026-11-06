@@ -155,6 +155,12 @@ transition: transform var(--motion-fast) var(--ease-out-expo);
 4. **代际号，不是只看 `open`。** 计时器到点时 `open` 恰好又是 `false`（关 → 开 → 关）会把第二次退场截断在半路；
    打开与关闭都要让代际号自增，计时器只在代际号没变时才卸载。
 5. **定时器回调里只用 `try_*` 访问信号。** 退场途中跳转页面会销毁信号，`get_untracked` 会 panic 带崩整个 wasm 实例。
+6. **退场期间的三个属性成套写，取值只有一份。** 面板**与遮罩**都要写 `data-state` + `inert` + `aria-hidden`
+   （`inert` 把元素移出无障碍树和焦点序；Playwright 的角色定位器与部分读屏只认 `aria-hidden`，所以两个一起写）。
+   取值收在 `presence.rs`，**不要**在调用点内联 `if closing { "closed" } else { "open" }`。按手里有什么选：
+   持有 `Presence` 的（现代风 Kit）用 `presence.state()` / `.inert()` / `.aria_hidden()`，以 `closing` 为判据；
+   只有 `open` 信号的（`ui/` 下的下拉 / 日期 / 时间 / 对话框 / 抽屉）用 `presence::state_attr(open)` / `inert_attr(open)` /
+   `aria_hidden_attr(open)`，关闭的那一刻立即生效。两族判据不同、取值相同。
 
 ## 六、控件状态矩阵
 

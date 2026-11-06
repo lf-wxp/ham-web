@@ -489,7 +489,7 @@ Tailwind 的 `sm` / `md` / `lg` 之外，只多一档 `xs`（400px，定义在 `
   内边距 —— 留了会在没有滚动条时也空出一条，而且滚动条出现 / 消失时内容会横向抖。
   代价是拖动区覆盖最右 12px（与系统覆盖式滚动条一致），所以**不要**在右边缘 12px 内放
   必须点的控件。**改这三处要一起看**：`ui/scrollbar.rs`、`surfaces.css` 的 `html` 段与
-  `.pxl-scrollbar*` 段、`dialog/shared.rs::lock_scroll`。
+  `.pxl-scrollbar*` 段、`overlay.rs::use_scroll_lock`。
 - **不要再写 `scrollbar-gutter`**：原生窗口滚动条已不存在，没有槽位可言；弹层锁滚动时也**不需要**
   补 `padding-right`（隐藏前后布局宽度不变，页面不会横向跳）。
 - 触屏（`hover: none`）整条隐藏 —— 那里没有常驻滚动条，手指滚动时多一条浮层只是噪声。

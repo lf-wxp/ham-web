@@ -5,29 +5,34 @@
 //! [`crate::ui::TimePicker`] 复用这里的类名与开合行为 ——
 //! 于是「弹出的选择框和语言切换一致」不是靠人工对齐，而是结构上只有一处定义。
 //!
+//! 本模块只管外观（类名、选项行、遮罩、焦点移出）；开合行为各有一个来源：
+//! 延迟卸载与 `data-state` / `inert` / `aria-hidden` 在 [`crate::presence`]，Esc 在 [`crate::focus`]。
+//!
 //! 使用方式（组件的 `view!` 里）：
 //!
 //! ```text
 //! let open = RwSignal::new(false);
-//! let mounted = popover::mount_on_open(open);
-//! popover::close_on_escape(open);
+//! let mounted = crate::presence::use_presence(open).visible;
+//! crate::focus::use_escape_close(open);
+//! let state = crate::presence::state_attr(open);
 //! view! {
 //!   <div class="relative">
-//!     <button role="combobox" data-state=popover::state(open) on:click=move |_| open.update(|o| *o = !*o)>…</button>
-//!     {mounted.get().then(|| view! {
-//!       <div class=popover::OVERLAY on:click=move |_| open.set(false)></div>
-//!       <div role="listbox" data-state=popover::state(open) class=popover::PANEL>
+//!     <button role="combobox" data-state=state on:click=move |_| open.update(|o| *o = !*o)>…</button>
+//!     {move || mounted.get().then(|| view! {
+//!       <div class=popover::OVERLAY data-state=state inert=inert_attr(open) aria-hidden=aria_hidden_attr(open)
+//!         on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
+//!       <div role="listbox" data-state=state inert=inert_attr(open) aria-hidden=aria_hidden_attr(open)
+//!         class=popover::panel_base()>
 //!         <div class="p-1 max-h-96 overflow-y-auto">…</div>
 //!       </div>
 //!     })}
 //!   </div>
 //! }
 //! ```
+//! 其中 `inert_attr` / `aria_hidden_attr` 同样来自 `crate::presence`。
 
-use leptos::ev;
 use leptos::html;
 use leptos::prelude::*;
-use send_wrapper::SendWrapper;
 use wasm_bindgen::JsCast;
 
 use crate::cn::cn;
@@ -122,52 +127,6 @@ pub fn panel_class(extra: &str) -> String {
   cn(&[panel_base(), extra])
 }
 
-/// `data-state` 属性值：`"open"` / `"closed"`，驱动进出场动画。
-pub fn state(open: RwSignal<bool>) -> impl Fn() -> &'static str + Copy + Send + Sync {
-  move || if open.get() { "open" } else { "closed" }
-}
-
-/// 退场期间的 `inert`：与 [`state`] 配对写在弹层的**面板与遮罩**上。
-///
-/// 关闭后元素还要在 DOM 里留一个动画的时间，但对读屏、键盘与自动化定位器它应当已经不存在了：
-/// `inert` 同时把它移出无障碍树和焦点序。没有它，选完一项后约 250ms 内已经关闭的列表框
-/// 仍是无障碍树里的 `listbox` + 一串 `option`，紧接着打开的第二个下拉会同时露出两份「全部」。
-/// 返回 `Option<&str>` 是 Leptos 布尔属性的写法：`Some("")` 写上，`None` 不渲染。
-pub fn inert(open: RwSignal<bool>) -> impl Fn() -> Option<&'static str> + Copy + Send + Sync {
-  move || (!open.get()).then_some("")
-}
-
-/// 退场期间的 `aria-hidden`：与 [`inert`] 并用。
-///
-/// `inert` 是现代浏览器把元素移出无障碍树的最权威写法，但并非所有辅助技术 / 自动化定位器都认它
-/// （Playwright 的角色定位器只认 `aria-hidden` / `display:none` / `visibility:hidden`；
-/// 老一些的屏幕阅读器 + 浏览器组合同理）。两个一起写是 WAI-ARIA 对「已不存在的元素」的常规做法。
-/// `aria-hidden` 只在退场期间出现：打开时不写这个属性（而不是写成 `"false"`），避免整棵树被意外隐藏。
-pub fn aria_hidden(open: RwSignal<bool>) -> impl Fn() -> Option<&'static str> + Copy + Send + Sync {
-  move || (!open.get()).then_some("true")
-}
-
-/// 监听 `Escape` 关闭弹层；组件清理时移除监听。
-///
-/// 每个弹层各挂一个 `window` 监听，但只有 Esc 栈的栈顶响应（见 [`crate::focus::register_escape`]）：
-/// 对话框里的下拉 / 日期选择器按 Esc 只收自己，不会连对话框一起关掉；输入法组词中的 Esc 也忽略。
-pub fn close_on_escape(open: RwSignal<bool>) {
-  let slot = crate::focus::register_escape(open);
-  let handle = window_event_listener(ev::keydown, move |e| {
-    if crate::focus::is_escape_for_overlay(&e) && open.get_untracked() && slot.is_top() {
-      // 吃掉这次 Esc：别的 `window` 监听（页面快捷键等）不该再把它当成自己的。
-      e.prevent_default();
-      open.set(false);
-    }
-  });
-  let handle = SendWrapper::new(Some(handle));
-  on_cleanup(move || {
-    if let Some(h) = handle.take() {
-      h.remove();
-    }
-  });
-}
-
 /// 焦点移出「弹层 + 触发器」所在的容器时关闭弹层（挂到面板的 `on:focusout`）。
 ///
 /// 适用于面板里有可聚焦元素的弹层（日历 / 时间选择：Tab 会先进入面板再离开）。
@@ -175,7 +134,7 @@ pub fn close_on_escape(open: RwSignal<bool>) {
 /// 面板上的 `focusout` 根本不会触发 —— 那类弹层请用 [`close_on_focus_leave`]。
 ///
 /// 没有这类规则时弹层会一直开着，而 `fixed inset-0 z-40` 的遮罩继续盖住整页 —— 只有 Esc
-/// 或再点一下才能收掉（`close_on_escape` 只管 Esc）。
+/// 或再点一下才能收掉（`use_escape_close` 只管 Esc）。
 ///
 /// 判定边界取**面板的父元素**：组件里触发器与面板同在这个 `relative` 容器下，因此
 /// 「焦点回到触发器」不会被误判成离开。`relatedTarget` 为 `None`（焦点落到文档外，
@@ -186,7 +145,7 @@ pub fn close_on_escape(open: RwSignal<bool>) {
 ///
 /// 但 `focusout` 可能在组件销毁**之后**才到达：选中选项会同步改掉筛选值，宿主视图
 /// 随之重建，销毁瞬间的焦点变化会被浏览器排到队列里，此时 `open` 已经释放 ——
-/// 普通 `get_untracked` 会 panic（同 `mount_on_open` 的定时器坑）。因此这里全部走
+/// 普通 `get_untracked` 会 panic（同 `use_presence` 里卸载计时器的坑）。因此这里全部走
 /// `try_*`：信号已释放就当「没开、无事发生」。
 pub fn close_on_focus_out(
   open: RwSignal<bool>,

@@ -60,7 +60,7 @@ pub fn TimePicker(
 ) -> impl IntoView {
   let open = RwSignal::new(false);
   let mounted = crate::presence::use_presence(open).visible;
-  popover::close_on_escape(open);
+  crate::focus::use_escape_close(open);
   // 面板引用：既作 `node_ref`，也给「焦点移出容器就关闭」的判定用
   // （见 `popover::close_on_focus_out`）。
   let panel_ref = NodeRef::<html::Div>::new();
@@ -71,7 +71,9 @@ pub fn TimePicker(
   let label = aria_label.clone().unwrap_or_else(|| placeholder.clone());
   let trigger_label = label.clone();
   let trigger_class = popover::trigger_class(size, &class);
-  let state = popover::state(open);
+  let state = crate::presence::state_attr(open);
+  let inert = crate::presence::inert_attr(open);
+  let hidden = crate::presence::aria_hidden_attr(open);
 
   let hour_col = NodeRef::<html::Div>::new();
   let min_col = NodeRef::<html::Div>::new();
@@ -138,12 +140,13 @@ pub fn TimePicker(
         .collect_view();
 
       view! {
-        <div class=popover::OVERLAY data-state=state inert=popover::inert(open) aria-hidden=popover::aria_hidden(open) on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
+        <div class=popover::OVERLAY data-state=state inert=inert aria-hidden=hidden on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
         <div
           role="dialog"
           aria-label=panel_label
           data-state=state
-          inert=popover::inert(open) aria-hidden=popover::aria_hidden(open)
+          inert=inert
+          aria-hidden=hidden
           data-slot="time-picker"
           class=popover::panel_class("w-40 p-1")
           node_ref=panel_ref

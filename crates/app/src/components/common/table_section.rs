@@ -2,7 +2,7 @@
 
 use leptos::prelude::*;
 
-use crate::data;
+use super::section_shell::{SectionShell, section_text};
 use crate::i18n::t;
 use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 
@@ -23,43 +23,38 @@ pub fn TableSection(
   // `StoredValue`（Copy）：标题要进两个 `'static` 属性闭包（h2 文案与表格无障碍名），
   // 直接 move 会让组件体闭包退化（见 docs/ui/pixel.md §8 坑 1）。
   let title = StoredValue::new(title);
-  if crate::kit::is_modern_at_mount() {
-    return view! {
-      <section class="md-panel">
-        <h2 class="md-panel-title">{move || t(&title.get_value())}</h2>
-        <div class="md-table-scroll">
-          <table class=class aria-label=move || t(&title.get_value())>
-            <thead>
-              <tr>
-                {headers
-                  .iter()
-                  .map(|h| view! { <th>{move || t(h)}</th> })
-                  .collect_view()}
-              </tr>
-            </thead>
-            <tbody>
-              {rows
+  let body = if crate::kit::is_modern_at_mount() {
+    view! {
+      <div class="md-table-scroll">
+        <table class=class aria-label=move || t(&title.get_value())>
+          <thead>
+            <tr>
+              {headers
                 .iter()
-                .map(|(name, mid, last)| {
-                  view! {
-                    <tr>
-                      <th scope="row">{move || { data::track_knowledge(); data::kt(name) }}</th>
-                      <td>{move || { data::track_knowledge(); data::kt(mid) }}</td>
-                      <td class="md-muted">{move || { data::track_knowledge(); data::kt(last) }}</td>
-                    </tr>
-                  }
-                })
+                .map(|h| view! { <th>{move || t(h)}</th> })
                 .collect_view()}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </tr>
+          </thead>
+          <tbody>
+            {rows
+              .iter()
+              .map(|(name, mid, last)| {
+                view! {
+                  <tr>
+                    <th scope="row">{move || section_text(name, false)}</th>
+                    <td>{move || section_text(mid, false)}</td>
+                    <td class="md-muted">{move || section_text(last, false)}</td>
+                  </tr>
+                }
+              })
+              .collect_view()}
+          </tbody>
+        </table>
+      </div>
     }
-    .into_any();
-  }
-  view! {
-    <section class=crate::kit::card_class()>
-      <h2 class=crate::kit::card_title_class()>{move || t(&title.get_value())}</h2>
+    .into_any()
+  } else {
+    view! {
       <Table aria_label=Signal::derive(move || t(&title.get_value())) class=class>
         <TableHead>
           <TableRow>
@@ -78,22 +73,13 @@ pub fn TableSection(
               view! {
                 <TableRow>
                   <TableCell class="align-top whitespace-nowrap">
-                    {move || {
-                      data::track_knowledge();
-                      data::kt(name)
-                    }}
+                    {move || section_text(name, false)}
                   </TableCell>
                   <TableCell class="align-top text-muted-foreground">
-                    {move || {
-                      data::track_knowledge();
-                      data::kt(mid)
-                    }}
+                    {move || section_text(mid, false)}
                   </TableCell>
                   <TableCell class="align-top text-muted-foreground">
-                    {move || {
-                      data::track_knowledge();
-                      data::kt(last)
-                    }}
+                    {move || section_text(last, false)}
                   </TableCell>
                 </TableRow>
               }
@@ -101,7 +87,8 @@ pub fn TableSection(
             .collect_view()}
         </TableBody>
       </Table>
-    </section>
-  }
-  .into_any()
+    }
+    .into_any()
+  };
+  view! { <SectionShell title=title.get_value()>{body}</SectionShell> }
 }

@@ -4,9 +4,9 @@ use leptos::prelude::*;
 use crate::cn::cn;
 use crate::icons::{Icon, IconKind};
 
-use super::shared::{aria_hidden_attr, inert_attr, state_attr};
 use crate::focus::{use_escape_close, use_modal_focus};
 use crate::i18n::t;
+use crate::presence::{aria_hidden_attr, inert_attr, state_attr};
 
 /// 居中模态对话框。
 ///

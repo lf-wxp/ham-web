@@ -111,14 +111,16 @@ pub fn DatePicker(
 ) -> impl IntoView {
   let open = RwSignal::new(false);
   let mounted = crate::presence::use_presence(open).visible;
-  popover::close_on_escape(open);
+  crate::focus::use_escape_close(open);
   // 面板引用：既作 `node_ref`，也给「焦点移出容器就关闭」的判定用
   // （见 `popover::close_on_focus_out`）。
   let panel_ref = NodeRef::<html::Div>::new();
 
   let placeholder = placeholder.unwrap_or_else(|| TextValue::from("YYYY-MM-DD"));
   let trigger_class = popover::trigger_class(size, &class);
-  let state = popover::state(open);
+  let state = crate::presence::state_attr(open);
+  let inert = crate::presence::inert_attr(open);
+  let hidden = crate::presence::aria_hidden_attr(open);
 
   // 弹层显示的月份与选中值解耦：翻月不应改值，只在打开时对齐一次。
   let today_ymd = today();
@@ -165,12 +167,13 @@ pub fn DatePicker(
       let title = intl::month_title(y, m);
       let panel_label = title.clone();
       view! {
-        <div class=popover::OVERLAY data-state=state inert=popover::inert(open) aria-hidden=popover::aria_hidden(open) on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
+        <div class=popover::OVERLAY data-state=state inert=inert aria-hidden=hidden on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
         <div
           role="dialog"
           aria-label=panel_label
           data-state=state
-          inert=popover::inert(open) aria-hidden=popover::aria_hidden(open)
+          inert=inert
+          aria-hidden=hidden
           data-slot="date-picker"
           class=popover::panel_class("w-[18.5rem] p-2")
           node_ref=panel_ref

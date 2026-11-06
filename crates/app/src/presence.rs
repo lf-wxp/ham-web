@@ -112,6 +112,67 @@ pub struct Presence {
   pub closing: Signal<bool>,
 }
 
+// 退场期间写在面板 / 遮罩上的三个属性（`data-state` + `inert` + `aria-hidden`）。
+//
+// 属性的**取值**只在下面三个函数里写；「什么时候算已关」的判据由调用方给，有两族：
+// - [`Presence`] 的同名方法看 `closing`：在场状态机确认进入退场后才生效（现代风 Kit 用）；
+// - `*_attr(open)` 看 `open` 信号：关闭的那一刻立即生效（`ui/` 下的下拉 / 日期 / 时间 / 对话框用）。
+// 两族判据不同，取值必须相同 —— 所以取值收在这里，而不是各写一份。
+
+/// `data-state`：`closed` 时才播退场动画，驱动进出场。
+fn state_value(closed: bool) -> &'static str {
+  if closed { "closed" } else { "open" }
+}
+
+/// `inert`：关闭后元素还要在 DOM 里留一个动画的时间，但对读屏、键盘与自动化定位器它应当
+/// 已经不存在了 —— `inert` 同时把它移出无障碍树和焦点序。
+///
+/// 返回 `Option<&str>` 是 Leptos 布尔属性的写法：`Some("")` 写上，`None` 不渲染。
+fn inert_value(closed: bool) -> Option<&'static str> {
+  closed.then_some("")
+}
+
+/// `aria-hidden`：`inert` 最权威，但并非所有辅助技术与自动化定位器都认它（Playwright 的
+/// 角色定位器只认 `aria-hidden` / `display:none` / `visibility:hidden`），所以两个一起写。
+/// 只在退场期间出现：打开时不写这个属性（而不是写成 `"false"`），避免整棵树被意外隐藏。
+fn aria_hidden_value(closed: bool) -> Option<&'static str> {
+  closed.then_some("true")
+}
+
+impl Presence {
+  /// 退场期间面板 / 遮罩的 `data-state`，以 `closing` 为判据。
+  pub fn state(self) -> impl Fn() -> &'static str + Copy + Send + Sync {
+    move || state_value(self.closing.get())
+  }
+
+  /// 退场期间的 `inert`，以 `closing` 为判据。
+  pub fn inert(self) -> impl Fn() -> Option<&'static str> + Copy + Send + Sync {
+    move || inert_value(self.closing.get())
+  }
+
+  /// 退场期间的 `aria-hidden`，以 `closing` 为判据；与 [`Presence::inert`] 并用。
+  pub fn aria_hidden(self) -> impl Fn() -> Option<&'static str> + Copy + Send + Sync {
+    move || aria_hidden_value(self.closing.get())
+  }
+}
+
+/// `data-state`，以 `open` 信号为判据：关闭的那一刻立即变 `closed`。
+pub fn state_attr(open: RwSignal<bool>) -> impl Fn() -> &'static str + Copy + Send + Sync {
+  move || state_value(!open.get())
+}
+
+/// `inert`，以 `open` 信号为判据；与 [`state_attr`] 配对写在面板**与遮罩**上。
+pub fn inert_attr(open: RwSignal<bool>) -> impl Fn() -> Option<&'static str> + Copy + Send + Sync {
+  move || inert_value(!open.get())
+}
+
+/// `aria-hidden`，以 `open` 信号为判据；与 [`inert_attr`] 并用。
+pub fn aria_hidden_attr(
+  open: RwSignal<bool>,
+) -> impl Fn() -> Option<&'static str> + Copy + Send + Sync {
+  move || aria_hidden_value(!open.get())
+}
+
 /// `open` → 在场状态。关闭后延迟 [`exit_ms`]`(Normal)` 再把 `visible` 置假；期间重新打开会让旧计时器失效。
 #[must_use]
 pub fn use_presence(open: RwSignal<bool>) -> Presence {

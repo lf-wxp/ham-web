@@ -1,5 +1,6 @@
 //! 全局顶部导航：桌面/移动端导航与主题切换。
 
+mod choice_row;
 mod group_menu;
 mod hud_badge;
 mod locale_toggle;
@@ -11,8 +12,6 @@ mod nav_bar;
 mod nav_root;
 mod scheme_choice;
 mod settings_dialog;
-mod style_choice;
-mod theme_choice;
 mod theme_toggle;
 
 pub use mobile_menu::provide_mobile_menu;

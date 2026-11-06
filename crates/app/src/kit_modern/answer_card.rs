@@ -110,9 +110,9 @@ pub fn ModernAnswerCard(
           <Portal>
             <div
               class="md-sheet"
-              data-state=move || { if presence.closing.get() { "closed" } else { "open" } }
-              inert=move || presence.closing.get().then_some("")
-              aria-hidden=move || presence.closing.get().then_some("true")
+              data-state=presence.state()
+              inert=presence.inert()
+              aria-hidden=presence.aria_hidden()
               on:pointerdown=backdrop.on_pointerdown()
               on:click=backdrop.on_click()
             >

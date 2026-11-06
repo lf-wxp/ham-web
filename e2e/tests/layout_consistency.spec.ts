@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, settleFrames, test, waitSettled } from "./fixtures";
+import { expect, settleFrames, test } from "./fixtures";
 
 // 布局一致性回归：结构页头、现代风页头不吸顶、尺度收敛、首屏入口。
 // 判据写在各用例里；现行的页头 / 尺度规则见 `docs/ui/modern.md`。
@@ -147,7 +147,9 @@ test("吸顶条与页面同色，且不比下面的卡片宽", async ({ page }) 
   // 窄屏没有页内吸顶条：分类 / 目录收进抽屉（见下一条用例），搜索条随页面滚走。
   await page.setViewportSize({ width: 640, height: 900 });
   await page.goto("/glossary");
-  await waitSettled(page);
+  // 词条数据是页面挂载后才取的（未到之前只有六块骨架，页面滚不动，`scrollTo` 会静默变成 0，
+  // 之后再也不会有人滚 —— 等词条卡真的渲染出来，与上面等 `.md-q-row` 同理）。
+  await expect(page.locator(".md-term").first()).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 900));
   await page.waitForFunction(() => window.scrollY >= 800);
   await settleFrames(page);

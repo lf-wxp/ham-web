@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, settleFrames, settleReveal, test } from "./fixtures";
+import { expect, ignoredLoadError, settleFrames, settleReveal, test } from "./fixtures";
 
 // 双设计系统的回归：现代风 / 像素风互不串味、切换不刷新、无横向溢出。
 // 判据见 `docs/ui/modern.md` §7（门禁与自检）与 `docs/ui/decisions.md` §8（两套皮肤互不串的验证方法）。
@@ -215,11 +215,14 @@ test("切换风格不刷新即生效（像素风 → 出现像素卡，页面未
 
 // 回归：像素风的自绘滚动条在切到现代风时被卸载，它挂在 `window` 上的 scroll / resize 监听
 // 曾没有随之摘除 —— 卸载后的第一次滚动会读已释放的 `NodeRef`，触发 panic 兜底页。
-test("像素风 → 现代风后滚动页面不报错（自绘滚动条卸载干净）", async ({ page }) => {
+test("像素风 → 现代风后滚动页面不报错（自绘滚动条卸载干净）", async ({ page, baseURL }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => {
-    if (m.type() === "error") errors.push(m.text());
+    if (m.type() !== "error") return;
+    // 第三方脚本在无外网环境里必然加载失败（见 `ignoredLoadError`），与本节要验的滚动条无关。
+    if (ignoredLoadError(m.text(), m.location().url, baseURL ?? "")) return;
+    errors.push(m.text());
   });
 
   await seed(page, "pixel");

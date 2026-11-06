@@ -21,6 +21,7 @@ mod previewable_image;
 mod provenance_note;
 mod question_progress_header;
 mod section_card;
+mod section_shell;
 mod skeleton;
 mod steps_section;
 mod sticky_panel;

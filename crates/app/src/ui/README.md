@@ -71,8 +71,9 @@ disabled / error 状态反馈因此只有一处定义。
 `aria-pressed` 语义，不是单选。
 `input_class` 已随表单控件迁移完成删除（见下「表单控件已经收敛」）。
 
-四个**弹层**控件（`Select` / `SimpleSelect` / `DatePicker` / `TimePicker`）的类名与开合行为
-集中在 `ui/popover.rs`：弹层容器、选项行、遮罩、退场延迟卸载、`Esc` 关闭都只有一份实现，
+四个**弹层**控件（`Select` / `SimpleSelect` / `DatePicker` / `TimePicker`）的外观集中在 `ui/popover.rs`
+（弹层容器、选项行、遮罩类名）；开合行为各有一个来源：退场延迟卸载与 `data-state` / `inert` / `aria-hidden`
+在 `crate::presence`，`Esc` 关闭在 `crate::focus::use_escape_close`。
 所以「弹出的选择框和语言切换一样」是结构上的保证，而不是靠人工对齐。
 
 下拉再进一步：`SimpleSelect` 不是第二个下拉，它把 `Vec<SelectOption>` 拼成 `Select` + `SelectItem`
@@ -485,4 +486,4 @@ const KINDS: [(FilterKind, &str, &str); 4] = [
 
 结论：**不引入第三方组件库，继续在本目录自维护**。理由（逐条）见
 [`docs/ui/decisions.md`](../../../../docs/ui/decisions.md) §10。需要新增组件时，按 `ui/` 现有约定补齐即可：
-优先复用 `control_class` / `CONTROL_BASE` 保证外观一致，交互与无障碍处理参考 `dialog/shared.rs`。
+优先复用 `control_class` / `CONTROL_BASE` 保证外观一致，模态的交互与无障碍处理参考 `dialog/dialog_root.rs`（焦点 / 滚动锁 / Esc 三件套 + 在场属性）。

@@ -94,6 +94,16 @@ fn is_rendered(el: &web_sys::HtmlElement) -> bool {
 
 /// 聚焦面板里第一个可交互元素；一个都没有时聚焦面板自身（面板需带 `tabindex="-1"`）。
 pub fn focus_first(root: &web_sys::Element) {
+  // 焦点已经在这个面板里就别抢：这个调用是**延迟一帧**发出的（见 [`use_modal_focus`]），
+  // 面板刚出现的这一帧里用户完全可能已经点进了第二个输入框 —— 抢回第一个输入框，
+  // 正在敲的字就落进了别的字段（自动化里必现：`fill` 的「聚焦」与「输入」隔着一次往返）。
+  let active = crate::util::document().active_element();
+  if active
+    .as_ref()
+    .is_some_and(|el| root.contains(Some(el.unchecked_ref::<web_sys::Node>())))
+  {
+    return;
+  }
   let target = focusable_items(root)
     .into_iter()
     .next()
@@ -247,6 +257,7 @@ pub fn use_escape_close(open: RwSignal<bool>) {
   let slot = register_escape(open);
   let handle = window_event_listener(leptos::ev::keydown, move |e| {
     if is_escape_for_overlay(&e) && open.get_untracked() && slot.is_top() {
+      // 吃掉这次 Esc：别的 `window` 监听（页面快捷键等）不该再把它当成自己的。
       e.prevent_default();
       open.set(false);
     }

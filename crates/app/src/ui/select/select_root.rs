@@ -84,9 +84,11 @@ pub fn Select(
   let open = RwSignal::new(false);
   // 关闭后延迟卸载（退场动画），开合行为见 `popover` 模块。
   let mounted = crate::presence::use_presence(open).visible;
-  popover::close_on_escape(open);
+  crate::focus::use_escape_close(open);
   let active = RwSignal::new(None::<String>);
-  let state = popover::state(open);
+  let state = crate::presence::state_attr(open);
+  let inert = crate::presence::inert_attr(open);
+  let hidden = crate::presence::aria_hidden_attr(open);
   let trigger_class = popover::trigger_class(size, &class);
   // 外层容器：焦点离开它才收起（见 `popover::close_on_focus_leave`）。
   let root_ref = NodeRef::<html::Div>::new();
@@ -260,7 +262,7 @@ pub fn Select(
             // `Provider` 的子节点是一次性闭包，会把它捕获的东西移走：每次挂载面板各用一份克隆。
             let children = children.clone();
             view! {
-              <div class=popover::OVERLAY data-state=state inert=popover::inert(open) aria-hidden=popover::aria_hidden(open) on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
+              <div class=popover::OVERLAY data-state=state inert=inert aria-hidden=hidden on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
               // 外层只管外观与进出场动画（`data-state`）；**可滚动的这一层自己就是 listbox**，
               // 选项成为它的直接子节点 —— 这是 ARIA 对 listbox 的标准形态。
               // 若把 `role="listbox"` 放在外层、里面再套一层带 `tabindex` 的滚动容器，axe 的
@@ -268,7 +270,7 @@ pub fn Select(
               //
               // `tabindex="-1"`：Chrome 会让「没有可聚焦子元素的滚动容器」进入 Tab 序，
               // 选项行本身都是 `tabindex="-1"`，列表就会变成一个多余的 Tab 停靠点。
-              <div data-state=state inert=popover::inert(open) aria-hidden=popover::aria_hidden(open) class=popover::panel_base()>
+              <div data-state=state inert=inert aria-hidden=hidden class=popover::panel_base()>
                 <div
                   role="listbox"
                   id=listbox_id()

@@ -38,9 +38,9 @@ pub fn ModernBubble(open: RwSignal<bool>, #[prop(into)] text: Signal<String>) ->
         view! {
           <div
             class="md-bubble"
-            data-state=move || { if presence.closing.get() { "closed" } else { "open" } }
-              inert=move || presence.closing.get().then_some("")
-              aria-hidden=move || presence.closing.get().then_some("true")
+            data-state=presence.state()
+            inert=presence.inert()
+            aria-hidden=presence.aria_hidden()
             role="status"
             aria-live="polite"
           >
