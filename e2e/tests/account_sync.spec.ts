@@ -1,13 +1,17 @@
+import { createHash } from "node:crypto";
 import { expect, test } from "./fixtures";
-import type { Page, Request, Route } from "@playwright/test";
+import type { Browser, Page, Request, Route } from "@playwright/test";
 
 /**
  * 在线账号（`/backup` 页）与「自定义远端同步」并存。
  *
  * 默认用**内存里的假服务**接管 `/api/account/*`（不依赖后端有没有设 `ACCOUNT_DB`），
- * 它按真实服务端的契约实现（条件写入 `If-Match` / `If-None-Match`、412、会话、指纹同口径）；
+ * 它按真实服务端的契约实现（会话、按 key 的清单 / 取值 / 带条件的上传、412、清单指纹同口径）；
  * `E2E_ACCOUNT_LIVE=1` 时不拦截，改打真实后端（需 `ACCOUNT_DB` 已设、前端能代理 `/api`），
  * 同一批断言既验前端也验假服务与真服务端没有漂移。
+ *
+ * 自动同步按 key 增量：每个 key 一个摘要（SHA-256），云端给出清单，前端只上传 / 取回有变化的 key，
+ * 两台设备各改各的 key 互不打扰，只有同一项数据两边都改了才停下来问用户。
  *
  * 每个用例在像素风与现代风各跑一遍（两套皮肤的控件与布局互不共享）。
  */
@@ -17,7 +21,9 @@ const PASSWORD = "correct horse";
 
 // ─────────────────────────── 假服务 ───────────────────────────
 
-/** 与 `ham_web_core::remote_sync::fingerprint` 同口径的 FNV-1a 64 位（逐段加长度前缀，键按字节序）。 */
+const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
+
+/** 与 `ham_web_core::remote_sync::fingerprint_pairs` 同口径的 FNV-1a 64 位（逐段加长度前缀，键按字节序）。 */
 function fingerprint(map: Record<string, string>): string {
   const MASK = (1n << 64n) - 1n;
   const enc = new TextEncoder();
@@ -37,25 +43,85 @@ function fingerprint(map: Record<string, string>): string {
   return h.toString();
 }
 
+/** 与 `ham_web_core::remote_sync::is_device_local_key` 同口径：只属于这台设备、不参与同步的 key。 */
+function isDeviceLocal(key: string): boolean {
+  return (
+    key.endsWith(":kv-version") ||
+    key.startsWith("api-cache:") ||
+    key.startsWith("ui:") ||
+    key.startsWith("bank-digest:") ||
+    [
+      "theme", "locale", "fab-position", "cat-settings", "push-subscription", "app:changelog-seen",
+      "sat-watch-notified", "sat-apt-notified", "nec.pending-template",
+      "remote-sync", "remote-sync-state", "account-sync-state", "account-sync-options", "sync-channel",
+    ].includes(key)
+  );
+}
+
+/** 与 `ham_web_core::delta::in_scope`（服务端按带影像的范围算）同口径。 */
+const inScope = (key: string) => !isDeviceLocal(key) && key !== "qsl-image-index" && Buffer.byteLength(key) <= 512;
+
 type Recorded = { method: string; path: string; headers: Record<string, string>; body: string };
 
 class FakeAccountServer {
   /** 每台「设备」（页面）各有各的登录态，像真实的 Cookie 一样互不影响；云端与账号是共享的。 */
   private readonly sessions = new Map<string, { id: number; username: string }>();
   readonly accounts = new Map<string, { id: number; username: string; password: string }>();
-  /** 云端备份（单账号即可：用例里只会有一个账号上传）。 */
-  cloud: { body: string; fp: string; updatedAt: number } | null = null;
+  /** 云端备份的内容（单账号即可：用例里只会有一个账号上传）；`null` = 还没有备份。 */
+  data: Record<string, string> | null = null;
+  private updatedAt = 0;
   enabled = true;
   readonly requests: Recorded[] = [];
   private nextId = 1;
 
-  /** 另一台设备往云端传了东西（不经过被测页面）。 */
+  /** 云端现在每个 key 的摘要（只算参与同步的 key）。 */
+  manifest(): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(this.data ?? {})) if (inScope(k)) out[k] = sha256(v);
+    return out;
+  }
+
+  private size() {
+    return Object.values(this.data ?? {}).reduce((n, v) => n + Buffer.byteLength(v), 0);
+  }
+
+  /** 云端内容的概况（用例里读 `cloud!.body` 比对「有没有被动过」）。 */
+  get cloud(): { body: string; fp: string; updatedAt: number } | null {
+    return this.data ? { body: JSON.stringify(this.data), fp: fingerprint(this.manifest()), updatedAt: this.updatedAt } : null;
+  }
+
+  private touch() {
+    this.updatedAt = Math.floor(Date.now() / 1000);
+  }
+
+  /** 另一台设备把云端整份换成这些内容（不经过被测页面）。 */
   uploadFromAnotherDevice(map: Record<string, string>) {
-    this.cloud = { body: JSON.stringify(map), fp: fingerprint(map), updatedAt: Math.floor(Date.now() / 1000) };
+    this.data = { ...map };
+    this.touch();
+  }
+
+  /** 另一台设备只改了这几个 key，其余原样。 */
+  anotherDeviceSets(partial: Record<string, string>) {
+    this.data = { ...(this.data ?? {}), ...partial };
+    this.touch();
   }
 
   puts(): Recorded[] {
     return this.requests.filter((r) => r.method === "PUT" && r.path === "/api/account/backup");
+  }
+
+  /** 自动同步的按 key 上传。 */
+  pushes(): Recorded[] {
+    return this.requests.filter((r) => r.method === "POST" && r.path === "/api/account/sync/push");
+  }
+
+  /** 某次按 key 上传里带的 key 与每条的「我看到的那一版」。 */
+  changesOf(push: Recorded): { key: string; base: string | null; value: string | null }[] {
+    return JSON.parse(push.body).changes;
+  }
+
+  private info() {
+    return { size: this.size(), updated_at: this.updatedAt, fingerprint: fingerprint(this.manifest()) };
   }
 
   private session(dev: string) {
@@ -64,14 +130,7 @@ class FakeAccountServer {
       enabled: this.enabled,
       registration_open: true,
       user: this.enabled && user
-        ? {
-            id: user.id,
-            username: user.username,
-            created_at: 1_700_000_000,
-            backup: this.cloud
-              ? { size: this.cloud.body.length, updated_at: this.cloud.updatedAt, fingerprint: this.cloud.fp }
-              : null,
-          }
+        ? { id: user.id, username: user.username, created_at: 1_700_000_000, backup: this.data ? this.info() : null }
         : null,
     };
   }
@@ -134,27 +193,32 @@ class FakeAccountServer {
       if (account.password !== json().password) return this.err(route, 401, "bad_credentials");
       this.accounts.delete(account.username.toLowerCase());
       this.sessions.delete(dev);
-      this.cloud = null;
+      this.data = null;
       return route.fulfill({ status: 204 });
     }
+
+    // 以下接口都要登录，并核对「我以为的账号」就是当前登录的那个。
+    const needsSession = path === "/api/account/backup" || path.startsWith("/api/account/sync/");
+    if (!needsSession) return this.err(route, 404, "bad_request");
+    const user = me();
+    if (!user) return this.err(route, 401, "unauthorized");
+    const claimed = req.headers()["x-account-id"];
+    if (claimed !== undefined && Number(claimed) !== user.id) return this.err(route, 409, "account_changed");
+
     if (path === "/api/account/backup") {
-      const user = me();
-      if (!user) return this.err(route, 401, "unauthorized");
-      const claimed = req.headers()["x-account-id"];
-      if (claimed !== undefined && Number(claimed) !== user.id) return this.err(route, 409, "account_changed");
       if (method === "GET") {
-        if (!this.cloud) return route.fulfill({ status: 204 });
-        return route.fulfill({ status: 200, contentType: "application/json", body: this.cloud.body });
+        if (!this.data) return route.fulfill({ status: 204 });
+        return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(this.data) });
       }
       if (method === "DELETE") {
-        this.cloud = null;
+        this.data = null;
         return route.fulfill({ status: 204 });
       }
       if (method === "PUT") {
         const h = req.headers();
         const ifMatch = h["if-match"]?.replace(/"/g, "");
         const ifNone = h["if-none-match"];
-        const current = this.cloud?.fp ?? null;
+        const current = this.data ? fingerprint(this.manifest()) : null;
         if ((ifMatch !== undefined && ifMatch !== current) || (ifNone === "*" && current !== null)) {
           return this.err(route, 412, "precondition_failed");
         }
@@ -164,9 +228,38 @@ class FakeAccountServer {
         } catch {
           return this.err(route, 400, "invalid_backup");
         }
-        this.cloud = { body, fp: fingerprint(map), updatedAt: Math.floor(Date.now() / 1000) };
-        return this.ok(route, 200, { size: body.length, updated_at: this.cloud.updatedAt, fingerprint: this.cloud.fp });
+        this.data = map;
+        this.touch();
+        // 回执：概况 + 写入之后云端的清单（前端据此建立每个 key 的基线）。
+        return this.ok(route, 200, { ...this.info(), keys: this.manifest() });
       }
+    }
+
+    if (path === "/api/account/sync/manifest" && method === "GET") {
+      if (!this.data) return route.fulfill({ status: 204 });
+      return this.ok(route, 200, { ...this.info(), keys: this.manifest() });
+    }
+    if (path === "/api/account/sync/pull" && method === "POST") {
+      const keys: string[] = json().keys ?? [];
+      const values: Record<string, string> = {};
+      for (const k of keys) if (this.data && k in this.data) values[k] = this.data[k];
+      return this.ok(route, 200, { values });
+    }
+    if (path === "/api/account/sync/push" && method === "POST") {
+      const changes: { key: string; base: string | null; value: string | null }[] = json().changes ?? [];
+      const current = this.manifest();
+      // 每个 key 带着「我看到的那一版」：有一个对不上，整批都不生效。
+      if (changes.some((c) => (current[c.key] ?? null) !== (c.base ?? null))) {
+        return this.err(route, 412, "precondition_failed");
+      }
+      const next = { ...(this.data ?? {}) };
+      for (const c of changes) {
+        if (c.value === null) delete next[c.key];
+        else next[c.key] = c.value;
+      }
+      this.data = next;
+      this.touch();
+      return this.ok(route, 200, { info: this.info(), keys: this.manifest() });
     }
     return this.err(route, 404, "bad_request");
   }
@@ -193,6 +286,7 @@ async function useAccountApi(page: Page, fake = new FakeAccountServer()): Promis
 
 const toast = (page: Page) => page.locator('[data-slot="toast"]');
 const panel = (page: Page) => page.getByTestId("account-panel");
+const syncStatus = (page: Page) => panel(page).getByRole("status");
 
 let counter = 0;
 /** 每个用例一个新账号名（真服务端里账号名全局唯一，不能在用例间复用）。 */
@@ -217,6 +311,20 @@ async function signUp(page: Page, name = uniqueName()) {
   await panel(page).getByRole("button", { name: "注册新账号" }).click();
   await expect(panel(page).getByTestId("account-signed-in-as")).toContainText(name);
   return name;
+}
+
+async function signIn(page: Page, name: string) {
+  await panel(page).getByLabel("账号名").fill(name);
+  await panel(page).getByLabel("口令", { exact: true }).fill(PASSWORD);
+  await panel(page).getByRole("button", { name: "登录", exact: true }).click();
+}
+
+/** 第二台「设备」：独立的浏览器环境（自己的 localStorage 与 Cookie），共用同一个假服务端。 */
+async function secondDevice(browser: Browser, fake: FakeAccountServer) {
+  const context = await browser.newContext({ locale: "zh-CN", timezoneId: "Asia/Shanghai", serviceWorkers: "block" });
+  const page = await context.newPage();
+  await useAccountApi(page, fake);
+  return { context, page };
 }
 
 /**
@@ -268,10 +376,14 @@ for (const style of ["pixel", "modern"] as const) {
       await panel(page).getByRole("button", { name: "退出登录", exact: true }).click();
       await expect(toast(page)).toContainText("已退出登录");
       await expect(panel(page).getByRole("button", { name: "登录", exact: true })).toBeVisible();
-      // 退出后偏好回到「没选过」，账号通道的基线作废。
+      // 退出后偏好回到「没选过」，账号通道的基线与主人作废。
       expect(await ls(page, "sync-channel")).toBeNull();
       const state = await ls(page, "account-sync-state");
-      expect(state === null || JSON.parse(state).base === null).toBe(true);
+      if (state !== null) {
+        const parsed = JSON.parse(state);
+        expect(Object.keys(parsed.keys ?? {})).toHaveLength(0);
+        expect(parsed.owner ?? null).toBeNull();
+      }
 
       // 登录失败不泄露是哪一项错了。
       await panel(page).getByLabel("账号名").fill(name);
@@ -288,7 +400,7 @@ for (const style of ["pixel", "modern"] as const) {
       await openBackup(page, style, { bookmarks: JSON.stringify(["q1", "q2"]), theme: "dark" });
       await signUp(page);
       // 本机有数据、云端空、从没同步过：账号通道直接传（去处是登录态，不必像自定义地址那样先确认）。
-      await expect.poll(() => fake.puts().length, { timeout: 20_000 }).toBeGreaterThan(0);
+      await expect.poll(() => fake.pushes().length, { timeout: 20_000 }).toBeGreaterThan(0);
       fake.requests.length = 0;
 
       await page.evaluate(() => {
@@ -309,6 +421,9 @@ for (const style of ["pixel", "modern"] as const) {
         expect(sent[deviceKey]).toBeUndefined();
       }
       await expect(panel(page).getByTestId("account-cloud-summary")).toContainText(/^云端备份 .+ · 更新于 \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+      // 手动上传之后本机与云端一致：自动同步立刻有了基线，不会把刚上传的东西再传一遍。
+      const stored = JSON.parse((await ls(page, "account-sync-state"))!);
+      expect(Object.keys(stored.keys ?? {}).length).toBeGreaterThan(0);
 
       // 本机之后变了样：「合并」取并集（云端独有的 key 回来、本机新增的收藏留下）。
       await page.evaluate(() => {
@@ -372,89 +487,157 @@ for (const style of ["pixel", "modern"] as const) {
       expect(raw).toEqual(expect.arrayContaining(["sync-channel", "remote-sync"]));
     });
 
-    test(`在线账号：自动写入带条件，第二次写入要求云端还停在上一次的内容（${style}）`, async ({ page }) => {
+    test(`在线账号：自动写入只传改动的 key，且每条带着它看到的那一版（${style}）`, async ({ page }) => {
       test.setTimeout(120_000);
       const fake = await useAccountApi(page);
       await openBackup(page, style);
       await signUp(page);
-      await expect(panel(page).getByRole("status")).toContainText(/已自动同步/);
+      await expect(syncStatus(page)).toContainText(/已自动同步/);
+      const before = fake.pushes().length;
 
-      // 本机改动 → 约 5 秒后自动写入；云端为空且没有基线：要求「云端还是空的」。
+      // 本机改了一个 key → 自动写入；云端还没有这个 key，所以「我看到的那一版」是没有。
+      // 登录那一轮刚上传过一次，而两次自动写入至少隔 30 秒（避免频繁上传），所以最多要等到那时候。
       await mergeImport(page, { bookmarks: JSON.stringify(["a"]) });
-      await expect.poll(() => fake.puts().length, { timeout: 20_000 }).toBe(1);
-      const first = fake.puts()[0];
-      expect(first.headers["if-none-match"]).toBe("*");
-      expect(first.headers["if-match"]).toBeUndefined();
-      expect(first.headers["x-account-id"]).toBeDefined();
-      await expect(panel(page).getByRole("status")).toContainText(/已自动同步/);
-      // 第一次写出的内容的指纹（用本文件的 TS 实现算：真后端模式下它与前端 / 服务端的 Rust 实现对拍）。
-      const afterFirst = fingerprint(JSON.parse(first.body));
+      await expect.poll(() => fake.pushes().length, { timeout: 45_000 }).toBe(before + 1);
+      const first = fake.changesOf(fake.pushes().at(-1)!);
+      // 只有改过的那一个 key，其余几十个没动的都不传（旧协议每次整份重传，含 QSL 影像）。
+      expect(first.map((c) => c.key)).toEqual(["bookmarks"]);
+      expect(first[0].base).toBeNull();
+      expect(JSON.parse(first[0].value!)).toEqual(["a"]);
+      expect(fake.pushes().at(-1)!.headers["x-account-id"]).toBeDefined();
+      await expect(syncStatus(page)).toContainText(/已自动同步/);
 
-      // 再改一次：基线就是上一次写出去的内容。两次自动写入至少隔 30 秒（整份快照可能很大）。
-      // 假服务按它自己算出的指纹核对 `If-Match`：前端与它对同一份内容算出的指纹不一致就会 412，
-      // 所以这里同时验了「指纹口径跨语言一致」。
+      // 再改一次：这次它看到的云端那一版就是上一次写进去的。两次自动写入至少隔 30 秒（避免频繁上传）。
+      // 假服务按它自己算的摘要核对每条的 `base`：前端与它对同一份内容算出的 SHA-256 不一致就会 412，
+      // 所以这里同时验了「摘要口径跨语言一致」。
       await mergeImport(page, { bookmarks: JSON.stringify(["a", "b"]) });
-      await expect.poll(() => fake.puts().length, { timeout: 60_000 }).toBe(2);
-      expect(fake.puts()[1].headers["if-match"]).toBe(afterFirst);
-      await expect(panel(page).getByRole("status")).toContainText(/已自动同步/);
-      expect(JSON.parse(JSON.parse(fake.puts()[1].body).bookmarks)).toEqual(expect.arrayContaining(["a", "b"]));
+      await expect.poll(() => fake.pushes().length, { timeout: 60_000 }).toBe(before + 2);
+      const second = fake.changesOf(fake.pushes().at(-1)!);
+      expect(second.map((c) => c.key)).toEqual(["bookmarks"]);
+      expect(second[0].base).toBe(sha256(first[0].value!));
+      expect(JSON.parse(second[0].value!)).toEqual(expect.arrayContaining(["a", "b"]));
+      await expect(syncStatus(page)).toContainText(/已自动同步/);
     });
 
-    test(`在线账号：另一台设备抢先写过云端，本机自动写入被挡下并暂停，不覆盖（${style}）`, async ({ page }) => {
+    test(`在线账号：两台设备各改各的数据，都成功且不打扰用户（${style}）`, async ({ page, browser }) => {
+      test.skip(LIVE, "要在两台设备间对照云端内容，只有假服务能直接读");
+      test.setTimeout(180_000);
+      const fake = await useAccountApi(page);
+      await openBackup(page, style);
+      const name = await signUp(page);
+      await expect(syncStatus(page)).toContainText(/已自动同步/);
+
+      const other = await secondDevice(browser, fake);
+      try {
+        await openBackup(other.page, style);
+        await signIn(other.page, name);
+        await expect(syncStatus(other.page)).toContainText(/已自动同步/);
+
+        // 两台设备都还没同步对方，各自改了不同的数据：A 改收藏，B 另加一项。
+        await mergeImport(page, { bookmarks: JSON.stringify(["from-a"]) });
+        await mergeImport(other.page, { "e2e-only-on-b": "b-value" });
+        await expect.poll(() => fake.data?.bookmarks, { timeout: 60_000 }).toBeDefined();
+        await expect.poll(() => fake.data?.["e2e-only-on-b"], { timeout: 60_000 }).toBe("b-value");
+        // 旧协议在这里会让后写的那台因为「云端已被更新」被挡下并暂停；现在各传各的，谁也不会挡住谁。
+        await expect(syncStatus(page)).not.toContainText("暂停");
+        await expect(syncStatus(other.page)).not.toContainText("暂停");
+
+        // 重新打开页面：各自取回对方的改动，没有冲突，两边一致。
+        await page.reload();
+        await other.page.reload();
+        await expect.poll(() => ls(page, "e2e-only-on-b"), { timeout: 20_000 }).toBe("b-value");
+        await expect.poll(() => ls(other.page, "bookmarks"), { timeout: 20_000 }).toBe(JSON.stringify(["from-a"]));
+        await expect(syncStatus(page)).toContainText(/已自动同步/);
+        await expect(syncStatus(other.page)).toContainText(/已自动同步/);
+      } finally {
+        await other.context.close();
+      }
+    });
+
+    test(`在线账号：同一项数据两边都改了，能合并的合并，不能合并的停下来问用户（${style}）`, async ({ page }) => {
       test.skip(LIVE, "需要在页面不知情的情况下改云端内容，只有假服务能做到");
       const fake = await useAccountApi(page);
       await openBackup(page, style);
       await signUp(page);
-      await expect(panel(page).getByRole("status")).toContainText(/已自动同步/);
+      await expect(syncStatus(page)).toContainText(/已自动同步/);
 
-      // 登录时云端还是空的；之后另一台设备传了东西，本机随后才有改动。
-      fake.uploadFromAnotherDevice({ bookmarks: JSON.stringify(["other-device"]) });
-      const before = fake.cloud!.body;
-      await mergeImport(page, { bookmarks: JSON.stringify(["mine"]) });
-      await expect(panel(page).getByRole("status")).toContainText("云端数据已被其他设备更新", { timeout: 30_000 });
-      // 服务端按条件挡下，云端内容没被盖掉；自动同步暂停而不是重试。
-      expect(fake.cloud!.body).toBe(before);
-      expect(fake.puts()).toHaveLength(1);
-      expect(fake.puts()[0].headers["if-none-match"]).toBe("*");
+      // 登录之后另一台设备改了云端的收藏与一项累计数据；本机随后也改了同样两项。
+      fake.anotherDeviceSets({
+        bookmarks: JSON.stringify(["other-device"]),
+        "e2e-counter": "from-cloud",
+      });
+      await mergeImport(page, { bookmarks: JSON.stringify(["mine"]), "e2e-counter": "from-local" });
+      // 没有安全合并规则的那一项：停下来问，说清是「同一项数据」，而不是笼统的「有改动」。
+      await expect(syncStatus(page)).toContainText("改动了同一项数据", { timeout: 30_000 });
+      // 自动写入不会覆盖云端：云端那两项原样。
+      expect(fake.data!["e2e-counter"]).toBe("from-cloud");
+      expect(JSON.parse(fake.data!.bookmarks)).toEqual(["other-device"]);
+
+      // 按提示选「从云端恢复（覆盖）」：以云端为准，之后自动同步恢复。
+      await panel(page).getByRole("button", { name: "从云端恢复（覆盖）" }).click();
+      await page.getByRole("dialog").getByRole("button", { name: "从云端恢复（覆盖）" }).click();
+      await expect(toast(page)).toContainText(/^已恢复 \d+ 条数据$/);
+      expect(await ls(page, "e2e-counter")).toBe("from-cloud");
+      await expect(syncStatus(page)).toContainText(/已自动同步/);
     });
 
-    test(`在线账号：新设备登录，云端有数据则直接取回；本机已有数据则交给用户（${style}）`, async ({ page, browser }) => {
+    test(`在线账号：新设备登录，云端有数据则直接取回；本机已有的收藏与云端自动合并（${style}）`, async ({ page, browser }) => {
       test.skip(LIVE, "需要预置云端内容，只有假服务能做到");
+      test.setTimeout(90_000);
       const fake = await useAccountApi(page);
       fake.uploadFromAnotherDevice({ bookmarks: JSON.stringify(["from-cloud"]), "e2e-cloud-only": "1" });
       await openBackup(page, style);
       const name = await signUp(page);
-      // 全新浏览器（没有任何用户数据）：自动快进，直接用云端覆盖本机。
+      // 全新浏览器（没有任何用户数据）：自动取回，直接用云端的内容。
       await expect.poll(async () => ls(page, "e2e-cloud-only"), { timeout: 20_000 }).toBe("1");
-      await expect(panel(page).getByRole("status")).toContainText(/已自动同步/);
-      // 取回之后本机比云端多出应用自己的默认数据，第一台设备会把差异补写回云端（约 5 秒后）。
-      // 等它写完再开第二台：否则第二台拿到的云端内容随后就被这次补写改掉，
-      // 它带着旧基线的写入会被服务端以 412 挡下——那是对的，但不是这条用例要验的。
-      await expect.poll(() => fake.puts().length, { timeout: 20_000 }).toBe(1);
-      const putsBefore = fake.puts().length;
+      await expect(syncStatus(page)).toContainText(/已自动同步/);
+      expect(JSON.parse((await ls(page, "bookmarks"))!)).toEqual(["from-cloud"]);
 
-      // 第二台设备（独立的浏览器环境）：本机已有数据、云端也有、从没同步过，
-      // 不知道谁新，暂停并交给用户，不发任何写入，本机数据原样保留。
-      const device = await browser.newContext({ locale: "zh-CN", timezoneId: "Asia/Shanghai", serviceWorkers: "block" });
+      // 第二台设备（独立的浏览器环境）：本机已有收藏、云端也有、从没同步过。
+      // 收藏有安全的合并规则（并集），所以自动合并、不打扰用户；本机原有的收藏不丢。
+      const other = await secondDevice(browser, fake);
       try {
-        const other = await device.newPage();
-        const shared = await useAccountApi(other, fake);
-        await openBackup(other, style, { bookmarks: JSON.stringify(["local-only"]) });
-        await panel(other).getByLabel("账号名").fill(name);
-        await panel(other).getByLabel("口令", { exact: true }).fill(PASSWORD);
-        await panel(other).getByRole("button", { name: "登录", exact: true }).click();
-        await expect(panel(other).getByRole("status")).toContainText("都有未同步的改动");
-        expect(shared.puts()).toHaveLength(putsBefore);
-        expect(JSON.parse((await ls(other, "bookmarks"))!)).toEqual(["local-only"]);
-
-        // 按提示「从云端合并」：两边并集，之后自动同步恢复（状态行不再是冲突）。
-        await panel(other).getByRole("button", { name: "从云端合并" }).click();
-        await expect(toast(other).filter({ hasText: /^已合并/ })).toBeVisible();
-        await expect(panel(other).getByRole("status")).toContainText(/已自动同步/);
-        expect(await ls(other, "e2e-cloud-only")).toBe("1");
+        await openBackup(other.page, style, { bookmarks: JSON.stringify(["local-only"]) });
+        await signIn(other.page, name);
+        await expect(syncStatus(other.page)).toContainText(/已自动同步/, { timeout: 30_000 });
+        expect(JSON.parse((await ls(other.page, "bookmarks"))!)).toEqual(expect.arrayContaining(["local-only", "from-cloud"]));
+        expect(await ls(other.page, "e2e-cloud-only")).toBe("1");
+        // 合并结果也传回了云端。
+        await expect
+          .poll(() => JSON.parse(fake.data!.bookmarks), { timeout: 30_000 })
+          .toEqual(expect.arrayContaining(["local-only", "from-cloud"]));
       } finally {
-        await device.close();
+        await other.context.close();
       }
+    });
+
+    test(`在线账号：本机一下子少了很多数据，停下来问用户，不把删除同步到云端（${style}）`, async ({ page }) => {
+      test.skip(LIVE, "需要读云端内容并在不经页面的情况下清本机数据，只有假服务能做到");
+      test.setTimeout(120_000);
+      const fake = await useAccountApi(page);
+      await openBackup(page, style);
+      await signUp(page);
+      await expect(syncStatus(page)).toContainText(/已自动同步/);
+
+      // 本机有 40 项进度，已经同步到云端。
+      const keys = Array.from({ length: 40 }, (_, i) => `practice:e2e-${i}`);
+      await mergeImport(page, Object.fromEntries(keys.map((k) => [k, "p"])));
+      await expect.poll(() => keys.every((k) => fake.data && k in fake.data), { timeout: 30_000 }).toBe(true);
+      await expect(syncStatus(page)).toContainText(/已自动同步/);
+
+      // 浏览器清理了站点数据：本机一下子只剩 2 项（不是用户一个个删的）。
+      await page.evaluate((ks) => ks.slice(2).forEach((k) => localStorage.removeItem(k)), keys);
+      await page.reload();
+      await expect(syncStatus(page)).toContainText("少了很多数据", { timeout: 30_000 });
+      // 云端一项没少：删除没有被同步出去。
+      expect(keys.every((k) => k in fake.data!)).toBe(true);
+
+      // 用户选「从云端恢复」就把数据找回来。
+      await panel(page).getByRole("button", { name: "从云端恢复（覆盖）" }).click();
+      await page.getByRole("dialog").getByRole("button", { name: "从云端恢复（覆盖）" }).click();
+      await expect(toast(page)).toContainText(/^已恢复 \d+ 条数据$/);
+      expect(await ls(page, "practice:e2e-39")).toBe("p");
+      await expect(syncStatus(page)).toContainText(/已自动同步/);
     });
 
     test(`在线账号：退出再登录，本机与云端内容一样就不算冲突（${style}）`, async ({ page }) => {
@@ -466,11 +649,9 @@ for (const style of ["pixel", "modern"] as const) {
       await expect(toast(page).filter({ hasText: /^已上传到云端/ })).toBeVisible();
 
       await panel(page).getByRole("button", { name: "退出登录", exact: true }).click();
-      await panel(page).getByLabel("账号名").fill(name);
-      await panel(page).getByLabel("口令", { exact: true }).fill(PASSWORD);
-      await panel(page).getByRole("button", { name: "登录", exact: true }).click();
+      await signIn(page, name);
       // 退出作废了基线；但两边其实一样，不该为此打扰用户。
-      await expect(panel(page).getByRole("status")).toContainText(/已自动同步/);
+      await expect(syncStatus(page)).toContainText(/已自动同步/);
       expect(fake.puts().length).toBeGreaterThan(0);
     });
 

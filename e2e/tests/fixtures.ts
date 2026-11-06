@@ -57,6 +57,8 @@ export function option(page: Page, letter: string) {
  * 以前的写法是固定 `waitForTimeout(150)`，那只是赌这段时间已经够 —— 慢机与 CI 上会扫到
  * 中间态。骨架块（`.skeleton`）与 spinner（`.animate-spin`）是各页面表达「还没好」的
  * 统一方式，等它们消失是一个**可复现**的判据，也天然自适应（快的页面 ~100ms 就过）。
+ * 分批挂载的内容块（工具页的计算器，见 `tool_mount.rs`）在主体到位前带 `aria-busy="true"`：
+ * 只认 `section` 上的，按钮的加载态（`ui::Button` 的 `aria-busy`）不在这条判据里。
  *
  * 到点仍未消失时不报错：这条路只是「尽量等到稳定」，断言本身仍是各用例自己的事。
  */
@@ -65,7 +67,8 @@ export async function waitSettled(page: Page) {
     .waitForFunction(
       () =>
         !document.querySelector("main .skeleton") &&
-        !document.querySelector("main .animate-spin"),
+        !document.querySelector("main .animate-spin") &&
+        !document.querySelector('main section[aria-busy="true"]'),
       undefined,
       { timeout: 15_000, polling: 100 },
     )
@@ -94,8 +97,8 @@ export async function settleFrames(page: Page) {
 /**
  * 等现代风的入场浮现落位：视口内不再有「已登记但还没入场」的元素。
  *
- * 浮现登记分三趟（rAF / 220ms / 640ms，见 `motion::reveal_modern_page`），每登记一个元素就
- * 立刻把它置成「透明 + 下移 18px」，再由观察器改成 `[data-reveal="in"]` 走上浮过渡。
+ * 浮现登记分三趟（rAF / 220ms / 640ms，见 `motion::reveal_modern_page`）。现代风里，登记时已在屏幕上的
+ * 块直接记为 `in`；折叠线以下的先藏成「透明 + 下移 12px」，滚到时由观察器改成 `[data-reveal="in"]` 走上浮过渡。
  * 在这段窗口里量坐标、按下鼠标，落点会跟着浮移动 —— 本地快机上「碰巧」错开，慢机上必现
  * 「点了没反应」。
  *

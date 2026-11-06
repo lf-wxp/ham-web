@@ -304,6 +304,8 @@ pub enum PullResult {
     count: usize,
     /// 远端内容的指纹，交给自动同步当基线。
     fp: Fingerprint,
+    /// 在线账号通道的按 key 基线（自定义远端没有，恒为 `None`）。
+    base: Option<ham_web_core::delta::Base>,
   },
 }
 
@@ -341,7 +343,11 @@ pub(crate) async fn import_fetched(
     crate::util::import_backup(&body).await
   };
   result
-    .map(|count| PullResult::Imported { count, fp })
+    .map(|count| PullResult::Imported {
+      count,
+      fp,
+      base: None,
+    })
     .map_err(|e| tf(fail_key, &[&e]))
 }
 
@@ -351,6 +357,8 @@ pub struct Pushed {
   pub count: usize,
   /// 写出内容的指纹，交给自动同步当基线。
   pub fp: Fingerprint,
+  /// 在线账号通道的按 key 基线（自定义远端没有，恒为 `None`）。
+  pub base: Option<ham_web_core::delta::Base>,
 }
 
 /// 写入失败：界面文案，以及自动写入该不该继续重试。
@@ -444,7 +452,11 @@ async fn send(cfg: &RemoteSyncConfig, built: Built) -> Result<Pushed, PushError>
   .await
   .map_err(|e| PushError::from_sync(&e))?;
   if (200..300).contains(&status) {
-    Ok(Pushed { count, fp })
+    Ok(Pushed {
+      count,
+      fp,
+      base: None,
+    })
   } else {
     Err(PushError::from_sync(&SyncError::Http(status)))
   }

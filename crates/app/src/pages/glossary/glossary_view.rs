@@ -1,7 +1,5 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
-use ham_web_core::Bank;
 use ham_web_core::categories::TOP_CATEGORIES;
 use ham_web_core::glossary::{GlossaryEntry, OTHER_CATEGORY};
 use leptos::prelude::*;
@@ -10,15 +8,15 @@ use leptos_router::hooks::use_query_map;
 
 use crate::components::common::{EmptyState, PageContainer, PageHeader, StickyPanel};
 use crate::components::sidebar_item::SidebarItem;
-use crate::data;
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
 use crate::ui::{Button, ChipToggle, Input, InputType, MobileNavDrawer, Tooltip, Variant};
 use crate::util::window;
 
+use super::hits::{self, HitMap};
 use super::stat::Stat;
 use super::term_card::TermCard;
-use super::{ALL, Haystacks, PAGE, category_meta, category_pos};
+use super::{ALL, Haystacks, PAGE, category_meta, category_pos, is_countable};
 use crate::i18n::{t, tf};
 
 /// 术语表主体：搜索、分类筛选与词条列表。
@@ -31,6 +29,8 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
   let abbr_only = RwSignal::new(false);
   let visible = RwSignal::new(PAGE);
   let haystacks: RwSignal<Option<Haystacks>> = RwSignal::new(None);
+  // 已统计的「术语 → 各题库出现题数」（卡片底栏读它）。
+  let hit_map: RwSignal<HitMap> = RwSignal::new(HitMap::new());
 
   // 支持 /glossary?q=驻波比 直接定位
   Effect::new(move |_| {
@@ -41,16 +41,18 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
     }
   });
 
+  // 题库已在内存里时这段是同步返回的：缓存命中就当场把上次的结果交给卡片（再进来不再闪「统计中」）；
+  // 没命中时逐题拼接检索文本要几十毫秒，放到首帧画出之后再做，不挡页面出来。
   spawn_local(async move {
-    let mut out = Vec::with_capacity(Bank::ALL.len());
-    for b in Bank::ALL {
-      let texts = data::load_bank(None, b, false)
-        .await
-        .map(|qs| qs.iter().map(|q| q.search_text()).collect())
-        .unwrap_or_default();
-      out.push((b, texts));
+    let banks = hits::load_banks().await;
+    if let Some((h, cached)) = hits::cached(&banks) {
+      hit_map.try_set(cached);
+      haystacks.try_set(Some(h));
+      return;
     }
-    haystacks.try_set(Some(Arc::new(out)));
+    crate::after_paint::after_next_paint(move || {
+      haystacks.try_set(Some(hits::build(banks)));
+    });
   });
 
   let base = Memo::new(move |_| {
@@ -88,6 +90,42 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
     });
     ranked.sort_unstable();
     ranked.into_iter().map(|(_, _, i)| i).collect::<Vec<_>>()
+  });
+
+  // 统计当前显示的卡片里还没统计过的术语：首帧之后每帧一批（`hits::BATCH`）。
+  // 列表换了（搜索 / 筛选 / 加载更多）就开新一轮，旧一轮在下一帧发现代号不对自行停下。
+  let round = StoredValue::new(0u32);
+  Effect::new(move |_| {
+    let Some(h) = haystacks.get() else { return };
+    let shown: Vec<&'static str> = filtered.with(|f| {
+      f.iter()
+        .take(visible.get())
+        .map(|&i| entries[i].term.as_str())
+        .filter(|term| is_countable(term))
+        .collect()
+    });
+    let pending: Vec<&'static str> =
+      hit_map.with_untracked(|m| shown.into_iter().filter(|t| !m.contains_key(t)).collect());
+    if pending.is_empty() {
+      return;
+    }
+    let this = round.get_value().wrapping_add(1);
+    round.set_value(this);
+    let mut queue = pending.into_iter();
+    crate::after_paint::each_frame(move || {
+      if round.try_get_value() != Some(this) {
+        return false;
+      }
+      let batch: Vec<_> = queue
+        .by_ref()
+        .take(hits::BATCH)
+        .map(|term| (term, hits::count(&h, term)))
+        .collect();
+      if batch.is_empty() {
+        return false;
+      }
+      hit_map.try_update(|m| m.extend(batch)).is_some()
+    });
   });
 
   let abbr_count = Memo::new(move |_| {
@@ -180,7 +218,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
     let shown_len = shown.len();
     let cards = shown
       .into_iter()
-      .map(|i| view! { <TermCard entry=&entries[i] haystacks=haystacks on_jump=jump_to /> })
+      .map(|i| view! { <TermCard entry=&entries[i] hits=hit_map on_jump=jump_to /> })
       .collect_view();
     view! {
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">{cards}</div>
@@ -216,7 +254,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
       <div class="md-term-grid">
         {shown
           .into_iter()
-          .map(|i| view! { <TermCard entry=&entries[i] haystacks=haystacks on_jump=jump_to /> })
+          .map(|i| view! { <TermCard entry=&entries[i] hits=hit_map on_jump=jump_to /> })
           .collect_view()}
       </div>
       {(shown_len < total)

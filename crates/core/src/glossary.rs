@@ -286,6 +286,22 @@ impl Glossary {
   }
 }
 
+/// 术语在每个题库里出现的题数（术语表卡片底部的「题库出现：A 类 3」）。
+///
+/// `haystacks` 是各题库每道题的检索文本，须已转小写（`QuestionItem::search_text`）；
+/// 术语在这里转小写后按子串匹配，同一题里出现多次只算一次。
+#[must_use]
+pub fn bank_hits<B: Copy>(term: &str, haystacks: &[(B, Vec<String>)]) -> Vec<(B, usize)> {
+  let needle = term.to_lowercase();
+  haystacks
+    .iter()
+    .map(|(bank, texts)| {
+      let n = texts.iter().filter(|t| t.contains(needle.as_str())).count();
+      (*bank, n)
+    })
+    .collect()
+}
+
 /// `data/glossary/` 下的分类文件名（不含扩展名），顺序与 [`glossary_files!`] 一致；
 /// 前端按此列表运行时拉取 `/data/glossary/{name}.json`，不再嵌入 wasm。
 pub const GLOSSARY_FILES: [&str; 10] = [
@@ -342,6 +358,31 @@ mod tests {
       .expect("glossary file exists");
       assert_eq!(on_disk, text, "{name}.json 顺序与 glossary_files! 不一致");
     }
+  }
+
+  #[test]
+  fn bank_hits_counts_questions_not_occurrences() {
+    let banks = vec![
+      (
+        'A',
+        vec!["驻波比 swr 与 swr 表".to_owned(), "天线增益".to_owned()],
+      ),
+      (
+        'B',
+        vec!["swr 过高".to_owned(), "swr".to_owned(), "电源".to_owned()],
+      ),
+      ('C', Vec::new()),
+    ];
+    // 术语按小写匹配；同一题出现两次只算一题；空题库也要占一项（卡片按题库逐个显示）。
+    assert_eq!(bank_hits("SWR", &banks), vec![('A', 1), ('B', 2), ('C', 0)]);
+    assert_eq!(
+      bank_hits("天线", &banks),
+      vec![('A', 1), ('B', 0), ('C', 0)]
+    );
+    assert_eq!(
+      bank_hits("不存在", &banks),
+      vec![('A', 0), ('B', 0), ('C', 0)]
+    );
   }
 
   #[test]

@@ -22,8 +22,11 @@ html[data-ui-style="modern"] {
   --md-surface: #fffefb;
   --md-surface-2: #ecebe4;
   --md-surface-3: #e0dfd6;
-  --md-border: #e2e0d7;
-  --md-border-strong: #c3c1b6;
+  /* 浅色模式的描边比色板上的纸色再冷、再实一点：浅底上 1px 的浅灰等于没有。
+     这两个值原先写在 `kit.css` 的组件层里（只在「改 token 不生效」这一点上错了），
+     现在归位到这里；`.dark` 在下面覆盖。 */
+  --md-border: #d8dee9;
+  --md-border-strong: #b7c1d3;
   /* 分隔线：比 border 更「墨」，用来画版面骨架（章节尺、数据条、栅栏），
      与「卡片描边」拉开一档 —— 两者混用会让整页看起来像表格。 */
   --md-rule: color-mix(in srgb, var(--md-fg) 18%, transparent);

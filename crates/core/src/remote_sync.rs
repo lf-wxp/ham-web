@@ -213,6 +213,27 @@ impl Fingerprint {
 /// `("ab","c")` 撞成同一个指纹。
 #[must_use]
 pub fn fingerprint(map: &std::collections::BTreeMap<String, String>) -> Fingerprint {
+  fingerprint_pairs(map)
+}
+
+/// [`fingerprint`] 的口径：先去掉设备专属的 key（[`is_device_local_key`]）再求指纹，但不复制、不改动 `map`。
+#[must_use]
+pub fn fingerprint_synced(map: &std::collections::BTreeMap<String, String>) -> Fingerprint {
+  fingerprint_pairs(
+    map
+      .iter()
+      .filter(|(key, _)| !is_device_local_key(key.as_str())),
+  )
+}
+
+/// 一串 `(key, value)` 的指纹。**调用方必须按 key 升序给**（`BTreeMap` 的迭代序）：指纹与出现顺序无关
+/// 的前提，就是大家都按同一个顺序喂进来。
+///
+/// 服务端的值不是现成的字符串（专表里的行要先序列化回文本），所以收任何能借出 `&str` 的类型。
+#[must_use]
+pub fn fingerprint_pairs<K: AsRef<str>, V: AsRef<str>>(
+  pairs: impl IntoIterator<Item = (K, V)>,
+) -> Fingerprint {
   const OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
   const PRIME: u64 = 0x0000_0100_0000_01b3;
   let mut h = OFFSET;
@@ -222,9 +243,9 @@ pub fn fingerprint(map: &std::collections::BTreeMap<String, String>) -> Fingerpr
       h = h.wrapping_mul(PRIME);
     }
   };
-  for (k, v) in map {
-    feed(k.as_bytes());
-    feed(v.as_bytes());
+  for (k, v) in pairs {
+    feed(k.as_ref().as_bytes());
+    feed(v.as_ref().as_bytes());
   }
   Fingerprint(h)
 }
@@ -236,9 +257,8 @@ pub fn fingerprint(map: &std::collections::BTreeMap<String, String>) -> Fingerpr
 /// 每次都会被判成「内容不同」而多传一次。
 #[must_use]
 pub fn fingerprint_json(json: &str) -> Option<Fingerprint> {
-  let mut map: std::collections::BTreeMap<String, String> = serde_json::from_str(json).ok()?;
-  map.retain(|key, _| !is_device_local_key(key));
-  Some(fingerprint(&map))
+  let map: std::collections::BTreeMap<String, String> = serde_json::from_str(json).ok()?;
+  Some(fingerprint_synced(&map))
 }
 
 /// 自动同步的持久化状态。
@@ -508,6 +528,49 @@ pub fn classify_pull(status: u16, body: &str) -> PullOutcome {
   }
 }
 
+/// `docs/reference/storage.md` 里登记、且参与同步的 key（带模式的写前缀）。`delta::classify` 的测试要它。
+#[cfg(test)]
+pub(crate) const DOCUMENTED_SYNCED_KEYS: &[&str] = &[
+  "practice",
+  "practice:lastMode",
+  "practice:noResumePrompt",
+  "exam:savedState",
+  "exam:answerCardFilter",
+  "exam:showExplanation",
+  "bookmarks",
+  "exam-history",
+  "logbook",
+  "station-info",
+  "daily-checkin",
+  "countdowns",
+  "morse-stats",
+  "dxcc_wanted_done",
+  "mistake-book",
+  "study-stats",
+  "mistake-book:seeded",
+  "study-stats:seen-seeded",
+  "morse-koch",
+  "dx-alerts",
+  "learning-plan",
+  "study-daily",
+  "morse-runner",
+  "contest-session",
+  "sat-watch",
+  "grid-map-filters",
+  "listen-settings",
+  "qsl-label-layout",
+  "card-review",
+  "question-notes",
+  "bookmark-groups",
+  "question-stats",
+  "achievements-seen",
+  "morse-trainer",
+  "morse-send",
+  "exam:last-review",
+  "rpg-stars",
+  "rpg-bestiary",
+];
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -727,6 +790,33 @@ mod tests {
   }
 
   #[test]
+  fn fingerprint_synced_equals_fingerprint_of_the_map_without_device_local_keys() {
+    // 服务端用它省掉一次整表克隆；口径必须与「先去掉设备专属 key 再 `fingerprint`」逐位相同，
+    // 否则服务端存的指纹就对不上前端的基线。
+    let full = map(&[
+      ("bookmarks", "[]"),
+      ("logbook", "{}"),
+      ("theme", "dark"),
+      ("api-cache:/api/solar", "x"),
+      ("remote-sync", "{}"),
+    ]);
+    let synced = map(&[("bookmarks", "[]"), ("logbook", "{}")]);
+    assert_eq!(fingerprint_synced(&full), fingerprint(&synced));
+    assert_ne!(fingerprint_synced(&full), fingerprint(&full));
+    assert_eq!(fingerprint_synced(&synced), fingerprint(&synced));
+  }
+
+  #[test]
+  fn fingerprint_pairs_hashes_borrowed_and_owned_values_alike() {
+    // 服务端的值有的是借来的原文、有的是现序列化出来的：两种形态喂进去，指纹必须相同。
+    let m = map(&[("a", "1"), ("b", "{\"x\":2}")]);
+    let owned = m.iter().map(|(k, v)| (k.as_str(), v.clone()));
+    let borrowed = m.iter().map(|(k, v)| (k.as_str(), v.as_str()));
+    assert_eq!(fingerprint_pairs(owned), fingerprint(&m));
+    assert_eq!(fingerprint_pairs(borrowed), fingerprint(&m));
+  }
+
+  #[test]
   fn fingerprint_json_ignores_device_local_keys_like_the_local_side_does() {
     let synced = map(&[("bookmarks", "[]"), ("logbook", "{}")]);
     // 远端是手工导出的完整备份：多出来的设备专属 key 不能让指纹对不上本机生成的同步内容。
@@ -942,47 +1032,7 @@ mod tests {
   /// 这条测试把「新增 key 要想一想它该不该同步」变成必须回答的问题。
   #[test]
   fn every_documented_key_is_classified() {
-    // 同步的用户数据。
-    const SYNCED: &[&str] = &[
-      "practice",
-      "practice:lastMode",
-      "practice:noResumePrompt",
-      "exam:savedState",
-      "exam:answerCardFilter",
-      "exam:showExplanation",
-      "bookmarks",
-      "exam-history",
-      "logbook",
-      "station-info",
-      "daily-checkin",
-      "countdowns",
-      "morse-stats",
-      "dxcc_wanted_done",
-      "mistake-book",
-      "study-stats",
-      "mistake-book:seeded",
-      "study-stats:seen-seeded",
-      "morse-koch",
-      "dx-alerts",
-      "learning-plan",
-      "study-daily",
-      "morse-runner",
-      "contest-session",
-      "sat-watch",
-      "grid-map-filters",
-      "listen-settings",
-      "qsl-label-layout",
-      "card-review",
-      "question-notes",
-      "bookmark-groups",
-      "question-stats",
-      "achievements-seen",
-      "morse-trainer",
-      "morse-send",
-      "exam:last-review",
-      "rpg-stars",
-      "rpg-bestiary",
-    ];
+    const SYNCED: &[&str] = DOCUMENTED_SYNCED_KEYS;
     // 只属于这台设备。
     const DEVICE: &[&str] = &[
       "ui:shortcutsHelpSeen",

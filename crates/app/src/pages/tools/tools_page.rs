@@ -59,6 +59,8 @@ use super::soft_tnc::SoftTnc;
 use super::stub_match::StubMatch;
 use super::swr_converter::SwrConverter;
 use super::tone_squelch::ToneSquelch;
+use super::tool_body::ToolBody;
+use super::tool_mount::ToolMount;
 use super::tool_section::ToolSection;
 use super::toroid_winding::ToroidWinding;
 use super::transformer_calculator::TransformerCalculator;
@@ -152,11 +154,25 @@ fn scroll_to(id: &str) {
   }
 }
 
+/// 点目录跳到某个计算器：还有没挂上的就先全部挂上，下一帧按真实高度再滚
+/// （否则落点按占位高度算，挂完之后目标已经被挤到别处）。
+fn jump_to(mount: ToolMount, id: &'static str) {
+  if mount.all_mounted() {
+    scroll_to(id);
+    return;
+  }
+  mount.mount_all();
+  request_animation_frame(move || scroll_to(id));
+}
+
 #[component]
 pub fn ToolsPage() -> impl IntoView {
   set_title("shell.calculators");
   // 本页渲染 `crates/core` 的中文原文，译文词典要自己挂一次拉取（本页不是 `KnowledgePage`）。
   crate::data::use_knowledge_i18n();
+  // 计算器主体分批挂载（见 `tool_mount`）：首屏先出，其余每帧放行一批。
+  let mount = ToolMount::provide(TOOL_NAV);
+  mount.start();
   // 移动端工具导航抽屉的开关：选中工具后要主动收起。
   let nav_open = RwSignal::new(false);
   // 路由切换后不会自动跳到锚点（如外链 `/tools#parabolic-dish`），挂载后手动滚动
@@ -176,6 +192,8 @@ pub fn ToolsPage() -> impl IntoView {
         );
         return;
       }
+      // 落点按真实高度算：先把还没挂上的计算器全部挂上（主体在这一帧里写进 DOM），下一帧再滚。
+      mount.mount_all();
       let id = id.to_owned();
       request_animation_frame(move || scroll_to(&id));
     }
@@ -191,7 +209,7 @@ pub fn ToolsPage() -> impl IntoView {
               type="button"
               class="w-full px-2.5 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               on:click=move |_| {
-                scroll_to(id);
+                jump_to(mount, id);
                 nav_open.set(false);
               }
             >
@@ -202,8 +220,10 @@ pub fn ToolsPage() -> impl IntoView {
       })
       .collect_view()
   };
-  // 46 个计算器块：外壳与内容不变，只把外层容器抽出来，供两套视图共用。
+  // 计算器块：外壳与内容不变，只把外层容器抽出来，供两套视图共用。
   let sections = move || {
+    // Smith 圆图这一节是手写外壳（多一行去 `/smith` 的链接），主体同样分批挂载。
+    let smith_ready = mount.ready("smith");
     view! {
       <div class="space-y-6">
             <ToolSection id="freq-wavelength" title="tools.frequency-wavelength" description="tools.300-f-mhz-approximate"><FreqWavelength /></ToolSection>
@@ -224,10 +244,14 @@ pub fn ToolsPage() -> impl IntoView {
 
             <ToolSection id="antenna-matcher" title="tools.antenna-matching-network" description="tools.an-l-network-matches"><AntennaMatcher /></ToolSection>
 
-            <section id="smith" class=crate::kit::card_class_with("scroll-mt-24")>
+            <section
+              id="smith"
+              class=crate::kit::card_class_with("scroll-mt-24")
+              aria-busy=move || (!smith_ready.get()).then_some("true")
+            >
               <h2 class=crate::kit::card_title_class()>{move || t("tools.smith-chart")}</h2>
               <p class="px-4 pt-3 text-xs text-muted-foreground">{move || t("tools.enter-a-complex-impedance")}</p>
-              <div class="p-4"><SmithChart /></div>
+              <div class="p-4"><ToolBody ready=smith_ready><SmithChart /></ToolBody></div>
               <p class="px-4 pb-4 text-xs text-muted-foreground">
                 {move || t("tools.for-drag-to-position")}
                 <a href="/smith" class="ml-1 text-primary">
@@ -362,7 +386,7 @@ pub fn ToolsPage() -> impl IntoView {
                 type="button"
                 class="md-tool-link"
                 data-spy=move || (spy.get() == Some(id)).to_string()
-                on:click=move |_| scroll_to(id)
+                on:click=move |_| jump_to(mount, id)
               >
                 {move || crate::data::core_text_tracked(key)}
               </button>
@@ -385,7 +409,7 @@ pub fn ToolsPage() -> impl IntoView {
                 class="md-drawer-item"
                 aria-pressed=move || (spy.get() == Some(id)).to_string()
                 on:click=move |_| {
-                  scroll_to(id);
+                  jump_to(mount, id);
                   nav_open.set(false);
                 }
               >

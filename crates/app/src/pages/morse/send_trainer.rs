@@ -1,6 +1,6 @@
 use ham_web_core::morse::{DIGITS, LETTERS, MorseChar, code_of};
+use ham_web_core::morse_store::SendStats;
 use leptos::prelude::*;
-use serde::{Deserialize, Serialize};
 
 use crate::icons::{Icon, IconKind};
 use crate::morse_audio::{start_tone, stop_tone};
@@ -30,14 +30,6 @@ impl SendTarget {
   }
 
   const ALL: [Self; 3] = [Self::Char, Self::Word, Self::CallSign];
-}
-
-/// 发报统计（持久化）。
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-struct SendStats {
-  correct: usize,
-  wrong: usize,
-  best_streak: usize,
 }
 
 const SEND_KEY: &str = "morse-send";

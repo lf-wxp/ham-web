@@ -86,7 +86,18 @@ transition: transform var(--motion-fast) var(--ease-out-expo);
 
 ### 7. 长列表优先分页
 
-长列表用增量渲染控制 DOM 数量（参见 `src/pages/glossary/glossary_page.rs` 的 `visible` / `PAGE` 分页），不要依赖 `content-visibility` 补性能——它会引入滚动条跳动、`Ctrl+F` 失效等副作用。
+长列表用增量渲染控制 DOM 数量（参见 `src/pages/glossary/glossary_view.rs` 的 `visible` / `PAGE` 分页），不要依赖 `content-visibility` 补性能——它会引入滚动条跳动、`Ctrl+F` 失效等副作用，
+而且它自带的绘制隔离会裁掉卡片内 `absolute` 定位的下拉面板。
+
+不能分页的长页面（工具页 60 个计算器）、一打开就要铺满的弹层（「更多」目录约 180 个入口），
+以及渲染之后还有成批计算的（术语表卡片的题库出现次数），首屏先出，其余用 `src/after_paint.rs` 的 `each_frame`
+每画完一帧推进一批，单批控制在一帧的预算内（不形成 50ms 以上的长任务）；
+要按真实位置定位之前（锚点直达、点目录）先一次做完。实现见 `src/pages/tools/tool_mount.rs`、
+`src/kit_modern/menu.rs` 与 `src/pages/glossary/hits.rs`。
+
+「用户很可能马上要用、但现在不急」的数据（常用题库）在空闲时预热（`after_paint::when_idle` + `bank_updates::prewarm`），
+同一份题库同时只下载、解析一次（`data::load_url`）。这些约束由 `e2e/tests/responsiveness.spec.ts` 守着；
+真机上要看实际耗时，在地址后加 `?perf=1` 打开测量面板（`src/perf_hud.rs`）。
 
 ## 三、token 速查
 
@@ -107,7 +118,11 @@ transition: transform var(--motion-fast) var(--ease-out-expo);
 | `--md-dur-fast` | `120ms` | 控件的悬停 / 状态过渡（描边、底色、勾选）、悬停气泡、下拉面板 |
 | `--md-dur` | `180ms` | 对话框 / 抽屉 / Toast / 菜单的进出场、按钮的悬停 |
 | `--md-dur-slow` | `320ms` | 较大的位移 / 版式变化 |
-| `--md-ease` / `--md-ease-out` | `cubic-bezier(…)` | 过渡 / 入场用 ease-out，退场用 ease |
+| `--md-ease` / `--md-ease-out` | `cubic-bezier(…)` | 过渡 / 入场用 ease-out，退场用 ease（**例外**：抽屉的退场用 `--md-ease-out`，见下一条） |
+
+- **抽屉退场用先快后慢的 `--md-ease-out`。** 在目录里点链接时，退场与新页面挂载同时进行，主线程会被新页面占住一两百毫秒，
+  抽屉的不透明度只能停在某一帧上：缓入曲线那时还剩约 60%，新旧两张页面半透明地叠在一起；缓出曲线第一帧就降到三成以下，
+  被冻住的也只是一层很淡的残影。卸载时机仍由 `presence` 按 `--md-dur` 决定，不受曲线影响（实现见 `kit.css` 的 `.md-sheet[data-state="closed"]`）。
 
 - **进出场的时长一律走 token**，不写 `180ms` 这样的字面量。装饰性的长动画（氛围循环、一次性演出、涟漪）可以写字面量。
 - 现代风**不用 `steps()`**，像素风**不用平滑缓动**；两套皮肤的动画不要互相借用（现代风的单选框曾借用像素风的

@@ -216,6 +216,11 @@ impl UserMeasurements {
   pub fn iter(&self) -> impl Iterator<Item = (&String, &UserMeasurement)> {
     self.0.iter()
   }
+
+  /// 从条目构造（账号同步的服务端从数据库表还原时用）。同一个机型出现两次，后一个生效。
+  pub fn from_entries(entries: impl IntoIterator<Item = (String, UserMeasurement)>) -> Self {
+    Self(entries.into_iter().collect())
+  }
 }
 
 #[cfg(test)]

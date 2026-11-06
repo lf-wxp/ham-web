@@ -4,8 +4,11 @@
 //! 路径与头名。两端引用同一份常量，改一处就不会出现「前端以为是 A、后端按 B 校验」。
 //! 数据库表结构与整体设计见 `docs/domain/account-sync.md`，接口见 `docs/reference/api.md`。
 
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
+use crate::delta::{Digest, Manifest};
 use crate::remote_sync::Fingerprint;
 
 /// 账号名最短长度（字符数）。
@@ -230,8 +233,94 @@ pub struct BackupInfo {
   pub size: u64,
   /// 最后一次写入的时间（Unix 秒）。
   pub updated_at: i64,
-  /// 内容指纹（与前端基线同口径，见 [`crate::remote_sync::fingerprint`]）。
+  /// 云端的**版本号**：对云端全部同步 key 的 `(key, 摘要)` 清单求的（见 [`crate::delta::manifest_fingerprint`]），
+  /// 也是 `ETag` / `If-Match` 比较的对象。
+  ///
+  /// 它只回答「云端现在是不是我上次看到的那一版」，不是内容完整性的凭据，也不是本机与云端「谁改了」
+  /// 的判据：自动同步靠每个 key 一对摘要（[`crate::delta::Synced`]）逐个判断，整份指纹对它没有用处。
+  /// 手动「上传」成功后的回执里也带它，只用来显示与做条件写入。
   pub fingerprint: Fingerprint,
+}
+
+// ───────────────────────── 按 key 的增量同步 ─────────────────────────
+//
+// 整份备份的 `GET` / `PUT /backup` 仍在（手动上传 / 恢复 / 合并用）。自动同步走下面三个接口，
+// 只交换有变化的 key，设计见 `crate::delta` 与 `docs/domain/account-sync.md`。
+
+/// 清单接口的路径（相对 [`API_BASE`]）。
+pub const SYNC_MANIFEST_PATH: &str = "/sync/manifest";
+/// 按 key 取值接口的路径。
+pub const SYNC_PULL_PATH: &str = "/sync/pull";
+/// 按 key 上传改动接口的路径。
+pub const SYNC_PUSH_PATH: &str = "/sync/push";
+
+/// 一次请求最多带多少个 key：账号里的 key 最多几百个（每张 QSL 影像一个），
+/// 这个数留足余量，又不让一个请求把服务端的处理拖成无界。
+pub const SYNC_MAX_KEYS: usize = 20_000;
+/// key 的最大字节数。
+pub const SYNC_MAX_KEY_LEN: usize = 512;
+
+/// `GET /sync/manifest`：云端全部同步 key 的清单。还没有备份为 `204`。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SyncManifest {
+  /// 清单的指纹，同 [`BackupInfo::fingerprint`]：与本机上次记下的一样就说明云端没变，什么都不用取。
+  pub fingerprint: Fingerprint,
+  /// 最后一次写入的时间（Unix 秒）。
+  pub updated_at: i64,
+  /// 内容总字节数。
+  pub size: u64,
+  /// `key → 摘要`。
+  pub keys: Manifest,
+}
+
+/// `POST /sync/pull` 的请求体：要哪些 key 的值。
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PullRequest {
+  pub keys: Vec<String>,
+}
+
+/// `POST /sync/pull` 的响应：云端现在有的那些 key 的值（请求了但已不存在的不在里面）。
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PullResponse {
+  pub values: BTreeMap<String, String>,
+}
+
+/// 一条上传的改动。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Change {
+  pub key: String,
+  /// 本机看到的这个 key 在云端的摘要；`None` = 本机看到的是云端没有这个 key。
+  ///
+  /// 云端现在的摘要与它对不上，说明别处在这期间改过这个 key，整批改动都不会生效（`412`）。
+  pub base: Option<Digest>,
+  /// 新值；`None` = 删除这个 key。
+  pub value: Option<String>,
+}
+
+/// `POST /sync/push` 的请求体。整批要么全部生效，要么全部不生效。
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PushRequest {
+  pub changes: Vec<Change>,
+}
+
+/// `POST /sync/push` 的响应。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PushResponse {
+  /// 写入之后云端的概况。
+  pub info: BackupInfo,
+  /// 写入之后云端的完整清单：本机拿它记下刚上传的那些 key 在云端是什么样。
+  pub keys: Manifest,
+}
+
+/// `PUT /backup`（整份替换）成功的响应：概况，外加写入之后云端的完整清单。
+///
+/// 与 [`BackupInfo`] 字段平铺在一起，只读概况的调用方（`BackupInfo` 反序列化时忽略多出来的 `keys`）不受影响。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BackupReceipt {
+  #[serde(flatten)]
+  pub info: BackupInfo,
+  /// 写入之后云端的完整清单：手动上传之后据此建立每个 key 的基线，不必再多发一次请求。
+  pub keys: Manifest,
 }
 
 /// 已登录的账号。

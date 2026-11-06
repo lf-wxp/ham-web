@@ -1,14 +1,12 @@
 //! 听题模式：自动朗读题干、选项，停顿思考后读出答案（可选解析），适合通勤时免手刷题。
 
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use ham_web_core::exam::shuffled;
-use ham_web_core::listen::{Phase, RATE_CHOICES, Step, THINK_CHOICES, script};
+use ham_web_core::listen::{Phase, RATE_CHOICES, Settings, Source, Step, THINK_CHOICES, script};
 use ham_web_core::{Bank, QuestionItem};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
@@ -25,55 +23,6 @@ use crate::ui::{
 use crate::util::{random, set_title, sleep, storage, window};
 
 const KEY: &str = "listen-settings";
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-enum Source {
-  A,
-  B,
-  C,
-  Mistakes,
-  Bookmarks,
-}
-
-impl Source {
-  const ALL: [Self; 5] = [Self::A, Self::B, Self::C, Self::Mistakes, Self::Bookmarks];
-
-  const fn label(self) -> &'static str {
-    match self {
-      Self::A => "A 类",
-      Self::B => "B 类",
-      Self::C => "C 类",
-      Self::Mistakes => "错题集",
-      Self::Bookmarks => "收藏集",
-    }
-  }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
-struct Settings {
-  source: Source,
-  rate: f32,
-  think_secs: u32,
-  explain: bool,
-  shuffle: bool,
-  /// 各来源上次听到的位置（顺序模式）。
-  positions: BTreeMap<Source, usize>,
-}
-
-impl Default for Settings {
-  fn default() -> Self {
-    Self {
-      source: Source::A,
-      rate: 1.0,
-      think_secs: 5,
-      explain: false,
-      shuffle: false,
-      positions: BTreeMap::new(),
-    }
-  }
-}
 
 async fn load_source(source: Source) -> Vec<QuestionItem> {
   let bank = match source {
@@ -177,24 +126,34 @@ pub fn ListenPage() -> impl IntoView {
 
   // 只在来源或顺序变化时重新加载题目（记录播放位置也会改 settings）
   let selection = Memo::new(move |_| settings.with(|s| (s.source, s.shuffle)));
+  // 载题的代际号：快速切换来源时，先发出的请求可能后回来。没有它，旧的题库会覆盖新的，
+  // 并把播放位置改成旧来源的位置。
+  let load_gen = RwSignal::new(0u32);
   Effect::new(move |_| {
     let (source, shuffle) = selection.get();
     stop();
+    let seq = load_gen.get_untracked().wrapping_add(1);
+    load_gen.set(seq);
     loading.set(true);
+    // 播放位置在 `await` 之前读：卸载之后信号已释放，读它会 panic。
+    let start = if shuffle {
+      0
+    } else {
+      settings.with_untracked(|s| s.positions.get(&source).copied().unwrap_or(0))
+    };
     spawn_local(async move {
       let mut qs = load_source(source).await;
       if shuffle {
         let mut rng = random;
         qs = shuffled(&qs, &mut rng);
       }
-      let start = if shuffle {
-        0
-      } else {
-        settings.with_untracked(|s| s.positions.get(&source).copied().unwrap_or(0))
-      };
-      index.set(start.min(qs.len().saturating_sub(1)));
-      questions.set(Arc::new(qs));
-      loading.set(false);
+      // 期间又换了来源、或页面已经卸载：这次结果作废（`try_*` 同时兜住已释放的信号）。
+      if load_gen.try_get_untracked() != Some(seq) {
+        return;
+      }
+      let _ = index.try_set(start.min(qs.len().saturating_sub(1)));
+      let _ = questions.try_set(Arc::new(qs));
+      let _ = loading.try_set(false);
     });
   });
 

@@ -32,6 +32,7 @@ mod input;
 pub mod interaction;
 mod menu;
 mod menu_drawer;
+mod menu_item;
 mod message;
 mod module_icon;
 pub mod motion;

@@ -3,8 +3,9 @@
 //! 它与 `crate::remote_sync`（自定义远端）是**并列**的两条通道：交换同一份备份 JSON
 //! （不含设备专属 key），共用同一套请求超时、错误分类与体积检查；去处不同——这里是同源的
 //! `/api/account/backup`，鉴权靠 `HttpOnly` 会话 Cookie（页面脚本碰不到令牌）。
-//! 「什么时候自动获取 / 写入」仍是 `crate::auto_sync` 的事；两条通道怎么共存见
-//! `docs/domain/account-sync.md`。
+//! 这里只管**手动**的「上传 / 恢复 / 合并」（整份内容，用户明确要覆盖）；**自动**同步按 key 增量，
+//! 在 `crate::account_cloud`（接口）与 `ham_web_core::delta_sync`（算法）。
+//! 两条通道怎么共存见 `docs/domain/account-sync.md`。
 //!
 //! 页面里拿到的 JSON 一律用 `serde_json` 解析，不用 `Response.json()`：指纹是 `u64`，
 //! 超过 2^53 的数走 JS 的 `JSON.parse` 会丢精度。
@@ -13,10 +14,12 @@ use std::cell::Cell;
 use std::collections::BTreeMap;
 
 use ham_web_core::account::{
-  ACCOUNT_ID_HEADER, API_BASE, ChangePassword, ConfirmPassword, Credentials, ErrorCode,
-  Precondition, SessionInfo, UserInfo,
+  ACCOUNT_ID_HEADER, API_BASE, BackupReceipt, ChangePassword, ConfirmPassword, Credentials,
+  ErrorCode, Precondition, SessionInfo, UserInfo,
 };
-use ham_web_core::remote_sync::{Fingerprint, fingerprint, fingerprint_json};
+use ham_web_core::delta::{
+  Manifest, base_after_pull, base_after_push, manifest_fingerprint, manifest_of,
+};
 use ham_web_core::sync_channel::{ACCOUNT_OPTIONS_KEY, AccountOptions};
 use leptos::prelude::*;
 use wasm_bindgen::JsValue;
@@ -28,7 +31,7 @@ use crate::remote_sync::{
 use crate::util::{BackupModules, storage};
 
 /// 单次请求的总超时：与自定义远端一致，备份可达几十 MB。
-const TIMEOUT_MS: i32 = 60_000;
+pub(crate) const TIMEOUT_MS: i32 = 60_000;
 
 /// 面向界面的登录态。
 #[derive(Clone, Debug, PartialEq)]
@@ -83,8 +86,13 @@ pub fn save_options(options: &AccountOptions) {
   storage::set_json(ACCOUNT_OPTIONS_KEY, options);
 }
 
+/// 账号通道是否同步 QSL 影像。
+pub fn include_images() -> bool {
+  !options().exclude_qsl_images
+}
+
 fn modules() -> BackupModules {
-  BackupModules::for_sync(!options().exclude_qsl_images)
+  BackupModules::for_sync(include_images())
 }
 
 // ───────────────────────── HTTP ─────────────────────────
@@ -112,7 +120,7 @@ async fn call(
 }
 
 /// [`call`] 的可调超时版本（启动时的自动获取不能被一个挂住的服务拖太久）。
-async fn call_within(
+pub(crate) async fn call_within(
   method: &str,
   path: &str,
   json_body: Option<String>,
@@ -142,14 +150,14 @@ async fn call_within(
 }
 
 /// 非 2xx 的响应：能解析出错误码就用码，否则按 HTTP 状态码。
-fn failure(status: u16, body: &str) -> SyncError {
+pub(crate) fn failure(status: u16, body: &str) -> SyncError {
   let code = serde_json::from_str::<serde_json::Value>(body)
     .ok()
     .and_then(|v| v["error"]["code"].as_str().and_then(ErrorCode::parse));
   code.map_or(SyncError::Http(status), SyncError::Account)
 }
 
-fn is_success(status: u16) -> bool {
+pub(crate) fn is_success(status: u16) -> bool {
   (200..300).contains(&status)
 }
 
@@ -349,10 +357,10 @@ pub async fn delete_account(password: &str) -> Result<(), String> {
   Ok(())
 }
 
-// ───────────────────────── 作为同步通道 ─────────────────────────
+// ───────────────────────── 手动同步 ─────────────────────────
 
 /// 从云端取回备份 JSON，**不动本机数据**。错误已是带前缀的界面文案。
-pub async fn fetch(timeout_ms: i32) -> Result<Fetched, String> {
+async fn fetch(timeout_ms: i32) -> Result<Fetched, String> {
   let fail = |detail: String| tf("tools.account-pull-failed", &[&detail]);
   let (status, body) = call_within("GET", "/backup", None, true, Precondition::None, timeout_ms)
     .await
@@ -365,32 +373,49 @@ pub async fn fetch(timeout_ms: i32) -> Result<Fetched, String> {
   }
 }
 
-/// 云端内容的指纹；不是 `{ key: value }` 形态的备份时给出用户能看懂的错误。
-pub fn fingerprint_of(body: &str) -> Result<Fingerprint, String> {
-  fingerprint_json(body).ok_or_else(|| {
-    tf(
-      "tools.account-pull-failed",
-      &[&t("tools.account-not-a-backup")],
-    )
-  })
+/// 云端内容的清单（按账号通道的范围）；内容不是 `{ key: value }` 的备份时为 `None`。
+fn manifest_of_body(body: &str) -> Option<Manifest> {
+  let map: BTreeMap<String, String> = serde_json::from_str(body).ok()?;
+  Some(manifest_of(&map, include_images()))
 }
 
 /// 手动：从云端恢复到本机（`merge` 为真走合并导入）。
+///
+/// 恢复完把「两边当时都停在云端那一版」记成基线（见 `ham_web_core::delta::base_after_pull`），
+/// 这样恢复之后本机与云端不一样的部分——合并出的结果、本机独有的数据——下一次自动同步会当成
+/// 「本机改了」传上去，而不是被当成「两边都改了」卡住。
 pub async fn pull(merge: bool) -> Result<PullResult, String> {
   let fetched = fetch(TIMEOUT_MS).await?;
-  import_fetched(
+  let remote = match &fetched {
+    Fetched::Data(body) => manifest_of_body(body),
+    Fetched::Empty => None,
+  };
+  let result = import_fetched(
     fetched,
     merge,
     "tools.account-pull-failed",
     "tools.account-not-a-backup",
   )
-  .await
+  .await?;
+  let PullResult::Imported { count, fp, .. } = result else {
+    return Ok(result);
+  };
+  // 恢复之后本机现在是什么样：读不出来（体积超限等）就不给基线，自动同步会当成从没同步过逐个 key 对比。
+  let base = match (remote, crate::util::build_sync_backup(modules()).await) {
+    (Some(remote), Ok(local)) => Some(base_after_pull(
+      &manifest_of(&local, include_images()),
+      &remote,
+    )),
+    _ => None,
+  };
+  Ok(PullResult::Imported { count, fp, base })
 }
 
 /// 准备好、还没发出的一次写入。
 struct Built {
   map: BTreeMap<String, String>,
-  fp: Fingerprint,
+  /// 本机内容的清单：写入成功后据此建立基线。
+  local: Manifest,
 }
 
 async fn build() -> Result<Built, PushError> {
@@ -398,50 +423,43 @@ async fn build() -> Result<Built, PushError> {
   let map = crate::util::build_sync_backup(modules())
     .await
     .map_err(PushError::permanent)?;
-  let fp = fingerprint(&map);
-  Ok(Built { map, fp })
+  let local = manifest_of(&map, include_images());
+  Ok(Built { map, local })
 }
 
-async fn send(built: Built, precondition: Precondition) -> Result<Pushed, PushError> {
-  let Built { map, fp } = built;
+async fn send(built: Built) -> Result<Pushed, PushError> {
+  let Built { map, local } = built;
   let count = map.len();
   let json = crate::util::serialize_backup(&map).map_err(PushError::permanent)?;
   // 与自定义远端同理：上传期间不要让 Rust 侧的键值表与 JSON 陪着 JS 侧那份。
   drop(map);
-  let (status, body) = call("PUT", "/backup", Some(json), true, precondition)
+  let (status, body) = call("PUT", "/backup", Some(json), true, Precondition::None)
     .await
     .map_err(|e| PushError::from_account(&e))?;
-  if is_success(status) {
-    Ok(Pushed { count, fp })
-  } else {
-    Err(PushError::from_account(&failure(status, &body)))
+  if !is_success(status) {
+    return Err(PushError::from_account(&failure(status, &body)));
   }
-}
-
-/// 按账号通道的选项生成同步内容后的本机指纹（不发请求），见 `remote_sync::local_fingerprint`。
-pub async fn local_fingerprint() -> Option<Fingerprint> {
-  crate::util::build_sync_backup(modules())
-    .await
-    .ok()
-    .map(|map| fingerprint(&map))
+  let receipt = serde_json::from_str::<BackupReceipt>(&body).ok();
+  // 基线用服务端回执里的清单：它按服务端规范化之后的内容算，下次取回的就是这份。
+  // 回执读不出来（不会发生）就不给基线，自动同步会逐个 key 对比。
+  let (fp, base) = match receipt {
+    Some(r) => {
+      let remote = r
+        .keys
+        .into_iter()
+        .filter(|(key, _)| ham_web_core::delta::in_scope(key, include_images()))
+        .collect::<Manifest>();
+      (r.info.fingerprint, Some(base_after_push(&local, &remote)))
+    }
+    None => (manifest_fingerprint(&local), None),
+  };
+  Ok(Pushed { count, fp, base })
 }
 
 /// 手动：把本机备份传到云端，一定传、**不设条件**（用户明确要覆盖云端）。
 pub async fn push() -> Result<Pushed, String> {
   let built = build().await.map_err(|e| e.message)?;
-  send(built, Precondition::None).await.map_err(|e| e.message)
-}
-
-/// 自动：本机内容与基线一致就**不发请求**，返回 `Ok(None)`。
-///
-/// 发出时带上条件：云端必须还停在基线上（没有基线则必须还是空的）。另一台设备在这期间
-/// 传过东西，云端就不再等于基线，服务端回 `412`，这里暂停而不是覆盖掉它。
-pub async fn push_if_changed(base: Option<Fingerprint>) -> Result<Option<Pushed>, PushError> {
-  let built = build().await?;
-  if base == Some(built.fp) {
-    return Ok(None);
-  }
-  send(built, Precondition::from_base(base)).await.map(Some)
+  send(built).await.map_err(|e| e.message)
 }
 
 #[cfg(test)]

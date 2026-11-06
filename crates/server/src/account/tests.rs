@@ -4,7 +4,8 @@ use axum::Router;
 use axum::body::Body;
 use axum::http::{HeaderMap, Method, Request, StatusCode};
 use ham_web_core::account::{BackupInfo, SessionInfo};
-use ham_web_core::remote_sync::{Fingerprint, fingerprint};
+use ham_web_core::delta::{manifest_fingerprint, manifest_of};
+use ham_web_core::remote_sync::Fingerprint;
 use tower::ServiceExt;
 
 use super::{AccountConfig, AccountService, CookieSecure};
@@ -98,9 +99,10 @@ fn app() -> Router {
 
 const BACKUP: &str = r#"{"bookmarks":"[1,2]","logbook":"{}"}"#;
 
+/// 前端对同一份备份算的指纹：对 `(key, 摘要)` 的清单求，设备专属的 key 不算。
 fn backup_fp(json: &str) -> Fingerprint {
   let map: std::collections::BTreeMap<String, String> = serde_json::from_str(json).unwrap();
-  fingerprint(&map)
+  manifest_fingerprint(&manifest_of(&map, true))
 }
 
 async fn put(app: &Router, cookie: &str, extra: &[(&str, &str)], body: &str) -> Reply {
@@ -465,7 +467,12 @@ async fn a_backup_round_trips_byte_for_byte_with_the_clients_fingerprint() {
   let info: BackupInfo = serde_json::from_str(&saved.body).unwrap();
   // 服务端算的指纹必须与前端对同一份 map 算的相同：基线与 `If-Match` 都靠它。
   assert_eq!(info.fingerprint, backup_fp(BACKUP));
-  assert_eq!(info.size as usize, BACKUP.len());
+  // 体积是各 key 规范文本的字节数之和（不含 JSON 外壳）。
+  let values: std::collections::BTreeMap<String, String> = serde_json::from_str(BACKUP).unwrap();
+  assert_eq!(
+    info.size as usize,
+    values.values().map(String::len).sum::<usize>()
+  );
 
   let got = get_backup(&app, &cookie).await;
   assert_eq!(got.status, StatusCode::OK);
@@ -509,6 +516,363 @@ async fn a_backup_round_trips_byte_for_byte_with_the_clients_fingerprint() {
 }
 
 #[tokio::test]
+async fn a_canonical_backup_is_stored_in_tables_and_comes_back_whole() {
+  use ham_web_core::exam_history::ExamRecord;
+  use ham_web_core::logbook::{LogEntry, Logbook};
+
+  let svc = AccountService::in_memory(true);
+  let app = svc.clone().router();
+  let cookie = signed_up(&app, "alice").await;
+
+  // 前端写出来的就是各个核心类型的序列化：值都是这种「规范字节」，才会进专表。
+  let logbook = serde_json::to_string(&Logbook {
+    entries: (1..=3)
+      .map(|id| LogEntry {
+        id,
+        date: "2026-01-02".into(),
+        time: "03:04".into(),
+        freq: "7.074".into(),
+        mode: "FT8".into(),
+        callsign: format!("JA{id}AAA"),
+        ..LogEntry::default()
+      })
+      .collect(),
+  })
+  .unwrap();
+  let exams = serde_json::to_string(&[ExamRecord {
+    bank: "A".into(),
+    correct: 31,
+    total: 40,
+    timestamp: 1_700_000_000_000,
+    weak: false,
+  }])
+  .unwrap();
+  let sent: std::collections::BTreeMap<String, String> = [
+    ("logbook", logbook.as_str()),
+    ("exam-history", exams.as_str()),
+    ("bookmarks", r#"["A-1","B-2"]"#),
+    ("theme", "dark"),
+    ("practice:2025-10:A", r#"{"index":5}"#),
+  ]
+  .into_iter()
+  .map(|(k, v)| (k.to_owned(), v.to_owned()))
+  .collect();
+  let body = serde_json::to_string(&sent).unwrap();
+
+  let saved = put(&app, &cookie, &[], &body).await;
+  assert_eq!(saved.status, StatusCode::OK, "{}", saved.body);
+  let info: BackupInfo = serde_json::from_str(&saved.body).unwrap();
+  // 指纹仍是前端那套口径（先去掉设备专属的 `theme` 再求指纹）：拆表没有改变它。
+  let mut as_client_builds_it = sent.clone();
+  as_client_builds_it.remove("theme");
+  assert_eq!(
+    info.fingerprint,
+    manifest_fingerprint(&manifest_of(&as_client_builds_it, true))
+  );
+
+  // 数据确实在各张表里，而不是一整份 JSON。
+  let counts: Vec<i64> = svc
+    .inner
+    .as_ref()
+    .unwrap()
+    .store
+    .with(|c| {
+      ["qsos", "exam_results", "bookmarks", "user_kv"]
+        .into_iter()
+        .map(|t| c.query_row(&format!("SELECT COUNT(*) FROM {t}"), [], |r| r.get(0)))
+        .collect()
+    })
+    .unwrap();
+  assert_eq!(counts, [3, 1, 2, 5]);
+
+  // 取回来：语义上与上传的完全一致，ETag 与上传时返回的指纹一致。
+  let got = get_backup(&app, &cookie).await;
+  assert_eq!(got.status, StatusCode::OK);
+  let back: std::collections::BTreeMap<String, String> = serde_json::from_str(&got.body).unwrap();
+  assert_eq!(back, sent);
+  assert_eq!(
+    got.headers["etag"].to_str().unwrap(),
+    format!("\"{}\"", info.fingerprint.get())
+  );
+
+  // 再传一份更小的：库里恰好等于它，没了的 key 与行都被清掉。
+  let smaller = r#"{"bookmarks":"[\"A-1\"]"}"#;
+  let cond = info.fingerprint.get().to_string();
+  let r = put(&app, &cookie, &[("if-match", cond.as_str())], smaller).await;
+  assert_eq!(r.status, StatusCode::OK, "{}", r.body);
+  let back = get_backup(&app, &cookie).await;
+  assert_eq!(
+    serde_json::from_str::<std::collections::BTreeMap<String, String>>(&back.body).unwrap(),
+    [("bookmarks".to_owned(), r#"["A-1"]"#.to_owned())].into()
+  );
+}
+
+/// 应用「导出备份」写出的那种文件：整个 localStorage（含设备专属的主题、接口缓存）、
+/// IndexedDB 里的日志与 QSL 影像、各类进度。用核心类型生成，与前端写出的字节一致。
+fn exported_backup_file() -> std::collections::BTreeMap<String, String> {
+  use ham_web_core::bank::Bank;
+  use ham_web_core::exam_history::ExamRecord;
+  use ham_web_core::logbook::{LogEntry, Logbook};
+  use ham_web_core::mistake_book::{MistakeBook, MistakeRecord, StudyStats};
+  use ham_web_core::question::{Codes, QuestionItem, QuestionOption, QuestionType};
+  use ham_web_core::station::StationBook;
+
+  let question = QuestionItem {
+    id: Some("A-1".into()),
+    codes: Codes {
+      j: Some("J1".into()),
+      p: Some("1.1".into()),
+    },
+    question: "业余无线电台的呼号由谁分配？".into(),
+    options: vec![QuestionOption {
+      key: "A".into(),
+      text: "无线电管理机构".into(),
+    }],
+    answer_keys: vec!["A".into()],
+    kind: QuestionType::Single,
+    pages: None,
+    image_url: None,
+    explanation: None,
+  };
+  let mistakes = MistakeBook {
+    records: vec![MistakeRecord {
+      key: "0123456789abcdef".into(),
+      question,
+      my_answer: vec!["B".into()],
+      wrong_count: 2,
+      streak: 1,
+      last_wrong_ms: 1_700_000_000_000,
+      due_ms: 1_700_086_400_000,
+      banks: [Bank::A].into(),
+      ease: 2.3,
+      interval_days: 1.0,
+      last_review_ms: 1_700_000_000_000,
+      cause: Some("memory".into()),
+    }],
+  };
+  let logbook = Logbook {
+    entries: (1..=50)
+      .map(|id| LogEntry {
+        id,
+        station_id: 1,
+        date: "2026-03-04".into(),
+        time: "12:30".into(),
+        freq: "14.074".into(),
+        mode: "FT8".into(),
+        callsign: format!("BG{id}ABC"),
+        remark: "含中文与 \"引号\"".into(),
+        ..LogEntry::default()
+      })
+      .collect(),
+  };
+  [
+    ("logbook", json(&logbook)),
+    ("station-book", json(&StationBook::default())),
+    ("mistake-book", json(&mistakes)),
+    ("study-stats", json(&StudyStats::default())),
+    (
+      "exam-history",
+      json(&vec![ExamRecord {
+        bank: "A".into(),
+        correct: 33,
+        total: 40,
+        timestamp: 1_700_000_000_000,
+        weak: false,
+      }]),
+    ),
+    ("bookmarks", r#"["A-1","A-7"]"#.to_owned()),
+    ("qsl-image-index", "[1]".to_owned()),
+    (
+      "qsl-image:1",
+      format!("data:image/jpeg;base64,{}", "QUJD".repeat(50_000)),
+    ),
+    (
+      "practice:2025-10:A",
+      r#"{"index":12,"answers":[]}"#.to_owned(),
+    ),
+    ("practice:lastMode", "random".to_owned()),
+    (
+      "learning-plan",
+      json(&ham_web_core::study_plan::StudyPlan {
+        target_date: "2026-12-01".into(),
+        bank: Some(Bank::A),
+        reminder_time: "20:00".into(),
+      }),
+    ),
+    // 设备专属 key：手动导出会带上，同步内容里没有，但备份文件里有，必须照单全收。
+    ("theme", "dark".to_owned()),
+    ("ui:shortcutsHelpSeen:practice", "1".to_owned()),
+    ("api-cache:/api/solar", r#"{"t":1}"#.to_owned()),
+    // 损坏 / 非 JSON 的值也是用户数据的一部分，不能让整份备份导入失败。
+    ("nec-designs-corrupt", "{半截".to_owned()),
+    // 页面自己的小文档（类型在 core）、工具与器材、NEC 存档、错题暂存。
+    (
+      "countdowns",
+      json(&ham_web_core::countdown::CountdownList {
+        events: vec![ham_web_core::countdown::CountdownEvent {
+          id: 1,
+          title: "A 类考试".into(),
+          target_ms: 1_800_000_000_000,
+        }],
+      }),
+    ),
+    (
+      "daily-checkin",
+      json(&ham_web_core::checkin::CheckinState {
+        last_date: "20261105".into(),
+        streak: 3,
+      }),
+    ),
+    (
+      "morse-stats",
+      json(&ham_web_core::morse_store::MorseStats {
+        correct: 5,
+        mistakes: [("K".to_owned(), 2)].into(),
+        daily: [("2026-11-04".to_owned(), (3, 1))].into(),
+        ..Default::default()
+      }),
+    ),
+    (
+      "morse-trainer",
+      json(&ham_web_core::morse_store::TrainerSettings::default()),
+    ),
+    (
+      "listen-settings",
+      json(&ham_web_core::listen::Settings::default()),
+    ),
+    (
+      "contest-session",
+      json(&ham_web_core::contest::ContestSession::starting(
+        "2026-11-05 08:00".into(),
+      )),
+    ),
+    (
+      "grid-map-filters",
+      json(&ham_web_core::grid_filter::GridFilters::default()),
+    ),
+    (
+      "station-info",
+      json(&ham_web_core::logbook::StationInfo::default()),
+    ),
+    (
+      "diy-progress",
+      r#"{"天线分析仪":{"done":true,"bought":["外壳"]}}"#.to_owned(),
+    ),
+    ("exam:wrong:A", "[]".to_owned()),
+  ]
+  .into_iter()
+  .map(|(k, v)| (k.to_owned(), v))
+  .collect()
+}
+
+fn json<T: serde::Serialize>(value: &T) -> String {
+  serde_json::to_string(value).unwrap()
+}
+
+#[tokio::test]
+async fn an_exported_backup_file_imports_into_the_tables_and_reads_back_identically() {
+  let svc = AccountService::in_memory(true);
+  let app = svc.clone().router();
+  let cookie = signed_up(&app, "alice").await;
+  let file = exported_backup_file();
+  let body = serde_json::to_string(&file).unwrap();
+
+  let r = put(&app, &cookie, &[], &body).await;
+  assert_eq!(r.status, StatusCode::OK, "{}", r.body);
+
+  let count = |table: &str| -> i64 {
+    svc
+      .inner
+      .as_ref()
+      .unwrap()
+      .store
+      .with(|c| c.query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |r| r.get(0)))
+      .unwrap()
+  };
+  // 核心数据进了专表……
+  assert_eq!(count("qsos"), 50);
+  assert_eq!(count("station_profiles"), 1);
+  assert_eq!(count("mistakes"), 1);
+  assert_eq!(count("exam_results"), 1);
+  assert_eq!(count("bookmarks"), 2);
+  assert_eq!(count("countdown_events"), 1);
+  assert_eq!(count("morse_mistakes"), 1);
+  assert_eq!(count("diy_bought"), 1);
+  assert_eq!(count("station_info"), 1);
+  // ……每个 key（含设备专属的、损坏的、QSL 影像）在目录里恰好一行。
+  assert_eq!(count("user_kv"), file.len() as i64);
+
+  // 取回的就是导入的那份，一个 key 不少、一个字节不变。
+  let got = get_backup(&app, &cookie).await;
+  assert_eq!(got.status, StatusCode::OK);
+  let back: std::collections::BTreeMap<String, String> = serde_json::from_str(&got.body).unwrap();
+  assert_eq!(back, file);
+
+  // 导入同一份文件两次是幂等的（用户重复点导入、两台设备各导一遍）。
+  let again = put(&app, &cookie, &[], &body).await;
+  assert_eq!(again.status, StatusCode::OK);
+  assert_eq!(count("qsos"), 50);
+  assert_eq!(count("user_kv"), file.len() as i64);
+}
+
+#[tokio::test]
+async fn a_backup_from_an_older_app_version_is_imported_into_the_tables() {
+  use ham_web_core::logbook::Logbook;
+
+  let svc = AccountService::in_memory(true);
+  let app = svc.clone().router();
+  let cookie = signed_up(&app, "alice").await;
+  // 旧版导出的文件：日志字段缺失、用旧字段名 `sota_ref`、带已不认识的字段；影像缺 padding、写成 `image/jpg`。
+  // 每一样都是合法的备份，必须正确进表——不能因为「和今天的写法不一样」被拒绝，更不能让落库失败。
+  let old_logbook = r#"{"entries":[{"id":1,"date":"2024-05-01","time":"08:00","freq":"7.1","mode":"CW","callsign":"JA1AAA","remark":"","sota_ref":"JA/TK-001","retired_field":true}]}"#;
+  let file: std::collections::BTreeMap<String, String> = [
+    ("logbook", old_logbook),
+    ("bookmarks", r#"["A-1"]"#),
+    ("qsl-image-index", "[1]"),
+    ("qsl-image:1", "data:image/jpg;base64,/9j/4AAQ"),
+  ]
+  .into_iter()
+  .map(|(k, v)| (k.to_owned(), v.to_owned()))
+  .collect();
+
+  let put_res = put(&app, &cookie, &[], &serde_json::to_string(&file).unwrap()).await;
+  assert_eq!(put_res.status, StatusCode::OK, "{}", put_res.body);
+  let info: BackupInfo = serde_json::from_str(&put_res.body).unwrap();
+
+  let store = &svc.inner.as_ref().unwrap().store;
+  let count = |t: &str| -> i64 {
+    store
+      .with(|c| c.query_row(&format!("SELECT COUNT(*) FROM {t}"), [], |r| r.get(0)))
+      .unwrap()
+  };
+  assert_eq!(
+    (count("qsos"), count("qsl_images"), count("bookmarks")),
+    (1, 1, 1)
+  );
+
+  // 取回的是今天的形态：旧字段名认成了新字段，没有的字段补了默认值，影像补齐了 padding、类型规范化。
+  let got = get_backup(&app, &cookie).await;
+  let back: std::collections::BTreeMap<String, String> = serde_json::from_str(&got.body).unwrap();
+  let book: Logbook = serde_json::from_str(&back["logbook"]).unwrap();
+  assert_eq!(book.entries[0].my_sota_ref, "JA/TK-001");
+  assert_eq!(back["qsl-image:1"], "data:image/jpeg;base64,/9j/4AAQ");
+
+  // 前端靠这一条保持基线：`PUT` 响应里的指纹 == 取回内容按前端口径算出的指纹 == `ETag`。
+  assert_eq!(info.fingerprint, backup_fp(&got.body));
+  assert_eq!(
+    got.headers["etag"].to_str().unwrap(),
+    format!("\"{}\"", info.fingerprint.get())
+  );
+
+  // 取回的内容再传一遍（前端拉下来之后下一次自动写入就是这样）：内容和指纹都不变，不会越同步越漂。
+  let again = put(&app, &cookie, &[], &got.body).await;
+  assert_eq!(again.status, StatusCode::OK, "{}", again.body);
+  let again: BackupInfo = serde_json::from_str(&again.body).unwrap();
+  assert_eq!(again.fingerprint, info.fingerprint);
+  assert_eq!(get_backup(&app, &cookie).await.body, got.body);
+}
+
+#[tokio::test]
 async fn only_well_formed_backups_are_stored() {
   let app = app();
   let cookie = signed_up(&app, "alice").await;
@@ -533,6 +897,36 @@ async fn only_well_formed_backups_are_stored() {
   )
   .await;
   assert_eq!(r.code(), "bad_request");
+}
+
+#[tokio::test]
+async fn a_backup_with_an_empty_or_overlong_key_is_refused() {
+  use std::collections::BTreeMap;
+
+  use ham_web_core::account::{SYNC_MAX_KEY_LEN, SYNC_MAX_KEYS};
+
+  let app = app();
+  let cookie = signed_up(&app, "alice").await;
+  let one = |key: String| json(&BTreeMap::from([(key, "x".to_owned())]));
+  // 与增量接口同一个口径：key 不能为空、不能超过上限；库里存不下的名字不先收进来。
+  let too_many: BTreeMap<String, String> = (0..=SYNC_MAX_KEYS)
+    .map(|i| (format!("k{i}"), String::new()))
+    .collect();
+  for (what, body) in [
+    ("空 key", one(String::new())),
+    ("超长 key", one("k".repeat(SYNC_MAX_KEY_LEN + 1))),
+    ("key 太多", json(&too_many)),
+  ] {
+    let r = put(&app, &cookie, &[], &body).await;
+    assert_eq!(
+      (r.status, r.code().as_str()),
+      (StatusCode::BAD_REQUEST, "invalid_backup"),
+      "{what}"
+    );
+  }
+  // 恰好在上限内的收。
+  let edge = one("k".repeat(SYNC_MAX_KEY_LEN));
+  assert_eq!(put(&app, &cookie, &[], &edge).await.status, StatusCode::OK);
 }
 
 #[tokio::test]
@@ -1133,5 +1527,335 @@ fn a_mistyped_value_stops_startup_instead_of_silently_opening_things_up() {
   ] {
     let err = config_from(&[(key, bad)]).expect_err(&format!("{key}={bad}"));
     assert!(err.to_string().contains(key), "错误里要点名变量：{err}");
+  }
+}
+
+// ───────────────────────── 按 key 的增量同步 ─────────────────────────
+
+mod delta {
+  use super::*;
+  use ham_web_core::account::{
+    Change, PullRequest, PullResponse, PushRequest, PushResponse, SyncManifest,
+  };
+  use ham_web_core::delta::Digest;
+
+  async fn manifest(app: &Router, cookie: &str) -> Reply {
+    call(
+      app,
+      Method::GET,
+      "/api/account/sync/manifest",
+      Some(cookie),
+      &[],
+      None,
+    )
+    .await
+  }
+
+  async fn pull(app: &Router, cookie: &str, keys: &[&str]) -> Reply {
+    let body = serde_json::to_string(&PullRequest {
+      keys: keys.iter().map(|k| (*k).to_owned()).collect(),
+    })
+    .unwrap();
+    post(app, "/api/account/sync/pull", Some(cookie), &body).await
+  }
+
+  async fn push(app: &Router, cookie: &str, changes: Vec<Change>) -> Reply {
+    let body = serde_json::to_string(&PushRequest { changes }).unwrap();
+    post(app, "/api/account/sync/push", Some(cookie), &body).await
+  }
+
+  fn set(key: &str, base: Option<&str>, value: &str) -> Change {
+    Change {
+      key: key.to_owned(),
+      base: base.map(Digest::of),
+      value: Some(value.to_owned()),
+    }
+  }
+
+  fn remove(key: &str, base: &str) -> Change {
+    Change {
+      key: key.to_owned(),
+      base: Some(Digest::of(base)),
+      value: None,
+    }
+  }
+
+  fn parse<T: serde::de::DeserializeOwned>(r: &Reply) -> T {
+    serde_json::from_str(&r.body).unwrap_or_else(|e| panic!("{e}: {}", r.body))
+  }
+
+  fn whole(r: &Reply) -> std::collections::BTreeMap<String, String> {
+    serde_json::from_str(&r.body).unwrap()
+  }
+
+  #[tokio::test]
+  async fn an_empty_account_has_no_manifest_and_the_first_push_creates_it() {
+    let app = app();
+    let cookie = signed_up(&app, "alice").await;
+    assert_eq!(manifest(&app, &cookie).await.status, StatusCode::NO_CONTENT);
+
+    let r = push(
+      &app,
+      &cookie,
+      vec![
+        set("bookmarks", None, r#"["A-1"]"#),
+        set("plain", None, "x"),
+      ],
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.body);
+    let pushed: PushResponse = parse(&r);
+    assert_eq!(pushed.keys.len(), 2);
+    assert_eq!(pushed.keys["plain"], Digest::of("x"));
+
+    let m: SyncManifest = parse(&manifest(&app, &cookie).await);
+    assert_eq!(m.keys, pushed.keys);
+    assert_eq!(m.fingerprint, pushed.info.fingerprint);
+    // 清单的指纹就是整份接口的 ETag：两个接口共用同一个版本号。
+    let all = get_backup(&app, &cookie).await;
+    assert_eq!(
+      all.headers["etag"].to_str().unwrap(),
+      format!("\"{}\"", m.fingerprint.get())
+    );
+  }
+
+  #[tokio::test]
+  async fn two_devices_changing_different_keys_both_succeed() {
+    // 这是整套设计要解决的场景：旧协议里设备 B 带着旧基线写，会因为 A 先写过而被 412。
+    let app = app();
+    let cookie = signed_up(&app, "alice").await;
+    let seed = vec![set("bookmarks", None, "[]"), set("practice:x", None, "p0")];
+    push(&app, &cookie, seed).await;
+
+    let a = push(
+      &app,
+      &cookie,
+      vec![set("bookmarks", Some("[]"), r#"["A-1"]"#)],
+    )
+    .await;
+    assert_eq!(a.status, StatusCode::OK, "{}", a.body);
+    // B 没看到 A 的改动（它的 bookmarks 基线还是 "[]"），但它只改 practice:x。
+    let b = push(&app, &cookie, vec![set("practice:x", Some("p0"), "p1")]).await;
+    assert_eq!(b.status, StatusCode::OK, "{}", b.body);
+
+    let map = whole(&get_backup(&app, &cookie).await);
+    assert_eq!(map["bookmarks"], r#"["A-1"]"#);
+    assert_eq!(map["practice:x"], "p1");
+  }
+
+  #[tokio::test]
+  async fn two_devices_changing_the_same_key_conflict_and_the_loser_changes_nothing() {
+    let app = app();
+    let cookie = signed_up(&app, "alice").await;
+    push(
+      &app,
+      &cookie,
+      vec![set("a", None, "0"), set("b", None, "0")],
+    )
+    .await;
+    let first = push(&app, &cookie, vec![set("a", Some("0"), "A")]).await;
+    assert_eq!(first.status, StatusCode::OK);
+
+    // B 以为 a 还是 "0"：被挡下；同一批里它对 b 的改动也一并不生效。
+    let loser = vec![set("b", Some("0"), "B"), set("a", Some("0"), "B")];
+    let r = push(&app, &cookie, loser).await;
+    assert_eq!(
+      (r.status, r.code().as_str()),
+      (StatusCode::PRECONDITION_FAILED, "precondition_failed")
+    );
+    let map = whole(&get_backup(&app, &cookie).await);
+    assert_eq!((map["a"].as_str(), map["b"].as_str()), ("A", "0"));
+  }
+
+  #[tokio::test]
+  async fn pulling_returns_values_and_skips_keys_that_are_gone() {
+    let app = app();
+    let cookie = signed_up(&app, "alice").await;
+    push(
+      &app,
+      &cookie,
+      vec![set("plain", None, "x"), set("gone", None, "y")],
+    )
+    .await;
+    push(&app, &cookie, vec![remove("gone", "y")]).await;
+    let r = pull(&app, &cookie, &["plain", "gone", "never"]).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.body);
+    let got: PullResponse = parse(&r);
+    assert_eq!(got.values.len(), 1);
+    assert_eq!(got.values["plain"], "x");
+  }
+
+  #[tokio::test]
+  async fn a_non_canonical_value_is_stored_canonically_and_listed_by_its_canonical_digest() {
+    let app = app();
+    let cookie = signed_up(&app, "alice").await;
+    let raw = r#"{"answered":3}"#;
+    let r = push(&app, &cookie, vec![set("study-stats", None, raw)]).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.body);
+    let pushed: PushResponse = parse(&r);
+    let got: PullResponse = parse(&pull(&app, &cookie, &["study-stats"]).await);
+    let canonical = &got.values["study-stats"];
+    assert!(canonical.contains("\"categories\""), "取回的是规范形态");
+    // 清单里的摘要是规范文本的，而不是上传原文的：客户端靠基线里的「一对摘要」处理这个差异。
+    assert_eq!(pushed.keys["study-stats"], Digest::of(canonical));
+    assert_ne!(pushed.keys["study-stats"], Digest::of(raw));
+    // 用清单里的摘要当 base 再改：认得上。
+    let again = Change {
+      key: "study-stats".into(),
+      base: Some(pushed.keys["study-stats"]),
+      value: Some(canonical.clone()),
+    };
+    let next = push(&app, &cookie, vec![again]).await;
+    assert_eq!(next.status, StatusCode::OK, "{}", next.body);
+  }
+
+  #[tokio::test]
+  async fn the_account_total_stays_under_the_cap_across_pushes() {
+    let app = app();
+    let cookie = signed_up(&app, "alice").await;
+    let big = "x".repeat(40 * 1024 * 1024);
+    let first = push(&app, &cookie, vec![set("a", None, &big)]).await;
+    assert_eq!(first.status, StatusCode::OK);
+    // 再来一个 40 MiB：单个请求没超，但加起来超过了账号上限。
+    let r = push(&app, &cookie, vec![set("b", None, &big)]).await;
+    assert_eq!(
+      (r.status, r.code().as_str()),
+      (StatusCode::PAYLOAD_TOO_LARGE, "too_large")
+    );
+    let m: SyncManifest = parse(&manifest(&app, &cookie).await);
+    assert_eq!(m.keys.len(), 1, "超限的一批一个都不留");
+  }
+
+  #[tokio::test]
+  async fn malformed_requests_are_refused_before_anything_is_touched() {
+    let app = app();
+    let cookie = signed_up(&app, "alice").await;
+    // 同一个 key 两条改动、空 key、超长 key：都是格式错误。
+    let dup = push(
+      &app,
+      &cookie,
+      vec![set("k", None, "1"), set("k", None, "2")],
+    )
+    .await;
+    assert_eq!(dup.code(), "bad_request");
+    assert_eq!(
+      push(&app, &cookie, vec![set("", None, "1")]).await.code(),
+      "bad_request"
+    );
+    let long = "k".repeat(513);
+    assert_eq!(
+      push(&app, &cookie, vec![set(&long, None, "1")])
+        .await
+        .code(),
+      "bad_request"
+    );
+    let junk = r#"{"changes":[{"key":1}]}"#;
+    let r = post(&app, "/api/account/sync/push", Some(&cookie), junk).await;
+    assert_eq!(r.code(), "bad_request");
+    assert_eq!(pull(&app, &cookie, &["a", "a"]).await.code(), "bad_request");
+    assert_eq!(
+      manifest(&app, &cookie).await.status,
+      StatusCode::NO_CONTENT,
+      "什么都没写进去"
+    );
+  }
+
+  #[tokio::test]
+  async fn an_oversized_pull_body_is_refused_after_authentication() {
+    let app = app();
+    let cookie = signed_up(&app, "alice").await;
+    // 一个 key 名撑到比上限还大：登录之后才读体，读到上限就拒绝。
+    let huge = format!(
+      r#"{{"keys":["{}"]}}"#,
+      "k".repeat(crate::account::PULL_BODY_LIMIT)
+    );
+    let r = post(&app, "/api/account/sync/pull", Some(&cookie), &huge).await;
+    assert_eq!(r.code(), "too_large");
+    // 没登录的同一个请求回 401，不是 413：鉴权在读体之前。
+    let r = call(
+      &app,
+      Method::POST,
+      "/api/account/sync/pull",
+      None,
+      &[JSON],
+      Some(&huge),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::UNAUTHORIZED);
+  }
+
+  #[tokio::test]
+  async fn the_endpoints_need_a_session_json_and_the_right_account() {
+    let app = app();
+    for (method, uri) in [
+      (Method::GET, "/api/account/sync/manifest"),
+      (Method::POST, "/api/account/sync/pull"),
+      (Method::POST, "/api/account/sync/push"),
+    ] {
+      let r = call(&app, method, uri, None, &[JSON], Some("{}")).await;
+      assert_eq!(r.status, StatusCode::UNAUTHORIZED, "{uri}");
+    }
+    let cookie = signed_up(&app, "alice").await;
+    let uri = "/api/account/sync/push";
+    // 不是 JSON：拒绝（第二道 CSRF 防线）。
+    let r = call(&app, Method::POST, uri, Some(&cookie), &[], Some("{}")).await;
+    assert_eq!(r.code(), "bad_request");
+    // 声称是另一个账号：拒绝，不把 A 的改动写进 B 的云端。
+    let claim = [JSON, ("x-account-id", "999")];
+    let r = call(
+      &app,
+      Method::POST,
+      uri,
+      Some(&cookie),
+      &claim,
+      Some(r#"{"changes":[]}"#),
+    )
+    .await;
+    assert_eq!(r.code(), "account_changed");
+  }
+
+  #[tokio::test]
+  async fn accounts_never_see_each_others_keys() {
+    let app = app();
+    let alice = signed_up(&app, "alice").await;
+    let bob = signed_up(&app, "bobby").await;
+    push(&app, &alice, vec![set("secret", None, "alice's")]).await;
+    assert_eq!(manifest(&app, &bob).await.status, StatusCode::NO_CONTENT);
+    assert!(
+      parse::<PullResponse>(&pull(&app, &bob, &["secret"]).await)
+        .values
+        .is_empty()
+    );
+    // bob 以为没有（None）是对的：他写同名 key 互不影响。
+    let r = push(&app, &bob, vec![set("secret", None, "bob's")]).await;
+    assert_eq!(r.status, StatusCode::OK);
+    let a: PullResponse = parse(&pull(&app, &alice, &["secret"]).await);
+    assert_eq!(a.values["secret"], "alice's");
+  }
+
+  #[tokio::test]
+  async fn the_whole_file_and_delta_endpoints_share_one_version_number() {
+    // 手动「上传到云端」走整份接口，自动同步走增量接口：同一份内容，两边看到的版本号必须一样，
+    // 否则自动同步每次都会把手动上传的结果当成「云端被别处改了」。
+    let app = app();
+    let cookie = signed_up(&app, "alice").await;
+    let r = put(&app, &cookie, &[], BACKUP).await;
+    let whole: BackupInfo = serde_json::from_str(&r.body).unwrap();
+    // 整份上传的回执里带着写入之后的清单，客户端据此建立基线，不必再问一次。
+    let receipt: ham_web_core::account::BackupReceipt = serde_json::from_str(&r.body).unwrap();
+    assert_eq!(receipt.info, whole);
+    assert_eq!(
+      receipt.keys.keys().collect::<Vec<_>>(),
+      ["bookmarks", "logbook"]
+    );
+    let m: SyncManifest = parse(&manifest(&app, &cookie).await);
+    assert_eq!(m.fingerprint, whole.fingerprint);
+    // 增量接口把云端改成别的、再改回同样的内容，指纹也回到同一个值。
+    push(&app, &cookie, vec![set("bookmarks", Some("[1,2]"), "[3]")]).await;
+    let back = push(&app, &cookie, vec![set("bookmarks", Some("[3]"), "[1,2]")]).await;
+    assert_eq!(
+      parse::<PushResponse>(&back).info.fingerprint,
+      whole.fingerprint
+    );
   }
 }

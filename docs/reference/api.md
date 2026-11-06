@@ -34,7 +34,8 @@
 
 ### 在线账号（`/api/account/*`）
 
-与前端「自定义远端同步」并列的另一条同步通道：账号、会话与云端备份存在服务器的 SQLite（`ACCOUNT_DB`）里。
+与前端「自定义远端同步」并列的另一条同步通道：账号、会话与云端备份存在服务器的 SQLite（`ACCOUNT_DB`）里，
+云端备份拆进多张表而不是一整份 JSON。
 没设 `ACCOUNT_DB` 时整组接口回 `503 unavailable`（`session` 例外，见下）。设计、表结构与安全取舍见
 [`domain/account-sync.md`](../domain/account-sync.md)；请求 / 响应结构与错误码的单一来源是 `crates/core/src/account.rs`。
 
@@ -46,15 +47,19 @@
 | POST | `/api/account/logout` | 退出，`204`，幂等 |
 | POST | `/api/account/password` | 改口令 `{ current, new }`，`204`；其他设备的会话全部失效 |
 | POST | `/api/account/delete` | 注销 `{ password }`，`204`；账号与云端备份一并删除 |
-| GET | `/api/account/backup` | 云端备份原文（与「导出备份」同格式的 JSON），`200` + `ETag`（内容指纹）；还没有为 `204` |
-| PUT | `/api/account/backup` | 整体替换云端备份，`200` + `{ size, updated_at, fingerprint }`；见下「条件写入」 |
+| GET | `/api/account/backup` | 云端备份（与「导出备份」同格式的 JSON，从各表拼回，内容与上传的逐 key 一致、外层空白与键序可能不同），`200` + `ETag`（云端版本号，即 key 清单的指纹）；还没有为 `204`。给手动「恢复 / 合并」用 |
+| PUT | `/api/account/backup` | 整体替换云端备份，`200` + `{ size, updated_at, fingerprint, keys }`；见下「条件写入」。内容会被**规范化**后存进各张表，规范化之后的总量超过 64 MiB（或展开后的行数超过 40 万）回 `413 too_large`（拒绝时旧备份原样保留）；key 不能为空、不超过 512 字节、至多 20000 个，否则 `400 invalid_backup`。`keys` 是写入之后云端每个 key 的摘要（规范文本的 SHA-256），`fingerprint` 是它们的指纹（与随后 `GET` 的 `ETag` 一致）。给手动「上传」用 |
+| GET | `/api/account/sync/manifest` | 云端全部同步 key 的清单 `{ fingerprint, updated_at, size, keys: { key: 摘要 } }`，读目录、不读内容；还没有备份为 `204` |
+| POST | `/api/account/sync/pull` | 按 key 取值：`{ keys: [..] }` → `{ values: { key: 值 } }`（规范形态；云端已经没有的 key 不在结果里）。至多 20000 个 key，key 不能为空、不能重复、不超过 512 字节，否则 `400`；请求体上限 1 MiB（先鉴权再读体，超出回 `413 too_large`） |
+| POST | `/api/account/sync/push` | 按 key 上传改动：`{ changes: [{ key, base, value }] }`，`base` 是调用方看到的这个 key 在云端的摘要（没有为 `null`），`value` 为 `null` 表示删除；整批在一个事务里，**有任何一条的 `base` 与云端现在的摘要对不上就整批不生效**（`412 precondition_failed`），写之前按净增量预估，账号总量会超过 64 MiB（或写完展开的行数超过 40 万）也整批不生效（`413 too_large`，没有写过任何东西）；这批改动规范化之后合计就超过 64 MiB 的，在解析阶段就停（同样 `413`），不会先把它们全部展开；同一个 key 在一批里出现两次回 `400`；成功 `200` + `{ info, keys }`（`keys` 是写入之后的完整清单） |
 | DELETE | `/api/account/backup` | 清掉云端备份，`204` |
 
 约定：
 
 - **鉴权**：`HttpOnly` + `SameSite=Strict` 的 `ham_session` Cookie（经 `X-Forwarded-Proto: https` 或 `ACCOUNT_COOKIE_SECURE=1` 时加 `Secure`）。**只支持同源**：没有 CORS，不给第三方用（第三方请用 `/api/v1/*`）；
 - **请求体**：JSON 接口一律要求 `Content-Type: application/json`（跨站表单发不出这个类型，是 `SameSite` 之外的第二道 CSRF 防线）；登录 / 注册 / 改口令 / 注销的请求体上限 16 KiB（超出回 `413`）；备份上限 64 MiB（与导入同口径，超出回 `413 too_large`），内容必须是 `{ key: value }` 的字符串表。`PUT /backup` 先鉴权再读体，未登录的请求回 `401`，不会为它读请求体；
-- **条件写入**：`PUT /backup` 带 `If-Match: <指纹>`（云端必须还是这份内容）或 `If-None-Match: *`（云端必须还是空的）时，条件不满足回 `412 precondition_failed`，条件检查与写入在同一个事务里；都不带 = 无条件覆盖。看不懂的条件头回 `400`，不会悄悄变成无条件覆盖；
+- **按 key 增量同步**：自动同步走 `/sync/*` 三个接口，每个 key 一个摘要，只交换有变化的 key，两台设备各改各的 key 互不影响；摘要、清单指纹的定义与客户端的三方对比见 [`docs/domain/account-sync.md`](../domain/account-sync.md) §5。摘要是 64 位小写十六进制的 SHA-256；
+- **条件写入**（整份接口）：`PUT /backup` 带 `If-Match: <指纹>`（云端必须还是这份内容）或 `If-None-Match: *`（云端必须还是空的）时，条件不满足回 `412 precondition_failed`，条件检查与写入在同一个事务里；都不带 = 无条件覆盖。看不懂的条件头回 `400`，不会悄悄变成无条件覆盖；
 - **`X-Account-Id`**：前端在备份请求里带上自己认定的账号 id，与当前会话不一致回 `409 account_changed`（两个标签页登录了不同账号时防串写）；
 - **错误**：`{ "error": { "code", "message" } }`，`code` 有 `unavailable` / `unauthorized` / `bad_credentials` / `invalid_username` / `invalid_password` / `username_taken` / `registration_closed` / `too_many_attempts` / `invalid_backup` / `too_large` / `precondition_failed` / `account_changed` / `bad_request` / `internal`，前端按码翻成三语文案；`message` 只给排查用；
 - **限流**：登录 / 注册每 IP 每 10 分钟 20 次（成败都算）；猜口令**只数失败**，登录 / 改口令 / 注销共用：每个（账号名，来源 IP）每 10 分钟 10 次失败、每个账号名（不分来源）每 10 分钟 100 次失败，口令对了不耗额度；超限 `429 too_many_attempts`；其余沿用 `/api/*` 的每 IP 配额；

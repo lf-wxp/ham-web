@@ -193,6 +193,10 @@ impl DisplayPrefs {
   }
 
   /// 是否现代风格。调用约束同 [`Self::ui_style`]。
+  ///
+  /// `#[track_caller]` 只为排障：dev 构建里误在跟踪上下文之外调用时，Leptos 报的是
+  /// 「读信号的那一行」，加了它才会报到真正的调用点。
+  #[track_caller]
   pub fn is_modern(self) -> bool {
     self.ui_style.get().is_modern()
   }

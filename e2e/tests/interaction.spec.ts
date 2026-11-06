@@ -64,7 +64,7 @@ test("按压有涟漪（控件）且 600ms 后自清理", async ({ page }) => {
   await seed(page, "modern");
   await page.goto("/glossary");
   const chip = page.locator(".md-chip").first();
-  // 入场浮现会把内容整体下移 18px 再上浮（640ms）：没落位就按下，坐标在按下的那一刻已经
+  // 入场浮现会把内容下移再上浮：没落位就按下，坐标在按下的那一刻已经
   // 过期，`pointerdown` 落到旁边元素上 —— 慢机上必现「按了没涟漪」。
   await settleReveal(page);
   // 落点交给 `hover()`：它会等元素稳定、滚动到可点位置，并校验这一点真的命中它。
@@ -83,7 +83,7 @@ test("平板宽度下模块卡是可拖拽轨道：拖动与方向键都能滚�
   await page.setViewportSize({ width: 768, height: 1024 });
   await page.goto("/");
 
-  // 首页的模块甲板同样在入场浮现里（整块下移 18px 再上浮），没落位时量的坐标按下去已经偏了。
+  // 首页的模块甲板同样可能在入场浮现里（下移再上浮），没落位时量的坐标按下去已经偏了。
   await settleReveal(page);
   const rail = page.locator(".md-modules.md-track");
   await expect(rail).toBeVisible();

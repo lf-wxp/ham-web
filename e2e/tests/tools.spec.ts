@@ -6,6 +6,55 @@ function tool(page: import("@playwright/test").Page, id: string) {
   return page.locator(`section#${id}`);
 }
 
+// 60 个计算器分批挂载（`crates/app/src/pages/tools/tool_mount.rs`）：首屏只挂前几个，其余每帧放行一批。
+// 「站内跳进来 → 首帧计数 → 点目录 → 两帧后计数」放在同一次 `evaluate` 里：分批在一两百毫秒内就走完，
+// 跨一次 Playwright 往返就看不到中间态了（整页 `goto` 更不行，加载期间分批早已结束）。
+test("小工具：计算器分批挂载，挂载途中点目录先挂全再跳，最终全部就位", async ({ page }) => {
+  const busy = page.locator('main section[aria-busy="true"]');
+  const sections = page.locator("main section[id]");
+  await page.goto("/countdown");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  const seen = await page.evaluate(async () => {
+    const frame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
+    const countBusy = () => document.querySelectorAll('main section[aria-busy="true"]').length;
+    // 站内导航：路由器拦截的是真实的链接点击，这里放一个临时链接点一下。
+    const a = document.createElement("a");
+    a.href = "/tools";
+    document.body.append(a);
+    a.click();
+    a.remove();
+    for (let i = 0; i < 120 && !document.querySelector("#freq-wavelength input"); i++) await frame();
+    const atFirstFrame = countBusy();
+    const btn = [...document.querySelectorAll<HTMLButtonElement>("aside nav button")].find(
+      (b) => b.textContent?.trim() === "数字模式编码",
+    );
+    if (!btn) return { atFirstFrame, afterJump: -1 };
+    btn.click();
+    await frame();
+    await frame();
+    return { atFirstFrame, afterJump: countBusy() };
+  });
+  // 首帧时确实还有没挂上的：说明是分批的，而不是一口气挂完。
+  expect(seen.atFirstFrame, "首帧时其余计算器应还在排队").toBeGreaterThan(40);
+  expect(seen.afterJump, "侧栏目录里没找到「数字模式编码」").toBeGreaterThanOrEqual(0);
+  // 点目录：先把剩下的全部挂上，再按真实高度滚过去 —— 两帧之内不该还有排队的。
+  expect(seen.afterJump, "点目录后应立刻挂上全部计算器，而不是等分批走完").toBe(0);
+  await expect
+    .poll(() => tool(page, "mode-encoder").evaluate((el) => Math.round(el.getBoundingClientRect().top)))
+    .toBeLessThan(240);
+  expect(await tool(page, "mode-encoder").evaluate((el) => el.getBoundingClientRect().top)).toBeGreaterThanOrEqual(0);
+
+  // 最终：60 节全部有内容，没有遗留的占位。
+  await expect(busy).toHaveCount(0);
+  const total = await sections.count();
+  expect(total, "工具页的计算器节数").toBeGreaterThanOrEqual(60);
+  const empty = await sections.evaluateAll(
+    (els) => els.filter((s) => !s.querySelector("input, select, button, svg, table, canvas, textarea")).map((s) => s.id),
+  );
+  expect(empty, "这些计算器没有挂上主体").toEqual([]);
+});
+
 test("小工具：频率 ↔ 波长双向换算", async ({ page }) => {
   await page.goto("/tools");
   await expect(page.getByRole("heading", { level: 1, name: "小工具" })).toBeVisible();
@@ -392,6 +441,9 @@ for (const [code, name] of [
       await expect(page.locator("section#toroid-winding")).toBeVisible();
       await expect(page.locator("section#intermod")).toBeVisible();
       await expect(page.locator("section#parabolic-dish")).toBeVisible();
+      // 计算器主体是分批挂上的（`tool_mount.rs`）：卡片外壳一开始就可见，主体还没到时带 `aria-busy`。
+      // 不等它们全部就位，量到的只是一排占位块，溢出检查就成了摆设。
+      await expect(page.locator('main section[aria-busy="true"]')).toHaveCount(0);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow, `${width}px`).toBeLessThanOrEqual(1);
     }

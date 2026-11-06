@@ -213,11 +213,13 @@ html[data-ui-style="modern"] .motion-toast {
 }
 
 /* 路由切换时顶栏那条 4px 读条：像素版是金色 / 主色交替的虚线段（逐帧扫过），
-   每次导航都会露一次脸。现代风换成橙→蓝的 2px 渐变细线。 */
+   每次导航都会露一次脸。现代风换成橙→蓝的 2px 渐变细线。
+   时长用 `--md-dur-slow`：读条和新页面同一帧出现，页面已经显示了它还在走，
+   读起来就是「还在加载」。曾经是 520ms，比换页淡入本身还长。 */
 html[data-ui-style="modern"] .route-sweep {
   height: 2px;
   background-image: linear-gradient(90deg, var(--md-orange), var(--md-violet), var(--md-blue));
-  animation-duration: 520ms;
+  animation-duration: var(--md-dur-slow);
   animation-timing-function: var(--md-ease-out);
 }
 

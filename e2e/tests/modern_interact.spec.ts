@@ -79,6 +79,52 @@ test("移动端菜单：dock 打开 → 点条目跳转 → 面板自动收起",
   await expect(page.locator(".md-menu-panel")).toHaveCount(0);
 });
 
+// 目录面板的入口是分块挂载的（打开后每画完一帧补一块）。补齐途中把过滤收窄、再清空，目录必须补回全部入口。
+//
+// 回归：补齐循环在「已放行块数 ≥ 总块数」时就结束；过滤把总块数缩到一块，它随即结束，
+// 清空过滤后总块数变回来却没人再起循环 —— 目录只剩前几块，要关了重开才补全。
+// CPU 降速是为了让「每帧补一块」拖得足够长，过滤才一定落在补齐途中。
+test("移动端菜单：补齐途中收窄过滤再清空，目录补回全部入口", async ({ page }) => {
+  await seed(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const panel = page.locator(".md-menu-panel");
+  const items = page.locator(".md-menu-panel .md-menu-item");
+  const more = page.locator('.md-dock button:has-text("更多")');
+
+  // 基线：不打扰时补齐之后一共有多少入口（数量连续几次不变才算补齐）。
+  await more.click();
+  await expect(panel).toBeVisible();
+  let last = -1;
+  let stable = 0;
+  await expect
+    .poll(
+      async () => {
+        const n = await items.count();
+        stable = n === last ? stable + 1 : 0;
+        last = n;
+        return stable;
+      },
+      { intervals: [150], timeout: 20_000 },
+    )
+    .toBeGreaterThanOrEqual(5);
+  const full = last;
+  expect(full, "入口要多于两块（每块 24 个），才有「补齐途中」可言").toBeGreaterThan(48);
+
+  await page.keyboard.press("Escape");
+  await expect(panel).toHaveCount(0);
+
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 6 });
+  await more.click();
+  const input = page.locator(".md-menu-input");
+  await input.fill("dxcc");
+  await expect(items.first()).toBeVisible();
+  await input.fill("");
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
+  await expect(items).toHaveCount(full);
+});
+
 // 目录搜索框里的「全站搜索」胶囊必须收在 40px 字段的边框之内。
 //
 // 回归：`pointer: coarse` 把 `.md-chip` 抬到 44（触控命中区），但没排除**嵌在字段里**的那颗，

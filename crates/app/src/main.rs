@@ -1,9 +1,12 @@
 //! 业余无线电执照考试模拟：Leptos CSR 前端入口。
 
+mod account_cloud;
 mod account_sync;
 mod achievements;
+mod after_paint;
 mod app;
 mod auto_sync;
+mod backup_apply;
 mod bank_updates;
 mod cn;
 mod components;
@@ -25,6 +28,7 @@ mod morse_settings;
 mod motion;
 mod overlay;
 mod pages;
+mod perf_hud;
 mod photo;
 mod presence;
 mod push;

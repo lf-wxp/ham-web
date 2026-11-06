@@ -657,7 +657,7 @@ async fn collect_backup(
 
 /// 导入一条 QSL 影像：备份是外部输入，key 与值都按本站写出的格式校验，不合格的
 /// 条目跳过（不计入返回的条数）。写入走 [`crate::kv::save_store_only`]。
-async fn import_qsl_image(key: &str, value: &str) -> Result<bool, String> {
+pub(crate) async fn import_qsl_image(key: &str, value: &str) -> Result<bool, String> {
   if qsl_image::entry_id_from_key(key).is_none() || !qsl_image::is_valid_stored_value(value) {
     return Ok(false);
   }

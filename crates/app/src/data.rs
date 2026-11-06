@@ -380,6 +380,8 @@ const SHORT_CACHE_DURATION: i64 = 10 * 1000;
 struct Cache {
   config: Option<Rc<BankConfig>>,
   questions: HashMap<String, Questions>,
+  /// 正在下载 / 解析的题库：同一地址的第二个请求等第一个完成后直接读缓存（见 [`load_url`]）。
+  inflight: HashMap<String, js_sys::Promise>,
   status: HashMap<String, VersionStatus>,
 }
 
@@ -430,10 +432,63 @@ pub async fn resolve_url(version: Option<&str>, bank: Bank) -> String {
   }
 }
 
+/// 拉取并解析一份题库，结果进缓存。
+///
+/// 同一地址同时只拉一次：空闲预热（`bank_updates::prewarm`）还没完成时用户就进了练习页，
+/// 页面不该再下载、再解析一遍（解析在手机上几十到上百毫秒，正好落在用户等新页面的时候）。
+/// 后来者等先来者完成后读缓存；先来者失败了，后来者自己再试一次。
 async fn load_url(url: &str) -> Result<Questions, AppError> {
   if let Some(hit) = CACHE.with_borrow(|c| c.questions.get(url).cloned()) {
     return Ok(hit);
   }
+  if let Some(pending) = CACHE.with_borrow(|c| c.inflight.get(url).cloned()) {
+    let _ = JsFuture::from(pending).await;
+    if let Some(hit) = CACHE.with_borrow(|c| c.questions.get(url).cloned()) {
+      return Ok(hit);
+    }
+  }
+  // 守卫活到这个函数结束（含 `await` 之间被丢弃的情形）：见 [`Inflight`]。
+  let _inflight = Inflight::register(url);
+  fetch_and_parse(url).await
+}
+
+/// 「这个地址正在下载 / 解析」的登记，离开作用域时撤销并唤醒等它的人。
+///
+/// 用 `Drop` 而不是在 `await` 之后手写清理：调用方的 Future 若在 `await` 中途被丢弃（页面卸载、
+/// 上层任务被取消），手写的清理那几行根本不会执行——条目留在表里，后来者等着一个永远不会
+/// resolve 的 `Promise`，这份题库从此打不开。
+struct Inflight {
+  url: String,
+  resolve: Option<js_sys::Function>,
+}
+
+impl Inflight {
+  fn register(url: &str) -> Self {
+    let mut resolve = None;
+    let done = js_sys::Promise::new(&mut |res, _rej| resolve = Some(res));
+    CACHE.with_borrow_mut(|c| c.inflight.insert(url.to_owned(), done));
+    Self {
+      url: url.to_owned(),
+      resolve,
+    }
+  }
+}
+
+impl Drop for Inflight {
+  fn drop(&mut self) {
+    // `try_with_borrow_mut`：线程退出、缓存已销毁时不要在析构里再 panic。
+    let _ = CACHE.try_with(|c| {
+      if let Ok(mut c) = c.try_borrow_mut() {
+        c.inflight.remove(&self.url);
+      }
+    });
+    if let Some(resolve) = self.resolve.take() {
+      let _ = resolve.call0(&wasm_bindgen::JsValue::NULL);
+    }
+  }
+}
+
+async fn fetch_and_parse(url: &str) -> Result<Questions, AppError> {
   let text = fetch_text(url, CacheMode::ForceCache)
     .await
     .map_err(|e| AppError::Network(tf("common.error-load-questions", &[&e.to_string()])))?;
@@ -475,6 +530,47 @@ pub async fn load_bank(
 /// 题库是否可用（存在且非空）。
 pub async fn bank_available(version: Option<&str>, bank: Bank) -> bool {
   load_bank(version, bank, true).await.is_ok()
+}
+
+thread_local! {
+  /// [`all_banks_merged`] 的结果，连同合并时用的三份题库数据。
+  /// 拿着原数据（而不是只记地址）比对：只记地址的话，旧数据释放后新数据可能分到同一个地址，误判为命中。
+  static MERGED: RefCell<Option<(Vec<Option<Questions>>, Questions)>> = const { RefCell::new(None) };
+}
+
+/// 两组题库数据是否是同一批（逐个 `Arc::ptr_eq`）。
+pub(crate) fn same_banks(a: &[Option<Questions>], b: &[Option<Questions>]) -> bool {
+  a.len() == b.len()
+    && a.iter().zip(b).all(|(x, y)| match (x, y) {
+      (Some(x), Some(y)) => Arc::ptr_eq(x, y),
+      (None, None) => true,
+      _ => false,
+    })
+}
+
+/// 默认版本下 A / B / C 三个题库合并成一份（按 A、B、C 顺序；加载失败的题库跳过）。
+///
+/// 题库浏览每次进入都要这份合集：逐题深拷贝约 3500 道题在手机上要几十毫秒，
+/// 题库没变时直接复用上一次的。
+pub async fn all_banks_merged() -> Questions {
+  let mut parts = Vec::with_capacity(Bank::ALL.len());
+  for bank in Bank::ALL {
+    parts.push(load_bank(None, bank, false).await.ok());
+  }
+  if let Some(hit) = MERGED.with_borrow(|m| {
+    m.as_ref()
+      .filter(|(src, _)| same_banks(src, &parts))
+      .map(|(_, qs)| qs.clone())
+  }) {
+    return hit;
+  }
+  let mut merged = Vec::with_capacity(parts.iter().flatten().map(|qs| qs.len()).sum());
+  for qs in parts.iter().flatten() {
+    merged.extend(qs.iter().cloned());
+  }
+  let merged: Questions = Arc::new(merged);
+  MERGED.with_borrow_mut(|m| *m = Some((parts, merged.clone())));
+  merged
 }
 
 /// 在后台把这些题库当前版本（默认版本）的解析并入 `index`。

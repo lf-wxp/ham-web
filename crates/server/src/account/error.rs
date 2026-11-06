@@ -56,6 +56,11 @@ impl From<StoreError> for ApiError {
         Self::new(ErrorCode::RegistrationClosed)
       }
       StoreError::PreconditionFailed => Self::new(ErrorCode::PreconditionFailed),
+      StoreError::TooLarge => Self::new(ErrorCode::TooLarge),
+      StoreError::Inconsistent => {
+        tracing::error!("账户数据库里的云端备份拼不回完整内容");
+        Self::new(ErrorCode::Internal)
+      }
       StoreError::Db(db) => {
         tracing::error!("账户数据库错误：{db}");
         Self::new(ErrorCode::Internal)

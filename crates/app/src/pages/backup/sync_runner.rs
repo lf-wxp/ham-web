@@ -64,8 +64,8 @@ pub(super) fn use_sync_runner(
       let (kind, text) = match action {
         SyncAction::Push => match crate::sync_io::push(channel).await {
           Ok(pushed) => {
-            // 写出的总是完整快照，远端现在就等于本机，可以当自动同步的基线。
-            crate::auto_sync::note_pushed(channel, pushed.fp);
+            // 写出的总是完整快照，对端现在就等于本机，可以当自动同步的基线。
+            crate::auto_sync::note_pushed(channel, pushed.fp, pushed.base);
             (ToastKind::Success, pushed_text(channel, pushed.count))
           }
           Err(e) => (ToastKind::Error, e),
@@ -79,8 +79,8 @@ pub(super) fn use_sync_runner(
           }
           match outcome {
             Ok(PullResult::Empty) => (ToastKind::Info, no_data_text(channel)),
-            Ok(PullResult::Imported { count: n, fp }) => {
-              crate::auto_sync::note_pulled(channel, fp, merge);
+            Ok(PullResult::Imported { count: n, fp, base }) => {
+              crate::auto_sync::note_pulled(channel, fp, base, merge);
               // 与手动导入同一套词条（走语义 key + `tp`，见 `backup_tool.rs` 的同类注释）。
               let msg = if merge {
                 tp("settings.merged-items", n as u32, &[&n.to_string()])

@@ -65,6 +65,8 @@ pub fn App() -> impl IntoView {
         {move || t("shell.skip-to-main-content")}
       </a>
       <UpdateNotices />
+      // 真机测量面板：只在地址带 `?perf=1` 的会话里出现（见 `perf_hud.rs`）。
+      <crate::perf_hud::PerfHud />
       <Navigation />
       <MainContent />
       <RouteTransition />

@@ -178,13 +178,20 @@ localStorage["ui:uiStyle"] = "pixel" | "modern"     ← 默认 pixel（D3：像�
 - **判断标准是「这行代码会不会被重复执行」，不是「想不想订阅」**：`let modern = …`、
   `class=if modern {…}` 这类一次性求值的位置一律用 `_at_mount`；只有真会随信号重跑的闭包
   才用订阅版。误用订阅版不会让界面出错，但 dev 构建会为**每个**这样的调用点刷一条
-  `at crates/app/src/theme.rs:188:19, you access a RwSignal<UiStyle> outside a reactive
-  tracking context` —— 告警里的位置是 getter 本身（`DisplayPrefs::is_modern`），真正的
-  病灶是调用它的那个组件体，顺着调用栈往上找，别改 `theme.rs`。
-- 守卫：`cargo make check-structure` 的「组件体里订阅风格信号」规则会在**函数体顶层
-  （rustfmt 的 2 空格缩进）**出现 `kit::is_modern()` 时直接红（C7.6）。这条规则只看缩进，
-  所以写代码时别把派发藏进组件体里的 `let x = { … }` 块、或自造一个在组件体里调用的
-  包装函数 —— 那两种情况它抓不到，只剩 dev 告警兜着。
+  `At crates/app/src/pages/bestiary/bestiary_page.rs:96:10, you access a RwSignal<UiStyle>
+  outside a reactive tracking context` —— `kit::is_modern` 与 `DisplayPrefs::is_modern` 都带
+  `#[track_caller]`，告警里的位置就是**真正的调用点**，照着改那一行，别改 `theme.rs`。
+- 守卫三处，各管一段（三处都过才叫不会漏）：
+  - `cargo make check-structure`「组件体里订阅风格信号」：**函数体顶层（rustfmt 的 2 空格缩进）**
+    出现 `kit::is_modern()` 直接红（C7.6）—— 只看缩进，判不出「藏进 `let x = { … }` 块」的写法；
+  - 同一守卫的「风格读取闭包被立即调用」：`let f = … || { … kit::is_modern() … };` 之后又出现
+    `f()` 就红 —— `{f()}` 把闭包跑在组件体构造期（没有跟踪上下文），要么写 `{f}` 交给 `view!`
+    渲染，要么把闭包里的读换成 `_at_mount`；
+  - `e2e/tests/smoke.spec.ts` 把 Leptos 的「在跟踪上下文之外读信号」告警当失败 —— 只在 dev
+    构建（`debug_assertions`）下有声，`cargo make e2e` 的 release 口径里空转，见
+    [`docs/engineering/testing.md`](../engineering/testing.md)。
+  仍有一种抓不到：把派发藏进一个在组件体里**通过别的函数**调用的包装函数（读信号那行既不在
+  组件体顶层、也不在登记的闭包里）。
 - 切风格后整页换皮肤靠的是 `app/main_content.rs` 重建整棵路由子树（两个分支的根元素类型不同），
   所以组件体里的构造期派发在切换时会被重新执行一次。页面里的组件必须挂在这棵子树下，
   否则切风格后会停在旧 Kit。

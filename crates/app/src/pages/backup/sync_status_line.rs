@@ -32,6 +32,7 @@ pub(super) fn SyncStatusLine(channel: SyncChannel) -> impl IntoView {
         AutoStatus::PushPaused(e) if account => (tf("tools.account-auto-push-paused", &[&e]), true),
         AutoStatus::PushPaused(e) => (tf("tools.remote-auto-push-paused", &[&e]), true),
         AutoStatus::SignedOut => (t("tools.account-auto-signed-out"), true),
+        AutoStatus::MassDeletion => (t("tools.account-auto-mass-deletion"), true),
       };
       let class = if is_problem { "text-xs text-hp-text" } else { "text-xs" };
       Some(view! { <p role="status" class=class>{text}</p> })

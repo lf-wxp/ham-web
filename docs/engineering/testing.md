@@ -94,6 +94,12 @@ ls target/dev-dist/                                          # 正常应有 data
 
 > 本地逐页调试用 `trunk serve` 方便，但要**先确认资产完整**；跑整批回归或提交前请用 `cargo make e2e`（release 构建 + Playwright 自带服务器，口径与 CI 一致）。
 
+`smoke.spec.ts` 还会把 Leptos 的「在跟踪上下文之外读信号」告警当失败（规则见 [`docs/ui/decisions.md`](../ui/decisions.md) §7）。
+这条告警只在 dev 构建（`debug_assertions`）里发声，`cargo make e2e` 的 release 产物下**恒不出现** ——
+release 全绿不代表这条验过；改了界面派发，请在 `trunk serve` 上跑一遍冒烟。也别把它当成唯一防线：
+它只覆盖「页面默认数据下真的会渲染到那段代码」，结构性误用由 `cargo make check-structure`
+的「组件体里订阅风格信号」「风格读取闭包被立即调用」两条静态规则抓。
+
 ### 写用例的约定（每一条都踩过）
 
 - **别用空洞的断言。** 「页面上没有 X」「这个列表里每一项都满足 Y」在选择器写错或页面没渲染时会**恒为真**。

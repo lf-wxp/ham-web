@@ -101,11 +101,13 @@ pub(super) fn MorseTrainer() -> impl IntoView {
     );
     // 看码模式逐字符高亮（听译/选择模式下不显示代码，无副作用）
     let chars = morse_char_times(&question.code, timing);
+    // 定时器回来时组件可能已经卸载：信号随 Owner 释放，`get_untracked` / `set` 会 panic
+    // 并带崩整个 wasm 实例，所以这里一律用 `try_*`。
     for (i, &(start, _)) in chars.iter().enumerate() {
       set_timeout(
         move || {
-          if play_gen.get_untracked() == seq {
-            read_highlight.set(Some(i));
+          if play_gen.try_get_untracked() == Some(seq) {
+            let _ = read_highlight.try_set(Some(i));
           }
         },
         Duration::from_secs_f64(start),
@@ -114,8 +116,8 @@ pub(super) fn MorseTrainer() -> impl IntoView {
     let total = chars.last().map_or(0.12, |(_, e)| *e);
     set_timeout(
       move || {
-        if play_gen.get_untracked() == seq {
-          read_highlight.set(None);
+        if play_gen.try_get_untracked() == Some(seq) {
+          let _ = read_highlight.try_set(None);
         }
       },
       Duration::from_secs_f64(total.max(0.12)),
@@ -123,8 +125,8 @@ pub(super) fn MorseTrainer() -> impl IntoView {
     playing.set(true);
     set_timeout(
       move || {
-        if play_gen.get_untracked() == seq {
-          playing.set(false);
+        if play_gen.try_get_untracked() == Some(seq) {
+          let _ = playing.try_set(false);
         }
       },
       Duration::from_secs_f64(dur.max(0.12)),

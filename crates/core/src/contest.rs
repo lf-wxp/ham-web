@@ -4,6 +4,8 @@
 
 use std::collections::HashSet;
 
+use serde::{Deserialize, Serialize};
+
 use crate::dxcc::{Entity, lookup};
 use crate::logbook::LogEntry;
 use crate::study_plan::{day_number, format_day};
@@ -245,6 +247,81 @@ pub fn session_contains(
     && (station_id == 0 || stations.of_entry(e).id == station_id)
     && stamp.as_str() >= start
     && (end.is_empty() || stamp.as_str() < end)
+}
+
+/// 当前竞赛场次（`localStorage` 的 `contest-session`）。
+///
+/// 放在 core 是因为账号同步的服务端要把它存进数据库表，前后端必须是同一份定义。
+/// 没有 `Default`：新场次的开始时间要读时钟，core 不读时钟，由页面用 [`ContestSession::starting`] 构造。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ContestSession {
+  pub contest_id: String,
+  /// 本场开始时间（UTC，`YYYY-MM-DD HH:MM`），之前的同名竞赛通联不计入。
+  pub start: String,
+  /// 导入快照的结束上界（不含）；空值兼容未限定结束时间的旧场次。
+  #[serde(default)]
+  pub end: String,
+  #[serde(default)]
+  pub station_id: u64,
+  /// 我发出的固定交换（CQ 分区 / 功率），序号类交换自动递增。
+  pub my_exch: String,
+  pub freq: String,
+  pub mode: String,
+  #[serde(default)]
+  pub power: String,
+  /// 赛前目标 QSO 数；0 = 未设。
+  #[serde(default)]
+  pub target_qsos: u32,
+  /// 计划比赛时长（分钟）；0 = 未设。
+  #[serde(default)]
+  pub planned_minutes: u32,
+}
+
+impl ContestSession {
+  /// 新场次：第一个竞赛、从 `start` 开始，其余取默认。
+  #[must_use]
+  pub fn starting(start: String) -> Self {
+    Self {
+      contest_id: CONTESTS[0].id.to_owned(),
+      start,
+      end: String::new(),
+      station_id: 0,
+      my_exch: String::new(),
+      freq: "14.025".to_owned(),
+      mode: "CW".to_owned(),
+      power: "LOW".to_owned(),
+      target_qsos: 0,
+      planned_minutes: 0,
+    }
+  }
+
+  /// 竞赛定义；id 认不出来时回落到第一个。
+  #[must_use]
+  pub fn def(&self) -> &'static ContestDef {
+    contest(&self.contest_id).unwrap_or(&CONTESTS[0])
+  }
+
+  /// 竞赛限定了模式就用它，否则用场次里填的。
+  #[must_use]
+  pub fn mode(&self) -> String {
+    match self.def().mode {
+      Some(m) => m.to_owned(),
+      None => self.mode.clone(),
+    }
+  }
+
+  /// 这条通联是否属于本场。
+  #[must_use]
+  pub fn includes(&self, e: &LogEntry, stations: &crate::station::StationBook) -> bool {
+    session_contains(
+      e,
+      &self.contest_id,
+      self.station_id,
+      stations,
+      &self.start,
+      &self.end,
+    )
+  }
 }
 
 /// 下一发送序号：迁移来的部分日志未必从 001 开始。
@@ -915,5 +992,28 @@ mod tests {
     assert_eq!(cabrillo_date(" 2026-10-31 "), "2026-10-31");
     // 解析不出时原样保留（宁可留着怪写法，也不要凭空改记录）。
     assert_eq!(cabrillo_date("?"), "?");
+  }
+
+  #[test]
+  fn a_session_keeps_its_stored_shape_and_falls_back_to_the_first_contest() {
+    let mut s = ContestSession::starting("2026-11-05 08:00".into());
+    let json = r#"{"contest_id":"CQ-WW-CW","start":"2026-11-05 08:00","end":"","station_id":0,"my_exch":"","freq":"14.025","mode":"CW","power":"LOW","target_qsos":0,"planned_minutes":0}"#;
+    assert_eq!(s.contest_id, CONTESTS[0].id);
+    // 默认竞赛不一定叫这个名字：只钉字段顺序与取值，id 用实际的。
+    let json = json.replace("CQ-WW-CW", CONTESTS[0].id);
+    assert_eq!(serde_json::to_string(&s).unwrap(), json);
+    assert_eq!(serde_json::from_str::<ContestSession>(&json).unwrap(), s);
+    // 旧存档缺的字段读成默认值。
+    let old: ContestSession = serde_json::from_str(
+      r#"{"contest_id":"x","start":"s","my_exch":"","freq":"7","mode":"SSB"}"#,
+    )
+    .unwrap();
+    assert_eq!(
+      (old.end.as_str(), old.station_id, old.target_qsos),
+      ("", 0, 0)
+    );
+    // 认不出的竞赛 id 回落到第一个，不 panic。
+    s.contest_id = "no-such-contest".into();
+    assert_eq!(s.def().id, CONTESTS[0].id);
   }
 }

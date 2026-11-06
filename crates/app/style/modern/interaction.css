@@ -16,43 +16,42 @@
    ============================================================ */
 
 /* ---------- 1) 换页方向 ----------
-   前进（层级变深）自下升起、后退自上落回、平级只交叉淡入。
+   前进（层级变深）：页内内容块自下浮入（`[data-reveal]` 的默认位移）；
+   后退：自上落回，更快；平级：只淡入、内容块不位移。
+
+   **整页（`#route-content`）永远只淡入**：给它加位移 / 缩放会让浏览器把整张页面提升成合成层并整页光栅化，
+   iOS Safari 上点一下底部栏就多出 150–250ms（见 `kit.css`「路由切换」一节的实测）。
+   方向感只落在页内浮现项上 —— 只有滚进视口的块才播（首屏内容不重播，见 `kit.css` 第 1 节），代价是固定的。
+   动画名统一用 `kit.css` 的 `md-route-enter`，这里只按方向改时长。
+
+   时长只用 token，且都很短（前进 `--md-dur`，后退 / 平级 `--md-dur-fast`）：页面本身要同步渲染，
+   手机上已经要等几百毫秒，换页动画再长就是在这段等待之后再让人等一次。
+
    必须写在 `@layer` 之外：`kit.css` 的 `.motion-page` 是无层级声明，
-   层内的规则压不住它（无层级 > 任何 @layer）。
-   位移 12px 是刻意的小：换页动画是「方向提示」，不是转场特效。 */
-html[data-ui-style="modern"] #route-content.motion-page[data-nav-dir="forward"] {
-  animation-name: md-route-forward;
-}
-
-html[data-ui-style="modern"] #route-content.motion-page[data-nav-dir="back"] {
-  animation-name: md-route-back;
-  animation-duration: 300ms;
-}
-
+   层内的规则压不住它（无层级 > 任何 @layer）。 */
+html[data-ui-style="modern"] #route-content.motion-page[data-nav-dir="back"],
 html[data-ui-style="modern"] #route-content.motion-page[data-nav-dir="lateral"] {
-  animation-name: md-route-lateral;
-  animation-duration: 240ms;
+  animation-duration: var(--md-dur-fast);
 }
 
-@keyframes md-route-forward {
-  from {
-    opacity: 0;
-    translate: 0 14px;
-  }
+/* 浮现项的初始位移按方向换：与 `[data-reveal]` 同一个属性（`transform`），
+   所以这里写 `transform` 而不是 `translate`，否则两条会叠加。`:not([data-reveal="in"])` 保证
+   只改「还没进场」的那一态，进场后的 `transform: none` 不受影响。
+
+   **`.js-motion` 要写在 `html` 上**（`html[…].js-motion`），不是 `html[…] .js-motion`：
+   这个类由 `motion::set_motion_ready` 挂在 `<html>` 自己身上，写成后代选择器永远匹配不到。
+   减少动态效果 / 像素动效关闭时 `motion.css` 的 `!important` 会把 `transform` 压回 `none`，
+   这里不需要再单独降级。 */
+html[data-ui-style="modern"].js-motion
+  #route-content[data-nav-dir="back"]
+  [data-reveal]:not([data-reveal="in"]) {
+  transform: translate3d(0, -10px, 0);
 }
 
-@keyframes md-route-back {
-  from {
-    opacity: 0;
-    translate: 0 -10px;
-  }
-}
-
-@keyframes md-route-lateral {
-  from {
-    opacity: 0;
-    scale: 0.995;
-  }
+html[data-ui-style="modern"].js-motion
+  #route-content[data-nav-dir="lateral"]
+  [data-reveal]:not([data-reveal="in"]) {
+  transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -170,9 +169,11 @@ html[data-ui-style="modern"] #route-content.motion-page[data-nav-dir="lateral"] 
     }
   }
 
-  /* 甲板只在 640–900 出现：手机（<640）上横向轨道会把 2/3 的入口藏起来，
-     首页的职责是「尽快找到入口」，那里必须回退成纵向列表。 */
-  @media (min-width: 640px) and (max-width: 900px) {
+  /* 甲板只在 [640, 900) 出现：手机（<640）上横向轨道会把 2/3 的入口藏起来，
+     首页的职责是「尽快找到入口」，那里必须回退成纵向列表。
+     上界用范围语法 `width < 900px`：上面「≥900 是桌面」那一档已经含了 900 本身，
+     写成 `max-width: 900px` 会让恰好 900px 同时命中两档（甲板的 flex 叠上桌面的 `overflow: visible`）。 */
+  @media (min-width: 640px) and (width < 900px) {
     .md-modules.md-track {
       display: flex;
       gap: var(--md-space-3);

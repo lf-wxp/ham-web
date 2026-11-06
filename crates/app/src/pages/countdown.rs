@@ -4,8 +4,8 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 use std::time::Duration;
 
+use ham_web_core::countdown::{CountdownEvent, CountdownList};
 use leptos::prelude::*;
-use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsValue;
 
 use crate::components::common::{EmptyState, PageContainer, PageHeader};
@@ -14,20 +14,6 @@ use crate::icons::IconKind;
 use crate::ui::{Button, DatePicker, Input, Size, TimePicker, Variant};
 use crate::util::now_ms;
 use crate::util::set_title;
-
-/// 一个倒计时事件。
-#[derive(Serialize, Deserialize, Clone)]
-struct CountdownEvent {
-  id: u64,
-  title: String,
-  /// 目标时间（毫秒时间戳）。
-  target_ms: i64,
-}
-
-#[derive(Serialize, Deserialize, Clone, Default)]
-struct CountdownList {
-  events: Vec<CountdownEvent>,
-}
 
 const KEY: &str = "countdowns";
 

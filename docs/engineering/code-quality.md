@@ -90,7 +90,7 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 | 静态检查 | clippy `-D warnings`（原生 + wasm 前端，含 12 个 worker） | `cargo make clippy` | 有 lint 级缺陷 |
 | 单元测试 | core / app / 各解码 crate | `cargo make test` | 逻辑回归 |
 | 界面规范 | 机械守卫（圆角 / 原生控件 / 类名工厂 / CHIP_ON / 填充色当文字 / 模糊渐变 / 软阴影 / 宽度容器封闭清单 / 现代风圆角阶梯 …，条数以工具输出为准） | `cargo make check-ui` | UI 规范回潮 |
-| 结构守卫 | 一文件一组件 / 页面手写吸顶偏移 / 组件体里订阅风格信号 / 散落 alert() / core 碰浏览器 API / crate 反向依赖 / panic 宏 / 知识库译文词典挂载 / 现代风隔离与样式门禁 / 视口断点白名单 / 类名索引 / 阅读正文流体字号 / 弹层三件套 / 文档内链（逐项见下方「机械守卫」小节） | `cargo make check-structure` | 结构/架构规范回潮 |
+| 结构守卫 | 一文件一组件 / 页面手写吸顶偏移 / 组件体里订阅风格信号 / 风格读取闭包被立即调用 / 散落 alert() / core 碰浏览器 API / crate 反向依赖 / panic 宏 / 知识库译文词典挂载 / 现代风隔离与样式门禁 / 视口断点白名单 / 类名索引 / 阅读正文流体字号 / 弹层三件套 / 文档内链（逐项见下方「机械守卫」小节） | `cargo make check-structure` | 结构/架构规范回潮 |
 | 文案 | 重复 key、占位符数量、复数变体、死条目、语言包新鲜度、覆盖率 | `cargo make i18n-check` | 三语不齐或死词条 |
 | 知识库译文 | 中文原文作 key 的漂移检测 | `cargo make knowledge-i18n-check` | 译文静默失效 |
 | 解析表 | 答案一致性、重复注入、同题多版本分叉 | `cargo make explanations-check` | 解析与题库不一致 |
@@ -318,7 +318,7 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 | C7.3 | 5 套配色 × 明暗 | `cargo make pixel-check` + 手动切 10 种组合 | 文字对比度达 WCAG AA | 不达标组合 |
 | C7.4 | 动效降级 | 系统「减少动态效果」+ 设置开关 | 逐帧动画降为静态帧；关掉像素动效不影响可用性 | 降级缺口 |
 | C7.5 | 易读字体开关 | 设置里切换 | 正文切回抗锯齿体，标题仍像素体，布局不溢出 | 布局破裂 |
-| C7.6 | 风格派发不越界订阅 | `cargo make check-structure` | 组件体里用 `kit::is_modern_at_mount()`；`kit::is_modern()` 只在 `view!` 属性闭包 / `move \|\|` 里出现 | 组件体里的订阅 |
+| C7.6 | 风格派发不越界订阅 | `cargo make check-structure` | 组件体里用 `kit::is_modern_at_mount()`；`kit::is_modern()` 只在 `view!` 属性闭包 / `move \|\|` 里出现，且那个闭包要交给 `view!` 渲染（`{f}`），不许在组件体里立即调用（`{f()}`） | 组件体里的订阅 |
 | C7.7 | 现代风样式按风格门禁 | `cargo make check-structure` | 选择器提到 `data-sig` / `pxl-*` / `bg-card` 这类像素风标识时必须带 `html[data-ui-style="modern"]`（`data-sig` 两套风格都会写，少了门禁像素风会播现代动效） | 像素风串味 |
 | C7.8 | 模态焦点 | `cargo make check-structure`（装配）+ `e2e/tests/modern_ui.spec.ts`（行为） | 带 `data-modal-root` 的面板必须调齐 `focus::use_modal_focus`、`overlay::use_scroll_lock`、`focus::use_escape_close`；行为上：打开聚焦面板、Tab 循环、关闭归还焦点、叠层时一次 Esc 只关最上层、卸载时释放滚动锁 | 键盘用户进不去 / 页面滚不动 / Esc 关多层 |
 | C7.9 | 现代风 CSS 守卫 | `cargo make check-structure` | 见「机械守卫」小节：隔离、层外门禁、`!important` 标注、视口断点白名单、类名索引双向一致 | 样式串味 / 断点漂移 / 类名只增不减 |
@@ -676,10 +676,12 @@ grep -rn "TODO\|FIXME\|HACK\|todo!()\|unimplemented!()" crates
 | 退场时长走 token | 退场动画（`*-out`，非无限循环）的时长必须是 `var(--…)`；两套皮肤的 CSS 都扫；例外同行写 `/* dur-ok: 理由 */` | Rust 侧的卸载延迟读同一个 token（`presence::exit_ms`），写死的字面量不会跟着变 |
 | 延迟卸载只有一份 | `crates/app/src` 里只有 `presence.rs` 能定义 `*EXIT_MS` 常量 | 曾在六个文件各写一份 |
 | 状态色字面值 | 红 / 琥珀色相（含橙）的十六进制只能写在 `tokens.css`；例外同行写 `/* color-ok: 理由 */` | 判色相：≤50° 或 ≥340°、饱和 ≥0.35、明度 ≥0.3（深棕墨水字不算）；纯函数，有正反例单测 |
-| 现代风断点 | 只能取 480 / 640 / 720 / 768 / 900 / 1024 | 识别小数、`em` / `rem`（按 16px）、范围语法；生产与单测共用一份实现 |
+| 现代风断点 | 只能取 480 / 640 / 720 / 768 / 900 / 1024；同一值的上下界不能同时含进来（`min-width: 900px` 与 `max-width: 900px` 都含 900，恰好 900px 两档同时命中；上界写 `(width < 900px)` 或范围语法） | 识别小数、`em` / `rem`（按 16px）、范围语法；生产与单测共用一份实现 |
 | 类名索引 | `style/modern/` 下全部 CSS 的 `md-*` 与 `docs/ui/modern-classes.md` **精确双向**一致 | 前缀类名不会被更长的已登记类放过；死条目也报 |
 | 阅读正文 | `--md-text-prose` 必须是 `clamp(…vw…)`、`--md-measure` 必须是 `em`、`.md-article-page` 必须落这两个 token，且文档 §2.3 的 clamp 值与 CSS 逐字一致 | 字号改回固定档、measure 换成 `px` / `ch` 时页面照常能看，只有这里对不上（规矩见 `docs/ui/modern.md` §2.3） |
 | 弹层三件套 | 带 `data-modal-root` 的面板调齐 focus / 滚动锁 / Esc（C7.8） | |
+| 风格读取闭包被立即调用 | `let f = … \|\| { … kit::is_modern() … };` 之后又出现 `f()` 即违规（C7.6 的第二半） | 读信号那行确实在闭包里，缩进规则看不见；按**调用点**判，语句范围靠 `{}` `()` `[]` 配对，字符串里有 `;` 时漏报 |
+| e2e 的 dev 告警断言 | `smoke.spec.ts` 把所有路由上 Leptos 的「在跟踪上下文之外读信号」告警当失败 | 只在 dev 构建发声，`cargo make e2e`（release）里空转，见 [`docs/engineering/testing.md`](testing.md) |
 | 知识库译文词典挂载 | 用了 `kt_tracked` / `core_text_tracked` 的页面挂了 `use_knowledge_i18n`（C3.5） | |
 | 文档内链 | 相对链接指向的文件存在；`docs/xxx.md §N` 引用的小节在目标文件里真有 | 只证明「这一节存在」，不证明「这一节讲的是你要的」 |
 | 逐行规则 | 吸顶偏移 / 风格开关被绕过 / 组件体订阅风格信号 / `alert()` / core 碰浏览器 API / core 里的色值 / `todo!(…)` `unimplemented!(…)` | 每条规则的扫描根必须存在 |

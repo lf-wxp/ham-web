@@ -8,6 +8,7 @@
 //! - 猜口令的限流**只数失败**（登录 / 改口令 / 注销共用），分「账号名 + 来源 IP」与「账号名」两层
 //!   （额度见 `account/mod.rs`）：口令对了不耗额度，别人也没法靠几次失败就把本人锁在门外。
 
+use std::collections::BTreeMap;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 
@@ -19,16 +20,17 @@ use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use ham_web_core::account::{
   ACCOUNT_ID_HEADER, ChangePassword, ConfirmPassword, Credentials, ErrorCode, PASSWORD_MAX,
-  Precondition, SessionInfo, USERNAME_MAX, UserInfo, validate_password, validate_username,
+  Precondition, PullRequest, PullResponse, PushRequest, SYNC_MAX_KEY_LEN, SYNC_MAX_KEYS,
+  SessionInfo, USERNAME_MAX, UserInfo, validate_password, validate_username,
 };
-use ham_web_core::backup_merge::backup_size_is_supported;
-use ham_web_core::remote_sync::fingerprint_json;
+use ham_web_core::backup_merge::{MAX_BACKUP_BYTES, backup_size_is_supported};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 use super::error::ApiError;
+use super::relational::{Delta, DeltaRefused, Split};
 use super::store::{SessionHit, Store, StoreError, UserRow};
-use super::{AccountService, BODY_LIMIT, CookieSecure, Inner, password, session};
+use super::{AccountService, BODY_LIMIT, CookieSecure, Inner, PULL_BODY_LIMIT, password, session};
 use crate::rate_limit;
 
 type ApiResult<T = Response> = Result<T, ApiError>;
@@ -267,7 +269,11 @@ fn parse_json<T: DeserializeOwned>(headers: &HeaderMap, body: &[u8]) -> ApiResul
 }
 
 fn json<T: Serialize>(status: StatusCode, body: &T) -> Response {
-  let text = serde_json::to_string(body).unwrap_or_else(|_| "null".to_owned());
+  // 序列化失败是程序错误：回 `null` + 200 会让客户端把它当成「空的清单 / 空备份」。
+  let text = match serde_json::to_string(body) {
+    Ok(text) => text,
+    Err(e) => return internal("响应序列化失败", e).into_response(),
+  };
   (status, [(CONTENT_TYPE, "application/json")], text).into_response()
 }
 
@@ -425,10 +431,7 @@ pub async fn change_password(
   let phc = inner.hash(req.new).await?;
   let (id, keep, now) = (auth.user.id, auth.token_hash, now());
   inner
-    .db(move |s| {
-      s.set_password_hash(id, &phc, now)?;
-      s.delete_other_sessions(id, &keep)
-    })
+    .db(move |s| s.set_password_and_drop_sessions(id, &phc, now, &keep))
     .await?;
   Ok(with_renewal(
     StatusCode::NO_CONTENT.into_response(),
@@ -527,18 +530,128 @@ pub async fn put_backup(State(svc): State<AccountService>, req: Request) -> ApiR
     return Err(ApiError::new(ErrorCode::TooLarge));
   }
   // 内容必须是 `{ key: value }` 的字符串表：与导入的校验口径一致，云端不存任何恢复不了的东西。
-  let (body, fingerprint) = blocking(move || {
-    let fp = std::str::from_utf8(&body).ok().and_then(fingerprint_json);
-    (body, fp)
+  // key 的数量与长度同增量接口一个口径（`check_keys`）；规范化会补齐缺省字段，拆出来的内容可能比原文
+  // 大得多，所以边拆边数、超过体积上限立刻停（`from_map_within`），不让一份没超限的请求体撑爆内存。
+  // 拆表（宽松解析核心数据、算规范文本的摘要）也在这里做：库里的写事务只管落盘，
+  // 不替它占着锁做 CPU 活。指纹与体积由库按规范内容算，随响应告诉前端当基线。
+  let split = blocking(move || {
+    let map = serde_json::from_slice::<BTreeMap<String, String>>(&body)
+      .map_err(|_| ErrorCode::InvalidBackup)?;
+    // 解析出键值表之后原始请求体就没用了：别让它陪着规范化出来的内容一起占内存。
+    drop(body);
+    check_keys(map.keys().map(String::as_str)).map_err(|_| ErrorCode::InvalidBackup)?;
+    Split::from_map_within(map, MAX_BACKUP_BYTES as u64).ok_or(ErrorCode::TooLarge)
   })
-  .await?;
-  let fingerprint = fingerprint.ok_or(ApiError::new(ErrorCode::InvalidBackup))?;
+  .await?
+  .map_err(ApiError::new)?;
   let (id, now) = (auth.user.id, now());
-  let info = inner
-    .db(move |s| s.put_backup(id, &body, fingerprint, now, pre))
+  let receipt = inner
+    .db(move |s| s.put_backup(id, &split, now, pre))
     .await?;
   Ok(with_renewal(
-    json(StatusCode::OK, &info),
+    json(StatusCode::OK, &receipt),
+    auth.renewal_cookie(inner, &headers),
+  ))
+}
+
+/// `GET /api/account/sync/manifest`：云端全部同步 key 的清单（key → 摘要）；还没有备份为 `204`。
+///
+/// 读目录而不读内容，几百个 key 也只是几十 KB：页面每次打开、每次自动写入前都会问一次。
+pub async fn sync_manifest(State(svc): State<AccountService>, headers: HeaderMap) -> ApiResult {
+  let inner = svc.inner()?;
+  let auth = authenticate(inner, &headers).await?;
+  let renewal = auth.renewal_cookie(inner, &headers);
+  let id = auth.user.id;
+  let Some(manifest) = inner.db(move |s| s.sync_manifest(id)).await? else {
+    return Ok(with_renewal(
+      StatusCode::NO_CONTENT.into_response(),
+      renewal,
+    ));
+  };
+  Ok(with_renewal(json(StatusCode::OK, &manifest), renewal))
+}
+
+/// `POST /api/account/sync/pull`：取指定 key 的值。云端已经没有的 key 不在结果里。
+///
+/// 先鉴权、再读请求体：用 `Bytes` 提取器的话，体在进处理函数之前就读完了，
+/// 未登录的请求也能让服务端缓冲到 [`PULL_BODY_LIMIT`]。
+pub async fn sync_pull(State(svc): State<AccountService>, req: Request) -> ApiResult {
+  let inner = svc.inner()?;
+  let (parts, body) = req.into_parts();
+  let headers = parts.headers;
+  let auth = authenticate(inner, &headers).await?;
+  let body = axum::body::to_bytes(body, PULL_BODY_LIMIT)
+    .await
+    .map_err(|_| ApiError::new(ErrorCode::TooLarge))?;
+  let req: PullRequest = parse_json(&headers, &body)?;
+  check_keys(req.keys.iter().map(String::as_str))?;
+  let id = auth.user.id;
+  let values = inner.db(move |s| s.pull_keys(id, &req.keys)).await?;
+  Ok(with_renewal(
+    json(StatusCode::OK, &PullResponse { values }),
+    auth.renewal_cookie(inner, &headers),
+  ))
+}
+
+/// 一次请求里的 key 数量与长度；重复的 key 也拒绝（同一个 key 两条改动没有意义，也说不清谁生效）。
+fn check_keys<'a>(keys: impl ExactSizeIterator<Item = &'a str>) -> ApiResult<()> {
+  if keys.len() > SYNC_MAX_KEYS {
+    return Err(ApiError::new(ErrorCode::BadRequest));
+  }
+  let mut seen = std::collections::HashSet::new();
+  for key in keys {
+    if key.is_empty() || key.len() > SYNC_MAX_KEY_LEN || !seen.insert(key) {
+      return Err(ApiError::new(ErrorCode::BadRequest));
+    }
+  }
+  Ok(())
+}
+
+/// `POST /api/account/sync/push`：按 key 上传改动。
+///
+/// 每条改动带着本机看到的这个 key 在云端的摘要（`base`），云端现在的摘要与它对不上就整批不生效（`412`）：
+/// 另一台设备在这期间改过这个 key。检查与写入在同一个事务里。没有冲突的 key 互不影响——
+/// 两台设备各改各的 key，谁也不会挡住谁。
+///
+/// 次序同 [`put_backup`]：先鉴权、先校验头，再拿上传名额，**最后**才读请求体。
+pub async fn sync_push(State(svc): State<AccountService>, req: Request) -> ApiResult {
+  let inner = svc.inner()?;
+  let (parts, body) = req.into_parts();
+  let headers = parts.headers;
+  let auth = authenticate(inner, &headers).await?;
+  require_json(&headers)?;
+  let declared = headers
+    .get("content-length")
+    .and_then(|v| v.to_str().ok())
+    .and_then(|v| v.trim().parse::<usize>().ok());
+  if declared.is_some_and(|n| n > BODY_LIMIT) {
+    return Err(ApiError::new(ErrorCode::TooLarge));
+  }
+  let _slot = inner
+    .upload_slots
+    .acquire()
+    .await
+    .map_err(|e| internal("上传名额", e))?;
+  let body = axum::body::to_bytes(body, BODY_LIMIT)
+    .await
+    .map_err(|_| ApiError::new(ErrorCode::TooLarge))?;
+  // 与整份上传同一个口径：边拆边数，规范化之后的新内容超过账号总量上限就停（`from_changes_within`）。
+  // 请求体在解析完之后立刻释放（`body` 随闭包落下），不陪着规范化出来的内容一起占内存。
+  let delta = blocking(move || {
+    let req = serde_json::from_slice::<PushRequest>(&body).map_err(|_| ErrorCode::BadRequest)?;
+    drop(body);
+    check_keys(req.changes.iter().map(|c| c.key.as_str())).map_err(|_| ErrorCode::BadRequest)?;
+    Delta::from_changes_within(req.changes, MAX_BACKUP_BYTES as u64).map_err(|e| match e {
+      DeltaRefused::DuplicateKey => ErrorCode::BadRequest,
+      DeltaRefused::TooLarge => ErrorCode::TooLarge,
+    })
+  })
+  .await?
+  .map_err(ApiError::new)?;
+  let (id, now) = (auth.user.id, now());
+  let res = inner.db(move |s| s.push_delta(id, &delta, now)).await?;
+  Ok(with_renewal(
+    json(StatusCode::OK, &res),
     auth.renewal_cookie(inner, &headers),
   ))
 }

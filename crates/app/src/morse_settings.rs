@@ -1,37 +1,11 @@
 //! 摩尔斯页全局播放设置：音调与音量，持久化到 `localStorage["morse-settings"]`。
 
+pub use ham_web_core::morse_store::MorseSettings;
 use leptos::prelude::*;
-use serde::{Deserialize, Serialize};
 
 use crate::util::storage;
 
 const KEY: &str = "morse-settings";
-
-/// 播放设置。
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub struct MorseSettings {
-  #[serde(default = "default_tone")]
-  pub tone_hz: u32,
-  #[serde(default = "default_volume")]
-  pub volume: f32,
-}
-
-const fn default_tone() -> u32 {
-  700
-}
-
-const fn default_volume() -> f32 {
-  1.0
-}
-
-impl Default for MorseSettings {
-  fn default() -> Self {
-    Self {
-      tone_hz: default_tone(),
-      volume: default_volume(),
-    }
-  }
-}
 
 fn load() -> MorseSettings {
   storage::get_json(KEY).unwrap_or_default()

@@ -1,14 +1,15 @@
 use ham_web_core::glossary::GlossaryEntry;
 use leptos::prelude::*;
 
-use super::{Haystacks, browse_href, category_meta, is_countable};
+use super::hits::HitMap;
+use super::{browse_href, category_meta, is_countable};
 use crate::i18n::{t, tf};
 use crate::ui::Tooltip;
 
 #[component]
 pub(super) fn TermCard(
   entry: &'static GlossaryEntry,
-  haystacks: RwSignal<Option<Haystacks>>,
+  hits: RwSignal<HitMap>,
   on_jump: Callback<String>,
 ) -> impl IntoView {
   let (cat_name, cat_tone) = category_meta(entry.category_key());
@@ -20,20 +21,13 @@ pub(super) fn TermCard(
   let abbr = entry.abbr.as_deref().filter(|a| *a != entry.term);
   let countable = is_countable(&entry.term);
 
-  // 题库出现次数（懒计算，仅对当前渲染的卡片统计）
+  // 题库出现次数：由 `GlossaryView` 在首帧之后分批统计（见 `hits`），这里只读自己那一项。
+  // 用 `Memo`：每统计完一批，60 张卡片里只有刚拿到结果的那几张会重绘底栏。
   let counts = Memo::new(move |_| {
     if !countable {
       return None;
     }
-    let needle = entry.term.to_lowercase();
-    haystacks.with(|h| {
-      h.as_ref().map(|banks| {
-        banks
-          .iter()
-          .map(|(b, texts)| (*b, texts.iter().filter(|t| t.contains(&needle)).count()))
-          .collect::<Vec<_>>()
-      })
-    })
+    hits.with(|m| m.get(entry.term.as_str()).cloned())
   });
 
   let modern = crate::kit::is_modern_at_mount();

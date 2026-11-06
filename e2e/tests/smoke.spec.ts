@@ -20,6 +20,12 @@ const fromThirdParty = (stack: string, base: string) => {
   return urls.length > 0 && urls.every((u) => !u.startsWith(base));
 };
 
+// Leptos 对「在跟踪上下文之外读信号」发的告警：组件体 / 被立即调用的闭包读了订阅版信号，
+// 那块内容不会随界面风格重渲染（规则见 docs/ui/decisions.md §7）。
+// 它只在 dev 构建（`debug_assertions`）里发声：`cargo make e2e` 的 release 产物下这条检查空转，
+// 守的是「trunk serve 起 dev 再跑冒烟」这个场景，见 docs/engineering/testing.md。
+const NON_REACTIVE_READ = "outside a reactive tracking context";
+
 for (const colorScheme of ["light", "dark"] as const) {
 test.describe(`全站冒烟（${colorScheme}）`, () => {
   test.use({ colorScheme });
@@ -34,6 +40,12 @@ test.describe(`全站冒烟（${colorScheme}）`, () => {
         problems.push(`pageerror: ${e.message}`);
       });
       page.on("console", (msg) => {
+        const text = msg.text();
+        if (msg.type() === "warning" && text.includes(NON_REACTIVE_READ)) {
+          // 只留第一行：Leptos 后面跟着一大段修复建议，进断言输出会淹没其它问题。
+          problems.push(`console warning: ${text.split("\n")[0]}`);
+          return;
+        }
         if (msg.type() !== "error") return;
         const url = msg.location().url;
         if (msg.text().startsWith("Failed to load resource") && ignoredRequest(url, base)) return;
@@ -63,7 +75,7 @@ test.describe(`全站冒烟（${colorScheme}）`, () => {
         (v) => `${v.id} (${v.impact}): ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`,
       );
 
-      expect(problems, "运行时错误").toEqual([]);
+      expect(problems, "运行时错误 / 告警").toEqual([]);
       expect(violations, "axe 违规").toEqual([]);
     });
   }

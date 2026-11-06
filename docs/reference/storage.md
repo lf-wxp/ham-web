@@ -64,7 +64,7 @@
 | `exam:last-review` | 上次考后复盘的题目与作答（解析同 `mistake-book`：展示时以题库当前版本为准，存档里的只在题库认不出这道题时兜底） |
 | `remote-sync` | 自定义远端同步配置（获取 / 写入接口地址、写入方法，以及获取、写入**各自一份**请求头，读写可用不同令牌；是否去掉 QSL 影像）；令牌明文只存本机，**不进备份**，见下 |
 | `remote-sync-state` | 自动同步状态：`base`（上次同步成功时远端内容的指纹）、`dirty`（本机有没写出去的改动）；**不进备份** |
-| `account-sync-state` | 在线账号通道的同步状态，形状同 `remote-sync-state`，另有 `owner`（这条基线属于哪个账号 id）；与自定义远端**各存各的**，互不覆盖；**不进备份** |
+| `account-sync-state` | 在线账号通道的同步状态：`owner`（基线属于哪个账号 id）、`dirty`、`keys`（每个 key 上次同步成功时云端与本机各一个摘要，见 `docs/domain/account-sync.md` §5.1）；与自定义远端**各存各的**，互不覆盖；**不进备份** |
 | `account-sync-options` | 在线账号通道的同步选项（是否去掉 QSL 影像）；与 `remote-sync` 里的同名开关各管各的；**不进备份** |
 | `sync-channel` | 自动同步用哪条通道（`custom` / `account` / `off`）；没有这个 key = 没选过，按「配了自定义接口就用它」处理；**不进备份** |
 
@@ -72,7 +72,9 @@
 
 ## 自动同步（两条通道）
 
-同步有两条并列的通道：**自定义远端**（下面这套）与**在线账号**（本站服务器的 SQLite，设计见 [`docs/domain/account-sync.md`](../domain/account-sync.md)）。两者交换同一份备份内容、各存各的状态（`remote-sync-state` / `account-sync-state`），**自动同步一次只跑一条**（`sync-channel` 偏好决定）；下面讲的判定、重试与「设备专属 key」对两条通道一视同仁，接口约定则只属于自定义远端。
+同步有两条并列的通道：**自定义远端**（下面这套）与**在线账号**（本站服务器的 SQLite，设计见 [`docs/domain/account-sync.md`](../domain/account-sync.md)）。两者交换同一份备份内容、各存各的状态（`remote-sync-state` / `account-sync-state`），**自动同步一次只跑一条**（`sync-channel` 偏好决定）；重试策略与「设备专属 key」对两条通道一视同仁。
+下面讲的判定（比整份指纹、不一样就整份覆盖）与接口约定**只属于自定义远端**——对端只有一份整体内容，只能这样；
+在线账号是按 key 增量同步，判定另有一套，见 [`docs/domain/account-sync.md`](../domain/account-sync.md) §5。
 
 ### 自定义远端
 

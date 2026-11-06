@@ -1,7 +1,7 @@
+use ham_web_core::checkin::CheckinState;
 use ham_web_core::{Bank, QuestionItem};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsValue;
 
 use crate::components::common::SectionCard;
@@ -9,13 +9,6 @@ use crate::data;
 use crate::i18n::{t, tp};
 use crate::ui::{ButtonLink, Size, Variant};
 use crate::util::storage;
-
-/// 学习打卡状态。
-#[derive(Serialize, Deserialize, Clone, Default)]
-struct CheckinState {
-  last_date: String,
-  streak: usize,
-}
 
 const CHECKIN_KEY: &str = "daily-checkin";
 
@@ -69,7 +62,8 @@ pub(super) fn DailyQuestion() -> impl IntoView {
       && !qs.is_empty()
     {
       let idx = today_str().parse::<usize>().unwrap_or(1) % qs.len();
-      question.set(qs.get(idx).cloned());
+      // 题库读回来之前用户可能已经离开首页：信号随 Owner 释放，`set` 会 panic。
+      let _ = question.try_set(qs.get(idx).cloned());
     }
   });
 

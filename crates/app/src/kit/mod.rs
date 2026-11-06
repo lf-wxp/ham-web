@@ -14,6 +14,10 @@ use crate::theme::use_display_prefs;
 ///
 /// 只在响应式闭包（`view!` 的属性闭包 / `move ||`）里调用，让那块内容随切换重渲染；
 /// 组件体里的派发请用 [`is_modern_at_mount`]，否则 dev 构建会告警。
+///
+/// `#[track_caller]` 只为排障：Leptos 的告警默认报在 `theme.rs` 里读信号的那一行，
+/// 加了它才会报到真正的调用点。
+#[track_caller]
 pub fn is_modern() -> bool {
   use_display_prefs().is_modern()
 }

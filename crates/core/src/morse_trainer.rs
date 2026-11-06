@@ -2,7 +2,7 @@
 //!
 //! 不依赖浏览器，`rng` 注入以便原生单测。
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
@@ -135,7 +135,7 @@ fn scope_pool(scope: Scope) -> Vec<&'static MorseChar> {
 }
 
 /// 易错字符池（答错 ≥1 次的字符）。
-fn weak_pool(mistakes: &HashMap<String, usize>) -> Vec<&'static MorseChar> {
+fn weak_pool(mistakes: &BTreeMap<String, usize>) -> Vec<&'static MorseChar> {
   LETTERS
     .iter()
     .chain(DIGITS)
@@ -147,7 +147,7 @@ fn weak_pool(mistakes: &HashMap<String, usize>) -> Vec<&'static MorseChar> {
 /// 随机取一个字符；`weak_first` 为真且存在答错 ≥2 次的字符时，优先从易错字符中抽。
 fn weighted_char(
   pool: &[&'static MorseChar],
-  mistakes: &HashMap<String, usize>,
+  mistakes: &BTreeMap<String, usize>,
   weak_first: bool,
   rng: &mut impl FnMut() -> f64,
 ) -> &'static MorseChar {
@@ -193,7 +193,7 @@ fn random_sentence(rng: &mut impl FnMut() -> f64) -> String {
 pub fn random_question(
   scope: Scope,
   target: Target,
-  mistakes: &HashMap<String, usize>,
+  mistakes: &BTreeMap<String, usize>,
   weak_first: bool,
   rng: &mut impl FnMut() -> f64,
 ) -> Question {
@@ -257,7 +257,7 @@ pub fn random_question(
 pub fn random_choice(
   scope: Scope,
   target: Target,
-  mistakes: &HashMap<String, usize>,
+  mistakes: &BTreeMap<String, usize>,
   weak_first: bool,
   rng: &mut impl FnMut() -> f64,
 ) -> (Question, Vec<String>, usize) {
@@ -292,7 +292,7 @@ pub fn random_choice(
 
 /// 跨天归档每日统计：日期变化时把当日计数写入 `daily` 并清零。
 pub fn roll_daily_snapshot(
-  daily: &mut HashMap<String, (usize, usize)>,
+  daily: &mut BTreeMap<String, (usize, usize)>,
   today: &mut String,
   today_correct: &mut usize,
   today_wrong: &mut usize,
@@ -325,7 +325,7 @@ mod tests {
   #[test]
   fn weak_scope_only_picks_mistaken_chars() {
     let mut rng = lcg(7);
-    let mut mistakes = HashMap::new();
+    let mut mistakes = BTreeMap::new();
     mistakes.insert("Q".to_owned(), 3usize);
     mistakes.insert("Z".to_owned(), 1usize);
     for _ in 0..50 {
@@ -341,7 +341,7 @@ mod tests {
       let (q, opts, ans) = random_choice(
         Scope::Letters,
         Target::Single,
-        &HashMap::new(),
+        &BTreeMap::new(),
         true,
         &mut rng,
       );
@@ -358,7 +358,7 @@ mod tests {
       let q = random_question(
         Scope::All,
         Target::CallSign,
-        &HashMap::new(),
+        &BTreeMap::new(),
         false,
         &mut rng,
       );
@@ -368,7 +368,7 @@ mod tests {
     let q = random_question(
       Scope::All,
       Target::Sentence,
-      &HashMap::new(),
+      &BTreeMap::new(),
       false,
       &mut rng,
     );
@@ -380,7 +380,7 @@ mod tests {
   fn choice_weak_scope_still_has_four_options() {
     let mut rng = lcg(5);
     // 只有一个易错字符时，干扰项应从全量池补齐，仍凑齐 4 个选项
-    let mut mistakes = HashMap::new();
+    let mut mistakes = BTreeMap::new();
     mistakes.insert("Q".to_owned(), 2usize);
     for _ in 0..20 {
       let (q, opts, ans) = random_choice(Scope::Weak, Target::Single, &mistakes, true, &mut rng);
@@ -393,7 +393,7 @@ mod tests {
 
   #[test]
   fn roll_daily_snapshot_archives_on_day_change() {
-    let mut daily = HashMap::new();
+    let mut daily = BTreeMap::new();
     let mut today = String::new();
     let mut ok = 0usize;
     let mut bad = 0usize;

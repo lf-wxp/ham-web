@@ -1,5 +1,9 @@
 //! 听题模式：把一道题转换成依次朗读 / 停顿的脚本。
 
+use std::collections::BTreeMap;
+
+use serde::{Deserialize, Serialize};
+
 use crate::question::QuestionItem;
 
 /// 单段朗读的最大字数：Chrome 的语音合成对过长的句子可能中途停止，按句切分。
@@ -8,6 +12,74 @@ pub const MAX_CHUNK: usize = 80;
 pub const THINK_CHOICES: [u32; 4] = [3, 5, 8, 12];
 /// 可选的语速。
 pub const RATE_CHOICES: [f32; 4] = [0.8, 1.0, 1.2, 1.5];
+
+/// 听题的题源。
+///
+/// 序列化用小写变体名（`a` / `b` / `c` / `mistakes` / `bookmarks`），是已经写进用户存储的格式。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Source {
+  A,
+  B,
+  C,
+  Mistakes,
+  Bookmarks,
+}
+
+impl Source {
+  pub const ALL: [Self; 5] = [Self::A, Self::B, Self::C, Self::Mistakes, Self::Bookmarks];
+
+  #[must_use]
+  pub const fn label(self) -> &'static str {
+    match self {
+      Self::A => "A 类",
+      Self::B => "B 类",
+      Self::C => "C 类",
+      Self::Mistakes => "错题集",
+      Self::Bookmarks => "收藏集",
+    }
+  }
+
+  /// 序列化里的写法（数据库列用同一个写法）。
+  #[must_use]
+  pub const fn as_str(self) -> &'static str {
+    match self {
+      Self::A => "a",
+      Self::B => "b",
+      Self::C => "c",
+      Self::Mistakes => "mistakes",
+      Self::Bookmarks => "bookmarks",
+    }
+  }
+}
+
+/// 听题模式的设置（`localStorage` 的 `listen-settings`）。
+///
+/// 放在 core 是因为账号同步的服务端要把它存进数据库表，前后端必须是同一份定义。
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Settings {
+  pub source: Source,
+  pub rate: f32,
+  pub think_secs: u32,
+  pub explain: bool,
+  pub shuffle: bool,
+  /// 各来源上次听到的位置（顺序模式）。
+  pub positions: BTreeMap<Source, usize>,
+}
+
+impl Default for Settings {
+  fn default() -> Self {
+    Self {
+      source: Source::A,
+      rate: 1.0,
+      think_secs: 5,
+      explain: false,
+      shuffle: false,
+      positions: BTreeMap::new(),
+    }
+  }
+}
 
 /// 脚本所处阶段，供界面高亮。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -92,7 +164,9 @@ pub fn script(q: &QuestionItem, number: usize, think_secs: u32, explain: bool) -
       &format!("{}，{}。", o.key, o.text.trim()),
     );
   }
-  steps.push(Step::Pause(Phase::Think, think_secs * 1000));
+  // `think_secs` 来自持久化 / 云端数据（`u32`，没有上限）：乘法用饱和版本，
+  // 免得一份被改坏的数据让 dev 构建 panic、release 构建回绕成错误停顿。
+  steps.push(Step::Pause(Phase::Think, think_secs.saturating_mul(1000)));
   steps.push(Step::Say(
     Phase::Answer,
     format!("正确答案：{}。", q.answer_keys.join("、")),
@@ -186,11 +260,41 @@ mod tests {
   }
 
   #[test]
+  fn an_absurd_think_time_does_not_overflow() {
+    // 一份被改坏的设置（或别的设备同步过来的怪值）不能把乘法变成 panic 或回绕。
+    let steps = script(&q(None), 1, u32::MAX, false);
+    assert!(steps.contains(&Step::Pause(Phase::Think, u32::MAX)));
+  }
+
+  #[test]
   fn long_text_is_chunked() {
     let long = "甲".repeat(200);
     let parts = chunks(&long, MAX_CHUNK);
     assert_eq!(parts.len(), 3);
     assert!(parts.iter().all(|p| p.chars().count() <= MAX_CHUNK));
     assert_eq!(chunks("短句，没有句号", MAX_CHUNK), ["短句，没有句号"]);
+  }
+
+  #[test]
+  fn the_stored_settings_shape_is_pinned_and_the_column_spelling_matches_serde() {
+    // 写进 localStorage、也进云端备份的格式：字段名和顺序都不能悄悄变。
+    let mut s = Settings::default();
+    s.positions.insert(Source::Mistakes, 3);
+    s.positions.insert(Source::A, 7);
+    let json = r#"{"source":"a","rate":1.0,"think_secs":5,"explain":false,"shuffle":false,"positions":{"a":7,"mistakes":3}}"#;
+    assert_eq!(serde_json::to_string(&s).unwrap(), json);
+    assert_eq!(serde_json::from_str::<Settings>(json).unwrap(), s);
+    // 缺字段补默认值（struct 级 `default`）。
+    assert_eq!(
+      serde_json::from_str::<Settings>("{}").unwrap(),
+      Settings::default()
+    );
+    // 数据库的 CHECK 与 `as_str` 同一个写法，它必须与序列化一致。
+    for source in Source::ALL {
+      assert_eq!(
+        serde_json::to_string(&source).unwrap(),
+        format!("\"{}\"", source.as_str())
+      );
+    }
   }
 }

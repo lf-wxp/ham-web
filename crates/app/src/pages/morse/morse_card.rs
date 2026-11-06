@@ -26,11 +26,13 @@ pub(super) fn MorseCard(entry: &'static MorseChar) -> impl IntoView {
     play_gen.set(seq);
     play_morse_timed_with(entry.code, timing, settings.tone_hz(), settings.volume());
     // 逐符号高亮：按时间线推进
+    // 定时器回来时组件可能已经卸载：信号随 Owner 释放，`get_untracked` / `set` 会 panic
+    // 并带崩整个 wasm 实例，所以这里一律用 `try_*`。
     for (i, &(start, _)) in times.iter().enumerate() {
       set_timeout(
         move || {
-          if play_gen.get_untracked() == seq {
-            highlight.set(Some(i));
+          if play_gen.try_get_untracked() == Some(seq) {
+            let _ = highlight.try_set(Some(i));
           }
         },
         Duration::from_secs_f64(start),
@@ -39,8 +41,8 @@ pub(super) fn MorseCard(entry: &'static MorseChar) -> impl IntoView {
     let total = times.last().map_or(0.12, |(_, e)| *e);
     set_timeout(
       move || {
-        if play_gen.get_untracked() == seq {
-          highlight.set(None);
+        if play_gen.try_get_untracked() == Some(seq) {
+          let _ = highlight.try_set(None);
         }
       },
       Duration::from_secs_f64(total.max(0.12)),

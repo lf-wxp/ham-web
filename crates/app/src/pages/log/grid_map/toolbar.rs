@@ -2,12 +2,12 @@
 
 use leptos::prelude::*;
 
-use super::super::grid_filter::QslStatus;
 use super::state::GridMapState;
 use crate::i18n::{localized_name, t};
 use crate::ui::{
   Button, ControlSize, Input, SelectOption, SimpleSelect, Size, Switch, Tooltip, Variant,
 };
+use ham_web_core::grid_filter::QslFilter;
 
 #[component]
 pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
@@ -110,9 +110,9 @@ pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
       <SimpleSelect
         value=Signal::derive(move || {
           match state.qsl_filter.get() {
-            Some(QslStatus::Confirmed) => "confirmed".to_owned(),
-            Some(QslStatus::SentPending) => "sent_pending".to_owned(),
-            Some(QslStatus::NotSent) => "not_sent".to_owned(),
+            Some(QslFilter::Confirmed) => "confirmed".to_owned(),
+            Some(QslFilter::SentPending) => "sent_pending".to_owned(),
+            Some(QslFilter::NotSent) => "not_sent".to_owned(),
             None => String::new(),
           }
         })
@@ -120,9 +120,9 @@ pub(super) fn GridToolbar(state: GridMapState) -> impl IntoView {
           state
             .qsl_filter
             .set(match v.as_str() {
-              "confirmed" => Some(QslStatus::Confirmed),
-              "sent_pending" => Some(QslStatus::SentPending),
-              "not_sent" => Some(QslStatus::NotSent),
+              "confirmed" => Some(QslFilter::Confirmed),
+              "sent_pending" => Some(QslFilter::SentPending),
+              "not_sent" => Some(QslFilter::NotSent),
               _ => None,
             })
         })

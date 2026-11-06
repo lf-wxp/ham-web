@@ -328,6 +328,16 @@ impl DiyProgressBook {
   pub fn is_empty(&self) -> bool {
     self.0.values().all(|p| !p.done && p.bought.is_empty())
   }
+
+  /// 全部项目的进度（按项目名）。
+  pub fn iter(&self) -> impl Iterator<Item = (&String, &DiyProgress)> {
+    self.0.iter()
+  }
+
+  /// 从条目构造（账号同步的服务端从数据库表还原时用）。同一个项目出现两次，后一个生效。
+  pub fn from_entries(entries: impl IntoIterator<Item = (String, DiyProgress)>) -> Self {
+    Self(entries.into_iter().collect())
+  }
 }
 
 #[cfg(test)]

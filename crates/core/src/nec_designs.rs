@@ -27,63 +27,68 @@ pub const MAX_DESIGNS: usize = 50;
 /// 名称最长字符数（超出截断）。
 pub const MAX_NAME_CHARS: usize = 40;
 
+/// 快照里的一根导线。
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-struct SavedWire {
-  a: [f64; 3],
-  b: [f64; 3],
-  radius: f64,
-  segments: usize,
+pub struct SavedWire {
+  pub a: [f64; 3],
+  pub b: [f64; 3],
+  pub radius: f64,
+  pub segments: usize,
 }
 
+/// 快照里的一个馈电。
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-struct SavedFeed {
-  wire: usize,
-  at: f64,
-  volts: f64,
+pub struct SavedFeed {
+  pub wire: usize,
+  pub at: f64,
+  pub volts: f64,
 }
 
+/// 快照里的一个集总负载。
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-struct SavedLoad {
-  wire: usize,
-  at: f64,
-  r_ohm: f64,
-  l_uh: f64,
-  c_pf: f64,
+pub struct SavedLoad {
+  pub wire: usize,
+  pub at: f64,
+  pub r_ohm: f64,
+  pub l_uh: f64,
+  pub c_pf: f64,
 }
 
+/// 快照里的大地。
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
-enum SavedGround {
+pub enum SavedGround {
   Free,
   Perfect,
   Lossy { eps_r: f64, sigma: f64 },
 }
 
+/// 快照里的一条传输线。
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-struct SavedLine {
-  wire_a: usize,
-  at_a: f64,
-  wire_b: usize,
-  at_b: f64,
-  z0: f64,
-  length_m: f64,
-  velocity_factor: f64,
+pub struct SavedLine {
+  pub wire_a: usize,
+  pub at_a: f64,
+  pub wire_b: usize,
+  pub at_b: f64,
+  pub z0: f64,
+  pub length_m: f64,
+  pub velocity_factor: f64,
 }
 
 /// 一份模型快照（与 [`NecInput`] + 传输线一一对应）。
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SavedModel {
-  wires: Vec<SavedWire>,
-  feeds: Vec<SavedFeed>,
+  pub wires: Vec<SavedWire>,
+  pub feeds: Vec<SavedFeed>,
   #[serde(default)]
-  loads: Vec<SavedLoad>,
-  freq_hz: f64,
-  ground: SavedGround,
+  pub loads: Vec<SavedLoad>,
+  pub freq_hz: f64,
+  pub ground: SavedGround,
   /// 导线电导率（S/m）；`None` = 理想导体。
   #[serde(default)]
-  conductivity: Option<f64>,
+  pub conductivity: Option<f64>,
   #[serde(default)]
-  lines: Vec<SavedLine>,
+  pub lines: Vec<SavedLine>,
 }
 
 impl SavedModel {

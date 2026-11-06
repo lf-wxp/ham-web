@@ -89,8 +89,14 @@ pub fn UpdateNotices() -> impl IntoView {
     }
   });
   on_cleanup(move || handle.remove());
+  // 启动 3 秒后：先检查题库更新，再在空闲时把常用题库预热进内存（见 `bank_updates::prewarm`）。
   set_timeout(
-    || leptos::task::spawn_local(bank_updates::check_on_start()),
+    || {
+      leptos::task::spawn_local(async {
+        bank_updates::check_on_start().await;
+        bank_updates::prewarm().await;
+      });
+    },
     Duration::from_secs(3),
   );
 

@@ -3,7 +3,8 @@
 //! 数据备份不在本页（存储写满时不好找），独立在 `/backup`，见 `crate::pages::backup`。
 //!
 //! 不在这里维护工具清单（列一次就会过期）：导航项与区块见 `tools_page.rs` 的 `TOOL_NAV`
-//! 与 `<ToolSection>`，两者一一对应。
+//! 与 `<ToolSection>`，两者一一对应。`TOOL_NAV` 的顺序同时是计算器主体的挂载次序
+//! （首屏先挂前几个，其余每帧一批，见 `tool_mount.rs`）。
 
 mod antenna_length;
 mod antenna_matcher;
@@ -59,6 +60,8 @@ mod soft_tnc;
 mod stub_match;
 mod swr_converter;
 mod tone_squelch;
+mod tool_body;
+mod tool_mount;
 mod tool_section;
 mod tools_page;
 mod toroid_winding;

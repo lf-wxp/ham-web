@@ -67,17 +67,14 @@ pub fn BrowsePage() -> impl IntoView {
   });
 
   spawn_local(async move {
-    let mut merged = Vec::new();
-    for b in Bank::ALL {
-      if let Ok(qs) = data::load_bank(None, b, false).await {
-        merged.extend(qs.iter().cloned());
-      }
-    }
-    all.try_set(Arc::new(merged));
+    // 合集在会话内缓存（`data::all_banks_merged`）：题库没变时第二次进来不再逐题深拷贝。
+    let merged = data::all_banks_merged().await;
+    all.try_set(merged);
     loading.try_set(false);
   });
 
-  // 各题库题目指纹（用于「只看本类新增」）
+  // 各题库题目指纹（用于「只看本类新增」）。`Memo` 是惰性的：只有下面真的用到时才逐题计算，
+  // 不勾「只看本类新增」就一次都不算（每次进入本页逐题算指纹，在手机上要几十毫秒）。
   let fingerprints = Memo::new(move |_| {
     let mut m: HashMap<Bank, HashSet<String>> = HashMap::new();
     all.with(|qs| {
@@ -94,15 +91,18 @@ pub fn BrowsePage() -> impl IntoView {
     let b = bank.get();
     let unique = unique_only.get();
     all.with(|qs| {
+      let in_bank = qs
+        .iter()
+        .enumerate()
+        .filter(|(_, q)| Bank::of_id(q.id_str()) == b);
+      // A 类没有「更低的题库」可比，不勾「只看本类新增」时也不需要指纹。
+      if !unique || b == Bank::A {
+        return in_bank.map(|(i, _)| i).collect::<Vec<_>>();
+      }
       fingerprints.with(|fps| {
         let has = |bank: Bank, f: &str| fps.get(&bank).is_some_and(|s| s.contains(f));
-        qs.iter()
-          .enumerate()
-          .filter(|(_, q)| Bank::of_id(q.id_str()) == b)
+        in_bank
           .filter(|(_, q)| {
-            if !unique || b == Bank::A {
-              return true;
-            }
             let f = fingerprint(q);
             match b {
               Bank::B => !has(Bank::A, &f),

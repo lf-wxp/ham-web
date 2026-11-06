@@ -19,10 +19,8 @@ mod word_copy;
 pub use morse_page::MorsePage;
 pub use pill_button::PillButton;
 
-use std::collections::HashMap;
-
 use ham_web_core::morse::code_of;
-use serde::{Deserialize, Serialize};
+use ham_web_core::morse_store::{MorseStats, TrainerSettings};
 
 use crate::util::random;
 
@@ -65,35 +63,6 @@ struct Feedback {
   question: Question,
 }
 
-/// 练习统计（持久化到 localStorage）。
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-struct MorseStats {
-  correct: usize,
-  wrong: usize,
-  /// 每个字符（答案文本）的累计答错次数，用于易错字符优先出题。
-  mistakes: HashMap<String, usize>,
-  /// 当前连续答对（不持久化，仅运行时）。
-  #[serde(skip)]
-  streak: usize,
-  /// 历史最长连续答对。
-  #[serde(default)]
-  best_streak: usize,
-  /// 答对过的最高速度（WPM）。
-  #[serde(default)]
-  top_wpm: f64,
-  /// 今日日期（YYYY-MM-DD）。
-  #[serde(default)]
-  today: String,
-  /// 今日正确/错误。
-  #[serde(default)]
-  today_correct: usize,
-  #[serde(default)]
-  today_wrong: usize,
-  /// 每日快照（日期 → 正确/错误），用于近 7 天趋势。
-  #[serde(default)]
-  daily: HashMap<String, (usize, usize)>,
-}
-
 const STATS_KEY: &str = "morse-stats";
 
 fn load_stats() -> MorseStats {
@@ -127,53 +96,6 @@ fn export_all_morse_stats() {
   }
   if let Ok(json) = serde_json::to_string_pretty(&serde_json::Value::Object(map)) {
     crate::util::download_text("morse-all-stats.json", &json, "application/json");
-  }
-}
-
-/// 解码练习的设置（持久化）。
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-struct TrainerSettings {
-  #[serde(default = "default_mode")]
-  mode: Mode,
-  #[serde(default = "default_scope")]
-  scope: Scope,
-  #[serde(default = "default_target")]
-  target: Target,
-  #[serde(default = "default_wpm")]
-  wpm: f64,
-  #[serde(default = "default_wpm")]
-  eff_wpm: f64,
-  /// 自适应速度：答对加速、答错减速。
-  #[serde(default)]
-  adaptive: bool,
-}
-
-const fn default_mode() -> Mode {
-  Mode::Listen
-}
-
-const fn default_scope() -> Scope {
-  Scope::Letters
-}
-
-const fn default_target() -> Target {
-  Target::Single
-}
-
-const fn default_wpm() -> f64 {
-  20.0
-}
-
-impl Default for TrainerSettings {
-  fn default() -> Self {
-    Self {
-      mode: default_mode(),
-      scope: default_scope(),
-      target: default_target(),
-      wpm: default_wpm(),
-      eff_wpm: default_wpm(),
-      adaptive: false,
-    }
   }
 }
 

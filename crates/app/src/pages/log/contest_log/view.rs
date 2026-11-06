@@ -24,7 +24,7 @@ use super::import_report::ImportReportPanel;
 use super::pace::ContestPace;
 use super::scp_source::{STORAGE_KEY as SCP_KEY, ScpSource};
 use super::scp_suggest::ScpSuggest;
-use super::session::Session;
+use super::session::{Session, fresh};
 use crate::i18n::{localized_name, t, tf};
 
 pub(super) const SESSION_KEY: &str = "contest-session";
@@ -34,7 +34,7 @@ const MODES: &[&str] = &["CW", "SSB", "FT8", "RTTY"];
 pub fn ContestLogPage() -> impl IntoView {
   set_title("shell.contest-log");
   let store = use_log_store();
-  let session = RwSignal::new(storage::get_json::<Session>(SESSION_KEY).unwrap_or_default());
+  let session = RwSignal::new(storage::get_json::<Session>(SESSION_KEY).unwrap_or_else(fresh));
   // 支持 `/contest-log?contest=ID` 预选竞赛（如从竞赛日历「开新场次」进入）。
   let query = use_query_map();
   if let Some(cid) = query.with_untracked(|q| q.get("contest"))

@@ -50,10 +50,11 @@ pub(super) fn KochTrainer() -> impl IntoView {
       settings.volume(),
     );
     playing.set(true);
+    // 组件在播放途中被卸载时信号已释放，`set` 会 panic（见 `presence.rs` 的同类注释）。
     set_timeout(
       move || {
-        if play_gen.get_untracked() == seq {
-          playing.set(false);
+        if play_gen.try_get_untracked() == Some(seq) {
+          let _ = playing.try_set(false);
         }
       },
       Duration::from_secs_f64(dur.max(0.12)),

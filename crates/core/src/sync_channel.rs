@@ -10,10 +10,15 @@
 //! 两条通道同时自动跑，从 A 拉下来的内容对 B 来说就是「本机变了」，B 又要写、写完 A 又觉得变了……
 //! 基线互相作废、谁也说不清两边是否分叉。所以**自动**只跑一条（[`resolve`]），另一条保留
 //! 手动的「写入 / 恢复 / 合并」；两条通道各存各的状态（键名见 [`SyncChannel::state_key`]），互不覆盖。
+//!
+//! 两条通道判定「谁覆盖谁」的办法也不同：自定义远端只有一个接口，只能拿整份内容的指纹做基线
+//! （[`SyncState`] + `remote_sync::plan_startup`）；在线账号是我们自己的服务，按 key 交换，
+//! 基线记每个 key 两侧的摘要（[`AccountSync`] + [`crate::delta_sync`]）。
 
 use serde::{Deserialize, Serialize};
 
-use crate::remote_sync::{Remote, StartupPlan, SyncState, plan_startup};
+use crate::delta::Base;
+use crate::remote_sync::SyncState;
 
 // 三个 key 的定义在 `remote_sync`（它决定哪些 key 不进备份），这里重新导出，
 // 让「通道相关的东西从 `sync_channel` 取」这条路径不变。
@@ -66,16 +71,6 @@ impl SyncChannel {
       Self::Custom => crate::remote_sync::STATE_KEY,
       Self::Account => ACCOUNT_STATE_KEY,
     }
-  }
-
-  /// 去处是不是「已经确认过是对的」。
-  ///
-  /// 自定义远端的地址是用户手敲的：获取返回 404 可能只是地址写错，所以从没成功过的接口
-  /// 不自动上传（见 [`StartupPlan::NeedsFirstPush`]）。在线账号的去处是登录态本身，
-  /// 登录成功就说明地址与身份都对，云端为空只是「还没传过」，可以直接传。
-  #[must_use]
-  pub const fn endpoint_is_verified(self) -> bool {
-    matches!(self, Self::Account)
   }
 }
 
@@ -160,24 +155,6 @@ pub const fn pref_after_logout(pref: Option<ChannelPref>) -> Option<ChannelPref>
   }
 }
 
-/// 启动时的决策：[`plan_startup`] 的通道版。
-///
-/// 只有一处不同：已确认去处的通道（[`SyncChannel::endpoint_is_verified`]）遇到
-/// 「从没同步成功过而远端是空的」时直接上传，而不是等用户手动确认。
-#[must_use]
-pub fn plan_for(
-  channel: SyncChannel,
-  state: &SyncState,
-  stale_dirty: bool,
-  remote: Remote,
-  local_has_data: bool,
-) -> StartupPlan {
-  match plan_startup(state, stale_dirty, remote, local_has_data) {
-    StartupPlan::NeedsFirstPush if channel.endpoint_is_verified() => StartupPlan::Upload,
-    plan => plan,
-  }
-}
-
 /// 离开一条通道（切走、退出登录）时它的状态该变成什么。
 ///
 /// 通道不在跑的时候，本机数据的改动**不被追踪**（写入钩子只盯着正在跑的那条）。
@@ -192,19 +169,74 @@ pub const fn leave(state: SyncState) -> SyncState {
   }
 }
 
-/// 状态里的基线是不是属于这个账号。
+/// 在线账号通道落盘的同步状态。
 ///
-/// 同一台浏览器可能换账号登录：A 的基线拿来判断 B 的云端，会把「B 的云端更新过」误当成
-/// 「可以放心快进覆盖本机」，本机里没传给 B 的数据就被吞了。基线不属于当前账号时作废。
-#[must_use]
-pub fn adopt_owner(state: SyncState, user_id: u64) -> SyncState {
-  if state.owner == Some(user_id) {
-    return state;
+/// 与自定义远端的 [`SyncState`] 同样存在 `localStorage` 里、同样不进备份（见 `remote_sync::is_excluded_from_backup`），
+/// 区别是基线不再是一个指纹，而是**每个 key 两侧各一个摘要**（见 [`crate::delta`] 模块文档「基线是一对摘要」）。
+/// 旧版本存下来的状态里那个整份指纹的 `base` 字段读不出来也无妨：没有基线就是「从没同步过」，
+/// 引擎会逐个 key 对比，相同的不动、不同的按规则处理，不会误覆盖。
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct AccountSync {
+  /// 这份基线属于哪个账号（账号 id）。
+  ///
+  /// 同一台浏览器可能换账号登录：A 的基线拿来判断 B 的云端，会把「B 的云端更新过」误当成
+  /// 「可以放心取回覆盖本机」，本机里没传给 B 的数据就被吞了。基线不属于当前账号时作废。
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub owner: Option<u64>,
+  /// 本机自上次同步以来可能有没传出去的改动（只用来决定要不要排一次自动写入；
+  /// 引擎每次都会重新对比，所以它「多亮一次」只是多一次无谓的检查，不会丢数据）。
+  pub dirty: bool,
+  /// 每个 key 上次同步成功时两侧的摘要。
+  #[serde(
+    skip_serializing_if = "Base::is_empty",
+    default,
+    deserialize_with = "deserialize_base"
+  )]
+  pub keys: Base,
+}
+
+/// 逐条容错地读基线。
+///
+/// 一条坏摘要只丢那一条，不能让整份状态一起读不出来：丢了 `dirty` 就等于「可能有没传出去的改动」
+/// 这条信息消失，界面不会再提示，而引擎只能等用户下一次操作才发现差异。
+fn deserialize_base<'de, D>(deserializer: D) -> Result<Base, D::Error>
+where
+  D: serde::Deserializer<'de>,
+{
+  let raw = std::collections::BTreeMap::<String, serde_json::Value>::deserialize(deserializer)?;
+  Ok(
+    raw
+      .into_iter()
+      .filter_map(|(key, value)| serde_json::from_value(value).ok().map(|s| (key, s)))
+      .collect(),
+  )
+}
+
+impl AccountSync {
+  /// 离开账号通道（切走、退出登录）：基线与主人作废，脏位保留。
+  ///
+  /// 理由同 [`leave`]：通道不在跑时本机的改动没人追踪，留着旧基线回来，会把「期间改过」当成「没改过」。
+  #[must_use]
+  pub fn leave(self) -> Self {
+    Self {
+      owner: None,
+      dirty: self.dirty,
+      keys: Base::new(),
+    }
   }
-  SyncState {
-    base: None,
-    owner: Some(user_id),
-    dirty: state.dirty,
+
+  /// 登录的是 `user_id`：基线不属于它就作废，改记新主人，脏位不丢。
+  #[must_use]
+  pub fn adopt_owner(self, user_id: u64) -> Self {
+    if self.owner == Some(user_id) {
+      return self;
+    }
+    Self {
+      owner: Some(user_id),
+      dirty: self.dirty,
+      keys: Base::new(),
+    }
   }
 }
 
@@ -228,6 +260,23 @@ mod tests {
     assert_eq!(SyncChannel::parse(""), None);
     assert_eq!(SyncChannel::parse("Custom"), None);
     assert_eq!(SyncChannel::parse("cloud"), None);
+  }
+
+  #[test]
+  fn a_broken_entry_does_not_discard_the_rest() {
+    let good = crate::delta::Digest::of("v").to_hex();
+    let raw = format!(
+      r#"{{"owner":7,"dirty":true,"keys":{{
+        "bookmarks":{{"r":"{good}","l":"{good}"}},
+        "study-stats":{{"r":"not-a-digest","l":"{good}"}},
+        "question-stats":{{"l":"{good}"}}
+      }}}}"#
+    );
+    let state: AccountSync = serde_json::from_str(&raw).expect("坏条目不该让整份状态读不出来");
+    assert!(state.dirty, "脏位必须保住");
+    assert_eq!(state.owner, Some(7));
+    assert_eq!(state.keys.len(), 1, "只有完整的那条留下");
+    assert!(state.keys.contains_key("bookmarks"));
   }
 
   #[test]
@@ -317,67 +366,19 @@ mod tests {
     assert!(back.exclude_qsl_images);
   }
 
-  #[test]
-  fn an_empty_cloud_is_uploaded_to_without_asking_but_a_custom_endpoint_is_not() {
-    let never = SyncState::default();
-    assert_eq!(
-      plan_for(SyncChannel::Account, &never, false, Remote::Empty, true),
-      StartupPlan::Upload
-    );
-    assert_eq!(
-      plan_for(SyncChannel::Custom, &never, false, Remote::Empty, true),
-      StartupPlan::NeedsFirstPush
-    );
-  }
-
-  #[test]
-  fn every_other_decision_is_the_same_for_both_channels() {
-    let clean = SyncState {
-      base: Some(fp("a")),
-      owner: None,
-      dirty: false,
-    };
-    let cases = [
-      (clean, false, Remote::Data(fp("a")), true),
-      (clean, false, Remote::Data(fp("b")), true),
-      (clean, true, Remote::Data(fp("b")), true),
-      (SyncState::default(), false, Remote::Data(fp("b")), true),
-      (SyncState::default(), false, Remote::Data(fp("b")), false),
-      (clean, false, Remote::Empty, true),
-      (SyncState::default(), false, Remote::Empty, false),
-    ];
-    for (state, stale, remote, has) in cases {
-      assert_eq!(
-        plan_for(SyncChannel::Account, &state, stale, remote, has),
-        plan_for(SyncChannel::Custom, &state, stale, remote, has),
-      );
+  fn synced(r: &str, l: &str) -> crate::delta::Synced {
+    crate::delta::Synced {
+      remote: crate::delta::Digest::of(r),
+      local: crate::delta::Digest::of(l),
     }
   }
 
-  #[test]
-  fn a_fresh_login_on_a_used_browser_with_cloud_data_is_a_conflict() {
-    // 云端有数据、本机也有、从没同步过：不知道谁新，交给用户（与自定义远端一致）。
-    assert_eq!(
-      plan_for(
-        SyncChannel::Account,
-        &SyncState::default(),
-        false,
-        Remote::Data(fp("cloud")),
-        true
-      ),
-      StartupPlan::Conflict
-    );
-    // 全新浏览器：直接取云端。
-    assert_eq!(
-      plan_for(
-        SyncChannel::Account,
-        &SyncState::default(),
-        false,
-        Remote::Data(fp("cloud")),
-        false
-      ),
-      StartupPlan::FastForward
-    );
+  fn account(owner: Option<u64>, dirty: bool) -> AccountSync {
+    AccountSync {
+      owner,
+      dirty,
+      keys: [("k".to_owned(), synced("r", "l"))].into(),
+    }
   }
 
   #[test]
@@ -391,49 +392,53 @@ mod tests {
     assert_eq!(left.base, None);
     assert_eq!(left.owner, None);
     assert!(left.dirty);
-    // 作废之后回来：远端变了也不会被当成「没动过」而快进覆盖。
-    assert_eq!(
-      plan_for(
-        SyncChannel::Account,
-        &leave(SyncState {
-          base: Some(fp("a")),
-          owner: Some(7),
-          dirty: false
-        }),
-        false,
-        Remote::Data(fp("b")),
-        true
-      ),
-      StartupPlan::Conflict
-    );
+  }
+
+  #[test]
+  fn leaving_the_account_channel_voids_every_key_baseline_but_keeps_the_dirty_bit() {
+    let left = account(Some(7), true).leave();
+    assert!(left.keys.is_empty());
+    assert_eq!(left.owner, None);
+    assert!(left.dirty);
+    assert!(!account(Some(7), false).leave().dirty);
   }
 
   #[test]
   fn a_baseline_only_belongs_to_the_account_that_made_it() {
-    let mine = SyncState {
-      base: Some(fp("a")),
-      owner: Some(1),
-      dirty: false,
-    };
+    let mine = account(Some(1), false);
     // 同一个账号：原样保留。
-    assert_eq!(adopt_owner(mine, 1), mine);
+    assert_eq!(mine.clone().adopt_owner(1), mine);
     // 换了账号：基线作废、改记新主人，脏位不丢。
-    let other = adopt_owner(
-      SyncState {
-        dirty: true,
-        ..mine
-      },
-      2,
-    );
-    assert_eq!(other.base, None);
+    let other = account(Some(1), true).adopt_owner(2);
+    assert!(other.keys.is_empty());
     assert_eq!(other.owner, Some(2));
     assert!(other.dirty);
-    // 升级前的状态没有主人：第一次登录也要作废（那份基线来自别的通道）。
-    let legacy = SyncState {
-      base: Some(fp("a")),
-      owner: None,
-      dirty: false,
-    };
-    assert_eq!(adopt_owner(legacy, 1).base, None);
+    // 没有主人的状态（从没登录过 / 升级前存的）：第一次登录也要作废，那份基线不知道是谁的。
+    assert!(account(None, false).adopt_owner(1).keys.is_empty());
+  }
+
+  #[test]
+  fn the_account_state_round_trips_and_stays_small_when_there_is_no_baseline() {
+    let state = account(Some(3), true);
+    let json = serde_json::to_string(&state).unwrap();
+    assert_eq!(serde_json::from_str::<AccountSync>(&json).unwrap(), state);
+    let empty = serde_json::to_string(&AccountSync::default()).unwrap();
+    assert_eq!(empty, r#"{"dirty":false}"#);
+  }
+
+  #[test]
+  fn a_state_saved_by_the_whole_file_era_is_read_as_never_synced_not_as_an_error() {
+    // 旧版本存的是 `{"base":<整份指纹>,"owner":7,"dirty":false}`：整份指纹对按 key 的基线没有意义，
+    // 读成「从没同步过」（主人与脏位照留）。读失败就会连脏位一起丢掉。
+    let old: AccountSync =
+      serde_json::from_str(r#"{"base":123456789,"owner":7,"dirty":true}"#).unwrap();
+    assert_eq!(old.owner, Some(7));
+    assert!(old.dirty);
+    assert!(old.keys.is_empty());
+    // 什么都没存、或存了别的东西：默认。
+    assert_eq!(
+      serde_json::from_str::<AccountSync>("{}").unwrap(),
+      AccountSync::default()
+    );
   }
 }

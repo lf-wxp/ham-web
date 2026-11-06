@@ -11,7 +11,6 @@ mod entry_list;
 mod form_state;
 mod grid_cell;
 mod grid_fill;
-mod grid_filter;
 mod grid_geo;
 mod grid_map;
 mod log_health_panel;

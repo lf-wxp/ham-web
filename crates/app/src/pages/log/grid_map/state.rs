@@ -1,5 +1,6 @@
 //! 网格地图响应式状态：筛选、聚合、静态统计与搜索 / 导出等操作集中于此，供各子组件共享。
 
+use std::cell::Cell;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -15,9 +16,9 @@ use crate::pages::log::LogEntry;
 use crate::util::copy_text;
 
 use super::super::grid_fill::band_color;
-use super::super::grid_filter::{GridFilters, QslStatus};
 use super::super::grid_geo::{great_circle_d, square_center, square_label};
 use crate::i18n::tp;
+use ham_web_core::grid_filter::{GridFilters, QslFilter};
 
 /// 波段显示顺序（低频 → 高频），筛选下拉据此排序。
 pub(super) const BAND_ORDER: &[&str] = &[
@@ -32,6 +33,47 @@ pub(super) const WORLD_SQUARES: usize = 180 * 180;
 
 /// 通联路径最多绘制条数（按网格 + 波段去重后），避免大日志拖慢渲染。
 const MAX_PATHS: usize = 600;
+
+/// 筛选状态在 `localStorage` 里的 key（与 `docs/reference/storage.md` 同名）。
+const FILTER_KEY: &str = "grid-map-filters";
+
+/// 筛选变化到落盘之间等多久。
+///
+/// 呼号筛选是逐字符输入的，每敲一下写一次存储会连带触发一次自动同步（写入钩子 →
+/// `mark_dirty` → 5 s 后整份推送）：一次输入十几个字符就是十几次云端写入。
+const FILTER_SAVE_DELAY: Duration = Duration::from_millis(600);
+
+thread_local! {
+  /// 落盘的代际号：停下来之前又改过，就由最后一次负责写。
+  static FILTER_SAVE_GEN: Cell<u32> = const { Cell::new(0) };
+}
+
+/// 攒一小会儿再写筛选。
+///
+/// 内容与已存的一样就不写：打开页面时 Effect 首跑会给出一份与存储相同的值，
+/// 照写会把「已同步」变成「待上传」，白白推一整份备份上云。
+fn save_filters_soon(f: GridFilters) {
+  let mine = FILTER_SAVE_GEN.with(|g| {
+    let next = g.get().wrapping_add(1);
+    g.set(next);
+    next
+  });
+  set_timeout(
+    move || {
+      if FILTER_SAVE_GEN.with(Cell::get) != mine {
+        return;
+      }
+      let Ok(text) = serde_json::to_string(&f) else {
+        return;
+      };
+      if crate::util::storage::get(FILTER_KEY).as_deref() == Some(text.as_str()) {
+        return;
+      }
+      crate::util::storage::set(FILTER_KEY, &text);
+    },
+    FILTER_SAVE_DELAY,
+  );
+}
 
 /// 通联路径集合：`(SVG path, 颜色, tooltip)` 列表 + 图例波段 + 未绘制条数。
 pub(super) type QsoPaths = (Vec<(String, &'static str, String)>, Vec<String>, usize);
@@ -63,7 +105,7 @@ pub(super) struct GridMapState {
   pub(super) dxcc_filter: RwSignal<Option<String>>,
   pub(super) year_filter: RwSignal<Option<String>>,
   pub(super) callsign_query: RwSignal<String>,
-  pub(super) qsl_filter: RwSignal<Option<QslStatus>>,
+  pub(super) qsl_filter: RwSignal<Option<QslFilter>>,
   pub(super) show_paths: RwSignal<bool>,
   pub(super) show_grayline: RwSignal<bool>,
   pub(super) search_input: RwSignal<String>,
@@ -95,8 +137,7 @@ impl GridMapState {
 
     // ---- 筛选状态：波段 / 模式 / DXCC / 年份 / 呼号（独立、可叠加，AND 关系）----
     // 从 localStorage 恢复上次筛选，默认全空。
-    let saved_filters: GridFilters =
-      crate::util::storage::get_json("grid-map-filters").unwrap_or_default();
+    let saved_filters: GridFilters = crate::util::storage::get_json(FILTER_KEY).unwrap_or_default();
     let band_filter = RwSignal::new(saved_filters.band.clone());
     let mode_filter = RwSignal::new(saved_filters.mode.clone());
     let dxcc_filter = RwSignal::new(saved_filters.dxcc.clone());
@@ -165,9 +206,9 @@ impl GridMapState {
       }
       if let Some(s) = qsl_filter.get() {
         let ok = match s {
-          QslStatus::Confirmed => e.qsl_rcvd,
-          QslStatus::SentPending => e.qsl_sent && !e.qsl_rcvd,
-          QslStatus::NotSent => !e.qsl_sent && !e.qsl_rcvd,
+          QslFilter::Confirmed => e.qsl_rcvd,
+          QslFilter::SentPending => e.qsl_sent && !e.qsl_rcvd,
+          QslFilter::NotSent => !e.qsl_sent && !e.qsl_rcvd,
         };
         if !ok {
           return false;
@@ -373,7 +414,7 @@ impl GridMapState {
       })
     });
 
-    // 筛选状态持久化：任一筛选变化即写入 localStorage。
+    // 筛选状态持久化：任一筛选变化后攒一小会儿再写（见 [`save_filters_soon`]）。
     Effect::new(move |_| {
       let f = GridFilters {
         band: band_filter.get(),
@@ -384,7 +425,7 @@ impl GridMapState {
         qsl: qsl_filter.get(),
         paths: show_paths.get(),
       };
-      crate::util::storage::set_json("grid-map-filters", &f);
+      save_filters_soon(f);
     });
 
     // ---- 灰线实时时钟（60s 刷新，与灰线页一致）----

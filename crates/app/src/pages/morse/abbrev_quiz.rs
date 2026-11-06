@@ -39,7 +39,12 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
 
   next();
 
+  // 已经排了一次「下一题」：900 ms 内连点两个选项不能跳两题、也不能重复计分。
+  let waiting = RwSignal::new(false);
   let choose = move |idx: usize| {
+    if waiting.get_untracked() {
+      return;
+    }
     let ok = idx == current.get();
     if ok {
       correct.update(|v| *v += 1);
@@ -47,7 +52,18 @@ pub(super) fn AbbrevQuiz() -> impl IntoView {
       wrong.update(|v| *v += 1);
     }
     feedback.set(Some(ok));
-    set_timeout(next, Duration::from_millis(900));
+    waiting.set(true);
+    set_timeout(
+      move || {
+        // 卸载后信号已释放，`get_untracked` / `set` 会 panic 并带崩整个 wasm 实例。
+        if waiting.try_get_untracked() != Some(true) {
+          return;
+        }
+        let _ = waiting.try_set(false);
+        next();
+      },
+      Duration::from_millis(900),
+    );
   };
 
   view! {

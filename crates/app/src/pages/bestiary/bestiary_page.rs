@@ -90,10 +90,13 @@ pub fn BestiaryPage() -> impl IntoView {
     }
   });
 
+  // 这个闭包在下面被**构造期立即调用**（`{chips()}`），调用点在组件体里、没有跟踪上下文：
+  // 这里读订阅版信号只会在 dev 构建刷「在跟踪上下文之外读信号」。风格切换靠
+  // `MainContent` 重建整棵路由子树覆盖，构造期取值一次就够。
   let chips = {
     let rows = rows.clone();
     move || {
-      if crate::kit::is_modern() {
+      if crate::kit::is_modern_at_mount() {
         return view! {
           <div class="md-chip-row md-filter-chips" role="group" aria-label=move || t("rpg.filter-topic")>
             <button

@@ -1,7 +1,7 @@
 //! 在线账号：注册 / 登录 / 云端备份（`/api/account/*`），数据存在 SQLite。
 //!
 //! 它与前端的「自定义远端同步」是**并列的两条同步通道**，交换同一份备份 JSON；
-//! 区别只在去处——这里的去处是本服务器的 `backups` 表。两者怎么共存、基线与冲突怎么判断，
+//! 区别只在去处——这里的去处是本服务器 SQLite 里的多张表（见 `relational`）。两者怎么共存、基线与冲突怎么判断，
 //! 见 `docs/domain/account-sync.md`；接口契约见 `docs/reference/api.md`。
 //!
 //! # 环境变量
@@ -23,6 +23,7 @@
 mod error;
 mod handlers;
 mod password;
+mod relational;
 mod session;
 mod store;
 
@@ -35,7 +36,7 @@ use axum::Router;
 use axum::extract::DefaultBodyLimit;
 use axum::middleware;
 use axum::routing::{get, post};
-use ham_web_core::account::API_BASE;
+use ham_web_core::account::{API_BASE, SYNC_MANIFEST_PATH, SYNC_PULL_PATH, SYNC_PUSH_PATH};
 use ham_web_core::backup_merge::MAX_BACKUP_BYTES;
 use tokio::sync::Semaphore;
 
@@ -49,6 +50,8 @@ const HASH_SLOTS: usize = 4;
 const BODY_LIMIT: usize = MAX_BACKUP_BYTES + 64 * 1024;
 /// 同时处理的备份上传数：每个都要把请求体（至多 64 MiB）读进内存再解析，不设限就能被几个并发请求撑爆。
 const UPLOAD_SLOTS: usize = 4;
+/// 按 key 取值的请求体上限：几百个 key 名，远用不到这个数。
+pub(crate) const PULL_BODY_LIMIT: usize = 1024 * 1024;
 /// 登录 / 注册 / 改口令 / 注销这类小 JSON 请求体的上限：账号名 ≤ 32、口令 ≤ 128 字节，
 /// 转义放大后也远不到这个数；没有它就是 axum 默认的 2 MiB，匿名请求能拿来占内存。
 const AUTH_BODY_LIMIT: usize = 16 * 1024;
@@ -310,6 +313,20 @@ impl AccountService {
         get(handlers::get_backup)
           .put(handlers::put_backup)
           .delete(handlers::delete_backup),
+      )
+      // 按 key 的增量同步：清单是读目录，取值请求体很小；上传和整份上传一样由处理函数自己鉴权后再读体。
+      .route(
+        &format!("{API_BASE}{SYNC_MANIFEST_PATH}"),
+        get(handlers::sync_manifest),
+      )
+      .route(
+        &format!("{API_BASE}{SYNC_PULL_PATH}"),
+        // 与上传一样由处理函数自己鉴权后再读体（带 `PULL_BODY_LIMIT` 上限），这里不挂 `DefaultBodyLimit`。
+        post(handlers::sync_pull),
+      )
+      .route(
+        &format!("{API_BASE}{SYNC_PUSH_PATH}"),
+        post(handlers::sync_push),
       )
       .merge(guarded)
       .route_layer(middleware::from_fn(handlers::tag_client_ip))

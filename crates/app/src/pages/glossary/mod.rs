@@ -2,6 +2,7 @@
 
 mod glossary_page;
 mod glossary_view;
+mod hits;
 mod stat;
 mod term_card;
 

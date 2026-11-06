@@ -15,8 +15,9 @@
   不直接调类名工厂；`grep -rn "刻意的例外" crates/app/src` 列全仅有的例外。→ [`docs/ui/pixel.md`](docs/ui/pixel.md) §10
 - **页面宽度只有一个来源**：`PageHeader` 与 `PageContainer` 里的 `max-w-5xl`。页面里不写 `max-w-*` / `container` / 自造的 `mx-auto` 宽度容器。
   → [`docs/ui/pixel.md`](docs/ui/pixel.md) §4 · [`docs/ui/modern.md`](docs/ui/modern.md) §3
-- **风格派发不许在组件体里订阅信号**：组件体用 `kit::is_modern_at_mount()`，`kit::is_modern()` 只留给 `view!` 属性闭包 / `move ||`。
-  dev 构建的 `you access a RwSignal<UiStyle> outside a reactive tracking context` 告警，病灶在调用点，不在 `theme.rs`。→ [`docs/ui/decisions.md`](docs/ui/decisions.md) §7
+- **风格派发不许在组件体里订阅信号**：组件体用 `kit::is_modern_at_mount()`，`kit::is_modern()` 只留给 `view!` 属性闭包 / `move ||`，
+  且那个闭包要交给 `view!` 渲染（写 `{f}`，不写 `{f()}`）。dev 构建的 `you access a RwSignal<UiStyle> outside a reactive tracking context`
+  告警直接指向调用点，不在 `theme.rs`。→ [`docs/ui/decisions.md`](docs/ui/decisions.md) §7
 - **模态的焦点与滚动锁各只有一份实现**：每个弹层都调 `crate::focus::use_modal_focus` 与 `crate::overlay::use_scroll_lock`，不自己写 `body.style.overflow`。
   → [`docs/ui/decisions.md`](docs/ui/decisions.md) §7
 - **弹层退场是动画、时长读 token、卸载延迟只用 `crate::presence`、关闭态不拦截点击**；新按钮变体的悬停 / 按下规则带 `:not(:disabled)`；

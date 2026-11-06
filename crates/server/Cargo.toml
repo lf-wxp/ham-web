@@ -15,7 +15,9 @@ axum.workspace = true
 chrono.workspace = true
 regex.workspace = true
 serde.workspace = true
-serde_json.workspace = true
+# float_roundtrip：解析浮点数时不允许差 1 个 ULP。服务端要把「解析 → 存库 → 读回 → 序列化」后的文本
+# 当作规范内容去算指纹，浮点数（难度系数、间隔天数、经纬度……）在这一圈里必须与前端写出的位数完全一致。
+serde_json = { workspace = true, features = ["float_roundtrip"] }
 sgp4.workspace = true
 tokio.workspace = true
 tower.workspace = true

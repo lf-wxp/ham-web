@@ -11,7 +11,8 @@
 //! - C3.1 一文件一组件：一个文件里出现两个以上「返回视图的函数」（`-> impl IntoView / AnyView`）；
 //! - C2.3 页内手写吸顶偏移：`sticky top-[…]` 出现在页面里（第二根吸顶栏唯一来源是 StickyPanel）；
 //! - C7.6 组件体里订阅风格信号：函数体顶层（缩进 2 空格）出现 `kit::is_modern()`，
-//!   那里该用 `kit::is_modern_at_mount()`；
+//!   那里该用 `kit::is_modern_at_mount()`；另有按**调用点**判的一条 —— 读风格信号的闭包被
+//!   立即调用（`{f()}`）时它跑在组件体构造期，同样没有跟踪上下文；
 //! - C6.1 散落的 `alert()`：反馈应走 Toast / MessageDialog；
 //! - A1.1 core 依赖浏览器 API：`web_sys` / `js_sys` / `wasm_bindgen` 出现在 core 源码；
 //! - A1.3 crate 反向依赖 app/server：任何 crate 的依赖里出现 ham-web-app / ham-web-server；
@@ -235,9 +236,177 @@ fn has_style_switch_literal(line: &str) -> bool {
 ///
 /// 只看行首缩进是有意为之：真要判「是否处于 `move ||` / `Signal::derive` 内」得做括号配对，
 /// 而 rustfmt 已经把「函数体顶层 = 2 空格」变成结构事实，够用且不会误报。
+///
+/// 它抓不到「读信号的闭包被**立即调用**」（`{f()}`）：那种写法读信号那行确实在闭包里，
+/// 由 [`check_eager_style_call`] 按调用点判。
 fn has_body_level_style_read(line: &str) -> bool {
   let indent = line.len() - line.trim_start().len();
   indent <= 2 && line.contains("kit::is_modern()")
+}
+
+/// 订阅版风格读取的完整写法。`is_modern_at_mount()` 不含这个子串，不会被误认。
+const STYLE_READ: &str = "kit::is_modern()";
+
+/// 偏移量在剥注释后的代码里的行号（从 1 起）。
+fn line_of(code: &str, offset: usize) -> usize {
+  code[..offset.min(code.len())].matches('\n').count() + 1
+}
+
+/// `let NAME = <expr>;` 里 `<expr>` 的字节范围（`=` 之后到同一层的 `;`）。
+///
+/// 只按 `{}` `()` `[]` 计深度，不认字符串字面量：字符串里出现 `;` / 括号会让范围算歪，
+/// 代价是这条闭包不再登记（漏报），不会凭空报别人的错。
+fn binding_body(code: &str, from: usize) -> Option<(usize, usize)> {
+  let bytes = code.as_bytes();
+  let (mut depth, mut i, mut eq) = (0i32, from, None);
+  while i < bytes.len() {
+    match bytes[i] {
+      b'{' | b'(' | b'[' => depth += 1,
+      b'}' | b')' | b']' => depth -= 1,
+      b';' if depth <= 0 => return eq.map(|e: usize| (e + 1, i)),
+      // 跳过 `==` / `=>` / `!=` / `<=` / `>=`，只认赋值号。
+      b'=' if depth <= 0 && eq.is_none() => {
+        let next = bytes.get(i + 1).copied().unwrap_or(b' ');
+        let prev = i.checked_sub(1).map(|p| bytes[p]).unwrap_or(b' ');
+        if !matches!(next, b'=' | b'>') && !matches!(prev, b'!' | b'<' | b'>' | b'=') {
+          eq = Some(i);
+        }
+      }
+      _ => {}
+    }
+    i += 1;
+  }
+  None
+}
+
+/// 绑定到「读风格信号的闭包」的名字：`let NAME = … || … kit::is_modern() …;`。
+///
+/// 返回 `(名字, 语句体起, 语句体止)`；起止用来把定义处自身排除在调用点扫描之外。
+fn style_read_closure_names(code: &str) -> Vec<(String, usize, usize)> {
+  let mut out = Vec::new();
+  for (at, _) in code.match_indices("let ") {
+    // 紧挨着标识符字符的不是 `let` 关键字（`outlet ` 之类）。
+    if code[..at]
+      .chars()
+      .next_back()
+      .is_some_and(|c| c.is_alphanumeric() || c == '_')
+    {
+      continue;
+    }
+    let after = &code[at + 4..];
+    let name: String = after
+      .chars()
+      .take_while(|c| c.is_alphanumeric() || *c == '_')
+      .collect();
+    if name.is_empty() || name.starts_with(|c: char| c.is_ascii_digit()) {
+      continue;
+    }
+    // `let Some(x) = …` / `let (a, b) = …` 是解构，别把 `Some` 当成闭包名。
+    let tail = after[name.len()..].trim_start();
+    if !(tail.starts_with('=') || tail.starts_with(':')) {
+      continue;
+    }
+    let Some((start, end)) = binding_body(code, at + 4) else {
+      continue;
+    };
+    let body = &code[start..end];
+    if body.contains("||") && body.contains(STYLE_READ) {
+      out.push((name, start, end));
+    }
+  }
+  out
+}
+
+/// 这一行是不是一个函数项的开头（自由函数或 `impl` 里的方法）。
+///
+/// 只认缩进 ≤ 2 的：rustfmt 已经把「函数体里的语句 = 2 空格以上」变成结构事实，更深的嵌套 `fn`
+/// 不切（切了会把外层函数里「先定义闭包、后调用」拆到两段，漏报）。宁可漏报，不误报。
+fn is_fn_item_line(line: &str) -> bool {
+  let trimmed = line.trim_start();
+  if line.len() - trimmed.len() > 2 {
+    return false;
+  }
+  let mut rest = trimmed;
+  if let Some(after_pub) = rest.strip_prefix("pub") {
+    rest = after_pub.trim_start();
+    // `pub(crate)` / `pub(super)`。
+    if rest.starts_with('(') {
+      rest = rest.split_once(')').map_or(rest, |(_, r)| r).trim_start();
+    }
+  }
+  for keyword in ["const ", "async ", "unsafe "] {
+    rest = rest.strip_prefix(keyword).unwrap_or(rest);
+  }
+  rest.starts_with("fn ")
+}
+
+/// 把剥注释后的代码按函数项切开：`(此段之前的行数, 片段)`。
+///
+/// 闭包名只在定义它的那个函数里有意义；另一个函数里的同名标识符（`chips` / `grid` 这类常见名字）
+/// 不是它的调用点。
+fn fn_segments(code: &str) -> Vec<(usize, &str)> {
+  let mut cuts = vec![0usize];
+  let mut offset = 0usize;
+  for line in code.split('\n') {
+    if offset > 0 && is_fn_item_line(line) {
+      cuts.push(offset);
+    }
+    offset += line.len() + 1;
+  }
+  cuts.push(code.len());
+  cuts
+    .windows(2)
+    .map(|w| (code[..w[0]].matches('\n').count(), &code[w[0]..w[1]]))
+    .collect()
+}
+
+/// 被**立即调用**的「读风格信号的闭包」：`let f = … || { … kit::is_modern() … };` 之后又出现 `f()`。
+///
+/// 为什么单列一条：读信号那行确实在闭包里，[`has_body_level_style_read`] 按缩进判不出来。
+/// 而这样的闭包只有在交给 `view!` 渲染（或 `Signal::derive` 这类构造器）时才跑在跟踪上下文里；
+/// `{f()}` 是组件体构造期就把它跑完了 —— dev 构建会刷「在跟踪上下文之外读信号」，那块内容
+/// 也不会随风格切换重渲染。
+///
+/// 按函数项分段匹配（[`fn_segments`]）：别的函数里同名的标识符不算。返回的行号是整个文件里的行号。
+fn eager_style_calls(code: &str) -> Vec<(usize, String)> {
+  let mut out: Vec<(usize, String)> = Vec::new();
+  for (lines_before, segment) in fn_segments(code) {
+    for (line, name) in eager_style_calls_in(segment) {
+      out.push((lines_before + line, name));
+    }
+  }
+  out.sort();
+  out.dedup();
+  out
+}
+
+/// [`eager_style_calls`] 在一个函数项范围内的匹配；行号相对这一段（从 1 起）。
+fn eager_style_calls_in(code: &str) -> Vec<(usize, String)> {
+  let mut out: Vec<(usize, String)> = Vec::new();
+  for (name, start, end) in style_read_closure_names(code) {
+    let mut from = 0usize;
+    while let Some(rel) = code[from..].find(name.as_str()) {
+      let pos = from + rel;
+      from = pos + name.len();
+      if pos >= start && pos < end {
+        continue;
+      }
+      // 定义处 / 字段 / 路径上的同名标识符不算调用。
+      if code[..pos]
+        .chars()
+        .next_back()
+        .is_some_and(|c| c.is_alphanumeric() || c == '_' || c == '.' || c == ':')
+      {
+        continue;
+      }
+      if code[from..].trim_start().starts_with('(') {
+        out.push((line_of(code, pos), name.clone()));
+      }
+    }
+  }
+  out.sort();
+  out.dedup();
+  out
 }
 
 /// `todo!()` / `todo!("…")` / `unimplemented!(…)` 都算：只认空括号的话，带说明文字的写法会漏过。
@@ -413,6 +582,64 @@ fn check_one_component_per_file(root: &Path) -> bool {
   }
   println!(
     "    → 一个文件只放一个组件（含任何 `-> impl IntoView / AnyView` 的视图函数）；主从组件用文件夹模块（mod.rs + 子文件）"
+  );
+  false
+}
+
+/// 组件体里「读风格信号的闭包被立即调用」（`{f()}`）：`is_modern()` 因此在没有跟踪上下文的
+/// 构造期读一次信号 —— dev 构建刷「在跟踪上下文之外读信号」，那块内容也不会随风格切换重渲染。
+///
+/// 与 C7.6 的逐行规则互补：那条只看「组件体顶层有没有读订阅版信号」，这条看**调用点**。
+fn check_eager_style_call(root: &Path) -> bool {
+  if !require_dir(root, "crates/app/src", "风格读取闭包被立即调用") {
+    return false;
+  }
+  let mut files = 0usize;
+  let mut report: Vec<String> = Vec::new();
+  for entry in WalkDir::new(root.join("crates/app/src"))
+    .sort_by_file_name()
+    .into_iter()
+    .filter_map(Result::ok)
+  {
+    let path = entry.path();
+    if !entry.file_type().is_file() || path.extension().is_none_or(|e| e != "rs") {
+      continue;
+    }
+    let rel = path
+      .strip_prefix(root)
+      .unwrap_or(path)
+      .to_string_lossy()
+      .replace('\\', "/");
+    let Ok(text) = std::fs::read_to_string(path) else {
+      continue;
+    };
+    files += 1;
+    // 拼接时保持行数不变，命中行号才和源码对得上。
+    let code = text.lines().map(code_part).collect::<Vec<_>>().join("\n");
+    for (line, name) in eager_style_calls(&code) {
+      report.push(format!("    {rel}:{line}  {name}()"));
+    }
+  }
+
+  if !scanned_ok(files, "风格读取闭包被立即调用") {
+    return false;
+  }
+  if report.is_empty() {
+    println!("✓ 风格读取闭包被立即调用：无");
+    return true;
+  }
+  println!("✗ 风格读取闭包被立即调用：{} 处", report.len());
+  for line in report.iter().take(MAX_REPORT) {
+    println!("{line}");
+  }
+  if report.len() > MAX_REPORT {
+    println!(
+      "    …（另有 {} 处，先修上面这些）",
+      report.len() - MAX_REPORT
+    );
+  }
+  println!(
+    "    → 闭包交给 `view!` 渲染（写 `{{f}}`，别写 `{{f()}}`）才跑在跟踪上下文里；确实要在构造期跑，就把里面的 `kit::is_modern()` 换成 `kit::is_modern_at_mount()`"
   );
   false
 }
@@ -1352,7 +1579,51 @@ fn off_list_breakpoints(css: &str) -> Vec<(usize, f64)> {
   out
 }
 
-/// C7.7：现代风 CSS 的视口断点只能取白名单里的值。
+/// 同一个值上同时出现「含 X 的下界」与「含 X 的上界」：恰好 X 宽时两档同时命中。
+///
+/// `min-width: 900px` 与 `max-width: 900px` 都**含** 900，所以两者不能共存；互斥档要么把上界写成
+/// `(width < 900px)`，要么用范围语法 `(640px <= width < 900px)`。只查值（[`off_list_breakpoints`]）
+/// 看不出这类错：两个 900 都在白名单里。
+fn overlapping_bounds(css: &str) -> Vec<(usize, f64)> {
+  /// `min-width: X` / `width >= X`：含 X 的下界。
+  static LOWER: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?:min-width\s*:\s*|width\s*>=\s*)(\d+(?:\.\d+)?)(px|em|rem)")
+      .expect("下界正则应能编译")
+  });
+  /// `max-width: X` / `width <= X`：含 X 的上界。
+  static UPPER: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?:max-width\s*:\s*|width\s*<=\s*)(\d+(?:\.\d+)?)(px|em|rem)")
+      .expect("上界正则应能编译")
+  });
+
+  let px_of = |value: &str, unit: &str| -> f64 {
+    let n = value.parse::<f64>().unwrap_or(f64::NAN);
+    if unit == "px" { n } else { n * 16.0 }
+  };
+  let line_of = |at: usize| css[..at].matches('\n').count() + 1;
+
+  let mut lowers: Vec<(f64, usize)> = Vec::new();
+  for m in MEDIA_QUERY.find_iter(css) {
+    for c in LOWER.captures_iter(m.as_str()) {
+      lowers.push((px_of(&c[1], &c[2]), line_of(m.start())));
+    }
+  }
+  let mut out = Vec::new();
+  for m in MEDIA_QUERY.find_iter(css) {
+    for c in UPPER.captures_iter(m.as_str()) {
+      let px = px_of(&c[1], &c[2]);
+      if lowers
+        .iter()
+        .any(|(low, _)| (low - px).abs() < f64::EPSILON)
+      {
+        out.push((line_of(m.start()), px));
+      }
+    }
+  }
+  out
+}
+
+/// C7.7：现代风 CSS 的视口断点只能取白名单里的值，且同一值的上下界不能同时含进来。
 ///
 /// 为什么进门禁：断点规范（`docs/ui/modern.md` §3）是「五档 + dock 768」，但裸 `@media` 里的像素值
 /// 没有静态检查守着，很容易又长出 899 / 767 这类「减一」相邻数字，改一处漏一处。
@@ -1363,6 +1634,7 @@ fn check_modern_breakpoints(root: &Path) -> bool {
   let dir = root.join("crates/app/style/modern");
   let mut files = 0usize;
   let mut report: Vec<String> = Vec::new();
+  let mut overlaps: Vec<String> = Vec::new();
   for entry in WalkDir::new(&dir)
     .sort_by_file_name()
     .into_iter()
@@ -1381,25 +1653,42 @@ fn check_modern_breakpoints(root: &Path) -> bool {
       continue;
     };
     files += 1;
-    for (line, px) in off_list_breakpoints(&strip_css_comments(&text)) {
+    let stripped = strip_css_comments(&text);
+    for (line, px) in off_list_breakpoints(&stripped) {
       report.push(format!("    {rel}:{line}  {px}px"));
+    }
+    for (line, px) in overlapping_bounds(&stripped) {
+      overlaps.push(format!(
+        "    {rel}:{line}  {px}px 上下界都含 {px}（恰好 {px}px 时两档同时命中）"
+      ));
     }
   }
 
   if !scanned_ok(files, "现代风断点") {
     return false;
   }
-  if report.is_empty() {
-    println!("✓ 现代风断点：视口断点都在五档 + 768 白名单内");
+  if report.is_empty() && overlaps.is_empty() {
+    println!("✓ 现代风断点：视口断点都在五档 + 768 白名单内，同一值的上下界不重叠");
     return true;
   }
-  println!("✗ 现代风断点：{} 处非白名单断点", report.len());
-  for line in report.iter().take(MAX_REPORT) {
-    println!("{line}");
+  if !report.is_empty() {
+    println!("✗ 现代风断点：{} 处非白名单断点", report.len());
+    for line in report.iter().take(MAX_REPORT) {
+      println!("{line}");
+    }
+    println!(
+      "    → 视口断点只有 480/640/720/900/1024 五档 + 底部 dock 的 768；窄屏档写 640 不写 639（同理不写 899/767），见 docs/ui/modern.md §3"
+    );
   }
-  println!(
-    "    → 视口断点只有 480/640/720/900/1024 五档 + 底部 dock 的 768；窄屏档写 640 不写 639（同理不写 899/767），见 docs/ui/modern.md §3"
-  );
+  if !overlaps.is_empty() {
+    println!("✗ 现代风断点：{} 处同值上下界重叠", overlaps.len());
+    for line in overlaps.iter().take(MAX_REPORT) {
+      println!("{line}");
+    }
+    println!(
+      "    → 「≥ X」与「≤ X」都含 X：上界改写成 `(width < Xpx)`，或用范围语法 `(Apx <= width < Xpx)`，见 docs/engineering/code-quality.md 的守卫表"
+    );
+  }
   false
 }
 
@@ -1897,6 +2186,9 @@ pub fn check(root: &Path) -> Result<()> {
   if !check_pixel_isolation(root) {
     failed.push("反向隔离（像素文件里的现代类名）".to_owned());
   }
+  if !check_eager_style_call(root) {
+    failed.push("风格读取闭包被立即调用".to_owned());
+  }
   if !check_modern_css_is_gated(root) {
     failed.push("现代风样式门禁".to_owned());
   }
@@ -2158,6 +2450,104 @@ const FRAME_MS: u64 = 16;
   }
 
   #[test]
+  fn eager_calls_of_style_closures_are_flagged() {
+    // 正例：`chips` 被 `{chips()}` 在组件体里立即调用（读信号那行确实在闭包里，缩进规则看不见）；
+    // `grid` 被交给 `view!` 渲染，是对的，不能报。
+    let code = "\
+fn page() {
+  let chips = {
+    let rows = rows.clone();
+    move || {
+      if crate::kit::is_modern() {
+        1
+      } else {
+        2
+      }
+    }
+  };
+  let grid = move || {
+    if crate::kit::is_modern() { 3 } else { 4 }
+  };
+  view! { {chips()} {grid} }
+}
+";
+    assert_eq!(eager_style_calls(code), vec![(15, "chips".to_owned())]);
+  }
+
+  #[test]
+  fn style_closure_detector_does_not_fire_on_lookalikes() {
+    // 构造期取值版不是订阅读：就算被立即调用也不算。
+    let at_mount = "\
+fn page() {
+  let chips = move || {
+    if crate::kit::is_modern_at_mount() { 1 } else { 2 }
+  };
+  view! { {chips()} }
+}
+";
+    assert!(eager_style_calls(at_mount).is_empty());
+
+    // `other.chips()` / `Foo::chips()` 不是这个局部闭包的调用。
+    let qualified = "\
+fn page() {
+  let chips = move || { crate::kit::is_modern() };
+  other.chips();
+  Foo::chips();
+}
+";
+    assert!(eager_style_calls(qualified).is_empty());
+  }
+
+  #[test]
+  fn an_eager_call_in_another_function_is_not_this_closures_call() {
+    // `page` 里的 `chips` 是风格闭包、被正确地交给 `view!`；`other` 里同名的 `chips` 是另一个东西，
+    // 它的 `chips()` 不能算到 `page` 头上。`Thing::method` 里自己的风格闭包被立即调用，要报，
+    // 而且行号是整个文件里的行号（不是片段里的）。
+    let code = "\
+fn page() {
+  let chips = move || { crate::kit::is_modern() };
+  view! { {chips} }
+}
+
+fn other() {
+  let chips = || 1;
+  view! { {chips()} }
+}
+
+impl Thing {
+  fn method(&self) {
+    let rows = move || { crate::kit::is_modern() };
+    view! { {rows()} }
+  }
+}
+";
+    assert_eq!(eager_style_calls(code), vec![(14, "rows".to_owned())]);
+  }
+
+  #[test]
+  fn fn_item_lines_are_recognised_with_their_qualifiers_and_only_near_the_left_edge() {
+    for yes in [
+      "fn a() {",
+      "pub fn a() {",
+      "pub(crate) fn a() {",
+      "pub(super) async fn a() {",
+      "  fn method(&self) {",
+      "  pub const fn x() -> u8 {",
+    ] {
+      assert!(is_fn_item_line(yes), "{yes:?}");
+    }
+    for no in [
+      "    fn nested() {",
+      "  let f = || 1;",
+      "pub struct S;",
+      "pub_fn_like();",
+      "// fn commented() {",
+    ] {
+      assert!(!is_fn_item_line(no), "{no:?}");
+    }
+  }
+
+  #[test]
   fn code_part_strips_comments() {
     assert_eq!(code_part("  // todo!()"), "  ");
     assert_eq!(code_part("  /* todo!() */"), "");
@@ -2328,5 +2718,21 @@ const FRAME_MS: u64 = 16;
     let off = off_list_breakpoints(css);
     assert_eq!(off.len(), 1, "{off:?}");
     assert!((off[0].1 - 899.0).abs() < f64::EPSILON);
+    // 值都在白名单里，但「≥900」与两条「≤900」同时存在：恰好 900px 两档都命中。
+    assert_eq!(overlapping_bounds(css).len(), 2, "同值上下界必须被报出来");
+
+    // 上界写成 `(width < 900px)` 就没有重叠了（这也是唯一允许的写法）。
+    let fixed = r#"
+@media (min-width: 900px) { }
+@media (width < 900px) { }
+@media (min-width: 640px) and (width < 900px) { }
+"#;
+    assert!(overlapping_bounds(fixed).is_empty());
+    // 范围语法里的「含下界 + 不含上界」同样不重叠。
+    let range = "@media (width >= 640px) and (width < 900px) { }";
+    assert!(overlapping_bounds(range).is_empty());
+    // 上界含、下界不含（`width > 900`）也不重叠：恰好 900 只属于上界那一档。
+    let exclusive_low = "@media (width > 900px) { }\n@media (max-width: 900px) { }";
+    assert!(overlapping_bounds(exclusive_low).is_empty());
   }
 }
