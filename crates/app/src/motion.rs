@@ -343,11 +343,10 @@ pub fn reveal_modern_page() {
   // `.md-page > *` 管迁移过的现代页；桥接页的内容块由 `PageContainer` 在挂载时自己登记
   // （见 `components/common/page_container.rs`）—— 两条合起来才是「所有页面同一套换页
   // 手感」，只做前者的话桥接页只有整页淡入、现代页却是「淡入 + 内容上浮」，一眼能看出差别。
-  const TARGETS: [&str; 7] = [
+  const TARGETS: [&str; 6] = [
     ".md-page > *",
     ".md-q-row",
     ".md-term",
-    ".md-bookmark",
     ".md-tool-link",
     ".md-log-row",
     ".md-panel",

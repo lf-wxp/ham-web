@@ -46,8 +46,7 @@ const RIPPLE_TARGETS: &str = ".md-btn:not(:disabled), .md-chip:not(:disabled), \
 ///
 /// 术语卡与内容面板刻意不在列：它们不可点击，闪一圈环等于骗人去点
 /// （同一条理由见 `kit.css` 里「术语卡悬停不上抬」的注释）。
-const RING_TARGETS: &str = ".md-opt, .md-q-row, .md-tool-link, .md-feature, .md-mod, \
-                            .md-bookmark, .md-cell";
+const RING_TARGETS: &str = ".md-opt, .md-q-row, .md-tool-link, .md-feature, .md-mod, .md-cell";
 
 /// 宿主上记「最新一次按压序号」的属性：连点时让旧定时器认出自己已经过期。
 const PRESS_SEQ_ATTR: &str = "data-press-seq";

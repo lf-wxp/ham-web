@@ -102,6 +102,82 @@ test("分类浏览：卡片可就地收藏，取消后从收藏集消失", async
   await expect(page.getByText("暂无收藏")).toBeVisible();
 });
 
+// 题目卡（分类浏览与收藏集共用）在两套皮肤下各跑一遍；`E2E_UI_STYLE` 对本文件不生效，必须显式切皮肤。
+for (const style of ["pixel", "modern"] as const) {
+  test(`分类浏览（${style}）：标题里写出正确选项字母，与标出的正确项一一对应`, async ({
+    page,
+  }) => {
+    await page.addInitScript((s) => {
+      if (window !== window.top) return;
+      localStorage.setItem("ui:uiStyle", s);
+    }, style);
+    await page.goto("/browse");
+    const rows = page.locator("main article");
+    await expect(rows.first()).toBeVisible();
+
+    // 颜色之外必须有文字：读屏 / 色觉障碍 / 灰度打印只能靠标题里的字母认出哪几项是对的
+    let multi = 0;
+    for (let i = 0; i < 8; i++) {
+      const card = rows.nth(i);
+      const right = card.locator('[data-right="true"]');
+      const letters = await right.evaluateAll((els) =>
+        els.map((e) => (e.textContent ?? "").trim().charAt(0)),
+      );
+      expect(letters.length, `第 ${i + 1} 张卡没有标出正确项`).toBeGreaterThan(0);
+      if (letters.length > 1) multi += 1;
+
+      const head = (await card.getByText(/正确答案/).first().innerText()).replace(/\s+/g, "");
+      expect(head, `第 ${i + 1} 张卡标题里的字母`).toContain(letters.join("、"));
+      expect(head.match(/[A-D]/g)?.length ?? 0).toBe(letters.length);
+    }
+    expect(multi, "前 8 张里至少有一道多选，才覆盖到「共 N 项」的写法").toBeGreaterThan(0);
+  });
+
+  test(`分类浏览（${style}）：收藏按钮的无障碍名带题号`, async ({ page }) => {
+    await page.addInitScript((s) => {
+      if (window !== window.top) return;
+      localStorage.setItem("ui:uiStyle", s);
+    }, style);
+    await page.goto("/browse");
+    const rows = page.locator("main article");
+    await expect(rows.nth(1)).toBeVisible();
+    // 同屏有很多张卡：名字不带题号，读屏听到的就是一排一模一样的「收藏本题」
+    const names = await rows
+      .locator("button[aria-pressed]")
+      .evaluateAll((els) => els.slice(0, 5).map((e) => e.getAttribute("aria-label")));
+    expect(names.every((n) => /^收藏题目 \S+/.test(n ?? ""))).toBe(true);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  test(`收藏（${style}）：其它标签页改了收藏，本页的题目卡与收藏集列表跟着变`, async ({
+    page,
+  }) => {
+    const context = page.context();
+    await context.addInitScript((s) => {
+      if (window !== window.top) return;
+      localStorage.setItem("ui:uiStyle", s);
+    }, style);
+    const BOOKMARK = /^收藏题目 \S+/;
+
+    // 本页停在收藏集（空），另一个标签页在浏览页收藏第一题
+    await page.goto("/bookmarks");
+    await expect(page.getByText("暂无收藏")).toBeVisible();
+    const other = await context.newPage();
+    await other.goto("/browse");
+    const otherRow = other.locator("main article").first();
+    await expect(otherRow).toBeVisible();
+    await otherRow.getByRole("button", { name: BOOKMARK }).click();
+    await expect(page.locator("main article")).toHaveCount(1);
+
+    // 本页换到浏览页：第一题已是收藏态；另一个标签页再取消，本页要跟着翻回去
+    await page.goto("/browse");
+    const mine = page.locator("main article").first().getByRole("button", { name: BOOKMARK });
+    await expect(mine).toHaveAttribute("aria-pressed", "true");
+    await otherRow.getByRole("button", { name: BOOKMARK }).click();
+    await expect(mine).toHaveAttribute("aria-pressed", "false");
+  });
+}
+
 test("分类浏览：加载更多分页", async ({ page }) => {
   await page.goto("/browse");
   const rows = page.locator("main article");

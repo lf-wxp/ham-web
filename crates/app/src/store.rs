@@ -8,6 +8,8 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
+use leptos::prelude::{ArcRwSignal, Effect, Get, RwSignal, Set, Update};
+
 use ham_web_core::Bank;
 use ham_web_core::QuestionItem;
 use ham_web_core::bookmark_groups::BookmarkGroups;
@@ -34,6 +36,35 @@ struct Caches {
 
 thread_local! {
   static CACHES: RefCell<Caches> = RefCell::new(Caches::default());
+  /// 收藏被「本页之外」改动的次数（其它标签页写入、整体失效）。本页自己的切换不计：
+  /// 页面已经就地更新了自己的快照。用 `Arc` 版信号，不依附任何组件的生命周期。
+  static BOOKMARKS_REV: ArcRwSignal<u32> = ArcRwSignal::new(0);
+}
+
+/// 收藏被本页之外改动的修订号；订阅它的页面据此重读收藏。
+pub fn bookmarks_revision() -> ArcRwSignal<u32> {
+  BOOKMARKS_REV.with(Clone::clone)
+}
+
+fn bump_bookmarks_revision() {
+  BOOKMARKS_REV.with(|r| r.update(|n| *n = n.wrapping_add(1)));
+}
+
+/// 页面持有的收藏快照：挂载时读一次，之后本页的切换由页面就地改它，
+/// 其它标签页改了收藏时自动重读（不依赖每个页面各自监听 `storage`）。
+///
+/// 必须在组件体里调用（内部登记了一个 `Effect`）。
+pub fn use_bookmark_snapshot() -> RwSignal<HashSet<String>> {
+  let snapshot = RwSignal::new(load_bookmarks());
+  let rev = bookmarks_revision();
+  Effect::new(move |prev: Option<()>| {
+    rev.get();
+    // 首次运行就是挂载，快照刚读过，不必再读一遍。
+    if prev.is_some() {
+      snapshot.set(load_bookmarks());
+    }
+  });
+  snapshot
 }
 
 /// 在缓存上执行 `f`（不可变借用）。
@@ -45,12 +76,16 @@ fn with_caches<R>(f: impl FnOnce(&mut Caches) -> R) -> R {
 /// 恢复——之后调用）。
 pub(crate) fn invalidate_all() {
   with_caches(|c| *c = Caches::default());
+  bump_bookmarks_revision();
 }
 
 /// 某个 key 变更后失效对应缓存。返回是否命中受缓存的 key。
 fn invalidate(key: &str) -> bool {
   match key {
-    BOOKMARKS_KEY => with_caches(|c| c.bookmarks = None),
+    BOOKMARKS_KEY => {
+      with_caches(|c| c.bookmarks = None);
+      bump_bookmarks_revision();
+    }
     GROUPS_KEY => with_caches(|c| c.groups = None),
     NOTES_KEY => with_caches(|c| c.notes = None),
     _ => return false,

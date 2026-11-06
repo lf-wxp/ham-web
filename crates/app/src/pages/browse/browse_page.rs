@@ -41,7 +41,7 @@ pub fn BrowsePage() -> impl IntoView {
   let visible = RwSignal::new(PAGE);
   let open_top = RwSignal::new(HashSet::<&'static str>::new());
   // 收藏快照：每行从里面读自己那一项（`QuestionRow` 里的 Memo），切换时由行就地增删。
-  let bookmarks = RwSignal::new(store::load_bookmarks());
+  let bookmarks = store::use_bookmark_snapshot();
 
   // 支持 /browse?bank=B&q=驻波比（术语表页跳转）、/browse?sub=驻波比 SWR（错题「同类题」跳转）
   let query = use_query_map();

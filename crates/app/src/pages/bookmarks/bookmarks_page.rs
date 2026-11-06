@@ -1,9 +1,12 @@
+use std::collections::HashSet;
+
 use ham_web_core::{Bank, QuestionItem};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
 use crate::components::common::{EmptyState, PageContainer, PageHeader, Skeleton};
 use crate::data;
+use crate::pages::browse::PAGE;
 use crate::store;
 use crate::ui::{Button, ButtonLink, Input, Size, Variant};
 use crate::util::set_title;
@@ -22,25 +25,40 @@ enum Filter {
 #[component]
 pub fn BookmarksPage() -> impl IntoView {
   set_title("shell.bookmarks");
+  // 题目卡与分类浏览共用 `QuestionRow`，它渲染 `crates/core` 的中文原文（`kt_tracked`），
+  // 译文词典要在本页挂一次拉取，否则以英文 / 西语直接打开本页时标签停在中文。
+  data::use_knowledge_i18n();
 
   let questions = RwSignal::new(Vec::<QuestionItem>::new());
   let loading = RwSignal::new(true);
-  let refresh = RwSignal::new(0usize);
   let groups = RwSignal::new(store::load_groups());
   let group_filter = RwSignal::new(Filter::All);
   let new_group = RwSignal::new(String::new());
+  // 列表一次显示多少条：卡片带完整解析，一次铺开几百张会很重；筛选条件变了回到第一页。
+  let visible = RwSignal::new(PAGE);
+  // 收藏快照：每张题目卡从里面读自己的收藏状态，切换时由卡片就地改它；
+  // 其它标签页改了收藏时由 `store` 的修订号触发重读。
+  let bookmarks = store::use_bookmark_snapshot();
 
+  // 只在挂载和「别的标签页改了收藏」时拉一次库。本页自己的取消收藏走下面的就地删除，
+  // 不再整页重载 —— 重载会重建所有卡片，别的卡里展开着的笔记和未保存的草稿都会丢。
+  let external_change = store::bookmarks_revision();
   Effect::new(move |_| {
-    refresh.get();
+    external_change.get();
     loading.set(true);
     spawn_local(async move {
       let ids = store::load_bookmarks();
+      // 列表按题号键控渲染，同一题号只留一份（收藏本来就以题号为键）。
+      let mut seen = HashSet::new();
       let mut result = Vec::new();
       for bank in Bank::ALL {
         if let Ok(qs) = data::load_bank(None, bank, false).await {
           result.extend(
             qs.iter()
-              .filter(|q| q.stable_id().is_some_and(|id| ids.contains(&id)))
+              .filter(|q| {
+                q.stable_id()
+                  .is_some_and(|id| ids.contains(&id) && seen.insert(id))
+              })
               .cloned(),
           );
         }
@@ -50,12 +68,17 @@ pub fn BookmarksPage() -> impl IntoView {
     });
   });
 
-  let remove = move |q: QuestionItem| {
-    if let Some(id) = q.stable_id() {
-      store::toggle_bookmark(&id);
-    }
-    refresh.update(|r| *r += 1);
-  };
+  // 题目卡自己切换了存储与快照；取消收藏后这一题不再属于收藏集，就地拿掉它。
+  // 延后一拍：这个回调是在那张卡自己的点击处理里被调用的，当场卸载它等于在处理函数
+  // 执行到一半时销毁它的响应式所有者。
+  let on_unbookmark = Callback::new(move |id: String| {
+    spawn_local(async move {
+      questions.update(|qs| qs.retain(|q| q.stable_id().as_deref() != Some(id.as_str())));
+      // `toggle_bookmark` 已把存储里各分组的残留清掉了，页面持有的副本要跟着重读，
+      // 否则分组计数过期，之后任何分组操作还会把残留条目写回存储。
+      groups.set(store::load_groups());
+    });
+  });
 
   let create_group = move || {
     let name = new_group.get_untracked().trim().to_owned();
@@ -124,6 +147,28 @@ pub fn BookmarksPage() -> impl IntoView {
       }
     })
   };
+
+  // 外层渲染闭包只订阅这几个「会改变分支」的 Memo（有没有收藏 / 筛选后是否为空）：
+  // 列表里少一张卡、多一个分组都不会让它重跑，也就不会重建整个列表。
+  // 列表本身交给 `<For>` 按题号键控，只增删真正变化的那几张卡。
+  let has_any = Memo::new(move |_| questions.with(|qs| !qs.is_empty()));
+  let total = Memo::new(move |_| filtered().count());
+  let list_empty = Memo::new(move |_| total.get() == 0);
+  let page_items = move || {
+    filtered()
+      .take(visible.get())
+      .collect::<Vec<QuestionItem>>()
+  };
+  // 还有没显示的：`Some((已显示, 总数))`。
+  let more_left = move || {
+    let total = total.get();
+    let shown = visible.get().min(total);
+    (shown < total).then_some((shown, total))
+  };
+  Effect::new(move |_| {
+    group_filter.with(|_| ());
+    visible.set(PAGE);
+  });
 
   let filter_tab = |on: bool| {
     if on {
@@ -231,7 +276,7 @@ pub fn BookmarksPage() -> impl IntoView {
               }
                 .into_any();
             }
-            if questions.get().is_empty() {
+            if !has_any.get() {
               return view! {
                 <EmptyState
                   title=Signal::derive(move || t("exam.no-bookmarks-yet"))
@@ -242,8 +287,7 @@ pub fn BookmarksPage() -> impl IntoView {
               }
                 .into_any();
             }
-            let list: Vec<QuestionItem> = filtered().collect();
-            if list.is_empty() {
+            if list_empty.get() {
               return view! {
                 <EmptyState
                   title=Signal::derive(move || t("exam.no-questions-in-this"))
@@ -252,33 +296,39 @@ pub fn BookmarksPage() -> impl IntoView {
               }
                 .into_any();
             }
-            let gs = groups.get();
-            let all_groups: Vec<String> = gs.groups.iter().map(|g| g.name.clone()).collect();
             view! {
               <div class="md-bookmark-list">
-                {list
-                  .into_iter()
-                  .map(|q| {
-                    let id = q.stable_id().unwrap_or_default();
-                    let groups_of = gs
-                      .groups
-                      .iter()
-                      .filter(|g| g.ids.iter().any(|x| x == &id))
-                      .map(|g| g.name.clone())
-                      .collect::<Vec<_>>();
+                <For
+                  each=page_items
+                  key=|q| q.stable_id().unwrap_or_default()
+                  children=move |q| {
                     view! {
                       <BookmarkCard
                         question=q
-                        groups_of=groups_of
-                        all_groups=all_groups.clone()
-                        on_remove=Callback::new(remove)
+                        groups=groups
+                        bookmarks=bookmarks
+                        on_unbookmark=on_unbookmark
                         on_add_to_group=Callback::new(add_to_group)
                         on_remove_from_group=Callback::new(remove_from_group)
                       />
                     }
-                  })
-                  .collect_view()}
+                  }
+                />
               </div>
+              {move || {
+                more_left()
+                  .map(|(shown, total)| {
+                    view! {
+                      <button
+                        type="button"
+                        class="md-btn md-btn-outline mt-4 w-full"
+                        on:click=move |_| visible.update(|v| *v += PAGE)
+                      >
+                        {move || tf("knowledge.load-more-count", &[&shown.to_string(), &total.to_string()])}
+                      </button>
+                    }
+                  })
+              }}
             }
               .into_any()
           }}
@@ -377,7 +427,7 @@ pub fn BookmarksPage() -> impl IntoView {
               </div>
             }
               .into_any()
-          } else if questions.get().is_empty() {
+          } else if !has_any.get() {
             view! {
               <EmptyState
                 title=Signal::derive(move || t("exam.no-bookmarks-yet"))
@@ -385,34 +435,43 @@ pub fn BookmarksPage() -> impl IntoView {
               />
             }
             .into_any()
-          } else {
-            let list: Vec<QuestionItem> = filtered().collect();
-            if list.is_empty() {
-              return view! {
-                <EmptyState title=Signal::derive(move || t("exam.no-questions-in-this")) description=t("exam.add-bookmarks-to-this") />
-              }
-              .into_any();
-            }
-            let gs = groups.get();
-            let all_groups: Vec<String> = gs.groups.iter().map(|g| g.name.clone()).collect();
+          } else if list_empty.get() {
             view! {
-              {list
-                .into_iter()
-                .map(|q| {
-                  let id = q.stable_id().unwrap_or_default();
-                  let groups_of = gs.groups_of(&id);
+              <EmptyState title=Signal::derive(move || t("exam.no-questions-in-this")) description=t("exam.add-bookmarks-to-this") />
+            }
+            .into_any()
+          } else {
+            view! {
+              <For
+                each=page_items
+                key=|q| q.stable_id().unwrap_or_default()
+                children=move |q| {
                   view! {
                     <BookmarkCard
                       question=q
-                      groups_of=groups_of
-                      all_groups=all_groups.clone()
-                      on_remove=Callback::new(remove)
+                      groups=groups
+                      bookmarks=bookmarks
+                      on_unbookmark=on_unbookmark
                       on_add_to_group=Callback::new(add_to_group)
                       on_remove_from_group=Callback::new(remove_from_group)
                     />
                   }
-                })
-                .collect_view()}
+                }
+              />
+              {move || {
+                more_left()
+                  .map(|(shown, total)| {
+                    view! {
+                      <Button
+                        variant=Variant::Outline
+                        class="w-full"
+                        on_click=Callback::new(move |_| visible.update(|v| *v += PAGE))
+                      >
+                        {move || tf("knowledge.load-more-count", &[&shown.to_string(), &total.to_string()])}
+                      </Button>
+                    }
+                  })
+              }}
             }
             .into_any()
           }

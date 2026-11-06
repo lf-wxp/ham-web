@@ -5121,64 +5121,7 @@ body[data-page-mode="exam"] .md-exam {
     gap: var(--md-space-3-5);
   }
 
-  .md-bookmark {
-    display: flex;
-    flex-direction: column;
-    padding: var(--md-space-4) var(--md-space-5);
-    border: 1px solid var(--md-border);
-    border-radius: var(--md-r-lg);
-    background-color: var(--md-surface);
-  }
-
-  .md-bookmark-head {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--md-space-2-5);
-  }
-
-  .md-bookmark-j {
-    flex-shrink: 0;
-    margin-top: var(--md-space-0-5);
-    padding: 1px 7px;
-    border-radius: var(--md-r-pill);
-    background-color: var(--md-surface-2);
-    font-family: var(--md-font-mono);
-    font-size: var(--md-text-xs);
-    color: var(--md-fg-muted);
-  }
-
-  .md-bookmark-q {
-    flex: 1;
-    min-width: 0;
-    font-size: var(--md-text-base);
-    line-height: 1.6;
-  }
-
-  .md-bookmark-remove:hover {
-    color: var(--md-danger-ink);
-    border-color: var(--md-danger);
-  }
-
-  .md-bookmark-opts {
-    display: flex;
-    flex-direction: column;
-    gap: var(--md-space-1);
-    margin-top: var(--md-space-2-5);
-    font-size: var(--md-text-sm);
-    color: var(--md-fg-muted);
-  }
-
-  .md-bookmark-opts li {
-    display: flex;
-    gap: var(--md-space-2);
-  }
-
-  .md-bookmark-answer {
-    margin-top: var(--md-space-2-5);
-    font-size: var(--md-text-sm);
-    color: var(--md-green);
-  }
-
+  /* 题目本身是 `.md-q-row`（与分类浏览同一张卡）；这里只剩卡片末尾的分组 / 笔记操作区。 */
   .md-bookmark-foot {
     display: flex;
     flex-wrap: wrap;
@@ -5581,6 +5524,17 @@ html[data-ui-style="modern"] .md-panel table:not(.md-table) tbody tr:last-child 
     line-height: 1.6;
   }
 
+  /* 题目附图：卡片是纵向 flex，图片默认会被拉满整行；改成自身尺寸、只防顶破卡片。 */
+  .md-q-row-img {
+    align-self: flex-start;
+    max-width: 100%;
+    max-height: 16rem;
+    margin-top: var(--md-space-2-5);
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-sm);
+    object-fit: contain;
+  }
+
   .md-q-row-opts {
     display: flex;
     flex-direction: column;
@@ -5746,12 +5700,11 @@ html[data-ui-style="modern"].js-motion [data-reveal="in"] {
   }
 
   /* ---------- 3) 可点卡片的「呼吸」 ----------
-     只给整块可点的卡片：选项行、题卡、模块卡、书签卡。
+     只给整块可点的卡片：选项行、题卡、模块卡。
      纯内容面板（`.md-panel`）不加 —— 悬停时正文跟着位移会干扰阅读。 */
   .md-opt,
   .md-feature,
-  .md-mod,
-  .md-bookmark {
+  .md-mod {
     transition:
       translate var(--md-dur-fast) var(--md-ease),
       border-color var(--md-dur-fast) var(--md-ease),
@@ -5761,8 +5714,7 @@ html[data-ui-style="modern"].js-motion [data-reveal="in"] {
 
   @media (hover: hover) {
     .md-feature:hover,
-    .md-mod:hover,
-    .md-bookmark:hover {
+    .md-mod:hover {
       translate: 0 -3px;
       box-shadow: 0 18px 36px -22px rgb(11 13 18 / 0.45);
     }
@@ -5968,7 +5920,6 @@ html[data-ui-style="modern"].js-motion [data-reveal="in"] {
 
     .md-feature:hover,
     .md-mod:hover,
-    .md-bookmark:hover,
     .md-opt:hover {
       translate: none;
     }

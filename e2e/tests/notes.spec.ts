@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { correctLetters, expect, option, test, wrongLetter } from "./fixtures";
 
 test("错题重练：答后可记笔记，重新进入仍在", async ({ page }) => {
@@ -66,7 +67,7 @@ test("收藏集：笔记按需展开，不占满列表", async ({ page }) => {
   await expect(page.getByRole("button", { name: "笔记" }).first().locator("span")).toBeVisible();
 });
 
-test("收藏集：每道收藏题带可展开的答案解析", async ({ page }) => {
+test("收藏集：题目展示与分类浏览是同一张卡，取消收藏后从列表消失", async ({ page }) => {
   await page.goto("/practice");
   await expect(page.getByText(/第 1 \/ \d+ 题/)).toBeVisible();
   await page.getByRole("button", { name: "收藏" }).first().click();
@@ -74,13 +75,95 @@ test("收藏集：每道收藏题带可展开的答案解析", async ({ page }) 
   await page.goto("/bookmarks");
   await expect(page.getByRole("heading", { level: 1, name: "收藏集" })).toBeVisible();
 
-  // 默认折叠，点开后 aria-expanded 翻转
-  const toggle = page.getByRole("button", { name: "答案解析" }).first();
-  await expect(toggle).toBeVisible();
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  // 与分类浏览同一张题目卡：直接铺开正确答案与解析，不再把解析折叠成按钮
+  const card = page.locator("main article").first();
+  await expect(card.getByText(/^(✓ )?正确答案/).first()).toBeVisible();
+  await expect(card.getByRole("button", { name: "答案解析" })).toHaveCount(0);
+
+  // 卡片上的收藏开关处于按下态（两套皮肤的无障碍名不同，按状态而不是名字定位）
+  const bookmark = card.getByRole("button", { pressed: true });
+  await expect(bookmark).toBeVisible();
+  await bookmark.click();
+  await expect(page.getByText("暂无收藏")).toBeVisible();
 });
+
+// 收藏集的列表行为在两套皮肤下各跑一遍：题目卡、分组区、笔记区是两套不同的 DOM。
+// 注意 `E2E_UI_STYLE` 只对 `mobile_overflow` / `i18n_layout` 生效，这里必须在用例里显式切皮肤。
+type Style = "pixel" | "modern";
+const STYLES: Style[] = ["pixel", "modern"];
+
+/** 预置收藏（A 类前 `count` 题）与分组，以指定皮肤打开收藏集。种子只在文档加载时写入，用例内不要 reload。 */
+async function openBookmarks(
+  page: Page,
+  style: Style,
+  count: number,
+  groups: { name: string; ids: string[] }[] = [],
+) {
+  await page.addInitScript(
+    ([s, n, g]) => {
+      if (window !== window.top) return;
+      localStorage.setItem("ui:uiStyle", s);
+      localStorage.setItem(
+        "bookmarks",
+        JSON.stringify(Array.from({ length: n }, (_, i) => `A-${i + 1}`)),
+      );
+      localStorage.setItem("bookmark-groups", JSON.stringify({ groups: g }));
+    },
+    [style, count, groups] as const,
+  );
+  await page.goto("/bookmarks");
+  await expect(page.getByRole("heading", { level: 1, name: "收藏集" })).toBeVisible();
+}
+
+for (const style of STYLES) {
+  test(`收藏集（${style}）：取消一张收藏，别的卡片里展开的笔记与草稿不丢`, async ({ page }) => {
+    await openBookmarks(page, style, 3);
+    const cards = page.locator("main article");
+    await expect(cards).toHaveCount(3);
+
+    await cards.nth(1).getByRole("button", { name: "笔记" }).click();
+    const editor = page.getByRole("textbox", { name: "笔记内容" });
+    await editor.fill("未保存的草稿");
+
+    await cards.nth(0).getByRole("button", { pressed: true }).click();
+    await expect(cards).toHaveCount(2);
+    // 列表不能整页重载：重载会重建全部卡片，展开状态与草稿一起消失
+    await expect(editor).toBeVisible();
+    await expect(editor).toHaveValue("未保存的草稿");
+  });
+
+  test(`收藏集（${style}）：取消收藏后分组计数立即更新，且不会被后续分组操作写回`, async ({
+    page,
+  }) => {
+    await openBookmarks(page, style, 3, [{ name: "组甲", ids: ["A-1", "A-2"] }]);
+    await expect(page.getByRole("button", { name: /^组甲\s*2$/ })).toBeVisible();
+
+    await page.locator("main article").first().getByRole("button", { pressed: true }).click();
+    await expect(page.getByRole("button", { name: /^组甲\s*1$/ })).toBeVisible();
+
+    // 页面里的分组副本过期时，下面这次保存会把已清理的 A-1 写回存储
+    await page.getByRole("textbox").first().fill("组乙");
+    await page.getByRole("button", { name: "新建分组" }).first().click();
+    await expect(page.getByRole("button", { name: /^组乙/ })).toBeVisible();
+    const stored = await page.evaluate(() => localStorage.getItem("bookmark-groups") ?? "{}");
+    const jia = (JSON.parse(stored).groups as { name: string; ids: string[] }[]).find(
+      (g) => g.name === "组甲",
+    );
+    expect(jia?.ids).toEqual(["A-2"]);
+  });
+
+  test(`收藏集（${style}）：收藏很多时分页显示，可加载更多`, async ({ page }) => {
+    await openBookmarks(page, style, 100);
+    const cards = page.locator("main article");
+    await expect(cards.first()).toBeVisible();
+    await expect(cards).toHaveCount(40);
+
+    const more = page.getByRole("button", { name: /加载更多（已显示 40 \/ 100）/ });
+    await more.click();
+    await expect(cards).toHaveCount(80);
+    await expect(page.getByRole("button", { name: /加载更多（已显示 80 \/ 100）/ })).toBeVisible();
+  });
+}
 
 test("快捷键：? 唤起帮助面板，Esc 可关闭", async ({ page }) => {
   await page.goto("/practice");

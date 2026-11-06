@@ -11,12 +11,23 @@ use crate::store;
 use crate::tone;
 use crate::ui::ChipToggle;
 
+/// 一道题的完整展示卡（题号 / 分类标签、题干、正确答案、解析、知识点、参考依据）。
+///
+/// 分类浏览与收藏集共用这一张卡：同一道题在两处长得一样，收藏集只通过 `children`
+/// 在卡片末尾追加自己的分组 / 笔记操作区，不另画一套题目版式。
 #[component]
-pub(super) fn QuestionRow(
+pub(crate) fn QuestionRow(
   q: QuestionItem,
   /// 列表页持有的收藏快照：本行从里面读自己的状态，切换时就地改它。
   /// 不直接读 `store::is_bookmarked()`：那是普通函数、不参与响应式，点了不会变色。
   bookmarks: RwSignal<HashSet<String>>,
+  /// 收藏状态切换后的回调，参数是切换后的真实状态（`true` = 已收藏）。
+  /// 收藏集靠它在取消收藏后把这一题从列表里拿掉。
+  #[prop(optional)]
+  on_bookmark_change: Option<Callback<bool>>,
+  /// 卡片末尾的追加内容（分隔线以下的操作区）。
+  #[prop(optional)]
+  children: Option<Children>,
 ) -> impl IntoView {
   // 没有稳定编号（`id` 与 `J` 都缺）的题不给收藏入口：位置兜底键 `pos:N` 随列表顺序变，
   // 写进存储后练习页对不上、收藏集也列不出来，用户还取消不了。
@@ -48,6 +59,9 @@ pub(super) fn QuestionRow(
           set.remove(&id);
         }
       });
+      if let Some(cb) = on_bookmark_change {
+        cb.run(added);
+      }
     });
     view! {
       <ChipToggle active=marked on_change=on_change aria_label=label title=title>
@@ -60,16 +74,19 @@ pub(super) fn QuestionRow(
   });
   let sub = q.p_code().and_then(categories::sub_category);
   let top_cat = sub.and_then(|s| categories::top_category(s.top));
-  let answers: Vec<_> = q
+  // 正确选项的字母（按选项顺序）：标题里要写出来，不能只靠选项的颜色 / 边框区分对错 ——
+  // 读屏、色觉障碍与灰度打印都看不到颜色。
+  let answer_letters: Vec<&str> = q
     .options
     .iter()
     .filter(|o| q.answer_keys.contains(&o.key))
-    .cloned()
+    .map(|o| o.key.as_str())
     .collect();
+  let answer_count = answer_letters.len();
+  let answer_letters = answer_letters.join("、");
   let note = q.p_code().and_then(categories::sub_note);
   let refs = top_cat.map_or(&[][..], |c| categories::top_refs(c.key));
   let is_multiple = q.is_multiple();
-  let answer_count = answers.len();
   let answer_title = move || {
     if is_multiple {
       tp(
@@ -84,23 +101,27 @@ pub(super) fn QuestionRow(
 
   if crate::kit::is_modern_at_mount() {
     let modern_id = q.stable_id();
+    // 与像素风同一个无障碍名：带题号，收藏集里一屏有多张卡时读屏分得清是哪一题。
+    let bookmark_label_id = modern_id.clone().unwrap_or_default();
     // 标签行与像素风取同一组字段（`id` 退化到 `J`、一级 / 二级分类、题型、官方分类码 `P`），
     // 两套皮肤对「这一题是什么」给出同一份答案。`id` 形如 `A-1`，本身就带题库类字母。
     let row_id = q.id_str().or(q.j_code()).map(ToOwned::to_owned);
     let p_code = q.p_code().map(ToOwned::to_owned);
-    // 初值只在挂载时取一次快照（组件体里没有观察者，`with` 会报「跟踪上下文之外读信号」）；
-    // 之后的同步靠下面 `bookmarks.update` 与本地 `marked`，不依赖这里的订阅。
-    let marked = RwSignal::new(
-      modern_id
-        .clone()
-        .is_some_and(|id| bookmarks.with_untracked(|s| s.contains(&id))),
-    );
+    // 与像素风同一种写法：状态从列表持有的快照派生（`Memo` 自带观察者，组件体里读不会报
+    // 「跟踪上下文之外读信号」）。不能只在挂载时取一次初值再靠本地信号同步 —— 那样
+    // 其它标签页改了收藏、快照重读后，这张卡仍停在旧状态。
+    let marked = Memo::new({
+      let id = modern_id.clone();
+      move |_| {
+        id.as_ref()
+          .is_some_and(|id| bookmarks.with(|s| s.contains(id)))
+      }
+    });
     let toggle_bookmark = {
       let id = modern_id.clone();
       move |_| {
         let Some(id) = id.clone() else { return };
         let added = store::toggle_bookmark(&id);
-        marked.set(added);
         bookmarks.update(|set| {
           if added {
             set.insert(id.clone());
@@ -108,6 +129,9 @@ pub(super) fn QuestionRow(
             set.remove(&id);
           }
         });
+        if let Some(cb) = on_bookmark_change {
+          cb.run(added);
+        }
       }
     };
 
@@ -156,7 +180,10 @@ pub(super) fn QuestionRow(
                   type="button"
                   class="md-icon-btn"
                   aria-pressed=move || marked.get().to_string()
-                  aria-label=move || t("exam.bookmark-this-question")
+                  aria-label=move || tf("exam.bookmark-question", &[&bookmark_label_id])
+                  title=move || {
+                    if marked.get() { t("exam.remove-bookmark") } else { t("exam.bookmark-this-question") }
+                  }
                   on:click=toggle_bookmark
                 >
                   <crate::kit_modern::ModernIcon kind=crate::kit_modern::MIcon::Book />
@@ -166,6 +193,18 @@ pub(super) fn QuestionRow(
         </div>
 
         <p class="md-q-row-text">{q.question.clone()}</p>
+        {q
+          .image()
+          .map(|src| {
+            view! {
+              <img
+                class="md-q-row-img"
+                src=src.to_owned()
+                alt=move || t("exam.question-image")
+                loading="lazy"
+              />
+            }
+          })}
 
         <ul class="md-q-row-opts">
           {q
@@ -184,7 +223,7 @@ pub(super) fn QuestionRow(
         </ul>
 
         <p class="md-q-row-answer">
-          "✓ " {answer_title}
+          "✓ " {answer_title} " " <span class="md-mono">{answer_letters.clone()}</span>
         </p>
 
         <div class="md-q-row-meta">
@@ -248,6 +287,7 @@ pub(super) fn QuestionRow(
               }
             })}
         </div>
+        {children.map(|c| c())}
       </article>
     }
     .into_any();
@@ -285,22 +325,29 @@ pub(super) fn QuestionRow(
       </div>
 
       <div class="mb-3 leading-relaxed">{q.question.clone()}</div>
-      {q.image().map(|src| view! { <img src=src.to_owned() alt="题目附图" loading="lazy" class="mb-3 max-h-64 border" /> })}
+      {q.image().map(|src| view! { <img src=src.to_owned() alt=move || t("exam.question-image") loading="lazy" class="mb-3 max-h-64 border" /> })}
 
       <div class="mb-3 border border-win/40 bg-win/5 p-3">
         <div class="mb-1.5 flex items-center gap-1.5 text-xs text-win-text">
           <Icon kind=IconKind::CheckCircle2 class="size-6 w-3.5" />
-          {answer_title}
+          {answer_title} <span class="font-mono">{answer_letters}</span>
         </div>
-        {answers
-          .into_iter()
-          .map(|a| {
+        // 列出全部选项，正确项用绿色实心标出：只给正确项的话，读者看不到干扰项长什么样。
+        {q
+          .options
+          .iter()
+          .map(|o| {
+            let right = q.answer_keys.contains(&o.key);
+            let key_class = if right {
+              "mt-0.5 flex size-5 shrink-0 items-center justify-center border-2 border-win bg-win/15 text-xs text-win-text"
+            } else {
+              "mt-0.5 flex size-5 shrink-0 items-center justify-center border-2 bg-card text-xs text-muted-foreground"
+            };
+            let text_class = if right { "flex-1" } else { "flex-1 text-muted-foreground" };
             view! {
-              <div class="flex items-start gap-2 py-0.5 text-sm">
-                <span class="mt-0.5 flex size-5 shrink-0 items-center justify-center border-2 border-win bg-card text-xs text-win-text">
-                  {a.key}
-                </span>
-                <span class="flex-1">{a.text}</span>
+              <div class="flex items-start gap-2 py-0.5 text-sm" data-right=right.to_string()>
+                <span class=key_class>{o.key.clone()}</span>
+                <span class=text_class>{o.text.clone()}</span>
               </div>
             }
           })
@@ -388,6 +435,7 @@ pub(super) fn QuestionRow(
             </div>
           }
         })}
+      {children.map(|c| c())}
     </article>
   }
   .into_any()
