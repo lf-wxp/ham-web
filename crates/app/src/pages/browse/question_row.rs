@@ -25,10 +25,20 @@ pub(crate) fn QuestionRow(
   /// 收藏集靠它在取消收藏后把这一题从列表里拿掉。
   #[prop(optional)]
   on_bookmark_change: Option<Callback<bool>>,
+  /// 解析文本的来源；不传就用题目自带的 `explanation`。
+  /// 错题本里的题是答错当时的快照，解析可能已被订正，调用方传入「读题库现在的解析」
+  /// 的信号（`data::snapshot_explanation`），索引到达后只换这一块文字，整张卡不重建。
+  #[prop(optional)]
+  explanation: Option<Signal<Option<String>>>,
+  /// 用户当时选的选项字母（错题本用）：命中的选项标上「我的选择」，选错的另加红色描边，
+  /// 与正确项并排对照。文字标记是必须的，颜色之外读屏与灰度打印也能分辨。
+  #[prop(optional)]
+  chosen: Vec<String>,
   /// 卡片末尾的追加内容（分隔线以下的操作区）。
   #[prop(optional)]
   children: Option<Children>,
 ) -> impl IntoView {
+  let explanation = explanation.unwrap_or_else(|| Signal::stored(q.explanation.clone()));
   // 没有稳定编号（`id` 与 `J` 都缺）的题不给收藏入口：位置兜底键 `pos:N` 随列表顺序变，
   // 写进存储后练习页对不上、收藏集也列不出来，用户还取消不了。
   let bookmark_toggle = q.stable_id().map(|id| {
@@ -212,10 +222,13 @@ pub(crate) fn QuestionRow(
             .iter()
             .map(|o| {
               let right = q.answer_keys.contains(&o.key);
+              let picked = chosen.contains(&o.key);
               view! {
-                <li data-right=right.to_string()>
+                <li data-right=right.to_string() data-chosen=picked.to_string()>
                   <span class="md-mono">{o.key.clone()}</span>
                   <span>{o.text.clone()}</span>
+                  {picked
+                    .then(|| view! { <span class="md-q-row-chosen">{move || t("learning.my-choice")}</span> })}
                 </li>
               }
             })
@@ -227,18 +240,19 @@ pub(crate) fn QuestionRow(
         </p>
 
         <div class="md-q-row-meta">
-          {q
-            .explanation
-            .clone()
-            .filter(|e| !e.is_empty())
-            .map(|e| {
-              view! {
-                <div class="md-q-row-block">
-                  <span class="md-stat-label">{move || t("exam.explanation")}</span>
-                  <p class="md-muted md-sm whitespace-pre-line">{e}</p>
-                </div>
-              }
-            })}
+          {move || {
+            explanation
+              .get()
+              .filter(|e| !e.is_empty())
+              .map(|e| {
+                view! {
+                  <div class="md-q-row-block">
+                    <span class="md-stat-label">{move || t("exam.explanation")}</span>
+                    <p class="md-muted md-sm whitespace-pre-line">{e}</p>
+                  </div>
+                }
+              })
+          }}
           {note
             .map(|n| {
               view! {
@@ -338,46 +352,56 @@ pub(crate) fn QuestionRow(
           .iter()
           .map(|o| {
             let right = q.answer_keys.contains(&o.key);
+            let picked = chosen.contains(&o.key);
             let key_class = if right {
               "mt-0.5 flex size-5 shrink-0 items-center justify-center border-2 border-win bg-win/15 text-xs text-win-text"
+            } else if picked {
+              "mt-0.5 flex size-5 shrink-0 items-center justify-center border-2 border-hp bg-hp/15 text-xs text-hp-text"
             } else {
               "mt-0.5 flex size-5 shrink-0 items-center justify-center border-2 bg-card text-xs text-muted-foreground"
             };
-            let text_class = if right { "flex-1" } else { "flex-1 text-muted-foreground" };
+            let text_class = if right || picked { "flex-1" } else { "flex-1 text-muted-foreground" };
             view! {
-              <div class="flex items-start gap-2 py-0.5 text-sm" data-right=right.to_string()>
+              <div
+                class="flex items-start gap-2 py-0.5 text-sm"
+                data-right=right.to_string()
+                data-chosen=picked.to_string()
+              >
                 <span class=key_class>{o.key.clone()}</span>
                 <span class=text_class>{o.text.clone()}</span>
+                {picked
+                  .then(|| view! { <span class="shrink-0 text-xs text-hp-text">{move || t("learning.my-choice")}</span> })}
               </div>
             }
           })
           .collect_view()}
       </div>
 
-      {q
-        .explanation
-        .clone()
-        .filter(|e| !e.is_empty())
-        .map_or_else(
-          || {
-            view! {
-              <div class="mb-3 border-t border-dashed pt-3">
-                <div class="mb-1 text-xs text-muted-foreground">{move || t("exam.explanation")}</div>
-                <div class="text-sm leading-6 text-muted-foreground">{move || t("knowledge.no-explanation-yet-for")}</div>
-              </div>
-            }
-            .into_any()
-          },
-          |e| {
-            view! {
-              <div class="mb-3 border-t border-dashed pt-3">
-                <div class="mb-1 text-xs text-muted-foreground">{move || t("exam.explanation")}</div>
-                <div class="whitespace-pre-line text-sm leading-6 text-muted-foreground">{e}</div>
-              </div>
-            }
-            .into_any()
-          },
-        )}
+      {move || {
+        explanation
+          .get()
+          .filter(|e| !e.is_empty())
+          .map_or_else(
+            || {
+              view! {
+                <div class="mb-3 border-t border-dashed pt-3">
+                  <div class="mb-1 text-xs text-muted-foreground">{move || t("exam.explanation")}</div>
+                  <div class="text-sm leading-6 text-muted-foreground">{move || t("knowledge.no-explanation-yet-for")}</div>
+                </div>
+              }
+              .into_any()
+            },
+            |e| {
+              view! {
+                <div class="mb-3 border-t border-dashed pt-3">
+                  <div class="mb-1 text-xs text-muted-foreground">{move || t("exam.explanation")}</div>
+                  <div class="whitespace-pre-line text-sm leading-6 text-muted-foreground">{e}</div>
+                </div>
+              }
+              .into_any()
+            },
+          )
+      }}
 
       {note
         .map(|n| {

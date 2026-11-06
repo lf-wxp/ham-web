@@ -186,7 +186,9 @@
 - 窗口面板：`pxl-window`（卡片原语，自带 2px 墨色描边 + 硬投影）、`pxl-popover`（弹层）、
   `pxl-titlebar`（标题栏）。
 - 区段标题：`pxl-section-title`（卡片内的标题栏：微底纹 + 2px 墨色下沿 + 左侧主色方块）、
-  `pxl-section-head`（页内分组标题，同样式但不带底纹与下沿，用在卡片外的 `h2`）。
+  `pxl-section-head`（页内分组标题，同样式但不带底纹与下沿，用在卡片外的 `h2`）、
+  `pxl-sub-head`（题目附属信息的小标题：12px 灰字 + 同色小方块，答案解析 / 我的笔记用，层级低于题卡；
+  现代风对应 `md-x-title`）。
   **不要再手抄 `border-b px-4 py-3 text-sm font-semibold`** —— 2026-10-20 之前这样的手抄有
   216 处，`font-semibold` 在点阵字体下不生效，标题既没有字重、又比 18px 的正文更小。
 - 手写卡片：`pxl-card` —— **只是标记，本身不带任何样式**。卡片的 2px 描边、以及「卡片内贴边

@@ -12,6 +12,8 @@ use crate::components::common::{
   EmptyState, ExplanationCard, NoteEditor, PageContainer, PageHeader,
 };
 use crate::data;
+use crate::pages::browse::PAGE;
+use crate::store;
 use crate::study;
 use crate::ui::intl::decimal;
 use crate::ui::{
@@ -68,6 +70,9 @@ fn option_class(selected: bool) -> String {
 #[component]
 pub fn MistakesPage() -> impl IntoView {
   set_title("shell.mistakes");
+  // 题目卡与分类浏览、收藏集共用 `QuestionRow`，它渲染 `crates/core` 的中文原文（`kt_tracked`），
+  // 译文词典要自己挂一次拉取，否则以英文 / 西语直接打开本页时标签停在中文。
+  data::use_knowledge_i18n();
 
   let query = use_query_map();
   let bank = RwSignal::new(
@@ -80,7 +85,7 @@ pub fn MistakesPage() -> impl IntoView {
   // 题库当前版本的解析索引。错题快照里存的是答错当时的解析，订正后不会自己更新，所以
   // 展示时一律经它取（`data::snapshot_explanation`）—— 只影响显示，快照与存档原样不动。
   // 只拉快照涉及的题库，没有错题就一个都不拉；索引没到之前沿用快照，到了之后卡片只换文字，
-  // 已经展开的卡片不会因此被重建而收起。
+  // 整张卡不会因此被重建。
   let fresh = RwSignal::new(ExplanationIndex::default());
   data::spawn_explanation_index(
     records.with_untracked(|rs| banks_for(rs.iter().map(|r| r.question.id_str()))),
@@ -111,15 +116,53 @@ pub fn MistakesPage() -> impl IntoView {
   let card_known = RwSignal::new(0usize);
   let card_unknown = RwSignal::new(0usize);
 
+  // 「一级分类 + 题库」筛选的唯一谓词：重练入口（untracked 读）与列表（tracked 读）共用，
+  // 两处口径不会各改各的。
+  let matches = |m: &MistakeRecord, f: &str, b: Option<Bank>| {
+    (f.is_empty() || top_of(&m.question) == f) && b.is_none_or(|b| m.in_bank(b))
+  };
   let filtered = move || {
     let f = filter.get_untracked();
     let b = bank.get_untracked();
     records
       .get_untracked()
       .into_iter()
-      .filter(|m| (f.is_empty() || top_of(&m.question) == f) && b.is_none_or(|b| m.in_bank(b)))
+      .filter(|m| matches(m, &f, b))
       .collect::<Vec<_>>()
   };
+
+  // 列表区：题目卡带完整解析，一次铺开几百张会很重，与收藏集一样分页（`PAGE` 条一档）。
+  // 收藏快照给每张卡的收藏开关用，切换由卡片就地改它。
+  let bookmarks = store::use_bookmark_snapshot();
+  let list_key = Memo::new(move |_| (filter.get(), bank.get()));
+  // 筛选变了要回到第一页：在写筛选的地方（`set_filter` / `set_bank`）同步重置，而不是挂 `Effect`
+  // 事后补 —— `Effect` 要等渲染之后才跑，会先按旧的条数铺一遍再裁掉。
+  // 筛选只能经这两个函数写，别处不要直接 `filter.set` / `bank.set`。
+  let visible = RwSignal::new(PAGE);
+  let set_filter = move |v: String| {
+    filter.set(v);
+    visible.set(PAGE);
+  };
+  let set_bank = move |v: Option<Bank>| {
+    bank.set(v);
+    visible.set(PAGE);
+  };
+  let list_total = Memo::new(move |_| {
+    let (f, b) = list_key.get();
+    records.with(|rs| rs.iter().filter(|m| matches(m, &f, b)).count())
+  });
+  let page_items = move || {
+    let (f, b) = list_key.get();
+    let n = visible.get();
+    records.with(|rs| {
+      rs.iter()
+        .filter(|m| matches(m, &f, b))
+        .take(n)
+        .cloned()
+        .collect::<Vec<MistakeRecord>>()
+    })
+  };
+  let load_more = move || visible.update(|n| *n += PAGE);
 
   let start_with = move |list: Vec<MistakeRecord>| {
     if list.is_empty() {
@@ -261,7 +304,10 @@ pub fn MistakesPage() -> impl IntoView {
     );
   });
 
-  let idle = move || !practicing.get() && !finished.get() && !records.with(Vec::is_empty);
+  // 「有没有错题」用 Memo 收窄：外层视图闭包若直接读 `records`，每次移出 / 刷新都会重跑整块、
+  // 重建全部卡片，`<For>` 的键控就白做了。Memo 只在空 ↔ 非空翻转时才通知。
+  let has_records = Memo::new(move |_| records.with(|r| !r.is_empty()));
+  let idle = move || !practicing.get() && !finished.get() && has_records.get();
 
   // 未来 7 天错题复习前瞻（owned 数据，静态渲染）。
   let review_now = now_ms();
@@ -620,7 +666,7 @@ pub fn MistakesPage() -> impl IntoView {
               </div>
             }
             .into_any()
-          } else if records.with(Vec::is_empty) {
+          } else if !has_records.get() {
             view! {
               <EmptyState
                 icon=IconKind::BookMarked
@@ -773,7 +819,7 @@ pub fn MistakesPage() -> impl IntoView {
                               <button
                                 type="button"
                                 class="whitespace-nowrap border px-3 py-1 text-xs transition-colors hover:bg-accent"
-                                on:click=move |_| filter.set(key.to_owned())
+                                on:click=move |_| set_filter(key.to_owned())
                               >
                                 {move || t(name)} " " <span class="tabular-nums">{n}</span>
                               </button>
@@ -826,7 +872,7 @@ pub fn MistakesPage() -> impl IntoView {
                   view! {
                     <SimpleSelect
                       value=filter
-                      on_change=Callback::new(move |v: String| filter.set(v))
+                      on_change=Callback::new(move |v: String| set_filter(v))
                       options=category_options
                       placeholder=Signal::derive(move || t("learning.all-categories"))
                       aria_label=Signal::derive(move || t("learning.all-categories"))
@@ -837,7 +883,7 @@ pub fn MistakesPage() -> impl IntoView {
                 <ChipGroup
                   value=Signal::derive(move || bank.get().map_or(String::new(), |b| b.as_str().to_owned()))
                   on_change=Callback::new(move |v: String| {
-                    bank.set(if v.is_empty() { None } else { Some(Bank::from_param(Some(&v))) });
+                    set_bank(if v.is_empty() { None } else { Some(Bank::from_param(Some(&v))) });
                   })
                   aria_label=Signal::derive(move || t("exam.bank"))
                 >
@@ -853,15 +899,41 @@ pub fn MistakesPage() -> impl IntoView {
                     .collect_view()}
                 </ChipGroup>
               </div>
+              // 列表交给 `<For>` 按错题 key 键控：翻页 / 切筛选只增删真正变化的卡片，
+              // 已有的卡不重建（否则别的卡里刚点的错因标注会跟着退回存档前的样子）。
+              // 前提：列表挂载期间 `records` 只经 `remove` / 清空 / 退出重练后的 `refresh` 改变，
+              // 卡内展示的次数、间隔、到期是挂载时的快照；若新增别的刷新来源（如跨标签页同步），
+              // 要么让 key 带上这些字段，要么让卡片读 `records` 里的最新值。
+              <For
+                each=page_items
+                key=|m| m.key.clone()
+                children=move |m| {
+                  view! {
+                    <MistakeCard
+                      record=m
+                      now_ms=now_ms()
+                      fresh=fresh.read_only()
+                      bookmarks=bookmarks
+                      on_remove=remove
+                    />
+                  }
+                }
+              />
               {move || {
-                let f = filter.get();
-                let now = now_ms();
-                records
-                  .get()
-                  .into_iter()
-                  .filter(|m| (f.is_empty() || top_of(&m.question) == f.as_str()) && in_bank(m))
-                  .map(|m| view! { <MistakeCard record=m now_ms=now fresh=fresh.read_only() on_remove=remove /> })
-                  .collect_view()
+                let total = list_total.get();
+                let shown = visible.get().min(total);
+                (shown < total)
+                  .then(|| {
+                    view! {
+                      <Button
+                        variant=Variant::Outline
+                        class="w-full"
+                        on_click=Callback::new(move |_| load_more())
+                      >
+                        {move || tf("knowledge.load-more-count", &[&shown.to_string(), &total.to_string()])}
+                      </Button>
+                    }
+                  })
               }}
             }
             .into_any()

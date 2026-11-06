@@ -316,7 +316,7 @@ ease    --md-ease（标准）· --md-ease-out（入场）
 | `.md-stat` / `.md-stat-value` / `.md-stat-label` / `.md-stat-text` | 统计卡与大号读数（等宽 + tabular-nums） |
 | `.md-tablist` / `.md-tab` | 页签（底边一条线，激活项渐变下划线） |
 | `.md-pagination` / `.md-page-btn` | 分页（32px 方块，`data-current="true"` 实心） |
-| `.md-q-row*` | 分类浏览与收藏集共用的题目卡片（`.md-q-row-head` 装标签行、`.md-q-row-text` 是题干、`.md-q-row-tag` 是分类胶囊；收藏集在卡片末尾追加 `.md-bookmark-foot` 分组 / 笔记操作区，不另画题目版式）。**标签行与题干必须是两个块级行**：标签与题干同处一个 flex 行时，题干首行被胶囊推到右边、换行后回到卡片内沿，左边缘就成了锯齿。判据见 `modern_ui.spec.ts` 的「题目行」 |
+| `.md-q-row*` | 分类浏览、收藏集与错题集共用的题目卡片（`.md-q-row-head` 装标签行、`.md-q-row-text` 是题干、`.md-q-row-tag` 是分类胶囊；收藏集在卡片末尾追加 `.md-bookmark-foot` 分组 / 笔记操作区，错题集追加我的答案 / 复习进度 / 错因区，都不另画题目版式；错题集还通过 `chosen` 把用户当时选的项标上 `.md-q-row-chosen`「我的选择」，选错的另加红色左线）。**标签行与题干必须是两个块级行**：标签与题干同处一个 flex 行时，题干首行被胶囊推到右边、换行后回到卡片内沿，左边缘就成了锯齿。判据见 `modern_ui.spec.ts` 的「题目行」 |
 
 ### 4.4 弹层与导航
 

@@ -1,7 +1,9 @@
+import type { Page } from "@playwright/test";
 import {
   bankQuestion,
+  bankQuestions,
+  confirmDialog,
   correctLetters,
-  expandExplanations,
   expect,
   explanationHead,
   mistakeRecord,
@@ -162,23 +164,27 @@ test("错题本：显示记忆巩固分布", async ({ page }) => {
   await expect(page.getByText("学习中 1 道")).toBeVisible();
 });
 
-test("错题集：列表里每道错题带可展开的答案解析", async ({ page }) => {
-  await page.goto("/practice");
-  await expect(page.getByText(/第 1 \/ \d+ 题/)).toBeVisible();
-  const correct = await correctLetters(page);
-  await option(page, wrongLetter(correct)).click();
-  await page.getByRole("button", { name: "下一题" }).first().click();
-  await expect(page.getByText(/第 2 \/ \d+ 题/)).toBeVisible();
+test("错题集：题目展示与收藏集是同一张卡，带题目标签、答案解析默认展示", async ({ page }) => {
+  const q = bankQuestion(0);
+  await page.addInitScript(
+    (records) => localStorage.setItem("mistake-book", JSON.stringify({ records })),
+    [mistakeRecord(q)],
+  );
 
   await page.goto("/mistakes");
   await expect(page.getByRole("heading", { level: 1, name: "错题集" })).toBeVisible();
 
-  // 默认折叠，点开后 aria-expanded 翻转
-  const toggle = page.getByRole("button", { name: "答案解析" }).first();
-  await expect(toggle).toBeVisible();
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  const card = page.locator("main article").first();
+  // 题目标签：题号（`A-1` 这类，本身带题库类字母）与官方分类码
+  await expect(card.getByText(q.id, { exact: true })).toBeVisible();
+  const codes = q.codes as { J: string; P: string };
+  await expect(card.getByText(codes.P, { exact: true })).toBeVisible();
+  // 答案解析不再折叠成按钮：不用点开，正文已经在页面上
+  await expect(card.getByRole("button", { name: "答案解析" })).toHaveCount(0);
+  await expect(card).toContainText(explanationHead(q));
+  // 错题独有的信息仍在卡片末尾
+  await expect(card.getByText(/^我的答案：/)).toBeVisible();
+  await expect(card.getByText("错因", { exact: true })).toBeVisible();
 });
 
 test("错题集：解析读题库现在的，题库认不出的题才沿用存档里的", async ({ page }) => {
@@ -200,8 +206,7 @@ test("错题集：解析读题库现在的，题库认不出的题才沿用存�
   await page.goto("/mistakes");
   await expect(page.getByRole("heading", { level: 1, name: "错题集" })).toBeVisible();
   const main = page.locator("main");
-  // 解析卡首次展开前不渲染正文：先全部展开，再等题库异步加载完、现在的解析换上来
-  await expandExplanations(page);
+  // 解析默认铺开：等题库异步加载完、现在的解析换上来
   await expect(main).toContainText(explanationHead(q));
   await expect(page.getByText("过期的旧解析")).toHaveCount(0);
   await expect(main).toContainText("只存在于存档里的解析");
@@ -211,9 +216,9 @@ test("错题集：解析读题库现在的，题库认不出的题才沿用存�
   expect(saved).toContain("过期的旧解析");
 });
 
-test("错题集：题库解析晚到时，已展开的卡片保持展开、只换文字", async ({ page }) => {
+test("错题集：题库解析晚到时，卡片先显示存档里的解析、到了只换文字", async ({ page }) => {
   const q = bankQuestion(0);
-  // 先把题库响应扣住：模拟弱网下用户在索引到达之前就点开了解析
+  // 先把题库响应扣住：模拟弱网下索引迟迟不到
   let release: () => void = () => {};
   const gate = new Promise<void>((resolve) => {
     release = resolve;
@@ -229,23 +234,106 @@ test("错题集：题库解析晚到时，已展开的卡片保持展开、只�
 
   try {
     await page.goto("/mistakes");
-    const toggle = page.getByRole("button", { name: "答案解析" }).first();
-    await toggle.click();
-    await expect(toggle).toHaveAttribute("aria-expanded", "true");
-    // 索引没到之前沿用存档里的
+    // 索引没到之前沿用存档里的（解析默认铺开，不用点开）
     await expect(page.getByText("过期的旧解析")).toBeVisible();
+    // 给卡片打个记号：之后它还在，就说明只换了文字、没有重建整张卡
+    await page.locator("main article").first().evaluate((el) => el.setAttribute("data-probe", "1"));
   } finally {
     release();
   }
 
   await expect(page.locator("main")).toContainText(explanationHead(q));
   await expect(page.getByText("过期的旧解析")).toHaveCount(0);
-  // 卡片没有因为换文字而被重建收起
-  await expect(page.getByRole("button", { name: "答案解析" }).first()).toHaveAttribute(
-    "aria-expanded",
-    "true",
-  );
+  await expect(page.locator("main article").first()).toHaveAttribute("data-probe", "1");
 });
+
+// 错题集的列表行为在两套皮肤下各跑一遍：题目卡是两套不同的 DOM。
+// `E2E_UI_STYLE` 只对 `mobile_overflow` / `i18n_layout` 生效，这里必须在用例里显式切皮肤。
+type Style = "pixel" | "modern";
+const STYLES: Style[] = ["pixel", "modern"];
+
+/** 以指定皮肤、预置错题打开错题集。种子只在文档加载时写入，用例内不要 reload。 */
+async function openMistakes(page: Page, style: Style, records: unknown[]) {
+  await page.addInitScript(
+    ([s, rs]) => {
+      if (window !== window.top) return;
+      localStorage.setItem("ui:uiStyle", s);
+      localStorage.setItem("mistake-book", JSON.stringify({ records: rs }));
+    },
+    [style, records] as const,
+  );
+  await page.goto("/mistakes");
+  await expect(page.getByRole("heading", { level: 1, name: "错题集" })).toBeVisible();
+}
+
+for (const style of STYLES) {
+  test(`错题集（${style}）：错题很多时分页显示，可加载更多，切换题库回到第一页`, async ({
+    page,
+  }) => {
+    const aTexts = new Set(
+      Array.from({ length: 100 }, (_, i) => bankQuestion(i, "A").question),
+    );
+    // 只取题面不与前 100 道 A 类重复的 B 类题，否则会被并成同一条错题
+    const onlyB = bankQuestions("B")
+      .filter((q) => q.id.startsWith("B-") && !aTexts.has(q.question))
+      .slice(0, 5);
+    expect(onlyB).toHaveLength(5);
+    const records = [
+      ...Array.from({ length: 100 }, (_, i) => mistakeRecord(bankQuestion(i, "A"))),
+      ...onlyB.map((q) => mistakeRecord(q)),
+    ];
+    await openMistakes(page, style, records);
+    const cards = page.locator("main article");
+    await expect(cards.first()).toBeVisible();
+    await expect(cards).toHaveCount(40);
+
+    await page.getByRole("button", { name: /加载更多（已显示 40 \/ 105）/ }).click();
+    await expect(cards).toHaveCount(80);
+
+    // 筛选变了回到第一页：B 类只有 5 道，没有「加载更多」
+    await page.getByRole("radio", { name: "B 类" }).click();
+    await expect(cards).toHaveCount(5);
+    await expect(page.getByRole("button", { name: /加载更多/ })).toHaveCount(0);
+
+    // 切回全部：不沿用之前展开到的 80，而是从第一页重新数
+    await page.getByRole("radio", { name: "全部" }).click();
+    await expect(cards).toHaveCount(40);
+    await expect(page.getByRole("button", { name: /加载更多（已显示 40 \/ 105）/ })).toBeVisible();
+  });
+
+  test(`错题集（${style}）：我选错的项标有「我的选择」，正确项不被误标`, async ({ page }) => {
+    const q = bankQuestion(0);
+    const wrong = wrongLetter(q.answer_keys);
+    await openMistakes(page, style, [{ ...mistakeRecord(q), my_answer: [wrong] }]);
+
+    const card = page.locator("main article").first();
+    // 文字标记（不只靠颜色），且只标选中的那一项
+    await expect(card.getByText("我的选择", { exact: true })).toHaveCount(1);
+    const picked = card.locator('[data-chosen="true"]');
+    await expect(picked).toHaveCount(1);
+    await expect(picked).toContainText(wrong);
+    await expect(picked).toHaveAttribute("data-right", "false");
+  });
+
+  test(`错题集（${style}）：移出一道错题，别的卡片不重建`, async ({ page }) => {
+    const records = [0, 1, 2].map((i) => mistakeRecord(bankQuestion(i)));
+    await openMistakes(page, style, records);
+    const cards = page.locator("main article");
+    await expect(cards).toHaveCount(3);
+
+    // 给最后一张卡打记号：它在移出别的卡之后还在，就说明列表是按 key 增删而不是整体重建
+    await cards.nth(2).evaluate((el) => el.setAttribute("data-probe", "1"));
+    // 「移出」的无障碍名带题号，一屏多张卡时读屏分得清
+    await cards
+      .nth(0)
+      .getByRole("button", { name: /^移出错题 / })
+      .click();
+    await confirmDialog(page, "移出");
+
+    await expect(cards).toHaveCount(2);
+    await expect(page.locator('main article[data-probe="1"]')).toHaveCount(1);
+  });
+}
 
 test.describe("首次进入", () => {
   test.use({ helpSeen: false });

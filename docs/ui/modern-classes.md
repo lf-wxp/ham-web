@@ -5,7 +5,7 @@
 > 这里登记了但 CSS 里已经没有（死条目），都会报错。条目写成 `` `md-xxx`(规则数) `` 的形态，
 > 第一列的组名只是分组标签，不参与比对；规则数是近似值，不参与比对。
 
-共 **522** 个类，分 151 组。
+共 **524** 个类，分 151 组。
 
 | 组 | 类（括号内为该类在 CSS 里出现的规则数） |
 |---|---|
@@ -107,7 +107,7 @@
 | `md-practice` | `md-practice`(9) · `md-practice-head`(1) |
 | `md-pressing` | `md-pressing`(1) |
 | `md-progress` | `md-progress`(1) · `md-progress-fill`(1) |
-| `md-q` | `md-q`(14) · `md-q-row`(4) · `md-q-row-answer`(1) · `md-q-row-block`(1) · `md-q-row-code`(1) · `md-q-row-dot`(1) · `md-q-row-head`(1) · `md-q-row-id`(1) · `md-q-row-img`(1) · `md-q-row-meta`(1) · `md-q-row-opts`(3) · `md-q-row-refs`(4) · `md-q-row-tag`(1) · `md-q-row-tag-multi`(1) · `md-q-row-tags`(1) · `md-q-row-text`(1) |
+| `md-q` | `md-q`(14) · `md-q-row`(4) · `md-q-row-answer`(1) · `md-q-row-block`(1) · `md-q-row-chosen`(2) · `md-q-row-code`(1) · `md-q-row-dot`(1) · `md-q-row-head`(1) · `md-q-row-id`(1) · `md-q-row-img`(1) · `md-q-row-meta`(1) · `md-q-row-opts`(3) · `md-q-row-refs`(4) · `md-q-row-tag`(1) · `md-q-row-tag-multi`(1) · `md-q-row-tags`(1) · `md-q-row-text`(1) |
 | `md-quiz` | `md-quiz`(4) · `md-quiz-bar`(1) · `md-quiz-bar-main`(1) · `md-quiz-foot`(2) · `md-quiz-head`(1) · `md-quiz-key`(4) · `md-quiz-list`(1) · `md-quiz-mark`(3) · `md-quiz-num`(2) · `md-quiz-opt`(10) · `md-quiz-options`(3) · `md-quiz-panel`(3) · `md-quiz-q`(2) · `md-quiz-score`(2) · `md-quiz-score-label`(1) · `md-quiz-sub`(1) · `md-quiz-summary`(2) · `md-quiz-tag`(1) · `md-quiz-text`(1) · `md-quiz-title`(1) · `md-quiz-verdict`(4) |
 | `md-radio` | `md-radio`(1) · `md-radio-dot`(1) |
 | `md-rail` | `md-rail`(2) · `md-rail-btn`(6) · `md-rail-left`(1) · `md-rail-right`(1) |
@@ -159,7 +159,7 @@
 | `md-wave` | `md-wave`(5) |
 | `md-weak` | `md-weak-tag`(1) |
 | `md-wf` | `md-wf`(1) · `md-wf-cell`(8) · `md-wf-col`(3) · `md-wf-day`(2) · `md-wf-empty`(1) · `md-wf-head`(1) · `md-wf-title`(2) · `md-wf-total`(1) · `md-wf-wrap`(1) |
-| `md-x` | `md-x`(1) · `md-x-body`(2) · `md-x-body-plain`(1) · `md-x-head`(1) · `md-x-inner`(2) · `md-x-panel`(4) · `md-x-toggle`(2) |
+| `md-x` | `md-x`(1) · `md-x-body`(2) · `md-x-body-plain`(1) · `md-x-head`(1) · `md-x-inner`(2) · `md-x-panel`(4) · `md-x-title`(3) · `md-x-toggle`(3) |
 
 ## 约定
 

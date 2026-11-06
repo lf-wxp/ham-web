@@ -88,7 +88,7 @@ pub fn ExplanationCard(#[prop(into)] explanation: Signal<Option<String>>) -> imp
     cn(&[
       // Tailwind v4 的 `translate-y-*` 用的是 `translate` 属性而不是 `transform`，
       // 过渡属性要写成 `translate` 才动得了。
-      "px-6 pb-5 transition-[opacity,translate] duration-[var(--motion-normal)] ease-[var(--ease-out-expo)]",
+      "px-4 pb-4 transition-[opacity,translate] duration-[var(--motion-normal)] ease-[var(--ease-out-expo)]",
       if open.get() {
         "translate-y-0 opacity-100"
       } else {
@@ -132,14 +132,14 @@ pub fn ExplanationCard(#[prop(into)] explanation: Signal<Option<String>>) -> imp
           <Button
             variant=Variant::Text
             // 文字色必须显式给：`Variant::Text` 的 `--btn-fg` 是 `muted-foreground`，而这里是卡片标题。
-            class="h-auto flex-1 justify-between px-6 py-4 text-left text-foreground hover:bg-accent/50"
+            class="h-auto flex-1 justify-between px-4 py-2.5 text-left text-foreground hover:bg-accent/50"
             aria_expanded=Signal::derive(move || open.get())
             on_click=Callback::new(move |_| {
               open.update(|v| *v = !*v);
               opened_once.set(true);
             })
           >
-            <span class=crate::kit::section_head_class()>{move || t("learning.explanation")}</span>
+            <span class="pxl-sub-head">{move || t("learning.explanation")}</span>
             <Icon
               kind=IconKind::ChevronDown
               class=Signal::derive(move || {
@@ -153,7 +153,7 @@ pub fn ExplanationCard(#[prop(into)] explanation: Signal<Option<String>>) -> imp
           <Button
             variant=Variant::Ghost
             size=Size::IconSm
-            class="mr-4 shrink-0"
+            class="mr-2 shrink-0"
             title=Signal::derive(move || t("learning.read-explanation-aloud"))
             aria_label=Signal::derive(move || t("learning.read-explanation-aloud"))
             on_click=Callback::new(move |_| speech::speak_zh(&speak_text))

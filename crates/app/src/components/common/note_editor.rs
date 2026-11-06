@@ -32,7 +32,7 @@ pub fn NoteEditor(#[prop(into)] question_id: Signal<String>) -> impl IntoView {
   view! {
     <div class=crate::kit::card_pad_class()>
       <div class="mb-2 flex items-center justify-between">
-        <div class=crate::kit::section_head_class()>{move || t("exam.my-notes")}</div>
+        <div class="pxl-sub-head">{move || t("exam.my-notes")}</div>
         <span class="text-xs text-muted-foreground">
           {move || saved.get().then(|| t("exam.saved"))}
         </span>
@@ -45,7 +45,7 @@ pub fn NoteEditor(#[prop(into)] question_id: Signal<String>) -> impl IntoView {
         aria_label=Signal::derive(move || t("common.note-content"))
       />
       <div class="mt-2 flex items-center gap-2">
-        <Button variant=Variant::Default size=Size::Sm on_click=Callback::new(move |_| save())>
+        <Button variant=Variant::Outline size=Size::Sm on_click=Callback::new(move |_| save())>
           {move || t("exam.save-note")}
         </Button>
         <Button

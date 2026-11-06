@@ -250,5 +250,7 @@
   "learning.marked-don-t-know": "(Marcada como no sé en tarjetas)",
   "learning.remove-mistake-confirm": "¿Quitar esta pregunta de los errores?",
   "learning.remove-mistake-hint": "Saldrá del libro de errores; la planificación de repaso y las estadísticas no cambian.",
-  "learning.mistake-removed": "Pregunta retirada de errores"
+  "learning.mistake-removed": "Pregunta retirada de errores",
+  "learning.my-choice": "Mi elección",
+  "learning.remove-mistake-n": "Quitar el error {}"
 }

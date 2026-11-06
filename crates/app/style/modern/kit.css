@@ -1967,7 +1967,9 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
    练习页附属面板：解析卡 / 笔记 / 设置与快捷键弹层
    ============================================================ */
 @layer components {
-  /* 通用「平面卡」：解析与笔记共用，没有标题栏色带。 */
+  /* 通用「平面卡」：解析与笔记共用，没有标题栏色带。
+     它们是题目的附属信息，层级必须低于题卡：标题只是一枚小号灰色标签（`.md-x-title`），
+     不用 `.md-h2` —— 那一档是页面区块标题，放进附属卡里会压过题干。 */
   .md-x {
     border: 1px solid var(--md-border);
     border-radius: var(--md-r-lg);
@@ -1979,7 +1981,41 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
     display: flex;
     align-items: center;
     gap: var(--md-space-2);
-    padding: var(--md-space-3) var(--md-space-4);
+    min-height: 40px;
+    padding: var(--md-space-1) var(--md-space-2) var(--md-space-1) var(--md-space-4);
+  }
+
+  /* 小号标签式标题：13px 灰字 + 16px 线性图标。字重只给到 600，字族沿用正文而不是展示体。 */
+  .md-x-title {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-space-2);
+    color: var(--md-fg-muted);
+    font-size: var(--md-text-sm);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1.3;
+    transition: color var(--md-dur-fast) var(--md-ease);
+  }
+
+  .md-x-title svg {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+  }
+
+  /* 头部右侧的操作（朗读）：去掉描边与底色，只留一枚灰图标；悬停仍走 `.md-icon-btn` 的行动色。
+     尺寸收到 32，`pointer: coarse` 下 `min-*` 仍把命中区抬回 44。 */
+  .md-x-head .md-icon-btn {
+    width: 32px;
+    height: 32px;
+    border-color: transparent;
+    background-color: transparent;
+  }
+
+  .md-x-head .md-icon-btn svg {
+    width: 18px;
+    height: 18px;
   }
 
   .md-x-toggle {
@@ -1987,8 +2023,8 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
     flex: 1;
     min-width: 0;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--md-space-3);
+    justify-content: flex-start;
+    gap: var(--md-space-1-5);
     padding: 2px 0;
     border: 0;
     background: transparent;
@@ -1998,10 +2034,19 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
     cursor: pointer;
   }
 
+  .md-x-toggle:hover .md-x-title,
+  .md-x-toggle:hover .md-chev {
+    color: var(--md-fg);
+  }
+
   .md-chev {
     flex-shrink: 0;
+    width: 16px;
+    height: 16px;
     color: var(--md-fg-muted);
-    transition: transform var(--md-dur) var(--md-ease);
+    transition:
+      transform var(--md-dur) var(--md-ease),
+      color var(--md-dur-fast) var(--md-ease);
     rotate: 0deg;
   }
 
@@ -5556,6 +5601,24 @@ html[data-ui-style="modern"] .md-panel table:not(.md-table) tbody tr:last-child 
     color: var(--md-fg);
   }
 
+  /* 错题本里用户当时选的项：选错的另加红色左线（与「正确」的绿线并排对照），
+     右侧的「我的选择」文字标记保证颜色之外也分辨得出。 */
+  .md-q-row-opts li[data-chosen="true"]:not([data-right="true"]) {
+    border-inline-start-color: var(--md-danger);
+    color: var(--md-fg);
+  }
+
+  .md-q-row-chosen {
+    margin-inline-start: auto;
+    flex-shrink: 0;
+    font-size: var(--md-text-xs);
+    color: var(--md-danger-ink);
+  }
+
+  .md-q-row-opts li[data-right="true"] .md-q-row-chosen {
+    color: var(--md-green);
+  }
+
   .md-q-row-answer {
     margin-top: var(--md-space-2-5);
     font-size: var(--md-text-sm);
@@ -6241,16 +6304,23 @@ html[data-ui-style="modern"] .max-w-5xl {
     }
   }
 
+  /* 允许换行：操作区按钮多时（错题集一排 6 个按钮 + 计数，约 785px），若与标题列硬挤在一行，
+     标题列只剩 300 多 px，副标题被折成七八行的细条（桌面 1200 版心下也一样）。
+     标题列保一个舒适的阅读宽度（24rem ≈ 20 个汉字一行），剩下放不下操作区，
+     就让操作区整体落到标题下面成一条工具栏 —— 与窄屏同一种排法，而不是让标题让路。
+     操作区少的页面（一两个按钮）一行放得下，仍然在标题右侧，版式不变。 */
   .md-page-head-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: flex-start;
     justify-content: space-between;
-    gap: var(--md-space-6);
+    gap: var(--md-space-4) var(--md-space-6);
   }
 
   .md-page-head-copy {
     display: flex;
     min-width: 0;
+    flex: 1 1 24rem;
     flex-direction: column;
     gap: var(--md-space-3);
   }
@@ -6259,6 +6329,11 @@ html[data-ui-style="modern"] .max-w-5xl {
     .md-page-head-row {
       flex-direction: column;
       gap: var(--md-space-4);
+    }
+
+    /* 列向排布时 `flex-basis` 会变成高度：必须清掉上面给宽度用的 24rem。 */
+    .md-page-head-copy {
+      flex: none;
     }
 
     /* 页头是每页最先吃掉首屏的东西：桌面那份 24px 上下内距 + 19px 副标题，
@@ -7383,13 +7458,15 @@ html[data-ui-style="modern"] body[data-page-mode="exam"] .motion-page {
     font-size: var(--md-text-sm);
   }
 
-  /* 页头操作区：多个按钮时要成组，否则会被 `space-between` 摊到三段 */
+  /* 页头操作区：多个按钮时要成组，否则会被 `space-between` 摊到三段。
+     `max-width: 100%`：按钮比一整行还宽时在区内自己折行，不顶出版心。 */
   .md-page-head-actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--md-space-2-5);
     flex-shrink: 0;
+    max-width: 100%;
   }
 }
 

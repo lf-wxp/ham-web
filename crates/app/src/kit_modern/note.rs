@@ -1,10 +1,14 @@
 //! 现代风「我的笔记」：一块圆角卡 + 无边框文本域 + 主次两个按钮。
-//! 存取逻辑与像素版完全一致（`store::load_note` / `save_note`），只换外观。
+//! 存取逻辑与像素版完全一致（`store::load_note` / `save_note`），只换外观；
+//! 标题是小号灰色标签（`md-x-title`）；保存按钮用线框而不是实心 ——
+//! 实心主按钮一屏只给一个，练习页底栏的「下一题」已经是它。
 
 use leptos::prelude::*;
 
 use crate::i18n::t;
 use crate::store;
+
+use super::{MIcon, ModernIcon};
 
 #[component]
 pub fn ModernNote(#[prop(into)] question_id: Signal<String>) -> impl IntoView {
@@ -35,8 +39,11 @@ pub fn ModernNote(#[prop(into)] question_id: Signal<String>) -> impl IntoView {
   view! {
     <div class="md-x">
       <div class="md-x-head">
-        <span class="md-h2">{move || t("exam.my-notes")}</span>
-        <span class="md-muted md-sm">{move || saved.get().then(|| t("exam.saved"))}</span>
+        <span class="md-x-title">
+          <ModernIcon kind=MIcon::Doc />
+          {move || t("exam.my-notes")}
+        </span>
+        <span class="md-muted md-sm ms-auto pe-2">{move || saved.get().then(|| t("exam.saved"))}</span>
       </div>
       <div class="md-x-body-plain">
         <super::ModernTextarea
@@ -47,10 +54,10 @@ pub fn ModernNote(#[prop(into)] question_id: Signal<String>) -> impl IntoView {
           placeholder=Signal::derive(move || t("exam.note-your-understanding-common"))
         />
         <div class="mt-3 flex items-center gap-2">
-          <button type="button" class="md-btn md-btn-accent" on:click=move |_| save()>
+          <button type="button" class="md-btn md-btn-sm md-btn-line" on:click=move |_| save()>
             {move || t("exam.save-note")}
           </button>
-          <button type="button" class="md-btn md-btn-ghost" on:click=move |_| clear()>
+          <button type="button" class="md-btn md-btn-sm md-btn-ghost" on:click=move |_| clear()>
             {move || t("exam.clear")}
           </button>
         </div>

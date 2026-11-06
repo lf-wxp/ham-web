@@ -1,7 +1,8 @@
 //! 现代风「答案解析」卡：圆角卡 + 一行折叠头 + 法规引用链接。
 //!
 //! 折叠语义、法规引用切分都复用像素版（`components/common/explanation_card.rs` 的
-//! `segments`），这里只重画外观：不再有标题栏色带、`▾` 换成线性 chevron、朗读换成图标按钮。
+//! `segments`），这里只重画外观：不再有标题栏色带、`▾` 换成线性 chevron、朗读换成图标按钮；
+//! 标题是小号灰色标签（`md-x-title`），层级低于题卡。
 
 use std::sync::atomic::{AtomicU32, Ordering};
 
@@ -63,7 +64,10 @@ pub fn ModernExplanation(#[prop(into)] explanation: Signal<Option<String>>) -> i
                 opened_once.set(true);
               }
             >
-              <span class="md-h2">{move || t("learning.explanation")}</span>
+              <span class="md-x-title">
+                <ModernIcon kind=MIcon::Book />
+                {move || t("learning.explanation")}
+              </span>
               <ModernIcon kind=MIcon::ChevronDown class="md-chev" />
             </button>
             <button

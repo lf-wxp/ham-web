@@ -705,6 +705,24 @@
     border-bottom: 2px solid var(--pxl-ink);
   }
 
+  /* 附属信息的小标题（答案解析 / 我的笔记）：层级低于题卡，不能像区段标题那样占 18px。
+     12px 灰字 + 6px 的同色方块记号，仍是点阵语言，但只是一枚「标签」而不是「标题栏」。
+     记号用 `currentColor`，随文字一起变，不单独占一个主色块去跟题目抢眼。 */
+  .pxl-sub-head {
+    display: inline-flex;
+    align-items: center;
+    padding-left: 0.875rem;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 6px 6px;
+    background-position: 0 center;
+    background-repeat: no-repeat;
+    color: var(--muted-foreground);
+    font-family: var(--font-pixel-label);
+    font-size: var(--text-sm);
+    line-height: 1.25;
+    text-transform: uppercase;
+  }
+
   .pxl-title {
     font-family: var(--font-pixel-display);
     line-height: 1.5;

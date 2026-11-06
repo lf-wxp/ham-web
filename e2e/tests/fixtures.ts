@@ -200,17 +200,27 @@ export type BankQuestion = {
   [field: string]: unknown;
 };
 
-let bankA: BankQuestion[] | undefined;
+const bankCache: Partial<Record<"A" | "B" | "C", BankQuestion[]>> = {};
 
 /**
- * A 类题库文件里的第 `i` 题。
+ * 题库文件（默认 A 类）里的第 `i` 题。
  *
  * 读文件而不是读页面：用例要播种「与题库是同一道题、但存档里的解析是旧的」，
  * 需要题干 / 选项 / 答案与题库逐字一致，才能验证页面认得出它并改读题库现在的解析。
  */
-export function bankQuestion(i = 0): BankQuestion {
-  bankA ??= JSON.parse(readFileSync(join(__dirname, "../../public/questions/A.json"), "utf8"));
-  return (bankA as BankQuestion[])[i];
+export function bankQuestion(i = 0, bank: "A" | "B" | "C" = "A"): BankQuestion {
+  return bankQuestions(bank)[i];
+}
+
+/**
+ * 某个题库文件里的全部题。注意 B / C 类题库包含低一级的题（同一题在不同文件里题干相同），
+ * 要造「只属于该类」的种子时按 `id` 前缀过滤，否则错题本会按题面指纹把它们并成一条。
+ */
+export function bankQuestions(bank: "A" | "B" | "C"): BankQuestion[] {
+  bankCache[bank] ??= JSON.parse(
+    readFileSync(join(__dirname, `../../public/questions/${bank}.json`), "utf8"),
+  );
+  return bankCache[bank] as BankQuestion[];
 }
 
 /**

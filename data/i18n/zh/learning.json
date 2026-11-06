@@ -211,5 +211,7 @@
   "learning.marked-don-t-know": "（闪卡自评不会）",
   "learning.remove-mistake-confirm": "移出这道错题？",
   "learning.remove-mistake-hint": "移出后不再出现在错题本，复习排程与练习统计不受影响。",
-  "learning.mistake-removed": "已移出这道错题"
+  "learning.mistake-removed": "已移出这道错题",
+  "learning.my-choice": "我的选择",
+  "learning.remove-mistake-n": "移出错题 {}"
 }
