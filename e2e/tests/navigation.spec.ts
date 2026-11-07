@@ -13,7 +13,7 @@ test("主导航：展开考试中心下拉可跳转到错题集", async ({ page 
   await expect(page.getByRole("heading", { level: 1, name: "错题集" })).toBeVisible();
 });
 
-test("主导航：考试中心五个分组各自列出全部条目，共 17 项", async ({ page }) => {
+test("主导航：考试中心五个分组各自列出全部条目，共 18 项", async ({ page }) => {
   await page.goto("/");
   const nav = page.locator("[data-nav]");
   await nav.getByRole("button", { name: "考试中心" }).click();
@@ -22,7 +22,7 @@ test("主导航：考试中心五个分组各自列出全部条目，共 17 项"
     练题: ["/practice", "/daily-challenge", "/browse", "/flashcards", "/listen"],
     模拟考: ["/exam", "/exam-review"],
     复习: ["/cards", "/mistakes", "/mistake-topics", "/bookmarks"],
-    学习数据: ["/weekly", "/progress", "/study-calendar", "/report"],
+    学习数据: ["/weekly", "/progress", "/study-calendar", "/exam-schedule", "/report"],
     闯关: ["/map", "/bestiary"],
   };
   let total = 0;
@@ -35,7 +35,7 @@ test("主导航：考试中心五个分组各自列出全部条目，共 17 项"
     }
     total += hrefs.length;
   }
-  expect(total).toBe(17);
+  expect(total).toBe(18);
 });
 
 test("数据备份入口：页脚、设置对话框都能直达 /backup", async ({ page }) => {

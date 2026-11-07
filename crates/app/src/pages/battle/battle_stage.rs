@@ -28,23 +28,21 @@ pub(super) fn BattleStage(
   let player = move || {
     let fx = hit.get();
     let hurt = fx.kind == HitKind::Hurt;
+    // 两套皮肤各有一份「受击 / 待机」动效，类名不共用。
+    let fx_class = if modern {
+      if hurt { "md-mon-hit" } else { "md-mon-idle" }
+    } else if hurt {
+      "pxl-shake"
+    } else {
+      "pxl-bob"
+    };
     view! {
       <div class="relative">
-        <div class=if hurt { "pxl-shake" } else { "pxl-bob" }>
-          {move || {
-            if crate::kit::is_modern() {
-              view! {
-                <crate::kit_modern::ModernEmblem
-                  icon=crate::kit_modern::MIcon::Antenna
-                  tone=crate::kit_modern::EmblemTone::Green
-                  size=84
-                  locked=Signal::derive(|| false)
-                />
-              }
-                .into_any()
-            } else {
-              view! { <PixelSprite name="hero" scale=5 /> }.into_any()
-            }
+        <div class=fx_class>
+          {if modern {
+            view! { <crate::kit_modern::ModernMonster sprite="hero" size=84 /> }.into_any()
+          } else {
+            view! { <PixelSprite name="hero" scale=5 /> }.into_any()
           }}
         </div>
         {hurt
@@ -69,23 +67,26 @@ pub(super) fn BattleStage(
       HitKind::Strike { damage, xp } => Some((damage, xp)),
       _ => None,
     };
+    let fx_class = if modern {
+      if strike.is_some() {
+        "md-mon-hit"
+      } else {
+        "md-mon-idle"
+      }
+    } else if strike.is_some() {
+      "pxl-flash"
+    } else {
+      "pxl-bob"
+    };
     view! {
       <div class="relative">
-        <div class=if strike.is_some() { "pxl-flash" } else { "pxl-bob" }>
-          {move || {
-            if crate::kit::is_modern() {
-              view! {
-                <crate::kit_modern::ModernEmblem
-                  icon=crate::kit_modern::emblem_variant(enemy_sprite).0
-                  tone=crate::kit_modern::emblem_variant(enemy_sprite).1
-                  size=84
-                  locked=Signal::derive(|| false)
-                />
-              }
-                .into_any()
-            } else {
-              view! { <PixelSprite name=enemy_sprite scale=5 /> }.into_any()
-            }
+        <div class=fx_class>
+          // 精灵与外层动效类同按挂载快照派发：只让其中一个跟着信号走，切皮肤时就会出现
+          // 「新皮肤的精灵套着旧皮肤的动效类」（整个舞台的外壳、血条也都是快照）。
+          {if modern {
+            view! { <crate::kit_modern::ModernMonster sprite=enemy_sprite size=84 /> }.into_any()
+          } else {
+            view! { <PixelSprite name=enemy_sprite scale=5 /> }.into_any()
           }}
         </div>
         {strike

@@ -9,6 +9,7 @@
 //! 用「空心 / 实心」这个第二通道区分（同一手法见波段用途徽章的描边）。
 
 use ham_web_core::categories::CategoryTone;
+use ham_web_core::mistake_book::heat_percent;
 
 /// 实心标记（圆点 / 色块）的填充类。调用点自己给尺寸（`size-2` / `size-2.5`）。
 ///
@@ -68,24 +69,22 @@ pub const fn var(tone: CategoryTone) -> &'static str {
   }
 }
 
-/// 热力档位（0–4）→ 与卡片色混合的比例（%）。
+/// 热力档位 + 分类色变量 → 一格热力的 `background-color` 声明。
 ///
-/// 热力格子/进度条要「同一色相、不同浓淡」：用 `color-mix(… %, var(--card))` 得到
-/// **不透明**的中间色，而不是半透明叠加 —— 后者会随背后内容变色，是这套像素风明确避免的。
-pub const fn heat_percent(level: u8) -> u8 {
-  match level {
-    0 => 0,
-    1 => 25,
-    2 => 40,
-    3 => 60,
-    4 => 80,
-    _ => 0,
-  }
+/// 档位 → 浓度的表在 core（`heat_percent`，带单测，`pixel-check` 按它审计各套配色下的文字对比度）。
+/// 这里只返回 `background-color: …` 这一段（调用点自己拼进 `style`）：浓度只有那一处定，
+/// 换个页面 / 换套皮肤不会各自算一套。文字色**不在这里**——用 `text-foreground`，
+/// 它随主题翻转，与浓度上限是一对。
+pub fn heat_fill(level: u8, cat_var: &str) -> String {
+  format!(
+    "background-color: color-mix(in srgb, {cat_var} {}%, var(--card))",
+    heat_percent(level)
+  )
 }
 
 #[cfg(test)]
 mod tests {
-  use super::{CategoryTone, chip, dot};
+  use super::{CategoryTone, chip, dot, heat_fill};
   use ham_web_core::categories::TOP_CATEGORIES;
 
   #[test]
@@ -110,6 +109,18 @@ mod tests {
         );
       }
     }
+  }
+
+  #[test]
+  fn heat_fill_uses_the_core_percent_table() {
+    assert_eq!(
+      heat_fill(4, "var(--cat-2)"),
+      "background-color: color-mix(in srgb, var(--cat-2) 30%, var(--card))"
+    );
+    assert_eq!(
+      heat_fill(0, "var(--cat-2)"),
+      "background-color: color-mix(in srgb, var(--cat-2) 0%, var(--card))"
+    );
   }
 
   #[test]

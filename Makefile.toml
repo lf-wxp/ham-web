@@ -181,7 +181,7 @@ command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--", "check-structure"]
 
 [tasks.pixel-check]
-description = "校验像素风生成物：调色板文字色阶与每个配色方案对比度达标，schemes.css 与方案表一致（只读）"
+description = "校验像素风生成物：调色板文字色阶与每个配色方案对比度达标，热力格子文字对比度与档位区分度达标，schemes.css 与方案表一致（只读）"
 # 与 i18n-check 同理不用 --release：只是算几个对比度，debug 构建即可。
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--", "pixel-check"]

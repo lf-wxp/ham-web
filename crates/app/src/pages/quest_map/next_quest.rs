@@ -31,15 +31,9 @@ pub(super) fn NextQuest(
         encode_uri_component(stage.key)
       );
       if crate::kit::is_modern_at_mount() {
-        let (icon, tone) = crate::kit_modern::emblem_variant(stage.key);
         return view! {
           <section class="md-next-quest" aria-labelledby="next-quest-title">
-            <crate::kit_modern::ModernEmblem
-              icon=icon
-              tone=tone
-              size=72
-              locked=Signal::derive(|| false)
-            />
+            <crate::kit_modern::ModernMonster sprite=monster_sprite(stage.key) size=72 />
             <div class="md-next-quest-body">
               <p class="md-next-quest-label">{move || t("rpg.next-quest")}</p>
               <h2 id="next-quest-title" class="md-next-quest-title">{move || t(stage.name)}</h2>

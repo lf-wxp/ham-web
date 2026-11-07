@@ -305,6 +305,14 @@ pub const MODULES: &[Module] = &[
     backend: false,
   },
   Module {
+    path: "/exam-schedule",
+    href: None,
+    title: "考试日程",
+    icon: "calendar",
+    group: Some(GROUP_EXAM_DATA),
+    backend: false,
+  },
+  Module {
     path: "/exam-review",
     href: None,
     title: "考后复盘",

@@ -234,6 +234,8 @@ test("像素风 → 现代风后滚动页面不报错（自绘滚动条卸载干
   await expect
     .poll(() => page.evaluate(() => document.documentElement.dataset.uiStyle))
     .toBe("modern");
+  // 窗口滚动条两套皮肤共用 `ui::ScrollBar`，只换外观类名：切到现代风后应当只剩 `.md-scrollbar`。
+  await expect(page.locator(".md-scrollbar")).toHaveCount(1);
   await expect(page.locator(".pxl-scrollbar")).toHaveCount(0);
 
   await page.keyboard.press("Escape");
@@ -1054,4 +1056,143 @@ test.describe("现代风考试设置的键位表", () => {
       await expect(dialog.locator(".md-shortcut-list")).toBeHidden();
     });
   });
+});
+
+// ---------------------------------------------------------------------------------------------
+// 窗口滚动条（`ui::ScrollBar`，两套皮肤共用）：只画在吸顶导航下沿与贴底固定层上沿之间。
+// 原生窗口滚动条属于视口，会一头扎进顶栏、另一头扎进底栏；这里量真实几何，不只数节点个数。
+// 判据见 `docs/ui/modern.md` §3 与 `docs/ui/pixel.md` 的「滚动模型」。
+// ---------------------------------------------------------------------------------------------
+test.describe("现代风：自绘窗口滚动条", () => {
+  /** 滚动条、顶栏与贴底固定层的实测几何（全部是视口坐标）。 */
+  async function edges(page: Page) {
+    return page.evaluate(() => {
+      const bar = document.querySelector<HTMLElement>(".md-scrollbar");
+      const r = bar?.getBoundingClientRect();
+      const nav = document.querySelector("[data-nav]")?.getBoundingClientRect();
+      const layers = [...document.querySelectorAll("[data-fixed-bottom]")]
+        .map((e) => e.getBoundingClientRect())
+        .filter((b) => b.height > 0);
+      return {
+        shown: !!bar && getComputedStyle(bar).display !== "none",
+        top: r?.top ?? -1,
+        bottom: r?.bottom ?? -1,
+        navBottom: nav?.bottom ?? -1,
+        layerTop: layers.length ? Math.min(...layers.map((b) => b.top)) : window.innerHeight,
+        layerCount: layers.length,
+        vh: window.innerHeight,
+      };
+    });
+  }
+
+  async function openLongPage(page: Page, size: { width: number; height: number }) {
+    await seed(page, "modern");
+    await page.setViewportSize(size);
+    await page.goto("/glossary");
+    await expect(page.locator("main h1").first()).toBeVisible();
+    await expect.poll(async () => (await edges(page)).shown, "页面不够长或滚动条没出现").toBe(true);
+  }
+
+  test("窄屏：上沿贴顶栏下沿，下沿贴 dock 上沿", async ({ page }) => {
+    await openLongPage(page, { width: 700, height: 800 });
+    // 先证明底部确有固定层，否则「下沿 = 视口底」也会通过，用例就空了。
+    await expect.poll(async () => (await edges(page)).layerCount, "窄屏没有贴底固定层").toBeGreaterThan(0);
+    await expect
+      .poll(async () => {
+        const e = await edges(page);
+        return Math.abs(e.top - e.navBottom) <= 1 && Math.abs(e.bottom - e.layerTop) <= 1;
+      })
+      .toBe(true);
+    const e = await edges(page);
+    expect(e.layerTop, "dock 应当抬高了滚动条下沿").toBeLessThan(e.vh);
+  });
+
+  test("宽屏：没有底栏，下沿到视口底", async ({ page }) => {
+    await openLongPage(page, { width: 1280, height: 800 });
+    const e = await edges(page);
+    expect(e.layerCount, "宽屏不该有贴底固定层").toBe(0);
+    expect(Math.abs(e.bottom - e.vh)).toBeLessThanOrEqual(1);
+    expect(Math.abs(e.top - e.navBottom)).toBeLessThanOrEqual(1);
+  });
+
+  // 回归：thumb 只有 10px 宽，拖动时指针稍微横向偏出就脱靶。
+  // 不捕获指针的话 `pointermove` 不再送达 thumb（或被 `pointerleave` 直接结束），页面停在原地。
+  test("拖动 thumb：指针横向偏出 thumb 之后仍继续滚动", async ({ page }) => {
+    await openLongPage(page, { width: 1280, height: 600 });
+    const thumb = page.locator(".md-scrollbar-thumb");
+    const box = await thumb.boundingBox();
+    expect(box, "thumb 没有渲染").not.toBeNull();
+    if (!box) return;
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    const scrollY = () => page.evaluate(() => window.scrollY);
+    expect(await scrollY()).toBe(0);
+
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    // 一边往下拖，一边往左偏出 300px（远超 thumb 的 10px 宽）。
+    await page.mouse.move(x - 300, y + 120, { steps: 8 });
+    await expect.poll(scrollY, "偏出 thumb 之后拖拽中断了").toBeGreaterThan(0);
+    const mid = await scrollY();
+    await page.mouse.move(x - 300, y + 240, { steps: 8 });
+    await expect.poll(scrollY).toBeGreaterThan(mid);
+    await page.mouse.up();
+
+    // 松手之后不再跟随：再动鼠标，页面不再滚。
+    const after = await scrollY();
+    await page.mouse.move(x - 300, y + 10, { steps: 4 });
+    await page.waitForTimeout(100);
+    expect(await scrollY()).toBe(after);
+  });
+
+  // 回归：固定层事后才出现（存储告警横幅）时，滚动条下沿要跟着让位。
+  // ResizeObserver 只认得已登记的元素，新挂载的横幅靠 MutationObserver 补登记。
+  test("横幅晚挂载：滚动条下沿让到横幅上沿，横幅关闭后复位", async ({ page }) => {
+    await openLongPage(page, { width: 1280, height: 700 });
+    expect((await edges(page)).layerCount).toBe(0);
+
+    await page.evaluate(() =>
+      window.dispatchEvent(new CustomEvent("ham-storage-write-failed", { detail: "logbook" })),
+    );
+    const banner = page.getByRole("alert").filter({ hasText: "本地存储空间已满" });
+    await expect(banner).toBeVisible();
+    await expect
+      .poll(async () => {
+        const e = await edges(page);
+        return e.layerCount === 1 && Math.abs(e.bottom - e.layerTop) <= 1 && e.layerTop < e.vh;
+      }, "滚动条下沿没有让到横幅上沿")
+      .toBe(true);
+
+    await banner.getByRole("button", { name: "知道了" }).click();
+    await expect(banner).toBeHidden();
+    await expect
+      .poll(async () => {
+        const e = await edges(page);
+        return e.layerCount === 0 && Math.abs(e.bottom - e.vh) <= 1;
+      }, "横幅关闭后滚动条没有复位")
+      .toBe(true);
+  });
+});
+
+// 怪物插画（`kit_modern::ModernMonster`）：形态由像素精灵名决定，`data-kind` 是定位依据。
+// 地图上的「下一关」与战斗舞台共用同一套插画，战斗里玩家是 `hero`、对手是五种怪之一。
+test("现代风：地图的下一关与战斗舞台都画矢量怪物（不是纹章、不是点阵）", async ({ page }) => {
+  await seed(page, "modern");
+  await page.goto("/map");
+  const next = page.locator(".md-next-quest .md-mon");
+  await expect(next).toHaveCount(1);
+  await expect(next).toHaveAttribute("data-kind", /^(static|swr|noise|spur|fade)$/);
+  await expect(next.locator("svg.md-mon-svg")).toHaveCount(1);
+  const kind = await next.getAttribute("data-kind");
+
+  await page.getByRole("link", { name: "开始战斗" }).click();
+  await expect(page).toHaveURL(/\/battle/);
+  const stage = page.locator(".md-battle-stage");
+  await expect(stage.locator('.md-mon[data-kind="hero"]')).toHaveCount(1);
+  const enemies = stage.locator(".md-mon:not([data-kind='hero'])");
+  await expect(enemies).toHaveCount(1);
+  // 同一关在地图上和战斗里是同一种怪。
+  await expect(enemies).toHaveAttribute("data-kind", kind ?? "");
+  // 现代风不该混进像素精灵。
+  await expect(stage.locator(".pxl-bob, .pxl-shake, .pxl-flash")).toHaveCount(0);
 });

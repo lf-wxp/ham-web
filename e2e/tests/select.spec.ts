@@ -249,7 +249,11 @@ for (const style of ["pixel", "modern"] as const) {
         await trigger.click();
         await expect(page.getByRole("listbox")).toBeVisible();
         const vp = page.viewportSize()!;
-        await page.mouse.click(vp.width - 6, Math.round(vp.height * 0.7));
+        // 最右 10–12px 是自绘窗口滚动条的拖动区（覆盖式，见 `docs/ui/pixel.md`「代价是拖动区
+        // 覆盖最右 12px」）：点到的是 thumb 而不是遮罩，遮罩收不到这次点击；而且 thumb 落在哪个
+        // 高度取决于页面滚到哪 —— 贴着右边界点会「有时红有时绿」。内缩 40px 仍在遮罩上，
+        // 又稳稳避开拖动区。
+        await page.mouse.click(vp.width - 40, Math.round(vp.height * 0.7));
         await expect(page.getByRole("listbox"), "点遮罩应收起").toHaveCount(0);
       });
 

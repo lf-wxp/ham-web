@@ -73,7 +73,8 @@ pub fn ModernDock(menu_open: RwSignal<bool>) -> impl IntoView {
   };
 
   view! {
-    <nav class="md-dock" aria-label=move || t("shell.main-navigation")>
+    // `data-fixed-bottom`：自绘窗口滚动条据此让位（`ui/scrollbar.rs`）。
+    <nav class="md-dock" data-fixed-bottom aria-label=move || t("shell.main-navigation")>
       <a
         class="md-dock-item"
         href="/"

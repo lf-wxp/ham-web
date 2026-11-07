@@ -141,8 +141,10 @@ pub fn topic_matches(top_key: Option<&str>, filter: &str) -> bool {
 
 /// 怪物精灵名，下标对应 [`ham_web_core::rpg::monster_kind`]。
 ///
-/// 数量与 `MONSTER_KINDS` 对齐；见下面的测试。
-const MONSTER_SPRITES: [&str; 5] = ["mon_static", "mon_swr", "mon_noise", "mon_spur", "mon_fade"];
+/// 数量与 `MONSTER_KINDS` 对齐；见下面的测试。现代风的怪物插画
+/// （`kit_modern/monster_art.rs`）按这里的名字逐个配图，它的测试会遍历这份清单。
+pub(crate) const MONSTER_SPRITES: [&str; 5] =
+  ["mon_static", "mon_swr", "mon_noise", "mon_spur", "mon_fade"];
 
 /// 某专题错题对应的怪物精灵（同一专题永远是同一种怪）。
 #[must_use]

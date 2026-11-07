@@ -58,7 +58,7 @@
 | `cargo make psk31-sample` | 生成 PSK31 测试样本 WAV（供手动测试 `/psk-decode`） |
 | `cargo make spectrum-sample` / `spectrum-analyze` / `spectrum-test` | 生成 / 命令行分析 / 端到端自检合成频谱样本（供 `/sdr-waterfall`） |
 | **像素风资源** | — |
-| `cargo make pixel-check` | 只读校验：调色板文字色阶与每个配色方案的对比度达标，`schemes.css` 与方案表一致；已并入 `check` / `ci` |
+| `cargo make pixel-check` | 只读校验：调色板文字色阶与每个配色方案的对比度达标，易错知识点热力格子的文字对比度与档位区分度达标，`schemes.css` 与方案表一致；已并入 `check` / `ci` |
 | `cargo make pixel-palette` | 校正 Tailwind 色阶里的文字档，使其在所有表面（含每个配色方案的亮 / 暗表面）上满足 WCAG AA |
 | `cargo make pixel-schemes` | 由方案表（`crates/core/src/color_scheme.rs`）生成 `style/pixel/schemes.css` |
 | `cargo make pixel-sprites` | 由字符画（`crates/tools/src/pixel/sprite_art.rs`）生成像素图标与精灵的数据文件（需 `PIXELARTICONS_DIR`） |

@@ -253,17 +253,23 @@ type Style = "pixel" | "modern";
 const STYLES: Style[] = ["pixel", "modern"];
 
 /** 以指定皮肤、预置错题打开错题集。种子只在文档加载时写入，用例内不要 reload。 */
-async function openMistakes(page: Page, style: Style, records: unknown[]) {
+async function openMistakes(page: Page, style: Style, records: unknown[], lang = "zh") {
   await page.addInitScript(
-    ([s, rs]) => {
+    ([s, rs, code]) => {
       if (window !== window.top) return;
       localStorage.setItem("ui:uiStyle", s);
+      localStorage.setItem("locale", code);
       localStorage.setItem("mistake-book", JSON.stringify({ records: rs }));
     },
-    [style, records] as const,
+    [style, records, lang] as const,
   );
   await page.goto("/mistakes");
-  await expect(page.getByRole("heading", { level: 1, name: "错题集" })).toBeVisible();
+  // 中文有稳定的页标题可等；其它语言等第一张卡渲染出来
+  if (lang === "zh") {
+    await expect(page.getByRole("heading", { level: 1, name: "错题集" })).toBeVisible();
+  } else {
+    await expect(page.locator("main article").first()).toBeVisible();
+  }
 }
 
 for (const style of STYLES) {
@@ -334,6 +340,81 @@ for (const style of STYLES) {
     await expect(page.locator('main article[data-probe="1"]')).toHaveCount(1);
   });
 }
+
+// 错题集卡片末尾（现代风专属 `md-mistake-*` 版式）：三行各自折行，三语 × 窄 / 宽屏都不能撑出卡片。
+// 全站版式审计（`mobile_overflow` / `i18n_layout`）只打开空的错题页，卡片页脚不在它们的覆盖里，
+// 所以这里自己量；种子带「错因」与较低的难度系数，让选中胶囊（加粗）与语义色都出现。
+const FOOT_LANGS = [
+  { code: "zh", remove: /^移出错题 / },
+  { code: "en", remove: /^Remove mistake / },
+  { code: "es", remove: /^Quitar el error / },
+] as const;
+const footRecord = () => ({ ...mistakeRecord(bankQuestion(0)), cause: "careless", ease: 1.5 });
+
+for (const lang of FOOT_LANGS) {
+  for (const width of [320, 1280] as const) {
+    test(`错题集（modern·${lang.code}）：${width}px 下页脚三行折行、不撑出卡片`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await openMistakes(page, "modern", [footRecord()], lang.code);
+      const card = page.locator("main article").first();
+      // 「移出」的名字带题号，也借它等语言包到位（语言包异步加载，先量会量到中文）
+      await expect(card.getByRole("button", { name: lang.remove })).toBeVisible();
+      await waitSettled(page);
+
+      const m = await card.evaluate((el) => {
+        const foot = el.querySelector(".md-mistake-foot");
+        if (!foot) return { missing: true as const };
+        const box = foot.getBoundingClientRect();
+        const visible = [...foot.querySelectorAll("*")].filter((n) => {
+          const r = n.getBoundingClientRect();
+          return r.width > 0 && r.height > 0;
+        });
+        return {
+          missing: false as const,
+          rows: [...foot.children].map((c) => c.className.split(" ")[0]),
+          // 越过页脚左右边的元素：折行失败（被撑出）时它们会越界
+          outside: visible
+            .filter((n) => {
+              const r = n.getBoundingClientRect();
+              return r.left < box.left - 1 || r.right > box.right + 1;
+            })
+            .map((n) => `${n.tagName}.${n.className}`),
+          footOverflow: foot.scrollWidth - foot.clientWidth,
+          docOverflow: document.documentElement.scrollWidth - window.innerWidth,
+        };
+      });
+
+      expect(m.missing, "现代风错题卡没有渲染专属页脚 .md-mistake-foot").toBe(false);
+      if (m.missing) return;
+      // 复盘 / 进度 / 错因自评三行，结构不能悄悄塌回一堆行内文字
+      expect(m.rows).toEqual(["md-mistake-row", "md-mistake-stats", "md-mistake-row"]);
+      expect(m.outside, `页脚里有元素越出了卡片内沿：${m.outside.join(", ")}`).toEqual([]);
+      expect(m.footOverflow, "页脚内容横向溢出").toBeLessThanOrEqual(0);
+      expect(m.docOverflow, "文档横向溢出").toBeLessThanOrEqual(0);
+    });
+  }
+}
+
+test.describe("错题集页脚（现代风·触屏）", () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+
+  test("「移出」与错因胶囊的命中区不小于 44px", async ({ page }) => {
+    await openMistakes(page, "modern", [footRecord()]);
+    const foot = page.locator("main article").first().locator(".md-mistake-foot");
+    await expect(foot).toBeVisible();
+    const targets = [
+      foot.getByRole("button", { name: /^移出错题 / }),
+      ...(await foot.getByRole("button", { pressed: false }).all()),
+    ];
+    expect(targets.length, "页脚里没找到可点目标").toBeGreaterThanOrEqual(2);
+    for (const t of targets) {
+      const b = await t.boundingBox();
+      expect(b?.height ?? 0, `命中区太矮：${await t.innerText()}`).toBeGreaterThanOrEqual(43.5);
+    }
+  });
+});
 
 test.describe("首次进入", () => {
   test.use({ helpSeen: false });

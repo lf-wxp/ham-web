@@ -74,11 +74,10 @@ pub fn App() -> impl IntoView {
       {move || {
         (!crate::kit::is_modern()).then(|| view! { <MobileTabs /> })
       }}
-      // 像素风的自绘滚动条同理：现代风用系统细滚动条（`style/modern/kit.css`），
-      // 两者同时出现会变成右侧一条 12px 的像素滑块。
-      {move || {
-        (!crate::kit::is_modern()).then(|| view! { <crate::ui::ScrollBar /> })
-      }}
+      // 两套皮肤都用这条自绘滚动条：它只画在「吸顶导航下沿 → 贴底固定层上沿」之间，
+      // 系统滚动条属于视口、会把头部和底栏一起切一刀（见 `ui/scrollbar.rs` 的模块注释）。
+      // 外观差异（12px 像素滑块 / 10px 细圆头）由类名分派，两套 CSS 各写一份。
+      <crate::ui::ScrollBar />
       <Footer />
       // 站内搜索（内容 + 页面）：两套顶栏的搜索按钮与 `/` 都指向它，皮肤差异只在弹层外观
       // （`Dialog` / `Input` 走 `ui::` 分派）。调谐台（⌘K）是另一件事 —— 它是键盘路由跳转。

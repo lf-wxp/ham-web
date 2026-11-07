@@ -73,8 +73,10 @@ pub fn MobileTabs() -> impl IntoView {
   let location = use_location();
   let menu = use_mobile_menu();
   view! {
+    // `data-fixed-bottom`：窗口滚动条（`ui::ScrollBar`）据此让位，条件见 `docs/ui/pixel.md` §滚动模型。
     <nav
       aria-label=move || t("shell.mobile-tabs")
+      data-fixed-bottom
       class="mobile-tabs fixed inset-x-0 bottom-0 z-40 border-t-2 border-ink bg-card xl:hidden"
       style="padding-bottom: env(safe-area-inset-bottom);"
     >

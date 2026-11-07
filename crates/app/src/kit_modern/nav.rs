@@ -64,7 +64,8 @@ pub fn ModernNav() -> impl IntoView {
   view! {
     // 阅读进度条：scroll-driven animation，纯 CSS（不支持的浏览器只是不显示）。
     <div class="md-scroll-progress" aria-hidden="true"></div>
-    <nav class="md-nav" aria-label=move || t("shell.main-navigation")>
+    // `data-nav`：自绘窗口滚动条从这里下沿开始（`ui/scrollbar.rs`），与像素风顶栏同一契约。
+    <nav class="md-nav" data-nav aria-label=move || t("shell.main-navigation")>
       <div class="md-nav-inner">
         <a class="md-brand" href="/">
           <span class="md-brand-dot" aria-hidden="true"></span>

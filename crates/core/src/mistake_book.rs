@@ -709,6 +709,33 @@ pub fn heat_level(value: usize, max: usize) -> u8 {
   }
 }
 
+/// 热力色能混到的上限（%）。理由见 [`heat_percent`]。
+pub const HEAT_MAX_PERCENT: u8 = 30;
+
+/// 热力档位（0–4）→ 与卡片色混合的比例（%）。
+///
+/// 热力格子 / 进度条要「同一色相、不同浓淡」：界面用 `color-mix(… %, var(--card))` 得到
+/// **不透明**的中间色，而不是半透明叠加 —— 后者会随背后内容变色，是这套像素风明确避免的。
+///
+/// 上限只到 30%，不是「越深越好」：热力格子里压着文字（知识点名、错题数、正确率），
+/// 文字色是随主题翻转的 `--foreground` / `--md-fg`，浓度越高越容易翻过「翻不过来」的那一档。
+/// 实测两头的坏情况：浅色主题混到 80% 时深墨字只剩 3.8:1；深色主题里 `--cat-8` 本身就是
+/// 近白（`#f4f4f4`），叠在晚霞暗色的卡片（`#352234`）上，30% 是 4.9:1、34% 就掉到 4.3:1。
+/// 30% 是各套配色 × 明暗都保住 4.5:1 的上限，四档浓淡仍分得出 ——
+/// 这两件事都由 `pixel-check`（`crates/tools/src/pixel/schemes.rs` 的热力审计）机械守着，
+/// 改这张表要先跑它（`docs/ui/pixel.md` §2 规则 7）。
+#[must_use]
+pub const fn heat_percent(level: u8) -> u8 {
+  match level {
+    0 => 0,
+    1 => 10,
+    2 => 18,
+    3 => 24,
+    4 => HEAT_MAX_PERCENT,
+    _ => 0,
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -1008,6 +1035,22 @@ mod tests {
     // max 为 0（没有错题）时不给任何档位。
     assert_eq!(heat_level(0, 0), 0);
     assert_eq!(heat_level(5, 0), 0);
+  }
+
+  #[test]
+  fn heat_percent_is_monotonic_and_capped() {
+    let percents: Vec<u8> = (0..=4).map(heat_percent).collect();
+    assert_eq!(percents, vec![0, 10, 18, 24, HEAT_MAX_PERCENT]);
+    assert!(
+      percents.windows(2).all(|w| w[0] < w[1]),
+      "档位必须逐档变浓：{percents:?}"
+    );
+    // 越界档位当作「无热度」，不能越过文字对比度上限。
+    assert_eq!(heat_percent(5), 0);
+    assert!(
+      percents.iter().all(|&p| p <= HEAT_MAX_PERCENT),
+      "越过文字对比度上限：{percents:?}"
+    );
   }
 
   #[test]

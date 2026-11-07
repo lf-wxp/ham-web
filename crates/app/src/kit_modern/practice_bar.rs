@@ -72,7 +72,13 @@ pub fn ModernPracticeBar(
       </button>
     </div>
 
-    <div class="md-bar md-bar-practice" role="region" aria-label=move || t("exam.bar-label")>
+    // `data-fixed-bottom`：自绘窗口滚动条据此让位（`ui/scrollbar.rs`）。
+    <div
+      class="md-bar md-bar-practice"
+      data-fixed-bottom
+      role="region"
+      aria-label=move || t("exam.bar-label")
+    >
       <div class="md-bar-inner">
         <div class="md-bar-stats">
           <span>

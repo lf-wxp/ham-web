@@ -94,6 +94,9 @@ features = [
   "MediaStreamTrack",
   "MessageEvent",
   "MouseEvent",
+  # 贴底固定层的增删（`ui/scrollbar.rs`）：晚挂载的横幅 / 路由带来的底栏要补登记到 ResizeObserver
+  "MutationObserver",
+  "MutationObserverInit",
   "Navigator",
   "NodeList",
   "Notification",

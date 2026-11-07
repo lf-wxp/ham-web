@@ -1,6 +1,9 @@
-//! 成就徽章 / 怪物图鉴「纹章」的选图规则：精灵名 → 图标与色调，主题名 → 稳定的一组预设。
+//! 成就徽章 / 怪物图鉴「纹章」的选图规则：精灵名 → 图标与色调。
 //!
-//! 为什么在 core：这是纯字符串规则（关键词匹配、FNV 哈希），不依赖浏览器；放在 `crates/app`
+//! 图鉴里的怪物现在有专门的角色插画（`kit_modern/monster_art.rs`），纹章只服务
+//! 成就、「全部通关」这类身份标识 —— 它们要的是一个图案，不是一张角色脸。
+//!
+//! 为什么在 core：这是纯字符串规则（关键词匹配），不依赖浏览器；放在 `crates/app`
 //! 里就没有单测，改一个关键词会让某枚徽章悄悄换图标也没人发现。图标本身（`MIcon`）属于界面层，
 //! 这里只给出与之一一对应的 [`Glyph`]，前端做一次映射。
 
@@ -109,38 +112,6 @@ pub fn tone_for(name: &str) -> Tone {
   }
 }
 
-/// 稳定哈希（FNV-1a 64 位）：短字符串上分布够均匀，也不依赖 `std` 哈希的实现细节，
-/// 所以同一个名字在任何版本、任何平台上都落在同一格。
-#[must_use]
-pub fn stable_hash(seed: &str) -> u64 {
-  let mut h: u64 = 0xcbf2_9ce4_8422_2325;
-  for b in seed.as_bytes() {
-    h ^= u64::from(*b);
-    h = h.wrapping_mul(0x100_0000_01b3);
-  }
-  h
-}
-
-/// 预设组：6 组「图标 + 色调」。
-const PRESETS: [(Glyph, Tone); 6] = [
-  (Glyph::Antenna, Tone::Green),
-  (Glyph::Signal, Tone::Blue),
-  (Glyph::Map, Tone::Violet),
-  (Glyph::Code, Tone::Blue),
-  (Glyph::Gauge, Tone::Fire),
-  (Glyph::Flame, Tone::Gold),
-];
-
-/// 按主题（可以是中文）稳定地取一组「图标 + 色调」。
-///
-/// [`glyph_for`] 靠 ASCII 关键词匹配精灵名，遇到中文主题（关卡 key、考点名）只能退回星星 ——
-/// 地图上十只怪物长得一模一样。这里用 [`stable_hash`] 在预设里取一组：
-/// 同一主题每次刷新都是同一枚纹章，不同主题之间又有区分度。
-#[must_use]
-pub fn variant_for(seed: &str) -> (Glyph, Tone) {
-  PRESETS[(stable_hash(seed) % PRESETS.len() as u64) as usize]
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -179,30 +150,5 @@ mod tests {
     // 图标与色调是两套关键词：`radio` 是信号图标，但色调不特殊（落到默认蓝）。
     assert_eq!(glyph_for("radio"), Glyph::Signal);
     assert_eq!(tone_for("radio"), Tone::Blue);
-  }
-
-  #[test]
-  fn stable_hash_matches_published_fnv1a_vectors() {
-    // FNV-1a 64 位的公开测试向量：算法被改动（常数、顺序）会立刻红，而不是悄悄让所有纹章换位。
-    assert_eq!(stable_hash(""), 0xcbf2_9ce4_8422_2325);
-    assert_eq!(stable_hash("a"), 0xaf63_dc4c_8601_ec8c);
-    assert_eq!(stable_hash("foobar"), 0x8594_4171_f739_67e8);
-  }
-
-  #[test]
-  fn variant_is_stable_and_spreads_over_presets() {
-    assert_eq!(variant_for("第一关"), variant_for("第一关"));
-    let seeds = [
-      "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p",
-    ];
-    let used: std::collections::HashSet<usize> = seeds
-      .iter()
-      .map(|s| (stable_hash(s) % PRESETS.len() as u64) as usize)
-      .collect();
-    assert!(
-      used.len() >= 4,
-      "16 个主题只落在 {} 组预设里，分布太集中",
-      used.len()
-    );
   }
 }

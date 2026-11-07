@@ -14,14 +14,6 @@ use crate::study;
 use crate::ui::Tooltip;
 use crate::util::set_title;
 
-/// 域色 token → 热力格子的背景（同色相、按档位与卡片色混合，保持不透明）。
-fn heat_bg(level: u8, cat_var: &str) -> String {
-  format!(
-    "background-color: color-mix(in srgb, {cat_var} {}%, var(--card))",
-    crate::tone::heat_percent(level)
-  )
-}
-
 #[component]
 pub fn MistakeTopicsPage() -> impl IntoView {
   set_title("易错知识点");
@@ -114,7 +106,7 @@ pub fn MistakeTopicsPage() -> impl IntoView {
                   <div class="flex flex-wrap gap-1.5 border-t px-4 py-3">
                     {domain.topics.into_iter().map(|topic| {
                       let level = heat_level(topic.mistakes, global_max);
-                      let bg = heat_bg(level, cat_var);
+                      let bg = crate::tone::heat_fill(level, cat_var);
                       let rate = stats
                         .total
                         .subs
@@ -129,15 +121,19 @@ pub fn MistakeTopicsPage() -> impl IntoView {
                       );
                       view! {
                         <Tooltip label=tip>
+                          // 文字一律 `text-foreground`（随主题翻转），不能用 `text-muted-foreground`：
+                          // 后者是「压在卡片色上」的灰，叠到同色相的热力底上只剩 1.9:1（深色）/ 1.4:1
+                          // （浅色），「正确率」那一段几乎看不见。也不要再压一层透明度 —— 上限已经
+                          // 贴着 4.5:1，再淡半档就又掉出去了（见 `core::mistake_book::heat_percent`）。
                           <a
                             href=format!("/practice?sub={}", topic.code)
-                            class="flex items-center gap-2 border px-2.5 py-1.5 text-xs transition-colors hover:border-primary/60"
+                            class="flex items-center gap-2 border px-2.5 py-1.5 text-xs text-foreground transition-colors hover:border-primary/60"
                             style=bg
                           >
                             <span class="max-w-48 truncate">{topic.name}</span>
-                            <span class="tabular-nums text-muted-foreground">{topic.mistakes}</span>
+                            <span class="tabular-nums">{topic.mistakes}</span>
                             {rate.map(|r| view! {
-                              <span class="tabular-nums text-muted-foreground">{tf("common.accuracy", &[&r.to_string()])}</span>
+                              <span class="tabular-nums">{tf("common.accuracy", &[&r.to_string()])}</span>
                             })}
                           </a>
                         </Tooltip>

@@ -13,7 +13,7 @@
 | 考试中心 · 练题 | `/practice` `/daily-challenge` `/browse` `/flashcards` `/listen` |
 | 考试中心 · 模拟考 | `/exam` `/exam-review` |
 | 考试中心 · 复习 | `/cards` `/mistakes` `/mistake-topics` `/bookmarks` |
-| 考试中心 · 学习数据 | `/weekly` `/progress` `/study-calendar` `/report` |
+| 考试中心 · 学习数据 | `/weekly` `/progress` `/study-calendar` `/exam-schedule` `/report` |
 | 备考速查 | `/reference` `/cheat-sheet` `/confusables` `/formulas` `/prefixes` `/glossary` `/q-code` `/phonetic` `/rst` `/morse` `/cw-operating` `/exam-comparison` `/license-classes` `/radio-law` |
 | 模式 · 数字 | `/analog-modes` `/atv` `/modern-digital-modes` `/modes` `/modulation` `/digital-comms` `/lora` `/dsp` `/dv-network` `/rtty` `/ft8` `/sdr` `/gnuradio` `/aprs` `/sstv` `/weather-sat` `/packet` |
 | 传播 · 频段 | `/frequencies` `/coordination` `/zone-map` `/propagation` `/beacons` `/special-prop` `/meteor-scatter` `/aurora` `/eme` `/muf` `/wspr` `/bands` `/bandplan` |

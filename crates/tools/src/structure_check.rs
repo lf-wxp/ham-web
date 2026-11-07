@@ -32,6 +32,7 @@
 //! - 退场时长 / 延迟卸载：退场动画（`*-out`）的时长必须走 token（两套皮肤读同一个值，Rust 侧的卸载延迟读它），
 //!   `EXIT_MS` 常量只能出现在 `presence.rs`；
 //! - 弹层三件套：带 `data-modal-root` 的面板必须装齐焦点 / 滚动锁 / Esc；
+//! - 贴底固定层标记：`fixed` 贴底的元素必须带 `data-fixed-bottom`（窗口滚动条靠它让位）；
 //! - 文档内链：相对链接指向的文件与 `§N` 小节都必须真实存在。
 //!
 //! 判定口径：每行先剥掉 `//` 之后的内容，`/*` 与 `*` 开头的行整行跳过（历史说明不算违规），
@@ -2158,6 +2159,91 @@ fn check_modal_parity(root: &Path) -> bool {
   false
 }
 
+/// 一行代码里是不是在声明一个「贴底固定层」。
+///
+/// 两种写法：Tailwind 工具类同时带 `fixed` 与 `bottom-0`（像素风 `BottomBar` / `MobileTabs`、
+/// 全站横幅），或现代风的 `md-bar` / `md-dock` 类（它们的 `position: fixed` 写在 `kit.css` 里）。
+/// 按「类名整词」判，`md-bar-inner` / `xl:bottom-0` / `bottom-20` 都不算。
+fn declares_fixed_bottom(line: &str) -> bool {
+  let tokens: Vec<&str> = line
+    .split(|c: char| c.is_whitespace() || c == '"' || c == '\'')
+    .collect();
+  let has = |t: &str| tokens.contains(&t);
+  (has("fixed") && has("bottom-0")) || has("md-bar") || has("md-dock")
+}
+
+/// 贴底固定层必须带 `data-fixed-bottom`：自绘窗口滚动条（`ui::ScrollBar`）靠它量出底栏占位，
+/// 少一条标记，滚动条就会一路画进那条底栏里。
+///
+/// 为什么按文件数而不是逐行配对：`class` 与属性通常写在不同行（rustfmt 会把长属性拆开），
+/// 一个文件里「声明了几处贴底层」与「标了几处」对得上就够了；漏标的那一处恰好让两个数不等。
+fn check_fixed_bottom_marker(root: &Path) -> bool {
+  const MARKER: &str = "data-fixed-bottom";
+  if !require_dir(root, "crates/app/src", "贴底固定层标记") {
+    return false;
+  }
+  let mut files = 0usize;
+  let mut layers = 0usize;
+  let mut report: Vec<String> = Vec::new();
+  for entry in WalkDir::new(root.join("crates/app/src"))
+    .sort_by_file_name()
+    .into_iter()
+    .filter_map(Result::ok)
+  {
+    let path = entry.path();
+    if !entry.file_type().is_file() || path.extension().is_none_or(|e| e != "rs") {
+      continue;
+    }
+    let rel = path
+      .strip_prefix(root)
+      .unwrap_or(path)
+      .to_string_lossy()
+      .replace('\\', "/");
+    let Ok(text) = std::fs::read_to_string(path) else {
+      continue;
+    };
+    files += 1;
+    let code: Vec<&str> = text.lines().map(code_part).collect();
+    let declared = code.iter().filter(|l| declares_fixed_bottom(l)).count();
+    if declared == 0 {
+      continue;
+    }
+    layers += declared;
+    let marked = code
+      .iter()
+      .map(|l| l.matches(MARKER).count())
+      .sum::<usize>();
+    if marked < declared {
+      report.push(format!(
+        "    {rel}: 声明了 {declared} 处贴底固定层，只标了 {marked} 处 `{MARKER}`"
+      ));
+    }
+  }
+
+  if !scanned_ok(files, "贴底固定层标记") {
+    return false;
+  }
+  if layers == 0 {
+    // 一处都没认出来 = 识别规则失效（类名改了），不能当成「全部合规」。
+    println!(
+      "✗ 贴底固定层标记：一处贴底固定层都没认出来（类名改了？同步改 `declares_fixed_bottom`）"
+    );
+    return false;
+  }
+  if report.is_empty() {
+    println!("✓ 贴底固定层标记：{layers} 处贴底固定层都带了 `{MARKER}`");
+    return true;
+  }
+  println!("✗ 贴底固定层标记：{} 个文件漏标", report.len());
+  for line in &report {
+    println!("{line}");
+  }
+  println!(
+    "    → 新增 `fixed` 贴底的元素必须加 `{MARKER}`，否则窗口滚动条会画进它里面（docs/ui/modern.md §3、docs/ui/pixel.md 滚动模型）"
+  );
+  false
+}
+
 /// 跑全部守卫：全部 0 违规返回 `Ok`，否则打印证据并 `bail`。
 pub fn check(root: &Path) -> Result<()> {
   println!(
@@ -2179,6 +2265,9 @@ pub fn check(root: &Path) -> Result<()> {
   println!("\n── 设计系统一致性 ──");
   if !check_modal_parity(root) {
     failed.push("模态三件套".to_owned());
+  }
+  if !check_fixed_bottom_marker(root) {
+    failed.push("贴底固定层标记".to_owned());
   }
   if !check_modern_isolation(root) {
     failed.push("双设计系统隔离".to_owned());
@@ -2545,6 +2634,25 @@ impl Thing {
     ] {
       assert!(!is_fn_item_line(no), "{no:?}");
     }
+  }
+
+  #[test]
+  fn fixed_bottom_layers_are_recognised_by_whole_class_token() {
+    assert!(declares_fixed_bottom(
+      "class=\"fixed inset-x-0 bottom-0 z-50 border-t\""
+    ));
+    assert!(declares_fixed_bottom(
+      "class=\"mobile-tabs fixed inset-x-0 bottom-0 z-40 xl:hidden\""
+    ));
+    assert!(declares_fixed_bottom("class=\"md-dock\""));
+    assert!(declares_fixed_bottom("class=\"md-bar md-bar-practice\""));
+    assert!(declares_fixed_bottom("      class=\"md-bar\""));
+    // 浮在底部但不贴边（toast / 更新提示）、断点前缀、同前缀的子类，都不是贴底固定层。
+    assert!(!declares_fixed_bottom("class=\"fixed bottom-20 right-4\""));
+    assert!(!declares_fixed_bottom("class=\"fixed xl:bottom-0\""));
+    assert!(!declares_fixed_bottom("class=\"md-bar-inner md-bar-exam\""));
+    assert!(!declares_fixed_bottom("class=\"md-dock-item\""));
+    assert!(!declares_fixed_bottom("class=\"sticky bottom-0\""));
   }
 
   #[test]

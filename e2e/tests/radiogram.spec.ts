@@ -1,7 +1,13 @@
 import { expect, pickOption, test } from "./fixtures";
 
+// `/tools` 是个很重的页面，`<head>` 里还有一个第三方广告脚本（adsbygoogle）。`page.goto` 默认等
+// `load`，而这个脚本也会拖住 `load`；无外网的测试机对它的连接偶尔长时间挂着 —— 整批并行跑时，
+// 60 秒的用例预算会被这一步吃完，报出来却是 `page.goto: Test timeout`，页面其实早就挂载好了。
+// 改等 DOM 就绪，「应用挂载 / 控件就绪」交给下面的 `toBeVisible` 断言把关
+//（与 mobile_overflow / i18n_layout 的写法一致）。
+
 test("NTS Radiogram 生成：填表生成报文并自动计算检查", async ({ page }) => {
-  await page.goto("/tools#radiogram");
+  await page.goto("/tools#radiogram", { waitUntil: "domcontentloaded" });
   await expect(page.locator("#rg-number")).toBeVisible();
 
   await page.locator("#rg-number").fill("12");
@@ -27,7 +33,7 @@ test("NTS Radiogram 生成：填表生成报文并自动计算检查", async ({ 
 });
 
 test("NTS Radiogram 生成：紧急优先级在报头里拼写全称 EMERGENCY", async ({ page }) => {
-  await page.goto("/tools#radiogram");
+  await page.goto("/tools#radiogram", { waitUntil: "domcontentloaded" });
   await expect(page.locator("#rg-number")).toBeVisible();
 
   await page.locator("#rg-number").fill("3");
@@ -47,7 +53,7 @@ test("NTS Radiogram 生成：紧急优先级在报头里拼写全称 EMERGENCY",
 });
 
 test("ICS-213 生成：切换到 ICS-213 填表生成字段式报文", async ({ page }) => {
-  await page.goto("/tools#radiogram");
+  await page.goto("/tools#radiogram", { waitUntil: "domcontentloaded" });
   await page.locator("#radiogram-format").click();
   await page.getByRole("option", { name: "ICS-213" }).click();
 
@@ -66,7 +72,7 @@ test("ICS-213 生成：切换到 ICS-213 填表生成字段式报文", async ({ 
 });
 
 test("ICS-213 生成：缺必填字段时不输出报文、复制按钮禁用", async ({ page }) => {
-  await page.goto("/tools#radiogram");
+  await page.goto("/tools#radiogram", { waitUntil: "domcontentloaded" });
   await page.locator("#radiogram-format").click();
   await page.getByRole("option", { name: "ICS-213" }).click();
 

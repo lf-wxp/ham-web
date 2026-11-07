@@ -346,9 +346,9 @@
 原生 `<details>`，当前页所在段默认展开）与底部 `MobileTabs`（激活态 = 顶部 4px 主色条 + 浅底，
 不只靠字色）。页面不要另写导航 / 底部条。
 
-那个下拉面板**挂在 `<nav>` 上，不在顶栏那层 `container` 里**：`container` 在 400–639px 之间是
-定宽居中（`max-w` 400）的，面板若以它为定位祖先，左右就会各空出一条、露出下面的页面；挪到
-`<nav>` 下（`sticky` 即定位祖先）后铺满整宽，内容仍由面板内部的 `container` 与顶栏对齐。
+那个下拉面板**挂在 `<nav>` 上，不在顶栏那层内容 div 里**：那层是 `container`（≥xl 起按断点定宽），
+面板以它为定位祖先，`inset-x-0` 就会被那条 `max-w` 收窄，左右各空出一条、露出下面的页面；挪到
+`<nav>` 下（`sticky` 即定位祖先）后铺满整宽，内容由面板自己的 `px-4` 与顶栏同一内边距对齐。
 
 排版在 `nav_bar.rs` 的网格上，顺序是**先导航、后设置**：
 
@@ -473,15 +473,19 @@ Tailwind 的 `sm` / `md` / `lg` 之外，只多一档 `xs`（400px，定义在 `
 纵向滚动**只有一层**：窗口（`html` / `body`）。页面里不要造「整页高度 + `overflow-auto`」的
 滚动容器，也不要用 `h-screen` 包住内容 —— 会出现双滚动条、吸顶错位、移动端地址栏收回时跳动。
 
-**窗口滚动条是自绘的**（`ui::ScrollBar`，挂在 `App` 根部）：
+**窗口滚动条是自绘的**（`ui::ScrollBar`，挂在 `App` 根部；两套皮肤共用，现代风的外形与同一条
+「只画在两条固定层之间」的规则写在 [`modern.md`](./modern.md) §3）：
 
 - 原生窗口滚动条在 `surfaces.css` 里隐藏，**根元素要两条规则一起写**：
   `html { scrollbar-width: none }`（Chromium 121+ / Firefox 64+ 的标准属性，新版 Chromium 的
   根滚动条实际靠它关 —— 只留伪元素那条时 macOS 上仍会画出原生浮层条）+ 
   `html::-webkit-scrollbar { display: none }`（老 Chromium / Safari）。Firefox 另外在
   `@supports not selector(::-webkit-scrollbar)` 里补 `scrollbar-color` 与
-  `* { scrollbar-width: auto }`。改画一条 12px 的像素滚动条，**从吸顶导航下沿开始**到视口底部
-  （导航是「机身」、滚动条属于「屏幕」，不并排到头部去）。`top` 由组件实测 `[data-nav]` 的高度写入。
+  `* { scrollbar-width: auto }`。改画一条 12px 的像素滚动条，**只画在上下两条固定层之间**：
+  从吸顶导航下沿到贴底固定层的上沿（导航与底栏是「机身」、滚动条属于「屏幕」，不并排到
+  头部和底栏上去）。上沿由组件实测 `[data-nav]` 的高度写入 `top`；下沿用同一套实测
+  **`[data-fixed-bottom]`** 的高度写入 `bottom` —— 底部 Tab（`MobileTabs`）与答题页操作栏
+  （`BottomBar`）都带这个属性，新增贴底固定层时必须一并加上，否则滚动条会切进那条底栏。
   `scrollbar-width` 规范上是**非继承**属性（MDN 明确，只有 `scrollbar-color` 才继承）：`html`
   为 `none` 时嵌套滚动区算出来仍是 `auto`，12px 像素滚动条照旧，所以嵌套滚动区不用在
   Chromium / Firefox 侧再兜。`* { scrollbar-width: auto }` 只是防御性兜底（显式钉回 `auto`，
@@ -490,8 +494,13 @@ Tailwind 的 `sm` / `md` / `lg` 之外，只多一档 `xs`（400px，定义在 `
 - **浮在内容之上，不占布局**：没有轨道底色、只有 thumb，`main` / `footer` **不要**留 12px
   内边距 —— 留了会在没有滚动条时也空出一条，而且滚动条出现 / 消失时内容会横向抖。
   代价是拖动区覆盖最右 12px（与系统覆盖式滚动条一致），所以**不要**在右边缘 12px 内放
-  必须点的控件。**改这三处要一起看**：`ui/scrollbar.rs`、`surfaces.css` 的 `html` 段与
-  `.pxl-scrollbar*` 段、`overlay.rs::use_scroll_lock`。
+  必须点的控件。**改这几处要一起看**：
+  1. `ui/scrollbar.rs`；
+  2. `surfaces.css` 的 `html` 段与 `.pxl-scrollbar*` 段；
+  3. `overlay.rs::use_scroll_lock`；
+  4. 所有贴底固定层上的 `data-fixed-bottom`——新增 / 移动贴底固定层时必须带上它（滚动条按它让位），
+     `check-structure` 的「贴底固定层标记」会拦漏标；底栏自己变高 / 变矮由 `ResizeObserver` 跟随，
+     不需要手动通知。
 - **不要再写 `scrollbar-gutter`**：原生窗口滚动条已不存在，没有槽位可言；弹层锁滚动时也**不需要**
   补 `padding-right`（隐藏前后布局宽度不变，页面不会横向跳）。
 - 触屏（`hover: none`）整条隐藏 —— 那里没有常驻滚动条，手指滚动时多一条浮层只是噪声。
@@ -592,13 +601,16 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
    不要缩容器）。真要另一种宽度，先在评审里说明，不要悄悄写 `max-w-3xl`。
    **例外只有打印类页面**：它们写 `mm`（纸张尺寸），不受这条约束，理由见上。
 4. **页脚与底栏与正文同宽**（`max-w-5xl`），左边缘与正文对齐。
-   **顶栏是唯一的外壳例外**：`nav_bar.rs` 继续用 `container`（宽度随断点增长）—— 整行桌面
+   **顶栏是唯一的外壳例外**：`nav_bar.rs` 用 `container`（宽度随断点增长）—— 整行桌面
    导航 + HUD 在 xl 断点需要 >1024px，收窄到 `max-w-5xl` 会在 1280px 视口把顶栏撑出屏幕
    （`e2e/tests/rpg_flow.spec.ts` 的「顶栏：各宽度 × 各语言都不撑出屏幕」会拦住这种改动）。
+   但那个 `container` 只在 **≥xl** 生效（`max-xl:max-w-none`）：<xl 是汉堡态，行内只剩品牌与
+   右侧图标组，再按断点收窄（768 / 1024）只会让整行缩在中间，两侧留出与内容无关的空白；
+   这一档必须铺满整宽，品牌贴左、图标组贴右。
 5. 需要事件的正文容器（如答题页的 `on:touchstart`）：外层包一个只带事件属性的 `<div>`，
    `PageContainer` 放里面。
 
-自检见 §11 的 ⑧（输出是一份**很短的封闭清单**，当前 **11 行 / 9 个文件**，逐条对得上即可；
+自检见 §11 的 ⑧（输出是一份**很短的封闭清单**，当前 **10 行 / 9 个文件**，逐条对得上即可；
 出现新行就说明又手抄了一份容器）。
 
 这份清单现在是**机械守着**的（`cargo make check-ui`）：清单外出现 `max-w-*` / `container` 会红，
@@ -610,7 +622,7 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
 | `components/common/page_header.rs` | 页头宽度就在这里定义（`page_container.rs` 用 `cn(&[…])` 拼类名，不出现在这条 grep 里） |
 | `app/pixel_footer.rs`、`components/common/bottom_bar.rs` | 外壳与正文左边缘对齐（页脚按风格拆成两份，现代版走 `md-*`，不受这条约束） |
 | `pages/mistakes/mistakes_page.rs`、`pages/bookmarks/bookmarks_page.rs`、`pages/qsl_labels/qsl_labels_page.rs`（2 处：筛选工具条 + 未设置呼号提示行）、`pages/daily_challenge.rs`（吸顶计时条） | `PageHeader` 的 children 行，与标题行对齐 |
-| `components/navigation/nav_bar.rs`（2 处 `container`） | 顶栏例外，理由见上 |
+| `components/navigation/nav_bar.rs`（1 处 `container`） | 顶栏例外，理由见上 |
 | `app/storage_warning.rs` | 全站横幅，复刻页头行的宽度 |
 
 不在范围内的：弹窗宽度（`Dialog` 的 `sm:max-w-*`）是另一套尺度；表单控件自身的宽度上限
@@ -870,7 +882,7 @@ grep -rnE --include='*.rs' --exclude-dir=ui --exclude=cn.rs 'blur|drop-shadow-|b
 # ⑦ 把填充色 token 当文字色用（对比度不够）：应为 0（check-ui 已拦；含任意值、`text-gold` 这类基础类，
 #    以及同一行里 `<text` 带 `fill-gold` 的 SVG 文字；class 折到下一行的 `<text>` 机械守卫抓不到，要人工看）
 grep -rnE --include='*.rs' 'text-\[color:var\(--pxl-(hp|xp|gold|win)\)\]|text-(hp|xp|gold|win)([^-a-zA-Z]|$)|<text[^>]*fill-(hp|xp|gold|win)([^-a-zA-Z]|$)' .
-# ⑧ 页面级宽度类：输出应等于 §4 那份封闭清单（11 行 / 9 文件：组件自身 / 页头对齐行 / 顶栏 container / 横幅）
+# ⑧ 页面级宽度类：输出应等于 §4 那份封闭清单（10 行 / 9 文件：组件自身 / 页头对齐行 / 顶栏 container / 横幅）
 #    check-ui 已按同一份清单机械守着（清单外命中、清单内计数漂移都会红），这条用来复核
 grep -rn --include='*.rs' --exclude-dir=ui -E 'class="[^"]*\bmax-w-(2xl|3xl|4xl|5xl|6xl)\b|class="container' pages components app \
   | grep -vE '<Dialog|sm:max-w'

@@ -32,6 +32,7 @@ pub fn BossVerdict(
     let s = score.get();
     boss_result(s.correct, s.total, pass_line.get())
   });
+  // 像素风：打赢了是奖杯精灵，没打赢是那只 Boss。
   let sprite = Signal::derive(move || {
     if result.get().passed {
       "badge_trophy"
@@ -70,15 +71,22 @@ pub fn BossVerdict(
       </div>
       {move || {
         if crate::kit::is_modern() {
-          view! {
-            <crate::kit_modern::ModernEmblem
-              icon=crate::kit_modern::emblem_icon(sprite.get_untracked())
-              tone=crate::kit_modern::emblem_tone(sprite.get_untracked())
-              size=72
-              locked=Signal::derive(|| false)
-            />
+          // 打赢了是奖杯纹章，没打赢就该看见那只 Boss —— 两种图形不是一类东西，
+          // 不要都塞进纹章里（奖杯是身份，Boss 是角色）。直接读 `result`，
+          // 评分变化（重新交卷）时这一块跟着换，不依赖字符串比较。
+          if result.get().passed {
+            view! {
+              <crate::kit_modern::ModernEmblem
+                icon=crate::kit_modern::emblem_icon("badge_trophy")
+                tone=crate::kit_modern::emblem_tone("badge_trophy")
+                size=72
+                locked=Signal::derive(|| false)
+              />
+            }
+              .into_any()
+          } else {
+            view! { <crate::kit_modern::ModernMonster sprite="boss" size=72 /> }.into_any()
           }
-            .into_any()
         } else {
           view! { <PixelSprite name=sprite scale=4 class="pxl-bob" /> }.into_any()
         }

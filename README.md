@@ -89,7 +89,7 @@ cargo make setup          # 安装 wasm32 目标、Trunk 与 wasm-bindgen CLI
 
 ### 考试中心
 
-像素风 RPG 闯关（地图 / 回合战 / 怪物图鉴，等级由学习存档实时推算）、练习与闪卡 / 听题 / 呼号抄收、A/B/C 仿真考试（40/60/90 题 · 40/60/90 分钟）与考后复盘、错题本与自适应复习、学习进度 / 周报 / 备考计划 / 成就墙、计算题变体与错题归因图谱。
+像素风 RPG 闯关（地图 / 回合战 / 怪物图鉴，等级由学习存档实时推算）、练习与闪卡 / 听题 / 呼号抄收、A/B/C 仿真考试（40/60/90 题 · 40/60/90 分钟）与考后复盘、错题本与自适应复习、学习进度 / 周报 / 备考计划 / 考试日程查询指引 / 成就墙、计算题变体与错题归因图谱。
 
 ### 知识库
 
@@ -232,7 +232,7 @@ docker run -d --name ham-web -p 3000:3000 -v ham-web-data:/app/data ham-web
 
 ## 路由
 
-页面按三大模块组织（共 180 个路径）；路由表在 `crates/app/src/app/main_content.rs`，路径 / 标题 /
+页面按三大模块组织（共 181 个路径）；路由表在 `crates/app/src/app/main_content.rs`，路径 / 标题 /
 图标 / 分组的唯一来源是 `crates/core/src/registry.rs`。完整路径表与带参数页面（`/practice?bank=A&multi=1`、
 `/battle?stage=…`、`/cards?deck=…` 等）见 [`docs/reference/routes.md`](docs/reference/routes.md)。
 

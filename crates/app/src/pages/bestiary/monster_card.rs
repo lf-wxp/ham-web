@@ -36,15 +36,10 @@ pub(super) fn MonsterCard(
   let wrong = record.wrong_count;
 
   if crate::kit::is_modern_at_mount() {
-    let (icon, tone) = crate::kit_modern::emblem_variant(top_key);
     return view! {
       <li class="md-monster">
-        <crate::kit_modern::ModernEmblem
-          icon=icon
-          tone=tone
-          size=52
-          locked=Signal::derive(|| false)
-        />
+        // 怪物按专题固定成一种形态（与像素精灵同源），不再按哈希换纹章。
+        <crate::kit_modern::ModernMonster sprite=monster_sprite(top_key) size=52 />
         <div class="md-monster-body">
           <div class="md-monster-top">
             <span class="md-mono">{code}</span>

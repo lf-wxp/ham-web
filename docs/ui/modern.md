@@ -202,7 +202,12 @@ ease    --md-ease（标准）· --md-ease-out（入场）
 - 页宽：`--md-page-max` = **1200px**（`kit.css` 把 `.max-w-5xl` 覆盖成它，页头 / 正文 / 页脚 / 底部工具条一起换）。
 - 页头：`kit_modern::ModernPageHead`（标题 + 副标题 + 右侧操作区 + 下方工具条），**不要页面里手写 `<h1>`**。
 - 断点：见下面「断点与固定层」。
-- 滚动：整页一条滚动条；页内第二根吸顶栏用 `common::StickyPanel`，**页面里不要手写 `sticky top-[…]`**。
+- 滚动：整页一条滚动条（**自绘**，见下）；页内第二根吸顶栏用 `common::StickyPanel`，**页面里不要手写 `sticky top-[…]`**。
+- **窗口滚动条不走系统那条**：系统滚动条属于视口，会一头扎进吸顶导航、另一头扎进贴底固定层。
+  `ui::ScrollBar` 自绘一条 `.md-scrollbar`（10px 细圆头），`top` 按 `[data-nav]`、
+  `bottom` 按 `[data-fixed-bottom]` 实测 —— **新增贴底固定层（fixed + 贴底）时必须加
+  `data-fixed-bottom`**，否则滚动条会切进那条底栏。原生根滚动条在 `kit.css` 里藏掉，
+  嵌套滚动区仍是原生细圆头。
 - **页内菜单（侧栏 / 分类行 / 目录）窄屏只有一种交互**：`kit_modern::ModernMenuDrawer` —— `<768` 右下角悬浮按钮
   （`.md-drawer-fab`）→ 右侧抽屉（`.md-sheet` + `.md-drawer-list`）。动作与像素风 `MobileNavDrawer` 同一套，
   形状按现代风的语言（圆形行动色按钮、行式列表、选中态用行动色）。`≥768` 按钮由 CSS 整颗隐藏，桌面侧栏 / 胶囊行接管。
@@ -258,10 +263,10 @@ ease    --md-ease（标准）· --md-ease-out（入场）
 
 | 层 | z-index | 出现条件 | 让位方式 |
 |---|---|---|---|
-| `.md-bar`（考试底栏）/ `.md-bar-practice` | 40（`--md-z-bar`） | 考试：所有宽度；练习：`<900` | 页面 `padding-bottom` 叠 `env(safe-area-inset-bottom)` |
+| `.md-bar`（考试底栏）/ `.md-bar-practice` | 40（`--md-z-bar`） | 考试：所有宽度；练习：`<900` | 页面 `padding-bottom` 叠 `env(safe-area-inset-bottom)`；带 `data-fixed-bottom` 让出窗口滚动条 |
 | `.md-next-float` | 41 | 练习页答完题后，**仅 `≥900`** | `<900` 不出现（底部操作条已有「下一题」，同屏只留一个主行动） |
 | `.md-rail` | 45 | `≥900` 两侧翻页 | 与 dock 互斥 |
-| `.md-dock` | 55（`--md-z-dock`） | `<768`，且**不在练习 / 考试页** | `.md-root` 底部留白 |
+| `.md-dock` | 55（`--md-z-dock`） | `<768`，且**不在练习 / 考试页** | `.md-root` 底部留白；带 `data-fixed-bottom` 让出窗口滚动条 |
 | `.md-drawer-fab` | 56（dock + 1） | `<768`，带分类 / 目录的页面 | 抬到 dock 之上 16px；开抽屉时被 `.md-sheet` 遮罩盖住 |
 | 抽屉 `.md-sheet` | 60（`--md-z-sheet`） | 打开时 | — |
 | 模态 `.md-modal` / `ui::Dialog` 现代分支 | 70（`--md-z-modal`） | 打开时 | — |
@@ -316,7 +321,8 @@ ease    --md-ease（标准）· --md-ease-out（入场）
 | `.md-stat` / `.md-stat-value` / `.md-stat-label` / `.md-stat-text` | 统计卡与大号读数（等宽 + tabular-nums） |
 | `.md-tablist` / `.md-tab` | 页签（底边一条线，激活项渐变下划线） |
 | `.md-pagination` / `.md-page-btn` | 分页（32px 方块，`data-current="true"` 实心） |
-| `.md-q-row*` | 分类浏览、收藏集与错题集共用的题目卡片（`.md-q-row-head` 装标签行、`.md-q-row-text` 是题干、`.md-q-row-tag` 是分类胶囊；收藏集在卡片末尾追加 `.md-bookmark-foot` 分组 / 笔记操作区，错题集追加我的答案 / 复习进度 / 错因区，都不另画题目版式；错题集还通过 `chosen` 把用户当时选的项标上 `.md-q-row-chosen`「我的选择」，选错的另加红色左线）。**标签行与题干必须是两个块级行**：标签与题干同处一个 flex 行时，题干首行被胶囊推到右边、换行后回到卡片内沿，左边缘就成了锯齿。判据见 `modern_ui.spec.ts` 的「题目行」 |
+| `.md-mon`（+ `md-mon-svg` / `md-mon-idle` / `md-mon-hit`） | 怪物插画（`kit_modern::ModernMonster`）：圆角外框 + 同色辉光 + 矢量角色，形态按像素精灵名（`mon_*` / `boss` / `hero`）选定，配色由 `data-tone` 给出；`md-mon-idle` / `md-mon-hit` 是战斗里的待机 / 受击动效（减弱动态偏好下静止）。图鉴、战斗舞台、地图下一关共用 |
+| `.md-q-row*` | 分类浏览、收藏集与错题集共用的题目卡片（`.md-q-row-head` 装标签行、`.md-q-row-text` 是题干、`.md-q-row-tag` 是分类胶囊；收藏集在卡片末尾追加 `.md-bookmark-foot` 分组 / 笔记操作区，错题集追加 `.md-mistake-foot`（三行：我的答案 / 考点 / 同类题再练，复习进度，错因自评 + 移出；各行自己 `flex-wrap`，320px 下三语都不撑出卡片），都不另画题目版式；错题集还通过 `chosen` 把用户当时选的项标上 `.md-q-row-chosen`「我的选择」，选错的另加红色左线）。**标签行与题干必须是两个块级行**：标签与题干同处一个 flex 行时，题干首行被胶囊推到右边、换行后回到卡片内沿，左边缘就成了锯齿。判据见 `modern_ui.spec.ts` 的「题目行」 |
 
 ### 4.4 弹层与导航
 
@@ -330,6 +336,7 @@ ease    --md-ease（标准）· --md-ease-out（入场）
 | `.md-nav` / `.md-nav-link` / `.md-menu*` / `.md-dock` / `.md-palette` | 顶栏、主导航面板、底部 dock、调谐台 |
 | `.md-drawer-fab` / `.md-drawer-list` / `.md-drawer-item` / `.md-drawer-sublist` | 窄屏页内菜单（`kit_modern::ModernMenuDrawer`）：可拖动的悬浮按钮 + 抽屉里的行式列表（子类缩进挂在主类下），见 §3 |
 | `.md-menu-chips` | 桌面版分类胶囊行的容器：`<768` 整块隐藏（那份分类在抽屉里），避免同一屏两份菜单 |
+| `.md-scrollbar` / `.md-scrollbar-thumb` | 自绘窗口滚动条（`ui::ScrollBar`）：只画在吸顶导航下沿与贴底固定层上沿之间，见 §3 |
 
 ---
 

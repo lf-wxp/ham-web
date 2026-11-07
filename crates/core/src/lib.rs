@@ -101,6 +101,7 @@ pub mod exam_clock;
 pub mod exam_comparison;
 pub mod exam_history;
 pub mod exam_review;
+pub mod exam_schedule;
 pub mod explanation_index;
 pub mod fab;
 pub mod feedline;

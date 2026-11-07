@@ -23,17 +23,21 @@
     ============================================================ */
 
 /* ---------- 滚动条（外壳，不在 components 层） ----------
-   像素风把根滚动条藏掉、改由 `ui::ScrollBar` 自绘 12px 方块滑块；现代风不挂那个组件，
-   这里把原生滚动条放回来并做成细圆头。嵌套滚动区（弹层 / 表格）也一并对齐 ——
+   两套皮肤共用 `ui::ScrollBar` 自绘**窗口**滚动条：它只画在吸顶导航下沿与贴底固定层上沿
+   之间（系统滚动条属于视口，会把头部和底栏一起切一刀，见 `ui/scrollbar.rs`）。像素风是
+   12px 方块滑块，现代风是下面这条 10px 细圆头。
+   所以根滚动条要藏掉 —— 标准属性与伪元素两条一起写，理由与像素风那边同源
+   （`pixel/surfaces.css` 的 `html` 段）。嵌套滚动区（弹层 / 表格）仍用原生细圆头，
    否则抽屉里会出现带抖动轨道的像素滚动条。 */
 html[data-ui-style="modern"] {
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  /* `scrollbar-color` 是继承属性：根上给一次就能传给嵌套滚动区；
+     `scrollbar-width` 不继承，所以嵌套区的 `auto` 不受上面那条影响。 */
   scrollbar-color: var(--md-border-strong) transparent;
 }
 
 html[data-ui-style="modern"]::-webkit-scrollbar {
-  display: block;
-  width: 10px;
+  display: none;
 }
 
 html[data-ui-style="modern"] *::-webkit-scrollbar {
@@ -55,6 +59,48 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb {
 
 html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
   background-color: var(--md-fg-muted);
+}
+
+/* 自绘窗口滚动条（`ui::ScrollBar`）：`top` / `bottom` 由组件按 `[data-nav]` 与
+   `[data-fixed-bottom]` 实测写入，这里只给长相与兜底几何。
+   没有轨道底色、只有 thumb，浮在内容之上不占布局（所以页面不用为它留内边距）；
+   外壳不吃指针事件，只有 thumb 接拖动。触屏没有常驻滚动条，整条隐藏。 */
+.md-scrollbar {
+  position: fixed;
+  inset-inline-end: 0;
+  inset-block-start: 0;
+  inset-block-end: 0;
+  width: 10px;
+  z-index: var(--md-z-bar);
+  pointer-events: none;
+  display: none;
+}
+
+.md-scrollbar-thumb {
+  position: absolute;
+  inset-inline-end: 0;
+  width: 10px;
+  height: 48px;
+  border-radius: var(--md-r-pill);
+  background-color: var(--md-border-strong);
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+}
+
+.md-scrollbar-thumb:hover {
+  background-color: var(--md-fg-muted);
+}
+
+.md-scrollbar-thumb:active {
+  cursor: grabbing;
+}
+
+@media (hover: none) {
+  /* `display` 是组件按「页面够不够长」逐帧写的内联样式，只能靠 `!important` 压住。 */
+  .md-scrollbar {
+    display: none !important; /* important-ok: 压组件写入的内联 display */
+  }
 }
 
 @layer components {
@@ -1043,10 +1089,13 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
     color: var(--md-fg);
   }
 
+  /* 状态字压在填充条上（条是绝对定位的兄弟节点，axe 量不到它）：
+     深色主题里「良好」那格是 20% 绿底，`--md-fg-muted` 上去只有 4.1:1，
+     12px 小字读不清。这一处用 `--md-fg`，条本身的强弱仍由高度 + 色相编码。 */
   .md-live-band-state {
     position: relative;
     font-size: var(--md-text-xs);
-    color: var(--md-fg-muted);
+    color: var(--md-fg);
   }
 
   /* 来源与更新时间：等宽小字，靠右 —— 它是这一块的「脚注」，不该抢读数。 */
@@ -3712,6 +3761,17 @@ html[data-ui-style="modern"]:not(.dark) .md-hero-art svg circle[fill="url(#md-mo
   }
 
   @media (width < 900px) {
+    /* 提示键隐掉之后按钮里只剩一个图标，原来为非对称内容留的左右内距（10 / 8）
+       就变成了「图标没落在圆心」：粗指针档把 `.md-text-btn` 撑到 44×44
+       （见文末 `pointer: coarse`），圆形的对称性会把这点偏差放大成看得见的偏左。
+       这里改成与 `.md-text-btn-icon` 同一种方形命中区，让图标落在圆心；
+       宽度取与高度相同的 34，细指针档下也是个正圆。 */
+    .md-search-trigger {
+      width: 34px;
+      padding-inline: 0;
+      justify-content: center;
+    }
+
     .md-search-trigger-hint {
       display: none;
     }
@@ -5177,7 +5237,99 @@ body[data-page-mode="exam"] .md-exam {
     border-top: 1px solid var(--md-border);
   }
 
-  /* 胶囊只有两档：默认 32、密集 28（列表行、脚注里用密集档） */
+  /* 错题集的卡片末尾（题目本身仍是 `.md-q-row`）：与 `.md-bookmark-foot` 同一条分隔线与节奏，
+     内容分三行 —— 复盘（我的答案 / 考点 / 同类题再练）、进度（次数 / 连对 / 难度 / 间隔 / 到期）、
+     错因自评 + 移出。各行自己 `flex-wrap`，窄屏与长文案（西语）放不下就折行，不撑出卡片。 */
+  .md-mistake-foot {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-space-2-5);
+    margin-top: var(--md-space-3-5);
+    padding-top: var(--md-space-3);
+    border-top: 1px solid var(--md-border);
+    font-size: var(--md-text-sm);
+  }
+
+  .md-mistake-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--md-space-1) var(--md-space-4);
+    min-width: 0;
+  }
+
+  /* 我的答案是这一块的主角：判错的颜色（文字档），字母用等宽加粗。 */
+  .md-mistake-mine {
+    color: var(--md-danger-ink);
+  }
+
+  .md-mistake-mine .md-mono {
+    font-weight: 600;
+  }
+
+  .md-mistake-topic {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--md-space-1);
+    min-width: 0;
+    color: var(--md-fg-muted);
+  }
+
+  /* 进度读数：安静的次要文字，数字等宽对齐；只有「到期」和「难度」带语义色。 */
+  .md-mistake-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--md-space-1) var(--md-space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--md-fg-muted);
+    font-size: var(--md-text-xs);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .md-mistake-stats b {
+    font-weight: 600;
+    color: var(--md-fg);
+  }
+
+  .md-mistake-stats .md-mistake-level[data-level="hard"] {
+    color: var(--md-danger-ink);
+  }
+
+  .md-mistake-stats .md-mistake-level[data-level="medium"] {
+    color: var(--md-warn-ink);
+  }
+
+  .md-mistake-stats .md-mistake-level[data-level="easy"] {
+    color: var(--md-green);
+  }
+
+  .md-mistake-stats li[data-due="true"] {
+    color: var(--md-accent-ink);
+    font-weight: 600;
+  }
+
+  .md-mistake-cause {
+    gap: var(--md-space-2);
+  }
+
+  /* 移出：行尾的次要操作（幽灵按钮），悬停才转危险色 —— 平时不抢错因胶囊的注意力。
+     与 `.md-btn-ghost:hover` 同权重，靠写在它后面取胜。 */
+  .md-mistake-remove {
+    margin-inline-start: auto;
+    color: var(--md-fg-muted);
+  }
+
+  .md-mistake-remove:hover:not(:disabled) {
+    color: var(--md-danger-ink);
+  }
+
+  /* 胶囊两档：默认、密集（列表行、脚注、错题页脚用密集档）。
+     密集档**实际生效的是横向内边距与字号**：`.md-chip` 的 `min-height: 32px` 压过了下面的
+     `height: 28px`，所以两档高度都是 32（触屏 `button` 抬到 44）。这是既有行为 ——
+     真把它改成 28 会让收藏 / 术语 / 浏览三页的胶囊整体变矮，要单独评估再动。 */
   .md-chip-sm {
     height: 28px;
     padding-inline: var(--md-space-2-5);
@@ -7256,6 +7408,135 @@ html[data-ui-style="modern"] body[data-page-mode="exam"] .motion-page {
     align-items: center;
     justify-content: space-between;
     gap: var(--md-space-2-5);
+  }
+}
+
+@layer components {
+  /* ============================================================
+     怪物插画（图鉴 / 战斗舞台 / 地图下一关 / Boss 判词）
+     ------------------------------------------------------------
+     像素风里怪物是 16×16 点阵精灵，现代风不放大点阵，改成同一套几何
+     语言的矢量角色（`kit_modern/monster_art.rs`）：圆角外框 + 同色辉光
+     + 硬边色块 + 一只表情。`--mon-size` 是外框边长，插画按 78% 缩放。
+     一个 `data-tone` 同时给出主体（`--mon-a`）、暗部（`--mon-b`）、
+     描线（`--mon-ink`）、辉光与外框色；插画里只写 `var()`，不写死色值。
+     ============================================================ */
+  .md-mon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: var(--mon-size, 56px);
+    height: var(--mon-size, 56px);
+    /* 眼睛 / 屏幕 / 面罩的「亮面」：浅色主题下是纸白，深色主题下是近黑，
+       在两种主题里都与彩色身体拉开一档，不需要第二套 token。 */
+    --mon-face: var(--md-surface);
+    border-radius: calc(var(--mon-size, 56px) * 0.3);
+    border: 1px solid var(--mon-border, var(--md-border));
+    background:
+      radial-gradient(
+        120% 120% at 32% 16%,
+        var(--mon-glow, transparent) 0%,
+        transparent 64%
+      ),
+      var(--md-surface-2);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--md-fg) 6%, transparent);
+  }
+
+  .md-mon-svg {
+    width: 78%;
+    height: 78%;
+    overflow: visible;
+  }
+
+  .md-mon[data-tone="blue"] {
+    --mon-a: var(--md-blue);
+    --mon-b: color-mix(in srgb, var(--md-blue) 70%, var(--md-fg));
+    --mon-ink: color-mix(in srgb, var(--md-blue) 38%, var(--md-fg));
+    --mon-glow: color-mix(in srgb, var(--md-blue) 26%, transparent);
+    --mon-border: color-mix(in srgb, var(--md-blue) 30%, var(--md-border));
+  }
+
+  .md-mon[data-tone="fire"] {
+    --mon-a: var(--md-orange);
+    --mon-b: color-mix(in srgb, var(--md-orange) 70%, var(--md-fg));
+    --mon-ink: color-mix(in srgb, var(--md-orange) 38%, var(--md-fg));
+    --mon-glow: color-mix(in srgb, var(--md-orange) 26%, transparent);
+    --mon-border: color-mix(in srgb, var(--md-orange) 30%, var(--md-border));
+  }
+
+  .md-mon[data-tone="green"] {
+    --mon-a: var(--md-green);
+    --mon-b: color-mix(in srgb, var(--md-green) 70%, var(--md-fg));
+    --mon-ink: color-mix(in srgb, var(--md-green) 38%, var(--md-fg));
+    --mon-glow: color-mix(in srgb, var(--md-green) 26%, transparent);
+    --mon-border: color-mix(in srgb, var(--md-green) 30%, var(--md-border));
+  }
+
+  .md-mon[data-tone="violet"] {
+    --mon-a: var(--md-violet);
+    --mon-b: color-mix(in srgb, var(--md-violet) 70%, var(--md-fg));
+    --mon-ink: color-mix(in srgb, var(--md-violet) 38%, var(--md-fg));
+    --mon-glow: color-mix(in srgb, var(--md-violet) 26%, transparent);
+    --mon-border: color-mix(in srgb, var(--md-violet) 30%, var(--md-border));
+  }
+
+  .md-mon[data-tone="gold"] {
+    --mon-a: var(--md-gold);
+    --mon-b: color-mix(in srgb, var(--md-gold) 70%, var(--md-fg));
+    --mon-ink: color-mix(in srgb, var(--md-gold) 38%, var(--md-fg));
+    --mon-glow: color-mix(in srgb, var(--md-gold) 26%, transparent);
+    --mon-border: color-mix(in srgb, var(--md-gold) 30%, var(--md-border));
+  }
+
+  .md-mon[data-tone="danger"] {
+    --mon-a: var(--md-danger);
+    --mon-b: color-mix(in srgb, var(--md-danger) 70%, var(--md-fg));
+    --mon-ink: color-mix(in srgb, var(--md-danger) 38%, var(--md-fg));
+    --mon-glow: color-mix(in srgb, var(--md-danger) 28%, transparent);
+    --mon-border: color-mix(in srgb, var(--md-danger) 32%, var(--md-border));
+  }
+
+  /* 呼吸：战斗舞台上的玩家与怪物都轻轻起伏，一眼看出是活物。
+     减弱动态偏好下直接静止 —— 位移类动效最容易引起不适。 */
+  .md-mon-idle {
+    animation: md-mon-float 4.2s var(--md-ease) infinite;
+  }
+
+  /* 受击：短促的位移 + 放大，播一次就停（节点靠 `hit.seq` 重建来重放）。 */
+  .md-mon-hit {
+    animation: md-mon-hit 340ms var(--md-ease);
+  }
+
+  @keyframes md-mon-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+
+  @keyframes md-mon-hit {
+    0% {
+      transform: translate(0, 0) scale(1);
+    }
+
+    30% {
+      transform: translate(3px, -3px) scale(1.05) rotate(2deg);
+    }
+
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .md-mon-idle,
+    .md-mon-hit {
+      animation: none;
+    }
   }
 }
 

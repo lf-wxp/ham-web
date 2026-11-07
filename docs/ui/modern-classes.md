@@ -5,7 +5,7 @@
 > 这里登记了但 CSS 里已经没有（死条目），都会报错。条目写成 `` `md-xxx`(规则数) `` 的形态，
 > 第一列的组名只是分组标签，不参与比对；规则数是近似值，不参与比对。
 
-共 **524** 个类，分 151 组。
+共 **538** 个类，分 153 组。
 
 | 组 | 类（括号内为该类在 CSS 里出现的规则数） |
 |---|---|
@@ -82,9 +82,11 @@
 | `md-mark` | `md-mark`(1) · `md-mark-right`(1) · `md-mark-wrong`(1) |
 | `md-menu` | `md-menu-anchor`(1) · `md-menu-body`(1) · `md-menu-chips`(1) · `md-menu-count`(1) · `md-menu-grid`(3) · `md-menu-icon-sm`(2) · `md-menu-input`(7) · `md-menu-item`(5) · `md-menu-panel`(1) · `md-menu-search`(8) · `md-menu-section`(2) |
 | `md-mini` | `md-mini-bar`(1) |
+| `md-mistake` | `md-mistake-cause`(1) · `md-mistake-foot`(1) · `md-mistake-level`(3) · `md-mistake-mine`(2) · `md-mistake-remove`(2) · `md-mistake-row`(1) · `md-mistake-stats`(6) · `md-mistake-topic`(1) |
 | `md-mod` | `md-mod`(7) · `md-mod-blue`(1) · `md-mod-green`(1) · `md-mod-head`(1) · `md-mod-index`(1) · `md-mod-title`(1) |
 | `md-modal` | `md-modal`(5) · `md-modal-body`(1) · `md-modal-head`(1) · `md-modal-panel`(5) |
 | `md-modules` | `md-modules`(5) |
+| `md-mon` | `md-mon`(7) · `md-mon-hit`(2) · `md-mon-idle`(2) · `md-mon-svg`(1) |
 | `md-mono` | `md-mono`(4) |
 | `md-monster` | `md-monster`(1) · `md-monster-body`(1) · `md-monster-foot`(1) · `md-monster-list`(2) · `md-monster-meta`(1) · `md-monster-q`(1) · `md-monster-top`(1) |
 | `md-moon` | `md-moon-disc`(2) |
@@ -118,7 +120,7 @@
 | `md-rst` | `md-rst`(1) · `md-rst-card`(1) · `md-rst-card-head`(1) · `md-rst-grid`(1) · `md-rst-key`(1) · `md-rst-label`(1) · `md-rst-levels`(2) · `md-rst-value`(1) |
 | `md-sat` | `md-sat`(2) |
 | `md-score` | `md-score`(1) · `md-score-fail`(1) · `md-score-pass`(1) · `md-score-value`(1) |
-| `md-scroll` | `md-scroll-progress`(3) |
+| `md-scroll` | `md-scroll-progress`(3) · `md-scrollbar`(2) · `md-scrollbar-thumb`(3) |
 | `md-search` | `md-search-key`(1) · `md-search-list`(1) · `md-search-row`(2) · `md-search-text`(3) · `md-search-trigger`(2) · `md-search-trigger-hint`(2) |
 | `md-sect` | `md-sect-head`(1) · `md-sect-note`(1) |
 | `md-section` | `md-section-title`(2) |

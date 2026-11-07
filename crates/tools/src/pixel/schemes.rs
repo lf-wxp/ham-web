@@ -45,6 +45,9 @@ const STATUS_TEXT: [&str; 4] = [
 /// 这条线若画得比基线还严，等于要求新方案比经典更好，而那些表面上本来就不放错误文字。
 const DESTRUCTIVE_SURFACES: [&str; 3] = ["--background", "--card", "--popover"];
 
+/// WCAG AA 正文下限。
+const AA: f64 = 4.5;
+
 /// 状态色文字可能落到的表面变量（暗色 / 亮色同一份，强调面也算：`hover:bg-accent` 上会有字）。
 const SURFACE_VARS: [&str; 6] = [
   "--background",
@@ -170,6 +173,99 @@ fn audit_inherited_text(
   Ok(bad)
 }
 
+/// 热力格子里相邻两档的最小对比度（WCAG 比值）。
+///
+/// 1.0 = 看不出差别。热力格子靠"同一色相、不同浓淡"传达多少，相邻档若分不开，
+/// 四档就退化成两三档。当前表（10 / 18 / 24 / 30%）实测最小是 1.052（亮色「森林」的 `--cat-5`
+/// 第 2→3 档），门槛 1.04 留一点余量：它拦的是"档位被调得挤成一团"，**不**保证肉眼一定好分辨，
+/// 改表时仍要在浅 / 深色各挑一两套配色目测。
+const HEAT_MIN_STEP: f64 = 1.04;
+
+/// 热力审计的结果：违规清单，以及全局最小的相邻档对比度（用来标定 [`HEAT_MIN_STEP`]）。
+struct HeatAudit {
+  bad: Vec<String>,
+  worst_step: f64,
+  worst_step_at: String,
+}
+
+/// 审计「易错知识点」热力格子（`color-mix(分类色 N%, var(--card))` 上压 `--foreground` 文字）：
+///
+/// 1. **文字**：每个方案 × 明暗 × 8 个分类色 × 4 档，`--foreground` 落在混出来的底上要 >= AA；
+/// 2. **浓淡**：相邻两档（含 0 档 = 纯卡片底）的底色对比度要 >= [`HEAT_MIN_STEP`]。
+///
+/// 两件事是一对矛盾 —— 浓度越高文字越难读，越低档位越难分 —— 所以放在一起审，
+/// 改 `ham_web_core::mistake_book::heat_percent` 的表时由这里兜住两头。
+/// 只覆盖像素风的 `--card` / `--foreground`（经典方案 + 生成的各方案）；现代风的取值不在这里。
+fn audit_heat(light: &BTreeMap<String, Rgb>, dark: &BTreeMap<String, Rgb>) -> Result<HeatAudit> {
+  let mut audit = HeatAudit {
+    bad: Vec::new(),
+    worst_step: f64::INFINITY,
+    worst_step_at: String::new(),
+  };
+  // 经典方案不在生成物里，单独补上；其余方案在其基础上叠覆盖。
+  let mut cases: Vec<(String, bool, BTreeMap<String, Rgb>)> = vec![
+    (DEFAULT_SCHEME.to_owned(), false, light.clone()),
+    (DEFAULT_SCHEME.to_owned(), true, dark.clone()),
+  ];
+  for scheme in generated() {
+    for (is_dark, classic) in [(false, light), (true, dark)] {
+      cases.push((
+        scheme.id.to_owned(),
+        is_dark,
+        effective_vars(scheme, is_dark, classic)?,
+      ));
+    }
+  }
+  for (id, is_dark, vars) in &cases {
+    let (Some(&card), Some(&fg)) = (vars.get("--card"), vars.get("--foreground")) else {
+      bail!("{id}：缺少 --card 或 --foreground");
+    };
+    for n in 1..=8 {
+      let name = format!("--cat-{n}");
+      let Some(&cat) = vars.get(&name) else {
+        bail!("{id}：缺少 {name}");
+      };
+      let mut prev = card;
+      for level in 1..=4u8 {
+        let pct = f64::from(ham_web_core::mistake_book::heat_percent(level)) / 100.0;
+        let cell = card.mix(cat, pct);
+        let text = fg.contrast(cell);
+        if text < AA {
+          audit.bad.push(format!(
+            "[{}] {id}：{name} 第 {level} 档（{}%）底 {} 上 --foreground {} 只有 {text:.2}",
+            mode_name(*is_dark),
+            (pct * 100.0).round(),
+            cell.hex(),
+            fg.hex()
+          ));
+        }
+        let step = prev.contrast(cell);
+        if step < audit.worst_step {
+          audit.worst_step = step;
+          audit.worst_step_at = format!(
+            "[{}] {id}：{name} 第 {} → {level} 档（{} → {}）",
+            mode_name(*is_dark),
+            level - 1,
+            prev.hex(),
+            cell.hex()
+          );
+        }
+        if step < HEAT_MIN_STEP {
+          audit.bad.push(format!(
+            "[{}] {id}：{name} 第 {} → {level} 档（{} → {}）只差 {step:.3}，分不开",
+            mode_name(*is_dark),
+            level - 1,
+            prev.hex(),
+            cell.hex()
+          ));
+        }
+        prev = cell;
+      }
+    }
+  }
+  Ok(audit)
+}
+
 /// `pixel-schemes`：生成 `schemes.css`；`check` 为真时只校验（过期或对比度不达标则失败）。
 pub fn run(root: &Path, check: bool) -> Result<()> {
   let path = root.join(super::SCHEMES_CSS);
@@ -181,6 +277,14 @@ pub fn run(root: &Path, check: bool) -> Result<()> {
       "配色方案有 {} 处文字对比度不达标（调整 core/color_scheme.rs 里的种子色）：\n{}",
       bad.len(),
       bad.join("\n")
+    );
+  }
+  let heat = audit_heat(&light, &dark)?;
+  if !heat.bad.is_empty() {
+    bail!(
+      "热力格子有 {} 处不达标（调整 core/mistake_book.rs 的 heat_percent；文字对比度要 >= {AA}，相邻档要 >= {HEAT_MIN_STEP}）：\n{}",
+      heat.bad.len(),
+      heat.bad.join("\n")
     );
   }
 
@@ -195,6 +299,10 @@ pub fn run(root: &Path, check: bool) -> Result<()> {
     println!(
       "配色方案：{} 个方案（含默认）全部达标，schemes.css 是最新的",
       SCHEMES.len()
+    );
+    println!(
+      "热力格子：文字对比度全部 >= {AA}；最紧的相邻档对比度 {:.3}（门槛 {HEAT_MIN_STEP}），在 {}",
+      heat.worst_step, heat.worst_step_at
     );
     return Ok(());
   }

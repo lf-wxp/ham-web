@@ -15,8 +15,10 @@ pub(super) fn StorageWarning() -> impl IntoView {
   move || {
     open.get().then(|| {
       view! {
+        // `data-fixed-bottom`：自绘窗口滚动条（`ui::ScrollBar`）据此让位，别压进这条横幅。
         <div
           role="alert"
+          data-fixed-bottom
           class="fixed inset-x-0 bottom-0 z-50 border-t border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-hp-text shadow-lg"
         >
           <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3">

@@ -1,9 +1,12 @@
-//! 成就徽章 / 怪物图鉴的现代「纹章」：圆角方块 + 渐变环 + 线性图标。
+//! 成就徽章 / 结算标记的现代「纹章」：圆角方块 + 渐变环 + 线性图标。
 //!
 //! 像素风用 16×16 点阵精灵（`PixelSprite`）表达「奖杯 / 火焰 / 星球」，
 //! 放大到 48–64px 就是一块块马赛克。现代风改用同一套线性图标语言：
 //! 一枚纹章 = 一层柔和渐变底 + 一圈同色描边 + 居中的 `MIcon`，
 //! 尺寸与圆角跟按钮、面板同一套刻度。
+//!
+//! 图鉴与战斗里的**怪物**不走纹章：它们要的是角色，不是图案，
+//! 见 `kit_modern/monster_art.rs`（同一套外框语言，中间换成矢量怪物）。
 
 use ham_web_core::emblem::{self, Glyph};
 use leptos::prelude::*;
@@ -40,13 +43,6 @@ pub fn emblem_icon(name: &str) -> MIcon {
 #[must_use]
 pub fn emblem_tone(name: &str) -> EmblemTone {
   emblem::tone_for(name)
-}
-
-/// 按主题（可以是中文）稳定地取一组「图标 + 色调」：同一主题每次刷新都是同一枚纹章。
-#[must_use]
-pub fn emblem_variant(seed: &str) -> (MIcon, EmblemTone) {
-  let (glyph, tone) = emblem::variant_for(seed);
-  (icon_of(glyph), tone)
 }
 
 /// 现代纹章。`size` 是外框边长（px），锁定时只画虚线框与盾牌图标。

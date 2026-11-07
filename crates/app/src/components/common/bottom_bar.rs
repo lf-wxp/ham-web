@@ -22,9 +22,11 @@ pub fn BottomBar(
 ) -> impl IntoView {
   view! {
     <Portal>
+      // `data-fixed-bottom`：窗口滚动条（`ui::ScrollBar`）据此让位，条件见 `docs/ui/pixel.md` §滚动模型。
       <div
         role="region"
         aria-label=move || t("shell.action-bar")
+        data-fixed-bottom
         class="fixed left-0 right-0 bottom-0 z-40 border-t-2 border-ink bg-card shadow-[0_-2px_0_0_var(--pxl-shadow)]"
         style="padding-bottom: env(safe-area-inset-bottom);"
       >

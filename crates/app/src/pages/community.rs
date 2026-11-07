@@ -16,7 +16,7 @@ pub fn CommunityPage() -> impl IntoView {
   view! {
     <KnowledgePage title=move || t("knowledge.ham-community") subtitle=move || t("knowledge.ham-radio-forums-q")>
       <SectionCard title=Signal::derive(move || t("knowledge.about-this-community"))>
-        <p class="text-sm leading-relaxed text-muted-foreground">
+        <p class="p-4 text-sm leading-relaxed text-muted-foreground">
           {move || {
             t(
               "knowledge.this-site-currently-focuses",

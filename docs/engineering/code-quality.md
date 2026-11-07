@@ -90,11 +90,11 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 | 静态检查 | clippy `-D warnings`（原生 + wasm 前端，含 12 个 worker） | `cargo make clippy` | 有 lint 级缺陷 |
 | 单元测试 | core / app / 各解码 crate | `cargo make test` | 逻辑回归 |
 | 界面规范 | 机械守卫（圆角 / 原生控件 / 类名工厂 / CHIP_ON / 填充色当文字 / 模糊渐变 / 软阴影 / 宽度容器封闭清单 / 现代风圆角阶梯 …，条数以工具输出为准） | `cargo make check-ui` | UI 规范回潮 |
-| 结构守卫 | 一文件一组件 / 页面手写吸顶偏移 / 组件体里订阅风格信号 / 风格读取闭包被立即调用 / 散落 alert() / core 碰浏览器 API / crate 反向依赖 / panic 宏 / 知识库译文词典挂载 / 现代风隔离与样式门禁 / 视口断点白名单 / 类名索引 / 阅读正文流体字号 / 弹层三件套 / 文档内链（逐项见下方「机械守卫」小节） | `cargo make check-structure` | 结构/架构规范回潮 |
+| 结构守卫 | 一文件一组件 / 页面手写吸顶偏移 / 组件体里订阅风格信号 / 风格读取闭包被立即调用 / 散落 alert() / core 碰浏览器 API / crate 反向依赖 / panic 宏 / 知识库译文词典挂载 / 现代风隔离与样式门禁 / 视口断点白名单 / 类名索引 / 阅读正文流体字号 / 弹层三件套 / 贴底固定层标记 / 文档内链（逐项见下方「机械守卫」小节） | `cargo make check-structure` | 结构/架构规范回潮 |
 | 文案 | 重复 key、占位符数量、复数变体、死条目、语言包新鲜度、覆盖率 | `cargo make i18n-check` | 三语不齐或死词条 |
 | 知识库译文 | 中文原文作 key 的漂移检测 | `cargo make knowledge-i18n-check` | 译文静默失效 |
 | 解析表 | 答案一致性、重复注入、同题多版本分叉 | `cargo make explanations-check` | 解析与题库不一致 |
-| 像素风 | 调色板对比度、`schemes.css` 与方案表一致 | `cargo make pixel-check` | 对比度或生成物漂移 |
+| 像素风 | 调色板对比度、`schemes.css` 与方案表一致、易错知识点热力格子（各方案 × 明暗 × 分类色 × 4 档）的文字对比度与相邻档可分辨度（仅像素风的 `--card` / `--foreground`） | `cargo make pixel-check` | 对比度或生成物漂移 |
 | e2e 对账 | `e2e/coverage-targets.json` 里每条 journey 的 grep 必须在 spec 里唯一命中 | `cargo make e2e-check` | 关键旅程失去用例 / grep 歧义 |
 | 注册表一致性 | 注册表 ↔ 导航 ↔ 路由 ↔ sitemap | `cargo test -p ham-web-app registry_check` | 新增页面漏注册 |
 | 体积预算 | `perf-budget.json`（主包 wasm br 上限 1 950 000 B 等 7 项） | `cargo make size-check`（需先 `build-web`） | 产物超预算 |
@@ -680,6 +680,7 @@ grep -rn "TODO\|FIXME\|HACK\|todo!()\|unimplemented!()" crates
 | 类名索引 | `style/modern/` 下全部 CSS 的 `md-*` 与 `docs/ui/modern-classes.md` **精确双向**一致 | 前缀类名不会被更长的已登记类放过；死条目也报 |
 | 阅读正文 | `--md-text-prose` 必须是 `clamp(…vw…)`、`--md-measure` 必须是 `em`、`.md-article-page` 必须落这两个 token，且文档 §2.3 的 clamp 值与 CSS 逐字一致 | 字号改回固定档、measure 换成 `px` / `ch` 时页面照常能看，只有这里对不上（规矩见 `docs/ui/modern.md` §2.3） |
 | 弹层三件套 | 带 `data-modal-root` 的面板调齐 focus / 滚动锁 / Esc（C7.8） | |
+| 贴底固定层标记 | 每个文件里「声明了几处贴底固定层」（`fixed` + `bottom-0`，或 `md-bar` / `md-dock`）不得多于 `data-fixed-bottom` 的出现次数；自绘窗口滚动条靠它让位 | 按文件计数而非逐元素配对：同一文件里漏标一处、又多标一处会互相抵消；非 `bottom-0` 的贴底写法（`inset-block-end` 写在 CSS 里的新类）认不出 |
 | 风格读取闭包被立即调用 | `let f = … \|\| { … kit::is_modern() … };` 之后又出现 `f()` 即违规（C7.6 的第二半） | 读信号那行确实在闭包里，缩进规则看不见；按**调用点**判，语句范围靠 `{}` `()` `[]` 配对，字符串里有 `;` 时漏报 |
 | e2e 的 dev 告警断言 | `smoke.spec.ts` 把所有路由上 Leptos 的「在跟踪上下文之外读信号」告警当失败 | 只在 dev 构建发声，`cargo make e2e`（release）里空转，见 [`docs/engineering/testing.md`](testing.md) |
 | 知识库译文词典挂载 | 用了 `kt_tracked` / `core_text_tracked` 的页面挂了 `use_knowledge_i18n`（C3.5） | |

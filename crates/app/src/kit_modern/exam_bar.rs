@@ -37,7 +37,13 @@ pub fn ModernExamBar(
     // 它落在 `<main>` 之外，必须自带 landmark（否则 axe 的 region 规则判「内容不在
     // 地标里」：固定在页面上的读数与操作按钮同样要能被跳读）。
     <Portal>
-    <div class="md-bar" role="region" aria-label=move || t("exam.bar-label")>
+    // `data-fixed-bottom`：自绘窗口滚动条据此让位（`ui/scrollbar.rs`）。
+    <div
+      class="md-bar"
+      data-fixed-bottom
+      role="region"
+      aria-label=move || t("exam.bar-label")
+    >
       <div class="md-bar-inner md-bar-exam">
         <div class="md-bar-stats">
           <span>

@@ -9,7 +9,7 @@
 
 ## 0. 一句话结论
 
-升级不是「换一套颜色」，而是把全站 180 条路由收进**一套动作语法**（7 类动作 + 12 个页面签名），
+升级不是「换一套颜色」，而是把全站 181 条路由收进**一套动作语法**（7 类动作 + 12 个页面签名），
 让每条路由既能被认出「这是哪一类页面」，又共享同一套曲线、时长与降级口径。
 落点是三层：**路由层**（`#route-content` 上的 `data-sig` / `data-nav-dir`）、
 **原语层**（`kit_modern/interaction.rs` 的按压反馈与 `kit_modern/rail.rs` 的拖拽轨道）、
@@ -79,7 +79,7 @@
 
 签名按**动作语义**分，不按模块归属分（`/antenna-theory` 与 `/antenna-analyzer` 只差一个词，
 一个读、一个算，必须分开）。完整的「路由 → 签名」表是
-`crates/core/src/interaction.rs::PageSignature::paths`，单测保证 180 条路由**每条都有且只有
+`crates/core/src/interaction.rs::PageSignature::paths`，单测保证 181 条路由**每条都有且只有
 一个签名**、且表里没有不存在的路由。
 
 | 签名 | 覆盖（举例） | 独有动作 | 与邻居的差异 |

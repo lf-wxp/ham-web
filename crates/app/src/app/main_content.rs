@@ -14,16 +14,16 @@ use crate::pages::{
   CountdownPage, CwOpPage, DailyChallengePage, DashboardPage, DevelopersPage, DigitalCommsPage,
   DiyProjectsPage, DominoexDecoderPage, DspBasicsPage, DvNetworkPage, DxPage, DxSpotsPage,
   DxccMapPage, DxpeditionPage, ElectronicsPage, EmcommPage, EmePage, EqslPage, EventsPage,
-  ExamComparisonPage, ExamPage, ExamReviewPage, FeedlinePage, FiltersPage, FlashcardsPage,
-  FormulasPage, FrequenciesPage, Ft8DecoderPage, Ft8Page, GearPage, GlossaryPage, GnuradioPage,
-  GraylinePage, GridMapPage, GridSystemPage, GroundingPage, HellDecoderPage, HistoryPage, HomePage,
-  IotaPage, KissTncPage, LearningPathPage, LearningResourcesPage, LicenseClassesPage,
-  LicenseCompliancePage, LicenseNoticePage, LicensePage, ListenPage, LogPage, LoggingSoftwarePage,
-  LoraPage, LrptDecoderPage, MeasurementLabPage, MeteorScatterPage, MetersPage, MicrowavePage,
-  MistakeTopicsPage, MistakesPage, MobilePage, ModernDigitalModesPage, ModesPage,
-  ModulationTheoryPage, MorsePage, MostWantedPage, MufPage, NavtexDecoderPage, NecPage, NoisePage,
-  NotFoundPage, NotificationsPage, NvisPage, OliviaDecoderPage, OpenSourcePage, OperatingPage,
-  OrganizationsPage, PacketPage, PhoneticPage, PhotoProcessorPage, PolarizationPage,
+  ExamComparisonPage, ExamPage, ExamReviewPage, ExamSchedulePage, FeedlinePage, FiltersPage,
+  FlashcardsPage, FormulasPage, FrequenciesPage, Ft8DecoderPage, Ft8Page, GearPage, GlossaryPage,
+  GnuradioPage, GraylinePage, GridMapPage, GridSystemPage, GroundingPage, HellDecoderPage,
+  HistoryPage, HomePage, IotaPage, KissTncPage, LearningPathPage, LearningResourcesPage,
+  LicenseClassesPage, LicenseCompliancePage, LicenseNoticePage, LicensePage, ListenPage, LogPage,
+  LoggingSoftwarePage, LoraPage, LrptDecoderPage, MeasurementLabPage, MeteorScatterPage,
+  MetersPage, MicrowavePage, MistakeTopicsPage, MistakesPage, MobilePage, ModernDigitalModesPage,
+  ModesPage, ModulationTheoryPage, MorsePage, MostWantedPage, MufPage, NavtexDecoderPage, NecPage,
+  NoisePage, NotFoundPage, NotificationsPage, NvisPage, OliviaDecoderPage, OpenSourcePage,
+  OperatingPage, OrganizationsPage, PacketPage, PhoneticPage, PhotoProcessorPage, PolarizationPage,
   PortableMapPage, PortablePage, PowerPage, PowerSupplyPage, PracticalAntennasPage, PracticePage,
   PrefixesPage, PrintPage, ProgressPage, PropagationPage, PskDecodePage, PskReporterPage,
   QCodePage, QrpPage, QslCardPage, QslDesignerPage, QslLabelsPage, QuestMapPage, RadioLawPage,
@@ -235,6 +235,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/dashboard") view=DashboardPage />
         <Route path=path!("/progress") view=ProgressPage />
         <Route path=path!("/study-calendar") view=StudyCalendarPage />
+        <Route path=path!("/exam-schedule") view=ExamSchedulePage />
         <Route path=path!("/achievements") view=AchievementsPage />
         <Route path=path!("/backup") view=BackupPage />
         <Route path=path!("/weekly") view=WeeklyPage />

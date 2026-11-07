@@ -715,8 +715,8 @@ const WIDTH_ALLOWED: &[(&str, &str)] = &[
   ),
 ];
 
-/// 清单内的命中数 / 文件数（复核日期 2026-10-16）。漂移了就要人看一眼。
-const WIDTH_EXPECT_HITS: usize = 11;
+/// 清单内的命中数 / 文件数（复核日期 2026-11-07）。漂移了就要人看一眼。
+const WIDTH_EXPECT_HITS: usize = 10;
 const WIDTH_EXPECT_FILES: usize = 9;
 
 /// §11 ⑧：页面里写页面级宽度容器（`max-w-2xl…6xl`，或类名开头的 `container`）。

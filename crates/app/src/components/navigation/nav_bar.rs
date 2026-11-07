@@ -87,7 +87,12 @@ pub(crate) fn PixelNav() -> impl IntoView {
     // 顶栏是一条实心的「HUD 栏」：底色用 `--card`（不透明）+ 2px 墨色下沿 + 硬偏移投影，
     // 不模糊、不渐变；吸顶时下面滚过的内容被它实实在在地盖住，不需要任何磨砂兜底。
     <nav data-nav aria-label=move || t("shell.main-navigation") class="sticky top-0 z-50 border-b-2 border-ink bg-card shadow-[0_2px_0_0_var(--pxl-shadow)]">
-      <div class="container relative mx-auto px-1 xs:px-2 sm:px-4">
+      // 内容层：只有 ≥xl 才用 `container` —— 那一档要放整行桌面导航 + HUD，宽度得 >1024px
+      // （`docs/ui/pixel.md` §4）。<xl 是汉堡态，行内只剩品牌与右侧图标组，再按断点收窄
+      // （768 / 1024）只会让整行往中间缩，两侧留出与内容无关的空白；这一档直接铺满整宽，
+      // 品牌贴左、图标组贴右。注意这不等于"与正文边缘对齐"：正文是 `max-w-5xl` 居中，
+      // 视口比它宽（1024–1279px）时顶栏两端仍会比正文更靠外。
+      <div class="container relative mx-auto max-xl:max-w-none px-1 xs:px-2 sm:px-4">
         <div class="flex h-16 items-center justify-between gap-2 sm:gap-3">
           // 品牌标识
           <a
@@ -212,10 +217,10 @@ pub(crate) fn PixelNav() -> impl IntoView {
 
       </div>
 
-      // 移动端下拉菜单。挂在 `<nav>` 上、不放进那层 `container` 里：`container` 在 400–639px
-      // 之间是**定宽居中**的（`max-w` 400），面板跟着它走就会在左右各空出一条，露出下面的页面。
-      // 内容宽度仍由面板里的 `container` 对齐：两侧边界与顶栏 `container` 同宽（同一 max-w），
-      // 内边距是面板自己的 `px-4`（菜单需要缩进，不跟顶栏的 `px-1/2/4` 逐档一致）。
+      // 移动端下拉菜单。挂在 `<nav>` 上、不放进上面那层内容 div 里：那层是 `container`
+      // （宽度随断点定死），面板以它为定位祖先，`inset-x-0` 就会被那条 `max-w` 收窄，
+      // 左右各空出一条、露出下面的页面。挂在 `<nav>` 下（`sticky` 即定位祖先）铺满整宽，
+      // 内容内边距由面板自己的 `px-4` 给（菜单需要缩进，不跟顶栏的 `px-1/2/4` 逐档一致）。
       {move || {
         menu_open.get().then(|| {
           view! {
@@ -234,7 +239,7 @@ pub(crate) fn PixelNav() -> impl IntoView {
               // `MobileNavSection` 里 —— 三列并排时每段自带的 `border-t` 会断成三段短虚线。
               <nav
                 aria-label=move || t("shell.mobile-navigation")
-                class="container mx-auto grid grid-cols-1 gap-1 px-4 py-3 sm:grid-cols-3 sm:items-start sm:gap-x-4"
+                class="grid grid-cols-1 gap-1 px-4 py-3 sm:grid-cols-3 sm:items-start sm:gap-x-4"
               >
                 // 三大段可折叠、当前页所在的那段默认展开（见 `MobileNavSection`）。
                 <MobileNavSection

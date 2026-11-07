@@ -1,6 +1,6 @@
 //! 交互签名与换页方向：路由 → 动作族的**唯一映射**。
 //!
-//! 全站 180 条路由，如果让每个页面自己挑动效，最后一定会漂移成「有的页有动效、有的页没有」。
+//! 全站 181 条路由，如果让每个页面自己挑动效，最后一定会漂移成「有的页有动效、有的页没有」。
 //! 这里把「这条路由用哪一种动作」写成一张可测的表，页面与样式层都只消费结果：
 //!
 //! - 前端在路由变化时把 [`PageSignature::attr`] 写到 `#route-content` 的 `data-sig` 上；
@@ -138,6 +138,7 @@ impl PageSignature {
         "/organizations",
         "/bestiary",
         "/logging-software",
+        "/exam-schedule",
       ],
       Self::Tools => &[
         "/tools",
