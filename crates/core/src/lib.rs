@@ -124,6 +124,7 @@ pub mod grid_filter;
 pub mod grid_system;
 pub mod grounding;
 pub mod history;
+pub mod ime_gate;
 pub mod interaction;
 pub mod intermod;
 pub mod iota;

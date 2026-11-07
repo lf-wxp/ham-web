@@ -348,15 +348,36 @@ impl LogEntry {
       &self.contact_pota_ref,
     ]
     .iter()
-    .any(|f| f.to_uppercase().contains(q))
+    .any(|f| upper_contains(f, q))
     {
       return true;
     }
     // DXCC 实体名（中文 / 英文），支持从 DXCC 地图点击实体后按实体过滤。
     self
       .entity()
-      .is_some_and(|e| e.name.contains(q) || e.name_en.to_uppercase().contains(q))
+      .is_some_and(|e| e.name.contains(q) || upper_contains(e.name_en, q))
   }
+}
+
+/// 等价于 `hay.to_uppercase().contains(needle)`，但字段是 ASCII 时不分配新串。
+///
+/// 日志搜索每输入一个字都要对每条记录的 9 个字段各比一次：5000 条日志就是 4.5 万次转大写分配。
+/// 字段是 ASCII、查询词含非 ASCII（中文查询、带变音符）时直接判否：ASCII 转大写仍是 ASCII，
+/// 不可能包含带非 ASCII 字符的子串。字段本身含非 ASCII（中文备注、带变音符的 QTH）走原来的路径：
+/// Unicode 大写可能改变长度（`ß` → `SS`），逐字节比较不成立。
+fn upper_contains(hay: &str, needle: &str) -> bool {
+  if hay.is_ascii() && !needle.is_ascii() {
+    return false;
+  }
+  if !hay.is_ascii() {
+    return hay.to_uppercase().contains(needle);
+  }
+  let (h, n) = (hay.as_bytes(), needle.as_bytes());
+  n.is_empty()
+    || (h.len() >= n.len()
+      && h
+        .windows(n.len())
+        .any(|w| w.iter().zip(n).all(|(a, b)| a.to_ascii_uppercase() == *b)))
 }
 
 /// 已寄出（纸卡 / LoTW / eQSL）但尚未确认收到 QSL 的通联（待追卡清单）。
@@ -782,6 +803,35 @@ mod tests {
     assert!(e.matches_query("CHINA")); // 实体英文名（q 已大写）
     assert!(!e.matches_query("日本"));
     assert!(e.matches_query("")); // 空查询命中全部
+  }
+
+  #[test]
+  fn upper_contains_matches_to_uppercase_contains() {
+    // 不分配的快路径必须与原来的 `to_uppercase().contains` 逐字一致：包括 needle 里带小写
+    // （原实现永远匹配不上 ASCII 小写）、非 ASCII 字段（中文、变音符、ß 大写会变长）。
+    let hays = [
+      "bg4xxx",
+      "BG4XXX",
+      "Bg4xXx/P",
+      "",
+      "上海浦东",
+      "São Paulo",
+      "straße",
+      "K-1234 park",
+      "a",
+    ];
+    let needles = [
+      "BG4", "bg4", "XXX/P", "", "浦东", "SÃO", "STRASSE", "K-12", "PARK", "A", "AB",
+    ];
+    for h in hays {
+      for n in needles {
+        assert_eq!(
+          upper_contains(h, n),
+          h.to_uppercase().contains(n),
+          "{h:?} ⊇ {n:?}"
+        );
+      }
+    }
   }
 
   #[test]

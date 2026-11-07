@@ -108,6 +108,38 @@ pub fn encode_uri_component(s: &str) -> String {
   out
 }
 
+/// [`encode_uri_component`] 的逆运算：把 `%XX` 还原成字节再按 UTF-8 解码。
+///
+/// 给 `location.hash` 用：浏览器返回的是编码形式（`#%E5%A4%A9%E7%BA%BF`），而元素 `id` 是原文。
+/// 与 JS 的 `decodeURIComponent` 不同，**格式不对时不报错而是原样保留**：这里的输入来自地址栏，
+/// 用户能随便写，一个孤立的 `%` 不该让整次锚点定位失效。解出来不是合法 UTF-8 时整串原样返回。
+/// 同样用纯 Rust 实现，原因同 [`encode_uri_component`]。
+#[must_use]
+pub fn decode_uri_component(s: &str) -> String {
+  let bytes = s.as_bytes();
+  let mut out = Vec::with_capacity(bytes.len());
+  let mut i = 0;
+  while i < bytes.len() {
+    let hex = |b: u8| char::from(b).to_digit(16);
+    match (
+      bytes[i],
+      bytes.get(i + 1).copied(),
+      bytes.get(i + 2).copied(),
+    ) {
+      (b'%', Some(h), Some(l)) if hex(h).is_some() && hex(l).is_some() => {
+        // `hex` 刚验证过两位都是十六进制，乘加不会溢出 u8。
+        out.push((hex(h).unwrap_or(0) * 16 + hex(l).unwrap_or(0)) as u8);
+        i += 3;
+      }
+      (b, _, _) => {
+        out.push(b);
+        i += 1;
+      }
+    }
+  }
+  String::from_utf8(out).unwrap_or_else(|_| s.to_owned())
+}
+
 /// 复阻抗文案：`R ± jX`（X 为负时用减号，不会写成 `+ j-50.0`）。
 ///
 /// 数字格式由 `f` 决定：`/nec` 按量级挑小数位、`/smith` 固定一位 —— 两边共用同一处
@@ -275,7 +307,9 @@ pub fn body_class(class: &str, on: bool) {
 /// `localStorage` 读写。读取失败时返回 `None`；写入失败（通常是配额已满）时在 `window` 上派发
 /// [`storage::WRITE_FAILED_EVENT`] 事件，由全局提示条提醒用户导出备份。
 pub mod storage {
+  use std::any::Any;
   use std::cell::RefCell;
+  use std::collections::HashMap;
   use std::rc::Rc;
 
   use serde::Serialize;
@@ -287,10 +321,13 @@ pub mod storage {
   pub const QUOTA_UNITS: usize = 5 * 1024 * 1024;
 
   type WriteHook = Rc<dyn Fn(&str)>;
+  /// [`get_json_shared`] 的解析缓存：key → （原串，解析结果）。
+  type ParsedCache = HashMap<String, (String, Rc<dyn Any>)>;
 
   thread_local! {
     /// 写入 / 删除后的回调，供自动同步感知「数据变了」（见 `crate::auto_sync`）。
     static WRITE_HOOK: RefCell<Option<WriteHook>> = const { RefCell::new(None) };
+    static PARSED: RefCell<ParsedCache> = RefCell::new(HashMap::new());
   }
 
   /// 注册写入回调（只保留最后一个）。回调拿到被写入 / 删除的 key，**必须很轻**：
@@ -366,11 +403,59 @@ pub mod storage {
     if let Some(s) = local() {
       let _ = s.remove_item(key);
     }
+    PARSED.with_borrow_mut(|m| m.remove(key));
     notify_write(key);
   }
 
   pub fn get_json<T: DeserializeOwned>(key: &str) -> Option<T> {
     serde_json::from_str(&get(key)?).ok()
+  }
+
+  /// 读取并解析 JSON；**原串和上次一样就直接复用上次的解析结果**（共享引用，不克隆）。
+  ///
+  /// 给「每次交互都要读、值又大」的 key 用（错题本、学习统计、单题统计）：解析几百 KB 的 JSON
+  /// 在手机上是几十毫秒，读出原串再比对一次只是内存拷贝。
+  ///
+  /// 命中的判据是原串本身，而不是「经本模块写入时失效」：备份导入（`backup_apply`）、跨标签页写入、
+  /// e2e 直接改 `localStorage` 都不经过这里的写入函数，按原串比对永远读不到旧值。
+  /// 同一个 key 被按两种类型读时（比如只取一个字段的精简结构），类型对不上就当未命中重新解析。
+  pub fn get_json_shared<T: DeserializeOwned + 'static>(key: &str) -> Option<Rc<T>> {
+    let raw = get(key)?;
+    let hit = PARSED.with_borrow(|m| {
+      m.get(key)
+        .filter(|(cached, _)| *cached == raw)
+        .and_then(|(_, value)| Rc::clone(value).downcast::<T>().ok())
+    });
+    if hit.is_some() {
+      return hit;
+    }
+    let value: Rc<T> = Rc::new(serde_json::from_str(&raw).ok()?);
+    remember(key, raw, value.clone());
+    Some(value)
+  }
+
+  /// 取出来改：缓存把自己那份让出来，调用方拿到的通常就是唯一引用，不必整份克隆。
+  /// 改完用 [`set_json_shared`] 写回（写回时会重新记进缓存）。
+  pub fn take_json<T: DeserializeOwned + Clone + 'static>(key: &str) -> Option<T> {
+    let value = get_json_shared::<T>(key)?;
+    PARSED.with_borrow_mut(|m| m.remove(key));
+    Some(Rc::unwrap_or_clone(value))
+  }
+
+  /// 写入并记进缓存：紧接着的下一次 [`get_json_shared`] 直接命中，不必把刚写进去的串再解析一遍。
+  pub fn set_json_shared<T: Serialize + 'static>(key: &str, value: T) -> Rc<T> {
+    let value = Rc::new(value);
+    if let Ok(raw) = serde_json::to_string(&*value) {
+      set(key, &raw);
+      remember(key, raw, value.clone());
+    }
+    value
+  }
+
+  fn remember(key: &str, raw: String, value: Rc<dyn Any>) {
+    PARSED.with_borrow_mut(|m| {
+      m.insert(key.to_owned(), (raw, value));
+    });
   }
 
   pub fn set_json<T: Serialize>(key: &str, value: &T) {
@@ -994,5 +1079,31 @@ impl DynRefError for JsValue {
     self
       .dyn_ref::<js_sys::Error>()
       .map(|e| String::from(e.message()))
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::{decode_uri_component, encode_uri_component};
+
+  #[test]
+  fn decode_round_trips_encode() {
+    // 中文、空格、`&` `#` `%`、斜杠都要来回一致：锚点 id 就是这样从地址栏还原的。
+    for s in ["awards", "fn-4-1", "天线 & SWR", "a#b%c/d", "İstanbul", ""] {
+      assert_eq!(decode_uri_component(&encode_uri_component(s)), s, "{s:?}");
+    }
+  }
+
+  #[test]
+  fn decode_keeps_malformed_input_instead_of_failing() {
+    // 地址栏任人输入：孤立的 `%`、半截转义、非十六进制都原样保留。
+    assert_eq!(decode_uri_component("100%"), "100%");
+    assert_eq!(decode_uri_component("%4"), "%4");
+    assert_eq!(decode_uri_component("%zz"), "%zz");
+    assert_eq!(decode_uri_component("a%2"), "a%2");
+    // 解出来不是合法 UTF-8（孤立的续字节）：整串原样返回，不丢字符。
+    assert_eq!(decode_uri_component("%E5%A4"), "%E5%A4");
+    // 大小写十六进制都认。
+    assert_eq!(decode_uri_component("%e5%a4%a9"), "天");
   }
 }

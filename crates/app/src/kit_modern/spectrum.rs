@@ -191,15 +191,30 @@ fn start(canvas: HtmlCanvasElement) {
     observer.observe(&canvas);
   }
 
-  // 滚出视口就挂起：首屏一滚走，这条带子不该继续占主线程。
+  let tick: FrameTick = Rc::new(RefCell::new(None));
+  // 排队中的那一帧；`-1` 表示没有排队（还没开始，或滚出视口后已停下）。
+  let handle = Rc::new(Cell::new(-1i32));
+
+  // 滚出视口就停下：首屏一滚走，这条带子不该继续占主线程。此前只是「不画」，每帧仍然自调度一次；
+  // 现在帧循环直接停掉，重新进入视口时由这里再挂上。
   let intersect_cb = {
     let visible = Rc::clone(&visible);
+    let tick = Rc::clone(&tick);
+    let handle = Rc::clone(&handle);
     Closure::<dyn FnMut(js_sys::Array)>::new(move |entries: js_sys::Array| {
       if let Ok(entry) = entries
         .get(0)
         .dyn_into::<web_sys::IntersectionObserverEntry>()
       {
-        visible.set(entry.is_intersecting());
+        let now_visible = entry.is_intersecting();
+        visible.set(now_visible);
+        if now_visible
+          && handle.get() < 0
+          && let (Some(window), Some(cb)) = (web_sys::window(), tick.borrow().as_ref())
+          && let Ok(id) = window.request_animation_frame(cb.as_ref().unchecked_ref())
+        {
+          handle.set(id);
+        }
       }
     })
   };
@@ -215,8 +230,6 @@ fn start(canvas: HtmlCanvasElement) {
     observer.observe(&canvas);
   }
 
-  let tick: FrameTick = Rc::new(RefCell::new(None));
-  let handle = Rc::new(Cell::new(-1i32));
   let last = Rc::new(Cell::new(0.0f64));
 
   if !reduced {
@@ -227,16 +240,18 @@ fn start(canvas: HtmlCanvasElement) {
       let visible = Rc::clone(&visible);
       let scene = Rc::clone(&scene);
       Closure::<dyn FnMut(f64)>::new(move |ts: f64| {
-        if visible.get() {
-          let prev = last.get();
-          // `prev <= 0` 是「刚恢复」或首帧：给一个标准间隔，别把挂起时长算进动画。
-          if prev <= 0.0 || ts - prev >= FRAME_MS {
-            let dt = if prev <= 0.0 { FRAME_MS } else { ts - prev };
-            last.set(ts);
-            scene.borrow_mut().advance(dt);
-          }
-        } else {
+        if !visible.get() {
+          // 停在这里，不再自调度；重新进入视口时由上面的观察器再挂上。
           last.set(0.0);
+          handle.set(-1);
+          return;
+        }
+        let prev = last.get();
+        // `prev <= 0` 是「刚恢复」或首帧：给一个标准间隔，别把挂起时长算进动画。
+        if prev <= 0.0 || ts - prev >= FRAME_MS {
+          let dt = if prev <= 0.0 { FRAME_MS } else { ts - prev };
+          last.set(ts);
+          scene.borrow_mut().advance(dt);
         }
 
         // 自调度：自己把自己挂到下一帧。`tick` 持有当前闭包，所以这里能拿到它。

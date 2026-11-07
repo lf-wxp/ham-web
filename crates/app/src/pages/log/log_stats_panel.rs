@@ -1,17 +1,18 @@
-//! 通联日志统计概览：总数 / 不同呼号 / DXCC / QSL 确认，模式与波段分布、DXCC 实体、奖项与网格地图。
+//! 通联日志统计概览：总数 / 不同呼号 / DXCC / QSL 确认，模式与波段分布；
+//! 首屏以下的 DXCC 实体、奖项、待回卡与网格地图见 [`super::log_stats_detail`]。
 
 use leptos::prelude::*;
 
-use ham_web_core::log_stats::{LogOverview, StatsScope, overview};
+use ham_web_core::log_stats::{LogOverview, overview};
 
+use crate::components::common::Deferred;
 use crate::ui::Stat;
 
-use super::awards_panel::AwardsPanel;
 use super::bar_list::BarList;
-use super::grid_map::GridMap;
+use super::log_stats_detail::LogStatsDetail;
 use super::stats_scope_select::{StatsScopeSelect, scoped_log_entries, use_stats_scope};
 use super::{Logbook, StationBook};
-use crate::i18n::{t, tf, tp};
+use crate::i18n::t;
 
 #[component]
 pub(super) fn LogStatsPanel(
@@ -21,34 +22,20 @@ pub(super) fn LogStatsPanel(
   // 统计口径（全部 / 某个台站 / 某个操作员）：切页也记着，俱乐部台就不用每次重选。
   let scope = use_stats_scope();
   let scoped = scoped_log_entries(scope);
-  // 奖状申请表的展开态放在闭包外：面板随日志变化整体重建，放在里面会被收起。
+  // 计数 / 去重 / 排序都在 core（`log_stats::overview`）：这里只做视图。
+  // 挂成 Memo 由概览与下面的明细共用，借用读取 —— 此前 `scoped.get()` 先把整份日志克隆一遍再算。
+  let summary = Memo::new(move |_| scoped.with(|entries| overview(entries)));
+  // 奖状申请表与待回卡「显示全部」的展开态放在闭包外：面板随日志变化整体重建，放在里面会被收起。
   let apply_open = RwSignal::new(false);
+  let show_all_pending = RwSignal::new(false);
 
   view! {
     {move || {
       if logbook.with(|lb| lb.entries.is_empty()) {
         return view! { <div></div> }.into_any();
       }
-      let parsed = StatsScope::from_key(&scope.get());
-      let entries = scoped.get();
-      // 网格地图的「本台」：按口径里的台站算，口径是操作员时用当前台站。
-      let my_grid = book.with(|b| {
-        b.resolve(parsed.station.unwrap_or(0))
-          .gridsquare
-          .clone()
-      });
-      // 计数 / 去重 / 排序都在 core（`log_stats::overview`）：这里只做视图。
-      let LogOverview {
-        total,
-        callsigns: n_calls,
-        dxcc,
-        grids,
-        modes,
-        bands,
-        confirmed,
-      } = overview(&entries);
+      let LogOverview { total, callsigns: n_calls, dxcc, modes, bands, confirmed, .. } = summary.get();
       let n_dxcc = dxcc.len();
-      let pending = ham_web_core::logbook::pending_qsl(&entries);
       view! {
         <StatsScopeSelect scope=scope count=Signal::derive(move || scoped.with(Vec::len)) />
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -67,100 +54,26 @@ pub(super) fn LogStatsPanel(
             <BarList items=bands />
           </div>
         </section>
-        <section class=crate::kit::card_pad_class()>
-          <h3 class="mb-2 text-sm">
-            {move || t("log.dxcc-entities")}
-            <span class="ml-2 text-xs font-normal text-muted-foreground">
-              {tp("log.worked-count", n_dxcc, &[&n_dxcc.to_string()])}
-            </span>
-          </h3>
-          {if dxcc.is_empty() {
-            view! { <div class="text-xs text-muted-foreground">{move || t("log.no-recognized-entities-yet")}</div> }.into_any()
-          } else {
-            view! {
-              <div class="flex flex-wrap gap-1.5">
-                {dxcc
-                  .into_iter()
-                  .map(|e| {
-                    view! {
-                      <span class="border bg-inset px-2.5 py-0.5 text-xs">{e}</span>
-                    }
-                  })
-                  .collect_view()}
-              </div>
-            }
-            .into_any()
-          }}
-        </section>
-        <AwardsPanel entries=entries.clone() apply_open=apply_open />
-        <section class=crate::kit::card_pad_class()>
-          <h3 class="mb-2 text-sm">
-            {move || t("log.qsls-pending")}
-            <span class="ml-2 text-xs font-normal text-muted-foreground">
-              {tp("common.cards-to-chase", pending.len(), &[&pending.len().to_string()])}
-            </span>
-          </h3>
-          {if pending.is_empty() {
-            view! { <div class="text-xs text-muted-foreground">{move || t("log.all-sent-qsls-are")}</div> }.into_any()
-          } else {
-            view! {
-              <div class="divide-y">
-                {pending
-                  .iter()
-                  .map(|e| {
-                    let via = if e.qsl_sent {
-                      t("knowledge.paper")
-                    } else if e.lotw_sent {
-                      "LoTW".to_owned()
-                    } else {
-                      "eQSL".to_owned()
-                    };
-                    view! {
-                      <div class="flex items-center gap-2 py-1.5 text-sm">
-                        <span class="font-mono">{e.callsign.clone()}</span>
-                        <span class="text-xs text-muted-foreground">
-                          {e.date.clone()} " · " {e.band_label()} " · " {e.mode.clone()}
-                        </span>
-                        <span class="ml-auto border px-2 py-0.5 text-xs text-muted-foreground">{via}</span>
-                      </div>
-                    }
-                  })
-                  .collect_view()}
-              </div>
-            }
-            .into_any()
-          }}
-        </section>
-        <section class=crate::kit::card_pad_class()>
-          <h3 class="mb-2 text-sm">
-            {move || t("learning.grids-worked")}
-            <span class="ml-2 text-xs font-normal text-muted-foreground">
-              {tf("log.entry", &[&grids.len().to_string()])}
-            </span>
-          </h3>
-          {if grids.is_empty() {
-            view! { <div class="text-xs text-muted-foreground">{move || t("log.no-grids-yet-they")}</div> }.into_any()
-          } else {
-            view! {
-              <div class="space-y-3">
-                <GridMap entries=entries.clone() station_grid=my_grid.clone() />
-                <div class="flex flex-wrap gap-1.5">
-                  {grids
-                    .into_iter()
-                    .map(|g| {
-                      view! {
-                        <span class="border bg-inset px-2.5 py-0.5 font-mono text-xs">{g}</span>
-                      }
-                    })
-                    .collect_view()}
-                </div>
-              </div>
-            }
-            .into_any()
-          }}
-        </section>
       }
       .into_any()
     }}
+    // 首屏以下：实体清单、奖项进度、待回卡、网格地图（含一张世界地图）。重度用户（几千条日志）
+    // 这一段同步建完要几百毫秒，推到首帧之后（见 `Deferred`）。放在上面的响应式闭包**外面**：
+    // 放在里面的话每记一条通联整块都会重新「延后一帧」，明细闪一下、页面跳一下。
+    // 占位 52rem：有日志时明细 = 实体清单（≥ 5rem）+ 奖状进度（≥ 49rem，各皮肤 / 宽度实测）再加待回卡与
+    // 网格地图（有数据时各 50rem 上下），取最稳的下限；日志为空时明细整块不出现，不占位。
+    <Deferred min_height=Signal::derive(move || {
+      if logbook.with(|lb| lb.entries.is_empty()) { String::new() } else { "52rem".to_owned() }
+    })>
+      <LogStatsDetail
+        logbook=logbook
+        scoped=scoped
+        summary=summary
+        scope=scope
+        book=book
+        apply_open=apply_open
+        show_all_pending=show_all_pending
+      />
+    </Deferred>
   }
 }

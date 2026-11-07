@@ -162,12 +162,26 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
     white-space: nowrap;
   }
 
-  /* 方块而不是圆点：几何记号比「发光小圆点」更像印刷厂的套准标。 */
-  .md-brand-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: var(--md-r-xs);
-    background: var(--md-accent);
+  /* 站标：与像素风 `.brand-mark` 同一个用意（文字左边一枚可识别的记号），形态走现代风：
+     圆角方块 + 线性卫星图标，不搬像素风的墨框与硬投影。
+     底色用「前景实心 + 底色反白」（与 `.md-page-btn[data-current]` 同一套取值），明暗两套
+     自动换向；**不占品牌橙** —— 那一档实心色只留给全页唯一的主行动（`docs/ui/decisions.md` §5）。
+     尺寸 26px 是窄屏（320px + 英语品牌字）量出来的上限：再大就会顶掉顶栏右侧的内距。 */
+  .md-brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--md-r-ctl);
+    background-color: var(--md-fg);
+    color: var(--md-bg);
+  }
+
+  .md-brand-mark-icon {
+    width: 18px;
+    height: 18px;
   }
 
   .md-nav-list {
@@ -563,6 +577,23 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
 
   .md-ring-wave:nth-of-type(3) {
     animation-delay: 2.8s;
+  }
+
+  /* 带 `data-pause-offscreen` 的容器滚出视口时（`motion::pause_offscreen_in` 打上 `data-offscreen`）
+     暂停里面的循环动画：圆锥描边转的是自定义属性、电波曲线动的是 `stroke-dashoffset`，都不能交给
+     合成线程，看不见了还在跑就是每帧白白重算样式、重绘一次。
+     **只点名无限循环的那几条**，不写 `[data-offscreen] *`：后者连一次性的入场动画与过渡也一起暂停，
+     它们会停在起始帧、`finished` 永远不兑现（e2e 的 `settleFrames` 就等在这上面）。
+     这几条都在 `@layer components` 里，多一级特异性就压得住它们的 `animation` 简写，不用 `!important`。
+     首屏或功能卡里新加循环动画时，在这里补上它的选择器。 */
+  [data-offscreen] .md-aurora,
+  [data-offscreen] .md-ring-wave,
+  [data-offscreen] .md-wave path,
+  [data-offscreen] .md-sat,
+  [data-offscreen] .md-eme,
+  [data-offscreen] .md-moon-disc,
+  [data-offscreen] .md-feature-accent {
+    animation-play-state: paused;
   }
 
   @keyframes md-ring-out {

@@ -92,6 +92,13 @@ ls target/dev-dist/                                          # 正常应有 data
 `await expect(summary(page)).toHaveText(shifted)` 等结果落定。
 **教训：对防抖 / 异步刷新的输出做快照，要先等它落定再读，别把「上一次的值」当基准。**
 
+**⑤ 按键、快照赶在分批挂载之前**
+
+页面的重块推到首帧之后再建（`Deferred`、地图分块、公式分批，见 [`docs/ui/motion.md`](../ui/motion.md) §7），用例若在 `goto` / 点击后**立刻**读 DOM 或按键，读到的是分批挂载的中间态：
+
+- 地图类用例对 `svg.innerHTML` 做快照：三份世界是逐帧补齐的，快照前要先等三份都在（`maps.spec.ts` 灰线地图一度因此稳定红；修法是先等 `translate(-720 0)` / `(0 0)` / `(720 0)` 三个 `<g>` 都出现）。
+- `modern_ui.spec.ts`（⌘K 调谐台、`/` 前缀图标输入框）与 `modern_a11y.spec.ts`（打开态表面）在 **dev 构建**下稳定红、**release 口径通过**：这三条在 `goto` 后立刻按键，dev 的未优化 wasm（百 MB 级）还在实例化时按键就丢了；等标题出现再按，⌘K 正常打开。看到这三条单独红先换 release 复核，别改调谐台。
+
 > 本地逐页调试用 `trunk serve` 方便，但要**先确认资产完整**；跑整批回归或提交前请用 `cargo make e2e`（release 构建 + Playwright 自带服务器，口径与 CI 一致）。
 
 `smoke.spec.ts` 还会把 Leptos 的「在跟踪上下文之外读信号」告警当失败（规则见 [`docs/ui/decisions.md`](../ui/decisions.md) §7）。

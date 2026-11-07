@@ -5,6 +5,7 @@
 //! 结果可回答「某分区大致在哪、含哪些实体」，但不是精确的分区边界。
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use ham_web_core::dxcc;
 use ham_web_core::dxcc_map::DxccShapes;
@@ -16,7 +17,7 @@ use super::projection::{polygon_points, project};
 /// 分区着色叠加层。
 #[component]
 pub fn ZoneOverlay(
-  #[prop(into)] shapes: Signal<DxccShapes>,
+  #[prop(into)] shapes: Signal<Arc<DxccShapes>>,
   /// 区域标识（DXCC 编号字符串）→ 分区号。
   #[prop(into)]
   zone_of: Signal<BTreeMap<String, u8>>,
@@ -43,7 +44,7 @@ pub fn ZoneOverlay(
         shapes
           .get()
           .shapes
-          .into_iter()
+          .iter()
           .map(|s| {
             let key = s.dxcc.to_string();
             // 未登记分区的区域用透明填充，避免 SVG 退回默认黑色。
@@ -59,9 +60,9 @@ pub fn ZoneOverlay(
             let width = if is_hl { "1.5" } else { "0.5" };
             let title = title_of.run(key.clone());
             s.polys
-              .into_iter()
+              .iter()
               .map(|ring| {
-                let points = polygon_points(&ring);
+                let points = polygon_points(ring);
                 let click_key = key.clone();
                 let title = title.clone();
                 let fill = fill.clone();

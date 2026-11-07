@@ -16,7 +16,9 @@ mod grid_map;
 mod log_health_panel;
 mod log_helpers;
 mod log_page;
+mod log_stats_detail;
 mod log_stats_panel;
+mod pending_qsl_list;
 mod qsl_badge;
 mod qsl_image;
 mod qsl_sync_dialog;
@@ -224,6 +226,8 @@ pub fn provide_log_store() {
     qsl_images: RwSignal::new(qsl_image::index()),
   };
   provide_context(store);
+  // 成就检测读这份内存日志的摘要（Memo，日志变了才重算），不再每答一题解析一次 localStorage。
+  crate::achievements::track_logbook(store.logbook);
 
   // 跨标签页同步：其他标签页修改日志 / 本台信息时，本页同步刷新。`storage` 事件
   // 只在「其他」标签页写入时触发，本页自身写入不触发，因此不会产生回环。

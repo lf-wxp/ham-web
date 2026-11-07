@@ -364,19 +364,16 @@ pub(super) fn HeatmapCard() -> impl IntoView {
                             .map(|(h, &c)| {
                               let label = format!("{band} · {h:02}:00 UTC · {:.0}%", c * 100.0);
                               let aria = label.clone();
-                              let class = move || {
-                                // 格子高度 24：20px 时指针目标只有 39.9×20，
-                                // 达不到 WCAG 2.5.8 的 24×24（axe target-size 会红）。
-                                cn(&[
-                                  "h-6 flex-1 cursor-pointer p-0 transition-shadow",
-                                  cell_class(c),
-                                  if selected.get() == Some((band, h)) {
-                                    "ring-primary ring-inset"
-                                  } else {
-                                    ""
-                                  },
-                                ])
-                              };
+                              // 格子高度 24：20px 时指针目标只有 39.9×20，
+                              // 达不到 WCAG 2.5.8 的 24×24（axe target-size 会红）。
+                              // 底色在建格子时算一次；选中态只切两个类（`class:`），不再整串重算：
+                              // 此前 class 是读 `selected` 的闭包、每次都过一遍 `cn` 合并，
+                              // 点一格要把 240 格的类名全部重算一遍，进页面也要先算 240 次。
+                              let class = cn(&[
+                                "h-6 flex-1 cursor-pointer p-0 transition-shadow",
+                                cell_class(c),
+                              ]);
+                              let is_selected = move || selected.get() == Some((band, h));
                               view! {
                                 // 格子已有 aria-label + aria-pressed，tooltip 只是视觉增强：
                                 // 悬停与聚焦（`:focus-within`）都显示。
@@ -384,6 +381,8 @@ pub(super) fn HeatmapCard() -> impl IntoView {
                                   <button
                                     type="button"
                                     class=class
+                                    class:ring-primary=is_selected
+                                    class:ring-inset=is_selected
                                     aria-label=aria
                                     aria-pressed=move || {
                                       if selected.get() == Some((band, h)) { "true" } else { "false" }

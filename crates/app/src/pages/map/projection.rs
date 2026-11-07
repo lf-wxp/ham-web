@@ -9,6 +9,17 @@ pub(crate) const MAP_H: f64 = 360.0;
 /// 世界内容在 x 方向的平铺偏移（×MAP_W），用于反子午线环绕：左/中/右三份。
 pub(crate) const WORLD_OFFSETS: [f64; 3] = [-1.0, 0.0, 1.0];
 
+/// 第 `i` 份平铺的建造次序（0 = 最先建）：离中间那份（偏移 `0`）越近越先建，距离相同时靠左的先。
+///
+/// 初始视口正好是偏移为 `0` 的那一份，其余几份要平移到反子午线附近才看得见（见 `map_view`）。
+/// 按偏移的**数值**算而不是写死下标：以后改了 [`WORLD_OFFSETS`] 的顺序或份数，次序跟着变，
+/// 不会悄悄变成「先建了看不见的那份」。
+pub(crate) fn tile_build_rank(i: usize) -> usize {
+  let key = |j: usize| (WORLD_OFFSETS[j].abs().to_bits(), j);
+  let mine = key(i);
+  (0..WORLD_OFFSETS.len()).filter(|&j| key(j) < mine).count()
+}
+
 /// 等距圆柱投影：经纬度 → SVG 坐标。
 pub fn project(lon: f64, lat: f64) -> (f64, f64) {
   ((lon + 180.0) * K, (90.0 - lat) * K)
@@ -77,6 +88,19 @@ pub(crate) fn simplify(poly: &[(f64, f64)], tol: f64) -> Vec<(f64, f64)> {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn tile_build_order_is_centre_first_then_left_then_right() {
+    // 次序：偏移 0（中）→ -1（左）→ +1（右）；每个次序恰好出现一次。
+    let ranks: Vec<usize> = (0..WORLD_OFFSETS.len()).map(tile_build_rank).collect();
+    assert_eq!(ranks, [1, 0, 2]);
+    let mut sorted = ranks.clone();
+    sorted.sort_unstable();
+    assert_eq!(sorted, (0..WORLD_OFFSETS.len()).collect::<Vec<_>>());
+    // 最先建的必须是视口所在的那份（偏移为 0）。
+    let first = ranks.iter().position(|&r| r == 0).expect("有第 0 份");
+    assert_eq!(WORLD_OFFSETS[first], 0.0);
+  }
 
   #[test]
   fn project_linear_mapping() {

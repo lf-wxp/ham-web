@@ -220,6 +220,7 @@
   "log.apply": "Apply",
   "log.labels": "labels",
   "log.qsls-pending": "QSLs pending",
+  "log.show-all-pending": "Show all {}",
   "log.essential-information-design-advice": "Essential information · design advice",
   "log.print-qsl-labels": "Print QSL labels",
   "log.when-printing-choose-actual": "When printing choose Actual size / 100% and turn off headers and footers, otherwise the labels will be misaligned.",

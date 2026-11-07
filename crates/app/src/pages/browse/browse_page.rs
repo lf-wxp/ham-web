@@ -21,7 +21,7 @@ use crate::util::set_title;
 
 use super::question_row::QuestionRow;
 use super::stat::Stat;
-use super::{ALL, OTHER, PAGE, sub_name_of, top_of};
+use super::{ALL, FIRST_ROWS, OTHER, PAGE, sub_name_of, top_of};
 use crate::i18n::{bank_class, t, tf};
 
 #[component]
@@ -42,6 +42,14 @@ pub fn BrowsePage() -> impl IntoView {
   let open_top = RwSignal::new(HashSet::<&'static str>::new());
   // 收藏快照：每行从里面读自己那一项（`QuestionRow` 里的 Memo），切换时由行就地增删。
   let bookmarks = store::use_bookmark_snapshot();
+  // 搜索框绑 `kw`（字立刻上屏），筛选按防抖后的副本算（见 `debounced`）。
+  let kw_settled = crate::debounced::use_debounced(kw, crate::debounced::SEARCH_DEBOUNCE);
+  // 进入本页的第一帧只建前 `FIRST_ROWS` 道题（手机一屏放得下三四道），画出来之后再补到 `visible`：
+  // 每道题带选项、解析、知识点与参考依据，一次建 40 道是这一页换页时最重的一块。
+  let row_cap = RwSignal::new(FIRST_ROWS);
+  crate::after_paint::after_next_paint(move || {
+    let _ = row_cap.try_set(usize::MAX);
+  });
 
   // 支持 /browse?bank=B&q=驻波比（术语表页跳转）、/browse?sub=驻波比 SWR（错题「同类题」跳转）
   let query = use_query_map();
@@ -53,6 +61,8 @@ pub fn BrowsePage() -> impl IntoView {
       sub.set(None);
     }
     if let Some(q) = q {
+      // 地址带来的关键词立刻生效（两份一起写），不走输入防抖。
+      kw_settled.set(q.clone());
       kw.set(q);
     }
     if let Some(s) = s
@@ -63,7 +73,7 @@ pub fn BrowsePage() -> impl IntoView {
       top.set(sc.top.to_owned());
       sub.set(Some(sc.name));
     }
-    visible.set(PAGE);
+    crate::debounced::set_if_changed(visible, PAGE);
   });
 
   spawn_local(async move {
@@ -141,9 +151,16 @@ pub fn BrowsePage() -> impl IntoView {
     m
   });
 
+  // 每道题的检索文本（题干 + 选项 + 解析拼接后转小写）：惰性 Memo，第一次输入关键词时才建，
+  // 之后每次击键只做子串查找 —— 此前每键都要对本类 1000 多道题各拼接、转小写一遍。
+  let search_texts = Memo::new(move |_| {
+    all.with(|qs| Arc::new(qs.iter().map(|q| q.search_text()).collect::<Vec<String>>()))
+  });
+
   let filtered = Memo::new(move |_| {
-    let k = kw.with(|k| k.trim().to_lowercase());
+    let k = kw_settled.with(|k| k.trim().to_lowercase());
     let (t, s, multi) = (top.get(), sub.get(), multi_only.get());
+    let texts = (!k.is_empty()).then(|| search_texts.get());
     all.with(|qs| {
       bank_questions.with(|idx| {
         idx
@@ -160,7 +177,7 @@ pub fn BrowsePage() -> impl IntoView {
             if multi && !q.is_multiple() {
               return false;
             }
-            k.is_empty() || q.search_text().contains(&k)
+            texts.as_ref().is_none_or(|t| t[i].contains(&k))
           })
           .collect::<Vec<_>>()
       })
@@ -299,8 +316,14 @@ pub fn BrowsePage() -> impl IntoView {
     if total == 0 {
       return view! { <EmptyState title=Signal::derive(move || t("exam.no-matching-questions")) /> }.into_any();
     }
-    let shown: Vec<usize> = filtered.with(|f| f.iter().copied().take(visible.get()).collect());
-    let shown_len = shown.len();
+    let shown: Vec<usize> = filtered.with(|f| {
+      f.iter()
+        .copied()
+        .take(visible.get().min(row_cap.get()))
+        .collect()
+    });
+    // 「加载更多」的计数按 `visible` 算：首帧只建了前几行，不能让按钮在那一帧显示「8 / 1100」。
+    let shown_len = visible.get().min(total);
     let rows = all.with(|qs| {
       shown
         .iter()
@@ -349,7 +372,7 @@ pub fn BrowsePage() -> impl IntoView {
         unique_only.set(false);
         select_top(ALL);
         sub.set(None);
-        visible.set(PAGE);
+        crate::debounced::set_if_changed(visible, PAGE);
       });
       return view! {
         <EmptyState
@@ -369,8 +392,13 @@ pub fn BrowsePage() -> impl IntoView {
       }
       .into_any();
     }
-    let shown: Vec<usize> = filtered.with(|f| f.iter().copied().take(visible.get()).collect());
-    let shown_len = shown.len();
+    let shown: Vec<usize> = filtered.with(|f| {
+      f.iter()
+        .copied()
+        .take(visible.get().min(row_cap.get()))
+        .collect()
+    });
+    let shown_len = visible.get().min(total);
     let rows = all.with(|qs| {
       shown
         .iter()
@@ -454,7 +482,7 @@ pub fn BrowsePage() -> impl IntoView {
                 aria-pressed=move || (sub.get() == Some(name)).to_string()
                 on:click=move |_| {
                   sub.set(Some(name));
-                  visible.set(PAGE);
+                  crate::debounced::set_if_changed(visible, PAGE);
                 }
               >
                 {move || crate::data::core_text_tracked(name)}
@@ -521,7 +549,7 @@ pub fn BrowsePage() -> impl IntoView {
                                       aria-pressed=move || (sub.get() == Some(name)).to_string()
                                       on:click=move |_| {
                                         sub.set(Some(name));
-                                        visible.set(PAGE);
+                                        crate::debounced::set_if_changed(visible, PAGE);
                                         cat_open.set(false);
                                       }
                                     >
@@ -560,7 +588,7 @@ pub fn BrowsePage() -> impl IntoView {
               value=kw
               on_input=Callback::new(move |v: String| {
                 kw.set(v);
-                visible.set(PAGE);
+                crate::debounced::set_if_changed(visible, PAGE);
               })
               kind="search"
               placeholder=Signal::derive(move || t("exam.search-question-answer-explanation"))
@@ -582,7 +610,7 @@ pub fn BrowsePage() -> impl IntoView {
                       aria-pressed=move || (bank.get() == b).to_string()
                       on:click=move |_| {
                         bank.set(b);
-                        visible.set(PAGE);
+                        crate::debounced::set_if_changed(visible, PAGE);
                         select_top(ALL);
                       }
                     >
@@ -668,7 +696,7 @@ pub fn BrowsePage() -> impl IntoView {
               on_change=Callback::new(move |v: String| {
                 if let Ok(b) = v.parse::<Bank>() {
                   bank.set(b);
-                  visible.set(PAGE);
+                  crate::debounced::set_if_changed(visible, PAGE);
                   select_top(ALL);
                 }
               })
@@ -687,7 +715,7 @@ pub fn BrowsePage() -> impl IntoView {
               value=kw
               on_change=Callback::new(move |v: String| {
                 kw.set(v);
-                visible.set(PAGE);
+                crate::debounced::set_if_changed(visible, PAGE);
               })
               kind=InputType::Search
               placeholder=Signal::derive(move || t("exam.search-question-answer-explanation"))

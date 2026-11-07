@@ -167,7 +167,7 @@ pub fn BookmarksPage() -> impl IntoView {
   };
   Effect::new(move |_| {
     group_filter.with(|_| ());
-    visible.set(PAGE);
+    crate::debounced::set_if_changed(visible, PAGE);
   });
 
   let filter_tab = |on: bool| {

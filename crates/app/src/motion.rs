@@ -302,8 +302,10 @@ pub fn reveal_children(parent: &web_sys::Element) {
     return;
   };
   // 现代风：高度判断交给观察器的第一次通知（见 [`reveal_below_fold`]），这里不量。
+  // 视口高度也只在像素风下读：`innerHeight` 在有待处理的样式变更时会强制同步布局，
+  // 挂载途中读一次就是一次整页布局（错题本页实测占了 20 ms 以上）。
   let modern = crate::theme::DisplayPrefs::style_is_modern_dom();
-  let viewport_h = viewport_height();
+  let viewport_h = if modern { 0.0 } else { viewport_height() };
   for i in 0..nodes.length() {
     let Some(node) = nodes.item(i) else { continue };
     let Some(el) = node.dyn_ref::<web_sys::Element>() else {
@@ -366,6 +368,67 @@ pub fn reveal_modern_page() {
       reveal_below_fold(el);
     }
   }
+  pause_offscreen_in(&scope);
+}
+
+type OffscreenCallback = Closure<dyn Fn(js_sys::Array, web_sys::IntersectionObserver)>;
+
+thread_local! {
+  /// [`pause_offscreen_in`] 的观察器与回调（回调要活得比观察器久）。
+  static OFFSCREEN: RefCell<Option<(web_sys::IntersectionObserver, OffscreenCallback)>> =
+    const { RefCell::new(None) };
+}
+
+/// 带 `data-pause-offscreen` 的容器滚出视口时打上 `data-offscreen`，CSS 据此暂停里面的循环动画
+/// （`kit.css`「首屏主视觉」一节）。
+///
+/// 首页首屏与功能卡里有几条无限循环的装饰动画：圆锥渐变描边转的是注册过的自定义属性，
+/// 底部电波曲线动的是 `stroke-dashoffset` —— 都不能交给合成线程，**每帧都要主线程重算样式、重绘**。
+/// 滚走之后看不见了还在跑，白占主线程和电量。随路由的浮现登记一起扫（重复 `observe` 是空操作）。
+fn pause_offscreen_in(scope: &web_sys::Element) {
+  let Ok(nodes) = scope.query_selector_all("[data-pause-offscreen]") else {
+    return;
+  };
+  if nodes.length() == 0 {
+    return;
+  }
+  OFFSCREEN.with_borrow_mut(|slot| {
+    if slot.is_none() {
+      let cb = OffscreenCallback::new(
+        |entries: js_sys::Array, obs: web_sys::IntersectionObserver| {
+          for entry in entries.iter() {
+            let Ok(entry) = entry.dyn_into::<web_sys::IntersectionObserverEntry>() else {
+              continue;
+            };
+            let target = entry.target();
+            if !target.is_connected() {
+              // 页面已换走：不再观察，否则观察器一直拽着这些已卸载的节点。
+              obs.unobserve(&target);
+              continue;
+            }
+            let _ = if entry.is_intersecting() {
+              target.remove_attribute("data-offscreen")
+            } else {
+              target.set_attribute("data-offscreen", "")
+            };
+          }
+        },
+      );
+      if let Ok(obs) = web_sys::IntersectionObserver::new(cb.as_ref().unchecked_ref()) {
+        *slot = Some((obs, cb));
+      }
+    }
+    if let Some((obs, _)) = slot.as_ref() {
+      for i in 0..nodes.length() {
+        if let Some(el) = nodes
+          .item(i)
+          .and_then(|n| n.dyn_into::<web_sys::Element>().ok())
+        {
+          obs.observe(&el);
+        }
+      }
+    }
+  });
 }
 
 /// 路由过渡：切换路径时重放主内容区的入场，并落位交互签名与换页方向。

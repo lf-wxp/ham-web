@@ -145,6 +145,10 @@ fn is_incomplete_number(e: &web_sys::Event) -> bool {
 /// 输入框。
 ///
 /// 典型用法见 [`crate::ui`] 模块文档的「使用示例」与 `src/ui/README.md`。
+///
+/// **输入法组字**：`kind=InputType::Search` 的搜索框在组字期间（拼音还没选字）不回调 `on_change`，
+/// 选字确认时补回调一次（见 `crate::composition`）；其余类型逐字回调，表单字段的字数计数、
+/// `maxlength` 与逐字校验不受影响。
 #[component]
 pub fn Input(
   /// 当前值（受控）。
@@ -230,6 +234,8 @@ pub fn Input(
   // 现代风只换类名（`.md-input`），DOM 结构与输入事件处理完全共用 —— 这样 46 个计算器、
   // 通联日志、各处搜索框一次性换装，不需要逐个页面改。
   let modern = crate::kit::is_modern_at_mount();
+  // 只有搜索框把组字中间串挡在外面（理由见上面的组件文档）。
+  let compose = (kind == InputType::Search).then(crate::composition::Composition::new);
   // 计算器的结果经常是 `2.0689655172413794` 这种长尾。聚焦时保持原文（不能动光标），
   // 失焦后按量级取整显示；值本身不变，只是「看起来」干净。
   //
@@ -286,7 +292,23 @@ pub fn Input(
         if kind == InputType::Number && is_incomplete_number(&e) {
           return;
         }
-        on_change.run(event_target_value(&e))
+        // 搜索框：输入法组字中（拼音还没选字）不派发 —— 打「天线」要先派发 t / ti / tia / tian …
+        // 每个字母都触发一次整份搜索重算，而这些中间串本来也搜不出东西。组字结束时补派一次。
+        match compose {
+          Some(c) => {
+            if let Some(v) = c.on_input(&e) {
+              on_change.run(v);
+            }
+          }
+          None => on_change.run(event_target_value(&e)),
+        }
+      }
+      on:compositionend=move |e| {
+        if let Some(c) = compose
+          && let Some(v) = c.on_end(&e)
+        {
+          on_change.run(v);
+        }
       }
       on:keydown=move |e| {
         if let Some(cb) = on_keydown {

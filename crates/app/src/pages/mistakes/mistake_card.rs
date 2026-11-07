@@ -37,8 +37,9 @@ pub(super) fn MistakeCard(
     .and_then(|s| top_pages(s.top).first())
     .map(|&(href, _)| href);
   // 该一级分类的正确率（用于展示薄弱程度）。
+  // 只读共享的那一份：每张卡都要读，克隆整份统计（含「做过的题」集合）×40 张卡不值得。
   let topic_rate = sub.and_then(|s| {
-    crate::study::load_stats()
+    crate::study::stats_shared()?
       .total
       .categories
       .get(s.top)

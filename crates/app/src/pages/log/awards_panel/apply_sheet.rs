@@ -22,12 +22,12 @@ fn via_key(via: ApplyVia) -> &'static str {
 
 #[component]
 pub(super) fn DxccApplySheet(
-  entries: Vec<LogEntry>,
+  entries: Memo<Vec<LogEntry>>,
   /// 展开态由上层持有：这个组件挂在日志页的响应式闭包里，日志一变就会整体重建，
   /// 展开态若放在组件内部，用户每记一条通联都会被收起。
   open: RwSignal<bool>,
 ) -> impl IntoView {
-  let rows = StoredValue::new(dxcc_record_sheet(&entries));
+  let rows = StoredValue::new(entries.with_untracked(|e| dxcc_record_sheet(e)));
   let export = Callback::new(move |_| {
     rows.with_value(|rows| {
       download_text("dxcc-apply.csv", &to_csv(rows), "text/csv;charset=utf-8");

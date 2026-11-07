@@ -179,113 +179,93 @@ impl GridMapState {
     dxcc_list.sort();
     year_list.sort();
 
-    let matches_filter = move |e: &LogEntry| {
-      if let Some(b) = band_filter.get()
-        && e.band_label() != b
-      {
-        return false;
-      }
-      if let Some(m) = mode_filter.get()
-        && e.mode != m
-      {
-        return false;
-      }
-      if let Some(d) = dxcc_filter.get()
-        && e.entity().map(|x| x.name) != Some(d.as_str())
-      {
-        return false;
-      }
-      if let Some(y) = year_filter.get()
-        && e.date.get(0..4) != Some(y.as_str())
-      {
-        return false;
-      }
-      let q = callsign_query.get().trim().to_ascii_uppercase();
-      if !q.is_empty() && !e.callsign.to_ascii_uppercase().contains(&q) {
-        return false;
-      }
-      if let Some(s) = qsl_filter.get() {
-        let ok = match s {
-          QslFilter::Confirmed => e.qsl_rcvd,
-          QslFilter::SentPending => e.qsl_sent && !e.qsl_rcvd,
-          QslFilter::NotSent => !e.qsl_sent && !e.qsl_rcvd,
-        };
-        if !ok {
-          return false;
-        }
-      }
-      true
-    };
-
-    // 筛选后的记录
+    // 筛选后的记录。筛选条件在循环外读一次：此前每条记录都要把 6 个筛选信号各 `.get()` 一遍
+    // （克隆 `Option<String>`），还要把呼号查询转一次大写 —— 5000 条就是几万次分配。
     let entries_for_filter = Arc::clone(&entries);
     let filtered = Memo::new(move |_| {
+      let band = band_filter.get();
+      let mode = mode_filter.get();
+      let dxcc = dxcc_filter.get();
+      let year = year_filter.get();
+      let q = callsign_query.with(|q| q.trim().to_ascii_uppercase());
+      let qsl = qsl_filter.get();
+      let matches = |e: &LogEntry| {
+        band.as_ref().is_none_or(|b| e.band_label() == *b)
+          && mode.as_ref().is_none_or(|m| e.mode == *m)
+          && dxcc
+            .as_deref()
+            .is_none_or(|d| e.entity().map(|x| x.name) == Some(d))
+          && year.as_deref().is_none_or(|y| e.date.get(0..4) == Some(y))
+          && (q.is_empty() || e.callsign.to_ascii_uppercase().contains(&q))
+          && qsl.is_none_or(|s| match s {
+            QslFilter::Confirmed => e.qsl_rcvd,
+            QslFilter::SentPending => e.qsl_sent && !e.qsl_rcvd,
+            QslFilter::NotSent => !e.qsl_sent && !e.qsl_rcvd,
+          })
+      };
       entries_for_filter
         .iter()
-        .filter(|e| matches_filter(e))
+        .filter(|e| matches(e))
         .cloned()
         .collect::<Vec<LogEntry>>()
     });
 
+    // 下面的派生统计都借用 `filtered`（`.with`），不要 `.get()`：那会把筛选结果整份克隆一遍，
+    // 5000 条日志时这一页光这些克隆就有六七份。
+
     // field 聚合：field 索引 → 去重网格码（用于展开列表与标签）。
     let field_grids = Memo::new(move |_| {
       let mut m: HashMap<(usize, usize), Vec<String>> = HashMap::new();
-      for e in filtered.get() {
-        if let Some(idx) = field_index(&e.gridsquare) {
-          let list = m.entry(idx).or_default();
-          if !list.contains(&e.gridsquare) {
-            list.push(e.gridsquare.clone());
+      filtered.with(|rows| {
+        for e in rows {
+          if let Some(idx) = field_index(&e.gridsquare) {
+            let list = m.entry(idx).or_default();
+            if !list.contains(&e.gridsquare) {
+              list.push(e.gridsquare.clone());
+            }
           }
         }
-      }
+      });
       m
     });
 
     // square 聚合：square 索引 → 完整记录列表（用于热力计数与明细展示）。
     let square_entries = Memo::new(move |_| {
       let mut m: HashMap<(usize, usize), Vec<LogEntry>> = HashMap::new();
-      for e in filtered.get() {
-        if let Some(idx) = square_index(&e.gridsquare) {
-          m.entry(idx).or_default().push(e.clone());
+      filtered.with(|rows| {
+        for e in rows {
+          if let Some(idx) = square_index(&e.gridsquare) {
+            m.entry(idx).or_default().push(e.clone());
+          }
         }
-      }
+      });
       m
     });
 
-    let field_max = Memo::new(move |_| {
-      field_grids
-        .get()
-        .values()
-        .map(|v| v.len())
-        .max()
-        .unwrap_or(1)
-    });
-    let square_max = Memo::new(move |_| {
-      square_entries
-        .get()
-        .values()
-        .map(|v| v.len())
-        .max()
-        .unwrap_or(1)
-    });
+    let field_max =
+      Memo::new(move |_| field_grids.with(|m| m.values().map(Vec::len).max().unwrap_or(1)));
+    let square_max =
+      Memo::new(move |_| square_entries.with(|m| m.values().map(Vec::len).max().unwrap_or(1)));
     let grid_count = Memo::new(move |_| {
-      filtered
-        .get()
-        .iter()
-        .map(|e| e.gridsquare.clone())
-        .collect::<HashSet<_>>()
-        .len()
+      filtered.with(|rows| {
+        rows
+          .iter()
+          .map(|e| e.gridsquare.as_str())
+          .collect::<HashSet<_>>()
+          .len()
+      })
     });
     let dxcc_count = Memo::new(move |_| {
-      filtered
-        .get()
-        .iter()
-        .filter_map(|e| e.entity().map(|x| x.name).map(|s| s.to_owned()))
-        .collect::<HashSet<_>>()
-        .len()
+      filtered.with(|rows| {
+        rows
+          .iter()
+          .filter_map(|e| e.entity().map(|x| x.name))
+          .collect::<HashSet<_>>()
+          .len()
+      })
     });
     let qsl_confirmed_count =
-      Memo::new(move |_| filtered.get().iter().filter(|e| e.qsl_rcvd).count());
+      Memo::new(move |_| filtered.with(|rows| rows.iter().filter(|e| e.qsl_rcvd).count()));
 
     // ---- 选中状态：field 展开 / square 明细 / 搜索高亮 ----
     let selected = RwSignal::new(None::<(usize, usize)>);
@@ -313,24 +293,26 @@ impl GridMapState {
       let mut paths = Vec::new();
       let mut legend: Vec<String> = Vec::new();
       let mut skipped = 0;
-      for e in filtered.get() {
-        let Some(target) = lat_lon_from_grid(&e.gridsquare) else {
-          continue;
-        };
-        let band = e.band_label();
-        if !seen.insert((e.gridsquare.to_ascii_uppercase(), band.clone())) {
-          continue;
+      filtered.with(|rows| {
+        for e in rows {
+          let Some(target) = lat_lon_from_grid(&e.gridsquare) else {
+            continue;
+          };
+          let band = e.band_label();
+          if !seen.insert((e.gridsquare.to_ascii_uppercase(), band.clone())) {
+            continue;
+          }
+          if paths.len() >= MAX_PATHS {
+            skipped += 1;
+            continue;
+          }
+          if !legend.contains(&band) {
+            legend.push(band.clone());
+          }
+          let title = format!("{} · {} · {}", e.callsign, e.gridsquare, band);
+          paths.push((great_circle_d(home, target, 48), band_color(&band), title));
         }
-        if paths.len() >= MAX_PATHS {
-          skipped += 1;
-          continue;
-        }
-        if !legend.contains(&band) {
-          legend.push(band.clone());
-        }
-        let title = format!("{} · {} · {}", e.callsign, e.gridsquare, band);
-        paths.push((great_circle_d(home, target, 48), band_color(&band), title));
-      }
+      });
       legend.sort_by_key(|b| BAND_ORDER.iter().position(|x| x == b).unwrap_or(usize::MAX));
       (paths, legend, skipped)
     });

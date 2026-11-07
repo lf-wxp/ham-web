@@ -96,7 +96,22 @@ transition: transform var(--motion-fast) var(--ease-out-expo);
 `src/kit_modern/menu.rs` 与 `src/pages/glossary/hits.rs`。
 
 「用户很可能马上要用、但现在不急」的数据（常用题库）在空闲时预热（`after_paint::when_idle` + `bank_updates::prewarm`），
-同一份题库同时只下载、解析一次（`data::load_url`）。这些约束由 `e2e/tests/responsiveness.spec.ts` 守着；
+同一份题库同时只下载、解析一次（`data::load_url`）。
+
+几件现成的工具，新页面直接用：
+
+- 首屏以下的重块包进 `components::common::Deferred`：新页面第一帧画出来之后再挂（地址带锚点时它会补上定位）。
+  它**下面**还有内容时给 `min_height`，值取各皮肤、各宽度实测高度的下限，否则下面的内容在挂上那一帧整体下跳；
+  块里的东西可能整个不出现（如日志为空时的统计明细）就传随状态变空的 `Signal`，别让空页面留白；
+- 「桌面一套、手机一套、CSS 藏一套」改用 `media::use_media_query`，只建当前宽度那一套；
+- 分页签 `ui::Tabs` 的面板内容第一次被切到才挂载，不必再自己做惰性；
+- 搜索框的筛选挂到 `debounced::use_debounced` 的防抖副本上，「回第一页」之类的重置写 `debounced::set_if_changed`
+  （`RwSignal::set` 写同一个值也照样通知，每敲一个字都会让整页列表重建一遍）；
+- 搜索框在输入法组字期间不派发（选字确认才补一次）：`ui::Input` 的 `kind=Search` 与 `ModernInput` 的 `kind="search"`
+  已内置（`composition.rs`，判定在 core 的 `ime_gate`），页面不必再写；非搜索的输入框刻意不挡，表单字段要逐字回调；
+- 大体积的本地数据用 `util::storage::get_json_shared` 读（按原串缓存解析结果），不要每次 `get_json`。
+
+这些约束由 `e2e/tests/responsiveness.spec.ts` 守着；测量口径与问题台账见 `docs/engineering/performance.md`；
 真机上要看实际耗时，在地址后加 `?perf=1` 打开测量面板（`src/perf_hud.rs`）。
 
 ## 三、token 速查

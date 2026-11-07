@@ -359,7 +359,9 @@ pub fn PracticePage() -> impl IntoView {
     }
   });
 
-  let matches = Signal::derive(move || {
+  // `Memo` 而不是 `Signal::derive`：跳题弹窗里读它两次（列表 + 计数），derive 每读一次就把整库
+  // 搜一遍 —— 每输入一个字扫两遍 1000 多道题。
+  let matches = Memo::new(move |_| {
     if store.order.get() != PracticeOrder::Sequential {
       return Vec::new();
     }

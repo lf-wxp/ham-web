@@ -190,6 +190,7 @@
   "log.apply": "应用确认",
   "log.labels": "张",
   "log.qsls-pending": "待确认 QSL",
+  "log.show-all-pending": "显示全部 {} 条",
   "log.essential-information-design-advice": "必备信息 · 设计建议",
   "log.print-qsl-labels": "打印 QSL 标签",
   "log.when-printing-choose-actual": "打印时请选择「实际大小 / 100%」并关闭页眉页脚，否则标签会错位。",

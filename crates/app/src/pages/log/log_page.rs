@@ -1,4 +1,4 @@
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{Deferred, PageContainer, PageHeader};
 use crate::ui::{Button, ButtonLink, FileInput, Size, Variant};
 use crate::util::download_text;
 use crate::util::set_title;
@@ -267,7 +267,11 @@ pub fn LogPage() -> impl IntoView {
         <div class="flex flex-col gap-5">
           <StationPanel book=book on_save=save_station_btn />
           <LogStatsPanel logbook=logbook book=book />
-          <LogHealthPanel />
+          // 体检要把整本日志逐条查一遍（重复、时间、子段……），面板在首屏以下：首帧之后再挂。
+          // 占位 6rem：面板最矮时（空日志 / 几十条）实测 6.1rem，条数多了只会更高。
+          <Deferred min_height="6rem">
+            <LogHealthPanel />
+          </Deferred>
           <ActivationExportPanel />
           <EntryForm form=form logbook=logbook book=book editing=editing on_save=on_save />
           <EntryList
@@ -340,7 +344,9 @@ pub fn LogPage() -> impl IntoView {
       <PageContainer>
         <StationPanel book=book on_save=save_station_btn />
         <LogStatsPanel logbook=logbook book=book />
-        <LogHealthPanel />
+        <Deferred min_height="6rem">
+          <LogHealthPanel />
+        </Deferred>
         <ActivationExportPanel />
         <EntryForm form=form logbook=logbook book=book editing=editing on_save=on_save />
         <EntryList logbook=logbook on_edit=on_edit on_remove=on_remove on_clear=on_clear initial_query=initial_query.unwrap_or_default() />

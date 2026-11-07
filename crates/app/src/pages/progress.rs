@@ -1,13 +1,13 @@
 //! 学习进度仪表盘：练习 / 考试 / 错题 / 收藏 / 日志 / 打卡 / DXCC 的统计总览。
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use ham_web_core::Bank;
 use ham_web_core::ExamRule;
 use ham_web_core::achievements::{ACHIEVEMENTS, AchStats, unlocked};
 use ham_web_core::categories::{sub_category, top_category, top_pages};
 use ham_web_core::mistake_book::StudyStats;
-use ham_web_core::most_wanted::{WANTED_ENTITIES, wanted_prefix};
+use ham_web_core::most_wanted::WANTED_ENTITIES;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde::Deserialize;
@@ -17,7 +17,6 @@ use crate::components::common::{PageContainer, PageHeader};
 use crate::components::study_plan_card::StudyPlanCard;
 use crate::exam_history::ExamTrend;
 use crate::i18n::{t, tf};
-use crate::pages::log::use_log_store;
 use crate::ui::{Chip, ChipGroup, Stat, Tooltip, card_title_class};
 use crate::util::{local_today, now_ms, set_title, storage};
 use crate::{data, store, study};
@@ -58,29 +57,16 @@ pub fn ProgressPage() -> impl IntoView {
   // 同步统计。
   let checkin: CheckinLite = storage::get_json("daily-checkin").unwrap_or_default();
   let bookmarks = store::load_bookmarks().len();
-  let entries = use_log_store().logbook.get_untracked().entries;
-  let log_count = entries.len();
-  let logged_dxcc: HashSet<String> = entries
-    .iter()
-    .filter_map(|e| wanted_prefix(&e.callsign).map(str::to_owned))
-    .collect();
+  // 日志相关的几项来自日志 store 上的摘要 Memo（`achievements::log_summary`），不再克隆整本日志。
+  let log = crate::achievements::log_summary();
+  let log_count = log.log_count;
   let done: Vec<String> = storage::get_json("dxcc_wanted_done").unwrap_or_default();
   let dxcc_done = WANTED_ENTITIES
     .iter()
-    .filter(|(p, _, _)| done.iter().any(|x| x.as_str() == *p) || logged_dxcc.contains(*p))
+    .filter(|(p, _, _)| done.iter().any(|x| x.as_str() == *p) || log.logged.contains(*p))
     .count();
   let dxcc_total = WANTED_ENTITIES.len();
-  let grids: HashSet<String> = entries
-    .iter()
-    .filter_map(|e| {
-      if e.gridsquare.is_empty() {
-        None
-      } else {
-        Some(e.gridsquare.clone())
-      }
-    })
-    .collect();
-  let grid_count = grids.len();
+  let grid_count = log.grid_count;
 
   // 错题与累计答题统计。
   let book = study::load_book();
@@ -156,7 +142,11 @@ pub fn ProgressPage() -> impl IntoView {
     for b in Bank::ALL {
       if let Ok(qs) = data::load_bank(None, b, false).await {
         let covered = study_stats
-          .try_with_value(|s| s.bank(b).map_or(0, |bs| bs.covered(qs.iter())))
+          .try_with_value(|s| {
+            s.bank(b).map_or(0, |bs| {
+              bs.covered_keys(&crate::data::bank_question_keys(&qs))
+            })
+          })
           .unwrap_or(0);
         out.push((b, covered, qs.len()));
       }
@@ -182,7 +172,7 @@ pub fn ProgressPage() -> impl IntoView {
     let challenge_days =
       storage::get_json::<ham_web_core::daily_challenge::DailyResults>("daily-challenge")
         .map_or(0, |r| r.days.len());
-    let contest_count = entries.iter().filter(|e| !e.contest_id.is_empty()).count();
+    let contest_count = log.contest_count;
     let s = AchStats {
       total_correct: study_stats.with_value(|s| s.total.correct),
       coverages: &covs,

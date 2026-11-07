@@ -32,12 +32,16 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
   // 已统计的「术语 → 各题库出现题数」（卡片底栏读它）。
   let hit_map: RwSignal<HitMap> = RwSignal::new(HitMap::new());
 
+  // 搜索框绑 `kw`，筛选按防抖后的副本算（见 `debounced`）；程序写入（地址、跳转）两份一起写。
+  let kw_settled = crate::debounced::use_debounced(kw, crate::debounced::SEARCH_DEBOUNCE);
+
   // 支持 /glossary?q=驻波比 直接定位
   Effect::new(move |_| {
     if let Some(q) = query.with(|q| q.get("q")) {
+      kw_settled.set(q.clone());
       kw.set(q);
       cat.set(ALL.to_owned());
-      visible.set(PAGE);
+      crate::debounced::set_if_changed(visible, PAGE);
     }
   });
 
@@ -74,7 +78,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
   });
 
   let filtered = Memo::new(move |_| {
-    let q = kw.with(|k| k.trim().to_lowercase());
+    let q = kw_settled.with(|k| k.trim().to_lowercase());
     let c = cat.get();
     let mut ranked: Vec<(u8, usize, usize)> = base.with(|idx| {
       idx
@@ -140,14 +144,15 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
 
   let select_cat = move |key: &str| {
     cat.set(key.to_owned());
-    visible.set(PAGE);
+    crate::debounced::set_if_changed(visible, PAGE);
   };
   // 移动端分类抽屉的开关：选中分类后要主动收起。
   let cat_open = RwSignal::new(false);
   let jump_to = Callback::new(move |term: String| {
+    kw_settled.set(term.clone());
     kw.set(term);
     cat.set(ALL.to_owned());
-    visible.set(PAGE);
+    crate::debounced::set_if_changed(visible, PAGE);
     window().scroll_to_with_x_and_y(0.0, 0.0);
   });
 
@@ -287,7 +292,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               value=kw
               on_input=Callback::new(move |v: String| {
                 kw.set(v);
-                visible.set(PAGE);
+                crate::debounced::set_if_changed(visible, PAGE);
               })
               kind="search"
               placeholder=Signal::derive(move || t("knowledge.search-terms-abbreviations-explanations"))
@@ -300,7 +305,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               aria-pressed=move || abbr_only.get().to_string()
               on:click=move |_| {
                 abbr_only.update(|v| *v = !*v);
-                visible.set(PAGE);
+                crate::debounced::set_if_changed(visible, PAGE);
               }
             >
               {move || t("knowledge.english-abbreviations-only")}
@@ -434,7 +439,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               value=kw
               on_change=Callback::new(move |v: String| {
                 kw.set(v);
-                visible.set(PAGE);
+                crate::debounced::set_if_changed(visible, PAGE);
               })
               kind=InputType::Search
               placeholder=Signal::derive(move || t("knowledge.search-terms-abbreviations-explanations"))
@@ -447,7 +452,7 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
               active=abbr_only
               on_change=Callback::new(move |v: bool| {
                 abbr_only.set(v);
-                visible.set(PAGE);
+                crate::debounced::set_if_changed(visible, PAGE);
               })
             >
               {view! { {move || t("knowledge.english-abbreviations-only")} }.into_any()}

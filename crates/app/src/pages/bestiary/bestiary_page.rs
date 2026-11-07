@@ -35,7 +35,7 @@ fn topic_of(r: &MistakeRecord) -> (&'static str, &'static str) {
 pub fn BestiaryPage() -> impl IntoView {
   set_title("rpg.bestiary");
   let now = now_ms();
-  let mut records = study::load_book().records;
+  let mut records = study::load_book().records.clone();
   // 到期的在前（`false < true`，所以取反），同样到期状态再按到期时间：最该复仇的排最上面。
   records.sort_by_key(|r| (!r.is_due(now), r.due_ms));
   let defeated = crate::rpg::load_bestiary().count();

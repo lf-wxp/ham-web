@@ -21,7 +21,7 @@ disabled / error 状态反馈因此只有一处定义。
 |---|---|---|
 | `Button` | `<button class=button_class(…)>` | `variant` `size` `kind` `disabled` `loading` `class` `aria_label` `title` `aria_expanded` `aria_controls`（折叠 / 下拉开关）`aria_current`（一组里「当前这个」，如答题卡的当前题）`on_click` `node_ref` |
 | `ButtonLink` | `<a href class=button_class(…)>`（跳转用的「按钮」） | `href`（`TextValue`）`variant` `size` `class` `aria_label` `title` `target` `rel` `download`（保存 `data:` / `blob:` 资源时的文件名）`on_click`（收 `MouseEvent`） |
-| `Input` | `<input>`（text / search / password / email / tel / url；日期与时间见 `DatePicker` / `TimePicker`） | `value` `on_change` `kind` `size` `prefix` `suffix` `clearable` `on_enter` `on_keydown` `invalid` `maxlength` `title` `autocomplete` `autocapitalize` `spellcheck` `aria_describedby` `node_ref` |
+| `Input` | `<input>`（text / search / password / email / tel / url；日期与时间见 `DatePicker` / `TimePicker`） | `value` `on_change` `kind` `size` `prefix` `suffix` `clearable` `on_enter` `on_keydown` `invalid` `maxlength` `title` `autocomplete` `autocapitalize` `spellcheck` `aria_describedby` `node_ref`。`kind=InputType::Search` 的搜索框在输入法组字期间不回调 `on_change`、选字确认补一次；其余类型逐字回调 |
 | `NumberField` | `<input type="number">` | `value` `on_change` `min` `max` `step` `controls`（加减步进）`kind`（`NumberKind::Decimal` = 文本框 + 数字键盘，负数与半截输入可用） |
 | `Textarea` | `<textarea>` | `value` `on_change` `rows` `auto_resize` `autocomplete` `autocapitalize` `spellcheck`（填令牌 / 密钥时设 `off` / `false`） |
 | `Select` + `SelectItem`（+ `SelectGroup`） | `<select>`（选项需要图标 / 徽章等富文本时，目前只有题库版本选择器）。**全站唯一的下拉引擎**：键盘、焦点、ARIA、箭头动画只在这里写一遍 | `value` `on_change` `trigger` `placeholder` `size` `invalid` `aria_label` `title` |
@@ -33,7 +33,7 @@ disabled / error 状态反馈因此只有一处定义。
 | `RadioGroup` + `RadioGroupItem` | `<input type="radio">`（表单里的单选，选项带文字） | `value` `on_change` `disabled` `invalid`（挂在 `radiogroup` 上，样式往下传给每个单选框） |
 | `ChipGroup` + `Chip` | 手写「分段选择」胶囊按钮（工具条上的短选项） | `value` `on_change` `disabled` |
 | `ChipToggle` | 手写「chip 开关」（筛选条上的独立开关） | `active` `on_change` `title` `disabled` |
-| `Tabs` + `TabsList` / `TabsTrigger` / `TabsPanel` | 手写 `role="tablist"` + `if` 藏显面板 / 用 `ChipGroup` 冒充视图切换 | `value` `on_change`；`TabsList` 的 `aria_label`（多组时必填）；`TabsTrigger` 的 `value`（ascii slug，同时拼 id）`disabled`；`TabsPanel` 的 `value`。面板常驻挂载、只切显隐（保留状态）。**筛选用 `ChipGroup`，不要用 Tabs** |
+| `Tabs` + `TabsList` / `TabsTrigger` / `TabsPanel` | 手写 `role="tablist"` + `if` 藏显面板 / 用 `ChipGroup` 冒充视图切换 | `value` `on_change`；`TabsList` 的 `aria_label`（多组时必填）；`TabsTrigger` 的 `value`（ascii slug，同时拼 id）`disabled`；`TabsPanel` 的 `value`。面板内容第一次被切到才挂载，之后常驻、只切显隐（保留状态）。**筛选用 `ChipGroup`，不要用 Tabs** |
 | `Slider` | `<input type="range">` | `value` `on_change` `min` `max` `step` `aria_valuetext` |
 | `FileInput` | 隐藏 `<input type="file">` + 触发按钮 | `on_files` `accept` `multiple` `label` |
 | `FileDropZone` | 手写 `<label for>` + 隐藏 input 的整块拖放区 | `on_file` `accept` `title`（同时是无障碍名）`icon` `hint` `choose_hint`（覆盖默认的「拖拽音频文件」提示行）`disabled` `id`（e2e 按固定 id 定位时传） |

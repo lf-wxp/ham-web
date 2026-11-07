@@ -4,6 +4,7 @@
 //! （DXCC 编号 → 区域状态）与「无国界实体的中心点标记」。
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use ham_web_core::dxcc_map::DxccShapes;
 use leptos::prelude::*;
@@ -15,13 +16,14 @@ use crate::i18n::tf;
 /// DXCC 实体 choropleth 叠加层。
 #[component]
 pub fn DxccOverlay(
-  #[prop(into)] shapes: Signal<DxccShapes>,
+  #[prop(into)] shapes: Signal<Arc<DxccShapes>>,
   #[prop(into)] worked: Signal<BTreeSet<u16>>,
   #[prop(into)] confirmed: Signal<BTreeSet<u16>>,
   on_entity_click: Callback<u16>,
 ) -> impl IntoView {
-  // DXCC 几何 → 通用区域几何。
-  let region_shapes = Signal::derive(move || {
+  // DXCC 几何 → 通用区域几何。`Memo` 而不是 `Signal::derive`：下游每读一次 derive 就把全部
+  // 多边形克隆一遍，而这个叠加层在世界地图上平铺三份、每份都要读。
+  let region_shapes = Memo::new(move |_| {
     shapes
       .get()
       .shapes
@@ -33,7 +35,7 @@ pub fn DxccOverlay(
       .collect::<Vec<_>>()
   });
   // 已通联 / 已确认 → 区域状态映射。
-  let status = Signal::derive(move || {
+  let status = Memo::new(move |_| {
     let worked = worked.get();
     let confirmed = confirmed.get();
     let mut map = BTreeMap::new();

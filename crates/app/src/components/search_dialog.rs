@@ -3,6 +3,11 @@
 //! 两套皮肤共用这一个弹层（外观由 `ui::Dialog` / `ui::Input` 按皮肤分派）；
 //! 现代风的顶栏搜索按钮与 `/` 也指向它 —— 现代风没有「另一套搜索」。
 
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::sync::Arc;
+
+use ham_web_core::QuestionSearchEntry;
 use ham_web_core::registry;
 use ham_web_core::search::{parse_query, qso_matches, search, tokenize};
 use ham_web_core::unit_conversions::UNIT_CONVERSION_GROUPS;
@@ -272,6 +277,32 @@ fn truncate(s: &str, max: usize) -> String {
   }
 }
 
+/// 题目索引每条的小写检索文本，连同生成它时的那份索引（索引换新就重建）。
+type QuestionTexts = (Arc<Vec<QuestionSearchEntry>>, Rc<Vec<String>>);
+
+thread_local! {
+  static QUESTION_TEXTS: RefCell<Option<QuestionTexts>> = const { RefCell::new(None) };
+}
+
+/// 题目索引的检索文本（会话内缓存）：此前每输入一个字都要对约 3500 条各拼接、转小写一遍。
+fn question_texts(index: &Arc<Vec<QuestionSearchEntry>>) -> Rc<Vec<String>> {
+  if let Some(hit) = QUESTION_TEXTS.with_borrow(|c| {
+    c.as_ref()
+      .filter(|(src, _)| Arc::ptr_eq(src, index))
+      .map(|(_, texts)| Rc::clone(texts))
+  }) {
+    return hit;
+  }
+  let texts = Rc::new(
+    index
+      .iter()
+      .map(QuestionSearchEntry::search_text)
+      .collect::<Vec<_>>(),
+  );
+  QUESTION_TEXTS.with_borrow_mut(|c| *c = Some((Arc::clone(index), Rc::clone(&texts))));
+  texts
+}
+
 /// 题库题目搜索（题干 + 解析），返回 `(页面, 路由, 题干, 解析片段)`。
 fn search_questions(query: &str) -> Vec<(String, String, String, String)> {
   let terms = tokenize(query);
@@ -281,14 +312,14 @@ fn search_questions(query: &str) -> Vec<(String, String, String, String)> {
   let Some(index) = data::question_index_loaded() else {
     return Vec::new();
   };
+  let texts = question_texts(&index);
   // 链接里的查询串必须编码：含空格、`&`、`#` 时未编码会把 URL 截断或注入额外参数。
   let href_q = crate::util::encode_uri_component(query.trim());
   let mut matched: Vec<(String, String, String, String)> = index
     .iter()
-    .filter(|e| {
-      let text = e.search_text();
-      terms.iter().all(|t| text.contains(t.as_str()))
-    })
+    .zip(texts.iter())
+    .filter(|(_, text)| terms.iter().all(|t| text.contains(t.as_str())))
+    .map(|(e, _)| e)
     .take(20)
     .map(|e| {
       let title = truncate(&e.q, 42);
@@ -367,6 +398,8 @@ mod tests {
 pub fn SearchDialog() -> impl IntoView {
   let SearchOpen(open) = expect_context::<SearchOpen>();
   let query = RwSignal::new(String::new());
+  // 输入框绑 `query`，结果按防抖后的副本算（见 `debounced`）：每次重算要扫题目、知识库、术语表与日志。
+  let query_settled = crate::debounced::use_debounced(query, crate::debounced::SEARCH_DEBOUNCE);
 
   // 术语表 / 题目搜索索引按需加载：首次打开面板时拉取，加载完成后结果自动刷新。
   let glossary_ready = RwSignal::new(data::glossary_loaded().is_some());
@@ -431,7 +464,7 @@ pub fn SearchDialog() -> impl IntoView {
             question_ready.track();
             // 索引刷新（题库数据更新）后重算结果
             index_epoch.track();
-            let q = query.get();
+            let q = query_settled.get();
             let trimmed = q.trim();
             if trimmed.is_empty() {
               return view! {

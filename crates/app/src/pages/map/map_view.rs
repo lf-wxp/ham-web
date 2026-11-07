@@ -1,7 +1,9 @@
 use leptos::prelude::*;
 use leptos::svg;
 
-use super::projection::{K, MAP_H, MAP_W, WORLD_OFFSETS, polygon_points, project, simplify};
+use super::projection::{
+  K, MAP_H, MAP_W, WORLD_OFFSETS, polygon_points, project, simplify, tile_build_rank,
+};
 use super::world_data::{CONTINENTS, COUNTRY_LABELS};
 use crate::i18n::t;
 use crate::ui::{Button, Size, TextValue, Variant};
@@ -382,6 +384,49 @@ pub fn MapView(
   };
 
   // 叠加层（children）为 `Fn`，每个平铺调用一次构建独立信息层，随底图一同平铺。
+  let tile = move |k: f64| {
+    let t = format!("translate({} 0)", k * MAP_W);
+    view! {
+      <g transform=t>
+        // L0 海洋
+        <rect x="0" y="0" width="720" height="360" fill="url(#ocean-grad)" />
+        // L1 陆地
+        <g shape-rendering="geometricPrecision">{land_views.clone()}</g>
+        // L2 经纬网
+        {graticule_v.clone()}
+        {graticule_h.clone()}
+        <line x1="0" y1="180" x2="720" y2="180" class="stroke-foreground/25" stroke-width="1" vector-effect="non-scaling-stroke" />
+        <line x1="360" y1="0" x2="360" y2="360" class="stroke-foreground/25" stroke-width="1" vector-effect="non-scaling-stroke" />
+        // 刻度与名称标注
+        {tick_views()}
+        {tick_lat_views()}
+        {name_views()}
+        // 国家/地区名称（放大后显示）
+        <g
+          class="fill-foreground/40"
+          style=move || {
+            if zoom.get() >= 2.0 { "opacity:0.9" } else { "opacity:0" }
+          }
+        >
+          {country_views()}
+        </g>
+        // 信息层（灰线 / 网格热力等）
+        {children()}
+      </g>
+    }
+  };
+  // 平铺的三份世界：中间那份随页面一起建，左右两份等首帧画出来之后每帧补一份。
+  // 初始视口正好是中间那份（720×360），左右两份要平移到反子午线附近才看得见；而一份世界连同
+  // 叠加层是上千个 SVG 节点，三份同步建完是地图页换页时最重的一块（分区 / DXCC 地图约 3100 个节点）。
+  let tiles_built = RwSignal::new(1usize);
+  crate::after_paint::each_frame(move || {
+    tiles_built
+      .try_update(|n| {
+        *n += 1;
+        *n < WORLD_OFFSETS.len()
+      })
+      .unwrap_or(false)
+  });
 
   view! {
     <div class="relative">
@@ -422,39 +467,17 @@ pub fn MapView(
             <stop offset="100%" stop-color="#f59e0b" stop-opacity="0" />
           </radialGradient>
         </defs>
-        // 世界内容在 x 方向平铺三份，实现反子午线无缝环绕。
+        // 世界内容在 x 方向平铺三份，实现反子午线无缝环绕（建造顺序：中、左、右，见 `tiles_built`）。
         {WORLD_OFFSETS
           .into_iter()
-          .map(|k| {
-            let t = format!("translate({} 0)", k * MAP_W);
-            view! {
-              <g transform=t>
-                // L0 海洋
-                <rect x="0" y="0" width="720" height="360" fill="url(#ocean-grad)" />
-                // L1 陆地
-                <g shape-rendering="geometricPrecision">{land_views.clone()}</g>
-                // L2 经纬网
-                {graticule_v.clone()}
-                {graticule_h.clone()}
-                <line x1="0" y1="180" x2="720" y2="180" class="stroke-foreground/25" stroke-width="1" vector-effect="non-scaling-stroke" />
-                <line x1="360" y1="0" x2="360" y2="360" class="stroke-foreground/25" stroke-width="1" vector-effect="non-scaling-stroke" />
-                // 刻度与名称标注
-                {tick_views()}
-                {tick_lat_views()}
-                {name_views()}
-                // 国家/地区名称（放大后显示）
-                <g
-                  class="fill-foreground/40"
-                  style=move || {
-                    if zoom.get() >= 2.0 { "opacity:0.9" } else { "opacity:0" }
-                  }
-                >
-                  {country_views()}
-                </g>
-                // 信息层（灰线 / 网格热力等）
-                {children()}
-              </g>
-            }
+          .enumerate()
+          .map(|(i, k)| {
+            // 离视口所在那份（偏移 0）最近的先建，其余依次在之后的帧里补上。
+            let rank = tile_build_rank(i);
+            // `Memo`：份数每帧加一，但每一份只在跨过自己门槛的那一次重建。
+            let shown = Memo::new(move |_| tiles_built.get() > rank);
+            let tile = tile.clone();
+            move || shown.get().then(|| tile(k))
           })
           .collect_view()}
       </svg>

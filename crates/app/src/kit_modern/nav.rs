@@ -68,7 +68,11 @@ pub fn ModernNav() -> impl IntoView {
     <nav class="md-nav" data-nav aria-label=move || t("shell.main-navigation")>
       <div class="md-nav-inner">
         <a class="md-brand" href="/">
-          <span class="md-brand-dot" aria-hidden="true"></span>
+          // 站标：与像素风 `nav_bar.rs` 的 `brand-mark` 同一个用意（文字左边一枚可识别的记号），
+          // 形态换成现代风的圆角方块 + 线性卫星图标 —— 不搬像素风的墨框与硬投影。
+          <span class="md-brand-mark" aria-hidden="true">
+            <ModernIcon kind=MIcon::Satellite class="md-brand-mark-icon" />
+          </span>
           {move || t("shell.amateur-radio")}
         </a>
 

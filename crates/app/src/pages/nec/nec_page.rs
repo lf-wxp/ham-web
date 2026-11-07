@@ -5,13 +5,13 @@
 //! 全部计算在 `ham_web_core::nec` 里完成（浏览器本地，离线可用）。
 
 use ham_web_core::nec::{
-  Feed, Ground, Load, NecInput, TransmissionLine, Wire, parse_nec, solve_with_lines,
+  Feed, Ground, Load, NecInput, NecResult, TransmissionLine, Wire, parse_nec, solve_with_lines,
   to_nec_with_lines,
 };
 use ham_web_core::nec_templates::nec_template;
 use leptos::prelude::*;
 
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{Deferred, PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::util::{cancel_debounce, debounce, set_title, take_nec_template};
 
@@ -33,6 +33,30 @@ use super::sweep::SweepSection;
 use super::wire_table::WireTable;
 use super::{LoadRow, MATERIALS, NOTE, PRESETS, Preset, WireRow};
 use crate::ui::ChipGroup;
+
+/// 最近一次求解：（输入，传输线，结果）。
+type LastSolve = (NecInput, Vec<TransmissionLine>, Option<NecResult>);
+
+thread_local! {
+  static LAST_SOLVE: std::cell::RefCell<Option<LastSolve>> = const { std::cell::RefCell::new(None) };
+}
+
+/// 带会话缓存的求解：输入与上次相同就直接返回上次的结果。
+///
+/// 默认天线（14.1 MHz 偶极子）每次进这一页都一样，此前每进一次都要重跑一遍矩量法
+/// （手机上一两百毫秒）；切走再切回、改了又改回来也一样直接命中。
+fn solve_cached(input: &NecInput, lines: &[TransmissionLine]) -> Option<NecResult> {
+  if let Some(hit) = LAST_SOLVE.with_borrow(|c| {
+    c.as_ref()
+      .filter(|(i, l, _)| i == input && l.as_slice() == lines)
+      .map(|(_, _, r)| r.clone())
+  }) {
+    return hit;
+  }
+  let result = solve_with_lines(input, lines);
+  LAST_SOLVE.with_borrow_mut(|c| *c = Some((input.clone(), lines.to_vec(), result.clone())));
+  result
+}
 
 #[component]
 pub fn NecPage() -> impl IntoView {
@@ -179,10 +203,12 @@ pub fn NecPage() -> impl IntoView {
   // 定时器回调会在离开页面后触发，那时信号已释放 —— 必须撤销。
   on_cleanup(|| cancel_debounce("nec-solve"));
 
+  // 求解结果按输入在会话内缓存（`solve_cached`）。`Memo` 是惰性的：读它的结果区都包在
+  // `Deferred` 里（见下方视图），所以首次求解发生在新页面第一帧画出来之后，不挡换页。
   let result = Memo::new(move |_| {
     settled_input
       .get()
-      .and_then(|i| solve_with_lines(&i, &core_lines.get()))
+      .and_then(|i| solve_cached(&i, &core_lines.get()))
   });
 
   // ── 导入 / 导出 ───────────────────────────────────────────────
@@ -450,23 +476,27 @@ pub fn NecPage() -> impl IntoView {
         }
       }}
 
-      <ResultSection
-        result=result
-        freq_hz=Signal::derive(freq_hz)
-        len_m=Signal::derive(len)
-        ground_kind=ground_kind
-      />
+      // 结果区、三维方向图、扫频、NVIS、方向表都读求解结果：矩量法一次求解（装阻抗矩阵 + 扫 2664 个方向）
+      // 是这一页最贵的一步，首帧之后再挂，换页时先把输入区画出来。
+      <Deferred>
+        <ResultSection
+          result=result
+          freq_hz=Signal::derive(freq_hz)
+          len_m=Signal::derive(len)
+          ground_kind=ground_kind
+        />
 
-      <Pattern3d result=result />
+        <Pattern3d result=result />
 
-      // 扫频同样订阅「稳定后的输入」：否则每敲一个字符都会重跑一次整段频带的求解。
-      <SweepSection input=settled_input lines=core_lines />
+        // 扫频同样订阅「稳定后的输入」：否则每敲一个字符都会重跑一次整段频带的求解。
+        <SweepSection input=settled_input lines=core_lines />
 
-      <LinesSection lines=lines new_id=Callback::new(move |_| id_gen()) />
+        <LinesSection lines=lines new_id=Callback::new(move |_| id_gen()) />
 
-      <NvisSection result=result />
+        <NvisSection result=result />
 
-      <DirectionTable result=result />
+        <DirectionTable result=result />
+      </Deferred>
       </PageContainer>
     </div>
   }

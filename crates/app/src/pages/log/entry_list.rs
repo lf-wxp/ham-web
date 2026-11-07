@@ -37,37 +37,61 @@ pub(super) fn EntryList(
   let mode_filter = RwSignal::new(String::new());
   let qsl_filter = RwSignal::new(String::new());
   let page = RwSignal::new(0usize);
+  // 搜索框绑 `query`（字立刻上屏），筛选按防抖后的副本算：连续输入只重算一次表格。
+  let query_settled = crate::debounced::use_debounced(query, crate::debounced::SEARCH_DEBOUNCE);
+  // 筛选条件变了回到第一页。跟的是**防抖后**的关键词，而且已经在第一页就不写：`RwSignal::set`
+  // 不比较新旧值、照样通知，此前每敲一个字都会让当前这一页的 50 行整体重建一遍（筛选结果还没变）。
   Effect::new(move |_| {
-    query.track();
+    query_settled.track();
     band_filter.track();
     mode_filter.track();
     qsl_filter.track();
-    page.set(0);
+    crate::debounced::set_if_changed(page, 0);
   });
 
-  // `Arc` 包一层：`Memo` 只能返回自有数据，所以「筛选结果变了」时克隆整份结果没法避免；
-  // 但**渲染**（翻页、改主题、任意重渲）不该再克隆一次整表 —— 一页只显示 `PAGE_SIZE` 行，
-  // 用 `Arc` 后「取整表」只是加一次引用计数。
+  // 筛选 + 排序只产出**下标**（指向 `logbook.entries`），不克隆记录：此前每输入一个字都要把全部命中的
+  // 记录克隆一遍再排序，5000 条日志时每键一百多毫秒。渲染时只取当前这一页的 `PAGE_SIZE` 条。
+  // `Arc` 包一层：翻页、改主题这类重渲拿整份下标只是加一次引用计数。
+  //
+  // 排序与关键词无关：按「日期、时间、编号」倒序的整表次序单独挂一个 Memo，日志变了才重排；
+  // 筛选只是按这个次序挑出命中的，不再每换一次关键词就把几千条重排一遍。
+  let order = Memo::new(move |_| {
+    logbook.with(|lb| {
+      let es = &lb.entries;
+      let mut idx: Vec<usize> = (0..es.len()).collect();
+      idx.sort_by(|&a, &b| {
+        let (a, b) = (&es[a], &es[b]);
+        (&b.date, &b.time, b.id).cmp(&(&a.date, &a.time, a.id))
+      });
+      Arc::new(idx)
+    })
+  });
   let filtered = Memo::new(move |_| {
-    let q = query.get().trim().to_uppercase();
+    let q = query_settled.with(|q| q.trim().to_uppercase());
     let (bf, mf, qf) = (band_filter.get(), mode_filter.get(), qsl_filter.get());
-    let mut list: Vec<LogEntry> = logbook.with(|lb| {
-      lb.entries
-        .iter()
-        .filter(|e| e.matches_query(&q))
-        .filter(|e| bf.is_empty() || e.band_label() == bf)
-        .filter(|e| mf.is_empty() || e.mode == mf)
-        // QSL 筛选按**四色档位**（走到哪一步）而不是单个标志位：走 LoTW / eQSL
-        // 确认的通联以前会被 `qsl_rcvd` 判成「未确认」，看着像没寄过卡。
-        .filter(|e| match QslTone::from_key(&qf) {
-          Some(tone) => QslStatus::of(e).tone() == tone,
-          None => true,
-        })
-        .cloned()
-        .collect()
-    });
-    list.sort_by(|a, b| (&b.date, &b.time, b.id).cmp(&(&a.date, &a.time, a.id)));
-    Arc::new(list)
+    // QSL 筛选按**四色档位**（走到哪一步）而不是单个标志位：走 LoTW / eQSL
+    // 确认的通联以前会被 `qsl_rcvd` 判成「未确认」，看着像没寄过卡。
+    let tone = QslTone::from_key(&qf);
+    let all = order.get();
+    if q.is_empty() && bf.is_empty() && mf.is_empty() && tone.is_none() {
+      return all;
+    }
+    logbook.with(|lb| {
+      let es = &lb.entries;
+      Arc::new(
+        all
+          .iter()
+          .copied()
+          .filter(|&i| {
+            let e = &es[i];
+            (bf.is_empty() || e.band_label() == bf)
+              && (mf.is_empty() || e.mode == mf)
+              && tone.is_none_or(|tone| QslStatus::of(e).tone() == tone)
+              && e.matches_query(&q)
+          })
+          .collect::<Vec<usize>>(),
+      )
+    })
   });
   let page_count = Memo::new(move |_| filtered.with(|v| v.len()).div_ceil(PAGE_SIZE).max(1));
 
@@ -182,11 +206,18 @@ pub(super) fn EntryList(
             <TableBody>
               {move || {
                 let start = page.get().min(page_count.get() - 1) * PAGE_SIZE;
-                filtered
-                  .get()
+                let rows: Vec<LogEntry> = filtered.with(|idx| {
+                  logbook.with(|lb| {
+                    idx
+                      .iter()
+                      .skip(start)
+                      .take(PAGE_SIZE)
+                      .filter_map(|&i| lb.entries.get(i).cloned())
+                      .collect()
+                  })
+                });
+                rows
                   .iter()
-                  .skip(start)
-                  .take(PAGE_SIZE)
                   .map(|e| {
                     let entry = e.clone();
                     let id = e.id;

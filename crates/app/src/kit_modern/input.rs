@@ -49,6 +49,10 @@ pub fn ModernInput(
     let k = kind.get();
     if k.is_empty() { "text".to_owned() } else { k }
   });
+  // 搜索框把输入法组字的中间串挡在外面（与 `ui::Input` 同一套规则，见 `crate::composition`）；
+  // 其余类型逐字回传。事件里读的是当时的 `kind`，所以只在事件处理时判断，不订阅。
+  let compose = crate::composition::Composition::new();
+  let is_search = move || kind.with_untracked(|k| k == "search");
 
   view! {
     <div class=format!("md-input-wrap {class}")>
@@ -68,7 +72,22 @@ pub fn ModernInput(
           (!name.is_empty()).then_some(name)
         }
         prop:value=move || value.get()
-        on:input=move |e| on_input.run(event_target_value(&e))
+        on:input=move |e| {
+          if is_search() {
+            if let Some(v) = compose.on_input(&e) {
+              on_input.run(v);
+            }
+          } else {
+            on_input.run(event_target_value(&e));
+          }
+        }
+        on:compositionend=move |e| {
+          if is_search()
+            && let Some(v) = compose.on_end(&e)
+          {
+            on_input.run(v);
+          }
+        }
         on:keydown=move |e: web_sys::KeyboardEvent| {
           if e.key() != "Enter" {
             return;

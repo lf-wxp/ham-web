@@ -39,7 +39,11 @@ pub fn StudyPlanCard(
     let b = bank.get();
     spawn_local(async move {
       if let Ok(qs) = data::load_bank(None, b, false).await {
-        let covered = stats.with_value(|s| s.bank(b).map_or(0, |bs| bs.covered(qs.iter())));
+        let covered = stats.with_value(|s| {
+          s.bank(b).map_or(0, |bs| {
+            bs.covered_keys(&crate::data::bank_question_keys(&qs))
+          })
+        });
         unseen.try_set(Some(qs.len().saturating_sub(covered)));
       }
     });

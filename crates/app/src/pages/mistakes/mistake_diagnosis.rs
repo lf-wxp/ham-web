@@ -4,7 +4,7 @@ use ham_web_core::categories::{TOP_CATEGORIES, top_pages};
 use ham_web_core::mistake_book::cause_stats;
 use leptos::prelude::*;
 
-use super::mistakes_page::top_of;
+use super::mistakes_page::category_counts;
 use crate::i18n::{Locale, locale, t, tf, tp};
 use crate::study;
 
@@ -19,27 +19,19 @@ fn category_name(key: &str) -> &'static str {
 /// 错题诊断：聚合分类分布、错因与薄弱环节，给出可行动结论。
 #[component]
 pub(super) fn MistakeDiagnosis() -> impl IntoView {
-  let records = study::load_book().sorted();
+  // 只读共享的那一份（`study::load_book` 有缓存）：这里只计数，不需要按时间排序、也不需要克隆。
+  let book = study::load_book();
   let stats = study::load_stats();
 
   // 错题分类分布（按错题数降序）。
-  let mut cat_counts: Vec<(&'static str, usize)> = TOP_CATEGORIES
-    .iter()
-    .map(|c| {
-      (
-        c.key,
-        records
-          .iter()
-          .filter(|m| top_of(&m.question) == c.key)
-          .count(),
-      )
-    })
-    .filter(|(_, n)| *n > 0)
+  let mut cat_counts: Vec<(&'static str, usize)> = category_counts(&book.records)
+    .into_iter()
+    .map(|(key, _, n)| (key, n))
     .collect();
   cat_counts.sort_by_key(|(_, n)| std::cmp::Reverse(*n));
 
   // 主要错因（已标注的最多）。
-  let top_cause = cause_stats(&study::load_book())
+  let top_cause = cause_stats(&book)
     .into_iter()
     .filter(|(_, _, n)| *n > 0)
     .max_by_key(|(_, _, n)| *n)

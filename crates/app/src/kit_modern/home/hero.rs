@@ -123,7 +123,8 @@ pub fn ModernHero() -> impl IntoView {
   });
 
   view! {
-    <section class="md-hero-band">
+    // `data-pause-offscreen`：滚出视口时暂停极光、电波、卫星这些循环动画（`motion::pause_offscreen_in`）。
+    <section class="md-hero-band" data-pause-offscreen="">
       <div class="md-aurora" aria-hidden="true"></div>
       <div class="md-shell md-hero-grid">
         <div class="md-hero-copy" node_ref=copy_ref>

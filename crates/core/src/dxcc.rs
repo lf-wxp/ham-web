@@ -7,10 +7,33 @@
 //! 斜杠呼号取较短的一段作为前缀（`VK9X/BG4XXX`、`KH6/K1ABC`），
 //! `/P`、`/M`、`/QRP`、`/数字` 等后缀忽略，`/MM`、`/AM` 不属于任何实体。
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
 const DATA: &str = include_str!("../data/dxcc.txt");
+
+/// [`lookup_with_prefix`] 记忆表的容量上限：超过就整表清空重来（日志一般几千个不同呼号）。
+///
+/// 只在浏览器（`wasm32`）启用：服务端（`crates/server` 的 `/api/v1/dxcc/lookup` 与呼号回退）、
+/// 构建工具与原生测试都是「每次查一个、查完即走」，记忆表只会在每个工作线程上白占内存。
+/// `0` 表示不记忆；单元测试直接调 [`lookup_memoized`] 传入具体容量，两条路径都有覆盖。
+#[cfg(target_arch = "wasm32")]
+const MEMO_CAP: usize = 50_000;
+#[cfg(not(target_arch = "wasm32"))]
+const MEMO_CAP: usize = 0;
+
+/// 超过这个长度的输入不进记忆表：真实呼号不会超过 20 字节，更长的是脏数据，
+/// 记下来只会让表里的键越攒越大。
+const MEMO_KEY_MAX: usize = 32;
+
+thread_local! {
+  /// 呼号（原样输入）→ 查找结果（匹配到的前缀、实体下标）。
+  ///
+  /// 日志相关页面在一次渲染里要对同一批呼号查好几遍（统计、奖项、体检、地图各一遍），
+  /// 5000 条日志每遍都是 5000 次「转大写 + 拆斜杠 + 最长前缀逐级查表」。查找是纯函数，记下来即可。
+  static MEMO: RefCell<HashMap<String, Option<(&'static str, usize)>>> = RefCell::new(HashMap::new());
+}
 
 /// 一个 DXCC 实体。
 #[derive(Debug, Clone, PartialEq)]
@@ -39,6 +62,10 @@ struct Table {
   entities: Vec<Entity>,
   prefixes: HashMap<&'static str, usize>,
   exact: HashMap<&'static str, usize>,
+  /// DXCC 编号 → 下标（日志条目大多带编号，`LogEntry::entity` 先走这条）。
+  by_dxcc: HashMap<u16, usize>,
+  /// 中文名 → 下标（同名取第一个，与此前的线性查找一致）。
+  by_name: HashMap<&'static str, usize>,
   max_len: usize,
 }
 
@@ -49,6 +76,8 @@ fn table() -> &'static Table {
       entities: Vec::new(),
       prefixes: HashMap::new(),
       exact: HashMap::new(),
+      by_dxcc: HashMap::new(),
+      by_name: HashMap::new(),
       max_len: 0,
     };
     for line in DATA
@@ -81,6 +110,10 @@ fn table() -> &'static Table {
         }
       }
     }
+    for (i, e) in t.entities.iter().enumerate() {
+      t.by_dxcc.entry(e.dxcc).or_insert(i);
+      t.by_name.entry(e.name).or_insert(i);
+    }
     t
   })
 }
@@ -94,13 +127,15 @@ pub fn entities() -> &'static [Entity] {
 /// 按中文名查找实体。
 #[must_use]
 pub fn entity_by_name(name: &str) -> Option<&'static Entity> {
-  entities().iter().find(|e| e.name == name)
+  let t = table();
+  t.by_name.get(name).map(|&i| &t.entities[i])
 }
 
 /// 按 DXCC 编号查找实体。
 #[must_use]
 pub fn entity_by_dxcc(dxcc: u16) -> Option<&'static Entity> {
-  entities().iter().find(|e| e.dxcc == dxcc)
+  let t = table();
+  t.by_dxcc.get(&dxcc).map(|&i| &t.entities[i])
 }
 
 /// 不改变所属实体的斜杠后缀。
@@ -128,23 +163,44 @@ fn base_of(call: &str) -> Option<&str> {
 /// 识别呼号所属实体，同时返回匹配到的前缀（整呼号例外时为整个呼号）。
 #[must_use]
 pub fn lookup_with_prefix(callsign: &str) -> Option<(&'static str, &'static Entity)> {
+  lookup_memoized(callsign, MEMO_CAP)
+}
+
+/// 带记忆表的查找，`cap` 是表的容量上限（`0` = 不记忆）。
+fn lookup_memoized(callsign: &str, cap: usize) -> Option<(&'static str, &'static Entity)> {
+  let t = table();
+  if cap == 0 || callsign.len() > MEMO_KEY_MAX {
+    return lookup_uncached(t, callsign).map(|(k, i)| (k, &t.entities[i]));
+  }
+  let hit = MEMO.with_borrow(|m| m.get(callsign).copied());
+  let found = hit.unwrap_or_else(|| {
+    let found = lookup_uncached(t, callsign);
+    MEMO.with_borrow_mut(|m| {
+      if m.len() >= cap {
+        m.clear();
+      }
+      m.insert(callsign.to_owned(), found);
+    });
+    found
+  });
+  found.map(|(k, i)| (k, &t.entities[i]))
+}
+
+fn lookup_uncached(t: &'static Table, callsign: &str) -> Option<(&'static str, usize)> {
   let call = callsign.trim().to_ascii_uppercase();
   if call.is_empty() || !call.is_ascii() {
     return None;
   }
-  let t = table();
   if let Some((&k, &i)) = t.exact.get_key_value(call.as_str()) {
-    return Some((k, &t.entities[i]));
+    return Some((k, i));
   }
   let base = base_of(&call)?;
   if let Some((&k, &i)) = t.exact.get_key_value(base) {
-    return Some((k, &t.entities[i]));
+    return Some((k, i));
   }
-  (1..=base.len().min(t.max_len)).rev().find_map(|n| {
-    t.prefixes
-      .get_key_value(&base[..n])
-      .map(|(&k, &i)| (k, &t.entities[i]))
-  })
+  (1..=base.len().min(t.max_len))
+    .rev()
+    .find_map(|n| t.prefixes.get_key_value(&base[..n]).map(|(&k, &i)| (k, i)))
 }
 
 /// 识别呼号所属实体。
@@ -527,6 +583,78 @@ mod tests {
       .collect();
     assert!(missing.is_empty(), "missing zh names: {missing:?}");
     assert_eq!(ZH_NAMES.len(), 340);
+  }
+
+  #[test]
+  fn indexed_lookups_match_linear_scan() {
+    // 按编号 / 中文名改成哈希索引后，结果必须与「按 cty 顺序取第一个」的线性查找完全一致。
+    for e in entities() {
+      let by_dxcc = entities().iter().find(|x| x.dxcc == e.dxcc);
+      assert_eq!(entity_by_dxcc(e.dxcc), by_dxcc, "dxcc {}", e.dxcc);
+      let by_name = entities().iter().find(|x| x.name == e.name);
+      assert_eq!(entity_by_name(e.name), by_name, "name {}", e.name);
+    }
+    assert_eq!(entity_by_dxcc(0), entities().iter().find(|x| x.dxcc == 0));
+    assert_eq!(entity_by_name("不存在的实体"), None);
+  }
+
+  #[test]
+  fn memoized_lookup_matches_uncached() {
+    // 记忆表按原样输入做键：大小写、首尾空格不同的写法各记一份，但结果必须与直接查表一致，
+    // 重复查同一个呼号也不能变。
+    let calls = [
+      "BG4XXX",
+      "bg4xxx",
+      " BG4XXX ",
+      "VK9X/BG4XXX",
+      "KH6/K1ABC",
+      "K1ABC/MM",
+      "",
+      "中文",
+      "BS7H",
+      "RX3ABC",
+      "UA0ABC",
+    ];
+    for _ in 0..2 {
+      for c in calls {
+        let direct = lookup_uncached(table(), c).map(|(k, i)| (k, &table().entities[i]));
+        assert_eq!(lookup_with_prefix(c), direct, "{c:?}");
+      }
+    }
+  }
+
+  #[test]
+  fn memo_capacity_and_bypass_do_not_change_results() {
+    // 三条路径结果必须一致：不记忆（`cap = 0`，服务端 / 原生）、容量 2 的小表（反复溢出清空）、
+    // 超长输入（不进表）。小容量让「表满了清空重来」在这里真的发生，而不是只在 5 万条时才触发。
+    let long = format!("BG4{}", "X".repeat(MEMO_KEY_MAX));
+    let calls = [
+      "BG4XXX",
+      "VK9X/BG4XXX",
+      "KH6/K1ABC",
+      "K1ABC/MM",
+      "RX3ABC",
+      "UA0ABC",
+      "BG4XXX",
+      long.as_str(),
+    ];
+    for cap in [0, 2] {
+      for c in calls {
+        let direct = lookup_uncached(table(), c).map(|(k, i)| (k, &table().entities[i]));
+        assert_eq!(lookup_memoized(c, cap), direct, "cap={cap} {c:?}");
+      }
+    }
+    MEMO.with_borrow(|m| {
+      assert!(m.len() <= 2, "表超过了容量上限：{}", m.len());
+      assert!(!m.contains_key(long.as_str()), "超长输入不该进记忆表");
+    });
+  }
+
+  #[cfg(not(target_arch = "wasm32"))]
+  #[test]
+  fn native_builds_do_not_memoize() {
+    // 服务端 / 工具链走的是原生目标：`lookup_with_prefix` 不该往线程局部表里攒东西。
+    assert_eq!(MEMO_CAP, 0);
   }
 
   #[test]

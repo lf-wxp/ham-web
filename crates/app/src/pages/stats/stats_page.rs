@@ -35,50 +35,61 @@ pub fn StatsPage() -> impl IntoView {
   let scoped = scoped_log_entries(scope);
 
   let body = move || {
-    let entries = scoped.get();
-    let total = entries.len();
-
+    // 无法映射到实体的通联归入「其他」桶：桶名走词条，柱状图原样渲染 label。
+    let other = t("tools.other");
     let mut dxcc: HashMap<String, usize> = HashMap::new();
     let mut band: HashMap<String, usize> = HashMap::new();
     let mut mode: HashMap<String, usize> = HashMap::new();
     let mut monthly: HashMap<String, usize> = HashMap::new();
-    let mut band_dxcc: HashMap<String, HashSet<String>> = HashMap::new();
+    let mut band_dxcc: HashMap<String, HashSet<u16>> = HashMap::new();
 
-    // 无法映射到实体的通联归入「其他」桶：桶名走词条，柱状图原样渲染 label。
-    let other = t("tools.other");
-    for e in &entries {
-      if !e.callsign.is_empty() {
-        *dxcc
-          .entry(
-            e.entity()
-              .map(|x| localized_name(x.name, x.name_en))
-              .unwrap_or_else(|| other.clone()),
-          )
-          .or_default() += 1;
-      }
-      let b = e.band_label();
-      if !b.is_empty() {
-        if let Some(entity) = e.entity().map(|x| localized_name(x.name, x.name_en)) {
-          band_dxcc.entry(b.clone()).or_default().insert(entity);
+    // 借用读取（`.with`）：此前 `scoped.get()` 先把整份日志克隆一遍。每条记录只查一次实体、
+    // 按 DXCC 编号计数，最后才对出现过的实体（最多 340 个）取本地化名 —— 此前每条记录查两次实体、
+    // 各分配一次名字串，5000 条就是一万次前缀查找加一万次分配。
+    let (total, qsl_sent_count, qsl_rcvd_count, heatmap, daily, awards) = scoped.with(|entries| {
+      let mut by_entity: HashMap<u16, (&'static ham_web_core::dxcc::Entity, usize)> =
+        HashMap::new();
+      let mut unknown = 0usize;
+      for e in entries {
+        let entity = e.entity();
+        if !e.callsign.is_empty() {
+          match entity {
+            Some(x) => by_entity.entry(x.dxcc).or_insert((x, 0)).1 += 1,
+            None => unknown += 1,
+          }
         }
-        *band.entry(b).or_default() += 1;
+        let b = e.band_label();
+        if !b.is_empty() {
+          if let Some(x) = entity {
+            band_dxcc.entry(b.clone()).or_default().insert(x.dxcc);
+          }
+          *band.entry(b).or_default() += 1;
+        }
+        if !e.mode.is_empty() {
+          *mode.entry(e.mode.clone()).or_default() += 1;
+        }
+        if let Some(ym) = e.date.get(..7) {
+          *monthly.entry(ym.to_owned()).or_default() += 1;
+        }
       }
-      if !e.mode.is_empty() {
-        *mode.entry(e.mode.clone()).or_default() += 1;
+      for (x, n) in by_entity.into_values() {
+        *dxcc.entry(localized_name(x.name, x.name_en)).or_default() += n;
       }
-      if let Some(ym) = e.date.get(..7) {
-        *monthly.entry(ym.to_owned()).or_default() += 1;
+      if unknown > 0 {
+        *dxcc.entry(other.clone()).or_default() += unknown;
       }
-    }
-
-    let qsl_sent_count = entries
-      .iter()
-      .filter(|e| e.qsl_sent || e.lotw_sent || e.eqsl_sent)
-      .count();
-    let qsl_rcvd_count = entries.iter().filter(|e| e.confirmed()).count();
-    let heatmap = hour_band_heatmap(&entries);
-    let daily = daily_qso_counts(&entries);
-    let awards = AwardProgress::from_entries(&entries);
+      (
+        entries.len(),
+        entries
+          .iter()
+          .filter(|e| e.qsl_sent || e.lotw_sent || e.eqsl_sent)
+          .count(),
+        entries.iter().filter(|e| e.confirmed()).count(),
+        hour_band_heatmap(entries),
+        daily_qso_counts(entries),
+        AwardProgress::from_entries(entries),
+      )
+    });
 
     let dxcc_total = dxcc.keys().filter(|k| k.as_str() != other.as_str()).count();
     let dxcc_top = top_n(dxcc, 10);

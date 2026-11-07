@@ -7,7 +7,7 @@
 //!   连续答对 [`MistakeRecord::target_streak`] 次（一般 [`MASTER_STREAK`] 次，
 //!   反复答错的题最多 [`MAX_TARGET_STREAK`] 次）视为掌握并移出错题本。
 
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -184,10 +184,16 @@ impl MistakeBook {
       }
     }
 
+    // 按 key 建索引去重：逐条在 `merged` 里线性查找是 O(n²)，1000 条（上限）就是 50 万次比较，
+    // 而 rekey 在每次读错题本时都要跑一遍（应用侧另有缓存，但首次读取仍要付这一次）。
     let mut merged: Vec<MistakeRecord> = Vec::with_capacity(self.records.len());
+    let mut index: HashMap<String, usize> = HashMap::with_capacity(self.records.len());
     for record in self.records.drain(..) {
-      match merged.iter_mut().find(|r| r.key == record.key) {
-        None => merged.push(record),
+      match index.get(&record.key).map(|&i| &mut merged[i]) {
+        None => {
+          index.insert(record.key.clone(), merged.len());
+          merged.push(record);
+        }
         Some(keep) => {
           // 两个变体各自记过答错次数，合并时累加
           keep.wrong_count = keep.wrong_count.saturating_add(record.wrong_count);
@@ -582,11 +588,25 @@ pub struct BankStats {
   pub seen: BTreeSet<String>,
 }
 
+/// 一批题目的 key 集合（去重；[`BankStats::covered_keys`] 的输入）。
+#[must_use]
+pub fn question_keys<'a>(questions: impl IntoIterator<Item = &'a QuestionItem>) -> HashSet<String> {
+  questions.into_iter().map(question_key).collect()
+}
+
 impl BankStats {
   /// 题库中做过的题数（只统计仍在 `questions` 里的题，题库改版删除的题不计）。
   #[must_use]
   pub fn covered<'a>(&self, questions: impl IntoIterator<Item = &'a QuestionItem>) -> usize {
-    let keys: HashSet<String> = questions.into_iter().map(question_key).collect();
+    self.covered_keys(&question_keys(questions))
+  }
+
+  /// 同 [`Self::covered`]，但题目 key 集合由调用方给（见 [`question_keys`]）。
+  ///
+  /// 应用侧按题库缓存这份集合：算 key 要对每道题做一次内容指纹，进度页 / 成就页 / 备考计划卡
+  /// 每次挂载都要对三个题库各算一遍。
+  #[must_use]
+  pub fn covered_keys(&self, keys: &HashSet<String>) -> usize {
     keys.iter().filter(|k| self.seen.contains(*k)).count()
   }
 
@@ -818,6 +838,42 @@ mod tests {
     assert_eq!(book.records[0].wrong_count, 2);
     assert_eq!(book.records[0].last_wrong_ms, 100);
     assert!(book.contains(&b));
+  }
+
+  #[test]
+  fn rekey_keeps_first_seen_order_and_merges_each_group() {
+    // 三组题、每组两个排版变体交错出现：合并后每组一条，顺序按各组第一次出现的位置，
+    // 错次数各自累加（改成哈希索引去重后，顺序与合并口径都不能变）。
+    let variants = [
+      ("题一 FT8模式", "题一 FT8 模式"),
+      ("题二 CW模式", "题二 CW 模式"),
+      ("题三 SSB模式", "题三 SSB 模式"),
+    ];
+    let mut book = MistakeBook::default();
+    for (i, (a, _)) in variants.iter().enumerate() {
+      book.record(&q(a, "A"), &ans("B"), i as i64);
+    }
+    for (i, (_, b)) in variants.iter().enumerate() {
+      book.record(&q(b, "A"), &ans("B"), 10 + i as i64);
+    }
+    assert_eq!(book.records.len(), 6);
+    assert!(book.rekey() > 0);
+    let stems: Vec<&str> = book
+      .records
+      .iter()
+      .map(|r| r.question.question.as_str())
+      .collect();
+    assert_eq!(stems, ["题一 FT8 模式", "题二 CW 模式", "题三 SSB 模式"]);
+    assert!(book.records.iter().all(|r| r.wrong_count == 2));
+    assert_eq!(
+      book
+        .records
+        .iter()
+        .map(|r| r.last_wrong_ms)
+        .collect::<Vec<_>>(),
+      [10, 11, 12]
+    );
+    assert_eq!(book.rekey(), 0);
   }
 
   #[test]
@@ -1115,6 +1171,8 @@ mod tests {
     let bank = s.bank(Bank::A).expect("bank A");
     assert!(bank.has_seen(&one) && !bank.has_seen(&two));
     assert_eq!(bank.covered([&one, &two]), 1);
+    // 调用方缓存 key 集合再算，结果与直接算一致；重复题只算一次。
+    assert_eq!(bank.covered_keys(&question_keys([&one, &two, &one])), 1);
     assert_eq!(bank.stats.answered, 1);
   }
 

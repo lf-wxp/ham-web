@@ -101,24 +101,39 @@
     <!-- KaTeX 公式渲染（自托管，离线可用）：页面里出现 [data-tex] 节点时才按需注入脚本与样式，
          其他页面零开销。wasm 把 KaTeX 源写在节点的 data-tex 上，这里用 MutationObserver
          等节点出现 —— 不依赖 wasm 侧的任何时序（挂载 / 路由切换都覆盖）。
-         加载或渲染失败就保留 Unicode 回退文本，绝不把页面弄坏。 -->
+         加载或渲染失败就保留 Unicode 回退文本，绝不把页面弄坏。
+         渲染结果按 TeX 原文缓存（再进公式页直接贴 HTML，不再排版），且每帧只花 BUDGET 毫秒，
+         没渲染完的下一帧接着做：公式页上百条公式一次排完是一个上百毫秒的长任务。 -->
     <script>
       (() => {
         let state = "idle"; // idle → loading → ready；失败停在 failed（保留回退文本，不重试）
         let queued = false;
         const PENDING = "[data-tex]:not(.katex-done)";
+        const BUDGET = 8;
+        const cache = new Map();
         const render = () => {
-          document.querySelectorAll(PENDING).forEach((el) => {
+          const start = performance.now();
+          for (const el of document.querySelectorAll(PENDING)) {
+            if (performance.now() - start > BUDGET) {
+              schedule();
+              return;
+            }
             el.classList.add("katex-done");
+            const tex = el.getAttribute("data-tex");
             try {
-              window.katex.render(el.getAttribute("data-tex"), el, {
-                throwOnError: false,
-                displayMode: false,
-              });
+              let html = cache.get(tex);
+              if (html === undefined) {
+                html = window.katex.renderToString(tex, {
+                  throwOnError: false,
+                  displayMode: false,
+                });
+                cache.set(tex, html);
+              }
+              el.innerHTML = html;
             } catch {
               /* 保留回退文本 */
             }
-          });
+          }
         };
         const load = () => {
           if (state !== "idle") return;

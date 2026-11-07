@@ -34,6 +34,23 @@ pub(super) fn top_of(question: &QuestionItem) -> &'static str {
     .map_or("其他", |s| s.top)
 }
 
+/// 各一级分类的错题数，按 `TOP_CATEGORIES` 的顺序、只列有错题的分类。
+///
+/// 一遍计数：此前是「每个分类 × 每条错题」各数一遍，页面与诊断面板各做一次 —— 1000 条错题时
+/// 光这一项就是两万次分类查找。
+pub(super) fn category_counts<'a>(
+  records: impl IntoIterator<Item = &'a MistakeRecord>,
+) -> Vec<(&'static str, &'static str, usize)> {
+  let mut by_key: std::collections::HashMap<&'static str, usize> = std::collections::HashMap::new();
+  for m in records {
+    *by_key.entry(top_of(&m.question)).or_default() += 1;
+  }
+  TOP_CATEGORIES
+    .iter()
+    .filter_map(|c| by_key.get(c.key).map(|&n| (c.key, c.name, n)))
+    .collect()
+}
+
 /// 把错题导出为纯文本。
 fn export_text(records: &[MistakeRecord]) -> String {
   let mut s = String::new();
@@ -141,11 +158,11 @@ pub fn MistakesPage() -> impl IntoView {
   let visible = RwSignal::new(PAGE);
   let set_filter = move |v: String| {
     filter.set(v);
-    visible.set(PAGE);
+    crate::debounced::set_if_changed(visible, PAGE);
   };
   let set_bank = move |v: Option<Bank>| {
     bank.set(v);
-    visible.set(PAGE);
+    crate::debounced::set_if_changed(visible, PAGE);
   };
   let list_total = Memo::new(move |_| {
     let (f, b) = list_key.get();
@@ -793,13 +810,7 @@ pub fn MistakesPage() -> impl IntoView {
                 if !filter.get().is_empty() {
                   return view! { <div></div> }.into_any();
                 }
-                let mut counts: Vec<(&'static str, &'static str, usize)> = records.with(|all| {
-                  TOP_CATEGORIES
-                    .iter()
-                    .map(|c| (c.key, c.name, all.iter().filter(|m| in_bank(m) && top_of(&m.question) == c.key).count()))
-                    .filter(|(_, _, n)| *n > 0)
-                    .collect()
-                });
+                let mut counts = records.with(|all| category_counts(all.iter().filter(|m| in_bank(m))));
                 counts.sort_by_key(|(_, _, n)| std::cmp::Reverse(*n));
                 if counts.is_empty() {
                   return view! { <div></div> }.into_any();

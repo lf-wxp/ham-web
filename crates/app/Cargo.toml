@@ -50,6 +50,8 @@ features = [
   "CanvasRenderingContext2d",
   "Clipboard",
   "ClipboardItem",
+  # 输入法组字结束（`ui/input.rs`：组字中不派发，结束时补派一次）
+  "CompositionEvent",
   "CssStyleDeclaration",
   "CustomEvent",
   "CustomEventInit",

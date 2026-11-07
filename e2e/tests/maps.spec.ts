@@ -37,6 +37,11 @@ test("灰线地图：时间偏移联动时钟、滑块与晨昏圈", async ({ pa
   await expect(map).toBeVisible();
   await expect(page.getByText("12:00:00 UTC")).toBeVisible();
   await expect(page.getByText("当前时间")).toBeVisible();
+  // 世界在 x 方向平铺三份：中间那份随页面建，左右两份在之后的帧里补（`map_view` 的 `tiles_built`）。
+  // 快照必须等三份都在：否则「现在」的基线只有一份，回到现在时三份齐了，`toBe(before)` 就永远不等。
+  await expect(
+    map.locator('g[transform="translate(-720 0)"], g[transform="translate(0 0)"], g[transform="translate(720 0)"]'),
+  ).toHaveCount(3);
   const before = await map.innerHTML();
 
   await page.getByRole("radio", { name: "+6h" }).click();

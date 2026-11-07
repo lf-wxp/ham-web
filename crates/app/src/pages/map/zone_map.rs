@@ -40,8 +40,9 @@ pub fn ZoneMap(
       ITU_ZONE_MAX
     }
   });
-  // 全部实体（含无几何者）→ 分区号，供区域着色与中心点标记共用。
-  let zone_of = Signal::derive(move || {
+  // 全部实体（含无几何者）→ 分区号，供区域着色与中心点标记共用。`Memo`：平铺三份、每份读两次，
+  // derive 每读一次就重建一遍 340 项的映射。
+  let zone_of = Memo::new(move |_| {
     let cq = is_cq.get();
     dxcc::entities()
       .iter()

@@ -240,12 +240,10 @@ impl<T: Clone + Default> LoadState<T> {
   }
 }
 
-/// 把 `ReadSignal<LoadState<T>>` 变成下游要的 `Signal<T>`，**只克隆一次**。
+/// 把 `ReadSignal<LoadState<T>>` 变成下游要的 `Signal<T>`。
 ///
-/// 直接写 `Signal::derive(move || load.get().ready_or_default())` 会先克隆整个 `LoadState`
-/// （含全部几何）、再克隆里面的值，等于每次读都复制两份。这里用 `with` 借用 `LoadState`，
-/// 只在取出就绪值时克隆一次 —— 与改动前读 `RwSignal<T>` 的开销相同（切波段 / 日志变化时
-/// 下游会反复读它）。
+/// 地图几何一律以 `Arc` 分发（见 [`load_binary`]），这里每读一次只是加一次引用计数 ——
+/// 此前每读一次都把全部几何深拷贝一份，地图平铺三份、每份叠加层读两三次，进一次地图页就是十几份拷贝。
 pub fn ready_signal<T>(
   load: leptos::prelude::ReadSignal<LoadState<T>>,
 ) -> leptos::prelude::Signal<T>
@@ -256,12 +254,24 @@ where
   Signal::derive(move || load.with(LoadState::ready_or_default))
 }
 
-/// 拉取 `url` 并用 `decode` 解码，返回随结果更新的 [`LoadState`]。
+thread_local! {
+  /// [`load_binary`] 的会话缓存：地址 → 解码结果（`Arc<T>`，按类型擦除存放）。
+  static BINARY: RefCell<HashMap<&'static str, Rc<dyn std::any::Any>>> = RefCell::new(HashMap::new());
+}
+
+/// 拉取 `url` 并用 `decode` 解码，返回随结果更新的 [`LoadState`]（就绪值是共享的 `Arc<T>`）。
 ///
 /// 供「几何二进制」类地图组件共用（`dxcc-entities.bin`、`cn-provinces.bin`）：它们的差别只有
 /// 地址、解码函数与失败时的文案，视图与文案仍由调用方决定。必须在组件体里调用（信号归属于
 /// 当前组件，组件销毁后结果会被丢弃而不是写入已失效的信号）。
-pub fn load_binary<T, F>(url: &'static str, decode: F) -> leptos::prelude::ReadSignal<LoadState<T>>
+///
+/// 解码结果在本次会话内缓存：再进地图页不再下载、解码。缓存命中时也**等新页面第一帧画出来**才交付
+/// （`after_paint`）：地图是一整片 SVG（世界地图上千个多边形），在换页那个任务里同步建完，
+/// 点下链接到新页面出现就要多等这一整片的时间。
+pub fn load_binary<T, F>(
+  url: &'static str,
+  decode: F,
+) -> leptos::prelude::ReadSignal<LoadState<Arc<T>>>
 where
   T: Send + Sync + 'static,
   F: FnOnce(&[u8]) -> Option<T> + 'static,
@@ -270,9 +280,26 @@ where
   use leptos::prelude::*;
 
   let (state, set_state) = signal(LoadState::Loading);
+  let cached = BINARY.with_borrow(|m| {
+    m.get(url)
+      .and_then(|v| Rc::clone(v).downcast::<Arc<T>>().ok())
+      .map(|v| Arc::clone(&v))
+  });
+  if let Some(hit) = cached {
+    crate::after_paint::after_next_paint(move || {
+      let _ = set_state.try_set(LoadState::Ready(hit));
+    });
+    return state;
+  }
   leptos::task::spawn_local(async move {
     let next = match fetch_bytes(url).await {
-      Ok(bytes) => decode(&bytes).map_or(LoadState::Failed, LoadState::Ready),
+      Ok(bytes) => decode(&bytes).map_or(LoadState::Failed, |v| {
+        let v = Arc::new(v);
+        BINARY.with_borrow_mut(|m| {
+          m.insert(url, Rc::new(Arc::clone(&v)));
+        });
+        LoadState::Ready(v)
+      }),
       Err(_) => LoadState::Failed,
     };
     // 组件在请求回来之前就被销毁时，信号已被回收：`try_set` 把值还回来，丢弃即可（`set` 会 panic）。
@@ -533,6 +560,35 @@ pub async fn bank_available(version: Option<&str>, bank: Bank) -> bool {
 }
 
 thread_local! {
+  /// [`bank_question_keys`] 的缓存：（题库数据，它的题目 key 集合）。题库重新加载就是另一个 `Arc`。
+  static BANK_KEYS: RefCell<Vec<(Questions, Rc<std::collections::HashSet<String>>)>> =
+    const { RefCell::new(Vec::new()) };
+}
+
+/// 一份题库的题目 key 集合（会话内缓存，供「题库覆盖率」用）。
+///
+/// 算 key 要对每道题做一次内容指纹：进度页、成就页、备考计划卡每次挂载都要对三个题库各算一遍，
+/// 约 3500 次指纹。题库数据不变（同一个 `Arc`）就复用上次的结果。
+pub fn bank_question_keys(qs: &Questions) -> Rc<std::collections::HashSet<String>> {
+  if let Some(hit) = BANK_KEYS.with_borrow(|c| {
+    c.iter()
+      .find(|(src, _)| Arc::ptr_eq(src, qs))
+      .map(|(_, keys)| Rc::clone(keys))
+  }) {
+    return hit;
+  }
+  let keys = Rc::new(ham_web_core::mistake_book::question_keys(qs.iter()));
+  BANK_KEYS.with_borrow_mut(|c| {
+    // 只留最近几份：换了题库版本后旧版本的集合就没人用了。
+    if c.len() >= 6 {
+      c.remove(0);
+    }
+    c.push((Arc::clone(qs), Rc::clone(&keys)));
+  });
+  keys
+}
+
+thread_local! {
   /// [`all_banks_merged`] 的结果，连同合并时用的三份题库数据。
   /// 拿着原数据（而不是只记地址）比对：只记地址的话，旧数据释放后新数据可能分到同一个地址，误判为命中。
   static MERGED: RefCell<Option<(Vec<Option<Questions>>, Questions)>> = const { RefCell::new(None) };
@@ -611,9 +667,21 @@ pub fn review_explanation(
 }
 
 async fn check_version(version_id: &str) -> VersionStatus {
+  // 配置里带修订号的题库按「可用」算，不为了判断能不能用就把整份题库下载、解析一遍：
+  // 修订号由构建后处理按文件内容写入，文件缺失时构建直接失败（`tools/postbuild.rs`
+  // 的 `stamp_bank_revisions`），所以「有修订号」就等于「文件在」。此前像素风首页的题库选择器
+  // 一进来就把 A / B / C 三个题库（约 3.45 MB JSON）全部解析一遍，只为点亮三个按钮。
+  // 开发环境没有修订号，照旧逐个加载判断；真正用到时加载失败，由各页面的错误提示兜底。
+  let cfg = load_config(false).await.ok();
   let mut available_banks = Vec::new();
   for bank in Bank::ALL {
-    if bank_available(Some(version_id), bank).await {
+    let stamped = match cfg.as_ref() {
+      Some(cfg) => cfg
+        .rev_of(&resolve_url(Some(version_id), bank).await)
+        .is_some(),
+      None => false,
+    };
+    if stamped || bank_available(Some(version_id), bank).await {
       available_banks.push(bank);
     }
   }

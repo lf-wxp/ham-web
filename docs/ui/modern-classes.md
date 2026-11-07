@@ -5,7 +5,7 @@
 > 这里登记了但 CSS 里已经没有（死条目），都会报错。条目写成 `` `md-xxx`(规则数) `` 的形态，
 > 第一列的组名只是分组标签，不参与比对；规则数是近似值，不参与比对。
 
-共 **538** 个类，分 153 组。
+共 **539** 个类，分 153 组。
 
 | 组 | 类（括号内为该类在 CSS 里出现的规则数） |
 |---|---|
@@ -22,7 +22,7 @@
 | `md-bento` | `md-bento`(6) |
 | `md-bookmark` | `md-bookmark-foot`(1) · `md-bookmark-list`(1) |
 | `md-bracket` | `md-bracket`(4) |
-| `md-brand` | `md-brand`(1) · `md-brand-dot`(1) |
+| `md-brand` | `md-brand`(1) · `md-brand-mark`(1) · `md-brand-mark-icon`(1) |
 | `md-btn` | `md-btn`(10) · `md-btn-accent`(7) · `md-btn-danger`(2) · `md-btn-ghost`(2) · `md-btn-icon`(2) · `md-btn-icon-only`(1) · `md-btn-lg`(2) · `md-btn-line`(2) · `md-btn-outline`(2) · `md-btn-quiet`(4) · `md-btn-sm`(3) · `md-btn-text`(2) · `md-btn-wrap`(2) · `md-btn-xs`(2) |
 | `md-bubble` | `md-bubble`(5) · `md-bubble-close`(2) · `md-bubble-text`(1) |
 | `md-bullet` | `md-bullet-dot`(1) |

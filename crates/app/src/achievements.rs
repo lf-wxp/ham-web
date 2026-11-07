@@ -1,5 +1,6 @@
 //! 成就解锁检测与全局提示：在作答 / 交卷等动作后检测新解锁的成就并弹出提示。
 
+use std::cell::Cell;
 use std::collections::HashSet;
 use std::time::Duration;
 
@@ -25,6 +26,8 @@ thread_local! {
   /// 响应式 `Owner` 上并随其清理而释放；这个队列是全站共享的，不能随某个页面 `Owner`
   /// 一起失效。引用计数信号只要还有引用就一直有效。
   static NEW: ArcRwSignal<Vec<&'static Achievement>> = ArcRwSignal::new(Vec::new());
+  /// 日志摘要的 Memo（日志 store 在根组件里登记，见 [`track_logbook`]）。
+  static LOG_SUMMARY: Cell<Option<Memo<LogSummary>>> = const { Cell::new(None) };
 }
 
 /// 打卡状态（精简）。
@@ -34,22 +37,80 @@ struct Checkin {
   streak: usize,
 }
 
+/// 成就判定里只依赖通联日志的那几项（进度页、成就页也用它，不必各自克隆整本日志再数一遍）。
+#[derive(Clone, Default, PartialEq)]
+pub(crate) struct LogSummary {
+  /// 日志里出现过的「最想通联」前缀。
+  pub(crate) logged: HashSet<String>,
+  pub(crate) log_count: usize,
+  pub(crate) grid_count: usize,
+  pub(crate) contest_count: usize,
+}
+
+fn summarize(logbook: &Logbook) -> LogSummary {
+  LogSummary {
+    logged: logbook
+      .entries
+      .iter()
+      .filter_map(|e| wanted_prefix(&e.callsign).map(str::to_owned))
+      .collect(),
+    log_count: logbook.entries.len(),
+    grid_count: logbook
+      .entries
+      .iter()
+      .filter(|e| !e.gridsquare.is_empty())
+      .map(|e| e.gridsquare.as_str())
+      .collect::<HashSet<_>>()
+      .len(),
+    contest_count: logbook
+      .entries
+      .iter()
+      .filter(|e| !e.contest_id.is_empty())
+      .count(),
+  }
+}
+
+/// 让成就检测读内存里的日志（与日志页同一份），摘要挂成 Memo：日志变了才重算。
+///
+/// 此前每答一题都从 `localStorage` 解析整本日志、逐条查前缀 —— 5000 条时这一步占了作答耗时的四成，
+/// 而日志在刷题过程中根本不会变。由日志 store 在根组件里调用一次（`pages::log::provide_log_store`），
+/// Memo 因此挂在根 Owner 上、与应用同寿。
+pub fn track_logbook(logbook: RwSignal<Logbook>) {
+  let memo = Memo::new(move |_| logbook.with(summarize));
+  LOG_SUMMARY.with(|c| c.set(Some(memo)));
+  // Memo 是惰性的：第一次读要把整本日志过一遍。空闲时先算好，别让它落在第一次作答上。
+  crate::after_paint::when_idle(
+    move || {
+      let _ = memo.try_with_untracked(|_| ());
+    },
+    Duration::from_secs(10),
+  );
+}
+
+/// 当前日志的摘要（来自日志 store 上的 Memo；store 还没登记时退回解析快照）。
+pub(crate) fn log_summary() -> LogSummary {
+  LOG_SUMMARY
+    .with(Cell::get)
+    .and_then(|m| m.try_get_untracked())
+    .unwrap_or_else(|| summarize(&storage::get_json("logbook").unwrap_or_default()))
+}
+
+/// 日志里出现过的「最想通联」前缀（首页追台建议卡用；与成就判定同一份 Memo，不重算）。
+pub fn logged_wanted_prefixes() -> HashSet<String> {
+  log_summary().logged
+}
+
 /// 构造成就判定所需的统计摘要（题库覆盖率需异步加载，此处传空）。
 fn build_stats() -> AchStats<'static> {
-  let study = crate::study::load_stats();
+  let total_correct = crate::study::stats_shared().map_or(0, |s| s.total.correct);
   let checkin: Checkin = storage::get_json("daily-checkin").unwrap_or_default();
   let challenge = storage::get_json::<DailyResults>("daily-challenge").map_or(0, |r| r.days.len());
-  let logbook: Logbook = storage::get_json("logbook").unwrap_or_default();
+  let log = log_summary();
 
-  let logged: HashSet<String> = logbook
-    .entries
-    .iter()
-    .filter_map(|e| wanted_prefix(&e.callsign).map(str::to_owned))
-    .collect();
   let done: Vec<String> = storage::get_json("dxcc_wanted_done").unwrap_or_default();
   let dxcc_count = WANTED_ENTITIES
     .iter()
-    .filter(|(p, _, _)| done.iter().any(|x| x.as_str() == *p) || logged.contains(*p))
+    .filter(|(p, _, _)| done.iter().any(|x| x.as_str() == *p) || log.logged.contains(*p))
     .count();
 
   let history = crate::exam_history::load();
@@ -59,31 +120,19 @@ fn build_stats() -> AchStats<'static> {
   let exam_perfect = history
     .iter()
     .any(|r| !r.weak && r.total > 0 && r.correct == r.total);
-  let grid_count = logbook
-    .entries
-    .iter()
-    .filter(|e| !e.gridsquare.is_empty())
-    .map(|e| e.gridsquare.clone())
-    .collect::<HashSet<_>>()
-    .len();
-  let contest_count = logbook
-    .entries
-    .iter()
-    .filter(|e| !e.contest_id.is_empty())
-    .count();
 
   AchStats {
-    total_correct: study.total.correct,
+    total_correct,
     coverages: &[],
     streak: checkin.streak,
     exam_passed,
     exam_perfect,
     challenge_count: challenge,
     dxcc_count,
-    log_count: logbook.entries.len(),
-    grid_count,
-    contest_count,
-    bookmarks: crate::store::load_bookmarks().len(),
+    log_count: log.log_count,
+    grid_count: log.grid_count,
+    contest_count: log.contest_count,
+    bookmarks: crate::store::bookmark_count(),
   }
 }
 

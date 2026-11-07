@@ -26,8 +26,12 @@ fn count<T: Ord>(p: &Progress<T>, confirmed: bool) -> usize {
 /// `apply_open` 由上层持有：本组件在日志页的响应式闭包里创建，日志一变就整体重建，
 /// 展开态放在内部会被重置（见 `DxccApplySheet`）。
 #[component]
-pub(super) fn AwardsPanel(entries: Vec<LogEntry>, apply_open: RwSignal<bool>) -> impl IntoView {
-  let progress = StoredValue::new(AwardProgress::from_entries(&entries));
+pub(super) fn AwardsPanel(
+  /// 按统计口径过滤后的通联。借用读取（不克隆）：上层的 Memo 由统计概览、奖项、网格地图共用。
+  entries: Memo<Vec<LogEntry>>,
+  apply_open: RwSignal<bool>,
+) -> impl IntoView {
+  let progress = StoredValue::new(entries.with_untracked(|e| AwardProgress::from_entries(e)));
   let confirmed = RwSignal::new(false);
 
   view! {

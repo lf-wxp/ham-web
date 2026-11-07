@@ -186,6 +186,11 @@ pub fn load_bookmarks() -> HashSet<String> {
   })
 }
 
+/// 收藏的题数（不克隆集合）。
+pub fn bookmark_count() -> usize {
+  with_bookmarks(HashSet::len)
+}
+
 /// 在缓存的收藏集合上执行 `f`，避免整表克隆。
 fn with_bookmarks<R>(f: impl FnOnce(&HashSet<String>) -> R) -> R {
   with_caches(|c| {

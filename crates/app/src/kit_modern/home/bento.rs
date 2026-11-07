@@ -18,7 +18,8 @@ pub fn Bento() -> impl IntoView {
   let due_foot_text = due_text.clone();
 
   view! {
-    <section class="mt-14">
+    // 焦点卡的圆锥描边是逐帧主线程重绘的动画：滚出视口就暂停（`motion::pause_offscreen_in`）。
+    <section class="mt-14" data-pause-offscreen="">
       <div class="mb-4 flex items-baseline justify-between gap-4">
         <h2 class="md-h2">{move || t("home.quick-actions")}</h2>
       </div>

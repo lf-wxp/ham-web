@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use ham_web_core::most_wanted::{WANTED_ENTITIES, wanted_prefix};
+use ham_web_core::most_wanted::WANTED_ENTITIES;
 use ham_web_core::solar::{PropagationLevel, propagation_level};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -9,7 +9,6 @@ use serde::Deserialize;
 use crate::components::common::SectionCard;
 use crate::data;
 use crate::i18n::{t, tf};
-use crate::pages::log::use_log_store;
 use crate::util::storage;
 
 /// `/api/solar` 返回的传播相关字段。
@@ -46,13 +45,9 @@ fn band_hint(sfi: Option<f64>, k: Option<f64>) -> Option<(&'static str, &'static
 /// 首页追台建议卡：结合实时太阳活动与本地日志缺口，给出「现在适合追什么」。
 #[component]
 pub fn WantedCard() -> impl IntoView {
-  let logged: HashSet<String> = use_log_store()
-    .logbook
-    .get_untracked()
-    .entries
-    .iter()
-    .filter_map(|e| wanted_prefix(&e.callsign).map(str::to_owned))
-    .collect();
+  // 与成就判定共用日志摘要的 Memo（`achievements::track_logbook`）：此前这里把整本日志克隆一遍、
+  // 逐条查前缀，几千条日志时是首页最重的一块。
+  let logged: HashSet<String> = crate::achievements::logged_wanted_prefixes();
   let done: Vec<String> = storage::get_json("dxcc_wanted_done").unwrap_or_default();
 
   let missing: Vec<(&'static str, &'static str, &'static str)> = WANTED_ENTITIES

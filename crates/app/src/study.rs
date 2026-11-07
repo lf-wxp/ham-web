@@ -1,6 +1,7 @@
 //! 错题本与累计答题统计的本地持久化，以及从旧版进度（练习 / 考试存档）的一次性迁移。
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 
 use ham_web_core::mistake_book::{MistakeBook, RecordOutcome, StudyStats, question_key};
 use ham_web_core::question_stats::QuestionStats;
@@ -14,6 +15,8 @@ use crate::{data, store};
 // `note_question_start`，随后 `record_answer` / `record_self_assess` 据此计算本题耗时。
 thread_local! {
   static QUESTION_START: Cell<i64> = const { Cell::new(0) };
+  /// 错题本：（原串，已 rekey 的解析结果），见 [`load_book`]。
+  static BOOK: RefCell<Option<(String, Rc<MistakeBook>)>> = const { RefCell::new(None) };
 }
 
 /// 标记「开始看一道题」；后续单题记录会自动计算从此刻起的耗时。
@@ -41,39 +44,101 @@ const QSTATS_KEY: &str = "question-stats";
 const SEEDED_KEY: &str = "mistake-book:seeded";
 const SEEN_SEEDED_KEY: &str = "study-stats:seen-seeded";
 
-pub fn load_book() -> MistakeBook {
-  let mut book: MistakeBook = storage::get_json(BOOK_KEY).unwrap_or_default();
+/// 错题本（只读共享）。
+///
+/// 每答一题、每进一次错题本 / 首页都要读：重度用户（1000 条，带完整题目快照）每次解析 + rekey 在手机上
+/// 是几十毫秒。所以缓存的是 **rekey 之后**的结果，原串和上次一样就直接返回（判据同
+/// `storage::get_json_shared`：按原串比对，备份导入 / 跨标签页写入不会读到旧值）。
+/// 要改错题本走 [`update_book`]，不要拿这份去 `clone` 再写回。
+pub fn load_book() -> Rc<MistakeBook> {
+  let raw = storage::get(BOOK_KEY);
+  if let Some(raw) = raw.as_deref()
+    && let Some(hit) = BOOK.with_borrow(|c| {
+      c.as_ref()
+        .filter(|(cached, _)| cached == raw)
+        .map(|(_, book)| Rc::clone(book))
+    })
+  {
+    return hit;
+  }
+  let mut book: MistakeBook = raw
+    .as_deref()
+    .and_then(|s| serde_json::from_str(s).ok())
+    .unwrap_or_default();
   // 题库排版归一化（2026-10）后历史 key 会失效：用题目快照重算 key 并归一化快照文本，
-  // 幂等，因此每次加载都顺手做一次即可。
+  // 幂等，所以每次从原串解析出来都顺手做一次（命中缓存时已经做过）。
   if book.rekey() > 0 {
-    save_book(&book);
+    return save_book(book);
+  }
+  let book = Rc::new(book);
+  if let Some(raw) = raw {
+    BOOK.with_borrow_mut(|c| *c = Some((raw, Rc::clone(&book))));
   }
   book
 }
 
-fn save_book(book: &MistakeBook) {
-  storage::set_json(BOOK_KEY, book);
+/// 改错题本：`f` 返回 `true` 表示改过，才整本写回；没改就原样放回缓存。
+///
+/// **契约：只要 `f` 动过错题本，就必须返回 `true`。** 返回 `false` 时这一轮的改动不会写回
+/// （缓存也还是原串），等于静默丢数据。调试构建会对照改前的快照断言这一点，写错的调用在
+/// 开发期就会 panic，而不是上线后丢记录。
+///
+/// 缓存里那份直接让出来给 `f` 改，免一次整本克隆。答对一道不在错题本里的题（最常见的情形）
+/// 错题本不变，此前也要整本序列化写回一次 —— 1000 条时约 600 KB。
+fn update_book(f: impl FnOnce(&mut MistakeBook) -> bool) {
+  let shared = load_book();
+  // 只有调试构建才付这一次整本克隆：用来核对「返回 false = 真没改」。
+  #[cfg(debug_assertions)]
+  let before = (*shared).clone();
+  let raw = BOOK.with_borrow_mut(|c| c.take().map(|(raw, _)| raw));
+  let mut book = Rc::unwrap_or_clone(shared);
+  if f(&mut book) {
+    save_book(book);
+  } else {
+    #[cfg(debug_assertions)]
+    assert!(
+      book == before,
+      "[update_book] 闭包改了错题本却返回 false，这次改动不会被写回"
+    );
+    if let Some(raw) = raw {
+      BOOK.with_borrow_mut(|c| *c = Some((raw, Rc::new(book))));
+    }
+  }
+}
+
+fn save_book(book: MistakeBook) -> Rc<MistakeBook> {
+  let book = Rc::new(book);
+  if let Ok(raw) = serde_json::to_string(&*book) {
+    storage::set(BOOK_KEY, &raw);
+    BOOK.with_borrow_mut(|c| *c = Some((raw, Rc::clone(&book))));
+  }
+  book
 }
 
 pub fn load_stats() -> StudyStats {
-  storage::get_json(STATS_KEY).unwrap_or_default()
+  stats_shared().map_or_else(StudyStats::default, Rc::unwrap_or_clone)
 }
 
-fn save_stats(stats: &StudyStats) {
-  storage::set_json(STATS_KEY, stats);
+/// 学习统计（只读共享，不克隆；缓存见 `storage::get_json_shared`）。
+pub fn stats_shared() -> Option<Rc<StudyStats>> {
+  storage::get_json_shared(STATS_KEY)
+}
+
+fn save_stats(stats: StudyStats) {
+  storage::set_json_shared(STATS_KEY, stats);
 }
 
 /// 加载单题作答统计。
 pub fn load_qstats() -> QuestionStats {
-  storage::get_json(QSTATS_KEY).unwrap_or_default()
+  storage::get_json_shared(QSTATS_KEY).map_or_else(QuestionStats::default, Rc::unwrap_or_clone)
 }
 
-fn save_qstats(stats: &QuestionStats) {
-  storage::set_json(QSTATS_KEY, stats);
+fn save_qstats(stats: QuestionStats) {
+  storage::set_json_shared(QSTATS_KEY, stats);
 }
 
 pub fn load_daily() -> DailyLog {
-  storage::get_json(DAILY_KEY).unwrap_or_default()
+  storage::get_json_shared(DAILY_KEY).map_or_else(DailyLog::default, Rc::unwrap_or_clone)
 }
 
 pub fn load_plan() -> StudyPlan {
@@ -120,15 +185,17 @@ fn record_items<'a>(
 ) -> Vec<RecordOutcome> {
   let now = now_ms();
   let today = local_today();
-  let mut book = load_book();
-  let mut stats = load_stats();
-  let mut qstats = load_qstats();
-  let mut log = daily.then(load_daily);
-  let outcomes: Vec<RecordOutcome> = items
-    .into_iter()
-    .filter_map(|(q, a, dur)| {
+  // 统计类三份都「取出来改、改完写回」（`storage::take_json`）：缓存让出自己那份，不整份克隆。
+  let mut stats: StudyStats = storage::take_json(STATS_KEY).unwrap_or_default();
+  let mut qstats: QuestionStats = storage::take_json(QSTATS_KEY).unwrap_or_default();
+  let mut log: Option<DailyLog> = daily.then(|| storage::take_json(DAILY_KEY).unwrap_or_default());
+  let mut outcomes: Vec<RecordOutcome> = Vec::new();
+  update_book(|book| {
+    for (q, a, dur) in items {
       let new = is_new(&stats, q);
-      let outcome = book.record(q, a, now)?;
+      let Some(outcome) = book.record(q, a, now) else {
+        continue;
+      };
       // 「掌握」= 把这只怪物打倒。放在这个汇总入口而不是各页面里记：练习页、考试、错题复习、
       // 回合战最终都走到这里，图鉴因此不会漏掉任何一条击败途径。
       if matches!(outcome, RecordOutcome::Mastered) {
@@ -140,15 +207,18 @@ fn record_items<'a>(
       if let Some(log) = log.as_mut() {
         log.add(&today, new, dur);
       }
-      Some(outcome)
-    })
-    .collect();
+      outcomes.push(outcome);
+    }
+    // 只有「答对且不在错题本里」时错题本不变：其余结果（答错 / 进度 / 掌握）都改了记录。
+    outcomes
+      .iter()
+      .any(|o| !matches!(o, RecordOutcome::Correct))
+  });
   if !outcomes.is_empty() {
-    save_book(&book);
-    save_stats(&stats);
-    save_qstats(&qstats);
-    if let Some(log) = &log {
-      storage::set_json(DAILY_KEY, log);
+    save_stats(stats);
+    save_qstats(qstats);
+    if let Some(log) = log {
+      storage::set_json_shared(DAILY_KEY, log);
     }
     crate::achievements::detect_new();
   }
@@ -159,39 +229,36 @@ fn record_items<'a>(
 pub fn record_self_assess(q: &QuestionItem, known: bool) {
   let dur = take_duration();
   let now = now_ms();
-  let mut book = load_book();
-  let mut stats = load_stats();
-  let mut qstats = load_qstats();
-  let mut log = load_daily();
+  let mut stats: StudyStats = storage::take_json(STATS_KEY).unwrap_or_default();
+  let mut qstats: QuestionStats = storage::take_json(QSTATS_KEY).unwrap_or_default();
+  let mut log: DailyLog = storage::take_json(DAILY_KEY).unwrap_or_default();
   log.add(&local_today(), is_new(&stats, q), dur);
-  book.record_result(q, known, &[], now);
+  update_book(|book| book.record_result(q, known, &[], now) != RecordOutcome::Correct);
   stats.record(q, known);
   qstats.record(&question_key(q), known, now, dur);
-  save_book(&book);
-  save_stats(&stats);
-  save_qstats(&qstats);
-  storage::set_json(DAILY_KEY, &log);
+  save_stats(stats);
+  save_qstats(qstats);
+  storage::set_json_shared(DAILY_KEY, log);
   crate::achievements::detect_new();
 }
 
 /// 手动移出一道错题。
 pub fn remove_mistake(key: &str) {
-  let mut book = load_book();
-  book.remove(key);
-  save_book(&book);
+  update_book(|book| {
+    let before = book.records.len();
+    book.remove(key);
+    book.records.len() != before
+  });
 }
 
 /// 标注错题错因（`cause` 为空则清除标注）。
 pub fn set_mistake_cause(key: &str, cause: &str) {
-  let mut book = load_book();
-  if book.set_cause(key, cause) {
-    save_book(&book);
-  }
+  update_book(|book| book.set_cause(key, cause));
 }
 
 /// 清空错题本。
 pub fn clear_book() {
-  save_book(&MistakeBook::default());
+  save_book(MistakeBook::default());
 }
 
 /// 把旧版仅存在于练习 / 考试存档中的作答一次性合并进错题本与统计，并补记「做过的题」
@@ -258,11 +325,11 @@ pub async fn ensure_seeded() {
     );
   }
   if need_seen {
-    let mut stats = load_stats();
+    let mut stats: StudyStats = storage::take_json(STATS_KEY).unwrap_or_default();
     for (q, _, _) in &collected {
       stats.mark_seen(q);
     }
-    save_stats(&stats);
+    save_stats(stats);
   }
 }
 

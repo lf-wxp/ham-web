@@ -271,7 +271,10 @@ pub(crate) fn start_global_watcher() {
   set_interval(
     || {
       let n = now_ms();
-      let list = load();
+      // 每秒一次，应用开着就一直跑：按原串缓存解析结果（`get_json_shared`），倒计时没改就不再解析。
+      let Some(list) = crate::util::storage::get_json_shared::<CountdownList>(KEY) else {
+        return;
+      };
       NOTIFIED.with_borrow_mut(|set| {
         for e in &list.events {
           if e.target_ms <= n && set.insert(e.id) {

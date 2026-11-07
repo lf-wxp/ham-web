@@ -220,6 +220,7 @@
   "log.apply": "Aplicar",
   "log.labels": "etiquetas",
   "log.qsls-pending": "QSL pendientes",
+  "log.show-all-pending": "Mostrar las {}",
   "log.essential-information-design-advice": "Información esencial · consejos de diseño",
   "log.print-qsl-labels": "Imprimir etiquetas QSL",
   "log.when-printing-choose-actual": "Al imprimir elige Tamaño real / 100% y desactiva encabezados y pies, o las etiquetas se desalinearán.",

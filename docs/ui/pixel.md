@@ -673,8 +673,8 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
   WAI-ARIA tabs 交互：`←` / `→`（`↑` / `↓`）环形移动**并顺带激活**，`Home` / `End` 跳首尾；
   组内是 roving tabindex（只有激活项在 Tab 序里）—— 与 `ChipGroup` 刻意不做 roving 的选择
   不同：tabs 下面挂着一整块面板，方向键是「换页」，逐项 Tab 过去反而会逐个经过看不见的内容。
-  面板常驻挂载、非激活时 `hidden`：`aria-controls` / `aria-labelledby` 靠组件生成的 id 配对，
-  **页面里不要手写这对 id**。
+  面板外壳常驻、非激活时 `hidden`；面板**内容**第一次被切到时才挂载，之后常驻（切走再切回不丢状态）：
+  `aria-controls` / `aria-labelledby` 靠组件生成的 id 配对，**页面里不要手写这对 id**。
 - **折叠 / 下拉**：`Button` 的 `aria_expanded` / `aria_controls`（面板有 id 时一并给）。
 - **一组按钮里的「当前」**：`Button` 的 `aria_current`（答题卡当前题、分页当前页），
   不要用自定义 class 表达；`aria-current` 只在一处为真。

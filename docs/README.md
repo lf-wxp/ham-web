@@ -60,6 +60,7 @@
 | [`engineering/tasks.md`](engineering/tasks.md) | `cargo make` 任务全集 | 找某个任务 |
 | [`engineering/deployment.md`](engineering/deployment.md) | 本地开发细节、生产构建、Docker、环境变量、Web Push | 构建与部署 |
 | [`engineering/code-quality.md`](engineering/code-quality.md) | **代码质量规范**：分层边界、单一来源、**门禁一览（§2）**、问题分级与证据口径、分范围检查清单 | 提交前 / 做审查 |
+| [`engineering/performance.md`](engineering/performance.md) | **性能**：测量档位（构建 / 降速 / 数据量）与阈值、真机测量与回归用例、性能问题台账与代码审查复核台账（带整改状态）、常驻缓存清单 | 页面卡顿 / 查整改进度 / 加缓存 |
 | [`engineering/licensing.md`](engineering/licensing.md) | 许可、第三方声明、GPL 例外与部署方义务 | 引入依赖 / 字体 / 分发 |
 
 ### data / 数据与内容
