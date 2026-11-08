@@ -898,6 +898,109 @@ fn selectors(css: &str, keep: impl Fn(&str) -> bool) -> Vec<(usize, String)> {
   out
 }
 
+/// 文件是否「会进现代风」（共享文件）。
+///
+/// 判定是文本启发式，**宁可多扫**：出现 `is_modern` / `kit::` / `crate::ui::` /
+/// `components::common::` 任一个就算共享。后两个不能省 —— 只用共享控件（`ui::Button`、
+/// `common::EmptyState`）而不显式引用 `kit::` 的页面同样会进现代风，漏判会让无条件的
+/// `border bg-inset` 从这里溜过去；误判的代价只是多扫几行（那些文件里本来也没有这种写法，
+/// 有的话正是这条规则要抓的）。
+fn is_shared_file(joined: &str) -> bool {
+  joined.contains("is_modern")
+    || joined.contains("kit::")
+    || joined.contains("crate::ui::")
+    || joined.contains("components::common::")
+}
+
+/// 无条件的 `class="…"` 字面量：同时含 `border` 与 `bg-inset` 两个类名（顺序不限、可跨行）。
+/// 返回 `(起始行号, 字面量压成一行的样子)`；非共享文件返回空。
+fn unconditional_inset_blocks(code: &[&str]) -> Vec<(usize, String)> {
+  static CLASS_LITERAL: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"class="([^"]*)""#).expect("class 字面量正则应能编译"));
+  let joined = code.join("\n");
+  if !is_shared_file(&joined) {
+    return Vec::new();
+  }
+  CLASS_LITERAL
+    .captures_iter(&joined)
+    .filter_map(|c| {
+      let body = c.get(1)?;
+      let has = |name: &str| body.as_str().split_whitespace().any(|t| t == name);
+      if !(has("border") && has("bg-inset")) {
+        return None;
+      }
+      let line = joined[..body.start()].matches('\n').count() + 1;
+      let one_line = body
+        .as_str()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+      Some((line, format!("class=\"{one_line}\"")))
+    })
+    .collect()
+}
+
+/// 共享页面里不许再出现「像素式内嵌块」：`class="… border bg-inset …"`。
+///
+/// 为什么需要（台账 C1）：`bg-inset` 是像素风的凹陷块（1px 墨框 + 灰底 + 直角），
+/// 在现代风里只能靠 `legacy-utilities.css` 把它映射成「灰底 + 6px 圆角」，看起来仍像
+/// **像素页面换了配色**。现代风的内嵌块是 `.md-tile`（12px 内距、`--md-r-md` 圆角、悬停时描边转橙）。
+///
+/// 判据是「**无条件下**写在这一个 `class="…"` 字面量里」：字面量里同时有 `border` 与 `bg-inset`
+/// 两个类名（顺序不限、可跨行）。按皮肤派发的写法
+/// （`class=if crate::kit::is_modern_at_mount() { "md-tile …" } else { "border bg-inset …" }`）
+/// 里右侧那串在 else 分支、不带 `class="` 前缀，不会被这条命中。像素专用文件（没有 `is_modern`
+/// 引用）同样豁免优先级 —— 它们根本不进现代风。
+fn check_pixel_inset_blocks(root: &Path) -> bool {
+  if !require_dir(root, "crates/app/src", "像素式内嵌块") {
+    return false;
+  }
+  let mut files = 0usize;
+  let mut report: Vec<String> = Vec::new();
+  for entry in WalkDir::new(root.join("crates/app/src"))
+    .sort_by_file_name()
+    .into_iter()
+    .filter_map(Result::ok)
+  {
+    let path = entry.path();
+    if !entry.file_type().is_file() || path.extension().is_none_or(|e| e != "rs") {
+      continue;
+    }
+    let rel = path
+      .strip_prefix(root)
+      .unwrap_or(path)
+      .to_string_lossy()
+      .replace('\\', "/");
+    let Ok(text) = std::fs::read_to_string(path) else {
+      continue;
+    };
+    files += 1;
+    let code: Vec<&str> = text.lines().map(code_part).collect();
+    for (line, snippet) in unconditional_inset_blocks(&code) {
+      report.push(format!("    {rel}:{line}  {snippet}"));
+    }
+  }
+
+  if !scanned_ok(files, "像素式内嵌块") {
+    return false;
+  }
+  if report.is_empty() {
+    println!("✓ 像素式内嵌块：共享页面都用 `.md-tile` 或按皮肤派发");
+    return true;
+  }
+  println!(
+    "✗ 像素式内嵌块：{} 处无条件的 `border bg-inset`",
+    report.len()
+  );
+  for line in report.iter().take(MAX_REPORT) {
+    println!("{line}");
+  }
+  println!(
+    "    → 改成 `class=if crate::kit::is_modern_at_mount() {{ \"md-tile …\" }} else {{ \"border bg-inset …\" }}`；见 docs/ui/modern-review.md 的 C1"
+  );
+  false
+}
+
 /// 反向隔离：**像素专用文件**里不能出现 `md-*` 类名。
 ///
 /// 判定「像素专用」的口径很保守：文件里出现 `pxl-` 类名，且完全没有 `is_modern` / `kit::`
@@ -1537,11 +1640,11 @@ fn check_important_marker(root: &Path) -> bool {
   false
 }
 
-/// 现代风视口断点白名单：`docs/ui/modern.md` §3 的「五档」+ 底部 dock 的 768。
+/// 现代风视口断点白名单：`docs/ui/modern.md` §3 的「五档」+ 底部 dock 的 768 + 顶栏折叠的 360。
 ///
 /// 曾漂移出 899（900 的「减一」反模式，同 639）、767（768 的减一）、860、960 这些
 /// 非档位值 —— `ui_check` 只拦页面 class 里的 `min-[NNNpx]:`，拦不到裸 `@media`。
-const MODERN_BREAKPOINTS: [u32; 6] = [480, 640, 720, 768, 900, 1024];
+const MODERN_BREAKPOINTS: [u32; 7] = [360, 480, 640, 720, 768, 900, 1024];
 
 /// 匹配 `@media CONDITION {`：`[^\{]*` 能跨行吃到第一个 `{` 前的条件部分。
 static MEDIA_QUERY: LazyLock<Regex> =
@@ -1669,7 +1772,7 @@ fn check_modern_breakpoints(root: &Path) -> bool {
     return false;
   }
   if report.is_empty() && overlaps.is_empty() {
-    println!("✓ 现代风断点：视口断点都在五档 + 768 白名单内，同一值的上下界不重叠");
+    println!("✓ 现代风断点：视口断点都在 360 + 五档 + 768 白名单内，同一值的上下界不重叠");
     return true;
   }
   if !report.is_empty() {
@@ -1678,7 +1781,7 @@ fn check_modern_breakpoints(root: &Path) -> bool {
       println!("{line}");
     }
     println!(
-      "    → 视口断点只有 480/640/720/900/1024 五档 + 底部 dock 的 768；窄屏档写 640 不写 639（同理不写 899/767），见 docs/ui/modern.md §3"
+      "    → 视口断点只有 480/640/720/900/1024 五档 + 底部 dock 的 768 + 顶栏折叠的 360；窄屏档写 640 不写 639（同理不写 899/767），见 docs/ui/modern.md §3"
     );
   }
   if !overlaps.is_empty() {
@@ -1690,6 +1793,103 @@ fn check_modern_breakpoints(root: &Path) -> bool {
       "    → 「≥ X」与「≤ X」都含 X：上界改写成 `(width < Xpx)`，或用范围语法 `(Apx <= width < Xpx)`，见 docs/engineering/code-quality.md 的守卫表"
     );
   }
+  false
+}
+
+/// 把现代风的 kit 样式读成一份文本：入口 `kit.css`（约定 + `@import`）+ `kit/` 下的分域文件。
+///
+/// 台账 C4 之后 `kit.css` 只剩约定与导入，规则在 `kit/*.css` 里。任何「在 kit.css 里找某条声明」
+/// 的门禁都必须走这个函数，否则会退化成空转（文件里当然找不到 —— 但它找的东西其实还在）。
+fn read_modern_kit(root: &Path) -> Option<String> {
+  let entry = root.join("crates/app/style/modern/kit.css");
+  let mut out = std::fs::read_to_string(entry).ok()?;
+  let dir = root.join("crates/app/style/modern/kit");
+  let mut files: Vec<std::path::PathBuf> = std::fs::read_dir(dir)
+    .ok()
+    .into_iter()
+    .flatten()
+    .filter_map(Result::ok)
+    .map(|e| e.path())
+    .filter(|p| p.extension().is_some_and(|x| x == "css"))
+    .collect();
+  files.sort();
+  for f in files {
+    if let Ok(text) = std::fs::read_to_string(&f) {
+      out.push('\n');
+      out.push_str(&text);
+    }
+  }
+  Some(out)
+}
+
+/// 对比入口文件的 `@import` 列表与目录里的分片。
+/// 返回 `(已导入的文件名, 在目录里却没导入的, 导入了却不存在的)`，三者都已排序。
+fn diff_kit_imports(
+  entry: &str,
+  mut on_disk: Vec<String>,
+) -> (Vec<String>, Vec<String>, Vec<String>) {
+  static KIT_IMPORT: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"@import\s+"\./kit/([^"]+)""#).expect("导入正则应能编译"));
+  on_disk.sort();
+  let mut imported: Vec<String> = KIT_IMPORT
+    .captures_iter(entry)
+    .map(|c| c[1].to_owned())
+    .collect();
+  imported.sort();
+  let not_imported = on_disk
+    .iter()
+    .filter(|n| !imported.contains(n))
+    .cloned()
+    .collect();
+  let missing_file = imported
+    .iter()
+    .filter(|n| !on_disk.contains(n))
+    .cloned()
+    .collect();
+  (imported, not_imported, missing_file)
+}
+
+/// `kit.css` 的 `@import` 列表必须与 `kit/` 目录里的分片**完全一致**。
+///
+/// 只有 `@import` 进入口的分片才会进构建产物。新分片忘了写 `@import` 时：源码里「有」这份样式、
+/// 读目录的 [`read_modern_kit`] 也读得到、单测照常绿 —— 但产物里没有它，
+/// 表现为「改了半天没生效」。反方向（`@import` 指向不存在的文件）Trunk 会报错，
+/// 但那时报的是一句路径错误，不如这里直接点名。
+fn check_modern_kit_imports(root: &Path) -> bool {
+  let Ok(entry) = std::fs::read_to_string(root.join("crates/app/style/modern/kit.css")) else {
+    println!("✗ 现代风 kit 分片导入：读不到 style/modern/kit.css（改名或搬家了？）");
+    return false;
+  };
+  let Ok(dir) = std::fs::read_dir(root.join("crates/app/style/modern/kit")) else {
+    println!("✗ 现代风 kit 分片导入：读不到 style/modern/kit/");
+    return false;
+  };
+  let on_disk: Vec<String> = dir
+    .filter_map(Result::ok)
+    .map(|e| e.file_name().to_string_lossy().into_owned())
+    .filter(|n| n.ends_with(".css"))
+    .collect();
+  let (imported, not_imported, missing_file) = diff_kit_imports(&entry, on_disk.clone());
+
+  if not_imported.is_empty() && missing_file.is_empty() {
+    println!(
+      "✓ 现代风 kit 分片导入：{} 个分片与 `@import` 一一对应",
+      imported.len()
+    );
+    return true;
+  }
+  println!(
+    "✗ 现代风 kit 分片导入：目录 {} 个、`@import` {} 个",
+    on_disk.len(),
+    imported.len()
+  );
+  for name in &not_imported {
+    println!("    {name} 在 kit/ 里但没有 `@import`（样式不会进产物）");
+  }
+  for name in &missing_file {
+    println!("    {name} 被 `@import` 但文件不存在（构建会报错）");
+  }
+  println!("    → kit.css 只放约定与 `@import`，分片文件与导入列表一一对应，顺序即级联");
   false
 }
 
@@ -1710,9 +1910,9 @@ fn check_prose_type_scale(root: &Path) -> bool {
   static EM_ONLY: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[0-9.]+em$").expect("单位正则应能编译"));
 
-  let (Ok(tokens_raw), Ok(kit_raw), Ok(doc)) = (
+  let (Ok(tokens_raw), Some(kit_raw), Ok(doc)) = (
     std::fs::read_to_string(root.join("crates/app/style/modern/tokens.css")),
-    std::fs::read_to_string(root.join("crates/app/style/modern/kit.css")),
+    read_modern_kit(root),
     std::fs::read_to_string(root.join("docs/ui/modern.md")),
   ) else {
     println!("✗ 阅读正文规范：缺 tokens.css / kit.css / docs/ui/modern.md（改名或搬家了？）");
@@ -2275,6 +2475,9 @@ pub fn check(root: &Path) -> Result<()> {
   if !check_pixel_isolation(root) {
     failed.push("反向隔离（像素文件里的现代类名）".to_owned());
   }
+  if !check_pixel_inset_blocks(root) {
+    failed.push("像素式内嵌块".to_owned());
+  }
   if !check_eager_style_call(root) {
     failed.push("风格读取闭包被立即调用".to_owned());
   }
@@ -2298,6 +2501,9 @@ pub fn check(root: &Path) -> Result<()> {
   }
   if !check_single_presence(root) {
     failed.push("延迟卸载只有一份".to_owned());
+  }
+  if !check_modern_kit_imports(root) {
+    failed.push("现代风 kit 分片导入".to_owned());
   }
   if !check_modern_class_index(root) {
     failed.push("现代风类名索引".to_owned());
@@ -2429,6 +2635,65 @@ const FRAME_MS: u64 = 16;
   }
 
   use super::*;
+
+  #[test]
+  fn kit_imports_must_match_the_directory_both_ways() {
+    let entry = "@import \"./kit/01-a.css\";\n@import \"./kit/02-b.css\";\n/* @import \"x\" */";
+    let names = |v: &[&str]| v.iter().map(|s| (*s).to_owned()).collect::<Vec<_>>();
+
+    let (imported, extra, missing) = diff_kit_imports(entry, names(&["02-b.css", "01-a.css"]));
+    assert_eq!(imported, names(&["01-a.css", "02-b.css"]));
+    assert!(extra.is_empty() && missing.is_empty());
+
+    // 目录里多一个、忘了 `@import`：样式不会进产物。
+    let (_, extra, missing) = diff_kit_imports(entry, names(&["01-a.css", "02-b.css", "03-c.css"]));
+    assert_eq!(extra, names(&["03-c.css"]));
+    assert!(missing.is_empty());
+
+    // `@import` 指向不存在的文件。
+    let (_, extra, missing) = diff_kit_imports(entry, names(&["01-a.css"]));
+    assert!(extra.is_empty());
+    assert_eq!(missing, names(&["02-b.css"]));
+  }
+
+  #[test]
+  fn inset_blocks_are_caught_in_shared_files_in_any_order_and_across_lines() {
+    let bad = [
+      "use crate::kit::tile_class;",
+      "view! { <div class=\"flex border bg-inset p-3\"></div> }",
+      "view! { <div class=\"bg-inset px-2 border\"></div> }",
+      "view! { <div class=\"flex",
+      "  border bg-inset\"></div> }",
+    ];
+    let hits = unconditional_inset_blocks(&bad);
+    assert_eq!(hits.iter().map(|h| h.0).collect::<Vec<_>>(), vec![2, 3, 4]);
+    assert!(hits[2].1.contains("border bg-inset"), "{hits:?}");
+  }
+
+  #[test]
+  fn inset_blocks_skip_dispatched_pixel_only_and_lookalike_classes() {
+    // 按皮肤派发：else 分支的字面量不带 `class="` 前缀。
+    let dispatched = [
+      "use crate::kit::is_modern_at_mount;",
+      "class=if is_modern_at_mount() { \"md-tile\" } else { \"border bg-inset p-3\" }",
+    ];
+    assert!(unconditional_inset_blocks(&dispatched).is_empty());
+    // 像素专用文件：没有任何共享信号，现代风渲染不到。
+    let pixel_only = ["view! { <div class=\"border bg-inset p-3 pxl-card\"></div> }"];
+    assert!(unconditional_inset_blocks(&pixel_only).is_empty());
+    // 只含 `border-t` / `bg-inset-foo` 这类相近类名，不是同名类。
+    let lookalike = [
+      "use crate::ui::Button;",
+      "view! { <div class=\"border-t bg-inset-x\"></div> }",
+    ];
+    assert!(unconditional_inset_blocks(&lookalike).is_empty());
+    // 只用共享控件、不引用 `kit::` 的页面同样算共享（M6 的漏判方向）。
+    let ui_only = [
+      "use crate::ui::Button;",
+      "view! { <div class=\"border bg-inset\"></div> }",
+    ];
+    assert_eq!(unconditional_inset_blocks(&ui_only).len(), 1);
+  }
 
   #[test]
   fn selector_lists_are_split_at_top_level_commas_only() {

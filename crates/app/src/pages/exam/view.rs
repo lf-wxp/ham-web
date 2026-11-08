@@ -531,9 +531,13 @@ pub fn ExamPage() -> impl IntoView {
         .into_any();
     }
     if store.questions.with(|q| q.is_empty()) {
+      // 「题库里没有题」是**空态**，不是错误：`role="alert"` 会让读屏把它当紧急告警念出来，
+      // 而这时用户没有任何操作失败（台账 A3）。
       return view! {
         <PageContainer class="space-y-0">
-          <div class="p-6" role="alert">{move || t("exam.question-bank-unavailable-or")}</div>
+          <crate::components::common::EmptyState
+            title=Signal::derive(move || t("exam.question-bank-unavailable-or"))
+          />
         </PageContainer>
       }
       .into_any();

@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_num};
+use super::{fmt_num, result_class};
 use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField, RadioGroup, RadioGroupItem};
 use crate::util::unique_id;
@@ -43,7 +43,7 @@ pub(super) fn CwBandwidth() -> impl IntoView {
           {move || t("tools.non-fading-k-3")}
         </label>
       </RadioGroup>
-      <div class=RESULT>
+      <div class=result_class()>
         {move || {
           let k = if fading.get() { 5.0 } else { 3.0 };
           let b = wpm.get() / 1.2;

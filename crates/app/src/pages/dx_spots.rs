@@ -325,7 +325,7 @@ pub fn DxSpotsPage() -> impl IntoView {
             {move || {
               show_alerts.get().then(|| {
                 view! {
-                  <div class="space-y-3 border bg-inset p-3">
+                  <div class=crate::kit::tile_class("space-y-3")>
                     <div class="flex flex-wrap gap-x-5 gap-y-2">
                       // 两个开关各写一遍而不是抽 `toggle(label, …)` 闭包：词条字面量必须写在
                       // `t()` 的直接实参位，`check-i18n` 只采集直接调用，经参数中转会漏检。

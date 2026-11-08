@@ -199,7 +199,9 @@ ease    --md-ease（标准）· --md-ease-out（入场）
 
 ## 3. 布局与页面骨架
 
-- 页宽：`--md-page-max` = **1200px**（`kit.css` 把 `.max-w-5xl` 覆盖成它，页头 / 正文 / 页脚 / 底部工具条一起换）。
+- 页宽：`--md-page-max` = `var(--page-max)` = **1200px**（`--page-max` 定义在 `style/input.css`，
+  像素风的 `max-w-5xl` 也取它 —— 两套皮肤版心同宽）；`08-motion.css` 把 `.max-w-5xl`
+  覆盖成它，页头 / 正文 / 页脚 / 底部工具条一起换。顶栏 `.md-nav-inner` 同样只取这一个值。
 - 页头：`kit_modern::ModernPageHead`（标题 + 副标题 + 右侧操作区 + 下方工具条），**不要页面里手写 `<h1>`**。
 - 断点：见下面「断点与固定层」。
 - 滚动：整页一条滚动条（**自绘**，见下）；页内第二根吸顶栏用 `common::StickyPanel`，**页面里不要手写 `sticky top-[…]`**。
@@ -227,11 +229,12 @@ ease    --md-ease（标准）· --md-ease-out（入场）
 
 ### 断点与固定层
 
-**视口断点**：`480 / 640 / 720 / 900 / 1024` 五档，外加**外壳的 768**（底部 dock 与页内菜单按钮）。`check-structure`
-的「现代风断点」按这六个值做白名单（识别小数、`em` / `rem`、范围语法）。
+**视口断点**：`480 / 640 / 720 / 900 / 1024` 五档，外加**外壳的两个**：768（底部 dock 与页内菜单按钮）与 360（顶栏品牌文字折叠）。`check-structure`
+的「现代风断点」按这七个值做白名单（识别小数、`em` / `rem`、范围语法）。
 
 | 档位 | 用途 |
 |---|---|
+| 360 | 窄屏顶栏：品牌**只留站标**（文字收进 `aria-label`），给右侧操作区腾出余量 |
 | 480 | 手机横屏 / 极窄屏的最后一次降列 |
 | 640 | 手机与平板的分界（`max-width` 的窄屏档一律写 **640**，不写 639） |
 | 720 | 窄平板的排版档 |
@@ -322,7 +325,13 @@ ease    --md-ease（标准）· --md-ease-out（入场）
 | `.md-tablist` / `.md-tab` | 页签（底边一条线，激活项渐变下划线） |
 | `.md-pagination` / `.md-page-btn` | 分页（32px 方块，`data-current="true"` 实心） |
 | `.md-mon`（+ `md-mon-svg` / `md-mon-idle` / `md-mon-hit`） | 怪物插画（`kit_modern::ModernMonster`）：圆角外框 + 同色辉光 + 矢量角色，形态按像素精灵名（`mon_*` / `boss` / `hero`）选定，配色由 `data-tone` 给出；`md-mon-idle` / `md-mon-hit` 是战斗里的待机 / 受击动效（减弱动态偏好下静止）。图鉴、战斗舞台、地图下一关共用 |
+| `.md-tile` | 内嵌小块：一组等价的读数（点划符号卡、时值格、公式卡）。`--md-surface-2` 底 + 1px 描边 + `--md-r-md`；可点的 `<button>` / `<a>` 自带悬停（描边转 `--md-accent-line`）。**不要**用它替代 `.md-panel` —— 它是「面板里的一堆小块」，不是容器 |
+| `.md-formula` | 公式读数：等宽 + 墨色。**不用行动色**（一页几十条公式，全染橙会废掉「一屏一个焦点」）；与正文的区分靠字体不靠颜色 |
 | `.md-q-row*` | 分类浏览、收藏集与错题集共用的题目卡片（`.md-q-row-head` 装标签行、`.md-q-row-text` 是题干、`.md-q-row-tag` 是分类胶囊；收藏集在卡片末尾追加 `.md-bookmark-foot` 分组 / 笔记操作区，错题集追加 `.md-mistake-foot`（三行：我的答案 / 考点 / 同类题再练，复习进度，错因自评 + 移出；各行自己 `flex-wrap`，320px 下三语都不撑出卡片），都不另画题目版式；错题集还通过 `chosen` 把用户当时选的项标上 `.md-q-row-chosen`「我的选择」，选错的另加红色左线）。**标签行与题干必须是两个块级行**：标签与题干同处一个 flex 行时，题干首行被胶囊推到右边、换行后回到卡片内沿，左边缘就成了锯齿。判据见 `modern_ui.spec.ts` 的「题目行」 |
+
+> **卡片只有一枚「这里是一块」的记号**：内容卡用 `.md-panel::before` 的左上角标（默认行动色，
+> 带 `--tone` 时跟随模块色）；页面级**索引卡**（`.md-tools-index` 这类吸顶目录）用 3px 行动色顶边，
+> 并把角标关掉（`content: none`）。两者叠在同一张卡上会互相削弱 —— 曾经工具页的索引卡同时有顶边与角标。
 
 ### 4.4 弹层与导航
 
@@ -409,7 +418,7 @@ kit::table_cell_class("align-top") // 现代：只有 extra / 像素：border px
 | `@supports selector()` | 83 | 69 | 14.1 | 回退机制本身，比 `:has()` 早得多 |
 | `@property` | 85 | 128 | 16.4 | 渐进：缺失时焦点卡 hover 的颜色变化是「切」而不是「过渡」 |
 | `animation-timeline` | 115 | 159 | 26 | 渐进：已在 `@supports` 内，缺失时无滚动视差 / 脊柱进度 |
-| View Transitions | 109 | 144 | 18 | 渐进：`view_transition.rs` 先检测 `startViewTransition` |
+| View Transitions | 109 | 144 | 18 | **未使用**：调谐台跳转曾用，因拍快照冻结数秒已改回普通换页（`interaction.md` 硬约束 1、台账 C10） |
 
 **合起来的下限：Chrome 111 / Firefox 113 / Safari 16.4。** 低于它的浏览器没有支持承诺。
 `:has()` 会把 Firefox 的下限从 113 抬到 121，这是**刻意避开的** —— 所以有下面的规矩。
@@ -446,7 +455,7 @@ cd e2e && npx playwright test tests/modern_ui.spec.ts tests/modern_a11y.spec.ts
 | 状态色字面值 | 红 / 琥珀色相（含橙）的十六进制只能写在 `tokens.css`；品牌渐变等例外同行写 `/* color-ok: 理由 */` |
 | 退场时长走 token | 退场动画（关键帧名 `*-out` / `*-out-only`、非无限循环）的时长必须是 `var(--…)`，不能写 `180ms`；路由过渡之类不走延迟卸载的同行写 `/* dur-ok: 理由 */`。两套皮肤的 CSS 都扫 |
 | 延迟卸载只有一份 | `crates/app/src` 里只有 `presence.rs` 能定义 `*EXIT_MS` 常量 |
-| 视口断点 | 只能取 480 / 640 / 720 / 768 / 900 / 1024（识别小数、`em` / `rem`、范围语法） |
+| 视口断点 | 只能取 360 / 480 / 640 / 720 / 768 / 900 / 1024（识别小数、`em` / `rem`、范围语法） |
 | 类名索引 | `style/modern/` 下全部 CSS 声明的 `md-*` 与 `docs/ui/modern-classes.md` **精确双向**一致 |
 | 弹层三件套 | 带 `data-modal-root` 的面板必须装齐焦点 / 滚动锁 / Esc |
 | 文档内链 | 相对链接与 `docs/xxx.md §N` 小节引用都要真实存在 |
@@ -578,4 +587,33 @@ node e2e/audit/dual_sweep.mjs modern && node e2e/audit/dual_sweep.mjs pixel
 | [`docs/ui/modern-classes.md`](./modern-classes.md) | `md-*` 类名索引（手工维护，门禁精确双向校验） |
 | [`docs/ui/decisions.md`](./decisions.md) | 设计取舍（为什么两套独立 Kit）；规范冲突时以本文件为准 |
 | `crates/app/src/ui/README.md` | 组件 API 清单（「有什么」） |
-| `crates/app/style/modern/kit.css` | 现代风组件样式（8000+ 行，按类名分区） |
+| `crates/app/style/modern/kit.css` | 现代风样式**入口**：只放约定（视觉语言 / 断点刻度）与 `@import`，不写规则 |
+| `crates/app/style/modern/kit/` | 现代风规则本体，11 个分域文件（见下「样式文件怎么排」） |
+
+### 样式文件怎么排（`kit/` 的 11 个分片）
+
+原来是一个 9900 行的 `kit.css`，2026-11 按**连续切片**拆成 11 个文件（台账 C4）：
+
+| 文件 | 内容 |
+|---|---|
+| `01-base.css` | 外壳 / 滚动条 / 按钮 / 输入 / 卡片 / 标题 / 图标底座 |
+| `02-question.css` | 题卡与练习·考试：题面、选项、操作栏、解析与设置弹层 |
+| `03-atmosphere.css` | 签名视觉与站点氛围：极光、频谱、VFO 刻度盘、弹层退场 |
+| `04-overlay.css` | 调谐台面板、Portal 字体兜底、原生新能力（容器查询 / 锚点定位） |
+| `05-menu.css` | 全站目录面板（「更多」） |
+| `06-polish.css` | 首屏节奏、卡片层级、移动端信息条与判分反馈 |
+| `07-bridge.css` | 像素工具类 → 现代 token 的桥接（只写 `html[data-ui-style="modern"]` 门禁的层外规则） |
+| `08-motion.css` | 动效层、路由切换、版心与版面骨架 |
+| `09-page-head.css` | 现代页头（`ModernPageHead`）与首屏模块 |
+| `10-narrow.css` | 窄屏控件收敛（≤640 字号 / 粗指针命中区）、转圈图标 |
+| `11-tables.css` | 表格、窄屏题卡密度、小屏首屏 |
+
+**顺序即级联，这是硬约束**：`@layer components` 的同名块按 `@import` 顺序拼接，同层同优先级的规则靠「谁写在后面」决胜负。所以：
+
+- 拆分只做**连续切片 + 末尾追加**：先按行序切出各分片，新规则追加到对应分片末尾、不插进切片中间。
+  拼接结果**不是**原文件的逐字节复刻（每个分片有自己的文件头，尾部还带新增规则），
+  但同层同名规则的**源顺序**必须与原文件一致（复核方式见台账 C4）；
+- **不要按主题重排文件**，也不要随意调换 `@import` 顺序 —— 这类回归截图看不出来，只表现为「某处间距 / 颜色莫名变了」；
+- 新增样式追加到对应主题文件的**末尾**；跨主题的新组件另起文件并追加到 `@import` 列表**末尾**。
+- 分片文件与 `@import` 列表由 `check-structure` 的「现代风 kit 分片导入」守卫**双向**校验：
+  目录里多一个文件（忘了 `@import`，样式不会进产物）或 `@import` 指向不存在的文件都会红。

@@ -1,0 +1,573 @@
+/* ============================================================
+   动效层、路由切换、版心与版面骨架（章节尺 + 编号）
+   ------------------------------------------------------------
+   原 `kit.css` 第 6121–6681 行（8/11 段，台账 C4 的分域拆分）。
+
+   **顺序即级联**：本目录下的文件由 `../kit.css` 按 01→11 顺序 `@import`，
+   同名 `@layer components` 按这个顺序拼接。**不要按主题重排文件**：同层同优先级的
+   规则靠源顺序决胜负，换顺序会悄悄改掉某个组件的最终取值。新增样式追加到对应
+   主题文件的末尾；跨主题的新组件另起文件并追加到 `@import` 列表**末尾**。
+   ============================================================ */
+
+/* ============================================================
+   动效层：入场 / 悬浮 / 按压 / 逐页签名
+   ------------------------------------------------------------
+   曲线与时长全部取自 token（`--md-ease` / `--md-ease-out` / `--md-dur*`）：
+   全站只有这一套手感，「每页不一样」靠第五节那几个签名类，而不是各页自己发明缓动 ——
+   换页面像换 App 是这类改造最容易翻的车。
+
+   所有位移都用独立的 `translate` / `scale` 属性，不用 `transform`：
+   入场动画占着 `transform`，两者各占一个属性才不会互相覆盖。
+   ============================================================ */
+
+/* ---------- 1) 滚动浮现 ----------
+   `[data-reveal]` 由 `motion.rs` 打上，`.js-motion` 只在「能播动效」时挂到 `<html>`
+   （系统偏好 / 设置 / 无 IntersectionObserver 都不挂）。两者都在时才隐藏，
+   所以脚本没跑起来时内容只是「没有动画」，不会停留在透明态。
+
+   现代风只给**登记时在折叠线以下**的块做浮现（`motion::reveal_below_fold`）：已经画在屏幕上的
+   直接记为 `in`，不再「藏起来重播一次」—— 平滑曲线下那一下会被看成闪烁。
+
+   `.js-motion` 写在 `html` 自己身上（`html[…].js-motion`），不是后代选择器：这个类由
+   `motion::set_motion_ready` 挂在 `<html>` 上。这条规则曾写成 `html[…] .js-motion […]`，
+   从来没生效过，现代风一直在用像素风的 4 格跳变（`pixel/motion.css`）。
+
+   时长只用 token、幅度 12px：浮现是「滚到了，内容落位」的提示，不是表演 ——
+   曾经的 520 / 640ms 比换页本身还长。不透明度用 `--md-dur`（先看得清），位移用 `--md-dur-slow`
+   收尾。**隐藏不加过渡**（过渡只写在 `in` 上）：
+   藏起来的块都在屏幕外，播一段淡出只是白占主线程。不写 `will-change`：工具页一次会藏
+   几十个面板，每个都提升成合成层是白占显存，浏览器在过渡开始时会自己提升。 */
+html[data-ui-style="modern"].js-motion [data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 12px, 0);
+  transition: none;
+  will-change: auto;
+}
+
+html[data-ui-style="modern"].js-motion [data-reveal="in"] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--md-dur) var(--md-ease),
+    transform var(--md-dur-slow) var(--md-ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+@layer components {
+  /* ---------- 2) 按压 ----------
+     现代风的按钮反馈是「按下去一点点」，不是像素版的「沉 4px + 硬阴影」。
+     只动 `scale`：`.md-btn` 的 `transform` 已经给悬停上抬用了。 */
+  .md-btn:active:not(:disabled),
+  .md-chip:active:not(:disabled),
+  .md-icon-btn:active:not(:disabled),
+  .md-dock-item:active {
+    transform: scale(0.97);
+  }
+
+  /* ---------- 3) 可点卡片的「呼吸」 ----------
+     只给整块可点的卡片：选项行、题卡、模块卡。
+     纯内容面板（`.md-panel`）不加 —— 悬停时正文跟着位移会干扰阅读。 */
+  .md-opt,
+  .md-feature,
+  .md-mod {
+    transition:
+      translate var(--md-dur-fast) var(--md-ease),
+      border-color var(--md-dur-fast) var(--md-ease),
+      box-shadow var(--md-dur-fast) var(--md-ease),
+      background-color var(--md-dur-fast) var(--md-ease);
+  }
+
+  @media (hover: hover) {
+    .md-feature:hover,
+    .md-mod:hover {
+      translate: 0 -3px;
+      box-shadow: 0 18px 36px -22px rgb(11 13 18 / 0.45);
+    }
+
+    .md-opt:hover {
+      translate: 0 -1px;
+    }
+  }
+
+  /* ---------- 4) 选中 / 判分的瞬时反馈 ----------
+     选中选项时轻轻「掐」一下：比只换描边更容易确认「点到了」。 */
+  .md-opt-sel {
+    animation: md-opt-pop 260ms var(--md-ease-out);
+  }
+
+  @keyframes md-opt-pop {
+    0% {
+      transform: scale(1);
+    }
+    38% {
+      transform: scale(0.988);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* 答题卡格子被点亮时弹一下（考试页点「下一题」后回去看答题卡最有感） */
+  .md-cell-answered,
+  .md-cell-flagged {
+    animation: md-cell-pop 240ms var(--md-ease-out);
+  }
+
+  @keyframes md-cell-pop {
+    0% {
+      transform: scale(0.9);
+    }
+    60% {
+      transform: scale(1.04);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* ---------- 5) 逐页签名 ----------
+     同一套曲线，各页换一个「动作」：练习是竖向翻题，考试是横向推题，
+     浏览页是目录行的左侧标尺，工具页是目录的落点高亮。 */
+
+  /* 练习：**换题时**题卡从下方浮上来（首屏不播 —— 挂载即播会让内容像「自己跳了一下」）。
+     `md-settled` 在第一次换题后才由页面加上。 */
+  .md-practice.md-settled .md-q {
+    animation: md-turn-rise 360ms var(--md-ease-out) both;
+  }
+
+  /* 考试：题卡从右侧推入，配合「下一题」的方向感（同样首屏不播）。 */
+  .md-exam.md-settled .md-q {
+    animation: md-turn-slide 320ms var(--md-ease-out) both;
+  }
+
+  @keyframes md-turn-rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+
+  @keyframes md-turn-slide {
+    from {
+      opacity: 0;
+      transform: translateX(26px);
+    }
+  }
+
+  /* 浏览页：悬停时左侧长出一道标尺，读长题目时知道自己在哪一行。 */
+  .md-q-row {
+    position: relative;
+    transition:
+      border-color var(--md-dur-fast) var(--md-ease),
+      background-color var(--md-dur-fast) var(--md-ease);
+  }
+
+  .md-q-row::before {
+    content: "";
+    position: absolute;
+    inset-block: 18px;
+    inset-inline-start: -1px;
+    width: 2px;
+    border-radius: var(--md-r-pill);
+    background-color: var(--md-fg);
+    opacity: 0;
+    transform: scaleY(0.3);
+    transition:
+      opacity var(--md-dur-fast) var(--md-ease),
+      transform var(--md-dur) var(--md-ease-out);
+  }
+
+  @media (hover: hover) {
+    .md-q-row:hover::before {
+      opacity: 0.35;
+      transform: scaleY(1);
+    }
+  }
+
+  /* 工具页：目录的落点高亮。`data-spy` 由 `use_scroll_spy` 写，不是 aria —— 
+     它是「读到这里」的提示，不是当前页，别让它冒充导航选中态。 */
+  .md-tool-link {
+    position: relative;
+    transition:
+      color var(--md-dur-fast) var(--md-ease),
+      background-color var(--md-dur-fast) var(--md-ease);
+  }
+
+  .md-tool-link::before {
+    content: "";
+    position: absolute;
+    inset-block: 6px;
+    inset-inline-start: 0;
+    width: 2px;
+    border-radius: var(--md-r-pill);
+    background-color: var(--md-blue);
+    opacity: 0;
+    transform: scaleY(0.4);
+    transition:
+      opacity var(--md-dur-fast) var(--md-ease),
+      transform var(--md-dur) var(--md-ease-out);
+  }
+
+  .md-tool-link[data-spy="true"] {
+    color: var(--md-fg);
+    background-color: color-mix(in srgb, var(--md-blue) 10%, transparent);
+  }
+
+  .md-tool-link[data-spy="true"]::before {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+
+  /* 文章页头那条 64px 的主色短线：从左侧「画」出来。
+     它是所有内容页（题库 / 术语 / 工具 / 参考 / 日志 / 收藏）共同的签名，
+     比让整块标题淡入更容易被看见，又不抢正文。 */
+  html[data-ui-style="modern"] .md-article-head::after {
+    transform-origin: left center;
+    animation: md-rule-in 720ms var(--md-ease-out) both;
+  }
+
+  @keyframes md-rule-in {
+    from {
+      opacity: 0;
+      transform: scaleX(0);
+    }
+  }
+
+  /* 考试倒计时进入危险档：缓慢呼吸。只改透明度，不改字号与位置 ——
+     数字在跳动时整体缩放会读不清。 */
+  /* 呼吸的是底色光晕，不是文字透明度：数字在倒计时里每 200ms 变一次，
+     整块淡出淡入会让人以为「已经结束」，而且半透明红字会跌破 AA 对比度。 */
+  .md-clock-danger {
+    padding-inline: var(--md-space-2);
+    border-radius: var(--md-r-pill);
+    animation: md-clock-breathe 1.8s var(--md-ease) infinite;
+  }
+
+  @keyframes md-clock-breathe {
+    50% {
+      background-color: color-mix(in srgb, var(--md-danger) 20%, transparent);
+    }
+  }
+
+  /* 术语卡：悬停时只提一点底色与描边，不上抬 —— 它不可点击，
+     上抬会让人以为能点进去。 */
+  .md-term {
+    transition:
+      border-color var(--md-dur-fast) var(--md-ease),
+      background-color var(--md-dur-fast) var(--md-ease);
+  }
+
+  @media (hover: hover) {
+    .md-term:hover {
+      border-color: var(--md-border-strong);
+      background-color: color-mix(in srgb, var(--md-fg) 3%, var(--md-surface));
+    }
+  }
+
+  /* ---------- 7) 降级 ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    html[data-ui-style="modern"].js-motion [data-reveal] {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+
+    .md-practice .md-q,
+    .md-exam .md-q,
+    .md-opt-sel,
+    .md-cell-answered,
+    .md-cell-flagged,
+    .md-clock-danger,
+    html[data-ui-style="modern"] .motion-page,
+    html[data-ui-style="modern"] .md-article-head::after {
+      animation: none;
+    }
+
+    .md-feature:hover,
+    .md-mod:hover,
+    .md-opt:hover {
+      translate: none;
+    }
+  }
+}
+
+/* 工具页目录的落点提示：从目录跳到某个计算器时，目标面板描边闪一圈蓝色。
+   用 `box-shadow` 而不是 `border`：后者会改变盒尺寸，跳转瞬间整页会抖一下。 */
+@layer components {
+  html[data-ui-style="modern"] .md-panel[data-flash="true"] {
+    animation: md-flash 900ms var(--md-ease-out);
+  }
+
+  @keyframes md-flash {
+    0% {
+      box-shadow: 0 0 0 1px var(--md-blue), 0 0 0 9px
+        color-mix(in srgb, var(--md-blue) 22%, transparent);
+    }
+
+    100% {
+      box-shadow: 0 0 0 1px transparent, 0 0 0 9px transparent;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html[data-ui-style="modern"] .md-panel[data-flash="true"] {
+      animation: none;
+    }
+  }
+}
+
+/* 表格行悬停：日志 / 参考 / 常驻表格里的行都是「可点进去看详情」的入口
+   （现代风里它们仍是像素 `Table` 外壳，行为一致，只是补一条读数辅助线）。 */
+@layer components {
+  html[data-ui-style="modern"] .md-root table tbody tr {
+    transition: background-color var(--md-dur-fast) var(--md-ease);
+  }
+
+  @media (hover: hover) {
+    html[data-ui-style="modern"] .md-root table tbody tr:hover {
+      background-color: color-mix(in srgb, var(--md-blue) 7%, transparent);
+    }
+  }
+}
+
+/* ============================================================
+   路由切换：现代风的唯一一条换页动画
+   ------------------------------------------------------------
+   为什么放在层外（不写进 `@layer components`）：像素风的 `.motion-page` 与
+   `tw-animate.css` 的 `.animate-in` 都是**无层级**声明，层内的规则再高优先级也压不住
+   它们（无层级 > 任何 @layer）。这两条必须同样写在层外，靠选择器优先级取胜。
+
+   `#route-content` 是**所有**页面的共同入口 —— 迁移过的现代页、还留在像素 DOM 上的
+   桥接页走的是同一个节点、同一条动画，所以换页手感一致。
+   像素版盖在它上面的是 4px 网点溶解（`page-enter` + `steps(1)`）：只覆盖缓动函数没用，
+   遮罩还在，而且会和页内浮现互相打架 —— 这里把遮罩摘掉，换成一次性淡入。
+
+   **整页只淡入，不许给 `#route-content` 加位移 / 缩放**：这个容器装着整张页面（工具页约 4000 个
+   节点、几万像素高），对它做 `transform` / `translate` / `scale` 动画，浏览器会把整页提升成一个
+   合成层并整张光栅化，WebKit（iOS Safari）上点一下底部栏就要多等 150–250ms，手机上放大到接近 1 秒；
+   只改 `opacity` 则几乎没有额外代价（实测：整页位移 300ms，仅淡入 130ms，关闭动画 120ms）。
+   换页的「方向感」由之后滚到的内容块的浮现（`[data-reveal]`，首屏内容不重播）承担，
+   见 `interaction.css` 第 1 节。
+
+   **不从全透明起步、时长只用 `--md-dur`**：旧页面在新页面挂上的同一帧就被摘掉了，
+   淡入从 `opacity: 0` 开始的话，新页面的第一帧是一块空白，再花 360ms 才看清 ——
+   实测新页面「可读」比像素风（第一帧就是完整页面）晚 150–300ms，这正是「点了要等一会」的来源。
+   从半透明起步，第一帧就看得清内容，淡入只剩一次轻微的「落定」。
+   ============================================================ */
+html[data-ui-style="modern"] .motion-page {
+  -webkit-mask-image: none;
+  mask-image: none;
+  -webkit-mask-size: auto;
+  mask-size: auto;
+  animation: md-route-enter var(--md-dur) var(--md-ease-out) both;
+}
+
+@keyframes md-route-enter {
+  from {
+    opacity: 0.55;
+  }
+}
+
+/* 页面自带的 `animate-in fade-in slide-in-from-bottom-2` 包装（119 个页面各有一层）
+   在现代风里关掉：它与上面那条路由动画是同一件事的第二份，两个一起播就是
+   「先淡入一次、再淡入一次」，8px 的位移还会叠成 18px。 */
+html[data-ui-style="modern"] main .animate-in.fade-in.slide-in-from-bottom-2 {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-ui-style="modern"] .motion-page {
+    animation: none;
+  }
+}
+
+/* ============================================================
+   桥接页的版心：`max-w-5xl` 在现代风下补上内边距
+   ------------------------------------------------------------
+   还留在像素 DOM 上的页面用的是 `PageContainer` / `PageHeader` / 页脚 / 底部工具条，
+   宽度写在 `max-w-5xl` 这个工具类上，值已经是 `--page-max`（= `--md-page-max`，两套皮肤
+   同宽，见 `style/input.css`），所以这里**不再改宽度**，只把内边距从像素风的 16px 换成
+   现代风的 `--md-page-pad`（24 / 32）——否则桥接页与迁移页的正文左边缘会差 8~16px。
+
+   必须写在层外：`max-w-5xl` 是 Tailwind 的 utilities（分层），无层级声明才能压住它。
+   弹窗内部不受影响（没有任何弹窗在用 `max-w-5xl`；搜索框是 `2xl`、QSL 是 `4xl`）。
+   ============================================================ */
+html[data-ui-style="modern"] .max-w-5xl {
+  max-width: var(--md-page-max);
+  padding-inline: var(--md-page-pad);
+}
+
+/* ============================================================
+   版面骨架：章节尺 + 编号（2026-10 视觉升级）
+   ------------------------------------------------------------
+   现代页面的内容块（首页的「快捷入口 / 模块入口 / 收尾」、以及后续按同一结构写的
+   区块）统一走一条骨架：**上沿一条墨线 + 一个等宽两位编号 + 一段大留白**。
+   这是全站最便宜的「几何化构图」：不新增任何标记，版面立刻有了节奏与秩序。
+
+   必须写在 `@layer` 之外：区块上还挂着 `mt-14` / `mb-4` 这类 Tailwind 工具类，
+   它们在 utilities 层，层内规则再高优先级也压不住（无层级 > 任何 @layer）。
+   ============================================================ */
+#route-content .md-page {
+  counter-reset: md-sect;
+}
+
+/* 工程网格：只有首页铺一层 24px 正交细线。
+   其他页面（列表 / 表格 / 文章）本身已有大量分隔线，再叠一层会变成「表格里的表格」。
+   与「CRT 扫描线」的区别写在这里免得被后来人当成违规：扫描线是 2–4px 的水平密线 +
+   扫动动画，这里是 24px 的正交静态网格、对比度 5%，只做底纹不参与任何动效。 */
+/* 网格画在 `::before` 而不是 `.md-page` 自身：`mask-image` 会连子元素一起遮掉，
+   放在伪元素上才能只淡出网格、不淡出第一屏的内容。
+   `z-index: -1` + `isolation: isolate` 让它留在页内、压在内容之下。 */
+/* 网格铺在「以读为主」的页面上：首页、列表、索引、长文、看板。
+   刻意不给 `practice` / `exam` / `tools` / `lab`：那四类页面的信息密度靠数字与波形，
+   底纹会与读数抢注意力（这是「几何服务内容」的边界，不是遗漏）。 */
+@media (min-width: 900px) {
+  html[data-ui-style="modern"]
+    #route-content:is(
+      [data-sig="landing"],
+      [data-sig="browse"],
+      [data-sig="index"],
+      [data-sig="read"],
+      [data-sig="board"]
+    )
+    .md-page {
+    position: relative;
+    isolation: isolate;
+  }
+
+  html[data-ui-style="modern"]
+    #route-content:is(
+      [data-sig="landing"],
+      [data-sig="browse"],
+      [data-sig="index"],
+      [data-sig="read"],
+      [data-sig="board"]
+    )
+    .md-page::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, var(--md-grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--md-grid) 1px, transparent 1px);
+    background-position: -1px -1px;
+    background-size: 24px 24px;
+    /* 淡出用**固定像素**而不是百分比：`/browse` 这类页面高度两万像素，
+       3% 就是 600px，首屏整块会被淡成「没有网格」。 */
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 96px,
+      #000 calc(100% - 160px),
+      transparent 100%
+    );
+    pointer-events: none;
+  }
+}
+
+#route-content .md-page > section:not(.md-closing) {
+  counter-increment: md-sect;
+  margin-block-start: var(--md-gap-section);
+  padding-block-start: var(--md-space-6);
+  /* 上沿改用 inset 阴影画线：section 自己要拿 background-image 画右端刻度，
+     `border-top` 占布局，两条会错开 1px。 */
+  box-shadow: inset 0 1px 0 var(--md-rule);
+  /* 分隔线由三段构成，从左到右：48px 行动色实线（段落起点）、1px 墨线（inset 阴影）、
+     右端 72px 八格刻度（把线读成「一把尺」）。行动色那一段和页头尺同源，
+     于是「每个章节开头都有一小段主题色」成为全站同一个记号，不靠逐页加装饰。 */
+  background-image:
+    linear-gradient(to right, var(--md-accent) 0 48px, transparent 48px),
+    repeating-linear-gradient(to right, var(--md-rule) 0 1px, transparent 1px 9px);
+  background-position:
+    left top,
+    right top;
+  background-repeat: no-repeat;
+  background-size:
+    48px 2px,
+    72px 6px;
+}
+
+/* 编号左侧的实心三角（`linear-gradient` 切出的半方块，不依赖字体里的 ▸ 字形），
+   与上沿刻度、竖线一起构成章节的「图纸标头」。
+   编号与三角一起走行动色：等宽两位数字是版面里最小的「层级标签」，
+   用主题色标出来，滚动时一眼能数到自己在第几块。 */
+#route-content .md-page > section:not(.md-closing)::before {
+  content: counter(md-sect, decimal-leading-zero);
+  display: block;
+  margin-block-end: 14px;
+  padding-inline-start: var(--md-space-4);
+  background-image: linear-gradient(to bottom right, var(--md-accent) 50%, transparent 50%);
+  background-position: 0 3px;
+  background-repeat: no-repeat;
+  background-size: 9px 9px;
+  font-family: var(--md-font-mono);
+  font-size: var(--md-text-xs);
+  letter-spacing: 0.22em;
+  color: var(--md-accent-ink);
+}
+
+/* 收尾 CTA 仍然与上一块拉开距离，但不画章节线、不占编号。 */
+#route-content .md-page > .md-closing {
+  margin-block-start: var(--md-gap-section);
+}
+
+/* 窄屏的章节尺收细一点：320px 上「线 + 编号 + 大留白」三样同时拉满会显得空。 */
+@media (width < 640px) {
+  /* 手机首屏要露出第一个入口的标题：章节尺（线 + 编号）压到最小，仍保留记号；
+     章节间距从 48 收到 32（仍是 4px 阶里的一档），桌面不变。 */
+  #route-content .md-page > section:not(.md-closing) {
+    padding-block-start: var(--md-space-4);
+    margin-block-start: 32px;
+  }
+
+  #route-content .md-page > section:not(.md-closing)::before {
+    margin-block-end: 8px;
+  }
+}
+
+/* 区块标题：只有「页面版心内的直接区块」才升到展示级字号。
+   弹层、解析卡、笔记卡里的 `.md-h2` 保持 22–28px，避免小面板里塞一个巨标题。 */
+#route-content .md-page > section > .md-h2 {
+  font-size: var(--md-display-3);
+  line-height: 1.02;
+}
+
+/* ============================================================
+   窄屏首屏（<640px）：主视觉退场，内容入口进入首屏
+   ------------------------------------------------------------
+   390×844 下原来的首屏要滚 1245px 才见到第一个入口 —— 首页的职责是
+   「尽快开始练」，装饰性插画与实时频谱在手机上必须让位。
+   桌面（≥900px）保持完整主视觉，占位与构图不变。
+   ============================================================ */
+@media (width < 640px) {
+  .md-hero-grid {
+    gap: var(--md-space-5);
+    padding-block: 24px 32px;
+  }
+
+  .md-hero-art {
+    display: none;
+  }
+
+  .md-hero-band .md-spectrum {
+    height: 40px;
+  }
+
+  .md-hero-copy {
+    gap: var(--md-space-3);
+  }
+
+  /* 数据条在手机上压紧两行：它是「读数」，不需要桌面那份行距。 */
+  .md-strip {
+    gap: 12px 24px;
+    padding-block-start: var(--md-space-4);
+  }
+
+  /* 扫描带与底部电波都是纯装饰（aria-hidden），手机上整条让位给内容入口；
+     实时频谱保留 —— 它是「正在收报」的活信号，不是静态装饰。 */
+  .md-wave {
+    display: none;
+  }
+}
+

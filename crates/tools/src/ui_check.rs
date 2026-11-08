@@ -695,7 +695,7 @@ const WIDTH_ALLOWED: &[(&str, &str)] = &[
   ),
   (
     "crates/app/src/components/navigation/nav_bar.rs",
-    "顶栏 container",
+    "顶栏与正文同版心",
   ),
   (
     "crates/app/src/pages/bookmarks/bookmarks_page.rs",

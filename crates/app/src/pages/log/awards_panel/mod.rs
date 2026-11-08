@@ -82,7 +82,7 @@ pub(super) fn AwardsPanel(
           view! {
             <div class="space-y-5 p-4">
               {(!gaps.is_empty()).then(|| view! {
-                <div class="border bg-inset p-3">
+                <div class=crate::kit::tile_class("")>
                   <div class="mb-1.5 text-xs">{move || t("log.sprint-suggestions")}</div>
                   <div class="flex flex-wrap gap-1.5">
                     {gaps
@@ -115,7 +115,7 @@ pub(super) fn AwardsPanel(
                     {bands
                       .into_iter()
                       .map(|(b, n)| view! {
-                        <span class="border bg-inset px-2.5 py-0.5 text-xs">
+                        <span class=crate::kit::tile_class("px-2.5 py-0.5 text-xs")>
                           {b} " " <span class="tabular-nums">{n}</span>
                         </span>
                       })

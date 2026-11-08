@@ -74,7 +74,7 @@ pub fn AntennaModelingPage() -> impl IntoView {
                 view! {
                   <a
                     href=*href
-                    class="border bg-inset px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    class=crate::kit::tile_class("px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground")
                   >
                     {move || crate::data::core_text_tracked(label)}
                   </a>

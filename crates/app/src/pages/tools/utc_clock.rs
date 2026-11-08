@@ -44,8 +44,8 @@ pub(super) fn UtcClock() -> impl IntoView {
 
   view! {
     <div class="grid gap-3">
-      <div class="flex items-center gap-3 border bg-inset px-4 py-3">
-        <div class=if crate::kit::is_modern_at_mount() { "md-stat-text text-3xl" } else { "pxl-stat text-3xl" }>{move || utc.get()}</div>
+      <div class=crate::kit::tile_class("flex items-center gap-3 px-4 py-3")>
+        <div class=crate::kit::stat_text_class("text-3xl")>{move || utc.get()}</div>
         <div class="text-sm text-muted-foreground">"UTC / Zulu"</div>
       </div>
 

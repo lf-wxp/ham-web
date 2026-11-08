@@ -40,8 +40,8 @@
 | 层 | 承载 | 表现 | 时长 |
 |---|---|---|---|
 | ① 换页帧 | `#route-content.motion-page`（所有页面共用，含桥接页） | 整页**只淡入**，从半透明（0.55）起步，时长与页内浮现的方向按下表分流 | `--md-dur-fast` / `--md-dur` |
-| ② 内容浮现 | `[data-reveal]`（由 `motion::reveal_modern_page` 登记） | **只对登记时在折叠线以下的块**：12px 上浮 + 淡入，同批错峰 30ms（≤4 档）；首屏内容不重播 | 不透明度 `--md-dur`、位移 `--md-dur-slow` |
-| ③ 共享元素 | 原生 View Transitions，**仅调谐台跳转** | 旧页淡出、新页上浮 | 240ms |
+| ② 内容浮现 | `[data-reveal]`（由 `motion::reveal_modern_page` 登记：换页后三趟扫一遍，晚于换页才挂载的子树由 `watch_late_content` 按同一份清单补登记） | **只对登记时在折叠线以下的块**：12px 上浮 + 淡入，同批错峰 30ms（≤4 档）；首屏内容不重播 | 不透明度 `--md-dur`、位移 `--md-dur-slow` |
+| ③ ~~共享元素~~ | **已移除**（原：调谐台跳转用原生 View Transitions） | —— | —— |
 
 换页方向由 `ham_web_core::interaction::nav_direction` 判定，写在 `#route-content[data-nav-dir]` 上：
 
@@ -60,6 +60,9 @@
 
 1. **高频操作禁用 View Transitions**：VT 会先冻结一帧拍快照，练习翻题第二次起会卡到数百毫秒。
    题目切换用的是 `.md-practice .md-q` / `.md-exam .md-q` 的 CSS 动画，方向相反、动作相同。
+   **调谐台跳转也踩了同一个坑**（2026-11-07）：点选一条之后整页冻住数秒 —— 拍「旧状态」快照时
+   面板还开着，等于把整屏弹层（`blur(26px)` 遮罩 + 181 行结果）一起光栅化。
+   去掉 VT 后同一操作 **4038 ms → 25–39 ms**，换页只保留 `#route-content` 的淡入。
 2. **位移只用 `translate` / `scale` 属性，不用 `transform`**：入场动画（`[data-reveal]`、`md-q`）
    已经占着 `transform`，两套写在同一个属性上会互相覆盖（表现是「悬停上抬把入场打断」）。
 3. **换页动画只有一层**：历史上的「像素网点溶解 + `.md-root` 淡入 + 119 个页面的

@@ -44,8 +44,8 @@ test("设置里切换配色方案：写入 <html>、持久化、刷新后保留"
   await expect(html).toHaveAttribute("data-scheme", "classic");
   const classicBg = await token(page, "--background");
 
-  await page.getByRole("button", { name: "外观与动效" }).first().click();
-  const dialog = page.getByRole("dialog", { name: "外观与动效" });
+  await page.getByRole("button", { name: "通用设置" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "通用设置" });
   await dialog.getByRole("radio", { name: "森林" }).click();
 
   await expect(html).toHaveAttribute("data-scheme", "forest");
@@ -57,9 +57,9 @@ test("设置里切换配色方案：写入 <html>、持久化、刷新后保留"
 
   await page.reload();
   await expect(html).toHaveAttribute("data-scheme", "forest");
-  await page.getByRole("button", { name: "外观与动效" }).first().click();
+  await page.getByRole("button", { name: "通用设置" }).first().click();
   await expect(
-    page.getByRole("dialog", { name: "外观与动效" }).getByRole("radio", { name: "森林" }),
+    page.getByRole("dialog", { name: "通用设置" }).getByRole("radio", { name: "森林" }),
   ).toBeChecked();
 });
 
@@ -93,9 +93,9 @@ test("不认识的方案 id 回退经典，并把存储规范化", async ({ page
   expect(classicBg).toBe("#f2e8cf");
 
   // 用户在设置里再选一次，存储里就是合法 id。
-  await page.getByRole("button", { name: "外观与动效" }).first().click();
+  await page.getByRole("button", { name: "通用设置" }).first().click();
   await page
-    .getByRole("dialog", { name: "外观与动效" })
+    .getByRole("dialog", { name: "通用设置" })
     .getByRole("radio", { name: "海洋" })
     .click();
   await expect
@@ -108,8 +108,8 @@ test("切换方案不会改变明暗模式", async ({ page }) => {
   await page.goto("/");
   const html = page.locator("html");
   await expect(html).toHaveClass(/dark/);
-  await page.getByRole("button", { name: "外观与动效" }).first().click();
-  const dialog = page.getByRole("dialog", { name: "外观与动效" });
+  await page.getByRole("button", { name: "通用设置" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "通用设置" });
   for (const { name } of SCHEMES) {
     await dialog.getByRole("radio", { name }).click();
     await expect(html).toHaveClass(/dark/);
@@ -120,8 +120,8 @@ test("切换方案不会改变明暗模式", async ({ page }) => {
 test("方案名随界面语言切换", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("locale", "en"));
   await page.goto("/");
-  await page.getByRole("button", { name: "Appearance & motion" }).first().click();
-  const dialog = page.getByRole("dialog", { name: "Appearance & motion" });
+  await page.getByRole("button", { name: "Settings" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Settings" });
   for (const name of [
     "Classic",
     "Forest",
@@ -172,8 +172,8 @@ test.describe("各方案的无障碍对比度", () => {
     test(`${id} · 设置对话框打开时`, async ({ page }) => {
       await preset(page, id, "light");
       await page.goto("/");
-      await page.getByRole("button", { name: "外观与动效" }).first().click();
-      await expect(page.getByRole("dialog", { name: "外观与动效" })).toBeVisible();
+      await page.getByRole("button", { name: "通用设置" }).first().click();
+      await expect(page.getByRole("dialog", { name: "通用设置" })).toBeVisible();
       await settleFrames(page);
       const res = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])

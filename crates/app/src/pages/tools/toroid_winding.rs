@@ -3,7 +3,7 @@ use ham_web_core::toroid::{
 };
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_num};
+use super::{fmt_num, result_class};
 use crate::i18n::{t, tf, tp};
 use crate::ui::{Field, NumberField, SelectOption, SimpleSelect};
 use crate::util::unique_id;
@@ -155,7 +155,7 @@ pub(super) fn ToroidWinding() -> impl IntoView {
         />
       </Field>
 
-      <div class=format!("{RESULT} space-y-1 tabular-nums")>
+      <div class=format!("{} space-y-1 tabular-nums", result_class())>
         {move || match report.get() {
           None => view! { <span>{move || t("tools.toroid-enter-valid")}</span> }.into_any(),
           Some((c, w, max_turns)) => {

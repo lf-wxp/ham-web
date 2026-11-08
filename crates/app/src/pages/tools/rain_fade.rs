@@ -4,7 +4,7 @@ use ham_web_core::rain_fade::{
 };
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_num};
+use super::{fmt_num, result_class};
 use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField, SelectOption, SimpleSelect};
 use crate::util::unique_id;
@@ -94,7 +94,7 @@ pub(super) fn RainFade() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class=format!("{RESULT} space-y-1 tabular-nums") role="status">
+      <div class=format!("{} space-y-1 tabular-nums", result_class()) role="status">
         {move || match outcome.get() {
           Ok(o) => {
             let capped = o.path_factor_capped;

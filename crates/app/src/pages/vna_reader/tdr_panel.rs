@@ -11,6 +11,7 @@ use ham_web_core::unit_math::format_distance_m;
 use leptos::prelude::*;
 
 use super::NOTE;
+use crate::components::common::EmptyState;
 use crate::i18n::{t, tf};
 use crate::ui::{ControlSize, Field, NumberField};
 use crate::util::unique_id;
@@ -104,7 +105,10 @@ pub(super) fn TdrPanel(sweep: Memo<Option<Sweep>>, vf_text: RwSignal<String>) ->
         // 这一层只做「有没有数据 / 输入对不对」的判断，下面用 `with` 借用结果：
         // `Memo::get()` 会把整份数据克隆一份（`Tdr` 有两条上万点的 Vec），每次重渲都拷一遍没必要。
         if sweep.with(Option::is_none) {
-          return view! { <p class=NOTE>{move || t("tools.vna-empty")}</p> }.into_any();
+          return view! {
+            <EmptyState plain=true title=Signal::derive(move || t("tools.vna-empty")) />
+          }
+          .into_any();
         }
         if vf.with(Option::is_none) {
           // 越界要直说「输错了」：`Field` 的 hint 已经说明了合理取值，不能再把同一句提示当结果重复一遍。

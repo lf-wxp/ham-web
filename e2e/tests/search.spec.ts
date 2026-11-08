@@ -36,6 +36,20 @@ test("全站搜索：多词查询按 AND 匹配并逐词高亮", async ({ page }
   expect(marked.some((m) => m.includes("驻波比"))).toBe(true);
 });
 
+// 台账 N3：页面命中上限原来是 3，长尾页面在站内搜索里等于不存在。
+// 两条判据各守一半：①第 6 个以前缀命中的页面也能搜到 —— 落在旧上限之外；
+// ②**首条**页面命中的标题必须以该词开头 —— 只放宽上限不够，旧实现按注册表顺序截断，
+// 「仅正文提到该词」的条目会排到前缀命中之前，那时②红而①仍可能绿。
+test("全站搜索：长尾页面也能直达（页面命中不再被截在 3 条）", async ({ page }) => {
+  await page.goto("/");
+  const panel = await openSearch(page);
+  await panel.getByLabel("搜索关键词").fill("天线");
+
+  await expect(panel.getByRole("link", { name: /天线架设/ }).first()).toBeVisible();
+  // 页面组排在内容组之前，首条 link 就是页面命中的第一名。
+  await expect(panel.getByRole("link").first()).toHaveAccessibleName(/^天线/);
+});
+
 test("全站搜索：高频词结果有上限，不会一次铺开全部命中", async ({ page }) => {
   await page.goto("/");
   const panel = await openSearch(page);

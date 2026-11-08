@@ -67,21 +67,30 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   /* 游戏化语义色：血条 / 经验条 / 金币 / 通关绿。亮暗两套共用，因为它们总是画在深色槽上。 */
-  --color-hp: var(--pxl-hp);
-  --color-xp: var(--pxl-xp);
-  --color-gold: var(--pxl-gold);
-  --color-win: var(--pxl-win);
+  /* 中立别名（`--hp-fill` 等）由两套皮肤各自赋值：像素风 = `--pxl-*`，现代风 = `--md-*`。
+     `@theme inline` 会把 `var(--hp-fill)` 内联进 `.bg-hp` 之类的工具类 —— 内联的是
+     **别名**而不是 `--pxl-*`，所以现代风覆盖别名就能生效（同 `--chart-N` 的机制）。 */
+  --color-hp: var(--hp-fill);
+  --color-xp: var(--xp-fill);
+  --color-gold: var(--gold-fill);
+  --color-win: var(--win-fill);
   /* 文字专用版本：填充色（上面四个）画在深色槽里，直接拿来写字对比度不够
      （亮色下金色文字落在奶油底只有 1.4:1）。写字一律用 `text-*-text`。 */
-  --color-hp-text: var(--pxl-hp-text);
-  --color-xp-text: var(--pxl-xp-text);
-  --color-gold-text: var(--pxl-gold-text);
-  --color-win-text: var(--pxl-win-text);
+  --color-hp-text: var(--hp-ink);
+  --color-xp-text: var(--xp-ink);
+  --color-gold-text: var(--gold-ink);
+  --color-win-text: var(--win-ink);
   --color-ink: var(--pxl-ink);
   --color-field: var(--pxl-field);
 }
 
 @theme {
+  /* 版心：`max-w-5xl` 从 Tailwind 默认的 64rem（1024）提到 `--page-max`（1200），
+     与现代风 `--md-page-max` 同一个值。全站页面容器（`PageHeader` / `PageContainer` /
+     页脚 / 底栏 / 顶栏）都写 `max-w-5xl`，所以这里改一次就全站生效；
+     那个变量定义在 `style/input.css`，两侧都不许再写死像素值。 */
+  --container-5xl: var(--page-max);
+
   /* 具名断点：Tailwind 默认 `sm`（640px）之上/之下差得太远，窄屏手机上确实需要一档
      「比 320 宽、比 sm 窄」的中间态（导航内边距、两列切三列）。新增中间态请加在这里，
      页面里不要写 `min-[400px]:` 这类任意值（`ui_check` ㉒ 已拦）。 */
@@ -197,6 +206,15 @@
   --reveal-shift: 8px;
 
   /* ---------- 亮色：旧纸张 / 掌机屏 ---------- */
+  /* 中立别名 → 像素取值（现代风在 `legacy-utilities.css` 里覆盖这 8 个名字）。 */
+  --hp-fill: var(--pxl-hp);
+  --xp-fill: var(--pxl-xp);
+  --gold-fill: var(--pxl-gold);
+  --win-fill: var(--pxl-win);
+  --hp-ink: var(--pxl-hp-text);
+  --xp-ink: var(--pxl-xp-text);
+  --gold-ink: var(--pxl-gold-text);
+  --win-ink: var(--pxl-win-text);
   --pxl-ink: #1a1c2c;
   --pxl-shadow: rgb(0 0 0 / 0.3);
   --pxl-hi: rgb(255 255 255 / 0.6);

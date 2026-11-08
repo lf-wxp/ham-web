@@ -136,7 +136,7 @@ pub fn NavtexDecoderPage() -> impl IntoView {
                     .map(|m| {
                       let header = format!("{}{} {:02}", m.transmitter, m.category, m.serial);
                       view! {
-                        <div class="border bg-inset p-4">
+                        <div class=crate::kit::tile_class("p-4")>
                           <div class="mb-2 flex flex-wrap items-center gap-2 text-sm">
                             <span class="font-mono">{header}</span>
                             <span

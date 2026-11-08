@@ -66,7 +66,7 @@ pub fn ContestCalendarPage() -> impl IntoView {
                     <div class="min-w-0">
                       <div class="flex flex-wrap items-baseline gap-x-2">
                         <span>{move || t(ev.name)}</span>
-                        <span class="border bg-inset px-2 py-0.5 text-xs text-muted-foreground">
+                        <span class=crate::kit::tile_class("px-2 py-0.5 text-xs text-muted-foreground")>
                           {move || t(ev.mode)}
                         </span>
                       </div>

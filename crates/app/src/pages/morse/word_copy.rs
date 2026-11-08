@@ -57,7 +57,7 @@ pub(super) fn WordCopy() -> impl IntoView {
         <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.listen-to-morse-for")}</span>
       </h2>
       <div class="space-y-4 p-4">
-        <div class="flex flex-col items-center gap-3 border bg-inset px-4 py-6">
+        <div class=crate::kit::tile_class("flex flex-col items-center gap-3 px-4 py-6")>
           <div class="text-xs text-muted-foreground">{move || t("morse.tap-play-then-type")}</div>
           <Button on_click=Callback::new(move |_| play())>
             <Icon kind=IconKind::Volume2 class="size-6" />

@@ -3,7 +3,7 @@ use ham_web_core::decibel::{
 };
 use leptos::prelude::*;
 
-use super::RESULT;
+use super::result_class;
 use crate::i18n::t;
 use crate::ui::{Field, NumberField};
 use crate::util::unique_id;
@@ -95,7 +95,7 @@ pub(super) fn DbmDbuv() -> impl IntoView {
         </Field>
       </div>
 
-      <div class=RESULT>
+      <div class=result_class()>
         {move || format!("{} dBm = {} dBμV = {} μV", dbm.get(), dbuv.get(), uv.get())}
       </div>
     </div>

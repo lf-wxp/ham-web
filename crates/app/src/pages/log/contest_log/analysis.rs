@@ -4,6 +4,7 @@ use ham_web_core::dxcc::{Entity, entity_by_dxcc};
 use ham_web_core::logbook::stamp;
 use leptos::prelude::*;
 
+use crate::components::common::EmptyState;
 use crate::i18n::{localized_name, t, tf, tp};
 use crate::pages::log::LogEntry;
 use crate::ui::{
@@ -65,7 +66,7 @@ pub(super) fn ContestAnalysis(
       <h2 class=crate::kit::card_title_class()>{move || t("contest.analysis-heading")}</h2>
       {move || match analysis.get() {
         None => view! {
-          <p class="px-4 py-6 text-sm text-muted-foreground">{move || t("contest.analysis-empty")}</p>
+          <EmptyState plain=true title=Signal::derive(move || t("contest.analysis-empty")) />
         }
         .into_any(),
         Some(a) => {

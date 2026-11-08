@@ -497,7 +497,7 @@ pub fn ContestLogPage() -> impl IntoView {
               />
             </Field>
             <Field label=Signal::derive(move || t("contest.sent"))>
-              <div class="flex h-12 items-center border bg-inset px-3 font-mono text-lg tabular-nums text-foreground">
+              <div class=crate::kit::tile_class("flex h-12 items-center px-3 font-mono text-lg tabular-nums text-foreground")>
                 {move || format!("{} {}", default_rst(&session.with(Session::mode)), sent_exch())}
               </div>
             </Field>

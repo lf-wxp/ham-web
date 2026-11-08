@@ -157,9 +157,9 @@ pub(super) fn Live() -> impl IntoView {
               // `aria-busy`：读数从「—」变成真值时读屏能知道这一次更新已经结束。
               <div class="md-live" aria-busy=move || loading.get().to_string()>
                 <div class="md-live-metrics">
-                  <LiveMetric label="home.solar-flux" value=Signal::from(sfi) />
-                  <LiveMetric label="radio.a-index" value=Signal::from(a) />
-                  <LiveMetric label="home.k-index" value=Signal::from(k) />
+                  <LiveMetric label="home.solar-flux" value=Signal::from(sfi) loading=Signal::from(loading) />
+                  <LiveMetric label="radio.a-index" value=Signal::from(a) loading=Signal::from(loading) />
+                  <LiveMetric label="home.k-index" value=Signal::from(k) loading=Signal::from(loading) />
                   {level}
                 </div>
 

@@ -110,7 +110,10 @@ pub fn PortableMapPage() -> impl IntoView {
           {move || {
             if loading.get() {
               view! {
-                <div class="py-12 text-center text-sm text-muted-foreground">{move || t("learning.loading")}</div>
+                <crate::components::common::LoadingBlock
+                  tall=true
+                  label=Signal::derive(move || t("learning.loading"))
+                />
               }
               .into_any()
             } else if markers.get().is_empty() {

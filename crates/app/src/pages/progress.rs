@@ -273,7 +273,12 @@ pub fn ProgressPage() -> impl IntoView {
             {move || {
               let list = coverage.get();
               if list.is_empty() {
-                return view! { <p class="text-sm text-muted-foreground">{move || t("exam.loading-questions-u-2026")}</p> }.into_any();
+                return view! {
+                  <crate::components::common::LoadingBlock
+                    label=Signal::derive(move || t("exam.loading-questions-u-2026"))
+                  />
+                }
+                .into_any();
               }
               list
                 .into_iter()

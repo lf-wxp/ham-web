@@ -13,7 +13,7 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::SpeechSynthesisUtterance;
 
 use super::print_sheet::{Source as Collection, load_items};
-use crate::components::common::{PageContainer, PageHeader};
+use crate::components::common::{EmptyState, PageContainer, PageHeader};
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
@@ -239,12 +239,25 @@ pub fn ListenPage() -> impl IntoView {
 
   let card = move || {
     if loading.get() {
-      return view! { <div class="p-6 text-sm text-muted-foreground" aria-live="polite">{move || t("exam.loading-questions-ellipsis")}</div> }.into_any();
+      return view! {
+        // `aria-live` 由 `LoadingBlock` 的 `role="status"` 提供：这里再套一层会让
+        // 同一段「加载中」被播报两次。
+        <div class="p-6">
+          <crate::components::common::LoadingBlock
+            label=Signal::derive(move || t("exam.loading-questions-ellipsis"))
+          />
+        </div>
+      }
+      .into_any();
     }
     let i = index.get();
     let Some(q) = questions.with(|qs| qs.get(i).cloned()) else {
-      return view! { <div class="p-6 text-sm text-muted-foreground">{move || t("exam.no-questions-here-yet")}</div> }
-        .into_any();
+      return view! {
+        <div class="p-6">
+          <EmptyState plain=true title=Signal::derive(move || t("exam.no-questions-here-yet")) />
+        </div>
+      }
+      .into_any();
     };
     let total = questions.with(|qs| qs.len());
     let revealed = move || matches!(phase.get(), Some(Phase::Answer | Phase::Explain));

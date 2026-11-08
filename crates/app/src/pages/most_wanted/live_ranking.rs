@@ -38,7 +38,12 @@ pub(super) fn LiveRanking() -> impl IntoView {
       <div class="p-4">
         {move || {
           if loading.get() {
-            return view! { <p class="text-sm text-muted-foreground">{move || t("log.fetching-the-live-list")}</p> }.into_any();
+            return view! {
+              <crate::components::common::LoadingBlock
+                label=Signal::derive(move || t("log.fetching-the-live-list"))
+              />
+            }
+            .into_any();
           }
           if failed.get() || entries.get().is_empty() {
             return view! {
@@ -55,7 +60,7 @@ pub(super) fn LiveRanking() -> impl IntoView {
                 .iter()
                 .map(|e| {
                   view! {
-                    <span class="border bg-inset px-2.5 py-1 text-xs tabular-nums">
+                    <span class=crate::kit::tile_class("px-2.5 py-1 text-xs tabular-nums")>
                       <span class="text-foreground">{format!("#{}", e.rank)}</span>
                       " DXCC " <span class="font-mono">{e.adif}</span>
                     </span>

@@ -2,7 +2,7 @@ use ham_web_core::dxcc::lookup;
 use ham_web_core::most_wanted::wanted_prefix;
 use leptos::prelude::*;
 
-use super::RESULT;
+use super::result_class;
 use crate::i18n::{t, tf};
 use crate::ui::{Field, Input};
 use crate::util::unique_id;
@@ -22,7 +22,7 @@ pub(super) fn CallsignLookup() -> impl IntoView {
           placeholder=Signal::derive(move || t("tools.e-g-p5abc-ja1abc"))
         />
       </Field>
-      <div class=RESULT>
+      <div class=result_class()>
         {move || {
           let c = call.get().trim().to_owned();
           if c.is_empty() {

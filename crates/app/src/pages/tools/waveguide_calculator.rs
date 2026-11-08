@@ -4,7 +4,7 @@ use ham_web_core::waveguide::{
 };
 use leptos::prelude::*;
 
-use super::RESULT;
+use super::result_class;
 use super::waveguide_report::WaveguideReport;
 use crate::i18n::t;
 use crate::ui::{Field, NumberField, SelectOption, SimpleSelect};
@@ -161,7 +161,7 @@ pub(super) fn WaveguideCalculator() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class=format!("{RESULT} space-y-1 tabular-nums") role="status">
+      <div class=format!("{} space-y-1 tabular-nums", result_class()) role="status">
         {move || match report.get() {
           Ok(r) => view! { <WaveguideReport report=r size=size.get() /> }.into_any(),
           Err(e) => view! { <div>{error_text(e)}</div> }.into_any(),

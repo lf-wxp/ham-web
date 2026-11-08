@@ -128,7 +128,13 @@ pub fn FlashcardsPage() -> impl IntoView {
       <PageContainer class="space-y-4">
         {move || {
           if loading.get() {
-            view! { <div class="px-4 py-10 text-center text-sm text-muted-foreground">{move || t("exam.loading-questions-u-2026")}</div> }
+            view! {
+              <div class="px-4 py-6">
+                <crate::components::common::LoadingBlock
+                  label=Signal::derive(move || t("exam.loading-questions-u-2026"))
+                />
+              </div>
+            }
               .into_any()
           } else if finished.get() {
             let total = known.get() + unknown.get() + skipped.get();

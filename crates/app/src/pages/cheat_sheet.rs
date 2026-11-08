@@ -53,7 +53,7 @@ pub fn CheatSheetPage() -> impl IntoView {
                     .into_iter()
                     .map(|it| {
                       view! {
-                        <div class="print-avoid-break border bg-inset p-3">
+                        <div class=crate::kit::tile_class("print-avoid-break")>
                           <div class="flex items-baseline gap-2">
                             <span class="text-sm">{move || kt_tracked(it.name)}</span>
                             <span class="font-mono text-xs text-muted-foreground">{it.code}</span>

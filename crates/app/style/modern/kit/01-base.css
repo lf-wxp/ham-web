@@ -1,0 +1,1749 @@
+/* ============================================================
+   外壳与基础控件：滚动条、按钮、输入、卡片、标题、图标等底座
+   ------------------------------------------------------------
+   原 `kit.css` 第 25–1748 行（1/11 段，台账 C4 的分域拆分）。
+
+   **顺序即级联**：本目录下的文件由 `../kit.css` 按 01→11 顺序 `@import`，
+   同名 `@layer components` 按这个顺序拼接。**不要按主题重排文件**：同层同优先级的
+   规则靠源顺序决胜负，换顺序会悄悄改掉某个组件的最终取值。新增样式追加到对应
+   主题文件的末尾；跨主题的新组件另起文件并追加到 `@import` 列表**末尾**。
+   ============================================================ */
+
+/* ---------- 滚动条（外壳，不在 components 层） ----------
+   两套皮肤共用 `ui::ScrollBar` 自绘**窗口**滚动条：它只画在吸顶导航下沿与贴底固定层上沿
+   之间（系统滚动条属于视口，会把头部和底栏一起切一刀，见 `ui/scrollbar.rs`）。像素风是
+   12px 方块滑块，现代风是下面这条 10px 细圆头。
+   所以根滚动条要藏掉 —— 标准属性与伪元素两条一起写，理由与像素风那边同源
+   （`pixel/surfaces.css` 的 `html` 段）。嵌套滚动区（弹层 / 表格）仍用原生细圆头，
+   否则抽屉里会出现带抖动轨道的像素滚动条。 */
+html[data-ui-style="modern"] {
+  scrollbar-width: none;
+  /* `scrollbar-color` 是继承属性：根上给一次就能传给嵌套滚动区；
+     `scrollbar-width` 不继承，所以嵌套区的 `auto` 不受上面那条影响。 */
+  scrollbar-color: var(--md-border-strong) transparent;
+}
+
+html[data-ui-style="modern"]::-webkit-scrollbar {
+  display: none;
+}
+
+html[data-ui-style="modern"] *::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+html[data-ui-style="modern"] *::-webkit-scrollbar-track {
+  background-color: transparent;
+  background-image: none;
+}
+
+html[data-ui-style="modern"] *::-webkit-scrollbar-thumb {
+  background-color: var(--md-border-strong);
+  border: 0;
+  border-radius: var(--md-r-pill);
+  box-shadow: none;
+}
+
+html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
+  background-color: var(--md-fg-muted);
+}
+
+/* 自绘窗口滚动条（`ui::ScrollBar`）：`top` / `bottom` 由组件按 `[data-nav]` 与
+   `[data-fixed-bottom]` 实测写入，这里只给长相与兜底几何。
+   没有轨道底色、只有 thumb，浮在内容之上不占布局（所以页面不用为它留内边距）；
+   外壳不吃指针事件，只有 thumb 接拖动。触屏没有常驻滚动条，整条隐藏。 */
+.md-scrollbar {
+  position: fixed;
+  inset-inline-end: 0;
+  inset-block-start: 0;
+  inset-block-end: 0;
+  width: 10px;
+  z-index: var(--md-z-bar);
+  pointer-events: none;
+  display: none;
+}
+
+.md-scrollbar-thumb {
+  position: absolute;
+  inset-inline-end: 0;
+  width: 10px;
+  height: 48px;
+  border-radius: var(--md-r-pill);
+  background-color: var(--md-border-strong);
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+}
+
+.md-scrollbar-thumb:hover {
+  background-color: var(--md-fg-muted);
+}
+
+.md-scrollbar-thumb:active {
+  cursor: grabbing;
+}
+
+@media (hover: none) {
+  /* `display` 是组件按「页面够不够长」逐帧写的内联样式，只能靠 `!important` 压住。 */
+  .md-scrollbar {
+    display: none !important; /* important-ok: 压组件写入的内联 display */
+  }
+}
+
+@layer components {
+  /* ---------- 版心 ---------- */
+  .md-shell {
+    width: 100%;
+    max-width: var(--md-page-max);
+    margin-inline: auto;
+    padding-inline: var(--md-page-pad);
+  }
+
+  .md-page {
+    width: 100%;
+    max-width: var(--md-page-max);
+    margin-inline: auto;
+    padding: 0 var(--md-page-pad) 40px;
+  }
+
+  @media (min-width: 1024px) {
+    .md-page {
+      padding-block: 0 64px;
+    }
+  }
+
+  /* ---------- 顶栏 ---------- */
+  .md-nav {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 50;
+    /* 顶栏在 `.md-root` 之外（它是外壳），字体得自己声明一次，否则会继承像素风的点阵字体。 */
+    font-family: var(--md-font);
+    font-size: var(--md-text-base);
+    /* 实心 + 墨线：海报式版面靠明确的边界分栏，不靠半透明磨砂。
+       滚动时文字从实心底上滑过，读数与标题不会与背后的内容叠在一起。 */
+    border-bottom: 1px solid var(--md-rule);
+    background-color: var(--md-bg);
+  }
+
+  .md-nav-inner {
+    display: flex;
+    align-items: center;
+    gap: var(--md-space-6);
+    max-width: var(--md-page-max);
+    margin-inline: auto;
+    padding-inline: var(--md-page-pad);
+    /* 与 `--md-nav-h` 同源：吸顶元素的偏移量按这个高度 + 1px 边框算。 */
+    height: var(--md-nav-inner-h);
+  }
+
+  .md-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-space-2-5);
+    font-family: var(--md-font-display);
+    font-size: var(--md-text-lede);
+    font-weight: 760;
+    letter-spacing: 0;
+    color: var(--md-fg);
+    white-space: nowrap;
+  }
+
+  /* 站标：与像素风 `.brand-mark` 同一个用意（文字左边一枚可识别的记号），形态走现代风：
+     圆角方块 + 线性卫星图标，不搬像素风的墨框与硬投影。
+     底色用「前景实心 + 底色反白」（与 `.md-page-btn[data-current]` 同一套取值），明暗两套
+     自动换向；**不占品牌橙** —— 那一档实心色只留给全页唯一的主行动（`docs/ui/decisions.md` §5）。
+     尺寸 26px 是窄屏（320px + 英语品牌字）量出来的上限：再大就会顶掉顶栏右侧的内距。 */
+  .md-brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--md-r-ctl);
+    background-color: var(--md-fg);
+    color: var(--md-bg);
+  }
+
+  .md-brand-mark-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* 320–359 的窄屏：品牌文字收掉，只留站标。
+     为什么要有这一档：en@320 下顶栏右侧操作区已经贴到内容边界（余量 0），任何一个新入口
+     都会立刻溢出；而 320 是 `mobile_overflow` 明确覆盖的宽度。链接的可访问名由
+     `aria-label` 兜住（站标本身 `aria-hidden`），所以收掉文字不影响读屏（台账 R1）。 */
+  @media (width < 360px) {
+    .md-brand-text {
+      display: none;
+    }
+
+    .md-brand {
+      gap: 0;
+    }
+  }
+
+  .md-nav-list {
+    display: none;
+    align-items: center;
+    gap: var(--md-space-0-5);
+  }
+
+  /* 导航从 768 起回到顶栏：平板竖屏（768×1024）用底部 dock 是「把手机界面放大」，
+     而这里放 5 项导航是够的（中文约 264px、西语约 419px，加上品牌与右侧操作 ≈ 738px）。
+     完整 6 项仍然只给 ≥900 —— 再往下塞「日志」会把西语挤到折行。 */
+  @media (min-width: 768px) {
+    .md-nav-list {
+      display: flex;
+    }
+  }
+
+  /* 紧凑档是 [768, 900)：恰好 900px 已经是完整导航。上界用范围语法 `width < 900px`，
+     写成 `max-width: 900px` 会把 900 本身也算进来，与上面「≥900 完整」自相矛盾。 */
+  @media (min-width: 768px) and (width < 900px) {
+    /* 紧凑档：把「日志」收进「更多」面板（面板里本来就有它的入口）。 */
+    .md-nav-link.md-nav-compact-hide {
+      display: none;
+    }
+  }
+
+  .md-nav-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    /* 不在 34px 的固定高度里放可能折行的文字：一旦折行会被裁掉半行。 */
+    white-space: nowrap;
+    height: 34px;
+    padding-inline: var(--md-space-3);
+    border-radius: var(--md-r-sm);
+    font-size: 14px;
+    letter-spacing: 0.01em;
+    color: var(--md-fg-muted);
+    transition:
+      background-color var(--md-dur-fast) var(--md-ease),
+      color var(--md-dur-fast) var(--md-ease);
+  }
+
+  .md-nav-link:hover {
+    background-color: var(--md-surface-2);
+    color: var(--md-accent-ink);
+  }
+
+  /* 当前页：底部一根 2px 的品牌色短线，比整块底色更「编辑排版」。
+     文字也用行动色（`--md-accent-ink`，AA 达标），顶栏是三处常驻导航之一，
+     只靠一根细线标位置太弱；图标 / 下划线 / 文字同色，一眼可辨「我在哪」。 */
+  .md-nav-link[aria-current="page"] {
+    color: var(--md-accent-ink);
+    font-weight: 600;
+  }
+
+  .md-nav-link[aria-current="page"]::after {
+    content: "";
+    position: absolute;
+    inset-inline: 12px;
+    inset-block-end: 0;
+    height: 2px;
+    background: var(--md-accent);
+  }
+
+  /* 「更多」是开关不是链接：面板开着时触发器必须自己说明这件事。
+     原来只有 `anchor-name`（定位用），面板一开，触发器与「首页 / 练习」长得完全一样；
+     dock 里的同款入口早就有这套记号（见 `.md-dock-item[aria-expanded="true"]`），
+     这里对齐它：浅橙底 + 行动色文字，不加下划线（下划线是「当前页」的记号，别混）。 */
+  .md-nav-link.md-menu-anchor[aria-expanded="true"] {
+    background-color: var(--md-accent-wash);
+    color: var(--md-accent-ink);
+  }
+
+  .md-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--md-space-1-5);
+    margin-inline-start: auto;
+  }
+
+  .md-text-btn {
+    display: inline-flex;
+    align-items: center;
+    height: 34px;
+    padding-inline: var(--md-space-3);
+    border-radius: var(--md-r-pill);
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--md-fg-muted);
+    font-family: inherit;
+    font-size: var(--md-text-sm);
+    cursor: pointer;
+    transition:
+      background-color var(--md-dur-fast) var(--md-ease),
+      color var(--md-dur-fast) var(--md-ease),
+      border-color var(--md-dur-fast) var(--md-ease);
+  }
+
+  .md-text-btn:hover {
+    background-color: var(--md-accent-wash);
+    color: var(--md-accent-ink);
+  }
+
+  /* ---------- 按钮 ---------- */
+  .md-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--md-space-2);
+    height: var(--md-control-h);
+    padding-inline: var(--md-space-4);
+    border-radius: var(--md-r-pill);
+    border: 1px solid transparent;
+    font-family: inherit;
+    font-size: var(--md-text-sm);
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color var(--md-dur) var(--md-ease),
+      box-shadow var(--md-dur) var(--md-ease),
+      transform var(--md-dur) var(--md-ease),
+      border-color var(--md-dur) var(--md-ease);
+  }
+
+  /* 禁用：半透明 + 禁止光标 + 去掉投影。
+     以前 `.md-btn` 完全没有禁用态：备份页里不可用的「写入远端」与旁边可用的「导出备份」截图逐字节相同，
+     主按钮还会在悬停时扫光、上抬、投影加深 —— 看起来可点、点了没反应。
+     悬停 / 按下的变化已用 `:not(:disabled)` 排除；这里的 `box-shadow: none` 压过 accent 的橙色投影
+     （`:disabled` 的特异性高于单个类）。 */
+  .md-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  /* 主行动：品牌橙 + 同色投影，是一屏里唯一的高饱和实心块（阶梯第 1 级）。 */
+  .md-btn-accent {
+    background-color: var(--md-accent);
+    color: var(--md-accent-fg);
+    box-shadow: var(--md-shadow-accent);
+  }
+
+  .md-btn-accent:hover:not(:disabled) {
+    transform: translateY(-2px);
+    background-color: color-mix(in srgb, var(--md-accent) 88%, #000);
+    box-shadow: 0 16px 38px -14px color-mix(in srgb, var(--md-accent) 70%, transparent);
+  }
+
+  .md-btn-accent:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  /* 次行动：描边胶囊。悬停向主色靠一档（橙线 + 橙字 + 极浅橙底）但不做实心，
+     —— 「主 / 次」的差别由**填充**表达，不靠灰度。 */
+  .md-btn-quiet {
+    background-color: transparent;
+    border-color: var(--md-border-strong);
+    color: var(--md-fg);
+  }
+
+  .md-btn-quiet:hover:not(:disabled) {
+    background-color: var(--md-accent-wash);
+    border-color: var(--md-accent-line);
+    color: var(--md-accent-ink);
+    transform: translateY(-2px);
+  }
+
+  .md-btn-outline {
+    background-color: var(--md-surface);
+    border-color: var(--md-border-strong);
+    color: var(--md-fg);
+  }
+
+  .md-btn-outline:hover:not(:disabled) {
+    background-color: var(--md-accent-wash);
+    border-color: var(--md-accent-line);
+    color: var(--md-accent-ink);
+  }
+
+  .md-btn-ghost {
+    background-color: transparent;
+    color: var(--md-fg-muted);
+  }
+
+  .md-btn-ghost:hover:not(:disabled) {
+    background-color: var(--md-accent-wash);
+    color: var(--md-accent-ink);
+  }
+
+  .md-btn-lg {
+    height: 52px;
+    padding-inline: 26px;
+    font-size: var(--md-text-md);
+  }
+
+  /* ---------- 首屏：电波带 ---------- */
+  .md-hero-band {
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid var(--md-border);
+    background:
+      radial-gradient(680px 420px at 2% -24%, var(--md-glow-1), transparent 66%),
+      radial-gradient(560px 340px at 100% 6%, var(--md-glow-2), transparent 70%),
+      var(--md-bg);
+    isolation: isolate;
+  }
+
+  /* 2026-10 视觉升级：去掉 CRT 扫描线与三层彩色柔光。
+     扫描线让首屏显「复古屏幕」，三层不同色相的光斑互相冲淡，版面反而发灰。
+     现在只剩两层同方向的强光 + 一条墨线收边，对比与层次交给字号本身。 */
+
+  .md-hero-grid {
+    position: relative;
+    display: grid;
+    gap: 44px;
+    padding-top: var(--md-space-16);
+    padding-bottom: 80px;
+  }
+
+  @media (min-width: 900px) {
+    .md-hero-grid {
+      grid-template-columns: minmax(0, 1.32fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 72px;
+      padding-top: 104px;
+      padding-bottom: 120px;
+    }
+  }
+
+  .md-hero-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  /* 首页 hero 上那枚 kicker（`A/B/C 题库 · 2025 版`）：等宽大写字距。
+     **必须限定在 `.md-hero-copy` 里** —— 这条曾是无作用域的 `.md-badge`，把
+     `text-transform: uppercase` 与 0.16em 字距漏给了全站徽标（统计页的「20m」被渲染成
+     「20M」、`ui::Badge` 的每个标签都跟着变大写）。通用徽标样式在 `09-page-head.css` 的 `.md-badge`。 */
+  .md-hero-copy .md-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-space-2);
+    padding: 7px 12px;
+    border-radius: var(--md-r-xs);
+    border: 1px solid var(--md-border-strong);
+    background-color: transparent;
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-2xs);
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--md-fg-muted);
+  }
+
+  .md-badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: var(--md-r-pill);
+    background: var(--md-green);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-green) 20%, transparent);
+  }
+
+  /* 首屏的版本徽标是首屏的「第一行字」，让它带行动色；
+     这里必须按 `.md-hero-copy` 子元素限死 —— `.md-badge` 同时被 `ui::badge_skin`
+     复用（题目标签、分类徽记），那些是中性信息，不能跟着变橙。 */
+  .md-hero-copy > .md-badge {
+    border-color: var(--md-accent-line);
+    color: var(--md-accent-ink);
+  }
+
+  /* 大标题：负字距 + 1.02 行高，第二行用品牌橙；中文在两行之间要留一点呼吸。 */
+  .md-display {
+    font-family: var(--md-font-display);
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    font-size: var(--md-display-1);
+    font-weight: 780;
+    letter-spacing: -0.01em;
+    line-height: 0.96;
+    text-wrap: balance;
+  }
+
+  /* 中文标题行高单独抬一档：0.96 是给拉丁大标题定的（字面无上下伸出、行间靠 x-height
+     就能分开）；汉字是满格方块，0.96 会让相邻两行的字面几乎贴住，36px 下限时尤其明显。
+     1.04 只多 3px，但两行标题不再是「一块砖」。 */
+  html[data-ui-style="modern"][lang^="zh"] .md-display {
+    line-height: 1.04;
+  }
+
+  .md-lede {
+    max-width: 34em;
+    font-size: var(--md-text-lede);
+    line-height: 1.55;
+    color: color-mix(in srgb, var(--md-fg) 74%, transparent);
+  }
+
+  /* 首屏最下面那行小字：等宽、大写字距、上方一条墨线 —— 版面上的「脚注」。 */
+  .md-trust {
+    width: fit-content;
+    padding-block-start: var(--md-space-3-5);
+    border-top: 1px solid var(--md-rule);
+    font-family: var(--md-font-mono);
+    /* 这行在中文界面里是「无需注册 · 进度只存在本机」：11px + 0.14em 的字距在中文上是
+       「又小又散」，读不动。中文用 12px、字距收到 0.08em；大写转换对汉字无影响，
+       所以西文仍是标签体，只有中文变清楚。 */
+    font-size: var(--md-text-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--md-fg-muted);
+  }
+
+  /* 首屏底部的电波曲线：渐变描边、两端淡出，缓慢横向漂移。 */
+  .md-wave {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: -1px;
+    width: 100%;
+    height: 96px;
+    pointer-events: none;
+    opacity: 0.9;
+  }
+
+  .md-wave path {
+    stroke-dasharray: 14 10;
+    animation: md-current 9s linear infinite;
+  }
+
+  @keyframes md-current {
+    to {
+      stroke-dashoffset: -240;
+    }
+  }
+
+  /* ---------- 首屏主视觉：发射塔 + 同心电波 ---------- */
+  .md-hero-art {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 280px;
+  }
+
+  .md-hero-art svg {
+    /* 必须参与定位：否则后面绝对定位的几何底盘会盖在插画之上
+       （定位元素绘制在流内元素之后，与 DOM 顺序无关）。 */
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    height: auto;
+    overflow: visible;
+  }
+
+  /* 几何底盘：实线外圆 + 虚线内圆 + 竖直轴线。
+     全部是 1px 线条，不填充 —— 首屏唯一的「面」还是那块读数条。 */
+  .md-hero-disc {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    width: min(88%, 400px);
+    aspect-ratio: 1;
+    translate: -50% -52%;
+    border: 1px solid color-mix(in srgb, var(--md-blue) 26%, transparent);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .md-hero-disc::before {
+    content: "";
+    position: absolute;
+    inset-block: -1px;
+    inset-inline-start: 50%;
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--md-blue) 18%, transparent) 22%,
+      color-mix(in srgb, var(--md-blue) 18%, transparent) 78%,
+      transparent
+    );
+  }
+
+  .md-hero-disc::after {
+    content: "";
+    position: absolute;
+    inset: 17%;
+    border: 1px dashed color-mix(in srgb, var(--md-blue) 22%, transparent);
+    border-radius: 50%;
+  }
+
+  /* 同心电波：三圈错峰扩散，纯装饰。 */
+  .md-ring-wave {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: md-ring-out 4.2s var(--md-ease-out) infinite;
+  }
+
+  .md-ring-wave:nth-of-type(2) {
+    animation-delay: 1.4s;
+  }
+
+  .md-ring-wave:nth-of-type(3) {
+    animation-delay: 2.8s;
+  }
+
+  /* 带 `data-pause-offscreen` 的容器滚出视口时（`motion::pause_offscreen_in` 打上 `data-offscreen`）
+     暂停里面的循环动画：圆锥描边转的是自定义属性、电波曲线动的是 `stroke-dashoffset`，都不能交给
+     合成线程，看不见了还在跑就是每帧白白重算样式、重绘一次。
+     **只点名无限循环的那几条**，不写 `[data-offscreen] *`：后者连一次性的入场动画与过渡也一起暂停，
+     它们会停在起始帧、`finished` 永远不兑现（e2e 的 `settleFrames` 就等在这上面）。
+     这几条都在 `@layer components` 里，多一级特异性就压得住它们的 `animation` 简写，不用 `!important`。
+     首屏或功能卡里新加循环动画时，在这里补上它的选择器。 */
+  [data-offscreen] .md-aurora,
+  [data-offscreen] .md-ring-wave,
+  [data-offscreen] .md-wave path,
+  [data-offscreen] .md-sat,
+  [data-offscreen] .md-eme,
+  [data-offscreen] .md-moon-disc,
+  [data-offscreen] .md-feature-accent {
+    animation-play-state: paused;
+  }
+
+  @keyframes md-ring-out {
+    0% {
+      transform: scale(0.45);
+      opacity: 0.5;
+    }
+    70% {
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1.35);
+      opacity: 0;
+    }
+  }
+
+  .md-tower-glow {
+    filter: drop-shadow(0 0 14px var(--md-glow-2));
+  }
+
+  /* 主视觉左下角的玻璃信息条：等级 / 经验 / 连续天数，压在插画上而不是再开一张卡。 */
+  .md-hero-stat {
+    position: absolute;
+    inset-inline-start: 0;
+    inset-block-end: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--md-space-3-5);
+    padding: var(--md-space-3) var(--md-space-4);
+    border-radius: var(--md-r-lg);
+    border: 1px solid var(--md-rule);
+    /* 实心卡片：首屏主视觉上不允许再叠一层毛玻璃 —— 半透明玻璃条会把塔身的
+       线条搅成一片糊，读数也失去对比。 */
+    background-color: var(--md-surface);
+  }
+
+  .md-hero-stat-divider {
+    width: 1px;
+    height: 28px;
+    background-color: var(--md-border);
+  }
+
+  /* 入场只留一处：路由容器 `#route-content`（`.motion-page`，见本文件末尾「动效层」）。
+     这里曾经还有一份 `.md-root { animation: md-page-in }`，与路由层的淡入叠在一起，
+     表现为「先淡一次、再淡一次」，桥接页与迁移页的换页手感也对不上。 */
+
+  @media (prefers-reduced-motion: reduce) {
+    .md-ring-wave,
+    .md-wave path {
+      animation: none;
+    }
+  }
+
+  /* ---------- 数据条（替代三张统计卡） ---------- */
+  /* 上沿从 1px 墨线抬成 2px 行动色线：这一带是「全页读数」，也是内容页上唯一
+     横向成片的数字区 —— 用主题色框住它，视线才会先落在数字上而不是标题上。 */
+  .md-strip {
+    display: grid;
+    gap: 24px 32px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 32px 0 8px;
+    border-top: 2px solid var(--md-accent-line);
+  }
+
+  @media (min-width: 720px) {
+    .md-strip {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /* 竖线只在宽屏出现：四格读数并排时，一条墨线比留白更能把「同一把尺子上的四个刻度」
+     讲清楚；窄屏两列两行时竖线会把版面切碎，所以退回纯留白。 */
+  .md-strip-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-space-0-5);
+  }
+
+  @media (min-width: 720px) {
+    .md-strip-item + .md-strip-item {
+      border-inline-start: 1px solid var(--md-rule);
+      padding-inline-start: 28px;
+    }
+  }
+
+  .md-strip-value {
+    /* 大字读数用比例字体：等宽数字在 56px 下间距过散，且斜杠零显得像终端。 */
+    font-family: var(--md-font);
+    font-size: clamp(40px, 4.4vw, 56px);
+    font-weight: 560;
+    line-height: 0.95;
+    letter-spacing: -0.045em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 读数标签走行动色：它是「这个数字是什么」的唯一说明，也是数据条上唯一成排的小字；
+     12px 下 `--md-accent-ink` 在暖纸底 5.4:1、在白卡上 6.0:1，够 AA。 */
+  .md-strip-label {
+    font-family: var(--md-font);
+    font-size: var(--md-text-xs);
+    letter-spacing: 0.01em;
+    color: var(--md-accent-ink);
+  }
+
+  /* 数据条右下角的「学习进度」入口：数据条只报数，入口要单独给一个。
+     靠右对齐 —— 它跟在最后一格（经验）后面，左对齐会被当成第五个指标。 */
+  .md-strip-link {
+    display: flex;
+    width: fit-content;
+    align-items: center;
+    gap: var(--md-space-1-5);
+    margin-block-start: 10px;
+    margin-inline-start: auto;
+    color: var(--md-accent-ink);
+    font-size: var(--md-text-sm);
+    transition: color var(--md-dur-fast) var(--md-ease);
+  }
+
+  .md-strip-link:hover {
+    color: var(--md-accent);
+  }
+
+  /* 数据条沉到「学习记录」章节之后，章节顶部已经有一条墨线：
+     这一份去掉自己的上边线，避免两条线在 24px 内叠成双横线。 */
+  .md-strip-flat {
+    border-top: none;
+    padding-block-start: var(--md-space-2);
+  }
+
+  /* ---------- 章节小标题行（标题 + 右侧读数） ---------- */
+  .md-sect-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px 16px;
+    margin-block-end: 12px;
+  }
+
+  .md-sect-note {
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-2xs);
+    letter-spacing: 0.06em;
+    color: var(--md-fg-muted);
+  }
+
+  /* ---------- 今日开台清单 ----------
+     三行清单而不是三张卡：卡片会与下方的「快捷入口」撞成同一层级，
+     而这一块要读成「一份今天要做完的清单」。 */
+  .md-onair {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* 三行之间的竖向链路 + 每行一个空心圆节点：清单读成「信号经过三级」的流程图，
+     而不是三行互不相干的文字。线只画在行与行之间，不穿过节点本身。 */
+  .md-onair > li {
+    position: relative;
+  }
+
+  .md-onair > li:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    inset-block-start: 50%;
+    inset-block-end: -50%;
+    inset-inline-start: -10.5px;
+    width: 1px;
+    background-color: var(--md-border-strong);
+    pointer-events: none;
+  }
+
+  .md-onair-row {
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto auto auto;
+    align-items: center;
+    gap: 18px;
+    min-height: 64px;
+    padding: 12px 4px 12px 0;
+    border-top: 1px solid var(--md-rule);
+    color: var(--md-fg);
+    transition:
+      background-color var(--md-dur-fast) var(--md-ease),
+      box-shadow var(--md-dur-fast) var(--md-ease);
+  }
+
+  .md-onair > li:last-child .md-onair-row {
+    border-bottom: 1px solid var(--md-rule);
+  }
+
+  @media (hover: hover) {
+    .md-onair-row:hover {
+      background-color: color-mix(in srgb, var(--md-fg) 3%, transparent);
+    }
+
+    .md-onair-row:hover .md-onair-go {
+      translate: 3px 0;
+    }
+  }
+
+  /* 键盘用户看不到 hover：焦点落在整行时给同一份底色与箭头位移。 */
+  .md-onair-row:focus-visible {
+    background-color: color-mix(in srgb, var(--md-fg) 4%, transparent);
+    outline: 2px solid var(--md-ring);
+    outline-offset: -2px;
+  }
+
+  /* 节点圆点在编号左侧、用负外边距把它挪出版心边距：
+     这样「01」仍然与章节标题左对齐，圆点落在版心的 padding 里（24/20px 够放）。
+     不用绝对定位是因为行高在手机上会变（说明折行），绝对定位会与行中心错位。 */
+  .md-onair-ch {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-inline-start: -14px;
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-xs);
+    letter-spacing: 0.12em;
+    color: var(--md-fg-muted);
+  }
+
+  .md-onair-ch::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border: 1px solid var(--md-fg-muted);
+    border-radius: 50%;
+  }
+
+  .md-onair-main {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .md-onair-title {
+    font-size: var(--md-text-md);
+    font-weight: 640;
+    line-height: 1.25;
+  }
+
+  /* 说明最多两行：三行以上会把清单拉成「段落」，
+     而它在这里的作用是「补充一句」，不是正文。 */
+  .md-onair-hint {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: var(--md-text-sm);
+    line-height: 1.45;
+    color: var(--md-fg-muted);
+  }
+
+  .md-onair-meta {
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-2xs);
+    white-space: nowrap;
+    color: var(--md-fg-muted);
+  }
+
+  .md-onair-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: var(--md-text-xs);
+    white-space: nowrap;
+    color: var(--md-fg-muted);
+  }
+
+  /* 状态灯：绿=已完成、橙=待发、灰=无限制。三色语义与全站一致，不新增色相。 */
+  .md-led {
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border-radius: var(--md-r-pill);
+    background-color: var(--md-border-strong);
+  }
+
+  .md-onair-row[data-state="todo"] .md-led {
+    background-color: var(--md-orange);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-orange) 18%, transparent);
+  }
+
+  .md-onair-row[data-state="done"] .md-led {
+    background-color: var(--md-green);
+  }
+
+  .md-onair-go {
+    color: var(--md-fg-muted);
+    transition: translate var(--md-dur-fast) var(--md-ease);
+  }
+
+  /* ---------- 学习记录：最近 7 天信号瀑布 ---------- */
+  .md-wf-wrap {
+    margin-block-start: 28px;
+  }
+
+  .md-wf-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 12px;
+    margin-block-end: 10px;
+  }
+
+  .md-wf-title {
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-2xs);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--md-fg-muted);
+  }
+
+  /* 「最近 7 天」这类中文小标题：0.16em（西文 kicker 的字距）落到汉字上会散成
+     「最 近 7 天」，与旁边的读数对不上。中文收到 0.06em，仍保留小字标签的距离感。 */
+  html[data-ui-style="modern"][lang^="zh"] .md-wf-title {
+    letter-spacing: 0.06em;
+  }
+
+  .md-wf-total {
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-2xs);
+    color: var(--md-fg-muted);
+  }
+
+  .md-wf-empty {
+    margin-block-end: 10px;
+    font-size: var(--md-text-sm);
+    color: var(--md-fg-muted);
+  }
+
+  /* 瀑布只有色块与日期：色块不写字（深档橙底上放数字会掉到 4.5:1 以下），
+     明细走 `title`，整图有 `role="img"` 的汇总名称。 */
+  .md-wf {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: var(--md-space-1-5);
+  }
+
+  .md-wf-col {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: var(--md-space-1-5);
+  }
+
+  /* 45° 斜切：七格连成一条「向下淌」的瀑布带，斜向与「时间向右、强度向下」
+     的读法一致。斜切在格子内部，不裁文字（格子本来就没有文字）。 */
+  .md-wf-cell {
+    display: block;
+    height: 52px;
+    border: 1px solid var(--md-border);
+    background-color: var(--md-surface-2);
+    clip-path: polygon(15% 0, 100% 0, 85% 100%, 0 100%);
+  }
+
+  /* 深色主题的底色很暗，最低档要抬高一点混合比例，否则「做了一道」与「没做」
+     在瀑布上分不出来（16% 橙混夜航底几乎回到背景色）。 */
+  .md-wf-cell[data-level="1"] {
+    border-color: color-mix(in srgb, var(--md-orange) 30%, var(--md-border));
+    background-color: color-mix(in srgb, var(--md-orange) 24%, var(--md-surface));
+  }
+
+  .md-wf-cell[data-level="2"] {
+    border-color: color-mix(in srgb, var(--md-orange) 44%, var(--md-border));
+    background-color: color-mix(in srgb, var(--md-orange) 44%, var(--md-surface));
+  }
+
+  .md-wf-cell[data-level="3"] {
+    border-color: color-mix(in srgb, var(--md-orange) 58%, var(--md-border));
+    background-color: color-mix(in srgb, var(--md-orange) 60%, var(--md-surface));
+  }
+
+  .md-wf-cell[data-level="4"] {
+    border-color: color-mix(in srgb, var(--md-orange) 78%, var(--md-border));
+    background-color: color-mix(in srgb, var(--md-orange) 80%, var(--md-surface));
+  }
+
+  .md-wf-cell[data-level="5"] {
+    border-color: var(--md-orange);
+    background-color: var(--md-orange);
+  }
+
+  .md-wf-day {
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-3xs);
+    letter-spacing: 0.04em;
+    text-align: center;
+    color: var(--md-fg-muted);
+  }
+
+  .md-wf-col[data-today="true"] .md-wf-day {
+    font-weight: 600;
+    color: var(--md-fg);
+  }
+
+  .md-wf-col[data-today="true"] .md-wf-cell {
+    border-color: var(--md-fg);
+  }
+
+  /* ---------- 实时传播（`/api/solar`） ----------
+     读数与波段条件同属「此刻的外部世界」，所以合成一块：三个指数 + 一个综合等级，
+     下面一条波段带。色条只用三色语义（绿=好、橙=一般、灰=弱），不新增色相。 */
+  .md-live {
+    display: grid;
+    gap: var(--md-space-4);
+    padding-block-start: var(--md-space-1);
+  }
+
+  .md-live-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    align-items: end;
+    gap: 14px 24px;
+  }
+
+  .md-live-metric {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: var(--md-space-0-5);
+  }
+
+  .md-live-metric-value {
+    font-family: var(--md-font);
+    font-size: clamp(26px, 2.6vw, 34px);
+    font-weight: 560;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .md-live-metric-label {
+    font-size: var(--md-text-xs);
+    color: var(--md-fg-muted);
+  }
+
+  /* 读数占位：宽度按三位数字预留（读数最大 3 位），高度贴着 26–34px 的读数行 ——
+     真值到位时这一格不换宽，右侧三格不会跟着挪（台账 P2）。 */
+  .md-live-metric-skel {
+    display: block;
+    width: 3ch;
+    height: clamp(26px, 2.6vw, 34px);
+  }
+
+  .md-live-level {
+    display: inline-flex;
+    align-items: center;
+    justify-self: end;
+    gap: var(--md-space-2);
+    padding: var(--md-space-1-5) var(--md-space-3);
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-xs);
+  }
+
+  .md-live-level-text {
+    font-size: var(--md-text-sm);
+    font-weight: 600;
+  }
+
+  .md-live-level[data-tone="good"] .md-led {
+    background-color: var(--md-green);
+  }
+
+  .md-live-level[data-tone="warn"] .md-led {
+    background-color: var(--md-orange);
+  }
+
+  /* 波段不是四张「卡片」，是一排电平柱：
+     柱高 = 条件档位（Good 满格 / Fair 六成 / Poor 三成），柱底一条边界就是「0 电平」轴。
+     高度与颜色双编码 —— 只靠色相的话，色觉障碍用户读不出强弱；只靠高度的话，
+     一眼看不出「好还是差」，两者叠在一起才成立。 */
+  .md-live-belt {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--md-space-2-5);
+    padding-block-start: var(--md-space-1);
+  }
+
+  .md-live-band {
+    --tone-color: var(--md-border-strong);
+    --fill: 14%;
+    position: relative;
+    display: flex;
+    min-width: 0;
+    height: 88px;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--md-space-2-5);
+    overflow: hidden;
+    padding: var(--md-space-2-5) var(--md-space-3);
+    border: 1px solid var(--md-border);
+    background-color: var(--md-surface);
+  }
+
+  .md-live-band[data-tone="good"] {
+    --tone-color: var(--md-green);
+    --fill: 100%;
+  }
+
+  .md-live-band[data-tone="warn"] {
+    --tone-color: var(--md-orange);
+    --fill: 62%;
+  }
+
+  .md-live-band[data-tone="muted"] {
+    --tone-color: var(--md-border-strong);
+    --fill: 34%;
+  }
+
+  /* 填充层压在文字下面（`position: absolute` + 文字各自 `position: relative`），
+     顶边那道 1px 实色线就是「当前电平」，比纯色块更容易比较高低。 */
+  .md-live-band-bar {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 0;
+    height: var(--fill);
+    background-color: color-mix(in srgb, var(--tone-color) 20%, transparent);
+    border-block-start: 1px solid var(--tone-color);
+    pointer-events: none;
+  }
+
+  .md-live-band-name {
+    position: relative;
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-2xs);
+    letter-spacing: 0.04em;
+    color: var(--md-fg);
+  }
+
+  /* 状态字压在填充条上（条是绝对定位的兄弟节点，axe 量不到它）：
+     深色主题里「良好」那格是 20% 绿底，`--md-fg-muted` 上去只有 4.1:1，
+     12px 小字读不清。这一处用 `--md-fg`，条本身的强弱仍由高度 + 色相编码。 */
+  .md-live-band-state {
+    position: relative;
+    font-size: var(--md-text-xs);
+    color: var(--md-fg);
+  }
+
+  /* 来源与更新时间：等宽小字，靠右 —— 它是这一块的「脚注」，不该抢读数。 */
+  .md-live-source {
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-3xs);
+    letter-spacing: 0.04em;
+    text-align: end;
+    color: var(--md-fg-muted);
+  }
+
+  .md-live-failed {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-space-3);
+    padding: var(--md-space-4);
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-md);
+    background-color: var(--md-surface);
+    font-size: var(--md-text-sm);
+    color: var(--md-fg-muted);
+  }
+
+  .md-live-failed-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--md-space-2);
+  }
+
+  @media (width < 640px) {
+    /* 手机上三格读数仍并排（都是两三位数），等级掉到下一行靠左；
+       波段带两列两行，比四列各 80px 更易读。 */
+    .md-live-metrics {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .md-live-level {
+      grid-column: 1 / -1;
+      justify-self: start;
+    }
+
+    .md-live-belt {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .md-live-source {
+      text-align: start;
+    }
+  }
+
+  @media (width < 640px) {
+    /* 手机上一行要塞下编号 + 标题 + 状态：收益（XP）让位，箭头保留方向感。 */
+    .md-onair-row {
+      grid-template-columns: 2rem minmax(0, 1fr) auto auto;
+      gap: var(--md-space-2-5);
+      min-height: 56px;
+    }
+
+    .md-onair-meta {
+      display: none;
+    }
+
+    /* 手机上说明只留一行：两行会把三条清单从「一屏读完」推成「一屏读两条」。 */
+    .md-onair-hint {
+      -webkit-line-clamp: 1;
+    }
+
+    .md-wf-cell {
+      height: 40px;
+      /* 小格上斜切会切掉近三成面积，退回直角（日期与格子的对应关系也更直白）。 */
+      clip-path: none;
+    }
+  }
+
+  /* ---------- 三个大小不一的行动卡 ---------- */
+  .md-bento {
+    display: grid;
+    gap: var(--md-space-5);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  @media (min-width: 900px) {
+    .md-bento {
+      grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1fr);
+    }
+  }
+
+  .md-feature {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--md-space-8);
+    padding: var(--md-space-8);
+    border-radius: var(--md-r-lg);
+    border: 1px solid transparent;
+    box-shadow: var(--md-shadow-1);
+    transition:
+      translate var(--md-dur) var(--md-ease),
+      box-shadow var(--md-dur) var(--md-ease);
+  }
+
+  /* 悬停上抬统一由后面的 `@media (hover: hover)` 分支用 `translate` 完成。
+     在这里再写 `transform: translateY(-3px)` 会与它叠成 -6px，而且 `transform`
+     不在通用 transition 列表里 —— 指针进出时卡片会一顿一顿地跳。 */
+
+  /* 焦点块：唯一使用橙色的实心面。
+     平涂而不是渐变 —— 渐变会把「一块颜色」变成「一团光」，海报要的是前者。
+
+     面色的三个色标抽成变量：真正的渐变画在「炫技层」那条 `.md-feature-accent`
+     里，hover 只换变量值。若照旧用 `background` 简写改色，会把渐变与锥形描边
+     一起重置成 `none`，指针移入的瞬间整块跳成纯色 —— 也就是「颜色闪一下」。 */
+  .md-feature-accent {
+    --md-accent-face-a: #ff6a35; /* color-ok: 品牌橙实心面（焦点卡），明暗共用 */
+    --md-accent-face-b: #ff4d2e; /* color-ok: 品牌橙实心面（焦点卡），明暗共用 */
+    --md-accent-face-c: #f2452b; /* color-ok: 品牌橙实心面（焦点卡），明暗共用 */
+    position: relative;
+    overflow: hidden;
+    background: var(--md-orange);
+    color: var(--md-primary-fg);
+  }
+
+  /* 右下角两个同心圆（实线 + 环带）：几何层次只压在卡角，不穿过任何文字。
+     用白色半透明而不是黑色：橙底上黑环会显脏。 */
+  .md-feature-accent::after {
+    content: "";
+    position: absolute;
+    inset-inline-end: -46px;
+    inset-block-end: -46px;
+    width: 190px;
+    height: 190px;
+    border: 1px solid rgb(255 255 255 / 0.3);
+    border-radius: 50%;
+    box-shadow: 0 0 0 26px rgb(255 255 255 / 0.07);
+    pointer-events: none;
+  }
+
+  .md-feature-accent:hover {
+    --md-accent-face-a: #ee5a26; /* color-ok: 品牌橙实心面（焦点卡），明暗共用 */
+    --md-accent-face-b: #e0431f; /* color-ok: 品牌橙实心面（焦点卡），明暗共用 */
+    --md-accent-face-c: #d23a1b; /* color-ok: 品牌橙实心面（焦点卡），明暗共用 */
+  }
+
+  /* 深色卡：实心墨面 + 顶部 3px 蓝线。旋转描边属于「光效」，与几何化版面冲突，
+     换成一条不动的粗边 —— 边界清楚，才撑得住旁边的橙色实心块。 */
+  .md-feature-ink {
+    border: 1px solid var(--md-border-strong);
+    border-top: 3px solid var(--md-blue);
+    background: var(--md-contrast-bg);
+    color: var(--md-contrast-fg);
+  }
+
+  .md-feature-quiet {
+    background-color: var(--md-surface);
+    border-color: var(--md-border);
+    color: var(--md-fg);
+  }
+
+  .md-feature-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-space-2);
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-2xs);
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    /* 0.72 是「贴着橙底算出来的极限」：深墨字在品牌橙上，叠到 0.72 只剩约 3.3:1，
+       低于 12px 小字的 4.5。0.86 约 4.6:1，视觉上仍是「比标题淡一档」的元信息。 */
+    opacity: 0.86;
+  }
+
+  .md-feature-title {
+    font-family: var(--md-font-display);
+    font-size: clamp(26px, 3vw, 38px);
+    font-weight: 740;
+    letter-spacing: 0;
+    line-height: 1.05;
+    text-wrap: balance;
+  }
+
+  .md-feature-value {
+    font-family: var(--md-font-mono);
+    font-size: clamp(52px, 6vw, 76px);
+    font-weight: 560;
+    line-height: 0.9;
+    letter-spacing: -0.05em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .md-feature-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-space-3);
+    font-size: var(--md-text-sm);
+    opacity: 0.86;
+  }
+
+  /* ---------- 模块卡片：三色，但只做浅底 + 描边，不铺满 ---------- */
+  .md-modules {
+    display: grid;
+    gap: var(--md-space-5);
+    /* 单列是显式的：不写时靠「只有一个隐式列」也能得到同样结果，
+       但 `.md-bento` 是显式单列，两块放在一起看会像是漏了一条规则。 */
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  @media (min-width: 900px) {
+    .md-modules {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .md-mod {
+    --tone: var(--md-orange);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-space-4);
+    /* 这里曾经有 `overflow: hidden`：卡片内部没有任何需要裁切的内容
+       （负外边距的 `.md-link-row` 只吃到 padding 里，角标在 9px 内），
+       它唯一的实际效果是 hover 上浮时把卡片底部那一圈圆角与边框裁掉。
+       需要裁到圆角的是角标本身，交给 `::before` 的 `border-start-start-radius`。 */
+    padding: var(--md-space-6);
+    border-radius: var(--md-r-lg);
+    border: 1px solid color-mix(in srgb, var(--tone) 22%, var(--md-border));
+    background: color-mix(in srgb, var(--tone) 5%, var(--md-surface));
+    box-shadow: var(--md-shadow-1);
+    transition:
+      translate var(--md-dur) var(--md-ease),
+      border-color var(--md-dur) var(--md-ease);
+  }
+
+  /* 左上角的实心直角三角（`linear-gradient` 切出的半方块）：替换原来的 3px 顶边色条。
+     同一块颜色，从「一条线」变成「一个角」—— 与章节头的三角、瀑布的斜切同一族几何记号；
+     hover 时放大而不是位移，避免与整卡上抬的 `translate` 抢同一属性。 */
+  .md-mod::before {
+    content: "";
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: 28px;
+    height: 28px;
+    background-image: linear-gradient(to bottom right, var(--tone) 50%, transparent 50%);
+    /* 左上角跟着卡片的圆角走：没有 `overflow: hidden` 之后，
+       靠这一行让三角的直角边不与圆角弧打架。 */
+    border-start-start-radius: var(--md-r-lg);
+    opacity: 0.85;
+    transform-origin: top left;
+    transition: scale var(--md-dur) var(--md-ease);
+    pointer-events: none;
+  }
+
+  @media (hover: hover) {
+    .md-mod:hover::before {
+      scale: 1.18;
+    }
+  }
+
+  .md-mod:hover {
+    translate: 0 -3px;
+    border-color: color-mix(in srgb, var(--tone) 45%, var(--md-border));
+  }
+
+  .md-mod-blue {
+    --tone: var(--md-blue);
+  }
+
+  .md-mod-green {
+    --tone: var(--md-green);
+  }
+
+  .md-mod-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--md-space-3);
+  }
+
+  .md-mod-index {
+    font-family: var(--md-font-mono);
+    font-size: clamp(52px, 5vw, 68px);
+    font-weight: 500;
+    line-height: 0.8;
+    letter-spacing: -0.06em;
+    /* 装饰性序号也要过对比度（52px 大字需 ≥3:1）：42% 透明合成只有 2.09 */
+    color: color-mix(in srgb, var(--tone) 52%, var(--md-fg));
+  }
+
+  .md-mod-title {
+    font-family: var(--md-font-display);
+    font-size: 24px;
+    font-weight: 740;
+    letter-spacing: 0;
+    color: var(--md-fg);
+  }
+
+  .md-link-list {
+    display: grid;
+    gap: 1px;
+  }
+
+  /* 目录列表里的一行（`.md-link-list` 的直接子项）。
+     **不要叫 `.md-link`**：那是 `kit::link_class()` 的行内文字链接（见文件末尾）。
+     两个组件曾共用这一个类名，于是全站 36 个行内链接被一并撑成了 `flex` + 36px 高 + 负外边距的「列表行」
+     （`/radio-law` 一页 22 个、`/developers` 的段内链接盒子比整段还宽 16px）。
+     `margin-inline: -8px` 配 `padding-inline: 8px` 是有意的「出血」：悬停底色比文字宽一圈，文字仍与卡片内容对齐。 */
+  .md-link-row {
+    display: flex;
+    align-items: center;
+    gap: var(--md-space-2);
+    min-height: 36px;
+    padding-inline: var(--md-space-2);
+    margin-inline: -8px;
+    border-radius: var(--md-r-xs);
+    font-size: var(--md-text-sm);
+    color: var(--md-accent-ink);
+    transition:
+      background-color var(--md-dur-fast) var(--md-ease),
+      color var(--md-dur-fast) var(--md-ease);
+  }
+
+  .md-link-row:hover {
+    background-color: color-mix(in srgb, var(--tone, var(--md-orange)) 12%, transparent);
+    color: var(--md-fg);
+  }
+
+  .md-link-row:focus-visible {
+    outline: 2px solid var(--md-ring);
+    outline-offset: 2px;
+  }
+
+  /* 目录条目的前导记号：从圆点改成实心三角 —— 与章节标头、卡片角标同一族。
+     三角指向右（条目方向），也给「这是一条入口」一个方向感。 */
+  .md-link-dot {
+    width: 6px;
+    height: 6px;
+    flex-shrink: 0;
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+    background-color: color-mix(in srgb, var(--tone, var(--md-orange)) 65%, transparent);
+  }
+
+  /* 「查看全部」用模块色 + 箭头，和上面一排入口区分开，否则读起来像第 5 个条目。 */
+  .md-link-more {
+    margin-top: var(--md-space-1-5);
+    padding-top: var(--md-space-2-5);
+    padding-inline: 0;
+    margin-inline: 0;
+    border-top: 1px solid color-mix(in srgb, var(--tone, var(--md-orange)) 22%, var(--md-border));
+    font-weight: 600;
+    /* 颜色（行动色 / 悬停前景色）与圆角（`--md-r-xs`）沿用 `.md-link-row`。
+       这里原先还声明过「模块色」的静止 / 悬停色和 `border-radius: 0`，但都被同名的 `.md-link` 覆盖，
+       从来没有渲染出来 —— 删掉这些死声明，而不是让改名把它们意外激活（那会悄悄改变「查看全部」的外观）。
+       若要它用模块色 / 直角，那是一次设计决定，另做。 */
+  }
+
+  .md-link-more:hover {
+    background-color: transparent;
+  }
+
+  .md-link-more svg {
+    transition: transform var(--md-dur) var(--md-ease);
+  }
+
+  .md-link-more:hover svg {
+    transform: translateX(3px);
+  }
+
+  /* ---------- 收尾 CTA ---------- */
+  .md-closing {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-space-5);
+    overflow: hidden;
+    margin-top: var(--md-gap-section);
+    padding: var(--md-space-8);
+    border-radius: var(--md-r-lg);
+    border-left: 4px solid var(--md-orange);
+    background: var(--md-contrast-bg);
+    color: var(--md-contrast-fg);
+  }
+
+  /* 原来这里有一团橙色径向光。整块改成实心后，光斑既多余又会让边角发糊：
+     收尾区的辨识度靠左边的橙条与字号，不靠发光。 */
+
+  .md-closing-copy {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-space-1-5);
+    min-width: 0;
+  }
+
+  .md-closing-title {
+    font-family: var(--md-font-display);
+    font-size: var(--md-display-4);
+    font-weight: 740;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+  }
+
+  /* ---------- 排版与通用 ---------- */
+
+  /* 这个类同时用于「页面区块标题」和「弹层 / 面板内的小标题」，
+     所以字号取两档之间的 `--md-display-4`，装饰留给区块骨架（见文件末尾的章节尺）。
+     早先在这里加过「橙色方块 + flex 对齐」，结果弹层标题、答案解析、笔记标题
+     全被顶上一个大方块 —— 装饰必须挂在只属于页面的选择器上。 */
+  .md-h2 {
+    font-family: var(--md-font-display);
+    font-size: var(--md-display-4);
+    font-weight: 740;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+
+  .md-muted {
+    color: var(--md-fg-muted);
+  }
+
+  .md-sm {
+    font-size: var(--md-text-sm);
+  }
+
+  .md-mono {
+    font-family: var(--md-font-mono);
+    font-variant-numeric: tabular-nums;
+    /* 两款等宽都带「斜杠零」特性（Geist Mono 默认开、Plex 走 `zero`），
+       但在 12–16px 的读数里它像代码而不是数据，统一关掉。
+       Plex 的默认零本就是光的，这条对它无害，留着是为了换字族时行为不漂。 */
+    font-feature-settings: "zero" 0;
+  }
+
+  .md-stat-value {
+    font-family: var(--md-font-mono);
+    font-size: 26px;
+    font-weight: 660;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .md-stat-label {
+    font-size: var(--md-text-2xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--md-fg-muted);
+  }
+
+  .md-hairline {
+    border-top: 1px solid var(--md-border);
+  }
+
+  /* ---------- 分段选择（设置里的风格 / 明暗） ---------- */
+  .md-choices {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--md-space-2);
+  }
+
+  .md-choices-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .md-choice {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-space-0-5);
+    padding: var(--md-space-2-5) var(--md-space-3);
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-md);
+    background-color: var(--md-surface);
+    color: var(--md-fg);
+    font-family: inherit;
+    text-align: start;
+    cursor: pointer;
+    transition:
+      border-color var(--md-dur-fast) var(--md-ease),
+      background-color var(--md-dur-fast) var(--md-ease),
+      box-shadow var(--md-dur-fast) var(--md-ease);
+  }
+
+  .md-choice:hover {
+    border-color: var(--md-border-strong);
+    background-color: var(--md-surface-2);
+  }
+
+  .md-choice[aria-pressed="true"] {
+    border-color: color-mix(in srgb, var(--md-blue) 55%, var(--md-border));
+    background-color: color-mix(in srgb, var(--md-blue) 9%, var(--md-surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-blue) 45%, transparent);
+  }
+
+  .md-choice-title {
+    font-size: var(--md-text-base);
+    font-weight: 570;
+  }
+
+  /* ---------- 入口面板 ---------- */
+  .md-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    justify-content: flex-end;
+    background-color: rgb(12 14 18 / 0.42);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+  }
+
+  .md-sheet-panel {
+    font-family: var(--md-font);
+    font-size: var(--md-text-base);
+    display: flex;
+    flex-direction: column;
+    width: min(420px, 100%);
+    max-height: 100%;
+    background-color: var(--md-surface);
+    border-start-start-radius: var(--md-r-xl);
+    border-end-start-radius: var(--md-r-xl);
+    box-shadow: var(--md-shadow-3);
+    animation: md-sheet-in var(--md-dur) var(--md-ease-out);
+  }
+
+  @keyframes md-sheet-in {
+    from {
+      transform: translateX(28px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .md-sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--md-space-3);
+    padding: var(--md-space-4) var(--md-space-5);
+    border-bottom: 1px solid var(--md-border);
+  }
+
+  .md-sheet-body {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 8px 12px 24px;
+  }
+
+  /* 面板 / 抽屉里的分组小标题：等宽大写已经是「标签」的语气，再用行动色当分隔层
+     —— 一屏里出现两三次，读者就知道「这一段属于哪个组」，不靠字号硬撑层级。 */
+  .md-group-title {
+    padding: 14px 8px 6px;
+    font-size: var(--md-text-xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--md-accent-ink);
+  }
+
+  /* 焦点：实线环 + 2px offset（像素风是 2px 虚线，两种语言各自成立）。
+     Portal 出来的表面（弹层 / 调谐台 / 抽屉 / dock / 气泡 / 固定条）不在 `.md-root`
+     子树里，必须逐个列出 —— 漏一个，键盘用户在那个表面里看到的就还是像素虚线环。 */
+  .md-root :focus-visible,
+  .md-sheet :focus-visible,
+  .md-nav :focus-visible,
+  .md-drawer-fab:focus-visible,
+  .md-modal-panel :focus-visible,
+  .md-sheet-panel :focus-visible,
+  .md-palette :focus-visible,
+  .md-dock :focus-visible,
+  .md-bubble :focus-visible,
+  .md-toast :focus-visible,
+  .md-bar :focus-visible {
+    outline: 2px solid var(--md-ring);
+    outline-offset: 2px;
+    /* 不写 border-radius：`.md-icon-btn` 是 10px，写死 4px 会让按钮一聚焦就「变方」。
+       现代浏览器的 outline 本来就跟随元素自身的圆角。 */
+  }
+}
+
+/* 图标按钮：现代风里导航右侧只留图标，文字标签交给 `aria-label`。
+   放在 components 层之外会盖住 `.md-text-btn` 的悬停态，所以补在这里。 */
+@layer components {
+  .md-text-btn-icon {
+    width: 36px;
+    padding-inline: 0;
+    justify-content: center;
+  }
+}
+

@@ -10,7 +10,7 @@ use ham_web_core::lora::{
 };
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_num};
+use super::{fmt_num, result_class};
 use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField, SelectOption, SimpleSelect};
 use crate::util::unique_id;
@@ -199,7 +199,7 @@ pub(super) fn LoraCalculator() -> impl IntoView {
         </Field>
       </div>
 
-      <div class=RESULT role="status">
+      <div class=result_class() role="status">
         {move || match toa.get() {
           Some((tsym, pre, psym, toa_s, bps)) => {
             tf(
@@ -241,7 +241,7 @@ pub(super) fn LoraCalculator() -> impl IntoView {
         </Field>
       </div>
 
-      <div class=RESULT role="status">
+      <div class=result_class() role="status">
         {move || match link.get() {
           Some((s, rx, margin, maxd)) => {
             tf(

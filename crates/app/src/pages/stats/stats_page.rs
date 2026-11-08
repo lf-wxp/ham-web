@@ -115,19 +115,19 @@ pub fn StatsPage() -> impl IntoView {
               view! {
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <div class=crate::kit::card_class_with("p-4 text-center")>
-                    <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{total}</div>
+                    <div class=crate::kit::stat_text_class("")>{total}</div>
                     <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.total-qsos")}</div>
                   </div>
                   <div class=crate::kit::card_class_with("p-4 text-center")>
-                    <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{dxcc_total}</div>
+                    <div class=crate::kit::stat_text_class("")>{dxcc_total}</div>
                     <div class="mt-1 text-xs text-muted-foreground">{move || t("log.dxcc-entities")}</div>
                   </div>
                   <div class=crate::kit::card_class_with("p-4 text-center")>
-                    <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{band_top.len()}</div>
+                    <div class=crate::kit::stat_text_class("")>{band_top.len()}</div>
                     <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.bands")}</div>
                   </div>
                   <div class=crate::kit::card_class_with("p-4 text-center")>
-                    <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>{mode_top.len()}</div>
+                    <div class=crate::kit::stat_text_class("")>{mode_top.len()}</div>
                     <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.modes")}</div>
                   </div>
                 </div>
@@ -148,7 +148,9 @@ pub fn StatsPage() -> impl IntoView {
             view! {
               // 整页 14 个块，只让「DXCC 奖项进度」带硬投影（L2）：统计页的第一眼落点。
               // 其余块保持平卡 —— 全部同重量时，眼睛没有入口（见 ui-pixel.md §2 硬规则 8）。
-              <section class="pxl-window">
+              // 现代风用 `.md-panel`：`pxl-window` 是 2px 墨框 + 直角，混进来就是「现代页面里的
+              // 一个像素窗体」（双皮肤隔离只扫「仅在像素风渲染」的文件，扫不到共享页里的硬编码）。
+              <section class=crate::kit::window_class()>
                 <h2 class=crate::kit::card_title_class()>{move || t("radio.dxcc-award-progress")}</h2>
                 <div class="space-y-3 p-4">
                   <div>
@@ -170,7 +172,7 @@ pub fn StatsPage() -> impl IntoView {
                         .iter()
                         .map(|(b, n)| {
                           view! {
-                            <span class="border bg-inset px-2.5 py-0.5 text-xs tabular-nums">
+                            <span class=crate::kit::tag_class("tabular-nums")>
                               {b.clone()} " " <span class="text-primary">{*n}</span>
                             </span>
                           }
@@ -202,14 +204,17 @@ pub fn StatsPage() -> impl IntoView {
                           view! {
                             <div>
                               <div class="mb-1.5 text-xs text-muted-foreground">
-                                {continent} " " <span class="tabular-nums text-muted-foreground">({ents.len()})</span>
+                                {continent} " "
+                                <span class="tabular-nums text-muted-foreground">
+                                  "(" {ents.len()} ")"
+                                </span>
                               </div>
                               <div class="flex flex-wrap gap-1.5">
                                 {ents
                                   .into_iter()
                                   .map(|e| {
                                     view! {
-                                      <span class="inline-flex items-center gap-1 border bg-inset px-2 py-0.5 text-xs">
+                                      <span class=if crate::kit::is_modern_at_mount() { "md-badge gap-1" } else { "inline-flex items-center gap-1 border bg-inset px-2 py-0.5 text-xs" }>
                                         <span class="font-mono text-muted-foreground">{e.prefix}</span>
                                         <span>{e.name}</span>
                                       </span>
@@ -260,7 +265,7 @@ pub fn StatsPage() -> impl IntoView {
                         {awards.vucc.iter().map(|(band, p)| {
                           let target = vucc_target(band).unwrap_or(1);
                           view! {
-                            <span class="border bg-inset px-2.5 py-0.5 text-xs tabular-nums">
+                            <span class=crate::kit::tag_class("tabular-nums")>
                               {band.clone()} " " <span class="text-primary">{p.worked.len()}</span> " / " {target}
                             </span>
                           }

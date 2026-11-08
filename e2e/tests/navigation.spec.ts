@@ -45,20 +45,29 @@ test("数据备份入口：页脚、设置对话框都能直达 /backup", async 
   await expect(page).toHaveURL(/\/backup$/);
   await expect(page.getByRole("heading", { level: 1, name: "数据备份" })).toBeVisible();
 
-  // 设置对话框（桌面顶栏的齿轮按钮无障碍名是「外观与动效」），点完应关闭对话框
+  // 设置对话框（桌面顶栏的齿轮按钮无障碍名是「通用设置」），点完应关闭对话框
   await page.goto("/");
-  await page.locator("[data-nav]").getByRole("button", { name: "外观与动效" }).first().click();
+  await page.locator("[data-nav]").getByRole("button", { name: "通用设置" }).first().click();
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("link", { name: "数据备份" }).click();
   await expect(page).toHaveURL(/\/backup$/);
   await expect(dialog).toHaveCount(0);
 });
 
-test("数据备份入口：移动菜单可直达 /backup", async ({ page }) => {
+test("数据备份入口：移动菜单里没有，齿轮设置里直达 /backup", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page.locator("[data-nav]").getByRole("button", { name: /菜单|导航/ }).first().click();
-  await page.locator('nav[aria-label*="导航"]').getByRole("link", { name: "数据备份" }).click();
+  const nav = page.locator("[data-nav]");
+  await nav.getByRole("button", { name: /菜单|导航/ }).first().click();
+  const panel = page.getByRole("navigation", { name: "移动端导航" });
+  await expect(panel).toBeVisible();
+  // 面板里只有导航：语言 / 外观设置在齿轮里，备份在设置对话框与页脚。
+  await expect(panel.getByRole("link", { name: "数据备份" })).toHaveCount(0);
+
+  await nav.getByRole("button", { name: /菜单|导航/ }).first().click();
+  await expect(panel).toBeHidden();
+  await nav.getByRole("button", { name: "通用设置" }).first().click();
+  await page.getByRole("dialog").getByRole("link", { name: "数据备份" }).click();
   await expect(page).toHaveURL(/\/backup$/);
   await expect(page.getByRole("heading", { level: 1, name: "数据备份" })).toBeVisible();
 });
@@ -84,32 +93,42 @@ test("主导航：展开工具下拉可跳转到小工具", async ({ page }) => 
 
 test("明暗主题：切换后写入本地偏好并作用于 <html>", async ({ page }) => {
   await page.goto("/");
-  const toggle = page.getByRole("button", { name: "切换到深色模式" });
-  await expect(toggle).toBeVisible();
-  await toggle.click();
+  // 顶栏不再有明暗切换按钮：三档（浅色 / 深色 / 跟随系统）只在齿轮打开的设置对话框里给得出来。
+  const gear = page.locator("[data-nav]").getByRole("button", { name: "通用设置" }).first();
+  const dialog = page.getByRole("dialog");
+  const pick = async (name: string) => {
+    await gear.click();
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("radio", { name, exact: true }).click();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  };
 
+  await pick("深色");
   await expect(page.locator("html")).toHaveClass(/dark/);
   await expect.poll(() => page.evaluate(() => localStorage.getItem("theme"))).toBe("dark");
 
-  await page.getByRole("button", { name: "切换到浅色模式" }).click();
+  await pick("浅色");
   await expect(page.locator("html")).not.toHaveClass(/dark/);
   await expect.poll(() => page.evaluate(() => localStorage.getItem("theme"))).toBe("light");
 
   // 偏好在刷新后保留
-  await page.getByRole("button", { name: "切换到深色模式" }).click();
+  await pick("深色");
   await page.reload();
   await expect(page.locator("html")).toHaveClass(/dark/);
 });
 
 test("界面语言：切换后同步 <html lang> 并持久化", async ({ page }) => {
   await page.goto("/");
-  // 语言切换后 aria-label 也会跟着翻译，这里用结构定位而非文案
-  const combo = page.locator("[data-nav] [role=combobox]").first();
-  await expect(combo).toBeVisible();
-  // 选项文案（中文 / English / Español）本身不随界面语言变化
+  // 语言与明暗同样收在设置对话框里；选项文案（中文 / English / Español）本身不随界面语言变化。
+  const gear = page.locator("[data-nav]").getByRole("button", { name: "通用设置" }).first();
+  const dialog = page.getByRole("dialog");
   const pick = async (name: string) => {
-    await combo.click();
-    await page.getByRole("option", { name, exact: true }).click();
+    await gear.click();
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("radio", { name, exact: true }).click();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
   };
 
   await pick("English");
@@ -119,7 +138,10 @@ test("界面语言：切换后同步 <html lang> 并持久化", async ({ page })
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 
-  await pick("中文");
+  // 换成英文后齿轮自己的名字也变了，重新按结构定位。
+  await page.locator("[data-nav]").getByRole("button", { name: "Settings" }).first().click();
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("radio", { name: "中文", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
 });
 
@@ -128,7 +150,12 @@ test("页脚许可：站内点击无需刷新，刷新后保留页面骨架与�
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
   await expect(page.locator("[data-nav]")).toBeVisible();
-  await page.getByRole("button", { name: "切换到深色模式" }).click();
+  // 深色只能从设置对话框里选（顶栏不再有明暗切换按钮）。
+  await page.locator("[data-nav]").getByRole("button", { name: "通用设置" }).first().click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("radio", { name: "深色", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
   const documentRequests: string[] = [];
   page.on("request", (request) => {
     if (request.isNavigationRequest() && request.frame() === page.mainFrame()) {

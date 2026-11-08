@@ -364,7 +364,11 @@ pub(super) fn WireCanvas(
       >
         <svg
           viewBox=format!("0 0 {SIZE} {SIZE}")
-          class="w-full border bg-inset"
+          class=if crate::kit::is_modern_at_mount() {
+            "w-full md-tile"
+          } else {
+            "w-full border bg-inset"
+          }
           role="img"
           aria-label=move || t("tools.nec-canvas-alt")
         >

@@ -67,7 +67,7 @@ pub fn SdrMapPage() -> impl IntoView {
                           kt(s.name)
                         }}
                       </span>
-                      <span class="border bg-inset px-2 py-0.5 text-xs text-muted-foreground">
+                      <span class=crate::kit::tile_class("px-2 py-0.5 text-xs text-muted-foreground")>
                         {move || {
                           data::track_knowledge();
                           kt(s.kind)

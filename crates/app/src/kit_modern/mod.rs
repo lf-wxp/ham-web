@@ -55,7 +55,6 @@ mod skeleton;
 mod spectrum;
 mod spectrum_paint;
 mod textarea;
-mod view_transition;
 
 pub use answer_card::ModernAnswerCard;
 pub use bubble::ModernBubble;

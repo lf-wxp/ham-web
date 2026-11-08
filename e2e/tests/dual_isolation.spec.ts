@@ -74,7 +74,7 @@ const SURFACES: {
     url: "/",
     ready: MODAL,
     modes: ["modern", "pixel"],
-    open: (p) => p.locator('button[aria-label="外观与动效"]').first().click(),
+    open: (p) => p.locator('button[aria-label="通用设置"]').first().click(),
   },
   { name: "快捷键帮助", url: "/practice", ready: MODAL, modes: ["modern", "pixel"], open: (p) => p.keyboard.press("?") },
   {

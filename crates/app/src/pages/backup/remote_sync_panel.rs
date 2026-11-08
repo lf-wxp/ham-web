@@ -89,7 +89,10 @@ pub(super) fn RemoteSyncPanel(
     .collect();
 
   view! {
-    <div class="space-y-3 border bg-inset p-3" data-testid="remote-sync-panel">
+    <div
+      class=crate::kit::inset_panel_class("space-y-3")
+      data-testid="remote-sync-panel"
+    >
       // 像素风保持 `pxl-label`（它没有标题栏，与相邻的 `bg-inset` 块是一体的）；
       // 现代风换成区块标题，否则这一屏里只有它会落回点阵字体。
       <h2 class=if crate::kit::is_modern_at_mount() { "md-section-title" } else { "pxl-label text-base" }>

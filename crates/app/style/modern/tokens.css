@@ -97,8 +97,15 @@ html[data-ui-style="modern"] {
        accent-line 骨架面：分割线端点、悬停描边、表头下沿（1px 专用）
        accent-wash 悬停底：链接 / 图标按钮悬停时的极浅底
 
-     蓝 / 绿 / 琥珀仍是**语义色**（选中 / 正确 / 提醒），不参与识别色；
-     行动橙也不许拿来标选中态（那样「行动」与「选中」就读不开了）。 */
+     蓝 / 绿 / 琥珀仍是**语义色**（选中 / 正确 / 提醒），不参与识别色。
+
+     三种「橙与非橙」的裁定（台账 T1，2026-11-07）：
+     - **行动（Action）**：实心橙，一屏只给一个主行动；
+     - **位置（Location，「我在哪」）**：允许用橙，但只走 `accent-ink` 文字 +
+       `accent` 细轨道（顶栏当前页）或 `accent-wash` 8% 底（dock 当前项）——
+       **不铺实心块**，否则与主行动抢；
+     - **选中（Selection，多选项的勾选态）**：一律用蓝，不用橙。
+     顶栏 / dock 的「当前页」属于**位置**而不是选中，所以它们用橙是正确的。 */
   --md-accent: var(--md-orange);
   /* 橙底上的文字：白字在这两档橙上都只有 3.3 / 2.8（AA 要 4.5），
      暖墨字则到 5.8 / 6.7 —— 顺带与「暖纸 + 深墨」的语言一致。 */
@@ -144,11 +151,13 @@ html[data-ui-style="modern"] {
   --md-z-top: 80;
 
   /* 版心：现代风**只有这一个宽度**。首页 `.md-shell`、内容页 `.md-page`、文章页
-     `.md-article-page`、以及桥接页的 `PageContainer` / `PageHeader` / 页脚 / 底部工具条
-     全部取它（桥接页那条在 `kit.css` 末尾按 `.max-w-5xl` 覆盖）。
+     `.md-article-page`、顶栏 `.md-nav-inner`、以及桥接页的 `PageContainer` / `PageHeader` /
+     页脚 / 底部工具条全部取它（桥接页那条在 `08-motion.css` 末尾按 `.max-w-5xl` 覆盖）。
+     值来自 `style/input.css` 的 `--page-max` —— 像素风的 `max-w-5xl` 也取同一个变量，
+     两套皮肤的版心因此同宽，切风格时左右边缘不跳。
      历史上这里是三个数：1200（首页与内容页）、860（文章页）、1024（桥接页），
      换页时版心左右跳，视觉上像换了套排版 —— 现在收敛成一个。 */
-  --md-page-max: 1200px;
+  --md-page-max: var(--page-max);
   --md-page-pad: 24px;
   /* 辅助声部（编号 / 读数 / 标签 / 键帽）：IBM Plex Mono。
      选它不是「换个等宽」——界面里到处都是等宽小字（章节编号、频率、日期、来源、
@@ -170,7 +179,9 @@ html[data-ui-style="modern"] {
      栈序即分工：拉丁先命中 Bricolage，汉字跳过它落到 Noto，二者都不认识的
      生僻字才落到系统黑体 —— 基线由同一行高对齐。 */
   --md-font-display:
-    "Bricolage Grotesque", "Bricolage Fallback", "Noto Sans SC Display", "PingFang SC",
+    "Bricolage Grotesque", "Bricolage Fallback", "Noto Sans SC Display",
+    /* 度量对齐的系统黑体：Noto 未到时行盒也一样高（见 `fonts.css` 的同名 @font-face）。 */
+    "Noto Sans SC Display Fallback", "PingFang SC",
     "HarmonyOS Sans SC", "MiSans", "Source Han Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB",
     "Microsoft YaHei UI", "Microsoft YaHei", ui-sans-serif, sans-serif;
 
@@ -237,7 +248,9 @@ html[data-ui-style="modern"] {
   --md-shadow-accent: 0 12px 32px -12px color-mix(in srgb, var(--md-orange) 55%, transparent);
   --md-shadow-glow: 0 0 0 1px color-mix(in srgb, var(--md-blue) 22%, transparent);
 
-  --md-ring: color-mix(in srgb, var(--md-blue) 50%, transparent);
+  /* 焦点环：50% 的蓝压在浅色底上合成后只有 2.33:1（WCAG 2.2 的非文本对比要 3:1），
+     70% 合成后 3.45:1。深色档本来就是 70%（3.69:1），两档同值更好记。 */
+  --md-ring: color-mix(in srgb, var(--md-blue) 70%, transparent);
 
   --md-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
   --md-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -290,13 +303,16 @@ html[data-ui-style="modern"] {
   --md-gap-section: 48px;
 }
 
-/* 中文语境下的两档小字各抬 1px。
+/* 中文语境下的小字抬到 **12px 起**（台账 F2）。
    10 / 11px 是给「等宽西文 kicker」定的：西文小写字面窄、x-height 高，10px 仍成形；
-   汉字是满格方块，10px 时笔画糊成一团（底部 dock 标签、热力刻度、日期都是这一档）。
+   汉字是满格方块，11px 在 1200 版心里已经糊成一团（章节编号、路径提示、kbd、dock 标签都是这一档）。
+   中文没有「10px 也能读」这回事，所以直接对齐到 12：3xs 抬到 12，2xs 抬到 13。
+   **代价**：中文下 2xs 与 `sm`（13）同值 —— 这是有意的，中文只需要一个「最小正文级」，
+   多一档只会让同屏出现 12/13/13 三种「差不多小」的字号。
    只覆盖变量而不是改基础值，英文 / 西语界面的节奏保持原设计。 */
 html[data-ui-style="modern"][lang^="zh"] {
-  --md-text-3xs: 11px;
-  --md-text-2xs: 12px;
+  --md-text-3xs: 12px;
+  --md-text-2xs: 13px;
 }
 
 /* 窄屏用 20px、宽屏用 32px 的内边距：与像素风的 `px-4` 相比内边距更大，

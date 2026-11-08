@@ -30,7 +30,9 @@ pub(super) fn AlertsCard() -> impl IntoView {
         {move || {
           if loading.get() {
             return view! {
-              <p class="px-3 py-6 text-center text-sm text-muted-foreground">{move || t("radio.fetching-alerts")}</p>
+              <crate::components::common::LoadingBlock
+                label=Signal::derive(move || t("radio.fetching-alerts"))
+              />
             }
             .into_any();
           }

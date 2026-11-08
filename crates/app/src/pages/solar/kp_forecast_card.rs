@@ -47,7 +47,12 @@ pub(super) fn KpForecastCard(#[prop(into)] refresh: Signal<u32>) -> impl IntoVie
       <div class="space-y-3 p-4 text-sm">
         {move || {
           if loading.get() {
-            return view! { <p class="text-muted-foreground">{move || t("radio.kp-forecast-loading")}</p> }.into_any();
+            return view! {
+              <crate::components::common::LoadingBlock
+                label=Signal::derive(move || t("radio.kp-forecast-loading"))
+              />
+            }
+            .into_any();
           }
           let now = clock.get();
           let Some(out) = data.get().and_then(|f| ham_web_core::kp_forecast::live_outlook(&f.points, now).map(|o| (f, o))) else {

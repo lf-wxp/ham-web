@@ -1,0 +1,683 @@
+/* ============================================================
+   表格、窄屏题卡密度与小屏首屏
+   ------------------------------------------------------------
+   原 `kit.css` 第 9272–9944 行（11/11 段，台账 C4 的分域拆分）。
+
+   **顺序即级联**：本目录下的文件由 `../kit.css` 按 01→11 顺序 `@import`，
+   同名 `@layer components` 按这个顺序拼接。**不要按主题重排文件**：同层同优先级的
+   规则靠源顺序决胜负，换顺序会悄悄改掉某个组件的最终取值。新增样式追加到对应
+   主题文件的末尾；跨主题的新组件另起文件并追加到 `@import` 列表**末尾**。
+   ============================================================ */
+
+/* ============================================================
+   表格（`ui::Table` / `.md-table`）
+   ------------------------------------------------------------
+   这一段**故意不放进 `@layer components`**：旧页面给单元格挂了
+   `border px-3 py-2` 这类 Tailwind 工具类，而工具类所在的 layer 排在
+   components 之后 —— 放在 layer 里会被它们覆盖，表现为「现代风表格是网格表、
+   行高按 y-2 走」。不进门禁层才能压过工具类。
+   ============================================================ */
+.md-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--md-text-sm);
+}
+
+.md-table thead th,
+.md-table tbody td,
+.md-table tbody th {
+  border-width: 0 0 1px;
+  border-style: solid;
+  border-color: var(--md-border);
+  background-color: transparent;
+  text-align: start;
+  vertical-align: top;
+}
+
+.md-table thead th {
+  padding: 8px 12px;
+  /* 表头 = 数据区的起点：字与线都走行动色的文字档 / 骨架档（见 tokens 里的四级阶梯）。 */
+  color: var(--md-accent-ink);
+  font-weight: 580;
+  border-bottom-color: var(--md-accent-line);
+}
+
+.md-table tbody td,
+.md-table tbody th {
+  padding: 9px 12px;
+}
+
+.md-table tbody th {
+  color: var(--md-fg);
+  font-weight: 560;
+  white-space: nowrap;
+}
+
+.md-table tbody tr:last-child td,
+.md-table tbody tr:last-child th {
+  border-bottom-width: 0;
+}
+
+.md-table tbody tr:hover {
+  background-color: color-mix(in srgb, var(--md-surface-2) 70%, transparent);
+}
+
+/* 滚动容器里的表格要有列宽下限，否则「先被挤扁、挤不动才滚」 */
+.md-table-scroll .md-table {
+  min-width: 520px;
+}
+
+/* 紧凑档：行多、每行字段少的列表（日志、竞赛记录、奖项、时区） */
+.md-table-compact thead th {
+  padding: 5px 8px;
+  font-size: var(--md-text-xs);
+}
+
+.md-table-compact tbody td,
+.md-table-compact tbody th {
+  padding: 6px 8px;
+  font-size: var(--md-text-xs);
+}
+
+@layer components {
+  /* ============================================================
+     下拉弹层（`ui::popover` → Select（SimpleSelect 是它的封装）/ DatePicker / TimePicker）
+     ------------------------------------------------------------
+     像素风是 `.pxl-popover` + 3 帧 steps 动画；现代风用「表面底 + 1px 描边 +
+     圆角 + 浮层阴影」，入场是 120ms 的位移淡入（不再用 steps，避免抖动）。
+     ============================================================ */
+  .md-popover {
+    border: 1px solid var(--md-border-strong);
+    border-radius: var(--md-r-md);
+    /* 比页面底色高一档：`--md-surface` 与页面底几乎同色，浮层会「看不见边缘」 */
+    background-color: color-mix(in srgb, var(--md-surface-2) 92%, var(--md-surface));
+    box-shadow:
+      0 18px 40px -24px rgb(0 0 0 / 0.7),
+      0 2px 8px -4px rgb(0 0 0 / 0.4);
+    animation: md-pop-in var(--md-dur-fast) var(--md-ease-out) both;
+  }
+
+  .md-popover[data-state="closed"] {
+    animation: md-pop-out var(--md-dur-fast) var(--md-ease-out) both;
+  }
+
+  @keyframes md-pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes md-pop-out {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+
+  /* 选项行：36 高、悬停浅底、键盘高亮用 `data-active`、选中用 `data-state=checked` 左侧蓝轨 */
+  .md-option {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: var(--md-r-sm);
+    background: transparent;
+    color: var(--md-fg);
+    font-family: inherit;
+    font-size: var(--md-text-sm);
+    /* 行高自己定：选项行在 Portal 之外、紧挨着触发器渲染，不写的话会继承所在容器的 `line-height`
+       （`text-xs` 的工具栏是 1.5，表单里是 1.6），同一个下拉在不同位置不是 36px 就是 37px。 */
+    line-height: 1.5;
+    min-height: 36px;
+    text-align: start;
+    cursor: pointer;
+    transition:
+      background-color var(--md-dur-fast) var(--md-ease),
+      color var(--md-dur-fast) var(--md-ease);
+  }
+
+  .md-option:hover,
+  .md-option:focus {
+    background-color: var(--md-surface-2);
+  }
+
+  .md-option[data-active="true"] {
+    background-color: color-mix(in srgb, var(--md-blue) 16%, var(--md-surface));
+    color: var(--md-fg);
+  }
+
+  .md-option[data-state="checked"],
+  .md-option[aria-selected="true"] {
+    background-color: color-mix(in srgb, var(--md-blue) 12%, var(--md-surface));
+    color: var(--md-fg);
+    font-weight: 560;
+  }
+
+  .md-option[data-state="checked"]::before,
+  .md-option[aria-selected="true"]::before {
+    content: "";
+    position: absolute;
+    inset-block: 6px;
+    inset-inline-start: 4px;
+    width: 2px;
+    border-radius: var(--md-r-pill);
+    background-color: var(--md-blue);
+  }
+
+  .md-option[aria-disabled="true"],
+  .md-option:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* 分组标题（`optgroup` 语义） */
+  .md-option-group {
+    padding: 8px 12px 4px;
+    font-size: var(--md-text-xs);
+    font-weight: 560;
+    letter-spacing: 0.02em;
+    color: var(--md-fg-muted);
+  }
+}
+
+@layer components {
+  /* 悬停气泡（`ui::tooltip` 直接挂在 body 上）：与下拉弹层同一套「表面 + 描边 + 浮层阴影」 */
+  .md-tip-popup {
+    position: fixed;
+    /* 要盖过 `.md-modal`（70）：在弹层里悬停出来的气泡不能被弹层压在下面。 */
+    z-index: var(--md-z-top);
+    max-width: 20rem;
+    padding: 6px 10px;
+    border: 1px solid var(--md-border-strong);
+    border-radius: var(--md-r-sm);
+    background-color: color-mix(in srgb, var(--md-surface-2) 92%, var(--md-surface));
+    color: var(--md-fg);
+    font-family: var(--md-font);
+    font-size: var(--md-text-xs);
+    line-height: 1.5;
+    box-shadow: 0 10px 24px -14px rgb(0 0 0 / 0.8);
+    pointer-events: none;
+    animation: md-tip-in var(--md-dur-fast) var(--md-ease-out) both;
+  }
+
+  /* 气泡的退场：`ui::tooltip` 在隐藏前先挂 `data-state="closed"`，等这段动画播完才 `hidden`。 */
+  .md-tip-popup[data-state="closed"] {
+    animation: md-tip-out var(--md-dur-fast) var(--md-ease-out) forwards;
+  }
+
+  @keyframes md-tip-out {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(2px);
+    }
+  }
+
+  @keyframes md-tip-in {
+    from {
+      opacity: 0;
+      transform: translateY(2px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer components {
+  /* ============================================================
+     开关（`ui::Switch`）
+     ------------------------------------------------------------
+     36×20 药丸；关 = 表面 3 档灰 + 细描边，开 = 品牌蓝；滑块 16px 白色，
+     用 transform 平滑滑动（像素风的 steps 位移只在那边生效）。
+     ============================================================ */
+  .md-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid var(--md-border-strong);
+    border-radius: var(--md-r-pill);
+    background-color: var(--md-surface-3);
+    cursor: pointer;
+    transition:
+      background-color var(--md-dur-fast) var(--md-ease),
+      border-color var(--md-dur-fast) var(--md-ease);
+  }
+
+  .md-switch[aria-checked="true"] {
+    border-color: transparent;
+    background-color: var(--md-blue);
+  }
+
+  .md-switch:disabled,
+  .md-switch[data-disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .md-switch:focus-visible {
+    outline: 2px solid var(--md-ring);
+    outline-offset: 2px;
+  }
+
+  .md-switch-thumb {
+    position: absolute;
+    inset-block-start: 1px;
+    inset-inline-start: 1px;
+    width: 16px;
+    height: 16px;
+    border-radius: var(--md-r-pill);
+    background-color: #fff;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+    transition: transform var(--md-dur) var(--md-ease);
+  }
+
+  .md-switch[aria-checked="true"] .md-switch-thumb {
+    transform: translateX(16px);
+  }
+}
+
+@layer components {
+  /* `ui::Dialog` 的现代皮肤（全站搜索面板等仍走这个组件）。
+     结构与 `ModernDialog` 不同：遮罩与面板是兄弟节点，面板自己居中。 */
+  .md-dialog-veil {
+    background-color: rgb(4 6 10 / 0.62);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    animation: md-veil-in var(--md-dur) var(--md-ease-out);
+  }
+
+  @keyframes md-veil-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .md-dialog-panel {
+    font-family: var(--md-font);
+    font-size: var(--md-text-base);
+    line-height: 1.6;
+    color: var(--md-fg);
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-xl);
+    background-color: var(--md-surface);
+    box-shadow: var(--md-shadow-3);
+    animation: md-dialog-in var(--md-dur) var(--md-ease-out);
+  }
+
+  /* 居中靠定位属性，动画只做不透明度 + 轻微上浮；`transform` 交给定位，
+     否则动画结束后的 `transform: none` 会把 `-translate-*` 冲掉、面板跑偏。 */
+  @keyframes md-dialog-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* 退场：遮罩与面板一起淡出。曾经这两个类只有入场、没有 `[data-state="closed"]` 规则，
+     于是全站搜索 / 设置 / 快捷键帮助这些 `ui::Dialog` 关闭时是「啪」地消失（组件会留 DOM 到动画结束，
+     却什么都没播）。时长用 `--md-dur`：Rust 侧的卸载延迟读的是同一个 token（见 `presence.rs`）。
+     同样只做不透明度：`transform` / `translate` 已被居中定位占用，见上面的说明。 */
+  .md-dialog-veil[data-state="closed"] {
+    animation: md-fade-out var(--md-dur) var(--md-ease) forwards;
+  }
+
+  .md-dialog-panel[data-state="closed"] {
+    animation: md-dialog-out var(--md-dur) var(--md-ease) forwards;
+  }
+
+  @keyframes md-dialog-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+}
+
+/* 下拉触发器里的箭头：`.md-input` 也用在触发器上，而图标组件带 `size-6`（24px）。
+   工具类在 utilities 层，层内规则压不过 —— 只能写在层外。 */
+.md-input > svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+@layer components {
+  /* 正文里的行内链接（`kit::link_class()`）：行动色，悬停加深。
+     只管颜色 / 悬停 / 焦点环，**不碰盒模型** —— 列表里的一行是 `.md-link-row`。
+     像素风的 `.pxl-link` 没有任何 CSS（链接样式来自全局 `a`）；现代风没有全局 `a` 规则，
+     所以这些链接此前与正文完全一样 —— 看着根本不像能点。
+     全站链接免下划线，可点性靠「行动色 + 悬停换色」表达。 */
+  .md-link {
+    color: var(--md-accent-ink);
+    border-radius: var(--md-r-xs);
+    transition: color var(--md-dur-fast) var(--md-ease);
+  }
+
+  .md-link:hover {
+    color: var(--md-fg);
+  }
+
+  .md-link:focus-visible {
+    outline: 2px solid var(--md-ring);
+    outline-offset: 2px;
+  }
+}
+
+
+/* ============================================================
+   窄屏练习 / 考试：题卡竖向密度
+   ------------------------------------------------------------
+   手机（≤640）竖屏一屏 ~844px，题卡却按桌面的呼吸感排：卡内距 24 + 卡头 14/18
+   + 卡内容 18，再加 18px 选项字配 24px 行高 —— 一道四选一要滚过一屏才看得完，
+   而「一眼扫完四个选项」正是练习最常用的动作（先判断会不会，再决定是否作答）。
+
+   收的是**内距、行高与三处字号错位**，不碰控件尺寸：
+      · 选项字 18px 比题干 17px 还大。`text-base` 这个工具类解析的是**像素风**阶梯
+        （`--text-base: 1.125rem`），在现代风里就成了「选项比题干更醒目、更早折行」。
+        统一到 `--md-text-compact`（窄屏 15），行高 24 → 1.4。
+      · 题干 17 → 15（同一档）、行高 1.6 → 1.45：中文正文 1.45 仍不挤。
+        15px 不是「随便小一点」：16px 下「《中华人民共和国无线电管理条例》」这类 16 字选项
+        必折一行，15px 配上收窄的左右内距才能一行放下 —— 四个选项各少一行就是 60px。
+      · 卡内距 24 → 14、卡头 14/18 → 6/14、卡内容 18 → 8/12：三层内距各收一档，
+        横向多出 16px 给文字（同上，让长选项少折一行）。
+      · 卡壳的 `gap-6`（卡头与卡内容之间那 24px 纯空白）清零，改由卡内容自己的上内距给。
+      · 题号 17 → 13：它是「第几题」这种元信息，比选项正文还大是反的；收到 13 后
+        320px 下「题号 + 两个徽标」才稳定在一行。
+      · 朗读按钮从标题行里搬出来，绝对定位到卡头右上、视觉缩到 18px 的裸图标
+        （命中区仍是 44）：它跟 13px 的题号并排时，一个 44×44 的描边方块会抢走整张卡的
+        视觉重心；搬出来之后卡头高度也从 56 降到 37。
+      · 选项行上下 10 → 8、纵向间距 6 → 4、题干与选项之间 8 → 6、徽标收一档。
+      · 页头的键位提示（`1–4` / `Enter` / `← →`）在触屏上按不出来，`pointer: coarse` 下不占那一行。
+
+   不动的东西：`.md-icon-btn` 的 44×44（`pointer: coarse` 的命中区下限）、
+   焦点环、`prefers-reduced-motion`。
+
+   为什么写在层外：`py-6` / `px-6` / `text-base` / `leading-6` / `space-y-3` / `gap-2`
+   都是 Tailwind 工具类（utilities 层），层内规则再高优先级也压不住它们。选择器全部带
+   `md-`，只命中现代风的题卡；像素风的题卡用另一套类名，不受影响。
+   ============================================================ */
+@media (width < 640px) {
+  /* ---------- 页头：删掉手机上按不出来的一行，内距收一档 ---------- */
+  .md-practice-head {
+    gap: var(--md-space-2-5);
+    padding: 14px 0 12px;
+  }
+
+  /* 键位提示（`1–4` / `Enter` / `← →`）在触屏上没有对应的输入方式，窄屏又是最贵的一行。
+     只对「窄屏 + 粗指针」隐藏：640px 以下的桌面窄窗口仍能按键，提示留着。 */
+  @media (pointer: coarse) {
+    .md-practice-head .md-keys {
+      display: none;
+    }
+  }
+
+  /* ---------- 题卡外壳：三层内距各收一档，清掉卡头与卡内容之间的 24px ---------- */
+  .md-practice .md-q,
+  .md-exam .md-q {
+    gap: 0;
+    padding: var(--md-space-4);
+  }
+
+  .md-practice .md-q [data-slot="card-header"],
+  .md-exam .md-q [data-slot="card-header"] {
+    /* 朗读按钮绝对定位在右上（见下一条），所以卡头的高度由标题行决定，
+       不再被它的 44px 命中区撑成 56。右侧让出 48px（44 命中区 + 4 内距）给它落位，
+       标题折行时每一行都自动避开它。 */
+    position: relative;
+    padding: var(--md-space-1-5) var(--md-space-3-5);
+    padding-inline-end: var(--md-space-12);
+    /* `CARD_HEADER` 是 `grid-rows-[auto_auto]` + `gap-1.5`：标题只有一项，
+       第二行是空的，但那 6px 行距照样占位。窄屏这一行尤其贵。 */
+    row-gap: 0;
+  }
+
+  /* 朗读按钮：视觉缩到与 13px 题号同一量级，命中区仍是 44×44。
+     做法是「透明盒子 + 18px 图标」而不是改盒子尺寸 —— `pointer: coarse` 的
+     44px 下限是无障碍硬线，不能为了好看缩到 30。垂直居中于 37px 高的卡头，
+     上下各溢出约 4px，落在卡头上边与分隔线上，那里没有可点控件。 */
+  .md-practice .md-q [data-slot="card-action"],
+  .md-exam .md-q [data-slot="card-action"] {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: var(--md-space-1);
+    transform: translateY(-50%);
+  }
+
+  .md-practice .md-q [data-slot="card-action"] .md-icon-btn,
+  .md-exam .md-q [data-slot="card-action"] .md-icon-btn {
+    border-color: transparent;
+    background-color: transparent;
+    color: var(--md-fg-muted);
+  }
+
+  .md-practice .md-q [data-slot="card-action"] .md-icon-btn svg,
+  .md-exam .md-q [data-slot="card-action"] .md-icon-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .md-practice .md-q [data-slot="card-content"],
+  .md-exam .md-q [data-slot="card-content"] {
+    padding: var(--md-space-2) var(--md-space-3);
+    font-size: var(--md-text-compact);
+    line-height: 1.45;
+  }
+
+  /* 题号 / 徽标在同一行：标题行 `gap-2`（8px）在 320px 下是决定「换不换行」的
+     那几像素，收到 6；徽标的横内距也跟着收。390px 下这一行本来就宽松，收这 2px 不影响观感。 */
+  .md-practice .md-q [data-slot="card-title"],
+  .md-exam .md-q [data-slot="card-title"] {
+    gap: var(--md-space-1-5);
+    /* 题号是元信息（第几题），不该比选项正文更抢眼。17px → 13px 与徽标同档，
+       顺便让这一行在 320px 下压到 222px（可用 240px），朗读按钮不再被挤到第二行。
+       必须在层外：`md-card-title` 的字号写在 components 层，与这里同权时后者才生效。 */
+    font-size: var(--md-text-sm);
+    font-weight: 620;
+  }
+
+  /* 徽标：12px 字 + 10px 横内距 + 1.6 行高 ≈ 27px，比同行的 17px 题号还高，
+     把标题行顶成 44。收到 11px / 6px / 1.5 后与题号同高，四件内容在 390px 下一行放得下
+     （三位数的「第 683 / 683 题」也放得下）。`--md-text-2xs` 在中文界面被
+     `[lang^="zh"]` 抬到 12 —— 这里要的是「比题号小一档」的关系，不是某个像素值。
+     必须带 `html[data-ui-style="modern"]`：`kit.css` 里已有一条同为层外的
+     `html[data-ui-style="modern"] .md-q [data-slot="badge"]`（0,3,1），
+     选择器权重不够就静默失效。 */
+  html[data-ui-style="modern"] .md-practice .md-q [data-slot="badge"],
+  html[data-ui-style="modern"] .md-exam .md-q [data-slot="badge"] {
+    padding: var(--md-space-0-5) var(--md-space-1-5);
+    font-size: var(--md-text-2xs);
+    line-height: 1.5;
+  }
+
+  /* ---------- 题干 / 选项之间的三段间距 ---------- */
+  /* `space-y-3` 用的是「除最后一个之外都加下外边距」，只盖 `margin-block-start`
+     会把两段间距叠成 12 + 10。先把工具类的两条外边距清零，再只给后续兄弟加上间距。 */
+  .md-practice .md-q [data-slot="card-content"] > *,
+  .md-exam .md-q [data-slot="card-content"] > * {
+    margin-block: 0;
+  }
+
+  .md-practice .md-q [data-slot="card-content"] > * + *,
+  .md-exam .md-q [data-slot="card-content"] > * + * {
+    margin-block-start: var(--md-space-1-5);
+  }
+
+  .md-practice .md-q [data-slot="option-group"],
+  .md-practice .md-q [data-slot="radio-group"],
+  .md-exam .md-q [data-slot="option-group"],
+  .md-exam .md-q [data-slot="radio-group"] {
+    row-gap: var(--md-space-1);
+  }
+
+  /* ---------- 选项行 ---------- */
+  .md-practice .md-q .md-opt,
+  .md-exam .md-q .md-opt {
+    padding: var(--md-space-2) var(--md-space-2);
+    column-gap: var(--md-space-1-5);
+    /* 内距收到 8 后单行选项只剩 39px，低于 44 的触控目标（整行就是可点区域）。
+       内距换高度：最小值钉在 44，双行 / 三行的选项本来就超过它，不受影响。 */
+    min-height: 44px;
+  }
+
+  /* 选项文字：`text-base`（像素阶梯 18px）与 `leading-6`（24px 行高）都是工具类，
+     必须层外覆盖。判分圆点 `.md-mark` 不动（自带 22px 尺寸）。
+     用 `--md-text-compact`（窄屏 15）：16px 下「《中华人民共和国无线电管理条例》」
+     这类 16 字选项一定折行，15px 配上收窄的左右内距就能一行放下。 */
+  .md-practice .md-q .md-opt [data-slot="option-text"],
+  .md-practice .md-q .md-opt > label,
+  .md-exam .md-q .md-opt [data-slot="option-text"],
+  .md-exam .md-q .md-opt > label {
+    font-size: var(--md-text-compact);
+    line-height: 1.4;
+  }
+}
+
+/* ============================================================
+   小屏首屏：页头与底栏别把题卡挤出视口
+   ------------------------------------------------------------
+   320×568 量过：顶栏 61 + 考试页头 208 + 两排底栏 121，题卡里 4 个选项一个都落不进底栏之上；
+   练习页头 246（题库 / 筛选胶囊 148 换成 3 行）。判据是「第一道题的选项在首屏可见」，
+   不是页头好不好看，所以只动**占高度的间距与折行**，不动触控目标（按钮 / 胶囊仍 44）。
+
+   · 页头内距与行距收一档；
+   · 考试元信息（类别 / 题数 / 限时）并成一行并降到 `--md-text-xs`，矮屏（高 ≤ 700）整行收起：
+     进度与题数在底栏 / 答题卡里仍可见；
+   · 练习页的题库 + 筛选胶囊在窄屏改成一条横滚行（复用 `.md-chip-scroll` 的「不折行、不压缩」口径），
+     三行变一行；
+   · 考试底栏内距与行距收一档。
+
+   写在层外是为了压过上面分层里同名选择器与 Tailwind 工具类（`gap-3` / `py-*`）。
+   ============================================================ */
+@media (width < 640px) {
+  .md-exam .md-practice-head {
+    gap: var(--md-space-2);
+    padding: 10px 0 8px;
+  }
+
+  /* 考试元信息：三项并一行，字号取阶梯最小正文档；行高 1.35（不是 1.6）。 */
+  .md-exam .md-practice-head > .md-muted {
+    column-gap: var(--md-space-2-5);
+    row-gap: 0;
+    font-size: var(--md-text-xs);
+    line-height: 1.35;
+  }
+
+  /* 考试页头第一行（标题 + 倒计时 | 「薄弱项组卷」 + 设置）：320px 下 272px 放不下，
+     折成 83px 两行。窄屏让「薄弱项组卷」胶囊只留文字最短形态、行距收到 6，
+     并让左右两组各自不再被压缩，折行时是「标题组一行 + 操作组一行」而不是胶囊内部断字。 */
+  .md-exam .md-practice-head > div:first-child {
+    row-gap: var(--md-space-1-5);
+  }
+
+  .md-exam .md-practice-head > div:first-child .md-chip {
+    white-space: nowrap;
+  }
+
+  /* 练习页：题库 / 筛选胶囊一条横滚行。分组竖线在一条线上没有意义，一并隐藏（F5-7）。 */
+  .md-practice .md-practice-head .md-chip-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    /* 让最后一颗胶囊滚出右缘时也有呼吸，不被页边裁成半颗。 */
+    padding-inline-end: var(--md-space-4);
+    margin-inline-end: calc(-1 * var(--md-page-pad));
+  }
+
+  .md-practice .md-practice-head .md-chip-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .md-practice .md-practice-head .md-chip-row .md-chip {
+    white-space: nowrap;
+  }
+
+  /* 行首的「题库类别」标签：横滚行里它是 flex 子项，不写 `flex-shrink: 0` 会被压到 13px 宽、
+     逐字竖排成 83px 高（实测），把一行重新撑成三行。 */
+  .md-practice .md-practice-head .md-chip-row > .md-muted {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .md-chip-row-divider {
+    display: none;
+  }
+
+  /* 考试底栏：内距 12→8，两排之间 8→6。按钮高度仍是 44。 */
+  .md-bar-exam {
+    padding-block: var(--md-space-2);
+  }
+
+  .md-bar-exam .md-bar-actions {
+    gap: var(--md-space-1-5);
+  }
+}
+
+/* 浏览页的「题库 + 筛选」胶囊组。
+   ≥641：`display: contents`，子胶囊直接成为 `.md-glossary-bar` 的 flex 子项，版式与没有这层包裹时完全一致；
+   ≤640：独占一行、不折行、横向滚动（与 `/cards` 的分类条同一读法）。5 颗胶囊折成两行是 98px（含行距），
+   一条滚动行是 44px，首张题卡因此上移一行。 */
+.md-chip-bar {
+  display: contents;
+}
+
+@media (width < 640px) {
+  .md-chip-bar {
+    display: flex;
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--md-space-2);
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    /* 末尾留一档呼吸：最后一颗滚出右缘时不被页边裁成半颗。 */
+    padding-inline-end: var(--md-space-4);
+    margin-inline-end: calc(-1 * var(--md-page-pad));
+  }
+
+  .md-chip-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .md-chip-bar .md-chip {
+    white-space: nowrap;
+  }
+}
+
+/* 矮屏（iPhone SE / 老安卓，高度 ≤ 700）：考试元信息整行收起。
+   「A 类 · 40 题 · 40 分钟」开考前已经看过，倒计时与进度条仍在页头，题数在底栏。 */
+@media (width < 640px) and (max-height: 700px) {
+  .md-exam .md-practice-head > .md-muted {
+    display: none;
+  }
+}

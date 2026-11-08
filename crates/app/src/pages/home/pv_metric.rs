@@ -10,9 +10,9 @@ pub(super) fn PvMetric(
   #[prop(into)] loading: Signal<bool>,
 ) -> impl IntoView {
   view! {
-    <div class="border bg-inset p-3 text-center">
+    <div class=crate::kit::tile_class("text-center")>
       <div class="text-xs text-muted-foreground">{move || label.get()}</div>
-      <div class=if crate::kit::is_modern_at_mount() { "md-stat-text mt-1" } else { "mt-1 pxl-stat" }>
+      <div class=crate::kit::stat_text_class("mt-1")>
         {move || match value.get() {
           Some(v) => format!("{v:.0}"),
           None if loading.get() => "…".to_owned(),

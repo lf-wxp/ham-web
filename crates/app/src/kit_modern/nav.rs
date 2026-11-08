@@ -67,13 +67,16 @@ pub fn ModernNav() -> impl IntoView {
     // `data-nav`：自绘窗口滚动条从这里下沿开始（`ui/scrollbar.rs`），与像素风顶栏同一契约。
     <nav class="md-nav" data-nav aria-label=move || t("shell.main-navigation")>
       <div class="md-nav-inner">
-        <a class="md-brand" href="/">
+        // `aria-label`：窄屏（<360）会把品牌**文字**收掉、只留站标，届时的可访问名
+        // 就只剩这枚装饰性图标（它本身是 `aria-hidden`），链接会变成无名链接（台账 R1）。
+        // 标签与文字同源，切语言跟着变。
+        <a class="md-brand" href="/" aria-label=move || t("shell.amateur-radio")>
           // 站标：与像素风 `nav_bar.rs` 的 `brand-mark` 同一个用意（文字左边一枚可识别的记号），
           // 形态换成现代风的圆角方块 + 线性卫星图标 —— 不搬像素风的墨框与硬投影。
           <span class="md-brand-mark" aria-hidden="true">
             <ModernIcon kind=MIcon::Satellite class="md-brand-mark-icon" />
           </span>
-          {move || t("shell.amateur-radio")}
+          <span class="md-brand-text">{move || t("shell.amateur-radio")}</span>
         </a>
 
         <div class="md-nav-list">

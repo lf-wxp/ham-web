@@ -246,4 +246,45 @@ test.describe("现代风断点", () => {
     // 520 = 最宽的列组在 320 视口下的可读下限（见 `kit.css` 的 `.md-table` 最小宽度）。
     expect(table!.min).toBeGreaterThanOrEqual(520);
   });
+
+  // 台账 R1：320 下顶栏右侧的余量是 0，任何一个新入口都会立刻溢出。
+  // 360 那一档把品牌**文字**收掉、只留站标，并靠 `aria-label` 保住可访问名。
+  test("320px：顶栏品牌只留站标、链接仍可被读屏识别", async ({ page }) => {
+    await seed(page);
+    await page.setViewportSize({ width: 320, height: 720 });
+    await open(page, "/");
+
+    const narrow = await page.evaluate(() => {
+      const brand = document.querySelector(".md-brand");
+      const text = document.querySelector(".md-brand-text");
+      const actions = document.querySelector(".md-nav-actions");
+      const inner = document.querySelector(".md-nav-inner, .md-shell");
+      const r = (el: Element | null) => (el ? el.getBoundingClientRect() : null);
+      const a = r(actions);
+      const i = r(inner);
+      return {
+        textShown: text ? getComputedStyle(text).display !== "none" : true,
+        brandWidth: r(brand)?.width ?? 0,
+        slack: a && i ? Math.round(i.right - a.right) : -1,
+        overflow: document.documentElement.scrollWidth - window.innerWidth,
+      };
+    });
+    expect(narrow.textShown, "320 下品牌文字应收起").toBe(false);
+    expect(narrow.brandWidth, "只剩站标，宽度应远小于带文字时（约 131px）").toBeLessThan(60);
+    expect(narrow.slack, "右侧操作区与内容边界之间必须留出余量").toBeGreaterThanOrEqual(12);
+    expect(narrow.overflow).toBeLessThanOrEqual(1);
+    // 可访问名不能依赖被 `display:none` 的文字。
+    await expect(page.getByRole("link", { name: "业余无线电" })).toHaveCount(1);
+  });
+
+  test("390px：品牌文字仍然显示（折叠只在 360 以下）", async ({ page }) => {
+    await seed(page);
+    await page.setViewportSize({ width: 390, height: 720 });
+    await open(page, "/");
+    const shown = await page.evaluate(() => {
+      const text = document.querySelector(".md-brand-text");
+      return text ? getComputedStyle(text).display !== "none" : false;
+    });
+    expect(shown, "390 是主流手机宽度，品牌名不该消失").toBe(true);
+  });
 });

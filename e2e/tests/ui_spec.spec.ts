@@ -283,9 +283,12 @@ test("F5 首页卡片的标题栏元信息是响应式的：异步数据到了�
   await expect(wanted.locator(":scope > .pxl-section-title .pxl-badge")).toContainText("传播");
 
   // 切到 English：每日一题的连续天数、追台卡的徽标都要跟着换语言。
-  const combo = page.locator("[data-nav] [role=combobox]").first();
-  await combo.click();
-  await page.getByRole("option", { name: "English", exact: true }).click();
+  // 语言在齿轮打开的设置对话框里（顶栏没有语言下拉了），选完 Esc 关掉。
+  await page.locator("[data-nav]").getByRole("button", { name: "通用设置" }).first().click();
+  const settings = page.getByRole("dialog");
+  await settings.getByRole("radio", { name: "English", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await expect(settings).toBeHidden();
   const daily = page.locator("main section.pxl-card").filter({ has: page.getByRole("heading", { level: 2, name: "Daily Question", exact: true }) });
   await expect(daily.locator(":scope > .pxl-section-title")).toContainText(/streak|day/i);
   await expect(daily.locator(":scope > .pxl-section-title")).not.toContainText("打卡");

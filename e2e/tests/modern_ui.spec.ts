@@ -60,8 +60,17 @@ test("现代风：入场动画不会把内容永久藏住（工具 / 题库 / �
   await seed(page, "modern");
   // 浮现的初始态是 `opacity: 0`，一旦观察器漏掉某个元素，内容就永久不可见 ——
   // 这是所有入场动画里唯一「不能靠肉眼一眼看出」的失败模式（工具页整页空白踩过一次）。
-  for (const url of ["/tools", "/browse", "/glossary"]) {
+  //
+  // 第二个值是「这一页真正的内容」的类名：术语表 / 题库要先等本地 JSON 落地，骨架本身也会被
+  // 登记（`PageContainer`），停在骨架上量等于什么也没测 —— CI 上就撞见过「骨架有 7 个
+  // `data-reveal`、内容换上来后 0 个」。
+  for (const [url, content] of [
+    ["/tools", ".md-panel"],
+    ["/browse", ".md-q-row"],
+    ["/glossary", ".md-term"],
+  ] as const) {
     await page.goto(url);
+    await expect(page.locator(`main ${content}`).first()).toBeAttached({ timeout: 60_000 });
     // 登记分三趟（rAF / 220ms / 640ms）：慢机上主线程被题库索引占住时，最后一趟会晚到，
     // 固定等 1200ms 会读到「一个都还没登记」。判据不变（必须有元素被登记），只是给它时间。
     await expect
@@ -111,6 +120,9 @@ test("顶栏搜索与 `/` 打开站内搜索（内容 + 页面），不是调谐
 test("⌘K 打开调谐台，输入后能跳到目标页", async ({ page }) => {
   await seed(page, "modern");
   await page.goto("/");
+  // 快捷键挂在应用挂载之后：`goto` 在 `load` 就返回，dev 构建（没有 wasm-opt）此时可能还没渲染出外壳，
+  // 直接按键会打在空页面上。先等顶栏，再按。
+  await page.locator("nav[data-nav]").waitFor();
   await page.keyboard.press("Control+k");
   const input = page.locator(".md-palette-input");
   await expect(input).toBeVisible();
@@ -120,6 +132,38 @@ test("⌘K 打开调谐台，输入后能跳到目标页", async ({ page }) => {
   await page.locator(".md-palette-item").first().click();
   await expect(page.locator(".md-palette")).toHaveCount(0);
   expect(new URL(page.url()).pathname).not.toBe("/");
+});
+
+// 台账 C10：调谐台跳转曾经套了原生 View Transition，点选后整页冻住数秒
+// （VT 拍「旧状态」快照时面板还开着，等于把整屏模糊遮罩 + 181 行结果一起光栅化）。
+// 判据不是「快多少」（CI 机器没有性能可比性），而是**这条路径不再触发 VT**：
+// 换页只保留 `#route-content` 的淡入，退出动效归 `presence`。
+test("调谐台跳转不触发 View Transition（曾因此卡住数秒）", async ({ page }) => {
+  await seed(page, "modern");
+  await page.goto("/");
+  await page.locator("nav[data-nav]").waitFor();
+  await page.keyboard.press("Control+k");
+  const input = page.locator(".md-palette-input");
+  await expect(input).toBeVisible();
+  await input.fill("术语");
+  await page.waitForTimeout(300);
+
+  // 先确认这个浏览器**有**这个 API：没有的话计数永远是 0，用例就成了空转。
+  const hasVT = await page.evaluate(() => typeof document.startViewTransition === "function");
+  expect(hasVT, "该浏览器应支持 View Transitions（否则这条用例测不到东西）").toBe(true);
+  await page.evaluate(() => {
+    window.__vtCalls = 0;
+    const orig = document.startViewTransition.bind(document);
+    document.startViewTransition = (...a: unknown[]) => {
+      window.__vtCalls += 1;
+      // @ts-expect-error 透传给原生实现
+      return orig(...a);
+    };
+  });
+  await page.locator(".md-palette-item").first().click();
+  await expect(page.locator(".md-palette")).toHaveCount(0);
+  const calls = await page.evaluate(() => (window as unknown as { __vtCalls: number }).__vtCalls);
+  expect(calls, "调谐台跳转不该再包 View Transition").toBe(0);
 });
 
 test("Portal 出来的弹层在现代风下也是现代外观（遮罩 / 按钮 / 字体）", async ({ page }) => {
@@ -160,7 +204,7 @@ test("Portal 出来的弹层在现代风下也是现代外观（遮罩 / 按钮 
 test("现代风抽屉可按 Esc 关闭（设置 / 目录面板）", async ({ page }) => {
   await seed(page, "modern");
   await page.goto("/");
-  await page.getByRole("button", { name: "外观与动效" }).first().click();
+  await page.getByRole("button", { name: "通用设置" }).first().click();
   await expect(page.locator(".md-sheet")).toHaveCount(1);
   await page.keyboard.press("Escape");
   await expect(page.locator(".md-sheet")).toHaveCount(0);
@@ -185,10 +229,10 @@ test("现代风目录面板：全站搜索开搜索弹层、设置开抽屉", as
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: "全站搜索" })).toHaveCount(0);
 
-  // 目录面板底部的设置入口：中文界面下它的可见文字与顶栏齿轮按钮同为「外观与动效」。
+  // 目录面板底部的设置入口：中文界面下它的可见文字与顶栏齿轮按钮同为「通用设置」。
   await page.getByRole("button", { name: "更多" }).first().click();
-  await page.locator(".md-sheet").getByRole("button", { name: "外观与动效" }).click();
-  await expect(page.locator(".md-sheet").getByRole("dialog", { name: "外观与动效" })).toBeVisible();
+  await page.locator(".md-sheet").getByRole("button", { name: "通用设置" }).click();
+  await expect(page.locator(".md-sheet").getByRole("dialog", { name: "通用设置" })).toBeVisible();
 });
 
 test("切换风格不刷新即生效（像素风 → 出现像素卡，页面未重载）", async ({ page }) => {
@@ -201,7 +245,7 @@ test("切换风格不刷新即生效（像素风 → 出现像素卡，页面未
     (window as unknown as { __styleMark?: number }).__styleMark = 42;
   });
 
-  await page.getByRole("button", { name: "外观与动效" }).first().click();
+  await page.getByRole("button", { name: "通用设置" }).first().click();
   await page.getByRole("button", { name: "像素风" }).click();
 
   await expect
@@ -229,7 +273,7 @@ test("像素风 → 现代风后滚动页面不报错（自绘滚动条卸载干
   await page.goto("/glossary");
   await expect(page.locator("main h1").first()).toBeVisible();
 
-  await page.getByRole("button", { name: "外观与动效" }).first().click();
+  await page.getByRole("button", { name: "通用设置" }).first().click();
   await page.getByRole("radio", { name: "现代风" }).click();
   await expect
     .poll(() => page.evaluate(() => document.documentElement.dataset.uiStyle))
@@ -296,7 +340,7 @@ test("像素风：逐页签名样式不外泄（lab 卡片 / map 标记）", asy
 test("现代风弹层：焦点进面板、Tab 不跑出去、关闭后归还", async ({ page }) => {
   await seed(page, "modern");
   await page.goto("/");
-  const trigger = page.getByRole("button", { name: "外观与动效" }).first();
+  const trigger = page.getByRole("button", { name: "通用设置" }).first();
   await trigger.click();
   const panel = page.locator("[data-modal-root]").first();
   await expect(panel).toBeVisible();
@@ -322,7 +366,7 @@ test("现代风弹层：焦点进面板、Tab 不跑出去、关闭后归还", a
     .poll(() =>
       page.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? ""),
     )
-    .toBe("外观与动效");
+    .toBe("通用设置");
 });
 
 test("通联日志：所有下拉的尺寸与箭头一致（两个组件同类控件不分裂）", async ({ page }) => {
@@ -606,6 +650,7 @@ test("带前缀图标的输入框让出左内边距（属性选择器，不依�
   await seed(page, "modern");
   await page.goto("/");
   // 站内搜索弹层里的输入框用了 `ui::Input` 的前缀槽（页面里的搜索框在现代风下是 `ModernInput`，没有图标槽）。
+  await page.locator("nav[data-nav]").waitFor();
   await page.keyboard.press("/");
   const wrap = page.locator(".md-input-wrap[data-adorn-left]").first();
   await expect(wrap).toBeVisible();

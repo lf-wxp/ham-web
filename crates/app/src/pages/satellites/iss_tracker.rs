@@ -48,7 +48,9 @@ pub(super) fn IssTracker() -> impl IntoView {
         {move || {
           if loading.get() {
             return view! {
-              <p class="px-3 py-6 text-center text-sm text-muted-foreground">{move || t("radio.fetching-iss-position")}</p>
+              <crate::components::common::LoadingBlock
+                label=Signal::derive(move || t("radio.fetching-iss-position"))
+              />
             }
             .into_any();
           }
@@ -61,19 +63,19 @@ pub(super) fn IssTracker() -> impl IntoView {
           match iss.get() {
             Some(d) => view! {
               <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div class="border bg-inset p-3 text-center">
+                <div class=crate::kit::tile_class("text-center")>
                   <div class="text-xs text-muted-foreground">{move || t("radio.latitude")}</div>
                   <div class="mt-1 text-lg tabular-nums">{format!("{}°", decimal(d.latitude, 2))}</div>
                 </div>
-                <div class="border bg-inset p-3 text-center">
+                <div class=crate::kit::tile_class("text-center")>
                   <div class="text-xs text-muted-foreground">{move || t("radio.longitude")}</div>
                   <div class="mt-1 text-lg tabular-nums">{format!("{}°", decimal(d.longitude, 2))}</div>
                 </div>
-                <div class="border bg-inset p-3 text-center">
+                <div class=crate::kit::tile_class("text-center")>
                   <div class="text-xs text-muted-foreground">{move || t("radio.altitude-label")}</div>
                   <div class="mt-1 text-lg tabular-nums">{format!("{} km", decimal(d.altitude, 0))}</div>
                 </div>
-                <div class="border bg-inset p-3 text-center">
+                <div class=crate::kit::tile_class("text-center")>
                   <div class="text-xs text-muted-foreground">{move || t("radio.speed")}</div>
                   <div class="mt-1 text-lg tabular-nums">{format!("{} km/s", decimal(d.velocity, 1))}</div>
                 </div>

@@ -1,7 +1,7 @@
 use ham_web_core::parabolic_dish::{DEFAULT_EFFICIENCY, DishInput, analyze, focus_from_depth};
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_num};
+use super::{fmt_num, result_class};
 use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField};
 use crate::util::unique_id;
@@ -92,7 +92,7 @@ pub(super) fn ParabolicDish() -> impl IntoView {
         />
       </Field>
 
-      <div class=format!("{RESULT} space-y-1 tabular-nums")>
+      <div class=format!("{} space-y-1 tabular-nums", result_class())>
         {move || match report.get() {
           None => view! { <span>{move || t("tools.dish-enter-valid")}</span> }.into_any(),
           Some(r) => {
@@ -160,7 +160,7 @@ pub(super) fn ParabolicDish() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class=format!("{RESULT} tabular-nums")>
+      <div class=format!("{} tabular-nums", result_class())>
         {move || match measured.get() {
           None => view! { <span>{move || t("tools.dish-measure-invalid")}</span> }.into_any(),
           Some((f, fd)) => {

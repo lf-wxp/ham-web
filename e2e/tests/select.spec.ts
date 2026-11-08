@@ -8,11 +8,12 @@ import { expect, settleFrames, test } from "./fixtures";
 // 以前它们是两份实现，一份键盘完全不可用、两份在 Tab 离开后都会留下全屏遮罩，
 // 而唯一的 e2e 辅助函数（`pickOption`）只会点鼠标，一个都拦不住。
 //
-// 三种用法（站内**真实存在**的，不是为测试造的）：
+// 两种用法（站内**真实存在**的，不是为测试造的）：
 //   - 数据式·筛选器：日志页的「CAT 协议」（2 项）与「模式」（18 项，会滚动，且选项随值变化）；
-//   - 数据式·无可见标签：导航栏的语言切换（名字与提示都靠 `aria_label` / `title`，永远有值）；
 //   - 组合式：首页的题库版本选择器（选项带图标 / 徽章 / 两行文字）。**目前站内唯一的组合式用法**，
 //     它不在日志页上，也只出现在像素风首页 —— 所以它的场景自带页面与风格限制。
+// 以前还有第三种「数据式·无可见标签」（像素风顶栏的语言切换）。语言收进设置对话框后，
+// 那里改成了三行单选（可见标签 + `role=radio`），站内就没有无可见标签的 `SimpleSelect` 了。
 
 type Style = "pixel" | "modern";
 
@@ -45,17 +46,6 @@ const KINDS: Kind[] = [
     minRows: 18,
   },
   {
-    // 语言切换只在**像素风**的顶栏里（现代风的语言在设置里切，导航里没有这个下拉）。
-    // 选中一项会改变界面语言，控件自己的名字（「切换语言」）也随之翻译 —— 所以不能按名字定位，
-    // 用 `[data-nav]` 里的 combobox；列表框的名字是翻译前的「切换语言」（打开时的语言是中文）。
-    name: "SimpleSelect · 无可见标签（语言切换）",
-    url: "/",
-    styles: ["pixel"],
-    pick: (p) => p.locator('[data-nav] [role="combobox"]').first(),
-    listName: "切换语言",
-    minRows: 3,
-  },
-  {
     name: "Select · 组合式（题库版本）",
     url: "/",
     styles: ["pixel"],
@@ -69,8 +59,7 @@ const KINDS: Kind[] = [
 
 /** 日志页上的两个数据式下拉：页面级用例（同页不串值、动态选项、外观一致）都在这页做。 */
 const LOG = KINDS[0];
-const HOME_COMBINED = KINDS[3];
-const HOME_SIMPLE = KINDS[2];
+const HOME_COMBINED = KINDS[2];
 
 async function open(page: Page, style: Style, kind: Kind) {
   await page.addInitScript((s) => {
@@ -527,9 +516,10 @@ for (const style of ["pixel", "modern"] as const) {
       await expect(page.getByRole("listbox")).toHaveCount(0);
       return { ...m, ...panel };
     };
-    // 首页上同时有组合式（题库版本）和数据式（语言切换）。
+    // 组合式只在像素风首页、数据式在日志页：这里只比计算样式，跨页对照不影响结论。
     const combined = await compare(HOME_COMBINED);
-    const simple = await compare(HOME_SIMPLE);
+    await open(page, style, LOG);
+    const simple = await compare(LOG);
     expect(simple, "组合式与数据式的下拉外观 / 动效 / 结构应完全一致").toEqual(combined);
   });
 }

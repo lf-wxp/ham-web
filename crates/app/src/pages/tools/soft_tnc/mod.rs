@@ -161,7 +161,7 @@ pub(super) fn SoftTnc() -> impl IntoView {
                 <div class="bg-inset px-3 py-2 text-xs text-muted-foreground">
                   {crate::i18n::tf("radio.decoded", &[&file_name.get_untracked()])}
                 </div>
-                <pre class="whitespace-pre-wrap break-words border bg-inset p-3 text-sm font-mono">{lines}</pre>
+                <pre class=crate::kit::tile_class("whitespace-pre-wrap break-words text-sm font-mono")>{lines}</pre>
                 <div class="flex justify-center">
                   <Button variant=Variant::Outline on_click=move |_| reset(())>
                     {move || t("tools.decode-another-file")}

@@ -5,7 +5,7 @@
 > 这里登记了但 CSS 里已经没有（死条目），都会报错。条目写成 `` `md-xxx`(规则数) `` 的形态，
 > 第一列的组名只是分组标签，不参与比对；规则数是近似值，不参与比对。
 
-共 **539** 个类，分 153 组。
+共 **555** 个类，分 157 组。
 
 | 组 | 类（括号内为该类在 CSS 里出现的规则数） |
 |---|---|
@@ -22,7 +22,7 @@
 | `md-bento` | `md-bento`(6) |
 | `md-bookmark` | `md-bookmark-foot`(1) · `md-bookmark-list`(1) |
 | `md-bracket` | `md-bracket`(4) |
-| `md-brand` | `md-brand`(1) · `md-brand-mark`(1) · `md-brand-mark-icon`(1) |
+| `md-brand` | `md-brand`(1) · `md-brand-mark`(1) · `md-brand-mark-icon`(1) · `md-brand-text`(1) |
 | `md-btn` | `md-btn`(10) · `md-btn-accent`(7) · `md-btn-danger`(2) · `md-btn-ghost`(2) · `md-btn-icon`(2) · `md-btn-icon-only`(1) · `md-btn-lg`(2) · `md-btn-line`(2) · `md-btn-outline`(2) · `md-btn-quiet`(4) · `md-btn-sm`(3) · `md-btn-text`(2) · `md-btn-wrap`(2) · `md-btn-xs`(2) |
 | `md-bubble` | `md-bubble`(5) · `md-bubble-close`(2) · `md-bubble-text`(1) |
 | `md-bullet` | `md-bullet-dot`(1) |
@@ -54,11 +54,13 @@
 | `md-due` | `md-due`(1) |
 | `md-emblem` | `md-emblem`(10) · `md-emblem-icon`(3) · `md-emblem-lock`(3) |
 | `md-eme` | `md-eme`(2) · `md-eme-back`(1) |
+| `md-err` | `md-error`(1) · `md-error-body`(1) · `md-error-detail`(1) · `md-error-icon`(1) · `md-error-title`(1) |
 | `md-empty` | `md-empty`(1) · `md-empty-card`(1) · `md-empty-mark`(1) · `md-empty-note`(1) · `md-empty-plain`(1) · `md-empty-title`(1) |
 | `md-exam` | `md-exam`(12) |
 | `md-feature` | `md-feature`(6) · `md-feature-accent`(8) · `md-feature-foot`(1) · `md-feature-ink`(1) · `md-feature-kicker`(1) · `md-feature-quiet`(2) · `md-feature-title`(1) · `md-feature-value`(1) |
 | `md-feedback` | `md-feedback`(1) |
 | `md-field` | `md-field`(3) · `md-field-error`(3) · `md-field-hint`(1) · `md-field-label`(2) · `md-field-required`(1) |
+| `md-formula` | `md-formula`(1) |
 | `md-footnote` | `md-footnote`(2) |
 | `md-filter` | `md-filter-chips`(1) |
 | `md-flip` | `md-flip`(1) · `md-flip-left`(1) · `md-flip-right`(1) |
@@ -77,7 +79,7 @@
 | `md-lede` | `md-lede`(2) |
 | `md-legend` | `md-legend`(2) |
 | `md-link` | `md-link`(7) · `md-link-dot`(1) · `md-link-inline`(2) · `md-link-list`(1) · `md-link-more`(4) · `md-link-row`(5) |
-| `md-live` | `md-live`(1) · `md-live-band`(4) · `md-live-band-bar`(1) · `md-live-band-name`(1) · `md-live-band-state`(1) · `md-live-belt`(2) · `md-live-failed`(1) · `md-live-failed-actions`(1) · `md-live-level`(4) · `md-live-level-text`(1) · `md-live-metric`(1) · `md-live-metric-label`(1) · `md-live-metric-value`(1) · `md-live-metrics`(2) · `md-live-source`(2) |
+| `md-live` | `md-live`(1) · `md-live-band`(4) · `md-live-band-bar`(1) · `md-live-band-name`(1) · `md-live-band-state`(1) · `md-live-belt`(2) · `md-live-failed`(1) · `md-live-failed-actions`(1) · `md-live-level`(4) · `md-live-level-text`(1) · `md-live-metric`(1) · `md-live-metric-label`(1) · `md-live-metric-skel`(1) · `md-live-metric-value`(1) · `md-live-metrics`(2) · `md-live-source`(2) |
 | `md-map` | `md-map-summary`(1) |
 | `md-mark` | `md-mark`(1) · `md-mark-right`(1) · `md-mark-wrong`(1) |
 | `md-menu` | `md-menu-anchor`(1) · `md-menu-body`(1) · `md-menu-chips`(1) · `md-menu-count`(1) · `md-menu-grid`(3) · `md-menu-icon-sm`(2) · `md-menu-input`(7) · `md-menu-item`(5) · `md-menu-panel`(1) · `md-menu-search`(8) · `md-menu-section`(2) |
@@ -99,7 +101,7 @@
 | `md-option` | `md-option`(11) · `md-option-group`(1) |
 | `md-page` | `md-page`(20) · `md-page-btn`(5) · `md-page-gap`(1) · `md-page-head`(6) · `md-page-head-actions`(1) · `md-page-head-copy`(1) · `md-page-head-row`(2) |
 | `md-pagination` | `md-pagination`(1) |
-| `md-palette` | `md-palette`(3) · `md-palette-backdrop`(1) · `md-palette-empty`(1) · `md-palette-foot`(1) · `md-palette-go`(3) · `md-palette-href`(1) · `md-palette-input`(3) · `md-palette-input-row`(1) · `md-palette-item`(4) · `md-palette-list`(1) · `md-palette-title`(1) |
+| `md-palette` | `md-palette`(3) · `md-palette-backdrop`(1) · `md-palette-empty`(1) · `md-palette-foot`(1) · `md-palette-alias`(1) · `md-palette-go`(3) · `md-palette-group`(1) · `md-palette-href`(1) · `md-palette-input`(3) · `md-palette-input-row`(1) · `md-palette-item`(4) · `md-palette-list`(1) · `md-palette-sec`(1) · `md-palette-title`(1) |
 | `md-panel` | `md-panel`(24) · `md-panel-flush`(3) · `md-panel-title`(2) |
 | `md-phrase` | `md-phrase`(3) |
 | `md-phrases` | `md-phrases`(1) |
@@ -130,7 +132,8 @@
 | `md-shortcut` | `md-shortcut-list`(1) |
 | `md-sheet` | `md-sheet`(7) · `md-sheet-body`(2) · `md-sheet-foot`(1) · `md-sheet-head`(1) · `md-sheet-panel`(6) · `md-sheet-wide`(1) |
 | `md-shell` | `md-shell`(1) |
-| `md-skel` | `md-skel`(2) · `md-skel-card`(1) · `md-skel-line`(1) · `md-skel-option`(1) · `md-skel-page`(1) · `md-skel-rows`(1) |
+| `md-readout` | `md-readout`(1) · `md-readout-inline`(1) |
+| `md-skel` | `md-skel`(2) · `md-skel-block`(1) · `md-skel-fill`(1) · `md-skel-card`(1) · `md-skel-line`(1) · `md-skel-option`(1) · `md-skel-page`(1) · `md-skel-rows`(1) |
 | `md-sm` | `md-sm`(1) |
 | `md-sonar` | `md-sonar`(2) |
 | `md-spectrum` | `md-spectrum`(3) |
@@ -147,6 +150,7 @@
 | `md-tablist` | `md-tablist`(1) |
 | `md-term` | `md-term`(6) · `md-term-abbr`(1) · `md-term-cat`(1) · `md-term-desc`(1) · `md-term-en`(1) · `md-term-foot`(2) · `md-term-foot-count`(1) · `md-term-foot-label`(1) · `md-term-grid`(2) · `md-term-head`(1) · `md-term-meta`(1) · `md-term-title`(1) |
 | `md-text` | `md-text-btn`(4) · `md-text-btn-icon`(1) |
+| `md-tile` | `md-tile`(4) |
 | `md-textarea` | `md-textarea`(9) |
 | `md-tip` | `md-tip-popup`(1) |
 | `md-toast` | `md-toast`(8) · `md-toast-icon`(4) |

@@ -3,7 +3,7 @@ use ham_web_core::intermod::{
 };
 use leptos::prelude::*;
 
-use super::RESULT;
+use super::result_class;
 use crate::i18n::{t, tf, tp};
 use crate::ui::{
   Checkbox, Field, Label, NumberField, Table, TableBody, TableCell, TableHead, TableHeader,
@@ -128,7 +128,7 @@ pub(super) fn IntermodCalculator() -> impl IntoView {
               })
               .collect_view();
             view! {
-              <div class=format!("{RESULT} space-y-1 tabular-nums")>
+              <div class=format!("{} space-y-1 tabular-nums", result_class())>
                 <div>{tf("tools.intermod-inputs", &[&inputs])}</div>
                 <div role="status">
                   {tp("tools.intermod-product-count", total as u32, &[&total.to_string()])}
@@ -191,7 +191,7 @@ pub(super) fn IntermodCalculator() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class=format!("{RESULT} space-y-1 tabular-nums")>
+      <div class=format!("{} space-y-1 tabular-nums", result_class())>
         {move || match image.get() {
           None => view! { <span>{move || t("tools.intermod-image-invalid")}</span> }.into_any(),
           Some(im) => {

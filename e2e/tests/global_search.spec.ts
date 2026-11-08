@@ -64,7 +64,7 @@ test("全局搜索：切换界面风格后顶栏入口仍可用", async ({ page 
   await expect(dialog).toHaveCount(0);
 
   // 像素 → 现代
-  await page.getByRole("button", { name: "外观与动效" }).first().click();
+  await page.getByRole("button", { name: "通用设置" }).first().click();
   await page.getByRole("radio", { name: "现代风" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-ui-style", "modern");
   await page.locator(".md-search-trigger").click();

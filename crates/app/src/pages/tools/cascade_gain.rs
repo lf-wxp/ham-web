@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_num};
+use super::{fmt_num, result_class};
 use crate::i18n::{t, tp};
 use crate::ui::{Field, Input};
 use crate::util::unique_id;
@@ -19,7 +19,7 @@ pub(super) fn CascadeGain() -> impl IntoView {
       >
         <Input id=input_id value=input on_change=Callback::new(move |v: String| input.set(v)) />
       </Field>
-      <div class=RESULT>
+      <div class=result_class()>
         {move || {
           let values: Vec<f64> = input
             .get()

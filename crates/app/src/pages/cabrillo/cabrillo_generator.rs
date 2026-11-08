@@ -139,7 +139,7 @@ pub(super) fn CabrilloGenerator() -> impl IntoView {
               .into_any()
             } else {
               view! {
-                <pre class="max-h-64 overflow-auto border bg-inset p-3 font-mono text-xs leading-5">
+                <pre class=crate::kit::tile_class("max-h-64 overflow-auto font-mono text-xs leading-5")>
                   {text}
                 </pre>
               }

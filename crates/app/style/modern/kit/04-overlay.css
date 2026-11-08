@@ -1,0 +1,480 @@
+/* ============================================================
+   调谐台与外壳表面：⌘K 面板、Portal 字体兜底、原生新能力（View Transitions / 容器查询 / 锚点定位）
+   ------------------------------------------------------------
+   原 `kit.css` 第 3819–4338 行（4/11 段，台账 C4 的分域拆分）。
+
+   **顺序即级联**：本目录下的文件由 `../kit.css` 按 01→11 顺序 `@import`，
+   同名 `@layer components` 按这个顺序拼接。**不要按主题重排文件**：同层同优先级的
+   规则靠源顺序决胜负，换顺序会悄悄改掉某个组件的最终取值。新增样式追加到对应
+   主题文件的末尾；跨主题的新组件另起文件并追加到 `@import` 列表**末尾**。
+   ============================================================ */
+
+/* ============================================================
+   调谐台（⌘K Command Palette）
+   ============================================================ */
+@layer components {
+  .md-search-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-space-2);
+    height: 34px;
+    padding-inline: 10px 8px;
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-pill);
+    color: var(--md-fg-muted);
+  }
+
+  .md-search-trigger:hover {
+    border-color: var(--md-border-strong);
+    background-color: var(--md-surface-2);
+    color: var(--md-fg);
+  }
+
+  .md-search-trigger-hint {
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-3xs);
+    padding: 1px 5px;
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-sm);
+    color: var(--md-fg-muted);
+  }
+
+  @media (width < 900px) {
+    /* 提示键隐掉之后按钮里只剩一个图标，原来为非对称内容留的左右内距（10 / 8）
+       就变成了「图标没落在圆心」：粗指针档把 `.md-text-btn` 撑到 44×44
+       （见文末 `pointer: coarse`），圆形的对称性会把这点偏差放大成看得见的偏左。
+       这里改成与 `.md-text-btn-icon` 同一种方形命中区，让图标落在圆心；
+       宽度取与高度相同的 34，细指针档下也是个正圆。 */
+    .md-search-trigger {
+      width: 34px;
+      padding-inline: 0;
+      justify-content: center;
+    }
+
+    .md-search-trigger-hint {
+      display: none;
+    }
+  }
+
+  .md-palette-backdrop {
+    place-items: start center;
+    padding-top: 12vh;
+  }
+
+  .md-palette {
+    width: min(720px, 100%);
+    overflow: hidden;
+    border: 1px solid var(--md-border-strong);
+    border-radius: var(--md-r-xl);
+    background-color: color-mix(in srgb, var(--md-surface) 92%, transparent);
+    -webkit-backdrop-filter: blur(26px) saturate(160%);
+    backdrop-filter: blur(26px) saturate(160%);
+    box-shadow:
+      var(--md-shadow-3),
+      0 0 120px -40px var(--md-glow-1);
+    animation: md-modal-in var(--md-dur) var(--md-ease-out);
+  }
+
+  .md-palette-input-row {
+    display: flex;
+    align-items: center;
+    gap: var(--md-space-3);
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--md-border);
+    color: var(--md-fg-muted);
+  }
+
+  .md-palette-input {
+    flex: 1;
+    min-width: 0;
+    height: 30px;
+    border: 0;
+    background: transparent;
+    color: var(--md-fg);
+    font-family: inherit;
+    font-size: var(--md-text-md);
+    outline: none;
+  }
+
+  .md-palette-input::placeholder {
+    color: var(--md-fg-muted);
+  }
+
+  .md-palette-list {
+    max-height: 46svh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--md-space-2);
+  }
+
+  .md-palette-item {
+    display: flex;
+    align-items: center;
+    gap: var(--md-space-2-5);
+    width: 100%;
+    padding: var(--md-space-2-5) var(--md-space-3);
+    border: 0;
+    border-radius: var(--md-r-sm);
+    background: transparent;
+    color: var(--md-fg);
+    font-family: inherit;
+    font-size: var(--md-text-base);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .md-palette-item[data-active="true"] {
+    background-color: var(--md-surface-2);
+    box-shadow: inset 2px 0 0 var(--md-orange);
+  }
+
+  .md-palette-title {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* 白话别名（台账 N4）：游戏化页面的功能名，贴在标题右侧，比路由更早被看到。 */
+  .md-palette-alias {
+    flex-shrink: 0;
+    padding: 1px 6px;
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-pill);
+    color: var(--md-fg-muted);
+    font-size: var(--md-text-2xs);
+    white-space: nowrap;
+  }
+
+  .md-palette-href {
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-2xs);
+    color: var(--md-fg-muted);
+  }
+
+  /* 段容器：只负责段间距（段标题自己带上下留白）。 */
+  .md-palette-sec + .md-palette-sec {
+    margin-top: var(--md-space-1);
+  }
+
+  /* 分组标题：181 条路由平铺时用户只能靠滚（台账 N2）。标题沿用目录面板那一族的语气
+     （等宽大写 + 小一号），段与段之间只用留白分隔 —— 调谐台本身已经很密，再加横线会碎。 */
+  .md-palette-group {
+    padding: 12px var(--md-space-3) 4px;
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-2xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--md-fg-muted);
+  }
+
+  .md-palette-go {
+    opacity: 0;
+    transition: opacity var(--md-dur-fast) var(--md-ease);
+  }
+
+  .md-palette-item[data-active="true"] .md-palette-go,
+  .md-palette-item:hover .md-palette-go {
+    opacity: 1;
+  }
+
+  .md-palette-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--md-space-3);
+    padding: 10px 18px;
+    border-top: 1px solid var(--md-border);
+    font-size: var(--md-text-xs);
+    color: var(--md-fg-muted);
+  }
+
+  .md-palette-empty {
+    padding: 28px;
+    text-align: center;
+    color: var(--md-fg-muted);
+  }
+}
+
+@layer components {
+  /* 光标跟随高光：卡片里跟着指针走的一团柔光，鼠标离开就淡掉。 */
+  .md-spotlight {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .md-spotlight::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(
+      240px circle at var(--mx, 50%) var(--my, 50%),
+      rgb(255 255 255 / 0.14),
+      transparent 62%
+    );
+    transition: opacity var(--md-dur) var(--md-ease);
+  }
+
+  .md-spotlight:hover::after {
+    opacity: 1;
+  }
+
+  /* 首屏视差由 `ModernHero` 里的滚动监听直接写 transform（见 hero.rs），
+     不再用 `animation-timeline`：那样在部分浏览器无效，且被 `overflow:hidden` 裁掉后几乎看不到。 */
+  .md-hero-copy,
+  .md-hero-art {
+    will-change: transform, opacity;
+  }
+}
+
+/* ============================================================
+   Portal / 外壳表面的字体兜底
+   ------------------------------------------------------------
+   这些元素不在 `.md-root` 里（挂在 body 上或位于导航组件内），不显式声明字体就会
+   回落到 body 的像素字体。新增「挂在 body 上的现代表面」时，把选择器加进这一组。
+   ============================================================ */
+.md-palette,
+.md-dock,
+.md-modal-panel,
+.md-sheet-panel,
+.md-bubble {
+  font-family: var(--md-font);
+  font-size: var(--md-text-base);
+  line-height: 1.6;
+  color: var(--md-fg);
+}
+
+/* ============================================================
+   新 CSS 能力：给现代风加"炫技"层
+   ------------------------------------------------------------
+   全部带降级：不支持 @property / oklch / scroll() 的浏览器只是少一点光效，
+   不会破坏布局。
+   ============================================================ */
+
+/* 可动画的自定义属性：`--md-angle` 只有注册成 <angle> 才能被 keyframes 插值。 */
+@property --md-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* 焦点卡的面色也走变量。注册成 <color> 才能让 hover 的加深真正过渡，
+   否则换值只是把颜色「切」一下，画面上依旧是一次闪。 */
+@property --md-accent-face-a {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #ff6a35; /* color-ok: 品牌橙实心面（焦点卡），明暗共用 */
+}
+
+@property --md-accent-face-b {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #ff4d2e; /* color-ok: 品牌橙实心面（焦点卡），明暗共用 */
+}
+
+@property --md-accent-face-c {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #f2452b; /* color-ok: 品牌橙实心面（焦点卡），明暗共用 */
+}
+
+@keyframes md-angle-spin {
+  to {
+    --md-angle: 360deg;
+  }
+}
+
+@layer components {
+  /* 1) 旋转的圆锥渐变描边：焦点卡与首屏玻璃条共用。 */
+  .md-feature-accent {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(
+          135deg,
+          var(--md-accent-face-a) 0%,
+          var(--md-accent-face-b) 55%,
+          var(--md-accent-face-c) 100%
+        )
+        padding-box,
+      conic-gradient(
+          from var(--md-angle),
+          #ff6a35, /* color-ok: 品牌橙实心面（焦点卡），明暗共用 */
+          #a97bff,
+          #6b8bff,
+          #ff6a35 /* color-ok: 品牌橙实心面（焦点卡），明暗共用 */
+        )
+        border-box;
+    animation: md-angle-spin 8s linear infinite;
+  }
+
+  /* 通用 `.md-feature` 的 transition 列表是给所有卡片用的，塞不进这三个变量；
+     这里特异性抬一格单独补上，让 hover 的加深随渐变一起过渡。 */
+  .md-feature.md-feature-accent {
+    transition:
+      translate var(--md-dur-fast) var(--md-ease),
+      box-shadow var(--md-dur-fast) var(--md-ease),
+      --md-accent-face-a var(--md-dur) var(--md-ease),
+      --md-accent-face-b var(--md-dur) var(--md-ease),
+      --md-accent-face-c var(--md-dur) var(--md-ease);
+  }
+
+  /* 读数条改成实心面 + 一条墨线：旋转的锥形描边属于「光效」，
+     与「几何化构图」相抵，而且动画每秒 12s 循环会一直抢首屏的注意力。 */
+
+  /* 2) 主按钮的扫光：hover 时一道高光掠过（纯合成层，不触发布局）。 */
+  .md-btn-accent {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .md-btn-accent::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    pointer-events: none;
+    background: linear-gradient(
+      115deg,
+      transparent 32%,
+      rgb(255 255 255 / 0.38) 46%,
+      transparent 60%
+    );
+    translate: -130% 0;
+    transition: translate 620ms var(--md-ease);
+  }
+
+  .md-btn-accent:hover:not(:disabled)::after {
+    translate: 130% 0;
+  }
+
+  /* 3) 滚动进度条：scroll-driven animation，纯 CSS，无 JS。 */
+  .md-scroll-progress {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline: 0;
+    z-index: 80;
+    height: 2px;
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    background: linear-gradient(90deg, var(--md-orange), var(--md-violet), var(--md-blue));
+    pointer-events: none;
+  }
+
+  @supports (animation-timeline: scroll()) {
+    .md-scroll-progress {
+      animation: md-scroll-grow linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+
+  @keyframes md-scroll-grow {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* 4) 排版：标题断行求均衡、段落避免孤字。 */
+  .md-display,
+  .md-article-title,
+  .md-h2 {
+    text-wrap: balance;
+  }
+
+  .md-lede,
+  .md-x-body,
+  .md-panel {
+    text-wrap: pretty;
+  }
+}
+
+/* （`.md-display-gradient` 的颜色只在 `@layer components` 里定义，浅色补丁见文件末尾附近。
+   这里曾有一条**未分层**的 `color: var(--md-orange)`：未分层规则永远压过分层规则，
+   浅色下「掺深色」的补丁从未生效，hero 大字停在 2.98:1。）*/
+
+@media (prefers-reduced-motion: reduce) {
+  .md-feature-accent,
+  .md-hero-stat,
+  .md-scroll-progress {
+    animation: none;
+  }
+
+  .md-btn-accent::after {
+    display: none;
+  }
+}
+
+/* ============================================================
+   Container Queries：让 `.md-page` 成为查询容器
+   ------------------------------------------------------------
+   这里**只**声明容器本身，不再用容器查询给 `.md-bento` / `.md-modules` 分列。
+   原因是一次真实的半桌面态：容器宽 = 视口 − 2×版心内边距，760 的容器阈值
+   在视口 808px 就成立，而这两块的视口规则要 900px、顶栏导航的切换也在 900px ——
+   结果是 808–899px 之间「卡片已经三列、导航还是手机 dock」，卡片内容宽只剩 129px。
+
+   分列只认视口断点（见 `.md-bento` / `.md-modules` 的 `min-width: 900px`），
+   同一组件不设两套阈值。目前**没有**任何规则用 `@container`：
+   曾经的 `.md-menu-grid` 在 Portal 里没有容器祖先，永远不命中，已改用视口断点。新增容器查询前
+   先确认目标元素真的在某个 `container-type` 容器内。
+
+   注意：`container-type: inline-size` 隐含 layout containment，会让 `.md-page`
+   成为 fixed 后代的包含块。所有 fixed 弹层 / 底栏都必须走 `<Portal>` 挂到 body
+   （`kit_modern/practice_bar.rs` 与 `dialog.rs` 都已这么做）。
+   ============================================================ */
+@layer components {
+  .md-page {
+    container-type: inline-size;
+    container-name: md-page;
+  }
+}
+
+/* ============================================================
+   Anchor Positioning：桌面端「更多」菜单锚在按钮下方
+   ------------------------------------------------------------
+   窄屏仍走右侧抽屉；桌面端不再整屏遮罩，而是贴着「更多」弹出的面板。
+   不支持 anchor 的浏览器自动落回抽屉（`md-sheet` 的默认样式）。
+   ============================================================ */
+.md-menu-anchor {
+  anchor-name: --md-more;
+}
+
+@supports (position-anchor: --md-more) {
+  @media (min-width: 900px) {
+    .md-sheet[data-anchored="true"] {
+      background: transparent;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      align-items: flex-start;
+      justify-content: flex-end;
+    }
+
+    .md-sheet[data-anchored="true"] .md-sheet-panel {
+      /* 必须是 fixed：absolute 时锚定解析失败（会退化成相对遮罩定位）。 */
+      position: fixed;
+      inset: auto;
+      position-anchor: --md-more;
+      position-area: block-end span-inline-end;
+      position-try-fallbacks: flip-block, flip-inline;
+      width: 380px;
+      max-height: 72svh;
+      margin-block-start: 10px;
+      border-radius: var(--md-r-xl);
+      border: 1px solid var(--md-border);
+      box-shadow: var(--md-shadow-3);
+      animation: md-menu-pop var(--md-dur) var(--md-ease-out);
+    }
+  }
+}
+
+@keyframes md-menu-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+

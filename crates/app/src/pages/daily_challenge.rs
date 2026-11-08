@@ -199,7 +199,14 @@ pub fn DailyChallengePage() -> impl IntoView {
       <PageContainer class="space-y-4">
         {move || {
           if loading.get() {
-            return view! { <div class=crate::kit::card_class_with("px-4 py-12 text-center text-sm text-muted-foreground")>{move || t("learning.loading-today-s-questions")}</div> }.into_any();
+            return view! {
+              <div class=crate::kit::card_class_with("px-4 py-6")>
+                <crate::components::common::LoadingBlock
+                  label=Signal::derive(move || t("learning.loading-today-s-questions"))
+                />
+              </div>
+            }
+            .into_any();
           }
           if !started.get() && !finished.get() {
             let done = today_result();

@@ -174,7 +174,7 @@ pub(super) fn PassPredictor() -> impl IntoView {
           </span>
         </div>
 
-        <div class="border bg-inset p-3">
+        <div class=crate::kit::tile_class("")>
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             <label class=format!("inline-flex {}", crate::kit::check_row_class())>
               <Checkbox

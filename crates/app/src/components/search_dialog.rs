@@ -34,7 +34,31 @@ pub struct SearchOpen(pub RwSignal<bool>);
 const MAX_QSO_RESULTS: usize = 5;
 
 /// 页面命中上限：页面是「直达」类结果，排在内容之前但不能挤满整屏。
-const MAX_PAGE_RESULTS: usize = 3;
+///
+/// 曾经是 3：181 条路由里只有前 3 条能被「输入页面名直达」，第 4 条以后的路由
+/// 在站内搜索里等于不存在（台账 N3）。提到 8 之后仍给内容留 22 条（总量上限 30），
+/// 单屏也不会被页面占满 —— 页面组天然排在内容前面，8 条是「一屏能扫完」的上限。
+const MAX_PAGE_RESULTS: usize = 8;
+
+/// 页面命中排序的分档：完全同名 < 标题前缀 < 标题包含 < 仅路由包含。
+///
+/// 只按 `registry` 顺序截断会让长尾页永远进不来（台账 N3）：键入「天线」时
+/// 「天线建模」应该排在「天线长度计算器」之前，而不是按注册表里谁先登记谁在前。
+fn page_rank(title: &str, href: &str, needle: &str) -> usize {
+  let title = title.to_lowercase();
+  let href = href.to_lowercase();
+  if title == needle {
+    0
+  } else if title.starts_with(needle) {
+    1
+  } else if title.contains(needle) {
+    2
+  } else if href.contains(needle) {
+    3
+  } else {
+    4
+  }
+}
 
 /// 按页面标题与路由搜页面（标题是中文原文，渲染时再过一层词典）。
 ///
@@ -46,13 +70,20 @@ fn search_pages(q: &str) -> Vec<(String, String, String, String)> {
     return Vec::new();
   }
   let group = t("shell.search-pages");
-  registry::MODULES
+  let mut hits: Vec<(usize, usize, &registry::Module)> = registry::MODULES
     .iter()
-    .filter(|m| {
-      m.title.to_lowercase().contains(&needle) || m.nav_href().to_lowercase().contains(&needle)
+    .enumerate()
+    .filter_map(|(i, m)| {
+      let rank = page_rank(m.title, m.nav_href(), &needle);
+      (rank < 4).then_some((rank, i, m))
     })
+    .collect();
+  // 同档内保持注册表顺序（`sort_by_key` 稳定），分档只看匹配质量。
+  hits.sort_by_key(|(rank, i, _)| (*rank, *i));
+  hits
+    .into_iter()
     .take(MAX_PAGE_RESULTS)
-    .map(|m| {
+    .map(|(_, _, m)| {
       let href = m.nav_href().to_owned();
       (
         group.clone(),

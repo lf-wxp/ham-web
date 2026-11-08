@@ -45,9 +45,10 @@ async function expectClean(page: Page) {
   expect(summary).toBe("");
 }
 
-const routes = ["/", "/practice", "/tools", "/log", "/glossary", "/map"];
+// `/morse` 与 `/formulas` 是 C1 刚真迁移的两页（内嵌小块 / 公式读数），一并纳入深色档扫描。
+const routes = ["/", "/practice", "/tools", "/log", "/glossary", "/map", "/morse", "/formulas"];
 
-test("现代风 · 深色：六个主页面零 a11y 违规", async ({ page }) => {
+test("现代风 · 深色：八个主页面零 a11y 违规", async ({ page }) => {
   await seed(page, "dark");
   for (const route of routes) {
     await page.goto(route);
@@ -65,9 +66,24 @@ test("现代风 · 亮色：三个主页面零 a11y 违规", async ({ page }) =>
   }
 });
 
+// 桥接页抽样（台账 A4）：上面那六条覆盖的是真迁移的页面，而全站 90% 的页面走的是
+// `PageHeader` + 工具类桥接，从来没被 axe 扫过。这里挑四个形态不同的桥接页：
+// 表单密集（/backup）、图表（/stats）、Canvas + 表单（/nec）、多卡 + 外部数据（/solar）。
+test("现代风 · 桥接页抽样：四个非主页面零违规（深色）", async ({ page }) => {
+  await seed(page, "dark");
+  for (const route of ["/backup", "/stats", "/nec", "/solar"]) {
+    await page.goto(route);
+    await settle(page);
+    await expectClean(page);
+  }
+});
+
 test("打开态表面：调谐台 / 确认弹层 / 移动端菜单零违规", async ({ page }) => {
   await seed(page, "dark");
   await page.goto("/");
+  // 快捷键挂在应用挂载之后：`goto` 在 `load` 就返回，此时 wasm 可能还没渲染出外壳，
+  // 直接按键会打在空页面上（表现为「调谐台打不开」，与实现无关）。先等顶栏。
+  await page.locator("nav.md-nav").waitFor();
   await page.keyboard.press("Control+k");
   // 必须断言表面真的打开了：没打开时 axe 扫的是底层页面，同样「零违规」。
   await expect(page.locator(".md-palette")).toBeVisible();
@@ -97,7 +113,7 @@ test("打开态表面：设置 / 搜索 / 快捷键帮助 / 练习设置 / 答�
 
   // 设置抽屉
   await page.goto("/");
-  await page.locator('button[aria-label="外观与动效"]').first().click();
+  await page.locator('button[aria-label="通用设置"]').first().click();
   await expect(page.locator('[role="dialog"]')).toHaveCount(1);
   await settle(page);
   await expectClean(page);
@@ -264,6 +280,131 @@ test.describe("状态色 token 的对比度", () => {
       expect(result.length, "应量到全部 token").toBeGreaterThanOrEqual(13);
       const bad = result.filter((r) => r.min < r.need).map((r) => `${r.name} = ${r.min.toFixed(2)} < ${r.need}（${r.value}）`);
       expect(bad, bad.join("\n")).toEqual([]);
+    });
+  }
+});
+
+// 语义文字色必须走现代 token，而不是像素色（台账 C7）。
+//
+// 这条曾经「写了但没生效」：`--color-hp-text` 等四个变量在 `legacy-utilities.css` 里映射过，
+// 但像素风的色彩 token 声明在 Tailwind 的 `@theme inline` 里 —— 生成工具类时值已内联，
+// 运行时不再读变量。于是现代风一直拿像素风的 `#8f2a3f` / `#f7a98f` 当状态色，
+// 而对比度只按像素风的底面量过。axe 也扫不出来（它只是「另一个也是合格的颜色」）。
+test.describe("语义文字色走现代 token", () => {
+  const cases = [
+    ["text-hp-text", "--md-danger-ink"],
+    // 文字档走 `-ink`（AA 的那一档）：深色下 `--md-green` 是给图形 / 实心面用的亮绿。
+    ["text-win-text", "--md-green-ink"],
+    ["text-xp-text", "--md-blue-ink"],
+    ["text-gold-text", "--md-gold-ink"],
+  ] as const;
+
+  for (const theme of ["light", "dark"] as const) {
+    test(`${theme === "light" ? "浅色" : "深色"}：四个语义文字类都等于对应的 --md-* token`, async ({ page }) => {
+      await seed(page, theme);
+      await page.goto("/");
+      await expect(page.locator(".md-root").first()).toBeAttached();
+
+      const got = await page.evaluate((pairs) => {
+        // `--md-*` 是十六进制；`color` 的计算值是 `rgb()` / `color(srgb …)`，统一成 RGB 数组比较。
+        const parse = (c: string): number[] | null => {
+          const srgb = c.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
+          if (srgb) return [Number(srgb[1]) * 255, Number(srgb[2]) * 255, Number(srgb[3]) * 255];
+          const rgb = c.match(/rgba?\(([^)]+)\)/);
+          if (!rgb) return null;
+          const p = rgb[1].split(/[ ,/]+/).filter(Boolean).map(Number);
+          return [p[0], p[1], p[2]];
+        };
+        const toRgb = (value: string) => {
+          const canvas = document.createElement("canvas").getContext("2d")!;
+          canvas.fillStyle = value;
+          canvas.fillRect(0, 0, 1, 1);
+          return Array.from(canvas.getImageData(0, 0, 1, 1).data).slice(0, 3);
+        };
+        const cs = getComputedStyle(document.documentElement);
+        // 探针必须挂在 `.md-root` 里：现代风的桥接覆盖有 `.md-root` 作用域（层外规则），
+        // 挂在 body 上会绕过它们 —— 曾经因此测到一个页面上根本不出现的值（假绿）。
+        const host = document.querySelector(".md-root") ?? document.body;
+        return pairs.map(([cls, token]) => {
+          const el = document.createElement("span");
+          el.className = cls;
+          el.textContent = "x";
+          host.appendChild(el);
+          const actual = parse(getComputedStyle(el).color);
+          el.remove();
+          return { cls, token, actual, want: toRgb(cs.getPropertyValue(token).trim()) };
+        });
+      }, cases.map(([c, t]) => [c, t] as const));
+
+      const bad = got.filter((g) => !g.actual || g.actual.some((v, i) => Math.abs(v - g.want[i]) > 3));
+      expect(bad.map((g) => `${g.cls} = ${g.actual}，应为 ${g.token} = ${g.want}`), "语义文字色仍是像素色").toEqual([]);
+    });
+  }
+});
+
+// 焦点环的对比度（WCAG 2.2 SC 1.4.11 非文本对比，≥3:1）。
+//
+// axe **扫不到**它：焦点环是 `outline`，只有键盘聚焦时才出现，且不是文字。
+// 浅色档曾经是 50% 透明度的蓝，合成到 `--md-bg` 上只有 2.33:1 —— 键盘用户看不到自己在哪。
+test.describe("焦点环的对比度", () => {
+  for (const theme of ["light", "dark"] as const) {
+    test(`${theme === "light" ? "浅色" : "深色"}：焦点环对四个底面都达到 3:1`, async ({ page }) => {
+      await seed(page, theme);
+      await page.goto("/");
+      await expect(page.locator(".md-root").first()).toBeAttached();
+
+      const result = await page.evaluate(() => {
+        // `--md-ring` 是 `color-mix()`，自定义属性取到的是原文；换成 `outline-color` 才拿得到计算值。
+        const probe = document.createElement("span");
+        probe.style.outlineColor = "var(--md-ring)";
+        document.body.appendChild(probe);
+        const raw = getComputedStyle(probe).outlineColor;
+        probe.remove();
+
+        const color = (() => {
+          const srgb = raw.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)/);
+          if (srgb) {
+            return {
+              r: Number(srgb[1]) * 255,
+              g: Number(srgb[2]) * 255,
+              b: Number(srgb[3]) * 255,
+              a: srgb[4] === undefined ? 1 : Number(srgb[4]),
+            };
+          }
+          const rgb = raw.match(/rgba?\(([^)]+)\)/);
+          if (!rgb) return null;
+          const p = rgb[1].split(/[ ,/]+/).filter(Boolean).map(Number);
+          return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
+        })();
+
+        const lin = (v: number) => {
+          const c = v / 255;
+          return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        };
+        const lum = (c: { r: number; g: number; b: number }) => 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
+        const hex = (h: string) => {
+          let s = h.replace("#", "");
+          if (s.length === 3) s = [...s].map((c) => c + c).join("");
+          return { r: parseInt(s.slice(0, 2), 16), g: parseInt(s.slice(2, 4), 16), b: parseInt(s.slice(4, 6), 16) };
+        };
+
+        const cs = getComputedStyle(document.documentElement);
+        const rows = ["--md-bg", "--md-surface", "--md-surface-2", "--md-surface-3"].map((token) => {
+          const bg = hex(cs.getPropertyValue(token).trim());
+          // 半透明环要按合成后的颜色比，不能比 token 本身。
+          const mixed = {
+            r: color!.r * color!.a + bg.r * (1 - color!.a),
+            g: color!.g * color!.a + bg.g * (1 - color!.a),
+            b: color!.b * color!.a + bg.b * (1 - color!.a),
+          };
+          const [hi, lo] = [lum(mixed), lum(bg)].sort((x, y) => y - x);
+          return { token, ratio: (hi + 0.05) / (lo + 0.05), raw };
+        });
+        return rows;
+      });
+
+      const bad = result.filter((r) => !Number.isFinite(r.ratio) || r.ratio < 3);
+      expect(bad.map((r) => `${r.token} = ${r.ratio.toFixed(2)}:1（${r.raw}）`), "焦点环对比度不足").toEqual([]);
     });
   }
 });

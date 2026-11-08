@@ -31,15 +31,15 @@ pub fn RstPage() -> impl IntoView {
       <PageContainer>
         <div class="grid grid-cols-3 gap-3">
           <div class=crate::kit::card_class_with("p-4 text-center")>
-            <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>"1–5"</div>
+            <div class=crate::kit::stat_text_class("")>"1–5"</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("knowledge.readability-r")}</div>
           </div>
           <div class=crate::kit::card_class_with("p-4 text-center")>
-            <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>"1–9"</div>
+            <div class=crate::kit::stat_text_class("")>"1–9"</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("knowledge.signal-strength-s")}</div>
           </div>
           <div class=crate::kit::card_class_with("p-4 text-center")>
-            <div class=if crate::kit::is_modern_at_mount() { "md-stat-text" } else { "pxl-stat" }>"1–9"</div>
+            <div class=crate::kit::stat_text_class("")>"1–9"</div>
             <div class="mt-1 text-xs text-muted-foreground">{move || t("knowledge.tone-t-cw")}</div>
           </div>
         </div>

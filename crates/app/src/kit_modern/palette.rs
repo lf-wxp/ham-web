@@ -20,7 +20,6 @@ use crate::i18n::t;
 
 use super::backdrop::Backdrop;
 use super::module_icon::module_icon;
-use super::view_transition::with_view_transition;
 use super::{MIcon, ModernIcon};
 use crate::focus::use_escape_close;
 use crate::presence::use_presence;
@@ -44,6 +43,126 @@ fn channels() -> Vec<Channel> {
     });
   }
   out
+}
+
+/// 分组在菜单里的先后（考试中心 → 知识库 → 工具，与目录面板同一套顺序）。
+///
+/// `registry::MODULES` 是按「页面归属」登记的，分组顺序是交错的；不排序直接切段，
+/// 同一组会碎成好几段、段标题重复出现（实测「闯关 / 闯关 / 练题 / 模拟考 / 练题…」）。
+/// `None`（不在导航里的 5 条）排最后。
+fn group_rank(group: Option<&str>) -> usize {
+  let Some(g) = group else {
+    return usize::MAX;
+  };
+  if let Some(i) = registry::EXAM_GROUPS.iter().position(|x| *x == g) {
+    return i;
+  }
+  if let Some(i) = registry::KNOWLEDGE_GROUPS.iter().position(|x| *x == g) {
+    return registry::EXAM_GROUPS.len() + i;
+  }
+  if let Some(i) = registry::TOOL_GROUPS.iter().position(|x| *x == g) {
+    return registry::EXAM_GROUPS.len() + registry::KNOWLEDGE_GROUPS.len() + i;
+  }
+  usize::MAX
+}
+
+/// 游戏化页面的**白话别名**（台账 N4）。
+///
+/// `/map`（闯关地图）与 `/bestiary`（怪物图鉴）用的是世界观语言：对老用户是好记的，
+/// 对「想找错题复习」的人则完全不可检索 —— 调谐台是全站唯一的「按概念找页面」入口，
+/// 这里补一个功能名，显示在标题后面，并参与输入过滤。
+fn page_alias(href: &str) -> Option<&'static str> {
+  match href {
+    "/map" => Some("shell.page-alias-map"),
+    "/bestiary" => Some("shell.page-alias-bestiary"),
+    _ => None,
+  }
+}
+
+/// 关键词查询的匹配质量分档：0 标题命中（中文原文或当前界面语言的译文）→ 1 白话别名命中 →
+/// 2 路由命中 → 3 其余。
+///
+/// 译文也算「标题命中」：英文 / 西语界面里用户看到并输入的就是译文，若只比中文原文，
+/// 这两种语言下的标题命中会全部掉到最后一档，排序等于失效。
+///
+/// 只在 `query` 非空时参与排序（空查询按分组排，见 `results`）。分档内部仍保持
+/// `registry` 顺序，所以同档平局不会因为排序而抖动。
+fn match_rank(ch: &Channel, q: &str) -> usize {
+  if ch.title.to_lowercase().contains(q) || core_text_tracked(ch.title).to_lowercase().contains(q) {
+    0
+  } else if page_alias(ch.href).is_some_and(|k| t(k).to_lowercase().contains(q)) {
+    1
+  } else if ch.href.contains(q) {
+    2
+  } else {
+    3
+  }
+}
+
+/// 一段结果：组名 + `(全局序号, 频道)`。
+type Run = (Option<&'static str>, Vec<(usize, Channel)>);
+
+/// 把结果切成「相邻同组」的段：181 条平铺时用户只能靠滚碰运气（台账 N2）。
+///
+/// 只切段、不重排 —— 视觉顺序与 `results` 顺序必须一致，否则 `↑↓` 的游标编号
+/// 会和 `aria-activedescendant` 指到的元素对不上。
+/// 段标题直接用 registry 的分组名当 i18n key（与目录面板同一套词条），不新增文案。
+fn group_runs(items: &[Channel]) -> Vec<Run> {
+  let mut runs: Vec<Run> = Vec::new();
+  for (index, ch) in items.iter().enumerate() {
+    let group = ch.module.group;
+    match runs.last_mut() {
+      Some((g, rows)) if *g == group => rows.push((index, *ch)),
+      _ => runs.push((group, vec![(index, *ch)])),
+    }
+  }
+  runs
+}
+
+/// 关键词查询的结果：不分组，整体作为一段（无组名）。
+fn flat_run(items: &[Channel]) -> Vec<Run> {
+  if items.is_empty() {
+    return Vec::new();
+  }
+  vec![(None, items.iter().copied().enumerate().collect())]
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn chans() -> Vec<Channel> {
+    channels().into_iter().take(6).collect()
+  }
+
+  #[test]
+  fn flat_run_keeps_global_index_and_has_no_group() {
+    let items = chans();
+    let runs = flat_run(&items);
+    assert_eq!(runs.len(), 1);
+    assert!(runs[0].0.is_none());
+    let idx: Vec<usize> = runs[0].1.iter().map(|(i, _)| *i).collect();
+    assert_eq!(idx, (0..items.len()).collect::<Vec<_>>());
+    assert!(flat_run(&[]).is_empty());
+  }
+
+  #[test]
+  fn group_runs_indices_are_global_and_contiguous() {
+    let items = chans();
+    let runs = group_runs(&items);
+    let idx: Vec<usize> = runs
+      .iter()
+      .flat_map(|(_, r)| r.iter().map(|(i, _)| *i))
+      .collect();
+    assert_eq!(idx, (0..items.len()).collect::<Vec<_>>());
+  }
+
+  #[test]
+  fn group_rank_puts_ungrouped_last() {
+    assert_eq!(group_rank(None), usize::MAX);
+    let first = registry::EXAM_GROUPS[0];
+    assert_eq!(group_rank(Some(first)), 0);
+  }
 }
 
 #[component]
@@ -95,7 +214,7 @@ pub fn ModernPalette(open: RwSignal<bool>) -> impl IntoView {
   let results = Memo::new(move |_| {
     let q = query.get().trim().to_lowercase();
     all.with_value(|list| {
-      list
+      let mut hits = list
         .iter()
         // 同时匹配中文原文与当前界面语言的译文：英文 / 西语界面里用户看到的是译文，
         // 只匹配原文的话输入 "Glossary" 什么都搜不到。译文在 Memo 内取，切语言会重算。
@@ -104,17 +223,37 @@ pub fn ModernPalette(open: RwSignal<bool>) -> impl IntoView {
             || c.href.contains(&q)
             || c.title.to_lowercase().contains(&q)
             || core_text_tracked(c.title).to_lowercase().contains(&q)
+            // 别名也要能搜到：用户想找「错题复习」，不会知道那页叫「怪物图鉴」。
+            || page_alias(c.href).is_some_and(|k| t(k).to_lowercase().contains(&q))
         })
-        .take(40)
         .copied()
-        .collect::<Vec<_>>()
+        .collect::<Vec<_>>();
+      // 排序而不是只切段：`registry::MODULES` 的分组是交错的，不排序时同一组会碎成几段、
+      // 段标题重复（台账 N2）。`sort_by_key` 稳定，组内保持 registry 的顺序。
+      //
+      // 有关键词时**先按匹配质量再按分组**：只按分组排会让 `group: None` 的页面（`/achievements`
+      // 这类）恒排最后，随后被 `truncate(40)` 裁掉 —— 而搜名字时它们恰恰是最该命中的。
+      if q.is_empty() {
+        hits.sort_by_key(|c| group_rank(c.module.group));
+      } else {
+        // `match_rank` 要做小写化与译文查表，用缓存键让每条只算一次，而不是每次比较都算。
+        hits.sort_by_cached_key(|c| (match_rank(c, &q), group_rank(c.module.group)));
+      }
+      hits.truncate(40);
+      hits
     })
   });
 
   // ↑↓ 移动选中项时把它滚进列表可视区（最多 40 项，超出面板高度后选中项会跑到视野外）。
   // 只在列表容器内部改 `scroll_top`，页面不跟着动，见 `popover::scroll_into_view_local`。
   Effect::new(move |_| {
-    let index = cursor.get();
+    let len = results.with(Vec::len);
+    if len == 0 {
+      return;
+    }
+    // 结果变少时 `cursor` 可能停在下标之外（除了 `on:input` 没有别处重置它）。
+    // 与 `aria-activedescendant` 取同一个 `min(len - 1)`，两边不能指向不同的项。
+    let index = cursor.get().min(len - 1);
     request_animation_frame(move || {
       if let Some(list) = crate::util::document().get_element_by_id("md-palette-list") {
         crate::ui::popover::scroll_into_view_local(&list, &format!("#md-palette-item-{index}"));
@@ -124,11 +263,17 @@ pub fn ModernPalette(open: RwSignal<bool>) -> impl IntoView {
 
   // `Callback`（Copy）：要进多个 `on:click` 闭包，普通闭包会被第一个 move 掉。
   let go = Callback::new(move |href: String| {
-    // `use_navigate()` 返回的是 Clone 而非 Copy 的闭包，先在回调外克隆一份再进过渡回调。
-    let navigate = navigate.clone();
-    with_view_transition(move || navigate(&href, Default::default()));
+    // 先关面板、再换页，**不套 View Transition**。
+    //
+    // 曾经是 `with_view_transition(navigate)`（想给「跳页」加一次共享元素过渡），结果是
+    // 点下去之后整页冻住数秒：VT 在动画开始前要先拍一张「旧状态」快照，而那一刻面板还开着，
+    // 快照要把整屏弹层（`backdrop-filter: blur(26px)` + 181 行结果 + 全屏遮罩）一起光栅化。
+    // 实测（同一台机器，点选后到新页面首帧）：套 VT ≈ 4.0 s，去掉 VT 21–74 ms。
+    // 这与 `docs/ui/interaction.md` 的硬约束 1（高频操作禁用 VT）一致 —— 换页只保留
+    // `#route-content` 的淡入，退出动效归 `presence`，一个表面只有一条动效源。
     open.set(false);
     query.set(String::new());
+    navigate(&href, Default::default());
   });
 
   view! {
@@ -228,26 +373,53 @@ pub fn ModernPalette(open: RwSignal<bool>) -> impl IntoView {
                 >
                   {move || {
                     let items = results.get();
-                    items
+                    // 按 registry 的子分组切段（`group_runs`）：段标题沿用目录面板的词条，
+                    // 只在「换组」处出现一次，不重复贴在每一行上。
+                    //
+                    // 有关键词时按「匹配质量」排序，同一组会被拆散；此时分组标题只会重复出现，
+                    // 所以合成一段、不画标题（序号仍是全局序号，游标与 `aria-activedescendant` 一致）。
+                    let runs = if query.with(|q| q.trim().is_empty()) {
+                      group_runs(&items)
+                    } else {
+                      flat_run(&items)
+                    };
+                    runs
                       .into_iter()
-                      .enumerate()
-                      .map(|(i, ch)| {
-                        let active = move || cursor.get() == i;
+                      .map(|(group, rows)| {
+                        let body = rows
+                          .into_iter()
+                          .map(|(i, ch)| {
+                            let active = move || cursor.get() == i;
+                            view! {
+                              <button
+                                type="button"
+                                class="md-palette-item"
+                                id=format!("md-palette-item-{i}")
+                                role="option"
+                                aria-selected=move || active().to_string()
+                                data-active=move || active().to_string()
+                                on:click=move |_| go.run(ch.href.to_owned())
+                              >
+                                <ModernIcon kind=module_icon(ch.module) class="md-menu-icon-sm" />
+                                <span class="md-palette-title">{core_text_tracked(ch.title)}</span>
+                                {page_alias(ch.href)
+                                  .map(|k| view! { <span class="md-palette-alias">{move || t(k)}</span> })}
+                                <span class="md-palette-href">{ch.href}</span>
+                                <ModernIcon kind=MIcon::ArrowRight class="md-palette-go" />
+                              </button>
+                            }
+                          })
+                          .collect_view();
                         view! {
-                          <button
-                            type="button"
-                            class="md-palette-item"
-                            id=format!("md-palette-item-{i}")
-                            role="option"
-                            aria-selected=move || active().to_string()
-                            data-active=move || active().to_string()
-                            on:click=move |_| go.run(ch.href.to_owned())
+                          <div
+                            class="md-palette-sec"
+                            role="group"
+                            aria-label=move || group.map(t)
                           >
-                            <ModernIcon kind=module_icon(ch.module) class="md-menu-icon-sm" />
-                            <span class="md-palette-title">{core_text_tracked(ch.title)}</span>
-                            <span class="md-palette-href">{ch.href}</span>
-                            <ModernIcon kind=MIcon::ArrowRight class="md-palette-go" />
-                          </button>
+                            {group
+                              .map(|g| view! { <p class="md-palette-group">{move || t(g)}</p> })}
+                            {body}
+                          </div>
                         }
                       })
                       .collect_view()

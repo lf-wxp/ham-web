@@ -3,7 +3,7 @@ use ham_web_core::decibel::{
 };
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_num};
+use super::{fmt_num, result_class};
 use crate::i18n::{t, tf};
 use crate::ui::{
   Field, NumberField, Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -51,7 +51,7 @@ pub(super) fn DecibelGain() -> impl IntoView {
             controls=false
           />
         </Field>
-        <div class=RESULT>
+        <div class=result_class()>
           {move || {
             let d = db.get();
             tf(

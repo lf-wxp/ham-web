@@ -20,7 +20,7 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
     {field_label.map(|(f_lon, f_lat)| {
       let done = data.hunt_done.len();
       view! {
-        <div class="mt-2 border bg-inset p-3">
+        <div class=crate::kit::tile_class("mt-2")>
           <div class="flex items-center justify-between text-xs">
             <span>{tf("log.grid-hunt-field", &[&f_lon.to_string(), &f_lat.to_string()])}</span>
             <span class="tabular-nums text-muted-foreground">{done} " / 100"</span>
@@ -36,7 +36,7 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
     })}
 
     // 全球 square 猎取进度（全部 32400 个 square）
-    <div class="mt-2 border bg-inset p-3">
+    <div class=crate::kit::tile_class("mt-2")>
       <div class="flex items-center justify-between text-xs">
         <span>{move || t("log.global-square-hunt")}</span>
         <span class="tabular-nums text-muted-foreground">{data.world_done} " / " {WORLD_SQUARES}</span>
@@ -52,7 +52,7 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
     // 通联最多 square（Top 榜，全量）
     {(!data.top_squares.is_empty()).then(|| {
       view! {
-        <div class="mt-2 border bg-inset p-3 text-xs">
+        <div class=crate::kit::tile_class("mt-2 text-xs")>
           <div class="mb-1.5">{move || t("log.most-worked-squares")}</div>
           <div class="flex flex-wrap gap-1.5">
             {data.top_squares
@@ -72,7 +72,7 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
     // 邻近未通联推荐（本台 square 8 邻域，按距离排序）
     {(!data.neighbor_hits.is_empty()).then(|| {
       view! {
-        <div class="mt-2 border bg-inset p-3">
+        <div class=crate::kit::tile_class("mt-2")>
           <div class="mb-1.5 text-xs">{move || t("log.nearby-unworked-click-to")}</div>
           <div class="flex flex-wrap gap-1.5">
             {data.neighbor_hits
@@ -113,7 +113,7 @@ pub(super) fn GridPanels(state: GridMapState) -> impl IntoView {
     {move || {
       state.click_inspect.get().map(|(lat, lon, grid, label, worked)| {
         view! {
-          <div class="mt-2 border bg-inset p-3 text-xs">
+          <div class=crate::kit::tile_class("mt-2 text-xs")>
             <div class="mb-1 flex items-center justify-between">
               <span>{move || t("log.click-inspector")}</span>
               <Button

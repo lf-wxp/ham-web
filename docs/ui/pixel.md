@@ -350,25 +350,22 @@
 面板以它为定位祖先，`inset-x-0` 就会被那条 `max-w` 收窄，左右各空出一条、露出下面的页面；挪到
 `<nav>` 下（`sticky` 即定位祖先）后铺满整宽，内容由面板自己的 `px-4` 与顶栏同一内边距对齐。
 
-排版在 `nav_bar.rs` 的网格上，顺序是**先导航、后设置**：
+排版在 `nav_bar.rs` 的网格上，面板里**只有导航**：
 
-- `<sm`（手机竖屏）一列：三段折叠在上，虚线之下是「语言 / 外观与动效 / 数据备份」；
-- `sm`–`xl`（横屏手机 / 平板 / 窄桌面）三列：三段各占一列，虚线之下是同一排工具。
+- `<sm`（手机竖屏）一列：三段折叠依次向下；
+- `sm`–`xl`（横屏手机 / 平板 / 窄桌面）三列：三段各占一列。
 
-单列铺到 640–1279px 会拉成一条通栏长列表（900px 下高约 370px，三列后约 146px）。面板里**不放
-「首页」**：底部 `MobileTabs` 与顶栏 brand 都直达首页，再列一次只会把导航挤到第二屏；工具也没
-必要放在最上面 —— 点开菜单第一眼看到的应该是导航。
-**分隔虚线也画在那里**：一列时是三条（三段之间 + 工具区前一条）、三列时只有一条横跨整行，第一段上面不画；不要塞回
+**分隔虚线也画在那里**：一列时是两条（三段之间）、三列时不画；不要塞回
 `MobileNavSection`（三列并排时每段自带的 `border-t` 会断成三段短虚线）。
-工具区那一排三格必须「一条基线」：左缘与段标题图标齐平（同款 `px-3`），竖直方向互相居中
-（`sm:self-center`）—— 少任何一条，三列并排时就出现「语言那格两行、右边一格一行」的高低错落。
 
-- 两个按钮是 `h-auto … whitespace-normal`：`.pxl-btn` 默认 `nowrap` + 固定 `h-10`，西语
-  「Apariencia y movimiento」在窄格里会溢出边框；它们各自包在 `px-3` 里（外层 `sm:contents`
-  让包装在一列时是两格、多列时各占一格），按钮左缘必须和段标题图标齐平，否则偏出 12px。
-- 「语言」与三个语言按钮同处一行（`px-2` 的按钮才放得下），标签 `hidden md:inline`：
-  `sm` 那档每列只有 192px，塞不进一行；读屏名字由 `role=group` 的 `aria-label` 提供，
-  可见标签 `aria-hidden`，不重复念。
+面板里**没有任何配置类控件，也没有页面直达按钮**：
+
+- 语言与全部外观设置在顶栏齿轮打开的设置对话框里（齿轮各宽度都常驻，见 `settings_dialog.rs`）。
+  以前这里有一套语言按钮组和「外观与动效」入口，同一个操作在 `sm`–`xl` 区间会同时出现两个入口。
+- 数据备份在设置对话框底部与页脚各有入口，这里不再摆第三个。
+- **不放「首页」**：底部 `MobileTabs` 与顶栏站标都直达首页，再列一次只会把导航挤到第二屏；
+  工具也没必要放在最上面 —— 点开菜单第一眼看到的应该是导航。单列铺到 640–1279px 会拉成
+  一条长列表（900px 下约 370px 高），三列后高度减半。
 
 侧栏在移动端被 `hidden md:block` / `hidden lg:block` 藏掉之后，分类 / 导航入口要用
 `ui::MobileNavDrawer`（右下角悬浮按钮 + 右侧抽屉，复用 `Sheet`）补上。浏览 / 术语表 /
@@ -427,8 +424,11 @@ view! {
 
 | 风格 | 宽度 | 来源 |
 |---|---|---|
-| 像素风 | `max-w-5xl` = 1024px | 两个组件里的工具类 |
-| 现代风 | `--md-page-max` = 1200px | `style/modern/tokens.css`；`style/modern/kit.css` 里把 `.max-w-5xl` 覆盖成它，所以页头、正文、页脚、底部工具条一起换 |
+| 像素风 | `max-w-5xl` = `--page-max` = 1200px | 两个组件里的工具类；**值不是 Tailwind 默认的 1024** —— `style/pixel/tokens.css` 的 `@theme` 把 `--container-5xl` 重定义成 `var(--page-max)` |
+| 现代风 | `--md-page-max` = `--page-max` = 1200px | `style/modern/tokens.css`；`style/modern/kit/08-motion.css` 里把 `.max-w-5xl` 覆盖成它，所以页头、正文、页脚、底部工具条、顶栏一起换 |
+
+两套皮肤的版心因此**同宽**（1200px）：`--page-max` 只在 `style/input.css` 定义一次，
+改宽度只改那一行，任何一侧都不许再写死像素值（`check-ui` 的宽度清单守着）。
 
 页面里**不写** `max-w-*`、**不写** `container`、**不写** `mx-auto` 的宽度容器；
 现代风的首页／内容页／文章页也统一取 `--md-page-max`，不要另开窄版心（以前文章页
@@ -575,8 +575,8 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
 
 它们量的是纸，和内容宽度不是一套坐标系：
 
-- `max-w-5xl` = 1024px，按 96dpi 折算 ≈ **271mm**，比 A4 的 210mm 宽 29%。套上去屏幕上的
-  「纸」就不是 A4 比例了，预览会骗人。
+- `max-w-5xl` = `--page-max` = 1200px，按 96dpi 折算 ≈ **317mm**，比 A4 的 210mm 宽 51%。套上去
+  屏幕上的「纸」就不是 A4 比例了，预览会骗人。
 - 打印时的版心由 `@page` 决定（`crates/app/style/pixel/surfaces.css`：`size: A4; margin: 14mm 12mm`），
   页面上用 `print:max-w-none print:p-0` 把屏幕约束整个放开。所以 `max-w-[210mm]` +
   `px-[14mm] py-[12mm]` **只在屏幕上复刻那份 `@page` 版心**（所见即所得），根本不进打印流程。
@@ -600,21 +600,23 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
 3. **只有一种内容宽度**。嫌宽 / 嫌窄都先用满 `max-w-5xl`，把内容本身做窄（限宽交给内容块，
    不要缩容器）。真要另一种宽度，先在评审里说明，不要悄悄写 `max-w-3xl`。
    **例外只有打印类页面**：它们写 `mm`（纸张尺寸），不受这条约束，理由见上。
-4. **页脚与底栏与正文同宽**（`max-w-5xl`），左边缘与正文对齐。
-   **顶栏是唯一的外壳例外**：`nav_bar.rs` 用 `container`（宽度随断点增长）—— 整行桌面
-   导航 + HUD 在 xl 断点需要 >1024px，收窄到 `max-w-5xl` 会在 1280px 视口把顶栏撑出屏幕
-   （`e2e/tests/rpg_flow.spec.ts` 的「顶栏：各宽度 × 各语言都不撑出屏幕」会拦住这种改动）。
-   但那个 `container` 只在 **≥xl** 生效（`max-xl:max-w-none`）：<xl 是汉堡态，行内只剩品牌与
-   右侧图标组，再按断点收窄（768 / 1024）只会让整行缩在中间，两侧留出与内容无关的空白；
-   这一档必须铺满整宽，品牌贴左、图标组贴右。
+4. **页脚、底栏、顶栏都与正文同宽**（`max-w-5xl` + `px-4`），四条边逐字对齐。
+   顶栏以前是唯一的外壳例外（`container`，宽度随断点长到 1280），现在不再是：语言 / 明暗
+   收进设置对话框、首页项交给站标之后，桌面整行只剩品牌 + 三段下拉 + 两个图标，1200 的版心在
+   三种语言下都放得下（最长的西语约 996px）。`e2e/tests/rpg_flow.spec.ts` 的
+   「顶栏：各宽度 × 各语言都不撑出屏幕」守着这条。
 5. 需要事件的正文容器（如答题页的 `on:touchstart`）：外层包一个只带事件属性的 `<div>`，
    `PageContainer` 放里面。
+
+**`max-w-5xl` 的值不是 Tailwind 默认的 1024**：`pixel/tokens.css` 的 `@theme` 把它重定义成
+`var(--page-max)`（= 75rem / 1200px，定义在 `style/input.css`）。现代风的 `--md-page-max`
+也取同一个变量，所以两套皮肤的版心同宽 —— 改宽度只改 `--page-max` 一行。
 
 自检见 §11 的 ⑧（输出是一份**很短的封闭清单**，当前 **10 行 / 9 个文件**，逐条对得上即可；
 出现新行就说明又手抄了一份容器）。
 
 这份清单现在是**机械守着**的（`cargo make check-ui`）：清单外出现 `max-w-*` / `container` 会红，
-清单内的**数量漂移**（期望 11 处 / 9 文件）也会红 —— 合法新增要同时改上面这张表与
+清单内的**数量漂移**（期望 10 处 / 9 文件）也会红 —— 合法新增要同时改上面这张表与
 `crates/tools/src/ui_check.rs` 里的 `WIDTH_ALLOWED`：
 
 | 位置 | 为什么允许 |
@@ -622,7 +624,7 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
 | `components/common/page_header.rs` | 页头宽度就在这里定义（`page_container.rs` 用 `cn(&[…])` 拼类名，不出现在这条 grep 里） |
 | `app/pixel_footer.rs`、`components/common/bottom_bar.rs` | 外壳与正文左边缘对齐（页脚按风格拆成两份，现代版走 `md-*`，不受这条约束） |
 | `pages/mistakes/mistakes_page.rs`、`pages/bookmarks/bookmarks_page.rs`、`pages/qsl_labels/qsl_labels_page.rs`（2 处：筛选工具条 + 未设置呼号提示行）、`pages/daily_challenge.rs`（吸顶计时条） | `PageHeader` 的 children 行，与标题行对齐 |
-| `components/navigation/nav_bar.rs`（1 处 `container`） | 顶栏例外，理由见上 |
+| `components/navigation/nav_bar.rs`（1 处 `max-w-5xl`） | 顶栏与正文同版心（`px-4` 也一致），理由见上 |
 | `app/storage_warning.rs` | 全站横幅，复刻页头行的宽度 |
 
 不在范围内的：弹窗宽度（`Dialog` 的 `sm:max-w-*`）是另一套尺度；表单控件自身的宽度上限
@@ -700,7 +702,7 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
 - **中文值不能重复**（两个 key 用同一句中文会被判「重复」）；确实要复用时改成引用同一个 key。
 - 三个语言文件的**行数**不同属于正常（en / es 的复数变体会多出 `one` / `other` 行），但按 key 归并后
   **key 集合必须一致**（`check-i18n` 强制）。
-- 代码里**不要硬编码**界面中文（如 `title="切换到深色模式"`）——`check-i18n` 抓不到它，
+- 代码里**不要硬编码**界面中文（如 `title="通用设置"`）——`check-i18n` 抓不到它，
   但 en / es 界面上会直接露出中文。发现这类残留请顺手补词条。
 
 ## 8. 常见坑
@@ -768,11 +770,10 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
 ## 10. 例外清单：刻意保留的原生元素
 
 规范之外**有意留下**的地方都在这里。每一处都在代码里写了 `刻意的例外` 注释，
-`grep -rn "刻意的例外" crates/app/src` 可列全（当前 **15 条注释 / 14 个文件**，
-其中 `nav_bar.rs` 与 `group_menu.rs` 各占 2 条；`pagination.rs` 那条只是解释
-「为什么不收录」，不是例外本身）。
+`grep -rn "刻意的例外" crates/app/src` 可列全（当前 **13 条注释 / 13 个文件**；
+`pagination.rs` 那条只是解释「为什么不收录」，不是例外本身）。
 大多数走 `button_class` + 原生元素，另有几处用
-`cn` / 原生类名（`nav_bar.rs` 的移动端语言切换、`dx_spots.rs` 的表格行按钮）、共用吸顶骨架常量
+`cn` / 原生类名（`dx_spots.rs` 的表格行按钮）、共用吸顶骨架常量
 （`page_header.rs`、`print_page.rs`）或保留整表原生 `<table>`（`bands_page.rs`）—— 各有理由见下表；
 **新写界面不要模仿它们**，它们各自的理由如下。
 
@@ -794,8 +795,7 @@ label 的 `has-[:focus-visible]:ring-2` 显示。**页面里不要再手写拖�
 
 | 位置 | 为什么保留原生元素 |
 | --- | --- |
-| `components/navigation/nav_bar.rs` | ① 导航项（`<a>`）：高亮要切 `variant`（`ButtonLink.variant` 是静态 prop）；② 移动端面板的语言切换（`<button>`×N）：选中态要重算 `class`（`Button.class` 是静态串，顺带输出 `aria-pressed`）。分组下拉开关已拆到 `group_menu.rs`，见下一行 |
-| `components/navigation/group_menu.rs` | 「考试中心」「知识库」「工具」三个下拉开关（三个菜单共用一个组件，同一条注释，渲染出 3 个 `<button>`）：理由同 nav_bar；面板是分组侧栏 + 条目区，见文件头 |
+| `components/navigation/group_menu.rs` | 「考试中心」「知识库」「工具」三个下拉开关（三个菜单共用一个组件，同一条注释，渲染出 3 个 `<button>`）：高亮要随当前路由切 `variant`（`Button` 的 `variant` 是静态 prop）并输出 `aria-expanded`；面板是分组侧栏 + 条目区，见文件头 |
 | `pages/callsign_copy.rs` | 两个模式按钮：选中态切 `variant` |
 | `components/exam/answer_card_sheet.rs` | 答题卡筛选按钮：当前筛选切 `variant` |
 | `pages/home/cards_card.rs` | 「今日待复习」入口：有待复习时切 `variant` |

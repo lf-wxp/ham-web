@@ -4,7 +4,7 @@ use ham_web_core::magnetic_loop::{self, LoopParams};
 use ham_web_core::unit_math::{format_capacitance_f, format_inductance_h, format_voltage_v};
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_resistance};
+use super::{fmt_resistance, result_class};
 use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField};
 use crate::util::unique_id;
@@ -41,7 +41,7 @@ pub(super) fn MagneticLoopTool() -> impl IntoView {
         <NumberField id=power_id value=Signal::derive(move || power.get()) on_change=Callback::new(move |v: String| power.set(v)) controls=false />
       </Field>
 
-      <div class=format!("{RESULT} space-y-1 tabular-nums")>
+      <div class=format!("{} space-y-1 tabular-nums", result_class())>
         {move || {
           let result = match (
             diameter.get().trim().parse::<f64>(),

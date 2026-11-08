@@ -63,7 +63,7 @@ pub(super) fn PropagationWidget() -> impl IntoView {
           <PvMetric label=Signal::derive(move || t("home.solar-flux")) value=sfi loading=loading />
           <PvMetric label=Signal::derive(move || t("home.sunspots")) value=ssn loading=loading />
         </div>
-        <div class="border bg-inset px-3 py-2 text-sm">
+        <div class=crate::kit::tile_class("px-3 py-2 text-sm")>
           {move || {
             match k.get() {
               Some(kv) => {
@@ -79,7 +79,12 @@ pub(super) fn PropagationWidget() -> impl IntoView {
                 }
                 .into_any()
               }
-              None if loading.get() => view! { <span>{move || t("home.fetching-conditions-u-2026")}</span> }.into_any(),
+              None if loading.get() => view! {
+                <crate::components::common::LoadingBlock
+                  label=Signal::derive(move || t("home.fetching-conditions-u-2026"))
+                />
+              }
+              .into_any(),
               None if failed.get() => {
                 view! {
                   <div class="flex flex-wrap items-center justify-between gap-2">

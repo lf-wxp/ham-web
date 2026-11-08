@@ -1,11 +1,15 @@
 //! 顶部导航栏。
 //!
-//! 本文件里的**导航项与分组下拉开关**保留原生元素 + [`button_class`]：高亮态要随当前
-//! 路由切换 `variant`，而 [`Button`] / [`ButtonLink`] 的 `variant` 是静态 prop
-//! （见 `docs/ui/pixel.md` 的「常见坑」）。`aria-expanded` / `aria-controls`
-//! 已经有通道，不再是保留理由 —— 汉堡菜单开关因此收编回 [`Button`]。同一个文件里的
-//! 搜索、语言切换、主题切换等按钮都已经用组件，**不要顺手把剩下的导航项清掉**。
-//! 「考试中心」「知识库」「工具」三个分组下拉的开关与面板是同一套路数，已拆到 `group_menu.rs`。
+//! 结构照现代风顶栏（`kit_modern/nav.rs`）来：品牌在左 → 导航项紧跟其后 → 动作组用
+//! `ml-auto` 顶到最右。区别只在皮肤与收纳方式（像素风是三个分组下拉，现代风是一串文字链接）。
+//!
+//! 顶栏里**没有单独的「首页」项**：左边那枚站标就是首页链接。导航里也没有语言 / 明暗 / 备份 ——
+//! 这些配置统一收进齿轮打开的设置对话框（`settings_dialog.rs`），顶栏只留
+//! 「搜索 + 设置 + HUD」三个常驻入口。顶栏多摆两个切换按钮，就要在 1024–1280 那档与 HUD 抢位置，
+//! 而这些操作在设置里本来就有完整形态（尤其「跟随系统」只有三选一给得出来）。
+//!
+//! 导航项本身只剩三个分组下拉，开关与面板都在 `group_menu.rs`（那里保留原生 `<button>` 的理由
+//! 见 `docs/ui/pixel.md` §10.2）；本文件的汉堡、搜索、齿轮都是 [`Button`]。
 
 use leptos::ev;
 use leptos::prelude::*;
@@ -15,21 +19,18 @@ use wasm_bindgen::JsCast;
 
 use ham_web_core::registry::{EXAM_GROUPS, KNOWLEDGE_GROUPS, TOOL_GROUPS};
 
-use crate::cn::cn;
 use crate::components::search_dialog::SearchOpen;
 use crate::icons::{Icon, IconKind};
-use crate::ui::{Button, ButtonLink, Size, Variant, button_class};
+use crate::ui::{Button, Size, Variant};
 
 use super::group_menu::{GroupMenu, MenuAlign};
 use super::hud_badge::HudBadge;
-use super::locale_toggle::LocaleToggle;
 use super::settings_dialog::SettingsDialog;
-use super::theme_toggle::ThemeToggle;
 
 use super::menu::MenuKind;
 use super::mobile_menu::{MOBILE_NAV_PANEL_ID, use_mobile_menu};
 use super::mobile_nav_section::MobileNavSection;
-use crate::i18n::{self, Locale, t};
+use crate::i18n::t;
 
 #[component]
 pub(crate) fn PixelNav() -> impl IntoView {
@@ -82,18 +83,20 @@ pub(crate) fn PixelNav() -> impl IntoView {
     }
   });
 
-  let active = move |href: &'static str| location.pathname.get() == href;
   view! {
     // 顶栏是一条实心的「HUD 栏」：底色用 `--card`（不透明）+ 2px 墨色下沿 + 硬偏移投影，
     // 不模糊、不渐变；吸顶时下面滚过的内容被它实实在在地盖住，不需要任何磨砂兜底。
     <nav data-nav aria-label=move || t("shell.main-navigation") class="sticky top-0 z-50 border-b-2 border-ink bg-card shadow-[0_2px_0_0_var(--pxl-shadow)]">
-      // 内容层：只有 ≥xl 才用 `container` —— 那一档要放整行桌面导航 + HUD，宽度得 >1024px
-      // （`docs/ui/pixel.md` §4）。<xl 是汉堡态，行内只剩品牌与右侧图标组，再按断点收窄
-      // （768 / 1024）只会让整行往中间缩，两侧留出与内容无关的空白；这一档直接铺满整宽，
-      // 品牌贴左、图标组贴右。注意这不等于"与正文边缘对齐"：正文是 `max-w-5xl` 居中，
-      // 视口比它宽（1024–1279px）时顶栏两端仍会比正文更靠外。
-      <div class="container relative mx-auto max-xl:max-w-none px-1 xs:px-2 sm:px-4">
-        <div class="flex h-16 items-center justify-between gap-2 sm:gap-3">
+      // 内容层与正文同一个版心：`max-w-5xl`（值 = `--page-max`，见 `style/input.css`）+ `px-4`，
+      // 与 `PageContainer` / `PageHeader` 逐字一致，所以顶栏两端与正文边缘永远对齐。
+      // 以前这里用 `container`（宽度随断点长到 1280）且 <xl 铺满整宽，于是顶栏比正文宽出一截；
+      // 现在桌面导航只剩三段下拉、右侧只剩两个图标，1200 的版心在三种语言下都放得下
+      // （最长的西语整行约 996px）。`relative` 留给导航项的下拉定位。
+      <div class="relative mx-auto max-w-5xl px-4">
+        // 排布对齐现代风：品牌在最左，导航项紧跟其后（不是居中），右侧动作组用 `ml-auto` 顶到
+        // 最右。三块之间不再用 `justify-between` —— 那样导航项会随两侧宽度浮动，换语言或
+        // HUD 数字变长时整组横向漂移。
+        <div class="flex h-16 items-center gap-2 sm:gap-3 xl:gap-4">
           // 品牌标识
           <a
             href="/"
@@ -113,25 +116,10 @@ pub(crate) fn PixelNav() -> impl IntoView {
             </div>
           </a>
 
-          // 桌面端导航
+          // 桌面端导航。没有单独的「首页」项：左边那枚站标本身就是首页链接
+          // （与现代风的 `.md-brand` 同一套语义），再摆一个「首页」按钮等于同一目标两个入口。
           // `self-stretch`：撑满 h-16 的导航行，让内部下拉的 `top-full` 能落在导航下沿。
           <div class="hidden items-center gap-1 self-stretch xl:flex">
-            // 刻意的例外，见文件头：高亮要切 `variant`，`ButtonLink` 的 `variant` 是静态 prop。
-            <a
-              href="/"
-              data-slot="button"
-              class=move || {
-                button_class(
-                  if active("/") { Variant::Default } else { Variant::Ghost },
-                  Size::Sm,
-                  "inline-flex items-center gap-2 whitespace-nowrap",
-                )
-              }
-            >
-              <Icon kind=IconKind::Home class="size-6" />
-              {move || t("shell.home")}
-            </a>
-
             // 考试中心下拉：17 条平铺会拉成一条长列表，与知识库 / 工具共用
             // 「分组侧栏 + 条目区」面板（见 `group_menu.rs`）。
             <GroupMenu
@@ -165,10 +153,12 @@ pub(crate) fn PixelNav() -> impl IntoView {
             />
           </div>
 
-          // 右侧：搜索 + 主题切换 + 移动端菜单按钮。
+          // 右侧：搜索 + 设置 + HUD + 移动端菜单按钮。
+          // `ml-auto` 把它顶到最右（布局对齐现代风，见上）。
           // `min-w-0`：flex 子项的最小宽度默认取内容的 min-content，不写的话 320px 的西语界面里这一组
-          // （搜索 + 语言名 + HUD + 菜单按钮）比可用宽度多 1px，把页面横向撑出 1px（`locale_toggle.rs` 的根节点同理）。
-          <div class="flex min-w-0 items-center gap-1">
+          // （搜索 + HUD + 菜单按钮）比可用宽度多 1px，把页面横向撑出 1px。
+          // 齿轮不分宽度常驻：它是语言与全部外观设置的唯一入口，手机档也不能少。
+          <div class="ml-auto flex min-w-0 items-center gap-1">
             <Button
               variant=Variant::Ghost
               size=Size::Icon
@@ -178,20 +168,15 @@ pub(crate) fn PixelNav() -> impl IntoView {
             >
               <Icon kind=IconKind::Search class="size-6" />
             </Button>
-            <LocaleToggle />
-            // <sm（手机）放不下：这两个挪进移动菜单（「外观与动效」对话框里也有主题）。
-            <div class="hidden items-center gap-1 sm:flex">
-              <ThemeToggle />
-              <Button
-                variant=Variant::Ghost
-                size=Size::Icon
-                aria_label=Signal::derive(move || t("shell.settings"))
-                title=Signal::derive(move || t("shell.settings"))
-                on_click=Callback::new(move |_| settings_open.set(true))
-              >
-                <Icon kind=IconKind::Settings class="size-6" />
-              </Button>
-            </div>
+            <Button
+              variant=Variant::Ghost
+              size=Size::Icon
+              aria_label=Signal::derive(move || t("shell.settings"))
+              title=Signal::derive(move || t("shell.settings"))
+              on_click=Callback::new(move |_| settings_open.set(true))
+            >
+              <Icon kind=IconKind::Settings class="size-6" />
+            </Button>
             <HudBadge />
             <Button
               variant=Variant::Ghost
@@ -228,15 +213,16 @@ pub(crate) fn PixelNav() -> impl IntoView {
               id=MOBILE_NAV_PANEL_ID
               class="motion-pop absolute inset-x-0 top-full z-40 max-h-[calc(100svh-4rem)] overflow-y-auto overscroll-contain border-b-2 border-ink bg-card shadow-[0_4px_0_0_var(--pxl-shadow)] xl:hidden"
             >
-              // 布局与顺序：**先导航、后设置**，两种宽度共用同一份结构。
-              // - `<sm`（手机竖屏）一列：三段折叠在上，虚线之下是语言 / 外观与动效 / 备份；
-              // - `sm`–`xl`（横屏手机 / 平板 / 窄桌面）三列：三段各占一列，虚线之下仍是那排工具。
-              // 以前把「首页 / 语言 / 设置 / 备份」放在最上面，点开菜单第一眼看到的是三个跟导航
-              // 无关的控件，像误入设置页；首页也不必放 —— 底部 Tab 与顶栏 brand 都直达（见
-              // `mobile_tabs.rs`）。单列铺到 640–1279px 还会拉成通栏长列表（900px 下约 370px 高）。
+              // 布局与顺序：**先导航、后一个页面直达入口**，两种宽度共用同一份结构。
+              // - `<sm`（手机竖屏）一列：三段折叠依次向下；
+              // - `sm`–`xl`（横屏手机 / 平板 / 窄桌面）三列：三段各占一列。
+              // 面板里**只有导航**：语言与外观设置在顶栏齿轮里（各宽度都常驻），数据备份在设置
+              // 对话框与页脚各有入口 —— 这里再摆一份只是同一条路多一个出口。
+              // 首页也不必放：底部 Tab 与顶栏 brand 都直达（见 `mobile_tabs.rs`）。单列铺到
+              // 640–1279px 会拉成一条长列表，三列后高度减半。
               //
-              // 分隔虚线由这里画（一列时是三条，三列时只有一条横跨整行），不放在
-              // `MobileNavSection` 里 —— 三列并排时每段自带的 `border-t` 会断成三段短虚线。
+              // 分隔虚线由这里画（一列时是两条，三列时不画），不放在 `MobileNavSection` 里 ——
+              // 三列并排时每段自带的 `border-t` 会断成三段短虚线。
               <nav
                 aria-label=move || t("shell.mobile-navigation")
                 class="grid grid-cols-1 gap-1 px-4 py-3 sm:grid-cols-3 sm:items-start sm:gap-x-4"
@@ -265,89 +251,6 @@ pub(crate) fn PixelNav() -> impl IntoView {
                   pathname=Signal::derive(move || location.pathname.get())
                   on_navigate=Callback::new(move |()| menu_open.set(false))
                 />
-
-                // 工具区与导航之间的那条线：一列时也画（三列时横跨整行）。
-                <div class="border-t-2 border-dashed border-ink/30 sm:col-span-3"></div>
-
-                // 「语言」与两个按钮排在同一行、竖直居中对齐：标签单独占一行时，左边两行、
-                // 右边一行的落差看起来就像没对齐。可见的标签只是给眼睛的，读屏名字由 `role=group`
-                // 的 `aria-label` 提供，所以 `aria-hidden` 掉，免得重复念一遍。
-                // `hidden md:inline`：`sm`（640）那档每列只有 192px，图标 + 三个语言按钮塞不进一行，
-                // 标签会把这一格顶成三行；那里只留按钮本身（中文 / English / Español 自解释）。
-                <div class="flex flex-wrap items-center gap-2 px-3 pt-1 sm:self-center">
-                  <span class="hidden pxl-label text-xs text-muted-foreground md:inline" aria-hidden="true">
-                    {move || t("shell.language")}
-                  </span>
-                  <div
-                    class="flex flex-wrap gap-1.5"
-                    role="group"
-                    aria-label=move || t("shell.language")
-                  >
-                    {Locale::ALL
-                      .iter()
-                      .map(|&l| view! {
-                        // 刻意的例外，见文件头：选中态要重算 `class`（`Button.class` 是静态串），
-                        // 顺带用 `aria-pressed` 让读屏用户也能分辨当前语言（不只是靠颜色）。
-                        <button
-                          type="button"
-                          aria-pressed=move || (i18n::locale().get() == l).to_string()
-                          class=move || {
-                            cn(&[
-                              // `px-2`：三个语言按钮要和「语言」同处一行，`px-3` 时
-                              // 在这排三列（每列 234px）里放不下、会折到第二行。
-                              "border-2 px-2 py-1.5 text-sm",
-                              if i18n::locale().get() == l {
-                                "border-ink bg-primary text-primary-foreground"
-                              } else {
-                                "border-input text-muted-foreground hover:border-ink hover:bg-accent hover:text-accent-foreground"
-                              },
-                            ])
-                          }
-                          on:click=move |_| i18n::set_locale(l)
-                        >
-                          {l.label()}
-                        </button>
-                      })
-                      .collect_view()}
-                  </div>
-                </div>
-
-                // 手机顶栏没有齿轮：「像素动效 / 易读字体 / 主题」都从这里进。
-                // 一列时两个入口并排（省下一整行高度）；`sm:contents` 让外层消失、两个 `px-3`
-                // 包装各占一格 —— 那圈内边距让按钮左缘与段标题的图标（`px-3`）齐平，
-                // 否则按钮会顶到列边，比上面那排段标题偏出 12px。
-                <div class="grid grid-cols-2 gap-1 sm:contents">
-                  // `sm:self-center`：640px 那档语言按钮会折成两行、把这一格撑高，
-                  // 不加就让按钮贴在这一格的顶边（整排看起来又是一高一低）。
-                  <div class="px-3 sm:self-center">
-                    <Button
-                      variant=Variant::Outline
-                      size=Size::Default
-                      // `h-auto` + `whitespace-normal`：西语的「Aparición y movimiento」在窄格里
-                      // 放不下一行（`.pxl-btn` 默认 nowrap + 固定 h-10），允许折行而不是溢出边框。
-                      class="h-auto min-h-10 w-full justify-start whitespace-normal py-2 text-left"
-                      on_click=Callback::new(move |_| {
-                        menu_open.set(false);
-                        settings_open.set(true);
-                      })
-                    >
-                      <Icon kind=IconKind::Settings class="size-6" />
-                      {move || t("shell.settings")}
-                    </Button>
-                  </div>
-                  // 备份不藏在工具页：手机上也给一个直达入口。
-                  <div class="px-3 sm:self-center">
-                    <ButtonLink
-                      href="/backup"
-                      variant=Variant::Outline
-                      class="h-auto min-h-10 w-full justify-start whitespace-normal py-2 text-left"
-                      on_click=Callback::new(move |_| menu_open.set(false))
-                    >
-                      <Icon kind=IconKind::Download class="size-6" />
-                      {move || t("tools.data-backup")}
-                    </ButtonLink>
-                  </div>
-                </div>
               </nav>
             </div>
           }

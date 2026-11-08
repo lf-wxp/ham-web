@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_num};
+use super::{fmt_num, result_class};
 use crate::i18n::t;
 use crate::ui::{ControlSize, Field, NumberField};
 use crate::util::unique_id;
@@ -48,7 +48,7 @@ pub(super) fn OhmsLaw() -> impl IntoView {
         {field(current, "电流 I", "A")}
         {field(resistance, "电阻 R", "Ω")}
       </div>
-      <div class=RESULT>
+      <div class=result_class()>
         {move || {
           match calc.get() {
             Some((name, value, power)) => view! {

@@ -12,6 +12,7 @@ use super::locus::S11Locus;
 use super::swr_plot::SwrPlot;
 use super::tdr_panel::TdrPanel;
 use super::{NOTE, fmt_hz, parse_error_text};
+use crate::components::common::EmptyState;
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::share_score::download;
@@ -231,7 +232,10 @@ pub fn VnaReaderPage() -> impl IntoView {
 
         {move || {
           let Some(s) = sweep.get() else {
-            return view! { <p class=NOTE>{move || t("tools.vna-empty")}</p> }.into_any();
+            return view! {
+              <EmptyState plain=true title=Signal::derive(move || t("tools.vna-empty")) />
+            }
+            .into_any();
           };
           let n = s.points.len();
           let (f0, f1) = (s.points[0].f_hz, s.points[n - 1].f_hz);

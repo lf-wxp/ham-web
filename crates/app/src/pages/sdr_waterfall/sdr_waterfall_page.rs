@@ -16,6 +16,7 @@ use web_sys::{
   MediaStreamConstraints,
 };
 
+use crate::components::common::EmptyState;
 use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::share_score::download_bytes;
@@ -626,9 +627,7 @@ pub fn SdrWaterfallPage() -> impl IntoView {
               let list = noise_samples.get();
               if list.is_empty() {
                 return view! {
-                  <p class="bg-inset px-3 py-2 text-sm text-muted-foreground">
-                    {move || t("tools.noise-floor-empty")}
-                  </p>
+                  <EmptyState plain=true title=Signal::derive(move || t("tools.noise-floor-empty")) />
                 }
                   .into_any();
               }

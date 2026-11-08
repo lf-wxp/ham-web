@@ -1,0 +1,369 @@
+/* ============================================================
+   签名视觉与站点氛围：极光、频谱、VFO 刻度盘、弹层退场
+   ------------------------------------------------------------
+   原 `kit.css` 第 3461–3818 行（3/11 段，台账 C4 的分域拆分）。
+
+   **顺序即级联**：本目录下的文件由 `../kit.css` 按 01→11 顺序 `@import`，
+   同名 `@layer components` 按这个顺序拼接。**不要按主题重排文件**：同层同优先级的
+   规则靠源顺序决胜负，换顺序会悄悄改掉某个组件的最终取值。新增样式追加到对应
+   主题文件的末尾；跨主题的新组件另起文件并追加到 `@import` 列表**末尾**。
+   ============================================================ */
+
+/* ============================================================
+   签名视觉：极光底、实时频谱、VFO 刻度盘、扫描带
+   ------------------------------------------------------------
+   这一组是「眼前一亮」的来源，克制使用：只出现在首页首屏与少数焦点面。
+   ============================================================ */
+@layer components {
+  /* 极光：三团缓慢漂移的色光，比静态径向渐变多一层「活的」观感。 */
+  .md-aurora {
+    position: absolute;
+    inset: -30% -10%;
+    z-index: -2;
+    pointer-events: none;
+    filter: blur(52px);
+    opacity: 0.62;
+    background:
+      radial-gradient(closest-side, var(--md-glow-1), transparent 70%) 12% 18% / 52% 62% no-repeat,
+      radial-gradient(closest-side, var(--md-glow-2), transparent 70%) 82% 8% / 48% 58% no-repeat,
+      radial-gradient(closest-side, var(--md-glow-3), transparent 70%) 58% 92% / 56% 60% no-repeat;
+    animation: md-aurora-drift 18s var(--md-ease) infinite alternate;
+  }
+
+  @keyframes md-aurora-drift {
+    from {
+      transform: translate3d(-2%, -1%, 0) scale(1);
+      opacity: 0.85;
+    }
+    to {
+      transform: translate3d(3%, 2%, 0) scale(1.08);
+      opacity: 1;
+    }
+  }
+
+  /* 实时频谱：一排竖条，错峰上下，像电台在接收信号。 */
+
+  /* VFO 刻度盘：外圈 60 格刻度 + 进度弧 + 指针，比一个通用圆环更像「电台」。 */
+  .md-dial {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 168px;
+    height: 168px;
+    flex-shrink: 0;
+  }
+
+  .md-dial svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .md-dial-tick {
+    stroke: var(--md-border-strong);
+    stroke-width: 1.5;
+    opacity: 0.5;
+  }
+
+  .md-dial-tick[data-major="true"] {
+    stroke: var(--md-fg-muted);
+    opacity: 0.9;
+    stroke-width: 2;
+  }
+
+  .md-dial-center {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--md-space-0-5);
+  }
+
+  .md-dial-value {
+    font-family: var(--md-font);
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .md-dial-needle {
+    transform-box: view-box;
+    transform-origin: 100px 100px;
+    transition: transform 600ms var(--md-ease-out);
+  }
+
+  /* 标题里的描边字与渐变字：同一句话里给第二个层级。 */
+  /* 第二行主张用**实心橙**而不是渐变：渐变字在深底上会中间发灰，
+     「一个焦点」要的是明确的色块。 */
+  .md-display-gradient {
+    color: var(--md-orange);
+  }
+
+  /* 模块卡左上角的 L 形记号线：给卡片一点「刻度」的性格。 */
+  .md-bracket::before,
+  .md-bracket::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-color: color-mix(in srgb, var(--tone, var(--md-orange)) 55%, transparent);
+    border-style: solid;
+    pointer-events: none;
+  }
+
+  .md-bracket::before {
+    inset-block-start: 9px;
+    inset-inline-start: 9px;
+    border-width: 1px 0 0 1px;
+  }
+
+  .md-bracket::after {
+    inset-block-end: 9px;
+    inset-inline-end: 9px;
+    border-width: 0 1px 1px 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .md-aurora {
+      animation: none;
+    }
+  }
+}
+
+@layer components {
+  /* 首屏信息条里的刻度盘：比主视觉那只小一号。 */
+  .md-dial-sm {
+    width: 104px;
+    height: 104px;
+  }
+
+  .md-dial-sm .md-dial-value {
+    font-size: 20px;
+  }
+}
+
+/* ============================================================
+   站点级氛围：极光 + 噪点（所有现代页面共用）
+   ------------------------------------------------------------
+   之前氛围只挂在首页首屏，内页是纯黑。这里把极光放到 body 的固定背景层，
+   每一页都有同样的"夜航"底子；噪点极淡，只负责打散大面积渐变的色带。
+   ============================================================ */
+html[data-ui-style="modern"] body {
+  position: relative;
+}
+
+html[data-ui-style="modern"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 520px at 6% -8%, var(--md-glow-1), transparent 68%),
+    radial-gradient(820px 480px at 98% -4%, var(--md-glow-2), transparent 70%),
+    radial-gradient(760px 520px at 50% 112%, var(--md-glow-3), transparent 72%);
+  opacity: 0.55;
+}
+
+html[data-ui-style="modern"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>");
+}
+
+/* 浅色下把极光压到几乎不可见：暖纸底 + 大面积留白才是这套版面的主角。
+   彩色光斑一多，纸面会被染成灰紫，对比度和「干净」同时丢掉（深色相反：
+   光斑是夜航的层次，保留原值）。 */
+html[data-ui-style="modern"]:not(.dark) body::before {
+  opacity: 0.2;
+}
+
+html[data-ui-style="modern"]:not(.dark) body::after {
+  opacity: 0.02;
+}
+
+html[data-ui-style="modern"]:not(.dark) .md-hero-band {
+  background: var(--md-bg);
+}
+
+/* 极光在浅色下只留一丝：它的作用是「夜航氛围」，白天没有这个语境，
+   留着只会把纸面糊成一片紫灰。 */
+html[data-ui-style="modern"]:not(.dark) .md-aurora {
+  opacity: 0.18;
+}
+
+/* 浅色纸面上，蓝紫细线本来会比深色底上淡一档；给主视觉补一点对比，
+   免得插画退化成「洗白的底纹」。只作用于一张静态 SVG，代价可忽略。 */
+html[data-ui-style="modern"]:not(.dark) .md-hero-art svg {
+  filter: contrast(1.06) saturate(1.1);
+}
+
+/* 塔顶那团「电离层辉光」是插画里最大的一块柔光。深色下它是夜航光源，
+   浅色下只剩一片紫雾 —— 压到三成，塔与电波线成为主体。 */
+html[data-ui-style="modern"]:not(.dark) .md-hero-art svg circle[fill="url(#md-moon)"] {
+  opacity: 0.3;
+}
+
+/* 内页标题下的「一把尺」：左端 128px 行动色实线 + 右端 72px 八格刻度。
+   全站所有现代页头（迁移页与桥接页都走 `.md-page-head`）共用这一条，
+   与章节上沿的刻度同一族；不额外加定位上下文，页头仍是 `position: static`
+   （`layout_consistency` 有一条用例守「页头不吸顶」）。
+   入场沿用既有的 `md-rule-in`（`transform: scaleX`），整条尺一起从左侧画出。
+   2026-11 加粗加长（96×3 → 128×4）：它是页头唯一的品牌横线，1px 级细线在 1200 版心
+   上会被两侧的留白彻底吃掉，主题色就只剩标题上方那个小方块。 */
+.md-article-head::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 6px;
+  margin-top: var(--md-space-2);
+  background-image:
+    linear-gradient(var(--md-accent), var(--md-accent)),
+    repeating-linear-gradient(to right, var(--md-rule) 0 1px, transparent 1px 9px);
+  background-position:
+    left top,
+    right top;
+  background-repeat: no-repeat;
+  background-size:
+    128px 4px,
+    72px 6px;
+}
+
+/* 手机上「一把尺」读不成一把尺：342px 的内容宽里，128 的色条与 72 的刻度中间空出 142px，
+   看起来是两截断线（台账 L2）。窄屏把色条压到 48、刻度压到 56，两段加起来约三成宽度，
+   中间那段空白短到能被读成「同一条线上的两种记号」。 */
+@media (width < 640px) {
+  .md-article-head::after {
+    background-size:
+      48px 4px,
+      56px 6px;
+  }
+}
+
+/* 多行页头区里仍沿用像素页头「自带版心」的写法（`mx-auto max-w-5xl px-4`）。
+   现代页头已经提供版心与内距，这一层是重复的：它会多出 16px 内距，而 `mx-auto`
+   的横向外边距会让 flex 子项拒绝拉伸 —— 内容是 max-content 时就顶出版心
+   （/qsl-labels 在 390 宽溢出 12px）。写在 `@layer` 之外：`px-4` / `max-w-5xl`
+   是工具类，层内的声明压不住它们。 */
+.md-page-head > [class~="mx-auto"] {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+@layer components {
+  /* Canvas 频谱：高度固定，宽度铺满版心。
+     不透明度比原来那版高：现在的柱子承载「信号强度」，不是一层底纹，
+     压到 0.62 会把峰值刻度和扫描线一起洗掉。 */
+  .md-spectrum {
+    display: block;
+    position: relative;
+    /* 抬到装饰性 `.md-wave` 之上：那条虚线穿过柱子会把「读数」和「底纹」搅在一起。
+       画布本身透明，所以只挡住柱子的那几像素，虚线在缝隙里照样看得到。 */
+    z-index: 1;
+    width: 100%;
+    height: 64px;
+    opacity: 0.88;
+  }
+}
+
+/* ============================================================
+   弹层退场：与 `presence.rs` 配套
+   ------------------------------------------------------------
+   关闭时组件不会立刻卸载，而是先挂 `data-state="closed"` 播完 180ms 的退场动画。
+   时长必须与 `presence::EXIT_MS` 一致，否则会出现「动画没播完就被摘掉」或「播完了还留在屏幕上」。
+   ============================================================ */
+@layer components {
+  @keyframes md-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes md-modal-out {
+    to {
+      opacity: 0;
+      transform: translateY(10px) scale(0.985);
+    }
+  }
+
+  @keyframes md-sheet-out {
+    to {
+      opacity: 0;
+      transform: translateX(28px);
+    }
+  }
+
+  @keyframes md-bubble-out {
+    to {
+      opacity: 0;
+      translate: 0 6px;
+    }
+  }
+
+  .md-modal {
+    animation: md-fade-in var(--md-dur) var(--md-ease) both;
+  }
+
+  .md-modal[data-state="closed"] {
+    animation: md-fade-out var(--md-dur) var(--md-ease) forwards;
+  }
+
+  .md-modal[data-state="closed"] .md-modal-panel {
+    animation: md-modal-out var(--md-dur) var(--md-ease) forwards;
+  }
+
+  /* 抽屉的遮罩是透明底（靠 panel 位移），退场时两者一起走。
+     不透明度用「先快后慢」的 `--md-ease-out`，不用 `--md-ease`：在目录里点链接时，退场与新页面挂载
+     是同时进行的，主线程会被新页面占住一两百毫秒，这段时间抽屉的不透明度只能停在某一帧上。
+     缓入曲线那时还剩约 60%，于是新旧两张页面半透明地叠在一起（实测截图）；缓出曲线第一帧就降到
+     三成以下，被冻住的也只是一层很淡的残影。卸载时机仍由 `presence` 按 `--md-dur` 决定，不受影响。 */
+  .md-sheet[data-state="closed"] {
+    animation: md-fade-out var(--md-dur) var(--md-ease-out) forwards;
+  }
+
+  .md-sheet[data-state="closed"] .md-sheet-panel {
+    animation: md-sheet-out var(--md-dur) var(--md-ease-out) forwards;
+  }
+
+  .md-bubble[data-state="closed"] {
+    animation: md-bubble-out var(--md-dur) var(--md-ease) forwards;
+  }
+
+  /* 退场期间元素还在 DOM 里：不能再吞点击（用户松手后紧接着点别处，那一下曾被全屏遮罩白白吃掉约 180ms）。
+     所有 `kit_modern` 表面的根节点都是这三个类之一。 */
+  .md-modal[data-state="closed"],
+  .md-sheet[data-state="closed"],
+  .md-bubble[data-state="closed"] {
+    pointer-events: none;
+  }
+
+  @keyframes md-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-modal,
+  .md-modal-panel,
+  .md-sheet,
+  .md-sheet-panel,
+  .md-bubble {
+    animation-duration: 1ms !important; /* important-ok: 降级动画 */
+  }
+}
+

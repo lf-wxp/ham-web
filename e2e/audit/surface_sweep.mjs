@@ -19,7 +19,7 @@ const surfaces = [
     name: "设置弹层",
     url: "/",
     ready: MODAL,
-    prep: (p) => p.locator('button[aria-label="外观与动效"]').first().click(),
+    prep: (p) => p.locator('button[aria-label="通用设置"]').first().click(),
   },
   {
     name: "调谐台 ⌘K",

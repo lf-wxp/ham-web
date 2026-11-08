@@ -37,9 +37,14 @@ pub(super) fn IssCard() -> impl IntoView {
       <div class="text-sm">{move || t("learning.iss-international-space-station")}</div>
       <div class="mt-2 text-sm tabular-nums text-muted-foreground">
         {move || match iss.get() {
-          Some(d) => format!("{:.2}°, {:.2}°", d.latitude, d.longitude),
-          None if loading.get() => t("learning.loading"),
-          None => t("learning.unavailable"),
+          Some(d) => view! { <span>{format!("{:.2}°, {:.2}°", d.latitude, d.longitude)}</span> }.into_any(),
+          None if loading.get() => view! {
+            <crate::components::common::LoadingBlock
+              label=Signal::derive(move || t("learning.loading"))
+            />
+          }
+          .into_any(),
+          None => view! { <span>{move || t("learning.unavailable")}</span> }.into_any(),
         }}
       </div>
     </a>

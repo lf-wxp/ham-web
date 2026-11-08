@@ -81,7 +81,7 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
         let mut list = state.field_grids.get().get(&(fl, fa)).cloned().unwrap_or_default();
         list.sort();
         view! {
-          <div class="mt-2 border bg-inset p-3">
+          <div class=crate::kit::tile_class("mt-2")>
             <div class="mb-2 flex items-center justify-between text-xs">
               <span>{tf("log.grid-with-locator", &[&(format!("{f_lon}{f_lat}")).to_string()])}</span>
               <Button
@@ -123,7 +123,7 @@ pub(super) fn GridDetails(state: GridMapState) -> impl IntoView {
           )
         });
         view! {
-          <div class="mt-2 border bg-inset p-3">
+          <div class=crate::kit::tile_class("mt-2")>
             <div class="mb-2 flex items-center justify-between text-xs">
               <span>
                 {if confirmed > 0 {

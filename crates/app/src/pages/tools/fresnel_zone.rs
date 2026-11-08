@@ -3,7 +3,7 @@ use ham_web_core::fresnel::{
 };
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_num};
+use super::{fmt_num, result_class};
 use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField};
 use crate::util::unique_id;
@@ -126,7 +126,7 @@ pub(super) fn FresnelZone() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class=format!("{RESULT} space-y-1 tabular-nums")>
+      <div class=format!("{} space-y-1 tabular-nums", result_class())>
         {move || match report() {
           Some(r) => {
             let verdict = match r.verdict {

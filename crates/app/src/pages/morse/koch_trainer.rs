@@ -196,7 +196,7 @@ pub(super) fn KochTrainer() -> impl IntoView {
           }}
         </div>
 
-        <div class="flex flex-col items-center gap-3 border bg-inset px-4 py-6">
+        <div class=crate::kit::tile_class("flex flex-col items-center gap-3 px-4 py-6")>
           <MorseKey
             class="size-16"
             active=playing

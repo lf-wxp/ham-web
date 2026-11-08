@@ -64,7 +64,7 @@ pub(super) fn RstQuiz() -> impl IntoView {
     <section class=crate::kit::card_class()>
       <h2 class=crate::kit::card_title_class()>{move || t("knowledge.rst-quiz")}</h2>
       <div class="space-y-4 p-4">
-        <div class="flex flex-col items-center gap-2 border bg-inset px-4 py-6">
+        <div class=crate::kit::tile_class("flex flex-col items-center gap-2 px-4 py-6")>
           <div class="text-xs text-muted-foreground">{move || t("knowledge.what-does-this-signal")}</div>
           <div class="font-mono text-3xl text-primary">{move || question.get()}</div>
         </div>

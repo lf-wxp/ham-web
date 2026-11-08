@@ -31,8 +31,10 @@ test("计算变体：设置里开启，同型题换数进练习", async ({ page 
   await page.keyboard.press("Escape");
 
   // 设置里打开「计算变体」→ 重新组卷后变体出现。
-  await page.getByRole("button", { name: "设置" }).click();
-  const dialog = page.getByRole("dialog", { name: "设置" });
+  // 练习页的页内「设置」（`exam.settings`）在 `<main>` 里；顶栏齿轮叫「通用设置」（`shell.settings`），
+  // 不加 `main` 限定与 `exact` 会同时命中两个按钮（strict mode violation）。
+  await page.locator("main").getByRole("button", { name: "设置", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "设置", exact: true });
   await expect(dialog.getByText("计算变体")).toBeVisible();
   await dialog.getByLabel("计算变体").click();
   await page.keyboard.press("Escape");

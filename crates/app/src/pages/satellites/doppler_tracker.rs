@@ -413,7 +413,7 @@ pub(super) fn DopplerTracker(
             );
             let (aos, los) = (pass.aos, pass.los);
             Some(view! {
-              <div class="space-y-1 border bg-inset px-3 py-2 text-sm tabular-nums">
+              <div class=crate::kit::tile_class("space-y-1 px-3 py-2 text-sm tabular-nums")>
                 <div class="text-xs text-muted-foreground">{move || kt_tracked(&info)}</div>
                 <div role="status">
                   {move || {

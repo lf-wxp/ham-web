@@ -6,6 +6,7 @@ mod callsign_runner;
 mod callsign_session;
 mod cw_decoder;
 mod koch_trainer;
+mod morse_body;
 mod morse_card;
 mod morse_key;
 mod morse_page;

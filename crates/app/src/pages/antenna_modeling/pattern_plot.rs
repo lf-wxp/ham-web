@@ -98,7 +98,7 @@ pub(super) fn PatternPlot() -> impl IntoView {
         {move || {
           (kind.get() == PatternKind::DipoleEl).then(|| {
             view! {
-              <div class="mt-2 border bg-inset px-3 py-2">
+              <div class=crate::kit::tile_class("mt-2 px-3 py-2")>
                 <div class="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{move || t("knowledge.height")}</span>
                   <span class="font-mono tabular-nums">{format!("{:.2} λ", height_wl.get())}</span>

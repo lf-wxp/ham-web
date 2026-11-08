@@ -1,0 +1,362 @@
+/* ============================================================
+   像素工具类 → 现代 token 的桥接（仅在现代根内生效）
+   ------------------------------------------------------------
+   原 `kit.css` 第 5763–6120 行（7/11 段，台账 C4 的分域拆分）。
+
+   **顺序即级联**：本目录下的文件由 `../kit.css` 按 01→11 顺序 `@import`，
+   同名 `@layer components` 按这个顺序拼接。**不要按主题重排文件**：同层同优先级的
+   规则靠源顺序决胜负，换顺序会悄悄改掉某个组件的最终取值。新增样式追加到对应
+   主题文件的末尾；跨主题的新组件另起文件并追加到 `@import` 列表**末尾**。
+   ============================================================ */
+
+/* ============================================================
+   像素工具类 → 现代 token 的桥接（仅在现代根内生效）
+   ------------------------------------------------------------
+   计算器把结果行写成 `class="bg-inset px-3 py-2 …"` 这样的像素工具类常量，
+   46 个组件里各有一份。与其逐个改，不如在 CSS 里把「内嵌块」的语义桥到现代 token：
+   只覆盖背景与圆角，间距与字号仍由原类名决定（它们本来就是通用间距）。
+   ============================================================ */
+html[data-ui-style="modern"] .md-root .bg-inset {
+  background-color: var(--md-surface-2);
+  border-radius: var(--md-r-sm);
+  color: var(--md-fg);
+}
+
+/* 小工具页的计算结果。
+   上面那条「只覆盖背景与圆角，字号仍由原类名决定」对结果框不够：`text-sm` 在这套阶梯里是 12px，
+   于是页面上**输入框是 16px、答案却是 12px**（390px 实测 `/tools` 全页文字的 84% 是 12px），
+   读数层级是倒的。只在 `≤640` 抬 —— 桌面是宽屏三列，12–13px 的密度是合适的。
+   选择器挂在已有的页面作用域 `.md-tools-grid` 上，不为这一条新增类名；
+   字段标签 / 提示（`.md-field-label` / `.md-field-hint`）仍是 12px，规范 §2.3 钉死，不动。 */
+@media (width < 640px) {
+  html[data-ui-style="modern"] .md-tools-grid .bg-inset {
+    font-size: var(--md-text-compact);
+    line-height: 1.5;
+  }
+
+  /* 公式 / 适用条件这类说明段：12 → 13，仍是「说明」档，只是不再比字段标签还小。 */
+  html[data-ui-style="modern"] .md-tools-grid p.text-xs {
+    font-size: var(--md-text-sm);
+    line-height: 1.55;
+  }
+
+  /* 西语 / 英文的面板标题两行时，24px × 1.3 偏挤。 */
+  html[data-ui-style="modern"] .md-tools-grid .md-panel-title {
+    line-height: 1.35;
+  }
+}
+
+html[data-ui-style="modern"] .md-root .bg-muted {
+  background-color: var(--md-surface-2);
+  border-radius: var(--md-r-xs);
+}
+
+
+/* 计算器里的对照表：像素 `Table` 用的是工具类底色，层内覆盖压不住，这里写在层外。 */
+html[data-ui-style="modern"] .md-panel table:not(.md-table) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--md-text-sm);
+}
+
+html[data-ui-style="modern"] .md-panel table:not(.md-table) thead th {
+  padding: var(--md-space-2) var(--md-space-3);
+  background-color: transparent;
+  color: var(--md-accent-ink);
+  font-weight: 580;
+  text-align: start;
+  /* `border-width: 0` 先清掉单元格自带的 `border` 工具类：那些单元格（`/tools` 的紧凑档、
+     信标 / RBN 的 SNR 表）在像素风里是「每格一个框」，现代风只留横向分隔线。
+     不写这一句，工具类的四条边会盖在下面这条 `border-bottom` 上，表格又变回网格。 */
+  border-width: 0;
+  border-bottom: 1px solid var(--md-accent-line);
+}
+
+html[data-ui-style="modern"] .md-panel table:not(.md-table) tbody td,
+html[data-ui-style="modern"] .md-panel table:not(.md-table) tbody th {
+  padding: var(--md-space-2) var(--md-space-3);
+  text-align: start;
+  vertical-align: top;
+  border-width: 0;
+  border-bottom: 1px solid var(--md-border);
+  background-color: transparent;
+}
+
+html[data-ui-style="modern"] .md-panel table:not(.md-table) tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+@layer components {
+  /* ---------- 题库浏览：题目行 ---------- */
+  .md-q-row {
+    display: flex;
+    flex-direction: column;
+    padding: var(--md-space-4) var(--md-space-5);
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-lg);
+    background-color: var(--md-surface);
+  }
+
+  .md-q-row-head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--md-space-2-5);
+  }
+
+  /* 标签行：题号 + 分类 + 题型 + 分类码。不定宽的胶囊挤在同一行，窄屏必须换行；
+     换行后各行仍需与题干同一条左边缘，所以这一行只是标签自己的容器，题干不在这里。 */
+  .md-q-row-tags {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--md-space-1-5);
+    min-width: 0;
+  }
+
+  .md-q-row-id {
+    flex-shrink: 0;
+    padding: 1px 7px;
+    border-radius: var(--md-r-pill);
+    background-color: var(--md-surface-2);
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-xs);
+    color: var(--md-fg-muted);
+  }
+
+  /* 分类名：与 `.md-q-row-id` 同一枚胶囊，但用正文字族 —— 编号是等宽机器码，名字是自然语言。
+     名字不截断：英文 / 西语最长到 40 多字符（「Modulation modes and digital communication」），
+     320px 下会超过一行，胶囊就在自己的行里折行 —— 分类名是这张卡片的「这是什么题」，
+     省略号一截就答不上来了（像素风同样完整显示）。`max-width` 只防它顶破卡片。 */
+  .md-q-row-tag {
+    max-width: 100%;
+    padding: 1px 7px;
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-pill);
+    font-size: var(--md-text-xs);
+    line-height: 1.5;
+    color: var(--md-fg-muted);
+  }
+
+  /* 圆点是行内元素而不是 flex 子项：折行时它会留在**首行**文字前，
+     而不是被垂直居中到两行之间（flex 的 `align-items` 做不到这一点）。 */
+  .md-q-row-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-inline-end: var(--md-space-1-5);
+    border-radius: var(--md-r-pill);
+    vertical-align: middle;
+  }
+
+  /* 题型是唯一「会改变怎么作答」的信息（要选几项），给一档强调色，
+     与像素风同一个来源（像素卡片的多选徽标也是金底金字）。金在这里只做文字 + 浅底，
+     对比度 10.6:1（深色）/ 5.9:1（浅色），压在浅底上仍过 AA。 */
+  .md-q-row-tag-multi {
+    border-color: color-mix(in srgb, var(--md-gold) 40%, var(--md-border));
+    background-color: color-mix(in srgb, var(--md-gold) 12%, var(--md-surface));
+    color: var(--md-gold-ink);
+  }
+
+  /* 官方分类码：等宽小字，比胶囊更安静 —— 它是「去官方题库对照」时才用的编号，
+     不该和分类名抢同一层的注意力（像素风里它同样是裸等宽文字）。
+     只靠「无胶囊、无底色」降低重量，不再叠 `opacity`：12px 文字压在 `--md-surface` 上
+     本来就只有 5.7–6.8:1，再乘 0.8 掉到 4.15:1，低于正文 4.5 的下限。 */
+  .md-q-row-code {
+    flex-shrink: 0;
+    font-size: var(--md-text-xs);
+    color: var(--md-fg-muted);
+  }
+
+  /* 题干在自己的块里：从卡片内距起排，不再被前导胶囊挤到右边。 */
+  .md-q-row-text {
+    margin-top: var(--md-space-2-5);
+    font-size: var(--md-text-base);
+    line-height: 1.6;
+  }
+
+  /* 题目附图：卡片是纵向 flex，图片默认会被拉满整行；改成自身尺寸、只防顶破卡片。 */
+  .md-q-row-img {
+    align-self: flex-start;
+    max-width: 100%;
+    max-height: 16rem;
+    margin-top: var(--md-space-2-5);
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-sm);
+    object-fit: contain;
+  }
+
+  .md-q-row-opts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-space-1);
+    margin-top: var(--md-space-2-5);
+    font-size: var(--md-text-sm);
+    color: var(--md-fg-muted);
+  }
+
+  .md-q-row-opts li {
+    display: flex;
+    gap: var(--md-space-2);
+    padding: 2px 0 2px 4px;
+    border-inline-start: 2px solid transparent;
+  }
+
+  .md-q-row-opts li[data-right="true"] {
+    border-inline-start-color: var(--md-green);
+    color: var(--md-fg);
+  }
+
+  /* 错题本里用户当时选的项：选错的另加红色左线（与「正确」的绿线并排对照），
+     右侧的「我的选择」文字标记保证颜色之外也分辨得出。 */
+  .md-q-row-opts li[data-chosen="true"]:not([data-right="true"]) {
+    border-inline-start-color: var(--md-danger);
+    color: var(--md-fg);
+  }
+
+  .md-q-row-chosen {
+    margin-inline-start: auto;
+    flex-shrink: 0;
+    font-size: var(--md-text-xs);
+    color: var(--md-danger-ink);
+  }
+
+  .md-q-row-opts li[data-right="true"] .md-q-row-chosen {
+    color: var(--md-green);
+  }
+
+  .md-q-row-answer {
+    margin-top: var(--md-space-2-5);
+    font-size: var(--md-text-sm);
+    font-weight: 560;
+    color: var(--md-green);
+  }
+
+  .md-q-row-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-space-2-5);
+    margin-top: var(--md-space-3);
+  }
+
+  .md-q-row-block {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-top: var(--md-space-2-5);
+    border-top: 1px dashed var(--md-border);
+  }
+
+  .md-q-row-refs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-space-1);
+    font-size: var(--md-text-sm);
+  }
+
+  .md-q-row-refs li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--md-space-2);
+    color: var(--md-fg-muted);
+  }
+
+  .md-q-row-refs a {
+    color: var(--md-accent-ink);
+  }
+
+  .md-ref-badge {
+    flex-shrink: 0;
+    padding: 0 7px;
+    border-radius: var(--md-r-pill);
+    background-color: var(--md-surface-2);
+    font-size: var(--md-text-xs);
+    color: var(--md-fg-muted);
+  }
+}
+
+@layer components {
+  /* 空态：现代风不画像素图标，用一圈虚线记号 + 安静的文字。 */
+  .md-empty-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--md-space-2);
+    padding: 44px 20px;
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-lg);
+    background-color: var(--md-surface);
+    text-align: center;
+  }
+
+  .md-empty-plain {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--md-space-1-5);
+    padding: var(--md-space-6) var(--md-space-2);
+    text-align: center;
+  }
+
+  .md-empty-mark {
+    width: 34px;
+    height: 34px;
+    margin-bottom: var(--md-space-1);
+    border: 1px dashed var(--md-border-strong);
+    border-radius: var(--md-r-pill);
+  }
+
+  .md-empty-title {
+    font-size: var(--md-text-base);
+    font-weight: 560;
+    color: var(--md-fg);
+  }
+}
+
+@layer components {
+  /* 错误态：与空态分开一套（空态的虚线记号读作「这里什么都没有」，错误需要一个
+     能被一眼认出的「出事了」形态）。底色取 `--md-danger` 的低掺量，文字走 `-ink` 档 ——
+     桥接页那套手写的 `bg-destructive/5` 与表单的 7% 掺色从此统一到这里（台账 S3 + T2）。 */
+  .md-error {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--md-space-3);
+    padding: var(--md-space-4);
+    border: 1px solid color-mix(in srgb, var(--md-danger) 32%, transparent);
+    border-radius: var(--md-r-md);
+    background-color: color-mix(in srgb, var(--md-danger) 7%, var(--md-surface));
+    color: var(--md-danger-ink);
+  }
+
+  .md-error-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+  }
+
+  .md-error-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--md-space-1);
+    min-width: 0;
+  }
+
+  .md-error-title {
+    font-size: var(--md-text-sm);
+    font-weight: 600;
+    color: var(--md-danger-ink);
+  }
+
+  /* 原文 / 错误码：等宽 + 可换行。解码失败时这一行常常是后端或 worker 的原始报错，
+     不让它把卡片顶宽（长串没有空格时浏览器默认不折行）。 */
+  .md-error-detail {
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-xs);
+    line-height: 1.6;
+    color: var(--md-fg-muted);
+    overflow-wrap: anywhere;
+  }
+}
+

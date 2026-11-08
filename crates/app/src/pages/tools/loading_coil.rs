@@ -4,7 +4,7 @@ use ham_web_core::loading_coil::{self, LoadingCoilInput};
 use ham_web_core::unit_math::{format_capacitance_f, format_inductance_h};
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_resistance};
+use super::{fmt_resistance, result_class};
 use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField};
 use crate::util::unique_id;
@@ -31,7 +31,7 @@ pub(super) fn LoadingCoilTool() -> impl IntoView {
         <NumberField id=freq_id.clone() value=Signal::derive(move || freq.get()) on_change=Callback::new(move |v: String| freq.set(v)) controls=false />
       </Field>
 
-      <div class=format!("{RESULT} space-y-1 tabular-nums")>
+      <div class=format!("{} space-y-1 tabular-nums", result_class())>
         {move || {
           let (Ok(h), Ok(d), Ok(f)) = (
             height.get().trim().parse::<f64>(),

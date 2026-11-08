@@ -672,6 +672,7 @@ grep -rn "TODO\|FIXME\|HACK\|todo!()\|unimplemented!()" crates
 | 一文件一组件 | 每个 `.rs` 最多一个 `-> impl IntoView / AnyView`（C3.1） | 扫描根不存在、或一个文件都没扫到都算失败 |
 | 双设计系统隔离 | `kit_modern/` 与 `style/modern/` 里不出现 `pxl-` | |
 | 反向隔离 | 只在像素风渲染的文件（有 `pxl-`、无 `is_modern` / `kit::`）里不出现 `md-*` | 判定逻辑是纯函数，有正反例单测 |
+| 像素式内嵌块 | 共享页面（引用 `is_modern` / `kit::` / `crate::ui::` / `components::common::` 的文件）里不出现无条件的 `class="… border bg-inset …"`：现代风的内嵌块是 `.md-tile`，`bg-inset` 只能按皮肤派发（用 `kit::tile_class` / `inset_panel_class`，不要各写一份 `if`） | 台账 C1；变异验证过（写回一处即红）。豁免口径**宁可多扫**：漏判会让规则空转，误判只多扫几行 |
 | 现代风样式门禁 | 选择器**逐项**判定：提到 `pxl-*` / `bg-card` 等像素风标识、或按 `data-sig` 分支却无 `md-` 的，必须带 `html[data-ui-style="modern"]`（C7.7） | 逗号列表里一项带门禁不能放过其余项 |
 | 层外样式门禁 | 不在 `@layer` 里的规则**逐项**必须带 `md-` 或 `data-ui-style`；`@keyframes` 步与 `::view-transition*` 除外 | `@layer a, b;` 这种无块语句不会吞掉下一条规则 |
 | `!important` 标注 | 每一条必须同行写 `/* important-ok: 理由 */` | |
@@ -679,8 +680,9 @@ grep -rn "TODO\|FIXME\|HACK\|todo!()\|unimplemented!()" crates
 | 退场时长走 token | 退场动画（`*-out`，非无限循环）的时长必须是 `var(--…)`；两套皮肤的 CSS 都扫；例外同行写 `/* dur-ok: 理由 */` | Rust 侧的卸载延迟读同一个 token（`presence::exit_ms`），写死的字面量不会跟着变 |
 | 延迟卸载只有一份 | `crates/app/src` 里只有 `presence.rs` 能定义 `*EXIT_MS` 常量 | 曾在六个文件各写一份 |
 | 状态色字面值 | 红 / 琥珀色相（含橙）的十六进制只能写在 `tokens.css`；例外同行写 `/* color-ok: 理由 */` | 判色相：≤50° 或 ≥340°、饱和 ≥0.35、明度 ≥0.3（深棕墨水字不算）；纯函数，有正反例单测 |
-| 现代风断点 | 只能取 480 / 640 / 720 / 768 / 900 / 1024；同一值的上下界不能同时含进来（`min-width: 900px` 与 `max-width: 900px` 都含 900，恰好 900px 两档同时命中；上界写 `(width < 900px)` 或范围语法） | 识别小数、`em` / `rem`（按 16px）、范围语法；生产与单测共用一份实现 |
+| 现代风断点 | 只能取 360 / 480 / 640 / 720 / 768 / 900 / 1024；同一值的上下界不能同时含进来（`min-width: 900px` 与 `max-width: 900px` 都含 900，恰好 900px 两档同时命中；上界写 `(width < 900px)` 或范围语法） | 识别小数、`em` / `rem`（按 16px）、范围语法；生产与单测共用一份实现 |
 | 类名索引 | `style/modern/` 下全部 CSS 的 `md-*` 与 `docs/ui/modern-classes.md` **精确双向**一致 | 前缀类名不会被更长的已登记类放过；死条目也报 |
+| 现代风 kit 分片导入 | `style/modern/kit.css` 的 `@import` 列表与 `style/modern/kit/` 目录里的分片**完全一致** | 只有 `@import` 过的分片才进产物：忘了写 `@import` 时源码里「有」这个样式、读目录的门禁也读得到，产物里却没有 —— 表现为「改了半天没生效」 |
 | 阅读正文 | `--md-text-prose` 必须是 `clamp(…vw…)`、`--md-measure` 必须是 `em`、`.md-article-page` 必须落这两个 token，且文档 §2.3 的 clamp 值与 CSS 逐字一致 | 字号改回固定档、measure 换成 `px` / `ch` 时页面照常能看，只有这里对不上（规矩见 `docs/ui/modern.md` §2.3） |
 | 弹层三件套 | 带 `data-modal-root` 的面板调齐 focus / 滚动锁 / Esc（C7.8） | |
 | 贴底固定层标记 | 每个文件里「声明了几处贴底固定层」（`fixed` + `bottom-0`，或 `md-bar` / `md-dock`）不得多于 `data-fixed-bottom` 的出现次数；自绘窗口滚动条靠它让位 | 按文件计数而非逐元素配对：同一文件里漏标一处、又多标一处会互相抵消；非 `bottom-0` 的贴底写法（`inset-block-end` 写在 CSS 里的新类）认不出 |

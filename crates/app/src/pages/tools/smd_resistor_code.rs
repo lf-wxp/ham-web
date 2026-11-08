@@ -3,7 +3,7 @@
 use ham_web_core::component_codes;
 use leptos::prelude::*;
 
-use super::{RESULT_INLINE, fmt_resistance};
+use super::{fmt_resistance, result_inline_class};
 use crate::i18n::t;
 use crate::ui::{Field, Input, InputType};
 use crate::util::unique_id;
@@ -27,7 +27,7 @@ pub(super) fn SmdResistorCode() -> impl IntoView {
           kind=InputType::Text
         />
       </Field>
-      <div class=RESULT_INLINE>
+      <div class=result_inline_class()>
         {move || match component_codes::smd_resistor(&code.get()) {
           Some(r) => fmt_resistance(r.ohms),
           None => t("tools.code-unrecognized"),

@@ -1,0 +1,1115 @@
+/* ============================================================
+   评审落地：首屏节奏、卡片层级、移动端信息条与判分反馈
+   ------------------------------------------------------------
+   原 `kit.css` 第 4659–5762 行（6/11 段，台账 C4 的分域拆分）。
+
+   **顺序即级联**：本目录下的文件由 `../kit.css` 按 01→11 顺序 `@import`，
+   同名 `@layer components` 按这个顺序拼接。**不要按主题重排文件**：同层同优先级的
+   规则靠源顺序决胜负，换顺序会悄悄改掉某个组件的最终取值。新增样式追加到对应
+   主题文件的末尾；跨主题的新组件另起文件并追加到 `@import` 列表**末尾**。
+   ============================================================ */
+
+/* ============================================================
+   评审批量落地（P0 / 记忆点① / 首屏节奏 / 卡片层级）
+   ============================================================ */
+
+/* 1) 答完题的出口：右下角浮出的「下一题」 */
+@layer components {
+  .md-next-float {
+    position: fixed;
+    inset-inline-end: 24px;
+    inset-block-end: 24px;
+    z-index: 41;
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    /* 隐藏态必须从无障碍树与 Tab 序里拿掉：只有 `opacity: 0` 的话，看不见的「下一题」仍能被 Tab 聚焦、
+       被读屏读到。`visibility` 延迟到淡出结束再切，退场动画不被截断。 */
+    visibility: hidden;
+    transition:
+      opacity var(--md-dur) var(--md-ease),
+      transform var(--md-dur) var(--md-ease),
+      visibility 0s linear var(--md-dur);
+  }
+
+  .md-next-float[data-visible="true"] {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  /* `<900` 底部操作条（`.md-bar-practice`）本身就有「下一题」：浮钮再出一个，同屏两个橙色主行动
+     （违反「一屏只给一个主行动」），而且它浮在 y≈704，正好盖住 44×44 的「朗读解析」、
+     下滚后压在「保存笔记」上。所以窄屏直接不要它；`display: none` 同时把它移出 Tab 序与无障碍树。
+     `≥900` 底栏不显示（两侧箭头翻页），浮钮仍是答完题后的出口，保留。
+     两档互斥，边界只属于一边：用范围语法 `width < 900px`，恰好 900 属于「底栏隐藏、浮钮保留」那一档，
+     写成 `max-width: 900px` 会让 900px 的练习页既没有底栏、也没有浮钮（见 `modern.md` §3）。 */
+  @media (width < 900px) {
+    .md-next-float {
+      display: none;
+    }
+  }
+
+  /* 2) 键位提示条 */
+  .md-keys {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 16px;
+    color: var(--md-fg-muted);
+    font-size: var(--md-text-xs);
+  }
+
+  .md-keys span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-space-1-5);
+  }
+}
+
+/* 3) 记忆点①：答对 = 同心电波扩散；答错 = 干扰线扫过 */
+.md-opt {
+  overflow: hidden;
+}
+
+.md-opt-right::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  border: 1px solid var(--md-green);
+  animation: md-signal-ring 900ms var(--md-ease-out) both;
+}
+
+@keyframes md-signal-ring {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--md-green) 45%, transparent);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.015);
+    box-shadow: 0 0 0 18px color-mix(in srgb, var(--md-green) 0%, transparent);
+  }
+}
+
+.md-opt-wrong::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--md-danger) 38%, transparent),
+    transparent
+  );
+  animation: md-interference 620ms linear both;
+}
+
+@keyframes md-interference {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* 4) 首屏节奏：压低高度、放大主视觉、光谱与扫描带之间留出分隔 */
+@media (min-width: 900px) {
+  .md-hero-grid {
+    padding-top: 60px;
+    padding-bottom: var(--md-space-16);
+  }
+
+  .md-hero-art svg {
+    max-width: 520px;
+  }
+}
+
+.md-spectrum {
+  margin-block: 10px 4px;
+}
+/* 5) 卡片层级：焦点卡更亮、次级卡去掉阴影只留描边 */
+.md-feature-accent {
+  box-shadow: 0 20px 48px -20px color-mix(in srgb, var(--md-orange) 70%, transparent);
+}
+
+.md-feature-quiet {
+  box-shadow: none;
+}
+
+.md-panel {
+  box-shadow: var(--md-shadow-1);
+}
+
+/* 6) 浅色模式的描边值在 `tokens.css` 的浅色块里（组件层不覆盖 token）。 */
+
+/* 考试页的底栏在**所有**宽度都是 fixed（桌面也不换成侧边栏），
+   所以底部留白必须无断点地成立：96px = 桌面单行底栏 + 一行余量。
+   只挂在 `.md-exam`（页根）上，不挂 `.md-root`：后者是会嵌套的字体作用域（见 C2.6-1）。 */
+body[data-page-mode="exam"] .md-exam {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+
+/* 7) 移动端练习 / 考试页：专注模式 —— 收起 dock，只留一条底部操作条。
+   考试页同样要收：它的底栏是 `.md-bar`（`inset-block-end: 0; z-index: 40`），
+   dock 在同一个底边、`z-index: 55` —— 不收的话 dock 会整条压在考试底栏上，
+   390×844 上「交卷」按钮正落在 dock 的第一格，点下去跳到导航页。
+   两条留白都叠 `env(safe-area-inset-bottom)`：底栏 / 操作条自己含这一项。 */
+@media (width < 900px) {
+  body[data-page-mode="practice"] .md-dock,
+  body[data-page-mode="exam"] .md-dock {
+    display: none;
+  }
+
+  body[data-page-mode="practice"] .md-bar-practice {
+    inset-block-end: 0;
+    /* 窄屏规则（上面 `<=900` 那条）为了「叠在 dock 之上」把 padding-bottom 清成了 0；
+       专注模式下 dock 已收起，操作条直接贴着屏幕底边，安全区要还回来，
+       否则按钮会压在 iPhone 的 home indicator 上。 */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  body[data-page-mode="practice"] .md-practice {
+    padding-bottom: calc(132px + env(safe-area-inset-bottom));
+  }
+
+  /* 考试底栏在窄屏会换成两行（按钮 `flex: 1 1 auto` + `flex-wrap`），
+     132px 够中文的单行版；具体行数由下方按宽度再抬一档。 */
+  body[data-page-mode="exam"] .md-exam {
+    padding-bottom: calc(132px + env(safe-area-inset-bottom));
+  }
+}
+
+/* 更窄的屏（≤480）：考试底栏的按钮会换成两到三行，
+   留白按最高一档给，宁可多滚一点，也不要最后一个按钮被压在底栏下面。 */
+@media (width < 480px) {
+  body[data-page-mode="exam"] .md-exam {
+    padding-bottom: calc(184px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-opt-right::after,
+  .md-opt-wrong::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+@layer components {
+  /* 信号报告 RST：结页面板的主视觉。 */
+  .md-rst {
+    display: flex;
+    align-items: baseline;
+    gap: var(--md-space-3-5);
+    margin-bottom: var(--md-space-1);
+  }
+
+  .md-rst-value {
+    font-family: var(--md-font-mono);
+    font-size: 46px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    background: linear-gradient(120deg in oklch, var(--md-orange), var(--md-violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .md-rst-label {
+    font-size: var(--md-text-xs);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--md-fg-muted);
+  }
+
+  /* 分类正确率条形图 */
+  .md-delta-row {
+    display: grid;
+    grid-template-columns: minmax(72px, 1fr) minmax(60px, 1.4fr) 48px;
+    align-items: center;
+    gap: var(--md-space-2-5);
+  }
+
+  .md-delta-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .md-delta-bar {
+    height: 6px;
+    border-radius: var(--md-r-pill);
+    background-color: var(--md-surface-3);
+    overflow: hidden;
+  }
+
+  .md-delta-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--md-orange), var(--md-violet));
+    animation: md-bar-grow 620ms var(--md-ease-out) both;
+  }
+
+  /* 不带 `!important`：关键帧内的 `!important` 按规范会被忽略，留着只会误导下一个改它的人。 */
+  @keyframes md-bar-grow {
+    from {
+      width: 0;
+    }
+  }
+}
+
+@layer components {
+  /* 加载骨架：形状贴近题卡，避免切换时布局跳动。 */
+  .md-skel-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-space-4);
+    padding-top: 28px;
+  }
+
+  .md-skel {
+    border-radius: var(--md-r-sm);
+    background: linear-gradient(
+      100deg,
+      var(--md-surface-2) 30%,
+      color-mix(in srgb, var(--md-surface-2) 55%, var(--md-surface-3)) 50%,
+      var(--md-surface-2) 70%
+    );
+    background-size: 260% 100%;
+    animation: md-skel-shimmer 1.4s var(--md-ease) infinite;
+  }
+
+  .md-skel-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-space-3-5);
+    padding: 22px;
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-lg);
+    background: var(--md-surface);
+    animation: none;
+  }
+
+  .md-skel-line {
+    height: 16px;
+  }
+
+  .md-skel-rows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-space-2-5);
+    margin-top: var(--md-space-1-5);
+  }
+
+  .md-skel-option {
+    height: 52px;
+    border-radius: var(--md-r-md);
+  }
+
+  /* 卡片内的加载占位（`components/common/loading_block.rs`）：两行短文本的高度，
+     与「一行标题 + 一行读数」的卡片内容同高，数据到位时不顶高卡片（台账 S1）。 */
+  .md-skel-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-space-2);
+    padding-block: 2px;
+  }
+
+  .md-skel-block .md-skel-line {
+    height: 14px;
+  }
+
+  /* 整块占位（地图 / 图表这类大块内容）：一块灰面比两行短灰块更像「这里将来是一张图」。
+     高度取 96px，正好是 320px 宽手机上「地图 + 图例」第一屏的一半，到位时不顶动下面的内容。 */
+  .md-skel-fill {
+    height: 96px;
+    border-radius: var(--md-r-md);
+  }
+
+  /* 内嵌小块：一组等价的小读数（点划符号卡、时值格、键值对）用它，而不是各写一遍
+     `border` + `bg-inset`。比卡片低一档的表面 —— 不放投影、不用行动色，
+     谁都不比谁重要；可点的块（`<button>` / `<a>`）才加悬停。 */
+  .md-tile {
+    padding: var(--md-space-3);
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-md);
+    background-color: var(--md-surface-2);
+  }
+
+  button.md-tile,
+  a.md-tile {
+    cursor: pointer;
+    transition:
+      border-color var(--md-dur-fast) var(--md-ease),
+      background-color var(--md-dur-fast) var(--md-ease);
+  }
+
+  button.md-tile:hover,
+  a.md-tile:hover {
+    border-color: var(--md-accent-line);
+    background-color: var(--md-surface);
+  }
+
+  /* 公式读数：等宽 + 墨色。**不用行动色** —— 一页有几十条公式，全染成橙色等于把
+     「一屏一个焦点」废掉（`docs/ui/decisions.md` §5）；行动色只留给可点的块在悬停时露一下。
+     与正文的区分靠等宽字体与 tabular-nums，而不是靠颜色。 */
+  .md-formula {
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-sm);
+    color: var(--md-fg);
+    font-variant-numeric: tabular-nums;
+  }
+
+  @keyframes md-skel-shimmer {
+    from {
+      background-position: 120% 0;
+    }
+    to {
+      background-position: -20% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .md-skel {
+      animation: none;
+    }
+  }
+}
+
+@layer components {
+  /* 共享骨架 `.skeleton`（`components/common/skeleton.rs`）：像素版定义在
+     `style/pixel/motion.css`，用的是 `--pxl-dither`（现代风里没有这个 token，整条
+     `background-image` 在计算值阶段就失效）与 `steps(1)` 逐帧闪烁 —— 现代风下会退化成
+     「一块硬切跳变的灰块」。这里给同一批元素换成与 `.md-skel` 同源的平滑扫光。
+     不改成 `.md-skel` 类名：那个类带着题卡形状，而这些调用点只想要一块占位。 */
+  html[data-ui-style="modern"] .skeleton {
+    border-radius: var(--md-r-sm);
+    background-color: transparent;
+    background-image: linear-gradient(
+      100deg,
+      var(--md-surface-2) 30%,
+      color-mix(in srgb, var(--md-surface-2) 55%, var(--md-surface-3)) 50%,
+      var(--md-surface-2) 70%
+    );
+    background-size: 260% 100%;
+    animation: md-skel-shimmer 1.4s var(--md-ease) infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html[data-ui-style="modern"] .skeleton {
+      animation: none;
+    }
+  }
+}
+
+@layer components {
+  /* 记忆点②：刻度盘「开机校准」——指针从最左扫到当前值，进度弧同步填充。 */
+  .md-dial-arc {
+    animation: md-arc-sweep 1.4s var(--md-ease-out) both;
+  }
+
+  @keyframes md-arc-sweep {
+    from {
+      stroke-dashoffset: 452;
+    }
+  }
+
+  .md-dial-needle {
+    transform-box: view-box;
+    transform-origin: 100px 100px;
+    transform: rotate(var(--dial-deg, -90deg));
+    animation: md-needle-sweep 1.4s var(--md-ease-out) both;
+  }
+
+  @keyframes md-needle-sweep {
+    from {
+      transform: rotate(-90deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .md-dial-arc,
+    .md-dial-needle {
+      animation: none;
+    }
+  }
+}
+
+@layer components {
+  /* 速查页：分区色点、分区网格、RST 三卡、通联短语 */
+  .md-area-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--md-r-pill);
+  }
+
+  .md-area-grid {
+    display: grid;
+    gap: var(--md-space-2);
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    margin-top: var(--md-space-3-5);
+  }
+
+  .md-area-cell {
+    display: flex;
+    gap: var(--md-space-2-5);
+    padding: var(--md-space-2-5) var(--md-space-3);
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-md);
+    background-color: var(--md-surface-2);
+  }
+
+  .md-area-cell[data-active="true"] {
+    border-color: color-mix(in srgb, var(--md-blue) 45%, var(--md-border));
+    background-color: color-mix(in srgb, var(--md-blue) 10%, var(--md-surface));
+  }
+
+  .md-area-digit {
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-md);
+    font-weight: 640;
+    color: var(--md-accent-ink);
+  }
+
+  .md-rst-grid {
+    display: grid;
+    gap: var(--md-space-2-5);
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .md-rst-card {
+    padding: var(--md-space-3-5);
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-md);
+    background-color: var(--md-surface-2);
+  }
+
+  .md-rst-card-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--md-space-2);
+    margin-bottom: var(--md-space-0-5);
+  }
+
+  .md-rst-key {
+    font-size: var(--md-text-md);
+    font-weight: 700;
+    color: var(--md-accent-ink);
+  }
+
+  .md-rst-levels {
+    display: grid;
+    gap: var(--md-space-1);
+    margin-top: var(--md-space-2);
+    padding-top: var(--md-space-2);
+    border-top: 1px solid var(--md-border);
+    font-size: var(--md-text-sm);
+  }
+
+  .md-rst-levels > div {
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    gap: var(--md-space-1-5);
+  }
+
+  .md-phrases {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .md-phrase {
+    display: grid;
+    gap: 4px 16px;
+    padding: 10px 0;
+    border-top: 1px solid var(--md-border);
+  }
+
+  .md-phrase:first-child {
+    border-top: 0;
+  }
+
+  @media (min-width: 640px) {
+    .md-phrase {
+      grid-template-columns: 8.5rem 1fr;
+    }
+  }
+
+}
+
+@layer components {
+  /* 专题自测：页面底部的附加区块 */
+  .md-related {
+    max-width: var(--md-page-max);
+    padding-top: 0;
+    padding-bottom: var(--md-space-12);
+  }
+
+  .md-quiz {
+    padding: 14px 0;
+    border-top: 1px solid var(--md-border);
+  }
+
+  .md-quiz:first-of-type {
+    border-top: 0;
+  }
+
+  .md-quiz-q {
+    font-size: var(--md-text-base);
+    line-height: 1.6;
+  }
+
+  .md-quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-space-1-5);
+    margin-top: var(--md-space-2-5);
+  }
+
+}
+
+@layer components {
+  /* ---------- 术语表 ---------- */
+  .md-glossary-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--md-space-2-5);
+    margin-bottom: var(--md-space-3-5);
+  }
+
+  .md-term-grid {
+    display: grid;
+    gap: var(--md-space-3-5);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  @media (min-width: 900px) {
+    .md-term-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .md-term {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: var(--md-space-4) var(--md-space-5);
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-lg);
+    background-color: var(--md-surface);
+    transition:
+      border-color var(--md-dur-fast) var(--md-ease),
+      transform var(--md-dur-fast) var(--md-ease);
+  }
+
+  /* 术语卡角标：与内容块、统计卡同一条规则（左上 16px 三角），
+     hover 时跟着边框一起提亮 —— 索引页的几何记号不该只在 hover 时消失。 */
+  .md-term::before {
+    content: "";
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: 16px;
+    height: 16px;
+    /* 同 `.md-panel::before`：不跟圆角的话矩形会把卡片左上的圆角涂平。 */
+    border-start-start-radius: inherit;
+    background-image: linear-gradient(
+      to bottom right,
+      var(--md-fg-muted) 50%,
+      transparent 50%
+    );
+    opacity: 0.55;
+    transition: opacity var(--md-dur-fast) var(--md-ease);
+    pointer-events: none;
+  }
+
+  .md-term:hover {
+    border-color: var(--md-border-strong);
+    transform: translateY(-2px);
+  }
+
+  .md-term:hover::before {
+    opacity: 0.95;
+  }
+
+  .md-term-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--md-space-2);
+    margin-bottom: var(--md-space-1-5);
+  }
+
+  .md-term-title {
+    font-family: var(--md-font-display);
+    font-size: var(--md-text-lg);
+    font-weight: 660;
+    letter-spacing: -0.01em;
+  }
+
+  .md-term-abbr {
+    padding: 1px 8px;
+    border-radius: var(--md-r-pill);
+    background-color: var(--md-surface-2);
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-xs);
+    color: var(--md-fg-muted);
+  }
+
+  .md-term-cat {
+    margin-inline-start: auto;
+    padding: 1px 8px;
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-pill);
+    font-size: var(--md-text-xs);
+    color: var(--md-fg-muted);
+  }
+
+  .md-term-en {
+    margin-bottom: var(--md-space-1-5);
+    font-size: var(--md-text-xs);
+    font-style: italic;
+    color: var(--md-fg-muted);
+  }
+
+  /* 释义是成段阅读文本，不是界面副文本：13px 在手机上笔画糊、也不符合
+     `ui/modern.md` §2.3 的「阅读正文 15~17.5」；用 compact 档（窄屏 15 / 桌面 16）。 */
+  .md-term-desc {
+    font-size: var(--md-text-compact);
+    line-height: 1.7;
+    color: var(--md-fg-muted);
+  }
+
+  .md-term-meta {
+    margin-top: var(--md-space-2);
+    font-size: var(--md-text-xs);
+    color: var(--md-fg-muted);
+  }
+
+  .md-term-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--md-space-2);
+    margin-top: auto;
+    padding-top: var(--md-space-3);
+    border-top: 1px dashed var(--md-border);
+    font-size: var(--md-text-xs);
+    color: var(--md-fg-muted);
+  }
+
+  /* 标签与计数分开排：标签安静、计数等宽，胶囊本身由 `.md-chip` 负责 */
+  .md-term-foot-label {
+    margin-inline-end: 2px;
+  }
+
+  .md-term-foot-count {
+    font-family: var(--md-font-mono);
+    color: var(--md-fg);
+  }
+}
+
+@layer components {
+  /* 输入框容器 + 清除按钮 */
+  .md-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .md-input-wrap .md-input {
+    padding-inline-end: 34px;
+  }
+
+  /* `type="search"` 的原生装饰（Chrome / Safari 的 ✕、结果角标）会和自绘的
+     `.md-input-clear` 并排出现，看起来像两个清除按钮 —— 统一只留自绘的那个。 */
+  .md-input[type="search"]::-webkit-search-cancel-button,
+  .md-input[type="search"]::-webkit-search-decoration,
+  .md-input[type="search"]::-webkit-search-results-button,
+  .md-input[type="search"]::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .md-input-clear {
+    position: absolute;
+    inset-inline-end: 8px;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border: 0;
+    border-radius: var(--md-r-pill);
+    background: transparent;
+    color: var(--md-fg-muted);
+    cursor: pointer;
+  }
+
+  .md-input-clear:hover {
+    background-color: var(--md-surface-3);
+    color: var(--md-fg);
+  }
+
+  .md-input-clear svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .md-glossary-search {
+    flex: 1;
+    min-width: 200px;
+  }
+}
+
+@layer components {
+  /* ---------- 收藏夹 ---------- */
+  .md-bookmark-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-space-3-5);
+  }
+
+  /* 题目本身是 `.md-q-row`（与分类浏览同一张卡）；这里只剩卡片末尾的分组 / 笔记操作区。 */
+  .md-bookmark-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--md-space-2);
+    margin-top: var(--md-space-3-5);
+    padding-top: var(--md-space-3);
+    border-top: 1px solid var(--md-border);
+  }
+
+  /* 错题集的卡片末尾（题目本身仍是 `.md-q-row`）：与 `.md-bookmark-foot` 同一条分隔线与节奏，
+     内容分三行 —— 复盘（我的答案 / 考点 / 同类题再练）、进度（次数 / 连对 / 难度 / 间隔 / 到期）、
+     错因自评 + 移出。各行自己 `flex-wrap`，窄屏与长文案（西语）放不下就折行，不撑出卡片。 */
+  .md-mistake-foot {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-space-2-5);
+    margin-top: var(--md-space-3-5);
+    padding-top: var(--md-space-3);
+    border-top: 1px solid var(--md-border);
+    font-size: var(--md-text-sm);
+  }
+
+  .md-mistake-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--md-space-1) var(--md-space-4);
+    min-width: 0;
+  }
+
+  /* 我的答案是这一块的主角：判错的颜色（文字档），字母用等宽加粗。 */
+  .md-mistake-mine {
+    color: var(--md-danger-ink);
+  }
+
+  .md-mistake-mine .md-mono {
+    font-weight: 600;
+  }
+
+  .md-mistake-topic {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--md-space-1);
+    min-width: 0;
+    color: var(--md-fg-muted);
+  }
+
+  /* 进度读数：安静的次要文字，数字等宽对齐；只有「到期」和「难度」带语义色。 */
+  .md-mistake-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--md-space-1) var(--md-space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--md-fg-muted);
+    font-size: var(--md-text-xs);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .md-mistake-stats b {
+    font-weight: 600;
+    color: var(--md-fg);
+  }
+
+  .md-mistake-stats .md-mistake-level[data-level="hard"] {
+    color: var(--md-danger-ink);
+  }
+
+  .md-mistake-stats .md-mistake-level[data-level="medium"] {
+    color: var(--md-warn-ink);
+  }
+
+  .md-mistake-stats .md-mistake-level[data-level="easy"] {
+    color: var(--md-green);
+  }
+
+  .md-mistake-stats li[data-due="true"] {
+    color: var(--md-accent-ink);
+    font-weight: 600;
+  }
+
+  .md-mistake-cause {
+    gap: var(--md-space-2);
+  }
+
+  /* 移出：行尾的次要操作（幽灵按钮），悬停才转危险色 —— 平时不抢错因胶囊的注意力。
+     与 `.md-btn-ghost:hover` 同权重，靠写在它后面取胜。 */
+  .md-mistake-remove {
+    margin-inline-start: auto;
+    color: var(--md-fg-muted);
+  }
+
+  .md-mistake-remove:hover:not(:disabled) {
+    color: var(--md-danger-ink);
+  }
+
+  /* 胶囊两档：默认、密集（列表行、脚注、错题页脚用密集档）。
+     密集档**实际生效的是横向内边距与字号**：`.md-chip` 的 `min-height: 32px` 压过了下面的
+     `height: 28px`，所以两档高度都是 32（触屏 `button` 抬到 44）。这是既有行为 ——
+     真把它改成 28 会让收藏 / 术语 / 浏览三页的胶囊整体变矮，要单独评估再动。 */
+  .md-chip-sm {
+    height: 28px;
+    padding-inline: var(--md-space-2-5);
+    font-size: var(--md-text-xs);
+  }
+
+  .md-icon-btn-xs {
+    width: 26px;
+    height: 26px;
+  }
+
+  .md-icon-btn-xs svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .md-dot-badge {
+    width: 6px;
+    height: 6px;
+    border-radius: var(--md-r-pill);
+    background-color: var(--md-orange);
+  }
+
+  .md-empty {
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  /* 现代下拉 */
+  .md-select {
+    height: 34px;
+    padding-inline: 10px 26px;
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-sm);
+    background-color: var(--md-surface-2);
+    color: var(--md-fg);
+    font-family: inherit;
+    font-size: var(--md-text-sm);
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--md-fg-muted) 50%),
+      linear-gradient(135deg, var(--md-fg-muted) 50%, transparent 50%);
+    background-position:
+      calc(100% - 14px) 14px,
+      calc(100% - 9px) 14px;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    cursor: pointer;
+  }
+
+  .md-select-sm {
+    height: 26px;
+    font-size: var(--md-text-xs);
+    background-position:
+      calc(100% - 12px) 12px,
+      calc(100% - 7px) 12px;
+  }
+
+  .md-select:focus-visible {
+    outline: 2px solid var(--md-ring);
+    outline-offset: 1px;
+  }
+}
+
+@layer components {
+  /* ---------- 表单：标签 / 提示 / 装饰位 / 步进 ---------- */
+  /* 表单行：标签 12px、控件与其上下各 6px、提示与错误同为 12px。
+     只有一处定义 —— 之前 `.md-field` 被写过两遍（4px / 5px 间距互相覆盖）。 */
+  .md-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .md-field-label {
+    font-size: var(--md-text-xs);
+    font-weight: 560;
+    letter-spacing: 0.01em;
+    color: var(--md-fg-muted);
+  }
+
+  .md-field-required {
+    margin-inline-start: 3px;
+    color: var(--md-accent-ink);
+  }
+
+  .md-field-hint {
+    font-size: var(--md-text-xs);
+    line-height: 1.5;
+    color: var(--md-fg-muted);
+  }
+
+  .md-field-error {
+    font-size: var(--md-text-xs);
+    line-height: 1.5;
+    color: var(--md-danger-ink);
+  }
+
+  .md-adorn {
+    position: absolute;
+    inset-block-start: 50%;
+    display: flex;
+    align-items: center;
+    color: var(--md-fg-muted);
+    translate: 0 -50%;
+  }
+
+  .md-adorn-left {
+    inset-inline-start: 6px;
+  }
+
+  .md-adorn-right {
+    inset-inline-end: 6px;
+  }
+
+  .md-adorn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .md-input-wrap[data-adorn-left] .md-input {
+    padding-inline-start: 30px;
+  }
+
+  .md-input-wrap[data-adorn-right] .md-input {
+    padding-inline-end: var(--md-space-8);
+  }
+
+  .md-step-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 26：步进按钮在手机上点得准的最小档（WCAG 2.5.8 要求 ≥24×24）。 */
+    width: 26px;
+    height: 26px;
+    border: 0;
+    border-radius: var(--md-r-xs);
+    background: transparent;
+    color: var(--md-fg-muted);
+    cursor: pointer;
+  }
+
+  .md-step-btn:hover:not(:disabled) {
+    background-color: var(--md-surface-3);
+    color: var(--md-fg);
+  }
+
+  .md-step-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .md-step-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* ---------- 工具页 ---------- */
+  .md-tools-grid {
+    display: grid;
+    gap: var(--md-space-6);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* 侧栏与「悬浮按钮 + 抽屉」互斥，分界与顶栏同一条（768）：`<768` 侧栏让位给
+     `ModernMenuDrawer`（见文件末尾的「窄屏分类 / 目录菜单」一节），`>=768` 目录回到左侧常驻索引。 */
+  @media (min-width: 768px) {
+    .md-tools-grid {
+      grid-template-columns: 208px minmax(0, 1fr);
+    }
+  }
+
+  .md-tools-aside {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .md-tools-aside {
+      display: block;
+    }
+  }
+
+  .md-tools-index {
+    position: sticky;
+    inset-block-start: calc(var(--md-nav-h) + 16px);
+    max-height: calc(100svh - var(--md-nav-h) - 32px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 18px;
+    /* 目录是一张「索引卡」：顶边 + 描边 + 平面底，和右侧计算面板同一套几何。
+       顶边用行动色（不是蓝）：蓝只表示「选中」，页内索引的顶边是识别记号。 */
+    border: 1px solid var(--md-border);
+    border-top: 3px solid var(--md-accent);
+    border-radius: var(--md-r-lg);
+    background-color: var(--md-surface);
+  }
+
+  /* 索引卡已经有 3px 行动色顶边这一枚记号，就不要再叠 `.md-panel::before` 的左上角标 ——
+     同一张卡上两个「这里是一块」的记号会互相削弱（台账 L3）。约定：**页面级索引卡用顶边，
+     内容卡用角标**，两者不叠加（同 `docs/ui/modern.md` §4.3）。 */
+  .md-tools-index::before {
+    content: none;
+  }
+
+  .md-tool-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .md-tool-link {
+    display: block;
+    width: 100%;
+    padding: var(--md-space-2) var(--md-space-2-5);
+    border: 0;
+    border-radius: var(--md-r-xs);
+    background: transparent;
+    color: var(--md-fg-muted);
+    font-family: inherit;
+    font-size: var(--md-text-sm);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .md-tool-link:hover {
+    background-color: var(--md-surface-2);
+    color: var(--md-fg);
+  }
+
+}
+

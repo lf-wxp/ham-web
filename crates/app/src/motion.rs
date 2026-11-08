@@ -342,21 +342,13 @@ fn viewport_height() -> f64 {
 /// （见 [`reveal_below_fold`]），登记本身不触发布局。查询限定在 `#route-content` 内，
 /// 弹层与导航不该被登记。
 pub fn reveal_modern_page() {
-  // `.md-page > *` 管迁移过的现代页；桥接页的内容块由 `PageContainer` 在挂载时自己登记
-  // （见 `components/common/page_container.rs`）—— 两条合起来才是「所有页面同一套换页
-  // 手感」，只做前者的话桥接页只有整页淡入、现代页却是「淡入 + 内容上浮」，一眼能看出差别。
-  const TARGETS: [&str; 6] = [
-    ".md-page > *",
-    ".md-q-row",
-    ".md-term",
-    ".md-tool-link",
-    ".md-log-row",
-    ".md-panel",
-  ];
   let Some(scope) = crate::util::document().get_element_by_id(ROUTE_CONTENT_ID) else {
     return;
   };
-  for sel in TARGETS {
+  // `.md-page > *` 管迁移过的现代页；桥接页的内容块由 `PageContainer` 在挂载时自己登记
+  // （见 `components/common/page_container.rs`）—— 两条合起来才是「所有页面同一套换页
+  // 手感」，只做前者的话桥接页只有整页淡入、现代页却是「淡入 + 内容上浮」，一眼能看出差别。
+  for sel in MODERN_TARGETS {
     let Ok(nodes) = scope.query_selector_all(sel) else {
       continue;
     };
@@ -368,7 +360,92 @@ pub fn reveal_modern_page() {
       reveal_below_fold(el);
     }
   }
+  watch_late_content(&scope);
   pause_offscreen_in(&scope);
+}
+
+/// 现代风要登记浮现的块。换页时整页扫一遍，晚于换页才渲染出来的子树按同一份清单补登记
+/// （见 [`watch_late_content`]）—— 一处清单，两条路径，新增目标只改这里。
+const MODERN_TARGETS: [&str; 6] = [
+  ".md-page > *",
+  ".md-q-row",
+  ".md-term",
+  ".md-tool-link",
+  ".md-log-row",
+  ".md-panel",
+];
+
+type LateCallback = Closure<dyn FnMut(js_sys::Array)>;
+
+thread_local! {
+  /// [`watch_late_content`] 的观察器与回调（回调要活得比观察器久）。
+  static LATE: RefCell<Option<(web_sys::MutationObserver, LateCallback)>> =
+    const { RefCell::new(None) };
+}
+
+/// 补登记「换页之后才渲染出来」的块。
+///
+/// 三趟登记（rAF / 220ms / 640ms）只盖住换页那一秒，而术语表、题库列表这些页面要等本地
+/// JSON 落地才有内容：慢机上数据回来时三趟早已跑完，整页一个元素都没登记 —— 表现是这些页
+/// 干脆不做入场（`data-reveal` 一个都没有）。这里盯住 `#route-content` 的子节点增删，
+/// 新挂进来的子树就地按 [`MODERN_TARGETS`] 登记（[`reveal_below_fold`] 对已登记的元素是
+/// 空操作，与三趟重叠也不会重复排队）。
+///
+/// 只看**元素**节点的增删：术语表卡片底栏每帧刷新出现次数也是 childList 变动，
+/// 但那只是文本节点，扫了也没有新块。
+fn watch_late_content(scope: &web_sys::Element) {
+  // 像素风由 `PageContainer` 在自己的挂载点登记，晚挂载的内容不归这里管。
+  if !crate::theme::DisplayPrefs::style_is_modern_dom() {
+    return;
+  }
+  if LATE.with(|slot| slot.borrow().is_some()) {
+    return;
+  }
+  let selector = MODERN_TARGETS.join(", ");
+  let cb = LateCallback::new(move |records: js_sys::Array| {
+    for record in records.iter() {
+      let Ok(record) = record.dyn_into::<web_sys::MutationRecord>() else {
+        continue;
+      };
+      let added = record.added_nodes();
+      for i in 0..added.length() {
+        let Some(node) = added.item(i) else { continue };
+        let Some(el) = node.dyn_ref::<web_sys::Element>() else {
+          continue;
+        };
+        register_late(el, &selector);
+      }
+    }
+  });
+  let Ok(observer) =
+    web_sys::MutationObserver::new(cb.as_ref().unchecked_ref::<js_sys::Function>())
+  else {
+    return;
+  };
+  let init = web_sys::MutationObserverInit::new();
+  init.set_child_list(true);
+  init.set_subtree(true);
+  if observer.observe_with_options(scope, &init).is_ok() {
+    LATE.with(|slot| *slot.borrow_mut() = Some((observer, cb)));
+  }
+}
+
+/// 把一棵刚挂进 DOM 的子树里命中 [`MODERN_TARGETS`] 的块登记进浮现观察器。
+fn register_late(el: &web_sys::Element, selector: &str) {
+  // 自己可能就是目标（列表追加的单项），也可能整棵子树是一次插入的。
+  if el.matches(selector).unwrap_or(false) {
+    reveal_below_fold(el);
+  }
+  let Ok(nodes) = el.query_selector_all(selector) else {
+    return;
+  };
+  for i in 0..nodes.length() {
+    let Some(node) = nodes.item(i) else { continue };
+    let Some(el) = node.dyn_ref::<web_sys::Element>() else {
+      continue;
+    };
+    reveal_below_fold(el);
+  }
 }
 
 type OffscreenCallback = Closure<dyn Fn(js_sys::Array, web_sys::IntersectionObserver)>;

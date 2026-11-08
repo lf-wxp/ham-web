@@ -165,7 +165,7 @@ pub(super) fn BackupTool() -> impl IntoView {
         />
       </div>
 
-      <div class="border bg-inset p-3">
+      <div class=crate::kit::inset_panel_class("")>
         <p class="mb-2 text-xs text-muted-foreground">
           {move || t("tools.backup-modules")}
         </p>
@@ -226,7 +226,7 @@ pub(super) fn BackupTool() -> impl IntoView {
         // 归并与排序在 core（`usage::sum_by_group`）：这里只把分组标签翻成文案。
         let groups = sum_by_group(list.iter().map(|(k, n)| (k.as_str(), *n)), key_label);
         view! {
-          <div class="space-y-2">
+          <div class=if crate::kit::is_modern_at_mount() { "md-panel space-y-2" } else { "space-y-2" }>
             <div class="flex items-center justify-between text-xs text-muted-foreground">
               {move || t("tools.local-storage-used-approx")}
               <span class="tabular-nums">

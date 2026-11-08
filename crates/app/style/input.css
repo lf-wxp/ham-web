@@ -36,6 +36,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* 版心宽度：**全站唯一来源**。
+   像素风的页面容器与顶栏都用 `max-w-5xl`，那个工具类的值在 `pixel/tokens.css` 的
+   `@theme` 里被重定义成取这个变量；现代风的 `.md-shell` / `.md-page` / `.md-nav-inner`
+   取 `--md-page-max`，它在 `modern/tokens.css` 里同样指向这里。
+   于是两套皮肤的内容页、页头、页脚、顶栏左右边缘对齐，切风格时版心不跳。
+   改宽度只改这一行 —— 不要在任何一侧再写一遍像素值。 */
+:root {
+  --page-max: 75rem; /* 1200px */
+}
+
 /* 全站 `<a>` 一律不带下划线（产品要求）：可点性由颜色与悬停反馈表达。
    写在层外 —— 无层规则压过 `utilities` 层的 `underline` / `hover:underline`，
    任何遗留的下划线工具类都不会再生效。 */

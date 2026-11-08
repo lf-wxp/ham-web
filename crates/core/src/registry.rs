@@ -1613,7 +1613,7 @@ pub const MODULES: &[Module] = &[
     group: None,
     backend: false,
   },
-  // 数据备份不进三组下拉：它是「保命操作」，入口在设置对话框、页脚与移动菜单，
+  // 数据备份不进三组下拉：它是「保命操作」，入口在设置对话框与页脚，
   // 不再埋在 /tools 的 60 多个计算器之后。
   Module {
     path: "/backup",

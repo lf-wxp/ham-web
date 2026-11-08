@@ -3,7 +3,7 @@
 use ham_web_core::smith::{gamma, reactance_arc, resistance_circle, swr_and_return_loss};
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_num};
+use super::{fmt_num, result_class};
 use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField};
 use crate::util::unique_id;
@@ -73,7 +73,7 @@ pub(super) fn SmithChart() -> impl IntoView {
             controls=false
           />
         </Field>
-        <div class=RESULT>
+        <div class=result_class()>
           {move || {
             let (gr, gi) = point();
             let (swr, rl) = swr_and_return_loss(gr, gi);

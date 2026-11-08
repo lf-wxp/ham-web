@@ -24,6 +24,10 @@ struct Asset {
   baseline: u64,
   /// 上限（字节，br 压缩后）。
   max: u64,
+  /// 该项是「已经压过的二进制」（字体 woff2 / 图片）：postbuild 不为它们生成 `.br`，
+  /// 所以按原始体积判。不加这个开关就会出现「缺 .br」的假失败。
+  #[serde(default)]
+  raw: bool,
 }
 
 /// `*` 通配（不跨路径分隔符）。
@@ -92,12 +96,18 @@ fn collect(dist: &Path, budget: &Budget) -> Result<Vec<Row>> {
       );
     }
     for f in matched {
-      let br = dist.join(format!("{f}.br"));
-      let size = std::fs::metadata(&br)
-        .with_context(|| {
-          format!("缺少 {f}.br：先跑 `cargo make build-web`（含 postbuild 预压缩）")
-        })?
-        .len();
+      let size = if a.raw {
+        std::fs::metadata(dist.join(f))
+          .with_context(|| format!("缺少 {f}：raw 预算项按原文件判体积"))?
+          .len()
+      } else {
+        let br = dist.join(format!("{f}.br"));
+        std::fs::metadata(&br)
+          .with_context(|| {
+            format!("缺少 {f}.br：先跑 `cargo make build-web`（含 postbuild 预压缩）")
+          })?
+          .len()
+      };
       rows.push(Row {
         name: a.name.clone(),
         file: f.clone(),

@@ -89,9 +89,20 @@
           link.href = "/fonts/" + file;
           document.head.appendChild(link);
         };
+        // 只预载**首屏正文与标题**用到的三款：正文（geist）、展示标题（bricolage）、
+        // 中文标题（noto-0）。等宽三档（plex 400/500/600）不进预载队列 —— 它们出现在
+        // 日期 / 读数这类次要比重的文字里，`font-display: swap` 晚到不会遮挡内容，
+        // 而预载一个 400 档也挡不住 500 / 600 的按需加载（实测首访仍会取这三档，共 30KB）。
+        // 台账 P3；首访实测：6 个字体文件 / 241KB，预载 3 个（204KB）。
+        // 中文展示字（100KB）只在中文界面预载：英 / 西语界面的标题是译文，中文只零散
+        // 出现在正文里（`font-display: swap` + `Noto Sans SC Display Fallback` 的度量对齐
+        // 兜住，见 `fonts.css`），不值得占 40% 的首屏字体预算。台账 P3。
+        let locale = "zh";
+        try { locale = localStorage.getItem("locale") || "zh"; } catch {}
         if (uiStyle === "modern") {
-          ["geist-latin", "bricolage-latin", "noto-sans-sc-display-0", "plex-mono-latin-400"]
-            .forEach((name) => preload(name + ".woff2"));
+          const fonts = ["geist-latin", "bricolage-latin"];
+          if (locale.startsWith("zh")) fonts.push("noto-sans-sc-display-0");
+          fonts.forEach((name) => preload(name + ".woff2"));
         } else if (readable === "on") {
           preload("geist-latin.woff2");
         }

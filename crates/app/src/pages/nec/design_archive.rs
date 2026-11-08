@@ -7,6 +7,7 @@ use ham_web_core::nec::{Ground, NecInput, NecResult, TransmissionLine, solve_wit
 use ham_web_core::nec_designs::{CORRUPT_KEY, DESIGNS_KEY, DesignBook, SaveError, SavedModel};
 use leptos::prelude::*;
 
+use crate::components::common::EmptyState;
 use crate::i18n::{t, tf};
 use crate::ui::intl::decimal;
 use crate::ui::{
@@ -193,7 +194,10 @@ pub(super) fn DesignArchiveSection(
         {move || {
           let designs = book.get().designs;
           if designs.is_empty() {
-            return view! { <p class=NOTE>{move || t("tools.nec-archive-empty")}</p> }.into_any();
+            return view! {
+              <EmptyState plain=true title=Signal::derive(move || t("tools.nec-archive-empty")) />
+            }
+            .into_any();
           }
           view! {
             <ul class="divide-y border" data-slot="nec-archive-list">

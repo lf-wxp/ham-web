@@ -1,7 +1,7 @@
 use ham_web_core::ip3_cascade::{Cascade, Ip3Error, Referred, Stage, cascade};
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_num};
+use super::{fmt_num, result_class};
 use crate::i18n::{t, tf};
 use crate::ui::{
   Button, Field, NumberField, SelectOption, SimpleSelect, Size, Table, TableBody, TableCell,
@@ -186,7 +186,7 @@ pub(super) fn Ip3Cascade() -> impl IntoView {
           {move || t("tools.ip3-remove-stage")}
         </Button>
       </div>
-      <div class=format!("{RESULT} tabular-nums") role="status">
+      <div class=format!("{} tabular-nums", result_class()) role="status">
         {move || match outcome.get() {
           Ok(c) => match (c.iip3_dbm, c.oip3_dbm) {
             (Some(iip3), Some(oip3)) => view! {

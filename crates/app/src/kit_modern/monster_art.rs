@@ -367,11 +367,34 @@ mod tests {
   use super::MonsterArt;
   use crate::icons::sprite_exists;
 
-  /// `kit.css` 里的配色块与本文件的 `tone()` 必须一一对得上：
+  /// 现代风 kit 样式的全文：入口（`kit.css`）+ `kit/` 下的分域文件。
+  ///
+  /// 不能只读入口 —— 台账 C4 之后 `kit.css` 只剩 `@import`，规则都在 `kit/*.css` 里。
+  /// 这里读盘而不是 `include_str!`：单元测试跑在宿主上，且分片会继续增加；
+  /// 写死一份文件列表的话，下次拆文件又要改一遍测试（这条测试就是这么坏掉的）。
+  fn modern_kit_css() -> String {
+    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/style/modern");
+    let mut out = std::fs::read_to_string(format!("{root}/kit.css")).unwrap_or_default();
+    let mut files: Vec<std::path::PathBuf> = std::fs::read_dir(format!("{root}/kit"))
+      .into_iter()
+      .flatten()
+      .filter_map(Result::ok)
+      .map(|e| e.path())
+      .filter(|p| p.extension().is_some_and(|x| x == "css"))
+      .collect();
+    files.sort();
+    for f in files {
+      out.push_str(&std::fs::read_to_string(f).unwrap_or_default());
+    }
+    out
+  }
+
+  /// `kit` 样式里的配色块与本文件的 `tone()` 必须一一对得上：
   /// 少了 `[data-tone="…"]` 那条，插画会整块透明（`var()` 取不到值不会报错，只会静默消失）。
   #[test]
   fn every_tone_is_declared_in_kit_css() {
-    const KIT_CSS: &str = include_str!("../../style/modern/kit.css");
+    let kit_css = modern_kit_css();
+    assert!(!kit_css.trim().is_empty(), "读不到现代风 kit 样式");
     for art in [
       MonsterArt::Static,
       MonsterArt::Swr,
@@ -382,7 +405,7 @@ mod tests {
       MonsterArt::Hero,
     ] {
       let selector = format!(".md-mon[data-tone=\"{}\"]", art.tone());
-      assert!(KIT_CSS.contains(&selector), "kit.css 缺 {selector}");
+      assert!(kit_css.contains(&selector), "kit 样式里缺 {selector}");
     }
   }
 

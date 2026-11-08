@@ -217,7 +217,7 @@ pub(super) fn SendTrainer() -> impl IntoView {
           </ChipGroup>
         </div>
 
-        <div class="flex flex-col items-center gap-2 border bg-inset px-4 py-6">
+        <div class=crate::kit::tile_class("flex flex-col items-center gap-2 px-4 py-6")>
           <div class="text-xs text-muted-foreground">{move || t("morse.target")}</div>
           <div class="text-4xl tabular-nums tracking-widest">{move || target.get()}</div>
           <div data-testid="send-marks" class="font-mono text-2xl tracking-[0.3em] text-primary">

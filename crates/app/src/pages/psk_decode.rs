@@ -135,13 +135,10 @@ pub fn PskDecodePage() -> impl IntoView {
           {move || {
             error.get().map(|e| {
               view! {
-                <div class="flex items-start gap-2 border border-destructive/40 bg-destructive/10 p-4 text-hp-text">
-                  <Icon kind=IconKind::AlertCircle class="mt-0.5 size-6 shrink-0" />
-                  <div class="flex-1">
-                    <div>{t("radio.decoding-failed")}</div>
-                    <div class="mt-1 text-sm">{e}</div>
-                  </div>
-                </div>
+                <crate::components::common::ErrorState
+                  title=Signal::derive(move || t("radio.decoding-failed"))
+                  detail=e
+                />
               }
             })
           }}
@@ -161,7 +158,7 @@ pub fn PskDecodePage() -> impl IntoView {
                       {t("radio.choose-another")}
                     </Button>
                   </div>
-                  <pre class="whitespace-pre-wrap break-words border bg-inset p-4 text-sm font-mono">{text}</pre>
+                  <pre class=crate::kit::tile_class("whitespace-pre-wrap break-words p-4 text-sm font-mono")>{text}</pre>
                 </div>
               }
             })

@@ -503,22 +503,33 @@ pub fn PracticePage() -> impl IntoView {
         .into_any();
     }
     if store.len() == 0 {
+      // 两种「没有题」都走空态组件（台账 A3）：`unseen_only` 是「全做完了」——
+      // 给一个回到全部题目的出口；其余是题库不可用，只说明、不给按钮。
       if unseen_only.get() {
         return view! {
           <PageContainer class="space-y-0">
-            <div class="p-6">
-              {move || t("exam.you-ve-completed-all")}
-              <button type="button" class="ml-2 text-primary underline-offset-4 hover:underline" on:click=move |_| unseen_only.set(false)>
-                {move || t("exam.practice-all")}
-              </button>
-            </div>
+            <crate::components::common::EmptyState
+              title=Signal::derive(move || t("exam.you-ve-completed-all"))
+              actions=ViewFn::from(move || {
+                view! {
+                  <crate::ui::Button
+                    variant=crate::ui::Variant::Text
+                    on_click=Callback::new(move |_| unseen_only.set(false))
+                  >
+                    {move || t("exam.practice-all")}
+                  </crate::ui::Button>
+                }
+              })
+            />
           </PageContainer>
         }
         .into_any();
       }
       return view! {
         <PageContainer class="space-y-0">
-          <div class="p-6">{move || t("exam.question-bank-unavailable-or")}</div>
+          <crate::components::common::EmptyState
+            title=Signal::derive(move || t("exam.question-bank-unavailable-or"))
+          />
         </PageContainer>
       }
       .into_any();

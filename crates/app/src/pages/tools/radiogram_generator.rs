@@ -316,7 +316,7 @@ pub fn RadiogramGenerator() -> impl IntoView {
           let miss = missing.get();
           if miss.is_empty() {
             view! {
-              <pre class="overflow-x-auto border bg-inset p-4 font-mono text-sm leading-relaxed">
+              <pre class=crate::kit::tile_class("overflow-x-auto p-4 font-mono text-sm leading-relaxed")>
                 {output.get()}
               </pre>
             }
@@ -324,7 +324,7 @@ pub fn RadiogramGenerator() -> impl IntoView {
           } else {
             let names = miss.iter().map(|k| k.label()).collect::<Vec<_>>().join(", ");
             view! {
-              <div class="border bg-inset p-4 text-sm text-muted-foreground">
+              <div class=crate::kit::tile_class("p-4 text-sm text-muted-foreground")>
                 {tf("tools.radiogram-missing-fields", &[&names])}
               </div>
             }

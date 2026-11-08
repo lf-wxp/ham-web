@@ -4,6 +4,7 @@ use ham_web_core::award_apply::{ApplyVia, dxcc_record_sheet, to_csv};
 use ham_web_core::logbook::LogEntry;
 use leptos::prelude::*;
 
+use crate::components::common::EmptyState;
 use crate::i18n::{localized_name, t, tp};
 use crate::ui::{
   Button, Size, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Variant,
@@ -56,9 +57,7 @@ pub(super) fn DxccApplySheet(
           rows.with_value(|rows| {
             if rows.is_empty() {
               return view! {
-                <p class="bg-inset px-3 py-2 text-sm text-muted-foreground">
-                  {move || t("log.apply-sheet-empty")}
-                </p>
+                <EmptyState plain=true title=Signal::derive(move || t("log.apply-sheet-empty")) />
               }
                 .into_any();
             }

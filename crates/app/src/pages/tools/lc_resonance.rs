@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use super::{RESULT, TAU, fmt_num};
+use super::{TAU, fmt_num, result_class};
 use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField};
 use crate::util::unique_id;
@@ -40,7 +40,7 @@ pub(super) fn LcResonance() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class=RESULT>
+      <div class=result_class()>
         {move || {
           let lc = inductance.get() * capacitance.get();
           let f = if lc > 0.0 { (1000.0 / TAU) / lc.sqrt() } else { 0.0 };

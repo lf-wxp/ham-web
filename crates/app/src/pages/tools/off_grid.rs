@@ -3,7 +3,7 @@
 use ham_web_core::off_grid::{self, OffGridInput};
 use leptos::prelude::*;
 
-use super::RESULT;
+use super::result_class;
 use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField};
 use crate::util::unique_id;
@@ -68,7 +68,7 @@ pub(super) fn OffGrid() -> impl IntoView {
         <NumberField id=controller_eff_id.clone() value=Signal::derive(move || controller_eff.get()) on_change=Callback::new(move |v: String| controller_eff.set(v)) step=5.0 controls=false />
       </Field>
 
-      <div class=format!("{RESULT} space-y-1 tabular-nums")>
+      <div class=format!("{} space-y-1 tabular-nums", result_class())>
         {move || {
           let (Ok(pw), Ok(ps), Ok(ld), Ok(cap), Ok(vv)) = (
             panel.get().trim().parse::<f64>(),

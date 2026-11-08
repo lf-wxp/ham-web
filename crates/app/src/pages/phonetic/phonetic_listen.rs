@@ -61,7 +61,7 @@ pub(super) fn PhoneticListen() -> impl IntoView {
         <span class="ml-2 text-xs font-normal text-muted-foreground">{move || t("morse.play-the-word-and")}</span>
       </h2>
       <div class="space-y-4 p-4">
-        <div class="flex flex-col items-center gap-2 border bg-inset px-4 py-6">
+        <div class=crate::kit::tile_class("flex flex-col items-center gap-2 px-4 py-6")>
           <div class="text-xs text-muted-foreground">{move || t("morse.tap-to-play-a")}</div>
           <Button on_click=Callback::new(move |_| play())>
             <Icon kind=IconKind::Volume2 class="size-6" />

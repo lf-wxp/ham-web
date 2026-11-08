@@ -132,6 +132,88 @@ pub fn card_class_with(extra: &str) -> String {
   }
 }
 
+/// 内嵌小块（「面板里的一堆小块」）：现代风 `.md-tile`（12px 内距、悬停转橙描边），
+/// 像素风 `border bg-inset p-3`（1px 墨框 + 灰底 + 直角）。
+///
+/// 像素侧的内距按 `extra` 决定：`extra` 自带 `p-*` / `px-*` / `py-*` 时就不再补 `p-3`，
+/// 否则补一个 —— `.md-tile` 自带 12px，与 `p-3` 同值，两套皮肤的内距因此始终一致。
+///
+/// `extra` 只放与风格无关的类（布局、字号、对齐、间距）。**不要**传皮肤专属类名
+/// （`md-*` / `pxl-*`）—— 同一份 DOM 会因此带上对方的记号，`dual_isolation` 会红。
+#[must_use]
+pub fn tile_class(extra: &str) -> String {
+  tile_like(extra, "md-tile")
+}
+
+/// 内嵌面板：现代风 `.md-panel`，像素风 `border bg-inset p-3`。
+///
+/// 与 [`card_class`] 的区别在像素风：卡片是 `pxl-card`（标题栏 + 硬投影），
+/// 这里是「卡片内部再分块」的凹陷块。现代风两者同为 `.md-panel`，只有内距策略不同。
+#[must_use]
+pub fn inset_panel_class(extra: &str) -> String {
+  tile_like(extra, "md-panel")
+}
+
+/// 独立窗体：现代风 `.md-panel`（角标 + 12 圆角），像素风 `pxl-window`（2px 墨框 + 硬投影）。
+#[must_use]
+pub fn window_class() -> &'static str {
+  if is_modern_at_mount() {
+    "md-panel md-panel-flush"
+  } else {
+    "pxl-window"
+  }
+}
+
+/// 等宽读数（时间 / 次数 / 计数）：现代风 `md-stat-text`，像素风 `pxl-stat`。
+///
+/// 与 [`stat_class`] 分开：那是统计格里的**大号数值**（`md-stat-value`，56px 起跳），
+/// 这里是跟随上下文字号的等宽读数。
+#[must_use]
+pub fn stat_text_class(extra: &str) -> String {
+  let extra = extra.trim();
+  if is_modern_at_mount() {
+    crate::cn::cn(&["md-stat-text", extra])
+  } else {
+    crate::cn::cn(&["pxl-stat", extra])
+  }
+}
+
+/// 小标签（波段 / 分组徽记）：现代风 `md-badge`（1px 描边胶囊），像素风凹陷小块。
+///
+/// 不走 `ui::badge_class`：那是 `ui::Badge` 的皮肤，像素侧是 `pxl-badge`（墨框 + 硬投影）；
+/// 这里要的是「安静的信息标签」，一屏几十个都长角会把版式读成表格。
+#[must_use]
+pub fn tag_class(extra: &str) -> String {
+  let extra = extra.trim();
+  if is_modern_at_mount() {
+    crate::cn::cn(&["md-badge", extra])
+  } else {
+    crate::cn::cn(&["border bg-inset px-2.5 py-0.5 text-xs", extra])
+  }
+}
+
+/// [`tile_class`] 与 [`inset_panel_class`] 只差现代风那一侧的首类名，像素侧同为凹陷块。
+fn tile_like(extra: &str, modern: &str) -> String {
+  let extra = extra.trim();
+  if is_modern_at_mount() {
+    crate::cn::cn(&[modern, extra])
+  } else if has_padding(extra) {
+    crate::cn::cn(&["border bg-inset", extra])
+  } else {
+    crate::cn::cn(&["border bg-inset p-3", extra])
+  }
+}
+
+/// `extra` 里是否已经写了内距（含变体前缀，如 `sm:px-4`）。只认 `p` 系列，`space-y-*` 不算。
+fn has_padding(extra: &str) -> bool {
+  extra.split_whitespace().any(|token| {
+    let base = token.rsplit(':').next().unwrap_or(token);
+    ["p-", "px-", "py-", "pt-", "pr-", "pb-", "pl-", "ps-", "pe-"]
+      .iter()
+      .any(|prefix| base.starts_with(prefix))
+  })
+}
+
 /// 「复选框 / 单选 + 文字」的一行：现代风 `.md-check-row`，像素风沿用工具类。
 #[must_use]
 pub fn check_row_class() -> &'static str {

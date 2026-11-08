@@ -152,16 +152,10 @@ pub fn WefaxDecoderPage() -> impl IntoView {
           {move || {
             error.get().map(|e| {
               view! {
-                <div
-                  role="alert"
-                  class="flex items-start gap-2 border border-destructive/40 bg-destructive/5 p-4 text-hp-text"
-                >
-                  <Icon kind=IconKind::AlertCircle class="mt-0.5 size-6 shrink-0" />
-                  <div class="flex-1">
-                    <div>{move || t("radio.decoding-failed")}</div>
-                    <div class="mt-1 text-sm">{e}</div>
-                  </div>
-                </div>
+                <crate::components::common::ErrorState
+                  title=Signal::derive(move || t("radio.decoding-failed"))
+                  detail=e
+                />
               }
             })
           }}
@@ -179,16 +173,10 @@ pub fn WefaxDecoderPage() -> impl IntoView {
                   Err(e) => {
                     view! {
                       <div class="space-y-4">
-                        <div
-                          role="alert"
-                          class="flex items-start gap-2 border border-destructive/40 bg-destructive/5 p-4 text-hp-text"
-                        >
-                          <Icon kind=IconKind::AlertCircle class="mt-0.5 size-6 shrink-0" />
-                          <div class="flex-1">
-                            <div>{move || t("radio.decoding-failed")}</div>
-                            <div class="mt-1 text-sm">{e}</div>
-                          </div>
-                        </div>
+                        <crate::components::common::ErrorState
+                          title=Signal::derive(move || t("radio.decoding-failed"))
+                          detail=e
+                        />
                         <div class="flex justify-center">
                           <Button variant=Variant::Outline on_click=move |_| reset(())>
                             <Icon kind=IconKind::RefreshCw class="size-6" />

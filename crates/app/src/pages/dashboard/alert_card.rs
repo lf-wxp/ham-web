@@ -47,7 +47,14 @@ pub(super) fn AlertCard() -> impl IntoView {
             <span class="font-mono text-sm text-muted-foreground">{a.product_id.clone()}</span>
           }
           .into_any(),
-          None if loading.get() => view! { <span class="text-sm text-muted-foreground">{move || t("learning.loading")}</span> }.into_any(),
+          None if loading.get() => {
+            view! {
+              <crate::components::common::LoadingBlock
+                label=Signal::derive(move || t("learning.loading"))
+              />
+            }
+              .into_any()
+          }
           None => view! { <span class="text-sm text-muted-foreground">{move || t("learning.no-active-alerts")}</span> }.into_any(),
         }}
       </div>

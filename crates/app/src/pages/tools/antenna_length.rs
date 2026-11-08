@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_num};
+use super::{fmt_num, result_class};
 use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField};
 use crate::util::unique_id;
@@ -25,7 +25,7 @@ pub(super) fn AntennaLength() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class=RESULT>
+      <div class=result_class()>
         {move || {
           let f = freq.get();
           if f <= 0.0 {

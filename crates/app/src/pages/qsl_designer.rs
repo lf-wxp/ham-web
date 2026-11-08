@@ -440,7 +440,7 @@ pub fn QslDesignerPage() -> impl IntoView {
             // 预览 + 导出 / 打印
             <section class=crate::kit::card_pad_class()>
               <h2 class=card_title_class("mb-3")>{move || t("log.preview")}</h2>
-              <div class="overflow-hidden border bg-inset p-2">
+              <div class=crate::kit::tile_class("overflow-hidden p-2")>
                 <img
                   src=move || preview.get()
                   alt=move || t("log.qsl-card-preview")

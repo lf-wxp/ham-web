@@ -11,19 +11,19 @@ pub(super) fn GridStatsBar(state: GridMapState) -> impl IntoView {
   view! {
     // 统计概览徽章 + 复制摘要
     <div class="mb-2 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-      <span class="border bg-inset px-2 py-0.5">
+      <span class=crate::kit::tile_class("px-2 py-0.5")>
         "field " <span class="tabular-nums">{move || state.field_grids.get().len()}</span>
       </span>
-      <span class="border bg-inset px-2 py-0.5">
+      <span class=crate::kit::tile_class("px-2 py-0.5")>
         "square " <span class="tabular-nums">{move || state.square_entries.get().len()}</span>
       </span>
-      <span class="border bg-inset px-2 py-0.5">
+      <span class=crate::kit::tile_class("px-2 py-0.5")>
         {move || t("log.grid")} " " <span class="tabular-nums">{move || state.grid_count.get()}</span>
       </span>
-      <span class="border bg-inset px-2 py-0.5">
+      <span class=crate::kit::tile_class("px-2 py-0.5")>
         "DXCC " <span class="tabular-nums">{move || state.dxcc_count.get()}</span>
       </span>
-      <span class="border bg-inset px-2 py-0.5">
+      <span class=crate::kit::tile_class("px-2 py-0.5")>
         "QSL "
         <span class="tabular-nums text-win-text">
           {move || state.qsl_confirmed_count.get()}

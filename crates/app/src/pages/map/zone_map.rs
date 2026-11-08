@@ -70,8 +70,11 @@ pub fn ZoneMap(
     {move || match load.get() {
       LoadState::Loading => {
         view! {
-          <div class="py-12 text-center text-sm text-muted-foreground">
-            {move || t("radio.loading-map-data")}
+          <div class="py-6">
+            <crate::components::common::LoadingBlock
+              tall=true
+              label=Signal::derive(move || t("radio.loading-map-data"))
+            />
           </div>
         }
         .into_any()

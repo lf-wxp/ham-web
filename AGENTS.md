@@ -13,7 +13,7 @@
   两者不共享类名与 token。→ [`docs/ui/decisions.md`](docs/ui/decisions.md) §3
 - **界面控件只有一套来源：`crates/app/src/ui/`。** 页面里不写原生 `<input>` / `<select>` / `<textarea>`，不新增本地 `const INPUT` / `CHIP_ON`，
   不直接调类名工厂；`grep -rn "刻意的例外" crates/app/src` 列全仅有的例外。→ [`docs/ui/pixel.md`](docs/ui/pixel.md) §10
-- **页面宽度只有一个来源**：`PageHeader` 与 `PageContainer` 里的 `max-w-5xl`。页面里不写 `max-w-*` / `container` / 自造的 `mx-auto` 宽度容器。
+- **页面宽度只有一个来源**：`PageHeader` 与 `PageContainer` 里的 `max-w-5xl`，值由 `style/input.css` 的 `--page-max` 决定（现代风的 `--md-page-max` 取同一个变量，顶栏也用它 —— 两套皮肤版心同宽）。页面里不写 `max-w-*` / `container` / 自造的 `mx-auto` 宽度容器。
   → [`docs/ui/pixel.md`](docs/ui/pixel.md) §4 · [`docs/ui/modern.md`](docs/ui/modern.md) §3
 - **风格派发不许在组件体里订阅信号**：组件体用 `kit::is_modern_at_mount()`，`kit::is_modern()` 只留给 `view!` 属性闭包 / `move ||`，
   且那个闭包要交给 `view!` 渲染（写 `{f}`，不写 `{f()}`）。dev 构建的 `you access a RwSignal<UiStyle> outside a reactive tracking context`
@@ -25,7 +25,7 @@
 - **页面级动效只有一条来源**：逐页动作写在 `interaction.css` 的 `#route-content[data-sig="…"]` 分支；新增路由必须在
   `PageSignature::paths` 里挑一个签名（漏了 `cargo test` 会红）。→ [`docs/ui/interaction.md`](docs/ui/interaction.md) §6.1
 - **页内第二根吸顶栏只有一个来源**：`StickyPanel`；页面里不手写 `sticky top-[…px]`。→ [`docs/ui/pixel.md`](docs/ui/pixel.md) §4、§11
-- **现代风 CSS**：视口断点只有五档（480 / 640 / 720 / 900 / 1024）外加 dock 与页内菜单按钮的 768，窄屏档写 640 不写 639；同一底边只允许一层固定层；
+- **现代风 CSS**：视口断点只有五档（480 / 640 / 720 / 900 / 1024）外加外壳的两个 —— dock 与页内菜单按钮的 768、顶栏品牌文字折叠的 360，窄屏档写 640 不写 639；同一底边只允许一层固定层；
   状态色只走 token 不写字面色值；`:has()` 不能决定版式。→ [`docs/ui/modern.md`](docs/ui/modern.md) §2.1、§3、§6.5
 - **加 / 删现代风 `md-*` 类名要同步改 [`docs/ui/modern-classes.md`](docs/ui/modern-classes.md)**（`check-structure` 精确双向校验）。
 

@@ -73,8 +73,9 @@ test("练习：切到随机题序且有作答时先确认", async ({ page }) => 
   await expect(page.getByText(/第 1 \/ \d+ 题/).first()).toBeVisible();
   await option(page, "A").click();
 
-  await page.getByRole("button", { name: "设置" }).first().click();
-  const settings = page.getByRole("dialog", { name: "设置" });
+  // 页内「设置」而不是顶栏的「通用设置」：`main` 限定 + `exact` 才唯一。
+  await page.locator("main").getByRole("button", { name: "设置", exact: true }).click();
+  const settings = page.getByRole("dialog", { name: "设置", exact: true });
   await expect(settings).toBeVisible();
   await settings.getByRole("radio", { name: "随机" }).click();
 

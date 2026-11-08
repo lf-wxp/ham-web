@@ -63,10 +63,28 @@ html[data-ui-style="modern"][data-scheme] body {
   --ring: var(--md-ring);
   --destructive: var(--md-danger-fill);
   --destructive-foreground: var(--md-danger-fill-fg);
+  /* 图表色阶（`bg-chart-N` / `text-chart-N`，太阳耀斑等级与波段标签在用）。
+     像素风的 `--chart-N` 由 8 套配色方案各自给值，现代风没有对应语义 —— 不映射就会在
+     现代页面里出现「某个复古方案的蓝绿」。注意覆盖的是 **`--chart-N`** 而不是
+     `--color-chart-N`：后者在 `@theme inline` 里，值已被内联进工具类（同 C7 的坑）。 */
+  --chart-1: var(--md-blue);
+  --chart-2: var(--md-green);
+  --chart-3: var(--md-violet);
+  --chart-4: var(--md-warn-fill);
+  --chart-5: var(--md-accent);
+  /* 血 / 经验 / 金 / 胜 四族语义色（`bg-hp` / `text-gold` / `border-win` …）。
+     像素风在 `@theme inline` 里把工具类内联成 `var(--hp-fill)` / `var(--hp-ink)`，
+     这里给这两个名字换成现代 token —— 覆盖面是**所有**透明度档（`bg-win/20` 也生效），
+     不必逐个类名枚举。填充走实心档，文字走 `-ink`（AA）。 */
+  --hp-fill: var(--md-danger-fill);
+  --xp-fill: var(--md-blue);
+  --gold-fill: var(--md-gold);
+  --win-fill: var(--md-green);
+  --hp-ink: var(--md-danger-ink);
+  --xp-ink: var(--md-blue-ink);
+  --gold-ink: var(--md-gold-ink);
+  --win-ink: var(--md-green-ink);
   /* 字体不在这一层换：见文件下方对 `.font-sans` / `.font-mono` 的逐类覆盖。 */
-  /* 血量 / 胜利语义色（`text-hp-text` / `text-win-text`）：同样是变量层替换。 */
-  --color-hp-text: var(--md-danger-ink);
-  --color-win-text: var(--md-green);
 }
 
 /* `text-primary` 在现代风里用墨色而不是橙：行动橙是「平涂的主 CTA」，不是「高亮文字」——

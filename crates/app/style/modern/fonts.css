@@ -37,3 +37,20 @@
    size-adjust 不动：Plex 的字宽是 0.6em，Menlo 0.602em、Consolas 0.55em，
    差值落在半个像素内，逐档校准只会在换字体时引入新的跳变。 */
 @font-face { font-family: "Plex Mono Fallback"; src: local("Menlo"), local("Consolas"), local("DejaVu Sans Mono"), local("Liberation Mono"), local("Courier New"); ascent-override: 102.5%; descent-override: 27.5%; line-gap-override: 0%; }
+
+/* 中文展示字的度量对齐回退（台账 F1）。
+   `Noto Sans SC Display` 的第 0 片虽然预载（约 103KB），仍要等它到才能用；在那之前标题按
+   系统黑体排版。实测行盒：Noto **1.50em** vs PingFang / HarmonyOS / MiSans / 雅黑 **1.40em**
+   —— 36px 的标题每行差 3.6px，三行就是 10px 的位移（CLS）。这里把系统黑体的行盒覆盖到
+   1.50em（1.16 + 0.34，与 Noto 的 hhea 一致），字体到位时不再跳。
+   字宽不用管：汉字在两者里都是 1em 前进宽度，换字体只影响行高。 */
+@font-face {
+  font-family: "Noto Sans SC Display Fallback";
+  /* macOS 的 `local()` 只认 **PostScript 名**：`local("PingFang SC")` 匹配不到（静默失效），
+     `local("PingFangSC-Regular")` 才行。两个都写上，谁命中算谁。 */
+  src: local("PingFangSC-Regular"), local("PingFang SC Regular"), local("PingFangSC-Medium"),
+    local("HarmonyOS Sans SC"), local("MiSans"), local("Microsoft YaHei");
+  ascent-override: 116%;
+  descent-override: 34%;
+  line-gap-override: 0%;
+}

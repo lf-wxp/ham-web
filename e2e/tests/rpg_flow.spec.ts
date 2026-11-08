@@ -152,14 +152,14 @@ test.describe("怪物图鉴", () => {
   });
 });
 
-test.describe("外观与动效设置", () => {
+test.describe("通用设置", () => {
   test("像素动效 / 易读字体：写入偏好、作用于 <html>、刷新后保留", async ({ page }) => {
     await page.goto("/");
     const html = page.locator("html");
     await expect(html).toHaveAttribute("data-pixel-motion", "on");
 
-    await page.getByRole("button", { name: "外观与动效" }).first().click();
-    const dialog = page.getByRole("dialog", { name: "外观与动效" });
+    await page.getByRole("button", { name: "通用设置" }).first().click();
+    const dialog = page.getByRole("dialog", { name: "通用设置" });
     await dialog.getByRole("switch", { name: "像素动效" }).click();
     await dialog.getByRole("switch", { name: "易读字体" }).click();
     await expect(html).toHaveAttribute("data-pixel-motion", "off");
@@ -228,7 +228,7 @@ test.describe("手机底部 Tab", () => {
   });
 });
 
-// 现有的 `i18n_layout.spec.ts` 只在 1280px 量：手机与平板宽度下顶栏（品牌 + 语言 + HUD + 汉堡）
+// 现有的 `i18n_layout.spec.ts` 只在 1280px 量：手机与平板宽度下顶栏（品牌 + 搜索 + 设置 + HUD + 汉堡）
 // 在西语 / 英语里最容易被撑出屏幕，曾经 320–768px 多个宽度都溢出过。
 test.describe("顶栏：各宽度 × 各语言都不撑出屏幕", () => {
   for (const lang of ["zh", "en", "es"]) {

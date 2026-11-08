@@ -50,7 +50,11 @@ pub(in crate::pages::backup) fn AccountPanel(
   });
 
   view! {
-    <div class="space-y-3 border bg-inset p-3" data-testid="account-panel">
+    // 现代风是页面里的一张 `.md-panel`；像素风保持原来的 inset 块（卡片内嵌，版式冻结）。
+    <div
+      class=crate::kit::inset_panel_class("space-y-3")
+      data-testid="account-panel"
+    >
       // 与 `RemoteSyncPanel` 同一写法：像素风保持 `pxl-label`，现代风换区块标题。
       <h2 class=if crate::kit::is_modern_at_mount() { "md-section-title" } else { "pxl-label text-base" }>
         {move || t("tools.account-title")}

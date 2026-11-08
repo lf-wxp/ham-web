@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_num};
+use super::{fmt_num, result_class};
 use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField};
 use crate::util::unique_id;
@@ -47,7 +47,7 @@ pub(super) fn SwrConverter() -> impl IntoView {
           controls=false
         />
       </Field>
-      <div class=RESULT>
+      <div class=result_class()>
         {move || {
           let s = swr.get();
           let gamma = (s - 1.0) / (s + 1.0);

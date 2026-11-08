@@ -21,6 +21,11 @@ pub(super) fn AccountAuthForm(registration_open: bool) -> impl IntoView {
   let name_error = RwSignal::new(String::new());
   let pass_error = RwSignal::new(String::new());
   let alive = StoredValue::new(crate::util::mount_guard());
+  let login_variant = if crate::kit::is_modern_at_mount() {
+    Variant::Outline
+  } else {
+    Variant::Default
+  };
 
   let submit = move |register: bool| {
     if working.get_untracked() {
@@ -113,8 +118,10 @@ pub(super) fn AccountAuthForm(registration_open: bool) -> impl IntoView {
         />
       </Field>
       <div class="flex flex-wrap items-center gap-2">
+        // 现代风一整页只有「导出备份」是实心（`modern.md` §4.1）：登录在整页尺度上与
+        // 「注册新账号」同级，降一档到描边。像素风表单没有这条约束，保留实心主按钮。
         <Button
-          variant=Variant::Default
+          variant=login_variant
           class=crate::kit::btn_wrap_class()
           loading=working
           on_click=Callback::new(move |()| submit(false))

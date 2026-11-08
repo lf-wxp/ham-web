@@ -40,7 +40,12 @@ pub(super) fn SpotsCard() -> impl IntoView {
       <div class="mt-2 space-y-1">
         {move || {
           if loading.get() {
-            return view! { <div class="text-sm text-muted-foreground">{move || t("learning.loading")}</div> }.into_any();
+            return view! {
+              <crate::components::common::LoadingBlock
+                label=Signal::derive(move || t("learning.loading"))
+              />
+            }
+            .into_any();
           }
           let list = spots.get();
           if list.is_empty() {

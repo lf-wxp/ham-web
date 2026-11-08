@@ -4,7 +4,7 @@ use ham_web_core::component_codes;
 use ham_web_core::unit_math::format_capacitance_f;
 use leptos::prelude::*;
 
-use super::RESULT_INLINE;
+use super::result_inline_class;
 use crate::i18n::t;
 use crate::ui::{Field, Input, InputType};
 use crate::util::unique_id;
@@ -28,7 +28,7 @@ pub(super) fn CapacitorCode() -> impl IntoView {
           kind=InputType::Text
         />
       </Field>
-      <div class=RESULT_INLINE>
+      <div class=result_inline_class()>
         {move || match component_codes::capacitor_code(&code.get()) {
           Some(c) => {
             let mut out = format_capacitance_f(c.farads);

@@ -269,7 +269,7 @@ export function mistakeRecord(question: Record<string, unknown>) {
  * 弹层式下拉（`ui::Select` / `ui::SimpleSelect`）：点触发器 → 在弹层里点选项。
  *
  * 它们不是原生 `<select>`，因此 `selectOption()` 用不了，必须走 `role=combobox` +
- * `role=option` 这条路径（与导航栏语言切换一致，见 navigation.spec.ts）。
+ * `role=option` 这条路径（日志页的两个筛选器即为此，见 select.spec.ts）。
  */
 export async function pickOption(
   page: Page,

@@ -1,0 +1,318 @@
+/* ============================================================
+   全站目录面板（「更多」）
+   ------------------------------------------------------------
+   原 `kit.css` 第 4339–4658 行（5/11 段，台账 C4 的分域拆分）。
+
+   **顺序即级联**：本目录下的文件由 `../kit.css` 按 01→11 顺序 `@import`，
+   同名 `@layer components` 按这个顺序拼接。**不要按主题重排文件**：同层同优先级的
+   规则靠源顺序决胜负，换顺序会悄悄改掉某个组件的最终取值。新增样式追加到对应
+   主题文件的末尾；跨主题的新组件另起文件并追加到 `@import` 列表**末尾**。
+   ============================================================ */
+
+/* ============================================================
+   全站目录（「更多」面板）
+   ============================================================ */
+@layer components {
+  .md-menu-panel {
+    width: min(620px, 100%);
+  }
+
+  /* 搜索框做成「字段」而不是「一条通栏」：
+     原来容器只有 padding，输入框本身没有内距，聚焦环会直接贴住占位文字与左右图标。
+     现在整块是一个圆角字段（内距给文字、外边距给面板），聚焦环画在字段上。 */
+  .md-menu-search {
+    display: flex;
+    align-items: center;
+    gap: var(--md-space-2);
+    margin: 12px 16px 10px;
+    padding: 0 10px;
+    height: 40px;
+    border: 1px solid var(--md-border);
+    border-radius: var(--md-r-md);
+    background-color: var(--md-surface-2);
+    color: var(--md-fg-muted);
+    transition:
+      border-color var(--md-dur-fast) var(--md-ease),
+      box-shadow var(--md-dur-fast) var(--md-ease);
+  }
+
+  .md-menu-search:hover {
+    border-color: var(--md-border-strong);
+  }
+
+  .md-menu-search:focus-within {
+    border-color: var(--md-ring);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-ring) 22%, transparent);
+  }
+
+  .md-menu-search > svg {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+  }
+
+  .md-menu-input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding-inline: var(--md-space-1-5);
+    border: 0;
+    background: transparent;
+    color: var(--md-fg);
+    font-family: inherit;
+    font-size: var(--md-text-base);
+    outline: none;
+    box-shadow: none;
+  }
+
+  /* 聚焦环画在字段上（`:focus-within`），输入框自己不再画：
+     `.md-root :focus-visible` 的优先级比单类高，必须用同等选择器覆盖。 */
+  .md-root .md-menu-search .md-menu-input:focus,
+  .md-root .md-menu-search .md-menu-input:focus-visible,
+  .md-menu-search .md-menu-input:focus,
+  .md-menu-search .md-menu-input:focus-visible {
+    outline: none;
+    box-shadow: none;
+    border-radius: var(--md-r-sm);
+  }
+
+  /* 原生 search 的清除按钮在深色底上是黑的，现代风交给字段自己的交互 */
+  .md-menu-input::-webkit-search-cancel-button {
+    appearance: none;
+  }
+
+  .md-menu-body {
+    padding: 4px 16px 16px;
+    /* 滚动线索用**滚动条本身**，不再用 `background-attachment: local` 画上下渐隐：
+       那两条 14px 的渐变贴在滚动区上下沿，上面那条正好落在搜索框下方，看起来就是
+       「搜索框自带一个阴影」—— 一个并非有意、也说不清来路的装饰。
+       面板本来就带原生细滚动条（`.md-menu-body` 的 `overflow-y: auto`），够提示「下面还有」。 */
+  }
+
+  .md-menu-section + .md-menu-section {
+    margin-top: var(--md-space-1-5);
+    padding-top: var(--md-space-1-5);
+    border-top: 1px solid var(--md-border);
+  }
+
+  .md-menu-count {
+    margin-inline-start: 8px;
+    font-family: var(--md-font-mono);
+    font-size: var(--md-text-3xs);
+    /* 11px 小字需 ≥4.5:1：`--md-fg-muted` + 70% 不透明度只有 3.59 */
+    color: color-mix(in srgb, var(--md-fg) 76%, var(--md-surface));
+  }
+
+  /* 两列密排：170+ 页面用单列会滚很久。 */
+  .md-menu-grid {
+    display: grid;
+    gap: 2px 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* 目录面板经 Portal 挂在 body 上，祖先里没有任何 `container-type` 容器，
+     写成 `@container` 永远不会命中（手机上菜单一直是两列）。面板宽度本来就等于视口宽度，
+     直接用视口断点。 */
+  @media (width < 640px) {
+    .md-menu-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
+
+@layer components {
+  /* 卫星：缓慢上下漂浮，像在轨道上飘。 */
+  .md-sat {
+    animation: md-sat-float 7s var(--md-ease) infinite alternate;
+  }
+
+  @keyframes md-sat-float {
+    from {
+      transform: translateY(-3px);
+    }
+    to {
+      transform: translateY(3px);
+    }
+  }
+
+  /* EME 链路：虚线朝月球方向流动，回波更慢、更淡。 */
+  .md-eme {
+    stroke-dasharray: 5 9;
+    animation: md-eme-travel 5s linear infinite;
+  }
+
+  .md-eme-back {
+    animation-duration: 7s;
+    animation-direction: reverse;
+  }
+
+  @keyframes md-eme-travel {
+    to {
+      stroke-dashoffset: -140;
+    }
+  }
+
+  .md-moon-disc {
+    animation: md-moon-pulse 9s var(--md-ease) infinite alternate;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  @keyframes md-moon-pulse {
+    from {
+      opacity: 0.75;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .md-sat,
+    .md-eme,
+    .md-moon-disc {
+      animation: none;
+    }
+  }
+}
+
+@layer components {
+  /* 全站目录的一条入口：分组图标 + 页面名。 */
+  .md-menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--md-space-2);
+    padding: var(--md-space-1-5) var(--md-space-1);
+    margin-inline: -4px;
+    border-radius: var(--md-r-xs);
+    color: var(--md-fg-muted);
+    font-size: var(--md-text-sm);
+    line-height: 1.45;
+    transition: color var(--md-dur-fast) var(--md-ease);
+  }
+
+  /* 触屏：一行只有 32px 上下，点不准。与 `.md-drawer-item` 同一个 44px 下限，鼠标环境版式不变。 */
+  @media (pointer: coarse) {
+    .md-menu-item {
+      min-height: 44px;
+    }
+  }
+
+  .md-menu-icon-sm {
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+    color: var(--md-fg-muted);
+    opacity: 0.75;
+    transition: color var(--md-dur-fast) var(--md-ease);
+  }
+
+  /* 悬停只在真有悬停的设备上生效：触屏点一下之后悬停态会一直粘着，像是「选中了」。 */
+  @media (hover: hover) {
+    .md-menu-item:hover {
+      color: var(--md-orange);
+      background-color: var(--md-surface-2);
+    }
+
+    .md-menu-item:hover .md-menu-icon-sm {
+      color: var(--md-orange);
+      opacity: 1;
+    }
+  }
+}
+
+/* ============================================================
+   评审修正：移动端信息条、浅色对比、翻页箭头、判分反馈
+   ============================================================ */
+
+/* 1) 手机首屏玻璃条：之前 390px 下「0 / 80」「连续 0 天」被挤成两行。
+      收窄刻度盘、隐藏标签只留数值、禁止换行。 */
+@media (width < 640px) {
+  .md-hero-stat {
+    gap: var(--md-space-2-5);
+    padding: var(--md-space-2-5) var(--md-space-3);
+    max-width: calc(100% - 4px);
+  }
+
+  .md-hero-stat .md-stat-label {
+    display: none;
+  }
+
+  .md-hero-stat .md-mono {
+    white-space: nowrap;
+    font-size: var(--md-text-sm);
+  }
+
+  .md-hero-stat-divider {
+    height: 20px;
+  }
+
+  .md-dial-sm {
+    width: 68px;
+    height: 68px;
+  }
+
+  .md-dial-sm .md-dial-value {
+    font-size: 14px;
+  }
+}
+
+/* 2) 浅色模式下主视觉偏淡：塔与月亮的线在米白底上对比不足。 */
+html[data-ui-style="modern"]:not(.dark) .md-hero-art svg {
+  filter: saturate(1.15) contrast(1.08);
+}
+
+html[data-ui-style="modern"]:not(.dark) .md-dial-tick {
+  opacity: 0.8;
+}
+
+html[data-ui-style="modern"]:not(.dark) .md-dial-tick[data-major="true"] {
+  stroke: var(--md-fg);
+  opacity: 0.75;
+}
+
+/* 3) 翻页箭头：在深色底上几乎看不见，补一层可读的"实体"感。 */
+.md-rail-btn {
+  background-color: color-mix(in srgb, var(--md-surface) 88%, transparent);
+  border-color: var(--md-border-strong);
+  color: var(--md-fg-muted);
+}
+
+.md-rail-btn:hover:not(:disabled) {
+  color: var(--md-fg);
+  border-color: var(--md-fg-muted);
+}
+
+/* 4) 判分结论出现时给一次「落定」的动效：位移 + 描边闪烁，眼睛才被拉过去。 */
+@keyframes md-verdict-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.md-verdict {
+  animation: md-verdict-in 320ms var(--md-ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-verdict {
+    animation: none;
+  }
+}
+
+/* 浅色模式再压一档：极光弱一点、线稿粗一点，主视觉才不会糊在底上。 */
+html[data-ui-style="modern"]:not(.dark) .md-aurora {
+  opacity: 0.3;
+}
+
+html[data-ui-style="modern"]:not(.dark) .md-hero-art svg path,
+html[data-ui-style="modern"]:not(.dark) .md-hero-art svg circle,
+html[data-ui-style="modern"]:not(.dark) .md-hero-art svg rect {
+  stroke-width: 1.6;
+}
+

@@ -197,7 +197,11 @@ pub fn LrptDecoderPage() -> impl IntoView {
                   <img
                     src=p.image_url.clone()
                     alt=t("tools.lrpt-decoder")
-                    class="w-full border bg-inset"
+                    class=if crate::kit::is_modern_at_mount() {
+                      "w-full md-tile"
+                    } else {
+                      "w-full border bg-inset"
+                    }
                   />
                 </div>
               }

@@ -105,9 +105,25 @@ fn fmt_resistance(ohm: f64) -> String {
 const TAU: f64 = std::f64::consts::TAU;
 
 /// 结果区（只读，不是表单控件）。
-const RESULT: &str = "sm:col-span-2 bg-inset px-3 py-2 text-sm text-muted-foreground";
+///
+/// 两套皮肤各一份取值，**不能只追加一个 `md-*` 类名**：`bg-inset` / `text-sm` 是工具类，
+/// 层优先级高于现代风的组件层，会把读数条的底色与字号抢回去（台账 L1）。
+/// 现代风换成 `.md-readout`：左 2px 行动色规则线 + 等宽数字，与可编辑的 `.md-input` 一眼可分。
+pub(super) fn result_class() -> &'static str {
+  if crate::kit::is_modern_at_mount() {
+    "md-readout sm:col-span-2"
+  } else {
+    "sm:col-span-2 bg-inset px-3 py-2 text-sm text-muted-foreground"
+  }
+}
 
-/// 结果区（单列布局用）：与 [`RESULT`] 同一套底色 / 内距 / 字号，但不跨列。
+/// 结果区（单列布局用）：与 [`result_class`] 同一套底色 / 内距 / 字号，但不跨列。
 ///
 /// 单列网格里写 `sm:col-span-2` 会凭空长出第二列，所以单列工具（代码解码这类）用这一份。
-const RESULT_INLINE: &str = "bg-inset px-3 py-2 text-sm tabular-nums text-muted-foreground";
+pub(super) fn result_inline_class() -> &'static str {
+  if crate::kit::is_modern_at_mount() {
+    "md-readout md-readout-inline"
+  } else {
+    "bg-inset px-3 py-2 text-sm tabular-nums text-muted-foreground"
+  }
+}

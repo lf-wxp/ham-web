@@ -3,7 +3,7 @@ use ham_web_core::duty_power::{
 };
 use leptos::prelude::*;
 
-use super::{RESULT, fmt_num};
+use super::{fmt_num, result_class};
 use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField, SelectOption, SimpleSelect};
 use crate::util::unique_id;
@@ -201,7 +201,7 @@ pub(super) fn DutyPower() -> impl IntoView {
           .into_any()
         }
       }}
-      <div class=format!("{RESULT} tabular-nums") role="status">
+      <div class=format!("{} tabular-nums", result_class()) role="status">
         {move || match outcome.get() {
           Ok(o) => view! {
             <div class="text-foreground">

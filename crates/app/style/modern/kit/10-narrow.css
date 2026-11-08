@@ -1,0 +1,395 @@
+/* ============================================================
+   窄屏控件收敛（≤640 字号 / 粗指针命中区）与转圈图标
+   ------------------------------------------------------------
+   原 `kit.css` 第 8888–9271 行（10/11 段，台账 C4 的分域拆分）。
+
+   **顺序即级联**：本目录下的文件由 `../kit.css` 按 01→11 顺序 `@import`，
+   同名 `@layer components` 按这个顺序拼接。**不要按主题重排文件**：同层同优先级的
+   规则靠源顺序决胜负，换顺序会悄悄改掉某个组件的最终取值。新增样式追加到对应
+   主题文件的末尾；跨主题的新组件另起文件并追加到 `@import` 列表**末尾**。
+   ============================================================ */
+
+/* ============================================================
+   窄屏控件收敛（≤640px 的字号 + 粗指针的命中区）
+   ------------------------------------------------------------
+   桌面控件的尺寸是按「指针 + 键盘」定的（34–40px 高、13px 字），到手机上两件事会失真：
+
+   1. **iOS 的聚焦缩放**：`font-size` 小于 16px 的表单控件获得焦点时，Safari 会把
+      整页放大一次，用户得再手动缩回去。这里把输入 / 下拉 / 文本域统一提到 16px ——
+      视觉上只差 3px，换掉的是「每次点输入框整页跳一下」。
+      `.md-palette-input`（17px）与 `.md-menu-input`（16px）本来就在阈值之上，不列。
+   2. **触控命中区**：WCAG 2.5.8 的下限是 24×24，Apple HIG 建议 44。原值里
+      `.md-input-clear` 只有 20、步进与 `.md-icon-btn-xs` 只有 26，属于「看得见、
+      点不准」。`pointer: coarse` 下统一抬一档；鼠标环境不受影响，桌面版式不变。
+
+   为什么放在文件末尾：这些都是「窄屏 / 触屏的追加约束」，必须压过后面对应组件的
+   基础尺寸；同层后写者胜，且仍在 `@layer components` 内，页面工具类照常能覆盖。
+   ============================================================ */
+@layer components {
+  @media (width < 640px) {
+    .md-input,
+    .md-select,
+    .md-textarea {
+      font-size: var(--md-text-base);
+    }
+
+    /* 24 列热力图在 320px 下每格只剩 4px：色阶读不出、焦点环也画不下。
+       这里退回「内容有下限 + 容器横向滚」，和日历热力图（`.md-cal-scroll`）同一套读法：
+       宁可让用户划一下，也不要给一张看不出强弱的图。 */
+    .md-heat {
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      padding-bottom: var(--md-space-0-5);
+    }
+
+    .md-heat-head,
+    .md-heat-row {
+      min-width: 400px;
+    }
+
+    /* 组卷的三个数字输入：320px 下等分成三列时每列不到 90px，
+       数字 + 步进按钮挤在一起。窄屏改成单列，纵向读更清楚。 */
+    .md-input-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* 术语表搜索框的 200px 下限在窄屏会与分类胶囊抢同一行，
+       直接让它独占一行（`flex-basis:100%` 需要父级是 wrap 的 flex）。 */
+    .md-glossary-search {
+      min-width: 0;
+      flex-basis: 100%;
+    }
+
+    /* 统计条（`ModernStatValue` + `.md-strip`）在手机上压成一行：
+       它是「这一屏有多少内容」的注脚，2×2 的大数字要吃掉 190px，
+       把第一张卡推到一屏之外（`/browse`、`/glossary` 都是这个症状）。
+       格数不写死 —— 用 `grid-auto-flow: column`，3 格 / 4 格都并排。 */
+    .md-page > .md-strip {
+      grid-template-columns: none;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(0, 1fr);
+      gap: var(--md-space-2) var(--md-space-3);
+      padding-block: var(--md-space-3) 0;
+    }
+
+    .md-page > .md-strip .md-strip-value {
+      font-size: var(--md-text-xl);
+      letter-spacing: -0.02em;
+    }
+
+    .md-page > .md-strip .md-strip-label {
+      font-size: var(--md-text-2xs);
+      line-height: 1.35;
+    }
+  }
+
+  @media (pointer: coarse) {
+    .md-input,
+    .md-btn {
+      min-height: 44px;
+    }
+
+    .md-text-btn,
+    .md-icon-btn {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    /* 清除按钮贴着输入框右缘：只放大到 32，再大就把字段的右侧内距吃掉了。 */
+    .md-input-clear {
+      width: 32px;
+      height: 32px;
+    }
+
+    .md-step-btn,
+    .md-icon-btn-xs {
+      min-width: 32px;
+      min-height: 32px;
+    }
+
+    .md-select-sm {
+      min-height: 32px;
+    }
+
+    /* 以下四族补的是「按类逐个列举」抬档时漏掉的：
+       它们都不是新控件 —— 28px 的筛选胶囊、
+       38px 的自测选项、36px 的模块入口行在拇指下只能靠猜。 */
+
+    /* 密集筛选胶囊（分类条）28px 高。只抬 `<button>`：卡片里当分类标签用的
+       `<a class="md-chip-sm">` 是「这条术语出现在哪几类题库」，信息密度优先，抬到 32 即可。 */
+    button.md-chip-sm {
+      min-height: 44px;
+    }
+
+    a.md-chip-sm {
+      min-height: 32px;
+    }
+
+    .md-quiz-opt,
+    .md-link-row,
+    .md-x-toggle {
+      min-height: 44px;
+    }
+
+    /* 开关的轨道是 36×20 的药丸，放大就变形；用伪元素把命中区撑到 44。
+       伪元素不参与布局，视觉一行都不变。 */
+    .md-switch::after {
+      content: "";
+      position: absolute;
+      inset-block-start: 50%;
+      inset-inline-start: 50%;
+      width: 44px;
+      height: 44px;
+      transform: translate(-50%, -50%);
+    }
+
+    /* 顶栏品牌链接：高度由行高决定（29），补纵向内距到 44，文字基线不变。 */
+    .md-brand {
+      min-height: 44px;
+    }
+
+    /* 首页模块卡的标题链接（`md-mod-title`，38）与数据条的「学习进度」入口（21）：
+       都是整卡/整条里的主链接，不是装饰。`md-mod-title` 原本是 inline，
+       `min-height` 对 inline 无效，得先变成 flex。 */
+    .md-mod-title {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
+
+    .md-strip-link {
+      min-height: 44px;
+    }
+
+    /* 波段表正文里的脚注引用（`md-footnote`）视觉只有 18px 高：靠内距放大命中区
+       会把整行行高顶开、正文排版散架，所以用伪元素就地撑到 44。
+       相邻脚注的字符间距一般大于 44，重叠可忽略。 */
+    .md-footnote {
+      position: relative;
+    }
+
+    .md-footnote::after {
+      content: "";
+      position: absolute;
+      inset-block-start: 50%;
+      inset-inline-start: 50%;
+      width: 44px;
+      height: 44px;
+      transform: translate(-50%, -50%);
+    }
+
+    /* 以下几族同样是「按类逐个列举」抬档时被漏掉的。 */
+
+    /* 勾选 / 单选行：控件只有 16×16、整行 18px 高，行距又只有 ~12px，拇指一落就是邻行。
+       整行抬到 44（`label` 本身可点，命中区 = 整行）。 */
+    .md-check-row {
+      min-height: 44px;
+    }
+
+    /* 不在 `label` 里的裸 `.md-check`（文字是旁边的 `<span>`）：行本身撑不起命中区，
+       用伪元素把 16×16 的方框就地撑到 44×44，视觉不变；与开关（`.md-switch::after`）同一手法。 */
+    .md-check {
+      position: relative;
+    }
+
+    .md-check::after {
+      content: "";
+      position: absolute;
+      inset: -14px;
+    }
+
+    /* 页签 36 → 44；换行按钮（`.md-btn-wrap` 把 `height` 换成了 `min-height: 40`，
+       复合选择器（0,2,0）压过上面的 `.md-btn`（0,1,0），所以要单独写）。 */
+    .md-tab {
+      min-height: 44px;
+    }
+
+    .md-btn.md-btn-wrap,
+    .md-btn.md-btn-wrap.md-btn-sm {
+      min-height: 44px;
+    }
+
+    /* 顶栏导航项 34 → 44：触屏平板（iPad 竖屏 768、横屏 1024）走的是 ≥768 的桌面顶栏，
+       指针却是粗的 —— 34px 的链接在那上面比 WCAG 2.5.8 的 24px 下限宽裕，但离
+       `docs/ui/modern.md` §2.6 自己定的 44 还差一档（台账 R2）。
+       只抬命中区的高度：行高居中，导航行仍是 60px，版式不动。 */
+    .md-nav-link {
+      height: 44px;
+    }
+
+    /* 页脚链接（`.md-nav-link` 在顶栏里是 60px 高的导航项，只有页脚里是一行 34px 的文字链接）。 */
+    footer .md-nav-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
+
+    /* 快捷键说明在触屏上没有对应的操作方式：整段不占位（考试设置弹层里它原本排 7 行）。
+       只作用于现代风 —— 像素风是「桌面优先」的表皮，键位表在那里仍是有效信息。 */
+    html[data-ui-style="modern"] .md-shortcut-list {
+      display: none;
+    }
+  }
+
+  /* 筛选胶囊是窄屏上最高频的触控目标，但一屏能有 6–10 个：
+     只在「粗指针 + 窄屏」同时成立时才抬到 44，避免把桌面筛选条撑高。 */
+  @media (pointer: coarse) and (width < 900px) {
+    .md-chip:not(.md-chip-sm) {
+      min-height: 44px;
+    }
+
+    /* 但**嵌在字段里**的胶囊不抬：目录搜索框 `.md-menu-search` 是 40px 高的字段，
+       44 的胶囊会从上下边框各顶出 2px（手机上的「全站搜索」就是这个症状）。
+       与字段内的清除按钮、`.md-select-sm` 同一条规矩 —— 贴着字段边缘的控件按字段高度收，
+       不跟着外面的触控目标涨。32 仍高于 WCAG 2.5.8 的 24，宽度方向本来就是整颗胶囊。 */
+    .md-menu-search .md-chip {
+      min-height: 32px;
+    }
+  }
+}
+
+/* ============================================================
+   转圈图标（`animate-spin`）
+   ------------------------------------------------------------
+   像素风把 `--animate-spin` 定义成 `steps(8, end)`：一圈八格、一格 45°，是「逐帧」
+   手感的一部分。这个变量挂在 `:root` 上，现代风照单继承，于是 spinner 变成每 100ms
+   跳一格 —— 圆心再准也像卡带。这里只换动画本身，类名 `animate-spin` 保留（e2e 用它
+   与 `.skeleton` 判断页面还在不在加载）。
+
+   未分层是有意的：工具类住在 `@layer utilities` 里，同权重下分层声明会被未分层声明
+   压过；`prefers-reduced-motion` 的降级带 `!important`，仍然赢过这里。
+   ============================================================ */
+html[data-ui-style="modern"] .animate-spin {
+  animation: md-spin 900ms linear infinite;
+}
+
+@keyframes md-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@layer components {
+  /* 亮色主题下的展示渐变：纯橙在近白底上只有 2.98:1（71px 大字需 3:1），
+     掺 12% 深色把它压到 3.2 左右；深色主题不受影响。 */
+  html[data-ui-style="modern"]:not(.dark) .md-display-gradient {
+    color: color-mix(in srgb, var(--md-orange) 84%, #2a1206);
+  }
+}
+
+@layer components {
+  /* 紧凑输入（内联在工具条里的小字段，如 CIV 地址 / 波特率）：
+     与 `--md-control-h` 同一套描边与圆角，只缩高度与字号。 */
+  .md-input-sm {
+    height: 32px;
+    padding-inline: 10px;
+    font-size: var(--md-text-xs);
+  }
+}
+
+@layer components {
+  /* 选项行（复选框 / 单选 + 文字）：一行一个可点区域，文字与控件同一基线 */
+  .md-check-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: var(--md-text-xs);
+    color: var(--md-fg-muted);
+    line-height: 1.5;
+  }
+
+  .md-check-row:hover {
+    color: var(--md-fg);
+  }
+
+  /* 纯装饰：没有 `:has()` 时整行不变淡 —— 控件本身仍是禁用态（原生 / `md-check` 自带样式），功能不受影响。 */
+  .md-check-row:has(input:disabled), /* has-ok: 装饰，缺失时整行不变淡 */
+  .md-check-row:has(.md-check:disabled) { /* has-ok: 装饰，缺失时整行不变淡 */
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+@layer components {
+  /* ============================================================
+     表单错误态
+     ------------------------------------------------------------
+     `aria-invalid` 是全站唯一的事实来源（`ui::control::invalid_attr` 只在错误时挂属性）。
+     之前只有像素桥接里给 `[role=combobox]` 补了红边，现代风的输入框 / 文本域完全没有错误态。
+     ============================================================ */
+  .md-input[aria-invalid="true"],
+  .md-textarea[aria-invalid="true"],
+  .md-root [role="combobox"][aria-invalid="true"],
+  .md-root .md-input-sm[aria-invalid="true"] {
+    border-color: var(--md-danger);
+    background-color: color-mix(in srgb, var(--md-danger) 7%, var(--md-surface-2));
+  }
+
+  /* 复选框 / 开关 / 单选组：`aria-invalid` 同样是唯一事实来源。单选的属性挂在 `radiogroup` 上
+     （读屏念「无效」是对整组而言），所以走后代选择器。 */
+  .md-check[aria-invalid="true"],
+  .md-switch[aria-invalid="true"],
+  [role="radiogroup"][aria-invalid="true"] .md-check {
+    border-color: var(--md-danger);
+  }
+
+  .md-input[aria-invalid="true"]:hover,
+  .md-textarea[aria-invalid="true"]:hover,
+  .md-root [role="combobox"][aria-invalid="true"]:hover {
+    border-color: color-mix(in srgb, var(--md-danger) 82%, var(--md-fg));
+  }
+
+  .md-input[aria-invalid="true"]:focus-visible,
+  .md-textarea[aria-invalid="true"]:focus-visible,
+  .md-root [role="combobox"][aria-invalid="true"]:focus-visible {
+    outline-color: var(--md-danger);
+    border-color: var(--md-danger);
+  }
+
+  /* 出错时标签一起转红：只看边框的话，长表单里很难一眼定位是哪一行 */
+  /* 纯装饰：没有 `:has()` 时标签保持原色 —— 控件描边与错误行（`.md-field-error`）仍是红的。 */
+  .md-field:has([aria-invalid="true"]) .md-field-label { /* has-ok: 装饰，缺失时标签不转红 */
+    color: var(--md-danger-ink);
+  }
+
+  /* 错误行前面加一个 12px 圆形感叹号，颜色与描边同源 */
+  .md-field-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .md-field-error::before {
+    content: "!";
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 13px;
+    height: 13px;
+    margin-top: 2px;
+    border-radius: var(--md-r-pill);
+    background-color: var(--md-danger-face);
+    color: var(--md-danger-face-fg);
+    font-family: var(--md-font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+  }
+}
+
+@layer components {
+  /* 数字输入的原生上下箭头是 OS 绘制的，和现代控件风格不搭；
+     需要步进的场景由 `ui::NumberField` 自己渲染 ± 按钮。 */
+  .md-root input[type="number"]::-webkit-inner-spin-button,
+  .md-root input[type="number"]::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+
+  .md-root input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+}
+

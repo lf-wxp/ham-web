@@ -48,7 +48,7 @@ pub(super) fn LogStatsDetail(
                 .into_iter()
                 .map(|e| {
                   view! {
-                    <span class="border bg-inset px-2.5 py-0.5 text-xs">{e}</span>
+                    <span class=crate::kit::tile_class("px-2.5 py-0.5 text-xs")>{e}</span>
                   }
                 })
                 .collect_view()}
@@ -77,7 +77,7 @@ pub(super) fn LogStatsDetail(
                   .into_iter()
                   .map(|g| {
                     view! {
-                      <span class="border bg-inset px-2.5 py-0.5 font-mono text-xs">{g}</span>
+                      <span class=crate::kit::tile_class("px-2.5 py-0.5 font-mono text-xs")>{g}</span>
                     }
                   })
                   .collect_view()}

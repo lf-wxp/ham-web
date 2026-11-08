@@ -16,6 +16,7 @@
 | 弹层怎么进出场、控件的悬停 / 禁用 / 错误态 | [`ui/motion.md`](ui/motion.md) §五、§六 |
 | 新增路由要选哪个页面签名 | [`ui/interaction.md`](ui/interaction.md) §3 |
 | 加 / 删 `md-*` 类名 | [`ui/modern-classes.md`](ui/modern-classes.md)（手工维护，漏登记会被门禁拦） |
+| 现代风已知问题 / 整改到哪一步了 | [`ui/modern-review.md`](ui/modern-review.md)（审核台账，条目带编号与状态） |
 | 没走组件的原生元素（「刻意的例外」） | [`ui/pixel.md`](ui/pixel.md) §10 |
 | 改界面文案 / 译文 | [`data/i18n.md`](data/i18n.md) |
 | 改完界面怎么验、e2e 红了怎么排障 | [`engineering/testing.md`](engineering/testing.md) |
@@ -47,6 +48,7 @@
 | [`ui/motion.md`](ui/motion.md) | **动效规范**：原则与规则清单、两套皮肤的 token、弹层进出场（「在场」实现）、控件状态矩阵 | 写动画 / 弹层 / 控件状态 |
 | [`ui/interaction.md`](ui/interaction.md) | **页面级交互（现代风）**：七类动作与触发场景、换页方向、12 个页面签名、「统一 vs 个性」 | 加页面动效 / 新增路由选签名 |
 | [`ui/modern-classes.md`](ui/modern-classes.md) | `md-*` 类名索引（**手工维护**，`check-structure` 精确双向校验） | 查「这个类归谁 / 还有没有人用」 |
+| [`ui/modern-review.md`](ui/modern-review.md) | **审核台账**：按十个维度列已知问题、证据、改法与状态（**不是规范**，规范见 `ui/modern.md`） | 查某条改进做没做 / 为什么没做 |
 
 代码旁的文档：[`crates/app/src/ui/README.md`](../crates/app/src/ui/README.md)（组件 API 清单——「有什么」；放在代码旁是为了改组件时一眼能看到）。
 

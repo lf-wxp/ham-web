@@ -19,6 +19,23 @@ pub fn FormulasPage() -> impl IntoView {
   crate::data::use_knowledge_i18n();
   // 全部分组加单位换算约 2900 个节点，一次建完是一个长任务：首屏的两组随页面出来，
   // 其余在之后的帧里每帧补一组（与工具页的分批挂载同一做法，见 `docs/ui/motion.md` §7）。
+  // 内嵌小块的类名按皮肤派发（`md-tile` 是现代风的内嵌面，见 `kit.css`）。
+  let modern = crate::kit::is_modern_at_mount();
+  let tile = if modern {
+    "md-tile group"
+  } else {
+    "group border bg-inset p-3 transition-colors hover:bg-accent/60"
+  };
+  let tile_plain = if modern {
+    "md-tile"
+  } else {
+    "border bg-inset p-3"
+  };
+  let formula_class = if modern {
+    "mt-1 md-formula"
+  } else {
+    "mt-1 font-mono text-sm text-primary"
+  };
   let total = FORMULA_GROUPS.len() + 1;
   let built = RwSignal::new(FIRST_GROUPS);
   crate::after_paint::each_frame(move || {
@@ -40,7 +57,7 @@ pub fn FormulasPage() -> impl IntoView {
               let body = view! {
                 <div class="text-sm">{move || kt_tracked(f.name)}</div>
                 // KaTeX 可用时渲染 data-tex，否则保留 Unicode 表达式。
-                <div class="mt-1 font-mono text-sm text-primary" data-tex=tex_of(f.name)>
+                <div class=formula_class data-tex=tex_of(f.name)>
                   {move || kt_tracked(f.expr)}
                 </div>
                 <div class="mt-0.5 text-xs text-muted-foreground">{move || kt_tracked(f.desc)}</div>
@@ -58,14 +75,14 @@ pub fn FormulasPage() -> impl IntoView {
                   view! {
                     <a
                       href=format!("/tools#{tool}")
-                      class="group border bg-inset p-3 transition-colors hover:bg-accent/60"
+                      class=tile
                     >
                       {body}
                     </a>
                   }
                     .into_any()
                 }
-                None => view! { <div class="border bg-inset p-3">{body}</div> }.into_any(),
+                None => view! { <div class=tile_plain>{body}</div> }.into_any(),
               }
             })
             .collect_view()}
@@ -105,10 +122,10 @@ pub fn FormulasPage() -> impl IntoView {
                           view! {
                             <a
                               href=href
-                              class="group border bg-inset p-3 transition-colors hover:bg-accent/60"
+                              class=tile
                             >
                               <div class="text-sm">{move || crate::data::core_text_tracked(c.name)}</div>
-                              <div class="mt-1 font-mono text-sm text-primary">{move || kt_tracked(c.expr)}</div>
+                              <div class=formula_class>{move || kt_tracked(c.expr)}</div>
                               <div class="mt-0.5 text-xs text-muted-foreground">{move || crate::data::core_text_tracked(c.example)}</div>
                               <div class="mt-1 text-xs text-primary opacity-0 transition-opacity group-hover:opacity-100">
                                 {move || t("knowledge.calculate")}

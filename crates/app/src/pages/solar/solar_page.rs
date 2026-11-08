@@ -164,9 +164,9 @@ pub fn SolarPage() -> impl IntoView {
             <MetricCard label=Signal::derive(move || t("radio.a-index")) value=a unit=Signal::derive(move || t("radio.daily-geomagnetic-index")) loading=loading failed=failed />
           </div>
           <div class="grid grid-cols-2 gap-3 px-4 pb-4 sm:grid-cols-4">
-            <div class="col-span-2 border bg-inset p-3 text-center sm:col-span-4">
+            <div class=crate::kit::tile_class("col-span-2 text-center sm:col-span-4")>
               <div class="text-xs text-muted-foreground">{move || t("radio.propagation-conditions-from-k")}</div>
-              <div class=if crate::kit::is_modern_at_mount() { "md-stat-text mt-1" } else { "mt-1 pxl-stat" }>
+              <div class=crate::kit::stat_text_class("mt-1")>
                 {move || {
                   match k.get() {
                     Some(kv) => {
@@ -256,7 +256,7 @@ pub fn SolarPage() -> impl IntoView {
               .iter()
               .map(|&(level, desc)| {
                 view! {
-                  <div class="border bg-inset p-3">
+                  <div class=crate::kit::tile_class("")>
                     <div>{move || crate::data::core_text_tracked(level)}</div>
                     <div class="mt-1 text-sm text-muted-foreground">{move || kt_tracked(desc)}</div>
                   </div>

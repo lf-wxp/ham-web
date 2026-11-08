@@ -79,7 +79,7 @@ kit_pixel ──► ui（迁移期）   kit_modern ──► 无像素依赖
 
 | 槽 | 语义参数 | 像素实现 | 现代实现 |
 |---|---|---|---|
-| `Scaffold` | title / subtitle / actions / toolbar / children / aside | `PageHeader` + `PageContainer`（1024 单栏） | 无页头标题栏：标题进正文流，1440 三栏 |
+| `Scaffold` | title / subtitle / actions / toolbar / children / aside | `PageHeader` + `PageContainer`（1200 单栏，与顶栏同宽） | 无页头标题栏：标题进正文流，1440 三栏 |
 | `Card` | title / meta / href / actions / children | `SectionCard`（标题栏 + 2px 墨框） | 无标题栏：h3 + 描述 + hover 浮出操作 |
 | `ModuleNav` | groups（3 组链接） | 阶梯下沉的三张卡片 | 三列分组链接 + 分隔线 |
 | `Stat` | label / value / unit / trend | 像素铭牌 `pxl-badge` | 大号数值 + 上方小标签 |
@@ -109,7 +109,6 @@ kit_pixel ──► ui（迁移期）   kit_modern ──► 无像素依赖
 |---|---|---|
 | 桌面导航 | 顶部 64px HUD 横栏 + 三段下拉 | 56px 细顶栏 + 单一入口面板 |
 | 移动导航 | 折叠面板 + 底部 5 Tab | 悬浮 dock + 全屏面板 |
-| 内容宽度 | `max-w-5xl`（1024）单栏 | 1200 版心（`--md-page-max`），首页/内容页/文章页/桥接页同一宽度 |
 | 页面组成 | 卡片流（标题栏卡片纵向堆叠） | 电波带首屏 + 数据条 + 大小不一的行动卡 + 三色模块卡 |
 | 卡片解剖 | 标题栏 + 2px 墨框 + 零投影 | 无标题栏 + 10px 圆角 + 1px 墨线 + `shadow-1` + 单一高饱和焦点 |
 | 表格 | 93 处宽表 + 横滚 | 响应式：桌面表格 / 移动卡片 |
@@ -119,10 +118,15 @@ kit_pixel ──► ui（迁移期）   kit_modern ──► 无像素依赖
 | 游戏化 | HP/XP/金币/连击、精灵 | 等级环 / 连续天数 / 经验，无 HUD、无精灵 |
 | 字体 | Fusion Pixel + Press Start 2P | Bricolage Grotesque（展示拉丁）+ Noto Sans SC 900（展示汉字）+ Geist（正文）+ IBM Plex Mono（读数 / 标签）+ 现代中文黑体（正文回落：PingFang / HarmonyOS Sans / MiSans / 思源黑） |
 
+**版心宽度不在差异清单里**：两套皮肤共用 `--page-max`（1200px，定义在 `style/input.css`），
+像素风的 `max-w-5xl` 与现代风的 `--md-page-max` 都指向它，顶栏 / 页头 / 正文 / 页脚同宽
+（细节见 [`pixel.md`](pixel.md) §4 与 [`modern.md`](modern.md) §3）。切风格时版心不跳。
+
 **现代风的设计语言：电波编辑部（Broadcast Editorial）**，四条原则：
 
 1. **暖白纸面 + 深墨**：底色 `#f7f5f0` 而不是后台常用的冷灰；层级靠留白与字号，不靠灰字。
-2. **一个焦点**：品牌橙只出现在首屏主 CTA 与「继续学习」这一张实心卡上；其余表面一律安静（白卡 / 深卡 / 浅色描边卡各一张）。
+2. **一个焦点**：品牌橙的**实心块**只出现在首屏主 CTA 与「继续学习」这一张实心卡上；其余表面一律安静（白卡 / 深卡 / 浅色描边卡各一张）。
+   橙色还可以标**位置**（「我在哪」：顶栏当前页的橙字 + 细轨道、dock 当前项的 8% 橙底），但那是文字 / 轨道 / 极浅底，不铺实心；**选中态**（多选项勾选、筛选 chip）一律用蓝，不用橙 —— 三条分清楚，「行动 / 位置 / 选中」才不会读混（台账 T1）。
 3. **大字号 + 克制的字距**：标题 `clamp(36px, 5.6vw, 72px)`；**中文一律不压负字距**（会挤字），只有数字/等宽读数保留 `-0.03em ~ -0.05em`。正文 16px / 1.75。中文靠字重与字号拉层级，因为 Geist 有 100–900，不存在像素风「没有粗体」的限制。
 4. **电波母题**：首屏底部一条平滑曲线（橙→蓝渐变、两端淡出）替代边框与分栏；三色（橙 / 蓝 / 绿）分别对应考试、知识、工具，只做浅底与描边，不铺满。
 

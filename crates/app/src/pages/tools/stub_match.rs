@@ -5,7 +5,7 @@ use ham_web_core::unit_math::format_distance_m;
 use ham_web_core::waveguide::C;
 use leptos::prelude::*;
 
-use super::RESULT;
+use super::result_class;
 use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField, RadioGroup, RadioGroupItem};
 use crate::util::unique_id;
@@ -66,7 +66,7 @@ pub(super) fn StubMatch() -> impl IntoView {
         </label>
       </RadioGroup>
 
-      <div class=format!("{RESULT} space-y-1 tabular-nums")>
+      <div class=format!("{} space-y-1 tabular-nums", result_class())>
         {move || {
           let (Ok(rr), Ok(xx), Ok(zz), Ok(ff), Ok(vv)) = (
             r.get().trim().parse::<f64>(),

@@ -1,4 +1,6 @@
-//! 外观与动效设置：主题 / 配色方案 / 像素动效 / 易读字体。放在对话框里，由顶栏的齿轮按钮打开。
+//! 设置：界面风格 / 语言 / 明暗 / 配色方案 / 像素动效 / 易读字体 / 数据备份。
+//! 放在对话框里，由顶栏的齿轮按钮打开 —— 顶栏上只有这一个「配置」入口，
+//! 不再单独摆语言切换与明暗切换（那两个都属于这里，且明暗的「跟随系统」只有在三选一里才给得出来）。
 //!
 //! 主题（明暗）与配色方案是正交的两个选择：任何方案都有亮 / 暗两套。
 //!
@@ -11,7 +13,7 @@ use ham_web_core::color_scheme::SCHEMES;
 use ham_web_core::ui_style::UiStyle;
 use leptos::prelude::*;
 
-use crate::i18n::t;
+use crate::i18n::{self, Locale, t};
 use crate::icons::{Icon, IconKind};
 use crate::theme::{Theme, style_defaults_theme, use_display_prefs, use_theme};
 use crate::ui::{ButtonLink, Dialog, DialogHeader, DialogTitle, RadioGroup, Switch, Variant};
@@ -19,8 +21,9 @@ use crate::ui::{ButtonLink, Dialog, DialogHeader, DialogTitle, RadioGroup, Switc
 use super::choice_row::ChoiceRow;
 use super::scheme_choice::SchemeChoice;
 
-/// 两组单选的 DOM id 前缀。同一组的每一行共用它，拼错会让 `<label for>` 悄悄失效，所以只写一次。
+/// 三组单选的 DOM id 前缀。同一组的每一行共用它，拼错会让 `<label for>` 悄悄失效，所以只写一次。
 const STYLE_ID: &str = "settings-ui-style";
+const LANG_ID: &str = "settings-language";
 const THEME_ID: &str = "settings-theme";
 
 /// 设置对话框。`open` 由顶栏的设置按钮控制。
@@ -28,10 +31,12 @@ const THEME_ID: &str = "settings-theme";
 pub fn SettingsDialog(open: RwSignal<bool>) -> impl IntoView {
   let theme = use_theme();
   let prefs = use_display_prefs();
+  let locale = i18n::locale();
 
   let theme_value = Signal::derive(move || theme.mode().as_str().to_owned());
   let scheme_value = Signal::derive(move || prefs.scheme().to_owned());
   let style_value = Signal::derive(move || prefs.ui_style().as_str().to_owned());
+  let lang_value = Signal::derive(move || locale.get().code().to_owned());
   let dark = Signal::derive(move || theme.is_dark());
 
   view! {
@@ -69,6 +74,29 @@ pub fn SettingsDialog(open: RwSignal<bool>) -> impl IntoView {
             />
           </RadioGroup>
           <p class="text-xs text-muted-foreground">{move || t("shell.settings-style-hint")}</p>
+        </div>
+
+        // 语言紧跟风格、且用三选一单选（一排三格）而不是下拉：这是外语用户唯一能找到出口的地方，
+        // 选项要一眼可见。名字写各语言自身（`Locale::label`，三语下都不翻译），所以这里不挂词典。
+        <p class="pxl-label text-xs text-muted-foreground">{move || t("shell.language")}</p>
+        <div>
+          <RadioGroup
+            value=lang_value
+            on_change=Callback::new(move |v: String| i18n::set_locale(Locale::from_code(&v)))
+            aria_label=Signal::derive(move || t("shell.language"))
+            class="grid-cols-3"
+          >
+            {Locale::ALL
+              .iter()
+              .map(|&l| view! {
+                <ChoiceRow
+                  id_prefix=LANG_ID
+                  value=l.code()
+                  label=Signal::derive(move || l.label().to_owned())
+                />
+              })
+              .collect_view()}
+          </RadioGroup>
         </div>
 
         // 单选组没有单个控件可以挂 `for`：整组靠 `aria_label` 命名，标签文字只是可见的小标题。
@@ -144,7 +172,7 @@ pub fn SettingsDialog(open: RwSignal<bool>) -> impl IntoView {
         </div>
 
         // 备份与外观无关，但「设置」是用户找数据操作时最先点的地方；
-        // 独立页 `/backup` 同时挂在页脚与移动菜单，别把它再塞回工具页。
+        // 独立页 `/backup` 同时挂在页脚，别把它再塞回工具页。
         <div class="border-t pt-4">
           <ButtonLink
             href="/backup"

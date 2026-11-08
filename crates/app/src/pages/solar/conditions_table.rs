@@ -47,8 +47,8 @@ pub(super) fn ConditionsTable(conditions: Vec<BandCond>) -> impl IntoView {
             view! {
               <TableRow>
                 <TableCell class=crate::kit::table_cell_class("font-mono")>{move || kt_tracked(&band)}</TableCell>
-                <TableCell class=format!("border px-3 py-2 {day_color}")>{move || kt_tracked(&day)}</TableCell>
-                <TableCell class=format!("border px-3 py-2 {night_color}")>{move || kt_tracked(&night)}</TableCell>
+                <TableCell class=crate::kit::table_cell_class(day_color)>{move || kt_tracked(&day)}</TableCell>
+                <TableCell class=crate::kit::table_cell_class(night_color)>{move || kt_tracked(&night)}</TableCell>
               </TableRow>
             }
           })

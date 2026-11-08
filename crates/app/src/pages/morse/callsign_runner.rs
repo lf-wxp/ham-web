@@ -283,7 +283,7 @@ pub(super) fn CallsignRunner() -> impl IntoView {
           {toggle("叠听（多一个干扰台）", |s| s.pileup, |s, v| s.pileup = v)}
         </div>
 
-        <div class="flex flex-col items-center gap-3 border bg-inset px-4 py-6">
+        <div class=crate::kit::tile_class("flex flex-col items-center gap-3 px-4 py-6")>
           {move || {
             if in_progress() {
               let (n, score) = session.with(|s| s.as_ref().map_or((0, 0), |s| (s.attempted() + 1, s.score())));

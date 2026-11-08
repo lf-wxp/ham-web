@@ -244,11 +244,12 @@ pub fn LogPage() -> impl IntoView {
           <a class="md-btn md-btn-ghost" href="/qsl-labels">
             {move || t("log.print-qsl-labels")}
           </a>
+          // 与同排的 ghost 按钮同权重、同高度：`FileInput` 默认会带 `Outline`（像素风那边
+          // 整排都是描边按钮，样式一致），搬到现代风就成了整排唯一的药丸（台账 C2）。
           <FileInput
             accept=".adi,.adif,.txt"
             label=Signal::derive(move || t("log.import-adif"))
-            variant=Variant::Outline
-            size=Size::Sm
+            variant=Variant::Ghost
             on_files=import_adif
           />
           <button type="button" class="md-btn md-btn-ghost" on:click=move |_| qsl_open.set(true)>
