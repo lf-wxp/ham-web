@@ -80,7 +80,8 @@
 | 卫星联动：双 VFO 卫星模式 / 跟随旋钮 / 真机验证 | 中 | 上行写入、线性转发器、自定义通带与旋转器自动跟踪已完成（见「已完成」）。**仍未做**：① **卫星模式**（IC-9700 / IC-705 / FT-991A 的主 / 副 VFO 各管一个波段）——各机型 CAT 语义不同（Hamlib 里 IC-7600/7610/7800/785x 的 `25` 命令是 Main/Sub 而非选中 / 未选中，FT-991A 的 `FR`/`FT` 也不是 Kenwood 含义），没有真机逐款验证就上线等于没测；② **线性转发器跟随电台旋钮**——现在是页面持有调谐点、转旋钮会触发「手动改频即停」，要反过来得把回读频率同时当输入和输出，而回读最多有 3 次轮询的延迟，发射会滞后于旋钮；③ **真机验证**——上行写入（FB / `25 01` 在各机型的实际行为、分频设置、电台忙时的回应）与旋转器（GS-232 在各控制器上的应答格式、速度、限位、过顶走哪条路）**一次都没实测过**，只有假串口。逐项验收步骤与记录项见 [`docs/domain/hardware-verification.md`](docs/domain/hardware-verification.md) A1–A6 / B1–B4 |
 | NanoVNA 串口实机验证 | 中 | 协议解析有单测、`.s1p` 入口有 e2e；串口收发需要真实仪器（与 KISS TNC 同一边界）。验收步骤与记录项见 [`docs/domain/hardware-verification.md`](docs/domain/hardware-verification.md) C1 / C2 |
 | 磁环库补 Amidon / Micrometals 型号 | 中 | 业余圈常用的 `FT-240-43`、`T-200-2`、`T-50-6` 等按 Amidon 命名；要先找到可逐个核对的官方 AL 表（目录 PDF 或零件页），再进 `toroid::CORES`，每条带核对日期；现有内部一致性测试（AL ≈ µ0·µi·Ae/le）对粉芯不适用（分布气隙），需要另想办法对拍。已确认取不到：Amidon 官网 403、Micrometals 页面没有 AL 表 |
-| 按路由拆分 wasm | 中 | **只在 `erase_components` 之后重测仍不够时再做**：要换掉 Trunk 的 rust 流水线（拆分要插在 cargo 与 `wasm-bindgen` 之间）、补 chunk 内容哈希（否则无 SW 的首访可能旧 chunk 配新主包）、`perf-budget.json` 增加 chunk 与总量项、加 `cfg(split_wasm)` dev 开关（未拆分的 wasm 残留 `__wasm_split_placeholder__` 导入，浏览器无法实例化）。量级参考（`erase_components` 之前测的）：拆 5 条主包 −399 KiB 但总下载 +8%；拆全部（约 1970 个文件）总量 +62%，不可行。只拆体积最大的少数路由 |
+| 按路由拆分 wasm | 低 | **2026-11-08 已做完三步测量并裁定不立项**：crate 级归因显示非本仓库的框架地板 4,733,302 B 占带符号构建的浅层字节 **56%**，与路由无关；删减实验里摘掉 179 条路由只留外壳，br 2,126,177 → 819,239（**−61.5%**，这只是收益上限），平均每页 7.3 KB br、最贵的 `/nec` 只有 3.8%。A 方案（多 wasm 模块）拿不到上限 —— Leptos CSR 模块间不能共享运行时，每拆一页都要连框架副本一起打。真要拆还要换掉 Trunk 的 rust 流水线（拆分插在 cargo 与 `wasm-bindgen` 之间）、补 chunk 内容哈希、`perf-budget.json` 增加 chunk 与总量项。**重开条件**：主包涨到 2.6 MB 以上且首屏 LCP 被带宽卡住，那时先做 SSR / 岛屿。数字与命令见 [`docs/engineering/performance.md`](docs/engineering/performance.md) §5.4 |
+| 软件许可页（`/license.html`）没有界面入口 | 低 | 该页在 `registry` 里是 `group: None`，而目录面板按 registry 分组建段（`kit_modern/menu.rs` 的 `SECTIONS`），所以它只有 ⌘K / 直接 URL 到得了；`/achievements` 是同类，已在面板底部补了入口。最小改法：底部再加一枚 ghost 链接（文案复用 `shell.software-license-title`），并把「`group: None` 的页面不进任何段，要直达就在底部补一枚」写进 `docs/ui/modern.md` §4.4。合规上不紧急 —— `/licenses/*` 全文随发布物提供，见 [`docs/engineering/licensing.md`](docs/engineering/licensing.md) |
 | THOR / MFSK16 解码 | 中 | fldigi 家族，复用 dominoex 的 GPL 转写 + `xcheck` 对拍流程 |
 | MSK144 / FSK441 解码 | 中 | 流星散射专用，联动 `/meteor-scatter`；自实现避开 WSJT GPL |
 | 声卡数字模式发端：FT8 基带 | 中 | CW / RTTY / PSK31 的基带 WAV 已可导出（见「已完成」）。FT8（8-FSK、6.25 波特）发端需完整实现 77 位报文打包 + 14 位 CRC + LDPC 编码 + 交织 + 格雷码 + 同步；LDPC 校验矩阵与报文打包需参考实现 / 测试向量对拍，而 WSJT-X 是 GPL（要自实现避开），缺参考向量无法验证 |
@@ -184,6 +185,7 @@
 | NTS Radiogram / ICS-213 | `/radiogram`、`/tools#radiogram` | 报头、优先级、HX、检查（check）计算按 ARRL 标准，ICS-213 字段按 FEMA 标准；只做格式与计算，不校验报文内容合规 |
 | 国内特色专题 | `/china-ham` | XW-2 / CAS-3 六颗卫星频率取自 BA1DU 的发射设计值（在轨状态以 AMSAT 为准）；409 MHz 公众对讲机依据国无办〔2025〕1 号，正文只写「较低功率」、限值在附件 3，不编精确数字 |
 | 主包体积：`erase_components` | `.cargo/config.toml`、`perf-budget.json` | 2026-10-16 启用，`map_view.rs` 的 4 处 `.clone()` 随之改掉；主包 wasm br 2351.2 → 1723.3 KiB（干净 HEAD 上对照 −644 KiB，−28%），完整 e2e 全过、挂载更快，上限收紧到 1 900 000 B 把省下的空间锁住；逐帧热路径仍未压测 |
+| 主包体积：分包评估（2026-11-08） | [`docs/engineering/performance.md`](docs/engineering/performance.md) §5.4 | 三步测量做完：①`cargo bloat` 读不了 wasm（`unsupported file format`），crate 级归因改用 `twiggy top` 全量输出按 crate 前缀汇总；②数据段 5,727 段 / 1.64 MB，最大一块是中文词典；③删减实验：去掉 `/nec` 一页 br −3.8%、只留外壳 br −61.5%。**裁定不做 A（多 wasm 模块）**。同日把「中文词典改成运行时语言包」实现了一版，实测**净亏**（wasm −65,458 B br，新增 `data/i18n/zh.json` +94,013 B，中文首访 **+28,555 B**），**已撤销** —— 根因是拆开 brotli 流后各流各自重建字典，省下的不够付新包的账 |
 | 全站手机宽度扫描 | `e2e/tests/mobile_overflow.spec.ts` | 全部路由 × 三语 × 320 / 390px；首轮扫出 6 个页面并逐页修完 |
 | 横向基础设施 | 搜索 · 存储 · 备份 · 门禁 | 统一搜索（含 `dxcc:` / `band:` / `mode:` 前缀）；`kv.rs` 写入版本仲裁（修「写入后立即刷新丢最后一笔」）与 IndexedDB 权威层；备份按模块勾选；交互页必须有专属 e2e（存量欠账已清零）；体积 / 文案 / 解析 / 像素风校验并入 `cargo make check` |
 | 信号听辨向导（S3） | `/signal-id` · `core/signal_id.rs` | 17 个模式的听感特征表（形态 / 节奏 / 占用带宽）＋ 三组条件筛选，末步链到对应解码器页；空结果如实说「条件矛盾」而不猜。单测钉死扇区式筛选与 `pages_exist_in_registry`（所有跳转目标必须在注册表里）；三语文案齐全，e2e 钉死收窄与空态 |
@@ -247,8 +249,9 @@
    工具 / 考试类路由没有任何功能用例字面量 `page.goto` 过时，`registry_check` 直接失败。依赖 `/api/*` 的页面用 `fixtures.ts` 的 `stubApi` 打桩，时间相关断言用 `page.clock` 固定。
 6. **体积**：`cargo make ci` 末尾跑 `size-check`，任何产物超出 `perf-budget.json` 即失败。
    上调上限前先回答「这次增量换来了什么、能不能拆进 Worker」，并在本文件记一笔。
-   **当前**（2026-10-28）：主包 wasm br **1867.1 KiB（1 911 868 B）/ 上限 1 950 000 B**（余量约 37 KiB，2%），单个解码 Worker ≤ 64 KiB。
-   上一次（2026-10-16，`erase_components` 刚启用）是 1 764 675 B / 上限 1 900 000 B。
+   **当前**（2026-11-08）：主包 wasm raw 8 234 910 B / br **2 129 826 B（2.03 MiB）/ 上限 2 260 000 B**（余量约 6%），单个解码 Worker ≤ 64 KiB。
+   上一轮（2026-10-28）记的是 br 1 911 868 B / 上限 1 950 000 B；本轮实测 br 2 129 826 B，上限同时由 2 500 000 B
+   **收紧**到 2 260 000 B（余量约 6%），收紧理由见 [`perf-budget.json`](perf-budget.json) 的 `note` 与 [`docs/engineering/performance.md`](docs/engineering/performance.md) §5。
    - **2026-10-28 上调上限 1 900 000 → 1 950 000 B 的记录**：
      - 增量来源：已提交的 HEAD（`be322ef`）就已是 1 890 791 B（10-16 之后落地的功能用掉 123 KiB，只剩 9 KB 余量）；
        「远端同步 + 知识库译文随语言切换响应」这批改动再加 **21 077 B（+1.1%）**，把它推到 1 911 868 B。
@@ -264,8 +267,16 @@
        **余量用完后下一步是服务端 / Worker / 路由拆分，而不是再上调。**
    - **动手前先决定放哪里**：纯计算且依赖重的放服务端（像 `/api/sat-track` 那样，SGP4 不进浏览器）或拆 Worker；只有薄薄一层界面的才进主包。上调上限不是默认选项。
    - **已用实测排除的方向**（不要重复尝试）：压缩参数（已是 brotli q11 / lgwin 24，复算只差 3.6 KiB）；`wasm-opt` 参数（5 种组合，br 体积在 2.37 MB ± 4 KB）；把内嵌数据挪成运行时 JSON（最多几十 KiB）；单态化（可避免部分只占 1 MB 的 0.16%）。把重复的响应式文本闭包换成共享 helper（299 处，br 仅 −1.2 KiB，2026-10-28）。真实结构是均匀的「页面数 × 每页视图树」，没有单个热点。
+    **2026-11-08 补两条实测**：①**默认语言词典挪成运行时语言包是净亏** —— wasm br −65,458 B，新增 `data/i18n/zh.json` +94,013 B，中文首访净 **+28,555 B**（实现过一版，已撤销）；
+    ②**按路由拆 wasm 的收益上限 61.5%（br），但框架地板占 56%**，A 方案拿不到上限，不立项。两条的机制与数字见 [`docs/engineering/performance.md`](docs/engineering/performance.md) §5.4。
    - **未验证项**：频谱 / 瀑布图、NEC 三维方向图、摩尔斯训练器这类每帧更新的页面，`erase_components` 前后的运行时开销没压测过，这是体积方向唯一的已知缺口。
-   - **工具坑**：`cargo bloat` 不能用于 wasm 目标；归因用 `twiggy` 且要 `strip=none` / `debug=0`（`debug=1` 会膨胀到 646 MB）；带符号构建会被随后的 `trunk build --release` 覆盖。
+   - **工具坑**：`cargo bloat` 不能用于 wasm 目标 —— 0.12.1 直接报 `has an unsupported file format`（它只解析 ELF），
+    带符号的 wasm 也不认，不必再试；归因改用 `twiggy top`，且要带符号（`strip = true` 时只剩段级信息）。
+   - **带符号构建怎么造**：给 `wasm-release` 注入两个 profile 变量即可，**不要换整包 debug profile**
+     （`--profiling` 那类会把产物撑到 646 MB；只注入 `DEBUG=1` 只多调试段，实测 154.8 MB，归因只看函数与数据段）：
+     `CARGO_PROFILE_WASM_RELEASE_STRIP=false CARGO_PROFILE_WASM_RELEASE_DEBUG=1 cargo build --profile wasm-release --target wasm32-unknown-unknown -p ham-web-app`，
+     产物在 `target/wasm32-unknown-unknown/wasm-release/`；`twiggy top` 全量输出按 `crate[hash]` 前缀汇总就是 crate 级归因。
+     注意这份产物会被随后的 `trunk build --release` 覆盖，要复现就先拷走。
 
 ---
 

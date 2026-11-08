@@ -38,7 +38,7 @@
    差值落在半个像素内，逐档校准只会在换字体时引入新的跳变。 */
 @font-face { font-family: "Plex Mono Fallback"; src: local("Menlo"), local("Consolas"), local("DejaVu Sans Mono"), local("Liberation Mono"), local("Courier New"); ascent-override: 102.5%; descent-override: 27.5%; line-gap-override: 0%; }
 
-/* 中文展示字的度量对齐回退（台账 F1）。
+/* 中文展示字的度量对齐回退（见 `docs/ui/modern.md` §2.2）。
    `Noto Sans SC Display` 的第 0 片虽然预载（约 103KB），仍要等它到才能用；在那之前标题按
    系统黑体排版。实测行盒：Noto **1.50em** vs PingFang / HarmonyOS / MiSans / 雅黑 **1.40em**
    —— 36px 的标题每行差 3.6px，三行就是 10px 的位移（CLS）。这里把系统黑体的行盒覆盖到

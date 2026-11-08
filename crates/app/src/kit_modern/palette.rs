@@ -66,7 +66,7 @@ fn group_rank(group: Option<&str>) -> usize {
   usize::MAX
 }
 
-/// 游戏化页面的**白话别名**（台账 N4）。
+/// 游戏化页面的**白话别名**（见 `docs/ui/modern.md` §4.4）。
 ///
 /// `/map`（闯关地图）与 `/bestiary`（怪物图鉴）用的是世界观语言：对老用户是好记的，
 /// 对「想找错题复习」的人则完全不可检索 —— 调谐台是全站唯一的「按概念找页面」入口，
@@ -102,7 +102,7 @@ fn match_rank(ch: &Channel, q: &str) -> usize {
 /// 一段结果：组名 + `(全局序号, 频道)`。
 type Run = (Option<&'static str>, Vec<(usize, Channel)>);
 
-/// 把结果切成「相邻同组」的段：181 条平铺时用户只能靠滚碰运气（台账 N2）。
+/// 把结果切成「相邻同组」的段：181 条平铺时用户只能靠滚碰运气（见 `docs/ui/modern.md` §4.4）。
 ///
 /// 只切段、不重排 —— 视觉顺序与 `results` 顺序必须一致，否则 `↑↓` 的游标编号
 /// 会和 `aria-activedescendant` 指到的元素对不上。
@@ -229,7 +229,7 @@ pub fn ModernPalette(open: RwSignal<bool>) -> impl IntoView {
         .copied()
         .collect::<Vec<_>>();
       // 排序而不是只切段：`registry::MODULES` 的分组是交错的，不排序时同一组会碎成几段、
-      // 段标题重复（台账 N2）。`sort_by_key` 稳定，组内保持 registry 的顺序。
+      // 段标题重复。`sort_by_key` 稳定，组内保持 registry 的顺序。
       //
       // 有关键词时**先按匹配质量再按分组**：只按分组排会让 `group: None` 的页面（`/achievements`
       // 这类）恒排最后，随后被 `truncate(40)` 裁掉 —— 而搜名字时它们恰恰是最该命中的。

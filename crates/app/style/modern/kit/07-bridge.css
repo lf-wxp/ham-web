@@ -1,7 +1,7 @@
 /* ============================================================
    像素工具类 → 现代 token 的桥接（仅在现代根内生效）
    ------------------------------------------------------------
-   原 `kit.css` 第 5763–6120 行（7/11 段，台账 C4 的分域拆分）。
+   原 `kit.css` 第 5763–6120 行（7/11 段；分域约定见 `docs/ui/modern.md` 附录）。
 
    **顺序即级联**：本目录下的文件由 `../kit.css` 按 01→11 顺序 `@import`，
    同名 `@layer components` 按这个顺序拼接。**不要按主题重排文件**：同层同优先级的
@@ -316,7 +316,7 @@ html[data-ui-style="modern"] .md-panel table:not(.md-table) tbody tr:last-child 
 @layer components {
   /* 错误态：与空态分开一套（空态的虚线记号读作「这里什么都没有」，错误需要一个
      能被一眼认出的「出事了」形态）。底色取 `--md-danger` 的低掺量，文字走 `-ink` 档 ——
-     桥接页那套手写的 `bg-destructive/5` 与表单的 7% 掺色从此统一到这里（台账 S3 + T2）。 */
+     桥接页那套手写的 `bg-destructive/5` 与表单的 7% 掺色从此统一到这里（见 `docs/ui/modern.md` §4.3）。 */
   .md-error {
     display: flex;
     align-items: flex-start;

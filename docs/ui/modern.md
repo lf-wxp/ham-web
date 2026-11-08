@@ -93,6 +93,24 @@
   `e2e/tests/modern_a11y.spec.ts` 的「状态色 token 的对比度」（它直接量 token 对页面四个真实底面的对比度，浅深各一遍）。
 - 品牌橙的实心面（焦点卡的 `--md-accent-face-*`）是明暗共用的有意字面值，在行尾写 `/* color-ok: 理由 */`。
 
+#### 跨皮肤工具类的三档映射（`@theme inline` 的三种修法）
+
+像素风的色彩 token 写在 Tailwind 的 `@theme inline` 里，**生成工具类时值已经内联**，运行时再改 `--color-*` 不会生效。
+共享组件用到的工具类要在现代风换色时，按代价从低到高只有三种修法：
+
+| 修法 | 什么时候能用 | 代价 |
+|---|---|---|
+| ① 覆盖**底层变量** | 内联的是中立变量（`--color-chart-5: var(--chart-5)`、`--color-hp: var(--hp-fill)`） | 一处覆盖全部档位，含 `/20` 这类透明度档 |
+| ② 按**类名**覆盖 | 内联的是像素专属 token（`var(--pxl-gold-text)`） | 每个类名、每个透明度档各写一条，最贵 |
+| ③ 先加**别名层**，再覆盖别名 | 想用 ① 但像素侧写死了 `--pxl-*` | 把像素侧 `--color-*` 的**定义处**改成引用别名即可，之后同 ① |
+
+判据：`rg 'var\(--' crates/app/style/pixel/tokens.css` 看 `@theme inline` 那一行究竟内联了什么，再决定用哪一种。
+
+现行落点：四族语义色的 8 个中立别名（`--hp-fill` / `--hp-ink` / `--xp-` / `--gold-` / `--win-`，填充与文字各一）
+与图表色阶 `--chart-1..5`，现代风统一在 `legacy-utilities.css` 里覆盖别名 → 一次覆盖「填充 + 文字 × 4 族」的全部档位。
+**不要再用类名覆盖**：状态文字色曾为四个类名各写一条 `html[data-ui-style="modern"] .text-hp-text { … }` 止血，
+别名层落地后已删除 —— 两套机制并存时，下一个改颜色的人会改错那一处。
+
 ### 2.2 字体（三个声部）
 
 | 变量 | 字族 | 用途 |
@@ -112,6 +130,11 @@
 **换展示 / 等宽字族时，同步改回落字体的度量覆盖**：`fonts.css` 里的 `Bricolage Fallback` / `Plex Mono Fallback` 用
 `size-adjust` / `ascent-override` / `descent-override` 让「字体还没到」时的行盒与最终一致，否则 `font-display: swap` 换字时标题会上下跳；
 数值的算法写在该处注释里。
+
+**中文展示字同样要有度量覆盖**：`Noto Sans SC Display Fallback` 用 ascent 116% / descent 34%（= 1.50em）对齐 Noto 的行盒。
+没有它，`swap` 之后中文标题每行差 3.6px（Noto 1.50em vs 系统黑体 1.40em，36px 标题肉眼可见地跳一下）。
+**坑**：macOS 上 `local("PingFang SC")` 匹配不到且**静默失效**，必须写 PostScript 名 `local("PingFangSC-Regular")`。
+核对方式：断掉字体加载后量标题高度，应当逐像素不变（实测 74px = 74px，位移 0）。
 
 ### 2.3 字号阶梯
 
@@ -181,8 +204,10 @@ ease    --md-ease（标准）· --md-ease-out（入场）
   步进按钮、`.md-icon-btn-xs` 与 `.md-select-sm` 抬到 32px（再大会吃掉字段右侧内距）；≤900px 的筛选胶囊 `.md-chip` 抬到 44px。
   **嵌在字段里的胶囊不跟着抬**（`.md-menu-search .md-chip` 收到 32）：目录搜索框是 40px 的字段，44 的胶囊会从上下边框各顶出 2px。
   WCAG 2.5.8 的下限是 24×24，20×20 明确不达标。
-- **中文界面把最小两档字号各抬 1px**：`--md-text-3xs` 10→11、`--md-text-2xs` 11→12（`tokens.css` 的 `[lang^="zh"]` 分支）。
+- **中文界面的最小两档字号整体抬一档**：`--md-text-3xs` 10→**12**、`--md-text-2xs` 11→**13**
+  （`tokens.css` 的 `[lang^="zh"]` 分支）。`--md-text-2xs` 与 `sm` 同值是有意的：中文只需要一个「最小正文级」。
   这两档是按西文 kicker 定的，汉字方块在 10 / 11px 会糊。
+  回归：181 路由 × 三语 × 320 / 390 的溢出审计。
 - **≤640px 的练习 / 考试题卡按手机密度排**：卡内距 24→14、卡头 14/18→6/14、卡内容 18→8/12、选项行 10→8、
   选项间距 6→4，题干与选项统一到 `--md-text-compact`（窄屏 15）与 1.45 / 1.4 行高，
   题号 17→13、卡头徽标收到 `--md-text-2xs`。
@@ -203,6 +228,8 @@ ease    --md-ease（标准）· --md-ease-out（入场）
   像素风的 `max-w-5xl` 也取它 —— 两套皮肤版心同宽）；`08-motion.css` 把 `.max-w-5xl`
   覆盖成它，页头 / 正文 / 页脚 / 底部工具条一起换。顶栏 `.md-nav-inner` 同样只取这一个值。
 - 页头：`kit_modern::ModernPageHead`（标题 + 副标题 + 右侧操作区 + 下方工具条），**不要页面里手写 `<h1>`**。
+- 页头那把「尺」（`.md-article-head::after`）：≥640 是 128px 色条 + 72px 刻度，**<640 压到 48 + 56**。
+  不压的话两段各自贴边、390px 下中间空出 140px，读成两条断线而不是一条尺（「两段加起来约三成宽」是判据）。
 - 断点：见下面「断点与固定层」。
 - 滚动：整页一条滚动条（**自绘**，见下）；页内第二根吸顶栏用 `common::StickyPanel`，**页面里不要手写 `sticky top-[…]`**。
 - **窗口滚动条不走系统那条**：系统滚动条属于视口，会一头扎进吸顶导航、另一头扎进贴底固定层。
@@ -299,6 +326,10 @@ ease    --md-ease（标准）· --md-ease-out（入场）
 | `.md-link` | 正文行内链接（行动色 + 悬停加深，**不下划线**；全站 `a` 免下划线，见 `style/input.css`），由 `kit::link_class()` 换装 |
 | `.md-link-row` | 首页入口列表（`.md-link-list`）里的一行：`flex` + 36px 高 + `margin-inline: -8px` 的悬停「出血」。**与 `.md-link` 无关**，不要混用 |
 
+> **一排平级动作必须同一形态、同一高度**：`/log` 的工具条曾有 4 个 `md-btn-ghost` + 1 个 `FileInput(Outline)` 药丸 + 1 个 `md-btn-quiet`，
+> 六个动作同样重要，看起来却是三档轻重。现代分支里 `FileInput` 一律 `Variant::Ghost` 且不降尺寸；
+> 工具条里混进任何带描边 / 带底色的控件，先问「它与旁边的按钮是不是同一权重」。
+
 ### 4.2 表单
 
 | 类 | 用途 |
@@ -327,6 +358,9 @@ ease    --md-ease（标准）· --md-ease-out（入场）
 | `.md-mon`（+ `md-mon-svg` / `md-mon-idle` / `md-mon-hit`） | 怪物插画（`kit_modern::ModernMonster`）：圆角外框 + 同色辉光 + 矢量角色，形态按像素精灵名（`mon_*` / `boss` / `hero`）选定，配色由 `data-tone` 给出；`md-mon-idle` / `md-mon-hit` 是战斗里的待机 / 受击动效（减弱动态偏好下静止）。图鉴、战斗舞台、地图下一关共用 |
 | `.md-tile` | 内嵌小块：一组等价的读数（点划符号卡、时值格、公式卡）。`--md-surface-2` 底 + 1px 描边 + `--md-r-md`；可点的 `<button>` / `<a>` 自带悬停（描边转 `--md-accent-line`）。**不要**用它替代 `.md-panel` —— 它是「面板里的一堆小块」，不是容器 |
 | `.md-formula` | 公式读数：等宽 + 墨色。**不用行动色**（一页几十条公式，全染橙会废掉「一屏一个焦点」）；与正文的区分靠字体不靠颜色 |
+| `.md-readout` / `.md-readout-inline` | **只读结果条**：左 2px 行动色规则线 + 等宽数字 + 正文色。不要用 `.md-input` 画只读值 —— 同底、同圆角、同字号，用户分不清哪个能改（工具页 37 处结果条曾与输入框同形）。按皮肤派发走 `pages/tools/mod.rs` 的 `result_class()` / `result_inline_class()` |
+| `.md-skel` / `.md-live-metric-skel` | 骨架屏：平滑扫光，`prefers-reduced-motion` 下降级。共享 `Skeleton` 组件在现代风也走它 —— `.skeleton` 只有像素版（`--pxl-dither` + `steps(1)`），直接沿用会渲染成硬切灰块。首页 live 读数按**三位数字**预留宽度，否则读数从占位跳到真值时整块抖一下 |
+| `.md-error` | 错误块：`--md-danger` 掺 7%（与表单错误态同一档），由 `ErrorState` 统一渲染。桥接页曾手写 `bg-destructive/5`，与 `.md-input[aria-invalid]` 的 7% 并成两档红底 |
 | `.md-q-row*` | 分类浏览、收藏集与错题集共用的题目卡片（`.md-q-row-head` 装标签行、`.md-q-row-text` 是题干、`.md-q-row-tag` 是分类胶囊；收藏集在卡片末尾追加 `.md-bookmark-foot` 分组 / 笔记操作区，错题集追加 `.md-mistake-foot`（三行：我的答案 / 考点 / 同类题再练，复习进度，错因自评 + 移出；各行自己 `flex-wrap`，320px 下三语都不撑出卡片），都不另画题目版式；错题集还通过 `chosen` 把用户当时选的项标上 `.md-q-row-chosen`「我的选择」，选错的另加红色左线）。**标签行与题干必须是两个块级行**：标签与题干同处一个 flex 行时，题干首行被胶囊推到右边、换行后回到卡片内沿，左边缘就成了锯齿。判据见 `modern_ui.spec.ts` 的「题目行」 |
 
 > **卡片只有一枚「这里是一块」的记号**：内容卡用 `.md-panel::before` 的左上角标（默认行动色，
@@ -346,6 +380,33 @@ ease    --md-ease（标准）· --md-ease-out（入场）
 | `.md-drawer-fab` / `.md-drawer-list` / `.md-drawer-item` / `.md-drawer-sublist` | 窄屏页内菜单（`kit_modern::ModernMenuDrawer`）：可拖动的悬浮按钮 + 抽屉里的行式列表（子类缩进挂在主类下），见 §3 |
 | `.md-menu-chips` | 桌面版分类胶囊行的容器：`<768` 整块隐藏（那份分类在抽屉里），避免同一屏两份菜单 |
 | `.md-scrollbar` / `.md-scrollbar-thumb` | 自绘窗口滚动条（`ui::ScrollBar`）：只画在吸顶导航下沿与贴底固定层上沿之间，见 §3 |
+
+> **展开态要看得出来**：「更多」的触发器在面板打开时与普通导航项一模一样，而 dock 里的同款有洗底。
+> 面板开着就写 `.md-nav-link.md-menu-anchor[aria-expanded="true"]`（浅橙底 + 行动色文字）；
+> **不加下划线** —— 下划线是「当前页」的记号，两个语义不能共用同一种画法。
+
+**调谐台与目录面板**（两个「按概念找页面」的入口，规则一并写在这里）：
+
+- **触屏路径只有一条**：目录面板自带按页名 / 路由 / 译文过滤整份目录的搜索框，触屏用户走它；⌘K / Ctrl K
+  只服务键盘用户（不开面板、↑↓ 选、覆盖全部路由）。**不要**再给调谐台加「跳转页面」入口 —— 同一件事做两遍，
+  还多一层弹层切换（复盘见 §8 的 37）。
+- **结果先按 registry 的段排序、再切段**：按匹配顺序直接切段会让同组碎成多段、段标题重复。渲染顺序、
+  `↑↓` 游标与 `aria-activedescendant` 必须同源（都来自同一份排好序的列表）。
+- **站内搜索的「页面」上限 8 条，且要分档排序**：同名 → 标题前缀 → 标题包含 → 仅路由包含。
+  只放宽上限不够 —— 旧实现按注册表顺序截断，前缀命中的长尾页会被「正文提到」的条目挤掉。
+- **`group: None` 的页面不进任何段**：面板按 registry 分组切段（`kit_modern/menu.rs` 的 `SECTIONS`），所以这类页面
+  只有 ⌘K / 直接 URL 到得了。要给它直达入口就**在面板底部补一枚**，别塞进别人的段 ——「段 = registry 分组」
+  这条对应关系不能因为「入口好找」而失真（`/achievements` 是现行落点；`/license.html` 还没补，见 `ROADMAP.md`）。
+- **语气分层**：游戏化页面（`/map`、`/bestiary`、战斗界面）保留世界观语言；调谐台是工具，
+  给这类路由补**白话别名**（「按专题刷题」「错题复习」），别名同时参与输入过滤。
+
+### 4.5 图标（`kit_modern::MIcon`）
+
+- 默认光学尺寸 20px，几何简化到「一眼读得出它是什么」。判据是**细节在 20px 下要连成一体**：
+  设置图标原先是「圆 + 四根短线」，放大才看得出是准星 —— 现在改成齿轮（内圈 + 齿根圈 + 八齿），齿与圈连成一体。
+- 图标按钮必填 `aria-label`（见 §6）；纯装饰图标 `aria-hidden="true"`，且不能是链接的唯一内容 ——
+  `<360` 收掉品牌文字时，站标靠 `aria-label` 保住可访问名。
+- 界面图标集中在 `kit_modern/icons.rs`，页面里不各自内联 `<svg>`；图表 / 示意图这类画布除外。
 
 ---
 
@@ -381,6 +442,7 @@ kit::table_cell_class("align-top") // 现代：只有 extra / 像素：border px
 | 新增无对应组件的 `md-*` 类不登记 | 类名索引门禁会红 |
 | 层外（不在 `@layer` 里）写不带 `md-` 的规则 | 会污染像素风（层外优先级高于工具类） |
 | 用 `!important` 而不写理由 | 必须同行补 `/* important-ok: 理由 */` |
+| 在 `view!` 里写 `({expr})` | Leptos 只认独立的 `{…}`：`(` 开头的 token 树会被当成文本，页面上会真的印出「(ents.len())」。要括号写 `"(" {expr} ")"` |
 
 ---
 
@@ -401,6 +463,10 @@ kit::table_cell_class("align-top") // 现代：只有 extra / 像素：border px
 - **axe 的「零违规」不覆盖渐变底、背景图与伪元素上的文字**：这类节点只进 `incomplete`（需人工复核），不算 violation，
   迁移时曾有 1272 处。`.md-quiz-score .md-mono` 就是人工按「向上找第一个实色祖先、再做 alpha 合成」估算后才发现只有 3.29:1
   （`.md-mod-index`、`.md-menu-count` 是同类）。仓库里没有留存这个自检脚本，改这类文字的颜色时要自己算一遍。
+- 焦点环：`--md-ring` 在浅色档是 **70% 透明度**的蓝（合成后实测 3.45:1，深色档 3.69:1）。
+  50% 时只有 2.33:1，达不到 WCAG 对非文本的 3:1 —— 调这个 token 要重新量，别凭肉眼说「看得见」。
+- **空态不是告警**：题库不可用、已全部做完这类状态用 `EmptyState`，**不要 `role="alert"`** ——
+  那会把「题库不可用」当作紧急告警念给读屏用户，而这些只是「这里暂时没有内容」。
 - 弹层：`role="dialog"` + `aria-modal` + `data-modal-root`，焦点用 `focus::use_modal_focus` 锁在面板内。
 
 ---
@@ -418,7 +484,7 @@ kit::table_cell_class("align-top") // 现代：只有 extra / 像素：border px
 | `@supports selector()` | 83 | 69 | 14.1 | 回退机制本身，比 `:has()` 早得多 |
 | `@property` | 85 | 128 | 16.4 | 渐进：缺失时焦点卡 hover 的颜色变化是「切」而不是「过渡」 |
 | `animation-timeline` | 115 | 159 | 26 | 渐进：已在 `@supports` 内，缺失时无滚动视差 / 脊柱进度 |
-| View Transitions | 109 | 144 | 18 | **未使用**：调谐台跳转曾用，因拍快照冻结数秒已改回普通换页（`interaction.md` 硬约束 1、台账 C10） |
+| View Transitions | 109 | 144 | 18 | **未使用**：调谐台跳转曾用，因拍快照冻结数秒已改回普通换页（实测 4038 ms → 25–39 ms，见 `interaction.md` 硬约束 1） |
 
 **合起来的下限：Chrome 111 / Firefox 113 / Safari 16.4。** 低于它的浏览器没有支持承诺。
 `:has()` 会把 Firefox 的下限从 113 抬到 121，这是**刻意避开的** —— 所以有下面的规矩。
@@ -576,6 +642,20 @@ node e2e/audit/dual_sweep.mjs modern && node e2e/audit/dual_sweep.mjs pixel
    点搜索按钮时 `set(true)` 写在死信号上，弹层永远不出现。现在站内搜索的状态是独立的 newtype（`components/search_dialog.rs` 的 `SearchOpen`），
    设置面板的开关不再走 context（`ModernMenu` 显式接收 `settings_open` prop）。约定：`provide_context` 只留给真正跨层的状态，且要有自己的类型；
    父子之间直接用 prop。判据（`global_search.spec.ts`「切换界面风格后顶栏入口仍可用」）：像素 → 现代 → 像素，每一步都点顶栏按钮，而不是按 `/`。
+33. **同名规则不限定祖先会泄漏到全站**：hero kicker 的 `.md-badge` 把 `text-transform: uppercase` + 0.16em 字距
+   漏给了每一个徽标（统计页的「20m」被渲染成「20M」）。加类名前先问「它要不要限定祖先」（修法是收进 `.md-hero-copy .md-badge`）。
+34. **为了「暗示可以滚」而加的装饰，如果落在某个控件正下方，就会被读成那个控件的样式**：目录面板顶部那条 14px 渐隐
+   正好贴在搜索框下面，看起来就是「搜索框自带一个阴影」，一个说不清来路的装饰。撤掉后靠**内容在边缘被切断**
+   （列表在底栏上方露出半行）+ 滚动条提示。
+35. **换外壳时先 `rg` 一遍这个 id 所在的标签**：`section#backup` 是三份 e2e 的定位契约（`backup.spec.ts` /
+   `account_sync.spec.ts` 用 `section#backup input[type=file]`），把它改成 `<div>` 会让四条同步用例超时。
+   组件层换了皮、外层标签却不该动 —— 先查谁在按标签定位。
+36. **按路径读样式 / 数据的测试，移动文件时要连带检查**：`kit_modern/monster_art.rs` 的单测用
+   `include_str!("…/kit.css")` 读盘找配色块，`kit.css` 拆成「入口 + 分片」后入口文件里没有规则，该测试**静默变红**
+   （86 条里挂 1 条，没人会去找）。已改成运行时读「入口 + 整个 `kit/` 目录」。
+37. **「换个入口也能进来」不算补全**：调谐台曾加过一颗「跳转页面」的 chip，后来整段撤掉 —— 目录面板自带的搜索框
+   已经能按页名 / 路由 / 译文过滤整份目录，再放一颗是把同一件事做两遍，还多一层弹层切换。
+   新增入口前先问「现有入口能不能到」：能到就去补现有入口的可发现性，不要在旁边并排放第二个。
 
 ---
 
@@ -592,7 +672,7 @@ node e2e/audit/dual_sweep.mjs modern && node e2e/audit/dual_sweep.mjs pixel
 
 ### 样式文件怎么排（`kit/` 的 11 个分片）
 
-原来是一个 9900 行的 `kit.css`，2026-11 按**连续切片**拆成 11 个文件（台账 C4）：
+原来是一个 9900 行的 `kit.css`（约 294 KB / 553 个类），2026-11 按**连续切片**拆成 11 个分片文件：
 
 | 文件 | 内容 |
 |---|---|
@@ -612,7 +692,7 @@ node e2e/audit/dual_sweep.mjs modern && node e2e/audit/dual_sweep.mjs pixel
 
 - 拆分只做**连续切片 + 末尾追加**：先按行序切出各分片，新规则追加到对应分片末尾、不插进切片中间。
   拼接结果**不是**原文件的逐字节复刻（每个分片有自己的文件头，尾部还带新增规则），
-  但同层同名规则的**源顺序**必须与原文件一致（复核方式见台账 C4）；
+  但同层同名规则的**源顺序**必须与原文件一致（复核：单文件版与分片版各构建一次，导出整份 CSSOM 逐行比对；这类页面本身有入场与懒挂载抖动，截图对比不可靠）；
 - **不要按主题重排文件**，也不要随意调换 `@import` 顺序 —— 这类回归截图看不出来，只表现为「某处间距 / 颜色莫名变了」；
 - 新增样式追加到对应主题文件的**末尾**；跨主题的新组件另起文件并追加到 `@import` 列表**末尾**。
 - 分片文件与 `@import` 列表由 `check-structure` 的「现代风 kit 分片导入」守卫**双向**校验：

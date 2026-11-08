@@ -245,7 +245,7 @@ pub fn LogPage() -> impl IntoView {
             {move || t("log.print-qsl-labels")}
           </a>
           // 与同排的 ghost 按钮同权重、同高度：`FileInput` 默认会带 `Outline`（像素风那边
-          // 整排都是描边按钮，样式一致），搬到现代风就成了整排唯一的药丸（台账 C2）。
+          // 整排都是描边按钮，样式一致），搬到现代风就成了整排唯一的药丸（见 `docs/ui/modern.md` §4.1）。
           <FileInput
             accept=".adi,.adif,.txt"
             label=Signal::derive(move || t("log.import-adif"))

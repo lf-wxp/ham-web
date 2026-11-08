@@ -1,7 +1,7 @@
 /* ============================================================
    外壳与基础控件：滚动条、按钮、输入、卡片、标题、图标等底座
    ------------------------------------------------------------
-   原 `kit.css` 第 25–1748 行（1/11 段，台账 C4 的分域拆分）。
+   原 `kit.css` 第 25–1748 行（1/11 段；分域约定见 `docs/ui/modern.md` 附录）。
 
    **顺序即级联**：本目录下的文件由 `../kit.css` 按 01→11 顺序 `@import`，
    同名 `@layer components` 按这个顺序拼接。**不要按主题重排文件**：同层同优先级的
@@ -174,7 +174,7 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
   /* 320–359 的窄屏：品牌文字收掉，只留站标。
      为什么要有这一档：en@320 下顶栏右侧操作区已经贴到内容边界（余量 0），任何一个新入口
      都会立刻溢出；而 320 是 `mobile_overflow` 明确覆盖的宽度。链接的可访问名由
-     `aria-label` 兜住（站标本身 `aria-hidden`），所以收掉文字不影响读屏（台账 R1）。 */
+     `aria-label` 兜住（站标本身 `aria-hidden`），所以收掉文字不影响读屏（见 `docs/ui/modern.md` §3）。 */
   @media (width < 360px) {
     .md-brand-text {
       display: none;
@@ -1050,7 +1050,7 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
   }
 
   /* 读数占位：宽度按三位数字预留（读数最大 3 位），高度贴着 26–34px 的读数行 ——
-     真值到位时这一格不换宽，右侧三格不会跟着挪（台账 P2）。 */
+     真值到位时这一格不换宽，右侧三格不会跟着挪。 */
   .md-live-metric-skel {
     display: block;
     width: 3ch;

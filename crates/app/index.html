@@ -93,10 +93,11 @@
         // 中文标题（noto-0）。等宽三档（plex 400/500/600）不进预载队列 —— 它们出现在
         // 日期 / 读数这类次要比重的文字里，`font-display: swap` 晚到不会遮挡内容，
         // 而预载一个 400 档也挡不住 500 / 600 的按需加载（实测首访仍会取这三档，共 30KB）。
-        // 台账 P3；首访实测：6 个字体文件 / 241KB，预载 3 个（204KB）。
+        // 字体预算与按语言预载的体积见 docs/engineering/performance.md §5.2（数值只在那里维护，
+        // 这里的预载队列跟着它改）。
         // 中文展示字（100KB）只在中文界面预载：英 / 西语界面的标题是译文，中文只零散
         // 出现在正文里（`font-display: swap` + `Noto Sans SC Display Fallback` 的度量对齐
-        // 兜住，见 `fonts.css`），不值得占 40% 的首屏字体预算。台账 P3。
+        // 兜住，见 `fonts.css`），不值得占 40% 的首屏字体预算。
         let locale = "zh";
         try { locale = localStorage.getItem("locale") || "zh"; } catch {}
         if (uiStyle === "modern") {

@@ -39,7 +39,7 @@ const CHUNK: usize = 24;
 ///
 /// **不再兼职「跳转页面」**：面板自带的搜索框已经按页名 / 路由 / 译文过滤整份目录
 /// （`sections` 那个 Memo），触屏用户要「找某页」直接在这里输入 —— 再放一颗跳调谐台的
-/// chip 是把同一件事做两遍，还多一层弹层切换（台账 I3 的反向修正）。
+/// chip 是把同一件事做两遍，还多一层弹层切换（加过一版又撤掉，见 `docs/ui/modern.md` §4.4）。
 /// 调谐台（⌘K）仍留给键盘用户：不用开面板、↑↓ 选、覆盖全部 181 条路由。
 #[component]
 pub fn ModernMenu(open: RwSignal<bool>, settings_open: RwSignal<bool>) -> impl IntoView {
@@ -289,10 +289,10 @@ pub fn ModernMenu(open: RwSignal<bool>, settings_open: RwSignal<bool>) -> impl I
                     >
                       {move || t("tools.data-backup")}
                     </a>
-                    // 成就页在 registry 里是 `group: None`（不进任何分组），现代风外壳
-                    // 因此一直没有直达入口 —— 像素风有 HUD 徽章，现代风没有（台账 N1）。
-                    // 放在这里而不是塞进「考试中心」段：它不属任何分组，塞进去会让
-                    // 「段 = registry 分组」这条对应关系失真。
+                    // 成就页在 registry 里是 `group: None`（不进任何分组），现代风外壳原本没有直达入口
+                    // （像素风有 HUD 徽章）—— 这里补的就是那个入口。放在底部而不是塞进「考试中心」段：
+                    // 它不属任何分组，塞进去会让「段 = registry 分组」这条对应关系失真
+                    // （规则见 `docs/ui/modern.md` §4.4）。
                     <a
                       class="md-btn md-btn-ghost"
                       href="/achievements"

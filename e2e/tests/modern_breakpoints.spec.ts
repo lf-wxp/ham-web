@@ -247,7 +247,7 @@ test.describe("现代风断点", () => {
     expect(table!.min).toBeGreaterThanOrEqual(520);
   });
 
-  // 台账 R1：320 下顶栏右侧的余量是 0，任何一个新入口都会立刻溢出。
+  // 320 下顶栏右侧的余量曾是 0，任何一个新入口都会立刻溢出（360 档收掉品牌文字，见 docs/ui/modern.md §3）。
   // 360 那一档把品牌**文字**收掉、只留站标，并靠 `aria-label` 保住可访问名。
   test("320px：顶栏品牌只留站标、链接仍可被读屏识别", async ({ page }) => {
     await seed(page);

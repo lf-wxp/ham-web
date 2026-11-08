@@ -66,7 +66,7 @@ test("现代风 · 亮色：三个主页面零 a11y 违规", async ({ page }) =>
   }
 });
 
-// 桥接页抽样（台账 A4）：上面那六条覆盖的是真迁移的页面，而全站 90% 的页面走的是
+// 桥接页抽样：上面那六条覆盖的是真迁移的页面，而全站 90% 的页面走的是
 // `PageHeader` + 工具类桥接，从来没被 axe 扫过。这里挑四个形态不同的桥接页：
 // 表单密集（/backup）、图表（/stats）、Canvas + 表单（/nec）、多卡 + 外部数据（/solar）。
 test("现代风 · 桥接页抽样：四个非主页面零违规（深色）", async ({ page }) => {
@@ -284,7 +284,7 @@ test.describe("状态色 token 的对比度", () => {
   }
 });
 
-// 语义文字色必须走现代 token，而不是像素色（台账 C7）。
+// 语义文字色必须走现代 token，而不是像素色（`@theme inline` 的内联值不看运行时变量，见 docs/ui/modern.md §2.1）。
 //
 // 这条曾经「写了但没生效」：`--color-hp-text` 等四个变量在 `legacy-utilities.css` 里映射过，
 // 但像素风的色彩 token 声明在 Tailwind 的 `@theme inline` 里 —— 生成工具类时值已内联，

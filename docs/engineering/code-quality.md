@@ -309,6 +309,8 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 | C6.3 | 加载态 | 抽查首屏资源页 | 页头先行 + 骨架占位 + `sr-only` 状态播报 | 裸文字加载 |
 | C6.4 | Tooltip | `grep -rn 'title="' crates/app/src` | 原生 `title=` 已清零（SVG `<title>` 与组件 prop 除外） | 残留 |
 | C6.5 | 错误文案可定位 | 抽查解码 / 导入 / 网络失败 | 有专属错误码文案，不把所有失败说成一句 | 笼统错误 |
+| C6.6 | 错误态组件 | `grep -rn 'role="alert"' crates/app/src` | 错误块统一走 `ErrorState`（标题 + 原文 + 可选重试），现代风的 `.md-error` 与表单错误态同为 `--md-danger` 7% 掺色；手写 `bg-destructive/5` 会形成第二档红底 | 逐字复制的错误块 |
+| C6.7 | 空态不冒充告警 | 抽查题库不可用、已全部做完 | 走 `EmptyState`，**不用 `role="alert"`**（「这里没有内容」不是紧急告警，读屏会打断用户） | 空态被播报成错误 |
 
 ### C7 像素风、主题与对比度
 
@@ -672,7 +674,7 @@ grep -rn "TODO\|FIXME\|HACK\|todo!()\|unimplemented!()" crates
 | 一文件一组件 | 每个 `.rs` 最多一个 `-> impl IntoView / AnyView`（C3.1） | 扫描根不存在、或一个文件都没扫到都算失败 |
 | 双设计系统隔离 | `kit_modern/` 与 `style/modern/` 里不出现 `pxl-` | |
 | 反向隔离 | 只在像素风渲染的文件（有 `pxl-`、无 `is_modern` / `kit::`）里不出现 `md-*` | 判定逻辑是纯函数，有正反例单测 |
-| 像素式内嵌块 | 共享页面（引用 `is_modern` / `kit::` / `crate::ui::` / `components::common::` 的文件）里不出现无条件的 `class="… border bg-inset …"`：现代风的内嵌块是 `.md-tile`，`bg-inset` 只能按皮肤派发（用 `kit::tile_class` / `inset_panel_class`，不要各写一份 `if`） | 台账 C1；变异验证过（写回一处即红）。豁免口径**宁可多扫**：漏判会让规则空转，误判只多扫几行 |
+| 像素式内嵌块 | 共享页面（引用 `is_modern` / `kit::` / `crate::ui::` / `components::common::` 的文件）里不出现无条件的 `class="… border bg-inset …"`：现代风的内嵌块是 `.md-tile`，`bg-inset` 只能按皮肤派发（用 `kit::tile_class` / `inset_panel_class`，不要各写一份 `if`） | 规范见 `ui/modern.md` §4.3 的 `.md-tile`；变异验证过（写回一处即红）。豁免口径**宁可多扫**：漏判会让规则空转，误判只多扫几行 |
 | 现代风样式门禁 | 选择器**逐项**判定：提到 `pxl-*` / `bg-card` 等像素风标识、或按 `data-sig` 分支却无 `md-` 的，必须带 `html[data-ui-style="modern"]`（C7.7） | 逗号列表里一项带门禁不能放过其余项 |
 | 层外样式门禁 | 不在 `@layer` 里的规则**逐项**必须带 `md-` 或 `data-ui-style`；`@keyframes` 步与 `::view-transition*` 除外 | `@layer a, b;` 这种无块语句不会吞掉下一条规则 |
 | `!important` 标注 | 每一条必须同行写 `/* important-ok: 理由 */` | |

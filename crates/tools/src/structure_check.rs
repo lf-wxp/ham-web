@@ -942,7 +942,7 @@ fn unconditional_inset_blocks(code: &[&str]) -> Vec<(usize, String)> {
 
 /// 共享页面里不许再出现「像素式内嵌块」：`class="… border bg-inset …"`。
 ///
-/// 为什么需要（台账 C1）：`bg-inset` 是像素风的凹陷块（1px 墨框 + 灰底 + 直角），
+/// 为什么需要：`bg-inset` 是像素风的凹陷块（1px 墨框 + 灰底 + 直角），
 /// 在现代风里只能靠 `legacy-utilities.css` 把它映射成「灰底 + 6px 圆角」，看起来仍像
 /// **像素页面换了配色**。现代风的内嵌块是 `.md-tile`（12px 内距、`--md-r-md` 圆角、悬停时描边转橙）。
 ///
@@ -996,7 +996,7 @@ fn check_pixel_inset_blocks(root: &Path) -> bool {
     println!("{line}");
   }
   println!(
-    "    → 改成 `class=if crate::kit::is_modern_at_mount() {{ \"md-tile …\" }} else {{ \"border bg-inset …\" }}`；见 docs/ui/modern-review.md 的 C1"
+    "    → 改成 `class=if crate::kit::is_modern_at_mount() {{ \"md-tile …\" }} else {{ \"border bg-inset …\" }}`；见 docs/ui/modern.md §4.3 的 `.md-tile`"
   );
   false
 }
@@ -1798,7 +1798,7 @@ fn check_modern_breakpoints(root: &Path) -> bool {
 
 /// 把现代风的 kit 样式读成一份文本：入口 `kit.css`（约定 + `@import`）+ `kit/` 下的分域文件。
 ///
-/// 台账 C4 之后 `kit.css` 只剩约定与导入，规则在 `kit/*.css` 里。任何「在 kit.css 里找某条声明」
+/// 拆分之后 `kit.css` 只剩约定与导入，规则在 `kit/*.css` 里。任何「在 kit.css 里找某条声明」
 /// 的门禁都必须走这个函数，否则会退化成空转（文件里当然找不到 —— 但它找的东西其实还在）。
 fn read_modern_kit(root: &Path) -> Option<String> {
   let entry = root.join("crates/app/style/modern/kit.css");

@@ -6,7 +6,7 @@
 //! 为什么要有这个组件：解码页那 10 处 `role="alert"` + `border-destructive/40` 是逐字复制的，
 //! 改一次颜色要改 10 个文件，且只有像素风的取值（`text-hp-text` 是血量色）——
 //! 现代风里靠 `legacy-utilities.css` 的变量映射兜底，误差在两套皮肤之间越拉越大
-//! （见 `docs/ui/modern-review.md` 的 S3 / T2）。
+//! （规范见 `docs/ui/modern.md` §4.3 的 `.md-error`）。
 //!
 //! 形制：
 //! - 现代风 `.md-error`：行动色淡底 + `--md-danger-ink` 文字，`detail` 用等宽小字（原文 / 错误码）；

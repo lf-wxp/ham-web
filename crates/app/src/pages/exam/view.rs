@@ -532,7 +532,7 @@ pub fn ExamPage() -> impl IntoView {
     }
     if store.questions.with(|q| q.is_empty()) {
       // 「题库里没有题」是**空态**，不是错误：`role="alert"` 会让读屏把它当紧急告警念出来，
-      // 而这时用户没有任何操作失败（台账 A3）。
+      // 而这时用户没有任何操作失败（见 `docs/ui/modern.md` §6）。
       return view! {
         <PageContainer class="space-y-0">
           <crate::components::common::EmptyState

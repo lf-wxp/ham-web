@@ -503,7 +503,7 @@ pub fn PracticePage() -> impl IntoView {
         .into_any();
     }
     if store.len() == 0 {
-      // 两种「没有题」都走空态组件（台账 A3）：`unseen_only` 是「全做完了」——
+      // 两种「没有题」都走空态组件（见 `docs/ui/modern.md` §6）：`unseen_only` 是「全做完了」——
       // 给一个回到全部题目的出口；其余是题库不可用，只说明、不给按钮。
       if unseen_only.get() {
         return view! {

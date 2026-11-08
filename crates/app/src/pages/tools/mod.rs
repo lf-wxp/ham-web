@@ -107,7 +107,7 @@ const TAU: f64 = std::f64::consts::TAU;
 /// 结果区（只读，不是表单控件）。
 ///
 /// 两套皮肤各一份取值，**不能只追加一个 `md-*` 类名**：`bg-inset` / `text-sm` 是工具类，
-/// 层优先级高于现代风的组件层，会把读数条的底色与字号抢回去（台账 L1）。
+/// 层优先级高于现代风的组件层，会把读数条的底色与字号抢回去（见 `docs/ui/modern.md` §4.3）。
 /// 现代风换成 `.md-readout`：左 2px 行动色规则线 + 等宽数字，与可编辑的 `.md-input` 一眼可分。
 pub(super) fn result_class() -> &'static str {
   if crate::kit::is_modern_at_mount() {

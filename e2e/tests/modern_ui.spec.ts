@@ -134,7 +134,7 @@ test("⌘K 打开调谐台，输入后能跳到目标页", async ({ page }) => {
   expect(new URL(page.url()).pathname).not.toBe("/");
 });
 
-// 台账 C10：调谐台跳转曾经套了原生 View Transition，点选后整页冻住数秒
+// 调谐台跳转曾经套了原生 View Transition，点选后整页冻住数秒
 // （VT 拍「旧状态」快照时面板还开着，等于把整屏模糊遮罩 + 181 行结果一起光栅化）。
 // 判据不是「快多少」（CI 机器没有性能可比性），而是**这条路径不再触发 VT**：
 // 换页只保留 `#route-content` 的淡入，退出动效归 `presence`。
