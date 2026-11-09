@@ -1,7 +1,6 @@
 //! DXCC 申请记录表：每个实体一条代表通联，可导出 CSV 作核对清单。
 
-use ham_web_core::award_apply::{ApplyVia, dxcc_record_sheet, to_csv};
-use ham_web_core::logbook::LogEntry;
+use ham_web_core::award_apply::{ApplyRow, ApplyVia, to_csv};
 use leptos::prelude::*;
 
 use crate::components::common::EmptyState;
@@ -23,14 +22,15 @@ fn via_key(via: ApplyVia) -> &'static str {
 
 #[component]
 pub(super) fn DxccApplySheet(
-  entries: Memo<Vec<LogEntry>>,
+  /// 申请表的行（`LogStore::derived` 上的会话级缓存）。
+  sheet: Memo<Vec<ApplyRow>>,
   /// 展开态由上层持有：这个组件挂在日志页的响应式闭包里，日志一变就会整体重建，
   /// 展开态若放在组件内部，用户每记一条通联都会被收起。
   open: RwSignal<bool>,
 ) -> impl IntoView {
-  let rows = StoredValue::new(entries.with_untracked(|e| dxcc_record_sheet(e)));
+  // 借用缓存里的那一份，不克隆；不订阅 `sheet`：日志一变，上层会把本组件整体重建。
   let export = Callback::new(move |_| {
-    rows.with_value(|rows| {
+    sheet.with_untracked(|rows| {
       download_text("dxcc-apply.csv", &to_csv(rows), "text/csv;charset=utf-8");
     });
   });
@@ -47,14 +47,14 @@ pub(super) fn DxccApplySheet(
         aria_controls="dxcc-apply-body"
         on_click=Callback::new(move |_| open.update(|v| *v = !*v))
       >
-        {move || rows.with_value(|rows| tp("log.apply-sheet", rows.len(), &[&rows.len().to_string()]))}
+        {move || sheet.with_untracked(|rows| tp("log.apply-sheet", rows.len(), &[&rows.len().to_string()]))}
       </Button>
       <Show when=move || open.get()>
         <div id="dxcc-apply-body" class="space-y-3 px-4 pb-4">
         <p class="text-xs text-muted-foreground">{move || t("log.apply-sheet-desc")}</p>
 
         {move || {
-          rows.with_value(|rows| {
+          sheet.with_untracked(|rows| {
             if rows.is_empty() {
               return view! {
                 <EmptyState plain=true title=Signal::derive(move || t("log.apply-sheet-empty")) />

@@ -91,6 +91,11 @@ pub async fn idle(timeout: Duration) {
 /// 第一次调用也在当前这一帧画完之后：调用方的首屏先出，分批的活排在后面。
 /// `step` 里写信号请用 `try_*`：页面在分批途中被卸载时信号已释放，`try_*` 返回 `None`，
 /// 顺势返回 `false` 结束循环。
+///
+/// **`step` 每次调用都必须有进展、并在有限次内返回 `false`**：不能靠「等别处的状态变好」来结束。
+/// 页面已隐藏时 [`after_next_paint`] 同步执行，`tick` 会变成同步递归 ——
+/// 一个原地踏步、等外部数据的 `step` 在后台标签页里就是无终止的递归（栈溢出或卡死主线程）。
+/// 要等异步数据，就等数据到了再调用 `each_frame`。
 pub fn each_frame(step: impl FnMut() -> bool + 'static) {
   fn tick(step: Rc<RefCell<dyn FnMut() -> bool>>) {
     after_next_paint(move || {
@@ -101,6 +106,37 @@ pub fn each_frame(step: impl FnMut() -> bool + 'static) {
     });
   }
   tick(Rc::new(RefCell::new(step)));
+}
+
+/// 列表渐进展开：`cap` 是列表当前最多显示几项（调用方在取项时 `take(cap.get())`），初值是第一帧
+/// 要放的项数；之后每画完一帧多放 `step` 项，放到 `target()`（通常是 `visible`）为止，
+/// 最后把上限撤掉（`usize::MAX`），后面「加载更多」、改筛选都不再受它限制。
+///
+/// 一次补满的话，补的那一帧和首帧一样重（题库浏览 / 错题本一次补 30 多张带解析的卡片是 50 ms 以上的
+/// 长任务）；分批补则每帧只多一小块，单帧控制在预算内。`cap` 是页面自己的信号，页面卸载后
+/// `try_*` 返回 `None`，循环随之结束。
+///
+/// **数据是异步到达的页面，等数据到了再调用本函数**（见 `browse_page`）。这里每一步都推进 `cap`，
+/// 在有限步内必然结束（步进判定是 core 的 `list_grow::next_cap`，单元测试钉住了终止性）；数据没到就先启动的话，
+/// 上限会在列表出现之前走完，数据一到就是一整页一次建完 —— 偏偏是慢机器、慢网络上最需要分批的时候失效。
+/// 反过来也不能用「数据没到就原地等」来补救：那是靠外部状态结束的循环，
+/// 加载失败时永不收工，页面隐藏时（帧回调同步执行）还会变成无终止的同步递归，见 [`each_frame`]。
+pub fn grow_cap(cap: RwSignal<usize>, step: usize, target: impl Fn() -> usize + 'static) {
+  use ham_web_core::list_grow::{GrowStep, next_cap};
+
+  each_frame(move || {
+    let Some(cur) = cap.try_get_untracked() else {
+      return false;
+    };
+    match next_cap(cur, step, target()) {
+      GrowStep::Done => {
+        let _ = cap.try_set(usize::MAX);
+        false
+      }
+      // `try_set` 成功返回 `None`；返回 `Some(原值)` 是信号已释放（页面被换走了），循环就此结束。
+      GrowStep::Next(next) => cap.try_set(next).is_none(),
+    }
+  });
 }
 
 /// 这次点击是不是「普通左键点链接」：只有这种情况才接管导航。

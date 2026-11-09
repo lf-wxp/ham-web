@@ -4,38 +4,39 @@
 
 use leptos::prelude::*;
 
-use ham_web_core::log_stats::{StatsScope, operators, scoped_entries};
+use ham_web_core::log_stats::{StatsScope, operators};
 
 use super::LogEntry;
+use super::derived::{SCOPE_KEY, build_scoped};
 use super::log_helpers::station_title;
 use super::use_log_store;
 use crate::i18n::{t, tp};
 use crate::ui::{SelectOption, SimpleSelect};
 
-/// 统计口径的持久化 key（视图偏好，不进备份正文）。
-const SCOPE_KEY: &str = "log-stats-scope";
-
-/// 读出持久化的统计口径（短串，见 [`StatsScope::key`]）。
+/// 当前的统计口径（短串，见 [`StatsScope::key`]）。
+///
+/// 全站共用 `LogStore::derived` 上的同一个信号：在一处改了口径，别处立刻跟着变。
+///
+/// 每次取用时再对一次持久化的值（一次 `localStorage` 读，与改前「每进一次页面读一次」同口径）：
+/// 另一个标签页改了口径，换到本页就跟上；值没变不写信号，不惊动订阅者。
 pub fn use_stats_scope() -> RwSignal<String> {
-  RwSignal::new(crate::util::storage::get(SCOPE_KEY).unwrap_or_default())
+  let scope = use_log_store().derived.scope;
+  let stored = crate::util::storage::get(SCOPE_KEY).unwrap_or_default();
+  crate::debounced::set_if_changed(scope, stored);
+  scope
 }
 
 /// 按口径过滤后的通联（跟随日志、台站档案与口径变化）。
 ///
 /// 上层统计（`AwardProgress::from_entries`、`overview`…）都吃 `&[LogEntry]`，
-/// 这里克隆一份子集交给它们，见 [`scoped_entries`]。
+/// 这里克隆一份子集交给它们，见 [`ham_web_core::log_stats::scoped_entries`]。
+/// 传入的是共享口径（[`use_stats_scope`] 的返回值）时直接给出会话级缓存的那一份。
 pub fn scoped_log_entries(scope: RwSignal<String>) -> Memo<Vec<LogEntry>> {
   let store = use_log_store();
-  Memo::new(move |_| {
-    let raw = StatsScope::from_key(&scope.get());
-    store.logbook.with(|lb| {
-      store.station.with(|b| {
-        // 持久化的口径可能指向已删的台站 / 已不存在的操作员，先剔掉失效片段（见 `live`）。
-        let parsed = raw.live(&lb.entries, b);
-        scoped_entries(&lb.entries, b, &parsed)
-      })
-    })
-  })
+  if scope == store.derived.scope {
+    return store.derived.scoped;
+  }
+  build_scoped(store.logbook, store.station, scope)
 }
 
 /// 口径下拉：只有一个台站且只有一个操作员时不渲染（没得选）。

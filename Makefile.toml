@@ -13,6 +13,9 @@ CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 APP_DIR = "crates/app"
 DIST_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/dist"
 SITE_URL = { value = "https://ham.onlyxp.me", condition = { env_not_set = ["SITE_URL"] } }
+# 像素字体子集化的原始 TTF 目录。放 tmp/ 下：不入库，随 `cargo make clean` 一起清掉；
+# 有默认值才不会让未设置时把字面量 `${FONT_SRC}` 当路径传下去（报错会指向一个不存在的目录）。
+FONT_SRC = { value = "${CARGO_MAKE_WORKING_DIRECTORY}/tmp/fonts", condition = { env_not_set = ["FONT_SRC"] } }
 
 # ───────────────────────────── 环境准备 ─────────────────────────────
 
@@ -146,11 +149,49 @@ description = "由 public/ 下的设计源生成 PWA / Apple Touch / badge 图�
 command = "cargo"
 args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "icons"]
 
+[tasks.fonts-fetch]
+description = "下载像素字体子集化所需的 5 个原始 TTF 到 FONT_SRC（默认 tmp/fonts）"
+# 版本钉在下面的 FUSION_VERSION 与 google/fonts 的 commit 上：子集化产物随字体版本变化，
+# 不钉的话「同一份语料跑两次」的结果也未必相同。
+script_runner = "@shell"
+script = '''
+set -eu
+FUSION_VERSION=2026.10.25
+GOOGLE_FONTS_COMMIT=5bb28733cec313b63fbd415b574b5ae35c8aa8b8
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+mkdir -p "$FONT_SRC"
+base="https://github.com/TakWolf/fusion-pixel-font/releases/download/$FUSION_VERSION"
+curl -fsSL -o "$tmp/prop.zip" "$base/fusion-pixel-font-12px-proportional-ttf-v$FUSION_VERSION.zip"
+curl -fsSL -o "$tmp/mono.zip" "$base/fusion-pixel-font-12px-monospaced-ttf-v$FUSION_VERSION.zip"
+unzip -oq -j "$tmp/prop.zip" fusion-pixel-12px-proportional-zh_hans.ttf fusion-pixel-12px-proportional-latin.ttf -d "$FONT_SRC"
+unzip -oq -j "$tmp/mono.zip" fusion-pixel-12px-monospaced-latin.ttf -d "$FONT_SRC"
+raw="https://raw.githubusercontent.com/google/fonts/$GOOGLE_FONTS_COMMIT"
+curl -fsSL -o "$FONT_SRC/PressStart2P-Regular.ttf" "$raw/ofl/pressstart2p/PressStart2P-Regular.ttf"
+curl -fsSL -o "$FONT_SRC/Silkscreen-Regular.ttf" "$raw/ofl/silkscreen/Silkscreen-Regular.ttf"
+echo "原始 TTF 已写入 $FONT_SRC"
+'''
+
 [tasks.fonts-pixel]
-description = "按仓库语料重新子集化像素字体 → public/fonts/pixel-*.woff2 + style/pixel/fonts-pixel.css（需 FONT_SRC 指向原始 TTF 目录）"
+description = "按仓库语料重新子集化像素字体 → public/fonts/pixel-*.woff2 + style/pixel/fonts-pixel.css（原始 TTF 取 FONT_SRC，默认 tmp/fonts）"
 # 产物已提交入库，日常开发与 CI 不需要跑它；只有新增大量中文文案或换字体版本时才重跑。
-command = "cargo"
-args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "pixel-fonts", "--src", "${FONT_SRC}"]
+# 先自己查一遍缺哪个文件：直接交给子集化工具的话，报错只说「缺少字体文件」，
+# 不告诉人该往哪放、怎么弄来。
+script_runner = "@shell"
+script = '''
+set -eu
+missing=""
+for f in fusion-pixel-12px-proportional-zh_hans.ttf fusion-pixel-12px-proportional-latin.ttf \
+         fusion-pixel-12px-monospaced-latin.ttf PressStart2P-Regular.ttf Silkscreen-Regular.ttf; do
+  [ -f "$FONT_SRC/$f" ] || missing="$missing $f"
+done
+if [ -n "$missing" ]; then
+  echo "FONT_SRC=$FONT_SRC 里缺少：$missing" >&2
+  echo "跑 cargo make fonts-fetch 自动下载，或把这些 TTF 放进该目录（来源与许可见 public/fonts/LICENSES）。" >&2
+  exit 1
+fi
+cargo run -q -p ham-web-tools --release -- pixel-fonts --src "$FONT_SRC"
+'''
 
 [tasks.pixel-sprites]
 description = "由字符画生成像素图标与精灵的数据文件（需 PIXELARTICONS_DIR 指向 pixelarticons 的 svg 目录）"

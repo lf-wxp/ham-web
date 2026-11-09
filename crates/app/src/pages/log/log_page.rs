@@ -220,6 +220,17 @@ pub fn LogPage() -> impl IntoView {
     );
   });
 
+  // 记录列表挂上之前的占位高度：日志为空时列表只是个空态，不占位，免得空页面留白。
+  // 取只有一两条记录时的整块高度（标题栏 + 筛选条 + 表头 + 一两行 + 分页）作下限；
+  // 列表在页面最底部，条数多了只会往下长，不会推动别的内容。
+  let list_placeholder = Signal::derive(move || {
+    if logbook.with(|lb| lb.entries.is_empty()) {
+      String::new()
+    } else {
+      "14rem".to_owned()
+    }
+  });
+
   let on_save = Callback::new(move |()| save());
   let on_edit = Callback::new(edit);
   let on_remove = Callback::new(remove);
@@ -275,13 +286,17 @@ pub fn LogPage() -> impl IntoView {
           </Deferred>
           <ActivationExportPanel />
           <EntryForm form=form logbook=logbook book=book editing=editing on_save=on_save />
-          <EntryList
-            logbook=logbook
-            on_edit=on_edit
-            on_remove=on_remove
-            on_clear=on_clear
-            initial_query=initial_query.unwrap_or_default()
-          />
+          // 记录列表一页 50 行、每行十几个组件：是本页首帧里最重的一块，又在表单之下。
+          // 首帧之后再挂；占位取表格最矮时的实测下限（空日志时列表是个空态，不占位）。
+          <Deferred min_height=list_placeholder>
+            <EntryList
+              logbook=logbook
+              on_edit=on_edit
+              on_remove=on_remove
+              on_clear=on_clear
+              initial_query=initial_query.clone().unwrap_or_default()
+            />
+          </Deferred>
         </div>
 
         <QslSyncDialog open=qsl_open />
@@ -350,7 +365,9 @@ pub fn LogPage() -> impl IntoView {
         </Deferred>
         <ActivationExportPanel />
         <EntryForm form=form logbook=logbook book=book editing=editing on_save=on_save />
-        <EntryList logbook=logbook on_edit=on_edit on_remove=on_remove on_clear=on_clear initial_query=initial_query.unwrap_or_default() />
+        <Deferred min_height=list_placeholder>
+          <EntryList logbook=logbook on_edit=on_edit on_remove=on_remove on_clear=on_clear initial_query=initial_query.clone().unwrap_or_default() />
+        </Deferred>
       </PageContainer>
       <QslSyncDialog open=qsl_open />
     </div>

@@ -4,7 +4,7 @@ use ham_web_core::{Bank, QuestionItem};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
-use crate::components::common::{EmptyState, PageContainer, PageHeader, Skeleton};
+use crate::components::common::{EmptyState, LoadMore, PageContainer, PageHeader, Skeleton};
 use crate::data;
 use crate::pages::browse::PAGE;
 use crate::store;
@@ -159,12 +159,6 @@ pub fn BookmarksPage() -> impl IntoView {
       .take(visible.get())
       .collect::<Vec<QuestionItem>>()
   };
-  // 还有没显示的：`Some((已显示, 总数))`。
-  let more_left = move || {
-    let total = total.get();
-    let shown = visible.get().min(total);
-    (shown < total).then_some((shown, total))
-  };
   Effect::new(move |_| {
     group_filter.with(|_| ());
     crate::debounced::set_if_changed(visible, PAGE);
@@ -315,20 +309,7 @@ pub fn BookmarksPage() -> impl IntoView {
                   }
                 />
               </div>
-              {move || {
-                more_left()
-                  .map(|(shown, total)| {
-                    view! {
-                      <button
-                        type="button"
-                        class="md-btn md-btn-outline mt-4 w-full"
-                        on:click=move |_| visible.update(|v| *v += PAGE)
-                      >
-                        {move || tf("knowledge.load-more-count", &[&shown.to_string(), &total.to_string()])}
-                      </button>
-                    }
-                  })
-              }}
+              <LoadMore visible=visible total=total step=PAGE />
             }
               .into_any()
           }}
@@ -458,20 +439,7 @@ pub fn BookmarksPage() -> impl IntoView {
                   }
                 }
               />
-              {move || {
-                more_left()
-                  .map(|(shown, total)| {
-                    view! {
-                      <Button
-                        variant=Variant::Outline
-                        class="w-full"
-                        on_click=Callback::new(move |_| visible.update(|v| *v += PAGE))
-                      >
-                        {move || tf("knowledge.load-more-count", &[&shown.to_string(), &total.to_string()])}
-                      </Button>
-                    }
-                  })
-              }}
+              <LoadMore visible=visible total=total step=PAGE class="w-full" />
             }
             .into_any()
           }

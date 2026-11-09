@@ -197,6 +197,8 @@
   "exam.units-db-power-ratio-example": "3 dB ≈ 功率 ×2，10 dB = ×10",
   "exam.units-db-voltage-ratio": "dB ↔ 电压比",
   "exam.units-db-voltage-ratio-example": "6 dB ≈ 电压 ×2，20 dB = ×10",
+  "exam.units-dbc": "dBc（相对载波电平）",
+  "exam.units-dbc-example": "载波 50 dBm、杂散 −10 dBm → −60 dBc",
   "exam.units-dbm-dbuv": "dBm ↔ dBμV（50Ω）",
   "exam.units-dbm-dbuv-example": "0 dBm = 107 dBμV，-73 dBm = 34 dBμV",
   "exam.units-dbuv-uv": "dBμV ↔ μV",

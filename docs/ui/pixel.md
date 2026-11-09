@@ -211,10 +211,11 @@
   改完跑 `cargo make pixel-sprites`（需 `PIXELARTICONS_DIR`）重新生成
   `crates/app/src/icons/pixel/` 下的 `icon_paths.rs` / `sprite_data.rs`。新增 `IconKind` 漏了映射会
   直接编译失败（`name()` 与生成的 `icon_path()` 都是穷尽 `match`）。
-- **字体**：跑 `cargo make fonts-pixel`（`FONT_SRC` 指向原始 TTF）重新生成
-  `public/fonts/pixel-*.woff2` 与 `crates/app/style/pixel/fonts-pixel.css`。**只在新增大量中文文案、
-  或换字体版本时才需要重跑**；语料外的生僻字由字体栈末尾的系统中文字体兜底，不影响使用。
-  原始字体的下载地址与许可证见 `public/fonts/LICENSES`。
+- **字体**：跑 `cargo make fonts-pixel` 重新生成 `public/fonts/pixel-*.woff2` 与
+  `crates/app/style/pixel/fonts-pixel.css`。原始 TTF 取 `FONT_SRC`（默认 `tmp/fonts`），
+  本机没有就先跑 `cargo make fonts-fetch` 下下来（版本钉在 `Makefile.toml` 里）。
+  **只在新增大量中文文案、或换字体版本时才需要重跑**；语料外的生僻字由字体栈末尾的系统中文字体兜底，
+  不影响使用。原始字体的下载地址与许可证见 `public/fonts/LICENSES`。
 
 **两个显示偏好**（设置里，持久化在 `ui:pixelMotion` / `ui:readableFont`，落在 `<html>` 的 `data-*`）：
 `data-pixel-motion="off"` 或系统「减少动态效果」时所有动画降为静态帧；

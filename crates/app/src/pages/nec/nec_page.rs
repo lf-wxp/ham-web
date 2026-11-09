@@ -478,6 +478,11 @@ pub fn NecPage() -> impl IntoView {
 
       // 结果区、三维方向图、扫频、NVIS、方向表都读求解结果：矩量法一次求解（装阻抗矩阵 + 扫 2664 个方向）
       // 是这一页最贵的一步，首帧之后再挂，换页时先把输入区画出来。
+      //
+      // 六块各包一层 `Deferred`，而不是共用一个：同一个 `Deferred` 里的内容在**同一个任务**里挂完，
+      // 求解结果有缓存的再次进入也要 100 ms 以上（4 倍降速）；每块自己排一次 `after_next_paint`，
+      // 就落在各自的任务里，主线程在块与块之间能喘口气、响应点按。
+      // 第一块（结果区）最先读到 `result`，首次求解的代价落在它那一个任务里。
       <Deferred>
         <ResultSection
           result=result
@@ -485,16 +490,26 @@ pub fn NecPage() -> impl IntoView {
           len_m=Signal::derive(len)
           ground_kind=ground_kind
         />
+      </Deferred>
 
+      <Deferred>
         <Pattern3d result=result />
+      </Deferred>
 
-        // 扫频同样订阅「稳定后的输入」：否则每敲一个字符都会重跑一次整段频带的求解。
+      // 扫频同样订阅「稳定后的输入」：否则每敲一个字符都会重跑一次整段频带的求解。
+      <Deferred>
         <SweepSection input=settled_input lines=core_lines />
+      </Deferred>
 
+      <Deferred>
         <LinesSection lines=lines new_id=Callback::new(move |_| id_gen()) />
+      </Deferred>
 
+      <Deferred>
         <NvisSection result=result />
+      </Deferred>
 
+      <Deferred>
         <DirectionTable result=result />
       </Deferred>
       </PageContainer>

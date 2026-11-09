@@ -13,8 +13,9 @@ use ham_web_core::categories::{self};
 
 /// 列表每次多显示几条：分类浏览与收藏集共用，「加载更多」的步长只有一个来源。
 pub(crate) const PAGE: usize = 40;
-/// 进入分类浏览的第一帧先建的题数（其余下一帧补到 [`PAGE`]，见 `browse_page`）。
+/// 进入分类浏览的第一帧先建的题数，之后每帧补 [`ROW_STEP`] 道直到 [`PAGE`]（见 `browse_page`）。
 const FIRST_ROWS: usize = 8;
+const ROW_STEP: usize = 8;
 const ALL: &str = "全部";
 const OTHER: &str = "其他";
 

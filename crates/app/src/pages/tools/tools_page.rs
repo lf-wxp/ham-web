@@ -13,6 +13,7 @@ use super::attenuator_calculator::AttenuatorCalculator;
 use super::battery_runtime::BatteryRuntime;
 use super::callsign_lookup::CallsignLookup;
 use super::capacitor_code::CapacitorCode;
+use super::carrier_dbc::CarrierDbc;
 use super::cascade_gain::CascadeGain;
 use super::coil_yagi_calculator::CoilYagiCalculator;
 use super::contest_scorer::ContestScorer;
@@ -77,6 +78,7 @@ const TOOL_NAV: &[(&str, &str)] = &[
   ("freq-wavelength", "tools.frequency-wavelength"),
   ("dbm-power", "tools.dbm-power"),
   ("decibel-gain", "tools.decibel-gain"),
+  ("dbc", "tools.carrier-relative-dbc"),
   ("ohms-law", "tools.ohm-s-law"),
   ("cw-bandwidth", "tools.cw-required-bandwidth"),
   ("lc-resonance", "tools.lc-resonance"),
@@ -231,6 +233,8 @@ pub fn ToolsPage() -> impl IntoView {
             <ToolSection id="dbm-power" title="tools.dbm-power" description="tools.0-dbm-1-mw"><DbmConverter /></ToolSection>
 
             <ToolSection id="decibel-gain" title="tools.decibel-gain" description="tools.power-ratio-db-10"><DecibelGain /></ToolSection>
+
+            <ToolSection id="dbc" title="tools.carrier-relative-dbc" description="tools.dbc-description"><CarrierDbc /></ToolSection>
 
             <ToolSection id="ohms-law" title="tools.ohm-s-law-power" description="tools.u-i-r-p"><OhmsLaw /></ToolSection>
 

@@ -209,6 +209,8 @@
   "exam.units-db-power-ratio-example": "3 dB ≈ power ×2, 10 dB = ×10",
   "exam.units-db-voltage-ratio": "dB ↔ voltage ratio",
   "exam.units-db-voltage-ratio-example": "6 dB ≈ voltage ×2, 20 dB = ×10",
+  "exam.units-dbc": "dBc (level relative to carrier)",
+  "exam.units-dbc-example": "Carrier 50 dBm, spur -10 dBm → -60 dBc",
   "exam.units-dbm-dbuv": "dBm ↔ dBμV (50 Ω)",
   "exam.units-dbm-dbuv-example": "0 dBm = 107 dBμV, -73 dBm = 34 dBμV",
   "exam.units-dbuv-uv": "dBμV ↔ μV",

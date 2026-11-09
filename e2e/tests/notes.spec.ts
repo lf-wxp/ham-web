@@ -163,6 +163,18 @@ for (const style of STYLES) {
     await expect(cards).toHaveCount(80);
     await expect(page.getByRole("button", { name: /加载更多（已显示 80 \/ 100）/ })).toBeVisible();
   });
+
+  test(`收藏集（${style}）：取消收藏后，「加载更多」里的总数跟着减一`, async ({ page }) => {
+    await openBookmarks(page, style, 100);
+    const cards = page.locator("main article");
+    await expect(cards).toHaveCount(40);
+    await expect(page.getByRole("button", { name: /加载更多（已显示 40 \/ 100）/ })).toBeVisible();
+
+    // 就地取消收藏：列表闭包不重跑，按钮要自己读到新的总数（按钮若只拿到挂载时的快照，这里会停在 100）。
+    await cards.first().getByRole("button", { pressed: true }).click();
+    await expect(page.getByRole("button", { name: /加载更多（已显示 40 \/ 99）/ })).toBeVisible();
+    await expect(cards).toHaveCount(40);
+  });
 }
 
 test("快捷键：? 唤起帮助面板，Esc 可关闭", async ({ page }) => {

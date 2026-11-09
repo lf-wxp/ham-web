@@ -1,5 +1,13 @@
 import type { Page } from "@playwright/test";
-import { bankQuestions, expect, option, settleReveal, test } from "./fixtures";
+import {
+  bankQuestions,
+  expect,
+  mistakeRecord,
+  option,
+  seedLog,
+  settleReveal,
+  test,
+} from "./fixtures";
 
 // 「点了要等一会」的回归守卫。判据都是**结构性**的（某件重活是否被挪到了首帧之后、某个请求是否只发一次），
 // 不断言毫秒数：dev 构建比 release 慢一个量级，CI 的机器也不固定，写死阈值只会制造抖动。
@@ -22,6 +30,55 @@ async function clientNav(page: Page, href: string) {
     a.click();
     a.remove();
   }, href);
+}
+
+/**
+ * 站内跳到 `href`，返回新页面**第一次被画出来**那一刻 `selector`（相对 `#route-content`）命中的节点数。
+ *
+ * 用 `MutationObserver` 记第一次出现，不用逐帧轮询：机器繁忙（并发跑全量）时两帧间隔会被拖长，
+ * 轮询一次就可能越过「首帧只有前几张」的中间态，用例间歇红。观察器每次 DOM 变动都回调，不会漏。
+ * 「点链接 → 等第一次出现」必须在同一次 `evaluate` 里：跨一次 Playwright 往返就看不到首帧了。
+ *
+ * - 默认：命中数第一次大于 0 时返回；
+ * - `readyText`：改为等路由容器里出现这段文字（如页头），返回那一刻的命中数 —— 可以是 0，
+ *   用来断言「页头已在、下面的块还没挂」；
+ * - `mark`：在第一个命中的节点上写 `data-mark="1"`，之后断言「补齐只追加、已建好的不重建」。
+ * 15 秒内没等到返回 -1。
+ */
+async function firstFrame(
+  page: Page,
+  href: string,
+  selector: string,
+  opts: { readyText?: string; mark?: boolean } = {},
+): Promise<number> {
+  return page.evaluate(
+    ({ href, selector, readyText, mark }) => {
+      const root = document.getElementById("route-content") as HTMLElement;
+      return new Promise<number>((resolve) => {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const obs = new MutationObserver(() => {
+          if (readyText && !(root.textContent ?? "").includes(readyText)) return;
+          const nodes = root.querySelectorAll(selector);
+          if (!readyText && nodes.length === 0) return;
+          if (mark && nodes[0]) nodes[0].setAttribute("data-mark", "1");
+          obs.disconnect();
+          clearTimeout(timer);
+          resolve(nodes.length);
+        });
+        obs.observe(root, { childList: true, subtree: true, characterData: true });
+        timer = setTimeout(() => {
+          obs.disconnect();
+          resolve(-1);
+        }, 15_000);
+        const a = document.createElement("a");
+        a.href = href;
+        document.body.append(a);
+        a.click();
+        a.remove();
+      });
+    },
+    { href, selector, readyText: opts.readyText ?? null, mark: opts.mark ?? false },
+  );
 }
 
 test.describe("响应：重活不挡首帧", () => {
@@ -447,5 +504,263 @@ test.describe("响应：输入", () => {
       el.dispatchEvent(new InputEvent("input", { bubbles: true, isComposing: true, data: "bg4xyz" }));
     });
     await expect(input).toHaveValue("BG4XYZ");
+  });
+});
+
+test.describe("响应：首帧只建一部分，其余分批补齐", () => {
+  test("错题本：首帧只建前几张卡，之后分批补到一页（40 张）", async ({ page }) => {
+    await seedModern(page);
+    // 60 条错题，超过一页；题目取自题库，快照与题库一致。
+    const records = bankQuestions("A").slice(0, 60).map((q) => mistakeRecord(q));
+    await page.addInitScript((book) => {
+      if (window !== window.top) return;
+      if (!localStorage.getItem("mistake-book")) localStorage.setItem("mistake-book", book);
+    }, JSON.stringify({ records }));
+    await page.goto("/countdown");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const atFirst = await firstFrame(page, "/mistakes", ".md-q-row");
+    expect(atFirst, "进页面后一直没有出现错题卡").toBeGreaterThan(0);
+    expect(atFirst, "首帧不该一次把一页 40 张卡都建出来").toBeLessThan(12);
+    // 补齐之后正好一页，不多不少；「加载更多」仍可用。
+    await expect(page.locator("#route-content .md-q-row")).toHaveCount(40);
+    await page.getByRole("button", { name: /加载更多/ }).click();
+    await expect(page.locator("#route-content .md-q-row")).toHaveCount(60);
+  });
+
+  test("术语表：首帧只建前几张卡，之后分批补到一页（60 张）", async ({ page }) => {
+    await seedModern(page);
+    await page.goto("/countdown");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const atFirst = await firstFrame(page, "/glossary", "article");
+    expect(atFirst, "进页面后一直没有出现术语卡").toBeGreaterThan(0);
+    expect(atFirst, "首帧不该一次把一页 60 张卡都建出来").toBeLessThan(30);
+    await expect(page.locator("#route-content article")).toHaveCount(60);
+    // 补齐过程中已建好的卡不重建：在第一张卡上做个记号，补齐之后记号还在。
+    // （此前整体 `collect_view`，每补一批都会把全部卡片重建一遍。）
+    await page.evaluate(() => document.querySelector("#route-content article")?.setAttribute("data-mark", "1"));
+    await page.getByRole("button", { name: /加载更多/ }).click();
+    await expect(page.locator("#route-content article")).toHaveCount(120);
+    await expect(page.locator('#route-content article[data-mark="1"]')).toHaveCount(1);
+  });
+
+  test("题库浏览：首帧只建前几行，之后分批补到一页；加载更多、换关键词后行跟着对", async ({ page }) => {
+    await seedModern(page);
+    await page.goto("/countdown");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    // 站内跳进来（题库已在内存里）；题库还在路上的整页打开见下一条。同时在第一行上做记号。
+    const atFirst = await firstFrame(page, "/browse?bank=A", ".md-q-row", { mark: true });
+    expect(atFirst, "进页面后一直没有出现题目行").toBeGreaterThan(0);
+    expect(atFirst, "第一批不该一次把一页 40 道题都建出来").toBeLessThan(40);
+    const rows = page.locator("#route-content .md-q-row");
+    await expect(rows).toHaveCount(40);
+    // 补齐只追加：已建好的第一行还是原来那个节点。
+    await expect(page.locator('#route-content .md-q-row[data-mark="1"]')).toHaveCount(1);
+    const firstText = await rows.first().innerText();
+    await page.getByRole("button", { name: /加载更多/ }).click();
+    await expect(rows).toHaveCount(80);
+    await expect(page.locator('#route-content .md-q-row[data-mark="1"]')).toHaveCount(1);
+    // 换关键词：第一行要换成新的题（只断言内容：节点是原地改还是换新的，是实现细节）。
+    await page.locator('main input[type="search"]').first().fill("天线");
+    await expect
+      .poll(async () => (await rows.count()) > 0 && (await rows.first().innerText()) !== firstText)
+      .toBe(true);
+  });
+
+  test("日志页：记录列表在首帧之后才挂，挂上后是一页 50 行", async ({ page }) => {
+    await seedModern(page);
+    await page.addInitScript((log) => {
+      if (window !== window.top) return;
+      if (!localStorage.getItem("logbook")) localStorage.setItem("logbook", log);
+    }, pendingLog(80));
+    await page.goto("/countdown");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    // 页头出现的那一刻数一数记录行：-1 = 页头一直没出现。
+    const rowsAtHeader = await firstFrame(page, "/log", "tbody tr", { readyText: "通联日志" });
+    expect(rowsAtHeader, "日志页的首帧应已有页头").not.toBe(-1);
+    expect(rowsAtHeader, "记录列表在表单之下，首帧不该同步建好").toBe(0);
+    await expect(page.locator("#route-content tbody tr")).toHaveCount(50);
+  });
+});
+
+test.describe("响应：补齐循环必须能结束", () => {
+  // `grow_cap` 的步进是个有限步内必然结束的循环；它曾经在「现在没东西可显示」时原地等，
+  // 靠外部状态（数据到达）才能结束：加载失败时永不收工，页面隐藏（帧回调同步执行）时变成无终止的同步递归。
+
+  /** 让 `document.hidden` 恒为 true：后台标签页里 rAF 暂停，应用的帧回调改为同步执行。 */
+  async function pretendHidden(page: Page) {
+    await page.addInitScript(() => {
+      if (window !== window.top) return;
+      Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+    });
+  }
+
+  test("页面隐藏时打开题库浏览，题库还在路上：不递归、不报错，数据到了照常出题", async ({ page }) => {
+    await seedModern(page);
+    await pretendHidden(page);
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.route(/\/questions\/[ABC]\.json/, async (route) => {
+      await new Promise((r) => setTimeout(r, 1500));
+      await route.continue();
+    });
+    await page.goto("/browse?bank=A");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.locator("#route-content .md-q-row").first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator("#route-content .md-q-row")).toHaveCount(40);
+    expect(errors, "补齐循环不该把栈撑爆").toEqual([]);
+  });
+
+  test("页面隐藏时打开空的错题本：不递归、不报错", async ({ page }) => {
+    await seedModern(page);
+    await pretendHidden(page);
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto("/mistakes");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    // 给循环几帧的时间：旧写法在这里同步递归到栈溢出。
+    await page.waitForTimeout(500);
+    expect(errors, "补齐循环不该把栈撑爆").toEqual([]);
+  });
+
+  test("题库浏览整页直接打开（题库慢到）：第一批仍只建前几行，随后补满一页", async ({ page }) => {
+    await seedModern(page);
+    // 扣住题库 1.5 秒：补齐不能在数据到达之前就把上限走完，否则数据一到就是一整页一次建完。
+    await page.route(/\/questions\/[ABC]\.json/, async (route) => {
+      await new Promise((r) => setTimeout(r, 1500));
+      await route.continue();
+    });
+    await page.addInitScript(() => {
+      if (window !== window.top) return;
+      // 记下行数的第一个非零值（见 `firstFrame` 的说明：观察器不会像轮询那样漏掉中间态）。
+      (window as unknown as { __firstRows: number }).__firstRows = 0;
+      // 整页打开时 `#route-content` 要等 wasm 起来才有：观察整个文档，每次变动再去找它。
+      document.addEventListener("DOMContentLoaded", () => {
+        const obs = new MutationObserver(() => {
+          const n = document.querySelectorAll("#route-content .md-q-row").length;
+          if (n > 0) {
+            (window as unknown as { __firstRows: number }).__firstRows = n;
+            obs.disconnect();
+          }
+        });
+        obs.observe(document.documentElement, { childList: true, subtree: true });
+      });
+    });
+    await page.goto("/browse?bank=A");
+    await expect(page.locator("#route-content .md-q-row")).toHaveCount(40, { timeout: 20_000 });
+    const first = await page.evaluate(() => (window as unknown as { __firstRows: number }).__firstRows);
+    expect(first, "进页面后一直没有出现题目行").toBeGreaterThan(0);
+    expect(first, "数据到达后的第一批不该一次把一页 40 道题都建出来").toBeLessThan(40);
+  });
+});
+
+test.describe("响应：会话级缓存要跟着数据失效", () => {
+  /** 在日志页的表单里记一条（只填呼号，其余走默认）。 */
+  async function addQso(page: Page, call: string) {
+    const form = page.locator("section", { hasText: "添加通联记录" });
+    await form.locator('input[placeholder="BG4XXX"]').fill(call);
+    await page.getByRole("button", { name: "添加记录" }).click();
+  }
+
+  test("记一条新实体的通联后，站内跳到统计页立刻看到新数字（奖项进度缓存会失效）", async ({ page }) => {
+    await seedLog(page, [{ callsign: "JA1AA", band: "20m" }]);
+    await page.goto("/stats");
+    // 奖项进度由 store 上的会话级缓存提供：第一次读到 1 个实体。
+    await expect(page.getByText(/^1 \/ 100$/)).toBeVisible();
+
+    // 站内（不重载）去日志页记一条另一个国家的通联，再站内回统计页。
+    await clientNav(page, "/log");
+    await expect(page.locator("section", { hasText: "添加通联记录" })).toBeVisible();
+    await addQso(page, "DL1AA");
+    // 记录列表标题上的条数：写进了日志才会变（添加记录没有 toast，不能等它）。
+    await expect(page.getByText("共 2 条", { exact: true })).toBeVisible();
+    await clientNav(page, "/stats");
+    await expect(page.getByText(/^2 \/ 100$/)).toBeVisible();
+    // 日志页的概览与奖项面板读的是同一份缓存，同样要跟上。
+    await clientNav(page, "/log");
+    await expect(page.locator("#awards")).toBeVisible();
+    await expect(page.getByText("2 / 100").first()).toBeVisible();
+  });
+
+  test("统计口径：另一个标签页改了口径，站内换页后本页跟上（口径信号只在启动读一次存储的话会过期）", async ({ page }) => {
+    // 两个操作员：BA1AA 两条、BG1BB 一条。口径按操作员过滤，统计页的总数跟着变。
+    const qso = (id: number, operator: string, callsign: string) => ({
+      id,
+      operator,
+      date: "2026-01-01",
+      time: "00:00",
+      freq: "14.074",
+      band: "20m",
+      mode: "FT8",
+      callsign,
+      gridsquare: "",
+      remark: "",
+    });
+    const log = JSON.stringify({
+      entries: [qso(1, "BA1AA", "JA1AA"), qso(2, "BA1AA", "DL1AA"), qso(3, "BG1BB", "W1AW")],
+    });
+    await page.addInitScript((json) => {
+      if (window !== window.top) return;
+      if (!sessionStorage.getItem("e2e:seeded-log")) {
+        localStorage.setItem("logbook", json);
+        sessionStorage.setItem("e2e:seeded-log", "1");
+      }
+    }, log);
+    const total = page.getByText("总 QSO", { exact: true }).locator("..");
+
+    await page.goto("/stats");
+    await expect(total).toHaveText(/^3\s*总 QSO$/);
+
+    // 模拟另一个标签页把口径改成「只看 BA1AA」：这个页面的内存信号并不知道，只有存储里的值变了。
+    await page.evaluate(() => localStorage.setItem("log-stats-scope", "o:BA1AA"));
+    await clientNav(page, "/log");
+    await expect(page.locator("section", { hasText: "添加通联记录" })).toBeVisible();
+    await clientNav(page, "/stats");
+    await expect(total).toHaveText(/^2\s*总 QSO$/);
+  });
+});
+
+test.describe("响应：重块各排各的任务", () => {
+  test("/nec：结果区、三维方向图、扫频、传输线、NVIS、方向表不在同一个任务里挂上", async ({ page }) => {
+    await seedModern(page);
+    await page.goto("/countdown");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    // 同一个任务里挂上的节点，会在 `MutationObserver` 的**同一次回调**里一起送到；分在不同任务里则是不同的回调。
+    // 记下每块的标记第一次出现在第几次回调里 —— 六块各自的回调序号必须互不相同。
+    const firstSeen = await page.evaluate(async () => {
+      const root = document.getElementById("route-content") as HTMLElement;
+      const markers: Record<string, () => boolean> = {
+        结果区: () => (root.textContent ?? "").includes("馈电点阻抗"),
+        三维方向图: () => !!root.querySelector('[role="img"][data-renderer]'),
+        扫频: () => (root.textContent ?? "").includes("频带扫描（SWR 曲线）"),
+        传输线: () => (root.textContent ?? "").includes("传输线（TL）"),
+        NVIS: () => (root.textContent ?? "").includes("NVIS 仰角-距离覆盖图"),
+        方向表: () => (root.textContent ?? "").includes("方向增益（对比 DXCC 实体）"),
+      };
+      return new Promise<Record<string, number>>((resolve) => {
+        const seen: Record<string, number> = {};
+        let call = 0;
+        const obs = new MutationObserver(() => {
+          call++;
+          for (const [name, present] of Object.entries(markers)) if (!(name in seen) && present()) seen[name] = call;
+          if (Object.keys(seen).length === Object.keys(markers).length) {
+            obs.disconnect();
+            resolve(seen);
+          }
+        });
+        obs.observe(root, { childList: true, subtree: true, characterData: true });
+        setTimeout(() => {
+          obs.disconnect();
+          resolve(seen);
+        }, 20_000);
+        const a = document.createElement("a");
+        a.href = "/nec";
+        document.body.append(a);
+        a.click();
+        a.remove();
+      });
+    });
+    expect(Object.keys(firstSeen), "六块都应在 20 秒内挂上").toHaveLength(6);
+    const calls = Object.values(firstSeen);
+    expect(new Set(calls).size, `六块应各自在不同的任务里挂上，实际回调序号：${JSON.stringify(firstSeen)}`).toBe(6);
   });
 });

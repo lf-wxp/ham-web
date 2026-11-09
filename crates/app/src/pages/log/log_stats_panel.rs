@@ -3,14 +3,15 @@
 
 use leptos::prelude::*;
 
-use ham_web_core::log_stats::{LogOverview, overview};
+use ham_web_core::log_stats::LogOverview;
 
 use crate::components::common::Deferred;
 use crate::ui::Stat;
 
 use super::bar_list::BarList;
 use super::log_stats_detail::LogStatsDetail;
-use super::stats_scope_select::{StatsScopeSelect, scoped_log_entries, use_stats_scope};
+use super::stats_scope_select::{StatsScopeSelect, use_stats_scope};
+use super::use_log_store;
 use super::{Logbook, StationBook};
 use crate::i18n::t;
 
@@ -20,11 +21,12 @@ pub(super) fn LogStatsPanel(
   book: RwSignal<StationBook>,
 ) -> impl IntoView {
   // 统计口径（全部 / 某个台站 / 某个操作员）：切页也记着，俱乐部台就不用每次重选。
+  // 口径、过滤后的日志与概览都是 store 上的会话级缓存（`LogDerived`）：日志没变，再进本页不重算。
+  // 计数 / 去重 / 排序在 core（`log_stats::overview`），这里只做视图。
+  let derived = use_log_store().derived;
   let scope = use_stats_scope();
-  let scoped = scoped_log_entries(scope);
-  // 计数 / 去重 / 排序都在 core（`log_stats::overview`）：这里只做视图。
-  // 挂成 Memo 由概览与下面的明细共用，借用读取 —— 此前 `scoped.get()` 先把整份日志克隆一遍再算。
-  let summary = Memo::new(move |_| scoped.with(|entries| overview(entries)));
+  let scoped = derived.scoped;
+  let summary = derived.overview;
   // 奖状申请表与待回卡「显示全部」的展开态放在闭包外：面板随日志变化整体重建，放在里面会被收起。
   let apply_open = RwSignal::new(false);
   let show_all_pending = RwSignal::new(false);
@@ -69,6 +71,8 @@ pub(super) fn LogStatsPanel(
         logbook=logbook
         scoped=scoped
         summary=summary
+        awards=derived.awards
+        dxcc_sheet=derived.dxcc_sheet
         scope=scope
         book=book
         apply_open=apply_open

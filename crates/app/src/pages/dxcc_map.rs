@@ -2,7 +2,6 @@
 
 use std::collections::BTreeSet;
 
-use ham_web_core::award_progress::AwardProgress;
 use ham_web_core::dxcc_map::decode_binary;
 use ham_web_core::log_stats::BAND_ORDER;
 use leptos::prelude::*;
@@ -12,7 +11,7 @@ use leptos_router::hooks::use_navigate;
 use crate::components::common::{Legend, PageContainer, PageHeader};
 use crate::data::{self, LoadState};
 use crate::i18n::{t, tp};
-use crate::pages::log::{StatsScopeSelect, scoped_log_entries, use_stats_scope};
+use crate::pages::log::{StatsScopeSelect, scoped_log_entries, use_log_store, use_stats_scope};
 use crate::pages::map::{DxccOverlay, MapView};
 use crate::ui::{Chip, ChipGroup};
 use crate::util::set_title;
@@ -27,7 +26,8 @@ pub fn DxccMapPage() -> impl IntoView {
   // 统计口径与日志页 / `/stats` 共用：选了某个台站，地图也只按那个台站的通联着色。
   let scope = use_stats_scope();
   let scoped = scoped_log_entries(scope);
-  let progress = Memo::new(move |_| scoped.with(|e| AwardProgress::from_entries(e)));
+  // 奖项进度取 store 上的会话级缓存（与上面的共享口径对应；日志页、统计页用的是同一份）。
+  let progress = use_log_store().derived.awards;
   // 选中波段（None = 全部）；按波段切换着色与统计。
   let selected_band = RwSignal::new(None::<String>);
   let worked = Signal::derive(move || {

@@ -1,15 +1,14 @@
 use std::collections::{HashMap, HashSet};
 
 use ham_web_core::award_progress::{
-  AwardProgress, CONTINENTS, IOTA_TARGET, WAS_TARGET, WAZ_TARGET, WPX_TARGET, dxcc_missing,
-  vucc_target,
+  CONTINENTS, IOTA_TARGET, WAS_TARGET, WAZ_TARGET, WPX_TARGET, dxcc_missing, vucc_target,
 };
 use ham_web_core::log_stats::{daily_qso_counts, hour_band_heatmap};
 use leptos::prelude::*;
 
-use crate::components::common::{EmptyState, PageContainer, PageHeader};
+use crate::components::common::{Deferred, EmptyState, PageContainer, PageHeader};
 use crate::icons::IconKind;
-use crate::pages::log::{StatsScopeSelect, scoped_log_entries, use_stats_scope};
+use crate::pages::log::{StatsScopeSelect, scoped_log_entries, use_log_store, use_stats_scope};
 use crate::ui::Tooltip;
 use crate::util::set_title;
 
@@ -33,6 +32,8 @@ pub fn StatsPage() -> impl IntoView {
   // 与日志页统计面板共用同一个口径（同一份持久化值）：在一处选了台站 / 操作员，这里照样按它算。
   let scope = use_stats_scope();
   let scoped = scoped_log_entries(scope);
+  // 奖项进度是 store 上的会话级缓存（日志页的奖项面板用同一份），本页不再自己对全部通联算一遍。
+  let awards_memo = use_log_store().derived.awards;
 
   let body = move || {
     // 无法映射到实体的通联归入「其他」桶：桶名走词条，柱状图原样渲染 label。
@@ -46,7 +47,7 @@ pub fn StatsPage() -> impl IntoView {
     // 借用读取（`.with`）：此前 `scoped.get()` 先把整份日志克隆一遍。每条记录只查一次实体、
     // 按 DXCC 编号计数，最后才对出现过的实体（最多 340 个）取本地化名 —— 此前每条记录查两次实体、
     // 各分配一次名字串，5000 条就是一万次前缀查找加一万次分配。
-    let (total, qsl_sent_count, qsl_rcvd_count, heatmap, daily, awards) = scoped.with(|entries| {
+    let (total, qsl_sent_count, qsl_rcvd_count) = scoped.with(|entries| {
       let mut by_entity: HashMap<u16, (&'static ham_web_core::dxcc::Entity, usize)> =
         HashMap::new();
       let mut unknown = 0usize;
@@ -85,9 +86,6 @@ pub fn StatsPage() -> impl IntoView {
           .filter(|e| e.qsl_sent || e.lotw_sent || e.eqsl_sent)
           .count(),
         entries.iter().filter(|e| e.confirmed()).count(),
-        hour_band_heatmap(entries),
-        daily_qso_counts(entries),
-        AwardProgress::from_entries(entries),
       )
     });
 
@@ -105,8 +103,266 @@ pub fn StatsPage() -> impl IntoView {
     let month_max = months.iter().map(|(_, c)| *c).max().unwrap_or(1);
 
     let empty = total == 0;
-    let missing = dxcc_missing(&awards);
+    // 借用缓存里的奖项进度（`.with`），不把整份克隆进本页；这里订阅它，日志一变整页重建。
+    let missing = awards_memo.with(dxcc_missing);
     let total_missing: usize = missing.iter().map(|(_, v)| v.len()).sum();
+    let (n_bands, n_modes) = (band_top.len(), mode_top.len());
+
+    // 首屏以下的所有块（缺口清单 … 日历热力图）连同只服务于它们的两项计算（小时 × 波段热力图、
+    // 每日通联数）一起推到首帧之后（见 `Deferred`）：5000 条日志时这两遍扫描加几百个热力格 / 日历格，
+    // 是本页进入时最重的一块，而用户一进来看到的只有最上面的统计卡与 DXCC 进度。
+    // 这里用 `with_untracked`：外层 `body` 已经跟着日志重建整页（`Deferred` 随之重新排队）。
+    let rest = move || {
+      let heatmap = scoped.with_untracked(|e| hour_band_heatmap(e));
+      let daily = scoped.with_untracked(|e| daily_qso_counts(e));
+      awards_memo.with_untracked(|awards| view! {
+        {(!missing.is_empty()).then(|| {
+          view! {
+            <section class=crate::kit::card_class()>
+              <h2 class=crate::cn::cn(&["flex items-baseline gap-2", crate::kit::card_title_class()])>
+                {move || t("radio.dxcc-gap-list")}
+                <span class="text-xs font-normal normal-case text-muted-foreground">
+                  {tp(
+                    "radio.entities-to-reach-100",
+                    total_missing as u32,
+                    &[&total_missing.to_string()],
+                  )}
+                </span>
+              </h2>
+              <div class="space-y-3 p-4">
+                {missing
+                  .clone()
+                  .into_iter()
+                  .map(|(continent, ents)| {
+                    view! {
+                      <div>
+                        <div class="mb-1.5 text-xs text-muted-foreground">
+                          {continent} " "
+                          <span class="tabular-nums text-muted-foreground">
+                            "(" {ents.len()} ")"
+                          </span>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5">
+                          {ents
+                            .into_iter()
+                            .map(|e| {
+                              view! {
+                                <span class=if crate::kit::is_modern_at_mount() { "md-badge gap-1" } else { "inline-flex items-center gap-1 border bg-inset px-2 py-0.5 text-xs" }>
+                                  <span class="font-mono text-muted-foreground">{e.prefix}</span>
+                                  <span>{e.name}</span>
+                                </span>
+                              }
+                            })
+                            .collect_view()}
+                        </div>
+                      </div>
+                    }
+                  })
+                  .collect_view()}
+              </div>
+            </section>
+          }
+        })}
+
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("log.more-award-progress")}</h2>
+          <div class="space-y-3 p-4">
+            <div>
+              <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+                <span>{move || t("learning.waz-cq-zones")}</span>
+                <span class="tabular-nums">{awards.waz.worked.len()} " / " {WAZ_TARGET}</span>
+              </div>
+              <div class="h-2 w-full overflow-hidden bg-muted">
+                <div
+                  class="h-full bg-primary transition"
+                  style=format!("width: {:.1}%", awards.waz.worked.len() as f64 / WAZ_TARGET as f64 * 100.0)
+                ></div>
+              </div>
+            </div>
+            <div>
+              <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+                <span>{move || t("learning.wac-continents")}</span>
+                <span class="tabular-nums">{awards.wac.worked.len()} " / " {CONTINENTS.len()}</span>
+              </div>
+              <div class="h-2 w-full overflow-hidden bg-muted">
+                <div
+                  class="h-full bg-primary transition"
+                  style=format!("width: {:.1}%", awards.wac.worked.len() as f64 / CONTINENTS.len() as f64 * 100.0)
+                ></div>
+              </div>
+            </div>
+            {(!awards.vucc.is_empty()).then(|| view! {
+              <div>
+                <div class="mb-1.5 text-xs text-muted-foreground">{move || t("learning.vucc-grids-vhf-uhf")}</div>
+                <div class="flex flex-wrap gap-1.5">
+                  {awards.vucc.iter().map(|(band, p)| {
+                    let target = vucc_target(band).unwrap_or(1);
+                    view! {
+                      <span class=crate::kit::tag_class("tabular-nums")>
+                        {band.clone()} " " <span class="text-primary">{p.worked.len()}</span> " / " {target}
+                      </span>
+                    }
+                  }).collect_view()}
+                </div>
+              </div>
+            })}
+            <div class="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{move || t("log.dxcc-challenge-band-points")}</span>
+              <span class="tabular-nums">{awards.dxcc_challenge}</span>
+            </div>
+            <div>
+              <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+                <span>{move || t("log.wpx-prefix-award")}</span>
+                <span class="tabular-nums">{awards.wpx.worked.len()} " / " {WPX_TARGET}</span>
+              </div>
+              <div class="h-2 w-full overflow-hidden bg-muted">
+                <div
+                  class="h-full bg-primary transition"
+                  style=format!("width: {:.1}%", awards.wpx.worked.len() as f64 / WPX_TARGET as f64 * 100.0)
+                ></div>
+              </div>
+            </div>
+            <div>
+              <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+                <span>{move || t("log.was-us-states")}</span>
+                <span class="tabular-nums">{awards.was.worked.len()} " / " {WAS_TARGET}</span>
+              </div>
+              <div class="h-2 w-full overflow-hidden bg-muted">
+                <div
+                  class="h-full bg-primary transition"
+                  style=format!("width: {:.1}%", awards.was.worked.len() as f64 / WAS_TARGET as f64 * 100.0)
+                ></div>
+              </div>
+            </div>
+            <div>
+              <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+                <span>{move || t("log.iota-island-groups")}</span>
+                <span class="tabular-nums">{awards.iota.worked.len()} " / " {IOTA_TARGET}</span>
+              </div>
+              <div class="h-2 w-full overflow-hidden bg-muted">
+                <div
+                  class="h-full bg-primary transition"
+                  style=format!("width: {:.1}%", awards.iota.worked.len() as f64 / IOTA_TARGET as f64 * 100.0)
+                ></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.qsl-confirmation-status")}</h2>
+          <div class="space-y-3 p-4">
+            <div>
+              <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+                <span>{move || t("radio.qsl-received")}</span>
+                <span class="tabular-nums">{qsl_rcvd_count} " / " {total}</span>
+              </div>
+              <div class="h-2 w-full overflow-hidden bg-muted">
+                <div
+                  class="h-full bg-win/70"
+                  style=format!("width: {:.1}%", qsl_rcvd_count as f64 / total.max(1) as f64 * 100.0)
+                ></div>
+              </div>
+            </div>
+            <div>
+              <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+                <span>{move || t("radio.sent-awaiting-confirmation")}</span>
+                <span class="tabular-nums">{qsl_sent_count} " / " {total}</span>
+              </div>
+              <div class="h-2 w-full overflow-hidden bg-muted">
+                <div
+                  class="h-full bg-gold/70"
+                  style=format!("width: {:.1}%", qsl_sent_count as f64 / total.max(1) as f64 * 100.0)
+                ></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.dxcc-entity-distribution-top")}</h2>
+          <div class="p-4">
+            <BarChart items=dxcc_top.clone() max=dxcc_top.first().map(|(_, c)| *c).unwrap_or(1) />
+          </div>
+        </section>
+
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.band-distribution")}</h2>
+          <div class="p-4">
+            <BarChart items=band_top.clone() max=band_top.first().map(|(_, c)| *c).unwrap_or(1) />
+          </div>
+        </section>
+
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.mode-distribution")}</h2>
+          <div class="p-4">
+            <BarChart items=mode_top.clone() max=mode_top.first().map(|(_, c)| *c).unwrap_or(1) />
+          </div>
+        </section>
+
+        <section class=crate::kit::card_class()>
+          <h2 class=crate::kit::card_title_class()>{move || t("radio.monthly-qso-trend")}</h2>
+          <div class="p-4">
+            <div class="flex h-32 items-end gap-1">
+              {months
+                .iter()
+                .map(|(m, c)| {
+                  let h = (*c as f64 / month_max as f64 * 100.0).max(2.0);
+                  let label = tp("radio.qsos", *c as u32, &[&(m).to_string(), &c.to_string()]);
+                  let month_label = m.get(5..).unwrap_or(m).to_owned();
+                  view! {
+                    // 列要撑满整条轨道（`h-full`）：柱的百分比高度必须有**确定高度**的包含块。
+                    // 列高交给内容决定时 `height: h%` 解析成 auto，柱高为 0、只剩标签。
+                    <Tooltip class="group flex h-full min-w-0 flex-1 flex-col items-center gap-1" label=label.clone()>
+                      // 内层轨道吃满「列高 − 标签行高」，柱再按比例填轨道。
+                      <div class="flex w-full min-h-0 flex-1 items-end">
+                        <div
+                          class="w-full bg-primary/70 outline-none transition group-hover:bg-primary focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
+                          style=format!("height: {h}%")
+                          tabindex="0"
+                          role="img"
+                          aria-label=label
+                        ></div>
+                      </div>
+                      <span class="shrink-0 text-xs text-muted-foreground">{month_label}</span>
+                    </Tooltip>
+                  }
+                })
+                .collect_view()}
+            </div>
+          </div>
+        </section>
+
+        {(!heatmap.is_empty()).then(|| {
+          view! {
+            <section class=crate::kit::card_class()>
+              <h2 class=crate::kit::card_title_class()>{move || t("radio.hour-band-heatmap")}</h2>
+              <div class="p-4">
+                <Heatmap rows=heatmap.clone() />
+              </div>
+              <p class="px-4 pb-4 text-xs text-muted-foreground">
+                {move || t("radio.the-x-axis-is")}
+              </p>
+            </section>
+          }
+        })}
+
+        {(!daily.is_empty()).then(|| {
+          view! {
+            <section class=crate::kit::card_class()>
+              <h2 class=crate::kit::card_title_class()>{move || t("learning.qso-calendar-heatmap")}</h2>
+              <div class="p-4">
+                <CalendarHeatmap counts=daily.clone() />
+              </div>
+              <p class="px-4 pb-4 text-xs text-muted-foreground">
+                {move || t("learning.qsos-per-day-over")}
+              </p>
+            </section>
+          }
+        })}
+      }
+      .into_any())
+    };
 
     view! {
           // 四条 0 值统计卡在空态下没有任何信息量，先把首屏让给「去记录第一通」的出口。
@@ -123,11 +379,11 @@ pub fn StatsPage() -> impl IntoView {
                     <div class="mt-1 text-xs text-muted-foreground">{move || t("log.dxcc-entities")}</div>
                   </div>
                   <div class=crate::kit::card_class_with("p-4 text-center")>
-                    <div class=crate::kit::stat_text_class("")>{band_top.len()}</div>
+                    <div class=crate::kit::stat_text_class("")>{n_bands}</div>
                     <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.bands")}</div>
                   </div>
                   <div class=crate::kit::card_class_with("p-4 text-center")>
-                    <div class=crate::kit::stat_text_class("")>{mode_top.len()}</div>
+                    <div class=crate::kit::stat_text_class("")>{n_modes}</div>
                     <div class="mt-1 text-xs text-muted-foreground">{move || t("radio.modes")}</div>
                   </div>
                 </div>
@@ -183,250 +439,7 @@ pub fn StatsPage() -> impl IntoView {
                 </div>
               </section>
 
-              {(!missing.is_empty()).then(|| {
-                view! {
-                  <section class=crate::kit::card_class()>
-                    <h2 class=crate::cn::cn(&["flex items-baseline gap-2", crate::kit::card_title_class()])>
-                      {move || t("radio.dxcc-gap-list")}
-                      <span class="text-xs font-normal normal-case text-muted-foreground">
-                        {tp(
-                          "radio.entities-to-reach-100",
-                          total_missing as u32,
-                          &[&total_missing.to_string()],
-                        )}
-                      </span>
-                    </h2>
-                    <div class="space-y-3 p-4">
-                      {missing
-                        .clone()
-                        .into_iter()
-                        .map(|(continent, ents)| {
-                          view! {
-                            <div>
-                              <div class="mb-1.5 text-xs text-muted-foreground">
-                                {continent} " "
-                                <span class="tabular-nums text-muted-foreground">
-                                  "(" {ents.len()} ")"
-                                </span>
-                              </div>
-                              <div class="flex flex-wrap gap-1.5">
-                                {ents
-                                  .into_iter()
-                                  .map(|e| {
-                                    view! {
-                                      <span class=if crate::kit::is_modern_at_mount() { "md-badge gap-1" } else { "inline-flex items-center gap-1 border bg-inset px-2 py-0.5 text-xs" }>
-                                        <span class="font-mono text-muted-foreground">{e.prefix}</span>
-                                        <span>{e.name}</span>
-                                      </span>
-                                    }
-                                  })
-                                  .collect_view()}
-                              </div>
-                            </div>
-                          }
-                        })
-                        .collect_view()}
-                    </div>
-                  </section>
-                }
-              })}
-
-              <section class=crate::kit::card_class()>
-                <h2 class=crate::kit::card_title_class()>{move || t("log.more-award-progress")}</h2>
-                <div class="space-y-3 p-4">
-                  <div>
-                    <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{move || t("learning.waz-cq-zones")}</span>
-                      <span class="tabular-nums">{awards.waz.worked.len()} " / " {WAZ_TARGET}</span>
-                    </div>
-                    <div class="h-2 w-full overflow-hidden bg-muted">
-                      <div
-                        class="h-full bg-primary transition"
-                        style=format!("width: {:.1}%", awards.waz.worked.len() as f64 / WAZ_TARGET as f64 * 100.0)
-                      ></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{move || t("learning.wac-continents")}</span>
-                      <span class="tabular-nums">{awards.wac.worked.len()} " / " {CONTINENTS.len()}</span>
-                    </div>
-                    <div class="h-2 w-full overflow-hidden bg-muted">
-                      <div
-                        class="h-full bg-primary transition"
-                        style=format!("width: {:.1}%", awards.wac.worked.len() as f64 / CONTINENTS.len() as f64 * 100.0)
-                      ></div>
-                    </div>
-                  </div>
-                  {(!awards.vucc.is_empty()).then(|| view! {
-                    <div>
-                      <div class="mb-1.5 text-xs text-muted-foreground">{move || t("learning.vucc-grids-vhf-uhf")}</div>
-                      <div class="flex flex-wrap gap-1.5">
-                        {awards.vucc.iter().map(|(band, p)| {
-                          let target = vucc_target(band).unwrap_or(1);
-                          view! {
-                            <span class=crate::kit::tag_class("tabular-nums")>
-                              {band.clone()} " " <span class="text-primary">{p.worked.len()}</span> " / " {target}
-                            </span>
-                          }
-                        }).collect_view()}
-                      </div>
-                    </div>
-                  })}
-                  <div class="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{move || t("log.dxcc-challenge-band-points")}</span>
-                    <span class="tabular-nums">{awards.dxcc_challenge}</span>
-                  </div>
-                  <div>
-                    <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{move || t("log.wpx-prefix-award")}</span>
-                      <span class="tabular-nums">{awards.wpx.worked.len()} " / " {WPX_TARGET}</span>
-                    </div>
-                    <div class="h-2 w-full overflow-hidden bg-muted">
-                      <div
-                        class="h-full bg-primary transition"
-                        style=format!("width: {:.1}%", awards.wpx.worked.len() as f64 / WPX_TARGET as f64 * 100.0)
-                      ></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{move || t("log.was-us-states")}</span>
-                      <span class="tabular-nums">{awards.was.worked.len()} " / " {WAS_TARGET}</span>
-                    </div>
-                    <div class="h-2 w-full overflow-hidden bg-muted">
-                      <div
-                        class="h-full bg-primary transition"
-                        style=format!("width: {:.1}%", awards.was.worked.len() as f64 / WAS_TARGET as f64 * 100.0)
-                      ></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{move || t("log.iota-island-groups")}</span>
-                      <span class="tabular-nums">{awards.iota.worked.len()} " / " {IOTA_TARGET}</span>
-                    </div>
-                    <div class="h-2 w-full overflow-hidden bg-muted">
-                      <div
-                        class="h-full bg-primary transition"
-                        style=format!("width: {:.1}%", awards.iota.worked.len() as f64 / IOTA_TARGET as f64 * 100.0)
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <section class=crate::kit::card_class()>
-                <h2 class=crate::kit::card_title_class()>{move || t("radio.qsl-confirmation-status")}</h2>
-                <div class="space-y-3 p-4">
-                  <div>
-                    <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{move || t("radio.qsl-received")}</span>
-                      <span class="tabular-nums">{qsl_rcvd_count} " / " {total}</span>
-                    </div>
-                    <div class="h-2 w-full overflow-hidden bg-muted">
-                      <div
-                        class="h-full bg-win/70"
-                        style=format!("width: {:.1}%", qsl_rcvd_count as f64 / total.max(1) as f64 * 100.0)
-                      ></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{move || t("radio.sent-awaiting-confirmation")}</span>
-                      <span class="tabular-nums">{qsl_sent_count} " / " {total}</span>
-                    </div>
-                    <div class="h-2 w-full overflow-hidden bg-muted">
-                      <div
-                        class="h-full bg-gold/70"
-                        style=format!("width: {:.1}%", qsl_sent_count as f64 / total.max(1) as f64 * 100.0)
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <section class=crate::kit::card_class()>
-                <h2 class=crate::kit::card_title_class()>{move || t("radio.dxcc-entity-distribution-top")}</h2>
-                <div class="p-4">
-                  <BarChart items=dxcc_top.clone() max=dxcc_top.first().map(|(_, c)| *c).unwrap_or(1) />
-                </div>
-              </section>
-
-              <section class=crate::kit::card_class()>
-                <h2 class=crate::kit::card_title_class()>{move || t("radio.band-distribution")}</h2>
-                <div class="p-4">
-                  <BarChart items=band_top.clone() max=band_top.first().map(|(_, c)| *c).unwrap_or(1) />
-                </div>
-              </section>
-
-              <section class=crate::kit::card_class()>
-                <h2 class=crate::kit::card_title_class()>{move || t("radio.mode-distribution")}</h2>
-                <div class="p-4">
-                  <BarChart items=mode_top.clone() max=mode_top.first().map(|(_, c)| *c).unwrap_or(1) />
-                </div>
-              </section>
-
-              <section class=crate::kit::card_class()>
-                <h2 class=crate::kit::card_title_class()>{move || t("radio.monthly-qso-trend")}</h2>
-                <div class="p-4">
-                  <div class="flex h-32 items-end gap-1">
-                    {months
-                      .iter()
-                      .map(|(m, c)| {
-                        let h = (*c as f64 / month_max as f64 * 100.0).max(2.0);
-                        let label = tp("radio.qsos", *c as u32, &[&(m).to_string(), &c.to_string()]);
-                        let month_label = m.get(5..).unwrap_or(m).to_owned();
-                        view! {
-                          // 列要撑满整条轨道（`h-full`）：柱的百分比高度必须有**确定高度**的包含块。
-                          // 列高交给内容决定时 `height: h%` 解析成 auto，柱高为 0、只剩标签。
-                          <Tooltip class="group flex h-full min-w-0 flex-1 flex-col items-center gap-1" label=label.clone()>
-                            // 内层轨道吃满「列高 − 标签行高」，柱再按比例填轨道。
-                            <div class="flex w-full min-h-0 flex-1 items-end">
-                              <div
-                                class="w-full bg-primary/70 outline-none transition group-hover:bg-primary focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring"
-                                style=format!("height: {h}%")
-                                tabindex="0"
-                                role="img"
-                                aria-label=label
-                              ></div>
-                            </div>
-                            <span class="shrink-0 text-xs text-muted-foreground">{month_label}</span>
-                          </Tooltip>
-                        }
-                      })
-                      .collect_view()}
-                  </div>
-                </div>
-              </section>
-
-              {(!heatmap.is_empty()).then(|| {
-                view! {
-                  <section class=crate::kit::card_class()>
-                    <h2 class=crate::kit::card_title_class()>{move || t("radio.hour-band-heatmap")}</h2>
-                    <div class="p-4">
-                      <Heatmap rows=heatmap.clone() />
-                    </div>
-                    <p class="px-4 pb-4 text-xs text-muted-foreground">
-                      {move || t("radio.the-x-axis-is")}
-                    </p>
-                  </section>
-                }
-              })}
-
-              {(!daily.is_empty()).then(|| {
-                view! {
-                  <section class=crate::kit::card_class()>
-                    <h2 class=crate::kit::card_title_class()>{move || t("learning.qso-calendar-heatmap")}</h2>
-                    <div class="p-4">
-                      <CalendarHeatmap counts=daily.clone() />
-                    </div>
-                    <p class="px-4 pb-4 text-xs text-muted-foreground">
-                      {move || t("learning.qsos-per-day-over")}
-                    </p>
-                  </section>
-                }
-              })}
+              <Deferred min_height="90rem">{rest()}</Deferred>
             }
             .into_any()
           }}

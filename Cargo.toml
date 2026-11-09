@@ -35,7 +35,7 @@ members = [
 default-members = ["crates/core", "crates/server", "crates/tools", "crates/apt"]
 
 [workspace.package]
-version = "0.6.5"
+version = "0.6.6"
 edition = "2024"
 rust-version = "1.99.1"
 # 工作区默认 MIT；dominoex / lrpt / navtex 及其 worker 六个 crate 因含 GPL-3.0 转写代码，单独声明 GPL-3.0-only。
@@ -73,25 +73,25 @@ ham-web-navtex-worker = { path = "crates/navtex-worker" }
 ham-web-lrpt-worker = { path = "crates/lrpt-worker" }
 
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = "1.0.154"
 anyhow = "1.0.104"
 thiserror = "2.0.21"
 
 # frontend
-leptos = { version = "0.8", features = ["csr"] }
-leptos_router = "0.8"
-wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4"
-js-sys = "0.3"
-web-sys = "0.3"
-console_error_panic_hook = "0.1"
+leptos = { version = "0.8.23", features = ["csr"] }
+leptos_router = "0.8.17"
+wasm-bindgen = "0.2.130"
+wasm-bindgen-futures = "0.4.80"
+js-sys = "0.3.107"
+web-sys = "0.3.107"
+console_error_panic_hook = "0.1.7"
 send_wrapper = "0.6"
 
 # server
 axum = "0.8"
 chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
 sgp4 = "2"
-tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "net", "signal", "io-util", "sync"] }
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "net", "signal", "io-util", "sync"] }
 tower = "0.5"
 tower-http = { version = "0.7", features = ["fs", "compression-gzip", "compression-br", "set-header", "trace", "timeout"] }
 tracing = "0.1"
@@ -100,18 +100,18 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 # tools
 clap = { version = "4", features = ["derive", "env"] }
 regex = "1.13"
-ureq = "3"
-resvg = "0.48"
+ureq = "3.5.1"
+resvg = "0.49"
 sha2 = "0.11"
-brotli = "9"
-flate2 = "1"
+brotli = "9.1.1"
+flate2 = "1.1.11"
 walkdir = "2"
 # 字体子集化 + WOFF2 编码（纯 Rust：不需要 Python / fonttools，也不需要 C++ 工具链）
 fontcull-klippa = "0.1"
 fontcull-skrifa = "0.39"
-ttf2woff2 = { version = "0.13", default-features = false }
+ttf2woff2 = { version = "0.14", default-features = false }
 # 只用来把 GB2312 一级汉字区的字节对解码成码点
-encoding_rs = "0.8"
+encoding_rs = "0.8.44"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -142,3 +142,8 @@ opt-level = "z"
 # LTO 收益有限却会显著增大 target 中间产物，拖累 Docker 构建缓存占用
 lto = "off"
 panic = "abort"
+# 覆盖 release 的 strip = true：strip=symbols 会顺带删掉 wasm 的 target_features 自定义段，
+# 后面 wasm-bindgen 读不到它就不知道启用了哪些 Wasm 特性（构建时刷一屏 warning，且不敢用
+# bulk-memory / sign-ext 等指令的优化路径）。debuginfo 只删 DWARF，release 构建本就没有，
+# 体积不变；符号段交给下游的 wasm-opt（主程序）与 wasm-bindgen --remove-name-section（Worker）。
+strip = "debuginfo"

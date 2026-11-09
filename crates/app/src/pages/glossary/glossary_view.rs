@@ -6,18 +6,20 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 
-use crate::components::common::{EmptyState, PageContainer, PageHeader, StickyPanel};
+use crate::components::common::{EmptyState, LoadMore, PageContainer, PageHeader, StickyPanel};
 use crate::components::sidebar_item::SidebarItem;
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
-use crate::ui::{Button, ChipToggle, Input, InputType, MobileNavDrawer, Tooltip, Variant};
+use crate::ui::{ChipToggle, Input, InputType, MobileNavDrawer, Tooltip};
 use crate::util::window;
 
 use super::hits::{self, HitMap};
 use super::stat::Stat;
 use super::term_card::TermCard;
-use super::{ALL, Haystacks, PAGE, category_meta, category_pos, is_countable};
-use crate::i18n::{t, tf};
+use super::{
+  ALL, CARD_STEP, FIRST_CARDS, Haystacks, PAGE, category_meta, category_pos, is_countable,
+};
+use crate::i18n::t;
 
 /// 术语表主体：搜索、分类筛选与词条列表。
 #[component]
@@ -208,6 +210,22 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
     }
   };
 
+  // 当前要显示的卡片（词条下标）。进页面的第一帧只放 `FIRST_CARDS` 张，之后每帧补 `CARD_STEP` 张
+  // 直到 `visible`（`grow_cap`）。卡片按下标键控（`<For>`）：补齐时已建好的卡不重建，只追加新的。
+  // 此前这里是「每次整体 `collect_view`」，60 张卡一次建完是进页面时最重的一块。
+  let card_cap = RwSignal::new(FIRST_CARDS);
+  // 词条是编译进来的静态数据，进页面就有卡可建，不必等数据。
+  crate::after_paint::grow_cap(card_cap, CARD_STEP, move || visible.get_untracked());
+  let shown_ids = move || {
+    filtered.with(|f| {
+      f.iter()
+        .copied()
+        .take(visible.get().min(card_cap.get()))
+        .collect::<Vec<usize>>()
+    })
+  };
+  // 键是 `entries` 里的下标，`entries` 是编译进来的 `&'static` 切片，不会被替换，键永远指向同一个词条。
+
   let list = move || {
     let total = filtered.with(Vec::len);
     if total == 0 {
@@ -219,26 +237,15 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
       }
       .into_any();
     }
-    let shown: Vec<usize> = filtered.with(|f| f.iter().copied().take(visible.get()).collect());
-    let shown_len = shown.len();
-    let cards = shown
-      .into_iter()
-      .map(|i| view! { <TermCard entry=&entries[i] hits=hit_map on_jump=jump_to /> })
-      .collect_view();
     view! {
-      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">{cards}</div>
-      {(shown_len < total)
-        .then(|| {
-          view! {
-            <Button
-              variant=Variant::Outline
-              class="mt-4 w-full"
-              on_click=Callback::new(move |_| visible.update(|v| *v += PAGE))
-            >
-              {move || tf("knowledge.load-more-count", &[&shown_len.to_string(), &total.to_string()])}
-            </Button>
-          }
-        })}
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <For
+          each=shown_ids
+          key=|i| *i
+          children=move |i| view! { <TermCard entry=&entries[i] hits=hit_map on_jump=jump_to /> }
+        />
+      </div>
+      <LoadMore visible=visible total=total step=PAGE />
     }
     .into_any()
   };
@@ -253,29 +260,17 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
       }
       .into_any();
     }
-    let shown: Vec<usize> = filtered.with(|f| f.iter().copied().take(visible.get()).collect());
-    let shown_len = shown.len();
     view! {
       <div class="md-term-grid">
-        {shown
-          .into_iter()
-          .map(|i| view! { <TermCard entry=&entries[i] hits=hit_map on_jump=jump_to /> })
-          .collect_view()}
+        <For
+          each=shown_ids
+          key=|i| *i
+          children=move |i| view! { <TermCard entry=&entries[i] hits=hit_map on_jump=jump_to /> }
+        />
       </div>
-      {(shown_len < total)
-        .then(|| {
-          view! {
-            <button
-              type="button"
-              class="md-btn md-btn-outline mt-4 w-full"
-              on:click=move |_| visible.update(|v| *v += PAGE)
-            >
-              {move || tf("knowledge.load-more-count", &[&shown_len.to_string(), &total.to_string()])}
-            </button>
-          }
-        })}
+      <LoadMore visible=visible total=total step=PAGE />
     }
-      .into_any()
+    .into_any()
   };
 
   if crate::kit::is_modern_at_mount() {

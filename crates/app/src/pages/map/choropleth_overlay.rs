@@ -8,7 +8,8 @@ use std::collections::BTreeMap;
 
 use leptos::prelude::*;
 
-use super::projection::polygon_points;
+use super::projection::write_polygon_points;
+use super::svg_markup::{KEY_ATTR, clicked_key, push_attr, push_escaped};
 
 /// 一块区域的状态。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -51,39 +52,47 @@ pub fn ChoroplethOverlay(
   #[prop(into)]
   on_click: Callback<String>,
 ) -> impl IntoView {
+  // 整层拼成一段标记、`inner_html` 一次解析；点击在外层 `<g>` 上委托（见 `svg_markup`）。
+  // 每块多边形的 DOM 形状与逐个 `view!` 建出来的完全一样（`<polygon><title/></polygon>`）。
+  let markup = move || {
+    let status = status.get();
+    let mut out = String::new();
+    shapes.with(|shapes| {
+      for s in shapes {
+        let st = status.get(&s.key).copied().unwrap_or(RegionStatus::Empty);
+        let cls = fill_class(st);
+        let title = title_of.run(s.key.clone());
+        // 同一块区域的各个环只有 `points` 不同：开头 / 样式属性 / 收尾各拼一次，环与环之间复用。
+        let mut head = String::from("<polygon");
+        push_attr(&mut head, KEY_ATTR, &s.key);
+        let mut style = String::new();
+        push_attr(&mut style, "class", cls);
+        push_attr(&mut style, "stroke-width", "0.5");
+        push_attr(&mut style, "vector-effect", "non-scaling-stroke");
+        let mut tail = String::from("><title>");
+        push_escaped(&mut tail, &title);
+        tail.push_str("</title></polygon>");
+        for ring in &s.polys {
+          out.push_str(&head);
+          out.push_str(" points=\"");
+          write_polygon_points(&mut out, ring);
+          out.push('"');
+          out.push_str(&style);
+          out.push_str(&tail);
+        }
+      }
+    });
+    out
+  };
+
   view! {
-    <g>
-      {move || {
-        let status = status.get();
-        shapes
-          .get()
-          .into_iter()
-          .map(|s| {
-            let st = status.get(&s.key).copied().unwrap_or(RegionStatus::Empty);
-            let cls = fill_class(st);
-            let key = s.key;
-            let title = title_of.run(key.clone());
-            s.polys
-              .into_iter()
-              .map(|ring| {
-                let points = polygon_points(&ring);
-                let click_key = key.clone();
-                view! {
-                  <polygon
-                    points=points
-                    class=cls
-                    stroke-width="0.5"
-                    vector-effect="non-scaling-stroke"
-                    on:click=move |_| on_click.run(click_key.clone())
-                  >
-                    <title>{title.clone()}</title>
-                  </polygon>
-                }
-              })
-              .collect_view()
-          })
-          .collect_view()
-      }}
-    </g>
+    <g
+      inner_html=markup
+      on:click=move |ev| {
+        if let Some(key) = clicked_key(&ev) {
+          on_click.run(key);
+        }
+      }
+    ></g>
   }
 }

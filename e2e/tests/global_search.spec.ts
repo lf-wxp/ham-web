@@ -44,6 +44,14 @@ test("全局搜索：公式速查与单位换算按条目命中", async ({ page 
   // 单位换算：条目名是 i18n key，由前端按当前语言取译文后匹配。
   await input.fill("dBm");
   await expect(page.getByText("dBm = 10·lg(P/mW)").first()).toBeVisible();
+
+  // dBc（相对载波电平）：单位换算与术语表两条来源都要能命中。
+  // 术语表是运行时拉取的 JSON，回归「补了词条却在全局搜索里查不到」。
+  await input.fill("dBc");
+  await expect(page.getByText("dBc = 10·lg(P/Pc)").first()).toBeVisible();
+  await expect(
+    page.getByText(/以载波功率为 0dB 基准的相对电平/).first(),
+  ).toBeVisible();
 });
 
 // 用户级回归：「切换界面风格后顶栏搜索点了没反应」。

@@ -15,6 +15,9 @@ use ham_web_core::categories::{CategoryTone, TOP_CATEGORIES, top_category};
 use ham_web_core::glossary::OTHER_CATEGORY;
 
 const PAGE: usize = 60;
+/// 进页面的第一帧先建的术语卡数，以及之后每帧补几张（补到 [`PAGE`] 为止，见 `glossary_view`）。
+const FIRST_CARDS: usize = 12;
+const CARD_STEP: usize = 16;
 const ALL: &str = "全部";
 
 /// 各题库题目的小写搜索文本（与分类浏览页的关键词搜索范围一致）。

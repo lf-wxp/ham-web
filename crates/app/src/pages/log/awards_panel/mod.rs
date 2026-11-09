@@ -4,11 +4,11 @@ use apply_sheet::DxccApplySheet;
 use bar_row::bar_row;
 
 use crate::i18n::{t, tf};
+use ham_web_core::award_apply::ApplyRow;
 use ham_web_core::award_progress::{
   AwardProgress, CONTINENTS, DXCC_TARGET, IOTA_TARGET, Progress, WAS_TARGET, WAZ_TARGET,
   WPX_TARGET, award_gaps, vucc_target,
 };
-use ham_web_core::logbook::LogEntry;
 use leptos::prelude::*;
 
 use crate::ui::{RadioGroup, RadioGroupItem, Tooltip};
@@ -27,11 +27,12 @@ fn count<T: Ord>(p: &Progress<T>, confirmed: bool) -> usize {
 /// 展开态放在内部会被重置（见 `DxccApplySheet`）。
 #[component]
 pub(super) fn AwardsPanel(
-  /// 按统计口径过滤后的通联。借用读取（不克隆）：上层的 Memo 由统计概览、奖项、网格地图共用。
-  entries: Memo<Vec<LogEntry>>,
+  /// 按统计口径算出的奖状进度与 DXCC 申请表：`LogStore::derived` 上的会话级缓存，
+  /// 日志没变时再进页面不重算（此前每次挂载都对全部通联算一遍）。
+  awards: Memo<AwardProgress>,
+  dxcc_sheet: Memo<Vec<ApplyRow>>,
   apply_open: RwSignal<bool>,
 ) -> impl IntoView {
-  let progress = StoredValue::new(entries.with_untracked(|e| AwardProgress::from_entries(e)));
   let confirmed = RwSignal::new(false);
 
   view! {
@@ -58,7 +59,8 @@ pub(super) fn AwardsPanel(
       </div>
       {move || {
         let c = confirmed.get();
-        progress.with_value(|p| {
+        // 借用缓存里的那一份，不克隆；不订阅 `awards`：日志一变，上层会把本面板整体重建。
+        awards.with_untracked(|p| {
           let mut bands: Vec<(String, usize)> = p
             .dxcc_by_band
             .iter()
@@ -200,7 +202,7 @@ pub(super) fn AwardsPanel(
         })
       }}
 
-      <DxccApplySheet entries=entries open=apply_open />
+      <DxccApplySheet sheet=dxcc_sheet open=apply_open />
     </section>
   }
 }

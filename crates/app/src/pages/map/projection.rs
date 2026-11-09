@@ -27,14 +27,23 @@ pub fn project(lon: f64, lat: f64) -> (f64, f64) {
 
 /// 多边形 → SVG points 字符串。
 pub(crate) fn polygon_points(poly: &[(f64, f64)]) -> String {
-  poly
-    .iter()
-    .map(|&(lon, lat)| {
-      let (x, y) = project(lon, lat);
-      format!("{x:.1},{y:.1}")
-    })
-    .collect::<Vec<_>>()
-    .join(" ")
+  // 每个点约 10 个字符（`xxx.x,yyy.y `）：一次分配够用，不为每个点单独分配再拼。
+  let mut out = String::with_capacity(poly.len() * 11);
+  write_polygon_points(&mut out, poly);
+  out
+}
+
+/// 同 [`polygon_points`]，直接写进调用方的缓冲（拼整段 SVG 标记时省掉中间字符串）。
+pub(crate) fn write_polygon_points(out: &mut String, poly: &[(f64, f64)]) {
+  use std::fmt::Write;
+  for (i, &(lon, lat)) in poly.iter().enumerate() {
+    if i > 0 {
+      out.push(' ');
+    }
+    let (x, y) = project(lon, lat);
+    // 写进 `String` 不会失败。
+    let _ = write!(out, "{x:.1},{y:.1}");
+  }
 }
 
 /// Douglas–Peucker 折线简化：删除与弦距离小于 `tol`（单位：度）的点。
@@ -107,6 +116,21 @@ mod tests {
     assert_eq!(project(-180.0, 90.0), (0.0, 0.0));
     assert_eq!(project(0.0, 0.0), (360.0, 180.0));
     assert_eq!(project(180.0, -90.0), (720.0, 360.0));
+  }
+
+  #[test]
+  fn polygon_points_are_one_decimal_pairs_joined_by_spaces() {
+    // 叠加层改成拼整段标记之后，points 的格式是 e2e 与样式都认的契约：不能变。
+    assert_eq!(
+      polygon_points(&[(-180.0, 90.0), (0.0, 0.0)]),
+      "0.0,0.0 360.0,180.0"
+    );
+    assert_eq!(polygon_points(&[(10.04, 20.06)]), "380.1,139.9");
+    assert_eq!(polygon_points(&[]), "");
+    // 直接写进调用方的缓冲：接在已有内容后面，不清空、不多加分隔符。
+    let mut buf = String::from("p=");
+    write_polygon_points(&mut buf, &[(0.0, 0.0), (1.0, 1.0)]);
+    assert_eq!(buf, "p=360.0,180.0 362.0,178.0");
   }
 
   #[test]

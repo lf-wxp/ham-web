@@ -4,6 +4,8 @@
 
 use leptos::prelude::*;
 
+use ham_web_core::award_apply::ApplyRow;
+use ham_web_core::award_progress::AwardProgress;
 use ham_web_core::log_stats::{LogOverview, StatsScope};
 
 use super::awards_panel::AwardsPanel;
@@ -17,6 +19,8 @@ pub(super) fn LogStatsDetail(
   logbook: RwSignal<Logbook>,
   scoped: Memo<Vec<LogEntry>>,
   summary: Memo<LogOverview>,
+  awards: Memo<AwardProgress>,
+  dxcc_sheet: Memo<Vec<ApplyRow>>,
   scope: RwSignal<String>,
   book: RwSignal<StationBook>,
   apply_open: RwSignal<bool>,
@@ -57,7 +61,7 @@ pub(super) fn LogStatsDetail(
           .into_any()
         }}
       </section>
-      <AwardsPanel entries=scoped apply_open=apply_open />
+      <AwardsPanel awards=awards dxcc_sheet=dxcc_sheet apply_open=apply_open />
       <PendingQslList scoped=scoped show_all=show_all_pending />
       <section class=crate::kit::card_pad_class()>
         <h3 class="mb-2 text-sm">

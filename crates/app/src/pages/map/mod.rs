@@ -12,6 +12,7 @@ mod dxcc_overlay;
 mod grayline_overlay;
 mod map_view;
 mod projection;
+mod svg_markup;
 mod world_data;
 mod zone_map;
 mod zone_overlay;

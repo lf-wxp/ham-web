@@ -17,9 +17,20 @@ Noto Sans SC Display，见后文各节与附录 E–H）。全部是 SIL OFL 1.1
 
 如何重新生成
 ------------
-    cargo make fonts-pixel
+    cargo make fonts-fetch   # 把下面这 5 个原始 TTF 下到 FONT_SRC（默认 tmp/fonts）
+    cargo make fonts-pixel   # 统计语料用字 → 切分片 → 写 woff2 与 fonts-pixel.css
 实际实现为 crates/tools/src/pixel/fonts.rs（纯 Rust）：按仓库语料统计用字、切分片、写出 woff2 与
-crates/app/style/pixel/fonts-pixel.css（带 unicode-range，浏览器按需下载）。
+crates/app/style/pixel/fonts-pixel.css（带 unicode-range，浏览器按需下载）。子集化需要的原始文件：
+
+| 文件 | 来源 |
+|---|---|
+| fusion-pixel-12px-proportional-zh_hans.ttf / fusion-pixel-12px-proportional-latin.ttf | fusion-pixel-font 的 12px-proportional-ttf 包（GitHub Releases） |
+| fusion-pixel-12px-monospaced-latin.ttf | 同上，12px-monospaced-ttf 包 |
+| PressStart2P-Regular.ttf | google/fonts 仓库 ofl/pressstart2p/ |
+| Silkscreen-Regular.ttf | google/fonts 仓库 ofl/silkscreen/ |
+
+下载用的版本（Fusion Pixel 的 release tag、google/fonts 的 commit）钉在 `Makefile.toml` 的
+`[tasks.fonts-fetch]` 里 —— 换版本会改产物，所以不在两处各写一份。
 
 关于 Reserved Font Name
 -----------------------

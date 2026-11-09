@@ -92,6 +92,12 @@ pub const UNIT_CONVERSION_GROUPS: &[UnitConversionGroup] = &[
         "decibel-gain",
       ),
       u(
+        "exam.units-dbc",
+        "dBc = 10·lg(P/Pc)",
+        "exam.units-dbc-example",
+        "dbc",
+      ),
+      u(
         "exam.units-dbm-dbuv",
         "dBμV = dBm + 107",
         "exam.units-dbm-dbuv-example",

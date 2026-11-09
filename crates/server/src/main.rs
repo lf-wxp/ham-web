@@ -95,10 +95,14 @@ fn cache_policy(path: &str) -> Option<&'static str> {
     // 几何二进制（DXCC 实体边界 / 中国省级边界）：无内容哈希、会被 `data-sync` 重新生成，
     // 用协商缓存保证重新生成后能拿到新版本；漏登记时只剩 `Last-Modified` 的启发式缓存。
     "/dxcc-entities.bin" | "/cn-provinces.bin" => Some("no-cache"),
-    // 解码 Worker 入口、各 wasm 胶水与语言包都没有内容哈希：不加协商缓存的话，无 SW 的首访
-    // 可能按启发式缓存拿到旧胶水配新 wasm（导入对象不匹配，实例化失败）或新代码配旧语言包。
+    // 解码 Worker 入口、各 wasm 胶水、语言包与术语表都没有内容哈希：不加协商缓存的话，
+    // 无 SW 的首访可能按启发式缓存拿到旧胶水配新 wasm（导入对象不匹配，实例化失败）、
+    // 新代码配旧语言包，或搜不到刚补充的术语（术语表是运行时拉的，页面会一直用旧那份）。
     "/decode-worker.js" => Some("no-cache"),
-    p if p.contains("-worker/") || (p.starts_with("/data/i18n/") && p.ends_with(".json")) => {
+    p if p.contains("-worker/")
+      || (p.starts_with("/data/i18n/") && p.ends_with(".json"))
+      || (p.starts_with("/data/glossary/") && p.ends_with(".json")) =>
+    {
       Some("no-cache")
     }
     p if p.starts_with("/questions/images/") || p.starts_with("/fonts/") => {
@@ -544,12 +548,15 @@ mod tests {
     for p in ["/dxcc-entities.bin", "/cn-provinces.bin"] {
       assert_eq!(cache_policy(p), Some("no-cache"), "{p}");
     }
-    // 无内容哈希的解码 Worker 资源与语言包必须协商缓存。
+    // 无内容哈希的解码 Worker 资源、语言包与术语表必须协商缓存。
     for p in [
       "/decode-worker.js",
       "/rtty-worker/rtty_worker.js",
       "/lrpt-worker/lrpt_worker_bg.wasm",
       "/data/i18n/en.json",
+      // 术语表在运行时按分类拉取：没有协商缓存时，重新部署后浏览器仍拿旧 JSON，
+      // 新补的术语在全局搜索里就是查不到。
+      "/data/glossary/basics.json",
     ] {
       assert_eq!(cache_policy(p), Some("no-cache"), "{p}");
     }

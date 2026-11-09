@@ -3,7 +3,8 @@
 //! 功率比按 `dB = 10·lg(P₁/P₀)`，电压比按 `dB = 20·lg(V₁/V₀)` ——
 //! 同一阻抗下 `V² ∝ P`，所以电压比的指数是功率比的一半。
 //!
-//! 另含 50Ω 下的电平换算：`dBμV = dBm + 107`、`dBμV = 20·lg(μV)`。
+//! 另含 50Ω 下的电平换算：`dBμV = dBm + 107`、`dBμV = 20·lg(μV)`，
+//! 以及相对载波的电平（dBc）：`dBc = P(dBm) − P载波(dBm)`。
 
 /// dB → 功率倍数（`10^(dB/10)`）。
 #[must_use]
@@ -88,6 +89,21 @@ pub fn uv_to_dbm(uv: f64) -> f64 {
     return f64::NAN;
   }
   dbuv_to_dbm(uv_to_dbuv(uv))
+}
+
+/// 杂散 / 边带相对载波的电平（dBc）：`dBc = 10·lg(P/Pc) = P(dBm) − Pc(dBm)`。
+///
+/// 以载波为 0 dB 基准，所以换算就是两个 dBm 电平相减，与绝对功率无关；
+/// 低于载波时为负值（−60 dBc 即功率只有载波的百万分之一）。
+#[must_use]
+pub fn dbc_between(carrier_dbm: f64, spur_dbm: f64) -> f64 {
+  spur_dbm - carrier_dbm
+}
+
+/// 由载波电平与相对电平反算杂散电平（dBm）：`P = Pc + dBc`。
+#[must_use]
+pub fn spur_dbm(carrier_dbm: f64, dbc: f64) -> f64 {
+  carrier_dbm + dbc
 }
 
 /// 对照表的档位（dB，由小到大）：衰减与增益各取几个记得住的整数刻度。
@@ -310,6 +326,28 @@ mod tests {
         (back - dbm).abs() < 1e-9,
         "{dbm} dBm → μV 往返不一致：{back}"
       );
+    }
+  }
+
+  #[test]
+  fn dbc_is_the_difference_of_two_levels() {
+    // 载波 50 dBm（100 W）与 10 μW 级杂散：−60 dBc 就是两个 dBm 之差。
+    assert!((dbc_between(50.0, -10.0) + 60.0).abs() < 1e-12);
+    // 与 dB → 倍数换算同源：−60 dBc 的功率是载波的百万分之一。
+    let ratio = db_to_power_ratio(dbc_between(50.0, -10.0));
+    assert!((ratio - 1e-6).abs() < 1e-12, "{ratio}");
+    // 0 dBc 与载波同功率；高于载波时为正。
+    assert!(dbc_between(50.0, 50.0).abs() < 1e-12);
+    assert!((dbc_between(0.0, 3.0) - 3.0).abs() < 1e-12);
+    assert!((spur_dbm(50.0, -60.0) + 10.0).abs() < 1e-12);
+  }
+
+  #[test]
+  fn dbc_and_spur_level_round_trip() {
+    for dbc in [-120.0, -60.0, -30.0, -6.0, 0.0, 3.0] {
+      let carrier = 50.0;
+      let spur = spur_dbm(carrier, dbc);
+      assert!((dbc_between(carrier, spur) - dbc).abs() < 1e-9, "{dbc}");
     }
   }
 }

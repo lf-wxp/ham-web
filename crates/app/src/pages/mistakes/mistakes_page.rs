@@ -9,7 +9,7 @@ use leptos_router::hooks::use_query_map;
 
 use crate::cn::cn;
 use crate::components::common::{
-  EmptyState, ExplanationCard, NoteEditor, PageContainer, PageHeader,
+  EmptyState, ExplanationCard, LoadMore, NoteEditor, PageContainer, PageHeader,
 };
 use crate::data;
 use crate::pages::browse::PAGE;
@@ -25,6 +25,10 @@ use super::mistake_card::MistakeCard;
 use super::mistake_diagnosis::MistakeDiagnosis;
 use crate::i18n::{t, tf, tp};
 use crate::icons::IconKind;
+
+/// 进入本页的第一帧先建的错题卡数，以及之后每帧补几张（补到 [`PAGE`] 为止，见 `grow_cap`）。
+const FIRST_CARDS: usize = 4;
+const CARD_STEP: usize = 6;
 
 /// 题目所属一级分类（用于分类筛选），无分类码时归入「其他」。
 pub(super) fn top_of(question: &QuestionItem) -> &'static str {
@@ -97,17 +101,19 @@ pub fn MistakesPage() -> impl IntoView {
       .with_untracked(|q| q.get("bank"))
       .and_then(|b| b.parse::<Bank>().ok()),
   );
-  let records = RwSignal::new(study::load_book().sorted());
+  // 进页面只读一次错题本：每次 `load_book()` 都要把 localStorage 里那串（1000 条约 3 MB）取出来
+  // 与缓存比对，此前一次进入读了五次，下面的前瞻 / 巩固度 / 错因都用这一份。
+  let book = study::load_book();
+  let records = RwSignal::new(book.sorted());
   let refresh = move || records.set(study::load_book().sorted());
   // 题库当前版本的解析索引。错题快照里存的是答错当时的解析，订正后不会自己更新，所以
   // 展示时一律经它取（`data::snapshot_explanation`）—— 只影响显示，快照与存档原样不动。
   // 只拉快照涉及的题库，没有错题就一个都不拉；索引没到之前沿用快照，到了之后卡片只换文字，
   // 整张卡不会因此被重建。
+  // 建索引要给两个题库的几千道题逐题算身份，题库已在内存里时这段是同步的：放到首帧画出之后。
   let fresh = RwSignal::new(ExplanationIndex::default());
-  data::spawn_explanation_index(
-    records.with_untracked(|rs| banks_for(rs.iter().map(|r| r.question.id_str()))),
-    fresh,
-  );
+  let banks = records.with_untracked(|rs| banks_for(rs.iter().map(|r| r.question.id_str())));
+  crate::after_paint::after_next_paint(move || data::spawn_explanation_index(banks, fresh));
   let in_bank = move |m: &MistakeRecord| bank.get().is_none_or(|b| m.in_bank(b));
   let due_count = Memo::new(move |_| {
     let now = now_ms();
@@ -156,6 +162,11 @@ pub fn MistakesPage() -> impl IntoView {
   // 事后补 —— `Effect` 要等渲染之后才跑，会先按旧的条数铺一遍再裁掉。
   // 筛选只能经这两个函数写，别处不要直接 `filter.set` / `bank.set`。
   let visible = RwSignal::new(PAGE);
+  // 每张卡带完整题目、解析与错因自评，一次建 40 张是这页进入时最重的一块（建卡 + 随后的样式 / 布局）：
+  // 第一帧只建前几张（手机一屏放得下一两张），之后每画完一帧补一小批，补满后撤掉上限。
+  let card_cap = RwSignal::new(FIRST_CARDS);
+  // 错题本是同步读出的，不必等数据；本来就空的话几帧内就收工。
+  crate::after_paint::grow_cap(card_cap, CARD_STEP, move || visible.get_untracked());
   let set_filter = move |v: String| {
     filter.set(v);
     crate::debounced::set_if_changed(visible, PAGE);
@@ -170,7 +181,7 @@ pub fn MistakesPage() -> impl IntoView {
   });
   let page_items = move || {
     let (f, b) = list_key.get();
-    let n = visible.get();
+    let n = visible.get().min(card_cap.get());
     records.with(|rs| {
       rs.iter()
         .filter(|m| matches(m, &f, b))
@@ -179,7 +190,6 @@ pub fn MistakesPage() -> impl IntoView {
         .collect::<Vec<MistakeRecord>>()
     })
   };
-  let load_more = move || visible.update(|n| *n += PAGE);
 
   let start_with = move |list: Vec<MistakeRecord>| {
     if list.is_empty() {
@@ -328,11 +338,13 @@ pub fn MistakesPage() -> impl IntoView {
 
   // 未来 7 天错题复习前瞻（owned 数据，静态渲染）。
   let review_now = now_ms();
-  let review_timeline = study::load_book().due_timeline(review_now, 7);
+  let review_timeline = book.due_timeline(review_now, 7);
   let review_max = review_timeline.iter().copied().max().unwrap_or(1).max(1);
   let review_total: usize = review_timeline.iter().sum();
-  // 记忆巩固度分布（owned 数据，静态渲染）。
-  let mastery = interval_buckets(&study::load_book());
+  // 记忆巩固度分布、错因分布（owned 数据，静态渲染）。
+  // 在闭包之外算好：视图里的反应式闭包要 `Send`，不能捕获 `book`（`Rc`）。
+  let mastery = interval_buckets(&book);
+  let cause_counts = cause_stats(&book);
 
   view! {
     <div class="min-h-svh animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">
@@ -845,7 +857,7 @@ pub fn MistakesPage() -> impl IntoView {
               }}
 
               {{
-                let cause_counts = cause_stats(&study::load_book());
+                let cause_counts = cause_counts.clone();
                 let has_cause = cause_counts.iter().any(|(_, _, n)| *n > 0);
                 move || {
                   has_cause.then(|| {
@@ -930,22 +942,7 @@ pub fn MistakesPage() -> impl IntoView {
                   }
                 }
               />
-              {move || {
-                let total = list_total.get();
-                let shown = visible.get().min(total);
-                (shown < total)
-                  .then(|| {
-                    view! {
-                      <Button
-                        variant=Variant::Outline
-                        class="w-full"
-                        on_click=Callback::new(move |_| load_more())
-                      >
-                        {move || tf("knowledge.load-more-count", &[&shown.to_string(), &total.to_string()])}
-                      </Button>
-                    }
-                  })
-              }}
+              <LoadMore visible=visible total=list_total step=PAGE class="w-full" />
             }
             .into_any()
           }

@@ -6,6 +6,7 @@ mod awards_panel;
 mod bar_list;
 mod card_image_mark;
 mod contest_log;
+mod derived;
 mod entry_form;
 mod entry_list;
 mod form_state;
@@ -26,6 +27,7 @@ mod station_panel;
 mod stats_scope_select;
 
 pub use contest_log::ContestLogPage;
+pub use derived::LogDerived;
 pub use grid_map::GridMap;
 pub use log_page::LogPage;
 pub use stats_scope_select::{StatsScopeSelect, scoped_log_entries, use_stats_scope};
@@ -96,6 +98,8 @@ pub struct LogStore {
   pub station: RwSignal<StationBook>,
   /// 存了卡片影像的通联 id（localStorage 索引的响应式镜像，供列表渲染相机标记）。
   pub qsl_images: RwSignal<std::collections::HashSet<u64>>,
+  /// 日志上的派生统计（概览 / 奖项进度 / 申请表 / 体检），日志变了才重算，切页回来复用。
+  pub derived: LogDerived,
 }
 
 impl LogStore {
@@ -215,15 +219,18 @@ impl LogStore {
 /// 初始化日志 store 并提供上下文（在应用根组件调用一次）。
 pub fn provide_log_store() {
   let snapshot = crate::kv::load_snapshot(LOG_KEY);
+  let logbook = RwSignal::new(
+    snapshot
+      .as_deref()
+      .map_or_else(Logbook::default, parse_logbook),
+  );
+  let station = RwSignal::new(load_book());
   let store = LogStore {
-    logbook: RwSignal::new(
-      snapshot
-        .as_deref()
-        .map_or_else(Logbook::default, parse_logbook),
-    ),
+    logbook,
     backup_busy: RwSignal::new(false),
-    station: RwSignal::new(load_book()),
+    station,
     qsl_images: RwSignal::new(qsl_image::index()),
+    derived: LogDerived::new(logbook, station),
   };
   provide_context(store);
   // 成就检测读这份内存日志的摘要（Memo，日志变了才重算），不再每答一题解析一次 localStorage。

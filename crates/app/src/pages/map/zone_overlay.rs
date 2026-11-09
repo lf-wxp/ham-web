@@ -12,7 +12,8 @@ use ham_web_core::dxcc_map::DxccShapes;
 use ham_web_core::zone::zone_color;
 use leptos::prelude::*;
 
-use super::projection::{polygon_points, project};
+use super::projection::{project, write_polygon_points};
+use super::svg_markup::{KEY_ATTR, clicked_key, push_attr, push_escaped};
 
 /// 分区着色叠加层。
 #[component]
@@ -34,93 +35,90 @@ pub fn ZoneOverlay(
   #[prop(into)]
   on_click: Callback<String>,
 ) -> impl IntoView {
-  view! {
-    <g>
-      // 有国界几何的实体：整块区域按分区着色。
-      {move || {
-        let zone_map = zone_of.get();
-        let max = max_zone.get();
-        let hl = highlight.get();
-        shapes
-          .get()
-          .shapes
-          .iter()
-          .map(|s| {
-            let key = s.dxcc.to_string();
-            // 未登记分区的区域用透明填充，避免 SVG 退回默认黑色。
-            let fill = zone_map
-              .get(&key)
-              .map_or_else(|| "transparent".to_owned(), |z| zone_color(*z, max));
-            let is_hl = hl == Some(s.dxcc);
-            let stroke = if is_hl {
-              "stroke-gold/70"
-            } else {
-              "stroke-foreground/30"
-            };
-            let width = if is_hl { "1.5" } else { "0.5" };
-            let title = title_of.run(key.clone());
-            s.polys
-              .iter()
-              .map(|ring| {
-                let points = polygon_points(ring);
-                let click_key = key.clone();
-                let title = title.clone();
-                let fill = fill.clone();
-                view! {
-                  <polygon
-                    points=points
-                    fill=fill
-                    fill-opacity="0.55"
-                    class=stroke
-                    stroke-width=width
-                    vector-effect="non-scaling-stroke"
-                    on:click=move |_| on_click.run(click_key.clone())
-                  >
-                    <title>{title.clone()}</title>
-                  </polygon>
-                }
-              })
-              .collect_view()
-          })
-          .collect_view()
-      }}
+  // 整层拼成一段标记、`inner_html` 一次解析；点击在外层 `<g>` 上委托（见 `svg_markup`）。
+  // 每个节点的 DOM 形状与逐个 `view!` 建出来的完全一样：多边形 / 圆点各带自己的 `<title>`。
+  let markup = move || {
+    let zone_map = zone_of.get();
+    let max = max_zone.get();
+    let hl = highlight.get();
+    let fill_of = |dxcc: u16| {
+      // 未登记分区的区域用透明填充，避免 SVG 退回默认黑色。
+      zone_map
+        .get(&dxcc.to_string())
+        .map_or_else(|| "transparent".to_owned(), |z| zone_color(*z, max))
+    };
+    let mut out = String::new();
+    let shapes = shapes.get();
 
-      // 无国界几何的实体（岛屿 / 细分子实体）：以中心点标记，保证分区可见。
-      {move || {
-        let has_geom: BTreeSet<u16> = shapes.get().shapes.iter().map(|s| s.dxcc).collect();
-        let zone_map = zone_of.get();
-        let max = max_zone.get();
-        let hl = highlight.get();
-        dxcc::entities()
-          .iter()
-          .filter(|e| !has_geom.contains(&e.dxcc))
-          .map(|e| {
-            let (x, y) = project(e.lon, e.lat);
-            let fill = zone_map
-              .get(&e.dxcc.to_string())
-              .map_or_else(|| "transparent".to_owned(), |z| zone_color(*z, max));
-            let is_hl = hl == Some(e.dxcc);
-            let radius = if is_hl { "2.6" } else { "1.6" };
-            let width = if is_hl { "0.8" } else { "0.4" };
-            let title = title_of.run(e.dxcc.to_string());
-            let id = e.dxcc;
-            view! {
-              <circle
-                cx=x.to_string()
-                cy=y.to_string()
-                r=radius
-                fill=fill
-                fill-opacity="0.85"
-                class="stroke-foreground/50"
-                stroke-width=width
-                on:click=move |_| on_click.run(id.to_string())
-              >
-                <title>{title}</title>
-              </circle>
-            }
-          })
-          .collect_view()
-      }}
-    </g>
+    // 有国界几何的实体：整块区域按分区着色。
+    for s in &shapes.shapes {
+      let key = s.dxcc.to_string();
+      let fill = fill_of(s.dxcc);
+      let is_hl = hl == Some(s.dxcc);
+      let stroke = if is_hl {
+        "stroke-gold/70"
+      } else {
+        "stroke-foreground/30"
+      };
+      let width = if is_hl { "1.5" } else { "0.5" };
+      let title = title_of.run(key.clone());
+      // 同一块区域的各个环只有 `points` 不同：开头 / 样式属性 / 收尾各拼一次，环与环之间复用。
+      let mut head = String::from("<polygon");
+      push_attr(&mut head, KEY_ATTR, &key);
+      let mut style = String::new();
+      push_attr(&mut style, "fill", &fill);
+      push_attr(&mut style, "fill-opacity", "0.55");
+      push_attr(&mut style, "class", stroke);
+      push_attr(&mut style, "stroke-width", width);
+      push_attr(&mut style, "vector-effect", "non-scaling-stroke");
+      let mut tail = String::from("><title>");
+      push_escaped(&mut tail, &title);
+      tail.push_str("</title></polygon>");
+      for ring in &s.polys {
+        out.push_str(&head);
+        out.push_str(" points=\"");
+        write_polygon_points(&mut out, ring);
+        out.push('"');
+        out.push_str(&style);
+        out.push_str(&tail);
+      }
+    }
+
+    // 无国界几何的实体（岛屿 / 细分子实体）：以中心点标记，保证分区可见。
+    let has_geom: BTreeSet<u16> = shapes.shapes.iter().map(|s| s.dxcc).collect();
+    for e in dxcc::entities()
+      .iter()
+      .filter(|e| !has_geom.contains(&e.dxcc))
+    {
+      let (x, y) = project(e.lon, e.lat);
+      let is_hl = hl == Some(e.dxcc);
+      let radius = if is_hl { "2.6" } else { "1.6" };
+      let width = if is_hl { "0.8" } else { "0.4" };
+      let id = e.dxcc.to_string();
+      out.push_str("<circle");
+      push_attr(&mut out, KEY_ATTR, &id);
+      push_attr(&mut out, "cx", &x.to_string());
+      push_attr(&mut out, "cy", &y.to_string());
+      push_attr(&mut out, "r", radius);
+      push_attr(&mut out, "fill", &fill_of(e.dxcc));
+      push_attr(&mut out, "fill-opacity", "0.85");
+      push_attr(&mut out, "class", "stroke-foreground/50");
+      push_attr(&mut out, "stroke-width", width);
+      out.push_str("><title>");
+      push_escaped(&mut out, &title_of.run(id));
+      out.push_str("</title></circle>");
+    }
+    out
+  };
+
+  view! {
+    <g
+      inner_html=markup
+      on:click=move |ev| {
+        if let Some(key) = clicked_key(&ev) {
+          on_click.run(key);
+        }
+      }
+    ></g>
   }
 }

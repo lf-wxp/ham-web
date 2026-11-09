@@ -77,7 +77,7 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 - **不对「刻意的边界」提改进**：ROADMAP 的「刻意不做」与「已知边界」是设计决定，见附录 C；
   只核对「代码 / 页面文案是否如实反映了这些边界」。
 - **不做性能压测的全量回归**：日常审核只对「每帧更新」的页面（频谱、NEC 三维、摩尔斯）做定向测量；
-  全站扫描的口径与结果单独记在 [`performance.md`](performance.md)。
+  全站扫描的口径与基线水位记在 [`performance.md`](performance.md) §1。
 
 ---
 
@@ -187,6 +187,7 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 | B1.4 | 干净环境构建 | 新目录 `git clone` → `cargo make setup` → `cargo make ci` | 一次通过，无手工步骤 | 缺失步骤 |
 | B1.5 | 构建耗时与内存 | 记录 `cargo make ci` 与 `docker build` 各阶段耗时、峰值内存 | 与 [`docs/engineering/deployment.md`](deployment.md) 的实测表同量级；OOM 有明确提示 | 实测表更新 |
 | B1.6 | 生成物入库边界 | 读 `.gitignore` 与 [`docs/engineering/architecture.md`](architecture.md) | `public/*-worker/`、`public/data/i18n/`、`dist/` 不入库；生成方式有文档 | 边界模糊项 |
+| B1.7 | 依赖升级对生成物的影响 | 升级 `ttf2woff2` / `resvg` / `brotli` 这类**产出入库文件或预压缩产物**的依赖时，用同一份输入在新旧版本下各跑一遍（两个版本可在 `/tmp` 的临时工程里并存，同 major 的 brotli 要分成两个工程）逐字节比；不要只看 `cargo make check` 绿 | 字节一致，或差异已量化并裁定（图标最大差 3/255 属抗锯齿舍入）；**默认值变了要显式写回去**（`ttf2woff2` 0.14 把 `encode` 默认改成不做 glyf/loca 变换，同输入大 16–19%，`pixel/fonts.rs` 的 `encode_woff2` 显式开启并带会变红的单测）；依赖升级与功能改动分开提交 | 产物变化清单、被上游悄悄改掉的默认值 |
 
 ### B2 产物完整性与预算
 
@@ -526,15 +527,20 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 
 ### F3 性能
 
-测量档位（构建、降速、数据量）、阈值与问题台账见 [`performance.md`](performance.md)；本节只列检查项。
+测量档位（构建、降速、真 GPU、数据量）、阈值与基线水位见 [`performance.md`](performance.md) §1；
+规则与守卫它们的用例见 §2；本节只列检查项。写法细则见 [`docs/ui/motion.md`](../ui/motion.md) §7。
 
 | ID | 检查项 | 方法 | 判定标准 |
 | --- | --- | --- | --- |
 | F3.1 | 主包体积 | `cargo make size-check` | 在预算内；新增依赖说明理由 |
-| F3.2 | 响应式粒度 | 搜 `Signal::derive` 高频读取点 | 重计算用 `Memo`，取长度用 `with(Vec::len)` |
-| F3.3 | 主线程长任务 | 抽查上传 / 导出 / 计算 | 重活进 Worker 或分片；有 loading |
+| F3.2 | 响应式粒度 | 搜 `Signal::derive` 高频读取点；搜对日志 / 错题本 / 题库这类大集合的 `.get()` | 重计算用 `Memo`，取长度用 `with(Vec::len)`；读大集合借用（`.with`），不克隆整份 |
+| F3.3 | 主线程长任务 | 抽查上传 / 导出 / 计算；站内进入重页面（按 `performance.md` §1 的档位） | 重活进 Worker 或分片；有 loading；再次进入长任务合计 0、首次 ≤ 1 个 |
 | F3.4 | 首屏 | 弱网（DevTools 限速）打开首页 | 有启动画面；无长白屏 |
-| F3.5 | 逐帧页面 | 频谱 / NEC 三维 / 摩尔斯 | 拖动无明显掉帧；有降级路径 |
+| F3.5 | 逐帧页面 | 频谱 / NEC 三维 / 摩尔斯；首页首屏的循环动画 | 拖动无明显掉帧；有降级路径；滚出视口即停（只点名无限循环的动画，不写 `[data-offscreen] *`） |
+| F3.6 | 首帧预算 | 搜 `view!` 里首屏以下的重块（统计、地图、长表、求解结果） | 包进 `Deferred`；几块都重就每块各包一层；重活不放在 rAF 回调里（它在绘制之前） |
+| F3.7 | 长列表 | 搜 `collect_view` / `.map(…)` 渲染的大集合 | 分页或分批；按主键键控（`<For key=…>`）+ `grow_cap`，补齐只追加不重建；读 `visible` 的闭包不包住 `<For>` |
+| F3.8 | 重复解析与派生计算 | 搜组件体 / `Memo` 里对大本地数据的 `get_json`、整份扫描 | 大数据走 `get_json_shared`；页面间共用的昂贵派生结果挂 store 级 `Memo`；新缓存登记 `performance.md` §4 并配「数据变了数字跟着变」的用例 |
+| F3.9 | 输入响应 | 搜 `on:input` / `on_change` 里触发大列表筛选的搜索框 | 筛选挂防抖副本；「回第一页」写 `set_if_changed`；搜索框有组字门控，表单字段没有 |
 
 ### F4 可访问性
 

@@ -65,7 +65,11 @@ cargo build --profile wasm-release --target wasm32-unknown-unknown $pkgs
 
 for codec in "$@"; do
   mkdir -p "public/${codec}-worker"
+  # 产物没人做符号解析，name / producers 段纯属体积；wasm-release 的 strip 只能设成
+  # debuginfo（strip=symbols 会连 target_features 段一起删），这两段由 wasm-bindgen 自己去掉。
+  # Worker 不走 Trunk，也就没有 wasm-opt 兜底，一旦漏了这两条体积会白涨一截。
   wasm-bindgen --target no-modules --no-typescript \
+    --remove-name-section --remove-producers-section \
     --out-dir "public/${codec}-worker" --out-name "${codec}_worker" \
     "target/wasm32-unknown-unknown/wasm-release/ham_web_${codec}_worker.wasm"
 done

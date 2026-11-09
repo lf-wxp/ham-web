@@ -7,7 +7,7 @@
 //! 缺网格这类**不给自动修** —— 拿实体中心猜一个网格写进日志等于掺假（统计面板的估算
 //! 提示里也一直强调那是估算），所以面板只把它指出来。
 
-use ham_web_core::log_health::{HealthContext, Issue, IssueKind, apply_fix, check};
+use ham_web_core::log_health::{Issue, IssueKind, apply_fix};
 use leptos::prelude::*;
 
 use crate::data::kt;
@@ -18,18 +18,6 @@ use super::use_log_store;
 
 /// 每类问题最多列几条明细（再多只报总数）。
 const MAX_ROWS: usize = 5;
-
-/// 本机时区相对 UTC 的偏移（分钟，东八区 = 480）。
-///
-/// `getTimezoneOffset()` 返回的是「本地比 UTC 晚多少分钟」（东八区是 -480），取负才是偏移。
-fn local_offset_minutes() -> i32 {
-  -js_sys::Date::new_0().get_timezone_offset() as i32
-}
-
-/// 当前 UTC 时间（自 1970-01-01 起经过的分钟数）。
-fn now_utc_minutes() -> i64 {
-  (js_sys::Date::now() / 60_000.0).floor() as i64
-}
 
 /// 种类标题（带条数）。
 fn kind_title(kind: IssueKind, count: usize) -> String {
@@ -90,14 +78,10 @@ pub(super) fn LogHealthPanel() -> impl IntoView {
   // 因此这里也要确保译文在拉 —— 日志页其余部分都是词典文案，不带这个依赖。
   crate::data::use_knowledge_i18n();
 
-  // 「现在」每次重算都取一次：面板只在日志变化时重算，不会自己定时刷新。
-  let report = Memo::new(move |_| {
-    let ctx = HealthContext {
-      now_utc_minutes: now_utc_minutes(),
-      local_offset_minutes: local_offset_minutes(),
-    };
-    logbook.with(|lb| check(&lb.entries, &ctx))
-  });
+  // 体检结果是 store 上的会话级缓存（`LogDerived`）：整本日志逐条查一遍，重度用户在手机上是一个
+  // 几十毫秒的整块任务，日志没变就不必每进一次页面再查。「现在几点」取算的那一刻；
+  // 报告里有「时间在未来」的条目时，缓存过期了会先重算一次（见 `LogDerived::health_report`）。
+  let report = store.derived.health_report();
 
   // 逐条应用，返回改动数；一条都没改就不落库。
   let run = move |issues: &[Issue]| -> usize {

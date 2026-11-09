@@ -197,3 +197,55 @@ test("SDR 在线接收站地图：定位到接收站并给出外链", async ({ p
   await expect(open).toHaveAttribute("target", "_blank");
   await expect(open).toHaveAttribute("rel", /noopener/);
 });
+
+// 区域叠加层（分区 / DXCC 着色）整层拼成一段标记、点击在外层 `<g>` 上委托（`map/svg_markup.rs`）。
+// 下面三条守的是委托这条链：点击落在哪块区域上、取到的区域标识对不对。
+
+test("分区地图：点多边形与点无几何实体的圆点，都定位到对应实体", async ({ page }) => {
+  await page.goto("/zone-map");
+  const map = page.getByRole("img", { name: /^CQ \/ ITU 分区地图/ });
+  await expect(map).toBeVisible();
+  // 区域标识写在每个节点的 `data-key` 上（DXCC 编号）；中国（318）是有几何的实体。
+  const china = map.locator('polygon[data-key="318"]').first();
+  await expect(china).toBeAttached({ timeout: 15_000 });
+  // 悬停提示是节点自己的 `<title>` 子节点（形状没变，样式的 `:has(> title)` 规则才认）。
+  await expect(china.locator("> title")).toContainText("中国");
+  await china.dispatchEvent("click");
+  await expect(page.getByText("已定位：中国")).toBeVisible();
+
+  // 无国界几何的实体画成圆点，走同一条委托。
+  const dot = map.locator("circle[data-key]").first();
+  await expect(dot).toBeAttached();
+  const key = await dot.getAttribute("data-key");
+  expect(key, "圆点应带实体编号").toMatch(/^\d+$/);
+  await dot.dispatchEvent("click");
+  await expect(page.getByText(/^已定位：/)).not.toContainText("中国");
+});
+
+test("DXCC 世界地图：点实体跳到日志并按实体名过滤", async ({ page }) => {
+  await page.goto("/dxcc-map");
+  const china = page.locator('#route-content svg[role="img"] polygon[data-key="318"]').first();
+  await expect(china).toBeAttached({ timeout: 15_000 });
+  await china.dispatchEvent("click");
+  await expect(page).toHaveURL(/\/log\?q=%E4%B8%AD%E5%9B%BD$/);
+});
+
+test("区域叠加层：每块区域各带一个 <title>，平铺的几份世界里标记形状一致", async ({ page }) => {
+  await page.goto("/dxcc-map");
+  const map = page.locator('#route-content svg[role="img"]');
+  await expect(map.locator("polygon[data-key]").first()).toBeAttached({ timeout: 15_000 });
+  const shape = await map.evaluate((svg) => {
+    const polys = [...svg.querySelectorAll("polygon[data-key]")];
+    return {
+      n: polys.length,
+      // 每个多边形恰有一个 `<title>` 子节点，且 `points` 非空（拼标记时少拼一段就会是空串）。
+      allTitled: polys.every((p) => p.querySelectorAll(":scope > title").length === 1),
+      allPoints: polys.every((p) => (p.getAttribute("points") ?? "").includes(",")),
+      noScript: svg.querySelectorAll("script").length,
+    };
+  });
+  expect(shape.n, "DXCC 世界地图应有几百块区域").toBeGreaterThan(300);
+  expect(shape.allTitled).toBe(true);
+  expect(shape.allPoints).toBe(true);
+  expect(shape.noScript).toBe(0);
+});

@@ -35,6 +35,10 @@
 - **不依赖浏览器的逻辑放 `ham-web-core` 并带单元测试**，`crates/app` 只做 DOM 与视图。→ [`docs/engineering/architecture.md`](docs/engineering/architecture.md)「分层与依赖方向」
 - **文案必须走 `t("域.词条")`，字面量写在调用点**；新增词条 zh / en / es 三份齐全，再 `cargo make i18n-pack`。
   页面渲染 `crates/core` 的中文原文（`kt_tracked` / `core_text_tracked`）要挂词典拉取。→ [`docs/data/i18n.md`](docs/data/i18n.md)
+- **重活不进新页面的首帧**：首屏以下的块包 `Deferred`（几块都重就每块各一层）；长列表按主键键控（`<For key=…>`）并用 `grow_cap` 分批补齐，
+  不整体 `collect_view`；读日志 / 错题本 / 题库这类大集合用 `.with` 借用，不 `.get()` 克隆；大本地数据走 `get_json_shared`，
+  页面间共用的昂贵派生结果挂 store 级 `Memo` 并登记 `performance.md` §4；搜索框筛选挂防抖副本，重置分页写 `set_if_changed`；
+  滚出视口的循环动画要停（只点名无限循环的那几条）。→ [`docs/ui/motion.md`](docs/ui/motion.md) §3、§7 · [`docs/engineering/performance.md`](docs/engineering/performance.md) §2
 - **标签关联与无障碍名要写全**：`Field` 的 `r#for` 与控件 `id` 配对；无可见标签的控件 / 图标按钮必填 `aria_label`。这些同时是 e2e 的定位契约。
 - **风格**：Rust 2024，`rustfmt.toml`（2 空格、行宽 100），clippy 的 `correctness/suspicious/style/complexity/perf` 是错误级。
   注释写「为什么」不写「做了什么」；注释、文案、文档一律中文（专有名词与代码标识符除外）。
@@ -63,4 +67,6 @@ cd e2e && E2E_BASE_URL=http://127.0.0.1:3030 npx playwright test tests/<相关 s
   **像素风与现代风（`E2E_UI_STYLE=modern`）各一档** —— 桌面宽度下看不出来，两档也不能互相代替。
 - 红了先分清是不是环境问题（dev 产物缺 `public/` 资产、缺 `postbuild` 才生成的知识库词典、dev 构建没有 `wasm-opt` 导致 CPU 密集用例超时）：
   → [`docs/engineering/testing.md`](docs/engineering/testing.md)「已知的失败与本地排障」。整批回归用 `cargo make e2e`（release 口径）。
-- 写 / 改 e2e 用例的约定（空洞断言、`toBeHidden` 与卸载、检测器要配自测、变异验证）→ 同文档「写用例的约定」。
+- 写 / 改 e2e 用例的约定（空洞断言、`toBeHidden` 与卸载、检测器要配自测、变异验证、抓首帧用 `MutationObserver`）→ 同文档「写用例的约定」。
+- 改了性能相关的东西（首帧、列表、缓存、动画）：测量口径（发布构建、4 倍降速、**必须带真 GPU**、重度数据、站内导航、多次取中位）与阈值见
+  [`docs/engineering/performance.md`](docs/engineering/performance.md) §1；动之前先看 §3「已评估、决定不做」，别重复排查。

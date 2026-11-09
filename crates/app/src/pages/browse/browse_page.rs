@@ -8,21 +8,21 @@ use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 
 use crate::cn::cn;
-use crate::components::common::{EmptyState, PageContainer, PageHeader, Skeleton, StickyPanel};
+use crate::components::common::{
+  EmptyState, LoadMore, PageContainer, PageHeader, Skeleton, StickyPanel,
+};
 use crate::components::sidebar_item::SidebarItem;
 use crate::data::{self, Questions};
 use crate::icons::{Icon, IconKind};
 use crate::store;
 use crate::tone;
-use crate::ui::{
-  Button, Chip, ChipGroup, ChipToggle, Input, InputType, MobileNavDrawer, Tooltip, Variant,
-};
+use crate::ui::{Chip, ChipGroup, ChipToggle, Input, InputType, MobileNavDrawer, Tooltip};
 use crate::util::set_title;
 
 use super::question_row::QuestionRow;
 use super::stat::Stat;
-use super::{ALL, FIRST_ROWS, OTHER, PAGE, sub_name_of, top_of};
-use crate::i18n::{bank_class, t, tf};
+use super::{ALL, FIRST_ROWS, OTHER, PAGE, ROW_STEP, sub_name_of, top_of};
+use crate::i18n::{bank_class, t};
 
 #[component]
 pub fn BrowsePage() -> impl IntoView {
@@ -44,12 +44,11 @@ pub fn BrowsePage() -> impl IntoView {
   let bookmarks = store::use_bookmark_snapshot();
   // 搜索框绑 `kw`（字立刻上屏），筛选按防抖后的副本算（见 `debounced`）。
   let kw_settled = crate::debounced::use_debounced(kw, crate::debounced::SEARCH_DEBOUNCE);
-  // 进入本页的第一帧只建前 `FIRST_ROWS` 道题（手机一屏放得下三四道），画出来之后再补到 `visible`：
-  // 每道题带选项、解析、知识点与参考依据，一次建 40 道是这一页换页时最重的一块。
+  // 进入本页的第一帧只建前 `FIRST_ROWS` 道题（手机一屏放得下三四道），画出来之后每帧补 `ROW_STEP` 道，
+  // 补到 `visible` 为止：每道题带选项、解析、知识点与参考依据，一次建 40 道是这一页换页时最重的一块，
+  // 一次补 32 道的那一帧也一样重。
+  // 题库是异步到达的：数据到了才启动补齐（见下面的 `spawn_local`），骨架屏在场期间不推进。
   let row_cap = RwSignal::new(FIRST_ROWS);
-  crate::after_paint::after_next_paint(move || {
-    let _ = row_cap.try_set(usize::MAX);
-  });
 
   // 支持 /browse?bank=B&q=驻波比（术语表页跳转）、/browse?sub=驻波比 SWR（错题「同类题」跳转）
   let query = use_query_map();
@@ -79,8 +78,16 @@ pub fn BrowsePage() -> impl IntoView {
   spawn_local(async move {
     // 合集在会话内缓存（`data::all_banks_merged`）：题库没变时第二次进来不再逐题深拷贝。
     let merged = data::all_banks_merged().await;
-    all.try_set(merged);
+    // 页面在等数据期间被换走了（信号已释放）：不必再往下做。
+    if all.try_set(merged).is_some() {
+      return;
+    }
     loading.try_set(false);
+    // 行出现之后才开始补：补齐是一串每帧一步、有限步内必然结束的循环（见 `grow_cap`），
+    // 不能在数据没到时就先启动 —— 那样上限会在列表出现之前走完，数据一到就是一整页一次建完。
+    crate::after_paint::grow_cap(row_cap, ROW_STEP, move || {
+      visible.try_get_untracked().unwrap_or(0)
+    });
   });
 
   // 各题库题目指纹（用于「只看本类新增」）。`Memo` 是惰性的：只有下面真的用到时才逐题计算，
@@ -289,6 +296,32 @@ pub fn BrowsePage() -> impl IntoView {
     }
   };
 
+  // 题目行：按「题库里的下标」键控的 `<For>`。补齐（`grow_cap`）、「加载更多」时已建好的行不重建，
+  // 只追加新的 —— 此前每次都整体 `collect_view`，补一批就把前面的行全部丢掉重建，一批比一批重。
+  // 换筛选 / 换题库时下标集合变了，`<For>` 按键增删，行里没有本地状态要保留。
+  // 前提：`all` 在本页只写一次（上面的 `spawn_local` 里数据落地那一下）。键是 `all` 里的下标，
+  // 若以后允许题库热更新替换 `all`，同一个下标会指向另一道题、`<For>` 却认为是同一行不重建 ——
+  // 到时要把键换成题号（`id_str`），或在替换时让整块重建。
+  let question_rows = move || {
+    view! {
+      <For
+        each=move || {
+          filtered.with(|f| {
+            f.iter()
+              .copied()
+              .take(visible.get().min(row_cap.get()))
+              .collect::<Vec<usize>>()
+          })
+        }
+        key=|i| *i
+        children=move |i| {
+          let q = all.with(|qs| qs[i].clone());
+          view! { <QuestionRow q=q bookmarks=bookmarks /> }
+        }
+      />
+    }
+  };
+
   let list = move || {
     if loading.get() {
       // 骨架屏而不是 spinner：题库首屏一次铺开十几行，spinner 消失换成真实列表会有一次
@@ -316,34 +349,11 @@ pub fn BrowsePage() -> impl IntoView {
     if total == 0 {
       return view! { <EmptyState title=Signal::derive(move || t("exam.no-matching-questions")) /> }.into_any();
     }
-    let shown: Vec<usize> = filtered.with(|f| {
-      f.iter()
-        .copied()
-        .take(visible.get().min(row_cap.get()))
-        .collect()
-    });
-    // 「加载更多」的计数按 `visible` 算：首帧只建了前几行，不能让按钮在那一帧显示「8 / 1100」。
-    let shown_len = visible.get().min(total);
-    let rows = all.with(|qs| {
-      shown
-        .iter()
-        .map(|&i| view! { <QuestionRow q=qs[i].clone() bookmarks=bookmarks /> })
-        .collect_view()
-    });
+    // 这个闭包里**不读 `visible`**：读了的话每次「加载更多」整块重跑，`<For>` 也跟着重建，
+    // 键控就白做了。「加载更多」按钮与它的计数在 `LoadMore` 自己的闭包里读。
     view! {
-      <div class="space-y-4">{rows}</div>
-      {(shown_len < total)
-        .then(|| {
-          view! {
-            <Button
-              variant=Variant::Outline
-              class="mt-4 w-full"
-              on_click=Callback::new(move |_| visible.update(|v| *v += PAGE))
-            >
-              {move || tf("knowledge.load-more-count", &[&shown_len.to_string(), &total.to_string()])}
-            </Button>
-          }
-        })}
+      <div class="space-y-4">{question_rows()}</div>
+      <LoadMore visible=visible total=total step=PAGE />
     }
     .into_any()
   };
@@ -392,35 +402,11 @@ pub fn BrowsePage() -> impl IntoView {
       }
       .into_any();
     }
-    let shown: Vec<usize> = filtered.with(|f| {
-      f.iter()
-        .copied()
-        .take(visible.get().min(row_cap.get()))
-        .collect()
-    });
-    let shown_len = visible.get().min(total);
-    let rows = all.with(|qs| {
-      shown
-        .iter()
-        .map(|&i| view! { <QuestionRow q=qs[i].clone() bookmarks=bookmarks /> })
-        .collect_view()
-    });
     view! {
-      <div class="flex flex-col gap-3">{rows}</div>
-      {(shown_len < total)
-        .then(|| {
-          view! {
-            <button
-              type="button"
-              class="md-btn md-btn-outline mt-4 w-full"
-              on:click=move |_| visible.update(|v| *v += PAGE)
-            >
-              {move || tf("knowledge.load-more-count", &[&shown_len.to_string(), &total.to_string()])}
-            </button>
-          }
-        })}
+      <div class="flex flex-col gap-3">{question_rows()}</div>
+      <LoadMore visible=visible total=total step=PAGE />
     }
-      .into_any()
+    .into_any()
   };
 
   if crate::kit::is_modern_at_mount() {

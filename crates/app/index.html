@@ -171,11 +171,13 @@
           if (state === "ready") render();
           else load();
         };
-        // 观察者回调只登记一次 rAF：DOM 频繁变动的页面（波形 / 瀑布图）不会每次都扫描。
+        // 观察者回调只登记一次：DOM 频繁变动的页面（波形 / 瀑布图）不会每次都扫描。
+        // rAF 回调跑在这一帧绘制**之前**，在里面排版就算进了新页面的首帧；套一层 0ms 定时器，
+        // 让首次排版落在绘制之后（公式在那一刻之前显示 Unicode 回退文本，本来就是这么设计的）。
         const schedule = () => {
           if (queued) return;
           queued = true;
-          requestAnimationFrame(scan);
+          requestAnimationFrame(() => setTimeout(scan, 0));
         };
         const start = () => {
           schedule();

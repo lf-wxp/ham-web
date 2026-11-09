@@ -192,6 +192,16 @@
     "category": "基础",
     "desc": "以 1mW 为参考的功率电平，0dBm 等于 1mW，30dBm 等于 1W"
   },
+  "dBc": {
+    "en": "Decibels Relative to Carrier",
+    "category": "基础",
+    "desc": "以载波功率为 0dB 基准的相对电平，表示谐波、杂散、互调与边带比载波低多少，-60dBc 即比载波低 60dB",
+    "aliases": [
+      "相对载波电平",
+      "载波相对电平"
+    ],
+    "see": "分贝"
+  },
   "趋肤效应": {
     "en": "Skin Effect",
     "category": "基础",

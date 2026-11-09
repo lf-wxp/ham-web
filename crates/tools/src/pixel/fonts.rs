@@ -21,7 +21,8 @@
 //! `--src` 目录里需要放：
 //! `fusion-pixel-12px-proportional-zh_hans.ttf`、`fusion-pixel-12px-proportional-latin.ttf`、
 //! `fusion-pixel-12px-monospaced-latin.ttf`、`PressStart2P-Regular.ttf`、`Silkscreen-Regular.ttf`。
-//! 下载地址与许可证见 `public/fonts/LICENSES`。
+//! 走 `cargo make fonts-pixel` 时目录由 `FONT_SRC` 给（默认 `tmp/fonts`），`cargo make fonts-fetch`
+//! 会按钉住的版本下好；来源与许可证见 `public/fonts/LICENSES`。
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
@@ -33,7 +34,7 @@ use fontcull_klippa::{Plan, SubsetFlags, subset_font};
 use fontcull_skrifa::raw::collections::IntSet;
 use fontcull_skrifa::raw::types::NameId;
 use fontcull_skrifa::{FontRef, GlyphId, MetadataProvider, Tag};
-use ttf2woff2::BrotliQuality;
+use ttf2woff2::{BrotliQuality, EncodeOptions};
 use walkdir::WalkDir;
 
 /// 语料扫描范围：与前端实际渲染的文本来源一致。
@@ -231,7 +232,26 @@ fn subset_to_woff2(ttf: &[u8], codepoints: &[u32]) -> Result<Vec<u8>> {
     &gids, &unicodes, &font, flags, &drop, &scripts, &features, &names, &langs,
   );
   let subset = subset_font(&font, &plan).map_err(|e| anyhow!("子集化失败：{e:?}"))?;
-  ttf2woff2::encode(&subset, BrotliQuality::default()).map_err(|e| anyhow!("WOFF2 编码失败：{e}"))
+  encode_woff2(&subset)
+}
+
+/// TTF → woff2。**显式开着 glyf / loca 变换**，不用 `ttf2woff2::encode` 的默认值。
+///
+/// ttf2woff2 0.14 起 `encode` 默认不做这步变换（上游为避开 Chromium 解码器在「重建后的 glyf 偏移超出短
+/// `loca` 范围」时拒收的问题），0.13 默认是做的。不做变换，同样的子集 woff2 要大 16–19%
+/// （实测：600 字的 CJK 分片 80408 → 95980 字节），12 个像素字体一重跑就整体变胖。
+/// 显式开启后 0.13 与 0.14 的输出逐字节一致，也不再依赖上游默认值再变。
+///
+/// 上游风险对本仓库不适用：分片只有几百字，glyf 最大约 120 KB，低于短 `loca` 的上限 131070
+/// （`indexToLocFormat = 0` 时偏移以 u16 × 2 存）。**以后分片变大（新增大量汉字、拆片变粗）要回来看这条**：
+/// 单片 glyf 逼近 131070 字节时，要么再拆片，要么改回 `encode`（接受变大）。
+fn encode_woff2(ttf: &[u8]) -> Result<Vec<u8>> {
+  let options = EncodeOptions {
+    quality: BrotliQuality::default(),
+    transform_glyf_loca: true,
+    ..EncodeOptions::default()
+  };
+  ttf2woff2::encode_with_options(ttf, options).map_err(|e| anyhow!("WOFF2 编码失败：{e}"))
 }
 
 /// 子集化并写出一个 woff2，返回体积。
@@ -390,6 +410,91 @@ mod tests {
       .collect();
     // 丙 最高；甲(U+7532) < 乙(U+4E59)? 按码点升序：乙 在前。
     assert_eq!(rank_by_frequency(&counter), vec!['丙', '乙', '甲', '丁']);
+  }
+
+  /// 手搓一个只有 `glyf` / `loca` / `head` / `maxp` 的最小 TrueType（`n` 个形状相同的矩形字形）。
+  ///
+  /// 目的只是喂给编码器：变换要同时看到这四张表才会生效（见 ttf2woff2 的 `transform_glyf_loca`）。
+  fn tiny_ttf(n: u16) -> Vec<u8> {
+    fn be16(v: &mut Vec<u8>, x: u16) {
+      v.extend_from_slice(&x.to_be_bytes());
+    }
+    // 一个简单字形：1 个轮廓、4 个点（矩形），点全部用 int16 坐标、无标志位压缩。
+    let mut one = Vec::new();
+    be16(&mut one, 1); // numberOfContours
+    for v in [0u16, 0, 100, 100] {
+      be16(&mut one, v); // xMin yMin xMax yMax
+    }
+    be16(&mut one, 3); // endPtsOfContours[0]
+    be16(&mut one, 0); // instructionLength
+    one.extend_from_slice(&[0x01; 4]); // flags：on-curve，x / y 都是 int16
+    for dx in [0i16, 100, 0, -100] {
+      one.extend_from_slice(&dx.to_be_bytes());
+    }
+    for dy in [0i16, 0, 100, 0] {
+      one.extend_from_slice(&dy.to_be_bytes());
+    }
+    while one.len() % 4 != 0 {
+      one.push(0);
+    }
+    let glyf: Vec<u8> = (0..n).flat_map(|_| one.clone()).collect();
+    // loca：长格式（indexToLocFormat = 1），n + 1 项。
+    let loca: Vec<u8> = (0..=u32::from(n))
+      .flat_map(|i| (i * one.len() as u32).to_be_bytes())
+      .collect();
+    let mut head = vec![0u8; 54];
+    head[0..4].copy_from_slice(&0x0001_0000u32.to_be_bytes());
+    head[12..16].copy_from_slice(&0x5F0F_3CF5u32.to_be_bytes()); // magicNumber
+    head[18..20].copy_from_slice(&1000u16.to_be_bytes()); // unitsPerEm
+    head[50..52].copy_from_slice(&1u16.to_be_bytes()); // indexToLocFormat
+    let mut maxp = vec![0u8; 32];
+    maxp[0..4].copy_from_slice(&0x0001_0000u32.to_be_bytes());
+    maxp[4..6].copy_from_slice(&n.to_be_bytes()); // numGlyphs
+
+    // 表目录按 tag 升序；每张表 4 字节对齐。
+    let tables: [(&[u8; 4], &[u8]); 4] = [
+      (b"glyf", &glyf),
+      (b"head", &head),
+      (b"loca", &loca),
+      (b"maxp", &maxp),
+    ];
+    let mut out = Vec::new();
+    out.extend_from_slice(&0x0001_0000u32.to_be_bytes());
+    be16(&mut out, tables.len() as u16);
+    be16(&mut out, 0);
+    be16(&mut out, 0);
+    be16(&mut out, 0);
+    let mut offset = 12 + 16 * tables.len();
+    let mut body = Vec::new();
+    for (tag, data) in tables {
+      out.extend_from_slice(tag);
+      out.extend_from_slice(&0u32.to_be_bytes()); // checksum：编码器不校验
+      out.extend_from_slice(&(offset as u32).to_be_bytes());
+      out.extend_from_slice(&(data.len() as u32).to_be_bytes());
+      body.extend_from_slice(data);
+      while body.len() % 4 != 0 {
+        body.push(0);
+      }
+      offset = 12 + 16 * tables.len() + body.len();
+    }
+    out.extend_from_slice(&body);
+    out
+  }
+
+  #[test]
+  fn woff2_encoding_keeps_the_glyf_loca_transform_on() {
+    // ttf2woff2 0.14 把 `encode` 的默认改成了「不变换」，同样的输入大 16–19%。
+    // 这条守的是：`encode_woff2` 不能退回到默认值（见该函数的文档）。
+    let ttf = tiny_ttf(400);
+    let ours = encode_woff2(&ttf).expect("最小字体应能编码");
+    let plain =
+      ttf2woff2::encode_no_transform(&ttf, BrotliQuality::default()).expect("不变换也应能编码");
+    assert!(
+      ours.len() < plain.len(),
+      "变换后应更小：ours={} 不变换={}（若相等或更大，说明 transform_glyf_loca 没生效）",
+      ours.len(),
+      plain.len()
+    );
   }
 
   #[test]

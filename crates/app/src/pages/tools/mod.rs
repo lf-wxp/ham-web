@@ -13,6 +13,7 @@ mod attenuator_calculator;
 mod battery_runtime;
 mod callsign_lookup;
 mod capacitor_code;
+mod carrier_dbc;
 mod cascade_gain;
 mod coil_yagi_calculator;
 mod contest_scorer;

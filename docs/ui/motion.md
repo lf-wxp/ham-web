@@ -53,6 +53,17 @@ transition: transform var(--motion-fast) var(--ease-out-expo);
 氛围类动画保持长周期 + 低复杂度。项目已有全局降级（见 `style/pixel/motion.css` 末尾 `@layer base` 里的两个块：
 `@media (prefers-reduced-motion: reduce)` 与 `html[data-pixel-motion="off"]`），新增动画自动继承，无需单独处理。
 
+**滚出视口也要停。** 转自定义属性、动 `stroke-dashoffset` 的循环动画（现代风首页的圆锥描边、电波、卫星）不走合成线程，
+每帧都要主线程重算样式、重绘，看不见了还在跑就是白占主线程和电量：
+
+- **CSS 循环动画**：容器带 `data-pause-offscreen`，`motion::pause_offscreen_in` 在它滚出视口时打上 `data-offscreen`，
+  `style/modern/kit.css`「首屏主视觉」一节里**只点名**无限循环的那几条（`[data-offscreen] .md-aurora { animation-play-state: paused }` 这样）。
+  **不要写 `[data-offscreen] *`**：它连一次性的入场动画与过渡一起暂停，它们停在起始帧、`finished` 永远不兑现
+  （e2e 的 `settleFrames` 会等到超时）。首屏 / 功能卡里新加循环动画，要把它的选择器补进这条规则；
+- **逐帧的 JS / canvas 循环**（`kit_modern/spectrum.rs`）：滚出视口时**停掉自调度**，回到视口由观察器再挂上。
+  只「不画」、每帧仍排下一帧不算停；
+- **定时器里读本地存储**（倒计时每秒检查）：走 `util::storage::get_json_shared`（按原串缓存解析结果），不要每秒重新解析。
+
 ### 4. `filter: blur` 只用于小元素
 
 `blur-in` / `blur-out` 仅用于弹层、图标等小元素；整页或大卡片进入动画禁用 blur——低端 Android 上代价过高。
@@ -98,20 +109,44 @@ transition: transform var(--motion-fast) var(--ease-out-expo);
 「用户很可能马上要用、但现在不急」的数据（常用题库）在空闲时预热（`after_paint::when_idle` + `bank_updates::prewarm`），
 同一份题库同时只下载、解析一次（`data::load_url`）。
 
-几件现成的工具，新页面直接用：
+现成的工具与写法，新页面直接用：
 
-- 首屏以下的重块包进 `components::common::Deferred`：新页面第一帧画出来之后再挂（地址带锚点时它会补上定位）。
+- **首屏以下的重块包进 `components::common::Deferred`**：新页面第一帧画出来之后再挂（地址带锚点时它会补上定位）。
   它**下面**还有内容时给 `min_height`，值取各皮肤、各宽度实测高度的下限，否则下面的内容在挂上那一帧整体下跳；
   块里的东西可能整个不出现（如日志为空时的统计明细）就传随状态变空的 `Signal`，别让空页面留白；
-- 「桌面一套、手机一套、CSS 藏一套」改用 `media::use_media_query`，只建当前宽度那一套；
-- 分页签 `ui::Tabs` 的面板内容第一次被切到才挂载，不必再自己做惰性；
-- 搜索框的筛选挂到 `debounced::use_debounced` 的防抖副本上，「回第一页」之类的重置写 `debounced::set_if_changed`
-  （`RwSignal::set` 写同一个值也照样通知，每敲一个字都会让整页列表重建一遍）；
-- 搜索框在输入法组字期间不派发（选字确认才补一次）：`ui::Input` 的 `kind=Search` 与 `ModernInput` 的 `kind="search"`
-  已内置（`composition.rs`，判定在 core 的 `ime_gate`），页面不必再写；非搜索的输入框刻意不挡，表单字段要逐字回调；
-- 大体积的本地数据用 `util::storage::get_json_shared` 读（按原串缓存解析结果），不要每次 `get_json`。
+- **几块都很重就每块各包一层 `Deferred`**，不要共用一个：同一个 `Deferred` 里的内容在同一个任务里挂完，
+  各排各的才落在各自的任务里，块与块之间主线程才能响应点按（`/nec` 的结果区、三维方向图、扫频等）；
+- **重活落在绘制之后**：`requestAnimationFrame` 的回调跑在这一帧绘制**之前**，在里面做重活等于算进首帧。
+  用 `after_paint::after_next_paint`（rAF 里再排一个 0 ms 定时器；页面已隐藏、rAF 暂停时它直接同步执行）。
+  页面外的脚本同理（`index.html` 里 KaTeX 的首轮排版）；
+- **「桌面一套、手机一套、CSS 藏一套」** 改用 `media::use_media_query`，只建当前宽度那一套；
+- **分页签** `ui::Tabs` 的面板内容第一次被切到才挂载，不必再自己做惰性；
+- **长列表（含「加载更多」）按下标 / 主键键控**（`<For key=…>`），并配 `after_paint::grow_cap` 分批补齐：补齐只追加新项。
+  整体 `collect_view` 每补一批都把前面建好的全部丢掉重建。三条要点：**数据异步到达的页面，等数据到了再调用 `grow_cap`**
+  （在数据落地的那段 `spawn_local` 里启动；先启动的话上限在列表出现前就走完，分批等于没做）；
+  **不要在 `step` 里「数据没到就原地等」**：那样的循环靠外部状态结束，加载失败时永不收工，页面隐藏时
+  （`after_next_paint` 同步执行）还会变成无终止的同步递归 —— `each_frame` 的 `step` 每次调用都必须有进展（`grow_cap`
+  的步进是 core 的 `list_grow::next_cap`，单元测试钉住了任何取值下都会结束）；
+  读 `visible` 的闭包不要包住 `<For>`，否则每次加载更多整块重跑、键控白做 —— 「加载更多」按钮用
+  `components::common::LoadMore`（它自己读 `visible` 与 `total`，`total` 可以是会变的信号；按钮间距默认 `mt-4 w-full`，
+  列表容器已带间距的页面传 `class="w-full"`），不要在页面里再手写一份；
+  行里有本地状态的列表，先确认复用已建好的行是安全的；
+  **`<For>` 的键是下标时，要写明「数据只写一次」这个前提**（数据会被整体替换的列表改用稳定主键）；
+- **搜索框**：筛选挂到 `debounced::use_debounced` 的防抖副本上，「回第一页」之类的重置写 `debounced::set_if_changed`
+  （`RwSignal::set` 写同一个值也照样通知，每敲一个字都会让整页列表重建一遍）；输入法组字期间不派发（选字确认才补一次）：
+  `ui::Input` 的 `kind=Search` 与 `ModernInput` 的 `kind="search"` 已内置（`composition.rs`，判定在 core 的 `ime_gate`），
+  页面不必再写；非搜索的输入框刻意不挡，表单字段要逐字回调；
+- **大体积的本地数据**用 `util::storage::get_json_shared` 读（按原串缓存解析结果），不要每次 `get_json`；
+  读大集合（日志、错题本、题库）一律借用（`.with`），不要 `.get()` 把整份克隆一遍；
+- **页面间共用、算一遍就很贵的派生结果**（日志的概览 / 奖项进度 / 申请表 / 体检）挂成 store 上的 `Memo`
+  （`pages/log/derived.rs` 的 `LogDerived`）：惰性（第一次读才算）、数据变了才重算、离开页面不释放，所以再进页面是直接取值。
+  规矩：每个这类缓存登记进 `docs/engineering/performance.md` §4（上限与失效条件）；配一条「数据变了，别的页面的数字跟着变」的
+  e2e（缓存最容易错在过期）；结果会随时间过期的（体检里「时间在未来」的条目）要带上算它时的时间、读之前判一下；
+- **一屏上千个同构 SVG 节点**（地图的区域叠加层）：整层拼成一段标记，`inner_html` 一次解析，点击在外层 `<g>` 上委托
+  （`pages/map/svg_markup.rs`：转义、`data-key`、`clicked_key`）。节点形状不变，样式与 e2e 都不受影响；
+  逐个 `view!` 建每个节点要好几次 wasm → JS 调用。
 
-这些约束由 `e2e/tests/responsiveness.spec.ts` 守着；测量口径与问题台账见 `docs/engineering/performance.md`；
+这些规则各由哪条用例守着，见 `docs/engineering/performance.md` §2；测量口径、已评估后决定不做的项与常驻缓存清单也在那里。
 真机上要看实际耗时，在地址后加 `?perf=1` 打开测量面板（`src/perf_hud.rs`）。
 
 ## 三、token 速查
