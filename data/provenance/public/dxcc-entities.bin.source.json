@@ -1,7 +1,7 @@
 {
   "source": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
   "digest": "6866c877d39cba9c357620878839b336d569f8c662d3cfab4cb1dbe2d39c977f",
-  "fetched_at": "2026-11-05T03:13:10Z",
+  "fetched_at": "2026-11-10T01:53:07Z",
   "etag": "W/\"f38538c6d102391eedf13668834921f72911c5e7cea2e8c816c3d2da69071a67\"",
   "inputs": {
     "crates/core/data/dxcc.txt": "d56de60f87b87c48e104b59eb6b38e9d45f4e4c79808b41beb7d54a0487b1e86"
