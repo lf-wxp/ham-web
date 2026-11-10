@@ -295,3 +295,119 @@ test("F5 首页卡片的标题栏元信息是响应式的：异步数据到了�
 });
 
 // 双风格运行时隔离的回归在 `dual_isolation.spec.ts`（带「等挂载 + 正向对照 + 表面必须打开」三道护栏）。
+
+test("G1 窄屏页头：只留标题，副标题与操作区折进「更多选项」", async ({ page }) => {
+  // 页头是吸顶的，而副标题 + 操作区（题库 / 搜索 / 两枚筛选）在 390px 下折成三四行，
+  // 钉住就是长期占掉三分之一视口。规则与实测数据见 `docs/ui/pixel.md` §4「窄屏折叠页头」。
+  await page.addInitScript(() => {
+    if (window !== window.top) return;
+    localStorage.setItem("ui:uiStyle", "pixel");
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/browse");
+  const header = page.locator("[data-page-header]");
+  const nav = page.locator("[data-nav]");
+  const more = page.getByRole("button", { name: "更多选项" });
+  const search = page.getByPlaceholder("搜索题干 / 答案 / 解析…");
+  const headerHeight = () => header.evaluate((el) => Math.round(el.getBoundingClientRect().height));
+  await expect(header).toBeVisible();
+  await expect(nav).toBeVisible();
+
+  // 页头仍然吸顶（不是靠取消吸顶来省地方）
+  await expect(header).toHaveCSS("position", "sticky");
+  // 收起时页头只有一行标题（实测 50px；副标题若漏在外面会到 76px 以上）
+  await expect(more).toHaveAttribute("aria-expanded", "false");
+  await expect.poll(headerHeight).toBeLessThan(64);
+  // 折叠区里的控件在 DOM 里但不可见 / 不可聚焦
+  await expect(search).toBeHidden();
+
+  await more.click();
+  await expect(more).toHaveAttribute("aria-expanded", "true");
+  await expect(search).toBeVisible();
+  // 副标题 + 三组控件都回来了（实测 212px）
+  await expect.poll(headerHeight).toBeGreaterThan(150);
+
+  // 焦点环（2px 虚线 + 3px 偏移 = 5px）画在控件外面，而折叠区靠 `overflow: hidden` 收起：
+  // 控件贴着折叠区边缘，环就被裁掉。量折叠区正文与控件包络之间的间距，左 / 右 / 下都得留满 5px
+  // （修复前左、下实测 0）。等展开过渡走完再量：`getBoundingClientRect` 量的是此刻的盒子。
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const body = document.querySelector("[data-page-header] [id^='page-head-actions'] > div")!;
+          const box = body.getBoundingClientRect();
+          const rects = [...body.querySelectorAll("button, input, select, a, [role='combobox']")]
+            .map((el) => el.getBoundingClientRect())
+            .filter((r) => r.width > 0 && r.height > 0);
+          // 量不到控件就返回 -1：让「折叠区里没控件」直接红，而不是空转通过
+          if (rects.length === 0) return -1;
+          return Math.min(
+            Math.min(...rects.map((r) => r.left)) - box.left,
+            box.right - Math.max(...rects.map((r) => r.right)),
+            box.bottom - Math.max(...rects.map((r) => r.bottom)),
+          );
+        }),
+      { message: "折叠区正文与控件之间没给焦点环留够 5px" },
+    )
+    .toBeGreaterThanOrEqual(5);
+
+  // 展开后滚下去页头依旧钉在导航下沿
+  await page.evaluate(() => window.scrollTo(0, 500));
+  await expect
+    .poll(() => header.evaluate((el) => Math.round(el.getBoundingClientRect().top)))
+    .toBe(66);
+  expect(Math.round(await nav.evaluate((el) => el.getBoundingClientRect().top))).toBe(0);
+
+  // 桌面端：没有「更多选项」，操作区直接在标题行右侧（`md:contents` 还原折叠前的版式）
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await expect(more).toBeHidden();
+  await expect(search).toBeVisible();
+});
+
+test("G2 窄屏页头：每日挑战的倒计时条常显，不跟着「更多选项」收起", async ({ page }) => {
+  // `children` 里的实时状态用 `PageHeader` 的 `keep_rows` 留在折叠区外面。
+  // 折进去就等于答题时看不见还剩多少时间 —— 见 `docs/ui/pixel.md` §4「窄屏折叠页头」。
+  await page.addInitScript(() => {
+    if (window !== window.top) return;
+    localStorage.setItem("ui:uiStyle", "pixel");
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/daily-challenge");
+  await page.getByRole("button", { name: "开始挑战" }).click();
+
+  const header = page.locator("[data-page-header]");
+  const more = page.getByRole("button", { name: "更多选项" });
+  // 折叠区仍是收起的（副标题与题库筛选在里面），倒计时条却在外面
+  await expect(more).toHaveAttribute("aria-expanded", "false");
+  await expect(header.getByText("剩余时间")).toBeVisible();
+  await expect(header.getByRole("button", { name: "交卷" })).toBeVisible();
+
+  // 滚下去也还看得见（页头吸顶）
+  await page.evaluate(() => window.scrollTo(0, 600));
+  await expect(header.getByText("剩余时间")).toBeVisible();
+});
+
+test("G3 窄屏页头：SDR 瀑布图的「开始」常显，不必先点「更多选项」", async ({ page }) => {
+  // `actions` 里页面唯一的主操作用 `PageHeader` 的 `keep_actions` 留在折叠区外面：
+  // 监听中想停下来，不该先去找一个收起的菜单 —— 见 `docs/ui/pixel.md` §4「窄屏折叠页头」。
+  await page.addInitScript(() => {
+    if (window !== window.top) return;
+    localStorage.setItem("ui:uiStyle", "pixel");
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/sdr-waterfall");
+
+  const header = page.locator("[data-page-header]");
+  const more = page.getByRole("button", { name: "更多选项" });
+  const start = header.getByRole("button", { name: "开始", exact: true });
+  // 折叠区仍收起（里面只剩副标题），主操作却在外面，且全页只有这一份
+  await expect(more).toHaveAttribute("aria-expanded", "false");
+  await expect(start).toBeVisible();
+  await expect(start).toHaveCount(1);
+
+  // 桌面端同样在标题行右侧，不因为常显而多出一份
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await expect(more).toBeHidden();
+  await expect(start).toBeVisible();
+  await expect(start).toHaveCount(1);
+});

@@ -1,6 +1,7 @@
 //! 题库分类浏览：按题目类型分类，列出全部选项并标出正确答案，附解析、知识点与参考依据。
 
 mod browse_page;
+mod question_facts;
 mod question_row;
 mod stat;
 

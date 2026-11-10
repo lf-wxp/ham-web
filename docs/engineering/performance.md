@@ -122,7 +122,7 @@
 | `/nec` 首次矩量法求解 | 求解是一个整块（装阻抗矩阵 + 扫 2664 个方向，约 140 ms）。已让它与其余五块各排各的任务，最长任务 193 → 138 ms。再拆要改 core 里的矩量法 | 首次进入 `/nec` 在真机上被反馈卡 |
 | 日志页首次进入的体检 / 奖项 / 申请表首算（约 345 ms） | 第一次都要算，只是再次进入不重复。可用 `after_paint::when_idle` 空闲时预算，代价是启动后多占一次主线程 | 重度用户首次进日志页在真机上被反馈卡 |
 | 日志搜索，键间隔略大于防抖（约 160 ms） | 下一键撞上防抖后那次重算，单键交互中位 72 ms（键间隔 60 ms 时 32 ms，无长任务）；整段输入的长任务合计仍是最低的 | 防抖时长改动，或搜索改成增量 |
-| 按路由拆分 wasm | trunk 0.22 不支持，且会把下载与编译挪到每页第一次点击上；收益上限 br 61.5%，但拆不动的框架地板占 56% | 见 §5.3 |
+| 按路由拆分 wasm | 收益上限 br 61.5%，但拆不动的框架地板占 56%；Trunk 也没有插 `wasm-split` 的位置。Leptos 0.8.5 自带的 `#[lazy_route]` 2026-11-09 按两种粒度实测后结论不变 | 见 §5.5 |
 
 ---
 
@@ -145,7 +145,7 @@
 
 ---
 
-## 5. 主包体积：现状、预算与分包评估（2026-11-08）
+## 5. 主包体积：现状、预算与分包评估（2026-11-08，2026-11-09 补测 §5.5）
 
 ### 5.1 实测
 
@@ -168,7 +168,9 @@
 
 ### 5.3 路由分包：三条路与裁定
 
-Leptos CSR 只有一个 wasm 实例，路由是客户端路由，代码在同一个模块里，没有「进到某页才下载那页 wasm」的现成能力。要拆只有三条路：
+Leptos CSR 只有一个 wasm 实例，路由是客户端路由。0.8.5 之前没有「进到某页才下载那页 wasm」的能力；0.8.5 起框架自带了
+（`LazyRoute` + `#[lazy_route]`，底层是 wasm-split）。2026-11-09 按「单页」与「10 块聚合」两种粒度都量过，**结论仍是不做**，数字与坑见 §5.5。
+除它之外还有三条路：
 
 | 方案 | 做法 | 代价 | 什么时候值得做 |
 |---|---|---|---|
@@ -176,7 +178,8 @@ Leptos CSR 只有一个 wasm 实例，路由是客户端路由，代码在同一
 | **B. 重活挪进 Worker** | 解码已经这么做；可继续挪题库检索 / 统计聚合 / 地图投影 | 中等；只减少**主线程长任务**，**不减少字节** | 长任务超标时（阈值见 §1.2） |
 | **C. SSR / 岛屿** | Leptos SSR + 按路由 islands | 要服务端渲染管线 + 首屏 HTML 缓存，重构量最大；首屏字节数是**数量级**下降 | 有稳定后端与运维预算 |
 
-**裁定：不做 A。** 拆代码带不走框架地板，也带不走默认语言词典。重开时先做 C —— 它是唯一能把框架地板一起砍掉的路。
+**裁定：不做 A。** 拆代码带不走框架地板，也带不走默认语言词典。框架自带的 wasm-split（§5.5）同理，只是把「拆不动的地板」换成了「碎片化的请求」。
+重开时先做 C —— 它是唯一能把框架地板一起砍掉的路。
 
 ### 5.4 分包测量的结果（2026-11-08）
 
@@ -224,3 +227,71 @@ twiggy top target/wasm32-unknown-unknown/wasm-release/ham-web-app.wasm > /tmp/to
 即便把反向表算成零开销，94 KB 仍大于 65 KB；另有多一次网络请求（`#boot` 期间要等它）和包没到时的「漏语义 key」降级态。
 
 **结论**：默认语言继续全量内嵌，`build.rs` 的 `BUNDLED_DOMAINS` 保持只对非中文生效。只有**换编码**（二进制语言包、或与 wasm 共享压缩字典）时才可能翻正，那已不是「打包」问题。
+
+### 5.5 路由级 wasm-split 实测（2026-11-09）
+
+Leptos 0.8.5 起框架自带懒加载：`leptos_router::LazyRoute` + `Lazy<T>`，`#[lazy_route]` 把 `view` 交给 `#[lazy]`，后者展开成 `wasm_split!`
+（本仓库当前锁定 `leptos 0.8.23` / `leptos_router 0.8.17` / `wasm_split_helpers 0.2.3`；单页一段测于 `0.8.21` / `0.8.16`，10 块一段测于当前锁定版本）。它**不是** §5.3 的方案 A：拆出的块与原模块共享同一份线性内存与同一个 Leptos 运行时，
+不存在跨模块传信号 / `web_sys` 对象的死结，所以不能拿 A 的结论直接套 —— 这里单独量。
+
+> 一次性测量，脚本不入库（与 §5.4 同一约定）。口径：`wasm-release` profile + 测量时的 `wasm-bindgen 0.2.129`（当前锁定 `0.2.130`；`--target web`）+ `wasm-opt 133 -Oz`
+> （与 `index.html` 的 `data-wasm-opt` 同参数）+ `brotli -q 11`。A 组（未拆分）在同一份源码上复算 br **2,126,616 B**，与 §5.4 基线差 0.02%，可用。
+> 单页一段在 0.6.5 上测，10 块一段在 0.6.6（`e7e12d3`）上测，两段各自带同版本基线 —— 版本差约 0.1%，不影响结论。
+
+**构建链。** Trunk 的内置步骤是 `cargo build → wasm-bindgen → wasm-opt`，钩子插不进中间，只能自己串；`wasm-split` 必须在 wasm-bindgen **之前**：
+
+```bash
+# .cargo/config.toml 的 rustflags 被环境变量覆盖，所以要原样带上；--emit-relocs 是 wasm-split 的硬要求
+CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS="-C debuginfo=1 --cfg erase_components -C link-args=--emit-relocs" \
+  cargo build --profile wasm-release --target wasm32-unknown-unknown -p ham-web-app
+wasm-split-cli target/wasm32-unknown-unknown/wasm-release/ham-web-app.wasm /tmp/split --target web --out-name ham-web-app
+wasm-bindgen --target web --no-typescript --out-dir /tmp/split --out-name ham-web-app /tmp/split/ham-web-app.wasm
+```
+
+不加 `--emit-relocs` 直接报 `No linking section found`。代价：中间产物 11.6 MB → 26.3 MB（0.6.6 加回 name 段后 34.7 MB），改 RUSTFLAGS 会触发一次全量重编译（2m23s）。
+
+#### 只拆 `/nec` 一页
+
+| 项 | 未拆分 | 拆 `/nec` | 差 |
+|---|---|---|---|
+| 主包 raw | 8,229,906 | 7,954,075 | −3.35% |
+| 主包 br | 2,124,215 | 2,073,878 | −2.37% |
+| chunk（raw / br） | — | 320,791 / 105,918 | 压缩率 3.03（主包 3.83） |
+| 非 `/nec` 页首访 br | 2,140,498 | 2,090,894 | −2.3% |
+| **`/nec` 首访 br** | 2,140,498 | 2,196,812 | **+2.6%** |
+
+拆一页等于让这一页首访更重，只换来其他页少 2.3%。wasm-split 搬走 372,659 B 代码 + 20,452 B 数据（比 §5.4 删减实验的 282,108 B 多：
+只被搬走函数调用的整段代码也跟着走）。浏览器验证：`/` 首屏不请求 chunk，站内跳到 `/nec` 才拉那一个文件，页面正常渲染。
+
+#### 按模块聚成 10 块（181 条路由，每块约 244 KB 源码）
+
+| 项 | 未拆分 | 10 块 | 差 |
+|---|---|---|---|
+| 主包 raw / br | 8,251,493 / 2,126,616 | 2,670,691 / **800,374** | **br −62.4%** |
+| 单页首访 br（含胶水） | 2,142,810 | **1,070,087 – 1,417,575（平均 1,218,713）** | −43% |
+| 单页首访 wasm 请求数 | 2 | **168 – 273** | ×100 |
+| **全部产物 br（PWA 全量预缓存）** | 2,142,810 | **2,945,866** | **+37.5%** |
+| wasm 文件数 | 1 | **482** | |
+
+主包确实掉到 800,374 B，与 §5.4「只留外壳」的 819,239 B 预测吻合 —— 剩下的就是框架地板 + 外壳 + 中文词典。**但块不是「一次只拉一块」**：
+块之间共享的函数被 CLI 拆成 471 个独立 `chunk_*.wasm`（中位 3 KB，最大 127 KB），`__wasm_split.js` 从 2,192 B 涨到 156,658 B raw / 4,930 br。
+浏览器实测一次页面加载触发 237 次 wasm 请求（`performance` buffer 默认 250 条被打满截断，按 `__wasm_split.js` 的依赖图算是 168–273 个）。
+功能正常：`/nec` `/morse` `/log` `/exam` 都能渲染，没有 chunk 加载失败。
+
+#### 为什么还是不做
+
+碎片化不是「块切多了」，而是机制本身：**跨块共享的每个函数都要单独成块**。本仓库 179 个页面共享同一套 UI kit / i18n / store，共享面天生最大，
+块数再少也压不住文件数。加上每块独立建 brotli 字典（3.83 → 3.03）把省下的字节吃回去，全量 br 反而 +37.5%，而 PWA 的 `install` 会把它们全部预缓存。
+只拆 1–2 个孤立重页时文件数没问题（单页那档只有 1 个 chunk、2 个请求），但那一档已经实测净亏 2.6%。
+
+裁定与 §5.3 一致：**不做**。重开条件不变（主包 > 2.6 MB 且首屏 LCP 被带宽卡住，先做 C：SSR / 岛屿）。
+
+#### 重开时先看这三个坑
+
+1. **table 导出**：`wasm_split_cli_support 0.2.3` 生成的 `__wasm_split.js` 调 `initSync(undefined, undefined)`，并从主模块导出里取 `__indirect_function_table`；
+   `wasm-bindgen 0.2.129`（测量时的版本，未在当前锁定的 `0.2.130` 上复测）不再导出这张表（bindgen 前的主 wasm 里有），chunk 实例化报 `LinkError: table import requires a WebAssembly.Table`。
+   探针里给主模块补了一条 28 B 的 export 才跑通；正式接入要么等 CLI 适配，要么在 bindgen 后补一道导出。
+2. **`view!` 不接受内联 turbofish**：`view=Lazy::<XRoute>::new()` 会被当成标签解析失败。先 `let x = Lazy::<XRoute>::new();` 再 `view=x`。
+3. **聚合要绕开 `#[lazy_route]`**：拆分函数不能有泛型 / receiver / `impl Trait` / `async`；`#[lazy_route]` 会把 `view` 改写成「自由函数 + impl 里的 async 包装」
+   （`Self` 自动换成具体类型，所以 `fn view(this: Self) -> AnyView` 照写）。但它给每个 `#[lazy]` 的模块名都加了 call-site 哈希，等于一个函数一块；
+   要按模块聚合得直接用 `#[wasm_split(同名模块, wasm_split_path = ::leptos::wasm_split)]`。

@@ -361,7 +361,7 @@ ease    --md-ease（标准）· --md-ease-out（入场）
 | `.md-readout` / `.md-readout-inline` | **只读结果条**：左 2px 行动色规则线 + 等宽数字 + 正文色。不要用 `.md-input` 画只读值 —— 同底、同圆角、同字号，用户分不清哪个能改（工具页 37 处结果条曾与输入框同形）。按皮肤派发走 `pages/tools/mod.rs` 的 `result_class()` / `result_inline_class()` |
 | `.md-skel` / `.md-live-metric-skel` | 骨架屏：平滑扫光，`prefers-reduced-motion` 下降级。共享 `Skeleton` 组件在现代风也走它 —— `.skeleton` 只有像素版（`--pxl-dither` + `steps(1)`），直接沿用会渲染成硬切灰块。首页 live 读数按**三位数字**预留宽度，否则读数从占位跳到真值时整块抖一下 |
 | `.md-error` | 错误块：`--md-danger` 掺 7%（与表单错误态同一档），由 `ErrorState` 统一渲染。桥接页曾手写 `bg-destructive/5`，与 `.md-input[aria-invalid]` 的 7% 并成两档红底 |
-| `.md-q-row*` | 分类浏览、收藏集与错题集共用的题目卡片（`.md-q-row-head` 装标签行、`.md-q-row-text` 是题干、`.md-q-row-tag` 是分类胶囊；收藏集在卡片末尾追加 `.md-bookmark-foot` 分组 / 笔记操作区，错题集追加 `.md-mistake-foot`（三行：我的答案 / 考点 / 同类题再练，复习进度，错因自评 + 移出；各行自己 `flex-wrap`，320px 下三语都不撑出卡片），都不另画题目版式；错题集还通过 `chosen` 把用户当时选的项标上 `.md-q-row-chosen`「我的选择」，选错的另加红色左线）。**标签行与题干必须是两个块级行**：标签与题干同处一个 flex 行时，题干首行被胶囊推到右边、换行后回到卡片内沿，左边缘就成了锯齿。判据见 `modern_ui.spec.ts` 的「题目行」 |
+| `.md-q-row*` | 分类浏览、收藏集与错题集共用的题目卡片（`.md-q-row-head` 装标签行、`.md-q-row-text` 是题干、`.md-q-row-tag` 是分类胶囊；收藏集在卡片末尾追加 `.md-bookmark-foot` 分组 / 笔记操作区，错题集追加 `.md-mistake-foot`（三行：我的答案 / 考点 / 同类题再练，复习进度，错因自评 + 移出；各行自己 `flex-wrap`，320px 下三语都不撑出卡片），都不另画题目版式；错题集还通过 `chosen` 把用户当时选的项标上 `.md-q-row-chosen`「我的选择」，选错的另加红色左线）。**知识点与参考依据默认收起**：两者是解题的补充资料，由 `QuestionFacts` 收进一枚 `.md-q-row-block` 里的折叠头（复用 `.md-x-toggle` / `.md-chev` / `.md-x-panel`），展开后仍是原来的标签行 + 正文，收起时正文不构建。**标签行与题干必须是两个块级行**：标签与题干同处一个 flex 行时，题干首行被胶囊推到右边、换行后回到卡片内沿，左边缘就成了锯齿。判据见 `modern_ui.spec.ts` 的「题目行」 |
 
 > **卡片只有一枚「这里是一块」的记号**：内容卡用 `.md-panel::before` 的左上角标（默认行动色，
 > 带 `--tone` 时跟随模块色）；页面级**索引卡**（`.md-tools-index` 这类吸顶目录）用 3px 行动色顶边，

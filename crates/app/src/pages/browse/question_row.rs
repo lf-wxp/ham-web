@@ -1,20 +1,23 @@
 use std::collections::HashSet;
 
 use ham_web_core::QuestionItem;
-use ham_web_core::categories::{self, RefKind};
+use ham_web_core::categories;
 use leptos::prelude::*;
 
-use crate::cn::cn;
 use crate::i18n::{t, tf, tp};
 use crate::icons::{Icon, IconKind};
 use crate::store;
 use crate::tone;
 use crate::ui::ChipToggle;
 
+use super::question_facts::QuestionFacts;
+
 /// 一道题的完整展示卡（题号 / 分类标签、题干、正确答案、解析、知识点、参考依据）。
 ///
 /// 分类浏览与收藏集共用这一张卡：同一道题在两处长得一样，收藏集只通过 `children`
 /// 在卡片末尾追加自己的分组 / 笔记操作区，不另画一套题目版式。
+///
+/// 知识点与参考依据是解题的补充资料，收在 [`QuestionFacts`] 里默认折叠。
 #[component]
 pub(crate) fn QuestionRow(
   q: QuestionItem,
@@ -253,53 +256,7 @@ pub(crate) fn QuestionRow(
                 }
               })
           }}
-          {note
-            .map(|n| {
-              view! {
-                <div class="md-q-row-block">
-                  <span class="md-stat-label">
-                    {move || t("knowledge.topic")} " "
-                    {move || sub.map(|s| crate::data::kt_tracked(s.name))}
-                  </span>
-                  <p class="md-muted md-sm">{move || crate::data::kt_tracked(n)}</p>
-                </div>
-              }
-            })}
-          {(!refs.is_empty())
-            .then(|| {
-              view! {
-                <div class="md-q-row-block">
-                  <span class="md-stat-label">{move || t("exam.references")}</span>
-                  <ul class="md-q-row-refs">
-                    {refs
-                      .iter()
-                      .map(|r| {
-                        view! {
-                          <li>
-                            <span class="md-ref-badge">{move || crate::data::kt_tracked(r.kind.label())}</span>
-                            {match r.url {
-                              Some(url) => view! {
-                                <a
-                                  href=url
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  class="inline-flex items-center pointer-coarse:min-h-11"
-                                >
-                                  {move || crate::data::kt_tracked(r.text)}
-                                </a>
-                              }
-                                .into_any(),
-                              None => view! { <span>{move || crate::data::kt_tracked(r.text)}</span> }
-                                .into_any(),
-                            }}
-                          </li>
-                        }
-                      })
-                      .collect_view()}
-                  </ul>
-                </div>
-              }
-            })}
+          <QuestionFacts sub_name=sub.map(|s| s.name) note=note refs=refs />
         </div>
         {children.map(|c| c())}
       </article>
@@ -403,62 +360,7 @@ pub(crate) fn QuestionRow(
           )
       }}
 
-      {note
-        .map(|n| {
-          view! {
-            <div class="mb-3 border-t border-dashed pt-3">
-              <div class="mb-1 text-xs text-muted-foreground">
-                {move || t("knowledge.topic")} {move || sub.map(|s| crate::data::kt_tracked(s.name))}
-              </div>
-              <div class="text-sm leading-6 text-muted-foreground">{move || crate::data::kt_tracked(n)}</div>
-            </div>
-          }
-        })}
-
-      {(!refs.is_empty())
-        .then(|| {
-          view! {
-            <div class="border-t border-dashed pt-3">
-              <div class="mb-1 text-xs text-muted-foreground">{move || t("exam.references")}</div>
-              <ul class="space-y-1">
-                {refs
-                  .iter()
-                  .map(|r| {
-                    let badge = cn(&[
-                      "mt-0.5 shrink-0 px-1.5 py-0.5 text-xs",
-                      if r.kind == RefKind::Law {
-                        "bg-xp/10 text-xp-text"
-                      } else {
-                        "bg-win/10 text-win-text"
-                      },
-                    ]);
-                    let body = match r.url {
-                      Some(url) => view! {
-                        <a
-                          href=url
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class=format!("{} {}", crate::kit::link_class(), "inline-flex items-center gap-1 pointer-coarse:min-h-11")
-                        >
-                          {move || crate::data::kt_tracked(r.text)}
-                          <Icon kind=IconKind::ExternalLink class="size-6 w-3" />
-                        </a>
-                      }
-                      .into_any(),
-                      None => view! { <span>{move || crate::data::kt_tracked(r.text)}</span> }.into_any(),
-                    };
-                    view! {
-                      <li class="flex items-start gap-2 text-sm text-muted-foreground">
-                        <span class=badge>{move || crate::data::kt_tracked(r.kind.label())}</span>
-                        {body}
-                      </li>
-                    }
-                  })
-                  .collect_view()}
-              </ul>
-            </div>
-          }
-        })}
+      <QuestionFacts sub_name=sub.map(|s| s.name) note=note refs=refs />
       {children.map(|c| c())}
     </article>
   }

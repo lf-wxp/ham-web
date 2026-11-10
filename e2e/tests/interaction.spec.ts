@@ -229,7 +229,9 @@ test("按压整块表面（选项行）全程不改变它的尺寸，点选项�
 test("像素风不装这套交互（无涟漪、无 md 类名）", async ({ page }) => {
   await seed(page, "pixel");
   await page.goto("/glossary");
-  const button = page.locator("main button").first();
+  // `:visible`：页头里窄屏才出现的「更多选项」在桌面宽度下是 `display: none`，
+  // 取到它会让 `scrollIntoViewIfNeeded` 一直等到超时。
+  const button = page.locator("main button:visible").first();
   await button.scrollIntoViewIfNeeded();
   const box = await button.boundingBox();
   if (!box) throw new Error("按钮不可见");

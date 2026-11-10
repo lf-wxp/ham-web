@@ -176,6 +176,38 @@ for (const style of ["pixel", "modern"] as const) {
     await otherRow.getByRole("button", { name: BOOKMARK }).click();
     await expect(mine).toHaveAttribute("aria-pressed", "false");
   });
+
+  test(`分类浏览（${style}）：知识点与参考依据默认收起，展开才出现`, async ({ page }) => {
+    await page.addInitScript((s) => {
+      if (window !== window.top) return;
+      localStorage.setItem("ui:uiStyle", s);
+    }, style);
+    // 首题是 A 类 1.1.1（有知识点与参考依据），折叠头必然存在
+    await page.goto("/browse");
+    const card = page.locator("main article").first();
+    await expect(card).toBeVisible();
+    const toggle = card.getByRole("button", { name: "知识点与参考依据" });
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    // `aria-controls` 必须指向一个真实存在、且全页唯一的面板（像素风曾漏写面板的 id，
+    // 悬空引用在收起态下不会被任何别的断言碰到）
+    const panelId = await toggle.getAttribute("aria-controls");
+    expect(panelId, "折叠头没有声明它控制的面板").toBeTruthy();
+    await expect(page.locator(`[id="${panelId}"]`)).toHaveCount(1);
+
+    // 收起时正文根本没构建（不是靠样式裁掉）：列表一屏几十张卡，不该为用户不看的文字付渲染成本
+    const refsLabel = card.getByText("参考依据", { exact: true });
+    await expect(refsLabel).toHaveCount(0);
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await expect(refsLabel).toBeVisible();
+
+    // 收起后正文留在 DOM 里给高度过渡，但必须真的不可见（`visibility: hidden`），
+    // 否则被裁掉的法条链接还能被 Tab 聚焦
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await expect(refsLabel).toBeHidden();
+  });
 }
 
 test("分类浏览：加载更多分页", async ({ page }) => {

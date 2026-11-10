@@ -471,6 +471,8 @@ pub fn SdrWaterfallPage() -> impl IntoView {
       <PageHeader
         title=move || t("tools.sdr-waterfall")
         subtitle=move || t("tools.feed-the-radio-or")
+        // 开始 / 停止是页面唯一的主操作：窄屏也不折（监听中要随时点得到「停止」）。
+        keep_actions=true
         actions=ViewFn::from(move || {
           view! {
             <Button

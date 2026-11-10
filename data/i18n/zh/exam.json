@@ -79,6 +79,7 @@
   "exam.take-a-mock-exam": "去做一套模拟考试",
   "exam.exclude-questions-already-done": "去掉练习、考试、闪卡中已经做过的题",
   "exam.references": "参考依据",
+  "exam.topic-and-references": "知识点与参考依据",
   "exam.emission-designators": "发射类别标识",
   "exam.found-a-previous-session": "发现上次练习记录",
   "exam.cancel": "取消",

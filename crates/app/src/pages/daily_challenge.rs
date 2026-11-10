@@ -151,6 +151,8 @@ pub fn DailyChallengePage() -> impl IntoView {
       <PageHeader
         title=move || t("learning.daily-challenge")
         subtitle=move || tf("learning.questions-a-day-in", &[&CHALLENGE_COUNT.to_string(), &CHALLENGE_MINUTES.to_string()])
+        // 第二行是倒计时 + 交卷：窄屏也不折（答题时随时要能看到还剩多少时间）。
+        keep_rows=true
         actions=ViewFn::from(move || {
           let nav = navigate.clone();
           view! {

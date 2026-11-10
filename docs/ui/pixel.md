@@ -446,13 +446,64 @@ view! {
 
 | 要什么 | 用 | 说明 |
 |---|---|---|
-| 粘性页头（标题 + 副标题） | `PageHeader` | `actions=ViewFn::from(move || view! { … })` 放右侧操作区；吸顶偏移默认 `top-[66px]`（导航栏 64px 行高 + 2px 底描边，与导航下沿精确对齐，避免吸顶瞬间错位）；吸顶骨架类名集中在 `PAGE_HEADER_BAR`，刻意的例外（打印页）也复用同一常量 |
+| 页头（标题 + 副标题） | `PageHeader` | `actions=ViewFn::from(move || view! { … })` 放右侧操作区；吸顶偏移默认 `top-[66px]`（导航栏 64px 行高 + 2px 底描边，与导航下沿精确对齐，避免吸顶瞬间错位）；**窄屏只留标题，其余折进「更多选项」**（见下「窄屏折叠页头」）；吸顶骨架类名集中在 `PAGE_HEADER_BAR`，刻意的例外（打印页）也复用同一常量 |
 | 页内第二根吸顶栏（目录导航 / 侧栏） | `StickyPanel` | 吸顶偏移自动量「页头底边 + 面板与页头之间的原始间距」，页头折行 / 切语言 / 断点切换都跟随，零错位；面板内需要限高的滚动子元素用 `var(--sticky-top)` 计算剩余高度（如 `max-h-[calc(100vh-var(--sticky-top)-16px)]`） |
-| 多行页头（标题行 + 工具条 / 确认条） | `PageHeader` 的 `children` | 子节点渲染在标题行下方；自己写一行 `mx-auto flex max-w-5xl …` 与标题行左边缘对齐 |
+| 多行页头（标题行 + 工具条 / 确认条） | `PageHeader` 的 `children` | 子节点渲染在标题行下方；自己写一行 `mx-auto flex max-w-5xl …` 与标题行左边缘对齐（窄屏折进「更多选项」，见下「窄屏折叠页头」） |
 | 页面正文 | `PageContainer` | 默认 `space-y-6 px-4 py-5`；间距 / 内边距不同就用 `class` 覆盖；页面内锚点用 `id="…"` |
 | 内容块滚动浮现 | `PageContainer` 的 `reveal=true` | 直接子元素进入视口时逐个浮现（同批 60ms 错峰）；`KnowledgePage` 已默认开启，普通内容页不必开 |
 | 知识库正文页 | `KnowledgePage` | = `PageHeader` + `PageContainer`，并负责按需拉取知识库译文 |
 | 打印类内容（`/print` 的纸、QSL 标签、QSL 设计器画布） | 物理尺寸（`max-w-[210mm]`、`@page size`、`mm` 值） | 量的是**纸**，不是内容宽度 —— **唯一**不受 `max-w-5xl` 约束的地方，理由见下 |
+
+### 窄屏折叠页头（只留标题）
+
+页头照常吸顶，但**窄屏（`< md`）只留标题**：副标题、`actions`（搜索 / 筛选 / 导出…）、
+`children`（多行工具条）全部折进标题行右侧的「更多选项」，默认收起。
+
+理由是实测出来的：页头是吸顶的，而这三块都是横向铺开的内容，窄屏折成三四行后会在 66px
+顶栏之外再钉死 60～270px。390×844 上折叠后**页头固定 50px**（只有标题行），加上顶栏共
+116px；展开后回到折叠前的样子：
+
+| 页面 | 展开后页头（折叠前） |
+|---|---|
+| `/browse`（副标题 + 题库 / 搜索 / 两枚筛选） | 212px |
+| `/qsl-labels`（整条打印工具条 + 未设呼号提示） | 340px |
+| `/log`（导出 / 导入 / 同步等 6 个按钮） | 156px |
+| `/mistakes`（复习 / 导出 / 打印 / 清空） | 138px |
+| `/bookmarks`（分组工具条 + 打印） | 212px |
+
+折叠区在 `md` 起退化成 `display: contents`：操作区的根节点直接成为标题行的 flex 项、
+工具条回到页头下方、副标题回到标题底下 —— 桌面端版式与折叠前**逐像素一致**
+（`PageHeader` 里的 `FOLD` / `FOLD_BODY` 两个常量）。**但「桌面一套、窄屏一套」只建当前宽度那一套**
+（[`docs/engineering/performance.md`](../engineering/performance.md) §2，与 `/bands` 同一条断点、同一个
+`media::use_media_query(MD_UP)`）：副标题在桌面端挂在标题底下、窄屏挂在折叠区里，**任何时刻 DOM 里只有一份**；
+「更多选项」按钮桌面端根本不建。别写成「两份都建、再用 `md:hidden` 藏一份」—— 同一段文字出现两次，
+按文字定位的 e2e 会撞严格模式（`modern_digital_modes` 就是这么红的），`/bands` 的「只建当前宽度」用例也会数到多出来的 `md:hidden`。
+
+收起时正文 `visibility: hidden`：读屏与 Tab 都到不了被折起来的控件。`aria-controls` 指向
+两个面板（操作区 + 工具条），其中工具条那块没有 `children` 时不渲染、也不进 `aria-controls`；
+没有 `actions` 也没有 `children` 的页头（如 `/tools`）按钮只用来展开副标题。
+
+折叠区里的东西**必须在展开后照常可用**：`/mistakes` 的清空确认条渲染在 `children` 里，
+展开后紧跟着触发它的「清空」按钮出现，不是「点了没反应」。
+
+例外有两个，判据都是「折进去，用户在**运行中**就够不着它」，别的理由不算：
+
+| 出口 | 留在外面的是 | 现有使用者 |
+|---|---|---|
+| `keep_rows=true` | `children` 里的**实时状态** | `/daily-challenge`：第二行是倒计时 + 交卷，折进去就看不见还剩多少时间（窄屏页头因此是「标题 + 倒计时条」两行） |
+| `keep_actions=true` | `actions` 里页面**唯一的主操作** | `/sdr-waterfall`：「开始 / 停止」，监听中想停下来不该先去翻一个收起的菜单（常显的操作区排在标题行下面，折叠区里只剩副标题） |
+
+其余页面不要开。`actions` 逐页核对过一遍，其余都落在可折的几类里：跳转链接
+（各解码器 / 参考页的「参考」「返回」）、筛选与搜索、刷新（`/solar` `/dx-spots`）、导出 / 打印 / 分享、
+计数徽标（`/dxcc-map` `/grid-map` `/portable-map`）。`/morse` 的 `SignalBars` 是 `aria-hidden` 的
+播放动效，状态在正文里有读得到的版本，同样可折。**新增页头的 `actions` 里若出现「开始 / 停止」
+这类会话开关，先想是不是该传 `keep_actions`。**
+
+**焦点环余量**：像素风的焦点环是 2px 虚线 + 3px 偏移，共 5px 伸在控件外面，而折叠靠
+`overflow: hidden`，控件贴着折叠区边缘时左 / 右 / 下的环会被裁掉。操作区那块的折叠正文因此
+带一圈 6px 余量（`FOLD_BODY_ACTIONS`：负外边距撑出盒子、内层补等量内边距，版式不变）；余量必须
+放在**内层** —— 放在 0fr 的盒子上，收起时内边距会让这一行撑不到 0。工具条那块（`children`）自带
+`px-4 pb-3`，不需要。`ui_spec.spec.ts` 的 G1 量的就是这个间距。
 
 ### 断点只有四档（像素风）
 
@@ -801,7 +852,7 @@ label 的 `has-[:focus-visible]:ring-2` 显示。**页面里不要再手写拖�
 | `components/exam/answer_card_sheet.rs` | 答题卡筛选按钮：当前筛选切 `variant` |
 | `pages/home/cards_card.rs` | 「今日待复习」入口：有待复习时切 `variant` |
 | `pages/dx_spots.rs` | 热点表格行内的紧凑内容按钮（呼号 + 国家两行）：像素按钮的高度与内边距会把行高撑开、破坏表格密度 |
-| `components/common/page_header.rs` | 吸顶骨架 `PAGE_HEADER_BAR` 常量：全站吸顶页头只有这一份骨架类名，打印页等「纸宽坐标系」的页头也复用它，吸顶偏移只在这一处改（见文件头注释与 §4） |
+| `components/common/page_header.rs` | 吸顶骨架 `PAGE_HEADER_BAR` 常量：全站页头只有这一份骨架类名，打印页等「纸宽坐标系」的页头也复用它，吸顶偏移只在这一处改；窄屏折叠区的类名常量（`FOLD` / `FOLD_BODY` / `FOLD_BODY_ACTIONS`）也在同一个文件里（见 §4「窄屏折叠页头」） |
 | `pages/print_sheet/print_page.rs` | 打印页量的是纸宽（`max-w-[210mm]`），不套 `PageHeader`；吸顶骨架与全站共用 `PAGE_HEADER_BAR`，偏移保持单一来源 |
 | `pages/bands/bands_page.rs` | 波段表的 tbody 有大量动态 `rowspan` / `colspan`（按波段跨行合并单元格），`TableCell` 的静态 `colspan: u32` 表达不了，整表保留原生 `<table>` |
 | `ui/pagination.rs` | 页码按钮的「当前页高亮」靠 `aria-current` 属性动态切换，`Button` 的 `class` 是静态串、也没有 `aria_current` 通道；分页条住在 `ui/` 里，样式与 `Button` 同源（`button_class`） |

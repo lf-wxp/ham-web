@@ -251,6 +251,7 @@
   "common.optional": "optional",
   "common.organisations-and-concepts": "Organisations and concepts",
   "common.pagination": "Pagination",
+  "common.more-options": "More options",
   "common.pair": "{} · {}",
   "common.pass-in-good-for": "Pass in {} {} ({}) · good for APT recording · max {}° · from {}",
   "common.pass-in-max-from": "Pass in {} {} ({}) · max {}° · from {}",

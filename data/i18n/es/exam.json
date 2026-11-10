@@ -91,6 +91,7 @@
   "exam.take-a-mock-exam": "Haz un examen simulado",
   "exam.exclude-questions-already-done": "Excluye preguntas ya hechas en práctica, exámenes o tarjetas",
   "exam.references": "Referencias",
+  "exam.topic-and-references": "Tema y referencias",
   "exam.emission-designators": "Designadores de emisión",
   "exam.found-a-previous-session": "Sesión anterior encontrada",
   "exam.cancel": "Cancelar",
