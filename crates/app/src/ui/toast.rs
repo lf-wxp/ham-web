@@ -283,7 +283,7 @@ pub fn ToastRoot() -> impl IntoView {
             "md-toast fixed bottom-20 right-4 z-[80] flex w-80 items-start gap-3 xl:bottom-4".to_owned()
           } else {
             format!(
-              "motion-toast pxl-popover fixed bottom-20 right-4 z-[60] flex w-72 items-center gap-3 border-l-4 p-3 xl:bottom-4 {band}"
+              "motion-toast pxl-popover fixed bottom-20 right-4 z-[var(--z-top)] flex w-72 items-center gap-3 border-l-4 p-3 xl:bottom-4 {band}"
             )
           }
         >

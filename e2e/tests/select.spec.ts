@@ -331,6 +331,46 @@ for (const style of ["pixel", "modern"] as const) {
         expect(mine.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`)).toEqual([]);
       });
 
+      test("typeahead：打开后连打字母跳到以它开头的项；带 Ctrl / Meta 的组合键不拦", async ({ page }) => {
+        await open(page, style, kind);
+        const trigger = kind.pick(page);
+        await trigger.focus();
+        await page.keyboard.press("ArrowDown");
+        await expect(page.getByRole("listbox")).toBeVisible();
+
+        const labels = (await rows(page).allTextContents()).map((t) => t.trim());
+        // 只测首字符在列表里独一无二的项：这样期望行不依赖「从下一项环形找」的实现细节。
+        const first = (s: string) => s.slice(0, 1).toLowerCase();
+        const unique = labels
+          .map((label, i) => ({ label, i }))
+          .filter(({ label }) => label && labels.filter((l) => first(l) === first(label)).length === 1);
+        // 只有 1 项或首字符全重复的列表没有可测的目标。
+        test.skip(unique.length === 0 || labels.length < 2, "列表里没有首字符唯一的项");
+        const target = unique[unique.length - 1];
+        const targetId = await rows(page).nth(target.i).getAttribute("id");
+
+        await page.keyboard.press("Home");
+        await page.keyboard.type(first(target.label));
+        await expect(trigger, `打「${first(target.label)}」应跳到「${target.label}」`).toHaveAttribute(
+          "aria-activedescendant",
+          targetId!,
+        );
+        // 全程仍只有一行高亮。
+        await expect(page.locator('[role="option"][data-active="true"]')).toHaveCount(1);
+
+        // Ctrl / Meta + 字符是浏览器快捷键：不能被 `preventDefault` 吞掉。
+        const prevented = await trigger.evaluate((el) => {
+          const out: boolean[] = [];
+          for (const mod of ["ctrlKey", "metaKey"] as const) {
+            const ev = new KeyboardEvent("keydown", { key: "c", bubbles: true, cancelable: true, [mod]: true });
+            el.dispatchEvent(ev);
+            out.push(ev.defaultPrevented);
+          }
+          return out;
+        });
+        expect(prevented, "Ctrl+C / Cmd+C 不应被 typeahead 吞掉").toEqual([false, false]);
+      });
+
       test("长列表：键盘把高亮行滚进列表可视区，页面本身不跟着滚", async ({ page }) => {
         await open(page, style, kind);
         const trigger = kind.pick(page);

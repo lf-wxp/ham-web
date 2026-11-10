@@ -222,7 +222,7 @@ pub fn PskReporterPage() -> impl IntoView {
                           <TableCell class=crate::kit::table_cell_class("tabular-nums text-muted-foreground")>{format!("{:.1} kHz", r.freq_khz)}</TableCell>
                           <TableCell class=crate::kit::table_cell_class("")>{r.band.clone()}</TableCell>
                           <TableCell class=crate::kit::table_cell_class("")>{r.mode.clone()}</TableCell>
-                          <TableCell class=format!("border px-3 py-2 text-right tabular-nums {}", if r.snr >= 0 { "text-win-text" } else { "text-muted-foreground" })>
+                          <TableCell numeric=true class=format!("border px-3 py-2 {}", if r.snr >= 0 { "text-win-text" } else { "text-muted-foreground" })>
                             {format!("{} dB", r.snr)}
                           </TableCell>
                         </TableRow>

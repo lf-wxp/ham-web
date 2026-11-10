@@ -34,6 +34,8 @@
 //!   新增中间态写在 `tokens.css` 的 `--breakpoint-*` 里，别在页面里现造。
 //! - ㉓ `<Icon>` 写 `h-3/3.5/4/5`（16 / 20px）：像素图标是 24px 网格，这些值会被
 //!   `surfaces.css` 隐式抬到 24px，源码与实际渲染不符；直接写 `size-6`。
+//! - ㉔ 像素风里写死的浮层层级（`z-50` / `z-[70]` 等 ≥ 40 的数值）：层级一律取 `--z-*` 档位，
+//!   否则「谁盖谁」会退回 DOM 顺序碰运气（档位见 `style/pixel/tokens.css` 的 `--z-*`）。
 //!
 //! 判不了、仍留给人工的：`mm` 尺寸的打印页（⑧ 的例外）、内联 `style` 里的阴影、
 //! ⑨ 的例外注释计数。
@@ -218,6 +220,15 @@ const RULES: &[Rule] = &[
     hits: has_destructive_as_text,
     advice: "`text-destructive` 是按钮填充色，暗色下落在弹层 / 卡片表面上不足 4.5:1；写字用 `text-hp-text`（§2 硬规则 6）",
   },
+  Rule {
+    name: "像素风里写死的浮层层级（`z-40` / `z-50` / `z-[70]` 等）",
+    roots: &["crates/app/src"],
+    // `kit_modern/` 与 `md-*` 类名所在行走 `--md-z-*` 阶梯，另有口径；
+    // `popover.rs` 的现代风遮罩（`z-40`）与像素风分支在同一个文件里，行内没有 `md-` 标记。
+    skip: &["cn.rs", "kit_modern/", "ui/popover.rs", "perf_hud.rs"],
+    hits: has_raw_z_index,
+    advice: "像素风 `z-index` 一律取 `tokens.css` 的档位：`z-[var(--z-bar|nav|dock|sheet|modal|popover|top)]`（档位见 `style/pixel/tokens.css` 的 `--z-*`）；`z-10` / `z-20` 这类局部层叠（≤30）不拦",
+  },
 ];
 
 /// 一行里有没有圆角**类**：只看字符串字面量内部的 `rounded` token。
@@ -294,6 +305,27 @@ fn has_native_control(line: &str) -> bool {
 /// 属性名前后不设边界：`data-class=""` 这种同样没有意义，一并拦。
 fn has_empty_attribute(line: &str) -> bool {
   line.contains("class=\"\"") || line.contains("style=\"\"")
+}
+
+/// ㉔ 像素风里写死的全局层级：`z-40` / `z-50` / `z-[70]` 这类 ≥ 40 的数值。
+///
+/// 层级必须取 `tokens.css` 的 `--z-*` 档位，否则「谁盖谁」又会退回 DOM 顺序碰运气。
+/// ≤ 30 的是局部层叠（`z-10` 粘性表头、`z-20` 页头骨架），不在阶梯里，不拦。
+/// 含 `md-` 的行是现代风类名，走 `--md-z-*`，不归这条管。
+fn has_raw_z_index(line: &str) -> bool {
+  if line.contains("md-") {
+    return false;
+  }
+  class_tokens(line).iter().any(|(_, base)| {
+    let Some(rest) = base.strip_prefix("z-") else {
+      return false;
+    };
+    let digits = rest
+      .strip_prefix('[')
+      .and_then(|r| r.strip_suffix(']'))
+      .unwrap_or(rest);
+    digits.parse::<u32>().is_ok_and(|n| n >= 40)
+  })
 }
 
 /// ㉓ `<Icon>` 上用 16/20px 的尺寸类（`h-4 w-4` / `size-4` …）。
@@ -1475,6 +1507,18 @@ mod tests {
       r#"class="focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-ring""#
     ));
     assert!(!has_solid_ring(r#"class="string-width spring-load""#));
+  }
+
+  #[test]
+  fn raw_z_index_rule_wants_tokens_for_global_layers_only() {
+    assert!(has_raw_z_index(r#"class="fixed z-50 bottom-0""#));
+    assert!(has_raw_z_index(r#"class="fixed z-[70]""#));
+    assert!(has_raw_z_index(r#"class="sm:z-40""#));
+    // 取档位、局部层叠、现代风类名都不拦。
+    assert!(!has_raw_z_index(r#"class="fixed z-[var(--z-modal)]""#));
+    assert!(!has_raw_z_index(r#"class="sticky z-10""#));
+    assert!(!has_raw_z_index(r#"class="relative z-20""#));
+    assert!(!has_raw_z_index(r#"class="md-toast fixed z-[80]""#));
   }
 
   #[test]

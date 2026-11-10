@@ -13,7 +13,8 @@ use crate::pages::log::qsl_image;
 use crate::pages::log::{LogEntry, use_log_store, utc_now_time, utc_today};
 use crate::ui::{
   Button, ButtonKind, ButtonLink, ControlSize, Field, Input, SelectOption, SimpleSelect, Size,
-  Stat, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Variant, card_title_class,
+  Stat, Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow, Variant,
+  card_title_class,
 };
 use crate::util::unique_id as ui_id;
 use crate::util::{download_text, set_title, storage};
@@ -588,7 +589,7 @@ pub fn ContestLogPage() -> impl IntoView {
                 let list = entries.get();
                 if list.is_empty() {
                   return view! {
-                    <TableRow><TableCell colspan=7 class="px-4 py-6 text-center font-sans text-sm text-muted-foreground">{move || t("contest.no-qsos-yet-type")}</TableCell></TableRow>
+                    <TableEmpty cols=7 label=Signal::derive(move || t("contest.no-qsos-yet-type")) class="font-sans" />
                   }.into_any();
                 }
                 list

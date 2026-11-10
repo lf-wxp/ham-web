@@ -127,7 +127,10 @@ pub fn RigReviewsPage() -> impl IntoView {
                   <h3 class="text-xs text-primary">
                     {move || t("knowledge.review-measured")}
                   </h3>
-                  <Table class="text-sm" wrapper_class="mt-2">
+                  // `min-w` 保列宽：三列里「测法」是整句说明，不给最小宽度时 320px 下
+                  // 会被压到 55–61px 逐字换行（表格内部横滚才是预期行为，见
+                  // `docs/ui/pixel.md` §4「横向滚动」）。
+                  <Table class="text-sm min-w-[40rem]" wrapper_class="mt-2">
                     <TableHead>
                       <TableRow>
                         <TableHeader class=crate::kit::table_cell_class("align-top")>{move || t("knowledge.metrics")}</TableHeader>

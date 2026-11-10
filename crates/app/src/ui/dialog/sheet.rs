@@ -28,7 +28,7 @@ pub fn Sheet(open: RwSignal<bool>, children: ChildrenFn) -> impl IntoView {
             data-state=state
             inert=inert
             aria-hidden=hidden
-            class="pxl-overlay pxl-enter-fade data-[state=closed]:pointer-events-none fixed inset-0 z-50"
+            class="pxl-overlay pxl-enter-fade data-[state=closed]:pointer-events-none fixed inset-0 z-[var(--z-sheet)]"
             // 用 pointerdown 而不是 click 关闭：`MobileNavDrawer` 在 pointerup 里打开抽屉
             //（区分轻点 / 拖动），随后浏览器派发同一次手势的合成 click —— 那时遮罩已
             // 盖住触发按钮，click 的命中测试落在遮罩上，会立刻把刚打开的抽屉关掉。
@@ -44,7 +44,7 @@ pub fn Sheet(open: RwSignal<bool>, children: ChildrenFn) -> impl IntoView {
             data-state=state
             inert=inert
             aria-hidden=hidden
-            class="pxl-sheet data-[state=closed]:pointer-events-none data-[state=open]:animate-in data-[state=closed]:animate-out fill-mode-both fixed z-50 flex flex-col gap-4 data-[state=closed]:duration-(--motion-normal) data-[state=open]:duration-(--motion-normal) data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 sm:max-w-sm"
+            class="pxl-sheet data-[state=closed]:pointer-events-none data-[state=open]:animate-in data-[state=closed]:animate-out fill-mode-both fixed z-[var(--z-sheet)] flex flex-col gap-4 data-[state=closed]:duration-(--motion-normal) data-[state=open]:duration-(--motion-normal) data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 sm:max-w-sm"
           >
             {children()}
             <super::toast_live_region::ToastLiveRegion />

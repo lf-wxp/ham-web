@@ -196,6 +196,20 @@
   --ease-standard: steps(4, end);
   --ease-out-back: steps(3, jump-end);
 
+  /* 固定层级阶梯：同一视口位置只允许一层，数值从下到上递增。
+     `z-index` 一律取这里的档位（写 `z-[var(--z-modal)]`，不要写 `z-50`）。
+     现代风有自己的 `--md-z-*`（同一套顺序，只服务于 `md-*` 类名）——两套皮肤的隔离约定
+     要求类名不互借，所以这里不复用 `--md-*`，但**数值口径一致**。
+     历史教训：下拉面板与 Dialog 曾同为 `z-50`，谁盖谁由 DOM 顺序决定；
+     `pill_button` 的 `pxl-tip-popup` 又比模态高，属于巧合而非设计。 */
+  --z-bar: 40;
+  --z-nav: 50;
+  --z-dock: 55;
+  --z-sheet: 60;
+  --z-modal: 70;
+  --z-popover: 75;
+  --z-top: 80;
+
   --pxl-frame: 0.1s;
   --motion-instant: 0.08s;
   --motion-fast: 0.12s;

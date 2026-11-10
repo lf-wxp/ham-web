@@ -48,7 +48,6 @@
   "learning.share-failed": "分享失败：{}",
   "learning.go-to-dxcc-rarity": "前往 DXCC 稀有度追踪 →",
   "learning.time-left": "剩余时间",
-  "learning.loading": "加载中…",
   "learning.recent-accuracy-last-attempts": "历史成绩（最近 {} 次正确率）",
   "learning.after-answering-in-practice": "去「练习」「模拟考试」或「闪卡」作答后，答错的题目会自动收进这里。",
   "learning.show-only-mistakes": "只看「{}」的错题",

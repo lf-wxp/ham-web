@@ -411,3 +411,67 @@ test("G3 窄屏页头：SDR 瀑布图的「开始」常显，不必先点「更�
   await expect(start).toBeVisible();
   await expect(start).toHaveCount(1);
 });
+
+test("H1 闯关地图：窄屏下「下一个任务」的文字块不被压成一字宽", async ({ page }) => {
+  // 这一行里同时有 `flex-shrink: 0` 的精灵与两个 `Size::Lg` 按钮。文字块曾写 `flex-1`
+  // （`basis: 0%`）+ `min-w-0`，可以被压到 0 宽 —— flex 认为「放得下」，`flex-wrap`
+  // 不触发，中文就逐字竖排成一列（390px 下实测 1 字宽、标题高 20 多行）。
+  // 判据用「文字块宽度」与「标题行数」：只看是否横向溢出抓不到这种纵向塌缩。
+  // 宽度取 600（不是 320/390）：窄到放不下时 `flex-wrap` 会把按钮组换行、文字块反而拿满宽度；
+  // 真正塌缩的是「精灵 + 按钮刚好挤得下」的那一档（用户报的那张图是 600 左右）。
+  await page.setViewportSize({ width: 600, height: 844 });
+  await page.goto("/map");
+
+  const title = page.locator("#next-quest-title");
+  await expect(title).toBeVisible();
+  const metrics = await title.evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    const lineHeight = Number.parseFloat(getComputedStyle(el).lineHeight) || 18;
+    return { width: rect.width, lines: rect.height / lineHeight };
+  });
+  // 一行能放下至少 8 个中文字符，且标题不超过 2 行。
+  expect(metrics.width).toBeGreaterThan(144);
+  expect(metrics.lines).toBeLessThanOrEqual(2);
+});
+
+test("H2 窄屏宽表：表格按住最小宽度横滚，不把列压成一字宽", async ({ page }) => {
+  // 三列以上的表要是不给 `min-w-[…]`，窄屏会让列均分剩下的宽度：
+  // `/rig-reviews` 在 320px 下曾把「测法」列压到 55px、8 行/字（表格内部横滚才是预期行为）。
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto("/rig-reviews");
+
+  const table = page.locator("table").first();
+  await expect(table).toBeVisible();
+  const width = await table.evaluate((el) => el.getBoundingClientRect().width);
+  // 640px = `min-w-[40rem]`：三列各留 200px 上下的可读宽度。
+  expect(width).toBeGreaterThanOrEqual(600);
+});
+
+test("I1 表单语义：aria-describedby 不留空属性、不悬空，也不指向别的表单行的说明", async ({ page }) => {
+  // `Field` 靠 context 把说明 / 错误节点的 id 下发给控件。context 若写在组件体里（而不是 `Provider`），
+  // 后一个 `Field` 会覆盖前一个、排在 `Field` 之后的独立控件还会读到前一行的 id —— 都是读屏才听得出来的错。
+  // 判据只看 DOM：每个 `field-hint-*` / `field-error-*` 必须属于控件所在的那一行。
+  for (const url of ["/tools", "/backup"]) {
+    await page.goto(url);
+    await expect(page.locator("#route-content[data-sig]")).toBeAttached({ timeout: 45_000 });
+    await expect(page.locator('[id^="field-hint"]').first()).toBeAttached({ timeout: 30_000 });
+    const bad = await page.evaluate(() => {
+      const out: string[] = [];
+      const row = (el: Element) => el.closest(".space-y-1\\.5, .md-field");
+      for (const el of document.querySelectorAll("[aria-describedby]")) {
+        const v = el.getAttribute("aria-describedby") ?? "";
+        const tag = `${el.tagName.toLowerCase()}#${el.id}`;
+        if (v.trim() === "") out.push(`${tag} 空的 aria-describedby`);
+        for (const id of v.split(/\s+/).filter(Boolean)) {
+          const target = document.getElementById(id);
+          if (!target) out.push(`${tag} 指向不存在的 #${id}`);
+          else if (/^field-(hint|error)-/.test(id) && row(target) !== row(el)) {
+            out.push(`${tag} 指向别的表单行的 #${id}`);
+          }
+        }
+      }
+      return out;
+    });
+    expect(bad, `${url} 的 aria-describedby 有问题`).toEqual([]);
+  }
+});

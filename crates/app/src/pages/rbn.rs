@@ -174,10 +174,10 @@ pub fn RbnPage() -> impl IntoView {
                           <TableCell class=crate::kit::table_cell_class("tabular-nums text-muted-foreground")>{format!("{} kHz", decimal(s.freq_khz, 1))}</TableCell>
                           <TableCell class=crate::kit::table_cell_class("")>{s.band.clone()}</TableCell>
                           <TableCell class=crate::kit::table_cell_class("")>{s.mode.clone()}</TableCell>
-                          <TableCell class=format!("border px-3 py-2 text-right tabular-nums {}", if s.snr >= 0 { "text-win-text" } else { "text-muted-foreground" })>
+                          <TableCell numeric=true class=format!("border px-3 py-2 {}", if s.snr >= 0 { "text-win-text" } else { "text-muted-foreground" })>
                             {format!("{} dB", s.snr)}
                           </TableCell>
-                          <TableCell class=crate::kit::table_cell_class("text-right tabular-nums text-muted-foreground")>{s.wpm}</TableCell>
+                          <TableCell numeric=true class=crate::kit::table_cell_class("text-muted-foreground")>{s.wpm}</TableCell>
                         </TableRow>
                       }
                     })

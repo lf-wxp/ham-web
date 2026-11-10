@@ -40,7 +40,7 @@ pub(super) fn IssCard() -> impl IntoView {
           Some(d) => view! { <span>{format!("{:.2}°, {:.2}°", d.latitude, d.longitude)}</span> }.into_any(),
           None if loading.get() => view! {
             <crate::components::common::LoadingBlock
-              label=Signal::derive(move || t("learning.loading"))
+              label=Signal::derive(move || t("common.loading"))
             />
           }
           .into_any(),

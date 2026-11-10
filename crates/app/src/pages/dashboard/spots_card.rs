@@ -42,7 +42,7 @@ pub(super) fn SpotsCard() -> impl IntoView {
           if loading.get() {
             return view! {
               <crate::components::common::LoadingBlock
-                label=Signal::derive(move || t("learning.loading"))
+                label=Signal::derive(move || t("common.loading"))
               />
             }
             .into_any();

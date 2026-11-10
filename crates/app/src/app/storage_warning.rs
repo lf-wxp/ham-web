@@ -19,7 +19,7 @@ pub(super) fn StorageWarning() -> impl IntoView {
         <div
           role="alert"
           data-fixed-bottom
-          class="fixed inset-x-0 bottom-0 z-50 border-t border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-hp-text shadow-lg"
+          class="fixed inset-x-0 bottom-0 z-[var(--z-dock)] border-t border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-hp-text shadow-lg"
         >
           <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-3">
             <span class="mr-auto">

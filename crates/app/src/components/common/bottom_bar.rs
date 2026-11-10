@@ -27,7 +27,7 @@ pub fn BottomBar(
         role="region"
         aria-label=move || t("shell.action-bar")
         data-fixed-bottom
-        class="fixed left-0 right-0 bottom-0 z-40 border-t-2 border-ink bg-card shadow-[0_-2px_0_0_var(--pxl-shadow)]"
+        class="fixed left-0 right-0 bottom-0 z-[var(--z-bar)] border-t-2 border-ink bg-card shadow-[0_-2px_0_0_var(--pxl-shadow)]"
         style="padding-bottom: env(safe-area-inset-bottom);"
       >
         <div class="mx-auto max-w-5xl px-4 py-2 space-y-2">

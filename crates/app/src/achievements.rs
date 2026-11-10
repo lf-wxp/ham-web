@@ -249,7 +249,7 @@ pub fn AchievementToast() -> impl IntoView {
           role="status"
           aria-live="polite"
           data-leaving=move || leaving.get().to_string()
-          class="motion-toast pxl-popover fixed bottom-20 right-4 z-50 flex w-72 items-start gap-3 p-3 xl:bottom-4"
+          class="motion-toast pxl-popover fixed bottom-20 right-4 z-[var(--z-top)] flex w-72 items-start gap-3 p-3 xl:bottom-4"
         >
           // 徽章精灵是像素语言的一部分（20 枚手绘点阵图）。现代风没有精灵，
           // 用同一套线性图标里的奖杯顶上 —— 否则每次解锁成就都会在柔和卡片里

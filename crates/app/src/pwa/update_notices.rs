@@ -188,7 +188,7 @@ pub fn UpdateNotices() -> impl IntoView {
 
   view! {
     <div
-      class="pointer-events-none fixed inset-x-3 bottom-20 z-50 ml-auto flex max-w-sm flex-col gap-2 print:hidden sm:inset-x-auto sm:right-4"
+      class="pointer-events-none fixed inset-x-3 bottom-20 z-[var(--z-top)] ml-auto flex max-w-sm flex-col gap-2 print:hidden sm:inset-x-auto sm:right-4"
       aria-live="polite"
     >
       {move || open.get().then(|| view! {

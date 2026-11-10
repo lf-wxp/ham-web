@@ -21,6 +21,20 @@
   }
 }
 
+/* 「减少动态效果」下加载指示的替代帧：只换明暗，不位移、不缩放。
+   两帧（steps(1)）而不是连续淡入淡出 —— 连续过渡在低帧率下反而像卡顿。 */
+@keyframes pxl-idle-pulse {
+  0%,
+  49.99% {
+    opacity: 0.45;
+  }
+
+  50%,
+  100% {
+    opacity: 1;
+  }
+}
+
 @keyframes pxl-scroll-x {
   to {
     background-position-x: -128px;
@@ -187,7 +201,7 @@
   inset-inline: 0;
   top: 0;
   height: 4px;
-  z-index: 55;
+  z-index: var(--z-dock);
   pointer-events: none;
   background-image: repeating-linear-gradient(
     90deg,
@@ -428,8 +442,18 @@
     *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
+      animation-delay: 0s !important;
       transition-duration: 0.01ms !important;
+      /* 延迟必须一起归零：`[data-reveal]` 的错峰延迟写在 `transition-delay` 上，
+         只清时长会让内容块仍然排队 60ms 才出现 —— 观感是「迟钝」而不是「即时」。 */
+      transition-delay: 0s !important;
       scroll-behavior: auto !important;
+    }
+    /* 加载指示是唯一的例外：通配的 0.01ms 会把它冻成一个静止的齿轮，
+       用户分不清「正在加载」与「卡住了」。换成两帧明暗（无位移、无缩放），
+       保留「还在动」的信号又不刺激前庭。文案侧的播报由 `Loading` 的 `role="status"` 负责。 */
+    .animate-spin {
+      animation: pxl-idle-pulse 1.6s steps(1, end) infinite !important;
     }
     /* 入场类动效的初始态（透明 / 位移）直接归位。JS 侧此时也不会给 `<html>` 加
        `.js-motion`，这里再兜一层，杜绝「内容停在 opacity 0」这种最坏情况。 */
@@ -451,8 +475,15 @@
   html[data-pixel-motion="off"] *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
     scroll-behavior: auto !important;
+  }
+
+  /* 同 `prefers-reduced-motion`：加载指示保留两帧明暗。 */
+  html[data-pixel-motion="off"] .animate-spin {
+    animation: pxl-idle-pulse 1.6s steps(1, end) infinite !important;
   }
 
   html[data-pixel-motion="off"] [data-reveal] {

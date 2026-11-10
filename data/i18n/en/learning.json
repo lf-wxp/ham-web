@@ -69,7 +69,6 @@
   "learning.share-failed": "Share failed: {}",
   "learning.go-to-dxcc-rarity": "Go to DXCC rarity tracker →",
   "learning.time-left": "Time left",
-  "learning.loading": "Loading…",
   "learning.recent-accuracy-last-attempts": {
     "one": "Recent accuracy (last {} attempt)",
     "other": "Recent accuracy (last {} attempts)"

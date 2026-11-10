@@ -153,10 +153,10 @@ pub fn SpotCoverage(
                   view! {
                     <TableRow>
                       <TableCell class=crate::kit::table_cell_class("")>{t(sector_key(i))}</TableCell>
-                      <TableCell class=crate::kit::table_cell_class("text-right tabular-nums")>
+                      <TableCell numeric=true class=crate::kit::table_cell_class("")>
                         {stat.count}
                       </TableCell>
-                      <TableCell class=crate::kit::table_cell_class("text-right tabular-nums text-muted-foreground")>
+                      <TableCell numeric=true class=crate::kit::table_cell_class("text-muted-foreground")>
                         {snr}
                       </TableCell>
                       <TableCell class=crate::kit::table_cell_class("")>

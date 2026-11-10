@@ -112,7 +112,7 @@ pub fn PortableMapPage() -> impl IntoView {
               view! {
                 <crate::components::common::LoadingBlock
                   tall=true
-                  label=Signal::derive(move || t("learning.loading"))
+                  label=Signal::derive(move || t("common.loading"))
                 />
               }
               .into_any()

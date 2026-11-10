@@ -115,6 +115,9 @@ pub fn DatePicker(
   // 面板引用：既作 `node_ref`，也给「焦点移出容器就关闭」的判定用
   // （见 `popover::close_on_focus_out`）。
   let panel_ref = NodeRef::<html::Div>::new();
+  // 落位：面板 `fixed` 定位，放不下时翻到触发器上方（日历自带宽度，不跟触发器）。
+  let trigger_ref = NodeRef::<html::Button>::new();
+  let panel_style = popover::use_anchored_panel(open, trigger_ref, panel_ref, false);
 
   let placeholder = placeholder.unwrap_or_else(|| TextValue::from("YYYY-MM-DD"));
   let trigger_class = popover::trigger_class(size, &class);
@@ -167,7 +170,7 @@ pub fn DatePicker(
       let title = intl::month_title(y, m);
       let panel_label = title.clone();
       view! {
-        <div class=popover::OVERLAY data-state=state inert=inert aria-hidden=hidden on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
+        <div class=popover::overlay_class() data-state=state inert=inert aria-hidden=hidden on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
         <div
           role="dialog"
           aria-label=panel_label
@@ -176,6 +179,7 @@ pub fn DatePicker(
           aria-hidden=hidden
           data-slot="date-picker"
           class=popover::panel_class("w-[18.5rem] p-2")
+          style=move || panel_style.get()
           node_ref=panel_ref
           on:focusout=popover::close_on_focus_out(open, panel_ref)
         >
@@ -216,15 +220,28 @@ pub fn DatePicker(
     })
   };
 
+  // `Field` 的下发：说明 / 错误 id、必填、错误显示时机（与 `Input` 同一套契约）。
+  let field_a11y = use_context::<super::field::FieldA11y>();
+  let invalid = match field_a11y {
+    Some(a) => a.invalid_for(invalid),
+    None => invalid,
+  };
+  let describedby = move || super::field::FieldA11y::describedby_attr(field_a11y, None);
+
   view! {
     <div class="relative">
       <button
+        node_ref=trigger_ref
         type="button"
         role="combobox"
         id=id
         aria-haspopup="dialog"
         aria-expanded=move || open.get().to_string()
         aria-label=move || aria_label.as_ref().map(TextValue::get)
+        aria-describedby=describedby
+        aria-required=move || {
+          field_a11y.map(|a| a.required.get()).unwrap_or(false).then_some("true")
+        }
         aria-invalid=invalid_attr(invalid)
         data-state=state
         disabled=move || disabled.get()
@@ -236,6 +253,11 @@ pub fn DatePicker(
             view_ym.set((y, m));
           }
           open.update(|o| *o = !*o);
+        }
+        on:blur=move |_| {
+          if let Some(a) = field_a11y {
+            a.mark_touched.run(());
+          }
         }
       >
         <span style="pointer-events: none;">

@@ -69,7 +69,6 @@
   "learning.share-failed": "Error al compartir: {}",
   "learning.go-to-dxcc-rarity": "Ir al rastreador de rareza DXCC →",
   "learning.time-left": "Tiempo restante",
-  "learning.loading": "Cargando…",
   "learning.recent-accuracy-last-attempts": {
     "one": "Precisión reciente (último {} intento)",
     "other": "Precisión reciente (últimos {} intentos)"

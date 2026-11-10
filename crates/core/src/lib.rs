@@ -176,6 +176,7 @@ pub mod organizations;
 pub mod oscillator;
 pub mod packet;
 pub mod pagination;
+pub mod panel_place;
 pub mod parabolic_dish;
 pub mod path_profile;
 pub mod phonetic;

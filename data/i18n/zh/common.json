@@ -223,6 +223,8 @@
   "common.questions": "{} 题",
   "common.label-with-questions": "{}「{}」（{} 道）",
   "common.questions-total": "共 {} 题",
+  "common.loading": "加载中…",
+  "common.result-count": "筛选结果 {} 条",
   "common.questions-answered-accuracy": "作答 {} 题，正确率 {}%",
   "common.questions-answered-in-the": "最近 14 天共作答 {} 题",
   "common.questions-left-unseen-in": "{} 类还有 {} 题没做过",

@@ -50,7 +50,7 @@ pub(super) fn AlertCard() -> impl IntoView {
           None if loading.get() => {
             view! {
               <crate::components::common::LoadingBlock
-                label=Signal::derive(move || t("learning.loading"))
+                label=Signal::derive(move || t("common.loading"))
               />
             }
               .into_any()

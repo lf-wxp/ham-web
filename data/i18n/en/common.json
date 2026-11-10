@@ -295,6 +295,11 @@
     "one": "{} question",
     "other": "{} questions"
   },
+  "common.loading": "Loading…",
+  "common.result-count": {
+    "one": "{} result",
+    "other": "{} results"
+  },
   "common.questions-answered-accuracy": {
     "one": "{} question answered, accuracy {}%",
     "other": "{} questions answered, accuracy {}%"

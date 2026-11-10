@@ -35,6 +35,7 @@
 mod shared;
 mod table_body;
 mod table_cell;
+mod table_empty;
 mod table_head;
 mod table_header;
 mod table_root;
@@ -43,7 +44,8 @@ mod table_row;
 pub use shared::TableDensity;
 pub use table_body::TableBody;
 pub use table_cell::TableCell;
+pub use table_empty::TableEmpty;
 pub use table_head::TableHead;
-pub use table_header::TableHeader;
+pub use table_header::{SortOrder, TableHeader};
 pub use table_root::Table;
 pub use table_row::TableRow;

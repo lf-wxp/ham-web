@@ -9,7 +9,7 @@ use leptos_router::hooks::use_query_map;
 
 use crate::cn::cn;
 use crate::components::common::{
-  EmptyState, LoadMore, PageContainer, PageHeader, Skeleton, StickyPanel,
+  EmptyState, LoadMore, PageContainer, PageHeader, ResultCount, Skeleton, StickyPanel,
 };
 use crate::components::sidebar_item::SidebarItem;
 use crate::data::{self, Questions};
@@ -663,6 +663,15 @@ pub fn BrowsePage() -> impl IntoView {
             // 两个一样的数字并排只是占位。
           </div>
 
+          // 筛选结果数改成列表正上方的一行小字（同时是读屏播报的 `role="status"`）：
+          // 搜索 / 题型 / 子类 / 只看多选 / 本类新增任何一项改变，这里都会跟着变，
+          // 不再要求用户自己数卡片或翻到底看「加载更多」。
+          <ResultCount
+            count=Signal::derive(move || filtered.with(Vec::len))
+            pending=loading
+            class="md-muted md-sm mb-3"
+          />
+
           {modern_list}
         </div>
       </div>
@@ -750,6 +759,8 @@ pub fn BrowsePage() -> impl IntoView {
             <Stat label=Signal::derive(move || t("exam.question-types")) value=Signal::stored(TOP_CATEGORIES.len()) />
             <Stat label=Signal::derive(move || t("exam.current-filter")) value=Signal::derive(move || filtered.with(Vec::len)) />
           </div>
+          // 筛选改变后播报一句「共 N 条」：`Stat` 里的数字读屏不会自动重念。
+          <ResultCount count=Signal::derive(move || filtered.with(Vec::len)) pending=loading />
           {list}
         </div>
       </PageContainer>

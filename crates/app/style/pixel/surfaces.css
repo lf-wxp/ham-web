@@ -470,7 +470,7 @@ html::-webkit-scrollbar {
   right: 0;
   bottom: 0;
   width: 12px;
-  z-index: 40; /* 低于弹层（z-50）：模态打开时被遮罩盖住，不会浮在弹窗上 */
+  z-index: var(--z-bar); /* 低于所有浮层：模态打开时被遮罩盖住，不会浮在弹窗上 */
   pointer-events: none;
   display: none;
 }

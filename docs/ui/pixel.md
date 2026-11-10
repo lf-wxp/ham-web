@@ -181,6 +181,17 @@
    改它要同时改 `question_card.rs` 与 `study.spec.ts`（「自己答对的才计」是既有契约），
    不要在界面层单独改。
 
+12. **浮层层级只有一个来源**：`style/pixel/tokens.css` 的 `--z-*`（档位从下到上：bar → nav →
+   dock → sheet → modal → popover → top）。写 `z-[var(--z-modal)]`，不要写
+   `z-50` / `z-[70]`。硬编码的后果是下拉面板与 Dialog 面板同为 `z-50`、谁盖谁由 DOM
+   顺序决定；下拉又必须能浮在模态之上（Dialog 里的选择器），所以它是单独一档。
+
+13. **静态降级是「换一种表达」，不是「停掉」**：`prefers-reduced-motion` 与
+   `data-pixel-motion="off"` 会把所有动画压成一帧（`motion.css`），所以新增的
+   无限循环动画必须同时给静态替代 —— 加载指示换成两帧明暗（`pxl-idle-pulse`），
+   纯装饰的读条直接不渲染。延迟也要一起归零（`transition-delay` / `animation-delay`），
+   否则「即时」会变成「迟钝」（`[data-reveal]` 的 60ms 错峰曾漏在降级之外）。
+
 **可用的像素元素**
 
 - 窗口面板：`pxl-window`（卡片原语，自带 2px 墨色描边 + 硬投影）、`pxl-popover`（弹层）、
@@ -249,6 +260,9 @@
 | 标签 + 控件 + 提示 / 错误 | `Field`（`hint` / `error` / `required`） | 手写 `<label>` + `<span>` |
 | 进度、分隔线、统计块、标签文字 | `Progress` / `Separator` / `Stat` / `Label` | 手写 |
 | 数据表格 | `Table` + `TableHead` / `TableBody` / `TableRow` / `TableHeader` / `TableCell` | 手写 `<table>`（2026-10-15 起收口） |
+| 表格为空 | `TableEmpty`（跨列一行提示） | 各页手写 `<tr><td colspan=…>暂无数据</td></tr>` |
+| 可排序的表头 | `TableHeader` 的 `sort`（输出 `aria-sort`）+ 自己的排序按钮 | 只换箭头图标、不给 `aria-sort` |
+| 数字列（分数 / 距离 / 次数） | `TableCell` 的 `numeric=true`（右对齐 + `tabular-nums`） | 靠调用点记得写 `text-right tabular-nums` |
 | 列表分页 | `Pagination` | 手写页码 / `.slice()` 截断 |
 | 轻量操作反馈（成功 / 已复制 / 导入完成） | `ui::push_success` / `push_error`（全局 `ToastRoot`） | 原生 `alert`（已清零）/ 内联「成功」文字 |
 | 需要用户确认的失败 | `MessageDialog` | Toast（Toast 自动消失，确认类信息会被错过） |
@@ -314,6 +328,18 @@
 | 限时考试的剩余时间读数 | `ExamClock`（档位由 `ham_web_core::exam_clock` 判定） | 手抄 `format_ms` + 自己定「最后 60 秒变红」 |
 | 答题卡（抽屉 + 题号格子） | `AnswerCardSheet` / `AnswerCardCell` | 手写格子网格 |
 | 答案解析（折叠 + 法规引用 + 朗读） | `ExplanationCard`（入参是解析文本；题目来自存档快照的，文本经 `data::snapshot_explanation` / `data::review_explanation` 取，见 [`docs/data/explanations.md`](../data/explanations.md)「存档快照里的解析」；首次展开前不渲染正文） | 手写折叠区 |
+
+**加载形态按「等多久 × 在哪块」选，不按个人习惯**：
+
+| 等待时长 | 区域 | 用 | 不要 |
+|---|---|---|---|
+| < 300ms | 任意 | 什么都不给（闪一下骨架比空白更晃） | 一闪而过的 spinner |
+| 300ms–2s | 卡片 / 区块内 | `LoadingBlock`（骨架）或 `Loading`（一条动词） | 整页 `PageLoading` |
+| > 2s | 卡片 / 解码类 | 骨架 + 一句动词说明 + `DecodeElapsed` 的已用时读数 | 只给一个转圈（转圈区分不了「慢」与「死了」） |
+| 首次挂载 | 整页 | `PageLoading`（页头 + 内容轮廓） | 一片留白 + 右下角小 spinner |
+
+`Loading` 只给按钮内部与「一句话就能说清」的局部等待；整块内容没到时用骨架。
+所有加载态都必须带 `role="status"` + `aria-busy`（三个组件已内置，`Loading` 不再例外）。
 
 **内容卡片的外壳只有一份（`SectionCard`）**。首页下半部分曾同时存在三种外壳（窗口级
 `card_class`、平卡 `flat_card_class`、整张手写的 `<a>`）：标题体、内边距、卡片间距、悬停反馈
@@ -578,6 +604,16 @@ Tailwind 的 `sm` / `md` / `lg` 之外，只多一档 `xs`（400px，定义在 `
 - **横向滚动**只出现在宽表格：`Table` 自带 `overflow-x-auto` + 调用点给 `min-w-[…px]`；
   不要在页面里再包一层 `overflow-x-auto`，也不要为了「不横滚」把列删掉（`mobile_overflow`
   守的是**整页**不横滚，表格内部横滚是预期行为）。
+  容器**溢出时自动**变成 `tabindex="0"` + `role="region"`（配 `aria_label` 命名）：
+  键盘用户否则没有任何手段横向滚动宽表（WCAG 2.1.1）。不溢出的短表不进 Tab 序，
+  不需要调用方传参。滚动容器内的焦点环改成内缩（`outline-offset: -3px`），
+  否则行内按钮的 2px 虚线 + 3px 偏移会被容器裁掉上下两条边。
+  **三列以上、或有整句说明列的表必须给 `min-w-[…]`**（按列数与最长一列取，常见 `40rem`–`48rem`）。
+  不给的话窄屏不会横滚，而是把列均分剩余宽度：`/rig-reviews` 的「测法」列在 320px 下
+  被压到 55px、一句话折成 8 行（表格宽 288 = 容器宽，说明它根本没触发横滚）。
+  判据：表格宽度 ≈ 容器宽度（没横滚）**且**任一单元格 < 64px、文本超过 4 行 = 该表缺 `min-w`。
+  给了 `min-w` 之后单元格窄到 50px 是正常的（列宽按内容分配，如 `/analog-modes` 的
+  发射类型列 50px、单行 `nowrap`），不要再往上加宽度。
 
 ### 页内第二根吸顶栏（`StickyPanel`）
 
@@ -717,6 +753,20 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
 ## 6. 无障碍（e2e 也依赖它）
 
 - **有可见标签**：用 `Field`（`r#for` + 控件 `id` 配对），或把控件包在 `<label>` 里。
+  `Field` 同时是**表单语义的唯一来源**：它把 `hint` / `error` 节点的 id 经 context 下发给
+  `Input` / `Textarea` / `NumberField` / `Select` / `SimpleSelect` / `DatePicker` / `TimePicker`，
+  控件自动输出 `aria-describedby`；`required` 输出 `aria-required`（星号只是视觉，读屏读得到必填）。
+  调用点**不要**再手写这两个属性 —— 漏写一次，读屏就少一条信息。
+  校验时机默认即时（`Field.validate_on = ValidateOn::Immediate`）：计算器的红框要和旁边的实时结果同步，
+  竞赛录入的「重复呼号」也是边输入边预警。表单类字段不想让用户敲第一个字符就被判错时，
+  显式传 `validate_on=ValidateOn::Blur`（失焦后才透传 `invalid`；已经有 `error` 文案时立即显示）。
+  `Field` 的 context 靠 `Provider` 给每行独立作用域，**不要**改回组件体里的 `provide_context`
+  （并排的 `Field` 会互相覆盖，排在 `Field` 之后的独立控件还会读到前一行的说明 id）。
+- **筛选 / 搜索的结果数变化要播报**：在结果列表附近放 `ResultCount`（`role="status"`，
+  缺省 `sr-only`；首屏加载中传 `pending`，别先播一句「0 条」）。视觉计数留在原处，
+  不要给侧栏角标那种会一次念十几个数字的元素加 `aria-live`。现代风把统计条的「当前筛选」格删了
+  （默认筛选下它恒等于总数），那边没有别的可见计数 —— 传 `class="md-muted md-sm mb-3"`，
+  把同一个节点变成列表上方的一行小字（`/browse`、`/glossary` 已这样接入；`/glossary` 的词条是编译进来的静态数据，没有加载态，不传 `pending`）。
 - **没有可见标签**：必须给 `aria_label=Signal::derive(move || t("…"))`（图标按钮 / 图标链接
   **必填**，例如 `Button variant=Variant::Ghost size=Size::IconSm aria_label=…`）。
 - **互斥 / 多选**：用组件的 `RadioGroup` / `ChipGroup` / `Checkbox` / `Switch`，
@@ -787,6 +837,10 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
 10. **别让动作「看起来能点、点了没反应」**：不可用的动作把 `disabled` 传下去（`Button`
     会如实置灰，读屏也读得到），不要在回调里 `if !allowed { return; }` 静默吞掉
     （机考仿真的「上一题」、答题卡的跳转都踩过）。
+    **禁用还要给出原因**：置灰只是「不能点」，用户不知道缺什么。原因三选一 ——
+    相邻一行说明、`Button.title`、`aria_describedby`（指向说明元素）。只置灰不解释
+    是上一轮审核里最常见的缺陷；控件自身**不再**用 `pointer-events: none` 拦悬停
+    （那会让 `title` 与 `cursor: not-allowed` 一起失效）。
 11. **`ui_check` 只看 `.rs` 里的类名字面量**：写在 `.css` 或内联 `style="…"` 里的同类问题
     在射程外（曾经把一条 `border-right` 声明并成非法值、箭头直接消失，门禁全绿）。
     改 `.css` / `style=` 时人眼过一遍 `+` 侧。
@@ -796,6 +850,15 @@ live region。队尾入队不会重置当前消息计时，只有队首身份变
     避免与卡片边框叠成双线（实现细节与 `<caption>` / `<tfoot>` 的边界见该处注释）。该规则依赖 `border-collapse` 这个
     **工具类**当选择器，所以 `ui::Table` 把它写成工具类而不是收进 `.pxl-table`（现代风的 `md-table` 不走这条规则）。
     带内边距包裹的表格不受影响。
+
+13. **可收缩的文字块不要只写 `flex-1`**：`flex-1` 的 `flex-basis` 是 `0%`，再配 `min-w-0`
+    就能被压到 0 宽 —— 而 `flex-wrap` 只在「放不下」时换行，文字块能压到 0 就意味着
+    **永远放得下**，于是中文逐字竖排成一列（`/map` 的「下一个任务」在 600px 下实测 94px 宽、
+    标题占二十多行；390px 反而正常，因为按钮组先被挤到第二行）。
+    一行里还有 `flex-shrink: 0` 的精灵 / 按钮时，文字块写成 `min-w-0 grow basis-[…]`
+    （给一个真实的首选宽度，如 `basis-56`），放不下才会换行。
+    这种塌缩**不会横向溢出**，所以 `mobile_overflow` / `i18n_layout` 抓不到 ——
+    回归用例按「文字块宽度 + 标题行数」断言，见 `ui_spec.spec.ts` H1。
 
 ## 9. 新增 / 扩展组件
 
@@ -904,7 +967,7 @@ label 的 `has-[:focus-visible]:ring-2` 显示。**页面里不要再手写拖�
 
 **机械可判定的条目已经接进 CI**：`cargo make check-ui`（含在 `cargo make check` 与 `cargo make ci`
 里，源码见 `crates/tools/src/ui_check.rs`）会扫 ①②③④⑤⑦、⑥ 的模糊 / 渐变与**任意值阴影的模糊位**、
-⑧ 的**页面级宽度容器封闭清单**（清单外命中、清单内计数漂移都会红），以及 2026-10-24 补上的 ⑪–㉓
+⑧ 的**页面级宽度容器封闭清单**（清单外命中、清单内计数漂移都会红），以及 2026-10-24 补上的 ⑪–㉔
 （字重 / 缩放 / `transition-all`+`duration-N` / 实线焦点环 / 非 6 倍数字号 / 原始色阶 / 手写悬停位移 /
 空属性 / `text-destructive` / 手写 `<h1>` / 12px 卡片标题 / 任意值断点 / 16px 图标），命中即让门禁红。
 下面保留手工命令是为了看清判定细节，以及覆盖工具刻意不做的部分：内联 `style` 里的阴影、
@@ -971,10 +1034,12 @@ grep -rn --include='*.rs' '<h2' crates/app/src | grep 'text-sm'
 grep -rnE --include='*.rs' '(min|max)-\[[0-9.]+(px|rem|em)\]:' crates/app/src
 # ㉓ 图标写 16/20px：应为 0（check-ui 已拦；像素图标是 24px 网格，写 size-6）
 grep -rn --include='*.rs' '<Icon' crates/app/src | grep -E 'class="[^"]*\b(h-[345]|size-[345])\b'
+# ㉔ 像素风写死的浮层层级：应为 0（check-ui 已拦）。`z-10` / `z-20` 这类局部层叠不算；层级取 `--z-*` 档位
+grep -rnE --include='*.rs' '\bz-(\[?[4-9][0-9]\]?)\b' crates/app/src | grep -v 'kit_modern\|md-\|ui/popover.rs'
 ```
 
 判据口径：除 ⑧（封闭清单，上限 = §4 里登记的文件数）与 ⑨（刻意的例外清单）外，其余各条**应为 0**。
-当前计数不写在这里（会过期）—— 以 `cargo make check-ui` 的输出为准，它持续守着 ①–㉓ 中的机械条目，
+当前计数不写在这里（会过期）—— 以 `cargo make check-ui` 的输出为准，它持续守着 ①–㉔ 中的机械条目，
 不必再靠人工记得跑。
 
 ## 12. 验收清单

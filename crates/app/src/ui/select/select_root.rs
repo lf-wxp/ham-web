@@ -92,6 +92,10 @@ pub fn Select(
   let trigger_class = popover::trigger_class(size, &class);
   // 外层容器：焦点离开它才收起（见 `popover::close_on_focus_leave`）。
   let root_ref = NodeRef::<html::Div>::new();
+  // 落位：面板是 `fixed`，位置由触发器实测（放下方还是翻到上方，见 `use_anchored_panel`）。
+  let trigger_ref = NodeRef::<html::Button>::new();
+  let panel_ref = NodeRef::<html::Div>::new();
+  let panel_style = popover::use_anchored_panel(open, trigger_ref, panel_ref, true);
   // 选项列表的滚动容器：键盘高亮要在它里面滚动，页面不能跟着动。
   let list_ref = NodeRef::<html::Div>::new();
   // 上下文**不能**在组件体里 `provide_context`：Leptos 的组件不会各自开一个作用域，同一个父级下
@@ -160,6 +164,8 @@ pub fn Select(
       .filter_map(|n| n.dyn_into::<web_sys::Element>().ok())
       .collect()
   };
+  // typeahead 的累积前缀（已打的字符, 最后按下的时间 ms）。
+  let typed = StoredValue::new((String::new(), 0.0_f64));
   let step = move |nav: Nav| {
     let rows = rows();
     let current = active
@@ -203,6 +209,42 @@ pub fn Select(
           None => open.set(false),
         }
       }
+      // typeahead：连打字母跳到以它开头的项（原生 `<select>` 的既有习惯）。
+      // 长列表（DXCC 实体、年份、工具类型）逐项按方向键不现实；匹配规则在
+      // `ham_web_core::listbox::typeahead`，带单测（不区分大小写、从下一项环形找）。
+      // 带 Ctrl / Meta / Alt 的组合键是浏览器与系统快捷键（复制、刷新…），不是打字，放行。
+      key
+        if is_open
+          && key.chars().count() == 1
+          && !(e.ctrl_key() || e.meta_key() || e.alt_key()) =>
+      {
+        let Some(ch) = key.chars().next().filter(|c| !c.is_control()) else {
+          return;
+        };
+        e.prevent_default();
+        let now = web_sys::window()
+          .and_then(|w| w.performance())
+          .map_or(0.0, |p| p.now());
+        // 600ms 内连打的字符拼成一个前缀，超时从头开始。
+        let (mut buffer, at) = typed.get_value();
+        if now - at > 600.0 {
+          buffer.clear();
+        }
+        buffer.push(ch);
+        typed.set_value((buffer.clone(), now));
+        let rows = rows();
+        let labels: Vec<String> = rows
+          .iter()
+          .map(|r| r.text_content().unwrap_or_default().trim().to_owned())
+          .collect();
+        let refs: Vec<&str> = labels.iter().map(String::as_str).collect();
+        let current = active
+          .get_untracked()
+          .and_then(|id| rows.iter().position(|r| r.id() == id));
+        if let Some(i) = ham_web_core::listbox::typeahead(&refs, &buffer, current) {
+          active.set(Some(rows[i].id()));
+        }
+      }
       _ => {}
     }
   };
@@ -210,6 +252,14 @@ pub fn Select(
   let title_label = title;
   let title = move || title_label.as_ref().map(TextValue::get);
   let placeholder_shown = placeholder.clone();
+
+  // `Field` 的下发：说明 / 错误 id、必填、错误显示时机（与 `Input` 同一套契约）。
+  let field_a11y = use_context::<super::super::field::FieldA11y>();
+  let invalid = match field_a11y {
+    Some(a) => a.invalid_for(invalid),
+    None => invalid,
+  };
+  let describedby = move || super::super::field::FieldA11y::describedby_attr(field_a11y, None);
   view! {
     // `min-w-0`：包一层 `relative` 是为了给弹层定位，但它同时也是父级 flex 行里的一个子项 ——
     // 不收缩的话，触发器里的长文案（见 `popover::trigger_class`）会连同这层一起把整行撑宽。
@@ -219,6 +269,7 @@ pub fn Select(
       on:focusout=popover::close_on_focus_leave(open, root_ref)
     >
       <button
+        node_ref=trigger_ref
         type="button"
         role="combobox"
         id=move || base_id.get_value()
@@ -227,6 +278,10 @@ pub fn Select(
         aria-controls=move || mounted.get().then(listbox_id)
         aria-activedescendant=move || open.get().then(|| active.get()).flatten()
         aria-label=move || aria_label.as_ref().map(TextValue::get)
+        aria-describedby=describedby
+        aria-required=move || {
+          field_a11y.map(|a| a.required.get()).unwrap_or(false).then_some("true")
+        }
         aria-invalid=invalid_attr(invalid)
         title=title
         data-state=state
@@ -234,6 +289,11 @@ pub fn Select(
         class=trigger_class
         on:click=move |_| open.update(|o| *o = !*o)
         on:keydown=on_keydown
+        on:blur=move |_| {
+          if let Some(a) = field_a11y {
+            a.mark_touched.run(());
+          }
+        }
       >
         <span style="pointer-events: none;">
           {move || {
@@ -262,7 +322,7 @@ pub fn Select(
             // `Provider` 的子节点是一次性闭包，会把它捕获的东西移走：每次挂载面板各用一份克隆。
             let children = children.clone();
             view! {
-              <div class=popover::OVERLAY data-state=state inert=inert aria-hidden=hidden on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
+              <div class=popover::overlay_class() data-state=state inert=inert aria-hidden=hidden on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
               // 外层只管外观与进出场动画（`data-state`）；**可滚动的这一层自己就是 listbox**，
               // 选项成为它的直接子节点 —— 这是 ARIA 对 listbox 的标准形态。
               // 若把 `role="listbox"` 放在外层、里面再套一层带 `tabindex` 的滚动容器，axe 的
@@ -270,7 +330,14 @@ pub fn Select(
               //
               // `tabindex="-1"`：Chrome 会让「没有可聚焦子元素的滚动容器」进入 Tab 序，
               // 选项行本身都是 `tabindex="-1"`，列表就会变成一个多余的 Tab 停靠点。
-              <div data-state=state inert=inert aria-hidden=hidden class=popover::panel_base()>
+              <div
+                node_ref=panel_ref
+                data-state=state
+                inert=inert
+                aria-hidden=hidden
+                style=move || panel_style.get()
+                class=popover::panel_base()
+              >
                 <div
                   role="listbox"
                   id=listbox_id()

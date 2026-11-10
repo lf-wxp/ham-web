@@ -365,7 +365,7 @@ pub(super) fn DopplerTracker(
           >
             {move || {
               if matches!(load.get(), Load::Loading) {
-                t("learning.loading")
+                t("common.loading")
               } else {
                 t("radio.doppler-load")
               }

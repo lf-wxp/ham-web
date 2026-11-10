@@ -42,7 +42,9 @@
       2px 2px 0 0 var(--pxl-shadow);
     font-size: var(--text-sm);
     line-height: 1;
-    transition-property: translate, box-shadow, background-color, filter;
+    /* 不把 `filter` 列进过渡：禁用态不再用滤镜（见下方 `.pxl-btn:disabled`），
+       留着它只会让「按下」多算一个不存在的属性。 */
+    transition-property: translate, box-shadow, background-color;
     transition-duration: var(--motion-instant);
     transition-timing-function: steps(2, end);
   }
@@ -126,12 +128,19 @@
     }
   }
 
-  /* 禁用：抖动网点遮罩 + 去投影。网点而不是半透明：像素风里「灰掉」就是镂空。 */
+  /* 禁用：抖动网点遮罩 + 去投影 + 换用弱化的表面 token。
+     网点而不是半透明：像素风里「灰掉」就是镂空。
+     **不写 `pointer-events: none`**：它会让同一规则里的 `cursor: not-allowed` 成为死代码，
+     也让 `title` / 悬停提示永远弹不出来 —— 禁用控件更需要「为什么不能点」的解释
+     （规范见 `docs/ui/pixel.md` §8 第 10 条）。
+     **不写 `filter: saturate()`**：滤镜会算出调色板之外的颜色，和「限色」原则直接冲突，
+     切到 CGA / Game Boy 时禁用态会脱离方案。 */
   .pxl-btn:disabled {
     cursor: not-allowed;
-    pointer-events: none;
+    --btn-bg: var(--muted);
+    --btn-fg: var(--muted-foreground);
+    --btn-lo: transparent;
     box-shadow: inset 2px 2px 0 0 var(--pxl-hi);
-    filter: saturate(0.4);
   }
 
   .pxl-btn:disabled::after {
@@ -229,6 +238,12 @@
     box-shadow: none;
   }
 
+  /* 幽灵按钮本来就没有底色：禁用时保持透明，只弱化文字，不要给它补一块 muted 底。 */
+  .pxl-btn-ghost:disabled {
+    --btn-bg: transparent;
+    --btn-fg: var(--muted-foreground);
+  }
+
   /* 无底色的按钮禁用时不要网点遮罩（整块网点看起来像脏点），半透明即可。 */
   .pxl-btn-text:disabled {
     box-shadow: none;
@@ -277,10 +292,10 @@
     outline-offset: 2px;
   }
 
+  /* 同按钮：不拦 `pointer-events`，否则 `cursor` / `title` 一起失效，禁用原因读不到。 */
   .pxl-field:disabled,
   .pxl-field[aria-disabled="true"] {
     cursor: not-allowed;
-    pointer-events: none;
     background-image: repeating-conic-gradient(var(--pxl-dither) 0% 25%, transparent 0% 50%);
     background-size: 4px 4px;
     opacity: 0.7;
@@ -342,8 +357,12 @@
     outline: none;
   }
 
+  /* 高亮只有一个来源：`data-active`。鼠标悬停与键盘导航（`aria-activedescendant` 指着的那行）
+     都写这个属性 —— 以前鼠标走 `:hover`、键盘走 `data-[active=true]` 工具类，
+     `:focus` 在 `div[role="option"]` 上根本不会命中，漏传工具类就变成「方向键看不见」。
+     样式放在这里而不是调用点，是因为 `.pxl-item` 只有一个实现（`ui/popover.rs`）。 */
   .pxl-item:hover,
-  .pxl-item:focus {
+  .pxl-item[data-active="true"] {
     background-color: var(--accent);
     color: var(--accent-foreground);
     border-color: var(--pxl-ink);
@@ -761,9 +780,17 @@
     border: 1px solid var(--border);
   }
 
+  /* 表头与正文同为 12px、同为正文点阵体，层级只剩一层 60% 浅底 ——
+     长表格里表头容易「沉进」数据。这里靠**底纹 + 下沿**拉开，不换字体族：
+     Silkscreen 比正文点阵体宽约 15%，表头一宽整张表的 min-content 就变大，
+     而 `overflow-x-auto` 不会让容器的 min-content 归零 —— 宽表会把外层 grid 项顶破
+     （`/tools` 的英文界面在 320px 下实测溢出 30px）。
+     也不加 `text-transform: uppercase`：同样的宽度代价。 */
   .pxl-table thead :is(th, td) {
-    background-color: color-mix(in oklab, var(--muted) 60%, transparent);
+    background-color: color-mix(in oklab, var(--muted) 82%, transparent);
     font-size: var(--text-xs);
+    letter-spacing: 0.02em;
+    border-bottom: 2px solid var(--pxl-ink);
   }
 
   @media (hover: hover) {
@@ -793,12 +820,27 @@
     outline: none;
   }
 
+  /* ---------- 滚动容器里的焦点环 ----------
+     宽表格的滚动容器是 `overflow-x-auto`，它同时把纵向溢出算成 `auto`：行内按钮
+     2px 虚线 + 3px 偏移的环上下会被裁掉（和页头折叠区踩的是同一个坑，那里靠
+     `FOLD_BODY_ACTIONS` 的 6px 余量解决）。表格里改用**内缩**的环：视觉上仍是一圈虚线，
+     但不越出控件盒子，也就不会被容器裁。容器自身拿到焦点时同样内缩。 */
+  [data-slot="table-container"]:focus-visible {
+    outline: 2px dashed var(--ring);
+    outline-offset: -3px;
+  }
+
+  [data-slot="table-container"] :is(.pxl-btn, .pxl-check, a):focus-visible {
+    outline-offset: -3px;
+  }
+
   /* 可见气泡在 body 的传送层，位置由触发器 rect 与视口边界决定，不受滚动容器裁剪。 */
   .pxl-tip-popup {
     position: fixed;
     left: 8px;
     top: 8px;
-    z-index: 70;
+    /* 最高一档：气泡必须在弹层之上（档位见 `tokens.css` 的 `--z-*` 阶梯）。 */
+    z-index: var(--z-top);
     width: max-content;
     max-width: 16rem;
     padding: 0.25rem 0.5rem;
@@ -848,6 +890,22 @@
       min-height: 2.25rem;
     }
   }
+
+  /* 320–399px：区段标题的左侧标记 + 内距占掉 32px，长标题折三行。
+     这档只收窄内距与标记，不改字号（12px 以下的任意字号已被 `check-ui` ⑮ 拦）。 */
+  @media (max-width: 399px) {
+    .pxl-section-title {
+      padding-left: 1.5rem;
+      background-position: 0.375rem center;
+      background-size: 6px 6px;
+    }
+
+    .pxl-section-head {
+      padding-left: 1rem;
+      background-position: 0 center;
+      background-size: 6px 6px;
+    }
+  }
 }
 
 /* ---------- 模态遮罩 ----------
@@ -857,4 +915,48 @@
   background-color: rgb(0 0 0 / 0.28);
   background-image: repeating-conic-gradient(rgb(0 0 0 / 0.32) 0% 25%, transparent 0% 50%);
   background-size: 4px 4px;
+}
+
+/* ---------- 高对比度（强制颜色）----------
+   `forced-colors: active` 下浏览器会强制所有 `background-color` / `box-shadow`：
+   像素风的「凸起（内高光 + 硬投影）」与所有**靠填充色表达的状态**（chip 选中、
+   tab 选中、开关打开、进度条填充）都会退化成无差别的方块。
+   这里**不放宽强制**（`forced-color-adjust: none` 会让原色残留、反而更不可读），
+   而是给每个状态补一条非颜色通道：系统高亮色的描边 / 边框。
+   规范里「状态只信 ARIA」在这里正好兑现 —— 选择器全部读 ARIA 属性。 */
+@media (forced-colors: active) {
+  .pxl-chip[aria-checked="true"],
+  .pxl-chip[aria-pressed="true"],
+  .pxl-tab[aria-selected="true"],
+  .pxl-item[data-state="checked"],
+  .pxl-item[aria-selected="true"],
+  .pxl-btn[aria-current="page"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+
+  .pxl-switch[data-state="checked"],
+  .pxl-check[data-state="checked"] {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  /* 进度条：填充与槽之间补一道系统色边界，否则强制成同色后完全看不出进度。 */
+  .pxl-bar-fill {
+    border-right: 2px solid Highlight;
+  }
+
+  /* 禁用：网点遮罩在强制颜色下不可见，改虚线边框（`GrayText` 由浏览器给）。 */
+  .pxl-btn:disabled,
+  .pxl-field:disabled {
+    border-style: dashed;
+  }
+
+  /* 焦点环统一成系统高亮色（原来的虚线环颜色会被强制，形状还在，这里只保证对比）。 */
+  .pxl-btn:focus-visible,
+  .pxl-field:focus-visible,
+  .pxl-chip:focus-visible,
+  .pxl-tab:focus-visible {
+    outline: 2px solid Highlight;
+  }
 }

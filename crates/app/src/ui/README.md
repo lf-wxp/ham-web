@@ -19,7 +19,7 @@ disabled / error 状态反馈因此只有一处定义。
 
 | 组件 | 替代的原生写法 | 关键 props |
 |---|---|---|
-| `Button` | `<button class=button_class(…)>` | `variant` `size` `kind` `disabled` `loading` `class` `aria_label` `title` `aria_expanded` `aria_controls`（折叠 / 下拉开关）`aria_current`（一组里「当前这个」，如答题卡的当前题）`on_click` `node_ref` |
+| `Button` | `<button class=button_class(…)>` | `variant` `size` `kind` `disabled` `loading` `class` `aria_label` `title` `aria_describedby`（禁用时的原因说明）`aria_expanded` `aria_controls`（折叠 / 下拉开关）`aria_current`（一组里「当前这个」，如答题卡的当前题）`on_click` `node_ref` |
 | `ButtonLink` | `<a href class=button_class(…)>`（跳转用的「按钮」） | `href`（`TextValue`）`variant` `size` `class` `aria_label` `title` `target` `rel` `download`（保存 `data:` / `blob:` 资源时的文件名）`on_click`（收 `MouseEvent`） |
 | `Input` | `<input>`（text / search / password / email / tel / url；日期与时间见 `DatePicker` / `TimePicker`） | `value` `on_change` `kind` `size` `prefix` `suffix` `clearable` `on_enter` `on_keydown` `invalid` `maxlength` `title` `autocomplete` `autocapitalize` `spellcheck` `aria_describedby` `node_ref`。`kind=InputType::Search` 的搜索框在输入法组字期间不回调 `on_change`、选字确认补一次；其余类型逐字回调 |
 | `NumberField` | `<input type="number">` | `value` `on_change` `min` `max` `step` `controls`（加减步进）`kind`（`NumberKind::Decimal` = 文本框 + 数字键盘，负数与半截输入可用） |
@@ -37,12 +37,12 @@ disabled / error 状态反馈因此只有一处定义。
 | `Slider` | `<input type="range">` | `value` `on_change` `min` `max` `step` `aria_valuetext` |
 | `FileInput` | 隐藏 `<input type="file">` + 触发按钮 | `on_files` `accept` `multiple` `label` |
 | `FileDropZone` | 手写 `<label for>` + 隐藏 input 的整块拖放区 | `on_file` `accept` `title`（同时是无障碍名）`icon` `hint` `choose_hint`（覆盖默认的「拖拽音频文件」提示行）`disabled` `id`（e2e 按固定 id 定位时传） |
-| `Field` | 手写的 `label + 控件 + 提示` 排版 | `label` `r#for` `hint` `error` `required` |
+| `Field` | 手写的 `label + 控件 + 提示` 排版 | `label` `r#for` `hint` `error` `invalid` `required` `validate_on`（默认 `Immediate`；表单类字段传 `Blur` 则失焦后才显示错误）。**表单语义的唯一来源**：`hint` / `error` 的 id 与必填状态经 context 下发给 `Input` / `Textarea` / `NumberField` / `Select` / `SimpleSelect` / `DatePicker` / `TimePicker`，控件自动补 `aria-describedby` / `aria-required` |
 | `Label` | `<label>`（单独使用，如 Checkbox 旁） | `r#for` |
 | `Dialog` / `Sheet` 及 `DialogHeader` 等 | — | 见源码 |
 | `MobileNavDrawer` | 移动端手写「悬浮按钮 + 抽屉」/ 横滑分类条（小屏下替代被 `hidden` 藏掉的侧栏） | `open`（由调用方持有，选中项后主动 `set(false)`）`title` `button_label`（悬浮按钮无障碍名）`icon` `class`（断点类，与侧栏断点配套）+ `children`（抽屉内容，与桌面侧栏共用同一份列表）；悬浮按钮可拖动改位置，收拢视口内并持久化在 `localStorage["fab-position"]`（全站共享）；用法与坑见 `docs/ui/pixel.md` §3.3 |
 | `Progress` / `Separator` / `Stat` | — | `Progress` 是分格条；加 `pxl-bar-hp` / `pxl-bar-xp` / `pxl-bar-win` / `pxl-bar-gold` 变血条 / 经验条 / 通关绿 / 金币 |
-| `Table` + `TableHead` / `TableBody` / `TableRow` / `TableHeader` / `TableCell` | 手写的 `<div class="overflow-x-auto"><table>…` | 根组件自带滚动容器；`class` 写 `min-w-[…]` 保列宽；限高写 `wrapper_class="max-h-[…]"`；`borderless` 去网格线；无可见标题传 `aria_label`；`TableHeader` / `TableCell` 支持 `colspan` |
+| `Table` + `TableHead` / `TableBody` / `TableRow` / `TableHeader` / `TableCell` / `TableEmpty` | 手写的 `<div class="overflow-x-auto"><table>…` | 根组件自带滚动容器；`class` 写 `min-w-[…]` 保列宽；限高写 `wrapper_class="max-h-[…]"`；`borderless` 去网格线；无可见标题传 `aria_label`；**容器溢出时自动加 `tabindex="0"` + `role="region"`**（键盘可横滚）；`TableHeader` 支持 `colspan` / `sort`（`SortOrder` → `aria-sort`），`TableCell` 支持 `colspan` / `numeric`（右对齐 + 等宽数字），空表用 `TableEmpty`（`cols` 与列数一致） |
 | `Pagination` | 手写分页 / `.slice()` 截断 | `page` `total_pages`（1 起）`on_change`；页数 ≤1 不渲染；窗口算法在 `ham_web_core::pagination` |
 | `ToastRoot` + `push` / `push_success` / `push_error` / `push_info` | `util::alert`（原生 alert，已清零）/ 内联「成功」文字 | 全局挂载在 `App`，可见反馈传送到 body、位于模态遮罩之上；悬停 / 聚焦时暂停计时，离开后再留 2 秒（WCAG 2.2.1）；`push_info` 给既非成功也非失败的中性提示（计时预警这类）；Dialog / Sheet 内同步公告；只在队首变化时重置计时；同类别同文案合并为 `×N`（退场中的队首不接受合并），入队规则在 `ham_web_core::toast_queue`（带单测）；页面只调 `push_*`，需确认的失败仍用 `MessageDialog` |
 | `ConfirmRoot` + `confirm(title, description, confirmText, tone, onConfirm)` | `window.confirm`（已全站清零）/ 各页面自己搭确认弹窗 | 全局确认服务：`App` 根部挂一次，任何地方调 `confirm(…)` 弹像素风确认框（取消 / 执行）；`ConfirmTone::Danger` 给删除类，`Normal` 给「合并 / 批量标记」这类不可逆但无破坏的动作；执行回调只在点了执行按钮后运行（用 `try_run`，发起确认的页面已卸载则静默放弃；路由一变确认框自动收起；退场动画期间重复点击不会二次执行） |

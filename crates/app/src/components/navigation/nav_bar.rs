@@ -86,7 +86,7 @@ pub(crate) fn PixelNav() -> impl IntoView {
   view! {
     // 顶栏是一条实心的「HUD 栏」：底色用 `--card`（不透明）+ 2px 墨色下沿 + 硬偏移投影，
     // 不模糊、不渐变；吸顶时下面滚过的内容被它实实在在地盖住，不需要任何磨砂兜底。
-    <nav data-nav aria-label=move || t("shell.main-navigation") class="sticky top-0 z-50 border-b-2 border-ink bg-card shadow-[0_2px_0_0_var(--pxl-shadow)]">
+    <nav data-nav aria-label=move || t("shell.main-navigation") class="sticky top-0 z-[var(--z-nav)] border-b-2 border-ink bg-card shadow-[0_2px_0_0_var(--pxl-shadow)]">
       // 内容层与正文同一个版心：`max-w-5xl`（值 = `--page-max`，见 `style/input.css`）+ `px-4`，
       // 与 `PageContainer` / `PageHeader` 逐字一致，所以顶栏两端与正文边缘永远对齐。
       // 以前这里用 `container`（宽度随断点长到 1280）且 <xl 铺满整宽，于是顶栏比正文宽出一截；
@@ -211,7 +211,7 @@ pub(crate) fn PixelNav() -> impl IntoView {
           view! {
             <div
               id=MOBILE_NAV_PANEL_ID
-              class="motion-pop absolute inset-x-0 top-full z-40 max-h-[calc(100svh-4rem)] overflow-y-auto overscroll-contain border-b-2 border-ink bg-card shadow-[0_4px_0_0_var(--pxl-shadow)] xl:hidden"
+              class="motion-pop absolute inset-x-0 top-full z-[var(--z-bar)] max-h-[calc(100svh-4rem)] overflow-y-auto overscroll-contain border-b-2 border-ink bg-card shadow-[0_4px_0_0_var(--pxl-shadow)] xl:hidden"
             >
               // 布局与顺序：**先导航、后一个页面直达入口**，两种宽度共用同一份结构。
               // - `<sm`（手机竖屏）一列：三段折叠依次向下；

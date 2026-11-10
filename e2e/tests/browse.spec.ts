@@ -133,6 +133,55 @@ for (const style of ["pixel", "modern"] as const) {
     expect(multi, "前 8 张里至少有一道多选，才覆盖到「共 N 项」的写法").toBeGreaterThan(0);
   });
 
+  test(`分类浏览（${style}）：筛选结果数随搜索与分类变化${style === "modern" ? "，且在列表上方可见" : "（读屏播报）"}`, async ({
+    page,
+  }) => {
+    // 现代风没有「当前筛选」统计格（默认筛选下它恒等于总数），结果数是列表正上方的一行小字；
+    // 像素风的可见计数在统计卡里，这一行只是 `sr-only` 的播报。两套皮肤共用同一个 `role="status"` 节点。
+    await page.addInitScript((s) => {
+      if (window !== window.top) return;
+      localStorage.setItem("ui:uiStyle", s);
+    }, style);
+    await page.goto("/browse");
+    const rows = page.locator("main article");
+    await expect(rows.first()).toBeVisible();
+
+    const status = page.getByRole("status").filter({ hasText: /^筛选结果 \d+ 条$/ });
+    await expect(status).toHaveCount(1);
+    const count = async () => Number(((await status.textContent()) ?? "").replace(/\D/g, ""));
+
+    // 加载完成后不是 0（加载中 `pending` 不报数，避免先播一句「0 条」）。
+    await expect.poll(count).toBeGreaterThan(0);
+    const total = await count();
+
+    if (style === "modern") {
+      await expect(status).toBeVisible();
+      // 在第一张题卡之上，且不是被裁成 0 高度的节点。
+      const [s, r] = await Promise.all([status.boundingBox(), rows.first().boundingBox()]);
+      expect(s && s.height, "结果数这一行应占高度").toBeGreaterThan(0);
+      expect(s!.y + s!.height, "结果数应在第一张题卡之上").toBeLessThanOrEqual(r!.y + 1);
+    } else {
+      await expect(status).toHaveClass(/sr-only/);
+    }
+
+    // 搜索收窄：数字变小且仍大于 0。
+    await page.getByPlaceholder(SEARCH).fill("天线");
+    await expect.poll(count).toBeLessThan(total);
+    expect(await count()).toBeGreaterThan(0);
+
+    // 筛到零条：写 0，而不是留着旧数字。
+    await page.getByPlaceholder(SEARCH).fill("这个词肯定不存在");
+    await expect(status).toHaveText("筛选结果 0 条");
+
+    // 清空搜索回到全部。
+    await page.getByPlaceholder(SEARCH).fill("");
+    await expect.poll(count).toBe(total);
+
+    // 「只看多选」也算筛选。
+    await page.getByRole("button", { name: "只看多选" }).click();
+    await expect.poll(count).toBeLessThan(total);
+  });
+
   test(`分类浏览（${style}）：收藏按钮的无障碍名带题号`, async ({ page }) => {
     await page.addInitScript((s) => {
       if (window !== window.top) return;

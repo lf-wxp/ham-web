@@ -51,6 +51,10 @@ pub fn Button(
   /// 原生 `title`（鼠标悬停提示）。
   #[prop(optional, into)]
   title: Option<TextValue>,
+  /// 关联的说明元素 id：**禁用的动作要靠它或 `title` 说清「为什么不能点」**。
+  /// 只置灰不解释是既有缺陷里最常见的一条（见 `docs/ui/pixel.md` §8 第 10 条）。
+  #[prop(optional, into)]
+  aria_describedby: Option<String>,
   /// `aria-expanded`：折叠 / 下拉开关的展开状态（传了才输出该属性）。
   #[prop(optional)]
   aria_expanded: Option<Signal<bool>>,
@@ -73,6 +77,7 @@ pub fn Button(
       class=button_class(variant, size, &class)
       aria-label=move || aria_label.as_ref().map(TextValue::get)
       title=move || title.as_ref().map(TextValue::get)
+      aria-describedby=aria_describedby
       aria-expanded=move || aria_expanded.as_ref().map(|s| s.get().to_string())
       aria-controls=move || aria_controls.as_ref().map(TextValue::get)
       aria-current=move || aria_current.get().then_some("true")

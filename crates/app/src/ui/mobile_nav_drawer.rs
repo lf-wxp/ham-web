@@ -62,7 +62,7 @@ pub fn MobileNavDrawer(
   // 拖动后抑制随后可能派发的合成 click（不同浏览器对 pointerdown
   // `prevent_default` 与 click 的关系不一致，这里双保险）。
   let suppress_click = StoredValue::new(false);
-  let container_class = cn(&["fixed z-40 touch-none", &class]);
+  let container_class = cn(&["fixed z-[var(--z-bar)] touch-none", &class]);
 
   let on_down = move |ev: web_sys::PointerEvent| {
     // 阻止合成 click / mouse 事件：打开改由 pointerup 判定，拖动后不会误开抽屉；

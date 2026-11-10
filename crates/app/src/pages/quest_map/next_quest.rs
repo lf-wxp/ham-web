@@ -57,7 +57,11 @@ pub(super) fn NextQuest(
       view! {
         <section class="pxl-window flex flex-wrap items-center gap-4 p-4" aria-labelledby="next-quest-title">
           <PixelSprite name=monster_sprite(stage.key) scale=6 class="pxl-bob" />
-          <div class="min-w-0 flex-1 space-y-1">
+          // `basis-56`（14rem）而不是 `flex-1`（`basis: 0%`）：这一行里有 `flex-shrink: 0`
+          // 的精灵与两个 `Size::Lg` 按钮，`flex-1` 的文字块可以被压到 0 宽 —— 不会触发
+          // `flex-wrap`（flex 认为放得下），中文于是逐字竖排成一列（390px 下实测 1 字宽）。
+          // 给一个真实的首选宽度，放不下时才会换行。
+          <div class="min-w-0 grow basis-56 space-y-1">
             <div class="pxl-label text-xs text-muted-foreground">{move || t("rpg.next-quest")}</div>
             <h2 id="next-quest-title" class=crate::kit::section_head_class()>{move || t(stage.name)}</h2>
             <p class="text-sm text-muted-foreground">{move || t(stage.desc)}</p>
@@ -106,7 +110,7 @@ pub(super) fn NextQuest(
       view! {
         <section class="pxl-window flex flex-wrap items-center gap-4 p-4" aria-labelledby="next-quest-title">
           <PixelSprite name="boss" scale=6 class="pxl-bob" />
-          <div class="min-w-0 flex-1 space-y-1">
+          <div class="min-w-0 grow basis-56 space-y-1">
             <h2 id="next-quest-title" class=crate::kit::section_head_class()>{move || t("rpg.all-cleared")}</h2>
             <p class="text-sm text-muted-foreground">{move || t("rpg.all-cleared-hint")}</p>
           </div>

@@ -114,9 +114,9 @@ pub(super) fn ContestAnalysis(
                       view! {
                         <TableRow class=format!("border-b last:border-0 {muted}")>
                           <TableCell class="whitespace-nowrap px-3 py-1.5 tabular-nums">{start}</TableCell>
-                          <TableCell class="px-2 py-1.5 text-right tabular-nums">{qsos}</TableCell>
-                          <TableCell class="px-2 py-1.5 text-right tabular-nums">{points}</TableCell>
-                          <TableCell class="px-2 py-1.5 text-right tabular-nums">{new_mults}</TableCell>
+                          <TableCell numeric=true class="px-2 py-1.5">{qsos}</TableCell>
+                          <TableCell numeric=true class="px-2 py-1.5">{points}</TableCell>
+                          <TableCell numeric=true class="px-2 py-1.5">{new_mults}</TableCell>
                           <TableCell class="hidden px-3 py-1.5 sm:table-cell" aria_hidden=true>
                             <div class=crate::kit::mini_bar_class() style=format!("width:{pct}%")></div>
                           </TableCell>

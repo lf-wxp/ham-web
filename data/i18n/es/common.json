@@ -295,6 +295,11 @@
     "one": "{} pregunta",
     "other": "{} preguntas"
   },
+  "common.loading": "Cargando…",
+  "common.result-count": {
+    "one": "{} resultado",
+    "other": "{} resultados"
+  },
   "common.questions-answered-accuracy": {
     "one": "{} pregunta respondida, precisión {}%",
     "other": "{} preguntas respondidas, precisión {}%"

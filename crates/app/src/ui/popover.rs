@@ -19,7 +19,7 @@
 //!   <div class="relative">
 //!     <button role="combobox" data-state=state on:click=move |_| open.update(|o| *o = !*o)>…</button>
 //!     {move || mounted.get().then(|| view! {
-//!       <div class=popover::OVERLAY data-state=state inert=inert_attr(open) aria-hidden=aria_hidden_attr(open)
+//!       <div class=popover::overlay_class() data-state=state inert=inert_attr(open) aria-hidden=aria_hidden_attr(open)
 //!         on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
 //!       <div role="listbox" data-state=state inert=inert_attr(open) aria-hidden=aria_hidden_attr(open)
 //!         class=popover::panel_base()>
@@ -33,16 +33,30 @@
 
 use leptos::html;
 use leptos::prelude::*;
+use send_wrapper::SendWrapper;
 use wasm_bindgen::JsCast;
+use wasm_bindgen::closure::Closure;
 
 use crate::cn::cn;
 
-/// 点击后关闭弹层的透明遮罩：铺满视口、位于弹层之下（`z-40` < 弹层 `z-50`）。
+/// 点击后关闭弹层的透明遮罩：铺满视口、位于弹层之下。
+///
 /// 遮罩保持透明：像素风里「变暗」只给模态对话框用，下拉是轻量的，不压暗背景。
+///
+/// 两套皮肤的档位不同，所以是函数而不是常量：现代风面板是 `z-50`，遮罩留在 `z-40`；
+/// 像素风面板在 `--z-popover`（75）—— **遮罩必须比面板低**，否则它会盖住选项，
+/// 点什么都只是关掉下拉（把遮罩一起改成 75 时实测红过 `select.spec.ts`）。
 ///
 /// 关闭后遮罩还会在 DOM 里留一个退场动画的时间：`data-[state=closed]:pointer-events-none`
 /// 让它在这段时间里不再吞点击（需要在遮罩上写 `data-state`，见各调用点）。
-pub const OVERLAY: &str = "fixed inset-0 z-40 data-[state=closed]:pointer-events-none";
+#[must_use]
+pub fn overlay_class() -> &'static str {
+  if crate::kit::is_modern_at_mount() {
+    "fixed inset-0 z-40 data-[state=closed]:pointer-events-none"
+  } else {
+    "fixed inset-0 z-[var(--z-modal)] data-[state=closed]:pointer-events-none"
+  }
+}
 
 /// 弹层容器类名（与语言切换下拉逐字一致）：`.pxl-popover` 窗口 + 向下「跳」出的两帧动画。
 ///
@@ -56,8 +70,112 @@ pub fn panel_base() -> &'static str {
   if crate::kit::is_modern_at_mount() {
     "md-popover absolute left-0 top-full mt-2 z-50 max-h-96 min-w-[8rem] w-full overflow-hidden data-[state=closed]:pointer-events-none"
   } else {
-    "pxl-popover absolute left-0 top-full mt-2 z-50 max-h-96 min-w-[8rem] w-full overflow-hidden pxl-enter data-[state=closed]:pointer-events-none"
+    // `fixed` 而不是 `absolute`：`absolute` 会被祖先的 `overflow` 裁掉
+    //（`Dialog` 面板就是 `overflow-hidden`，在它里面打开下拉会少半截），
+    // 而 Tailwind v4 的 `-translate-x-1/2` 走的是独立的 `translate` 属性，
+    // 不创建包含块，所以 `fixed` 仍然相对视口 —— 不需要为此把面板 Portal 到 body。
+    // 具体落位由 [`use_anchored_panel`] 写内联 `left/top/width`，这里不写 `top-full`。
+    "pxl-popover fixed left-0 top-0 z-[var(--z-popover)] max-h-96 min-w-[8rem] overflow-hidden pxl-enter data-[state=closed]:pointer-events-none"
   }
+}
+
+/// 让浮层贴着触发器落位，并在放不下时**翻到上方**。
+///
+/// 返回值写进面板的 `style`（`left/top/width`）。为什么要量而不是用 CSS：
+/// 触发器的位置只有运行时知道，而「下方放不下」是移动端最常见的情形
+/// （表格最后一行、贴底操作栏、390×844 的下半屏）。纯算术部分在
+/// `ham_web_core::panel_place`，带单测。
+///
+/// 每次打开都先把面板挪到 `-9999px`（下拉同时锁死宽度，`fixed` 下 `w-full` 会铺满视口），
+/// 下一帧量到真实高度再落位 —— 否则会先闪一下「贴左上的大面板」，
+/// 日历 / 时间面板再次打开时也会先闪一下上次的位置。
+///
+/// 现代风返回 `None`：面板仍是 `absolute` + CSS 定位，不写 `style` 属性（连空属性也不留）。
+pub fn use_anchored_panel(
+  open: RwSignal<bool>,
+  trigger: NodeRef<html::Button>,
+  panel: NodeRef<html::Div>,
+  // 面板宽度是否跟触发器一致（下拉 `true`；日历 / 时间面板自带固定宽度用 `false`）。
+  match_trigger_width: bool,
+) -> Signal<Option<String>> {
+  // 现代风的下拉仍是 `absolute` + CSS 定位，写内联 `left/top` 会把版式弄乱。
+  if crate::kit::is_modern_at_mount() {
+    return Signal::derive(|| None);
+  }
+  let style = RwSignal::new(String::from("left:-9999px;top:0"));
+  let measure = move || {
+    let (Some(t), Some(p)) = (trigger.get_untracked(), panel.get_untracked()) else {
+      return;
+    };
+    let a = t.get_bounding_client_rect();
+    let r = p.get_bounding_client_rect();
+    let vw = crate::util::document()
+      .document_element()
+      .map_or(0.0, |el| f64::from(el.client_width()));
+    let vh = crate::util::window()
+      .inner_height()
+      .ok()
+      .and_then(|v| v.as_f64())
+      .unwrap_or(0.0);
+    let placed = ham_web_core::panel_place::place(
+      ham_web_core::panel_place::Rect {
+        left: a.left(),
+        top: a.top(),
+        width: a.width(),
+        height: a.height(),
+      },
+      r.width(),
+      r.height(),
+      vw,
+      vh,
+    );
+    let width = if match_trigger_width {
+      format!("width:{:.0}px", a.width().round())
+    } else {
+      String::new()
+    };
+    style.set(format!(
+      "left:{:.0}px;top:{:.0}px;{width}",
+      placed.left.round(),
+      placed.top.round(),
+    ));
+  };
+
+  Effect::new(move |_| {
+    if !open.get() {
+      return;
+    }
+    // 先挪到屏外（下拉同时锁宽度），避免闪一帧旧位置 / 铺满视口的大面板，下一帧再量高落位。
+    match trigger.get_untracked() {
+      Some(t) if match_trigger_width => style.set(format!(
+        "left:-9999px;top:0;width:{:.0}px",
+        t.get_bounding_client_rect().width().round()
+      )),
+      _ => style.set(String::from("left:-9999px;top:0")),
+    }
+    set_timeout(measure, std::time::Duration::from_millis(0));
+  });
+
+  // 跟随页面滚动（含嵌套滚动区）与窗口缩放。`scroll` 不冒泡，必须用捕获阶段。
+  let scroll = Closure::<dyn FnMut(web_sys::Event)>::new(move |_| measure());
+  let _ = crate::util::window().add_event_listener_with_callback_and_bool(
+    "scroll",
+    scroll.as_ref().unchecked_ref(),
+    true,
+  );
+  let resize = window_event_listener(leptos::ev::resize, move |_| measure());
+  let keep = SendWrapper::new(scroll);
+  on_cleanup(move || {
+    resize.remove();
+    let scroll = keep.take();
+    let _ = crate::util::window().remove_event_listener_with_callback_and_bool(
+      "scroll",
+      scroll.as_ref().unchecked_ref(),
+      true,
+    );
+  });
+
+  Signal::derive(move || Some(style.get()))
 }
 
 /// 弹层内单个可选项的类名（与 [`crate::ui::SelectItem`] 逐字一致）：`.pxl-item`，
@@ -72,26 +190,16 @@ pub fn item_base() -> &'static str {
   }
 }
 
-/// 键盘高亮行的额外类名（像素风）。
+/// 下拉选项行的完整类名。
 ///
-/// `.pxl-item` 只有 `:hover` / `:focus` 的底色，而下拉的键盘导航里焦点始终留在触发器上
-/// （用 `aria-activedescendant` 指当前行），这两种状态都不会命中 —— 没有这条，方向键移动是「看不见」的。
-/// 现代风的 `.md-option[data-active="true"]` 自带蓝调浅底，不需要工具类。
-const ITEM_ACTIVE_PIXEL: &str = "data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:border-ink";
-
-/// 下拉选项行的完整类名：[`item_base`] + 键盘高亮（见 [`ITEM_ACTIVE_PIXEL`]）。
-///
-/// 凡是带 `data-active` 的选项行（[`crate::ui::SelectItem`]）都用它，而不是裸的 `item_base()`。
+/// 键盘高亮（焦点留在触发器上、由 `aria-activedescendant` 指当前行）**不再靠工具类**：
+/// `.pxl-item[data-active="true"]` 的底色写在 `style/pixel/controls.css` 里，鼠标悬停与
+/// 键盘导航走同一条规则。以前鼠标走 `:hover`、键盘走 `data-[active=true]:*`，
+/// `:focus` 在 `div[role="option"]` 上根本不会命中 —— 漏传类名就是「方向键看不见」。
+/// 现代风的 `.md-option[data-active="true"]` 同样自带浅底，所以两个分支都不需要额外类。
 #[must_use]
 pub fn item_class() -> String {
-  cn(&[
-    item_base(),
-    if crate::kit::is_modern_at_mount() {
-      ""
-    } else {
-      ITEM_ACTIVE_PIXEL
-    },
-  ])
+  item_base().to_owned()
 }
 
 /// 弹层内「不该影响触发器」的点击：吞掉冒泡与默认行为。

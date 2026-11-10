@@ -136,7 +136,7 @@ pub use confirm::{ConfirmRoot, ConfirmTone, confirm};
 pub use control::{ControlSize, TextValue, control_class};
 pub use date_picker::DatePicker;
 pub use dialog::{Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Sheet};
-pub use field::Field;
+pub use field::{Field, ValidateOn};
 pub use file_drop_zone::FileDropZone;
 pub use file_input::FileInput;
 pub use input::{Input, InputType};
@@ -153,7 +153,10 @@ pub use simple_select::{SelectOption, SimpleSelect};
 pub use slider::Slider;
 pub use stat::Stat;
 pub use switch::Switch;
-pub use table::{Table, TableBody, TableCell, TableDensity, TableHead, TableHeader, TableRow};
+pub use table::{
+  SortOrder, Table, TableBody, TableCell, TableDensity, TableEmpty, TableHead, TableHeader,
+  TableRow,
+};
 pub use tabs::{Tabs, TabsList, TabsPanel, TabsTrigger};
 pub use textarea::Textarea;
 pub use time_picker::TimePicker;

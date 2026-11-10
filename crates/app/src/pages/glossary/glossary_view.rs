@@ -6,7 +6,9 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_query_map;
 
-use crate::components::common::{EmptyState, LoadMore, PageContainer, PageHeader, StickyPanel};
+use crate::components::common::{
+  EmptyState, LoadMore, PageContainer, PageHeader, ResultCount, StickyPanel,
+};
 use crate::components::sidebar_item::SidebarItem;
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
@@ -416,6 +418,14 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
             // 两个一样的数字并排只是占位。
           </div>
 
+          // 筛选结果数改成列表正上方的一行小字（同时是读屏播报的 `role="status"`）：
+          // 搜索 / 分类 / 只看英文缩写任何一项改变，这里都会跟着变。
+          // 词条是编译进来的静态数据，没有「加载中」，不需要 `pending`。
+          <ResultCount
+            count=Signal::derive(move || filtered.with(Vec::len))
+            class="md-muted md-sm mb-3"
+          />
+
           {modern_list}
         </div>
       </div>
@@ -480,6 +490,8 @@ pub(crate) fn GlossaryView(entries: &'static [GlossaryEntry]) -> impl IntoView {
             <Stat label=Signal::derive(move || t("knowledge.term-categories")) value=category_total />
             <Stat label=Signal::derive(move || t("exam.current-filter")) value=Signal::derive(move || filtered.with(Vec::len)) />
           </div>
+          // 筛选改变后播报一句「共 N 条」：`Stat` 里的数字读屏不会自动重念。
+          <ResultCount count=Signal::derive(move || filtered.with(Vec::len)) />
           {list}
         </div>
       </PageContainer>

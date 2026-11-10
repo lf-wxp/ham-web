@@ -61,6 +61,14 @@ pub fn Textarea(
     &class,
   ]);
 
+  // `Field` 的下发（说明 / 错误 id、必填、错误的显示时机），与 `Input` 同一套契约。
+  let field_a11y = use_context::<super::field::FieldA11y>();
+  let invalid = match field_a11y {
+    Some(a) => a.invalid_for(invalid),
+    None => invalid,
+  };
+  let describedby = move || super::field::FieldA11y::describedby_attr(field_a11y, None);
+
   if auto_resize {
     let resize = move |el: web_sys::HtmlTextAreaElement| {
       let style = web_sys::HtmlElement::style(&el);
@@ -91,6 +99,10 @@ pub fn Textarea(
       rows=rows
       placeholder=move || placeholder.as_ref().map(TextValue::get)
       aria-label=move || aria_label.as_ref().map(TextValue::get)
+      aria-describedby=describedby
+      aria-required=move || {
+        field_a11y.map(|a| a.required.get()).unwrap_or(false).then_some("true")
+      }
       aria-invalid=invalid_attr(invalid)
       autofocus=autofocus
       disabled=move || disabled.get()
@@ -98,6 +110,11 @@ pub fn Textarea(
       class=class
       prop:value=move || value.get()
       on:input=move |e| on_change.run(event_target_value(&e))
+      on:blur=move |_| {
+        if let Some(a) = field_a11y {
+          a.mark_touched.run(());
+        }
+      }
     ></textarea>
   }
 }

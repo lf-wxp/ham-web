@@ -27,7 +27,7 @@ pub(super) fn LiveMetric(
           view! {
             <span class="md-live-metric-value">
               <span class="md-skel md-live-metric-skel" aria-hidden="true"></span>
-              <span class="sr-only">{move || t("learning.loading")}</span>
+              <span class="sr-only">{move || t("common.loading")}</span>
             </span>
           }
             .into_any()

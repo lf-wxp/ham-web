@@ -260,6 +260,16 @@ pub fn Input(
     control_class(size, &cn(&[kind.appearance_class(), pad_l, pad_r, &class]))
   };
 
+  // `Field` 的下发：说明 / 错误节点的 id、是否必填、现在是否该显示错误。
+  // 控件自己取用，调用点不用再逐个拼 `aria-describedby`（漏写一次读屏就少一条）。
+  let field_a11y = use_context::<super::field::FieldA11y>();
+  let invalid = match field_a11y {
+    Some(a) => a.invalid_for(invalid),
+    None => invalid,
+  };
+  let describedby =
+    move || super::field::FieldA11y::describedby_attr(field_a11y, aria_describedby.as_deref());
+
   let field = view! {
     <input
       node_ref=node_ref
@@ -271,7 +281,10 @@ pub fn Input(
       inputmode=inputmode
       autocapitalize=autocapitalize
       spellcheck=spellcheck
-      aria-describedby=aria_describedby
+      aria-describedby=describedby
+      aria-required=move || {
+        field_a11y.map(|a| a.required.get()).unwrap_or(false).then_some("true")
+      }
       min=min
       max=max
       step=step
@@ -286,7 +299,13 @@ pub fn Input(
       class=input_class
       prop:value=move || display.get()
       on:focus=move |_| frozen.set(Some(display.get_untracked()))
-      on:blur=move |_| frozen.set(None)
+      on:blur=move |_| {
+        frozen.set(None);
+        // 失焦即「已触碰」：错误提示从这一刻起才出现（见 `Field::validate_on`）。
+        if let Some(a) = field_a11y {
+          a.mark_touched.run(());
+        }
+      }
       on:input=move |e| {
         // 数字框的半截输入（`-`、`1.`）`value` 是空串，别当成「清空」（见 helper 的注释）。
         if kind == InputType::Number && is_incomplete_number(&e) {

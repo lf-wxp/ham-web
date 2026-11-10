@@ -64,6 +64,9 @@ pub fn TimePicker(
   // 面板引用：既作 `node_ref`，也给「焦点移出容器就关闭」的判定用
   // （见 `popover::close_on_focus_out`）。
   let panel_ref = NodeRef::<html::Div>::new();
+  // 落位：面板 `fixed` 定位，放不下时翻到触发器上方（面板自带宽度，不跟触发器）。
+  let trigger_ref = NodeRef::<html::Button>::new();
+  let panel_style = popover::use_anchored_panel(open, trigger_ref, panel_ref, false);
 
   let placeholder = placeholder.unwrap_or_else(|| TextValue::from("HH:MM"));
   // 无障碍名称：优先用调用方给的 `aria_label`，否则回退到占位文案。触发器与弹层各持一份，
@@ -140,7 +143,7 @@ pub fn TimePicker(
         .collect_view();
 
       view! {
-        <div class=popover::OVERLAY data-state=state inert=inert aria-hidden=hidden on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
+        <div class=popover::overlay_class() data-state=state inert=inert aria-hidden=hidden on:click=move |e| { popover::swallow(&e); open.set(false); }></div>
         <div
           role="dialog"
           aria-label=panel_label
@@ -149,6 +152,7 @@ pub fn TimePicker(
           aria-hidden=hidden
           data-slot="time-picker"
           class=popover::panel_class("w-40 p-1")
+          style=move || panel_style.get()
           node_ref=panel_ref
           on:focusout=popover::close_on_focus_out(open, panel_ref)
         >
@@ -167,20 +171,38 @@ pub fn TimePicker(
     })
   };
 
+  // `Field` 的下发：说明 / 错误 id、必填、错误显示时机（与 `Input` 同一套契约）。
+  let field_a11y = use_context::<super::field::FieldA11y>();
+  let invalid = match field_a11y {
+    Some(a) => a.invalid_for(invalid),
+    None => invalid,
+  };
+  let describedby = move || super::field::FieldA11y::describedby_attr(field_a11y, None);
+
   view! {
     <div class="relative">
       <button
+        node_ref=trigger_ref
         type="button"
         role="combobox"
         id=id
         aria-haspopup="dialog"
         aria-expanded=move || open.get().to_string()
         aria-label=move || trigger_label.get()
+        aria-describedby=describedby
+        aria-required=move || {
+          field_a11y.map(|a| a.required.get()).unwrap_or(false).then_some("true")
+        }
         aria-invalid=invalid_attr(invalid)
         data-state=state
         disabled=move || disabled.get()
         class=trigger_class
         on:click=move |_| open.update(|o| *o = !*o)
+        on:blur=move |_| {
+          if let Some(a) = field_a11y {
+            a.mark_touched.run(());
+          }
+        }
       >
         <span style="pointer-events: none;">
           {move || {

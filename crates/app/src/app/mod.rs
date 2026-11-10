@@ -50,7 +50,7 @@ pub fn App() -> impl IntoView {
         // `data-skip-link`：它在 `.md-root` 之外，现代风的焦点环按它单独换（否则键盘用户
         // 按第一下 Tab 看到的是像素虚线环）。
         data-skip-link
-        class="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:text-primary-foreground"
+        class="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[var(--z-top)] focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:text-primary-foreground"
         on:click=|e| {
           e.prevent_default();
           if let Some(main) = crate::util::window()

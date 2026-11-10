@@ -77,7 +77,7 @@ pub fn MobileTabs() -> impl IntoView {
     <nav
       aria-label=move || t("shell.mobile-tabs")
       data-fixed-bottom
-      class="mobile-tabs fixed inset-x-0 bottom-0 z-40 border-t-2 border-ink bg-card xl:hidden"
+      class="mobile-tabs fixed inset-x-0 bottom-0 z-[var(--z-bar)] border-t-2 border-ink bg-card xl:hidden"
       style="padding-bottom: env(safe-area-inset-bottom);"
     >
       <ul class="grid grid-cols-5">

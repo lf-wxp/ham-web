@@ -43,9 +43,80 @@ pub fn navigate(current: Option<usize>, len: usize, nav: Nav) -> Option<usize> {
   })
 }
 
+/// 按前缀跳到匹配项（下拉的 typeahead）。
+///
+/// 长列表（DXCC 实体、工具类型、题库版本有几十上百项）逐项按方向键不现实 ——
+/// 原生 `<select>` 与各桌面工具都支持「连打几个字母跳过去」。
+///
+/// - 不区分大小写；
+/// - 从 `from` 的**下一项**开始找并环形回绕，最后才落到自己（与原生 `<select>` 一致：
+///   连按同一个字母时在「以该字母开头的项」之间轮转）；
+/// - 查询串是同一个字符的重复（`jj`、`444`）时按单个字符匹配：调用方用时间窗口累积按键，
+///   快速连按同一个字母会得到 `jj`，没有这条规则就匹配不到任何项，轮转也就失效了
+///   （原生 `<select>` 同样如此）；
+/// - `query` 为空或没有任何匹配返回 `None`（调用方据此保持原高亮，不要乱跳）。
+#[must_use]
+pub fn typeahead(labels: &[&str], query: &str, from: Option<usize>) -> Option<usize> {
+  let mut needle = query.trim().to_lowercase();
+  if needle.is_empty() || labels.is_empty() {
+    return None;
+  }
+  if let Some(first) = needle.chars().next()
+    && needle.chars().count() > 1
+    && needle.chars().all(|c| c == first)
+  {
+    needle = first.to_string();
+  }
+  let len = labels.len();
+  let start = from.filter(|&i| i < len).map_or(0, |i| (i + 1) % len);
+  (0..len)
+    .map(|offset| (start + offset) % len)
+    .find(|&i| labels[i].to_lowercase().starts_with(&needle))
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn typeahead_jumps_to_the_first_prefix_match_after_the_current_row() {
+    let labels = ["20m", "40m", "80m", "160m"];
+    // 从「还没高亮」开始：落在第一个匹配项。
+    assert_eq!(typeahead(&labels, "4", None), Some(1));
+    // 已经在 40m：从下一项开始环形找，回到自己。
+    assert_eq!(typeahead(&labels, "4", Some(1)), Some(1));
+    // 大小写不敏感。
+    assert_eq!(
+      typeahead(&["Japan", "Jersey", "Kenya"], "je", None),
+      Some(1)
+    );
+  }
+
+  #[test]
+  fn typeahead_rotates_between_items_sharing_the_prefix() {
+    let labels = ["Japan", "Jersey", "Kenya"];
+    assert_eq!(typeahead(&labels, "j", None), Some(0));
+    assert_eq!(typeahead(&labels, "j", Some(0)), Some(1));
+    assert_eq!(typeahead(&labels, "j", Some(1)), Some(0));
+  }
+
+  #[test]
+  fn typeahead_repeated_same_char_keeps_rotating() {
+    // 快速连按 `j`：缓冲累积成 `jj` / `jjj`，仍按单个字符轮转。
+    let labels = ["Japan", "Jersey", "Kenya"];
+    assert_eq!(typeahead(&labels, "jj", Some(0)), Some(1));
+    assert_eq!(typeahead(&labels, "jjj", Some(1)), Some(0));
+    // 不是同一个字符的重复仍是正常前缀：`je` 只命中 Jersey。
+    assert_eq!(typeahead(&labels, "je", Some(1)), Some(1));
+  }
+
+  #[test]
+  fn typeahead_returns_none_when_nothing_matches() {
+    let labels = ["20m", "40m"];
+    assert_eq!(typeahead(&labels, "z", None), None);
+    assert_eq!(typeahead(&labels, "", None), None);
+    assert_eq!(typeahead(&[], "a", None), None);
+  }
 
   #[test]
   fn next_and_prev_wrap_around() {
