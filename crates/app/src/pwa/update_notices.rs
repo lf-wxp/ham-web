@@ -7,6 +7,7 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::{ServiceWorker, ServiceWorkerRegistration, ServiceWorkerState};
 
 use ham_web_core::changelog::{self, Release};
+use ham_web_core::update_prompt::{self, StateChange};
 
 use crate::ui::{Button, Size, Variant};
 use crate::util::{document, now_ms, storage, window};
@@ -21,6 +22,12 @@ const SEEN_KEY: &str = "app:changelog-seen";
 const MAX_ITEMS: usize = 6;
 /// 定期检查新版本的间隔。
 const UPDATE_CHECK_INTERVAL: Duration = Duration::from_secs(60 * 60);
+/// 点「刷新以更新」后，等新版接管页面（`controllerchange`）的最长时间，超时才强制刷新。
+///
+/// 不能取得太短：waiting 的 worker 常被浏览器回收，收到 `SKIP_WAITING` 前要先冷启动、
+/// 执行完整个脚本（含几百项的预缓存清单），慢设备上轻易超过一两秒。在它激活之前就刷新，
+/// 新页面会在 `reg.waiting()` 里再次看到它，于是又弹出同一个提示。
+const ACTIVATE_WAIT: Duration = Duration::from_secs(8);
 
 fn post_skip_waiting(worker: &ServiceWorker) {
   for ty in ["SKIP_WAITING", "skip-waiting"] {
@@ -32,6 +39,30 @@ fn post_skip_waiting(worker: &ServiceWorker) {
 
 fn reload() {
   let _ = window().location().reload();
+}
+
+/// 提示所指的 waiting worker 一旦不再是 `installed`，提示就过时了，该关。
+/// 什么时候不该关（提示已指向更新的 worker、用户正等新版接管）由
+/// [`update_prompt::should_dismiss`] 判定，这里只把浏览器侧的三个事实喂给它。
+fn dismiss_when_settled(
+  worker: &ServiceWorker,
+  shown: StoredValue<Option<ServiceWorker>, LocalStorage>,
+  open: RwSignal<bool>,
+  applying: RwSignal<bool>,
+) {
+  let w = worker.clone();
+  let on_state = Closure::<dyn Fn()>::new(move || {
+    let change = StateChange {
+      is_current_target: shown.with_value(|cur| cur.as_ref() == Some(&w)),
+      still_installed: w.state() == ServiceWorkerState::Installed,
+      user_applying: applying.get_untracked(),
+    };
+    if update_prompt::should_dismiss(change) {
+      open.set(false);
+    }
+  });
+  let _ = worker.add_event_listener_with_callback("statechange", on_state.as_ref().unchecked_ref());
+  on_state.forget();
 }
 
 /// 新版本的更新内容：拉取新部署的 `/changelog.json`，取比当前运行版本新的条目。
@@ -59,6 +90,8 @@ pub fn UpdateNotices() -> impl IntoView {
   // 词典不会自己到，组件体里挂一次拉取（切语言后由 Effect 重新判断）。
   data::use_knowledge_i18n();
   let open = RwSignal::new(false);
+  // 用户已点「刷新以更新」、正在等新版接管页面：按钮转圈，提示不因 worker 激活而被关掉。
+  let applying = RwSignal::new(false);
   let new_items = RwSignal::new(Vec::<String>::new());
   let new_date = RwSignal::new(String::new());
   let waiting: StoredValue<Option<ServiceWorker>, LocalStorage> = StoredValue::new_local(None);
@@ -102,7 +135,10 @@ pub fn UpdateNotices() -> impl IntoView {
 
   let has_controller = || window().navigator().service_worker().controller().is_some();
   let show = move |worker: ServiceWorker| {
+    dismiss_when_settled(&worker, waiting, open, applying);
     waiting.set_value(Some(worker));
+    // 出现了新的 waiting worker（含更新途中又部署了一版）：重新开始一轮，旧的「更新中」作废。
+    applying.set(false);
     open.set(true);
     leptos::task::spawn_local(async move {
       let (date, items) = fetch_new_items().await;
@@ -169,9 +205,14 @@ pub fn UpdateNotices() -> impl IntoView {
   }
 
   let update_now = move |_| {
+    // 已经在等新版接管：再点一次只会重复发 `SKIP_WAITING` 并叠一个兜底定时器。
+    if applying.get_untracked() {
+      return;
+    }
     let Some(worker) = waiting.get_value() else {
       return;
     };
+    applying.set(true);
     // 更新内容已经在这里看过，刷新后不再重复展示
     new_date.with_untracked(|d| {
       if !d.is_empty() {
@@ -183,7 +224,8 @@ pub fn UpdateNotices() -> impl IntoView {
     let _ =
       container.add_event_listener_with_callback("controllerchange", on_change.unchecked_ref());
     post_skip_waiting(&worker);
-    set_timeout(reload, Duration::from_millis(1500));
+    // 正常由 `controllerchange` 触发刷新；这里只是兜底（个别浏览器不派发该事件）。
+    set_timeout(reload, ACTIVATE_WAIT);
   };
 
   view! {
@@ -200,6 +242,7 @@ pub fn UpdateNotices() -> impl IntoView {
           <Button
             variant=Variant::Ghost
             size=Size::Sm
+            disabled=applying
             on_click=Callback::new(move |_| open.set(false))
           >
             {move || t("settings.later")}
@@ -207,6 +250,7 @@ pub fn UpdateNotices() -> impl IntoView {
           <Button
             variant=Variant::Default
             size=Size::Sm
+            loading=applying
             on_click=Callback::new(move |_| update_now(()))
           >
             {move || t("settings.refresh-to-update")}

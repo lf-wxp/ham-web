@@ -245,6 +245,24 @@ test.describe("现代风断点", () => {
     expect(table!.scrollable).toBe("auto");
     // 520 = 最宽的列组在 320 视口下的可读下限（见 `kit.css` 的 `.md-table` 最小宽度）。
     expect(table!.min).toBeGreaterThanOrEqual(520);
+
+    // 溢出的滚动容器必须键盘可达（axe: scrollable-region-focusable，WCAG 2.1.1）：
+    // 逐个量，不抽样 —— `/reference` 上有手写表与 `TableSection` 两类来源，漏一类就是回归。
+    const regions = await page.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLElement>(".md-table-scroll")).map((el) => ({
+        overflow: el.scrollWidth > el.clientWidth,
+        tabindex: el.getAttribute("tabindex"),
+        role: el.getAttribute("role"),
+        label: el.getAttribute("aria-label"),
+      })),
+    );
+    const overflowing = regions.filter((r) => r.overflow);
+    expect(overflowing.length, "320px 下至少应有一张表溢出，否则这条断言什么也没测").toBeGreaterThan(0);
+    for (const r of overflowing) {
+      expect(r.tabindex).toBe("0");
+      expect(r.role).toBe("region");
+      expect(r.label, "region 必须有可访问名").toBeTruthy();
+    }
   });
 
   // 320 下顶栏右侧的余量曾是 0，任何一个新入口都会立刻溢出（360 档收掉品牌文字，见 docs/ui/modern.md §3）。

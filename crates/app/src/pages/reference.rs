@@ -12,7 +12,9 @@ use crate::components::common::{PageContainer, PageHeader, TableSection};
 use crate::data;
 use crate::data::kt_tracked;
 use crate::i18n::{t, tf};
-use crate::ui::{Chip, ChipGroup, Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
+use crate::ui::{
+  Chip, ChipGroup, ScrollRegion, Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+};
 use crate::util::set_title;
 
 #[component]
@@ -45,7 +47,10 @@ pub fn ReferencePage() -> impl IntoView {
           <div class="md-article">
             <section class="md-panel">
               <h2 class="md-panel-title">{move || t("exam.operator-licence-classes-and")}</h2>
-              <div class="md-table-scroll">
+              <ScrollRegion
+                class="md-table-scroll"
+                aria_label=Signal::derive(move || t("exam.operator-licence-classes-and"))
+              >
                 <table class="md-table">
                   <thead>
                     <tr>
@@ -71,7 +76,7 @@ pub fn ReferencePage() -> impl IntoView {
                       .collect_view()}
                   </tbody>
                 </table>
-              </div>
+              </ScrollRegion>
             </section>
 
             <section class="md-panel">
@@ -162,7 +167,10 @@ pub fn ReferencePage() -> impl IntoView {
 
             <section class="md-panel">
               <h2 class="md-panel-title">{move || t("exam.emission-designators")}</h2>
-              <div class="md-table-scroll">
+              <ScrollRegion
+                class="md-table-scroll"
+                aria_label=Signal::derive(move || t("exam.emission-designators"))
+              >
                 <table class="md-table">
                   <thead>
                     <tr>
@@ -186,7 +194,7 @@ pub fn ReferencePage() -> impl IntoView {
                       .collect_view()}
                   </tbody>
                 </table>
-              </div>
+              </ScrollRegion>
             </section>
 
             <TableSection

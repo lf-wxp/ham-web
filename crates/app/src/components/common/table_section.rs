@@ -4,7 +4,7 @@ use leptos::prelude::*;
 
 use super::section_shell::{SectionShell, section_text};
 use crate::i18n::t;
-use crate::ui::{Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
+use crate::ui::{ScrollRegion, Table, TableBody, TableCell, TableHead, TableHeader, TableRow};
 
 /// 三列表格：第一列为条目标题（强调），后两列为说明（次要色）。
 ///
@@ -25,7 +25,12 @@ pub fn TableSection(
   let title = StoredValue::new(title);
   let body = if crate::kit::is_modern_at_mount() {
     view! {
-      <div class="md-table-scroll">
+      // 现代风的裸表格版式由 `.md-panel table:not(.md-table)` 承担，不走 `Table`；
+      // 溢出时键盘可达（`tabindex` / `role=region`）交给与 `Table` 同一套检测的 `ScrollRegion`。
+      <ScrollRegion
+        class="md-table-scroll"
+        aria_label=Signal::derive(move || t(&title.get_value()))
+      >
         <table class=class aria-label=move || t(&title.get_value())>
           <thead>
             <tr>
@@ -50,7 +55,7 @@ pub fn TableSection(
               .collect_view()}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
     }
     .into_any()
   } else {

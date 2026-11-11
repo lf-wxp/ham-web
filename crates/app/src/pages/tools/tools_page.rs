@@ -10,6 +10,7 @@ use super::antenna_length::AntennaLength;
 use super::antenna_matcher::AntennaMatcher;
 use super::aprs_codec::AprsCodec;
 use super::attenuator_calculator::AttenuatorCalculator;
+use super::atu_synth::AtuSynth;
 use super::battery_runtime::BatteryRuntime;
 use super::callsign_lookup::CallsignLookup;
 use super::capacitor_code::CapacitorCode;
@@ -58,6 +59,7 @@ use super::rf_exposure::RfExposure;
 use super::smd_resistor_code::SmdResistorCode;
 use super::smith_chart::SmithChart;
 use super::soft_tnc::SoftTnc;
+use super::station_link::StationLink;
 use super::stub_match::StubMatch;
 use super::swr_converter::SwrConverter;
 use super::tone_squelch::ToneSquelch;
@@ -112,6 +114,7 @@ const TOOL_NAV: &[(&str, &str)] = &[
   // 与正文章节标题同一条词条：目录里显示成完整标题（如「EIRP 有效辐射功率」）。
   ("eirp", "tools.eirp-effective-radiated-power"),
   ("link-budget", "tools.link-budget"),
+  ("station-link", "tools.station-link"),
   ("lora", "tools.lora"),
   ("radiogram", "tools.radiogram"),
   ("receiver-sensitivity", "tools.receiver-sensitivity-toc"),
@@ -127,6 +130,7 @@ const TOOL_NAV: &[(&str, &str)] = &[
   ("utc-clock", "tools.utc-time-heading"),
   ("tx-line", "tools.transmission-line-impedance"),
   ("stub-match", "tools.stub-match"),
+  ("atu-synth", "tools.atu-synth"),
   ("toroid-winding", "tools.toroid-winding"),
   ("common-mode-choke", "tools.common-mode-choke"),
   ("magnetic-loop", "tools.magloop"),
@@ -314,6 +318,8 @@ pub fn ToolsPage() -> impl IntoView {
 
             <ToolSection id="link-budget" title="tools.link-budget" description="tools.eirp-path-loss-receive"><LinkBudgetCalculator /></ToolSection>
 
+            <ToolSection id="station-link" title="tools.station-link" description="tools.station-link-description"><StationLink /></ToolSection>
+
             <ToolSection id="lora" title="tools.lora" description="tools.lora-description"><LoraCalculator /></ToolSection>
 
             <ToolSection id="radiogram" title="tools.radiogram" description="tools.radiogram-description"><RadiogramGenerator /></ToolSection>
@@ -343,6 +349,8 @@ pub fn ToolsPage() -> impl IntoView {
             <ToolSection id="tx-line" title="tools.transmission-line-impedance" description="tools.characteristic-impedance-of-coax"><TxLine /></ToolSection>
 
             <ToolSection id="stub-match" title="tools.stub-match" description="tools.stub-match-description"><StubMatch /></ToolSection>
+
+            <ToolSection id="atu-synth" title="tools.atu-synth" description="tools.atu-synth-description"><AtuSynth /></ToolSection>
 
             <ToolSection id="toroid-winding" title="tools.toroid-winding" description="tools.toroid-winding-description"><ToroidWinding /></ToolSection>
 

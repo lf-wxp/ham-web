@@ -261,6 +261,7 @@
 | 进度、分隔线、统计块、标签文字 | `Progress` / `Separator` / `Stat` / `Label` | 手写 |
 | 数据表格 | `Table` + `TableHead` / `TableBody` / `TableRow` / `TableHeader` / `TableCell` | 手写 `<table>`（2026-10-15 起收口） |
 | 表格为空 | `TableEmpty`（跨列一行提示） | 各页手写 `<tr><td colspan=…>暂无数据</td></tr>` |
+| 裸 `<table>` 的横向滚动容器（现代风知识页 / 速查页，不走 `Table` 的那类） | `ScrollRegion`（溢出时自动 `tabindex` + `role="region"`；第一个子元素必须是 `<table>`） | 手写 `<div class="md-table-scroll">`（溢出时键盘不可达，axe `scrollable-region-focusable`） |
 | 可排序的表头 | `TableHeader` 的 `sort`（输出 `aria-sort`）+ 自己的排序按钮 | 只换箭头图标、不给 `aria-sort` |
 | 数字列（分数 / 距离 / 次数） | `TableCell` 的 `numeric=true`（右对齐 + `tabular-nums`） | 靠调用点记得写 `text-right tabular-nums` |
 | 列表分页 | `Pagination` | 手写页码 / `.slice()` 截断 |

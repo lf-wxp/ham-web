@@ -154,8 +154,8 @@ pub use slider::Slider;
 pub use stat::Stat;
 pub use switch::Switch;
 pub use table::{
-  SortOrder, Table, TableBody, TableCell, TableDensity, TableEmpty, TableHead, TableHeader,
-  TableRow,
+  ScrollRegion, SortOrder, Table, TableBody, TableCell, TableDensity, TableEmpty, TableHead,
+  TableHeader, TableRow,
 };
 pub use tabs::{Tabs, TabsList, TabsPanel, TabsTrigger};
 pub use textarea::Textarea;

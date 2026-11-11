@@ -97,7 +97,7 @@ cargo make setup          # 安装 wasm32 目标、Trunk 与 wasm-bindgen CLI
 
 ### 工具与实时数据
 
-62 项计算器（`/tools`）、太阳活动与空间天气、DX 热点与 DXCC 稀有度、卫星过境与多普勒修正、PSK Reporter / RBN 接收报告、点对点 MUF 与可靠度矩阵、DXCC / 网格地图、中继台 → CHIRP CSV、数据备份与合并导入。
+64 项计算器（`/tools`）、太阳活动与空间天气、DX 热点与 DXCC 稀有度、卫星过境与多普勒修正、PSK Reporter / RBN 接收报告、点对点 MUF 与可靠度矩阵、DXCC / 网格地图、中继台 → CHIRP CSV、数据备份与合并导入。
 
 ### 天线与射频设计
 

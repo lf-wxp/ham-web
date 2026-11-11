@@ -101,6 +101,10 @@ ls target/dev-dist/                                          # 正常应有 data
 
 > 本地逐页调试用 `trunk serve` 方便，但要**先确认资产完整**；跑整批回归或提交前请用 `cargo make e2e`（release 构建 + Playwright 自带服务器，口径与 CI 一致）。
 
+**⑥ `updates.spec.ts` 的 waiting worker 用例只在 release 产物上成立**：「发现新版本」提示的 Service Worker 接线是 release-only（`!cfg!(debug_assertions)`），
+`trunk serve` 的 dev 产物里那两条用例的提示永远不会出现，会在等 `发现新版本` 处超时 —— 不是回归，换 release 复核。用例用 `EventTarget` 做的假 Service Worker 容器喂数据（`seedWaitingWorker`），
+所以它验的是页面这一侧的接线与忙态，**不验真实浏览器里 worker 的激活时序**（8 秒兜底的时长因此没有自动化覆盖）。
+
 `smoke.spec.ts` 还会把 Leptos 的「在跟踪上下文之外读信号」告警当失败（规则见 [`docs/ui/decisions.md`](../ui/decisions.md) §7）。
 这条告警只在 dev 构建（`debug_assertions`）里发声，`cargo make e2e` 的 release 产物下**恒不出现** ——
 release 全绿不代表这条验过；改了界面派发，请在 `trunk serve` 上跑一遍冒烟。也别把它当成唯一防线：

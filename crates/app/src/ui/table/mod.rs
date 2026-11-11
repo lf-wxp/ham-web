@@ -32,6 +32,8 @@
 //! </Table>
 //! ```
 
+mod scroll_overflow;
+mod scroll_region;
 mod shared;
 mod table_body;
 mod table_cell;
@@ -41,6 +43,7 @@ mod table_header;
 mod table_root;
 mod table_row;
 
+pub use scroll_region::ScrollRegion;
 pub use shared::TableDensity;
 pub use table_body::TableBody;
 pub use table_cell::TableCell;

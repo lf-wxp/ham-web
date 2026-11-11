@@ -7,7 +7,7 @@
   - 题库 JSON（`/questions/*.json`）：**NetworkFirst**，离线回退缓存（最多 10 条，7 天）；
   - 题目图片（`/questions/images/*`）：**StaleWhileRevalidate**（最多 300 张，30 天）；
   - 页面导航：离线时回退到预缓存的 `index.html`；其余静态资源预缓存；
-- 部署新版本后，页面可见时与此后每小时检查一次更新；发现新 Service Worker 时在右下角提示「发现新版本」并列出更新内容（读取 `/changelog.json`），点击「刷新以更新」即切换到新版。提示不遮挡页面，考试中可以先忽略；
+- 部署新版本后，页面可见时与此后每小时检查一次更新；发现新 Service Worker 时在右下角提示「发现新版本」并列出更新内容（读取 `/changelog.json`），点击「刷新以更新」后，等新版 Service Worker 接管页面（`controllerchange`）再刷新，最长等 8 秒兜底。不能点完就刷：waiting 的 worker 常被回收，冷启动处理 `SKIP_WAITING` 可能要好几秒，抢在它激活前刷新会让新页面又在 `reg.waiting` 里看到它、再弹一次；等待期间「刷新以更新」按钮转圈（`aria-busy`）、「稍后」置灰，提示留在页面上，不因 worker 开始激活而被关掉；只有提示所指的 worker 自己离开 `installed`（且用户没点更新）、或被更新的版本顶替时才自动关（判定见 `core/update_prompt.rs`）。提示不遮挡页面，考试中可以先忽略；
 - 刷新后首次打开会显示一次「已更新到新版本」及更新内容；首次访问的用户不会看到；
 - 更新内容写在 `crates/core/src/changelog.rs` 的 `CHANGELOG` 中（新版本插到最前面，日期 + 条目），`postbuild` 会导出为 `dist/changelog.json`；
 - `postbuild` 还会为每个题库计算内容哈希，写入 `dist/questions/config.json` 的 `banks.*.rev`；前端请求题库时带上 `?v=<rev>`，题库内容变化后一定会重新下载。前端记录上次看到的题目摘要，题库变化时提示「题库已更新：修改 N 题，新增 N 题…」；

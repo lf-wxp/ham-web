@@ -462,8 +462,8 @@ kit::table_cell_class("align-top") // 现代：只有 extra / 像素：border px
 - 装饰性元素（大号序号、分组计数）也要过对比度 —— 它们是文字节点。
 - 图标按钮必须有 `aria-label`；`aria-label` 的文案要**包含**可见文字（`label-content-name-mismatch`），分隔用空格（`搜索 /`）：
   全角括号的 `搜索（/）` 在 axe 里仍判不匹配。
-- **无 role 的 `div` 不能挂 `aria-label`**（axe `aria-prohibited-attr`）：`ui::Table` 的滚动容器只有调用方明确传了 `role` 才带名字，
-  否则名字留给内层 `<table>`。
+- **无 role 的 `div` 不能挂 `aria-label`**（axe `aria-prohibited-attr`）：`ui::Table` 与 `ui::ScrollRegion` 的滚动容器只在**有区域语义**时才带名字
+  （溢出可滚而自动得到 `role="region"`，或调用方明确传了 `role`），否则名字留给内层 `<table>`。
 - `<main>` 之外的固定条（考试 / 练习底栏、`BottomBar`）要写 `role="region"` 与名称（axe 的 `region` 规则：页面内容都应在地标内）。
 - **axe 的「零违规」不覆盖渐变底、背景图与伪元素上的文字**：这类节点只进 `incomplete`（需人工复核），不算 violation，
   迁移时曾有 1272 处。`.md-quiz-score .md-mono` 就是人工按「向上找第一个实色祖先、再做 alpha 合成」估算后才发现只有 3.29:1

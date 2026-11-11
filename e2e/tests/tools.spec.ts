@@ -281,6 +281,91 @@ test("小工具：单短截线匹配给出接入点与短截线长度", async ({
   await expect(section.getByText("纯电抗负载无法用无耗短截线匹配。")).toBeVisible();
 });
 
+test("小工具：ATU 覆盖综合逐波段判定 Pi / T 网络能否兜住负载区域", async ({ page }) => {
+  await page.goto("/tools#atu-synth");
+  const section = tool(page, "atu-synth");
+  await expect(section).toBeVisible();
+  // 行的可访问名就是「波段 覆盖 C下限 L下限」，按名字开头定位，不依赖单元格间的空白。
+  const row = (band: string) =>
+    section
+      .getByRole("table", { name: "各波段的覆盖情况" })
+      .getByRole("row", { name: new RegExp(`^${band}\\b`) });
+
+  // 默认 Pi：R 10–500 Ω、X −200…+200 Ω（63 个负载点），C 10–500 pF、L 0.3–30 μH。
+  // 期望值来自独立的 Python 实现（与 `crates/core/src/atu_synth.rs` 的单测同一组）：
+  // 160 m 只覆盖 12 点、C 必要下限 3536.8 pF；20 m 覆盖 59 点；6 m 覆盖 46 点。
+  await expect(row("160m")).toContainText("12 / 63");
+  await expect(row("160m")).toContainText("3536.8");
+  await expect(row("20m")).toContainText("59 / 63");
+  await expect(row("20m")).toContainText("454.7");
+  await expect(row("6m")).toContainText("46 / 63");
+
+  // 换成 T 高通：低频段 63 点全覆盖，6 m 只有 49 点（电容下限 10 pF 挡住了）。
+  await section.getByRole("radio", { name: /T 高通/ }).click();
+  await expect(row("160m")).toContainText("63 / 63");
+  await expect(row("160m")).toContainText("125.1");
+  await expect(row("6m")).toContainText("49 / 63");
+
+  // 放宽元件范围后 6 m 也能全覆盖：电容下限放到 4 pF。
+  await section.getByLabel("电容下限（pF）").fill("4");
+  await expect(row("6m")).toContainText("63 / 63");
+
+  // 范围不合法（电阻上限小于下限）：给出提示、不出表。
+  await section.getByLabel("负载电阻上限 R（Ω）").fill("5");
+  await expect(section.getByText(/请输入有效的阻抗范围/)).toBeVisible();
+  await expect(section.getByRole("table", { name: "各波段的覆盖情况" })).toHaveCount(0);
+});
+
+test("小工具：台站链路预算给出余量、可达距离与回收潜力排名", async ({ page }) => {
+  await page.goto("/tools#station-link");
+  const section = tool(page, "station-link");
+  await expect(section).toBeVisible();
+  const table = section.getByRole("table", { name: "各环节单独做到理想后的回收潜力" });
+  const firstRow = table.getByRole("row").nth(1);
+  const rowOf = (name: string) => table.getByRole("row", { name: new RegExp(`^${name}`) });
+
+  // 默认：145.5 MHz、200 km、5 W、RG-213 各 10 m、增益 3 / 3 dBi、附加损耗 1 dB、NF 2 dB、
+  // Fa = 0、12.5 kHz、所需 SNR 12 dB。期望值来自独立的 Python 原型（噪声用逐级功率累加，
+  // 不共用 Rust 里的公式；RG-213 的 √f 插值按 `feedline.rs` 的参考点另算）：
+  //   单段馈线 1.03 dB，余量 37.24 dB，到达 SNR 49.24 dB。
+  await expect(section.getByText("余量 37.24 dB：到达 SNR 49.24 dB，所需 SNR 为 12.00 dB")).toBeVisible();
+  await expect(section.getByText("馈线损耗：发射 1.03 dB · 接收 1.03 dB")).toBeVisible();
+  // 只有热噪声：外部噪声一点可回收的都没有，接收链的损耗一比一。NF 2 dB 比单段馈线 1.03 dB 大，排第一。
+  await expect(section.getByText(/超出热噪声的部分：外部噪声占 0\.0%，接收链（馈线 \+ 接收机）占 100\.0%/)).toBeVisible();
+  await expect(firstRow).toContainText("接收机噪声系数");
+  await expect(firstRow).toContainText("2.00");
+  await expect(rowOf("外部噪声")).toContainText("0.00");
+  await expect(rowOf("接收馈线损耗")).toContainText("1.03");
+
+  // 外部噪声拉到 40 dB（嘈杂的 HF 环境）：噪声几乎全部来自外部（99.99%），排名翻转 ——
+  // 外部噪声单独做到理想可多出 36.97 dB，接收馈线与接收机 NF 合起来只剩 0.0005 dB 量级，
+  // 而发射馈线与附加损耗不进噪声，仍是一比一。余量只剩 0.27 dB。
+  await section.getByLabel("外部噪声 Fa（dB）").fill("40");
+  await expect(section.getByText(/外部噪声占 99\.99?%|外部噪声占 100\.0%/)).toBeVisible();
+  await expect(firstRow).toContainText("外部噪声");
+  await expect(firstRow).toContainText("36.97");
+  await expect(rowOf("接收馈线损耗")).toContainText("0.00");
+  await expect(rowOf("接收机噪声系数")).toContainText("0.00");
+  await expect(rowOf("发射馈线损耗")).toContainText("1.03");
+  await expect(section.getByText(/^余量 0\.27 dB/)).toBeVisible();
+
+  // 把所需 SNR 提到远高于到达值：给出「不够，差 … dB」。
+  await section.getByLabel("所需 SNR（dB）").fill("200");
+  await expect(section.getByText(/^不够，差 \d+\.\d\d dB/)).toBeVisible();
+
+  // 距离缩到 10 m（145.5 MHz 下约 5 个波长，不足 10 个）：落入近场，给出提示而不是悄悄套自由空间公式；
+  // 拉回 200 km 提示消失。
+  await section.getByLabel("距离（km）").fill("0.01");
+  await expect(section.getByText(/距离不足 10 个波长（20\.\d\d m）：已落入近场/)).toBeVisible();
+  await section.getByLabel("距离（km）").fill("200");
+  await expect(section.getByText(/已落入近场/)).toHaveCount(0);
+
+  // 输入不合法（负的馈线长度）：给出提示、不出表。
+  await section.getByLabel("发射馈线长度（m）").fill("-5");
+  await expect(section.getByText(/^请输入有效的数值/)).toBeVisible();
+  await expect(table).toHaveCount(0);
+});
+
 test("小工具：磁环小环天线估算电感 / 效率 / Q / 调谐电容", async ({ page }) => {
   await page.goto("/tools#magnetic-loop");
   const section = tool(page, "magnetic-loop");
