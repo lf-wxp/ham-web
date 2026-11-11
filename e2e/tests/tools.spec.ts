@@ -187,6 +187,53 @@ test("小工具：磁环绕线由目标电感反推匝数，向上取整并给�
   await expect(section.getByText(/请输入有效的 AL/)).toBeVisible();
 });
 
+/** 共模扼流表里某个波段的一行：`[波段, 频率, |Z|, R, X, 电阻占比, 插损]`。 */
+async function chokeRow(section: import("@playwright/test").Locator, band: string) {
+  const row = section.getByRole("row").filter({ has: section.page().getByRole("cell", { name: band, exact: true }) });
+  return row.getByRole("cell").allTextContents();
+}
+
+// 期望值来自独立 Python 脚本（自带对数插值，不复用页面代码），复磁导率取自 Fair-Rite 官方 CSV：
+// FT-240-43（5943003801）、10 匝、50 Ω 回路，40 m 中心 7.1 MHz。
+test("小工具：共模扼流圈按官方复磁导率给出各波段阻抗与插损，换材料 / 匝数 / 回路都会变", async ({ page }) => {
+  await page.goto("/tools#common-mode-choke");
+  const section = tool(page, "common-mode-choke");
+  await expect(section).toBeVisible();
+
+  // 默认 FT-240-43、10 匝、50 Ω：160 m 到 6 m 共 11 个波段。
+  await expect(section.getByRole("status")).toContainText("5943003801 · 43 号材料");
+  await expect(section.getByRole("table", { name: "共模扼流各波段阻抗与插入损耗" }).getByRole("row")).toHaveCount(12); // 表头 + 11
+  await expect.poll(() => chokeRow(section, "40m")).toEqual(["40m", "7.10", "3408.2", "2410.2", "2409.8", "71", "36.76"]);
+  await expect.poll(() => chokeRow(section, "20m")).toEqual(["20m", "14.18", "4486.5", "3552.8", "2739.6", "79", "39.14"]);
+
+  // 换成同尺寸的 61 号材料：20 m 几乎是纯电感（电阻占比 2%），阻抗也小得多。
+  await section.getByRole("combobox", { name: "扼流磁环" }).click();
+  await page.getByRole("option", { name: /5961003801/ }).click();
+  await expect.poll(() => chokeRow(section, "20m")).toEqual(["20m", "14.18", "1636.6", "39.01", "1636.2", "2", "30.31"]);
+
+  // 回到 43 号、改成 5 匝并把回路阻抗调到 200 Ω：阻抗按匝数平方缩放（10 匝 → 5 匝是 1/4），插损随回路变小。
+  await section.getByRole("combobox", { name: "扼流磁环" }).click();
+  await page.getByRole("option", { name: /5943003801/ }).click();
+  await section.getByLabel("穿孔匝数").fill("5");
+  await section.getByLabel("共模回路阻抗 (Ω)").fill("200");
+  await expect.poll(() => chokeRow(section, "20m")).toEqual(["20m", "14.18", "1121.6", "888.21", "684.91", "79", "16.16"]);
+
+  // 不合法的匝数：给一句话，不画一张全是 NaN 的表。
+  await section.getByLabel("穿孔匝数").fill("0");
+  await expect(section.getByRole("status")).toContainText("匝数要是 1 到 100 的整数");
+  await expect(section.getByRole("table")).toHaveCount(0);
+
+  // 穿孔次数只能是 1–100 的整数：小数、超限、极端大数都不画表，也不出现 inf / NaN。
+  for (const bad of ["2.5", "101", "1e200"]) {
+    await section.getByLabel("穿孔匝数").fill(bad);
+    await expect(section.getByRole("status"), bad).toContainText("匝数要是 1 到 100 的整数");
+    await expect(section.getByRole("table"), bad).toHaveCount(0);
+  }
+  await section.getByLabel("穿孔匝数").fill("100");
+  await expect(section.getByRole("table", { name: "共模扼流各波段阻抗与插入损耗" })).toBeVisible();
+  await expect(section.getByRole("table")).not.toContainText(/NaN|inf/i);
+});
+
 test("小工具：SMD 电阻与瓷片电容丝印代码解码", async ({ page }) => {
   await page.goto("/tools#smd-resistor");
 
@@ -351,6 +398,24 @@ test("小工具：数字模式编码可导出基带 WAV", async ({ page }) => {
   const hellPath = await hell.path();
   expect(hellPath).not.toBeNull();
   expect((await stat(hellPath as string)).size).toBeGreaterThan(2000);
+
+  // FT8：整个 15 秒时隙，12 kHz × 15 s × 2 字节 + 44 字节 WAV 头，长度是钉死的。
+  const dl7 = page.waitForEvent("download");
+  await section.getByRole("button", { name: "下载 FT8 WAV" }).click();
+  const ft8 = await dl7;
+  expect(ft8.suggestedFilename()).toBe("ft8.wav");
+  const ft8Path = await ft8.path();
+  expect(ft8Path).not.toBeNull();
+  expect((await stat(ft8Path as string)).size).toBe(44 + 15 * 12000 * 2);
+});
+
+test("小工具：FT8 发端拒绝无法编码的报文", async ({ page }) => {
+  await page.goto("/tools#mode-encoder");
+  const section = tool(page, "mode-encoder");
+  // 认不出标准格式就按自由文本，超过 13 个字符编不进 71 位。
+  await section.getByLabel("FT8 发端报文").fill("THIS IS WAY TOO LONG");
+  await section.getByRole("button", { name: "下载 FT8 WAV" }).click();
+  await expect(page.getByText(/报文无法编码/)).toBeVisible();
 });
 
 test("小工具：WSPR 发端拒绝非法呼号 / 网格", async ({ page }) => {

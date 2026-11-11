@@ -9,9 +9,14 @@ import { expect, test } from "./fixtures";
  * 2. 没有未捕获的 JS 异常（内核差异最常见的表现就是这里）；
  * 3. 三维方向图在 WebGL2 不可用时走 SVG 回退。
  *
- * **状态：只在 chromium 上通过过（基线）。** 目标内核还没跑——本机缓存里的
- * firefox / webkit 与当前 Playwright 版本不匹配，需要先 `npx playwright install firefox webkit`。
- * 所以这两个 project 默认关闭，用 `E2E_CROSS=1 npx playwright test --project=firefox --project=webkit` 启用。
+ * **状态（2026-11-10，dev 构建）**：
+ * - chromium：基线通过；
+ * - **WebKit（playwright webkit-2370）：2 个用例全部通过**；
+ * - **Firefox：未验证。** 本机缓存的 firefox-1555 与当前 Playwright 版本匹配，但二进制起不来 ——
+ *   连 Playwright 之外直接 `firefox --headless -profile <目录>` 都报 `Could not find profile folder`，
+ *   所以这是本机环境问题，不是站点问题，也不是用例问题。换一台机器 / 终端再跑才算数。
+ *
+ * 这两个 project 默认关闭，用 `E2E_CROSS=1 npx playwright test --project=firefox --project=webkit` 启用。
  * 不要把「用例存在」当成「已经验证」。
  */
 

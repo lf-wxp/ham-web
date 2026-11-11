@@ -214,6 +214,6 @@ pub(super) fn ToroidWinding() -> impl IntoView {
 }
 
 /// 「61 × 35.55 × 12.7 mm」；自定义磁环没有尺寸。
-fn part_size(c: &Core) -> String {
+pub(super) fn part_size(c: &Core) -> String {
   format!("{} × {} × {} mm", c.od_mm, c.id_mm, c.height_mm)
 }

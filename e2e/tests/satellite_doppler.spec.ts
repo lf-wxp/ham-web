@@ -742,6 +742,37 @@ test("线性转发器：非反相的 AO-7 A 上下行同向（下行 +1 kHz，�
   await expect(p.getByText("下行 29.451000 MHz ↔ 上行 145.901000 MHz")).toBeVisible();
 });
 
+// JO-97（JY1Sat）与 TO-108（CAS-6）的通带用 IARU 频率协调页当第二来源核对过（见 `sat_transponder.rs` 模块头）。
+// 这里钉死：选中后带出各自的 NORAD、通带与中心点映射，且反相时下行 +1 kHz 上行 −1 kHz。
+for (const [name, norad, passband, pair, moved] of [
+  [
+    "JO-97",
+    "43803",
+    /通带：上行 435\.100000 – 435\.120000 MHz，下行 145\.855000 – 145\.875000 MHz（反相）/,
+    "下行 145.865000 MHz ↔ 上行 435.110000 MHz",
+    "下行 145.866000 MHz ↔ 上行 435.109000 MHz",
+  ],
+  [
+    "TO-108",
+    "44881",
+    /通带：上行 435\.270000 – 435\.290000 MHz，下行 145\.915000 – 145\.935000 MHz（反相）/,
+    "下行 145.925000 MHz ↔ 上行 435.280000 MHz",
+    "下行 145.926000 MHz ↔ 上行 435.279000 MHz",
+  ],
+] as const) {
+  test(`线性转发器 ${name}：带出 NORAD ${norad}、通带与反相映射`, async ({ page }) => {
+    const p = await connectedAt(page, 100);
+    await p.getByRole("radio", { name: "线性转发器（上下行联动）" }).click();
+    await p.getByRole("combobox", { name: "转发器", exact: true }).click();
+    await page.getByRole("option", { name: name, exact: true }).click();
+    await expect(p.getByLabel("NORAD 编号")).toHaveValue(norad);
+    await expect(p.getByText(passband)).toBeVisible();
+    await expect(p.getByText(pair)).toBeVisible();
+    await p.getByRole("button", { name: "+1 kHz" }).click();
+    await expect(p.getByText(moved)).toBeVisible();
+  });
+}
+
 test("线性转发器：手填调谐点保持原文，越界拉回并提示，外部改值同步文本", async ({ page }) => {
   await stubDoppler(page);
   await page.goto("/satellites");

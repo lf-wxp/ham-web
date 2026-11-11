@@ -18,6 +18,12 @@ const WSPR_RATE: u32 = 12_000;
 /// WSPR 音频基准频率（4 个音调从它开始，占 6 Hz 带宽）。
 const WSPR_BASE_HZ: f64 = 1500.0;
 
+/// FT8 基带采样率：合成器内部固定 12 kHz（`ham_web_ft8::synthesize` 不接受别的值），
+/// 一个 15 秒时隙正好 180 000 个样本。
+const FT8_RATE: u32 = 12_000;
+/// FT8 音频基频（符号 0 的音调；8 个音调占 50 Hz 带宽，1500 Hz 是电台音频窗口的常用中心）。
+const FT8_BASE_HZ: f32 = 1500.0;
+
 /// 合成结果 → WAV 下载；样本为空说明一个可编码字符都没有。
 ///
 /// CW / RTTY / Feld Hell 对不认识的字符是静默跳过的（中文、全角标点等），全军覆没时
@@ -53,6 +59,9 @@ pub(super) fn ModeEncoder() -> impl IntoView {
   let station_id = unique_id("navtex-station");
   let kind_id = unique_id("navtex-kind");
   let serial_id = unique_id("navtex-serial");
+
+  let ft8_message = RwSignal::new("CQ BG1AAA OM89".to_string());
+  let ft8_id = unique_id("ft8-message");
 
   // 四个「把报文直接合成音频」的按钮共用：空报文 / 超长报文直接提示，
   // 否则会静默导出一个 44 字节的 WAV（只有文件头）。
@@ -169,6 +178,30 @@ pub(super) fn ModeEncoder() -> impl IntoView {
     );
   });
 
+  // FT8：77 位打包 + CRC-14 + LDPC + 格雷码 + 同步 + GFSK 都在解码器的 crate 里
+  // （`crates/ft8` 有「编码 → 合成 → 解码」往返单测）。报文单独一个输入框：FT8 的标准报文
+  // 是「呼号 呼号 网格」，和上面 CW / RTTY 共用的自由文本不是一回事。
+  // 认不出标准格式时库会回退成自由文本（最多 13 个字符），超长或含非法字符才报错；
+  // 空报文在库里是合法的全空格自由文本，要自己拦。
+  let download_ft8 = Callback::new(move |_| {
+    let text = ft8_message.get().trim().to_uppercase();
+    let samples = (!text.is_empty())
+      .then(|| {
+        ham_web_ft8::synthesize(
+          &text,
+          FT8_BASE_HZ,
+          false,
+          &mut ham_web_ft8::HashTable::new(),
+        )
+      })
+      .flatten();
+    let Some(samples) = samples else {
+      push_error(t("tools.ft8-encode-failed"));
+      return;
+    };
+    download_wav(samples, FT8_RATE, "ft8.wav");
+  });
+
   view! {
     <div class="space-y-4">
       <Field label=Signal::derive(move || t("tools.message-content")) r#for=text_id.clone()>
@@ -233,6 +266,15 @@ pub(super) fn ModeEncoder() -> impl IntoView {
           />
         </Field>
       </div>
+      <div class="border-t pt-3">
+        <Field label=Signal::derive(|| t("tools.ft8-tx-message")) r#for=ft8_id.clone()>
+          <Input
+            id=ft8_id
+            value=ft8_message
+            on_change=Callback::new(move |v: String| ft8_message.set(v))
+          />
+        </Field>
+      </div>
       <div class="space-y-2 border-t pt-3">
         <div class="text-xs text-foreground/70">{move || t("tools.audio-generate")}</div>
         <div class="flex flex-wrap gap-2">
@@ -254,11 +296,15 @@ pub(super) fn ModeEncoder() -> impl IntoView {
           <Button variant=Variant::Outline size=Size::Sm on_click=download_hell>
             {move || t("tools.download-hell-wav")}
           </Button>
+          <Button variant=Variant::Outline size=Size::Sm on_click=download_ft8>
+            {move || t("tools.download-ft8-wav")}
+          </Button>
         </div>
         <p class="text-xs text-muted-foreground">{move || t("tools.audio-note")}</p>
         <p class="text-xs text-muted-foreground">{move || t("tools.wspr-audio-note")}</p>
         <p class="text-xs text-muted-foreground">{move || t("tools.navtex-audio-note")}</p>
         <p class="text-xs text-muted-foreground">{move || t("tools.hell-audio-note")}</p>
+        <p class="text-xs text-muted-foreground">{move || t("tools.ft8-audio-note")}</p>
       </div>
     </div>
   }

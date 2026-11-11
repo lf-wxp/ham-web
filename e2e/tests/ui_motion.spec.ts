@@ -155,7 +155,17 @@ for (const style of STYLES) {
         const animEnd = Math.max(...rows.flatMap((f) => f.anims.map((a) => a.end)));
         expect(goneAt, "应在 700ms 内卸载").not.toBeNull();
         expect(goneAt!, `卸载（${Math.round(goneAt!)}ms）不应早于退场动画结束（${Math.round(animEnd)}ms）`).toBeGreaterThanOrEqual(animEnd - 20);
-        expect(goneAt!, `卸载（${Math.round(goneAt!)}ms）比动画结束（${Math.round(animEnd)}ms）晚了太久`).toBeLessThanOrEqual(animEnd + 120);
+        // 上限按**实测帧间隔**放宽，不能写死 120ms：`goneAt` 来自逐帧采样，「已经卸载」最早也要
+        // 等到下一帧才看得见，本身就带一帧的量化误差。CI 上并行跑的另一个 worker 把 CPU 占满时
+        // 单帧能到 140–180ms（180ms 的退场被量成 360ms 左右），固定余量会把「机器慢」判成
+        // 「留了长长的空壳」。健康机器上一帧 16–30ms，下限 120ms 仍与原来一样紧，真正的空壳回归
+        // 照样红。两帧：卸载计时器起算与采样各吃一次。
+        const frameGap = Math.max(...rows.slice(1).map((f, i) => f.t - rows[i].t));
+        const slack = Math.min(360, Math.max(120, frameGap * 2));
+        expect(
+          goneAt!,
+          `卸载（${Math.round(goneAt!)}ms）比动画结束（${Math.round(animEnd)}ms）晚了太久（单帧 ${Math.round(frameGap)}ms，上限 ${Math.round(animEnd + slack)}ms）`,
+        ).toBeLessThanOrEqual(animEnd + slack);
       });
     }
 

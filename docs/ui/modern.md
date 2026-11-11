@@ -281,8 +281,13 @@ ease    --md-ease（标准）· --md-ease-out（入场）
 - **同一组件只允许一套阈值**：网格分列只认视口断点，不要把同一组件的分列同时写进
   `@media` 与 `@container`（`.md-bento` 曾因此让 808px 变成「卡片三列、导航还是手机 dock」）。
   容器查询只用于面板内部重排。
-- `.md-page` 声明了 `container-type: inline-size`，它是 `fixed` 后代的包含块：
-  所有 fixed 弹层 / 底栏必须走 `<Portal>`。
+- `.md-page` 声明了 `container-type: inline-size`。早期规范里它带 layout containment、会成为 `fixed` 后代的
+  包含块，**但这一条后来从规范里去掉了**：2026-11-10 实测 Chromium 与 WebKit 下，`.md-page` 内的 `SimpleSelect`
+  遮罩（`fixed inset-0`）在页面滚过 28 000 px 后仍盖满视口（`getBoundingClientRect` = 0, 0, 视口宽, 视口高）；
+  Firefox 没跑到（本机起不来），未验证。**规则**：新增的 fixed 弹层 / 底栏一律走 `<Portal>` —— 不依赖各引擎对 containment 的实现细节。
+  **既有的例外**：`ui::SimpleSelect` / `DatePicker` / `TimePicker` 的 `popover::overlay_class()` 遮罩沿用现状、
+  暂不改成 `Portal`（Chromium / WebKit 实测盖满视口，不算缺陷，见 `ROADMAP.md`「刻意不做」）；
+  Firefox 验证前这只是“已测内核无问题”，出现 Firefox 上遮罩只盖住页面容器的报告就改掉它们。
 - **Portal 出来的表面不在 `.md-root` 里**（弹层 / 调谐台 / 抽屉 / dock / 气泡 / toast / 固定条都挂在 `body` 上）。新增这类表面要同步三处：
   ① 覆盖它们的规则**不能带 `.md-root` 限定**，否则整条落空（`legacy-utilities.css` 头部有同样的规矩）；
   ② 把它的根类加进 `kit.css` 的焦点环选择器列表，漏一个，键盘用户在那个表面里看到的仍是像素虚线环
@@ -396,7 +401,7 @@ ease    --md-ease（标准）· --md-ease-out（入场）
   只放宽上限不够 —— 旧实现按注册表顺序截断，前缀命中的长尾页会被「正文提到」的条目挤掉。
 - **`group: None` 的页面不进任何段**：面板按 registry 分组切段（`kit_modern/menu.rs` 的 `SECTIONS`），所以这类页面
   只有 ⌘K / 直接 URL 到得了。要给它直达入口就**在面板底部补一枚**，别塞进别人的段 ——「段 = registry 分组」
-  这条对应关系不能因为「入口好找」而失真（`/achievements` 是现行落点；`/license.html` 还没补，见 `ROADMAP.md`）。
+  这条对应关系不能因为「入口好找」而失真（`/achievements` 是现行落点；`/license.html` 不用补：两套皮肤的页脚都有它的链接，`navigation.spec.ts` 覆盖了点击）。
 - **语气分层**：游戏化页面（`/map`、`/bestiary`、战斗界面）保留世界观语言；调谐台是工具，
   给这类路由补**白话别名**（「按专题刷题」「错题复习」），别名同时参与输入过滤。
 
@@ -596,7 +601,7 @@ node e2e/audit/dual_sweep.mjs modern && node e2e/audit/dual_sweep.mjs pixel
 20. **带 `transform` 的元素会成为绝对定位后代的包含块**：闯关地图的记号圆点曾放在会 `hover:translateX(3px)` 的卡片**内部**，
    鼠标一上去圆点就以卡片为基准重新定位，跳到文字上。记号现在是卡片的**兄弟**节点（`pages/quest_map/stage_node.rs`）；卡片的 hover 后来也改成只换描边与底色、不再位移，但兄弟结构保留，以后给卡片加任何 transform 都不会再把记号带走。
    判据：hover 前后量几个相关元素的 `getBoundingClientRect().left`；若只有绝对定位的那个变了，就是这类问题。
-   （同一机制的另一半在 §3：`.md-page` 的 `container-type` 让 `fixed` 后代的包含块变成它，所以 fixed 表面要走 `<Portal>`。）
+   （§3 曾把 `.md-page` 的 `container-type` 也算作同一机制；2026-11-10 实测 Chromium / WebKit 下它**不**改变 `fixed` 后代的包含块，见 §3。`transform` 这一条仍成立。）
 21. **弹层面板上无条件 `stop_propagation` 会让面板里的链接整页刷新**：路由的全局 click 拦截挂在 `window` 的冒泡阶段，
    面板为了「点面板内不关闭」把冒泡截断，里面的 `<a href>` 就到不了拦截层，浏览器走默认导航（用户会看到一次启动遮罩）。
    「点外面关闭」一律走 `kit_modern::backdrop::Backdrop`（只认按下与抬起都落在遮罩本身的点击），不在面板上拦冒泡。

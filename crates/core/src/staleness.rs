@@ -13,7 +13,7 @@
 //!
 //! 登记项集中在这一个文件里，避免每个模块各记一个日期、各判各的过期。
 
-use crate::{diy_projects, gear_rx, provenance, radio_law, toroid};
+use crate::{common_mode_choke, diy_projects, gear_rx, provenance, radio_law, toroid};
 
 /// 一条需要定期复核的外部数据。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -56,6 +56,13 @@ pub fn curated() -> Vec<Curated> {
     out.push(Curated {
       key: "toroid",
       source: "Fair-Rite 官方零件页（磁环 AL / 尺寸，按最旧的一条算）",
+      checked_on: date,
+    });
+  }
+  if let Some(date) = common_mode_choke::oldest_fetched() {
+    out.push(Curated {
+      key: "common-mode-choke",
+      source: "Fair-Rite 官方复磁导率 CSV（43 / 61 号材料，按最旧的一条算）",
       checked_on: date,
     });
   }
@@ -204,6 +211,10 @@ mod tests {
     assert_eq!(
       find("toroid"),
       toroid::oldest_verified().expect("磁环核对日期")
+    );
+    assert_eq!(
+      find("common-mode-choke"),
+      common_mode_choke::oldest_fetched().expect("复磁导率取回日期")
     );
     assert_eq!(find("diy-cost"), diy_projects::COST_CHECKED_ON);
   }

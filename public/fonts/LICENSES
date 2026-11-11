@@ -54,7 +54,7 @@ Geist 与 Geist Mono 在现代风里是正文声部与「易读字体」的正�
 | 文件 | 来源字体 | 版权 / 项目 |
 |---|---|---|
 | bricolage-latin.woff2 / bricolage-latin-ext.woff2 | Bricolage Grotesque（可变：opsz 12–96 / wght 200–800） | Copyright 2022 The Bricolage Grotesque Project Authors (https://github.com/ateliertriay/bricolage) |
-| plex-mono-latin-{400,500,600}.woff2 | IBM Plex Mono（400 / 500 / 600） | Copyright 2017 IBM Corp. All rights reserved. |
+| plex-mono-latin-{400,500,600}.woff2 | IBM Plex Mono（400 / 500 / 600） | Copyright © 2017 IBM Corp. with Reserved Font Name "Plex" |
 | noto-sans-sc-display-{0..6}.woff2 | Noto Sans SC 900（思源黑体 Heavy，子集分片） | Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'，见附录 G |
 
 三款的许可全文与附录 A 相同（SIL OFL 1.1），版权行见附录 E / F / G。
@@ -673,16 +673,20 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 附录 E：Bricolage Grotesque — OFL
 ======================================================================
 Copyright 2022 The Bricolage Grotesque Project Authors (https://github.com/ateliertriay/bricolage)
+（上面一行取自 Google Fonts 的 ofl/bricolagegrotesque/OFL.txt 首行，2026-11-10 逐字核对；
+随包字体文件内嵌的 name 表 ID 0 与它完全一致。）
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
-许可全文见附录 A（同为 OFL 1.1，不再重复抄一遍）。保留字体名（Reserved Font Name）为
-"Bricolage Grotesque"；本项目只做子集分发，未改字形、未改字体名。
+许可全文见附录 A（同为 OFL 1.1，不再重复抄一遍）。上游版权行没有声明保留字体名（Reserved Font Name），
+OFL 的相关限制因此不适用；本项目只做子集分发，未改字形、未改字体名。
 
 ======================================================================
 附录 F：IBM Plex Mono — OFL
 ======================================================================
-Copyright 2017 IBM Corp. All rights reserved.
-IBM Plex(r) is a trademark of IBM Corp, registered in many jurisdictions worldwide.
+Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"
+（上面一行取自 Google Fonts 的 ofl/ibmplexmono/OFL.txt 首行，与 IBM 官方仓库 IBM/plex 的 LICENSE.txt
+首行逐字一致，2026-11-10 核对。随包字体文件内嵌的 name 表 ID 0 写的是另一种措辞 "Copyright 2017 IBM Corp.
+All rights reserved."，那是字体元数据而不是许可文件的版权声明，这里以许可文件为准。）
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 许可全文见附录 A（同为 OFL 1.1）。保留字体名（Reserved Font Name）为 "Plex"；本项目只做子集分发，

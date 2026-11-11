@@ -583,6 +583,7 @@ fn fix_hint(key: &str) -> &'static str {
     "gear-rx" => "`gear_rx::CHECKED_ON` 与 `crates/core/data/gear-rx.txt` 文件头",
     "radio-law-text" => "`crates/core/data/radio-law.txt` 文件头的 `# 核对日期：`",
     "toroid" => "`toroid::CORES[].verified`（逐条）",
+    "common-mode-choke" => "`common_mode_choke::MATERIALS[].fetched`（逐条）",
     "diy-cost" => "`diy_projects::COST_CHECKED_ON`",
     _ => "`crates/core/src/provenance.rs` 的 `PROVENANCES` 里该域的 `checked_on`",
   }

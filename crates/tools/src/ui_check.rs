@@ -1005,19 +1005,40 @@ const MODERN_CONTROL_WRAPPERS: &[&str] = &[
   "crates/app/src/kit_modern/textarea.rs",
 ];
 
-/// 原生控件的封闭清单（清单外命中 = 违规，清单内计数为 0 = 过期例外）。
+/// 原生控件的封闭清单（清单外命中 = 违规；清单内命中行数必须**等于**登记的数）。
 ///
-/// 键 = 相对项目根的路径；理由必须一并写清，并登记到 `docs/ui/pixel.md` §10。
-const NATIVE_CONTROL_ALLOWED: &[(&str, &str)] = &[
+/// 键 = 相对项目根的路径，第二项是该文件里允许的命中行数。只登记文件、不登记条数的话，
+/// 例外文件里再多写一个 `<input` 也会被放行 —— 门禁只管「哪些文件允许」，不管「每个文件允许几处」。
+/// 登记的数与实际不符（多了 = 新增了未登记的例外；少了 = 例外在收缩，0 = 过期例外）都要人确认，
+/// 同时改这里与 `docs/ui/pixel.md` §10.2b 的表。理由必须一并写清。
+const NATIVE_CONTROL_ALLOWED: &[(&str, usize, &str)] = &[
   (
     "crates/app/src/kit_modern/palette.rs",
+    1,
     "刻意的例外：命令面板输入框嵌在「图标 + 输入 + kbd」的 flex 行里，包 `md-input-wrap` 会改这一行布局",
   ),
   (
     "crates/app/src/kit_modern/menu.rs",
+    1,
     "刻意的例外：目录抽屉的搜索行同理（图标 + 输入 + 站内搜索按钮同一行）",
   ),
 ];
+
+/// 封闭清单里「登记数与实际命中数不符」的文件：`(路径, 登记数, 实际数)`。
+///
+/// 实际数取自 `hits`（没出现过的文件按 0 算）。纯函数，单测钉死两个方向的漂移。
+fn native_control_drift<'a>(
+  allowed: &[(&'a str, usize, &str)],
+  hits: &[(&str, usize)],
+) -> Vec<(&'a str, usize, usize)> {
+  allowed
+    .iter()
+    .filter_map(|(path, expected, _)| {
+      let actual = hits.iter().find(|(p, _)| p == path).map_or(0, |(_, n)| *n);
+      (actual != *expected).then_some((*path, *expected, actual))
+    })
+    .collect()
+}
 
 /// §11 ③：原生 `<input>` / `<select>` / `<textarea>` 只允许出现在控件封装与上面的例外里。
 ///
@@ -1054,8 +1075,8 @@ fn check_native_controls(root: &Path) -> bool {
     };
     let exception = NATIVE_CONTROL_ALLOWED
       .iter()
-      .find(|(p, _)| *p == rel)
-      .map(|(p, _)| *p);
+      .find(|(p, _, _)| *p == rel)
+      .map(|(p, _, _)| *p);
     for (i, line) in text.lines().enumerate() {
       let code = code_part(line);
       if code.is_empty() || !has_native_control(code) {
@@ -1075,15 +1096,11 @@ fn check_native_controls(root: &Path) -> bool {
     }
   }
 
-  let stale: Vec<&str> = NATIVE_CONTROL_ALLOWED
-    .iter()
-    .map(|(p, _)| *p)
-    .filter(|p| !allowed_hits.iter().any(|(hit, _)| hit == p))
-    .collect();
-  if violations == 0 && stale.is_empty() {
+  let drift = native_control_drift(NATIVE_CONTROL_ALLOWED, &allowed_hits);
+  if violations == 0 && drift.is_empty() {
     let total: usize = allowed_hits.iter().map(|(_, n)| *n).sum();
     println!(
-      "✓ 原生表单控件（`<input>` / `<select>` / `<textarea>`）：封装外零残留（封闭清单 {total} 处 / {} 文件）",
+      "✓ 原生表单控件（`<input>` / `<select>` / `<textarea>`）：封装外零残留（封闭清单 {total} 处 / {} 文件，逐文件条数与登记一致）",
       allowed_hits.len()
     );
     return true;
@@ -1103,10 +1120,13 @@ fn check_native_controls(root: &Path) -> bool {
       "    → 像素风用 `ui/` 的 Input / SimpleSelect / Textarea / FileInput / FileDropZone；现代风用 `kit_modern/` 的 ModernInput / ModernSelect / ModernTextarea。都不合用就在本清单里登记理由"
     );
   }
-  if !stale.is_empty() {
-    println!("✗ 原生表单控件的封闭清单已过期：{}", stale.join("、"));
+  if !drift.is_empty() {
+    println!("✗ 原生表单控件的封闭清单条数漂移（路径：登记 → 实际）：");
+    for (path, expected, actual) in &drift {
+      println!("    {path}：{expected} → {actual}");
+    }
     println!(
-      "    → 这些文件不再写原生控件；从 `NATIVE_CONTROL_ALLOWED` 与 `docs/ui/pixel.md` §10 里删掉"
+      "    → 实际为 0 是过期例外，从 `NATIVE_CONTROL_ALLOWED` 与 `docs/ui/pixel.md` §10.2b 里删掉；其余情形先确认多出 / 少掉的那处是不是该走封装，确实要保留就同时改登记数与文档表"
     );
   }
   false
@@ -1290,6 +1310,31 @@ mod tests {
       code_part("  class=\"rounded-xl\" // 说明"),
       "  class=\"rounded-xl\" "
     );
+  }
+
+  /// 封闭清单的条数是**精确**的：例外文件里多写一处、少写一处、写光了，三种都要被发现。
+  #[test]
+  fn native_control_allowlist_counts_are_exact() {
+    let allowed: &[(&str, usize, &str)] = &[("a.rs", 1, "x"), ("b.rs", 2, "y")];
+    // 一致：没有漂移。
+    assert!(native_control_drift(allowed, &[("a.rs", 1), ("b.rs", 2)]).is_empty());
+    // 多出一处：例外文件里又偷偷多写了一个 `<input`。
+    assert_eq!(
+      native_control_drift(allowed, &[("a.rs", 2), ("b.rs", 2)]),
+      vec![("a.rs", 1, 2)]
+    );
+    // 少了一处：例外在收缩，登记数该跟着降。
+    assert_eq!(
+      native_control_drift(allowed, &[("a.rs", 1), ("b.rs", 1)]),
+      vec![("b.rs", 2, 1)]
+    );
+    // 一处都没有（文件没出现在命中里）：过期例外，实际数按 0 算。
+    assert_eq!(
+      native_control_drift(allowed, &[("b.rs", 2)]),
+      vec![("a.rs", 1, 0)]
+    );
+    // 清单外的文件不归这个函数管（那是 `violations`）。
+    assert!(native_control_drift(allowed, &[("a.rs", 1), ("b.rs", 2), ("c.rs", 9)]).is_empty());
   }
 
   #[test]

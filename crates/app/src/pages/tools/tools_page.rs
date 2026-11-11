@@ -16,6 +16,7 @@ use super::capacitor_code::CapacitorCode;
 use super::carrier_dbc::CarrierDbc;
 use super::cascade_gain::CascadeGain;
 use super::coil_yagi_calculator::CoilYagiCalculator;
+use super::common_mode_choke::CommonModeChoke;
 use super::contest_scorer::ContestScorer;
 use super::cw_bandwidth::CwBandwidth;
 use super::dbm_converter::DbmConverter;
@@ -127,6 +128,7 @@ const TOOL_NAV: &[(&str, &str)] = &[
   ("tx-line", "tools.transmission-line-impedance"),
   ("stub-match", "tools.stub-match"),
   ("toroid-winding", "tools.toroid-winding"),
+  ("common-mode-choke", "tools.common-mode-choke"),
   ("magnetic-loop", "tools.magloop"),
   ("loading-coil", "tools.loading-coil"),
   ("trap", "tools.trap"),
@@ -343,6 +345,8 @@ pub fn ToolsPage() -> impl IntoView {
             <ToolSection id="stub-match" title="tools.stub-match" description="tools.stub-match-description"><StubMatch /></ToolSection>
 
             <ToolSection id="toroid-winding" title="tools.toroid-winding" description="tools.toroid-winding-description"><ToroidWinding /></ToolSection>
+
+            <ToolSection id="common-mode-choke" title="tools.common-mode-choke" description="tools.common-mode-choke-description"><CommonModeChoke /></ToolSection>
 
             <ToolSection id="magnetic-loop" title="tools.magloop" description="tools.magloop-description"><MagneticLoopTool /></ToolSection>
 

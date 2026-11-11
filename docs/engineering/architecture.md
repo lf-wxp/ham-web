@@ -13,7 +13,7 @@
 | 图标 | Lucide（内联 SVG，与原版路径一致） |
 | 浏览器 API | Web Speech API（朗读）、Web Audio API（摩尔斯 / 信号音 / 实时频谱）、Canvas（照片处理、瀑布图）、WebGL2（天线求解器的三维方向图，不支持时回退 SVG）、Notification（倒计时提醒）、IndexedDB（大体积日志存储） |
 | 服务器 | Axum 0.8 + tower-http（SPA 回退、缓存头、gzip/brotli），并提供 `/api/*` 外部数据代理（`ureq` + 内存缓存 + `sgp4` 过境计算） |
-| 数字信号解码 | `ham-web-apt` / `ham-web-sstv` / `ham-web-wspr` / `ham-web-ft8` 等十一个解码 crate（纯 Rust DSP，编译为 Worker，音频不上传服务器；另有一个 AX.25 软 TNC Worker，解码核心在 `ham-web-core`） |
+| 数字信号解码 | `ham-web-apt` / `ham-web-sstv` / `ham-web-wspr` / `ham-web-ft8` 等十一个解码 crate（纯 Rust DSP，编译为 Worker，音频不上传服务器；`ham-web-ft8` 的编码与合成链另被主包直接链接，供 `/tools` 导出 FT8 发端基带；另有一个 AX.25 软 TNC Worker，解码核心在 `ham-web-core`） |
 | 工具链 | `ham-web-tools`（clap、ureq、resvg、sha2、brotli、walkdir） |
 | 任务编排 | [cargo-make](https://github.com/sagiegurari/cargo-make) |
 | PWA | 构建时由 Rust 生成 Service Worker（预缓存 + 运行时缓存策略） |

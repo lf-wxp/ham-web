@@ -146,6 +146,8 @@ mod tests {
   fn synthesized_signal_decodes_back_to_the_same_text() {
     for (text, expect) in [
       ("CQ K7IHZ DM43", "CQ K7IHZ DM43"),
+      // `/tools#mode-encoder` 发端的默认报文。
+      ("CQ BG1AAA OM89", "CQ BG1AAA OM89"),
       ("CQ EA8/G5LSI", "CQ EA8/G5LSI"),
       ("R2RFE/P EA8/G5LSI R+12", "R2RFE/P <EA8/G5LSI> R+12"),
     ] {
@@ -179,5 +181,27 @@ mod tests {
         .collect();
       assert!(hit, "{text:?} 未解回，实际 {got:?}");
     }
+  }
+
+  /// 页面导出的 WAV 长度是钉死的：整个时隙 12 kHz × 15 s（FT4 是 7.5 s），信号居中、前后等长静音。
+  /// 样本数一旦漂移，播放时就对不上 0 / 15 / 30 / 45 秒的时隙起点。
+  #[test]
+  fn synthesized_audio_fills_exactly_one_slot() {
+    let mut hash = HashTable::new();
+    let ft8 = synthesize("CQ BG1AAA OM89", 1500.0, false, &mut hash).expect("FT8 编码失败");
+    assert_eq!(ft8.len(), 15 * 12_000);
+    let ft4 = synthesize("CQ BG1AAA OM89", 1500.0, true, &mut hash).expect("FT4 编码失败");
+    assert_eq!(ft4.len(), 7_500 * 12);
+    // 前后静音：首尾样本为 0，中段有信号。
+    assert_eq!((ft8[0], ft8[ft8.len() - 1]), (0.0, 0.0));
+    assert!(ft8[ft8.len() / 2..].iter().any(|s| s.abs() > 0.5));
+  }
+
+  /// 编不出来的报文（非 FT8 字符集、超过 13 字符的自由文本）返回 `None`，不产出静音文件。
+  #[test]
+  fn unencodable_text_yields_no_audio() {
+    let mut hash = HashTable::new();
+    assert!(synthesize("CQ 你好", 1500.0, false, &mut hash).is_none());
+    assert!(synthesize("THIS IS WAY TOO LONG", 1500.0, false, &mut hash).is_none());
   }
 }

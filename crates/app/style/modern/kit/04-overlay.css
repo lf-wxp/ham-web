@@ -418,9 +418,11 @@
    曾经的 `.md-menu-grid` 在 Portal 里没有容器祖先，永远不命中，已改用视口断点。新增容器查询前
    先确认目标元素真的在某个 `container-type` 容器内。
 
-   注意：`container-type: inline-size` 隐含 layout containment，会让 `.md-page`
-   成为 fixed 后代的包含块。所有 fixed 弹层 / 底栏都必须走 `<Portal>` 挂到 body
-   （`kit_modern/practice_bar.rs` 与 `dialog.rs` 都已这么做）。
+   注意：早期规范里 `container-type: inline-size` 隐含 layout containment，会让 `.md-page`
+   成为 fixed 后代的包含块；该条后来已从规范去掉，2026-11-10 实测 Chromium 与 WebKit 下
+   `.md-page` 内的 `fixed inset-0` 遮罩仍盖满视口（Firefox 未验证，见 `docs/ui/modern.md` §3）。
+   保险起见 fixed 弹层 / 底栏仍走 `<Portal>` 挂到 body（`kit_modern/practice_bar.rs` 与
+   `dialog.rs` 都已这么做），不依赖引擎对 containment 的实现。
    ============================================================ */
 @layer components {
   .md-page {

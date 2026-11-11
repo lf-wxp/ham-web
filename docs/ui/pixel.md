@@ -928,12 +928,13 @@ label 的 `has-[:focus-visible]:ring-2` 显示。**页面里不要再手写拖�
 
 §11 ③ 是**封闭清单**：原生 `<input>` / `<select>` / `<textarea>` 只允许出现在两套 Kit 的
 封装文件（`crates/app/src/ui/` 下的各控件、`kit_modern/{input,select,textarea}.rs`）与下表。
-清单外命中 = 违规；清单内一处都没有 = 过期例外（`cargo make check-ui` 两头都拦）。
+清单外命中 = 违规；清单内**逐文件的命中行数必须等于登记数**，多了、少了、写光了（过期例外）都算失败
+（`cargo make check-ui` 两头都拦）。登记数写在 `ui_check.rs` 的 `NATIVE_CONTROL_ALLOWED` 里，与下表的「处数」列对账。
 
-| 位置 | 为什么保留原生 `<input>` |
-| --- | --- |
-| `kit_modern/palette.rs` | 命令面板的输入框嵌在 `.md-palette-input-row`（图标 + 输入 + `kbd`）的 flex 行里，`ModernInput` 的 `md-input-wrap` 与清除按钮会改掉这一行的布局 |
-| `kit_modern/menu.rs` | 目录抽屉的 `.md-menu-search` 行同理：图标 + 输入 + 「站内搜索」按钮在同一行 |
+| 位置 | 处数 | 为什么保留原生 `<input>` |
+| --- | --- | --- |
+| `kit_modern/palette.rs` | 1 | 命令面板的输入框嵌在 `.md-palette-input-row`（图标 + 输入 + `kbd`）的 flex 行里，`ModernInput` 的 `md-input-wrap` 与清除按钮会改掉这一行的布局 |
+| `kit_modern/menu.rs` | 1 | 目录抽屉的 `.md-menu-search` 行同理：图标 + 输入 + 「站内搜索」按钮在同一行 |
 
 这两个例外**不是**「还没迁」：两个文件里都只有 `<input>` 这一个小节，其余控件（按钮、
 列表项）都走 `md-*` 类名或组件。要收紧到零，先给 `ModernInput` 加一个「无包装 / 无清除按钮」

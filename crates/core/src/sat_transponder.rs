@@ -15,9 +15,22 @@
 //!
 //! # 数据出处
 //!
-//! 通带取自 SatNOGS DB（`/api/transmitters/`，`type=Transponder` 且 `status=active`，取回日期 2026-10-16），
-//! 逐条与本站 [`crate::satellites::SATELLITES`] 里人工写的频率互相印证（AO-7 B、FO-29 两处一致）。
+//! 通带取自 SatNOGS DB（`/api/transmitters/`，`type=Transponder` 且 `status=active`）。前五条取回日期 2026-10-16，
+//! JO-97 / TO-108 两条 2026-11-10 补入。AO-7 B、FO-29 与本站 [`crate::satellites::SATELLITES`] 里人工写的频率互相印证；
+//! JO-97 / TO-108 用 **IARU 业余卫星频率协调页**当第二来源核对（JY1SAT 协调页 `serialnum=554`：下行通带
+//! 145.855–145.875、反相上行 435.100–435.120；CAS-6 协调页 `serialnum=622`：线性转发器下行 145.925、上行 435.280，
+//! 即通带中心，与 SatNOGS 的 20 kHz 通带中心一致）。
 //! 只收**上下行通带宽度相等**的条目（单测断言）：宽度不等就没有一一对应的映射。
+//!
+//! **筛选规则（为什么只补了两条）**：SatNOGS 里 `Transponder` 且 `active` 的条目并不都能用。2026-11-10 逐条过了一遍：
+//! - **FO-82（Shin-en 2，NORAD 40320）不收**：SatNOGS 标「在轨」、通带也与 AMSAT 页一致，但它是随 Hayabusa2 发射的
+//!   日心轨道探测器，SatNOGS 的 TLE 接口对它返回空 —— 没有地心轨道根数就没有多普勒，放进来只会让页面“选了却算不出”；
+//! - QB50P1、UKUBE-1 的条目引用栏是 `CITATION NEEDED`，更新于 2019 年，无第二来源，不收；
+//! - QO-100（Es'hail 2）是地球静止轨道，多普勒可忽略，且 2.4 GHz 上行要转换器，不属于本模块的 VHF/UHF 场景；
+//! - CAS-11、PRECURSOR 在 SatNOGS 里状态是 `future`（尚未发射），KOSEN-1 上下行宽度不等；
+//! - JY1Sat 的 CW 条目是同一个转发器的 CW 模式（引用栏写着 `typo`），同一通带不重复收。
+//!
+//! 这份数据来自众包库，**会变**：新增前必须重新拉取并重复上面的核对，不能只改常数。
 //!
 //! # 写上行的护栏
 //!
@@ -52,7 +65,8 @@ pub struct Transponder {
   pub inverting: bool,
 }
 
-/// 预置的线性转发器：SatNOGS DB 里 `Transponder` 且 `active` 的条目（2026-10-16）。
+/// 预置的线性转发器：SatNOGS DB 里 `Transponder` 且 `active` 的条目，再按模块头「筛选规则」过一遍
+/// （前五条 2026-10-16，JO-97 / TO-108 为 2026-11-10）。
 ///
 /// 上行用 `type=Transponder` 的 `uplink_low/high`，下行用 `downlink_low/high`，`invert` 照抄。
 pub const TRANSPONDERS: &[Transponder] = &[
@@ -99,6 +113,24 @@ pub const TRANSPONDERS: &[Transponder] = &[
     uplink_hi: 435_150_000,
     downlink_lo: 145_950_000,
     downlink_hi: 145_970_000,
+    inverting: true,
+  },
+  Transponder {
+    name: "JO-97",
+    norad: 43_803,
+    uplink_lo: 435_100_000,
+    uplink_hi: 435_120_000,
+    downlink_lo: 145_855_000,
+    downlink_hi: 145_875_000,
+    inverting: true,
+  },
+  Transponder {
+    name: "TO-108",
+    norad: 44_881,
+    uplink_lo: 435_270_000,
+    uplink_hi: 435_290_000,
+    downlink_lo: 145_915_000,
+    downlink_hi: 145_935_000,
     inverting: true,
   },
 ];
@@ -310,6 +342,12 @@ mod tests {
     ("AO-73", 145_950_000, 435_150_000),
     ("AO-73", 145_960_000, 435_140_000),
     ("AO-73", 145_970_000, 435_130_000),
+    ("JO-97", 145_855_000, 435_120_000),
+    ("JO-97", 145_865_000, 435_110_000),
+    ("JO-97", 145_875_000, 435_100_000),
+    ("TO-108", 145_915_000, 435_290_000),
+    ("TO-108", 145_925_000, 435_280_000),
+    ("TO-108", 145_935_000, 435_270_000),
   ];
 
   #[test]
@@ -580,11 +618,11 @@ mod tests {
 
   // ───── 护栏 ─────
 
-  /// 上行整段落在卫星业余业务段内的预置（AO-7 A、RS-44、AO-73），在多普勒最坏情形下通带里**每个**调谐点都必须能写。
-  /// 独立脚本逐点扫过（每颗 3 个径向速度 × 201 个调谐点）：这三颗被拒的点数都是 0。
+  /// 上行整段落在卫星业余业务段内的预置（AO-7 A、RS-44、AO-73、JO-97、TO-108），在多普勒最坏情形下通带里**每个**调谐点都必须能写。
+  /// 独立脚本逐点扫过（每颗 3 个径向速度 × 201 个调谐点）：这几颗被拒的点数都是 0。
   #[test]
   fn the_guard_lets_every_tuning_point_through_when_the_uplink_is_inside_the_service() {
-    for name in ["AO-7 · A", "RS-44", "AO-73"] {
+    for name in ["AO-7 · A", "RS-44", "AO-73", "JO-97", "TO-108"] {
       let t = by_name(name);
       let nominal = t.uplink_lo + t.width() / 2;
       let slack = t.width() / 2;

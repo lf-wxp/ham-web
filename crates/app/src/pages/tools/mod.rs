@@ -16,6 +16,7 @@ mod capacitor_code;
 mod carrier_dbc;
 mod cascade_gain;
 mod coil_yagi_calculator;
+mod common_mode_choke;
 mod contest_scorer;
 mod cw_bandwidth;
 mod dbm_converter;
