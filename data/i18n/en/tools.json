@@ -404,7 +404,7 @@
   "tools.nec-line-wire-b": "Port B wire",
   "tools.nec-line-z0": "Characteristic impedance Z0",
   "tools.nec-lines": "Transmission line (TL)",
-  "tools.nec-lines-note": "Connects a lossless feed line between two breaks in the structure. A port is \"wire index + relative position (0 = start, 1 = end)\". Length is in metres; the velocity factor is about 0.66–0.8 for coax. Note that a λ/2 line is **not** equivalent to a wire (it inverts the voltage and keeps the current in phase) — only a zero-length line is.",
+  "tools.nec-lines-note": "Connects a lossless feed line between two breaks in the structure. A port is \"wire index + relative position (0 = start, 1 = end)\". Length is in metres; the velocity factor is about 0.66–0.8 for coax. A negative Z0 makes a **crossed line** (180° phase reversal, how the elements of a log-periodic array are connected). Ports and sources on the same segment are in parallel (a source feeding the input of a line). Note that a λ/2 line is **not** equivalent to a wire (it inverts the voltage and keeps the current in phase) — only a zero-length line is.",
   "tools.nec-load-c": "Load capacitance C (pF)",
   "tools.nec-load-l": "Load inductance L (µH)",
   "tools.nec-load-position": "Load position (0–1)",

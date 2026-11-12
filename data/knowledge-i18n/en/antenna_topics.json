@@ -45,7 +45,7 @@
   "替代方案": "Alternatives",
   "替代法（比较法）": "Substitution (gain-comparison) method",
   "最长振子取低端频率的半波长（实际略长），最短振子要比高端频率再留余量 —— 结构带宽 B_s 多出的部分就是这份余量。": "Make the longest element a half wave at the low-end frequency (a little longer in practice) and leave margin beyond the high-end frequency for the shortest element — the extra in the structure bandwidth B_s is that margin.",
-  "本站求解器不支持交叉线 TL（见 NEC 页的说明），所以这里不提供 LPDA 的 NEC 模型。": "The site's solver does not support crossed transmission lines (TL) (see the note on the NEC page), so no NEC model of an LPDA is provided here.",
+  "本站求解器已支持交叉线（TL 的 Z0 取负）：下面的按钮在求解器里打开 τ = 0.90、σ = 0.16、12 根振子的 LPDA 模型（Z0 取 150 Ω，只是一个能用的取值，不是最优设计）；在 14.2–28.5 MHz 的 5 个频点上，馈电阻抗与 necpp 相差在 2% 以内，最大增益相差不超过 0.1 dB，前后比相差不超过 2 dB，波束指向最短振子一侧。这是对另一套 NEC-2 实现的对拍，不是实测。": "The site's solver now supports crossed lines (a negative Z0 on the TL card). The button below opens in the solver an LPDA model with τ = 0.90, σ = 0.16 and 12 elements (Z0 is 150 Ω — a workable value, not an optimised design). At 5 frequencies between 14.2 and 28.5 MHz the feed impedance agrees with necpp to within 2 %, the maximum gain to within 0.1 dB and the front-to-back ratio to within 2 dB, with the beam pointing toward the shortest elements. This is a comparison against another NEC-2 implementation, not a measurement.",
   "杂散电容": "Stray capacitance",
   "每个波段都要有对应长度的地网：只给 20 米配的地网，用到 40 米上等于地网不足。": "Every band needs radials of the matching length: radials built for 20 m used on 40 m are too few radials in effect.",
   "比较两副天线先统一参照：dBd 加 2.15 再与 dBi 比。": "Put two antennas on the same reference before comparing them: add 2.15 to a dBd figure, then compare it with a dBi figure.",

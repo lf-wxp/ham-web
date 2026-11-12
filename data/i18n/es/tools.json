@@ -404,7 +404,7 @@
   "tools.nec-line-wire-b": "Hilo del puerto B",
   "tools.nec-line-z0": "Impedancia característica Z0",
   "tools.nec-lines": "Línea de transmisión (TL)",
-  "tools.nec-lines-note": "Conecta una línea de alimentación sin pérdidas entre dos cortes de la estructura. Un puerto es «índice de hilo + posición relativa (0 = inicio, 1 = fin)». La longitud va en metros y el factor de velocidad es 0,66–0,8 para coaxil. Ojo: una línea de λ/2 **no** equivale a un hilo (invierte la tensión y mantiene la corriente en fase); solo la línea de longitud cero equivale a un hilo.",
+  "tools.nec-lines-note": "Conecta una línea de alimentación sin pérdidas entre dos cortes de la estructura. Un puerto es «índice de hilo + posición relativa (0 = inicio, 1 = fin)». La longitud va en metros y el factor de velocidad es 0,66–0,8 para coaxil. Una Z0 negativa da una **línea cruzada** (inversión de fase de 180°, como se conectan los elementos de una antena log-periódica). Los puertos y las fuentes del mismo segmento están en paralelo (una fuente que alimenta la entrada de una línea). Ojo: una línea de λ/2 **no** equivale a un hilo (invierte la tensión y mantiene la corriente en fase); solo la línea de longitud cero equivale a un hilo.",
   "tools.nec-load-c": "Capacidad de carga C (pF)",
   "tools.nec-load-l": "Inductancia de carga L (µH)",
   "tools.nec-load-position": "Posición de la carga (0–1)",

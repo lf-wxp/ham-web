@@ -17,7 +17,7 @@ pub struct NecTemplate {
   pub id: &'static str,
   /// 展示名（加载后作为提示文案的一部分）。
   pub name: &'static str,
-  /// `.nec` 文本（NEC 免费格式子集：`GW` / `GE` / `EX` / `FR`）。
+  /// `.nec` 文本（NEC 免费格式子集：`GW` / `GE` / `EX` / `FR`，对数周期模板另有 `TL`）。
   pub text: &'static str,
 }
 
@@ -113,6 +113,44 @@ FR 0 1 145.0 0.0
 EN
 ",
   },
+  NecTemplate {
+    id: "lpda-14-28mhz",
+    name: "对数周期偶极阵（14–28 MHz，12 根）",
+    text: "\
+CM 对数周期偶极阵（LPDA）14–28 MHz：τ = 0.90、σ = 0.16、12 根振子（与「天线补充专题」的算例同一组参数）
+CM 最长振子 10.7 m（14 MHz 的半波长）、最短 3.36 m，臂长 23.5 m；振子沿 y 轴、排列沿 x 轴，自由空间
+CM 相邻振子的中心之间各接一条**交叉线**（TL 的 Z0 为负 = 180° 反相，NEC-2 的约定），线长取两振子的间距；
+CM Z0 取 150 Ω：只是让 14–28.5 MHz 的馈电阻抗落在 110–130 Ω 的一个取值，不是最优设计，需要匹配到 50 Ω 时另加变换
+CM 激励在最短振子（顶点），波束指向顶点一侧（+x）；后方没有终端支节
+GW 1 15 0.000 -5.350 0.0 0.000 5.350 0.0 0.01
+GW 2 15 3.424 -4.815 0.0 3.424 4.815 0.0 0.01
+GW 3 15 6.506 -4.333 0.0 6.506 4.333 0.0 0.01
+GW 4 15 9.279 -3.900 0.0 9.279 3.900 0.0 0.01
+GW 5 15 11.775 -3.510 0.0 11.775 3.510 0.0 0.01
+GW 6 15 14.022 -3.159 0.0 14.022 3.159 0.0 0.01
+GW 7 15 16.043 -2.843 0.0 16.043 2.843 0.0 0.01
+GW 8 15 17.863 -2.559 0.0 17.863 2.559 0.0 0.01
+GW 9 15 19.501 -2.303 0.0 19.501 2.303 0.0 0.01
+GW 10 15 20.975 -2.073 0.0 20.975 2.073 0.0 0.01
+GW 11 15 22.301 -1.865 0.0 22.301 1.865 0.0 0.01
+GW 12 15 23.495 -1.679 0.0 23.495 1.679 0.0 0.01
+GE 0
+TL 1 8 2 8 -150 3.424
+TL 2 8 3 8 -150 3.082
+TL 3 8 4 8 -150 2.773
+TL 4 8 5 8 -150 2.496
+TL 5 8 6 8 -150 2.246
+TL 6 8 7 8 -150 2.022
+TL 7 8 8 8 -150 1.820
+TL 8 8 9 8 -150 1.638
+TL 9 8 10 8 -150 1.474
+TL 10 8 11 8 -150 1.327
+TL 11 8 12 8 -150 1.194
+EX 0 12 8 0 1.0 0.0
+FR 0 1 14.2 0.0
+EN
+",
+  },
 ];
 
 /// 按 id 取模板。
@@ -124,7 +162,7 @@ pub fn nec_template(id: &str) -> Option<&'static NecTemplate> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::nec::{parse_nec, solve, wavelength};
+  use crate::nec::{parse_nec, solve, solve_with_lines, wavelength};
 
   #[test]
   fn template_ids_are_unique() {
@@ -207,7 +245,8 @@ mod tests {
       assert!(!file.input.wires.is_empty(), "{} 没有导线", t.id);
       assert!(!file.input.feeds.is_empty(), "{} 没有馈电点", t.id);
       assert!(file.input.freq_hz > 0.0, "{} 频率非法", t.id);
-      let r = solve(&file.input).unwrap_or_else(|| panic!("{} 无法求解", t.id));
+      let r =
+        solve_with_lines(&file.input, &file.lines).unwrap_or_else(|| panic!("{} 无法求解", t.id));
 
       assert!(
         r.impedance.0 > 1.0,
@@ -292,7 +331,7 @@ mod tests {
     assert_eq!(efhw.input.feeds[0].at, 0.5 / 41.0, "馈电点应落在端点段上");
   }
 
-  /// necpp（PyNEC 2.3.4，NEC-2 的 C++ 移植）对同一份模板的参照解：`(id, R, X, 最大增益)`。
+  /// necpp（PyNEC 2.3.4 起、2.4.0 重跑逐位相同，NEC-2 的 C++ 移植）对同一份模板的参照解：`(id, R, X, 最大增益)`。
   ///
   /// 生成方式（`crates/nec/reference/necpp_ref.py`）：把模板逐卡转给 PyNEC
   /// （`GE 1` 补 `GN 1` = 理想导体地面），最大增益在上半空间 θ / φ 各 5° 网格上取。这是**另一套 NEC-2 实现**的结果，不是实测值 —— 它证明的是
@@ -304,6 +343,7 @@ mod tests {
     ("efhw-40m", 4155.489, -10253.688, 7.925),
     ("j-pole-2m", 10.966, 25.061, 8.554),
     ("yagi3-2m", 34.177, -23.083, 7.066),
+    ("lpda-14-28mhz", 128.248, -7.102, 7.987),
   ];
 
   #[test]
@@ -315,7 +355,7 @@ mod tests {
     );
     for &(id, r, x, g) in NECPP_REF {
       let file = parse_nec(nec_template(id).unwrap().text).unwrap();
-      let got = solve(&file.input).unwrap();
+      let got = solve_with_lines(&file.input, &file.lines).unwrap();
       let (gr, gx) = got.impedance;
       // 增益（方向图积分）两边一致到 0.5 dB；J 型的差最大（0.41 dB）。
       assert!(
@@ -339,5 +379,93 @@ mod tests {
         d * 100.0
       );
     }
+  }
+
+  /// LPDA 模板在 5 个频点上与 necpp 的逐点对拍：`(MHz, R, X, 最大增益 dBi, 前后比 dB)`。
+  ///
+  /// 生成：`python crates/nec/reference/tl_necpp.py template`（PyNEC 2.4.0）。
+  /// 「天线补充专题」页面上写的「阻抗相差 2% 以内、增益不超过 0.1 dB、前后比不超过 2 dB」就是
+  /// 下面三个容限 —— 页面文字改了数字，这里和脚本输出要一起改。
+  const NECPP_LPDA_SWEEP: &[(f64, f64, f64, f64, f64)] = &[
+    (14.2, 128.248, -7.102, 7.987, 19.73),
+    (18.1, 121.574, -10.646, 8.569, 29.03),
+    (21.2, 117.695, -20.574, 8.303, 27.10),
+    (24.9, 111.875, -6.670, 8.024, 21.58),
+    (28.5, 121.946, -19.235, 8.551, 29.94),
+  ];
+
+  #[test]
+  fn lpda_sweep_agrees_with_necpp_as_the_page_claims() {
+    let file = parse_nec(nec_template("lpda-14-28mhz").unwrap().text).unwrap();
+    for &(mhz, r, x, g, fb) in NECPP_LPDA_SWEEP {
+      let mut input = file.input.clone();
+      input.freq_hz = mhz * 1e6;
+      let got = solve_with_lines(&input, &file.lines).unwrap();
+      let dz = (got.impedance.0 - r).hypot(got.impedance.1 - x) / r.hypot(x);
+      assert!(
+        dz < 0.02,
+        "{mhz} MHz：阻抗相差 {:.2}%，页面写的是 2% 以内",
+        dz * 100.0
+      );
+      let dg = (got.gain_max_dbi - g).abs();
+      assert!(
+        dg < 0.1,
+        "{mhz} MHz：增益相差 {dg:.3} dB，页面写的是不超过 0.1 dB"
+      );
+      let dfb = (got.front_to_back_db - fb).abs();
+      assert!(
+        dfb < 2.0,
+        "{mhz} MHz：前后比相差 {dfb:.2} dB，页面写的是不超过 2 dB"
+      );
+      assert!(
+        got.gain_max_azimuth_deg.abs() < 1.0 || (got.gain_max_azimuth_deg - 360.0).abs() < 1.0,
+        "{mhz} MHz：波束方位 {}° 不在顶点一侧",
+        got.gain_max_azimuth_deg
+      );
+    }
+  }
+
+  /// LPDA 模板的意义在**交叉线**：相邻振子反相馈电，波束才指向顶点（最短振子）一侧、前后比才高。
+  /// 把 `Z0` 的符号翻回去（普通线）整个方向图就垮掉 —— 这条用例把这个差别钉住，
+  /// 也防止以后有人把「负 Z0」当成非法输入而悄悄丢掉。
+  #[test]
+  fn lpda_needs_its_crossed_lines() {
+    let file = parse_nec(nec_template("lpda-14-28mhz").unwrap().text).unwrap();
+    assert_eq!(file.lines.len(), 11, "12 根振子之间 11 条线");
+    assert!(
+      file.lines.iter().all(|l| l.z0 < 0.0),
+      "模板里的线都应是交叉线（Z0 为负）：{:?}",
+      file.lines
+    );
+    assert!(
+      file.ignored.is_empty(),
+      "不应有被忽略的卡片：{:?}",
+      file.ignored
+    );
+    let crossed = solve_with_lines(&file.input, &file.lines).unwrap();
+    // 波束指向顶点（+x，方位 0°）；necpp 同口径下 F/B = 19.7 dB（本实现 19.2 dB）。
+    assert!(
+      crossed.gain_max_azimuth_deg.abs() < 1.0
+        || (crossed.gain_max_azimuth_deg - 360.0).abs() < 1.0,
+      "方位 {}°",
+      crossed.gain_max_azimuth_deg
+    );
+    assert!(
+      crossed.front_to_back_db > 15.0,
+      "F/B {} dB",
+      crossed.front_to_back_db
+    );
+    let plain: Vec<_> = file
+      .lines
+      .iter()
+      .map(|l| crate::nec::TransmissionLine { z0: -l.z0, ..*l })
+      .collect();
+    let plain = solve_with_lines(&file.input, &plain).unwrap();
+    assert!(
+      plain.front_to_back_db < crossed.front_to_back_db - 10.0,
+      "不交叉时 F/B {} dB 应比交叉时 {} dB 差得多",
+      plain.front_to_back_db,
+      crossed.front_to_back_db
+    );
   }
 }

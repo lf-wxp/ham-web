@@ -335,6 +335,11 @@ impl Load {
 /// 它建模的是**串进结构里**的一段馈线：端口 a、b 是结构上的两个断口，电流流经这条线。
 /// 于是 λ/2 线等价于把断口直接连起来（阻抗透传），λ/4 线则是阻抗变换器 ——
 /// 这两条正是单元测试的判据。
+///
+/// 同一个段上的多个端口与激励源是**并联**在那个间隙上的（NEC-2 的口径）：源接在线的输入端、
+/// 一个振子中心同时挂前后两条线，都是这样表达。`z0` 为负是**交叉线**（相邻振子反相馈电，
+/// 对数周期天线靠它），等价于同样的线再加半个波长。数字与 necpp 逐点对拍过，
+/// 见 `reference/tl_necpp.py` 与 `transmission_lines_agree_with_necpp`。
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TransmissionLine {
   /// 端口 A 所在导线。
@@ -345,7 +350,7 @@ pub struct TransmissionLine {
   pub wire_b: usize,
   /// 端口 B 在导线上的相对位置。
   pub at_b: f64,
-  /// 特性阻抗（Ω）。
+  /// 特性阻抗（Ω）。**负号表示交叉线**（180° 反相，NEC-2 的约定），取绝对值当特性阻抗；0 非法。
   pub z0: f64,
   /// 线长（m）。
   pub length_m: f64,
@@ -1142,6 +1147,37 @@ struct Solved {
 }
 
 /// 「装配 → 解线性方程组 → 取馈电阻抗」这一段。
+/// 结构上的一个「间隙位置」：`(段, 段内位置)`。落在同一位置的激励源与传输线端口并联在这个间隙上，
+/// 共用一个间隙电压（见 `solve_model` 里的装配说明）。
+struct GapLoc {
+  /// 段号。
+  seg: usize,
+  /// 段内归一化位置。
+  alpha: f64,
+  /// 该位置上源电压之和；`None` 表示没有激励（间隙电压是未知量）。
+  volts: Option<f64>,
+  /// 落在该位置上的端口槽号（`2 * 线序号 + 0 / 1`）。
+  ports: Vec<usize>,
+}
+
+impl GapLoc {
+  fn new(seg: usize, alpha: f64, volts: Option<f64>) -> Self {
+    Self {
+      seg,
+      alpha,
+      volts,
+      ports: Vec::new(),
+    }
+  }
+
+  /// 同一 `(段, 位置)` 的下标；位置按 1e-9 容差判同（`locate` 算出来的 `alpha` 有舍入）。
+  fn find(locs: &[GapLoc], seg: usize, alpha: f64) -> Option<usize> {
+    locs
+      .iter()
+      .position(|l| l.seg == seg && (l.alpha - alpha).abs() < 1e-9)
+  }
+}
+
 fn solve_model(input: &NecInput, lines: &[TransmissionLine]) -> Option<Solved> {
   // `is_finite()` 先挡掉 NaN 与 ±inf：只写 `freq_hz <= 0.0` 会放行 NaN（比较为假），
   // 一路算到 `Some(NaN)` 冒充有效解。有限性判定在前，后面的 `<=` 才不会碰到 NaN。
@@ -1179,10 +1215,14 @@ fn solve_model(input: &NecInput, lines: &[TransmissionLine]) -> Option<Solved> {
     for (wire, at) in [(line.wire_a, line.at_a), (line.wire_b, line.at_b)] {
       let (seg_idx, alpha) = locate(&model, wire, at)?;
       let seg = model.segs[seg_idx];
-      if (1.0 - alpha).abs() > 1e-12 {
+      // 只有端口**恰好落在端点上**（`at = 0` / `1`）才放开那个端点：线是在端点处把电流送出去。
+      // 端口落在端段内部（比如 `.nec` 的段号换算成段心）时端点电流照旧是 0 —— 那是 NEC 的口径，
+      // 也是物理上对的：放开会让电流从导线末端无处可去地流出去（线较长时解出负电阻，
+      // 与 necpp 也对不上）。
+      if alpha.abs() < 1e-9 {
         line_nodes.push(seg.start_node);
       }
-      if alpha.abs() > 1e-12 {
+      if (1.0 - alpha).abs() < 1e-9 {
         line_nodes.push(seg.end_node);
       }
     }
@@ -1214,25 +1254,40 @@ fn solve_model(input: &NecInput, lines: &[TransmissionLine]) -> Option<Solved> {
 
   // 传输线段：把两端口网络的约束接进系统。
   //
-  // 未知量扩成 `[电流…; 端口电压…]`：MoM 方程里出现 `−V_p·Λ`（δ 间隙激励），
-  // 把电压也当成未知量、再补上网络自己的两行约束，系统仍是方阵 ——
-  // 端口电压与电流是**一起**解出来的，而不是先解电流再事后修正。
+  // **端口与馈电共用同一个间隙**：落在同一个 `(段, 段内位置)` 上的所有端口与激励源是并联的 ——
+  // 间隙电压只有一个，结构穿过间隙的电流是它们各自电流之和（NEC-2 的网络口径：
+  // 一个激励源加一条传输线接在同一段上，就是「源接在线的输入端」，相控阵靠这个馈电；
+  // 同一段上挂两条线也是并联）。于是未知量是
+  //   `[结点电流 n 个; 无激励位置的间隙电压 nl 个; 各端口穿过间隙的电流 np 个]`，
+  // 方程是
+  //   MoM 的 n 行 + 每条线 2 行网络约束 + 每个无激励位置 1 行电流守恒（Σ 端口电流 = 结构电流）。
+  // 有激励的位置间隙电压就是源电压（已在右端项里），不再是未知量。
   //
-  // 约束用链矩阵（端口电流都取「流入网络」为正）：
-  //   V_a = A·V_b − B·I_b，  I_a = C·V_b − D·I_b
-  // 其中 `A = D = cosθ`、`B = jZ0·sinθ`、`C = j·sinθ/Z0`，`θ = ωℓ/(c·vf)`。
-  // 代进去可得两个极端都对：`θ = 0`（零长线）给出 `V_a = V_b, I_a = −I_b`，
-  // 就是一根导线；`θ = π`（λ/2 线）给出 `V_a = −V_b, I_a = I_b`，
-  // 阻抗原样透传（`Z_in = Z_b`）。
+  // 网络约束用链矩阵。端口电流取「从结构流入网络」，网络电压取沿电流方向的**压降**：
+  // 间隙电压 `Ṽ` 是 δ 间隙激励（沿段方向的电势升），所以网络电压是 `−Ṽ`。若直接把 `Ṽ` 当网络电压，
+  // 线长的符号就反了（等效于负的电长度）—— λ/4、λ/2 的线两者恰好一样，其它长度会差一个相位
+  // （与 necpp 逐点对拍时才暴露）：
+  //   −Ṽ_a = ρ(A·(−Ṽ_b) − B·Ĩ_b)，  Ĩ_a = ρ(C·(−Ṽ_b) − D·Ĩ_b)
+  // 其中 `A = D = cosθ`、`B = jZ0·sinθ`、`C = j·sinθ/Z0`，`θ = ωℓ/(c·vf)`，
+  // `ρ = s_a·s_b` 换算两个端口的朝向。`θ = 0` 给出一根导线，`θ = π` 给出阻抗原样透传。
+  // **交叉线**（`z0 < 0`，NEC 的约定）是把一端的两根导体对调：`ρ` 再取负，`|z0|` 当特性阻抗。
   let n = unknowns.len();
   let np = lines.len() * 2;
-  let mut port_w: Vec<Vec<Cx>> = Vec::with_capacity(np);
+  // 馈电所在位置：`(段, 段内位置)` → 源电压之和。端口落在这里就与源并联。
+  let mut locs: Vec<GapLoc> = Vec::new();
+  for &(seg_idx, alpha, volts) in &feed_pos {
+    match GapLoc::find(&locs, seg_idx, alpha) {
+      Some(i) => locs[i].volts = Some(locs[i].volts.unwrap_or(0.0) + volts),
+      None => locs.push(GapLoc::new(seg_idx, alpha, Some(volts))),
+    }
+  }
+  let mut slot_loc: Vec<usize> = Vec::with_capacity(np);
   let mut port_sign_v: Vec<f64> = Vec::with_capacity(np);
   if np > 0 {
     // 先查有限性再比大小：`z0 = NaN` 与 0.0 的比较恒为假，只写 `<= 0.0` 会放行
-    // NaN 一路装到消元阶段，把「参数非法」伪装成「无解」。
+    // NaN 一路装到消元阶段，把「参数非法」伪装成「无解」。负的 `z0` 是交叉线，合法。
     if lines.iter().any(|l| {
-      !(l.z0.is_finite() && l.z0 > 0.0)
+      !(l.z0.is_finite() && l.z0 != 0.0)
         || !(l.length_m.is_finite() && l.length_m >= 0.0)
         || !(l.velocity_factor.is_finite() && l.velocity_factor > 0.0)
         || !l.at_a.is_finite()
@@ -1240,57 +1295,93 @@ fn solve_model(input: &NecInput, lines: &[TransmissionLine]) -> Option<Solved> {
     }) {
       return None;
     }
-    rhs.resize(n + np, Cx::ZERO);
-    for row in z.iter_mut() {
-      row.resize(n + np, Cx::ZERO);
-    }
-    z.resize(n + np, vec![Cx::ZERO; n + np]);
-
-    // 端口段上的 hat 权重：激励列与约束行共用同一组权重，口径一致。
-    for (p, line) in lines.iter().enumerate() {
-      for (slot, wire, at) in [
-        (2 * p, line.wire_a, line.at_a),
-        (2 * p + 1, line.wire_b, line.at_b),
-      ] {
+    for line in lines {
+      for (wire, at) in [(line.wire_a, line.at_a), (line.wire_b, line.at_b)] {
         let (seg_idx, alpha) = locate(&model, wire, at)?;
-        let seg = model.segs[seg_idx];
-        let mut col = vec![Cx::ZERO; n];
-        for (node, w) in [(seg.start_node, 1.0 - alpha), (seg.end_node, alpha)] {
-          if let Some(row) = unknowns.iter().position(|&j| j == node) {
-            col[row] += Cx::of(w);
-          }
-        }
-        // MoM 方程的右端是 `−Ṽ_p·Λ`，把这一项移到矩阵里，端口电压就成了未知量。
-        // （`Ṽ_p` 是沿该**段自身方向**的间隙电压；端口朝向由 `port_sign` 换算。）
-        for (row, c) in col.iter().enumerate() {
-          z[row][n + slot] += *c;
-        }
-        port_w.push(col);
         port_sign_v.push(Model::port_sign(&model, seg_idx));
+        let loc = GapLoc::find(&locs, seg_idx, alpha).unwrap_or_else(|| {
+          locs.push(GapLoc::new(seg_idx, alpha, None));
+          locs.len() - 1
+        });
+        locs[loc].ports.push(slot_loc.len());
+        slot_loc.push(loc);
       }
     }
+  }
+  // 无激励的位置各有一个间隙电压未知量（列 `n + 序号`）。
+  let mut volt_col: Vec<Option<usize>> = Vec::with_capacity(locs.len());
+  let mut nl = 0usize;
+  for l in &locs {
+    if l.volts.is_none() {
+      volt_col.push(Some(n + nl));
+      nl += 1;
+    } else {
+      volt_col.push(None);
+    }
+  }
+  let cur_col = |slot: usize| n + nl + slot;
+  if np > 0 {
+    let dim = n + nl + np;
+    rhs.resize(dim, Cx::ZERO);
+    for row in z.iter_mut() {
+      row.resize(dim, Cx::ZERO);
+    }
+    z.resize(dim, vec![Cx::ZERO; dim]);
+
+    // 间隙电压在 MoM 行里的列：`−Ṽ·Λ` 移到左边，权重与激励（右端项）共用同一组 hat 权重。
+    let hat = |seg_idx: usize, alpha: f64| -> Vec<(usize, f64)> {
+      let seg = model.segs[seg_idx];
+      [(seg.start_node, 1.0 - alpha), (seg.end_node, alpha)]
+        .into_iter()
+        .filter_map(|(node, w)| unknowns.iter().position(|&j| j == node).map(|row| (row, w)))
+        .collect()
+    };
+    for (li, l) in locs.iter().enumerate() {
+      if let Some(col) = volt_col[li] {
+        for (row, w) in hat(l.seg, l.alpha) {
+          z[row][col] += Cx::of(w);
+        }
+      }
+    }
+    // 电流守恒：Σ（该位置上各端口的电流）− 结构穿过间隙的电流 = 0。
+    for (li, l) in locs.iter().enumerate() {
+      let Some(vcol) = volt_col[li] else { continue };
+      let krow = n + np + (vcol - n);
+      for &slot in &l.ports {
+        z[krow][cur_col(slot)] += Cx::ONE;
+      }
+      for (row, w) in hat(l.seg, l.alpha) {
+        z[krow][row] -= Cx::of(w);
+      }
+    }
+    // 网络约束：`Ṽ` 在有激励的位置是已知数，移到右端项。
     let omega = k * C0;
     for (p, line) in lines.iter().enumerate() {
       let theta = line.electrical_length(omega);
       let (sin, cos) = theta.sin_cos();
       let (pa, pb) = (2 * p, 2 * p + 1);
-      // 两个端口的朝向可能相反（一个在导线末端、一个在首端），链矩阵要按
-      // `ρ = s_a·s_b` 换算：`Ṽ_a = ρ(A·Ṽ_b − B·Ĩ_b)`、`Ĩ_a = ρ(C·Ṽ_b − D·Ĩ_b)`。
-      let rho = Cx::of(port_sign_v[pa] * port_sign_v[pb]);
-      // 行 pa：Ṽ_a − ρ·cosθ·Ṽ_b + ρ·jZ0·sinθ·Ĩ_b = 0
-      z[n + pa][n + pa] += Cx::ONE;
-      z[n + pa][n + pb] -= rho * Cx::of(cos);
-      for (i, w) in port_w[pb].iter().enumerate() {
-        z[n + pa][i] += rho * Cx::j(line.z0 * sin) * *w;
-      }
-      // 行 pb：Ĩ_a − ρ·j(sinθ/Z0)·Ṽ_b + ρ·cosθ·Ĩ_b = 0
-      for (i, w) in port_w[pa].iter().enumerate() {
-        z[n + pb][i] += *w;
-      }
-      z[n + pb][n + pb] -= rho * Cx::j(sin / line.z0);
-      for (i, w) in port_w[pb].iter().enumerate() {
-        z[n + pb][i] += rho * Cx::of(cos) * *w;
-      }
+      let z0 = line.z0.abs();
+      let cross = if line.z0 < 0.0 { -1.0 } else { 1.0 };
+      let rho = Cx::of(port_sign_v[pa] * port_sign_v[pb] * cross);
+      let (la, lb) = (slot_loc[pa], slot_loc[pb]);
+      // 把「系数 × 该位置的间隙电压」放进第 `row` 行：未知量进矩阵，已知量进右端项。
+      let put_v =
+        |z: &mut Vec<Vec<Cx>>, rhs: &mut Vec<Cx>, row: usize, li: usize, coef: Cx| match volt_col
+          [li]
+        {
+          Some(col) => z[row][col] += coef,
+          None => rhs[row] -= coef * Cx::of(locs[li].volts.unwrap_or(0.0)),
+        };
+      // 行 pa：Ṽ_a − ρ·cosθ·Ṽ_b − ρ·jZ0·sinθ·Ĩ_b = 0
+      let ra = n + pa;
+      put_v(&mut z, &mut rhs, ra, la, Cx::ONE);
+      put_v(&mut z, &mut rhs, ra, lb, -(rho * Cx::of(cos)));
+      z[ra][cur_col(pb)] -= rho * Cx::j(z0 * sin);
+      // 行 pb：Ĩ_a + ρ·j(sinθ/Z0)·Ṽ_b + ρ·cosθ·Ĩ_b = 0
+      let rb = n + pb;
+      z[rb][cur_col(pa)] += Cx::ONE;
+      put_v(&mut z, &mut rhs, rb, lb, rho * Cx::j(sin / z0));
+      z[rb][cur_col(pb)] += rho * Cx::of(cos);
     }
   }
 
@@ -1309,7 +1400,14 @@ fn solve_model(input: &NecInput, lines: &[TransmissionLine]) -> Option<Solved> {
   let (feed_seg, feed_alpha, feed_volts) = feed_pos[0];
   let seg = model.segs[feed_seg];
   let node_i = |node: usize| -> Cx { node_current[node] };
-  let i_feed = node_i(seg.start_node) * (1.0 - feed_alpha) + node_i(seg.end_node) * feed_alpha;
+  // 结构穿过馈电间隙的电流；若有传输线并联在同一个间隙上，线也分走一部分，
+  // 源真正送出的电流 = 结构电流 − 各端口电流（电流守恒，见上面的装配说明）。
+  let mut i_feed = node_i(seg.start_node) * (1.0 - feed_alpha) + node_i(seg.end_node) * feed_alpha;
+  if let Some(li) = GapLoc::find(&locs, feed_seg, feed_alpha) {
+    for &slot in &locs[li].ports {
+      i_feed -= sol[cur_col(slot)];
+    }
+  }
   if i_feed.abs() < 1e-18 {
     return None;
   }
@@ -2150,8 +2248,8 @@ fn push_ignored(ignored: &mut Vec<String>, what: impl Into<String>) {
 /// `TL` 按 NEC-2 手册 Part III 的定义：`TL I1 I2 I3 I4 F1 F2 F3 F4 F5 F6`，两端各是一个段，
 /// `F1` = 特性阻抗（Ω，负号表示 180° 反相的交叉线）、`F2` = 线长（m，空白 = 两个连接段之间的
 /// 直线距离）、`F3`–`F6` = 两端并联导纳。NEC 的线是**无耗、速度因子 1** 的理想线，所以导入时
-/// 速度因子取 1；交叉线与非零并联导纳本求解器不支持，整张卡跳过并留诊断（只解析一半等于
-/// 静默算错）。`I2 = −1` 按手册清空此前的全部传输线。
+/// 速度因子取 1；负的 `F1`（交叉线）原样保留符号；非零并联导纳本求解器不支持，整张卡跳过并留诊断
+/// （只解析一半等于静默算错）。`I2 = −1` 按手册清空此前的全部传输线。
 ///
 /// 只有在「没有任何导线」或「没有任何馈电」或「没有可用频率」时才整体返回 `None`。
 #[must_use]
@@ -2278,13 +2376,6 @@ pub fn parse_nec(text: &str) -> Option<NecFile> {
             push_ignored(
               &mut ignored,
               "TL(两端并联导纳未支持，已跳过该卡)".to_owned(),
-            );
-            return Some(());
-          }
-          if z0 < 0.0 {
-            push_ignored(
-              &mut ignored,
-              "TL(交叉线（Z0 为负）未支持，已跳过该卡)".to_owned(),
             );
             return Some(());
           }
@@ -4288,7 +4379,8 @@ mod tests {
       "TL 1 10 2 1 50\nTL 1 1 2 10 75 3.0\nTL 1 1 2 10 -50 1\nTL 1 1 2 10 50 1 0.01 0 0 0\nTL 0 10 0 11 300 2\n",
     ))
     .expect("应能解析");
-    assert_eq!(f.lines.len(), 3, "{:?}", f.lines);
+    // 四条：普通线、带线长的线、交叉线（Z0 为负）、tag 0 的绝对段号；带并联导纳的那张整卡跳过。
+    assert_eq!(f.lines.len(), 4, "{:?}", f.lines);
     // 段号 → 段心；NEC 的线是速度因子 1 的理想线。
     let a = f.lines[0];
     assert_eq!((a.wire_a, a.wire_b), (0, 1));
@@ -4305,14 +4397,16 @@ mod tests {
       a.length_m
     );
     assert_eq!((f.lines[1].z0, f.lines[1].length_m), (75.0, 3.0));
+    // 负的 Z0 是交叉线：符号原样保留（求解器用它判断反相，导出时也靠它写回）。
+    assert_eq!((f.lines[2].z0, f.lines[2].length_m), (-50.0, 1.0));
     // tag 0：绝对段号（第 10 段 = 1 号线末段，第 11 段 = 2 号线首段）。
-    let abs = f.lines[2];
+    let abs = f.lines[3];
     assert_eq!((abs.wire_a, abs.wire_b, abs.z0), (0, 1, 300.0));
     assert!((abs.at_a - 0.95).abs() < 1e-12 && (abs.at_b - 0.05).abs() < 1e-12);
-    // 交叉线与并联导纳：整张卡跳过并说明原因，而不是只解析一半。
+    // 并联导纳：整张卡跳过并说明原因，而不是只解析一半。
     assert!(
-      f.ignored.iter().any(|x| x.contains("交叉线")),
-      "{:?}",
+      !f.ignored.iter().any(|x| x.contains("交叉线")),
+      "交叉线现在受支持：{:?}",
       f.ignored
     );
     assert!(
@@ -4340,6 +4434,239 @@ mod tests {
       "Z0 = 0：{:?}",
       f.ignored
     );
+  }
+
+  /// 两根平行半波振子（沿 z，每根 21 段）、中段之间接一条线、激励在 1 号振子的 `feed_seg` 段上。
+  /// 与 `reference/tl_necpp.py` 的 `dipoles()` 是同一份卡片组（对拍用的就是它）。
+  fn two_dipoles(spacing: f64, len: f64, z0: f64, feed_seg: usize) -> String {
+    format!(
+      "GW 1 21 0 0 -5.1 0 0 5.1 0.005\nGW 2 21 {spacing} 0 -5.1 {spacing} 0 5.1 0.005\nGE 0\n\
+       TL 1 11 2 11 {z0} {len} 0 0 0 0\nEX 0 1 {feed_seg} 0 1 0\nFR 0 1 0 0 14.2 0\nEN\n"
+    )
+  }
+
+  fn solve_deck(text: &str) -> NecResult {
+    let f = parse_nec(text).expect("应能解析");
+    assert!(f.ignored.is_empty(), "{:?}", f.ignored);
+    solve_with_lines(&f.input, &f.lines).expect("应能求解")
+  }
+
+  /// 与 necpp（PyNEC 2.4.0，`reference/tl_necpp.py`）逐点对拍：激励与传输线端口**共用一段**
+  /// （线接在源的两端，相控阵的标准接法）、端口各在没有激励的段上、普通线与交叉线都覆盖。
+  ///
+  /// 参照值是 necpp 的馈电阻抗。两套是不同的矩量法离散（本实现 hat 基 Galerkin、necpp 脉冲基 + 点匹配），
+  /// 阻抗差几个百分点是常态。脚本（`FEED_SEG=11` 与 `=5` 各跑一遍，每遍 48 组，共 96 组）的 `ΔZ/|Z|`：
+  /// 共段（11）中位 1.7%、最坏 8.6%；分段（5）馈电阻抗常在几百 Ω 到 kΩ、对段长更敏感，中位 4.1%、最坏 18.8%。
+  /// 下面挑的 7 组都落在共段 / 分段的典型区间内，容限取 8%；而符号错（线长反号、交叉线不反相、并联当成串联）会差几倍，抓得住。
+  #[test]
+  fn transmission_lines_agree_with_necpp() {
+    // (间距, 线长, Z0, 激励段, necpp 的 R, X)
+    let cases = [
+      (5.3, 5.3, 50.0, 11, 12.472, -7.100),
+      (5.3, 5.3, -50.0, 11, 42.755, 10.756),
+      (3.0, 7.9, -300.0, 11, 73.025, 15.055),
+      (8.0, 12.0, 75.0, 11, 42.292, 24.936),
+      (5.3, 3.0, 75.0, 5, 540.972, 161.694),
+      (5.3, 3.0, -75.0, 5, 192.265, -209.193),
+      (8.0, 12.0, -50.0, 5, 457.921, -23.792),
+    ];
+    for (spacing, len, z0, seg, r, x) in cases {
+      let got = solve_deck(&two_dipoles(spacing, len, z0, seg)).impedance;
+      let d = (got.0 - r).hypot(got.1 - x) / r.hypot(x);
+      assert!(
+        d < 0.08,
+        "间距 {spacing} 线长 {len} Z0 {z0} 激励段 {seg}：{:.3}{:+.3}j vs necpp {r}{x:+}j（相对差 {:.1}%）",
+        got.0,
+        got.1,
+        d * 100.0
+      );
+    }
+  }
+
+  /// 端口落在端段内部（`.nec` 的段号换算成段心）时，导线末端电流仍是 0 —— NEC 的口径。
+  ///
+  /// 以前只要端口所在段碰到端点，两端节点就都被放开：电流从导线末端无处可去地流出去，
+  /// 线长超过约 6 m 时解出**负电阻**（passive 结构不可能），也与 necpp 对不上。
+  /// 参照是 necpp（PyNEC 2.4.0）：两根共线臂中间接一条线、端口各在端段段心，线几乎不起作用，
+  /// 阻抗 ≈ 14.5 − j811 Ω，与线长、普通 / 交叉都无关。
+  #[test]
+  fn ports_inside_an_end_segment_do_not_release_the_wire_end() {
+    for z0 in [50.0, -50.0] {
+      for len in [0.3, 3.0, 6.0, 10.9, 16.0] {
+        let text = format!(
+          "GW 1 10 -5.3 0 10 -0.15 0 10 0.002\nGW 2 10 0.15 0 10 5.3 0 10 0.002\nGE 0\n\
+           TL 1 10 2 1 {z0} {len} 0 0 0 0\nEX 0 1 5 0 1 0\nFR 0 1 0 0 14.1 0\nEN\n"
+        );
+        let z = solve_deck(&text).impedance;
+        assert!(z.0 > 0.0, "Z0 {z0} 线长 {len}：电阻 {} Ω 不可能为负", z.0);
+        let d = (z.0 - 14.5).hypot(z.1 + 811.0) / 811.0;
+        assert!(
+          d < 0.08,
+          "Z0 {z0} 线长 {len}：{z:?} 与 necpp 的 14.5 − j811 Ω 差 {:.1}%",
+          d * 100.0
+        );
+      }
+    }
+  }
+
+  /// 交叉线 = 同一条线再多半个波长：把一端的两根导体对调，等价于相位多转 180°。
+  /// 这是个与任何外部程序无关的解析恒等式，对两种线长、两种地面、源与端口共段 / 不共段都成立。
+  #[test]
+  fn crossed_line_equals_a_half_wave_longer_plain_line() {
+    let lam = wavelength(14.2e6);
+    for seg in [11, 5] {
+      // 线长 0 在 NEC 里表示「取两段之间的直线距离」，要零长线得给一个极小的正数。
+      for len in [1e-9, 1.7, 5.3] {
+        let crossed = solve_deck(&two_dipoles(5.3, len, -75.0, seg)).impedance;
+        let longer = solve_deck(&two_dipoles(5.3, len + lam / 2.0, 75.0, seg)).impedance;
+        assert!(
+          (crossed.0 - longer.0).hypot(crossed.1 - longer.1) < 1e-6 * crossed.0.hypot(crossed.1),
+          "激励段 {seg} 线长 {len}：交叉 {crossed:?} vs 加长半波 {longer:?}"
+        );
+      }
+    }
+  }
+
+  /// 零长线把两个间隙并联：两根相距很远（互耦可忽略）的相同振子并联，源看到的是单根的一半；
+  /// 交叉的零长线把第二根反相接上，源电流仍是两路之和，阻抗同样减半。
+  /// 这条抓的是「端口与激励共段时按串联叠加」那类错误（串联会得到两倍而不是一半）。
+  #[test]
+  fn zero_length_line_puts_two_gaps_in_parallel() {
+    let single = {
+      let t = "GW 1 21 0 0 -5.1 0 0 5.1 0.005\nGE 0\nEX 0 1 11 0 1 0\nFR 0 1 0 0 14.2 0\nEN\n";
+      solve_deck(t).impedance
+    };
+    for z0 in [50.0, -50.0] {
+      // 线长不能写 0（NEC 里 0 = 取两段间的直线距离），写一个极小的正数。
+      let z = solve_deck(&two_dipoles(400.0, 1e-9, z0, 11)).impedance;
+      for (got, want) in [(z.0, single.0 / 2.0), (z.1, single.1 / 2.0)] {
+        assert!(
+          (got - want).abs() < 0.02 * single.0.hypot(single.1),
+          "Z0 {z0}：{z:?} 应约为单根 {single:?} 的一半"
+        );
+      }
+    }
+  }
+
+  /// `two_dipoles` 的变体：每根振子可以反向绘制（起点在上、终点在下）。
+  /// 反向只是换了「段方向」的约定，结构本身不变。
+  fn two_dipoles_dir(len: f64, z0: f64, feed_seg: usize, rev1: bool, rev2: bool) -> String {
+    let wire = |tag: u32, x: f64, rev: bool| {
+      let (a, b) = if rev { (5.1, -5.1) } else { (-5.1, 5.1) };
+      format!("GW {tag} 21 {x} 0 {a} {x} 0 {b} 0.005\n")
+    };
+    format!(
+      "{}{}GE 0\nTL 1 11 2 11 {z0} {len} 0 0 0 0\nEX 0 1 {feed_seg} 0 1 0\nFR 0 1 0 0 14.2 0\nEN\n",
+      wire(1, 0.0, rev1),
+      wire(2, 5.3, rev2)
+    )
+  }
+
+  /// 端口的朝向换算（`port_sign`）在「端口与激励共段」的路径上也要成立 —— necpp 对拍里所有导线
+  /// 方向都一致，覆盖不到它，这里用不依赖外部程序的对称性来钉：
+  /// - 两根都反向绘制：结构与接线都只是镜像，阻抗不变；
+  /// - 只反向一根：线接到了那根振子的另一侧导体上，等价于**交叉线**（Z0 取负）。
+  ///
+  /// 共段（激励与端口同在 11 段）与分段（激励在 5 段、端口在 11 段）各验一遍。
+  #[test]
+  fn port_orientation_is_consistent_when_sharing_a_gap() {
+    let close = |a: (f64, f64), b: (f64, f64), what: &str| {
+      let d = (a.0 - b.0).hypot(a.1 - b.1) / b.0.hypot(b.1);
+      assert!(d < 1e-6, "{what}：{a:?} vs {b:?}（相对差 {d:.2e}）");
+    };
+    for (seg, len, z0) in [
+      (11, 5.3, 75.0),
+      (11, 3.0, 50.0),
+      (5, 5.3, 75.0),
+      (5, 12.0, 300.0),
+    ] {
+      let base = solve_deck(&two_dipoles_dir(len, z0, seg, false, false)).impedance;
+      let crossed = solve_deck(&two_dipoles_dir(len, -z0, seg, false, false)).impedance;
+      assert!(
+        (base.0 - crossed.0).hypot(base.1 - crossed.1) > 1e-3 * base.0.hypot(base.1),
+        "前提：普通线与交叉线的结果应不同（seg {seg} 线长 {len} Z0 {z0}）"
+      );
+      let tag = format!("seg {seg} 线长 {len} Z0 {z0}");
+      // 只反向 2 号振子（端口所在、不含激励）：等价于交叉线。
+      let rev2 = solve_deck(&two_dipoles_dir(len, z0, seg, false, true)).impedance;
+      close(rev2, crossed, &format!("{tag} 反向 2 号振子应等价于交叉线"));
+      // 激励在 11 段（段心）时，反向 1 号振子不改变馈电的物理位置，也等价于交叉线；
+      // 激励在 5 段时反向会把馈电点换到另一端，不在这里比。
+      if seg == 11 {
+        let rev1 = solve_deck(&two_dipoles_dir(len, z0, seg, true, false)).impedance;
+        close(rev1, crossed, &format!("{tag} 反向 1 号振子应等价于交叉线"));
+        let both = solve_deck(&two_dipoles_dir(len, z0, seg, true, true)).impedance;
+        close(both, base, &format!("{tag} 两根都反向应与原结果相同"));
+      }
+    }
+  }
+
+  /// `port_sign`（端口朝向）只在**端点端口**上会是 −1（内部段两端度数相同，取 +1）。
+  /// 上面那条对称性用例走的是段心端口，碰不到它；这里把端口与激励都放在导线**端点**上
+  /// （`at = 0` 或 `1`，页面默认行与「跨接断口」的用法），同一个物理结构用三种绘制方向 / 端点写法，
+  /// 结果必须一致：A 全部写 `at = 0`（`port_sign = −1`）、B 全部反向绘制并写 `at = 1`（`+1`）、
+  /// C 两根混着写（`ρ = s_a·s_b = −1`）。
+  #[test]
+  fn end_ports_sharing_a_gap_do_not_depend_on_drawing_direction() {
+    let lam = wavelength(14.2e6);
+    // 两根垂直振子，下端相对，线与源都接在下端（z = −5.1）。
+    let build = |rev1: bool, rev2: bool, at1: f64, at2: f64, len: f64, z0: f64| {
+      let wire = |x: f64, rev: bool| {
+        let (a, b) = ([x, 0.0, -5.1], [x, 0.0, 5.1]);
+        if rev {
+          Wire::new(b, a, 0.005, 21)
+        } else {
+          Wire::new(a, b, 0.005, 21)
+        }
+      };
+      let input = NecInput {
+        wires: vec![wire(0.0, rev1), wire(5.3, rev2)],
+        feeds: vec![Feed {
+          wire: 0,
+          at: at1,
+          volts: 1.0,
+        }],
+        loads: Vec::new(),
+        freq_hz: 14.2e6,
+        ground: Ground::Free,
+        conductivity: None,
+      };
+      let line = TransmissionLine {
+        wire_a: 0,
+        at_a: at1,
+        wire_b: 1,
+        at_b: at2,
+        z0,
+        length_m: len,
+        velocity_factor: 1.0,
+      };
+      solve_with_lines(&input, &[line])
+        .expect("应能求解")
+        .impedance
+    };
+    for z0 in [75.0, -75.0] {
+      for len in [0.3, lam / 4.0, 5.3] {
+        let a = build(false, false, 0.0, 0.0, len, z0);
+        let b = build(true, true, 1.0, 1.0, len, z0);
+        let c = build(false, true, 0.0, 1.0, len, z0);
+        let norm = a.0.hypot(a.1);
+        for (what, v) in [("B 全部反向", b), ("C 混合", c)] {
+          let d = (v.0 - a.0).hypot(v.1 - a.1) / norm;
+          assert!(
+            d < 1e-6,
+            "Z0 {z0} 线长 {len}：{what} {v:?} vs A {a:?}（相对差 {d:.2e}）"
+          );
+        }
+      }
+    }
+  }
+
+  #[test]
+  fn zero_characteristic_impedance_is_rejected() {
+    let f = parse_nec(&two_dipoles(5.3, 5.3, 50.0, 11)).unwrap();
+    let mut line = f.lines[0];
+    line.z0 = 0.0;
+    assert_eq!(solve_with_lines(&f.input, &[line]), None);
   }
 
   #[test]

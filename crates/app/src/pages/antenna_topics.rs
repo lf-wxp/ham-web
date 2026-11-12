@@ -7,6 +7,7 @@ use ham_web_core::antenna_topics::{
 use leptos::prelude::*;
 
 use crate::components::common::{BulletSection, ConceptsSection, KnowledgePage};
+use crate::components::nec_template_link::NecTemplateLink;
 use crate::i18n::t;
 use crate::util::set_title;
 
@@ -24,6 +25,9 @@ pub fn AntennaTopicsPage() -> impl IntoView {
       <BulletSection title="knowledge.antenna-topics-trap-tips" items=TRAP_TIPS />
       <ConceptsSection title="knowledge.antenna-topics-lpda" items=LPDA_CONCEPTS />
       <BulletSection title="knowledge.antenna-topics-lpda-tips" items=LPDA_TIPS />
+      <div data-slot="lpda-model-link">
+        <NecTemplateLink template="lpda-14-28mhz" />
+      </div>
       <ConceptsSection title="knowledge.antenna-topics-gain" items=GAIN_CONCEPTS />
       <BulletSection title="knowledge.antenna-topics-gain-tips" items=GAIN_TIPS />
     </KnowledgePage>

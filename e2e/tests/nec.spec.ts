@@ -571,6 +571,68 @@ test("天线矩量法求解：.nec 的 TL 卡导入成传输线、导出时写�
   await expect(box).toHaveValue(/TL 1, 10, 2, 1, 75\.000000, 1\.200000/);
 });
 
+test("天线矩量法求解：负 Z0（交叉线）导入后保留符号、导出时写回，不再算未支持", async ({ page }) => {
+  await page.goto("/nec");
+  await page.getByText("导入 / 导出 .nec").click();
+  const box = page.getByRole("textbox", { name: /把 \.nec 文本粘贴/ });
+  await box.fill(
+    [
+      "GW 1 10 -5 0 10 -0.001 0 10 0.001",
+      "GW 2 10 0.001 0 10 5 0 10 0.001",
+      "EX 0 1 5 0 1 0",
+      "TL 1 10 2 1 -75 1.2",
+      "FR 0 1 0 0 14.1",
+      "EN",
+    ].join("\n"),
+  );
+  await page.getByRole("button", { name: "导入" }).click();
+  // 交叉线以前整卡跳过并留「未支持」诊断；现在是正常导入。
+  await expect(page.getByText("已忽略未支持的卡片")).toHaveCount(0);
+  await expect(page.getByText(/共 1 段传输线。/)).toBeVisible();
+  const lines = page.locator('[data-slot="nec-lines"]');
+  await expect(lines.locator('input[aria-label="特性阻抗 Z0 1"]')).toHaveValue("-75");
+  await expect(summary(page)).toBeVisible();
+
+  await page.getByRole("button", { name: "导出当前几何" }).click();
+  await expect(box).toHaveValue(/TL 1, 10, 2, 1, -75\.000000, 1\.200000/);
+
+  // 符号真的进了求解：同一份几何把 Z0 改成 +75，馈电阻抗必须变。
+  const crossed = await summary(page).innerText();
+  await lines.locator('input[aria-label="特性阻抗 Z0 1"]').fill("75");
+  await expect(summary(page)).not.toHaveText(crossed);
+});
+
+// 回归：存档的可用性判据（`SavedModel::is_usable`）曾要求 `Z0 > 0`，交叉线（负 Z0）的存档
+// 保存得进去、载入按钮却不可用 —— LPDA 这类结构存了就载不回来。
+test("天线矩量法求解：含交叉线（负 Z0）的设计存档可以载回", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("locale", "zh"));
+  await page.goto("/antenna-topics");
+  await page.getByRole("link", { name: "在求解器中打开" }).click();
+  await expect(page.getByText(/已加载方案库模板：对数周期偶极阵/)).toBeVisible();
+  const lines = page.locator('[data-slot="nec-lines"]');
+  await expect(lines.locator('input[aria-label="特性阻抗 Z0 1"]')).toHaveValue("-150");
+  await expect(summary(page)).toBeVisible();
+  const designed = await summary(page).innerText();
+
+  await page.getByText("设计存档", { exact: true }).click();
+  await page.getByLabel("存档名称").fill("LPDA 12 元");
+  await page.getByRole("button", { name: "保存当前设计" }).click();
+  await expect(page.getByText("已保存设计：LPDA 12 元")).toBeVisible();
+
+  // 刷新后页面回到默认预设（没有传输线），再从存档载回。
+  await page.reload();
+  await expect(summary(page)).toBeVisible();
+  await expect(page.getByText(/共 11 段传输线。/)).toHaveCount(0);
+  await page.getByText("设计存档", { exact: true }).click();
+  const load = page.getByRole("button", { name: "载入设计 LPDA 12 元" });
+  await expect(load).toBeEnabled();
+  await load.click();
+  await expect(page.getByText("已载入设计：LPDA 12 元")).toBeVisible();
+  await expect(page.getByText(/共 11 段传输线。/)).toBeVisible();
+  await expect(lines.locator('input[aria-label="特性阻抗 Z0 11"]')).toHaveValue("-150");
+  await expect(summary(page)).toHaveText(designed);
+});
+
 test("天线矩量法求解：设计存档可以两份并排对比", async ({ page }) => {
   await page.goto("/nec");
   await expect(page.getByText(/馈电点阻抗 .+ Ω/)).toBeVisible();

@@ -240,7 +240,8 @@ impl SavedModel {
         l.wire_a < n
           && l.wire_b < n
           && finite(&[l.at_a, l.at_b, l.z0, l.length_m, l.velocity_factor])
-          && l.z0 > 0.0
+          // 负 Z0 是交叉线（NEC-2 约定，LPDA 靠它），合法；只有 0 非法，与 `solve_model` 同口径。
+          && l.z0 != 0.0
           && l.length_m >= 0.0
           && l.velocity_factor > 0.0
       })
@@ -476,6 +477,28 @@ mod tests {
     let mut m = ok;
     m.wires[0].segments = MAX_SEGMENTS;
     assert!(!m.is_usable());
+  }
+
+  /// 交叉线（负 Z0，LPDA 靠它）是合法输入：存档不能把它判成坏数据，否则「载入」载不回来。
+  /// 0 与非有限数仍然非法，与求解器的入口检查同口径。
+  #[test]
+  fn crossed_lines_are_usable_and_round_trip() {
+    let (input, mut lines) = sample();
+    lines[0].z0 = -150.0;
+    let m = SavedModel::from_input(&input, &lines);
+    assert!(m.is_usable(), "负 Z0 的存档应可载入");
+    let json = serde_json::to_string(&m).unwrap();
+    let back: SavedModel = serde_json::from_str(&json).unwrap();
+    assert!(back.is_usable());
+    assert_eq!(back.to_input().1, lines, "符号必须原样带回");
+
+    for bad in [0.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+      lines[0].z0 = bad;
+      assert!(
+        !SavedModel::from_input(&input, &lines).is_usable(),
+        "Z0 = {bad} 应判为不可用"
+      );
+    }
   }
 
   #[test]

@@ -94,3 +94,30 @@ for (const lang of ["en", "es"] as const) {
     }
   });
 }
+
+// LPDA 的 NEC 模型：12 根振子之间 11 条交叉线（负 Z0）。数字与 necpp 对拍（`tl_necpp.py`）：
+// 14.2 MHz 馈电阻抗 128.2 − j7.1 Ω（necpp）/ 128.8 − j6.0 Ω（本站），最大增益 7.99 / 7.96 dBi。
+test("天线补充专题：LPDA 模型在求解器中打开，交叉线与对拍数值都在", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("locale", "zh"));
+  await page.goto("/antenna-topics");
+  const link = page.getByRole("link", { name: "在求解器中打开" });
+  await expect(link).toHaveCount(1);
+  await link.click();
+
+  await expect(page).toHaveURL(/\/nec/);
+  await expect(page.getByText(/已加载方案库模板：对数周期偶极阵/)).toBeVisible();
+  await expect(page.getByText(/共 11 段传输线。/)).toBeVisible();
+  const lines = page.locator('[data-slot="nec-lines"]');
+  await expect(lines.locator('input[aria-label="特性阻抗 Z0 1"]')).toHaveValue("-150");
+  await expect(lines.locator('input[aria-label="特性阻抗 Z0 11"]')).toHaveValue("-150");
+
+  const summary = page.getByText(/馈电点阻抗 .+ Ω/);
+  await expect(summary).toBeVisible();
+  await expect
+    .poll(async () => Number((await summary.innerText()).match(/馈电点阻抗 (-?[\d.]+)/)?.[1] ?? "0"))
+    .toBeGreaterThan(125);
+  const text = await summary.innerText();
+  expect(Number(text.match(/馈电点阻抗 (-?[\d.]+)/)![1])).toBeLessThan(132);
+  expect(Number(text.match(/增益 ([\d.]+) dBi/)![1])).toBeGreaterThan(7.8);
+  expect(Number(text.match(/增益 ([\d.]+) dBi/)![1])).toBeLessThan(8.2);
+});
