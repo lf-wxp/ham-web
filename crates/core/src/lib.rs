@@ -22,6 +22,7 @@ pub mod antenna_installation;
 pub mod antenna_modeling;
 pub mod antenna_pattern;
 pub mod antenna_theory;
+pub mod antenna_topics;
 pub mod antenna_tuning;
 pub mod antennas;
 pub mod api_v1;

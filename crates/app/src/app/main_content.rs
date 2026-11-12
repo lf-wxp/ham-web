@@ -6,8 +6,8 @@ use leptos_router::path;
 use crate::pages::{
   AchievementsPage, AmplifierPage, AnalogModesPage, AntennaAnalyzerPage, AntennaArrayPage,
   AntennaDiyPage, AntennaFarmPage, AntennaInstallationPage, AntennaModelingPage, AntennaTheoryPage,
-  AntennaTuningPage, AntennasPage, AprsPage, AptDecoderPage, ArdfPage, AtvPage, AuroraPage,
-  AwardsPage, BackupPage, BalunPage, BandPlanPage, BandsPage, BattlePage, BeaconsPage,
+  AntennaTopicsPage, AntennaTuningPage, AntennasPage, AprsPage, AptDecoderPage, ArdfPage, AtvPage,
+  AuroraPage, AwardsPage, BackupPage, BalunPage, BandPlanPage, BandsPage, BattlePage, BeaconsPage,
   BeginnerPage, BestiaryPage, BookmarksPage, BrowsePage, CabrilloPage, CallsignCopyPage,
   CallsignPage, CardsPage, CheatSheetPage, ChinaHamPage, CommunityPage, ConfusablesPage,
   ConnectorsPage, ContestCalendarPage, ContestLogPage, ContestPage, CoordinationPage,
@@ -279,6 +279,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/noise") view=NoisePage />
         <Route path=path!("/learning-path") view=LearningPathPage />
         <Route path=path!("/practical-antennas") view=PracticalAntennasPage />
+        <Route path=path!("/antenna-topics") view=AntennaTopicsPage />
         <Route path=path!("/vna") view=VnaPage />
         <Route path=path!("/diy-projects") view=DiyProjectsPage />
         <Route path=path!("/developers") view=DevelopersPage />

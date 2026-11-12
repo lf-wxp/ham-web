@@ -51,6 +51,7 @@ pub const TOPIC_TOPS: &[(&str, &str)] = &[
   ("/antenna-analyzer", "天线"),
   ("/antenna-modeling", "天线"),
   ("/antenna-array", "天线"),
+  ("/antenna-topics", "天线"),
   ("/nvis", "天线"),
   ("/electronics", "基础"),
   ("/filters", "基础"),

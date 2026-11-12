@@ -3,9 +3,10 @@
 
 use crate::fec::{Code, Interleaver, PUNCTURE, Viterbi};
 use crate::front::{
-  Grid, detect_base as detect_base_grid, find_offset, gate, peak_ratios, polish_base, symbol_bins,
+  Grid, detect_base as detect_base_grid, find_offset, gate, peak_ratios, polish_base,
 };
 use crate::lookup::{render, varidec};
+use crate::track::bins_tracked;
 use crate::{Mode, gray_decode};
 
 /// fldigi 的回溯深度（`tracepair.trace`）。
@@ -19,10 +20,14 @@ const CWI_MAXCOUNT: i32 = 6;
 pub struct Decoded {
   /// 正文（`\r` 换成换行，其余控制字符去掉；字节按 Latin-1 解读）。
   pub text: String,
-  /// 使用的信号中心频率（Hz）：调用方没给就是自动检测的结果。
+  /// 使用的信号中心频率（Hz）：调用方没给就是自动检测的结果；有频漂时取信号区间中点处的值。
   pub center_hz: f64,
   /// 参与解码的符号数。
   pub symbols: usize,
+  /// 符号周期相对名义值的偏差（ppm），正 = 录音时钟偏慢；没有跟踪到时钟误差是 0。
+  pub clock_ppm: f64,
+  /// 频漂（Hz / 秒），正 = 越往后频率越高；没有跟踪到频漂是 0。
+  pub drift_hz_per_s: f64,
   /// 译码用的交织深度（MFSK4 / 8 会在 5 与 10 之间择优，其余模式固定）。
   pub depth: usize,
 }
@@ -73,9 +78,11 @@ pub fn decode_audio(
     return None;
   }
   let nt = grid.ntones;
-  let bins = symbol_bins(samples, &grid, base, offset);
+  // 时钟误差与频漂：没有值得做的修正时 `drift` 就是不跟踪的网格，`bins` 与 `symbol_bins` 逐位相同。
+  let (bins, drift) = bins_tracked(samples, &grid, base, offset);
   let (first, last) = gate(&peak_ratios(&bins, nt))?;
   let span = last - first + 1;
+  let mid_base = drift.base_at((first + last) as f64 / 2.0);
 
   let region: Vec<&[f64]> = bins.chunks_exact(nt).skip(first).take(span).collect();
   let mut best: Option<(i64, Decoded)> = None;
@@ -101,8 +108,10 @@ pub fn decode_audio(
         score,
         Decoded {
           text,
-          center_hz: base + mode.bandwidth() / 2.0,
+          center_hz: mid_base + mode.bandwidth() / 2.0,
           symbols: span,
+          clock_ppm: drift.clock_ppm(),
+          drift_hz_per_s: drift.drift_hz_per_s(),
           depth,
         },
       ));

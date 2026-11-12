@@ -1,6 +1,7 @@
 //! 合成往返：本 crate 的发端 → 收端，覆盖全部子模式与多种采样率 / 中心频率。
 
-use ham_web_mfsk::{MODES, decode_audio, encode_audio, parse_mode};
+use ham_web_dsp::{stretch, synth_drifting, warp};
+use ham_web_mfsk::{MODES, decode_audio, encode_audio, encode_symbols, parse_mode};
 
 const TEXT: &str = "the quick brown fox jumps over the lazy dog 1234567890";
 
@@ -145,21 +146,6 @@ fn rejects_unusable_parameters() {
   assert!(encode_audio(TEXT, mode, 8000, f64::NAN).is_none());
 }
 
-/// 线性插值重采样（`ratio` > 1 把信号拉长，模拟录音机时钟偏慢）。
-fn stretch(x: &[f32], ratio: f64) -> Vec<f32> {
-  let n = (x.len() as f64 * ratio) as usize;
-  (0..n)
-    .map(|i| {
-      let p = i as f64 / ratio;
-      let k = p.floor() as usize;
-      let f = (p - p.floor()) as f32;
-      let a = x[k.min(x.len() - 1)];
-      let b = x[(k + 1).min(x.len() - 1)];
-      a + (b - a) * f
-    })
-    .collect()
-}
-
 #[test]
 fn noise_never_decodes_across_many_seeds() {
   let mode = parse_mode("16").unwrap();
@@ -187,9 +173,7 @@ fn noise_never_decodes_across_many_seeds() {
 
 #[test]
 fn survives_sample_clock_error() {
-  // 录音机 / 声卡时钟与发端差几十 ppm 是常态：整段录音只搜一次对齐（取沿时间均匀抽出的窗口，
-  // 等于对齐到录音中段），不跟踪漂移。这里钉死「300 ppm、约 80 秒」仍然逐字完整；
-  // 实测 1000 ppm 时开头或结尾的一遍开始出错（`ROADMAP` 里记作已知边界）。
+  // 录音机 / 声卡时钟与发端差几十 ppm 是常态；更大的偏差见 `tracks_large_clock_error`。
   let mode = parse_mode("16").unwrap();
   let text = format!("{TEXT} ").repeat(8);
   let clean = encode_audio(&text, mode, 8000, 1000.0).unwrap();
@@ -218,4 +202,156 @@ fn auto_center_survives_noise_in_every_mode() {
     );
     assert!(text_ok(&d.text), "MFSK{}: {:?}", mode.name, d.text);
   }
+}
+
+fn long_text() -> String {
+  format!("{TEXT} ").repeat(8)
+}
+
+#[test]
+fn tracks_large_clock_error() {
+  // 1000 ppm 起不跟踪就开头或结尾出错；跟踪之后正反两个方向都要稳。
+  let mode = parse_mode("16").unwrap();
+  let clean = encode_audio(&long_text(), mode, 8000, 1000.0).unwrap();
+  for ppm in [1000.0f64, 2500.0, -1500.0] {
+    let audio = stretch(&clean, 1.0 + ppm * 1e-6);
+    let d = decode_audio(&audio, 8000, mode, None, false).expect("应解出信号");
+    assert_eq!(d.text.matches(TEXT).count(), 8, "{ppm} ppm: {:?}", d.text);
+    // 报告的时钟误差要是真的：符号周期在录音里被拉长了 `ppm`。
+    assert!(
+      (d.clock_ppm - ppm).abs() < 60.0,
+      "{ppm} ppm 估成 {}",
+      d.clock_ppm
+    );
+  }
+}
+
+#[test]
+fn tracks_linear_frequency_drift() {
+  // 0.2 Hz/s、80 秒 = 偏出 16 Hz（约一个音调间隔）：不跟踪时两头的音调已经落到邻位上。
+  let mode = parse_mode("16").unwrap();
+  let low = 1000.0 - mode.bandwidth() / 2.0;
+  for hz_per_s in [0.2f64, -0.3] {
+    let freqs: Vec<f64> = encode_symbols(&long_text(), mode)
+      .iter()
+      .map(|&t| low + f64::from(t) * mode.baud())
+      .collect();
+    let audio = synth_drifting(&freqs, 8000, 8000.0 / mode.baud(), hz_per_s);
+    let d = decode_audio(&audio, 8000, mode, None, false).expect("应解出信号");
+    assert_eq!(
+      d.text.matches(TEXT).count(),
+      8,
+      "{hz_per_s} Hz/s: {:?}",
+      d.text
+    );
+    assert!(
+      (d.drift_hz_per_s - hz_per_s).abs() < 0.02,
+      "{hz_per_s} Hz/s 估成 {}",
+      d.drift_hz_per_s
+    );
+    assert!(
+      d.clock_ppm.abs() < 30.0,
+      "没有时钟误差却估成 {} ppm",
+      d.clock_ppm
+    );
+    // 中心频率取信号区间中点处的值：整段录音漂了 hz_per_s × 时长，中点在一半。
+    let mid = 1000.0 + hz_per_s * (d.symbols as f64 / mode.baud()) / 2.0;
+    assert!(
+      (d.center_hz - mid).abs() < 1.5,
+      "中点 {mid}，报告 {}",
+      d.center_hz
+    );
+  }
+}
+
+#[test]
+fn tracks_clock_error_that_changes_over_time() {
+  // 转速逐渐变化：符号边界漂成二次曲线（80 秒偏出约 1 个符号），一条直线抓不住。
+  let mode = parse_mode("16").unwrap();
+  let clean = encode_audio(&long_text(), mode, 8000, 1500.0).unwrap();
+  for (ratio0, slope) in [(0.0, 2e-5), (0.0, -2e-5), (5e-4, 3e-5)] {
+    let audio = warp(&clean, 8000.0, ratio0, slope);
+    let d = decode_audio(&audio, 8000, mode, None, false).expect("应解出信号");
+    assert_eq!(
+      d.text.matches(TEXT).count(),
+      8,
+      "ratio0 {ratio0}, slope {slope}: {:?}",
+      d.text
+    );
+    assert!(
+      d.clock_ppm.abs() > 300.0,
+      "该看到时钟误差：{} ppm",
+      d.clock_ppm
+    );
+    assert!(
+      d.drift_hz_per_s.abs() > 0.01,
+      "转速变化也会带出频漂：{}",
+      d.drift_hz_per_s
+    );
+  }
+}
+
+#[test]
+fn clean_recordings_are_left_exactly_as_they_were() {
+  // 没有漂移时不应凭空修正：`track` 退回 `Drift::fixed`，报告的两个量都是精确的 0。
+  for mode in MODES {
+    let mut text = long_text();
+    while encode_symbols(&text, mode).len() < 700 {
+      text.push_str(&long_text());
+    }
+    let audio = encode_audio(&text, mode, mode.rate, 1500.0).unwrap();
+    let d = decode_audio(&audio, mode.rate, mode, Some(1500.0), false).expect("应解出信号");
+    assert_eq!(d.clock_ppm, 0.0, "MFSK{}", mode.name);
+    assert_eq!(d.drift_hz_per_s, 0.0, "MFSK{}", mode.name);
+  }
+}
+
+#[test]
+fn tracking_works_in_every_mode() {
+  // 1000 ppm 的时钟误差；每个子模式的文本长到至少有 700 个符号（够 14 块）。
+  for mode in MODES {
+    let mut text = long_text();
+    while encode_symbols(&text, mode).len() < 700 {
+      text.push_str(&long_text());
+    }
+    let repeats = text.matches(TEXT).count();
+    let clean = encode_audio(&text, mode, mode.rate, 1500.0).unwrap();
+    for ppm in [1000.0f64, -1000.0] {
+      let audio = stretch(&clean, 1.0 + ppm * 1e-6);
+      let d = decode_audio(&audio, mode.rate, mode, None, false)
+        .unwrap_or_else(|| panic!("MFSK{} {ppm} ppm 应解出信号", mode.name));
+      assert_eq!(
+        d.text.matches(TEXT).count(),
+        repeats,
+        "MFSK{} {ppm} ppm: {:?}",
+        mode.name,
+        d.text
+      );
+    }
+  }
+}
+
+#[test]
+fn tracking_holds_up_in_noise() {
+  // 噪声幅度 4（音调箱里约 +12 dB）+ 1000 ppm：跟踪靠的是每块的估计再拟合，噪声下不能崩。
+  let mode = parse_mode("16").unwrap();
+  let clean = encode_audio(&long_text(), mode, 8000, 1000.0).unwrap();
+  let mut audio = stretch(&clean, 1.001);
+  ham_web_dsp::add_noise(&mut audio, 4.0);
+  let d = decode_audio(&audio, 8000, mode, None, false).expect("应解出信号");
+  assert_eq!(d.text.matches(TEXT).count(), 8, "{:?}", d.text);
+  assert!((d.clock_ppm - 1000.0).abs() < 100.0, "{}", d.clock_ppm);
+}
+
+#[test]
+fn a_clean_recording_with_noise_only_blocks_is_not_derailed() {
+  // 信号两头各有一大段纯噪声：`track` 只看「有信号」的块，噪声块不能把拟合带偏。
+  let mode = parse_mode("16").unwrap();
+  let clean = encode_audio(&long_text(), mode, 8000, 1000.0).unwrap();
+  let mut audio = vec![0.0f32; 8000 * 20];
+  audio.extend_from_slice(&stretch(&clean, 1.001));
+  audio.extend(std::iter::repeat_n(0.0f32, 8000 * 20));
+  ham_web_dsp::add_noise(&mut audio, 1.0);
+  let d = decode_audio(&audio, 8000, mode, None, false).expect("应解出信号");
+  assert_eq!(d.text.matches(TEXT).count(), 8, "{:?}", d.text);
 }

@@ -2,7 +2,7 @@
 //!
 //! MFSK 与 THOR 共用（两者都是「每个符号一个音调、音调在一排等间隔的频点上」）：区别只在
 //! 波特率、音调间隔与音调数，由 [`Grid`] 承载。fldigi 在这一段用滑动 FFT 逐样本跟踪；
-//! 这里在整段录音上搜一次，不跟踪时钟漂移，也没有 AFC。
+//! 这里在整段录音上搜一次，时钟漂移与频漂由随后的 [`crate::track`] 另行跟踪。
 
 use crate::tone_magnitudes;
 use ham_web_dsp::tone_power;

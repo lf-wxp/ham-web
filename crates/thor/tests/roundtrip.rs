@@ -1,6 +1,7 @@
 //! 合成往返：本 crate 的发端 → 收端，覆盖全部子模式与多种采样率 / 中心频率 / 噪声。
 
-use ham_web_thor::{MODES, decode_audio, encode_audio, parse_mode};
+use ham_web_dsp::{stretch, synth_drifting};
+use ham_web_thor::{MODES, decode_audio, encode_audio, encode_symbols, parse_mode};
 
 const TEXT: &str = "the quick brown fox jumps over the lazy dog 1234567890";
 
@@ -231,5 +232,98 @@ fn carrier_between_coarse_grid_points_is_found() {
     let d = decode_audio(&audio, 8000, mode, None, false)
       .unwrap_or_else(|| panic!("THOR {name} @ {center} 应解出信号"));
     assert!(d.text.contains(TEXT), "THOR {name}: {:?}", d.text);
+  }
+}
+
+fn long_text() -> String {
+  format!("{TEXT} ").repeat(8)
+}
+
+#[test]
+fn tracks_large_clock_error() {
+  // 1000 ppm 起不跟踪就开头或结尾出错；THOR 的 IFK+ 看相邻符号的音调差，一次错位会连错两个符号。
+  for name in ["16", "8"] {
+    let mode = parse_mode(name).unwrap();
+    let clean = encode_audio(&long_text(), mode, mode.rate, 1500.0).unwrap();
+    for ppm in [1000.0f64, -1500.0] {
+      let audio = stretch(&clean, 1.0 + ppm * 1e-6);
+      let d = decode_audio(&audio, mode.rate, mode, None, false)
+        .unwrap_or_else(|| panic!("THOR {name} {ppm} ppm 应解出信号"));
+      assert_eq!(
+        d.text.matches(TEXT).count(),
+        8,
+        "THOR {name} {ppm} ppm: {:?}",
+        d.text
+      );
+      assert!(
+        (d.clock_ppm - ppm).abs() < 60.0,
+        "THOR {name} {ppm} ppm 估成 {}",
+        d.clock_ppm
+      );
+    }
+  }
+}
+
+#[test]
+fn tracks_linear_frequency_drift() {
+  // THOR16 的音调间隔 15.6 Hz：0.2 Hz/s、80 秒偏出 16 Hz。
+  let mode = parse_mode("16").unwrap();
+  for hz_per_s in [0.2f64, -0.3] {
+    let freqs: Vec<f64> = encode_symbols(&long_text(), mode)
+      .iter()
+      .map(|&t| 1500.0 + mode.tone_offset(usize::from(t)))
+      .collect();
+    let audio = synth_drifting(&freqs, 8000, 8000.0 / mode.baud(), hz_per_s);
+    let d = decode_audio(&audio, 8000, mode, None, false).expect("应解出信号");
+    assert_eq!(
+      d.text.matches(TEXT).count(),
+      8,
+      "{hz_per_s} Hz/s: {:?}",
+      d.text
+    );
+    assert!(
+      (d.drift_hz_per_s - hz_per_s).abs() < 0.02,
+      "{hz_per_s} Hz/s 估成 {}",
+      d.drift_hz_per_s
+    );
+  }
+}
+
+#[test]
+fn clean_recordings_are_left_exactly_as_they_were() {
+  // 没有漂移时不应凭空修正：报告的两个量都是精确的 0。
+  for mode in MODES {
+    let mut text = long_text();
+    while encode_symbols(&text, mode).len() < 700 {
+      text.push_str(&long_text());
+    }
+    let audio = encode_audio(&text, mode, mode.rate, 2000.0).unwrap();
+    let d = decode_audio(&audio, mode.rate, mode, Some(2000.0), false).expect("应解出信号");
+    assert_eq!(d.clock_ppm, 0.0, "THOR {}", mode.name);
+    assert_eq!(d.drift_hz_per_s, 0.0, "THOR {}", mode.name);
+  }
+}
+
+#[test]
+fn tracking_works_in_every_mode() {
+  for mode in MODES {
+    let mut text = long_text();
+    while encode_symbols(&text, mode).len() < 700 {
+      text.push_str(&long_text());
+    }
+    let repeats = text.matches(TEXT).count();
+    let clean = encode_audio(&text, mode, mode.rate, 2000.0).unwrap();
+    for ppm in [1000.0f64, -1000.0] {
+      let audio = stretch(&clean, 1.0 + ppm * 1e-6);
+      let d = decode_audio(&audio, mode.rate, mode, None, false)
+        .unwrap_or_else(|| panic!("THOR {} {ppm} ppm 应解出信号", mode.name));
+      assert_eq!(
+        d.text.matches(TEXT).count(),
+        repeats,
+        "THOR {} {ppm} ppm: {:?}",
+        mode.name,
+        d.text
+      );
+    }
   }
 }

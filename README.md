@@ -232,7 +232,7 @@ docker run -d --name ham-web -p 3000:3000 -v ham-web-data:/app/data ham-web
 
 ## 路由
 
-页面按三大模块组织（共 183 个路径）；路由表在 `crates/app/src/app/main_content.rs`，路径 / 标题 /
+页面按三大模块组织（共 184 个路径）；路由表在 `crates/app/src/app/main_content.rs`，路径 / 标题 /
 图标 / 分组的唯一来源是 `crates/core/src/registry.rs`。完整路径表与带参数页面（`/practice?bank=A&multi=1`、
 `/battle?stage=…`、`/cards?deck=…` 等）见 [`docs/reference/routes.md`](docs/reference/routes.md)。
 

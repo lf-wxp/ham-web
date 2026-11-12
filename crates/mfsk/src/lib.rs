@@ -12,8 +12,9 @@
 //!   交替喂入、按路径度量投票，这里同样。
 //!
 //! 与 fldigi 的差异（接收端只保留「对离线文件有用」的部分）：
-//! - 符号同步：fldigi 用滑动 FFT 逐样本跟踪；这里在整段录音上搜一次对齐偏移，不跟踪时钟漂移；
-//! - 没有 AFC（载频偏差由整段录音上的一次中心频率搜索代替）、没有图片模式；
+//! - 符号同步与 AFC：fldigi 用滑动 FFT 逐样本跟踪；这里先在整段录音上搜一次对齐偏移与中心频率，
+//!   再按块各测一次、拟合一条 1–3 阶的**平滑曲线**去跟时钟误差与频漂（[`track`]），跟不了突变；
+//! - 没有图片模式；
 //! - 解调用 Goertzel 而不是滑动 FFT（幅度的比例不变，判决只看比值）。
 
 use ham_web_dsp::tone_power;
@@ -21,6 +22,7 @@ use ham_web_dsp::tone_power;
 pub mod fec;
 pub mod front;
 pub mod lookup;
+pub mod track;
 pub mod varicode;
 
 mod rx;

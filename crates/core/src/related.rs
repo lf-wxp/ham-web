@@ -330,6 +330,16 @@ pub const RELATED: &[(&str, &[(&str, &str)])] = &[
       ("/antenna-array", "天线阵列 / 相控阵"),
       ("/antenna-theory", "天线理论"),
       ("/antenna-diy", "天线 DIY"),
+      ("/antenna-topics", "天线补充专题"),
+    ],
+  ),
+  (
+    "/antenna-topics",
+    &[
+      ("/antennas", "天线型式"),
+      ("/antenna-modeling", "天线建模"),
+      ("/grounding", "接地与防雷"),
+      ("/measurement-lab", "测量实验室"),
     ],
   ),
   (

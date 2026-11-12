@@ -26,5 +26,19 @@ THOR_REAL_DIR=/tmp/fw cargo test -p ham-web-thor --release --test real_recording
 ## 这个验证没覆盖什么
 
 - fldigi-web 里还有 THOR25 / 32 / 44 / 56 四个更新的模式，本仓用的 fldigi GitHub 镜像源码里没有它们的参数，所以没做。
-- 只验了干净信号；弱信号 / 衰落 / 时钟漂移下与 fldigi 接收机的差距没有量化（本仓是硬位判决 + 一次性对齐，fldigi 是软位 + 逐符号跟踪）。
-- 载频偏差（AFC）、图片模式不在范围内。
+- 双向对拍只验了干净信号；弱信号 / 衰落下与 fldigi 接收机的差距没有量化（本仓 THOR 是硬位判决，fldigi 是软位）。
+- 漂移跟踪只用「fldigi 发端 → 本仓收端」这一个方向验证（见下节），**没有**拿 fldigi 的接收机在同样的漂移录音上对比。
+- 图片模式不在范围内。
+
+## 漂移跟踪的验证（2026-11-12）
+
+`gen_all.sh` 另外生成 `fwlong_MFSK16` / `MFSK32` / `THOR8` / `THOR16`（同一报文重复 8 遍，45–175 秒，仍是 fldigi 原版发端）。
+测试里用重采样把漂移加上去 —— 常数的时钟误差（+1000 / −1500 ppm）与时变转速（80–90 秒里符号边界偏出约一个符号，
+同时带出 ±0.03–0.05 Hz/s 的频漂）——然后断言 8 遍报文逐字都在、估到的平均时钟误差与实际拉伸相差 < 150 ppm：
+
+```text
+MFSK_REAL_DIR=/tmp/fw cargo test -p ham-web-mfsk --release --test real_recordings -- --include-ignored
+THOR_REAL_DIR=/tmp/fw cargo test -p ham-web-thor --release --test real_recordings -- --include-ignored
+```
+
+对照（把 `track` 关掉）：MFSK16 / THOR16 在 +1000 ppm 下只剩 7 / 6 遍，−1500 ppm 下 6 / 4 遍；加噪声后更差。

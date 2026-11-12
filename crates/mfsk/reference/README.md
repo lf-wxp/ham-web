@@ -43,7 +43,7 @@
 | `thor/src/varicode.rs` | `src/thor/thorvaricode.cxx`（© 2008 Dave Freese W1HKJ） | 二次信道 Varicode（生成物，由 `thor/examples/extract_varicode.rs` 提取并与同文件的 `thor_varidecode[]` 逐项比对）；主字符集就是本 crate 的 IZ8BLY MFSK Varicode |
 | `mfsk/src/fec.rs` 的 `Code::IEEE_K15` | `src/filters/viterbi.cxx` 的 K = 15 码 | 25x4 / 50x1 / 50x2 / 100 这四个高速模式用 |
 
-THOR 的设计 © Nino Porcino IZ8BLY / Murray Greenman ZL1BPU。验证方法与上面 MFSK 的四条一一对应：`thor/tests/upstream_xcheck.rs`（11 个子模式 × 5 段文本，含二次信道）、`thor/tests/real_recordings.rs`（fldigi 4.2.13 自己的发端录音，`THOR_REAL_DIR`）、`thor/tests/roundtrip.rs`（合成往返），以及 `fldigi_web/` 的双向验证。与 fldigi 接收机的差异（硬位判决、无 AFC、不跟踪时钟漂移）见 `thor/src/lib.rs` 的模块文档。
+THOR 的设计 © Nino Porcino IZ8BLY / Murray Greenman ZL1BPU。验证方法与上面 MFSK 的四条一一对应：`thor/tests/upstream_xcheck.rs`（11 个子模式 × 5 段文本，含二次信道）、`thor/tests/real_recordings.rs`（fldigi 4.2.13 自己的发端录音，`THOR_REAL_DIR`）、`thor/tests/roundtrip.rs`（合成往返），以及 `fldigi_web/` 的双向验证。与 fldigi 接收机的差异（硬位判决、平滑曲线而非逐样本的漂移跟踪）见 `thor/src/lib.rs` 的模块文档。
 
 ## 一个与 fldigi 源码不一致的发现
 

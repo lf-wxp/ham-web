@@ -4,15 +4,15 @@ use std::sync::OnceLock;
 
 use crate::{
   amplifier, analog_modes, antenna_analyzer, antenna_array, antenna_diy, antenna_farm,
-  antenna_installation, antenna_modeling, antenna_tuning, antennas, api_v1, aprs, ardf, atv,
-  aurora, awards, bandplan, bands, beginner, cabrillo, community, connectors, coordination, cw_op,
-  digital_comms, dsp_basics, dv_network, dx, dxcc, dxpedition, electronics, emcomm, eme, eqsl,
-  events, feedline, filters, frequencies, ft8, gear, gnuradio, grid_system, grounding, history,
-  iota, license_classes, logging_software, meters, microwave, mobile, modes, modulation_theory,
-  morse, most_wanted, muf, nvis, open_source, operating, organizations, packet, phonetic,
-  polarization, portable, power, power_supply, prefixes, propagation, qrp, qsl_card, receiver,
-  reference, regulations, remote, repeater, repeater_build, rfi, rst, rtty, safety, satellites,
-  sdr, sdr_map, solar, special_prop, sstv, swl, transceiver, weather_sat, wspr, zone,
+  antenna_installation, antenna_modeling, antenna_topics, antenna_tuning, antennas, api_v1, aprs,
+  ardf, atv, aurora, awards, bandplan, bands, beginner, cabrillo, community, connectors,
+  coordination, cw_op, digital_comms, dsp_basics, dv_network, dx, dxcc, dxpedition, electronics,
+  emcomm, eme, eqsl, events, feedline, filters, frequencies, ft8, gear, gnuradio, grid_system,
+  grounding, history, iota, license_classes, logging_software, meters, microwave, mobile, modes,
+  modulation_theory, morse, most_wanted, muf, nvis, open_source, operating, organizations, packet,
+  phonetic, polarization, portable, power, power_supply, prefixes, propagation, qrp, qsl_card,
+  receiver, reference, regulations, remote, repeater, repeater_build, rfi, rst, rtty, safety,
+  satellites, sdr, sdr_map, solar, special_prop, sstv, swl, transceiver, weather_sat, wspr, zone,
 };
 
 /// 一条可搜索的知识条目。
@@ -1303,6 +1303,20 @@ fn build_index() -> Vec<SearchEntry> {
     "/antenna-array",
     antenna_array::ARRAY_TIPS,
   );
+
+  // 天线补充专题
+  for (concepts, tips_list) in [
+    (
+      antenna_topics::VERTICAL_CONCEPTS,
+      antenna_topics::VERTICAL_TIPS,
+    ),
+    (antenna_topics::TRAP_CONCEPTS, antenna_topics::TRAP_TIPS),
+    (antenna_topics::LPDA_CONCEPTS, antenna_topics::LPDA_TIPS),
+    (antenna_topics::GAIN_CONCEPTS, antenna_topics::GAIN_TIPS),
+  ] {
+    pairs(&mut out, "天线补充专题", "/antenna-topics", concepts);
+    tips(&mut out, "天线补充专题", "/antenna-topics", tips_list);
+  }
 
   // 极光通信
   pairs(&mut out, "极光通信", "/aurora", aurora::AURORA_CONCEPTS);

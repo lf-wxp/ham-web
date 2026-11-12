@@ -817,6 +817,14 @@ pub const MODULES: &[Module] = &[
     backend: false,
   },
   Module {
+    path: "/antenna-topics",
+    href: None,
+    title: "天线补充专题",
+    icon: "radio-tower",
+    group: Some(GROUP_ANTENNAS),
+    backend: false,
+  },
+  Module {
     path: "/antenna-installation",
     href: None,
     title: "天线架设",

@@ -13,7 +13,8 @@
 
 use std::path::PathBuf;
 
-use ham_web_thor::{MODES, decode_audio};
+use ham_web_dsp::warp;
+use ham_web_thor::{MODES, decode_audio, parse_mode};
 
 const TEXT: &str = "the quick brown fox jumps over the lazy dog 1234567890";
 
@@ -43,5 +44,43 @@ fn fldigi_encoder_output_for_every_mode() {
       d.center_hz
     );
     assert!(d.text.contains(TEXT), "{file}：{:?}", d.text);
+  }
+}
+
+/// 时钟误差与时变转速的组合：`(ratio0, slope)`。
+const WARPS: &[(f64, f64)] = &[
+  (1e-3, 0.0),
+  (-1.5e-3, 0.0),
+  (0.0, 2e-5),
+  (0.0, -2e-5),
+  (5e-4, 3e-5),
+];
+
+#[test]
+#[ignore = "需要 THOR_REAL_DIR 指向 fldigi 生成的录音目录（见本文件头注释）"]
+fn fldigi_encoder_output_survives_clock_and_frequency_drift() {
+  // `fwlong_THOR*.wav`：fldigi 的原版发端、报文重复 8 遍（`gen_all.sh` 生成）。漂移由重采样加上去，
+  // 不跟踪时这些都会丢掉 1–4 遍报文。
+  for (file, name) in [("fwlong_THOR16.wav", "16"), ("fwlong_THOR8.wav", "8")] {
+    let (samples, rate) = load(file);
+    let mode = parse_mode(name).unwrap();
+    for &(ratio0, slope) in WARPS {
+      let audio = warp(&samples, f64::from(rate), ratio0, slope);
+      let d = decode_audio(&audio, rate, mode, None, false)
+        .unwrap_or_else(|| panic!("{file} ratio0 {ratio0} slope {slope}：应解出信号"));
+      assert_eq!(
+        d.text.matches(TEXT).count(),
+        8,
+        "{file} ratio0 {ratio0} slope {slope}: {:?}",
+        d.text
+      );
+      let secs = samples.len() as f64 / f64::from(rate);
+      let expected_ppm = (ratio0 + slope * secs / 2.0) * 1e6;
+      assert!(
+        (d.clock_ppm - expected_ppm).abs() < 150.0,
+        "{file} ratio0 {ratio0} slope {slope}：时钟误差估成 {} ppm，期望约 {expected_ppm}",
+        d.clock_ppm
+      );
+    }
   }
 }

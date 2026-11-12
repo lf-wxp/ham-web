@@ -3,9 +3,10 @@
 
 use ham_web_mfsk::fec::{Interleaver, PUNCTURE, Viterbi};
 use ham_web_mfsk::front::{
-  Grid, detect_base as detect_base_grid, find_offset, gate, peak_ratios, polish_base, symbol_bins,
+  Grid, detect_base as detect_base_grid, find_offset, gate, peak_ratios, polish_base,
 };
 use ham_web_mfsk::lookup::{render, varidec};
+use ham_web_mfsk::track::bins_tracked;
 
 use crate::varicode::SECONDARY;
 use crate::{Mode, NUMTONES};
@@ -30,10 +31,14 @@ pub struct Decoded {
   pub text: String,
   /// 二次信道（ID 信标）文本，可能为空。
   pub id: String,
-  /// 使用的信号中心频率（Hz）：调用方没给就是自动检测的结果。
+  /// 使用的信号中心频率（Hz）：调用方没给就是自动检测的结果；有频漂时取信号区间中点处的值。
   pub center_hz: f64,
   /// 参与解码的符号数。
   pub symbols: usize,
+  /// 符号周期相对名义值的偏差（ppm），正 = 录音时钟偏慢；没有跟踪到时钟误差是 0。
+  pub clock_ppm: f64,
+  /// 频漂（Hz / 秒），正 = 越往后频率越高；没有跟踪到频漂是 0。
+  pub drift_hz_per_s: f64,
 }
 
 fn grid_for(rate: u32, mode: &Mode) -> Option<Grid> {
@@ -193,9 +198,11 @@ pub fn decode_audio(
     return None;
   }
   let nt = grid.ntones;
-  let bins = symbol_bins(samples, &grid, base, offset);
+  // 时钟误差与频漂：没有值得做的修正时 `drift` 就是不跟踪的网格，`bins` 与 `symbol_bins` 逐位相同。
+  let (bins, drift) = bins_tracked(samples, &grid, base, offset);
   let (first, last) = gate(&peak_ratios(&bins, nt))?;
   let span = last - first + 1;
+  let mid_base = drift.base_at((first + last) as f64 / 2.0);
 
   let mut rx = Receiver::new(mode);
   let mut tmp = vec![0.0f64; nt];
@@ -223,7 +230,9 @@ pub fn decode_audio(
   Some(Decoded {
     text: render(&primary),
     id: render(&secondary),
-    center_hz: base - mode.tone_offset(0),
+    center_hz: mid_base - mode.tone_offset(0),
     symbols: span,
+    clock_ppm: drift.clock_ppm(),
+    drift_hz_per_s: drift.drift_hz_per_s(),
   })
 }

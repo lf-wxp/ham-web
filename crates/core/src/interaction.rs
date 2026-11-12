@@ -223,6 +223,7 @@ impl PageSignature {
         "/antenna-theory",
         "/antennas",
         "/practical-antennas",
+        "/antenna-topics",
         "/antenna-diy",
         "/antenna-installation",
         "/electronics",

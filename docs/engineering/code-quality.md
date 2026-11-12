@@ -648,7 +648,7 @@ grep -rn "TODO\|FIXME\|HACK\|todo!()\|unimplemented!()" crates
 | SOTA / POTA | 「我的」与「对方」字段严格区分；旧 ADIF 的方向歧义不猜 |
 | NEC | 不支持交叉 `TL` 与并联导纳；端点端口导出会移到段心；交叉验证参照是 necpp 而非实测 |
 | VNA | 页面不做校准，显示仪器读数 |
-| 解码 | WEFAX 未做 1500/2300 Hz FM 副载波；LRPT 的 OQPSK 仅合成验证；FT4 未在真实信号验证；DominoEX FEC 需用户选；MFSK / THOR 不跟踪时钟漂移（实测约 1000 ppm 起出错）、无 AFC，THOR 用硬位判决 |
+| 解码 | WEFAX 未做 1500/2300 Hz FM 副载波；LRPT 的 OQPSK 仅合成验证；FT4 未在真实信号验证；DominoEX FEC 需用户选；MFSK / THOR 的时钟误差与频漂只拟合 1–3 阶平滑曲线（突变跟不了、短于约 190 个符号不跟踪），THOR 用硬位判决 |
 | 外部格式 | CHIRP CSV 未在真实 CHIRP 实测；SOTA / POTA 官方格式说明未取到 |
 | 硬件 | 卫星上调、旋转器、NanoVNA 串口**一次真机验证都没有**，只能标「待验」 |
 | 传播 | 简化 VOACAP，无 SNR；噪声按 290 K 热噪声，未接 ITU-R P.372 |
