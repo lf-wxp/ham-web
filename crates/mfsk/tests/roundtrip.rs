@@ -355,3 +355,26 @@ fn a_clean_recording_with_noise_only_blocks_is_not_derailed() {
   let d = decode_audio(&audio, 8000, mode, None, false).expect("应解出信号");
   assert_eq!(d.text.matches(TEXT).count(), 8, "{:?}", d.text);
 }
+
+/// 报文严格周期重复时，等间距抽窗口会与周期混叠：几个边缘音调从没被抽到，梳评分在那里没有证据，
+/// 梳就偏一个音调（整段乱码）。MFSK128 的 100 / 127 遍复读曾在自动检测里选成 `中心 − 125 Hz`；
+/// 窗口改成格内抖动抽样之后，不给中心频率也要找对（`front::signal_windows`）。
+#[test]
+fn auto_center_survives_a_message_repeated_in_lockstep_with_the_sampling() {
+  let mode = parse_mode("128").unwrap();
+  for reps in [100usize, 127] {
+    let text = format!("{TEXT} ").repeat(reps);
+    let audio = encode_audio(&text, mode, mode.rate, 1500.0).unwrap();
+    let d = decode_audio(&audio, mode.rate, mode, None, false).expect("应解出信号");
+    assert!(
+      (d.center_hz - 1500.0).abs() <= mode.baud() / 8.0,
+      "重复 {reps} 遍：检测到 {} Hz，期望 1500 Hz",
+      d.center_hz
+    );
+    assert_eq!(
+      d.text.matches(TEXT).count(),
+      reps,
+      "重复 {reps} 遍应逐遍解出"
+    );
+  }
+}

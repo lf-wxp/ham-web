@@ -77,7 +77,7 @@ impl Grid {
 /// 「有信号」= 窗口能量不低于最响 10% 窗口的一半。不能直接取能量最高的 `count` 个：
 /// 恒包络信号（MFSK 就是）每个窗口的能量几乎一样，差别只来自音调频率与窗口的整周期关系，
 /// 按能量排序等于偏向某几个音调 —— 中心频率检测会因此被带偏好几个音调（真实录音上实测过）。
-pub fn signal_windows(samples: &[f32], grid: &Grid, count: usize) -> Vec<f64> {
+fn pick_windows(samples: &[f32], grid: &Grid, count: usize, jitter: bool) -> Vec<f64> {
   let n = ((samples.len() as f64) / grid.sym).floor() as usize;
   let energies: Vec<(usize, f64)> = (0..n)
     .filter_map(|i| {
@@ -99,8 +99,46 @@ pub fn signal_windows(samples: &[f32], grid: &Grid, count: usize) -> Vec<f64> {
     .collect();
   let take = count.min(live.len());
   (0..take)
-    .map(|k| live[k * live.len() / take] as f64 * grid.sym)
+    .map(|k| {
+      let frac = if jitter {
+        unit_jitter(k as u64, take as u64, live.len() as u64)
+      } else {
+        0.0
+      };
+      let cell = (k as f64 + frac) * live.len() as f64 / take as f64;
+      live[(cell as usize).min(live.len() - 1)] as f64 * grid.sym
+    })
     .collect()
+}
+
+/// 等间距版（每格取格首）：符号对齐用 —— 要的是沿时间均匀，不怕与报文周期同相。
+pub fn signal_windows(samples: &[f32], grid: &Grid, count: usize) -> Vec<f64> {
+  pick_windows(samples, grid, count, false)
+}
+
+/// 中心频率探测用的窗口：每格内取一个**抖动**位置，而不是格首。
+///
+/// 报文严格周期重复时（信标、测试序列、复读机），等间距抽样会与周期混叠，窗口永远落在同一批符号上，
+/// 某些音调从没被抽到。梳评分看不到的边缘音调等于没有证据，梳就可能偏一个音调
+/// （MFSK128 把同一句报文连续重复 100 遍时实测过：自动检测选成 1375 而不是 1500 Hz，整段乱码）。
+/// 抖动仍保持沿时间均匀，且对同一段录音是确定的（哈希只依赖格序号、格数与有信号窗口数），结果可复现。
+/// 符号对齐（[`find_offset`]）**不用**它：对齐看的是整窗能量，与哪个音调无关，不受混叠影响，
+/// 而换一批窗口会让大频漂录音的对齐点跟着挪一点，没有必要冒这个险。
+pub fn probe_windows(samples: &[f32], grid: &Grid, count: usize) -> Vec<f64> {
+  pick_windows(samples, grid, count, true)
+}
+
+/// `[0, 1)` 内的确定性伪随机数（SplitMix64 的终结步骤）：只依赖三个整数输入，不用全局状态。
+fn unit_jitter(a: u64, b: u64, c: u64) -> f64 {
+  let mut z = a
+    .wrapping_mul(0x9E37_79B9_7F4A_7C15)
+    .wrapping_add(b.wrapping_mul(0xBF58_476D_1CE4_E5B9))
+    .wrapping_add(c.wrapping_mul(0x94D0_49BB_1331_11EB));
+  z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+  z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+  z ^= z >> 31;
+  // 取高 53 位，恰好填满 f64 尾数。
+  (z >> 11) as f64 / (1u64 << 53) as f64
 }
 
 /// 梳评分：`windows` 里每个窗口「梳内最强音调能量 − 梳两侧各一个邻位的最强能量」之和。
@@ -128,7 +166,7 @@ fn comb_score(nwin: usize, nt: usize, power: &dyn Fn(usize, i32) -> f64) -> f64 
 ///
 /// 评分 = 梳内最强音调能量 − 梳两侧邻位的最强能量（[`comb_score`]）：梳错一个音调时，
 /// 那个音调被发送的窗口会得分骤降。窗口取自「有信号」的符号并沿时间均匀抽取
-/// （[`signal_windows`]）。录音里没有足够的符号窗口返回 `None`。
+/// （[`probe_windows`]）。录音里没有足够的符号窗口返回 `None`。
 #[must_use]
 pub fn detect_base(samples: &[f32], grid: &Grid) -> Option<f64> {
   let rate = grid.rate;
@@ -150,7 +188,7 @@ pub fn detect_base(samples: &[f32], grid: &Grid) -> Option<f64> {
 
   // 第 1 步：整个频带，少量窗口。
   let coarse_windows = (PROBE_BUDGET / (j_max * grid.win)).clamp(4, 16);
-  let wa = signal_windows(samples, grid, coarse_windows);
+  let wa = probe_windows(samples, grid, coarse_windows);
   if wa.len() < 4 {
     return None;
   }
@@ -179,7 +217,7 @@ pub fn detect_base(samples: &[f32], grid: &Grid) -> Option<f64> {
   let last = tooth(hi, nt as i32); // 需要的最高网格点
   let span = last - first + 1;
   let more = (PROBE_BUDGET / (span * grid.win)).clamp(8, MAX_PROBE_WINDOWS);
-  let wb = signal_windows(samples, grid, more);
+  let wb = probe_windows(samples, grid, more);
   let eb: Vec<Vec<f64>> = wb
     .iter()
     .map(|&s| {
@@ -199,7 +237,7 @@ pub fn detect_base(samples: &[f32], grid: &Grid) -> Option<f64> {
 
   // 第 3 步：细扫 ±1.5 个音调间隔，1/8 间隔。窗口数再按预算收缩。
   let fine_windows = (PROBE_BUDGET / (25 * (nt + 2) * grid.win)).clamp(8, 48);
-  let wc = signal_windows(samples, grid, fine_windows);
+  let wc = probe_windows(samples, grid, fine_windows);
   let slices: Vec<&[f32]> = wc.iter().map(|&s| slice(s)).collect();
   let centre = (j_b + 1) as f64 * grid.baud;
   let mut refined = (f64::NEG_INFINITY, centre);
@@ -227,7 +265,7 @@ pub fn detect_base(samples: &[f32], grid: &Grid) -> Option<f64> {
 pub fn polish_base(samples: &[f32], grid: &Grid, base: f64, offset: f64) -> f64 {
   let (nt, sp, rate) = (grid.ntones, grid.spacing, grid.rate);
   let count = (PROBE_BUDGET / (5 * (nt + 2) * grid.win)).clamp(16, 192);
-  let slices: Vec<&[f32]> = signal_windows(samples, grid, count)
+  let slices: Vec<&[f32]> = probe_windows(samples, grid, count)
     .into_iter()
     .filter_map(|s| {
       let start = (s + offset).round() as usize;
@@ -359,4 +397,77 @@ fn signal_region(ratios: &[f64]) -> Option<(usize, usize)> {
     .map(|i| smooth(i) >= REGION_RATIO)
     .collect();
   Some((on.iter().position(|&x| x)?, on.iter().rposition(|&x| x)?))
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  /// 恒包络的单音录音：每个符号窗口能量几乎相同，所以全部都算「有信号」。
+  fn steady_tone(grid: &Grid, symbols: usize) -> Vec<f32> {
+    let n = (symbols as f64 * grid.sym) as usize + grid.win;
+    (0..n)
+      .map(|i| (2.0 * std::f64::consts::PI * 1000.0 * i as f64 / f64::from(grid.rate)).sin() as f32)
+      .collect()
+  }
+
+  fn grid() -> Grid {
+    Grid::new(8000, 31.25, 31.25, 16).expect("合法几何")
+  }
+
+  #[test]
+  fn probe_windows_are_deterministic() {
+    let g = grid();
+    let audio = steady_tone(&g, 100);
+    assert_eq!(
+      probe_windows(&audio, &g, 10),
+      probe_windows(&audio, &g, 10),
+      "同一段录音两次探测必须取到同一批窗口"
+    );
+  }
+
+  /// 每个窗口落在自己那一格里（沿时间仍然均匀、升序），而且至少有一个不在格首 ——
+  /// 否则「抖动」就是空话，与报文周期混叠的问题原样保留。
+  #[test]
+  fn probe_windows_stay_in_their_cell_and_actually_move() {
+    let g = grid();
+    let audio = steady_tone(&g, 100);
+    let live = 100.0;
+    let count = 10;
+    let probe = probe_windows(&audio, &g, count);
+    let even = signal_windows(&audio, &g, count);
+    assert_eq!(probe.len(), count);
+    assert_eq!(even.len(), count);
+    for (k, &start) in probe.iter().enumerate() {
+      let sym = (start / g.sym).round();
+      let lo = (k as f64 * live / count as f64).floor();
+      let hi = ((k + 1) as f64 * live / count as f64).ceil();
+      assert!(
+        (lo..hi).contains(&sym),
+        "第 {k} 个窗口在符号 {sym}，应在 [{lo}, {hi})"
+      );
+    }
+    assert!(probe.windows(2).all(|w| w[0] <= w[1]), "应升序：{probe:?}");
+    assert_ne!(probe, even, "抖动没有生效：与等间距抽样完全相同");
+  }
+
+  /// 要的窗口数不少于有信号的窗口数时，每格只剩一个窗口可选，抖动不能越界或丢窗口：
+  /// 结果必须与等间距版一致（下标上界的钳位在这里生效）。
+  #[test]
+  fn probe_windows_with_few_live_windows_match_the_even_pick() {
+    let g = grid();
+    let audio = steady_tone(&g, 12);
+    let probe = probe_windows(&audio, &g, 500);
+    assert!(!probe.is_empty());
+    assert_eq!(probe, signal_windows(&audio, &g, 500));
+    let limit = audio.len() as f64;
+    assert!(probe.iter().all(|&s| s >= 0.0 && s + g.win as f64 <= limit));
+  }
+
+  #[test]
+  fn silence_has_no_windows() {
+    let g = grid();
+    assert!(probe_windows(&vec![0.0; 8000], &g, 8).is_empty());
+    assert!(probe_windows(&[], &g, 8).is_empty());
+  }
 }
