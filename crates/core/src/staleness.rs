@@ -13,7 +13,7 @@
 //!
 //! 登记项集中在这一个文件里，避免每个模块各记一个日期、各判各的过期。
 
-use crate::{common_mode_choke, diy_projects, gear_rx, provenance, radio_law, toroid};
+use crate::{common_mode_choke, diy_projects, gear_rx, noise_model, provenance, radio_law, toroid};
 
 /// 一条需要定期复核的外部数据。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -66,6 +66,11 @@ pub fn curated() -> Vec<Curated> {
       checked_on: date,
     });
   }
+  out.push(Curated {
+    key: "noise-model",
+    source: "ITU-R P.372-14 表 1（人为噪声与银河噪声的 c / d 常数）与图 39 的适用频段",
+    checked_on: noise_model::CHECKED_ON,
+  });
   out.push(Curated {
     key: "diy-cost",
     source: "DIY 项目成本档位（市场价，只给档位不给售价）",
@@ -216,6 +221,7 @@ mod tests {
       find("common-mode-choke"),
       common_mode_choke::oldest_fetched().expect("复磁导率取回日期")
     );
+    assert_eq!(find("noise-model"), noise_model::CHECKED_ON);
     assert_eq!(find("diy-cost"), diy_projects::COST_CHECKED_ON);
   }
 }

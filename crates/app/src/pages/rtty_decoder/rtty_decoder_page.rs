@@ -5,7 +5,7 @@ use wasm_bindgen::JsValue;
 use web_sys::File;
 
 use crate::components::common::{DecodeElapsed, PageContainer, PageHeader};
-use crate::decode_session::{DecodeConfig, DecodeSession};
+use crate::decode_session::{DecodeConfig, DecodeSession, MAX_UPLOAD_BYTES};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Button, ButtonLink, Field, FileDropZone, NumberField, NumberKind, Size, Variant};
 use crate::util::set_title;
@@ -13,16 +13,13 @@ use crate::util::set_title;
 use super::rtty_worker::parse_message;
 use crate::i18n::{t, tf};
 
-/// 允许的最大 WAV 体积（字节）。几分钟的 12 kHz 单声道音频远小于 8 MB。
-const MAX_BYTES: u64 = 8 * 1024 * 1024;
-
 #[component]
 pub fn RttyDecoderPage() -> impl IntoView {
   set_title("tools.rtty-decoder");
 
   let session = DecodeSession::new(DecodeConfig {
     codec: "rtty",
-    max_bytes: MAX_BYTES,
+    max_bytes: MAX_UPLOAD_BYTES,
     transfer: false,
     parse: parse_message,
     too_large: |mb, max| tf("tools.file-too-large-downsample", &[mb, max]),

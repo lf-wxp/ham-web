@@ -6,7 +6,7 @@ test("信号听辨：默认列出全部候选模式", async ({ page }) => {
     page.getByRole("heading", { level: 1, name: "信号听辨向导" }),
   ).toBeVisible();
   await expect(page.getByRole("heading", { level: 2 })).toContainText(
-    "候选模式（17 个）",
+    "候选模式（19 个）",
   );
   await expect(
     page.getByRole("heading", { level: 3, name: "等幅电报 CW" }),

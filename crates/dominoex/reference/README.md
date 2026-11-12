@@ -24,6 +24,6 @@ reference_interop`），不随前端分发。
 - 算法出处：fldigi `src/dominoex/dominoex.cxx`（`sendMuPskEX` / `decodeMuPskEX` /
   `MuPskSec2Pri` / `MuPskPriSecChar`）、`src/filters/viterbi.cxx`（编码器与 Viterbi）、
   `src/mfsk/interleave.cxx`（交织器，fldigi 注明改编自 gMFSK），均为 GNU GPL v3。
-- 码表：IZ8BLY MFSK Varicode，由 `../examples/extract_mfsk_varicode.rs` 从 fldigi
-  `src/mfsk/mfskvaricode.cxx` 生成 Rust（`../src/mfsk_varicode.rs`）与 TS
+- 码表：IZ8BLY MFSK Varicode，由 `crates/mfsk/examples/extract_varicode.rs` 从 fldigi
+  `src/mfsk/mfskvaricode.cxx` 生成 Rust（`crates/mfsk/src/varicode.rs`，MFSK / THOR / DominoEX 共用）与 TS
   （`e2e/tests/mfsk_varicode_data.ts`）两份，提取时与同文件的 `varidecode[]` 逐项比对。

@@ -352,6 +352,60 @@ script = '''
 cargo test -p ham-web-dominoex --test reference_interop
 '''
 
+[tasks.mfsk-sample]
+description = "生成合成 MFSK 样本（发端音调序列与 fldigi 上游逐位对拍过）：MODE='16' TEXT='CQ CQ DE BG1AAA 599' CENTER=1000 cargo make mfsk-sample"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-mfsk --release --example generate_sample -- "${MODE:-16}" tmp/mfsk-sample.wav "${TEXT:-CQ CQ DE BG1AAA 599}" "${CENTER:-1000}"
+'''
+
+[tasks.mfsk-decode]
+description = "命令行解码 MFSK 样本：MODE='16' FILE=tmp/mfsk-sample.wav [CENTER=1000] cargo make mfsk-decode（CENTER 缺省 = 自动检测）"
+script_runner = "@shell"
+script = '''
+cargo run -q -p ham-web-mfsk --release --example decode_sample -- "${MODE:-16}" "${FILE:-tmp/mfsk-sample.wav}" "${CENTER:-auto}"
+'''
+
+[tasks.mfsk-test]
+description = "生成并解码合成 MFSK 样本，端到端自检（依赖 mfsk-sample → mfsk-decode）"
+dependencies = ["mfsk-sample", "mfsk-decode"]
+
+[tasks.mfsk-xcheck]
+description = "与 fldigi 上游代码逐位对拍：FLDIGI_SRC=/path/to/fldigi cargo make mfsk-xcheck（编译上游的 viterbi / interleave / varicode，需要 C++ 编译器）"
+script_runner = "@shell"
+script = '''
+: "${FLDIGI_SRC:?请设置 FLDIGI_SRC 指向 fldigi 源码根目录（git clone --depth 1 https://github.com/w1hkj/fldigi）}"
+cargo test -p ham-web-mfsk --release --test upstream_xcheck -- --include-ignored
+'''
+
+[tasks.thor-sample]
+description = "生成合成 THOR 样本（发端音调序列与 fldigi 上游逐位对拍过，音频被 fldigi 自己的接收机解出过）：MODE='16' TEXT='CQ CQ DE BG1AAA 599' CENTER=1500 cargo make thor-sample"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-thor --release --example generate_sample -- "${MODE:-16}" tmp/thor-sample.wav "${TEXT:-CQ CQ DE BG1AAA 599}" "${CENTER:-1500}"
+'''
+
+[tasks.thor-decode]
+description = "命令行解码 THOR 样本：MODE='16' FILE=tmp/thor-sample.wav [CENTER=1500] cargo make thor-decode（CENTER 缺省 = 自动检测）"
+script_runner = "@shell"
+script = '''
+cargo run -q -p ham-web-thor --release --example decode_sample -- "${MODE:-16}" "${FILE:-tmp/thor-sample.wav}" "${CENTER:-auto}"
+'''
+
+[tasks.thor-test]
+description = "生成并解码合成 THOR 样本，端到端自检（依赖 thor-sample → thor-decode）"
+dependencies = ["thor-sample", "thor-decode"]
+
+[tasks.thor-xcheck]
+description = "与 fldigi 上游代码逐位对拍：FLDIGI_SRC=/path/to/fldigi cargo make thor-xcheck（编译上游的 viterbi / interleave / varicode，需要 C++ 编译器）"
+script_runner = "@shell"
+script = '''
+: "${FLDIGI_SRC:?请设置 FLDIGI_SRC 指向 fldigi 源码根目录（git clone --depth 1 https://github.com/w1hkj/fldigi）}"
+cargo test -p ham-web-thor --release --test upstream_xcheck -- --include-ignored
+'''
+
 [tasks.olivia-sample]
 description = "生成合成 Olivia 样本（用本仓编码器，与 Python 参考实现互锁验证过）：MODE='32/1000@1500' TEXT='CQ CQ DE BG1AAA 599' cargo make olivia-sample"
 script_runner = "@shell"
@@ -499,6 +553,16 @@ description = "构建 DominoEX 解码 Web Worker（wasm-bindgen --target no-modu
 script_runner = "@shell"
 script = "sh scripts/build-decode-worker.sh dominoex"
 
+[tasks.build-mfsk-worker]
+description = "构建 MFSK 解码 Web Worker（wasm-bindgen --target no-modules，CLI 版本须与 Cargo.lock 一致）"
+script_runner = "@shell"
+script = "sh scripts/build-decode-worker.sh mfsk"
+
+[tasks.build-thor-worker]
+description = "构建 THOR 解码 Web Worker（wasm-bindgen --target no-modules，CLI 版本须与 Cargo.lock 一致）"
+script_runner = "@shell"
+script = "sh scripts/build-decode-worker.sh thor"
+
 [tasks.wspr-test]
 description = "生成并解码合成 WSPR 样本，端到端自检（依赖 wspr-sample → wspr-decode）"
 dependencies = ["wspr-sample", "wspr-decode"]
@@ -550,7 +614,7 @@ dependencies = ["spectrum-sample", "spectrum-analyze"]
 # ───────────────────────────── 合成测试样本（汇总） ─────────────────────────────
 
 [tasks.samples]
-description = "生成全部合成测试样本 WAV 到 tmp/：apt / sstv / wspr / ft8 / lrpt / dominoex / olivia / navtex / rtty / hell / wefax / psk31 / spectrum"
+description = "生成全部合成测试样本 WAV 到 tmp/：apt / sstv / wspr / ft8 / lrpt / dominoex / mfsk / thor / olivia / navtex / rtty / hell / wefax / psk31 / spectrum"
 # 各样本任务互为独立产物，汇总只做编排；单跑某个样本仍用对应的 <x>-sample。
 dependencies = [
   "apt-sample",
@@ -559,6 +623,8 @@ dependencies = [
   "ft8-sample",
   "lrpt-sample",
   "dominoex-sample",
+  "mfsk-sample",
+  "thor-sample",
   "olivia-sample",
   "navtex-sample",
   "rtty-sample",

@@ -13,11 +13,11 @@
 | 图标 | Lucide（内联 SVG，与原版路径一致） |
 | 浏览器 API | Web Speech API（朗读）、Web Audio API（摩尔斯 / 信号音 / 实时频谱）、Canvas（照片处理、瀑布图）、WebGL2（天线求解器的三维方向图，不支持时回退 SVG）、Notification（倒计时提醒）、IndexedDB（大体积日志存储） |
 | 服务器 | Axum 0.8 + tower-http（SPA 回退、缓存头、gzip/brotli），并提供 `/api/*` 外部数据代理（`ureq` + 内存缓存 + `sgp4` 过境计算） |
-| 数字信号解码 | `ham-web-apt` / `ham-web-sstv` / `ham-web-wspr` / `ham-web-ft8` 等十一个解码 crate（纯 Rust DSP，编译为 Worker，音频不上传服务器；`ham-web-ft8` 的编码与合成链另被主包直接链接，供 `/tools` 导出 FT8 发端基带；另有一个 AX.25 软 TNC Worker，解码核心在 `ham-web-core`） |
+| 数字信号解码 | `ham-web-apt` / `ham-web-sstv` / `ham-web-wspr` / `ham-web-ft8` 等十三个解码 crate（纯 Rust DSP，编译为 Worker，音频不上传服务器；`ham-web-ft8` 的编码与合成链另被主包直接链接，供 `/tools` 导出 FT8 发端基带；另有一个 AX.25 软 TNC Worker，解码核心在 `ham-web-core`） |
 | 工具链 | `ham-web-tools`（clap、ureq、resvg、sha2、brotli、walkdir） |
 | 任务编排 | [cargo-make](https://github.com/sagiegurari/cargo-make) |
 | PWA | 构建时由 Rust 生成 Service Worker（预缓存 + 运行时缓存策略） |
-| 许可 | MIT（见仓库根目录 [`LICENSE`](../../LICENSE)）；DominoEX / LRPT / NAVTEX 解码器及其 Worker 例外，为 GPL-3.0（见 [`docs/engineering/licensing.md`](licensing.md)） |
+| 许可 | MIT（见仓库根目录 [`LICENSE`](../../LICENSE)）；DominoEX / MFSK / THOR / LRPT / NAVTEX 解码器及其 Worker 例外，为 GPL-3.0（见 [`docs/engineering/licensing.md`](licensing.md)） |
 
 ## 分层与依赖方向
 
@@ -84,9 +84,9 @@
 │   │       ├── remote_sync.rs · account_sync.rs · sync_io.rs · auto_sync.rs  # 两条同步通道：自定义远端 / 在线账号的 fetch 封装、按通道分派的 I/O、打开页面自动获取 + 改动后自动写入（决策与重试策略在 core/remote_sync.rs · sync_channel.rs，设计见 docs/domain/account-sync.md）
 │   │       ├── i18n/       # 界面文案运行时：mod.rs（t/tf/Locale）+ catalog.rs + pack.rs
 │   │       └── …           # exam_history / achievements / bank_updates / shortcuts / speech / theme / photo / pwa / rpg
-│   ├── apt/ · sstv/ · wspr/ · ft8/ · rtty/ · olivia/ · dominoex/ · navtex/ · lrpt/ · hell/ · wefax/
-│   │                       # 十一个解码核心（纯 Rust DSP + 单测 + 对拍；dominoex / navtex / lrpt 含 GPL 转写）
-│   ├── *-worker/           # 十二个 Worker 胶水（wasm-bindgen --target no-modules）；afsk1200 的解码实现在 core
+│   ├── apt/ · sstv/ · wspr/ · ft8/ · rtty/ · olivia/ · dominoex/ · mfsk/ · thor/ · navtex/ · lrpt/ · hell/ · wefax/
+│   │                       # 十三个解码核心（纯 Rust DSP + 单测 + 对拍；dominoex / mfsk / thor / navtex / lrpt 含 GPL 转写；mfsk 还放 MFSK / THOR / DominoEX FEC 共用的卷积码 · Viterbi · 交织器 · Varicode）
+│   ├── *-worker/           # 十四个 Worker 胶水（wasm-bindgen --target no-modules）；afsk1200 的解码实现在 core
 │   ├── server/             # Axum 静态站点服务器 + /api 代理 + /api/v1 开放接口 + /api/account 在线账号（`account/`：SQLite 存取 / 会话 / Argon2 / 路由）
 │   └── tools/              # 构建/维护 CLI（数据集、解析、术语表、i18n、图标、sw.js、sitemap、各项守卫）
 │       └── templates/sw.js # Service Worker 模板
@@ -99,7 +99,7 @@
 └── public/
     ├── questions/          # 题库 JSON、config.json、题目图片（构建产物，已提交）
     ├── decode-worker.js    # 统一解码 Worker 入口（手写，入库；协议见 docs/domain/decode-worker-protocol.md）
-    ├── *-worker/           # 十二个 Worker 目录由 `cargo make build-*-worker` 生成（已被 .gitignore 忽略）
+    ├── *-worker/           # 十四个 Worker 目录由 `cargo make build-*-worker` 生成（已被 .gitignore 忽略）
     ├── data/               # 运行时语言包与合并后的知识库译文（生成物，不入库）
     ├── fonts/              # 像素字体分片、Geist、Bricolage、Plex Mono、思源黑 900 分片（本地托管，许可见 fonts/LICENSES）
     ├── vendor/             # 自托管第三方资源（KaTeX）

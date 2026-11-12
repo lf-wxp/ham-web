@@ -188,6 +188,36 @@ for (const style of ["pixel", "modern"] as const) {
         await expect(trigger).not.toHaveAttribute("aria-activedescendant", /.+/);
       });
 
+      test("选中后再次打开：aria-activedescendant 指向新面板里的选中行（回归：以前指向已卸载的旧行）", async ({
+        page,
+      }) => {
+        await open(page, style, kind);
+        const trigger = kind.pick(page);
+        await trigger.focus();
+        // 反复开合几轮：旧版本的症状是「第一次开正常、选中后再开就指到旧面板的行」。
+        for (let round = 0; round < 3; round++) {
+          await page.keyboard.press("ArrowDown");
+          await expect(page.getByRole("listbox")).toBeVisible();
+          const selected = page.locator('[role="listbox"] [role="option"][aria-selected="true"]');
+          await expect(selected).toHaveCount(1);
+          const selectedId = (await selected.getAttribute("id"))!;
+          // 指向的 id 必须是当前 DOM 里**真实存在**的行，而不只是「有个值」。
+          await expect(trigger, `第 ${round + 1} 次打开时应指向当前选中行`).toHaveAttribute(
+            "aria-activedescendant",
+            selectedId,
+          );
+          await expect(page.locator(`[id="${selectedId}"]`)).toHaveCount(1);
+          if ((await rows(page).count()) < 2) {
+            await page.keyboard.press("Escape");
+          } else {
+            // 换到下一项再选中，让「选中项」每轮都变。
+            await page.keyboard.press("ArrowDown");
+            await page.keyboard.press("Enter");
+          }
+          await expect(page.getByRole("listbox")).toHaveCount(0);
+        }
+      });
+
       test("Tab / Shift+Tab 离开：弹层和全屏遮罩都收起（回归：以前会一直盖住整页）", async ({ page }) => {
         await open(page, style, kind);
         const trigger = kind.pick(page);

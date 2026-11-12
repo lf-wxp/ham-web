@@ -10,7 +10,7 @@
 | `cargo make dev` | 前端开发服务器（默认任务，http://127.0.0.1:3000） |
 | `cargo make dev-full` | 后端 API（3001）+ 前端开发服务器（3000，代理 `/api`） |
 | **构建** | — |
-| `cargo make build-worker` / `build-sstv-worker` / `build-wspr-worker` / `build-rtty-worker` / `build-olivia-worker` / `build-dominoex-worker` / `build-navtex-worker` / `build-lrpt-worker` / `build-ft8-worker` / `build-hell-worker` / `build-wefax-worker` / `build-afsk1200-worker` | 构建单个解码 Web Worker（wasm-bindgen `--target no-modules`；APT 的任务名是 `build-worker`，其余带 codec 前缀）。全部一起构建用 `cargo make build-workers`，清单取自 `crates/*-worker`（十二个） |
+| `cargo make build-worker` / `build-sstv-worker` / `build-wspr-worker` / `build-rtty-worker` / `build-olivia-worker` / `build-dominoex-worker` / `build-mfsk-worker` / `build-thor-worker` / `build-navtex-worker` / `build-lrpt-worker` / `build-ft8-worker` / `build-hell-worker` / `build-wefax-worker` / `build-afsk1200-worker` | 构建单个解码 Web Worker（wasm-bindgen `--target no-modules`；APT 的任务名是 `build-worker`，其余带 codec 前缀）。全部一起构建用 `cargo make build-workers`，清单取自 `crates/*-worker`（十四个） |
 | `cargo make build-web` | 构建前端（release）并执行 `postbuild`（sw.js / sitemap / 预压缩） |
 | `cargo make build-server` | 构建静态站点服务器（release） |
 | `cargo make build` | 图标 + 前端 + 服务器 |
@@ -45,7 +45,7 @@
 | `cargo make knowledge-i18n-check` | 校验知识库正文译文：中文原文作 key，源码改过句子后译文即失效（静默回退中文），已并入 `cargo make check` |
 | `cargo make e2e-check` | e2e 覆盖对账：`e2e/coverage-targets.json` 的每条核心旅程（grep）必须能在 `e2e/tests` 的 spec 里命中，已并入 `cargo make check` |
 | **解码器样本** | — |
-| `cargo make samples` | 一键生成合成测试样本 WAV 到 `tmp/`（apt / sstv / wspr / lrpt / dominoex / olivia / navtex / rtty / psk31 / spectrum；FT8 用 `ft8-sample` 单独生成） |
+| `cargo make samples` | 一键生成合成测试样本 WAV 到 `tmp/`（apt / sstv / wspr / lrpt / dominoex / mfsk / thor / olivia / navtex / rtty / psk31 / spectrum；FT8 用 `ft8-sample` 单独生成） |
 | `cargo make apt-sample` / `apt-decode` / `apt-test` | 生成 / 命令行解码 / 端到端自检 APT 样本 WAV |
 | `cargo make sstv-sample` / `sstv-decode` / `sstv-test` | 同上，SSTV |
 | `cargo make wspr-sample` / `wspr-decode` / `wspr-test` | 同上，WSPR |
@@ -53,6 +53,8 @@
 | `cargo make rtty-sample` / `rtty-decode` / `rtty-test` | 同上，RTTY |
 | `cargo make olivia-sample` / `olivia-decode` / `olivia-test` / `olivia-xcheck` | 同上，Olivia（`xcheck` 与独立参考实现双向对拍） |
 | `cargo make dominoex-sample` / `dominoex-decode` / `dominoex-test` / `dominoex-xcheck` | 同上，DominoEX |
+| `cargo make mfsk-sample` / `mfsk-decode` / `mfsk-test` / `mfsk-xcheck` | 同上，MFSK（`CENTER` 指定中心频率，缺省自动检测；`mfsk-xcheck` 与 fldigi 上游代码逐位对拍，需 `FLDIGI_SRC` 与 C++ 编译器） |
+| `cargo make thor-sample` / `thor-decode` / `thor-test` / `thor-xcheck` | 同上，THOR（含二次信道 ID 信标；`thor-xcheck` 同 `mfsk-xcheck`） |
 | `cargo make navtex-sample` / `navtex-decode` / `navtex-test` | 同上，NAVTEX |
 | `cargo make lrpt-sample` / `lrpt-decode` / `lrpt-test` | 同上，LRPT |
 | `cargo make psk31-sample` | 生成 PSK31 测试样本 WAV（供手动测试 `/psk-decode`） |

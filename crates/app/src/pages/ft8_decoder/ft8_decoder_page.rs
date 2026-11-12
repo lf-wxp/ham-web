@@ -6,7 +6,7 @@ use wasm_bindgen::JsValue;
 use web_sys::File;
 
 use crate::components::common::{DecodeElapsed, PageContainer, PageHeader};
-use crate::decode_session::{DecodeConfig, DecodeSession};
+use crate::decode_session::{DecodeConfig, DecodeSession, MAX_UPLOAD_BYTES};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
   Button, ButtonLink, Field, FileDropZone, SelectOption, SimpleSelect, Size, Variant,
@@ -16,16 +16,14 @@ use crate::util::set_title;
 use super::ft8_worker::parse_message;
 use crate::i18n::{t, tf, tp};
 
-/// 允许的最大 WAV 体积（字节）。12 kHz 16 位单声道约 23 KB/s，8 MB 约能装 23 个 FT8 时隙。
-const MAX_BYTES: u64 = 8 * 1024 * 1024;
-
 #[component]
 pub fn Ft8DecoderPage() -> impl IntoView {
   set_title("tools.ft8-decoder");
 
   let session = DecodeSession::new(DecodeConfig {
     codec: "ft8",
-    max_bytes: MAX_BYTES,
+    // 12 kHz 16 位单声道约 23 KB/s，8 MiB 约能装 23 个 FT8 时隙。
+    max_bytes: MAX_UPLOAD_BYTES,
     transfer: false,
     parse: parse_message,
     too_large: |mb, max| tf("tools.ft8-file-too-large", &[mb, max]),

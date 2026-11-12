@@ -1,6 +1,7 @@
 //! 台站链路预算：发射机 → 馈线 → 天线 → 路径 → 天线 → 馈线 → 接收机 → 噪声 → 所需 SNR。
 
 use ham_web_core::feedline::FEEDLINE_SPECS;
+use ham_web_core::noise_model::{self, Environment};
 use ham_web_core::station_link::{
   self, FAR_FIELD_WAVELENGTHS, LinkInput, Stage, cable_loss_db, format_power_w, format_reach_km,
 };
@@ -22,6 +23,17 @@ fn stage_key(stage: Stage) -> &'static str {
     Stage::Misc => "tools.station-link-stage-misc",
     Stage::RxNoiseFigure => "tools.station-link-stage-rx-nf",
     Stage::ExternalNoise => "tools.station-link-stage-ext",
+  }
+}
+
+/// P.372 环境类别的词条 key（下拉选项与说明文字共用，名字里带曲线字母）。
+fn env_key(env: Environment) -> &'static str {
+  match env {
+    Environment::City => "tools.station-link-env-city",
+    Environment::Residential => "tools.station-link-env-residential",
+    Environment::Rural => "tools.station-link-env-rural",
+    Environment::QuietRural => "tools.station-link-env-quiet-rural",
+    Environment::Galactic => "tools.station-link-env-galactic",
   }
 }
 
@@ -57,6 +69,9 @@ pub(super) fn StationLink() -> impl IntoView {
   let misc = RwSignal::new(String::from("1"));
   let nf = RwSignal::new(String::from("2"));
   let ext = RwSignal::new(String::from("0"));
+  // 外部噪声来源：0 = 自填（下面的 Fa 栏），其余是 `Environment::ALL` 的下标 + 1。
+  // 默认自填且值为 0，与加预设之前的行为逐位一致。
+  let env = RwSignal::new(0usize);
   let bw = RwSignal::new(String::from("12500"));
   let req = RwSignal::new(String::from("12"));
 
@@ -69,6 +84,17 @@ pub(super) fn StationLink() -> impl IntoView {
   };
   let tx_options = options();
   let rx_options = options();
+  let env_options: Vec<SelectOption> = std::iter::once(SelectOption::new(
+    "0",
+    Signal::derive(move || t("tools.station-link-env-custom")),
+  ))
+  .chain(
+    Environment::ALL
+      .iter()
+      .enumerate()
+      .map(|(i, &e)| SelectOption::new((i + 1).to_string(), Signal::derive(move || t(env_key(e))))),
+  )
+  .collect();
 
   let freq_id = unique_id("slink-freq");
   let dist_id = unique_id("slink-dist");
@@ -83,12 +109,51 @@ pub(super) fn StationLink() -> impl IntoView {
   let misc_id = unique_id("slink-misc");
   let nf_id = unique_id("slink-nf");
   let ext_id = unique_id("slink-ext");
+  let env_id = unique_id("slink-env");
   let bw_id = unique_id("slink-bw");
   let req_id = unique_id("slink-req");
+
+  // 选了 P.372 预设时的 `(环境, 频率)`；自填或频率不是数则 `None`。
+  let preset = move || -> Option<(Environment, f64)> {
+    let e = *Environment::ALL.get(env.get().checked_sub(1)?)?;
+    Some((e, num(freq)?))
+  };
+  // 预设给出的 Fa：`None` = 没选预设；`Some(None)` = 频率在该曲线的适用频段之外（不外推）。
+  let preset_fa = move || preset().map(|(e, f)| noise_model::fam_db(e, f));
+  // 预设在范围内：说明取到的值（显示在下拉的提示行）。
+  let preset_result = move || -> Option<String> {
+    let (e, f) = preset()?;
+    let fa = noise_model::fam_db(e, f)?;
+    let shown = freq.get().trim().to_owned();
+    Some(tf(
+      "tools.station-link-env-result",
+      &[&t(env_key(e)), &shown, &fmt_db(fa)],
+    ))
+  };
+  // 预设在范围外：说明为什么没有值（显示在结果框里，替代泛泛的「输入无效」）。
+  // 两句话分开放，是为了同一句不会同时出现在提示行与结果框、被读屏读两遍。
+  let preset_range = move || -> Option<String> {
+    let (e, f) = preset()?;
+    if noise_model::fam_db(e, f).is_some() {
+      return None;
+    }
+    let c = e.curve();
+    let shown = freq.get().trim().to_owned();
+    Some(tf(
+      "tools.station-link-env-range",
+      &[
+        &t(env_key(e)),
+        &c.lo_mhz.to_string(),
+        &c.hi_mhz.to_string(),
+        &shown,
+      ],
+    ))
+  };
 
   // 输入 → (馈线损耗, 结果)。纯派生，不进 Effect。
   // 任何一栏不是有限数就整条链路「输入无效」，不拿默认值悄悄顶上；
   // 取值范围（负长度、非正频率……）由内核拒绝，同样落到「输入无效」。
+  // 选了预设而频率在曲线范围之外，同样不出结果（不外推），页面另给原因。
   let outcome = move || {
     let f = num(freq)?;
     let (tx_line_db, rx_line_db) = (
@@ -106,7 +171,10 @@ pub(super) fn StationLink() -> impl IntoView {
       rx_line_db,
       misc_loss_db: num(misc)?,
       rx_nf_db: num(nf)?,
-      ext_noise_db: num(ext)?,
+      ext_noise_db: match preset_fa() {
+        None => num(ext)?,
+        Some(fa) => fa?,
+      },
       bandwidth_hz: num(bw)?,
       required_snr_db: num(req)?,
     };
@@ -114,7 +182,10 @@ pub(super) fn StationLink() -> impl IntoView {
   };
 
   view! {
-    <div class="grid gap-3 sm:grid-cols-2">
+    // `[&>*]:min-w-0`：网格子项默认 `min-width:auto`。「外部噪声来源」下拉里是一整行不换行的文字
+    // （如「银河噪声（P.372 曲线 E，理论下限）」），不加这个会把整列撑宽，手机宽度下整页横向滚动
+    // （西班牙语 320 px 实测超出 38 px）。同 `ToroidWinding` / `CommonModeChoke`。
+    <div class="grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
       <Field label=Signal::derive(move || t("log.frequency-mhz")) r#for=freq_id.clone()>
         <NumberField id=freq_id value=Signal::derive(move || freq.get()) on_change=Callback::new(move |v: String| freq.set(v)) controls=false />
       </Field>
@@ -183,12 +254,38 @@ pub(super) fn StationLink() -> impl IntoView {
       </Field>
 
       <Field
-        label=Signal::derive(move || t("tools.station-link-ext-noise"))
-        hint=Signal::derive(move || t("tools.station-link-ext-noise-hint"))
-        r#for=ext_id.clone()
+        label=Signal::derive(move || t("tools.station-link-env"))
+        hint=Signal::derive(move || preset_result().unwrap_or_else(|| t("tools.station-link-env-hint")))
+        r#for=env_id.clone()
       >
-        <NumberField id=ext_id value=Signal::derive(move || ext.get()) on_change=Callback::new(move |v: String| ext.set(v)) controls=false />
+        <SimpleSelect
+          id=env_id
+          value=Signal::derive(move || env.get().to_string())
+          on_change=Callback::new(move |v: String| {
+            if let Ok(n) = v.parse::<usize>() {
+              env.set(n);
+            }
+          })
+          options=env_options
+          aria_label=Signal::derive(move || t("tools.station-link-env"))
+        />
       </Field>
+      // 手填的 Fa 只在「自填」时用；选了预设就不显示，免得出现一个填了却不生效的栏。
+      {move || {
+        (env.get() == 0)
+          .then(|| {
+            let ext_id = ext_id.clone();
+            view! {
+              <Field
+                label=Signal::derive(move || t("tools.station-link-ext-noise"))
+                hint=Signal::derive(move || t("tools.station-link-ext-noise-hint"))
+                r#for=ext_id.clone()
+              >
+                <NumberField id=ext_id value=Signal::derive(move || ext.get()) on_change=Callback::new(move |v: String| ext.set(v)) controls=false />
+              </Field>
+            }
+          })
+      }}
       <Field label=Signal::derive(move || t("tools.station-link-bandwidth")) r#for=bw_id.clone()>
         <NumberField id=bw_id value=Signal::derive(move || bw.get()) on_change=Callback::new(move |v: String| bw.set(v)) controls=false />
       </Field>
@@ -202,9 +299,11 @@ pub(super) fn StationLink() -> impl IntoView {
 
       {move || match outcome() {
         None => {
+          // 预设的频率在曲线范围之外：原因是「不外推」，不是「输入无效」，分开说。
+          let text = preset_range().unwrap_or_else(|| t("tools.station-link-invalid"));
           view! {
             <div class=result_class()>
-              <p>{t("tools.station-link-invalid")}</p>
+              <p>{text}</p>
             </div>
           }
             .into_any()

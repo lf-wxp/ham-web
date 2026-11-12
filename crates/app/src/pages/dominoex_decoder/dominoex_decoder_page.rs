@@ -5,7 +5,7 @@ use wasm_bindgen::JsValue;
 use web_sys::File;
 
 use crate::components::common::{DecodeElapsed, PageContainer, PageHeader};
-use crate::decode_session::{DecodeConfig, DecodeSession};
+use crate::decode_session::{DecodeConfig, DecodeSession, MAX_UPLOAD_BYTES};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
   Button, ButtonLink, Checkbox, Field, FileDropZone, SelectOption, SimpleSelect, Size, TextValue,
@@ -15,9 +15,6 @@ use crate::util::set_title;
 
 use super::dominoex_worker::parse_message;
 use crate::i18n::{t, tf};
-
-/// 允许的最大 WAV 体积（字节）。
-const MAX_BYTES: u64 = 8 * 1024 * 1024;
 
 /// 支持的标准子模式（4/5/8/11/16/22；8 是默认）。
 const MODES: &[(&str, &str)] = &[
@@ -35,7 +32,7 @@ pub fn DominoexDecoderPage() -> impl IntoView {
 
   let session = DecodeSession::new(DecodeConfig {
     codec: "dominoex",
-    max_bytes: MAX_BYTES,
+    max_bytes: MAX_UPLOAD_BYTES,
     transfer: false,
     parse: parse_message,
     too_large: |mb, max| tf("tools.file-too-large-downsample", &[mb, max]),
@@ -208,7 +205,7 @@ pub fn DominoexDecoderPage() -> impl IntoView {
                     (!p.id.is_empty()).then(|| {
                       view! {
                         <p class="text-xs text-muted-foreground">
-                          {tf("tools.dominoex-id-channel", &[&p.id.clone()])}
+                          {tf("tools.digital-id-channel", &[&p.id.clone()])}
                         </p>
                       }
                     })

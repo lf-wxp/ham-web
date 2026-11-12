@@ -11,6 +11,7 @@ authors.workspace = true
 
 [dependencies]
 ham-web-dsp.workspace = true
+ham-web-mfsk.workspace = true
 
 [dev-dependencies]
 ham-web-apt.workspace = true

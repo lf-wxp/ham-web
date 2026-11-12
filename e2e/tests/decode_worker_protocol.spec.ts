@@ -13,7 +13,7 @@ import { expect, test } from "./fixtures";
 
 // 与 `public/decode-worker.js` 的 `CODECS` 表、`docs/domain/decode-worker-protocol.md` 的
 // 「已接入的 codec」表保持一一对应：加解码器时三处一起加。
-const CODECS = ["apt", "sstv", "wspr", "rtty", "olivia", "dominoex", "navtex", "lrpt", "ft8", "hell", "wefax", "afsk1200"];
+const CODECS = ["apt", "sstv", "wspr", "rtty", "olivia", "dominoex", "mfsk", "thor", "navtex", "lrpt", "ft8", "hell", "wefax", "afsk1200"];
 
 type Reply = { ok: boolean; error?: string; result?: unknown };
 
@@ -46,7 +46,7 @@ async function converse(
   }, messages);
 }
 
-test("解码 Worker：十二个 codec 的加载路径都有效，空输入回协议错误码", async ({ page }) => {
+test("解码 Worker：全部 codec 的加载路径都有效，空输入回协议错误码", async ({ page }) => {
   await page.goto("/");
   for (const codec of CODECS) {
     const [reply] = await converse(page, [{ codec, bytes: true, params: {} }]);

@@ -1,12 +1,12 @@
-//! 从 fldigi 的 `mfskvaricode.cxx` 提取 IZ8BLY MFSK Varicode（DominoEX FEC 用），生成：
-//! - `mfsk_varicode.rs`（本 crate 的表）；
+//! 从 fldigi 的 `mfskvaricode.cxx` 提取 IZ8BLY MFSK Varicode（MFSK / THOR / DominoEX FEC 共用），生成：
+//! - `varicode.rs`（本 crate 的表）；
 //! - `mfsk_varicode_data.ts`（e2e 独立 TS 编码器用的数据模块）。
 //!
 //! 用法：
 //! ```text
-//! cargo run -p ham-web-dominoex --example extract_mfsk_varicode -- /path/to/mfskvaricode.cxx [输出目录]
+//! cargo run -p ham-web-mfsk --example extract_varicode -- /path/to/mfskvaricode.cxx [输出目录]
 //! ```
-//! 仓库内已有生成产物（`src/mfsk_varicode.rs`、`e2e/tests/mfsk_varicode_data.ts`），
+//! 仓库内已有生成产物（`src/varicode.rs`、`e2e/tests/mfsk_varicode_data.ts`），
 //! 仅当上游 fldigi 表更新时需要重跑。
 //!
 //! 来源：fldigi（GPL-3.0）`src/mfsk/mfskvaricode.cxx`，表本身是 IZ8BLY 的 MFSK Varicode
@@ -20,7 +20,7 @@ fn main() {
   let mut args = std::env::args().skip(1);
   let Some(src_arg) = args.next() else {
     eprintln!(
-      "用法: cargo run -p ham-web-dominoex --example extract_mfsk_varicode -- <源 mfskvaricode.cxx> [输出目录]"
+      "用法: cargo run -p ham-web-mfsk --example extract_varicode -- <源 mfskvaricode.cxx> [输出目录]"
     );
     std::process::exit(2);
   };
@@ -61,23 +61,23 @@ fn main() {
   }
 
   let mut rs = String::from(
-    "//! IZ8BLY MFSK Varicode（DominoEX FEC 用）。\n//!\n//! **生成物**：由 `examples/extract_mfsk_varicode.rs` 从 fldigi（GPL-3.0）\n//! `src/mfsk/mfskvaricode.cxx` 提取，请勿手改。\n\n/// 字符码 0–255 → 码字（`'1'` / `'0'` 串，首位恒为 1、不含 `001`）。\npub const VARICODE: [&str; 256] = [\n",
+    "//! IZ8BLY MFSK Varicode（MFSK / THOR / DominoEX FEC 共用）。\n//!\n//! **生成物**：由 `examples/extract_varicode.rs` 从 fldigi（GPL-3.0）\n//! `src/mfsk/mfskvaricode.cxx` 提取，请勿手改。\n\n/// 字符码 0–255 → 码字（`'1'` / `'0'` 串，首位恒为 1、不含 `001`）。\npub const VARICODE: [&str; 256] = [\n",
   );
   for c in &codes {
     rs.push_str(&format!("  \"{c}\",\n"));
   }
   rs.push_str("];\n");
-  fs::write(out_dir.join("mfsk_varicode.rs"), rs).expect("写 mfsk_varicode.rs");
+  fs::write(out_dir.join("varicode.rs"), rs).expect("写 varicode.rs");
 
   let mut ts = String::from(
-    "// IZ8BLY MFSK Varicode（DominoEX FEC 用）。生成物：由 crates/dominoex/examples/extract_mfsk_varicode.rs\n// 从 fldigi（GPL-3.0）src/mfsk/mfskvaricode.cxx 提取，请勿手改。\nexport const MFSK_VARICODE: readonly string[] = [\n",
+    "// IZ8BLY MFSK Varicode（MFSK / THOR / DominoEX FEC 共用）。生成物：由 crates/mfsk/examples/extract_varicode.rs\n// 从 fldigi（GPL-3.0）src/mfsk/mfskvaricode.cxx 提取，请勿手改。\nexport const MFSK_VARICODE: readonly string[] = [\n",
   );
   for c in &codes {
     ts.push_str(&format!("  \"{c}\",\n"));
   }
   ts.push_str("];\n");
   fs::write(out_dir.join("mfsk_varicode_data.ts"), ts).expect("写 TS 数据");
-  println!("已生成 mfsk_varicode.rs 与 mfsk_varicode_data.ts（256 码，已与解码表逐项比对）");
+  println!("已生成 varicode.rs 与 mfsk_varicode_data.ts（256 码，已与解码表逐项比对）");
 }
 
 fn between<'a>(src: &'a str, start: &str, end: &str) -> &'a str {

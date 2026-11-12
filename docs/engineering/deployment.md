@@ -103,10 +103,10 @@ arm64 / 4 vCPU / 16GiB 的 Docker 虚拟机下，一次 `docker build` 的耗时
 | --- | --- | --- |
 | 拉基础镜像 + 编译安装 `wasm-bindgen-cli` | ~1 min | 镜像层，命中即整层跳过 |
 | 下载 Trunk 预编译二进制 | ~5 s | 镜像层 |
-| 编译第三方依赖（原生 tools/server + wasm 前端与十二个 Worker） | ~1 min | `--mount=type=cache` |
+| 编译第三方依赖（原生 tools/server + wasm 前端与十四个 Worker） | ~1 min | `--mount=type=cache` |
 | 编译前端 `ham-web-app` | **~5 min** | 不可缓存（每次提交都在变） |
 | Trunk 下载 Tailwind / wasm-opt | ~1 min | `--mount=type=cache` |
-| 图标 / 语言包 / 十二个 Worker / postbuild + 产物断言 | < 1 min | — |
+| 图标 / 语言包 / 十四个 Worker / postbuild + 产物断言 | < 1 min | — |
 
 **内存要求**：`wasm-release`（`opt-level = "z"` + `codegen-units = 1`）编译前端时，单个 `rustc` 进程峰值约 6–8GB。Docker 虚拟机只给 4GiB / 8GiB 时会在这一步被 OOM 杀掉，而报错只有 BuildKit 的 `cannot allocate memory`（要加 `--progress=plain` 才看得到 `rustc … SIGKILL: kill`，容易误判成 Dockerfile 有问题）。建议：
 

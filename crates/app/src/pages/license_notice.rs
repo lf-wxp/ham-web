@@ -62,6 +62,16 @@ pub fn LicenseNoticePage() -> impl IntoView {
             <p class="font-mono">"crates/dominoex/reference/README.md"</p>
           </li>
           <li>
+            <a href="https://github.com/w1hkj/fldigi" class="text-primary">"MFSK · fldigi"</a>
+            <p>{move || t("shell.software-license-mfsk")}</p>
+            <p class="font-mono">"crates/mfsk/reference/README.md"</p>
+          </li>
+          <li>
+            <a href="https://github.com/w1hkj/fldigi" class="text-primary">"THOR · fldigi"</a>
+            <p>{move || t("shell.software-license-thor")}</p>
+            <p class="font-mono">"crates/mfsk/reference/README.md"</p>
+          </li>
+          <li>
             <a href="https://github.com/artlav/meteor_decoder" class="text-primary">"LRPT · artlav/meteor_decoder"</a>
             <p>{move || t("shell.software-license-lrpt")}</p>
             <p class="font-mono">"crates/lrpt/reference/README.md"</p>

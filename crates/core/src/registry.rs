@@ -545,6 +545,22 @@ pub const MODULES: &[Module] = &[
     backend: false,
   },
   Module {
+    path: "/mfsk-decode",
+    href: None,
+    title: "MFSK 解码器",
+    icon: "waves",
+    group: Some(GROUP_TOOL_CALC),
+    backend: false,
+  },
+  Module {
+    path: "/thor-decode",
+    href: None,
+    title: "THOR 解码器",
+    icon: "waves",
+    group: Some(GROUP_TOOL_CALC),
+    backend: false,
+  },
+  Module {
     path: "/olivia-decode",
     href: None,
     title: "Olivia 解码器",

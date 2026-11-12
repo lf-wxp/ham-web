@@ -1,13 +1,13 @@
-// 统一解码 Worker 协议：APT / SSTV / WSPR / RTTY / Olivia / DominoEX / NAVTEX / LRPT / FT8 / Feld Hell / WEFAX / AFSK1200 共用这一份入口。
+// 统一解码 Worker 协议：APT / SSTV / WSPR / RTTY / Olivia / DominoEX / MFSK / THOR / NAVTEX / LRPT / FT8 / Feld Hell / WEFAX / AFSK1200 共用这一份入口。
 //
 // 消息信封：
-//   入站：{ codec: "apt"|"sstv"|"wspr"|"rtty"|"olivia"|"dominoex"|"navtex"|"lrpt"|"ft8"|"hell"|"wefax"|"afsk1200", bytes: ArrayBuffer|ArrayBufferView, params?: Object }
+//   入站：{ codec: "apt"|"sstv"|"wspr"|"rtty"|"olivia"|"dominoex"|"mfsk"|"thor"|"navtex"|"lrpt"|"ft8"|"hell"|"wefax"|"afsk1200", bytes: ArrayBuffer|ArrayBufferView, params?: Object }
 //   出站：{ ok: true, result } 或 { ok: false, error }
 //   error 是英文错误码（"no-signal:RTTY" / "not-wav" …），页面侧按码取各语言词条
 //   （见 crates/app/src/decode_worker.rs 的 localize_error）；不认识的错误原样显示。
 //
 // 各 codec 的 wasm glue 导出名统一为 `decode(bytes, params)`；
-// params 按解码器取字段（wspr.baseHz / rtty.markHz / olivia.mode / dominoex.mode，缺省回退各自默认值）。
+// params 按解码器取字段（wspr.baseHz / rtty.markHz / olivia.mode / dominoex.mode / mfsk.mode / thor.mode，缺省回退各自默认值）。
 //
 // 一个 Worker 只服务一个 codec：各胶水脚本顶层都是 `let wasm_bindgen = ...`，同一个 Worker 里
 // 再 `importScripts` 第二个胶水会抛 `Identifier 'wasm_bindgen' has already been declared`。
@@ -21,6 +21,8 @@ const CODECS = Object.assign(Object.create(null), {
   rtty: ["/rtty-worker/rtty_worker.js", "/rtty-worker/rtty_worker_bg.wasm"],
   olivia: ["/olivia-worker/olivia_worker.js", "/olivia-worker/olivia_worker_bg.wasm"],
   dominoex: ["/dominoex-worker/dominoex_worker.js", "/dominoex-worker/dominoex_worker_bg.wasm"],
+  mfsk: ["/mfsk-worker/mfsk_worker.js", "/mfsk-worker/mfsk_worker_bg.wasm"],
+  thor: ["/thor-worker/thor_worker.js", "/thor-worker/thor_worker_bg.wasm"],
   navtex: ["/navtex-worker/navtex_worker.js", "/navtex-worker/navtex_worker_bg.wasm"],
   lrpt: ["/lrpt-worker/lrpt_worker.js", "/lrpt-worker/lrpt_worker_bg.wasm"],
   ft8: ["/ft8-worker/ft8_worker.js", "/ft8-worker/ft8_worker_bg.wasm"],

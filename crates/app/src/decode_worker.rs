@@ -1,6 +1,6 @@
 //! 解码器页面的共享 Worker 桥：统一协议（`{ codec, bytes, params }` → `{ ok, result }`）。
 //!
-//! 各解码页（APT / SSTV / WSPR / RTTY / NAVTEX / LRPT / DominoEX / Olivia / FT8 / Feld Hell /
+//! 各解码页（APT / SSTV / WSPR / RTTY / NAVTEX / LRPT / DominoEX / MFSK / Olivia / FT8 / Feld Hell /
 //! WEFAX / 软 TNC）此前
 //! 各自维护一份「spawn worker + 读文件 + 组消息 + 拆回复」的样板，统一入口见
 //! `public/decode-worker.js`；这里把其中的公共部分（spawn / 读文件 / 组信封 /
@@ -324,6 +324,7 @@ pub(crate) fn localize_error(raw: &str) -> String {
       }
     }
     "mark-hz-out-of-range" => tf("tools.decode-err-mark-hz", &[arg]),
+    "center-hz-out-of-range" => tf("tools.decode-err-center-hz", &[arg]),
     "base-hz-out-of-range" => tf("tools.decode-err-base-hz", &[arg]),
     "ft8-sample-rate" => tf("tools.decode-err-ft8-sample-rate", &[arg]),
     "need-sample-rate" => tf("tools.decode-err-lrpt-sample-rate", &[arg]),

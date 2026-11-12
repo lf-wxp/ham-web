@@ -5,7 +5,7 @@ use wasm_bindgen::JsValue;
 use web_sys::File;
 
 use crate::components::common::{DecodeElapsed, PageContainer, PageHeader};
-use crate::decode_session::{DecodeConfig, DecodeSession};
+use crate::decode_session::{DecodeConfig, DecodeSession, MAX_UPLOAD_BYTES};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
   Button, ButtonLink, Field, FileDropZone, SelectOption, SimpleSelect, Size, TextValue, Variant,
@@ -14,9 +14,6 @@ use crate::util::set_title;
 
 use super::olivia_worker::parse_message;
 use crate::i18n::{t, tf};
-
-/// 允许的最大 WAV 体积（字节）。
-const MAX_BYTES: u64 = 8 * 1024 * 1024;
 
 /// 支持的子模式（规范命名 = 音调数/带宽；中心频率是各子模式惯例值）。
 const MODES: &[(&str, &str)] = &[
@@ -32,7 +29,7 @@ pub fn OliviaDecoderPage() -> impl IntoView {
 
   let session = DecodeSession::new(DecodeConfig {
     codec: "olivia",
-    max_bytes: MAX_BYTES,
+    max_bytes: MAX_UPLOAD_BYTES,
     transfer: false,
     parse: parse_message,
     too_large: |mb, max| tf("tools.file-too-large-downsample", &[mb, max]),

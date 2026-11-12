@@ -19,8 +19,11 @@
 use ham_web_dsp::tone_power;
 
 pub mod fec;
-pub mod mfsk_varicode;
 pub mod varicode;
+
+/// IZ8BLY MFSK Varicode 住在 `ham-web-mfsk`（MFSK / THOR / DominoEX FEC 三处共用，只此一份）；
+/// 这里保留原路径，测试与示例里的 `ham_web_dominoex::mfsk_varicode` 不用跟着改。
+pub use ham_web_mfsk::varicode as mfsk_varicode;
 
 use varicode::{VARICODE, VARIDECODE};
 

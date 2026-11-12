@@ -5,9 +5,16 @@ import { AUDIT } from "./layout_audit";
 
 // 路由表以 main_content.rs 为准，与 smoke.spec.ts 保持一致
 const source = readFileSync(join(__dirname, "../../crates/app/src/app/main_content.rs"), "utf8");
-const routes = [...source.matchAll(/path!\("([^"]+)"\)/g)]
+const allRoutes = [...source.matchAll(/path!\("([^"]+)"\)/g)]
   .map((m) => m[1])
   .filter((p) => !p.includes(":") && !p.includes("*"));
+
+// 逐页修复时用：I18N_ONLY=/mfsk-decode,/thor-decode 只扫子串命中的路由（默认全站，与 MOBILE_ONLY 同一用法）
+const only = (process.env.I18N_ONLY ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+const routes = only.length ? allRoutes.filter((r) => only.some((o) => r.includes(o))) : allRoutes;
 
 /** 被测界面风格：`E2E_UI_STYLE=modern` 切到现代风，其余一律像素风。 */
 const uiStyle = process.env.E2E_UI_STYLE === "modern" ? "modern" : "pixel";

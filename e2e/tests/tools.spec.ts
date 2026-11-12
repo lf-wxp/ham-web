@@ -366,6 +366,73 @@ test("小工具：台站链路预算给出余量、可达距离与回收潜力�
   await expect(table).toHaveCount(0);
 });
 
+test("小工具：台站链路预算的外部噪声来源按 P.372 曲线给出 Fa，超出范围不外推", async ({ page }) => {
+  await page.goto("/tools#station-link");
+  const section = tool(page, "station-link");
+  await expect(section).toBeVisible();
+  const table = section.getByRole("table", { name: "各环节单独做到理想后的回收潜力" });
+  const manualFa = section.getByLabel("外部噪声 Fa（dB）");
+  const pick = async (name: RegExp) => {
+    await section.getByRole("combobox", { name: "外部噪声来源" }).click();
+    await page.getByRole("option", { name }).click();
+  };
+
+  // 默认「自填」：手填的 Fa 栏在、结果与没有预设时逐位相同（Fa = 0 → 余量 37.24 dB）。
+  await expect(manualFa).toBeVisible();
+  await expect(section.getByText("余量 37.24 dB：到达 SNR 49.24 dB，所需 SNR 为 12.00 dB")).toBeVisible();
+
+  // 城市（曲线 A）@ 145.5 MHz：Fa = 76.8 − 27.7·lg 145.5 = 16.89 dB（Python 独立算）。
+  // 链路其余部分不变，只有噪声变：独立的逐级功率累加路径给出噪声 −116.05 dBm、SNR 35.29 dB、
+  // 余量 23.29 dB，外部噪声占超出热噪声部分的 97.9%，单独做到理想可多出 13.95 dB。
+  await pick(/^城市/);
+  await expect(manualFa).toHaveCount(0);
+  await expect(
+    section.getByText("城市（P.372 曲线 A）：145.5 MHz 处外部噪声 Fa 的中位数为 16.89 dB"),
+  ).toBeVisible();
+  await expect(section.getByText("余量 23.29 dB：到达 SNR 35.29 dB，所需 SNR 为 12.00 dB")).toBeVisible();
+  await expect(section.getByText(/折算到天线端子的噪声 -116\.05 dBm/)).toBeVisible();
+  await expect(section.getByText(/外部噪声占 97\.9%，接收链（馈线 \+ 接收机）占 2\.1%/)).toBeVisible();
+  const firstRow = table.getByRole("row").nth(1);
+  await expect(firstRow).toContainText("外部噪声");
+  await expect(firstRow).toContainText("13.95");
+
+  // 2 m 上安静乡村（曲线 D 只到 30 MHz）没有定义：不外推，说明原因，不出表，也不是泛泛的「输入无效」。
+  await pick(/^安静乡村/);
+  await expect(
+    section.getByText("安静乡村（P.372 曲线 D） 只覆盖 0.3–30 MHz，145.5 MHz 在范围外（曲线不外推）：请改用「自填」。"),
+  ).toHaveCount(1);
+  await expect(table).toHaveCount(0);
+  await expect(section.getByText(/^请输入有效的数值/)).toHaveCount(0);
+
+  // 边界含在内：30 MHz 有值（53.6 − 28.6·lg 30 = 11.35 dB），30.1 MHz 就没有。
+  await section.getByLabel("频率（MHz）").fill("30");
+  await expect(
+    section.getByText("安静乡村（P.372 曲线 D）：30 MHz 处外部噪声 Fa 的中位数为 11.35 dB"),
+  ).toBeVisible();
+  await section.getByLabel("频率（MHz）").fill("30.1");
+  await expect(section.getByText(/30\.1 MHz 在范围外/)).toBeVisible();
+
+  // 20 m（14.2 MHz）：安静乡村 20.64 dB；银河噪声 25.50 dB（曲线 E 从 10 MHz 起，9.9 MHz 就没有）。
+  await section.getByLabel("频率（MHz）").fill("14.2");
+  await expect(
+    section.getByText("安静乡村（P.372 曲线 D）：14.2 MHz 处外部噪声 Fa 的中位数为 20.64 dB"),
+  ).toBeVisible();
+  await pick(/^银河噪声/);
+  await expect(
+    section.getByText("银河噪声（P.372 曲线 E，理论下限）：14.2 MHz 处外部噪声 Fa 的中位数为 25.50 dB"),
+  ).toBeVisible();
+  await section.getByLabel("频率（MHz）").fill("9.9");
+  await expect(section.getByText(/只覆盖 10–100 MHz，9\.9 MHz 在范围外/)).toBeVisible();
+
+  // 切回「自填」：手填栏回来，原来填的值（0）还在，结果回到起点之外的同一条链路（频率现在是 9.9 MHz，
+  // 所以只断言不再是范围提示、且有结果表）。
+  await pick(/^自填/);
+  await expect(manualFa).toBeVisible();
+  await expect(manualFa).toHaveValue("0");
+  await expect(section.getByText(/在范围外/)).toHaveCount(0);
+  await expect(table).toHaveCount(1);
+});
+
 test("小工具：磁环小环天线估算电感 / 效率 / Q / 调谐电容", async ({ page }) => {
   await page.goto("/tools#magnetic-loop");
   const section = tool(page, "magnetic-loop");
@@ -525,9 +592,14 @@ test("小工具：陷波器给出两波段 trap 偶极子设计", async ({ page 
   const section = tool(page, "trap");
   await expect(section).toBeVisible();
 
-  // 默认 40m+20m、67 pF：电感 ≈ 1.88 µH，内段 ≈ 5.04 m、外段 ≈ 5.10 m。
-  await expect(section.getByText(/电感 1\.88 µH · 内段 5\.04 m · 外段 5\.10 m/)).toBeVisible();
+  // 默认 40m+20m、67 pF：电感 ≈ 1.88 µH，内段 ≈ 5.04 m；外段 143/7.05/2 − 5.04 = 5.10 m
+  // 扣掉 trap 在低波段的感性加载（0.64 m）后是 4.46 m。
+  await expect(section.getByText(/电感 1\.88 µH · 内段 5\.04 m · 外段 4\.46 m/)).toBeVisible();
   await expect(section.getByText(/低波段加载电抗 110\.\d+ Ω/)).toBeVisible();
+
+  // 电容改小 → 电感变大 → 低波段加载更重 → 外段更短（30 pF 时 3.84 m，独立 Python 算得）。
+  await section.getByLabel("trap 电容（pF）").fill("30");
+  await expect(section.getByText(/电感 4\.20 µH · 内段 5\.04 m · 外段 3\.84 m/)).toBeVisible();
 
   // 输入不合法给出提示（高波段不大于低波段）。
   await section.getByLabel("高波段频率（MHz）").fill("7");

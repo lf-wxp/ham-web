@@ -109,7 +109,7 @@ ADIF 3.1 日志与多台站 / 操作员、日志体检、QSL 全生命周期与�
 
 ### 浏览器内解码与硬件互联
 
-十二个 Worker（十一个解码器 + AX.25 软 TNC）在浏览器内完成解码，音频不上传；Web Serial 接电台 CAT、KISS TNC、NanoVNA 与旋转器（写电台默认关闭，写前过硬护栏）。解码器清单见 [`docs/reference/features.md`](docs/reference/features.md)。
+十四个 Worker（十三个解码器 + AX.25 软 TNC）在浏览器内完成解码，音频不上传；Web Serial 接电台 CAT、KISS TNC、NanoVNA 与旋转器（写电台默认关闭，写前过硬护栏）。解码器清单见 [`docs/reference/features.md`](docs/reference/features.md)。
 
 ### 设备与 DIY
 
@@ -136,7 +136,7 @@ ADIF 3.1 日志与多台站 / 操作员、日志体检、QSL 全生命周期与�
 Rust 2024（MSRV 1.99.1）+ [Leptos 0.8](https://leptos.dev)（CSR，编译为 WebAssembly）+ Tailwind CSS v4，由 [Trunk](https://trunkrs.dev) 构建；
 服务器是 Axum 0.8（静态站点 + `/api/*` 同源代理）；数字信号解码是纯 Rust DSP，编译为 Worker，音频不上传服务器；
 任务编排用 [cargo-make](https://github.com/sagiegurari/cargo-make)；PWA 的 Service Worker 由构建时的 Rust 工具生成。
-许可 MIT，DominoEX / LRPT / NAVTEX 解码器及其 Worker 例外为 GPL-3.0（见[许可](#许可)）。
+许可 MIT，DominoEX / MFSK / THOR / LRPT / NAVTEX 解码器及其 Worker 例外为 GPL-3.0（见[许可](#许可)）。
 逐层的技术栈表（含浏览器 API 与工具链）见 [`docs/engineering/architecture.md`](docs/engineering/architecture.md)。
 
 ## 项目结构
@@ -146,8 +146,8 @@ crates/core                  领域模型与纯计算（题库、考试、ADIF�
 crates/nec                   天线矩量法求解器（纯 std 零依赖）
 crates/dsp · crates/wav      解码器共用的 DSP 原语与 WAV 解析
 crates/app                   Leptos 前端（pages / components / ui / i18n / store）
-crates/{apt,sstv,wspr,ft8,rtty,olivia,dominoex,navtex,lrpt,hell,wefax}   十一个解码核心
-crates/*-worker              十二个 Web Worker 胶水（含 afsk1200 软 TNC）
+crates/{apt,sstv,wspr,ft8,rtty,olivia,dominoex,mfsk,thor,navtex,lrpt,hell,wefax}   十三个解码核心
+crates/*-worker              十四个 Web Worker 胶水（含 afsk1200 软 TNC）
 crates/server                Axum 静态站点 + /api 代理 + /api/v1 开放接口
 crates/tools                 构建与维护 CLI（数据集、解析、i18n、图标、各项守卫）
 data/ · public/ · e2e/       数据与译文、构建产物与静态资源、Playwright 测试
@@ -232,7 +232,7 @@ docker run -d --name ham-web -p 3000:3000 -v ham-web-data:/app/data ham-web
 
 ## 路由
 
-页面按三大模块组织（共 181 个路径）；路由表在 `crates/app/src/app/main_content.rs`，路径 / 标题 /
+页面按三大模块组织（共 183 个路径）；路由表在 `crates/app/src/app/main_content.rs`，路径 / 标题 /
 图标 / 分组的唯一来源是 `crates/core/src/registry.rs`。完整路径表与带参数页面（`/practice?bank=A&multi=1`、
 `/battle?stage=…`、`/cards?deck=…` 等）见 [`docs/reference/routes.md`](docs/reference/routes.md)。
 
@@ -246,7 +246,7 @@ docker run -d --name ham-web -p 3000:3000 -v ham-web-data:/app/data ham-web
 - **练习模式的搜索按钮不见了？** 题目搜索仅在练习模式的顺序模式下可用；跨全站的知识检索请用 `/` 唤起的搜索面板。
 - **朗读 / 摩尔斯试听没有声音？** 浏览器需要一次用户交互后才允许播放音频，请先点击页面；朗读依赖系统 TTS 语音包。
 - **`cargo make dev-full` 和 `cargo make i18n-check` 能同时跑吗？** 不能：两者都要占用 `target/` 的构建锁，同时执行会互相等待，建议串行运行。
-- **改了解码 Worker 却不生效？** 十二个 Worker 的 wasm 由 `cargo make build-worker` / `build-sstv-worker` / `build-wspr-worker` / `build-rtty-worker` / `build-olivia-worker` / `build-dominoex-worker` / `build-navtex-worker` / `build-lrpt-worker` / `build-ft8-worker` / `build-hell-worker` / `build-wefax-worker` / `build-afsk1200-worker` 生成到 `public/*-worker/`（清单见 [`docs/engineering/tasks.md`](docs/engineering/tasks.md)，`cargo make readme-check` 会对账）；`cargo make dev` 与 `build-web` 会自动先构建，但单独改了 worker 代码后需重跑对应任务（首次还需 `cargo make setup` 提供版本匹配的 `wasm-bindgen`）。
+- **改了解码 Worker 却不生效？** 十四个 Worker 的 wasm 由 `cargo make build-worker` / `build-sstv-worker` / `build-wspr-worker` / `build-rtty-worker` / `build-olivia-worker` / `build-dominoex-worker` / `build-mfsk-worker` / `build-thor-worker` / `build-navtex-worker` / `build-lrpt-worker` / `build-ft8-worker` / `build-hell-worker` / `build-wefax-worker` / `build-afsk1200-worker` 生成到 `public/*-worker/`（清单见 [`docs/engineering/tasks.md`](docs/engineering/tasks.md)，`cargo make readme-check` 会对账）；`cargo make dev` 与 `build-web` 会自动先构建，但单独改了 worker 代码后需重跑对应任务（首次还需 `cargo make setup` 提供版本匹配的 `wasm-bindgen`）。
 - **端到端测试跑不起来？** 首次需在 `e2e/` 下执行 `npm ci && npx playwright install chromium`；`cargo make e2e` 会先构建 release 站点。
 - **通联日志很大还能用吗？** 可以：日志由 `IndexedDB` 承载，突破 localStorage 的 5MB 配额；清浏览器数据会同时清除两者，重要日志请定期用「数据备份」导出。双写与快照的细节见 [`docs/reference/storage.md`](docs/reference/storage.md)。
 
@@ -281,8 +281,8 @@ docker run -d --name ham-web -p 3000:3000 -v ham-web-data:/app/data ham-web
 
 ## 许可
 
-原创组件以 **MIT** 发布（全文见 [`LICENSE`](LICENSE)）；含 GPL-3.0 转写代码的六个 crate（DominoEX /
-LRPT / NAVTEX 及其 Worker）单独按 `GPL-3.0-only` 发布，因此完整站点分发是 **MIT AND GPL-3.0-only**。
+原创组件以 **MIT** 发布（全文见 [`LICENSE`](LICENSE)）；含 GPL-3.0 转写代码的十个 crate（DominoEX /
+MFSK / THOR / LRPT / NAVTEX 及其 Worker）单独按 `GPL-3.0-only` 发布，因此完整站点分发是 **MIT AND GPL-3.0-only**。
 **MIT 不覆盖题库数据**：题目与解析版权归上游作者。
 
 例外清单、第三方 MIT / BSD 声明（ft8_lib、KISS FFT）、发布物需随附的许可文件与部署方义务见

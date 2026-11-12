@@ -1,8 +1,9 @@
 //! DominoEX FEC（MultiPSK 兼容）：卷积码 + 4×4×4 交织 + IZ8BLY MFSK Varicode。
 //!
 //! 转写自 fldigi（GPL-3.0）`src/dominoex/dominoex.cxx` 的 `sendMuPskEX` / `decodeMuPskEX`
-//! 一组方法，以及它们用到的 `src/filters/viterbi.cxx`（编码器与 Viterbi 译码器）、
-//! `src/mfsk/interleave.cxx`（交织器）。参数照抄 fldigi：
+//! 一组方法。它们用到的卷积编码器、Viterbi 译码器与交织器（fldigi `src/filters/viterbi.cxx`、
+//! `src/mfsk/interleave.cxx`）住在 `ham-web-mfsk::fec`（MFSK / THOR 共用，只此一份，与 fldigi 上游逐位对拍过）。
+//! 参数照抄 fldigi：
 //!
 //! - 卷积码 K = 7、多项式 0x6D / 0x4F（与 MFSK16 相同的「NASA」码），码率 1/2；
 //! - 发送：每个 Varicode 位进编码器得到 2 个码位，**4 个码位凑成一个 nibble**，过前向交织器
@@ -16,170 +17,15 @@
 //! 二次信道的字符（`MuPskSec2Pri` / `MuPskPriSecChar`）。代价是主信道丢了这些码字原本的
 //! 字符（多数控制符与 0x80 以上的字符），发送前统一换成 `_` —— 与 fldigi 一致。
 
-use crate::mfsk_varicode::VARICODE;
+use ham_web_mfsk::fec::{Code, Encoder, Interleaver, Viterbi};
+use ham_web_mfsk::lookup::varidec;
+use ham_web_mfsk::varicode::VARICODE;
 
-/// 约束长度。
-const K: u32 = 7;
-/// 两个生成多项式（fldigi `dominoex.h` 的 `POLY1` / `POLY2`）。
-const POLY1: u32 = 0x6D;
-const POLY2: u32 = 0x4F;
-/// 交织器：size × size × depth。
+/// 交织器：size × size × depth（fldigi 在 DominoEX 里用 4 × 4 × 4）。
 const INLV_SIZE: usize = 4;
 const INLV_DEPTH: usize = 4;
-/// 反向交织器的初值：删除位（软值居中，两种假设的度量相同）。
-const PUNCTURE: u8 = 128;
-/// Viterbi 的路径存储深度（fldigi `PATHMEM`）。
-const PATHMEM: usize = 256;
 /// 回溯深度（fldigi 在 DominoEX 里 `settraceback(45)`）。
 const TRACEBACK: usize = 45;
-const NSTATES: usize = 1 << (K - 1);
-
-fn parity(x: u32) -> u32 {
-  x.count_ones() & 1
-}
-
-/// `(POLY1 码位) | (POLY2 码位) << 1`，下标为 K 位移位寄存器。
-fn conv_output(state: u32) -> u32 {
-  parity(POLY1 & state) | (parity(POLY2 & state) << 1)
-}
-
-/// 卷积编码器。
-#[derive(Debug, Default, Clone)]
-struct ConvEncoder {
-  shreg: u32,
-}
-
-impl ConvEncoder {
-  fn encode(&mut self, bit: bool) -> u32 {
-    self.shreg = (self.shreg << 1) | u32::from(bit);
-    conv_output(self.shreg & ((1 << K) - 1))
-  }
-}
-
-/// 卷积交织器（fldigi `interleave`）：`depth` 级，每级一个 size×size 的移位方阵，
-/// 前向取反对角线、反向取主对角线，两者串起来恰好把每个位置的延迟补齐。
-#[derive(Debug, Clone)]
-struct Interleaver {
-  forward: bool,
-  table: [u8; INLV_SIZE * INLV_SIZE * INLV_DEPTH],
-}
-
-impl Interleaver {
-  fn new(forward: bool) -> Self {
-    Self {
-      forward,
-      table: [if forward { 0 } else { PUNCTURE }; INLV_SIZE * INLV_SIZE * INLV_DEPTH],
-    }
-  }
-
-  fn idx(k: usize, i: usize, j: usize) -> usize {
-    INLV_SIZE * INLV_SIZE * k + INLV_SIZE * i + j
-  }
-
-  fn symbols(&mut self, syms: &mut [u8; INLV_SIZE]) {
-    for k in 0..INLV_DEPTH {
-      for i in 0..INLV_SIZE {
-        for j in 0..INLV_SIZE - 1 {
-          self.table[Self::idx(k, i, j)] = self.table[Self::idx(k, i, j + 1)];
-        }
-      }
-      for (i, s) in syms.iter().enumerate() {
-        self.table[Self::idx(k, i, INLV_SIZE - 1)] = *s;
-      }
-      for (i, s) in syms.iter_mut().enumerate() {
-        let j = if self.forward { INLV_SIZE - i - 1 } else { i };
-        *s = self.table[Self::idx(k, i, j)];
-      }
-    }
-  }
-
-  /// 4 位整数（最高位先出）过交织器。
-  fn bits(&mut self, value: u32) -> u32 {
-    let mut syms = [0u8; INLV_SIZE];
-    for (i, s) in syms.iter_mut().enumerate() {
-      *s = ((value >> (INLV_SIZE - i - 1)) & 1) as u8;
-    }
-    self.symbols(&mut syms);
-    syms.iter().fold(0, |acc, &s| (acc << 1) | u32::from(s))
-  }
-}
-
-/// 硬判决 Viterbi 译码器（fldigi `viterbi`，回溯 45、每次输出 1 位）。
-///
-/// 路径度量用 `i64`：fldigi 在 chunksize = 1 时永远走不到它的「度量归一化」分支
-/// （`decode` 每次都在归一化之前就 `return traceback()`），`int` 要连续跑几百万步才会溢出；
-/// 这里换成 64 位，比较结果与 fldigi 逐位相同，又不会在长录音里溢出。
-#[derive(Debug, Clone)]
-struct Viterbi {
-  metrics: Vec<[i64; NSTATES]>,
-  history: Vec<[usize; NSTATES]>,
-  sequence: [usize; PATHMEM],
-  ptr: usize,
-}
-
-impl Viterbi {
-  fn new() -> Self {
-    Self {
-      metrics: vec![[0; NSTATES]; PATHMEM],
-      history: vec![[0; NSTATES]; PATHMEM],
-      sequence: [0; PATHMEM],
-      ptr: 0,
-    }
-  }
-
-  /// 软值 → 「这一位是 0 / 是 1」的度量（fldigi `mettab`）。
-  fn met(bit: u32, sym: u8) -> i64 {
-    if bit == 0 {
-      128 - i64::from(sym)
-    } else {
-      i64::from(sym) - 128
-    }
-  }
-
-  fn decode(&mut self, sym: [u8; 2]) -> u32 {
-    let cur = self.ptr;
-    let prev = (cur + PATHMEM - 1) % PATHMEM;
-    let met: [i64; 4] = std::array::from_fn(|o| {
-      let o = o as u32;
-      Self::met((o >> 1) & 1, sym[1]) + Self::met(o & 1, sym[0])
-    });
-    for n in 0..NSTATES {
-      let (s0, s1) = (n, n + NSTATES);
-      let (p0, p1) = (s0 >> 1, s1 >> 1);
-      let m0 = self.metrics[prev][p0] + met[conv_output(s0 as u32) as usize];
-      let m1 = self.metrics[prev][p1] + met[conv_output(s1 as u32) as usize];
-      // 平手取 p1：与 fldigi 的 `if (m0 > m1)` 同向。
-      if m0 > m1 {
-        self.metrics[cur][n] = m0;
-        self.history[cur][n] = p0;
-      } else {
-        self.metrics[cur][n] = m1;
-        self.history[cur][n] = p1;
-      }
-    }
-    self.ptr = (self.ptr + 1) % PATHMEM;
-    self.traceback()
-  }
-
-  fn traceback(&mut self) -> u32 {
-    let mut p = (self.ptr + PATHMEM - 1) % PATHMEM;
-    let mut best = (i64::MIN, 0usize);
-    for (i, &m) in self.metrics[p].iter().enumerate() {
-      // 严格大于：同分取下标最小的状态（与 fldigi 一致）。
-      if m > best.0 {
-        best = (m, i);
-      }
-    }
-    self.sequence[p] = best.1;
-    for _ in 0..TRACEBACK {
-      let prev = (p + PATHMEM - 1) % PATHMEM;
-      self.sequence[prev] = self.history[p][self.sequence[p]];
-      p = prev;
-    }
-    // 状态的最低位就是那一步的输入位。
-    (self.sequence[p] & 1) as u32
-  }
-}
 
 /// 二次信道字符 → 借用的主信道码（fldigi `MuPskSec2Pri`，含它的重音字母折叠表）。
 #[must_use]
@@ -256,30 +102,10 @@ pub fn pri_to_char(c: u16) -> u16 {
   }
 }
 
-/// 码字（'1' / '0' 串）→ 整数，用于接收端反查。
-///
-/// 反查表只建一次（`OnceLock`）：接收热路径上每个候选都要反查，原来每次都线性扫
-/// 256 个码字并重新 fold，解码器实例之间还各自重复。
-fn varidec(code: u32) -> Option<u16> {
-  static MAP: std::sync::OnceLock<std::collections::HashMap<u32, u16>> = std::sync::OnceLock::new();
-  let map = MAP.get_or_init(|| {
-    let mut m = std::collections::HashMap::with_capacity(VARICODE.len());
-    for (i, s) in VARICODE.iter().enumerate() {
-      let key = s
-        .bytes()
-        .fold(0u32, |acc, b| (acc << 1) | u32::from(b == b'1'));
-      // 保留第一个出现的位置（与原来 `position` 的语义一致，尽管码字互不重复）。
-      m.entry(key).or_insert(i as u16);
-    }
-    m
-  });
-  map.get(&code).copied()
-}
-
 /// FEC 发送端：字符 → IFK+ nibble。
 #[derive(Debug, Clone)]
 pub struct FecEncoder {
-  enc: ConvEncoder,
+  enc: Encoder,
   inlv: Interleaver,
   bitshreg: u32,
   bitstate: u32,
@@ -295,8 +121,8 @@ impl FecEncoder {
   #[must_use]
   pub fn new() -> Self {
     Self {
-      enc: ConvEncoder::default(),
-      inlv: Interleaver::new(true),
+      enc: Encoder::new(Code::NASA_K7),
+      inlv: Interleaver::new(INLV_SIZE, INLV_DEPTH, true),
       bitshreg: 0,
       bitstate: 0,
     }
@@ -307,7 +133,7 @@ impl FecEncoder {
     let data = self.enc.encode(false);
     for _ in 0..100 {
       for i in 0..2 {
-        self.bitshreg = (self.bitshreg << 1) | ((data >> i) & 1);
+        self.bitshreg = (self.bitshreg << 1) | u32::from((data >> i) & 1);
         self.bitstate += 1;
         if self.bitstate == 4 {
           self.inlv.bits(self.bitshreg);
@@ -337,7 +163,7 @@ impl FecEncoder {
     for b in VARICODE[c as usize].bytes() {
       let data = self.enc.encode(b == b'1');
       for i in 0..2 {
-        self.bitshreg = (self.bitshreg << 1) | ((data >> i) & 1);
+        self.bitshreg = (self.bitshreg << 1) | u32::from((data >> i) & 1);
         self.bitstate += 1;
         if self.bitstate == 4 {
           out.push(self.inlv.bits(self.bitshreg) as u8);
@@ -369,8 +195,8 @@ impl FecDecoder {
   #[must_use]
   pub fn new() -> Self {
     Self {
-      inlv: Interleaver::new(false),
-      vit: Viterbi::new(),
+      inlv: Interleaver::new(INLV_SIZE, INLV_DEPTH, false),
+      vit: Viterbi::new(Code::NASA_K7, TRACEBACK),
       pair: [0; 2],
       odd: false,
       datashreg: 1,
@@ -399,8 +225,8 @@ impl FecDecoder {
     if self.odd {
       return;
     }
-    let bit = self.vit.decode(self.pair);
-    self.datashreg = (self.datashreg << 1) | bit;
+    let (bit, _) = self.vit.decode(self.pair);
+    self.datashreg = (self.datashreg << 1) | u32::from(bit);
     if self.datashreg & 7 == 1 {
       if let Some(c) = varidec(self.datashreg >> 1) {
         out.push(pri_to_char(c));
@@ -417,8 +243,8 @@ mod tests {
   #[test]
   fn interleavers_are_inverse_after_their_delay() {
     // 前向 + 反向串起来是一个纯延迟：送入一串随机 nibble，输出是同一串（错后若干个）。
-    let mut tx = Interleaver::new(true);
-    let mut rx = Interleaver::new(false);
+    let mut tx = Interleaver::new(INLV_SIZE, INLV_DEPTH, true);
+    let mut rx = Interleaver::new(INLV_SIZE, INLV_DEPTH, false);
     let mut seed = 0x1234_5678u32;
     let input: Vec<u32> = (0..200)
       .map(|_| {

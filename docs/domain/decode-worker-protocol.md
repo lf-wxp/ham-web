@@ -1,8 +1,8 @@
 # 解码 Worker 协议（统一入口）
 
-本文档是「文件 → 浏览器内解码」链路的**现行规范**：十一个解码器页面（APT / SSTV /
-WSPR / RTTY / Olivia / DominoEX / NAVTEX / LRPT / FT8 / Feld Hell / WEFAX），加上归在
-软 TNC 小工具（`/tools#soft-tnc`）里的 AFSK1200，共十二个 codec 共用一份 JS 入口
+本文档是「文件 → 浏览器内解码」链路的**现行规范**：十三个解码器页面（APT / SSTV /
+WSPR / RTTY / Olivia / DominoEX / MFSK / THOR / NAVTEX / LRPT / FT8 / Feld Hell / WEFAX），加上归在
+软 TNC 小工具（`/tools#soft-tnc`）里的 AFSK1200，共十四个 codec 共用一份 JS 入口
 `public/decode-worker.js`，各自的 wasm 胶水遵守同一份导出契约，页面侧统一经
 `crate::decode_session::DecodeSession` 接入。新增解码器照文末清单走一遍即可。
 
@@ -62,14 +62,15 @@ WSPR / RTTY / Olivia / DominoEX / NAVTEX / LRPT / FT8 / Feld Hell / WEFAX），�
 | --- | --- | --- |
 | `not-wav` / `unsupported-format` / `truncated` / `no-audio` | 各 worker 的 WAV 解析 | 见 `ham_web_apt::Error::code()` |
 | `too-short` | APT / SSTV / WEFAX | 音频不足以解出一帧 / 一张图 |
-| `no-signal:<名>` | RTTY / Olivia / DominoEX / NAVTEX / WSPR / HELL / WEFAX | 没有可解调的信号（门限见下节；`<名>` 是 `RTTY` / `Olivia` / `DominoEX` / `NAVTEX` / `WSPR` / `HELL` / `WEFAX`。WEFAX 的 `NoSync` 也归这一码，不再单独回 `no-sync`） |
+| `no-signal:<名>` | RTTY / Olivia / DominoEX / MFSK / THOR / NAVTEX / WSPR / HELL / WEFAX | 没有可解调的信号（门限见下节；`<名>` 是 `RTTY` / `Olivia` / `DominoEX` / `MFSK` / `THOR` / `NAVTEX` / `WSPR` / `HELL` / `WEFAX`。WEFAX 的 `NoSync` 也归这一码，不再单独回 `no-sync`） |
 | `no-vis` | SSTV | 未检测到 VIS 头 |
-| `unsupported-submode:<模式>` | Olivia / DominoEX | 子模式不在标准表内（语法解析失败） |
+| `unsupported-submode:<模式>` | Olivia / DominoEX / MFSK / THOR | 子模式不在标准表内（语法解析失败） |
 | `olivia-params:<音调数>,<带宽>` | Olivia | 参数组合语法合法但语义不在标准表内（音调数 ≠ 31.25 波特 × 带宽） |
 | `olivia-params:<音调数>,<带宽>@<中心频率>` | Olivia | 中心频率非有限，或中心 + 半带宽越过 Nyquist；`localize_error` 按 `@` 拆出第三个参数，走 `tools.decode-err-olivia-params-range` |
 | `mark-hz-out-of-range:<Hz>` | RTTY | 传号频率越界（须 > 0 且传号 + 170 Hz 小于采样率一半） |
 | `base-hz-out-of-range:<Hz>` | WSPR | 基带频率越界（须 > 0 且小于采样率一半） |
-| `rate-too-low:<最低 Hz>` | DominoEX | 采样率低于音调带上沿的 Nyquist 要求（Olivia 的同类检查报带 `@` 的 `olivia-params`） |
+| `center-hz-out-of-range:<Hz>` | MFSK / THOR | 手填的中心频率让整个音调带（含两侧各一个音调间隔）放不进 0 与采样率一半之间；页面在发 Worker 之前只拦「不是正数」，越界由 Worker 按实际采样率判 |
+| `rate-too-low:<最低 Hz>` | DominoEX / MFSK / THOR | 采样率低于音调带上沿的 Nyquist 要求（Olivia 的同类检查报带 `@` 的 `olivia-params`） |
 | `need-sample-rate:<Hz>` / `need-stereo:<声道数>` | LRPT | 采样率低于 144 kHz，或不是双声道 I/Q；参数是录音的实际值 |
 | `ft8-sample-rate:<Hz>` | FT8 / FT4 | 采样率不是 12000 Hz（时频分析按该采样率设计，别的采样率会静默解错，所以直接拒绝） |
 | `image-incomplete:<帧数>` | LRPT | 帧层有输出但图像层不完整（不等于「帧层都通过了」） |
@@ -88,6 +89,8 @@ WSPR / RTTY / Olivia / DominoEX / NAVTEX / LRPT / FT8 / Feld Hell / WEFAX），�
 | `rtty` | `markHz`（2125；空号 = 传号 + 170 Hz） | `{ text }` | `/rtty-worker/` |
 | `olivia` | `mode`（`"32/1000@1500"`） | `{ text }` | `/olivia-worker/` |
 | `dominoex` | `mode`（`"8"`）、`fec`（`false`；`true` = MultiPSK 兼容 FEC） | `{ text, id }`（`id` = 二次信道，可能为空串） | `/dominoex-worker/` |
+| `mfsk` | `mode`（`"16"`；4 / 8 / 11 / 16 / 22 / 31 / 32 / 64 / 128）、`centerHz`（缺省 = 自动检测）、`reverse`（`false`；`true` = LSB） | `{ text, centerHz, depth }`（`centerHz` = 实际使用的中心频率，`depth` = 译码用的交织深度） | `/mfsk-worker/` |
+| `thor` | `mode`（`"16"`；micro / 4 / 5 / 8 / 11 / 16 / 22 / 25x4 / 50x1 / 50x2 / 100）、`centerHz`、`reverse`（同 `mfsk`） | `{ text, id, centerHz }`（`id` = 二次信道 ID 信标，可能为空串） | `/thor-worker/` |
 | `navtex` | —（页面发 `null`） | `{ messages: [{ transmitter, category, serial, text, corrected, errors, chars, accepted }] }` | `/navtex-worker/` |
 | `lrpt` | —（页面发 `null`） | `{ width, height, rgb: Uint8Array }`（RGB 三平面交错） | `/lrpt-worker/` |
 | `ft8` | `protocol`（`"ft8"`；`"ft4"`） | `{ messages: [{ text, freq_hz, time_sec, sync_db }], unsupported, slots }`（`time_sec` 距录音开头；`sync_db` 是同步强度而非 SNR；`unsupported` 是 CRC 通过但类型无字段解析的条数；`slots` 是逐个解码的时隙数） | `/ft8-worker/` |
@@ -96,7 +99,7 @@ WSPR / RTTY / Olivia / DominoEX / NAVTEX / LRPT / FT8 / Feld Hell / WEFAX），�
 | `afsk1200` | —（页面发 `null`） | `{ frames: [{ kind: "ui", source, destination, info } \| { kind: "raw", hex }], truncated }`；录音超过 60 秒时 `truncated: true`，只解前一段 | `/afsk1200-worker/` |
 
 AFSK1200 **没有对应的 `/afsk1200/` 核心 crate**：它的解调/调制逻辑住在 `ham-web-core`
-（`core/afsk1200.rs` + `core/kiss.rs`）。理由是它和其余十一个 codec 形态不同——它是
+（`core/afsk1200.rs` + `core/kiss.rs`）。理由是它和其余十三个 codec 形态不同——它是
 **软 TNC**（`帧 ↔ 基带音频` 收发双向），发端 `modulate_frame_for_tx` 还要供 `/tools#soft-tnc`
 下载 `afsk1200.wav` 复用，不是只有「音频 → 报文/图像」的收端；于是核心按「不依赖浏览器的
 逻辑放 `ham-web-core`」的规则从第一天就留在 core（与 PSK31 同因：`synthesize` 供发端复用）。
@@ -106,7 +109,7 @@ RX 下沉到 Worker、核心没搬，worker 直接 `use ham_web_core::afsk1200`�
 的导出契约，不要求核心独立成 crate，所以这不构成例外。
 
 页面体积上限（`DecodeConfig::max_bytes`，超出直接报错、不发 Worker）：8 MiB（RTTY /
-Olivia / DominoEX / NAVTEX / FT8 / Feld Hell / WEFAX / AFSK1200）、32 MiB（SSTV / WSPR）、96 MiB（APT）、128 MiB（LRPT，
+Olivia / DominoEX / MFSK / THOR / NAVTEX / FT8 / Feld Hell / WEFAX / AFSK1200）、32 MiB（SSTV / WSPR）、96 MiB（APT）、128 MiB（LRPT，
 也是唯一 `transfer: true` 的页面）。8 MiB 这个值统一取自 `decode_session::MAX_UPLOAD_BYTES`，
 各页不要再各写一份。
 
@@ -116,6 +119,16 @@ Olivia / DominoEX / NAVTEX / FT8 / Feld Hell / WEFAX / AFSK1200）、32 MiB（SS
   （停止位 / 起始位结构），DominoEX 要求锁定后的「无音调变化」nibble（16/17）
   比例 ≤ 5%，NAVTEX 另有 4% 残余错误率门限。达不到一律 `no-signal:<名>`，
   页面显示「没有可解调的信号」而不是一段乱码。
+- **MFSK / THOR 的门限看「峰均比」**：每个符号里最强音调与平均幅度的比值（干净信号接近音调数，纯噪声约 1.8），
+  取 8 个符号的滑动平均划出信号起止，整段平均峰均比要 ≥ 2.6、区间 ≥ 32 个符号；THOR 另外要求区间内
+  不合法的音调差（0 / 1 / −17，IFK+ 产生不出来）≤ 10%。不够一律 `no-signal:MFSK` / `no-signal:THOR`。
+  这两个解码器还有三条与 fldigi 不同的**边界**：符号对齐只在整段录音上搜一次，不跟踪时钟漂移（实测 300 ppm、80 秒仍逐字
+  完整，1000 ppm 起开头或结尾出错）；没有 AFC，载频靠一次性的中心频率检测（可手填覆盖）；THOR 用硬位判决，
+  弱信号下不如 fldigi 的软位路径。信号结束后会喂一段「删除位」把交织器与 Viterbi 里压着的最后几个字符推出来
+  （THOR 发端的冲刷比管线延迟短，fldigi 自己的接收机靠收完信号后继续运行来推）。
+- **THOR 高速模式（25x4 / 50x1 / 50x2 / 100）的内存**：K = 15 的 Viterbi 要存 `PATHMEM（256）× 16384` 个状态的路径度量（`i32`）
+  与幸存前驱（`u16`），一个实例约 **24 MB**（Worker 里只建一个）；K = 7 的模式只有几十 KB。
+  Worker 里没有别的大块内存，所以 8 MiB 的上传上限加这一块仍远低于 wasm 的 4 GiB 上限；若以后要在同一页面里并行跑多个高速解码，要先重估这一项。
 - **门限是概率性的**：门限之下仍可能出现零星疑似字符，输出不等于校验过的数据。
   有内部校验的模式才有硬证据（NAVTEX 的 4-mark 权重、LRPT 的 RS(255,223)）。
 - **LRPT 的容错是尽力而为**：RS 纠不了的帧跳过、帧计数允许空洞、JPEG 段解不开只丢
@@ -215,8 +228,8 @@ sh scripts/build-decode-worker.sh
 
 ## 前端侧桥（`crates/app/src/decode_session.rs` + `decode_worker.rs`）
 
-**页面只用 `crate::decode_session::DecodeSession`**：十一个解码页（APT / SSTV / WSPR / RTTY /
-Olivia / DominoEX / NAVTEX / LRPT / FT8 / Feld Hell / WEFAX）已全部迁移，`crates/app` 里不再有手写
+**页面只用 `crate::decode_session::DecodeSession`**：十三个解码页（APT / SSTV / WSPR / RTTY /
+Olivia / DominoEX / MFSK / THOR / NAVTEX / LRPT / FT8 / Feld Hell / WEFAX）已全部迁移，`crates/app` 里不再有手写
 `generation` / 超时 / terminate 的解码页。页面只需要三件事：
 
 1. 在**组件体**（有 Owner）里 `DecodeSession::new(DecodeConfig { … })` —— 内部的
@@ -236,7 +249,7 @@ Olivia / DominoEX / NAVTEX / LRPT / FT8 / Feld Hell / WEFAX）已全部迁移，
 已卸载、超时槽位与 300 秒兜底（`DECODE_TIMEOUT_SECS`）、`processing` / `reading` /
 `error` / `file_name` / `result` 五个信号、`cancel` / `reset`。LRPT 走
 `transfer: true`（读成 `ArrayBuffer` 直接转移，避免 128 MB 级录音在主线程多拷一份），
-其余八页 `transfer: false`。
+其余各页 `transfer: false`。
 
 底层函数（`DecodeSession` 内部使用；只有确实不走会话的场合才直接调）：
 

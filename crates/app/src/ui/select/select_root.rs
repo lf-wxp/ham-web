@@ -26,6 +26,12 @@ pub(super) struct SelectCtx {
   /// 存 id 而不是值或下标：`SelectItem` 是组合式子节点，根组件事先并不知道有哪些行、什么顺序；
   /// 导航时直接读 DOM 里的 `[role="option"]` 顺序，行自己拿 id 和这里比一下就知道该不该亮。
   pub(super) active: RwSignal<Option<String>>,
+  /// 「高亮行被卸载了，需要重新定位」的代际号：高亮行卸载时由 [`super::SelectItem`] 自增。
+  ///
+  /// 行会在面板开着（甚至退场动画中被快速重开）时被整批重建 —— 选项信号一变（`SimpleSelect` 的
+  /// 选项随当前值变化就是这样），所有行换成新 id。`active` 只存 id，不跟着换，
+  /// `aria-activedescendant` 就会指向一个已不存在的元素。
+  pub(super) reprime: RwSignal<u32>,
 }
 
 /// 下拉选择：全站**唯一**的弹层式下拉实现（键盘、焦点、ARIA、箭头动画都只在这里写一遍）。
@@ -107,14 +113,16 @@ pub fn Select(
     on_change,
     open,
     active,
+    reprime: RwSignal::new(0),
   };
 
   // ── 键盘高亮 ────────────────────────────────────────────────
   // 关闭时清掉高亮：下次打开重新放到当前选中项上，而不是停在上次关闭前的位置。
-  let primed = StoredValue::new(false);
+  // `primed` 记「已经为哪一代 `reprime` 定过位」：高亮行被重建时代际号变了，要重新定一次。
+  let primed = StoredValue::new(None::<u32>);
   Effect::new(move |_| {
     if !open.get() {
-      primed.set_value(false);
+      primed.set_value(None);
       active.set(None);
     }
   });
@@ -123,14 +131,15 @@ pub fn Select(
     if !open.get() || !mounted.get() {
       return;
     }
+    let epoch = ctx.reprime.get();
     // 订阅 `list_ref`：节点挂上时重跑一次，而不是在它还是 `None` 的那一拍就放弃。
     let Some(list) = list_ref.get() else {
       return;
     };
-    if primed.get_value() {
+    if primed.get_value() == Some(epoch) {
       return;
     }
-    primed.set_value(true);
+    primed.set_value(Some(epoch));
     if let Ok(Some(selected)) = list.query_selector(r#"[role="option"][aria-selected="true"]"#) {
       active.set(Some(selected.id()));
     }

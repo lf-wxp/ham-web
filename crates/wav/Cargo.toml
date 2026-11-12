@@ -8,7 +8,7 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
-# 许可：MIT。GPL-3.0 的解码 crate（dominoex / navtex / lrpt）可以依赖它，反过来不行。
+# 许可：MIT。GPL-3.0 的解码 crate（dominoex / mfsk / thor / navtex / lrpt）可以依赖它，反过来不行。
 [dependencies]
 
 [lints]

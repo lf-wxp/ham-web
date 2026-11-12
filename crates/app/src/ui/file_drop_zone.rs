@@ -13,7 +13,7 @@ use super::control::TextValue;
 /// 文件拖放上传区。
 ///
 /// `FileInput` 只是个按钮，表达不了「把文件拖到一块区域上」；上传解码类页面
-/// （APT / SSTV / WSPR / RTTY / Olivia / NAVTEX / LRPT / DominoEX / PSK31 / 离线瀑布分析）
+/// （APT / SSTV / WSPR / RTTY / Olivia / NAVTEX / LRPT / DominoEX / MFSK / THOR / PSK31 / 离线瀑布分析）
 /// 要的就是整块拖放，所以单独成组件。页面里不要再手写 `<label for>` + 隐藏 input。
 #[component]
 pub fn FileDropZone(

@@ -1,4 +1,4 @@
-// IZ8BLY MFSK Varicode（DominoEX FEC 用）。生成物：由 crates/dominoex/examples/extract_mfsk_varicode.rs
+// IZ8BLY MFSK Varicode（MFSK / THOR / DominoEX FEC 共用）。生成物：由 crates/mfsk/examples/extract_varicode.rs
 // 从 fldigi（GPL-3.0）src/mfsk/mfskvaricode.cxx 提取，请勿手改。
 export const MFSK_VARICODE: readonly string[] = [
   "11101011100",

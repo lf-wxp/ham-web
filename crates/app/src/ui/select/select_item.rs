@@ -25,6 +25,18 @@ pub fn SelectItem(#[prop(into)] value: String, children: Children) -> impl IntoV
       .value
       .with(|cur| v.with_value(|v| cur.as_deref() == Some(v.as_str())))
   };
+  // 自己是高亮行时被卸载（选项信号变化导致整批重建）：清掉指向自己的 id 并请根组件重新定位，
+  // 否则 `aria-activedescendant` 会指向已不存在的元素。`try_*`：整个下拉一起卸载时信号可能已释放。
+  on_cleanup(move || {
+    let mine_active = ctx
+      .active
+      .try_with_untracked(|a| my_id.with_value(|mine| a.as_deref() == Some(mine.as_str())))
+      .unwrap_or(false);
+    if mine_active {
+      ctx.active.try_set(None);
+      ctx.reprime.try_update(|n| *n = n.wrapping_add(1));
+    }
+  });
   let highlighted = move || {
     ctx
       .active

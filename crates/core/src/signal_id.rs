@@ -166,6 +166,22 @@ pub const PROFILES: &[SignalProfile] = &[
     page: Some("/dominoex-decode"),
   },
   SignalProfile {
+    key: "mfsk",
+    sounds: &[Sound::Multi],
+    rhythms: &[Rhythm::Continuous],
+    // MFSK4（约 120 Hz）到 MFSK128（约 1.9 kHz）；最常见的 MFSK16 约 235 Hz。
+    bandwidth_hz: (50.0, 2000.0),
+    page: Some("/mfsk-decode"),
+  },
+  SignalProfile {
+    key: "thor",
+    sounds: &[Sound::Multi],
+    rhythms: &[Rhythm::Continuous],
+    // THOR micro（约 36 Hz）到 THOR 100（约 1.8 kHz，-26 dB 带宽 2.4 kHz）；常见的 THOR 16 约 281 Hz。
+    bandwidth_hz: (35.0, 2500.0),
+    page: Some("/thor-decode"),
+  },
+  SignalProfile {
     key: "hell",
     sounds: &[Sound::Single, Sound::Noise],
     rhythms: &[Rhythm::Continuous],

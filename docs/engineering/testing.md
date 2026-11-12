@@ -42,9 +42,10 @@ cargo make e2e-coverage                                # 只统计覆盖率，�
 | `E2E_WORKERS` | 并发数，默认 2。dev 构建没有 `wasm-opt`，CPU 密集用例并行时容易超时；机器好时可调大 |
 | `E2E_UI_STYLE=modern` | **`mobile_overflow` 与 `i18n_layout` 默认只扫像素风；设成 `modern` 再扫一遍现代风。** 两档是互补的，不是重复：现代风有自己的 dock / 768 与 900 断点与大量专属类，像素风档全绿不代表现代风没有溢出（这一档曾长期没人跑，一跑就是 4 条红） |
 | `E2E_CROSS=1` | 额外启用 firefox / webkit 两个 project，只跑 `cross_browser.spec.ts`（核心页面能开、无未捕获异常、三维图有 SVG 回退）；需先 `npx playwright install firefox webkit`，默认关 |
-| `MOBILE_ONLY` / `MOBILE_MAX_FINDINGS` / `I18N_MAX_FINDINGS` | 缩小 / 放宽这两个全站审计的扫描范围与报告条数 |
+| `MOBILE_ONLY` / `I18N_ONLY` / `MOBILE_MAX_FINDINGS` / `I18N_MAX_FINDINGS` | 缩小 / 放宽这两个全站审计的扫描范围与报告条数；`*_ONLY` 填逗号分隔的路由子串（如 `I18N_ONLY=/mfsk-decode,/thor-decode`），只扫命中的路由，逐页修复时用 |
 | `E2E_MIN_JOURNEY` / `E2E_MIN_ROUTE` | 覆盖率硬门禁阈值（CI 仓库变量，见下「集成到 CI」） |
 | `LRPT_REAL_IQ` | 本地真实 IQ 样本路径；未设置时相关用例自动跳过 |
+| `FLDIGI_SRC` / `MFSK_REAL_DIR` / `THOR_REAL_DIR` | Rust 侧（非 Playwright）对拍与真实录音用例的外部输入：fldigi 源码根目录、录音目录。对应的 `ham-web-mfsk` / `ham-web-thor` 用例标了 `#[ignore]`，默认 `cargo test` 显示为 ignored，用 `cargo make mfsk-xcheck` / `thor-xcheck` 或 `-- --include-ignored` 运行，缺输入会失败而不是空转；来源与命令见 `crates/mfsk/reference/README.md` |
 
 **提交前两档都要看**：`cargo make e2e` 是 release 口径（与 CI 一致，含 `postbuild` 生成物）；`trunk serve` 方便逐页调试，
 但它缺 `postbuild` 的产物，见下一节 ①。全站审计的现代风档：

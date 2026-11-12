@@ -39,14 +39,15 @@
 把 OFL 文本与版权行追加进 `public/fonts/LICENSES`、在本节登记用途、在 `@font-face` 之外还有
 真实引用点；只入库 `.woff2` 而不改这三处，等于引入了一个既无出处也无使用者的二进制。
 
-### 例外：GPL-3.0 的六个 crate
+### 例外：GPL-3.0 的十个 crate
 
-下面六个 crate 含有转写自 GPL-3.0 项目的代码，因此**整个 crate 按 GPL-3.0（`GPL-3.0-only`）发布**，
+下面十个 crate 含有转写自 GPL-3.0 项目的代码，因此**整个 crate 按 GPL-3.0（`GPL-3.0-only`）发布**，
 许可全文见 [`LICENSES/GPL-3.0-only.txt`](../../LICENSES/GPL-3.0-only.txt)，各自的 `Cargo.toml` 也已声明：
 
 | crate | 为什么是 GPL |
 | --- | --- |
 | `crates/dominoex`、`crates/dominoex-worker` | 算法与 Varicode 表转写自 [fldigi](https://github.com/w1hkj/fldigi)（GPL-3.0） |
+| `crates/mfsk`、`crates/mfsk-worker`、`crates/thor`、`crates/thor-worker` | 卷积码 / Viterbi / 交织器 / 发收端逻辑转写自 [fldigi](https://github.com/w1hkj/fldigi)（GPL-3.0；MFSK 的设计与 Varicode 为 IZ8BLY 所定义，交织器与 Viterbi 改编自 gMFSK © Tomi Manninen OH2BNS；THOR 的二次信道 Varicode © Dave Freese W1HKJ）。来源与验证见 `crates/mfsk/reference/README.md` |
 | `crates/lrpt`、`crates/lrpt-worker` | 帧层 / 80k 链路等部分转写自 [artlav/meteor_decoder](https://github.com/artlav/meteor_decoder)（GPL-3.0）；其余部分转写自 MIT 的 lrpt-encoder |
 | `crates/navtex`、`crates/navtex-worker` | CCIR 476（SITOR-B）码表转写自 AI5GW/CCIR476（GPL-3.0），来源声明见 `crates/navtex/src/codec.rs` 文件头 |
 
@@ -54,9 +55,12 @@
 
 - 这几个解码器编译成独立的 wasm 文件，由 `public/decode-worker.js` 经 `postMessage` 调用，
   与站点其余部分（MIT）之间没有链接关系；本站公开分发的 wasm 对应源码就是本仓库。
-- **复用这六个 crate 时必须遵守 GPL-3.0**（衍生作品需以 GPL-3.0 开源）；其余 crate 仍是 MIT。
-- `e2e/tests/dominoex_varicode_data.ts`（fldigi `dominovar.cxx`）与 `e2e/tests/navtex_varicode_data.ts`
+- **复用这十个 crate 时必须遵守 GPL-3.0**（衍生作品需以 GPL-3.0 开源）；其余 crate 仍是 MIT。
+- `e2e/tests/dominoex_varicode_data.ts`（fldigi `dominovar.cxx`）、`e2e/tests/mfsk_varicode_data.ts`（`mfskvaricode.cxx`）、
+  `e2e/tests/thor_varicode_data.ts`（`thorvaricode.cxx`）与 `e2e/tests/navtex_varicode_data.ts`
   （转录自 `crates/navtex/src/codec.rs`）是测试用的 GPL 衍生数据，同样按 GPL-3.0 对待。
+- `crates/mfsk/reference/fldigi_ref.cpp` 与 `crates/mfsk/reference/fldigi_web/` 下的脚本只在对拍时用到：前者编译 fldigi 上游源码（不随仓库分发，
+  需要 `FLDIGI_SRC`），后者调用 fldigi 4.2.13 的 WebAssembly 构建（`crashdemons-external/fldigi-web`，同样不随仓库分发）；都不进发布物。
 - 发布物自带 `/license.html`、`/licenses/LICENSE`、`/licenses/GPL-3.0-only.txt` 以及第三方 MIT / BSD 声明文件；许可说明是站内页面，点击与刷新均复用全站应用壳、主题和语言，许可全文链接使用完整文档导航。`postbuild` 生成 `/license.html` 应用壳别名，Docker 构建检查这些文件，OCI 许可标签为 `MIT AND GPL-3.0-only`。部署方必须提供与实际构建版本一致的源码提交或归档，不以仓库最新版本代替。
 - 这份划分是工程上的处理，不是法律意见；若有疑问请自行咨询。
 

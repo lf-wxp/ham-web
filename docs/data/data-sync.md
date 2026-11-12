@@ -83,7 +83,7 @@ check-data-sync（离线，挂 cargo make check）      check-data-freshness（�
 | --- | --- | --- | --- |
 | A 可下载、可逐字比对 | `dxcc.txt`（cty.csv） | 摘要 | 已纳入 `data-freshness` |
 | B 可下载、只能比校验头 | `dxcc-entities.bin`、`cn-provinces.bin`、题库 | 条件 `HEAD`（题库逐文件） | 已纳入 |
-| C 人工转录、上游是 HTML / 法规页 | `crates/core/data/gear-rx.txt`、`crates/core/data/radio-law.txt`、`toroid::CORES`、`common_mode_choke::MATERIALS`（Fair-Rite 复磁导率 CSV）、`provenance::PROVENANCES` 的 8 个知识域、`diy_projects::COST_CHECKED_ON` | **只能看核对日期的年龄** | 已纳入 `data-staleness`（§6.2） |
+| C 人工转录、上游是 HTML / 法规页 | `crates/core/data/gear-rx.txt`、`crates/core/data/radio-law.txt`、`toroid::CORES`、`common_mode_choke::MATERIALS`（Fair-Rite 复磁导率 CSV）、`noise_model`（ITU-R P.372 表 1 的 c / d 常数）、`provenance::PROVENANCES` 的 8 个知识域、`diy_projects::COST_CHECKED_ON` | **只能看核对日期的年龄** | 已纳入 `data-staleness`（§6.2） |
 | D 第三方 vendored、版本固定 | `public/vendor/katex`、`public/fonts/*`、`pixel/sprite_art.rs`（源自 pixelarticons） | 记版本 + 人工升级 | **不自动同步**（版本记录见下） |
 
 C 桶为什么不能套 A / B：这些数据是人对着页面抄进仓库的，抄完就没有可比对象了；上游页面的
@@ -343,10 +343,10 @@ cargo make explanations-apply   # 把解析写回 public/questions/*.json（离�
 
 ### 6.2 时效性数据是否过期：`check-data-staleness`（`data_sync::staleness`）
 
-登记表在 `ham_web_core::staleness::curated()`：`provenance::PROVENANCES` 的 8 个知识域，加五个
-数据面 `gear-rx` / `radio-law-text` / `toroid` / `common-mode-choke` / `diy-cost`。每一项的核对日期都写在**它自己的
-数据文件或常量**里（条文库读文件头的 `# 核对日期：`，磁环取 `CORES[].verified` 里最旧的一条，复磁导率取 `MATERIALS[].fetched` 里最旧的一条），
-这里只做判定，不另存一份日期。
+登记表在 `ham_web_core::staleness::curated()`：`provenance::PROVENANCES` 的 8 个知识域，加六个
+数据面 `gear-rx` / `radio-law-text` / `toroid` / `common-mode-choke` / `noise-model` / `diy-cost`。每一项的核对日期都写在**它自己的
+数据文件或常量**里（条文库读文件头的 `# 核对日期：`，磁环取 `CORES[].verified` 里最旧的一条，复磁导率取 `MATERIALS[].fetched` 里最旧的一条，
+噪声模型取 `noise_model::CHECKED_ON`），这里只做判定，不另存一份日期。
 
 判定规则：
 

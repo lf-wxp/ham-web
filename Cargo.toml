@@ -23,6 +23,10 @@ members = [
   "crates/olivia-worker",
   "crates/dominoex",
   "crates/dominoex-worker",
+  "crates/mfsk",
+  "crates/mfsk-worker",
+  "crates/thor",
+  "crates/thor-worker",
   "crates/hell",
   "crates/hell-worker",
   "crates/wefax",
@@ -35,10 +39,10 @@ members = [
 default-members = ["crates/core", "crates/server", "crates/tools", "crates/apt"]
 
 [workspace.package]
-version = "0.6.9"
+version = "0.6.10"
 edition = "2024"
 rust-version = "1.99.1"
-# 工作区默认 MIT；dominoex / lrpt / navtex 及其 worker 六个 crate 因含 GPL-3.0 转写代码，单独声明 GPL-3.0-only。
+# 工作区默认 MIT；dominoex / mfsk / thor / lrpt / navtex 及其 worker 十个 crate 因含 GPL-3.0 转写代码，单独声明 GPL-3.0-only。
 license = "MIT"
 repository = "https://github.com/lf-wxp/ham-web"
 homepage = "https://ham.onlyxp.me"
@@ -64,6 +68,8 @@ ham-web-olivia = { path = "crates/olivia" }
 ham-web-olivia-worker = { path = "crates/olivia-worker" }
 ham-web-dominoex = { path = "crates/dominoex" }
 ham-web-dominoex-worker = { path = "crates/dominoex-worker" }
+ham-web-mfsk = { path = "crates/mfsk" }
+ham-web-thor = { path = "crates/thor" }
 ham-web-hell = { path = "crates/hell" }
 ham-web-hell-worker = { path = "crates/hell-worker" }
 ham-web-wefax = { path = "crates/wefax" }

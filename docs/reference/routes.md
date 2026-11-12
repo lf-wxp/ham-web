@@ -21,7 +21,7 @@
 | 设备 · 测量 | `/connectors` `/antenna-analyzer` `/vna` `/electronics` `/filters` `/measurement-lab` `/meters` `/power` `/power-supply` `/transceiver` `/receiver` `/rig-reviews` `/gear` `/amplifier` `/microwave` `/mobile` |
 | 通联 · 活动 | `/radiogram` `/operating` `/sat-operation` `/china-ham` `/contest` `/cabrillo` `/awards` `/iota` `/dx` `/dxpedition` `/most-wanted` `/qrp` `/eqsl` `/qsl-card` `/ardf` `/emcomm` `/winlink` `/events` `/portable` `/grid` `/callsign` `/repeater` `/repeater-build` `/logging-software` |
 | 进阶 · 关于 | `/organizations` `/safety` `/grounding` `/rfi` `/noise` `/beginner` `/learning-path` `/learning-resources` `/swl` `/license` `/spectrum-admin` `/regulations` `/history` `/remote` `/open-source` `/community` `/diy-projects` `/developers` |
-| 工具 · 计算 · 解码 | `/kiss-tnc` `/vna-reader` `/navtex-decode` `/lrpt-decode` `/dominoex-decode` `/olivia-decode` `/rtty-decode` `/hell-decode` `/wefax-decode` `/ft8-decode` `/tools` `/nec` `/waveform-lab` `/smith` `/compliance` `/apt-decoder` `/sstv-decode` `/wspr-decode` `/signal-id` `/sdr-waterfall` `/psk-decode` |
+| 工具 · 计算 · 解码 | `/kiss-tnc` `/vna-reader` `/navtex-decode` `/lrpt-decode` `/dominoex-decode` `/mfsk-decode` `/thor-decode` `/olivia-decode` `/rtty-decode` `/hell-decode` `/wefax-decode` `/ft8-decode` `/tools` `/nec` `/waveform-lab` `/smith` `/compliance` `/apt-decoder` `/sstv-decode` `/wspr-decode` `/signal-id` `/sdr-waterfall` `/psk-decode` |
 | 工具 · 日志 · 竞赛 | `/log` `/qsl-labels` `/qsl-designer` `/contest-log` `/contest-calendar` `/stats` |
 | 工具 · 实时数据 | `/dashboard` `/dx-spots` `/psk-reporter` `/rbn` `/solar` |
 | 工具 · 地图 · 卫星 | `/grid-map` `/grayline` `/dxcc-map` `/portable-map` `/satellites` `/sdr-map` |

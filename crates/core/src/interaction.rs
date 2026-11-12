@@ -176,6 +176,8 @@ impl PageSignature {
         "/navtex-decode",
         "/lrpt-decode",
         "/dominoex-decode",
+        "/mfsk-decode",
+        "/thor-decode",
         "/olivia-decode",
         "/rtty-decode",
         "/hell-decode",

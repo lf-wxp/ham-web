@@ -1,6 +1,6 @@
-//! IZ8BLY MFSK Varicode（DominoEX FEC 用）。
+//! IZ8BLY MFSK Varicode（MFSK / THOR / DominoEX FEC 共用）。
 //!
-//! **生成物**：由 `examples/extract_mfsk_varicode.rs` 从 fldigi（GPL-3.0）
+//! **生成物**：由 `examples/extract_varicode.rs` 从 fldigi（GPL-3.0）
 //! `src/mfsk/mfskvaricode.cxx` 提取，请勿手改。
 
 /// 字符码 0–255 → 码字（`'1'` / `'0'` 串，首位恒为 1、不含 `001`）。

@@ -121,7 +121,7 @@ test("解码页卸载会清除超时，读取中的异步结果不访问已释�
   expect(errors).toEqual([]);
 });
 
-for (const route of ["/olivia-decode", "/dominoex-decode", "/navtex-decode", "/lrpt-decode"]) {
+for (const route of ["/olivia-decode", "/dominoex-decode", "/mfsk-decode", "/thor-decode", "/navtex-decode", "/lrpt-decode"]) {
   test(`数字模式参考链接：${route}`, async ({ page }) => {
     await page.goto(route);
     await page.getByRole("link", { name: "数字模式知识", exact: true }).click();

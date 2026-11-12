@@ -172,6 +172,7 @@ pub mod muf;
 pub mod nec_designs;
 pub mod noise;
 pub mod noise_floor;
+pub mod noise_model;
 pub mod nvis;
 pub mod off_grid;
 pub mod open_source;

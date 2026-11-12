@@ -2,8 +2,8 @@
 //! `decodeMuPskEX`、`viterbi.cxx` 的 `encoder` / `viterbi`、`interleave.cxx` 的 `interleave`
 //! **逐行直译**（C 风格的下标、`unsigned` 回绕、平铺的交织表），与 `src/fec.rs` 不共享代码。
 //!
-//! 码表从 e2e 的 TS 数据模块里现场解析（与 `src/mfsk_varicode.rs` 同由
-//! `examples/extract_mfsk_varicode.rs` 从 `mfskvaricode.cxx` 生成，但走的是另一份产物）。
+//! 码表从 e2e 的 TS 数据模块里现场解析（与 `crates/mfsk/src/varicode.rs` 同由
+//! `crates/mfsk/examples/extract_varicode.rs` 从 `mfskvaricode.cxx` 生成，但走的是另一份产物）。
 
 // 刻意保留 C 的写法（下标循环、手写取模）：参考实现的价值在于**一眼能对上原文**，
 // 改成迭代器风格就不再是逐行直译了。
