@@ -13,10 +13,7 @@ pub const NOISE_CONCEPTS: &[(&str, &str)] = &[
   ),
   (
     "S 表",
-    concat!(
-      "信号强度指示，每格约 6 dB。S9 的电平按频段区分：HF（<30MHz）为 50 μV（约 -73 dBm），",
-      "30MHz 以上按 IARU 一区建议为 5 μV（约 -93 dBm）。",
-    ),
+    "信号强度指示，每格约 6 dB。S9 的电平按频段区分：HF（<30MHz）为 50 μV（约 -73 dBm），30MHz 以上按 IARU 一区建议为 5 μV（约 -93 dBm）。",
   ),
   (
     "噪声抑制",

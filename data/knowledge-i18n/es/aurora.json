@@ -1,5 +1,4 @@
 {
-  "144MHz 上法拉第旋转量 ∝f⁻²，量值很小。": "en 144 MHz la rotación de Faraday es proporcional a f⁻² y su magnitud es muy pequeña.",
   "Bz（行星际磁场分量）": "Bz (componente del campo magnético interplanetario)",
   "Kp 指数": "Índice Kp",
   "NOAA SWPC 每 3 小时发布；Kp ≥ 5 时高纬地区极光传播概率明显上升。": "Publicado por NOAA SWPC cada 3 horas; con Kp ≥ 5 aumenta de forma apreciable la probabilidad de propagación auroral en latitudes altas.",
@@ -13,10 +12,9 @@
   "南向（负值）且持续时能量更易注入极区，是极光活动的关键先兆。": "Cuando apunta al sur (negativo) y de forma sostenida, la energía se inyecta más fácilmente en la región polar: es un precursor clave de la actividad auroral.",
   "天线与极化": "Antenas y polarización",
   "天线指向极光区，尽量使用圆极化或将水平天线转到最佳方位；极光会让极化面不断旋转。": "Apunte la antena a la zona auroral; use polarización circular si puede o gire la antena horizontal al mejor acimut: la aurora hace rotar continuamente el plano de polarización.",
-  "天线需指向极光区（高纬的北 / 南方天空）。反射会使极化失真、去极化并快速起伏；": "La antena debe apuntar a la zona auroral (hacia el cielo del norte / sur en latitudes altas). La reflexión distorsiona la polarización, la despolariza y la hace fluctuar rápidamente;",
+  "天线需指向极光区（高纬的北 / 南方天空）。反射会使极化失真、去极化并快速起伏；实际以水平极化八木指向极区最常用，圆极化可减轻极化失配但并非公认「占优」——144MHz 上法拉第旋转量 ∝f⁻²，量值很小。": "La antena debe apuntar a la zona auroral (hacia el cielo del norte / sur en latitudes altas). La reflexión distorsiona la polarización, la despolariza y la hace fluctuar rápidamente; en la práctica lo más habitual es una Yagi de polarización horizontal apuntando a la zona polar; la polarización circular puede reducir el desajuste de polarización, pero no se acepta generalmente como «superior» — en 144 MHz la rotación de Faraday es proporcional a f⁻² y su magnitud es muy pequeña.",
   "太阳带电粒子沿地磁线注入极区高层大气，形成不规则电离体，可反射 VHF/UHF 电波。": "Las partículas cargadas del Sol se inyectan a lo largo de las líneas geomagnéticas en la atmósfera superior polar, formando cuerpos ionizados irregulares que pueden reflejar ondas de VHF/UHF.",
   "太阳风速度": "Velocidad del viento solar",
-  "实际以水平极化八木指向极区最常用，圆极化可减轻极化失配但并非公认「占优」——": "en la práctica lo más habitual es una Yagi de polarización horizontal apuntando a la zona polar; la polarización circular puede reducir el desajuste de polarización, pero no se acepta generalmente como «superior» —",
   "持续高于约 500 km/s 时地磁扰动增强，是极光活动的上游驱动。": "Por encima de unos 500 km/s sostenidos se intensifica la perturbación geomagnética: es el motor aguas arriba de la actividad auroral.",
   "极光传播": "Propagación auroral",
   "极光反射伴随强烈多径起伏，CW 听起来沙哑颤动、语音近似「低语」，是典型识别特征。": "La reflexión auroral conlleva fuertes fluctuaciones multitrayecto: el CW suena áspero y tembloroso y la fonía casi como un susurro, una característica típica de identificación.",

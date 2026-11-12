@@ -457,6 +457,18 @@ fn main() -> Result<()> {
       Ok(())
     }
     Command::KnowledgeI18nCheck => {
+      // `concat!` 拼出来的中文整句在词典里没有 key（导出只看得到片段），英文 / 西语界面会静默停在中文。
+      let concats = knowledge_i18n::concat_violations(&root)?;
+      if !concats.is_empty() {
+        println!(
+          "✗ `concat!` 里拼了中文 {} 处（译文以整句为 key，片段永远命中不到；改写成单个字面量）：",
+          concats.len()
+        );
+        for c in &concats {
+          println!("      {c}");
+        }
+        bail!("知识库译文校验未通过");
+      }
       let drift = knowledge_i18n::drift(&root)?;
       if !drift.is_empty() {
         println!(

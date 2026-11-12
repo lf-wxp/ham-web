@@ -1,5 +1,4 @@
 {
-  "30MHz 以上按 IARU 一区建议为 5 μV（约 -93 dBm）。": "above 30 MHz, per the IARU Region 1 recommendation, 5 μV (about -93 dBm).",
   "Noise Blanker（NB）削除脉冲噪声，DSP 降噪压低宽带噪声。": "A noise blanker (NB) removes impulse noise; DSP noise reduction lowers broadband noise.",
   "S 表": "S-meter",
   "人为噪声 QRM": "Man-made noise (QRM)",
@@ -7,7 +6,7 @@
   "优先排查自家电器：拉总闸后逐路合闸，定位干扰源。": "Check your own appliances first: switch off the main breaker, then restore circuits one by one to locate the source.",
   "低频段（160/80m）为主，随季节天气变化": "Mainly the low bands (160/80 m), varying with season and weather",
   "使用磁环小环等低噪接收天线，远离建筑与电源线。": "Use a low-noise receiving antenna such as a small magnetic loop, away from buildings and power lines.",
-  "信号强度指示，每格约 6 dB。S9 的电平按频段区分：HF（<30MHz）为 50 μV（约 -73 dBm），": "A signal-strength indicator, about 6 dB per S-unit. The S9 level differs by band: on HF (< 30 MHz) it is 50 μV (about -73 dBm),",
+  "信号强度指示，每格约 6 dB。S9 的电平按频段区分：HF（<30MHz）为 50 μV（约 -73 dBm），30MHz 以上按 IARU 一区建议为 5 μV（约 -93 dBm）。": "A signal-strength indicator, about 6 dB per S-unit. The S9 level differs by band: on HF (< 30 MHz) it is 50 μV (about -73 dBm), above 30 MHz, per the IARU Region 1 recommendation, 5 μV (about -93 dBm).",
   "参考 S 表读数判断本地底噪水平（HF 的 S9=50 μV、每格 6 dB；VHF 以上 S9 为 5 μV）。": "Judge the local noise floor from the S-meter reading (on HF S9 = 50 μV with 6 dB per S-unit; on VHF and above S9 is 5 μV).",
   "噪声抑制": "Noise reduction",
   "在约 10–300 MHz 最显著并构成自然底限；到 UHF/微波已被接收机热噪声淹没": "Most significant at about 10–300 MHz, where it forms the natural floor; by UHF/microwave it is swamped by the receiver's thermal noise",

@@ -1,5 +1,4 @@
 {
-  "144MHz 上法拉第旋转量 ∝f⁻²，量值很小。": "at 144 MHz the Faraday rotation scales as f⁻² and its magnitude is very small.",
   "Bz（行星际磁场分量）": "Bz (interplanetary magnetic field component)",
   "Kp 指数": "Kp index",
   "NOAA SWPC 每 3 小时发布；Kp ≥ 5 时高纬地区极光传播概率明显上升。": "Issued by NOAA SWPC every 3 hours; when Kp ≥ 5 the probability of auroral propagation at high latitudes rises noticeably.",
@@ -13,10 +12,9 @@
   "南向（负值）且持续时能量更易注入极区，是极光活动的关键先兆。": "When southward (negative) and sustained, energy is injected into the polar region more easily — a key precursor of auroral activity.",
   "天线与极化": "Antennas and polarisation",
   "天线指向极光区，尽量使用圆极化或将水平天线转到最佳方位；极光会让极化面不断旋转。": "Point the antenna at the auroral region; use circular polarisation if possible or rotate a horizontal antenna to the best bearing — the aurora keeps rotating the plane of polarisation.",
-  "天线需指向极光区（高纬的北 / 南方天空）。反射会使极化失真、去极化并快速起伏；": "The antenna must point at the auroral region (towards the northern / southern sky at high latitudes). Reflection distorts the polarisation, depolarises it and makes it fluctuate rapidly;",
+  "天线需指向极光区（高纬的北 / 南方天空）。反射会使极化失真、去极化并快速起伏；实际以水平极化八木指向极区最常用，圆极化可减轻极化失配但并非公认「占优」——144MHz 上法拉第旋转量 ∝f⁻²，量值很小。": "The antenna must point at the auroral region (towards the northern / southern sky at high latitudes). Reflection distorts the polarisation, depolarises it and makes it fluctuate rapidly; in practice a horizontally polarised Yagi aimed at the polar region is used most often; circular polarisation can ease polarisation mismatch but is not generally accepted as \"superior\" — at 144 MHz the Faraday rotation scales as f⁻² and its magnitude is very small.",
   "太阳带电粒子沿地磁线注入极区高层大气，形成不规则电离体，可反射 VHF/UHF 电波。": "Charged particles from the Sun are injected along geomagnetic field lines into the upper atmosphere over the polar regions, forming irregular ionised bodies that can reflect VHF/UHF waves.",
   "太阳风速度": "Solar wind speed",
-  "实际以水平极化八木指向极区最常用，圆极化可减轻极化失配但并非公认「占优」——": "in practice a horizontally polarised Yagi aimed at the polar region is used most often; circular polarisation can ease polarisation mismatch but is not generally accepted as \"superior\" —",
   "持续高于约 500 km/s 时地磁扰动增强，是极光活动的上游驱动。": "When sustained above about 500 km/s, geomagnetic disturbance intensifies — the upstream driver of auroral activity.",
   "极光传播": "Auroral propagation",
   "极光反射伴随强烈多径起伏，CW 听起来沙哑颤动、语音近似「低语」，是典型识别特征。": "Auroral reflection brings strong multipath fluctuation: CW sounds raspy and wavering and speech sounds almost like a whisper — a typical identifying signature.",

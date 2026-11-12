@@ -1,5 +1,4 @@
 {
-  "30MHz 以上按 IARU 一区建议为 5 μV（约 -93 dBm）。": "por encima de 30 MHz, según la recomendación de la Región 1 de la IARU, 5 μV (unos -93 dBm).",
   "Noise Blanker（NB）削除脉冲噪声，DSP 降噪压低宽带噪声。": "El supresor de ruido (NB) elimina el ruido por impulsos; la reducción de ruido por DSP baja el ruido de banda ancha.",
   "S 表": "Medidor S",
   "人为噪声 QRM": "Ruido artificial (QRM)",
@@ -7,7 +6,7 @@
   "优先排查自家电器：拉总闸后逐路合闸，定位干扰源。": "Revise primero sus propios aparatos: corte el interruptor general y vaya restableciendo circuitos uno a uno para localizar la fuente.",
   "低频段（160/80m）为主，随季节天气变化": "Predomina en las bandas bajas (160/80 m) y varía con la estación y el tiempo",
   "使用磁环小环等低噪接收天线，远离建筑与电源线。": "Use una antena de recepción de bajo ruido, como un bucle magnético pequeño, alejada de edificios y líneas eléctricas.",
-  "信号强度指示，每格约 6 dB。S9 的电平按频段区分：HF（<30MHz）为 50 μV（约 -73 dBm），": "Indicador de intensidad de señal, unos 6 dB por división. El nivel de S9 varía por banda: en HF (< 30 MHz) son 50 μV (unos -73 dBm),",
+  "信号强度指示，每格约 6 dB。S9 的电平按频段区分：HF（<30MHz）为 50 μV（约 -73 dBm），30MHz 以上按 IARU 一区建议为 5 μV（约 -93 dBm）。": "Indicador de intensidad de señal, unos 6 dB por división. El nivel de S9 varía por banda: en HF (< 30 MHz) son 50 μV (unos -73 dBm), por encima de 30 MHz, según la recomendación de la Región 1 de la IARU, 5 μV (unos -93 dBm).",
   "参考 S 表读数判断本地底噪水平（HF 的 S9=50 μV、每格 6 dB；VHF 以上 S9 为 5 μV）。": "Evalúe el ruido de fondo local con la lectura del medidor S (en HF, S9 = 50 μV y 6 dB por división; en VHF y superiores, S9 son 5 μV).",
   "噪声抑制": "Reducción de ruido",
   "在约 10–300 MHz 最显著并构成自然底限；到 UHF/微波已被接收机热噪声淹没": "Es más notable en unos 10–300 MHz, donde constituye el suelo natural; en UHF/microondas queda enmascarado por el ruido térmico del receptor",

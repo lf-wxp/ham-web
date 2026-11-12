@@ -326,6 +326,74 @@ pub fn conflicts(root: &Path) -> Result<Vec<String>> {
   Ok(out)
 }
 
+/// 找出 `concat!(…)` 里拼了中文字面量的行号（1 起）。
+///
+/// 译文以**运行时拿到的整句**为 key，而 `concat!` 在编译期把几段字面量拼成一句；
+/// 导出工具按行取字面量，只能看到片段。于是词典里是片段 key、页面上 `kt()` 拿到的是整句，
+/// 永远命中不到 —— 英文 / 西语界面整段停在中文，且没有任何报错。
+/// 所以含中文的正文必须写成**单个字面量**（长句不折行，rustfmt 不会拆字符串）。
+pub fn concat_chinese_lines(src: &str) -> Vec<usize> {
+  const NEEDLE: &str = "concat!(";
+  let mut out = Vec::new();
+  let mut from = 0;
+  while let Some(rel) = src[from..].find(NEEDLE) {
+    let at = from + rel;
+    let line_start = src[..at].rfind('\n').map_or(0, |p| p + 1);
+    let open = at + NEEDLE.len();
+    from = open;
+    // 注释里提到 `concat!(` 不算。
+    if src[line_start..at].trim_start().starts_with("//") {
+      continue;
+    }
+    // 向后找配对的 `)`，字符串字面量里的括号不参与配对。
+    let bytes = src.as_bytes();
+    let (mut depth, mut i, mut cjk) = (1usize, open, false);
+    while i < bytes.len() && depth > 0 {
+      match bytes[i] {
+        b'"' => {
+          let begin = i + 1;
+          i += 1;
+          while i < bytes.len() && bytes[i] != b'"' {
+            i += if bytes[i] == b'\\' { 2 } else { 1 };
+          }
+          cjk |= src.get(begin..i).is_some_and(has_cjk);
+        }
+        b'(' => depth += 1,
+        b')' => depth -= 1,
+        _ => {}
+      }
+      i += 1;
+    }
+    if cjk {
+      out.push(src[..at].matches('\n').count() + 1);
+    }
+  }
+  out
+}
+
+/// 扫 `crates/core/src`：任何拼中文的 `concat!`（见 [`concat_chinese_lines`]）。
+pub fn concat_violations(root: &Path) -> Result<Vec<String>> {
+  let dir = root.join("crates/core/src");
+  let mut out = Vec::new();
+  for e in std::fs::read_dir(&dir).with_context(|| format!("读取 {} 失败", dir.display()))? {
+    let p = e?.path();
+    if p.extension().is_none_or(|x| x != "rs") {
+      continue;
+    }
+    let src = std::fs::read_to_string(&p)?;
+    let name = p
+      .file_name()
+      .unwrap_or_default()
+      .to_string_lossy()
+      .to_string();
+    for line in concat_chinese_lines(&src) {
+      out.push(format!("crates/core/src/{name}:{line}"));
+    }
+  }
+  out.sort();
+  Ok(out)
+}
+
 /// 列出 core 中含中文的模块及其字符数（从大到小），供决定先翻哪个。
 pub fn inventory(root: &Path) -> Result<Vec<(String, usize)>> {
   let dir = root.join("crates/core/src");
@@ -417,5 +485,31 @@ pub const C: &str = "另一个";
     // `\u{…}` 十六进制转义同样按实际字符还原。
     let src2 = "pub const B: &str = \"\\u{5929}\\u{7ebf}\";";
     assert_eq!(extract_chinese(src2), vec!["天线"]);
+  }
+
+  #[test]
+  fn flags_concat_that_joins_chinese() {
+    let src =
+      "const A: &str = \"首行\";\nconst B: &str = concat!(\n  \"第一段，\",\n  \"第二段。\",\n);\n";
+    assert_eq!(concat_chinese_lines(src), vec![2]);
+  }
+
+  #[test]
+  fn ignores_concat_without_chinese_and_comments() {
+    // 不含中文（如 `env!` 拼路径）、注释里提到、单个字面量，都不算。
+    let src = concat!(
+      "let p = concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/style\");\n",
+      "// 不要写 concat!(\"中文\", \"片段\")\n",
+      "const A: &str = \"单个字面量，不拼接\";\n",
+    );
+    assert!(concat_chinese_lines(src).is_empty());
+  }
+
+  #[test]
+  fn concat_paren_matching_skips_parens_in_strings() {
+    // 字面量里的 `)` 不能提前结束配对，否则后面的中文片段会漏判。
+    let src =
+      "const A: &str = concat!(\"a)\", \"中文\");\nconst B: &str = concat!(\"x\", \"y\");\n";
+    assert_eq!(concat_chinese_lines(src), vec![1]);
   }
 }
