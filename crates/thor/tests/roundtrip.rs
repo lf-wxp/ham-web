@@ -327,3 +327,27 @@ fn tracking_works_in_every_mode() {
     }
   }
 }
+
+/// 恒定载波（窄带干扰）：载波不比信号强的在音调幅度里减掉，比信号强的把那个音调位抹掉。
+/// fldigi 4.2.13 自己的接收机在载波与信号等幅时一遍报文也解不出（差分对拍见 `crates/thor/examples/noise_sweep.rs` 与 `reference/fldigi_web/README.md`）。
+/// 噪声取得足够大，噪声小时硬判决的接收机自己还能应付（变异验证：去掉任何一步，对应的载波幅度都会红）。
+#[test]
+fn a_constant_carrier_is_suppressed_or_erased() {
+  let mode = parse_mode("16").unwrap();
+  let center = 1500.0;
+  let text = format!("{TEXT} ").repeat(6);
+  for (amp, noise) in [(1.0f64, 3.0f32), (2.0, 3.0)] {
+    let mut audio = encode_audio(&text, mode, 8000, center).unwrap();
+    let w = 2.0 * std::f64::consts::PI * (center + 50.0) / 8000.0;
+    for (i, s) in audio.iter_mut().enumerate() {
+      *s += (amp * (w * i as f64).sin()) as f32;
+    }
+    ham_web_dsp::add_noise(&mut audio, noise);
+    let d = decode_audio(&audio, 8000, mode, Some(center), false).expect("应解出信号");
+    assert!(
+      d.text.matches(TEXT).count() >= 5,
+      "载波幅度 {amp}、噪声 {noise}：{:?}",
+      d.text
+    );
+  }
+}

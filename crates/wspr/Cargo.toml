@@ -8,10 +8,9 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
-[dependencies]
-ham-web-apt.workspace = true
-
 [dev-dependencies]
+# `examples/decode_sample.rs` 用它的 WAV 解析：dev-dependencies 对 example 同样可见。
+ham-web-apt.workspace = true
 ham-web-dsp.workspace = true
 ham-web-wav.workspace = true
 

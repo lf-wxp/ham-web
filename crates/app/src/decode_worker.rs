@@ -7,6 +7,8 @@
 //! 超时兜底 / 按码本地化）收敛成一份，代际、取消与重置的编排在
 //! [`crate::decode_session::DecodeSession`]（页面一律经它接入，不再手写生命周期）。
 
+use std::sync::{Arc, OnceLock};
+
 use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
@@ -14,7 +16,7 @@ use wasm_bindgen::closure::Closure;
 use web_sys::{File, Worker};
 
 use crate::i18n::{t, tf};
-use crate::util::js_error_message;
+use crate::util::{js_error_message, rgba_to_data_url};
 
 /// 解码超时（秒）：录音过长或 worker 卡死（OOM / 协议错误未回信）时的兜底。
 pub const DECODE_TIMEOUT_SECS: u32 = 300;
@@ -270,6 +272,99 @@ pub fn get_bool(obj: &JsValue, key: &str) -> Result<bool, String> {
   raw_field(obj, key)?
     .as_bool()
     .ok_or_else(|| tf("common.field-is-missing", &[key]))
+}
+
+/// 必填数组字段（元素由调用方解析）。
+pub fn get_array(obj: &JsValue, key: &str) -> Result<js_sys::Array, String> {
+  raw_field(obj, key)?
+    .dyn_into()
+    .map_err(|_| tf("common.field-is-not-an-array", &[key]))
+}
+
+/// 可选字段的原始值：缺失 / `null` 是 `None`。新版页面比缓存里的旧版 Worker 多要的字段走这条路，
+/// 旧 Worker 没有这个字段时按缺省值处理，而不是整次解码报「字段缺失」。
+fn optional_field(obj: &JsValue, key: &str) -> Result<Option<JsValue>, String> {
+  let v = raw_field(obj, key)?;
+  Ok((!v.is_undefined() && !v.is_null()).then_some(v))
+}
+
+/// 可选数值字段：缺失给 `default`；给了但不是数字仍报错（不静默变成 `default`）。
+pub fn get_f64_or(obj: &JsValue, key: &str, default: f64) -> Result<f64, String> {
+  optional_field(obj, key)?.map_or(Ok(default), |v| {
+    v.as_f64()
+      .ok_or_else(|| tf("common.field-has-wrong-type", &[key]))
+  })
+}
+
+/// 可选布尔字段：缺失给 `default`；给了但不是布尔仍报错。
+pub fn get_bool_or(obj: &JsValue, key: &str, default: bool) -> Result<bool, String> {
+  optional_field(obj, key)?.map_or(Ok(default), |v| {
+    v.as_bool()
+      .ok_or_else(|| tf("common.field-has-wrong-type", &[key]))
+  })
+}
+
+/// 解码器从录音里解出的一张图片。MFSK / THOR 的图片模式共用。
+///
+/// 保留 RGBA、不保留 PNG：与 SSTV / APT / WEFAX 的 payload 同一形状（原始像素是唯一真源），
+/// PNG 编码是主线程同步的大活，推迟到**第一次真的要把图画出来**时再做，结果缓存在 `url` 里 ——
+/// 重渲染、切语言重新挂载都不会再编码一次。`Arc` 让 `clone` 只是引用计数加一。
+#[derive(Clone)]
+pub struct PicturePayload {
+  pub width: u32,
+  pub height: u32,
+  pub color: bool,
+  /// RGBA（宽 × 高 × 4）。
+  rgba: Arc<[u8]>,
+  /// PNG data URL 的缓存（成功与失败都缓存），见 [`PicturePayload::url`]。
+  url: Arc<OnceLock<Result<String, String>>>,
+}
+
+impl PicturePayload {
+  /// 这张图的 PNG data URL；画不出来（取不到 2D 上下文之类）是 `None`，由页面显示失败文案。
+  ///
+  /// 失败也缓存：页面每次重渲染都会再问一遍，不缓存就等于每次都在主线程重试一次整图编码。
+  /// 失败原因只在第一次 `console.error` 出来（用户界面只给通用文案）。
+  pub fn url(&self) -> Option<&str> {
+    self
+      .url
+      .get_or_init(|| {
+        rgba_to_data_url(&self.rgba, self.width, self.height).inspect_err(|e| {
+          web_sys::console::error_1(&format!("[decode-picture] PNG 编码失败：{e}").into());
+        })
+      })
+      .as_deref()
+      .ok()
+  }
+}
+
+/// 解析结果里的 `pictures` 数组（缺失 = 没有图片）。长度与尺寸对不上会在 `ImageData` 构造处报英文
+/// DOMException，这里按协议错误就地拒绝（与 sstv_worker 同一口径）；PNG 编码留给 [`PicturePayload::url`]。
+pub fn get_pictures(result: &JsValue) -> Result<Vec<PicturePayload>, String> {
+  if optional_field(result, "pictures")?.is_none() {
+    return Ok(Vec::new());
+  }
+  get_array(result, "pictures")?
+    .iter()
+    .map(|item| {
+      let width = get_u32(&item, "width")?;
+      let height = get_u32(&item, "height")?;
+      let rgba = get_u8s(&item, "rgba")?;
+      let expected = (width as usize)
+        .checked_mul(height as usize)
+        .and_then(|n| n.checked_mul(4));
+      if width == 0 || height == 0 || expected != Some(rgba.len()) {
+        return Err(tf("common.field-is-not-rgba", &["rgba"]));
+      }
+      Ok(PicturePayload {
+        width,
+        height,
+        color: get_bool(&item, "color")?,
+        rgba: Arc::from(rgba),
+        url: Arc::new(OnceLock::new()),
+      })
+    })
+    .collect()
 }
 
 /// 必填 `Uint8Array` 字段（拷出为 `Vec<u8>`）。

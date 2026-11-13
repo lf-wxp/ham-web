@@ -1,14 +1,14 @@
 //! WEFAX 解码器页面：上传 WEFAX 录音（WAV），交由 Web Worker 后台解码出灰度图。
 
 use leptos::prelude::*;
-use wasm_bindgen::{Clamped, JsCast, JsValue};
-use web_sys::{CanvasRenderingContext2d, File, HtmlCanvasElement, ImageData};
+use wasm_bindgen::JsValue;
+use web_sys::File;
 
 use crate::components::common::{DecodeElapsed, PageContainer, PageHeader};
 use crate::decode_session::{DecodeConfig, DecodeSession, MAX_UPLOAD_BYTES};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Button, ButtonLink, FileDropZone, Size, Variant};
-use crate::util::{document, js_error_message, set_title};
+use crate::util::{rgba_to_data_url, set_title};
 
 use super::wefax_worker::parse_message;
 use crate::i18n::{t, tf};
@@ -26,23 +26,7 @@ fn render_gray(gray: &[u8], width: u32, height: u32) -> Result<String, String> {
     rgba[o + 2] = g;
     rgba[o + 3] = 255;
   }
-  let canvas: HtmlCanvasElement = document()
-    .create_element("canvas")
-    .map_err(|e| js_error_message(&e))?
-    .unchecked_into();
-  canvas.set_width(width);
-  canvas.set_height(height);
-  let ctx: CanvasRenderingContext2d = canvas
-    .get_context("2d")
-    .map_err(|e| js_error_message(&e))?
-    .ok_or_else(|| t("common.canvas-2d-context-not"))?
-    .unchecked_into();
-  let img = ImageData::new_with_u8_clamped_array_and_sh(Clamped(&rgba), width, height)
-    .map_err(|e| js_error_message(&e))?;
-  ctx
-    .put_image_data(&img, 0.0, 0.0)
-    .map_err(|e| js_error_message(&e))?;
-  canvas.to_data_url().map_err(|e| js_error_message(&e))
+  rgba_to_data_url(&rgba, width, height)
 }
 
 #[component]

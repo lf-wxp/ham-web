@@ -1,4 +1,4 @@
-//! THOR 数字模式编解码（THOR micro / 4 / 5 / 8 / 11 / 16 / 22 / 25x4 / 50x1 / 50x2 / 100）。
+//! THOR 数字模式编解码（THOR micro / 4 / 5 / 8 / 11 / 16 / 22 / 25 / 32 / 44 / 56 / 25x4 / 50x1 / 50x2 / 100）。
 //!
 //! 算法转写自 **fldigi**（GPL-3.0）`src/thor/thor.cxx`（W1HKJ、VK2ETA、KL4YFD；
 //! 模式设计 © Nino Porcino IZ8BLY / Murray Greenman ZL1BPU）。
@@ -15,18 +15,20 @@
 //! 与 fldigi 的差异（接收端只保留「对离线文件有用」的部分）：
 //! - 判决用 fldigi 的**硬位路径**（`decodesymbol`：音调差落在合法范围就给 255 / 0，越界或宽带脉冲给
 //!   128 删除位）；fldigi 默认的软位路径（`softdecodesymbol`）按载频偏差给软值，对干净信号与硬位路径
-//!   的输出相同，弱信号下略胜；
+//!   的输出相同；白噪声下实测本仓不输它（数字见 `reference/fldigi_web/README.md`），所以没有照着再写一遍；
 //! - 前端同 MFSK：整段录音搜一次符号对齐与中心频率（[`ham_web_mfsk::front`]），再用
-//!   [`ham_web_mfsk::track`] 按块拟合平滑曲线去跟时钟误差与频漂（跟不了突变）；没有 CWI 抑制、前导检测与
-//!   图片模式。
+//!   [`ham_web_mfsk::track`] 按块拟合平滑曲线去跟时钟误差与频漂（半个音调间隔以上的跳频跟不了）；窄带载波的处理见 [`ham_web_mfsk::front::suppress_carriers`]
+//!   （不是 fldigi 那种逐符号在线屏蔽）；没有前导检测（量过，离线解码没有可见差距）；
+//!   图片模式（THOR 11 / 16 / 22 / 25 / 32 / 44 / 56）见 [`picture`]：先找同步音，同步音结束处就是第一个像素。
 
+pub mod picture;
 pub mod varicode;
 
 mod rx;
 mod tx;
 
 pub use rx::{Decoded, decode_audio, detect_base};
-pub use tx::{encode_audio, encode_symbols};
+pub use tx::{encode_audio, encode_picture_audio, encode_symbols};
 
 use ham_web_mfsk::fec::Code;
 
@@ -54,6 +56,12 @@ pub struct Mode {
 }
 
 impl Mode {
+  /// 有图片模式（fldigi 的 `CAP_IMG`）：THOR 11 / 16 / 22 / 25 / 32 / 44 / 56。
+  #[must_use]
+  pub fn has_picture(&self) -> bool {
+    matches!(self.name, "11" | "16" | "22" | "25" | "32" | "44" | "56")
+  }
+
   /// 波特率（Hz）。
   #[must_use]
   pub fn baud(&self) -> f64 {
@@ -168,6 +176,46 @@ pub const MODES: &[Mode] = &[
     micro: false,
   },
   Mode {
+    name: "25",
+    rate: 8000,
+    symlen: 320,
+    spacing_factor: 1,
+    depth: 25,
+    flush: 20,
+    k15: true,
+    micro: false,
+  },
+  Mode {
+    name: "32",
+    rate: 8000,
+    symlen: 256,
+    spacing_factor: 1,
+    depth: 10,
+    flush: 20,
+    k15: false,
+    micro: false,
+  },
+  Mode {
+    name: "44",
+    rate: 11025,
+    symlen: 256,
+    spacing_factor: 1,
+    depth: 10,
+    flush: 4,
+    k15: false,
+    micro: false,
+  },
+  Mode {
+    name: "56",
+    rate: 16000,
+    symlen: 290,
+    spacing_factor: 1,
+    depth: 10,
+    flush: 20,
+    k15: false,
+    micro: false,
+  },
+  Mode {
     name: "25x4",
     rate: 8000,
     symlen: 320,
@@ -230,4 +278,20 @@ pub fn center_in_range(mode: &Mode, rate: u32, center_hz: f64) -> bool {
   center_hz.is_finite()
     && low >= 0.0
     && low + (NUMTONES as f64 + 1.0) * mode.spacing() < f64::from(rate) / 2.0
+}
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  /// `has_picture` 靠模式**名字**判断（fldigi 的 `CAP_IMG` 名单）：新增模式时漏改不会有编译错误，
+  /// 所以把名单钉在这里；`rx` 里 `with_picture` 只在 `has_picture()` 为真时才走同步音那条路。
+  #[test]
+  fn only_the_modes_fldigi_gives_pictures_to_report_one() {
+    let with: Vec<&str> = MODES
+      .iter()
+      .filter(|m| m.has_picture())
+      .map(|m| m.name)
+      .collect();
+    assert_eq!(with, ["11", "16", "22", "25", "32", "44", "56"]);
+  }
 }

@@ -7,7 +7,7 @@
 // 音频部分（音调频率、滤波、同步）不在这里：那部分由真实录音验证（见 tests/real_recordings.rs）。
 //
 // 用法（由 tests/upstream_xcheck.rs 调用）：
-//   fldigi_ref mfsk <symbits> <depth> <preamble> <text>
+//   fldigi_ref mfsk <symbits> <depth> <preamble> <lead_zeros:0|1> <text>
 //   fldigi_ref thor <k15:0|1> <depth> <flushlength> <micro:0|1> <text>
 //   fldigi_ref viterbi <k> <poly1> <poly2> <traceback> <seed> <n>
 // 前两个输出音调序列（空格分隔）；viterbi 输出 `位 度量` 每步一行。
@@ -85,10 +85,12 @@ struct MfskTx {
   }
 };
 
-static void run_mfsk(int symbits, int depth, int preamble, const char *text) {
+// `lead_zeros`：clearbits 之后是否发 preamble / 3 个零位（mfsk.cxx 的 tx_process 对 64L / 128L 不发）。
+static void run_mfsk(int symbits, int depth, int preamble, bool lead_zeros, const char *text) {
   MfskTx tx(symbits, depth, preamble);
   tx.clearbits();
-  for (int i = 0; i < preamble / 3; i++) tx.sendbit(0);
+  if (lead_zeros)
+    for (int i = 0; i < preamble / 3; i++) tx.sendbit(0);
   tx.sendchar('\r');
   tx.sendchar(2);
   tx.sendchar('\r');
@@ -203,8 +205,8 @@ static void run_viterbi(int k, int p1, int p2, int traceback, unsigned seed, int
 }
 
 int main(int argc, char **argv) {
-  if (argc >= 6 && !strcmp(argv[1], "mfsk")) {
-    run_mfsk(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), argv[5]);
+  if (argc >= 7 && !strcmp(argv[1], "mfsk")) {
+    run_mfsk(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]) != 0, argv[6]);
   } else if (argc >= 7 && !strcmp(argv[1], "thor")) {
     run_thor(atoi(argv[2]) != 0, atoi(argv[3]), atoi(argv[4]), atoi(argv[5]) != 0, argv[6]);
   } else if (argc >= 8 && !strcmp(argv[1], "viterbi")) {

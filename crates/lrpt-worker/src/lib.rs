@@ -68,14 +68,23 @@ pub fn decode(bytes: &[u8], _params: &JsValue) -> Result<JsValue, JsValue> {
   }
   let image = image.ok_or_else(|| JsValue::from_str(&format!("image-incomplete:{best_frames}")))?;
 
-  // RGB 三平面交错输出。
+  // RGB 三平面交错输出：按行、列拉链，不按下标取值（行数 / 列数以通道本身为准）。
   let mut rgb = Vec::with_capacity(image.width * image.height * 3);
-  for y in 0..image.height {
-    for x in 0..image.width {
-      for ch in 0..3 {
-        rgb.push(image.channels[ch][y][x]);
-      }
+  for ((row_r, row_g), row_b) in image.channels[0]
+    .iter()
+    .zip(&image.channels[1])
+    .zip(&image.channels[2])
+  {
+    for ((&r, &g), &b) in row_r.iter().zip(row_g).zip(row_b) {
+      rgb.extend([r, g, b]);
     }
+  }
+  // 拉链会静默截断：某个通道少一行 / 少几列时长度对不上 `width × height × 3`，页面构造 `ImageData`
+  // 只会得到一个英文 DOMException。这里如实报「图像不完整」，与帧层失败同一个错误码。
+  if rgb.len() != image.width * image.height * 3 {
+    return Err(JsValue::from_str(&format!(
+      "image-incomplete:{best_frames}"
+    )));
   }
   let arr = js_sys::Uint8Array::new_with_length(rgb.len() as u32);
   arr.copy_from(&rgb);

@@ -265,6 +265,15 @@ test("卫星多普勒：换卫星带出预置频率；没有过境、取不到�
   await expect(p.getByLabel("下行频率（MHz）")).toHaveValue("436.795");
   await expect(p.getByLabel("上行频率（MHz）")).toHaveValue("145.85");
 
+  // AO-123（ASRTU-1）：SatNOGS 与 IARU 协调页两个来源一致的下行 435.400 / 上行 145.850 MHz
+  await p.getByRole("combobox", { name: "卫星" }).click();
+  await page.getByRole("option", { name: "AO-123 · 61781" }).click();
+  await expect(p.getByLabel("NORAD 编号")).toHaveValue("61781");
+  await expect(p.getByLabel("下行频率（MHz）")).toHaveValue("435.4");
+  await expect(p.getByLabel("上行频率（MHz）")).toHaveValue("145.85");
+  await p.getByRole("combobox", { name: "卫星" }).click();
+  await page.getByRole("option", { name: "SO-50 · 27607" }).click();
+
   // 手动改任何一个数：回到「自定义」，并且已加载的过境作废
   await p.getByRole("button", { name: "加载下一次过境" }).click();
   await expect(p.getByText(/最大仰角 30°/)).toBeVisible();

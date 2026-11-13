@@ -3,11 +3,14 @@
 
 use ham_web_mfsk::fec::{Interleaver, PUNCTURE, Viterbi};
 use ham_web_mfsk::front::{
-  Grid, detect_base as detect_base_grid, find_offset, gate, peak_ratios, polish_base,
+  Grid, POLISH_REACH, clean_carriers, detect_base as detect_base_grid, find_offset, gate,
+  peak_ratios, polish_base,
 };
-use ham_web_mfsk::lookup::{render, varidec};
+use ham_web_mfsk::lookup::{printable_fraction, render, varidec};
+use ham_web_mfsk::picture::{FmDemod, Header, Picture, decode_picture};
 use ham_web_mfsk::track::bins_tracked;
 
+use crate::picture::{self, HeaderScanner};
 use crate::varicode::SECONDARY;
 use crate::{Mode, NUMTONES};
 
@@ -39,6 +42,20 @@ pub struct Decoded {
   pub clock_ppm: f64,
   /// 频漂（Hz / 秒），正 = 越往后频率越高；没有跟踪到频漂是 0。
   pub drift_hz_per_s: f64,
+  /// 从录音里解出来的图片（THOR 11 / 16 / 22 / 25 / 32 / 44 / 56 的图片模式；录音采样率要等于该模式的标称采样率）。
+  /// 正文 `text` 里照常保留 `pic%X` 报头，同步音与图像段的乱码已经从正文里去掉。
+  pub pictures: Vec<Picture>,
+  /// 正文里有图片报头，但没有解出图片（采样率不是该模式的标称值、找不到同步音、报头之后没有录到图像、
+  /// 报头数量超过上限）。页面据此提示，不然用户只看到一段缺了图的正文。
+  pub picture_skipped: bool,
+}
+
+/// 一段连续 THOR 文本的解码结果，加上里面找到的图片报头。
+struct Segment {
+  decoded: Decoded,
+  /// 这段文本里识别出的图片报头（按出现顺序），以及主信道正文到报头为止的文字
+  /// （报头之后 fldigi 转入图像接收，不再收字符；离线解码在这里去掉同步音之前那段静音译出的乱码）。
+  headers: Vec<(Header, String)>,
 }
 
 fn grid_for(rate: u32, mode: &Mode) -> Option<Grid> {
@@ -73,6 +90,9 @@ struct Receiver {
   datashreg: u32,
   prev: Option<usize>,
   chars: Vec<u16>,
+  scanner: HeaderScanner,
+  /// 识别出的图片报头，以及补完它时 `chars` 已有多少个字符。
+  headers: Vec<(Header, usize)>,
   /// 参与差分的 nibble 数与其中音调差不合法的个数。
   events: usize,
   invalid: usize,
@@ -90,6 +110,8 @@ impl Receiver {
       datashreg: 1,
       prev: None,
       chars: Vec::new(),
+      scanner: HeaderScanner::default(),
+      headers: Vec::new(),
       events: 0,
       invalid: 0,
     }
@@ -157,6 +179,11 @@ impl Receiver {
     if self.datashreg & 7 == 1 {
       if let Some(c) = thor_varidec(self.datashreg >> 1) {
         self.chars.push(c);
+        if c < 0x100
+          && let Some(header) = self.scanner.push(c)
+        {
+          self.headers.push((header, self.chars.len()));
+        }
       }
       self.datashreg = 1;
     }
@@ -178,6 +205,136 @@ pub fn decode_audio(
   center: Option<f64>,
   reverse: bool,
 ) -> Option<Decoded> {
+  decode_with_pictures(samples, rate, mode, center, reverse, MAX_PICTURES)
+}
+
+/// 一段录音里最多处理多少张图片（防止畸形输入把递归拖得很深）。
+const MAX_PICTURES: usize = 4;
+
+/// 文本 + 图片：先按普通文本解一遍；它不像干净的纯文本（判无信号 / 乱码 / 文本里读到了报头）时，
+/// 再在整段录音里找同步音，找到了就把录音切成「图像之前的文本 / 图像 / 图像之后」三段，
+/// 文本各自解码、图像做 FM 解调；没有同步音就退回那段普通文本。
+///
+/// 为什么图片要靠同步音、而不是靠整段解码出来的报头：整段录音里夹着图像时，图像段会让区间里不合法的音调差占比
+/// 远超门限（[`MAX_INVALID_PERCENT`]），整段解码直接判无信号；同步音又长又固定、在 18 个音调所占的带之外
+/// （见 [`crate::picture`]），而且它是否存在本身就能验证中心频率。
+fn decode_with_pictures(
+  samples: &[f32],
+  rate: u32,
+  mode: &Mode,
+  center: Option<f64>,
+  reverse: bool,
+  pictures_left: usize,
+) -> Option<Decoded> {
+  let plain = decode_segment(samples, rate, mode, center, reverse);
+  if !mode.has_picture() {
+    return plain.map(|s| s.decoded);
+  }
+  // 图片的像素样本数（10）是按模式的标称采样率给的，别的采样率要先重采样，这里不做。
+  if rate != mode.rate || pictures_left == 0 {
+    return plain.map(|s| Decoded {
+      picture_skipped: !s.headers.is_empty(),
+      ..s.decoded
+    });
+  }
+  // 绝大多数录音只有文本：整段解出来是可读文本、里面又没有图片报头，就不必再去找同步音
+  // （整段瞬时频率 + 最多 6 个候选中心频率，比解码本身还贵）。录音里夹着图像时，整段解码要么判无信号，
+  // 要么译出乱码，要么至少能在图像之前的文本里读到报头，三种都会落到下面的同步音搜索。
+  if let Some(seg) = &plain
+    && seg.headers.is_empty()
+    && printable_fraction(&seg.decoded.text) >= 0.9
+  {
+    return plain.map(|s| s.decoded);
+  }
+  let grid = grid_for(rate, mode)?;
+  // 中心频率：给了就用；没给就自动检测。录音里夹着图像时整段检测可能被带偏（图像是调频、不在音调栅格上），
+  // 所以再试只用开头 30% / 50% 的检测结果；哪一个找得到同步音，就说明它对。
+  let mut candidates: Vec<f64> = Vec::new();
+  match center {
+    Some(c) => candidates.push(c),
+    None => {
+      // 相差不到 0.05 × 带宽（不足一个音调间隔）的候选等价：同步音的搜索带两侧各有约 0.12 × 带宽的余量，
+      // 估计差这么点不会改变结果，各扫一遍整段 FIR 只是白白多花时间（选错子模式 / 弱信号时候选会全部落空）。
+      let merge_hz = 0.05 * mode.bandwidth();
+      for fraction in [1.0, 0.5, 0.3, 0.2, 0.12, 0.08] {
+        let part = &samples[..((samples.len() as f64 * fraction) as usize)];
+        if let Some(base) = detect_base_grid(part, &grid) {
+          let c = base - mode.tone_offset(0);
+          if !candidates.iter().any(|&known| (known - c).abs() < merge_hz) {
+            candidates.push(c);
+          }
+        }
+      }
+    }
+  }
+  for c in candidates {
+    if let Some(decoded) = with_picture(samples, rate, mode, c, reverse, &grid, pictures_left) {
+      return Some(decoded);
+    }
+  }
+  // 没有一个候选走通：退回纯文本；文本里有报头就说明图片没解出来。
+  plain.map(|s| Decoded {
+    picture_skipped: !s.headers.is_empty(),
+    ..s.decoded
+  })
+}
+
+/// [`decode_with_pictures`] 的图片分支：以 `c` 为中心频率的估计找同步音，找到了就把录音切成
+/// 「图像之前的文本 / 图像 / 图像之后」三段。任何一步走不通（没有同步音、之前没有报头、图像不在录音里）返回 `None`。
+fn with_picture(
+  samples: &[f32],
+  rate: u32,
+  mode: &Mode,
+  c: f64,
+  reverse: bool,
+  grid: &Grid,
+  pictures_left: usize,
+) -> Option<Decoded> {
+  let sync = picture::find_sync(samples, rate, c, mode.bandwidth(), grid.sym, reverse)?;
+  let (sync_begin, start) = (sync.begin, sync.start);
+  // 同步音的频率比文本里的梳检测准得多：用它推出来的中心频率去解文本与图像。
+  let c = sync.center_hz(mode.bandwidth(), reverse);
+  // 同步音之前的文本，里面要有报头；没有就当这个音不是图片的同步音。
+  let cut = (sync_begin.floor() as usize).min(samples.len());
+  let before = decode_segment(&samples[..cut], rate, mode, Some(c), reverse)?;
+  // 取**最后**一个报头：同步音紧跟在报头之后，报头与同步音之间只会隔着冲刷的静音。
+  // （MFSK 那边相反 —— 图像段的起点是从报头位置推出来的，所以用第一个，见 `mfsk::rx`。）
+  let (header, through) = before.headers.last().cloned()?;
+  // 图像之前这一小段里没有图像，跟踪是干净的：它的中心频率才是发端的中心频率。
+  let center_hz = before.decoded.center_hz;
+  let demod = FmDemod::thor(rate, center_hz, mode.bandwidth());
+  let picture = decode_picture(samples, &demod, start, &header, reverse)?;
+  let end = (start + header.samples() as f64).ceil() as usize;
+  let mut decoded = before.decoded;
+  decoded.text = through;
+  decoded.pictures = vec![picture];
+  if end < samples.len()
+    && let Some(after) = decode_with_pictures(
+      &samples[end..],
+      rate,
+      mode,
+      Some(center_hz),
+      reverse,
+      pictures_left - 1,
+    )
+  {
+    decoded.text.push_str(&after.text);
+    decoded.id.push_str(&after.id);
+    decoded.symbols += after.symbols;
+    decoded.pictures.extend(after.pictures);
+    decoded.picture_skipped |= after.picture_skipped;
+  }
+  Some(decoded)
+}
+
+/// 一段连续 THOR 文本的解码（不处理图片）。
+fn decode_segment(
+  samples: &[f32],
+  rate: u32,
+  mode: &Mode,
+  center: Option<f64>,
+  reverse: bool,
+) -> Option<Segment> {
   let grid = grid_for(rate, mode)?;
   let (base, auto) = match center {
     Some(c) if c.is_finite() => (c + mode.tone_offset(0), false),
@@ -190,7 +347,7 @@ pub fn decode_audio(
   let offset = find_offset(samples, &grid, base);
   // 自动检测的中心频率在符号对齐之后再核对一遍；用户给定的不动。
   let base = if auto {
-    polish_base(samples, &grid, base, offset)
+    polish_base(samples, &grid, base, offset, POLISH_REACH)
   } else {
     base
   };
@@ -199,7 +356,10 @@ pub fn decode_audio(
   }
   let nt = grid.ntones;
   // 时钟误差与频漂：没有值得做的修正时 `drift` 就是不跟踪的网格，`bins` 与 `symbol_bins` 逐位相同。
-  let (bins, drift) = bins_tracked(samples, &grid, base, offset);
+  let (mut bins, drift) = bins_tracked(samples, &grid, base, offset);
+  // 硬判决的接收机更需要「抹」：比信号强的载波在每个符号里都是最强，不抹掉就会判出一串恒定音调。
+  // 返回值（两种载波的个数）只给测试与诊断用，解码路径不看。
+  clean_carriers(&mut bins, nt);
   let (first, last) = gate(&peak_ratios(&bins, nt))?;
   let span = last - first + 1;
   let mid_base = drift.base_at((first + last) as f64 / 2.0);
@@ -227,12 +387,31 @@ pub fn decode_audio(
     .filter(|&&c| c >= 0x100)
     .map(|&c| c & 0xFF)
     .collect();
-  Some(Decoded {
-    text: render(&primary),
-    id: render(&secondary),
-    center_hz: mid_base - mode.tone_offset(0),
-    symbols: span,
-    clock_ppm: drift.clock_ppm(),
-    drift_hz_per_s: drift.drift_hz_per_s(),
+  Some(Segment {
+    decoded: Decoded {
+      text: render(&primary),
+      id: render(&secondary),
+      center_hz: mid_base - mode.tone_offset(0),
+      symbols: span,
+      clock_ppm: drift.clock_ppm(),
+      drift_hz_per_s: drift.drift_hz_per_s(),
+      pictures: Vec::new(),
+      picture_skipped: false,
+    },
+    headers: if mode.has_picture() {
+      rx.headers
+        .iter()
+        .map(|&(header, n)| {
+          let through: Vec<u16> = rx.chars[..n]
+            .iter()
+            .copied()
+            .filter(|&c| c < 0x100)
+            .collect();
+          (header, render(&through))
+        })
+        .collect()
+    } else {
+      Vec::new()
+    },
   })
 }

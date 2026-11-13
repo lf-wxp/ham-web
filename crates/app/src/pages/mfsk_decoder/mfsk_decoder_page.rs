@@ -4,7 +4,9 @@ use leptos::prelude::*;
 use wasm_bindgen::JsValue;
 use web_sys::File;
 
-use crate::components::common::{DecodeElapsed, PageContainer, PageHeader};
+use crate::components::common::{
+  DecodeElapsed, DecodeTrackingNote, DecodedPictures, PageContainer, PageHeader,
+};
 use crate::decode_session::{DecodeConfig, DecodeSession, MAX_UPLOAD_BYTES};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
@@ -27,6 +29,8 @@ const MODES: &[(&str, &str)] = &[
   ("32", "MFSK32"),
   ("64", "MFSK64"),
   ("128", "MFSK128"),
+  ("64L", "MFSK64L"),
+  ("128L", "MFSK128L"),
 ];
 
 #[component]
@@ -242,6 +246,12 @@ pub fn MfskDecoderPage() -> impl IntoView {
                       &[&format!("{:.1}", p.center_hz), &p.depth.to_string()],
                     )}
                   </p>
+                  <DecodeTrackingNote clock_ppm=p.clock_ppm drift_hz_per_s=p.drift_hz_per_s />
+                  <DecodedPictures
+                    pictures=p.pictures.clone()
+                    skipped=p.picture_skipped
+                    file_stem="mfsk-picture"
+                  />
                 </div>
               }
             })

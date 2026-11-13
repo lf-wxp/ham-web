@@ -1069,6 +1069,34 @@ pub fn js_error_message(err: &JsValue) -> String {
     .unwrap_or_else(|| format!("{err:?}"))
 }
 
+/// RGBA 像素 → 离屏 canvas → PNG data URL（`rgba.len()` 必须是 `width × height × 4`）。
+///
+/// 解码页（SSTV / APT / WEFAX / MFSK 图片）共用：`ImageData` 构造失败（长度与尺寸对不上）、取不到 2D 上下文都按字符串错误返回，
+/// 不 panic。
+pub fn rgba_to_data_url(rgba: &[u8], width: u32, height: u32) -> Result<String, String> {
+  let canvas: web_sys::HtmlCanvasElement = document()
+    .create_element("canvas")
+    .map_err(|e| js_error_message(&e))?
+    .unchecked_into();
+  canvas.set_width(width);
+  canvas.set_height(height);
+  let ctx: web_sys::CanvasRenderingContext2d = canvas
+    .get_context("2d")
+    .map_err(|e| js_error_message(&e))?
+    .ok_or_else(|| t("common.canvas-2d-context-not"))?
+    .unchecked_into();
+  let img = web_sys::ImageData::new_with_u8_clamped_array_and_sh(
+    wasm_bindgen::Clamped(rgba),
+    width,
+    height,
+  )
+  .map_err(|e| js_error_message(&e))?;
+  ctx
+    .put_image_data(&img, 0.0, 0.0)
+    .map_err(|e| js_error_message(&e))?;
+  canvas.to_data_url().map_err(|e| js_error_message(&e))
+}
+
 trait DynRefError {
   fn dyn_ref_error(&self) -> Option<String>;
 }

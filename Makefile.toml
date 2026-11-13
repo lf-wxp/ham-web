@@ -360,6 +360,22 @@ mkdir -p tmp
 cargo run -q -p ham-web-mfsk --release --example generate_sample -- "${MODE:-16}" tmp/mfsk-sample.wav "${TEXT:-CQ CQ DE BG1AAA 599}" "${CENTER:-1000}"
 '''
 
+[tasks.mfsk-picture-sample]
+description = "生成合成 MFSK 图片模式样本（含同名 .rgb 原图）：MODE='32' W=64 H=48 KIND=gray PATTERN=ramp CENTER=1000 cargo make mfsk-picture-sample"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-mfsk --release --example generate_picture_sample -- \
+  "${MODE:-16}" tmp/mfsk-picture-sample.wav "${W:-32}" "${H:-24}" "${KIND:-color}" "${PATTERN:-bands}" "${CENTER:-1000}" "${SPP:-8}"
+'''
+
+[tasks.mfsk-picture-decode]
+description = "命令行解码 MFSK 图片样本并报误差、写出 PPM：FILE=tmp/mfsk-picture-sample.wav cargo make mfsk-picture-decode"
+script_runner = "@shell"
+script = '''
+cargo run -q -p ham-web-mfsk --release --example decode_picture -- "${MODE:-16}" "${FILE:-tmp/mfsk-picture-sample.wav}" "${CENTER:-auto}" "${OUT:-tmp/mfsk-picture-sample.ppm}"
+'''
+
 [tasks.mfsk-decode]
 description = "命令行解码 MFSK 样本：MODE='16' FILE=tmp/mfsk-sample.wav [CENTER=1000] cargo make mfsk-decode（CENTER 缺省 = 自动检测）"
 script_runner = "@shell"
@@ -370,6 +386,10 @@ cargo run -q -p ham-web-mfsk --release --example decode_sample -- "${MODE:-16}" 
 [tasks.mfsk-test]
 description = "生成并解码合成 MFSK 样本，端到端自检（依赖 mfsk-sample → mfsk-decode）"
 dependencies = ["mfsk-sample", "mfsk-decode"]
+
+[tasks.mfsk-picture-test]
+description = "生成并解码合成 MFSK 图片样本，端到端自检（依赖 mfsk-picture-sample → mfsk-picture-decode）"
+dependencies = ["mfsk-picture-sample", "mfsk-picture-decode"]
 
 [tasks.mfsk-xcheck]
 description = "与 fldigi 上游代码逐位对拍：FLDIGI_SRC=/path/to/fldigi cargo make mfsk-xcheck（编译上游的 viterbi / interleave / varicode，需要 C++ 编译器）"
@@ -387,6 +407,22 @@ mkdir -p tmp
 cargo run -q -p ham-web-thor --release --example generate_sample -- "${MODE:-16}" tmp/thor-sample.wav "${TEXT:-CQ CQ DE BG1AAA 599}" "${CENTER:-1500}"
 '''
 
+[tasks.thor-picture-sample]
+description = "生成合成 THOR 图片模式样本（含同名 .rgb 原图）：MODE='16' W=120 H=150 KIND=gray PATTERN=ramp cargo make thor-picture-sample"
+script_runner = "@shell"
+script = '''
+mkdir -p tmp
+cargo run -q -p ham-web-thor --release --example generate_picture_sample -- \
+  "${MODE:-16}" tmp/thor-picture-sample.wav "${W:-59}" "${H:-74}" "${KIND:-color}" "${PATTERN:-bands}" "${CENTER:-1500}"
+'''
+
+[tasks.thor-picture-decode]
+description = "命令行解码 THOR 图片样本并报误差、写出 PPM：FILE=tmp/thor-picture-sample.wav cargo make thor-picture-decode"
+script_runner = "@shell"
+script = '''
+cargo run -q -p ham-web-thor --release --example decode_thor_picture -- "${MODE:-16}" "${FILE:-tmp/thor-picture-sample.wav}" "${CENTER:-auto}" "${OUT:-tmp/thor-picture-sample.ppm}"
+'''
+
 [tasks.thor-decode]
 description = "命令行解码 THOR 样本：MODE='16' FILE=tmp/thor-sample.wav [CENTER=1500] cargo make thor-decode（CENTER 缺省 = 自动检测）"
 script_runner = "@shell"
@@ -397,6 +433,10 @@ cargo run -q -p ham-web-thor --release --example decode_sample -- "${MODE:-16}" 
 [tasks.thor-test]
 description = "生成并解码合成 THOR 样本，端到端自检（依赖 thor-sample → thor-decode）"
 dependencies = ["thor-sample", "thor-decode"]
+
+[tasks.thor-picture-test]
+description = "生成并解码合成 THOR 图片样本，端到端自检（依赖 thor-picture-sample → thor-picture-decode）"
+dependencies = ["thor-picture-sample", "thor-picture-decode"]
 
 [tasks.thor-xcheck]
 description = "与 fldigi 上游代码逐位对拍：FLDIGI_SRC=/path/to/fldigi cargo make thor-xcheck（编译上游的 viterbi / interleave / varicode，需要 C++ 编译器）"
@@ -614,7 +654,7 @@ dependencies = ["spectrum-sample", "spectrum-analyze"]
 # ───────────────────────────── 合成测试样本（汇总） ─────────────────────────────
 
 [tasks.samples]
-description = "生成全部合成测试样本 WAV 到 tmp/：apt / sstv / wspr / ft8 / lrpt / dominoex / mfsk / thor / olivia / navtex / rtty / hell / wefax / psk31 / spectrum"
+description = "生成全部合成测试样本 WAV 到 tmp/：apt / sstv / wspr / ft8 / lrpt / dominoex / mfsk（文本 + 图片）/ thor（文本 + 图片）/ olivia / navtex / rtty / hell / wefax / psk31 / spectrum"
 # 各样本任务互为独立产物，汇总只做编排；单跑某个样本仍用对应的 <x>-sample。
 dependencies = [
   "apt-sample",
@@ -624,7 +664,9 @@ dependencies = [
   "lrpt-sample",
   "dominoex-sample",
   "mfsk-sample",
+  "mfsk-picture-sample",
   "thor-sample",
+  "thor-picture-sample",
   "olivia-sample",
   "navtex-sample",
   "rtty-sample",

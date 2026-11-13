@@ -1,4 +1,4 @@
-//! MFSK 数字模式编解码（MFSK4 / 8 / 11 / 16 / 22 / 31 / 32 / 64 / 128）。
+//! MFSK 数字模式编解码（MFSK4 / 8 / 11 / 16 / 22 / 31 / 32 / 64 / 128 / 64L / 128L）。
 //!
 //! 算法转写自 **fldigi**（GPL-3.0）`src/mfsk/mfsk.cxx`（W1HKJ，改编自 gMFSK，
 //! © 2001–2003 Tomi Manninen OH2BNS）；MFSK 的设计与 Varicode © IZ8BLY。
@@ -13,8 +13,8 @@
 //!
 //! 与 fldigi 的差异（接收端只保留「对离线文件有用」的部分）：
 //! - 符号同步与 AFC：fldigi 用滑动 FFT 逐样本跟踪；这里先在整段录音上搜一次对齐偏移与中心频率，
-//!   再按块各测一次、拟合一条 1–3 阶的**平滑曲线**去跟时钟误差与频漂（[`track`]），跟不了突变；
-//! - 没有图片模式；
+//!   再按块各测一次、拟合一条 1–3 阶的**平滑曲线**去跟时钟误差与频漂（[`track`]），半个音调间隔以上的跳频跟不了；
+//! - 图片模式（MFSK16 / 32 / 64 / 128）见 [`picture`]：先照常解出文本，由 `Pic:…;` 报头的位置推出图像段起点，再做 FM 解调；
 //! - 解调用 Goertzel 而不是滑动 FFT（幅度的比例不变，判决只看比值）。
 
 use ham_web_dsp::tone_power;
@@ -22,6 +22,7 @@ use ham_web_dsp::tone_power;
 pub mod fec;
 pub mod front;
 pub mod lookup;
+pub mod picture;
 pub mod track;
 pub mod varicode;
 
@@ -29,7 +30,7 @@ mod rx;
 mod tx;
 
 pub use rx::{Decoded, decode_audio, detect_base};
-pub use tx::{encode_audio, encode_symbols};
+pub use tx::{encode_audio, encode_picture_audio, encode_symbols};
 
 /// 一个 MFSK 子模式。
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -45,9 +46,22 @@ pub struct Mode {
   pub depth: usize,
   /// 发送前导 / 收尾冲刷长度（码位）。
   pub preamble: usize,
+  /// 长交织变体（64L / 128L）。三处与其余模式不同：
+  /// - 发端在 `clearbits` 之后**不发** `preamble / 3` 个前导零位（fldigi 的 `tx_process` 专门排除了这两个模式）；
+  /// - 收端不再补冲刷：发端自带的 `preamble` = 2500 / 5000 个零位本身就比「交织延迟 + 回溯」长，
+  ///   再补一段删除位只会把冲刷区里的零位与删除位混在一起、译出一串乱码；
+  /// - 前导零位没了，信号的头 `(符号位数 − 1) × 深度` 个符号里反交织器还没填满，译出的是发端
+  ///   **从未发过**的「发送前历史」（`clearbits` 推进交织器但不发符号）—— 头部要丢掉。
+  pub long: bool,
 }
 
 impl Mode {
+  /// 有图片模式（fldigi 的 `CAP_IMG`）：只有 MFSK16 / 32 / 64 / 128。
+  #[must_use]
+  pub fn has_picture(&self) -> bool {
+    matches!(self.name, "16" | "32" | "64" | "128")
+  }
+
   /// 音调数。
   #[must_use]
   pub fn numtones(&self) -> usize {
@@ -67,7 +81,7 @@ impl Mode {
   }
 }
 
-/// 支持的子模式（fldigi `mfsk.cxx` 构造函数里的表；不含 64L / 128L 两个长交织变体）。
+/// 支持的子模式（fldigi `mfsk.cxx` 构造函数里的表，含 64L / 128L 两个长交织变体）。
 pub const MODES: &[Mode] = &[
   Mode {
     name: "4",
@@ -76,6 +90,7 @@ pub const MODES: &[Mode] = &[
     symbits: 5,
     depth: 5,
     preamble: 107,
+    long: false,
   },
   Mode {
     name: "8",
@@ -84,6 +99,7 @@ pub const MODES: &[Mode] = &[
     symbits: 5,
     depth: 5,
     preamble: 107,
+    long: false,
   },
   Mode {
     name: "11",
@@ -92,6 +108,7 @@ pub const MODES: &[Mode] = &[
     symbits: 4,
     depth: 10,
     preamble: 107,
+    long: false,
   },
   Mode {
     name: "16",
@@ -100,6 +117,7 @@ pub const MODES: &[Mode] = &[
     symbits: 4,
     depth: 10,
     preamble: 107,
+    long: false,
   },
   Mode {
     name: "22",
@@ -108,6 +126,7 @@ pub const MODES: &[Mode] = &[
     symbits: 4,
     depth: 10,
     preamble: 107,
+    long: false,
   },
   Mode {
     name: "31",
@@ -116,6 +135,7 @@ pub const MODES: &[Mode] = &[
     symbits: 3,
     depth: 10,
     preamble: 107,
+    long: false,
   },
   Mode {
     name: "32",
@@ -124,6 +144,7 @@ pub const MODES: &[Mode] = &[
     symbits: 4,
     depth: 10,
     preamble: 107,
+    long: false,
   },
   Mode {
     name: "64",
@@ -132,6 +153,7 @@ pub const MODES: &[Mode] = &[
     symbits: 4,
     depth: 10,
     preamble: 180,
+    long: false,
   },
   Mode {
     name: "128",
@@ -140,6 +162,27 @@ pub const MODES: &[Mode] = &[
     symbits: 4,
     depth: 20,
     preamble: 214,
+    long: false,
+  },
+  // 长交织变体：音调表与 64 / 128 相同，只是交织深度拉到 400 / 800、冲刷长度拉到 2500 / 5000，
+  // 用时间分集换抗衰落与抗突发干扰（代价是延迟：64L 约 10 秒的交织管线）。
+  Mode {
+    name: "64L",
+    rate: 8000,
+    symlen: 128,
+    symbits: 4,
+    depth: 400,
+    preamble: 2500,
+    long: true,
+  },
+  Mode {
+    name: "128L",
+    rate: 8000,
+    symlen: 64,
+    symbits: 4,
+    depth: 800,
+    preamble: 5000,
+    long: true,
   },
 ];
 
@@ -214,4 +257,20 @@ pub(crate) fn tone_magnitudes(
       .sqrt();
   }
   true
+}
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  /// `has_picture` 与 `rx::picture_start` 都靠模式**名字**判断（fldigi 的 `CAP_IMG` 名单）：新增模式时
+  /// 漏改不会有编译错误，所以把名单钉在这里。长交织变体的音调表与 64 / 128 相同，但 fldigi 不给图片能力。
+  #[test]
+  fn only_the_modes_fldigi_gives_pictures_to_report_one() {
+    let with: Vec<&str> = MODES
+      .iter()
+      .filter(|m| m.has_picture())
+      .map(|m| m.name)
+      .collect();
+    assert_eq!(with, ["16", "32", "64", "128"]);
+  }
 }

@@ -5,7 +5,7 @@
 //! ```text
 //! cargo run -p ham-web-thor --release --example generate_sample -- [MODE] [输出.wav] [文本] [中心频率Hz] [采样率]
 //! ```
-//! MODE ∈ micro/4/5/8/11/16/22/25x4/50x1/50x2/100（默认 16）；文本默认 `CQ CQ DE BG1AAA 599`；
+//! MODE ∈ micro/4/5/8/11/16/22/25/32/44/56/25x4/50x1/50x2/100（默认 16）；文本默认 `CQ CQ DE BG1AAA 599`；
 //! 中心默认 1500 Hz；采样率默认取该模式的标称采样率。
 
 use ham_web_thor::{encode_audio, parse_mode};
@@ -22,7 +22,8 @@ fn main() {
     .and_then(|c| c.parse::<f64>().ok())
     .unwrap_or(1500.0);
 
-  let mode = parse_mode(&mode_name).expect("子模式（micro/4/5/8/11/16/22/25x4/50x1/50x2/100）");
+  let mode =
+    parse_mode(&mode_name).expect("子模式（micro/4/5/8/11/16/22/25/32/44/56/25x4/50x1/50x2/100）");
   let rate = args
     .next()
     .and_then(|r| r.parse::<u32>().ok())

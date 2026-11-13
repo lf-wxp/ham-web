@@ -1,15 +1,14 @@
 //! SSTV 慢扫描电视解码器页面：上传 SSTV 录音，交由 Web Worker 在后台线程解码。
 
 use leptos::prelude::*;
-use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
-use web_sys::{File, HtmlCanvasElement, ImageData};
+use web_sys::File;
 
 use crate::components::common::{DecodeElapsed, PageContainer, PageHeader};
 use crate::decode_session::{DecodeConfig, DecodeSession};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Button, ButtonLink, FileDropZone, Size, Variant};
-use crate::util::{document, js_error_message, set_title};
+use crate::util::{rgba_to_data_url, set_title};
 
 use super::sstv_worker::parse_message;
 use crate::i18n::{t, tf};
@@ -28,34 +27,11 @@ struct SstvResult {
   image_url: String,
 }
 
-/// RGBA 像素 → 离屏 canvas → PNG data URL。
-fn render_rgba(rgba: &[u8], width: u32, height: u32) -> Result<String, String> {
-  let canvas: HtmlCanvasElement = document()
-    .create_element("canvas")
-    .map_err(|e| js_error_message(&e))?
-    .unchecked_into();
-  canvas.set_width(width);
-  canvas.set_height(height);
-  let ctx = canvas
-    .get_context("2d")
-    .map_err(|e| js_error_message(&e))?
-    .ok_or_else(|| t("common.canvas-2d-context-not"))?
-    .dyn_into::<web_sys::CanvasRenderingContext2d>()
-    .map_err(|_| t("common.canvas-2d-context-not"))?;
-
-  let img = ImageData::new_with_u8_clamped_array_and_sh(wasm_bindgen::Clamped(rgba), width, height)
-    .map_err(|e| js_error_message(&e))?;
-  ctx
-    .put_image_data(&img, 0.0, 0.0)
-    .map_err(|e| js_error_message(&e))?;
-  canvas.to_data_url().map_err(|e| js_error_message(&e))
-}
-
 /// 创建消息回调（只创建一次并复用）。
 /// 解析 Worker 结果并把 RGBA 像素画成 PNG data URL；渲染失败当作解码失败。
 fn parse_and_render(raw: &JsValue) -> Result<SstvResult, String> {
   let p = parse_message(raw)?;
-  let image_url = render_rgba(&p.rgba, p.width, p.height)?;
+  let image_url = rgba_to_data_url(&p.rgba, p.width, p.height)?;
   Ok(SstvResult {
     width: p.width,
     height: p.height,

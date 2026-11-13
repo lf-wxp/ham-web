@@ -3,15 +3,16 @@
 //! [`crate::front`] 的对齐与中心频率都是「整段录音搜一次」：符号边界只有一个起点，音调梳只有一个
 //! 基频。录音机 / 声卡时钟与发端差上千 ppm、或发射机在录音期间频率漂了半个音调间隔时，两端就会错位。
 //!
-//! 这里把录音切成 [`BLOCK`] 个符号一块，每块各自测一次「符号边界偏多少」和「音调梳偏多少」，
+//! 这里把录音切成 [`BLOCK`]（短录音更小，见 [`MIN_BLOCK`]）个符号一块，每块各自测一次「符号边界偏多少」和「音调梳偏多少」，
 //! 再对块序号拟合一条**低阶多项式曲线**（1–3 阶，按 BIC 挑，见 [`fit_curve`]）：
 //! - 符号边界 = `offset + n × sym + 曲线(n)`（曲线的平均斜率除以 `sym` 就是时钟误差）；
 //! - 最低音调频率 = `base + 曲线(n)`（曲线的平均斜率就是频漂）。
 //!
 //! 1 阶抓线性漂移（固定的时钟比例误差、预热阶段的匀速频漂），2–3 阶抓匀加速与更弯的曲线（转速逐渐
-//! 变化的录音机、指数式收敛的发射机预热）。曲线之外的东西（突然跳频、断续的时钟跳变）跟不了：
-//! 残差大到不可信时整条拟合作废、退回「不跟踪」。fldigi 是逐样本跟踪（滑动 FFT + 每符号的相位 AFC），
-//! 能跟任意形状的漂移，这里不能。
+//! 变化的录音机、指数式收敛的发射机预热）。曲线之外的东西跟不了：残差大到不可信时整条拟合作废、
+//! 退回「不跟踪」。实测（数字见 `reference/fldigi_web/README.md`）：时钟跳变（丢 / 插样本）与不超过半个音调
+//! 间隔的突然跳频本来就能解；超过半个间隔等于音调序号错了一位，跟不了。fldigi 是逐样本跟踪（滑动 FFT +
+//! 每符号的相位 AFC），能跟任意形状的漂移，这里不能。
 //!
 //! **不改变干净录音的结果**：拟合出的修正小到不值得（符号边界偏移不到 1/32 个符号、频率偏移不到
 //! 1/16 个波特率）就放弃（[`track`] 返回 `None`，[`bins_tracked`] 给出 [`Drift::fixed`] 与
@@ -21,14 +22,19 @@ use crate::front::{Grid, peak_ratios, symbol_bins};
 use crate::tone_magnitudes;
 use ham_web_dsp::tone_power;
 
-/// 一块的符号数。块越长单次估计越稳，但对「块内漂移」越不敏感；漂移速率在 1 块内
+/// 一块的符号数（长录音用它）。块越长单次估计越稳，但对「块内漂移」越不敏感；漂移速率在 1 块内
 /// 应远小于 1 个符号（1000 ppm 时 48 个符号只漂 0.05 个符号）。
 const BLOCK: usize = 48;
+
+/// 短录音把块缩短到最少这么多个符号：总符号数不到 `8 × BLOCK` 时，48 个一块凑不够 [`MIN_BLOCKS`] 块
+/// 就整体不跟踪，而慢速模式（MFSK4 约 4 波特）的短报文正是最怕时钟误差的。块长 = `总符号数 / 8`，夹在
+/// `[MIN_BLOCK, BLOCK]` 之间；录音够长（≥ 384 个符号）时块长就是 [`BLOCK`]，与此前逐位相同。
+const MIN_BLOCK: usize = 16;
 
 /// 每块只取其中均匀分布的这么多个窗口来评分（代价与它成正比）。
 const BLOCK_WINDOWS: usize = 16;
 
-/// 至少这么多块「有信号」才拟合（约 190 个符号；更短的录音漂移本来也不大）。
+/// 至少这么多块「有信号」才拟合（长录音约 190 个符号，短录音块缩到 [`MIN_BLOCK`] 后约 64 个符号）。
 const MIN_BLOCKS: usize = 4;
 
 /// 一块的平均峰均比达到它才算「有信号」（与 [`crate::front::gate`] 的区间门限同一个量级）。
@@ -404,14 +410,12 @@ fn parabola_peak(l: f64, c: f64, r: f64) -> f64 {
 }
 
 /// 挑出「有信号」的块（块序号），超出预算就均匀抽稀。
-fn live_blocks(bins: &[f64], grid: &Grid) -> Vec<usize> {
+fn live_blocks(bins: &[f64], grid: &Grid, block: usize) -> Vec<usize> {
   let ratios = peak_ratios(bins, grid.ntones);
   let live: Vec<usize> = ratios
-    .as_chunks::<BLOCK>()
-    .0
-    .iter()
+    .chunks_exact(block)
     .enumerate()
-    .filter(|(_, c)| c.iter().sum::<f64>() / BLOCK as f64 >= LIVE_RATIO)
+    .filter(|(_, c)| c.iter().sum::<f64>() / block as f64 >= LIVE_RATIO)
     .map(|(b, _)| b)
     .collect();
   // 每块最坏扫 9 个候选，每个候选 `BLOCK_WINDOWS` 个窗口 × 全部音调。
@@ -424,13 +428,18 @@ fn live_blocks(bins: &[f64], grid: &Grid) -> Vec<usize> {
 }
 
 /// 块 `b` 里均匀取出的窗口的符号序号。
-fn block_symbols(b: usize) -> impl Iterator<Item = f64> {
-  (0..BLOCK_WINDOWS).map(move |i| (b * BLOCK + i * BLOCK / BLOCK_WINDOWS) as f64)
+fn block_symbols(b: usize, block: usize) -> impl Iterator<Item = f64> {
+  (0..BLOCK_WINDOWS).map(move |i| (b * block + i * block / BLOCK_WINDOWS) as f64)
 }
 
 /// 块中心的符号序号（拟合的横坐标）。
-fn block_centre(b: usize) -> f64 {
-  (b * BLOCK) as f64 + (BLOCK - 1) as f64 / 2.0
+fn block_centre(b: usize, block: usize) -> f64 {
+  (b * block) as f64 + (block - 1) as f64 / 2.0
+}
+
+/// 这条录音一块取多少个符号（见 [`MIN_BLOCK`]）。
+fn block_len(total_symbols: usize) -> usize {
+  (total_symbols / 8).clamp(MIN_BLOCK, BLOCK)
 }
 
 /// 每块的符号边界偏移（相对名义网格 `offset + n × sym`），样本；返回 `(块中心, 偏移)`。
@@ -440,6 +449,7 @@ fn timing_points(
   base: f64,
   offset: f64,
   blocks: &[usize],
+  block: usize,
 ) -> Vec<(f64, f64)> {
   let tone_max = |w: &[f32]| {
     (0..grid.ntones)
@@ -448,7 +458,7 @@ fn timing_points(
   };
   // 偏移 `delta` 时块 `b` 的幅度和（开方：错位时幅度线性下降，见 `triangle_peak`）。
   let amplitude = |b: usize, delta: f64| -> f64 {
-    block_symbols(b)
+    block_symbols(b, block)
       .filter_map(|n| {
         let start = offset + n * grid.sym + delta;
         if start < 0.0 {
@@ -463,7 +473,7 @@ fn timing_points(
   let h = grid.sym / 16.0;
   let mut points: Vec<(f64, f64)> = Vec::new();
   for &b in blocks {
-    let x = block_centre(b);
+    let x = block_centre(b, block);
     // 整个符号周期（环形）16 档全搜：搜索范围不依赖预测，个别块出错也不会让后面的块够不着。
     let s: Vec<f64> = (0..16)
       .map(|i| amplitude(b, -grid.sym / 2.0 + f64::from(i) * h))
@@ -492,9 +502,15 @@ fn timing_points(
 /// 每块的音调梳频率偏差（Hz，相对 `base`），在 `drift` 给出的符号边界上测；返回 `(块中心, 偏差)`。
 ///
 /// `drift.first` 必须还是 0（块序号 = 名义网格序号）。
-fn freq_points(samples: &[f32], grid: &Grid, drift: &Drift, blocks: &[usize]) -> Vec<(f64, f64)> {
+fn freq_points(
+  samples: &[f32],
+  grid: &Grid,
+  drift: &Drift,
+  blocks: &[usize],
+  block: usize,
+) -> Vec<(f64, f64)> {
   let power = |b: usize, e: f64| -> f64 {
-    block_symbols(b)
+    block_symbols(b, block)
       .filter_map(|n| {
         let start = drift.start_at(n);
         if start < 0.0 {
@@ -513,7 +529,7 @@ fn freq_points(samples: &[f32], grid: &Grid, drift: &Drift, blocks: &[usize]) ->
   let h = grid.baud / 8.0;
   let mut points: Vec<(f64, f64)> = Vec::new();
   for &b in blocks {
-    let x = block_centre(b);
+    let x = block_centre(b, block);
     let centre = predict(&points, x, 0.0);
     let s: Vec<f64> = (0..9)
       .map(|i| power(b, centre + (f64::from(i) - 4.0) * h))
@@ -536,12 +552,13 @@ fn freq_points(samples: &[f32], grid: &Grid, drift: &Drift, blocks: &[usize]) ->
 /// 没有可信、且值得做的修正时返回 `None`（调用方沿用不跟踪的网格）；多数调用方直接用 [`bins_tracked`]。
 #[must_use]
 pub fn track(samples: &[f32], grid: &Grid, base: f64, offset: f64, bins: &[f64]) -> Option<Drift> {
-  let blocks = live_blocks(bins, grid);
+  let block = block_len(bins.len() / grid.ntones);
+  let blocks = live_blocks(bins, grid, block);
   if blocks.len() < MIN_BLOCKS {
     return None;
   }
   let mut drift = Drift::fixed(grid, base, offset);
-  let tp = timing_points(samples, grid, base, offset, &blocks);
+  let tp = timing_points(samples, grid, base, offset, &blocks, block);
   let timing = fit_curve(&tp, grid.sym / 8.0);
   if let Some(curve) = timing
     && curve.worst() >= grid.sym * TIMING_APPLY
@@ -549,7 +566,7 @@ pub fn track(samples: &[f32], grid: &Grid, base: f64, offset: f64, bins: &[f64])
     drift.timing = curve;
   }
   let freq = fit_curve(
-    &freq_points(samples, grid, &drift, &blocks),
+    &freq_points(samples, grid, &drift, &blocks, block),
     grid.baud / 4.0,
   );
   if let Some(curve) = freq
@@ -564,6 +581,27 @@ pub fn track(samples: &[f32], grid: &Grid, base: f64, offset: f64, bins: &[f64])
   }
   let applied = !drift.timing.coef.is_empty() || !drift.freq.coef.is_empty();
   (applied && drift.drop_unreachable()).then_some(drift)
+}
+
+/// 跟踪估出的时钟误差绝对值达到它（ppm），就把录音按估值重采样回名义时钟、再整段解一遍
+/// （见 [`undo_clock`]）。比它小的误差，跟踪本身已经修得干净，不值得再来一遍。
+pub const REDO_CLOCK_PPM: f64 = 1500.0;
+
+/// 把时钟偏差 `clock_ppm` 的录音重采样回名义时钟（`clock_ppm` 正 = 录音偏慢，缩短它）。
+///
+/// 为什么要重采样、跟踪不够：时钟误差不只让符号边界漂，**所有音调的频率也按同一比例缩放**
+/// （1000 Hz 在 3000 ppm 下落在 997 Hz，对 MFSK4 的 3.9 Hz 音调间隔已是将近一个音调），而中心频率检测
+/// 与音调梳都在跟踪之前、按未缩放的频率做。实测 MFSK4 的短报文在 3000 ppm 起整段乱码（中心频率检测落在
+/// 相差 4 个音调之外），而同一条录音按跟踪估出的 ppm（误差 < 50 ppm）重采样后一遍就解出来。
+#[must_use]
+pub fn undo_clock(samples: &[f32], clock_ppm: f64) -> Vec<f32> {
+  ham_web_dsp::stretch(samples, 1.0 / (1.0 + clock_ppm * 1e-6))
+}
+
+/// 录音里的频率 `hz` 在 [`undo_clock`] 之后的频率。
+#[must_use]
+pub fn corrected_hz(hz: f64, clock_ppm: f64) -> f64 {
+  hz * (1.0 + clock_ppm * 1e-6)
 }
 
 /// 各符号的音调幅度（`ntones` 个一组、按符号顺序平铺）与对应的 [`Drift`]：MFSK 与 THOR 收端共用的入口。
@@ -594,11 +632,29 @@ mod tests {
 
   /// 块中心序号 `24, 72, …`，共 `n` 个。
   fn xs(n: usize) -> Vec<f64> {
-    (0..n).map(block_centre).collect()
+    (0..n).map(|b| block_centre(b, BLOCK)).collect()
   }
 
   fn grid() -> Grid {
     Grid::new(8000, 15.625, 15.625, 16).unwrap()
+  }
+
+  #[test]
+  fn short_recordings_get_shorter_blocks() {
+    // 总符号数 / 8，夹在 [MIN_BLOCK, BLOCK] 之间；够长的录音与此前的固定块长一样。
+    assert_eq!(block_len(0), MIN_BLOCK);
+    assert_eq!(block_len(64), MIN_BLOCK);
+    assert_eq!(block_len(200), 25);
+    assert_eq!(block_len(8 * BLOCK), BLOCK);
+    assert_eq!(block_len(100_000), BLOCK);
+  }
+
+  #[test]
+  fn undoing_the_clock_scales_time_and_frequency_together() {
+    // 录音偏慢 1%（符号变长 1%）：重采样后样本数少 1%，原来 990 Hz 的音调回到 1000 Hz。
+    assert_eq!(undo_clock(&vec![0.0; 10_100], 10_000.0).len(), 10_000);
+    assert!((corrected_hz(990.099, 10_000.0) - 1000.0).abs() < 0.01);
+    assert_eq!(corrected_hz(1234.5, 0.0), 1234.5);
   }
 
   #[test]
@@ -701,7 +757,7 @@ mod tests {
     // 最近 8 个点里有 1 个被带偏：中位数斜率与中位数截距都不受它影响。
     let mut pts: Vec<(f64, f64)> = xs(8).into_iter().map(|x| (x, 0.5 * x)).collect();
     pts[6].1 += 200.0;
-    let x = block_centre(8);
+    let x = block_centre(8, BLOCK);
     assert!((predict(&pts, x, 0.0) - 0.5 * x).abs() < 1.0);
     assert_eq!(predict(&[], x, 7.0), 7.0);
     assert_eq!(predict(&[(10.0, 3.0)], x, 7.0), 3.0);

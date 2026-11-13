@@ -13,6 +13,11 @@ pub struct Satellite {
 }
 
 /// 常用业余卫星。
+///
+/// 加一颗星要同步四处，漏一处不会有编译错误：本表、`sat_doppler.rs` 的 [`crate::sat_doppler::PRESETS`]
+/// （多普勒页的预置，单测逐条对照本表的上 / 下行文字）、
+/// `data/knowledge-i18n/{en,es}/satellites.json`（上行 / 下行 / 说明是按中文原文做 key 的译文，漏了会静默回退中文）、
+/// 以及 `e2e/tests/satellite_doppler.spec.ts`（预置频率与 NORAD 的断言）。
 pub const SATELLITES: &[Satellite] = &[
   Satellite {
     name: "国际空间站",
@@ -45,6 +50,14 @@ pub const SATELLITES: &[Satellite] = &[
     uplink: "435.350 MHz（67Hz 亚音）",
     downlink: "145.880 MHz",
     note: "与 AO-91 同属 Fox 系列，操作方式相近。",
+  },
+  Satellite {
+    name: "AO-123",
+    callsign: "ASRTU-1",
+    kind: "FM 中继",
+    uplink: "145.850 MHz（67Hz 亚音）",
+    downlink: "435.400 MHz",
+    note: "俄中两国高校学生研制的 12U 立方星，带 V/U FM 转发器；当前是否开机请看 AMSAT 状态页的近期报告。",
   },
   Satellite {
     name: "AO-7",

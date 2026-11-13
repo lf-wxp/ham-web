@@ -38,7 +38,7 @@ impl Code {
     poly2: 0x4F,
   };
 
-  /// IEEE 码（K = 15，八进制 044735 / 063057）：THOR 的高速模式（25x4 / 50x1 / 50x2 / 100）。
+  /// IEEE 码（K = 15，八进制 044735 / 063057）：THOR 的长码模式（25 / 25x4 / 50x1 / 50x2 / 100）。
   pub const IEEE_K15: Self = Self {
     k: 15,
     poly1: 0o44735,

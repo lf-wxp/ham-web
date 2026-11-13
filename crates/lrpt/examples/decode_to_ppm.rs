@@ -24,11 +24,14 @@ fn main() {
   let image = decode_image(&frames).expect("整链解码");
   let mut ppm = Vec::with_capacity(image.height * image.width * 3 + 32);
   ppm.extend_from_slice(format!("P6\n{} {}\n255\n", image.width, image.height).as_bytes());
-  for y in 0..image.height {
-    for x in 0..image.width {
-      for ch in 0..3 {
-        ppm.push(image.channels[ch][y][x]);
-      }
+  // 三通道逐像素交错：按行、列拉链，不按下标取值（行数 / 列数以通道本身为准）。
+  for ((row_r, row_g), row_b) in image.channels[0]
+    .iter()
+    .zip(&image.channels[1])
+    .zip(&image.channels[2])
+  {
+    for ((&r, &g), &b) in row_r.iter().zip(row_g).zip(row_b) {
+      ppm.extend([r, g, b]);
     }
   }
   std::fs::write(&out_path, &ppm).unwrap();

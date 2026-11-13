@@ -24,6 +24,7 @@ fn tone_sequences_match_upstream_for_every_mode() {
         &mode.symbits.to_string(),
         &mode.depth.to_string(),
         &mode.preamble.to_string(),
+        if mode.long { "0" } else { "1" },
         text,
       ]);
       let got = encode_symbols(text, mode);

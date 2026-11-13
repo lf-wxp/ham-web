@@ -59,8 +59,9 @@
 - `e2e/tests/dominoex_varicode_data.ts`（fldigi `dominovar.cxx`）、`e2e/tests/mfsk_varicode_data.ts`（`mfskvaricode.cxx`）、
   `e2e/tests/thor_varicode_data.ts`（`thorvaricode.cxx`）与 `e2e/tests/navtex_varicode_data.ts`
   （转录自 `crates/navtex/src/codec.rs`）是测试用的 GPL 衍生数据，同样按 GPL-3.0 对待。
-- `crates/mfsk/reference/fldigi_ref.cpp` 与 `crates/mfsk/reference/fldigi_web/` 下的脚本只在对拍时用到：前者编译 fldigi 上游源码（不随仓库分发，
-  需要 `FLDIGI_SRC`），后者调用 fldigi 4.2.13 的 WebAssembly 构建（`crashdemons-external/fldigi-web`，同样不随仓库分发）；都不进发布物。
+- `crates/mfsk/reference/fldigi_ref.cpp`、`crates/mfsk/reference/fldigi_web/` 下的脚本与驱动它们的 `crates/thor/examples/noise_sweep.rs`
+  只在对拍时用到：前者编译 fldigi 上游源码（不随仓库分发，需要 `FLDIGI_SRC`），中间那组调用 fldigi 4.2.13 的 WebAssembly 构建
+  （`crashdemons-external/fldigi-web`，同样不随仓库分发），最后一个只编成 example；都不进发布物。
 - 发布物自带 `/license.html`、`/licenses/LICENSE`、`/licenses/GPL-3.0-only.txt` 以及第三方 MIT / BSD 声明文件；许可说明是站内页面，点击与刷新均复用全站应用壳、主题和语言，许可全文链接使用完整文档导航。`postbuild` 生成 `/license.html` 应用壳别名，Docker 构建检查这些文件，OCI 许可标签为 `MIT AND GPL-3.0-only`。部署方必须提供与实际构建版本一致的源码提交或归档，不以仓库最新版本代替。
 - 这份划分是工程上的处理，不是法律意见；若有疑问请自行咨询。
 

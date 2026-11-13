@@ -2,6 +2,7 @@
 
 use ham_web_mfsk::fec::{Encoder, Interleaver};
 use ham_web_mfsk::lookup::varienc;
+use ham_web_mfsk::picture::push_tone;
 
 use crate::varicode::SECONDARY;
 use crate::{Mode, NUMTONES};
@@ -156,17 +157,133 @@ pub fn encode_audio(text: &str, mode: &Mode, rate: u32, center_hz: f64) -> Optio
   }
   let mut out = Vec::with_capacity((tones.len() as f64 * sym) as usize + 1);
   let mut phase = 0.0f64;
+  synth_tones(&tones, mode, rate, center_hz, &mut phase, &mut out);
+  Some(out)
+}
+
+/// 把音调序列合成成样本，追加到 `out`：相位连续（`phase` 由调用方带着走），符号边界按小数位置落在样本上。
+/// `n` 个符号从 `out` 当前末尾起算。
+fn synth_tones(
+  tones: &[u8],
+  mode: &Mode,
+  rate: u32,
+  center_hz: f64,
+  phase: &mut f64,
+  out: &mut Vec<f32>,
+) {
+  let sym = f64::from(rate) / mode.baud();
+  let origin = out.len();
   for (n, &t) in tones.iter().enumerate() {
     let freq = center_hz + mode.tone_offset(usize::from(t));
-    let step = std::f64::consts::TAU * freq / f64::from(rate);
-    let end = ((n + 1) as f64 * sym).round() as usize;
-    while out.len() < end {
-      out.push(phase.cos() as f32);
-      phase += step;
-      if phase > std::f64::consts::TAU {
-        phase -= std::f64::consts::TAU;
+    let end = origin + ((n + 1) as f64 * sym).round() as usize;
+    push_tone(out, phase, freq, rate, end.saturating_sub(out.len()));
+  }
+}
+
+/// 一次图片发射的音频（单声道，相位连续，振幅 1）：普通 THOR 文本（含 `pic%X` 报头）→ 冲刷 →
+/// 20 个符号长的静音 → 20 个符号长的同步音 → FM 图像 → `\r EOT \r` 与冲刷。结构与 fldigi 的
+/// `tx_process` / `send_image` 一致，见 [`crate::picture`]。
+///
+/// - `text` 在报头前面发送（可为空）；`rgb` 是 `宽 × 高 × 3` 字节；
+/// - 只支持有图片模式的子模式（[`Mode::has_picture`]）、[`crate::picture::code_for`] 认得的尺寸，
+///   且 `rate` 必须等于该模式的标称采样率；其余返回 `None`。
+#[must_use]
+pub fn encode_picture_audio(
+  text: &str,
+  header: &ham_web_mfsk::picture::Header,
+  rgb: &[u8],
+  mode: &Mode,
+  rate: u32,
+  center_hz: f64,
+) -> Option<Vec<f32>> {
+  let (w, h) = (header.width, header.height);
+  let code = crate::picture::code_for(header)?;
+  let sym = f64::from(rate) / mode.baud();
+  let bandwidth = mode.bandwidth();
+  let low = center_hz + mode.tone_offset(0);
+  let high = center_hz + mode.tone_offset(NUMTONES - 1);
+  // 同步音在中心 − 0.6 × 带宽，比最低音调还低 0.1 × 带宽：只查音调带不够，它会先掉到 0 Hz 以下。
+  let sync_hz = center_hz + crate::picture::SYNC_OFFSET * bandwidth;
+  if !mode.has_picture()
+    || rate != mode.rate
+    || rgb.len() != w * h * 3
+    || !center_hz.is_finite()
+    || low < 0.0
+    || sync_hz < 0.0
+    || high >= f64::from(rate) / 2.0
+    || header.spp != crate::picture::SPP
+  {
+    return None;
+  }
+  let mut tx = Sender::new(*mode);
+  tx.clear_bits();
+  for _ in 0..16 {
+    tx.send_symbol(0);
+  }
+  tx.send_idle();
+  tx.send_char(b'\r', false);
+  if !mode.micro {
+    tx.send_char(2, false);
+    tx.send_char(b'\r', false);
+  }
+  for b in text.bytes().chain(*b"pic%").chain([code]) {
+    tx.send_char(b, false);
+  }
+  tx.flush();
+  let before = tx.tones.len();
+
+  let planes = if header.color { 3 } else { 1 };
+  let sync_samples = (crate::picture::SYNC_SYMBOLS as f64 * sym).round() as usize;
+  let image_samples = w * h * planes * header.spp;
+  // 合成之前先按总长估一下：超限就不分配、不要等合成完才拒绝。文本与冲刷按 `before` 的两倍保守估
+  // （第二次冲刷不会比「文本 + 第一次冲刷」长）。
+  let estimate = 2.0 * before as f64 * sym + 2.0 * sync_samples as f64 + image_samples as f64;
+  if estimate > MAX_SAMPLES as f64 {
+    return None;
+  }
+  let mut out = Vec::with_capacity(estimate as usize);
+  let mut phase = 0.0f64;
+  synth_tones(
+    &tx.tones[..before],
+    mode,
+    rate,
+    center_hz,
+    &mut phase,
+    &mut out,
+  );
+  // 静音、同步音。
+  out.extend(std::iter::repeat_n(0.0f32, sync_samples));
+  let mut tone = |freq: f64, count: usize, out: &mut Vec<f32>| {
+    push_tone(out, &mut phase, freq, rate, count);
+  };
+  tone(sync_hz, sync_samples, &mut out);
+  // 图像：彩色每行 R、G、B 三遍，灰度每行一遍。
+  for y in 0..h {
+    for plane in 0..planes {
+      for x in 0..w {
+        let byte = rgb[3 * (y * w + x) + plane];
+        tone(
+          center_hz + bandwidth * (f64::from(byte) - 128.0) / 256.0,
+          header.spp,
+          &mut out,
+        );
       }
     }
   }
-  Some(out)
+  // 图像之后：`\r EOT \r` 与冲刷。
+  tx.send_char(b'\r', false);
+  if !mode.micro {
+    tx.send_char(4, false);
+    tx.send_char(b'\r', false);
+  }
+  tx.flush();
+  synth_tones(
+    &tx.tones[before..],
+    mode,
+    rate,
+    center_hz,
+    &mut phase,
+    &mut out,
+  );
+  (out.len() <= MAX_SAMPLES).then_some(out)
 }

@@ -158,7 +158,8 @@ async fn spa_fallback(index: PathBuf, uri: Uri, req: Request<Body>) -> Response 
     .await
   {
     Ok(res) => res.into_response(),
-    Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response(),
+    // tower-http 0.7 起 `ServeFile` 的错误类型是 `Infallible`：这一支只是让 `match` 穷尽。
+    Err(never) => match never {},
   }
 }
 

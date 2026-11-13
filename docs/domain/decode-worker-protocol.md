@@ -89,8 +89,8 @@ WSPR / RTTY / Olivia / DominoEX / MFSK / THOR / NAVTEX / LRPT / FT8 / Feld Hell 
 | `rtty` | `markHz`（2125；空号 = 传号 + 170 Hz） | `{ text }` | `/rtty-worker/` |
 | `olivia` | `mode`（`"32/1000@1500"`） | `{ text }` | `/olivia-worker/` |
 | `dominoex` | `mode`（`"8"`）、`fec`（`false`；`true` = MultiPSK 兼容 FEC） | `{ text, id }`（`id` = 二次信道，可能为空串） | `/dominoex-worker/` |
-| `mfsk` | `mode`（`"16"`；4 / 8 / 11 / 16 / 22 / 31 / 32 / 64 / 128）、`centerHz`（缺省 = 自动检测）、`reverse`（`false`；`true` = LSB） | `{ text, centerHz, depth }`（`centerHz` = 实际使用的中心频率，`depth` = 译码用的交织深度） | `/mfsk-worker/` |
-| `thor` | `mode`（`"16"`；micro / 4 / 5 / 8 / 11 / 16 / 22 / 25x4 / 50x1 / 50x2 / 100）、`centerHz`、`reverse`（同 `mfsk`） | `{ text, id, centerHz }`（`id` = 二次信道 ID 信标，可能为空串） | `/thor-worker/` |
+| `mfsk` | `mode`（`"16"`；4 / 8 / 11 / 16 / 22 / 31 / 32 / 64 / 128 / 64L / 128L）、`centerHz`（缺省 = 自动检测）、`reverse`（`false`；`true` = LSB） | `{ text, centerHz, depth, clockPpm, driftHzPerS, pictures, pictureSkipped }`（`centerHz` = 实际使用的中心频率，`depth` = 译码用的交织深度，`clockPpm` / `driftHzPerS` = 跟踪并修正掉的时钟误差与频漂，没有跟踪到时精确为 0，`pictures` = 录音里解出的图片数组，可为空，每项 `{ width, height, color, rgba }`，`rgba` 是 `Uint8Array`（RGBA）；只有 MFSK16 / 32 / 64 / 128 且采样率等于该模式标称采样率、报头尺寸不超过 1 048 576 像素、报头之后至少录到一整行图像时才解图；`pictureSkipped` = 正文里有图片报头却没解出图。`clockPpm` / `driftHzPerS` / `pictures` / `pictureSkipped` 是后加字段，页面缺失时按 0 / 空 / `false` 处理，旧 Worker 缓存不会让解码报错） | `/mfsk-worker/` |
+| `thor` | `mode`（`"16"`；micro / 4 / 5 / 8 / 11 / 16 / 22 / 25 / 32 / 44 / 56 / 25x4 / 50x1 / 50x2 / 100）、`centerHz`、`reverse`（同 `mfsk`） | `{ text, id, centerHz, clockPpm, driftHzPerS, pictures, pictureSkipped }`（`id` = 二次信道 ID 信标，可能为空串；`clockPpm` / `driftHzPerS` / `pictures` / `pictureSkipped` 同 `mfsk`，只有 THOR 11 / 16 / 22 / 25 / 32 / 44 / 56 且采样率等于该模式标称采样率时才解图） | `/thor-worker/` |
 | `navtex` | —（页面发 `null`） | `{ messages: [{ transmitter, category, serial, text, corrected, errors, chars, accepted }] }` | `/navtex-worker/` |
 | `lrpt` | —（页面发 `null`） | `{ width, height, rgb: Uint8Array }`（RGB 三平面交错） | `/lrpt-worker/` |
 | `ft8` | `protocol`（`"ft8"`；`"ft4"`） | `{ messages: [{ text, freq_hz, time_sec, sync_db }], unsupported, slots }`（`time_sec` 距录音开头；`sync_db` 是同步强度而非 SNR；`unsupported` 是 CRC 通过但类型无字段解析的条数；`slots` 是逐个解码的时隙数） | `/ft8-worker/` |
@@ -122,13 +122,17 @@ Olivia / DominoEX / MFSK / THOR / NAVTEX / FT8 / Feld Hell / WEFAX / AFSK1200）
 - **MFSK / THOR 的门限看「峰均比」**：每个符号里最强音调与平均幅度的比值（干净信号接近音调数，纯噪声约 1.8），
   取 8 个符号的滑动平均划出信号起止，整段平均峰均比要 ≥ 2.6、区间 ≥ 32 个符号；THOR 另外要求区间内
   不合法的音调差（0 / 1 / −17，IFK+ 产生不出来）≤ 10%。不够一律 `no-signal:MFSK` / `no-signal:THOR`。
-  这两个解码器还有三条与 fldigi 不同的**边界**：时钟误差与频漂靠「整段录音按块测一次、拟合 1–3 阶平滑曲线」
-  （`ham_web_mfsk::track`）来跟，而不是逐样本跟踪 —— 常数的时钟误差（各子模式实测 ±1000 ppm，MFSK16 到 +2500 / −1500 ppm）、匀速或渐变的频漂
-  （MFSK16 / THOR16 实测 +0.2 / −0.3 Hz/s）与转速逐渐变化都能跟住，**突然跳频 / 时钟跳变跟不了**；块数不足（有信号的部分短于约 190 个符号）
-  或拟合不可信时退回「不跟踪」（与没有这一步时逐位相同）；载频靠一次性的中心频率检测（可手填覆盖）；THOR 用硬位判决，
-  弱信号下不如 fldigi 的软位路径。信号结束后会喂一段「删除位」把交织器与 Viterbi 里压着的最后几个字符推出来
-  （THOR 发端的冲刷比管线延迟短，fldigi 自己的接收机靠收完信号后继续运行来推）。
-- **THOR 高速模式（25x4 / 50x1 / 50x2 / 100）的内存**：K = 15 的 Viterbi 要存 `PATHMEM（256）× 16384` 个状态的路径度量（`i32`）
+  这两个解码器与 fldigi 不同的**边界**：
+  - 时钟误差与频漂靠「整段录音按块测一次、拟合 1–3 阶平滑曲线」（`ham_web_mfsk::track`）来跟，而不是逐样本跟踪：常数的时钟误差、匀速或渐变的频漂与转速逐渐变化都能跟住；
+    时钟跳变（丢 / 插样本）与不超过半个音调间隔的突然跳频也能解，**超过半个音调间隔的跳频不能**；有信号的部分短于约 64 个符号、拟合不可信或修正太小时退回「不跟踪」
+    （与没有这一步时逐位相同）。MFSK 估出 ≥ 1500 ppm 的时钟误差时把录音重采样回名义时钟再解一遍（时钟误差会把音调频率一起缩放）；±12000 ppm 的长录音不行；
+  - 载频靠一次性的中心频率检测（可手填覆盖）；MFSK 另用发射开头 / 结尾的最低音调前导当锚（短报文只用少数音调时评分定不准梳），录音从发射中途开始又没有冲刷时没有这个锚；
+  - 窄带载波（恒定干扰）整段估出后减掉 / 抹掉，自动检测中心频率那一步不做这个处理（有载波请手填）；
+  - THOR 用硬位判决（白噪声下实测不输 fldigi 的软位路径）；
+  - 图片模式只在模式的标称采样率上解图，别的采样率只给文本；
+  - 信号结束后会喂一段「删除位」把交织器与 Viterbi 里压着的最后几个字符推出来（THOR 发端的冲刷比管线延迟短，fldigi 自己的接收机靠收完信号后继续运行来推）。
+  实测数字与复现命令见 [`crates/mfsk/reference/fldigi_web/README.md`](../../crates/mfsk/reference/fldigi_web/README.md)。
+- **THOR 的 K = 15 模式（25 / 25x4 / 50x1 / 50x2 / 100）的内存**：K = 15 的 Viterbi 要存 `PATHMEM（256）× 16384` 个状态的路径度量（`i32`）
   与幸存前驱（`u16`），一个实例约 **24 MB**（Worker 里只建一个）；K = 7 的模式只有几十 KB。
   Worker 里没有别的大块内存，所以 8 MiB 的上传上限加这一块仍远低于 wasm 的 4 GiB 上限；若以后要在同一页面里并行跑多个高速解码，要先重估这一项。
 - **门限是概率性的**：门限之下仍可能出现零星疑似字符，输出不等于校验过的数据。

@@ -17,7 +17,7 @@
 
 ## 怎么验证的
 
-1. **与上游代码逐位对拍**（`tests/upstream_xcheck.rs` + `reference/fldigi_ref.cpp`）：把 fldigi 的 `viterbi.cxx` / `interleave.cxx` / `mfskvaricode.cxx` / `thorvaricode.cxx` **原样编译**，驱动它们生成音调序列，Rust 版必须逐个音调相同（9 个子模式 × 4 段文本）；Viterbi 对随机软值逐步比较输出位与路径度量（K = 7 与 K = 15）。
+1. **与上游代码逐位对拍**（`tests/upstream_xcheck.rs` + `reference/fldigi_ref.cpp`）：把 fldigi 的 `viterbi.cxx` / `interleave.cxx` / `mfskvaricode.cxx` / `thorvaricode.cxx` **原样编译**，驱动它们生成音调序列，Rust 版必须逐个音调相同（11 个子模式 × 4 段文本，含 64L / 128L 与它们「没有前导零位」的帧结构）；Viterbi 对随机软值逐步比较输出位与路径度量（K = 7 与 K = 15）。
 
    ```text
    git clone --depth 1 https://github.com/w1hkj/fldigi /tmp/fldigi
@@ -28,9 +28,9 @@
 
 2. **真实录音**（`tests/real_recordings.rs`）：gMFSK 官方站点的 MFSK16 / MFSK8 样本与 G4WNC 的 MFSK16 / 32 / 64 样本，逐字解出标准测试报文（`the quick brown fox jumps over the lazy dog 1234567890`）。录音不进仓库，用 `MFSK_REAL_DIR` 指向存放目录；同样是 `#[ignore]` 用例，运行时加 `-- --include-ignored`，目录或文件缺失会失败而不是跳过（只想跑其中一部分就用用例名过滤，如 `-- --include-ignored g4wnc_mfsk16_sample`）。
 
-3. **fldigi 自己的收发端**（`reference/fldigi_web/`）：fldigi 4.2.13 的原版调制解调器（WebAssembly 版）生成的 9 个 MFSK 子模式录音被本 crate 逐字解出，本 crate 生成的音频被 fldigi 的接收机还原 —— 双向都验过，细节与边界见 `fldigi_web/README.md`。
+3. **fldigi 自己的收发端**（`reference/fldigi_web/`）：fldigi 4.2.13 的原版调制解调器（WebAssembly 版）生成的 11 个 MFSK 子模式录音被本 crate 逐字解出，本 crate 生成的音频被 fldigi 的接收机还原 —— 双向都验过，细节与边界见 `fldigi_web/README.md`。
 
-4. **合成往返**（`tests/roundtrip.rs`）：9 个子模式 × 多种采样率 / 中心频率 / 噪声 / 时钟误差。
+4. **合成往返**（`tests/roundtrip.rs`）：11 个子模式 × 多种采样率 / 中心频率 / 噪声 / 时钟误差。
 
 ## THOR 部分（`ham-web-thor`）
 
@@ -41,10 +41,10 @@
 | `thor/src/tx.rs` | `src/thor/thor.cxx` 的 `sendsymbol` / `sendchar` / `Clearbits` / `flushtx` / `tx_process` | 发端帧结构、IFK+ 选音调、二次信道（ID 信标） |
 | `thor/src/rx.rs` 的 `Receiver` | `src/thor/thor.cxx` 的 `decodesymbol`（硬位路径）/ `decodePairs` | 音调差还原 nibble、拆成码位软值、Viterbi、按 `001` 切字符 |
 | `thor/src/varicode.rs` | `src/thor/thorvaricode.cxx`（© 2008 Dave Freese W1HKJ） | 二次信道 Varicode（生成物，由 `thor/examples/extract_varicode.rs` 提取并与同文件的 `thor_varidecode[]` 逐项比对）；主字符集就是本 crate 的 IZ8BLY MFSK Varicode |
-| `mfsk/src/fec.rs` 的 `Code::IEEE_K15` | `src/filters/viterbi.cxx` 的 K = 15 码 | 25x4 / 50x1 / 50x2 / 100 这四个高速模式用 |
+| `mfsk/src/fec.rs` 的 `Code::IEEE_K15` | `src/filters/viterbi.cxx` 的 K = 15 码 | 25 / 25x4 / 50x1 / 50x2 / 100 这五个模式用 |
 
 THOR 的设计 © Nino Porcino IZ8BLY / Murray Greenman ZL1BPU。验证方法与上面 MFSK 的四条一一对应：`thor/tests/upstream_xcheck.rs`（11 个子模式 × 5 段文本，含二次信道）、`thor/tests/real_recordings.rs`（fldigi 4.2.13 自己的发端录音，`THOR_REAL_DIR`）、`thor/tests/roundtrip.rs`（合成往返），以及 `fldigi_web/` 的双向验证。与 fldigi 接收机的差异（硬位判决、平滑曲线而非逐样本的漂移跟踪）见 `thor/src/lib.rs` 的模块文档。
 
 ## 一个与 fldigi 源码不一致的发现
 
-fldigi 里 MFSK4 / MFSK8 的交织深度是 5（fldigi 4.2.13 的原版发端生成的录音确实要用 5 才能译出）；但 gMFSK（这个模式的原作者实现）的官方 MFSK8 样本要用 **10** 才能译出原文。所以这两个子模式两种深度都试、按可读性择优（`rx.rs` 的 `depth_candidates`），结果里带回实际用的深度。
+fldigi 里 MFSK4 / MFSK8 的交织深度是 5（fldigi 4.2.13 的原版发端生成的录音确实要用 5 才能译出）；但 gMFSK（这个模式的原作者实现）的官方 MFSK8 样本要用 **10** 才能译出原文。所以这两个子模式两种深度都试、按平均路径度量择优（`rx.rs` 的 `depth_candidates` / `depth_wins`），结果里带回实际用的深度。

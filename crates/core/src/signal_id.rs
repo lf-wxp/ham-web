@@ -169,7 +169,7 @@ pub const PROFILES: &[SignalProfile] = &[
     key: "mfsk",
     sounds: &[Sound::Multi],
     rhythms: &[Rhythm::Continuous],
-    // MFSK4（约 120 Hz）到 MFSK128（约 1.9 kHz）；最常见的 MFSK16 约 235 Hz。
+    // MFSK4（约 120 Hz）到 MFSK128 / 128L（约 1.9 kHz）；最常见的 MFSK16 约 235 Hz。
     bandwidth_hz: (50.0, 2000.0),
     page: Some("/mfsk-decode"),
   },

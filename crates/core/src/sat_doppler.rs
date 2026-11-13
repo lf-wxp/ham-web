@@ -205,6 +205,15 @@ pub struct Preset {
 /// 预置的 FM 卫星。频率取自 [`crate::satellites::SATELLITES`]（单测逐条对照），NORAD 编号对照 Celestrak 业余卫星组。
 ///
 /// 只收了在 Celestrak 业余卫星组里能取到 TLE 的卫星；表里的 AO-92 当前不在该组，所以没放进来。
+///
+/// AO-123（ASRTU-1）的频率有两个独立来源：SatNOGS DB 的 FM 转发器条目（下行 435.400 / 上行 145.850 MHz），
+/// 与 IARU 业余卫星频率协调页（序号 830：下行 435.400 MHz，上行更正为 145.850 MHz，67 Hz 亚音）。
+/// 2026-11-13 核对，AMSAT 状态页上它是近一周报告最多的 FM 星。
+///
+/// **刻意没收**：AO-27（SatNOGS 写 436.795、AMSAT 页写 436.797 MHz，两处不一致）、LilacSat-2 / CAS-3H
+/// （SatNOGS 的 FM 条目是 437.200 / 144.350 且已标「不活动」，IARU 写的是 437.225 / 145.825 / 145.875）、
+/// PO-101（Diwata-2B，IARU 协调的 145.900 / 437.500 MHz 与 SatNOGS 一致，但 AMSAT 状态页近一周没有任何报告，
+/// 预置成常驻会误导）。
 pub const PRESETS: &[Preset] = &[
   Preset {
     name: "ISS",
@@ -223,6 +232,12 @@ pub const PRESETS: &[Preset] = &[
     norad: 43_017,
     uplink_hz: 435_250_000,
     downlink_hz: 145_960_000,
+  },
+  Preset {
+    name: "AO-123",
+    norad: 61_781,
+    uplink_hz: 145_850_000,
+    downlink_hz: 435_400_000,
   },
 ];
 
@@ -552,6 +567,7 @@ mod tests {
       ("ISS", "国际空间站"),
       ("SO-50", "SO-50"),
       ("AO-91", "AO-91"),
+      ("AO-123", "AO-123"),
     ] {
       let preset = PRESETS.iter().find(|p| p.name == name).unwrap();
       let entry = SATELLITES.iter().find(|s| s.name == table_name).unwrap();

@@ -1322,7 +1322,7 @@ checksum = "17e2ac29387b1aa07a1e448f7bb4f35b500787971e965b02842b900afa5c8f6f"
 
 [[package]]
 name = "ham-web-afsk1200-worker"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-core",
  "ham-web-wav",
@@ -1332,7 +1332,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-app"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "console_error_panic_hook",
  "ham-web-apt",
@@ -1354,7 +1354,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-apt"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-dsp",
  "ham-web-wav",
@@ -1362,7 +1362,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-apt-worker"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-apt",
  "js-sys",
@@ -1371,7 +1371,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-core"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-nec",
  "ham-web-wav",
@@ -1382,7 +1382,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-dominoex"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1392,7 +1392,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-dominoex-worker"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-apt",
  "ham-web-dominoex",
@@ -1402,11 +1402,11 @@ dependencies = [
 
 [[package]]
 name = "ham-web-dsp"
-version = "0.6.11"
+version = "0.6.12"
 
 [[package]]
 name = "ham-web-ft8"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1415,7 +1415,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-ft8-worker"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-apt",
  "ham-web-ft8",
@@ -1425,7 +1425,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-hell"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1434,7 +1434,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-hell-worker"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-hell",
  "ham-web-wav",
@@ -1444,14 +1444,14 @@ dependencies = [
 
 [[package]]
 name = "ham-web-lrpt"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-apt",
 ]
 
 [[package]]
 name = "ham-web-lrpt-worker"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "console_error_panic_hook",
  "ham-web-apt",
@@ -1462,7 +1462,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-mfsk"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-dsp",
  "ham-web-wav",
@@ -1470,7 +1470,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-mfsk-worker"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-mfsk",
  "ham-web-wav",
@@ -1480,7 +1480,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-navtex"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1489,7 +1489,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-navtex-worker"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-apt",
  "ham-web-navtex",
@@ -1499,11 +1499,11 @@ dependencies = [
 
 [[package]]
 name = "ham-web-nec"
-version = "0.6.11"
+version = "0.6.12"
 
 [[package]]
 name = "ham-web-olivia"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1512,7 +1512,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-olivia-worker"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-apt",
  "ham-web-olivia",
@@ -1522,7 +1522,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-rtty"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1531,7 +1531,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-rtty-worker"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-apt",
  "ham-web-rtty",
@@ -1541,7 +1541,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-server"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1569,7 +1569,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-sstv"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-dsp",
  "ham-web-wav",
@@ -1577,7 +1577,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-sstv-worker"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-sstv",
  "js-sys",
@@ -1586,7 +1586,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-thor"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-dsp",
  "ham-web-mfsk",
@@ -1595,7 +1595,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-thor-worker"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-thor",
  "ham-web-wav",
@@ -1605,7 +1605,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-tools"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "anyhow",
  "brotli",
@@ -1628,18 +1628,18 @@ dependencies = [
 
 [[package]]
 name = "ham-web-wav"
-version = "0.6.11"
+version = "0.6.12"
 
 [[package]]
 name = "ham-web-wefax"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-wav",
 ]
 
 [[package]]
 name = "ham-web-wefax-worker"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-wefax",
  "js-sys",
@@ -1648,7 +1648,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-wspr"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1657,7 +1657,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-wspr-worker"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "ham-web-apt",
  "ham-web-wspr",

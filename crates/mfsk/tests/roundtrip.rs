@@ -11,9 +11,10 @@ fn text_ok(got: &str) -> bool {
 
 #[test]
 fn every_mode_round_trips_at_its_own_rate() {
+  const CENTER: f64 = 1000.0;
   for mode in MODES {
-    let audio = encode_audio(TEXT, mode, mode.rate, 1000.0).expect("编码");
-    let d = decode_audio(&audio, mode.rate, mode, Some(1000.0), false)
+    let audio = encode_audio(TEXT, mode, mode.rate, CENTER).expect("编码");
+    let d = decode_audio(&audio, mode.rate, mode, Some(CENTER), false)
       .unwrap_or_else(|| panic!("MFSK{} 应解出信号", mode.name));
     assert!(text_ok(&d.text), "MFSK{}: {:?}", mode.name, d.text);
   }
@@ -32,6 +33,65 @@ fn auto_center_finds_the_carrier_and_decodes() {
       d.center_hz
     );
     assert!(text_ok(&d.text), "MFSK{name}: {:?}", d.text);
+  }
+}
+
+/// 短报文只用到少数几个音调：MFSK8 / MFSK4 的自动中心检测曾偏低 2–3 个音调、整段乱码
+/// （`CQ CQ DE BG1AAA K ` 在 35 个中心频率里 MFSK8 错 6 个、MFSK4 错 5 个，`TEST ` 全错）；
+/// `TEST ` / `73 ` 这种极短报文手填中心频率也乱码（深度 10 的乱码比深度 5 的正确文本更长，可读性分数偏向它）。
+/// 变异验证：不用空闲音的锚（`idle_tone_shift` 恒返回 `None`）、深度只看可读性（`DEPTH_METRIC_GAP` 改很大），
+/// 各自让下面某一行变红。
+#[test]
+fn short_messages_on_slow_modes_find_their_centre_and_depth() {
+  for (name, msg, center) in [
+    ("8", "CQ DE BG1AAA K ", 969.0),
+    ("8", "CQ DE BG1AAA K ", 1314.0),
+    ("8", "73 ", 1000.0),
+    ("8", "73 ", 1500.0),
+    ("8", "CQ ", 1000.0),
+    ("8", "CQ ", 1337.0),
+    ("4", "CQ DE BG1AAA K ", 946.0),
+    ("4", "73 ", 1000.0),
+  ] {
+    let mode = parse_mode(name).unwrap();
+    let audio = encode_audio(msg, mode, 8000, center).unwrap();
+    let d = decode_audio(&audio, 8000, mode, None, false)
+      .unwrap_or_else(|| panic!("MFSK{name} {msg:?} @{center} 应解出信号"));
+    assert!(
+      d.text.contains(msg.trim_end()),
+      "MFSK{name} {msg:?} @{center}：{:?}（检测到 {} Hz）",
+      d.text,
+      d.center_hz
+    );
+    assert!(
+      (d.center_hz - center).abs() <= mode.baud() / 8.0,
+      "MFSK{name} {msg:?} @{center}：检测到 {} Hz",
+      d.center_hz
+    );
+    assert_eq!(d.depth, 5, "MFSK{name} {msg:?} @{center}");
+  }
+}
+
+/// 空闲音的锚在下边带录音里也要对：频谱反转后前导在梳的最高一齿。
+/// 用 `(-1)^n` 调制做频谱反转（`f → 采样率 / 2 − f`）。
+#[test]
+fn the_idle_tone_anchor_works_on_a_reversed_recording() {
+  let mode = parse_mode("8").unwrap();
+  for center in [3000.0, 2663.0] {
+    let audio = encode_audio("CQ ", mode, 8000, center).unwrap();
+    let flipped: Vec<f32> = audio
+      .iter()
+      .enumerate()
+      .map(|(i, &x)| if i % 2 == 0 { x } else { -x })
+      .collect();
+    let d = decode_audio(&flipped, 8000, mode, None, true)
+      .unwrap_or_else(|| panic!("反转录音 @{center} 应解出信号"));
+    assert!(d.text.contains("CQ"), "反转 @{center}：{:?}", d.text);
+    assert!(
+      (d.center_hz - (4000.0 - center)).abs() <= mode.baud() / 8.0,
+      "反转 @{center}：检测到 {} Hz",
+      d.center_hz
+    );
   }
 }
 
@@ -226,6 +286,46 @@ fn tracks_large_clock_error() {
   }
 }
 
+/// 短录音 + 很大的时钟误差：块缩短后才凑得够块数去跟踪，MFSK4 这类慢速模式还要把录音重采样回名义时钟
+/// 再解一遍（时钟误差会把音调频率一起缩放，中心频率检测在跟踪之前、不知道）。
+/// 变异验证：`REDO_CLOCK_PPM` 改成 1e12、`MIN_BLOCK` 改成 `BLOCK`（MFSK4 的 178 个符号凑不够 4 块，
+/// 没有估值就不会重来）、重采样后不把中心频率换回录音的轴、不把两次的时钟误差合起来，各自都让 MFSK4 一行变红；
+/// MFSK16 / 32 两行钉死更大的误差（±12000 ppm，改动前这两行乱码或缺遍），上面几个变异不一定让它们变红。
+#[test]
+fn short_recordings_survive_a_large_clock_error() {
+  for (name, reps, ppm) in [
+    ("4", 2usize, 3000.0f64),
+    ("4", 2, 5000.0),
+    ("16", 3, -12000.0),
+    ("32", 1, 12000.0),
+  ] {
+    let mode = parse_mode(name).unwrap();
+    let msg = "CQ CQ DE BG1AAA K ".repeat(reps);
+    let clean = encode_audio(&msg, mode, 8000, 1000.0).unwrap();
+    let audio = stretch(&clean, 1.0 + ppm * 1e-6);
+    let d = decode_audio(&audio, 8000, mode, None, false)
+      .unwrap_or_else(|| panic!("MFSK{name} {ppm} ppm 应解出信号"));
+    assert_eq!(
+      d.text.matches("CQ CQ DE BG1AAA K").count(),
+      reps,
+      "MFSK{name} {ppm} ppm: {:?}",
+      d.text
+    );
+    // 结果按录音自己的轴报：总时钟误差与实际拉伸一致，中心频率是录音里的 1000 / (1 + ppm)。
+    assert!(
+      (d.clock_ppm - ppm).abs() < 400.0,
+      "MFSK{name} {ppm} ppm 估成 {}",
+      d.clock_ppm
+    );
+    let center = 1000.0 / (1.0 + ppm * 1e-6);
+    assert!(
+      (d.center_hz - center).abs() < 2.0,
+      "MFSK{name} 中心 {center}，报告 {}",
+      d.center_hz
+    );
+  }
+}
+
 #[test]
 fn tracks_linear_frequency_drift() {
   // 0.2 Hz/s、80 秒 = 偏出 16 Hz（约一个音调间隔）：不跟踪时两头的音调已经落到邻位上。
@@ -375,6 +475,96 @@ fn auto_center_survives_a_message_repeated_in_lockstep_with_the_sampling() {
       d.text.matches(TEXT).count(),
       reps,
       "重复 {reps} 遍应逐遍解出"
+    );
+  }
+}
+
+/// 恒定载波（窄带干扰）：fldigi 4.2.13 自己的接收机在载波与信号等幅时一遍报文也解不出
+/// （差分对拍见 `crates/thor/examples/noise_sweep.rs` 与 `reference/fldigi_web/README.md`）。本仓整段录音里估出载波幅度，不比信号强的减掉，
+/// 比信号强的把那个音调位抹掉。噪声取得足够大：噪声小的时候 fldigi 沿用的窄带干扰软删除自己就够了，
+/// 测不出这一步（变异验证：去掉两步中任何一步，对应的用例都红）。
+#[test]
+fn a_carrier_the_size_of_the_signal_is_suppressed_and_a_stronger_one_is_erased() {
+  let mode = parse_mode("16").unwrap();
+  let center = 1500.0;
+  let text = format!("{TEXT} ").repeat(6);
+  for (amp, noise) in [(1.0f64, 3.0f32), (2.0, 3.0)] {
+    let mut audio = encode_audio(&text, mode, 8000, center).unwrap();
+    // 载波放在两个音调之间（距最近音调 4.7 Hz）。
+    let w = 2.0 * std::f64::consts::PI * (center + 50.0) / 8000.0;
+    for (i, s) in audio.iter_mut().enumerate() {
+      *s += (amp * (w * i as f64).sin()) as f32;
+    }
+    ham_web_dsp::add_noise(&mut audio, noise);
+    let d = decode_audio(&audio, 8000, mode, Some(center), false).expect("应解出信号");
+    assert!(
+      d.text.matches(TEXT).count() >= 5,
+      "载波幅度 {amp}、噪声 {noise}：{:?}",
+      d.text
+    );
+  }
+}
+
+/// 长交织变体（64L / 128L）：整段录音只用到少数几个音调（0 / 1 / 3 / 7 / 15），90% 以上的符号是最低音调。
+/// 不给中心频率时粗检测会偏几个音调（见 `front::POLISH_REACH_LONG`），译出的正文头尾也不能带乱码
+/// （头部是反交织器没填满时译出的「发送前历史」，尾部是给冲刷区补删除位的产物）。
+#[test]
+fn long_interleave_modes_find_the_carrier_and_decode_cleanly() {
+  for name in ["64L", "128L"] {
+    let mode = parse_mode(name).unwrap();
+    for center in [1250.3, 1500.0, 1800.0, 2000.0] {
+      let audio = encode_audio(TEXT, mode, 8000, center).unwrap();
+      let d = decode_audio(&audio, 8000, mode, None, false)
+        .unwrap_or_else(|| panic!("MFSK{name} @ {center} 应解出信号"));
+      assert!(
+        (d.center_hz - center).abs() <= mode.baud() / 8.0,
+        "MFSK{name}: 检测到 {} Hz，期望 {center}",
+        d.center_hz
+      );
+      assert_eq!(d.text.trim(), TEXT, "MFSK{name} @ {center}");
+    }
+  }
+}
+
+/// 同上，但带噪声底。无噪声的合成信号里反交织器没填满时译出的头部、冲刷区补删除位译出的尾部恰好
+/// 什么字符都凑不出来（变异验证过：去掉丢头 / 补尾保护，上一个用例仍然通过），噪声底下它们才会变成乱码 ——
+/// 真实录音都有噪声底。
+#[test]
+fn long_interleave_modes_decode_cleanly_in_noise() {
+  for name in ["64L", "128L"] {
+    let mode = parse_mode(name).unwrap();
+    for amp in [1.0f32, 2.0] {
+      let mut audio = encode_audio(TEXT, mode, 8000, 1500.0).unwrap();
+      ham_web_dsp::add_noise(&mut audio, amp);
+      let d = decode_audio(&audio, 8000, mode, None, false)
+        .unwrap_or_else(|| panic!("MFSK{name} 噪声幅度 {amp} 应解出信号"));
+      assert_eq!(d.text.trim(), TEXT, "MFSK{name} 噪声幅度 {amp}");
+    }
+  }
+}
+
+/// 发端与 fldigi 的帧结构一致：长交织变体没有 `preamble / 3` 个前导零位，其余模式有。
+/// 每个码位变成 2 个码字位；`clearbits` 先推进 `preamble` 对零（不发符号，但可能留下不满一个符号的零头），
+/// 之后每攒满 `symbits` 个码字位发一个符号。
+#[test]
+fn long_modes_send_no_lead_zeros() {
+  use ham_web_mfsk::lookup::varienc;
+  let char_bits = |c: u8| varienc(c).len();
+  let body: usize = TEXT.bytes().map(char_bits).sum();
+  let frame: usize = [b'\r', 2, b'\r', b'\r', 4, b'\r']
+    .into_iter()
+    .map(char_bits)
+    .sum();
+  for mode in MODES {
+    let lead = if mode.long { 0 } else { mode.preamble / 3 };
+    let sent_bits = lead + frame + body + 1 + mode.preamble;
+    let cleared = mode.preamble * 2;
+    let expected = (cleared + sent_bits * 2) / mode.symbits - cleared / mode.symbits;
+    assert_eq!(
+      encode_symbols(TEXT, mode).len(),
+      expected,
+      "MFSK{}",
+      mode.name
     );
   }
 }

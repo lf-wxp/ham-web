@@ -2,14 +2,12 @@ use leptos::prelude::*;
 use leptos::task::spawn_local;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{
-  AudioBuffer, AudioContext, CanvasRenderingContext2d, File, HtmlCanvasElement, ImageData,
-};
+use web_sys::{AudioBuffer, AudioContext, File};
 
 use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Button, ButtonLink, FileDropZone, Variant, card_title_class};
-use crate::util::{document, js_error_message};
+use crate::util::{js_error_message, rgba_to_data_url};
 
 use super::{CEIL_DB, FLOOR_DB};
 
@@ -31,27 +29,6 @@ struct AnalysisResult {
   sample_rate: f32,
   width: u32,
   height: u32,
-}
-
-/// RGBA 像素 → 离屏 canvas → PNG data URL。
-fn render_rgba(rgba: &[u8], width: u32, height: u32) -> Result<String, String> {
-  let canvas: HtmlCanvasElement = document()
-    .create_element("canvas")
-    .map_err(|e| js_error_message(&e))?
-    .unchecked_into();
-  canvas.set_width(width);
-  canvas.set_height(height);
-  let ctx: CanvasRenderingContext2d = canvas
-    .get_context("2d")
-    .map_err(|e| js_error_message(&e))?
-    .ok_or_else(|| t("common.canvas-2d-context-not"))?
-    .unchecked_into();
-  let img = ImageData::new_with_u8_clamped_array_and_sh(wasm_bindgen::Clamped(rgba), width, height)
-    .map_err(|e| js_error_message(&e))?;
-  ctx
-    .put_image_data(&img, 0.0, 0.0)
-    .map_err(|e| js_error_message(&e))?;
-  canvas.to_data_url().map_err(|e| js_error_message(&e))
 }
 
 /// 用浏览器原生解码器把 WAV 字节解码为单声道 f32 样本。
@@ -84,10 +61,10 @@ async fn analyze_file(file: &File) -> Result<AnalysisResult, String> {
     ham_web_core::spectrum::analyze_waterfall(&samples, FILE_FRAME, FILE_HEIGHT, FLOOR_DB, CEIL_DB)
       .ok_or_else(|| t("radio.audio-too-short-to"))?;
   let width = (FILE_FRAME / 2) as u32;
-  let waterfall_url = render_rgba(&rgba, width, FILE_HEIGHT as u32)?;
+  let waterfall_url = rgba_to_data_url(&rgba, width, FILE_HEIGHT as u32)?;
   let spec_rgba =
     ham_web_core::spectrum::spectrum_to_rgba(&avg_db, FILE_SPECTRUM_H, FLOOR_DB, CEIL_DB);
-  let spectrum_url = render_rgba(&spec_rgba, width, FILE_SPECTRUM_H as u32)?;
+  let spectrum_url = rgba_to_data_url(&spec_rgba, width, FILE_SPECTRUM_H as u32)?;
   Ok(AnalysisResult {
     waterfall_url,
     spectrum_url,

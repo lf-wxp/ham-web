@@ -48,15 +48,21 @@ macro_rules! string_list {
 
 string_list!(
   /// `bookmarks`：收藏题目的 stable_id。
-  Bookmarks, "bookmarks", "bookmarks"
+  Bookmarks,
+  "bookmarks",
+  "bookmarks"
 );
 string_list!(
   /// `dxcc_wanted_done`：已通联的 DXCC 稀有前缀。
-  DxccWantedDone, "dxcc_wanted_done", "dxcc_wanted_done"
+  DxccWantedDone,
+  "dxcc_wanted_done",
+  "dxcc_wanted_done"
 );
 string_list!(
   /// `achievements-seen`：已提示过的成就解锁 id。
-  AchievementsSeen, "achievements-seen", "achievements_seen"
+  AchievementsSeen,
+  "achievements-seen",
+  "achievements_seen"
 );
 
 /// `qsl-image-index`：存了卡片影像的通联编号（`LogEntry.id`）。

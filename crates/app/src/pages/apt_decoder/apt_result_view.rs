@@ -1,13 +1,11 @@
 //! 结果视图：把灰度 / 假彩色图像渲染为 PNG data URL 并展示，支持下载与模式切换。
 
 use leptos::prelude::*;
-use wasm_bindgen::JsCast;
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 
 use crate::i18n::{t, tp};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Button, ChipToggle};
-use crate::util::{document, js_error_message};
+use crate::util::rgba_to_data_url;
 
 use super::channel_view::ChannelView;
 
@@ -45,7 +43,7 @@ impl AptRender {
       duration_seconds,
       channel_a_url: render_channel(&channel_a, width, height)?,
       channel_b_url: render_channel(&channel_b, width, height)?,
-      false_color_url: render_rgba(&false_color, width, height)?,
+      false_color_url: rgba_to_data_url(&false_color, width, height)?,
     })
   }
 }
@@ -60,30 +58,7 @@ fn render_channel(pixels: &[u8], width: u32, height: u32) -> Result<String, Stri
     rgba[o + 2] = g;
     rgba[o + 3] = 255;
   }
-  render_rgba(&rgba, width, height)
-}
-
-/// RGBA 像素 → 离屏 canvas → PNG data URL。
-fn render_rgba(rgba: &[u8], width: u32, height: u32) -> Result<String, String> {
-  let canvas: HtmlCanvasElement = document()
-    .create_element("canvas")
-    .map_err(|e| js_error_message(&e))?
-    .unchecked_into();
-  canvas.set_width(width);
-  canvas.set_height(height);
-  let ctx: CanvasRenderingContext2d = canvas
-    .get_context("2d")
-    .map_err(|e| js_error_message(&e))?
-    .ok_or_else(|| t("common.canvas-2d-context-not"))?
-    .unchecked_into();
-
-  let clamped = wasm_bindgen::Clamped(rgba);
-  let img = ImageData::new_with_u8_clamped_array_and_sh(clamped, width, height)
-    .map_err(|e| js_error_message(&e))?;
-  ctx
-    .put_image_data(&img, 0.0, 0.0)
-    .map_err(|e| js_error_message(&e))?;
-  canvas.to_data_url().map_err(|e| js_error_message(&e))
+  rgba_to_data_url(&rgba, width, height)
 }
 
 /// 显示模式。

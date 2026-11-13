@@ -4,7 +4,9 @@ use leptos::prelude::*;
 use wasm_bindgen::JsValue;
 use web_sys::File;
 
-use crate::components::common::{DecodeElapsed, PageContainer, PageHeader};
+use crate::components::common::{
+  DecodeElapsed, DecodeTrackingNote, DecodedPictures, PageContainer, PageHeader,
+};
 use crate::decode_session::{DecodeConfig, DecodeSession, MAX_UPLOAD_BYTES};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
@@ -25,6 +27,10 @@ const MODES: &[(&str, &str)] = &[
   ("5", "THOR 5"),
   ("11", "THOR 11"),
   ("22", "THOR 22"),
+  ("25", "THOR 25"),
+  ("32", "THOR 32"),
+  ("44", "THOR 44"),
+  ("56", "THOR 56"),
   ("25x4", "THOR 25x4"),
   ("50x1", "THOR 50x1"),
   ("50x2", "THOR 50x2"),
@@ -241,6 +247,12 @@ pub fn ThorDecoderPage() -> impl IntoView {
                   <p class="text-xs text-muted-foreground">
                     {tf("tools.thor-detected", &[&format!("{:.1}", p.center_hz)])}
                   </p>
+                  <DecodeTrackingNote clock_ppm=p.clock_ppm drift_hz_per_s=p.drift_hz_per_s />
+                  <DecodedPictures
+                    pictures=p.pictures.clone()
+                    skipped=p.picture_skipped
+                    file_stem="thor-picture"
+                  />
                   {move || {
                     (!p.id.is_empty()).then(|| {
                       view! {

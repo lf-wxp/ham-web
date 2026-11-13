@@ -1,4 +1,5 @@
 {
+  "145.850 MHz（67Hz 亚音）": "145.850 MHz (67 Hz tone)",
   "145.850 MHz（先发 74.4Hz 激活，再 67Hz）": "145.850 MHz (activate with 74.4 Hz first, then 67 Hz)",
   "145.990 MHz（67Hz 亚音）": "145.990 MHz (67 Hz tone)",
   "1974 年发射的老卫星，至今仍可间歇工作，适合 SSB/CW。": "An old satellite launched in 1974 that still works intermittently; suitable for SSB/CW.",
@@ -16,6 +17,7 @@
   "中国业余卫星系列，多颗在轨，转发器为线性（SSB/CW）。": "A Chinese amateur satellite series with several units in orbit; the transponders are linear (SSB/CW).",
   "低轨卫星每次过境约 10 分钟，需提前查过境时间并提前守听。": "A low-Earth-orbit satellite pass lasts about 10 minutes, so look up the pass time and be listening in advance.",
   "使用能同时收发的电台和指向性天线（如手持八木）。": "Use a radio that can transmit and receive at the same time and a directional antenna (such as a handheld Yagi).",
+  "俄中两国高校学生研制的 12U 立方星，带 V/U FM 转发器；当前是否开机请看 AMSAT 状态页的近期报告。": "A 12U CubeSat built by Russian and Chinese university students with a V/U FM transponder; check the recent reports on the AMSAT status page to see whether it is switched on right now.",
   "入门首选 FM 中继卫星，需要掌握亚音设置。": "The first-choice FM repeater satellite for beginners; you need to master the tone settings.",
   "国际空间站": "International Space Station",
   "在线过境预报，适合快速查询。": "Online pass predictions, handy for quick lookups.",

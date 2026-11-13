@@ -81,6 +81,7 @@ pub mod cw_op;
 pub mod cw_runner;
 pub mod daily_challenge;
 pub mod decibel;
+pub mod decode_tracking;
 pub mod delta;
 pub mod delta_sync;
 pub mod df_fix;

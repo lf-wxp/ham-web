@@ -45,7 +45,7 @@
 | `cargo make knowledge-i18n-check` | 校验知识库正文译文：中文原文作 key，源码改过句子后译文即失效（静默回退中文），已并入 `cargo make check` |
 | `cargo make e2e-check` | e2e 覆盖对账：`e2e/coverage-targets.json` 的每条核心旅程（grep）必须能在 `e2e/tests` 的 spec 里命中，已并入 `cargo make check` |
 | **解码器样本** | — |
-| `cargo make samples` | 一键生成合成测试样本 WAV 到 `tmp/`（apt / sstv / wspr / lrpt / dominoex / mfsk / thor / olivia / navtex / rtty / psk31 / spectrum；FT8 用 `ft8-sample` 单独生成） |
+| `cargo make samples` | 一键生成合成测试样本 WAV 到 `tmp/`（apt / sstv / wspr / lrpt / dominoex / mfsk（文本 + 图片）/ thor（文本 + 图片）/ olivia / navtex / rtty / psk31 / spectrum；FT8 用 `ft8-sample` 单独生成） |
 | `cargo make apt-sample` / `apt-decode` / `apt-test` | 生成 / 命令行解码 / 端到端自检 APT 样本 WAV |
 | `cargo make sstv-sample` / `sstv-decode` / `sstv-test` | 同上，SSTV |
 | `cargo make wspr-sample` / `wspr-decode` / `wspr-test` | 同上，WSPR |
@@ -54,7 +54,9 @@
 | `cargo make olivia-sample` / `olivia-decode` / `olivia-test` / `olivia-xcheck` | 同上，Olivia（`xcheck` 与独立参考实现双向对拍） |
 | `cargo make dominoex-sample` / `dominoex-decode` / `dominoex-test` / `dominoex-xcheck` | 同上，DominoEX |
 | `cargo make mfsk-sample` / `mfsk-decode` / `mfsk-test` / `mfsk-xcheck` | 同上，MFSK（`CENTER` 指定中心频率，缺省自动检测；`mfsk-xcheck` 与 fldigi 上游代码逐位对拍，需 `FLDIGI_SRC` 与 C++ 编译器） |
+| `cargo make mfsk-picture-sample` / `mfsk-picture-decode` / `mfsk-picture-test` | 同上，MFSK **图片模式**：`W` / `H` / `KIND`（`color` / `gray`）/ `PATTERN`（`bands` / `ramp`）/ `SPP` 可选；样本旁边写同名 `.rgb` 原图，解码时自动比对并报平均 / 最大误差 |
 | `cargo make thor-sample` / `thor-decode` / `thor-test` / `thor-xcheck` | 同上，THOR（含二次信道 ID 信标；`thor-xcheck` 同 `mfsk-xcheck`） |
+| `cargo make thor-picture-sample` / `thor-picture-decode` / `thor-picture-test` | 同上，THOR **图片模式**（尺寸只能取 fldigi 的六档：59×74 / 120×150 / 240×300 / 160×120 / 320×240 / 640×480） |
 | `cargo make navtex-sample` / `navtex-decode` / `navtex-test` | 同上，NAVTEX |
 | `cargo make lrpt-sample` / `lrpt-decode` / `lrpt-test` | 同上，LRPT |
 | `cargo make psk31-sample` | 生成 PSK31 测试样本 WAV（供手动测试 `/psk-decode`） |

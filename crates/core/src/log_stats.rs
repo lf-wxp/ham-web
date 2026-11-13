@@ -262,10 +262,7 @@ impl StatsScope {
       return false;
     }
     let want = self.operator.trim();
-    if !want.is_empty() && operator_of(e, book) != want.to_ascii_uppercase() {
-      return false;
-    }
-    true
+    want.is_empty() || operator_of(e, book) == want.to_ascii_uppercase()
   }
 }
 

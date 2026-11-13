@@ -1,6 +1,8 @@
 import fs from 'node:fs';
-const { default: createCore } = await import(`${process.env.FLDIGI_WEB ?? '/tmp/fldigi-web'}/web/fldigi-core.js`);
-const { createDecoderSession } = await import(`${process.env.FLDIGI_WEB ?? '/tmp/fldigi-web'}/web/decoder-session.js`);
+const root = process.env.FLDIGI_WEB;
+if (!root) throw new Error('请先设置 FLDIGI_WEB（fldigi-web 克隆目录，见 README.md）');
+const { default: createCore } = await import(`${root}/web/fldigi-core.js`);
+const { createDecoderSession } = await import(`${root}/web/decoder-session.js`);
 
 const [,, modeName, wavPath, freq] = process.argv;
 const core = await createCore();

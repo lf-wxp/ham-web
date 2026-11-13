@@ -1,6 +1,8 @@
 import fs from 'node:fs';
-const { default: createCore } = await import(`${process.env.FLDIGI_WEB ?? '/tmp/fldigi-web'}/web/fldigi-core.js`);
-const { createEncoderSession } = await import(`${process.env.FLDIGI_WEB ?? '/tmp/fldigi-web'}/web/encoder-session.js`);
+const root = process.env.FLDIGI_WEB;
+if (!root) throw new Error('请先设置 FLDIGI_WEB（fldigi-web 克隆目录，见 README.md）');
+const { default: createCore } = await import(`${root}/web/fldigi-core.js`);
+const { createEncoderSession } = await import(`${root}/web/encoder-session.js`);
 
 const core = await createCore();
 const modes = JSON.parse(core.UTF8ToString(core._web_modes()));
