@@ -4,6 +4,7 @@ use ham_web_core::events::{HAM_EVENTS, HamEvent, next_start};
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::components::meteor_shower_section::MeteorShowerSection;
 use crate::i18n::{t, tf, tp};
 use crate::ui::{Button, ButtonLink, Size, Variant};
 use crate::util::set_title;
@@ -160,6 +161,8 @@ pub fn EventsPage() -> impl IntoView {
             }}
           </p>
         </section>
+
+        <MeteorShowerSection today=now_t />
 
         <section class=crate::kit::card_class()>
           <h2 class=crate::kit::card_title_class()>

@@ -7,7 +7,8 @@ use ham_web_core::station_link::{
 };
 use leptos::prelude::*;
 
-use super::result_class;
+use super::atmosphere_fields::AtmosphereFields;
+use super::{num, result_class};
 use crate::i18n::{t, tf};
 use crate::ui::{
   Field, NumberField, SelectOption, SimpleSelect, Table, TableBody, TableCell, TableDensity,
@@ -43,12 +44,6 @@ fn fmt_db(v: f64) -> String {
   format!("{v:.2}")
 }
 
-/// 文本输入解析：不是有限数就 `None`（整条链路「输入无效」，不拿默认值悄悄顶上）。
-/// 取值范围（如馈线长度不能为负）由内核判，这里只管「是不是一个数」。
-fn num(s: RwSignal<String>) -> Option<f64> {
-  s.get().trim().parse::<f64>().ok().filter(|v| v.is_finite())
-}
-
 #[component]
 pub(super) fn StationLink() -> impl IntoView {
   let rg213 = FEEDLINE_SPECS
@@ -69,9 +64,22 @@ pub(super) fn StationLink() -> impl IntoView {
   let misc = RwSignal::new(String::from("1"));
   let nf = RwSignal::new(String::from("2"));
   let ext = RwSignal::new(String::from("0"));
-  // 外部噪声来源：0 = 自填（下面的 Fa 栏），其余是 `Environment::ALL` 的下标 + 1。
-  // 默认自填且值为 0，与加预设之前的行为逐位一致。
+  // 外部噪声来源：`None` = 自填（下面的 Fa 栏），`Some(i)` = `Environment::ALL[i]`，
+  // `Some(Environment::ALL.len())` = 大气噪声（P.372 第 5 部分，需要月 / 时 / 坐标）。
+  // 默认自填，与加预设之前的行为逐位一致。
   let env = RwSignal::new(0usize);
+  // 下拉里「大气噪声」的序号（排在五条环境曲线之后）。
+  //
+  // 选项值是 `Environment::ALL` 的下标 + 1（1..=5），所以这一项必须从 `len + 1` 起，
+  // 否则会和最后一条曲线（银河噪声）撞值 —— 撞了之后 `preset()` 会把「大气噪声」
+  // 解析成银河噪声，页面显示的是银河的范围提示。
+  let atmos_index = Environment::ALL.len() + 1;
+  // 大气噪声（P.372 第 5 部分）需要的四个量：月、UTC 小时、纬度、经度。
+  // 默认取「7 月、本地傍晚、北京」，与 `atmospheric_noise` 的示例口径一致。
+  let atm_month = RwSignal::new(String::from("7"));
+  let atm_hour = RwSignal::new(String::from("12"));
+  let atm_lat = RwSignal::new(String::from("40"));
+  let atm_lon = RwSignal::new(String::from("116"));
   let bw = RwSignal::new(String::from("12500"));
   let req = RwSignal::new(String::from("12"));
 
@@ -94,6 +102,11 @@ pub(super) fn StationLink() -> impl IntoView {
       .enumerate()
       .map(|(i, &e)| SelectOption::new((i + 1).to_string(), Signal::derive(move || t(env_key(e))))),
   )
+  // 大气噪声：需要月 / 时 / 位置，选它之后页面上多出这几个栏。
+  .chain(std::iter::once(SelectOption::new(
+    atmos_index.to_string(),
+    Signal::derive(move || t("tools.station-link-env-atmos")),
+  )))
   .collect();
 
   let freq_id = unique_id("slink-freq");
@@ -113,13 +126,38 @@ pub(super) fn StationLink() -> impl IntoView {
   let bw_id = unique_id("slink-bw");
   let req_id = unique_id("slink-req");
 
-  // 选了 P.372 预设时的 `(环境, 频率)`；自填或频率不是数则 `None`。
+  // 选了 P.372 预设时的 `(环境, 频率)`；自填、「大气噪声」或频率不是数则 `None`
+  // （大气噪声走 `atmos_fa()`，不能让这里再解析成某条环境曲线）。
   let preset = move || -> Option<(Environment, f64)> {
-    let e = *Environment::ALL.get(env.get().checked_sub(1)?)?;
+    let i = env.get().checked_sub(1)?;
+    if i >= Environment::ALL.len() {
+      return None;
+    }
+    let e = *Environment::ALL.get(i)?;
     Some((e, num(freq)?))
   };
   // 预设给出的 Fa：`None` = 没选预设；`Some(None)` = 频率在该曲线的适用频段之外（不外推）。
   let preset_fa = move || preset().map(|(e, f)| noise_model::fam_db(e, f));
+
+  // 大气噪声那一项：`Some(None)` = 输入越界（月 / 小时 / 坐标 / 频率），页面给出原因。
+  let is_atmos = move || env.get() == atmos_index;
+  // 返回 `None` = 不是大气噪声这一项；`Some(None)` = 是它但输入还不合法
+  // （月不是 1–12、坐标或频率越界）—— 后者要落到「输入无效」，不能悄悄退回自填。
+  let atmos_fa = move || -> Option<Option<f64>> {
+    if !is_atmos() {
+      return None;
+    }
+    let input = (|| {
+      Some(ham_web_core::atmospheric_noise::AtmNoiseInput {
+        month: ham_web_core::atmospheric_noise::month_from_f64(num(atm_month)?)?,
+        hour_utc: num(atm_hour)?,
+        lat_deg: num(atm_lat)?,
+        lon_deg: num(atm_lon)?,
+        freq_mhz: num(freq)?,
+      })
+    })();
+    Some(input.and_then(|i| ham_web_core::atmospheric_noise::atmospheric(&i).map(|n| n.fa_db)))
+  };
   // 预设在范围内：说明取到的值（显示在下拉的提示行）。
   let preset_result = move || -> Option<String> {
     let (e, f) = preset()?;
@@ -171,9 +209,13 @@ pub(super) fn StationLink() -> impl IntoView {
       rx_line_db,
       misc_loss_db: num(misc)?,
       rx_nf_db: num(nf)?,
-      ext_noise_db: match preset_fa() {
-        None => num(ext)?,
-        Some(fa) => fa?,
+      ext_noise_db: if is_atmos() {
+        atmos_fa()??
+      } else {
+        match preset_fa() {
+          None => num(ext)?,
+          Some(fa) => fa?,
+        }
       },
       bandwidth_hz: num(bw)?,
       required_snr_db: num(req)?,
@@ -270,6 +312,10 @@ pub(super) fn StationLink() -> impl IntoView {
           aria_label=Signal::derive(move || t("tools.station-link-env"))
         />
       </Field>
+      // 大气噪声：月 / UTC 小时 / 纬度 / 经度。只在选中那一项时出现。
+      {move || is_atmos().then(|| view! {
+        <AtmosphereFields month=atm_month hour=atm_hour lat=atm_lat lon=atm_lon id_prefix="slink" />
+      })}
       // 手填的 Fa 只在「自填」时用；选了预设就不显示，免得出现一个填了却不生效的栏。
       {move || {
         (env.get() == 0)

@@ -533,5 +533,19 @@
   "knowledge.power-and-dbm-table": "Tabla de potencia y dBm (con los límites de potencia de la licencia)",
   "knowledge.unit-prefixes-and-magnitudes": "Prefijos de unidades y magnitudes",
   "knowledge.conversion": "Conversión",
-  "knowledge.multiplier": "Multiplicador"
+  "knowledge.multiplier": "Multiplicador",
+  "knowledge.active-now": "Activa ahora",
+  "knowledge.imo-source": "Datos: IMO Meteor Shower Calendar 2026",
+  "knowledge.meteor-showers-title": "Calendario de lluvias de meteoros",
+  "knowledge.month-day": "{}/{}",
+  "knowledge.next-meteor-shower-peaks": "Próximos máximos de lluvias de meteoros",
+  "knowledge.open-the-event-calendar": "Abrir el calendario de eventos →",
+  "knowledge.peak-dates-are-accurate-only": "Las fechas del máximo solo son exactas para 2026 (el máximo sigue la longitud solar, así que cambia alrededor de un día de un año a otro); la ZHR es un valor típico de los retornos recientes y «variable» indica que la lluvia ha producido estallidos en el pasado. Fuente: International Meteor Organization (IMO) – www.imo.net.",
+  "knowledge.peak-in-days": "Máximo el {} (en {} días)",
+  "knowledge.peak-today": "Máximo hoy ({})",
+  "knowledge.the-shower-timetable-on": "Las fechas del máximo, los radiantes y las ZHR de todas las lluvias están en el calendario de lluvias de meteoros de la página de calendario de eventos, ordenado por días hasta el próximo máximo; las que están activas ahora aparecen marcadas.",
+  "knowledge.zhr-value": "ZHR {}",
+  "knowledge.zhr-variable": "ZHR variable",
+  "knowledge.peak-passed": "Máximo ya pasado ({})",
+  "knowledge.no-meteor-showers-in-window": "No hay lluvias de meteoros activas ni ninguna alcanza su máximo en los próximos {} días."
 }

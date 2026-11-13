@@ -9,6 +9,7 @@
 mod antenna_length;
 mod antenna_matcher;
 mod aprs_codec;
+mod atmosphere_fields;
 mod attenuator_calculator;
 mod atu_synth;
 mod battery_runtime;
@@ -27,6 +28,7 @@ mod distance_bearing;
 mod doppler_calculator;
 mod duty_power;
 mod eirp_calculator;
+mod external_noise;
 mod feedline_loss;
 mod filter_design;
 mod freq_wavelength;
@@ -34,6 +36,7 @@ mod frequency_units;
 mod fresnel_zone;
 mod fspl_calculator;
 mod gain_conversion;
+mod ground_wave;
 mod intermod_calculator;
 mod ip3_cascade;
 mod lc_resonance;
@@ -78,6 +81,13 @@ mod waveguide_report;
 mod wire_gauge;
 
 pub use tools_page::ToolsPage;
+
+/// 文本输入解析：不是有限数就 `None`（整条计算「输入无效」，不拿默认值悄悄顶上）。
+/// 取值范围由各计算器的内核判，这里只管「是不是一个数」。
+fn num(s: leptos::prelude::RwSignal<String>) -> Option<f64> {
+  use leptos::prelude::Get;
+  s.get().trim().parse::<f64>().ok().filter(|v| v.is_finite())
+}
 
 fn fmt_num(v: f64) -> String {
   // 0 不能落进最后的科学计数分支（会显示成 `0.000e0`）。

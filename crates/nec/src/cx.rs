@@ -147,6 +147,16 @@ impl Mul for Cx {
   }
 }
 
+impl Mul<Cx> for f64 {
+  type Output = Cx;
+  fn mul(self, o: Cx) -> Cx {
+    Cx {
+      re: self * o.re,
+      im: self * o.im,
+    }
+  }
+}
+
 impl Mul<f64> for Cx {
   type Output = Self;
   fn mul(self, k: f64) -> Self {
@@ -168,6 +178,16 @@ impl Div for Cx {
     Self {
       re: (self.re * o.re + self.im * o.im) / d,
       im: (self.im * o.re - self.re * o.im) / d,
+    }
+  }
+}
+
+impl Div<f64> for Cx {
+  type Output = Self;
+  fn div(self, k: f64) -> Self {
+    Self {
+      re: self.re / k,
+      im: self.im / k,
     }
   }
 }

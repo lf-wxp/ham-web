@@ -8,18 +8,27 @@
 //! N      = √( 1000 · L(µH) / AL )          （向上取整到整匝）
 //! ```
 //!
-//! **数据边界（先读这个）**：[`CORES`] 里只收录**已逐个对着厂商官方零件页核对过**的磁环
-//! （Fair-Rite，页面标注 AL 在 10 kHz 下测得），每一条都带料号与核对日期。业余圈里广泛流传的
-//! `FT-240-43`、`T-200-2`、`T-50-6` 之类按 Amidon 型号的速查值，这里**没有收录** —— Amidon 官网
-//! 无法访问核对，Micrometals 页面没有 AL 表，没有可对拍的来源就不上线（见 `ROADMAP.md` 建设原则 6）。
+//! **数据边界（先读这个）**：[`CORES`] 里只收录**已逐个对着厂商官方页面核对过**的磁环，
+//! 两条来源：Fair-Rite 官方零件页（料号是 10 位料号，AL 在 10 kHz 下测得）与 Micrometals 官方
+//! [product finder](https://www.micrometals.com/products/product-finder/)（料号是 T-xx-材料 的
+//! 通用型号，同一张表给出 AL / Ae / Ie / 尺寸）。每一条都带料号与核对日期。
+//!
+//! 厂商对这些数值**没有给出数据使用条款**（两家的条款只覆盖购买与退货，不含目录数据授权），
+//! AL、尺寸、Ae、Ie 是事实性规格数据，本项目按「标注来源 + 料号 + 核对日期」的方式引用，
+//! 不宣称获得授权，也不复制厂商的曲线图与说明书正文。
+//!
+//! 粉芯（Micrometals 的 -2 / -6）的 AL 是**分布气隙**的结果，不能用 `µ0·µi·Ae/le` 反推 ——
+//! 那条自洽检查只对铁氧体成立（见 [`catalogue_geometry_is_consistent`] 的分支）。
 //! 页面也提供「自己输入 AL」的入口，用来覆盖没收录的磁环。
 //!
 //! 精度边界：
-//! - AL 有 ±20% / ±25% 的出厂公差，且随频率、磁通与温度变化（铁氧体的 µ 随频率下降）；
-//!   这里算出的是**低频（10 kHz 口径）的标称值**，不是工作频率下的有效电感；
+//! - AL 有出厂公差（铁氧体 ±20% / ±25%，Micrometals 的 -2 是 ±5%、-6 是 ±10%），且随频率、
+//!   磁通与温度变化（铁氧体的 µ 随频率下降）；这里算出的是**低频（10 kHz 口径）的标称值**，
+//!   不是工作频率下的有效电感；
 //! - 不考虑绕线之间的分布电容、引线电感与自谐振，只给一个几何上的窗口占用率提醒；
 //! - 共模扼流圈的阻抗取决于材料在工作频段的复磁导率，不等于这里的低频电感，本模块不替它下结论；
-//!   要看 HF 各波段的阻抗与插入损耗，用 [`crate::common_mode_choke`]（同一份磁环库 + 官方复磁导率表）。
+//!   要看 HF 各波段的阻抗与插入损耗，用 [`crate::common_mode_choke`]（那里只有带官方复磁导率表的
+//!   铁氧体材料；Micrometals 的粉芯不进那张表）。
 
 use crate::math::positive;
 
@@ -28,7 +37,7 @@ use crate::math::positive;
 pub struct Core {
   /// 厂商零件号。
   pub part: &'static str,
-  /// 材料牌号（Fair-Rite 的 43 / 61 等）。
+  /// 材料牌号（Fair-Rite 的 43 / 61 等；Micrometals 铁粉芯记成 `-2` / `-6`，见 [`Core::is_powder`]）。
   pub material: &'static str,
   /// 外径 / 内径 / 高度（mm，标称值）。
   pub od_mm: f64,
@@ -45,6 +54,17 @@ pub struct Core {
   pub ae_cm2: f64,
   /// 数据核对日期（对照厂商官方零件页）。
   pub verified: &'static str,
+}
+
+impl Core {
+  /// 是不是 Micrometals 的铁粉芯（材料记号以 `-` 开头）。
+  ///
+  /// 粉芯与铁氧体在两处要分开对待：AL 是分布气隙的结果（不能用 `µ0·µi·Ae/le` 反推），
+  /// 也没有复磁导率表（不进共模扼流圈）。判别只放在这一处，别在别处再写一遍 `starts_with('-')`。
+  #[must_use]
+  pub fn is_powder(&self) -> bool {
+    self.material.starts_with('-')
+  }
 }
 
 /// 已核对的磁环（见模块文档的数据边界）。
@@ -101,7 +121,169 @@ pub const CORES: &[Core] = &[
     ae_cm2: 1.58,
     verified: "2026-10-14",
   },
+  // ── Micrometals 铁粉芯（product finder，2026-11-12 核对）─────────────────────────
+  // 公差：-2 为 AL +5%/−5%，-6 为 +10%/−10%（RF 目录第 4 页的 MAGNETIC TOLERANCE 表）；
+  // 这里统一记成 ±值。Ae / Ie / 尺寸与 AL 同表给出（英寸已折算成 mm）。
+  Core {
+    part: "T50-2",
+    material: "-2",
+    od_mm: 12.7,
+    id_mm: 7.7,
+    height_mm: 4.83,
+    al_nh: 4.9,
+    tolerance_pct: 5.0,
+    mu_i: 10.0,
+    le_cm: 3.19,
+    ae_cm2: 0.112,
+    verified: "2026-11-12",
+  },
+  Core {
+    part: "T68-2",
+    material: "-2",
+    od_mm: 17.5,
+    id_mm: 9.4,
+    height_mm: 4.83,
+    al_nh: 5.7,
+    tolerance_pct: 5.0,
+    mu_i: 10.0,
+    le_cm: 4.23,
+    ae_cm2: 0.179,
+    verified: "2026-11-12",
+  },
+  Core {
+    part: "T106-2",
+    material: "-2",
+    od_mm: 26.9,
+    id_mm: 14.5,
+    height_mm: 11.1,
+    al_nh: 13.5,
+    tolerance_pct: 5.0,
+    mu_i: 10.0,
+    le_cm: 6.49,
+    ae_cm2: 0.659,
+    verified: "2026-11-12",
+  },
+  Core {
+    part: "T130-2",
+    material: "-2",
+    od_mm: 33.0,
+    id_mm: 19.8,
+    height_mm: 11.1,
+    al_nh: 11.0,
+    tolerance_pct: 5.0,
+    mu_i: 10.0,
+    le_cm: 8.28,
+    ae_cm2: 0.698,
+    verified: "2026-11-12",
+  },
+  Core {
+    part: "T200-2",
+    material: "-2",
+    od_mm: 50.8,
+    id_mm: 31.8,
+    height_mm: 14.0,
+    al_nh: 12.0,
+    tolerance_pct: 5.0,
+    mu_i: 10.0,
+    le_cm: 13.0,
+    ae_cm2: 1.27,
+    verified: "2026-11-12",
+  },
+  Core {
+    part: "T50-6",
+    material: "-6",
+    od_mm: 12.7,
+    id_mm: 7.7,
+    height_mm: 4.83,
+    al_nh: 4.0,
+    tolerance_pct: 10.0,
+    mu_i: 8.5,
+    le_cm: 3.19,
+    ae_cm2: 0.112,
+    verified: "2026-11-12",
+  },
+  Core {
+    part: "T68-6",
+    material: "-6",
+    od_mm: 17.5,
+    id_mm: 9.4,
+    height_mm: 4.83,
+    al_nh: 4.7,
+    tolerance_pct: 10.0,
+    mu_i: 8.5,
+    le_cm: 4.23,
+    ae_cm2: 0.179,
+    verified: "2026-11-12",
+  },
+  Core {
+    part: "T80-6",
+    material: "-6",
+    od_mm: 20.2,
+    id_mm: 12.6,
+    height_mm: 6.35,
+    al_nh: 4.5,
+    tolerance_pct: 10.0,
+    mu_i: 8.5,
+    le_cm: 5.14,
+    ae_cm2: 0.231,
+    verified: "2026-11-12",
+  },
+  Core {
+    part: "T94-6",
+    material: "-6",
+    od_mm: 23.9,
+    id_mm: 14.2,
+    height_mm: 7.92,
+    al_nh: 7.0,
+    tolerance_pct: 10.0,
+    mu_i: 8.5,
+    le_cm: 5.97,
+    ae_cm2: 0.362,
+    verified: "2026-11-12",
+  },
+  Core {
+    part: "T106-6",
+    material: "-6",
+    od_mm: 26.9,
+    id_mm: 14.5,
+    height_mm: 11.1,
+    al_nh: 11.6,
+    tolerance_pct: 10.0,
+    mu_i: 8.5,
+    le_cm: 6.49,
+    ae_cm2: 0.659,
+    verified: "2026-11-12",
+  },
+  Core {
+    part: "T157-6",
+    material: "-6",
+    od_mm: 39.9,
+    id_mm: 24.1,
+    height_mm: 14.5,
+    al_nh: 11.5,
+    tolerance_pct: 10.0,
+    mu_i: 8.5,
+    le_cm: 10.1,
+    ae_cm2: 1.06,
+    verified: "2026-11-12",
+  },
+  Core {
+    part: "T200-6",
+    material: "-6",
+    od_mm: 50.8,
+    id_mm: 31.8,
+    height_mm: 14.0,
+    al_nh: 10.4,
+    tolerance_pct: 10.0,
+    mu_i: 8.5,
+    le_cm: 13.0,
+    ae_cm2: 1.27,
+    verified: "2026-11-12",
+  },
 ];
+
+/// Micrometals 铁粉芯数据的核对日期，[`crate::staleness`] 用它判过期。
+pub const POWDER_CHECKED_ON: &str = "2026-11-12";
 
 /// 按料号查一个已收录的磁环。
 #[must_use]
@@ -259,12 +441,14 @@ mod tests {
     );
   }
 
+  /// 铁氧体的 AL 与 `µ0·µi·Ae/le` 在公差内一致（同时校验了 Ae / le / µi 三个录入值）。
+  ///
+  /// 粉芯（Micrometals 的 `-2` / `-6`）**不适用**这条：它们靠分布气隙把有效磁导率压下来，
+  /// `µi` 是材料本身的初始磁导率（10 / 8.5），理论 AL 会比标称值大一个数量级。
   #[test]
-  fn al_matches_the_geometry_formula_within_tolerance() {
-    // 理论值 AL = µ0·µi·Ae/le（SI 换算到 nH）。厂商标称 AL 在公差内应与之一致，
-    // 同时校验了 Ae / le / µi 三个录入值。
+  fn ferrite_al_matches_the_geometry_formula_within_tolerance() {
     const MU0: f64 = 4.0e-7 * std::f64::consts::PI;
-    for c in CORES {
+    for c in CORES.iter().filter(|c| !c.is_powder()) {
       let theory_nh = MU0 * c.mu_i * (c.ae_cm2 * 1e-4) / (c.le_cm * 1e-2) * 1e9;
       let err = (theory_nh - c.al_nh).abs() / c.al_nh;
       // 理论值用的是 µi（B<10G 的初始值）；厂商 AL 是实测，且公差 ±20–25%，再放宽到 1.15 倍公差。
@@ -277,6 +461,69 @@ mod tests {
     }
   }
 
+  /// 粉芯的 Ae / Ie 要与尺寸对得上（矩形截面环的两个几何恒等式）。
+  ///
+  /// AL 是厂商实测值，且**随尺寸变化**（大环的分布气隙更多、有效磁导率更低），拿 `AL ∝ Ae/le`
+  /// 去反推材料常数只会得到 ±10% 的散布 —— 那条路查不出抄错，反而会误伤。真正能查的是几何：
+  /// 矩形截面的环形磁芯 `Ae ≈ H·(OD−ID)/2`、`Ie ≈ π·(OD+ID)/2`。两个恒等式同时成立，
+  /// 说明 OD / ID / H / Ae / Ie 这五个数抄的是同一行。
+  #[test]
+  fn powder_core_geometry_is_self_consistent() {
+    for c in CORES.iter().filter(|c| c.is_powder()) {
+      let ae = c.height_mm * (c.od_mm - c.id_mm) / 2.0 / 100.0; // mm² → cm²
+      let ie = std::f64::consts::PI * (c.od_mm + c.id_mm) / 2.0 / 10.0; // mm → cm
+      // 厂商给的 Ae / Ie 只到三位有效数字；实际磁路还比几何均值短一点，取 10%。
+      assert!(
+        (ae - c.ae_cm2).abs() / c.ae_cm2 < 0.10,
+        "{}: 几何 Ae {ae:.3} cm² vs 表里 {:.3}",
+        c.part,
+        c.ae_cm2
+      );
+      assert!(
+        (ie - c.le_cm).abs() / c.le_cm < 0.05,
+        "{}: 几何 Ie {ie:.2} cm vs 表里 {:.2}",
+        c.part,
+        c.le_cm
+      );
+      // 粉芯的有效磁导率远低于材料本体的 µi（分布气隙），所以 AL 只做量级检查。
+      assert!(
+        (0.5..40.0).contains(&c.al_nh),
+        "{}: AL {} nH 不像粉芯",
+        c.part,
+        c.al_nh
+      );
+    }
+  }
+
+  /// 尺寸与 Micrometals 表的英寸值对得上（英寸 × 25.4 = mm，表里只给到三位小数）。
+  #[test]
+  fn powder_core_dimensions_come_from_the_inch_table() {
+    let cases = [
+      ("T50-2", 0.5, 0.303, 0.19),
+      ("T68-2", 0.69, 0.37, 0.19),
+      ("T106-2", 1.06, 0.57, 0.437),
+      ("T130-2", 1.3, 0.78, 0.437),
+      ("T200-2", 2.0, 1.25, 0.55),
+      ("T80-6", 0.795, 0.495, 0.25),
+      ("T94-6", 0.942, 0.56, 0.312),
+      ("T157-6", 1.57, 0.95, 0.57),
+    ];
+    for (part, od, id, h) in cases {
+      let c = core_by_part(part).unwrap_or_else(|| panic!("{part} 应收录"));
+      for (got, inch, what) in [
+        (c.od_mm, od, "外径"),
+        (c.id_mm, id, "内径"),
+        (c.height_mm, h, "高度"),
+      ] {
+        assert!(
+          (got - inch * 25.4).abs() < 0.06,
+          "{part} {what}: {got} mm vs {inch} in（{:.1} mm）",
+          inch * 25.4
+        );
+      }
+    }
+  }
+
   #[test]
   fn catalogue_is_sane_and_unique() {
     let mut parts: Vec<&str> = CORES.iter().map(|c| c.part).collect();
@@ -284,7 +531,16 @@ mod tests {
     parts.dedup();
     assert_eq!(parts.len(), CORES.len(), "料号重复");
     for c in CORES {
-      assert_eq!(c.part.len(), 10, "{}", c.part);
+      // Fair-Rite 是 10 位数字料号（第 3–4 位是材料），Micrometals 是 T-xx-材料 的型号。
+      if c.is_powder() {
+        assert!(
+          c.part.starts_with('T') && c.part.ends_with(c.material),
+          "{} 不像 Micrometals 型号",
+          c.part
+        );
+      } else {
+        assert_eq!(c.part.len(), 10, "{}", c.part);
+      }
       assert!(
         c.od_mm > c.id_mm && c.id_mm > 0.0 && c.height_mm > 0.0,
         "{}",
@@ -296,15 +552,21 @@ mod tests {
         c.part
       );
       // Fair-Rite 料号第 3–4 位是材料牌号。
-      assert_eq!(
-        &c.part[2..4],
-        c.material,
-        "{} 的材料位与 material 不符",
-        c.part
-      );
+      if !c.is_powder() {
+        assert_eq!(
+          &c.part[2..4],
+          c.material,
+          "{} 的材料位与 material 不符",
+          c.part
+        );
+      }
     }
     assert!(core_by_part(" 5943003801 ").is_some());
+    assert!(core_by_part("T200-2").is_some_and(Core::is_powder));
+    assert!(core_by_part("5943003801").is_some_and(|c| !c.is_powder()));
+    // Amidon 的型号是同一批磁芯的分销型号，本站不按它收录（避免两套编号各错一半）。
     assert!(core_by_part("FT-240-43").is_none());
+    assert!(core_by_part("-2").is_none());
   }
 
   #[test]

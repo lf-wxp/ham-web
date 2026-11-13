@@ -138,6 +138,15 @@ impl Curve {
   pub fn contains(&self, freq_mhz: f64) -> bool {
     (self.lo_mhz..=self.hi_mhz).contains(&freq_mhz)
   }
+
+  /// 曲线在 `freq_mhz` 的值 `c − d·lg f`（dB），**不检查适用频段**。
+  ///
+  /// 对外给数请走 [`fam_db`]（越出频段返回 `None`）；这里留给「官方程序本来就不分频段」的场合
+  /// （[`crate::atmospheric_noise`] 合成时的银河噪声），让 `c` / `d` 只有这一处来源。
+  #[must_use]
+  pub fn at(&self, freq_mhz: f64) -> f64 {
+    self.c - self.d * freq_mhz.log10()
+  }
 }
 
 /// 外部噪声系数的**中位数** `Fam`（dB，相对 `kT0b`）。
@@ -147,9 +156,7 @@ impl Curve {
 #[must_use]
 pub fn fam_db(env: Environment, freq_mhz: f64) -> Option<f64> {
   let curve = env.curve();
-  curve
-    .contains(freq_mhz)
-    .then(|| curve.c - curve.d * freq_mhz.log10())
+  curve.contains(freq_mhz).then(|| curve.at(freq_mhz))
 }
 
 #[cfg(test)]

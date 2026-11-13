@@ -152,7 +152,9 @@ test("小工具：雨衰按 P.838-3 / P.530-17 估算，并对越界输入与适
   await s.getByLabel("频率（GHz，1–1000）").fill("24.048");
   await s.getByLabel("距离（km）").fill("10");
   await s.getByLabel("0.01% 降雨率 R0.01（mm/h）").fill("50");
-  await pickOption(page, "极化", "垂直极化");
+  // 在本区块内找下拉：/tools 页上还有别的「极化」下拉（地波场强），按全页名字找会命中两个。
+  await s.getByRole("combobox", { name: "极化" }).click();
+  await page.getByRole("option", { name: "垂直极化", exact: true }).click();
   await expect(s.getByText("雨衰 34.35 dB（一年里 0.01% 的时间会被超过）")).toBeVisible();
   await expect(s.getByText("单位长度雨衰 5.93 dB/km（k = 0.1410，α = 0.956）")).toBeVisible();
   await s.getByLabel("时间百分比 p（%，0.001–1）").fill("0.1");

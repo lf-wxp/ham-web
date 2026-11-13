@@ -6,6 +6,7 @@ pub mod call_area_map;
 pub mod cat_control;
 pub mod common;
 pub mod exam;
+pub mod meteor_shower_section;
 pub mod navigation;
 pub mod nec_template_link;
 pub mod practice;

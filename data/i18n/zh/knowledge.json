@@ -527,5 +527,19 @@
   "knowledge.power-and-dbm-table": "功率与 dBm 对照（含操作证功率上限）",
   "knowledge.unit-prefixes-and-magnitudes": "单位前缀与量级",
   "knowledge.conversion": "换算",
-  "knowledge.multiplier": "倍数"
+  "knowledge.multiplier": "倍数",
+  "knowledge.active-now": "正在活动",
+  "knowledge.imo-source": "数据：IMO Meteor Shower Calendar 2026",
+  "knowledge.meteor-showers-title": "流星雨时刻表",
+  "knowledge.month-day": "{}/{}",
+  "knowledge.next-meteor-shower-peaks": "下一批流星雨峰值",
+  "knowledge.open-the-event-calendar": "打开活动日历 →",
+  "knowledge.peak-dates-are-accurate-only": "峰值日只对 2026 年精确（峰值由太阳黄经决定，换年会差一天上下）；ZHR 是近年观测的典型值，「可变」表示历史上偶有爆发。数据来源：International Meteor Organization（IMO）– www.imo.net。",
+  "knowledge.peak-in-days": "峰值 {}（{} 天后）",
+  "knowledge.peak-today": "峰值今天（{}）",
+  "knowledge.the-shower-timetable-on": "全部流星雨的峰值日期、辐射点与 ZHR 见活动日历里的「流星雨时刻表」，按距离下次峰值的天数排列；正在活动的场次会标出来。",
+  "knowledge.zhr-value": "ZHR {}",
+  "knowledge.zhr-variable": "ZHR 可变",
+  "knowledge.peak-passed": "峰值已过（{}）",
+  "knowledge.no-meteor-showers-in-window": "未来 {} 天内没有流星雨到达峰值，当前也没有正在活动的流星雨。"
 }

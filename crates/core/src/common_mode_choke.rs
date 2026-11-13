@@ -596,7 +596,8 @@ mod tests {
   /// 低频端的 µ' 要和磁环库里登记的 µi 对得上：数据表与 `toroid::CORES` 是两处独立录入。
   #[test]
   fn low_frequency_permeability_agrees_with_the_core_library() {
-    for c in CORES {
+    // 只查铁氧体：粉芯没有表（见 `every_ferrite_core_in_the_library_has_a_material_table`）。
+    for c in CORES.iter().filter(|c| !c.is_powder()) {
       let mat = m(c.material);
       let (f_lo, _) = mat.range_hz();
       let (mu_re, _) = mat.complex_mu(f_lo).unwrap();
@@ -774,10 +775,22 @@ mod tests {
     assert!(no_loop.iter().all(|r| r.z.is_some() && r.loss_db.is_none()));
   }
 
-  /// 每个收录的磁环都能查到材料表：新增磁环忘了配材料表会在这里红。
+  /// 每个**铁氧体**磁环都能查到材料表。
+  ///
+  /// 粉芯（Micrometals 的 `-2` / `-6`）本来就没有复磁导率表：它们的复磁导率随磁通与温度变化很大，
+  /// 厂商没有像 Fair-Rite 那样给出可程序化读取的 CSV，所以不进共模扼流圈的下拉
+  /// （页面按 `material().is_some()` 过滤）。这里只要求铁氧体齐全。
   #[test]
-  fn every_core_in_the_library_has_a_material_table() {
+  fn every_ferrite_core_in_the_library_has_a_material_table() {
     for c in CORES {
+      if c.is_powder() {
+        assert!(
+          material(c.material).is_none(),
+          "{} 是粉芯，不该有复磁导率表",
+          c.part
+        );
+        continue;
+      }
       assert!(
         material(c.material).is_some(),
         "{} 的材料 {} 没有复磁导率表",

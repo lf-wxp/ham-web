@@ -433,6 +433,51 @@ test("小工具：台站链路预算的外部噪声来源按 P.372 曲线给出 
   await expect(table).toHaveCount(1);
 });
 
+test("小工具：台站链路预算可选大气噪声（P.372），随月份与当地时间变化", async ({ page }) => {
+  await page.goto("/tools#station-link");
+  const section = tool(page, "station-link");
+  await expect(section).toBeVisible();
+  const pick = async (name: RegExp) => {
+    await section.getByRole("combobox", { name: "外部噪声来源" }).click();
+    await page.getByRole("option", { name }).click();
+  };
+  // 7 月 40°N 116°E、UTC 12（当地约 19:44，傍晚雷电最旺）、20 m。
+  // 参照值由官方 P372 程序给出（`crates/core/reference/p372_check.py`）：Fa = 46.30 dB。
+  // 大气噪声只定义到 30 MHz（原文的适用频段），默认的 145.5 MHz 会落到「输入无效」。
+  await section.getByLabel("频率（MHz）").fill("7");
+  await pick(/^大气噪声/);
+  const month = section.getByLabel("月份（1–12）");
+  const hour = section.getByLabel("UTC 小时（0–23）");
+  await expect(month).toHaveValue("7");
+  await expect(hour).toHaveValue("12");
+  await expect(section.getByLabel("纬度（°，北正）")).toHaveValue("40");
+  await expect(section.getByLabel("经度（°，东正）")).toHaveValue("116");
+  // 手填的 Fa 栏在大气噪声这一项下不显示。
+  await expect(section.getByLabel("外部噪声 Fa（dB）")).toHaveCount(0);
+  await expect(section.getByRole("table", { name: "各环节单独做到理想后的回收潜力" })).toHaveCount(1);
+  // Fa = 46.30 dB 走进整条链路：其余输入是页面默认（5 W、两端 10 m RG-213、增益各 3 dBi、附加损耗 1 dB、
+  // NF 2 dB、带宽 12.5 kHz、所需 SNR 12 dB、距离 200 km），7 MHz 下 RG-213 10 m 损耗 0.2121 dB。
+  // 期望值由 Python 独立算（噪声 = -174 + 10lg B + 10lg(Fa + Lr·F_rx - 1)；信号取天线端子处，不扣接收馈线）：
+  // 噪声 -86.73 dBm、SNR 33.13 dB、余量 21.13 dB。把大气噪声接成别的值（或根本没接进去）都过不了这三个数。
+  await expect(section.getByText(/折算到天线端子的噪声 -86\.73 dBm/)).toBeVisible();
+  await expect(section.getByText("余量 21.13 dB：到达 SNR 33.13 dB，所需 SNR 为 12.00 dB")).toBeVisible();
+
+  // 当地时间变化：UTC 18（当地约 01:44）Fa = 43.72 dB，比傍晚弱 2.6 dB：噪声 -89.31 dBm、余量 23.72 dB。
+  await hour.fill("18");
+  await expect(section.getByText(/折算到天线端子的噪声 -89\.31 dBm/)).toBeVisible();
+  await expect(section.getByText("余量 23.72 dB：到达 SNR 35.72 dB，所需 SNR 为 12.00 dB")).toBeVisible();
+
+  // 越界输入（13 月）给出提示、不出表。重新进页面：工具页的计算器是分批挂载的，
+  // 同一页里前面的输入步骤会让「工具目录」重新定位、section 被卸载重挂，旧 locator 会失效。
+  await page.goto("/tools#station-link");
+  await section.getByLabel("频率（MHz）").fill("7");
+  await section.getByRole("combobox", { name: "外部噪声来源" }).click();
+  await page.getByRole("option", { name: /^大气噪声/ }).click();
+  await section.getByLabel("月份（1–12）").fill("13");
+  await expect(section.getByText(/^请输入有效的数值（频率、距离、功率/)).toBeVisible();
+  await expect(section.getByRole("table", { name: "各环节单独做到理想后的回收潜力" })).toHaveCount(0);
+});
+
 test("小工具：磁环小环天线估算电感 / 效率 / Q / 调谐电容", async ({ page }) => {
   await page.goto("/tools#magnetic-loop");
   const section = tool(page, "magnetic-loop");
@@ -804,4 +849,110 @@ test("小工具：抛物面天线用实测凹陷深度反推焦距", async ({ pa
 
   await depth.fill("0");
   await expect(section.getByText(/请输入大于 0 的口径与深度/)).toBeVisible();
+});
+
+test("小工具：地波场强按 P.368 给出场强与传输损耗，数值与 NTIA 官方程序一致", async ({ page }) => {
+  await page.goto("/tools#ground-wave");
+  const section = tool(page, "ground-wave");
+  await expect(section).toBeVisible();
+  const table = section.getByRole("table", { name: "地波场强随距离" });
+  const pick = async (label: string, name: RegExp) => {
+    await section.getByRole("combobox", { name: label }).click();
+    await page.getByRole("option", { name }).click();
+  };
+
+  // 期望值全部来自 NTIA 随 P.368-10 发布的 LFMF 源码（clang 编成命令行程序后喂同一批输入）：
+  // 默认 1 MHz、100 km、中等干燥地（εr 15、σ 1 mS/m）、垂直极化、天线贴地、1 kW、Ns 315。
+  await expect(section.getByText("场强 29.39 dB(µV/m)；基本传输损耗 112.60 dB；接收功率 -43.04 dBm（4.77 dBi 参考天线）")).toBeVisible();
+  await expect(section.getByText("解法：残留级数（绕射区）")).toBeVisible();
+  await expect(section.getByText("地面常数：εr = 15，σ = 0.001 S/m")).toBeVisible();
+  // 1 MHz 的分界在 80·f^(−1/3) = 80 km：50 km 走平地近似，100 km 起走残留级数。
+  await expect(table.getByRole("row", { name: /^1 104\.89 37\.09 平地近似/ })).toBeVisible();
+  await expect(table.getByRole("row", { name: /^50 42\.73 99\.26 平地近似/ })).toBeVisible();
+  await expect(table.getByRole("row", { name: /^100 29\.39 112\.60 残留级数/ })).toBeVisible();
+  await expect(table.getByRole("row", { name: /^1000 -63\.13 205\.11 残留级数/ })).toBeVisible();
+
+  // 100 km 的 29.39 dB(µV/m) 是能收到的信号：不出「低于噪声底」提示；拉到 1000 km（-63.13）才出。
+  const floorNote = section.getByText(/^场强低于 -40 dB\(µV\/m\)，已远在任何实际噪声底之下/);
+  await expect(floorNote).toHaveCount(0);
+  await section.getByLabel("距离（km）").fill("1000");
+  await expect(section.getByText(/^场强 -63\.13 dB\(µV\/m\)/)).toBeVisible();
+  await expect(floorNote).toBeVisible();
+  await section.getByLabel("距离（km）").fill("100");
+  await expect(floorNote).toHaveCount(0);
+
+  // 水平极化衰减快得多：同一条 100 km 路径只剩 −26.04 dB(µV/m)。
+  await pick("极化", /^水平/);
+  await expect(section.getByText(/^场强 -26\.04 dB\(µV\/m\)；基本传输损耗 168\.03 dB/)).toBeVisible();
+  await pick("极化", /^垂直/);
+
+  // 海水（平均盐度，εr 70、σ 5 S/m）在 7 MHz、500 km：25.15 dB(µV/m)。
+  await pick("地面类型", /^海水（平均盐度）/);
+  await section.getByLabel("频率（MHz）").fill("7");
+  await section.getByLabel("距离（km）").fill("500");
+  await expect(section.getByText(/^场强 25\.15 dB\(µV\/m\)；基本传输损耗 133\.74 dB/)).toBeVisible();
+  await expect(section.getByText("地面常数：εr = 70，σ = 5 S/m")).toBeVisible();
+  // 预设时没有 εr / σ 输入框，免得出现一个填了不生效的栏。
+  await expect(section.getByLabel("相对介电常数 εr")).toHaveCount(0);
+
+  // 自己填 εr / σ：30 与 0.01（湿地）、两端天线抬高、100 W、14 MHz、30 km。
+  await pick("地面类型", /^自己填/);
+  await expect(section.getByLabel("相对介电常数 εr")).toHaveValue("70");
+  await section.getByLabel("相对介电常数 εr").fill("30");
+  await section.getByLabel("电导率 σ（S/m）").fill("0.01");
+  await section.getByLabel("频率（MHz）").fill("14");
+  await section.getByLabel("距离（km）").fill("30");
+  await section.getByLabel("发射天线高度（m）").fill("10");
+  await section.getByLabel("接收天线高度（m）").fill("20");
+  await section.getByLabel("发射功率（W）").fill("100");
+  await expect(section.getByText(/^场强 22\.94 dB\(µV\/m\)；基本传输损耗 131\.96 dB/)).toBeVisible();
+  await expect(section.getByText("解法：平地近似 + 曲率修正")).toBeVisible();
+
+  // 距离越界：给出范围提示、不出主结果；其余输入合法时距离表仍在（表不依赖这一项）。
+  await section.getByLabel("距离（km）").fill("20000");
+  await expect(section.getByText(/^输入无效：频率 0\.01–30 MHz/)).toBeVisible();
+  await expect(table).toHaveCount(1);
+  // 电导率为 0：整张表都不成立，表一并消失。
+  await section.getByLabel("电导率 σ（S/m）").fill("0");
+  await expect(table).toHaveCount(0);
+});
+
+test("小工具：外部噪声按业余波段列出大气 / 人为 / 银河与合成，数值与 P.372 官方程序一致", async ({ page }) => {
+  await page.goto("/tools#external-noise");
+  const section = tool(page, "external-noise");
+  await expect(section).toBeVisible();
+  const table = section.getByRole("table", { name: "按业余波段的外部噪声" });
+  const row = (re: RegExp) => table.getByRole("row", { name: re });
+  const pick = async (name: RegExp) => {
+    await section.getByRole("combobox", { name: "外部噪声来源" }).click();
+    await page.getByRole("option", { name }).click();
+  };
+
+  // 期望值来自 ITU-R SG3 的官方 P372 程序（编成命令行后逐行喂同样的输入；官方的月份是 0 起的）：
+  // 默认「住宅、7 月、UTC 12 时、北纬 40° 东经 116°」。人为 / 银河两列由公式另算：
+  // 住宅 72.5 − 27.7·lg f，银河 52 − 23·lg f。
+  await expect(table.getByRole("row")).toHaveCount(12); // 表头 + 11 个频率
+  await expect(row(/^0\.475 78\.0 81\.5 59\.4 81\.0 \+11\.4 \/ −10\.5 人为/)).toBeVisible();
+  await expect(row(/^7\.1 46\.1 48\.9 32\.4 50\.5 \+10\.1 \/ −4\.6 人为/)).toBeVisible();
+  await expect(row(/^28\.5 -6\.7 32\.2 18\.5 32\.3 \+10\.6 \/ −5\.2 人为/)).toBeVisible();
+
+  // 安静乡村：7.1 MHz 大气噪声（46.1）盖过人为（29.3），28.5 MHz 则掉到银河（18.5）之下。
+  await pick(/^安静乡村/);
+  await expect(row(/^7\.1 46\.1 29\.3 32\.4 46\.4 \+7\.0 \/ −6\.5 大气/)).toBeVisible();
+  await expect(row(/^28\.5 -6\.7 12\.0 18\.5 18\.5 \+6\.5 \/ −2\.0 银河/)).toBeVisible();
+
+  // 1 月 UTC 0 时：3.65 MHz 上银河（39.1）略高于大气（38.0），到 5.36 MHz 又翻回大气 —— 主导来源会换手。
+  await section.getByLabel("月份（1–12）").fill("1");
+  await section.getByLabel("UTC 小时（0–23）").fill("0");
+  await expect(row(/^3\.65 38\.0 37\.5 39\.1 43\.2 \+7\.5 \/ −5\.3 银河/)).toBeVisible();
+  await expect(row(/^5\.36 35\.9 32\.7 35\.2 39\.7 \+7\.3 \/ −5\.7 大气/)).toBeVisible();
+
+  // 月份必须是 1–12 的整数：7.5 不能悄悄截成 7，13 也不行；都给提示、不出表。
+  await section.getByLabel("月份（1–12）").fill("7.5");
+  await expect(section.getByText(/^输入无效：月份为 1–12 的整数/)).toBeVisible();
+  await expect(table).toHaveCount(0);
+  await section.getByLabel("月份（1–12）").fill("13");
+  await expect(section.getByText(/^输入无效：月份为 1–12 的整数/)).toBeVisible();
+  await section.getByLabel("月份（1–12）").fill("1");
+  await expect(table).toHaveCount(1);
 });

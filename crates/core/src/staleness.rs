@@ -72,6 +72,26 @@ pub fn curated() -> Vec<Curated> {
     checked_on: noise_model::CHECKED_ON,
   });
   out.push(Curated {
+    key: "atmospheric-noise",
+    source: "ITU-R P.372 第 5 部分的系数表（ITU-R SG3 的 `ITU-R-HF` 仓库 `COEFFxxW.txt`）",
+    checked_on: crate::atmospheric_noise::CHECKED_ON,
+  });
+  out.push(Curated {
+    key: "ground-wave",
+    source: "ITU-R P.368-10 的地面常数（图 1–9，列表见 ITU-R HDB-59 表 2）与随附 NTIA LFMF 源码的适用范围",
+    checked_on: crate::ground_wave::CHECKED_ON,
+  });
+  out.push(Curated {
+    key: "meteor-showers",
+    source: "IMO《Meteor Shower Calendar 2026》表 5（Working List of Visual Meteor Showers）",
+    checked_on: crate::meteor_showers::CHECKED_ON,
+  });
+  out.push(Curated {
+    key: "toroid-powder",
+    source: "Micrometals 铁粉芯的 AL / Ae / Ie / 尺寸（官方 product finder 与 RF 目录的公差表）",
+    checked_on: crate::toroid::POWDER_CHECKED_ON,
+  });
+  out.push(Curated {
     key: "diy-cost",
     source: "DIY 项目成本档位（市场价，只给档位不给售价）",
     checked_on: diy_projects::COST_CHECKED_ON,
@@ -222,6 +242,13 @@ mod tests {
       common_mode_choke::oldest_fetched().expect("复磁导率取回日期")
     );
     assert_eq!(find("noise-model"), noise_model::CHECKED_ON);
+    assert_eq!(
+      find("atmospheric-noise"),
+      crate::atmospheric_noise::CHECKED_ON
+    );
+    assert_eq!(find("ground-wave"), crate::ground_wave::CHECKED_ON);
+    assert_eq!(find("meteor-showers"), crate::meteor_showers::CHECKED_ON);
+    assert_eq!(find("toroid-powder"), crate::toroid::POWDER_CHECKED_ON);
     assert_eq!(find("diy-cost"), diy_projects::COST_CHECKED_ON);
   }
 }

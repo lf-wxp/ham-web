@@ -533,5 +533,19 @@
   "knowledge.power-and-dbm-table": "Power and dBm table (with licence power limits)",
   "knowledge.unit-prefixes-and-magnitudes": "Unit prefixes and magnitudes",
   "knowledge.conversion": "Conversion",
-  "knowledge.multiplier": "Multiplier"
+  "knowledge.multiplier": "Multiplier",
+  "knowledge.active-now": "Active now",
+  "knowledge.imo-source": "Data: IMO Meteor Shower Calendar 2026",
+  "knowledge.meteor-showers-title": "Meteor shower timetable",
+  "knowledge.month-day": "{}/{}",
+  "knowledge.next-meteor-shower-peaks": "Upcoming meteor shower peaks",
+  "knowledge.open-the-event-calendar": "Open the event calendar →",
+  "knowledge.peak-dates-are-accurate-only": "Peak dates are exact for 2026 only (the peak follows the solar longitude, so it shifts by about a day from year to year); ZHR is a typical value from recent returns, and \"variable\" means the shower has produced outbursts in the past. Source: International Meteor Organization (IMO) – www.imo.net.",
+  "knowledge.peak-in-days": "Peaks {} (in {} days)",
+  "knowledge.peak-today": "Peaks today ({})",
+  "knowledge.the-shower-timetable-on": "Peak dates, radiants and ZHRs for every shower are in the meteor shower timetable on the event calendar, sorted by days to the next peak; showers that are active now are marked.",
+  "knowledge.zhr-value": "ZHR {}",
+  "knowledge.zhr-variable": "ZHR variable",
+  "knowledge.peak-passed": "Peak passed ({})",
+  "knowledge.no-meteor-showers-in-window": "No meteor showers are active, and none peaks in the next {} days."
 }

@@ -27,6 +27,7 @@ use super::distance_bearing::DistanceBearing;
 use super::doppler_calculator::DopplerCalculator;
 use super::duty_power::DutyPower;
 use super::eirp_calculator::EirpCalculator;
+use super::external_noise::ExternalNoise;
 use super::feedline_loss::FeedlineLoss;
 use super::filter_design::FilterDesign;
 use super::freq_wavelength::FreqWavelength;
@@ -34,6 +35,7 @@ use super::frequency_units::FrequencyUnits;
 use super::fresnel_zone::FresnelZone;
 use super::fspl_calculator::FsplCalculator;
 use super::gain_conversion::GainConversion;
+use super::ground_wave::GroundWave;
 use super::intermod_calculator::IntermodCalculator;
 use super::ip3_cascade::Ip3Cascade;
 use super::lc_resonance::LcResonance;
@@ -115,6 +117,8 @@ const TOOL_NAV: &[(&str, &str)] = &[
   ("eirp", "tools.eirp-effective-radiated-power"),
   ("link-budget", "tools.link-budget"),
   ("station-link", "tools.station-link"),
+  ("external-noise", "tools.external-noise"),
+  ("ground-wave", "tools.ground-wave"),
   ("lora", "tools.lora"),
   ("radiogram", "tools.radiogram"),
   ("receiver-sensitivity", "tools.receiver-sensitivity-toc"),
@@ -319,6 +323,10 @@ pub fn ToolsPage() -> impl IntoView {
             <ToolSection id="link-budget" title="tools.link-budget" description="tools.eirp-path-loss-receive"><LinkBudgetCalculator /></ToolSection>
 
             <ToolSection id="station-link" title="tools.station-link" description="tools.station-link-description"><StationLink /></ToolSection>
+
+            <ToolSection id="external-noise" title="tools.external-noise" description="tools.external-noise-description"><ExternalNoise /></ToolSection>
+
+            <ToolSection id="ground-wave" title="tools.ground-wave" description="tools.ground-wave-description"><GroundWave /></ToolSection>
 
             <ToolSection id="lora" title="tools.lora" description="tools.lora-description"><LoraCalculator /></ToolSection>
 
