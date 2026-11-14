@@ -111,6 +111,7 @@
   "shell.logging-software": "Software de registro",
   "shell.main-navigation": "Navegación principal",
   "shell.maps-satellites": "Mapas · Satélites",
+  "shell.match-strength": "Coincidencia {} de {}",
   "shell.matching-feedlines": "Adaptación y líneas",
   "shell.microwave": "Microondas",
   "shell.mistakes": "Errores",
@@ -251,5 +252,15 @@
   "shell.view-usage-and-back": "Ver uso y hacer copia",
   "shell.weather-satellites": "Satélites meteorológicos",
   "shell.weekly-report": "Informe semanal",
-  "shell.wspr": "WSPR"
+  "shell.wspr": "WSPR",
+  "shell.no-signal": "Sin señal",
+  "shell.band-exam": "EXAM",
+  "shell.band-knowledge": "KNOWLEDGE",
+  "shell.band-tools": "TOOLS",
+  "shell.hud-streak-short": "{}D",
+  "shell.scan-title": "Escaneo · Búsqueda en el sitio",
+  "shell.scan-code-idle": "STBY",
+  "shell.scan-code-busy": "SCAN",
+  "shell.scan-unit": "RES",
+  "shell.scan-site": "Escanear el sitio"
 }

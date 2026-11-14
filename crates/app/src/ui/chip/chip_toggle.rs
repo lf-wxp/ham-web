@@ -5,6 +5,7 @@ use leptos::prelude::*;
 use crate::cn::cn;
 
 use super::super::control::TextValue;
+use super::chip_lamp::ChipLamp;
 use super::shared::chip_base;
 
 /// 单个 chip 开关（筛选条上的「只看需要的」「提醒」这类独立开关）。
@@ -41,6 +42,7 @@ pub fn ChipToggle(
         }
       }
     >
+      <ChipLamp on=active />
       {children()}
     </button>
   }

@@ -11,6 +11,7 @@ use crate::ui::{
 
 use super::boss_verdict::BossVerdict;
 use super::category_compare::CategoryCompare;
+use super::share_call_toggle::ShareCallToggle;
 use crate::i18n::{t, tf, tp};
 
 #[component]
@@ -24,9 +25,11 @@ pub fn ExamResultDialog(
   #[prop(into)] wrong_href: Signal<String>,
   #[prop(into)] bank: Signal<Bank>,
 ) -> impl IntoView {
+  // 分享图上是否印呼号：默认不印，弹窗每次重开都回到不印（隐私选项不记住「同意」）。
+  let show_call = RwSignal::new(false);
   let card = move || {
     let (s, b, pl) = (score.get(), bank.get(), pass_line.get());
-    share_score::render_score_card(b, s, pl).ok()
+    share_score::render_score_card(b, s, pl, show_call.get_untracked()).ok()
   };
   let share = move |_| {
     if let Some(data_url) = card() {
@@ -80,6 +83,11 @@ pub fn ExamResultDialog(
     }
     .into_any();
   }
+  Effect::new(move |_| {
+    if open.get() {
+      show_call.set(false);
+    }
+  });
   view! {
     <Dialog open=open>
       <DialogHeader>
@@ -89,7 +97,7 @@ pub fn ExamResultDialog(
       // 内容超过 60svh 时这里会滚动：滚动区必须能被键盘聚焦（`tabindex=0`），否则没有鼠标的用户
         // 滚不动它（axe 的 `scrollable-region-focusable`）。Boss 判词加进来之后这个区域才开始溢出。
         <div class="max-h-[60svh] space-y-2 overflow-y-auto overscroll-contain" tabindex="0">
-        <BossVerdict score=score pass_line=pass_line weak=weak />
+        <BossVerdict score=score pass_line=pass_line weak=weak bank=bank />
         <div>{move || t("exam.score")} {move || score.get().correct} " / " {move || score.get().total}</div>
         <div class="text-sm text-muted-foreground">{move || t("exam.accuracy")} {move || score.get().percent()} "%"</div>
         {move || {
@@ -109,6 +117,7 @@ pub fn ExamResultDialog(
           (!d.is_empty()).then(|| view! { <CategoryCompare deltas=d /> })
         }}
         {move || (open.get() && !weak.get()).then(|| view! { <HistoryChart /> })}
+        <ShareCallToggle show=show_call />
       </div>
       <DialogFooter>
         {move || {

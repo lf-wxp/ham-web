@@ -123,14 +123,6 @@ html[data-ui-style="pixel"] *:not([data-keep-round])::after {
   }
 }
 
-/* 位图 / 精灵要锐利地放大；照片、地图瓦片不能套这个（会变成马赛克），所以不做全局规则。 */
-.pxl-img,
-.pxl-img img,
-canvas.pxl-img {
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-}
-
 /* ---------- 页面背景：抖动底纹 + 暗色星空 ----------
    纯 CSS、零图片：
    - `::before` 是 4px 棋盘格抖动（透明度很低，只给大块纯色一点「颗粒」，不影响文字对比度）；
@@ -201,19 +193,6 @@ body::before {
 
 /* 贴边吸附的卡片底下会有内容滚过：`--card` 现在是实心的，不再需要模糊兜底。 */
 
-/* ---------- 首页装饰 ---------- */
-.hero-grid {
-  position: absolute;
-  z-index: -1;
-  inset: -3.5rem 0 auto;
-  height: 30rem;
-  pointer-events: none;
-  background-image:
-    linear-gradient(to right, var(--pxl-dither) 2px, transparent 2px),
-    linear-gradient(to bottom, var(--pxl-dither) 2px, transparent 2px);
-  background-size: 32px 32px;
-}
-
 .brand-mark {
   background-color: var(--primary);
   border: 2px solid var(--pxl-ink);
@@ -232,39 +211,30 @@ body::before {
   );
 }
 
-/* 频谱条（SDR 瀑布图意象）：硬边色块横向跳帧滚动。 */
-.spectrum-bar {
-  position: relative;
-  overflow: hidden;
-  background-image: repeating-linear-gradient(
-    90deg,
-    var(--chart-1) 0 8px,
-    var(--chart-3) 8px 16px,
-    var(--chart-2) 16px 24px,
-    var(--chart-4) 24px 32px
-  );
-  background-size: 128px 100%;
-  animation: pxl-scroll-x 1.6s steps(16, end) infinite;
-}
-
-/* 瀑布图底部刻度线 */
-.spectrum-ticks {
-  background-image: repeating-linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--foreground) 40%, transparent) 0 2px,
-    transparent 2px 12.5%
-  );
-}
-
-/* ---------- 基础组件：滑块（原生 range 的跨浏览器自绘） ----------
+/* ---------- 基础组件：滑块 = 调谐推子（原生 range 的跨浏览器自绘） ----------
    轨道与滑块的伪元素 Tailwind 无法逐帧覆盖，统一收在这里。进度由组件以内联
-   `--slider-fill` 百分比传入，CSS 只做一次硬停靠的 linear-gradient，无需 JS 参与。
+   `--slider-fill` 百分比传入（像素风已按 24 格取整），CSS 只做硬停靠的 linear-gradient。
    伪元素不继承 `box-sizing: border-box`，所以尺寸按 content-box 算：
-   轨道内容高 8px + 上下各 2px 描边 = 12px；滑块 20px 高，负 margin 让它垂直居中。 */
+   轨道内容高 12px + 上下各 2px 描边 = 16px；滑块 24px + 描边 = 28px，负 margin 让它垂直居中。
+   上方的刻度行是组件外层的 `.pxl-slider-ticks`（`ui::Slider` 的像素分支，样式在 controls.css 的组件层：
+   外层要让调用方传的 `w-32` 这类宽度类生效，不能写在层外）。 */
 .ui-slider {
+  /* 24 格电平条：亮的格是主色，格间 2px 缝露出槽底。 */
+  --slider-cells: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(100% / 24 - 2px),
+    var(--pxl-field) calc(100% / 24 - 2px) calc(100% / 24)
+  );
+  --slider-track: linear-gradient(
+    to right,
+    var(--primary) var(--slider-fill, 0%),
+    var(--pxl-field) var(--slider-fill, 0%)
+  );
+  /* 滑块中线的发射红指针：读数落在哪一格，看指针而不是看滑块的边。 */
+  --slider-needle: linear-gradient(90deg, transparent 0 3px, var(--led-tx) 3px 5px, transparent 5px);
   appearance: none;
   width: 100%;
-  height: 1.5rem;
+  height: 1.75rem;
   background: transparent;
   cursor: pointer;
   outline: none;
@@ -278,58 +248,45 @@ body::before {
 }
 
 .ui-slider::-webkit-slider-runnable-track {
-  height: 0.5rem;
+  height: 12px;
   border: 2px solid var(--pxl-ink);
-  background: linear-gradient(
-    to right,
-    var(--primary) var(--slider-fill, 0%),
-    var(--pxl-field) var(--slider-fill, 0%)
-  );
+  background: var(--slider-cells), var(--slider-track);
   box-shadow: inset 0 2px 0 0 var(--pxl-lo);
 }
 
 .ui-slider::-webkit-slider-thumb {
   appearance: none;
-  width: 0.75rem;
-  height: 1.25rem;
-  margin-top: -0.5rem;
+  width: 8px;
+  height: 24px;
+  margin-top: -8px;
   border: 2px solid var(--pxl-ink);
   border-radius: 0;
-  background: var(--card);
-  box-shadow:
-    inset 2px 2px 0 0 var(--pxl-hi),
-    inset -2px -2px 0 0 var(--pxl-lo);
+  background: var(--slider-needle), var(--card);
 }
 
 .ui-slider::-moz-range-track {
-  height: 0.5rem;
+  box-sizing: border-box;
+  height: 16px;
   border: 2px solid var(--pxl-ink);
-  background: linear-gradient(
-    to right,
-    var(--primary) var(--slider-fill, 0%),
-    var(--pxl-field) var(--slider-fill, 0%)
-  );
+  background: var(--slider-cells), var(--slider-track);
   box-shadow: inset 0 2px 0 0 var(--pxl-lo);
 }
 
 .ui-slider::-moz-range-thumb {
   box-sizing: border-box;
-  width: 1rem;
-  height: 1.5rem;
+  width: 12px;
+  height: 28px;
   border: 2px solid var(--pxl-ink);
   border-radius: 0;
-  background: var(--card);
-  box-shadow:
-    inset 2px 2px 0 0 var(--pxl-hi),
-    inset -2px -2px 0 0 var(--pxl-lo);
+  background: var(--slider-needle), var(--card);
 }
 
 .ui-slider:active::-webkit-slider-thumb {
-  background: var(--accent);
+  background: var(--slider-needle), var(--accent);
 }
 
 .ui-slider:active::-moz-range-thumb {
-  background: var(--accent);
+  background: var(--slider-needle), var(--accent);
 }
 
 .ui-slider:focus-visible::-webkit-slider-thumb {
@@ -537,8 +494,7 @@ html::-webkit-scrollbar {
   }
   /* 背景底纹与星空纯装饰，打印时直接不渲染 */
   body::before,
-  body::after,
-  .hero-grid {
+  body::after {
     display: none !important;
   }
   .print-avoid-break {

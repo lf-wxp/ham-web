@@ -111,6 +111,7 @@
   "shell.logging-software": "Logging Software",
   "shell.main-navigation": "Main navigation",
   "shell.maps-satellites": "Maps · Satellites",
+  "shell.match-strength": "Match strength {} of {}",
   "shell.matching-feedlines": "Matching & Feedlines",
   "shell.microwave": "Microwave",
   "shell.mistakes": "Mistakes",
@@ -251,5 +252,15 @@
   "shell.view-usage-and-back": "View usage and back up",
   "shell.weather-satellites": "Weather Satellites",
   "shell.weekly-report": "Weekly Report",
-  "shell.wspr": "WSPR"
+  "shell.wspr": "WSPR",
+  "shell.no-signal": "No signal",
+  "shell.band-exam": "EXAM",
+  "shell.band-knowledge": "KNOWLEDGE",
+  "shell.band-tools": "TOOLS",
+  "shell.hud-streak-short": "{}D",
+  "shell.scan-title": "Scan · Site search",
+  "shell.scan-code-idle": "STBY",
+  "shell.scan-code-busy": "SCAN",
+  "shell.scan-unit": "HITS",
+  "shell.scan-site": "Scan the site"
 }

@@ -27,7 +27,6 @@
   "home.start-practice": "Empezar práctica",
   "home.quick-start": "Inicio rápido",
   "home.mock-exam-weighted-by": "Examen ponderado por precisión y errores",
-  "home.receiving": "Recibiendo",
   "home.cards-are-due-for": {
     "one": "{} tarjeta pendiente de repaso.",
     "other": "{} tarjetas pendientes de repaso."
@@ -43,10 +42,9 @@
     "one": "{} día seguido · mejor {}",
     "other": "{} días seguidos · mejor {}"
   },
-  "home.choose-a-bank-version": "Elige versión y clase del banco, y empieza práctica o examen simulado",
   "home.question-bank-is-unavailable": "El banco {} no está disponible o está vacío; genera los datos primero.",
   "home.sunspots": "Manchas solares",
-  "home.rpg-entry-legend": "Misión = práctica del banco, Bestiario = tus errores; el simulacro está en «Inicio rápido» abajo",
+  "home.rpg-entry-legend": "Ruta de QSO = práctica por temas, Registro de QRM = tus errores; el simulacro está en «Inicio rápido» abajo",
   "home.propagation-fetch-failed": "No se pudieron obtener las condiciones: reintenta o abre la página solar",
   "home.quick-actions": "Accesos rápidos",
   "home.modules": "Secciones",
@@ -78,5 +76,41 @@
   "home.waterfall-empty": "Aún no hay registro. ¿Empezamos hoy?",
   "home.waterfall-cell": "{} · {} preguntas",
   "home.live-unavailable": "Los datos en vivo no están disponibles",
-  "home.live-updated": "Actualizado {}"
+  "home.live-updated": "Actualizado {}",
+  "home.readiness-signal": "Preparación",
+  "home.readiness-average": {
+    "one": "{} examen reciente, media {}%",
+    "other": "{} exámenes recientes, media {}%"
+  },
+  "home.readiness-none": "Aún no hay simulacros de {}: haz uno para obtener una lectura",
+  "home.s9-pass-line": "S9 = aprobado",
+  "home.knowledge-spectrum": "Espectro de conocimientos",
+  "home.knowledge-spectrum-hint": "Cada barra es una categoría de preguntas; su altura es tu acierto (S9 = aprobado). Toca una barra para practicarla.",
+  "home.spectrum-few": "menos de {} respuestas, aún sin lectura",
+  "home.log-strip-title": "Registro de estación · últimos 28 días",
+  "home.log-strip-total": {
+    "one": "{} pregunta en 28 días",
+    "other": "{} preguntas en 28 días"
+  },
+  "home.log-strip-summary": "Preguntas respondidas por día en los últimos 28 días",
+  "home.main-display": "Pantalla principal",
+  "home.main-code": "MAIN",
+  "home.operator-tag": "OPERATOR · LV {}",
+  "home.s-gap": {
+    "one": "Falta {} barra para el aprobado",
+    "other": "Faltan {} barras para el aprobado"
+  },
+  "home.s-pass": "Por encima del aprobado (S9)",
+  "home.s-none": "Aún sin lectura de preparación",
+  "home.band-bank": "BAND · BANCO",
+  "home.spectrum-code-1": "REG",
+  "home.spectrum-code-2": "FRQ",
+  "home.spectrum-code-3": "OPS",
+  "home.spectrum-code-4": "TRM",
+  "home.spectrum-code-5": "MOD",
+  "home.spectrum-code-6": "EQP",
+  "home.spectrum-code-7": "ANT",
+  "home.spectrum-code-8": "PRP",
+  "home.spectrum-code-9": "BAS",
+  "home.spectrum-code-10": "SAF"
 }

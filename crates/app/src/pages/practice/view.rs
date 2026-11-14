@@ -29,6 +29,7 @@ use crate::util::set_title;
 
 use super::bottom_bar::PracticeBottomBar;
 use super::header_bar::PracticeHeaderBar;
+use super::rig_panel::PracticeRig;
 use super::store::{PracticeStore, load_questions};
 use crate::i18n::{t, tf};
 
@@ -537,6 +538,8 @@ pub fn PracticePage() -> impl IntoView {
     // 首屏不播「翻题上浮」：题卡挂载时就播一次 20px 上浮，看起来像内容自己跳了一下。
     // 记录题号变化，**第一次换题之后**才允许播（那时上浮正是「翻页」的方向感）。
     let settled = RwSignal::new(false);
+    // 当前题的判分（题卡写、像素风读数屏读）：题卡按题重建，挂载时会先写回 `None`。
+    let verdict = RwSignal::new(None::<bool>);
     Effect::new(move |prev: Option<Option<usize>>| {
       let cur = store.current().map(|(i, _)| i);
       if prev.flatten().is_some_and(|p| Some(p) != cur) {
@@ -560,10 +563,12 @@ pub fn PracticePage() -> impl IntoView {
         on:touchstart=swipe_start
         on:touchend=swipe_end
       >
+        // 底部留白 = 底栏实测高度 + 一行余量（口径同考试页，见 `pages/exam/view.rs`）。
+        // 现代风的 `.md-practice` 自己已按同一个变量留过，这里只给像素风，避免叠成两倍。
         <PageContainer class=if crate::kit::is_modern() {
-          "py-6 space-y-4 pb-24 sm:pb-28"
+          "py-6 space-y-4"
         } else {
-          "py-6 space-y-4 pb-24 sm:pb-28 animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal)"
+          "py-6 space-y-4 pb-[calc(var(--fixed-bottom-h,7rem)+1rem)] animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal)"
         }>
         <PracticeHeaderBar
           percent=percent
@@ -589,8 +594,20 @@ pub fn PracticePage() -> impl IntoView {
             .map(|(i, q)| {
               let expl = q.clone();
               view! {
+                // 像素风：题卡上方是两块读数屏（题号 + LOCK / QRM、连对信号），取代下面那行连对文字。
+                {(!crate::kit::is_modern_at_mount()).then(|| {
+                  view! {
+                    <PracticeRig
+                      index=i
+                      total=Signal::derive(move || store.len())
+                      verdict=verdict
+                      streak=store.streak
+                      best=store.best_streak
+                    />
+                  }
+                })}
                 {move || {
-                  (store.streak.get() >= 2).then(|| {
+                  (crate::kit::is_modern_at_mount() && store.streak.get() >= 2).then(|| {
                     view! {
                       <div class="flex items-center gap-1 text-xs text-win-text">
                         <span>{tf("radio.correct-in-a-row", &[&store.streak.get().to_string()])}</span>
@@ -610,6 +627,7 @@ pub fn PracticePage() -> impl IntoView {
                   confirm_multiple=true
                   peeked=store.current_peeked()
                   on_reveal=Callback::new(move |()| store.mark_peeked())
+                  verdict_out=verdict.write_only()
                 />
                 {move || store.show_explanation.get().then(|| view! { <ExplanationCard explanation=expl.explanation.clone() /> })}
                 <NoteEditor question_id=current_id />

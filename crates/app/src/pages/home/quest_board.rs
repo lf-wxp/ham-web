@@ -1,15 +1,19 @@
-//! 基地的「今日任务」：每日挑战 / 复仇到期怪物 / 推进关卡。
+//! 首页「今日值机」面板：每日挑战 / 排查到期干扰 / 推进通联路线，一行一个任务（灯 + 任务 + 进度）。
 
 use ham_web_core::daily_challenge::{DailyResults, current_streak, longest_streak};
 use ham_web_core::rpg::{XP_PER_CHALLENGE, XP_PER_CORRECT};
 use leptos::prelude::*;
 
+use crate::components::common::SectionCard;
 use crate::i18n::{t, tf, tp};
 use crate::rpg::load_stars;
 use crate::study;
 use crate::util::{local_today, now_ms, storage};
 
 use super::quest_row::QuestRow;
+
+/// 通联路线的信号格上限：10 站 × 每站 3 格。
+const MAX_STARS: u32 = 30;
 
 /// 今日任务栏。数据都是同步读本地存档，进入首页时算一次即可。
 #[component]
@@ -50,46 +54,48 @@ pub(super) fn QuestBoard() -> impl IntoView {
     }
   };
 
+  // 右侧进度只写真实数据：每日挑战是今天的「答对 / 总数」，到期干扰是待排查条数，路线是已收集的信号格。
+  let daily_count = move || match daily {
+    Some(r) => format!("{} / {}", r.correct, r.total),
+    None => tf("rpg.reward-xp", &[&XP_PER_CHALLENGE.to_string()]),
+  };
+  let review_count = move || {
+    if due > 0 {
+      tp("rpg.quest-review-count", due, &[&due.to_string()])
+    } else {
+      t("rpg.done-tag")
+    }
+  };
+  let stage_count = move || format!("{stars} / {}", MAX_STARS);
+
   view! {
-    <section class="space-y-3" aria-labelledby="quest-board-title">
-      <div class="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="quest-board-title" class=crate::kit::section_head_class()>{move || t("rpg.quest-board")}</h2>
-        <span class="text-xs text-muted-foreground">
-          {move || tp("rpg.quests-left", left, &[&left.to_string()])}
-        </span>
-      </div>
-      <ul class="grid gap-3 md:grid-cols-3">
+    <SectionCard
+      title=Signal::derive(move || t("rpg.quest-board"))
+      meta=ViewFn::from(move || tp("rpg.quests-left", left, &[&left.to_string()]))
+    >
+      <ul class="px-4 py-1">
         <QuestRow
           href="/daily-challenge"
-          sprite="node_coin"
           title=Signal::derive(move || t("learning.daily-challenge"))
           hint=Signal::derive(daily_hint)
-          reward=Signal::derive(move || tf("rpg.reward-xp", &[&XP_PER_CHALLENGE.to_string()]))
+          count=Signal::derive(daily_count)
           done=daily.is_some()
         />
         <QuestRow
           href="/battle?mode=revenge"
-          sprite="node_heart"
           title=Signal::derive(move || t("rpg.revenge-all"))
-          hint=Signal::derive(move || {
-            if due > 0 {
-              tp("rpg.quest-review-count", due, &[&due.to_string()])
-            } else {
-              t("rpg.quest-review-done")
-            }
-          })
-          reward=Signal::derive(move || tf("rpg.reward-per-answer", &[&XP_PER_CORRECT.to_string()]))
+          hint=Signal::derive(move || tf("rpg.reward-per-answer", &[&XP_PER_CORRECT.to_string()]))
+          count=Signal::derive(review_count)
           done=due == 0
         />
         <QuestRow
           href="/map"
-          sprite="node_flag"
           title=Signal::derive(move || t("rpg.quest-stage"))
           hint=Signal::derive(move || tp("rpg.quest-stage-hint", stars, &[&stars.to_string()]))
-          reward=Signal::derive(move || tf("rpg.reward-per-answer", &[&XP_PER_CORRECT.to_string()]))
+          count=Signal::derive(stage_count)
           done=false
         />
       </ul>
-    </section>
+    </SectionCard>
   }
 }

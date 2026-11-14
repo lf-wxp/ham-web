@@ -5,9 +5,9 @@
 //! 主从两栏：分组常驻侧栏，条目区只渲染当前分组（两列），面板再以
 //! `max-h-[calc(100svh-5rem)]` 兜底 —— 窗口再矮也只是条目区内部滚动。
 //!
-//! 下拉开关保留原生 `<button>` + [`button_class`] 的原因见 `nav_bar.rs` 文件头与
-//! `docs/ui/pixel.md` §10.2：高亮要随当前路由切换 `variant`（`Button` 的 `variant`
-//! 是静态 prop）。`aria-expanded` / `aria-controls` 已经有通道，不再是保留理由。
+//! 下拉开关保留原生 `<button>` 的原因见 `docs/ui/pixel.md` §10.2：它是电台面板上的波段键
+//! （`.pxl-band-key`，不是 `Button` 的任何变体），「当前页面在这个分组里」要随路由动态打
+//! `data-active`，而 `Button` 的类名是静态的。
 
 use leptos::prelude::*;
 use leptos_router::hooks::use_location;
@@ -17,7 +17,7 @@ use ham_web_core::registry;
 use crate::cn::cn;
 use crate::i18n::t;
 use crate::icons::{Icon, IconKind, icon_of};
-use crate::ui::{Button, Size, TextValue, Variant, button_class};
+use crate::ui::{Button, Led, LedState, LedTone, Size, TextValue, Variant};
 
 use super::menu::MenuKind;
 
@@ -64,8 +64,6 @@ pub(crate) fn GroupMenu(
   /// 开关文案。字面量留在调用点：`check-i18n` 按调用点采集，转手进来的 key 会漏统计。
   #[prop(into)]
   label: TextValue,
-  /// 开关图标。
-  icon: IconKind,
   /// 面板水平对齐。
   align: MenuAlign,
   /// 展开状态由导航栏统一持有：同一时刻只允许一个下拉打开。
@@ -111,25 +109,22 @@ pub(crate) fn GroupMenu(
     // 视口。垂直方向因此与「考试中心」共享同一个基准 —— 容器高 h-16，
     // `top-full` 恒为导航下沿。
     <div class="group static">
-      // 刻意的例外，见文件头：下拉开关要切换 `variant` 并输出 `aria-expanded`。
+      // 刻意的例外，见文件头：下拉开关是波段键，当前分组随路由打 `data-active`。
       <button
         type="button"
         data-slot="button"
         aria-expanded=move || is_open().to_string()
         aria-haspopup="true"
         aria-controls=panel_id
-        class=move || {
-          button_class(
-            if menu_active() { Variant::Default } else { Variant::Ghost },
-            Size::Sm,
-            "inline-flex items-center gap-2 whitespace-nowrap",
-          )
-        }
+        // 波段键：当前页面在这个分组里 = 按进去 + 顶部灯条 + 灯亮（`radio.css` 的 `.pxl-band-key`）。
+        class="pxl-band-key"
+        data-active=move || menu_active().then_some("")
         on:click=move |_| {
           open_menu.update(|m| *m = if *m == Some(kind) { None } else { Some(kind) });
         }
       >
-        <Icon kind=icon class="size-6" />
+        // 波段键的指示灯：亮 = 当前页面在这个分组里（不只靠按钮底色区分）。
+        <Led tone=LedTone::Rx state=Signal::derive(move || LedState::lit(menu_active())) small=true />
         {move || label.get()}
         <Icon
           kind=IconKind::ChevronDown

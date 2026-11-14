@@ -1,9 +1,11 @@
-//! 地图顶部的「下一个任务」：推荐接下来该打哪一关。
+//! 通联路线顶部的「下一站」：推荐接下来该通联哪一站（像素风画成那一站的干扰频谱）。
 
 use ham_web_core::Bank;
+use ham_web_core::rig_panel::qrm_kind;
 use ham_web_core::rpg::Stage;
 use leptos::prelude::*;
 
+use crate::components::radio::{QrmSignature, qrm_name};
 use crate::i18n::{t, tp};
 use crate::icons::PixelSprite;
 use crate::pages::bank_href;
@@ -56,7 +58,11 @@ pub(super) fn NextQuest(
       }
       view! {
         <section class="pxl-window flex flex-wrap items-center gap-4 p-4" aria-labelledby="next-quest-title">
-          <PixelSprite name=monster_sprite(stage.key) scale=6 class="pxl-bob" />
+          // 这一站的干扰信号（每个分类一种真实干扰现象）；名字写在屏幕下沿，颜色不是唯一通道。
+          <div class="pxl-display flex shrink-0 flex-col items-center gap-1 p-2">
+            <QrmSignature kind=qrm_kind(stage.key) animate=true />
+            <span class="pxl-d-dim text-xs">{move || qrm_name(qrm_kind(stage.key))}</span>
+          </div>
           // `basis-56`（14rem）而不是 `flex-1`（`basis: 0%`）：这一行里有 `flex-shrink: 0`
           // 的精灵与两个 `Size::Lg` 按钮，`flex-1` 的文字块可以被压到 0 宽 —— 不会触发
           // `flex-wrap`（flex 认为放得下），中文于是逐字竖排成一列（390px 下实测 1 字宽）。

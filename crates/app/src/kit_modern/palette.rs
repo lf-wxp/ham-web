@@ -66,9 +66,16 @@ fn group_rank(group: Option<&str>) -> usize {
   usize::MAX
 }
 
+/// 改过名的页面：曾用名（原文或当前语言的译文）也算命中，老用户输入旧名还能找到。
+fn former_matches(href: &str, q: &str) -> bool {
+  registry::former_title(href).is_some_and(|old| {
+    old.to_lowercase().contains(q) || core_text_tracked(old).to_lowercase().contains(q)
+  })
+}
+
 /// 游戏化页面的**白话别名**（见 `docs/ui/modern.md` §4.4）。
 ///
-/// `/map`（闯关地图）与 `/bestiary`（怪物图鉴）用的是世界观语言：对老用户是好记的，
+/// `/map`（通联路线）与 `/bestiary`（干扰图鉴）用的是世界观语言：对老用户是好记的，
 /// 对「想找错题复习」的人则完全不可检索 —— 调谐台是全站唯一的「按概念找页面」入口，
 /// 这里补一个功能名，显示在标题后面，并参与输入过滤。
 fn page_alias(href: &str) -> Option<&'static str> {
@@ -79,7 +86,7 @@ fn page_alias(href: &str) -> Option<&'static str> {
   }
 }
 
-/// 关键词查询的匹配质量分档：0 标题命中（中文原文或当前界面语言的译文）→ 1 白话别名命中 →
+/// 关键词查询的匹配质量分档：0 标题命中（中文原文或当前界面语言的译文）→ 1 白话别名 / 曾用名命中 →
 /// 2 路由命中 → 3 其余。
 ///
 /// 译文也算「标题命中」：英文 / 西语界面里用户看到并输入的就是译文，若只比中文原文，
@@ -90,7 +97,9 @@ fn page_alias(href: &str) -> Option<&'static str> {
 fn match_rank(ch: &Channel, q: &str) -> usize {
   if ch.title.to_lowercase().contains(q) || core_text_tracked(ch.title).to_lowercase().contains(q) {
     0
-  } else if page_alias(ch.href).is_some_and(|k| t(k).to_lowercase().contains(q)) {
+  } else if page_alias(ch.href).is_some_and(|k| t(k).to_lowercase().contains(q))
+    || former_matches(ch.href, q)
+  {
     1
   } else if ch.href.contains(q) {
     2
@@ -223,8 +232,9 @@ pub fn ModernPalette(open: RwSignal<bool>) -> impl IntoView {
             || c.href.contains(&q)
             || c.title.to_lowercase().contains(&q)
             || core_text_tracked(c.title).to_lowercase().contains(&q)
-            // 别名也要能搜到：用户想找「错题复习」，不会知道那页叫「怪物图鉴」。
+            // 别名也要能搜到：用户想找「错题复习」，不会知道那页叫「干扰图鉴」。
             || page_alias(c.href).is_some_and(|k| t(k).to_lowercase().contains(&q))
+            || former_matches(c.href, &q)
         })
         .copied()
         .collect::<Vec<_>>();

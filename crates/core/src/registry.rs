@@ -178,16 +178,16 @@ pub const MODULES: &[Module] = &[
   Module {
     path: "/map",
     href: None,
-    title: "闯关地图",
+    title: "通联路线",
     icon: "map",
     group: Some(GROUP_EXAM_RPG),
     backend: false,
   },
-  // 回合战只能带着 `?stage=` / `?mode=revenge` 进入（由地图与图鉴发起），不进导航与 sitemap。
+  // 抗干扰只能带着 `?stage=` / `?mode=revenge` 进入（由路线与图鉴发起），不进导航与 sitemap。
   Module {
     path: "/battle",
     href: None,
-    title: "回合战",
+    title: "抗干扰",
     icon: "star",
     group: None,
     backend: false,
@@ -195,7 +195,7 @@ pub const MODULES: &[Module] = &[
   Module {
     path: "/bestiary",
     href: None,
-    title: "怪物图鉴",
+    title: "干扰图鉴",
     icon: "book-marked",
     group: Some(GROUP_EXAM_RPG),
     backend: false,
@@ -1675,6 +1675,25 @@ pub fn by_path(path: &str) -> Option<&'static Module> {
   MODULES.iter().find(|m| m.path == path)
 }
 
+/// 改过名的页面的**曾用名**（路径 → 旧标题）：站内搜索与调谐台照旧认它们，老用户输入旧名还能找到。
+///
+/// 旧标题也是中文原文 + 知识库译文的 key，留在这里它们的译文就仍然有人用、不会被判成死条目。
+/// 2026-11 像素风叙事从 RPG 换成电台语言时改了这三个（`docs/ui/decisions.md` §11.6）。
+pub const FORMER_TITLES: &[(&str, &str)] = &[
+  ("/map", "闯关地图"),
+  ("/battle", "回合战"),
+  ("/bestiary", "怪物图鉴"),
+];
+
+/// 某个路径的曾用名。
+#[must_use]
+pub fn former_title(path: &str) -> Option<&'static str> {
+  FORMER_TITLES
+    .iter()
+    .find(|(p, _)| *p == path)
+    .map(|(_, title)| *title)
+}
+
 /// 某个分组下的模块，保持注册顺序。
 #[must_use]
 pub fn in_group(group: &str) -> Vec<&'static Module> {
@@ -1737,6 +1756,20 @@ pub fn sitemap_entries() -> Vec<(&'static str, &'static str, &'static str)> {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn former_titles_point_at_live_pages_and_differ_from_the_current_title() {
+    for (path, old) in FORMER_TITLES {
+      let m = by_path(path).unwrap_or_else(|| panic!("曾用名指向不存在的路径 {path}"));
+      assert_ne!(m.title, *old, "{path} 的曾用名与现标题相同");
+      assert!(
+        MODULES.iter().all(|m| m.title != *old),
+        "曾用名「{old}」又被别的页面用作标题"
+      );
+    }
+    assert_eq!(former_title("/bestiary"), Some("怪物图鉴"));
+    assert_eq!(former_title("/practice"), None);
+  }
 
   #[test]
   fn path_words_match_at_word_start_only() {

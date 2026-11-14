@@ -11,6 +11,7 @@
 @import "./pixel/schemes.css";
 @import "./pixel/surfaces.css";
 @import "./pixel/controls.css";
+@import "./pixel/radio.css";
 @import "./pixel/motion.css";
 
 /* 第二套设计系统（现代风）。必须放在像素层之后：同层同权重的选择器后写者胜，

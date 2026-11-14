@@ -274,47 +274,10 @@ html[data-ui-style="modern"].js-motion
     }
   }
 
-  /* 4.3 日志型：一条贯穿页面的时间轴脊柱，滚动进度用 scroll-driven 动画填色。
-     不支持 `animation-timeline` 时整条脊柱不画（`@supports` 兜底），
-     而不是画一条永远满格的假进度。 */
-  @supports (animation-timeline: scroll()) {
-    @media (min-width: 900px) {
-      #route-content[data-sig="log"] .md-page {
-        position: relative;
-      }
-
-      #route-content[data-sig="log"] .md-page::before {
-        content: "";
-        position: absolute;
-        inset-block: 56px 104px;
-        inset-inline-start: -14px;
-        width: 2px;
-        border-radius: var(--md-r-pill);
-        background-color: var(--md-border);
-      }
-
-      #route-content[data-sig="log"] .md-page::after {
-        content: "";
-        position: absolute;
-        inset-block-start: 56px;
-        inset-inline-start: -14px;
-        width: 2px;
-        height: calc(100% - 160px);
-        border-radius: var(--md-r-pill);
-        background-color: var(--md-blue);
-        transform-origin: top center;
-        scale: 1 0;
-        animation: md-spine-grow linear both;
-        animation-timeline: scroll(root);
-      }
-    }
-  }
-
-  @keyframes md-spine-grow {
-    to {
-      scale: 1 1;
-    }
-  }
+  /* 4.3 日志型（`/log` 等）：**不给页级动作**。
+     这里曾有一条贯穿版心的「时间轴脊柱」（`::before` 轨道 + `::after` 蓝色进度，随滚动生长），
+     但它在版心左侧画出一条 2px 竖线，读起来就是一条贴在左边的蓝色滚动条，
+     会跟页面自己的滚动方向抢注意力，已整条移除。 */
 
   /* 4.4 看板型（进度 / 统计 / 成就）：卡片悬停上抬，读数已经在 `ModernStatValue`
      里滚过一次；这里补的是「扫一眼就能比较」的层级感。 */
@@ -390,7 +353,7 @@ html[data-ui-style="modern"].js-motion
      三块新内容的节奏 —— 它们同时出现在首屏后 200px 内，不做错峰就是一整块同时刷出。
 
      必须带 `html[data-ui-style="modern"]`：`data-sig` 在像素风首页也会写
-     （`kit_modern::interaction` 统一落位），少了门禁等于给冻结的像素首页加新动效。 */
+     （`kit_modern::interaction` 统一落位），少了门禁等于把现代风的动效加到像素首页上。 */
   /* 章节头的刻度尺：上沿那条 72px 的八格刻度从左侧「画」出来。
      `background-size` 可插值，不支持时只是少一段动画，刻度本身仍在。 */
   html[data-ui-style="modern"]
@@ -508,7 +471,7 @@ html[data-ui-style="modern"].js-motion
      这里不再单独定义动画 —— 两套动画叠在同一条伪元素上会互相覆盖。 */
 
   /* ---------- 5) 降级 ----------
-     动效被关时：没有涟漪、没有声呐环、没有扫描带、没有脊柱进度，
+     动效被关时：没有涟漪、没有声呐环、没有扫描带，
      但内容与层级一个都不少。 */
   @media (prefers-reduced-motion: reduce) {
     .md-ping,
@@ -536,10 +499,6 @@ html[data-ui-style="modern"].js-motion
 
     .md-track {
       scroll-behavior: auto;
-    }
-
-    #route-content[data-sig="log"] .md-page::after {
-      display: none;
     }
   }
 }

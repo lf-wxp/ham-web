@@ -16,8 +16,8 @@ use send_wrapper::SendWrapper;
 
 use crate::components::common::{ExplanationCard, MessageDialog, PageContainer, PageLoading};
 use crate::components::exam::{
-  AnswerCardFilter, AnswerCardSheet, CustomPaperDialog, ExamResultDialog, ExamResumeDialog,
-  ExamSettingsDialog, ExamSubmitConfirmDialog, RulesWalkthroughDialog,
+  AnswerCardFilter, AnswerCardPanel, AnswerCardSheet, CustomPaperDialog, ExamResultDialog,
+  ExamResumeDialog, ExamSettingsDialog, ExamSubmitConfirmDialog, RulesWalkthroughDialog,
 };
 use crate::components::question_card::QuestionCard;
 use crate::components::shortcut_help::ShortcutHelpDialog;
@@ -567,10 +567,16 @@ pub fn ExamPage() -> impl IntoView {
         on:touchstart=swipe_start
         on:touchend=swipe_end
       >
+        // 底部留白 = 底栏实测高度（`--fixed-bottom-h`，由 `ui::ScrollBar` 量所有
+        // `[data-fixed-bottom]` 后写到根元素）+ 一行余量。以前写死 `pb-28`(112px)，
+        // 而手机档底栏实测 140px（两行按钮），最后一行答题卡正被压住，滚到底也看不全。
+        // 实测值随文案折行 / 安全区自动跟随，不写魔法数字。
+        // 现代风的 `.md-exam` 自己已经按同一个变量留过（`06-polish.css`），这里只给像素风 ——
+        // 两处都写会叠成两倍留白。
         <PageContainer class=if crate::kit::is_modern() {
-          "py-6 space-y-4 pb-28 sm:pb-28"
+          "py-6 space-y-4"
         } else {
-          "py-6 space-y-4 pb-28 sm:pb-28 animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal)"
+          "py-6 space-y-4 pb-[calc(var(--fixed-bottom-h,7rem)+1rem)] animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal)"
         }>
         // 现代风不显示 Boss 舞台：RPG 隐喻属于像素风，同样的信息（进度 / 剩余时间）
         // 由现代页头与底栏承担，见 `docs/ui/decisions.md` §5。
@@ -655,6 +661,26 @@ pub fn ExamPage() -> impl IntoView {
               }
             })
         }}
+
+        // 像素风窄屏：答题卡直接铺在题卡下面（canvas「存储频道 · 答题卡」），桌面档仍用弹窗。
+        {(!crate::kit::is_modern_at_mount()).then(|| {
+          view! {
+            <AnswerCardPanel
+              class="lg:hidden"
+              questions=store.questions
+              answers=store.answers
+              flags=store.flags
+              finished=store.finished
+              current_index=store.index
+              jump_locked=strict
+              on_jump=Callback::new(move |i| {
+                if !strict.get_untracked() {
+                  store.jump(i);
+                }
+              })
+            />
+          }
+        })}
 
         <ExamBottomBar
           answered=answered

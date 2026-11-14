@@ -1464,13 +1464,17 @@ fn build_index() -> Vec<SearchEntry> {
 
   // 工具与页面入口（导航注册表：路径 + 中文标题 + 所属分组）。
   // 排在索引最后 —— 同分时知识条目自然靠前，页面入口不挤占术语/知识的结果。
+  // 改过名的页面把曾用名放进正文：搜旧名照样命中同一条，结果里也看得出「原来叫什么」。
+  // 正文必须恰好是曾用名（不能再拼「页面入口」）：它是知识库译文词典的 key，拼了就查不到 en / es 译文。
   for m in crate::registry::MODULES {
     push(
       &mut out,
       m.group.unwrap_or("页面"),
       m.href.unwrap_or(m.path),
       m.title.to_owned(),
-      "页面入口".to_owned(),
+      crate::registry::former_title(m.path)
+        .unwrap_or("页面入口")
+        .to_owned(),
     );
   }
 
@@ -1713,6 +1717,29 @@ pub fn search(query: &str) -> Vec<&'static SearchEntry> {
     .collect()
 }
 
+/// 一条搜索结果与查询的匹配度（1–4 格信号）：标题完全等于查询 4、标题以它开头 3、标题含有它 2、
+/// 其余命中记 1（正文里出现整段查询，或标题只命中了查询里的某个词 —— 多词查询在结果里不罕见）。
+/// 按「去首尾空白 + 小写」比较；空查询记 0。搜索面板的信号格读它，是可复现的真实依据。
+#[must_use]
+pub fn match_strength(query: &str, title: &str, text: &str) -> u8 {
+  let q = query.trim().to_lowercase();
+  if q.is_empty() {
+    return 0;
+  }
+  let t = title.trim().to_lowercase();
+  if t == q {
+    4
+  } else if t.starts_with(&q) {
+    3
+  } else if t.contains(&q) {
+    2
+  } else if text.to_lowercase().contains(&q) || q.split_whitespace().any(|w| t.contains(w)) {
+    1
+  } else {
+    0
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -1731,6 +1758,27 @@ mod tests {
   fn hits(e: &crate::logbook::LogEntry, q: &str) -> bool {
     let (terms, filters) = parse_query(q);
     qso_matches(e, &terms, &filters)
+  }
+
+  #[test]
+  fn match_strength_ranks_title_hits_above_body_hits() {
+    assert_eq!(match_strength("天线", "天线", ""), 4);
+    assert_eq!(match_strength("天线", "天线型式", ""), 3);
+    assert_eq!(match_strength("天线", "实用天线专题", ""), 2);
+    assert_eq!(match_strength("天线", "极化", "电磁波离开天线时的取向"), 1);
+    assert_eq!(match_strength("FT8", "ft8 解码", ""), 3, "不分大小写");
+    assert_eq!(match_strength("  ", "天线", "天线"), 0, "空查询没有读数");
+    assert_eq!(match_strength("八木", "天线", "偶极"), 0);
+    assert_eq!(
+      match_strength("偶极天线", "极化", "偶极天线的原理"),
+      1,
+      "正文里有整段查询"
+    );
+    assert_eq!(
+      match_strength("八木 天线", "天线型式", ""),
+      1,
+      "标题只命中查询里的一个词"
+    );
   }
 
   #[test]

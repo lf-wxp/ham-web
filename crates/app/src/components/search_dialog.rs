@@ -9,16 +9,19 @@ use std::sync::Arc;
 
 use ham_web_core::QuestionSearchEntry;
 use ham_web_core::registry;
-use ham_web_core::search::{parse_query, qso_matches, search, tokenize};
+use ham_web_core::search::{match_strength, parse_query, qso_matches, search, tokenize};
 use ham_web_core::unit_conversions::UNIT_CONVERSION_GROUPS;
 use leptos::prelude::*;
 
+use crate::components::radio::{SignalBars, TuningScale};
 use crate::data;
 use crate::data::core_text_tracked;
-use crate::i18n::t;
+use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::pages::SLANG_CATEGORY;
-use crate::ui::{ControlSize, Dialog, Input, InputType};
+use crate::ui::{
+  ControlSize, Dialog, Input, InputType, Led, LedState, LedTone, Readout, ReadoutTone,
+};
 
 /// 站内搜索的开闭状态（App 层 `provide_context`，两套顶栏的按钮与 `/` 共用）。
 ///
@@ -75,7 +78,13 @@ fn search_pages(q: &str) -> Vec<(String, String, String, String)> {
     .iter()
     .enumerate()
     .filter_map(|(i, m)| {
-      let rank = page_rank(m.title, m.nav_href(), &needle);
+      let mut rank = page_rank(m.title, m.nav_href(), &needle);
+      // 曾用名（`registry::FORMER_TITLES`）算作标题命中的下一档：老用户输入旧名还能直达。
+      if rank == 4
+        && registry::former_title(m.path).is_some_and(|old| page_rank(old, "", &needle) < 4)
+      {
+        rank = 3;
+      }
       (rank < 4).then_some((rank, i, m))
     })
     .collect();
@@ -133,6 +142,53 @@ fn search_qsos(
 /// 同一个「题库」分组里会有多个不同链接；若把 `href` 挂在分组上，组内所有条目都会
 /// 跳向第一条命中的链接。
 type SearchGroup = (String, Vec<(String, String, String)>);
+
+/// 像素风扫描面板的状态：待命 → 扫描中（输入还在防抖期）→ 锁定 N 条 / 无信号。
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ScanState {
+  Idle,
+  Scanning,
+  Lock(usize),
+  NoSignal,
+}
+
+/// 面板里最多列多少条结果（各来源合计）。
+const MAX_RESULTS: usize = 30;
+
+/// 一个查询的命中（分组名、链接、标题、摘要，至多 `MAX_RESULTS` 条），按来源优先级排好：
+/// 自己的日志 → 页面 → 术语 → 知识条目 → 单位换算 → 题目。
+fn collect_results(q: &str) -> Vec<(String, String, String, String)> {
+  let (qso_terms, qso_filters) = parse_query(q);
+  // 自己的日志排最前：用户搜呼号时第一条就该是那条通联。
+  let mut raw = search_qsos(&qso_terms, &qso_filters);
+  // 其次是页面：键入的若是页面名（「史密斯」「通联日志」），第一条就该能直达。
+  raw.extend(search_pages(q));
+  raw.extend(
+    search_glossary(q)
+      .into_iter()
+      .map(|(p, h, t, d)| (p.to_owned(), h.to_owned(), t, d)),
+  );
+  for e in search(q) {
+    raw.push((
+      e.page.to_owned(),
+      e.href.to_owned(),
+      e.title.clone(),
+      e.text.clone(),
+    ));
+  }
+  raw.extend(
+    search_unit_conversions(q)
+      .into_iter()
+      .map(|(p, h, t, d)| (p, h.to_owned(), t, d)),
+  );
+  for e in search_questions(q) {
+    raw.push((e.0, e.1, e.2, e.3));
+  }
+  // 面板只列前 `MAX_RESULTS` 条、状态条也只读 `len().min(MAX_RESULTS)`：在这里就封顶，
+  // 题目命中成百上千时 `Memo` 的整表比较与渲染处的克隆都只碰这几十条。
+  raw.truncate(MAX_RESULTS);
+  raw
+}
 
 /// HTML 转义。
 fn escape_html(s: &str) -> String {
@@ -446,6 +502,120 @@ pub fn SearchDialog() -> impl IntoView {
     "pxl-label mb-1 flex items-center gap-2 px-2 text-xs text-muted-foreground"
   };
 
+  // 结果只算一遍：列表与像素风的扫描状态条（要知道条数）共用。
+  let results = Memo::new(move |_| {
+    glossary_ready.track();
+    question_ready.track();
+    // 索引刷新（题库数据更新）后重算结果
+    index_epoch.track();
+    let q = query_settled.get();
+    if q.trim().is_empty() {
+      Vec::new()
+    } else {
+      collect_results(&q)
+    }
+  });
+
+  // 像素风的扫描面板（canvas「站内搜索 · 扫描」，`docs/ui/pixel.md` §3.4）：标题栏的灯、刻度尺与读数屏
+  // 都读同一个状态 —— 待命 → 扫描中（防抖期内）→ 锁定 N 条 / 无信号。全是装饰（`aria-hidden`）：
+  // 结果本身与「没有结果」的提示在下面的列表里，两套皮肤的无障碍语义一致。
+  // 弹层的 children 会被多次构建（`Fn`），所以下面都是闭包而不是建好的视图。
+  let pixel = !crate::kit::is_modern_at_mount();
+  let state = move || {
+    let typed = query.with(|q| q.trim().to_owned());
+    let settled = query_settled.with(|q| q.trim().to_owned());
+    let shown = results.with(Vec::len).min(MAX_RESULTS);
+    if typed.is_empty() && settled.is_empty() {
+      ScanState::Idle
+    } else if typed != settled {
+      ScanState::Scanning
+    } else if shown > 0 {
+      ScanState::Lock(shown)
+    } else {
+      ScanState::NoSignal
+    }
+  };
+  let lamp = move || match state() {
+    ScanState::Scanning => (LedTone::Warn, LedState::Blink),
+    ScanState::Lock(_) => (LedTone::Rx, LedState::On),
+    ScanState::Idle | ScanState::NoSignal => (LedTone::Rx, LedState::Off),
+  };
+  let title_bar = move || {
+    pixel.then(|| {
+      view! {
+        // 负外边距抵消弹层面板的内边距（`ui/dialog/dialog_root.rs` 像素分支的 `p-4 sm:p-6`），
+        // 让标题栏贴边铺满；那边的内边距改了，这里的 `-m*` 要跟着改。
+        <div class="pxl-section-title -mx-4 -mt-4 sm:-mx-6 sm:-mt-6" aria-hidden="true">
+          {move || t("shell.scan-title")}
+          <span class="ml-auto">
+            {move || {
+              let (tone, s) = lamp();
+              view! { <Led tone=tone state=s small=true /> }
+            }}
+          </span>
+        </div>
+      }
+    })
+  };
+  // 刻度上印的是这一次结果里真实出现的分组（最多 4 个，按结果顺序），锁定时指针停在第一组。
+  let marks = Signal::derive(move || {
+    let mut groups: Vec<String> = Vec::new();
+    results.with(|r| {
+      for (page, ..) in r.iter().take(MAX_RESULTS) {
+        if groups.len() < 4 && !groups.contains(page) {
+          groups.push(page.clone());
+        }
+      }
+    });
+    let n = groups.len().max(1);
+    groups
+      .into_iter()
+      .enumerate()
+      .map(|(i, g)| (g, u8::try_from((i * 2 + 1) * 50 / n).unwrap_or(50)))
+      .collect::<Vec<_>>()
+  });
+  let needle = Signal::derive(move || match state() {
+    ScanState::Lock(_) => marks.with(|m| m.first().map_or(1, |(_, at)| *at)),
+    _ => 1,
+  });
+  let scan = move || {
+    pixel.then(|| {
+      view! {
+        <div class="space-y-0" aria-hidden="true">
+          <TuningScale
+            marks=Signal::derive(move || if matches!(state(), ScanState::Lock(_)) { marks.get() } else { Vec::new() })
+            needle=needle
+            sweeping=Signal::derive(move || state() == ScanState::Scanning)
+          />
+          <div class="pxl-display flex items-center gap-2 px-2.5 py-1.5">
+            {move || {
+              let (code, class) = match state() {
+                ScanState::Idle => (t("shell.scan-code-idle"), "pxl-d-dim"),
+                ScanState::Scanning => (t("shell.scan-code-busy"), "pxl-d-hot"),
+                ScanState::Lock(_) => (t("learning.rig-lock"), "pxl-d-ok"),
+                ScanState::NoSignal => (t("shell.no-signal"), "pxl-d-dim"),
+              };
+              view! { <span class=format!("pxl-label text-xs {class}")>{code}</span> }
+            }}
+            <span class="ml-auto flex items-center gap-1.5">
+              <Readout
+                text=Signal::derive(move || match state() {
+                  ScanState::Lock(n) => format!("{n:02}"),
+                  ScanState::NoSignal => "00".to_owned(),
+                  _ => "--".to_owned(),
+                })
+                tone=Signal::derive(move || {
+                  if state() == ScanState::Scanning { ReadoutTone::Hot } else { ReadoutTone::Normal }
+                })
+              />
+              <span class="pxl-label pxl-d-dim text-xs">{move || t("shell.scan-unit")}</span>
+            </span>
+          </div>
+        </div>
+      }
+    })
+  };
+
   // 打开时清空输入。
   Effect::new(move |_| {
     if open.get() {
@@ -472,6 +642,7 @@ pub fn SearchDialog() -> impl IntoView {
   view! {
     <Dialog open=open class="sm:max-w-2xl" show_close=false label="shell.site-search">
       <div class="flex flex-col gap-3">
+        {title_bar}
         // 搜索框
         <Input
           value=query
@@ -483,6 +654,7 @@ pub fn SearchDialog() -> impl IntoView {
           prefix=move || view! { <Icon kind=IconKind::Search /> }
           clearable=true
         />
+        {scan}
 
         // 结果列表。`md-search-text` 给现代风的命中高亮（`mark` 底色），像素风不能挂 ——
         // 样式表不分层，像素风里挂上会命中现代的 `mark` 配色。
@@ -492,10 +664,6 @@ pub fn SearchDialog() -> impl IntoView {
           "max-h-[60svh] overflow-y-auto overscroll-contain"
         }>
           {move || {
-            glossary_ready.track();
-            question_ready.track();
-            // 索引刷新（题库数据更新）后重算结果
-            index_epoch.track();
             let q = query_settled.get();
             let trimmed = q.trim();
             if trimmed.is_empty() {
@@ -507,28 +675,8 @@ pub fn SearchDialog() -> impl IntoView {
               .into_any();
             }
 
-            let (qso_terms, qso_filters) = parse_query(&q);
-            // 自己的日志排最前：用户搜呼号时第一条就该是那条通联。
-            let mut raw: Vec<(String, String, String, String)> =
-              search_qsos(&qso_terms, &qso_filters);
-            // 其次是页面：键入的若是页面名（「史密斯」「通联日志」），第一条就该能直达。
-            raw.extend(search_pages(&q));
-            raw.extend(
-              search_glossary(&q)
-                .into_iter()
-                .map(|(p, h, t, d)| (p.to_owned(), h.to_owned(), t, d)),
-            );
-            for e in search(&q) {
-              raw.push((e.page.to_owned(), e.href.to_owned(), e.title.clone(), e.text.clone()));
-            }
-            raw.extend(
-              search_unit_conversions(&q)
-                .into_iter()
-                .map(|(p, h, t, d)| (p, h.to_owned(), t, d)),
-            );
-            for e in search_questions(&q) {
-              raw.push((e.0, e.1, e.2, e.3));
-            }
+            // `results` 在 `collect_results` 里已封顶，这里最多克隆 `MAX_RESULTS` 条。
+            let raw = results.with(Clone::clone);
             if raw.is_empty() {
               return view! {
                 <div class="px-2 py-8 text-center text-sm text-muted-foreground">
@@ -539,7 +687,7 @@ pub fn SearchDialog() -> impl IntoView {
             }
 
             let mut groups: Vec<SearchGroup> = Vec::new();
-            for (page, href, title, text) in raw.into_iter().take(30) {
+            for (page, href, title, text) in raw.into_iter().take(MAX_RESULTS) {
               match groups.iter_mut().find(|(p, _)| p == &page) {
                 Some((_, items)) => items.push((title, href, text)),
                 None => groups.push((page, vec![(title, href, text)])),
@@ -568,11 +716,24 @@ pub fn SearchDialog() -> impl IntoView {
                                 <li>
                                   <a
                                     href=href
-                                    class="block px-3 py-2 transition-colors hover:bg-accent"
+                                    class="flex items-center gap-3 px-3 py-2 transition-colors hover:bg-accent"
                                     on:click=move |_| open.set(false)
                                   >
-                                    <div class="text-sm" inner_html=highlight(&title, &kw)></div>
-                                    <div class="mt-0.5 truncate text-xs text-muted-foreground" inner_html=highlight(&text, &kw)></div>
+                                    <div class="min-w-0 flex-1">
+                                      <div class="text-sm" inner_html=highlight(&title, &kw)></div>
+                                      <div class="mt-0.5 truncate text-xs text-muted-foreground" inner_html=highlight(&text, &kw)></div>
+                                    </div>
+                                    // 像素风：右侧信号格 = 匹配度（`core::search::match_strength`，标题命中高于正文命中）。
+                                    // 格数与高度都是视觉通道，旁边补一句文字版（`SignalBars` 自己 `aria-hidden`）。
+                                    {pixel.then(|| {
+                                      let lit = match_strength(&kw, &title, &text);
+                                      view! {
+                                        <SignalBars lit=lit total=4 />
+                                        <span class="sr-only">
+                                          {tf("shell.match-strength", &[&lit.to_string(), "4"])}
+                                        </span>
+                                      }
+                                    })}
                                   </a>
                                 </li>
                               }

@@ -5,7 +5,7 @@ use crate::cn::cn;
 use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::speech;
-use crate::ui::{Button, Size, Tooltip, Variant, card_class};
+use crate::ui::{Button, Size, Tooltip, Variant};
 
 /// 解析正文切出的一段：普通文字，或带法规链接（`(href, 悬停文案)`）的引用。
 pub(crate) struct Segment {
@@ -104,17 +104,19 @@ pub fn ExplanationCard(#[prop(into)] explanation: Signal<Option<String>>) -> imp
       }
       .into_any();
     }
+    // 像素风的解析在屏幕上（canvas「DECODE · 解析」，`docs/ui/pixel.md` §2 硬规则 14 的例外）：
+    // 荧光色正文、屏幕色链接；折叠交互不变（多个页面的 e2e 靠「点开答案解析」这条通道）。
     let Some(body) = text.get() else {
       return view! {
-        <div data-slot="card" class=card_class("gap-0 py-0")>
-          <div class="flex flex-wrap items-center gap-x-2 gap-y-1 px-6 py-4 text-sm text-muted-foreground">
+        <div data-slot="card" class="pxl-display pxl-decode mb-[24px]">
+          <div class="pxl-d-dim flex flex-wrap items-center gap-x-2 gap-y-1 px-4 py-3 text-sm">
             <Icon kind=IconKind::BookOpen class="size-6 w-4 shrink-0" />
             <span>{move || t("knowledge.no-explanation-yet-for")}</span>
             <a
               href="https://github.com/lf-wxp/ham-web"
               target="_blank"
               rel="noopener noreferrer"
-              class=format!("{} {}", crate::kit::link_class(), "inline-flex items-center gap-1")
+              class="inline-flex items-center gap-1 underline"
             >
               {move || t("knowledge.contribute")}
               <Icon kind=IconKind::ExternalLink class="size-6 w-3" />
@@ -127,19 +129,21 @@ pub fn ExplanationCard(#[prop(into)] explanation: Signal<Option<String>>) -> imp
     let speak_text = body.clone();
 
     view! {
-      <div data-slot="card" class=card_class("gap-0 py-0")>
+      <div data-slot="card" class="pxl-display pxl-decode mb-[24px]">
         <div class="flex items-center">
           <Button
             variant=Variant::Text
-            // 文字色必须显式给：`Variant::Text` 的 `--btn-fg` 是 `muted-foreground`，而这里是卡片标题。
-            class="h-auto flex-1 justify-between px-4 py-2.5 text-left text-foreground hover:bg-accent/50"
+            // 文字色必须显式给：`Variant::Text` 的 `--btn-fg` 是纸面的 `muted-foreground`，落在暗屏上看不清。
+            class="pxl-decode-toggle h-auto flex-1 justify-between px-4 py-2.5 text-left"
             aria_expanded=Signal::derive(move || open.get())
             on_click=Callback::new(move |_| {
               open.update(|v| *v = !*v);
               opened_once.set(true);
             })
           >
-            <span class="pxl-sub-head">{move || t("learning.explanation")}</span>
+            <span class="pxl-label text-xs">
+              {move || format!("{} · {}", t("learning.decode-code"), t("learning.explanation"))}
+            </span>
             <Icon
               kind=IconKind::ChevronDown
               class=Signal::derive(move || {
@@ -153,7 +157,7 @@ pub fn ExplanationCard(#[prop(into)] explanation: Signal<Option<String>>) -> imp
           <Button
             variant=Variant::Ghost
             size=Size::IconSm
-            class="mr-2 shrink-0"
+            class="pxl-decode-toggle mr-2 shrink-0"
             title=Signal::derive(move || t("learning.read-explanation-aloud"))
             aria_label=Signal::derive(move || t("learning.read-explanation-aloud"))
             on_click=Callback::new(move |_| speech::speak_zh(&speak_text))
@@ -167,14 +171,14 @@ pub fn ExplanationCard(#[prop(into)] explanation: Signal<Option<String>>) -> imp
               {move || {
                 opened_once.get().then(|| {
                   view! {
-                    <div class="whitespace-pre-line border-t pt-4 text-sm leading-6 text-muted-foreground">
+                    <div class="whitespace-pre-line border-t-2 border-dashed border-(--display-rim) pt-3 text-sm leading-6">
                       {segments(&body).into_iter().map(|Segment { text, link }| {
                         if let Some((href, title)) = link {
                           view! {
                             <Tooltip label=title>
                               <a
                                 href=href
-                                class="text-primary hover:opacity-80"
+                                class="underline hover:opacity-80"
                               >
                                 {text}
                               </a>

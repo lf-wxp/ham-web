@@ -327,21 +327,26 @@
       4px 4px 0 0 var(--pxl-shadow);
   }
 
-  /* 标题栏：窗口顶部的一条主色带，左边标题、右边留给关闭钮。 */
-  .pxl-titlebar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0.375rem 0.75rem;
-    background-color: var(--primary);
-    color: var(--primary-foreground);
-    border-bottom: 2px solid var(--pxl-ink);
-    background-image: repeating-linear-gradient(
-      0deg,
-      transparent 0 2px,
-      rgb(255 255 255 / 0.08) 2px 4px
-    );
+  /* L2 面板与对话框（机箱上拆下来的子面板）：四角各一颗 6px 螺丝。画在 `::before` 上而不是背景层：
+     背景层会被标题栏（`pxl-section-title` 自带底色）盖住，螺丝要压在它上面。
+     `::after` 留给题卡的判分动效（`motion.css` 的 `[data-signal]`）。 */
+  .pxl-window::before,
+  .pxl-popover[data-slot="dialog-content"]::before {
+    --screw: color-mix(in srgb, var(--pxl-ink) 55%, transparent);
+    content: "";
+    position: absolute;
+    inset: 4px;
+    pointer-events: none;
+    background-image:
+      linear-gradient(var(--screw), var(--screw)), linear-gradient(var(--screw), var(--screw)),
+      linear-gradient(var(--screw), var(--screw)), linear-gradient(var(--screw), var(--screw));
+    background-size: 6px 6px;
+    background-repeat: no-repeat;
+    background-position:
+      0 0,
+      100% 0,
+      0 100%,
+      100% 100%;
   }
 
   /* ---------- 选项行（下拉 / 菜单） ---------- */
@@ -457,27 +462,43 @@
     background-color: var(--primary-foreground);
   }
 
+  /* 开关一行：绿灯 + 拨杆 + ON / OFF 丝印（`ui::Switch` 的像素分支）。开 / 关由拨杆位置与
+     `aria-checked` 承担，灯与丝印是另外两个读法（`docs/ui/pixel.md` §3.4）。 */
+  .pxl-switch-row {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
   .pxl-switch {
     position: relative;
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
-    width: 2.75rem;
+    width: 3rem;
     height: 1.5rem;
     padding: 2px;
     background-color: var(--pxl-field);
-    border: 2px solid var(--input);
+    border: 2px solid var(--pxl-ink);
     box-shadow:
       inset 2px 2px 0 0 var(--pxl-lo),
       inset -2px -2px 0 0 var(--pxl-hi);
     cursor: pointer;
     outline: none;
-    transition: background-color var(--motion-fast) steps(2, end);
   }
 
-  .pxl-switch[data-state="checked"] {
-    background-color: var(--pxl-win);
-    border-color: var(--pxl-ink);
+  /* 轨道中间的凹槽：拨杆在槽里滑，开 / 关两端一眼看得出。 */
+  .pxl-switch::before {
+    content: "";
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 50%;
+    height: 2px;
+    margin-top: -1px;
+    background-color: var(--pxl-lo);
+    pointer-events: none;
   }
 
   .pxl-switch:focus-visible {
@@ -490,21 +511,101 @@
     opacity: 0.5;
   }
 
+  /* `position: relative`：绝对定位的凹槽（`::before`）默认画在流内元素之上，拨杆要压住它。 */
   .pxl-switch-thumb {
+    position: relative;
     display: block;
-    width: 1rem;
+    width: 18px;
     height: 100%;
     background-color: var(--card);
     border: 2px solid var(--pxl-ink);
-    box-shadow:
-      inset 2px 2px 0 0 var(--pxl-hi),
-      inset -2px -2px 0 0 var(--pxl-lo);
     pointer-events: none;
     transition: translate var(--motion-fast) steps(3, end);
   }
 
+  /* 拨杆上的一道竖纹（手指拨的位置）。 */
+  .pxl-switch-thumb::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 2px;
+    height: 8px;
+    background-color: var(--pxl-ink);
+  }
+
   .pxl-switch[data-state="checked"] .pxl-switch-thumb {
-    translate: 1.25rem 0;
+    translate: 22px 0;
+    background-color: var(--primary);
+  }
+
+  .pxl-switch[data-state="checked"] .pxl-switch-thumb::after {
+    background-color: var(--primary-foreground);
+  }
+
+  /* 定宽：ON / OFF 切换时这一行不跳。禁用时不再淡化：拨杆自己已经半透明，丝印字再淡就不够对比度。 */
+  .pxl-switch-state {
+    min-width: 3ch;
+    font-family: var(--font-pixel-label);
+    font-size: var(--text-xs);
+    line-height: 1.25;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .pxl-switch-state[data-state="checked"] {
+    color: var(--win-ink);
+  }
+
+  /* ---------- 调谐推子的外层（`ui::Slider` 像素分支）：上方刻度行 + 原生 range ---------- */
+  .pxl-slider {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* 21 道刻度，两端对齐滑块中心（滑块 12px 宽，中心离两端 6px）。 */
+  .pxl-slider-ticks {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 10px;
+    padding: 0 5px;
+  }
+
+  .pxl-slider-ticks > span {
+    width: 2px;
+    height: 4px;
+    background-color: var(--pxl-ink);
+    opacity: 0.45;
+  }
+
+  .pxl-slider-ticks > span[data-major] {
+    height: 8px;
+    opacity: 0.9;
+  }
+
+  /* ---------- 题卡（像素风）：头部是一条标题栏 ----------
+     卡片本身带 `py-6`，标题栏用负的上外边距贴到顶边；样式同 `.pxl-section-title`（灰底 + 主色方块）。 */
+  .pxl-q-card > [data-slot="card-header"] {
+    margin-top: -1.5rem;
+    padding: 0.625rem 1rem 0.625rem 2rem;
+    background-color: color-mix(in oklab, var(--muted) 55%, transparent);
+    background-image: linear-gradient(var(--primary), var(--primary));
+    background-size: 8px 8px;
+    background-position: 0.75rem center;
+    background-repeat: no-repeat;
+    border-bottom: 2px solid var(--pxl-ink);
+  }
+
+  /* 解析上屏（`ExplanationCard` 的像素分支）：按钮文字跟屏幕色，悬停是幽灵段的底。 */
+  .pxl-decode-toggle {
+    --btn-fg: var(--display-fg);
+  }
+
+  .pxl-decode-toggle:hover:not(:disabled) {
+    background-color: var(--display-ghost);
   }
 
   /* ---------- 徽标 ---------- */
@@ -525,8 +626,12 @@
   }
 
   /* ---------- 分段选择 / 筛选 chip ---------- */
+  /* 波段键：每个键里一颗灯（`ChipLamp`，选中才亮），未选中也是墨色描边 —— 一排键是同一块面板。 */
   .pxl-chip {
+    display: inline-flex;
     flex-shrink: 0;
+    align-items: center;
+    gap: 6px;
     cursor: pointer;
     white-space: nowrap;
     padding: 0.25rem 0.625rem;
@@ -534,7 +639,7 @@
     line-height: 1.25;
     background-color: var(--card);
     color: var(--muted-foreground);
-    border: 2px solid var(--input);
+    border: 2px solid var(--pxl-ink);
     transition-property: background-color, color, border-color, translate;
     transition-duration: var(--motion-instant);
     transition-timing-function: steps(2, end);
@@ -549,14 +654,16 @@
     }
   }
 
+  /* 选中 = 波段键按进去：底色沉到输入槽、顶上一条 4px 主色灯条亮起。
+     不再整块填主色 —— 一排 chip 里只有灯条是彩色的，选中项不会压过页面的主行动。 */
   .pxl-chip[aria-checked="true"],
   .pxl-chip[aria-pressed="true"] {
-    background-color: var(--primary);
-    color: var(--primary-foreground);
+    background-color: var(--pxl-field);
+    color: var(--foreground);
     border-color: var(--pxl-ink);
     box-shadow:
-      inset 2px 2px 0 0 rgb(255 255 255 / 0.3),
-      inset -2px -2px 0 0 rgb(0 0 0 / 0.3);
+      inset 0 4px 0 0 var(--primary),
+      inset 2px 2px 0 0 var(--pxl-lo);
   }
 
   .pxl-chip:focus-visible {
@@ -571,8 +678,8 @@
 
   /* ---------- 页内视图切换（Tabs） ----------
      标签坐在同一条墨色基线上（标签栏的下边框），选中项抬起成卡片色 —— 与 chip 的区别
-     一眼可见：chip 选中是**填主色**（那是「我挑了这个值」），tab 选中是**抬起一块板**
-     （那是「下面是这块」）。
+     一眼可见：chip 选中是**按进去、顶上亮灯条**（那是「我挑了这个值」），tab 选中是
+     **抬起一块板、下沿主色**（那是「下面是这块」）。
      基线加标签的「底座」写法刻意不带负外边距：窄屏下 4 个标签会折行，负外边距在折行
      时会和上一行的边框叠在一起，连接处的错觉反而错位。基线 + 抬板在任何行数下都成立。 */
   .pxl-tablist {
@@ -639,6 +746,12 @@
     width: 100%;
     overflow: hidden;
     background-color: var(--pxl-field);
+    /* 未亮的格子画成暗格（电平表的熄灭段）：空槽也看得出「一共几格」，与填充的缝对齐。 */
+    background-image: repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--pxl-ink) 10%, var(--pxl-field)) 0 6px,
+      transparent 6px 8px
+    );
     border: 2px solid var(--pxl-ink);
     box-shadow: inset 2px 2px 0 0 var(--pxl-lo);
   }
@@ -668,15 +781,9 @@
     --bar-color: var(--pxl-gold);
   }
 
-  /* 绿色血条（玩家）在危险时也要变红：颜色跟着 `data-low` 走，不靠调用方切类名。 */
-  .pxl-bar-danger[data-low="true"] {
-    --bar-color: var(--pxl-hp);
-  }
-
   /* 血量低于 25%：整条闪烁，提示「危险」。
      只给血条（`pxl-bar-hp`）：经验条 / 答题进度条在起步阶段本来就是低值，闪烁会被误读成告警。 */
-  .pxl-bar-hp[data-low="true"] .pxl-bar-fill,
-  .pxl-bar-danger[data-low="true"] .pxl-bar-fill {
+  .pxl-bar-hp[data-low="true"] .pxl-bar-fill {
     animation: pxl-blink 0.6s steps(1, end) infinite;
   }
 

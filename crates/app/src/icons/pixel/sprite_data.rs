@@ -26,11 +26,15 @@ const HERO_LAYERS: &[SpriteLayer] = &[
   },
   SpriteLayer {
     fill: "#f4c9a0",
-    d: r#"M5 4h6v1h-6zM5 5h1v1h-1zM7 5h2v1h-2zM10 5h1v1h-1zM5 6h6v1h-6zM5 7h2v1h-2zM9 7h2v1h-2zM6 8h4v1h-4zM3 11h1v1h-1zM12 11h1v1h-1z"#,
+    d: r#"M5 4h6v1h-6zM5 5h1v1h-1zM7 5h2v1h-2zM10 5h1v1h-1zM5 6h6v1h-6zM9 7h2v1h-2zM6 8h4v1h-4zM3 11h1v1h-1zM12 11h1v1h-1z"#,
   },
   SpriteLayer {
     fill: "#94b0c2",
     d: r#"M3 5h1v2h-1zM12 5h1v2h-1z"#,
+  },
+  SpriteLayer {
+    fill: "#566c86",
+    d: r#"M5 7h2v1h-2z"#,
   },
   SpriteLayer {
     fill: "#b13e53",
@@ -48,6 +52,45 @@ const HERO_LAYERS: &[SpriteLayer] = &[
 pub const HERO: SpriteData = SpriteData {
   size: 16,
   layers: HERO_LAYERS,
+};
+
+const RADIO_LAYERS: &[SpriteLayer] = &[
+  SpriteLayer {
+    fill: "var(--px-sprite-ink,#1a1c2c)",
+    d: r#"M13 3h1v1h-1zM12 4h1v1h-1zM2 5h12v1h-12zM2 6h1v6h-1zM13 6h1v6h-1zM2 12h12v1h-12z"#,
+  },
+  SpriteLayer {
+    fill: "var(--secondary,#e8dbb5)",
+    d: r#"M3 6h10v1h-10zM3 7h1v3h-1zM10 7h2v1h-2zM11 8h1v1h-1zM10 9h3v1h-3zM3 10h10v1h-10zM3 11h1v1h-1zM5 11h1v1h-1zM7 11h1v1h-1zM9 11h4v1h-4z"#,
+  },
+  SpriteLayer {
+    fill: "var(--display-bg,#1a1c2c)",
+    d: r#"M4 7h6v1h-6zM4 8h1v1h-1zM7 8h1v1h-1zM10 8h1v1h-1zM4 9h6v1h-6z"#,
+  },
+  SpriteLayer {
+    fill: "var(--muted-foreground,#42566c)",
+    d: r#"M12 7h1v2h-1z"#,
+  },
+  SpriteLayer {
+    fill: "var(--display-fg,#73eff7)",
+    d: r#"M5 8h2v1h-2zM8 8h2v1h-2z"#,
+  },
+  SpriteLayer {
+    fill: "#a7f070",
+    d: r#"M4 11h1v1h-1z"#,
+  },
+  SpriteLayer {
+    fill: "#b13e53",
+    d: r#"M6 11h1v1h-1z"#,
+  },
+  SpriteLayer {
+    fill: "#ffcd75",
+    d: r#"M8 11h1v1h-1z"#,
+  },
+];
+pub const RADIO: SpriteData = SpriteData {
+  size: 16,
+  layers: RADIO_LAYERS,
 };
 
 const MON_STATIC_LAYERS: &[SpriteLayer] = &[
@@ -163,20 +206,24 @@ pub const MON_FADE: SpriteData = SpriteData {
 
 const BOSS_LAYERS: &[SpriteLayer] = &[
   SpriteLayer {
-    fill: "var(--px-sprite-ink,#1a1c2c)",
-    d: r#"M2 0h1v1h-1zM13 0h1v1h-1zM1 1h1v2h-1zM3 1h1v1h-1zM12 1h1v1h-1zM14 1h1v2h-1zM4 2h1v1h-1zM11 2h1v1h-1zM2 3h1v2h-1zM5 3h6v1h-6zM13 3h1v2h-1zM1 5h1v6h-1zM14 5h1v6h-1zM6 6h1v1h-1zM9 6h1v1h-1zM5 7h2v1h-2zM9 7h2v1h-2zM4 9h1v2h-1zM11 9h1v1h-1zM6 10h1v1h-1zM8 10h1v1h-1zM10 10h1v1h-1zM12 10h1v1h-1zM2 11h1v1h-1zM5 11h6v1h-6zM13 11h1v1h-1zM3 12h1v1h-1zM12 12h1v1h-1zM2 13h3v1h-3zM11 13h3v1h-3zM1 14h1v1h-1zM4 14h2v1h-2zM10 14h2v1h-2zM14 14h1v1h-1zM2 15h3v1h-3zM6 15h4v1h-4zM11 15h3v1h-3z"#,
-  },
-  SpriteLayer {
     fill: "#b13e53",
-    d: r#"M2 1h1v1h-1zM13 1h1v1h-1zM2 2h2v1h-2zM12 2h2v1h-2zM3 3h2v1h-2zM11 3h2v1h-2zM3 4h10v1h-10zM2 5h12v1h-12zM2 6h2v2h-2zM7 6h2v2h-2zM12 6h2v2h-2zM2 8h12v1h-12zM2 9h2v2h-2zM5 9h6v1h-6zM12 9h2v1h-2zM13 10h1v1h-1zM3 11h2v1h-2zM11 11h2v1h-2zM4 12h8v1h-8zM5 13h6v1h-6zM6 14h4v1h-4z"#,
+    d: r#"M7 0h2v2h-2z"#,
   },
   SpriteLayer {
-    fill: "#f4f4f4",
-    d: r#"M4 6h2v1h-2zM10 6h2v1h-2zM4 7h1v1h-1zM11 7h1v1h-1zM5 10h1v1h-1zM7 10h1v1h-1zM9 10h1v1h-1zM11 10h1v1h-1z"#,
+    fill: "var(--px-sprite-ink,#1a1c2c)",
+    d: r#"M1 2h1v1h-1zM4 2h1v1h-1zM7 2h2v1h-2zM11 2h1v1h-1zM14 2h1v1h-1zM0 3h16v1h-16zM1 4h1v1h-1zM4 4h1v1h-1zM7 4h2v2h-2zM11 4h1v1h-1zM14 4h1v1h-1zM6 6h1v2h-1zM9 6h1v2h-1zM5 8h6v1h-6zM5 9h1v1h-1zM7 9h2v1h-2zM10 9h1v1h-1zM5 10h2v1h-2zM9 10h2v1h-2zM4 11h1v1h-1zM6 11h1v1h-1zM9 11h1v1h-1zM11 11h1v1h-1zM4 12h8v1h-8zM3 13h1v1h-1zM5 13h1v1h-1zM7 13h2v1h-2zM10 13h1v1h-1zM12 13h1v1h-1zM2 14h12v1h-12zM1 15h1v1h-1zM14 15h1v1h-1z"#,
   },
   SpriteLayer {
-    fill: "#ffcd75",
-    d: r#"M2 14h2v1h-2zM12 14h2v1h-2z"#,
+    fill: "#73eff7",
+    d: r#"M1 5h1v1h-1zM14 5h1v1h-1zM0 6h1v3h-1zM3 6h1v1h-1zM12 6h1v1h-1zM15 6h1v3h-1zM2 7h1v2h-1zM13 7h1v2h-1zM1 9h1v1h-1zM3 9h1v1h-1zM12 9h1v1h-1zM14 9h1v1h-1z"#,
+  },
+  SpriteLayer {
+    fill: "#566c86",
+    d: r#"M7 6h2v1h-2zM7 7h1v1h-1zM6 9h1v1h-1zM9 9h1v1h-1zM7 10h2v1h-2zM5 11h1v1h-1zM10 11h1v1h-1zM4 13h1v1h-1zM11 13h1v1h-1zM2 15h12v1h-12z"#,
+  },
+  SpriteLayer {
+    fill: "#94b0c2",
+    d: r#"M8 7h1v1h-1zM7 11h2v1h-2z"#,
   },
 ];
 pub const BOSS: SpriteData = SpriteData {
@@ -428,6 +475,7 @@ pub const NODE_COIN: SpriteData = SpriteData {
 pub fn sprite_by_name(name: &str) -> Option<&'static SpriteData> {
   match name {
     "hero" => Some(&HERO),
+    "radio" => Some(&RADIO),
     "mon_static" => Some(&MON_STATIC),
     "mon_swr" => Some(&MON_SWR),
     "mon_noise" => Some(&MON_NOISE),

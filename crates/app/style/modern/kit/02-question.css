@@ -1696,9 +1696,11 @@ html[data-ui-style="modern"] .md-q [data-slot="badge"] {
       border-start-end-radius: var(--md-r-lg);
     }
 
-    /* 操作条 + dock 两层，底部留白要一起让出来。 */
+    /* 操作条 + dock 两层，底部留白要一起让出来。两层高度都由实测得来：
+       操作条是 `[data-fixed-bottom]`（`--fixed-bottom-h` 已含它的顶边到屏幕底），
+       这里只补操作条上方的一行余量。写死 168px 时文案折行就会不够。 */
     .md-practice {
-      padding-bottom: 168px;
+      padding-bottom: calc(var(--fixed-bottom-h, 168px) + var(--md-space-2));
     }
   }
 }

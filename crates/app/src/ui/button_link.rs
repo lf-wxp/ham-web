@@ -10,6 +10,7 @@
 use leptos::prelude::*;
 
 use super::control::TextValue;
+use super::led::{Led, LedState, LedTone};
 use super::{Size, Variant, button_class};
 
 /// 链接版按钮（导航 / 跳转用）。
@@ -40,8 +41,16 @@ pub fn ButtonLink(
   /// `prevent_default()` 拦住这次跳转」这种守卫可以直接写在调用点。
   #[prop(optional, into)]
   on_click: Option<Callback<web_sys::MouseEvent>>,
+  /// 像素风按键里的指示灯，同 [`Button`](super::Button) 的 `led` / `led_on`。
+  #[prop(optional)]
+  led: Option<LedTone>,
+  #[prop(optional, into)] led_on: Signal<bool>,
   children: Children,
 ) -> impl IntoView {
+  let lamp = (!crate::kit::is_modern_at_mount())
+    .then_some(led)
+    .flatten()
+    .map(|tone| view! { <Led tone=tone state=Signal::derive(move || LedState::lit(led_on.get())) small=true /> });
   view! {
     <a
       href=move || href.get()
@@ -58,6 +67,7 @@ pub fn ButtonLink(
         }
       }
     >
+      {lamp}
       {children()}
     </a>
   }

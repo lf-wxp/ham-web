@@ -36,6 +36,15 @@ function readPushedFile(req: PwRequest): { filename: string; type: string; text:
 const pushedJson = (req: PwRequest): Record<string, string> => JSON.parse(readPushedFile(req).text);
 
 /**
+ * Toast 的正文节点。
+ *
+ * 像素风在正文前面画了一枚装饰字符（✓ / ✗ / i，`aria-hidden`，见 `ui/toast.rs`）。断言文案要落在
+ * 正文节点上：取外层 `[data-slot="toast"]` 的 textContent 时，`^已导出…` 这类起锚正则会被装饰字符挡掉。
+ */
+const toastText = (page: import("@playwright/test").Page) =>
+  page.locator('[data-slot="toast-text"]');
+
+/**
  * 数据备份（`/backup`）。
  *
  * 原先是小工具页最底部的 `/tools#backup`，埋在几十个计算器之后；现在独立成页，
@@ -47,12 +56,12 @@ test("数据备份：导出 JSON 含本地数据", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "数据备份" })).toBeVisible();
   await expect(page.getByText("本地存储占用（约）")).toBeVisible();
 
-  // 导出成功后有一个「已导出 N 项」提示（全局 Toast，`data-slot="toast"` 定位）。
+  // 导出成功后有一个「已导出 N 项」提示（全局 Toast，正文节点 `data-slot="toast-text"` 定位）。
   const dl = page.waitForEvent("download");
   await page.getByRole("button", { name: "导出备份" }).click();
   const file = await dl;
   expect(file.suggestedFilename()).toMatch(/^ham-backup-\d{8}\.json$/);
-  await expect(page.locator('[data-slot="toast"]')).toContainText(/^已导出 \d+ 项$/);
+  await expect(toastText(page)).toContainText(/^已导出 \d+ 项$/);
 
   const data = JSON.parse(await readFile(await file.path(), "utf8"));
   expect(data["e2e-backup-key"]).toBe("e2e-value");
@@ -73,7 +82,7 @@ test("数据备份：按模块勾选导出（不勾选的通联数据不进备�
   const dl = page.waitForEvent("download");
   await section.getByRole("button", { name: "导出备份" }).click();
   const file = await dl;
-  await expect(page.locator('[data-slot="toast"]')).toContainText(/^已导出 \d+ 项$/);
+  await expect(toastText(page)).toContainText(/^已导出 \d+ 项$/);
 
   const data = JSON.parse(await readFile(await file.path(), "utf8"));
   expect(data["logbook"]).toBeUndefined();
@@ -99,7 +108,7 @@ test("数据备份：只勾选 QSL 影像也要导出影像与索引；导入拒
     buffer: Buffer.from(JSON.stringify(backup)),
   });
   // 索引（localStorage）+ 合格的 1 张影像 = 2 条（结果走全局 Toast）。
-  await expect(page.locator('[data-slot="toast"]')).toContainText("已恢复 2 条数据");
+  await expect(toastText(page)).toContainText("已恢复 2 条数据");
 
   // 取消「通联数据」与「其他」：索引不在被勾选的模块里，影像仍要导出。
   await section.getByLabel(/^通联数据/).uncheck();
@@ -141,7 +150,7 @@ test("数据备份：导入恢复与合并导入", async ({ page }) => {
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(restore)),
   });
-  await expect(page.locator('[data-slot="toast"]')).toContainText(/^已恢复 \d+ 条数据$/);
+  await expect(toastText(page)).toContainText(/^已恢复 \d+ 条数据$/);
   expect(await page.evaluate(() => localStorage.getItem("e2e-imported"))).toBe("cover");
 
   // 合并导入（保留本机已有的 key，并入新的）
@@ -150,7 +159,7 @@ test("数据备份：导入恢复与合并导入", async ({ page }) => {
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify({ "e2e-merged": "yes" })),
   });
-  await expect(page.locator('[data-slot="toast"]')).toContainText(/^已合并 \d+ 条数据$/);
+  await expect(toastText(page)).toContainText(/^已合并 \d+ 条数据$/);
   expect(await page.evaluate(() => localStorage.getItem("e2e-imported"))).toBe("cover");
   expect(await page.evaluate(() => localStorage.getItem("e2e-merged"))).toBe("yes");
 });
@@ -164,13 +173,13 @@ test("数据备份：跨设备合并重映射影像 ID，保留本机扫描件",
   const a = "data:image/png;base64,QUFB";
   const b = "data:image/png;base64,QkJC";
   const importFile = async (merge: boolean, data: Record<string, string>) => {
-    await expect(page.locator('[data-slot="toast"]')).toHaveCount(0);
+    await expect(toastText(page)).toHaveCount(0);
     await inputs.nth(merge ? 1 : 0).setInputFiles({
       name: "images.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(data)),
     });
-    await expect(page.locator('[data-slot="toast"]')).toContainText(merge ? /^已合并/ : /^已恢复/);
+    await expect(toastText(page)).toContainText(merge ? /^已合并/ : /^已恢复/);
     await expect(page.locator('section#backup input[type="file"]').first()).toBeEnabled();
-    await expect(page.locator('[data-slot="toast"]')).toHaveCount(0);
+    await expect(toastText(page)).toHaveCount(0);
   };
   await importFile(false, {
     logbook: JSON.stringify({ entries: [entry(1, "JA1AAA", "2026-01-01")] }),
@@ -210,13 +219,13 @@ test("覆盖新日志会删除同 ID 的旧影像，随后合并正确影像不�
   const a = "data:image/png;base64,QUFB";
   const b = "data:image/png;base64,QkJC";
   const restore = async (merge: boolean, data: Record<string, string>) => {
-    await expect(page.locator('[data-slot="toast"]')).toHaveCount(0);
+    await expect(toastText(page)).toHaveCount(0);
     await inputs.nth(merge ? 1 : 0).setInputFiles({
       name: "cover.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(data)),
     });
-    await expect(page.locator('[data-slot="toast"]')).toContainText(merge ? /^已合并/ : /^已恢复/);
+    await expect(toastText(page)).toContainText(merge ? /^已合并/ : /^已恢复/);
     await expect(page.locator('section#backup input[type="file"]').first()).toBeEnabled();
-    await expect(page.locator('[data-slot="toast"]')).toHaveCount(0);
+    await expect(toastText(page)).toHaveCount(0);
   };
   await restore(false, { logbook: log("JA1AAA"), "qsl-image-index": "[1]", "qsl-image:1": a });
   await restore(false, { logbook: log("W1AW"), "qsl-image-index": "[]" });
@@ -238,7 +247,7 @@ test("数据备份：非法 JSON 给出失败提示而不是静默", async ({ pa
     mimeType: "application/json",
     buffer: Buffer.from("这不是 JSON"),
   });
-  await expect(page.locator('[data-slot="toast"]')).toContainText(/^导入失败：/);
+  await expect(toastText(page)).toContainText(/^导入失败：/);
 });
 
 /**
@@ -259,7 +268,7 @@ test.describe("自定义远端同步", () => {
     await page.locator("#remote-put-url").fill(`${REMOTE}/put`);
     await page.locator("#remote-put-headers").fill("Authorization: Bearer secret");
     await page.getByRole("button", { name: "写入远端" }).click();
-    await expect(page.locator('[data-slot="toast"]')).toContainText(/^已写入远端 \d+ 项$/);
+    await expect(toastText(page)).toContainText(/^已写入远端 \d+ 项$/);
 
     expect(seen?.method()).toBe("PUT");
     expect(seen?.headers()["authorization"]).toBe("Bearer secret");
@@ -284,7 +293,7 @@ test.describe("自定义远端同步", () => {
     // 旧版本允许用这行把 JSON 改成别的类型；现在带上它会让服务端读不到 boundary。
     await page.locator("#remote-put-headers").fill("Content-Type: text/plain\nAuthorization: Bearer secret");
     await page.getByRole("button", { name: "写入远端" }).click();
-    await expect(page.locator('[data-slot="toast"]')).toContainText(/^已写入远端 \d+ 项$/);
+    await expect(toastText(page)).toContainText(/^已写入远端 \d+ 项$/);
 
     expect(seen?.headers()["content-type"]).toMatch(/^multipart\/form-data;\s*boundary=/i);
     // 其余自定义请求头照常发出。
@@ -315,10 +324,10 @@ test.describe("自定义远端同步", () => {
     await page.locator("#remote-put-headers").fill("Authorization: Bearer write-token");
 
     await page.getByRole("button", { name: "从远端合并" }).click();
-    await expect(page.locator('[data-slot="toast"]')).toContainText(/^已合并 \d+ 条数据$/);
-    await expect(page.locator('[data-slot="toast"]')).toHaveCount(0);
+    await expect(toastText(page)).toContainText(/^已合并 \d+ 条数据$/);
+    await expect(toastText(page)).toHaveCount(0);
     await page.getByRole("button", { name: "写入远端" }).click();
-    await expect(page.locator('[data-slot="toast"]')).toContainText(/^已写入远端 \d+ 项$/);
+    await expect(toastText(page)).toContainText(/^已写入远端 \d+ 项$/);
 
     expect(auth.get).toBe("Bearer read-token");
     expect(auth.put).toBe("Bearer write-token");
@@ -340,7 +349,7 @@ test.describe("自定义远端同步", () => {
     await page.goto("/backup");
     await page.locator("#remote-get-url").fill(`${REMOTE}/get`);
     await page.getByRole("button", { name: "从远端合并" }).click();
-    await expect(page.locator('[data-slot="toast"]')).toContainText(/^已合并 \d+ 条数据$/);
+    await expect(toastText(page)).toContainText(/^已合并 \d+ 条数据$/);
     expect(await page.evaluate(() => localStorage.getItem("e2e-from-remote"))).toBe("yes");
 
     await page.reload();
@@ -353,7 +362,7 @@ test.describe("自定义远端同步", () => {
     await page.locator("#remote-get-url").fill(`${REMOTE}/get`);
     await page.getByRole("button", { name: "从远端恢复（覆盖）" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "从远端恢复（覆盖）" }).click();
-    await expect(page.locator('[data-slot="toast"]')).toHaveText("远端还没有数据");
+    await expect(toastText(page)).toHaveText("远端还没有数据");
   });
 
   test("从远端获取：HTTP 错误给出失败提示", async ({ page }) => {
@@ -361,7 +370,7 @@ test.describe("自定义远端同步", () => {
     await page.goto("/backup");
     await page.locator("#remote-get-url").fill(`${REMOTE}/get`);
     await page.getByRole("button", { name: "从远端合并" }).click();
-    await expect(page.locator('[data-slot="toast"]')).toContainText("HTTP 401");
+    await expect(toastText(page)).toContainText("HTTP 401");
   });
 
   test("地址或请求头不合格时就地报错并禁用对应按钮", async ({ page }) => {
@@ -410,7 +419,7 @@ test.describe("自定义远端同步", () => {
     await section.getByLabel(/^QSL 影像（扫描件/).uncheck();
     await page.locator("#remote-put-url").fill(`${REMOTE}/put`);
     await page.getByRole("button", { name: "写入远端" }).click();
-    await expect(page.locator('[data-slot="toast"]')).toContainText(/^已写入远端 \d+ 项$/);
+    await expect(toastText(page)).toContainText(/^已写入远端 \d+ 项$/);
 
     const data = pushedJson(pushed!);
     expect(data["logbook"]).toBeDefined();
@@ -425,7 +434,7 @@ test.describe("自定义远端同步", () => {
       await route.fulfill({ status: 204 });
     });
     await page.goto("/backup");
-    const toast = page.locator('[data-slot="toast"]');
+    const msg = toastText(page);
 
     // 经导入路径把一张合格的影像写进 IndexedDB。
     const png = "data:image/png;base64,iVBORw0KGgo=";
@@ -434,24 +443,24 @@ test.describe("自定义远端同步", () => {
       mimeType: "application/json",
       buffer: Buffer.from(JSON.stringify({ "qsl-image-index": JSON.stringify([7]), "qsl-image:7": png })),
     });
-    await expect(toast).toContainText("已恢复 2 条数据");
-    await expect(toast).toHaveCount(0);
+    await expect(msg).toContainText("已恢复 2 条数据");
+    await expect(msg).toHaveCount(0);
 
     await page.locator("#remote-put-url").fill(`${REMOTE}/put`);
     await page.getByRole("button", { name: "写入远端" }).click();
-    await expect(toast).toContainText(/^已写入远端/);
+    await expect(msg).toContainText(/^已写入远端/);
     expect(pushes).toHaveLength(1);
     expect(pushedJson(pushes[0])["qsl-image:7"]).toBe(png);
-    await expect(toast).toHaveCount(0);
+    await expect(msg).toHaveCount(0);
 
     const exclude = page.getByRole("checkbox", { name: "同步时不含 QSL 影像" });
     await exclude.click();
     await expect(exclude).toHaveAttribute("aria-checked", "true");
     await page.getByRole("button", { name: "写入远端" }).click();
-    await expect(toast).toContainText(/^已写入远端/);
+    await expect(msg).toContainText(/^已写入远端/);
     expect(pushes).toHaveLength(2);
     expect(pushedJson(pushes[1])["qsl-image:7"]).toBeUndefined();
-    await expect(toast).toHaveCount(0);
+    await expect(msg).toHaveCount(0);
 
     // 开关随配置保存，刷新后还在。
     await page.reload();
@@ -472,7 +481,7 @@ test.describe("自定义远端同步", () => {
       mimeType: "application/json",
       buffer: Buffer.from(JSON.stringify({ "remote-sync": '{"put_url":"https://evil.test/"}' })),
     });
-    await expect(page.locator('[data-slot="toast"]')).toContainText(/^已恢复 \d+ 条数据$/);
+    await expect(toastText(page)).toContainText(/^已恢复 \d+ 条数据$/);
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("remote-sync") ?? "{}"));
     expect(stored.get_url).toBe(`${REMOTE}/get`);
     expect(stored.put_url ?? "").toBe("");
@@ -513,13 +522,12 @@ test.describe("自动同步", () => {
     );
   const ls = (page: import("@playwright/test").Page, key: string) =>
     page.evaluate((k) => localStorage.getItem(k), key);
-  const toast = (page: import("@playwright/test").Page) => page.locator('[data-slot="toast"]');
 
   test("打开页面自动获取：远端有更新、本机没有未同步改动 → 用远端覆盖本机", async ({ page }) => {
     await seed(page, { config: { get_url: GET }, state: { base: 1, dirty: false } });
     await serveRemote(page, { "e2e-from-remote": "yes" });
     await page.goto("/backup");
-    await expect(toast(page)).toContainText("已从远端更新本机数据");
+    await expect(toastText(page)).toContainText("已从远端更新本机数据");
     expect(await ls(page, "e2e-from-remote")).toBe("yes");
   });
 
@@ -527,7 +535,7 @@ test.describe("自动同步", () => {
     await seed(page, { config: { get_url: GET } });
     await serveRemote(page, { "e2e-from-remote": "yes" });
     await page.goto("/backup");
-    await expect(toast(page)).toContainText("已从远端更新本机数据");
+    await expect(toastText(page)).toContainText("已从远端更新本机数据");
     expect(await ls(page, "e2e-from-remote")).toBe("yes");
   });
 
@@ -535,7 +543,7 @@ test.describe("自动同步", () => {
     await seed(page, { config: { get_url: GET }, items: { bookmarks: "[]" } });
     await serveRemote(page, { "e2e-from-remote": "yes" });
     await page.goto("/backup");
-    await expect(toast(page)).toContainText("已暂停自动同步");
+    await expect(toastText(page)).toContainText("已暂停自动同步");
     await expect(remotePanel(page).getByRole("status")).toContainText("已暂停自动同步");
     expect(await ls(page, "e2e-from-remote")).toBeNull();
   });
@@ -557,7 +565,7 @@ test.describe("自动同步", () => {
     await seed(page, { config: { get_url: GET }, state: { base: 1, dirty: false } });
     await serveRemote(page, { "e2e-from-remote": "yes" });
     await page.goto("/backup");
-    await expect(toast(page)).toContainText("已从远端更新本机数据");
+    await expect(toastText(page)).toContainText("已从远端更新本机数据");
 
     // 本机改成别的值；刷新后远端内容与上次同步时一致，不应再被覆盖回去。
     await page.evaluate(() => localStorage.setItem("e2e-from-remote", "local"));
@@ -572,7 +580,7 @@ test.describe("自动同步", () => {
     await seed(page, { config: { get_url: GET, put_url: PUT }, state: { base: 1, dirty: true } });
     await page.route(GET, (route) => route.fulfill({ status: 500, body: "" }));
     await page.goto("/backup");
-    await expect(toast(page)).toContainText("HTTP 500");
+    await expect(toastText(page)).toContainText("HTTP 500");
     await expect(remotePanel(page).getByRole("status")).toContainText("已暂停自动写入");
   });
 
@@ -608,17 +616,17 @@ test.describe("自动同步", () => {
 
     // 本次会话里还没成功同步过：数据变了也不写。
     await importFile({ "e2e-a": "1" });
-    await expect(toast(page)).toContainText(/^已恢复/);
+    await expect(toastText(page)).toContainText(/^已恢复/);
     await page.waitForTimeout(7_000);
     expect(puts).toHaveLength(0);
 
     // 手动写入成功 = 这组地址验证过了，之后的变化才自动写。
-    await expect(toast(page)).toHaveCount(0);
+    await expect(toastText(page)).toHaveCount(0);
     await page.getByRole("button", { name: "写入远端" }).click();
-    await expect(toast(page)).toContainText(/^已写入远端/);
+    await expect(toastText(page)).toContainText(/^已写入远端/);
     expect(puts).toHaveLength(1);
 
-    await expect(toast(page)).toHaveCount(0);
+    await expect(toastText(page)).toHaveCount(0);
     await importFile({ "e2e-b": "2" });
     await expect.poll(() => puts.length, { timeout: 20_000 }).toBe(2);
     expect(pushedJson(puts[1])["e2e-b"]).toBe("2");
@@ -638,15 +646,15 @@ test.describe("自动同步", () => {
     });
     await page.goto("/backup");
     // 404 可能只是获取地址写错了：没人确认过这组接口，不能替用户把本机推上去。
-    await expect(toast(page)).toContainText("请先手动点一次「写入远端」");
+    await expect(toastText(page)).toContainText("请先手动点一次「写入远端」");
     await expect(remotePanel(page).getByRole("status")).toContainText("请先手动点一次「写入远端」");
     await page.waitForTimeout(7_000);
     expect(puts).toHaveLength(0);
 
     // 手动写入成功 = 这组地址验证过了。
-    await expect(toast(page)).toHaveCount(0);
+    await expect(toastText(page)).toHaveCount(0);
     await page.getByRole("button", { name: "写入远端" }).click();
-    await expect(toast(page)).toContainText(/^已写入远端/);
+    await expect(toastText(page)).toContainText(/^已写入远端/);
     expect(puts).toHaveLength(1);
   });
 
@@ -683,7 +691,7 @@ test.describe("自动同步", () => {
     await expect.poll(() => ls(page, "logbook")).toContain("BG4RACE");
 
     release();
-    await expect(toast(page)).toContainText("已暂停自动同步");
+    await expect(toastText(page)).toContainText("已暂停自动同步");
     expect(await ls(page, "e2e-from-remote")).toBeNull();
     expect(await ls(page, "logbook")).toContain("BG4RACE");
   });
@@ -731,7 +739,7 @@ test.describe("自动同步", () => {
     const sent = page.waitForRequest((r) => r.url() === PUT && r.method() === "PUT", { timeout: 20_000 });
     await page.getByRole("button", { name: "从远端恢复（覆盖）" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "从远端恢复（覆盖）" }).click();
-    await expect(toast(page)).toContainText(/^已恢复/);
+    await expect(toastText(page)).toContainText(/^已恢复/);
     // 覆盖导入不会删掉远端没有的 key：远端因此还缺这一份，自动同步要把它补回去。
     const body = pushedJson(await sent);
     expect(body["e2e-local"]).toBe("mine");

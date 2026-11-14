@@ -10,6 +10,7 @@ use leptos::prelude::*;
 use crate::icons::{Icon, IconKind};
 
 use super::control::TextValue;
+use super::led::{Led, LedState, LedTone};
 use super::{Size, Variant, button_class};
 
 /// `<button type>`。
@@ -65,10 +66,33 @@ pub fn Button(
   /// `aria-current="true"`；`false` / 不传不输出该属性。
   #[prop(optional, into)]
   aria_current: Signal<bool>,
+  /// 像素风按键里的指示灯（`docs/ui/pixel.md` §3.4）：主操作的「发射键」、带提醒的动作。
+  /// `led_on` 决定亮灭；现代风没有指示灯，两个参数都不读。
+  #[prop(optional)]
+  led: Option<LedTone>,
+  #[prop(optional, into)] led_on: Signal<bool>,
   #[prop(optional, into)] on_click: Option<Callback<()>>,
   #[prop(optional)] node_ref: NodeRef<html::Button>,
   children: Children,
 ) -> impl IntoView {
+  // 像素风的「忙」是琥珀灯闪，不是转圈（电台面板上没有转圈的东西）；现代风照旧转圈。
+  let pixel = !crate::kit::is_modern_at_mount();
+  let lamp = move || {
+    (pixel && (led.is_some() || loading.get())).then(|| {
+      let busy = loading.get();
+      let tone = if busy {
+        LedTone::Warn
+      } else {
+        led.unwrap_or(LedTone::Rx)
+      };
+      let state = if busy {
+        LedState::Blink
+      } else {
+        LedState::lit(led_on.get())
+      };
+      view! { <Led tone=tone state=state small=true /> }
+    })
+  };
   view! {
     <button
       node_ref=node_ref
@@ -89,9 +113,9 @@ pub fn Button(
         }
       }
     >
+      {lamp}
       {move || {
-        loading
-          .get()
+        (!pixel && loading.get())
           .then(|| {
             // 外面包一层 span：`has-[>svg]:px-*` 按「直接子 svg」判断内边距，
             // 直接把 spinner 塞成子 svg 会在加载中把纯文字按钮的左右内边距压窄一档。

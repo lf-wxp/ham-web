@@ -89,6 +89,9 @@ pub fn ScrollBar() -> impl IntoView {
   // 上下两条固定层的占位：滚动条只画在两者之间。缓存起来，避免每帧读它们的几何。
   let top_h = StoredValue::new(0.0);
   let bottom_h = StoredValue::new(0.0);
+  // 上一次写到根元素 `--fixed-bottom-h` 的值：量到同一个数就不再写（量得很勤：挂载、字体落位、
+  // 每次尺寸变化），省掉一次样式失效；`None` = 还没写过（首次必须写，哪怕是 0）。
+  let root_written = StoredValue::new(None::<f64>);
   // 拖动状态：按下时的指针 y 与当时的 `scrollY`。
   let dragging = StoredValue::new(false);
   let grab_y = StoredValue::new(0.0);
@@ -117,6 +120,19 @@ pub fn ScrollBar() -> impl IntoView {
     let bottom = bottom_inset();
     top_h.set_value(top);
     bottom_h.set_value(bottom);
+    // 同一个实测值也挂到根元素上：页面靠它给贴底固定层让位（`--fixed-bottom-h`），
+    // 不必各写一个魔法数字。底栏高度会随文案折行 / 安全区变，写死的 `pb-28` 迟早不够
+    // （实测考试页底栏 140px、页面只留 112px，最后一行答题卡被压住）。
+    if root_written.get_value() != Some(bottom)
+      && let Some(root) = document()
+        .document_element()
+        .and_then(|el| el.dyn_into::<web_sys::HtmlElement>().ok())
+    {
+      let _ = root
+        .style()
+        .set_property("--fixed-bottom-h", &format!("{bottom}px"));
+      root_written.set_value(Some(bottom));
+    }
     if let Some(host) = host.get_untracked() {
       let style = web_sys::HtmlElement::from(host).style();
       let _ = style.set_property("top", &format!("{top}px"));

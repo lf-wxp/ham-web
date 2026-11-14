@@ -226,6 +226,7 @@ pub mod repeater;
 pub mod repeater_build;
 pub mod rf_exposure;
 pub mod rfi;
+pub mod rig_panel;
 pub mod rig_reviews;
 pub mod rotor;
 pub mod rpg;

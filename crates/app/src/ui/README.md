@@ -19,8 +19,8 @@ disabled / error 状态反馈因此只有一处定义。
 
 | 组件 | 替代的原生写法 | 关键 props |
 |---|---|---|
-| `Button` | `<button class=button_class(…)>` | `variant` `size` `kind` `disabled` `loading` `class` `aria_label` `title` `aria_describedby`（禁用时的原因说明）`aria_expanded` `aria_controls`（折叠 / 下拉开关）`aria_current`（一组里「当前这个」，如答题卡的当前题）`on_click` `node_ref` |
-| `ButtonLink` | `<a href class=button_class(…)>`（跳转用的「按钮」） | `href`（`TextValue`）`variant` `size` `class` `aria_label` `title` `target` `rel` `download`（保存 `data:` / `blob:` 资源时的文件名）`on_click`（收 `MouseEvent`） |
+| `Button` | `<button class=button_class(…)>` | `variant` `size` `kind` `disabled` `loading`（像素风是琥珀灯闪，现代风转圈）`led` `led_on`（像素风按键里的指示灯）`class` `aria_label` `title` `aria_describedby`（禁用时的原因说明）`aria_expanded` `aria_controls`（折叠 / 下拉开关）`aria_current`（一组里「当前这个」，如答题卡的当前题）`on_click` `node_ref` |
+| `ButtonLink` | `<a href class=button_class(…)>`（跳转用的「按钮」） | `href`（`TextValue`）`variant` `size` `led` `led_on` `class` `aria_label` `title` `target` `rel` `download`（保存 `data:` / `blob:` 资源时的文件名）`on_click`（收 `MouseEvent`） |
 | `Input` | `<input>`（text / search / password / email / tel / url；日期与时间见 `DatePicker` / `TimePicker`） | `value` `on_change` `kind` `size` `prefix` `suffix` `clearable` `on_enter` `on_keydown` `invalid` `maxlength` `title` `autocomplete` `autocapitalize` `spellcheck` `aria_describedby` `node_ref`。`kind=InputType::Search` 的搜索框在输入法组字期间不回调 `on_change`、选字确认补一次；其余类型逐字回调 |
 | `NumberField` | `<input type="number">` | `value` `on_change` `min` `max` `step` `controls`（加减步进）`kind`（`NumberKind::Decimal` = 文本框 + 数字键盘，负数与半截输入可用） |
 | `Textarea` | `<textarea>` | `value` `on_change` `rows` `auto_resize` `autocomplete` `autocapitalize` `spellcheck`（填令牌 / 密钥时设 `off` / `false`） |
@@ -35,6 +35,9 @@ disabled / error 状态反馈因此只有一处定义。
 | `ChipToggle` | 手写「chip 开关」（筛选条上的独立开关） | `active` `on_change` `title` `disabled` |
 | `Tabs` + `TabsList` / `TabsTrigger` / `TabsPanel` | 手写 `role="tablist"` + `if` 藏显面板 / 用 `ChipGroup` 冒充视图切换 | `value` `on_change`；`TabsList` 的 `aria_label`（多组时必填）；`TabsTrigger` 的 `value`（ascii slug，同时拼 id）`disabled`；`TabsPanel` 的 `value`。面板内容第一次被切到才挂载，之后常驻、只切显隐（保留状态）。**筛选用 `ChipGroup`，不要用 Tabs** |
 | `Slider` | `<input type="range">` | `value` `on_change` `min` `max` `step` `aria_valuetext` |
+| `Knob` | `<input type="range">`（面板上的调谐量：音调 / 音量 / 增益） | `value` `on_change` `min` `max` `step` `label`（可见标签）`aria_label` `readout` + `unit`（读数屏）`aria_valuetext`（读屏 + 现代风的可见数值）`class`（只给现代风的 `Slider`）；像素风是 80px 旋钮 + 读数屏（拖动 / 有焦点时滚轮 / 方向键，`role="slider"`），现代风是「标签 + `Slider` + 数值」一行 |
+| `Led` | — | 指示灯：`tone`（`LedTone::Rx` / `Tx` / `Warn` / `Info`）`state`（`LedState::Off` / `On` / `Blink`）`small`；`aria-hidden`，旁边必须有文字 |
+| `Readout` | — | 七段读数：`text` `label`（读屏名，不给则 `aria-hidden`）`scale`（1–4）`tone`（`ReadoutTone`）；只放在屏幕（`pxl-display`）里 |
 | `FileInput` | 隐藏 `<input type="file">` + 触发按钮 | `on_files` `accept` `multiple` `label` |
 | `FileDropZone` | 手写 `<label for>` + 隐藏 input 的整块拖放区 | `on_file` `accept` `title`（同时是无障碍名）`icon` `hint` `choose_hint`（覆盖默认的「拖拽音频文件」提示行）`disabled` `id`（e2e 按固定 id 定位时传） |
 | `Field` | 手写的 `label + 控件 + 提示` 排版 | `label` `r#for` `hint` `error` `invalid` `required` `validate_on`（默认 `Immediate`；表单类字段传 `Blur` 则失焦后才显示错误）。**表单语义的唯一来源**：`hint` / `error` 的 id 与必填状态经 context 下发给 `Input` / `Textarea` / `NumberField` / `Select` / `SimpleSelect` / `DatePicker` / `TimePicker`，控件自动补 `aria-describedby` / `aria-required` |

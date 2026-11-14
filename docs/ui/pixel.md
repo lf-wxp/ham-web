@@ -39,7 +39,8 @@
 
 ## 2. 像素规范（视觉基线）
 
-整站是「16 位掌机 + 复古电台」风格。**外观只在 `crates/app/style/pixel/` 定义一次**，组件与页面只用
+整站是「Pixel Rig · 16 位电台前面板」：一台用 16 位像素画出来的短波电台（为什么这么定见
+[`docs/ui/decisions.md`](decisions.md) §11.6）。**外观只在 `crates/app/style/pixel/` 定义一次**，组件与页面只用
 语义 token 与 `pxl-*` 控件类，不要在页面里再写圆角、模糊、渐变、软阴影。
 
 > 仓库里还有**第二套设计系统（现代风）**（两套并存、都在维护），它有自己的目录 `crates/app/src/kit_modern/` 与
@@ -49,12 +50,13 @@
 
 | 文件 | 管什么 |
 |---|---|
-| `tokens.css` | 亮 / 暗两套调色板（映射到 `--background` / `--primary` / `--border` 等**既有语义名**）、零圆角、硬偏移阴影、字号阶梯、`steps()` 缓动 |
+| `tokens.css` | 亮 / 暗两套调色板（映射到 `--background` / `--primary` / `--border` 等**既有语义名**）、屏幕层 `--display-*` 与指示灯 `--led-*`、零圆角、硬偏移阴影、字号阶梯、`steps()` 缓动 |
 | `schemes.css` | 其余配色方案（森林 / 海洋 / 晚霞 / 石墨与 PICO-8 / Game Boy / 红白机 / C64 / CGA / ZX Spectrum）的亮 / 暗变量块；由 `cargo make pixel-schemes` 从 `crates/core/src/color_scheme.rs` 生成，**勿手改** |
 | `palette.css` | Tailwind 默认色阶（`green-600` 等）整体换成像素调色板；由固定规则生成，**不要手调单个色值** |
 | `fonts.css` / `fonts-pixel.css` | 字体声明；后者由 `cargo make fonts-pixel`（`crates/tools/src/pixel/fonts.rs`）生成，**勿手改** |
 | `surfaces.css` | 全局基线、背景底纹、存量卡片兜底、滚动条、图标 / 精灵尺寸。背景是**纯 CSS**：亮色是带细抖动点阵的纸张，暗色是深蓝夜空 + 稀疏星点（`steps()` 慢闪）；没有 WebGL、没有渐变 / 模糊，打印时不渲染 |
-| `controls.css` | `pxl-btn` / `pxl-field` / `pxl-window` / `pxl-titlebar` / `pxl-popover` / `pxl-overlay` / `pxl-check` / `pxl-radio` / `pxl-switch` / `pxl-chip` / `pxl-badge` / `pxl-item` / `pxl-bar` 等控件原语 |
+| `controls.css` | `pxl-btn` / `pxl-field` / `pxl-window` / `pxl-popover` / `pxl-overlay` / `pxl-check` / `pxl-radio` / `pxl-switch` / `pxl-chip` / `pxl-badge` / `pxl-item` / `pxl-bar` 等控件原语 |
+| `radio.css` | 电台组件的外观：屏幕 `pxl-display`、七段 `pxl-readout`、指示灯 `pxl-led`、S 表 `pxl-meter-*`、知识频谱 `pxl-spectrum*`、值机记录 `pxl-logstrip`、旋钮 `pxl-knob`、干扰频谱 `pxl-qrm`、信号格 `pxl-sigbars`、电量格 `pxl-battery`、无信号 `pxl-testcard` / `pxl-flatline`、页头铭牌 `pxl-band-tag` 与刻度 `pxl-tick-edge` |
 | `motion.css` | 全部逐帧动画与「静态降级」 |
 
 **硬规则**
@@ -192,10 +194,32 @@
    纯装饰的读条直接不渲染。延迟也要一起归零（`transition-delay` / `animation-delay`），
    否则「即时」会变成「迟钝」（`[data-reveal]` 的 60ms 错峰曾漏在降级之外）。
 
+14. **四层材质，屏幕只放数字与短状态**：机身（L0 与外壳）→ 面板（L1 / L2）→ 屏幕 → 指示灯。
+   屏幕（`pxl-display`，取 `--display-*`）亮色下是反射式液晶（本方案纸色压深 + 墨色段码、无扫描线），暗色下是背光暗屏
+   （本方案卡片色再压深一层 + 荧光读数）；两套都从**自己的纸色 / 卡片色**派生，主色只给限幅色偏（色相差 <= 12°）。只放读数、单位与几个字的状态
+   （`LOCK`、「扫描中」）；**长文（题干、知识库正文）永远在纸面上**。唯一的例外是答案解析：它在屏幕上
+   （`ExplanationCard` 的像素分支「DECODE · 解析」，理由见 [`decisions.md`](decisions.md) §11.6）。屏幕只坐在面板上，
+   不直接落在页底；**大块屏幕一屏最多两块**（和「一页只有当前任务块是 L2」同一个口径），统计格、旋钮、题号这类
+   读数小屏不计。屏幕里的字只用 `--display-fg` / `--display-dim` /
+   `--display-hot` / `--display-alarm` / `--display-ok`（`pxl-display` 下的 `pxl-d-*` 类），不要写 `text-foreground`
+   —— 那是纸面的字色，不跟屏幕的配色走（屏幕色随明暗与配色方案单独派生，纸面字色落在屏幕上不保证对比度）。
+   扫描线画在字的**下面**（背景层），不盖在文字上。
+   数字读数走 `Readout`（SVG 七段 + 读屏文本），不要用普通文字假装七段。
+15. **指示灯只有四个意思**：`Led` 的 `tone` = `Rx`（绿：锁定 / 正确 / 开）、`Tx`（红：发射 / 错误 / 告急 / 在考）、
+   `Warn`（琥珀：忙 / 提醒 / 已标记）、`Info`（蓝：当前 / 信息），取值直接指向既有状态色（`--led-rx` → `--pxl-win` 等），
+   不新增色相。灯是 `aria-hidden` 的装饰，**旁边必须有文字**或常驻 `role="status"` 的结论 —— 颜色不是唯一通道。
+   **只有灯会循环闪烁**（1s 周期 `steps(1)`），文字、读数与大面积色块永远不闪；降级时闪烁变常亮
+   （判分「锁定」的两下内框是一次性的，见 [`motion.md`](motion.md) §8）。
+16. **电台元素必须承载功能，只写真的**：S 表表达掌握度 / 备考状态（S9 = 合格线，映射在 `ham_web_core::rig_panel`），
+   知识频谱表达各分类正确率，瀑布表达作答记录。纯装饰的频谱只允许出现在解码 / 监听的「接收中」。
+   不编造频率与呼号：示意频率只用真实频点，呼号取用户设置的本台呼号，没有就写「未设置」。
+17. **电台动作有固定词汇**：按压、调谐、扫描、锁定、干扰（QRM）、换台、衰减、闪烁，时长与降级见
+   [`docs/ui/motion.md`](motion.md) §8。新动效先在这八个里找，不另起名字；无限循环的（扫描、装饰频谱、干扰特征）
+   要在滚出视口时暂停（`motion::pause_offscreen_in` + `data-pause-offscreen`，见 motion.md 规则 3）。
+
 **可用的像素元素**
 
-- 窗口面板：`pxl-window`（卡片原语，自带 2px 墨色描边 + 硬投影）、`pxl-popover`（弹层）、
-  `pxl-titlebar`（标题栏）。
+- 窗口面板：`pxl-window`（卡片原语，自带 2px 墨色描边 + 硬投影 + 四角螺丝）、`pxl-popover`（弹层）。
 - 区段标题：`pxl-section-title`（卡片内的标题栏：微底纹 + 2px 墨色下沿 + 左侧主色方块）、
   `pxl-section-head`（页内分组标题，同样式但不带底纹与下沿，用在卡片外的 `h2`）、
   `pxl-sub-head`（题目附属信息的小标题：12px 灰字 + 同色小方块，答案解析 / 我的笔记用，层级低于题卡；
@@ -211,16 +235,17 @@
   `pxl-bar-win` / `pxl-bar-gold`。
 - 精灵：`PixelSprite name="hero" scale=4`（`scale` 是**每格的屏幕像素数**，从接口上杜绝非整数倍）；
   成就徽章用 `badge_sprite(id)` 取精灵名。
-- 动效类：`pxl-shake`（受击）、`pxl-flash`（闪白）、`pxl-bob`（待机）、`pxl-blink`、`pxl-float-up`（飘字）、
-  `pxl-typewriter`（打字机，`--steps` 传字符数）；`pxl-enter` / `pxl-enter-fade` 是弹层与遮罩的入场
+- 动效类：`pxl-shake`（受击）、`pxl-flash`（闪白）、`pxl-bob`（待机）、`pxl-blink`、`pxl-float-up`（飘字）；
+  `pxl-enter` / `pxl-enter-fade` 是弹层与遮罩的入场
   （`Dialog` / `Popover` 内部用，页面不用手写）。
 
 **新增像素资源**（图标 / 精灵 / 字体都是「源数据 → 生成物」，产物已入库，日常 / CI 不重跑，**勿手改**）：
 
 - **图标 / 精灵**：源数据在 `crates/tools/src/pixel/sprite_art.rs`（`ICON_MAP` 把 `IconKind` 映射到
-  pixelarticons 文件名，`None` 的手绘稿在 `HAND_ICONS`，角色 / Boss / 怪物 / 徽章在 `SPRITES`）；
-  改完跑 `cargo make pixel-sprites`（需 `PIXELARTICONS_DIR`）重新生成
-  `crates/app/src/icons/pixel/` 下的 `icon_paths.rs` / `sprite_data.rs`。新增 `IconKind` 漏了映射会
+  pixelarticons 文件名，`None` 的手绘稿在 `HAND_ICONS`，值机员 / 稀有 DX 台 / 怪物 / 徽章在 `SPRITES`）；
+  改完跑 `cargo make pixel-sprites` 重新生成 `crates/app/src/icons/pixel/` 下的文件：设了 `PIXELARTICONS_DIR`
+  （pixelarticons 的 svg 目录）才连 `icon_paths.rs` 一起生成，不设只重写 `sprite_data.rs` —— 只改精灵不需要图标集。
+  怪物精灵（`mon_*`）在像素风里已换成干扰频谱（§3.4），保留是因为现代风的插画按同一个名字取图。新增 `IconKind` 漏了映射会
   直接编译失败（`name()` 与生成的 `icon_path()` 都是穷尽 `match`）。
 - **字体**：跑 `cargo make fonts-pixel` 重新生成 `public/fonts/pixel-*.woff2` 与
   `crates/app/style/pixel/fonts-pixel.css`。原始 TTF 取 `FONT_SRC`（默认 `tmp/fonts`），
@@ -247,6 +272,7 @@
 | 是 / 否（**改完立即生效**的设置项） | `Switch` | `<input type="checkbox">` |
 | 是 / 否（**随表单一起提交**的字段） | `Checkbox` | `<input type="checkbox">` |
 | 数值范围（滑杆） | `Slider` | `<input type="range">` |
+| 面板上的调谐量（音调 / 音量 / 增益，范围小、常凭手感调） | `Knob`（自带标签与读数；像素风是旋钮 + 读数屏，现代风是「标签 + `Slider` + 数值」） | `<input type="range">` / 手写 `role="slider"` |
 | 互斥选择（表单里、选项带文字、和标签配套） | `RadioGroup` + `RadioGroupItem` | 手写 chip |
 | 互斥选择（工具条上、选项很短、横排一行） | `ChipGroup` + `Chip` | 手写 chip |
 | 互斥选择（**整行宽度的列表**：侧栏、图表配套） | `SidebarItem` | 手写列表项 |
@@ -326,7 +352,7 @@
 | 题图（缩略图 + 点击放大） | `PreviewableImage` | 手搭 `Dialog` + `<img>` |
 | 题目笔记编辑区 | `NoteEditor` | 手写 `Textarea` + 存取逻辑 |
 | 答题进度头 / 底部固定操作栏 | `QuestionProgressHeader` / `BottomBar` | 手写进度行 / 固定底栏 |
-| 限时考试的剩余时间读数 | `ExamClock`（档位由 `ham_web_core::exam_clock` 判定） | 手抄 `format_ms` + 自己定「最后 60 秒变红」 |
+| 限时考试的剩余时间读数 | `ExamClock`（七段屏，坐在 Boss 舞台的 ON AIR 读数屏上，页头不重复）+ `ExamBarClock`（底栏里的朴素文字，滚动后仍可见；档位都由 `ham_web_core::exam_clock` 判定） | 手抄 `format_ms` + 自己定「最后 60 秒变红」；在页头再放一份；把底栏那份删掉（长题 / 看图滚动后读数就没了） |
 | 答题卡（抽屉 + 题号格子） | `AnswerCardSheet` / `AnswerCardCell` | 手写格子网格 |
 | 答案解析（折叠 + 法规引用 + 朗读） | `ExplanationCard`（入参是解析文本；题目来自存档快照的，文本经 `data::snapshot_explanation` / `data::review_explanation` 取，见 [`docs/data/explanations.md`](../data/explanations.md)「存档快照里的解析」；首次展开前不渲染正文） | 手写折叠区 |
 
@@ -367,6 +393,17 @@
 
 考试 / 练习 / 导航三族组件（`components/exam/`、`components/practice/`、`components/navigation/`）
 只在对应流程里用，不在此表：改它们直接读文件头注释（弹层的开合、`Portal`、焦点与滚动锁都写在里面）。
+
+**首页的分段靠各块自己的 `mt-6`**：首页把 `PageContainer` 的 `space-y-6` 关成了 `space-y-0`（首屏的
+Hero 与快速开始要更松的节奏），所以每一块都必须自己写 `mt-6` 分段——漏一个，两块上下墨框就贴在一起
+（模块卡片行与「今日学习队列」曾因此贴死，2026-11-14 修）。新增首页区块时照抄相邻块的 `mt-6`，
+`ui_spec.spec.ts` 的「H4 首页：三列模块卡片与今日学习队列之间有间距」会拦。
+
+**顶栏一排控件等高**：站标、三个波段键（`GroupMenu`）、搜索、设置、HUD 读数屏在同一行里
+**高度一致**，且都是该行（桌面 40px / 窄屏 64px）的居中项、上下留同样的 2px / 12px。像素风的边框是
+2px 墨框，差一档高度就一眼看得出来（此前站标与右侧按钮 40px 顶到行边、波段键 36px、HUD 32px，
+三种高度并存）。取值：桌面 `xl:h-9` / `xl:size-9`（36px），窄屏 40px 跟随图标按钮。
+新增顶栏控件时照同一档取高，`ui_spec.spec.ts` 的「顶栏一排控件等高」会拦。
 
 ### 3.3 移动端侧栏替代（`MobileNavDrawer`）
 
@@ -441,9 +478,41 @@ view! {
 已知取舍：抽屉永远从**右侧**滑出（复用 `Sheet`），按钮拖到左边也不会换侧；悬浮按钮是
 像素风方形（§2 零圆角），不是系统风格的圆形 FAB；位置存的是绝对像素，不记忆「贴左 / 贴右」。
 
-**入口文案用白话，隐喻只留在图标里**：移动端底部 Tab（`components/navigation/mobile_tabs.rs`）
-与抽屉的分类名按「用户找得到」命名（首页 / 练习 / 考试 / 错题 / 更多），不要用「基地 / 地图 /
-图鉴」这类关卡隐喻 —— 隐喻是氛围，不是导航。
+### 3.4 电台组件（`ui/` 的基础件 + `components/radio/` 的组合件）
+
+「电台前面板」语言（§2 硬规则 14–17）的组件与类名，版式以 canvas「Pixel Rig」为准。基础件在 `ui/`（控件也要用它们，
+`ui/` 不反过来依赖 `components/`）；`components/radio/` 里是只读的组合显示件，只产出 `pxl-*` 类名 —— 在两套皮肤共用的
+页面里要放进像素分支（`is_modern_at_mount()` 分叉），现代风保留它自己的实现。
+
+| 要什么 | 用 | 说明 |
+|---|---|---|
+| 屏幕容器 | `pxl-display` 类（`radio.css`） | 亮色是液晶、暗色是背光屏（取值随明暗与配色方案派生）；里面的字只用 `pxl-d-dim` / `pxl-d-hot` / `pxl-d-ok` / `pxl-d-alarm` 这几档，不写纸面字色 |
+| 数字读数（等级、S 值、倒计时、分数、条数） | `ui::Readout`（`text` + 读屏 `label` + `scale` 1–4 + `tone`） | SVG 七段，认得的字符见 `ham_web_core::rig_panel::segment_mask`；不给 `label` 时整块 `aria-hidden`，读屏文本由调用方另放（`sr-only`） |
+| 状态指示灯 | `ui::Led`（`tone` + `state`，`small` = 8px） | `aria-hidden` 的装饰，旁边必须有文字或 `role="status"` 的结论 |
+| 按键里的灯位 | `Button` / `ButtonLink` 的 `led` + `led_on` | 主操作「发射键」、「标记本题」这类；`loading` 时像素风是琥珀灯闪（不转圈）。现代风不读 |
+| 统计格 | `ui::Stat` | 像素风是纸面卡里的一块七段小屏（数值另有 `sr-only` 文本） |
+| 开关 | `ui::Switch` | 像素风一行：绿灯 + 拨杆（凹槽、竖纹）+ ON / OFF 丝印；`class` 给整行 |
+| 波段键 | `ui::Chip` / `ChipToggle` | 每键一灯（`chip/chip_lamp.rs`），选中 = 按进去 + 顶部 4px 灯条 + 灯亮 |
+| 调谐推子 | `ui::Slider` | 像素风外面包一层：21 道刻度 + 24 格分段轨道 + 红指针滑块；`class` 给外层 |
+| 旋钮 | `ui::Knob`（`label` / `aria_label` / `readout` + `unit` / `aria_valuetext`） | 80px，旁边是标签与读数屏；现代风是「标签 + `Slider` + 数值」一行 |
+| 掌握度 / 备考状态 | `SignalMeter`（`units`，`None` = 无数据；可选 `peak` 峰值保持） | `role="meter"`；峰值必须是真实记录过的值（首页 = 最近几次里最好的一次模拟考试，练习 = 本次最高连对） |
+| 刻度尺 + 指针 | `TuningScale`（`marks` 丝印标签与位置、`needle`、`sweeping`） | 顶栏下沿的换台刻度（`navigation/band_scale.rs`）、搜索面板的扫描刻度；`aria-hidden` |
+| 屏幕上的电平格（经验条一类） | `pxl-meter-bar` + `pxl-meter-seg[data-lit]`，列数写 `[--cells:N]` | 自己补 `role="progressbar"` 与 `aria-label` |
+| 干扰（QRM）的形象 | `QrmSignature`（`kind` = `rig_panel::qrm_kind(一级分类 key)`，`strength` 0–1，`animate`）+ `qrm_name(kind)` | 每个一级分类一种真实干扰现象的频谱样子；`aria-hidden`，名字与强度另写文字。`animate` 的两帧轮换会在滚出视口时暂停 |
+| 星级 / 匹配度 | `SignalBars`（`lit` + `total`；格高 4 / 8 / 12 / 16px） | `aria-hidden`：数量要另有文字或外层 `role="img"` 的 `aria-label`；搜索结果的匹配度取 `core::search::match_strength` |
+| 电量（抗干扰里玩家的血量） | `Battery`（`level` / `max` / `label`） | `role="progressbar"`；纸面上用状态色，坐在屏幕里改用屏幕色 |
+| 判分时的「锁定 / 干扰」手感 | 题卡根节点的 `data-signal`；判分结果另经 `QuestionCard` 的 `verdict_out` 交给页面 | 练习页上方的 `PracticeRig`（题号 + LOCK / QRM、连对 S 表）读它 |
+| 页头的所属分组 | `PageHeader` 内置（`common::BandTag`，桌面端才显示） | 页面不用手写 |
+
+**关键页面的像素版式**（都只在像素分支）：首页「主显示屏」面板（`pages/home/base_hero.rs`）→ 快速开始（波段键）→
+知识频谱（柱下写分类简称，英 / 西语是三字母代码）→ 今日值机紧凑列表；练习页的 `PracticeRig` 与上屏的解析；
+考试页的 ON AIR 头部（`pages/exam/boss_stage.rs`）与 `lg` 以下铺在页面里的答题卡（`AnswerCardPanel`，桌面档仍是弹窗）；
+成绩 QSL 卡（`components/exam/boss_verdict.rs`，与导出图 `share_score` 同一张卡）；搜索扫描面板；404 无信号；
+抗干扰的本台屏 / 干扰屏（`pages/battle/pixel_battle_stage.rs`；`battle_stage.rs` 是现代风舞台，同时是两套的派发点）。
+
+**入口文案用白话**：移动端底部 Tab（`components/navigation/mobile_tabs.rs`）是「灯 + 白话文字」，不画图标；
+它与抽屉的分类名按「用户找得到」命名（首页 / 练习 / 考试 / 错题 / 更多），不要用「基地 / 地图 / 图鉴」这类
+关卡隐喻 —— 隐喻是氛围，不是导航。
 
 ## 4. 页面骨架与内容宽度
 
@@ -532,13 +601,13 @@ view! {
 放在**内层** —— 放在 0fr 的盒子上，收起时内边距会让这一行撑不到 0。工具条那块（`children`）自带
 `px-4 pb-3`，不需要。`ui_spec.spec.ts` 的 G1 量的就是这个间距。
 
-### 断点只有四档（像素风）
+### 断点只有五档（像素风）
 
 > 这是**像素风 / Tailwind** 的口径；现代风 CSS 另有一套（五档 + dock 的 768），见
 > [`docs/ui/modern.md`](modern.md) §3。
 
-Tailwind 的 `sm` / `md` / `lg` 之外，只多一档 `xs`（400px，定义在 `tokens.css` 的
-`--breakpoint-xs`）。**不要在页面里写 `min-[560px]:` 这类任意值断点**（`check-ui` ㉒ 已拦）；
+Tailwind 的 `sm` / `md` / `lg` 之外，只多两档：`xs`（400px）与 `2xs`（360px，只给手机顶栏的站名用），
+都定义在 `tokens.css` 的 `--breakpoint-*`。**不要在页面里写 `min-[560px]:` 这类任意值断点**（`check-ui` ㉒ 已拦）；
 确实需要新的中间态，就加一条 `--breakpoint-*` 再全局用。
 
 注意区分两种「方括号里的像素值」：
@@ -580,6 +649,11 @@ Tailwind 的 `sm` / `md` / `lg` 之外，只多一档 `xs`（400px，定义在 `
   4. 所有贴底固定层上的 `data-fixed-bottom`——新增 / 移动贴底固定层时必须带上它（滚动条按它让位），
      `check-structure` 的「贴底固定层标记」会拦漏标；底栏自己变高 / 变矮由 `ResizeObserver` 跟随，
      不需要手动通知。
+- **贴底固定层的高度会写成 CSS 变量 `--fixed-bottom-h`**（同上那条实测，写在根元素上）：页面靠它
+  给固定层让位，**不要写死 `pb-28` 这类数值**。固定层的高度随文案折行、安全区、语言变（手机档操作栏
+  是两行按钮，实测 140px），写死就会漏——考试页曾因此把答题卡最后一行压在底栏下面，滚到底也看不全。
+  需要让位的页面写成 `pb-[calc(var(--fixed-bottom-h,7rem)+1rem)]`（fallback 只是测量落位前的一帧）；
+  现代风的 `.md-exam` / `.md-practice` 已在 CSS 里按同一个变量留过，页面容器**不要**再写一份，会叠成两倍。
 - **不要再写 `scrollbar-gutter`**：原生窗口滚动条已不存在，没有槽位可言；弹层锁滚动时也**不需要**
   补 `padding-right`（隐藏前后布局宽度不变，页面不会横向跳）。
 - 触屏（`hover: none`）整条隐藏 —— 那里没有常驻滚动条，手指滚动时多一条浮层只是噪声。
@@ -911,7 +985,7 @@ label 的 `has-[:focus-visible]:ring-2` 显示。**页面里不要再手写拖�
 
 | 位置 | 为什么保留原生元素 |
 | --- | --- |
-| `components/navigation/group_menu.rs` | 「考试中心」「知识库」「工具」三个下拉开关（三个菜单共用一个组件，同一条注释，渲染出 3 个 `<button>`）：高亮要随当前路由切 `variant`（`Button` 的 `variant` 是静态 prop）并输出 `aria-expanded`；面板是分组侧栏 + 条目区，见文件头 |
+| `components/navigation/group_menu.rs` | 「考试中心」「知识库」「工具」三个下拉开关（三个菜单共用一个组件，同一条注释，渲染出 3 个 `<button>`）：它们是电台面板的波段键（`.pxl-band-key`，不用 `button_class`），当前分组要随路由动态打 `data-active`，`Button` 的类名是静态的；面板是分组侧栏 + 条目区，见文件头 |
 | `pages/callsign_copy.rs` | 两个模式按钮：选中态切 `variant` |
 | `components/exam/answer_card_sheet.rs` | 答题卡筛选按钮：当前筛选切 `variant` |
 | `pages/home/cards_card.rs` | 「今日待复习」入口：有待复习时切 `variant` |

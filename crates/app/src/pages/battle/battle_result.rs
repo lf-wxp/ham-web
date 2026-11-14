@@ -3,6 +3,7 @@
 use ham_web_core::Bank;
 use leptos::prelude::*;
 
+use crate::components::radio::SignalBars;
 use crate::i18n::{t, tf};
 use crate::icons::PixelSprite;
 use crate::pages::bank_href;
@@ -98,32 +99,24 @@ pub(super) fn BattleResult(
                 role="img"
                 aria-label=move || tf("rpg.stars-value", &[&stars.to_string()])
               >
-                {(1..=3u8)
-                  .map(|n| {
-                    view! {
-                      {move || {
-                        if crate::kit::is_modern() {
-                          view! {
-                            <crate::kit_modern::ModernIcon
-                              kind=crate::kit_modern::MIcon::Star
-                              class=if n <= stars { "md-star-on" } else { "md-star-off" }
-                            />
-                          }
-                            .into_any()
-                        } else {
-                          view! {
-                            <PixelSprite
-                              name="badge_star"
-                              scale=3
-                              class=if n <= stars { "" } else { "opacity-25 grayscale" }
-                            />
-                          }
-                            .into_any()
+                {move || {
+                  if crate::kit::is_modern() {
+                    (1..=3u8)
+                      .map(|n| {
+                        view! {
+                          <crate::kit_modern::ModernIcon
+                            kind=crate::kit_modern::MIcon::Star
+                            class=if n <= stars { "md-star-on" } else { "md-star-off" }
+                          />
                         }
-                      }}
-                    }
-                  })
-                  .collect_view()}
+                      })
+                      .collect_view()
+                      .into_any()
+                  } else {
+                    // 像素风：1–3 格信号（通联路线的读法），名字在外层 `aria-label` 上。
+                    view! { <SignalBars lit=stars /> }.into_any()
+                  }
+                }}
               </div>
             }
           })}

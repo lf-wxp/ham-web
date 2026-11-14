@@ -12,6 +12,7 @@ mod battle_page;
 mod battle_result;
 mod battle_stage;
 mod deck;
+mod pixel_battle_stage;
 mod result_row;
 mod run;
 

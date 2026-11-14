@@ -2,6 +2,7 @@
 
 mod bottom_bar;
 mod header_bar;
+mod rig_panel;
 mod store;
 mod view;
 

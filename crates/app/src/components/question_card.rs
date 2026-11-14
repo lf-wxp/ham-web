@@ -9,8 +9,9 @@ use crate::i18n::{t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::speech;
 use crate::ui::{
-  BadgeVariant, Button, CARD_HEADER, Checkbox, Label, RadioGroup, RadioGroupItem, Size, Tooltip,
-  Variant, badge_class, card_class, card_content_class, card_title_class,
+  BadgeVariant, Button, CARD_HEADER, Checkbox, Label, Led, LedState, LedTone, RadioGroup,
+  RadioGroupItem, Size, Tooltip, Variant, badge_class, card_class, card_content_class,
+  card_title_class,
 };
 use crate::util::unique_id;
 
@@ -85,6 +86,10 @@ pub fn QuestionCard(
   /// `docs/ui/pixel.md` §2 规则 11 的待决项，不在界面层擅自改统计语义。
   #[prop(optional, into)]
   on_reveal: Option<Callback<()>>,
+  /// 判分结论的出口：判分可见后写 `Some(true)`（锁定）/ `Some(false)`（干扰），没判分时写 `None`。
+  /// 练习页上方的读数屏（LOCK / QRM 两颗灯）读它；结论本身仍在卡片里的答案行（live region）。
+  #[prop(optional)]
+  verdict_out: Option<WriteSignal<Option<bool>>>,
 ) -> impl IntoView {
   let base_id = unique_id("q");
   // 风格在组件挂载时定一次即可：练习页没有切风格的入口，切风格要走导航（页面会重建）。
@@ -97,6 +102,17 @@ pub fn QuestionCard(
   // 两个分支各要一个闭包，克隆一份给现代风的朗读按钮。
   let question_text_modern = question_text.clone();
   let j_code = question.j_code().map(ToOwned::to_owned);
+  // 像素风标题栏上的一级分类（「法规」）：题目带分类码时才有。它是 core 的中文原文，
+  // 英 / 西语要靠知识库词典 —— 题卡被很多页面复用，词典拉取挂在这里而不是指望每个页面都挂。
+  let top_key = question
+    .codes
+    .p
+    .as_deref()
+    .and_then(ham_web_core::categories::top_of)
+    .map(|c| c.key);
+  if !modern && top_key.is_some() {
+    crate::data::use_knowledge_i18n();
+  }
   let kind_label = question.kind.label();
   let pages = question.pages.and_then(|p| {
     let start = p.start?;
@@ -273,6 +289,7 @@ pub fn QuestionCard(
           } else {
             view! {
               <span class="motion-pop ml-2 inline-flex items-center gap-1 align-middle text-base text-win-text">
+                <Led tone=LedTone::Rx state=LedState::On />
                 <Icon kind=IconKind::CheckCircle class="size-6" />
                 {move || t("exam.answered-correct")}
               </span>
@@ -301,6 +318,7 @@ pub fn QuestionCard(
           } else {
             view! {
               <span class="pxl-shake ml-2 inline-flex flex-wrap items-center gap-x-1 align-middle text-base text-hp-text">
+                <Led tone=LedTone::Tx state=LedState::On />
                 <Icon kind=IconKind::XCircle class="size-6" />
                 {move || t("exam.answered-wrong")}
                 <span class="text-sm">
@@ -399,8 +417,32 @@ pub fn QuestionCard(
       })
   };
 
+  // 判分结论落到卡片根上（中性属性，与皮肤无关）：像素风据此播「锁定」闪框 / 「干扰」噪点
+  // （`motion.css` 的 `[data-signal]`，`docs/ui/motion.md` §8），现代风不读它。
+  let signal = move || {
+    gate()
+      .visible()
+      .then(|| {
+        selected.with(|sel| {
+          (!sel.is_empty()).then(|| {
+            if answer_keys_sv.with_value(|ks| ham_web_core::question::same_set(sel, ks)) {
+              "lock"
+            } else {
+              "qrm"
+            }
+          })
+        })
+      })
+      .flatten()
+  };
+
+  if let Some(out) = verdict_out {
+    Effect::new(move |_| out.set(signal().map(|s| s == "lock")));
+  }
+
+  // 像素风的题卡头部是一条标题栏（`pxl-q-card`，样式在 controls.css）：题号、题型、分类、题号徽标。
   view! {
-    <div data-slot="card" class=card_class(if modern { "md-q" } else { "" })>
+    <div data-slot="card" data-signal=signal class=card_class(if modern { "md-q" } else { "pxl-q-card" })>
       <div data-slot="card-header" class=CARD_HEADER>
         // `flex-wrap`：「第 N / M 题」+ 题型 + 题号三个徽标都是不换行的定宽内容，
         // 320px 下（英文 / 西语最明显）会把标题行撑出视口，整页横向滚动。
@@ -409,6 +451,10 @@ pub fn QuestionCard(
           <span data-slot="badge" class=badge_class(BadgeVariant::Secondary, "")>
             {move || t(kind_label)}
           </span>
+          {(!modern)
+            .then_some(top_key)
+            .flatten()
+            .map(|k| view! { <span class="text-xs text-muted-foreground">{move || crate::data::core_text_tracked(k)}</span> })}
           {pages.map(|p| view! { <span data-slot="badge" class=badge_class(BadgeVariant::Outline, "")>{p}</span> })}
           {j_code
             .clone()

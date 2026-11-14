@@ -1,4 +1,7 @@
-//! 考试页顶部：进度头、薄弱项标识、考试元信息（类别 / 题数 / 限时 / 剩余）与设置入口。
+//! 考试页顶部：进度头、薄弱项标识、考试元信息（类别 / 题数 / 限时）与设置入口。
+//!
+//! 页头元信息不放剩余时间：像素风它是 Boss 舞台大读数屏的主体（`docs/ui/pixel.md` §3.4），
+//! 另在底栏固定放一份朴素文字（滚动后仍可见，见 `exam_bottom_bar.rs`）。
 
 use ham_web_core::{Bank, ExamRule};
 use leptos::prelude::*;
@@ -7,8 +10,6 @@ use crate::components::common::QuestionProgressHeader;
 use crate::i18n::{bank_class, t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Button, ButtonLink, Size, Variant};
-
-use super::exam_clock::ExamClock;
 
 #[component]
 pub(super) fn ExamHeader(
@@ -70,18 +71,16 @@ pub(super) fn ExamHeader(
             let r = rule.get();
             tf("exam.questions-single-multiple", &[&r.total.to_string(), &r.singles.to_string(), &r.multiples.to_string()])
           }}
-          // `minutes == 0` 是不限时的自定义组卷：没有「限时 0 分钟 / 剩余 00:00」这种读数可言。
+          // `minutes == 0` 是不限时的自定义组卷：没有「限时 0 分钟」这种说法。
           {move || {
             (rule.get().minutes > 0).then(|| view! {
-              "｜" {move || tf("exam.time-limit-min", &[&rule.get().minutes.to_string()])} "｜"
-              {move || t("exam.remaining")} <ExamClock remaining=remaining rule=rule />
+              "｜" {move || tf("exam.time-limit-min", &[&rule.get().minutes.to_string()])}
             })
           }}
         }
       })
     />
-    // 窄屏只留三项元信息：剩余时间已经是上方的 HUD 读数（`BossStage`），
-    // 这里再写一遍既重复又会把「试题数（单选 32，多选 8）」挤成折行。
+    // 窄屏只留三项元信息：多了会把「试题数（单选 32，多选 8）」挤成折行。
     // `flex-wrap` 而不是两列网格：三项在 390px 下正好一行，320px 下自然折到第二行。
     <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs text-muted-foreground sm:hidden">
       <span>{move || t("exam.class-prefix")} {move || bank_class(bank.get().as_str())}</span>

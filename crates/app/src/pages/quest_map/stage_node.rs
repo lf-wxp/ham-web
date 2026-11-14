@@ -4,6 +4,7 @@ use ham_web_core::rpg::{Stage, StageState};
 use leptos::prelude::*;
 
 use crate::cn::cn;
+use crate::components::radio::SignalBars;
 use crate::i18n::{t, tf, tp};
 use crate::icons::PixelSprite;
 
@@ -50,20 +51,8 @@ pub(super) fn StageNode(
         }
         _ => {
           view! {
-            <span class="flex shrink-0 items-center" aria-hidden="true">
-              {(1..=3u8)
-                .map(|n| {
-                  view! {
-                    <PixelSprite
-                      name="badge_star"
-                      scale=2
-                      class=if n <= stars { "" } else { "opacity-25 grayscale" }
-                    />
-                  }
-                })
-                .collect_view()}
-            </span>
-            // 星星是贴图，读屏听不到；补一句文本，名字里也就带上了自己的星级。
+            // 1–3 格信号（原来的星星）：电平格是装饰，读屏听不到；补一句文本，名字里也就带上了自己的格数。
+            <SignalBars lit=stars />
             {(stars > 0)
               .then(|| {
                 view! {

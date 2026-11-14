@@ -351,12 +351,19 @@ pub const PALETTE: &[(char, &str)] = &[
   ('p', "#b13e8a"),
   ('S', "#f4c9a0"),
   ('n', "#8b5a3c"),
+  // 下面几色跟随主题与配色方案（电台图标坐在站标与屏幕里，要随面板换色）：面板、屏幕底、荧光、次要字、纸面。
+  ('Q', "var(--secondary,#e8dbb5)"),
+  ('D', "var(--display-bg,#1a1c2c)"),
+  ('F', "var(--display-fg,#73eff7)"),
+  ('M', "var(--muted-foreground,#42566c)"),
+  ('w', "var(--card,#fff8e1)"),
 ];
 
-/// 全部精灵：角色 / Boss / 怪物 / 成就徽章 / 地图节点。必须是正方形（行数 = 每行字符数）。
+/// 全部精灵：角色 / 电台 / 稀有 DX 台（Boss）/ 怪物 / 成就徽章 / 地图节点。必须是正方形（行数 = 每行字符数）。
 pub const SPRITES: &[(&str, &[&str])] = &[
   (
     "hero",
+    // 值机员：两侧耳罩 + 左耳伸出的话筒杆（`d`）—— 戴着耳麦守听的样子。
     &[
       "................",
       ".....KKKKKK.....",
@@ -365,7 +372,7 @@ pub const SPRITES: &[(&str, &[&str])] = &[
       "..KKKSSSSSSKKK..",
       "..KgKSKSSKSKgK..",
       "..KgKSSSSSSKgK..",
-      "..KKKSSRRSSKKK..",
+      "..KKKddRRSSKKK..",
       "....KKSSSSKK....",
       "...KbbbbbbbbK...",
       "..KbbWbbbbWbbK..",
@@ -373,6 +380,34 @@ pub const SPRITES: &[(&str, &[&str])] = &[
       "...K.KbbbbK.K...",
       "....KBBKKBBK....",
       "....KKK..KKK....",
+      "................",
+    ],
+  ),
+  (
+    "radio",
+    // 电台（站标、主显示屏、抗干扰里的本台）：屏幕上两组读数、旋钮、三颗灯与一根天线。
+    //
+    // 四周留白：机身（那圈墨框）占 x=2..13、y=5..12，天线在机身右上方（x=12..13、y=3..4）。
+    // 站标那块 `brand-mark` 是「2px 墨框 + 主色底」的小面板，精灵铺满 16×16 时机身墨框会正好贴住
+    // 面板墨框，看着像没有内边距（2026-11-14 修）。左右 2 格 = 面板里 4px 的主色底，才是「装在
+    // 面板上的一块屏」；1 格（2px）在 36px 的方块里读起来仍是贴边。天线也不碰右上角 —— 顶到角上
+    // 会让整块图形又变成「铺满」。
+    &[
+      "................",
+      "................",
+      "................",
+      ".............K..",
+      "............K...",
+      "..KKKKKKKKKKKK..",
+      "..KQQQQQQQQQQK..",
+      "..KQDDDDDDQQMK..",
+      "..KQDFFDFFDQMK..",
+      "..KQDDDDDDQQQK..",
+      "..KQQQQQQQQQQK..",
+      "..KQlQRQYQQQQK..",
+      "..KKKKKKKKKKKK..",
+      "................",
+      "................",
       "................",
     ],
   ),
@@ -483,23 +518,24 @@ pub const SPRITES: &[(&str, &[&str])] = &[
   ),
   (
     "boss",
+    // 稀有 DX 台（考试）：八木天线 + 铁塔 + 塔顶航标灯，两侧是向外辐射的信号弧。
     &[
-      "..K..........K..",
-      ".KRK........KRK.",
-      ".KRRK......KRRK.",
-      "..KRRKKKKKKRRK..",
-      "..KRRRRRRRRRRK..",
-      ".KRRRRRRRRRRRRK.",
-      ".KRRWWKRRKWWRRK.",
-      ".KRRWKKRRKKWRRK.",
-      ".KRRRRRRRRRRRRK.",
-      ".KRRKRRRRRRKRRK.",
-      ".KRRKWKWKWKWKRK.",
-      "..KRRKKKKKKRRK..",
-      "...KRRRRRRRRK...",
-      "..KKKRRRRRRKKK..",
-      ".KYYKKRRRRKKYYK.",
-      "..KKK.KKKK.KKK..",
+      ".......RR.......",
+      ".......RR.......",
+      ".K..K..KK..K..K.",
+      "KKKKKKKKKKKKKKKK",
+      ".K..K..KK..K..K.",
+      ".C.....KK.....C.",
+      "C..C..KddK..C..C",
+      "C.C...KdgK...C.C",
+      "C.C..KKKKKK..C.C",
+      ".C.C.KdKKdK.C.C.",
+      ".....KKddKK.....",
+      "....KdKggKdK....",
+      "....KKKKKKKK....",
+      "...KdK.KK.KdK...",
+      "..KKKKKKKKKKKK..",
+      ".KddddddddddddK.",
     ],
   ),
   (

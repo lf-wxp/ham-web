@@ -1,5 +1,6 @@
 //! 全局顶部导航：桌面/移动端导航与设置对话框。
 
+mod band_scale;
 mod choice_row;
 mod group_menu;
 mod hud_badge;

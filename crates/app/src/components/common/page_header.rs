@@ -5,6 +5,8 @@ use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 use crate::ui::{Button, Size, Variant};
 
+use super::band_tag::BandTag;
+
 /// 吸顶页头骨架类名：吸顶位置、层级、墨色下沿、底色。
 ///
 /// 全站吸顶页头**只有这一份骨架**：`PageHeader` 用它，`print_page` 这类「刻意的例外」
@@ -124,7 +126,8 @@ pub fn PageHeader(
   });
 
   view! {
-    <header data-page-header class=cn(&[PAGE_HEADER_BAR, &class])>
+    // `pxl-tick-edge`：下沿的刻度线画在底部内边距里（`radio.css`），不占布局。
+    <header data-page-header class=cn(&[PAGE_HEADER_BAR, "pxl-tick-edge", &class])>
       // 窄屏是一列（标题行 / 折叠区），`md` 起回到「一行 + 折行」：
       // `gap-0` 是必须的 —— 收起态的折叠区高度为 0，行间距会把它变成一条白边。
       <div class="mx-auto flex max-w-5xl flex-col gap-0 px-4 py-3 md:flex-row md:flex-wrap md:items-center md:gap-3">
@@ -139,11 +142,18 @@ pub fn PageHeader(
             // 副标题只建**一份**：`md` 起在标题底下（这里），窄屏在折叠区里。
             // 不能两份都建、再用 `hidden md:block` / `md:hidden` 藏一份 —— 同一段文字在 DOM 里出现两次，
             // 按文字定位的用例会撞上严格模式，页内搜索脚本也会多命中一份。
+            // 桌面端副标题前挂一块「波段铭牌」（这一页属于考试中心 / 知识库 / 工具）：与副标题同一行，
+            // 不加页头高度；窄屏页头只留标题，不挂。
             {move || {
               wide
                 .get()
                 .then(|| {
-                  view! { <div class="text-xs text-muted-foreground">{move || subtitle.get()}</div> }
+                  view! {
+                    <div class="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                      <BandTag />
+                      <span>{move || subtitle.get()}</span>
+                    </div>
+                  }
                 })
             }}
           </div>

@@ -111,6 +111,7 @@
   "shell.logging-software": "日志与竞赛软件",
   "shell.main-navigation": "主导航",
   "shell.maps-satellites": "地图 · 卫星",
+  "shell.match-strength": "匹配度 {} / {} 格",
   "shell.matching-feedlines": "天线匹配与馈线",
   "shell.microwave": "微波通信",
   "shell.mistakes": "错题集",
@@ -251,5 +252,15 @@
   "shell.view-usage-and-back": "查看占用并备份",
   "shell.weather-satellites": "气象卫星接收",
   "shell.weekly-report": "学习周报",
-  "shell.wspr": "WSPR 弱信号传播"
+  "shell.wspr": "WSPR 弱信号传播",
+  "shell.no-signal": "无信号",
+  "shell.band-exam": "EXAM",
+  "shell.band-knowledge": "KNOWLEDGE",
+  "shell.band-tools": "TOOLS",
+  "shell.hud-streak-short": "{}天",
+  "shell.scan-title": "扫描 · 站内搜索",
+  "shell.scan-code-idle": "STBY",
+  "shell.scan-code-busy": "SCAN",
+  "shell.scan-unit": "条",
+  "shell.scan-site": "扫描全站"
 }

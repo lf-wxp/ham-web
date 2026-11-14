@@ -6,8 +6,10 @@
 use leptos::prelude::*;
 
 use crate::cn::cn;
+use crate::i18n::t;
 
 use super::control::{TextValue, invalid_attr};
+use super::led::{Led, LedState, LedTone};
 
 /// 开关。
 #[component]
@@ -23,28 +25,33 @@ pub fn Switch(
   aria_label: Option<TextValue>,
   #[prop(optional, into)] disabled: Signal<bool>,
   #[prop(optional, into)] invalid: Signal<bool>,
-  #[prop(optional, into)] class: String,
+  /// 布局类（宽度 / 对齐 / 外边距）。**像素风作用在「灯 + 拨杆 + ON/OFF 丝印」整行上**（行是这一个
+  /// 控件的视觉单元），现代风作用在 `<button>` 上；别传只对按钮本体成立的重排类（如 `absolute`）。
+  #[prop(optional, into)]
+  class: String,
 ) -> impl IntoView {
-  // 像素风：轨道 / 滑块在 `.pxl-switch` / `.pxl-switch-thumb`（关 = 凹陷暗槽、开 = 绿底、
-  // 3 帧 steps 位移）。现代风换成 `.md-switch`（36×20 药丸、关 = 表面 3 档灰、开 = 品牌蓝、
-  // 滑块平滑滑动）。开 / 关仍由位置与 `aria-checked` 承担，不靠颜色单独传达。
+  // 像素风是「拨杆 + 旁边的绿灯 + ON / OFF 丝印」（`docs/ui/pixel.md` §3.4）：开 / 关由拨杆位置与
+  // `aria-checked` 承担，灯和丝印字是另外两个读法；两者都 `aria-hidden`，读屏只听 `role="switch"`。
+  // 现代风换成 `.md-switch`（36×20 药丸、关 = 表面 3 档灰、开 = 品牌蓝、滑块平滑滑动）。
   let modern = crate::kit::is_modern_at_mount();
-  let class = if modern {
-    cn(&["md-switch", &class])
-  } else {
-    cn(&["pxl-switch", &class])
+  let state = move || {
+    if checked.get() {
+      "checked"
+    } else {
+      "unchecked"
+    }
   };
-  view! {
+  let control = view! {
     <button
       type="button"
       role="switch"
       data-slot="switch"
       id=id
-      class=class
+      class=if modern { cn(&["md-switch", &class]) } else { "pxl-switch".to_owned() }
       aria-checked=move || checked.get().to_string()
       aria-label=move || aria_label.as_ref().map(TextValue::get)
       aria-invalid=invalid_attr(invalid)
-      data-state=move || if checked.get() { "checked" } else { "unchecked" }
+      data-state=state
       data-disabled=move || disabled.get().then_some("")
       disabled=move || disabled.get()
       on:click=move |_| {
@@ -56,8 +63,22 @@ pub fn Switch(
       <span
         data-slot="switch-thumb"
         class=if modern { "md-switch-thumb" } else { "pxl-switch-thumb" }
-        data-state=move || if checked.get() { "checked" } else { "unchecked" }
+        data-state=state
       ></span>
     </button>
+  };
+  if modern {
+    return control.into_any();
   }
+  let lit = Signal::derive(move || LedState::lit(checked.get() && !disabled.get()));
+  view! {
+    <span class=cn(&["pxl-switch-row", &class]) data-disabled=move || disabled.get().then_some("")>
+      <Led tone=LedTone::Rx state=lit />
+      {control}
+      <span class="pxl-switch-state" aria-hidden="true" data-state=state>
+        {move || if checked.get() { t("common.switch-on") } else { t("common.switch-off") }}
+      </span>
+    </span>
+  }
+  .into_any()
 }

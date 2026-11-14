@@ -151,10 +151,13 @@
 /* 6) 浅色模式的描边值在 `tokens.css` 的浅色块里（组件层不覆盖 token）。 */
 
 /* 考试页的底栏在**所有**宽度都是 fixed（桌面也不换成侧边栏），
-   所以底部留白必须无断点地成立：96px = 桌面单行底栏 + 一行余量。
+   所以底部留白必须无断点地成立，且要跟着底栏的**实测**高度走：窄屏底栏会折成两行
+   （文字按钮 + 图标按钮），写死 96px 时最后一行答题卡被压住、滚到底也看不全。
+   `--fixed-bottom-h` 由 `ui::ScrollBar` 量所有 `[data-fixed-bottom]` 后写到根元素；
+   fallback `96px` 只是测量落位前的一帧。
    只挂在 `.md-exam`（页根）上，不挂 `.md-root`：后者是会嵌套的字体作用域（见 C2.6-1）。 */
 body[data-page-mode="exam"] .md-exam {
-  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--fixed-bottom-h, 96px) + env(safe-area-inset-bottom));
 }
 
 /* 7) 移动端练习 / 考试页：专注模式 —— 收起 dock，只留一条底部操作条。

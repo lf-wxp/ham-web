@@ -1,22 +1,23 @@
 use leptos::prelude::*;
 
-use crate::ui::{Button, Size, Variant};
+use crate::cn::cn;
+use crate::ui::{Button, Led, LedState, LedTone, Size, Variant};
 
 use super::answer_card_model::cell_label;
 
-/// 答题卡里的一格题号。
+/// 答题卡里的一格题号（像素风叫它「存储频道」，canvas 的答题卡格，`docs/ui/pixel.md` §3.4）。
 ///
 /// 状态用多个通道表达，不靠颜色单独成立：
-/// - 已答 = 主色实心；未答 = 描边空心（`Variant` 不同，形状上就能分）；
-/// - 当前题 = 底部加粗的金色下沿 + `aria-current`（以前完全看不出自己在哪一题）；
-/// - 标记 = 右上角带 `!` 的小牌；交卷后 = 右下角 ✓ / ✗ 小牌。
+/// - 右上角一盏灯：标记 = 琥珀、当前题 = 蓝、已答 = 绿、未答 = 灭；
+/// - 已答 = 凹槽底；当前题 = 主色描边加一道内框 + `aria-current`；
+/// - 交卷后 = 右下角 ✓ / ✗ 小牌。
 ///
-/// 整格在父级 `grid` 闭包里随答案 / 筛选 / 当前题重建，所以 `variant` 与 `class` 取静态值即可，
-/// 不需要退回原生 `<button>`。
+/// 题号写在左下角、不补零：按钮的可见文本就是题号本身（读屏 / e2e 都靠它），状态另由 `aria-label` 说明。
 ///
-/// 刻意**不**在格子里放「点击看题图」的触发器：格子只有 36px 见方，任何一个 16px 的角标都会
-/// 压掉题号按钮一块可点区域（点偏了就变成开图而不是跳题）。题图在题目卡片里本来就能放大看，
-/// 这里只负责跳题。
+/// 整格在父级 `grid` 闭包里随答案 / 筛选 / 当前题重建，所以 `class` 取静态值即可。
+///
+/// 刻意**不**在格子里放「点击看题图」的触发器：格子只有 36px 高，任何一个 16px 的角标都会
+/// 压掉题号按钮一块可点区域（点偏了就变成开图而不是跳题）。题图在题目卡片里本来就能放大看。
 #[component]
 pub fn AnswerCardCell(
   /// 题号（从 1 起）。
@@ -30,21 +31,27 @@ pub fn AnswerCardCell(
   locked: bool,
   on_pick: Callback<()>,
 ) -> impl IntoView {
-  let class = if current {
-    "relative h-9 w-full border-b-4 border-b-gold pointer-coarse:h-11"
+  let class = cn(&[
+    "relative h-9 w-full items-end justify-start px-1.5 pb-0.5 pointer-coarse:h-11",
+    if answered { "bg-inset" } else { "" },
+    if current {
+      "border-primary outline-2 outline-primary -outline-offset-[6px]"
+    } else {
+      ""
+    },
+  ]);
+  let lamp = if flagged {
+    LedTone::Warn
+  } else if current {
+    LedTone::Info
   } else {
-    "relative h-9 w-full pointer-coarse:h-11"
-  };
-  let variant = if answered {
-    Variant::Default
-  } else {
-    Variant::Outline
+    LedTone::Rx
   };
   // 无障碍名：题号 + 状态。可见文本仍是纯题号（label-in-name 成立）；规则与现代版共用。
   let label = cell_label(number.to_string(), flagged, verdict);
   view! {
     <Button
-      variant=variant
+      variant=Variant::Outline
       size=Size::Sm
       class=class
       disabled=locked
@@ -52,18 +59,13 @@ pub fn AnswerCardCell(
       aria_label=label
       on_click=Callback::new(move |_| on_pick.run(()))
     >
-      <span>{number}</span>
-      // 角标的字符用伪元素画（`after:content-[…]`），不进按钮的文本内容：题号按钮的文本就是
-      // 题号本身（读屏 / e2e 都靠它），状态另由 `aria-label` 说明。
-      {flagged
-        .then(|| {
-          view! {
-            <span
-              aria-hidden="true"
-              class="pxl-label absolute -top-1 -right-1 flex size-5 items-center justify-center border-2 border-ink bg-accent text-xs text-accent-foreground after:content-['!']"
-            ></span>
-          }
-        })}
+      <span class="pxl-label text-xs">{number}</span>
+      <Led
+        tone=lamp
+        state=LedState::lit(flagged || current || answered)
+        small=true
+        class="absolute top-1 right-1"
+      />
       {verdict
         .map(|correct| {
           let tone = if correct {

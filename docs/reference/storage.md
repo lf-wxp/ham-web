@@ -31,8 +31,8 @@
 | `station-info` | 本台信息（呼号 / 操作员 / 网格 / 设备 / 天线，写入 ADIF 台站字段） |
 | `daily-checkin` | 首页每日打卡与连续天数 |
 | `countdowns` | 倒计时条目 |
-| `rpg-stars` | 闯关星级（`core::rpg::StageStars`；合并导入时按关取较高星级） |
-| `rpg-bestiary` | 怪物图鉴（`core::rpg::Bestiary`；合并导入时取并集） |
+| `rpg-stars` | 通联路线每一站的信号格（界面上的 1–3 格；`core::rpg::StageStars`；合并导入时按关取较高值） |
+| `rpg-bestiary` | 干扰图鉴（原怪物图鉴；`core::rpg::Bestiary`；合并导入时取并集） |
 | `morse-stats` | 摩尔斯解码练习统计 |
 | `dxcc_wanted_done` | 已通联的 DXCC 稀有前缀集合 |
 | `mistake-book` | 错题本（题目快照、错误次数、连续答对次数、难度系数、复习间隔、下次复习时间，最多 1000 题）；快照里的解析只是存档当时的兜底，**展示时以题库当前版本为准**，见 [`docs/data/explanations.md`](../data/explanations.md)「存档快照里的解析」 |

@@ -48,7 +48,7 @@ pub fn card_class() -> &'static str {
 /// 现代风的 `.md-btn` 是固定高度、强制单行的药丸，标签一长就会在窄屏里比所在行还宽，把整页撑出横向滚动
 /// （西语 320px 下 `/backup` 的「Restaurar desde remoto (sobrescribir)」、`/nec` 的折叠标题就是这样）。
 /// 只给**确实会遇到长标签**的按钮加；短标签的按钮加了也不变（单行时高度仍是控件高）。
-/// 像素风按钮的字体与内距更窄，没出过这个问题，版式冻结，所以返回空。
+/// 像素风按钮的字体与内距更窄，没出过这个问题，所以返回空。
 #[must_use]
 pub fn btn_wrap_class() -> &'static str {
   if is_modern_at_mount() {
@@ -241,7 +241,7 @@ pub fn table_cell_class(extra: &str) -> String {
 /// 正文里的脚注引用（如波段表的「1」「5.162A」）：现代风 `md-footnote`，像素风为空。
 ///
 /// 现代风靠 `::after` 把 18px 高的行内小字撑到 44 的触控命中区（见 `kit.css`）；
-/// 像素风的版式冻结，命中区不做放大。这个类名不能被写死在共享视图里 ——
+/// 像素风目前不做这层放大。这个类名不能被写死在共享视图里 ——
 /// 像素风 DOM 里出现 `md-*` 会被 `dual_isolation.spec.ts` 判为跨皮肤污染。
 #[must_use]
 pub fn footnote_class() -> &'static str {

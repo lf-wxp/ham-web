@@ -65,7 +65,7 @@
 | `cargo make pixel-check` | 只读校验：调色板文字色阶与每个配色方案的对比度达标，易错知识点热力格子的文字对比度与档位区分度达标，`schemes.css` 与方案表一致；已并入 `check` / `ci` |
 | `cargo make pixel-palette` | 校正 Tailwind 色阶里的文字档，使其在所有表面（含每个配色方案的亮 / 暗表面）上满足 WCAG AA |
 | `cargo make pixel-schemes` | 由方案表（`crates/core/src/color_scheme.rs`）生成 `style/pixel/schemes.css` |
-| `cargo make pixel-sprites` | 由字符画（`crates/tools/src/pixel/sprite_art.rs`）生成像素图标与精灵的数据文件（需 `PIXELARTICONS_DIR`） |
+| `cargo make pixel-sprites` | 由字符画（`crates/tools/src/pixel/sprite_art.rs`）生成像素精灵的数据文件；设了 `PIXELARTICONS_DIR` 时连图标一起生成 |
 | `cargo make fonts-fetch` | 下载像素字体子集化所需的 5 个原始 TTF 到 `FONT_SRC`（默认 `tmp/fonts`，版本已钉住） |
 | `cargo make fonts-pixel` | 按仓库语料重新子集化像素字体（原始 TTF 取 `FONT_SRC`，缺文件会提示先跑 `fonts-fetch`；纯 Rust，不需要 Python） |
 | **质量** | — |

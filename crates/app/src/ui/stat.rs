@@ -1,8 +1,14 @@
 use leptos::html;
 use leptos::prelude::*;
 
+use super::readout::Readout;
+
 /// 统计卡片：大数字 + 标签。`value` 可为静态 `usize` 或响应式 `Signal<usize>`；
 /// `label` 要跟随语言切换就传 `Signal::derive(move || t("…"))`（静态 `&str` / `String` 也收）。
+///
+/// `value` 刻意是 `usize` 而不是格式化好的字符串：像素风的数字是一块七段屏，只画得了
+/// `rig_panel::segment_mask` 认得的字符 —— 传「1,234」或带单位的文案会被画成全灭的格子，
+/// 屏幕上看起来是一片空白。要加单位 / 千分位就放在 `label` 里，别改这里的类型。
 ///
 /// 带 `motion-lift`（悬停抬起）并参与滚动浮现：统计格通常是「整块可扫读」的信息，
 /// 逐个浮现比整页一次性出现更容易抓住注意力。
@@ -29,13 +35,15 @@ pub fn Stat(
     }
     .into_any();
   }
+  // 像素风的数字是一块小读数屏（七段，`docs/ui/pixel.md` §3.4）。七段图形对读屏是装饰，
+  // 数值另放一份 `sr-only` 文本：读屏与按文字定位的 e2e 读到的仍是那串数字。
   view! {
     <div node_ref=node class="pxl-window motion-lift p-4">
-      // 数字用像素标题字体，像掌机屏上的读数；标签退到次要层级。
-      <div class="pxl-title text-lg tabular-nums text-foreground sm:text-xl">
-        {move || display.get()}
+      <div class="pxl-display inline-flex px-2 py-1.5" aria-hidden="true">
+        <Readout text=Signal::derive(move || display.get().to_string()) scale=3 />
       </div>
-      <div class="mt-0.5 text-xs text-muted-foreground">{move || label.get()}</div>
+      <span class="sr-only">{move || display.get()}</span>
+      <div class="mt-1.5 text-xs text-muted-foreground">{move || label.get()}</div>
     </div>
   }
   .into_any()

@@ -764,3 +764,46 @@ test.describe("响应：重块各排各的任务", () => {
     expect(new Set(calls).size, `六块应各自在不同的任务里挂上，实际回调序号：${JSON.stringify(firstSeen)}`).toBe(6);
   });
 });
+
+for (const style of ["pixel", "modern"] as const) {
+  test(`答题页滚到底：最后一行内容不会被贴底操作栏压住（${style}）`, async ({ page }) => {
+    // 贴底固定层的高度随文案折行 / 安全区 / 语言变（手机档操作栏是两行按钮，实测 140px），
+    // 页面底部留白必须跟着实测值 `--fixed-bottom-h` 走。写死 `pb-28`(112px) 时答题卡最后一行
+    // 正好被压住、滚到底也看不全（2026-11-14 修）。判据：滚到底后，正文里**有文字**的块
+    // 底边都要在操作栏上沿之上；两套皮肤各一个用例（现代风的留白在 CSS 里，走的是另一条路径；
+    // 各用各的 page，不在同一个 page 上叠 `addInitScript`）。
+    await page.addInitScript((s) => {
+      if (window !== window.top) return;
+      localStorage.setItem("ui:uiStyle", s);
+      localStorage.setItem("ui:shortcutsHelpSeen:exam", "1");
+    }, style);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/exam?bank=A");
+    await expect(page.locator("main [data-slot='exam-clock']")).toBeVisible({ timeout: 30_000 });
+    // 等固定层量完（`ui::ScrollBar` 在挂载与字体落位后各量一次）
+    await expect
+      .poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--fixed-bottom-h").trim()))
+      .toMatch(/^\d+px$/);
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const bar = [...document.querySelectorAll<HTMLElement>("[data-fixed-bottom]")].find(
+            (el) => el.offsetHeight > 0,
+          );
+          if (!bar) return -1;
+          const barTop = bar.getBoundingClientRect().top;
+          let worst = 0;
+          for (const el of document.querySelectorAll("#route-content *")) {
+            const r = el.getBoundingClientRect();
+            if (r.height < 8) continue;
+            // 只看真正画着文字的块：容器自己会撑到页底，量它没有意义
+            const hasText = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent!.trim());
+            if (hasText) worst = Math.max(worst, r.bottom);
+          }
+          return Math.round(barTop - worst);
+        }),
+      )
+      .toBeGreaterThan(8);
+  });
+}

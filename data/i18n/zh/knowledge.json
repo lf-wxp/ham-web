@@ -53,7 +53,6 @@
   "knowledge.getting-started": "上手要点",
   "knowledge.download-the-openapi-3": "下载 OpenAPI 3.1 文档（openapi.json）",
   "knowledge.amateur-bands": "业余业务频段",
-  "knowledge.amateur-radio": "业余无线电 · Amateur Radio",
   "knowledge.common-ham-terms-english": "业余无线电常用术语 · 英文缩写 · 通俗解释",
   "knowledge.amateur-radio-direction-finding": "业余无线电测向（ARDF）· 竞赛频段",
   "knowledge.repeater-usage-notes": "中继台使用要点",
@@ -541,5 +540,6 @@
   "knowledge.zhr-value": "ZHR {}",
   "knowledge.zhr-variable": "ZHR 可变",
   "knowledge.peak-passed": "峰值已过（{}）",
-  "knowledge.no-meteor-showers-in-window": "未来 {} 天内没有流星雨到达峰值，当前也没有正在活动的流星雨。"
+  "knowledge.no-meteor-showers-in-window": "未来 {} 天内没有流星雨到达峰值，当前也没有正在活动的流星雨。",
+  "knowledge.no-signal-hint": "这个频道没有信号：地址可能拼错了，或者页面已经搬走。"
 }

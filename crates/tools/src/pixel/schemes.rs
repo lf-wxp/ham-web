@@ -173,6 +173,63 @@ fn audit_inherited_text(
   Ok(bad)
 }
 
+/// 审计经典方案手写在 `tokens.css` 里的屏幕层：门槛与 core 里派生方案的单测同一套。
+///
+/// 派生方案由 `color_scheme` 的单测守着；经典方案的屏幕色是手写的，只有这里看得到。亮色（`:root`）是反射式液晶，
+/// 暗色（`.dark`）是背光屏，两份各审一遍；状态色还要与 core 里对应的常量同值（各方案共用这一份）。
+fn audit_classic_display(
+  light: &BTreeMap<String, Rgb>,
+  dark: &BTreeMap<String, Rgb>,
+) -> Result<Vec<String>> {
+  use ham_web_core::color_scheme::{
+    DISPLAY_FG_MIN, DISPLAY_GHOST_RANGE, DISPLAY_STATUS, DISPLAY_STATUS_LCD,
+  };
+  let mut bad = Vec::new();
+  for (mode, block, vars) in [("亮色", ":root", light), ("暗色", ".dark", dark)] {
+    let var = |name: &str| -> Result<Rgb> {
+      vars
+        .get(name)
+        .copied()
+        .ok_or_else(|| anyhow!("tokens.css 的 {block} 里缺少 {name}"))
+    };
+    let bg = var("--display-bg")?;
+    let short = |name: &str, fg: Rgb, min: f64| -> Option<String> {
+      let r = fg.contrast(bg);
+      (r < min).then(|| {
+        format!(
+          "[经典·{mode}] {name} {} 落在屏幕底 {} 上只有 {r:.2}（要 >= {min}）",
+          fg.hex(),
+          bg.hex()
+        )
+      })
+    };
+    bad.extend(short("--display-fg", var("--display-fg")?, DISPLAY_FG_MIN));
+    bad.extend(short("--display-dim", var("--display-dim")?, AA));
+    let status = if block == ".dark" {
+      DISPLAY_STATUS
+    } else {
+      DISPLAY_STATUS_LCD
+    };
+    for (name, c) in status {
+      let v = var(name)?;
+      if v != c {
+        bad.push(format!(
+          "[经典·{mode}] {name} 与 color_scheme 里的状态色常量不一致"
+        ));
+      }
+      bad.extend(short(name, v, AA));
+    }
+    let (lo, hi) = DISPLAY_GHOST_RANGE;
+    let r = var("--display-ghost")?.contrast(bg);
+    if !(lo..=hi).contains(&r) {
+      bad.push(format!(
+        "[经典·{mode}] --display-ghost 对屏幕底 {r:.2}，应在 {lo}–{hi}"
+      ));
+    }
+  }
+  Ok(bad)
+}
+
 /// 热力格子里相邻两档的最小对比度（WCAG 比值）。
 ///
 /// 1.0 = 看不出差别。热力格子靠"同一色相、不同浓淡"传达多少，相邻档若分不开，
@@ -271,7 +328,8 @@ pub fn run(root: &Path, check: bool) -> Result<()> {
   let path = root.join(super::SCHEMES_CSS);
   let css = generate_css()?;
   let (light, dark) = classic_vars(root)?;
-  let bad = audit_inherited_text(&light, &dark)?;
+  let mut bad = audit_inherited_text(&light, &dark)?;
+  bad.extend(audit_classic_display(&light, &dark)?);
   if !bad.is_empty() {
     bail!(
       "配色方案有 {} 处文字对比度不达标（调整 core/color_scheme.rs 里的种子色）：\n{}",

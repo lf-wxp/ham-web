@@ -286,5 +286,10 @@
   "learning.exam-schedule-next-mock-desc": "Saca preguntas con las cuotas reales y cronométralo; el resultado muestra tu calificación y la precisión por tema, para saber cuánto te falta.",
   "learning.exam-schedule-go-plan": "Abrir el plan de estudio",
   "learning.exam-schedule-go-countdown": "Abrir las cuentas atrás",
-  "learning.exam-schedule-go-mock": "Abrir el simulacro"
+  "learning.exam-schedule-go-mock": "Abrir el simulacro",
+  "learning.rig-q": "Q",
+  "learning.rig-lock": "LOCK",
+  "learning.rig-qrm": "QRM",
+  "learning.streak-signal": "Señal de racha",
+  "learning.decode-code": "DECODE"
 }

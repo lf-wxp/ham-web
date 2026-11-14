@@ -20,9 +20,10 @@ use wasm_bindgen::JsCast;
 use ham_web_core::registry::{EXAM_GROUPS, KNOWLEDGE_GROUPS, TOOL_GROUPS};
 
 use crate::components::search_dialog::SearchOpen;
-use crate::icons::{Icon, IconKind};
-use crate::ui::{Button, Size, Variant};
+use crate::icons::{Icon, IconKind, PixelSprite};
+use crate::ui::{Button, Led, LedState, LedTone, Size, Variant};
 
+use super::band_scale::BandScale;
 use super::group_menu::{GroupMenu, MenuAlign};
 use super::hud_badge::HudBadge;
 use super::settings_dialog::SettingsDialog;
@@ -96,16 +97,28 @@ pub(crate) fn PixelNav() -> impl IntoView {
         // 排布对齐现代风：品牌在最左，导航项紧跟其后（不是居中），右侧动作组用 `ml-auto` 顶到
         // 最右。三块之间不再用 `justify-between` —— 那样导航项会随两侧宽度浮动，换语言或
         // HUD 数字变长时整组横向漂移。
-        <div class="flex h-16 items-center gap-2 sm:gap-3 xl:gap-4">
+        // 桌面档这一行压到 40px，下面 24px 是换台刻度尺（`BandScale`）：顶栏总高仍是 64px，
+        // 页头的吸顶偏移（`PAGE_HEADER_BAR` 的 66px）不用跟着改。
+        //
+        // 桌面档里所有控件统一 36px（`xl:h-9` / `xl:size-9`）：站标、三个波段键、搜索、设置、HUD
+        // 一样高，且都是 40px 行里的居中项 —— 上下各留 2px。此前是站标与右侧按钮 40px（顶到行边）、
+        // 波段键 36px、HUD 32px 三种高度并存，一排控件看着参差（2026-11-14 改）。
+        <div class="flex h-16 items-center gap-1 sm:gap-3 xl:h-10 xl:gap-4">
           // 品牌标识
+          // 电台顶面板的左端：电源灯 + 电台站标 + 站名（`docs/ui/pixel.md` §3.4）。
+          // 站名在手机上从 360px（`2xs`）才出现、用丝印字：320px 放不下，点阵标题字又太宽。
           <a
             href="/"
-            class="group flex shrink-0 items-center gap-2.5 pointer-coarse:min-h-11"
+            class="group flex min-w-0 shrink items-center gap-1.5 sm:gap-2 pointer-coarse:min-h-11"
             on:click=move |_| menu_open.set(false)
           >
-            <div class="brand-mark flex size-10 items-center justify-center text-primary-foreground group-hover:-translate-y-0.5">
-              <Icon kind=IconKind::Satellite class="size-6" />
+            <Led tone=LedTone::Rx state=LedState::On small=true />
+            <div class="brand-mark flex size-10 shrink-0 items-center justify-center group-hover:-translate-y-0.5 xl:size-9">
+              <PixelSprite name="radio" scale=2 />
             </div>
+            <span class="pxl-label hidden min-w-0 truncate text-xs text-foreground 2xs:block sm:hidden">
+              {move || t("shell.amateur-radio")}
+            </span>
             <div class="hidden flex-col whitespace-nowrap leading-tight sm:flex">
               <span class="pxl-title text-xs text-foreground">{move || t("shell.amateur-radio")}</span>
               // 副标题是装饰，宽度让位于功能：点阵标题字体比正文宽，西语副标题又最长（≈ 240px），
@@ -126,7 +139,6 @@ pub(crate) fn PixelNav() -> impl IntoView {
               kind=MenuKind::Exam
               groups=EXAM_GROUPS
               label=Signal::derive(move || t("shell.exam-center"))
-              icon=IconKind::Timer
               align=MenuAlign::Left
               open_menu=open_menu
             />
@@ -137,7 +149,6 @@ pub(crate) fn PixelNav() -> impl IntoView {
               kind=MenuKind::Knowledge
               groups=KNOWLEDGE_GROUPS
               label=Signal::derive(move || t("shell.knowledge"))
-              icon=IconKind::BookOpen
               align=MenuAlign::Center
               open_menu=open_menu
             />
@@ -147,35 +158,40 @@ pub(crate) fn PixelNav() -> impl IntoView {
               kind=MenuKind::Tools
               groups=TOOL_GROUPS
               label=Signal::derive(move || t("shell.tools"))
-              icon=IconKind::Calculator
               align=MenuAlign::Right
               open_menu=open_menu
             />
           </div>
 
-          // 右侧：搜索 + 设置 + HUD + 移动端菜单按钮。
-          // `ml-auto` 把它顶到最右（布局对齐现代风，见上）。
-          // `min-w-0`：flex 子项的最小宽度默认取内容的 min-content，不写的话 320px 的西语界面里这一组
-          // （搜索 + HUD + 菜单按钮）比可用宽度多 1px，把页面横向撑出 1px。
-          // 齿轮不分宽度常驻：它是语言与全部外观设置的唯一入口，手机档也不能少。
-          <div class="ml-auto flex min-w-0 items-center gap-1">
+          // 右侧：搜索 + 设置 + HUD + 移动端菜单按钮。`ml-auto` 把它顶到最右（布局对齐现代风，见上）。
+          // `shrink-0`：按键缩不动，窄屏时由左边的站名让位（截断 / 360px 以下隐藏）；这一组要是允许收缩，
+          // 按键就会溢出到视口外。齿轮不分宽度常驻：它是语言与全部外观设置的唯一入口，手机档也不能少。
+          <div class="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
+            // 同一个按钮两种外形：手机档是图标，桌面档是面板上的丝印字按键（琥珀灯 + 名字 + 快捷键 `/`）。
+            // 丝印字就是按钮的名字本身（本地化），可见文字与无障碍名一致（WCAG 2.5.3）。
             <Button
               variant=Variant::Ghost
               size=Size::Icon
+              class="xl:h-9 xl:w-auto xl:gap-2 xl:border-ink xl:bg-card xl:px-3"
               aria_label=Signal::derive(move || t("shell.search"))
               title=Signal::derive(move || t("shell.search-with-shortcut"))
               on_click=Callback::new(move |_| search_open.set(true))
             >
-              <Icon kind=IconKind::Search class="size-6" />
+              <Icon kind=IconKind::Search class="size-6 xl:hidden" />
+              <Led tone=LedTone::Warn state=LedState::Off small=true class="hidden xl:inline-block" />
+              <span class="pxl-label hidden text-xs xl:inline">{move || t("shell.search")}</span>
+              <kbd class="pxl-kbd hidden xl:inline" aria-hidden="true">"/"</kbd>
             </Button>
             <Button
               variant=Variant::Ghost
               size=Size::Icon
+              class="xl:h-9 xl:w-auto xl:border-ink xl:bg-card xl:px-3"
               aria_label=Signal::derive(move || t("shell.settings"))
               title=Signal::derive(move || t("shell.settings"))
               on_click=Callback::new(move |_| settings_open.set(true))
             >
-              <Icon kind=IconKind::Settings class="size-6" />
+              <Icon kind=IconKind::Settings class="size-6 xl:hidden" />
+              <span class="pxl-label hidden text-xs xl:inline">{move || t("shell.settings")}</span>
             </Button>
             <HudBadge />
             <Button
@@ -199,7 +215,8 @@ pub(crate) fn PixelNav() -> impl IntoView {
             </Button>
           </div>
         </div>
-
+        // 在定位容器里、行的下面：下拉面板以整个容器的下沿为基准（`top-full`），自然落在刻度尺下方。
+        <BandScale />
       </div>
 
       // 移动端下拉菜单。挂在 `<nav>` 上、不放进上面那层内容 div 里：那层是 `container`

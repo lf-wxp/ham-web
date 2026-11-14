@@ -247,5 +247,10 @@
   "learning.exam-schedule-next-mock-desc": "按真实配额抽题计时，交卷看评级与各分类正确率，判断还差多少。",
   "learning.exam-schedule-go-plan": "去备考计划",
   "learning.exam-schedule-go-countdown": "去倒计时",
-  "learning.exam-schedule-go-mock": "去模拟考试"
+  "learning.exam-schedule-go-mock": "去模拟考试",
+  "learning.rig-q": "Q",
+  "learning.rig-lock": "LOCK",
+  "learning.rig-qrm": "QRM",
+  "learning.streak-signal": "连对信号",
+  "learning.decode-code": "DECODE"
 }

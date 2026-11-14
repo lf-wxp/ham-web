@@ -7,6 +7,7 @@ use ham_web_core::weak_exam::CategoryDelta;
 use ham_web_core::{Bank, ExamScore};
 use leptos::prelude::*;
 
+use crate::components::exam::ShareCallToggle;
 use crate::i18n::{t, tf, tp};
 use crate::share_score;
 
@@ -23,10 +24,17 @@ pub fn ModernExamResult(
   #[prop(into)] wrong_href: Signal<String>,
   #[prop(into)] bank: Signal<Bank>,
 ) -> impl IntoView {
+  // 分享图上是否印呼号：默认不印，弹窗每次重开都回到不印（同像素版）。
+  let show_call = RwSignal::new(false);
   let card = move || {
     let (s, b, pl) = (score.get(), bank.get(), pass_line.get());
-    share_score::render_score_card(b, s, pl).ok()
+    share_score::render_score_card(b, s, pl, show_call.get_untracked()).ok()
   };
+  Effect::new(move |_| {
+    if open.get() {
+      show_call.set(false);
+    }
+  });
   let download = move |_| {
     if let Some(data_url) = card() {
       share_score::download(
@@ -123,6 +131,7 @@ pub fn ModernExamResult(
       }}
 
       <p class="md-muted md-sm">{move || t("exam.after-submitting-you-can")}</p>
+      <ShareCallToggle show=show_call />
 
       <div class="md-dialog-actions">
         {move || {

@@ -8,8 +8,10 @@
 //! 产物提交入库，日常开发不需要运行；改了字符画或换了图标集才重跑：
 //!
 //! ```text
-//! cargo make pixel-sprites          # 需要 PIXELARTICONS_DIR 指向 pixelarticons 的 svg 目录
+//! cargo make pixel-sprites          # 给了 PIXELARTICONS_DIR（pixelarticons 的 svg 目录）才连图标一起重生成
 //! ```
+//!
+//! 只改了精灵的字符画时不需要图标集：不设 `PIXELARTICONS_DIR` 就只写 `sprite_data.rs`。
 
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
@@ -230,21 +232,29 @@ pub(super) fn rustfmt(root: &Path, files: &[&Path]) -> Result<()> {
   Ok(())
 }
 
-/// 生成 `icon_paths.rs` 与 `sprite_data.rs`。
-pub fn generate(root: &Path, pixelarticons: &Path) -> Result<()> {
+/// 生成 `sprite_data.rs`；给了 pixelarticons 目录时连 `icon_paths.rs` 一起生成。
+pub fn generate(root: &Path, pixelarticons: Option<&Path>) -> Result<()> {
   let out_dir = root.join("crates/app/src/icons/pixel");
   fs::create_dir_all(&out_dir)?;
-  let icon_file = out_dir.join("icon_paths.rs");
   let sprite_file = out_dir.join("sprite_data.rs");
-  fs::write(&icon_file, icon_paths_source(pixelarticons)?)?;
   fs::write(&sprite_file, sprite_data_source()?)?;
+  let shown = out_dir.strip_prefix(root).unwrap_or(&out_dir).display();
+  let Some(icons_dir) = pixelarticons else {
+    rustfmt(root, &[&sprite_file])?;
+    println!(
+      "精灵 {} 张 → {shown}（未给 PIXELARTICONS_DIR，图标未动）",
+      SPRITES.len()
+    );
+    return Ok(());
+  };
+  let icon_file = out_dir.join("icon_paths.rs");
+  fs::write(&icon_file, icon_paths_source(icons_dir)?)?;
   rustfmt(root, &[&icon_file, &sprite_file])?;
   println!(
-    "图标 {} 个（手绘 {}），精灵 {} 张 → {}",
+    "图标 {} 个（手绘 {}），精灵 {} 张 → {shown}",
     ICON_MAP.len(),
     HAND_ICONS.len(),
     SPRITES.len(),
-    out_dir.strip_prefix(root).unwrap_or(&out_dir).display()
   );
   Ok(())
 }

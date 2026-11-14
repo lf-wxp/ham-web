@@ -2,6 +2,7 @@
 //!
 //! 入参与像素版 `pages/exam/exam_bottom_bar.rs` 一致；移动端只保留两行按钮，
 //! 统计行直接藏掉（窄屏塞不下且信息重复）。
+//! 倒计时在底栏固定放一份：长题 / 看图滚动后，页头（`ModernExamHead`）那份早已滚出视口。
 
 use ham_web_core::ExamRule;
 use leptos::portal::Portal;

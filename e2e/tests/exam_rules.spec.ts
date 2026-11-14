@@ -21,7 +21,7 @@ test("模考：机考仿真开考前先过考场规则演练", async ({ page }) 
   // 确认后真正开考：倒计时出现。
   await dialog.getByRole("button", { name: "我已了解，开始机考" }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.getByText(/剩余时间：\d{2}:\d{2}/).first()).toBeVisible();
+  await expect(page.locator('main [data-slot="exam-clock"]')).toHaveText(/^\d{2}:\d{2}$/);
 });
 
 test("模考：规则演练可以暂不开始", async ({ page }) => {

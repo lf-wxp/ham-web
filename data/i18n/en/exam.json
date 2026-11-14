@@ -420,6 +420,36 @@
   "exam.group-deleted": "Group deleted",
   "exam.keys-pick": "to pick",
   "exam.keys-turn": "to turn",
-  "exam.signal-report": "signal report",
-  "exam.unknown-error-detail": "Unknown error: {}"
+  "exam.signal-report": "Signal report",
+  "exam.unknown-error-detail": "Unknown error: {}",
+  "exam.qsl-no-call": "Callsign not set",
+  "exam.qsl-call-hidden": "Callsign withheld",
+  "exam.qsl-share-call": "Show my callsign ({}) on the shared image",
+  "exam.qsl-confirming": "Confirming QSO with the Class {} mock exam",
+  "exam.on-air-code": "ON AIR",
+  "exam.on-air-state": "Exam in progress",
+  "exam.clock-calm": "REMAIN",
+  "exam.clock-warn": "LOW",
+  "exam.clock-danger": "FINAL",
+  "exam.channel-memory": "Memory channels · Answer card",
+  "exam.qsl-code": "QSL",
+  "exam.qsl-head": "Mock exam · {}",
+  "exam.qsl-to": "TO",
+  "exam.qsl-call": "CALL",
+  "exam.qsl-date": "DATE",
+  "exam.qsl-utc": "UTC",
+  "exam.qsl-to-value": "Mock exam room",
+  "exam.qsl-score": "Score {} / {}",
+  "exam.qsl-pass": "PASS",
+  "exam.qsl-fail": "FAIL",
+  "exam.qsl-reading-at": "Pass line {}/{} = S9; you're right on it — reads {}.",
+  "exam.qsl-reading-above": {
+    "one": "Pass line {}/{} = S9; {} question above it — reads {}.",
+    "other": "Pass line {}/{} = S9; {} questions above it — reads {}."
+  },
+  "exam.qsl-reading-below": {
+    "one": "Pass line {}/{} = S9; {} question short — reads {}.",
+    "other": "Pass line {}/{} = S9; {} questions short — reads {}."
+  },
+  "exam.qsl-signoff": "TNX QSO · 73"
 }

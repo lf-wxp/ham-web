@@ -6,6 +6,7 @@ use crate::i18n::t;
 use crate::ui::{Button, Separator, Sheet, Size, Variant, button_class};
 
 use super::answer_card_cell::AnswerCardCell;
+use super::answer_card_legend::AnswerCardLegend;
 use super::answer_card_model::AnswerCardModel;
 
 #[component]
@@ -154,41 +155,7 @@ pub fn AnswerCardSheet(
           </div>
         </div>
         <div class="grid grid-cols-6 gap-2 sm:grid-cols-8">{grid}</div>
-        // 图例常驻：以前只有交卷后才出现，作答中那个小黄块的含义要靠猜。
-        <ul class="flex flex-wrap items-center gap-x-4 gap-y-1 pt-2 text-xs text-muted-foreground">
-          <li class="inline-flex items-center gap-1">
-            <span class="inline-block size-4 border-2 border-ink bg-primary"></span>
-            {move || t("exam.answered")}
-          </li>
-          <li class="inline-flex items-center gap-1">
-            <span class="inline-block size-4 border-2 border-ink bg-card"></span>
-            {move || t("exam.unanswered")}
-          </li>
-          <li class="inline-flex items-center gap-1">
-            <span class="inline-block size-4 border-2 border-b-4 border-ink border-b-gold bg-card"></span>
-            {move || t("exam.current-question")}
-          </li>
-          <li class="inline-flex items-center gap-1">
-            <span class="pxl-label inline-flex size-4 items-center justify-center border-2 border-ink bg-accent text-xs text-accent-foreground">"!"</span>
-            {move || t("exam.flagged")}
-          </li>
-          {move || {
-            finished
-              .get()
-              .then(|| {
-                view! {
-                  <li class="inline-flex items-center gap-1">
-                    <span class="inline-flex size-4 items-center justify-center border-2 border-win bg-card text-xs text-win-text">"✓"</span>
-                    {move || t("exam.correct-label")}
-                  </li>
-                  <li class="inline-flex items-center gap-1">
-                    <span class="inline-flex size-4 items-center justify-center border-2 border-destructive bg-card text-xs text-hp-text">"✗"</span>
-                    {move || t("exam.wrong-label")}
-                  </li>
-                }
-              })
-          }}
-        </ul>
+        <AnswerCardLegend finished=finished />
       </div>
     </Sheet>
   }

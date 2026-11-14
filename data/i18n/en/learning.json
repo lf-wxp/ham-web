@@ -286,5 +286,10 @@
   "learning.exam-schedule-next-mock-desc": "Draw questions with the real quotas and time it; the graded result shows your rating and per-topic accuracy, so you know how far you are.",
   "learning.exam-schedule-go-plan": "Open the study plan",
   "learning.exam-schedule-go-countdown": "Open countdowns",
-  "learning.exam-schedule-go-mock": "Open the mock exam"
+  "learning.exam-schedule-go-mock": "Open the mock exam",
+  "learning.rig-q": "Q",
+  "learning.rig-lock": "LOCK",
+  "learning.rig-qrm": "QRM",
+  "learning.streak-signal": "Streak signal",
+  "learning.decode-code": "DECODE"
 }

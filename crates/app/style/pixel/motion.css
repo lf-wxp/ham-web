@@ -35,12 +35,6 @@
   }
 }
 
-@keyframes pxl-scroll-x {
-  to {
-    background-position-x: -128px;
-  }
-}
-
 /* 暗色星空：两组星点轮换。具体坐标写在 surfaces.css 的 `.dark body::after` 里；
    这里只切换「第二组」的 box-shadow。 */
 @keyframes pxl-twinkle {
@@ -93,13 +87,6 @@
   }
 }
 
-/* 打字机：宽度从 0 走到 100%，步数由 `--steps` 给出（字符数）。 */
-@keyframes pxl-type {
-  to {
-    width: 100%;
-  }
-}
-
 /* 飘字（+XP、伤害数字）：向上飘 16px 并在最后一帧消失。 */
 @keyframes pxl-float-up {
   0% {
@@ -136,15 +123,6 @@
   animation: pxl-float-up 0.9s steps(5, end) forwards;
 }
 
-.pxl-typewriter {
-  display: inline-block;
-  width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  vertical-align: bottom;
-  animation: pxl-type var(--type-dur, 1s) steps(var(--steps, 20), end) forwards;
-}
-
 /* ---------- 路由切换：主内容区「抖动溶解」入场 ----------
    由 `RouteTransition` 在路径变化时「摘类 → 强制回流 → 加类」重放。
    用 4 张逐帧切换的蒙版（25% → 50% → 75% → 100% 的有序抖动）实现像素溶解：
@@ -178,21 +156,27 @@
   animation: page-enter var(--motion-normal) steps(1, end) backwards;
 }
 
-/* ---------- 路由切换：顶栏「读条」 ----------
-   每次导航从左到右一格一格填满再消失，是「页面正在换台」的唯一提示；
+/* ---------- 路由切换：顶栏「换台」读条 ----------
+   一条刻度尺贴在视口最上沿，红色指针从左到右一格一格扫过、到头后整条淡出 —— 像旋调谐钮
+   换台（docs/ui/motion.md §8）。是「页面正在换台」的唯一提示；`RouteTransition` 每次导航重挂一次。
+   指针用独立的 `translate`（`vw` 单位，不依赖自身宽度），整条只动 `opacity`：两者都是合成器属性。
    层级压在导航（z-50）之上、跳转链接（z-[60]）之下。 */
 @keyframes route-sweep {
-  0% {
-    clip-path: inset(0 100% 0 0);
-    opacity: 1;
-  }
+  0%,
   75% {
-    clip-path: inset(0 0 0 0);
     opacity: 1;
   }
   100% {
-    clip-path: inset(0 0 0 0);
     opacity: 0;
+  }
+}
+
+@keyframes route-tune {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: calc(100vw - 4px) 0;
   }
 }
 
@@ -200,15 +184,43 @@
   position: fixed;
   inset-inline: 0;
   top: 0;
-  height: 4px;
+  height: 6px;
   z-index: var(--z-dock);
   pointer-events: none;
-  background-image: repeating-linear-gradient(
-    90deg,
-    var(--pxl-gold) 0 8px,
-    var(--primary) 8px 16px
-  );
-  animation: route-sweep var(--motion-slow) steps(12, end) forwards;
+  background-color: var(--card);
+  background-image:
+    repeating-linear-gradient(90deg, var(--pxl-ink) 0 2px, transparent 2px 48px),
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--pxl-ink) 45%, transparent) 0 2px,
+      transparent 2px 12px
+    );
+  background-size:
+    100% 6px,
+    100% 3px;
+  background-position:
+    0 0,
+    0 0;
+  background-repeat: repeat-x;
+  animation: route-sweep var(--motion-slow) steps(1, end) forwards;
+}
+
+/* 桌面档有常驻的换台刻度尺（顶栏下沿的 `BandScale`），指针自己会走到新分组：顶端读条只留给手机档。 */
+@media (min-width: 1280px) {
+  .route-sweep {
+    display: none;
+  }
+}
+
+.route-sweep::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 6px;
+  background-color: var(--led-tx);
+  animation: route-tune var(--motion-slow) steps(8, end) forwards;
 }
 
 /* ---------- 滚动浮现 ----------
@@ -367,6 +379,94 @@
 
 .motion-check {
   animation: check-pop var(--motion-fast) steps(2, end) both;
+}
+
+/* ---------- 电台反馈：判分时的「锁定」与「干扰」（题卡的 `data-signal`） ----------
+   锁定 = 边框内沿亮两下绿；干扰 = 网点噪声跳三帧。两者都只占 `--motion-normal`、终态透明，
+   静态降级（0.01ms 跑完）后什么也不留 —— 结论在判分文字与指示灯里，这里只是手感。
+   画在内沿（`inset: 0`）而不是压着描边：题卡可能带 `overflow: hidden`，越界的部分会被裁掉。 */
+@keyframes pxl-lock-flash {
+  0%,
+  24% {
+    opacity: 1;
+  }
+  25%,
+  49% {
+    opacity: 0;
+  }
+  50%,
+  74% {
+    opacity: 1;
+  }
+  75%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes pxl-qrm-noise {
+  0% {
+    opacity: 1;
+    background-position: 0 0;
+  }
+  33% {
+    opacity: 1;
+    background-position: 2px 0;
+  }
+  66% {
+    opacity: 1;
+    background-position: 0 2px;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.pxl-window[data-signal]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pxl-window[data-signal="lock"]::after {
+  border: 2px solid var(--led-rx);
+  animation: pxl-lock-flash var(--motion-normal) steps(1, end) forwards;
+}
+
+.pxl-window[data-signal="qrm"]::after {
+  background-image: repeating-conic-gradient(
+    color-mix(in srgb, var(--pxl-ink) 30%, transparent) 0% 25%,
+    transparent 0% 50%
+  );
+  background-size: 4px 4px;
+  animation: pxl-qrm-noise var(--motion-normal) steps(1, end) forwards;
+}
+
+/* 扫描：刻度尺的指针在整条刻度上来回逐格扫（1.6s、16 格，`docs/ui/motion.md` §8）。
+   静态降级（0.01ms 跑一次）后停在组件给的位置。 */
+@keyframes pxl-scale-sweep {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 100% 0;
+  }
+}
+
+.pxl-scale[data-sweep] .pxl-scale-track {
+  animation: pxl-scale-sweep 1.6s steps(16, end) infinite alternate;
+}
+
+/* 干扰频谱的两帧轮换：第二帧整张盖在第一帧上、只切它的显隐。
+   静态降级时第二帧停在可见 —— 一张完整的静止频谱，而不是两帧叠成一团。 */
+.pxl-qrm-frame[data-frame="1"] {
+  animation: pxl-blink 0.6s steps(1, end) infinite;
+}
+
+[data-offscreen] .pxl-qrm-frame {
+  animation-play-state: paused;
 }
 
 /* ---------- 出现式反馈：纯淡入（定位由 transform 承担的元素） ----------

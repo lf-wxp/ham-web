@@ -27,7 +27,6 @@
   "home.start-practice": "Start Practice",
   "home.quick-start": "Quick Start",
   "home.mock-exam-weighted-by": "Mock exam weighted by topic accuracy and mistakes",
-  "home.receiving": "Receiving",
   "home.cards-are-due-for": {
     "one": "{} card is due for review.",
     "other": "{} cards are due for review."
@@ -43,10 +42,9 @@
     "one": "{} day in a row · best {}",
     "other": "{} days in a row · best {}"
   },
-  "home.choose-a-bank-version": "Choose a bank version and class, then start practice or a mock exam",
   "home.question-bank-is-unavailable": "Question bank {} is unavailable or empty; build the dataset first.",
   "home.sunspots": "Sunspots",
-  "home.rpg-entry-legend": "Quest = question-bank practice, Bestiary = your mistakes; mock exams are under Quick start below",
+  "home.rpg-entry-legend": "QSO route = topic-by-topic practice, QRM log = your mistakes; mock exams are under Quick start below",
   "home.propagation-fetch-failed": "Couldn't fetch live conditions - retry, or open the solar page",
   "home.quick-actions": "Quick actions",
   "home.modules": "Sections",
@@ -78,5 +76,41 @@
   "home.waterfall-empty": "No record yet. Ready to get on air today?",
   "home.waterfall-cell": "{} · {} questions",
   "home.live-unavailable": "Live data is unavailable",
-  "home.live-updated": "Updated {}"
+  "home.live-updated": "Updated {}",
+  "home.readiness-signal": "Exam readiness",
+  "home.readiness-average": {
+    "one": "{} recent exam, avg {}%",
+    "other": "{} recent exams, avg {}%"
+  },
+  "home.readiness-none": "No {} mock exam yet — take one to get a reading",
+  "home.s9-pass-line": "S9 = pass mark",
+  "home.knowledge-spectrum": "Knowledge spectrum",
+  "home.knowledge-spectrum-hint": "Each bar is a question category; its height is your accuracy (S9 = pass mark). Tap a bar to practise that category.",
+  "home.spectrum-few": "fewer than {} answers, no reading yet",
+  "home.log-strip-title": "Station log · last 28 days",
+  "home.log-strip-total": {
+    "one": "{} question in 28 days",
+    "other": "{} questions in 28 days"
+  },
+  "home.log-strip-summary": "Questions answered per day over the last 28 days",
+  "home.main-display": "Main display",
+  "home.main-code": "MAIN",
+  "home.operator-tag": "OPERATOR · LV {}",
+  "home.s-gap": {
+    "one": "{} bar below the pass line",
+    "other": "{} bars below the pass line"
+  },
+  "home.s-pass": "Above the pass line (S9)",
+  "home.s-none": "No readiness reading yet",
+  "home.band-bank": "BAND · BANK",
+  "home.spectrum-code-1": "REG",
+  "home.spectrum-code-2": "FRQ",
+  "home.spectrum-code-3": "OPS",
+  "home.spectrum-code-4": "TRM",
+  "home.spectrum-code-5": "MOD",
+  "home.spectrum-code-6": "EQP",
+  "home.spectrum-code-7": "ANT",
+  "home.spectrum-code-8": "PRP",
+  "home.spectrum-code-9": "BAS",
+  "home.spectrum-code-10": "SAF"
 }

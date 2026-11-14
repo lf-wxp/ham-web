@@ -1,0 +1,687 @@
+/* ============================================================
+   电台组件（Pixel Rig · 16 位电台前面板）
+   ------------------------------------------------------------
+   屏幕、七段读数、指示灯、S 表、知识频谱、波段铭牌与页头刻度的外观。
+   规则见 docs/ui/pixel.md §2 硬规则 14–17，理由见 docs/ui/decisions.md §11.6。
+   取值只用 tokens.css 的 `--display-*` / `--led-*` 与既有语义 token；组件在 `src/components/radio/`。
+
+   全部放在 `@layer components`，调用点的 Tailwind 工具类（间距、宽度）照常覆盖这里的默认值。
+   ============================================================ */
+
+@layer components {
+  /* ---------- 屏幕：亮色是反射式液晶、暗色是背光屏（取值见 tokens.css 与 schemes.css） ----------
+     内凹：左上暗边 + 右下亮边（与按钮的「凸」相反）。扫描线是背景层的 2px 横纹，画在字的**下面**，
+     不盖在文字上（硬规则 14）。只坐在面板上，不直接落在页底。 */
+  .pxl-display {
+    position: relative;
+    background-color: var(--display-bg);
+    /* 扫描线只在背光屏上：亮色液晶的 `--display-scan` 取透明（浅底上画线只剩一层脏纹），整条渐变随之不可见。 */
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent 0 2px,
+      var(--display-scan) 2px 4px
+    );
+    color: var(--display-fg);
+    /* `--display-edge`：屏幕自己的边框色（亮色下是屏幕色压深，暗色下就是墨框）—— 浅色屏配纸面纯黑框
+       会像一块贴上去的补丁（`docs/ui/decisions.md` §11.6）。 */
+    border: 2px solid var(--display-edge, var(--pxl-ink));
+    box-shadow:
+      inset 2px 2px 0 0 var(--display-scan),
+      inset -2px -2px 0 0 var(--display-rim);
+  }
+
+  /* 屏幕上的字只有这几档（硬规则 14）：纸面的 `text-foreground` 不跟屏幕配色走。 */
+  .pxl-d-dim {
+    color: var(--display-dim);
+  }
+
+  .pxl-d-hot {
+    color: var(--display-hot);
+  }
+
+  .pxl-d-alarm {
+    color: var(--display-alarm);
+  }
+
+  .pxl-d-ok {
+    color: var(--display-ok);
+  }
+
+  /* 全局焦点环是 `--ring`：亮色主题下是深蓝，落在暗屏上看不见，屏幕里改用读数色。 */
+  .pxl-display :focus-visible {
+    outline-color: var(--display-fg);
+  }
+
+  /* ---------- 七段读数（`Readout`） ----------
+     每个像素块一个 `<rect>`；点亮的段取 `currentColor`（由 `data-tone` 决定），没亮的是幽灵段。 */
+  .pxl-readout {
+    display: inline-block;
+    flex-shrink: 0;
+    line-height: 0;
+    color: var(--display-fg);
+  }
+
+  .pxl-readout svg {
+    display: block;
+    shape-rendering: crispEdges;
+  }
+
+  .pxl-readout[data-tone="dim"] {
+    color: var(--display-dim);
+  }
+
+  .pxl-readout[data-tone="hot"] {
+    color: var(--display-hot);
+  }
+
+  .pxl-readout[data-tone="alarm"] {
+    color: var(--display-alarm);
+  }
+
+  .pxl-readout[data-tone="ok"] {
+    color: var(--display-ok);
+  }
+
+  .pxl-seg {
+    fill: var(--display-ghost);
+  }
+
+  .pxl-seg[data-lit] {
+    fill: currentColor;
+  }
+
+  /* ---------- 指示灯（`Led`） ----------
+     灯罩是一块暗色方块；点亮层画在 `::after` 上，闪烁只动它的 `opacity`（合成器属性）。
+     左上角 2px 的高光格让「亮着」不只靠色相（硬规则 15：灯旁边还必须有文字）。 */
+  .pxl-led {
+    --led: var(--led-rx);
+    --led-hi: var(--led-rx-hi);
+    position: relative;
+    display: inline-block;
+    flex-shrink: 0;
+    width: 0.75rem;
+    height: 0.75rem;
+    background-color: var(--led-off);
+    border: 2px solid var(--pxl-ink);
+  }
+
+  .pxl-led[data-size="sm"] {
+    width: 0.5rem;
+    height: 0.5rem;
+  }
+
+  .pxl-led[data-tone="tx"] {
+    --led: var(--led-tx);
+    --led-hi: var(--led-tx-hi);
+  }
+
+  .pxl-led[data-tone="warn"] {
+    --led: var(--led-warn);
+    --led-hi: var(--led-warn-hi);
+  }
+
+  .pxl-led[data-tone="info"] {
+    --led: var(--led-info);
+    --led-hi: var(--led-info-hi);
+  }
+
+  .pxl-led::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background-color: var(--led);
+    background-image: linear-gradient(var(--led-hi), var(--led-hi));
+    background-size: 2px 2px;
+    background-repeat: no-repeat;
+  }
+
+  .pxl-led:is([data-state="on"], [data-state="blink"])::after {
+    opacity: 1;
+  }
+
+  /* 只有灯会闪（硬规则 15）：1s 一个周期，每秒一次，远低于 WCAG 2.3.1 的 3 次。
+     降级时 motion.css 把时长压成一帧，`pxl-blink` 的终值是不透明 —— 闪烁变常亮。 */
+  .pxl-led[data-state="blink"]::after {
+    animation: pxl-blink 1s steps(1, end) infinite;
+  }
+
+  /* ---------- S 表（`SignalMeter`） ----------
+     13 格：S1–S9 用读数色，+10…+40 用 `--display-ok`（这里 S9 以上是「稳过」，红色只留给错误）。
+     刻度标签与格子共用同一组 13 列，标签只占奇数列，居中、允许溢出到相邻的空列。 */
+  /* 格数默认 13（S 表）；经验条这类别的电平条用 `[--cells:16]` 改列数，外观不变。 */
+  .pxl-meter-bar,
+  .pxl-meter-scale {
+    display: grid;
+    grid-template-columns: repeat(var(--cells, 13), minmax(0, 1fr));
+    gap: 2px;
+  }
+
+  .pxl-meter-seg {
+    height: 0.75rem;
+    background-color: var(--display-ghost);
+  }
+
+  .pxl-meter-seg[data-lit] {
+    background-color: var(--display-lit);
+  }
+
+  .pxl-meter-seg[data-lit][data-plus] {
+    background-color: var(--display-ok);
+  }
+
+  /* 峰值保持：比当前高的「最好到过这里」那一格。 */
+  .pxl-meter-seg[data-peak] {
+    background-color: var(--display-hot);
+  }
+
+  .pxl-meter-scale > span {
+    justify-self: center;
+    white-space: nowrap;
+    font-family: var(--font-pixel-label);
+    font-size: var(--text-xs);
+    line-height: 1.5;
+    color: var(--display-dim);
+  }
+
+  .pxl-meter-scale > span[data-plus] {
+    color: var(--display-ok);
+  }
+
+  /* ---------- 知识频谱（首页） ----------
+     每根柱是一个链接：13 格竖排，从下往上点亮；悬停 / 聚焦时柱底的游标亮起。 */
+  .pxl-spectrum {
+    display: grid;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .pxl-spectrum-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 2px;
+    outline-offset: 0;
+  }
+
+  .pxl-spectrum-cells {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 2px;
+  }
+
+  .pxl-spectrum-cells > span {
+    height: 0.25rem;
+    background-color: var(--display-ghost);
+  }
+
+  .pxl-spectrum-cells > span[data-lit] {
+    background-color: var(--display-lit);
+  }
+
+  .pxl-spectrum-cells > span[data-lit][data-plus] {
+    background-color: var(--display-ok);
+  }
+
+  /* 合格线以下五成（S0–S4）：琥珀，提示「这一类该补了」。 */
+  .pxl-spectrum-bar[data-weak] .pxl-spectrum-cells > span[data-lit] {
+    background-color: var(--display-hot);
+  }
+
+  /* 不换行：320px 下每列只剩 18px 左右，「01」会被折成上下两行；两位数字略宽于列时溢进柱间距。 */
+  .pxl-spectrum-index {
+    white-space: nowrap;
+    text-align: center;
+    font-family: var(--font-pixel-label);
+    font-size: var(--text-xs);
+    line-height: 1.5;
+    color: var(--display-dim);
+    border-top: 2px solid transparent;
+  }
+
+  .pxl-spectrum-bar:is(:hover, :focus-visible, [data-active]) .pxl-spectrum-index {
+    color: var(--display-fg);
+    border-top-color: var(--display-fg);
+  }
+
+  /* 320–399px：柱间距与柱内边距各收一档，给两位序号腾出宽度（断点与 controls.css 的窄屏档一致）。 */
+  @media (max-width: 399px) {
+    .pxl-spectrum {
+      gap: 2px;
+    }
+
+    .pxl-spectrum-bar {
+      padding: 2px 0;
+    }
+  }
+
+  /* < 360px：10 列每列只剩 20px 上下，低于 WCAG 2.5.8 的 24px 最小目标（360px 起恰好 >= 24px）。
+     改成 5 列两行，每根柱 ~40px 宽；柱本身是整根可点的链接，高度不变。 */
+  @media (max-width: 359px) {
+    .pxl-spectrum {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px 6px;
+    }
+  }
+
+  /* ---------- 页头：波段铭牌 + 下沿刻度 ----------
+     铭牌告诉你「这一页在哪个波段」（考试中心 / 知识库 / 工具），与副标题同一行，不增加页头高度。
+     刻度画在页头底部内边距里（`::after`），不占布局。 */
+  .pxl-band-tag {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.375rem;
+    font-family: var(--font-pixel-label);
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .pxl-tick-edge::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 6px;
+    pointer-events: none;
+    background-image:
+      repeating-linear-gradient(90deg, var(--pxl-ink) 0 2px, transparent 2px 60px),
+      repeating-linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--pxl-ink) 40%, transparent) 0 2px,
+        transparent 2px 12px
+      );
+    background-size:
+      100% 6px,
+      100% 3px;
+    background-position:
+      0 100%,
+      0 100%;
+    background-repeat: repeat-x;
+  }
+
+  /* ---------- 顶栏：波段键（分组下拉开关） ----------
+     与 chip 同一套「按进去 + 顶部灯条」：当前页面在这个分组里时 `data-active`。 */
+  .pxl-band-key {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 6px;
+    height: 2.25rem;
+    padding: 0 0.5rem 0 0.75rem;
+    white-space: nowrap;
+    cursor: pointer;
+    font-size: var(--text-xs);
+    line-height: 1.25;
+    background-color: var(--card);
+    color: var(--muted-foreground);
+    border: 2px solid var(--pxl-ink);
+    outline: none;
+  }
+
+  @media (hover: hover) {
+    .pxl-band-key:hover {
+      background-color: var(--accent);
+      color: var(--accent-foreground);
+    }
+  }
+
+  .pxl-band-key[data-active] {
+    background-color: var(--pxl-field);
+    color: var(--foreground);
+    box-shadow:
+      inset 0 4px 0 0 var(--primary),
+      inset 2px 2px 0 0 var(--pxl-lo);
+  }
+
+  .pxl-band-key:focus-visible {
+    outline: 2px dashed var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* 键帽：快捷键提示（顶栏 SCAN 键里的 `/`）。 */
+  .pxl-kbd {
+    padding: 0 4px;
+    font-family: var(--font-pixel-label);
+    font-size: var(--text-xs);
+    line-height: 1.25;
+    color: var(--muted-foreground);
+    border: 2px solid var(--pxl-ink);
+  }
+
+  /* ---------- 刻度尺（`TuningScale`：顶栏下沿的换台刻度、搜索面板的扫描刻度） ----------
+     61 道刻度（每 10 道一根长的、每 5 道一根中的），三个分组的丝印标签，一根红指针。
+     指针挂在整宽轨道上、平移轨道（`translate` 是合成器属性），逐格走 8 帧。 */
+  .pxl-scale {
+    position: relative;
+    height: 1.5rem;
+    overflow: hidden;
+    border-top: 2px solid color-mix(in srgb, var(--pxl-ink) 30%, transparent);
+  }
+
+  .pxl-scale::before {
+    --tick: color-mix(in srgb, var(--pxl-ink) 45%, transparent);
+    content: "";
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 0;
+    height: 10px;
+    background-image:
+      repeating-linear-gradient(90deg, var(--pxl-ink) 0 2px, transparent 2px calc(100% / 6)),
+      repeating-linear-gradient(90deg, var(--pxl-ink) 0 2px, transparent 2px calc(100% / 12)),
+      repeating-linear-gradient(90deg, var(--tick) 0 2px, transparent 2px calc(100% / 60));
+    background-size:
+      100% 10px,
+      100% 6px,
+      100% 4px;
+    background-position:
+      0 100%,
+      0 100%,
+      0 100%;
+    background-repeat: no-repeat;
+    /* 重复渐变画不到最右端那一道：用一条内阴影补上。 */
+    box-shadow: inset -2px 0 0 0 var(--pxl-ink);
+  }
+
+  /* 标签与指针同一条基准：左右各缩 8px 的轨道（与刻度一致）。 */
+  .pxl-scale-label {
+    position: absolute;
+    top: 1px;
+    left: calc(8px + (100% - 16px) * var(--at, 0));
+    translate: -50% 0;
+    font-family: var(--font-pixel-label);
+    font-size: var(--text-xs);
+    line-height: 1.25;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .pxl-scale-track {
+    position: absolute;
+    inset: 0 8px;
+    pointer-events: none;
+    transition: translate var(--motion-normal) steps(8, end);
+  }
+
+  .pxl-scale-needle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -1px;
+    width: 4px;
+    background-color: var(--led-tx);
+  }
+
+  .pxl-scale-needle::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -2px;
+    width: 8px;
+    height: 4px;
+    background-color: var(--led-tx);
+  }
+
+  /* ---------- 考试头部：ON AIR 框（`BossStage`） ----------
+     红色描边的纸面小框：在考灯 + ON AIR 丝印 + 状态，旁边是大号倒计时屏。 */
+  .pxl-onair {
+    background-color: var(--card);
+    border: 2px solid var(--pxl-hp);
+  }
+
+  /* ---------- 成绩 QSL 卡的合格章（`BossVerdict`） ----------
+     双线框（描边 + 外描边）盖章：合格用胜色、未合格用告急色，字和框同色。 */
+  .pxl-qsl-stamp {
+    color: var(--hp-ink);
+    border: 2px solid currentColor;
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  .pxl-qsl-stamp[data-pass] {
+    color: var(--win-ink);
+  }
+
+  /* ---------- 旋钮（`Knob`） ----------
+     本体不转：外圈 11 颗刻度灯 + 一枚按 2px 网格吸附的指示点，点阵图形旋转会糊。
+     `touch-action: none`：竖向拖动是调值，不能被浏览器当成页面滚动。 */
+  .pxl-knob {
+    display: inline-block;
+    flex-shrink: 0;
+    line-height: 0;
+    cursor: ns-resize;
+    touch-action: none;
+  }
+
+  .pxl-knob svg {
+    display: block;
+    shape-rendering: crispEdges;
+  }
+
+  /* 旋钮 + 右侧「标签 / 读数屏」一组。 */
+  .pxl-knob-row {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .pxl-knob-shadow {
+    fill: var(--pxl-shadow);
+  }
+
+  .pxl-knob-body {
+    fill: var(--secondary);
+    stroke: var(--pxl-ink);
+    stroke-width: 2;
+  }
+
+  .pxl-knob-hi {
+    fill: none;
+    stroke: var(--pxl-hi);
+    stroke-width: 2;
+  }
+
+  .pxl-knob-pointer {
+    fill: var(--foreground);
+  }
+
+  /* 熄灭的刻度灯与指示灯同一个暗色：一圈「灯」，而不是一圈浅色小点。 */
+  .pxl-knob-dot {
+    fill: var(--led-off);
+  }
+
+  .pxl-knob-dot[data-lit] {
+    fill: var(--primary);
+  }
+
+  /* ---------- 干扰频谱（`QrmSignature`，抗干扰的「敌人」） ----------
+     只有三种亮法，全部取屏幕层 token：底噪 fg、尖峰 hot、过载 alarm；未亮的格是熄灭段。 */
+  .pxl-qrm {
+    display: block;
+    flex-shrink: 0;
+    shape-rendering: crispEdges;
+  }
+
+  .pxl-qrm-cell {
+    fill: var(--display-ghost);
+  }
+
+  .pxl-qrm-cell[data-tier="fg"] {
+    fill: var(--display-fg);
+  }
+
+  .pxl-qrm-cell[data-tier="hot"] {
+    fill: var(--display-hot);
+  }
+
+  .pxl-qrm-cell[data-tier="alarm"] {
+    fill: var(--display-alarm);
+  }
+
+  /* ---------- 信号格（`SignalBars`：路线 / 结算的星级、搜索结果的匹配度） ----------
+     每格高 4px 一档（高度由组件内联写，省掉逐档规则）；熄灭的格用指示灯的暗色。 */
+  .pxl-sigbars {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: flex-end;
+    gap: 2px;
+    height: 16px;
+  }
+
+  .pxl-sigbars > span {
+    width: 4px;
+    background-color: var(--led-off);
+  }
+
+  .pxl-sigbars > span[data-lit] {
+    background-color: var(--primary);
+  }
+
+  /* ---------- 电量格（`Battery`，抗干扰里玩家的血量） ----------
+     分档颜色跟状态 token：够用绿、过半以下琥珀、告急红 —— 与 LED 四义同一套。 */
+  .pxl-battery {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: 2px;
+    margin-right: 6px;
+    padding: 2px;
+    background-color: var(--pxl-field);
+    border: 2px solid var(--pxl-ink);
+  }
+
+  /* 正极帽 */
+  .pxl-battery::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: -6px;
+    width: 4px;
+    height: 8px;
+    margin-top: -4px;
+    background-color: var(--pxl-ink);
+  }
+
+  .pxl-battery > span {
+    width: 8px;
+    height: 12px;
+    background-color: color-mix(in srgb, var(--pxl-ink) 12%, var(--pxl-field));
+  }
+
+  .pxl-battery > span[data-lit] {
+    background-color: var(--pxl-win);
+  }
+
+  .pxl-battery[data-tier="mid"] > span[data-lit] {
+    background-color: var(--pxl-gold);
+  }
+
+  .pxl-battery[data-tier="low"] > span[data-lit] {
+    background-color: var(--pxl-hp);
+  }
+
+  /* 电量格坐在屏幕上（抗干扰的本台屏）：改用屏幕层的几档颜色。 */
+  .pxl-display .pxl-battery {
+    background-color: transparent;
+    border-color: var(--display-dim);
+  }
+
+  .pxl-display .pxl-battery::after {
+    background-color: var(--display-dim);
+  }
+
+  .pxl-display .pxl-battery > span {
+    width: 6px;
+    background-color: var(--display-ghost);
+  }
+
+  .pxl-display .pxl-battery > span[data-lit] {
+    background-color: var(--display-ok);
+  }
+
+  .pxl-display .pxl-battery[data-tier="mid"] > span[data-lit] {
+    background-color: var(--display-hot);
+  }
+
+  .pxl-display .pxl-battery[data-tier="low"] > span[data-lit] {
+    background-color: var(--display-alarm);
+  }
+
+  /* ---------- 无信号（404）：彩条测试卡 + 一条平线 ---------- */
+  /* 电视测试图的八条色带：固定取 Sweetie-16，不跟明暗与配色方案走（它画的是「信号源」，不是屏幕本身）。 */
+  .pxl-testcard {
+    background-image: linear-gradient(
+      90deg,
+      #f4f4f4 0 12.5%,
+      #ffcd75 0 25%,
+      #73eff7 0 37.5%,
+      #38b764 0 50%,
+      #ef7d57 0 62.5%,
+      #b13e53 0 75%,
+      #3b5dc9 0 87.5%,
+      #1a1c2c 0
+    );
+  }
+
+  /* 平线（带一个跳变）：404 屏幕下沿。 */
+  .pxl-flatline-svg {
+    display: block;
+    width: 100%;
+    height: 20px;
+    fill: var(--display-fg);
+    shape-rendering: crispEdges;
+  }
+
+  /* ---------- 值机记录（首页主屏，近 28 天） ----------
+     五档亮度在屏幕色里按比例混出来：不加新 token，换配色方案自动跟着走。 */
+  .pxl-logstrip {
+    display: grid;
+    grid-template-columns: repeat(28, minmax(0, 1fr));
+    gap: 2px;
+  }
+
+  .pxl-logstrip > span {
+    height: 12px;
+    background-color: var(--display-ghost);
+  }
+
+  /* 亮度档由组件写进 `--mix`（0 档不写，保持幽灵色）：一条规则代替五条逐档规则（样式表预算）。 */
+  .pxl-logstrip > span[style] {
+    background-color: color-mix(in srgb, var(--display-fg) var(--mix), var(--display-bg));
+  }
+
+  /* 今天：下沿一道琥珀，与「当前」的读法一致但不抢亮度档。 */
+  .pxl-logstrip > span[data-today] {
+    box-shadow: inset 0 -2px 0 0 var(--display-hot);
+  }
+}
+
+/* ---------- 高对比度（强制颜色） ----------
+   强制颜色会抹掉所有背景色：灯、S 表格子、频谱格子全部变成同一块。
+   给「亮着」补一道系统色边框，状态才不会只剩颜色（与 controls.css 的同名块同一思路）。 */
+@media (forced-colors: active) {
+  .pxl-led:is([data-state="on"], [data-state="blink"]),
+  .pxl-meter-seg[data-lit],
+  .pxl-spectrum-cells > span[data-lit],
+  .pxl-sigbars > span[data-lit],
+  .pxl-battery > span[data-lit],
+  .pxl-logstrip > span:not([data-level="0"]) {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+
+  /* SVG 画的七段读数与干扰频谱：格子靠 `fill` 分亮灭，强制颜色下改用系统色（亮 = Highlight、灭 = GrayText）。 */
+  .pxl-seg,
+  .pxl-qrm-cell {
+    fill: GrayText;
+  }
+
+  .pxl-seg[data-lit],
+  .pxl-qrm-cell[data-lit] {
+    fill: Highlight;
+  }
+}

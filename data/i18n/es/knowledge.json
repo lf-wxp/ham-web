@@ -56,7 +56,6 @@
   "knowledge.getting-started": "Primeros pasos",
   "knowledge.download-the-openapi-3": "Descargar la especificación OpenAPI 3.1 (openapi.json)",
   "knowledge.amateur-bands": "Bandas de aficionados",
-  "knowledge.amateur-radio": "Radioafición",
   "knowledge.common-ham-terms-english": "Términos habituales · abreviaturas en inglés · explicaciones sencillas",
   "knowledge.amateur-radio-direction-finding": "Radiogoniolocalización (ARDF) · bandas de concurso",
   "knowledge.repeater-usage-notes": "Notas de uso de repetidores",
@@ -547,5 +546,6 @@
   "knowledge.zhr-value": "ZHR {}",
   "knowledge.zhr-variable": "ZHR variable",
   "knowledge.peak-passed": "Máximo ya pasado ({})",
-  "knowledge.no-meteor-showers-in-window": "No hay lluvias de meteoros activas ni ninguna alcanza su máximo en los próximos {} días."
+  "knowledge.no-meteor-showers-in-window": "No hay lluvias de meteoros activas ni ninguna alcanza su máximo en los próximos {} días.",
+  "knowledge.no-signal-hint": "No hay señal en este canal: puede que la dirección esté mal escrita o que la página se haya movido."
 }

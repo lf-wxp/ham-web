@@ -21,8 +21,8 @@ use crate::components::common::{PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::share_score::download_bytes;
 use crate::ui::{
-  Button, Field, Input, Size, Slider, Table, TableBody, TableCell, TableHead, TableHeader,
-  TableRow, ToastKind, Variant, push, push_error,
+  Button, Field, Input, Knob, Size, Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  ToastKind, Variant, push, push_error,
 };
 use crate::util::{js_error_message, set_title, storage, window};
 
@@ -502,22 +502,19 @@ pub fn SdrWaterfallPage() -> impl IntoView {
             {move || error.get().map(|e| view! { <p role="alert" class="text-sm text-hp-text">{e}</p> })}
 
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-              <label class="inline-flex items-center gap-2">
-                {move || t("tools.gain")}
-                <Slider
-                  value=Signal::derive(move || f64::from(gain.get()))
-                  on_change=Callback::new(move |v: f64| gain.set(v as f32))
-                  min=-40.0
-                  max=40.0
-                  step=1.0
-                  class="w-32"
-                  aria_label=Signal::derive(move || t("tools.display-gain-db"))
-                  aria_valuetext=Signal::derive(move || format!("{:+} dB", gain.get().round()))
-                />
-                <span class="w-12 tabular-nums text-foreground">
-                  {move || tf("common.db", &[&format!("{:+}", gain.get())])}
-                </span>
-              </label>
+              <Knob
+                value=Signal::derive(move || f64::from(gain.get()))
+                on_change=Callback::new(move |v: f64| gain.set(v as f32))
+                min=-40.0
+                max=40.0
+                step=1.0
+                class="w-32"
+                label=Signal::derive(move || t("tools.gain"))
+                aria_label=Signal::derive(move || t("tools.display-gain-db"))
+                readout=Signal::derive(move || format!("{:+}", gain.get().round()))
+                unit="dB"
+                aria_valuetext=Signal::derive(move || tf("common.db", &[&format!("{:+}", gain.get().round())]))
+              />
               <span class="tabular-nums">
                 {move || {
                   let nyquist = sample_rate.get() / 2.0;

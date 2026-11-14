@@ -11,7 +11,6 @@
   "common.a-licence-is-valid": "A licence is valid for at most 5 years; apply for renewal 30 working days before it expires.",
   "common.a-typical-pass-lasts": "A typical pass lasts about 10–15 minutes, so plan together with",
   "common.accuracy": "Accuracy {}%",
-  "common.accuracy-with-result": "Accuracy {}% · {}",
   "common.adjust": "Adjust →",
   "common.after-connecting-read-azimuth": "After connecting, read azimuth/elevation and enter a target azimuth to rotate remotely",
   "common.after-parsing-check-the": "After parsing, check the \"DXCC rarity ranking\" to judge whether it is worth chasing, or log the callsign in the logbook.",
@@ -485,5 +484,8 @@
   "common.error-invalid-bank-config": "Invalid question bank config: {}",
   "common.error-load-questions": "Failed to load question data: {}",
   "common.error-invalid-questions": "Invalid question data: {}",
-  "common.check-this-field": "Check this field (format or range)"
+  "common.check-this-field": "Check this field (format or range)",
+  "common.no-signal": "No reading",
+  "common.switch-on": "ON",
+  "common.switch-off": "OFF"
 }

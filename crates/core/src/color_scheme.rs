@@ -307,6 +307,111 @@ const MIN_TEXT: f64 = 4.8;
 /// 「框」薄得只剩内高光在撑。这里按暗色里最亮的几个表面把它推到够 3:1 为止。
 const MIN_EDGE: f64 = 3.0;
 
+/// 屏幕读数（`--display-fg`）对屏幕底的最低要求：读数是一屏里最该一眼读出的字，按 AAA 的 7:1 给。
+pub const DISPLAY_FG_MIN: f64 = 7.0;
+
+/// 暗色（背光）屏幕上的三个状态色：不随方案变，与 `tokens.css` 的 `.dark` 同值（`--display-hot` / `--display-alarm` /
+/// `--display-ok`）。列在这里是为了让单测检查它们落在每个方案的暗色屏幕底上都够 4.5。
+pub const DISPLAY_STATUS: [(&str, Rgb); 3] = [
+  ("--display-hot", Rgb::from_u32(0xffcd75)),
+  ("--display-alarm", Rgb::from_u32(0xef7d57)),
+  ("--display-ok", Rgb::from_u32(0xa7f070)),
+];
+
+/// 幽灵段（未点亮的七段 / 电平格）对屏幕底的对比度区间：低于下限看不出「这里有一段」，
+/// 高于上限会被读成「亮着」。
+pub const DISPLAY_GHOST_RANGE: (f64, f64) = (1.15, 1.8);
+
+/// 亮色屏幕（反射式液晶）：屏幕底从**本方案自己的纸色**压深一档得来，不再往主色里混。
+///
+/// 为什么不用主色：主色在不少方案里和纸色相差很远（石墨是暖白纸 + 冷蓝主色、CGA 是薄荷纸 +
+/// 品红主色），混 16% 就足以把屏推成一块**异色补丁**（中性灰 / 粉 / 淡紫）—— 用户反馈
+/// 「某些配色下屏幕背景还是比较突兀」正是这几套。液晶是一块**同族**的反射面板：
+/// 纸色压深、色相不动，主色只用来给极轻的色偏（[`LCD_PRIMARY_TINT`]）。
+const LCD_DEEPEN: f64 = 0.07;
+
+/// 主色给屏幕底的色偏：足够让每套方案「看得出是这套」，又不会压过纸色的色相。
+const LCD_PRIMARY_TINT: f64 = 0.05;
+
+/// 屏幕底与卡片色的色相最多差多少度。纸色接近中性（饱和度 ~0.01）时，几个百分点的主色就能把
+/// 色相整个拽走（Spectrum 的暖白卡片 + 纯蓝主色 → 一块淡紫屏）；超过这条线就把主色的色偏收掉，
+/// 只留纸色的明度关系 —— 液晶是一块**同族**的反射面板，不是另一种颜色。
+const LCD_MAX_HUE_DRIFT: f64 = 12.0;
+
+/// 色相角（0–360）。中性色（最大与最小通道相等）返回 `None`。
+fn hue(c: Rgb) -> Option<f64> {
+  let max = c.0.max(c.1).max(c.2);
+  let min = c.0.min(c.1).min(c.2);
+  if max == min {
+    return None;
+  }
+  let d = f64::from(max - min);
+  let (r, g, b) = (f64::from(c.0), f64::from(c.1), f64::from(c.2));
+  let h = if max == c.0 {
+    60.0 * (((g - b) / d) % 6.0)
+  } else if max == c.1 {
+    60.0 * ((b - r) / d + 2.0)
+  } else {
+    60.0 * ((r - g) / d + 4.0)
+  };
+  Some(if h < 0.0 { h + 360.0 } else { h })
+}
+
+/// 两个色相的夹角（0–180）。只看**看得出来的颜色**：两边都几乎中性时返回 0。
+///
+/// 为什么不是直接比色相角：卡片的纸色常常淡到几乎中性（`#fafaf8` 的饱和度 ~0.01），这时色相角
+/// 是噪声 —— 差 15° 看着刺眼，肉眼看却是同一个暖白。判据要问的是「屏和卡片看起来是不是两种颜色」，
+/// 所以两边里**更饱和的那个**得先过一道可见门槛，否则不构成色相冲突。
+fn hue_gap(a: Rgb, b: Rgb) -> f64 {
+  let (Some(ha), Some(hb)) = (hue(a), hue(b)) else {
+    return 0.0;
+  };
+  const VISIBLE_SAT: f64 = 0.06;
+  if saturation(a).max(saturation(b)) < VISIBLE_SAT {
+    return 0.0;
+  }
+  let d = (ha - hb).abs() % 360.0;
+  d.min(360.0 - d)
+}
+
+/// HSV 饱和度（0 = 中性，1 = 纯色）。
+fn saturation(c: Rgb) -> f64 {
+  let max = c.0.max(c.1).max(c.2);
+  let min = c.0.min(c.1).min(c.2);
+  if max == 0 {
+    return 0.0;
+  }
+  f64::from(max - min) / f64::from(max)
+}
+
+/// 亮色屏幕对它所在的亮色卡片的对比度区间：下限是「看得出这是一块屏」，上限是「别暗成补丁」。
+/// 部件的边界另有 2px 墨框（墨框对屏幕底 >= 3:1）。
+pub const LCD_CARD_RANGE: (f64, f64) = (1.08, 1.22);
+
+/// 暗色屏幕（背光屏）：从**本方案的卡片色**压深一档得来 —— 卡片是「机身面板」，屏幕比它暗一层，
+/// 像面板上嵌着的一块玻璃。不再和卡片同色（那样屏幕根本不存在，一片糊），也不再像经典方案那样
+/// 比卡片暗一大截（1.55 的对比像挖了个洞）。
+const BACKLIGHT_DEEPEN: f64 = 0.30;
+
+/// 暗色屏幕对暗色卡片的对比度区间：下限「看得出是另一块材质」，上限「别成了黑洞」。
+pub const BACKLIGHT_CARD_RANGE: (f64, f64) = (1.12, 1.34);
+
+/// 亮色屏幕（液晶）上的三个状态色：深色、不随方案变，与 `tokens.css` 的 `:root` 同值（暗色屏幕用 [`DISPLAY_STATUS`]）。
+/// 不随方案派生是为了不让每个方案块都再写一遍（样式表预算）；单测保证它们落在每个方案的液晶底上都够 4.5。
+pub const DISPLAY_STATUS_LCD: [(&str, Rgb); 3] = [
+  ("--display-hot", Rgb::from_u32(0x754500)),
+  ("--display-alarm", Rgb::from_u32(0x932937)),
+  ("--display-ok", Rgb::from_u32(0x1a5b31)),
+];
+
+/// 暗色墨框：从「墨色往底色靠 30%」的灰出发，往墨色推，直到在每个会被它描边的表面上都 >= [`MIN_EDGE`]。
+/// 与 [`Scheme::tokens`] 里 `--pxl-ink` 的算法一致（那边还要照顾按钮底 / 输入底，这里只需照顾屏幕）。
+fn pxl_ink(d: &Seeds) -> Rgb {
+  let edge = d.ink.mix(d.bg, 0.30);
+  let frame = d.bg.mix(edge, 0.55);
+  readable(frame, d.ink, &[d.bg], MIN_EDGE)
+}
+
 /// 在 `bg` 上读得最清楚的字色（浅 / 深二选一）；两个都不够 4.5 时返回 `Err`。
 fn best_text_on(bg: Rgb, what: &str) -> Result<Rgb, String> {
   let best = [LIGHT_TEXT, DARK_TEXT]
@@ -339,6 +444,99 @@ impl Scheme {
   #[must_use]
   pub const fn seeds(&self, dark: bool) -> &Seeds {
     if dark { &self.dark } else { &self.light }
+  }
+
+  /// 屏幕层（`--display-*`）：两套都从自己的种子派生、都带本方案的主色色相 —— 暗色下是背光屏
+  /// （夜色底混主色、荧光读数），亮色下是反射式液晶（卡片色混主色、墨色段码），亮度贴近纸面。
+  /// 白天看液晶、夜里开背光（`docs/ui/decisions.md` §11.6）。
+  /// 经典方案的两套屏幕色手写在 `tokens.css`（暗色是青色荧光），不走这里。扫描线与内边框（`--display-scan` /
+  /// `--display-rim`）在 `tokens.css` 里用 `color-mix` 从屏幕底算，不按方案逐个写。
+  #[must_use]
+  pub fn display_tokens(&self, dark: bool) -> Vec<(&'static str, Value)> {
+    if dark {
+      // 读数取暗色主色、不够 7:1 就往白色推；幽灵段是读数 16% 混进屏幕底。
+      let d = &self.dark;
+      let card = d.bg.mix(d.primary, 0.10);
+      // 屏幕比卡片暗一层：往黑压（保住色相），一档一档收到区间内。
+      let (lo, hi) = BACKLIGHT_CARD_RANGE;
+      let mut deepen = BACKLIGHT_DEEPEN;
+      let mut bg = card.mix(Rgb::BLACK, deepen);
+      while bg.contrast(card) < lo && deepen < 0.9 {
+        deepen += 0.02;
+        bg = card.mix(Rgb::BLACK, deepen);
+      }
+      while bg.contrast(card) > hi && deepen > 0.02 {
+        deepen -= 0.02;
+        bg = card.mix(Rgb::BLACK, deepen);
+      }
+      let fg = readable(
+        d.primary.mix(Rgb::WHITE, 0.2),
+        Rgb::WHITE,
+        &[bg],
+        DISPLAY_FG_MIN,
+      );
+      let dim = readable(d.ink.mix(bg, 0.4), d.ink, &[bg], MIN_TEXT);
+      return vec![
+        ("--display-bg", Value::Color(bg)),
+        ("--display-fg", Value::Color(fg)),
+        ("--display-ghost", Value::Color(bg.mix(fg, 0.16))),
+        ("--display-dim", Value::Color(dim)),
+        // 暗色背光屏的外框仍是墨框（`--pxl-ink`）：深底上那圈亮线就是机身轮廓，
+        // 与 `tokens.css` 的 `.dark` 同值 —— 派生到这里只是为了亮 / 暗两侧变量名对齐。
+        ("--display-edge", Value::Color(pxl_ink(d))),
+      ];
+    }
+    // 段码是墨色、不够 7:1 往黑推；幽灵段从很淡开始一格一格加深，刚好够「看得出这里有一段」为止。
+    let l = &self.light;
+    let card = l.bg.mix(Rgb::WHITE, 0.78);
+    // 屏幕底 = 纸色 + 主色极轻的色偏（先定色相），再压深一档（只动明度）：同族、不发紫、不发粉。
+    // 压深量按区间反解：主色那 5% 本身就在压深，从固定值往回退会退不到（经典方案的墨色很深）。
+    // 纸色越中性，主色越容易把色相整个拽走：先按色相上限收色偏（中性纸色按满收）。
+    // 收到上限的 80% 再停：压深那一步还会再挪一点色相，留出余量才不会停在阈值外。
+    let mut tint = LCD_PRIMARY_TINT;
+    while hue_gap(l.bg.mix(l.primary, tint), l.bg) > LCD_MAX_HUE_DRIFT * 0.8 && tint > 0.0 {
+      tint = (tint - 0.005).max(0.0);
+    }
+    let base = l.bg.mix(l.primary, tint);
+    let (lo, hi) = LCD_CARD_RANGE;
+    let mut deepen = LCD_DEEPEN;
+    let mut bg = base.mix(l.ink, deepen);
+    while bg.contrast(card) > hi && deepen > 0.0 {
+      deepen = (deepen - 0.005).max(0.0);
+      bg = base.mix(l.ink, deepen);
+    }
+    // 退到 0 还不够（主色自己就把屏压得比卡片暗太多）：把主色的色偏也收掉，只留纸色压深。
+    while bg.contrast(card) > hi && tint > 0.0 {
+      tint = (tint - 0.01).max(0.0);
+      bg = l.bg.mix(l.primary, tint).mix(l.ink, deepen);
+    }
+    while bg.contrast(card) < lo && deepen < 0.9 {
+      deepen += 0.005;
+      bg = l.bg.mix(l.primary, tint).mix(l.ink, deepen);
+    }
+    let fg = readable(l.ink, Rgb::BLACK, &[bg], DISPLAY_FG_MIN);
+    // 次要字是段码色往屏幕底靠一半：液晶上的「暗一点的字」，不是另一套灰。
+    let dim = readable(fg.mix(bg, 0.5), fg, &[bg], MIN_TEXT);
+    // 幽灵段要同时守住区间两端：太淡看不出「这里有一段」，太亮会被读成「亮着」。
+    let (ghost_lo, ghost_hi) = DISPLAY_GHOST_RANGE;
+    let mut t = 0.09;
+    while bg.mix(fg, t).contrast(bg) < ghost_lo + 0.05 && t < 0.5 {
+      t += 0.01;
+    }
+    // 上限也在这里守：墨色深的方案从 0.09 起就可能越线，往回收一档，而不是留给单测去发现。
+    while bg.mix(fg, t).contrast(bg) > ghost_hi && t > 0.01 {
+      t -= 0.01;
+    }
+    let edge = readable(bg.mix(fg, 0.55), fg, &[bg], MIN_EDGE);
+    vec![
+      ("--display-bg", Value::Color(bg)),
+      ("--display-fg", Value::Color(fg)),
+      ("--display-ghost", Value::Color(bg.mix(fg, t))),
+      ("--display-dim", Value::Color(dim)),
+      // 屏幕外框：亮色下取「屏幕底再深一档」，不用纸面的纯黑墨框 —— 浅灰屏配 2px 近黑框像贴上去的
+      // 补丁（`docs/ui/decisions.md` §11.6）。仍要够 3:1（WCAG 1.4.11 的部件边界）。
+      ("--display-edge", Value::Color(edge)),
+    ]
   }
 
   /// 展开成全套要覆盖的 CSS 变量（变量名 → 值），顺序固定。
@@ -430,6 +628,8 @@ impl Scheme {
       ("--pxl-ink", c(pxl_ink)),
       ("--pxl-field", c(field)),
     ];
+    // 屏幕层亮暗两块都写（亮色是液晶、暗色是背光屏）：守住「两块覆盖同一组变量」这条约定（见单测）。
+    out.extend(self.display_tokens(dark));
     // 亮色下的抖动点阵与像素窗口内阴影是「墨色 + 透明度」，要跟着墨色走；
     // 暗色下它们是白 / 黑 + 透明度，与方案无关，沿用 `tokens.css`。
     if !dark {
@@ -642,6 +842,179 @@ mod tests {
           s.id
         );
       }
+    }
+  }
+
+  #[test]
+  fn display_tokens_follow_the_mode() {
+    // 亮色是反射式液晶、暗色是背光屏：两套各自从对应明暗的种子派生，展开的全套变量里也是这一份。
+    for s in SCHEMES {
+      for dark in [false, true] {
+        let picked: Vec<(&'static str, Value)> = s
+          .tokens(dark)
+          .unwrap()
+          .into_iter()
+          .filter(|(n, _)| n.starts_with("--display-"))
+          .collect();
+        assert_eq!(picked, s.display_tokens(dark), "{} dark={dark}", s.id);
+      }
+    }
+  }
+
+  #[test]
+  fn display_readouts_and_status_colors_read_on_every_screen() {
+    for s in SCHEMES {
+      for dark in [false, true] {
+        let t = s.display_tokens(dark);
+        let bg = get(&t, "--display-bg");
+        let r = get(&t, "--display-fg").contrast(bg);
+        assert!(
+          r >= DISPLAY_FG_MIN,
+          "{} dark={dark}: 屏幕读数只有 {r:.2}",
+          s.id
+        );
+        let r = get(&t, "--display-dim").contrast(bg);
+        assert!(r >= 4.5, "{} dark={dark}: 屏幕次要字只有 {r:.2}", s.id);
+        let status = if dark {
+          DISPLAY_STATUS
+        } else {
+          DISPLAY_STATUS_LCD
+        };
+        for (name, c) in status {
+          let r = c.contrast(bg);
+          assert!(
+            r >= 4.5,
+            "{} dark={dark}: {name} 落在屏幕底上只有 {r:.2}",
+            s.id
+          );
+        }
+      }
+    }
+  }
+
+  #[test]
+  fn display_ghost_segments_read_as_unlit_but_visible() {
+    let (lo, hi) = DISPLAY_GHOST_RANGE;
+    for s in SCHEMES {
+      for dark in [false, true] {
+        let t = s.display_tokens(dark);
+        let r = get(&t, "--display-ghost").contrast(get(&t, "--display-bg"));
+        assert!(
+          (lo..=hi).contains(&r),
+          "{} dark={dark}: 幽灵段对屏幕底 {r:.2}，应在 {lo}–{hi}",
+          s.id
+        );
+      }
+    }
+  }
+
+  #[test]
+  fn screens_stay_in_the_same_color_family_as_their_panel() {
+    // 用户反馈「某些配色下亮 / 暗主题里屏幕背景还是比较突兀」。根因是屏幕底曾经往主色里混 16%：
+    // 主色与纸色色相远时（石墨的暖白纸 + 冷蓝主色、CGA 的薄荷纸 + 品红主色）屏幕就成了一块异色补丁。
+    // 现在屏幕底只从**本方案自己的纸色 / 卡片色**派生，主色只给限幅的色偏。
+    // 两条判据：① 与卡片色相差 <= `LCD_MAX_HUE_DRIFT`；② 对比度落在各自区间内（不是同色、也不是黑洞）。
+    for s in SCHEMES {
+      for dark in [false, true] {
+        let t = s.display_tokens(dark);
+        let base = s.tokens(dark).unwrap();
+        let screen = get(&t, "--display-bg");
+        let card = get(&base, "--card");
+        let gap = hue_gap(screen, card);
+        // 卡片本身接近中性时色相没有意义，`hue_gap` 会返回 0。
+        assert!(
+          gap <= LCD_MAX_HUE_DRIFT + 0.5,
+          "{}（dark={dark}）：屏幕 {} 与卡片 {} 色相差 {gap:.0}°",
+          s.id,
+          screen.hex(),
+          card.hex()
+        );
+        let (lo, hi) = if dark {
+          BACKLIGHT_CARD_RANGE
+        } else {
+          LCD_CARD_RANGE
+        };
+        let r = screen.contrast(card);
+        assert!(
+          (lo..=hi).contains(&r),
+          "{}（dark={dark}）：屏幕对卡片 {r:.2}，应在 {lo}–{hi}",
+          s.id
+        );
+        // 读数仍要好读：屏幕再好看，字读不清也没用。
+        let fg = get(&t, "--display-fg");
+        assert!(
+          fg.contrast(screen) >= DISPLAY_FG_MIN,
+          "{}（dark={dark}）：读数对屏幕只有 {:.2}",
+          s.id,
+          fg.contrast(screen)
+        );
+        // 判据是色相（不是饱和度）：同族面可以比卡片更饱和 —— Game Boy 的纸色几乎中性、
+        // 屏幕是明确的橄榄绿，但它和卡片同色相（86° vs 83°），看着就是「这块屏偏绿」，不突兀。
+        // 突兀的是**另一种颜色**：淡紫 / 粉 / 冷蓝的屏配暖白卡片。
+      }
+    }
+  }
+
+  #[test]
+  fn the_screen_frame_reads_against_the_screen() {
+    // 屏幕外框是部件边界（WCAG 1.4.11）：亮色下它是屏幕底压深的一档（不是纸面纯黑），暗色下是墨框。
+    // 无论哪套，框对屏幕底都得 >= 3:1 —— 否则「这一块是屏」这条边界就没了。
+    for s in SCHEMES {
+      for dark in [false, true] {
+        let t = s.display_tokens(dark);
+        let screen = get(&t, "--display-bg");
+        let edge = get(&t, "--display-edge");
+        let r = edge.contrast(screen);
+        assert!(
+          r >= MIN_EDGE,
+          "{}（dark={dark}）：屏幕边框 {} 对屏幕 {} 只有 {r:.2}",
+          s.id,
+          edge.hex(),
+          screen.hex()
+        );
+      }
+    }
+  }
+
+  #[test]
+  fn the_light_screen_is_a_soft_tinted_panel() {
+    // 亮色液晶要比卡片暗一档、读得出「另一块材质」，又不能暗成补丁；部件边界靠墨框（>= 3:1）。
+    let (lo, hi) = LCD_CARD_RANGE;
+    for s in SCHEMES {
+      let screen = get(&s.display_tokens(false), "--display-bg");
+      let light = s.tokens(false).unwrap();
+      let card = get(&light, "--card");
+      assert!(
+        screen.luminance() < card.luminance(),
+        "{}: 液晶不比卡片暗",
+        s.id
+      );
+      let r = screen.contrast(card);
+      assert!(
+        (lo..=hi).contains(&r),
+        "{}: 液晶对卡片 {r:.2}，应在 {lo}–{hi}",
+        s.id
+      );
+      assert!(screen.luminance() > 0.5, "{}: 液晶暗成了补丁", s.id);
+      let r = get(&light, "--pxl-ink").contrast(screen);
+      assert!(r >= MIN_EDGE, "{}: 墨框对液晶只有 {r:.2}", s.id);
+    }
+  }
+
+  #[test]
+  fn screens_carry_each_schemes_own_hue() {
+    // 「屏幕要和配色有关联」：每套方案的屏幕底都从自己的卡片色 / 夜色底混主色派生，不能是一套共同的灰。
+    for dark in [false, true] {
+      let screens: BTreeSet<String> = SCHEMES
+        .iter()
+        .map(|s| get(&s.display_tokens(dark), "--display-bg").hex())
+        .collect();
+      assert!(
+        screens.len() >= SCHEMES.len() - 2,
+        "dark={dark}: {} 套方案只有 {} 种屏幕底，屏幕没跟配色走",
+        SCHEMES.len(),
+        screens.len()
+      );
     }
   }
 

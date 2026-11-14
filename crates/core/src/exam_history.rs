@@ -80,6 +80,8 @@ pub struct Readiness {
   pub passed: usize,
   /// 平均正确率（0–100）。
   pub average: f64,
+  /// 其中最好的一次正确率（0–100）：S 表的「峰值保持」读它，是真实考出过的成绩。
+  pub best: f64,
   /// 最近一次减去最早一次的正确率（百分点），用于显示进步 / 退步。
   pub trend: f64,
 }
@@ -105,6 +107,7 @@ pub fn assess(history: &[ExamRecord], bank: Bank) -> Option<Readiness> {
   let count = recent.len();
   let passed = recent.iter().filter(|r| r.correct >= rule.pass).count();
   let average = recent.iter().map(|r| r.percent()).sum::<f64>() / count as f64;
+  let best = recent.iter().map(|r| r.percent()).fold(0.0, f64::max);
   let verdict = if count < MIN_EXAMS {
     Verdict::NeedMore
   } else if recent.iter().all(|r| r.correct >= rule.pass + SAFE_MARGIN) {
@@ -119,6 +122,7 @@ pub fn assess(history: &[ExamRecord], bank: Bank) -> Option<Readiness> {
     count,
     passed,
     average,
+    best,
     trend: last.percent() - first.percent(),
   })
 }
@@ -136,6 +140,15 @@ mod tests {
       timestamp: ts,
       weak: false,
     }
+  }
+
+  #[test]
+  fn best_is_the_top_score_among_the_assessed_exams() {
+    let total = ExamRule::of(Bank::A).total;
+    let history = vec![rec("A", 20, 1), rec("A", 36, 2), rec("A", 30, 3)];
+    let r = assess(&history, Bank::A).expect("有记录");
+    assert!((r.best - 36.0 / total as f64 * 100.0).abs() < 1e-9);
+    assert!(r.best >= r.average, "最好一次不会低于平均");
   }
 
   #[test]

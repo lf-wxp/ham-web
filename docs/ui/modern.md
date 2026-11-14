@@ -488,7 +488,7 @@ kit::table_cell_class("align-top") // 现代：只有 extra / 像素：border px
 | `:has()` | 105 | 121 | 15.4 | **不是硬性要求**：版式不用它，焦点环有回退，其余是装饰（见下） |
 | `@supports selector()` | 83 | 69 | 14.1 | 回退机制本身，比 `:has()` 早得多 |
 | `@property` | 85 | 128 | 16.4 | 渐进：缺失时焦点卡 hover 的颜色变化是「切」而不是「过渡」 |
-| `animation-timeline` | 115 | 159 | 26 | 渐进：已在 `@supports` 内，缺失时无滚动视差 / 脊柱进度 |
+| `animation-timeline` | 115 | 159 | 26 | 渐进：已在 `@supports` 内，缺失时无滚动视差 / 顶栏阅读进度 |
 | View Transitions | 109 | 144 | 18 | **未使用**：调谐台跳转曾用，因拍快照冻结数秒已改回普通换页（实测 4038 ms → 25–39 ms，见 `interaction.md` 硬约束 1） |
 
 **合起来的下限：Chrome 111 / Firefox 113 / Safari 16.4。** 低于它的浏览器没有支持承诺。

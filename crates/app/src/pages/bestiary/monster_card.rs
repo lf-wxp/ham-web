@@ -1,10 +1,11 @@
-//! 图鉴里的一只怪物 = 一道错题。
+//! 干扰图鉴里的一个干扰信号 = 一道错题（像素风画成频谱特征，现代风仍是矢量怪物）。
 
 use ham_web_core::mistake_book::MistakeRecord;
+use ham_web_core::rig_panel::qrm_kind;
 use leptos::prelude::*;
 
+use crate::components::radio::QrmSignature;
 use crate::i18n::{t, tp};
-use crate::icons::PixelSprite;
 use crate::rpg::monster_sprite;
 use crate::ui::{ButtonLink, Progress, Size, Variant};
 use crate::util::encode_uri_component;
@@ -76,7 +77,10 @@ pub(super) fn MonsterCard(
   }
   view! {
     <li class="pxl-window flex gap-3 p-3">
-      <PixelSprite name=monster_sprite(top_key) scale=4 class="pxl-bob" />
+      // 这道错题的干扰频谱：静帧（列表里一屏几十张，不让每张都在动），强度随剩余「血量」降。
+      <div class="pxl-display shrink-0 self-start p-1">
+        <QrmSignature kind=qrm_kind(top_key) strength=hp as f64 / 100.0 cols=10 rows=6 />
+      </div>
       <div class="min-w-0 flex-1 space-y-1">
         <div class="pxl-label flex flex-wrap gap-x-2 text-xs text-muted-foreground">
           <span>{code}</span>

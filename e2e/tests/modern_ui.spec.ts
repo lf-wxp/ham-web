@@ -939,7 +939,7 @@ test.describe("手机宽度版式回归", () => {
 
   // 关卡名是 `/map` 的主标识，单行 ellipsis 把「Radio regulations and …」截掉。
   for (const [locale, label] of [["en", "英文"], ["es", "西语"]] as const) {
-    test(`闯关地图：${label}关卡名不被截断`, async ({ page }) => {
+    test(`通联路线：${label}关卡名不被截断`, async ({ page }) => {
       await seed(page, "modern");
       await page.addInitScript((l) => localStorage.setItem("locale", l), locale);
       await page.goto("/map");
@@ -1230,7 +1230,7 @@ test("现代风：地图的下一关与战斗舞台都画矢量怪物（不是�
   await expect(next.locator("svg.md-mon-svg")).toHaveCount(1);
   const kind = await next.getAttribute("data-kind");
 
-  await page.getByRole("link", { name: "开始战斗" }).click();
+  await page.getByRole("link", { name: "开始通联" }).click();
   await expect(page).toHaveURL(/\/battle/);
   const stage = page.locator(".md-battle-stage");
   await expect(stage.locator('.md-mon[data-kind="hero"]')).toHaveCount(1);

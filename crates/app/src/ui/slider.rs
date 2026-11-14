@@ -9,6 +9,10 @@ use crate::cn::cn;
 
 use super::control::TextValue;
 
+/// 像素风轨道的格数与刻度道数（`docs/ui/pixel.md` §3.4）。
+const CELLS: f64 = 24.0;
+const TICKS: u8 = 20;
+
 /// 滑块。
 #[component]
 pub fn Slider(
@@ -39,14 +43,23 @@ pub fn Slider(
     }
   };
   let valuetext = aria_valuetext;
+  let modern = crate::kit::is_modern_at_mount();
+  // 像素风的轨道是 24 格电平条：填色按整格走（格心过了当前值才亮），不出现半格。
+  let fill = move || {
+    if modern {
+      pct()
+    } else {
+      (pct() / 100.0 * CELLS + 0.5).floor() / CELLS * 100.0
+    }
+  };
 
-  view! {
+  let input = view! {
     <input
       type="range"
       data-slot="slider"
       id=id
-      class=cn(&["ui-slider", &class])
-      style=move || format!("--slider-fill: {:.2}%", pct())
+      class=if modern { cn(&["ui-slider", &class]) } else { "ui-slider".to_owned() }
+      style=move || format!("--slider-fill: {:.2}%", fill())
       min=min
       max=max
       step=step
@@ -63,5 +76,18 @@ pub fn Slider(
         }
       }
     />
+  };
+  if modern {
+    return input.into_any();
   }
+  // 推子上方的刻度尺：21 道，每 5 道一根长的。纯装饰，宽度类给外层（调用方传的 `w-32` 这类）。
+  view! {
+    <span class=cn(&["pxl-slider", &class])>
+      <span class="pxl-slider-ticks" aria-hidden="true">
+        {(0..=TICKS).map(|i| view! { <span data-major=(i % 5 == 0).then_some("")></span> }).collect_view()}
+      </span>
+      {input}
+    </span>
+  }
+  .into_any()
 }

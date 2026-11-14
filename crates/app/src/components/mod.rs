@@ -12,6 +12,7 @@ pub mod nec_template_link;
 pub mod practice;
 pub mod question_card;
 pub mod quiz_option;
+pub mod radio;
 pub mod related_topics;
 pub mod rotor_control;
 pub mod search_dialog;

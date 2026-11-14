@@ -1,4 +1,5 @@
-//! 像素风首页（原首页，视觉冻结）。
+//! 像素风首页「值机台」：主显示屏 → 快速开始 → 知识频谱 → 今日值机 → 模块入口（顺序与面板形态见
+//! `docs/ui/pixel.md` §3.4）。
 
 use ham_web_core::Bank;
 use leptos::prelude::*;
@@ -6,19 +7,18 @@ use leptos::task::spawn_local;
 
 use crate::components::bank_selector::QuestionBankSelector;
 use crate::components::bubble::Bubble;
-use crate::components::common::PageContainer;
+use crate::components::common::{PageContainer, SectionCard};
 use crate::components::study_plan_card::StudyPlanCard;
 use crate::data;
 use crate::icons::{Icon, IconKind};
 use crate::pages::{DEFAULT_TITLE, bank_href};
-use crate::ui::{
-  ButtonLink, CARD_HEADER, Size, Variant, card_class, card_content_class, card_title_class,
-};
+use crate::ui::{ButtonLink, Size, Variant};
 use crate::util::set_title;
 
 use super::base_hero::BaseHero;
 use super::cards_card::CardsCard;
 use super::daily_question::DailyQuestion;
+use super::knowledge_spectrum::KnowledgeSpectrum;
 use super::modules::MODULES;
 use super::propagation_widget::PropagationWidget;
 use super::quest_board::QuestBoard;
@@ -79,19 +79,11 @@ pub fn PixelHomePage() -> impl IntoView {
 
   view! {
     <PageContainer class="space-y-0 relative pb-12 pt-8 sm:pt-12">
-      // 基地首屏：角色 + 等级 + 主入口，再接今日任务。
-      <div class="space-y-8">
-        <BaseHero />
-        <QuestBoard />
-      </div>
+      <BaseHero />
 
-      // 快速开始练习（选择题库版本与类别）
-      <div data-slot="card" class=card_class("mt-8")>
-        <div data-slot="card-header" class=CARD_HEADER>
-          <div data-slot="card-title" class=card_title_class("")>{move || t("home.quick-start")}</div>
-          <div class="text-sm text-muted-foreground">{move || t("home.choose-a-bank-version")}</div>
-        </div>
-        <div data-slot="card-content" class=card_content_class("space-y-4")>
+      // 快速开始：面板（L1）+ 标题栏；题库类别是一排波段键（在 `QuestionBankSelector` 里）。
+      <SectionCard title=Signal::derive(move || t("home.quick-start")) class="mt-6">
+        <div class="space-y-4 p-4">
           <QuestionBankSelector selected_version=version selected_bank=bank disabled=checking />
           <div class="flex flex-wrap gap-3 relative">
             <ButtonLink
@@ -121,19 +113,15 @@ pub fn PixelHomePage() -> impl IntoView {
             <Bubble open=warn_open text=warn_text />
           </div>
         </div>
+      </SectionCard>
+
+      // 知识频谱：每根柱是一个分类的掌握度，点进去就是专项练习。
+      <div class="mt-6">
+        <KnowledgeSpectrum />
       </div>
 
-      // 频谱条（SDR 意象）：纯装饰，只做电台气质的一层底纹。
-      // 压成一条细带（标题行 + 24px 条）：它是整页饱和度最高的元素，原来带刻度尺和三个频率数字
-      // 一共 100+px，会把下面的模块入口往下推，在手机上尤其明显。
-      <div class="mt-6 w-full">
-        <div class=crate::kit::card_class_with("px-3 py-2") aria-hidden="true">
-          <div class="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-            <span class="pxl-label">"Spectrum · 14.000 MHz"</span>
-            <span class="pxl-label">{move || t("home.receiving")}</span>
-          </div>
-          <div class="spectrum-bar h-6 border-2 border-ink"></div>
-        </div>
+      <div class="mt-6">
+        <QuestBoard />
       </div>
 
       // 模块入口：三列不等宽（首列更宽）+ 阶梯式下沉，打破三等分的呆板网格。
@@ -209,7 +197,9 @@ pub fn PixelHomePage() -> impl IntoView {
       </div>
 
       // 首屏以下的功能卡片随滚动逐个浮现，避免一进页面七张卡片同时刷出来。
-      <div node_ref=stack class="space-y-6">
+      // `mt-6`：页面关掉了 `PageContainer` 的 `space-y-6`（各块自己写 `mt-6` 分段），这里必须补 ——
+      // 漏了的话三列模块卡片与下方「今日学习队列」的上下墨框会直接贴在一起（2026-11-14 修）。
+      <div node_ref=stack class="mt-6 space-y-6">
         <StudyPlanCard />
         <ReviewCard />
         <CardsCard />

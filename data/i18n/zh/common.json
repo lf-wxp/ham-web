@@ -8,7 +8,6 @@
   "common.a-licence-is-valid": "执照有效期不超过 5 年，届满 30 个工作日前申请更换。",
   "common.a-typical-pass-lasts": "典型过境约 10–15 分钟，建议配合",
   "common.accuracy": "正确率 {}%",
-  "common.accuracy-with-result": "正确率 {}% · {}",
   "common.adjust": "调整 →",
   "common.after-connecting-read-azimuth": "连接后读取方位/仰角，可输入目标方位遥控转向",
   "common.after-parsing-check-the": "解析后可对照「DXCC 稀有度榜单」判断追台价值，或到「通联日志」录入该呼号。",
@@ -362,5 +361,8 @@
   "common.error-invalid-bank-config": "题库配置格式错误：{}",
   "common.error-load-questions": "题库数据加载失败：{}",
   "common.error-invalid-questions": "题库数据格式错误：{}",
-  "common.check-this-field": "请检查该输入（格式或范围不对）"
+  "common.check-this-field": "请检查该输入（格式或范围不对）",
+  "common.no-signal": "无读数",
+  "common.switch-on": "ON",
+  "common.switch-off": "OFF"
 }

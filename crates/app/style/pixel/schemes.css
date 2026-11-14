@@ -37,6 +37,11 @@ html[data-scheme="forest"] {
   --sidebar-ring: #1f6f48;
   --pxl-ink: #14281c;
   --pxl-field: #fdfefc;
+  --display-bg: #dbe9cf;
+  --display-fg: #14281c;
+  --display-ghost: #c7d6bd;
+  --display-dim: #556656;
+  --display-edge: #6e7f6d;
   --pxl-lo: rgb(20 40 28 / 0.2);
   --pxl-dither: rgb(20 40 28 / 0.055);
 }
@@ -69,6 +74,11 @@ html[data-scheme="forest"].dark {
   --sidebar-ring: #c9e58a;
   --pxl-ink: #778279;
   --pxl-field: #0c1611;
+  --display-bg: #112018;
+  --display-fg: #7fddae;
+  --display-ghost: #233e30;
+  --display-dim: #929e94;
+  --display-edge: #636e66;
 }
 
 /* ---------- ocean ---------- */
@@ -101,6 +111,11 @@ html[data-scheme="ocean"] {
   --sidebar-ring: #1a6a9a;
   --pxl-ink: #0f2233;
   --pxl-field: #fcfdfe;
+  --display-bg: #d6e8ef;
+  --display-fg: #0f2233;
+  --display-ghost: #c2d4dc;
+  --display-dim: #526573;
+  --display-edge: #697b88;
   --pxl-lo: rgb(15 34 51 / 0.2);
   --pxl-dither: rgb(15 34 51 / 0.055);
 }
@@ -133,6 +148,11 @@ html[data-scheme="ocean"].dark {
   --sidebar-ring: #7ee8e8;
   --pxl-ink: #74818c;
   --pxl-field: #091421;
+  --display-bg: #0e1e2b;
+  --display-fg: #7dd3f3;
+  --display-ghost: #203b4b;
+  --display-dim: #909da5;
+  --display-edge: #606d79;
 }
 
 /* ---------- sunset ---------- */
@@ -165,6 +185,11 @@ html[data-scheme="sunset"] {
   --sidebar-ring: #7a3b8c;
   --pxl-ink: #2b1722;
   --pxl-field: #fefdfc;
+  --display-bg: #f5dfd5;
+  --display-fg: #2b1722;
+  --display-ghost: #e1cbc3;
+  --display-dim: #715c60;
+  --display-edge: #867173;
   --pxl-lo: rgb(43 23 34 / 0.2);
   --pxl-dither: rgb(43 23 34 / 0.055);
 }
@@ -197,6 +222,11 @@ html[data-scheme="sunset"].dark {
   --sidebar-ring: #ffb86b;
   --pxl-ink: #847984;
   --pxl-field: #18111e;
+  --display-bg: #251824;
+  --display-fg: #ffa5c0;
+  --display-ghost: #482f3d;
+  --display-dim: #a2959d;
+  --display-edge: #726773;
 }
 
 /* ---------- graphite ---------- */
@@ -229,6 +259,11 @@ html[data-scheme="graphite"] {
   --sidebar-ring: #3a4256;
   --pxl-ink: #151515;
   --pxl-field: #fdfdfd;
+  --display-bg: #e4e4e1;
+  --display-fg: #151515;
+  --display-ghost: #d1d1cf;
+  --display-dim: #616160;
+  --display-edge: #727271;
   --pxl-lo: rgb(21 21 21 / 0.2);
   --pxl-dither: rgb(21 21 21 / 0.055);
 }
@@ -261,6 +296,11 @@ html[data-scheme="graphite"].dark {
   --sidebar-ring: #f0c24b;
   --pxl-ink: #7d7d7d;
   --pxl-field: #0e0e0e;
+  --display-bg: #1a1a1b;
+  --display-fg: #d9dde3;
+  --display-ghost: #39393b;
+  --display-dim: #989898;
+  --display-edge: #666666;
 }
 
 /* ---------- pico ---------- */
@@ -293,6 +333,11 @@ html[data-scheme="pico"] {
   --sidebar-ring: #7e2553;
   --pxl-ink: #1d2b53;
   --pxl-field: #fffefd;
+  --display-bg: #f5e3de;
+  --display-fg: #1d2b53;
+  --display-ghost: #ddcfcf;
+  --display-dim: #5e627c;
+  --display-edge: #7e7e92;
   --pxl-lo: rgb(29 43 83 / 0.2);
   --pxl-dither: rgb(29 43 83 / 0.055);
 }
@@ -325,6 +370,11 @@ html[data-scheme="pico"].dark {
   --sidebar-ring: #ffec27;
   --pxl-ink: #7e7c88;
   --pxl-field: #0f162c;
+  --display-bg: #0f1d35;
+  --display-fg: #54bdff;
+  --display-ghost: #1a3755;
+  --display-dim: #9f9ca0;
+  --display-edge: #6e6e7c;
 }
 
 /* ---------- gameboy ---------- */
@@ -357,6 +407,11 @@ html[data-scheme="gameboy"] {
   --sidebar-ring: #2f6b2f;
   --pxl-ink: #0f2a12;
   --pxl-field: #fdfefb;
+  --display-bg: #daecc3;
+  --display-fg: #0f2a12;
+  --display-ghost: #c6d9b1;
+  --display-dim: #51694b;
+  --display-edge: #6a8162;
   --pxl-lo: rgb(15 42 18 / 0.2);
   --pxl-dither: rgb(15 42 18 / 0.055);
 }
@@ -389,6 +444,11 @@ html[data-scheme="gameboy"].dark {
   --sidebar-ring: #c4e58a;
   --pxl-ink: #6c786d;
   --pxl-field: #051007;
+  --display-bg: #0f1907;
+  --display-fg: #afc93f;
+  --display-ghost: #293510;
+  --display-dim: #919b8d;
+  --display-edge: #5d695e;
 }
 
 /* ---------- nes ---------- */
@@ -421,6 +481,11 @@ html[data-scheme="nes"] {
   --sidebar-ring: #d82800;
   --pxl-ink: #000000;
   --pxl-field: #fffefe;
+  --display-bg: #ede6dd;
+  --display-fg: #000000;
+  --display-ghost: #d8d1c9;
+  --display-dim: #65635f;
+  --display-edge: #6b6763;
   --pxl-lo: rgb(0 0 0 / 0.2);
   --pxl-dither: rgb(0 0 0 / 0.055);
 }
@@ -453,6 +518,11 @@ html[data-scheme="nes"].dark {
   --sidebar-ring: #f8b800;
   --pxl-ink: #737378;
   --pxl-field: #0c0c13;
+  --display-bg: #0d151e;
+  --display-fg: #63c9fd;
+  --display-ghost: #1b3242;
+  --display-dim: #989b9e;
+  --display-edge: #68686d;
 }
 
 /* ---------- commodore ---------- */
@@ -485,6 +555,11 @@ html[data-scheme="commodore"] {
   --sidebar-ring: #2e2c9b;
   --pxl-ink: #14142b;
   --pxl-field: #fdfdfd;
+  --display-bg: #e6e4df;
+  --display-fg: #14142b;
+  --display-ghost: #d1cfcd;
+  --display-dim: #61606d;
+  --display-edge: #72727c;
   --pxl-lo: rgb(20 20 43 / 0.2);
   --pxl-dither: rgb(20 20 43 / 0.055);
 }
@@ -517,6 +592,11 @@ html[data-scheme="commodore"].dark {
   --sidebar-ring: #edf171;
   --pxl-ink: #7c7b91;
   --pxl-field: #101022;
+  --display-bg: #191b2d;
+  --display-fg: #c6d0ff;
+  --display-ghost: #35384f;
+  --display-dim: #9897ab;
+  --display-edge: #67667c;
 }
 
 /* ---------- cga ---------- */
@@ -549,6 +629,11 @@ html[data-scheme="cga"] {
   --sidebar-ring: #c02060;
   --pxl-ink: #101010;
   --pxl-field: #fefffe;
+  --display-bg: #e5e8e9;
+  --display-fg: #101010;
+  --display-ghost: #d0d2d3;
+  --display-dim: #636464;
+  --display-edge: #707172;
   --pxl-lo: rgb(16 16 16 / 0.2);
   --pxl-dither: rgb(16 16 16 / 0.055);
 }
@@ -581,6 +666,11 @@ html[data-scheme="cga"].dark {
   --sidebar-ring: #ff55ff;
   --pxl-ink: #78787d;
   --pxl-field: #080810;
+  --display-bg: #0c161d;
+  --display-fg: #77ffff;
+  --display-ghost: #1d3b41;
+  --display-dim: #979b9e;
+  --display-edge: #64646a;
 }
 
 /* ---------- spectrum ---------- */
@@ -613,6 +703,11 @@ html[data-scheme="spectrum"] {
   --sidebar-ring: #0000d8;
   --pxl-ink: #0a0a12;
   --pxl-field: #fefefd;
+  --display-bg: #e6e6e9;
+  --display-fg: #0a0a12;
+  --display-ghost: #d2d2d6;
+  --display-dim: #626268;
+  --display-edge: #6d6d73;
   --pxl-lo: rgb(10 10 18 / 0.2);
   --pxl-dither: rgb(10 10 18 / 0.055);
 }
@@ -645,4 +740,9 @@ html[data-scheme="spectrum"].dark {
   --sidebar-ring: #ffe94a;
   --pxl-ink: #79797e;
   --pxl-field: #090911;
+  --display-bg: #181612;
+  --display-fg: #ffed6e;
+  --display-ghost: #3d3821;
+  --display-dim: #9c9b9a;
+  --display-edge: #65656b;
 }

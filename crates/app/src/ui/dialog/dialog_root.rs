@@ -40,6 +40,7 @@ pub fn Dialog(
       // 层级用 `z-[70]`（= `.md-modal`）：`z-50` 会被移动端 dock（55）盖在遮罩上，还能点穿去导航。
       "md-dialog-panel data-[state=closed]:pointer-events-none fixed left-1/2 top-1/2 z-[70] flex flex-col w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 p-4 sm:max-w-lg sm:p-6 max-h-[calc(100svh-2rem)] overflow-hidden min-h-0"
     } else {
+      // 内边距 `p-4 sm:p-6` 被 `search_dialog.rs` 的像素风标题栏用负外边距抵消：改这里要同步改那边。
       "pxl-popover pxl-enter data-[state=closed]:pointer-events-none fixed left-1/2 top-4 z-[var(--z-modal)] flex flex-col w-full max-w-[calc(100%-2rem)] -translate-x-1/2 gap-4 p-4 sm:max-w-lg sm:top-1/2 sm:-translate-y-1/2 sm:p-6 max-h-[calc(100svh-2rem)] overflow-hidden min-h-0"
     },
     &class,

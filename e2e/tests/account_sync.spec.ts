@@ -284,7 +284,13 @@ async function useAccountApi(page: Page, fake = new FakeAccountServer()): Promis
 
 // ─────────────────────────── 辅助 ───────────────────────────
 
-const toast = (page: Page) => page.locator('[data-slot="toast"]');
+/**
+ * Toast 的正文节点（外层是 `[data-slot="toast"]`）。
+ *
+ * 像素风在正文前面画了一枚装饰字符（✓ / ✗ / i，`aria-hidden`，见 `ui/toast.rs`）。断言文案要落在
+ * 正文上：取外层节点的 textContent 时，`^已上传到云端…` 这类起锚正则会被装饰字符挡掉。
+ */
+const toastText = (page: Page) => page.locator('[data-slot="toast-text"]');
 const panel = (page: Page) => page.getByTestId("account-panel");
 const syncStatus = (page: Page) => panel(page).getByRole("status");
 
@@ -339,7 +345,7 @@ async function mergeImport(page: Page, data: Record<string, string>) {
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(data)),
   });
-  await expect(toast(page).filter({ hasText: /^已合并/ })).toBeVisible();
+  await expect(toastText(page).filter({ hasText: /^已合并/ })).toBeVisible();
 }
 
 const ls = (page: Page, key: string) => page.evaluate((k) => localStorage.getItem(k), key);
@@ -374,7 +380,7 @@ for (const style of ["pixel", "modern"] as const) {
       await expect(panel(page).getByTestId("account-signed-in-as")).toContainText(name);
 
       await panel(page).getByRole("button", { name: "退出登录", exact: true }).click();
-      await expect(toast(page)).toContainText("已退出登录");
+      await expect(toastText(page)).toContainText("已退出登录");
       await expect(panel(page).getByRole("button", { name: "登录", exact: true })).toBeVisible();
       // 退出后偏好回到「没选过」，账号通道的基线与主人作废。
       expect(await ls(page, "sync-channel")).toBeNull();
@@ -408,7 +414,7 @@ for (const style of ["pixel", "modern"] as const) {
         localStorage.setItem("e2e-from-cloud", "yes");
       });
       await panel(page).getByRole("button", { name: "上传到云端" }).click();
-      await expect(toast(page)).toContainText(/^已上传到云端 \d+ 项$/);
+      await expect(toastText(page)).toContainText(/^已上传到云端 \d+ 项$/);
       const put = fake.puts().at(-1)!;
       // 手动上传不带条件（用户明确要覆盖云端）；内容是备份 JSON，不含设备专属 key。
       expect(put.headers["if-match"]).toBeUndefined();
@@ -431,7 +437,7 @@ for (const style of ["pixel", "modern"] as const) {
         localStorage.setItem("bookmarks", JSON.stringify(["only-here"]));
       });
       await panel(page).getByRole("button", { name: "从云端合并" }).click();
-      await expect(toast(page)).toContainText(/^已合并 \d+ 条数据$/);
+      await expect(toastText(page)).toContainText(/^已合并 \d+ 条数据$/);
       expect(await ls(page, "e2e-from-cloud")).toBe("yes");
       expect(JSON.parse((await ls(page, "bookmarks"))!)).toEqual(expect.arrayContaining(["q1", "q3", "only-here"]));
 
@@ -440,7 +446,7 @@ for (const style of ["pixel", "modern"] as const) {
       await panel(page).getByRole("button", { name: "从云端恢复（覆盖）" }).click();
       await expect(page.getByRole("dialog")).toContainText("用云端数据覆盖本机？");
       await page.getByRole("dialog").getByRole("button", { name: "从云端恢复（覆盖）" }).click();
-      await expect(toast(page)).toContainText(/^已恢复 \d+ 条数据$/);
+      await expect(toastText(page)).toContainText(/^已恢复 \d+ 条数据$/);
       expect(await ls(page, "e2e-from-cloud")).toBe("yes");
     });
 
@@ -576,7 +582,7 @@ for (const style of ["pixel", "modern"] as const) {
       // 按提示选「从云端恢复（覆盖）」：以云端为准，之后自动同步恢复。
       await panel(page).getByRole("button", { name: "从云端恢复（覆盖）" }).click();
       await page.getByRole("dialog").getByRole("button", { name: "从云端恢复（覆盖）" }).click();
-      await expect(toast(page)).toContainText(/^已恢复 \d+ 条数据$/);
+      await expect(toastText(page)).toContainText(/^已恢复 \d+ 条数据$/);
       expect(await ls(page, "e2e-counter")).toBe("from-cloud");
       await expect(syncStatus(page)).toContainText(/已自动同步/);
     });
@@ -635,7 +641,7 @@ for (const style of ["pixel", "modern"] as const) {
       // 用户选「从云端恢复」就把数据找回来。
       await panel(page).getByRole("button", { name: "从云端恢复（覆盖）" }).click();
       await page.getByRole("dialog").getByRole("button", { name: "从云端恢复（覆盖）" }).click();
-      await expect(toast(page)).toContainText(/^已恢复 \d+ 条数据$/);
+      await expect(toastText(page)).toContainText(/^已恢复 \d+ 条数据$/);
       expect(await ls(page, "practice:e2e-39")).toBe("p");
       await expect(syncStatus(page)).toContainText(/已自动同步/);
     });
@@ -646,7 +652,7 @@ for (const style of ["pixel", "modern"] as const) {
       await openBackup(page, style, { bookmarks: JSON.stringify(["same"]) });
       const name = await signUp(page);
       await panel(page).getByRole("button", { name: "上传到云端" }).click();
-      await expect(toast(page).filter({ hasText: /^已上传到云端/ })).toBeVisible();
+      await expect(toastText(page).filter({ hasText: /^已上传到云端/ })).toBeVisible();
 
       await panel(page).getByRole("button", { name: "退出登录", exact: true }).click();
       await signIn(page, name);
@@ -669,7 +675,7 @@ for (const style of ["pixel", "modern"] as const) {
       await expect(dialog.getByRole("alert")).toContainText("两次输入的新口令不一致");
       await dialog.getByLabel("再输一次新口令").fill("a brand new pass");
       await dialog.getByRole("button", { name: "修改口令" }).click();
-      await expect(toast(page)).toContainText("口令已修改");
+      await expect(toastText(page)).toContainText("口令已修改");
       await expect(dialog).toBeHidden();
       expect(fake.requests.some((r) => r.path === "/api/account/password") || LIVE).toBe(true);
 
@@ -679,7 +685,7 @@ for (const style of ["pixel", "modern"] as const) {
       await expect(dialog.getByRole("alert")).toContainText("账号名或口令不对");
       await dialog.getByLabel("口令", { exact: true }).fill("a brand new pass");
       await dialog.getByRole("button", { name: "注销账号" }).click();
-      await expect(toast(page)).toContainText("账号已注销");
+      await expect(toastText(page)).toContainText("账号已注销");
       await expect(panel(page).getByRole("button", { name: "登录", exact: true })).toBeVisible();
       // 注销只删云端，本机数据不动；登录同名账号的口令已失效。
       await panel(page).getByLabel("账号名").fill(name);

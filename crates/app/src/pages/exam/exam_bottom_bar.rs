@@ -1,13 +1,15 @@
 //! 考试页底部操作栏：作答 / 标记统计、剩余时间读数、上一题 / 下一题、标记、答题卡与交卷。
+//!
+//! 剩余时间在底栏固定放一份（朴素文字）：长题 / 看图滚动后，上方 ON AIR 读数屏早已滚出视口。
 
 use leptos::prelude::*;
 
 use crate::components::common::{BottomBar, KeyHints};
 use crate::i18n::t;
-use crate::ui::{Button, Size, Variant};
+use crate::ui::{Button, LedTone, Size, Variant};
 use ham_web_core::ExamRule;
 
-use super::exam_clock::ExamClock;
+use super::exam_bar_clock::ExamBarClock;
 
 #[component]
 pub(super) fn ExamBottomBar(
@@ -21,7 +23,7 @@ pub(super) fn ExamBottomBar(
   /// 机考仿真：不能回看上一题。按钮要如实置灰，而不是看着能点、点了没反应。
   #[prop(into)]
   strict: Signal<bool>,
-  /// 剩余毫秒数（固定在底栏：长题 / 看图滚动后，顶部读数早已滚出视口）。
+  /// 剩余毫秒数（固定在底栏：长题 / 看图滚动后，屏幕上那份早已滚出视口）。
   #[prop(into)]
   remaining: Signal<i64>,
   #[prop(into)] rule: Signal<ExamRule>,
@@ -70,7 +72,7 @@ pub(super) fn ExamBottomBar(
           // `minutes == 0` 是不限时的自定义组卷：没有读数可放。
           {move || {
             (rule.get().minutes > 0).then(|| view! {
-              "｜" {move || t("exam.remaining")} <ExamClock remaining=remaining rule=rule />
+              "｜" {move || t("exam.remaining")} <ExamBarClock remaining=remaining rule=rule />
             })
           }}
         </div>
@@ -88,11 +90,15 @@ pub(super) fn ExamBottomBar(
           </Button>
         }
       }
+      // 「标记」键带琥珀灯（已标记 = 亮）。答题卡在 `lg` 以下直接铺在页面里（`AnswerCardPanel`），
+      // 这一档不再给弹窗入口。
       right=move || {
         view! {
           <Button
             variant=Variant::Outline
             size=Size::Default
+            led=LedTone::Warn
+            led_on=is_flagged
             on_click=Callback::new(move |_| on_toggle_flag.run(()))
           >
             {flag_label}
@@ -100,6 +106,7 @@ pub(super) fn ExamBottomBar(
           <Button
             variant=Variant::Outline
             size=Size::Default
+            class="hidden lg:inline-flex"
             on_click=Callback::new(move |_| on_open_card.run(()))
           >
             {move || t("exam.answer-card")}
@@ -148,22 +155,16 @@ pub(super) fn ExamBottomBar(
       }
       mobile_bottom=ViewFn::from(move || {
         view! {
-          <div class="grid grid-cols-3 gap-2 mt-2">
+          <div class="grid grid-cols-2 gap-2 mt-2">
             <Button
               variant=Variant::Outline
               size=Size::Default
               class="w-full"
+              led=LedTone::Warn
+              led_on=is_flagged
               on_click=Callback::new(move |_| on_toggle_flag.run(()))
             >
               {flag_label}
-            </Button>
-            <Button
-              variant=Variant::Outline
-              size=Size::Default
-              class="w-full"
-              on_click=Callback::new(move |_| on_open_card.run(()))
-            >
-              {move || t("exam.answer-card")}
             </Button>
             <Button
               variant=Variant::Destructive

@@ -56,7 +56,6 @@
   "knowledge.getting-started": "Getting started",
   "knowledge.download-the-openapi-3": "Download the OpenAPI 3.1 spec (openapi.json)",
   "knowledge.amateur-bands": "Amateur bands",
-  "knowledge.amateur-radio": "Amateur Radio",
   "knowledge.common-ham-terms-english": "Common ham terms · English abbreviations · plain explanations",
   "knowledge.amateur-radio-direction-finding": "Amateur radio direction finding (ARDF) · contest bands",
   "knowledge.repeater-usage-notes": "Repeater usage notes",
@@ -547,5 +546,6 @@
   "knowledge.zhr-value": "ZHR {}",
   "knowledge.zhr-variable": "ZHR variable",
   "knowledge.peak-passed": "Peak passed ({})",
-  "knowledge.no-meteor-showers-in-window": "No meteor showers are active, and none peaks in the next {} days."
+  "knowledge.no-meteor-showers-in-window": "No meteor showers are active, and none peaks in the next {} days.",
+  "knowledge.no-signal-hint": "No signal on this channel: the address may be mistyped, or the page has moved."
 }

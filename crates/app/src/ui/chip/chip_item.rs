@@ -6,6 +6,7 @@
 use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 
+use super::chip_lamp::ChipLamp;
 use super::shared::{ChipCtx, chip_base};
 
 /// 方向键在同一组内移动选择：焦点先落到目标项，再交给它的 `click` ——
@@ -83,6 +84,7 @@ pub fn Chip(#[prop(into)] value: String, children: Children) -> impl IntoView {
         move_focus(&ev, step);
       }
     >
+      <ChipLamp on=Signal::derive(checked) />
       {children()}
     </button>
   }

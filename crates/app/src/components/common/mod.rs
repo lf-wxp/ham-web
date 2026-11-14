@@ -1,6 +1,7 @@
 //! 通用组件：提示弹窗、答案解析卡片、可预览图片、进度头部、底部操作栏，
 //! 以及页面骨架（页头/容器/卡片）与状态反馈（加载/空态）。
 
+mod band_tag;
 mod bottom_bar;
 mod bullet_section;
 mod concepts_section;

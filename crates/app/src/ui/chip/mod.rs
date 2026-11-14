@@ -15,10 +15,11 @@
 //! 各自定义过 4 种不同的 chip 写法（圆角、内边距、选中态描边都不一样）。
 //!
 //! 本目录按「一个组件一个文件」组织（见 `AGENTS.md`）：共享的样式 token 与组上下文在
-//! [`shared`]，另外三个文件各放一个组件。
+//! [`shared`]，另外四个文件各放一个组件（`chip_lamp` 是像素风键里的指示灯，组内私有）。
 
 mod chip_group;
 mod chip_item;
+mod chip_lamp;
 mod chip_toggle;
 mod shared;
 

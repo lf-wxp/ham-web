@@ -15,7 +15,7 @@ import {
   wrongLetter,
 } from "./fixtures";
 
-// 闯关地图 / 回合战 / 怪物图鉴 / 外观设置 / 底部 Tab 的回归。
+// 通联路线 / 抗干扰 / 干扰图鉴 / 外观设置 / 底部 Tab 的回归。
 // 作答靠读题库文件判对错（与 smoke.spec.ts 读路由表同一思路），不依赖页面会泄露答案的文案。
 
 type Q = { question: string; answer_keys: string[]; options: { key: string }[] };
@@ -23,7 +23,7 @@ const bank: Q[] = JSON.parse(readFileSync(join(__dirname, "../../public/question
 const byStem = new Map(bank.map((q) => [q.question.trim(), q]));
 
 const stem = (page: Page) => page.locator("main [data-slot=card-content] .whitespace-pre-line").first();
-const finished = (page: Page) => page.getByRole("heading", { name: /^(关卡通过！|复仇成功！|败北…)$/ });
+const finished = (page: Page) => page.getByRole("heading", { name: /^(通联成功！|排查完成！|电量耗尽…)$/ });
 
 /** 选出当前题的答案；`correct=false` 时保证答错。
  *
@@ -46,8 +46,8 @@ async function pick(page: Page, correct: boolean) {
 /** 出招并进入下一回合（或结算）。 */
 async function turn(page: Page, correct: boolean) {
   await pick(page, correct);
-  await page.getByRole("button", { name: "攻击", exact: true }).click();
-  await page.getByRole("button", { name: /^(继续|结算)$/ }).click();
+  await page.getByRole("button", { name: "发射", exact: true }).click();
+  await page.getByRole("button", { name: /^(继续|出信号报告)$/ }).click();
 }
 
 /** 打到结算为止；前 `wrongTurns` 回合故意答错。 */
@@ -60,81 +60,81 @@ async function play(page: Page, wrongTurns = 0) {
   throw new Error("40 回合内没有分出胜负");
 }
 
-test.describe("闯关地图与回合战", () => {
+test.describe("通联路线与抗干扰", () => {
   test("通关首关：给三星、写入存档，并解锁下一关", async ({ page }) => {
     await page.goto("/map");
     // 只有第一关开放，其余 9 关锁定。
     await expect(page.getByText("未解锁")).toHaveCount(9);
-    await expect(page.getByText(/已通关 0 \/ 10 关/)).toBeVisible();
+    await expect(page.getByText(/已通联 0 \/ 10 站/)).toBeVisible();
 
-    await page.getByRole("link", { name: "开始战斗" }).click();
+    await page.getByRole("link", { name: "开始通联" }).click();
     await expect(page).toHaveURL(/\/battle\?.*stage=/);
     await play(page);
 
-    await expect(finished(page)).toHaveText("关卡通过！");
+    await expect(finished(page)).toHaveText("通联成功！");
     // 全程没答错：满血通关 = 三星。
-    await expect(page.getByRole("img", { name: "3 / 3 星" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "3 / 3 格信号" })).toBeVisible();
     await expect.poll(() => page.evaluate(() => localStorage.getItem("rpg-stars"))).toContain('"best"');
 
-    await page.getByRole("link", { name: "返回地图" }).click();
-    await expect(page.getByText(/已通关 1 \/ 10 关/)).toBeVisible();
+    await page.getByRole("link", { name: "返回路线" }).click();
+    await expect(page.getByText(/已通联 1 \/ 10 站/)).toBeVisible();
     await expect(page.getByText("未解锁")).toHaveCount(8);
   });
 
   test("答错：扣一点生命、题目稍后重出，并收进图鉴", async ({ page }) => {
     await page.goto("/map");
-    await page.getByRole("link", { name: "开始战斗" }).click();
+    await page.getByRole("link", { name: "开始通联" }).click();
     await expect(page.getByText("第 1 / 10 题")).toBeVisible();
 
     await turn(page, false);
     // 错题放回队尾：总题数 +1；生命 5 → 4。
     await expect(page.getByText("第 2 / 11 题")).toBeVisible();
-    await expect(page.getByText("生命 4 / 5")).toBeVisible();
+    await expect(page.getByText("电量 4 / 5")).toBeVisible();
 
     await page.goto("/bestiary");
-    await expect(page.getByRole("link", { name: "挑战", exact: true })).toHaveCount(1);
+    await expect(page.getByRole("link", { name: "排查", exact: true })).toHaveCount(1);
   });
 
   test("直接输入未解锁关卡的地址：被拦下并指回地图", async ({ page }) => {
     await page.goto("/battle?bank=A&stage=调制");
-    await expect(page.getByRole("alert")).toContainText("还没解锁");
-    await page.getByRole("link", { name: "返回地图" }).click();
+    await expect(page.getByRole("alert")).toContainText("还没开通");
+    await page.getByRole("link", { name: "返回路线" }).click();
     await expect(page).toHaveURL(/\/map/);
   });
 
   test("没有战斗目标：给出提示而不是空白", async ({ page }) => {
     await page.goto("/battle");
-    await expect(page.getByRole("alert")).toContainText("没有指定战斗目标");
+    await expect(page.getByRole("alert")).toContainText("没有指定通联目标");
   });
 });
 
-test.describe("怪物图鉴", () => {
-  test("空图鉴：引导去闯关", async ({ page }) => {
+test.describe("干扰图鉴", () => {
+  test("空图鉴：引导去通联", async ({ page }) => {
     await page.goto("/bestiary");
     await expect(page.getByText("图鉴还是空的")).toBeVisible();
-    await page.getByRole("link", { name: "去闯关" }).click();
+    await page.getByRole("link", { name: "去通联" }).click();
     await expect(page).toHaveURL(/\/map/);
   });
 
-  test("复仇：连续答对到掌握后，怪物记入已击败", async ({ page }) => {
+  test("排查：连续答对到掌握后，干扰记入已消除", async ({ page }) => {
     await page.goto("/map");
-    await page.getByRole("link", { name: "开始战斗" }).click();
-    await turn(page, false); // 制造一只怪物
+    await page.getByRole("link", { name: "开始通联" }).click();
+    await turn(page, false); // 制造一个干扰
     await page.goto("/battle?mode=revenge");
     // 掌握需要连续答对 3 次，且复仇队不开暴击 —— 一场只有一回合，所以要打三场。
     for (let round = 0; round < 3; round++) {
       await play(page);
-      await expect(finished(page)).toHaveText("复仇成功！");
+      await expect(finished(page)).toHaveText("排查完成！");
       if (round < 2) await page.goto("/battle?mode=revenge");
     }
     await expect.poll(() => page.evaluate(() => localStorage.getItem("rpg-bestiary"))).toContain("defeated");
     await page.goto("/bestiary");
-    // 只制造了一只怪物且已被击败：图鉴进度 100%。别写成 `not.toContainText("0%")` ——
+    // 只制造了一个干扰且已被消除：排查进度 100%。别写成 `not.toContainText("0%")` ——
     // 「100%」本身就含有子串「0%」。
-    await expect(page.getByText("已击败 100%")).toBeVisible();
+    await expect(page.getByText("已消除 100%")).toBeVisible();
   });
 
-  test("复仇：答错弹出的解析读题库现在的，不用错题快照里的旧文字", async ({ page }) => {
+  test("排查：答错弹出的解析读题库现在的，不用错题快照里的旧文字", async ({ page }) => {
     const q = bankQuestion(0);
     await page.addInitScript(
       (records) => localStorage.setItem("mistake-book", JSON.stringify({ records })),
@@ -144,7 +144,7 @@ test.describe("怪物图鉴", () => {
     await expect(stem(page)).toBeVisible();
     // 选一个不在正确答案里的选项，一定答错（不假设这道题是单选还是多选）
     await option(page, wrongLetter(q.answer_keys)).click();
-    await page.getByRole("button", { name: "攻击", exact: true }).click();
+    await page.getByRole("button", { name: "发射", exact: true }).click();
     // 答错才弹解析，卡片首次展开前不渲染正文：展开后再断言
     await expandExplanations(page);
     await expect(page.locator("main")).toContainText(explanationHead(q));
@@ -222,7 +222,7 @@ test.describe("手机底部 Tab", () => {
 
   test("答题页让位：战斗中不显示底部 Tab", async ({ page }) => {
     await page.goto("/map");
-    await page.getByRole("link", { name: "开始战斗" }).click();
+    await page.getByRole("link", { name: "开始通联" }).click();
     await expect(stem(page)).toBeVisible();
     await expect(page.getByRole("navigation", { name: "底部导航" })).toBeHidden();
   });
@@ -273,19 +273,19 @@ for (const colorScheme of ["light", "dark"] as const) {
 
     test("战斗中 → 答错反馈 → 答对反馈 → 结算", async ({ page }) => {
       await page.goto("/map");
-      await page.getByRole("link", { name: "开始战斗" }).click();
+      await page.getByRole("link", { name: "开始通联" }).click();
       await expect(stem(page)).toBeVisible();
       expect(await contrast(page), "战斗中").toEqual([]);
 
       await pick(page, false);
-      await page.getByRole("button", { name: "攻击", exact: true }).click();
-      await expect(page.getByText("受伤了…")).toBeVisible();
+      await page.getByRole("button", { name: "发射", exact: true }).click();
+      await expect(page.getByText("受到干扰…")).toBeVisible();
       expect(await contrast(page), "答错反馈").toEqual([]);
       await page.getByRole("button", { name: "继续", exact: true }).click();
 
       await pick(page, true);
-      await page.getByRole("button", { name: "攻击", exact: true }).click();
-      await expect(page.getByText("命中！")).toBeVisible();
+      await page.getByRole("button", { name: "发射", exact: true }).click();
+      await expect(page.getByText("锁定！")).toBeVisible();
       expect(await contrast(page), "答对反馈").toEqual([]);
       await page.getByRole("button", { name: "继续", exact: true }).click();
 
@@ -304,49 +304,49 @@ for (const colorScheme of ["light", "dark"] as const) {
   });
 }
 
-test.describe("模拟考试 Boss 战", () => {
+test.describe("模拟考试：呼叫稀有 DX 台", () => {
   const submit = async (page: Page) => {
     await page.getByRole("button", { name: "交卷", exact: true }).first().click();
     await page.getByRole("dialog", { name: "确认交卷？" }).getByRole("button", { name: "确认交卷" }).click();
     return page.getByRole("dialog", { name: "成绩" });
   };
 
-  test("作答期间 Boss 被封印、血量满格，不泄露对错", async ({ page }) => {
+  test("作答期间守听中、堆叠满格，不泄露对错", async ({ page }) => {
     await page.goto("/exam");
-    const stage = page.getByRole("region", { name: "考场 Boss" });
-    await expect(stage).toContainText("封印中");
-    await expect(stage).toContainText("封印解除 0 / 40");
-    await expect(stage.getByRole("progressbar", { name: "Boss 生命" })).toHaveAttribute("aria-valuenow", "100");
+    const stage = page.getByRole("region", { name: "稀有 DX 台" });
+    await expect(stage).toContainText("守听中");
+    await expect(stage).toContainText("已发送 0 / 40");
+    await expect(stage.getByRole("progressbar", { name: "堆叠剩余" })).toHaveAttribute("aria-valuenow", "100");
 
-    // 答一题（无论对错）：Boss 血量不变，只有「封印解除」进度推进。
+    // 答一题（无论对错）：Boss 血量不变，只有「已发送」进度推进。
     await option(page, "A").click();
-    await expect(stage).toContainText("封印解除 1 / 40");
-    await expect(stage.getByRole("progressbar", { name: "Boss 生命" })).toHaveAttribute("aria-valuenow", "100");
+    await expect(stage).toContainText("已发送 1 / 40");
+    await expect(stage.getByRole("progressbar", { name: "堆叠剩余" })).toHaveAttribute("aria-valuenow", "100");
   });
 
   for (const colorScheme of ["light", "dark"] as const) {
-    test(`交卷空卷：评级 C、Boss 满血、战利品只有参与经验（${colorScheme}）`, async ({ page }) => {
+    test(`交卷空卷：评级 C、堆叠满格、QSL 回执只有参与经验（${colorScheme}）`, async ({ page }) => {
       await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
       await page.goto("/exam");
       await expect(page.getByText(/第 1 \/ 40 题/).first()).toBeVisible();
       const result = await submit(page);
       await expect(result).toBeVisible();
 
-      const verdict = result.getByRole("region", { name: "Boss 还活着…" });
+      const verdict = result.getByRole("region", { name: "还没突破堆叠…" });
       await expect(verdict).toContainText("C");
-      await expect(verdict).toContainText("Boss 剩余生命 100%");
+      await expect(verdict).toContainText("堆叠剩余 100%");
       // 没及格也没满分：只有参与经验 30，没有合格 / 满分的额外奖励。
-      await expect(verdict).toContainText("战利品 +30 经验");
-      expect(await contrast(page), "Boss 判词").toEqual([]);
+      await expect(verdict).toContainText("QSL 回执 +30 经验");
+      expect(await contrast(page), "稀有台判词").toEqual([]);
 
       // 交卷后舞台上的 Boss 血量同步（空卷：仍是满血）。
       await result.getByRole("button", { name: "继续浏览题目" }).click();
-      const stage = page.getByRole("region", { name: "考场 Boss" });
-      await expect(stage).toContainText("Boss 剩余生命 100%");
+      const stage = page.getByRole("region", { name: "稀有 DX 台" });
+      await expect(stage).toContainText("堆叠剩余 100%");
     });
   }
 
-  test("满分交卷：评级 S、Boss 倒下、战利品含合格与满分奖励", async ({ page }) => {
+  test("满分交卷：评级 S、突破堆叠、QSL 回执含合格与满分奖励", async ({ page }) => {
     // 把 `/exam` 抽到的题目对上题库，逐题选出正确答案；40 题全对 = 满分。
     await page.goto("/exam");
     await expect(page.getByText(/第 1 \/ 40 题/).first()).toBeVisible();
@@ -358,11 +358,11 @@ test.describe("模拟考试 Boss 战", () => {
       if (i < 39) await page.getByRole("button", { name: "下一题", exact: true }).first().click();
     }
     const result = await submit(page);
-    const verdict = result.getByRole("region", { name: "Boss 被击败！" });
+    const verdict = result.getByRole("region", { name: "突破堆叠，通联成功！" });
     await expect(verdict).toContainText("S");
-    await expect(verdict).toContainText("Boss 剩余生命 0%");
+    await expect(verdict).toContainText("堆叠剩余 0%");
     // 参与 30 + 合格 120 + 满分 200。
-    await expect(verdict).toContainText("战利品 +350 经验");
+    await expect(verdict).toContainText("QSL 回执 +350 经验");
     // 经验由存档推算：这一场之后 HUD 等级应已上升（经验 = 40 题 × 10 + 350）。
     await page.goto("/");
     await expect(page.locator("[data-slot=hud]")).not.toHaveAttribute("aria-label", /^LV 1 ·/);

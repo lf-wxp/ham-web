@@ -194,10 +194,11 @@ cargo run -q -p ham-web-tools --release -- pixel-fonts --src "$FONT_SRC"
 '''
 
 [tasks.pixel-sprites]
-description = "由字符画生成像素图标与精灵的数据文件（需 PIXELARTICONS_DIR 指向 pixelarticons 的 svg 目录）"
+description = "由字符画生成像素精灵的数据文件；设了 PIXELARTICONS_DIR（pixelarticons 的 svg 目录）时连图标一起生成"
 # 产物已提交入库；只有改了 crates/tools/src/pixel/sprite_art.rs 或换了图标集才需要重跑。
+# 目录交给 clap 从环境变量读（`env = "PIXELARTICONS_DIR"`）：不设就只重生成精灵，不会拿空串当路径。
 command = "cargo"
-args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "pixel-sprites", "--pixelarticons", "${PIXELARTICONS_DIR}"]
+args = ["run", "-q", "-p", "ham-web-tools", "--release", "--", "pixel-sprites"]
 
 [tasks.pixel-palette]
 description = "校正像素调色板里的文字色阶，使其在所有表面（含每个配色方案的亮 / 暗表面）上满足 WCAG AA"

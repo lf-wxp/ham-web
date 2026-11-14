@@ -225,9 +225,9 @@ enum Command {
   },
   /// 生成像素图标与精灵的数据文件（icons/pixel/{icon_paths,sprite_data}.rs）
   PixelSprites {
-    /// pixelarticons 的 svg 目录
+    /// pixelarticons 的 svg 目录；不给则只重新生成精灵（sprite_data.rs），图标原样不动
     #[arg(long, env = "PIXELARTICONS_DIR")]
-    pixelarticons: PathBuf,
+    pixelarticons: Option<PathBuf>,
   },
   /// 按仓库语料把像素字体子集化成 woff2 分片（public/fonts/pixel-*.woff2 + style/pixel/fonts-pixel.css）
   PixelFonts {
@@ -525,7 +525,9 @@ fn main() -> Result<()> {
     Command::DxccMap { input, url } => dxcc_map::generate(&root, input.as_deref(), &url),
     Command::CnMap { input, url } => cn_map::generate(&root, input.as_deref(), &url),
     Command::Icons => icons::generate(&paths),
-    Command::PixelSprites { pixelarticons } => pixel::sprites::generate(&root, &pixelarticons),
+    Command::PixelSprites { pixelarticons } => {
+      pixel::sprites::generate(&root, pixelarticons.as_deref())
+    }
     Command::PixelFonts { src } => pixel::fonts::generate(&root, &src),
     Command::PixelSchemes { check } => pixel::schemes::run(&root, check),
     Command::PixelCheck => {

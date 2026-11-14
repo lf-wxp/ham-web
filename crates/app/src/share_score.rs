@@ -1,5 +1,7 @@
 //! 成绩分享卡片：把模拟考试成绩绘制到 Canvas，导出为 PNG 图片（完全本地完成，不上传）。
 
+use ham_web_core::logbook::StationInfo;
+use ham_web_core::rig_panel::{S_SEGMENTS, S_WEAK, S9, exam_s_units, s_reading};
 use ham_web_core::{Bank, ExamScore};
 use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::{JsCast, JsValue};
@@ -11,102 +13,249 @@ use crate::util::{document, js_error_message};
 const W: f64 = 600.0;
 const H: f64 = 400.0;
 
+/// QSL 成绩卡的固定配色（Sweetie-16）：导出图两套皮肤共用一张，也不跟界面的配色方案走 ——
+/// 它是要发出去的「卡片」，不是界面的一部分。
+const QSL_STOCK: &str = "#f7f0dc";
+const QSL_HEAD: &str = "#ece3c8";
+const QSL_INK: &str = "#1a1c2c";
+const QSL_MUTED: &str = "#566c86";
+const QSL_RULE: &str = "#c9bfa3";
+const QSL_BRAND: &str = "#3b5dc9";
+const QSL_PASS: &str = "#257a45";
+const QSL_FAIL: &str = "#b13e53";
+/// 卡上的小屏幕与 S 表格子：同界面里暗色（背光）屏幕的四档（底噪 / 亮 / +dB / 偏弱）。导出图是固定配色，不随明暗变。
+const QSL_SCREEN: &str = "#1a1c2c";
+const QSL_SEG_OFF: &str = "#333c57";
+const QSL_SEG_ON: &str = "#73eff7";
+const QSL_SEG_PLUS: &str = "#a7f070";
+const QSL_SEG_WEAK: &str = "#ffcd75";
+const QSL_SEG_LABEL: &str = "#94b0c2";
+/// 呼号与读数用等宽字：QSL 卡上的呼号本来就是这种「打字机」观感，数字也对得齐。
+const QSL_MONO: &str = "ui-monospace, Menlo, Consolas, monospace";
+/// 按 2 倍像素出图：分享到手机上看不糊。
+const QSL_SCALE: f64 = 2.0;
+
 fn fill(ctx: &CanvasRenderingContext2d, text: &str, x: f64, y: f64) -> Result<(), String> {
   ctx.fill_text(text, x, y).map_err(|e| js_error_message(&e))
 }
 
-/// 生成成绩分享卡片，返回 PNG data URL。
-pub fn render_score_card(bank: Bank, score: ExamScore, pass_line: usize) -> Result<String, String> {
+/// 带最大宽度的 `fill_text`：长呼号与西语文案会被横向压缩而不是溢出卡片。
+fn fill_max(
+  ctx: &CanvasRenderingContext2d,
+  text: &str,
+  x: f64,
+  y: f64,
+  max_width: f64,
+) -> Result<(), String> {
+  ctx
+    .fill_text_with_max_width(text, x, y, max_width)
+    .map_err(|e| js_error_message(&e))
+}
+
+/// 本台呼号：日志里当前台站的呼号（`station-info` 镜像，RBN / PSK Reporter 读的也是它）。
+pub(crate) fn own_callsign() -> Option<String> {
+  crate::util::storage::get_json::<StationInfo>("station-info")
+    .map(|s| s.callsign.trim().to_ascii_uppercase())
+    .filter(|c| !c.is_empty())
+}
+
+/// 生成成绩分享卡片（一张 QSL 卡），返回 PNG data URL。
+///
+/// 卡上只写真的（`docs/ui/decisions.md` §11.6）：呼号取日志设置的本台呼号、没有就写「未设置呼号」；
+/// 不编频率与模式，通联表里只有日期、题库、得分、正确率与信号报告（S9 = 合格线，`rig_panel::exam_s_units`）。
+///
+/// `show_call`：是否把本台呼号印在卡上。呼号能反查到个人信息，而这张图是要发出去的 ——
+/// 所以调用方默认传 `false`，由用户在分享前明确勾选（没设呼号时这个参数无效）。
+pub fn render_score_card(
+  bank: Bank,
+  score: ExamScore,
+  pass_line: usize,
+  show_call: bool,
+) -> Result<String, String> {
   let canvas: HtmlCanvasElement = document()
     .create_element("canvas")
     .map_err(|e| js_error_message(&e))?
     .unchecked_into();
-  canvas.set_width(W as u32);
-  canvas.set_height(H as u32);
+  canvas.set_width((W * QSL_SCALE) as u32);
+  canvas.set_height((H * QSL_SCALE) as u32);
   let ctx: CanvasRenderingContext2d = canvas
     .get_context("2d")
     .map_err(|e| js_error_message(&e))?
     .ok_or("Canvas 2D context unavailable")?
     .unchecked_into();
+  ctx
+    .scale(QSL_SCALE, QSL_SCALE)
+    .map_err(|e| js_error_message(&e))?;
 
   let passed = score.is_passed(pass_line);
-  let accent = if passed { "#16a34a" } else { "#dc2626" };
+  let accent = if passed { QSL_PASS } else { QSL_FAIL };
+  let units = exam_s_units(score.correct, score.total, pass_line);
+  let margin = 36.0;
 
-  // 背景与顶部色条。
-  ctx.set_fill_style_str("#ffffff");
+  // 卡纸与内框。
+  ctx.set_fill_style_str(QSL_STOCK);
   ctx.fill_rect(0.0, 0.0, W, H);
-  ctx.set_fill_style_str(accent);
-  ctx.fill_rect(0.0, 0.0, W, 8.0);
+  ctx.set_stroke_style_str(QSL_INK);
+  ctx.set_line_width(2.0);
+  ctx.stroke_rect(12.0, 12.0, W - 24.0, H - 24.0);
 
-  ctx.set_text_align("center");
-
-  // 标题。
-  ctx.set_fill_style_str("#18181b");
-  ctx.set_font("bold 30px sans-serif");
-  fill(&ctx, &t("exam.amateur-radio-mock-exam"), W / 2.0, 76.0)?;
-
-  // 题库 + 合格线。
-  ctx.set_fill_style_str("#71717a");
-  ctx.set_font("18px sans-serif");
-  fill(
+  // 左上：本台呼号。
+  ctx.set_text_align("left");
+  match own_callsign() {
+    Some(call) if show_call => {
+      ctx.set_fill_style_str(QSL_INK);
+      ctx.set_font(&format!("bold 52px {QSL_MONO}"));
+      fill_max(&ctx, &call, margin, 92.0, 330.0)?;
+    }
+    other => {
+      // 设了呼号但没勾选 = 「未公开」；压根没设 = 「未设置」，两句不能混。
+      let note = if other.is_some() {
+        t("exam.qsl-call-hidden")
+      } else {
+        t("exam.qsl-no-call")
+      };
+      ctx.set_fill_style_str(QSL_MUTED);
+      ctx.set_font("24px sans-serif");
+      fill_max(&ctx, &note, margin, 84.0, 330.0)?;
+    }
+  }
+  ctx.set_fill_style_str(QSL_MUTED);
+  ctx.set_font("14px sans-serif");
+  fill_max(
     &ctx,
-    &tp(
-      "common.class-pass-mark-questions",
-      pass_line,
-      &[bank.as_str(), &pass_line.to_string()],
+    &t("exam.amateur-radio-mock-exam"),
+    margin,
+    118.0,
+    330.0,
+  )?;
+
+  // 右上：「QSL」字样与站点。
+  ctx.set_text_align("right");
+  ctx.set_fill_style_str(QSL_BRAND);
+  ctx.set_font(&format!("bold 48px {QSL_MONO}"));
+  fill(&ctx, "QSL", W - margin, 92.0)?;
+  ctx.set_fill_style_str(QSL_MUTED);
+  ctx.set_font(&format!("13px {QSL_MONO}"));
+  fill(&ctx, "ham.onlyxp.me", W - margin, 118.0)?;
+
+  ctx.set_fill_style_str(QSL_RULE);
+  ctx.fill_rect(margin, 138.0, W - margin * 2.0, 2.0);
+
+  // 确认语。
+  ctx.set_text_align("left");
+  ctx.set_fill_style_str(QSL_INK);
+  ctx.set_font("17px sans-serif");
+  fill_max(
+    &ctx,
+    &tf("exam.qsl-confirming", &[bank.as_str()]),
+    margin,
+    170.0,
+    W - margin * 2.0,
+  )?;
+
+  // 通联表：表头一行、数据一行。
+  let cells: [(String, String); 5] = [
+    (t("log.date"), crate::util::local_today()),
+    (t("exam.bank"), bank.as_str().to_owned()),
+    (
+      t("morse.score"),
+      format!("{} / {}", score.correct, score.total),
     ),
-    W / 2.0,
-    116.0,
-  )?;
+    (t("learning.accuracy"), format!("{}%", score.percent())),
+    (
+      t("exam.signal-report"),
+      units.map_or_else(|| "--".to_owned(), s_reading),
+    ),
+  ];
+  let (table_y, head_h, row_h) = (188.0, 26.0, 44.0);
+  let table_w = W - margin * 2.0;
+  let col_w = table_w / cells.len() as f64;
+  ctx.set_fill_style_str(QSL_HEAD);
+  ctx.fill_rect(margin, table_y, table_w, head_h);
+  ctx.set_fill_style_str(QSL_RULE);
+  ctx.fill_rect(margin, table_y + head_h, table_w, 1.0);
+  for i in 1..cells.len() {
+    ctx.fill_rect(margin + col_w * i as f64, table_y, 1.0, head_h + row_h);
+  }
+  ctx.set_stroke_style_str(QSL_INK);
+  ctx.stroke_rect(margin, table_y, table_w, head_h + row_h);
+  ctx.set_text_align("center");
+  for (i, (label, value)) in cells.iter().enumerate() {
+    let cx = margin + col_w * (i as f64 + 0.5);
+    ctx.set_fill_style_str(QSL_MUTED);
+    ctx.set_font("12px sans-serif");
+    fill_max(&ctx, label, cx, table_y + 18.0, col_w - 10.0)?;
+    ctx.set_fill_style_str(QSL_INK);
+    ctx.set_font(&format!("bold 20px {QSL_MONO}"));
+    fill_max(&ctx, value, cx, table_y + head_h + 29.0, col_w - 10.0)?;
+  }
 
-  // 得分大字。
-  ctx.set_fill_style_str("#18181b");
-  ctx.set_font("bold 76px sans-serif");
-  fill(
-    &ctx,
-    &format!("{} / {}", score.correct, score.total),
-    W / 2.0,
-    222.0,
-  )?;
+  // 左下：一块小屏幕上的 S 表，读法与界面里的 `SignalMeter` 一致（S9 以上绿、S5 以下琥珀）。
+  let (sx, sy, sw, sh) = (margin, 282.0, 300.0, 56.0);
+  ctx.set_fill_style_str(QSL_SCREEN);
+  ctx.fill_rect(sx, sy, sw, sh);
+  let segs = f64::from(S_SEGMENTS);
+  let gap = 4.0;
+  let seg_w = ((sw - 20.0 - gap * (segs - 1.0)) / segs).floor();
+  let left = sx + (sw - (seg_w * segs + gap * (segs - 1.0))) / 2.0;
+  let lit = units.unwrap_or(0);
+  ctx.set_font(&format!("11px {QSL_MONO}"));
+  for k in 1..=S_SEGMENTS {
+    let x = left + f64::from(k - 1) * (seg_w + gap);
+    let color = if k > lit {
+      QSL_SEG_OFF
+    } else if k > S9 {
+      QSL_SEG_PLUS
+    } else if lit < S_WEAK {
+      QSL_SEG_WEAK
+    } else {
+      QSL_SEG_ON
+    };
+    ctx.set_fill_style_str(color);
+    ctx.fill_rect(x, sy + 10.0, seg_w, 14.0);
+    // 刻度与界面同一套：奇数格标 1…9，S9 以上标 +20 / +40。
+    let label = match k {
+      1 | 3 | 5 | 7 | 9 => Some(k.to_string()),
+      11 | 13 => Some(format!("+{}", u32::from(k - S9) * 10)),
+      _ => None,
+    };
+    if let Some(label) = label {
+      ctx.set_fill_style_str(if k > S9 { QSL_SEG_PLUS } else { QSL_SEG_LABEL });
+      fill(&ctx, &label, x + seg_w / 2.0, sy + 44.0)?;
+    }
+  }
 
-  // 正确率 + 合格判定。
+  // 右下：结论章，略微倾斜，像盖上去的。
+  ctx.save();
+  ctx
+    .translate(462.0, 310.0)
+    .map_err(|e| js_error_message(&e))?;
+  ctx.rotate(-0.08).map_err(|e| js_error_message(&e))?;
+  ctx.set_stroke_style_str(accent);
+  ctx.set_line_width(3.0);
+  ctx.stroke_rect(-92.0, -30.0, 184.0, 60.0);
   ctx.set_fill_style_str(accent);
   ctx.set_font("bold 26px sans-serif");
-  fill(
-    &ctx,
-    &tf(
-      "common.accuracy-with-result",
-      &[
-        &score.percent().to_string(),
-        &if passed {
-          t("exam.passed")
-        } else {
-          t("exam.not-passed")
-        },
-      ],
-    ),
-    W / 2.0,
-    266.0,
-  )?;
-
-  // 日期。
-  let today = js_sys::Date::new_0();
-  let date = tf(
-    "common.entry",
-    &[
-      &today.get_full_year().to_string(),
-      &(today.get_month() + 1).to_string(),
-      &today.get_date().to_string(),
-    ],
+  let verdict = if passed {
+    t("exam.passed")
+  } else {
+    t("exam.not-passed")
+  };
+  fill_max(&ctx, &verdict, 0.0, 0.0, 168.0)?;
+  ctx.set_font("12px sans-serif");
+  let pass_mark = tp(
+    "common.class-pass-mark-questions",
+    pass_line,
+    &[bank.as_str(), &pass_line.to_string()],
   );
-  ctx.set_fill_style_str("#a1a1aa");
-  ctx.set_font("16px sans-serif");
-  fill(&ctx, &date, W / 2.0, 316.0)?;
+  fill_max(&ctx, &pass_mark, 0.0, 20.0, 168.0)?;
+  ctx.restore();
 
-  // 底部水印。
-  ctx.set_fill_style_str("#d4d4d8");
-  ctx.set_font("14px sans-serif");
-  fill(&ctx, "ham.onlyxp.me", W / 2.0, 372.0)?;
+  // 落款：QSL 卡的通行写法，不翻译。
+  ctx.set_text_align("left");
+  ctx.set_fill_style_str(QSL_INK);
+  ctx.set_font(&format!("bold 15px {QSL_MONO}"));
+  fill(&ctx, "TNX QSO · 73", margin, 370.0)?;
 
   canvas.to_data_url().map_err(|e| js_error_message(&e))
 }

@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, option, test } from "./fixtures";
+import { bankQuestions, expect, mistakeRecord, option, test } from "./fixtures";
 
 // 界面评审整改的回归：用例标题里的编号对应 `docs/README.md` §2 的硬规则，改动时能对上。
 
@@ -112,10 +112,10 @@ test("B8 Toast：悬停时不消失（暂停计时）", async ({ page }) => {
 test("E1 首页：首屏只有一个最重的主操作，模拟考试入口不重复", async ({ page }) => {
   await page.goto("/");
   const hero = page.locator("main section[aria-labelledby=home-title]");
-  await expect(hero.getByRole("link", { name: "出去闯关" })).toBeVisible();
-  await expect(hero.getByRole("link", { name: "怪物图鉴" })).toBeVisible();
-  // 「挑战 Boss」(/exam) 与下面快速开始里的「开始模拟考试」是同一去向，只留后者。
-  await expect(hero.getByRole("link", { name: "挑战 Boss" })).toHaveCount(0);
+  await expect(hero.getByRole("link", { name: "出发通联" })).toBeVisible();
+  await expect(hero.getByRole("link", { name: "干扰图鉴" })).toBeVisible();
+  // 「呼叫稀有台」(/exam) 与下面快速开始里的「开始模拟考试」是同一去向，只留后者。
+  await expect(hero.getByRole("link", { name: "呼叫稀有台" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "开始模拟考试" })).toBeVisible();
 });
 
@@ -412,7 +412,7 @@ test("G3 窄屏页头：SDR 瀑布图的「开始」常显，不必先点「更�
   await expect(start).toHaveCount(1);
 });
 
-test("H1 闯关地图：窄屏下「下一个任务」的文字块不被压成一字宽", async ({ page }) => {
+test("H1 通联路线：窄屏下「下一站」的文字块不被压成一字宽", async ({ page }) => {
   // 这一行里同时有 `flex-shrink: 0` 的精灵与两个 `Size::Lg` 按钮。文字块曾写 `flex-1`
   // （`basis: 0%`）+ `min-w-0`，可以被压到 0 宽 —— flex 认为「放得下」，`flex-wrap`
   // 不触发，中文就逐字竖排成一列（390px 下实测 1 字宽、标题高 20 多行）。
@@ -447,6 +447,83 @@ test("H2 窄屏宽表：表格按住最小宽度横滚，不把列压成一字�
   expect(width).toBeGreaterThanOrEqual(600);
 });
 
+test("H3 顶栏一排控件等高：站标 / 波段键 / 搜索 / 设置 / HUD 顶边与底边对齐", async ({ page }) => {
+  // 像素风顶栏里的控件都带 2px 墨框，差一档高度一眼就看得出。此前是三种高度并存
+  // （站标与右侧按钮 40px 顶到行边、波段键 36px、HUD 32px）。判据用几何而不是类名：
+  // 同一排的顶边 / 底边必须一致；桌面档（≥1280）与窄屏档各测一次，两档高度本来就不同。
+  await page.addInitScript(() => {
+    if (window !== window.top) return;
+    localStorage.setItem("ui:uiStyle", "pixel");
+  });
+  for (const [width, expected] of [
+    [1440, 36],
+    [390, 40],
+  ] as const) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/");
+    const nav = page.locator("[data-nav]");
+    await expect(nav).toBeVisible();
+    const boxes = await nav.evaluate((el) => {
+      const pick = (sel: string) =>
+        [...el.querySelectorAll<HTMLElement>(sel)].filter((n) => n.offsetWidth > 0);
+      return [
+        el.querySelector<HTMLElement>('a[href="/"]')!,
+        ...pick(".pxl-band-key"),
+        ...pick(".ml-auto [data-slot='button']"),
+        pick('[data-slot="hud"]')[0]!.parentElement!,
+      ]
+        .filter(Boolean)
+        .map((n) => {
+          const r = n.getBoundingClientRect();
+          return { top: Math.round(r.top), bottom: Math.round(r.bottom), h: Math.round(r.height) };
+        });
+    });
+    expect(boxes.length).toBeGreaterThan(2);
+    const tops = new Set(boxes.map((b) => b.top));
+    const bottoms = new Set(boxes.map((b) => b.bottom));
+    expect([...tops], `@${width} 顶边不齐：${JSON.stringify(boxes)}`).toHaveLength(1);
+    expect([...bottoms], `@${width} 底边不齐：${JSON.stringify(boxes)}`).toHaveLength(1);
+    expect(boxes[0]!.h, `@${width} 控件高度不是 ${expected}px：${JSON.stringify(boxes)}`).toBe(expected);
+  }
+});
+
+test("H4 首页：三列模块卡片与「今日学习队列」之间有间距", async ({ page }) => {
+  // 首页把 `PageContainer` 的 `space-y-6` 关成了 `space-y-0`（各块自己写 `mt-6` 分段）。
+  // 模块卡片行与下方功能卡片区当初漏了 `mt-6`，两块上下墨框直接贴在一起（2026-11-14 修）。
+  // 判据用容器几何而不是卡片：卡片带 `reveal` 入场位移（`translateY(8px)`），量它会量到动到一半的位置。
+  await page.addInitScript(() => {
+    if (window !== window.top) return;
+    localStorage.setItem("ui:uiStyle", "pixel");
+    localStorage.setItem("theme", "light");
+  });
+  // 「今日学习队列」只在有复习项时渲染：预置一条到期错题，让它真的出现在版式里。
+  const records = bankQuestions("A").slice(0, 3).map((q) => mistakeRecord(q));
+  await page.addInitScript((book) => {
+    if (window !== window.top) return;
+    if (!localStorage.getItem("mistake-book")) localStorage.setItem("mistake-book", book);
+  }, JSON.stringify({ records }));
+  for (const width of [1280, 1000, 390] as const) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto("/");
+    await expect(page.getByText("今日学习队列")).toBeVisible({ timeout: 30_000 });
+    // 量容器几何；入场动效落定前读数可能偏，所以用 `poll` 等到满足（真的没间距会超时失败），不写固定等待。
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const stack = [...document.querySelectorAll<HTMLElement>("div")].find(
+              (d) => /(^|\s)space-y-6(\s|$)/.test(d.className) && d.querySelector(".pxl-card"),
+            );
+            const row = stack?.previousElementSibling as HTMLElement | null;
+            if (!stack || !row) return -1;
+            return Math.round(stack.getBoundingClientRect().top - row.getBoundingClientRect().bottom);
+          }),
+        { message: `@${width} 模块卡片与下方卡片区之间没有间距` },
+      )
+      .toBeGreaterThanOrEqual(16);
+  }
+});
+
 test("I1 表单语义：aria-describedby 不留空属性、不悬空，也不指向别的表单行的说明", async ({ page }) => {
   // `Field` 靠 context 把说明 / 错误节点的 id 下发给控件。context 若写在组件体里（而不是 `Provider`），
   // 后一个 `Field` 会覆盖前一个、排在 `Field` 之后的独立控件还会读到前一行的 id —— 都是读屏才听得出来的错。
@@ -474,4 +551,65 @@ test("I1 表单语义：aria-describedby 不留空属性、不悬空，也不指
     });
     expect(bad, `${url} 的 aria-describedby 有问题`).toEqual([]);
   }
+});
+
+test("H5 首页知识频谱：每根柱的点击目标不小于 24px（320 / 360 / 390）", async ({ page }) => {
+  // WCAG 2.5.8：10 根柱挤一行时，320px 下每列只剩约 20px；窄屏改成 5 列两行后每根都 >= 24px。
+  await page.addInitScript(() => {
+    if (window !== window.top) return;
+    localStorage.setItem("ui:uiStyle", "pixel");
+  });
+  for (const width of [320, 360, 390] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    const bars = page.locator("a.pxl-spectrum-bar");
+    await expect(bars).toHaveCount(10);
+    const sizes = await bars.evaluateAll((els) =>
+      els.map((el) => {
+        const r = el.getBoundingClientRect();
+        return { w: Math.round(r.width), h: Math.round(r.height) };
+      }),
+    );
+    for (const s of sizes) {
+      expect(s.w >= 24 && s.h >= 24, `@${width} 频谱柱 ${JSON.stringify(s)} 小于 24px`).toBe(true);
+    }
+  }
+});
+
+test("H6 成绩弹窗：设了呼号才有「显示我的呼号」开关，且默认不勾选", async ({ page }) => {
+  // 导出的成绩图是要发给别人的，呼号能反查到个人信息：不能默认印上去（`docs/ui/decisions.md` §11.6）。
+  const submit = async () => {
+    await page.getByRole("button", { name: "交卷", exact: true }).first().click();
+    await page.getByRole("dialog", { name: "确认交卷？" }).getByRole("button", { name: "确认交卷" }).click();
+    return page.getByRole("dialog", { name: "成绩" });
+  };
+  await page.addInitScript(() => {
+    if (window !== window.top) return;
+    localStorage.setItem("ui:uiStyle", "pixel");
+    localStorage.setItem(
+      "station-info",
+      JSON.stringify({ callsign: "BG4XXX", operator: "", gridsquare: "", rig: "", antenna: "" }),
+    );
+  });
+  await page.goto("/exam");
+  await expect(page.getByText(/第 1 \/ 40 题/).first()).toBeVisible();
+  const result = await submit();
+  const toggle = result.getByRole("checkbox", { name: /显示我的呼号/ });
+  await expect(toggle).toHaveAttribute("aria-checked", "false");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-checked", "true");
+});
+
+test("H7 成绩弹窗：没设呼号时没有「显示我的呼号」开关", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (window !== window.top) return;
+    localStorage.setItem("ui:uiStyle", "pixel");
+  });
+  await page.goto("/exam");
+  await expect(page.getByText(/第 1 \/ 40 题/).first()).toBeVisible();
+  await page.getByRole("button", { name: "交卷", exact: true }).first().click();
+  await page.getByRole("dialog", { name: "确认交卷？" }).getByRole("button", { name: "确认交卷" }).click();
+  const result = page.getByRole("dialog", { name: "成绩" });
+  await expect(result).toBeVisible();
+  await expect(result.getByRole("checkbox", { name: /显示我的呼号/ })).toHaveCount(0);
 });

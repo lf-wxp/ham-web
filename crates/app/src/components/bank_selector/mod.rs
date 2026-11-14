@@ -13,8 +13,8 @@ use crate::data::{self, VersionStatus};
 use crate::i18n::{bank_class, t, tf};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
-  BadgeVariant, Button, Label, RadioGroup, RadioGroupItem, Select, SelectItem, Size, Tooltip,
-  Variant, badge_class, push_success,
+  BadgeVariant, Button, Chip, ChipGroup, Select, SelectItem, Size, Tooltip, Variant, badge_class,
+  push_success,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -391,36 +391,30 @@ pub fn QuestionBankSelector(
             {error_block}
           </div>
 
+          // 题库类别是一排波段键（`docs/ui/pixel.md` §3.4）；选中题库的说明写在键下面一行。
           <div class="space-y-2">
-            <div class="text-sm text-muted-foreground">{move || t("exam.select-a-bank")}</div>
-            <RadioGroup
-              class="flex flex-wrap gap-x-6 gap-y-2"
+            <span class="pxl-label block text-xs text-muted-foreground">{move || t("home.band-bank")}</span>
+            <ChipGroup
               value=bank_value
               on_change=on_bank
+              aria_label=Signal::derive(move || t("exam.select-a-bank"))
               disabled=Signal::derive(move || disabled.get() || available_banks.with(Vec::is_empty))
             >
               {move || {
-                let info = selected_data.get();
                 available_banks
                   .get()
                   .into_iter()
-                  .map(|bank| {
-                    let id = format!("bank-{bank}");
-                    let desc = info.as_ref().map(|v| v.version.banks.get(bank).description.clone());
-                    view! {
-                      <div class="flex items-center gap-2">
-                        <RadioGroupItem id=id.clone() value=bank.as_str() />
-                        // flex-col 覆盖 Label 默认 flex-row（cn 冲突组），题号与描述纵向排列且不换行
-                        <Label r#for=id class=Signal::derive(|| "flex-col items-start gap-0.5".to_owned())>
-                          <span class="whitespace-nowrap">{move || bank_class(bank.as_str())}</span>
-                          {desc.map(|d| view! { <div class="text-xs text-muted-foreground">{d}</div> })}
-                        </Label>
-                      </div>
-                    }
-                  })
+                  .map(|bank| view! { <Chip value=bank.as_str()>{move || bank_class(bank.as_str())}</Chip> })
                   .collect_view()
               }}
-            </RadioGroup>
+            </ChipGroup>
+            {move || {
+              selected_data
+                .get()
+                .map(|v| v.version.banks.get(selected_bank.get()).description.clone())
+                .filter(|d| !d.is_empty())
+                .map(|d| view! { <p class="text-xs text-muted-foreground">{d}</p> })
+            }}
             {move || {
               (available_banks.with(Vec::is_empty) && selected_version.with(Option::is_some))
                 .then(|| {

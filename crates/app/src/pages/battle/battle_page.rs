@@ -189,8 +189,13 @@ pub fn BattlePage() -> impl IntoView {
   });
 
   let stage = move || {
-    let sprite = meta.with(|m| m.as_ref().map_or("mon_noise", |m| m.sprite));
-    view! { <BattleStage battle=run.battle enemy_name=enemy_name enemy_sprite=sprite hit=run.hit /> }
+    let (sprite, qrm) = meta.with(|m| {
+      m.as_ref().map_or(
+        ("mon_noise", ham_web_core::rig_panel::QrmKind::Garble),
+        |m| (m.sprite, m.qrm),
+      )
+    });
+    view! { <BattleStage battle=run.battle enemy_name=enemy_name enemy_sprite=sprite qrm=qrm hit=run.hit /> }
   };
 
   let fighting = move || {

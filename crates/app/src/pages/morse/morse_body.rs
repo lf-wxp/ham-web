@@ -11,7 +11,7 @@ use crate::i18n::{t, tf};
 use crate::morse_audio::play_morse_timed_with;
 use crate::morse_settings::use_morse_settings;
 use crate::ui::{
-  Button, Size, Slider, Stat, Tabs, TabsList, TabsPanel, TabsTrigger, Tooltip, Variant,
+  Button, Knob, Size, Stat, Tabs, TabsList, TabsPanel, TabsTrigger, Tooltip, Variant,
 };
 
 use super::abbrev_quiz::AbbrevQuiz;
@@ -62,34 +62,32 @@ pub(super) fn MorseBody() -> impl IntoView {
 
     <section class=crate::kit::card_class()>
       <div class="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
-        <div class="flex items-center gap-2">
-          <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("morse.tone")}</span>
-          <Slider
-            value=Signal::derive(move || f64::from(settings.settings.get().tone_hz))
-            on_change=Callback::new(move |v: f64| settings.set_tone(v as u32))
-            min=300.0
-            max=1200.0
-            step=10.0
-            aria_label=Signal::derive(move || t("morse.play-tone"))
-            aria_valuetext=Signal::derive(move || format!("{} Hz", settings.settings.get().tone_hz))
-            class="w-32"
-          />
-          <span class="w-14 text-xs tabular-nums text-muted-foreground">{move || format!("{} Hz", settings.settings.get().tone_hz)}</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="whitespace-nowrap text-xs text-muted-foreground">{move || t("morse.volume-label")}</span>
-          <Slider
-            value=Signal::derive(move || (f64::from(settings.settings.get().volume) * 100.0).round())
-            on_change=Callback::new(move |v: f64| settings.set_volume(v as f32 / 100.0))
-            min=0.0
-            max=100.0
-            step=1.0
-            aria_label=Signal::derive(move || t("morse.volume"))
-            aria_valuetext=Signal::derive(move || format!("{:.0}%", settings.settings.get().volume * 100.0))
-            class="w-32"
-          />
-          <span class="w-14 text-xs tabular-nums text-muted-foreground">{move || format!("{:.0}%", settings.settings.get().volume * 100.0)}</span>
-        </div>
+        <Knob
+          value=Signal::derive(move || f64::from(settings.settings.get().tone_hz))
+          on_change=Callback::new(move |v: f64| settings.set_tone(v as u32))
+          min=300.0
+          max=1200.0
+          step=10.0
+          label=Signal::derive(move || t("morse.tone"))
+          aria_label=Signal::derive(move || t("morse.play-tone"))
+          readout=Signal::derive(move || settings.settings.get().tone_hz.to_string())
+          unit="Hz"
+          aria_valuetext=Signal::derive(move || format!("{} Hz", settings.settings.get().tone_hz))
+          class="w-32"
+        />
+        <Knob
+          value=Signal::derive(move || (f64::from(settings.settings.get().volume) * 100.0).round())
+          on_change=Callback::new(move |v: f64| settings.set_volume(v as f32 / 100.0))
+          min=0.0
+          max=100.0
+          step=1.0
+          label=Signal::derive(move || t("morse.volume-label"))
+          aria_label=Signal::derive(move || t("morse.volume"))
+          readout=Signal::derive(move || format!("{:.0}", settings.settings.get().volume * 100.0))
+          unit="%"
+          aria_valuetext=Signal::derive(move || format!("{:.0}%", settings.settings.get().volume * 100.0))
+          class="w-32"
+        />
         <Button
           variant=Variant::Outline
           size=Size::Sm

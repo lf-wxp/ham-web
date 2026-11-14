@@ -18,15 +18,19 @@ use crate::i18n::t;
 use crate::icons::{Icon, IconKind};
 use crate::util::now_ms;
 
+use super::led::{Led, LedState, LedTone};
+
 /// Toast 类别（决定图标、强调色与停留时长）。定义与入队规则在 core（带单测）。
 pub use ham_web_core::toast_queue::ToastKind;
 
-/// 类别对应的（图标色, 左侧色带）。
-const fn kind_accent(kind: ToastKind) -> (&'static str, &'static str) {
+/// 像素风里类别对应的（指示灯, 左侧色带, 形状字符）：灯的四个意思见 `docs/ui/pixel.md` §2 硬规则 15。
+/// 形状字符是灯旁边的第二个通道（✓ / ✗ / i）：只靠灯色与色带，色觉异常的用户分不出成功与出错
+/// （WCAG 1.4.1）。字符只是装饰（`aria-hidden`）—— 类别另由 `data-kind` 与正文说明。
+const fn kind_accent(kind: ToastKind) -> (LedTone, &'static str, &'static str) {
   match kind {
-    ToastKind::Success => ("text-win-text", "border-l-win"),
-    ToastKind::Error => ("text-hp-text", "border-l-destructive"),
-    ToastKind::Info => ("text-primary", "border-l-primary"),
+    ToastKind::Success => (LedTone::Rx, "border-l-win", "✓"),
+    ToastKind::Error => (LedTone::Tx, "border-l-destructive", "✗"),
+    ToastKind::Info => (LedTone::Info, "border-l-primary", "i"),
   }
 }
 
@@ -246,7 +250,7 @@ pub fn ToastRoot() -> impl IntoView {
         ToastKind::Error => IconKind::XCircle,
         ToastKind::Info => IconKind::AlertCircle,
       };
-      let (accent, band) = kind_accent(m.kind);
+      let (lamp, band, glyph) = kind_accent(m.kind);
       // 现代风：胶囊式浮层（左侧不画 4px 色条，改用图标着色 + 细描边）。
       let modern = crate::kit::is_modern_at_mount();
       let kind_key = match m.kind {
@@ -287,12 +291,21 @@ pub fn ToastRoot() -> impl IntoView {
             )
           }
         >
-          <Icon kind=icon class=if modern {
-            "md-toast-icon".to_owned()
+          // 像素风是「电报条」：类型由同色指示灯 + 形状字符表达（成功绿 ✓、出错红 ✗、提示蓝 i），不画图标。
+          {if modern {
+            view! { <Icon kind=icon class="md-toast-icon" /> }.into_any()
           } else {
-            format!("size-6 shrink-0 {accent}")
-          } />
-          <div class="min-w-0 flex-1 text-sm">
+            view! {
+              <span class="flex shrink-0 items-center gap-1.5">
+                <Led tone=lamp state=LedState::On />
+                <span class="pxl-label w-3 text-center text-xs" aria-hidden="true">{glyph}</span>
+              </span>
+            }
+              .into_any()
+          }}
+          // 正文单独挂 `data-slot`：像素风在它前面还有一枚装饰字符（`aria-hidden`），
+          // 断言文案的一方要取正文节点，别把装饰算进 textContent。
+          <div class="min-w-0 flex-1 text-sm" data-slot="toast-text">
             {m.text.clone()}
             {(m.count > 1)
               .then(|| view! { <span class="ml-1 tabular-nums text-muted-foreground">{format!("×{}", m.count)}</span> })}

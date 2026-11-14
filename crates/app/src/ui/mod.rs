@@ -26,6 +26,7 @@
 //! | [`Switch`] | `<input type="checkbox">`（切换即生效的设置） | 对应 Radix Switch |
 //! | [`RadioGroup`] + [`RadioGroupItem`] | `<input type="radio">` | 对应 Radix RadioGroup |
 //! | [`Slider`] | `<input type="range">` | 轨道 / 滑块自绘，进度用 CSS 变量 |
+//! | [`Knob`] | `<input type="range">`（面板上的调谐量：音调 / 音量 / 增益） | 像素风是旋钮（`role="slider"`），现代风渲染同参数的 [`Slider`] |
 //! | [`ChipGroup`] + [`Chip`] | 手写的分段选择胶囊 | 互斥选择，比 [`RadioGroup`] 紧凑，适合工具条 |
 //! | [`ChipToggle`] | 手写的筛选 chip 开关 | `aria-pressed` 语义，允许一个都不选 |
 //! | [`Tabs`] + [`TabsList`] / [`TabsTrigger`] / [`TabsPanel`] | 手写 `role="tablist"` + `if` 藏显面板 | **视图切换**（下面换一块）；筛选用 [`ChipGroup`] |
@@ -107,13 +108,16 @@ mod file_drop_zone;
 mod file_input;
 mod input;
 pub(crate) mod intl;
+mod knob;
 mod label;
+mod led;
 mod mobile_nav_drawer;
 mod number_field;
 mod pagination;
 pub(crate) mod popover;
 mod progress;
 mod radio;
+mod readout;
 mod scrollbar;
 mod select;
 mod separator;
@@ -140,12 +144,15 @@ pub use field::{Field, ValidateOn};
 pub use file_drop_zone::FileDropZone;
 pub use file_input::FileInput;
 pub use input::{Input, InputType};
+pub use knob::Knob;
 pub use label::Label;
+pub use led::{Led, LedState, LedTone};
 pub use mobile_nav_drawer::MobileNavDrawer;
 pub use number_field::{NumberField, NumberKind};
 pub use pagination::Pagination;
 pub use progress::Progress;
 pub use radio::{RadioGroup, RadioGroupItem};
+pub use readout::{Readout, ReadoutTone};
 pub use scrollbar::ScrollBar;
 pub use select::{Select, SelectGroup, SelectItem};
 pub use separator::Separator;

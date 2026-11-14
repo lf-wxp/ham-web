@@ -95,6 +95,8 @@
      「比 320 宽、比 sm 窄」的中间态（导航内边距、两列切三列）。新增中间态请加在这里，
      页面里不要写 `min-[400px]:` 这类任意值（`ui_check` ㉒ 已拦）。 */
   --breakpoint-xs: 400px;
+  /* 360px：手机顶栏的站名在这一档才放得下（320px 时让位给搜索 / 设置 / HUD / 菜单）。 */
+  --breakpoint-2xs: 360px;
 
   /* 零圆角：`rounded-*` 全部归零（视图里已在 2026-10-13 清干净，这里仍是兜底）。
      `rounded-full` / 裸 `rounded` 是字面量，由 surfaces.css 的全局规则兜底；
@@ -219,6 +221,40 @@
   /* 入场位移基准：取 4 的倍数，保证落点落在像素格上。 */
   --reveal-shift: 8px;
 
+  /* ---------- 屏幕层（电台前面板的屏幕） ----------
+     亮色是反射式液晶（本方案卡片色混主色的浅底 + 墨色段码），暗色是背光屏（`.dark` 里覆盖成青色荧光）：
+     白天看液晶、夜里开背光（decisions.md §11.6）。只放读数与短状态，只坐在面板（L1 / L2）上（docs/ui/pixel.md §2 硬规则 14）。
+     这一份就是 color_scheme.rs 用经典方案的亮色种子派生出来的值；其余方案的两套都写在 schemes.css。
+     状态色 hot / alarm / ok 不随方案变（`DISPLAY_STATUS_LCD`，暗色是 `DISPLAY_STATUS`），只写在这里；
+     单测与 `pixel-schemes` 审计保证它们落在每个方案的屏幕底上都 >= 4.5。 */
+  --display-bg: #e7dfcd;
+  --display-fg: #1a1c2c;
+  /* 点亮格 / 频谱格：液晶上「变深一点」，不是实心黑。 */
+  --display-lit: color-mix(in srgb, var(--display-bg) 58%, var(--display-fg));
+  --display-ghost: #d2ccbd;
+  --display-dim: #5e5e62;
+  /* 液晶不画扫描线（浅底上那层线只会显脏）；内边框从屏幕底算。 */
+  --display-scan: transparent;
+  --display-rim: color-mix(in srgb, var(--display-bg) 75%, var(--foreground));
+  /* 屏幕外框：亮色下取「屏幕底再深一档」，不用纸面的纯黑墨框 —— 浅灰屏配 2px 近黑框像贴上去的补丁。
+     仍要够 3:1（WCAG 1.4.11 的部件边界），所以只压到刚好过线的位置。 */
+  --display-edge: #797675;
+  --display-hot: #754500;
+  --display-alarm: #932937;
+  --display-ok: #1a5b31;
+
+  /* 指示灯：只有四个意思（硬规则 15），直接指向既有状态色，不新增色相。
+     `-hi` 是灯面左上角那一格高光；灭灯是一块暗色灯罩，明暗通用。 */
+  --led-rx: var(--pxl-win);
+  --led-rx-hi: var(--pxl-win-hi);
+  --led-tx: var(--pxl-hp);
+  --led-tx-hi: var(--pxl-hp-hi);
+  --led-warn: var(--pxl-gold);
+  --led-warn-hi: #f4f4f4;
+  --led-info: var(--pxl-xp);
+  --led-info-hi: var(--pxl-xp-hi);
+  --led-off: #333c57;
+
   /* ---------- 亮色：旧纸张 / 掌机屏 ---------- */
   /* 中立别名 → 像素取值（现代风在 `legacy-utilities.css` 里覆盖这 8 个名字）。 */
   --hp-fill: var(--pxl-hp);
@@ -297,6 +333,23 @@
 
 /* ---------- 暗色：夜空 / 深蓝掌机 ---------- */
 .dark {
+  /* 屏幕层：背光屏（青色荧光，Sweetie-16 的 #73eff7）。hot / alarm / ok 与 color_scheme::DISPLAY_STATUS 同值。
+     屏幕底比卡片（#262b45）暗一层、色相不变 —— 像面板上嵌着的一块玻璃；与卡片同色时屏幕整块消失，
+     比卡片暗太多（旧的 #1a1c2c 对卡片 1.55）又像挖了个洞（`color_scheme::BACKLIGHT_CARD_RANGE`）。 */
+  --display-bg: #151d2d;
+  --display-fg: #73eff7;
+  /* 背光屏上点亮就是读数色本身（与亮色共用一条 color-mix，少一份逐方案值）。 */
+  --display-lit: var(--display-fg);
+  --display-ghost: #22364d;
+  --display-dim: #94b0c2;
+  --display-scan: color-mix(in srgb, var(--display-bg) 70%, #000);
+  --display-rim: color-mix(in srgb, var(--display-bg) 86%, var(--foreground));
+  /* 暗色背光屏的外框仍是墨框：深底上那圈亮线就是机身的轮廓。 */
+  --display-edge: var(--pxl-ink);
+  --display-hot: #ffcd75;
+  --display-alarm: #ef7d57;
+  --display-ok: #a7f070;
+
   /* 墨框：对本方案所有会被它描边的暗色表面（背景 / 卡片 / 弹层 / 按钮底 / 输入底）都 >= 3:1
      （WCAG 1.4.11）。旧值 #566c86 对卡片只有 2.6、对按钮底 2.0，暗色的「框」薄得只剩内高光在撑。
      其余 10 套方案的同一变量由 `color_scheme.rs` 按 `MIN_EDGE` 派生，单测守着。 */

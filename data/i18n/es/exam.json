@@ -420,6 +420,36 @@
   "exam.group-deleted": "Grupo eliminado",
   "exam.keys-pick": "para elegir",
   "exam.keys-turn": "para pasar",
-  "exam.signal-report": "informe de señal",
-  "exam.unknown-error-detail": "Error desconocido: {}"
+  "exam.signal-report": "Informe de señal",
+  "exam.unknown-error-detail": "Error desconocido: {}",
+  "exam.qsl-no-call": "Indicativo sin configurar",
+  "exam.qsl-call-hidden": "Indicativo reservado",
+  "exam.qsl-share-call": "Mostrar mi indicativo ({}) en la imagen compartida",
+  "exam.qsl-confirming": "Confirmando QSO con el simulacro de Clase {}",
+  "exam.on-air-code": "ON AIR",
+  "exam.on-air-state": "Examen en curso",
+  "exam.clock-calm": "REMAIN",
+  "exam.clock-warn": "LOW",
+  "exam.clock-danger": "FINAL",
+  "exam.channel-memory": "Canales de memoria · Hoja de respuestas",
+  "exam.qsl-code": "QSL",
+  "exam.qsl-head": "Examen simulado · {}",
+  "exam.qsl-to": "TO",
+  "exam.qsl-call": "CALL",
+  "exam.qsl-date": "DATE",
+  "exam.qsl-utc": "UTC",
+  "exam.qsl-to-value": "Sala de examen simulado",
+  "exam.qsl-score": "Puntuación {} / {}",
+  "exam.qsl-pass": "PASS",
+  "exam.qsl-fail": "FAIL",
+  "exam.qsl-reading-at": "Aprobado {}/{} = S9; justo en la línea — se lee {}.",
+  "exam.qsl-reading-above": {
+    "one": "Aprobado {}/{} = S9; {} pregunta por encima — se lee {}.",
+    "other": "Aprobado {}/{} = S9; {} preguntas por encima — se lee {}."
+  },
+  "exam.qsl-reading-below": {
+    "one": "Aprobado {}/{} = S9; falta {} pregunta — se lee {}.",
+    "other": "Aprobado {}/{} = S9; faltan {} preguntas — se lee {}."
+  },
+  "exam.qsl-signoff": "TNX QSO · 73"
 }

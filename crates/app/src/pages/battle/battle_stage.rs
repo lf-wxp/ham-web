@@ -1,12 +1,15 @@
-//! 战斗舞台：玩家与怪物的精灵、血条、连击与受击特效。
+//! 抗干扰舞台：本台与干扰信号、电量与干扰强度、连对与受击特效。
+//!
+//! 本文件是现代风的矢量怪物与血条，同时是舞台的**派发点**：像素风的两块屏幕（干扰频谱 + 电量格）
+//! 在 `pixel_battle_stage.rs`（`docs/ui/decisions.md` §11.6）。
 
+use ham_web_core::rig_panel::QrmKind;
 use ham_web_core::rpg::{Battle, CRIT_COMBO, PLAYER_MAX_HP};
 use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
-use crate::icons::PixelSprite;
-use crate::ui::Progress;
 
+use super::pixel_battle_stage::PixelBattleStage;
 use super::run::{HitFx, HitKind};
 
 /// 舞台。
@@ -17,33 +20,26 @@ use super::run::{HitFx, HitKind};
 pub(super) fn BattleStage(
   #[prop(into)] battle: Signal<Battle>,
   #[prop(into)] enemy_name: Signal<String>,
+  /// 现代风的矢量怪物。
   enemy_sprite: &'static str,
+  /// 像素风的干扰形象。
+  qrm: QrmKind,
   #[prop(into)] hit: Signal<HitFx>,
 ) -> impl IntoView {
-  let modern = crate::kit::is_modern_at_mount();
+  if !crate::kit::is_modern_at_mount() {
+    return view! { <PixelBattleStage battle=battle enemy_name=enemy_name qrm=qrm hit=hit /> }
+      .into_any();
+  }
   let player_hp = Signal::derive(move || i64::from(battle.get().hp_percent()));
   let enemy_hp = Signal::derive(move || i64::from(battle.get().enemy_percent()));
 
   // 玩家侧：受击时抖动并飘 `-1`。
   let player = move || {
-    let fx = hit.get();
-    let hurt = fx.kind == HitKind::Hurt;
-    // 两套皮肤各有一份「受击 / 待机」动效，类名不共用。
-    let fx_class = if modern {
-      if hurt { "md-mon-hit" } else { "md-mon-idle" }
-    } else if hurt {
-      "pxl-shake"
-    } else {
-      "pxl-bob"
-    };
+    let hurt = hit.get().kind == HitKind::Hurt;
     view! {
       <div class="relative">
-        <div class=fx_class>
-          {if modern {
-            view! { <crate::kit_modern::ModernMonster sprite="hero" size=84 /> }.into_any()
-          } else {
-            view! { <PixelSprite name="hero" scale=5 /> }.into_any()
-          }}
+        <div class=if hurt { "md-mon-hit" } else { "md-mon-idle" }>
+          <crate::kit_modern::ModernMonster sprite="hero" size=84 />
         </div>
         {hurt
           .then(|| {
@@ -62,32 +58,14 @@ pub(super) fn BattleStage(
 
   // 怪物侧：命中时闪白并飘出伤害；经验飘在上方，两行错开不重叠。
   let enemy = move || {
-    let fx = hit.get();
-    let strike = match fx.kind {
+    let strike = match hit.get().kind {
       HitKind::Strike { damage, xp } => Some((damage, xp)),
       _ => None,
     };
-    let fx_class = if modern {
-      if strike.is_some() {
-        "md-mon-hit"
-      } else {
-        "md-mon-idle"
-      }
-    } else if strike.is_some() {
-      "pxl-flash"
-    } else {
-      "pxl-bob"
-    };
     view! {
       <div class="relative">
-        <div class=fx_class>
-          // 精灵与外层动效类同按挂载快照派发：只让其中一个跟着信号走，切皮肤时就会出现
-          // 「新皮肤的精灵套着旧皮肤的动效类」（整个舞台的外壳、血条也都是快照）。
-          {if modern {
-            view! { <crate::kit_modern::ModernMonster sprite=enemy_sprite size=84 /> }.into_any()
-          } else {
-            view! { <PixelSprite name=enemy_sprite scale=5 /> }.into_any()
-          }}
+        <div class=if strike.is_some() { "md-mon-hit" } else { "md-mon-idle" }>
+          <crate::kit_modern::ModernMonster sprite=enemy_sprite size=84 />
         </div>
         {strike
           .map(|(damage, xp)| {
@@ -114,49 +92,24 @@ pub(super) fn BattleStage(
     let c = battle.get().combo;
     (c >= 2).then(|| {
       view! {
-        <div class=if modern { "md-combo" } else { "pxl-blink pxl-label text-xs text-gold-text" }>
-          {tf("rpg.combo", &[&c.to_string()])}
-        </div>
-        {(c >= CRIT_COMBO)
-          .then(|| {
-            view! {
-              <div class=if modern { "md-combo-crit" } else { "pxl-label text-xs" }>
-                {t("rpg.crit")}
-              </div>
-            }
-          })}
+        <div class="md-combo">{tf("rpg.combo", &[&c.to_string()])}</div>
+        {(c >= CRIT_COMBO).then(|| view! { <div class="md-combo-crit">{t("rpg.crit")}</div> })}
       }
     })
   };
 
   view! {
-    <section
-      class=if modern { "md-battle-stage" } else { "pxl-window p-3 sm:p-4" }
-      aria-label=move || t("rpg.battle")
-    >
+    <section class="md-battle-stage" aria-label=move || t("rpg.battle")>
       <div class="grid grid-cols-[1fr_auto_1fr] items-end gap-2 sm:gap-4">
         <div class="flex min-w-0 flex-col items-start gap-2">
           <div class="pxl-label text-xs">{move || t("rpg.you")}</div>
           {player}
           {move || {
-            if modern {
-              let pct = player_hp.get().clamp(0, 100);
-              let low = pct <= 30;
-              view! {
-                <div class="md-hp-track" data-low=low.to_string()>
-                  <span class="md-hp-fill" style=format!("width: {pct}%")></span>
-                </div>
-              }
-                .into_any()
-            } else {
-              view! {
-                <Progress
-                  value=player_hp
-                  label=Signal::derive(move || t("rpg.hp-label"))
-                  class="pxl-bar-win pxl-bar-danger"
-                />
-              }
-                .into_any()
+            let pct = player_hp.get().clamp(0, 100);
+            view! {
+              <div class="md-hp-track" data-low=(pct <= 30).to_string()>
+                <span class="md-hp-fill" style=format!("width: {pct}%")></span>
+              </div>
             }
           }}
           <div class="text-xs tabular-nums text-muted-foreground">
@@ -165,7 +118,7 @@ pub(super) fn BattleStage(
         </div>
 
         <div class="flex min-w-12 flex-col items-center gap-1 pb-16 text-center" aria-live="polite">
-          <span class=if modern { "md-vs" } else { "pxl-title text-sm" } aria-hidden="true">"VS"</span>
+          <span class="md-vs" aria-hidden="true">"VS"</span>
           {combo}
         </div>
 
@@ -173,23 +126,11 @@ pub(super) fn BattleStage(
           <div class="pxl-label max-w-full truncate text-xs">{move || enemy_name.get()}</div>
           {enemy}
           {move || {
-            if modern {
-              let pct = enemy_hp.get().clamp(0, 100);
-              view! {
-                <div class="md-hp-track md-hp-enemy">
-                  <span class="md-hp-fill" style=format!("width: {pct}%")></span>
-                </div>
-              }
-                .into_any()
-            } else {
-              view! {
-                <Progress
-                  value=enemy_hp
-                  label=Signal::derive(move || t("rpg.enemy-hp-label"))
-                  class="pxl-bar-hp"
-                />
-              }
-                .into_any()
+            let pct = enemy_hp.get().clamp(0, 100);
+            view! {
+              <div class="md-hp-track md-hp-enemy">
+                <span class="md-hp-fill" style=format!("width: {pct}%")></span>
+              </div>
             }
           }}
           <div class="text-xs tabular-nums text-muted-foreground">
@@ -202,4 +143,5 @@ pub(super) fn BattleStage(
       </div>
     </section>
   }
+  .into_any()
 }

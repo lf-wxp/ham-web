@@ -2,6 +2,7 @@
 
 use ham_web_core::categories::top_of;
 use ham_web_core::mistake_book::MistakeRecord;
+use ham_web_core::rig_panel::{QrmKind, qrm_kind};
 use ham_web_core::rpg::{
   STAGE_SIZE, StageState, next_stage, pick_stage, stage_id, stage_pool, stage_states, stages_of,
 };
@@ -40,6 +41,8 @@ pub(super) enum Enemy {
 pub(super) struct Meta {
   pub(super) enemy: Enemy,
   pub(super) sprite: &'static str,
+  /// 像素风的干扰形象（与精灵同一个分类来源）。
+  pub(super) qrm: QrmKind,
   /// 闯关模式下写星级用的关卡 id；复仇模式没有。
   pub(super) stage_id: Option<String>,
   /// 闯关模式下的下一关 `(key, 名称)`。
@@ -115,6 +118,7 @@ async fn build_stage(key: &str, version: Option<&str>, bank: Bank) -> Result<Dec
     meta: Meta {
       enemy: Enemy::Stage(stage.name),
       sprite: monster_sprite(key),
+      qrm: qrm_kind(key),
       stage_id: Some(stage_id(bank.as_str(), key)),
       next: next_stage(&stages, key).map(|s| (s.key.to_owned(), s.name)),
     },
@@ -148,7 +152,9 @@ fn build_revenge(key: Option<&str>, topic: Option<&str>) -> Result<Deck, DeckErr
     }
   };
   let first = records.first().ok_or(DeckError::Empty)?;
-  let sprite = monster_sprite(top_key(first).unwrap_or_default());
+  let first_key = top_key(first).unwrap_or_default();
+  let sprite = monster_sprite(first_key);
+  let qrm = qrm_kind(first_key);
   let enemy = if records.len() == 1 {
     Enemy::Single
   } else {
@@ -159,6 +165,7 @@ fn build_revenge(key: Option<&str>, topic: Option<&str>) -> Result<Deck, DeckErr
     meta: Meta {
       enemy,
       sprite,
+      qrm,
       stage_id: None,
       next: None,
     },

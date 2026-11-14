@@ -11,7 +11,6 @@
   "common.a-licence-is-valid": "La licencia es válida como máximo 5 años; solicita la renovación 30 días hábiles antes del vencimiento.",
   "common.a-typical-pass-lasts": "Un paso típico dura unos 10–15 minutos, por lo que conviene combinarlo con",
   "common.accuracy": "Precisión {}%",
-  "common.accuracy-with-result": "Precisión {}% · {}",
   "common.adjust": "Ajustar →",
   "common.after-connecting-read-azimuth": "Tras conectar, lee azimut/elevación e introduce un azimut objetivo para girar a distancia",
   "common.after-parsing-check-the": "Tras analizarlo, consulta el «ranking de rareza DXCC» para valorar si merece perseguirlo, o registra el indicativo en el diario.",
@@ -485,5 +484,8 @@
   "common.error-invalid-bank-config": "Configuración del banco de preguntas no válida: {}",
   "common.error-load-questions": "No se pudieron cargar los datos de las preguntas: {}",
   "common.error-invalid-questions": "Datos de las preguntas no válidos: {}",
-  "common.check-this-field": "Revisa este campo (formato o rango)"
+  "common.check-this-field": "Revisa este campo (formato o rango)",
+  "common.no-signal": "Sin lectura",
+  "common.switch-on": "ON",
+  "common.switch-off": "OFF"
 }

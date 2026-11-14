@@ -50,7 +50,7 @@ pub(in crate::pages::backup) fn AccountPanel(
   });
 
   view! {
-    // 现代风是页面里的一张 `.md-panel`；像素风保持原来的 inset 块（卡片内嵌，版式冻结）。
+    // 现代风是页面里的一张 `.md-panel`；像素风是卡片里内嵌的 inset 块。
     <div
       class=crate::kit::inset_panel_class("space-y-3")
       data-testid="account-panel"

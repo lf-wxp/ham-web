@@ -97,7 +97,7 @@ pub fn DiyProjectsPage() -> impl IntoView {
   });
 
   // 参考链接是列表里的行内链接：行高 16px 时点击目标低于 WCAG 2.5.8 的 24×24，
-  // 现代风用 `py-1` 把可点区做到 24；像素风的版式冻结，保持原样。
+  // 现代风用 `py-1` 把可点区做到 24；像素风目前保持原样。
   let link_class = if crate::kit::is_modern_at_mount() {
     "md-link inline-block py-1"
   } else {

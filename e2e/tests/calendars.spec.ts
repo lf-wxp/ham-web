@@ -103,9 +103,9 @@ test("竞赛日历：按下一届开始时间排序，加入倒计时，并链�
   }
 
   // 加入提醒：写进倒计时列表（标题带「竞赛：」前缀），再去 /countdown 能看到。
-  // 成功提示走全局 Toast（`role="status"`）。
+  // 成功提示走全局 Toast；取正文节点（像素风在正文前还有一枚 `aria-hidden` 的装饰字符）。
   await page.getByRole("button", { name: "加入提醒" }).first().click();
-  const toast = page.getByRole("status");
+  const toast = page.getByRole("status").locator('[data-slot="toast-text"]');
   await expect(toast).toContainText(/^已把「.+」加入倒计时提醒$/);
   const name = (await toast.innerText()).match(/已把「(.+)」/)![1];
   const stored = await page.evaluate(() => localStorage.getItem("countdowns") ?? "");

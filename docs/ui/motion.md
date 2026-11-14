@@ -20,8 +20,8 @@
 ### 1. 只动 `transform` 与 `opacity`
 
 禁止用 `left` / `top` / `width` / `height` / `margin` 等布局属性做逐帧动画——它们每帧都会触发 layout / reflow。
-像素主题另外允许 `background-position`（骨架 / 扫掠高光这类只重绘的动效，见 `pxl-scroll-x`），其余仍只走
-`transform` / `opacity`。
+像素主题另外允许 `background-position`（只重绘、不排版的底纹位移），其余仍只走
+`transform` / `translate` / `opacity`。
 
 ```css
 /* 反例：left 触发 reflow */
@@ -36,7 +36,8 @@
 }
 ```
 
-项目实例：`.spectrum-bar` 的扫掠高光从 `left` 动画改成了 `background-position-x`（`pxl-scroll-x`，`surfaces.css`）。
+项目实例：换台读条 `.route-sweep` 的指针用独立的 `translate`（`calc(100vw - 4px)`，不依赖自身宽度）扫过，
+整条只动 `opacity` 淡出（`motion.css`）。
 像素动效一律配 `steps()` 逐格跳，不用平滑插值 —— 「跳格」既省合成器时间，也是风格本身。
 
 ### 2. 复用节奏 token
@@ -79,11 +80,11 @@ transition: transform var(--motion-fast) var(--ease-out-expo);
 
 - 暗色星点轮换 `.dark body::after`（`pxl-twinkle`，6s，`steps(1, end)`）；
 - 骨架屏两档明暗跳动 `.skeleton`（`skeleton-sweep`，1.2s）；
-- 频谱条扫掠高光 `.spectrum-bar`（`pxl-scroll-x`，1.6s，`steps(16, end)`）；
+- 指示灯闪烁 `.pxl-led[data-state="blink"]`（`pxl-blink`，1s，`steps(1, end)`；8–16px 的小方块，降级时变常亮）；
 - 精灵 / 图标上下浮动 `.pxl-bob`、`.pxl-bob-sprite`（1s）。
 
-背景网点（`body::before`）与首页网格（`.hero-grid`）是静态底纹，不耗动画预算。
-路由切换的「读条」`.route-sweep` 是纯装饰，降级时直接 `display: none`（见 `motion.css`）。
+背景网点（`body::before`）、首页网格（`.hero-grid`）与屏幕扫描线（`.pxl-display`）是静态底纹，不耗动画预算。
+路由切换的「换台」读条 `.route-sweep` 是纯装饰，降级时直接 `display: none`（见 `motion.css`）。
 
 ### 5. 闪烁频率 ≤ 3 次/秒
 
@@ -148,6 +149,25 @@ transition: transform var(--motion-fast) var(--ease-out-expo);
 
 这些规则各由哪条用例守着，见 `docs/engineering/performance.md` §2；测量口径、已评估后决定不做的项与常驻缓存清单也在那里。
 真机上要看实际耗时，在地址后加 `?perf=1` 打开测量面板（`src/perf_hud.rs`）。
+
+### 8. 电台动作（像素风）
+
+像素风的反馈只用下面八个动作（`docs/ui/pixel.md` §2 硬规则 17）：缓动一律 `steps()`，时长取 `--motion-*`。
+新动效先在这张表里找，找不到再加一行，不另起名字。
+
+| 动作 | 用在哪 | 时长 / 帧 | 降级（减少动效 / 像素动效关） | 落点 |
+|---|---|---|---|---|
+| 按压 | 按键、导航波段键 | `--motion-instant` · `steps(2)` | 保留（本来就是瞬时） | `.pxl-btn` 的 `translate` |
+| 换台 | 路由切换 | 溶解 `--motion-normal`；桌面档顶栏刻度尺的指针走到新分组 `--motion-normal` · `steps(8)`，手机档是顶端刻度条上扫过的指针 `--motion-slow` · `steps(8)` | 溶解归零；指针直接到位，顶端刻度条不渲染 | `.motion-page`、`.pxl-scale-track`（`TuningScale`）、`.route-sweep`（手机档） |
+| 闪烁 | 只给指示灯（8–16px） | 1s 周期 · `steps(1)` | 常亮 | `.pxl-led[data-state="blink"]` |
+| 调谐 | 推子、旋钮 | 不补间：每次输入直接跳到新的一格（刻度灯 / 指针吸附在格上） | 同左 | `ui::Knob`（`pxl-knob-*`）、`.ui-slider` 的刻度与红指针 |
+| 扫描 | 站内搜索 | 输入未落定时刻度尺指针来回扫（1.6s · `steps(16)`）+ 标题栏琥珀灯闪 + 读数屏「SCAN」 | 指针停在左端、灯常亮，文字照常 | `.pxl-scale[data-sweep]`、`components/search_dialog.rs` |
+| 锁定 | 答对、搜索命中 | 题卡内沿亮两下绿：`--motion-normal` · `steps(1)` 四段；练习读数屏的 LOCK 灯亮；搜索命中转绿灯 + 「LOCK」+ 七段条数，指针停在第一组 | 不播，结论在判分文字与绿灯 | `.pxl-window[data-signal="lock"]::after`、`PracticeRig` |
+| 干扰（QRM） | 答错；抗干扰 / 路线上的干扰形象 | 答错：网点噪声跳三帧（`--motion-normal`）+ 练习读数屏的 QRM 灯亮；干扰频谱：两帧轮换 0.6s · `steps(1)`，滚出视口暂停 | 答错不播；频谱停在一帧静图 | `.pxl-window[data-signal="qrm"]::after`、`.pxl-qrm-frame` |
+| 衰减 | S 表峰值保持回落 | 每格 80ms · `steps(1)` | 不画峰值保持 | 峰值保持已有（`SignalMeter` 的 `peak`，琥珀格），但它是真实记录的最好成绩、不会「回落」，所以没有衰减动画 |
+
+闪烁频率守规则 5（≤ 3 次 / 秒）；**循环闪烁只给指示灯**，读数、文字与大面积色块永远不闪（倒计时告急时闪的是旁边的灯，不是数字）。
+判分的「锁定」是一次性的两下 2px 内框，干扰频谱的两帧轮换是形状在变、不是明暗闪 —— 都不算例外。
 
 ## 三、token 速查
 

@@ -8,7 +8,7 @@ use super::section_shell::{SectionShell, section_text};
 ///
 /// 与 [`crate::components::common::ConceptsSection`] 的区别是**纵向单行排列**而非两列网格
 /// —— 步骤有先后顺序，两列网格会让阅读顺序错乱。现代风额外带序号角标（`<ol>`），
-/// 像素风因版式冻结保持无序号。
+/// 像素风保持无序号。
 #[component]
 pub fn StepsSection(
   #[prop(into)] title: String,
