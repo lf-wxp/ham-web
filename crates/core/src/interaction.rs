@@ -282,6 +282,7 @@ impl PageSignature {
         "/packet",
         "/repeater",
         "/repeater-build",
+        "/ui-spec",
       ],
       Self::Board => &[
         "/progress",

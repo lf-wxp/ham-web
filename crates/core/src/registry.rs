@@ -1357,6 +1357,14 @@ pub const MODULES: &[Module] = &[
     backend: false,
   },
   Module {
+    path: "/ui-spec",
+    href: None,
+    title: "UI 设计规范",
+    icon: "layout-grid",
+    group: Some(GROUP_ADVANCED),
+    backend: false,
+  },
+  Module {
     path: "/tools",
     href: None,
     title: "小工具",

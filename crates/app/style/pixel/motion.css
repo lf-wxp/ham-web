@@ -465,7 +465,11 @@
   animation: pxl-blink 0.6s steps(1, end) infinite;
 }
 
-[data-offscreen] .pxl-qrm-frame {
+/* 只点名无限循环的那几条：干扰频谱两帧轮换、指示灯闪烁、刻度扫描。
+   其余一次性的入场 / 过渡不暂停，否则滚回来时会卡在动画中间帧。 */
+[data-offscreen] .pxl-qrm-frame,
+[data-offscreen] .pxl-led[data-state="blink"],
+[data-offscreen] .pxl-scale[data-sweep] .pxl-scale-track {
   animation-play-state: paused;
 }
 

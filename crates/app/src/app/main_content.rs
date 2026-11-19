@@ -32,7 +32,7 @@ use crate::pages::{
   RttyDecoderPage, RttyPage, SafetyPage, SatOperationPage, SatellitesPage, SdrMapPage, SdrPage,
   SdrWaterfallPage, SignalIdPage, SmithPage, SolarPage, SpecialPropPage, SpectrumAdminPage,
   SstvDecoderPage, SstvPage, StatsPage, StudyCalendarPage, SwlPage, ThorDecoderPage, ToolsPage,
-  TransceiverPage, VnaPage, VnaReaderPage, WaveformLabPage, WeatherSatPage, WeeklyPage,
+  TransceiverPage, UiSpecPage, VnaPage, VnaReaderPage, WaveformLabPage, WeatherSatPage, WeeklyPage,
   WefaxDecoderPage, WinlinkPage, WsprDecoderPage, WsprPage, ZoneMapPage,
 };
 
@@ -285,6 +285,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/developers") view=DevelopersPage />
         <Route path=path!("/learning-resources") view=LearningResourcesPage />
         <Route path=path!("/community") view=CommunityPage />
+        <Route path=path!("/ui-spec") view=UiSpecPage />
               </Routes>
             }
           };

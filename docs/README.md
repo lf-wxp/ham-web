@@ -11,6 +11,7 @@
 | 要做什么 | 去哪 |
 | --- | --- |
 | 改界面 | 先确定是哪套皮肤：现代风 → [`ui/modern.md`](ui/modern.md)，像素风 → [`ui/pixel.md`](ui/pixel.md)；找组件与 prop → [`crates/app/src/ui/README.md`](../crates/app/src/ui/README.md) |
+| 看 UI 设计规范的可交互示例 | 站内 `/ui-spec`（导航「进阶 · 关于」）；七个板块覆盖组件、图标、色板、排版、动效与状态。现代风下是占位页，规范待补 |
 | 页面骨架 / 内容宽度 / 页头 | [`ui/pixel.md`](ui/pixel.md) §4 · [`ui/modern.md`](ui/modern.md) §3 |
 | 取值：圆角 / 间距 / 字号 / 状态色 | [`ui/modern.md`](ui/modern.md) §2 |
 | 弹层怎么进出场、控件的悬停 / 禁用 / 错误态 | [`ui/motion.md`](ui/motion.md) §五、§六 |

@@ -61,6 +61,7 @@ transition: transform var(--motion-fast) var(--ease-out-expo);
   `style/modern/kit.css`「首屏主视觉」一节里**只点名**无限循环的那几条（`[data-offscreen] .md-aurora { animation-play-state: paused }` 这样）。
   **不要写 `[data-offscreen] *`**：它连一次性的入场动画与过渡一起暂停，它们停在起始帧、`finished` 永远不兑现
   （e2e 的 `settleFrames` 会等到超时）。首屏 / 功能卡里新加循环动画，要把它的选择器补进这条规则；
+  像素风对应的清单在 `style/pixel/motion.css`（干扰频谱两帧、指示灯闪烁、刻度扫描三条），同样只点名无限循环的那几条；
 - **逐帧的 JS / canvas 循环**（`kit_modern/spectrum.rs`）：滚出视口时**停掉自调度**，回到视口由观察器再挂上。
   只「不画」、每帧仍排下一帧不算停；
 - **定时器里读本地存储**（倒计时每秒检查）：走 `util::storage::get_json_shared`（按原串缓存解析结果），不要每秒重新解析。
