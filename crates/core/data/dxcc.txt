@@ -1,8 +1,8 @@
 # 由 `ham-web-tools dxcc` 从 https://www.country-files.com/bigcty/cty.csv 生成，请勿手工编辑。
-# 摘要: sha256:9fbbb6686cdb962126a20619cfcad770822762ae762d638b82b31e5fea22dfe9
-# 抓取: 2026-11-10T01:52:18Z
-# 上游版本: VER20261107
-# Last-Modified: Sat, 07 Nov 2026 15:48:50 GMT
+# 摘要: sha256:5a5f13a673a2d42ffcd1d9eb298e6aa773463a3a224a6e67ad1f924bc7cf32bc
+# 抓取: 2026-11-22T02:00:32Z
+# 上游版本: VER20261114
+# Last-Modified: Sat, 14 Nov 2026 14:19:56 GMT
 246|1A|Sov Mil Order of Malta|EU|15|28|41.90|12.43|1A
 247|1S|Spratly Islands|AS|26|50|9.88|114.23|9M0 BM9S BN9S BO9S BP9S BQ9S BU9S BV9S BW9S BX9S
 260|3A|Monaco|EU|14|27|43.73|7.4|3A
