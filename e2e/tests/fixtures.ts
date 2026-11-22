@@ -35,6 +35,19 @@ export function ignoredLoadError(text: string, url: string, base: string): boole
   return new URL(url).pathname.startsWith("/api/");
 }
 
+/**
+ * 这条 `pageerror` 是不是第三方脚本自己抛的。
+ *
+ * 与 `ignoredLoadError` 同一个口径的另一半：页面里的 AdSense 这类脚本在无外网环境里不但加载失败，
+ * 还会把自己的 unhandled rejection 抛成 `Uncaught (in promise) undefined`（消息里没有任何线索，
+ * 只有堆栈指向 `pagead2.googlesyndication.com`）—— 断言「页面没崩」的用例会被它随机带红。
+ * 判据：堆栈里出现的地址**全是**外域。堆栈里一个地址都没有时不算第三方（宁可暴露出来）。
+ */
+export function fromThirdParty(stack: string, base: string): boolean {
+  const urls = stack.match(/https?:\/\/[^\s)]+/g) ?? [];
+  return urls.length > 0 && urls.every((u) => !u.startsWith(base));
+}
+
 // 练习 / 考试首次进入会自动弹出快捷键说明，默认标记为已看过，避免遮挡后续操作
 export const test = base.extend<{ helpSeen: boolean }>({
   helpSeen: [true, { option: true }],

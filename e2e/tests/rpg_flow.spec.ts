@@ -203,7 +203,7 @@ test.describe("通用设置", () => {
 test.describe("手机底部 Tab", () => {
   test.use({ viewport: { width: 375, height: 740 } });
 
-  test("首页 / 练习 / 考试 / 错题 / 更多：可跳转，顶栏不撑出屏幕", async ({ page }) => {
+  test("首页 / 练习 / 考试 / 错题：可跳转，顶栏不撑出屏幕", async ({ page }) => {
     await page.goto("/");
     const tabs = page.getByRole("navigation", { name: "底部导航" });
     await expect(tabs).toBeVisible();
@@ -215,8 +215,21 @@ test.describe("手机底部 Tab", () => {
     await tabs.getByRole("link", { name: "练习" }).click();
     await expect(page).toHaveURL(/\/map/);
     await expect(tabs.getByRole("link", { name: "练习" })).toHaveAttribute("aria-current", "page");
+  });
 
-    await tabs.getByRole("button", { name: "更多" }).click();
+  test("全站菜单只有一个入口：底部 Tab 里没有「更多」，顶栏汉堡是唯一的开关", async ({ page }) => {
+    await page.goto("/map");
+    const tabs = page.getByRole("navigation", { name: "底部导航" });
+    await expect(tabs).toBeVisible();
+    // 底栏里只有 4 个跳转项，没有会开面板的按钮。
+    await expect(tabs.getByRole("button")).toHaveCount(0);
+    await expect(tabs.getByRole("link")).toHaveCount(4);
+
+    // 全站「打开菜单」按钮只有一个，且就在顶栏里。
+    const openers = page.getByRole("button", { name: "打开菜单" });
+    await expect(openers).toHaveCount(1);
+    await expect(page.locator("[data-nav]").getByRole("button", { name: "打开菜单" })).toBeVisible();
+    await openers.click();
     await expect(page.getByRole("navigation", { name: "移动端导航" })).toBeVisible();
   });
 
@@ -226,6 +239,38 @@ test.describe("手机底部 Tab", () => {
     await expect(stem(page)).toBeVisible();
     await expect(page.getByRole("navigation", { name: "底部导航" })).toBeHidden();
   });
+
+  // 平板起顶栏里已经有三个分组下拉，手机那套（汉堡 + 底部 Tab）必须整条退场：
+  // 两套同时出现就是同一批入口两个开关，也是这次要消掉的那种重复。
+  for (const [width, phone] of [
+    [767, true],
+    [768, false],
+    [1024, false],
+  ] as const) {
+    test(`顶栏导航在 ${width}px 是${phone ? "手机" : "平板"}形态`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/");
+      const nav = page.locator("[data-nav]");
+      const tabs = page.getByRole("navigation", { name: "底部导航" });
+      const keys = nav.locator(".pxl-band-key:visible");
+      if (phone) {
+        await expect(nav.getByRole("button", { name: "打开菜单" })).toBeVisible();
+        await expect(tabs).toBeVisible();
+        // 三个键在 `<md` 是 `display: none`，DOM 里仍在（`toHaveCount` 会把它们算进去）。
+        await expect(keys).toHaveCount(0);
+      } else {
+        // 平板档：三个分组下拉常驻，汉堡与底部 Tab 一起退场。
+        await expect(keys).toHaveCount(3);
+        await expect(nav.getByRole("button", { name: "打开菜单" })).toHaveCount(0);
+        await expect(tabs).toBeHidden();
+      }
+      // 两种情况都不许把顶栏撑出屏幕（西语最长，768px 下只剩几十像素余量）。
+      const over = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(over, "文档横向溢出").toBeLessThanOrEqual(0);
+    });
+  }
 });
 
 // 现有的 `i18n_layout.spec.ts` 只在 1280px 量：手机与平板宽度下顶栏（品牌 + 搜索 + 设置 + HUD + 汉堡）

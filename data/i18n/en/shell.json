@@ -262,5 +262,9 @@
   "shell.scan-code-idle": "STBY",
   "shell.scan-code-busy": "SCAN",
   "shell.scan-unit": "HITS",
-  "shell.scan-site": "Scan the site"
+  "shell.scan-site": "Scan the site",
+  "shell.group-item-count": {
+    "one": "{} item",
+    "other": "{} items"
+  }
 }

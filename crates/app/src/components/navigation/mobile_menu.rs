@@ -1,14 +1,15 @@
 //! 移动端菜单的开合状态。
 //!
-//! 顶栏（`Navigation`）与底部 Tab（`MobileTabs` 的「更多」）都要开关同一个面板，
-//! 所以状态提升到这里、由 `App` 注入一次，而不是各自持有一份。
+//! 菜单只有一个开关（顶栏右端的汉堡按钮，见 `nav_bar.rs`）；状态仍提升到这里、由 `App`
+//! 注入一次，是因为**底部 Tab 也要读它**：底栏跳转时要顺手把可能开着面板收起来，
+//! 否则新页面已经画出来，面板还盖在上面。
 
 use leptos::prelude::*;
 
 /// 移动端导航面板的 DOM id。
 ///
-/// 顶栏开关与底部 Tab 的「更多」都靠 `aria-controls` 指向它 —— 面板是条件渲染的，
-/// 两处开关必须和 `nav_bar.rs` 里那个 `id` 用同一份常量，改一处不会漏另一处。
+/// 顶栏汉堡的 `aria-controls` 指向它 —— 面板是条件渲染的，开关与 `nav_bar.rs` 里那个 `id`
+/// 必须用同一份常量，改一处不会漏另一处。
 pub const MOBILE_NAV_PANEL_ID: &str = "nav-mobile-panel";
 
 #[derive(Clone, Copy)]

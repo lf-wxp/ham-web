@@ -262,5 +262,6 @@
   "shell.scan-code-idle": "STBY",
   "shell.scan-code-busy": "SCAN",
   "shell.scan-unit": "条",
-  "shell.scan-site": "扫描全站"
+  "shell.scan-site": "扫描全站",
+  "shell.group-item-count": "共 {} 项"
 }

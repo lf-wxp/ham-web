@@ -3,6 +3,8 @@
 use leptos::prelude::*;
 use wasm_bindgen::JsCast;
 
+use crate::cn::cn;
+
 use super::shared::TabsCtx;
 
 /// 一组触发项里当前处于「可用」状态的那些（禁用项不参与方向键移动）。
@@ -78,6 +80,9 @@ pub fn TabsTrigger(
   #[prop(into)]
   value: String,
   #[prop(optional, into)] disabled: Signal<bool>,
+  /// 追加到 `.pxl-tab` / `.md-tab` 上的类名（等分宽度、横滑不换行这类版式差异）。
+  #[prop(optional, into)]
+  class: String,
   children: Children,
 ) -> impl IntoView {
   let ctx = expect_context::<TabsCtx>();
@@ -85,6 +90,12 @@ pub fn TabsTrigger(
   let panel_id = ctx.panel_id(&value);
   let v = StoredValue::new(value);
   let active = move || ctx.is_active(&v);
+  let base = if crate::kit::is_modern_at_mount() {
+    "md-tab"
+  } else {
+    "pxl-tab"
+  };
+  let class = cn(&[base, &class]);
   view! {
     <button
       type="button"
@@ -97,7 +108,7 @@ pub fn TabsTrigger(
       // roving tabindex：非激活项不进 Tab 序，组内靠方向键。
       tabindex=move || if active() { "0" } else { "-1" }
       disabled=move || disabled.get()
-      class=if crate::kit::is_modern_at_mount() { "md-tab" } else { "pxl-tab" }
+      class=class
       on:click=move |_| {
         if !disabled.get_untracked() && !active() {
           ctx.on_change.run(v.get_value());

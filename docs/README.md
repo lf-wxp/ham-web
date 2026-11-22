@@ -37,6 +37,7 @@
 | [`data/`](#data--数据与内容) | 外部数据、题库、解析、文案怎么维护 | 规范 + 流程 |
 | [`reference/`](#reference--速查) | 有哪些路由 / 存储 key / 接口 / 功能 | 速查（多由代码派生，工具对账） |
 | [`domain/`](#domain--领域功能) | 某个领域功能的协议、口径与验收 | 规范 |
+| [`design/`](#design--设计稿) | 独立设计板（S9 CONSOLE）长什么样、怎么改、怎么出图 | 设计板规范 + 设计提案（**不约束产品代码**） |
 
 ### ui / 界面（两套皮肤）
 
@@ -93,6 +94,16 @@
 | [`domain/antenna-coverage.md`](domain/antenna-coverage.md) | 天线方向增益 × DXCC 实体的口径与实现（口径是「方向增益」，不是覆盖 / 可达） | 动天线分析 |
 | [`domain/pwa.md`](domain/pwa.md) | PWA：Service Worker 生成、缓存策略、更新提示、图标 | 动离线 / 缓存 |
 | [`domain/account-sync.md`](domain/account-sync.md) | 在线账号与同步通道：与自定义远端怎么共存、基线与冲突、SQLite 表结构、安全、Docker 持久化 | 动同步 / 账号 / 部署数据卷 |
+
+### design / 设计稿
+
+独立于产品代码的设计板：约束的是设计板本身，**不是** `crates/app/` 的现行写法（产品代码以 `ui/` 为准，两套取值不要互相套用）。
+
+| 文档 | 内容 | 何时看 |
+| --- | --- | --- |
+| [`design/s9-console-design-spec.md`](design/s9-console-design-spec.md) | **S9 CONSOLE 设计规范**：适用范围与冲突裁决、样式约定、组件工厂、命名、可访问性、验收清单与自检脚本 | 改设计板 / 把设计板落成界面代码 |
+| [`design/s9-console-design.html`](design/s9-console-design.html) | 可运行的设计板（30 张），也是上面规范的事实源 | 看效果 / 对照取值 |
+| [`design/s9-console-ui-prompts.md`](design/s9-console-ui-prompts.md) | 生图提示词交付稿：只表达视觉意图，取值以设计板为准 | 用图像模型出稿 |
 
 另有：[`ROADMAP.md`](../ROADMAP.md)（还没做的、刻意不做的、新增内容必须过的门禁）、[`images/`](images/)（README 截图）。
 

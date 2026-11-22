@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import {
   bankQuestions,
   expect,
+  fromThirdParty,
   mistakeRecord,
   option,
   seedLog,
@@ -594,11 +595,24 @@ test.describe("响应：补齐循环必须能结束", () => {
     });
   }
 
-  test("页面隐藏时打开题库浏览，题库还在路上：不递归、不报错，数据到了照常出题", async ({ page }) => {
+  /**
+   * 收集页面上的 `pageerror`，返回可断言的数组。
+   *
+   * 只收本站的：第三方脚本（AdSense）在无外网环境里会抛自己的 unhandled rejection
+   * （`Uncaught (in promise) undefined`，消息里没有线索、堆栈指向外域），与本组要验的补齐循环无关。
+   */
+  function siteErrors(page: Page, baseURL: string | undefined) {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => {
+      if (!fromThirdParty(e.stack ?? "", baseURL ?? "")) errors.push(e.message);
+    });
+    return errors;
+  }
+
+  test("页面隐藏时打开题库浏览，题库还在路上：不递归、不报错，数据到了照常出题", async ({ page, baseURL }) => {
     await seedModern(page);
     await pretendHidden(page);
-    const errors: string[] = [];
-    page.on("pageerror", (e) => errors.push(e.message));
+    const errors = siteErrors(page, baseURL);
     await page.route(/\/questions\/[ABC]\.json/, async (route) => {
       await new Promise((r) => setTimeout(r, 1500));
       await route.continue();
@@ -610,11 +624,10 @@ test.describe("响应：补齐循环必须能结束", () => {
     expect(errors, "补齐循环不该把栈撑爆").toEqual([]);
   });
 
-  test("页面隐藏时打开空的错题本：不递归、不报错", async ({ page }) => {
+  test("页面隐藏时打开空的错题本：不递归、不报错", async ({ page, baseURL }) => {
     await seedModern(page);
     await pretendHidden(page);
-    const errors: string[] = [];
-    page.on("pageerror", (e) => errors.push(e.message));
+    const errors = siteErrors(page, baseURL);
     await page.goto("/mistakes");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     // 给循环几帧的时间：旧写法在这里同步递归到栈溢出。
@@ -784,10 +797,14 @@ for (const style of ["pixel", "modern"] as const) {
     await expect
       .poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--fixed-bottom-h").trim()))
       .toMatch(/^\d+px$/);
-    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    // 每轮判定前都重新滚到底：底栏的实测高度在字体落位 / 文案折行后会变，页面底部留白
+    // 跟着变、文档随之变长 —— 只滚一次的话，几帧后就不在底部了（并发跑整批时字体更慢，
+    // 每次都能踩到），量到的余量于是越来越负。判据是「**滚到底时**最后一行不被压住」，
+    // 所以把「到底」当成每轮的前置条件；留白真的不够时，重滚之后余量照样为负，检测力不变。
     await expect
       .poll(() =>
         page.evaluate(() => {
+          window.scrollTo(0, document.documentElement.scrollHeight);
           const bar = [...document.querySelectorAll<HTMLElement>("[data-fixed-bottom]")].find(
             (el) => el.offsetHeight > 0,
           );

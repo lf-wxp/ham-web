@@ -7,7 +7,8 @@ test("主导航：展开考试中心下拉可跳转到错题集", async ({ page 
 
   await nav.getByRole("button", { name: "考试中心" }).click();
   // 考试中心已改为分组下拉（练题 / 模拟考 / 复习 / 学习数据 / 闯关），错题集在「复习」里。
-  await nav.getByRole("button", { name: "复习", exact: true }).click();
+  // 分组按钮的无障碍名是「复习 共 4 项」（角标由 `sr-only` 的同义说法给出），用前缀匹配。
+  await nav.getByRole("button", { name: /^复习/ }).click();
   await nav.locator('a[href="/mistakes"]').click();
   await expect(page).toHaveURL(/\/mistakes$/);
   await expect(page.getByRole("heading", { level: 1, name: "错题集" })).toBeVisible();
@@ -27,7 +28,8 @@ test("主导航：考试中心五个分组各自列出全部条目，共 18 项"
   };
   let total = 0;
   for (const [group, hrefs] of Object.entries(expected)) {
-    await nav.getByRole("button", { name: group, exact: true }).click();
+    // 分组按钮的名字带上条目数（「练题 共 5 项」）：用前缀匹配，别写精确串。
+    await nav.getByRole("button", { name: new RegExp(`^${group}`) }).click();
     const links = nav.locator("#nav-exam-panel a");
     await expect(links).toHaveCount(hrefs.length);
     for (const href of hrefs) {

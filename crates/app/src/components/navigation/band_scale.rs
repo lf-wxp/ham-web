@@ -17,7 +17,11 @@ const MARKS: [(ModuleKind, u8); 3] = [
 const PARKED: u8 = 1;
 
 /// 顶栏的换台刻度：三个分组的丝印标签，指针停在当前页面所在的分组上、换分组时逐格走过去。
-/// 所在分组在导航地标与页头铭牌里都有文字。只在桌面档（`xl`）显示。
+/// 所在分组在导航地标与页头铭牌里都有文字。
+///
+/// **只在桌面档（`xl`）显示，不能提前到 `md`**：它占 24px 行高，平板档的行已经是 64px，
+/// 加上它顶栏就高过页头吸顶偏移（`PAGE_HEADER_BAR` 的 66px），规则见 `docs/ui/pixel.md` §3
+/// 「顶栏总高」。平板档没有信息损失：三个波段键自己带当前分组的 `data-active` 高亮。
 #[component]
 pub(crate) fn BandScale() -> impl IntoView {
   let location = use_location();

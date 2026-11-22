@@ -33,7 +33,7 @@ disabled / error 状态反馈因此只有一处定义。
 | `RadioGroup` + `RadioGroupItem` | `<input type="radio">`（表单里的单选，选项带文字） | `value` `on_change` `disabled` `invalid`（挂在 `radiogroup` 上，样式往下传给每个单选框） |
 | `ChipGroup` + `Chip` | 手写「分段选择」胶囊按钮（工具条上的短选项） | `value` `on_change` `disabled` |
 | `ChipToggle` | 手写「chip 开关」（筛选条上的独立开关） | `active` `on_change` `title` `disabled` |
-| `Tabs` + `TabsList` / `TabsTrigger` / `TabsPanel` | 手写 `role="tablist"` + `if` 藏显面板 / 用 `ChipGroup` 冒充视图切换 | `value` `on_change`；`TabsList` 的 `aria_label`（多组时必填）；`TabsTrigger` 的 `value`（ascii slug，同时拼 id）`disabled`；`TabsPanel` 的 `value`。面板内容第一次被切到才挂载，之后常驻、只切显隐（保留状态）。**筛选用 `ChipGroup`，不要用 Tabs** |
+| `Tabs` + `TabsList` / `TabsTrigger` / `TabsPanel` | 手写 `role="tablist"` + `if` 藏显面板 / 用 `ChipGroup` 冒充视图切换 | `value` `on_change`；`TabsList` 的 `aria_label`（多组时必填）；`TabsTrigger` 的 `value`（ascii slug，同时拼 id）`disabled` `class`（等分宽度、横滑不换行这类版式差异）；`TabsPanel` 的 `value` `class`。面板内容第一次被切到才挂载，之后常驻、只切显隐（保留状态）。**筛选用 `ChipGroup`，不要用 Tabs** |
 | `Slider` | `<input type="range">` | `value` `on_change` `min` `max` `step` `aria_valuetext` |
 | `Knob` | `<input type="range">`（面板上的调谐量：音调 / 音量 / 增益） | `value` `on_change` `min` `max` `step` `label`（可见标签）`aria_label` `readout` + `unit`（读数屏）`aria_valuetext`（读屏 + 现代风的可见数值）`class`（只给现代风的 `Slider`）；像素风是 80px 旋钮 + 读数屏（拖动 / 有焦点时滚轮 / 方向键，`role="slider"`），现代风是「标签 + `Slider` + 数值」一行 |
 | `Led` | — | 指示灯：`tone`（`LedTone::Rx` / `Tx` / `Warn` / `Info`）`state`（`LedState::Off` / `On` / `Blink`）`small`；`aria-hidden`，旁边必须有文字 |

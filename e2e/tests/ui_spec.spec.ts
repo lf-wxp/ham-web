@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { bankQuestions, expect, mistakeRecord, option, test } from "./fixtures";
+import { bankQuestions, expect, mistakeRecord, option, settleFrames, test } from "./fixtures";
 
 // 界面评审整改的回归：用例标题里的编号对应 `docs/README.md` §2 的硬规则，改动时能对上。
 
@@ -127,21 +127,65 @@ test("E2 首页模块卡：条目是各自的真链接", async ({ page }) => {
   await expect(page).toHaveURL(/\/mistakes$/);
 });
 
-test("E3 移动菜单：三大段可折叠，当前页所在的段默认展开", async ({ page }) => {
+test("E3 移动菜单：三段做成标签栏，默认停当前页所在的那段", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/practice");
   await page.locator("[data-nav]").getByRole("button", { name: /菜单|导航/ }).first().click();
   const nav = page.getByRole("navigation", { name: "移动端导航" });
   await expect(nav).toBeVisible();
-  const sections = nav.locator("details");
-  await expect(sections).toHaveCount(3);
-  // /practice 属于考试中心：只有这一段展开。
-  await expect(sections.nth(0)).toHaveAttribute("open", "");
-  await expect(sections.nth(1)).not.toHaveAttribute("open", "");
-  // 点开知识库：里面的入口出现。
-  await sections.nth(1).locator("summary").click();
-  await expect(sections.nth(1)).toHaveAttribute("open", "");
+  // 换段不再靠折叠 / 展开（滚两屏之后段标题就看不见了）：标签栏常驻。
+  const tabs = nav.getByRole("tab");
+  await expect(tabs).toHaveCount(3);
+  // /practice 属于考试中心：打开就在这一段。
+  await expect(nav.getByRole("tab", { name: "考试中心" })).toHaveAttribute("aria-selected", "true");
+  await expect(nav.getByRole("tab", { name: "知识库" })).toHaveAttribute("aria-selected", "false");
   await expect(nav.locator('[aria-current="page"]')).toHaveCount(1);
+  // 切到知识库：面板换成知识库的条目。
+  await nav.getByRole("tab", { name: "知识库" }).click();
+  await expect(nav.getByRole("tab", { name: "知识库" })).toHaveAttribute("aria-selected", "true");
+  const panel = nav.getByRole("tabpanel").filter({ has: page.getByRole("link", { name: "术语表" }) });
+  await expect(panel).toBeVisible();
+  await expect(panel.getByRole("link", { name: "术语表" })).toBeVisible();
+  // 菜单里只有导航：全站搜索是顶栏那颗常驻图标按钮，不在面板里再摆一份。
+  await expect(nav.getByRole("button", { name: "全站搜索" })).toHaveCount(0);
+  await expect(nav.getByRole("searchbox")).toHaveCount(0);
+});
+
+test("E3b 移动菜单：面板停在底部 Tab 上沿，最后一行入口不被底栏压住", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/map");
+  await page.locator("[data-nav]").getByRole("button", { name: /菜单|导航/ }).first().click();
+  const nav = page.getByRole("navigation", { name: "移动端导航" });
+  await expect(nav).toBeVisible();
+  // 入场是位移 + 淡入（8px / `--motion-normal`）：量几何要等它播完，否则量到的是动画开始那一帧。
+  await settleFrames(page);
+  const tabs = page.getByRole("navigation", { name: "底部导航" });
+  const [panelBottom, tabsTop] = await Promise.all([
+    nav.evaluate((el) => el.getBoundingClientRect().bottom),
+    tabs.evaluate((el) => el.getBoundingClientRect().top),
+  ]);
+  // 限高扣掉的是实测的贴底栏高度（`--fixed-bottom-h`），不是某个写死的 4rem。
+  expect(panelBottom, "菜单盖住了底部 Tab").toBeLessThanOrEqual(tabsTop + 1);
+});
+
+test("E3c 移动菜单开着时拉宽过 md：菜单随之收起，转回窄屏不会自己弹出", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/map");
+  const opener = page.locator("[data-nav]").getByRole("button", { name: "打开菜单" });
+  await opener.click();
+  const panel = page.getByRole("navigation", { name: "移动端导航" });
+  await expect(panel).toBeVisible();
+
+  // 手机横屏 / 平板：汉堡与手机面板一起退场，状态也要跟着复位，而不只是被 CSS 藏起。
+  // 这里按 id 查而不是按 role：role 查询会把 `display: none` 的节点排除在外，
+  // 「面板还在 DOM 里只是被藏起」会被当成 0 个，断言就空了（也等不到状态复位就切回窄屏）。
+  const mounted = page.locator("#nav-mobile-panel");
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await expect(mounted).toHaveCount(0);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(opener).toHaveAttribute("aria-expanded", "false");
+  await expect(mounted).toHaveCount(0);
 });
 
 test("E4 底部 Tab：激活项除了字色还有顶部主色条", async ({ page }) => {
@@ -295,6 +339,37 @@ test("F5 首页卡片的标题栏元信息是响应式的：异步数据到了�
 });
 
 // 双风格运行时隔离的回归在 `dual_isolation.spec.ts`（带「等挂载 + 正向对照 + 表面必须打开」三道护栏）。
+
+test("G0 顶栏总高在每一档都等于页头吸顶偏移（吸顶时页头不被压住）", async ({ page }) => {
+  // 页头的吸顶偏移是 `PAGE_HEADER_BAR` 里的固定 66px，顶栏总高要在每一档都等于它；
+  // 规则与「为什么」见 `docs/ui/pixel.md` §3「顶栏总高」。这里只量：吸顶后页头不被顶栏压住。
+  await page.addInitScript(() => {
+    if (window !== window.top) return;
+    localStorage.setItem("ui:uiStyle", "pixel");
+  });
+  for (const width of [390, 767, 768, 900, 1024, 1279, 1280, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/glossary");
+    const nav = page.locator("[data-nav]");
+    const header = page.locator("[data-page-header]");
+    await expect(header).toBeVisible();
+    // 滚下去让页头进入吸顶位。
+    await page.evaluate(() => window.scrollTo(0, 600));
+    await expect
+      .poll(() => header.evaluate((el) => Math.round(el.getBoundingClientRect().top)), {
+        message: `@${width} 页头没有停在顶栏下沿`,
+      })
+      .toBe(66);
+    const overlap = await page.evaluate(() => {
+      const n = document.querySelector("[data-nav]")!.getBoundingClientRect();
+      const h = document.querySelector("[data-page-header]")!.getBoundingClientRect();
+      return Math.round(n.bottom - h.top);
+    });
+    // 0 = 页头紧贴顶栏；正数就是被顶栏压住（顶栏总高超过吸顶偏移）。
+    expect(overlap, `@${width} 页头被顶栏压住了 ${overlap}px`).toBeLessThanOrEqual(0);
+    await page.evaluate(() => window.scrollTo(0, 0));
+  }
+});
 
 test("G1 窄屏页头：只留标题，副标题与操作区折进「更多选项」", async ({ page }) => {
   // 页头是吸顶的，而副标题 + 操作区（题库 / 搜索 / 两枚筛选）在 390px 下折成三四行，

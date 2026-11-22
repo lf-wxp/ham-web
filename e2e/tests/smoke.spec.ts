@@ -4,6 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 import {
   AXE_DISABLED_RULES,
   expect,
+  fromThirdParty,
   ignoredLoadError,
   settleFrames,
   test,
@@ -21,11 +22,7 @@ const ignoredRequest = (url: string, base: string) =>
   !url.startsWith(base) || new URL(url).pathname.startsWith("/api/");
 
 // 第三方脚本（如 AdSense）在无外网的测试环境里会抛自己的 unhandled rejection，
-// 堆栈里全是外域地址，与本站代码无关，按与 console/网络一致的规则忽略。
-const fromThirdParty = (stack: string, base: string) => {
-  const urls = stack.match(/https?:\/\/[^\s)]+/g) ?? [];
-  return urls.length > 0 && urls.every((u) => !u.startsWith(base));
-};
+// 堆栈里全是外域地址，与本站代码无关，按与 console/网络一致的规则忽略（见 `fixtures.ts`）。
 
 // Leptos 对「在跟踪上下文之外读信号」发的告警：组件体 / 被立即调用的闭包读了订阅版信号，
 // 那块内容不会随界面风格重渲染（规则见 docs/ui/decisions.md §7）。

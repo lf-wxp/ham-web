@@ -93,6 +93,18 @@ pub const TOOL_GROUPS: &[&str] = &[
   GROUP_TOOL_TRAIN,
 ];
 
+/// 一级模块下的子分组（按导航展示顺序）：[`kind_of`] 的反向。
+///
+/// 手机菜单的三大段、桌面的三个下拉都读它，不各自再存一份分组清单。
+#[must_use]
+pub const fn groups_of(kind: ModuleKind) -> &'static [&'static str] {
+  match kind {
+    ModuleKind::Exam => EXAM_GROUPS,
+    ModuleKind::Knowledge => KNOWLEDGE_GROUPS,
+    ModuleKind::Tool => TOOL_GROUPS,
+  }
+}
+
 /// 按分组判断所属一级模块。
 #[must_use]
 pub fn kind_of(group: &str) -> ModuleKind {
@@ -1850,6 +1862,18 @@ mod tests {
     // 一级菜单名本身不是任何模块的分组,但仍归「考试中心」,与拆分前的契约一致。
     assert_eq!(kind_of(GROUP_EXAM), ModuleKind::Exam);
     assert!(in_group(GROUP_EXAM).is_empty(), "条目都应挂在子分组上");
+  }
+
+  #[test]
+  fn groups_of_is_the_inverse_of_kind_of() {
+    // 三张分组表互不相交、且各自的分组都归回自己的一级模块：
+    // 一个分组同时出现在两张表里，`kind_of` 只会认其中一个，另一边的菜单就少一组。
+    for kind in [ModuleKind::Exam, ModuleKind::Knowledge, ModuleKind::Tool] {
+      assert!(!groups_of(kind).is_empty(), "{kind:?} 没有分组");
+      for g in groups_of(kind) {
+        assert_eq!(kind_of(g), kind, "分组 {g} 在 {kind:?} 的表里却归到别处");
+      }
+    }
   }
 
   #[test]

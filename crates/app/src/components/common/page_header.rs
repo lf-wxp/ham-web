@@ -12,6 +12,9 @@ use super::band_tag::BandTag;
 /// 全站吸顶页头**只有这一份骨架**：`PageHeader` 用它，`print_page` 这类「刻意的例外」
 /// （纸宽坐标系，见 `docs/ui/pixel.md` §4）也用它 —— 偏移只在这里改一处，
 /// 不会出现组件与手写骨架各写各的、吸顶偏移漂移（见 `print_page` 曾与导航错位 2px）。
+///
+/// **66px 是顶栏在每一档的实测总高**：窄屏 64px 行 + 2px 下沿，桌面 40px 行 + 24px 刻度尺 + 2px 下沿。
+/// 改顶栏结构前先看 `docs/ui/pixel.md` §3「顶栏总高」，并跑 `ui_spec.spec.ts` 的 G0。
 pub const PAGE_HEADER_BAR: &str = "sticky top-[66px] z-20 border-b-2 border-ink bg-card";
 
 /// 窄屏折叠区外壳：`grid-rows` 0fr → 1fr 做高度过渡（与 `.ui-collapse` 同一手法，

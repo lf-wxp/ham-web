@@ -15,7 +15,7 @@ use leptos_router::hooks::use_location;
 use ham_web_core::registry;
 
 use crate::cn::cn;
-use crate::i18n::t;
+use crate::i18n::{t, tp};
 use crate::icons::{Icon, IconKind, icon_of};
 use crate::ui::{Button, Led, LedState, LedTone, Size, TextValue, Variant};
 
@@ -126,11 +126,14 @@ pub(crate) fn GroupMenu(
         // 波段键的指示灯：亮 = 当前页面在这个分组里（不只靠按钮底色区分）。
         <Led tone=LedTone::Rx state=Signal::derive(move || LedState::lit(menu_active())) small=true />
         {move || label.get()}
+        // 下拉箭头只在桌面档（`≥1280`）画：平板档（768–1279）要在一行里放下三个键 +
+        // 站标 + 右侧动作组，西语算下来只剩几十像素余量，箭头是三个键里唯一的非文字件。
+        // 「这是个下拉」由 `aria-haspopup`、面板的开合与按键按下去的样子说清。
         <Icon
           kind=IconKind::ChevronDown
           class=Signal::derive(move || {
             cn(&[
-              "size-6",
+              "hidden size-6 xl:block",
               if is_open() { "rotate-180" } else { "" },
             ])
           })
@@ -184,7 +187,6 @@ pub(crate) fn GroupMenu(
                       variant=Variant::Ghost
                       size=Size::Sm
                       class="w-full justify-start gap-2 has-[>svg]:px-2"
-                      aria_label=Signal::derive(move || t(g))
                       on_click=Callback::new(move |_| group.set(g))
                     >
                       <span class=move || {
@@ -214,7 +216,17 @@ pub(crate) fn GroupMenu(
                           },
                         ])
                       }>{move || t(g)}</span>
-                      // 数字只是概览，读屏名字用按钮的 `aria_label` 保持干净。
+                      // 条目数只是概览。**不能只靠 `aria-hidden` 把它从无障碍名里摘掉**：
+                      // axe 的 `label-content-name-mismatch` 按 DOM 可见文字比对，属性对它无效
+                      // （实测按钮文字是「练题5」、`aria-label` 是「练题」，直接判不匹配）。
+                      // 所以这里用 `sr-only` 的同义说法给读屏念「共 N 项」（en / es 按数量换词形），
+                      // 可见的角标才 `aria-hidden`。
+                      <span class="sr-only">
+                        {move || {
+                          let n = group_count(g);
+                          tp("shell.group-item-count", n, &[&n.to_string()])
+                        }}
+                      </span>
                       <span
                         class="pxl-label text-xs tabular-nums text-muted-foreground"
                         aria-hidden="true"

@@ -104,8 +104,10 @@ html[data-ui-style="pixel"] *:not([data-keep-round])::after {
   }
 
   /* 移动端底部 Tab 是固定的，会盖住页面最后一行：给页脚补一段下边距做让位。
-     答题类页面（练习 / 考试 / 回合战）自带固定操作栏、页脚已被隐藏，不受影响。 */
-  @media (max-width: 1279px) {
+     答题类页面（练习 / 考试 / 回合战）自带固定操作栏、页脚已被隐藏，不受影响。
+     断点与 `.mobile-tabs` 自己的 `md:hidden` 一致：平板起没有底栏，也就不需要让位；
+     以前写的是 1279 并一直留着这条内边距，768–1279 的页脚会多出一截空白。 */
+  @media (max-width: 767px) {
     body > footer {
       padding-bottom: calc(4rem + env(safe-area-inset-bottom));
     }

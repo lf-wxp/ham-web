@@ -201,7 +201,8 @@ test("数据备份：跨设备合并重映射影像 ID，保留本机扫描件",
   expect(data["qsl-image:1"]).toBe(a);
   expect(data["qsl-image:2"]).toBe(b);
   await page.locator("[data-nav]").getByRole("button", { name: "工具", exact: true }).click();
-  await page.locator("[data-nav]").getByRole("button", { name: "日志 · 竞赛", exact: true }).click();
+  // 分组按钮的无障碍名带条目数（「日志 · 竞赛 共 N 项」），用前缀匹配，别写精确串。
+  await page.locator("[data-nav]").getByRole("button", { name: /^日志 · 竞赛/ }).click();
   await page.locator('[data-nav] a[href="/log"]').first().click();
   await expect(page.getByRole("row").filter({ hasText: "W1AW" })).toHaveCount(1);
   await page.locator('input[placeholder="BG4XXX"]').fill("DL1AAA");

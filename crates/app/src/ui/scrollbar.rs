@@ -39,8 +39,7 @@ const MIN_THUMB: f64 = 24.0;
 /// 浮点误差容差：`scrollHeight` 与 `clientHeight` 相等时不该显示滚动条。
 const EPS: f64 = 1.0;
 
-/// 贴底固定层占掉的高度：取所有可见 `[data-fixed-bottom]` 里最高的那一条。
-///
+/// 贴底固定层占掉的高度：取所有可见 `[data-fixed-bottom]` 里最高的那一条。///
 /// 外壳上同时挂着多条候选是常态（底部 Tab / dock 常驻，答题页用 `body.no-site-footer`
 /// 把它们 `display: none` 掉、换成操作栏），所以按实测取最大：不可见的那条 `rect.height` 是 0，
 /// 自然落选。底边只允许一层（见 `docs/ui/modern.md` §3），取最大而不是求和，避免哪天两条
@@ -92,6 +91,8 @@ pub fn ScrollBar() -> impl IntoView {
   // 上一次写到根元素 `--fixed-bottom-h` 的值：量到同一个数就不再写（量得很勤：挂载、字体落位、
   // 每次尺寸变化），省掉一次样式失效；`None` = 还没写过（首次必须写，哪怕是 0）。
   let root_written = StoredValue::new(None::<f64>);
+  // 同上，`--nav-h`。
+  let nav_written = StoredValue::new(None::<f64>);
   // 拖动状态：按下时的指针 y 与当时的 `scrollY`。
   let dragging = StoredValue::new(false);
   let grab_y = StoredValue::new(0.0);
@@ -120,18 +121,26 @@ pub fn ScrollBar() -> impl IntoView {
     let bottom = bottom_inset();
     top_h.set_value(top);
     bottom_h.set_value(bottom);
-    // 同一个实测值也挂到根元素上：页面靠它给贴底固定层让位（`--fixed-bottom-h`），
-    // 不必各写一个魔法数字。底栏高度会随文案折行 / 安全区变，写死的 `pb-28` 迟早不够
-    // （实测考试页底栏 140px、页面只留 112px，最后一行答题卡被压住）。
-    if root_written.get_value() != Some(bottom)
-      && let Some(root) = document()
-        .document_element()
-        .and_then(|el| el.dyn_into::<web_sys::HtmlElement>().ok())
+    // 两个实测值都挂到根元素上，页面与菜单照它让位，不必各写一个魔法数字：
+    // - `--fixed-bottom-h`：底栏高度（贴底固定层），底栏会随文案折行 / 安全区变，
+    //   写死的 `pb-28` 迟早不够（实测考试页底栏 140px、页面只留 112px，最后一行被压住）；
+    // - `--nav-h`：吸顶导航实测高度（手机 66px、桌面两行更高），移动端菜单的限高要从
+    //   「导航下沿到贴底栏上沿」算，两处各写 64 / 66 会在换皮肤、折行时对不上。
+    if let Some(root) = document()
+      .document_element()
+      .and_then(|el| el.dyn_into::<web_sys::HtmlElement>().ok())
     {
-      let _ = root
-        .style()
-        .set_property("--fixed-bottom-h", &format!("{bottom}px"));
-      root_written.set_value(Some(bottom));
+      // 量不到导航（`top == 0`）就不写：写进去一个 `0px` 会盖掉使用方 `var(--nav-h, 66px)` 的兜底。
+      if top > 0.0 && nav_written.get_value() != Some(top) {
+        let _ = root.style().set_property("--nav-h", &format!("{top}px"));
+        nav_written.set_value(Some(top));
+      }
+      if root_written.get_value() != Some(bottom) {
+        let _ = root
+          .style()
+          .set_property("--fixed-bottom-h", &format!("{bottom}px"));
+        root_written.set_value(Some(bottom));
+      }
     }
     if let Some(host) = host.get_untracked() {
       let style = web_sys::HtmlElement::from(host).style();

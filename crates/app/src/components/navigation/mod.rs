@@ -6,10 +6,12 @@ mod group_menu;
 mod hud_badge;
 mod menu;
 mod mobile_menu;
+mod mobile_nav_panel;
 mod mobile_nav_section;
 mod mobile_tabs;
 mod nav_bar;
 mod nav_root;
+mod nav_sections;
 mod scheme_choice;
 mod settings_dialog;
 
