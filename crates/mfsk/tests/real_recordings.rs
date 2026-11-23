@@ -216,12 +216,11 @@ fn fldigi_desktop_picture_recording() {
       .enumerate()
     {
       let at = 3 * (((yr * 24.0) as usize) * 32 + (xr * 32.0) as usize);
-      for c in 0..3 {
+      for (c, &expect) in want[patch].iter().enumerate() {
         let got = i32::from(p.rgb[at + c]);
         assert!(
-          (got - want[patch][c]).abs() <= 2,
-          "{center:?}：象限 {patch} 通道 {c}：{got}，预期 {}",
-          want[patch][c]
+          (got - expect).abs() <= 2,
+          "{center:?}：象限 {patch} 通道 {c}：{got}，预期 {expect}"
         );
       }
     }
