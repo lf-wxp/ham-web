@@ -52,6 +52,7 @@ mod oscillator;
 mod parabolic_dish;
 mod path_profile;
 mod path_profile_chart;
+mod picture_tx;
 mod propagation_estimator;
 mod radiogram_generator;
 mod rain_fade;

@@ -1,12 +1,16 @@
 // 统一解码 Worker 协议：APT / SSTV / WSPR / RTTY / Olivia / DominoEX / MFSK / THOR / NAVTEX / LRPT / FT8 / Feld Hell / WEFAX / AFSK1200 共用这一份入口。
 //
 // 消息信封：
-//   入站：{ codec: "apt"|"sstv"|"wspr"|"rtty"|"olivia"|"dominoex"|"mfsk"|"thor"|"navtex"|"lrpt"|"ft8"|"hell"|"wefax"|"afsk1200", bytes: ArrayBuffer|ArrayBufferView, params?: Object }
+//   入站（解码）：{ codec: "apt"|"sstv"|"wspr"|"rtty"|"olivia"|"dominoex"|"mfsk"|"thor"|"navtex"|"lrpt"|"ft8"|"hell"|"wefax"|"afsk1200", bytes: ArrayBuffer|ArrayBufferView, params?: Object }
+//   入站（编码）：{ codec, op: "encode", params?: Object }（没有输入文件，所以没有 bytes）
 //   出站：{ ok: true, result } 或 { ok: false, error }
 //   error 是英文错误码（"no-signal:RTTY" / "not-wav" …），页面侧按码取各语言词条
 //   （见 crates/app/src/decode_worker.rs 的 localize_error）；不认识的错误原样显示。
 //
-// 各 codec 的 wasm glue 导出名统一为 `decode(bytes, params)`；
+// 各 codec 的 wasm glue 导出名统一为 `decode(bytes, params)`；支持编码的 codec 另导出
+// `encode(params)`（目前是 navtex / mfsk / thor / dominoex：这四个核心 crate 都是 GPL-3.0，发端不能链进
+// MIT 的主包，只能放在各自的 worker 里；MIT 的 Olivia / WSPR / FT8 / Feld Hell 发端直接链进主包）；
+// 没导出 `encode` 的 codec 收到编码请求回 `encode-unsupported:<codec>`。
 // params 按解码器取字段（wspr.baseHz / rtty.markHz / olivia.mode / dominoex.mode / mfsk.mode / thor.mode，缺省回退各自默认值）。
 //
 // 一个 Worker 只服务一个 codec：各胶水脚本顶层都是 `let wasm_bindgen = ...`，同一个 Worker 里
@@ -56,14 +60,16 @@ function load(codec, entry) {
   return ready;
 }
 
-// 结果里「独占整块 ArrayBuffer」的 Uint8Array（SSTV 的 rgba、LRPT 的 rgb 可达几十 MB）走
-// transfer 而不是结构化克隆。只转移独占整块的：指向 wasm 线性内存的视图转移会让整个实例失效。
+// 结果里「独占整块 ArrayBuffer」的类型化数组（SSTV 的 rgba、LRPT 的 rgb 可达几十 MB，
+// 编码结果的 Float32Array 样本同理）走 transfer 而不是结构化克隆。只转移独占整块的：
+// 指向 wasm 线性内存的视图转移会让整个实例失效。
 function transferables(result) {
   const out = [];
   if (result && typeof result === "object") {
     for (const v of Object.values(result)) {
       if (
-        v instanceof Uint8Array &&
+        ArrayBuffer.isView(v) &&
+        !(v instanceof DataView) &&
         v.byteOffset === 0 &&
         v.byteLength === v.buffer.byteLength &&
         v.buffer instanceof ArrayBuffer
@@ -88,13 +94,28 @@ let replied = false;
 self.onmessage = async (event) => {
   replied = false;
   try {
-    const { codec, bytes, params } = event.data || {};
+    const { codec, op, bytes, params } = event.data || {};
     // 用 Object.create(null) 的表：`"constructor"` / `"__proto__"` 之类不会命中原型链。
     const entry = typeof codec === "string" ? CODECS[codec] : undefined;
     if (!entry) {
       // 错误细节按惯例用英文：这条信息会经 { ok:false, error } 原样显示在
       // en/es 界面上，不能硬编码中文。
       throw new Error("unknown codec: " + codec);
+    }
+    // `op` 缺省 = 解码（旧页面不带这个字段）；别的取值直接拒绝，免得拼错的 "encod" 被当成解码、
+    // 再以一条误导的 `bad-request:bytes` 报错。
+    if (op !== undefined && op !== "decode" && op !== "encode") {
+      throw new Error("bad-request:op");
+    }
+    if (op === "encode") {
+      await load(codec, entry);
+      if (typeof wasm_bindgen.encode !== "function") {
+        throw new Error("encode-unsupported:" + codec);
+      }
+      const result = wasm_bindgen.encode(params || {});
+      self.postMessage({ ok: true, result }, transferables(result));
+      replied = true;
+      return;
     }
     if (!(bytes instanceof ArrayBuffer) && !ArrayBuffer.isView(bytes)) {
       throw new Error("bad-request:bytes");

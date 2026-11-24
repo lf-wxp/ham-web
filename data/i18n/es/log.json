@@ -484,5 +484,17 @@
   "log.delete-this-qso-hint": "También se elimina la imagen de tarjeta QSL; no se puede deshacer.",
   "log.clear-all": "Borrar todo",
   "log.clear-all-done": "Registro vaciado",
-  "log.qso-deleted": "QSO eliminado"
+  "log.qso-deleted": "QSO eliminado",
+  "log.rig-guard-class-unset": "Sin elegir",
+  "log.rig-guard-class-hint": "Elige una clase para comprobar también tus privilegios y ver el límite de potencia.",
+  "log.rig-guard-lamp-ok": "Verde · sin problemas",
+  "log.rig-guard-lamp-notice": "Ámbar · a tener en cuenta",
+  "log.rig-guard-lamp-alert": "Rojo · transmitir ahora no cumpliría la norma",
+  "log.rig-guard-lamp-out": "Gris · fuera de las bandas de aficionado (ignóralo si solo escuchas; no se puede transmitir)",
+  "log.rig-guard-class-not-permitted": "La licencia de clase {} no puede usar esta frecuencia (Medidas, art. 30)",
+  "log.rig-guard-phone-out-of-segment": "En el plan de banda de {}, {} MHz no es para fonía, pero el modo es de fonía",
+  "log.rig-guard-coordination": "Esta frecuencia requiere coordinación previa (Medidas, art. 15)",
+  "log.rig-guard-off-plan": "En el plan de banda de {}, {} MHz es un segmento solo de fonía; CW / datos aquí se sale del plan de banda (es un aviso, no una infracción)",
+  "log.rig-guard-power-limit": "Límite de potencia TX {} W",
+  "log.rig-guard-note": "Se juzga con la frecuencia y el modo que indica la radio; solo lectura, no se escribe nada en la radio. Con split la frecuencia de transmisión puede ser otra."
 }

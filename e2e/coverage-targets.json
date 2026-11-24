@@ -243,6 +243,21 @@
     },
     {
       "group": "工具",
+      "name": "电台 CAT 频率护栏（操作证 / 话务子段 / 协调 / 只读）",
+      "grep": "电台 CAT：频率护栏按读到的频率、模式与操作证类别亮灯"
+    },
+    {
+      "group": "工具",
+      "name": "电台 CAT 频率护栏：320px 三语 × 两套皮肤不横向溢出",
+      "grep": "电台 CAT：频率护栏在 320px 下不横向溢出"
+    },
+    {
+      "group": "工具",
+      "name": "电台 CAT 频率护栏：溢出检测器自测",
+      "grep": "电台 CAT：溢出检测器自测"
+    },
+    {
+      "group": "工具",
       "name": "计算器交互（频率 / 驻波比 / 欧姆）",
       "grep": "小工具：频率 ↔ 波长双向换算"
     },
@@ -458,6 +473,11 @@
     },
     {
       "group": "工具",
+      "name": "射频暴露评估：GB 8702 公众限值（30–3000 MHz）与 FCC 对照",
+      "grep": "射频暴露评估以 GB 8702 公众限值为准"
+    },
+    {
+      "group": "工具",
       "name": "IP3 级联：总 IIP3 / OIP3、瓶颈级、OIP3 输入与增减级数",
       "grep": "IP3 级联给出总 IIP3 / OIP3"
     },
@@ -600,6 +620,116 @@
       "group": "工具",
       "name": "数字模式编码导出基带 WAV",
       "grep": "小工具：数字模式编码可导出基带 WAV"
+    },
+    {
+      "group": "工具",
+      "name": "Olivia 发端：按子模式定长并在解码页往返",
+      "grep": "小工具：Olivia 发端按子模式精确定长"
+    },
+    {
+      "group": "工具",
+      "name": "Olivia 发端：拒绝无法编码的报文、跳过非 ASCII",
+      "grep": "小工具：Olivia 发端拒绝无法编码的报文"
+    },
+    {
+      "group": "工具",
+      "name": "NAVTEX 发端：经 worker 合成并在解码页往返",
+      "grep": "小工具：NAVTEX 发端经 worker 合成"
+    },
+    {
+      "group": "工具",
+      "name": "NAVTEX 发端：按字段指出非法报头",
+      "grep": "小工具：NAVTEX 发端拒绝非法报头，并指出是哪个字段"
+    },
+    {
+      "group": "工具",
+      "name": "MFSK / THOR / DominoEX 发端：经 worker 合成并在解码页往返",
+      "grep": "小工具：MFSK / THOR / DominoEX 发端经 worker 合成"
+    },
+    {
+      "group": "工具",
+      "name": "MFSK / THOR / DominoEX 发端：拒绝没有可发字符的报文",
+      "grep": "小工具：MFSK / THOR / DominoEX 发端拒绝没有可发字符的报文"
+    },
+    {
+      "group": "工具",
+      "name": "THOR 发端：ID 信标与自定中心频率（MFSK / THOR）",
+      "grep": "小工具：THOR 发端带 ID 信标，MFSK / THOR 的中心频率可自定"
+    },
+    {
+      "group": "工具",
+      "name": "MFSK / THOR 发端：中心频率与 ID 不合法的提示",
+      "grep": "小工具：MFSK / THOR 发端的中心频率与 ID 不合法时给出具体提示"
+    },
+    {
+      "group": "工具",
+      "name": "MFSK / THOR 图片发端：缩放发出并在解码页读回",
+      "grep": "小工具：MFSK / THOR 图片发端缩放后经 worker 发出"
+    },
+    {
+      "group": "工具",
+      "name": "SSTV 发端：铺满裁剪到模式尺寸并在解码页读回",
+      "grep": "小工具：SSTV 发端把图片铺满裁剪到模式尺寸"
+    },
+    {
+      "group": "工具",
+      "name": "时隙钟：FT8 / FT4 按 UTC 对齐的起点、奇偶与剩余时间",
+      "grep": "时隙钟：FT8 / FT4 按 UTC 对齐"
+    },
+    {
+      "group": "工具",
+      "name": "时隙钟：发端页的 WSPR 周期与发射偏移",
+      "grep": "时隙钟：发端页多一行 WSPR"
+    },
+    {
+      "group": "工具",
+      "name": "时隙钟：英文 / 西语译文",
+      "grep": "时隙钟：英文 / 西语界面都有译文"
+    },
+    {
+      "group": "工具",
+      "name": "时隙钟：溢出检测器自测",
+      "grep": "时隙钟：溢出检测器自测"
+    },
+    {
+      "group": "工具",
+      "name": "时隙钟：320px 三语 × 两套皮肤 × 两个页面不横向溢出",
+      "grep": "时隙钟：320px 下不横向溢出"
+    },
+    {
+      "group": "工具",
+      "name": "图片发端：没选图 / 不是图片 / 子模式不支持 / 太长的提示",
+      "grep": "小工具：图片发端没选图、不是图片、子模式没有图片模式或太长时"
+    },
+    {
+      "group": "工具",
+      "name": "解码 Worker：编码请求（navtex 回样本、其余 encode-unsupported）",
+      "grep": "解码 Worker：编码请求——navtex 回基带样本"
+    },
+    {
+      "group": "工具",
+      "name": "解码 Worker：编码入参按字段报错、未知 op",
+      "grep": "解码 Worker：编码入参不合法时按字段回 encode-params"
+    },
+    {
+      "group": "工具",
+      "name": "解码 Worker：MFSK / THOR / DominoEX 全部子模式编码",
+      "grep": "解码 Worker：编码请求——MFSK / THOR / DominoEX 的全部子模式"
+    },
+    {
+      "group": "工具",
+      "name": "解码 Worker：MFSK / THOR / DominoEX 编码入参错误码",
+      "grep": "解码 Worker：MFSK / THOR / DominoEX 编码入参不合法"
+    },
+    {
+      "group": "工具",
+      "name": "解码 Worker：MFSK / THOR 图片发端按子模式与尺寸校验",
+      "grep": "解码 Worker：编码请求——MFSK / THOR 的图片发端"
+    },
+    {
+      "group": "工具",
+      "name": "解码 Worker：THOR ID 信标与中心频率",
+      "grep": "解码 Worker：编码请求——THOR 的 ID 信标"
     },
     {
       "group": "工具",

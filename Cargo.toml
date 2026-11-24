@@ -39,7 +39,7 @@ members = [
 default-members = ["crates/core", "crates/server", "crates/tools", "crates/apt"]
 
 [workspace.package]
-version = "0.7.1"
+version = "0.7.2"
 edition = "2024"
 rust-version = "1.99.1"
 # 工作区默认 MIT；dominoex / mfsk / thor / lrpt / navtex 及其 worker 十个 crate 因含 GPL-3.0 转写代码，单独声明 GPL-3.0-only。
@@ -68,7 +68,7 @@ ham-web-lrpt = { path = "crates/lrpt" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0.154"
-anyhow = "1.0.104"
+anyhow = "1.0.105"
 
 # frontend
 leptos = { version = "0.8.23", features = ["csr"] }
@@ -91,14 +91,14 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 
 # tools
-clap = { version = "4", features = ["derive", "env"] }
+clap = { version = "4.6", features = ["derive", "env"] }
 regex = "1.13"
-ureq = "3.5.1"
-resvg = "0.49"
+ureq = "3.5"
+resvg = "0.50"
 sha2 = "0.11"
-brotli = "9.1.1"
-flate2 = "1.1.11"
-walkdir = "2"
+brotli = "9.1"
+flate2 = "1.1"
+walkdir = "2.5"
 # 字体子集化 + WOFF2 编码（纯 Rust：不需要 Python / fonttools，也不需要 C++ 工具链）
 fontcull-klippa = "0.1"
 fontcull-skrifa = "0.39"

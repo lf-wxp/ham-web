@@ -25,9 +25,12 @@ pub mod picture;
 pub mod varicode;
 
 mod rx;
+mod send;
 mod tx;
 
+pub use ham_web_mfsk::EncodeError;
 pub use rx::{Decoded, decode_audio, detect_base};
+pub use send::{MAX_ID_CHARS, PICTURE_SIZES, encode_message, encode_picture_message, sendable_id};
 pub use tx::{encode_audio, encode_picture_audio, encode_symbols};
 
 use ham_web_mfsk::fec::Code;

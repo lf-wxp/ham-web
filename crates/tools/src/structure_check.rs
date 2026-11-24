@@ -16,6 +16,9 @@
 //! - C6.1 散落的 `alert()`：反馈应走 Toast / MessageDialog；
 //! - A1.1 core 依赖浏览器 API：`web_sys` / `js_sys` / `wasm_bindgen` 出现在 core 源码；
 //! - A1.3 crate 反向依赖 app/server：任何 crate 的依赖里出现 ham-web-app / ham-web-server；
+//! - 许可边界：非 GPL 的 crate 不得在 `[dependencies]` / `[build-dependencies]` 里依赖 GPL crate
+//!   （`docs/engineering/licensing.md`：GPL 的解码 / 编码 crate 只能编成独立的 worker wasm，
+//!   链进 MIT 的主包会让整个主包带上 GPL）；
 //! - A2.1 数据显示层带色值：`crates/core` 里出现 `"#rrggbb"` 字面量（分类色这类「标识色」
 //!   必须只给档位，色值归界面层的 `--cat-*`，否则 11 套配色方案会失效）；
 //! - 运行时 panic 宏：`todo!(…)` / `unimplemented!(…)` 不应留到提交；
@@ -692,6 +695,141 @@ fn check_no_reverse_deps(root: &Path) -> bool {
     println!("{line}");
   }
   println!("    → 分层依赖只能从上往下：core / 解码 crate / worker 不得依赖 app / server");
+  false
+}
+
+/// Cargo.toml 里一行（已去注释、去空白）是不是 `name = "…"` 之类的字符串键，取其值。
+fn manifest_string(line: &str, key: &str) -> Option<String> {
+  let rest = line
+    .strip_prefix(key)?
+    .trim_start()
+    .strip_prefix('=')?
+    .trim();
+  let value = rest.strip_prefix('"')?;
+  Some(value[..value.find('"')?].to_owned())
+}
+
+/// 这个小节是不是会进发布物的依赖表（`dependencies` / `build-dependencies`，含
+/// `target.'cfg(..)'.` 前缀与 `[dependencies.foo]` 的表写法）；`dev-dependencies` 不进发布物，放行。
+fn is_shipped_dependency_section(section: &str) -> bool {
+  let section = section.trim().trim_matches(|c| c == '[' || c == ']');
+  // 去掉 `target.<cfg>.` 前缀：cfg 里可能带点（`cfg(target_arch = "wasm32")`），所以从右往左找。
+  let tail = section
+    .rsplit_once("dependencies")
+    .map_or(section, |(_, after)| after);
+  let kind = section.strip_suffix(tail).unwrap_or(section);
+  let is_table = tail.is_empty() || tail.starts_with('.');
+  is_table
+    && (kind == "dependencies"
+      || kind == "build-dependencies"
+      || kind.ends_with(".dependencies")
+      || kind.ends_with(".build-dependencies"))
+}
+
+/// 许可边界：非 GPL 的 crate 不得依赖 GPL crate。
+///
+/// `manifests` 是 `(crate 目录名, Cargo.toml 全文)`。许可取 `license = "GPL-…"` 字符串；
+/// `license.workspace = true`（继承根上的 MIT）与别的写法都算非 GPL。依赖只看「依赖 key 是 GPL crate 的
+/// 包名」（`ham-web-navtex.workspace = true` / `ham-web-navtex = { … }` / `[dependencies.ham-web-navtex]`），
+/// 返回 `crate 目录:行号  依赖 key` 的命中清单。纯函数，有正反例单测。
+fn gpl_boundary_violations(manifests: &[(String, String)]) -> Vec<String> {
+  let package_of = |text: &str| -> (Option<String>, bool) {
+    let mut section = String::new();
+    let (mut name, mut gpl) = (None, false);
+    for line in text.lines() {
+      let line = code_part(line).trim();
+      if line.starts_with('[') {
+        section = line.to_owned();
+      } else if section == "[package]" {
+        name = name.or_else(|| manifest_string(line, "name"));
+        gpl |= manifest_string(line, "license").is_some_and(|l| l.starts_with("GPL"));
+      }
+    }
+    (name, gpl)
+  };
+  let gpl_names: Vec<String> = manifests
+    .iter()
+    .filter_map(|(_, text)| match package_of(text) {
+      (Some(name), true) => Some(name),
+      _ => None,
+    })
+    .collect();
+
+  let mut report = Vec::new();
+  for (dir, text) in manifests {
+    if package_of(text).1 {
+      continue;
+    }
+    let mut section = String::new();
+    for (i, line) in text.lines().enumerate() {
+      let line = code_part(line).trim();
+      if line.starts_with('[') {
+        // `[dependencies.ham-web-navtex]` 的表写法：依赖名在小节标题里。
+        section = line.to_owned();
+        if is_shipped_dependency_section(&section) {
+          let inner = section.trim_matches(|c| c == '[' || c == ']');
+          if let Some((_, dep)) = inner.rsplit_once("dependencies.")
+            && gpl_names.iter().any(|g| g == dep.trim())
+          {
+            report.push(format!("    crates/{dir}/Cargo.toml:{}  {line}", i + 1));
+          }
+        }
+        continue;
+      }
+      if !is_shipped_dependency_section(&section) {
+        continue;
+      }
+      let key = line
+        .split(|c: char| c == '=' || c == '.' || c.is_whitespace())
+        .next()
+        .unwrap_or_default();
+      if gpl_names.iter().any(|g| g == key) {
+        report.push(format!("    crates/{dir}/Cargo.toml:{}  {line}", i + 1));
+      }
+    }
+  }
+  report
+}
+
+/// 许可边界检查：读 `crates/*/Cargo.toml`，交给 [`gpl_boundary_violations`]。
+fn check_gpl_boundary(root: &Path) -> bool {
+  let Ok(entries) = std::fs::read_dir(root.join("crates")) else {
+    println!("✗ 许可边界：目录 `crates` 不存在（改名了？）");
+    return false;
+  };
+  let mut manifests = Vec::new();
+  for entry in entries.flatten() {
+    let manifest = entry.path().join("Cargo.toml");
+    if let Ok(text) = std::fs::read_to_string(&manifest) {
+      manifests.push((entry.file_name().to_string_lossy().to_string(), text));
+    }
+  }
+  manifests.sort();
+  let gpl = manifests
+    .iter()
+    .filter(|(_, text)| text.contains("license = \"GPL"))
+    .count();
+  // 一个 GPL crate 都没认出来时规则是空转的（改了 license 写法 / 目录），不静默放行。
+  if gpl == 0 {
+    println!("✗ 许可边界：没有认出任何 GPL crate（license 的写法变了？），规则空转");
+    return false;
+  }
+  let report = gpl_boundary_violations(&manifests);
+  if report.is_empty() {
+    println!("✓ 许可边界：{gpl} 个 GPL crate 都没有被非 GPL 的 crate 依赖");
+    return true;
+  }
+  println!(
+    "✗ 许可边界：{} 处非 GPL crate 依赖了 GPL crate",
+    report.len()
+  );
+  for line in &report {
+    println!("{line}");
+  }
+  println!(
+    "    → GPL 的解码 / 编码 crate 只能编成独立 worker wasm（docs/engineering/licensing.md）；\
+     主包要用它的功能，经 decode_worker 的 encode_once / DecodeSession 走 worker"
+  );
   false
 }
 
@@ -2456,6 +2594,9 @@ pub fn check(root: &Path) -> Result<()> {
   if !check_no_reverse_deps(root) {
     failed.push("crate 依赖方向".to_owned());
   }
+  if !check_gpl_boundary(root) {
+    failed.push("许可边界（非 GPL crate 依赖了 GPL crate）".to_owned());
+  }
 
   println!("\n── 组件结构 ──");
   if !check_one_component_per_file(root) {
@@ -2534,6 +2675,92 @@ pub fn check(root: &Path) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+  use super::gpl_boundary_violations;
+
+  fn manifest(name: &str, license: &str, body: &str) -> (String, String) {
+    (
+      name.to_owned(),
+      format!("[package]\nname = \"ham-web-{name}\"\n{license}\n\n{body}\n"),
+    )
+  }
+
+  const GPL: &str = "license = \"GPL-3.0-only\"";
+  const MIT: &str = "license.workspace = true";
+
+  #[test]
+  fn mit_crate_depending_on_gpl_is_reported_in_every_dependency_spelling() {
+    let gpl = manifest(
+      "navtex",
+      GPL,
+      "[dependencies]\nham-web-apt.workspace = true",
+    );
+    for (spelling, body) in [
+      (
+        "workspace 简写",
+        "[dependencies]\nham-web-navtex.workspace = true",
+      ),
+      (
+        "内联表",
+        "[dependencies]\nham-web-navtex = { path = \"../navtex\" }",
+      ),
+      ("等号带空格", "[dependencies]\nham-web-navtex   = \"0.1\""),
+      (
+        "构建依赖",
+        "[build-dependencies]\nham-web-navtex.workspace = true",
+      ),
+      (
+        "target 依赖",
+        "[target.'cfg(target_arch = \"wasm32\")'.dependencies]\nham-web-navtex.workspace = true",
+      ),
+      (
+        "表写法",
+        "[dependencies.ham-web-navtex]\npath = \"../navtex\"",
+      ),
+    ] {
+      let hits = gpl_boundary_violations(&[gpl.clone(), manifest("app", MIT, body)]);
+      assert_eq!(hits.len(), 1, "{spelling}: {hits:?}");
+      assert!(
+        hits[0].contains("crates/app/Cargo.toml"),
+        "{spelling}: {hits:?}"
+      );
+    }
+  }
+
+  #[test]
+  fn allowed_shapes_are_not_reported() {
+    let gpl = manifest("navtex", GPL, "");
+    let other_gpl = manifest(
+      "navtex-worker",
+      GPL,
+      "[dependencies]\nham-web-navtex.workspace = true",
+    );
+    // GPL 依赖 GPL（worker → 核心）是正常的；dev-dependencies 不进发布物；
+    // 注释里提到、或名字只是前缀相同（`ham-web-navtex-extra`）的不算。
+    let mit = manifest(
+      "app",
+      MIT,
+      "[dependencies]\n# ham-web-navtex.workspace = true\nham-web-navtex-extra.workspace = true\n\
+       ham-web-apt.workspace = true\n\n[dev-dependencies]\nham-web-navtex.workspace = true",
+    );
+    assert_eq!(
+      gpl_boundary_violations(&[gpl, other_gpl, mit]),
+      Vec::<String>::new()
+    );
+  }
+
+  #[test]
+  fn license_in_other_sections_does_not_make_a_crate_gpl() {
+    // `license` 只认 `[package]` 里的；依赖表里恰好叫 license 的键不算。
+    let gpl = manifest("navtex", GPL, "");
+    let tricky = (
+      "app".to_owned(),
+      "[package]\nname = \"ham-web-app\"\nlicense.workspace = true\n\n[dependencies]\n\
+       license = \"GPL-3.0\"\nham-web-navtex.workspace = true\n"
+        .to_owned(),
+    );
+    assert_eq!(gpl_boundary_violations(&[gpl, tricky]).len(), 1);
+  }
+
   #[test]
   fn exit_animations_must_use_tokens() {
     let css = "\

@@ -7,24 +7,11 @@ use web_sys::File;
 use crate::components::common::{DecodeElapsed, PageContainer, PageHeader};
 use crate::decode_session::{DecodeConfig, DecodeSession, MAX_UPLOAD_BYTES};
 use crate::icons::{Icon, IconKind};
-use crate::ui::{
-  Button, ButtonLink, Checkbox, Field, FileDropZone, SelectOption, SimpleSelect, Size, TextValue,
-  Variant,
-};
+use crate::ui::{Button, ButtonLink, Checkbox, Field, FileDropZone, SimpleSelect, Size, Variant};
 use crate::util::set_title;
 
 use super::dominoex_worker::parse_message;
 use crate::i18n::{t, tf};
-
-/// 支持的标准子模式（4/5/8/11/16/22；8 是默认）。
-const MODES: &[(&str, &str)] = &[
-  ("8", "DominoEX 8"),
-  ("16", "DominoEX 16"),
-  ("11", "DominoEX 11"),
-  ("4", "DominoEX 4"),
-  ("22", "DominoEX 22"),
-  ("5", "DominoEX 5"),
-];
 
 #[component]
 pub fn DominoexDecoderPage() -> impl IntoView {
@@ -70,14 +57,7 @@ pub fn DominoexDecoderPage() -> impl IntoView {
     });
   });
 
-  let mode_options: Vec<SelectOption> = MODES
-    .iter()
-    .map(|(value, label)| SelectOption {
-      value: (*value).to_owned(),
-      label: TextValue::from((*label).to_owned()),
-      group: None,
-    })
-    .collect();
+  let mode_options = crate::codec_modes::select_options(crate::codec_modes::DOMINOEX_MODES);
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">

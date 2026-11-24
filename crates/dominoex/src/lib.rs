@@ -19,7 +19,10 @@
 use ham_web_dsp::tone_power;
 
 pub mod fec;
+mod send;
 pub mod varicode;
+
+pub use send::{ENCODE_SAMPLE_RATE, encode_message};
 
 /// IZ8BLY MFSK Varicode 住在 `ham-web-mfsk`（MFSK / THOR / DominoEX FEC 三处共用，只此一份）；
 /// 这里保留原路径，测试与示例里的 `ham_web_dominoex::mfsk_varicode` 不用跟着改。

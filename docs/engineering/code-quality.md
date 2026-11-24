@@ -677,6 +677,7 @@ grep -rn "TODO\|FIXME\|HACK\|todo!()\|unimplemented!()" crates
 | 守卫 | 判据 | 备注 |
 | --- | --- | --- |
 | crate 依赖方向 | 任何 crate 的依赖里不出现 `ham-web-app` / `ham-web-server`（A1.3） | `crates` 目录不存在即失败，不静默放行 |
+| 许可边界 | 非 GPL 的 crate 不得在 `[dependencies]` / `[build-dependencies]` 里依赖 GPL crate（`license = "GPL-…"`） | 判定是纯函数，有六种依赖写法的正例与放行形态的单测；认不出任何 GPL crate 即失败（规则空转）；变异验证过（把 `ham-web-navtex` 加回 `app` 即红）。依据见 `engineering/licensing.md` |
 | 一文件一组件 | 每个 `.rs` 最多一个 `-> impl IntoView / AnyView`（C3.1） | 扫描根不存在、或一个文件都没扫到都算失败 |
 | 双设计系统隔离 | `kit_modern/` 与 `style/modern/` 里不出现 `pxl-` | |
 | 反向隔离 | 只在像素风渲染的文件（有 `pxl-`、无 `is_modern` / `kit::`）里不出现 `md-*` | 判定逻辑是纯函数，有正反例单测 |

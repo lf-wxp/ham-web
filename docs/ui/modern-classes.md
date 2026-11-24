@@ -66,6 +66,7 @@
 | `md-flip` | `md-flip`(1) · `md-flip-left`(1) · `md-flip-right`(1) |
 | `md-glossary` | `md-glossary-bar`(1) · `md-glossary-search`(2) |
 | `md-group` | `md-group-title`(1) |
+| `md-guard` | `md-guard-row`(6) · `md-guard-tone`(5) |
 | `md-h2` | `md-h2`(5) |
 | `md-hairline` | `md-hairline`(1) |
 | `md-heat` | `md-heat`(2) · `md-heat-cell`(7) · `md-heat-cells`(1) · `md-heat-head`(2) · `md-heat-row`(2) · `md-heat-rowlabel`(1) · `md-heat-tick`(1) · `md-heat-total`(1) |

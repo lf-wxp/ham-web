@@ -8,8 +8,12 @@
 //! 3. [`fm`] —— Hilbert 变换 + 相位差分做 FM 解调，得到瞬时频率；
 //! 4. [`vis`] —— 检测 VIS 头，识别 Martin / Scottie / Robot 模式；
 //! 5. [`decode`] —— 逐行锁定同步脉冲、采样并重建 RGB 图像。
+//!
+//! 发端见 [`encode_image`]：RGB 图像 → 8 kHz 基带音频（Martin / Scottie / Robot 七个模式），
+//! 独立于解码器按规格文本写，与解码器互相检验。
 
 mod decode;
+mod encode;
 mod fm;
 mod modes;
 mod resample;
@@ -18,6 +22,7 @@ mod vis;
 use std::fmt;
 
 pub use decode::SstvImage;
+pub use encode::{EncodeError, encode as encode_image, supports as has_encoder};
 pub use modes::{ColorKind, Comp, EdgeEvidence, MODES, Mode, ROBOT_36_SEPARATOR, Scan};
 
 /// 工作采样率（Hz）。

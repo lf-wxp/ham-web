@@ -336,3 +336,199 @@ fn the_old_wrong_header_is_not_accepted() {
   }
   assert!(decode_samples(&out, WORK_RATE).is_err());
 }
+
+// ---------- 库里的编码器（`ham_web_sstv::encode_image`） ----------
+//
+// 库里的编码器与上面这份测试内的编码器各自对着规格写；这里让它们互相对拍，再让解码器读回。
+
+/// 一幅平滑的彩色测试图：红随列、绿随行变化，蓝取两者的混合；没有锐利边缘，
+/// Robot 的色度二次采样不会被硬边放大成大误差。
+fn colour_image(w: usize, h: usize) -> Vec<u8> {
+  let mut rgb = Vec::with_capacity(w * h * 3);
+  for y in 0..h {
+    for x in 0..w {
+      let r = x * 255 / (w - 1);
+      let g = y * 255 / (h - 1);
+      rgb.extend_from_slice(&[r as u8, g as u8, ((r + (255 - g)) / 2) as u8]);
+    }
+  }
+  rgb
+}
+
+/// 每个模式：编码 → 解码，得到满高的图、模式名认对，平均误差很小，中心像素的颜色对得上。
+///
+/// 阈值取观测值的两倍多（Martin M1 约 0.5、Robot 36 约 1.7 灰阶）：足够小，通道顺序错了、
+/// 色差零点错了、Y 的黑电平错了都会变成几十灰阶的误差。逐像素的最大误差不设限 ——
+/// 左右两端的列在 FM 解调的边沿过渡里本来就偏得多（真实录音上也一样）。
+#[test]
+fn library_encoder_round_trips_a_colour_image_in_every_mode() {
+  for m in MODES {
+    let rgb = colour_image(m.width, m.height);
+    let audio = ham_web_sstv::encode_image(m, &rgb).unwrap();
+    let img = decode_samples(&audio, WORK_RATE).unwrap();
+    assert_eq!(img.mode, m.name, "{}", m.name);
+    assert_eq!(
+      (img.width as usize, img.height as usize),
+      (m.width, m.height),
+      "{}",
+      m.name
+    );
+    let mut sum = [0u64; 3];
+    for y in 0..m.height {
+      for x in 0..m.width {
+        let got = px(&img, x, y);
+        for c in 0..3 {
+          sum[c] += u64::from(got[c].abs_diff(i32::from(rgb[3 * (y * m.width + x) + c])));
+        }
+      }
+    }
+    let n = (m.width * m.height) as f64;
+    for (c, name) in ["R", "G", "B"].iter().enumerate() {
+      let mean = sum[c] as f64 / n;
+      assert!(mean < 3.0, "{} 通道 {name} 平均误差 {mean:.2}", m.name);
+    }
+    let (cx, cy) = (m.width / 2, m.height / 2);
+    let got = px(&img, cx, cy);
+    for c in 0..3 {
+      let want = i32::from(rgb[3 * (cy * m.width + cx) + c]);
+      assert!(
+        (got[c] - want).abs() <= 12,
+        "{} 中心像素通道 {c}: {} vs {want}",
+        m.name,
+        got[c]
+      );
+    }
+  }
+}
+
+/// 与测试内的独立编码器对拍：5 个 RGB 模式的灰度渐变，两份编码器的输出交给同一个解码器，
+/// 读回的图应当几乎相同。
+///
+/// - 两份音频的**时序逐样本一致**（库里的比测试里的多出末尾的 300 ms），只是两边的像素量化不同
+///   （库里先取整到字节再映射频率，测试里直接用连续的渐变），正弦的相位随之漂开，所以不是逐样本相等；
+/// - 只比去掉两端各 4 列的区域：每个分量扫描段末尾是 2300 Hz → 1500 Hz 的陡降，解码器的 Hilbert
+///   解调在那里的边缘效应随相位而变（最右一列实测差到 50 多灰阶、次右列十几），对任何编码器、
+///   对真实录音都一样，不是编码器的分歧；中间区域实测最大只差 4–5 灰阶（两边量化的差）；
+/// - 只比两边都解出来的行：测试内的编码器让音频恰好在末行结束处截止，Scottie 会丢最后一行
+///   （解码器的边缘行为，见库里编码器的 `TAIL_MS`）。
+#[test]
+fn library_encoder_agrees_with_the_independent_test_encoder_on_rgb_modes() {
+  for name in [
+    "Martin M1",
+    "Martin M2",
+    "Scottie S1",
+    "Scottie S2",
+    "Scottie DX",
+  ] {
+    let m = mode(name);
+    let ramp: Vec<u8> = (0..m.width * m.height)
+      .flat_map(|i| {
+        let v = ((i % m.width) * 255 / (m.width - 1)) as u8;
+        [v, v, v]
+      })
+      .collect();
+    let ours = ham_web_sstv::encode_image(m, &ramp).unwrap();
+    let theirs = synth(m, Pattern::Gray, 0.0, m.height);
+    assert_eq!(
+      ours.len(),
+      theirs.len() + 2400,
+      "{name}：时序应逐样本一致，只多 300 ms 的结尾"
+    );
+    let lib = decode_samples(&ours, WORK_RATE).unwrap();
+    let other = decode_samples(&theirs, WORK_RATE).unwrap();
+    assert_eq!(
+      (lib.width, other.width),
+      (m.width as u32, m.width as u32),
+      "{name}"
+    );
+    let rows = lib.height.min(other.height) as usize;
+    assert!(rows >= m.height - 1, "{name}：只对得上 {rows} 行");
+    let mut diffs: Vec<i32> = (0..rows)
+      .flat_map(|y| (4..m.width - 4).map(move |x| (x, y)))
+      .flat_map(|(x, y)| {
+        let (a, b) = (px(&lib, x, y), px(&other, x, y));
+        [0, 1, 2].map(|c| (a[c] - b[c]).abs())
+      })
+      .collect();
+    diffs.sort_unstable();
+    let p99 = diffs[(diffs.len() - 1) * 99 / 100];
+    let worst = diffs[diffs.len() - 1];
+    // 差的大小取决于每像素有几个样本（8 kHz 下）：Scottie DX 约 8.6（实测最大差 2）、Martin M1 / Scottie S1
+    // 约 3.5（4–5）、Martin M2 / Scottie S2 只有 1.8–2.2（13–14）—— 样本越少，解调对相位越敏感。
+    // 分两档卡：绝大多数像素（p99）一律 ≤ 8；最大值在样本数少的两个快速模式上放宽到 16。
+    // 分量顺序、同步位置、分隔写错会是几十灰阶，两档都抓得住。
+    let samples_per_pixel = m.scans[0].len_ms / m.width as f64 * f64::from(WORK_RATE) / 1000.0;
+    let limit = if samples_per_pixel >= 3.0 { 6 } else { 16 };
+    assert!(p99 <= 8, "{name}：99% 分位的读回差 {p99}");
+    assert!(
+      worst <= limit,
+      "{name}（{samples_per_pixel:.1} 样本/像素）：最大读回差 {worst}，上限 {limit}"
+    );
+  }
+}
+
+/// 整图时长对得上公开值（±1.5%，与 `whole_image_durations_match_the_published_values` 同一口径）；
+/// 头部约 0.97 s、结尾 0.3 s 不计入整图时长，所以先扣掉再比。
+#[test]
+fn library_encoder_audio_length_matches_the_published_durations() {
+  let published = [
+    ("Martin M1", 114.0),
+    ("Martin M2", 58.0),
+    ("Scottie S1", 110.0),
+    ("Scottie S2", 71.0),
+    ("Scottie DX", 269.0),
+    ("Robot 36", 36.0),
+    ("Robot 72", 72.0),
+  ];
+  for (name, secs) in published {
+    let m = mode(name);
+    let audio = ham_web_sstv::encode_image(m, &vec![128; m.width * m.height * 3]).unwrap();
+    let image = audio.len() as f64 / f64::from(WORK_RATE) - 0.97 - 0.3;
+    assert!(
+      (image - secs).abs() / secs < 0.015,
+      "{name}：图像部分 {image:.1} s，公开值约 {secs} s"
+    );
+  }
+}
+
+#[test]
+fn library_encoder_output_is_a_clean_unit_amplitude_signal() {
+  let m = mode("Robot 36");
+  let audio = ham_web_sstv::encode_image(m, &colour_image(m.width, m.height)).unwrap();
+  assert!(audio.iter().all(|v| v.is_finite() && v.abs() <= 1.0));
+  // 振幅 1 的正弦：峰值接近 1，不是被削过或缩小过。
+  assert!(audio.iter().fold(0.0f32, |a, v| a.max(v.abs())) > 0.99);
+}
+
+#[test]
+fn library_encoder_rejects_bad_input() {
+  let m = mode("Martin M1");
+  let ok = vec![0u8; m.width * m.height * 3];
+  assert!(ham_web_sstv::encode_image(m, &ok).is_ok());
+  for bad in [&ok[1..], &ok[..ok.len() - 3], &[][..]] {
+    assert_eq!(
+      ham_web_sstv::encode_image(m, bad),
+      Err(ham_web_sstv::EncodeError::ImageSize)
+    );
+  }
+  // 解码器认得、编码器没写的模式（这里用改了名字的副本模拟，如 PD120）：明确拒绝。
+  let pd = Mode {
+    name: "PD120",
+    ..*m
+  };
+  assert!(!ham_web_sstv::has_encoder(&pd));
+  assert_eq!(
+    ham_web_sstv::encode_image(&pd, &ok),
+    Err(ham_web_sstv::EncodeError::UnsupportedMode)
+  );
+  // 解码器的七个模式都有编码器：新增解码模式时忘了写编码器会在这里红。
+  assert!(
+    MODES.iter().all(ham_web_sstv::has_encoder),
+    "有模式没有编码器"
+  );
+  assert_eq!(ham_web_sstv::EncodeError::ImageSize.code(), "image-size");
+  assert_eq!(
+    ham_web_sstv::EncodeError::UnsupportedMode.code(),
+    "unsupported-mode"
+  );
+}

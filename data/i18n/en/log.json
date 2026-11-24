@@ -484,5 +484,17 @@
   "log.delete-this-qso-hint": "Its QSL card image is removed too, and deletion cannot be undone.",
   "log.clear-all": "Clear all",
   "log.clear-all-done": "Logbook cleared",
-  "log.qso-deleted": "QSO deleted"
+  "log.qso-deleted": "QSO deleted",
+  "log.rig-guard-class-unset": "Not set",
+  "log.rig-guard-class-hint": "Pick a class to also check your privileges and see the power limit.",
+  "log.rig-guard-lamp-ok": "Green · nothing found",
+  "log.rig-guard-lamp-notice": "Amber · take note",
+  "log.rig-guard-lamp-alert": "Red · transmitting now would not comply",
+  "log.rig-guard-lamp-out": "Grey · outside the amateur bands (ignore if only listening; transmitting is not allowed)",
+  "log.rig-guard-class-not-permitted": "Class {} licence holders may not use this frequency (Measures, Article 30)",
+  "log.rig-guard-phone-out-of-segment": "In the {} band plan, {} MHz is not for voice, but the mode is voice",
+  "log.rig-guard-coordination": "This frequency requires frequency coordination first (Measures, Article 15)",
+  "log.rig-guard-off-plan": "In the {} band plan, {} MHz is a voice-only segment; CW / data here is off the band plan (a reminder, not a violation)",
+  "log.rig-guard-power-limit": "TX power limit {} W",
+  "log.rig-guard-note": "Judged from the frequency and mode the rig reports; read-only, nothing is written to the rig. With split operation the transmit frequency may be a different one."
 }

@@ -28,13 +28,19 @@ WSPR / RTTY / Olivia / DominoEX / MFSK / THOR / NAVTEX / LRPT / FT8 / Feld Hell 
 ## 消息信封
 
 ```ts
-// 入站（页面 → worker）
+// 入站（页面 → worker）：解码
 { codec: string, bytes: ArrayBuffer | ArrayBufferView, params?: Object }
+// 入站：编码（没有输入文件，所以没有 bytes；`op` 缺省 = 解码）
+{ codec: string, op: "encode", params?: Object }
 // 出站（worker → 页面）
 { ok: true, result: Object } | { ok: false, error: string }
 ```
 
-- `bytes`：用户文件的原始字节（WAV 等）；WAV 解析在各解码器 crate 内做
+`op` 只认缺省 / `"decode"` / `"encode"`，别的取值回 `bad-request:op`（拼错的 `"encod"` 不能被当成解码、
+再以一条误导的 `bad-request:bytes` 报错）。**编码是后加的、可选的能力**：胶水里导出了 `encode(params)` 的 codec
+才支持（现在是 `navtex` / `mfsk` / `thor` / `dominoex`，四个核心 crate 都是 GPL-3.0），没有的回 `encode-unsupported:<codec>`。
+
+- `bytes`：用户文件的原始字节（WAV 等；仅解码）；WAV 解析在各解码器 crate 内做
   （`ham_web_apt::parse_wav`）。`decode-worker.js` 同时接受 `ArrayBuffer` 与类型化数组 /
   `DataView`（后者按 `byteOffset` / `byteLength` 取视图），缺 `bytes` 才回
   `bad-request:bytes`。
@@ -64,12 +70,12 @@ WSPR / RTTY / Olivia / DominoEX / MFSK / THOR / NAVTEX / LRPT / FT8 / Feld Hell 
 | `too-short` | APT / SSTV / WEFAX | 音频不足以解出一帧 / 一张图 |
 | `no-signal:<名>` | RTTY / Olivia / DominoEX / MFSK / THOR / NAVTEX / WSPR / HELL / WEFAX | 没有可解调的信号（门限见下节；`<名>` 是 `RTTY` / `Olivia` / `DominoEX` / `MFSK` / `THOR` / `NAVTEX` / `WSPR` / `HELL` / `WEFAX`。WEFAX 的 `NoSync` 也归这一码，不再单独回 `no-sync`） |
 | `no-vis` | SSTV | 未检测到 VIS 头 |
-| `unsupported-submode:<模式>` | Olivia / DominoEX / MFSK / THOR | 子模式不在标准表内（语法解析失败） |
+| `unsupported-submode:<模式>` | Olivia / DominoEX / MFSK / THOR（解码与编码） | 子模式不在标准表内（语法解析失败）；编码时 `mode` 不是字符串也回这一码（参数为空） |
 | `olivia-params:<音调数>,<带宽>` | Olivia | 参数组合语法合法但语义不在标准表内（音调数 ≠ 31.25 波特 × 带宽） |
 | `olivia-params:<音调数>,<带宽>@<中心频率>` | Olivia | 中心频率非有限，或中心 + 半带宽越过 Nyquist；`localize_error` 按 `@` 拆出第三个参数，走 `tools.decode-err-olivia-params-range` |
 | `mark-hz-out-of-range:<Hz>` | RTTY | 传号频率越界（须 > 0 且传号 + 170 Hz 小于采样率一半） |
 | `base-hz-out-of-range:<Hz>` | WSPR | 基带频率越界（须 > 0 且小于采样率一半） |
-| `center-hz-out-of-range:<Hz>` | MFSK / THOR | 手填的中心频率让整个音调带（含两侧各一个音调间隔）放不进 0 与采样率一半之间；页面在发 Worker 之前只拦「不是正数」，越界由 Worker 按实际采样率判 |
+| `center-hz-out-of-range:<Hz>` | MFSK / THOR（解码与编码） | 手填的中心频率让整个音调带（含两侧各一个音调间隔）放不进 0 与采样率一半之间；页面在发 Worker 之前只拦「不是正数」，越界由 Worker 按实际采样率判（编码时采样率是该模式的标称值；`centerHz` 给了但不是数字时参数是 `NaN`） |
 | `rate-too-low:<最低 Hz>` | DominoEX / MFSK / THOR | 采样率低于音调带上沿的 Nyquist 要求（Olivia 的同类检查报带 `@` 的 `olivia-params`） |
 | `need-sample-rate:<Hz>` / `need-stereo:<声道数>` | LRPT | 采样率低于 144 kHz，或不是双声道 I/Q；参数是录音的实际值 |
 | `ft8-sample-rate:<Hz>` | FT8 / FT4 | 采样率不是 12000 Hz（时频分析按该采样率设计，别的采样率会静默解错，所以直接拒绝） |
@@ -77,7 +83,10 @@ WSPR / RTTY / Olivia / DominoEX / MFSK / THOR / NAVTEX / LRPT / FT8 / Feld Hell 
 | `image-size-mismatch` | WEFAX（仅 `modulate` 的入参校验，不经 Worker） | 灰度图 `width × height` 与 `gray` 长度不符；刻意不复用 LRPT 的 `image-incomplete`（那个码带帧数占位符） |
 | `input-too-large:<字节>` | LRPT | 超过 worker 的 192 MiB 输入上限（页面已限 128 MiB，这里是兜底） |
 | `worker-load-failed` / `worker-run-failed:<message>` | **页面侧合成**（`decode_worker::error_handler`） | 入口脚本或胶水加载失败（404 / 被拦截 / 语法错误）；运行期异常（wasm trap，带原始英文 message） |
-| `bad-request:bytes` / `worker-codec-mismatch:<已加载 codec>` / `unknown codec: <名>` | `decode-worker.js` | 信封缺 `bytes`；同一个 Worker 收到第二种 codec；codec 不在 `CODECS` 表里 |
+| `encode-params:<字段>` | NAVTEX（`ham_web_navtex::encode_message`）、MFSK / THOR / DominoEX（`ham_web_mfsk::send`） | 编码入参不合法，字段是 `station` / `category` / `serial` / `text` / `phasing` 之一（NAVTEX），或 `text`（过滤后没有可发字符、引导文本超过 1024 字符）/ `length`（合成后超过 8 Mi 样本，约 17 分钟：文本太长，或图片太大 / 太慢）/ `picture`（图片参数不合法：子模式没有图片模式、尺寸不被支持、像素数据与尺寸对不上、`spp` 不是 2 / 4 / 8、字段缺失或类型不对）/ `id`（THOR 的 ID 信标超过 64 字符）；每个字段在 `localize_error` 里各有一条指出怎么改的提示（`tools.decode-err-encode-*`）。字段缺失或类型不对按空值处理，落到同一组码，没有单独的「缺字段」分支 |
+| `encode-unsupported:<codec>` | `decode-worker.js` | 对没有导出 `encode` 的 codec 发了编码请求 |
+| `bad-request:op` | `decode-worker.js` | `op` 不是 `decode` / `encode` |
+| `bad-request:bytes` / `worker-codec-mismatch:<已加载 codec>` / `unknown codec: <名>` | `decode-worker.js` | 解码信封缺 `bytes`；同一个 Worker 收到第二种 codec；codec 不在 `CODECS` 表里 |
 
 ## 已接入的 codec
 
@@ -97,6 +106,34 @@ WSPR / RTTY / Olivia / DominoEX / MFSK / THOR / NAVTEX / LRPT / FT8 / Feld Hell 
 | `hell` | —（页面发 `null`） | `{ text }` | `/hell-worker/` |
 | `wefax` | —（页面发 `null`） | `{ width, height, gray: Uint8Array }`（灰度图一字节一像素） | `/wefax-worker/` |
 | `afsk1200` | —（页面发 `null`） | `{ frames: [{ kind: "ui", source, destination, info } \| { kind: "raw", hex }], truncated }`；录音超过 60 秒时 `truncated: true`，只解前一段 | `/afsk1200-worker/` |
+
+### 编码（`op: "encode"`）
+
+| codec | params 字段 | `result` 形态 |
+| --- | --- | --- |
+| `navtex` | `station`（一个 ASCII 字母，大小写与首尾空白会规整）、`category`（同）、`serial`（0–99 的整数，**必须是数字类型**）、`text`（非空、至多 1024 字符）、`phasingSecs`（0–60，必填） | `{ samples: Float32Array, sampleRate: 8000 }`（8 kHz 无噪声基带；页面用 `sampleRate` 写 WAV 头，不自己写死） |
+| `mfsk` | `mode`（缺省 `"16"`，名单同解码）、`text`、`centerHz`（缺省 1500 Hz；给了就照它发，放不下报错、不悄悄挪）、`picture`（可选，见下） | `{ samples, sampleRate }`，采样率是**该模式的标称值**（MFSK 11 / 22 为 11025，其余 8000） |
+| `thor` | 同 `mfsk`（`mode` 缺省 `"16"`），另有 `id`（可选，ID 信标，走二次信道，至多 64 字符；MFSK 没有二次信道，给了也忽略） | 同上；标称采样率 THOR 5 / 11 / 22 / 44 为 11025、THOR 56 为 16000、其余 8000 |
+| `dominoex` | `mode`（缺省 `"8"`）、`text`、`fec`（缺省 `false`；`true` = MultiPSK 兼容 FEC，**收发两端必须一致**）；信号中心固定 1000 Hz，没有 `centerHz` | `{ samples, sampleRate: 8000 }`（FEC 的码率 1/2，同一报文的音频更长） |
+
+- **可发字符**（MFSK / THOR / DominoEX）：可打印 ASCII 与换行，其余跳过；控制字符不发（THOR 里的 `\x01` 是二次信道开关，用户文本不该意外触发它）。三个 crate 共用 `ham_web_mfsk::send` 里的 `sendable_text`，规则只此一份。
+- **图片发端**（`mfsk` / `thor` 的 `picture` 参数）：`{ width, height, color, spp?, rgb: Uint8Array }`，`rgb` 是 `宽 × 高 × 3` 字节（灰度时三个通道相同，发端取 R 通道），给了就发一次图片，此时 `text` 是报头前面的引导文本（**可以为空**）。
+  - MFSK：只有 16 / 32 / 64 / 128 有图片模式；尺寸任意（≤ 1 048 576 像素）；`spp` 是每像素样本数，8 标准 / 4 快 / 2 最快（越快越糊），缺省 8。
+  - THOR：只有 11 / 16 / 22 / 25 / 32 / 44 / 56 有图片模式；尺寸只能是 59×74、120×150、160×120、240×300、320×240、640×480 六种（彩色 / 灰度各有报头码）；每像素固定 10 个样本，不读 `spp`；同步音在中心 − 0.6 × 带宽，中心太低会让它掉到 0 Hz 以下，按 `center-hz-out-of-range` 拒绝。
+  - 彩色每行发 R、G、B 三遍，耗时约是灰度的三倍；合成后超过 8 Mi 样本（8 kHz 下约 17 分钟）回 `encode-params:length`，例如 THOR 640×480 彩色（920 万样本）。
+  - 缩放、铺满裁剪、透明铺白、灰度（BT.601）在主包的 `ham_web_core::picture_tx`（有单测）；worker 只收已经是目标尺寸的像素。页面持有的尺寸 / 子模式名单在 `crates/app/src/codec_modes.rs`，协议 e2e 把名单逐个送进 worker。
+- **子模式名单**：主包不能依赖这三个 GPL crate，所以页面自己持有「值 → 标签」表，只此一份：`crates/app/src/codec_modes.rs`（解码页与发端共用；条数 11 / 15 / 6 由单测钉死）。表与核心 crate 漂移时，对不上的名字会被 Worker 回 `unsupported-submode`，`decode_worker_protocol.spec.ts` 把全部名字逐个送进 Worker。
+
+- **为什么发端也在 worker 里**：`ham-web-navtex` 是 GPL-3.0-only，链进 MIT 的主包 wasm 会让整个主包带上 GPL
+  （[`engineering/licensing.md`](../engineering/licensing.md)）。所以 GPL 的 crate **无论收发**都只能在独立 worker 里；
+  MIT 的 crate（Olivia、WSPR、FT8、Feld Hell）的发端仍直接链进主包，不必走这条路。
+- 校验只在核心 crate 一处（`encode_message`，有原生单测）；worker 只做 JS ↔ Rust 的转换，页面不抄规则。
+- 结果里的 `Float32Array` 与 `Uint8Array` 一样，独占整块 buffer 时由 `decode-worker.js` 整块转移（见下「Worker 生命周期约束」）。
+- 页面侧是 `decode_worker::encode_once(codec, &params)`：一次性请求，起 Worker → 发信封 → 等一条回复 → 销毁，
+  30 秒兜底超时，错误经 `parse_outcome` 本地化。它**不是** `DecodeSession`：编码没有输入文件，也没有「选新文件替换在途任务」。
+- 新增一个 codec 的编码：核心 crate 出一个带校验的纯函数（错误码 `encode-params:<字段>`）+ 单测，worker 加
+  `#[wasm_bindgen] pub fn encode(params: &JsValue) -> Result<JsValue, JsValue>`，补 `localize_error` 与三份词条，
+  并在 `e2e/tests/decode_worker_protocol.spec.ts` 钉死成功与各字段的错误码。
 
 AFSK1200 **没有对应的 `/afsk1200/` 核心 crate**：它的解调/调制逻辑住在 `ham-web-core`
 （`core/afsk1200.rs` + `core/kiss.rs`）。理由是它和其余十三个 codec 形态不同——它是
@@ -167,8 +204,8 @@ Olivia / DominoEX / MFSK / THOR / NAVTEX / FT8 / Feld Hell / WEFAX / AFSK1200）
   `message`；声明成 `ErrorEvent` 会让 wasm-bindgen 转换时抛错，消息永远到不了页面。
   `message` 非空说明是运行期异常（wasm trap），码变成 `worker-run-failed:<message>`。
   Worker 端另有 `unhandledrejection` 兜底。
-- **结果里独占整块 buffer 的 `Uint8Array`**（SSTV 的 `rgba`、LRPT 的 `rgb`、WEFAX 的 `gray`）
-  由 `decode-worker.js` 自动放进 transfer 列表，避免几十 MB 的结构化克隆多拷一份；指向 wasm
+- **结果里独占整块 buffer 的类型化数组**（SSTV 的 `rgba`、LRPT 的 `rgb`、WEFAX 的 `gray` 是 `Uint8Array`，
+  编码结果的 `samples` 是 `Float32Array`；`DataView` 不算）由 `decode-worker.js` 自动放进 transfer 列表，避免几十 MB 的结构化克隆多拷一份；指向 wasm
   线性内存的视图不会被转移。判据是「`byteOffset == 0` 且 `byteLength == buffer.byteLength`」，
   所以给某个 codec 加「读后复用这块 Uint8Array」的优化时，它就不再满足判据（否则转移后 worker
   手里的 buffer 会被 detach）。

@@ -1,4 +1,4 @@
-use ham_web_core::rf_exposure::assess;
+use ham_web_core::rf_exposure::{assess, assess_gb8702_public};
 use leptos::prelude::*;
 
 use super::fmt_num;
@@ -6,7 +6,9 @@ use crate::i18n::{t, tf};
 use crate::ui::{Field, NumberField};
 use crate::util::unique_id;
 
-/// 射频暴露合规评估：按 FCC OET-65 估算功率密度与最小安全距离。
+/// 射频暴露评估：先按中国 GB 8702-2014 看公众曝露（只收 30–3000 MHz），再附 FCC OET-65 对照。
+///
+/// 两块结果的顺序就是结论的优先级：国内合规以 GB 8702 为准，FCC 的数同频段宽松 5 倍，只作对照。
 #[component]
 pub(super) fn RfExposure() -> impl IntoView {
   let power = RwSignal::new(100.0);
@@ -70,6 +72,40 @@ pub(super) fn RfExposure() -> impl IntoView {
         />
       </Field>
       <div class="sm:col-span-2 space-y-1 bg-inset px-3 py-2 text-sm text-muted-foreground">
+        <div class="text-xs text-foreground/70">{move || t("tools.gb8702-heading")}</div>
+        {move || {
+          match assess_gb8702_public(power.get(), freq.get(), gain.get(), distance.get()) {
+            Some(r) => {
+              let within = r.power_density_w_m2 <= r.limit_w_m2;
+              view! {
+                <div class="tabular-nums">
+                  {tf("tools.gb8702-power-density", &[&fmt_num(r.power_density_w_m2)])}
+                </div>
+                <div class="tabular-nums">
+                  {tf("tools.gb8702-public-limit", &[&fmt_num(r.limit_w_m2)])}
+                </div>
+                <div class="tabular-nums">
+                  {tf("tools.gb8702-safe-distance", &[&fmt_num(r.safe_distance_m)])}
+                </div>
+                <div>
+                  {if within {
+                    t("tools.gb8702-within")
+                  } else {
+                    t("tools.gb8702-exceeds")
+                  }}
+                </div>
+              }
+              .into_any()
+            }
+            None => view! { <span>{move || t("tools.gb8702-out-of-range")}</span> }.into_any(),
+          }
+        }}
+      </div>
+      <p class="sm:col-span-2 text-xs text-muted-foreground">
+        {move || t("tools.gb8702-averaging-note")}
+      </p>
+      <div class="sm:col-span-2 space-y-1 bg-inset px-3 py-2 text-sm text-muted-foreground">
+        <div class="text-xs text-foreground/70">{move || t("tools.fcc-reference-heading")}</div>
         {move || {
           match assess(power.get(), freq.get(), gain.get(), distance.get()) {
             Some(r) => {

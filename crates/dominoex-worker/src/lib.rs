@@ -49,3 +49,43 @@ pub fn decode(bytes: &[u8], params: &JsValue) -> Result<JsValue, JsValue> {
     .map_err(|e| format!("{e:?}"))?;
   Ok(obj.into())
 }
+
+/// 参数字段：缺省 / `null` 是 `None`；给了但类型不对按「非法」处理（字符串给空串、数字给 `NaN`），
+/// 这样仍落到对应的错误码，而不是悄悄换成缺省值。
+fn param(params: &JsValue, key: &str) -> Option<JsValue> {
+  let v = js_sys::Reflect::get(params, &JsValue::from_str(key)).unwrap_or(JsValue::UNDEFINED);
+  (!v.is_undefined() && !v.is_null()).then_some(v)
+}
+
+/// 编码结果：`{ samples: Float32Array, sampleRate }`。`Float32Array::from` 拷出一块独占的 buffer，
+/// `decode-worker.js` 才能把它整块转移给页面。
+fn encode_result(samples: &[f32], rate: u32) -> Result<JsValue, JsValue> {
+  let out = js_sys::Object::new();
+  js_sys::Reflect::set(
+    &out,
+    &JsValue::from_str("samples"),
+    &js_sys::Float32Array::from(samples).into(),
+  )?;
+  js_sys::Reflect::set(&out, &JsValue::from_str("sampleRate"), &JsValue::from(rate))?;
+  Ok(out.into())
+}
+
+/// 合成一段 DominoEX 基带，返回 `{ samples: Float32Array, sampleRate }`。
+///
+/// 统一 Worker 协议的编码入口。`params`：`mode`（缺省 `"8"`）、`text`、`fec`（缺省 `false`；
+/// `true` = MultiPSK 兼容 FEC，**收发两端必须选同一种**）。信号中心固定 1000 Hz，没有 `centerHz`。
+/// 校验全在 [`ham_web_dominoex::encode_message`]。本 crate 是 GPL-3.0，发端只能在这个独立 worker 里。
+#[wasm_bindgen]
+pub fn encode(params: &JsValue) -> Result<JsValue, JsValue> {
+  let mode =
+    param(params, "mode").map_or_else(|| "8".to_owned(), |v| v.as_string().unwrap_or_default());
+  let text = param(params, "text")
+    .and_then(|v| v.as_string())
+    .unwrap_or_default();
+  let fec = param(params, "fec")
+    .and_then(|v| v.as_bool())
+    .unwrap_or(false);
+  let (samples, rate) = ham_web_dominoex::encode_message(&text, &mode, fec)
+    .map_err(|e| JsValue::from_str(&e.code()))?;
+  encode_result(&samples, rate)
+}

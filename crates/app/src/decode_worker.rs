@@ -7,6 +7,7 @@
 //! 超时兜底 / 按码本地化）收敛成一份，代际、取消与重置的编排在
 //! [`crate::decode_session::DecodeSession`]（页面一律经它接入，不再手写生命周期）。
 
+use std::cell::RefCell;
 use std::sync::{Arc, OnceLock};
 
 use leptos::prelude::*;
@@ -216,6 +217,97 @@ fn envelope(codec: &str, ab: &js_sys::ArrayBuffer, params: &JsValue) -> JsValue 
   obj.into()
 }
 
+/// 编码请求的兜底超时（毫秒）。合成是毫秒级的活；超过它只会是 wasm 加载卡住了，
+/// 否则按钮会一直没有反应。
+const ENCODE_TIMEOUT_MS: i32 = 30_000;
+
+/// 组装 `{ codec, op: "encode", params }` 信封（编码没有输入文件，所以没有 `bytes`）。
+fn encode_envelope(codec: &str, params: &JsValue) -> JsValue {
+  let obj = js_sys::Object::new();
+  let _ = js_sys::Reflect::set(&obj, &JsValue::from_str("codec"), &JsValue::from_str(codec));
+  let _ = js_sys::Reflect::set(&obj, &JsValue::from_str("op"), &JsValue::from_str("encode"));
+  let _ = js_sys::Reflect::set(&obj, &JsValue::from_str("params"), params);
+  obj.into()
+}
+
+/// 与 Worker 回信同形的失败消息体 `{ ok: false, error }`。
+fn failure_reply(error: &str) -> JsValue {
+  let data = js_sys::Object::new();
+  let _ = js_sys::Reflect::set(&data, &"ok".into(), &JsValue::FALSE);
+  let _ = js_sys::Reflect::set(&data, &"error".into(), &JsValue::from_str(error));
+  data.into()
+}
+
+/// 一次性编码请求：起一个 Worker、发 `{ codec, op: "encode", params }`、等一条回复、销毁，
+/// 返回 `result`（失败是已本地化的文案）。
+///
+/// 为什么不用 `DecodeSession`：它围着「选文件 → 读取 → 解码」组织（代际、读文件、超时槽位），
+/// 编码没有输入文件，也没有「选新文件替换在途任务」的场景。调用方是按钮回调、不在组件的
+/// Owner 里，所以闭包的所有权放在这个 future 里（回复或超时到达、Worker 销毁后随它释放），
+/// 不走 `retain_*` 那套挂在 Owner 上的写法。
+///
+/// 为什么走 Worker 而不是直接链进主包：能编码的 codec 里有 GPL-3.0 的（NAVTEX），
+/// 链进 MIT 的主包 wasm 会让整个主包带上 GPL（`docs/engineering/licensing.md`）。
+pub async fn encode_once(codec: &str, params: &JsValue) -> Result<JsValue, String> {
+  let Ok(worker) = Worker::new("/decode-worker.js") else {
+    return Err(localize_error("worker-load-failed"));
+  };
+  let window = web_sys::window();
+  let timer = std::cell::Cell::new(None::<i32>);
+  // 闭包都要活到回复到达：Promise 的执行体同步跑完，闭包却要等 Worker 回信才会被调用。
+  let keep: RefCell<Vec<Box<dyn std::any::Any>>> = RefCell::default();
+
+  let promise = js_sys::Promise::new(&mut |resolve, _reject| {
+    let on_message_resolve = resolve.clone();
+    let on_message =
+      Closure::<dyn FnMut(web_sys::MessageEvent)>::new(move |ev: web_sys::MessageEvent| {
+        let _ = on_message_resolve.call1(&JsValue::NULL, &ev.data());
+      });
+    let on_message_fn = on_message
+      .as_ref()
+      .unchecked_ref::<js_sys::Function>()
+      .clone();
+    // `error` 事件（脚本 404 / 被拦截 / wasm trap）经 `error_handler` 合成成一条同形回信，
+    // 走上面同一个 `on_message`。
+    let on_error = error_handler(&on_message_fn);
+    worker.set_onmessage(Some(&on_message_fn));
+    worker.set_onerror(Some(on_error.as_ref().unchecked_ref()));
+
+    let timeout_resolve = resolve.clone();
+    let on_timeout = Closure::<dyn FnMut()>::new(move || {
+      let reply = failure_reply("worker-run-failed:timeout");
+      let _ = timeout_resolve.call1(&JsValue::NULL, &reply);
+    });
+    if let Some(window) = &window
+      && let Ok(handle) = window.set_timeout_with_callback_and_timeout_and_arguments_0(
+        on_timeout.as_ref().unchecked_ref(),
+        ENCODE_TIMEOUT_MS,
+      )
+    {
+      timer.set(Some(handle));
+    }
+    keep.borrow_mut().extend([
+      Box::new(on_message) as Box<dyn std::any::Any>,
+      Box::new(on_error),
+      Box::new(on_timeout),
+    ]);
+  });
+
+  let posted = worker.post_message(&encode_envelope(codec, params));
+  let data = match posted {
+    Ok(()) => wasm_bindgen_futures::JsFuture::from(promise)
+      .await
+      .map_err(|e| js_error_message(&e)),
+    Err(e) => Err(js_error_message(&e)),
+  };
+  if let (Some(window), Some(handle)) = (&window, timer.get()) {
+    window.clear_timeout_with_handle(handle);
+  }
+  shutdown_worker(&worker);
+  drop(keep);
+  parse_outcome(&data?)
+}
+
 /// 拆统一回复：`{ ok: bool, result?, error? }` → `Ok(result)` / `Err(error)`。
 ///
 /// 每页拿到 `result`（一个 JS 对象）后按自己的字段解析。`error` 若是 Worker 的错误码
@@ -376,6 +468,15 @@ pub fn get_u8s(obj: &JsValue, key: &str) -> Result<Vec<u8>, String> {
   Ok(arr.to_vec())
 }
 
+/// 必填 `Float32Array` 字段（拷出为 `Vec<f32>`）：编码结果的基带样本。
+pub fn get_f32s(obj: &JsValue, key: &str) -> Result<Vec<f32>, String> {
+  let v = raw_field(obj, key)?;
+  let arr: js_sys::Float32Array = v
+    .dyn_into()
+    .map_err(|_| tf("common.field-is-not-a", &[key]))?;
+  Ok(arr.to_vec())
+}
+
 /// 把 `码` / `码:参数` 拆开。参数里可以再含 `:`（只在第一个冒号处切）。
 fn split_code(raw: &str) -> (&str, &str) {
   raw.split_once(':').unwrap_or((raw, ""))
@@ -429,6 +530,19 @@ pub(crate) fn localize_error(raw: &str) -> String {
     "rate-too-low" => tf("tools.decode-err-rate-too-low", &[arg]),
     "input-too-large" => tf("tools.decode-err-input-too-large", &[arg]),
     "image-incomplete" => tf("tools.decode-err-lrpt-incomplete", &[arg]),
+    // 编码入参不合法：参数是出错的字段名，每个字段一条能直接照着改的提示。
+    "encode-params" => match arg {
+      "station" => t("tools.decode-err-encode-station"),
+      "category" => t("tools.decode-err-encode-category"),
+      "serial" => t("tools.decode-err-encode-serial"),
+      "text" => t("tools.decode-err-encode-text"),
+      "phasing" => t("tools.decode-err-encode-phasing"),
+      "picture" => t("tools.decode-err-encode-picture"),
+      "length" => t("tools.decode-err-encode-length"),
+      "id" => t("tools.decode-err-encode-id"),
+      _ => raw.to_owned(),
+    },
+    "encode-unsupported" => tf("tools.decode-err-encode-unsupported", &[arg]),
     _ => raw.to_owned(),
   }
 }

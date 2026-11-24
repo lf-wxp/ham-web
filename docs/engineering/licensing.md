@@ -55,6 +55,13 @@
 
 - 这几个解码器编译成独立的 wasm 文件，由 `public/decode-worker.js` 经 `postMessage` 调用，
   与站点其余部分（MIT）之间没有链接关系；本站公开分发的 wasm 对应源码就是本仓库。
+  **发端也一样**：NAVTEX / MFSK / THOR / DominoEX 的合成走各自 worker 的 `encode` 入口（`decode_worker::encode_once`，协议见
+  [`domain/decode-worker-protocol.md`](../domain/decode-worker-protocol.md)「编码」），主包不依赖任何 GPL crate。
+  Olivia、WSPR、FT8、Feld Hell 是 MIT，发端可以直接链进主包。
+  主包因此拿不到这些 crate 的模式表，页面自己持有子模式「值 → 标签」名单（`crates/app/src/codec_modes.rs`）。
+- **这条边界由 `check-structure` 的「许可边界」守着**：非 GPL 的 crate 不得在 `[dependencies]` /
+  `[build-dependencies]` 里依赖 GPL crate（`dev-dependencies` 不进发布物，放行）。一个 GPL crate 都没认出来时
+  规则会空转，那也算失败。新增 GPL crate 时在它的 `Cargo.toml` 写 `license = "GPL-3.0-only"` 即被纳入。
 - **复用这十个 crate 时必须遵守 GPL-3.0**（衍生作品需以 GPL-3.0 开源）；其余 crate 仍是 MIT。
 - `e2e/tests/dominoex_varicode_data.ts`（fldigi `dominovar.cxx`）、`e2e/tests/mfsk_varicode_data.ts`（`mfskvaricode.cxx`）、
   `e2e/tests/thor_varicode_data.ts`（`thorvaricode.cxx`）与 `e2e/tests/navtex_varicode_data.ts`

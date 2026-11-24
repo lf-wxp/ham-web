@@ -360,3 +360,24 @@ html[data-ui-style="modern"] .md-panel table:not(.md-table) tbody tr:last-child 
   }
 }
 
+/* ============================================================
+   电台频率护栏（RigGuard）：像素风的 Led + text-* token 在现代风换圆点 + data-tone 驱动。
+   圆点是 aria-hidden 装饰（文字另用 --md-*-ink 上色），颜色不是唯一通道。
+   ============================================================ */
+@layer components {
+  /* 灯名行：圆点色由 data-tone 决定，缺省（灰）与 .md-led 基础色一致。 */
+  .md-guard-row { --md-guard-dot: var(--md-border-strong); }
+  .md-guard-row[data-tone="alert"] { --md-guard-dot: var(--md-danger); }
+  .md-guard-row[data-tone="notice"] { --md-guard-dot: var(--md-gold); }
+  .md-guard-row[data-tone="ok"] { --md-guard-dot: var(--md-green); }
+  .md-guard-row[data-tone="out"] { --md-guard-dot: var(--md-fg-muted); }
+  .md-guard-row .md-led { background-color: var(--md-guard-dot); }
+
+  /* 灯名与 finding 文字：同样由 data-tone 上色。 */
+  .md-guard-tone { color: var(--md-fg-muted); }
+  .md-guard-tone[data-tone="alert"] { color: var(--md-danger-ink); }
+  .md-guard-tone[data-tone="notice"] { color: var(--md-gold-ink); }
+  .md-guard-tone[data-tone="ok"] { color: var(--md-green-ink); }
+  .md-guard-tone[data-tone="out"] { color: var(--md-fg-muted); }
+}
+

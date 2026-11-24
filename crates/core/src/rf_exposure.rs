@@ -1,4 +1,9 @@
-//! 射频暴露评估：按 FCC 47 CFR §1.1310 计算最大允许暴露（MPE）功率密度与最小安全距离。
+//! 射频暴露评估：按 FCC 47 CFR §1.1310 计算最大允许暴露（MPE）功率密度与最小安全距离，
+//! 另有一条只认 30–3000 MHz 的中国 GB 8702-2014 公众曝露口径（[`assess_gb8702_public`]）。
+//!
+//! **两套口径不能互相代入**：GB 8702 的公众限值在 30–3000 MHz 恒为 0.4 W/m²，而 FCC 非受控限值
+//! 随频率抬高 —— 30–300 MHz 是 2 W/m²（5 倍，安全距离相差 √5 ≈ 2.24 倍），435 MHz 约 2.9 W/m²
+//! （7.25 倍），1.5 GHz 以上 10 W/m²（25 倍）。国内合规判定看 GB 8702，FCC 只作对照。
 //!
 //! 采用远场近似：功率密度 S = P·G / (4π d²)。近场区（距离小于数个波长）实际场强
 //! 可能更高，故本计算仅作合规自检参考，不能替代专业电磁环境评估。
@@ -24,6 +29,30 @@ use std::f64::consts::PI;
 /// 非受控环境 MPE 表中 100 mW/cm² 段的上边界频率（MHz），见 47 CFR §1.1310
 /// Table 1(B)。受控环境（Table 1(A)）对应的边界是 3.0 MHz。
 pub const UNCONTROLLED_MF_CORNER_MHZ: f64 = 1.34;
+
+/// GB 8702-2014 公众曝露限值（30–3000 MHz）的等效平面波功率密度（W/m²）。
+///
+/// 标准同一行还写了电场强度 12 V/m；12² / 377 ≈ 0.38，标准取整写作 0.4，这里照标准写的值，
+/// 不自己用 12 V/m 反算（会差 4.5%）。与 [`crate::safety::EXPOSURE_LIMITS`] 的正文同值，
+/// 由 `knowledge_consistency` 对拍。
+pub const GB8702_PUBLIC_W_M2: f64 = 0.4;
+
+/// [`GB8702_PUBLIC_W_M2`] 适用的频率范围（MHz，含两端）。
+///
+/// 本站只收录这一行：GB 8702 在 30 MHz 以下（HF）与 3 GHz 以上另有分段限值，没有逐字核对过的
+/// 限值表之前不外推 —— 把 0.4 W/m² 用到 HF 会得出一个看起来像真的、实际错的距离。
+pub const GB8702_PUBLIC_RANGE_MHZ: (f64, f64) = (30.0, 3000.0);
+
+/// 按 GB 8702-2014 评估公众曝露的结果。
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Gb8702Public {
+  /// 给定距离处的功率密度（W/m²，远场近似）。
+  pub power_density_w_m2: f64,
+  /// 公众限值（W/m²），即 [`GB8702_PUBLIC_W_M2`]。
+  pub limit_w_m2: f64,
+  /// 满足公众限值所需的最小距离（米）。
+  pub safe_distance_m: f64,
+}
 
 /// 射频暴露评估结果。
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -160,6 +189,39 @@ pub fn assess(power_w: f64, freq_mhz: f64, gain_dbi: f64, distance_m: f64) -> Op
   })
 }
 
+/// 按 GB 8702-2014 评估**公众**曝露：功率密度、限值与最小安全距离（远场近似）。
+///
+/// `power_w` 按 6 分钟平均功率处理 —— SSB / CW 的峰包功率要先折算（见 `duty_power`）。
+/// 频率不在 [`GB8702_PUBLIC_RANGE_MHZ`] 内、任一入参非正或非有限、结果溢出时返回 `None`，
+/// 页面据此说明「不给国内结论」而不是退回 FCC 的数。
+///
+/// 只覆盖公众曝露：职业曝露限值、豁免条件、多部发射机相加与近场修正都没有收录。
+#[must_use]
+pub fn assess_gb8702_public(
+  power_w: f64,
+  freq_mhz: f64,
+  gain_dbi: f64,
+  distance_m: f64,
+) -> Option<Gb8702Public> {
+  let (lo, hi) = GB8702_PUBLIC_RANGE_MHZ;
+  let valid = [power_w, freq_mhz, gain_dbi, distance_m]
+    .iter()
+    .all(|v| v.is_finite())
+    && power_w > 0.0
+    && distance_m > 0.0
+    && (lo..=hi).contains(&freq_mhz);
+  if !valid {
+    return None;
+  }
+  let eirp_w = power_w * linear_gain(gain_dbi);
+  let result = Gb8702Public {
+    power_density_w_m2: eirp_w / (4.0 * PI * distance_m * distance_m),
+    limit_w_m2: GB8702_PUBLIC_W_M2,
+    safe_distance_m: (eirp_w / (4.0 * PI * GB8702_PUBLIC_W_M2)).sqrt(),
+  };
+  (result.power_density_w_m2.is_finite() && result.safe_distance_m.is_finite()).then_some(result)
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -228,5 +290,70 @@ mod tests {
     assert!(assess(0.0, 14.0, 0.0, 10.0).is_none());
     assert!(assess(100.0, 0.1, 0.0, 10.0).is_none());
     assert!(assess(100.0, 14.0, 0.0, 0.0).is_none());
+  }
+
+  /// 期望值来自独立脚本：S = P·G/(4πd²)，d = √(P·G/(4π·0.4))（不复用本模块的公式）。
+  #[test]
+  fn gb8702_matches_independent_anchors() {
+    let r = assess_gb8702_public(100.0, 145.0, 0.0, 10.0).unwrap();
+    assert!((r.power_density_w_m2 - 0.079_577).abs() < 1e-6);
+    assert!((r.safe_distance_m - 4.460_310).abs() < 1e-6);
+    assert_eq!(r.limit_w_m2, 0.4);
+    // 11.15 dBi 的定向天线：同样 100 W，安全距离按 √G 放大。
+    let r = assess_gb8702_public(100.0, 145.0, 11.15, 10.0).unwrap();
+    assert!((r.safe_distance_m - 16.101_453).abs() < 1e-5);
+  }
+
+  /// 安全距离代回去，功率密度正好等于限值；这一步抓得住「距离公式与密度公式不互逆」。
+  #[test]
+  fn gb8702_safe_distance_round_trips_to_the_limit() {
+    for (p, f, g) in [
+      (5.0, 435.0, 2.15),
+      (100.0, 145.0, 0.0),
+      (1500.0, 1296.0, 18.0),
+    ] {
+      let r = assess_gb8702_public(p, f, g, 10.0).unwrap();
+      let at_safe = assess_gb8702_public(p, f, g, r.safe_distance_m).unwrap();
+      assert!((at_safe.power_density_w_m2 - GB8702_PUBLIC_W_M2).abs() < 1e-12);
+    }
+  }
+
+  /// 「差 5 倍」只在 30–300 MHz 成立（FCC 非受控 0.2 mW/cm² = 2 W/m²，距离比正好 √5）；
+  /// 300 MHz 以上 FCC 的限值随频率抬高，差距更大，不能把 5 倍当成 30–3000 MHz 的通则。
+  /// 期望的倍数由独立脚本按 FCC 分段算出（435 MHz 为 2.9 W/m²，即 7.25 倍）。
+  #[test]
+  fn gb8702_vs_fcc_distance_ratio_depends_on_the_band() {
+    let ratio = |f: f64| {
+      let gb = assess_gb8702_public(100.0, f, 2.15, 10.0).unwrap();
+      let fcc = assess(100.0, f, 2.15, 10.0).unwrap();
+      gb.safe_distance_m / fcc.safe_distance_uncontrolled_m
+    };
+    assert!((ratio(146.0) - 5f64.sqrt()).abs() < 1e-9);
+    assert!((ratio(435.0) - 7.25f64.sqrt()).abs() < 1e-9);
+    assert!((ratio(2400.0) - 25f64.sqrt()).abs() < 1e-9);
+  }
+
+  /// 频段边界含两端；段外（HF、3 GHz 以上）一律 `None`，不外推。
+  #[test]
+  fn gb8702_refuses_frequencies_outside_30_to_3000_mhz() {
+    assert!(assess_gb8702_public(100.0, 30.0, 0.0, 10.0).is_some());
+    assert!(assess_gb8702_public(100.0, 3000.0, 0.0, 10.0).is_some());
+    for f in [14.0, 29.999, 3000.001, 5800.0, 0.0, -1.0] {
+      assert!(assess_gb8702_public(100.0, f, 0.0, 10.0).is_none(), "{f}");
+    }
+  }
+
+  #[test]
+  fn gb8702_rejects_invalid_and_overflowing_inputs() {
+    assert!(assess_gb8702_public(0.0, 145.0, 0.0, 10.0).is_none());
+    assert!(assess_gb8702_public(-5.0, 145.0, 0.0, 10.0).is_none());
+    assert!(assess_gb8702_public(100.0, 145.0, 0.0, 0.0).is_none());
+    assert!(assess_gb8702_public(100.0, 145.0, 0.0, -3.0).is_none());
+    assert!(assess_gb8702_public(f64::NAN, 145.0, 0.0, 10.0).is_none());
+    assert!(assess_gb8702_public(100.0, f64::NAN, 0.0, 10.0).is_none());
+    assert!(assess_gb8702_public(100.0, 145.0, f64::INFINITY, 10.0).is_none());
+    assert!(assess_gb8702_public(f64::INFINITY, 145.0, 0.0, 10.0).is_none());
+    // 增益大到线性值溢出：不返回一个 inf 的「安全距离」。
+    assert!(assess_gb8702_public(100.0, 145.0, 5000.0, 10.0).is_none());
   }
 }

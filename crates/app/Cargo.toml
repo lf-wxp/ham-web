@@ -11,11 +11,16 @@ authors.workspace = true
 [dependencies]
 ham-web-core.workspace = true
 ham-web-apt.workspace = true
-# WSPR / NAVTEX / FT8 发端：消息打包与 FSK 合成直接用解码器同一份实现（往返测试在其 crate 内）
+# WSPR / FT8 / Feld Hell 发端：消息打包与 FSK 合成直接用解码器同一份实现（往返测试在其 crate 内）。
+# 这几个都是 MIT。NAVTEX 是 GPL-3.0，发端放在 navtex-worker 里（`decode_worker::encode_once`）
 ham-web-wspr.workspace = true
 ham-web-ft8.workspace = true
-ham-web-navtex.workspace = true
 ham-web-hell.workspace = true
+# Olivia 发端：同上，用解码器同一份 `encode_audio`。Olivia 是 MIT，才能直接链进主包；
+# dominoex / mfsk / thor 是 GPL-3.0-only，不能照这个写法接（docs/engineering/licensing.md）
+ham-web-olivia.workspace = true
+# SSTV 发端：同上，用库里的 `encode_image`（解码器的 Worker 另有自己的依赖）。`ham-web-sstv` 是 MIT。
+ham-web-sstv.workspace = true
 leptos.workspace = true
 leptos_router.workspace = true
 serde.workspace = true

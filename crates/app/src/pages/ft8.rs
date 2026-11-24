@@ -1,9 +1,11 @@
 //! FT8 / FT4 弱信号数字模式操作速查。
 
 use ham_web_core::ft8::{FT8_CONCEPTS, FT8_FREQS, FT8_TIPS};
+use ham_web_core::slot_clock;
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::components::slot_clock::SlotClock;
 use crate::data::kt_tracked;
 use crate::i18n::t;
 use crate::util::set_title;
@@ -21,6 +23,13 @@ pub fn Ft8Page() -> impl IntoView {
       />
 
       <PageContainer>
+        // 时隙钟：FT8 / FT4 都按 UTC 对齐，这页是「怎么操作」的速查，最该放在最上面。
+        <section class=crate::kit::card_class()>
+          <div class="p-4">
+            <SlotClock specs=vec![slot_clock::FT8, slot_clock::FT4] />
+          </div>
+        </section>
+
         <section class=crate::kit::card_class()>
           <h2 class=crate::kit::card_title_class()>{move || t("radio.key-concepts-heading")}</h2>
           <div class="grid gap-1 p-4 sm:grid-cols-2">

@@ -22,7 +22,9 @@ pub use crate::license_classes::{
 };
 
 /// A / B / C 类操作技术能力。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+///
+/// 序列化成 `"A"` / `"B"` / `"C"`（电台页把用户选的类别存进 `cat-settings`）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Class {
   A,
   B,

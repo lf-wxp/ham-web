@@ -10,28 +10,13 @@ use crate::components::common::{
 use crate::decode_session::{DecodeConfig, DecodeSession, MAX_UPLOAD_BYTES};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
-  Button, ButtonLink, Checkbox, Field, FileDropZone, NumberField, NumberKind, SelectOption,
-  SimpleSelect, Size, TextValue, Variant,
+  Button, ButtonLink, Checkbox, Field, FileDropZone, NumberField, NumberKind, SimpleSelect, Size,
+  Variant,
 };
 use crate::util::set_title;
 
 use super::mfsk_worker::parse_message;
 use crate::i18n::{t, tf};
-
-/// 支持的子模式（16 是默认，也是最常见的）。
-const MODES: &[(&str, &str)] = &[
-  ("16", "MFSK16"),
-  ("8", "MFSK8"),
-  ("4", "MFSK4"),
-  ("11", "MFSK11"),
-  ("22", "MFSK22"),
-  ("31", "MFSK31"),
-  ("32", "MFSK32"),
-  ("64", "MFSK64"),
-  ("128", "MFSK128"),
-  ("64L", "MFSK64L"),
-  ("128L", "MFSK128L"),
-];
 
 #[component]
 pub fn MfskDecoderPage() -> impl IntoView {
@@ -91,14 +76,7 @@ pub fn MfskDecoderPage() -> impl IntoView {
     });
   });
 
-  let mode_options: Vec<SelectOption> = MODES
-    .iter()
-    .map(|(value, label)| SelectOption {
-      value: (*value).to_owned(),
-      label: TextValue::from((*label).to_owned()),
-      group: None,
-    })
-    .collect();
+  let mode_options = crate::codec_modes::select_options(crate::codec_modes::MFSK_MODES);
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">

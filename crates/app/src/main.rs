@@ -9,6 +9,7 @@ mod auto_sync;
 mod backup_apply;
 mod bank_updates;
 mod cn;
+mod codec_modes;
 mod components;
 mod composition;
 mod data;

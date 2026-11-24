@@ -27,9 +27,14 @@ pub mod track;
 pub mod varicode;
 
 mod rx;
+mod send;
 mod tx;
 
 pub use rx::{Decoded, decode_audio, detect_base};
+pub use send::{
+  DEFAULT_CENTER_HZ, EncodeError, MAX_ENCODE_SAMPLES, MAX_TEXT_CHARS, PictureTx, encode_message,
+  encode_picture_message, lead_in_text, resolve_center, sendable_text, within_budget,
+};
 pub use tx::{encode_audio, encode_picture_audio, encode_symbols};
 
 /// 一个 MFSK 子模式。

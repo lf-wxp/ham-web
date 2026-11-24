@@ -6,6 +6,7 @@
 use ham_web_core::cat::{
   BAUD_RATES, DEFAULT_CIV_ADDR, Parser, Protocol, Update as CatUpdate, format_mhz, poll_commands,
 };
+use ham_web_core::license_compliance::Class;
 use js_sys::{Array, Function, Object, Promise, Reflect, Uint8Array};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -13,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 
+use crate::components::rig_guard::RigGuard;
 use crate::i18n::{t, tf};
 use crate::ui::{Button, ControlSize, Input, SelectOption, SimpleSelect, Size, Variant};
 use crate::util::{js_error_message, sleep, storage, window};
@@ -28,6 +30,9 @@ pub(crate) struct Settings {
   pub(crate) protocol: Protocol,
   pub(crate) baud: u32,
   pub(crate) civ_addr: u8,
+  /// 频率护栏按哪张操作证判定（`RigGuard`）；没选是 `None`。放在这里而不是单开一个 key：
+  /// 它和串口参数一样「跟着这台设备连的这台电台走」（设备专属、不同步），不必再登记一个存储 key。
+  pub(crate) class: Option<Class>,
 }
 
 /// 读取已保存的串口设置（没有保存过就是默认值）。
@@ -46,6 +51,7 @@ impl Default for Settings {
       protocol: Protocol::Kenwood,
       baud: 9600,
       civ_addr: DEFAULT_CIV_ADDR,
+      class: None,
     }
   }
 }
@@ -245,6 +251,7 @@ pub fn CatControl(#[prop(into)] on_reading: Callback<CatReading>) -> impl IntoVi
     .collect();
 
   view! {
+    <div class="space-y-2">
     <div class="flex flex-wrap items-center gap-2 border border-dashed px-3 py-2 text-xs text-muted-foreground">
       <span class="text-foreground">{move || t("common.rig-cat")}</span>
       {if supported {
@@ -323,6 +330,19 @@ pub fn CatControl(#[prop(into)] on_reading: Callback<CatReading>) -> impl IntoVi
       } else {
         view! { <span>{move || t("common.connecting-a-rig-requires")}</span> }.into_any()
       }}
+    </div>
+    // 频率护栏：连上电台后按读到的频率 / 模式与所选操作证类别亮灯（只读，不写电台）。
+    <Show when=connected>
+      <RigGuard
+        freq_hz=freq
+        mode=mode
+        class=Signal::derive(move || settings.with(|s| s.class))
+        on_class=Callback::new(move |c: Option<Class>| {
+          settings.update(|s| s.class = c);
+          save();
+        })
+      />
+    </Show>
     </div>
   }
 }

@@ -145,9 +145,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.104"
+version = "1.0.105"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
+checksum = "2cb931c189b85683d69a5cfad41d4d418671e1ac413dd209f3f2fc31e3cfd902"
 
 [[package]]
 name = "argon2"
@@ -1322,7 +1322,7 @@ checksum = "17e2ac29387b1aa07a1e448f7bb4f35b500787971e965b02842b900afa5c8f6f"
 
 [[package]]
 name = "ham-web-afsk1200-worker"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-core",
  "ham-web-wav",
@@ -1332,14 +1332,15 @@ dependencies = [
 
 [[package]]
 name = "ham-web-app"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "console_error_panic_hook",
  "ham-web-apt",
  "ham-web-core",
  "ham-web-ft8",
  "ham-web-hell",
- "ham-web-navtex",
+ "ham-web-olivia",
+ "ham-web-sstv",
  "ham-web-wspr",
  "js-sys",
  "leptos",
@@ -1354,7 +1355,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-apt"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-dsp",
  "ham-web-wav",
@@ -1362,7 +1363,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-apt-worker"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-apt",
  "js-sys",
@@ -1371,7 +1372,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-core"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-nec",
  "ham-web-wav",
@@ -1382,7 +1383,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-dominoex"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1392,7 +1393,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-dominoex-worker"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-apt",
  "ham-web-dominoex",
@@ -1402,11 +1403,11 @@ dependencies = [
 
 [[package]]
 name = "ham-web-dsp"
-version = "0.7.1"
+version = "0.7.2"
 
 [[package]]
 name = "ham-web-ft8"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1415,7 +1416,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-ft8-worker"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-apt",
  "ham-web-ft8",
@@ -1425,7 +1426,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-hell"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1434,7 +1435,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-hell-worker"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-hell",
  "ham-web-wav",
@@ -1444,14 +1445,14 @@ dependencies = [
 
 [[package]]
 name = "ham-web-lrpt"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-apt",
 ]
 
 [[package]]
 name = "ham-web-lrpt-worker"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "console_error_panic_hook",
  "ham-web-apt",
@@ -1462,7 +1463,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-mfsk"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-dsp",
  "ham-web-wav",
@@ -1470,7 +1471,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-mfsk-worker"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-mfsk",
  "ham-web-wav",
@@ -1480,7 +1481,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-navtex"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1489,7 +1490,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-navtex-worker"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-apt",
  "ham-web-navtex",
@@ -1499,11 +1500,11 @@ dependencies = [
 
 [[package]]
 name = "ham-web-nec"
-version = "0.7.1"
+version = "0.7.2"
 
 [[package]]
 name = "ham-web-olivia"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1512,7 +1513,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-olivia-worker"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-apt",
  "ham-web-olivia",
@@ -1522,7 +1523,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-rtty"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1531,7 +1532,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-rtty-worker"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-apt",
  "ham-web-rtty",
@@ -1541,7 +1542,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-server"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1569,7 +1570,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-sstv"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-dsp",
  "ham-web-wav",
@@ -1577,7 +1578,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-sstv-worker"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-sstv",
  "js-sys",
@@ -1586,7 +1587,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-thor"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-dsp",
  "ham-web-mfsk",
@@ -1595,7 +1596,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-thor-worker"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-thor",
  "ham-web-wav",
@@ -1605,7 +1606,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-tools"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "anyhow",
  "brotli",
@@ -1628,18 +1629,18 @@ dependencies = [
 
 [[package]]
 name = "ham-web-wav"
-version = "0.7.1"
+version = "0.7.2"
 
 [[package]]
 name = "ham-web-wefax"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-wav",
 ]
 
 [[package]]
 name = "ham-web-wefax-worker"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-wefax",
  "js-sys",
@@ -1648,7 +1649,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-wspr"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-apt",
  "ham-web-dsp",
@@ -1657,7 +1658,7 @@ dependencies = [
 
 [[package]]
 name = "ham-web-wspr-worker"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "ham-web-apt",
  "ham-web-wspr",
@@ -1667,14 +1668,15 @@ dependencies = [
 
 [[package]]
 name = "harfrust"
-version = "0.12.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c03d949a14aa089bbb282f7dd76a498a7f684428e4257202efc119ec010376f9"
+checksum = "865dcc4105d51c323d8fedbb2d75b5e9c8ecddf5613f74c82f851d0afbc97114"
 dependencies = [
  "bitflags",
  "bytemuck",
  "read-fonts",
  "smallvec",
+ "yoke",
 ]
 
 [[package]]
@@ -2782,13 +2784,16 @@ dependencies = [
 
 [[package]]
 name = "read-fonts"
-version = "0.41.0"
+version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "046a7d674daf459825b32f5062056d6882db0d2f5a479fbd76ccfc870ac18709"
+checksum = "bdaa4fffe9ff3ca2c353fa9729792805b9b3e324695ff5a081f860612e81b330"
 dependencies = [
  "bytemuck",
+ "foldhash 0.2.0",
  "font-types",
  "once_cell",
+ "smallvec",
+ "yoke",
 ]
 
 [[package]]
@@ -2822,9 +2827,9 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
 name = "resvg"
-version = "0.49.0"
+version = "0.50.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1572844b6727a1bf842190e9947641a68ac44bed83f50afb4bd1407a2564bee8"
+checksum = "77bb4b284cf8a5c8ae721594af53387fb755d2196fddb32b2acfb4fa9251fa0c"
 dependencies = [
  "bytemuck",
  "gif",
@@ -3283,12 +3288,15 @@ checksum = "33f4fe9184a62d842c9ef383018f3306d8ba224fd9d836f56d7288308847c256"
 
 [[package]]
 name = "skrifa"
-version = "0.44.0"
+version = "0.49.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "819ab7d62b1d3e72d9d9dea5650bac30424f9111364bb94928dbf5ecad1baa68"
+checksum = "a7459fb60888ad9a5f367dd293fa2fb9df142cb451aa6bfd6cd66a7d6a9b739d"
 dependencies = [
  "bytemuck",
+ "once_cell",
  "read-fonts",
+ "smallvec",
+ "yoke",
 ]
 
 [[package]]
@@ -3884,9 +3892,9 @@ dependencies = [
 
 [[package]]
 name = "usvg"
-version = "0.49.0"
+version = "0.50.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d09b73ee83641d390ad7ffd9000f347b16eb128e437675b6ff277ea5c7fcf22c"
+checksum = "bdb896f04730b97805bbc3191fc57e4bf03face0f14577dd42e783c4d8c98802"
 dependencies = [
  "base64 0.23.1",
  "data-url",

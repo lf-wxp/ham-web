@@ -10,32 +10,13 @@ use crate::components::common::{
 use crate::decode_session::{DecodeConfig, DecodeSession, MAX_UPLOAD_BYTES};
 use crate::icons::{Icon, IconKind};
 use crate::ui::{
-  Button, ButtonLink, Checkbox, Field, FileDropZone, NumberField, NumberKind, SelectOption,
-  SimpleSelect, Size, TextValue, Variant,
+  Button, ButtonLink, Checkbox, Field, FileDropZone, NumberField, NumberKind, SimpleSelect, Size,
+  Variant,
 };
 use crate::util::set_title;
 
 use super::thor_worker::parse_message;
 use crate::i18n::{t, tf};
-
-/// 支持的子模式（16 是默认，也是最常见的）。
-const MODES: &[(&str, &str)] = &[
-  ("16", "THOR 16"),
-  ("8", "THOR 8"),
-  ("4", "THOR 4"),
-  ("micro", "THOR micro"),
-  ("5", "THOR 5"),
-  ("11", "THOR 11"),
-  ("22", "THOR 22"),
-  ("25", "THOR 25"),
-  ("32", "THOR 32"),
-  ("44", "THOR 44"),
-  ("56", "THOR 56"),
-  ("25x4", "THOR 25x4"),
-  ("50x1", "THOR 50x1"),
-  ("50x2", "THOR 50x2"),
-  ("100", "THOR 100"),
-];
 
 #[component]
 pub fn ThorDecoderPage() -> impl IntoView {
@@ -95,14 +76,7 @@ pub fn ThorDecoderPage() -> impl IntoView {
     });
   });
 
-  let mode_options: Vec<SelectOption> = MODES
-    .iter()
-    .map(|(value, label)| SelectOption {
-      value: (*value).to_owned(),
-      label: TextValue::from((*label).to_owned()),
-      group: None,
-    })
-    .collect();
+  let mode_options = crate::codec_modes::select_options(crate::codec_modes::THOR_MODES);
 
   view! {
     <div class="animate-in fade-in slide-in-from-bottom-2 duration-(--motion-normal) ease-out">

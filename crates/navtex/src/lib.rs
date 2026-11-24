@@ -32,6 +32,11 @@ pub use message::{NavtexMessage, decode_messages, find_zczc};
 /// 的基带采样。
 pub const MAX_MESSAGE_CHARS: usize = 1024;
 
+/// 发端合成的基带采样率（Hz）。
+///
+/// Worker 把它连同样本一起回给页面，页面写 WAV 头时用这个值，不再自己写一份 8000。
+pub const SAMPLE_RATE: u32 = 8000;
+
 /// 完整解码：音频样本 → 报文列表。
 ///
 /// 音调自动估计（Mark 低于 Space）；两条极性都试（估计的音调可能把 Mark / Space
@@ -71,7 +76,77 @@ pub fn synthesize_message(
   phasing_secs: f64,
 ) -> Vec<f32> {
   let bits = broadcast_bits(b1, b2, serial, text, phasing_secs);
-  render_fsk(&bits, 8000, 0.0)
+  render_fsk(&bits, SAMPLE_RATE, 0.0)
+}
+
+/// 相位段时长上限（秒）：再长的前导没有意义，也挡住把码字向量撑大的入参。
+pub const MAX_PHASING_SECS: f64 = 60.0;
+
+/// 发端入参不合法。[`EncodeError::code`] 是 worker 回给页面的英文错误码
+/// （`encode-params:<字段>`，见 `docs/domain/decode-worker-protocol.md`）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EncodeError {
+  /// 台站识别字母不是恰好一个 ASCII 字母。
+  Station,
+  /// 电报类型字母不是恰好一个 ASCII 字母。
+  Category,
+  /// 序号不是 0–99 的整数。
+  Serial,
+  /// 正文为空（只有空白）或超过 [`MAX_MESSAGE_CHARS`]。
+  Text,
+  /// 相位段时长不在 0 – [`MAX_PHASING_SECS`] 秒内。
+  Phasing,
+}
+
+impl EncodeError {
+  /// 英文错误码（`encode-params:<字段>`）。
+  #[must_use]
+  pub fn code(self) -> &'static str {
+    match self {
+      Self::Station => "encode-params:station",
+      Self::Category => "encode-params:category",
+      Self::Serial => "encode-params:serial",
+      Self::Text => "encode-params:text",
+      Self::Phasing => "encode-params:phasing",
+    }
+  }
+}
+
+/// 恰好一个 ASCII 字母 → 大写字母。
+fn single_letter(value: &str) -> Option<char> {
+  let mut chars = value.trim().chars();
+  let c = chars.next()?;
+  (chars.next().is_none() && c.is_ascii_alphabetic()).then(|| c.to_ascii_uppercase())
+}
+
+/// 校验后合成一条 NAVTEX 广播：Worker 的 `encode` 入口。
+///
+/// 入参保持 JS 传来的原始形态（字符串 / 数字）：校验只在这一处，页面与 worker 都不必各写一份。
+/// 序号必须是整数（`42.5`、`NaN`、负数都拒绝）；正文先看长度再合成 ——
+/// [`synthesize_message`] 本身不设上限，调用方不校验就能生成几百 MB 的采样。
+///
+/// # Errors
+///
+/// 任一入参不合法时返回对应字段的 [`EncodeError`]。
+pub fn encode_message(
+  station: &str,
+  category: &str,
+  serial: f64,
+  text: &str,
+  phasing_secs: f64,
+) -> Result<Vec<f32>, EncodeError> {
+  let b1 = single_letter(station).ok_or(EncodeError::Station)?;
+  let b2 = single_letter(category).ok_or(EncodeError::Category)?;
+  if !serial.is_finite() || serial.fract() != 0.0 || !(0.0..=99.0).contains(&serial) {
+    return Err(EncodeError::Serial);
+  }
+  if text.trim().is_empty() || text.chars().count() > MAX_MESSAGE_CHARS {
+    return Err(EncodeError::Text);
+  }
+  if !phasing_secs.is_finite() || !(0.0..=MAX_PHASING_SECS).contains(&phasing_secs) {
+    return Err(EncodeError::Phasing);
+  }
+  Ok(synthesize_message(b1, b2, serial as u8, text, phasing_secs))
 }
 
 /// 同 [`synthesize`]，采样率可选（测试用：验证高采样率输入的抽取路径）。
@@ -209,5 +284,69 @@ mod tests {
     assert_eq!(messages[0].serial, 42);
     assert_eq!(messages[0].text, text);
     assert!(messages[0].accepted);
+  }
+
+  /// 校验后的入口与 `synthesize_message` 逐样本相同，报头原样读回；
+  /// 小写字母与首尾空白被规整（页面不再替它做一遍）。
+  #[test]
+  fn encode_message_matches_synthesize_message_and_normalises_letters() {
+    let text = "GALE WARNING IN SOUTHERN ADRIATIC 25 KNOTS";
+    let samples = encode_message(" f ", "b", 42.0, text, 2.0).unwrap();
+    assert_eq!(samples, synthesize_message('F', 'B', 42, text, 2.0));
+    let messages = decode_audio(&samples, 8000).expect("应恢复报文");
+    assert_eq!(
+      (
+        messages[0].transmitter,
+        messages[0].category,
+        messages[0].serial
+      ),
+      ('F', 'B', 42)
+    );
+  }
+
+  #[test]
+  fn encode_message_rejects_each_bad_field_with_its_own_code() {
+    let ok = |station, category, serial, text: &str, phasing| {
+      encode_message(station, category, serial, text, phasing)
+    };
+    assert_eq!(ok("", "A", 1.0, "X", 2.0), Err(EncodeError::Station));
+    assert_eq!(ok("FF", "A", 1.0, "X", 2.0), Err(EncodeError::Station));
+    assert_eq!(ok("1", "A", 1.0, "X", 2.0), Err(EncodeError::Station));
+    assert_eq!(ok("F", "你", 1.0, "X", 2.0), Err(EncodeError::Category));
+    for bad in [-1.0, 100.0, 42.5, f64::NAN, f64::INFINITY] {
+      assert_eq!(
+        ok("F", "A", bad, "X", 2.0),
+        Err(EncodeError::Serial),
+        "{bad}"
+      );
+    }
+    // 序号边界 0 与 99 合法。
+    assert!(ok("F", "A", 0.0, "X", 2.0).is_ok());
+    assert!(ok("F", "A", 99.0, "X", 2.0).is_ok());
+    assert_eq!(ok("F", "A", 1.0, "", 2.0), Err(EncodeError::Text));
+    assert_eq!(ok("F", "A", 1.0, "  \n", 2.0), Err(EncodeError::Text));
+    let too_long = "A".repeat(MAX_MESSAGE_CHARS + 1);
+    assert_eq!(ok("F", "A", 1.0, &too_long, 2.0), Err(EncodeError::Text));
+    assert!(ok("F", "A", 1.0, &"A".repeat(MAX_MESSAGE_CHARS), 0.0).is_ok());
+    for bad in [-0.1, MAX_PHASING_SECS + 0.1, f64::NAN, f64::INFINITY] {
+      assert_eq!(
+        ok("F", "A", 1.0, "X", bad),
+        Err(EncodeError::Phasing),
+        "{bad}"
+      );
+    }
+  }
+
+  #[test]
+  fn encode_error_codes_have_the_protocol_shape() {
+    for e in [
+      EncodeError::Station,
+      EncodeError::Category,
+      EncodeError::Serial,
+      EncodeError::Text,
+      EncodeError::Phasing,
+    ] {
+      assert!(e.code().starts_with("encode-params:"), "{e:?}");
+    }
   }
 }

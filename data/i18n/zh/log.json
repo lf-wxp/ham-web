@@ -403,5 +403,17 @@
   "log.delete-this-qso-hint": "它的 QSL 影像会一并清除，删除后无法恢复。",
   "log.clear-all": "清空全部",
   "log.clear-all-done": "已清空通联记录",
-  "log.qso-deleted": "已删除该条通联记录"
+  "log.qso-deleted": "已删除该条通联记录",
+  "log.rig-guard-class-unset": "未选择",
+  "log.rig-guard-class-hint": "选择类别后还会判断「证外」并给出功率上限。",
+  "log.rig-guard-lamp-ok": "绿灯 · 未发现问题",
+  "log.rig-guard-lamp-notice": "黄灯 · 需留意",
+  "log.rig-guard-lamp-alert": "红灯 · 此刻发射不合规",
+  "log.rig-guard-lamp-out": "灰灯 · 不在业余频段（只收听可忽略，发射不允许）",
+  "log.rig-guard-class-not-permitted": "{} 类操作证无权使用这个频率（办法第三十条）",
+  "log.rig-guard-phone-out-of-segment": "{} 波段规划里 {} MHz 不用于话务，当前模式是话务",
+  "log.rig-guard-coordination": "这个频率需要先开展频率协调（办法第十五条）",
+  "log.rig-guard-off-plan": "{} 波段规划里 {} MHz 是话务专用子段，CW / 数据在这里偏离波段规划（只是提醒，不算违规）",
+  "log.rig-guard-power-limit": "发射功率上限 {} W",
+  "log.rig-guard-note": "按电台当前读到的频率与模式判断，只读，不会改电台；分频（split）时发射频率可能是另一个。"
 }

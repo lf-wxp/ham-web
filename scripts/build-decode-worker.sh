@@ -63,6 +63,10 @@ done
 # shellcheck disable=SC2086 # $pkgs 需要分词
 cargo build --profile wasm-release --target wasm32-unknown-unknown $pkgs
 
+# cargo 的产物目录要跟着 CARGO_TARGET_DIR 走：写死 `target/` 时，设了该变量的环境里 cargo 把新 wasm
+# 编到别处，这里却取旧目录里上一次的产物 —— wasm-bindgen 不会报错，worker 悄悄停在旧代码上。
+target_dir="${CARGO_TARGET_DIR:-target}"
+
 for codec in "$@"; do
   mkdir -p "public/${codec}-worker"
   # 产物没人做符号解析，name / producers 段纯属体积；wasm-release 的 strip 只能设成
@@ -71,5 +75,5 @@ for codec in "$@"; do
   wasm-bindgen --target no-modules --no-typescript \
     --remove-name-section --remove-producers-section \
     --out-dir "public/${codec}-worker" --out-name "${codec}_worker" \
-    "target/wasm32-unknown-unknown/wasm-release/ham_web_${codec}_worker.wasm"
+    "${target_dir}/wasm32-unknown-unknown/wasm-release/ham_web_${codec}_worker.wasm"
 done

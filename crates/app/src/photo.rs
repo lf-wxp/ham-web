@@ -324,6 +324,73 @@ async fn compress(kind: PhotoKind, file: &File) -> Result<Blob, CompressError> {
   Ok(blob)
 }
 
+/// 一次「画到目标尺寸」的计划：目标宽高，以及要从原图里取的矩形 `(x, y, 宽, 高)`（原图像素）。
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DrawPlan {
+  pub size: (u32, u32),
+  pub source: (f64, f64, f64, f64),
+}
+
+/// 把图片文件画到 `plan` 指定的尺寸上，返回 `(宽, 高, RGBA)`（canvas 的 `getImageData`）。
+///
+/// `plan` 拿到原图的 `(宽, 高)`，决定缩放到多大、取哪一块（等比缩小用整张图，铺满裁剪用中间一块）；
+/// 返回 `None` 表示「这张图没法按要求画」，按解码失败处理。先铺一层白底再画：PNG 的透明区域发出去
+/// 应当是白的，不是黑的。解码后的像素总量同样设限（与 QSL 影像同一口径，防「解压炸弹」）。
+///
+/// # Errors
+///
+/// 读文件 / 解码失败、像素总量超限、取不到 canvas。
+pub async fn file_to_rgba(
+  file: &File,
+  plan: impl FnOnce(u32, u32) -> Option<DrawPlan>,
+) -> Result<(u32, u32, Vec<u8>), PhotoError> {
+  let decode = |detail: String| PhotoError::Decode(detail);
+  let url = Url::create_object_url_with_blob(file).map_err(|e| decode(js_error_message(&e)))?;
+  let img = load_image(&url).await;
+  let _ = Url::revoke_object_url(&url);
+  let img = img.map_err(decode)?;
+  let (nw, nh) = (img.natural_width(), img.natural_height());
+  if nw == 0 || nh == 0 {
+    return Err(decode("Failed to load the image.".to_owned()));
+  }
+  qsl_image::check_dimensions(nw, nh).map_err(|_| PhotoError::TooLarge)?;
+  let plan = plan(nw, nh).ok_or_else(|| decode("Failed to load the image.".to_owned()))?;
+  let (w, h) = plan.size;
+  let canvas: HtmlCanvasElement = document()
+    .create_element("canvas")
+    .map_err(|e| decode(js_error_message(&e)))?
+    .unchecked_into();
+  canvas.set_width(w);
+  canvas.set_height(h);
+  let ctx: CanvasRenderingContext2d = canvas
+    .get_context("2d")
+    .map_err(|e| decode(js_error_message(&e)))?
+    .ok_or_else(|| decode("Canvas 2D context unavailable".to_owned()))?
+    .unchecked_into();
+  ctx.set_fill_style_str("#fff");
+  ctx.fill_rect(0.0, 0.0, f64::from(w), f64::from(h));
+  let (sx, sy, sw, sh) = plan.source;
+  ctx
+    .draw_image_with_html_image_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
+      &img,
+      sx,
+      sy,
+      sw,
+      sh,
+      0.0,
+      0.0,
+      f64::from(w),
+      f64::from(h),
+    )
+    .map_err(|e| decode(js_error_message(&e)))?;
+  let data = ctx
+    .get_image_data(0.0, 0.0, f64::from(w), f64::from(h))
+    .map_err(|e| decode(js_error_message(&e)))?
+    .data()
+    .0;
+  Ok((w, h, data))
+}
+
 /// 处理照片。
 pub async fn process_photo(kind: PhotoKind, file: File) -> Result<PhotoResult, PhotoError> {
   let blob = compress(kind, &file).await?;

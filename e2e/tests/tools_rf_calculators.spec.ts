@@ -47,6 +47,44 @@ test("小工具：占空比与平均功率按模式与滑动窗口折算，并�
   await expect(s.getByText("脉宽 × 重复频率超过 100%：脉冲重叠了")).toBeVisible();
 });
 
+test("小工具：射频暴露评估以 GB 8702 公众限值为准，只收 30–3000 MHz，FCC 仅作对照", async ({ page }) => {
+  await page.goto("/tools#rf-exposure");
+  const s = tool(page, "rf-exposure");
+  await expect(s).toBeVisible();
+
+  // 默认 14 MHz（HF）：GB 8702 这里不收，必须明说「不给国内结论」，而不是退回 FCC 的数。
+  await expect(s.getByText(/GB 8702 公众限值这里只收 30–3000 MHz/)).toBeVisible();
+  await expect(s.getByText(/公众最小安全距离/)).toHaveCount(0);
+  // FCC 对照仍在，并标明不能用于国内合规。
+  await expect(s.getByText(/FCC 47 CFR §1\.1310 对照（限值口径不同，不能用于国内合规判定）/)).toBeVisible();
+  await expect(s.getByText(/最小安全距离：公众 .* m，受控 .* m/)).toBeVisible();
+
+  // 100 W、145 MHz、0 dBi、10 m。期望值来自独立脚本：S = P·G/(4πd²)，d = √(P·G/(4π·0.4))。
+  await s.getByLabel("发射功率（W）").fill("100");
+  await s.getByLabel("频率（MHz）").fill("145");
+  await s.getByLabel("天线增益（dBi）").fill("0");
+  await s.getByLabel("评估距离（m）").fill("10");
+  await expect(s.getByText("功率密度：0.0796 W/m²")).toBeVisible();
+  await expect(s.getByText("公众限值 0.4000 W/m²（30–3000 MHz，任意 6 分钟平均）")).toBeVisible();
+  await expect(s.getByText("公众最小安全距离：4.46 m")).toBeVisible();
+  await expect(s.getByText("当前距离下满足 GB 8702 公众限值。")).toBeVisible();
+  // 同一输入下 FCC 的公众距离只有 1.99 m：照着 FCC 的数选址会比国标近一半还多。
+  await expect(s.getByText("最小安全距离：公众 1.99 m，受控 0.8921 m")).toBeVisible();
+
+  // 距离缩到 3 m：功率密度 0.8842 W/m² 超过 0.4 W/m²。
+  await s.getByLabel("评估距离（m）").fill("3");
+  await expect(s.getByText("功率密度：0.8842 W/m²")).toBeVisible();
+  await expect(s.getByText("当前距离下超过 GB 8702 公众限值，请增大距离或降低功率。")).toBeVisible();
+
+  // 频段边界含两端（30 MHz 有结论），段外（5.8 GHz）回到「不给结论」。
+  await s.getByLabel("评估距离（m）").fill("10");
+  await s.getByLabel("频率（MHz）").fill("30");
+  await expect(s.getByText("公众最小安全距离：4.46 m")).toBeVisible();
+  await s.getByLabel("频率（MHz）").fill("5800");
+  await expect(s.getByText(/GB 8702 公众限值这里只收 30–3000 MHz/)).toBeVisible();
+  await expect(s.getByText(/公众最小安全距离/)).toHaveCount(0);
+});
+
 test("小工具：IP3 级联给出总 IIP3 / OIP3、瓶颈级，并支持 OIP3 输入与增减级数", async ({ page }) => {
   await page.goto("/tools#ip3-cascade");
   const s = tool(page, "ip3-cascade");

@@ -189,6 +189,24 @@ fn rf_exposure_uncontrolled_mf_corner_differs_from_controlled() {
   assert!((rf_exposure::mpe_limit_mw_cm2(3.0, true) - 100.0).abs() < 1e-9);
 }
 
+/// 计算器用的 GB 8702 公众限值必须与 `/safety` 正文写的同一个数：两处各写一份，改了一边
+/// 就会出现「知识页说 0.4、算出来按别的」。
+#[test]
+fn rf_exposure_gb8702_limit_matches_the_safety_page() {
+  assert_eq!(rf_exposure::GB8702_PUBLIC_W_M2, 0.4);
+  let row = crate::safety::EXPOSURE_LIMITS
+    .iter()
+    .find(|(name, _)| name.contains("30–3000 MHz"))
+    .expect("EXPOSURE_LIMITS 里应有 30–3000 MHz 公众曝露一行");
+  assert!(row.1.contains("0.4 W/m²"), "{}", row.1);
+  let (lo, hi) = rf_exposure::GB8702_PUBLIC_RANGE_MHZ;
+  assert!(
+    row.0.contains(&format!("{lo}–{hi} MHz").replace(".0", "")),
+    "{}",
+    row.0
+  );
+}
+
 /// 带阻必须在带边给出归一化值 = gₖ；只看 L·C 乘积（=1/ω0²）抓不到 gₖ 与 1/gₖ 用反。
 #[test]
 fn bandstop_band_edge_immittance_equals_g() {

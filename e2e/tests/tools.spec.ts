@@ -1,5 +1,5 @@
-import { stat } from "node:fs/promises";
-import { expect, test } from "./fixtures";
+import { readFile, stat } from "node:fs/promises";
+import { expect, pickOption, test } from "./fixtures";
 
 /** 定位某个工具的 section（导航 / 锚点用的 id 与 section 的 id 一致）。 */
 function tool(page: import("@playwright/test").Page, id: string) {
@@ -606,6 +606,431 @@ test("小工具：数字模式编码可导出基带 WAV", async ({ page }) => {
   expect((await stat(ft8Path as string)).size).toBe(44 + 15 * 12000 * 2);
 });
 
+test("小工具：Olivia 发端按子模式精确定长，下载的 WAV 能在解码页读回原文", async ({ page }) => {
+  await page.goto("/tools#mode-encoder");
+  const section = tool(page, "mode-encoder");
+  const submode = "Olivia 子模式（音调数 / 带宽 Hz）";
+
+  // 默认报文 "CQ CQ DE BG1AAA"（15 字符），8 kHz、符号 256 样本。期望字节数由独立脚本按
+  // 「前导（64×256 − 8000 静音 + 4×2000 音调）+ 块数 × 64 × 256」算出，再加 44 字节 WAV 头；
+  // 块数 = ceil(15 / 每块字符数)，每块字符数 = log2(音调数)。
+  const sizes: Record<string, number> = {
+    "4/125": 294956,
+    "8/250": 196652,
+    "16/500": 163884,
+    "32/1000": 131116,
+  };
+  for (const [mode, size] of Object.entries(sizes)) {
+    await pickOption(page, submode, mode);
+    const dl = page.waitForEvent("download");
+    await section.getByRole("button", { name: "下载 Olivia WAV" }).click();
+    const file = await dl;
+    expect(file.suggestedFilename()).toBe("olivia.wav");
+    const path = await file.path();
+    expect(path).not.toBeNull();
+    expect((await stat(path as string)).size, mode).toBe(size);
+
+    // 真往返：把刚下载的文件交给解码页（同一子模式），原文必须读回来。
+    if (mode === "8/250" || mode === "32/1000") {
+      const wav = await readFile(path as string);
+      await page.goto("/olivia-decode");
+      if (mode !== "32/1000") await pickOption(page, "子模式（音调数/带宽）", mode);
+      await page.locator('input[type="file"]').setInputFiles({
+        name: `olivia-${mode.replace("/", "-")}.wav`,
+        mimeType: "audio/wav",
+        buffer: wav,
+      });
+      await expect(page.locator("pre")).toContainText("CQ CQ DE BG1AAA", { timeout: 20000 });
+      await page.goto("/tools#mode-encoder");
+    }
+  }
+});
+
+test("小工具：Olivia 发端拒绝无法编码的报文，并跳过非 ASCII 字符", async ({ page }) => {
+  await page.goto("/tools#mode-encoder");
+  const section = tool(page, "mode-encoder");
+  const download = section.getByRole("button", { name: "下载 Olivia WAV" });
+
+  // 只有中文：没有任何可发字符，不能导出一个只有前导的 WAV。
+  await section.getByLabel("报文内容").fill("你好，世界");
+  await download.click();
+  await expect(page.getByText(/报文无法编码：Olivia 只能发可打印 ASCII/)).toBeVisible();
+
+  // 中文夹在 ASCII 里：中文被跳过，剩下的 "CQ" 正好是 2 个字符 = 1 块（32/1000 每块 5 字符）。
+  await section.getByLabel("报文内容").fill("CQ你好");
+  const dl = page.waitForEvent("download");
+  await download.click();
+  const path = await (await dl).path();
+  expect(path).not.toBeNull();
+  // 前导 16384 − 8000 + 8000 = 16384 样本，加 1 块 16384 样本。
+  expect((await stat(path as string)).size).toBe(44 + 2 * (16384 + 16384));
+
+  // 4/125 每块只装 2 个字符，1024 个字符 = 512 块，合成后超过 8 Mi 样本上限：必须报错而不是导出。
+  await section.getByLabel("报文内容").fill("A".repeat(1024));
+  await pickOption(page, "Olivia 子模式（音调数 / 带宽 Hz）", "4/125");
+  await download.click();
+  await expect(page.getByText(/不能超过约 17 分钟/).first()).toBeVisible();
+});
+
+/** 点发端页的某个「下载 … WAV」按钮，返回下载到的文件内容与建议文件名。 */
+async function downloadWav(
+  page: import("@playwright/test").Page,
+  buttonName: string,
+): Promise<{ wav: Buffer; filename: string }> {
+  const dl = page.waitForEvent("download");
+  await tool(page, "mode-encoder").getByRole("button", { name: buttonName }).click();
+  const file = await dl;
+  const path = await file.path();
+  expect(path).not.toBeNull();
+  return { wav: await readFile(path as string), filename: file.suggestedFilename() };
+}
+
+test("小工具：MFSK / THOR / DominoEX 发端经 worker 合成，下载的 WAV 在各自解码页读回原文", async ({
+  page,
+}) => {
+  const message = "CQ CQ DE BG1AAA";
+  const upload = (name: string, wav: Buffer) =>
+    page.locator('input[type="file"]').setInputFiles({ name, mimeType: "audio/wav", buffer: wav });
+  await page.goto("/tools#mode-encoder");
+  await tool(page, "mode-encoder").getByLabel("报文内容").fill(message);
+
+  // 采样率写在 WAV 头 24–27 字节：来自 worker 回包里该模式的标称值，不是页面写死的 8000。
+  // MFSK32 与 DominoEX 16 是 8000，THOR 22 是 11025。
+  await pickOption(page, "MFSK 发端子模式", "MFSK32");
+  const mfsk = await downloadWav(page, "下载 MFSK WAV");
+  expect(mfsk.filename).toBe("mfsk.wav");
+  expect(mfsk.wav.readUInt32LE(24)).toBe(8000);
+
+  await pickOption(page, "THOR 发端子模式", "THOR 22");
+  const thor = await downloadWav(page, "下载 THOR WAV");
+  expect(thor.filename).toBe("thor.wav");
+  expect(thor.wav.readUInt32LE(24)).toBe(11025);
+
+  await pickOption(page, "DominoEX 发端子模式", "DominoEX 16");
+  const plain = await downloadWav(page, "下载 DominoEX WAV");
+  expect(plain.filename).toBe("dominoex.wav");
+  expect(plain.wav.readUInt32LE(24)).toBe(8000);
+  await tool(page, "mode-encoder").getByRole("checkbox", { name: /FEC 模式/ }).click();
+  const fec = await downloadWav(page, "下载 DominoEX WAV");
+  // FEC 调制的码率是 1/2：同一条报文的文件明显更长，也证明勾选真的传到了 worker。
+  expect(fec.wav.length).toBeGreaterThan(plain.wav.length * 1.5);
+
+  // 真往返：每个文件交给对应的解码页，子模式与 FEC 选成同一个，原文必须读回来。
+  await page.goto("/mfsk-decode");
+  await pickOption(page, "MFSK 子模式", "MFSK32");
+  await upload("mfsk32.wav", mfsk.wav);
+  await expect(page.locator("pre")).toContainText(message, { timeout: 30000 });
+
+  await page.goto("/thor-decode");
+  await pickOption(page, "THOR 子模式", "THOR 22");
+  await upload("thor22.wav", thor.wav);
+  await expect(page.locator("pre")).toContainText(message, { timeout: 30000 });
+
+  await page.goto("/dominoex-decode");
+  await pickOption(page, "子模式", "DominoEX 16");
+  await upload("dex16.wav", plain.wav);
+  await expect(page.locator("pre")).toContainText(message, { timeout: 30000 });
+
+  // FEC 的文件要在解码页勾 FEC 才读得回来（收发两端必须一致）。
+  await page.goto("/dominoex-decode");
+  await pickOption(page, "子模式", "DominoEX 16");
+  await page.getByRole("checkbox", { name: /FEC 模式/ }).click();
+  await upload("dex16-fec.wav", fec.wav);
+  await expect(page.locator("pre")).toContainText(message, { timeout: 30000 });
+});
+
+test("小工具：MFSK / THOR / DominoEX 发端拒绝没有可发字符的报文", async ({ page }) => {
+  await page.goto("/tools#mode-encoder");
+  const section = tool(page, "mode-encoder");
+  // 只有中文：过滤后没有可发字符，不能导出一个只有前导的 WAV。
+  await section.getByLabel("报文内容").fill("你好，世界");
+  for (const name of ["下载 MFSK WAV", "下载 THOR WAV", "下载 DominoEX WAV"]) {
+    await section.getByRole("button", { name }).click();
+    await expect(page.getByText(/报文不能为空或过长，也要有能发送的字符/).first(), name).toBeVisible();
+  }
+  // 中文夹在 ASCII 里：中文被跳过，剩下的照常合成（有下载事件即可）。
+  await section.getByLabel("报文内容").fill("CQ你好 DE BG1AAA");
+  const mixed = await downloadWav(page, "下载 MFSK WAV");
+  expect(mixed.wav.length).toBeGreaterThan(44);
+});
+
+test("小工具：THOR 发端带 ID 信标，MFSK / THOR 的中心频率可自定，解码页读回", async ({ page }) => {
+  await page.goto("/tools#mode-encoder");
+  const section = tool(page, "mode-encoder");
+  await section.getByLabel("报文内容").fill("CQ CQ DE BG1AAA");
+  const upload = (name: string, wav: Buffer) =>
+    page.locator('input[type="file"]').setInputFiles({ name, mimeType: "audio/wav", buffer: wav });
+  const detected = async (pattern: RegExp) =>
+    Number(pattern.exec((await page.getByText(pattern).first().textContent()) ?? "")?.[1]);
+
+  // THOR：ID 信标走二次信道，解码页把它与正文分开显示；中心频率 1200 Hz 被检测出来。
+  await section.getByLabel("THOR ID 信标（二次信道）").fill("DE TEST");
+  await section.getByLabel("MFSK / THOR 中心频率（Hz）").fill("1200");
+  const thor = await downloadWav(page, "下载 THOR WAV");
+  // MFSK：同一个中心频率输入框，改成 2000 Hz。
+  await section.getByLabel("MFSK / THOR 中心频率（Hz）").fill("2000");
+  const mfsk = await downloadWav(page, "下载 MFSK WAV");
+
+  await page.goto("/thor-decode");
+  await upload("thor.wav", thor.wav);
+  await expect(page.locator("pre")).toContainText("CQ CQ DE BG1AAA", { timeout: 30000 });
+  await expect(page.locator("pre")).not.toContainText("DE TEST");
+  await expect(page.getByText(/二次信道（ID 信标）：.*DE TEST/)).toBeVisible();
+  // THOR 16 的音调间隔 15.6 Hz，检测精度远优于 10 Hz。
+  expect(Math.abs((await detected(/中心频率 ([\d.]+) Hz/)) - 1200)).toBeLessThanOrEqual(10);
+
+  await page.goto("/mfsk-decode");
+  await upload("mfsk.wav", mfsk.wav);
+  await expect(page.locator("pre")).toContainText("CQ CQ DE BG1AAA", { timeout: 30000 });
+  expect(Math.abs((await detected(/中心频率 ([\d.]+) Hz/)) - 2000)).toBeLessThanOrEqual(10);
+});
+
+test("小工具：MFSK / THOR 发端的中心频率与 ID 不合法时给出具体提示", async ({ page }) => {
+  await page.goto("/tools#mode-encoder");
+  const section = tool(page, "mode-encoder");
+  const center = section.getByLabel("MFSK / THOR 中心频率（Hz）");
+  // 越界：整个信号带要放得进 0 与采样率的一半之间，提示里带上填的值。
+  await center.fill("100000");
+  await section.getByRole("button", { name: "下载 MFSK WAV" }).click();
+  await expect(page.getByText(/中心频率越界.*100000/)).toBeVisible();
+  // 不是数字：不悄悄换成缺省值，同样报越界（值显示为 NaN）。
+  await center.fill("abc");
+  await section.getByRole("button", { name: "下载 THOR WAV" }).click();
+  await expect(page.getByText(/中心频率越界.*NaN/)).toBeVisible();
+  // ID 过长：输入框限了 64 字符，但绕过它（粘贴 / 程序写入）时 worker 仍要拒绝。
+  await center.fill("");
+  await section.getByLabel("THOR ID 信标（二次信道）").evaluate((el: HTMLInputElement) => {
+    el.removeAttribute("maxlength");
+  });
+  await section.getByLabel("THOR ID 信标（二次信道）").fill("A".repeat(65));
+  await section.getByRole("button", { name: "下载 THOR WAV" }).click();
+  await expect(page.getByText(/ID 信标最多 64 个字符/)).toBeVisible();
+});
+
+/** 用 canvas 现场生成一张四象限的 PNG（无损，颜色逐字节可对）；左右各留一条 8 像素宽的洋红边。
+ *
+ * 洋红边用来区分「等比缩放」与「铺满裁剪」：前者整张图都在，后者把两侧裁掉。只有四象限的话，
+ * 拉伸变形与居中裁剪解出来的象限中心颜色是一样的，分不出来。 */
+async function quadrantPng(page: import("@playwright/test").Page, w: number, h: number): Promise<Buffer> {
+  const url = await page.evaluate(
+    ([width, height]) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      const colours = ["rgb(220,180,30)", "rgb(40,180,210)", "rgb(220,70,30)", "rgb(40,70,210)"];
+      colours.forEach((c, i) => {
+        ctx.fillStyle = c;
+        ctx.fillRect((i % 2) * (width / 2), Math.floor(i / 2) * (height / 2), width / 2, height / 2);
+      });
+      ctx.fillStyle = "rgb(255,0,255)";
+      ctx.fillRect(0, 0, 8, height);
+      ctx.fillRect(width - 8, 0, 8, height);
+      return canvas.toDataURL("image/png");
+    },
+    [w, h],
+  );
+  return Buffer.from(url.split(",")[1], "base64");
+}
+
+/** 解码页上画出来的图片：取给定坐标的像素颜色（RGB）。 */
+async function pictureColours(
+  page: import("@playwright/test").Page,
+  points: Array<[number, number]>,
+): Promise<number[][]> {
+  const figure = page.getByTestId("decode-picture");
+  await expect(figure).toBeVisible({ timeout: 90000 });
+  return figure.locator("img").evaluate(async (img: HTMLImageElement, pts: Array<[number, number]>) => {
+    await img.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(img, 0, 0);
+    return pts.map(([x, y]) => Array.from(ctx.getImageData(x, y, 1, 1).data.slice(0, 3)));
+  }, points);
+}
+
+const QUADRANTS = [[220, 180, 30], [40, 180, 210], [220, 70, 30], [40, 70, 210]];
+
+test("小工具：MFSK / THOR 图片发端缩放后经 worker 发出，解码页读回同一张图", async ({ page }) => {
+  test.setTimeout(180000);
+  await page.goto("/tools#mode-encoder");
+  const section = tool(page, "mode-encoder");
+  const png = await quadrantPng(page, 80, 60);
+  await section.locator('input[type="file"]').setInputFiles({ name: "quad.png", mimeType: "image/png", buffer: png });
+  await expect(section.getByText("quad.png")).toBeVisible();
+  const upload = (name: string, wav: Buffer) =>
+    page.locator('input[type="file"]').setInputFiles({ name, mimeType: "audio/wav", buffer: wav });
+  const within = (got: number[][], want: number[][], tol: number, label: string) =>
+    got.forEach((px, i) => px.forEach((v, c) => expect(Math.abs(v - want[i][c]), `${label} 象限 ${i} 通道 ${c}: ${v} vs ${want[i][c]}`).toBeLessThanOrEqual(tol)));
+
+  // MFSK16：最大边长 80 → 80 × 60（不缩放）；报文内容当引导文本，报头 `Pic:80x60C;` 留在正文里。
+  await section.getByLabel("报文内容").fill("CQ ");
+  await pickOption(page, "MFSK 图片最大边长", "80 px");
+  const colour = await downloadWav(page, "发 MFSK 图片并下载 WAV");
+  expect(colour.filename).toBe("mfsk-picture.wav");
+  expect(colour.wav.readUInt32LE(24)).toBe(8000);
+  // 取消「彩色」再发一遍灰度：时间约少三分之二，解出来是灰的。
+  await section.getByRole("checkbox", { name: "彩色" }).click();
+  const gray = await downloadWav(page, "发 MFSK 图片并下载 WAV");
+  expect(gray.wav.length).toBeLessThan(colour.wav.length - 2 * 80 * 60 * 8 * 2 + 20000);
+
+  await page.goto("/mfsk-decode");
+  await upload("mfsk-colour.wav", colour.wav);
+  let figure = page.getByTestId("decode-picture");
+  await expect(figure.locator("figcaption")).toContainText("80 × 60", { timeout: 90000 });
+  await expect(figure.locator("figcaption")).toContainText("彩色");
+  await expect(page.locator("pre")).toHaveText(/^\s*CQ Pic:80x60C;\s*$/);
+  within(await pictureColours(page, [[20, 15], [60, 15], [20, 45], [60, 45]]), QUADRANTS, 6, "MFSK 彩色");
+  // 等比缩放不裁剪：两侧 8 像素的洋红边都在。
+  // 容差放宽到 40：彩色每行是 R、G、B 三个平面依次发，平面交界与颜色跳变处 FM 解调要几个像素才落稳
+  // （每像素只有 8 个样本），边缘像素偏差可达几十。这里只要分得清「洋红」与「象限颜色」
+  // （G 通道差 180、B 通道差 225），40 绰绰有余。
+  within(await pictureColours(page, [[4, 30], [76, 30]]), [[255, 0, 255], [255, 0, 255]], 40, "MFSK 边条");
+
+  await page.goto("/mfsk-decode");
+  await upload("mfsk-gray.wav", gray.wav);
+  figure = page.getByTestId("decode-picture");
+  await expect(figure.locator("figcaption")).toContainText("灰度", { timeout: 90000 });
+  // 灰度：三个通道相同，且值是四个象限颜色的 BT.601 亮度（0.299 R + 0.587 G + 0.114 B，独立算出：
+  // 175 / 142 / 110 / 77），不是 R 通道（220 / 40）。发端自己就只取 R 通道，所以「三个通道相同」
+  // 单独成立不了检验：只有对上亮度，才说明页面做了灰度转换。
+  const luma = [175, 142, 110, 77];
+  (await pictureColours(page, [[20, 15], [60, 15], [20, 45], [60, 45]])).forEach((px, i) => {
+    expect(Math.max(...px) - Math.min(...px), `象限 ${i}：灰度图三个通道应相同`).toBeLessThanOrEqual(2);
+    expect(Math.abs(px[0] - luma[i]), `象限 ${i}：灰度值 ${px[0]} 应是亮度 ${luma[i]}`).toBeLessThanOrEqual(6);
+  });
+
+  // THOR：只认固定尺寸，这里选 59 × 74（竖）。80 × 60 的横图铺满裁剪：左右各裁掉一些，
+  // 上下完整，四个象限的中心仍落在各自的颜色里。
+  await page.goto("/tools#mode-encoder");
+  await section.locator('input[type="file"]').setInputFiles({ name: "quad.png", mimeType: "image/png", buffer: png });
+  // 重新加载后「彩色」已恢复默认勾选，这里不用再点。
+  await expect(section.getByRole("checkbox", { name: "彩色" })).toHaveAttribute("aria-checked", "true");
+  await pickOption(page, "THOR 图片尺寸", "59 × 74");
+  const thor = await downloadWav(page, "发 THOR 图片并下载 WAV");
+  expect(thor.filename).toBe("thor-picture.wav");
+  await page.goto("/thor-decode");
+  await upload("thor-picture.wav", thor.wav);
+  figure = page.getByTestId("decode-picture");
+  await expect(figure.locator("figcaption")).toContainText("59 × 74", { timeout: 90000 });
+  within(await pictureColours(page, [[15, 18], [44, 18], [15, 55], [44, 55]]), QUADRANTS, 8, "THOR");
+  // 铺满裁剪：横图装进竖版尺寸，两侧被裁掉，最外一列已经是象限颜色，不是洋红（拉伸变形会留着洋红边）。
+  within(await pictureColours(page, [[3, 18], [55, 18]]), [QUADRANTS[0], QUADRANTS[1]], 40, "THOR 裁剪");
+});
+
+/** SSTV 解码页上画出来的图像：取给定坐标的像素颜色（RGB）。 */
+async function sstvPixels(
+  page: import("@playwright/test").Page,
+  points: Array<[number, number]>,
+): Promise<number[][]> {
+  return page.evaluate(async (pts) => {
+    const img = document.querySelector("img[alt='SSTV 解码结果']") as HTMLImageElement;
+    await img.decode();
+    const c = document.createElement("canvas");
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    const ctx = c.getContext("2d")!;
+    ctx.drawImage(img, 0, 0);
+    return pts.map(([x, y]) => Array.from(ctx.getImageData(x, y, 1, 1).data.slice(0, 3)));
+  }, points);
+}
+
+test("小工具：SSTV 发端把图片铺满裁剪到模式尺寸，导出的 WAV 在解码页读回模式与颜色", async ({ page }) => {
+  test.setTimeout(240000);
+  await page.goto("/tools#mode-encoder");
+  const section = tool(page, "mode-encoder");
+  const png = await quadrantPng(page, 80, 60);
+  await section.locator('input[type="file"]').setInputFiles({ name: "quad.png", mimeType: "image/png", buffer: png });
+  const upload = (name: string, wav: Buffer) =>
+    page.locator('input[type="file"]').setInputFiles({ name, mimeType: "audio/wav", buffer: wav });
+  const near = (got: number[], want: number[], tol: number, label: string) =>
+    got.forEach((v, c) => expect(Math.abs(v - want[c]), `${label} 通道 ${c}: ${v} vs ${want[c]}`).toBeLessThanOrEqual(tol));
+
+  // Robot 36（默认）：320 × 240 与 4:3 的原图同比例，不裁剪。Robot 的色度水平分辨率减半、Y 是视频范围，
+  // 平坦色块中心的误差也在十几灰阶以内；洋红边条用宽容差只求与象限颜色分得开。
+  const robot = await downloadWav(page, "发 SSTV 图片并下载 WAV");
+  expect(robot.filename).toBe("sstv.wav");
+  expect(robot.wav.readUInt32LE(24)).toBe(8000);
+  await page.goto("/sstv-decode");
+  await upload("robot36.wav", robot.wav);
+  await expect(page.getByText("Robot 36", { exact: true })).toBeVisible({ timeout: 90000 });
+  await expect(page.getByText("320 × 240")).toBeVisible();
+  const centres: Array<[number, number]> = [[80, 60], [240, 60], [80, 180], [240, 180]];
+  (await sstvPixels(page, centres)).forEach((px, i) => near(px, QUADRANTS[i], 14, `Robot 36 象限 ${i}`));
+  near((await sstvPixels(page, [[10, 120]]))[0], [255, 0, 255], 50, "Robot 36 边条");
+
+  // Martin M2：320 × 256（5:4）比 4:3 的原图窄，铺满裁剪会把左右各裁掉一点，边条变窄但仍在；
+  // 这里同时验证 RGB 模式的颜色（通道顺序错了会立刻变色）。再取消「彩色」发灰度：
+  // 值必须是各象限颜色的 BT.601 亮度，而不是 R 通道。
+  await page.goto("/tools#mode-encoder");
+  await section.locator('input[type="file"]').setInputFiles({ name: "quad.png", mimeType: "image/png", buffer: png });
+  await pickOption(page, "SSTV 模式", "Martin M2 · 320 × 256");
+  const m2 = await downloadWav(page, "发 SSTV 图片并下载 WAV");
+  await section.getByRole("checkbox", { name: "彩色" }).click();
+  const m2gray = await downloadWav(page, "发 SSTV 图片并下载 WAV");
+
+  await page.goto("/sstv-decode");
+  await upload("martin-m2.wav", m2.wav);
+  await expect(page.getByText("Martin M2", { exact: true })).toBeVisible({ timeout: 90000 });
+  await expect(page.getByText("320 × 256")).toBeVisible();
+  const m2centres: Array<[number, number]> = [[80, 64], [240, 64], [80, 192], [240, 192]];
+  (await sstvPixels(page, m2centres)).forEach((px, i) => near(px, QUADRANTS[i], 10, `Martin M2 象限 ${i}`));
+  near((await sstvPixels(page, [[8, 128]]))[0], [255, 0, 255], 50, "Martin M2 边条");
+  // 裁剪与拉伸的分界：80 × 60 的原图铺进 5:4 的 320 × 256，左右各裁掉 2.5 个原图像素，洋红边在输出里
+  // 约 23 px 宽；若是拉伸变形则有 32 px。x = 28 在两者之间 —— 裁剪是象限颜色，拉伸还是洋红。
+  near((await sstvPixels(page, [[28, 64]]))[0], QUADRANTS[0], 60, "Martin M2 裁剪后边条之外");
+
+  await page.goto("/sstv-decode");
+  await upload("martin-m2-gray.wav", m2gray.wav);
+  await expect(page.getByText("Martin M2", { exact: true })).toBeVisible({ timeout: 90000 });
+  const luma = [175, 142, 110, 77];
+  (await sstvPixels(page, m2centres)).forEach((px, i) => {
+    expect(Math.max(...px) - Math.min(...px), `象限 ${i}：灰度图三个通道应相同`).toBeLessThanOrEqual(6);
+    expect(Math.abs(px[0] - luma[i]), `象限 ${i}：灰度值 ${px[0]} 应是亮度 ${luma[i]}`).toBeLessThanOrEqual(10);
+  });
+});
+
+test("小工具：图片发端没选图、不是图片、子模式没有图片模式或太长时给出具体提示", async ({ page }) => {
+  await page.goto("/tools#mode-encoder");
+  const section = tool(page, "mode-encoder");
+  const mfsk = section.getByRole("button", { name: "发 MFSK 图片并下载 WAV" });
+  const thor = section.getByRole("button", { name: "发 THOR 图片并下载 WAV" });
+  const input = section.locator('input[type="file"]');
+
+  await mfsk.click();
+  await expect(page.getByText("请先选择一张图片。").first()).toBeVisible();
+  // SSTV 同样要先选图（它不经过 worker，走的是另一条代码路径）。刷新后界面回到干净状态再点，
+  // 否则上面那条同文案的提示还在，断言证明不了是 SSTV 按钮触发的。
+  await page.reload();
+  await expect(page.getByText("请先选择一张图片。")).toHaveCount(0);
+  await section.getByRole("button", { name: "发 SSTV 图片并下载 WAV" }).click();
+  await expect(page.getByText("请先选择一张图片。").first()).toBeVisible();
+
+  // 不是图片：发送时拒绝（选择时不拦，免得文件名留在按钮旁、实际却被拒绝）。文件名只显示一份。
+  await input.setInputFiles({ name: "note.txt", mimeType: "text/plain", buffer: Buffer.from("hello") });
+  await expect(section.getByText("note.txt")).toHaveCount(1);
+  await mfsk.click();
+  await expect(page.getByText("这不是图片文件。")).toBeVisible();
+
+  const png = await quadrantPng(page, 80, 60);
+  await input.setInputFiles({ name: "quad.png", mimeType: "image/png", buffer: png });
+  // MFSK8 / THOR 100 都没有图片模式：在发给 worker 之前就拦下，提示里列出有图片模式的子模式。
+  await pickOption(page, "MFSK 发端子模式", "MFSK8");
+  await mfsk.click();
+  await expect(page.getByText(/所选子模式没有图片模式.*MFSK 用 16 \/ 32 \/ 64 \/ 128/).first()).toBeVisible();
+  await pickOption(page, "THOR 发端子模式", "THOR 100");
+  await thor.click();
+  await expect(page.getByText(/所选子模式没有图片模式/).first()).toBeVisible();
+
+  // 640 × 480 彩色在 8 kHz 下超过样本上限：worker 回 `length`，页面说「太长」并给出办法。
+  await pickOption(page, "THOR 发端子模式", "THOR 16");
+  await pickOption(page, "THOR 图片尺寸", "640 × 480");
+  await thor.click();
+  await expect(page.getByText(/合成后的音频太长.*灰度/)).toBeVisible({ timeout: 60000 });
+});
+
 test("小工具：FT8 发端拒绝无法编码的报文", async ({ page }) => {
   await page.goto("/tools#mode-encoder");
   const section = tool(page, "mode-encoder");
@@ -624,12 +1049,56 @@ test("小工具：WSPR 发端拒绝非法呼号 / 网格", async ({ page }) => {
   await expect(page.getByText(/呼号与网格要合法/)).toBeVisible();
 });
 
-test("小工具：NAVTEX 发端拒绝非法报头", async ({ page }) => {
+test("小工具：NAVTEX 发端拒绝非法报头，并指出是哪个字段", async ({ page }) => {
   await page.goto("/tools#mode-encoder");
   const section = tool(page, "mode-encoder");
+  const download = section.getByRole("button", { name: "下载 NAVTEX WAV" });
+  // 校验只在 navtex 核心那一处，worker 回 `encode-params:<字段>`，页面按字段给提示。
   await section.getByLabel("NAVTEX 台站字母").fill("1");
+  await download.click();
+  await expect(page.getByText(/台站识别字母必须恰好是一个英文字母/)).toBeVisible();
+  // 以前页面只取第一个字符，"FF" 会悄悄当成 "F"；现在要求恰好一个字母。
+  await section.getByLabel("NAVTEX 台站字母").fill("FF");
+  await download.click();
+  await expect(page.getByText(/台站识别字母必须恰好是一个英文字母/).first()).toBeVisible();
+  await section.getByLabel("NAVTEX 台站字母").fill("F");
+  await section.getByLabel("NAVTEX 电报类型").fill("9");
+  await download.click();
+  await expect(page.getByText(/电报类型必须恰好是一个英文字母/)).toBeVisible();
+  await section.getByLabel("NAVTEX 电报类型").fill("A");
+  await section.getByLabel("NAVTEX 序号").fill("100");
+  await download.click();
+  await expect(page.getByText(/序号必须是 0–99 的整数/)).toBeVisible();
+});
+
+test("小工具：NAVTEX 发端经 worker 合成，下载的 WAV 在解码页读回报头与正文", async ({ page }) => {
+  await page.goto("/tools#mode-encoder");
+  const section = tool(page, "mode-encoder");
+  // 小写与首尾空白由核心规整成 "G" / "D"；序号 42、正文取一段已在核心单测里往返过的海事预警。
+  await section.getByLabel("报文内容").fill("GALE WARNING IN SOUTHERN ADRIATIC 25 KNOTS");
+  await section.getByLabel("NAVTEX 台站字母").fill(" g ");
+  await section.getByLabel("NAVTEX 电报类型").fill("d");
+  await section.getByLabel("NAVTEX 序号").fill("42");
+  const dl = page.waitForEvent("download");
   await section.getByRole("button", { name: "下载 NAVTEX WAV" }).click();
-  await expect(page.getByText(/台站与类型各填一个字母/)).toBeVisible();
+  const file = await dl;
+  expect(file.suggestedFilename()).toBe("navtex.wav");
+  const path = await file.path();
+  expect(path).not.toBeNull();
+  const wav = await readFile(path as string);
+  // 采样率来自 worker 回包（8000），写进 WAV 头 24–27 字节；不是页面自己写死的。
+  expect(wav.readUInt32LE(24)).toBe(8000);
+
+  // 真往返：同一个文件交给解码页，报头 GD 42 与正文都要读回来。
+  await page.goto("/navtex-decode");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "navtex.wav",
+    mimeType: "audio/wav",
+    buffer: wav,
+  });
+  await expect(page.getByText("GD 42")).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText(/GALE WARNING IN SOUTHERN ADRIATIC 25 KNOTS/)).toBeVisible();
+  await expect(page.getByText("通过").first()).toBeVisible();
 });
 
 test("小工具：陷波器给出两波段 trap 偶极子设计", async ({ page }) => {

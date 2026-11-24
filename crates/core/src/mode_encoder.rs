@@ -120,9 +120,32 @@ pub fn text_to_baudot_bits(text: &str) -> String {
     .join(" ")
 }
 
+/// 文本 → Olivia 能发的字符：可打印 ASCII（0x20–0x7E）与换行，其余跳过。
+///
+/// Olivia 每个字符占 7 位（0–127），库里遇到 > 127 的字符会悄悄换成 NUL，页面上就是
+/// 「中文变成一串空白」。这里和 CW / RTTY 一致：不认识的字符直接跳过，全军覆没由调用方报错。
+/// 控制字符（制表符、NUL、退格）也不发：它们在对端的终端里会被当成控制动作。
+#[must_use]
+pub fn olivia_text(text: &str) -> String {
+  text
+    .chars()
+    .filter(|c| matches!(c, ' '..='~' | '\n'))
+    .collect()
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn olivia_text_keeps_printable_ascii_and_newline_only() {
+    assert_eq!(olivia_text("CQ CQ DE BG1AAA"), "CQ CQ DE BG1AAA");
+    assert_eq!(olivia_text("a~ z\n"), "a~ z\n");
+    // 中文、全角标点、制表符、NUL、DEL 都跳过，相邻的可打印字符不受影响。
+    assert_eq!(olivia_text("CQ你好\tDE\u{0}BG1\u{7f}AAA，"), "CQDEBG1AAA");
+    assert_eq!(olivia_text("你好"), "");
+    assert_eq!(olivia_text(""), "");
+  }
 
   #[test]
   fn morse_uses_code_of() {
