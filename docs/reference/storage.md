@@ -18,6 +18,9 @@
 | `ui:colorScheme` | 像素风配色方案 id（11 套，默认 `classic`），与明暗正交；落在 `<html data-scheme>` |
 | `ui:pixelMotion` | 像素动效开关（`on` / `off`）；落在 `<html data-pixel-motion>`，不影响系统的「减少动态效果」 |
 | `ui:readableFont` | 易读字体开关（`on` / `off`）：正文切回抗锯齿字体，标题与数字仍是像素字体；落在 `<html data-readable-font>` |
+| `ui:license-checklist` | `/license` 设台申请核对清单里已勾选的项（清单项 id 的 JSON 数组）；设备本地、不同步，清单改版后不存在的旧 id 读取时丢弃 |
+| `qso-audio-index` | 哪些通联挂了本机录音（通联 id 的 JSON 数组）；设备本地、**不同步**，只在备份里勾选「通联录音」时才带上 |
+| `qso-audio:{id}` | 一条通联的录音本体（`data:audio/…;base64,…`，只存 IndexedDB、不进 localStorage）；设备本地、**不同步、不上传**，默认不进备份 |
 | `theme` | `light` / `dark` / `system` |
 | `locale` | `zh` / `en` / `es`（界面语言） |
 
@@ -99,5 +102,5 @@
 - **拉取之后会补写**：覆盖导入是按 key 叠加的，远端没有、本机独有的 key 会留下；所以手动恢复 / 合并以及自动快进之后（配了写入接口时）都会置脏位，让下一次自动写入把差异补回远端——写出前会再比一次指纹，没有差异就不发请求。只配了获取接口时无处可写，覆盖后清掉脏位。
 - **为什么自动获取不用合并**：合并对答题统计是累加的（`merge_study_stats`），同一份远端数据合并两次计数就翻倍，不幂等。
 - **远端指纹与本机同口径**：远端内容求指纹前先去掉设备专属 key，所以远端是一份手工导出的完整备份（带主题、接口缓存…）也不会因此永远对不上本机。
-- **设备专属、不同步的 key**（`is_device_local_key`）：`theme`、`locale`、`ui:*`、`fab-position`、`cat-settings`（电台串口参数跟着这台设备连的那台电台走）、`api-cache:*`、`*:kv-version`、`bank-digest:*`、`push-subscription`、`app:changelog-seen`、`sat-*-notified`、`nec.pending-template`，以及同步自己的 `remote-sync` / `remote-sync-state` / `account-sync-state` / `account-sync-options` / `sync-channel`。**新增本地存储 key 时必须在上面的表里登记，并在 `crates/core/src/remote_sync.rs` 的 `every_documented_key_is_classified` 测试里归类（同步 / 设备专属）**——漏归类测试会红，而不是悄悄变成「每次写入都触发一次同步」。
+- **设备专属、不同步的 key**（`is_device_local_key`）：`theme`、`locale`、`ui:*`、`fab-position`、`cat-settings`（电台串口参数跟着这台设备连的那台电台走）、`qso-audio-index` 与 `qso-audio:*`（通联录音只在本机，不上传）、`api-cache:*`、`*:kv-version`、`bank-digest:*`、`push-subscription`、`app:changelog-seen`、`sat-*-notified`、`nec.pending-template`，以及同步自己的 `remote-sync` / `remote-sync-state` / `account-sync-state` / `account-sync-options` / `sync-channel`。**新增本地存储 key 时必须在上面的表里登记，并在 `crates/core/src/remote_sync.rs` 的 `every_documented_key_is_classified` 测试里归类（同步 / 设备专属）**——漏归类测试会红，而不是悄悄变成「每次写入都触发一次同步」。
 - **手动导入直接写 `localStorage`**，不经过存储钩子，要自己调 `auto_sync::mark_dirty()`。

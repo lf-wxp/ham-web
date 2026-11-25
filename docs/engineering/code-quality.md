@@ -387,7 +387,7 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 | 日志 · 竞赛 | `/log` `/contest-log` `/qsl-*` `/awards` | ADIF 字段方向（`MY_*` vs 对方）、去重、导入导出往返、公式注入 |
 | 实时数据 | `/dashboard` `/dx-spots` `/solar` `/psk-reporter` `/rbn` | 上游失败降级、缓存口径、时间戳时区、轮询清理 |
 | 地图 · 卫星 | `/grid-map` `/dxcc-map` `/satellites` `/sdr-map` | 大圆跨日期变更线、点数量上限、无网格时不算假数据 |
-| 训练 · 辅助 | `/morse` `/callsign-copy` `/print` `/notifications` | 音频上下文释放、打印尺寸、权限被拒的降级 |
+| 训练 · 辅助 | `/morse` `/callsign-copy` `/voice-qso` `/print` `/notifications` | 音频上下文释放、打印尺寸、权限被拒的降级（`/voice-qso` 的麦克风被拒只计时、不录音） |
 | 天线 · 射频 | `/nec` `/waveform-lab` `/measurement-lab` | 数值精度、三维图回退、每帧重绘开销 |
 
 ### D4 路由与边界页面

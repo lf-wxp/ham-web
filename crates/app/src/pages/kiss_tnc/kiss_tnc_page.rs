@@ -6,6 +6,7 @@
 
 use std::collections::VecDeque;
 
+use ham_web_core::aprs_position::StationBook;
 use ham_web_core::kiss::{KissDecoder, ax25_ui_frame, encode_frame, parse_ui_frame};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -13,6 +14,7 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use web_sys::js_sys;
 
+use super::position_map::PositionMap;
 use crate::components::common::{EmptyState, PageContainer, PageHeader};
 use crate::i18n::{t, tf};
 use crate::ui::{
@@ -50,6 +52,8 @@ pub fn KissTncPage() -> impl IntoView {
   let opening = RwSignal::new(false);
   let error = RwSignal::new(None::<String>);
   let rows = RwSignal::new(VecDeque::<RxRow>::new());
+  // 收到的位置报文按站汇总：地图与计数读它，跟帧列表一样断开后保留。
+  let book = RwSignal::new(StationBook::new());
 
   let baud = RwSignal::new(9600u32);
   // 选项在视图外预生成：view! 的属性里不能直接写 `vec![…]`（逗号会被当成属性分隔）。
@@ -135,7 +139,11 @@ pub fn KissTncPage() -> impl IntoView {
                 continue;
               };
               for frame in dec.feed(&arr.to_vec()) {
-                let text = match parse_ui_frame(&frame) {
+                let parsed = parse_ui_frame(&frame);
+                if let Some(f) = &parsed {
+                  book.update(|b| b.record(&f.source_label(), &f.info));
+                }
+                let text = match parsed {
                   Some(f) => format!(
                     "{}>{}:{}",
                     f.source,
@@ -318,6 +326,8 @@ pub fn KissTncPage() -> impl IntoView {
             }}
           </div>
         </section>
+
+        <PositionMap book=book />
 
         <section class="border bg-card p-4">
           <h2 class=card_title_class("")>{move || t("tools.kiss-tx")}</h2>

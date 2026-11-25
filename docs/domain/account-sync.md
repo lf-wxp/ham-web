@@ -340,7 +340,7 @@ sat_favorites     (user_id, pos) PK → sat_watch · norad · name
 - 值不是 JSON 的单个设置：`theme`、`locale`、`practice:lastMode`、`practice:noResumePrompt:*`、`exam:answerCardFilter:*`、
   `exam:showExplanation:*`、`exam:weighted`、`exam:strict`、`qsl-card-template`、`qsl-card-imposition`、`qsl-label-layout`、
   `study-reminder-last`、`log-stats-scope`、`mistake-book:seeded` 等；
-- 设备专属的：`ui:*`、`api-cache:*`、`cat-settings`、`fab-position`、`push-subscription`（手动导出会带上，所以照收）；
+- 设备专属的：`ui:*`、`api-cache:*`、`cat-settings`、`qso-audio-index` 与 `qso-audio:*`（通联录音不上传、不同步）、`fab-position`、`push-subscription`（手动导出会带上，所以照收）；
 - 损坏时留下的原文：`nec-designs-corrupt`；
 - 比服务端新的前端新加的 key——服务端不认识它，也不会丢它。
 

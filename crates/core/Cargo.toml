@@ -16,5 +16,10 @@ serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
 
+# 通话练习的报文格式要和 FT8 打包逻辑对拍（只在单测里用，运行时不依赖）。
+# ft8 不依赖 core，所以没有循环。
+[dev-dependencies]
+ham-web-ft8.workspace = true
+
 [lints]
 workspace = true

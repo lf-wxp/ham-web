@@ -291,6 +291,7 @@ pub fn CatControl(#[prop(into)] on_reading: Callback<CatReading>) -> impl IntoVi
               aria_label=Signal::derive(move || t("common.ci-v-address-hex"))
               title=Signal::derive(move || t("common.ci-v-address-hex-examples"))
               class="md-input-sm w-14 font-mono uppercase"
+              size=ControlSize::Sm
               maxlength=Signal::derive(|| "2".to_owned())
               disabled=Signal::derive(busy)
               value=Signal::derive(move || format!("{:02X}", settings.with(|s| s.civ_addr)))

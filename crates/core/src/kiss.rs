@@ -263,10 +263,25 @@ pub fn ax25_ui_frame(dest: &str, src: &str, digis: &[&str], info: &[u8]) -> Opti
 pub struct UiFrame {
   /// 源呼号（不含 SSID）。
   pub source: String,
+  /// 源地址的 SSID（0..=15）。同一呼号的不同 SSID 是不同的站（手台、车载、固定台），
+  /// 按站去重或上地图时必须带上它。
+  pub source_ssid: u8,
   /// 目的呼号。
   pub destination: String,
   /// 信息字段。
   pub info: Vec<u8>,
+}
+
+impl UiFrame {
+  /// `BG1AAA-7` 形式的站名；SSID 为 0 时不带后缀（AX.25 / APRS 的通行写法）。
+  #[must_use]
+  pub fn source_label(&self) -> String {
+    if self.source_ssid == 0 {
+      self.source.clone()
+    } else {
+      format!("{}-{}", self.source, self.source_ssid)
+    }
+  }
 }
 
 /// 解析 AX.25 UI 帧（KISS 载荷，不含 FCS；支持 0..8 个中继地址；返回 `None` 表示结构不合法）。
@@ -283,7 +298,7 @@ pub fn parse_ui_frame(frame: &[u8]) -> Option<UiFrame> {
   if frame[6] & 1 != 0 {
     return None;
   }
-  let source = decode_address(&frame[7..14])?.0;
+  let (source, source_ssid) = decode_address(&frame[7..14])?;
   let mut offset = 7usize;
   // 源地址固定为第二个；E 位只标识地址链结束，末地址可能是中继。
   loop {
@@ -309,6 +324,7 @@ pub fn parse_ui_frame(frame: &[u8]) -> Option<UiFrame> {
     }
     return Some(UiFrame {
       source,
+      source_ssid,
       destination: dest,
       info: frame[offset + 2..].to_vec(),
     });
@@ -318,6 +334,17 @@ pub fn parse_ui_frame(frame: &[u8]) -> Option<UiFrame> {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn parsed_frame_keeps_the_source_ssid() {
+    let frame = ax25_ui_frame("APRS", "BG1AAA-7", &[], b">x").unwrap();
+    let ui = parse_ui_frame(&frame).unwrap();
+    assert_eq!((ui.source.as_str(), ui.source_ssid), ("BG1AAA", 7));
+    assert_eq!(ui.source_label(), "BG1AAA-7");
+    // SSID 0 不写后缀；与 -7 是两个不同的站名。
+    let plain = parse_ui_frame(&ax25_ui_frame("APRS", "BG1AAA", &[], b">x").unwrap()).unwrap();
+    assert_eq!(plain.source_label(), "BG1AAA");
+  }
 
   #[test]
   fn out_of_range_ssid_is_rejected_not_truncated() {

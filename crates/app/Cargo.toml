@@ -95,6 +95,10 @@ features = [
   "KeyboardEvent",
   "Location",
   "MediaDevices",
+  # 话音通联练习（`mic_recorder.rs`）：只录下来回放自己的声音，不识别
+  "MediaRecorder",
+  "RecordingState",
+  "BlobEvent",
   "MediaQueryList",
   "MediaStream",
   "MediaStreamAudioSourceNode",

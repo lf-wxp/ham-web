@@ -26,6 +26,13 @@ pub fn MapView(
   /// 外部触发定位：(纬度, 经度)，设为 `Some` 时视图居中并缩放到 square 级别。
   #[prop(optional, into)]
   focus: Signal<Option<(f64, f64)>>,
+  /// 外部定位时放大到「世界宽度的 1/N」：缺省 8（约 45° 宽，国家级）。
+  /// 只有要看几十公里量级的东西（如中继台的无线电地平线）才需要更大的值。
+  #[prop(optional)]
+  focus_zoom: Option<f64>,
+  /// 最大缩放倍数：缺省 16（约 22° 宽）。与 `focus_zoom` 配套抬高，否则聚焦之后缩不回去也放不大。
+  #[prop(optional)]
+  max_zoom: Option<f64>,
   /// 可选：把当前缩放级别同步给调用方（用于按 zoom 切换信息层粒度）。
   #[prop(optional)]
   zoom_signal: Option<RwSignal<f64>>,
@@ -46,6 +53,10 @@ pub fn MapView(
       aria_label.get()
     }
   };
+
+  let focus_zoom = focus_zoom.unwrap_or(8.0).max(1.0);
+  // 聚焦放得再大，也得能放到那一档：上限不低于聚焦倍数。
+  let max_zoom = max_zoom.unwrap_or(16.0).max(focus_zoom);
 
   // ---- 视图状态（平移/缩放，x 允许环绕）----
   let view_box = RwSignal::new((0.0f64, 0.0f64, MAP_W, MAP_H));
@@ -71,8 +82,8 @@ pub fn MapView(
       return;
     };
     let (px, py) = project(lon, lat);
-    let w = MAP_W / 8.0;
-    let h = MAP_H / 8.0;
+    let w = MAP_W / focus_zoom;
+    let h = MAP_H / focus_zoom;
     view_box.set((
       (px - w / 2.0).rem_euclid(MAP_W),
       (py - h / 2.0).clamp(0.0, MAP_H - h),
@@ -83,8 +94,8 @@ pub fn MapView(
 
   let zoom_by = move |factor: f64| {
     let (x, y, w, h) = view_box.get_untracked();
-    let nw = (w * factor).clamp(MAP_W / 16.0, MAP_W);
-    let nh = (h * factor).clamp(MAP_H / 16.0, MAP_H);
+    let nw = (w * factor).clamp(MAP_W / max_zoom, MAP_W);
+    let nh = (h * factor).clamp(MAP_H / max_zoom, MAP_H);
     let nx = (x + (w - nw) / 2.0).rem_euclid(MAP_W);
     let ny = (y + (h - nh) / 2.0).clamp(0.0, MAP_H - nh);
     view_box.set((nx, ny, nw, nh));
@@ -106,8 +117,8 @@ pub fn MapView(
     let px = (f64::from(ev.client_x()) - rect.left()) / rect.width();
     let py = (f64::from(ev.client_y()) - rect.top()) / rect.height();
     let (x, y, w, h) = view_box.get_untracked();
-    let nw = (w * factor).clamp(MAP_W / 16.0, MAP_W);
-    let nh = (h * factor).clamp(MAP_H / 16.0, MAP_H);
+    let nw = (w * factor).clamp(MAP_W / max_zoom, MAP_W);
+    let nh = (h * factor).clamp(MAP_H / max_zoom, MAP_H);
     let wx = x + px * w;
     let wy = y + py * h;
     let nx = (wx - px * nw).rem_euclid(MAP_W);
@@ -183,8 +194,8 @@ pub fn MapView(
       if start_dist > 0.0 && cur > 0.0 {
         let factor = start_dist / cur;
         let (x, y, w, h) = start_box;
-        let nw = (w * factor).clamp(MAP_W / 16.0, MAP_W);
-        let nh = (h * factor).clamp(MAP_H / 16.0, MAP_H);
+        let nw = (w * factor).clamp(MAP_W / max_zoom, MAP_W);
+        let nh = (h * factor).clamp(MAP_H / max_zoom, MAP_H);
         let nx = (x + (w - nw) / 2.0).rem_euclid(MAP_W);
         let ny = (y + (h - nh) / 2.0).clamp(0.0, MAP_H - nh);
         view_box.set((nx, ny, nw, nh));

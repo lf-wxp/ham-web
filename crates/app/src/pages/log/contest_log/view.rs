@@ -262,6 +262,8 @@ pub fn ContestLogPage() -> impl IntoView {
     // `logbook` 与同一批 `qsl-image:<id>` 键，这里漏清就会让下一个新通联直接挂上
     // 已删记录的扫描件（`log_page` 的删除路径就是这么做的，两处必须一致）。
     qsl_image::purge(store, &[id]);
+    // 录音同理：id 会复用，别让新通联挂上已删记录的录音。
+    crate::pages::log::qso_audio::purge(&[id]);
     store.persist();
   };
   let restart = move || {

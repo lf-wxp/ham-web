@@ -5,6 +5,7 @@ use wasm_bindgen::JsValue;
 
 use super::countdown::add_countdown;
 use crate::components::common::{PageContainer, PageHeader};
+use crate::components::license_checklist::LicenseChecklist;
 use crate::i18n::t;
 use crate::ui::{Button, DatePicker, Field, Size, Variant};
 use crate::util::set_title;
@@ -110,6 +111,8 @@ pub fn LicensePage() -> impl IntoView {
             </ol>
           </section>
 
+          <LicenseChecklist />
+
           <section class=crate::kit::card_class()>
             <h2 class=crate::kit::card_title_class()>{move || t("knowledge.operating-classes-and-privileges")}</h2>
             <dl class="divide-y">
@@ -144,7 +147,7 @@ pub fn LicensePage() -> impl IntoView {
             </ul>
           </section>
 
-          <section class=crate::kit::card_class()>
+          <section class=crate::kit::card_class() id="expiry-reminder">
             <h2 class=crate::kit::card_title_class()>{move || t("settings.license-expiry-reminder")}</h2>
             <div class="space-y-3 p-4">
               <p class="text-xs text-muted-foreground">

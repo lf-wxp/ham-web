@@ -5,6 +5,7 @@ use ham_web_core::slot_clock;
 use leptos::prelude::*;
 
 use crate::components::common::{PageContainer, PageHeader};
+use crate::components::ft8_practice::Ft8Practice;
 use crate::components::slot_clock::SlotClock;
 use crate::data::kt_tracked;
 use crate::i18n::t;
@@ -29,6 +30,8 @@ pub fn Ft8Page() -> impl IntoView {
             <SlotClock specs=vec![slot_clock::FT8, slot_clock::FT4] />
           </div>
         </section>
+
+        <Ft8Practice />
 
         <section class=crate::kit::card_class()>
           <h2 class=crate::kit::card_title_class()>{move || t("radio.key-concepts-heading")}</h2>

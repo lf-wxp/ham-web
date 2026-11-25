@@ -25,7 +25,7 @@
 | 工具 · 日志 · 竞赛 | `/log` `/qsl-labels` `/qsl-designer` `/contest-log` `/contest-calendar` `/stats` |
 | 工具 · 实时数据 | `/dashboard` `/dx-spots` `/psk-reporter` `/rbn` `/solar` |
 | 工具 · 地图 · 卫星 | `/grid-map` `/grayline` `/dxcc-map` `/portable-map` `/satellites` `/sdr-map` |
-| 工具 · 训练 · 辅助 | `/photo-processor` `/callsign-copy` `/countdown` `/notifications` `/print` |
+| 工具 · 训练 · 辅助 | `/photo-processor` `/callsign-copy` `/voice-qso` `/countdown` `/notifications` `/print` |
 | 可直链访问（未在导航中） | `/battle` `/license.html` `/achievements` `/backup` |
 
 带参数的页面：

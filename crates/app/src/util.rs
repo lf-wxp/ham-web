@@ -7,6 +7,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::i18n::{t, tf};
 use ham_web_core::qsl_image;
+use ham_web_core::qso_audio;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::{JsCast, JsValue};
 
@@ -583,6 +584,8 @@ pub struct BackupModules {
   pub log: bool,
   /// QSL 影像本体（IndexedDB 的 `qsl-image:<id>`，数据量大，单独勾选）。
   pub qsl_images: bool,
+  /// 通联录音本体（IndexedDB 的 `qso-audio:<id>`）：**默认不勾**，也永远不参与同步。
+  pub qso_audio: bool,
   /// 其余本地数据。
   pub other: bool,
 }
@@ -598,6 +601,8 @@ impl BackupModules {
     Self {
       log: true,
       qsl_images: include_qsl_images,
+      // 录音只在本机：不上传、不同步，无论同步通道怎么配置。
+      qso_audio: false,
       other: true,
     }
   }
@@ -692,6 +697,7 @@ async fn collect_backup(
       let keep = match ham_web_core::classify_key(&key) {
         ham_web_core::BackupModule::Log => modules.log,
         ham_web_core::BackupModule::QslImage => modules.qsl_images, // 快照侧基本不存在
+        ham_web_core::BackupModule::QsoAudio => modules.qso_audio,  // 只有索引在 localStorage
         ham_web_core::BackupModule::Other => modules.other,
       };
       if keep {
@@ -737,19 +743,106 @@ async fn collect_backup(
       }
     }
   }
+  // 通联录音：与 QSL 影像同一套规则（索引直接读 localStorage，本体按索引从 IndexedDB 逐个读回），
+  // 区别只有一点——它默认不勾选。日志上下文与影像共用同一个 key：导入时按通联身份给 id 做映射。
+  if modules.qso_audio {
+    if !modules.log
+      && !map.contains_key(qsl_image::BACKUP_LOG_KEY)
+      && let Some(context) = crate::kv::load_large_strict("logbook")
+        .await
+        .map_err(|_| t("tools.backup-write-failed"))?
+    {
+      insert_backup_value(&mut map, qsl_image::BACKUP_LOG_KEY.to_owned(), context)?;
+    }
+    let index = local.get_item(qso_audio::INDEX_KEY).ok().flatten();
+    let ids = index
+      .as_deref()
+      .and_then(|raw| serde_json::from_str::<Vec<u64>>(raw).ok())
+      .unwrap_or_default();
+    if let Some(index) = index {
+      insert_backup_value(&mut map, qso_audio::INDEX_KEY.to_owned(), index)?;
+    }
+    for id in ids {
+      let key = qso_audio::key_for(id);
+      if let Some(value) = crate::kv::load_store_only_strict(&key)
+        .await
+        .map_err(|_| t("tools.backup-write-failed"))?
+      {
+        insert_backup_value(&mut map, key, value)?;
+      }
+    }
+  }
   Ok(map)
 }
 
-/// 导入一条 QSL 影像：备份是外部输入，key 与值都按本站写出的格式校验，不合格的
-/// 条目跳过（不计入返回的条数）。写入走 [`crate::kv::save_store_only`]。
-pub(crate) async fn import_qsl_image(key: &str, value: &str) -> Result<bool, String> {
-  if qsl_image::entry_id_from_key(key).is_none() || !qsl_image::is_valid_stored_value(value) {
+/// 随通联 id 关联、存 IndexedDB 的本机大数据：QSL 影像与通联录音。
+///
+/// 两者的 key 格式、值的校验各不相同，但备份导入时的处理一模一样（按通联身份映射 id、
+/// 旧数据延后清理、索引跟着走），所以描述成数据、循环处理，而不是把一整段逻辑复制两遍。
+#[derive(Clone, Copy)]
+struct Attachment {
+  /// 存储层 key 前缀。
+  prefix: &'static str,
+  /// localStorage 里的 id 索引 key。
+  index_key: &'static str,
+  key_for: fn(u64) -> String,
+  id_of: fn(&str) -> Option<u64>,
+  /// 备份里的值是否像本站写出的数据。
+  valid: fn(&str) -> bool,
+  /// 索引写回时是否**不论有没有变化**都计入「恢复了几项」：影像沿用历史口径（索引算一项），
+  /// 录音只在真的恢复了录音时才计，否则每次恢复都会多出一项莫名其妙的计数。
+  index_always_counts: bool,
+}
+
+const IMAGE: Attachment = Attachment {
+  prefix: qsl_image::KEY_PREFIX,
+  index_key: qsl_image::INDEX_KEY,
+  key_for: qsl_image::key_for,
+  id_of: qsl_image::entry_id_from_key,
+  valid: qsl_image::is_valid_stored_value,
+  index_always_counts: true,
+};
+
+const AUDIO: Attachment = Attachment {
+  prefix: qso_audio::KEY_PREFIX,
+  index_key: qso_audio::INDEX_KEY,
+  key_for: qso_audio::key_for,
+  id_of: qso_audio::entry_id_from_key,
+  valid: qso_audio::is_valid_stored_value,
+  index_always_counts: false,
+};
+
+const ATTACHMENTS: [Attachment; 2] = [IMAGE, AUDIO];
+
+/// 一类附件在一次导入里的进度。
+#[derive(Default)]
+struct AttachmentState {
+  /// 导入后仍然有数据的通联 id。
+  index: std::collections::BTreeSet<u64>,
+  /// 要等所有写入成功后才删的旧数据（此前预扫描里就直接删，若随后写别的 key 失败，会落得
+  /// 「日志还是旧的、对应的数据已经没了」，且没法回滚）。
+  stale: Vec<String>,
+  /// 本次从备份里写入的 key（同一个 id 已经覆盖写入，不能再当旧数据删）。
+  written: std::collections::BTreeSet<String>,
+  /// 这一类在备份里真的带了数据（合并导入时用来决定要不要写索引）。
+  changed: bool,
+}
+
+/// 导入一条附件：备份是外部输入，key 与值都按本站写出的格式校验，不合格的条目跳过
+/// （不计入返回的条数）。写入走 [`crate::kv::save_store_only`]。
+async fn import_attachment(kind: Attachment, key: &str, value: &str) -> Result<bool, String> {
+  if (kind.id_of)(key).is_none() || !(kind.valid)(value) {
     return Ok(false);
   }
   if !crate::kv::save_store_only(key, value).await {
     return Err(t("tools.backup-write-failed"));
   }
   Ok(true)
+}
+
+/// 导入一条 QSL 影像（账号同步落盘也用它）。
+pub(crate) async fn import_qsl_image(key: &str, value: &str) -> Result<bool, String> {
+  import_attachment(IMAGE, key, value).await
 }
 
 /// 从备份 JSON 恢复本地数据，返回恢复的条目数。
@@ -771,12 +864,16 @@ async fn import_backup_inner(json: &str) -> Result<usize, String> {
     return Err(t("shell.localstorage-unavailable"));
   };
   let mut count = 0;
-  let has_index = map.contains_key(qsl_image::INDEX_KEY) || map.contains_key("logbook");
-  let mut index = std::collections::BTreeSet::new();
-  // 旧影像的删除推迟到**所有写入成功之后**：此前预扫描里就直接删，若随后恢复日志或写别的 key
-  // 失败，会落得「日志还是旧的、对应的影像已经没了」，且没法回滚。
-  let mut stale_images: Vec<String> = Vec::new();
-  let mut written_images = std::collections::BTreeSet::new();
+  let has_logbook = map.contains_key("logbook");
+  // 备份里带了索引或日志：导入后要把本机索引按结果重写（日志被换掉时，id 对不上的旧附件要清掉）。
+  let rewrite_index: Vec<bool> = ATTACHMENTS
+    .iter()
+    .map(|a| has_logbook || map.contains_key(a.index_key))
+    .collect();
+  let mut states: Vec<AttachmentState> = ATTACHMENTS
+    .iter()
+    .map(|_| AttachmentState::default())
+    .collect();
   if let Some(incoming) = map.get("logbook") {
     let _: ham_web_core::logbook::Logbook =
       serde_json::from_str(incoming).map_err(|e| e.to_string())?;
@@ -784,33 +881,35 @@ async fn import_backup_inner(json: &str) -> Result<usize, String> {
       .await
       .map_err(|_| t("tools.backup-write-failed"))?;
     let retained = ham_web_core::backup_merge::retained_image_ids(current.as_deref(), incoming);
-    let mut old_ids: std::collections::BTreeSet<u64> = local
-      .get_item(qsl_image::INDEX_KEY)
-      .map_err(|_| t("tools.backup-write-failed"))?
-      .and_then(|v| serde_json::from_str::<Vec<u64>>(&v).ok())
-      .unwrap_or_default()
-      .into_iter()
-      .collect();
-    for raw in [current.as_deref(), Some(incoming.as_str())]
-      .into_iter()
-      .flatten()
-    {
-      if let Ok(book) = serde_json::from_str::<ham_web_core::logbook::Logbook>(raw) {
-        old_ids.extend(book.entries.iter().map(|e| e.id));
-      }
-    }
-    for id in old_ids {
-      let key = qsl_image::key_for(id);
-      if retained.contains(&id) {
-        if crate::kv::load_store_only_strict(&key)
-          .await
-          .map_err(|_| t("tools.backup-write-failed"))?
-          .is_some()
-        {
-          index.insert(id);
+    for (kind, state) in ATTACHMENTS.iter().zip(states.iter_mut()) {
+      let mut old_ids: std::collections::BTreeSet<u64> = local
+        .get_item(kind.index_key)
+        .map_err(|_| t("tools.backup-write-failed"))?
+        .and_then(|v| serde_json::from_str::<Vec<u64>>(&v).ok())
+        .unwrap_or_default()
+        .into_iter()
+        .collect();
+      for raw in [current.as_deref(), Some(incoming.as_str())]
+        .into_iter()
+        .flatten()
+      {
+        if let Ok(book) = serde_json::from_str::<ham_web_core::logbook::Logbook>(raw) {
+          old_ids.extend(book.entries.iter().map(|e| e.id));
         }
-      } else {
-        stale_images.push(key);
+      }
+      for id in old_ids {
+        let key = (kind.key_for)(id);
+        if retained.contains(&id) {
+          if crate::kv::load_store_only_strict(&key)
+            .await
+            .map_err(|_| t("tools.backup-write-failed"))?
+            .is_some()
+          {
+            state.index.insert(id);
+          }
+        } else {
+          state.stale.push(key);
+        }
       }
     }
   }
@@ -818,18 +917,21 @@ async fn import_backup_inner(json: &str) -> Result<usize, String> {
     if k == qsl_image::BACKUP_LOG_KEY
       || k.ends_with(crate::kv::VERSION_SUFFIX)
       || ham_web_core::remote_sync::is_excluded_from_backup(&k)
+      || ATTACHMENTS.iter().any(|a| k == a.index_key)
     {
       continue;
     }
-    if k == qsl_image::INDEX_KEY {
-      continue;
-    }
-    if k.starts_with(qsl_image::KEY_PREFIX) {
-      if import_qsl_image(&k, &v).await?
-        && let Some(id) = qsl_image::entry_id_from_key(&k)
+    if let Some((kind, state)) = ATTACHMENTS
+      .iter()
+      .zip(states.iter_mut())
+      .find(|(a, _)| k.starts_with(a.prefix))
+    {
+      if import_attachment(*kind, &k, &v).await?
+        && let Some(id) = (kind.id_of)(&k)
       {
-        index.insert(id);
-        written_images.insert(k.clone());
+        state.index.insert(id);
+        state.written.insert(k.clone());
+        state.changed = true;
         count += 1;
       }
       continue;
@@ -845,19 +947,28 @@ async fn import_backup_inner(json: &str) -> Result<usize, String> {
     }
     count += 1;
   }
-  // 全部写入成功后才清理旧影像。备份里同一个 id 的影像已经覆盖写入，不能再删；删除失败只留下
+  // 全部写入成功后才清理旧附件。备份里同一个 id 的已经覆盖写入，不能再删；删除失败只留下
   // 一份不在索引里的孤儿（不可见、只占空间），不值得让已经成功的恢复整体报错。
-  for key in stale_images {
-    if !written_images.contains(&key) {
-      let _ = crate::kv::remove_store_only(&key).await;
+  for state in &states {
+    for key in &state.stale {
+      if !state.written.contains(key) {
+        let _ = crate::kv::remove_store_only(key).await;
+      }
     }
   }
-  if has_index || !index.is_empty() {
-    let value = serde_json::to_string(&index).map_err(|e| e.to_string())?;
-    local
-      .set_item(qsl_image::INDEX_KEY, &value)
-      .map_err(|_| t("tools.backup-write-failed"))?;
-    count += 1;
+  for ((kind, state), rewrite) in ATTACHMENTS.iter().zip(&states).zip(rewrite_index) {
+    // 影像沿用历史口径（带日志 / 索引就重写）；录音只在本机原本有索引、或确有录音时才写，
+    // 别让没用过录音的人每次恢复都多出一个空的 `qso-audio-index`。
+    let existed = local.get_item(kind.index_key).ok().flatten().is_some();
+    if !state.index.is_empty() || (rewrite && (kind.index_always_counts || existed)) {
+      let value = serde_json::to_string(&state.index).map_err(|e| e.to_string())?;
+      local
+        .set_item(kind.index_key, &value)
+        .map_err(|_| t("tools.backup-write-failed"))?;
+      if kind.index_always_counts || state.changed {
+        count += 1;
+      }
+    }
   }
   Ok(count)
 }
@@ -895,45 +1006,55 @@ async fn import_backup_merge_inner(json: &str) -> Result<usize, String> {
     ids = ham_web_core::backup_merge::image_ids_for_existing_log(current_log.as_deref(), context);
   } else if current_log.is_none() {
     // 旧版仅影像备份没有日志上下文；仅在本机没有日志时保留原始 ID。
-    ids.extend(
-      map
-        .keys()
-        .filter_map(|k| qsl_image::entry_id_from_key(k).map(|id| (id, id))),
-    );
+    ids.extend(map.keys().filter_map(|k| {
+      ATTACHMENTS
+        .iter()
+        .find_map(|a| (a.id_of)(k))
+        .map(|id| (id, id))
+    }));
   }
-  let mut index: std::collections::BTreeSet<u64> = local
-    .get_item(qsl_image::INDEX_KEY)
-    .ok()
-    .flatten()
-    .and_then(|v| serde_json::from_str::<Vec<u64>>(&v).ok())
-    .unwrap_or_default()
-    .into_iter()
+  let mut states: Vec<AttachmentState> = ATTACHMENTS
+    .iter()
+    .map(|a| AttachmentState {
+      index: local
+        .get_item(a.index_key)
+        .ok()
+        .flatten()
+        .and_then(|v| serde_json::from_str::<Vec<u64>>(&v).ok())
+        .unwrap_or_default()
+        .into_iter()
+        .collect(),
+      ..AttachmentState::default()
+    })
     .collect();
   for (k, v) in map {
-    if matches!(
-      k.as_str(),
-      "logbook" | qsl_image::INDEX_KEY | qsl_image::BACKUP_LOG_KEY
-    ) || k.ends_with(crate::kv::VERSION_SUFFIX)
+    if k == "logbook"
+      || k == qsl_image::BACKUP_LOG_KEY
+      || ATTACHMENTS.iter().any(|a| k == a.index_key)
+      || k.ends_with(crate::kv::VERSION_SUFFIX)
       || ham_web_core::remote_sync::is_excluded_from_backup(&k)
     {
       continue;
     }
-    if k.starts_with(qsl_image::KEY_PREFIX) {
-      let Some(target) = qsl_image::entry_id_from_key(&k)
-        .and_then(|id| ids.get(&id))
-        .copied()
-      else {
+    if let Some((kind, state)) = ATTACHMENTS
+      .iter()
+      .zip(states.iter_mut())
+      .find(|(a, _)| k.starts_with(a.prefix))
+    {
+      let Some(target) = (kind.id_of)(&k).and_then(|id| ids.get(&id)).copied() else {
         continue;
       };
-      let key = qsl_image::key_for(target);
+      let key = (kind.key_for)(target);
+      // 本机这条通联已经有数据就保留本机的，不用备份里的覆盖。
       if crate::kv::load_store_only_strict(&key)
         .await
         .map_err(|_| t("tools.backup-write-failed"))?
         .is_some()
       {
-        index.insert(target);
-      } else if import_qsl_image(&key, &v).await? {
-        index.insert(target);
+        state.index.insert(target);
+      } else if import_attachment(*kind, &key, &v).await? {
+        state.index.insert(target);
+        state.changed = true;
         count += 1;
       }
       continue;
@@ -946,12 +1067,15 @@ async fn import_backup_merge_inner(json: &str) -> Result<usize, String> {
       count += 1;
     }
   }
-  if !index.is_empty() {
-    let value = serde_json::to_string(&index).map_err(|e| e.to_string())?;
-    local
-      .set_item(qsl_image::INDEX_KEY, &value)
-      .map_err(|_| t("tools.backup-write-failed"))?;
-    count += 1;
+  for (kind, state) in ATTACHMENTS.iter().zip(&states) {
+    // 影像沿用历史口径（索引非空就写、算一项）；录音只在真的合并进了录音时才写、才计。
+    if !state.index.is_empty() && (kind.index_always_counts || state.changed) {
+      let value = serde_json::to_string(&state.index).map_err(|e| e.to_string())?;
+      local
+        .set_item(kind.index_key, &value)
+        .map_err(|_| t("tools.backup-write-failed"))?;
+      count += 1;
+    }
   }
   Ok(count)
 }

@@ -32,8 +32,9 @@ use crate::pages::{
   RttyDecoderPage, RttyPage, SafetyPage, SatOperationPage, SatellitesPage, SdrMapPage, SdrPage,
   SdrWaterfallPage, SignalIdPage, SmithPage, SolarPage, SpecialPropPage, SpectrumAdminPage,
   SstvDecoderPage, SstvPage, StatsPage, StudyCalendarPage, SwlPage, ThorDecoderPage, ToolsPage,
-  TransceiverPage, UiSpecPage, VnaPage, VnaReaderPage, WaveformLabPage, WeatherSatPage, WeeklyPage,
-  WefaxDecoderPage, WinlinkPage, WsprDecoderPage, WsprPage, ZoneMapPage,
+  TransceiverPage, UiSpecPage, VnaPage, VnaReaderPage, VoiceQsoPage, WaveformLabPage,
+  WeatherSatPage, WeeklyPage, WefaxDecoderPage, WinlinkPage, WsprDecoderPage, WsprPage,
+  ZoneMapPage,
 };
 
 use crate::components::related_topics::RelatedTopics;
@@ -118,6 +119,7 @@ pub(super) fn MainContent() -> impl IntoView {
         <Route path=path!("/morse") view=MorsePage />
         <Route path=path!("/phonetic") view=PhoneticPage />
         <Route path=path!("/callsign-copy") view=CallsignCopyPage />
+        <Route path=path!("/voice-qso") view=VoiceQsoPage />
         <Route path=path!("/bands") view=BandsPage />
         <Route path=path!("/beacons") view=BeaconsPage />
         <Route path=path!("/reference") view=ReferencePage />

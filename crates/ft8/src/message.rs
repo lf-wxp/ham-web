@@ -422,19 +422,22 @@ fn unpack58(n58: u64, hash: &mut HashTable) -> String {
 }
 
 /// 打包网格 / 报告（15 位）。
+///
+/// 不是网格 / `RRR` / `RR73` / `73` / 空，也不是合法报告的载荷返回 `None`（由调用方回退成别的消息类型）。
+/// 原先对任何其它文字都返回「+00 报告」：`HELLO` 会被悄悄打包成标准消息的 `+00`。
 #[must_use]
-fn packgrid(grid: &str) -> u16 {
+fn packgrid(grid: &str) -> Option<u16> {
   if grid.is_empty() {
-    return MAXGRID4 + 1;
+    return Some(MAXGRID4 + 1);
   }
   if grid == "RRR" {
-    return MAXGRID4 + 2;
+    return Some(MAXGRID4 + 2);
   }
   if grid == "RR73" {
-    return MAXGRID4 + 3;
+    return Some(MAXGRID4 + 3);
   }
   if grid == "73" {
-    return MAXGRID4 + 4;
+    return Some(MAXGRID4 + 4);
   }
   let b = grid.as_bytes();
   if b.len() >= 4
@@ -447,7 +450,7 @@ fn packgrid(grid: &str) -> u16 {
     g = g * 18 + (b[1] - b'A') as u16;
     g = g * 10 + (b[2] - b'0') as u16;
     g = g * 10 + (b[3] - b'0') as u16;
-    return g;
+    return Some(g);
   }
   // 报告：R+dd / R-dd / +dd / -dd
   let (ir, rest) = if let Some(r) = grid.strip_prefix('R') {
@@ -455,30 +458,27 @@ fn packgrid(grid: &str) -> u16 {
   } else {
     (0, grid)
   };
-  let dd = parse_dd(rest);
-  let irpt = 35 + dd;
+  let dd = parse_report(rest)?;
+  // `dd` 在 -30..=32 内，所以 `35 + dd` 在 5..=67，不会越界（原先把负数 `as u16` 再相加，
+  // 靠回绕才对：release 碰巧正确，debug 构建直接 panic）。
+  let irpt = (35 + dd) as u16;
   let v = MAXGRID4 + irpt;
-  if ir == 1 { v | 0x8000 } else { v }
+  Some(if ir == 1 { v | 0x8000 } else { v })
 }
 
-/// 解析 `+dd` / `-dd`（两位十进制带符号）。
-fn parse_dd(s: &str) -> u16 {
-  let mut val: i16 = 0;
-  let mut neg = false;
-  let mut rest = s;
-  if let Some(r) = s.strip_prefix('-') {
-    neg = true;
-    rest = r;
-  } else if let Some(r) = s.strip_prefix('+') {
-    rest = r;
+/// 解析 `+dd` / `-dd`：必须带符号、1–2 位数字、值在 FT8 报告范围 -30..=32 内。
+fn parse_report(s: &str) -> Option<i16> {
+  let (neg, digits) = match s.as_bytes().first()? {
+    b'-' => (true, &s[1..]),
+    b'+' => (false, &s[1..]),
+    _ => return None,
+  };
+  if !(1..=2).contains(&digits.len()) || !digits.bytes().all(|b| b.is_ascii_digit()) {
+    return None;
   }
-  for ch in rest.chars().take(2) {
-    if !ch.is_ascii_digit() {
-      break;
-    }
-    val = val * 10 + (ch as i16 - '0' as i16);
-  }
-  if neg { (-val) as u16 } else { val as u16 }
+  let v: i16 = digits.parse().ok()?;
+  let dd = if neg { -v } else { v };
+  (-30..=32).contains(&dd).then_some(dd)
 }
 
 /// 解包网格 / 报告。返回 `(extra, field_type)`。
@@ -504,7 +504,8 @@ fn unpackgrid(igrid4: u16, ir: u8) -> Result<(String, Field), MessageError> {
     4 => Ok(("73".to_owned(), Field::Token)),
     _ => {
       let dd = irpt as i16 - 35;
-      let s = format!("{dd:+}");
+      // 固定两位带符号（`-05`、`+12`）：与 WSJT-X / ft8_lib 的 `int_to_dd(.., 2, true)` 一致。
+      let s = format!("{dd:+03}");
       Ok((if ir > 0 { format!("R{s}") } else { s }, Field::Rst))
     }
   }
@@ -537,7 +538,7 @@ fn encode_std(
     return Err(MessageError::Callsign2);
   }
 
-  let igrid4 = packgrid(extra);
+  let igrid4 = packgrid(extra).ok_or(MessageError::Grid)?;
   let mut n29a = (n28a << 1) | u32::from(ipa);
   let n29b = (n28b << 1) | u32::from(ipb);
   if call_to.ends_with("/R") {
@@ -970,6 +971,74 @@ mod tests {
       let mut hash = HashTable::new();
       let msg = encode(text, &mut hash).unwrap();
       assert_eq!(msg.payload, expect, "payload of {text:?}");
+    }
+  }
+
+  /// 报告载荷的位布局（协议定义）：16 位字段 = `32400 + 35 + dB`（32400 是 4 位网格的个数），
+  /// 带 `R` 时最高位置 1。期望值按这条定义手算，不经过被测代码。
+  #[test]
+  fn report_payloads_follow_the_protocol_layout() {
+    let field = |p: &[u8; 10]| {
+      ((u16::from(p[7]) & 0x3f) << 10) | (u16::from(p[8]) << 2) | u16::from(p[9] >> 6)
+    };
+    for (text, db, r) in [
+      ("K1ABC W9XYZ -12", -12i16, false),
+      ("K1ABC W9XYZ +05", 5, false),
+      ("K1ABC W9XYZ -30", -30, false),
+      ("K1ABC W9XYZ +32", 32, false),
+      ("K1ABC W9XYZ R-07", -7, true),
+      ("K1ABC W9XYZ R+32", 32, true),
+    ] {
+      let msg = encode(text, &mut HashTable::new()).unwrap();
+      assert_eq!(get_type(&msg), MessageType::Standard, "{text}");
+      let expect = (32_400 + 35 + db) as u16 | if r { 0x8000 } else { 0 };
+      assert_eq!(field(&msg.payload), expect, "{text}");
+    }
+  }
+
+  /// 负数报告曾经在 debug 构建里 `35 + (-12 as u16)` 溢出 panic（release 靠回绕才碰巧对）；
+  /// 解码也曾把 `-05` 显示成 `-5`。
+  #[test]
+  fn reports_round_trip_with_two_digits_in_debug_builds() {
+    for text in [
+      "K1ABC W9XYZ -12",
+      "K1ABC W9XYZ -05",
+      "K1ABC W9XYZ +05",
+      "K1ABC W9XYZ +00",
+      "K1ABC W9XYZ -30",
+      "K1ABC W9XYZ +32",
+      "K1ABC W9XYZ R-07",
+      "K1ABC W9XYZ R+10",
+    ] {
+      roundtrip(text, text);
+    }
+    // 一位数字的写法照旧认，解回来是规范的两位。
+    roundtrip("K1ABC W9XYZ -5", "K1ABC W9XYZ -05");
+    roundtrip("K1ABC W9XYZ R+5", "K1ABC W9XYZ R+05");
+  }
+
+  /// 不是报告的载荷不能被悄悄打包成「+00」；越界的报告也不行。
+  #[test]
+  fn payloads_that_are_not_reports_are_not_packed_as_one() {
+    for bad in [
+      "HELLO", "-99", "+33", "-31", "-", "+", "R", "R-", "5", "X-12", "-1x", "-123", "OK",
+    ] {
+      let text = format!("K1ABC W9XYZ {bad}");
+      match encode(&text, &mut HashTable::new()) {
+        Err(_) => {}
+        Ok(m) => assert_ne!(
+          decode(&m, &mut HashTable::new()).as_deref(),
+          Ok("K1ABC W9XYZ +00"),
+          "{text:?} 被悄悄打包成了 +00"
+        ),
+      }
+      if let Ok(m) = encode(&text, &mut HashTable::new()) {
+        assert_ne!(
+          get_type(&m),
+          MessageType::Standard,
+          "{text:?} 不该是标准消息"
+        );
+      }
     }
   }
 

@@ -1618,6 +1618,14 @@ pub const MODULES: &[Module] = &[
     backend: false,
   },
   Module {
+    path: "/voice-qso",
+    href: None,
+    title: "话音通联",
+    icon: "radio",
+    group: Some(GROUP_TOOL_TRAIN),
+    backend: false,
+  },
+  Module {
     path: "/countdown",
     href: None,
     title: "倒计时",

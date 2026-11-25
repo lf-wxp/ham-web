@@ -9,11 +9,15 @@ use ham_web_core::dx_watch::{
   freq_label, mode_of_comment as mode_of,
 };
 use ham_web_core::dxcc::lookup;
+use ham_web_core::grid::lat_lon_from_grid;
+use ham_web_core::spot_bearing::{Heading, heading, is_six_meters, sector_counts};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use serde::Deserialize;
 
 use crate::components::common::{EmptyState, Loading, PageContainer, PageHeader};
+use crate::components::six_meter_summary::SixMeterSummary;
+use crate::components::spot_heading::SpotHeading;
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::pages::log::use_log_store;
@@ -81,6 +85,33 @@ pub fn DxSpotsPage() -> impl IntoView {
     })
   });
   let needed_count = Memo::new(move |_| needs.with(|n| n.iter().filter(|x| x.is_needed()).count()));
+
+  // 本台位置（当前台站的网格中心）：6 m 的方位以它为原点。网格没填或不合法就是 `None`，
+  // 页面如实提示，不假装有方位。别的页面改过台站信息后重新拉取时会重读。
+  let home = RwSignal::new(None::<(f64, f64)>);
+  let read_home = move || {
+    home.set(lat_lon_from_grid(
+      &store.active_station_untracked().gridsquare,
+    ));
+  };
+  read_home();
+  // 只给 6 m 的 spot 算方位（与 `spots` 一一对应）：每条要做一次 DXCC 前缀查询，别的波段用不上。
+  let headings = Memo::new(move |_| {
+    let home = home.get();
+    spots.with(|list| {
+      list
+        .iter()
+        .map(|s| {
+          home
+            .filter(|_| is_six_meters(s.freq_khz))
+            .and_then(|h| heading(h, &s.dx, &s.comment))
+        })
+        .collect::<Vec<Option<Heading>>>()
+    })
+  });
+  let six_counts = Memo::new(move |_| {
+    headings.with(|hs| sector_counts(hs.iter().flatten().map(|h| h.bearing_deg)))
+  });
 
   // 提醒设置与本次打开页面期间已提醒过的 spot。
   let alerts = RwSignal::new(storage::get_json::<AlertSettings>(ALERTS_KEY).unwrap_or_default());
@@ -152,6 +183,7 @@ pub fn DxSpotsPage() -> impl IntoView {
   // 请求代数：手动刷新与每分钟轮询可能交叠，慢的旧响应不能盖掉新的。
   let generation = StoredValue::new(0u32);
   let load = move || {
+    read_home();
     loading.set(true);
     failed.set(false);
     generation.update_value(|g| *g = g.wrapping_add(1));
@@ -280,6 +312,16 @@ pub fn DxSpotsPage() -> impl IntoView {
                 })
                 .collect_view()}
             </div>
+            {move || {
+              (band_filter.get() == Some("6m")).then(|| {
+                view! {
+                  <SixMeterSummary
+                    home_known=Signal::derive(move || home.get().is_some())
+                    counts=Signal::derive(move || six_counts.get())
+                  />
+                }
+              })
+            }}
             {move || {
               has_log.get().then(|| {
                 view! {
@@ -418,10 +460,13 @@ pub fn DxSpotsPage() -> impl IntoView {
               let mode = mode_filter.get();
               let only_needed = needed_only.get();
               let need_list = needs.get();
-              let filtered: Vec<(Spot, Need)> = list
+              let head_list = headings.get();
+              let filtered: Vec<(Spot, Need, Option<Heading>)> = list
                 .into_iter()
                 .zip(need_list)
-                .filter(|(s, n)| {
+                .zip(head_list)
+                .map(|((s, n), h)| (s, n, h))
+                .filter(|(s, n, _)| {
                   band.is_none_or(|b| band_of(s.freq_khz) == b)
                     && mode.is_none_or(|m| mode_of(&s.comment) == m)
                     && (!only_needed || matches!(n, Need::NewDxcc | Need::NewBand))
@@ -437,7 +482,7 @@ pub fn DxSpotsPage() -> impl IntoView {
                 <div class="divide-y">
                   {filtered
                     .iter()
-                    .map(|(s, need)| {
+                    .map(|(s, need, head)| {
                       let freq = s.freq_khz;
                       let dx = s.dx.clone();
                       let country = if s.country.is_empty() {
@@ -517,6 +562,7 @@ pub fn DxSpotsPage() -> impl IntoView {
                               {comment.clone()}
                             </p>
                           })}
+                          {head.clone().map(|h| view! { <SpotHeading heading=h /> })}
                         </div>
                       }
                     })

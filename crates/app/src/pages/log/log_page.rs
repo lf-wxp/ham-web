@@ -17,6 +17,7 @@ use super::log_health_panel::LogHealthPanel;
 use super::log_stats_panel::LogStatsPanel;
 use super::qsl_image;
 use super::qsl_sync_dialog::QslSyncDialog;
+use super::qso_audio;
 use super::station_panel::StationPanel;
 use super::{LogEntry, Logbook, use_log_store, utc_today};
 use crate::i18n::{t, tf, tp};
@@ -85,6 +86,7 @@ pub fn LogPage() -> impl IntoView {
         logbook.update(|l| l.entries.retain(|e| e.id != id));
         // 影像与 id 绑定，而 `next_id()` 会复用 id —— 一并清掉，别让新通联挂上旧扫描件。
         qsl_image::purge(store, &[id]);
+        qso_audio::purge(&[id]);
         store.persist();
         crate::ui::push_success(t("log.qso-deleted"));
       }),
@@ -105,6 +107,7 @@ pub fn LogPage() -> impl IntoView {
         let ids: Vec<u64> = logbook.with_untracked(|l| l.entries.iter().map(|e| e.id).collect());
         logbook.set(Logbook::default());
         qsl_image::purge(store, &ids);
+        qso_audio::purge(&ids);
         store.persist();
         crate::ui::push_success(t("log.clear-all-done"));
       }),

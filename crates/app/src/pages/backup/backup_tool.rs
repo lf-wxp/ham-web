@@ -45,6 +45,8 @@ pub(super) fn BackupTool() -> impl IntoView {
   let log_store = crate::pages::log::use_log_store();
   let export_log = RwSignal::new(true);
   let export_qsl = RwSignal::new(true);
+  // 通联录音只在本机、不参与同步：备份里默认不带，要的人自己勾。
+  let export_audio = RwSignal::new(false);
   let export_other = RwSignal::new(true);
   // 自定义远端同步进行中（面板自己维护，这里只用来禁用本地导入 / 导出）。
   let syncing = RwSignal::new(false);
@@ -104,6 +106,7 @@ pub(super) fn BackupTool() -> impl IntoView {
     let modules = BackupModules {
       log: export_log.get_untracked(),
       qsl_images: export_qsl.get_untracked(),
+      qso_audio: export_audio.get_untracked(),
       other: export_other.get_untracked(),
     };
     exporting.set(true);
@@ -135,8 +138,9 @@ pub(super) fn BackupTool() -> impl IntoView {
       </li>
     }
   };
-  // 三项全不选只会导出一个空 JSON，直接禁用按钮。
-  let nothing_selected = move || !(export_log.get() || export_qsl.get() || export_other.get());
+  // 全不选只会导出一个空 JSON，直接禁用按钮。
+  let nothing_selected =
+    move || !(export_log.get() || export_qsl.get() || export_audio.get() || export_other.get());
 
   view! {
     <div class="space-y-4">
@@ -177,6 +181,10 @@ pub(super) fn BackupTool() -> impl IntoView {
           {module_row(
             export_qsl,
             Signal::derive(move || t("tools.backup-module-qsl-images")),
+          )}
+          {module_row(
+            export_audio,
+            Signal::derive(move || t("tools.backup-module-qso-audio")),
           )}
           {module_row(
             export_other,

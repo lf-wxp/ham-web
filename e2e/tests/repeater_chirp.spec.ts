@@ -20,7 +20,7 @@ async function lookup(page: import("@playwright/test").Page) {
   });
   await page.goto("/repeater");
   await page.getByRole("button", { name: "查询" }).click();
-  await expect(page.getByRole("cell", { name: "BR1BJ" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "BR1BJ", exact: true })).toBeVisible();
 }
 
 test("中继台：导出 CHIRP CSV，默认跳过停用 / 波段外 / 非 CTCSS / 坏频率", async ({ page }) => {

@@ -205,6 +205,38 @@ pub fn distance_bearing(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> (f64, f64
   (dist, bearing)
 }
 
+/// 球面上以 `(lat, lon)` 为心、`radius_km` 为半径的圆：沿方位角 0°、360°/n、… 取 `n` 个点（不重复首点），
+/// 返回 `(纬度, 经度)`。半径与 [`distance_bearing`] 用同一个地球半径（6371 km）。
+///
+/// **经度不归一化**：圆跨过日期变更线时经度会超出 ±180°（如 `180.3`），这样相邻点之间始终连续，
+/// 画成折线不会拦腰拉出一条横穿地图的线；地图把世界在横向平铺了三份，越界的那一段自然落在邻图上。
+///
+/// 输入不合法（中心越界、半径不是正的有限值、`n < 3`、半径超过半个地球周长）返回空。
+/// 圆盖住极点时经度不再单调，本函数不处理（无线电地平线只有几十到几百公里）。
+#[must_use]
+pub fn circle_points(lat: f64, lon: f64, radius_km: f64, n: usize) -> Vec<(f64, f64)> {
+  const R: f64 = 6371.0;
+  if !(lat.is_finite() && lon.is_finite() && (-90.0..=90.0).contains(&lat)) {
+    return Vec::new();
+  }
+  if !(radius_km.is_finite() && radius_km > 0.0 && radius_km < std::f64::consts::PI * R) || n < 3 {
+    return Vec::new();
+  }
+  let delta = radius_km / R;
+  let (phi1, lam1) = (lat.to_radians(), lon.to_radians());
+  (0..n)
+    .map(|i| {
+      let theta = std::f64::consts::TAU * i as f64 / n as f64;
+      let phi2 = (phi1.sin() * delta.cos() + phi1.cos() * delta.sin() * theta.cos())
+        .clamp(-1.0, 1.0)
+        .asin();
+      let lam2 = lam1
+        + (theta.sin() * delta.sin() * phi1.cos()).atan2(delta.cos() - phi1.sin() * phi2.sin());
+      (phi2.to_degrees(), lam2.to_degrees())
+    })
+    .collect()
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -302,5 +334,81 @@ mod tests {
     assert_eq!(pts[0], (0.0, 0.0));
     assert!((pts[50].0 - 0.0).abs() < 1e-6);
     assert!((pts[50].1 - 180.0).abs() < 1e-6);
+  }
+
+  #[test]
+  fn circle_points_are_all_at_the_radius_and_evenly_spread() {
+    // 各取一个北、南半球，低、中、高纬与跨经度的中心；半径从市区到省域。
+    for (lat, lon) in [
+      (31.2, 121.5),
+      (-33.9, 151.2),
+      (0.0, 0.0),
+      (64.0, -150.0),
+      (-80.0, 20.0),
+    ] {
+      for radius in [25.0, 300.0] {
+        let pts = circle_points(lat, lon, radius, 72);
+        assert_eq!(pts.len(), 72);
+        for (i, &(plat, plon)) in pts.iter().enumerate() {
+          let (d, b) = distance_bearing(lat, lon, plat, plon);
+          assert!(
+            (d - radius).abs() < 1e-6,
+            "({lat},{lon}) r={radius} #{i}: d={d}"
+          );
+          // 方位角按 5° 一步均匀排开，第 0 个点正北；比较时处理 0° / 360° 的回绕。
+          let expect = 5.0 * i as f64;
+          let diff = ((b - expect + 540.0) % 360.0) - 180.0;
+          assert!(
+            diff.abs() < 1e-6,
+            "({lat},{lon}) #{i}: 方位 {b}，应为 {expect}"
+          );
+        }
+      }
+    }
+  }
+
+  #[test]
+  fn circle_north_point_is_one_degree_of_latitude_per_111_km() {
+    // 手算：地球半径 6371 km 时纬度 1° = 6371·π/180 km；正北方向的点只改纬度、不改经度。
+    let one_degree_km = 6371.0 * std::f64::consts::PI / 180.0;
+    let pts = circle_points(31.2, 121.5, one_degree_km, 8);
+    assert!((pts[0].0 - 32.2).abs() < 1e-9, "{:?}", pts[0]);
+    assert!((pts[0].1 - 121.5).abs() < 1e-9, "{:?}", pts[0]);
+    // 正南方向（第 4 个）同理回到 30.2°。
+    assert!((pts[4].0 - 30.2).abs() < 1e-9, "{:?}", pts[4]);
+  }
+
+  #[test]
+  fn circle_across_the_antimeridian_stays_continuous() {
+    let pts = circle_points(10.0, 179.9, 50.0, 90);
+    let max_lon = pts.iter().map(|p| p.1).fold(f64::MIN, f64::max);
+    assert!(
+      max_lon > 180.0,
+      "越过日期变更线的一侧应是 >180 的连续经度，实际最大 {max_lon}"
+    );
+    for w in pts
+      .windows(2)
+      .chain(std::iter::once(&[pts[pts.len() - 1], pts[0]][..]))
+    {
+      assert!((w[1].1 - w[0].1).abs() < 1.0, "相邻点经度不该跳变：{:?}", w);
+    }
+  }
+
+  #[test]
+  fn circle_rejects_what_it_cannot_draw() {
+    assert!(
+      circle_points(31.0, 121.0, 0.0, 36).is_empty(),
+      "半径 0 没有圆"
+    );
+    assert!(circle_points(31.0, 121.0, -5.0, 36).is_empty());
+    assert!(circle_points(31.0, 121.0, f64::NAN, 36).is_empty());
+    assert!(circle_points(31.0, 121.0, f64::INFINITY, 36).is_empty());
+    assert!(
+      circle_points(31.0, 121.0, 20_100.0, 36).is_empty(),
+      "超过半个地球周长"
+    );
+    assert!(circle_points(91.0, 121.0, 10.0, 36).is_empty());
+    assert!(circle_points(f64::NAN, 121.0, 10.0, 36).is_empty());
+    assert!(circle_points(31.0, 121.0, 10.0, 2).is_empty());
   }
 }

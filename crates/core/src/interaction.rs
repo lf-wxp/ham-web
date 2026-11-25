@@ -107,6 +107,7 @@ impl PageSignature {
         "/daily-challenge",
         "/battle",
         "/morse",
+        "/voice-qso",
       ],
       Self::Exam => &["/exam", "/exam-review", "/exam-comparison"],
       Self::Browse => &[

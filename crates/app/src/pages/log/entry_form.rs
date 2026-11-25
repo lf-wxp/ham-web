@@ -17,6 +17,7 @@ use crate::ui::{
 use super::form_state::LogFormState;
 use super::log_helpers::{PROP_MODES, compass, station_title};
 use super::qsl_image::QslImage;
+use super::qso_audio::QsoAudio;
 use super::{LogEntry, Logbook, StationBook};
 use crate::i18n::{localized_name, t, tf, tp};
 use crate::util::unique_id;
@@ -398,6 +399,18 @@ pub(super) fn EntryForm(
               <span class="text-xs text-muted-foreground">{move || t("log.qsl-card-image")}</span>
               <span class="text-xs text-muted-foreground">
                 {move || t("log.save-this-qso-then")}
+              </span>
+            </div>
+          }.into_any(),
+        }}
+        {move || match editing.get() {
+          Some(id) => view! { <QsoAudio entry_id=id /> }.into_any(),
+          // 录音同样按 id 关联：新记录先提示「保存后再说」。
+          None => view! {
+            <div class="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-3">
+              <span class="text-xs text-muted-foreground">{move || t("log.qso-audio")}</span>
+              <span class="text-xs text-muted-foreground">
+                {move || t("log.save-this-qso-then-audio")}
               </span>
             </div>
           }.into_any(),

@@ -2,12 +2,14 @@
 //! 并把当前筛选结果导出成 CHIRP 通用 CSV 用来给手台写频。
 
 use ham_web_core::chirp_csv::{self, ExportOptions, RepeaterRow, SkipCounts};
+use ham_web_core::repeater_horizon::has_coordinates;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
+use super::repeater_horizon::{HorizonTarget, RepeaterHorizon};
 use crate::components::common::EmptyState;
 use crate::data;
-use crate::i18n::{t, tp};
+use crate::i18n::{t, tf, tp};
 use crate::ui::{
   Button, Checkbox, Input, Label, Size, Table, TableBody, TableCell, TableHead, TableHeader,
   TableRow, Variant,
@@ -24,6 +26,11 @@ struct Repeater {
   city: String,
   r#use: String,
   status: String,
+  /// 数据源缺失时服务端补 0；旧的响应 / 测试桩里没有这两个字段，同样按 0 处理。
+  #[serde(default)]
+  lat: f64,
+  #[serde(default)]
+  lon: f64,
 }
 
 /// `/api/repeaters` 返回。
@@ -71,6 +78,8 @@ pub fn RepeaterLookup() -> impl IntoView {
   let only_bands = RwSignal::new(true);
   let skip_off_air = RwSignal::new(true);
   let summary = RwSignal::new(None::<ExportSummary>);
+  // 选中画地平线的那一台。换国家 / 重新查询时清掉：旧结果里的那台已经不在表里了。
+  let horizon_target = RwSignal::new(None::<HorizonTarget>);
 
   let bands_id = unique_id("chirp-only-bands");
   let off_air_id = unique_id("chirp-skip-off-air");
@@ -84,6 +93,7 @@ pub fn RepeaterLookup() -> impl IntoView {
     loading.set(true);
     failed.set(false);
     summary.set(None);
+    horizon_target.set(None);
     let url = format!(
       "/api/repeaters?country={}",
       js_sys::encode_uri_component(&c)
@@ -244,6 +254,8 @@ pub fn RepeaterLookup() -> impl IntoView {
         </div>
       })}
 
+      <RepeaterHorizon selected=horizon_target />
+
       {move || {
         if failed.get() {
           return view! {
@@ -270,10 +282,40 @@ pub fn RepeaterLookup() -> impl IntoView {
                   <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.city")}</TableHeader>
                   <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.use")}</TableHeader>
                   <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.status-column")}</TableHeader>
+                  <TableHeader class=crate::kit::table_cell_class("")>{move || t("radio.horizon-column")}</TableHeader>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {list.into_iter().map(|r| view! {
+                {list.into_iter().map(|r| {
+                  let target = has_coordinates(r.lat, r.lon).then(|| HorizonTarget {
+                    callsign: r.callsign.clone(),
+                    frequency_mhz: r.frequency_mhz.clone(),
+                    lat: r.lat,
+                    lon: r.lon,
+                  });
+                  let horizon_cell = match target {
+                    Some(target) => {
+                      let aria = tf("radio.horizon-draw-aria", &[&r.callsign, &r.frequency_mhz]);
+                      let mine = target.clone();
+                      let is_selected = Signal::derive(move || {
+                        horizon_target.with(|s| s.as_ref() == Some(&mine))
+                      });
+                      view! {
+                        <Button
+                          variant=Variant::Outline
+                          size=Size::Sm
+                          aria_label=aria
+                          aria_current=is_selected
+                          on_click=Callback::new(move |_| horizon_target.set(Some(target.clone())))
+                        >
+                          {move || if is_selected.get() { t("radio.horizon-drawn") } else { t("radio.horizon-draw") }}
+                        </Button>
+                      }
+                      .into_any()
+                    }
+                    None => view! { <span>{move || t("radio.horizon-no-coords")}</span> }.into_any(),
+                  };
+                  view! {
                   <TableRow>
                     <TableCell class="border px-3 py-1.5 font-mono">{r.callsign}</TableCell>
                     <TableCell class="border px-3 py-1.5 tabular-nums text-muted-foreground">{r.frequency_mhz}</TableCell>
@@ -282,7 +324,9 @@ pub fn RepeaterLookup() -> impl IntoView {
                     <TableCell class="border px-3 py-1.5 text-muted-foreground">{r.city}</TableCell>
                     <TableCell class="border px-3 py-1.5 text-muted-foreground">{r.r#use}</TableCell>
                     <TableCell class="border px-3 py-1.5 text-muted-foreground">{r.status}</TableCell>
+                    <TableCell class="border px-3 py-1.5 text-muted-foreground">{horizon_cell}</TableCell>
                   </TableRow>
+                  }
                 }).collect_view()}
               </TableBody>
             </Table>

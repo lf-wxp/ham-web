@@ -15,6 +15,7 @@ use crate::mistake_book::{
   CategoryStats, MAX_RECORDS, MistakeBook, MistakeRecord, StudyStats, Tally,
 };
 use crate::qsl_image;
+use crate::qso_audio;
 use crate::rpg::{Bestiary, StageStars};
 use crate::station::{StationBook, StationProfile};
 
@@ -499,6 +500,9 @@ pub enum BackupModule {
   Log,
   /// QSL 影像本体（IndexedDB 里的 `qsl-image:<id>`，数据量大）。
   QslImage,
+  /// 通联录音本体（IndexedDB 里的 `qso-audio:<id>`）与它的索引。**默认不进备份**，单独勾选；
+  /// 录音只在本机，不参与任何同步。
+  QsoAudio,
   /// 其余所有本地数据（设置、练习进度、考试历史……）。
   Other,
 }
@@ -512,6 +516,10 @@ pub enum BackupModule {
 pub fn classify_key(key: &str) -> BackupModule {
   if key.starts_with(qsl_image::KEY_PREFIX) {
     return BackupModule::QslImage;
+  }
+
+  if key.starts_with(qso_audio::KEY_PREFIX) || key == qso_audio::INDEX_KEY {
+    return BackupModule::QsoAudio;
   }
   match key {
     "logbook" | "station-info" | "station-book" | qsl_image::INDEX_KEY | "log-stats-scope" => {
@@ -532,6 +540,8 @@ mod classify_tests {
     assert_eq!(classify_key("qsl-image-index"), BackupModule::Log);
     assert_eq!(classify_key("log-stats-scope"), BackupModule::Log);
     assert_eq!(classify_key("qsl-image:7"), BackupModule::QslImage);
+    assert_eq!(classify_key("qso-audio:7"), BackupModule::QsoAudio);
+    assert_eq!(classify_key("qso-audio-index"), BackupModule::QsoAudio);
     assert_eq!(classify_key("mistake-book"), BackupModule::Other);
     assert_eq!(classify_key("theme"), BackupModule::Other);
     assert_eq!(classify_key("practice:2024"), BackupModule::Other);

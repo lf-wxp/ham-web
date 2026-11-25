@@ -23,6 +23,7 @@ mod pending_qsl_list;
 mod qsl_badge;
 mod qsl_image;
 mod qsl_sync_dialog;
+mod qso_audio;
 mod station_panel;
 mod stats_scope_select;
 

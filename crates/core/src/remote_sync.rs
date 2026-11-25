@@ -162,6 +162,9 @@ pub fn is_device_local_key(key: &str) -> bool {
     || key.starts_with("api-cache:")
     || key.starts_with("ui:")
     || key.starts_with("bank-digest:")
+    // 通联录音只在本机：本体（IndexedDB）与索引都不同步、不上传（见 `qso_audio`）。
+    || key.starts_with(crate::qso_audio::KEY_PREFIX)
+    || key == crate::qso_audio::INDEX_KEY
     || matches!(
       key,
       "theme"
@@ -1040,6 +1043,9 @@ mod tests {
       "ui:colorScheme",
       "ui:pixelMotion",
       "ui:readableFont",
+      "ui:license-checklist",
+      "qso-audio-index",
+      "qso-audio",
       "theme",
       "locale",
       "cat-settings",

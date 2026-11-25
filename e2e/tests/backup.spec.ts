@@ -468,6 +468,49 @@ test.describe("自定义远端同步", () => {
     await expect(page.getByRole("checkbox", { name: "同步时不含 QSL 影像" })).toHaveAttribute("aria-checked", "true");
   });
 
+  test("通联录音不上传：无论是否勾选影像，写出的同步内容里都没有录音与索引", async ({ page }) => {
+    const pushes: PwRequest[] = [];
+    await page.route(`${REMOTE}/put`, async (route) => {
+      if (route.request().method() !== "OPTIONS") pushes.push(route.request());
+      await route.fulfill({ status: 204 });
+    });
+    await page.goto("/backup");
+    const msg = toastText(page);
+
+    // 经导入路径把一段合格的录音与一张影像写进本机，再各做一次写入远端（含 / 不含影像）。
+    const png = "data:image/png;base64,iVBORw0KGgo=";
+    const wav = "data:audio/wav;base64,UklGRg==";
+    await page.locator('section#backup input[type="file"]').first().setInputFiles({
+      name: "both.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(
+        JSON.stringify({
+          logbook: JSON.stringify({ entries: [{ id: 7, date: "2026-01-01", time: "12:00", freq: "14.074", mode: "FT8", callsign: "JA1AAA", remark: "" }] }),
+          "qsl-image-index": JSON.stringify([7]),
+          "qsl-image:7": png,
+          "qso-audio-index": JSON.stringify([7]),
+          "qso-audio:7": wav,
+        }),
+      ),
+    });
+    await expect(msg).toContainText(/^已恢复/);
+    await expect(msg).toHaveCount(0);
+    expect(await page.evaluate(() => localStorage.getItem("qso-audio-index"))).toBe("[7]");
+
+    await page.locator("#remote-put-url").fill(`${REMOTE}/put`);
+    await page.getByRole("button", { name: "写入远端" }).click();
+    await expect(msg).toContainText(/^已写入远端/);
+    await expect(msg).toHaveCount(0);
+    // 对照：影像同步时是带上的；录音不在。
+    expect(pushedJson(pushes[0])["qsl-image:7"]).toBe(png);
+    expect(Object.keys(pushedJson(pushes[0])).filter((k) => k.startsWith("qso-audio"))).toEqual([]);
+
+    await page.getByRole("checkbox", { name: "同步时不含 QSL 影像" }).click();
+    await page.getByRole("button", { name: "写入远端" }).click();
+    await expect(msg).toContainText(/^已写入远端/);
+    expect(Object.keys(pushedJson(pushes[1])).filter((k) => k.startsWith("qso-audio"))).toEqual([]);
+  });
+
   test("导出的备份不含同步配置，导入的备份也改不了它", async ({ page }) => {
     await page.goto("/backup");
     await page.locator("#remote-get-url").fill(`${REMOTE}/get`);
