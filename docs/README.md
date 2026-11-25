@@ -1,6 +1,7 @@
 # 文档索引
 
-> 这是 `docs/` 的**唯一**目录：[`README.md`](../README.md) 与 [`AGENTS.md`](../AGENTS.md) 只指向这里，不各自再列一遍。
+> 这是 `docs/` 的**唯一权威**目录：[`README.md`](../README.md) 与 [`AGENTS.md`](../AGENTS.md) 只指向这里，不各自再列一遍。
+> 英文版：[`README.en.md`](README.en.md) 是本页的翻译（同类文件用 `.en.md` 后缀）；专题文档仍以中文版为准，不另立索引。
 > 守卫：`cargo make readme-check` 保证 `docs/` 下每份文档在本页都有一行链接；
 > `cargo make check-structure` 保证文档内链和 `docs/…md §N` 引用都能解析（见[文档约定](#文档约定)）。
 

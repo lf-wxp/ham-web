@@ -139,7 +139,9 @@ pub use chip::{Chip, ChipGroup, ChipToggle};
 pub use confirm::{ConfirmRoot, ConfirmTone, confirm};
 pub use control::{ControlSize, TextValue, control_class};
 pub use date_picker::DatePicker;
-pub use dialog::{Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Sheet};
+pub use dialog::{
+  Dialog, DialogBody, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Sheet,
+};
 pub use field::{Field, ValidateOn};
 pub use file_drop_zone::FileDropZone;
 pub use file_input::FileInput;
@@ -310,7 +312,7 @@ pub fn card_class(extra: &str) -> String {
 ///
 /// 全站卡片分三级，**一页里只让「当前任务块」用 L2**（`card_class` / `pxl-window`），
 /// 其余次要块用平卡 —— 368 处手写卡片、29 处窗口时，所有块同重量会让页面没有落点。
-/// 目录 / 关键指标这类「一眼要看」的块才升到 L2。
+/// 目录这类「一眼要看」的单块才升到 L2；成排的统计格（`Stat`）是平卡：四五个并排的窗口同样没有落点。
 pub fn flat_card_class(extra: &str) -> String {
   if crate::kit::is_modern_at_mount() {
     return cn(&["md-panel flex flex-col gap-6 py-6 mb-[24px]", extra]);

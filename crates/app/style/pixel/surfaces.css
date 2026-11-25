@@ -130,7 +130,11 @@ html[data-ui-style="pixel"] *:not([data-keep-round])::after {
    - `::before` 是 4px 棋盘格抖动（透明度很低，只给大块纯色一点「颗粒」，不影响文字对比度）；
    - 暗色下 `::after` 是一组固定的「星点」—— 一个 2×2 的元素用 `box-shadow` 复制出多颗星，
      用 steps(1) 在两组星点之间切换，形成缓慢的闪烁。
-   固定定位伪元素而不是 `background-attachment: fixed`：后者在 iOS Safari 上滚动时会持续重绘。 */
+   固定定位伪元素而不是 `background-attachment: fixed`：后者在 iOS Safari 上滚动时会持续重绘。
+   星点是情感化装饰（长时间备考的夜台氛围），不是信息元素：`pointer-events` 关掉、
+   压在内容层下、不承载文字，所以不参与对比度审计；6s 一轮的 steps(1) 也远低于 WCAG 2.3.1
+   的 3 次/秒。`prefers-reduced-motion` 与 `data-pixel-motion="off"` 会把它压成静止的一帧
+   （见 motion.css 的通配降级）；色值只在 tokens.css 定义一次，切明暗与配色方案都不跳色。 */
 /* 现代风格不要这两层「像素底纹」：抖动棋盘与暗色星空是像素语言的一部分，
    留着会在现代页面上露出上一套 UI 的痕迹（判定标准见 `docs/ui/decisions.md` §2）。 */
 html[data-ui-style="modern"] body::before,
@@ -159,10 +163,12 @@ body::before {
   pointer-events: none;
   background: transparent;
   box-shadow:
-    6vw 9vh #f4f4f4, 14vw 31vh #73eff7, 22vw 14vh #f4f4f4, 31vw 52vh #ffcd75, 38vw 7vh #f4f4f4,
-    47vw 26vh #f4f4f4, 55vw 61vh #73eff7, 63vw 11vh #f4f4f4, 71vw 38vh #ffcd75, 79vw 18vh #f4f4f4,
-    86vw 56vh #f4f4f4, 93vw 8vh #73eff7, 11vw 71vh #f4f4f4, 27vw 84vh #f4f4f4, 44vw 77vh #ffcd75,
-    59vw 90vh #f4f4f4, 76vw 80vh #73eff7, 91vw 87vh #f4f4f4;
+    6vw 9vh var(--pxl-star), 14vw 31vh var(--pxl-star-cool), 22vw 14vh var(--pxl-star),
+    31vw 52vh var(--pxl-star-warm), 38vw 7vh var(--pxl-star), 47vw 26vh var(--pxl-star),
+    55vw 61vh var(--pxl-star-cool), 63vw 11vh var(--pxl-star), 71vw 38vh var(--pxl-star-warm),
+    79vw 18vh var(--pxl-star), 86vw 56vh var(--pxl-star), 93vw 8vh var(--pxl-star-cool),
+    11vw 71vh var(--pxl-star), 27vw 84vh var(--pxl-star), 44vw 77vh var(--pxl-star-warm),
+    59vw 90vh var(--pxl-star), 76vw 80vh var(--pxl-star-cool), 91vw 87vh var(--pxl-star);
   animation: pxl-twinkle 6s steps(1, end) infinite;
 }
 

@@ -12,6 +12,19 @@ pub const BAND_ORDER: &[&str] = &[
   "160m", "80m", "60m", "40m", "30m", "20m", "17m", "15m", "12m", "10m", "6m", "2m", "70cm",
 ];
 
+/// 波段的数据身份色（`hsl()` 字符串）：按 [`BAND_ORDER`] 的位置在色环上铺开，低频暖色 → 高频冷色。
+///
+/// 与分区图同一个出口（[`crate::zone::zone_color`]，`docs/ui/pixel.md` §2 的「按数据着色」例外）：
+/// 同一波段在任何地图上同色、**不随配色方案变**。不在排序表里的波段返回 `None` ——
+/// 调用方给中性色，免得和某个真实波段撞成同一色。
+#[must_use]
+pub fn band_color(band: &str) -> Option<String> {
+  let slot = BAND_ORDER.iter().position(|b| *b == band)?;
+  let slots = u8::try_from(BAND_ORDER.len()).ok()?;
+  let slot = u8::try_from(slot + 1).ok()?;
+  Some(crate::zone::zone_color(slot, slots))
+}
+
 /// 统计每个波段在 24 个 UTC 小时内的通联数量。
 ///
 /// 返回按 [`BAND_ORDER`] 排序的 `(波段, [24 小时计数])` 列表，未在排序表内出现的波段
@@ -327,6 +340,21 @@ mod tests {
       time: time.to_owned(),
       ..LogEntry::default()
     }
+  }
+
+  #[test]
+  fn band_colors_are_stable_distinct_and_only_for_known_bands() {
+    let colors: Vec<String> = BAND_ORDER
+      .iter()
+      .map(|b| band_color(b).expect("排序表里的波段都有颜色"))
+      .collect();
+    assert!(colors.iter().all(|c| c.starts_with("hsl(")));
+    // 每个波段各一色：地图图例只靠颜色分波段，两个波段同色就分不开。
+    let unique: HashSet<&String> = colors.iter().collect();
+    assert_eq!(unique.len(), BAND_ORDER.len());
+    assert_eq!(band_color("20m"), band_color("20m"));
+    assert_eq!(band_color(""), None);
+    assert_eq!(band_color("23cm"), None);
   }
 
   /// 一本两档案的册子：1 = 家里（操作员 WXP），2 = 野外（操作员 LZ）。

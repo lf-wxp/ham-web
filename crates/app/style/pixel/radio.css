@@ -303,13 +303,13 @@
   }
 
   /* ---------- 顶栏：波段键（分组下拉开关） ----------
-     与 chip 同一套「按进去 + 顶部灯条」：当前页面在这个分组里时 `data-active`。 */
+     与 chip 同一套「按进去 + 顶部灯条」：当前页面在这个分组里时 `data-active`。
+     高度不写在这里：由 `group_menu.rs` 按断点给（`h-10 xl:h-9`），与同一行的站标 / 按钮同一套断点。 */
   .pxl-band-key {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
     gap: 6px;
-    height: 2.25rem;
     padding: 0 0.5rem 0 0.75rem;
     white-space: nowrap;
     cursor: pointer;

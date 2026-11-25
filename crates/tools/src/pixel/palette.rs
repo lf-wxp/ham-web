@@ -107,8 +107,8 @@ impl SurfaceSet {
   }
 }
 
-/// 从 `tokens.css` 里取出 `:root`（亮）与 `.dark`（暗）两块里的十六进制变量。
-pub fn classic_tokens(tokens_css: &str) -> Result<(BTreeMap<String, Rgb>, BTreeMap<String, Rgb>)> {
+/// `tokens.css` 里 `:root`（亮）与 `.dark`（暗）两块的原文。
+pub fn classic_blocks(tokens_css: &str) -> Result<(&str, &str)> {
   let (Some(root_at), Some(dark_at)) = (tokens_css.find(":root {"), tokens_css.find("\n.dark {"))
   else {
     bail!("tokens.css 里找不到 `:root {{` 或 `.dark {{` 块");
@@ -116,16 +116,22 @@ pub fn classic_tokens(tokens_css: &str) -> Result<(BTreeMap<String, Rgb>, BTreeM
   let dark_end = tokens_css[dark_at..]
     .find("\n}")
     .map_or(tokens_css.len(), |i| dark_at + i);
+  Ok((
+    &tokens_css[root_at..dark_at],
+    &tokens_css[dark_at..dark_end],
+  ))
+}
+
+/// 从 `tokens.css` 里取出 `:root`（亮）与 `.dark`（暗）两块里的十六进制变量。
+pub fn classic_tokens(tokens_css: &str) -> Result<(BTreeMap<String, Rgb>, BTreeMap<String, Rgb>)> {
+  let (light, dark) = classic_blocks(tokens_css)?;
   let re = Regex::new(r"(--[a-z0-9-]+):\s*(#[0-9a-fA-F]{6});")?;
   let read = |block: &str| -> BTreeMap<String, Rgb> {
     re.captures_iter(block)
       .filter_map(|c| Rgb::parse(&c[2]).map(|rgb| (c[1].to_owned(), rgb)))
       .collect()
   };
-  Ok((
-    read(&tokens_css[root_at..dark_at]),
-    read(&tokens_css[dark_at..dark_end]),
-  ))
+  Ok((read(light), read(dark)))
 }
 
 /// 解析 `palette.css` 里的 `--color-<族>-<档>: #rrggbb;`。

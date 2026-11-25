@@ -23,7 +23,7 @@
   "design.principle-corners": "No radius / no blur / no gradient",
   "design.principle-corners-desc": "Every edge is square, shadows are hard offsets only, surfaces never get glows or gradients.",
   "design.principle-grid": "4px size grid",
-  "design.principle-grid-desc": "Control heights are 24 / 32 / 40 / 48px and all spacing is a multiple of 4.",
+  "design.principle-grid-desc": "Control heights are 24 / 32 / 40 / 48px and layout spacing is a multiple of 4; tight spacing inside controls may sit on the 2px pixel grid.",
   "design.principle-icon": "24px icon grid",
   "design.principle-icon-desc": "Path coordinates are integers; scaling only by integer multiples of 24 stays crisp.",
   "design.principle-weight": "One font weight",

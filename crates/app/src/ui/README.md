@@ -42,7 +42,7 @@ disabled / error 状态反馈因此只有一处定义。
 | `FileDropZone` | 手写 `<label for>` + 隐藏 input 的整块拖放区 | `on_file` `accept` `title`（同时是无障碍名）`icon` `hint` `choose_hint`（覆盖默认的「拖拽音频文件」提示行）`disabled` `id`（e2e 按固定 id 定位时传） |
 | `Field` | 手写的 `label + 控件 + 提示` 排版 | `label` `r#for` `hint` `error` `invalid` `required` `validate_on`（默认 `Immediate`；表单类字段传 `Blur` 则失焦后才显示错误）。**表单语义的唯一来源**：`hint` / `error` 的 id 与必填状态经 context 下发给 `Input` / `Textarea` / `NumberField` / `Select` / `SimpleSelect` / `DatePicker` / `TimePicker`，控件自动补 `aria-describedby` / `aria-required` |
 | `Label` | `<label>`（单独使用，如 Checkbox 旁） | `r#for` |
-| `Dialog` / `Sheet` 及 `DialogHeader` 等 | — | 见源码 |
+| `Dialog` / `Sheet` 及 `DialogHeader` 等 | — | 见源码；内容可能超过一屏时包进 `DialogBody`（矮视口下由它滚动，并给贴边控件的焦点框留出余量） |
 | `MobileNavDrawer` | 移动端手写「悬浮按钮 + 抽屉」/ 横滑分类条（小屏下替代被 `hidden` 藏掉的侧栏） | `open`（由调用方持有，选中项后主动 `set(false)`）`title` `button_label`（悬浮按钮无障碍名）`icon` `class`（断点类，与侧栏断点配套）+ `children`（抽屉内容，与桌面侧栏共用同一份列表）；悬浮按钮可拖动改位置，收拢视口内并持久化在 `localStorage["fab-position"]`（全站共享）；用法与坑见 `docs/ui/pixel.md` §3.3 |
 | `Progress` / `Separator` / `Stat` | — | `Progress` 是分格条；加 `pxl-bar-hp` / `pxl-bar-xp` / `pxl-bar-win` / `pxl-bar-gold` 变血条 / 经验条 / 通关绿 / 金币 |
 | `Table` + `TableHead` / `TableBody` / `TableRow` / `TableHeader` / `TableCell` / `TableEmpty` | 手写的 `<div class="overflow-x-auto"><table>…` | 根组件自带滚动容器；`class` 写 `min-w-[…]` 保列宽；限高写 `wrapper_class="max-h-[…]"`；`borderless` 去网格线；无可见标题传 `aria_label`；**容器溢出时自动加 `tabindex="0"` + `role="region"`**（键盘可横滚）；`TableHeader` 支持 `colspan` / `sort`（`SortOrder` → `aria-sort`），`TableCell` 支持 `colspan` / `numeric`（右对齐 + 等宽数字），空表用 `TableEmpty`（`cols` 与列数一致） |

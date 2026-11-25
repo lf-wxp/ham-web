@@ -16,8 +16,12 @@ use std::path::Path;
 use anyhow::{Context, Result, anyhow, bail};
 use ham_web_core::color::Rgb;
 use ham_web_core::color_scheme::{DEFAULT_SCHEME, SCHEMES, Scheme};
+use regex::Regex;
 
 use super::palette::{self, SurfaceSet, Surfaces};
+
+/// 「方案 id × 是否暗色 × 有效变量」一组完整用例。
+type CaseVars = (String, bool, BTreeMap<String, Rgb>);
 
 /// 生成物的头部说明。
 const HEADER: &str =
@@ -130,6 +134,28 @@ pub fn extend_surfaces(surfaces: &mut Surfaces, root: &Path) -> Result<()> {
 fn classic_vars(root: &Path) -> Result<(BTreeMap<String, Rgb>, BTreeMap<String, Rgb>)> {
   let css = fs::read_to_string(root.join(super::TOKENS_CSS))?;
   palette::classic_tokens(&css)
+}
+
+/// 全部「方案 × 明暗」的有效变量：经典方案不在生成物里，单独补上；其余方案在其基础上叠覆盖。
+///
+/// 暗色的基底是 `:root` 叠 `.dark`：浏览器里 `.dark` 只覆盖它写了的变量，状态色等仍继承亮色块。
+fn all_cases(light: &BTreeMap<String, Rgb>, dark: &BTreeMap<String, Rgb>) -> Result<Vec<CaseVars>> {
+  let mut dark_base = light.clone();
+  dark_base.extend(dark.iter().map(|(k, v)| (k.clone(), *v)));
+  let mut cases = vec![
+    (DEFAULT_SCHEME.to_owned(), false, light.clone()),
+    (DEFAULT_SCHEME.to_owned(), true, dark_base.clone()),
+  ];
+  for scheme in generated() {
+    for (is_dark, classic) in [(false, light), (true, &dark_base)] {
+      cases.push((
+        scheme.id.to_owned(),
+        is_dark,
+        effective_vars(scheme, is_dark, classic)?,
+      ));
+    }
+  }
+  Ok(cases)
 }
 
 /// 审计：每个方案 × 明暗里，不随方案变的文字色在所有表面上都要 >= AA。
@@ -259,21 +285,7 @@ fn audit_heat(light: &BTreeMap<String, Rgb>, dark: &BTreeMap<String, Rgb>) -> Re
     worst_step: f64::INFINITY,
     worst_step_at: String::new(),
   };
-  // 经典方案不在生成物里，单独补上；其余方案在其基础上叠覆盖。
-  let mut cases: Vec<(String, bool, BTreeMap<String, Rgb>)> = vec![
-    (DEFAULT_SCHEME.to_owned(), false, light.clone()),
-    (DEFAULT_SCHEME.to_owned(), true, dark.clone()),
-  ];
-  for scheme in generated() {
-    for (is_dark, classic) in [(false, light), (true, dark)] {
-      cases.push((
-        scheme.id.to_owned(),
-        is_dark,
-        effective_vars(scheme, is_dark, classic)?,
-      ));
-    }
-  }
-  for (id, is_dark, vars) in &cases {
+  for (id, is_dark, vars) in &all_cases(light, dark)? {
     let (Some(&card), Some(&fg)) = (vars.get("--card"), vars.get("--foreground")) else {
       bail!("{id}：缺少 --card 或 --foreground");
     };
@@ -323,6 +335,98 @@ fn audit_heat(light: &BTreeMap<String, Rgb>, dark: &BTreeMap<String, Rgb>) -> Re
   Ok(audit)
 }
 
+/// 灭灯（`--led-off`）与亮灯之间的最低对比度：WCAG 1.4.11 的 3:1。
+const LED_MIN: f64 = 3.0;
+
+/// 要与灭灯拉开的亮灯色：`(变量, 是否只查暗色)`。
+///
+/// 绿灯（锁定 / 正确，最常见的一盏）与金灯两档都查；`--primary` 是信号格与旋钮刻度的亮格，只查暗色。
+/// 红 / 蓝灯与亮色的 `--primary` 本身就是深色，和任何暗色灯罩都拉不开亮度 ——
+/// 它们靠高光格与旁边的文字区分（`docs/ui/pixel.md` §2 硬规则 15），不在这条线里。
+const LED_LIT: [(&str, bool); 3] = [
+  ("--pxl-win", false),
+  ("--pxl-gold", false),
+  ("--primary", true),
+];
+
+/// `--led-off` 的混色公式 `color-mix(in srgb, var(--a) N%, var(--b))` → `(a, N / 100, b)`；块里没写时为 `None`。
+///
+/// 只认这一种写法：换了写法审计就读不懂，宁可报错让人同步这里，也不要静默跳过。
+fn led_off_formula(block: &str) -> Result<Option<(String, f64, String)>> {
+  if !block.contains("--led-off:") {
+    return Ok(None);
+  }
+  let re = Regex::new(
+    r"--led-off:\s*color-mix\(in srgb, var\((--[a-z0-9-]+)\) (\d+)%, var\((--[a-z0-9-]+)\)\);",
+  )?;
+  let Some(c) = re.captures(block) else {
+    bail!("--led-off 不是 `color-mix(in srgb, var(--a) N%, var(--b))`，灭灯审计读不懂这种写法");
+  };
+  Ok(Some((
+    c[1].to_owned(),
+    c[2].parse::<f64>()? / 100.0,
+    c[3].to_owned(),
+  )))
+}
+
+/// 指示灯审计的结果：违规清单，以及全局最紧的一组亮灭对比度。
+struct LedAudit {
+  bad: Vec<String>,
+  worst: f64,
+  worst_at: String,
+}
+
+/// 审计灭灯：每个方案 × 明暗里按 `tokens.css` 的公式混出灯罩，[`LED_LIT`] 的亮灯色对它要 >= [`LED_MIN`]。
+///
+/// 灯罩是公式不是色值，派生方案的墨 / 卡片 / 背景一变它就跟着变，只有逐方案复算才看得到。
+fn audit_led_off(
+  tokens_css: &str,
+  light: &BTreeMap<String, Rgb>,
+  dark: &BTreeMap<String, Rgb>,
+) -> Result<LedAudit> {
+  let (light_block, dark_block) = palette::classic_blocks(tokens_css)?;
+  let Some(light_mix) = led_off_formula(light_block)? else {
+    bail!("tokens.css 的 :root 里缺少 --led-off");
+  };
+  let dark_mix = led_off_formula(dark_block)?.unwrap_or_else(|| light_mix.clone());
+  let mut audit = LedAudit {
+    bad: Vec::new(),
+    worst: f64::INFINITY,
+    worst_at: String::new(),
+  };
+  for (id, is_dark, vars) in &all_cases(light, dark)? {
+    let var = |name: &str| {
+      vars
+        .get(name)
+        .copied()
+        .ok_or_else(|| anyhow!("{id}（{}）：缺少 {name}", mode_name(*is_dark)))
+    };
+    let (a, pct, b) = if *is_dark { &dark_mix } else { &light_mix };
+    let off = var(b)?.mix(var(a)?, *pct);
+    for (name, dark_only) in LED_LIT {
+      if dark_only && !is_dark {
+        continue;
+      }
+      let lit = var(name)?;
+      let r = lit.contrast(off);
+      let at = format!(
+        "[{}] {id}：{name} {} 对灭灯 {}",
+        mode_name(*is_dark),
+        lit.hex(),
+        off.hex()
+      );
+      if r < audit.worst {
+        audit.worst = r;
+        audit.worst_at.clone_from(&at);
+      }
+      if r < LED_MIN {
+        audit.bad.push(format!("{at} 只有 {r:.2}"));
+      }
+    }
+  }
+  Ok(audit)
+}
+
 /// `pixel-schemes`：生成 `schemes.css`；`check` 为真时只校验（过期或对比度不达标则失败）。
 pub fn run(root: &Path, check: bool) -> Result<()> {
   let path = root.join(super::SCHEMES_CSS);
@@ -345,6 +449,15 @@ pub fn run(root: &Path, check: bool) -> Result<()> {
       heat.bad.join("\n")
     );
   }
+  let tokens_css = fs::read_to_string(root.join(super::TOKENS_CSS))?;
+  let led = audit_led_off(&tokens_css, &light, &dark)?;
+  if !led.bad.is_empty() {
+    bail!(
+      "指示灯有 {} 处亮灭分不开（调整 tokens.css 的 --led-off 公式；亮灯对灭灯要 >= {LED_MIN}）：\n{}",
+      led.bad.len(),
+      led.bad.join("\n")
+    );
+  }
 
   if check {
     let on_disk = fs::read_to_string(&path).unwrap_or_default();
@@ -361,6 +474,10 @@ pub fn run(root: &Path, check: bool) -> Result<()> {
     println!(
       "热力格子：文字对比度全部 >= {AA}；最紧的相邻档对比度 {:.3}（门槛 {HEAT_MIN_STEP}），在 {}",
       heat.worst_step, heat.worst_step_at
+    );
+    println!(
+      "指示灯：亮灯对灭灯全部 >= {LED_MIN}；最紧 {:.2}，在 {}",
+      led.worst, led.worst_at
     );
     return Ok(());
   }
@@ -423,6 +540,47 @@ mod tests {
         .unwrap();
       assert!(l < d, "{}", s.id);
     }
+  }
+
+  #[test]
+  fn led_off_formula_reads_color_mix_and_rejects_other_syntax() {
+    let (a, pct, b) = led_off_formula(
+      "  --led-rx: var(--pxl-win);\n  --led-off: color-mix(in srgb, var(--pxl-ink) 25%, var(--background));\n",
+    )
+    .unwrap()
+    .unwrap();
+    assert_eq!((a.as_str(), b.as_str()), ("--pxl-ink", "--background"));
+    assert!((pct - 0.25).abs() < 1e-12);
+    assert!(
+      led_off_formula("  --led-rx: var(--pxl-win);\n")
+        .unwrap()
+        .is_none()
+    );
+    assert!(led_off_formula("  --led-off: #333c57;\n").is_err());
+  }
+
+  #[test]
+  fn led_audit_flags_a_lit_color_that_matches_the_housing() {
+    let mut light = BTreeMap::new();
+    for (k, v) in [
+      ("--pxl-ink", "#1a1c2c"),
+      ("--card", "#fff8e1"),
+      ("--background", "#f2e8cf"),
+      ("--pxl-win", "#38b764"),
+      ("--pxl-gold", "#ffcd75"),
+      ("--primary", "#3b5dc9"),
+    ] {
+      light.insert(k.to_owned(), Rgb::parse(v).unwrap());
+    }
+    let dark = light.clone();
+    // 灯罩 = 纯绿：绿灯亮灭完全分不开，必须被拦下。
+    let css = ":root {\n  --led-off: color-mix(in srgb, var(--pxl-win) 100%, var(--card));\n}\n.dark {\n}\n";
+    let audit = audit_led_off(css, &light, &dark).unwrap();
+    assert!(
+      audit.bad.iter().any(|b| b.contains("--pxl-win")),
+      "{:?}",
+      audit.bad
+    );
   }
 
   #[test]

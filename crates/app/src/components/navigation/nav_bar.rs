@@ -107,9 +107,10 @@ pub(crate) fn PixelNav() -> impl IntoView {
         // 两档总高都是 66px，这是页头吸顶偏移（`PAGE_HEADER_BAR`）的前提：别只给某一档加第二条行。
         // 规则与回归见 `docs/ui/pixel.md` §3「顶栏总高」。
         //
-        // 桌面档里所有控件统一 36px（`xl:h-9` / `xl:size-9`）：站标、三个波段键、搜索、设置、HUD
-        // 一样高，且都是 40px 行里的居中项 —— 上下各留 2px。此前是站标与右侧按钮 40px（顶到行边）、
-        // 波段键 36px、HUD 32px 三种高度并存，一排控件看着参差（2026-11-14 改）。
+        // 一行控件等高：`<xl`（行高 64px）全部 40px —— 站标 `size-10`、波段键与 HUD `h-10`、
+        // 搜索 / 设置 `Size::Icon`；`xl` 起整行收缩到 40px、全体控件统一 36px（`xl:h-9` / `xl:size-9`，
+        // 上下各留 2px）。断点一律用 Tailwind 的 `xl:`，别在 CSS 里另写 px 媒体查询：两套断点在小数宽度
+        // 与非 16px 默认字号下会错开。`ui_spec.spec.ts` 的 H3 在手机 / 平板 / 桌面三档量顶边与底边。
         <div class="flex h-16 items-center gap-1 sm:gap-3 xl:h-10 xl:gap-4">
           // 品牌标识
           // 电台顶面板的左端：电源灯 + 电台站标 + 站名（`docs/ui/pixel.md` §3.4）。

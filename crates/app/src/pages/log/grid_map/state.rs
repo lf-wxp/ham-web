@@ -19,11 +19,8 @@ use super::super::grid_fill::band_color;
 use super::super::grid_geo::{great_circle_d, square_center, square_label};
 use crate::i18n::tp;
 use ham_web_core::grid_filter::{GridFilters, QslFilter};
-
-/// 波段显示顺序（低频 → 高频），筛选下拉据此排序。
-pub(super) const BAND_ORDER: &[&str] = &[
-  "160m", "80m", "60m", "40m", "30m", "20m", "17m", "15m", "12m", "10m", "6m", "2m", "70cm",
-];
+// 波段显示顺序（低频 → 高频）只有 core 一份：筛选下拉、图例排序与路径颜色都按它。
+use ham_web_core::log_stats::BAND_ORDER;
 
 /// 缩放阈值：`zoom` 达到该值后，地图热力由 field（20°×10°）切换为 square（2°×1°）。
 pub(super) const FIELD_SQUARE_ZOOM: f64 = 4.0;
@@ -76,7 +73,7 @@ fn save_filters_soon(f: GridFilters) {
 }
 
 /// 通联路径集合：`(SVG path, 颜色, tooltip)` 列表 + 图例波段 + 未绘制条数。
-pub(super) type QsoPaths = (Vec<(String, &'static str, String)>, Vec<String>, usize);
+pub(super) type QsoPaths = (Vec<(String, String, String)>, Vec<String>, usize);
 
 /// 点击反查结果：`(纬度, 经度, 网格, square 标签, 是否已通联)`。
 pub(super) type ClickInspect = (f64, f64, String, Option<String>, bool);

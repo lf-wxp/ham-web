@@ -219,7 +219,7 @@ pub(super) fn GridOverlay(state: GridMapState) -> impl IntoView {
               <path
                 d=format!("M {d}")
                 fill="none"
-                stroke=*color
+                stroke=color.clone()
                 stroke-width="1.2"
                 opacity="0.75"
                 vector-effect="non-scaling-stroke"

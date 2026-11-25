@@ -23,7 +23,7 @@
   "design.principle-corners": "Sin redondeo / sin desenfoque / sin degradado",
   "design.principle-corners-desc": "Todos los bordes son rectos, las sombras solo tienen desplazamiento y las superficies nunca llevan brillos ni degradados.",
   "design.principle-grid": "Rejilla de 4px",
-  "design.principle-grid-desc": "Las alturas de control son 24 / 32 / 40 / 48px y todo el espaciado es múltiplo de 4.",
+  "design.principle-grid-desc": "Las alturas de control son 24 / 32 / 40 / 48px y el espaciado de diseño es múltiplo de 4; el espaciado compacto dentro de los controles puede ir en la rejilla de 2px.",
   "design.principle-icon": "Rejilla de iconos de 24px",
   "design.principle-icon-desc": "Las coordenadas son enteras; solo los múltiplos enteros de 24 mantienen el borde nítido.",
   "design.principle-weight": "Un único peso de fuente",

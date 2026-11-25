@@ -525,13 +525,15 @@ test("H2 窄屏宽表：表格按住最小宽度横滚，不把列压成一字�
 test("H3 顶栏一排控件等高：站标 / 波段键 / 搜索 / 设置 / HUD 顶边与底边对齐", async ({ page }) => {
   // 像素风顶栏里的控件都带 2px 墨框，差一档高度一眼就看得出。此前是三种高度并存
   // （站标与右侧按钮 40px 顶到行边、波段键 36px、HUD 32px）。判据用几何而不是类名：
-  // 同一排的顶边 / 底边必须一致；桌面档（≥1280）与窄屏档各测一次，两档高度本来就不同。
+  // 同一排的顶边 / 底边必须一致；桌面档（≥1280）、平板档（768–1279）与手机档各测一次。
+  // 平板档不能省：手机档没有波段键（`<md` 整组隐藏），只有平板档量得到波段键对 40px 行。
   await page.addInitScript(() => {
     if (window !== window.top) return;
     localStorage.setItem("ui:uiStyle", "pixel");
   });
   for (const [width, expected] of [
     [1440, 36],
+    [1024, 40],
     [390, 40],
   ] as const) {
     await page.setViewportSize({ width, height: 800 });

@@ -3,6 +3,7 @@
 //! 行为：打开时挂载到 `<body>`、锁定页面滚动、聚焦首个可交互元素；Esc 或点击遮罩关闭；
 //! 关闭时保留 `data-state="closed"` 一段时间以播放退出动画。
 
+mod dialog_body;
 mod dialog_description;
 mod dialog_footer;
 mod dialog_header;
@@ -11,6 +12,7 @@ mod dialog_title;
 mod sheet;
 mod toast_live_region;
 
+pub use dialog_body::DialogBody;
 pub use dialog_description::DialogDescription;
 pub use dialog_footer::DialogFooter;
 pub use dialog_header::DialogHeader;

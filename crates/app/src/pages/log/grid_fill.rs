@@ -60,20 +60,10 @@ pub(super) fn square_fill_class_sent(n: usize, max: usize) -> &'static str {
   }
 }
 
-/// 波段 → 路径颜色（低频暖色 → 高频冷色）。
-pub(super) fn band_color(band: &str) -> &'static str {
-  match band {
-    "160m" => "#b91c1c",
-    "80m" => "#ea580c",
-    "60m" | "40m" => "#f59e0b",
-    "30m" => "#84cc16",
-    "20m" => "#22c55e",
-    "17m" => "#14b8a6",
-    "15m" => "#06b6d4",
-    "12m" => "#3b82f6",
-    "10m" => "#6366f1",
-    "6m" => "#a855f7",
-    "2m" | "70cm" => "#ec4899",
-    _ => "#94a3b8",
-  }
+/// 波段 → 通联路径与图例的颜色。
+///
+/// 已知波段取 core 的数据身份色（`log_stats::band_color`，不随配色方案变，见 `docs/ui/pixel.md` §2）；
+/// 未知波段走中性的语义 token，不和任何真实波段撞色。
+pub(super) fn band_color(band: &str) -> String {
+  ham_web_core::log_stats::band_color(band).unwrap_or_else(|| "var(--muted-foreground)".to_owned())
 }

@@ -23,7 +23,7 @@
   "design.principle-corners": "零圆角 / 零模糊 / 零渐变",
   "design.principle-corners-desc": "描边一律直角，投影只有硬偏移，表面不叠柔光与渐变。",
   "design.principle-grid": "4px 尺寸网格",
-  "design.principle-grid-desc": "控件高只取 24 / 32 / 40 / 48px，间距都是 4 的倍数。",
+  "design.principle-grid-desc": "控件高只取 24 / 32 / 40 / 48px，布局间距是 4 的倍数；控件内部的紧凑间距可落在 2px 像素格上。",
   "design.principle-icon": "24px 图标栅格",
   "design.principle-icon-desc": "路径坐标全为整数，放大只取 24 的整数倍才不糊。",
   "design.principle-weight": "唯一字重",

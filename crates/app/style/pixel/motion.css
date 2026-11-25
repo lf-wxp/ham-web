@@ -40,11 +40,11 @@
 @keyframes pxl-twinkle {
   50% {
     box-shadow:
-      6vw 9vh #f4f4f4, 14vw 31vh transparent, 22vw 14vh #f4f4f4, 31vw 52vh transparent,
-      38vw 7vh #f4f4f4, 47vw 26vh transparent, 55vw 61vh #73eff7, 63vw 11vh transparent,
-      71vw 38vh #ffcd75, 79vw 18vh transparent, 86vw 56vh #f4f4f4, 93vw 8vh transparent,
-      11vw 71vh #f4f4f4, 27vw 84vh transparent, 44vw 77vh #ffcd75, 59vw 90vh transparent,
-      76vw 80vh #73eff7, 91vw 87vh transparent;
+      6vw 9vh var(--pxl-star), 14vw 31vh transparent, 22vw 14vh var(--pxl-star), 31vw 52vh transparent,
+      38vw 7vh var(--pxl-star), 47vw 26vh transparent, 55vw 61vh var(--pxl-star-cool), 63vw 11vh transparent,
+      71vw 38vh var(--pxl-star-warm), 79vw 18vh transparent, 86vw 56vh var(--pxl-star), 93vw 8vh transparent,
+      11vw 71vh var(--pxl-star), 27vw 84vh transparent, 44vw 77vh var(--pxl-star-warm), 59vw 90vh transparent,
+      76vw 80vh var(--pxl-star-cool), 91vw 87vh transparent;
   }
 }
 
@@ -247,8 +247,8 @@
 }
 
 /* ---------- 交互反馈：可点击区块的抬起 ----------
-   给「整块可点」的卡片 / 统计格用；纯内容区块（正文卡片、表格）不要加，
-   悬停时内容整体位移反而干扰阅读。位移 2px（一个 art-pixel），阴影同步拉长。 */
+   只给「整块可点」的卡片用；纯内容区块（正文卡片、表格、统计格）不要加 ——
+   悬停有反馈会被读成「整卡可点」（`docs/ui/pixel.md` 的「整卡可点」约定），位移也干扰阅读。位移 2px（一个 art-pixel），阴影同步拉长。 */
 /* 位移用独立的 `translate` 属性（不是 `transform`）：卡片同时挂着入场动画
    （`reveal` / `pxl-enter` 用的是 `transform`），两者各占一个属性才不会互相覆盖；
    `pxl-btn` 也是这套 —— 全站的「上抬 / 下沉」只有一种实现（e2e 读的也是 `translate`）。 */

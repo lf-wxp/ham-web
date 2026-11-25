@@ -49,10 +49,11 @@ pub fn OverviewSection() -> impl IntoView {
         </div>
         <div class="grid gap-3 sm:grid-cols-2">
           <For each=move || visible.get() key=|i| *i let:i>
+            // 不写 `aria_label`：无障碍名取自卡里全部可见文字（标题 + 说明 + 取值）。只给标题当名字，
+            // axe 的 `label-content-name-mismatch` 会判可见文字不在名字里。
             <Button
               variant=Variant::Outline
               class="h-auto flex flex-col items-start gap-2 p-3 text-left whitespace-normal"
-              aria_label=Signal::derive(move || t(PRINCIPLES[i].title))
               on_click=Callback::new(move |_| selected.set(String::from(PRINCIPLES[i].spec)))
             >
               <span class="flex items-center gap-2">

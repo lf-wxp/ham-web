@@ -9,12 +9,14 @@
 //! （`.pxl-band-key`，不是 `Button` 的任何变体），「当前页面在这个分组里」要随路由动态打
 //! `data-active`，而 `Button` 的类名是静态的。
 
+use leptos::html;
 use leptos::prelude::*;
 use leptos_router::hooks::use_location;
 
 use ham_web_core::registry;
 
 use crate::cn::cn;
+use crate::focus::is_escape_for_overlay;
 use crate::i18n::{t, tp};
 use crate::icons::{Icon, IconKind, icon_of};
 use crate::ui::{Button, Led, LedState, LedTone, Size, TextValue, Variant};
@@ -103,21 +105,40 @@ pub(crate) fn GroupMenu(
     MenuKind::Tools => "nav-tools-panel",
     MenuKind::Exam => "nav-exam-panel",
   };
+  // Esc 收起后把焦点还给波段键：面板一隐藏，焦点就从里面的链接掉回 `body`，键盘用户得从页首重新 Tab。
+  let trigger = NodeRef::<html::Button>::new();
 
   view! {
     // `static`：面板宽 960px，必须相对整条导航容器定位（居中 / 贴右）才不会溢出
     // 视口。垂直方向因此与「考试中心」共享同一个基准 —— 容器高 h-16，
     // `top-full` 恒为导航下沿。
-    <div class="group static">
+    <div
+      class="group static"
+      // 焦点在波段键或面板内任意元素上时按 Esc 收起（`is_escape_for_overlay` 排除输入法组词）。
+      // 挂在元素级 keydown 而不是 `window`：焦点不在本菜单内时不该由它响应。
+      on:keydown=move |e| {
+        if is_escape_for_overlay(&e) && is_open() {
+          e.stop_propagation();
+          open_menu.set(None);
+          if let Some(el) = trigger.get_untracked() {
+            let _ = el.focus();
+          }
+        }
+      }
+    >
       // 刻意的例外，见文件头：下拉开关是波段键，当前分组随路由打 `data-active`。
       <button
+        node_ref=trigger
         type="button"
         data-slot="button"
         aria-expanded=move || is_open().to_string()
-        aria-haspopup="true"
+        // 站点导航的展开键只带 `aria-expanded` + `aria-controls`（W3C APG「Disclosure Navigation」）：
+        // 面板是一组导航链接，`aria-haspopup="true"` 会被读屏报成「菜单」，
+        // `"dialog"` 又要求面板本身是 `role="dialog"` —— 两种都不是它。
         aria-controls=panel_id
         // 波段键：当前页面在这个分组里 = 按进去 + 顶部灯条 + 灯亮（`radio.css` 的 `.pxl-band-key`）。
-        class="pxl-band-key"
+        // 高度与这一行的站标 / 按钮同源（`size-10 xl:size-9`，见 `nav_bar.rs`）：`<xl` 40px、`xl` 起 36px。
+        class="pxl-band-key h-10 xl:h-9"
         data-active=move || menu_active().then_some("")
         on:click=move |_| {
           open_menu.update(|m| *m = if *m == Some(kind) { None } else { Some(kind) });
@@ -128,7 +149,7 @@ pub(crate) fn GroupMenu(
         {move || label.get()}
         // 下拉箭头只在桌面档（`≥1280`）画：平板档（768–1279）要在一行里放下三个键 +
         // 站标 + 右侧动作组，西语算下来只剩几十像素余量，箭头是三个键里唯一的非文字件。
-        // 「这是个下拉」由 `aria-haspopup`、面板的开合与按键按下去的样子说清。
+        // 「这是个下拉」由 `aria-expanded`、面板的开合与按键按下去的样子说清。
         <Icon
           kind=IconKind::ChevronDown
           class=Signal::derive(move || {

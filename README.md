@@ -6,7 +6,7 @@
 [![Leptos 0.8](https://img.shields.io/badge/Leptos-0.8-ef3939)](https://leptos.dev)
 [![PWA](https://img.shields.io/badge/PWA-offline-5a0fc8)](#pwa-与离线)
 
-**在线 demo：<https://ham.onlyxp.me/>** ｜ [快速开始](#快速开始) ｜ [功能一览](#功能一览) ｜ [文档地图](#文档地图) ｜ [贡献指南](#贡献指南)
+**在线 demo：<https://ham.onlyxp.me/>** ｜ [English](README.en.md) ｜ [快速开始](#快速开始) ｜ [功能一览](#功能一览) ｜ [文档地图](#文档地图) ｜ [贡献指南](#贡献指南)
 
 一站式业余无线电学习平台：**A/B/C 三类题库**的练习与模拟考试、**100+ 专题知识库**速查，以及通联日志、实时数据与常用计算工具。
 
@@ -121,12 +121,13 @@ ADIF 3.1 日志与多台站 / 操作员、日志体检、QSL 全生命周期与�
 
 ## 文档地图
 
-细节都在 [`docs/`](docs/README.md)：那里是**唯一的文档索引**，按「界面 / 工程 / 数据 / 速查 / 领域」分目录，并写明每份文档何时看、谁维护。最常用的入口：
+细节都在 [`docs/`](docs/README.md)：那里是**唯一权威的文档索引**，按「界面 / 工程 / 数据 / 速查 / 领域」分目录，并写明每份文档何时看、谁维护。最常用的入口：
 
 - 动代码前：[`AGENTS.md`](AGENTS.md) —— 硬规则与验收命令
 - 界面规范：[`docs/ui/modern.md`](docs/ui/modern.md)（现代风）· [`docs/ui/pixel.md`](docs/ui/pixel.md)（像素风）
 - 架构与完整目录树：[`docs/engineering/architecture.md`](docs/engineering/architecture.md)
 - 还没做的与「刻意不做」的：[`ROADMAP.md`](ROADMAP.md)
+- 英文版：[`README.en.md`](README.en.md) · [`docs/README.en.md`](docs/README.en.md)（面向外部读者的翻译；规范仍以中文文档为准）
 
 > README 里的数字与清单（Worker 数量、路由数量、计算器数量、`build-*-worker` 任务表、截图文件）由
 > `cargo make readme-check` 对账；被搬走的章节改名或删除时它也会红。

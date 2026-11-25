@@ -244,16 +244,21 @@
   --display-ok: #1a5b31;
 
   /* 指示灯：只有四个意思（硬规则 15），直接指向既有状态色，不新增色相。
-     `-hi` 是灯面左上角那一格高光；灭灯是一块暗色灯罩，明暗通用。 */
+     `-hi` 是灯面左上角那一格高光；warn 的高光由灯面提亮派生（金没有调色板亮色档），
+     至少要与固定白高光一样分得开。
+     灭灯是一块暗色灯罩，从本方案的墨色派生（固定色值在 Game Boy / CGA 里会跳出整机色相）。
+     亮色的墨是深色，灯罩几乎就是墨；暗色的墨是浅色，`.dark` 里改成「少量墨 + 背景」，
+     否则灯罩比卡片还亮、亮灭分不开。亮灭对比度由 `pixel-check` 逐方案 × 明暗审计，
+     公式只认 `color-mix(in srgb, var(--a) N%, var(--b))` 这一种写法。 */
   --led-rx: var(--pxl-win);
   --led-rx-hi: var(--pxl-win-hi);
   --led-tx: var(--pxl-hp);
   --led-tx-hi: var(--pxl-hp-hi);
   --led-warn: var(--pxl-gold);
-  --led-warn-hi: #f4f4f4;
+  --led-warn-hi: color-mix(in srgb, var(--led-warn) 25%, white);
   --led-info: var(--pxl-xp);
   --led-info-hi: var(--pxl-xp-hi);
-  --led-off: #333c57;
+  --led-off: color-mix(in srgb, var(--pxl-ink) 90%, var(--card));
 
   /* ---------- 亮色：旧纸张 / 掌机屏 ---------- */
   /* 中立别名 → 像素取值（现代风在 `legacy-utilities.css` 里覆盖这 8 个名字）。 */
@@ -278,12 +283,23 @@
   --pxl-gold: #ffcd75;
   --pxl-win: #38b764;
   --pxl-win-hi: #a7f070;
+  /* 暗色星空的星点：情感化装饰，给长时间备考一点夜台氛围，不承载信息。
+     单独定义而不是借 `--primary-foreground`：后者在暗色翻转成墨色，星点会整片消失。
+     三个值亮暗共用、也不随 11 套配色方案变 —— 星空是机身材质，不是主题色；
+     不承载文字，所以不参与 `pixel-check` 的文字对比度审计。 */
+  --pxl-star: #f4f4f4;
+  --pxl-star-cool: #73eff7;
+  --pxl-star-warm: #ffcd75;
   /* 文字色：在所有亮色表面（含 accent 金色底）上 >= 4.9。 */
   --pxl-hp-text: #8f2a3f;
   --pxl-xp-text: #2b4aa8;
   --pxl-gold-text: #5f4500;
   --pxl-win-text: #14602f;
 
+  /* 文字 / 底色的对比度由 `cargo make pixel-check`（11 套方案 × 明暗）与 `color_scheme.spec.ts` 的 axe 守着，
+     改种子色后跑它们，不在这里手抄数字。两者都不审 placeholder：它是 `--muted-foreground` 叠
+     `opacity: .8`（`controls.css`），经典亮色落在输入底 `--pxl-field` 上正好 4.5:1 —— WCAG 1.4.3 对
+     placeholder 同样要 4.5，别再调淡 `--muted-foreground` 或那层 opacity。 */
   --background: #f2e8cf;
   --foreground: #1a1c2c;
   --card: #fff8e1;
@@ -349,6 +365,9 @@
   --display-hot: #ffcd75;
   --display-alarm: #ef7d57;
   --display-ok: #a7f070;
+
+  /* 灭灯：暗色的墨是浅色，取「少量墨 + 背景」才是暗灯罩（见 `:root` 的指示灯说明）。 */
+  --led-off: color-mix(in srgb, var(--pxl-ink) 25%, var(--background));
 
   /* 墨框：对本方案所有会被它描边的暗色表面（背景 / 卡片 / 弹层 / 按钮底 / 输入底）都 >= 3:1
      （WCAG 1.4.11）。旧值 #566c86 对卡片只有 2.6、对按钮底 2.0，暗色的「框」薄得只剩内高光在撑。

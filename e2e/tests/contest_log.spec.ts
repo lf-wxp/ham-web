@@ -229,9 +229,9 @@ test("竞赛录入：赛后分析在乘数不分波段的竞赛里不列波段�
   await expect(sec.getByText(/段，合计/)).toBeVisible();
 });
 
-/** 一张 Stat 卡片里的数值：按标签找到那张卡，再读它的数字。 */
+/** 一张 Stat 卡片里的数值：按标签找到那张卡，再读它的数字（`data-slot="stat"` 两套皮肤通用）。 */
 function stat(page: Page, label: string) {
-  return page.locator("div.pxl-window").filter({ has: page.getByText(label, { exact: true }) });
+  return page.locator('[data-slot="stat"]').filter({ has: page.getByText(label, { exact: true }) });
 }
 
 /**

@@ -95,7 +95,7 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 | 文案 | 重复 key、占位符数量、复数变体、死条目、语言包新鲜度、覆盖率 | `cargo make i18n-check` | 三语不齐或死词条 |
 | 知识库译文 | 中文原文作 key 的漂移检测 | `cargo make knowledge-i18n-check` | 译文静默失效 |
 | 解析表 | 答案一致性、重复注入、同题多版本分叉 | `cargo make explanations-check` | 解析与题库不一致 |
-| 像素风 | 调色板对比度、`schemes.css` 与方案表一致、易错知识点热力格子（各方案 × 明暗 × 分类色 × 4 档）的文字对比度与相邻档可分辨度（仅像素风的 `--card` / `--foreground`） | `cargo make pixel-check` | 对比度或生成物漂移 |
+| 像素风 | 调色板对比度、`schemes.css` 与方案表一致、易错知识点热力格子（各方案 × 明暗 × 分类色 × 4 档）的文字对比度与相邻档可分辨度（仅像素风的 `--card` / `--foreground`）、指示灯灭灯对亮灯（绿 / 金两档，暗色另查信号格的 `--primary`）>= 3:1 | `cargo make pixel-check` | 对比度或生成物漂移 |
 | e2e 对账 | `e2e/coverage-targets.json` 里每条 journey 的 grep 必须在 spec 里唯一命中 | `cargo make e2e-check` | 关键旅程失去用例 / grep 歧义 |
 | 注册表一致性 | 注册表 ↔ 导航 ↔ 路由 ↔ sitemap | `cargo test -p ham-web-app registry_check` | 新增页面漏注册 |
 | 体积预算 | `perf-budget.json`（主包 wasm br 上限 1 950 000 B 等 7 项） | `cargo make size-check`（需先 `build-web`） | 产物超预算 |

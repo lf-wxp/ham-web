@@ -16,7 +16,9 @@ use leptos::prelude::*;
 use crate::i18n::{self, Locale, t};
 use crate::icons::{Icon, IconKind};
 use crate::theme::{Theme, style_defaults_theme, use_display_prefs, use_theme};
-use crate::ui::{ButtonLink, Dialog, DialogHeader, DialogTitle, RadioGroup, Switch, Variant};
+use crate::ui::{
+  ButtonLink, Dialog, DialogBody, DialogHeader, DialogTitle, RadioGroup, Switch, Variant,
+};
 
 use super::choice_row::ChoiceRow;
 use super::scheme_choice::SchemeChoice;
@@ -45,7 +47,7 @@ pub fn SettingsDialog(open: RwSignal<bool>) -> impl IntoView {
         <DialogTitle>{move || t("shell.settings")}</DialogTitle>
       </DialogHeader>
 
-      <div class="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain">
+      <DialogBody class="flex flex-col gap-5">
         // 界面风格：两套独立设计系统（像素 / 现代）。切换会重建外壳与页面，故放在最上面。
         <p class="pxl-label text-xs text-muted-foreground">{move || t("shell.settings-style")}</p>
         <div class="space-y-2">
@@ -187,7 +189,7 @@ pub fn SettingsDialog(open: RwSignal<bool>) -> impl IntoView {
             {move || t("settings.export-all-local-data")}
           </p>
         </div>
-      </div>
+      </DialogBody>
     </Dialog>
   }
 }

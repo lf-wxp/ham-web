@@ -52,7 +52,8 @@ pub(super) fn PracticeRig(
         <Readout
           text=Signal::derive(move || s_reading(units()))
           label=Signal::derive(move || s_reading(units()))
-          tone=Signal::derive(move || ReadoutTone::for_s_units(Some(units())))
+          // 连对 0 是「还没开始」，不是弱信号：按没数据给灰，开场不亮琥珀告警。
+          tone=Signal::derive(move || ReadoutTone::for_s_units(Some(units()).filter(|&u| u > 0)))
         />
       </div>
       <SignalMeter

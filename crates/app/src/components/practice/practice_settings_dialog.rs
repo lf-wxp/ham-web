@@ -5,7 +5,7 @@ use crate::components::exam::ShortcutRow;
 use crate::i18n::t;
 use crate::shortcuts::SHORTCUT_HELP;
 use crate::ui::{
-  Checkbox, Dialog, DialogDescription, DialogHeader, DialogTitle, Label, RadioGroup,
+  Checkbox, Dialog, DialogBody, DialogDescription, DialogHeader, DialogTitle, Label, RadioGroup,
   RadioGroupItem, Separator, Switch,
 };
 
@@ -51,7 +51,7 @@ pub fn PracticeSettingsDialog(
         <DialogTitle>{move || t("exam.settings")}</DialogTitle>
         <DialogDescription>{move || t("exam.order-answer-display-and")}</DialogDescription>
       </DialogHeader>
-      <div class="space-y-5">
+      <DialogBody class="space-y-5">
         <div class="space-y-2">
           <div class="text-sm text-muted-foreground">{move || t("exam.order-random")}</div>
           <RadioGroup class="flex items-center gap-4" value=order_value on_change=on_order>
@@ -95,7 +95,7 @@ pub fn PracticeSettingsDialog(
             })
             .collect_view()}
         </div>
-      </div>
+      </DialogBody>
     </Dialog>
   }
   .into_any()

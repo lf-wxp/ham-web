@@ -285,13 +285,17 @@ export function mistakeRecord(question: Record<string, unknown>) {
  *
  * 它们不是原生 `<select>`，因此 `selectOption()` 用不了，必须走 `role=combobox` +
  * `role=option` 这条路径（日志页的两个筛选器即为此，见 select.spec.ts）。
+ *
+ * `scope` 可以是整页，也可以是某个区块：同一页上有同名下拉时（`/tools` 的「尺寸」与「THOR 图片尺寸」）
+ * 传区块，只在区块里找触发器。选项总在全页找 —— 列表在传送层里，不在区块的 DOM 下面。
  */
 export async function pickOption(
-  page: Page,
+  scope: Page | Locator,
   name: string | RegExp,
   option: string | RegExp,
 ) {
-  await page.getByRole("combobox", { name }).click();
+  const page = "goto" in scope ? scope : scope.page();
+  await scope.getByRole("combobox", { name }).click();
   await page.getByRole("option", { name: option, exact: true }).click();
 }
 

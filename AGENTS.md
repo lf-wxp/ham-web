@@ -41,7 +41,7 @@
   滚出视口的循环动画要停（只点名无限循环的那几条）。→ [`docs/ui/motion.md`](docs/ui/motion.md) §3、§7 · [`docs/engineering/performance.md`](docs/engineering/performance.md) §2
 - **标签关联与无障碍名要写全**：`Field` 的 `r#for` 与控件 `id` 配对；无可见标签的控件 / 图标按钮必填 `aria_label`。这些同时是 e2e 的定位契约。
 - **风格**：Rust 2024，`rustfmt.toml`（2 空格、行宽 100），clippy 的 `correctness/suspicious/style/complexity/perf` 是错误级。
-  注释写「为什么」不写「做了什么」；注释、文案、文档一律中文（专有名词与代码标识符除外）。
+  注释写「为什么」不写「做了什么」；注释、文案、文档一律中文（专有名词与代码标识符除外；面向外部读者的 `README.en.md` 与 `docs/README.en.md` 英文翻译是显式例外）。
 
 ### 文档
 

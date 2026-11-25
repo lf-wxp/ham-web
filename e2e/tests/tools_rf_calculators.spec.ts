@@ -160,7 +160,8 @@ test("小工具：矩形波导算截止、模式、导波波长、导体损耗�
   await expect(s.getByText("介质中波长 21.41 mm，导波波长 24.24 mm")).toBeVisible();
 
   // 换成 WR-42 看 24 GHz：尺寸自动填入，推荐频段取表中公布值。
-  await pickOption(page, "尺寸", "WR-42");
+  // 在本区块里找下拉：/tools 页上还有「THOR 图片尺寸」，按全页名字找会命中两个。
+  await pickOption(s, "尺寸", "WR-42");
   await s.getByLabel("工作频率（GHz）").fill("24.048");
   await expect(s.getByLabel("内宽 a（mm，长边）")).toHaveValue("10.668");
   await expect(s.getByText("TE10 截止频率 14.05 GHz")).toBeVisible();
