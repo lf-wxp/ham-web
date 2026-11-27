@@ -8,6 +8,7 @@ use super::iss_card::IssCard;
 use super::solar_card::SolarCard;
 use super::spots_card::SpotsCard;
 use super::wanted_card::WantedCard;
+use super::watch_card::WatchCard;
 use crate::i18n::t;
 
 #[component]
@@ -29,6 +30,7 @@ pub fn DashboardPage() -> impl IntoView {
           <SpotsCard />
           <IssCard />
         </div>
+        <WatchCard />
         <div class="grid gap-4 sm:grid-cols-2">
           <WantedCard />
         </div>

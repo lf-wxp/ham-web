@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, option, test } from "./fixtures";
+import { expect, focusRingSlack, option, test } from "./fixtures";
 
 /** 底部栏统计行：「题库 A 类 · 顺序练习 · 进度 1 / 100」。
  *  操作栏经 `Portal` 挂到 `body`（避免被路由容器的入场 `transform` 影响 `fixed` 定位），
@@ -56,6 +56,8 @@ test("练习：搜索题目可跳转，未命中时给出提示", async ({ page 
   await page.keyboard.press("Enter");
   const search = page.getByRole("dialog", { name: "搜索题目" });
   await expect(search).toBeVisible();
+  // 搜索面板不挂右上角关闭按钮：点遮罩 / Esc / 「跳转」都能关，多一个 × 只是多一条路。
+  await expect(search.getByRole("button", { name: "关闭" })).toHaveCount(0);
   await search.getByRole("textbox").first().fill("天线");
   await expect(search.getByText(/匹配 \d+ 条/)).toBeVisible();
   await search.locator("li").filter({ hasText: /第 \d+ 题/ }).first().click();
@@ -66,6 +68,24 @@ test("练习：搜索题目可跳转，未命中时给出提示", async ({ page 
   await page.keyboard.press("Enter");
   await search.getByRole("textbox").first().fill("这个词肯定不存在");
   await expect(search.getByText("未找到匹配")).toBeVisible();
+});
+
+// 回归：输入框被弹层里的 `overflow-auto` 容器包着，焦点环（2px 虚线 + 2px 偏移 = 盒子外 4px）
+// 此前容器只留 4px 内距 —— 环外沿正好压在裁剪边界上，分数 DPR 的手机上左/上沿被切掉。
+// 现改为 6px（与 `ui::DialogBody` 同一手法），必须留有盈余（不是「刚好贴边」）。
+test("练习：搜索题目的输入框焦点环不被滚动容器裁掉", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/practice");
+  await expect(page.getByText(/第 1 \/ \d+ 题/).first()).toBeVisible();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: "搜索题目" });
+  await expect(dialog).toBeVisible();
+  const input = dialog.getByRole("textbox").first();
+  await input.focus();
+  await expect(input).toBeFocused();
+  const ring = await focusRingSlack(input);
+  expect(ring.ring).toBeGreaterThan(0);
+  expect(ring.slack).toBeGreaterThanOrEqual(1);
 });
 
 test("练习：切到随机题序且有作答时先确认", async ({ page }) => {

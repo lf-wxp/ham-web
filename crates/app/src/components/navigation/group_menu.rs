@@ -261,7 +261,11 @@ pub(crate) fn GroupMenu(
               .collect_view()}
           </div>
           // 条目区：只渲染当前分组，窗口矮时在这里内部滚动。
-          <div class="min-w-0 flex-1 overflow-y-auto overscroll-contain p-1">
+          //
+          // `-m-0.5 p-1.5`：`overflow-y-auto` 两个方向都裁剪，条目（`border-2` 链接）的焦点环
+          // （2px 虚线 + 2px 偏移 = 盒外 4px）此前被 4px 内距刚好压在裁剪边界上。这里把内距提到
+          // 6px（余量 2px），多出的 2px 用负外边距抵掉、内容位置不变（同一手法见 `ui::DialogBody`）。
+          <div class="min-w-0 flex-1 -m-0.5 overflow-y-auto overscroll-contain p-1.5">
             <div class="grid grid-cols-2 gap-x-2 gap-y-0.5">
               {move || {
                 registry::MODULES

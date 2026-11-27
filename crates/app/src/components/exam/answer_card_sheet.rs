@@ -108,7 +108,9 @@ pub fn AnswerCardSheet(
       <div data-slot="sheet-header" class="flex flex-col gap-1.5 p-4">
         <h2 data-slot="sheet-title" class="text-foreground">{move || t("exam.answer-card")}</h2>
       </div>
-      <div class="px-4 space-y-3 overflow-y-auto overscroll-contain pt-1">
+      // 纵向内距要 > 焦点环（2px 虚线 + 2px 偏移 = 4px）：此前 `pt-1`（4px）余量为 0、底部无内距，
+      // 首/末行的环会被裁。横向 `px-4`（16px）本来就够。`-mt-0.5` 抵掉顶部多出的 2px，内容位置不变。
+      <div class="-mt-0.5 space-y-3 overflow-y-auto overscroll-contain px-4 pt-1.5 pb-1.5">
         <div class="flex items-center justify-between gap-3 text-sm">
           <div class="text-muted-foreground">
             {move || t("exam.answered-summary")} " " {move || model.answered_count()} " / " {move || model.total()} "｜" {move || t("exam.flag")} " " {move || model.flagged_count()}

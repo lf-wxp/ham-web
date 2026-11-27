@@ -6,7 +6,7 @@
 
 | 层 | 技术 |
 | --- | --- |
-| 语言 | Rust 2024 edition（MSRV 1.99.1） |
+| 语言 | Rust 2024 edition（MSRV 1.100.0） |
 | 前端 | [Leptos 0.8](https://leptos.dev)（CSR）+ `leptos_router`，编译为 WebAssembly |
 | 前端构建 | [Trunk](https://trunkrs.dev)（自动下载 Tailwind CSS v4 独立版、wasm-bindgen、wasm-opt） |
 | 样式 | Tailwind CSS v4 + tw-animate-css，沿用原 shadcn/ui（new-york）设计令牌与类名 |
@@ -49,7 +49,7 @@
 .
 ├── AGENTS.md               # 动代码前的入口：文档索引 + 硬规则
 ├── ROADMAP.md              # 路线图：未完成项、刻意不做的边界与工程门禁
-├── Cargo.toml              # workspace（edition 2024、MSRV 1.99.1、统一依赖与 lint）
+├── Cargo.toml              # workspace（edition 2024、MSRV 1.100.0、统一依赖与 lint）
 ├── Makefile.toml           # cargo make 任务
 ├── Dockerfile              # 多阶段构建（distroless 运行镜像）
 ├── rustfmt.toml            # 2 空格缩进、行宽 100

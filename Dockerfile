@@ -7,7 +7,7 @@
 #
 # 构建参数：
 #   SITE_URL              站点地址（写入 Open Graph 与 sitemap.xml），默认 https://ham.onlyxp.me
-#   RUST_VERSION          构建阶段基础镜像的 tag（默认 1.99.1，钉死可复现）
+#   RUST_VERSION          构建阶段基础镜像的 tag（默认 1.100.0，钉死可复现）
 #   TRUNK_VERSION         Trunk 版本
 #   REBUILD_DATASET       设为 1 时在构建阶段从远程 CSV 重新生成题库（默认使用仓库内已提交的 JSON）
 #   WASM_BINDGEN_VERSION  wasm-bindgen CLI 版本；留空时自动取 Cargo.lock 中的版本
@@ -20,9 +20,9 @@
 
 # 钉到具体版本而不是浮动的大版本 `1`：rust:1-bookworm 会随上游更新悄悄换工具链，
 # 同一个提交隔一周重建可能得到不同的 wasm / 原生二进制。升级工具链时改这里，
-# 与 Cargo.toml 的 `rust-version`（1.99.1）一起看；.github/workflows/check.yml 里的 toolchain
+# 与 Cargo.toml 的 `rust-version`（1.100.0）一起看；.github/workflows/check.yml 里的 toolchain
 # 也要同步到这个版本（CI 与镜像用不同版本时，lint 结果会不一致）。
-ARG RUST_VERSION=1.99.1
+ARG RUST_VERSION=1.100.0
 
 # wasm-bindgen CLI 版本需与 Cargo.lock 中的 wasm-bindgen crate 版本一致，
 # 否则解码 Worker 生成的胶水代码与 wasm 不匹配（运行时报 "cannot read properties"）。

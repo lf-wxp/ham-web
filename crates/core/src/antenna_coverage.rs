@@ -178,6 +178,31 @@ pub fn pattern_phi(azimuth_deg: f64) -> f64 {
   (90.0 - azimuth_deg).rem_euclid(360.0)
 }
 
+/// 这副天线朝某个地理方位（正北 0°、顺时针）的增益与相对峰值的损失（dB，≥ 0）。
+///
+/// 方向表的每一行就是用它算的（[`direction_gains`]），所以「某个实体的增益」与「某个方位的增益」
+/// 是同一个数。基准增益不是有限值、或水平口径下切面不完整时返回 `None`：没有可比的参照，
+/// 宁可不给，也不要给一个「NaN 增益 + 0 损失」。
+#[must_use]
+pub fn gain_toward(slices: &PatternSlices, azimuth_deg: f64, mode: GainMode) -> Option<(f64, f64)> {
+  let base = slices.gain_max_dbi;
+  if !base.is_finite() {
+    return None;
+  }
+  if matches!(mode, GainMode::Horizontal) && !azimuth_slice_is_complete(slices.azimuth) {
+    return None;
+  }
+  let gain = gain_at(slices, pattern_phi(azimuth_deg), mode);
+  // 切面按 2° 采样、基准峰值来自更细的扫描，个别方向可能比基准还高。夹到基准，免得
+  // 出现「增益大于最大值、损失却是 0」的自相矛盾行；非有限值同样兜回基准。
+  let gain = if gain.is_finite() {
+    gain.min(base)
+  } else {
+    base
+  };
+  Some((gain, base - gain))
+}
+
 /// 生成方向表：每个 DXCC 实体一行，按「相对峰值的损失」升序排列。
 ///
 /// 本台网格非法时返回 `None`（没有原点就算不出方位）。
@@ -201,25 +226,19 @@ pub fn direction_gains(
   }
   let mut rows: Vec<EntityGain> = entities()
     .iter()
-    .map(|entity| {
+    .filter_map(|entity| {
       let (distance_km, azimuth_deg) = distance_bearing(home_lat, home_lon, entity.lat, entity.lon);
-      let gain = gain_at(slices, pattern_phi(azimuth_deg), mode);
-      // 切面按 2° 采样、基准峰值来自更细的扫描，个别方向可能比基准还高。夹到基准，免得
-      // 出现「增益大于最大值、损失却是 0」的自相矛盾行；非有限值同样兜回基准。
-      let gain = if gain.is_finite() {
-        gain.min(base)
-      } else {
-        base
-      };
-      EntityGain {
+      // 前置校验都已做过，这里不会是 `None`；仍用 `?` 而不是 `unwrap`，免得将来改了校验就 panic。
+      let (gain_dbi, loss_db) = gain_toward(slices, azimuth_deg, mode)?;
+      Some(EntityGain {
         dxcc: entity.dxcc,
         name: entity.name,
         name_en: entity.name_en,
         azimuth_deg,
         distance_km,
-        gain_dbi: gain,
-        loss_db: base - gain,
-      }
+        gain_dbi,
+        loss_db,
+      })
     })
     .collect();
   rows.sort_by(|a, b| {
@@ -407,6 +426,79 @@ mod tests {
       );
       assert!(row.distance_km > 0.0);
     }
+  }
+
+  #[test]
+  fn gain_toward_is_the_same_number_as_the_table_row() {
+    // 方向图：水平切面 `gain = 10·cos(φ)`，3D 全 0。
+    let az: Vec<(f64, f64)> = (0..=360)
+      .map(|d| (f64::from(d), 10.0 * f64::from(d).to_radians().cos()))
+      .collect();
+    let grid = uniform_rows(0.0);
+    let s = slices(&az, &grid, (1, 4), 10.0);
+    for mode in [GainMode::Horizontal, GainMode::BestElevation] {
+      let rows = direction_gains(&s, "OM89", mode).expect("本台网格有效");
+      for row in rows.iter().step_by(17) {
+        let (gain, loss) = gain_toward(&s, row.azimuth_deg, mode).expect("切面完整");
+        assert_eq!(
+          (gain, loss),
+          (row.gain_dbi, row.loss_db),
+          "{mode:?} {}",
+          row.name
+        );
+      }
+    }
+  }
+
+  #[test]
+  fn gain_toward_follows_the_geographic_bearing() {
+    // 东西向的偶极子式图样 `10·cos(φ)`：正东（方位 90°）是峰值，正北 / 正南（0° / 180°）在 0 dBi。
+    let az: Vec<(f64, f64)> = (0..=360)
+      .map(|d| (f64::from(d), 10.0 * f64::from(d).to_radians().cos()))
+      .collect();
+    let grid = uniform_rows(0.0);
+    let s = slices(&az, &grid, (1, 4), 10.0);
+    let east = gain_toward(&s, 90.0, GainMode::Horizontal).unwrap();
+    assert!(
+      (east.0 - 10.0).abs() < 1e-9 && east.1.abs() < 1e-9,
+      "{east:?}"
+    );
+    let north = gain_toward(&s, 0.0, GainMode::Horizontal).unwrap();
+    assert!(
+      north.0.abs() < 1e-9 && (north.1 - 10.0).abs() < 1e-9,
+      "{north:?}"
+    );
+    // 西（270°）在 φ=180°，增益 −10 dBi，比峰值低 20 dB。
+    let west = gain_toward(&s, 270.0, GainMode::Horizontal).unwrap();
+    assert!(
+      (west.0 + 10.0).abs() < 1e-9 && (west.1 - 20.0).abs() < 1e-9,
+      "{west:?}"
+    );
+    // 方位取模：负数与 ≥ 360 的写法等价。
+    assert_eq!(gain_toward(&s, -270.0, GainMode::Horizontal), Some(east));
+    assert_eq!(gain_toward(&s, 450.0, GainMode::Horizontal), Some(east));
+  }
+
+  #[test]
+  fn gain_toward_refuses_without_a_reference() {
+    let short: Vec<(f64, f64)> = (0..360).map(|d| (f64::from(d), 0.0)).collect();
+    let grid = uniform_rows(1.0);
+    assert!(
+      gain_toward(
+        &slices(&short, &grid, (1, 4), 10.0),
+        90.0,
+        GainMode::Horizontal
+      )
+      .is_none()
+    );
+    assert!(
+      gain_toward(
+        &slices(&short, &grid, (1, 4), f64::NAN),
+        90.0,
+        GainMode::BestElevation
+      )
+      .is_none()
+    );
   }
 
   #[test]

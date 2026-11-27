@@ -7,6 +7,7 @@
 mod callsign_lookup;
 mod callsign_reference;
 mod callsign_structure;
+mod dx_facts_block;
 
 use ham_web_core::callsign::CALLSIGN_TIPS;
 use ham_web_core::dxcc::lookup;

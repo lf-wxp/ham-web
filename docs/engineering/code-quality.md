@@ -181,7 +181,7 @@ AX.25 的 FCS 这类协议级缺陷，逐行读码（E2）没看出来，只有�
 
 | ID | 检查项 | 方法 | 判定标准 | 产出 |
 | --- | --- | --- | --- | --- |
-| B1.1 | 工具链钉版本 | 对照 `Dockerfile`、`.github/workflows/*.yml`、`.tool-versions`、`Cargo.toml` 的 MSRV | 三处一致（如 1.99.1），无浮动 `@stable` | 漂移点 |
+| B1.1 | 工具链钉版本 | 对照 `Dockerfile`、`.github/workflows/*.yml`、`.tool-versions`、`Cargo.toml` 的 MSRV | 三处一致（如 1.100.0），无浮动 `@stable` | 漂移点 |
 | B1.2 | wasm-bindgen 版本一致 | `sh scripts/decode-workers.sh` + 三处 awk 解析 `Cargo.lock` | 版本取自锁文件；解析失败有专属报错（不是「版本漂移」） | 误诊风险 |
 | B1.3 | 前端构建参数 | 读 `Trunk.toml` / `index.html` / `.cargo/config.toml` | `wasm-opt` 参数、`erase_components`、release profile 与文档一致 | 参数漂移 |
 | B1.4 | 干净环境构建 | 新目录 `git clone` → `cargo make setup` → `cargo make ci` | 一次通过，无手工步骤 | 缺失步骤 |
@@ -648,7 +648,7 @@ grep -rn "TODO\|FIXME\|HACK\|todo!()\|unimplemented!()" crates
 | SOTA / POTA | 「我的」与「对方」字段严格区分；旧 ADIF 的方向歧义不猜 |
 | NEC | `TL` 不支持两端并联导纳（交叉线 = 负 Z0 已支持）；端点端口导出会移到段心；交叉验证参照是 necpp 而非实测 |
 | VNA | 页面不做校准，显示仪器读数 |
-| 解码 | WEFAX 未做 1500/2300 Hz FM 副载波；LRPT 的 OQPSK 仅合成验证；FT4 未在真实信号验证；DominoEX FEC 需用户选；MFSK / THOR 的时钟误差与频漂只拟合 1–3 阶平滑曲线（突变跟不了、短于约 190 个符号不跟踪），THOR 用硬位判决 |
+| 解码 | WEFAX 的真实格式只用四段公开录音核对过结构（无标准图逐像素对照）；LRPT 的 OQPSK 仅合成验证；FT4 未在真实信号验证；DominoEX FEC 需用户选；MFSK / THOR 的时钟误差与频漂只拟合 1–3 阶平滑曲线（突变跟不了、短于约 190 个符号不跟踪），THOR 用硬位判决 |
 | 外部格式 | CHIRP CSV 未在真实 CHIRP 实测；SOTA / POTA 官方格式说明未取到 |
 | 硬件 | 卫星上调、旋转器、NanoVNA 串口**一次真机验证都没有**，只能标「待验」 |
 | 传播 | 简化 VOACAP，无 SNR；噪声按 290 K 热噪声，未接 ITU-R P.372 |

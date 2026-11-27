@@ -105,6 +105,41 @@ export async function waitSettled(page: Page) {
 }
 
 /**
+ * 焦点环与最近裁剪祖先之间的余量（px）。
+ *
+ * 像素风聚焦环是「2px 虚线 + 2px 偏移」，会画出控件盒子外 4px；任何 `overflow` 容器都会
+ * 在 padding box 处裁掉越出的那一段 —— 视觉上就是「焦点环左侧/上沿被切掉」。这里返回
+ * 「环的最外沿到裁剪边界还剩多少」（负数 = 已被裁）。`target` 必须是**已聚焦**、环已画出的元素。
+ *
+ * 余量为 0 也算不安全：环正好压在边界上，分数 DPR 的屏幕上最外一列像素会被舍掉。
+ * 断言用 `slack >= 1`，不要只看「没被裁」。
+ */
+export async function focusRingSlack(target: Locator) {
+  return target.evaluate((node) => {
+    const el = node as HTMLElement;
+    const r = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    const ring = parseFloat(cs.outlineWidth) + parseFloat(cs.outlineOffset);
+    // 最近的会裁剪的祖先（overflow 非 visible）
+    let sc: HTMLElement | null = el.parentElement;
+    while (sc) {
+      const s = getComputedStyle(sc);
+      if (s.overflowX !== "visible" || s.overflowY !== "visible") break;
+      sc = sc.parentElement;
+    }
+    if (!sc) return { ring, slack: Number.POSITIVE_INFINITY };
+    const s = getComputedStyle(sc);
+    const sr = sc.getBoundingClientRect();
+    const clipLeft = sr.left + parseFloat(s.borderLeftWidth);
+    const clipTop = sr.top + parseFloat(s.borderTopWidth);
+    return {
+      ring,
+      slack: Math.min(r.left - ring - clipLeft, r.top - ring - clipTop),
+    };
+  });
+}
+
+/**
  * 等页面上所有 CSS / Web 动画播完，并再让出两帧。
  *
  * 用途有二：① axe 在入场动画中途（`animate-in` 300 ms）取到的是半透明色，对比度会误报；

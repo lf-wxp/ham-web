@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, focusRingSlack, test } from "./fixtures";
 
 /**
  * 全局搜索命令面板（`/` 唤起）：领域前缀语法 + 页面入口 + 本地日志 QSO。
@@ -139,4 +139,40 @@ test("全局搜索：本地日志 QSO 命中且排在最前", async ({ page }) =
   await expect(page.getByText(/BA1AAA · 2026-10-01 08:30/).first()).toBeVisible();
   await input.fill("dxcc:ja");
   await expect(page.getByText(/BA1AAA · 2026-10-01 08:30/)).toHaveCount(0);
+});
+
+// 回归：结果行是整宽链接，焦点环（2px 虚线 + 2px 偏移）会画出盒子外 4px；
+// 结果列表是 `overflow-y-auto`（两个方向都裁剪），此前把环的左右外沿切掉了。
+// 修法是 `-m-1.5 p-1.5` 把裁剪边界往外让 6px（与 `ui::DialogBody` 同一手法）。
+test("全局搜索：结果行的焦点环不被滚动容器裁掉", async ({ page }) => {
+  // 复现手机竖屏：弹层贴顶（`top-4`），结果列表带 `max-h-[60svh]` 滚动。
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "搜索" })).toBeVisible();
+  await page.keyboard.press("/");
+  const input = page.locator(`input[placeholder="${SEARCH}"]`);
+  await expect(input).toBeVisible();
+
+  // 文本输入框的脚本聚焦同样命中 `:focus-visible`，焦点环会画出来。
+  await input.focus();
+  await expect(input).toBeFocused();
+  const inputRing = await focusRingSlack(input);
+  expect(inputRing.ring).toBeGreaterThan(0);
+  expect(inputRing.slack).toBeGreaterThanOrEqual(1);
+
+  await input.fill("天线");
+  await expect(page.locator('[data-slot="search-results"] a').first()).toBeVisible();
+
+  // Tab 到第一条结果链接（清空按钮是 `tabindex="-1"`，不在 Tab 序列里）。
+  let tag = "";
+  for (let i = 0; i < 6 && tag !== "A"; i++) {
+    await page.keyboard.press("Tab");
+    tag = await page.evaluate(() => document.activeElement?.tagName ?? "");
+  }
+  expect(tag).toBe("A");
+
+  const rowRing = await focusRingSlack(page.locator('[data-slot="search-results"] a').first());
+  // 环宽必须是实际画出来的（`outline-style: none` 时不应误判为 0）。
+  expect(rowRing.ring).toBeGreaterThan(0);
+  expect(rowRing.slack).toBeGreaterThanOrEqual(1);
 });

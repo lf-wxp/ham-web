@@ -6,5 +6,7 @@ mod iss_card;
 mod solar_card;
 mod spots_card;
 mod wanted_card;
+mod watch_card;
+mod watch_window_row;
 
 pub use dashboard_page::DashboardPage;

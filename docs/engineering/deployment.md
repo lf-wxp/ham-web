@@ -40,7 +40,7 @@ cargo make docker-build && cargo make docker-run
 | --- | --- | --- |
 | `SITE_URL` | `https://ham.onlyxp.me` | 写入 Open Graph 与 `sitemap.xml` 的站点地址 |
 | `REBUILD_DATASET` | `0` | 设为 `1` 时构建阶段从远程 CSV 重新生成题库 |
-| `RUST_VERSION` | `1.99.1` | 构建阶段基础镜像的 tag。钉死具体版本，避免浮动的大版本 tag 让同一提交隔周重建出不同的二进制 |
+| `RUST_VERSION` | `1.100.0` | 构建阶段基础镜像的 tag。钉死具体版本，避免浮动的大版本 tag 让同一提交隔周重建出不同的二进制 |
 | `TRUNK_VERSION` | `0.21.14` | Trunk 版本 |
 | `WASM_BINDGEN_VERSION` | 空 | wasm-bindgen CLI 版本（构建全部解码 Worker，清单取自 `crates/*-worker`）；留空时自动取 `Cargo.lock` 中的版本 |
 

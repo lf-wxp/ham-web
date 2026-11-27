@@ -5,8 +5,8 @@ use leptos::prelude::*;
 use crate::exam_history::HistoryChart;
 use crate::share_score;
 use crate::ui::{
-  Button, ButtonLink, Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Size,
-  Variant,
+  Button, ButtonLink, Dialog, DialogBody, DialogDescription, DialogFooter, DialogHeader,
+  DialogTitle, Size, Variant,
 };
 
 use super::boss_verdict::BossVerdict;
@@ -94,9 +94,9 @@ pub fn ExamResultDialog(
         <DialogTitle>{move || t("exam.score-title")}</DialogTitle>
         <DialogDescription class="sr-only">{move || t("exam.exam-result-details-and")}</DialogDescription>
       </DialogHeader>
-      // 内容超过 60svh 时这里会滚动：滚动区必须能被键盘聚焦（`tabindex=0`），否则没有鼠标的用户
+      // 内容超过 60svh 时这里会滚动：滚动区必须能被键盘聚焦（`focusable`），否则没有鼠标的用户
         // 滚不动它（axe 的 `scrollable-region-focusable`）。Boss 判词加进来之后这个区域才开始溢出。
-        <div class="max-h-[60svh] space-y-2 overflow-y-auto overscroll-contain" tabindex="0">
+        <DialogBody class="max-h-[60svh] space-y-2" focusable=true>
         <BossVerdict score=score pass_line=pass_line weak=weak bank=bank />
         <div>{move || t("exam.score")} {move || score.get().correct} " / " {move || score.get().total}</div>
         <div class="text-sm text-muted-foreground">{move || t("exam.accuracy")} {move || score.get().percent()} "%"</div>
@@ -118,7 +118,7 @@ pub fn ExamResultDialog(
         }}
         {move || (open.get() && !weak.get()).then(|| view! { <HistoryChart /> })}
         <ShareCallToggle show=show_call />
-      </div>
+      </DialogBody>
       <DialogFooter>
         {move || {
           (wrong_count.get() > 0).then(|| {

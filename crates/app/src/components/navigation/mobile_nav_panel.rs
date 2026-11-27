@@ -8,7 +8,9 @@
 //!   分组改成小标题 + 网格（`mobile_nav_section.rs`）：手机一列、`sm` 两列、`lg` 三列。
 //! - **限高扣掉贴底层**：面板从导航下沿铺到「底部 Tab 的上沿」，最后一行入口不会被
 //!   底栏压住（`--fixed-bottom-h` 是 `ui::ScrollBar` 实测写下的同一个值；答题类页面把
-//!   底栏换成操作栏时它也自动跟随）。
+//!   底栏换成操作栏时它也自动跟随）。起点不用 `top-full`：它落在定位祖先的 padding
+//!   box 下沿，比含边框的 `--nav-h` 少一个 border-b（2px），而限高按 `--nav-h` 算 ——
+//!   两头不一致，面板底沿与底栏上沿之间正好露出一条 2px 的缝。
 //!
 //! 面板**不锁背景滚动**：它不是模态（没有遮罩、焦点可以正常离开），锁了会让菜单里的
 //! 长列表滚不动 —— 这里恰恰要靠滚动才看得完 116 个知识库入口。
@@ -52,7 +54,7 @@ pub(super) fn MobileNavPanel() -> impl IntoView {
     <nav
       id=MOBILE_NAV_PANEL_ID
       aria-label=move || t("shell.mobile-navigation")
-      class="motion-pop absolute inset-x-0 top-full z-[var(--z-bar)] flex max-h-[calc(100svh-var(--nav-h,66px)-var(--fixed-bottom-h,0px))] flex-col border-b-2 border-ink bg-card shadow-[0_4px_0_0_var(--pxl-shadow)] md:hidden"
+      class="motion-pop absolute inset-x-0 top-[var(--nav-h,66px)] z-[var(--z-bar)] flex max-h-[calc(100svh-var(--nav-h,66px)-var(--fixed-bottom-h,0px))] flex-col border-b-2 border-ink bg-card shadow-[0_4px_0_0_var(--pxl-shadow)] md:hidden"
     >
       <Tabs
         value=Signal::derive(move || tab.get())

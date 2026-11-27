@@ -658,11 +658,18 @@ pub fn SearchDialog() -> impl IntoView {
 
         // 结果列表。`md-search-text` 给现代风的命中高亮（`mark` 底色），像素风不能挂 ——
         // 样式表不分层，像素风里挂上会命中现代的 `mark` 配色。
-        <div class=if crate::kit::is_modern_at_mount() {
-          "md-search-text max-h-[60svh] overflow-y-auto overscroll-contain"
-        } else {
-          "max-h-[60svh] overflow-y-auto overscroll-contain"
-        }>
+        //
+        // `-m-1.5 p-1.5`：`overflow-y-auto` 两个方向都裁剪，结果行（整宽链接）的焦点环
+        // （2px 虚线 + 2px 偏移）会被切掉左右外沿 —— 与 `ui::DialogBody` 同一个坑、同一种
+        // 让法：裁剪边界往外让 6px（落在弹层自身的内边距里），内容位置不变。
+        <div
+          data-slot="search-results"
+          class=if crate::kit::is_modern_at_mount() {
+            "md-search-text -m-1.5 max-h-[60svh] overflow-y-auto overscroll-contain p-1.5"
+          } else {
+            "-m-1.5 max-h-[60svh] overflow-y-auto overscroll-contain p-1.5"
+          }
+        >
           {move || {
             let q = query_settled.get();
             let trimmed = q.trim();

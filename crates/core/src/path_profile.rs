@@ -9,7 +9,8 @@
 //! - 只在给定的采样点上判定，点与点之间的地形按「没有隆起」处理 —— 采样越密越可信；
 //! - 至少要有 3 个点（A、B 和中间至少一点）：只有两端时地面形状未知，无法判断曲率是否挡住路径，
 //!   所以不给结论，要求补一个中点；
-//! - 高度与海拔用同一基准；不含植被、建筑、地面反射与衍射附加损耗。
+//! - 高度与海拔用同一基准；不含植被、建筑与地面反射。衍射附加损耗由 [`crate::diffraction`] 按单个刃形
+//!   障碍另算（取 ν 最大的那一点）。
 
 use crate::fresnel::{
   FULL_CLEARANCE_RATIO, MIN_CLEARANCE_RATIO, Verdict, earth_bulge_m, fresnel_radius_m, wavelength_m,

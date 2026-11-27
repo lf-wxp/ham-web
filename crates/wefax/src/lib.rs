@@ -1,4 +1,4 @@
-//! WEFAX（WMO 短波气象传真）解码：AM 视频信号 → 灰度图。
+//! WEFAX（WMO 短波气象传真）解码：1500 / 2300 Hz 调频副载波或 AM 视频 → 灰度图。
 //!
 //! 纯 Rust、无外部依赖（除 WAV 解析），可同时用于 WASM 前端与命令行 / 测试。
 //!
@@ -7,18 +7,28 @@
 //! WEFAX 是图像传真：每行以一个同步脉冲开头，接着是像素，亮度逐像素变化。本实现采用的
 //! 简化模型是**幅度 = 亮度**（黑 = 高幅度、白 = 低幅度），基带音频直接就是视频信号。
 //!
+//! # 两套格式
+//!
+//! - **真实传真**（[`fax`]）：连续的 1500 / 2300 Hz 调频副载波，没有逐行同步；开头有起始音与
+//!   相位线，图像靠两端各自的时钟自由运行（所以会斜）。按 IOC 576 / 288、60–240 LPM 解，
+//!   相位线给出行首、行周期与黑白电平，没有相位线就用自相关与整段分布。**页面默认用这一套。**
+//! - **简化模型**（本文件与 [`fm`]）：本站最初自拟的口径——每行 380 像素、行首一个 5% 的同步
+//!   脉冲，调幅（幅度 = 亮度）或调频两种载体。真实电台不这么发，只剩合成录音自测用。
+//!   [`decode`] 会自己判断是调幅还是调频（[`Modulation`]），判错时用 [`decode_with`] 指定。
+//!
 //! # 诚实说明
 //!
-//! 这个模型**不等于**电台里收到的真实 HF 传真。据我们所知，短波气象传真走 SSB 时，
-//! 音频是 1500 Hz（黑）～ 2300 Hz（白）的**调频副载波**（中心约 1900 Hz），而不是原始
-//! 幅度；卫星 WEFAX（如 GOES）则是 2400 Hz 副载波上的调幅。本实现两者都**没有解调**：
-//! 拿真实电台的录音来解，得到的只会是噪声图。要解真实信号，需先对 1500/2300 Hz 做 FM
-//! 解调再进入下面的行同步，并按 WMO 规范校准同步时序与像素率。
+//! 真实传真解码用四段公开的真实录音核对过（见 `samples/README.md`）：相位线、行周期与黑白电平
+//! 的实测值符合预期，解出的 DWD 地面预报图能读出文字与等压线、竖线竖直。但**页面只给了录音、
+//! 没有给出解码后的图像**，所以没有逐像素对错，只有结构断言加人工目视。没有建模的东西列在
+//! [`fax`] 的模块文档里（起始音不触发、LSB、彩色传真、强噪声下的抗干扰）。卫星 WEFAX
+//! （2400 Hz 调幅副载波）不在这里。
 //!
-//! 行速率 / 同步脉冲占比 / 每行像素数同样是**自定口径**（120 LPM、同步占 5%、每行 380
-//! 像素），未对照真实 WMO 传真样本校准——往返合成对拍只证明「本实现自洽」。解调假设
-//! **行对齐**（首个同步脉冲后按固定行长切分）。真实录音的验收状态见
-//! `docs/domain/hardware-verification.md` 的 E4。
+//! 简化模型的几何（120 LPM、同步占 5%、每行 380 像素）是自定口径，往返合成对拍只证明
+//! 「本实现自洽」。它解调假设**行对齐**（首个同步脉冲后按固定行长切分）。
+
+pub mod fax;
+pub mod fm;
 
 /// 工作采样率（Hz）。
 pub const SAMPLE_RATE: u32 = 8_000;
@@ -61,6 +71,33 @@ pub struct WefaxImage {
   pub width: usize,
   pub height: usize,
   pub gray: Vec<u8>,
+}
+
+/// 输入的调制方式。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Modulation {
+  /// 幅度 = 亮度的基带视频。
+  Am,
+  /// 1500 / 2300 Hz 调频副载波（真实短波传真）。
+  Fm,
+}
+
+impl Modulation {
+  /// 给协议与页面用的稳定小写名。
+  #[must_use]
+  pub fn code(self) -> &'static str {
+    match self {
+      Self::Am => "am",
+      Self::Fm => "fm",
+    }
+  }
+}
+
+/// 解码结果：图，加上实际采用的解调方式（自动判断时页面要告诉用户）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Decoded {
+  pub image: WefaxImage,
+  pub modulation: Modulation,
 }
 
 /// 解码错误。
@@ -123,15 +160,12 @@ impl From<ham_web_wav::Error> for Error {
   }
 }
 
-/// 灰度图 → AM 视频采样（每行：同步脉冲 + 像素；只做 8000 Hz，供合成对拍）。
+/// 灰度图 → AM 视频采样（幅度 = 亮度；每行：同步脉冲 + 像素；只做 8000 Hz，供合成对拍）。
 ///
 /// 尺寸不符时返回 [`Error::InvalidImage`]：`gray` 比 `width × height` 短会越界 panic，
 /// 而 `width` 不等于 [`PIXELS_PER_LINE`] 会生成解码端按固定行长切不开的音频。
 pub fn modulate(image: &WefaxImage) -> Result<Vec<f32>, Error> {
-  if image.width != PIXELS_PER_LINE || image.gray.len() != image.width.saturating_mul(image.height)
-  {
-    return Err(Error::InvalidImage);
-  }
+  check_image(image)?;
   let mut out = Vec::with_capacity(image.height * LINE_SAMPLES);
   for row in 0..image.height {
     out.extend(std::iter::repeat_n(BLACK, SYNC_SAMPLES));
@@ -143,14 +177,41 @@ pub fn modulate(image: &WefaxImage) -> Result<Vec<f32>, Error> {
   Ok(out)
 }
 
-/// 解码一段 WAV 音频字节，返回重建的灰度图。
-pub fn decode(bytes: &[u8]) -> Result<WefaxImage, Error> {
-  let (samples, rate) = ham_web_wav::parse(bytes)?;
-  decode_samples(&samples, rate)
+/// 灰度图 → 调频副载波采样（真实短波传真的口径，见 [`fm`]）。
+pub fn modulate_fm(image: &WefaxImage) -> Result<Vec<f32>, Error> {
+  fm::modulate(image)
 }
 
-/// 从归一化单声道样本（[-1, 1]）与采样率解码。
+pub(crate) fn check_image(image: &WefaxImage) -> Result<(), Error> {
+  if image.width != PIXELS_PER_LINE || image.gray.len() != image.width.saturating_mul(image.height)
+  {
+    return Err(Error::InvalidImage);
+  }
+  Ok(())
+}
+
+/// 解码一段 WAV 音频字节，返回重建的灰度图（调制方式自动判断）。
+pub fn decode(bytes: &[u8]) -> Result<WefaxImage, Error> {
+  decode_with(bytes, None).map(|d| d.image)
+}
+
+/// 同 [`decode`]，可指定调制方式（`None` = 自动判断），并回报实际采用的方式。
+pub fn decode_with(bytes: &[u8], force: Option<Modulation>) -> Result<Decoded, Error> {
+  let (samples, rate) = ham_web_wav::parse(bytes)?;
+  decode_samples_with(&samples, rate, force)
+}
+
+/// 从归一化单声道样本（[-1, 1]）与采样率解码（调制方式自动判断）。
 pub fn decode_samples(samples: &[f32], sample_rate: u32) -> Result<WefaxImage, Error> {
+  decode_samples_with(samples, sample_rate, None).map(|d| d.image)
+}
+
+/// 同 [`decode_samples`]，可指定调制方式（`None` = 自动判断），并回报实际采用的方式。
+pub fn decode_samples_with(
+  samples: &[f32],
+  sample_rate: u32,
+  force: Option<Modulation>,
+) -> Result<Decoded, Error> {
   if sample_rate == 0 {
     return Err(Error::UnsupportedFormat);
   }
@@ -164,14 +225,60 @@ pub fn decode_samples(samples: &[f32], sample_rate: u32) -> Result<WefaxImage, E
   if working.len() < LINE_SAMPLES {
     return Err(Error::TooShort);
   }
+  let modulation = force.unwrap_or_else(|| {
+    if fm::looks_fm(working) {
+      Modulation::Fm
+    } else {
+      Modulation::Am
+    }
+  });
+  let image = match modulation {
+    Modulation::Am => decode_am(working)?,
+    Modulation::Fm => decode_fm(working)?,
+  };
+  Ok(Decoded { image, modulation })
+}
+
+/// 调幅视频：基带幅度直接是亮度。
+fn decode_am(working: &[f32]) -> Result<WefaxImage, Error> {
   // 同步门限按整段峰值取相对值：绝对电平会把留了 headroom 的录音整段判成无信号。
   let level = sync_level(working);
   // 找不到同步脉冲不等于「音频过短」：一段足够长的噪声也走这条路，文案要分开
   // （前者换录音，后者只需录长一点）。
-  let Some(sync_start) = find_trusted_sync(working, level) else {
+  let Some(sync_start) = find_trusted_sync(working, level, SYNC_SAMPLES) else {
     return Err(Error::NoSync);
   };
-  let lines = (working.len() - sync_start) / LINE_SAMPLES;
+  render(working.len(), sync_start, |off| {
+    mean(&working[off..off + PIXEL_SAMPLES])
+  })
+}
+
+/// 调频副载波：逐像素解出频率，折成亮度。
+fn decode_fm(working: &[f32]) -> Result<WefaxImage, Error> {
+  let track = fm::track(working);
+  let level = sync_level(&track);
+  // 轨迹按「以 i 起头的一个像素窗」估，同步脉冲只有 `SYNC − PIXEL + 1` 个窗完全落在里面，
+  // 两端各 `PIXEL − 1` 个窗跨在边界上、值不可靠：要求的连续长度要留出这个余量。
+  let Some(rough) = find_trusted_sync(&track, level, SYNC_SAMPLES - 2 * PIXEL_SAMPLES) else {
+    return Err(Error::NoSync);
+  };
+  // 粗行首最多早 `PIXEL − 1` 个样本，真行首在 `rough..rough + PIXEL` 里；挑「格子与像素对齐」
+  // 的那个。范围必须从 `rough` 起、不能再往前：整像素错位（把首像素当同步、把下一行的同步头
+  // 当末像素）残差同样为零，并列时取最早的，范围往前多伸一个像素就会取到错的那个。
+  let start = fm::best_alignment(working, rough..rough + PIXEL_SAMPLES).unwrap_or(rough);
+  let black = fm::measured_black_hz(working, start);
+  render(working.len(), start, |off| {
+    fm::window_hz(&working[off..off + PIXEL_SAMPLES]).map_or(0.0, |hz| fm::level_at(hz, black))
+  })
+}
+
+/// 按行首 `sync_start` 切行，`pixel(off)` 给出以 `off` 起头的一个像素窗的亮度。
+fn render(
+  len: usize,
+  sync_start: usize,
+  pixel: impl Fn(usize) -> f32,
+) -> Result<WefaxImage, Error> {
+  let lines = (len - sync_start) / LINE_SAMPLES;
   if lines == 0 {
     // 同步脉冲落在最后半秒里：只剩脉冲没有行，等同于解不出图。
     return Err(Error::TooShort);
@@ -180,8 +287,7 @@ pub fn decode_samples(samples: &[f32], sample_rate: u32) -> Result<WefaxImage, E
   for line in 0..lines {
     let base = sync_start + line * LINE_SAMPLES + SYNC_SAMPLES;
     for p in 0..PIXELS_PER_LINE {
-      let off = base + p * PIXEL_SAMPLES;
-      let amp = mean(&working[off..off + PIXEL_SAMPLES]);
+      let amp = pixel(base + p * PIXEL_SAMPLES);
       gray.push((amp.clamp(0.0, 1.0) * 255.0).round() as u8);
     }
   }
@@ -202,13 +308,13 @@ fn sync_level(samples: &[f32]) -> f32 {
 }
 
 /// 找第一个同步脉冲（持续高于 `level` 的段）的起始采样。
-fn find_sync(samples: &[f32], level: f32) -> Option<usize> {
+fn find_sync(samples: &[f32], level: f32, min_run: usize) -> Option<usize> {
   let mut run = 0usize;
   for (i, &s) in samples.iter().enumerate() {
     if s > level {
       run += 1;
-      if run >= SYNC_SAMPLES {
-        return Some(i + 1 - SYNC_SAMPLES);
+      if run >= min_run {
+        return Some(i + 1 - min_run);
       }
     } else {
       run = 0;
@@ -222,27 +328,27 @@ fn find_sync(samples: &[f32], level: f32) -> Option<usize> {
 /// 图像本身也有全黑的行或色块，单看「一段持续高电平」会把它们当成行同步，整幅图从此
 /// 错位（解出来是一堆斜纹而不是报错）。传真每行都以同步开头，所以拿「往后一到两行
 /// 是否同样以同步开头」做校验；录音太短、没有一整行可校验时按可信处理。
-fn find_trusted_sync(samples: &[f32], level: f32) -> Option<usize> {
+fn find_trusted_sync(samples: &[f32], level: f32, min_run: usize) -> Option<usize> {
   let mut from = 0usize;
   loop {
     let rest = samples.get(from..)?;
-    let offset = find_sync(rest, level)?;
+    let offset = find_sync(rest, level, min_run)?;
     let start = from + offset;
-    if repeats_each_line(samples, start, level) {
+    if repeats_each_line(samples, start, level, min_run) {
       return Some(start);
     }
     // 跳过这段黑电平：同一个黑块里的其它起点同样不可信，逐个重试只是白扫。
-    from = start + SYNC_SAMPLES;
+    from = start + min_run;
   }
 }
 
 /// `start` 之后的连续两行是否也以同步脉冲开头（可校验的行数不足时按通过处理）。
-fn repeats_each_line(samples: &[f32], start: usize, level: f32) -> bool {
+fn repeats_each_line(samples: &[f32], start: usize, level: f32, min_run: usize) -> bool {
   for lines in [1usize, 2] {
     let Some(at) = start.checked_add(lines * LINE_SAMPLES) else {
       return false;
     };
-    let Some(end) = at.checked_add(SYNC_SAMPLES) else {
+    let Some(end) = at.checked_add(min_run) else {
       return false;
     };
     // 录音在下一行之前就结束了：没有可校验的证据，不能因此把候选判死。
@@ -377,5 +483,266 @@ mod tests {
     let img = pattern();
     let samples = modulate(&img).expect("尺寸一致");
     assert!(decode_samples(&samples[..LINE_SAMPLES / 2], 8000).is_err());
+  }
+
+  // ---- 调频副载波 ----
+
+  /// 每行都有硬边：黑白交替、全档灰阶、整行全白 / 全黑，逼出像素之间的串扰。
+  fn hard_edges() -> WefaxImage {
+    let mut gray = Vec::new();
+    for row in 0..6 {
+      for col in 0..PIXELS_PER_LINE {
+        gray.push(match row {
+          0 => (col as u32 * 255 / (PIXELS_PER_LINE as u32 - 1)) as u8, // 灰阶全档
+          1 => {
+            if col % 2 == 0 {
+              0
+            } else {
+              255
+            }
+          }
+          2 => 255,
+          3 => 0,
+          4 => ((col * 37 + 11) % 256) as u8, // 伪随机
+          _ => {
+            if (col / 19) % 2 == 0 {
+              255
+            } else {
+              0
+            }
+          }
+        });
+      }
+    }
+    WefaxImage {
+      width: PIXELS_PER_LINE,
+      height: 6,
+      gray,
+    }
+  }
+
+  /// 确定性的伪随机噪声（线性同余），不引入依赖。
+  fn noise(len: usize, amplitude: f32, seed: u64) -> Vec<f32> {
+    let mut state = seed;
+    (0..len)
+      .map(|_| {
+        state = state
+          .wrapping_mul(6364136223846793005)
+          .wrapping_add(1442695040888963407);
+        ((state >> 33) as f32 / (1u64 << 31) as f32 * 2.0 - 1.0) * amplitude
+      })
+      .collect()
+  }
+
+  fn mean_abs_diff(a: &[u8], b: &[u8]) -> f64 {
+    a.iter()
+      .zip(b)
+      .map(|(x, y)| (f64::from(*x) - f64::from(*y)).abs())
+      .sum::<f64>()
+      / b.len() as f64
+  }
+
+  #[test]
+  fn fm_round_trips_pixel_for_pixel_including_hard_edges() {
+    let img = hard_edges();
+    let samples = modulate_fm(&img).expect("尺寸一致");
+    let d = decode_samples_with(&samples, SAMPLE_RATE, None).unwrap();
+    assert_eq!(d.modulation, Modulation::Fm);
+    assert_eq!(d.image, img);
+  }
+
+  #[test]
+  fn fm_is_independent_of_the_carrier_level() {
+    // 线性预测只看波形形状，不看幅度：录音电平差 20 倍也要逐像素一致。
+    let img = hard_edges();
+    let quiet: Vec<f32> = modulate_fm(&img)
+      .unwrap()
+      .iter()
+      .map(|s| s * 0.05)
+      .collect();
+    assert_eq!(decode_samples(&quiet, SAMPLE_RATE).unwrap(), img);
+  }
+
+  #[test]
+  fn fm_survives_a_16_bit_wav_round_trip() {
+    let img = hard_edges();
+    let wav = ham_web_wav::encode(&modulate_fm(&img).unwrap(), SAMPLE_RATE);
+    let d = decode_with(&wav, None).unwrap();
+    assert_eq!(d.modulation, Modulation::Fm);
+    assert_eq!((d.image.width, d.image.height), (img.width, img.height));
+    // 16 位量化噪声（约 -90 dB）远小于一个灰阶的频率分辨（800 Hz / 255），逐像素一致。
+    assert_eq!(d.image, img);
+  }
+
+  #[test]
+  fn fm_finds_the_line_start_at_any_offset() {
+    // 行首的粗位置会早几个样本，要靠「格子与像素对齐」微调回来；各种前导长度都得逐像素一致。
+    let img = hard_edges();
+    let samples = modulate_fm(&img).unwrap();
+    for lead in [0usize, 1, 3, 7, 9, 10, 11, 13, 250, 1999] {
+      let mut shifted = vec![0.0f32; lead];
+      shifted.extend_from_slice(&samples);
+      let d = decode_samples(&shifted, SAMPLE_RATE).unwrap();
+      assert_eq!(d.gray, img.gray, "前导 {lead} 个样本");
+    }
+  }
+
+  #[test]
+  fn fm_corrects_a_mistuned_receiver() {
+    // 接收机调谐差 ±60 Hz：整条副载波平移。黑电平从同步脉冲实测，白按 +800 Hz 推，
+    // 所以灰度不受影响。
+    let img = hard_edges();
+    for shift in [-60.0, -25.0, 25.0, 60.0] {
+      let samples = fm::modulate_shifted(&img, shift).unwrap();
+      let d = decode_samples(&samples, SAMPLE_RATE).unwrap();
+      assert_eq!(d.gray, img.gray, "调谐偏差 {shift} Hz");
+    }
+  }
+
+  #[test]
+  fn fm_resamples_other_rates() {
+    // 整数倍重采样（16 / 48 kHz）往返逐像素一致；非整数倍（11.025 / 44.1 kHz）靠线性插值，
+    // 硬边会被抹一点（实测平均 0.8–4.6 灰阶、最大 34），这里只防整幅错位或反相。
+    let img = hard_edges();
+    let samples = modulate_fm(&img).unwrap();
+    for rate in [11_025u32, 16_000, 44_100, 48_000] {
+      let mut up = ham_web_wav::resample(&samples, SAMPLE_RATE, rate);
+      // 重采样后的长度可能差几个样本；补一小段静音，别让最后一行因此被舍掉。
+      up.extend(vec![0.0f32; 64]);
+      let d = decode_samples_with(&up, rate, None).unwrap();
+      assert_eq!(d.modulation, Modulation::Fm, "{rate} Hz");
+      assert_eq!(d.image.height, img.height, "{rate} Hz");
+      if rate % SAMPLE_RATE == 0 {
+        assert_eq!(d.image.gray, img.gray, "{rate} Hz");
+      } else {
+        let mean = mean_abs_diff(&d.image.gray, &img.gray);
+        assert!(mean < 8.0, "{rate} Hz：平均误差 {mean:.1}");
+      }
+    }
+  }
+
+  #[test]
+  fn fm_a_black_burst_before_the_message_is_not_taken_as_sync() {
+    // 1500 Hz 的纯音（黑）排在正文之前：单看「一段黑」会当成行同步，要靠后续行校验挡掉。
+    let img = hard_edges();
+    let mut samples = modulate_fm(&WefaxImage {
+      width: PIXELS_PER_LINE,
+      height: 1,
+      gray: vec![255; PIXELS_PER_LINE],
+    })
+    .unwrap();
+    samples.truncate(900);
+    samples.extend(vec![0.0f32; 1_300]);
+    samples.extend(modulate_fm(&img).unwrap());
+    assert_eq!(decode_samples(&samples, SAMPLE_RATE).unwrap(), img);
+  }
+
+  #[test]
+  fn noise_costs_accuracy_but_not_the_image() {
+    // 每个像素只有 10 个样本，线性预测对噪声比平滑法敏感——把这个代价量出来而不是回避。
+    // 均匀噪声幅度占载波的 5% / 22%（约 28 / 16 dB 信噪比）时，图还在、行数对，实测平均误差
+    // 约 1.2 / 7.5 灰阶（最大 7 / 44）；这里的上限留了一倍多余量。
+    let img = hard_edges();
+    let clean = modulate_fm(&img).unwrap();
+    for (amplitude, mean_limit) in [(0.045f32, 3.0), (0.2, 15.0)] {
+      let n = noise(clean.len(), amplitude, 7);
+      let mut noisy: Vec<f32> = clean.iter().zip(&n).map(|(a, b)| a + b).collect();
+      noisy.extend(vec![0.0f32; 64]);
+      let d = decode_samples_with(&noisy, SAMPLE_RATE, None).unwrap();
+      assert_eq!(d.modulation, Modulation::Fm, "噪声 {amplitude}");
+      assert_eq!(d.image.height, img.height, "噪声 {amplitude}");
+      let mean = mean_abs_diff(&d.image.gray, &img.gray);
+      assert!(
+        mean < mean_limit,
+        "噪声 {amplitude}：平均误差 {mean:.1} 灰阶"
+      );
+    }
+  }
+
+  #[test]
+  fn auto_detection_tells_the_two_apart() {
+    let img = pattern();
+    let am = modulate(&img).unwrap();
+    let fm_audio = modulate_fm(&img).unwrap();
+    assert_eq!(
+      decode_samples_with(&am, SAMPLE_RATE, None)
+        .unwrap()
+        .modulation,
+      Modulation::Am
+    );
+    assert_eq!(
+      decode_samples_with(&fm_audio, SAMPLE_RATE, None)
+        .unwrap()
+        .modulation,
+      Modulation::Fm
+    );
+    assert!(!fm::looks_fm(&vec![0.0f32; 4000]), "静音不是调频");
+    // 白噪声的线性预测系数在 0 附近、折成 2 kHz，恰在频带里，所以「像调频」；它落到调频路径后
+    // 找不到同步脉冲，照样报 NoSync（见 `fm_noise_and_silence_report_no_sync`）。
+  }
+
+  #[test]
+  fn forcing_a_modulation_overrides_the_guess() {
+    let img = pattern();
+    let am = modulate(&img).unwrap();
+    // 指定对了：与自动一致。
+    let forced = decode_samples_with(&am, SAMPLE_RATE, Some(Modulation::Am)).unwrap();
+    assert_eq!(forced.image.gray, img.gray);
+    // 指定错了：按指定的走，不会悄悄改回自动判断的结果；调幅音频按调频解不出同步。
+    assert_eq!(
+      decode_samples_with(&am, SAMPLE_RATE, Some(Modulation::Fm)).err(),
+      Some(Error::NoSync)
+    );
+  }
+
+  #[test]
+  fn fm_noise_and_silence_report_no_sync() {
+    assert_eq!(
+      decode_samples_with(&noise(40_000, 0.5, 11), SAMPLE_RATE, Some(Modulation::Fm)).err(),
+      Some(Error::NoSync)
+    );
+    assert_eq!(
+      decode_samples_with(&vec![0.0f32; 40_000], SAMPLE_RATE, Some(Modulation::Fm)).err(),
+      Some(Error::NoSync)
+    );
+  }
+
+  #[test]
+  fn fm_modulate_rejects_inconsistent_images() {
+    let mut short = pattern();
+    short.gray.pop();
+    assert_eq!(modulate_fm(&short).err(), Some(Error::InvalidImage));
+  }
+
+  #[test]
+  fn measured_black_level_is_only_trusted_within_the_tuning_tolerance() {
+    // 调谐偏差在容限内：用实测值；超出容限（多半不是这路信号）：退回标称 1500 Hz。
+    let img = hard_edges();
+    for (shift, expected) in [
+      (100.0, 1600.0),
+      (-100.0, 1400.0),
+      (300.0, 1500.0),
+      (-300.0, 1500.0),
+    ] {
+      let samples = fm::modulate_shifted(&img, shift).unwrap();
+      let measured = fm::measured_black_hz(&samples, 0);
+      assert!(
+        (measured - expected).abs() < 0.5,
+        "偏差 {shift} Hz 量成 {measured}"
+      );
+    }
+  }
+
+  #[test]
+  fn fm_tone_estimate_matches_the_carrier_frequency() {
+    // 估计器本身：1500 / 1900 / 2300 Hz 的纯音在 10 个样本里就能估到 0.01 Hz 内。
+    for hz in [1500.0f64, 1900.0, 2300.0] {
+      let w: Vec<f32> = (0..PIXEL_SAMPLES)
+        .map(|n| (std::f64::consts::TAU * hz * n as f64 / 8000.0 + 0.7).sin() as f32)
+        .collect();
+      let est = fm::window_hz(&w).unwrap();
+      assert!((est - hz).abs() < 0.01, "{hz} Hz 估成 {est}");
+    }
+    assert!(fm::window_hz(&[0.0; 10]).is_none());
   }
 }

@@ -50,7 +50,7 @@
 
 ### 环境要求
 
-- Rust ≥ 1.99.1（与 `.tool-versions`、`Cargo.toml` 的 `rust-version`、CI 与 Dockerfile 的工具链一致）
+- Rust ≥ 1.100.0（与 `.tool-versions`、`Cargo.toml` 的 `rust-version`、CI 与 Dockerfile 的工具链一致）
 - `wasm32-unknown-unknown` 目标、[Trunk](https://trunkrs.dev)、[cargo-make](https://github.com/sagiegurari/cargo-make)
 - Node.js ≥ 22（**仅跑端到端测试需要**；构建与开发不需要 Node）
 
@@ -134,7 +134,7 @@ ADIF 3.1 日志与多台站 / 操作员、日志体检、QSL 全生命周期与�
 
 ## 技术栈
 
-Rust 2024（MSRV 1.99.1）+ [Leptos 0.8](https://leptos.dev)（CSR，编译为 WebAssembly）+ Tailwind CSS v4，由 [Trunk](https://trunkrs.dev) 构建；
+Rust 2024（MSRV 1.100.0）+ [Leptos 0.8](https://leptos.dev)（CSR，编译为 WebAssembly）+ Tailwind CSS v4，由 [Trunk](https://trunkrs.dev) 构建；
 服务器是 Axum 0.8（静态站点 + `/api/*` 同源代理）；数字信号解码是纯 Rust DSP，编译为 Worker，音频不上传服务器；
 任务编排用 [cargo-make](https://github.com/sagiegurari/cargo-make)；PWA 的 Service Worker 由构建时的 Rust 工具生成。
 许可 MIT，DominoEX / MFSK / THOR / LRPT / NAVTEX 解码器及其 Worker 例外为 GPL-3.0（见[许可](#许可)）。

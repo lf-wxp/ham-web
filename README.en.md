@@ -53,7 +53,7 @@ It is built for candidates preparing for Class A/B/C operating certificates, new
 
 ### Requirements
 
-- Rust ≥ 1.99.1, matching `.tool-versions`, `Cargo.toml`, CI, and the Dockerfile
+- Rust ≥ 1.100.0, matching `.tool-versions`, `Cargo.toml`, CI, and the Dockerfile
 - The `wasm32-unknown-unknown` target, [Trunk](https://trunkrs.dev), and [cargo-make](https://github.com/sagiegurari/cargo-make)
 - Node.js ≥ 22 (**only for end-to-end tests**; building and development do not need Node)
 
@@ -134,7 +134,7 @@ Useful entry points:
 
 ## Technology stack
 
-Rust 2024 (MSRV 1.99.1) with [Leptos 0.8](https://leptos.dev) compiled to WebAssembly, Tailwind CSS v4, and [Trunk](https://trunkrs.dev) for builds. Axum 0.8 serves static files and the `/api/*` proxy. Signal decoding is pure-Rust DSP compiled into Workers; audio is never uploaded. Task orchestration uses [cargo-make](https://github.com/sagiegurari/cargo-make), and a Rust build tool generates the PWA Service Worker.
+Rust 2024 (MSRV 1.100.0) with [Leptos 0.8](https://leptos.dev) compiled to WebAssembly, Tailwind CSS v4, and [Trunk](https://trunkrs.dev) for builds. Axum 0.8 serves static files and the `/api/*` proxy. Signal decoding is pure-Rust DSP compiled into Workers; audio is never uploaded. Task orchestration uses [cargo-make](https://github.com/sagiegurari/cargo-make), and a Rust build tool generates the PWA Service Worker.
 
 The project is MIT-licensed, with GPL-3.0 exceptions for selected decoders and their Workers (see [License](#license)). The layered stack, browser APIs, and toolchain are documented in [`docs/engineering/architecture.md`](docs/engineering/architecture.md).
 

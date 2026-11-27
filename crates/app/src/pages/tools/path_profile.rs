@@ -1,3 +1,4 @@
+use ham_web_core::diffraction::{NU_FLOOR, dominant_edge};
 use ham_web_core::fresnel::{K_STANDARD, Verdict};
 use ham_web_core::path_profile::{
   MAX_POINTS, ParseError, ParseErrorKind, ProfileError, ProfileParams, ProfileReport, analyze,
@@ -187,6 +188,28 @@ pub(super) fn PathProfile() -> impl IntoView {
                 &format!("{:.0}", worst.clearance_ratio.unwrap_or_default() * 100.0),
               ],
             );
+            // 单刃绕射：取 ν 最大的那个点（核心保证至少有一个内部点，否则 analyze 早就报错了）。
+            let diffraction = dominant_edge(&r).map(|edge| {
+              let line = if edge.nu <= NU_FLOOR {
+                tf(
+                  "tools.diffraction-clear",
+                  &[&fmt_num(edge.dist_km), &format!("{:.2}", edge.nu)],
+                )
+              } else {
+                tf(
+                  "tools.diffraction-summary",
+                  &[
+                    &fmt_num(edge.dist_km),
+                    &format!("{:.2}", edge.nu),
+                    &format!("{:.1}", edge.loss_db),
+                  ],
+                )
+              };
+              let blocking = (edge.blocking_points >= 2).then(|| {
+                tf("tools.diffraction-blocking", &[&edge.blocking_points.to_string()])
+              });
+              (edge, line, blocking)
+            });
             let worst_index = r.worst_index;
             let rows = r
               .rows
@@ -231,6 +254,21 @@ pub(super) fn PathProfile() -> impl IntoView {
                 <div>{worst_text}</div>
                 <div>{advice}</div>
               </div>
+              {diffraction
+                .map(|(edge, line, blocking)| {
+                  view! {
+                    <div
+                      class="space-y-1 bg-inset px-3 py-2 text-sm tabular-nums text-muted-foreground"
+                      data-testid="diffraction"
+                      data-nu=format!("{:.4}", edge.nu)
+                      data-loss=format!("{:.3}", edge.loss_db)
+                      data-blocking=edge.blocking_points.to_string()
+                    >
+                      <div class="text-foreground">{line}</div>
+                      {blocking.map(|text| view! { <div>{text}</div> })}
+                    </div>
+                  }
+                })}
               <PathProfileChart report=r />
               <p class="text-xs text-muted-foreground">{move || t("tools.profile-chart-note")}</p>
               <Table class="min-w-[560px]" wrapper_class="border" density=crate::ui::TableDensity::Compact>
@@ -253,6 +291,9 @@ pub(super) fn PathProfile() -> impl IntoView {
       </div>
       <p class="sm:col-span-2 text-xs text-muted-foreground">
         {move || t("tools.profile-assumptions")}
+      </p>
+      <p class="sm:col-span-2 text-xs text-muted-foreground">
+        {move || t("tools.diffraction-note")}
       </p>
     </div>
   }

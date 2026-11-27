@@ -19,6 +19,12 @@ use crate::presence::use_presence;
 pub fn ModernDialog(
   open: RwSignal<bool>,
   #[prop(into)] title: Signal<String>,
+  /// 是否显示右上角的关闭按钮。
+  ///
+  /// 「点遮罩 / Esc 就能关」的搜索面板不需要它：多一个 × 只是多一条要解释的路
+  /// （与像素风 `ui::Dialog` 的 `show_close=false` 同一条约定）。
+  #[prop(optional, default = true)]
+  show_close: bool,
   children: ChildrenFn,
 ) -> impl IntoView {
   use_escape_close(open);
@@ -52,14 +58,19 @@ pub fn ModernDialog(
               >
                 <div class="md-modal-head">
                   <h2 class="md-h2">{move || title.get()}</h2>
-                  <button
-                    type="button"
-                    class="md-icon-btn"
-                    aria-label=move || t("log.close")
-                    on:click=move |_| open.set(false)
-                  >
-                    <ModernIcon kind=MIcon::Close />
-                  </button>
+                  {show_close
+                    .then(|| {
+                      view! {
+                        <button
+                          type="button"
+                          class="md-icon-btn"
+                          aria-label=move || t("log.close")
+                          on:click=move |_| open.set(false)
+                        >
+                          <ModernIcon kind=MIcon::Close />
+                        </button>
+                      }
+                    })}
                 </div>
                 <div class="md-modal-body">{children.with_value(|c| c())}</div>
               </div>

@@ -11,7 +11,7 @@
 // `encode(params)`（目前是 navtex / mfsk / thor / dominoex：这四个核心 crate 都是 GPL-3.0，发端不能链进
 // MIT 的主包，只能放在各自的 worker 里；MIT 的 Olivia / WSPR / FT8 / Feld Hell 发端直接链进主包）；
 // 没导出 `encode` 的 codec 收到编码请求回 `encode-unsupported:<codec>`。
-// params 按解码器取字段（wspr.baseHz / rtty.markHz / olivia.mode / dominoex.mode / mfsk.mode / thor.mode，缺省回退各自默认值）。
+// params 按解码器取字段（wspr.baseHz / rtty.markHz / olivia.mode / dominoex.mode / mfsk.mode / thor.mode / wefax.format·lpm·ioc·modulation，缺省回退各自默认值）。
 //
 // 一个 Worker 只服务一个 codec：各胶水脚本顶层都是 `let wasm_bindgen = ...`，同一个 Worker 里
 // 再 `importScripts` 第二个胶水会抛 `Identifier 'wasm_bindgen' has already been declared`。

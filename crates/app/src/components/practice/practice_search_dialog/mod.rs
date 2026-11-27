@@ -41,14 +41,16 @@ pub fn PracticeSearchDialog(
     .into_any();
   }
   view! {
-    <Dialog open=open class="sm:max-w-[640px]">
+    <Dialog open=open class="sm:max-w-[640px]" show_close=false>
       <DialogHeader>
         <DialogTitle>{move || t("exam.search-questions")}</DialogTitle>
         <DialogDescription>{move || t("exam.type-a-question-number")}</DialogDescription>
       </DialogHeader>
-      // `p-1 -m-1`：滚动容器会裁掉子元素溢出的内容，输入框 3px 的聚焦环必须留出余量；
-      // 负外边距把多出来的 4px 抵掉，视觉位置不变。
-      <div class="-m-1 min-h-0 space-y-3 overflow-auto p-1">
+      // `-m-1.5 p-1.5`：`overflow-auto` 会裁掉子元素越出的内容，而聚焦环是「2px 虚线 + 2px 偏移」
+      // = 盒子外 4px；容器内距必须**大于** 4px 才有余量。此前是 `-m-1 p-1`（4px），环的外沿正好压在裁剪边界上，
+      // 分数 DPR 的手机上左/上沿会被切掉一像素。这里改用 6px（与 `ui::DialogBody` 同一手法），
+      // 负外边距抵掉多出来的 6px，视觉位置不变。
+      <div class="-m-1.5 min-h-0 space-y-3 overflow-auto p-1.5">
         <Input
           id="jump"
           value=input

@@ -104,7 +104,7 @@ WSPR / RTTY / Olivia / DominoEX / MFSK / THOR / NAVTEX / LRPT / FT8 / Feld Hell 
 | `lrpt` | —（页面发 `null`） | `{ width, height, rgb: Uint8Array }`（RGB 三平面交错） | `/lrpt-worker/` |
 | `ft8` | `protocol`（`"ft8"`；`"ft4"`） | `{ messages: [{ text, freq_hz, time_sec, sync_db }], unsupported, slots }`（`time_sec` 距录音开头；`sync_db` 是同步强度而非 SNR；`unsupported` 是 CRC 通过但类型无字段解析的条数；`slots` 是逐个解码的时隙数） | `/ft8-worker/` |
 | `hell` | —（页面发 `null`） | `{ text }` | `/hell-worker/` |
-| `wefax` | —（页面发 `null`） | `{ width, height, gray: Uint8Array }`（灰度图一字节一像素） | `/wefax-worker/` |
+| `wefax` | `format`（`"fax"` 缺省 / `"simplified"`）；`fax` 下 `lpm`（`"60"` / `"90"` / `"100"` / `"120"` 缺省 / `"180"` / `"240"`）与 `ioc`（`"576"` 缺省 / `"288"`）；`simplified` 下 `modulation`（`"auto"` 缺省 / `"fm"` / `"am"`）。不认识的值按缺省 | `{ width, height, gray: Uint8Array, format }`（灰度图一字节一像素）；`format: "fax"` 另有 `lpm`（实测行速率）、`phasingLines`（相位线行数，0 = 没找到）、`blackHz` / `whiteHz`、`levels`（`"phasing"` / `"nominal"` / `"stretched"`）；`format: "simplified"` 另有 `modulation`（**实际采用**的 `"fm"` / `"am"`） | `/wefax-worker/` |
 | `afsk1200` | —（页面发 `null`） | `{ frames: [{ kind: "ui", source, destination, info } \| { kind: "raw", hex }], truncated }`；录音超过 60 秒时 `truncated: true`，只解前一段 | `/afsk1200-worker/` |
 
 ### 编码（`op: "encode"`）
@@ -146,7 +146,7 @@ RX 下沉到 Worker、核心没搬，worker 直接 `use ham_web_core::afsk1200`�
 的导出契约，不要求核心独立成 crate，所以这不构成例外。
 
 页面体积上限（`DecodeConfig::max_bytes`，超出直接报错、不发 Worker）：8 MiB（RTTY /
-Olivia / DominoEX / MFSK / THOR / NAVTEX / FT8 / Feld Hell / WEFAX / AFSK1200）、32 MiB（SSTV / WSPR）、96 MiB（APT）、128 MiB（LRPT，
+Olivia / DominoEX / MFSK / THOR / NAVTEX / FT8 / Feld Hell / AFSK1200）、24 MiB（WEFAX：一幅真实气象图要发十分钟左右，11.025 kHz 约 13 MB）、32 MiB（SSTV / WSPR）、96 MiB（APT）、128 MiB（LRPT，
 也是唯一 `transfer: true` 的页面）。8 MiB 这个值统一取自 `decode_session::MAX_UPLOAD_BYTES`，
 各页不要再各写一份。
 

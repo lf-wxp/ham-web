@@ -52,7 +52,7 @@
 | `sat-watch-notified` | 已提醒过的过境，避免重复通知 |
 | `grid-map-filters` | 日志网格地图筛选条件（含是否显示通联路径） |
 | `listen-settings` | 听题模式设置（题源、语速、思考时间、是否读解析、各题源听到的位置） |
-| `cat-settings` | 电台 CAT 协议、波特率与 CI-V 地址，以及频率护栏按哪张操作证判定（`class`：`"A"` / `"B"` / `"C"`，没选就没有这个字段） |
+| `cat-settings` | 电台 CAT 协议、波特率与 CI-V 地址，以及频率护栏按哪张操作证判定（`class`：`"A"` / `"B"` / `"C"`，没选就没有这个字段；`/dashboard` 的「现在守哪一段」卡也读写这一个字段） |
 | `qsl-label-layout` | QSL 标签纸版式 |
 | `card-review` | 知识卡片复习进度（每张卡的难度系数、间隔、下次复习时间，及今日已学新卡数） |
 | `app:changelog-seen` | 已看过的更新说明日期 |

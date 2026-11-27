@@ -8,6 +8,7 @@ use ham_web_core::most_wanted::wanted_prefix;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 
+use super::dx_facts_block::DxFactsBlock;
 use crate::data;
 use crate::i18n::{t, tf};
 use crate::pages::log::use_log_store;
@@ -81,6 +82,9 @@ pub fn CallsignLookup(input: RwSignal<String>) -> impl IntoView {
       untrack(run_online);
     }
   });
+
+  // 只跟「有没有呼号」：整块的存活不该随每个字符重建（重读设计册、重拉太阳数据、重建定时器）。
+  let has_call = Memo::new(move |_| !input.get().trim().is_empty());
 
   // 本地解析结果：`(标签, 值)`。
   let rows = move || -> Vec<(&'static str, String)> {
@@ -260,6 +264,20 @@ pub fn CallsignLookup(input: RwSignal<String>) -> impl IntoView {
           </div>
         }
         .into_any()
+      }}
+
+      // 这条 DX 值不值得叫：方位、可靠度、晨昏圈、日志与天线增益摆在一起，只在这里出现一次。
+      {move || {
+        has_call
+          .get()
+          .then(|| {
+            view! {
+              <DxFactsBlock
+                call=Signal::derive(move || input.get().trim().to_ascii_uppercase())
+                home_grid=Signal::derive(move || home_grid.get())
+              />
+            }
+          })
       }}
 
       {move || {

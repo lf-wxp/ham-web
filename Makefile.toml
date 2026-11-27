@@ -561,15 +561,17 @@ script_runner = "@shell"
 script = "sh scripts/build-decode-worker.sh hell"
 
 [tasks.wefax-sample]
-description = "生成合成 WEFAX 测试样本 WAV：cargo make wefax-sample"
+description = "生成合成 WEFAX 测试样本 WAV（简化模型的调幅 / 调频各一份，加一份真实格式）：cargo make wefax-sample"
 script_runner = "@shell"
 script = '''
 mkdir -p tmp
 cargo run -q -p ham-web-wefax --release --example generate_sample -- tmp/wefax-sample.wav
+cargo run -q -p ham-web-wefax --release --example generate_sample -- tmp/wefax-fm-sample.wav --fm
+cargo run -q -p ham-web-wefax --release --example generate_sample -- tmp/wefax-fax-sample.wav --fax
 '''
 
 [tasks.wefax-decode]
-description = "命令行解码 WEFAX 样本：FILE=tmp/wefax-sample.wav cargo make wefax-decode"
+description = "命令行解码 WEFAX 样本（简化模型，自动判断调幅 / 调频）：FILE=tmp/wefax-fm-sample.wav cargo make wefax-decode；真实格式见 decode_sample 的 --fax"
 script_runner = "@shell"
 script = '''
 cargo run -q -p ham-web-wefax --release --example decode_sample -- "${FILE:-tmp/wefax-sample.wav}"

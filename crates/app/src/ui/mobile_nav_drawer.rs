@@ -173,10 +173,13 @@ pub fn MobileNavDrawer(
         <div data-slot="sheet-header" class="flex flex-col gap-1.5 p-4">
           <h2 data-slot="sheet-title" class="text-foreground">{move || title.get()}</h2>
         </div>
-        // `pt-1`：打开时焦点自动落在第一个列表项（`focus_first`），它的 focus-visible
-        // 聚焦环画在元素外框之外 —— 顶部不留 4px 余量会被 overflow 容器裁掉
-        // （`ui/README.md` §3「状态反馈」的坑）。
-        <div class="overflow-y-auto overscroll-contain px-4 pb-4 pt-1">{children()}</div>
+        // 打开时焦点自动落在第一个列表项（`focus_first`），它的 focus-visible 聚焦环画在
+        // 元素外框之外 4px —— 容器顶部的内距必须**大于** 4px 才有余量。此前 `pt-1`（4px）正好
+        // 等于环宽（余量 0），分数 DPR 上首项的环会被切掉。这里提到 6px，`-mt-0.5` 抵掉多出的
+        // 2px、内容位置不变（同一手法见 `ui::DialogBody`）。
+        <div class="-mt-0.5 overflow-y-auto overscroll-contain px-4 pb-4 pt-1.5">
+          {children()}
+        </div>
       </Sheet>
     }
   }

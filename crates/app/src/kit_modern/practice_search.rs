@@ -25,7 +25,8 @@ pub fn ModernPracticeSearch(
   };
 
   view! {
-    <ModernDialog open=open title=Signal::derive(move || t("exam.search-questions"))>
+    // 不挂关闭按钮：与像素风同一约定（点遮罩 / Esc / 「跳转」都能关）。
+    <ModernDialog open=open title=Signal::derive(move || t("exam.search-questions")) show_close=false>
       <p class="md-muted md-sm">{move || t("exam.type-a-question-number")}</p>
 
       <super::ModernInput
