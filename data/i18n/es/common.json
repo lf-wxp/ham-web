@@ -109,6 +109,10 @@
   "common.cross-origin-cors": "CORS entre dominios",
   "common.d": "{}d {}:{}:{}",
   "common.data-meta-source-list": "{ \"data\": …, \"meta\": { \"source\": … } }; en los endpoints de lista, meta incluye total y next_cursor.",
+  "common.data-partial-notice": "Algunos datos en tiempo real no están disponibles temporalmente; los datos obtenidos y el material de consulta de esta página no se ven afectados.",
+  "common.data-snapshot-incomplete-notice": "Los datos en tiempo real no están disponibles temporalmente: lo que se muestra procede de una instantánea guardada en {} y puede no estar actualizada, y otros datos no tienen ni valores en vivo ni instantánea; el material de consulta y las calculadoras locales de esta página siguen funcionando.",
+  "common.data-snapshot-notice": "Los datos en tiempo real no están disponibles temporalmente: parte del contenido procede de una instantánea guardada en {} y puede no estar actualizada; el material de consulta y las calculadoras locales de esta página siguen funcionando.",
+  "common.data-unavailable-notice": "Los datos en tiempo real de esta página no están disponibles; el material de consulta y las calculadoras locales siguientes siguen funcionando. Vuelve a abrir la página al recuperar la conexión para actualizarlos.",
   "common.days": {
     "one": "{} día",
     "other": "{} días"

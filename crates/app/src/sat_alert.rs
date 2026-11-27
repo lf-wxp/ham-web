@@ -35,14 +35,28 @@ pub fn save(w: &SatWatch) {
   storage::set_json(WATCH_KEY, w);
 }
 
-/// 查询未来 24 小时过境（`group` 为 `amateur` 或 `weather`）。
-pub async fn fetch_passes(w: &SatWatch, group: &str) -> Result<Vec<Pass>, crate::data::AppError> {
-  let url = format!(
+fn passes_url(w: &SatWatch, group: &str) -> String {
+  format!(
     "/api/passes?lat={}&lon={}&min_elev={}&group={}",
     w.lat, w.lon, w.min_elev, group
-  );
+  )
+}
+
+/// 查询未来 24 小时过境（`group` 为 `amateur` 或 `weather`）。页面主动查询用这个：
+/// 失败会计入页头的「实时数据」提示。
+pub async fn fetch_passes(w: &SatWatch, group: &str) -> Result<Vec<Pass>, crate::data::AppError> {
   // 冷启动时服务端要等上游 TLE，用放宽的超时（见 `fetch_external_json_slow`）。
-  crate::data::fetch_external_json_slow::<PassesApi>(&url)
+  crate::data::fetch_external_json_slow::<PassesApi>(&passes_url(w, group))
+    .await
+    .map(|api| api.passes)
+}
+
+/// 全局提醒的后台查询：与用户此刻看的页面无关，不计入页头提示（见 `fetch_external_json_background`）。
+async fn fetch_passes_background(
+  w: &SatWatch,
+  group: &str,
+) -> Result<Vec<Pass>, crate::data::AppError> {
+  crate::data::fetch_external_json_background::<PassesApi>(&passes_url(w, group))
     .await
     .map(|api| api.passes)
 }
@@ -99,7 +113,7 @@ fn check_amateur(w: &SatWatch) {
     CACHE.with_borrow_mut(|c| c.inflight = true);
     let w = w.clone();
     spawn_local(async move {
-      let result = fetch_passes(&w, "amateur").await;
+      let result = fetch_passes_background(&w, "amateur").await;
       CACHE.with_borrow_mut(|c| {
         c.inflight = false;
         if let Ok(passes) = result {
@@ -155,7 +169,7 @@ fn check_apt(w: &SatWatch) {
     CACHE.with_borrow_mut(|c| c.apt_inflight = true);
     let w = w.clone();
     spawn_local(async move {
-      let result = fetch_passes(&w, "weather").await;
+      let result = fetch_passes_background(&w, "weather").await;
       CACHE.with_borrow_mut(|c| {
         c.apt_inflight = false;
         if let Ok(passes) = result {

@@ -89,5 +89,9 @@
 
 约定：成功 `{ "data", "meta" }`、失败 `{ "error": { "code", "message" } }`；带 `ETag`（`If-None-Match` → 304）；`/api/v1/*` 开放 CORS（内部 `/api/*` 保持同源）；独立配额——匿名 30 次/分/IP，携带 `Authorization: Bearer <key>` 600 次/分，超限返回 429 + `Retry-After`。契约单一事实来源是 `crates/core/src/api_v1.rs`，文档页、`openapi.json` 与服务端路由测试共用，不会漂移。
 
-> 依赖 `/api/*` 的页面：`/dashboard`、`/solar`、`/dx-spots`、`/most-wanted`、`/satellites`、`/grid-map`、`/portable-map`、`/log`、`/repeater`、`/portable`、`/psk-reporter`、`/rbn`，以及首页的实时传播面板（现代风 `/api/solar`）／传播卡片（像素风）；纯静态托管（无后端）时这些页面降级为「数据暂不可用」。其余专题页与题库页均为本地静态数据或纯前端计算（如 `/tools`、`/grayline`、`/morse`、`/sdr-map`、`/events`），无网络也完全可用。
+> 依赖 `/api/*` 的页面：`/dashboard`、`/solar`、`/dx-spots`、`/most-wanted`、`/satellites`、`/grid-map`、`/portable-map`、`/log`、`/repeater`、`/portable`、`/psk-reporter`、`/rbn`，以及首页的实时传播面板（现代风 `/api/solar`）／传播卡片（像素风）。其余专题页与题库页均为本地静态数据或纯前端计算（如 `/tools`、`/grayline`、`/morse`、`/sdr-map`、`/events`），无网络也完全可用。
+>
+> **降级口径（纯静态托管 / 离线）**：取数成功（且响应能解析）时把响应原文写进本机 `api-cache:<url>`（7 天内有效；时间戳损坏的条目按没有缓存处理）；之后失败时，页头按来源分级提示，而不是把整页换成「数据暂不可用」——有快照就写明「部分内容来自某时保存的离线快照、可能不是最新」，同页另有块既无实时也无快照时改用「另有部分数据缺失」的措辞；没有快照时，部分接口失败说是局部缺失，全部失败才说本页实时数据不可用。任何一档都不替换页内内容：知识说明、波段表与本地计算照常渲染。
+>
+> 计入提示的只有**页面主动取的**同源 `/api/*` 数据接口：推送与账号接口不参与（它们是配置 / 同步）；后台任务（全局过境提醒，走 `fetch_external_json_background`）不参与——它与用户此刻看的页面无关，离线时必然失败，计入会让纯静态页也冒出提示。走 live 模式（`fetch_external_json_live`，如 KP 预报、卫星轨迹）的接口同样计入实时 / 不可用，只是不读写离线缓存、因此不会出现「快照」档。来源记录只属于当前页：请求发起时记下所在路径、响应回来时对不上就丢弃，路由切换时整体清空。状态判定在 `crates/core/src/data_status.rs`，提示组件是 `crates/app/src/components/common/data_status_notice.rs`。
 

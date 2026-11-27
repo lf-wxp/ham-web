@@ -219,7 +219,7 @@ Pages are grouped into three modules. The route table lives in `crates/app/src/a
 ## FAQ
 
 - **Question bank is empty or returns 404?** Confirm that `A/B/C.json` and `config.json` exist under `public/questions/`; run `cargo make dataset` if needed.
-- **Live-data pages say “temporarily unavailable”?** They need the server’s `/api/*` proxy (`cargo make dev-full` or `cargo make serve`). Static hosting cannot forward upstream requests, so this is expected.
+- **Live-data pages say “temporarily unavailable”?** They need the server’s `/api/*` proxy (`cargo make dev-full` or `cargo make serve`). Static hosting cannot forward upstream requests; the page header then shows the last successful offline snapshot or a graded notice, while reference material and local calculators keep working (see [`docs/reference/api.md`](docs/reference/api.md)).
 - **First build is slow?** Trunk downloads Tailwind, wasm-bindgen, and wasm-opt and compiles dependencies; later builds are incremental.
 - **wasm-opt reports a `bulk memory` error?** `index.html` enables the required feature through `data-wasm-opt-params`; use the wasm-opt version pinned in `Trunk.toml`.
 - **The deployed page does not change after an update?** The Service Worker needs one refresh to activate. A “new version found” prompt appears hourly; you can also update manually in DevTools → Application → Service Workers.

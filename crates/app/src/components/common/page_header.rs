@@ -91,6 +91,8 @@ pub fn PageHeader(
     let children: Children = children.unwrap_or_else(|| Box::new(|| ().into_any()));
     return view! {
       <crate::kit_modern::ModernPageHead title=title subtitle=subtitle actions=actions children=children />
+      // 降级提示跟着页头走：两套皮肤共用同一个挂载点，实时页不必各写一份。
+      <super::DataStatusNotice />
     }
     .into_any();
   }
@@ -215,6 +217,7 @@ pub fn PageHeader(
           None => view! { {c()} }.into_any(),
         })}
     </header>
+    <super::DataStatusNotice />
   }
   .into_any()
 }

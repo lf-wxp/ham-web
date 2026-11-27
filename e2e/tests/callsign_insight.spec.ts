@@ -44,7 +44,9 @@ test("呼号查询：没通联过的呼号如实说，没有本台网格时不�
   // 页面上另有「呼号结构」「中国呼号分区」等含「呼号」的无障碍名，必须精确匹配输入框。
   await page.getByLabel("呼号", { exact: true }).fill("K1ZZ");
   await expect(page.getByText("还没有通联过")).toBeVisible();
-  await expect(page.getByText("先在台站信息里填网格")).toBeVisible();
+  // 同一句提示在下方 DX 事实块的方位 / 可靠度 / 晨昏圈里也会出现，按「方位」这一行定位。
+  const azimuthRow = page.getByText("方位（从本台）", { exact: true }).locator("..");
+  await expect(azimuthRow.getByText("先在台站信息里填网格", { exact: true })).toBeVisible();
   await expect(page.getByText(/^\d{2,3}°$/)).toHaveCount(0);
 });
 

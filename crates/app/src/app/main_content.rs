@@ -67,6 +67,8 @@ pub(super) fn MainContent() -> impl IntoView {
   });
   Effect::new(move |_| {
     let _ = location.pathname.get();
+    // 实时数据的来源记录只属于当前页：换页就清（响应要等网络，必然晚于这一步）。
+    crate::data::reset_page_api_status();
     request_animation_frame(move || {
       if popped.get_value() {
         popped.set_value(false);

@@ -1,18 +1,21 @@
 //! 题库数据加载：配置文件、题库 JSON、版本可用性状态（带内存缓存）。
 
 use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use std::rc::Rc;
 use std::sync::{Arc, OnceLock};
 
+use ham_web_core::data_status::{ApiOrigin, is_snapshot_fresh, sanitize_snapshot_time};
 use ham_web_core::exam_review::ReviewItem;
 use ham_web_core::explanation_index::ExplanationIndex;
 use ham_web_core::glossary::{GLOSSARY_FILES, Glossary};
 use ham_web_core::{Bank, BankConfig, QuestionItem, QuestionSearchEntry, QuestionVersion};
-use leptos::prelude::{ArcRwSignal, Get, ReadSignal, RwSignal, Signal, Track, Update, With};
+use leptos::prelude::{
+  ArcRwSignal, Get, ReadSignal, RwSignal, Set, Signal, Track, Update, With, WithUntracked,
+};
 use leptos::task::spawn_local;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestCache, RequestInit, Response};
 
@@ -93,12 +96,11 @@ async fn fetch_text(url: &str, mode: CacheMode) -> Result<String, AppError> {
 }
 
 /// API 离线缓存：实时数据页在离线时回退到「最后一次成功拉取」的数据，而非硬降级为
-/// 「数据暂不可用」。缓存以响应原文（text）存储、以 URL 为 key，避免与各接口的解析类型耦合。
+/// 「数据暂不可用」（来源如何对外提示见 `page_api_status`）。缓存以响应原文（text）存储、
+/// 以 URL 为 key，避免与各接口的解析类型耦合。
 const API_CACHE_PREFIX: &str = "api-cache:";
 /// 单条缓存最大 UTF-16 单元数（约 512 KB），超过不缓存，避免挤占 localStorage 配额。
 const API_CACHE_MAX_UNITS: usize = 512 * 1024;
-/// 缓存回退的最大有效期（7 天，毫秒），超过则认为过于陈旧、不再回退。
-const API_CACHE_MAX_AGE_MS: i64 = 7 * 24 * 60 * 60 * 1000;
 
 /// 一条 API 缓存：`{ ts: 写入时间戳(ms), text: 响应原文 }`。
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -123,13 +125,93 @@ fn api_cache_put(url: &str, text: &str) {
   crate::util::storage::set_json_silent(&api_cache_key(url), &entry);
 }
 
-/// 读取仍处于有效期内的缓存响应原文。
-fn api_cache_get(url: &str) -> Option<String> {
+/// 读取仍处于有效期内的缓存响应原文与写入时间；时间与 TTL 的口径来自 core。
+/// 时间戳损坏（localStorage 被改写）的条目按「没有缓存」处理，不拿一个不可信的时间去对用户说话。
+fn api_cache_get(url: &str) -> Option<(String, i64)> {
   let entry = crate::util::storage::get_json::<ApiCacheEntry>(&api_cache_key(url))?;
-  if now_ms() - entry.ts > API_CACHE_MAX_AGE_MS {
+  let now = now_ms();
+  let cached_at_ms = sanitize_snapshot_time(entry.ts, now)?;
+  if !is_snapshot_fresh(cached_at_ms, now) {
     return None;
   }
-  Some(entry.text)
+  Some((entry.text, cached_at_ms))
+}
+
+/// 当前这一页各接口的来源。只存「此刻所在页」的结果：路由一变就整体清空
+/// （见 [`reset_page_api_status`]），换页后旧页的失败不会串到新页的提示里。
+#[derive(Clone, Default)]
+pub struct PageApiStatus {
+  pub origins: BTreeMap<String, ApiOrigin>,
+}
+
+thread_local! {
+  /// 用 Arc 版信号，不依附任何组件的生命周期（页头会重建，状态不能跟着丢）。
+  static PAGE_API_STATUS: ArcRwSignal<PageApiStatus> = ArcRwSignal::new(PageApiStatus::default());
+}
+
+/// 当前页的实时数据状态，供页头的统一提示订阅。
+#[must_use]
+pub fn page_api_status() -> ArcRwSignal<PageApiStatus> {
+  PAGE_API_STATUS.with(Clone::clone)
+}
+
+fn current_path() -> String {
+  window().location().pathname().unwrap_or_default()
+}
+
+/// 路由切换时调用：丢掉上一页的来源记录。
+///
+/// 只靠「记录时比对路径」不够：A → B（B 没有实时请求）→ A 时，A 的旧失败仍在表里，
+/// 页头会在新请求回来之前先闪一下过期的提示。
+pub fn reset_page_api_status() {
+  let status = page_api_status();
+  if status.with_untracked(|s| !s.origins.is_empty()) {
+    status.set(PageApiStatus::default());
+  }
+}
+
+/// 一次取数的结果要不要计入「本页实时数据状态」。
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Report {
+  /// 页面主动取的数据：计入页头提示。
+  Page,
+  /// 后台任务（定时提醒等）取的数据：与用户此刻看的页面无关，不得影响页头提示。
+  Silent,
+}
+
+/// 记录一次接口请求的来源。只记同源 `/api/*` 里的数据接口：题库、语言包、跨源 NOAA
+/// 降级都走同一个取数函数，把它们算进来会让静态页面也弹出「实时数据不可用」；
+/// 推送与账号是配置 / 同步接口，某一页订阅失败也不代表这一页的实时数据没了。
+///
+/// `origin_path` 是**发起请求时**所在的页面：响应回来时用户可能已经切走，
+/// 这时结果属于旧页，直接丢弃，否则 A 页的慢请求失败会记到 B 页头上。
+fn record_api_origin(report: Report, origin_path: &str, url: &str, origin: ApiOrigin) {
+  if report == Report::Silent
+    || !url.starts_with("/api/")
+    || url.starts_with("/api/push/")
+    || url.starts_with("/api/account/")
+    || origin_path != current_path()
+  {
+    return;
+  }
+  page_api_status().update(|status| {
+    status.origins.insert(url.to_owned(), origin);
+  });
+}
+
+/// 把快照时间戳写成本地时间「YYYY-MM-DD HH:MM」。不用 `Intl`：切语言时同一条提示的
+/// 时间格式不该跟着变，用户要能拿它和自己的最后一次联网时间对上。
+#[must_use]
+pub fn format_snapshot_time(cached_at_ms: i64) -> String {
+  let date = js_sys::Date::new(&JsValue::from_f64(cached_at_ms as f64));
+  format!(
+    "{:04}-{:02}-{:02} {:02}:{:02}",
+    date.get_full_year() as i64,
+    date.get_month() as i64 + 1,
+    date.get_date() as i64,
+    date.get_hours() as i64,
+    date.get_minutes() as i64,
+  )
 }
 
 fn parse_json<T: serde::de::DeserializeOwned>(text: &str) -> Result<T, AppError> {
@@ -146,7 +228,7 @@ const SLOW_FETCH_TIMEOUT_MS: i32 = 20_000;
 ///
 /// 5 秒对大多数接口够用；卫星类接口见 [`fetch_external_json_slow`]。
 pub async fn fetch_external_json<T: serde::de::DeserializeOwned>(url: &str) -> Result<T, AppError> {
-  fetch_external_json_within(url, FETCH_TIMEOUT_MS).await
+  fetch_external_json_within(url, FETCH_TIMEOUT_MS, Report::Page).await
 }
 
 /// 同上，但超时放宽到 20 秒，给「服务端要等上游」的接口用。
@@ -157,33 +239,80 @@ pub async fn fetch_external_json<T: serde::de::DeserializeOwned>(url: &str) -> R
 pub async fn fetch_external_json_slow<T: serde::de::DeserializeOwned>(
   url: &str,
 ) -> Result<T, AppError> {
-  fetch_external_json_within(url, SLOW_FETCH_TIMEOUT_MS).await
+  fetch_external_json_within(url, SLOW_FETCH_TIMEOUT_MS, Report::Page).await
+}
+
+/// 后台任务专用（放宽超时）：同样读写离线缓存，但结果不计入页头的「实时数据状态」。
+///
+/// 全局的过境提醒每隔几分钟就会取一次 `/api/passes`，离线时它必然失败；若计入页头提示，
+/// 用户站在 `/tools` 这类纯静态页上也会看到「实时数据暂不可用」。
+pub async fn fetch_external_json_background<T: serde::de::DeserializeOwned>(
+  url: &str,
+) -> Result<T, AppError> {
+  fetch_external_json_within(url, SLOW_FETCH_TIMEOUT_MS, Report::Silent).await
 }
 
 /// 电台写入依赖的轨迹必须重新取数，不允许静默使用本机离线缓存。
+///
+/// live 模式只是「不读写离线缓存」，来源仍记入页头提示：这类接口（KP 预报、卫星轨迹）
+/// 属于本页实时数据，失败时若不算进来，页头会把「这一块空了」误报成「全部实时」。
+/// 非 `/api/*` 的 URL 由 [`record_api_origin`] 的过滤挡掉，行为与缓存路径一致。
 pub async fn fetch_external_json_live<T: serde::de::DeserializeOwned>(
   url: &str,
 ) -> Result<T, AppError> {
-  let text = fetch_text_with_timeout(url, SLOW_FETCH_TIMEOUT_MS).await?;
-  parse_json(&text)
+  // 发起时就记下所在页面，见 `record_api_origin`。
+  let origin_path = current_path();
+  let record = |origin| record_api_origin(Report::Page, &origin_path, url, origin);
+  match fetch_text_with_timeout(url, SLOW_FETCH_TIMEOUT_MS).await {
+    Ok(text) => match parse_json(&text) {
+      Ok(data) => {
+        record(ApiOrigin::Live);
+        Ok(data)
+      }
+      Err(err) => {
+        record(ApiOrigin::Unavailable);
+        Err(err)
+      }
+    },
+    Err(net_err) => {
+      record(ApiOrigin::Unavailable);
+      Err(net_err)
+    }
+  }
 }
 
 async fn fetch_external_json_within<T: serde::de::DeserializeOwned>(
   url: &str,
   timeout_ms: i32,
+  report: Report,
 ) -> Result<T, AppError> {
+  // 发起时就记下所在页面，见 `record_api_origin`。
+  let origin_path = current_path();
+  // 来源记进全局状态而不是塞进返回值：页头订阅的是全局状态，逐页透传会漏掉没改的页面。
+  let record = |origin| record_api_origin(report, &origin_path, url, origin);
   match fetch_text_with_timeout(url, timeout_ms).await {
-    Ok(text) => {
-      api_cache_put(url, &text);
-      parse_json(&text)
-    }
+    Ok(text) => match parse_json(&text) {
+      Ok(data) => {
+        // 解析成功才写缓存：200 但内容不对（网关错误页、字段变更）不能顶掉上一份可用快照，
+        // 否则页头承诺的「离线快照」下次根本读不出来。
+        api_cache_put(url, &text);
+        record(ApiOrigin::Live);
+        Ok(data)
+      }
+      Err(err) => {
+        record(ApiOrigin::Unavailable);
+        Err(err)
+      }
+    },
     Err(net_err) => {
       // 网络失败：回退到有效期内的缓存；缓存缺失或格式不兼容时维持原始错误。
-      if let Some(text) = api_cache_get(url)
+      if let Some((text, cached_at_ms)) = api_cache_get(url)
         && let Ok(data) = parse_json(&text)
       {
+        record(ApiOrigin::Snapshot { cached_at_ms });
         return Ok(data);
       }
+      record(ApiOrigin::Unavailable);
       Err(net_err)
     }
   }

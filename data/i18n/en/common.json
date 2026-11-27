@@ -109,6 +109,10 @@
   "common.cross-origin-cors": "Cross-origin CORS",
   "common.d": "{}d {}:{}:{}",
   "common.data-meta-source-list": "{ \"data\": …, \"meta\": { \"source\": … } }; list endpoints carry total and next_cursor in meta.",
+  "common.data-partial-notice": "Some live data is temporarily unavailable; the data that did load and this page's reference material are unaffected.",
+  "common.data-snapshot-incomplete-notice": "Live data is temporarily unavailable: what is shown comes from a snapshot saved at {} and may be out of date, and some data has neither live values nor a snapshot; this page's reference material and local calculators still work.",
+  "common.data-snapshot-notice": "Live data is temporarily unavailable: some content below is from a snapshot saved at {} and may be out of date; this page's reference material and local calculators still work.",
+  "common.data-unavailable-notice": "Live data for this page is unavailable; the reference material and local calculators below still work. Reopen this page once back online to refresh.",
   "common.days": {
     "one": "{} day",
     "other": "{} days"

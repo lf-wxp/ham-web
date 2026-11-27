@@ -32,6 +32,25 @@ pub fn NotificationsPage() -> impl IntoView {
   let supported = crate::push::is_supported();
   let subscribed = RwSignal::new(crate::push::has_subscription());
   let status = RwSignal::new(None::<String>);
+  // 后台推送不可用不等于「提醒功能没了」：页内每日提醒由 study 的 watcher 独立驱动。
+  // 一进页面就说明，别等用户点过「订阅」才知道还有可用的那条路。
+  // 用独立信号而不是塞进 `status`：`status` 是点击订阅 / 退订后的结果提示，会被清空；
+  // 这句是常驻说明，且存的是「状态」而非译文，切语言后仍跟着变。
+  let push_unreachable = RwSignal::new(!supported);
+  if supported {
+    // 探测要等网络（最长约 10 秒），放进 Effect 而不是组件体：首帧不为它让路。
+    // 首次判定不是最终结论：用户可能停在通知页期间断网又恢复，`online` 事件触发时重探，
+    // 让这条常驻说明跟着网络状态走，而不是把进页时的一次判定留到离开页面。
+    let probe = move || {
+      leptos::task::spawn_local(async move {
+        let reachable = crate::push::fetch_public_key().await.is_some();
+        // 用户可能已离开本页（信号随组件释放），这时写入就是空操作而不是 panic。
+        let _ = push_unreachable.try_set(!reachable);
+      });
+    };
+    Effect::new(move |_| probe());
+    window_event_listener(leptos::ev::online, move |_| probe());
+  }
 
   let request = move |_| {
     leptos::task::spawn_local(async move {
@@ -240,6 +259,15 @@ pub fn NotificationsPage() -> impl IntoView {
                 </div>
               }
               .into_any()
+            }}
+            {move || {
+              push_unreachable.get().then(|| {
+                view! {
+                  <p class="text-xs text-muted-foreground">
+                    {move || t("settings.push-fallback-local-reminder")}
+                  </p>
+                }
+              })
             }}
             {move || {
               status.get().map(|s| {

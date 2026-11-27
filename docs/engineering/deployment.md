@@ -20,8 +20,7 @@ cargo make build          # 图标 + 前端（release）+ sw.js/sitemap + 服务
 cargo make serve          # 用 release 服务器托管 dist/：http://127.0.0.1:8080
 ```
 
-构建产物位于 `dist/`；`dist/` 为纯静态文件，服务器仅额外提供 `/api/*` 代理与 `healthz`。若部署到纯静态托管（Nginx、CDN、GitHub Pages 等），只需把未命中的路径回退到 `index.html`，并为 `sw.js`、`manifest.json`、`changelog.json`、`index.html` 设置 `Cache-Control: no-cache`；此时依赖 `/api/*` 的实时数据页会降级为“数据暂不可用”，其余功能不受影响。
-
+构建产物位于 `dist/`；`dist/` 为纯静态文件，服务器仅额外提供 `/api/*` 代理与 `healthz`。若部署到纯静态托管（Nginx、CDN、GitHub Pages 等），只需把未命中的路径回退到 `index.html`，并为 `sw.js`、`manifest.json`、`changelog.json`、`index.html` 设置 `Cache-Control: no-cache`；此时依赖 `/api/*` 的实时数据页会显示最近一次成功的离线快照或分级提示（口径见 [`docs/reference/api.md`](../reference/api.md)），其余功能不受影响。
 
 ## Docker 部署
 
@@ -146,5 +145,5 @@ docker run -d --name ham-web -p 3000:3000 \
   ham-web
 ```
 
-> ⚠️ 浏览器只在安全上下文（HTTPS 或 `localhost`）开放 `PushManager`。本地用 `http://127.0.0.1` 可调试，线上必须走 HTTPS。纯静态托管（无后端）时该功能不可用，前端会自动降级为「未配置推送服务」。
+> ⚠️ 浏览器只在安全上下文（HTTPS 或 `localhost`）开放 `PushManager`。本地用 `http://127.0.0.1` 可调试，线上必须走 HTTPS。纯静态托管（无后端）时不可用的是**后台**推送：前端会说明「未配置推送服务」，并同时告知页面打开期间的每日提醒仍可用（由 `crates/app/src/study.rs` 的 watcher 驱动，时间在备考计划里设置）；浏览器不支持 Web Push 时同样由这条页内提醒兜底。
 
