@@ -27,6 +27,12 @@ html[data-ui-style="modern"] body {
   font-family: var(--md-font);
 }
 
+/* 根元素自己仍挂着点阵字：正文已被 `body` 覆盖，但逐元素读计算样式时会看到
+   `<html>` / `<head>` 还是 "Fusion Pixel"。整棵树从这里统一成现代字体。 */
+html[data-ui-style="modern"] {
+  font-family: var(--md-font);
+}
+
 /* 动效兜底：像素风把**所有** Tailwind `transition-*` 工具类的默认缓动改成
    `steps(4, end)`（`--default-transition-timing-function`）。不改回来的话，
    未迁移页面里每个 `transition-colors` 的悬停都是四帧跳变 —— 一处两处看不出来，
@@ -138,6 +144,15 @@ html[data-ui-style="modern"] .bg-inset {
 html[data-ui-style="modern"] kbd {
   font-family: var(--md-font-mono);
   letter-spacing: 0;
+}
+
+/* 裸 `code` / `pre` / `samp` 读的是像素风的 `--default-mono-font-family`，
+   `.font-mono` 的逐类覆盖管不到元素级规则，`.md-mono` 也只加在部分 `<code>` 上。
+   和 `kbd` 一样按元素兜底，规范页这类大量 `<code>` 的页面才不会露出点阵等宽字。 */
+html[data-ui-style="modern"] code,
+html[data-ui-style="modern"] pre,
+html[data-ui-style="modern"] samp {
+  font-family: var(--md-font-mono);
 }
 
 /* 滑杆：交给浏览器的 accent-color，轨道与滑块都跟着品牌色 */

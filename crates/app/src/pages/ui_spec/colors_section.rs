@@ -9,26 +9,9 @@ use crate::components::common::SectionCard;
 use crate::i18n::t;
 use crate::theme::{Theme, use_display_prefs, use_theme};
 use crate::ui::{Button, Chip, ChipGroup, Switch, Variant, push_success};
-use crate::util::{copy_text, document, window};
+use crate::util::copy_text;
 
-use super::spec_data::{TOKEN_GROUPS, all_tokens, scheme_key};
-
-/// 读 `<html>` 上某个 CSS 自定义属性当前真正生效的值。
-fn computed(name: &str) -> String {
-  let Some(root) = document().document_element() else {
-    return String::from("-");
-  };
-  let Ok(Some(style)) = window().get_computed_style(&root) else {
-    return String::from("-");
-  };
-  let value = style.get_property_value(name).unwrap_or_default();
-  let value = value.trim();
-  if value.is_empty() {
-    String::from("-")
-  } else {
-    value.to_owned()
-  }
-}
+use super::spec_data::{TOKEN_GROUPS, all_tokens, computed, scheme_key};
 
 #[component]
 pub fn ColorsSection() -> impl IntoView {

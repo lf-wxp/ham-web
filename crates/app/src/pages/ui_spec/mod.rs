@@ -1,4 +1,4 @@
-//! `/ui-spec`：UI 设计规范展示页（像素风为完整规范，现代风为占位页）。
+//! `/ui-spec`：UI 设计规范展示页（两套皮肤各有一份七板块规范）。
 //!
 //! 七个板块各占一个文件（一文件一组件），静态数据表集中在 `spec_data.rs` 里，
 //! 那里面没有返回视图的函数。展示用的控件全部取 `crate::ui`，不在页面里重画一套。
@@ -14,7 +14,7 @@ mod data_gallery;
 mod feedback_gallery;
 mod form_gallery;
 mod icons_section;
-mod modern_placeholder;
+mod modern;
 mod motion_section;
 mod overlay_gallery;
 mod overview_section;

@@ -104,6 +104,19 @@ pub fn QuestionBankSelector(
   selected_bank: RwSignal<Bank>,
   #[prop(into)] disabled: Signal<bool>,
 ) -> impl IntoView {
+  // 类别标签原先写死 `pxl-label`：这个组件只在像素首页用过，串风格没暴露。现代风首页
+  // 复用后必须按皮肤分叉；现代侧交给共享语义工具类，由变量层映射到现代 token。
+  let label_class = if crate::kit::is_modern_at_mount() {
+    ""
+  } else {
+    "pxl-label"
+  };
+  // 刷新失败块：像素风用 2px 硬边框，现代风的卡片描边只有 1px。
+  let notice_border = if crate::kit::is_modern_at_mount() {
+    "border"
+  } else {
+    "border-2"
+  };
   let versions = RwSignal::new(Vec::<VersionWithStatus>::new());
   let loading = RwSignal::new(true);
   let refresh_state = RwSignal::new(RefreshState::Idle);
@@ -296,7 +309,7 @@ pub fn QuestionBankSelector(
       && (retry_count.get() >= 2 || !auto_retrying.get()))
     .then(|| {
       view! {
-        <div class="mt-2 border-2 border-destructive bg-card p-3" role="alert">
+        <div class=crate::cn::cn(&[notice_border, "mt-2 border-destructive bg-card p-3"]) role="alert">
           <div class="flex items-start gap-2">
             <Icon kind=IconKind::AlertCircle class="size-6 shrink-0 text-hp-text" />
             <div class="flex-1">
@@ -393,7 +406,7 @@ pub fn QuestionBankSelector(
 
           // 题库类别是一排波段键（`docs/ui/pixel.md` §3.4）；选中题库的说明写在键下面一行。
           <div class="space-y-2">
-            <span class="pxl-label block text-xs text-muted-foreground">{move || t("home.band-bank")}</span>
+            <span class=crate::cn::cn(&[label_class, "block text-xs text-muted-foreground"])>{move || t("home.band-bank")}</span>
             <ChipGroup
               value=bank_value
               on_change=on_bank

@@ -124,7 +124,7 @@ pub fn FormGallery() -> impl IntoView {
           </Field>
         </div>
         <div class="md:col-span-2 space-y-2">
-          <span class="pxl-label text-xs text-muted-foreground">
+          <span class=super::spec_data::pixel_only("pxl-label", "", "text-xs text-muted-foreground")>
             {move || t("design.comp-chip-label")}
           </span>
           <ChipGroup
@@ -139,7 +139,7 @@ pub fn FormGallery() -> impl IntoView {
           </ChipGroup>
         </div>
         <div class=crate::kit::tile_class("md:col-span-2 space-y-1 p-3")>
-          <span class="pxl-label text-xs text-muted-foreground">
+          <span class=super::spec_data::pixel_only("pxl-label", "", "text-xs text-muted-foreground")>
             {move || t("design.comp-echo")}
           </span>
           <code class="block text-xs break-all text-foreground">

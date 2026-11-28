@@ -625,7 +625,9 @@ node e2e/audit/dual_sweep.mjs modern && node e2e/audit/dual_sweep.mjs pixel
    `--font-pixel-body` / `--font-pixel-mono`，不是 `--font-sans` / `--font-mono`，全仓没有任何规则读后者（像素风在 `@theme inline` 里声明了它们，Tailwind 生成工具类时就把值换了进去）。
    `legacy-utilities.css` 里曾有两行重映射这两个变量的声明，实测它们不起作用：只停用逐类覆盖、保留那两行，
    `/tools` 上的 `.font-mono` 立刻回到 Fusion Pixel Mono；删掉它们后 25 个页面变体、7126 个有字元素的计算字体栈与删之前逐一相同。
-   字体必须逐类覆盖 `.font-sans` / `.font-mono`。
+   字体必须逐类覆盖 `.font-sans` / `.font-mono`；另外裸 `code` / `pre` / `samp` 读的是 `--default-mono-font-family`
+   （像素风指向 `--font-pixel-mono`），那是元素级规则、不是工具类，`legacy-utilities.css` 还要按元素钉成
+   `var(--md-font-mono)`，`<html>` 自身也一并覆盖成 `var(--md-font)` —— 否则逐元素读计算字体仍会看到 Fusion Pixel。
 26. **`mx-auto` 的 flex 子项不再拉伸**：auto 外边距会吃掉 flex 子项的剩余空间，子项于是按 max-content 排，内容宽时顶出版心
    （`/qsl-labels` 在 390px 宽曾溢出 12px）。现代页头已经提供版心与内距，像素页头自带的 `mx-auto max-w-5xl px-4` 放在里面是重复的，
    `kit.css` 的 `.md-page-head > [class~="mx-auto"]` 把它归零 —— 写在 `@layer` 之外，因为 `px-4` / `max-w-5xl` 是工具类，层内压不住。

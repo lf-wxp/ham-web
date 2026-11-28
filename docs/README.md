@@ -12,7 +12,7 @@
 | 要做什么 | 去哪 |
 | --- | --- |
 | 改界面 | 先确定是哪套皮肤：现代风 → [`ui/modern.md`](ui/modern.md)，像素风 → [`ui/pixel.md`](ui/pixel.md)；找组件与 prop → [`crates/app/src/ui/README.md`](../crates/app/src/ui/README.md) |
-| 看 UI 设计规范的可交互示例 | 站内 `/ui-spec`（导航「进阶 · 关于」）；七个板块覆盖组件、图标、色板、排版、动效与状态。现代风下是占位页，规范待补 |
+| 看 UI 设计规范的可交互示例 | 站内 `/ui-spec`（导航「进阶 · 关于」）；两套皮肤各有一份七板块规范（组件、图标、色板、排版、动效与状态），各读本皮肤的设计变量 |
 | 页面骨架 / 内容宽度 / 页头 | [`ui/pixel.md`](ui/pixel.md) §4 · [`ui/modern.md`](ui/modern.md) §3 |
 | 取值：圆角 / 间距 / 字号 / 状态色 | [`ui/modern.md`](ui/modern.md) §2 |
 | 弹层怎么进出场、控件的悬停 / 禁用 / 错误态 | [`ui/motion.md`](ui/motion.md) §五、§六 |
@@ -63,6 +63,7 @@
 | [`engineering/tasks.md`](engineering/tasks.md) | `cargo make` 任务全集 | 找某个任务 |
 | [`engineering/deployment.md`](engineering/deployment.md) | 本地开发细节、生产构建、Docker、环境变量、Web Push | 构建与部署 |
 | [`engineering/code-quality.md`](engineering/code-quality.md) | **代码质量规范**：分层边界、单一来源、**门禁一览（§2）**、问题分级与证据口径、分范围检查清单 | 提交前 / 做审查 |
+| [`engineering/review-2026-11-27-modern-ui-spec.md`](engineering/review-2026-11-27-modern-ui-spec.md) | **一次性审核记录**：现代风规范页与首页题库入口这一轮的 15 项问题、修复方式与回归记录 | 想追溯这轮改动为什么这么修 |
 | [`engineering/performance.md`](engineering/performance.md) | **性能**：测量口径（构建 / 降速 / 真 GPU / 数据量）与阈值、基线水位、规则与守卫它们的用例对照、已评估后决定不做的项、常驻缓存清单、主包体积预算与分包裁定 | 页面卡顿 / 要不要优化某处 / 加缓存 / 想拆包 |
 | [`engineering/licensing.md`](engineering/licensing.md) | 许可、第三方声明、GPL 例外与部署方义务 | 引入依赖 / 字体 / 分发 |
 

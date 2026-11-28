@@ -11,7 +11,7 @@ Only section-level jumps are listed here. The target documents contain the detai
 | What you want to do | Where to go |
 | --- | --- |
 | Change the UI | First identify the skin: Modern UI → [`ui/modern.md`](ui/modern.md), Pixel UI → [`ui/pixel.md`](ui/pixel.md). For components and props → [`crates/app/src/ui/README.md`](../crates/app/src/ui/README.md) |
-| See an interactive UI-spec example | The in-app `/ui-spec` page (navigation: Advanced · About). It covers components, icons, palettes, typography, motion, and states. Under Modern UI it is a placeholder |
+| See an interactive UI-spec example | The in-app `/ui-spec` page (navigation: Advanced · About). Both skins have their own seven sections (components, icons, palette, typography, motion, states), each reading that skin's design tokens |
 | Page skeleton / content width / page header | [`ui/pixel.md`](ui/pixel.md), section 4 · [`ui/modern.md`](ui/modern.md), section 3 |
 | Values for radii / spacing / type scale / status colors | [`ui/modern.md`](ui/modern.md), section 2 |
 | Overlay enter/exit motion; hover, disabled, and error states | [`ui/motion.md`](ui/motion.md), sections five and six |
@@ -62,6 +62,7 @@ Code-adjacent documentation: [`crates/app/src/ui/README.md`](../crates/app/src/u
 | [`engineering/tasks.md`](engineering/tasks.md) | Complete `cargo make` task list | Finding a task |
 | [`engineering/deployment.md`](engineering/deployment.md) | Local development, production builds, Docker, environment variables, Web Push | Building and deploying |
 | [`engineering/code-quality.md`](engineering/code-quality.md) | Code quality: layer boundaries, single source of truth, gate overview, issue severity, evidence rules, scoped checklists | Before commits or during review |
+| [`engineering/review-2026-11-27-modern-ui-spec.md`](engineering/review-2026-11-27-modern-ui-spec.md) | One-off review record: the 15 issues found in the Modern UI spec page and home bank picker, how they were fixed, and the regression log | Tracing why this round was fixed this way |
 | [`engineering/performance.md`](engineering/performance.md) | Performance: measurement method, thresholds, baselines, guarded rules, evaluated-and-rejected options, caches, bundle budget | Investigating slow pages or caching |
 | [`engineering/licensing.md`](engineering/licensing.md) | Licenses, third-party notices, GPL exceptions, distributor obligations | Adding dependencies, fonts, or distributing builds |
 

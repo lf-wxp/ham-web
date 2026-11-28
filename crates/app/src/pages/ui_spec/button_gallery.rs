@@ -73,8 +73,8 @@ pub fn ButtonGallery() -> impl IntoView {
               })
               .collect_view()}
           </div>
-          <div class="pxl-display flex flex-col gap-2 p-3 min-w-0">
-            <span class="pxl-label text-xs">{move || t("design.comp-last-action")}</span>
+          <div class=super::spec_data::pixel_only("pxl-display", "md-panel", "flex flex-col gap-2 p-3 min-w-0")>
+            <span class=super::spec_data::pixel_only("pxl-label", "", "text-xs")>{move || t("design.comp-last-action")}</span>
             <span class=crate::kit::stat_text_class("text-base break-all")>{readout}</span>
           </div>
         </div>

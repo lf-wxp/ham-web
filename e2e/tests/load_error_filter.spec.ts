@@ -29,6 +29,14 @@ test.describe("资源加载失败的过滤规则", () => {
     expect(ignoredLoadError(LOAD_FAILED, `${BASE}/api/spots`, BASE)).toBe(true);
   });
 
+  test("部署方可选配置缺失 —— 放过", () => {
+    // `push-config.json` 不在仓库里，未配置时推送功能自身关闭；
+    // release 服务器对缺失文件返回 404，浏览器随即报资源加载失败。
+    expect(ignoredLoadError(LOAD_FAILED, `${BASE}/push-config.json`, BASE)).toBe(true);
+    // 同一目录下的页面资产仍然要抓，不能把整个静态目录放过去。
+    expect(ignoredLoadError(LOAD_FAILED, `${BASE}/push-settings.js`, BASE)).toBe(false);
+  });
+
   test("不是「资源加载失败」的报错 —— 不算放过，照旧算问题", () => {
     expect(ignoredLoadError("Uncaught TypeError: x is not a function", `${BASE}/app.js`, BASE)).toBe(
       false,

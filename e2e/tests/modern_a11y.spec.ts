@@ -408,3 +408,34 @@ test.describe("焦点环的对比度", () => {
     });
   }
 });
+
+// 规范页的七个标签是**懒挂载**的：首屏只建总览，色板（45 个 token）、图标（58 个）、
+// 动效（6 个演示）都要点开才存在。不点开就扫，等于这七块从未被 axe 看过。
+test("现代风 · 设计规范页：七个标签零 a11y 违规", async ({ page }) => {
+  await seed(page, "dark");
+  await page.goto("/ui-spec");
+  await settle(page);
+  await expectClean(page);
+
+  const topTab = (name: string) =>
+    page.getByRole("tablist", { name: "设计规范板块" }).getByRole("tab", { name, exact: true });
+
+  for (const name of ["通用组件", "图标一览", "色彩体系", "排版规范", "动效一览", "状态一览"]) {
+    await topTab(name).click();
+    // 动效标签里有两条无限循环：先关掉，`settle` 才等得到页面真的静下来。
+    if (name === "动效一览") {
+      await page.getByRole("switch", { name: "减少动态效果" }).click();
+    }
+    await settle(page);
+    await expectClean(page);
+
+    // 通用组件下面还有五个子标签，同样是切到才挂载。
+    if (name === "通用组件") {
+      for (const sub of ["进阶表单", "数据与导航", "弹层与读数", "占位与状态"]) {
+        await page.getByRole("tab", { name: sub, exact: true }).click();
+        await settle(page);
+        await expectClean(page);
+      }
+    }
+  }
+});

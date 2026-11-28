@@ -7,6 +7,7 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
+use ham_web_core::Bank;
 use leptos::ev;
 use leptos::prelude::*;
 use send_wrapper::SendWrapper;
@@ -14,10 +15,16 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen::closure::Closure;
 
 use crate::i18n::{t, tf};
+use crate::pages::bank_href;
 use crate::rpg::{load_profile, rank_label};
 
 #[component]
-pub fn ModernHero() -> impl IntoView {
+pub fn ModernHero(
+  version: RwSignal<Option<String>>,
+  bank: RwSignal<Bank>,
+  /// 题库不可用时的拦截器（由 `ModernHome` 提供，与像素首页同一套口径）。
+  on_navigate: Callback<web_sys::MouseEvent>,
+) -> impl IntoView {
   let profile = load_profile();
   let level = profile.level;
   let percent = level.percent();
@@ -142,11 +149,19 @@ pub fn ModernHero() -> impl IntoView {
           <p class="md-lede">{move || t("home.one-platform-for-exam")}</p>
 
           <div class="md-cta-row flex flex-wrap items-center gap-3">
-            <a class="md-btn md-btn-accent md-btn-lg" href="/practice">
+            <a
+              class="md-btn md-btn-accent md-btn-lg"
+              href=Signal::derive(move || bank_href("/practice", version.get().as_deref(), bank.get()))
+              on:click=move |e| on_navigate.run(e)
+            >
               {move || t("home.start-practice")}
               <crate::kit_modern::ModernIcon kind=crate::kit_modern::MIcon::ArrowRight />
             </a>
-            <a class="md-btn md-btn-quiet md-btn-lg" href="/exam">
+            <a
+              class="md-btn md-btn-quiet md-btn-lg"
+              href=Signal::derive(move || bank_href("/exam", version.get().as_deref(), bank.get()))
+              on:click=move |e| on_navigate.run(e)
+            >
               <crate::kit_modern::ModernIcon kind=crate::kit_modern::MIcon::Play />
               {move || t("shell.mock-exam")}
             </a>

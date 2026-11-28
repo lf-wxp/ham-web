@@ -1,6 +1,6 @@
 //! 页面外壳：按皮肤分叉。
 //!
-//! 现代风目前是一块占位页（见 `modern_placeholder.rs`）；像素风才是完整的七板块规范展示。
+//! 两套皮肤各有一份七板块规范展示（现代风在 `modern/`），互不共享视图与取值。
 //! 分叉必须发生在组件体里、用 `is_modern_at_mount()`：风格切换靠 `MainContent` 用两种不同根元素
 //! 重建整棵路由子树，这样两套 DOM 都不会漏出对方的类名。
 //!
@@ -17,7 +17,7 @@ use crate::util::set_title;
 use super::colors_section::ColorsSection;
 use super::components_section::ComponentsSection;
 use super::icons_section::IconsSection;
-use super::modern_placeholder::ModernPlaceholder;
+use super::modern::ModernUiSpec;
 use super::motion_section::MotionSection;
 use super::overview_section::OverviewSection;
 use super::states_section::StatesSection;
@@ -27,7 +27,7 @@ use super::typography_section::TypographySection;
 pub fn UiSpecPage() -> impl IntoView {
   if crate::kit::is_modern_at_mount() {
     set_title("design.modern-title");
-    return view! { <ModernPlaceholder /> }.into_any();
+    return view! { <ModernUiSpec /> }.into_any();
   }
   set_title("design.page-title");
   let active = RwSignal::new(String::from("overview"));

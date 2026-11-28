@@ -44,7 +44,7 @@ pub fn StatesSection() -> impl IntoView {
           {move || t("design.states-hint")}
         </p>
         <div class=crate::kit::tile_class("space-y-2 p-3")>
-          <span class="pxl-label text-xs text-muted-foreground">
+          <span class=super::spec_data::pixel_only("pxl-label", "", "text-xs text-muted-foreground")>
             {move || t("design.states-lab")}
           </span>
           <ChipGroup

@@ -4,12 +4,19 @@
 //! 明确的动作（练习 / 模拟考试 / 错题），数字只出现在「今日待复习」这种页面上没有重复的地方 ——
 //! 上方数据条已经给过已答数与正确率，卡片再抄一遍就变成报表了。
 
+use ham_web_core::Bank;
 use leptos::prelude::*;
 
 use crate::i18n::{t, tf};
+use crate::pages::bank_href;
 
 #[component]
-pub fn Bento() -> impl IntoView {
+pub fn Bento(
+  version: RwSignal<Option<String>>,
+  bank: RwSignal<Bank>,
+  /// 题库不可用时的拦截器（由 `ModernHome` 提供）。错题本不依赖题库，不接这个守卫。
+  on_navigate: Callback<web_sys::MouseEvent>,
+) -> impl IntoView {
   // 光标跟随的高光：指针位置写进 `--mx / --my`，由 `.md-spotlight::after` 画柔光。
   use crate::kit_modern::motion::spotlight;
   let due = crate::study::load_book().due_count(crate::util::now_ms());
@@ -25,7 +32,12 @@ pub fn Bento() -> impl IntoView {
       </div>
 
       <div class="md-bento">
-        <a class="md-feature md-feature-accent md-spotlight" href="/practice" on:pointermove=spotlight>
+        <a
+          class="md-feature md-feature-accent md-spotlight"
+          href=Signal::derive(move || bank_href("/practice", version.get().as_deref(), bank.get()))
+          on:pointermove=spotlight
+          on:click=move |e| on_navigate.run(e)
+        >
           <div class="flex flex-col gap-2">
             <span class="md-feature-kicker">{move || t("home.continue-learning")}</span>
             <span class="md-feature-title">{move || t("home.start-practice")}</span>
@@ -36,7 +48,12 @@ pub fn Bento() -> impl IntoView {
           </span>
         </a>
 
-        <a class="md-feature md-feature-quiet md-spotlight" href="/exam" on:pointermove=spotlight>
+        <a
+          class="md-feature md-feature-quiet md-spotlight"
+          href=Signal::derive(move || bank_href("/exam", version.get().as_deref(), bank.get()))
+          on:pointermove=spotlight
+          on:click=move |e| on_navigate.run(e)
+        >
           <span class="md-feature-kicker">{move || t("shell.mock-exam")}</span>
           <div class="flex flex-col gap-2">
             <span class="md-feature-title">{move || t("home.start-mock-exam")}</span>

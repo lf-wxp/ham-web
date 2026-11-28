@@ -95,7 +95,7 @@ pub fn AdvancedInputGallery() -> impl IntoView {
             />
           </Field>
           <div class="space-y-2">
-            <span class="pxl-label text-xs text-muted-foreground">
+            <span class=super::spec_data::pixel_only("pxl-label", "", "text-xs text-muted-foreground")>
               {move || t("design.comp-radio-mode")}
             </span>
             <RadioGroup

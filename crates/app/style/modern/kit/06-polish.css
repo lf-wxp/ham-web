@@ -759,8 +759,10 @@ body[data-page-mode="exam"] .md-exam {
     cursor: pointer;
   }
 
+  /* hover 只把 × 加深，完全不画圆底：输入框可能是浅灰，也可能被浏览器自动填充
+     染成浅黄，任何实心或半透明的圆形底块都会像贴了块补丁。常态的 transparent
+     保持不动，反馈交给图标颜色。 */
   .md-input-clear:hover {
-    background-color: var(--md-surface-3);
     color: var(--md-fg);
   }
 

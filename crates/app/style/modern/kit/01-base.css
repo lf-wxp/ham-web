@@ -889,6 +889,30 @@ html[data-ui-style="modern"] *::-webkit-scrollbar-thumb:hover {
     background-color: var(--md-border-strong);
   }
 
+  /* 规范页展示用的四档灯：色相与像素风 `LedTone` 一一对应（绿 / 红 / 琥珀 / 蓝）。
+     `data-lit="off"` 回到基础灰 —— 灭灯不保留色相，只留「有位、没亮」这一层信息。
+     属性写在灯本体上（`pages/ui_spec/modern/feedback.rs`），因此不影响 `.md-onair-row`
+     与 `.md-live-level` 那两处「按父级 state / tone 着色」的既有用法。 */
+  .md-led[data-tone="rx"] {
+    background-color: var(--md-green);
+  }
+
+  .md-led[data-tone="tx"] {
+    background-color: var(--md-danger);
+  }
+
+  .md-led[data-tone="warn"] {
+    background-color: var(--md-gold);
+  }
+
+  .md-led[data-tone="info"] {
+    background-color: var(--md-blue);
+  }
+
+  .md-led[data-lit="off"] {
+    background-color: var(--md-border-strong);
+  }
+
   .md-onair-row[data-state="todo"] .md-led {
     background-color: var(--md-orange);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-orange) 18%, transparent);

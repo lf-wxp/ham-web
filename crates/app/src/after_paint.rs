@@ -139,6 +139,19 @@ pub fn grow_cap(cap: RwSignal<usize>, step: usize, target: impl Fn() -> usize + 
   });
 }
 
+/// 筛选结果变化时把上限复位到 `first`，并重新登记逐帧补齐。
+///
+/// [`grow_cap`] 补满目标后会把 `cap` 设成 `usize::MAX` 并**结束循环**：只在挂载时登记一次的话，
+/// 搜索框「搜一次再清空」之后列表会永远停在第一批（`/ui-spec` 的图标集踩过这个坑）。
+/// 这里把登记挂到 `total` 上：筛选结果一变就复位并重新排一轮，循环本身仍是有限步结束。
+pub fn grow_cap_per_filter(cap: RwSignal<usize>, step: usize, first: usize, total: Memo<usize>) {
+  Effect::new(move |_| {
+    let _ = total.get();
+    let _ = cap.try_set(first);
+    grow_cap(cap, step, move || total.get_untracked());
+  });
+}
+
 /// 这次点击是不是「普通左键点链接」：只有这种情况才接管导航。
 ///
 /// 口径与 `leptos_router` 自己拦截链接时一致：已被拦下的、中键、带修饰键

@@ -5,6 +5,7 @@
 //! 不是界面文案 —— 后者不进词典，源码里也就不会出现没有译文的中文。
 
 use crate::icons::IconKind;
+use crate::util::{document, window};
 
 /// 原则卡片的筛选维度。
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -559,13 +560,43 @@ pub fn slider_u8(value: f64, max: u8) -> u8 {
   value.round().clamp(0.0, f64::from(max)) as u8
 }
 
-/// 现代风占位页里「规划中的板块」，与像素风页面的七个标签共用同一批词条。
-pub const PLANNED_SECTIONS: &[&str] = &[
-  "design.tab-overview",
-  "design.tab-components",
-  "design.tab-icons",
-  "design.tab-colors",
-  "design.tab-typography",
-  "design.tab-motion",
-  "design.tab-states",
-];
+/// 读 `<html>` 上某个 CSS 自定义属性当前真正生效的值。
+///
+/// 两套皮肤的规范页都要展示「运行时计算值」，实现只留这一份；读不到时返回 `-`，
+/// 让页面显示一个明确的占位而不是空白。
+#[must_use]
+pub(crate) fn computed(name: &str) -> String {
+  let Some(root) = document().document_element() else {
+    return String::from("-");
+  };
+  let Ok(Some(style)) = window().get_computed_style(&root) else {
+    return String::from("-");
+  };
+  let value = style.get_property_value(name).unwrap_or_default();
+  let value = value.trim();
+  if value.is_empty() {
+    String::from("-")
+  } else {
+    value.to_owned()
+  }
+}
+
+/// 只在像素风生效的**展示性**类名（标签 / 标题 / 读数屏外壳），不是控件本体。
+///
+/// 两套皮肤的规范页要展示同一批共享控件实样，所以这些外围容器按皮肤换类名；
+/// 现代侧留空时由共享语义工具类 + 变量层接管，不会把 `pxl-*` 漏进现代 DOM。
+#[must_use]
+pub(crate) fn pixel_only(
+  pixel_class: &'static str,
+  modern_class: &'static str,
+  extra: &str,
+) -> String {
+  crate::cn::cn(&[
+    if crate::kit::is_modern_at_mount() {
+      modern_class
+    } else {
+      pixel_class
+    },
+    extra,
+  ])
+}

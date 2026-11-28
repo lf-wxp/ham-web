@@ -6,6 +6,7 @@ import {
   expect,
   fromThirdParty,
   ignoredLoadError,
+  OPTIONAL_DEPLOYMENT_PATHS,
   settleFrames,
   test,
   waitSettled,
@@ -17,9 +18,13 @@ const routes = [...source.matchAll(/path!\("([^"]+)"\)/g)]
   .map((m) => m[1])
   .filter((p) => !p.includes(":") && !p.includes("*"));
 
-// 实时数据依赖 /api 代理与第三方服务，测试环境下可能不可用，属于预期降级
-const ignoredRequest = (url: string, base: string) =>
-  !url.startsWith(base) || new URL(url).pathname.startsWith("/api/");
+// 实时数据依赖 /api 代理与第三方服务，测试环境下可能不可用，属于预期降级；
+// 部署方可选配置（`/push-config.json`）缺失同样是预期状态，规则与控制台报错共用一处。
+const ignoredRequest = (url: string, base: string) => {
+  if (!url.startsWith(base)) return true;
+  const { pathname } = new URL(url);
+  return pathname.startsWith("/api/") || OPTIONAL_DEPLOYMENT_PATHS.includes(pathname);
+};
 
 // 第三方脚本（如 AdSense）在无外网的测试环境里会抛自己的 unhandled rejection，
 // 堆栈里全是外域地址，与本站代码无关，按与 console/网络一致的规则忽略（见 `fixtures.ts`）。

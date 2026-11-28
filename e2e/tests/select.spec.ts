@@ -11,7 +11,7 @@ import { expect, settleFrames, test } from "./fixtures";
 // 两种用法（站内**真实存在**的，不是为测试造的）：
 //   - 数据式·筛选器：日志页的「CAT 协议」（2 项）与「模式」（18 项，会滚动，且选项随值变化）；
 //   - 组合式：首页的题库版本选择器（选项带图标 / 徽章 / 两行文字）。**目前站内唯一的组合式用法**，
-//     它不在日志页上，也只出现在像素风首页 —— 所以它的场景自带页面与风格限制。
+//     两套皮肤的首页都有这个入口，但它不在日志页上 —— 所以它的场景自带页面限制。
 // 以前还有第三种「数据式·无可见标签」（像素风顶栏的语言切换）。语言收进设置对话框后，
 // 那里改成了三行单选（可见标签 + `role=radio`），站内就没有无可见标签的 `SimpleSelect` 了。
 
@@ -48,7 +48,6 @@ const KINDS: Kind[] = [
   {
     name: "Select · 组合式（题库版本）",
     url: "/",
-    styles: ["pixel"],
     pick: (p) => p.getByRole("combobox", { name: "选择题库版本", exact: true }),
     // 触发器的内容是**当前选中的版本**（「2025年10月版本 最新」）：列表框的名字必须是标签，
     // 不能是它。axe 只查「有没有名字」，查不出这个。
@@ -546,9 +545,8 @@ for (const style of ["pixel", "modern"] as const) {
   });
 
   // 组合式与数据式必须是同一个外观 —— 这是「两个下拉合成一个引擎」的验收：它们曾经是两份实现，
-  // 箭头一个渐变一个瞬切、选中行一个多一枚对勾。组合式只在像素风首页，所以只在像素风下对照。
+  // 箭头一个渐变一个瞬切、选中行一个多一枚对勾。组合式在首页、数据式在日志页，跨页对照。
   test(`${style} · 组合式与数据式的下拉外观与动效完全一致`, async ({ page }) => {
-    test.skip(style !== "pixel", "组合式下拉（题库版本）只出现在像素风首页");
     await open(page, style, HOME_COMBINED);
     const compare = async (kind: Kind) => {
       const trigger = kind.pick(page);
@@ -586,7 +584,7 @@ for (const style of ["pixel", "modern"] as const) {
       await expect(page.getByRole("listbox")).toHaveCount(0);
       return { ...m, ...panel };
     };
-    // 组合式只在像素风首页、数据式在日志页：这里只比计算样式，跨页对照不影响结论。
+    // 组合式在首页、数据式在日志页：这里只比计算样式，跨页对照不影响结论。
     const combined = await compare(HOME_COMBINED);
     await open(page, style, LOG);
     const simple = await compare(LOG);

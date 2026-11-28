@@ -22,17 +22,28 @@ export { expect };
 export const AXE_DISABLED_RULES = ["link-in-text-block"];
 
 /**
+ * 部署方自行提供的可选静态配置：文件缺失时对应功能保持关闭，请求必然 404。
+ *
+ * `push-config.json` 由部署方生成并托管 VAPID 公钥（见 `crates/app/src/push.rs` 的模块注释），
+ * 仓库不带这份文件，测试环境就是「未配置」这个正常状态；release 服务器对缺失文件返回 404，
+ * 浏览器随即在控制台留一条 `Failed to load resource`。两者都属预期降级，与 `/api` 同口径。
+ * 仅限**明确可选**的部署文件，本站自己的页面资产不在此列。
+ */
+export const OPTIONAL_DEPLOYMENT_PATHS = ["/push-config.json"];
+
+/**
  * 浏览器报的 `Failed to load resource` 是不是可以忽略。
  *
  * 测试环境没有外网：页面里的第三方脚本（AdSense 这类）必然 `net::ERR_CONNECTION_REFUSED`，
  * 报错来自浏览器、地址是外域，与本站代码无关；`/api` 的降级是各页面自己兜底的事
  * （用例里用 `stubApi` / 假服务），也不该让「页面没崩」这类用例红。
- * 只有**本站自己的静态资源**加载失败才必须暴露出来。
+ * 只有**本站自己的静态资源**加载失败才必须暴露出来（`OPTIONAL_DEPLOYMENT_PATHS` 除外）。
  */
 export function ignoredLoadError(text: string, url: string, base: string): boolean {
   if (!text.startsWith("Failed to load resource")) return false;
   if (!url.startsWith(base)) return true;
-  return new URL(url).pathname.startsWith("/api/");
+  const { pathname } = new URL(url);
+  return pathname.startsWith("/api/") || OPTIONAL_DEPLOYMENT_PATHS.includes(pathname);
 }
 
 /**

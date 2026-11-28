@@ -3,7 +3,7 @@
 use leptos::prelude::*;
 
 use crate::components::common::SectionCard;
-use crate::debounced::{SEARCH_DEBOUNCE, set_if_changed, use_debounced};
+use crate::debounced::{SEARCH_DEBOUNCE, use_debounced};
 use crate::i18n::t;
 use crate::icons::{Icon, IconKind, PixelSprite};
 use crate::ui::{Button, Chip, ChipGroup, Input, InputType, Variant, push_success};
@@ -44,9 +44,9 @@ pub fn IconsSection() -> impl IntoView {
       .take(cap.get())
       .collect::<Vec<IconKind>>()
   });
-  crate::after_paint::grow_cap(cap, BATCH_STEP, move || {
-    filtered.with_untracked(|items| items.len())
-  });
+  // 查询结果一变就复位并重新分批：`grow_cap` 补满即结束，只登记一次的话清空搜索后只剩首批。
+  let filtered_len = Memo::new(move |_| filtered.with(Vec::len));
+  crate::after_paint::grow_cap_per_filter(cap, BATCH_STEP, FIRST_BATCH, filtered_len);
 
   let select_size = Callback::new(move |v: String| {
     size.set(v.clone());
@@ -66,10 +66,7 @@ pub fn IconsSection() -> impl IntoView {
         <div class="flex flex-wrap items-center gap-3">
           <Input
             value=query
-            on_change=Callback::new(move |v: String| {
-              query.set(v);
-              set_if_changed(cap, FIRST_BATCH);
-            })
+            on_change=Callback::new(move |v: String| query.set(v))
             kind=InputType::Search
             clearable=true
             placeholder=Signal::derive(move || t("design.icons-placeholder"))
